@@ -121,14 +121,14 @@ let rec path_concat head p =
 (* Extract a signature from a module type *)
 
 let extract_sig env loc mty =
-  match Env.scrape_alias env mty with
+  match Mtype.remove_weak (Env.scrape_alias env mty) with
     Mty_signature sg -> sg
   | Mty_alias path ->
       raise(Error(loc, env, Cannot_scrape_alias path))
   | _ -> raise(Error(loc, env, Signature_expected))
 
 let extract_sig_open env loc mty =
-  match Env.scrape_alias env mty with
+  match Mtype.remove_weak (Env.scrape_alias env mty) with
     Mty_signature sg -> sg
   | Mty_alias path ->
       raise(Error(loc, env, Cannot_scrape_alias path))
@@ -321,7 +321,7 @@ let retype_applicative_functor_type ~loc env funct arg =
   let mty_functor = (Env.find_module funct env).md_type in
   let mty_arg = (Env.find_module arg env).md_type in
   let mty_param =
-    match Env.scrape_alias env mty_functor with
+    match Mtype.remove_weak (Env.scrape_alias env mty_functor) with
     | Mty_functor (Named (_, mty_param), _) -> mty_param
     | _ -> assert false (* could trigger due to MPR#7611 *)
   in
@@ -338,7 +338,12 @@ let retype_applicative_functor_type ~loc env funct arg =
 let check_usage_of_path_of_substituted_item paths ~loc ~lid env super =
     { super with
       Btype.it_signature_item = (fun self -> function
-      | Sig_module (id, _, { md_type = Mty_alias aliased_path; _ }, _, _)
+      | Sig_module
+          ( id, _
+          , { md_type=
+                (Mty_alias aliased_path | Mty_weak_alias (aliased_path, _))
+            ; _ }
+          , _, _)
         when List.exists
                (fun path -> path_is_strict_prefix path ~prefix:aliased_path)
                paths
@@ -612,7 +617,7 @@ let merge_constraint initial_env loc sg lid constr =
         else begin
           let path = Pident id in
           real_ids := [path];
-          begin match mty.mty_type with
+          begin match Mtype.remove_weak mty.mty_type with
           | Mty_ident _ -> ()
           | mty -> unpackable_modtype := Some mty
           end;
@@ -646,7 +651,7 @@ let merge_constraint initial_env loc sg lid constr =
         real_ids := path :: !real_ids;
         let item =
           match md.md_type, constr with
-            Mty_alias _, (With_module _ | With_type _) ->
+            (Mty_alias _ | Mty_weak_alias _), (With_module _ | With_type _) ->
               (* A module alias cannot be refined, so keep it
                  and just check that the constraint is correct *)
               item
@@ -1304,8 +1309,15 @@ and transl_modtype_aux env smty =
         smty.pmty_attributes
   | Pmty_alias lid ->
       let path = transl_module_alias loc env lid.txt in
-      mkmty (Tmty_alias (path, lid)) (Mty_alias path) env loc
-        smty.pmty_attributes
+      let mty =
+        if Env.is_functor_arg path env then
+          let p = Env.normalize_module_path (Some smty.pmty_loc) env path in
+          let mty = Includemod.expand_module_alias env p in
+          Mty_weak_alias (p, mty)
+        else
+          Mty_alias path
+      in
+      mkmty (Tmty_alias (path, lid)) mty env loc smty.pmty_attributes
   | Pmty_signature ssg ->
       let sg = transl_signature env ssg in
       mkmty (Tmty_signature sg) (Mty_signature sg.sig_type) env loc
@@ -1515,7 +1527,11 @@ and transl_signature env sg =
             let aliasable = not (Env.is_functor_arg path env) in
             let md =
               if not aliasable then
-                md
+                { md_type = Mty_weak_alias (path, md.md_type);
+                  md_attributes = pms.pms_attributes;
+                  md_loc = pms.pms_loc;
+                  md_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
+                }
               else
                 { md_type = Mty_alias path;
                   md_attributes = pms.pms_attributes;
@@ -1829,6 +1845,7 @@ let path_of_module mexp =
 let rec closed_modtype env = function
     Mty_ident _ -> true
   | Mty_alias _ -> true
+  | Mty_weak_alias (_, mty) -> closed_modtype env mty
   | Mty_signature sg ->
       let env = Env.add_signature sg env in
       List.for_all (closed_signature_item env) sg
@@ -2031,7 +2048,7 @@ and package_constraints env loc mty constrs =
     match Mtype.scrape env mty with
     | Mty_signature sg ->
         Mty_signature (package_constraints_sig env loc sg constrs)
-    | Mty_functor _ | Mty_alias _ -> assert false
+    | Mty_functor _ | Mty_alias _ | Mty_weak_alias _ -> assert false
     | Mty_ident p -> raise(Error(loc, env, Cannot_scrape_package_type p))
   end
 
@@ -2123,6 +2140,7 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
               if sttn then Mtype.strengthen ~aliasable env mty path
               else mty
             in
+            let mty = if alias then Mty_weak_alias (path, mty) else mty in
             { md with mod_type = mty }
       in md
   | Pmod_structure sstr ->
@@ -2172,7 +2190,7 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
         mod_attributes = smod.pmod_attributes;
         mod_loc = smod.pmod_loc }
   | Pmod_apply _ ->
-      type_application smod.pmod_loc sttn funct_body env smod
+      type_application ~alias smod.pmod_loc sttn funct_body env smod
   | Pmod_constraint(sarg, smty) ->
       let arg = type_module ~alias true funct_body anchor env sarg in
       let mty = transl_modtype env smty in
@@ -2218,7 +2236,7 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
   | Pmod_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
 
-and type_application loc strengthen funct_body env smod =
+and type_application ~alias loc strengthen funct_body env smod =
   let rec extract_application funct_body env sargs smod =
     match smod.pmod_desc with
     | Pmod_apply(f, sarg) ->
@@ -2242,12 +2260,13 @@ and type_application loc strengthen funct_body env smod =
     in
     type_module strengthen funct_body None env sfunct
   in
-  List.fold_left (type_one_application ~ctx:(loc, funct, args) funct_body env)
+  List.fold_left
+    (type_one_application ~alias ~ctx:(loc, funct, args) funct_body env)
     funct args
 
-and type_one_application ~ctx:(apply_loc,md_f,args) funct_body env funct
+and type_one_application ~alias ~ctx:(apply_loc,md_f,args) funct_body env funct
     app_view =
-  match Env.scrape_alias env funct.mod_type with
+  match Mtype.remove_weak (Env.scrape_alias env funct.mod_type) with
   | Mty_functor (Unit, mty_res) ->
       if not app_view.arg_is_syntactic_unit then
         raise (Error (app_view.f_loc, env, Apply_generative));
@@ -2313,6 +2332,16 @@ and type_one_application ~ctx:(apply_loc,md_f,args) funct_body env funct
       in
       check_well_formed_module env apply_loc
         "the signature of this functor application" mty_appl;
+      let mty_appl =
+        match mty_appl, app_view.arg_path with
+        | _ when not alias -> mty_appl
+        | (Mty_alias _ | Mty_weak_alias _), _ | _, None -> mty_appl
+        | _, Some arg_path ->
+            match path_of_module funct with
+            | None -> mty_appl
+            | Some path ->
+                Mty_weak_alias (Papply (path, arg_path), mty_appl)
+      in
       { mod_desc = Tmod_apply(funct, app_view.arg, coercion);
         mod_type = mty_appl;
         mod_env = env;
@@ -2702,6 +2731,7 @@ let rec normalize_modtype = function
   | Mty_alias _ -> ()
   | Mty_signature sg -> normalize_signature sg
   | Mty_functor(_param, body) -> normalize_modtype body
+  | Mty_weak_alias(_p, mty) -> normalize_modtype mty
 
 and normalize_signature sg = List.iter normalize_signature_item sg
 

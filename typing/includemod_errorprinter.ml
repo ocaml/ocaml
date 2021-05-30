@@ -157,6 +157,8 @@ module Illegal_permutation = struct
         find env (Context.Arg arg :: ctx) q mt
     | Mty_functor(arg, mt), InBody :: q ->
         find env (Context.Body arg :: ctx) q mt
+    | Mty_weak_alias(_, mt), _ ->
+        find env ctx path mt
     | _ -> raise Not_found
 
   let find env path mt = find env [] path mt
@@ -291,6 +293,7 @@ module With_shorthand = struct
   let modtype (r : _ named) = match r.item with
     | Types.Mty_ident _
     | Types.Mty_alias _
+    | Types.Mty_weak_alias _
     | Types.Mty_signature []
       -> Original r.item
     | Types.Mty_signature _ | Types.Mty_functor _

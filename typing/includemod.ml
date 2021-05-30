@@ -351,6 +351,7 @@ let retrieve_functor_params env mty =
         end
     | Mty_functor (p, res) -> retrieve_functor_params (p :: before) env res
     | Mty_signature _ as res -> List.rev before, res
+    | Mty_weak_alias (_, mty) -> retrieve_functor_params before env mty
   in
   retrieve_functor_params [] env mty
 
@@ -367,12 +368,18 @@ let rec modtypes ~loc env ~mark subst mty1 mty2 =
 
 and try_modtypes ~loc env ~mark subst mty1 mty2 =
   match mty1, mty2 with
-  | (Mty_alias p1, Mty_alias p2) ->
+  | ((Mty_alias p1 | Mty_weak_alias (p1, _)), Mty_alias p2) ->
       if Env.is_functor_arg p2 env then
         Error (Error.Invalid_module_alias p2)
       else if not (equal_module_paths env p1 subst p2) then
           Error Error.(Mt_core Incompatible_aliases)
       else Ok Tcoerce_none
+  | ((Mty_alias p1 | Mty_weak_alias (p1, _)), Mty_weak_alias (p2, _)) ->
+      if not (equal_module_paths env p1 subst p2) then
+          Error Error.(Mt_core Incompatible_aliases)
+      else Ok Tcoerce_none
+  | (Mty_weak_alias (_, mty1), _) ->
+      try_modtypes ~loc env ~mark subst mty1 mty2
   | (Mty_alias p1, _) -> begin
       match
         Env.normalize_module_path (Some Location.none) env p1
@@ -454,7 +461,7 @@ and try_modtypes ~loc env ~mark subst mty1 mty2 =
       let params2 = retrieve_functor_params env mty2 in
       let d = Error.sdiff params1 params2 in
       Error Error.(Functor (Params d))
-  | _, Mty_alias _ ->
+  | _, (Mty_alias _ | Mty_weak_alias _) ->
       Error (Error.Mt_core Error.Not_an_alias)
 
 (* Functor parameters *)
@@ -825,7 +832,7 @@ module Functor_inclusion_diff = struct
   }
 
   let keep_expansible_param = function
-    | Mty_ident _ | Mty_alias _ as mty -> Some mty
+    | Mty_ident _ | Mty_alias _ | Mty_weak_alias _ as mty -> Some mty
     | Mty_signature _ | Mty_functor _ -> None
 
   let lookup_expansion { env ; res ; _ } = match res with

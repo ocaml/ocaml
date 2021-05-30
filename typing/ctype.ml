@@ -747,7 +747,12 @@ let rec normalize_package_path env p =
     try (Env.find_modtype p env).mtd_type
     with Not_found -> None
   in
-  match t with
+  let rec remove_weak = function
+    | Some (Mty_weak_alias (_, mty)) -> remove_weak (Some mty)
+    | mty -> mty
+  in
+  match remove_weak t with
+  | Some (Mty_weak_alias _) -> assert false
   | Some (Mty_ident p) -> normalize_package_path env p
   | Some (Mty_signature _ | Mty_functor _ | Mty_alias _) | None ->
       match p with
