@@ -15,7 +15,11 @@ File "test_loc_modtype_type_eq.ml", line 3, characters 15-42:
                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Signature mismatch:
        Modules do not match:
-         (module Test_functor.Apply(String))
+         sig
+           type elt = String.t
+           type t = Test_functor.Apply(String).t
+           val create : elt -> t
+         end
        is not included in
          S
        Type declarations do not match:
@@ -30,7 +34,11 @@ File "test_loc_type_subst.ml", line 1, characters 50-77:
                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Signature mismatch:
        Modules do not match:
-         (module Test_functor.Apply(String))
+         sig
+           type elt = String.t
+           type t = Test_functor.Apply(String).t
+           val create : elt -> t
+         end
        is not included in
          sig type t val create : unit -> t end
        Values do not match:
@@ -45,7 +53,11 @@ File "test_loc_modtype_type_subst.ml", line 3, characters 15-42:
                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Signature mismatch:
        Modules do not match:
-         (module Test_functor.Apply(String))
+         sig
+           type elt = String.t
+           type t = Test_functor.Apply(String).t
+           val create : elt -> t
+         end
        is not included in
          S
        Values do not match:

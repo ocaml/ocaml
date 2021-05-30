@@ -673,6 +673,16 @@ let missing_field ppf item =
     (show_loc "Expected declaration") loc
 
 let module_types {Err.got=mty1; expected=mty2} =
+  let mty1 =
+     match mty2 with
+     | Types.Mty_alias _ | Types.Mty_weak_alias _ ->
+         (* Alias information is useful in the error, don't erase it. *)
+         mty1
+     | _ ->
+         (* The mismatch is structural rather than an alias, show the more
+            useful underlying module type if this is a weak alias. *)
+         Mtype.remove_weak mty1
+  in
   Format.dprintf
     "@[<hv 2>Modules do not match:@ \
      %a@;<1 -2>is not included in@ %a@]"
