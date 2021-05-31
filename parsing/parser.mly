@@ -2499,15 +2499,11 @@ let_binding_body_no_punning:
         let patloc = ($startpos($1), $endpos($2)) in
         (ghpat ~loc:patloc (Ppat_constraint(v, typ)),
          mkexp_constraint ~loc:$sloc $4 $2) }
-  | let_ident COLON typevar_list DOT core_type EQUAL seq_expr
-      (* TODO: could replace [typevar_list DOT core_type]
-               with [mktyp(poly(core_type))]
-               and simplify the semantic action? *)
-      { let typloc = ($startpos($3), $endpos($5)) in
-        let patloc = ($startpos($1), $endpos($5)) in
+  | let_ident COLON poly(core_type) EQUAL seq_expr
+      { let patloc = ($startpos($1), $endpos($3)) in
         (ghpat ~loc:patloc
-           (Ppat_constraint($1, ghtyp ~loc:typloc (Ptyp_poly($3,$5)))),
-         $7) }
+           (Ppat_constraint($1, ghtyp ~loc:($loc($3)) $3)),
+         $5) }
   | let_ident COLON TYPE lident_list DOT core_type EQUAL seq_expr
       { let exp, poly =
           wrap_type_annotation ~loc:$sloc $4 $6 $8 in
