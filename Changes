@@ -433,7 +433,7 @@ Working version
 
 ### Bug fixes:
 
-- #6654, #9974, #10401: make `include` and with `constraints` handle correctly
+- #6654, #9774, #10401: make `include` and with `constraints` handle correctly
   the ghost components of signatures. For instance, in
 
     include struct class c = object end end type c
