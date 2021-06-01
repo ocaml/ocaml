@@ -927,11 +927,13 @@ static void sweep_slice (intnat work)
 
 void set_caml_percent_free (uintnat pf)
 {
+  double o, lambda, s, m;
+
   caml_percent_free = pf;
-  double o = caml_percent_free / 100.;
-  double lambda = Mark_to_sweep_ratio;
-  double s = 1 + (1 + 2 / lambda) / o;
-  double m = lambda * s;
+  o = caml_percent_free / 100.;
+  lambda = Mark_to_sweep_ratio;
+  s = 1 + (1 + 2 / lambda) / o;
+  m = lambda * s;
   s_factor = s;
   m_factor = m;
   ooh_ratio = 1/(o+1)/m + 1/s;
