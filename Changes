@@ -156,6 +156,11 @@ Working version
   functions in String to match those in Bytes.
   (David Allsopp, review by Damien Doligez, Gabriel Scherer and others)
 
+- #9487, #9489: Add Random.full_int which allows 62-bit bounds on 64-bit
+  systems.
+  (David Allsopp, request by Francois Berenger, review by Xavier Leroy and
+   Damien Doligez)
+
 - #9533: Added String.starts_with and String.ends_with.
   (Bernhard Schommer, review by Daniel Bünzli, Gabriel Scherer and
   Alain Frisch)
