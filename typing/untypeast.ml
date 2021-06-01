@@ -284,7 +284,7 @@ let extension_constructor sub ext =
     (map_loc sub ext.ext_name)
     (match ext.ext_kind with
       | Text_decl (args, ret) ->
-          Pext_decl (constructor_arguments sub args,
+          Pext_decl ([], constructor_arguments sub args,
                      Option.map (sub.typ sub) ret)
       | Text_rebind (_p, lid) -> Pext_rebind (map_loc sub lid)
     )
