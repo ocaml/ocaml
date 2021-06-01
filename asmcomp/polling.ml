@@ -123,16 +123,11 @@ let potentially_recursive_tailcall ~fwd_func funbody =
 
 (* Given the result of the analysis of recursive handlers,
    add polls to make sure that every loop polls or allocate or ...
-   Two strategies are supported for adding polls:
- - if [poll_location] is [At_top], [Ipoll] instructions are added to
-   the beginning of every recursive handler that needs extra polling;
- - if [poll_location] is [At_bottom], [Ipoll] instructions are added
-   before unguarded back edges ([Iexit] instructions that go back
-   to a recursive handler that needs extra polling).
-*)
 
-type poll_location = At_top | At_bottom
-let poll_location = At_bottom
+   [Ipoll] instructions are added before unguarded back edges
+   ([Iexit] instructions that go back to a recursive handler that
+   needs extra polling).
+*)
 
 let add_poll i =
   Mach.instr_cons (Iop (Ipoll { return_label = None })) [||] [||] i
@@ -156,14 +151,12 @@ let instr_body handler_safe i =
       }
     | Icatch (rc, hdl, body) ->
       let ube' =
-        if rc = Cmm.Recursive && poll_location = At_bottom
+        if rc = Cmm.Recursive
         then List.fold_left add_unsafe_handler ube hdl
         else ube in
       let instr_handler (k, i0) =
         let i1 = instr ube' i0 in
-        if rc = Cmm.Recursive && poll_location = At_top && not (handler_safe k)
-        then (k, add_poll i1)
-        else (k, i1) in
+        (k, i1) in
       { i with
         desc = Icatch (rc,
                        List.map instr_handler hdl,
@@ -171,7 +164,7 @@ let instr_body handler_safe i =
         next = instr ube i.next;
       }
     | Iexit k ->
-        if poll_location = At_bottom && IntSet.mem k ube
+        if IntSet.mem k ube
         then add_poll i
         else i
     | Itrywith (body, hdl) ->
