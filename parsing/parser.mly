@@ -1716,7 +1716,7 @@ module_declaration_body:
   }
 ;
 %inline module_expr_alias:
-  id = mkrhs(mod_longident)
+  id = mkrhs(mod_ext_longident)
     { Mty.alias ~loc:(make_loc $sloc) id }
 ;
 (* A module substitution (in a signature). *)

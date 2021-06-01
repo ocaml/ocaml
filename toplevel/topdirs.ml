@@ -323,7 +323,7 @@ let parse_warnings ppf iserr s =
 
 (* Typing information *)
 
-let trim_signature = function
+let rec trim_signature = function
     Mty_signature sg ->
       Mty_signature
         (List.map
@@ -341,6 +341,7 @@ let trim_signature = function
                  Sig_modtype (id, Modtype_manifest (trim_modtype mty))*)
              | item -> item)
            sg)
+  | Mty_weak_alias (p, mty) -> Mty_weak_alias (p, trim_signature mty)
   | mty -> mty
 
 let show_prim to_sig ppf lid =
@@ -527,12 +528,13 @@ let () =
            Sig_module (id, Mp_present,
                        {md with md_type = trim_signature md.md_type},
                        rs, Exported) :: acc in
-         match md.md_type with
+         match Mtype.remove_weak md.md_type with
          | Mty_alias path ->
              let md = Env.find_module path env in
              accum_aliases md (acc Trec_not)
          | Mty_ident _ | Mty_signature _ | Mty_functor _ ->
              List.rev (acc (is_rec_module id md))
+         | Mty_weak_alias _ -> assert false
        in
        accum_aliases md []
     )

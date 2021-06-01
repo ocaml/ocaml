@@ -422,6 +422,9 @@ let type_iterators =
     | Mty_functor (p, mt) ->
         it.it_functor_param it p;
         it.it_module_type it mt
+    | Mty_weak_alias (p, mt) ->
+        it.it_path p;
+        it.it_module_type it mt
   and it_class_type it = function
       Cty_constr (p, tyl, cty) ->
         it.it_path p;

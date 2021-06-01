@@ -1228,12 +1228,16 @@ let rec normalize_module_path lax env = function
 
 and expand_module_path lax env path =
   try match find_module ~alias:true path env with
-    {md_type=Mty_alias path1} ->
+    {md_type= (Mty_alias path1 | Mty_weak_alias (path1, _)); _} ->
       let path' = normalize_module_path lax env path1 in
       if lax || !Clflags.transparent_modules then path' else
-      let id = Path.head path in
-      if Ident.global id && not (Ident.same id (Path.head path'))
-      then add_required_global id;
+      let new_global_ids =
+        Path.heads path'
+        |> List.filter Ident.global
+        |> Ident.Set.of_list
+        |> Ident.Set.diff (Ident.Set.of_list (Path.heads path))
+      in
+      Ident.Set.iter add_required_global new_global_ids ;
       path'
   | _ -> path
   with Not_found when lax
@@ -1491,10 +1495,14 @@ let find_shadowed_types path env =
 (* Expand manifest module type names at the top of the given module type *)
 
 let rec scrape_alias env sub ?path mty =
-  match mty, path with
-    Mty_ident _, _ ->
+  let rec remove_weak = function
+    | Mty_weak_alias (_, mty) -> remove_weak mty
+    | mty -> mty
+  in
+  match remove_weak mty, path with
+    (Mty_ident _ as mty'), _ ->
       let p =
-        match may_subst (Subst.modtype Keep) sub mty with
+        match may_subst (Subst.modtype Keep) sub mty' with
         | Mty_ident p -> p
         | _ -> assert false (* only [Mty_ident]s in [sub] *)
       in
@@ -1512,7 +1520,7 @@ let rec scrape_alias env sub ?path mty =
           (Warnings.No_cmi_file (Path.name path));*)
         mty
       end
-  | mty, Some path ->
+  | _, Some path ->
       !strengthen ~aliasable:true env mty path
   | _ -> mty
 
@@ -1629,7 +1637,11 @@ let is_identchar c =
 let rec components_of_module_maker
           {cm_env; cm_freshening_subst; cm_prefixing_subst;
            cm_path; cm_addr; cm_mty} : _ result =
-  match scrape_alias cm_env cm_freshening_subst cm_mty with
+  let rec remove_weak = function
+    | Mty_weak_alias (_, mty) -> remove_weak mty
+    | mty -> mty
+  in
+  match remove_weak (scrape_alias cm_env cm_freshening_subst cm_mty) with
     Mty_signature sg ->
       let c =
         { comp_values = NameMap.empty;
@@ -1793,6 +1805,7 @@ let rec components_of_module_maker
           fcomp_subst_cache = Hashtbl.create 17 })
   | Mty_ident _ -> Error No_components_abstract
   | Mty_alias p -> Error (No_components_alias p)
+  | Mty_weak_alias _ -> assert false
 
 (* Insertion of bindings by identifier + path *)
 
@@ -2322,7 +2335,8 @@ let read_signature modname filename =
   let md = Lazy_backtrack.force subst_modtype_maker mda.mda_declaration in
   match md.md_type with
   | Mty_signature sg -> sg
-  | Mty_ident _ | Mty_functor _ | Mty_alias _ -> assert false
+  | Mty_ident _ | Mty_functor _ | Mty_alias _ | Mty_weak_alias _ ->
+      assert false
 
 let is_identchar_latin1 = function
   | 'A'..'Z' | 'a'..'z' | '_' | '\192'..'\214' | '\216'..'\246'

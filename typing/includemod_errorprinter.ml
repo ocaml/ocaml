@@ -157,6 +157,8 @@ module Illegal_permutation = struct
         find env (Context.Arg arg :: ctx) q mt
     | Mty_functor(arg, mt), InBody :: q ->
         find env (Context.Body arg :: ctx) q mt
+    | Mty_weak_alias(_, mt), _ ->
+        find env ctx path mt
     | _ -> raise Not_found
 
   let find env path mt = find env [] path mt
@@ -291,6 +293,7 @@ module With_shorthand = struct
   let modtype (r : _ named) = match r.item with
     | Types.Mty_ident _
     | Types.Mty_alias _
+    | Types.Mty_weak_alias _
     | Types.Mty_signature []
       -> Original r.item
     | Types.Mty_signature _ | Types.Mty_functor _
@@ -670,6 +673,16 @@ let missing_field ppf item =
     (show_loc "Expected declaration") loc
 
 let module_types {Err.got=mty1; expected=mty2} =
+  let mty1 =
+     match mty2 with
+     | Types.Mty_alias _ | Types.Mty_weak_alias _ ->
+         (* Alias information is useful in the error, don't erase it. *)
+         mty1
+     | _ ->
+         (* The mismatch is structural rather than an alias, show the more
+            useful underlying module type if this is a weak alias. *)
+         Mtype.remove_weak mty1
+  in
   Format.dprintf
     "@[<hv 2>Modules do not match:@ \
      %a@;<1 -2>is not included in@ %a@]"

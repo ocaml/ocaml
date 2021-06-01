@@ -31,6 +31,6 @@ module M :
   functor (A : sig module type T end) (B : sig module type T end) ->
     sig val f : ((module A.T), (module B.T)) t -> string end
 module A : sig module type T = sig end end
-module N : sig val f : ((module A.T), (module A.T)) t -> string end
+module N = M(A)(A)
 Exception: Match_failure ("", 8, 52).
 |}];;

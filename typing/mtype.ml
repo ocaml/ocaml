@@ -28,6 +28,8 @@ let rec scrape env mty =
       with Not_found ->
         mty
       end
+  | Mty_weak_alias (p, mty) ->
+      Mty_weak_alias (p, scrape env mty)
   | _ -> mty
 
 let freshen ~scope mty =
@@ -46,6 +48,8 @@ let rec strengthen ~aliasable env mty p =
       let param = Ident.create_scoped ~scope:(Path.scope p) "Arg" in
       Mty_functor(Named (Some param, arg),
         strengthen ~aliasable:false env res (Papply(p, Pident param)))
+  | Mty_weak_alias(path, mty) ->
+      Mty_weak_alias(path, strengthen ~aliasable env mty p)
   | mty ->
       mty
 
@@ -101,10 +105,17 @@ and strengthen_sig ~aliasable env sg p =
 and strengthen_decl ~aliasable env md p =
   match md.md_type with
   | Mty_alias _ -> md
+  | Mty_weak_alias (p, _) when aliasable && not (Env.is_functor_arg p env) ->
+      {md with md_type = Mty_alias p}
+  | Mty_weak_alias _ -> md
   | _ when aliasable -> {md with md_type = Mty_alias p}
   | mty -> {md with md_type = strengthen ~aliasable env mty p}
 
 let () = Env.strengthen := strengthen
+
+let rec remove_weak = function
+  | Mty_weak_alias (_, mty) -> remove_weak mty
+  | mty -> mty
 
 let rec make_aliases_absent pres mty =
   match mty with
@@ -129,7 +140,7 @@ and make_aliases_absent_sig sg =
 
 let scrape_for_type_of env pres mty =
   let rec loop env path mty =
-    match mty, path with
+    match remove_weak mty, path with
     | Mty_alias path, _ -> begin
         try
           let md = Env.find_module path env in
@@ -138,7 +149,7 @@ let scrape_for_type_of env pres mty =
       end
     | mty, Some path ->
         strengthen ~aliasable:false env mty path
-    | _ -> mty
+    | mty, _ -> mty
   in
   make_aliases_absent pres (loop env None mty)
 
@@ -190,6 +201,14 @@ let rec nondep_mty_with_presence env va ids pres mty =
                     nondep_mty res_env va ids res)
       in
       pres, mty
+  | Mty_weak_alias (p, mty') ->
+      begin match Path.find_free_opt ids p with
+      | Some _ ->
+          nondep_mty_with_presence env va ids pres mty'
+      | None ->
+          let pres, mty' = nondep_mty_with_presence env va ids pres mty' in
+          pres, Mty_weak_alias (p, mty')
+      end
 
 and nondep_mty env va ids mty =
   snd (nondep_mty_with_presence env va ids Mp_present mty)
@@ -269,6 +288,8 @@ let rec enrich_modtype env p mty =
   match mty with
     Mty_signature sg ->
       Mty_signature(List.map (enrich_item env p) sg)
+  | Mty_weak_alias (path, mty) ->
+      Mty_weak_alias (path, enrich_modtype env p mty)
   | _ ->
       mty
 
@@ -286,11 +307,12 @@ and enrich_item env p = function
   | item -> item
 
 let rec type_paths env p mty =
-  match scrape env mty with
+  match remove_weak (scrape env mty) with
     Mty_ident _ -> []
   | Mty_alias _ -> []
   | Mty_signature sg -> type_paths_sig env p sg
   | Mty_functor _ -> []
+  | Mty_weak_alias _ -> assert false
 
 and type_paths_sig env p sg =
   match sg with
@@ -311,11 +333,12 @@ let rec no_code_needed_mod env pres mty =
   match pres with
   | Mp_absent -> true
   | Mp_present -> begin
-      match scrape env mty with
+      match remove_weak (scrape env mty) with
         Mty_ident _ -> false
       | Mty_signature sg -> no_code_needed_sig env sg
       | Mty_functor _ -> false
       | Mty_alias _ -> false
+      | Mty_weak_alias _ -> assert false
     end
 
 and no_code_needed_sig env sg =
@@ -352,6 +375,8 @@ let rec contains_type env = function
       contains_type env body
   | Mty_alias _ ->
       ()
+  | Mty_weak_alias (_, mty) ->
+      contains_type env mty
 
 and contains_type_sig env = List.iter (contains_type_item env)
 
@@ -421,19 +446,28 @@ let collect_arg_paths mty =
   and bindings = ref Ident.empty in
   (* let rt = Ident.create "Root" in
      and prefix = ref (Path.Pident rt) in *)
-  let it_path p = paths := Path.Set.union (get_arg_paths p) !paths
-  and it_signature_item it si =
+  let it_path p = paths := Path.Set.union (get_arg_paths p) !paths in
+  let build_signature_subst id sg =
+    List.iter
+      (function Sig_module (id', _, _, _, _) ->
+          subst :=
+            Path.Map.add (Pdot (Pident id, Ident.name id')) id' !subst
+        | _ -> ())
+      sg
+  in
+  let it_signature_item it si =
     type_iterators.it_signature_item it si;
     match si with
     | Sig_module (id, _, {md_type=Mty_alias p}, _, _) ->
         bindings := Ident.add id p !bindings
     | Sig_module (id, _, {md_type=Mty_signature sg}, _, _) ->
-        List.iter
-          (function Sig_module (id', _, _, _, _) ->
-              subst :=
-                Path.Map.add (Pdot (Pident id, Ident.name id')) id' !subst
-            | _ -> ())
-          sg
+        build_signature_subst id sg
+    | Sig_module (id, _, {md_type=Mty_weak_alias (p, mty)}, _, _) ->
+        bindings := Ident.add id p !bindings;
+        begin match remove_weak mty with
+        | Mty_signature sg -> build_signature_subst id sg
+        | _ -> ()
+        end
     | _ -> ()
   in
   let it = {type_iterators with it_path; it_signature_item} in
@@ -461,6 +495,9 @@ let rec remove_aliases_mty env args pres mty =
           args'.modified <- true;
           remove_aliases_mty env args' Mp_present mty'
         end
+    | Mty_weak_alias (_, mty') ->
+        args'.modified <- true;
+        remove_aliases_mty env args' pres mty'
     | mty ->
         Mp_present, mty
   in
@@ -477,8 +514,11 @@ and remove_aliases_sig env args sg =
   | Sig_module(id, pres, md, rs, priv) :: rem  ->
       let pres, mty =
         match md.md_type with
-          Mty_alias p when args.exclude id p ->
+        | Mty_alias p when args.exclude id p ->
             pres, md.md_type
+        | Mty_weak_alias (p, mty) when args.exclude id p ->
+            let pres, mty = remove_aliases_mty env args pres mty in
+            pres, Mty_weak_alias (p, mty)
         | mty ->
             remove_aliases_mty env args pres mty
       in

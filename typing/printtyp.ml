@@ -1719,7 +1719,7 @@ let rec tree_of_modtype ?(ellipsis=false) = function
       in
       let res = wrap_env env (tree_of_modtype ~ellipsis) ty_res in
       Omty_functor (param, res)
-  | Mty_alias p ->
+  | Mty_alias p | Mty_weak_alias (p, _) ->
       Omty_alias (tree_of_path Module p)
 
 and tree_of_functor_parameter = function

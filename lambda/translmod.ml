@@ -226,7 +226,7 @@ exception Initialization_failure of unsafe_info
 
 let init_shape id modl =
   let rec init_shape_mod subid loc env mty =
-    match Mtype.scrape env mty with
+    match Mtype.remove_weak (Mtype.scrape env mty) with
       Mty_ident _
     | Mty_alias _ ->
         raise (Initialization_failure
@@ -237,6 +237,7 @@ let init_shape id modl =
         (* can we do better? *)
         raise (Initialization_failure
                 (Unsafe {reason=Unsafe_functor;loc;subid}))
+    | Mty_weak_alias _ -> assert false
   and init_shape_struct env sg =
     match sg with
       [] -> []

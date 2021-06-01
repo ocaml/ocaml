@@ -116,32 +116,7 @@ module Assume :
     ->
     sig
       module Point : sig type t end
-      module Test_range :
-        sig
-          module Endpoint : sig type t = Point.t end
-          type finite = [ `Before of Endpoint.t ]
-          type infinite = [ `Until_infinity ]
-          type +'a range =
-            'a Given.Make_range(Point).range = private {
-            until : 'a;
-          } constraint 'a = [< `Before of Endpoint.t | `Until_infinity ]
-          val until :
-            ([< `Before of Endpoint.t | `Until_infinity ] as 'a) range -> 'a
-        end
-      module Test_ranged :
-        sig
-          module Endpoint : sig type t = Test_range.Endpoint.t end
-          module Range :
-            sig
-              module Endpoint : sig type t = Test_range.Endpoint.t end
-              type finite = [ `Before of Endpoint.t ]
-              type infinite = [ `Until_infinity ]
-              type +'a range = 'a Test_range.range = private { until : 'a; }
-                constraint 'a = [< `Before of Endpoint.t | `Until_infinity ]
-              val until :
-                ([< `Before of Endpoint.t | `Until_infinity ] as 'a) range ->
-                'a
-            end
-        end
+      module Test_range = Given.Make_range(Point)
+      module Test_ranged = Given.Make_ranged(Test_range)
     end
 |}]
