@@ -152,24 +152,26 @@
      int64_vec = [0: [0: 1L 1L] [0: [0: 1L 2L] [0: [0: 2L 1L] 0]]]
      nativeint_vec = [0: [0: 1n 1n] [0: [0: 1n 2n] [0: [0: 2n 1n] 0]]]
      test_vec =
-       (function cmp eq ne lt gt le ge vec
+       (function cmp eq ne lt gt le ge vec : [0: [0: *, *], *]
          (let
            (uncurry =
-              (function f param (apply f (field 0 param) (field 1 param)))
+              (function f param[0: *, *]
+                (apply f (field 0 param) (field 1 param)))
             map =
               (function f l
                 (apply (field 18 (global Stdlib__List!)) (apply uncurry f) l)))
-           (makeblock 0
+           (makeblock 0 ([0: *, *],*)
              (makeblock 0 (apply map gen_cmp vec) (apply map cmp vec))
              (apply map
-               (function gen spec
+               (function gen spec : [0: *, *]
                  (makeblock 0 (apply map gen vec) (apply map spec vec)))
-               (makeblock 0 (makeblock 0 gen_eq eq)
-                 (makeblock 0 (makeblock 0 gen_ne ne)
-                   (makeblock 0 (makeblock 0 gen_lt lt)
-                     (makeblock 0 (makeblock 0 gen_gt gt)
-                       (makeblock 0 (makeblock 0 gen_le le)
-                         (makeblock 0 (makeblock 0 gen_ge ge) 0)))))))))))
+               (makeblock 0 ([0: *, *],*) (makeblock 0 gen_eq eq)
+                 (makeblock 0 ([0: *, *],*) (makeblock 0 gen_ne ne)
+                   (makeblock 0 ([0: *, *],*) (makeblock 0 gen_lt lt)
+                     (makeblock 0 ([0: *, *],*) (makeblock 0 gen_gt gt)
+                       (makeblock 0 ([0: *, *],*) (makeblock 0 gen_le le)
+                         (makeblock 0 ([0: *, *],*) (makeblock 0 gen_ge ge)
+                           0)))))))))))
     (seq
       (apply test_vec int_cmp int_eq int_ne int_lt int_gt int_le int_ge
         int_vec)
@@ -189,27 +191,30 @@
         nativeint_gt nativeint_le nativeint_ge nativeint_vec)
       (let
         (eta_test_vec =
-           (function cmp eq ne lt gt le ge vec
+           (function cmp eq ne lt gt le ge vec : [0: [0: *, *], *]
              (let
                (uncurry =
-                  (function f param
+                  (function f param[0: *, *]
                     (apply f (field 0 param) (field 1 param)))
                 map =
                   (function f l
                     (apply (field 18 (global Stdlib__List!))
                       (apply uncurry f) l)))
-               (makeblock 0
+               (makeblock 0 ([0: *, *],*)
                  (makeblock 0 (apply map eta_gen_cmp vec)
                    (apply map cmp vec))
                  (apply map
-                   (function gen spec
+                   (function gen spec : [0: *, *]
                      (makeblock 0 (apply map gen vec) (apply map spec vec)))
-                   (makeblock 0 (makeblock 0 eta_gen_eq eq)
-                     (makeblock 0 (makeblock 0 eta_gen_ne ne)
-                       (makeblock 0 (makeblock 0 eta_gen_lt lt)
-                         (makeblock 0 (makeblock 0 eta_gen_gt gt)
-                           (makeblock 0 (makeblock 0 eta_gen_le le)
-                             (makeblock 0 (makeblock 0 eta_gen_ge ge) 0)))))))))))
+                   (makeblock 0 ([0: *, *],*) (makeblock 0 eta_gen_eq eq)
+                     (makeblock 0 ([0: *, *],*) (makeblock 0 eta_gen_ne ne)
+                       (makeblock 0 ([0: *, *],*) (makeblock 0 eta_gen_lt lt)
+                         (makeblock 0 ([0: *, *],*)
+                           (makeblock 0 eta_gen_gt gt)
+                           (makeblock 0 ([0: *, *],*)
+                             (makeblock 0 eta_gen_le le)
+                             (makeblock 0 ([0: *, *],*)
+                               (makeblock 0 eta_gen_ge ge) 0)))))))))))
         (seq
           (apply eta_test_vec eta_int_cmp eta_int_eq eta_int_ne eta_int_lt
             eta_int_gt eta_int_le eta_int_ge int_vec)
