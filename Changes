@@ -249,6 +249,10 @@ Working version
   the reference manual.
   (John Whitington, review by David Allsopp)
 
+- #10438: add a new toplevel cli argument `-e <script>` to
+  run script passed to the toplevel.
+  (Pavlo Khrystenko, review by Gabriel Scherer)
+
 ### Manual and documentation:
 
 - #10247: Add initial tranche of examples to reference manual.
