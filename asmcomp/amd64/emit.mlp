@@ -546,7 +546,7 @@ let emit_instr env fallthrough i =
       if n <> 0
       then cfi_adjust_cfa_offset n;
       env.stack_offset <- env.stack_offset + n
-  | Lop(Iload(chunk, addr)) ->
+  | Lop(Iload(chunk, addr, _mut)) ->
       let dest = res i 0 in
       begin match chunk with
       | Word_int | Word_val ->

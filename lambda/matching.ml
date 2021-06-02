@@ -2589,13 +2589,13 @@ let rec list_as_pat = function
 
 let complete_pats_constrs = function
   | constr :: _ as constrs ->
-      let tag_of_constr constr =
-        constr.pat_desc.cstr_tag in
+      let constr_of_pat cstr_pat =
+        cstr_pat.pat_desc in
       let pat_of_constr cstr =
         let open Patterns.Head in
         to_omega_pattern { constr with pat_desc = Construct cstr } in
       List.map pat_of_constr
-        (complete_constrs constr (List.map tag_of_constr constrs))
+        (complete_constrs constr (List.map constr_of_pat constrs))
   | _ -> assert false
 
 (*

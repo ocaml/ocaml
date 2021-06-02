@@ -29,7 +29,7 @@ method! class_of_operation op =
   (* Operations that affect the floating-point stack cannot be factored *)
   | Iconst_float _ | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Iintoffloat | Ifloatofint
-  | Iload((Single | Double | Double_u), _) -> Op_other
+  | Iload((Single | Double | Double_u), _, _) -> Op_other
   (* Specific ops *)
   | Ispecific(Ilea _) -> Op_pure
   | Ispecific(Istore_int(_, _, is_asg)) -> Op_store is_asg

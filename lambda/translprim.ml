@@ -89,6 +89,9 @@ type prim =
   | Send_self
   | Send_cache
   | Frame_pointers
+  | Identity
+  | Apply
+  | Revapply
 
 let used_primitives = Hashtbl.create 7
 let add_used_primitive loc env path =
@@ -112,12 +115,12 @@ let prim_sys_argv =
 
 let primitives_table =
   create_hashtable 57 [
-    "%identity", Primitive (Pidentity, 1);
+    "%identity", Identity;
     "%bytes_to_string", Primitive (Pbytes_to_string, 1);
     "%bytes_of_string", Primitive (Pbytes_of_string, 1);
     "%ignore", Primitive (Pignore, 1);
-    "%revapply", Primitive (Prevapply, 2);
-    "%apply", Primitive (Pdirapply, 2);
+    "%revapply", Revapply;
+    "%apply", Apply;
     "%loc_LOC", Loc Loc_LOC;
     "%loc_FILE", Loc Loc_FILE;
     "%loc_LINE", Loc Loc_LINE;
@@ -702,9 +705,24 @@ let lambda_of_prim prim_name prim loc args arg_exps =
         if !Clflags.native_code && Config.with_frame_pointers then 1 else 0
       in
       Lconst (const_int frame_pointers)
+  | Identity, [arg] -> arg
+  | Apply, [func; arg]
+  | Revapply, [arg; func] ->
+      Lapply {
+        ap_func = func;
+        ap_args = [arg];
+        ap_loc = loc;
+        (* CR-someday lwhite: it would be nice to be able to give
+           application attributes to functions applied with the application
+           operators. *)
+        ap_tailcall = Default_tailcall;
+        ap_inlined = Default_inline;
+        ap_specialised = Default_specialise;
+      }
   | (Raise _ | Raise_with_backtrace
     | Lazy_force | Loc _ | Primitive _ | Comparison _
-    | Send | Send_self | Send_cache | Frame_pointers), _ ->
+    | Send | Send_self | Send_cache | Frame_pointers | Identity
+    | Apply | Revapply), _ ->
       raise(Error(to_location loc, Wrong_arity_builtin_primitive prim_name))
 
 let check_primitive_arity loc p =
@@ -721,6 +739,8 @@ let check_primitive_arity loc p =
     | Send | Send_self -> p.prim_arity = 2
     | Send_cache -> p.prim_arity = 4
     | Frame_pointers -> p.prim_arity = 0
+    | Identity -> p.prim_arity = 1
+    | Apply | Revapply -> p.prim_arity = 2
   in
   if not ok then raise(Error(loc, Wrong_arity_builtin_primitive p.prim_name))
 
@@ -752,7 +772,6 @@ let transl_primitive loc p env ty path =
                  body; }
 
 let lambda_primitive_needs_event_after = function
-  | Prevapply | Pdirapply (* PR#6920 *)
   (* We add an event after any primitive resulting in a C call that
      may raise an exception or allocate. These are places where we may
      collect the call stack. *)
@@ -771,7 +790,7 @@ let lambda_primitive_needs_event_after = function
   | Pbigstring_set_16 _ | Pbigstring_set_32 _ | Pbigstring_set_64 _
   | Pbbswap _ -> true
 
-  | Pidentity | Pbytes_to_string | Pbytes_of_string | Pignore | Psetglobal _
+  | Pbytes_to_string | Pbytes_of_string | Pignore | Psetglobal _
   | Pgetglobal _ | Pmakeblock _ | Pfield _ | Pfield_computed | Psetfield _
   | Psetfield_computed _ | Pfloatfield _ | Psetfloatfield _ | Praise _
   | Psequor | Psequand | Pnot | Pnegint | Paddint | Psubint | Pmulint
@@ -789,8 +808,9 @@ let primitive_needs_event_after = function
   | External _ -> true
   | Comparison(comp, knd) ->
       lambda_primitive_needs_event_after (comparison_primitive comp knd)
-  | Lazy_force | Send | Send_self | Send_cache -> true
-  | Raise _ | Raise_with_backtrace | Loc _ | Frame_pointers -> false
+  | Lazy_force | Send | Send_self | Send_cache
+  | Apply | Revapply -> true
+  | Raise _ | Raise_with_backtrace | Loc _ | Frame_pointers | Identity -> false
 
 let transl_primitive_application loc p env ty path exp args arg_exps =
   let prim =

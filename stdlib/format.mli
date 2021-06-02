@@ -221,6 +221,12 @@ val pp_print_string : formatter -> string -> unit
 val print_string : string -> unit
 (** [pp_print_string ppf s] prints [s] in the current pretty-printing box. *)
 
+val pp_print_bytes : formatter -> bytes -> unit
+val print_bytes : bytes -> unit
+(** [pp_print_bytes ppf b] prints [b] in the current pretty-printing box.
+    @since 4.13.0
+*)
+
 val pp_print_as : formatter -> int -> string -> unit
 val print_as : int -> string -> unit
 (** [pp_print_as ppf len s] prints [s] in the current pretty-printing box.
