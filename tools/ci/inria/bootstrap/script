@@ -57,6 +57,13 @@ quote1 () {
   printf "'%s'" "`printf %s "$1" | sed -e "s/'/'\\\\\\\\''/g"`";
 }
 
+sedi () {
+  case "${OCAML_ARCH}" in
+    macos) sed -i '' "$@";;
+    *) sed -i "$@";;
+  esac
+}
+
 # Functions used to modify the source code
 
 change_exe_magic_number() {
@@ -64,10 +71,10 @@ change_exe_magic_number() {
   new="$1"
   echo Changing executable magic number from ${old} to ${new}
   # Change magic number in runtime/caml/exec.h
-  sed -i 's/\x23define \+EXEC_MAGIC \+\x22'${old}\
+  sedi 's/\x23define \+EXEC_MAGIC \+\x22'${old}\
 '\x22/#define EXEC_MAGIC "'${new}'"/' runtime/caml/exec.h
   # Change magic number in utils/config.mlp
-  sed -i 's/let \+exec_magic_number \+= \+\x22'${old}\
+  sedi 's/let \+exec_magic_number \+= \+\x22'${old}\
 '\x22/let exec_magic_number = "'${new}'"/' utils/config.mlp
 }
 
