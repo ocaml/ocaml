@@ -506,6 +506,9 @@ Working version
 - #10189, #10190, #10347: Universal variables leaking through GADT equations
   (Jacques Garrigue, report and review by Leo White)
 
+- #10205: Avoid overwriting closures while initialising recursive modules
+  (Stephen Dolan, review by Xavier Leroy, Hugo Heuzard and Vincent Laviron)
+
 - #10253, #10373: tweak error message for unknown variant constructors
   or record fields in type-directed disambiguation
   (Florian Angeletti, report by Hongbo Zhang, review by Gabriel Scherer)
