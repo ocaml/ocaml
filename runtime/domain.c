@@ -1263,15 +1263,6 @@ static void domain_terminate(struct domain_ml_values* ml_values)
     acknowledge_all_pending_interrupts();
   }
 
-  /* release domain blocked waiting to join this domain */
-  check_err("domain_terminate_waiter_lock",
-            sync_mutex_lock(Mutex_val(ml_values->mutex)));
-  Field(ml_values->terminated, 0) = Val_true;
-  check_err("domain_terminate_waiter_broadcast",
-            sync_condvar_broadcast(Condition_val(ml_values->condition)));
-  check_err("domain_terminate_waiter_unlock",
-            sync_mutex_unlock(Mutex_val(ml_values->mutex)));
-
   atomic_store_rel(&domain_self->backup_thread_msg, BT_TERMINATE);
   caml_plat_signal(&domain_self->domain_cond);
   caml_plat_unlock(&domain_self->domain_lock);
@@ -1281,6 +1272,24 @@ static void domain_terminate(struct domain_ml_values* ml_values)
      on caml_domain_alone (which uses caml_num_domains_running) in at least
      the shared_heap lockfree fast paths */
   atomic_fetch_add(&caml_num_domains_running, -1);
+
+  /* release domain blocked waiting to join this domain
+   *  - the terminate lock can block and at the same time we need to
+   *    ensure we have dropped the domain lock to allow for domain reuse
+   *  - note that we *can* use the raw pointers here for the ml_values
+   *    because a minor GC will have happened above
+   *  - these ml_values are registered as global roots, hence we know
+   *    they will not be collected while domain_terminate executes
+   */
+  Assert(!Is_young(ml_values->mutex) && !Is_young(ml_values->condition) && !Is_young(ml_values->terminated));
+  Assert(Field(ml_values->terminated, 0) == Val_false);
+  check_err("domain_terminate_waiter_lock",
+            sync_mutex_lock(Mutex_val(ml_values->mutex)));
+  Field(ml_values->terminated, 0) = Val_true;
+  check_err("domain_terminate_waiter_broadcast",
+            sync_condvar_broadcast(Condition_val(ml_values->condition)));
+  check_err("domain_terminate_waiter_unlock",
+            sync_mutex_unlock(Mutex_val(ml_values->mutex)));
 }
 
 int caml_incoming_interrupts_queued()
