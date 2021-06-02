@@ -1043,6 +1043,14 @@ OCaml 4.12.0 (24 February 2021)
 - #9634: Allow initial and repeated commas in `OCAMLRUNPARAM`.
   (Nicolás Ojeda Bär, review by Gabriel Scherer)
 
+- #9928: Add a new builtin alert [@@ocaml.alert polymorphic_comparison]
+  attached to the polymorphic comparison functions in the standard library.
+  This new alert allows users to avoid using polymorphic comparison functions
+  for rigorousness or performance reasons when needed.
+  It is currently disabled by default. You can enable it using
+  `-alert +polymorphic_comparison`.
+  (Kate Deplaix, review by ???)
+
 ### Internal/compiler-libs changes:
 
 - #8987: Make some locations more accurate

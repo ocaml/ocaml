@@ -289,6 +289,7 @@ val exists2 : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
  *)
 
 val mem : 'a -> 'a list -> bool
+  [@@ocaml.alert polymorphic_comparison]
 (** [mem a set] is true if and only if [a] is equal
    to an element of [set].
  *)
@@ -369,6 +370,7 @@ val partition_map : ('a -> ('b, 'c) Either.t) -> 'a list -> 'b list * 'c list
 
 
 val assoc : 'a -> ('a * 'b) list -> 'b
+  [@@ocaml.alert polymorphic_comparison]
 (** [assoc a l] returns the value associated with key [a] in the list of
    pairs [l]. That is,
    [assoc a [ ...; (a,b); ...] = b]
@@ -378,6 +380,7 @@ val assoc : 'a -> ('a * 'b) list -> 'b
  *)
 
 val assoc_opt : 'a -> ('a * 'b) list -> 'b option
+  [@@ocaml.alert polymorphic_comparison]
 (** [assoc_opt a l] returns the value associated with key [a] in the list of
     pairs [l]. That is,
     [assoc_opt a [ ...; (a,b); ...] = Some b]
@@ -399,6 +402,7 @@ val assq_opt : 'a -> ('a * 'b) list -> 'b option
  *)
 
 val mem_assoc : 'a -> ('a * 'b) list -> bool
+  [@@ocaml.alert polymorphic_comparison]
 (** Same as {!assoc}, but simply return [true] if a binding exists,
    and [false] if no bindings exist for the given key.
  *)
@@ -409,6 +413,7 @@ val mem_assq : 'a -> ('a * 'b) list -> bool
  *)
 
 val remove_assoc : 'a -> ('a * 'b) list -> ('a * 'b) list
+  [@@ocaml.alert polymorphic_comparison]
 (** [remove_assoc a l] returns the list of
    pairs [l] without the first pair with key [a], if any.
    Not tail-recursive.

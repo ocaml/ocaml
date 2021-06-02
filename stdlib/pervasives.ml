@@ -20,14 +20,21 @@ let invalid_arg = invalid_arg
 let failwith = failwith
 exception Exit
 external ( = ) : 'a -> 'a -> bool = "%equal"
+  [@@ocaml.alert polymorphic_comparison]
 external ( <> ) : 'a -> 'a -> bool = "%notequal"
+  [@@ocaml.alert polymorphic_comparison]
 external ( < ) : 'a -> 'a -> bool = "%lessthan"
+  [@@ocaml.alert polymorphic_comparison]
 external ( > ) : 'a -> 'a -> bool = "%greaterthan"
+  [@@ocaml.alert polymorphic_comparison]
 external ( <= ) : 'a -> 'a -> bool = "%lessequal"
+  [@@ocaml.alert polymorphic_comparison]
 external ( >= ) : 'a -> 'a -> bool = "%greaterequal"
+  [@@ocaml.alert polymorphic_comparison]
 external compare : 'a -> 'a -> int = "%compare"
-let min = min
-let max = max
+  [@@ocaml.alert polymorphic_comparison]
+let min [@ocaml.alert polymorphic_comparison] = min
+let max [@ocaml.alert polymorphic_comparison] = max
 external ( == ) : 'a -> 'a -> bool = "%eq"
 external ( != ) : 'a -> 'a -> bool = "%noteq"
 external not : bool -> bool = "%boolnot"

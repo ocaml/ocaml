@@ -88,29 +88,35 @@ val add : ('a, 'b) t -> 'a -> 'b -> unit
    (Same behavior as with association lists.) *)
 
 val find : ('a, 'b) t -> 'a -> 'b
+  [@@ocaml.alert polymorphic_comparison]
 (** [Hashtbl.find tbl x] returns the current binding of [x] in [tbl],
    or raises [Not_found] if no such binding exists. *)
 
 val find_opt : ('a, 'b) t -> 'a -> 'b option
+  [@@ocaml.alert polymorphic_comparison]
 (** [Hashtbl.find_opt tbl x] returns the current binding of [x] in [tbl],
     or [None] if no such binding exists.
     @since 4.05 *)
 
 val find_all : ('a, 'b) t -> 'a -> 'b list
+  [@@ocaml.alert polymorphic_comparison]
 (** [Hashtbl.find_all tbl x] returns the list of all data
    associated with [x] in [tbl].
    The current binding is returned first, then the previous
    bindings, in reverse order of introduction in the table. *)
 
 val mem : ('a, 'b) t -> 'a -> bool
+  [@@ocaml.alert polymorphic_comparison]
 (** [Hashtbl.mem tbl x] checks if [x] is bound in [tbl]. *)
 
 val remove : ('a, 'b) t -> 'a -> unit
+  [@@ocaml.alert polymorphic_comparison]
 (** [Hashtbl.remove tbl x] removes the current binding of [x] in [tbl],
    restoring the previous binding if it exists.
    It does nothing if [x] is not bound in [tbl]. *)
 
 val replace : ('a, 'b) t -> 'a -> 'b -> unit
+  [@@ocaml.alert polymorphic_comparison]
 (** [Hashtbl.replace tbl key data] replaces the current binding of [key]
    in [tbl] by a binding of [key] to [data].  If [key] is unbound in [tbl],
    a binding of [key] to [data] is added to [tbl].
@@ -264,10 +270,12 @@ val add_seq : ('a,'b) t -> ('a * 'b) Seq.t -> unit
     @since 4.07 *)
 
 val replace_seq : ('a,'b) t -> ('a * 'b) Seq.t -> unit
+  [@@ocaml.alert polymorphic_comparison]
 (** Add the given bindings to the table, using {!replace}
     @since 4.07 *)
 
 val of_seq : ('a * 'b) Seq.t -> ('a, 'b) t
+  [@@ocaml.alert polymorphic_comparison]
 (** Build a table from the given bindings. The bindings are added
     in the same order they appear in the sequence, using {!replace_seq},
     which means that if two pairs have the same key, only the latest one

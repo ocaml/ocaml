@@ -403,12 +403,15 @@ type state =
     alert_errors: (Misc.Stdlib.String.Set.t * bool); (* false:set complement *)
   }
 
+let disabled_alerts =
+  Misc.Stdlib.String.Set.singleton "polymorphic_comparison"
+
 let current =
   ref
     {
       active = Array.make (last_warning_number + 1) true;
       error = Array.make (last_warning_number + 1) false;
-      alerts = (Misc.Stdlib.String.Set.empty, false); (* all enabled *)
+      alerts = (disabled_alerts, false); (* all enabled expt disabled_alerts *)
       alert_errors = (Misc.Stdlib.String.Set.empty, true); (* all soft *)
     }
 

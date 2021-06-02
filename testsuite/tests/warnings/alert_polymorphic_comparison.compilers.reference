@@ -1,0 +1,221 @@
+File "alert_polymorphic_comparison.ml", line 12, characters 9-16:
+12 | let _a = compare
+              ^^^^^^^
+Alert polymorphic_comparison: Stdlib.compare
+File "alert_polymorphic_comparison.ml", line 13, characters 11-12:
+13 | let _b = 1 = 1
+                ^
+Alert polymorphic_comparison: Stdlib.=
+File "alert_polymorphic_comparison.ml", line 14, characters 11-13:
+14 | let _c = 1 <> 1
+                ^^
+Alert polymorphic_comparison: Stdlib.<>
+File "alert_polymorphic_comparison.ml", line 15, characters 11-13:
+15 | let _d = 1 >= 1
+                ^^
+Alert polymorphic_comparison: Stdlib.>=
+File "alert_polymorphic_comparison.ml", line 16, characters 11-12:
+16 | let _e = 1 > 1
+                ^
+Alert polymorphic_comparison: Stdlib.>
+File "alert_polymorphic_comparison.ml", line 17, characters 11-13:
+17 | let _f = 1 <= 1
+                ^^
+Alert polymorphic_comparison: Stdlib.<=
+File "alert_polymorphic_comparison.ml", line 18, characters 11-12:
+18 | let _g = 1 < 1
+                ^
+Alert polymorphic_comparison: Stdlib.<
+File "alert_polymorphic_comparison.ml", line 19, characters 9-12:
+19 | let _h = min 1 1
+              ^^^
+Alert polymorphic_comparison: Stdlib.min
+File "alert_polymorphic_comparison.ml", line 20, characters 9-12:
+20 | let _i = max 1 1
+              ^^^
+Alert polymorphic_comparison: Stdlib.max
+File "alert_polymorphic_comparison.ml", line 21, characters 9-17:
+21 | let _j = List.mem
+              ^^^^^^^^
+Alert polymorphic_comparison: Stdlib.List.mem
+File "alert_polymorphic_comparison.ml", line 22, characters 9-19:
+22 | let _k = List.assoc
+              ^^^^^^^^^^
+Alert polymorphic_comparison: Stdlib.List.assoc
+File "alert_polymorphic_comparison.ml", line 23, characters 9-23:
+23 | let _l = List.assoc_opt
+              ^^^^^^^^^^^^^^
+Alert polymorphic_comparison: Stdlib.List.assoc_opt
+File "alert_polymorphic_comparison.ml", line 24, characters 9-23:
+24 | let _m = List.mem_assoc
+              ^^^^^^^^^^^^^^
+Alert polymorphic_comparison: Stdlib.List.mem_assoc
+File "alert_polymorphic_comparison.ml", line 25, characters 9-26:
+25 | let _n = List.remove_assoc
+              ^^^^^^^^^^^^^^^^^
+Alert polymorphic_comparison: Stdlib.List.remove_assoc
+File "alert_polymorphic_comparison.ml", line 27, characters 9-23:
+27 | let _a = Stdlib.compare
+              ^^^^^^^^^^^^^^
+Alert polymorphic_comparison: Stdlib.compare
+File "alert_polymorphic_comparison.ml", line 28, characters 19-20:
+28 | let _b = Stdlib.(1 = 1)
+                        ^
+Alert polymorphic_comparison: Stdlib.=
+File "alert_polymorphic_comparison.ml", line 29, characters 19-21:
+29 | let _c = Stdlib.(1 <> 1)
+                        ^^
+Alert polymorphic_comparison: Stdlib.<>
+File "alert_polymorphic_comparison.ml", line 30, characters 19-21:
+30 | let _d = Stdlib.(1 >= 1)
+                        ^^
+Alert polymorphic_comparison: Stdlib.>=
+File "alert_polymorphic_comparison.ml", line 31, characters 19-20:
+31 | let _e = Stdlib.(1 > 1)
+                        ^
+Alert polymorphic_comparison: Stdlib.>
+File "alert_polymorphic_comparison.ml", line 32, characters 19-21:
+32 | let _f = Stdlib.(1 <= 1)
+                        ^^
+Alert polymorphic_comparison: Stdlib.<=
+File "alert_polymorphic_comparison.ml", line 33, characters 19-20:
+33 | let _g = Stdlib.(1 < 1)
+                        ^
+Alert polymorphic_comparison: Stdlib.<
+File "alert_polymorphic_comparison.ml", line 34, characters 9-19:
+34 | let _h = Stdlib.min 1 1
+              ^^^^^^^^^^
+Alert polymorphic_comparison: Stdlib.min
+File "alert_polymorphic_comparison.ml", line 35, characters 9-19:
+35 | let _i = Stdlib.max 1 1
+              ^^^^^^^^^^
+Alert polymorphic_comparison: Stdlib.max
+File "alert_polymorphic_comparison.ml", line 36, characters 9-24:
+36 | let _j = Stdlib.List.mem
+              ^^^^^^^^^^^^^^^
+Alert polymorphic_comparison: Stdlib.List.mem
+File "alert_polymorphic_comparison.ml", line 37, characters 9-26:
+37 | let _k = Stdlib.List.assoc
+              ^^^^^^^^^^^^^^^^^
+Alert polymorphic_comparison: Stdlib.List.assoc
+File "alert_polymorphic_comparison.ml", line 38, characters 9-30:
+38 | let _l = Stdlib.List.assoc_opt
+              ^^^^^^^^^^^^^^^^^^^^^
+Alert polymorphic_comparison: Stdlib.List.assoc_opt
+File "alert_polymorphic_comparison.ml", line 39, characters 9-30:
+39 | let _m = Stdlib.List.mem_assoc
+              ^^^^^^^^^^^^^^^^^^^^^
+Alert polymorphic_comparison: Stdlib.List.mem_assoc
+File "alert_polymorphic_comparison.ml", line 40, characters 9-33:
+40 | let _n = Stdlib.List.remove_assoc
+              ^^^^^^^^^^^^^^^^^^^^^^^^
+Alert polymorphic_comparison: Stdlib.List.remove_assoc
+File "alert_polymorphic_comparison.ml", line 42, characters 9-34:
+42 | let _a = Stdlib.Pervasives.compare
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+Alert polymorphic_comparison: Stdlib.Pervasives.compare
+File "alert_polymorphic_comparison.ml", line 43, characters 30-31:
+43 | let _b = Stdlib.Pervasives.(1 = 1)
+                                   ^
+Alert polymorphic_comparison: Stdlib.Pervasives.=
+File "alert_polymorphic_comparison.ml", line 44, characters 30-32:
+44 | let _c = Stdlib.Pervasives.(1 <> 1)
+                                   ^^
+Alert polymorphic_comparison: Stdlib.Pervasives.<>
+File "alert_polymorphic_comparison.ml", line 45, characters 30-32:
+45 | let _d = Stdlib.Pervasives.(1 >= 1)
+                                   ^^
+Alert polymorphic_comparison: Stdlib.Pervasives.>=
+File "alert_polymorphic_comparison.ml", line 46, characters 30-31:
+46 | let _e = Stdlib.Pervasives.(1 > 1)
+                                   ^
+Alert polymorphic_comparison: Stdlib.Pervasives.>
+File "alert_polymorphic_comparison.ml", line 47, characters 30-32:
+47 | let _f = Stdlib.Pervasives.(1 <= 1)
+                                   ^^
+Alert polymorphic_comparison: Stdlib.Pervasives.<=
+File "alert_polymorphic_comparison.ml", line 48, characters 30-31:
+48 | let _g = Stdlib.Pervasives.(1 < 1)
+                                   ^
+Alert polymorphic_comparison: Stdlib.Pervasives.<
+File "alert_polymorphic_comparison.ml", line 49, characters 9-30:
+49 | let _h = Stdlib.Pervasives.min 1 1
+              ^^^^^^^^^^^^^^^^^^^^^
+Alert polymorphic_comparison: Stdlib.Pervasives.min
+File "alert_polymorphic_comparison.ml", line 50, characters 9-30:
+50 | let _i = Stdlib.Pervasives.max 1 1
+              ^^^^^^^^^^^^^^^^^^^^^
+Alert polymorphic_comparison: Stdlib.Pervasives.max
+File "alert_polymorphic_comparison.ml", line 52, characters 9-27:
+52 | let _a = Pervasives.compare
+              ^^^^^^^^^^^^^^^^^^
+Alert polymorphic_comparison: Stdlib.Pervasives.compare
+File "alert_polymorphic_comparison.ml", line 53, characters 23-24:
+53 | let _b = Pervasives.(1 = 1)
+                            ^
+Alert polymorphic_comparison: Stdlib.Pervasives.=
+File "alert_polymorphic_comparison.ml", line 54, characters 23-25:
+54 | let _c = Pervasives.(1 <> 1)
+                            ^^
+Alert polymorphic_comparison: Stdlib.Pervasives.<>
+File "alert_polymorphic_comparison.ml", line 55, characters 23-25:
+55 | let _d = Pervasives.(1 >= 1)
+                            ^^
+Alert polymorphic_comparison: Stdlib.Pervasives.>=
+File "alert_polymorphic_comparison.ml", line 56, characters 23-24:
+56 | let _e = Pervasives.(1 > 1)
+                            ^
+Alert polymorphic_comparison: Stdlib.Pervasives.>
+File "alert_polymorphic_comparison.ml", line 57, characters 23-25:
+57 | let _f = Pervasives.(1 <= 1)
+                            ^^
+Alert polymorphic_comparison: Stdlib.Pervasives.<=
+File "alert_polymorphic_comparison.ml", line 58, characters 23-24:
+58 | let _g = Pervasives.(1 < 1)
+                            ^
+Alert polymorphic_comparison: Stdlib.Pervasives.<
+File "alert_polymorphic_comparison.ml", line 59, characters 9-23:
+59 | let _h = Pervasives.min 1 1
+              ^^^^^^^^^^^^^^
+Alert polymorphic_comparison: Stdlib.Pervasives.min
+File "alert_polymorphic_comparison.ml", line 60, characters 9-23:
+60 | let _i = Pervasives.max 1 1
+              ^^^^^^^^^^^^^^
+Alert polymorphic_comparison: Stdlib.Pervasives.max
+File "alert_polymorphic_comparison.ml", line 62, characters 9-21:
+62 | let _a = Hashtbl.find
+              ^^^^^^^^^^^^
+Alert polymorphic_comparison: Stdlib.Hashtbl.find
+File "alert_polymorphic_comparison.ml", line 63, characters 9-25:
+63 | let _b = Hashtbl.find_opt
+              ^^^^^^^^^^^^^^^^
+Alert polymorphic_comparison: Stdlib.Hashtbl.find_opt
+File "alert_polymorphic_comparison.ml", line 64, characters 9-25:
+64 | let _c = Hashtbl.find_all
+              ^^^^^^^^^^^^^^^^
+Alert polymorphic_comparison: Stdlib.Hashtbl.find_all
+File "alert_polymorphic_comparison.ml", line 65, characters 9-20:
+65 | let _d = Hashtbl.mem
+              ^^^^^^^^^^^
+Alert polymorphic_comparison: Stdlib.Hashtbl.mem
+File "alert_polymorphic_comparison.ml", line 66, characters 9-23:
+66 | let _e = Hashtbl.remove
+              ^^^^^^^^^^^^^^
+Alert polymorphic_comparison: Stdlib.Hashtbl.remove
+File "alert_polymorphic_comparison.ml", line 67, characters 9-24:
+67 | let _f = Hashtbl.replace
+              ^^^^^^^^^^^^^^^
+Alert polymorphic_comparison: Stdlib.Hashtbl.replace
+File "alert_polymorphic_comparison.ml", line 68, characters 9-28:
+68 | let _g = Hashtbl.replace_seq
+              ^^^^^^^^^^^^^^^^^^^
+Alert polymorphic_comparison: Stdlib.Hashtbl.replace_seq
+File "alert_polymorphic_comparison.ml", line 69, characters 9-23:
+69 | let _h = Hashtbl.of_seq
+              ^^^^^^^^^^^^^^
+Alert polymorphic_comparison: Stdlib.Hashtbl.of_seq
+File "alert_polymorphic_comparison.ml", line 72, characters 9-13:
+72 | let _o = test
+              ^^^^
+Alert polymorphic_comparison: test
+use <monomorphic function> instead
