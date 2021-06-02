@@ -96,7 +96,7 @@ void caml_shrink_mark_stack ();
 void major_collection (void);
 void caml_finish_major_cycle (void);
 void caml_set_major_window (int);
-void set_caml_percent_free (uintnat);
+void caml_set_percent_free (uintnat);
 
 /* Forces finalisation of all heap-allocated values,
    disregarding both local and global roots.
