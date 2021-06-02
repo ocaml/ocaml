@@ -438,7 +438,7 @@ CAMLprim value caml_gc_set(value v)
 
   newpf = norm_pfree (Long_val (Field (v, 2)));
   if (newpf != caml_percent_free){
-    set_caml_percent_free (newpf);
+    caml_set_percent_free (newpf);
     caml_gc_message (0x20, "New space overhead: %"
                      ARCH_INTNAT_PRINTF_FORMAT "u%%\n", caml_percent_free);
   }
@@ -691,7 +691,7 @@ void caml_init_gc (uintnat minor_size, uintnat major_size,
   }
   caml_set_minor_heap_size (Bsize_wsize (norm_minsize (minor_size)));
   caml_major_heap_increment = major_incr;
-  set_caml_percent_free (norm_pfree (percent_fr));
+  caml_set_percent_free (norm_pfree (percent_fr));
   caml_percent_max = norm_pmax (percent_m);
   caml_set_allocation_policy (policy);
   caml_init_major_heap (major_bsize);

@@ -757,7 +757,7 @@ static void sweep_slice (intnat work)
   caml_gc_sweep_hp = sweep_hp;
 }
 
-void set_caml_percent_free (uintnat pf)
+void caml_set_percent_free (uintnat pf)
 {
   double o, lambda, s, m;
 
