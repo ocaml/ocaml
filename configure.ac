@@ -299,6 +299,11 @@ AC_ARG_ENABLE([cfi],
   [AS_HELP_STRING([--disable-cfi],
     [disable the CFI directives in assembly files])])
 
+AC_ARG_ENABLE([imprecise-c99-float-ops],
+  [AS_HELP_STRING([--enable-imprecise-c99-float-ops],
+    [enables potentially imprecise replacement implementations
+     of C99 float ops if unavailable on this platform])])
+
 AC_ARG_ENABLE([installing-source-artifacts],
   [AS_HELP_STRING([--enable-installing-source-artifacts],
     [install *.cmt* and *.mli files])])
@@ -482,6 +487,10 @@ AS_CASE([$host],
 
 ## Find vendor of the C compiler
 OCAML_CC_VENDOR
+
+## In cross-compilation mode, can we run executables produced?
+# At the moment, it's required, but the fact is used in C99 function detection
+OCAML_HOST_IS_EXECUTABLE
 
 # Determine how to call the C preprocessor directly.
 # Most of the time, calling the C preprocessor through the C compiler is
@@ -1238,25 +1247,31 @@ OCAML_SIGNAL_HANDLERS_SEMANTICS
 
 ## Check for C99 float ops
 
-# Note: this was disabled on Windows but the autoconf-generated script
-# does find the function it is looking for.
-# however the fma test does not pass so we disable the feature
-# for the moment, to be backward-compatible
+has_c99_float_ops=true
+AC_CHECK_FUNCS(m4_normalize([expm1 log1p hypot fma exp2 log2 cbrt acosh asinh
+  atanh erf erfc trunc round copysign]), [], [has_c99_float_ops=false])
 
-AS_CASE([$host],
-  [*-*-mingw32|*-pc-windows], [],
-  [has_c99_float_ops=true
-  AC_CHECK_FUNC([expm1], [], [has_c99_float_ops=false])
-  AS_IF([$has_c99_float_ops],
-    [AC_CHECK_FUNC([log1p], [], [has_c99_float_ops=false])])
-  AS_IF([$has_c99_float_ops],
-    [AC_CHECK_FUNC([hypot], [], [has_c99_float_ops=false])])
-  AS_IF([$has_c99_float_ops],
-    [AC_CHECK_FUNC([fma], [
-      AS_CASE([$target],[x86_64-*-cygwin],[],[AC_DEFINE([HAS_WORKING_FMA])])],
-      [has_c99_float_ops=false])])
-  AS_IF([$has_c99_float_ops],
-    [AC_CHECK_FUNC([copysign], [AC_DEFINE([HAS_C99_FLOAT_OPS])])])])
+AS_IF([$has_c99_float_ops],
+  [AC_DEFINE([HAS_C99_FLOAT_OPS])
+  # Check whether round works (known bug in mingw-w64)
+  OCAML_C99_CHECK_ROUND
+  # Check whether fma works (regressed in mingw-w64 8.0.0; present, but broken,
+  # in VS2013-2017 and present but unimplemented in Cygwin64)
+  OCAML_C99_CHECK_FMA],
+  [AS_IF([test x"$enable_imprecise_c99_float_ops" != "xyes" ],
+    [AS_CASE([$enable_imprecise_c99_float_ops,$ocaml_cv_cc_vendor],
+      [no,*], [hard_error=true],
+      [,msvc-*], [AS_IF([test "${ocaml_cv_cc_vendor#msvc-}" -lt 1800 ],
+        [hard_error=false],
+        [hard_error=true])],
+      [hard_error=true])
+     AS_IF([test x"$hard_error" = 'xtrue'],
+       [AC_MSG_ERROR(m4_normalize([
+         C99 float ops unavailable, enable replacements
+         with --enable-imprecise-c99-float-ops]))],
+       [AC_MSG_WARN(m4_normalize([
+         C99 float ops unavailable, replacements enabled
+         (ancient Visual Studio)]))])])])
 
 ## getrusage
 AC_CHECK_FUNC([getrusage], [AC_DEFINE([HAS_GETRUSAGE])])
