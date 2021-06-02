@@ -10,7 +10,7 @@ module Raw = struct
   type timeout_or_notified = Timeout | Notified
   external wait_until : int64 -> timeout_or_notified
     = "caml_ml_domain_yield_until"
-  external spawn : (unit -> unit) -> Mutex.t -> Condition.t -> bool ref -> t
+  external spawn : (unit -> unit) -> Mutex.t -> t
     = "caml_domain_spawn"
   external self : unit -> t
     = "caml_ml_domain_id"
@@ -52,9 +52,7 @@ type 'a state =
 
 type 'a t = {
   domain : Raw.t;
-  mutex: Mutex.t;
-  condition: Condition.t;
-  terminated: bool ref;
+  termination_mutex: Mutex.t;
   state: 'a state Atomic.t }
 
 exception Retry
@@ -67,9 +65,7 @@ let cas r vold vnew =
   if not (Atomic.compare_and_set r vold vnew) then raise Retry
 
 let spawn f =
-  let mutex = Mutex.create () in
-  let condition = Condition.create () in
-  let terminated = ref false in
+  let termination_mutex = Mutex.create () in
   let state = Atomic.make Running in
   let body () =
     let result = match f () with
@@ -85,29 +81,28 @@ let spawn f =
       | Joined | Finished _ ->
          failwith "internal error: I'm already finished?")
   in
-  { domain = Raw.spawn body mutex condition terminated; mutex; condition; terminated; state }
+  { domain = Raw.spawn body termination_mutex; termination_mutex; state }
 
-let termination_wait mutex condition terminated =
-  Mutex.lock mutex;
-  while !terminated = false do
-    Condition.wait condition mutex
-  done;
-  Mutex.unlock mutex
+let termination_wait termination_mutex =
+  (* Raw.spawn returns with the mutex locked, so this will block if the
+     domain has not terminated yet *)
+  Mutex.lock termination_mutex;
+  Mutex.unlock termination_mutex
 
-let join { mutex; condition; terminated; state; _ } =
+let join { termination_mutex; state; _ } =
   let res = spin (fun () ->
     match Atomic.get state with
     | Running -> begin
       let x = ref None in
       cas state Running (Joining x);
-      termination_wait mutex condition terminated;
+      termination_wait termination_mutex;
       match !x with
       | None -> failwith "internal error: termination signaled but result not passed"
       | Some r -> r
     end
     | Finished x as old ->
       cas state old Joined;
-      termination_wait mutex condition terminated;
+      termination_wait termination_mutex;
       x
     | Joining _ | Joined ->
       raise (Invalid_argument "This domain has already been joined")
