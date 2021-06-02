@@ -25,9 +25,6 @@ type integer_operation =
   | Icomp of integer_comparison
   | Icheckbound
 
-type poll_test_direction =
-  Ipending | Inotpending
-
 type float_comparison = Cmm.float_comparison
 
 type test =
