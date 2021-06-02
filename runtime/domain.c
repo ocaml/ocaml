@@ -415,26 +415,18 @@ enum domain_status { Dom_starting, Dom_started, Dom_failed };
 struct domain_ml_values {
   value callback;
   value mutex;
-  value condition;
-  value terminated;
 };
 
-static void init_domain_ml_values(struct domain_ml_values* ml_values, value callback, value mutex, value condition, value terminated) {
+static void init_domain_ml_values(struct domain_ml_values* ml_values, value callback, value mutex) {
   ml_values->callback = callback;
   ml_values->mutex = mutex;
-  ml_values->condition = condition;
-  ml_values->terminated = terminated;
   caml_register_generational_global_root(&ml_values->callback);
   caml_register_generational_global_root(&ml_values->mutex);
-  caml_register_generational_global_root(&ml_values->condition);
-  caml_register_generational_global_root(&ml_values->terminated);
 }
 
 static void free_domain_ml_values(struct domain_ml_values* ml_values) {
   caml_remove_generational_global_root(&ml_values->callback);
   caml_remove_generational_global_root(&ml_values->mutex);
-  caml_remove_generational_global_root(&ml_values->condition);
-  caml_remove_generational_global_root(&ml_values->terminated);
   caml_stat_free(ml_values);
 }
 
@@ -550,10 +542,11 @@ CAMLexport void (*caml_domain_start_hook)(void) =
 CAMLexport void (*caml_domain_stop_hook)(void) =
    caml_domain_stop_default;
 
-static void domain_terminate(struct domain_ml_values*);
+static void domain_terminate();
 
 static void* domain_thread_func(void* v)
 {
+  sync_mutex terminate_mutex = NULL;
   struct domain_startup_params* p = v;
   struct domain_ml_values *ml_values = p->ml_values;
 
@@ -562,6 +555,9 @@ static void* domain_thread_func(void* v)
 
   caml_plat_lock(&p->parent->lock);
   if (domain_self) {
+    /* this domain is part of STW sections, so can read ml_values */
+    terminate_mutex = Mutex_val(ml_values->mutex);
+    sync_mutex_lock(terminate_mutex);
     p->status = Dom_started;
     p->unique_id = domain_self->interruptor.unique_id;
   } else {
@@ -577,7 +573,10 @@ static void* domain_thread_func(void* v)
                 domain_self->interruptor.unique_id);
     caml_domain_start_hook();
     caml_callback(ml_values->callback, Val_unit);
-    domain_terminate(ml_values);
+    domain_terminate();
+    /* joining domains will lock/unlock the terminate_mutex
+      so this unlock will release them */
+    sync_mutex_unlock(terminate_mutex);
     free_domain_ml_values(ml_values);
   } else {
     caml_gc_log("Failed to create domain");
@@ -587,9 +586,9 @@ static void* domain_thread_func(void* v)
 
 #define Domainthreadptr_val(val) ((struct domain_thread**)Data_custom_val(val))
 
-CAMLprim value caml_domain_spawn(value callback, value mutex, value condition, value terminated)
+CAMLprim value caml_domain_spawn(value callback, value mutex)
 {
-  CAMLparam4 (callback, mutex, condition, terminated);
+  CAMLparam2 (callback, mutex);
   struct domain_startup_params p;
   pthread_t th;
   int err;
@@ -602,7 +601,7 @@ CAMLprim value caml_domain_spawn(value callback, value mutex, value condition, v
   if (!p.ml_values) {
     caml_failwith("failed to create ml values for domain thread");
   }
-  init_domain_ml_values(p.ml_values, callback, mutex, condition, terminated);
+  init_domain_ml_values(p.ml_values, callback, mutex);
 
   err = pthread_create(&th, 0, domain_thread_func, (void*)&p);
   if (err) {
@@ -1186,7 +1185,7 @@ int caml_domain_is_terminating ()
   return s->terminating;
 }
 
-static void domain_terminate(struct domain_ml_values* ml_values)
+static void domain_terminate()
 {
   caml_domain_state* domain_state = domain_self->state.state;
   struct interruptor* s = &domain_self->interruptor;
@@ -1272,24 +1271,6 @@ static void domain_terminate(struct domain_ml_values* ml_values)
      on caml_domain_alone (which uses caml_num_domains_running) in at least
      the shared_heap lockfree fast paths */
   atomic_fetch_add(&caml_num_domains_running, -1);
-
-  /* release domain blocked waiting to join this domain
-   *  - the terminate lock can block and at the same time we need to
-   *    ensure we have dropped the domain lock to allow for domain reuse
-   *  - note that we *can* use the raw pointers here for the ml_values
-   *    because a minor GC will have happened above
-   *  - these ml_values are registered as global roots, hence we know
-   *    they will not be collected while domain_terminate executes
-   */
-  Assert(!Is_young(ml_values->mutex) && !Is_young(ml_values->condition) && !Is_young(ml_values->terminated));
-  Assert(Field(ml_values->terminated, 0) == Val_false);
-  check_err("domain_terminate_waiter_lock",
-            sync_mutex_lock(Mutex_val(ml_values->mutex)));
-  Field(ml_values->terminated, 0) = Val_true;
-  check_err("domain_terminate_waiter_broadcast",
-            sync_condvar_broadcast(Condition_val(ml_values->condition)));
-  check_err("domain_terminate_waiter_unlock",
-            sync_mutex_unlock(Mutex_val(ml_values->mutex)));
 }
 
 int caml_incoming_interrupts_queued()
