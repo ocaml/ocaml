@@ -179,6 +179,9 @@ Working version
 - #9582: Add Array.{find_opt,find_map,split,combine}.
   (Nicolás Ojeda Bär, review by Daniel Bünzli and Gabriel Scherer)
 
+- #9961: Add Array.fold_left_map.
+  (Craig Ferguson, review by Damien Doligez)
+
 - #10097: Lazy.map, Lazy.map_val: ('a -> 'b) -> 'a Lazy.t -> 'b Lazy.t
   (map f x) is always (lazy (f (force x))), whereas (map_val f x)
   applies f directly if x is already forced.
