@@ -359,7 +359,7 @@ void caml_init_domains(uintnat minor_heap_wsz) {
   tls_size = caml_mem_round_up_pages(sizeof(caml_domain_state));
   tls_areas_size = tls_size * Max_domains;
 
-  heaps_base = caml_mem_map(size*2, size*2, 1 /* reserve_only */);
+  heaps_base = caml_mem_map(size, size, 1 /* reserve_only */);
   tls_base = caml_mem_map(tls_areas_size, tls_areas_size, 1 /* reserve_only */);
   if (!heaps_base || !tls_base) caml_raise_out_of_memory();
 
