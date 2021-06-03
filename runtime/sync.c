@@ -48,8 +48,6 @@ static int sync_mutex_destroy(sync_mutex m)
   return rc;
 }
 
-#define Mutex_val(v) (* ((sync_mutex *) Data_custom_val(v)))
-
 static void caml_mutex_finalize(value wrapper)
 {
   sync_mutex_destroy(Mutex_val(wrapper));
@@ -148,8 +146,6 @@ static int sync_condvar_destroy(sync_condvar c)
   caml_stat_free(c);
   return rc;
 }
-
-#define Condition_val(v) (* (sync_condvar *) Data_custom_val(v))
 
 static void caml_condition_finalize(value wrapper)
 {

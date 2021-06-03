@@ -212,11 +212,13 @@ stdlib__digest.cmx : \
 stdlib__digest.cmi :
 stdlib__domain.cmo : \
     stdlib__obj.cmi \
+    stdlib__mutex.cmi \
     stdlib__int64.cmi \
     stdlib__atomic.cmi \
     stdlib__domain.cmi
 stdlib__domain.cmx : \
     stdlib__obj.cmx \
+    stdlib__mutex.cmx \
     stdlib__int64.cmx \
     stdlib__atomic.cmx \
     stdlib__domain.cmi
