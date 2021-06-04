@@ -516,7 +516,7 @@ let private_object env fields1 params1 fields2 params2 =
     | () -> None
   end
 
-let type_manifest env ty1 params1 ty2 params2 priv2 =
+let type_manifest env ty1 params1 ty2 params2 priv2 kind2 =
   let ty1' = Ctype.expand_head env ty1 and ty2' = Ctype.expand_head env ty2 in
   match ty1'.desc, ty2'.desc with
   | Tvariant row1, Tvariant row2
@@ -537,14 +537,28 @@ let type_manifest env ty1 params1 ty2 params2 priv2 =
       | Some err -> Some (Private_object(ty1, ty2, err))
     end
   | _ -> begin
-    match
-      match priv2 with
-      | Private -> Ctype.equal_private env params1 ty1 params2 ty2
-      | Public -> Ctype.equal env true (params1 @ [ty1]) (params2 @ [ty2])
-    with
-    | exception Ctype.Equality trace -> Some (Manifest (env, trace))
-    | () -> None
-  end
+      let is_private_abbrev_2 =
+        match priv2, kind2 with
+        | Private, Type_abstract -> begin
+            (* Same checks as the [when] guards from above, inverted *)
+            match ty2'.desc with
+            | Tvariant row ->
+                not (is_absrow env (Btype.row_more row))
+            | Tobject (fi, _) ->
+                not (is_absrow env (snd (Ctype.flatten_fields fi)))
+            | _ -> true
+          end
+        | _, _ -> false
+      in
+      match
+        if is_private_abbrev_2 then
+          Ctype.equal_private env params1 ty1 params2 ty2
+        else
+          Ctype.equal env true (params1 @ [ty1]) (params2 @ [ty2])
+      with
+      | exception Ctype.Equality err -> Some (Manifest(env,err))
+      | () -> None
+    end
 
 let type_declarations ?(equality = false) ~loc env ~mark name
       decl1 path decl2 =
@@ -565,7 +579,7 @@ let type_declarations ?(equality = false) ~loc env ~mark name
         end
     | (Some ty1, Some ty2) ->
          type_manifest env ty1 decl1.type_params ty2 decl2.type_params
-           decl2.type_private
+           decl2.type_private decl2.type_kind
     | (None, Some ty2) ->
         let ty1 =
           Btype.newgenty (Tconstr(path, decl2.type_params, ref Mnil))
