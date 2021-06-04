@@ -557,7 +557,7 @@ end
 
 (* Comparison for [type_expr]; cannot be used for functors *)
 
-let eq_type t1 t2 = repr t1 == repr t2
+let eq_type t1 t2 = t1 == t2 || repr t1 == repr t2
 let compare_type t1 t2 = compare (get_id t1) (get_id t2)
 
 (**** Some type creators ****)
