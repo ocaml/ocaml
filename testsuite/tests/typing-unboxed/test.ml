@@ -119,6 +119,7 @@ Error: Signature mismatch:
          external f : int -> (int [@untagged]) = "f" "f_nat"
        is not included in
          external f : int -> int = "f" "f_nat"
+       The two primitives' results have different representations
 |}]
 
 module Bad2 : sig
@@ -141,6 +142,7 @@ Error: Signature mismatch:
          external f : (int [@untagged]) -> int = "f" "f_nat"
        is not included in
          external f : int -> int = "f" "f_nat"
+       The two primitives' 1st arguments have different representations
 |}]
 
 module Bad3 : sig
@@ -163,6 +165,7 @@ Error: Signature mismatch:
          external f : (int [@untagged]) -> int = "f" "f_nat"
        is not included in
          external f : int -> int = "a" "a_nat"
+       The names of the primitives are not the same
 |}]
 
 module Bad4 : sig
@@ -185,6 +188,7 @@ Error: Signature mismatch:
          external f : float -> (float [@unboxed]) = "f" "f_nat"
        is not included in
          external f : float -> float = "f" "f_nat"
+       The two primitives' results have different representations
 |}]
 
 module Bad5 : sig
@@ -207,6 +211,7 @@ Error: Signature mismatch:
          external f : (float [@unboxed]) -> float = "f" "f_nat"
        is not included in
          external f : float -> float = "f" "f_nat"
+       The two primitives' 1st arguments have different representations
 |}]
 
 module Bad6 : sig
@@ -229,6 +234,7 @@ Error: Signature mismatch:
          external f : (float [@unboxed]) -> float = "f" "f_nat"
        is not included in
          external f : float -> float = "a" "a_nat"
+       The names of the primitives are not the same
 |}]
 
 module Bad7 : sig
@@ -251,6 +257,7 @@ Error: Signature mismatch:
          external f : int -> int = "f" "f_nat" [@@noalloc]
        is not included in
          external f : int -> int = "f" "f_nat"
+       The first primitive is [@@noalloc] but the second is not
 |}]
 
 (* Bad: attributes in the interface but not in the implementation *)
@@ -275,6 +282,7 @@ Error: Signature mismatch:
          external f : int -> int = "f" "f_nat"
        is not included in
          external f : int -> (int [@untagged]) = "f" "f_nat"
+       The two primitives' results have different representations
 |}]
 
 module Bad9 : sig
@@ -297,6 +305,7 @@ Error: Signature mismatch:
          external f : int -> int = "f" "f_nat"
        is not included in
          external f : (int [@untagged]) -> int = "f" "f_nat"
+       The two primitives' 1st arguments have different representations
 |}]
 
 module Bad10 : sig
@@ -319,6 +328,7 @@ Error: Signature mismatch:
          external f : int -> int = "a" "a_nat"
        is not included in
          external f : (int [@untagged]) -> int = "f" "f_nat"
+       The names of the primitives are not the same
 |}]
 
 module Bad11 : sig
@@ -341,6 +351,7 @@ Error: Signature mismatch:
          external f : float -> float = "f" "f_nat"
        is not included in
          external f : float -> (float [@unboxed]) = "f" "f_nat"
+       The two primitives' results have different representations
 |}]
 
 module Bad12 : sig
@@ -363,6 +374,7 @@ Error: Signature mismatch:
          external f : float -> float = "f" "f_nat"
        is not included in
          external f : (float [@unboxed]) -> float = "f" "f_nat"
+       The two primitives' 1st arguments have different representations
 |}]
 
 module Bad13 : sig
@@ -385,6 +397,7 @@ Error: Signature mismatch:
          external f : float -> float = "a" "a_nat"
        is not included in
          external f : (float [@unboxed]) -> float = "f" "f_nat"
+       The names of the primitives are not the same
 |}]
 
 module Bad14 : sig
@@ -407,6 +420,7 @@ Error: Signature mismatch:
          external f : int -> int = "f" "f_nat"
        is not included in
          external f : int -> int = "f" "f_nat" [@@noalloc]
+       The second primitive is [@@noalloc] but the first is not
 |}]
 
 (* Bad: claiming something is a primitive when it isn't *)
@@ -431,6 +445,7 @@ Error: Signature mismatch:
          val f : int -> int
        is not included in
          external f : int -> int = "f" "f_nat"
+       The definition is not a primitive
 |}]
 
 (* Good: not claiming something is a primitive when it is *)
@@ -470,6 +485,7 @@ Error: Signature mismatch:
          external f : int -> int = "gg" "f_nat"
        is not included in
          external f : int -> int = "f" "f_nat"
+       The names of the primitives are not the same
 |}]
 
 module Bad18 : sig
@@ -492,6 +508,7 @@ Error: Signature mismatch:
          external f : int -> int = "f" "gg_nat"
        is not included in
          external f : int -> int = "f" "f_nat"
+       The native names of the primitives are not the same
 |}]
 
 module Bad19 : sig
@@ -514,6 +531,7 @@ Error: Signature mismatch:
          external f : int -> int = "gg" "gg_nat"
        is not included in
          external f : int -> int = "f" "f_nat"
+       The names of the primitives are not the same
 |}]
 
 (* Bad: mismatched arities *)
@@ -544,6 +562,8 @@ Error: Signature mismatch:
          external f : int -> int -> int = "f" "f_nat"
        is not included in
          external f : int -> int -> int = "f" "f_nat"
+       The syntactic arities of these primitives were not the same
+       (They must have the same number of ->s present in the source)
 |}]
 
 module Bad21 : sig
@@ -571,6 +591,8 @@ Error: Signature mismatch:
          external f : int -> int_int = "f" "f_nat"
        is not included in
          external f : int -> int -> int = "f" "f_nat"
+       The syntactic arities of these primitives were not the same
+       (They must have the same number of ->s present in the source)
 |}]
 
 (* This will fail with a *type* error, instead of an arity mismatch *)
@@ -594,6 +616,8 @@ Error: Signature mismatch:
          external f : int -> int -> int = "f" "f_nat"
        is not included in
          external f : int -> int = "f" "f_nat"
+       The type int -> int -> int is not compatible with the type int -> int
+       Type int -> int is not compatible with type int
 |}]
 
 (* Bad: unboxed or untagged with the wrong type *)

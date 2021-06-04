@@ -19,6 +19,10 @@ Working version
 - #10328: Give more precise error when disambiguation could not possibly work.
   (Leo White, review by Gabriel Scherer and Florian Angeletti)
 
+- #10407: Produce more detailed error messages that contain full error traces
+  when module inclusion fails.
+  (Antal Spector-Zabusky, NOT YET REVIEWED)
+
 ### Internal/compiler-libs changes:
 
 - #10433: Remove the distinction between 32-bit aligned and 64-bit aligned

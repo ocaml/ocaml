@@ -33,8 +33,8 @@ type error =
   | Bound_type_variable of string
   | Recursive_type
   | Unbound_row_variable of Longident.t
-  | Type_mismatch of Errortrace.unification Errortrace.t
-  | Alias_type_mismatch of Errortrace.unification Errortrace.t
+  | Type_mismatch of Errortrace.unification_error
+  | Alias_type_mismatch of Errortrace.unification_error
   | Present_has_conjunction of string
   | Present_has_no_type of string
   | Constructor_mismatch of type_expr * type_expr
@@ -234,9 +234,9 @@ and transl_type_aux env policy styp =
       in
       List.iter2
         (fun (sty, cty) ty' ->
-           try unify_param env ty' cty.ctyp_type with Unify trace ->
-             let trace = Errortrace.swap_trace trace in
-             raise (Error(sty.ptyp_loc, env, Type_mismatch trace))
+           try unify_param env ty' cty.ctyp_type with Unify err ->
+             let err = Errortrace.swap_unification_error err in
+             raise (Error(sty.ptyp_loc, env, Type_mismatch err))
         )
         (List.combine stl args) params;
       let constr =
@@ -284,17 +284,13 @@ and transl_type_aux env policy styp =
       let params = instance_list decl.type_params in
       List.iter2
         (fun (sty, cty) ty' ->
-           try unify_var env ty' cty.ctyp_type with Unify trace ->
-             let trace = Errortrace.swap_trace trace in
-             raise (Error(sty.ptyp_loc, env, Type_mismatch trace))
+           try unify_var env ty' cty.ctyp_type with Unify err ->
+             let err = Errortrace.swap_unification_error err in
+             raise (Error(sty.ptyp_loc, env, Type_mismatch err))
         )
         (List.combine stl args) params;
         let ty_args = List.map (fun ctyp -> ctyp.ctyp_type) args in
-      let ty =
-        try Ctype.expand_head env (newconstr path ty_args)
-        with Unify trace ->
-          raise (Error(styp.ptyp_loc, env, Type_mismatch trace))
-      in
+      let ty = Ctype.expand_head env (newconstr path ty_args) in
       let ty = match ty.desc with
         Tvariant row ->
           let row = Btype.row_repr row in
@@ -336,9 +332,9 @@ and transl_type_aux env policy styp =
               instance (fst(TyVarMap.find alias !used_variables))
           in
           let ty = transl_type env policy st in
-          begin try unify_var env t ty.ctyp_type with Unify trace ->
-            let trace = Errortrace.swap_trace trace in
-            raise(Error(styp.ptyp_loc, env, Alias_type_mismatch trace))
+          begin try unify_var env t ty.ctyp_type with Unify err ->
+            let err = Errortrace.swap_unification_error err in
+            raise(Error(styp.ptyp_loc, env, Alias_type_mismatch err))
           end;
           ty
         with Not_found ->
@@ -347,9 +343,9 @@ and transl_type_aux env policy styp =
           used_variables :=
             TyVarMap.add alias (t, styp.ptyp_loc) !used_variables;
           let ty = transl_type env policy st in
-          begin try unify_var env t ty.ctyp_type with Unify trace ->
-            let trace = Errortrace.swap_trace trace in
-            raise(Error(styp.ptyp_loc, env, Alias_type_mismatch trace))
+          begin try unify_var env t ty.ctyp_type with Unify err ->
+             let err = Errortrace.swap_unification_error err in
+            raise(Error(styp.ptyp_loc, env, Alias_type_mismatch err))
           end;
           if !Clflags.principal then begin
             end_def ();
@@ -632,8 +628,8 @@ let globalize_used_variables env fixed =
   fun () ->
     List.iter
       (function (loc, t1, t2) ->
-        try unify env t1 t2 with Unify trace ->
-          raise (Error(loc, env, Type_mismatch trace)))
+        try unify env t1 t2 with Unify err ->
+          raise (Error(loc, env, Type_mismatch err)))
       !r
 
 let transl_simple_type env fixed styp =

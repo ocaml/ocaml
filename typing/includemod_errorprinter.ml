@@ -607,15 +607,18 @@ let subcase_list l ppf = match l with
         (List.rev l)
 
 (* Printers for leaves *)
-let core id x =
+let core env id x =
   match x with
   | Err.Value_descriptions diff ->
-      let t1 = Printtyp.tree_of_value_description id diff.got in
-      let t2 = Printtyp.tree_of_value_description id diff.expected in
-      Format.dprintf
-        "@[<hv 2>Values do not match:@ %a@;<1 -2>is not included in@ %a@]%a%t"
-        !Oprint.out_sig_item t1
-        !Oprint.out_sig_item t2
+      Format.dprintf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]%a%a%t@]"
+        "Values do not match"
+        !Oprint.out_sig_item
+        (Printtyp.tree_of_value_description id diff.got)
+        "is not included in"
+        !Oprint.out_sig_item
+        (Printtyp.tree_of_value_description id diff.expected)
+        (Includecore.report_value_mismatch
+           "the first" "the second" env) diff.symptom
         show_locs (diff.got.val_loc, diff.expected.val_loc)
         Printtyp.Conflicts.print_explanations
   | Err.Type_declarations diff ->
@@ -627,7 +630,7 @@ let core id x =
         !Oprint.out_sig_item
         (Printtyp.tree_of_type_declaration id diff.expected Trec_first)
         (Includecore.report_type_mismatch
-           "the first" "the second" "declaration") diff.symptom
+           "the first" "the second" "declaration" env) diff.symptom
         show_locs (diff.got.type_loc, diff.expected.type_loc)
         Printtyp.Conflicts.print_explanations
   | Err.Extension_constructors diff ->
@@ -639,7 +642,7 @@ let core id x =
         !Oprint.out_sig_item
         (Printtyp.tree_of_extension_constructor id diff.expected Text_first)
         (Includecore.report_extension_constructor_mismatch
-           "the first" "the second" "declaration") diff.symptom
+           "the first" "the second" "declaration" env) diff.symptom
         show_locs (diff.got.ext_loc, diff.expected.ext_loc)
         Printtyp.Conflicts.print_explanations
   | Err.Class_type_declarations diff ->
@@ -777,7 +780,7 @@ and signature ~expansion_token ~env:_ ~before ~ctx sgs =
     )
 and sigitem ~expansion_token ~env ~before ~ctx (name,s) = match s with
   | Core c ->
-      dwith_context ctx (core name c):: before
+      dwith_context ctx (core env name c) :: before
   | Module_type diff ->
       module_type ~expansion_token ~eqmode:false ~env ~before
         ~ctx:(Context.Module name :: ctx) diff
@@ -864,7 +867,7 @@ let all env = function
       let first = Location.msg "%a" interface_mismatch diff in
       signature ~expansion_token:true ~env ~before:[first] ~ctx:[] diff.symptom
   | In_Type_declaration (id,reason) ->
-      [Location.msg "%t" (core id reason)]
+      [Location.msg "%t" (core env id reason)]
   | In_Module_type diff ->
       module_type ~expansion_token:true ~eqmode:false ~before:[] ~env ~ctx:[]
         diff

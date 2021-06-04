@@ -26,6 +26,8 @@ Error: Signature mismatch:
          val f : t/1 -> unit
        is not included in
          val f : t/2 -> unit
+       The type t/1 -> unit is not compatible with the type t/2 -> unit
+       Type t/1 is not compatible with type t/2
        Line 6, characters 4-14:
          Definition of type t/1
        Line 2, characters 2-12:
@@ -52,9 +54,9 @@ Error: Signature mismatch:
          type u = A of t/2
        Constructors do not match:
          A of t/1
-       is not compatible with:
+       is not the same as:
          A of t/2
-       The types are not equal.
+       The type t/1 is not equal to the type t/2
        Line 4, characters 9-19:
          Definition of type t/1
        Line 2, characters 2-11:
@@ -121,9 +123,9 @@ Error: Signature mismatch:
          type t = A of T/2.t
        Constructors do not match:
          A of T/1.t
-       is not compatible with:
+       is not the same as:
          A of T/2.t
-       The types are not equal.
+       The type T/1.t is not equal to the type T/2.t
        Line 5, characters 6-34:
          Definition of module T/1
        Line 2, characters 2-30:
@@ -150,6 +152,9 @@ Error: Signature mismatch:
          val f : (module s/1) -> t/2 -> t/1
        is not included in
          val f : (module s/2) -> t/2 -> t/2
+       The type (module s/1) -> t/2 -> t/1 is not compatible with the type
+         (module s/2) -> t/2 -> t/2
+       Type (module s/1) is not compatible with type (module s/2)
        Line 5, characters 23-33:
          Definition of type t/1
        Line 3, characters 2-12:
@@ -180,6 +185,9 @@ Error: Signature mismatch:
          val f : a/2 -> 'a -> a/1
        is not included in
          val f : a/2 -> (module a) -> a/2
+       The type a/2 -> (module a) -> a/1 is not compatible with the type
+         a/2 -> (module a) -> a/2
+       Type a/1 is not compatible with type a/2
        Line 5, characters 12-22:
          Definition of type a/1
        Line 3, characters 2-12:
@@ -333,6 +341,7 @@ Error: Signature mismatch:
          type a = M/1.t
        is not included in
          type a = M/2.t
+       The type M/1.t is not equal to the type M/2.t
        Line 2, characters 14-42:
          Definition of module M/1
        File "_none_", line 1:
@@ -366,6 +375,9 @@ Error: Signature mismatch:
          val f : t/2 -> t/3 -> t/4 -> t/1
        is not included in
          val f : t/1 -> t/1 -> t/1 -> t/1
+       The type t/2 -> t/3 -> t/4 -> t/1 is not compatible with the type
+         t/1 -> t/1 -> t/1 -> t/1
+       Type t/2 is not compatible with type t/1
        Line 4, characters 0-10:
          Definition of type t/1
        Line 1, characters 0-10:

@@ -45,7 +45,8 @@ module Error: sig
     | Unit
 
   type core_sigitem_symptom =
-    | Value_descriptions of Types.value_description core_diff
+    | Value_descriptions of
+        (Types.value_description, Includecore.value_mismatch) diff
     | Type_declarations of
         (Types.type_declaration, Includecore.type_mismatch) diff
     | Extension_constructors of

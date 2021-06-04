@@ -50,8 +50,8 @@ type error =
   | Bound_type_variable of string
   | Recursive_type
   | Unbound_row_variable of Longident.t
-  | Type_mismatch of Errortrace.unification Errortrace.t
-  | Alias_type_mismatch of Errortrace.unification Errortrace.t
+  | Type_mismatch of Errortrace.unification_error
+  | Alias_type_mismatch of Errortrace.unification_error
   | Present_has_conjunction of string
   | Present_has_no_type of string
   | Constructor_mismatch of type_expr * type_expr

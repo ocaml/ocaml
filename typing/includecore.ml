@@ -66,7 +66,7 @@ let primitive_descriptions pd1 pd2 =
 type value_mismatch =
   | Primitive_mismatch of primitive_mismatch
   | Not_a_primitive
-  | Type of Env.t * Errortrace.comparison Errortrace.t
+  | Type of Errortrace.moregen_error
 
 exception Dont_match of value_mismatch
 
@@ -80,7 +80,7 @@ let value_descriptions ~loc env name
     vd1.val_attributes vd2.val_attributes
     name;
   match Ctype.moregeneral env true vd1.val_type vd2.val_type with
-  | exception Ctype.Moregen trace -> raise (Dont_match (Type (env, trace)))
+  | exception Ctype.Moregen err -> raise (Dont_match (Type err))
   | () -> begin
       match (vd1.val_kind, vd2.val_kind) with
       | (Val_prim p1, Val_prim p2) -> begin
@@ -105,7 +105,8 @@ let private_flags decl1 decl2 =
   | Private, Public ->
       decl2.type_kind = Type_abstract &&
       (decl2.type_manifest = None || decl1.type_kind <> Type_abstract)
-  | _, _ -> true
+  | _, _ ->
+      true
 
 (* Inclusion between manifest types (particularly for private row types) *)
 
@@ -131,7 +132,7 @@ let choose_other ord first second =
   | Second -> choose First first second
 
 type label_mismatch =
-  | Type of Env.t * Errortrace.comparison Errortrace.t
+  | Type of Errortrace.equality_error
   | Mutability of position
 
 type record_mismatch =
@@ -143,7 +144,7 @@ type record_mismatch =
   | Unboxed_float_representation of position
 
 type constructor_mismatch =
-  | Type of Env.t * Errortrace.comparison Errortrace.t
+  | Type of Errortrace.equality_error
   | Arity
   | Inline_record of record_mismatch
   | Kind of position
@@ -164,22 +165,22 @@ type extension_constructor_mismatch =
                             * constructor_mismatch
 
 type private_variant_mismatch =
-  | Openness
+  | Only_outer_closed (* It's only dangerous in one direction *)
   | Missing of position * string
   | Presence of string
   | Incompatible_types_for of string
-  | Types of Env.t * Errortrace.comparison Errortrace.t
+  | Types of Errortrace.equality_error
 
 type private_object_mismatch =
   | Missing of string
-  | Types of Env.t * Errortrace.comparison Errortrace.t
+  | Types of Errortrace.equality_error
 
 type type_mismatch =
   | Arity
   | Privacy
   | Kind
-  | Constraint of Env.t * Errortrace.comparison Errortrace.t
-  | Manifest of Env.t * Errortrace.comparison Errortrace.t
+  | Constraint of Errortrace.equality_error
+  | Manifest of Errortrace.equality_error
   | Private_variant of type_expr * type_expr * private_variant_mismatch
   | Private_object of type_expr * type_expr * private_object_mismatch
   | Variance
@@ -188,25 +189,63 @@ type type_mismatch =
   | Unboxed_representation of position
   | Immediate of Type_immediacy.Violation.t
 
-let report_label_mismatch first second ppf err =
+let report_primitive_mismatch first second ppf err =
   let pr fmt = Format.fprintf ppf fmt in
+  match (err : primitive_mismatch) with
+  | Name ->
+      pr "The names of the primitives are not the same"
+  | Arity ->
+      pr "The syntactic arities of these primitives were not the same@ \
+          (They must have the same number of ->s present in the source)"
+  | No_alloc ord ->
+      pr "%s primitive is [@@@@noalloc] but %s is not"
+        (String.capitalize_ascii (choose ord first second))
+        (choose_other ord first second)
+  | Native_name ->
+      pr "The native names of the primitives are not the same"
+  | Result_repr ->
+      pr "The two primitives' results have different representations"
+  | Argument_repr n ->
+      pr "The two primitives' %d%s arguments have different representations"
+        n (Misc.ordinal_suffix n)
+
+let report_value_mismatch first second env ppf err =
+  let pr fmt = Format.fprintf ppf fmt in
+  pr "@ ";
+  match (err : value_mismatch) with
+  | Primitive_mismatch pm ->
+      report_primitive_mismatch first second ppf pm
+  | Not_a_primitive ->
+      pr "The definition is not a primitive"
+  | Type trace ->
+      Printtyp.report_moregen_error ppf env trace
+        (fun ppf -> Format.fprintf ppf "The type")
+        (fun ppf -> Format.fprintf ppf "is not compatible with the type")
+
+let report_type_inequality env ppf err =
+  Printtyp.report_equality_error ppf env err
+    (fun ppf -> Format.fprintf ppf "The type")
+    (fun ppf -> Format.fprintf ppf "is not equal to the type")
+
+let report_label_mismatch first second env ppf err =
   match (err : label_mismatch) with
-  | Type _ -> pr "The types are not equal."
+  | Type err ->
+      report_type_inequality env ppf err
   | Mutability ord ->
-      pr "%s is mutable and %s is not."
-        (String.capitalize_ascii  (choose ord first second))
+      Format.fprintf ppf "%s is mutable and %s is not."
+        (String.capitalize_ascii (choose ord first second))
         (choose_other ord first second)
 
-let report_record_mismatch first second decl ppf err =
+let report_record_mismatch first second decl env ppf err =
   let pr fmt = Format.fprintf ppf fmt in
   match err with
   | Label_mismatch (l1, l2, err) ->
       pr
-        "@[<hv>Fields do not match:@;<1 2>%a@ is not compatible with:\
+        "@[<hv>Fields do not match:@;<1 2>%a@ is not the same as:\
          @;<1 2>%a@ %a@]"
         Printtyp.label l1
         Printtyp.label l2
-        (report_label_mismatch first second) err
+        (report_label_mismatch first second env) err
   | Label_names (n, name1, name2) ->
       pr "@[<hv>Fields number %i have different names, %s and %s.@]"
         n (Ident.name name1) (Ident.name name2)
@@ -218,12 +257,12 @@ let report_record_mismatch first second decl ppf err =
         (choose ord first second) decl
         "uses unboxed float representation"
 
-let report_constructor_mismatch first second decl ppf err =
+let report_constructor_mismatch first second decl env ppf err =
   let pr fmt  = Format.fprintf ppf fmt in
   match (err : constructor_mismatch) with
-  | Type _ -> pr "The types are not equal."
+  | Type err -> report_type_inequality env ppf err
   | Arity -> pr "They have different arities."
-  | Inline_record err -> report_record_mismatch first second decl ppf err
+  | Inline_record err -> report_record_mismatch first second decl env ppf err
   | Kind ord ->
       pr "%s uses inline records and %s doesn't."
         (String.capitalize_ascii (choose ord first second))
@@ -233,16 +272,16 @@ let report_constructor_mismatch first second decl ppf err =
         (String.capitalize_ascii (choose ord first second))
         (choose_other ord first second)
 
-let report_variant_mismatch first second decl ppf err =
+let report_variant_mismatch first second decl env ppf err =
   let pr fmt = Format.fprintf ppf fmt in
   match (err : variant_mismatch) with
   | Constructor_mismatch (c1, c2, err) ->
       pr
-        "@[<hv>Constructors do not match:@;<1 2>%a@ is not compatible with:\
+        "@[<hv>Constructors do not match:@;<1 2>%a@ is not the same as:\
          @;<1 2>%a@ %a@]"
         Printtyp.constructor c1
         Printtyp.constructor c2
-        (report_constructor_mismatch first second decl) err
+        (report_constructor_mismatch first second decl env) err
   | Constructor_names (n, name1, name2) ->
       pr "Constructors number %i have different names, %s and %s."
         n (Ident.name name1) (Ident.name name2)
@@ -250,30 +289,68 @@ let report_variant_mismatch first second decl ppf err =
       pr "The constructor %s is only present in %s %s."
         (Ident.name s) (choose ord first second) decl
 
-let report_extension_constructor_mismatch first second decl ppf err =
+let report_extension_constructor_mismatch first second decl env ppf err =
   let pr fmt = Format.fprintf ppf fmt in
   match (err : extension_constructor_mismatch) with
   | Constructor_privacy -> pr "A private type would be revealed."
   | Constructor_mismatch (id, ext1, ext2, err) ->
-      pr "@[<hv>Constructors do not match:@;<1 2>%a@ is not compatible with:\
+      pr "@[<hv>Constructors do not match:@;<1 2>%a@ is not the same as:\
           @;<1 2>%a@ %a@]"
         (Printtyp.extension_only_constructor id) ext1
         (Printtyp.extension_only_constructor id) ext2
-        (report_constructor_mismatch first second decl) err
+        (report_constructor_mismatch first second decl env) err
 
-let report_type_mismatch0 first second decl ppf err =
+let report_private_variant_mismatch first second decl env ppf err =
   let pr fmt = Format.fprintf ppf fmt in
+  match (err : private_variant_mismatch) with
+  | Only_outer_closed ->
+      (* It's only dangerous in one direction, so we don't have a position *)
+      pr "%s is private and closed, but %s is not closed"
+        (String.capitalize_ascii second) first
+  | Missing (ord, name) ->
+      pr "The constructor %s is only present in %s %s."
+        name (choose ord first second) decl
+  | Presence s ->
+      pr "The tag `%s is present in the %s %s,@ but might not be in the %s"
+        s second decl first
+  | Incompatible_types_for s -> pr "Types for tag `%s are incompatible" s
+  | Types err ->
+      report_type_inequality env ppf err
+
+let report_private_object_mismatch env ppf err =
+  let pr fmt = Format.fprintf ppf fmt in
+  match (err : private_object_mismatch) with
+  | Missing s -> pr "The implementation is missing the method %s" s
+  | Types err -> report_type_inequality env ppf err
+
+let report_type_mismatch first second decl env ppf err =
+  let pr fmt = Format.fprintf ppf fmt in
+  pr "@ ";
   match err with
-  | Arity -> pr "They have different arities."
-  | Privacy -> pr "A private type would be revealed."
-  | Kind -> pr "Their kinds differ."
-  | Constraint _ -> pr "Their constraints differ."
-  | Manifest _ -> ()
-  | Private_variant _ -> ()
-  | Private_object _ -> ()
-  | Variance -> pr "Their variances do not agree."
-  | Record_mismatch err -> report_record_mismatch first second decl ppf err
-  | Variant_mismatch err -> report_variant_mismatch first second decl ppf err
+  | Arity ->
+      pr "They have different arities."
+  | Privacy ->
+      pr "A private type would be revealed."
+  | Kind ->
+      pr "Their kinds differ."
+  | Constraint err ->
+      (* This error can come from implicit parameter disagreement or from
+         explicit `constraint`s.  Both affect the parameters, hence this choice
+         of explanatory text *)
+      pr "Their parameters differ@,";
+      report_type_inequality env ppf err
+  | Manifest err ->
+      report_type_inequality env ppf err
+  | Private_variant (_ty1, _ty2, mismatch) ->
+      report_private_variant_mismatch first second decl env ppf mismatch
+  | Private_object (_ty1, _ty2, mismatch) ->
+      report_private_object_mismatch env ppf mismatch
+  | Variance ->
+      pr "Their variances do not agree."
+  | Record_mismatch err ->
+      report_record_mismatch first second decl env ppf err
+  | Variant_mismatch err ->
+      report_variant_mismatch first second decl env ppf err
   | Unboxed_representation ord ->
       pr "Their internal representations differ:@ %s %s %s."
          (choose ord first second) decl
@@ -287,13 +364,6 @@ let report_type_mismatch0 first second decl ppf err =
           pr "%s is not a type that is always immediate on 64 bit platforms."
             first
 
-let report_type_mismatch first second decl ppf err =
-  match err with
-  | Manifest _ -> ()
-  | Private_variant _ -> ()
-  | Private_object _ -> ()
-  | _ -> Format.fprintf ppf "@ %a" (report_type_mismatch0 first second decl) err
-
 let rec compare_constructor_arguments ~loc env params1 params2 arg1 arg2 =
   match arg1, arg2 with
   | Types.Cstr_tuple arg1, Types.Cstr_tuple arg2 ->
@@ -302,7 +372,7 @@ let rec compare_constructor_arguments ~loc env params1 params2 arg1 arg2 =
       else begin
         (* Ctype.equal must be called on all arguments at once, cf. PR#7378 *)
         match Ctype.equal env true (params1 @ arg1) (params2 @ arg2) with
-        | exception Ctype.Equality trace -> Some (Type (env, trace))
+        | exception Ctype.Equality err -> Some (Type err)
         | () -> None
       end
   | Types.Cstr_record l1, Types.Cstr_record l2 ->
@@ -316,7 +386,7 @@ and compare_constructors ~loc env params1 params2 res1 res2 args1 args2 =
   match res1, res2 with
   | Some r1, Some r2 -> begin
       match Ctype.equal env true [r1] [r2] with
-      | exception Ctype.Equality trace -> Some (Type (env, trace))
+      | exception Ctype.Equality err -> Some (Type err)
       | () -> compare_constructor_arguments ~loc env [r1] [r2] args1 args2
     end
   | Some _, None -> Some (Explicit_return_type First)
@@ -372,8 +442,7 @@ and compare_labels env params1 params2
     let tl1 = params1 @ [ld1.ld_type] in
     let tl2 = params2 @ [ld2.ld_type] in
     match Ctype.equal env true tl1 tl2 with
-    | exception Ctype.Equality trace ->
-        Some (Type (env, trace) : label_mismatch)
+    | exception Ctype.Equality err -> Some (Type err : label_mismatch)
     | () -> None
   end
 
@@ -432,7 +501,7 @@ let private_variant env row1 params1 row2 params2 =
       Ctype.merge_row_fields row1.row_fields row2.row_fields
     in
     let err =
-      if row2.row_closed && not row1.row_closed then Some Openness
+      if row2.row_closed && not row1.row_closed then Some Only_outer_closed
       else begin
         match row2.row_closed, Ctype.filter_row_fields false r1 with
         | true, (s, _) :: _ ->
@@ -459,8 +528,8 @@ let private_variant env row1 params1 row2 params2 =
       match pairs with
       | [] -> begin
           match Ctype.equal env true tl1 tl2 with
-          | exception Ctype.Equality trace ->
-              Some (Types (env, trace) : private_variant_mismatch)
+          | exception Ctype.Equality err ->
+              Some (Types err : private_variant_mismatch)
           | () -> None
         end
       | (s, f1, f2) :: pairs -> begin
@@ -512,7 +581,7 @@ let private_object env fields1 params1 fields2 params2 =
   in
   begin
     match Ctype.equal env true (params1 @ tl1) (params2 @ tl2) with
-    | exception Ctype.Equality trace -> Some (Types (env, trace))
+    | exception Ctype.Equality err -> Some (Types err)
     | () -> None
   end
 
@@ -556,7 +625,7 @@ let type_manifest env ty1 params1 ty2 params2 priv2 kind2 =
         else
           Ctype.equal env true (params1 @ [ty1]) (params2 @ [ty2])
       with
-      | exception Ctype.Equality err -> Some (Manifest(env,err))
+      | exception Ctype.Equality err -> Some (Manifest err)
       | () -> None
     end
 
@@ -574,7 +643,7 @@ let type_declarations ?(equality = false) ~loc env ~mark name
       (_, None) ->
         begin
           match Ctype.equal env true decl1.type_params decl2.type_params with
-          | exception Ctype.Equality trace -> Some (Constraint(env, trace))
+          | exception Ctype.Equality err -> Some (Constraint err)
           | () -> None
         end
     | (Some ty1, Some ty2) ->
@@ -585,10 +654,10 @@ let type_declarations ?(equality = false) ~loc env ~mark name
           Btype.newgenty (Tconstr(path, decl2.type_params, ref Mnil))
         in
         match Ctype.equal env true decl1.type_params decl2.type_params with
-        | exception Ctype.Equality trace -> Some (Constraint(env, trace))
+        | exception Ctype.Equality err -> Some (Constraint err)
         | () ->
           match Ctype.equal env false [ty1] [ty2] with
-          | exception Ctype.Equality trace -> Some (Manifest(env, trace))
+          | exception Ctype.Equality err -> Some (Manifest err)
           | () -> None
   in
   if err <> None then err else
@@ -682,8 +751,8 @@ let extension_constructors ~loc env ~mark id ext1 ext2 =
   let tl1 = ty1 :: ext1.ext_type_params in
   let tl2 = ty2 :: ext2.ext_type_params in
   match Ctype.equal env true tl1 tl2 with
-  | exception Ctype.Equality trace ->
-      Some (Constructor_mismatch (id, ext1, ext2, Type(env, trace)))
+  | exception Ctype.Equality err ->
+      Some (Constructor_mismatch (id, ext1, ext2, Type err))
   | () ->
     let r =
       compare_constructors ~loc env

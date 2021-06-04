@@ -689,6 +689,7 @@ typing/includecore.cmo : \
     typing/printtyp.cmi \
     typing/primitive.cmi \
     typing/path.cmi \
+    utils/misc.cmi \
     typing/ident.cmi \
     typing/errortrace.cmi \
     typing/env.cmi \
@@ -704,6 +705,7 @@ typing/includecore.cmx : \
     typing/printtyp.cmx \
     typing/primitive.cmx \
     typing/path.cmx \
+    utils/misc.cmx \
     typing/ident.cmx \
     typing/errortrace.cmx \
     typing/env.cmx \

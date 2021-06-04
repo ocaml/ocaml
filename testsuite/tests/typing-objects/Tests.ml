@@ -702,6 +702,8 @@ Error: Signature mismatch:
          val f : (#c as 'a) -> 'a
        is not included in
          val f : #c -> #c
+       The type (#c as 'a) -> 'a is not compatible with the type 'a -> #c
+       Type 'a is not compatible with type 'b
 |}];;
 
 module M = struct type t = int class t () = object end end;;

@@ -21,7 +21,7 @@ Error: Signature mismatch:
          type t += F
        Constructors do not match:
          F of int
-       is not compatible with:
+       is not the same as:
          F
        They have different arities.
 |}];;

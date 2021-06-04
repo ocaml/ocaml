@@ -113,7 +113,6 @@ val tree_of_type_scheme: type_expr -> out_type
 val type_sch : formatter -> type_expr -> unit
 val type_scheme: formatter -> type_expr -> unit
 (* Maxence *)
-val reset_names: unit -> unit
 val type_scheme_max: ?b_reset_names: bool ->
         formatter -> type_expr -> unit
 (* End Maxence *)
@@ -179,20 +178,26 @@ val report_ambiguous_type_error:
 
 val report_unification_error :
   formatter -> Env.t ->
-  Errortrace.unification Errortrace.t ->
+  Errortrace.unification_error ->
   ?type_expected_explanation:(formatter -> unit) ->
   (formatter -> unit) -> (formatter -> unit) ->
   unit
 
 val report_equality_error :
   formatter -> Env.t ->
-  Errortrace.comparison Errortrace.t ->
+  Errortrace.equality_error ->
   (formatter -> unit) -> (formatter -> unit) ->
   unit
 
 val report_moregen_error :
   formatter -> Env.t ->
-  Errortrace.comparison Errortrace.t ->
+  Errortrace.moregen_error ->
+  (formatter -> unit) -> (formatter -> unit) ->
+  unit
+
+val report_comparison_error :
+  formatter -> Env.t ->
+  Errortrace.comparison_error ->
   (formatter -> unit) -> (formatter -> unit) ->
   unit
 
@@ -202,7 +207,7 @@ module Subtype : sig
     Env.t ->
     Errortrace.Subtype.t ->
     string ->
-    Errortrace.unification Errortrace.t ->
+    Errortrace.unification_error ->
     unit
 end
 

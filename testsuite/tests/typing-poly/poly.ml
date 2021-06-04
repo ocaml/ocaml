@@ -1177,6 +1177,12 @@ Error: Signature mismatch:
          val f : (< m : 'a. 'a * ('a * 'b) > as 'b) -> unit
        is not included in
          val f : < m : 'b. 'b * ('b * < m : 'c. 'c * 'a > as 'a) > -> unit
+       The type (< m : 'a. 'a * ('a * 'd) > as 'd) -> unit
+       is not compatible with the type
+         < m : 'b. 'b * ('b * < m : 'c. 'c * 'e > as 'e) > -> unit
+       The method m has type 'a. 'a * ('a * < m : 'a. 'b >) as 'b,
+       but the expected method type was 'c. 'c * ('b * < m : 'c. 'a >) as 'a
+       The universal variable 'b would escape its scope
 |}];;
 
 module M : sig type 'a t type u = <m: 'a. 'a t> end
@@ -1569,6 +1575,11 @@ Error: Values do not match:
        is not included in
          val f :
            < m : 'a. [< `Bar | `Foo of 'b & int ] as 'c > -> < m : 'b. 'c >
+       The type
+         < m : 'a. [< `Bar | `Foo of 'b & int ] as 'c > -> < m : 'b. 'c >
+       is not compatible with the type
+         < m : 'a. [< `Bar | `Foo of 'b & int ] as 'd > -> < m : 'b. 'd >
+       Types for tag `Foo are incompatible
 |}]
 
 (* PR#6171 *)

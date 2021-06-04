@@ -323,7 +323,9 @@ Line 15, characters 0-69:
 Error: This variant or record definition does not match that of type M.t
        Constructors do not match:
          E of (MkT(M.T).t, MkT(M.T).t) eq
-       is not compatible with:
+       is not the same as:
          E of (MkT(Desc).t, MkT(Desc).t) eq
-       The types are not equal.
+       The type (MkT(M.T).t, MkT(M.T).t) eq is not equal to the type
+         (MkT(Desc).t, MkT(Desc).t) eq
+       Type MkT(M.T).t is not equal to type MkT(Desc).t
 |}]

@@ -197,7 +197,8 @@ Line 1, characters 0-40:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type
          (int, [> `A ]) def
-       Their constraints differ.
+       Their parameters differ
+       The type int is not equal to the type 'a
 |}]
 
 type ('a,'b) kind = ('a, 'b) def = A constraint 'b = [> `A];;
@@ -220,7 +221,7 @@ Line 2, characters 0-37:
 Error: This variant or record definition does not match that of type d
        Fields do not match:
          y : int;
-       is not compatible with:
+       is not the same as:
          mutable y : int;
        This is mutable and the original is not.
 |}]
@@ -242,9 +243,9 @@ Line 1, characters 0-31:
 Error: This variant or record definition does not match that of type d
        Fields do not match:
          x : int;
-       is not compatible with:
+       is not the same as:
          x : float;
-       The types are not equal.
+       The type int is not equal to the type float
 |}]
 
 type mono = {foo:int}
