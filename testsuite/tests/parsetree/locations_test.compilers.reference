@@ -1100,4 +1100,212 @@ Ptop_def
   ]
 
 val x : int = 42
+Ptop_def
+  [
+    structure_item (//toplevel//[3,56+0]..[3,56+31])
+      Pstr_value Nonrec
+      [
+        <def>
+          pattern (//toplevel//[3,56+4]..[3,56+5])
+            Ppat_var "x" (//toplevel//[3,56+4]..[3,56+5])
+          expression (//toplevel//[3,56+8]..[3,56+31])
+            Pexp_object
+            class_structure
+              pattern (//toplevel//[3,56+14]..[3,56+14]) ghost
+                Ppat_any
+              [
+                class_field (//toplevel//[3,56+15]..[3,56+27])
+                  Pcf_method Public
+                    "f" (//toplevel//[3,56+22]..[3,56+23])
+                    Concrete Fresh
+                    expression (//toplevel//[3,56+26]..[3,56+27]) ghost
+                      Pexp_poly
+                      expression (//toplevel//[3,56+26]..[3,56+27])
+                        Pexp_constant PConst_int (1,None)
+                      None
+              ]
+      ]
+  ]
+
+val x : < f : int > = <obj>
+Ptop_def
+  [
+    structure_item (//toplevel//[1,0+0]..[1,0+35])
+      Pstr_value Nonrec
+      [
+        <def>
+          pattern (//toplevel//[1,0+4]..[1,0+5])
+            Ppat_var "x" (//toplevel//[1,0+4]..[1,0+5])
+          expression (//toplevel//[1,0+8]..[1,0+35])
+            Pexp_send "f"
+            expression (//toplevel//[1,0+8]..[1,0+31])
+              Pexp_object
+              class_structure
+                pattern (//toplevel//[1,0+14]..[1,0+14]) ghost
+                  Ppat_any
+                [
+                  class_field (//toplevel//[1,0+15]..[1,0+27])
+                    Pcf_method Public
+                      "f" (//toplevel//[1,0+22]..[1,0+23])
+                      Concrete Fresh
+                      expression (//toplevel//[1,0+26]..[1,0+27]) ghost
+                        Pexp_poly
+                        expression (//toplevel//[1,0+26]..[1,0+27])
+                          Pexp_constant PConst_int (1,None)
+                        None
+                ]
+      ]
+  ]
+
+val x : int = 1
+Ptop_def
+  [
+    structure_item (//toplevel//[1,0+0]..[1,0+36])
+      Pstr_value Nonrec
+      [
+        <def>
+          pattern (//toplevel//[1,0+4]..[1,0+5])
+            Ppat_var "x" (//toplevel//[1,0+4]..[1,0+5])
+          expression (//toplevel//[1,0+8]..[1,0+36])
+            Pexp_construct "Some" (//toplevel//[1,0+8]..[1,0+12])
+            Some
+              expression (//toplevel//[1,0+13]..[1,0+36])
+                Pexp_object
+                class_structure
+                  pattern (//toplevel//[1,0+19]..[1,0+19]) ghost
+                    Ppat_any
+                  [
+                    class_field (//toplevel//[1,0+20]..[1,0+32])
+                      Pcf_method Public
+                        "f" (//toplevel//[1,0+27]..[1,0+28])
+                        Concrete Fresh
+                        expression (//toplevel//[1,0+31]..[1,0+32]) ghost
+                          Pexp_poly
+                          expression (//toplevel//[1,0+31]..[1,0+32])
+                            Pexp_constant PConst_int (1,None)
+                          None
+                  ]
+      ]
+  ]
+
+val x : < f : int > option = Some <obj>
+Ptop_def
+  [
+    structure_item (//toplevel//[1,0+0]..[1,0+40])
+      Pstr_value Nonrec
+      [
+        <def>
+          pattern (//toplevel//[1,0+4]..[1,0+5])
+            Ppat_var "x" (//toplevel//[1,0+4]..[1,0+5])
+          expression (//toplevel//[1,0+8]..[1,0+40])
+            Pexp_construct "Some" (//toplevel//[1,0+8]..[1,0+12])
+            Some
+              expression (//toplevel//[1,0+13]..[1,0+40])
+                Pexp_send "f"
+                expression (//toplevel//[1,0+13]..[1,0+36])
+                  Pexp_object
+                  class_structure
+                    pattern (//toplevel//[1,0+19]..[1,0+19]) ghost
+                      Ppat_any
+                    [
+                      class_field (//toplevel//[1,0+20]..[1,0+32])
+                        Pcf_method Public
+                          "f" (//toplevel//[1,0+27]..[1,0+28])
+                          Concrete Fresh
+                          expression (//toplevel//[1,0+31]..[1,0+32]) ghost
+                            Pexp_poly
+                            expression (//toplevel//[1,0+31]..[1,0+32])
+                              Pexp_constant PConst_int (1,None)
+                            None
+                    ]
+      ]
+  ]
+
+val x : int option = Some 1
+Ptop_def
+  [
+    structure_item (//toplevel//[2,1+0]..[5,76+12])
+      Pstr_eval
+      expression (//toplevel//[2,1+0]..[5,76+12])
+        Pexp_let Nonrec
+        [
+          <def>
+            pattern (//toplevel//[2,1+4]..[2,1+5])
+              Ppat_var "f" (//toplevel//[2,1+4]..[2,1+5])
+            expression (//toplevel//[2,1+6]..[2,1+15]) ghost
+              Pexp_fun
+              Nolabel
+              None
+              pattern (//toplevel//[2,1+6]..[2,1+7])
+                Ppat_var "x" (//toplevel//[2,1+6]..[2,1+7])
+              expression (//toplevel//[2,1+8]..[2,1+15]) ghost
+                Pexp_fun
+                Nolabel
+                None
+                pattern (//toplevel//[2,1+8]..[2,1+9])
+                  Ppat_var "y" (//toplevel//[2,1+8]..[2,1+9])
+                expression (//toplevel//[2,1+10]..[2,1+15]) ghost
+                  Pexp_fun
+                  Nolabel
+                  None
+                  pattern (//toplevel//[2,1+10]..[2,1+11])
+                    Ppat_var "z" (//toplevel//[2,1+10]..[2,1+11])
+                  expression (//toplevel//[2,1+14]..[2,1+15])
+                    Pexp_ident "x" (//toplevel//[2,1+14]..[2,1+15])
+        ]
+        expression (//toplevel//[3,20+0]..[5,76+12])
+          Pexp_apply
+          expression (//toplevel//[3,20+0]..[3,20+1])
+            Pexp_ident "f" (//toplevel//[3,20+0]..[3,20+1])
+          [
+            <arg>
+            Nolabel
+              expression (//toplevel//[3,20+2]..[3,20+25])
+                Pexp_object
+                class_structure
+                  pattern (//toplevel//[3,20+8]..[3,20+8]) ghost
+                    Ppat_any
+                  [
+                    class_field (//toplevel//[3,20+9]..[3,20+21])
+                      Pcf_method Public
+                        "f" (//toplevel//[3,20+16]..[3,20+17])
+                        Concrete Fresh
+                        expression (//toplevel//[3,20+20]..[3,20+21]) ghost
+                          Pexp_poly
+                          expression (//toplevel//[3,20+20]..[3,20+21])
+                            Pexp_constant PConst_int (1,None)
+                          None
+                  ]
+            <arg>
+            Nolabel
+              expression (//toplevel//[4,46+2]..[4,46+29])
+                Pexp_send "f"
+                expression (//toplevel//[4,46+2]..[4,46+25])
+                  Pexp_object
+                  class_structure
+                    pattern (//toplevel//[4,46+8]..[4,46+8]) ghost
+                      Ppat_any
+                    [
+                      class_field (//toplevel//[4,46+9]..[4,46+21])
+                        Pcf_method Public
+                          "f" (//toplevel//[4,46+16]..[4,46+17])
+                          Concrete Fresh
+                          expression (//toplevel//[4,46+20]..[4,46+21]) ghost
+                            Pexp_poly
+                            expression (//toplevel//[4,46+20]..[4,46+21])
+                              Pexp_constant PConst_int (1,None)
+                            None
+                    ]
+            <arg>
+            Nolabel
+              expression (//toplevel//[5,76+2]..[5,76+12])
+                Pexp_object
+                class_structure
+                  pattern (//toplevel//[5,76+8]..[5,76+8]) ghost
+                    Ppat_any
+                  []
+          ]
+  ]
+
+- : < f : int > = <obj>
 

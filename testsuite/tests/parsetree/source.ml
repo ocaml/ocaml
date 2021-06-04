@@ -7425,3 +7425,15 @@ module M = struct
   let q =
     let%foo x and y and z in (x,y,z)
 end
+
+(* No surrounding parentheses for immediate objects *)
+let x = object method f = 1 end;;
+let x = object method f = 1 end # f;;
+let x = Some object method f = 1 end;;
+let x = Some object method f = 1 end # f;;
+
+let f x y z = x in
+f object method f = 1 end
+  object method f = 1 end # f
+  object end
+;;
