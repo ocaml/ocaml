@@ -79,6 +79,7 @@ let safe_string = %%FORCE_SAFE_STRING%%
 let default_safe_string = %%DEFAULT_SAFE_STRING%%
 let windows_unicode = %%WINDOWS_UNICODE%% != 0
 let supports_shared_libraries = %%SUPPORTS_SHARED_LIBRARIES%%
+let force_instrumented_runtime = %%FORCE_INSTRUMENTED_RUNTIME%%
 
 let flat_float_array = %%FLAT_FLOAT_ARRAY%%
 

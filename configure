@@ -747,6 +747,7 @@ build_os
 build_vendor
 build_cpu
 build
+force_instrumented_runtime
 naked_pointers_checker
 naked_pointers
 compute_deps
@@ -899,6 +900,7 @@ enable_installing_bytecode_programs
 enable_native_compiler
 enable_flambda
 enable_flambda_invariants
+enable_force_instrumented_runtime
 with_target_bindir
 enable_reserved_header_bits
 enable_stdlib_manpages
@@ -1572,6 +1574,8 @@ Optional Features:
   --enable-flambda        enable flambda optimizations
   --enable-flambda-invariants
                           enable invariants checks in flambda
+  --force-instrumented-runtime
+                          force the usage of the instrumented runtime
   --enable-reserved-header-bits=BITS
                           reserve BITS (between 0 and 31) bits in block
                           headers for profiling info
@@ -2790,6 +2794,7 @@ profinfo=false
 profinfo_width=0
 extralibs=
 instrumented_runtime=true
+force_instrumented_runtime=false
 instrumented_runtime_ldlibs=""
 
 # Information about the package
@@ -2889,6 +2894,7 @@ VERSION=4.12.0+multicore
 
 
  # TODO: rename this variable
+
 
 
 
@@ -3217,6 +3223,12 @@ fi
 # Check whether --enable-flambda-invariants was given.
 if test "${enable_flambda_invariants+set}" = set; then :
   enableval=$enable_flambda_invariants;
+fi
+
+
+# Check whether --enable-force-instrumented-runtime was given.
+if test "${enable_force_instrumented_runtime+set}" = set; then :
+  enableval=$enable_force_instrumented_runtime;
 fi
 
 
@@ -14567,6 +14579,11 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
  ;;
 esac
+
+if test "x$enable_force_instrumented_runtime" = "xyes"; then :
+  force_instrumented_runtime=true
+
+fi
 
 # The instrumented runtime is built by default
 # if the proper clock source is found.
