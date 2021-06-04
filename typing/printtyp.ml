@@ -782,6 +782,15 @@ let best_type_path p =
 
 (* Print a type expression *)
 
+(* When printing a type scheme, we print weak names.  When printing a plain
+   type, we do not.  This type controls that behavior *)
+type type_or_scheme = Type | Type_scheme
+
+let is_non_gen mode ty =
+  match mode with
+  | Type_scheme -> is_Tvar ty && ty.level <> generic_level
+  | Type        -> false
+
 module Names : sig
   val reset_names : unit -> unit
 
@@ -800,13 +809,9 @@ module Names : sig
 
   val with_local_names : (unit -> 'a) -> 'a
 
-  (* For [print_items], which is itself for the toplevel *)
-  val refresh_weak :
-    (type_expr ->
-     string ->
-     string TypeMap.t * String.Set.t ->
-     string TypeMap.t * String.Set.t) ->
-    unit
+  (* Refresh the weak variable map in the toplevel; for [print_items], which is
+     itself for the toplevel *)
+  val refresh_weak : unit -> unit
 end = struct
   (* We map from types to names, but not directly; we also store a substitution,
      which maps from types to types.  The lookup process is
@@ -913,9 +918,16 @@ end = struct
         name_subst := old_subst)
       f
 
-  let refresh_weak refresh =
+  let refresh_weak () =
+    let refresh t name (m,s) =
+      if is_non_gen Type_scheme (repr t) then
+        begin
+          TypeMap.add t name m,
+          String.Set.add name s
+        end
+      else m, s in
     let m, s =
-      TypeMap.fold refresh !weak_var_map (TypeMap.empty ,String.Set.empty)  in
+      TypeMap.fold refresh !weak_var_map (TypeMap.empty ,String.Set.empty) in
     named_weak_vars := s;
     weak_var_map := m
 end
@@ -1030,10 +1042,6 @@ let reset_and_mark_loops_list tyl =
 
 (* Disabled in classic mode when printing an unification error *)
 let print_labels = ref true
-
-(* When printing a type scheme, we print weak names.  When printing a plain
-   type, we do not.  This type controls that behavior *)
-type type_or_scheme = Type | Scheme
 
 let rec tree_of_typexp mode ty =
   let ty = repr ty in
@@ -1199,11 +1207,6 @@ and tree_of_typobject mode fi nm =
       fatal_error "Printtyp.tree_of_typobject"
   end
 
-and is_non_gen mode ty =
-  match mode with
-  | Scheme -> is_Tvar ty && ty.level <> generic_level
-  | Type   -> false
-
 and tree_of_typfields mode rest = function
   | [] ->
       let rest =
@@ -1230,9 +1233,9 @@ let type_expr ppf ty =
   reset_and_mark_loops ty;
   marked_type_expr ppf ty
 
-and type_sch ppf ty = typexp Scheme ppf ty
+and type_sch ppf ty = typexp Type_scheme ppf ty
 
-and type_scheme ppf ty = reset_and_mark_loops ty; typexp Scheme ppf ty
+and type_scheme ppf ty = reset_and_mark_loops ty; typexp Type_scheme ppf ty
 
 let type_path ppf p =
   let (p', s) = best_type_path p in
@@ -1243,10 +1246,12 @@ let type_path ppf p =
 (* Maxence *)
 let type_scheme_max ?(b_reset_names=true) ppf ty =
   if b_reset_names then Names.reset_names () ;
-  typexp Scheme ppf ty
+  typexp Type_scheme ppf ty
 (* End Maxence *)
 
-let tree_of_type_scheme ty = reset_and_mark_loops ty; tree_of_typexp Scheme ty
+let tree_of_type_scheme ty =
+  reset_and_mark_loops ty;
+  tree_of_typexp Type_scheme ty
 
 (* Print one type declaration *)
 
@@ -1255,8 +1260,8 @@ let tree_of_constraints params =
     (fun ty list ->
        let ty' = unalias ty in
        if proxy ty != proxy ty' then
-         let tr = tree_of_typexp Scheme ty in
-         (tr, tree_of_typexp Scheme ty') :: list
+         let tr = tree_of_typexp Type_scheme ty in
+         (tr, tree_of_typexp Type_scheme ty') :: list
        else list)
     params []
 
@@ -1580,7 +1585,7 @@ let rec tree_of_class_type mode params =
         tree_of_class_type mode params cty
       else
         let namespace = Namespace.best_class_namespace p' in
-        Octy_constr (tree_of_path namespace p', tree_of_typlist Scheme tyl)
+        Octy_constr (tree_of_path namespace p', tree_of_typlist Type_scheme tyl)
   | Cty_signature sign ->
       let sty = repr sign.csig_self in
       let self_ty =
@@ -1632,7 +1637,7 @@ let class_type ppf cty =
   !Oprint.out_class_type ppf (tree_of_class_type Type [] cty)
 
 let tree_of_class_param param variance =
-  (match tree_of_typexp Scheme param with
+  (match tree_of_typexp Type_scheme param with
     Otyp_var (_, s) -> s
   | _ -> "?"),
   if is_Tvar (repr param) then Asttypes.(NoVariance, NoInjectivity)
@@ -1661,7 +1666,7 @@ let tree_of_class_declaration id cl rs =
   Osig_class
     (vir_flag, Ident.name id,
      List.map2 tree_of_class_param params (class_variance cl.cty_variance),
-     tree_of_class_type Scheme params cl.cty_type,
+     tree_of_class_type Type_scheme params cl.cty_type,
      tree_of_rec rs)
 
 let class_declaration id ppf cl =
@@ -1694,7 +1699,7 @@ let tree_of_cltype_declaration id cl rs =
   Osig_class_type
     (virt, Ident.name id,
      List.map2 tree_of_class_param params (class_variance cl.clty_variance),
-     tree_of_class_type Scheme params cl.clty_type,
+     tree_of_class_type Type_scheme params cl.clty_type,
      tree_of_rec rs)
 
 let cltype_declaration id ppf cl =
@@ -1897,18 +1902,8 @@ let modtype_declaration id ppf decl =
 
 (* For the toplevel: merge with tree_of_signature? *)
 
-(* Refresh weak variable map in the toplevel *)
-let refresh_weak () =
-  Names.refresh_weak (fun t name (m,s) ->
-    if is_non_gen Scheme (repr t) then
-      begin
-        TypeMap.add t name m,
-        String.Set.add name s
-      end
-    else m, s)
-
 let print_items showval env x =
-  refresh_weak();
+  Names.refresh_weak();
   reset_naming_context ();
   Conflicts.reset ();
   let extend_val env (sigitem,outcome) = outcome, showval env sigitem in

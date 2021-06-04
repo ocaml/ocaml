@@ -160,7 +160,7 @@ val functor_parameters:
   ('b -> Format.formatter -> unit) ->
   (Ident.t option * 'b) list -> Format.formatter -> unit
 
-type type_or_scheme = Type | Scheme
+type type_or_scheme = Type | Type_scheme
 
 val tree_of_signature: Types.signature -> out_sig_item list
 val tree_of_typexp: type_or_scheme -> type_expr -> out_type

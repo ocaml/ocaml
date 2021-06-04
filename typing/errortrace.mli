@@ -24,12 +24,12 @@ val print_pos : Format.formatter -> position -> unit
 
 type expanded_type = { ty: type_expr; expanded: type_expr }
 
-(** [unexpanded_type ty] creates an [expanded_type] whose expansion is also
+(** [trivial_expansion ty] creates an [expanded_type] whose expansion is also
     [ty].  Usually, you want [Ctype.expand_type] instead, since the expansion
     carries useful information; however, in certain circumstances, the error is
     about the expansion of the type, meaning that actually performing the
     expansion produces more confusing or inaccurate output. *)
-val unexpanded_type : type_expr -> expanded_type
+val trivial_expansion : type_expr -> expanded_type
 
 type 'a diff = { got: 'a; expected: 'a }
 

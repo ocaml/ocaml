@@ -30,7 +30,7 @@ let print_pos ppf = function
 
 type expanded_type = { ty: type_expr; expanded: type_expr }
 
-let unexpanded_type ty = { ty; expanded = ty }
+let trivial_expansion ty = { ty; expanded = ty }
 
 type 'a diff = { got: 'a; expected: 'a }
 

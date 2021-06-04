@@ -218,14 +218,14 @@ let report_value_mismatch first second env ppf err =
   | Primitive_mismatch pm ->
       report_primitive_mismatch first second ppf pm
   | Not_a_primitive ->
-      pr "The definition is not a primitive"
+      pr "The implementation is not a primitive"
   | Type trace ->
-      Printtyp.report_moregen_error ppf Scheme env trace
+      Printtyp.report_moregen_error ppf Type_scheme env trace
         (fun ppf -> Format.fprintf ppf "The type")
         (fun ppf -> Format.fprintf ppf "is not compatible with the type")
 
 let report_type_inequality env ppf err =
-  Printtyp.report_equality_error ppf Scheme env err
+  Printtyp.report_equality_error ppf Type_scheme env err
     (fun ppf -> Format.fprintf ppf "The type")
     (fun ppf -> Format.fprintf ppf "is not equal to the type")
 
@@ -522,17 +522,17 @@ let privacy_mismatch env decl1 decl2 =
       | Type_abstract, Type_abstract
         when Option.is_some decl2.type_manifest -> begin
           match decl1.type_manifest with
-          | Some ty1 -> Some begin
+          | Some ty1 -> begin
             let ty1 = Ctype.expand_head env ty1 in
             match ty1.desc with
             | Tvariant row when Btype.is_constr_row ~allow_ident:true
                                   (Btype.row_more row) ->
-                Private_row_type
+                Some Private_row_type
             | Tobject (fi, _) when Btype.is_constr_row ~allow_ident:true
                                      (snd (Ctype.flatten_fields fi)) ->
-                Private_row_type
+                Some Private_row_type
             | _ ->
-                Private_type_abbreviation
+                Some Private_type_abbreviation
             end
           | None ->
               None

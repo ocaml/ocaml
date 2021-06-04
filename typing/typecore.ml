@@ -1343,7 +1343,7 @@ let check_scope_escape loc env level ty =
   with Escape esc ->
     (* We don't expand the type here because if we do, we might expand to the
        type that escaped, leading to confusing error messages. *)
-    let trace = Errortrace.[Escape (map_escape unexpanded_type esc)] in
+    let trace = Errortrace.[Escape (map_escape trivial_expansion esc)] in
     raise (Error(loc, env, Pattern_type_clash({trace}, None)))
 
 type pattern_checking_mode =

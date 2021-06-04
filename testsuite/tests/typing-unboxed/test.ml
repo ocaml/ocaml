@@ -445,7 +445,7 @@ Error: Signature mismatch:
          val f : int -> int
        is not included in
          external f : int -> int = "f" "f_nat"
-       The definition is not a primitive
+       The implementation is not a primitive
 |}]
 
 (* Good: not claiming something is a primitive when it is *)

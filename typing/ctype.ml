@@ -57,6 +57,20 @@ open Local_store
 
 (**** Errors ****)
 
+(* There are two classes of errortrace-related exceptions: *traces* and
+   *errors*.  The former, whose names end with [_trace], contain
+   [Errortrace.trace]s, representing traces that are currently being built; they
+   are local to this file.  All the internal functions that implement
+   unification, type equality, and moregen raise trace exceptions.  Once we are
+   done, in the top level functions such as [unify], [equal], and [moregen], we
+   catch the trace exceptions and transform them into the analogous error
+   exception.  This indicates that we are done building the trace, and expect
+   the error to flow out of unification, type equality, or moregen into
+   surrounding code (with some few exceptions when these top-level functions are
+   used as building blocks elsewhere.)  Only the error exceptions are exposed in
+   [ctype.mli]; the trace exceptions are an implementation detail.  Any trace
+   exception that escapes from a function in this file is a bug. *)
+
 exception Unify_trace    of unification trace
 exception Equality_trace of comparison  trace
 exception Moregen_trace  of comparison  trace
@@ -2160,7 +2174,7 @@ let expanded_diff env ~got ~expected =
 (* Diff while transforming a [type_expr] into an [expanded_type] without
    expanding *)
 let unexpanded_diff ~got ~expected =
-  Diff (map_diff unexpanded_type {got; expected})
+  Diff (map_diff trivial_expansion {got; expected})
 
 (**** Unification ****)
 
@@ -3638,12 +3652,14 @@ let moregeneral env inst_nongen pat_sch subj_sch =
        try
          moregen inst_nongen (TypePairs.create 13) env patt subj
        with Moregen_trace trace ->
-         (* In order to properly detect and print weak variables when printing
-            this error, we need to regeneralize the levels of the types after
-            they were instantiated at [generic_level - 1] above.  Because
+         (* Moregen splits the generic level into two finer levels:
+            [generic_level] and [generic_level - 1].  In order to properly
+            detect and print weak variables when printing this error, we need to
+            merge them back together, by regeneralizing the levels of the types
+            after they were instantiated at [generic_level - 1] above.  Because
             [moregen] does some unification that we need to preserve for more
             legible error messages, we have to manually perform the
-            rengeneralization rather than backtracking. *)
+            regeneralization rather than backtracking. *)
          current_level := generic_level - 2;
          generalize subj_inst;
          raise (Moregen {trace = expand_trace env trace}))
@@ -3705,10 +3721,10 @@ let matches ~expand_error_trace env ty ty' =
         backtrack snap;
         let diff =
           if expand_error_trace
-          then expanded_diff env
-          else unexpanded_diff
+          then expanded_diff env ~got:ty ~expected:ty'
+          else unexpanded_diff ~got:ty ~expected:ty'
         in
-        raise (Matches_failure (env, {trace = [diff ~got:ty ~expected:ty']}))
+        raise (Matches_failure (env, {trace = [diff]}))
       end;
       backtrack snap
   | exception Unify err ->
@@ -4137,12 +4153,14 @@ let match_class_types ?(trace=true) env pat_sch subj_sch =
   begin match res with
   | []   -> ()
   | _::_ ->
-    (* If [res] is nonempty, we've found an error.  In order to properly detect
-       and print weak variables when printing this error, we need to
-       regeneralize the levels of the types after they were instantiated at
-       [generic_level - 1] above.  Because we may do unification that we need to
-       preserve for more legible error messages, we have to manually perform the
-       rengeneralization rather than backtracking. *)
+    (* If [res] is nonempty, we've found an error.  Moregen splits the generic
+       level into two finer levels: [generic_level] and [generic_level - 1].  In
+       order to properly detect and print weak variables when printing this
+       error, we need to merge them back together, by regeneralizing the levels
+       of the types after they were instantiated at [generic_level - 1] above.
+       Because [moregen] does some unification that we need to preserve for more
+       legible error messages, we have to manually perform the regeneralization
+       rather than backtracking. *)
     current_level := generic_level - 2;
     generalize_class_type true subj_inst;
   end;
