@@ -143,9 +143,11 @@ let load_file = Topeval.load_file false
 
 (* Load commands from a file *)
 
-let dir_use ppf name = ignore(Toploop.use_file ppf name)
+let dir_use ppf name =
+  ignore (Toploop.use_input ppf (Toploop.File name))
 let dir_use_output ppf name = ignore(Toploop.use_output ppf name)
-let dir_mod_use ppf name = ignore(Toploop.mod_use_file ppf name)
+let dir_mod_use ppf name =
+  ignore (Toploop.mod_use_input ppf (Toploop.File name))
 
 let _ = add_directive "use" (Directive_string (dir_use std_out))
     {
