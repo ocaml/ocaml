@@ -110,3 +110,15 @@ let x =
   42
 (** Another docstring attached to x. *)
 ;;
+
+(* No surrounding parentheses for immediate objects *)
+let x = object method f = 1 end;;
+let x = object method f = 1 end # f;;
+let x = Some object method f = 1 end;;
+let x = Some object method f = 1 end # f;;
+
+let f x y z = x in
+f object method f = 1 end
+  object method f = 1 end # f
+  object end
+;;
