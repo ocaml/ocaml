@@ -1431,7 +1431,7 @@ let rec copy_sep cleanup_scope fixed free bound visited ty =
   end
 
 let instance_poly' cleanup_scope ~keep_names fixed univars sch =
-  (* In order to compute univars below, [sch] schould not contain [Tsubst] *)
+  (* In order to compute univars below, [sch] should not contain [Tsubst] *)
   let univars = List.map repr univars in
   let copy_var ty =
     match ty.desc with

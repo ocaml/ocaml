@@ -33,7 +33,7 @@ let web_dir = Filename.parent_dir_name // "webman"
 let docs_maindir = web_dir // "manual"
 let docs_file = ( // ) docs_maindir
 
-(* Ouput for API *)
+(* Output for API *)
 let api_dir = web_dir // "api"
 
 (* How to go from manual to api *)
