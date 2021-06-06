@@ -66,6 +66,9 @@ OCaml 4.13.0
 - #10265: Move type_unboxed.unboxed into type_kind
   (Stephen Dolan, review by Gabriel Scherer)
 
+* #10081: Typecheck `x |> f` and `f @@ x` as `(f x)`
+  (Alain Frisch, review by Jacques Garrigue, Josh Berdine and Thomas Refis)
+
 ### Runtime system:
 
 - #9284: Add -config option to display the configuration of ocamlrun on stdout,
@@ -171,11 +174,6 @@ OCaml 4.13.0
 - #10419: Add %frame_pointers primitive which is true only in native code with
   frame pointers mode enabled.
   (David Allsopp, review by Vincent Laviron and Mark Shinwell)
-
-### Type system:
-
-* #10081: Typecheck `x |> f` and `f @@ x` as `(f x)`
-  (Alain Frisch, review by Jacques Garrigue, Josh Berdine and Thomas Refis)
 
 ### Standard library:
 
