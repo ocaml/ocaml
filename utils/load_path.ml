@@ -103,6 +103,8 @@ let add dir =
   files_uncap := SMap.union first !files_uncap new_files_uncap;
   dirs := dir :: !dirs
 
+let append_dir = add
+
 let add_dir dir = add (Dir.create dir)
 
 let is_basename fn = Filename.basename fn = fn
