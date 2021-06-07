@@ -67,5 +67,9 @@ val append_dir : Dir.t -> unit
 (** [append_dir d] adds [d] to the end of the load path (i.e. at lowest
     priority. *)
 
+val prepend_dir : Dir.t -> unit
+(** [prepend_dir d] adds [d] to the start of the load path (i.e. at highest
+    priority. *)
+
 val get : unit -> Dir.t list
 (** Same as [get_paths ()], except that it returns a [Dir.t list]. *)
