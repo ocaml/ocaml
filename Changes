@@ -699,6 +699,13 @@ OCaml 4.13.0
 - #10376: Link runtime libraries correctly on msvc64 in -output-complete-obj
   (David Allsopp, review by Gabriel Scherer)
 
+- #10442, #10446: Fix regression in the toplevel to #directory caused by
+  corrections and improvements to the Load_path in #9611. #directory now
+  adds the path to the start of the load path again (so files in the newly
+  added directory take priority).
+  (David Allsopp, report by Vasile Rotaru, review by Florian Angeletti
+   and Nicolás Ojeda Bär)
+
 - #10449: Fix major GC work accounting (the GC was running too fast).
   (Damien Doligez, report by Stephen Dolan, review by Nicolás Ojeda Bär
    and Sadiq Jaffer)
