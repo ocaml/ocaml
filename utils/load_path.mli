@@ -23,7 +23,7 @@
 *)
 
 val add_dir : string -> unit
-(** Add a directory to the load path *)
+(** Add a directory to the end of the load path (i.e. at lowest priority.) *)
 
 val remove_dir : string -> unit
 (** Remove a directory from the load path *)
@@ -60,7 +60,12 @@ module Dir : sig
       sub-directories of this directory. *)
 end
 
-val add : Dir.t -> unit
+val[@deprecated] add : Dir.t -> unit
+(** Old name for {!append_dir} *)
+
+val append_dir : Dir.t -> unit
+(** [append_dir d] adds [d] to the end of the load path (i.e. at lowest
+    priority. *)
 
 val get : unit -> Dir.t list
 (** Same as [get_paths ()], except that it returns a [Dir.t list]. *)

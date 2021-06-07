@@ -96,6 +96,8 @@ let add dir =
     dir.Dir.files;
   dirs := dir :: !dirs
 
+let append_dir = add
+
 let add_dir dir = add (Dir.create dir)
 
 let is_basename fn = Filename.basename fn = fn
