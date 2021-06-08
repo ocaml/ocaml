@@ -110,7 +110,7 @@ let prepend_dir dir =
        STbl.replace !files base fn;
        STbl.replace !files_uncap (String.uncapitalize_ascii base) fn)
     dir.Dir.files;
-  dirs := dir :: !dirs
+  dirs := !dirs @ [dir]
 
 let is_basename fn = Filename.basename fn = fn
 
