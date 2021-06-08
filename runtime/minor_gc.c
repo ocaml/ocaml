@@ -45,11 +45,8 @@ extern value caml_ephe_none; /* See weak.c */
 struct generic_table CAML_TABLE_STRUCT(char);
 
 static atomic_intnat domains_finished_minor_gc;
-static atomic_intnat domain_finished_root;
 
 static atomic_uintnat caml_minor_cycles_started = 0;
-
-static caml_plat_mutex global_roots_lock = CAML_PLAT_MUTEX_INITIALIZER;
 
 double caml_extra_heap_resources_minor = 0;
 
@@ -527,13 +524,11 @@ void caml_empty_minor_heap_domain_clear (struct domain* domain, void* unused)
 #endif
 }
 
-void caml_empty_minor_heap_promote (struct domain* domain, int participating_count, struct domain** participating, int not_alone)
+void caml_empty_minor_heap_promote (struct domain* domain, int participating_count, struct domain** participating)
 {
   caml_domain_state* domain_state = domain->state;
   struct caml_minor_tables *self_minor_tables = domain_state->minor_tables;
   struct caml_custom_elt *elt;
-  unsigned rewrite_successes = 0;
-  unsigned rewrite_failures = 0;
   char* young_ptr = domain_state->young_ptr;
   char* young_end = domain_state->young_end;
   uintnat minor_allocated_bytes = young_end - young_ptr;
@@ -552,21 +547,15 @@ void caml_empty_minor_heap_promote (struct domain* domain, int participating_cou
   caml_gc_log ("Minor collection of domain %d starting", domain->state->id);
   CAML_EV_BEGIN(EV_MINOR);
 
-  if( participating[0] == caml_domain_self() || !not_alone ) { // TODO: We should distribute this work
-    if(domain_finished_root == 0){
-      if (caml_plat_try_lock(&global_roots_lock)){
-        CAML_EV_BEGIN(EV_MINOR_GLOBAL_ROOTS);
-        caml_scan_global_young_roots(oldify_one, &st);
-        CAML_EV_END(EV_MINOR_GLOBAL_ROOTS);
-        atomic_store_explicit(&domain_finished_root, 1, memory_order_release);
-        caml_plat_unlock(&global_roots_lock);
-      }
-    }
+  if( participating[0] == caml_domain_self() ) { // TODO: We should distribute this work
+    CAML_EV_BEGIN(EV_MINOR_GLOBAL_ROOTS);
+    caml_scan_global_young_roots(oldify_one, &st);
+    CAML_EV_END(EV_MINOR_GLOBAL_ROOTS);
   }
 
  CAML_EV_BEGIN(EV_MINOR_REMEMBERED_SET);
 
-  if( not_alone ) {
+  if( participating_count > 1 ) {
     int participating_idx = -1;
     struct domain* domain_self = caml_domain_self();
 
@@ -686,7 +675,7 @@ void caml_empty_minor_heap_promote (struct domain* domain, int participating_cou
   atomic_store_rel((atomic_uintnat*)&domain_state->young_limit, (uintnat)domain_state->young_start);
   atomic_store_rel((atomic_uintnat*)&domain_state->young_ptr, (uintnat)domain_state->young_end);
 
-  if( not_alone ) {
+  if( participating_count > 1 ) {
     atomic_fetch_add_explicit(&domains_finished_minor_gc, 1, memory_order_release);
   }
 
@@ -695,10 +684,10 @@ void caml_empty_minor_heap_promote (struct domain* domain, int participating_cou
   domain_state->stat_promoted_words += domain_state->allocated_words - prev_alloc_words;
 
   CAML_EV_END(EV_MINOR);
-  caml_gc_log ("Minor collection of domain %d completed: %2.0f%% of %u KB live, rewrite: successes=%u failures=%u",
+  caml_gc_log ("Minor collection of domain %d completed: %2.0f%% of %u KB live",
                domain->state->id,
                100.0 * (double)st.live_bytes / (double)minor_allocated_bytes,
-               (unsigned)(minor_allocated_bytes + 512)/1024, rewrite_successes, rewrite_failures);
+               (unsigned)(minor_allocated_bytes + 512)/1024);
 }
 
 void caml_do_opportunistic_major_slice(struct domain* domain, void* unused)
@@ -718,35 +707,26 @@ void caml_do_opportunistic_major_slice(struct domain* domain, void* unused)
 */
 void caml_empty_minor_heap_setup(struct domain* domain) {
   atomic_store_explicit(&domains_finished_minor_gc, 0, memory_order_release);
-  atomic_store_explicit(&domain_finished_root, 0, memory_order_release);
 }
 
 /* must be called within a STW section */
 static void caml_stw_empty_minor_heap_no_major_slice (struct domain* domain, void* unused, int participating_count, struct domain** participating)
 {
-  int not_alone = !caml_domain_alone();
-
   #ifdef DEBUG
   CAMLassert(caml_domain_is_in_stw());
   #endif
 
-  if( not_alone ) {
-    if( participating[0] == caml_domain_self() ) {
-      atomic_fetch_add(&caml_minor_cycles_started, 1);
-    }
-  }
-  else
-  {
+  if( participating[0] == caml_domain_self() ) {
     atomic_fetch_add(&caml_minor_cycles_started, 1);
   }
 
   caml_gc_log("running stw empty_minor_heap_promote");
-  caml_empty_minor_heap_promote(domain, participating_count, participating, not_alone);
+  caml_empty_minor_heap_promote(domain, participating_count, participating);
 
   /* collect gc stats before leaving the barrier */
   caml_sample_gc_collect(domain->state);
 
-  if( not_alone ) {
+  if( participating_count > 1 ) {
     CAML_EV_BEGIN(EV_MINOR_LEAVE_BARRIER);
     {
       SPIN_WAIT {
