@@ -524,7 +524,7 @@ void caml_empty_minor_heap_domain_clear (struct domain* domain, void* unused)
 #endif
 }
 
-void caml_empty_minor_heap_promote (struct domain* domain, int participating_count, struct domain** participating, int not_alone)
+void caml_empty_minor_heap_promote (struct domain* domain, int participating_count, struct domain** participating)
 {
   caml_domain_state* domain_state = domain->state;
   struct caml_minor_tables *self_minor_tables = domain_state->minor_tables;
@@ -555,7 +555,7 @@ void caml_empty_minor_heap_promote (struct domain* domain, int participating_cou
 
  CAML_EV_BEGIN(EV_MINOR_REMEMBERED_SET);
 
-  if( not_alone ) {
+  if( participating_count > 1 ) {
     int participating_idx = -1;
     struct domain* domain_self = caml_domain_self();
 
@@ -675,7 +675,7 @@ void caml_empty_minor_heap_promote (struct domain* domain, int participating_cou
   atomic_store_rel((atomic_uintnat*)&domain_state->young_limit, (uintnat)domain_state->young_start);
   atomic_store_rel((atomic_uintnat*)&domain_state->young_ptr, (uintnat)domain_state->young_end);
 
-  if( not_alone ) {
+  if( participating_count > 1 ) {
     atomic_fetch_add_explicit(&domains_finished_minor_gc, 1, memory_order_release);
   }
 
@@ -712,8 +712,6 @@ void caml_empty_minor_heap_setup(struct domain* domain) {
 /* must be called within a STW section */
 static void caml_stw_empty_minor_heap_no_major_slice (struct domain* domain, void* unused, int participating_count, struct domain** participating)
 {
-  int not_alone = !caml_domain_alone();
-
   #ifdef DEBUG
   CAMLassert(caml_domain_is_in_stw());
   #endif
@@ -723,12 +721,12 @@ static void caml_stw_empty_minor_heap_no_major_slice (struct domain* domain, voi
   }
 
   caml_gc_log("running stw empty_minor_heap_promote");
-  caml_empty_minor_heap_promote(domain, participating_count, participating, not_alone);
+  caml_empty_minor_heap_promote(domain, participating_count, participating);
 
   /* collect gc stats before leaving the barrier */
   caml_sample_gc_collect(domain->state);
 
-  if( not_alone ) {
+  if( participating_count > 1 ) {
     CAML_EV_BEGIN(EV_MINOR_LEAVE_BARRIER);
     {
       SPIN_WAIT {
