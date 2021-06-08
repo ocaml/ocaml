@@ -105,7 +105,7 @@ let add_dir dir = add (Dir.create dir)
 let prepend_dir dir =
   assert (not Config.merlin || Local_store.is_bound ());
   prepend_add dir;
-  dirs := dir :: !dirs
+  dirs := !dirs @ [dir]
 
 let is_basename fn = Filename.basename fn = fn
 
