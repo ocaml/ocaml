@@ -205,6 +205,7 @@ clean:
 	rm -f ocamlrun ocamlrund ocamlruni
 	rm -f ocamlrun.exe ocamlrund.exe ocamlruni.exe
 	rm -f primitives primitives.new prims.c $(GENERATED_HEADERS)
+	rm -f GIT_HASH GIT_HASH.new
 	rm -f domain_state*.inc
 	rm -rf $(DEPDIR)
 
@@ -268,8 +269,14 @@ caml/jumptbl.h : caml/instruct.h
 	sed -n -e '/^  /s/ \([A-Z]\)/ \&\&lbl_\1/gp' \
 	       -e '/^}/q' > $@
 
-caml/version.h : $(ROOTDIR)/tools/make-version-header.sh $(ROOTDIR)/VERSION
-	$^ > $@
+# Avoid building due to GIT_HASH when it hasn't changed
+GIT_HASH: $(shell (git rev-parse --short HEAD || echo "<hash unavailable>") > GIT_HASH.new; \
+        cmp -s GIT_HASH GIT_HASH.new || echo GIT_HASH.new)
+	cp $^ $@
+
+caml/version.h : $(ROOTDIR)/tools/make-version-header.sh $(ROOTDIR)/VERSION GIT_HASH
+	$(ROOTDIR)/tools/make-version-header.sh $(ROOTDIR)/VERSION > $@
+	echo "#define OCAML_BUILD_GIT_HASH \"`cat GIT_HASH`\"" >> $@
 
 # Libraries and programs
 
