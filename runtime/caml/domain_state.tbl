@@ -94,10 +94,6 @@ DOMAIN_STATE(uintnat, requested_major_slice)
 
 DOMAIN_STATE(uintnat, requested_minor_gc)
 
-DOMAIN_STATE(intnat, critical_section_nesting)
-
-DOMAIN_STATE(struct interrupt*, pending_interrupts)
-
 DOMAIN_STATE(int, parser_trace)
 /* See parsing.c */
 

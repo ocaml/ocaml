@@ -94,8 +94,6 @@ INLINE intnat caml_domain_alone()
 typedef struct interrupt interrupt;
 typedef void (*domain_rpc_handler)(struct domain*, void*, interrupt*);
 
-void caml_acknowledge_interrupt(interrupt*);
-
 #ifdef DEBUG
 int caml_domain_is_in_stw();
 #endif
