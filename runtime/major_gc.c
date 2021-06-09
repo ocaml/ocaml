@@ -51,7 +51,7 @@ struct mark_stack {
 };
 
 uintnat caml_percent_free;
-static uintnat marked_words, heap_wsz_at_cycle_start;
+static uintnat marked_words = 1000, prev_marked_words, heap_wsz_at_cycle_start;
 static double s_factor, m_factor, ooh_ratio;
 uintnat caml_major_heap_increment;
 CAMLexport char *caml_heap_start;
@@ -403,6 +403,7 @@ static void start_cycle (void)
   CAMLassert (Caml_state->mark_stack->count == 0);
   CAMLassert (redarken_first_chunk == NULL);
   caml_gc_message (0x01, "Starting new major GC cycle\n");
+  prev_marked_words = marked_words;
   marked_words = 0;
   caml_darken_all_roots_start ();
   caml_gc_phase = Phase_mark;
@@ -936,7 +937,7 @@ void caml_set_percent_free (uintnat pf)
   m = lambda * s;
   s_factor = s;
   m_factor = m;
-  ooh_ratio = 1/(o+1)/m + 1/s;
+  ooh_ratio = 1/m + (1+o)/s;
 }
 
 /* The main entry point for the major GC. Called about once for each
@@ -960,8 +961,7 @@ void caml_major_collection_slice (intnat howmuch)
     if (equiv > alloc) alloc = equiv;
   }
   if (caml_extra_heap_resources > 0.0){
-    double equiv =
-      Caml_state->stat_heap_wsz * ooh_ratio * caml_extra_heap_resources;
+    double equiv = prev_marked_words * ooh_ratio * caml_extra_heap_resources;
     if (equiv > alloc) alloc = equiv;
   }
 
