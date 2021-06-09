@@ -349,7 +349,7 @@ void caml_init_domains(uintnat minor_heap_wsz) {
   void* tls_base;
 
   /* sanity check configuration */
-  if (caml_mem_round_up_pages(Minor_heap_max) != Minor_heap_max)
+  if (caml_mem_round_up_pages(Bsize_wsize(Minor_heap_max)) != Bsize_wsize(Minor_heap_max))
     caml_fatal_error("Minor_heap_max misconfigured for this platform");
 
   /* reserve memory space for minor heaps and tls_areas */
