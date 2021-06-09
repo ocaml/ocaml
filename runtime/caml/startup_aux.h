@@ -59,6 +59,8 @@ struct caml_params {
 
 extern const struct caml_params* const caml_params;
 
+extern const char* caml_runtime_build_git_hash_is;
+
 extern void caml_parse_ocamlrunparam (void);
 extern int caml_parse_command_line (char_os **argv);
 

@@ -43,6 +43,11 @@ extern void caml_win32_unregister_overflow_detection (void);
 static struct caml_params params;
 const struct caml_params* const caml_params = &params;
 
+/* this variable is intended to appear in the text segment to
+   find the runtime git hash of the build */
+const char* caml_runtime_build_git_hash_is =
+  "RUNTIME_BUILD_GIT_HASH_IS_" OCAML_BUILD_GIT_HASH;
+
 static void init_startup_params()
 {
 #ifndef NATIVE_CODE
@@ -222,6 +227,7 @@ int caml_parse_command_line(char_os **argv)
     case 'v':
       if (!strcmp_os (argv[i], T("-version"))){
         printf ("The OCaml runtime, version " OCAML_VERSION_STRING "\n");
+        printf ("built with git hash " OCAML_BUILD_GIT_HASH "\n");
         exit (0);
       }else if (!strcmp_os (argv[i], T("-vnum"))){
         printf (OCAML_VERSION_STRING "\n");
