@@ -80,12 +80,6 @@ struct interrupt {
   struct interrupt* next;
 };
 
-/* returns 0 on failure, if the target has terminated. */
-CAMLcheckresult
-int caml_send_interrupt(struct interruptor* self,
-                        struct interruptor* target,
-                        domain_rpc_handler handler,
-                        void* data);
 void caml_handle_incoming_interrupts(void);
 
 
@@ -244,7 +238,6 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
     domain_state->id = d->id;
     domain_state->unique_id = d->interruptor.unique_id;
     d->state.state = domain_state;
-    domain_state->critical_section_nesting = 0;
 
     if (caml_init_signal_stack() < 0) {
       goto init_signal_stack_failure;
@@ -629,11 +622,6 @@ CAMLprim value caml_domain_spawn(value callback, value mutex)
   CAMLreturn (Val_long(p.unique_id));
 }
 
-CAMLprim value caml_ml_domain_join(value domain)
-{
-    caml_failwith("domain.join unimplemented");
-}
-
 struct domain* caml_domain_self()
 {
   return domain_self ? &domain_self->state : 0;
@@ -749,12 +737,8 @@ static void decrement_stw_domains_still_processing()
 static void caml_poll_gc_work();
 static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
 {
-#ifdef DEBUG
-  caml_domain_state* domain_state = Caml_state;
-#endif
-
   CAML_EV_BEGIN(EV_STW_HANDLER);
-  caml_acknowledge_interrupt(done);
+  atomic_store_rel(&done->acknowledged, 1);
   CAML_EV_BEGIN(EV_STW_API_BARRIER);
   {
     SPIN_WAIT {
@@ -769,11 +753,11 @@ static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
   CAML_EV_END(EV_STW_API_BARRIER);
 
   #ifdef DEBUG
-  domain_state->inside_stw_handler = 1;
+  Caml_state->inside_stw_handler = 1;
   #endif
   stw_request.callback(domain, stw_request.data, stw_request.num_domains, stw_request.participating);
   #ifdef DEBUG
-  domain_state->inside_stw_handler = 0;
+  Caml_state->inside_stw_handler = 0;
   #endif
 
   decrement_stw_domains_still_processing();
@@ -789,9 +773,7 @@ static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
 
 #ifdef DEBUG
 int caml_domain_is_in_stw() {
-  caml_domain_state* domain_state = Caml_state;
-
-  return domain_state->inside_stw_handler;
+  return Caml_state->inside_stw_handler;
 }
 #endif
 
@@ -946,8 +928,8 @@ static void caml_poll_gc_work()
     /* FIXME: a domain will only ever call finalizers if its minor
       heap triggers the minor collection
       Care may be needed with finalizers running when the domain
-      is waiting in a critical_section or in a blocking section
-      and serviced by the backup thread.
+      is waiting in a blocking section and serviced by the backup
+      thread.
       */
     CAML_EV_BEGIN(EV_MINOR_FINALIZED);
     caml_final_do_calls();
@@ -1130,21 +1112,6 @@ static uintnat handle_incoming(struct interruptor* s)
   return handled;
 }
 
-void caml_acknowledge_interrupt(struct interrupt* req)
-{
-  atomic_store_rel(&req->acknowledged, 1);
-}
-
-static void acknowledge_all_pending_interrupts()
-{
-  Assert(Caml_state->critical_section_nesting == 0);
-  while (Caml_state->pending_interrupts) {
-    interrupt* curr = Caml_state->pending_interrupts;
-    Caml_state->pending_interrupts = curr->next;
-    caml_acknowledge_interrupt(curr);
-  }
-}
-
 static void handover_ephemerons(caml_domain_state* domain_state)
 {
   if (domain_state->ephe_info->todo == 0 &&
@@ -1255,11 +1222,6 @@ static void domain_terminate()
     caml_free_stack(domain_state->current_stack);
   }
 
-  if (Caml_state->critical_section_nesting) {
-    Caml_state->critical_section_nesting = 0;
-    acknowledge_all_pending_interrupts();
-  }
-
   atomic_store_rel(&domain_self->backup_thread_msg, BT_TERMINATE);
   caml_plat_signal(&domain_self->domain_cond);
   caml_plat_unlock(&domain_self->domain_lock);
@@ -1357,92 +1319,6 @@ int caml_send_partial_interrupt(
   return 1;
 }
 
-int caml_send_interrupt(struct interruptor* self,
-                         struct interruptor* target,
-                         domain_rpc_handler handler,
-                         void* data)
-{
-  struct interrupt req;
-  if (!caml_send_partial_interrupt(target, handler, data, &req))
-    return 0;
-  caml_wait_interrupt_acknowledged(self, &req);
-  return 1;
-}
-
-
-CAMLprim value caml_ml_domain_critical_section(value delta)
-{
-  intnat crit = Caml_state->critical_section_nesting + Long_val(delta);
-  Caml_state->critical_section_nesting = crit;
-  if (crit < 0) {
-    caml_fatal_error("invalid critical section nesting");
-  } else if (crit == 0) {
-    acknowledge_all_pending_interrupts();
-  }
-  return Val_unit;
-}
-
-#define Chunk_size 0x400
-
-CAMLprim value caml_ml_domain_yield(value unused)
-{
-  struct interruptor* s = &domain_self->interruptor;
-  int found_work = 1;
-  intnat left;
-
-  if (Caml_state->critical_section_nesting == 0) {
-    caml_failwith("Domain.Sync.wait must be called from within a critical section");
-  }
-
-  caml_plat_lock(&s->lock);
-  while (!Caml_state->pending_interrupts) {
-    if (handle_incoming(s) == 0 && !found_work) {
-      CAML_EV_BEGIN(EV_DOMAIN_IDLE_WAIT);
-      caml_plat_wait(&s->cond);
-      CAML_EV_END(EV_DOMAIN_IDLE_WAIT);
-    } else {
-      caml_plat_unlock(&s->lock);
-      left = caml_opportunistic_major_collection_slice(Chunk_size);
-      if (left == Chunk_size)
-        found_work = 0;
-      caml_plat_lock(&s->lock);
-    }
-  }
-  caml_plat_unlock(&s->lock);
-
-  return Val_unit;
-}
-
-static void handle_ml_interrupt(struct domain* d, void* unique_id_p, interrupt* req)
-{
-  if (d->internals->interruptor.unique_id != *(uintnat*)unique_id_p) {
-    caml_acknowledge_interrupt(req);
-    return;
-  }
-  if (d->state->critical_section_nesting > 0) {
-    req->next = d->state->pending_interrupts;
-    d->state->pending_interrupts = req;
-  } else {
-    caml_acknowledge_interrupt(req);
-  }
-}
-
-CAMLprim value caml_ml_domain_interrupt(value domain)
-{
-  CAMLparam1 (domain);
-  uintnat unique_id = (uintnat)Long_val(domain);
-  struct interruptor* target =
-    &all_domains[unique_id % Max_domains].interruptor;
-
-  CAML_EV_BEGIN(EV_DOMAIN_SEND_INTERRUPT);
-  if (!caml_send_interrupt(&domain_self->interruptor, target, &handle_ml_interrupt, &unique_id)) {
-    /* the domain might have terminated, but that's fine */
-  }
-  CAML_EV_END(EV_DOMAIN_SEND_INTERRUPT);
-
-  CAMLreturn (Val_unit);
-}
-
 CAMLprim int64_t caml_ml_domain_ticks_unboxed(value unused)
 {
   return caml_time_counter() - startup_timestamp;
@@ -1451,47 +1327,6 @@ CAMLprim int64_t caml_ml_domain_ticks_unboxed(value unused)
 CAMLprim value caml_ml_domain_ticks(value unused)
 {
   return caml_copy_int64(caml_ml_domain_ticks_unboxed(unused));
-}
-
-CAMLprim value caml_ml_domain_yield_until(value t)
-{
-  int64_t ts = Int64_val(t) + startup_timestamp;
-  struct interruptor* s = &domain_self->interruptor;
-  value ret = Val_int(1); /* Domain.Sync.Notify */
-  int res;
-  intnat left;
-  int found_work = 1;
-
-  if (Caml_state->critical_section_nesting == 0){
-    caml_failwith("Domain.Sync.wait_until must be called from within a critical section");
-  }
-
-  caml_plat_lock(&s->lock);
-
-  while (!Caml_state->pending_interrupts) {
-    if (ts < caml_time_counter ()) {
-      ret = Val_int(0); /* Domain.Sync.Timeout */
-      break;
-    } else if (handle_incoming(s) == 0 && !found_work) {
-      CAML_EV_BEGIN(EV_DOMAIN_IDLE_WAIT);
-      res = caml_plat_timedwait(&s->cond, ts);
-      CAML_EV_END(EV_DOMAIN_IDLE_WAIT);
-      if (res) {
-        ret = Val_int(0); /* Domain.Sync.Timeout */
-        break;
-      }
-    } else {
-      caml_plat_unlock(&s->lock);
-      left = caml_opportunistic_major_collection_slice(Chunk_size);
-      if (left == Chunk_size)
-        found_work = 0;
-      caml_plat_lock(&s->lock);
-    }
-  }
-
-  caml_plat_unlock(&s->lock);
-
-  return ret;
 }
 
 CAMLprim value caml_ml_domain_cpu_relax(value t)

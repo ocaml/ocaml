@@ -3,19 +3,13 @@
 module E = Ephemeron.K1
 
 module S = struct
-  let make () = Atomic.make false
+  let make () = Semaphore.Binary.make false
 
   let rec wait s =
-    let success =
-      Domain.Sync.critical_section (fun () ->
-        if Atomic.get s then true
-        else (Domain.Sync.wait (); false))
-    in
-    if success then () else wait s
+    Semaphore.Binary.acquire s
 
-  let notify s d =
-    Atomic.set s true;
-    Domain.Sync.notify d
+  let notify s =
+    Semaphore.Binary.release s
 end
 
 let e1 = E.create ()
@@ -29,8 +23,7 @@ let _ =
   assert (E.check_key e1);
   assert (not (E.check_data e1));
 
-  let s1,s2 = S.make(), S.make() in
-  let main_domain = Domain.self () in
+  let s1, s2 = S.make(), S.make() in
   let child_domain = Domain.spawn (fun () ->
     let e2 = E.create () in
     E.set_key e2 !k;
@@ -44,7 +37,7 @@ let _ =
     assert (E.check_data e1);
     assert (E.check_key e2);
     assert (not (E.check_data e2));
-    S.notify s1 main_domain;
+    S.notify s1;
 
     S.wait s2;
     let e3 = match E.get_data e2 with
@@ -81,7 +74,7 @@ let _ =
   assert (E.check_key e3);
   assert (E.check_data e3);
 
-  S.notify s2 (Domain.get_id child_domain);
+  S.notify s2;
   Domain.join child_domain;
 
   Gc.full_major ();
