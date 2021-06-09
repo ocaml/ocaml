@@ -46,7 +46,7 @@ const struct caml_params* const caml_params = &params;
 /* this variable is intended to appear in the text segment to
    find the runtime git hash of the build */
 const char* caml_runtime_build_git_hash_is =
-  "RUNTIME_BUILD_GIT_HASH_IS_" OCAML_BUILD_GIT_HASH;
+  "OCAML_RUNTIME_BUILD_GIT_HASH_IS_" OCAML_BUILD_GIT_HASH;
 
 static void init_startup_params()
 {
