@@ -150,13 +150,11 @@ CAMLexport __thread caml_domain_state* Caml_state;
 
 asize_t caml_norm_minor_heap_size (intnat wsize)
 {
-  asize_t page_size = caml_mem_round_up_pages(1);
   asize_t bs, max;
   if (wsize < Minor_heap_min) wsize = Minor_heap_min;
   bs = caml_mem_round_up_pages(Bsize_wsize (wsize));
 
-  Assert(page_size * 2 < Minor_heap_max);
-  max = Minor_heap_max - page_size * 2;
+  max = Bsize_wsize(Minor_heap_max);
 
   if (bs > max) bs = max;
 
