@@ -542,7 +542,7 @@ static void mark_ephe_aux (struct mark_stack *stk, intnat *work,
       ephes_to_check = &Field(v,CAML_EPHE_LINK_OFFSET);
       return;
     }
-  } else {  /* a simily weak pointer or an already alive data */
+  } else {  /* a similarly weak pointer or an already alive data */
     *work -= 1;
   }
 
