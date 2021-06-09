@@ -617,7 +617,7 @@ struct domain* caml_domain_self()
 struct domain* caml_owner_of_young_block(value v) {
   int heap_id;
   Assert(Is_young(v));
-  heap_id = ((uintnat)v - caml_minor_heaps_base) / Minor_heap_max;
+  heap_id = ((uintnat)v - caml_minor_heaps_base) / Bsize_wsize(Minor_heap_max);
   return &all_domains[heap_id].state;
 }
 
