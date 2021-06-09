@@ -445,7 +445,7 @@ Error: Signature mismatch:
          val f : int -> int
        is not included in
          external f : int -> int = "f" "f_nat"
-       The implementation is not a primitive
+       The implementation is not a primitive.
 |}]
 
 (* Good: not claiming something is a primitive when it is *)
@@ -562,8 +562,8 @@ Error: Signature mismatch:
          external f : int -> int -> int = "f" "f_nat"
        is not included in
          external f : int -> int -> int = "f" "f_nat"
-       The syntactic arities of these primitives were not the same
-       (They must have the same number of arrows present in the source)
+       The syntactic arities of these primitives were not the same.
+       (They must have the same number of arrows present in the source.)
 |}]
 
 module Bad21 : sig
@@ -591,8 +591,8 @@ Error: Signature mismatch:
          external f : int -> int_int = "f" "f_nat"
        is not included in
          external f : int -> int -> int = "f" "f_nat"
-       The syntactic arities of these primitives were not the same
-       (They must have the same number of arrows present in the source)
+       The syntactic arities of these primitives were not the same.
+       (They must have the same number of arrows present in the source.)
 |}]
 
 (* This will fail with a *type* error, instead of an arity mismatch *)

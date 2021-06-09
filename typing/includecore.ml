@@ -197,8 +197,8 @@ let report_primitive_mismatch first second ppf err =
   | Name ->
       pr "The names of the primitives are not the same"
   | Arity ->
-      pr "The syntactic arities of these primitives were not the same@ \
-          (They must have the same number of arrows present in the source)"
+      pr "The syntactic arities of these primitives were not the same.@ \
+          (They must have the same number of arrows present in the source.)"
   | No_alloc ord ->
       pr "%s primitive is [@@@@noalloc] but %s is not"
         (String.capitalize_ascii (choose ord first second))
@@ -218,7 +218,7 @@ let report_value_mismatch first second env ppf err =
   | Primitive_mismatch pm ->
       report_primitive_mismatch first second ppf pm
   | Not_a_primitive ->
-      pr "The implementation is not a primitive"
+      pr "The implementation is not a primitive."
   | Type trace ->
       Printtyp.report_moregen_error ppf Type_scheme env trace
         (fun ppf -> Format.fprintf ppf "The type")
@@ -237,7 +237,7 @@ let report_privacy_mismatch ppf err =
     | Private_record_type        -> true,  "record constructor"
     | Private_extensible_variant -> true,  "extensible variant"
     | Private_row_type           -> true,  "row type"
-  in Format.fprintf ppf "%s %s would be revealed"
+  in Format.fprintf ppf "%s %s would be revealed."
        (if singular then "A private" else "Private")
        item
 
