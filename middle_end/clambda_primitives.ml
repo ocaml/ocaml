@@ -130,6 +130,8 @@ type primitive =
   | Ppoll
   (* nop instruction for debugging *)
   | Pnop
+  (* Fetch domain-local state *)
+  | Pdls_get
 
 and integer_comparison = Lambda.integer_comparison =
     Ceq | Cne | Clt | Cgt | Cle | Cge
