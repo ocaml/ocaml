@@ -182,6 +182,7 @@ let presume = "Presume"
 let preperform = "Preperform"
 let ppoll = "Ppoll"
 let pnop = "Pnop"
+let pdls_get = "Pdls_get"
 
 let pabsfloat_arg = "Pabsfloat_arg"
 let paddbint_arg = "Paddbint_arg"
@@ -298,6 +299,7 @@ let presume_arg = "Presume_arg"
 let preperform_arg = "Preperform_arg"
 let ppoll_arg = "Ppoll_arg"
 let pnop_arg = "Pnop_arg"
+let pdls_get_arg = "Pdls_get_arg"
 
 let raise = "raise"
 let raise_arg = "raise_arg"
@@ -446,6 +448,7 @@ let of_primitive : Lambda.primitive -> string = function
   | Preperform -> preperform
   | Ppoll -> ppoll
   | Pnop -> pnop
+  | Pdls_get -> pdls_get
 
 let of_primitive_arg : Lambda.primitive -> string = function
   | Pidentity -> pidentity_arg
@@ -562,3 +565,4 @@ let of_primitive_arg : Lambda.primitive -> string = function
   | Preperform -> preperform_arg
   | Ppoll -> ppoll_arg
   | Pnop -> pnop_arg
+  | Pdls_get -> pdls_get_arg

@@ -152,6 +152,7 @@ let convert (prim : Lambda.primitive) : Clambda_primitives.primitive =
   | Popaque -> Popaque
   | Ppoll -> Ppoll
   | Pnop -> Pnop
+  | Pdls_get -> Pdls_get
   | Pbytes_to_string
   | Pbytes_of_string
   | Pctconst _

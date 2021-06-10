@@ -160,6 +160,7 @@ let operation d = function
   | Ccheckbound -> "checkbound" ^ location d
   | Cpoll -> "poll"
   | Cnop -> "nop"
+  | Cdls_get -> "dls_get"
 
 let rec expr ppf = function
   | Cconst_int (n, _dbg) -> fprintf ppf "%i" n
