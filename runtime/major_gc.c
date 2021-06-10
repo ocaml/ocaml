@@ -369,8 +369,9 @@ static void update_major_slice_work() {
   if( saved_terminated_words > 0 ) {
     while(!atomic_compare_exchange_strong(&terminated_domains_allocated_words, &saved_terminated_words, 0));
   }
-
   p = (double) (saved_terminated_words + dom_st->allocated_words) * 3.0 * (100 + caml_percent_free) / heap_words / caml_percent_free / 2.0;
+
+  if (p < dom_st->extra_heap_resources) p = dom_st->extra_heap_resources;
 
   if (p > 0.3) p = 0.3;
 
@@ -416,6 +417,7 @@ static void update_major_slice_work() {
 
   dom_st->stat_major_words += dom_st->allocated_words;
   dom_st->allocated_words = 0;
+  dom_st->extra_heap_resources = 0.0;
 }
 
 static intnat get_major_slice_work(intnat howmuch) {
