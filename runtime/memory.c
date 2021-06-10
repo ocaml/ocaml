@@ -689,3 +689,14 @@ CAMLexport wchar_t* caml_stat_wcsconcat(int n, ...)
 }
 
 #endif
+
+CAMLexport void caml_adjust_gc_speed (mlsize_t res, mlsize_t max)
+{
+  if (max == 0) max = 1;
+  if (res > max) res = max;
+  Caml_state->extra_heap_resources += (double) res / (double) max;
+  if (Caml_state->extra_heap_resources > 1.0){
+    Caml_state->extra_heap_resources = 1.0;
+    caml_request_major_slice ();
+  }
+}
