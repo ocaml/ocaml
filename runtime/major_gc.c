@@ -825,10 +825,9 @@ intnat ephe_mark (intnat budget, uintnat for_cycle)
   return budget;
 }
 
-intnat ephe_sweep (struct domain* d, intnat budget)
+intnat ephe_sweep (caml_domain_state* domain_state, intnat budget)
 {
   value v;
-  caml_domain_state* domain_state = d->state;
   CAMLassert (caml_gc_phase == Phase_sweep_ephe);
 
   while (domain_state->ephe_info->todo != 0 && budget > 0) {
@@ -880,8 +879,7 @@ void caml_sample_gc_stats(struct gc_stats* buf)
 {
   int i;
   intnat pool_max = 0, large_max = 0;
-  struct domain* domain_self = caml_domain_self ();
-  int my_id = domain_self->state->id;
+  int my_id = Caml_state->id;
   memset(buf, 0, sizeof(*buf));
 
   for (i=0; i<Max_domains; i++) {
@@ -929,14 +927,14 @@ inline void caml_sample_gc_collect(caml_domain_state* domain)
   caml_sample_heap_stats(domain->shared_heap, &stats->major_heap);
 }
 
-static void cycle_all_domains_callback(struct domain* domain, void* unused,
-                                       int participating_count, struct domain** participating)
+static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
+                                       int participating_count, caml_domain_state** participating)
 {
   uintnat num_domains_in_stw;
 
   CAML_EV_BEGIN(EV_MAJOR_GC_CYCLE_DOMAINS);
 
-  CAMLassert(domain == caml_domain_self());
+  CAMLassert(domain == Caml_state);
   CAMLassert(atomic_load_acq(&ephe_cycle_info.num_domains_todo) ==
              atomic_load_acq(&ephe_cycle_info.num_domains_done));
   CAMLassert(atomic_load(&num_domains_to_mark) == 0);
@@ -966,7 +964,7 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused,
         caml_sample_gc_stats(&s);
         heap_words = s.major_heap.pool_words + s.major_heap.large_words;
         not_garbage_words = s.major_heap.pool_live_words + s.major_heap.large_words;
-        swept_words = domain->state->swept_words;
+        swept_words = domain->swept_words;
         caml_gc_log ("heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d "
                       "not_garbage_words %"ARCH_INTNAT_PRINTF_FORMAT"d "
                       "swept_words %"ARCH_INTNAT_PRINTF_FORMAT"d",
@@ -1005,7 +1003,7 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused,
         caml_stat_space_overhead.heap_words_last_cycle = heap_words;
         caml_stat_space_overhead.not_garbage_words_last_cycle = not_garbage_words;
       }
-      domain->state->swept_words = 0;
+      domain->swept_words = 0;
 
       num_domains_in_stw = (uintnat)caml_global_barrier_num_domains();
       atomic_store_rel(&num_domains_to_sweep, num_domains_in_stw);
@@ -1037,15 +1035,15 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused,
     caml_global_barrier();
   }
 
-  domain->state->stat_major_collections++;
-  caml_cycle_heap(domain->state->shared_heap);
-  domain->state->sweeping_done = 0;
+  domain->stat_major_collections++;
+  caml_cycle_heap(domain->shared_heap);
+  domain->sweeping_done = 0;
 
   /* Mark roots for new cycle */
-  domain->state->marking_done = 0;
-  domain->state->major_work_computed = 0;
-  domain->state->major_work_todo = 0;
-  domain->state->major_gc_clock = 0.0;
+  domain->marking_done = 0;
+  domain->major_work_computed = 0;
+  domain->major_work_todo = 0;
+  domain->major_gc_clock = 0.0;
 
   CAML_EV_BEGIN(EV_MAJOR_MARK_ROOTS);
   caml_do_roots (&caml_darken, NULL, domain, 0);
@@ -1057,24 +1055,24 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused,
   }
   CAML_EV_END(EV_MAJOR_MARK_ROOTS);
 
-  if (domain->state->mark_stack->count == 0) {
+  if (domain->mark_stack->count == 0) {
     atomic_fetch_add_verify_ge0(&num_domains_to_mark, -1);
-    domain->state->marking_done = 1;
+    domain->marking_done = 1;
   }
 
   /* Ephemerons */
-  CAMLassert(domain->state->ephe_info->todo == (value) NULL);
-  domain->state->ephe_info->todo = domain->state->ephe_info->live;
-  domain->state->ephe_info->live = (value) NULL;
-  domain->state->ephe_info->cycle = 0;
-  domain->state->ephe_info->cursor.todop = NULL;
-  domain->state->ephe_info->cursor.cycle = 0;
-  if (domain->state->ephe_info->todo == (value) NULL)
+  CAMLassert(domain->ephe_info->todo == (value) NULL);
+  domain->ephe_info->todo = domain->ephe_info->live;
+  domain->ephe_info->live = (value) NULL;
+  domain->ephe_info->cycle = 0;
+  domain->ephe_info->cursor.todop = NULL;
+  domain->ephe_info->cursor.cycle = 0;
+  if (domain->ephe_info->todo == (value) NULL)
     caml_ephe_todo_list_emptied();
 
   /* Finalisers */
-  domain->state->final_info->updated_first = 0;
-  domain->state->final_info->updated_last = 0;
+  domain->final_info->updated_first = 0;
+  domain->final_info->updated_last = 0;
 
   /* To ensure a mutator doesn't resume while global roots are being marked.
      Mutators can alter the set of global roots, to preserve its correctness,
@@ -1085,7 +1083,7 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused,
   CAML_EV_END(EV_MAJOR_GC_CYCLE_DOMAINS);
 }
 
-static int is_complete_phase_sweep_and_mark_main (struct domain *d)
+static int is_complete_phase_sweep_and_mark_main ()
 {
   return
     caml_gc_phase == Phase_sweep_and_mark_main &&
@@ -1099,7 +1097,7 @@ static int is_complete_phase_sweep_and_mark_main (struct domain *d)
     /* All orphaned ephemerons have been adopted */
 }
 
-static int is_complete_phase_mark_final (struct domain *d)
+static int is_complete_phase_mark_final ()
 {
   return
     caml_gc_phase == Phase_mark_final &&
@@ -1114,7 +1112,7 @@ static int is_complete_phase_mark_final (struct domain *d)
     /* All orphaned ephemerons have been adopted */
 }
 
-static int is_complete_phase_sweep_ephe (struct domain *d)
+static int is_complete_phase_sweep_ephe ()
 {
   return
     caml_gc_phase == Phase_sweep_ephe &&
@@ -1126,17 +1124,17 @@ static int is_complete_phase_sweep_ephe (struct domain *d)
     /* All orphaned structures have been adopted */
 }
 
-static void try_complete_gc_phase (struct domain* domain, void* unused,
-                                   int participating_count, struct domain** participating)
+static void try_complete_gc_phase (caml_domain_state* domain, void* unused,
+                                   int participating_count, caml_domain_state** participating)
 {
   barrier_status b;
   CAML_EV_BEGIN(EV_MAJOR_GC_PHASE_CHANGE);
 
   b = caml_global_barrier_begin ();
   if (caml_global_barrier_is_final(b)) {
-    if (is_complete_phase_sweep_and_mark_main(domain)) {
+    if (is_complete_phase_sweep_and_mark_main()) {
       caml_gc_phase = Phase_mark_final;
-    } else if (is_complete_phase_mark_final(domain)) {
+    } else if (is_complete_phase_mark_final()) {
       caml_gc_phase = Phase_sweep_ephe;
     }
   }
@@ -1146,8 +1144,7 @@ static void try_complete_gc_phase (struct domain* domain, void* unused,
 
 intnat caml_opportunistic_major_work_available ()
 {
-  struct domain* d = caml_domain_self();
-  caml_domain_state* domain_state = d->state;
+  caml_domain_state* domain_state = Caml_state;
   return !domain_state->sweeping_done || !domain_state->marking_done;
 }
 
@@ -1175,11 +1172,10 @@ static char collection_slice_mode_char(collection_slice_mode mode)
 
 static intnat major_collection_slice(intnat howmuch,
                                      int participant_count,
-                                     struct domain** barrier_participants,
+                                     caml_domain_state** barrier_participants,
                                      collection_slice_mode mode)
 {
-  struct domain* d = caml_domain_self();
-  caml_domain_state* domain_state = d->state;
+  caml_domain_state* domain_state = Caml_state;
   intnat sweep_work = 0, mark_work = 0;
   intnat available, left;
   uintnat blocks_marked_before = domain_state->stat_blocks_marked;
@@ -1254,7 +1250,7 @@ mark_again:
   if (mode != Slice_opportunistic) {
     /* Finalisers */
     if (caml_gc_phase == Phase_mark_final &&
-        caml_final_update_first(d)) {
+        caml_final_update_first(domain_state)) {
       /* This domain has updated finalise first values */
       atomic_fetch_add_verify_ge0(&num_domains_to_final_update_first, -1);
       if (budget > 0 && !domain_state->marking_done)
@@ -1262,7 +1258,7 @@ mark_again:
     }
 
     if (caml_gc_phase == Phase_sweep_ephe &&
-        caml_final_update_last(d)) {
+        caml_final_update_last(domain_state)) {
       /* This domain has updated finalise last values */
       atomic_fetch_add_verify_ge0(&num_domains_to_final_update_last, -1);
       /* Nothing has been marked while updating last */
@@ -1287,7 +1283,7 @@ mark_again:
     if (caml_gc_phase == Phase_sweep_ephe &&
         domain_state->ephe_info->todo != 0) {
       CAML_EV_BEGIN(EV_MAJOR_EPHE_SWEEP);
-      budget = ephe_sweep (d, budget);
+      budget = ephe_sweep (domain_state, budget);
       CAML_EV_END(EV_MAJOR_EPHE_SWEEP);
       if (domain_state->ephe_info->todo == 0) {
         atomic_fetch_add_verify_ge0(&num_domains_to_ephe_sweep, -1);
@@ -1295,10 +1291,10 @@ mark_again:
     }
 
     /* Complete GC phase */
-    if (is_complete_phase_sweep_and_mark_main(d) ||
-        is_complete_phase_mark_final (d)) {
+    if (is_complete_phase_sweep_and_mark_main() ||
+        is_complete_phase_mark_final ()) {
       if (barrier_participants) {
-        try_complete_gc_phase (d, (void*)0, participant_count, barrier_participants);
+        try_complete_gc_phase (domain_state, (void*)0, participant_count, barrier_participants);
       } else {
         caml_try_run_on_all_domains (&try_complete_gc_phase, 0, 0);
       }
@@ -1318,7 +1314,7 @@ mark_again:
   /* we did: work we were asked - interrupted_budget + any overwork */
   commit_major_slice_work(computed_work - interrupted_budget + (budget < 0 ? -budget : 0));
 
-  if (mode != Slice_opportunistic && is_complete_phase_sweep_ephe(d)) {
+  if (mode != Slice_opportunistic && is_complete_phase_sweep_ephe()) {
     saved_major_cycle = caml_major_cycles_completed;
     /* To handle the case where multiple domains try to finish the major
       cycle simultaneously, we loop until the current cycle has ended,
@@ -1327,7 +1323,7 @@ mark_again:
 
     while (saved_major_cycle == caml_major_cycles_completed) {
       if (barrier_participants) {
-        cycle_all_domains_callback(d, (void*)0, participant_count, barrier_participants);
+        cycle_all_domains_callback(domain_state, (void*)0, participant_count, barrier_participants);
       } else {
         caml_try_run_on_all_domains(&cycle_all_domains_callback, 0, 0);
       }
@@ -1361,11 +1357,11 @@ intnat caml_major_collection_slice(intnat howmuch)
   return work_left;
 }
 
-static void finish_major_cycle_callback (struct domain* domain, void* arg,
-                                         int participating_count, struct domain** participating)
+static void finish_major_cycle_callback (caml_domain_state* domain, void* arg,
+                                         int participating_count, caml_domain_state** participating)
 {
   uintnat saved_major_cycles = (uintnat)arg;
-  CAMLassert (domain == caml_domain_self());
+  CAMLassert (domain == Caml_state);
 
   caml_empty_minor_heap_no_major_slice_from_stw(domain, (void*)0, participating_count, participating);
 

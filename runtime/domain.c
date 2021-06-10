@@ -52,6 +52,13 @@
    with OS-level threads, called "domains".
 */
 
+struct domain {
+  struct dom_internal* internals;
+  caml_domain_state* state;
+};
+
+typedef struct interrupt interrupt;
+typedef void (*domain_rpc_handler)(struct domain*, void*, interrupt*);
 
 /* control of interrupts */
 struct interruptor {
@@ -655,15 +662,15 @@ static void interrupt_domain(dom_internal* d) {
 static struct {
   atomic_uintnat domains_still_running;
   atomic_uintnat num_domains_still_processing;
-  void (*callback)(struct domain*, void*, int participating_count, struct domain** others_participating);
+  void (*callback)(caml_domain_state*, void*, int participating_count,  caml_domain_state** others_participating);
   void* data;
   int num_domains;
   atomic_uintnat barrier;
-  void (*enter_spin_callback)(struct domain*, void*);
+  void (*enter_spin_callback)(caml_domain_state*, void*);
   void* enter_spin_data;
 
   struct interrupt reqs[Max_domains];
-  struct domain* participating[Max_domains];
+  caml_domain_state* participating[Max_domains];
 } stw_request = {
   ATOMIC_UINTNAT_INIT(0),
   ATOMIC_UINTNAT_INIT(0),
@@ -747,7 +754,7 @@ static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
       caml_handle_incoming_interrupts();
 
       if (stw_request.enter_spin_callback)
-        stw_request.enter_spin_callback(domain, stw_request.enter_spin_data);
+        stw_request.enter_spin_callback(domain->state, stw_request.enter_spin_data);
     }
   }
   CAML_EV_END(EV_STW_API_BARRIER);
@@ -755,7 +762,7 @@ static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
   #ifdef DEBUG
   Caml_state->inside_stw_handler = 1;
   #endif
-  stw_request.callback(domain, stw_request.data, stw_request.num_domains, stw_request.participating);
+  stw_request.callback(domain->state, stw_request.data, stw_request.num_domains, stw_request.participating);
   #ifdef DEBUG
   Caml_state->inside_stw_handler = 0;
   #endif
@@ -785,9 +792,9 @@ static int caml_send_partial_interrupt(
 static void caml_wait_interrupt_acknowledged(struct interruptor* self, struct interrupt* req);
 
 int caml_try_run_on_all_domains_with_spin_work(
-  void (*handler)(struct domain*, void*, int, struct domain**), void* data,
-  void (*leader_setup)(struct domain*),
-  void (*enter_spin_callback)(struct domain*, void*), void* enter_spin_data)
+  void (*handler)(caml_domain_state*, void*, int, caml_domain_state**), void* data,
+  void (*leader_setup)(caml_domain_state*),
+  void (*enter_spin_callback)(caml_domain_state*, void*), void* enter_spin_data)
 {
 #ifdef DEBUG
   caml_domain_state* domain_state = Caml_state;
@@ -829,7 +836,7 @@ int caml_try_run_on_all_domains_with_spin_work(
   atomic_store_rel(&stw_request.domains_still_running, 1);
 
   if( leader_setup ) {
-    leader_setup(&domain_self->state);
+    leader_setup(domain_self->state.state);
   }
 
   /* Next, interrupt all domains, counting how many domains received
@@ -837,11 +844,11 @@ int caml_try_run_on_all_domains_with_spin_work(
      this STW section). */
   {
     struct interrupt* reqs = stw_request.reqs;
-    struct domain** participating = stw_request.participating;
+    caml_domain_state** participating = stw_request.participating;
 
     for (i = 0; i < Max_domains; i++) {
       if (&all_domains[i] == domain_self) {
-        participating[domains_participating] = &domain_self->state;
+        participating[domains_participating] = domain_self->state.state;
         domains_participating++;
         continue;
       }
@@ -850,13 +857,13 @@ int caml_try_run_on_all_domains_with_spin_work(
                               stw_handler,
                               0,
                               &reqs[domains_participating])) {
-        participating[domains_participating] = &all_domains[i].state;
+        participating[domains_participating] = all_domains[i].state.state;
         domains_participating++;
       }
     }
 
     for(i = 0; i < domains_participating ; i++) {
-      if( participating[i] && &domain_self->state != participating[i] ) {
+      if( participating[i] && domain_self->state.state != participating[i] ) {
         caml_wait_interrupt_acknowledged(&domain_self->interruptor, &reqs[i]);
       }
     }
@@ -875,7 +882,7 @@ int caml_try_run_on_all_domains_with_spin_work(
   #ifdef DEBUG
   domain_state->inside_stw_handler = 1;
   #endif
-  handler(&domain_self->state, data, domains_participating, stw_request.participating);
+  handler(domain_self->state.state, data, domains_participating, stw_request.participating);
   #ifdef DEBUG
   domain_state->inside_stw_handler = 0;
   #endif
@@ -887,7 +894,7 @@ int caml_try_run_on_all_domains_with_spin_work(
   return 1;
 }
 
-int caml_try_run_on_all_domains(void (*handler)(struct domain*, void*, int, struct domain**), void* data, void (*leader_setup)(struct domain*))
+int caml_try_run_on_all_domains(void (*handler)(caml_domain_state*, void*, int, caml_domain_state**), void* data, void (*leader_setup)(caml_domain_state*))
 {
   return caml_try_run_on_all_domains_with_spin_work(handler, data, leader_setup, 0, 0);
 }
