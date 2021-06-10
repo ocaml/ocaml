@@ -30,8 +30,6 @@ module Test(G: GLOBREF) () = struct
 
   let size = 1024
 
-  let random_state = Domain.DLS.new_key Random.State.make_self_init
-
   let vals = Array.init size Int.to_string
 
   let a = Array.init size (fun i -> G.register (Int.to_string i))
@@ -45,23 +43,23 @@ module Test(G: GLOBREF) () = struct
     done
 
   let change () =
-    match Random.State.int (Domain.DLS.get random_state) 37 with
+    match Random.int 37 with
     | 0 ->
         Gc.full_major()
     | 1|2|3|4 ->
         Gc.minor()
     | 5|6|7|8|9|10|11|12 ->             (* update with young value *)
-        let i = Random.State.int (Domain.DLS.get random_state) size in
+        let i = Random.int size in
         G.set a.(i) (Int.to_string i)
     | 13|14|15|16|17|18|19|20 ->        (* update with old value *)
-        let i = Random.State.int (Domain.DLS.get random_state) size in
+        let i = Random.int size in
         G.set a.(i) vals.(i)
     | 21|22|23|24|25|26|27|28 ->        (* re-register young value *)
-        let i = Random.State.int (Domain.DLS.get random_state) size in
+        let i = Random.int size in
         G.remove a.(i);
         a.(i) <- G.register (Int.to_string i)
     | (*29|30|31|32|33|34|35|36*) _ ->  (* re-register old value *)
-        let i = Random.State.int (Domain.DLS.get random_state) size in
+        let i = Random.int size in
         G.remove a.(i);
         a.(i) <- G.register vals.(i)
 

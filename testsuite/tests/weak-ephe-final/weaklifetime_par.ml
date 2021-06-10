@@ -3,9 +3,6 @@
 
 let size = 1000;;
 let num_domains = 4;;
-let random_state = Domain.DLS.new_key Random.State.make_self_init
-
-let random_int = Random.State.int (Domain.DLS.get random_state)
 
 type block = int array;;
 
@@ -21,7 +18,7 @@ type bunch = {
 
 let data =
   Array.init size (fun i ->
-    let n = 1 + random_int size in
+    let n = 1 + Random.int size in
     {
       objs = Array.make n (Absent 0);
       wp = Weak.create n;
@@ -57,12 +54,12 @@ let check_and_change data i j =
     | Absent n, true -> assert (gc1 <= n+2); No_change
     | Absent _, false -> Fill
     | Present _, true ->
-      if random_int 10 = 0 then Erase else No_change
+      if Random.int 10 = 0 then Erase else No_change
   in
   match change with
   | No_change -> ()
   | Fill ->
-    let x = Array.make (1 + random_int 10) 42 in
+    let x = Array.make (1 + Random.int 10) 42 in
     data.(i).objs.(j) <- Present x;
     Weak.set data.(i).wp j (Some x);
   | Erase ->
@@ -75,19 +72,19 @@ let dummy = ref [||];;
 
 let run index () =
   let domain_data = Array.init 100 (fun i ->
-    let n = 1 + random_int 100 in
+    let n = 1 + Random.int 100 in
     {
       objs = Array.make n (Absent 0);
       wp = Weak.create n;
     }
   ) in
   while gccount () < 5 do
-    dummy := Array.make (random_int 300) 0;
-    let i = (random_int (size/num_domains)) + index * size/num_domains in
-    let j = random_int (Array.length data.(i).objs) in
+    dummy := Array.make (Random.int 300) 0;
+    let i = (Random.int (size/num_domains)) + index * size/num_domains in
+    let j = Random.int (Array.length data.(i).objs) in
     check_and_change data i j;
-    let ix = random_int 100 in
-    let jx = random_int (Array.length domain_data.(ix).objs) in
+    let ix = Random.int 100 in
+    let jx = Random.int (Array.length domain_data.(ix).objs) in
     check_and_change domain_data ix jx
   done
 
