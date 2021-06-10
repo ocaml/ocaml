@@ -137,14 +137,14 @@ static char *compact_allocate (mlsize_t size)
   return adr;
 }
 
-static void do_compaction (intnat new_allocation_policy)
+static void do_compaction (intnat new_allocation_policy, int do_check)
 {
   char *ch, *chend;
   CAMLassert (caml_gc_phase == Phase_idle);
   caml_gc_message (0x10, "Compacting heap...\n");
 
 #ifdef DEBUG
-  caml_heap_check ();
+  if (do_check) caml_heap_check ();
 #endif
 
   /* Make sure the heap is in the right state for compaction:
@@ -388,7 +388,7 @@ void caml_compact_heap (intnat new_allocation_policy)
               Caml_state->custom_table->base);
 
   CAML_EV_BEGIN(EV_COMPACT_MAIN);
-  do_compaction (new_allocation_policy);
+  do_compaction (new_allocation_policy, 1);
   CAML_EV_END(EV_COMPACT_MAIN);
   /* Compaction may fail to shrink the heap to a reasonable size
      because it deals in complete chunks: if a very large chunk
@@ -452,7 +452,7 @@ void caml_compact_heap (intnat new_allocation_policy)
       Caml_state->stat_top_heap_wsz = Caml_state->stat_heap_wsz;
     }
     CAML_EV_BEGIN(EV_COMPACT_RECOMPACT);
-    do_compaction (-1);
+    do_compaction (-1, 0);
     CAMLassert (Caml_state->stat_heap_chunks == 1);
     CAMLassert (Chunk_next (caml_heap_start) == NULL);
     CAMLassert (Caml_state->stat_heap_wsz == Wsize_bsize (Chunk_size (chunk)));
