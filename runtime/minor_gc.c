@@ -143,11 +143,11 @@ struct oldify_state {
   caml_domain_state* domain;
 };
 
-static value alloc_shared(mlsize_t wosize, tag_t tag)
+static value alloc_shared(caml_domain_state* d, mlsize_t wosize, tag_t tag)
 {
-  void* mem = caml_shared_try_alloc(Caml_state->shared_heap, wosize, tag,
+  void* mem = caml_shared_try_alloc(d->shared_heap, wosize, tag,
                                     0 /* not pinned */);
-  Caml_state->allocated_words += Whsize_wosize(wosize);
+  d->allocated_words += Whsize_wosize(wosize);
   if (mem == NULL) {
     caml_fatal_error("allocation failure during minor GC");
   }
@@ -287,7 +287,7 @@ static void oldify_one (void* st_v, value v, value *p)
   if (tag == Cont_tag) {
     value stack_value = Field(v, 0);
     CAMLassert(Wosize_hd(hd) == 1 && infix_offset == 0);
-    result = alloc_shared(1, Cont_tag);
+    result = alloc_shared(st->domain, 1, Cont_tag);
     if( try_update_object_header(v, p, result, 0) ) {
       struct stack_info* stk = Ptr_val(stack_value);
       Field(result, 0) = Val_ptr(stk);
@@ -307,7 +307,7 @@ static void oldify_one (void* st_v, value v, value *p)
     value field0;
     sz = Wosize_hd (hd);
     st->live_bytes += Bhsize_hd(hd);
-    result = alloc_shared (sz, tag);
+    result = alloc_shared(st->domain, sz, tag);
     field0 = Field(v, 0);
     if( try_update_object_header(v, p, result, infix_offset) ) {
       if (sz > 1){
@@ -336,7 +336,7 @@ static void oldify_one (void* st_v, value v, value *p)
   } else if (tag >= No_scan_tag) {
     sz = Wosize_hd (hd);
     st->live_bytes += Bhsize_hd(hd);
-    result = alloc_shared(sz, tag);
+    result = alloc_shared(st->domain, sz, tag);
     for (i = 0; i < sz; i++) {
       Field(result, i) = Field(v, i);
     }
@@ -367,7 +367,7 @@ static void oldify_one (void* st_v, value v, value *p)
       /* Do not short-circuit the pointer.  Copy as a normal block. */
       CAMLassert (Wosize_hd (hd) == 1);
       st->live_bytes += Bhsize_hd(hd);
-      result = alloc_shared (1, Forward_tag);
+      result = alloc_shared(st->domain, 1, Forward_tag);
       if( try_update_object_header(v, p, result, 0) ) {
         p = Op_val (result);
         v = f;
