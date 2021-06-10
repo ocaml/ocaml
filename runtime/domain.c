@@ -52,14 +52,6 @@
    with OS-level threads, called "domains".
 */
 
-struct domain {
-  struct dom_internal* internals;
-  caml_domain_state* state;
-};
-
-typedef struct interrupt interrupt;
-typedef void (*domain_rpc_handler)(struct domain*, void*, interrupt*);
-
 /* control of interrupts */
 struct interruptor {
   atomic_uintnat* interrupt_word;
@@ -75,6 +67,9 @@ struct interruptor {
   struct interrupt* qhead;
   struct interrupt* qtail;      /* defined only when qhead != NULL */
 };
+
+typedef struct interrupt interrupt;
+typedef void (*domain_rpc_handler)(caml_domain_state*, void*, interrupt*);
 
 struct interrupt {
   /* immutable fields */
@@ -94,7 +89,7 @@ struct dom_internal {
   /* readonly fields, initialised and never modified */
   atomic_uintnat* interrupt_word_address;
   int id;
-  struct domain state;
+  caml_domain_state* state;
   struct interruptor interruptor;
 
   /* backup thread */
@@ -236,7 +231,6 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
   }
   if (d) {
     caml_domain_state* domain_state;
-    d->state.internals = d;
     domain_self = d;
     SET_Caml_state((void*)(d->tls_area));
     domain_state = (caml_domain_state*)(d->tls_area);
@@ -244,7 +238,7 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
 
     domain_state->id = d->id;
     domain_state->unique_id = d->interruptor.unique_id;
-    d->state.state = domain_state;
+    d->state = domain_state;
 
     if (caml_init_signal_stack() < 0) {
       goto init_signal_stack_failure;
@@ -257,8 +251,8 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
       goto alloc_minor_tables_failure;
     }
 
-    d->state.state->shared_heap = caml_init_shared_heap();
-    if(d->state.state->shared_heap == NULL) {
+    d->state->shared_heap = caml_init_shared_heap();
+    if(d->state->shared_heap == NULL) {
       goto init_shared_heap_failure;
     }
 
@@ -315,7 +309,7 @@ create_unique_token_failure:
 reallocate_minor_heap_failure:
   caml_teardown_major_gc();
 init_major_gc_failure:
-  caml_teardown_shared_heap(d->state.state->shared_heap);
+  caml_teardown_shared_heap(d->state->shared_heap);
 init_shared_heap_failure:
   caml_free_minor_tables(domain_state->minor_tables);
   domain_state->minor_tables = NULL;
@@ -405,7 +399,7 @@ void caml_init_domains(uintnat minor_heap_wsz) {
 void caml_init_domain_self(int domain_id) {
   Assert (domain_id >= 0 && domain_id < Max_domains);
   domain_self = &all_domains[domain_id];
-  SET_Caml_state(domain_self->state.state);
+  SET_Caml_state(domain_self->state);
 }
 
 enum domain_status { Dom_starting, Dom_started, Dom_failed };
@@ -629,16 +623,11 @@ CAMLprim value caml_domain_spawn(value callback, value mutex)
   CAMLreturn (Val_long(p.unique_id));
 }
 
-struct domain* caml_domain_self()
-{
-  return domain_self ? &domain_self->state : 0;
-}
-
 caml_domain_state* caml_owner_of_young_block(value v) {
   int heap_id;
   Assert(Is_young(v));
   heap_id = ((uintnat)v - caml_minor_heaps_base) / Bsize_wsize(Minor_heap_max);
-  return all_domains[heap_id].state.state;
+  return all_domains[heap_id].state;
 }
 
 CAMLprim value caml_ml_domain_id(value unit)
@@ -742,7 +731,7 @@ static void decrement_stw_domains_still_processing()
 }
 
 static void caml_poll_gc_work();
-static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
+static void stw_handler(caml_domain_state* domain, void* unused2, interrupt* done)
 {
   CAML_EV_BEGIN(EV_STW_HANDLER);
   atomic_store_rel(&done->acknowledged, 1);
@@ -754,7 +743,7 @@ static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
       caml_handle_incoming_interrupts();
 
       if (stw_request.enter_spin_callback)
-        stw_request.enter_spin_callback(domain->state, stw_request.enter_spin_data);
+        stw_request.enter_spin_callback(domain, stw_request.enter_spin_data);
     }
   }
   CAML_EV_END(EV_STW_API_BARRIER);
@@ -762,7 +751,7 @@ static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
   #ifdef DEBUG
   Caml_state->inside_stw_handler = 1;
   #endif
-  stw_request.callback(domain->state, stw_request.data, stw_request.num_domains, stw_request.participating);
+  stw_request.callback(domain, stw_request.data, stw_request.num_domains, stw_request.participating);
   #ifdef DEBUG
   Caml_state->inside_stw_handler = 0;
   #endif
@@ -836,7 +825,7 @@ int caml_try_run_on_all_domains_with_spin_work(
   atomic_store_rel(&stw_request.domains_still_running, 1);
 
   if( leader_setup ) {
-    leader_setup(domain_self->state.state);
+    leader_setup(domain_self->state);
   }
 
   /* Next, interrupt all domains, counting how many domains received
@@ -848,7 +837,7 @@ int caml_try_run_on_all_domains_with_spin_work(
 
     for (i = 0; i < Max_domains; i++) {
       if (&all_domains[i] == domain_self) {
-        participating[domains_participating] = domain_self->state.state;
+        participating[domains_participating] = domain_self->state;
         domains_participating++;
         continue;
       }
@@ -857,13 +846,13 @@ int caml_try_run_on_all_domains_with_spin_work(
                               stw_handler,
                               0,
                               &reqs[domains_participating])) {
-        participating[domains_participating] = all_domains[i].state.state;
+        participating[domains_participating] = all_domains[i].state;
         domains_participating++;
       }
     }
 
     for(i = 0; i < domains_participating ; i++) {
-      if( participating[i] && domain_self->state.state != participating[i] ) {
+      if( participating[i] && domain_self->state != participating[i] ) {
         caml_wait_interrupt_acknowledged(&domain_self->interruptor, &reqs[i]);
       }
     }
@@ -882,7 +871,7 @@ int caml_try_run_on_all_domains_with_spin_work(
   #ifdef DEBUG
   domain_state->inside_stw_handler = 1;
   #endif
-  handler(domain_self->state.state, data, domains_participating, stw_request.participating);
+  handler(domain_self->state, data, domains_participating, stw_request.participating);
   #ifdef DEBUG
   domain_state->inside_stw_handler = 0;
   #endif
@@ -1111,7 +1100,7 @@ static uintnat handle_incoming(struct interruptor* s)
        interrupts */
     caml_plat_unlock(&s->lock);
 
-    req->handler(caml_domain_self(), req->data, req);
+    req->handler(domain_self->state, req->data, req);
 
     caml_plat_lock(&s->lock);
     handled++;
@@ -1159,7 +1148,7 @@ int caml_domain_is_terminating ()
 
 static void domain_terminate()
 {
-  caml_domain_state* domain_state = domain_self->state.state;
+  caml_domain_state* domain_state = domain_self->state;
   struct interruptor* s = &domain_self->interruptor;
   int finished = 0;
 
