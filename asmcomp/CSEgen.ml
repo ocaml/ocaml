@@ -240,7 +240,7 @@ method class_of_operation op =
   | Inop ->
       (* not correct, but enough to force CSE from leaving nops alone *)
       Op_store true
-  | Idls_get -> Op_pure
+  | Idls_get -> Op_load
 
 (* Operations that are so cheap that it isn't worth factoring them. *)
 method is_cheap_operation op =
