@@ -98,8 +98,7 @@ module DLS = struct
 
   type entry = {key_id: int ref; mutable slot: Obj.t}
 
-  external get_dls_list : unit -> entry list
-    = "caml_domain_dls_get" [@@noalloc]
+  external get_dls_list : unit -> entry list = "%dls_get"
 
   external set_dls_list : entry list  -> unit
     = "caml_domain_dls_set" [@@noalloc]
