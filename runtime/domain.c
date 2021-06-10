@@ -65,8 +65,6 @@ struct interruptor {
   atomic_uintnat interrupt_pending;
 };
 
-void caml_handle_incoming_interrupts(void);
-
 struct dom_internal {
   /* readonly fields, initialised and never modified */
   atomic_uintnat* interrupt_word_address;
@@ -150,6 +148,91 @@ void caml_init_domain_state_key ()
 #else
 CAMLexport __thread caml_domain_state* Caml_state;
 #endif
+
+/* Interrupt functions */
+static const uintnat INTERRUPT_MAGIC = (uintnat)(-1);
+
+static void interrupt_domain(dom_internal* d) {
+  atomic_store_rel(d->interrupt_word_address, INTERRUPT_MAGIC);
+}
+
+int caml_incoming_interrupts_queued()
+{
+  return atomic_load_acq(&domain_self->interruptor.interrupt_pending);
+}
+
+/* must NOT be called with s->lock held */
+static void stw_handler(caml_domain_state* domain);
+static uintnat handle_incoming(struct interruptor* s)
+{
+  uintnat handled = atomic_load_acq(&s->interrupt_pending);
+  Assert (s->running);
+  if (handled) {
+    atomic_store_rel(&s->interrupt_pending, 0);
+
+    stw_handler(domain_self->state);
+  }
+  return handled;
+}
+
+static void handle_incoming_otherwise_relax (struct interruptor* self)
+{
+  if (!handle_incoming(self))
+    cpu_relax();
+}
+
+void caml_handle_incoming_interrupts()
+{
+  handle_incoming(&domain_self->interruptor);
+}
+
+int caml_send_interrupt(struct interruptor* target)
+{
+  /* we have blocked new domains joining as the STW is in progress
+   * a target domain can not go from 'not running' to 'running'
+   */
+  if (!target->running) return 0;
+
+  caml_plat_lock(&target->lock);
+  if (!target->running) {
+    caml_plat_unlock(&target->lock);
+    return 0;
+  }
+
+  /* signal that there is an interrupt pending */
+  Assert(!atomic_load_acq(&target->interrupt_pending));
+  atomic_store_rel(&target->interrupt_pending, 1);
+
+  /* Signal the condition variable, in case the target is
+     itself waiting for an interrupt to be processed elsewhere */
+  caml_plat_broadcast(&target->cond); // OPT before/after unlock? elide?
+  caml_plat_unlock(&target->lock);
+
+  atomic_store_rel(target->interrupt_word, INTERRUPT_MAGIC); //FIXME dup
+
+  return 1;
+}
+
+static void caml_wait_interrupt_serviced(struct interruptor* target)
+{
+  int i;
+
+  /* Often, interrupt handlers are fast, so spin for a bit before waiting */
+  for (i=0; i<1000; i++) {
+    if (!atomic_load_acq(&target->interrupt_pending)) {
+      return;
+    }
+    cpu_relax();
+  }
+
+  {
+    SPIN_WAIT {
+      if (!atomic_load_acq(&target->interrupt_pending))
+        return;
+      cpu_relax();
+    }
+  }
+}
 
 asize_t caml_norm_minor_heap_size (intnat wsize)
 {
@@ -656,12 +739,6 @@ CAMLprim value caml_ml_domain_unique_token (value unit)
   return Caml_state->unique_token_root;
 }
 
-static const uintnat INTERRUPT_MAGIC = (uintnat)(-1);
-
-static void interrupt_domain(dom_internal* d) {
-  atomic_store_rel(d->interrupt_word_address, INTERRUPT_MAGIC);
-}
-
 /* sense-reversing barrier */
 #define BARRIER_SENSE_BIT 0x100000
 
@@ -762,9 +839,6 @@ int caml_domain_is_in_stw() {
 }
 #endif
 
-static int caml_send_interrupt(struct interruptor* target);
-static void caml_wait_interrupt_serviced(struct interruptor* self, struct interruptor* target);
-
 int caml_try_run_on_all_domains_with_spin_work(
   void (*handler)(caml_domain_state*, void*, int, caml_domain_state**), void* data,
   void (*leader_setup)(caml_domain_state*),
@@ -836,7 +910,7 @@ int caml_try_run_on_all_domains_with_spin_work(
     }
 
     for(i = 0; i < domains_participating ; i++) {
-      caml_wait_interrupt_serviced(&domain_self->interruptor, interruptors[i]);
+      caml_wait_interrupt_serviced(interruptors[i]);
     }
   }
 
@@ -1061,19 +1135,6 @@ void caml_print_stats () {
     Caml_state->stat_major_collections);
 }
 
-/* must NOT be called with s->lock held */
-static uintnat handle_incoming(struct interruptor* s)
-{
-  uintnat handled = atomic_load_acq(&s->interrupt_pending);
-  Assert (s->running);
-  if (handled) {
-    atomic_store_rel(&s->interrupt_pending, 0);
-
-    stw_handler(domain_self->state);
-  }
-  return handled;
-}
-
 static void handover_ephemerons(caml_domain_state* domain_state)
 {
   if (domain_state->ephe_info->todo == 0 &&
@@ -1196,79 +1257,6 @@ static void domain_terminate()
      on caml_domain_alone (which uses caml_num_domains_running) in at least
      the shared_heap lockfree fast paths */
   atomic_fetch_add(&caml_num_domains_running, -1);
-}
-
-int caml_incoming_interrupts_queued()
-{
-  return atomic_load_acq(&domain_self->interruptor.interrupt_pending);
-}
-
-static inline void handle_incoming_interrupts(struct interruptor* s, int otherwise_relax)
-{
-  if (atomic_load_acq(&s->interrupt_pending)) {
-    handle_incoming(s);
-  } else if (otherwise_relax) {
-    cpu_relax();
-  }
-}
-
-static void handle_incoming_otherwise_relax (struct interruptor* self)
-{
-  handle_incoming_interrupts(self, 1);
-}
-
-void caml_handle_incoming_interrupts()
-{
-  handle_incoming_interrupts(&domain_self->interruptor, 0);
-}
-
-static void caml_wait_interrupt_serviced (struct interruptor* self,
-                                          struct interruptor* target)
-{
-  int i;
-
-  /* Often, interrupt handlers are fast, so spin for a bit before waiting */
-  for (i=0; i<1000; i++) {
-    if (!atomic_load_acq(&target->interrupt_pending)) {
-      return;
-    }
-    cpu_relax();
-  }
-
-  {
-    SPIN_WAIT {
-      if (!atomic_load_acq(&target->interrupt_pending))
-        return;
-      handle_incoming_otherwise_relax(self);
-    }
-  }
-}
-
-int caml_send_interrupt(struct interruptor* target)
-{
-  /* we have blocked new domains joining as the STW is in progress
-   * a target domain can not go from 'not running' to 'running'
-   */
-  if (!target->running) return 0;
-
-  caml_plat_lock(&target->lock);
-  if (!target->running) {
-    caml_plat_unlock(&target->lock);
-    return 0;
-  }
-
-  /* signal that there is an interrupt pending */
-  Assert(!atomic_load_acq(&target->interrupt_pending));
-  atomic_store_rel(&target->interrupt_pending, 1);
-
-  /* Signal the condition variable, in case the target is
-     itself waiting for an interrupt to be processed elsewhere */
-  caml_plat_broadcast(&target->cond); // OPT before/after unlock? elide?
-  caml_plat_unlock(&target->lock);
-
-  atomic_store_rel(target->interrupt_word, INTERRUPT_MAGIC); //FIXME dup
-
-  return 1;
 }
 
 CAMLprim int64_t caml_ml_domain_ticks_unboxed(value unused)
