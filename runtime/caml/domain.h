@@ -80,7 +80,7 @@ void caml_init_domains(uintnat minor_heap_size);
 void caml_init_domain_self(int);
 
 struct domain* caml_domain_self();
-struct domain* caml_owner_of_young_block(value);
+caml_domain_state* caml_owner_of_young_block(value);
 
 CAMLextern atomic_uintnat caml_num_domains_running;
 CAMLextern uintnat caml_minor_heaps_base;
