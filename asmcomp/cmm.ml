@@ -170,6 +170,7 @@ and operation =
   | Ccheckbound
   | Cpoll
   | Cnop
+  | Cdls_get
 
 type expression =
     Cconst_int of int * Debuginfo.t

@@ -76,6 +76,7 @@ let oper_result_type = function
   | Calloc -> typ_val
   | Cstore (_c, _) -> typ_void
   | Cpoll | Cnop -> typ_void
+  | Cdls_get -> typ_val
   | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi |
     Cand | Cor | Cxor | Clsl | Clsr | Casr |
     Ccmpi _ | Ccmpa _ | Ccmpf _ -> typ_int
@@ -323,13 +324,14 @@ method is_simple_expr = function
   | Cop(op, args, _) ->
       begin match op with
         (* The following may have side effects *)
-      | Capply _ | Cextcall _ | Cnop | Cpoll | Calloc | Cstore _
-      | Craise _ -> false
+      | Capply _ | Cextcall _ | Calloc | Cstore _ | Craise _
+      | Cnop (* conservative *) | Cpoll -> false
         (* The remaining operations are simple if their args are *)
       | Cload _ | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi | Cand | Cor
       | Cxor | Clsl | Clsr | Casr | Ccmpi _ | Caddv | Cadda | Ccmpa _ | Cnegf
       | Cabsf | Caddf | Csubf | Cmulf | Cdivf | Cfloatofint | Cintoffloat
-      | Ccmpf _ | Ccheckbound -> List.for_all self#is_simple_expr args
+      | Ccmpf _ | Ccheckbound | Cdls_get ->
+          List.for_all self#is_simple_expr args
       end
   | Cassign _ | Cifthenelse _ | Cswitch _ | Ccatch _ | Cexit _
   | Ctrywith _ -> false
@@ -364,7 +366,7 @@ method effects_of exp =
     let from_op =
       match op with
       | Capply _ | Cextcall _ | Cnop -> EC.arbitrary
-      | Calloc | Cpoll -> EC.none
+      | Calloc | Cpoll | Cdls_get -> EC.none
       | Cstore _ -> EC.effect_only Effect.Arbitrary
       | Craise _ | Ccheckbound -> EC.effect_only Effect.Raise
       | Cload {mutability = Asttypes.Immutable} -> EC.none
@@ -465,6 +467,7 @@ method select_operation op args _dbg =
       end
   | (Cpoll, _) -> Ipoll, args
   | (Cnop, _) -> Inop, args
+  | (Cdls_get, _) -> Idls_get, args
   | (Calloc, _) -> (Ialloc {bytes = 0; dbginfo = []}), args
   | (Caddi, _) -> self#select_arith_comm Iadd args
   | (Csubi, _) -> self#select_arith Isub args

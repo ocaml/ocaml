@@ -167,6 +167,7 @@ and operation =
                    or equal to the bound. *)
   | Cpoll
   | Cnop
+  | Cdls_get
 
 (** Every basic block should have a corresponding [Debuginfo.t] for its
     beginning. *)

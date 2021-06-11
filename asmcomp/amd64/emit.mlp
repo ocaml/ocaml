@@ -744,6 +744,8 @@ let emit_instr fallthrough i =
       I.mov (arg32 i 0) (res32 i 0)
   | Lop (Iname_for_debugger _) -> ()
   | Lop (Inop) -> I.nop ()
+  | Lop (Idls_get) ->
+      I.mov (domain_field Domainstate.Domain_dls_root) (res i 0)
   | Lop (Ipoll) ->
       I.cmp (domain_field Domainstate.Domain_young_limit) r15;
       let lbl_call_gc = new_label() in

@@ -223,3 +223,4 @@ let primitive ppf (prim:Clambda_primitives.primitive) =
   | Popaque -> fprintf ppf "opaque"
   | Ppoll -> fprintf ppf "poll"
   | Pnop -> fprintf ppf "nop"
+  | Pdls_get -> fprintf ppf "dls_get"

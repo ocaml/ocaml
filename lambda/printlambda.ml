@@ -363,6 +363,7 @@ let primitive ppf = function
   | Popaque -> fprintf ppf "opaque"
   | Ppoll -> fprintf ppf "poll"
   | Pnop -> fprintf ppf "nop"
+  | Pdls_get -> fprintf ppf "dls_get"
 
 let name_of_primitive = function
   | Pidentity -> "Pidentity"
@@ -482,6 +483,7 @@ let name_of_primitive = function
   | Preperform -> "Preperform"
   | Ppoll -> "Ppoll"
   | Pnop -> "Pnop"
+  | Pdls_get -> "Pdls_get"
 
 let function_attribute ppf { inline; specialise; local; is_a_functor; stub } =
   if is_a_functor then
