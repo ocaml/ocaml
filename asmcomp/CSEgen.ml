@@ -237,11 +237,12 @@ method class_of_operation op =
   | Ispecific _ -> Op_other
   | Iname_for_debugger _ -> Op_pure
   | Ipoll -> Op_checkbound
-  | Inop -> Op_store true (* not correct, but enough to force CSE from leaving
-                             nops alone *)
+  | Inop ->
+      (* not correct, but enough to force CSE from leaving nops alone *)
+      Op_store true
+  | Idls_get -> Op_load
 
 (* Operations that are so cheap that it isn't worth factoring them. *)
-
 method is_cheap_operation op =
   match op with
   | Iconst_int _ -> true

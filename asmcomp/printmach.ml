@@ -155,6 +155,7 @@ let operation op arg ppf res =
       Arch.print_specific_operation reg op ppf arg
   | Ipoll -> fprintf ppf "poll"
   | Inop -> fprintf ppf "nop"
+  | Idls_get -> fprintf ppf "dls_get"
 
 let rec instr ppf i =
   if !Clflags.dump_live then begin

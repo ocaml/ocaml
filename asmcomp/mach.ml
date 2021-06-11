@@ -64,6 +64,7 @@ type operation =
       provenance : unit option; is_assignment : bool; }
   | Ipoll
   | Inop
+  | Idls_get
 
 type instruction =
   { desc: instruction_desc;

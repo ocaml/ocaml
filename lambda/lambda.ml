@@ -156,6 +156,8 @@ type primitive =
   | Ppoll
   (* nop instruction for debugging *)
   | Pnop
+  (* Fetching domain-local state *)
+  | Pdls_get
 
 and integer_comparison =
     Ceq | Cne | Clt | Cgt | Cle | Cge

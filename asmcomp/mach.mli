@@ -71,6 +71,7 @@ type operation =
             identifier is forgotten. *)
   | Ipoll
   | Inop
+  | Idls_get
 
 type instruction =
   { desc: instruction_desc;
