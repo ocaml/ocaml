@@ -261,8 +261,10 @@ stdlib__filename.cmo : \
     stdlib__string.cmi \
     stdlib__random.cmi \
     stdlib__printf.cmi \
+    stdlib__obj.cmi \
     stdlib__list.cmi \
     stdlib__lazy.cmi \
+    camlinternalDomain.cmi \
     stdlib__buffer.cmi \
     stdlib__filename.cmi
 stdlib__filename.cmx : \
@@ -270,8 +272,10 @@ stdlib__filename.cmx : \
     stdlib__string.cmx \
     stdlib__random.cmx \
     stdlib__printf.cmx \
+    stdlib__obj.cmx \
     stdlib__list.cmx \
     stdlib__lazy.cmx \
+    camlinternalDomain.cmx \
     stdlib__buffer.cmx \
     stdlib__filename.cmi
 stdlib__filename.cmi :
@@ -364,6 +368,7 @@ stdlib__hashtbl.cmo : \
     stdlib__random.cmi \
     stdlib__obj.cmi \
     stdlib__lazy.cmi \
+    camlinternalDomain.cmi \
     stdlib__array.cmi \
     stdlib__hashtbl.cmi
 stdlib__hashtbl.cmx : \
@@ -373,6 +378,7 @@ stdlib__hashtbl.cmx : \
     stdlib__random.cmx \
     stdlib__obj.cmx \
     stdlib__lazy.cmx \
+    camlinternalDomain.cmx \
     stdlib__array.cmx \
     stdlib__hashtbl.cmi
 stdlib__hashtbl.cmi : \

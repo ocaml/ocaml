@@ -95,20 +95,15 @@ let self () = Raw.self ()
 
 module DLS = struct
 
+  open CamlinternalDomain
+
   type 'a key = int ref * (unit -> 'a)
-
-  type entry = {key_id: int ref; mutable slot: Obj.t}
-
-  external get_dls_list : unit -> entry list = "%dls_get"
-
-  external set_dls_list : entry list  -> unit
-    = "caml_domain_dls_set" [@@noalloc]
 
   let new_key f = (ref 0, f)
 
   let set k x =
     let cs = Obj.repr x in
-    let vals = get_dls_list () in
+    let st = get_dls_state () in
     let rec add_or_update_entry k v l =
       match l with
       | [] -> Some {key_id = k; slot = v}
@@ -120,24 +115,24 @@ module DLS = struct
         else add_or_update_entry k v tl
     in
     let (key, _) = k in
-    match add_or_update_entry key cs vals with
+    match add_or_update_entry key cs st.entry_list with
     | None -> ()
-    | Some e -> set_dls_list (e::vals)
+    | Some e -> st.entry_list <- e::st.entry_list
 
   let get k =
-    let rec search key_id init dls_list l =
+    let st = get_dls_state () in
+    let rec search (key_id, init) l =
       match l with
       | [] ->
         begin
           let slot = Obj.repr (init ()) in
-          set_dls_list ({key_id; slot}::dls_list);
+          st.entry_list <- ({key_id; slot}::st.entry_list);
           slot
         end
       | hd::tl ->
-        if hd.key_id == key_id then hd.slot else search key_id init dls_list tl
+        if hd.key_id == key_id then hd.slot
+        else search (key_id, init) tl
     in
-    let dls_list = get_dls_list () in
-    let (key_id, init) = k in
-    Obj.obj @@ search key_id init dls_list dls_list
+    Obj.obj @@ search k st.entry_list
 
 end

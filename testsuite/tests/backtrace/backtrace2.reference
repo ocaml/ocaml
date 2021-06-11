@@ -35,7 +35,7 @@ Uncaught exception Invalid_argument("index out of bounds")
 Raised by primitive operation at Backtrace2.run in file "backtrace2.ml", line 63, characters 14-22
 test_Not_found
 Uncaught exception Not_found
-Raised at Stdlib__hashtbl.find in file "hashtbl.ml", line 539, characters 13-28
+Raised at Stdlib__hashtbl.find in file "hashtbl.ml", line 545, characters 13-28
 Called from Backtrace2.test_Not_found in file "backtrace2.ml", line 44, characters 9-42
 Re-raised at Backtrace2.test_Not_found in file "backtrace2.ml", line 44, characters 61-70
 Called from Backtrace2.run in file "backtrace2.ml", line 63, characters 11-23
@@ -50,7 +50,7 @@ Called from CamlinternalLazy.do_force_block in file "camlinternalLazy.ml", line 
 Re-raised at CamlinternalLazy.do_force_block in file "camlinternalLazy.ml", line 81, characters 4-11
 Called from Backtrace2.run in file "backtrace2.ml", line 63, characters 11-23
 Uncaught exception Not_found
-Raised at Stdlib__hashtbl.find in file "hashtbl.ml", line 539, characters 13-28
+Raised at Stdlib__hashtbl.find in file "hashtbl.ml", line 545, characters 13-28
 Called from Backtrace2.test_lazy.exception_raised_internally in file "backtrace2.ml", line 51, characters 8-41
 Re-raised at CamlinternalLazy.do_force_block.(fun) in file "camlinternalLazy.ml", line 78, characters 50-57
 Called from CamlinternalLazy.do_force_block in file "camlinternalLazy.ml", line 71, characters 17-27
