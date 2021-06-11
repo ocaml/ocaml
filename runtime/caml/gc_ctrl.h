@@ -27,6 +27,21 @@ void caml_init_gc ();
 value caml_gc_stat(value);
 value caml_gc_major(value);
 
+
+#define caml_stat_top_heap_wsz caml_top_heap_words(Caml_state->shared_heap)
+#define caml_stat_compactions 0
+#define caml_stat_heap_wsz caml_heap_size(Caml_state->shared_heap)
+#define caml_stat_heap_chunks caml_heap_blocks(Caml_state->shared_heap)
+#define caml_stat_major_collections Caml_state->stat_major_collections
+#define caml_stat_minor_collections Caml_state->stat_minor_collections
+#define caml_stat_promoted_words Caml_state->stat_promoted_words
+#define caml_allocated_words Caml_state->allocated_words
+#define caml_stat_major_words Caml_state->stat_major_words
+#define caml_stat_minor_words Caml_state->stat_minor_words
+
+#define caml_young_end Caml_state->young_end
+#define caml_young_ptr Caml_state->young_ptr
+
 #ifdef DEBUG
 void caml_heap_check (void);
 #endif
