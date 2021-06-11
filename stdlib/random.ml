@@ -167,8 +167,9 @@ let _ = CamlinternalDomain.(register_initialiser (fun st ->
   st.random <- Obj.repr (mk_default ())))
 
 let current_state () =
-  let st = CamlinternalDomain.get_dls_state () in
-  Obj.magic (st.CamlinternalDomain.random)
+  let open CamlinternalDomain in
+  let st = get_dls_state () in
+  Obj.magic st.random
 
 let bits () = State.bits (current_state ())
 let int bound = State.int (current_state ()) bound

@@ -327,12 +327,15 @@ let remove_extension name =
 external open_desc: string -> open_flag list -> int -> int = "caml_sys_open"
 external close_desc: int -> unit = "caml_sys_close"
 
-let prng = lazy(Random.State.make_self_init ())
+let _ = CamlinternalDomain.(register_initialiser (fun st ->
+  st.filename <- Obj.repr (lazy (Random.State.make_self_init()))))
 
 let temp_file_name temp_dir prefix suffix =
-  let rnd = (Random.State.bits (Lazy.force prng)) land 0xFFFFFF in
+  let open CamlinternalDomain in
+  let st = get_dls_state () in
+  let random_state = Lazy.force (Obj.magic st.filename) in
+  let rnd = (Random.State.bits random_state) land 0xFFFFFF in
   concat temp_dir (Printf.sprintf "%s%06x%s" prefix rnd suffix)
-
 
 let current_temp_dir_name = ref temp_dir_name
 
