@@ -22,7 +22,6 @@
 #include <string.h>
 #include "caml/alloc.h"
 #include "caml/callback.h"
-#include "caml/custom.h"
 #include "caml/domain.h"
 #include "caml/domain_state.h"
 #include "caml/eventlog.h"
@@ -575,8 +574,6 @@ static void* domain_thread_func(void* v)
   }
   return 0;
 }
-
-#define Domainthreadptr_val(val) ((struct domain_thread**)Data_custom_val(val))
 
 CAMLprim value caml_domain_spawn(value callback, value mutex)
 {
