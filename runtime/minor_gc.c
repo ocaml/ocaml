@@ -154,7 +154,7 @@ static value alloc_shared(caml_domain_state* d, mlsize_t wosize, tag_t tag)
 }
 
 #if 0
-static inline void log_gc_value(const char* prefix, value v)
+Caml_inline void log_gc_value(const char* prefix, value v)
 {
   if (Is_block(v)) {
     header_t hd = Hd_val(v);
@@ -179,7 +179,7 @@ static void spin_on_header(value v) {
   }
 }
 
-static inline header_t get_header_val(value v) {
+Caml_inline header_t get_header_val(value v) {
   header_t hd = atomic_load_explicit(Hp_atomic_val(v), memory_order_relaxed);
   if (!Is_update_in_progress(hd))
     return hd;
@@ -237,7 +237,7 @@ static int try_update_object_header(value v, value *p, value result, mlsize_t in
 
 /* If [*v] is an [Infix_tag] object, [v] is updated to point to the first
  * object in the block. */
-static inline void resolve_infix_val (value* v)
+Caml_inline void resolve_infix_val (value* v)
 {
   int offset = 0;
   if (get_header_val(*v) == Infix_tag) {
@@ -389,7 +389,7 @@ static void oldify_one (void* st_v, value v, value *p)
 /* Care needed with this test. It will only make sense if
    all minor heaps have been promoted
    as the liveness of the keys can only be known at that point */
-static inline int ephe_check_alive_data (struct caml_ephe_ref_elt *re)
+Caml_inline int ephe_check_alive_data (struct caml_ephe_ref_elt *re)
 {
   mlsize_t i;
   value child;
