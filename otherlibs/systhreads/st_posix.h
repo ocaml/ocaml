@@ -32,16 +32,10 @@
 #include "caml/domain.h"
 #include "caml/printexc.h"
 #include "caml/backtrace.h"
+#include "caml/signals.h"
+
 #include <pthread.h>
 #include <signal.h>
-#include <caml/signals.h>
-
-#ifdef __GNUC__
-#undef INLINE
-#define INLINE inline
-#else
-#define INLINE
-#endif
 
 typedef int st_retcode;
 
@@ -74,7 +68,7 @@ static int st_thread_create(st_thread_id * res,
 
 /* Cleanup at thread exit */
 
-static INLINE void st_thread_cleanup(void)
+Caml_inline void st_thread_cleanup(void)
 {
   return;
 }
@@ -99,12 +93,12 @@ static int st_tls_newkey(st_tlskey * res)
   return pthread_key_create(res, NULL);
 }
 
-static INLINE void * st_tls_get(st_tlskey k)
+Caml_inline void * st_tls_get(st_tlskey k)
 {
   return pthread_getspecific(k);
 }
 
-static INLINE void st_tls_set(st_tlskey k, void * v)
+Caml_inline void st_tls_set(st_tlskey k, void * v)
 {
   pthread_setspecific(k, v);
 }
@@ -202,7 +196,7 @@ static void st_masterlock_release(st_masterlock * m)
    re-wake us later.
 */
 
-static INLINE void st_thread_yield(st_masterlock * m)
+Caml_inline void st_thread_yield(st_masterlock * m)
 {
   uintnat waiters;
 

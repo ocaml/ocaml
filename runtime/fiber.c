@@ -52,7 +52,7 @@ struct stack_info** caml_alloc_stack_cache () {
   return stack_cache;
 }
 
-static inline struct stack_info* alloc_for_stack (mlsize_t wosize)
+Caml_inline struct stack_info* alloc_for_stack (mlsize_t wosize)
 {
   return caml_stat_alloc_noexc(sizeof(struct stack_info) +
                                sizeof(value) * wosize +
@@ -60,7 +60,7 @@ static inline struct stack_info* alloc_for_stack (mlsize_t wosize)
                                sizeof(struct stack_handler));
 }
 
-static inline struct stack_info** stack_cache_bucket (mlsize_t wosize) {
+Caml_inline struct stack_info** stack_cache_bucket (mlsize_t wosize) {
   mlsize_t size_bucket_wsz = caml_fiber_wsz;
   struct stack_info** size_bucket = Caml_state->stack_cache;
   struct stack_info** end = size_bucket + NUM_STACK_SIZE_CLASSES;
@@ -146,7 +146,7 @@ void caml_get_stack_sp_pc (struct stack_info* stack, char** sp /* out */, uintna
   *pc = Saved_return_address(*sp);
 }
 
-static inline void scan_stack_frames(scanning_action f, void* fdata, struct stack_info* stack, value* gc_regs)
+Caml_inline void scan_stack_frames(scanning_action f, void* fdata, struct stack_info* stack, value* gc_regs)
 {
   char * sp;
   uintnat retaddr;

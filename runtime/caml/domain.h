@@ -77,7 +77,7 @@ CAMLextern atomic_uintnat caml_num_domains_running;
 CAMLextern uintnat caml_minor_heaps_base;
 CAMLextern uintnat caml_minor_heaps_end;
 
-INLINE intnat caml_domain_alone()
+Caml_inline intnat caml_domain_alone()
 {
   return atomic_load_acq(&caml_num_domains_running) == 1;
 }

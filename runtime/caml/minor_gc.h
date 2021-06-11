@@ -82,7 +82,7 @@ extern int caml_debug_is_major(value val);
     *ref->ptr++ = (x);                                                  \
   } while (0)
 
-static inline void add_to_ephe_ref_table (struct caml_ephe_ref_table *tbl,
+Caml_inline void add_to_ephe_ref_table (struct caml_ephe_ref_table *tbl,
                                           value ar, mlsize_t offset)
 {
   struct caml_ephe_ref_elt *ephe_ref;
@@ -96,7 +96,7 @@ static inline void add_to_ephe_ref_table (struct caml_ephe_ref_table *tbl,
   CAMLassert(ephe_ref->offset < Wosize_val(ephe_ref->ephe));
 }
 
-static inline void add_to_custom_table (struct caml_custom_table *tbl, value v,
+Caml_inline void add_to_custom_table (struct caml_custom_table *tbl, value v,
                                         mlsize_t mem, mlsize_t max)
 {
   struct caml_custom_elt *elt;
