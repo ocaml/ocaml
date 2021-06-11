@@ -16,6 +16,9 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- #10328: Give more precise error when disambiguation could not possibly work.
+  (Leo White, review by Gabriel Scherer and Florian Angeletti)
+
 ### Internal/compiler-libs changes:
 
 ### Build system:
