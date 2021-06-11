@@ -44,6 +44,7 @@ let spawn f =
   let termination_mutex = Mutex.create () in
   let state = Atomic.make Running in
   let body () =
+    CamlinternalDomain.initialise_dls ();
     let result = match f () with
       | x -> Ok x
       | exception ex -> Error ex in
