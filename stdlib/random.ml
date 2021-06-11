@@ -147,7 +147,7 @@ end
 
 (* This is the state you get with [init 27182818] and then applying
    the "land 0x3FFFFFFF" filter to them.  See #5575, #5793, #5977. *)
-let default = {
+let mk_default () = {
   State.st = [|
       0x3ae2522b; 0x1d8d4634; 0x15b4fad0; 0x18b14ace; 0x12f8a3c4; 0x3b086c47;
       0x16d467d6; 0x101d91c7; 0x321df177; 0x0176c193; 0x1ff72bf1; 0x1e889109;
@@ -163,22 +163,29 @@ let default = {
   State.idx = 0;
 }
 
-let bits () = State.bits default
-let int bound = State.int default bound
-let int32 bound = State.int32 default bound
-let nativeint bound = State.nativeint default bound
-let int64 bound = State.int64 default bound
-let float scale = State.float default scale
-let bool () = State.bool default
+let _ = CamlinternalDomain.(register_initialiser (fun st ->
+  st.random <- Obj.repr (mk_default ())))
 
-let full_init seed = State.full_init default seed
-let init seed = State.full_init default [| seed |]
+let current_state () =
+  let st = CamlinternalDomain.get_dls_state () in
+  Obj.magic (st.CamlinternalDomain.random)
+
+let bits () = State.bits (current_state ())
+let int bound = State.int (current_state ()) bound
+let int32 bound = State.int32 (current_state ()) bound
+let nativeint bound = State.nativeint (current_state ()) bound
+let int64 bound = State.int64 (current_state ()) bound
+let float scale = State.float (current_state ()) scale
+let bool () = State.bool (current_state ())
+
+let full_init seed = State.full_init (current_state ()) seed
+let init seed = State.full_init (current_state ()) [| seed |]
 let self_init () = full_init (random_seed())
 
 (* Manipulating the current state. *)
 
-let get_state () = State.copy default
-let set_state s = State.assign default s
+let get_state () = State.copy (current_state ())
+let set_state s = State.assign (current_state ()) s
 
 (********************
 

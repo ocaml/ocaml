@@ -110,6 +110,14 @@ camlinternalAtomic.cmo : \
 camlinternalAtomic.cmx : \
     camlinternalAtomic.cmi
 camlinternalAtomic.cmi :
+camlinternalDomain.cmo : \
+    stdlib__obj.cmi \
+    camlinternalDomain.cmi
+camlinternalDomain.cmx : \
+    stdlib__obj.cmx \
+    camlinternalDomain.cmi
+camlinternalDomain.cmi : \
+    stdlib__obj.cmi
 camlinternalFormat.cmo : \
     stdlib__sys.cmi \
     stdlib__string.cmi \
@@ -213,13 +221,13 @@ stdlib__digest.cmi :
 stdlib__domain.cmo : \
     stdlib__obj.cmi \
     stdlib__mutex.cmi \
-    stdlib__int64.cmi \
+    camlinternalDomain.cmi \
     stdlib__atomic.cmi \
     stdlib__domain.cmi
 stdlib__domain.cmx : \
     stdlib__obj.cmx \
     stdlib__mutex.cmx \
-    stdlib__int64.cmx \
+    camlinternalDomain.cmx \
     stdlib__atomic.cmx \
     stdlib__domain.cmi
 stdlib__domain.cmi :
@@ -568,23 +576,27 @@ stdlib__queue.cmi : \
 stdlib__random.cmo : \
     stdlib__string.cmi \
     stdlib.cmi \
+    stdlib__obj.cmi \
     stdlib__nativeint.cmi \
     stdlib__int64.cmi \
     stdlib__int32.cmi \
     stdlib__int.cmi \
     stdlib__digest.cmi \
     stdlib__char.cmi \
+    camlinternalDomain.cmi \
     stdlib__array.cmi \
     stdlib__random.cmi
 stdlib__random.cmx : \
     stdlib__string.cmx \
     stdlib.cmx \
+    stdlib__obj.cmx \
     stdlib__nativeint.cmx \
     stdlib__int64.cmx \
     stdlib__int32.cmx \
     stdlib__int.cmx \
     stdlib__digest.cmx \
     stdlib__char.cmx \
+    camlinternalDomain.cmx \
     stdlib__array.cmx \
     stdlib__random.cmi
 stdlib__random.cmi : \
