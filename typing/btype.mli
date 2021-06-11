@@ -82,18 +82,10 @@ val commu_repr: commutable -> commutable
 
 (**** polymorphic variants ****)
 
-val row_repr: row_desc -> row_desc
-        (* Return the canonical representative of a row description *)
-val row_field_repr: row_field -> row_field
-val row_field: label -> row_desc -> row_field
-        (* Return the canonical representative of a row field *)
-val row_more: row_desc -> type_expr
-        (* Return the extension variable of the row *)
-
 val is_fixed: row_desc -> bool
 (* Return whether the row is directly marked as fixed or not *)
 
-val row_fixed: row_desc -> bool
+val has_fixed_explanation: row_desc -> bool
 (* Return whether the row should be treated as fixed or not.
    In particular, [is_fixed row] implies [row_fixed row].
 *)
@@ -122,7 +114,7 @@ val is_row_name: string -> bool
 val is_constr_row: allow_ident:bool -> type_expr -> bool
 
 (* Set the polymorphic variant row_name field *)
-val set_row_name : type_declaration -> Path.t -> unit
+val set_static_row_name: type_declaration -> Path.t -> unit
 
 (**** Utilities for type traversal ****)
 

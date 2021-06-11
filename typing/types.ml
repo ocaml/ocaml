@@ -562,6 +562,84 @@ end
 let eq_type t1 t2 = t1 == t2 || repr t1 == repr t2
 let compare_type t1 t2 = compare (get_id t1) (get_id t2)
 
+(* Constructor and accessors for [row_desc] *)
+
+let create_row ~fields ~more ~closed ~fixed ~name =
+    { row_fields=fields; row_more=more; row_bound=();
+      row_closed=closed; row_fixed=fixed; row_name=name }
+
+let rec rev_concat l ll =
+  match ll with
+    [] -> l
+  | l'::ll -> rev_concat (l'@l) ll
+
+(* [row_fields] subsumes the original [row_repr] *)
+let rec row_fields_aux ll row =
+  match get_desc row.row_more with
+  | Tvariant row' ->
+      let f = row.row_fields in
+      row_fields_aux (if f = [] then ll else f::ll) row'
+  | _ ->
+      let f = row.row_fields in
+      if ll = [] then f else rev_concat f ll
+
+let row_fields row = row_fields_aux [] row
+
+let rec row_repr_no_fields row =
+  match get_desc row.row_more with
+  | Tvariant row' -> row_repr_no_fields row'
+  | _ -> row
+
+let row_more row = (row_repr_no_fields row).row_more
+let row_closed row = (row_repr_no_fields row).row_closed
+let row_fixed row = (row_repr_no_fields row).row_fixed
+let row_name row = (row_repr_no_fields row).row_name
+
+let set_row_name row row_name =
+  let row_fields = row_fields row in
+  let row = row_repr_no_fields row in
+  {row with row_fields; row_name}
+
+type row_desc_repr =
+    Row of { fields: (label * row_field) list;
+             more:type_expr;
+             closed:bool;
+             fixed:fixed_explanation option;
+             name:(Path.t * type_expr list) option }
+
+let row_repr row =
+  let fields = row_fields row in
+  let row = row_repr_no_fields row in
+  Row { fields;
+        more = row.row_more;
+        closed = row.row_closed;
+        fixed = row.row_fixed;
+        name = row.row_name }
+
+(* just to avoid the "unused constructor" warning.. *)
+let _row_bound row = row.row_bound
+
+let rec row_field_repr_aux tl = function
+    Reither(_, tl', _, {contents = Some fi}) ->
+      row_field_repr_aux (tl@tl') fi
+  | Reither(c, tl', m, r) ->
+      Reither(c, tl@tl', m, r)
+  | Rpresent (Some _) when tl <> [] ->
+      Rpresent (Some (List.hd tl))
+  | fi -> fi
+
+let row_field_repr fi = row_field_repr_aux [] fi
+
+let rec row_field tag row =
+  let rec find = function
+    | (tag',f) :: fields ->
+        if tag = tag' then row_field_repr f else find fields
+    | [] ->
+        match get_desc row.row_more with
+        | Tvariant row' -> row_field tag row'
+        | _ -> Rabsent
+  in find row.row_fields
+
 (**** Some type creators ****)
 
 let new_id = Local_store.s_ref (-1)

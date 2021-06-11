@@ -217,8 +217,7 @@ let rec typexp copy_scope s ty =
           in
           Tobject (t1', ref name')
       | Tvariant row ->
-          let row = row_repr row in
-          let more = row.row_more in
+          let more = row_more row in
           let mored = get_desc more in
           (* We must substitute in a subtle way *)
           (* Tsubst takes a tuple containing the row var and the variant *)
@@ -250,12 +249,13 @@ let rec typexp copy_scope s ty =
               (* Return a new copy *)
               let row =
                 copy_row (typexp copy_scope s) true row (not dup) more' in
-              match row.row_name with
+              match row_name row with
               | Some (p, tl) ->
-                 Tvariant {row with row_name =
-                                      if to_subst_by_type_function s p
-                                      then None
-                                      else Some (type_path s p, tl)}
+                  let name =
+                    if to_subst_by_type_function s p then None
+                    else Some (type_path s p, tl)
+                  in
+                  Tvariant (set_row_name row name)
               | None ->
                   Tvariant row
           end

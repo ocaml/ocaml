@@ -175,15 +175,16 @@ let set_private_row env loc p decl =
   let rv =
     match get_desc tm with
       Tvariant row ->
-        let row = Btype.row_repr row in
+        let Row {fields; more; closed; name} = row_repr row in
         set_type_desc tm
-          (Tvariant {row with row_fixed = Some Fixed_private});
+          (Tvariant (create_row ~fields ~more ~closed ~name
+                       ~fixed:(Some Fixed_private)));
         if Btype.static_row row then
           (* the syntax hinted at the existence of a row variable,
              but there is in fact no row variable to make private, e.g.
              [ type t = private [< `A > `A] ] *)
           raise (Error(loc, Invalid_private_row_declaration tm))
-        else row.row_more
+        else more
     | Tobject (ty, _) ->
         let r = snd (Ctype.flatten_fields ty) in
         if not (Btype.is_Tvar r) then
@@ -1653,10 +1654,9 @@ let explain_unbound_single ppf tv ty =
       explain_unbound ppf tv tl (fun (_,_,t) -> t)
         "method" (fun (lab,_,_) -> lab ^ ": ")
   | Tvariant row ->
-      let row = Btype.row_repr row in
-      if eq_type row.row_more tv then trivial ty else
-      explain_unbound ppf tv row.row_fields
-        (fun (_l,f) -> match Btype.row_field_repr f with
+      if eq_type (row_more row) tv then trivial ty else
+      explain_unbound ppf tv (row_fields row)
+        (fun (_l,f) -> match row_field_repr f with
           Rpresent (Some t) -> t
         | Reither (_,[t],_,_) -> t
         | Reither (_,tl,_,_) -> Btype.newgenty (Ttuple tl)

@@ -96,10 +96,9 @@ let compute_variance env visited vari ty =
     | Tsubst _ ->
         assert false
     | Tvariant row ->
-        let row = Btype.row_repr row in
         List.iter
           (fun (_,f) ->
-            match Btype.row_field_repr f with
+            match row_field_repr f with
               Rpresent (Some ty) ->
                 compute_same ty
             | Reither (_, tyl, _, _) ->
@@ -113,8 +112,8 @@ let compute_variance env visited vari ty =
                    if List.length tyl > 1 then upper else inter vari upper *)
                 List.iter (compute_variance_rec v) tyl
             | _ -> ())
-          row.row_fields;
-        compute_same row.row_more
+          (row_fields row);
+        compute_same (row_more row)
     | Tpoly (ty, _) ->
         compute_same ty
     | Tvar _ | Tnil | Tlink _ | Tunivar _ -> ()
