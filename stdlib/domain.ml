@@ -9,6 +9,61 @@ module Raw = struct
     = "caml_ml_domain_cpu_relax"
 end
 
+module DLS = struct
+
+  type dls_state = Obj.t array
+
+  let unique_value = Obj.repr (ref 0)
+
+  external get_dls_state : unit -> dls_state = "%dls_get"
+
+  external set_dls_state : dls_state -> unit =
+    "caml_domain_dls_set" [@@noalloc]
+
+  let create_dls () =
+    let st = Array.make 8 unique_value in
+    set_dls_state st
+
+  let _ = create_dls ()
+
+  type 'a key = int * (unit -> 'a)
+
+  let key_counter = Atomic.make 0
+
+  let new_key f =
+    let k = Atomic.fetch_and_add key_counter 1 in
+    (k, f)
+
+  let rec log2 n =
+    if n <= 1 then 0 else 1 + (log2 (n asr 1))
+
+  (* If necessary, grow the current domain's local state array such that [idx]
+   * is a valid index in the array. *)
+  let maybe_grow idx =
+    let st = get_dls_state () in
+    if idx < Array.length st then st
+    else begin
+      let sz = Int.shift_left 1 (1 + log2 idx) in
+      let new_st = Array.make sz unique_value in
+      Array.blit st 0 new_st 0 (Array.length st);
+      set_dls_state new_st;
+      new_st
+    end
+
+  let set (idx, _init) x =
+    let st = maybe_grow idx in
+    st.(idx) <- Obj.repr x
+
+  let get (idx, init) =
+    let st = maybe_grow idx in
+    let v = st.(idx) in
+    if v == unique_value then
+      let v' = Obj.repr (init ()) in
+      st.(idx) <- v';
+      Obj.magic v'
+    else Obj.magic v
+
+end
 type nanoseconds = int64
 external timer_ticks : unit -> (int64 [@unboxed]) =
   "caml_ml_domain_ticks" "caml_ml_domain_ticks_unboxed" [@@noalloc]
@@ -44,7 +99,7 @@ let spawn f =
   let termination_mutex = Mutex.create () in
   let state = Atomic.make Running in
   let body () =
-    CamlinternalDomain.initialise_dls ();
+    DLS.create_dls ();
     let result = match f () with
       | x -> Ok x
       | exception ex -> Error ex in
@@ -93,46 +148,4 @@ let get_id { domain; _ } = domain
 
 let self () = Raw.self ()
 
-module DLS = struct
 
-  open CamlinternalDomain
-
-  type 'a key = int ref * (unit -> 'a)
-
-  let new_key f = (ref 0, f)
-
-  let set k x =
-    let cs = Obj.repr x in
-    let st = get_dls_state () in
-    let rec add_or_update_entry k v l =
-      match l with
-      | [] -> Some {key_id = k; slot = v}
-      | hd::tl ->
-        if (hd.key_id == k) then begin
-          hd.slot <- v;
-          None
-        end
-        else add_or_update_entry k v tl
-    in
-    let (key, _) = k in
-    match add_or_update_entry key cs st.entry_list with
-    | None -> ()
-    | Some e -> st.entry_list <- e::st.entry_list
-
-  let get k =
-    let st = get_dls_state () in
-    let rec search (key_id, init) l =
-      match l with
-      | [] ->
-        begin
-          let slot = Obj.repr (init ()) in
-          st.entry_list <- ({key_id; slot}::st.entry_list);
-          slot
-        end
-      | hd::tl ->
-        if hd.key_id == key_id then hd.slot
-        else search (key_id, init) tl
-    in
-    Obj.obj @@ search k st.entry_list
-
-end

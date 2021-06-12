@@ -163,30 +163,24 @@ let mk_default () = {
   State.idx = 0;
 }
 
-let _ = CamlinternalDomain.(register_initialiser (fun st ->
-  st.random <- Obj.repr (mk_default ())))
+let random_key = Domain.DLS.new_key mk_default
 
-let current_state () =
-  let open CamlinternalDomain in
-  let st = get_dls_state () in
-  Obj.magic st.random
+let bits () = State.bits (Domain.DLS.get random_key)
+let int bound = State.int (Domain.DLS.get random_key) bound
+let int32 bound = State.int32 (Domain.DLS.get random_key) bound
+let nativeint bound = State.nativeint (Domain.DLS.get random_key) bound
+let int64 bound = State.int64 (Domain.DLS.get random_key) bound
+let float scale = State.float (Domain.DLS.get random_key) scale
+let bool () = State.bool (Domain.DLS.get random_key)
 
-let bits () = State.bits (current_state ())
-let int bound = State.int (current_state ()) bound
-let int32 bound = State.int32 (current_state ()) bound
-let nativeint bound = State.nativeint (current_state ()) bound
-let int64 bound = State.int64 (current_state ()) bound
-let float scale = State.float (current_state ()) scale
-let bool () = State.bool (current_state ())
-
-let full_init seed = State.full_init (current_state ()) seed
-let init seed = State.full_init (current_state ()) [| seed |]
+let full_init seed = State.full_init (Domain.DLS.get random_key) seed
+let init seed = State.full_init (Domain.DLS.get random_key) [| seed |]
 let self_init () = full_init (random_seed())
 
 (* Manipulating the current state. *)
 
-let get_state () = State.copy (current_state ())
-let set_state s = State.assign (current_state ()) s
+let get_state () = State.copy (Domain.DLS.get random_key)
+let set_state s = State.assign (Domain.DLS.get random_key) s
 
 (********************
 

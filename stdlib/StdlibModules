@@ -34,11 +34,12 @@ STDLIB_MODS=\
   stdlib pervasives seq option either result bool char uchar \
   sys list bytes string unit marshal obj array float int int32 int64 nativeint \
   lexing parsing set map stack queue camlinternalLazy lazy stream buffer \
-  camlinternalDomain camlinternalFormat printf arg atomic \
+  atomic mutex condition semaphore domain \
+	camlinternalFormat printf arg \
   printexc fun gc digest random hashtbl weak \
   format scanf callback camlinternalOO oo camlinternalMod genlex ephemeron \
   filename complex arrayLabels listLabels bytesLabels stringLabels moreLabels \
-  stdLabels bigarray mutex condition semaphore domain
+  stdLabels bigarray
 
 STDLIB_MODULES=\
   $(foreach module, $(STDLIB_MODS), $(call add_stdlib_prefix,$(module)))
