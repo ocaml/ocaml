@@ -115,9 +115,9 @@ extern void (*caml_termination_hook)(void);
 
 /* Hook for scanning the stacks of the other threads */
 
-static void (*prev_scan_roots_hook) (scanning_action, void *, struct domain *);
+static void (*prev_scan_roots_hook) (scanning_action, void *, caml_domain_state *);
 
-static void caml_thread_scan_roots(scanning_action action, void *fdata, struct domain *self)
+static void caml_thread_scan_roots(scanning_action action, void *fdata, caml_domain_state *domain_state)
 {
   caml_thread_t th;
 
@@ -137,7 +137,7 @@ static void caml_thread_scan_roots(scanning_action action, void *fdata, struct d
 
   };
 
-  if (prev_scan_roots_hook != NULL) (*prev_scan_roots_hook)(action, fdata, self);
+  if (prev_scan_roots_hook != NULL) (*prev_scan_roots_hook)(action, fdata, domain_state);
 
   return;
 }
@@ -204,9 +204,9 @@ static void caml_thread_leave_blocking_section(void)
 static caml_thread_t caml_thread_new_info(void)
 {
   caml_thread_t th;
-  struct domain *d;
+  caml_domain_state *domain_state;
 
-  d = caml_domain_self();
+  domain_state = Caml_state;
   th = NULL;
   th = (caml_thread_t) caml_stat_alloc_noexc(sizeof(struct caml_thread_struct));
   if (th == NULL) return NULL;
@@ -214,7 +214,7 @@ static caml_thread_t caml_thread_new_info(void)
   th->descr = Val_unit;
   th->next = NULL;
   th->prev = NULL;
-  th->domain_id = d->state->id;
+  th->domain_id = domain_state->id;
   th->current_stack = caml_alloc_main_stack(Stack_size / sizeof(value));;
   th->c_stack = NULL;
   th->local_roots = NULL;

@@ -28,12 +28,12 @@
 #include "caml/shared_heap.h"
 
 /* [size] is a number of elements for the [to_do.item] array */
-static void alloc_todo (struct domain* d, int size)
+static void alloc_todo (caml_domain_state* d, int size)
 {
   struct final_todo *result =
     caml_stat_alloc_noexc (sizeof (struct final_todo) +
                            size * sizeof (struct final));
-  struct caml_final_info *f = d->state->final_info;
+  struct caml_final_info *f = d->final_info;
   if (result == NULL) caml_fatal_error ("out of memory");
   result->next = NULL;
   result->size = size;
@@ -49,11 +49,11 @@ static void alloc_todo (struct domain* d, int size)
 
 /* Find white finalisable values, move them to the finalising set, and
    darken them (if darken_value is true). */
-static void generic_final_update (struct domain* d, struct finalisable *final, int darken_value)
+static void generic_final_update (caml_domain_state* d, struct finalisable *final, int darken_value)
 {
   uintnat i, j, k;
   uintnat todo_count = 0;
-  struct caml_final_info *f = d->state->final_info;
+  struct caml_final_info *f = d->final_info;
 
   CAMLassert (final->old <= final->young);
   for (i = 0; i < final->old; i++) {
@@ -111,9 +111,9 @@ static void generic_final_update (struct domain* d, struct finalisable *final, i
   }
 }
 
-int caml_final_update_first (struct domain* d)
+int caml_final_update_first (caml_domain_state* d)
 {
-  struct caml_final_info *f = d->state->final_info;
+  struct caml_final_info *f = d->final_info;
   if (!f->updated_first) {
     CAML_EV_BEGIN(EV_FINALISE_UPDATE_FIRST);
     generic_final_update (d, &f->first, /* darken_value */ 1);
@@ -124,9 +124,9 @@ int caml_final_update_first (struct domain* d)
   return 0;
 }
 
-int caml_final_update_last (struct domain* d)
+int caml_final_update_last (caml_domain_state* d)
 {
-  struct caml_final_info *f = d->state->final_info;
+  struct caml_final_info *f = d->final_info;
   if (!f->updated_last) {
     CAML_EV_BEGIN(EV_FINALISE_UPDATE_LAST);
     generic_final_update (d, &f->last, /* darken_value */ 0);
@@ -141,8 +141,7 @@ void caml_final_do_calls ()
 {
   struct final f;
   value res;
-  struct domain *d = caml_domain_self();
-  struct caml_final_info *fi = d->state->final_info;
+  struct caml_final_info *fi = Caml_state->final_info;
 
   if (fi->running_finalisation_function) return;
   if (fi->todo_head != NULL) {
@@ -171,11 +170,11 @@ void caml_final_do_calls ()
 #define Call_action(f,d,x) (*(f)) ((d), (x), &(x))
 
 /* Called my major_gc for marking roots */
-void caml_final_do_roots (scanning_action act, void* fdata, struct domain* domain, int do_val)
+void caml_final_do_roots (scanning_action act, void* fdata, caml_domain_state* d, int do_val)
 {
   uintnat i;
   struct final_todo *todo;
-  struct caml_final_info *f = domain->state->final_info;
+  struct caml_final_info *f = d->final_info;
 
   CAMLassert (f->first.old <= f->first.young);
   for (i = 0; i < f->first.young; i++) {
@@ -200,10 +199,10 @@ void caml_final_do_roots (scanning_action act, void* fdata, struct domain* domai
 }
 
 /* Called by minor gc for marking roots */
-void caml_final_do_young_roots (scanning_action act, void* fdata, struct domain* d, int do_last_val)
+void caml_final_do_young_roots (scanning_action act, void* fdata, caml_domain_state* d, int do_last_val)
 {
   uintnat i;
-  struct caml_final_info *f = d->state->final_info;
+  struct caml_final_info *f = d->final_info;
 
   CAMLassert (f->first.old <= f->first.young);
   for (i = f->first.old; i < f->first.young; i++) {
@@ -219,11 +218,11 @@ void caml_final_do_young_roots (scanning_action act, void* fdata, struct domain*
   }
 }
 
-static void generic_final_minor_update (struct domain* d, struct finalisable * final)
+static void generic_final_minor_update (caml_domain_state* d, struct finalisable * final)
 {
   uintnat i, j, k;
   uintnat todo_count = 0;
-  struct caml_final_info *fi = d->state->final_info;
+  struct caml_final_info *fi = d->final_info;
 
   CAMLassert (final->old <= final->young);
   for (i = final->old; i < final->young; i++){
@@ -276,14 +275,14 @@ static void generic_final_minor_update (struct domain* d, struct finalisable * f
   }
 }
 
-void caml_final_update_last_minor (struct domain* d)
+void caml_final_update_last_minor (caml_domain_state* d)
 {
-  generic_final_minor_update(d, &d->state->final_info->last);
+  generic_final_minor_update(d, &d->final_info->last);
 }
 
-void caml_final_empty_young (struct domain* d)
+void caml_final_empty_young (caml_domain_state* d)
 {
-  struct caml_final_info *f = d->state->final_info;
+  struct caml_final_info *f = d->final_info;
   f->first.old = f->first.young;
   f->last.old = f->last.young;
 }
