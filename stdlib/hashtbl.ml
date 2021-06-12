@@ -57,7 +57,7 @@ let randomized = ref randomized_default
 let randomize () = randomized := true
 let is_randomized () = !randomized
 
-let random_key = Domain.DLS.new_key Random.State.make_self_init
+let prng_key = Domain.DLS.new_key Random.State.make_self_init
 
 (* Functions which appear before the functorial interface must either be
    independent of the hash function or take it as a parameter (see #2202 and
@@ -72,7 +72,7 @@ let rec power_2_above x n =
 
 let create ?(random = !randomized) initial_size =
   let s = power_2_above 16 initial_size in
-  let random_state = Domain.DLS.get random_key in
+  let random_state = Domain.DLS.get prng_key in
   let seed = if random then Random.State.bits random_state else 0 in
   { initial_size = s; size = 0; seed = seed; data = Array.make s Empty }
 
@@ -618,7 +618,7 @@ let of_seq i =
 let rebuild ?(random = !randomized) h =
   let s = power_2_above 16 (Array.length h.data) in
   let seed =
-    let random_state = Domain.DLS.get random_key in
+    let random_state = Domain.DLS.get prng_key in
     if random then Random.State.bits random_state
     else if Obj.size (Obj.repr h) >= 4 then h.seed
     else 0 in
