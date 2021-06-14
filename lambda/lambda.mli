@@ -46,8 +46,8 @@ type is_safe =
   | Unsafe
 
 type field_read_semantics =
-  | Reads_agree
-  | Reads_vary
+  | Reads_agree    (** Immutable read *)
+  | Reads_vary     (** Mutable read *)
 
 type block_size =
   | Known of int
