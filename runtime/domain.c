@@ -67,7 +67,6 @@ struct interruptor {
 
 struct dom_internal {
   /* readonly fields, initialised and never modified */
-  atomic_uintnat* interrupt_word_address;
   int id;
   caml_domain_state* state;
   struct interruptor interruptor;
@@ -152,8 +151,8 @@ CAMLexport __thread caml_domain_state* Caml_state;
 /* Interrupt functions */
 static const uintnat INTERRUPT_MAGIC = (uintnat)(-1);
 
-static void interrupt_domain(dom_internal* d) {
-  atomic_store_rel(d->interrupt_word_address, INTERRUPT_MAGIC);
+Caml_inline void interrupt_domain(struct interruptor* s) {
+  atomic_store_rel(s->interrupt_word, INTERRUPT_MAGIC);
 }
 
 int caml_incoming_interrupts_queued()
@@ -208,7 +207,7 @@ int caml_send_interrupt(struct interruptor* target)
   caml_plat_broadcast(&target->cond); // OPT before/after unlock? elide?
   caml_plat_unlock(&target->lock);
 
-  atomic_store_rel(target->interrupt_word, INTERRUPT_MAGIC); //FIXME dup
+  interrupt_domain(target);
 
   return 1;
 }
@@ -297,7 +296,7 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
     caml_plat_lock(&s->lock);
     if (!s->running) {
       d = &all_domains[i];
-      if (!d->interrupt_word_address) {
+      if (!s->interrupt_word) {
         caml_domain_state* domain_state;
         atomic_uintnat* young_limit;
         /* never been started before, so set up minor heap */
@@ -310,9 +309,8 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
         }
       	domain_state = (caml_domain_state*)(d->tls_area);
         young_limit = (atomic_uintnat*)&domain_state->young_limit;
-        d->interrupt_word_address = young_limit;
-        atomic_store_rel(young_limit, (uintnat)domain_state->young_start);
         s->interrupt_word = young_limit;
+        atomic_store_rel(young_limit, (uintnat)domain_state->young_start);
       }
       Assert(!s->interrupt_pending);
       s->running = 1;
@@ -455,14 +453,16 @@ void caml_init_domains(uintnat minor_heap_wsz) {
     uintnat domain_minor_heap_base;
     uintnat domain_tls_base;
 
+    dom->id = i;
+
+    dom->interruptor.interrupt_word = 0;
     caml_plat_mutex_init(&dom->interruptor.lock);
     caml_plat_cond_init(&dom->interruptor.cond,
                         &dom->interruptor.lock);
-    dom->interruptor.interrupt_pending = 0;
     dom->interruptor.running = 0;
     dom->interruptor.terminating = 0;
     dom->interruptor.unique_id = i;
-    dom->id = i;
+    dom->interruptor.interrupt_pending = 0;
 
     caml_plat_mutex_init(&dom->domain_lock);
     caml_plat_cond_init(&dom->domain_cond, &dom->domain_lock);
@@ -946,7 +946,7 @@ int caml_try_run_on_all_domains(void (*handler)(caml_domain_state*, void*, int, 
 }
 
 void caml_interrupt_self() {
-  interrupt_domain(domain_self);
+  interrupt_domain(&domain_self->interruptor);
 }
 
 /* Arrange for a major GC slice to be performed on the current domain
@@ -999,7 +999,7 @@ static void caml_poll_gc_work()
 
 void caml_handle_gc_interrupt()
 {
-  atomic_uintnat* young_limit = domain_self->interrupt_word_address;
+  atomic_uintnat* young_limit = domain_self->interruptor.interrupt_word;
   CAMLalloc_point_here;
 
   CAML_EV_BEGIN(EV_INTERRUPT_GC);
