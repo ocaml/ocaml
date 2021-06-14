@@ -50,13 +50,11 @@ module DLS : sig
     val set : 'a key -> 'a -> unit
     (** [set k v] updates the calling domain's domain-local state to associate
         the key [k] with value [v]. It overwrites any previous values associated
-        to [k], which cannot be restored later. [set] is an [O(n)] operation
-        where [n] is the number of keys set on the calling domain. *)
+        to [k], which cannot be restored later. *)
 
     val get : 'a key -> 'a
     (** [get k] returns [v] if a value [v] is associated to the key [k] on
         the calling domain's domain-local state. Sets [k]'s value with its
-        initialiser and returns it otherwise. [get] is an [O(n)] operation
-        where [n] is the number of keys set on the calling domain *)
+        initialiser and returns it otherwise. *)
 
   end
