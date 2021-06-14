@@ -68,6 +68,17 @@ type wrong_name = {
   valid_names: string list;
 }
 
+type wrong_kind_context =
+  | Pattern
+  | Expression of type_forcing_context option
+
+type wrong_kind_sort =
+  | Constructor
+  | Record
+  | Boolean
+  | List
+  | Unit
+
 type existential_restriction =
   | At_toplevel (** no existential types at the toplevel *)
   | In_group (** nor with [let ... and ...] *)
@@ -162,7 +173,7 @@ type error =
   | Too_many_arguments of bool * type_expr * type_forcing_context option
   | Abstract_wrong_label of arg_label * type_expr * type_forcing_context option
   | Scoping_let_module of string * type_expr
-  | Not_a_variant_type of Longident.t
+  | Not_a_polymorphic_variant_type of Longident.t
   | Incoherent_label_order
   | Less_general of string * Errortrace.unification Errortrace.t
   | Modules_not_allowed
@@ -189,6 +200,8 @@ type error =
   | Bindings_type_clash of Errortrace.unification Errortrace.t
   | Unbound_existential of Ident.t list * type_expr
   | Missing_type_constraint
+  | Wrong_expected_kind of wrong_kind_sort * wrong_kind_context * type_expr
+  | Expr_not_a_record_type of type_expr
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error

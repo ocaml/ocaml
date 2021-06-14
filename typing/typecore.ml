@@ -65,6 +65,25 @@ type wrong_name = {
   valid_names: string list;
 }
 
+type wrong_kind_context =
+  | Pattern
+  | Expression of type_forcing_context option
+
+type wrong_kind_sort =
+  | Constructor
+  | Record
+  | Boolean
+  | List
+  | Unit
+
+let wrong_kind_sort_of_constructor (lid : Longident.t) =
+  match lid with
+  | Lident "true" | Lident "false" | Ldot(_, "true") | Ldot(_, "false") ->
+      Boolean
+  | Lident "[]" | Lident "::" | Ldot(_, "[]") | Ldot(_, "::") -> List
+  | Lident "()" | Ldot(_, "()") -> Unit
+  | _ -> Constructor
+
 type existential_restriction =
   | At_toplevel (** no existential types at the toplevel *)
   | In_group (** nor with let ... and ... *)
@@ -110,7 +129,7 @@ type error =
   | Too_many_arguments of bool * type_expr * type_forcing_context option
   | Abstract_wrong_label of arg_label * type_expr * type_forcing_context option
   | Scoping_let_module of string * type_expr
-  | Not_a_variant_type of Longident.t
+  | Not_a_polymorphic_variant_type of Longident.t
   | Incoherent_label_order
   | Less_general of string * Errortrace.unification Errortrace.t
   | Modules_not_allowed
@@ -137,6 +156,8 @@ type error =
   | Bindings_type_clash of Errortrace.unification Errortrace.t
   | Unbound_existential of Ident.t list * type_expr
   | Missing_type_constraint
+  | Wrong_expected_kind of wrong_kind_sort * wrong_kind_context * type_expr
+  | Expr_not_a_record_type of type_expr
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -285,23 +306,39 @@ let extract_option_type env ty =
     when Path.same path Predef.path_option -> ty
   | _ -> assert false
 
+type record_extraction_result =
+  | Record_type of Path.t * Path.t * Types.label_declaration list
+  | Not_a_record_type
+  | Maybe_a_record_type
+
 let extract_concrete_record env ty =
   match extract_concrete_typedecl env ty with
-    (p0, p, {type_kind=Type_record (fields, _)}) -> (p0, p, fields)
-  | _ -> raise Not_found
+  | Typedecl(p0, p, {type_kind=Type_record (fields, _)}) ->
+    Record_type (p0, p, fields)
+  | Has_no_typedecl | Typedecl(_, _, _) -> Not_a_record_type
+  | May_have_typedecl -> Maybe_a_record_type
+
+type variant_extraction_result =
+  | Variant_type of Path.t * Path.t * Types.constructor_declaration list
+  | Not_a_variant_type
+  | Maybe_a_variant_type
 
 let extract_concrete_variant env ty =
   match extract_concrete_typedecl env ty with
-    (p0, p, {type_kind=Type_variant (cstrs, _)}) -> (p0, p, cstrs)
-  | (p0, p, {type_kind=Type_open}) -> (p0, p, [])
-  | _ -> raise Not_found
+  | Typedecl(p0, p, {type_kind=Type_variant (cstrs, _)}) ->
+    Variant_type (p0, p, cstrs)
+  | Typedecl(p0, p, {type_kind=Type_open}) ->
+    Variant_type (p0, p, [])
+  | Has_no_typedecl | Typedecl(_, _, _) -> Not_a_variant_type
+  | May_have_typedecl -> Maybe_a_variant_type
 
 let extract_label_names env ty =
-  try
-    let (_, _,fields) = extract_concrete_record env ty in
-    List.map (fun l -> l.Types.ld_id) fields
-  with Not_found ->
-    assert false
+  match extract_concrete_record env ty with
+  | Record_type (_, _,fields) -> List.map (fun l -> l.Types.ld_id) fields
+  | Not_a_record_type | Maybe_a_record_type -> assert false
+
+let is_principal ty =
+  (repr ty).level = generic_level || not !Clflags.principal
 
 (* Typing of patterns *)
 
@@ -772,7 +809,7 @@ let build_or_pat env loc lid =
     let ty = expand_head env (newty(Tconstr(path, tyl, ref Mnil))) in
     match ty.desc with
       Tvariant row when static_row row -> row
-    | _ -> raise(Error(lid.loc, env, Not_a_variant_type lid.txt))
+    | _ -> raise(Error(lid.loc, env, Not_a_polymorphic_variant_type lid.txt))
   in
   let pats, fields =
     List.fold_left
@@ -806,7 +843,7 @@ let build_or_pat env loc lid =
     [] ->
       (* empty polymorphic variants: not possible with the concrete language
          but valid at the ast level *)
-      raise(Error(lid.loc, env, Not_a_variant_type lid.txt))
+      raise(Error(lid.loc, env, Not_a_polymorphic_variant_type lid.txt))
   | pat :: pats ->
       let r =
         List.fold_left
@@ -1716,13 +1753,14 @@ and type_pat_aux
         pat_env = !env })
   | Ppat_construct(lid, sarg) ->
       let expected_type =
-        try
-          let (p0, p, _) = extract_concrete_variant !env expected_ty in
-          let principal =
-            (repr expected_ty).level = generic_level || not !Clflags.principal
-          in
-            Some (p0, p, principal)
-        with Not_found -> None
+        match extract_concrete_variant !env expected_ty with
+        | Variant_type(p0, p, _) ->
+            Some (p0, p, is_principal expected_ty)
+        | Maybe_a_variant_type -> None
+        | Not_a_variant_type ->
+            let srt = wrong_kind_sort_of_constructor lid.txt in
+            let error = Wrong_expected_kind(srt, Pattern, expected_ty) in
+            raise (Error (loc, !env, error))
       in
       let constr =
         match lid.txt, mode with
@@ -1838,14 +1876,14 @@ and type_pat_aux
   | Ppat_record(lid_sp_list, closed) ->
       assert (lid_sp_list <> []);
       let expected_type, record_ty =
-        try
-          let (p0, p,_) = extract_concrete_record !env expected_ty in
-          let ty = generic_instance expected_ty in
-          let principal =
-            (repr expected_ty).level = generic_level || not !Clflags.principal
-          in
-          Some (p0, p, principal), ty
-        with Not_found -> None, newvar ()
+        match extract_concrete_record !env expected_ty with
+        | Record_type(p0, p, _) ->
+            let ty = generic_instance expected_ty in
+            Some (p0, p, is_principal expected_ty), ty
+        | Maybe_a_record_type -> None, newvar ()
+        | Not_a_record_type ->
+          let error = Wrong_expected_kind(Record, Pattern, expected_ty) in
+          raise (Error (loc, !env, error))
       in
       let type_label_pat (label_lid, label, sarg) k =
         let ty_arg =
@@ -3051,35 +3089,38 @@ and type_expect_
             Some exp
       in
       let ty_record, expected_type =
-        let get_path ty =
-          try
-            let (p0, p,_) = extract_concrete_record env ty in
-            let principal =
-              (repr ty).level = generic_level || not !Clflags.principal
+        let expected_opath =
+          match extract_concrete_record env ty_expected with
+          | Record_type (p0, p, _) -> Some (p0, p, is_principal ty_expected)
+          | Maybe_a_record_type -> None
+          | Not_a_record_type ->
+            let error =
+              Wrong_expected_kind(Record, Expression explanation, ty_expected)
             in
-            Some (p0, p, principal)
-          with Not_found -> None
+            raise (Error (loc, env, error))
         in
-        let opath = get_path ty_expected in
-        match opath with
-          None | Some (_, _, false) ->
-            let ty = if opath = None then newvar () else ty_expected in
-            begin match opt_exp with
-              None -> ty, opath
-            | Some exp ->
-                match get_path exp.exp_type with
-                  None ->
-                    ty, opath
-                | Some (_, p', _) as opath ->
-                    let decl = Env.find_type p' env in
-                    begin_def ();
-                    let ty =
-                      newconstr p' (instance_list decl.type_params) in
-                    end_def ();
-                    generalize_structure ty;
-                    ty, opath
-            end
-        | _ -> ty_expected, opath
+        let opt_exp_opath =
+          match opt_exp with
+          | None -> None
+          | Some exp ->
+            match extract_concrete_record env exp.exp_type with
+            | Record_type (p0, p, _) -> Some (p0, p, is_principal exp.exp_type)
+            | Maybe_a_record_type -> None
+            | Not_a_record_type ->
+              let error = Expr_not_a_record_type exp.exp_type in
+              raise (Error (exp.exp_loc, env, error))
+        in
+        match expected_opath, opt_exp_opath with
+        | None, None -> newvar (), None
+        | Some _, None -> ty_expected, expected_opath
+        | Some(_, _, true), Some _ -> ty_expected, expected_opath
+        | (None | Some (_, _, false)), Some (_, p', _) ->
+            let decl = Env.find_type p' env in
+            begin_def ();
+            let ty = newconstr p' (instance_list decl.type_params) in
+            end_def ();
+            generalize_structure ty;
+            ty, opt_exp_opath
       in
       let closed = (opt_sexp = None) in
       let lbl_exp_list =
@@ -3991,10 +4032,13 @@ and type_label_access env srecord usage lid =
   end;
   let ty_exp = record.exp_type in
   let expected_type =
-    try
-      let (p0, p,_) = extract_concrete_record env ty_exp in
-      Some(p0, p, (repr ty_exp).level = generic_level || not !Clflags.principal)
-    with Not_found -> None
+    match extract_concrete_record env ty_exp with
+    | Record_type(p0, p, _) ->
+        Some(p0, p, is_principal ty_exp)
+    | Maybe_a_record_type -> None
+    | Not_a_record_type ->
+        let error = Expr_not_a_record_type ty_exp in
+        raise (Error (record.exp_loc, env, error))
   in
   let labels = Env.lookup_all_labels ~loc:lid.loc usage lid.txt env in
   let label =
@@ -4607,13 +4651,15 @@ and type_application env funct sargs =
 and type_construct env loc lid sarg ty_expected_explained attrs =
   let { ty = ty_expected; explanation } = ty_expected_explained in
   let expected_type =
-    try
-      let (p0, p,_) = extract_concrete_variant env ty_expected in
-      let principal =
-        (repr ty_expected).level = generic_level || not !Clflags.principal
-      in
-      Some(p0, p, principal)
-    with Not_found -> None
+    match extract_concrete_variant env ty_expected with
+    | Variant_type(p0, p,_) ->
+        Some(p0, p, is_principal ty_expected)
+    | Maybe_a_variant_type -> None
+    | Not_a_variant_type ->
+        let srt = wrong_kind_sort_of_constructor lid.txt in
+        let ctx = Expression explanation in
+        let error = Wrong_expected_kind(srt, ctx, ty_expected) in
+        raise (Error (loc, env, error))
   in
   let constrs =
     Env.lookup_all_constructors ~loc:lid.loc Env.Positive lid.txt env
@@ -5662,7 +5708,7 @@ let report_error ~loc env = function
       Location.errorf ~loc
         "Cannot use private constructor %s to create values of type %a"
         constr.cstr_name Printtyp.type_expr ty
-  | Not_a_variant_type lid ->
+  | Not_a_polymorphic_variant_type lid ->
       Location.errorf ~loc "The type %a@ is not a variant type" longident lid
   | Incoherent_label_order ->
       Location.errorf ~loc
@@ -5790,6 +5836,30 @@ let report_error ~loc env = function
         "@[%s@ %s@]"
         "Existential types introduced in a constructor pattern"
         "must be bound by a type constraint on the argument."
+  | Wrong_expected_kind(sort, ctx, ty) ->
+      let ctx, explanation =
+        match ctx with
+        | Expression explanation -> "expression", explanation
+        | Pattern -> "pattern", None
+      in
+      let sort =
+        match sort with
+        | Constructor -> "constructor"
+        | Boolean -> "boolean literal"
+        | List -> "list literal"
+        | Unit -> "unit literal"
+        | Record -> "record"
+      in
+      Location.errorf ~loc
+        "This %s should not be a %s,@ \
+         the expected type is@ %a%t"
+        ctx sort Printtyp.type_expr ty
+        (report_type_expected_explanation_opt explanation)
+  | Expr_not_a_record_type ty ->
+      Location.errorf ~loc
+        "This expression has type %a@ \
+         which is not a record type."
+        Printtyp.type_expr ty
 
 let report_error ~loc env err =
   Printtyp.wrap_printing_env ~error:true env

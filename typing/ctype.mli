@@ -190,11 +190,16 @@ val expand_head_opt: Env.t -> type_expr -> type_expr
     optimisations. *)
 
 val full_expand: may_forget_scope:bool -> Env.t -> type_expr -> type_expr
+
+type typedecl_extraction_result =
+  | Typedecl of Path.t * Path.t * type_declaration
+    (* The original path of the types, and the first concrete
+       type declaration found expanding it. *)
+  | Has_no_typedecl
+  | May_have_typedecl
+
 val extract_concrete_typedecl:
-        Env.t -> type_expr -> Path.t * Path.t * type_declaration
-        (* Return the original path of the types, and the first concrete
-           type declaration found expanding it.
-           Raise [Not_found] if none appears or not a type constructor. *)
+        Env.t -> type_expr -> typedecl_extraction_result
 
 val unify: Env.t -> type_expr -> type_expr -> unit
         (* Unify the two types given. Raise [Unify] if not possible. *)

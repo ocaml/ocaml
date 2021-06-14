@@ -137,8 +137,7 @@ Error: Unbound record field Complex.z
 Line 1, characters 2-6:
 1 | { true with contents = 0 };;
       ^^^^
-Error: This expression has type bool but an expression was expected of type
-         'a ref
+Error: This expression has type bool which is not a record type.
 |}];;
 
 type ('a, 'b) t = { fst : 'a; snd : 'b };;
