@@ -47,22 +47,6 @@ let cons_opt x_opt xs =
   | None -> xs
   | Some x -> x :: xs
 
-let mod_field pos =
-  (* Note: In some occasions, size is actually available, but in general
-     coercions can reuse blocks if the indices are compatible, so the size is
-     only a minimal guaranteed size and may not reflect the actual block size.
-  *)
-  Pfield (
-    { index = pos;
-      block_info = module_block_info;
-    }, Reads_agree)
-
-let mod_setfield pos =
-  Psetfield (
-    { index = pos;
-      block_info = module_block_info;
-    }, Pointer, Root_initialization)
-
 (* Keep track of the root path (from the root of the namespace to the
    currently compiled module expression).  Useful for naming extensions. *)
 

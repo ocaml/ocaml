@@ -640,15 +640,10 @@ and transl_exp0 ~in_new_scope ~scopes e =
       | [] when pure = Alias -> transl_exp ~scopes e
       | _ ->
           let oid = Ident.create_local "open" in
-          let field_info pos =
-            { index = pos;
-              block_info = Lambda.module_block_info;
-            }
-          in
           let body, _ =
             List.fold_left (fun (body, pos) id ->
               Llet(Alias, Pgenval, id,
-                   Lprim(Pfield (field_info pos, Reads_agree), [Lvar oid],
+                   Lprim(mod_field pos, [Lvar oid],
                          of_location ~scopes od.open_loc), body),
               pos + 1
             ) (transl_exp ~scopes e, 0)

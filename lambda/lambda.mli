@@ -477,10 +477,13 @@ val merge_inline_attributes
 
 val reset: unit -> unit
 
-(* Info about module blocks.
+(** Helpers for module block accesses.
    Size is considered to be unknown in all cases,
    because coercions can reuse longer but compatible module blocks,
    so the actual size of a module block may be greater than what its
    type would suggest.
+   Module accesses are always immutable, except in translobj where the
+   method cache is stored in a mutable module field.
 *)
-val module_block_info: block_info
+val mod_field: ?read_semantics: field_read_semantics -> int -> primitive
+val mod_setfield: int -> primitive

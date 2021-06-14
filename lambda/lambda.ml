@@ -998,3 +998,19 @@ let reset () =
   raise_count := 0
 
 let module_block_info : block_info = { tag = 0; size = Unknown; }
+
+let mod_field ?(read_semantics=Reads_agree) pos =
+  (* Note: In some occasions, size is actually available, but in general
+     coercions can reuse blocks if the indices are compatible, so the size is
+     only a minimal guaranteed size and may not reflect the actual block size.
+  *)
+  Pfield (
+    { index = pos;
+      block_info = module_block_info;
+    }, read_semantics)
+
+let mod_setfield pos =
+  Psetfield (
+    { index = pos;
+      block_info = module_block_info;
+    }, Pointer, Root_initialization)
