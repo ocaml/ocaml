@@ -43,7 +43,7 @@ let rec eliminate_ref id = function
       Lletrec(List.map (fun (v, e) -> (v, eliminate_ref id e)) idel,
               eliminate_ref id e2)
   | Lprim(Pfield ({ index = 0; _ }, _), [Lvar v], _) when Ident.same v id ->
-      Lvar id
+      Lmutvar id
   | Lprim(Psetfield({index = 0; _ }, _, _), [Lvar v; e], _)
     when Ident.same v id ->
       Lassign(id, eliminate_ref id e)
