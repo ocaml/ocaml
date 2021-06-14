@@ -26,8 +26,6 @@ extern "C" {
 #include "config.h"
 #include "mlvalues.h"
 #include "domain_state.h"
-#include "memory.h"
-#include "major_gc.h"
 #include "platform.h"
 
 #define Caml_check_gc_interrupt(dom_st)   \
@@ -49,7 +47,6 @@ void caml_request_minor_gc (void);
 
 void caml_interrupt_self(void);
 
-void caml_sample_gc_stats(struct gc_stats* buf);
 void caml_print_stats(void);
 
 CAMLexport void caml_reset_domain_lock(void);
