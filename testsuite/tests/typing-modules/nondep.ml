@@ -53,6 +53,6 @@ end
 module M :
   sig
     module F : functor (X : sig type t end) -> sig type t = X.t end
-    module Not_ok : sig type t = private X.t end
+    module Not_ok : sig type t end
   end
 |}]
