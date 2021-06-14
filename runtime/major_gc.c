@@ -61,7 +61,6 @@ int caml_gc_phase;        /* always Phase_mark, Pase_clean,
 uintnat caml_allocated_words;
 uintnat caml_dependent_size, caml_dependent_allocated;
 double caml_extra_heap_resources;
-uintnat caml_fl_wsz_at_phase_change = 0;
 
 extern value caml_fl_merge;  /* Defined in freelist.c. */
 
@@ -427,7 +426,6 @@ static void init_sweep_phase(void)
   caml_gc_phase = Phase_sweep;
   sweep_chunk = caml_heap_start;
   caml_gc_sweep_hp = sweep_chunk;
-  caml_fl_wsz_at_phase_change = caml_fl_cur_wsz;
   if (caml_major_gc_hook) (*caml_major_gc_hook)();
 }
 
