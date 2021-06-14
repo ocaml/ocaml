@@ -92,24 +92,24 @@ static struct {
   atomic_uintnat num_domains_still_processing;
   void (*callback)(caml_domain_state*, void*, int participating_count, caml_domain_state** others_participating);
   void* data;
-  int num_domains;
-  atomic_uintnat barrier;
   void (*enter_spin_callback)(caml_domain_state*, void*);
   void* enter_spin_data;
 
+  /* barrier state */
+  int num_domains;
+  atomic_uintnat barrier;
+
   caml_domain_state* participating[Max_domains];
-  struct interruptor* interruptors[Max_domains];
 } stw_request = {
   ATOMIC_UINTNAT_INIT(0),
   ATOMIC_UINTNAT_INIT(0),
   NULL,
   NULL,
+  NULL,
+  NULL,
   0,
   ATOMIC_UINTNAT_INIT(0),
-  NULL,
-  NULL,
   { 0 },
-  { 0 }
 };
 
 static caml_plat_mutex all_domains_lock = CAML_PLAT_MUTEX_INITIALIZER;
@@ -892,38 +892,35 @@ int caml_try_run_on_all_domains_with_spin_work(
      this STW section). */
   {
     caml_domain_state** participating = stw_request.participating;
-    struct interruptor** interruptors = stw_request.interruptors;
 
     for (i = 0; i < Max_domains; i++) {
       if (&all_domains[i] == domain_self) {
         participating[domains_participating] = domain_self->state;
-        interruptors[domains_participating] = &domain_self->interruptor;
         Assert(!domain_self->interruptor.interrupt_pending);
         domains_participating++;
         continue;
       }
       if (caml_send_interrupt(&all_domains[i].interruptor)) {
         participating[domains_participating] = all_domains[i].state;
-        interruptors[domains_participating] = &all_domains[i].interruptor;
         domains_participating++;
       }
     }
 
+    Assert(domains_participating > 0);
+
+    /* setup the domain_participating fields */
+    stw_request.num_domains = domains_participating;
+    atomic_store_rel(&stw_request.num_domains_still_processing,
+                     domains_participating);
+
     for(i = 0; i < domains_participating ; i++) {
-      caml_wait_interrupt_serviced(interruptors[i]);
+      int id = participating[i]->id;
+      caml_wait_interrupt_serviced(&all_domains[id].interruptor);
     }
   }
 
-  Assert(domains_participating > 0);
-
-  /* setup the domain_participating fields */
-  stw_request.num_domains = domains_participating;
-  atomic_store_rel(&stw_request.num_domains_still_processing,
-                   domains_participating);
-
   /* release from the enter barrier */
   atomic_store_rel(&stw_request.domains_still_running, 0);
-
 
   #ifdef DEBUG
   domain_state->inside_stw_handler = 1;
