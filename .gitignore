@@ -195,6 +195,8 @@ _build
 /runtime/.dep
 /runtime/domain_state32.inc
 /runtime/domain_state64.inc
+/runtime/GIT_HASH
+/runtime/GIT_HASH.new
 
 /stdlib/camlheader
 /stdlib/target_camlheader

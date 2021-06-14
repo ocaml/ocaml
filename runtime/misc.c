@@ -36,7 +36,6 @@ __declspec(noreturn) void __cdecl abort(void);
 #include "caml/misc.h"
 #include "caml/memory.h"
 #include "caml/osdeps.h"
-#include "caml/version.h"
 #include "caml/domain.h"
 #include "caml/startup.h"
 #include "caml/startup_aux.h"
