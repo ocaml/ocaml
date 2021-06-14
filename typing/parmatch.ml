@@ -800,45 +800,7 @@ let should_extend ext env = match ext with
       | Any -> assert false
       end
               end
-(*<<<<<<< HEAD
               
-=======
-
-type simple_constructor_tag =
-  | Constant of int
-  | Block of int
-
-module ConstructorTagHashtbl = Hashtbl.Make(
-  struct
-    type t = simple_constructor_tag
-    let hash = Hashtbl.hash
-    let equal = ( = )
-  end
-)
-
-(* complement constructor tags *)
-let complete_tags nconsts nconstrs tags =
-  let seen_const = Array.make nconsts false
-  and seen_constr = Array.make nconstrs false in
-  List.iter
-    (function
-      | Cstr_constant i -> seen_const.(i) <- true
-      | Cstr_block { tag; size = _; mutability = _ } ->
-          seen_constr.(tag) <- true
-      | _  -> assert false)
-    tags ;
-  let r = ConstructorTagHashtbl.create (nconsts+nconstrs) in
-  for i = 0 to nconsts-1 do
-    if not seen_const.(i) then
-      ConstructorTagHashtbl.add r (Constant i) ()
-  done ;
-  for i = 0 to nconstrs-1 do
-    if not seen_constr.(i) then
-      ConstructorTagHashtbl.add r (Block i) ()
-  done ;
-  r
-
->>>>>>> 900a11b9c... Propagate info on mutability in switches through lambda, flambda*)
 (* build a pattern from a constructor description *)
 let pat_of_constr ex_pat cstr =
   {ex_pat with pat_desc =
