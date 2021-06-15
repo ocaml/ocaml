@@ -586,7 +586,7 @@ CAMLprim value caml_sys_random_seed (value unit)
   /* If the read from /dev/urandom fully succeeded, we now have 96 bits
      of good random data and can stop here.  Otherwise, complement
      whatever we got (probably nothing) with some not-very-random data. */
-  if (n < 12) {
+  if (n < 11) {
 #ifdef HAS_GETTIMEOFDAY
     struct timeval tv;
     gettimeofday(&tv, NULL);
@@ -599,6 +599,7 @@ CAMLprim value caml_sys_random_seed (value unit)
     data[n++] = getpid();
     data[n++] = getppid();
 #endif
+    data[n++] = (intnat)Caml_state->unique_token_root;
   }
 #endif
   /* Convert to an OCaml array of ints */
