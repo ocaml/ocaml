@@ -19,7 +19,8 @@ OCaml 4.12, maintenance version
   (David Allsopp, review by Nicolás Ojeda Bär)
 
 - #10449: Fix major GC work accounting (the GC was running too fast).
-  (Damien Doligez, report by Stephen Dolan, review by Nicolás Ojeda Bär)
+  (Damien Doligez, report by Stephen Dolan, review by Nicolás Ojeda Bär
+   and Sadiq Jaffer)
 
 OCaml 4.12.0 (24 February 2021)
 -------------------------------
