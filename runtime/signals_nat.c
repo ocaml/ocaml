@@ -30,11 +30,12 @@
 #include "caml/domain.h"
 #include "caml/fail.h"
 #include "caml/fiber.h"
+#include "frame_descriptors.h"
 #include "caml/memory.h"
 #include "caml/osdeps.h"
 #include "caml/signals.h"
+#include "signals_osdep.h"
 #include "caml/stack.h"
-#include "frame_descriptors.h"
 
 #ifndef NSIG
 #define NSIG 64
@@ -46,7 +47,6 @@ typedef void (*signal_handler)(int signo);
 extern signal_handler caml_win32_signal(int sig, signal_handler action);
 #define signal(sig,act) caml_win32_signal(sig,act)
 #endif
-
 
 /* This routine is the common entry point for garbage collection
    and signal handling.  It can trigger a callback to OCaml code.
@@ -116,21 +116,36 @@ void caml_garbage_collection()
   caml_process_pending_signals();
 }
 
-static void handle_signal(int sig, siginfo_t* info, void* context)
+DECLARE_SIGNAL_HANDLER(handle_signal)
 {
   int saved_errno;
   /* Save the value of errno (PR#5982). */
   saved_errno = errno;
+#if !defined(POSIX_SIGNALS) && !defined(BSD_SIGNALS)
+  signal(sig, handle_signal);
+#endif
   if (sig < 0 || sig >= NSIG) return;
   caml_record_signal(sig);
+  /* Some ports cache [Caml_state->young_limit] in a register.
+     Use the signal context to modify that register too, but only if
+     we are inside OCaml code (not inside C code). */
+#if defined(CONTEXT_PC) && defined(CONTEXT_YOUNG_LIMIT)
+  if (caml_find_code_fragment_by_pc((char *) CONTEXT_PC) != NULL)
+    CONTEXT_YOUNG_LIMIT = (context_reg) Caml_state->young_limit;
+#endif
   errno = saved_errno;
 }
 
 int caml_set_signal_action(int signo, int action)
 {
   signal_handler oldact;
+#ifdef POSIX_SIGNALS
   struct sigaction sigact, oldsigact;
+#else
+  signal_handler act;
+#endif
 
+#ifdef POSIX_SIGNALS
   switch(action) {
   case 0:
     sigact.sa_handler = SIG_DFL;
@@ -141,16 +156,21 @@ int caml_set_signal_action(int signo, int action)
     sigact.sa_flags = 0;
     break;
   default:
-    sigact.sa_sigaction = handle_signal;
-    sigact.sa_flags = SA_ONSTACK | SA_SIGINFO;
-#if defined(TARGET_amd64) && defined(SYS_macosx)
-    sigact.sa_flags |= SA_64REGSET;
-#endif
+    SET_SIGACT(sigact, handle_signal);
     break;
   }
   sigemptyset(&sigact.sa_mask);
   if (sigaction(signo, &sigact, &oldsigact) == -1) return -1;
   oldact = oldsigact.sa_handler;
+#else
+  switch(action) {
+  case 0:  act = SIG_DFL; break;
+  case 1:  act = SIG_IGN; break;
+  default: act = handle_signal; break;
+  }
+  oldact = signal(signo, act);
+  if (oldact == SIG_ERR) return -1;
+#endif
   if (oldact == (signal_handler) handle_signal)
     return 2;
   else if (oldact == SIG_IGN)
@@ -169,6 +189,7 @@ DECLARE_SIGNAL_HANDLER(trap_handler)
   /* TODO: raise a real exception here */
   caml_fatal_error ("bounds check failed");
 }
+
 #endif
 
 /* Initialization of signal stuff */
@@ -180,8 +201,10 @@ void caml_init_signals(void)
 #if defined(TARGET_power)
   { struct sigaction act;
     sigemptyset(&act.sa_mask);
-    act.sa_sigaction = trap_handler;
-    act.sa_flags = SA_ONSTACK | SA_SIGINFO;
+    SET_SIGACT(act, trap_handler);
+#if !defined(SYS_rhapsody)
+    act.sa_flags |= SA_NODEFER;
+#endif
     sigaction(SIGTRAP, &act, NULL);
   }
 #endif
@@ -189,8 +212,7 @@ void caml_init_signals(void)
 #if defined(TARGET_s390x)
   { struct sigaction act;
     sigemptyset(&act.sa_mask);
-    act.sa_sigaction = trap_handler;
-    act.sa_flags = SA_ONSTACK | SA_SIGINFO;
+    SET_SIGACT(act, trap_handler);
     sigaction(SIGFPE, &act, NULL);
   }
 #endif
