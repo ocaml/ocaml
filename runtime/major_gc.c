@@ -456,7 +456,7 @@ Caml_inline void mark_slice_darken(struct mark_stack* stk, value v, mlsize_t i,
       if( Tag_hd(chd) < No_scan_tag ) {
         mark_stack_push(stk, child, 0, work);
       } else {
-        *work -= 1; /* Account for header */
+        *work -= Whsize_hd (chd);
       }
     }
   }
