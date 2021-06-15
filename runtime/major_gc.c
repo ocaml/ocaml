@@ -53,6 +53,7 @@ struct mark_stack {
 uintnat caml_percent_free;
 static uintnat marked_words = 1000, prev_marked_words, heap_wsz_at_cycle_start;
 static double s_factor, m_factor, ooh_ratio;
+uintnat caml_mark_to_sweep_ratio = Mark_to_sweep_ratio_def;
 uintnat caml_major_heap_increment;
 CAMLexport char *caml_heap_start;
 char *caml_gc_sweep_hp;
@@ -929,13 +930,15 @@ void caml_set_percent_free (uintnat pf)
   double o, lambda, s, m;
 
   caml_percent_free = pf;
+  lambda = caml_mark_to_sweep_ratio / 1000.;
   o = caml_percent_free / 100.;
-  lambda = Mark_to_sweep_ratio;
   s = 1 + (1 + 2 / lambda) / o;
   m = lambda * s;
   s_factor = s;
   m_factor = m;
   ooh_ratio = 1/m + (1+o)/s;
+  caml_gc_message (0x40, "parameters for GC pacing: m=%.3f, s=%.3f\n",
+                   m_factor, s_factor);
 }
 
 /* The main entry point for the major GC. Called about once for each

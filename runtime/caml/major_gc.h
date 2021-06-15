@@ -79,6 +79,7 @@ extern double caml_major_ring[Max_major_window];
 extern int caml_major_ring_index;
 extern double caml_major_work_credit;
 extern double caml_gc_clock;
+extern uintnat caml_mark_to_sweep_ratio;
 
 /* [caml_major_gc_hook] is called just between the end of the mark
    phase and the beginning of the sweep phase of the major GC.

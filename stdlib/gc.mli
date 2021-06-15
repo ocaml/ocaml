@@ -237,6 +237,15 @@ type control =
         [caml_alloc_custom_mem] (e.g. bigarrays).
         Default: 8192 bytes.
         @since 4.08.0 *)
+
+    mark_to_sweep_ratio : int;
+    (** How much marking work each mark slice will do when sweep slices
+        do 1000 units of sweeping work. Because one unit of marking work
+        usually takes more time than one unit of sweeping work, this
+        parameter can be used to balance the latencies of the mark slices
+        and the sweep slices.
+        Default: 333.
+        @since 4.14.0 *)
   }
 (** The GC parameters are given as a [control] record.  Note that
     these parameters can also be initialised by setting the

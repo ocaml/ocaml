@@ -46,6 +46,7 @@ type control = {
   custom_major_ratio : int;
   custom_minor_ratio : int;
   custom_minor_max_size : int;
+  mark_to_sweep_ratio : int;
 }
 
 external stat : unit -> stat = "caml_gc_stat"

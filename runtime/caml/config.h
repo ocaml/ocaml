@@ -269,7 +269,7 @@ typedef uint64_t uintnat;
 /* Default allocation policy. */
 #define Allocation_policy_def caml_policy_best_fit
 
-/* Ratio of marking work to sweeping work. */
-#define Mark_to_sweep_ratio 0.33
+/* Ratio of marking work to sweeping work (in units of 1/1000). */
+#define Mark_to_sweep_ratio_def 333
 
 #endif /* CAML_CONFIG_H */

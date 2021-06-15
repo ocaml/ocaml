@@ -20,7 +20,9 @@ let _ =
            window_size = g1.window_size;
            custom_major_ratio = g1.custom_major_ratio;
            custom_minor_ratio = g1.custom_minor_ratio;
-           custom_minor_max_size = g1.custom_minor_max_size };
+           custom_minor_max_size = g1.custom_minor_max_size;
+           mark_to_sweep_ratio = g1.mark_to_sweep_ratio;
+         };
   let g2 = Gc.get() in
   assert (g2.minor_heap_size = min_heap_sz);
   assert (g2.major_heap_increment = maj_heap_inc);
@@ -32,4 +34,7 @@ let _ =
   assert (g2.window_size = g1.window_size);
   assert (g2.custom_major_ratio = g1.custom_major_ratio);
   assert (g2.custom_minor_ratio = g1.custom_minor_ratio);
-  assert (g2.custom_minor_max_size = g1.custom_minor_max_size)
+  assert (g2.custom_minor_max_size = g1.custom_minor_max_size);
+  assert (g2.mark_to_sweep_ratio = g1.mark_to_sweep_ratio);
+  ()
+

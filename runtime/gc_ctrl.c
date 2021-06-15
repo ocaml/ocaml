@@ -361,7 +361,7 @@ CAMLprim value caml_gc_get(value v)
   CAMLparam0 ();   /* v is ignored */
   CAMLlocal1 (res);
 
-  res = caml_alloc_tuple (11);
+  res = caml_alloc_tuple (12);
   Store_field (res, 0, Val_long (Caml_state->minor_heap_wsz));          /* s */
   Store_field (res, 1, Val_long (caml_major_heap_increment));           /* i */
   Store_field (res, 2, Val_long (caml_percent_free));                   /* o */
@@ -377,6 +377,7 @@ CAMLprim value caml_gc_get(value v)
   Store_field (res, 8, Val_long (caml_custom_major_ratio));             /* M */
   Store_field (res, 9, Val_long (caml_custom_minor_ratio));             /* m */
   Store_field (res, 10, Val_long (caml_custom_minor_max_bsz));          /* n */
+  Store_field (res, 11, Val_long (caml_mark_to_sweep_ratio));           /* r */
   CAMLreturn (res);
 }
 
@@ -421,6 +422,11 @@ static uintnat norm_custom_min (uintnat p)
   return Max (p, 1);
 }
 
+static uintnat norm_mark_to_sweep_ratio (uintnat r)
+{
+  return Max (r, 1);
+}
+
 CAMLprim value caml_gc_set(value v)
 {
   uintnat newpf, newpm;
@@ -428,6 +434,7 @@ CAMLprim value caml_gc_set(value v)
   asize_t newminwsz;
   uintnat newpolicy;
   uintnat new_custom_maj, new_custom_min, new_custom_sz;
+  uintnat new_mark_to_sweep_ratio;
   CAML_EV_BEGIN(EV_EXPLICIT_GC_SET);
 
   caml_verb_gc = Long_val (Field (v, 3));
@@ -496,6 +503,17 @@ CAMLprim value caml_gc_set(value v)
       caml_gc_message (0x20, "New custom minor size limit: %"
                        ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
                        caml_custom_minor_max_bsz);
+    }
+  }
+
+  /* This field was added in 4.14.0 */
+  if (Wosize_val (v) >= 12){
+    new_mark_to_sweep_ratio = norm_mark_to_sweep_ratio(Long_val(Field(v,11)));
+    if (new_mark_to_sweep_ratio != caml_mark_to_sweep_ratio){
+      caml_mark_to_sweep_ratio = new_mark_to_sweep_ratio;
+      caml_gc_message (0x20, "New mark-to-sweep ratio: %"
+                       ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
+                       caml_mark_to_sweep_ratio);
     }
   }
 
