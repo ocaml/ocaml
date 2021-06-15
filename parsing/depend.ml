@@ -181,6 +181,7 @@ let rec add_pattern bv pat =
   | Ppat_record(pl, _) ->
       List.iter (fun (lbl, p) -> add bv lbl; add_pattern bv p) pl
   | Ppat_array pl -> List.iter (add_pattern bv) pl
+  | Ppat_list pl -> List.iter (add_pattern bv) pl
   | Ppat_or(p1, p2) -> add_pattern bv p1; add_pattern bv p2
   | Ppat_constraint(p, ty) -> add_pattern bv p; add_type bv ty
   | Ppat_variant(_, op) -> add_opt add_pattern bv op
@@ -221,6 +222,7 @@ let rec add_expr bv exp =
   | Pexp_field(e, fld) -> add_expr bv e; add bv fld
   | Pexp_setfield(e1, fld, e2) -> add_expr bv e1; add bv fld; add_expr bv e2
   | Pexp_array el -> List.iter (add_expr bv) el
+  | Pexp_list el -> List.iter (add_expr bv) el
   | Pexp_ifthenelse(e1, e2, opte3) ->
       add_expr bv e1; add_expr bv e2; add_opt add_expr bv opte3
   | Pexp_sequence(e1, e2) -> add_expr bv e1; add_expr bv e2

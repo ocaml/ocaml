@@ -50,7 +50,7 @@
    ;; PARSING
    location longident docstrings syntaxerr ast_helper camlinternalMenhirLib
    parser lexer parse printast pprintast ast_mapper ast_iterator attr_helper
-   builtin_attributes ast_invariants depend
+   builtin_attributes ast_invariants depend ast_desugar
    ; manual update: mli only files
    asttypes parsetree
 

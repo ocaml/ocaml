@@ -376,6 +376,7 @@ module E = struct
         sub.expr sub e1; iter_loc sub lid;
         sub.expr sub e2
     | Pexp_array el -> List.iter (sub.expr sub) el
+    | Pexp_list el -> List.iter (sub.expr sub) el
     | Pexp_ifthenelse (e1, e2, e3) ->
         sub.expr sub e1; sub.expr sub e2;
         iter_opt (sub.expr sub) e3
@@ -451,6 +452,7 @@ module P = struct
     | Ppat_record (lpl, _cf) ->
         List.iter (iter_tuple (iter_loc sub) (sub.pat sub)) lpl
     | Ppat_array pl -> List.iter (sub.pat sub) pl
+    | Ppat_list pl -> List.iter (sub.pat sub) pl
     | Ppat_or (p1, p2) -> sub.pat sub p1; sub.pat sub p2
     | Ppat_constraint (p, t) ->
         sub.pat sub p; sub.typ sub t

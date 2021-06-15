@@ -1331,6 +1331,7 @@ let rec has_literal_pattern p = match p.ppat_desc with
   | Ppat_open (_, p) ->
      has_literal_pattern p
   | Ppat_tuple ps
+  | Ppat_list ps
   | Ppat_array ps ->
      List.exists has_literal_pattern ps
   | Ppat_record (ps, _) ->
@@ -1923,6 +1924,9 @@ and type_pat_aux
         pat_type = instance expected_ty;
         pat_attributes = sp.ppat_attributes;
         pat_env = !env })
+  | Ppat_list spl ->
+      let sp = { sp with ppat_desc= Ast_desugar.pat_list loc spl } in
+      type_pat category ~mode ~env sp expected_ty k
   | Ppat_or(sp1, sp2) ->
       begin match mode with
       | Normal ->
@@ -2648,6 +2652,7 @@ let shallow_iter_ppat f p =
   | Ppat_extension _
   | Ppat_type _ | Ppat_unpack _ -> ()
   | Ppat_array pats -> List.iter f pats
+  | Ppat_list pats -> List.iter f pats
   | Ppat_or (p1,p2) -> f p1; f p2
   | Ppat_variant (_, arg) -> Option.iter f arg
   | Ppat_tuple lst ->  List.iter f lst
@@ -3259,6 +3264,9 @@ and type_expect_
         exp_type = instance ty_expected;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
+  | Pexp_list sargl ->
+      let sexp = { sexp with pexp_desc= Ast_desugar.exp_list loc sargl } in
+      type_expect ?in_function ~recarg env sexp ty_expected_explained
   | Pexp_ifthenelse(scond, sifso, sifnot) ->
       let cond = type_expect env scond
           (mk_expected ~explanation:If_conditional Predef.type_bool) in

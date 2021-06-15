@@ -238,6 +238,9 @@ and pattern i ppf x =
   | Ppat_array (l) ->
       line i ppf "Ppat_array\n";
       list i pattern ppf l;
+  | Ppat_list (l) ->
+      line i ppf "Ppat_list\n";
+      list i pattern ppf l;
   | Ppat_or (p1, p2) ->
       line i ppf "Ppat_or\n";
       pattern i ppf p1;
@@ -320,6 +323,9 @@ and expression i ppf x =
       expression i ppf e2;
   | Pexp_array (l) ->
       line i ppf "Pexp_array\n";
+      list i expression ppf l;
+  | Pexp_list (l) ->
+      line i ppf "Pexp_list\n";
       list i expression ppf l;
   | Pexp_ifthenelse (e1, e2, eo) ->
       line i ppf "Pexp_ifthenelse\n";

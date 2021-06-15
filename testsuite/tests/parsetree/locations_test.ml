@@ -122,3 +122,12 @@ f object method f = 1 end
   object method f = 1 end # f
   object end
 ;;
+
+(* Lists *)
+
+let _ =
+  match [] with
+  | [] -> []
+  | ( 1 :: [ 2; 3 ] ) -> ( 4 :: [ 5; 6 ] )
+  | _ -> []
+;;
