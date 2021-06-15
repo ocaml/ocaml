@@ -34,18 +34,19 @@ module DLS = struct
     let k = Atomic.fetch_and_add key_counter 1 in
     (k, f)
 
-  let rec log2 n =
-    if n <= 1 then 0 else 1 + (log2 (n asr 1))
-
   (* If necessary, grow the current domain's local state array such that [idx]
    * is a valid index in the array. *)
   let maybe_grow idx =
     let st = get_dls_state () in
-    if idx < Array.length st then st
+    let sz = Array.length st in
+    if idx < sz then st
     else begin
-      let sz = Int.shift_left 1 (1 + log2 idx) in
-      let new_st = Array.make sz unique_value in
-      Array.blit st 0 new_st 0 (Array.length st);
+      let rec compute_new_size s =
+        if idx < s then s else compute_new_size (2 * s)
+      in
+      let new_sz = compute_new_size sz in
+      let new_st = Array.make new_sz unique_value in
+      Array.blit st 0 new_st 0 sz;
       set_dls_state new_st;
       new_st
     end
