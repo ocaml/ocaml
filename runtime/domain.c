@@ -808,8 +808,6 @@ static void stw_handler(caml_domain_state* domain)
 
       if (stw_request.enter_spin_callback)
         stw_request.enter_spin_callback(domain, stw_request.enter_spin_data);
-      else
-        cpu_relax();
     }
   }
   CAML_EV_END(EV_STW_API_BARRIER);
