@@ -249,8 +249,8 @@ val trim : string -> string
     @since 4.00.0 *)
 
 val escaped : string -> string
-(** [escaped s] is [s] with special characters represented by escape
-    sequences, following the lexical conventions of OCaml.
+(** [escaped s] is [s] with all characters outside the printable US-ASCII range
+    represented by escape sequences.
 
     All characters outside the US-ASCII printable range \[0x20;0x7E\] are
     escaped, as well as backslash (0x2F) and double-quote (0x22).
@@ -260,7 +260,40 @@ val escaped : string -> string
     [escaped s] fails).
 
     @raise Invalid_argument if the result is longer than
-    {!Sys.max_string_length} bytes. *)
+    {!Sys.max_string_length} bytes.
+
+    @deprecated Use {!String.escape_ascii} instead. *)
+
+val escape_ascii : string -> string
+(** [escaped s] is [s] with all characters outside the printable US-ASCII range
+    represented by escape sequences.
+
+    All characters outside the US-ASCII printable range \[0x20;0x7E\] are
+    escaped, as well as backslash (0x2F) and double-quote (0x22).
+
+    The function {!Scanf.unescaped} is a left inverse of [escaped],
+    i.e. [Scanf.unescaped (escaped s) = s] for any string [s] (unless
+    [escaped s] fails).
+
+    @raise Invalid_argument if the result is longer than
+    {!Sys.max_string_length} bytes.
+
+    @since 4.14.0 *)
+
+val escape : string -> string
+(** [escape s] is [s] with special characters replaced with escape sequences,
+    following the lexical conventions of OCaml.
+
+    The following characters are escaped:
+    double quote (['\"'], newline (['\n']), carriage return (['\r']),
+    tab (['\t\]), backspace (['\b']), DEL (0x7F),
+    and everything in the ['\x00' .. '\x1F'] range.
+
+    @raise Invalid_argument if the result is longer than
+    {!Sys.max_string_length} bytes.
+
+    @since 4.14.0 *)
+
 
 val uppercase_ascii : string -> string
 (** [uppercase_ascii s] is [s] with all lowercase letters
