@@ -4802,7 +4802,9 @@ let rec nondep_type_rec ?(expand_private=false) env ids ty =
             (* Register new type first for recursion *)
             TypeHash.add nondep_variants more ty';
             let static = static_row row in
-            let more' = if static then newgenty Tnil else more in
+            let more' =
+              if static then newgenty Tnil else nondep_type_rec env ids more
+            in
             (* Return a new copy *)
             let row =
               copy_row (nondep_type_rec env ids) true row true more' in

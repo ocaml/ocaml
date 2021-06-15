@@ -25,6 +25,8 @@ Working version
 
 ### Bug fixes:
 
+- #10454: Check row_more in nondep_type_rec.
+  (Leo White, review by Thomas Refis)
 
 OCaml 4.13.0
 -------------
