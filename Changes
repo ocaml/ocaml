@@ -585,8 +585,9 @@ OCaml 4.13.0
 - #10376: Link runtime libraries correctly on msvc64 in -output-complete-obj
   (David Allsopp, review by Gabriel Scherer)
 
-- #xxx: Fix major GC work accounting (the GC was running too fast).
-  (Damien Doligez, report by Stephen Dolan, review by xxx)
+- #10449: Fix major GC work accounting (the GC was running too fast).
+  (Damien Doligez, report by Stephen Dolan, review by Nicolás Ojeda Bär
+   and Sadiq Jaffer)
 
 OCaml 4.12.0 (24 February 2021)
 -------------------------------
