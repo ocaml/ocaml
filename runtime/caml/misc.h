@@ -384,6 +384,9 @@ void caml_gc_message (int, char *, ...)
 extern uintnat caml_runtime_warnings;
 int caml_runtime_warnings_active(void);
 
+extern uintnat caml_boxed_float_array_warning;
+int caml_boxed_float_array_warning_active(void);
+
 #ifdef DEBUG
 #ifdef ARCH_SIXTYFOUR
 #define Debug_tag(x) (INT64_LITERAL(0xD700D7D7D700D6D7u) \

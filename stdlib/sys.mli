@@ -354,6 +354,13 @@ val runtime_warnings_enabled: unit -> bool
 
     @since 4.03.0 *)
 
+val enable_boxed_float_array_warning: bool -> unit
+(** Control whether the OCaml runtime system can emit warnings when
+    boxed float arrays are allocated. *)
+
+val boxed_float_array_warning_enabled: unit -> bool
+(** Return whether the boxed float array warning is currently enabled. *)
+
 (** {1 Optimization} *)
 
 external opaque_identity : 'a -> 'a = "%opaque"

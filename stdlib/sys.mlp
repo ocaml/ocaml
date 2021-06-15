@@ -126,6 +126,11 @@ external enable_runtime_warnings: bool -> unit =
 external runtime_warnings_enabled: unit -> bool =
   "caml_ml_runtime_warnings_enabled"
 
+external enable_boxed_float_array_warning: bool -> unit =
+  "caml_ml_enable_boxed_float_array_warning"
+external boxed_float_array_warning_enabled: unit -> bool =
+  "caml_ml_boxed_float_array_warning_enabled"
+
 (* The version string is found in file ../VERSION *)
 
 let ocaml_version = "%%VERSION%%"

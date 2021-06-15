@@ -202,3 +202,17 @@ int caml_runtime_warnings_active(void)
   }
   return 1;
 }
+
+uintnat caml_boxed_float_array_warning = 0;
+static int caml_boxed_float_array_warning_first = 1;
+
+int caml_boxed_float_array_warning_active(void)
+{
+  if (!caml_boxed_float_array_warning) return 0;
+  if (caml_boxed_float_array_warning_first) {
+    fprintf(stderr, "[ocaml] (use Sys.enable_boxed_float_array_warning to "
+                    "control these warnings)\n");
+    caml_boxed_float_array_warning_first = 0;
+  }
+  return 1;
+}
