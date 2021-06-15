@@ -553,46 +553,11 @@ module Array = struct
       r
     end
 
-  let mapi_from_array f a =
-    let l = Array.length a in
-    let r = create l in
-    for i = 0 to l - 1 do
-      unsafe_set r i (f i (Array.unsafe_get a i))
-    done;
-    r
-
-  let map_with_array f a b =
-    let la = length a in
-    let lb = Array.length b in
-    if la <> lb then
-      invalid_arg "Float.Array.map_with_array: arrays must have the same length"
-    else begin
-      let r = create la in
-      for i = 0 to la - 1 do
-        unsafe_set r i (f (unsafe_get a i) (Array.unsafe_get b i))
-      done;
-      r
-    end
-
-  let map2_from_array f a b =
-    let la = Array.length a in
-    let lb = Array.length b in
-    if la <> lb then
-      invalid_arg "Float.Array.map2_to_array: arrays must have the same length"
-    else begin
-      let r = create la in
-      for i = 0 to la - 1 do
-        unsafe_set r i (f (Array.unsafe_get a i) (Array.unsafe_get b i))
-      done;
-      r
-    end
-
   let map2_to_array f a b =
     let la = length a in
     let lb = length b in
     if la <> lb then
-      invalid_arg "Float.Array.map2_from_array:\
-                   arrays must have the same length"
+      invalid_arg "Float.Array.map2_to_array: arrays must have the same length"
     else begin
       if la = 0 then [||] else begin
         let r = Array.make la (f (unsafe_get a 0) (unsafe_get b 0)) in
@@ -601,6 +566,20 @@ module Array = struct
         done;
         r
       end
+    end
+
+  let map2_with_array f a b =
+    let la = length a in
+    let lb = Array.length b in
+    if la <> lb then
+      invalid_arg "Float.Array.map2_with_array:\
+                   arrays must have the same length"
+    else begin
+      let r = create la in
+      for i = 0 to la - 1 do
+        unsafe_set r i (f (unsafe_get a i) (Array.unsafe_get b i))
+      done;
+      r
     end
 
 end

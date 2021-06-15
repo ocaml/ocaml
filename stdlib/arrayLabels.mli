@@ -213,12 +213,32 @@ val map2 : f:('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
    @raise Invalid_argument if the arrays are not the same size.
    @since 4.03.0 (4.05.0 in ArrayLabels) *)
 
-val map_with_floatarray : f:('a -> float -> 'b) -> 'a array -> floatarray ->
-                          'b array
+(** {1 Iterators using floatarrays} *)
+
+
+val map_to_floatarray : f:('a -> float) -> 'a array -> floatarray
+(** [map_to_floatarray ~f a] applies function [f] to all the
+    elements of the array [a], and builds a floatarray with the
+    results returned by [f]. *)
+
+val mapi_to_floatarray : f:(int -> 'a -> float) -> 'a array -> floatarray
+(** Same as {!map_to_floatarray}, but the function is applied to
+    the index of the element as first argument, and the element
+    itself as second argument. *)
+
+val map2_to_floatarray : f:('a -> 'b -> float) -> 'a array -> 'b array ->
+                         floatarray
+(** [map2 ~f a b] applies function [f] to all the elements of [a]
+   and [b], and builds a floatarray with the results returned by [f]:
+   @raise Invalid_argument if the arrays are not the same size. *)
+
+val map2_with_floatarray : f:('a -> float -> 'b) -> 'a array -> floatarray ->
+                           'b array
 (** [map_with_floatarray ~f a b] applies function [f] to all the
    elements of the array [a] and the floatarray [b], and builds an
    array with the results returned by [f].
    @raise Invalid_argument if the arrays are not the same size. *)
+
 
 (** {1 Array scanning} *)
 

@@ -150,22 +150,16 @@ val map2 : f:(float -> float -> float) -> t -> t -> t
     [[| f a.(0) b.(0); ...; f a.(length a - 1) b.(length b - 1)|]].
     @raise Invalid_argument if the floatarrays are not the same size. *)
 
-val map_with_array : f:(float -> 'a -> float) -> t -> 'a array -> t
-(** [map_with_array ~f a b] applies function [f] to all the elements
-   of the array [a] and the floatarray [b], and builds an array with
-   the results returned by [f].
-   @raise Invalid_argument if the arrays are not the same size. *)
-
-val map2_from_array : f:('a -> 'b -> float) -> 'a array -> 'b array -> t
-(** [map2_from_array ~f a b] applies function [f] to all the elements
-   of the arrays [a] and [b], and builds a floatarray with the results
-   returned by [f].
-   @raise Invalid_argument if the arrays are not the same size. *)
-
 val map2_to_array : f:(float -> float -> 'a) -> t -> t -> 'a array
 (** [map2_to_array ~f a b] applies function [f] to all the elements
     of the floatarrays [a] and [b], and builds an array with the
     results returned by [f].
+   @raise Invalid_argument if the arrays are not the same size. *)
+
+val map2_with_array : f:(float -> 'a -> float) -> t -> 'a array -> t
+(** [map_with_array ~f a b] applies function [f] to all the elements
+   of the array [a] and the floatarray [b], and builds an array with
+   the results returned by [f].
    @raise Invalid_argument if the arrays are not the same size. *)
 
 (** {2 Array scanning} *)
@@ -260,10 +254,6 @@ val from_array : float array -> t
 
 val mapi_to_array : f:(int -> float -> 'a) -> t -> 'a array
 (** Same as {!map_to_array}, but the function is applied to the index of the
-    element as first argument, and the element itself as second argument. *)
-
-val mapi_from_array : f:(int -> 'a -> float) -> 'a array -> t
-(** Same as {!map_from_array}, but the function is applied to the index of the
     element as first argument, and the element itself as second argument. *)
 
 (**/**)
