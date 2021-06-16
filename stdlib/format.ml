@@ -1034,8 +1034,14 @@ let err_formatter_key = DLS.new_key (fun () ->
   formatter_of_out_channel Stdlib.stderr)
 let _ = DLS.set err_formatter_key err_formatter
 
-let str_formatter_key = DLS.new_key (fun () -> formatter_of_buffer stdbuf)
+let str_formatter_key = DLS.new_key (fun () ->
+  formatter_of_buffer (DLS.get stdbuf_key))
 let _ = DLS.set str_formatter_key str_formatter
+
+let get_std_formatter () = DLS.get std_formatter_key
+let get_err_formatter () = DLS.get err_formatter_key
+let get_str_formatter () = DLS.get str_formatter_key
+let get_stdbuf () = DLS.get stdbuf_key
 
 (* [flush_buffer_formatter buf ppf] flushes formatter [ppf],
    then returns the contents of buffer [buf] that is reset.
