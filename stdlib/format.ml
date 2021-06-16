@@ -1020,6 +1020,22 @@ let std_formatter = formatter_of_out_channel Stdlib.stdout
 and err_formatter = formatter_of_out_channel Stdlib.stderr
 and str_formatter = formatter_of_buffer stdbuf
 
+(* Initialise domain local state *)
+module DLS = Domain.DLS
+
+let stdbuf_key = DLS.new_key pp_make_buffer
+let _ = DLS.set stdbuf_key stdbuf
+
+let std_formatter_key = DLS.new_key (fun () ->
+  formatter_of_out_channel Stdlib.stdout)
+let _ = DLS.set std_formatter_key std_formatter
+
+let err_formatter_key = DLS.new_key (fun () ->
+  formatter_of_out_channel Stdlib.stderr)
+let _ = DLS.set err_formatter_key err_formatter
+
+let str_formatter_key = DLS.new_key (fun () -> formatter_of_buffer stdbuf)
+let _ = DLS.set str_formatter_key str_formatter
 
 (* [flush_buffer_formatter buf ppf] flushes formatter [ppf],
    then returns the contents of buffer [buf] that is reset.
@@ -1033,7 +1049,10 @@ let flush_buffer_formatter buf ppf =
 
 
 (* Flush [str_formatter] and get the contents of [stdbuf]. *)
-let flush_str_formatter () = flush_buffer_formatter stdbuf str_formatter
+let flush_str_formatter () =
+  let stdbuf = DLS.get stdbuf_key in
+  let str_formatter = DLS.get str_formatter_key in
+  flush_buffer_formatter stdbuf str_formatter
 
 (*
   Symbolic pretty-printing
@@ -1102,82 +1121,84 @@ let formatter_of_symbolic_output_buffer sob =
 
 *)
 
-let open_hbox = pp_open_hbox std_formatter
-and open_vbox = pp_open_vbox std_formatter
-and open_hvbox = pp_open_hvbox std_formatter
-and open_hovbox = pp_open_hovbox std_formatter
-and open_box = pp_open_box std_formatter
-and close_box = pp_close_box std_formatter
-and open_tag = pp_open_tag std_formatter
-and close_tag = pp_close_tag std_formatter
-and open_stag = pp_open_stag std_formatter
-and close_stag = pp_close_stag std_formatter
-and print_as = pp_print_as std_formatter
-and print_string = pp_print_string std_formatter
-and print_int = pp_print_int std_formatter
-and print_float = pp_print_float std_formatter
-and print_char = pp_print_char std_formatter
-and print_bool = pp_print_bool std_formatter
-and print_break = pp_print_break std_formatter
-and print_cut = pp_print_cut std_formatter
-and print_space = pp_print_space std_formatter
-and force_newline = pp_force_newline std_formatter
-and print_flush = pp_print_flush std_formatter
-and print_newline = pp_print_newline std_formatter
-and print_if_newline = pp_print_if_newline std_formatter
+let open_hbox v = pp_open_hbox (DLS.get std_formatter_key) v
+and open_vbox v = pp_open_vbox (DLS.get std_formatter_key) v
+and open_hvbox v = pp_open_hvbox (DLS.get std_formatter_key) v
+and open_hovbox v = pp_open_hovbox (DLS.get std_formatter_key) v
+and open_box v = pp_open_box (DLS.get std_formatter_key) v
+and close_box v = pp_close_box (DLS.get std_formatter_key) v
+and open_tag v = pp_open_tag (DLS.get std_formatter_key) v
+and close_tag v = pp_close_tag (DLS.get std_formatter_key) v
+and open_stag v = pp_open_stag (DLS.get std_formatter_key) v
+and close_stag v = pp_close_stag (DLS.get std_formatter_key) v
+and print_as v = pp_print_as (DLS.get std_formatter_key) v
+and print_string v = pp_print_string (DLS.get std_formatter_key) v
+and print_int v = pp_print_int (DLS.get std_formatter_key) v
+and print_float v = pp_print_float (DLS.get std_formatter_key) v
+and print_char v = pp_print_char (DLS.get std_formatter_key) v
+and print_bool v = pp_print_bool (DLS.get std_formatter_key) v
+and print_break v = pp_print_break (DLS.get std_formatter_key) v
+and print_cut v = pp_print_cut (DLS.get std_formatter_key) v
+and print_space v = pp_print_space (DLS.get std_formatter_key) v
+and force_newline v = pp_force_newline (DLS.get std_formatter_key) v
+and print_flush v = pp_print_flush (DLS.get std_formatter_key) v
+and print_newline v = pp_print_newline (DLS.get std_formatter_key) v
+and print_if_newline v = pp_print_if_newline (DLS.get std_formatter_key) v
 
-and open_tbox = pp_open_tbox std_formatter
-and close_tbox = pp_close_tbox std_formatter
-and print_tbreak = pp_print_tbreak std_formatter
+and open_tbox v = pp_open_tbox (DLS.get std_formatter_key) v
+and close_tbox v = pp_close_tbox (DLS.get std_formatter_key) v
+and print_tbreak v = pp_print_tbreak (DLS.get std_formatter_key) v
 
-and set_tab = pp_set_tab std_formatter
-and print_tab = pp_print_tab std_formatter
+and set_tab v = pp_set_tab (DLS.get std_formatter_key) v
+and print_tab v = pp_print_tab (DLS.get std_formatter_key) v
 
-and set_margin = pp_set_margin std_formatter
-and get_margin = pp_get_margin std_formatter
+and set_margin v = pp_set_margin (DLS.get std_formatter_key) v
+and get_margin v = pp_get_margin (DLS.get std_formatter_key) v
 
-and set_max_indent = pp_set_max_indent std_formatter
-and get_max_indent = pp_get_max_indent std_formatter
+and set_max_indent v = pp_set_max_indent (DLS.get std_formatter_key) v
+and get_max_indent v = pp_get_max_indent (DLS.get std_formatter_key) v
 
-and set_geometry = pp_set_geometry std_formatter
-and safe_set_geometry = pp_safe_set_geometry std_formatter
-and get_geometry = pp_get_geometry std_formatter
-and update_geometry = pp_update_geometry std_formatter
+and set_geometry ~max_indent =
+  pp_set_geometry (DLS.get std_formatter_key) ~max_indent
+and safe_set_geometry ~max_indent =
+  pp_safe_set_geometry (DLS.get std_formatter_key) ~max_indent
+and get_geometry v = pp_get_geometry (DLS.get std_formatter_key) v
+and update_geometry v = pp_update_geometry (DLS.get std_formatter_key) v
 
-and set_max_boxes = pp_set_max_boxes std_formatter
-and get_max_boxes = pp_get_max_boxes std_formatter
-and over_max_boxes = pp_over_max_boxes std_formatter
+and set_max_boxes v = pp_set_max_boxes (DLS.get std_formatter_key) v
+and get_max_boxes v = pp_get_max_boxes (DLS.get std_formatter_key) v
+and over_max_boxes v = pp_over_max_boxes (DLS.get std_formatter_key) v
 
-and set_ellipsis_text = pp_set_ellipsis_text std_formatter
-and get_ellipsis_text = pp_get_ellipsis_text std_formatter
+and set_ellipsis_text v = pp_set_ellipsis_text (DLS.get std_formatter_key) v
+and get_ellipsis_text v = pp_get_ellipsis_text (DLS.get std_formatter_key) v
 
-and set_formatter_out_channel =
-  pp_set_formatter_out_channel std_formatter
+and set_formatter_out_channel v =
+  pp_set_formatter_out_channel (DLS.get std_formatter_key) v
 
-and set_formatter_out_functions =
-  pp_set_formatter_out_functions std_formatter
-and get_formatter_out_functions =
-  pp_get_formatter_out_functions std_formatter
+and set_formatter_out_functions v =
+  pp_set_formatter_out_functions (DLS.get std_formatter_key) v
+and get_formatter_out_functions v =
+  pp_get_formatter_out_functions (DLS.get std_formatter_key) v
 
-and set_formatter_output_functions =
-  pp_set_formatter_output_functions std_formatter
-and get_formatter_output_functions =
-  pp_get_formatter_output_functions std_formatter
+and set_formatter_output_functions v =
+  pp_set_formatter_output_functions (DLS.get std_formatter_key) v
+and get_formatter_output_functions v =
+  pp_get_formatter_output_functions (DLS.get std_formatter_key) v
 
-and set_formatter_stag_functions =
-  pp_set_formatter_stag_functions std_formatter
-and get_formatter_stag_functions =
-  pp_get_formatter_stag_functions std_formatter
-and set_print_tags =
-  pp_set_print_tags std_formatter
-and get_print_tags =
-  pp_get_print_tags std_formatter
-and set_mark_tags =
-  pp_set_mark_tags std_formatter
-and get_mark_tags =
-  pp_get_mark_tags std_formatter
-and set_tags =
-  pp_set_tags std_formatter
+and set_formatter_stag_functions v =
+  pp_set_formatter_stag_functions (DLS.get std_formatter_key) v
+and get_formatter_stag_functions v =
+  pp_get_formatter_stag_functions (DLS.get std_formatter_key) v
+and set_print_tags v =
+  pp_set_print_tags (DLS.get std_formatter_key) v
+and get_print_tags v =
+  pp_get_print_tags (DLS.get std_formatter_key) v
+and set_mark_tags v =
+  pp_set_mark_tags (DLS.get std_formatter_key) v
+and get_mark_tags v =
+  pp_get_mark_tags (DLS.get std_formatter_key) v
+and set_tags v =
+  pp_set_tags (DLS.get std_formatter_key) v
 
 
 (* Convenience functions *)
@@ -1356,8 +1377,8 @@ let ifprintf _ppf (Format (fmt, _)) =
   make_iprintf ignore () fmt
 
 let fprintf ppf = kfprintf ignore ppf
-let printf fmt = fprintf std_formatter fmt
-let eprintf fmt = fprintf err_formatter fmt
+let printf fmt = fprintf (DLS.get std_formatter_key) fmt
+let eprintf fmt = fprintf (DLS.get err_formatter_key) fmt
 
 let kdprintf k (Format (fmt, _)) =
   make_printf
@@ -1391,8 +1412,8 @@ let asprintf fmt = kasprintf id fmt
 (* Flushing standard formatters at end of execution. *)
 
 let flush_standard_formatters () =
-  pp_print_flush std_formatter ();
-  pp_print_flush err_formatter ()
+  pp_print_flush (DLS.get std_formatter_key) ();
+  pp_print_flush (DLS.get err_formatter_key) ()
 
 let () = at_exit flush_standard_formatters
 
@@ -1416,13 +1437,13 @@ let pp_get_all_formatter_output_functions state () =
 
 
 (* Deprecated : subsumed by set_formatter_out_functions *)
-let set_all_formatter_output_functions =
-  pp_set_all_formatter_output_functions std_formatter
+let set_all_formatter_output_functions ~out =
+  pp_set_all_formatter_output_functions (DLS.get std_formatter_key) ~out
 
 
 (* Deprecated : subsumed by get_formatter_out_functions *)
-let get_all_formatter_output_functions =
-  pp_get_all_formatter_output_functions std_formatter
+let get_all_formatter_output_functions () =
+  pp_get_all_formatter_output_functions (DLS.get std_formatter_key) ()
 
 
 (* Deprecated : error prone function, do not use it.
@@ -1473,7 +1494,7 @@ let pp_get_formatter_tag_functions fmt () =
   let print_close_tag s = funs.print_close_stag (String_tag s) in
   {mark_open_tag; mark_close_tag; print_open_tag; print_close_tag}
 
-let set_formatter_tag_functions =
-  pp_set_formatter_tag_functions std_formatter
-and get_formatter_tag_functions =
-  pp_get_formatter_tag_functions std_formatter
+let set_formatter_tag_functions v =
+  pp_set_formatter_tag_functions (DLS.get std_formatter_key) v
+and get_formatter_tag_functions () =
+  pp_get_formatter_tag_functions (DLS.get std_formatter_key) ()

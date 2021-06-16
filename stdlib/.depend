@@ -211,16 +211,16 @@ stdlib__digest.cmx : \
     stdlib__digest.cmi
 stdlib__digest.cmi :
 stdlib__domain.cmo : \
+    stdlib__sys.cmi \
     stdlib__obj.cmi \
     stdlib__mutex.cmi \
-    stdlib__int.cmi \
     stdlib__atomic.cmi \
     stdlib__array.cmi \
     stdlib__domain.cmi
 stdlib__domain.cmx : \
+    stdlib__sys.cmx \
     stdlib__obj.cmx \
     stdlib__mutex.cmx \
-    stdlib__int.cmx \
     stdlib__atomic.cmx \
     stdlib__array.cmx \
     stdlib__domain.cmi
@@ -292,6 +292,7 @@ stdlib__format.cmo : \
     stdlib__queue.cmi \
     stdlib__list.cmi \
     stdlib__int.cmi \
+    stdlib__domain.cmi \
     camlinternalFormatBasics.cmi \
     camlinternalFormat.cmi \
     stdlib__buffer.cmi \
@@ -304,6 +305,7 @@ stdlib__format.cmx : \
     stdlib__queue.cmx \
     stdlib__list.cmx \
     stdlib__int.cmx \
+    stdlib__domain.cmx \
     camlinternalFormatBasics.cmx \
     camlinternalFormat.cmx \
     stdlib__buffer.cmx \
