@@ -1033,7 +1033,6 @@ CAMLexport void caml_acquire_domain_lock(void)
 {
   dom_internal* self = domain_self;
   caml_plat_lock(&self->domain_lock);
-  return;
 }
 
 CAMLexport void caml_bt_enter_ocaml(void)
@@ -1045,15 +1044,12 @@ CAMLexport void caml_bt_enter_ocaml(void)
   if (self->backup_thread_running) {
     atomic_store_rel(&self->backup_thread_msg, BT_ENTERING_OCAML);
   }
-
-  return;
 }
 
 CAMLexport void caml_release_domain_lock(void)
 {
   dom_internal* self = domain_self;
   caml_plat_unlock(&self->domain_lock);
-  return;
 }
 
 CAMLexport void caml_bt_exit_ocaml(void)
@@ -1067,25 +1063,19 @@ CAMLexport void caml_bt_exit_ocaml(void)
     /* Wakeup backup thread if it is sleeping */
     caml_plat_signal(&self->domain_cond);
   }
-
-
-  return;
 }
 
 static void caml_enter_blocking_section_default(void)
 {
   caml_bt_exit_ocaml();
   caml_release_domain_lock();
-  return;
 }
 
 static void caml_leave_blocking_section_default(void)
 {
   caml_bt_enter_ocaml();
   caml_acquire_domain_lock();
-  return;
 }
-
 
 CAMLexport void (*caml_enter_blocking_section_hook)(void) =
    caml_enter_blocking_section_default;
