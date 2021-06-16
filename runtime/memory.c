@@ -123,11 +123,9 @@
    generated.
 */
 
-__attribute__((always_inline)) inline static void write_barrier(value obj, intnat field, value old_val, value new_val) ;
-
 /* The write barrier does not read or write the heap, it just
    modifies domain-local data structures. */
-static void write_barrier(value obj, intnat field, value old_val, value new_val)
+Caml_inline void write_barrier(value obj, intnat field, value old_val, value new_val)
 {
   /* HACK: can't assert when get old C-api style pointers
     Assert (Is_block(obj)); */
