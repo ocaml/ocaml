@@ -18,7 +18,6 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "caml/addrmap.h"
 #include "caml/config.h"
 #include "caml/custom.h"
 #include "caml/domain.h"

@@ -27,7 +27,6 @@
 #include "caml/major_gc.h"
 #include "caml/shared_heap.h"
 #include "caml/domain.h"
-#include "caml/addrmap.h"
 #include "caml/roots.h"
 #include "caml/alloc.h"
 #include "caml/fiber.h"

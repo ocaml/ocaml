@@ -19,7 +19,6 @@
 #include <string.h>
 #include <math.h>
 
-#include "caml/addrmap.h"
 #include "caml/config.h"
 #include "caml/domain.h"
 #include "caml/eventlog.h"
