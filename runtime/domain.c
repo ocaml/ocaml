@@ -126,7 +126,53 @@ static __thread dom_internal* domain_self;
 
 static int64_t startup_timestamp;
 
-static uintnat handle_incoming(struct interruptor* s);
+/*
+ * This structure is protected by all_domains_lock
+ * [0, participating_domains) are all the domains taking part in STW sections
+ * [participating_domains, Max_domains) are all those domains free to be used
+ */
+static struct {
+  int participating_domains;
+  dom_internal* domains[Max_domains];
+} stw_domains = {
+  0,
+  { 0 }
+};
+
+static void add_to_stw_domains(dom_internal* dom) {
+  int i;
+  Assert(stw_domains.participating_domains < Max_domains);
+  for(i=stw_domains.participating_domains; stw_domains.domains[i]!=dom; ++i) {
+    Assert(i<Max_domains);
+  }
+
+  /* swap passed domain with domain at stw_domains.participating_domains */
+  dom = stw_domains.domains[stw_domains.participating_domains];
+  stw_domains.domains[stw_domains.participating_domains] = stw_domains.domains[i];
+  stw_domains.domains[i] = dom;
+  stw_domains.participating_domains++;
+}
+
+static void remove_from_stw_domains(dom_internal* dom) {
+  int i;
+  for(i=0; stw_domains.domains[i]!=dom; ++i) {
+    Assert(i<Max_domains);
+  }
+  Assert(i < stw_domains.participating_domains);
+
+  /* swap passed domain to first free domain */
+  stw_domains.participating_domains--;
+  stw_domains.domains[i] = stw_domains.domains[stw_domains.participating_domains];
+  stw_domains.domains[stw_domains.participating_domains] = dom;
+}
+
+static dom_internal* next_free_domain() {
+  if (stw_domains.participating_domains == Max_domains)
+    return NULL;
+
+  Assert(stw_domains.participating_domains < Max_domains);
+  return stw_domains.domains[stw_domains.participating_domains];
+}
 
 #ifdef __APPLE__
 /* OSX has issues with dynamic loading + exported TLS.
@@ -187,9 +233,6 @@ void caml_handle_incoming_interrupts()
 
 int caml_send_interrupt(struct interruptor* target)
 {
-  /* we have all_domains_lock so domain state will not change under us */
-  if (!target->running) return 0;
-
   /* signal that there is an interrupt pending */
   Assert(!atomic_load_acq(&target->interrupt_pending));
   atomic_store_rel(&target->interrupt_pending, 1);
@@ -275,7 +318,6 @@ int caml_reallocate_minor_heap(asize_t wsize)
 
 /* must be run on the domain's thread */
 static void create_domain(uintnat initial_minor_heap_wsize) {
-  int i;
   dom_internal* d = 0;
   Assert (domain_self == 0);
 
@@ -284,31 +326,29 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
   /* wait until any in-progress STW sections end */
   while (atomic_load_acq(&stw_leader)) caml_plat_wait(&all_domains_cond);
 
-  for (i = 0; i < Max_domains && !d; i++) {
-    struct interruptor* s = &all_domains[i].interruptor;
-    if (!s->running) {
-      d = &all_domains[i];
-      if (!s->interrupt_word) {
-        caml_domain_state* domain_state;
-        atomic_uintnat* young_limit;
-        /* never been started before, so set up minor heap */
-        if (!caml_mem_commit((void*)d->tls_area, (d->tls_area_end - d->tls_area))) {
-          /* give up now: if we couldn't get memory for this domain, we're
-             unlikely to have better luck with any other */
-          d = 0;
-          caml_plat_unlock(&s->lock);
-          break;
-        }
-      	domain_state = (caml_domain_state*)(d->tls_area);
-        young_limit = (atomic_uintnat*)&domain_state->young_limit;
-        s->interrupt_word = young_limit;
-        atomic_store_rel(young_limit, (uintnat)domain_state->young_start);
+  d = next_free_domain();
+  if (d) {
+    struct interruptor* s = &d->interruptor;
+    Assert(!s->running);
+    Assert(!s->interrupt_pending);
+    if (!s->interrupt_word) {
+      caml_domain_state* domain_state;
+      atomic_uintnat* young_limit;
+      /* never been started before, so set up minor heap */
+      if (!caml_mem_commit((void*)d->tls_area, (d->tls_area_end - d->tls_area))) {
+        /* give up now */
+        d = 0;
+        goto domain_init_complete;
       }
-      Assert(!s->interrupt_pending);
-      s->running = 1;
-      atomic_fetch_add(&caml_num_domains_running, 1);
+      domain_state = (caml_domain_state*)(d->tls_area);
+      young_limit = (atomic_uintnat*)&domain_state->young_limit;
+      s->interrupt_word = young_limit;
+      atomic_store_rel(young_limit, (uintnat)domain_state->young_start);
     }
+    s->running = 1;
+    atomic_fetch_add(&caml_num_domains_running, 1);
   }
+
   if (d) {
     caml_domain_state* domain_state;
     domain_self = d;
@@ -385,6 +425,7 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
     domain_state->checking_pointer_pc = NULL;
 #endif
 
+    add_to_stw_domains(domain_self);
     goto domain_init_complete;
 
   caml_free_stack(domain_state->current_stack);
@@ -450,6 +491,8 @@ void caml_init_domains(uintnat minor_heap_wsz) {
     uintnat domain_minor_heap_base;
     uintnat domain_tls_base;
 
+    stw_domains.domains[i] = dom;
+
     dom->id = i;
 
     dom->interruptor.interrupt_word = 0;
@@ -474,7 +517,6 @@ void caml_init_domains(uintnat minor_heap_wsz) {
     dom->minor_heap_area = domain_minor_heap_base;
     dom->minor_heap_area_end = domain_minor_heap_base + Bsize_wsize(Minor_heap_max);
   }
-
 
   create_domain(minor_heap_wsz);
   if (!domain_self) caml_fatal_error("Failed to create main domain");
@@ -839,11 +881,8 @@ int caml_try_run_on_all_domains_with_spin_work(
   void (*leader_setup)(caml_domain_state*),
   void (*enter_spin_callback)(caml_domain_state*, void*), void* enter_spin_data)
 {
-#ifdef DEBUG
-  caml_domain_state* domain_state = Caml_state;
-#endif
   int i;
-  uintnat domains_participating = 0;
+  caml_domain_state* domain_state = domain_self->state;
 
   caml_gc_log("requesting STW");
 
@@ -876,44 +915,43 @@ int caml_try_run_on_all_domains_with_spin_work(
   stw_request.data = data;
   atomic_store_rel(&stw_request.barrier, 0);
   atomic_store_rel(&stw_request.domains_still_running, 1);
+  stw_request.num_domains = stw_domains.participating_domains;
+  atomic_store_rel(&stw_request.num_domains_still_processing,
+                     stw_domains.participating_domains);
 
   if( leader_setup ) {
-    leader_setup(domain_self->state);
+    leader_setup(domain_state);
   }
 
-  /* Next, interrupt all domains, counting how many domains received
-     the interrupt (i.e. are not terminated and are participating in
-     this STW section). */
+#ifdef DEBUG
   {
-    caml_domain_state** participating = stw_request.participating;
-
-    for (i = 0; i < Max_domains; i++) {
-      if (&all_domains[i] == domain_self) {
-        participating[domains_participating] = domain_self->state;
-        Assert(!domain_self->interruptor.interrupt_pending);
+    int domains_participating = 0;
+    for(i=0; i<Max_domains; i++) {
+      if(all_domains[i].interruptor.running)
         domains_participating++;
-        continue;
-      }
-      if (caml_send_interrupt(&all_domains[i].interruptor)) {
-        participating[domains_participating] = all_domains[i].state;
-        domains_participating++;
-      }
     }
-
+    Assert(domains_participating == stw_domains.participating_domains);
     Assert(domains_participating > 0);
+  }
+#endif
 
-    /* setup the domain_participating fields */
-    stw_request.num_domains = domains_participating;
-    atomic_store_rel(&stw_request.num_domains_still_processing,
-                     domains_participating);
-
-    /* domains now know they are part of the section */
-    caml_plat_unlock(&all_domains_lock);
-
-    for(i = 0; i < domains_participating ; i++) {
-      int id = participating[i]->id;
-      caml_wait_interrupt_serviced(&all_domains[id].interruptor);
+  /* Next, interrupt all domains */
+  for(i = 0; i < stw_domains.participating_domains; i++) {
+    caml_domain_state* d = stw_domains.domains[i]->state;
+    stw_request.participating[i] = d;
+    if (d != domain_state) {
+      caml_send_interrupt(&stw_domains.domains[i]->interruptor);
+    } else {
+      Assert(!domain_self->interruptor.interrupt_pending);
     }
+  }
+
+  /* domains now know they are part of the STW */
+  caml_plat_unlock(&all_domains_lock);
+
+  for(i = 0; i < stw_request.num_domains; i++) {
+    int id = stw_request.participating[i]->id;
+    caml_wait_interrupt_serviced(&all_domains[id].interruptor);
   }
 
   /* release from the enter barrier */
@@ -922,7 +960,7 @@ int caml_try_run_on_all_domains_with_spin_work(
   #ifdef DEBUG
   domain_state->inside_stw_handler = 1;
   #endif
-  handler(domain_self->state, data, domains_participating, stw_request.participating);
+  handler(domain_state, data, stw_request.num_domains, stw_request.participating);
   #ifdef DEBUG
   domain_state->inside_stw_handler = 0;
   #endif
@@ -1179,23 +1217,24 @@ static void domain_terminate()
     /* The interaction of termination and major GC is quite subtle.
      *
      * At the end of the major GC, we decide the number of domains to mark and
-     * sweep for the next cycle. If the following [handle_incoming] participates
-     * in a major GC cycle, then we need to finish marking and sweeping again in
-     * order to decrement the globals [num_domains_to_mark] and
-     * [num_domains_to_sweep] (see major_gc.c). Luckily, if the following
-     * [handle_incoming] does participate in a major GC cycle, then
-     * [Caml_state->sweeping_done] will be set to 0 making conditional check to
-     * fail, which forces this domain to finish marking and sweeping again.
+     * sweep for the next cycle. If a STW section has been started, it will
+     * require this domain to participate, which in turn could involve a
+     * major GC cycle. This would then require finish marking and sweeping
+     * again in order to decrement the globals [num_domains_to_mark] and
+     * [num_domains_to_sweep] (see major_gc.c).
      */
 
     if (!caml_incoming_interrupts_queued() &&
-        Caml_state->marking_done &&
-        Caml_state->sweeping_done) {
+        domain_state->marking_done &&
+        domain_state->sweeping_done) {
 
       finished = 1;
       s->terminating = 0;
       s->running = 0;
       s->unique_id += Max_domains;
+
+      /* Remove this domain from stw_domains */
+      remove_from_stw_domains(domain_self);
 
       /* signal the interruptor condition variable
        * because the backup thread may be waiting on it
