@@ -187,16 +187,8 @@ void caml_handle_incoming_interrupts()
 
 int caml_send_interrupt(struct interruptor* target)
 {
-  /* we have blocked new domains joining as the STW is in progress
-   * a target domain can not go from 'not running' to 'running'
-   */
+  /* we have all_domains_lock so domain state will not change under us */
   if (!target->running) return 0;
-
-  caml_plat_lock(&target->lock);
-  if (!target->running) {
-    caml_plat_unlock(&target->lock);
-    return 0;
-  }
 
   /* signal that there is an interrupt pending */
   Assert(!atomic_load_acq(&target->interrupt_pending));
@@ -204,6 +196,7 @@ int caml_send_interrupt(struct interruptor* target)
 
   /* Signal the condition variable, in case the target is
      itself waiting for an interrupt to be processed elsewhere */
+  caml_plat_lock(&target->lock);
   caml_plat_broadcast(&target->cond); // OPT before/after unlock? elide?
   caml_plat_unlock(&target->lock);
 
@@ -293,7 +286,6 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
 
   for (i = 0; i < Max_domains && !d; i++) {
     struct interruptor* s = &all_domains[i].interruptor;
-    caml_plat_lock(&s->lock);
     if (!s->running) {
       d = &all_domains[i];
       if (!s->interrupt_word) {
@@ -316,7 +308,6 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
       s->running = 1;
       atomic_fetch_add(&caml_num_domains_running, 1);
     }
-    caml_plat_unlock(&s->lock);
   }
   if (d) {
     caml_domain_state* domain_state;
@@ -873,7 +864,6 @@ int caml_try_run_on_all_domains_with_spin_work(
   } else {
     atomic_store_rel(&stw_leader, (uintnat)domain_self);
   }
-  caml_plat_unlock(&all_domains_lock);
 
   CAML_EV_BEGIN(EV_STW_LEADER);
   caml_gc_log("causing STW");
@@ -916,6 +906,9 @@ int caml_try_run_on_all_domains_with_spin_work(
     stw_request.num_domains = domains_participating;
     atomic_store_rel(&stw_request.num_domains_still_processing,
                      domains_participating);
+
+    /* domains now know they are part of the section */
+    caml_plat_unlock(&all_domains_lock);
 
     for(i = 0; i < domains_participating ; i++) {
       int id = participating[i]->id;
@@ -1191,7 +1184,7 @@ static void domain_terminate()
     handover_ephemerons(domain_state);
     handover_finalisers(domain_state);
 
-    caml_plat_lock(&s->lock);
+    caml_plat_lock(&all_domains_lock);
 
     /* The interaction of termination and major GC is quite subtle.
      *
@@ -1217,11 +1210,14 @@ static void domain_terminate()
       /* signal the interruptor condition variable
        * because the backup thread may be waiting on it
        */
+      caml_plat_lock(&s->lock);
       caml_plat_broadcast(&s->cond);
+      caml_plat_unlock(&s->lock);
+
       Assert (domain_self->backup_thread_running);
       domain_self->backup_thread_running = 0;
     }
-    caml_plat_unlock(&s->lock);
+    caml_plat_unlock(&all_domains_lock);
   }
   caml_sample_gc_collect(domain_state);
   caml_remove_generational_global_root(&domain_state->unique_token_root);
