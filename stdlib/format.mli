@@ -928,7 +928,7 @@ val formatter_of_out_channel : out_channel -> formatter
 *)
 
 val std_formatter : formatter
-(** The initiali domain's standard formatter to write to standard output.
+(** The initial domain's standard formatter to write to standard output.
 
   It is defined as {!formatter_of_out_channel} {!Stdlib.stdout}.
 *)
