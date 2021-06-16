@@ -35,8 +35,18 @@
    version prefixed by [pp_] that takes a formatter as its first argument.
 
    More formatters can be created with {!formatter_of_out_channel},
-   {!formatter_of_buffer}, {!formatter_of_symbolic_output_buffer}
-   or using {{!section:formatter}custom formatters}.
+   {!formatter_of_buffer}, {!formatter_of_symbolic_output_buffer} or using
+   {{!section:formatter}custom formatters}.
+
+   If multiple domains write to the same output channel such as
+   {{!Stdlib.stdout}stdout} and {{!Stdlib.stderr}stderr} using distinct
+   formatters on each domain, the output from the domains will be interleaved
+   with each other. It is expected that the user of this library will implement
+   the necessary synchronisation.
+
+   Warning: Since {{!section:formatter}formatters} contain mutable state, it is
+   not thread-safe to use the same formatter on multiple domains in parallel
+   without synchronisation.
 
 *)
 
@@ -933,10 +943,20 @@ val std_formatter : formatter
   It is defined as {!formatter_of_out_channel} {!Stdlib.stdout}.
 *)
 
+val get_std_formatter : unit -> formatter
+(** [get_std_formatter ()] returns the current domain's standard formatter used
+    to write to standard output.
+*)
+
 val err_formatter : formatter
 (** The initial domain's formatter to write to standard error.
 
   It is defined as {!formatter_of_out_channel} {!Stdlib.stderr}.
+*)
+
+val get_err_formatter : unit -> formatter
+(* [get_err_formatter ()] returns the current domain's formatter used to write
+   to standard error.
 *)
 
 val formatter_of_buffer : Buffer.t -> formatter
@@ -949,10 +969,19 @@ val formatter_of_buffer : Buffer.t -> formatter
 val stdbuf : Buffer.t
 (** The initial domain's string buffer in which [str_formatter] writes. *)
 
+val get_stdbuf : unit -> Buffer.t
+(** [get_stdbuf ()] returns the current domain's string buffer in which the
+    current domain's string formatter writes. *)
+
 val str_formatter : formatter
 (** The initial domain's formatter to output to the {!stdbuf} string buffer.
 
   [str_formatter] is defined as {!formatter_of_buffer} {!stdbuf}.
+*)
+
+val get_str_formatter : unit -> formatter
+(** The current domain's formatter to output to the current domains string
+    buffer.
 *)
 
 val flush_str_formatter : unit -> string
