@@ -265,8 +265,8 @@ val escaped : string -> string
     @deprecated Use {!String.escape_ascii} instead. *)
 
 val escape_ascii : string -> string
-(** [escaped s] is [s] with all characters outside the printable US-ASCII range
-    represented by escape sequences.
+(** [escape_ascii s] is [s] with all characters outside the printable US-ASCII
+    range represented by escape sequences.
 
     All characters outside the US-ASCII printable range \[0x20;0x7E\] are
     escaped, as well as backslash (0x2F) and double-quote (0x22).
@@ -293,7 +293,6 @@ val escape : string -> string
     {!Sys.max_string_length} bytes.
 
     @since 4.14.0 *)
-
 
 val uppercase_ascii : string -> string
 (** [uppercase_ascii s] is [s] with all lowercase letters
