@@ -1013,7 +1013,7 @@ void caml_handle_gc_interrupt()
   CAML_EV_END(EV_INTERRUPT_GC);
 }
 
-CAMLexport inline int caml_bt_is_in_blocking_section(void)
+CAMLexport int caml_bt_is_in_blocking_section(void)
 {
   dom_internal* self = domain_self;
   uintnat status = atomic_load_acq(&self->backup_thread_msg);
@@ -1024,7 +1024,7 @@ CAMLexport inline int caml_bt_is_in_blocking_section(void)
 
 }
 
-CAMLexport inline intnat caml_domain_is_multicore ()
+CAMLexport intnat caml_domain_is_multicore ()
 {
   dom_internal *self = domain_self;
   return (!caml_domain_alone() || self->backup_thread_running);

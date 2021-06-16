@@ -186,7 +186,7 @@ void caml_orphan_allocated_words() {
     atomic_fetch_add(&terminated_domains_allocated_words, Caml_state->allocated_words);
 }
 
-static inline value ephe_list_tail(value e)
+Caml_inline value ephe_list_tail(value e)
 {
   value last = 0;
   while (e != 0) {

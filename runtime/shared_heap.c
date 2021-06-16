@@ -201,7 +201,7 @@ static void calc_pool_stats(pool* a, sizeclass sz, struct heap_stats* s) {
 }
 
 /* Initialize a pool and its object freelist */
-static inline void pool_initialize(pool* r, sizeclass sz, caml_domain_state* owner)
+Caml_inline void pool_initialize(pool* r, sizeclass sz, caml_domain_state* owner)
 {
   mlsize_t wh = wsize_sizeclass[sz];
   value* p = (value*)((char*)r + POOL_HEADER_SZ);
