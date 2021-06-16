@@ -53,14 +53,17 @@ module DLS = struct
 
   let set (idx, _init) x =
     let st = maybe_grow idx in
-    st.(idx) <- Obj.repr x
+    (* [Sys.opaque_identity] ensures that flambda does not look at the type of
+     * [x], which may be a [float] and conclude that the [st] is a float array.
+     * We do not want OCaml's float array optimisation kicking in here. *)
+    st.(idx) <- Obj.repr (Sys.opaque_identity x)
 
   let get (idx, init) =
     let st = maybe_grow idx in
     let v = st.(idx) in
     if v == unique_value then
       let v' = Obj.repr (init ()) in
-      st.(idx) <- v';
+      st.(idx) <- (Sys.opaque_identity v');
       Obj.magic v'
     else Obj.magic v
 
