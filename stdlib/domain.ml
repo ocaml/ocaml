@@ -103,8 +103,7 @@ let spawn f =
   let termination_mutex = Mutex.create () in
   let state = Atomic.make Running in
   let body () =
-    DLS.create_dls ();
-    let result = match f () with
+    let result = match DLS.create_dls (); f () with
       | x -> Ok x
       | exception ex -> Error ex in
     spin (fun () ->
