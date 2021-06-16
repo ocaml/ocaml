@@ -13,7 +13,15 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Pseudo-random number generators (PRNG). *)
+(** Pseudo-random number generators (PRNG).
+
+    With multiple domains, by default, each domain is initialised with the same
+    random seed. Hence, each domain will yield the same sequence of numbers. If
+    you wish to have uncorrelated sequences of random numbers on each domain,
+    one way to achieve this is to call {!self_init} on each domain before
+    requesting random numbers.
+
+*)
 
 (** {1 Basic functions} *)
 
@@ -29,7 +37,7 @@ val self_init : unit -> unit
     in a system-dependent way.  If [/dev/urandom] is available on the host
     machine, it is used to provide a highly random initial seed.  Otherwise, a
     less random seed is computed from system parameters (current time, process
-    IDs). *)
+    IDs, domain-local state). *)
 
 val bits : unit -> int
 (** Return 30 random bits in a nonnegative integer.
