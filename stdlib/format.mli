@@ -30,10 +30,9 @@
    - {!std_formatter} outputs to {{!Stdlib.stdout}stdout}
    - {!err_formatter} outputs to {{!Stdlib.stderr}stderr}
 
-   Most functions in the {!Format} module come in two variants:
-   a short version that operates on {!std_formatter} and the
-   generic version prefixed by [pp_] that takes a formatter
-   as its first argument.
+   Most functions in the {!Format} module come in two variants: a short version
+   that operates on the current domain's {!std_formatter} and the generic
+   version prefixed by [pp_] that takes a formatter as its first argument.
 
    More formatters can be created with {!formatter_of_out_channel},
    {!formatter_of_buffer}, {!formatter_of_symbolic_output_buffer}
@@ -929,13 +928,13 @@ val formatter_of_out_channel : out_channel -> formatter
 *)
 
 val std_formatter : formatter
-(** The standard formatter to write to standard output.
+(** The initiali domain's standard formatter to write to standard output.
 
   It is defined as {!formatter_of_out_channel} {!Stdlib.stdout}.
 *)
 
 val err_formatter : formatter
-(** A formatter to write to standard error.
+(** The initial domain's formatter to write to standard error.
 
   It is defined as {!formatter_of_out_channel} {!Stdlib.stderr}.
 *)
@@ -948,17 +947,17 @@ val formatter_of_buffer : Buffer.t -> formatter
 *)
 
 val stdbuf : Buffer.t
-(** The string buffer in which [str_formatter] writes. *)
+(** The initial domain's string buffer in which [str_formatter] writes. *)
 
 val str_formatter : formatter
-(** A formatter to output to the {!stdbuf} string buffer.
+(** The initial domain's formatter to output to the {!stdbuf} string buffer.
 
   [str_formatter] is defined as {!formatter_of_buffer} {!stdbuf}.
 *)
 
 val flush_str_formatter : unit -> string
-(** Returns the material printed with [str_formatter], flushes
-  the formatter and resets the corresponding buffer.
+(** Returns the material printed with [str_formatter] of the current domain,
+    flushes the formatter and resets the corresponding buffer.
 *)
 
 val make_formatter :
