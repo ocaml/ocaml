@@ -254,6 +254,10 @@ OCaml 4.13.0
 
 ### Manual and documentation:
 
+- #9525, #10402: ocamldoc only create paragraphq at the toplevel of
+  documentation comments
+  (Florian Angeletti, report by Hendrik Tews, review by Gabriel Scherer)
+
 - #10247: Add initial tranche of examples to reference manual.
   Adds some eighty examples to the reference manual, principally to the
   expressions and patterns sections.
