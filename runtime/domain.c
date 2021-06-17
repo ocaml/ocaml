@@ -331,6 +331,7 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
     Assert(!d->interruptor.interrupt_pending);
 
     domain_state->extra_heap_resources = 0.0;
+    domain_state->extra_heap_resources_minor = 0.0;
 
     if (caml_init_signal_stack() < 0) {
       goto init_signal_stack_failure;

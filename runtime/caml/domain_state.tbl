@@ -115,6 +115,7 @@ DOMAIN_STATE(value, dls_root)
 DOMAIN_STATE(value, unique_token_root)
 
 DOMAIN_STATE(double, extra_heap_resources)
+DOMAIN_STATE(double, extra_heap_resources_minor)
 
 /*****************************************************************************/
 /* GC stats (see gc_ctrl.c and the Gc module) */
