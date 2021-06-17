@@ -34,6 +34,34 @@ Error: This function should have type unit -> unit
        but its first argument is labelled ?opt
 |}];;
 
+(* filter_arrow *)
+
+let (f : x:int -> int) = fun y -> y
+[%%expect{|
+Line 1, characters 25-35:
+1 | let (f : x:int -> int) = fun y -> y
+                             ^^^^^^^^^^
+Error: This function should have type x:int -> int
+       but its first argument is not labelled
+|}];;
+
+let (f : int -> int) = fun ~y -> y
+[%%expect{|
+Line 1, characters 23-34:
+1 | let (f : int -> int) = fun ~y -> y
+                           ^^^^^^^^^^^
+Error: This function should have type int -> int
+       but its first argument is labelled ~y
+|}];;
+
+let (f : x:int -> int) = fun ~y -> y
+[%%expect{|
+Line 1, characters 25-36:
+1 | let (f : x:int -> int) = fun ~y -> y
+                             ^^^^^^^^^^^
+Error: This function should have type x:int -> int
+       but its first argument is labelled ~y
+|}];;
 
 (* More examples *)
 

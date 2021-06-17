@@ -1263,3 +1263,111 @@ Line 7, characters 22-36:
 Error: This function should have type int -> int
        but its first argument is not labelled
 |}]
+
+(* Check got/expected when the order changes *)
+module M = struct
+  type t
+end
+type (_,_) eq = Refl: ('a,'a) eq
+let f (x:M.t) (y: (M.t, int -> int) eq) =
+  let Refl = y in
+  if true then fun x -> x + 1 else x
+[%%expect{|
+module M : sig type t end
+type (_, _) eq = Refl : ('a, 'a) eq
+Line 7, characters 35-36:
+7 |   if true then fun x -> x + 1 else x
+                                       ^
+Error: This expression has type M.t = int -> int
+       but an expression was expected of type int -> int
+       This instance of int -> int is ambiguous:
+       it would escape the scope of its equation
+|}]
+
+module M = struct
+  type t
+end
+type (_,_) eq = Refl: ('a,'a) eq
+let f w (x:M.t) (y: (M.t, <m:int>) eq) =
+  let Refl = y in
+  let z = if true then x else w in
+  z#m
+[%%expect{|
+module M : sig type t end
+type (_, _) eq = Refl : ('a, 'a) eq
+Line 8, characters 2-3:
+8 |   z#m
+      ^
+Error: This expression has type M.t
+       It has no method m
+Hint: Did you mean m?
+|}]
+
+(* Check got/expected when the order changes *)
+module M = struct
+  type t
+end
+type (_,_) eq = Refl: ('a,'a) eq
+let f w (x:M.t) (y: (M.t, <m:int>) eq) =
+  let Refl = y in
+  let z = if true then w else x in
+  z#m
+[%%expect{|
+module M : sig type t end
+type (_, _) eq = Refl : ('a, 'a) eq
+Line 8, characters 2-3:
+8 |   z#m
+      ^
+Error: This expression has type M.t
+       It has no method m
+Hint: Did you mean m?
+|}]
+
+type (_,_) eq = Refl: ('a,'a) eq
+module M = struct
+  type t = C : (<m:int; ..> as 'a) * ('a, <m:int; b:bool>) eq -> t
+end
+let f (C (x,y) : M.t) =
+  let g w =
+    let Refl = y in
+    let z = if true then w else x in
+    z#b
+  in ()
+[%%expect{|
+type (_, _) eq = Refl : ('a, 'a) eq
+module M :
+  sig
+    type t =
+        C : (< m : int; .. > as 'a) * ('a, < b : bool; m : int >) eq -> t
+  end
+Line 9, characters 4-5:
+9 |     z#b
+        ^
+Error: This expression has type < m : int; .. >
+       It has no method b
+|}]
+
+(* Check got/expected when the order changes *)
+type (_,_) eq = Refl: ('a,'a) eq
+module M = struct
+  type t = C : (<m:int; ..> as 'a) * ('a, <m:int; b:bool>) eq -> t
+end
+let f (C (x,y) : M.t) =
+  let g w =
+    let Refl = y in
+    let z = if true then x else w in
+    z#b
+  in ()
+[%%expect{|
+type (_, _) eq = Refl : ('a, 'a) eq
+module M :
+  sig
+    type t =
+        C : (< m : int; .. > as 'a) * ('a, < b : bool; m : int >) eq -> t
+  end
+Line 9, characters 4-5:
+9 |     z#b
+        ^
+Error: This expression has type < m : int; .. >
+       It has no method b
+|}]

@@ -34,3 +34,21 @@ Error: The class type object method x : 'a * float end
        The method x has type 'a * float but is expected to have type int
        Type 'a * float is not compatible with type int
 |}]
+
+let foo = 42#m;;
+[%%expect{|
+Line 1, characters 10-12:
+1 | let foo = 42#m;;
+              ^^
+Error: This expression has type int
+       It has no method m
+|}]
+
+let foo = object (self) method foo = self#bar end;;
+[%%expect{|
+Line 1, characters 37-41:
+1 | let foo = object (self) method foo = self#bar end;;
+                                         ^^^^
+Error: This expression has type < foo : 'a >
+       It has no method bar
+|}]
