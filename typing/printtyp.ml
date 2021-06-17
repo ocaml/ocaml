@@ -2421,21 +2421,25 @@ module Subtype = struct
         Some (Errortrace.map_diff (trees_of_type_expansion Type) diff)
 
   let report_error
-        ppf env tr1 txt1 ({trace=tr2} : Errortrace.unification_error) =
+        ppf
+        env
+        (Errortrace.Subtype.{trace = tr_sub; unification_trace = tr_unif})
+        txt1 =
     wrap_printing_env ~error:true env (fun () ->
       reset ();
-      let tr1 = prepare_trace prepare_expansion tr1 in
-      let tr2 = prepare_unification_trace prepare_expansion tr2 in
-      let keep_first = match tr2 with
+      let tr_sub  = prepare_trace             prepare_expansion tr_sub  in
+      let tr_unif = prepare_unification_trace prepare_expansion tr_unif in
+      let keep_first = match tr_unif with
         | [Obj _ | Variant _ | Escape _ ] | [] -> true
         | _ -> false in
       fprintf ppf "@[<v>%a"
-        (trace filter_subtype_trace subtype_get_diff true keep_first txt1) tr1;
-      if tr2 = [] then fprintf ppf "@]" else
-        let mis = mismatch (dprintf "Within this type") env tr2 in
+        (trace filter_subtype_trace subtype_get_diff true keep_first txt1)
+        tr_sub;
+      if tr_unif = [] then fprintf ppf "@]" else
+        let mis = mismatch (dprintf "Within this type") env tr_unif in
         fprintf ppf "%a%t%t@]"
           (trace filter_unification_trace unification_get_diff false
-             (mis = None) "is not compatible with type") tr2
+             (mis = None) "is not compatible with type") tr_unif
           (explain mis)
           Conflicts.print_explanations
     )

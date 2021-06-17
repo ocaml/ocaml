@@ -213,7 +213,6 @@ module Subtype : sig
     Env.t ->
     Errortrace.Subtype.error ->
     string ->
-    Errortrace.unification_error ->
     unit
 end
 

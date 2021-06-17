@@ -57,7 +57,7 @@ val explain: 'a list ->
   (prev:'a option -> 'a -> 'b option) ->
   'b option
 
-(* Type indices *)
+(** Type indices *)
 type unification = private Unification
 type comparison  = private Comparison
 
@@ -106,28 +106,37 @@ val incompatible_fields :
 
 val swap_trace : ('a, 'variety) t -> ('a, 'variety) t
 
-(* The traces (['variety t]) are the core error types.  However, we bundle them
-   up into three "top-level" error types, which are used elsewhere:
-   [unification_error], [equality_error], and [moregen_error].  In the case of
-   [equality_error], this has to bundle in extra information; in general, it
-   distinguishes the three types of errors and allows us to distinguish traces
-   that are being built (or processed) from those that are complete and have
-   become the final error. *)
+(** The traces (['variety t]) are the core error types.  However, we bundle them
+    up into three "top-level" error types, which are used elsewhere:
+    [unification_error], [equality_error], and [moregen_error].  In the case of
+    [equality_error], this has to bundle in extra information; in general, it
+    distinguishes the three types of errors and allows us to distinguish traces
+    that are being built (or processed) from those that are complete and have
+    become the final error.  These error types have the invariants that their
+    traces are nonempty; we ensure that through three smart constructors with
+    matching names. *)
 
-type unification_error = { trace : unification error } [@@unboxed]
+type unification_error = private { trace : unification error } [@@unboxed]
 
-type equality_error =
+type equality_error = private
   { trace : comparison error;
     subst : (type_expr * type_expr) list }
 
-type moregen_error = { trace : comparison error } [@@unboxed]
+type moregen_error = private { trace : comparison error } [@@unboxed]
 
-(* Wraps up the two different kinds of [comparison] errors in one type *)
+val unification_error : trace:unification error -> unification_error
+
+val equality_error :
+  trace:comparison error -> subst:(type_expr * type_expr) list -> equality_error
+
+val moregen_error : trace:comparison error -> moregen_error
+
+(** Wraps up the two different kinds of [comparison] errors in one type *)
 type comparison_error =
   | Equality_error of equality_error
   | Moregen_error  of moregen_error
 
-(* Lift [swap_trace] to [unification_error] *)
+(** Lift [swap_trace] to [unification_error] *)
 val swap_unification_error : unification_error -> unification_error
 
 module Subtype : sig
@@ -136,8 +145,24 @@ module Subtype : sig
 
   type 'a t = 'a elt list
 
-  type trace = type_expr     t
-  type error = expanded_type t
+  (** Just as outside [Subtype], we split traces, completed traces, and complete
+      errors.  However, in a minor asymmetry, the name [Subtype.error_trace]
+      corresponds to the outside [error] type, and [Subtype.error] corresponds
+      to the outside [*_error] types (e.g., [unification_error]).  This [error]
+      type has the invariant that the subtype trace is nonempty; note that no
+      such invariant is imposed on the unification trace. *)
+
+  type trace       = type_expr t
+  type error_trace = expanded_type t
+
+  type unification_error_trace = unification error (** To avoid shadowing *)
+
+  type nonrec error = private
+    { trace             : error_trace
+    ; unification_trace : unification error }
+
+  val error :
+    trace:error_trace -> unification_trace:unification_error_trace -> error
 
   val map : ('a -> 'b) -> 'a t -> 'b t
 end

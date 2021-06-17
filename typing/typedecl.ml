@@ -282,7 +282,9 @@ let make_constructor env type_path type_params sargs sret_type =
                ~got:ret_type
                ~expected:(Ctype.newconstr type_path type_params)]
           in
-          raise (Error (sret_type.ptyp_loc, Constraint_failed (env, {trace})))
+          raise (Error(sret_type.ptyp_loc,
+                       Constraint_failed(env,
+                                         Errortrace.unification_error ~trace)))
       end;
       widen z;
       targs, Some tret_type, args, Some ret_type

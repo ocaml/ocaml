@@ -23,7 +23,7 @@ module TypePairs : Hashtbl.S with type key = type_expr * type_expr
 exception Unify    of Errortrace.unification_error
 exception Equality of Errortrace.equality_error
 exception Moregen  of Errortrace.moregen_error
-exception Subtype  of Errortrace.Subtype.error * Errortrace.unification_error
+exception Subtype  of Errortrace.Subtype.error
 
 exception Escape of type_expr Errortrace.escape
 
@@ -233,16 +233,21 @@ val unify_var: Env.t -> type_expr -> type_expr -> unit
         (* Same as [unify], but allow free univars when first type
            is a variable. *)
 val filter_arrow: Env.t -> type_expr -> arg_label -> type_expr * type_expr
-        (* A special case of unification (with l:'a -> 'b). *)
+        (* A special case of unification with [l:'a -> 'b].  Raises
+           [Filter_arrow_failed] instead of [Unify]. *)
 val filter_method: Env.t -> string -> private_flag -> type_expr -> type_expr
-        (* A special case of unification (with {m : 'a; 'b}). *)
+        (* A special case of unification (with {m : 'a; 'b}).  Raises
+           [Filter_method_failed] instead of [Unify]. *)
 val check_filter_method: Env.t -> string -> private_flag -> type_expr -> unit
-        (* A special case of unification (with {m : 'a; 'b}), returning unit. *)
+        (* A special case of unification (with {m : 'a; 'b}), returning unit.
+           Raises [Filter_method_failed] instead of [Unify]. *)
 val occur_in: Env.t -> type_expr -> type_expr -> bool
 val deep_occur: type_expr -> type_expr -> bool
 val filter_self_method:
         Env.t -> string -> private_flag -> (Ident.t * type_expr) Meths.t ref ->
         type_expr -> Ident.t * type_expr
+        (* Raises [Self_has_no_such_method] instead of [Unify], and only if the
+           self type is closed at this point. *)
 val moregeneral: Env.t -> bool -> type_expr -> type_expr -> unit
         (* Check if the first type scheme is more general than the second. *)
 val is_moregeneral: Env.t -> bool -> type_expr -> type_expr -> bool
@@ -260,6 +265,28 @@ val does_match: Env.t -> type_expr -> type_expr -> bool
 
 val reify_univars : Env.t -> Types.type_expr -> Types.type_expr
         (* Replaces all the variables of a type by a univar. *)
+
+(* Exceptions for special cases of unify *)
+
+type filter_arrow_failure =
+  | Unification_error of Errortrace.unification_error
+  | Label_mismatch of
+      { got           : arg_label
+      ; expected      : arg_label
+      ; expected_type : type_expr
+      }
+  | Not_a_function
+
+exception Filter_arrow_failed of filter_arrow_failure
+
+type filter_method_failure =
+  | Unification_error of Errortrace.unification_error
+  | Not_a_method
+  | Not_an_object of type_expr
+
+exception Filter_method_failed of filter_method_failure
+
+exception Self_has_no_such_method
 
 type class_match_failure =
     CM_Virtual_class

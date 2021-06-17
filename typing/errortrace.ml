@@ -149,6 +149,21 @@ type equality_error =
 
 type moregen_error = { trace : comparison error } [@@unboxed]
 
+let unification_error ~trace : unification_error =
+  if trace = []
+  then Misc.fatal_error "Unification error trace was empty"
+  else { trace }
+
+let equality_error ~trace ~subst : equality_error =
+  if trace = []
+  then Misc.fatal_error "Equality error trace was empty"
+  else { trace; subst }
+
+let moregen_error ~trace : moregen_error =
+  if trace = []
+  then Misc.fatal_error "Moregen error trace was empty"
+  else { trace }
+
 type comparison_error =
   | Equality_error of equality_error
   | Moregen_error  of moregen_error
@@ -162,8 +177,19 @@ module Subtype = struct
 
   type 'a t = 'a elt list
 
-  type trace = type_expr     t
-  type error = expanded_type t
+  type trace       = type_expr t
+  type error_trace = expanded_type t
+
+  type unification_error_trace = unification error (** To avoid shadowing *)
+
+  type nonrec error =
+    { trace             : error_trace
+    ; unification_trace : unification error }
+
+  let error ~trace ~unification_trace =
+    if trace = []
+    then Misc.fatal_error "Subtype error trace was empty"
+    else { trace; unification_trace }
 
   let map_elt f = function
     | Diff x -> Diff (map_diff f x)
