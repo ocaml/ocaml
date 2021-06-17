@@ -847,23 +847,23 @@ int caml_try_run_on_all_domains_with_spin_work(
 
   caml_gc_log("requesting STW");
 
-  // Don't take the lock if there's already a stw leader
-  if (atomic_load_acq(&stw_leader)) {
+  /* Don't touch the lock if there's already a stw leader
+    OR we can't get the lock */
+  if (atomic_load_acq(&stw_leader) ||
+      !caml_plat_try_lock(&all_domains_lock)) {
     caml_handle_incoming_interrupts();
     return 0;
   }
 
-  /* Try to take the lock by setting ourselves as the stw_leader.
-     If it fails, handle interrupts (probably participating in
-     an STW section) and return. */
-  caml_plat_lock(&all_domains_lock);
+  /* see if there is a stw_leader already */
   if (atomic_load_acq(&stw_leader)) {
     caml_plat_unlock(&all_domains_lock);
     caml_handle_incoming_interrupts();
     return 0;
-  } else {
-    atomic_store_rel(&stw_leader, (uintnat)domain_self);
   }
+
+  /* we have the lock and can claim the stw_leader */
+  atomic_store_rel(&stw_leader, (uintnat)domain_self);
 
   CAML_EV_BEGIN(EV_STW_LEADER);
   caml_gc_log("causing STW");
