@@ -9,6 +9,65 @@ module Raw = struct
     = "caml_ml_domain_cpu_relax"
 end
 
+module DLS = struct
+
+  type dls_state = Obj.t array
+
+  let unique_value = Obj.repr (ref 0)
+
+  external get_dls_state : unit -> dls_state = "%dls_get"
+
+  external set_dls_state : dls_state -> unit =
+    "caml_domain_dls_set" [@@noalloc]
+
+  let create_dls () =
+    let st = Array.make 8 unique_value in
+    set_dls_state st
+
+  let _ = create_dls ()
+
+  type 'a key = int * (unit -> 'a)
+
+  let key_counter = Atomic.make 0
+
+  let new_key f =
+    let k = Atomic.fetch_and_add key_counter 1 in
+    (k, f)
+
+  (* If necessary, grow the current domain's local state array such that [idx]
+   * is a valid index in the array. *)
+  let maybe_grow idx =
+    let st = get_dls_state () in
+    let sz = Array.length st in
+    if idx < sz then st
+    else begin
+      let rec compute_new_size s =
+        if idx < s then s else compute_new_size (2 * s)
+      in
+      let new_sz = compute_new_size sz in
+      let new_st = Array.make new_sz unique_value in
+      Array.blit st 0 new_st 0 sz;
+      set_dls_state new_st;
+      new_st
+    end
+
+  let set (idx, _init) x =
+    let st = maybe_grow idx in
+    (* [Sys.opaque_identity] ensures that flambda does not look at the type of
+     * [x], which may be a [float] and conclude that the [st] is a float array.
+     * We do not want OCaml's float array optimisation kicking in here. *)
+    st.(idx) <- Obj.repr (Sys.opaque_identity x)
+
+  let get (idx, init) =
+    let st = maybe_grow idx in
+    let v = st.(idx) in
+    if v == unique_value then
+      let v' = Obj.repr (init ()) in
+      st.(idx) <- (Sys.opaque_identity v');
+      Obj.magic v'
+    else Obj.magic v
+
+end
 type nanoseconds = int64
 external timer_ticks : unit -> (int64 [@unboxed]) =
   "caml_ml_domain_ticks" "caml_ml_domain_ticks_unboxed" [@@noalloc]
@@ -44,7 +103,7 @@ let spawn f =
   let termination_mutex = Mutex.create () in
   let state = Atomic.make Running in
   let body () =
-    let result = match f () with
+    let result = match DLS.create_dls (); f () with
       | x -> Ok x
       | exception ex -> Error ex in
     spin (fun () ->
@@ -92,51 +151,4 @@ let get_id { domain; _ } = domain
 
 let self () = Raw.self ()
 
-module DLS = struct
 
-  type 'a key = int ref * (unit -> 'a)
-
-  type entry = {key_id: int ref; mutable slot: Obj.t}
-
-  external get_dls_list : unit -> entry list = "%dls_get"
-
-  external set_dls_list : entry list  -> unit
-    = "caml_domain_dls_set" [@@noalloc]
-
-  let new_key f = (ref 0, f)
-
-  let set k x =
-    let cs = Obj.repr x in
-    let vals = get_dls_list () in
-    let rec add_or_update_entry k v l =
-      match l with
-      | [] -> Some {key_id = k; slot = v}
-      | hd::tl ->
-        if (hd.key_id == k) then begin
-          hd.slot <- v;
-          None
-        end
-        else add_or_update_entry k v tl
-    in
-    let (key, _) = k in
-    match add_or_update_entry key cs vals with
-    | None -> ()
-    | Some e -> set_dls_list (e::vals)
-
-  let get k =
-    let rec search key_id init dls_list l =
-      match l with
-      | [] ->
-        begin
-          let slot = Obj.repr (init ()) in
-          set_dls_list ({key_id; slot}::dls_list);
-          slot
-        end
-      | hd::tl ->
-        if hd.key_id == key_id then hd.slot else search key_id init dls_list tl
-    in
-    let dls_list = get_dls_list () in
-    let (key_id, init) = k in
-    Obj.obj @@ search key_id init dls_list dls_list
-
-end

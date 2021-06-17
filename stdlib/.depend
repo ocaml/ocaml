@@ -213,14 +213,16 @@ stdlib__digest.cmi :
 stdlib__domain.cmo : \
     stdlib__obj.cmi \
     stdlib__mutex.cmi \
-    stdlib__int64.cmi \
+    stdlib__int.cmi \
     stdlib__atomic.cmi \
+    stdlib__array.cmi \
     stdlib__domain.cmi
 stdlib__domain.cmx : \
     stdlib__obj.cmx \
     stdlib__mutex.cmx \
-    stdlib__int64.cmx \
+    stdlib__int.cmx \
     stdlib__atomic.cmx \
+    stdlib__array.cmx \
     stdlib__domain.cmi
 stdlib__domain.cmi :
 stdlib__either.cmo : \
@@ -254,7 +256,7 @@ stdlib__filename.cmo : \
     stdlib__random.cmi \
     stdlib__printf.cmi \
     stdlib__list.cmi \
-    stdlib__lazy.cmi \
+    stdlib__domain.cmi \
     stdlib__buffer.cmi \
     stdlib__filename.cmi
 stdlib__filename.cmx : \
@@ -263,7 +265,7 @@ stdlib__filename.cmx : \
     stdlib__random.cmx \
     stdlib__printf.cmx \
     stdlib__list.cmx \
-    stdlib__lazy.cmx \
+    stdlib__domain.cmx \
     stdlib__buffer.cmx \
     stdlib__filename.cmi
 stdlib__filename.cmi :
@@ -355,7 +357,7 @@ stdlib__hashtbl.cmo : \
     stdlib__seq.cmi \
     stdlib__random.cmi \
     stdlib__obj.cmi \
-    stdlib__lazy.cmi \
+    stdlib__domain.cmi \
     stdlib__array.cmi \
     stdlib__hashtbl.cmi
 stdlib__hashtbl.cmx : \
@@ -364,7 +366,7 @@ stdlib__hashtbl.cmx : \
     stdlib__seq.cmx \
     stdlib__random.cmx \
     stdlib__obj.cmx \
-    stdlib__lazy.cmx \
+    stdlib__domain.cmx \
     stdlib__array.cmx \
     stdlib__hashtbl.cmi
 stdlib__hashtbl.cmi : \
@@ -572,6 +574,7 @@ stdlib__random.cmo : \
     stdlib__int64.cmi \
     stdlib__int32.cmi \
     stdlib__int.cmi \
+    stdlib__domain.cmi \
     stdlib__digest.cmi \
     stdlib__char.cmi \
     stdlib__array.cmi \
@@ -583,6 +586,7 @@ stdlib__random.cmx : \
     stdlib__int64.cmx \
     stdlib__int32.cmx \
     stdlib__int.cmx \
+    stdlib__domain.cmx \
     stdlib__digest.cmx \
     stdlib__char.cmx \
     stdlib__array.cmx \

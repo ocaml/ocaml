@@ -621,7 +621,8 @@ int caml_win32_random_seed (intnat data[16])
   data[2] = GetCurrentProcessId();
   data[3] = pc.LowPart;
   data[4] = pc.HighPart;
-  return 5;
+  data[5] = (intnat)Caml_state->unique_token_root;
+  return 6;
 }
 
 
