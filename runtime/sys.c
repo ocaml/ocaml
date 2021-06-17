@@ -56,7 +56,6 @@
 #include "caml/fiber.h"
 #include "caml/sys.h"
 #include "caml/startup.h"
-#include "caml/version.h"
 #include "caml/callback.h"
 #include "caml/startup_aux.h"
 #include "caml/major_gc.h"

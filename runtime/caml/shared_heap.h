@@ -23,7 +23,6 @@ uintnat caml_top_heap_words(struct caml_heap_state*);
 uintnat caml_heap_blocks(struct caml_heap_state*);
 
 struct pool* caml_pool_of_shared_block(value v);
-struct domain* caml_owner_of_shared_block(value v);
 
 void caml_shared_unpin(value v);
 
@@ -38,23 +37,23 @@ extern struct global_heap_state global;
 /* CR mshinwell: ensure this matches [Emitaux] */
 enum {NOT_MARKABLE = 3 << 8};
 
-static inline int Has_status_hd(header_t hd, status s) {
+Caml_inline int Has_status_hd(header_t hd, status s) {
   return (hd & (3 << 8)) == s;
 }
 
-static inline header_t With_status_hd(header_t hd, status s) {
+Caml_inline header_t With_status_hd(header_t hd, status s) {
   return (hd & ~(3 << 8)) | s;
 }
 
-static inline int is_garbage(value v) {
+Caml_inline int is_garbage(value v) {
   return Has_status_hd(Hd_val(v), global.GARBAGE);
 }
 
-static inline int is_unmarked(value v) {
+Caml_inline int is_unmarked(value v) {
   return Has_status_hd(Hd_val(v), global.UNMARKED);
 }
 
-static inline int is_marked(value v) {
+Caml_inline int is_marked(value v) {
   return Has_status_hd(Hd_val(v), global.MARKED);
 }
 
