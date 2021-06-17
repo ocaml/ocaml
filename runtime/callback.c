@@ -37,14 +37,14 @@ static __thread int callback_depth = 0;
  * is executing to ensure that the garbage collector follows the
  * stack parent
  */
-static inline value save_and_clear_stack_parent(caml_domain_state* domain_state) {
+Caml_inline value save_and_clear_stack_parent(caml_domain_state* domain_state) {
   struct stack_info* parent_stack = Stack_parent(domain_state->current_stack);
   value cont = caml_alloc_1(Cont_tag, Val_ptr(parent_stack));
   Stack_parent(domain_state->current_stack) = NULL;
   return cont;
 }
 
-static inline void restore_stack_parent(caml_domain_state* domain_state, value cont) {
+Caml_inline void restore_stack_parent(caml_domain_state* domain_state, value cont) {
   struct stack_info* parent_stack = Ptr_val(Op_val(cont)[0]);
   Assert(Stack_parent(domain_state->current_stack) == NULL);
   Stack_parent(domain_state->current_stack) = parent_stack;

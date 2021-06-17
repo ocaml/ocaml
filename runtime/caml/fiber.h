@@ -5,7 +5,6 @@
 
 #include "misc.h"
 #include "mlvalues.h"
-#include "memory.h"
 #include "roots.h"
 
 struct stack_info;

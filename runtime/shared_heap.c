@@ -23,14 +23,14 @@ struct global_heap_state global = {0 << 8, 1 << 8, 2 << 8};
 typedef struct pool {
   struct pool* next;
   value* next_obj;
-  struct domain* owner;
+  caml_domain_state* owner;
   sizeclass sz;
 } pool;
 CAML_STATIC_ASSERT(sizeof(pool) == Bsize_wsize(POOL_HEADER_WSIZE));
 #define POOL_HEADER_SZ sizeof(pool)
 
 typedef struct large_alloc {
-  struct domain* owner;
+  caml_domain_state* owner;
   struct large_alloc* next;
 } large_alloc;
 CAML_STATIC_ASSERT(sizeof(large_alloc) % sizeof(value) == 0);
@@ -66,7 +66,7 @@ struct caml_heap_state {
 
   sizeclass next_to_sweep;
 
-  struct domain* owner;
+  caml_domain_state* owner;
 
   struct heap_stats stats;
 };
@@ -84,13 +84,13 @@ struct caml_heap_state* caml_init_shared_heap() {
     heap->next_to_sweep = 0;
     heap->swept_large = 0;
     heap->unswept_large = 0;
-    heap->owner = caml_domain_self();
+    heap->owner = Caml_state;
     memset(&heap->stats, 0, sizeof(heap->stats));
   }
   return heap;
 }
 
-static int move_all_pools(pool** src, pool** dst, struct domain* new_owner) {
+static int move_all_pools(pool** src, pool** dst, caml_domain_state* new_owner) {
   int count = 0;
   while (*src) {
     pool* p = *src;
@@ -201,7 +201,7 @@ static void calc_pool_stats(pool* a, sizeclass sz, struct heap_stats* s) {
 }
 
 /* Initialize a pool and its object freelist */
-static inline void pool_initialize(pool* r, sizeclass sz, struct domain* owner)
+Caml_inline void pool_initialize(pool* r, sizeclass sz, caml_domain_state* owner)
 {
   mlsize_t wh = wsize_sizeclass[sz];
   value* p = (value*)((char*)r + POOL_HEADER_SZ);
@@ -297,7 +297,7 @@ static pool* pool_global_adopt(struct caml_heap_state* local, sizeclass sz)
   caml_plat_unlock(&pool_freelist.lock);
 
   if( !r && adopted_pool ) {
-    Caml_state->major_work_todo -=
+    local->owner->major_work_todo -=
       pool_sweep(local, &local->full_pools[sz], sz, 0);
     r = local->avail_pools[sz];
   }
@@ -314,7 +314,7 @@ static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
 
   /* Otherwise, try to sweep until we find one */
   while (!local->avail_pools[sz] && local->unswept_avail_pools[sz]) {
-    Caml_state->major_work_todo -=
+    local->owner->major_work_todo -=
       pool_sweep(local, &local->unswept_avail_pools[sz], sz, 0);
   }
 
@@ -459,7 +459,7 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist, sizeclass 
         /* update stats */
         s->pool_live_blocks--;
         s->pool_live_words -= Whsize_hd(hd);
-        local->owner->state->swept_words += Whsize_hd(hd);
+        local->owner->swept_words += Whsize_hd(hd);
         s->pool_frag_words -= (wh - Whsize_hd(hd));
       } else {
         /* still live, the pool can't be released to the global freelist */
@@ -498,7 +498,7 @@ static intnat large_alloc_sweep(struct caml_heap_state* local) {
 
     local->stats.large_words -=
       Whsize_hd(hd) + Wsize_bsize(LARGE_ALLOC_HEADER_SZ);
-    local->owner->state->swept_words +=
+    local->owner->swept_words +=
       Whsize_hd(hd) + Wsize_bsize(LARGE_ALLOC_HEADER_SZ);
     local->stats.large_blocks--;
     free(a);
@@ -640,10 +640,10 @@ void verify_push(void* st_v, value v, value* p)
   if (!Is_block(v)) return;
 
   if( Is_young(v) ) {
-    struct domain* domain;
+    caml_domain_state* domain_state;
     caml_gc_log("minor in heap: %p, hd_val: %lx, p: %p", (value*)v, Hd_val(v), p);
-    domain = caml_owner_of_young_block(v);
-    caml_gc_log("owner: %d, young_start: %p, young_end: %p, young_ptr: %p, young_limit: %p", domain->state->id, domain->state->young_start, domain->state->young_end, domain->state->young_ptr, (void *)domain->state->young_limit);
+    domain_state = caml_owner_of_young_block(v);
+    caml_gc_log("owner: %d, young_start: %p, young_end: %p, young_ptr: %p, young_limit: %p", domain_state->id, domain_state->young_start, domain_state->young_end, domain_state->young_ptr, (void *)domain_state->young_limit);
   }
 
   if (st->sp == st->stack_len) {
@@ -808,7 +808,7 @@ void caml_cycle_heap_stw() {
 void caml_cycle_heap(struct caml_heap_state* local) {
   int i, received_p = 0, received_l = 0;
 
-  caml_gc_log("Cycling heap [%02d]", local->owner->state->id);
+  caml_gc_log("Cycling heap [%02d]", local->owner->id);
   for (i = 0; i < NUM_SIZECLASSES; i++) {
     Assert(local->unswept_avail_pools[i] == 0);
     local->unswept_avail_pools[i] = local->avail_pools[i];
