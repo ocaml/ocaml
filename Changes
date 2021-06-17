@@ -25,6 +25,9 @@ Working version
   64-bit floats in Cmm.memory_chunk.
   (Greta Yorsh, review by Xavier Leroy)
 
+- #10434: Pun labelled arguments with type constraint in function applications.
+  (Greta Yorsh, review by ??)
+
 ### Build system:
 
 ### Bug fixes:
