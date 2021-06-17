@@ -512,6 +512,8 @@ void caml_empty_minor_heap_domain_clear (caml_domain_state* domain, void* unused
   clear_table ((struct generic_table *)&minor_tables->ephe_ref);
   clear_table ((struct generic_table *)&minor_tables->custom);
 
+  Caml_state->extra_heap_resources_minor = 0.0;
+
 #ifdef DEBUG
   {
     uintnat* p = (uintnat*)domain->young_start;
@@ -622,6 +624,7 @@ void caml_empty_minor_heap_promote (caml_domain_state* domain, int participating
     if (Is_block(*v) && Is_young(*v)) {
       if (get_header_val(*v) == 0) { /* value copied to major heap */
         *v = Field(*v, 0);
+        caml_adjust_gc_speed(elt->mem, elt->max);
       } else {
         oldify_one(&st, *v, v);
       }
