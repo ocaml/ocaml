@@ -784,11 +784,10 @@ let lookup_label obj lab dbg =
 
 let call_cached_method obj tag cache pos args dbg =
   let arity = List.length args in
-  let cache = array_indexing log2_size_addr cache pos dbg in
   Compilenv.need_send_fun arity;
   Cop(Capply typ_val,
       Cconst_symbol("caml_send" ^ Int.to_string arity, dbg) ::
-        obj :: tag :: cache :: args,
+        obj :: tag :: cache :: pos :: args,
       dbg)
 
 (* Allocation *)
@@ -1831,10 +1830,12 @@ let send_function arity =
   let cconst_int i = Cconst_int (i, dbg ()) in
   let (args, clos', body) = apply_function_body (1+arity) in
   let cache = V.create_local "cache"
+  and pos = V.create_local "pos"
   and obj = List.hd args
   and tag = V.create_local "tag" in
   let clos =
-    let cache = Cvar cache and obj = Cvar obj and tag = Cvar tag in
+    let cache = Cvar cache and obj = Cvar obj and tag = Cvar tag
+    and pos = Cvar pos in
     let meths = V.create_local "meths" and cached = V.create_local "cached" in
     let real = V.create_local "real" in
     let mask = get_field_gen Asttypes.Mutable (Cvar meths) 1 (dbg ()) in
@@ -1842,6 +1843,7 @@ let send_function arity =
     let tag_pos = Cop(Cadda, [Cop (Cadda, [cached_pos; Cvar meths], dbg ());
                               cconst_int(3*size_addr-1)], dbg ()) in
     let tag' = Cop(Cload (Word_int, Mutable), [tag_pos], dbg ()) in
+    bind "cache" (array_indexing log2_size_addr cache pos (dbg ())) (fun cache ->
     Clet (
     VP.create meths, Cop(Cload (Word_val, Mutable), [obj], dbg ()),
     Clet (
@@ -1858,14 +1860,14 @@ let send_function arity =
                 dbg ()),
     Cop(Cload (Word_val, Mutable),
       [Cop(Cadda, [Cop (Cadda, [Cvar real; Cvar meths], dbg ());
-       cconst_int(2*size_addr-1)], dbg ())], dbg ()))))
+       cconst_int(2*size_addr-1)], dbg ())], dbg ())))))
 
   in
   let body = Clet(VP.create clos', clos, body) in
   let cache = cache in
   let fun_name = "caml_send" ^ Int.to_string arity in
   let fun_args =
-    [obj, typ_val; tag, typ_int; cache, typ_val]
+    [obj, typ_val; tag, typ_int; cache, typ_val; pos, typ_int]
     @ List.map (fun id -> (id, typ_val)) (List.tl args) in
   let fun_dbg = placeholder_fun_dbg ~human_name:fun_name in
   Cfunction
