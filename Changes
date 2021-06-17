@@ -75,6 +75,11 @@ Working version
   This allows stacktraces to work in gdb through C and OCaml calls.
   (Edwin Török, review by Nicolás Ojeda Bär and Xavier Leroy)
 
+- #10461: in `caml_send*` helper functions, replace one argument that is
+  a derived pointer by two arguments, a base array and an integer offset.
+  (Vincent Laviron, review by Xavier Leroy)
+
+
 OCaml 4.13.0
 -------------
 
