@@ -155,6 +155,26 @@ CAMLexport CAMLweakdef void caml_modify (value *fp, value val)
                         memory_order_release);
 }
 
+
+/* Use this function to tell the major GC to speed up when you use
+   finalized blocks to automatically deallocate resources (other
+   than memory). The GC will do at least one cycle every [max]
+   allocated resources; [res] is the number of resources allocated
+   this time.
+   Note that only [res/max] is relevant.  The units (and kind of
+   resource) can change between calls to [caml_adjust_gc_speed].
+*/
+CAMLexport void caml_adjust_gc_speed (mlsize_t res, mlsize_t max)
+{
+  if (max == 0) max = 1;
+  if (res > max) res = max;
+  Caml_state->extra_heap_resources += (double) res / (double) max;
+  if (Caml_state->extra_heap_resources > 1.0){
+    Caml_state->extra_heap_resources = 1.0;
+    caml_request_major_slice ();
+  }
+}
+
 CAMLexport CAMLweakdef void caml_initialize (value *fp, value val)
 {
 #ifdef DEBUG
@@ -689,14 +709,3 @@ CAMLexport wchar_t* caml_stat_wcsconcat(int n, ...)
 }
 
 #endif
-
-CAMLexport void caml_adjust_gc_speed (mlsize_t res, mlsize_t max)
-{
-  if (max == 0) max = 1;
-  if (res > max) res = max;
-  Caml_state->extra_heap_resources += (double) res / (double) max;
-  if (Caml_state->extra_heap_resources > 1.0){
-    Caml_state->extra_heap_resources = 1.0;
-    caml_request_major_slice ();
-  }
-}
