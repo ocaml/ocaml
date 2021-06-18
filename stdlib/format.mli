@@ -1238,10 +1238,16 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a
 *)
 
 val printf : ('a, formatter, unit) format -> 'a
-(** Same as [fprintf] above, but output on [std_formatter]. *)
+(** Same as [fprintf] above, but output on [get_std_formatter ()].
+
+    It is defined as [fun fmt -> fprintf (get_std_formatter ()) fmt].
+*)
 
 val eprintf : ('a, formatter, unit) format -> 'a
-(** Same as [fprintf] above, but output on [err_formatter]. *)
+(** Same as [fprintf] above, but output on [get_err_formatter ()].
+
+    It is defined as [fun fmt -> fprintf (get_err_formatter ()) fmt].
+*)
 
 val sprintf : ('a, unit, string) format -> 'a
 (** Same as [printf] above, but instead of printing on a formatter,
