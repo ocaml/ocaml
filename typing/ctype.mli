@@ -246,7 +246,7 @@ val deep_occur: type_expr -> type_expr -> bool
 val filter_self_method:
         Env.t -> string -> private_flag -> (Ident.t * type_expr) Meths.t ref ->
         type_expr -> Ident.t * type_expr
-        (* Raises [Self_has_no_such_method] instead of [Unify], and only if the
+        (* Raises [Filter_method_failed] instead of [Unify], and only if the
            self type is closed at this point. *)
 val moregeneral: Env.t -> bool -> type_expr -> type_expr -> unit
         (* Check if the first type scheme is more general than the second. *)
@@ -285,8 +285,6 @@ type filter_method_failure =
   | Not_an_object of type_expr
 
 exception Filter_method_failed of filter_method_failure
-
-exception Self_has_no_such_method
 
 type class_match_failure =
     CM_Virtual_class

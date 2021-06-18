@@ -2427,7 +2427,7 @@ module Subtype = struct
         txt1 =
     wrap_printing_env ~error:true env (fun () ->
       reset ();
-      let tr_sub  = prepare_trace             prepare_expansion tr_sub  in
+      let tr_sub = prepare_trace prepare_expansion tr_sub in
       let tr_unif = prepare_unification_trace prepare_expansion tr_unif in
       let keep_first = match tr_unif with
         | [Obj _ | Variant _ | Escape _ ] | [] -> true

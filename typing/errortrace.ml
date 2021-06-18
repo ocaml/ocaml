@@ -150,19 +150,16 @@ type equality_error =
 type moregen_error = { trace : comparison error } [@@unboxed]
 
 let unification_error ~trace : unification_error =
-  if trace = []
-  then Misc.fatal_error "Unification error trace was empty"
-  else { trace }
+  assert (trace <> []);
+  { trace }
 
 let equality_error ~trace ~subst : equality_error =
-  if trace = []
-  then Misc.fatal_error "Equality error trace was empty"
-  else { trace; subst }
+    assert (trace <> []);
+    { trace; subst }
 
 let moregen_error ~trace : moregen_error =
-  if trace = []
-  then Misc.fatal_error "Moregen error trace was empty"
-  else { trace }
+  assert (trace <> []);
+  { trace }
 
 type comparison_error =
   | Equality_error of equality_error
@@ -187,9 +184,8 @@ module Subtype = struct
     ; unification_trace : unification error }
 
   let error ~trace ~unification_trace =
-    if trace = []
-    then Misc.fatal_error "Subtype error trace was empty"
-    else { trace; unification_trace }
+  assert (trace <> []);
+  { trace; unification_trace }
 
   let map_elt f = function
     | Diff x -> Diff (map_diff f x)

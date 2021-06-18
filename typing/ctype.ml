@@ -3426,14 +3426,8 @@ let filter_method env name priv ty =
 let check_filter_method env name priv ty =
   ignore(filter_method env name priv ty)
 
-exception Self_has_no_such_method
-
 let filter_self_method env lab priv meths ty =
-  let ty' =
-    try filter_method env lab priv ty
-    with Filter_method_failed Not_a_method -> raise Self_has_no_such_method
-       | Filter_method_failed _            -> assert false
-  in
+  let ty' = filter_method env lab priv ty in
   try
     Meths.find lab !meths
   with Not_found ->

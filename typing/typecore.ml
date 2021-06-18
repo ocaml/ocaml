@@ -3549,13 +3549,7 @@ and type_expect_
           exp_type = typ;
           exp_attributes = sexp.pexp_attributes;
           exp_env = env }
-      with (Filter_method_failed _ | Self_has_no_such_method) as err ->
-        let err =
-          match err with
-          | Filter_method_failed err -> err
-          | Self_has_no_such_method -> Not_a_method
-          | _ -> assert false
-        in
+      with Filter_method_failed err ->
         let error =
           match err with
           | Unification_error err ->
@@ -5733,8 +5727,7 @@ let report_error ~loc env = function
       in
       Location.errorf ~loc
         "@[<v>@[<2>This function should have type@ %a%t@]@,\
-         but its first argument is %s@ \
-         instead of %s%s@]"
+         @[but its first argument is %s@ instead of %s%s@]@]"
         Printtyp.type_expr expected_type
         (report_type_expected_explanation_opt explanation)
         (label ~long:true got)
