@@ -344,7 +344,7 @@ static void update_major_slice_work() {
                     = dom_st->allocated_words * 3 * (100 + caml_percent_free)
                       / (2 * heap_words * caml_percent_free)
      Proportion of extra-heap resources consumed since the previous slice:
-                 PE = caml_extra_heap_resources
+                 PE = dom_st->extra_heap_resources
      Proportion of total work to do in this slice:
                  P  = max (PH, PE)
      Amount of marking work for the GC cycle:
@@ -397,6 +397,9 @@ static void update_major_slice_work() {
   caml_gc_message (0x40, "raw work-to-do = %"
                          ARCH_INTNAT_PRINTF_FORMAT "uu\n",
                    (uintnat) (p * 1000000));
+  caml_gc_message (0x40, "extra_heap_resources = %"
+		   ARCH_INTNAT_PRINTF_FORMAT "uu\n",
+		   (uintnat) (dom_st->extra_heap_resources * 1000000));
   caml_gc_message (0x40, "computed work = %"
                          ARCH_INTNAT_PRINTF_FORMAT "d words\n",
                    computed_work);
