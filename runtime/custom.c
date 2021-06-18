@@ -50,16 +50,12 @@ static value alloc_custom_gen (const struct custom_operations * ops,
     result = caml_alloc_small(wosize, Custom_tag);
     Custom_ops_val(result) = ops;
     if (ops->finalize != NULL || mem != 0) {
-      /* Remember that the block needs processing after minor GC. */
-      add_to_custom_table (&Caml_state->minor_tables->custom, result, mem, max_major);
-#if 0 /* XXX TODO KC */
       if (mem > mem_minor) {
         caml_adjust_gc_speed (mem - mem_minor, max_major);
       }
       /* The remaining [mem_minor] will be counted if the block survives a
          minor GC */
-      add_to_custom_table (Caml_state->custom_table, result,
-                           mem_minor, max_major);
+      add_to_custom_table (&Caml_state->minor_tables->custom, result, mem, max_major);
       /* Keep track of extra resources held by custom block in
          minor heap. */
       if (mem_minor != 0) {
@@ -68,15 +64,13 @@ static value alloc_custom_gen (const struct custom_operations * ops,
           (double) mem_minor / (double) max_minor;
         if (Caml_state->extra_heap_resources_minor > 1.0) {
           caml_request_minor_gc ();
-          caml_gc_dispatch ();
         }
       }
-#endif
     }
   } else {
     result = caml_alloc_shr(wosize, Custom_tag);
     Custom_ops_val(result) = ops;
-    /* !!caml_adjust_gc_speed(mem, max_major); */
+    caml_adjust_gc_speed(mem, max_major);
     result = caml_check_urgent_gc(result);
   }
   CAMLreturn(result);

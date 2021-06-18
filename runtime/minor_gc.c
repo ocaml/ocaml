@@ -47,8 +47,6 @@ static atomic_intnat domains_finished_minor_gc;
 
 static atomic_uintnat caml_minor_cycles_started = 0;
 
-double caml_extra_heap_resources_minor = 0;
-
 /* [sz] and [rsv] are numbers of entries */
 static void alloc_generic_table (struct generic_table *tbl, asize_t sz,
                                  asize_t rsv, asize_t element_size)
@@ -512,6 +510,8 @@ void caml_empty_minor_heap_domain_clear (caml_domain_state* domain, void* unused
   clear_table ((struct generic_table *)&minor_tables->ephe_ref);
   clear_table ((struct generic_table *)&minor_tables->custom);
 
+  domain->extra_heap_resources_minor = 0.0;
+
 #ifdef DEBUG
   {
     uintnat* p = (uintnat*)domain->young_start;
@@ -620,6 +620,7 @@ void caml_empty_minor_heap_promote (caml_domain_state* domain, int participating
   for (elt = self_minor_tables->custom.base; elt < self_minor_tables->custom.ptr; elt++) {
     value *v = &elt->block;
     if (Is_block(*v) && Is_young(*v)) {
+      caml_adjust_gc_speed(elt->mem, elt->max);
       if (get_header_val(*v) == 0) { /* value copied to major heap */
         *v = Field(*v, 0);
       } else {
