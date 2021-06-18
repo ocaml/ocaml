@@ -549,6 +549,8 @@ let rec compare_length_with l n =
       compare_length_with l (n-1)
 ;;
 
+let is_empty l = (l = [])
+
 (** {1 Comparison} *)
 
 (* Note: we are *not* shortcutting the list by using
