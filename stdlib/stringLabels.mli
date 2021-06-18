@@ -260,9 +260,7 @@ val escaped : string -> string
     [escaped s] fails).
 
     @raise Invalid_argument if the result is longer than
-    {!Sys.max_string_length} bytes.
-
-    @deprecated Use {!String.escape_ascii} instead. *)
+    {!Sys.max_string_length} bytes. *)
 
 val escape_ascii : string -> string
 (** [escape_ascii s] is [s] with all characters outside the printable US-ASCII
