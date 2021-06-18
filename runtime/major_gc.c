@@ -1027,6 +1027,11 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused,
       atomic_store_rel(&num_domains_to_final_update_first, num_domains_in_stw);
       atomic_store_rel(&num_domains_to_final_update_last, num_domains_in_stw);
 
+      // Adopt orphaned work from domains that were spawned and terminated in
+      // the previous cycle.
+      CAMLassert (orph_structs.ephe_list_todo == 0);
+      caml_adopt_orphaned_work ();
+
       atomic_store(&domain_global_roots_started, WORK_UNSTARTED);
     }
     // should interrupts be processed here or not?
