@@ -561,18 +561,11 @@ CAMLprim value caml_sys_time(value unit)
 
 #ifdef _WIN32
 extern int caml_win32_random_seed (intnat data[16]);
-#endif
-
-CAMLprim value caml_sys_random_seed (value unit)
-{
-  intnat data[16];
-  int n, i;
-  value res;
-#ifdef _WIN32
-  n = caml_win32_random_seed(data);
 #else
+int caml_unix_random_seed(intnat data[16])
+{
   int fd;
-  n = 0;
+  int n = 0;
   /* Try /dev/urandom first */
   fd = open("/dev/urandom", O_RDONLY, 0);
   if (fd != -1) {
@@ -598,6 +591,19 @@ CAMLprim value caml_sys_random_seed (value unit)
     data[n++] = getppid();
 #endif
   }
+  return n;
+}
+#endif
+
+CAMLprim value caml_sys_random_seed (value unit)
+{
+  intnat data[16];
+  int n, i;
+  value res;
+#ifdef _WIN32
+  n = caml_win32_random_seed(data);
+#else
+  n = caml_unix_random_seed(data);
 #endif
   /* Convert to an OCaml array of ints */
   res = caml_alloc_small(n, 0);
