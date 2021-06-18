@@ -622,9 +622,9 @@ void caml_empty_minor_heap_promote (caml_domain_state* domain, int participating
   for (elt = self_minor_tables->custom.base; elt < self_minor_tables->custom.ptr; elt++) {
     value *v = &elt->block;
     if (Is_block(*v) && Is_young(*v)) {
+      caml_adjust_gc_speed(elt->mem, elt->max);
       if (get_header_val(*v) == 0) { /* value copied to major heap */
         *v = Field(*v, 0);
-        caml_adjust_gc_speed(elt->mem, elt->max);
       } else {
         oldify_one(&st, *v, v);
       }
