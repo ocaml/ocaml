@@ -566,6 +566,7 @@ int caml_unix_random_seed(intnat data[16])
 {
   int fd;
   int n = 0;
+
   /* Try /dev/urandom first */
   fd = open("/dev/urandom", O_RDONLY, 0);
   if (fd != -1) {
@@ -575,23 +576,25 @@ int caml_unix_random_seed(intnat data[16])
     while (nread > 0) data[n++] = buffer[--nread];
   }
   /* If the read from /dev/urandom fully succeeded, we now have 96 bits
-     of good random data and can stop here.  Otherwise, complement
-     whatever we got (probably nothing) with some not-very-random data. */
-  if (n < 12) {
+     of good random data and can stop here. */
+  if (n >= 12) return n;
+  /* Otherwise, complement whatever we got (probably nothing)
+     with some not-very-random data. */
+  {
 #ifdef HAS_GETTIMEOFDAY
     struct timeval tv;
     gettimeofday(&tv, NULL);
-    data[n++] = tv.tv_usec;
-    data[n++] = tv.tv_sec;
+    if (n < 16) data[n++] = tv.tv_usec;
+    if (n < 16) data[n++] = tv.tv_sec;
 #else
-    data[n++] = time(NULL);
+    if (n < 16) data[n++] = time(NULL);
 #endif
 #ifdef HAS_UNISTD
-    data[n++] = getpid();
-    data[n++] = getppid();
+    if (n < 16) data[n++] = getpid();
+    if (n < 16) data[n++] = getppid();
 #endif
+    return n;
   }
-  return n;
 }
 #endif
 
