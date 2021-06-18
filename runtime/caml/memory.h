@@ -49,6 +49,7 @@ CAMLextern value caml_alloc_shr_preserving_profinfo (mlsize_t, tag_t,
   caml_alloc_shr(size, tag)
 #endif /* WITH_PROFINFO */
 CAMLextern value caml_alloc_shr_no_raise (mlsize_t wosize, tag_t);
+CAMLextern void caml_adjust_gc_speed (mlsize_t, mlsize_t);
 CAMLextern void caml_alloc_dependent_memory (mlsize_t);
 CAMLextern void caml_free_dependent_memory (mlsize_t);
 CAMLextern int caml_atomic_cas_field (value, intnat, value, value);
@@ -587,8 +588,6 @@ CAMLextern void caml_remove_generational_global_root (value *);
    previously registered with [caml_register_generational_global_root]. */
 
 CAMLextern void caml_modify_generational_global_root(value *r, value newval);
-
-CAMLextern void caml_adjust_gc_speed (mlsize_t, mlsize_t);
 
 #ifdef __cplusplus
 }
