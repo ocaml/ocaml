@@ -437,20 +437,20 @@ let alert_is_error {kind; _} =
   let (set, pos) = (!current).alert_errors in
   Misc.Stdlib.String.Set.mem kind set = pos
 
+let with_state state f =
+  let prev = backup () in
+  restore state;
+  try
+    let r = f () in
+    restore prev;
+    r
+  with exn ->
+    restore prev;
+    raise exn
+
 let mk_lazy f =
   let state = backup () in
-  lazy
-    (
-      let prev = backup () in
-      restore state;
-      try
-        let r = f () in
-        restore prev;
-        r
-      with exn ->
-        restore prev;
-        raise exn
-    )
+  lazy (with_state state f)
 
 let set_alert ~error ~enable s =
   let upd =
@@ -730,13 +730,11 @@ let message = function
   | Redundant_case -> "this match case is unused."
   | Redundant_subpat -> "this sub-pattern is unused."
   | Instance_variable_override [lab] ->
-      "the instance variable " ^ lab ^ " is overridden.\n" ^
-      "The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)"
+      "the instance variable " ^ lab ^ " is overridden."
   | Instance_variable_override (cname :: slist) ->
       String.concat " "
         ("the following instance variables are overridden by the class"
-         :: cname  :: ":\n " :: slist) ^
-      "\nThe behaviour changed in ocaml 3.10 (previous behaviour was hiding.)"
+         :: cname  :: ":\n " :: slist)
   | Instance_variable_override [] -> assert false
   | Illegal_backslash -> "illegal backslash escape in string."
   | Implicit_public_methods l ->

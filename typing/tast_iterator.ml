@@ -234,9 +234,8 @@ let expr sub {exp_extra; exp_desc; exp_env; _} =
       sub.expr sub exp1;
       sub.expr sub exp2;
       sub.expr sub exp3
-  | Texp_send (exp, _, expo) ->
-      sub.expr sub exp;
-      Option.iter (sub.expr sub) expo
+  | Texp_send (exp, _) ->
+      sub.expr sub exp
   | Texp_new _ -> ()
   | Texp_instvar _ -> ()
   | Texp_setinstvar (_, _, _, exp) ->sub.expr sub exp

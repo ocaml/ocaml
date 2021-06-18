@@ -148,6 +148,7 @@ val help_warnings: unit -> unit
 type state
 val backup: unit -> state
 val restore: state -> unit
+val with_state : state -> (unit -> 'a) -> 'a
 val mk_lazy: (unit -> 'a) -> 'a Lazy.t
     (** Like [Lazy.of_fun], but the function is applied with
         the warning/alert settings at the time [mk_lazy] is called. *)

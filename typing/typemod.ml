@@ -89,7 +89,6 @@ type error =
   | With_cannot_remove_constrained_type
   | Repeated_name of Sig_component_kind.t * string
   | Non_generalizable of type_expr
-  | Non_generalizable_class of Ident.t * class_declaration
   | Non_generalizable_module of module_type
   | Implementation_is_required of string
   | Interface_not_compiled of string
@@ -1824,14 +1823,15 @@ let rec path_of_module mexp =
 let path_of_module mexp =
  try Some (path_of_module mexp) with Not_a_path -> None
 
-(* Check that all core type schemes in a structure are closed *)
+(* Check that all core type schemes in a structure
+   do not contain non-generalized type variable *)
 
-let rec closed_modtype env = function
-    Mty_ident _ -> true
-  | Mty_alias _ -> true
+let rec nongen_modtype env = function
+    Mty_ident _ -> false
+  | Mty_alias _ -> false
   | Mty_signature sg ->
       let env = Env.add_signature sg env in
-      List.for_all (closed_signature_item env) sg
+      List.exists (nongen_signature_item env) sg
   | Mty_functor(arg_opt, body) ->
       let env =
         match arg_opt with
@@ -1840,25 +1840,25 @@ let rec closed_modtype env = function
         | Named (Some id, param) ->
             Env.add_module ~arg:true id Mp_present param env
       in
-      closed_modtype env body
+      nongen_modtype env body
 
-and closed_signature_item env = function
-    Sig_value(_id, desc, _) -> Ctype.closed_schema env desc.val_type
-  | Sig_module(_id, _, md, _, _) -> closed_modtype env md.md_type
-  | _ -> true
+and nongen_signature_item env = function
+    Sig_value(_id, desc, _) -> Ctype.nongen_schema env desc.val_type
+  | Sig_module(_id, _, md, _, _) -> nongen_modtype env md.md_type
+  | _ -> false
 
-let check_nongen_scheme env sig_item =
+let check_nongen_signature_item env sig_item =
   match sig_item with
     Sig_value(_id, vd, _) ->
-      if not (Ctype.closed_schema env vd.val_type) then
+      if Ctype.nongen_schema env vd.val_type then
         raise (Error (vd.val_loc, env, Non_generalizable vd.val_type))
   | Sig_module (_id, _, md, _, _) ->
-      if not (closed_modtype env md.md_type) then
+      if nongen_modtype env md.md_type then
         raise(Error(md.md_loc, env, Non_generalizable_module md.md_type))
   | _ -> ()
 
-let check_nongen_schemes env sg =
-  List.iter (check_nongen_scheme env) sg
+let check_nongen_signature env sg =
+  List.iter (check_nongen_signature_item env) sg
 
 (* Helpers for typing recursive modules *)
 
@@ -2727,7 +2727,7 @@ let type_module_type_of env smod =
   in
   let mty = Mtype.scrape_for_type_of ~remove_aliases env tmty.mod_type in
   (* PR#5036: must not contain non-generalized type variables *)
-  if not (closed_modtype env mty) then
+  if nongen_modtype env mty then
     raise(Error(smod.pmod_loc, env, Non_generalizable_module mty));
   tmty, mty
 
@@ -2913,7 +2913,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
             Includemod.compunit initial_env ~mark:Mark_positive
               sourcefile sg "(inferred signature)" simple_sg
           in
-          check_nongen_schemes finalenv simple_sg;
+          check_nongen_signature finalenv simple_sg;
           normalize_signature simple_sg;
           Typecore.force_delayed_checks ();
           (* See comment above. Here the target signature contains all
@@ -3107,11 +3107,6 @@ let report_error ~loc _env = function
       Location.errorf ~loc
         "@[The type of this expression,@ %a,@ \
            contains type variables that cannot be generalized@]" type_scheme typ
-  | Non_generalizable_class (id, desc) ->
-      Location.errorf ~loc
-        "@[The type of this class,@ %a,@ \
-           contains type variables that cannot be generalized@]"
-        (class_declaration id) desc
   | Non_generalizable_module mty ->
       Location.errorf ~loc
         "@[The type of this module,@ %a,@ \

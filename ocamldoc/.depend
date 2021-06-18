@@ -512,7 +512,6 @@ odoc_misc.cmo : \
     odoc_types.cmi \
     odoc_messages.cmo \
     ../parsing/longident.cmi \
-    ../typing/ctype.cmi \
     ../typing/btype.cmi \
     odoc_misc.cmi
 odoc_misc.cmx : \
@@ -522,7 +521,6 @@ odoc_misc.cmx : \
     odoc_types.cmx \
     odoc_messages.cmx \
     ../parsing/longident.cmx \
-    ../typing/ctype.cmx \
     ../typing/btype.cmx \
     odoc_misc.cmi
 odoc_misc.cmi : \
