@@ -4,6 +4,9 @@ Working version
 
 ### Runtime system:
 
+- #10236 Add a runtime warning when allocating a float array.
+  (Nicolas Chataing, review by Nicolás Ojeda Bär)
+
 ### Code generation and optimizations:
 
 ### Standard library:
