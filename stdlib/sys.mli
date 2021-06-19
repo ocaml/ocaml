@@ -354,12 +354,21 @@ val runtime_warnings_enabled: unit -> bool
 
     @since 4.03.0 *)
 
-val enable_boxed_float_array_warning: bool -> unit
-(** Control whether the OCaml runtime system can emit warnings when
-    boxed float arrays are allocated. *)
+val enable_float_array_alloc_warning: bool -> unit
+(** Control whether the OCaml runtime system can emit warnings when float
+    arrays are allocated.
 
-val boxed_float_array_warning_enabled: unit -> bool
-(** Return whether the boxed float array warning is currently enabled. *)
+    @since 4.14.0 *)
+
+val float_array_alloc_warning_enabled: unit -> bool
+(** Return whether the float array allocation warning is currently enabled.
+
+    @since 4.14.0 *)
+
+val set_float_array_alloc_callstack_size: int -> unit
+(** Set the size of the printed backtrace when allocating a float array.
+
+    @since 4.14.0 *)
 
 (** {1 Optimization} *)
 
