@@ -126,12 +126,10 @@ external enable_runtime_warnings: bool -> unit =
 external runtime_warnings_enabled: unit -> bool =
   "caml_ml_runtime_warnings_enabled"
 
-external enable_float_array_alloc_warning: bool -> unit =
+external enable_float_array_alloc_warning: bool -> int -> unit =
   "caml_ml_enable_float_array_alloc_warning"
 external float_array_alloc_warning_enabled: unit -> bool =
   "caml_ml_float_array_alloc_warning_enabled"
-external set_float_array_alloc_callstack_size: int -> unit =
-  "caml_ml_set_float_array_alloc_callstack_size"
 
 (* The version string is found in file ../VERSION *)
 
