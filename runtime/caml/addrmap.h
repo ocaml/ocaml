@@ -31,7 +31,7 @@ void caml_addrmap_iter(struct addrmap* t, void (*f)(value, value));
 
 /* iteration */
 typedef uintnat addrmap_iterator;
-static inline addrmap_iterator caml_addrmap_iter_ok(struct addrmap* t, addrmap_iterator i)
+Caml_inline addrmap_iterator caml_addrmap_iter_ok(struct addrmap* t, addrmap_iterator i)
 {
   if (i < t->size) {
     Assert(t->entries[i].key != ADDRMAP_INVALID_KEY);
@@ -41,7 +41,7 @@ static inline addrmap_iterator caml_addrmap_iter_ok(struct addrmap* t, addrmap_i
   }
 }
 
-static inline addrmap_iterator caml_addrmap_next(struct addrmap* t, addrmap_iterator i)
+Caml_inline addrmap_iterator caml_addrmap_next(struct addrmap* t, addrmap_iterator i)
 {
   if (!t->entries) return (uintnat)(-1);
   i++;
@@ -52,25 +52,25 @@ static inline addrmap_iterator caml_addrmap_next(struct addrmap* t, addrmap_iter
   return i;
 }
 
-static inline value caml_addrmap_iter_key(struct addrmap* t, addrmap_iterator i)
+Caml_inline value caml_addrmap_iter_key(struct addrmap* t, addrmap_iterator i)
 {
   Assert(caml_addrmap_iter_ok(t, i));
   return t->entries[i].key;
 }
 
-static inline value caml_addrmap_iter_value(struct addrmap* t, addrmap_iterator i)
+Caml_inline value caml_addrmap_iter_value(struct addrmap* t, addrmap_iterator i)
 {
   Assert(caml_addrmap_iter_ok(t, i));
   return t->entries[i].value;
 }
 
-static inline value* caml_addrmap_iter_val_pos(struct addrmap* t, addrmap_iterator i)
+Caml_inline value* caml_addrmap_iter_val_pos(struct addrmap* t, addrmap_iterator i)
 {
   Assert(caml_addrmap_iter_ok(t, i));
   return &t->entries[i].value;
 }
 
-static inline addrmap_iterator caml_addrmap_iterator(struct addrmap* t)
+Caml_inline addrmap_iterator caml_addrmap_iterator(struct addrmap* t)
 {
   return caml_addrmap_next(t, (uintnat)(-1));
 }
