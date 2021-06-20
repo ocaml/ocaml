@@ -27,7 +27,6 @@
 #include "caml/major_gc.h"
 #include "caml/shared_heap.h"
 #include "caml/domain.h"
-#include "caml/addrmap.h"
 #include "caml/roots.h"
 #include "caml/alloc.h"
 #include "caml/fiber.h"
@@ -124,11 +123,9 @@
    generated.
 */
 
-__attribute__((always_inline)) inline static void write_barrier(value obj, intnat field, value old_val, value new_val) ;
-
 /* The write barrier does not read or write the heap, it just
    modifies domain-local data structures. */
-static void write_barrier(value obj, intnat field, value old_val, value new_val)
+Caml_inline void write_barrier(value obj, intnat field, value old_val, value new_val)
 {
   /* HACK: can't assert when get old C-api style pointers
     Assert (Is_block(obj)); */
@@ -156,6 +153,26 @@ CAMLexport CAMLweakdef void caml_modify (value *fp, value val)
   atomic_thread_fence(memory_order_acquire);
   atomic_store_explicit(&Op_atomic_val((value)fp)[0], val,
                         memory_order_release);
+}
+
+
+/* Use this function to tell the major GC to speed up when you use
+   finalized blocks to automatically deallocate resources (other
+   than memory). The GC will do at least one cycle every [max]
+   allocated resources; [res] is the number of resources allocated
+   this time.
+   Note that only [res/max] is relevant.  The units (and kind of
+   resource) can change between calls to [caml_adjust_gc_speed].
+*/
+CAMLexport void caml_adjust_gc_speed (mlsize_t res, mlsize_t max)
+{
+  if (max == 0) max = 1;
+  if (res > max) res = max;
+  Caml_state->extra_heap_resources += (double) res / (double) max;
+  if (Caml_state->extra_heap_resources > 1.0){
+    Caml_state->extra_heap_resources = 1.0;
+    caml_request_major_slice ();
+  }
 }
 
 CAMLexport CAMLweakdef void caml_initialize (value *fp, value val)

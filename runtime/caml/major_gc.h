@@ -25,7 +25,7 @@ typedef enum {
 } gc_phase_t;
 extern gc_phase_t caml_gc_phase;
 
-static inline char caml_gc_phase_char(gc_phase_t phase) {
+Caml_inline char caml_gc_phase_char(gc_phase_t phase) {
   switch (phase) {
     case Phase_sweep_and_mark_main:
       return 'M';

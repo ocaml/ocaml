@@ -58,7 +58,6 @@
 #include "caml/signals.h"
 #include "caml/sys.h"
 #include "caml/startup.h"
-#include "caml/version.h"
 
 #ifndef O_BINARY
 #define O_BINARY 0

@@ -26,14 +26,7 @@ extern "C" {
 #include "config.h"
 #include "mlvalues.h"
 #include "domain_state.h"
-#include "memory.h"
-#include "major_gc.h"
 #include "platform.h"
-
-struct domain {
-  struct dom_internal* internals;
-  caml_domain_state* state;
-};
 
 #define Caml_check_gc_interrupt(dom_st)   \
   (CAMLalloc_point_here, \
@@ -54,7 +47,6 @@ void caml_request_minor_gc (void);
 
 void caml_interrupt_self(void);
 
-void caml_sample_gc_stats(struct gc_stats* buf);
 void caml_print_stats(void);
 
 CAMLexport void caml_reset_domain_lock(void);
@@ -79,30 +71,26 @@ CAMLextern void (*caml_domain_stop_hook)(void);
 void caml_init_domains(uintnat minor_heap_size);
 void caml_init_domain_self(int);
 
-struct domain* caml_domain_self();
-struct domain* caml_owner_of_young_block(value);
+caml_domain_state* caml_owner_of_young_block(value);
 
 CAMLextern atomic_uintnat caml_num_domains_running;
 CAMLextern uintnat caml_minor_heaps_base;
 CAMLextern uintnat caml_minor_heaps_end;
 
-INLINE intnat caml_domain_alone()
+Caml_inline intnat caml_domain_alone()
 {
   return atomic_load_acq(&caml_num_domains_running) == 1;
 }
-
-typedef struct interrupt interrupt;
-typedef void (*domain_rpc_handler)(struct domain*, void*, interrupt*);
 
 #ifdef DEBUG
 int caml_domain_is_in_stw();
 #endif
 
 int caml_try_run_on_all_domains_with_spin_work(
-  void (*handler)(struct domain*, void*, int, struct domain**), void* data,
-  void (*leader_setup)(struct domain*),
-  void (*enter_spin_callback)(struct domain*, void*), void* enter_spin_data);
-int caml_try_run_on_all_domains(void (*handler)(struct domain*, void*, int, struct domain**), void*, void (*leader_setup)(struct domain*));
+  void (*handler)(caml_domain_state*, void*, int, caml_domain_state**), void* data,
+  void (*leader_setup)(caml_domain_state*),
+  void (*enter_spin_callback)(caml_domain_state*, void*), void* enter_spin_data);
+int caml_try_run_on_all_domains(void (*handler)(caml_domain_state*, void*, int, caml_domain_state**), void*, void (*leader_setup)(caml_domain_state*));
 
 /* barriers */
 typedef uintnat barrier_status;
