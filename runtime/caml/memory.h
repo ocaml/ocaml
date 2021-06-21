@@ -588,6 +588,7 @@ CAMLextern void caml_remove_generational_global_root (value *);
 
 CAMLextern void caml_modify_generational_global_root(value *r, value newval);
 
+CAMLextern void caml_adjust_gc_speed (mlsize_t, mlsize_t);
 
 #ifdef __cplusplus
 }
