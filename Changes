@@ -4,8 +4,11 @@ Working version
 
 ### Runtime system:
 
-- #10236 Add a runtime warning when allocating a float array.
-  (Nicolas Chataing, review by Nicolás Ojeda Bär)
+- #10236 Add a runtime warning when allocating a float array, which prints
+  a backtrace of the current callstack.
+  It can be controled through `Sys.enable_float_array_alloc`, or
+  `OCALMRUNPARAM=F=n`, where `n` gives the backtrace size to print.
+  (Nicolas Chataing, review by Nicolás Ojeda Bär and Alain Frisch)
 
 ### Code generation and optimizations:
 
