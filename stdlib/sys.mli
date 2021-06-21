@@ -354,14 +354,15 @@ val runtime_warnings_enabled: unit -> bool
 
     @since 4.03.0 *)
 
-val enable_float_array_alloc_warning: bool -> int -> unit
+val enable_float_array_alloc_warning: int option -> unit
 (** Control whether the OCaml runtime system can emit warnings when values
-    of type [float array] arrays are allocated. The second argument specifies
-    the size of the printed function callstack.
+    of type [float array] arrays are allocated.
+    None   -> the warning is disabled
+    Some s -> the warning is enabled with a backtrace of size s
 
     @since 4.14.0 *)
 
-val float_array_alloc_warning_enabled: unit -> bool
+val float_array_alloc_warning_enabled: unit -> int option
 (** Return whether the float array allocation warning is currently enabled.
 
     @since 4.14.0 *)

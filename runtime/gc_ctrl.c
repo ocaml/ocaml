@@ -789,14 +789,9 @@ CAMLprim value caml_ml_runtime_warnings_enabled(value unit)
   return Val_bool(caml_runtime_warnings);
 }
 
-CAMLprim value caml_ml_enable_float_array_alloc_warning(value vbool,
-                                                        value vsize)
+CAMLprim value caml_ml_enable_float_array_alloc_warning(value vsize)
 {
-  if (Bool_val(vbool)) {
-    caml_float_array_alloc_warning = Int_val(vsize);
-  } else {
-    caml_float_array_alloc_warning = 0;
-  }
+  caml_float_array_alloc_warning = Int_val(vsize);
   return Val_unit;
 }
 

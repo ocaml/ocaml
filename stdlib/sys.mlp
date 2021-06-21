@@ -126,10 +126,22 @@ external enable_runtime_warnings: bool -> unit =
 external runtime_warnings_enabled: unit -> bool =
   "caml_ml_runtime_warnings_enabled"
 
-external enable_float_array_alloc_warning: bool -> int -> unit =
+external c_enable_float_array_alloc_warning: int -> unit =
   "caml_ml_enable_float_array_alloc_warning"
-external float_array_alloc_warning_enabled: unit -> bool =
+
+external c_float_array_alloc_warning_enabled: unit -> int =
   "caml_ml_float_array_alloc_warning_enabled"
+
+let enable_float_array_alloc_warning size_opt =
+  let size = Option.value size_opt ~default:0 in
+  if size < 0 then
+    invalid_arg "Sys.enable_float_array_alloc_warning"
+  else
+    c_enable_float_array_alloc_warning size
+
+let float_array_alloc_warning_enabled () =
+  let size = c_float_array_alloc_warning_enabled () in
+  if size <= 0 then None else Some size
 
 (* The version string is found in file ../VERSION *)
 
