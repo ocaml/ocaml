@@ -686,8 +686,10 @@ stdlib__StringLabels.cmx : stringLabels.ml \
 stdlib__StringLabels.cmi : stringLabels.mli \
     stdlib__Seq.cmi
 stdlib__Sys.cmo : sys.ml \
+    stdlib__Option.cmi \
     stdlib__Sys.cmi
 stdlib__Sys.cmx : sys.ml \
+    stdlib__Option.cmx \
     stdlib__Sys.cmi
 stdlib__Sys.cmi : sys.mli
 stdlib__Uchar.cmo : uchar.ml \
