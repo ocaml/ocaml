@@ -330,6 +330,9 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
     d->state = domain_state;
     Assert(!d->interruptor.interrupt_pending);
 
+    domain_state->extra_heap_resources = 0.0;
+    domain_state->extra_heap_resources_minor = 0.0;
+
     if (caml_init_signal_stack() < 0) {
       goto init_signal_stack_failure;
     }
@@ -1151,9 +1154,10 @@ static void handover_finalisers(caml_domain_state* domain_state)
   if (f->todo_head != NULL || f->first.size != 0 || f->last.size != 0) {
     /* have some final structures */
     if (caml_gc_phase != Phase_sweep_and_mark_main) {
-      /* Force a major GC to simplify constraints for
-      * handing over ephemerons. */
-      caml_gc_major(Val_unit);
+      /* Force a major GC cycle to simplify constraints for
+       * handing over finalisers. */
+      caml_finish_major_cycle();
+      Assert(caml_gc_phase == Phase_sweep_and_mark_main);
     }
     caml_add_orphaned_finalisers (f);
     /* Create a dummy final info */
