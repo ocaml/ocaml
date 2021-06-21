@@ -1356,7 +1356,7 @@ Ptop_def
                 [
                   <arg>
                   Labelled "y"
-                    expression (//toplevel//[5,98+6]..[5,98+7]) ghost
+                    expression (//toplevel//[5,98+5]..[5,98+12]) ghost
                       Pexp_constraint
                       expression (//toplevel//[5,98+6]..[5,98+7])
                         Pexp_ident "y" (//toplevel//[5,98+6]..[5,98+7])
