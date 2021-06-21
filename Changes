@@ -26,7 +26,7 @@ Working version
   (Greta Yorsh, review by Xavier Leroy)
 
 - #10434: Pun labelled arguments with type constraint in function applications.
-  (Greta Yorsh, review by ??)
+  (Greta Yorsh, review by Nicolas Chataing and Nicolás Ojeda Bär)
 
 ### Build system:
 
