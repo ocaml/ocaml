@@ -1383,8 +1383,16 @@ let ifprintf _ppf (Format (fmt, _)) =
   make_iprintf ignore () fmt
 
 let fprintf ppf = kfprintf ignore ppf
-let printf fmt = fprintf (DLS.get std_formatter_key) fmt
-let eprintf fmt = fprintf (DLS.get err_formatter_key) fmt
+
+let printf (Format (fmt, _)) =
+  make_printf
+    (fun acc -> output_acc (DLS.get std_formatter_key) acc)
+    End_of_acc fmt
+
+let eprintf (Format (fmt, _)) =
+  make_printf
+    (fun acc -> output_acc (DLS.get err_formatter_key) acc)
+    End_of_acc fmt
 
 let kdprintf k (Format (fmt, _)) =
   make_printf
