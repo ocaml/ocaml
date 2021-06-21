@@ -110,15 +110,17 @@ static void ephe_next_cycle ()
 void caml_ephe_todo_list_emptied ()
 {
   caml_plat_lock(&ephe_lock);
-  /* Force next ephemeron cycle in order to avoid reasoning about whether the
-   * domain has already incremented [ephe_cycle_info.num_domains_done] counter
-   */
+
+  /* Force next ephemeron marking cycle in order to avoid reasoning about
+   * whether the domain has already incremented
+   * [ephe_cycle_info.num_domains_done] counter. */
   atomic_store(&ephe_cycle_info.num_domains_done, 0);
   atomic_fetch_add(&ephe_cycle_info.ephe_cycle, +1);
   atomic_fetch_add(&ephe_cycle_info.num_domains_todo, -1);
   atomic_fetch_add_verify_ge0(&num_domains_to_ephe_sweep, -1);
   CAMLassert(atomic_load_acq(&ephe_cycle_info.num_domains_done) <=
              atomic_load_acq(&ephe_cycle_info.num_domains_todo));
+
   caml_plat_unlock(&ephe_lock);
 }
 
