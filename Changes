@@ -21,6 +21,10 @@ Working version
 
 ### Internal/compiler-libs changes:
 
+- #10433: Remove the distinction between 32-bit aligned and 64-bit aligned
+  64-bit floats in Cmm.memory_chunk.
+  (Greta Yorsh, review by Xavier Leroy)
+
 ### Build system:
 
 ### Bug fixes:
