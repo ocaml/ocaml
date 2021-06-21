@@ -99,7 +99,26 @@ let rec spin f =
 let cas r vold vnew =
   if not (Atomic.compare_and_set r vold vnew) then raise Retry
 
+let first_domain_spawned = ref false
+
+let first_spawn_function = ref (fun () -> ())
+
+let at_first_spawn f =
+  if !first_domain_spawned then
+    raise (Invalid_argument "First domain already spawned")
+  else begin
+    let old_f = !first_spawn_function in
+    let new_f () = f (); old_f () in
+    first_spawn_function := new_f
+  end
+
 let spawn f =
+  begin if not (!first_domain_spawned) then
+    first_domain_spawned := true;
+    !first_spawn_function();
+    (* Release the old function *)
+    first_spawn_function := (fun () -> ())
+  end;
   let termination_mutex = Mutex.create () in
   let state = Atomic.make Running in
   let body () =
