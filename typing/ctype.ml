@@ -2200,13 +2200,17 @@ let reify env t =
   in
   iterator t
 
-let is_newtype env p =
+let is_public_type env p =
   try
     let decl = Env.find_type p env in
-    decl.type_expansion_scope <> Btype.lowest_level &&
     decl.type_kind = Type_abstract &&
     decl.type_private = Public
   with Not_found -> false
+
+let find_expansion_scope env path =
+  let decl = Env.find_type path env in
+  if decl.type_manifest = None then generic_level
+  else decl.type_expansion_scope
 
 let non_aliasable p decl =
   (* in_pervasives p ||  (subsumed by in_current_module) *)
@@ -2471,9 +2475,6 @@ let find_lowest_level ty =
     end
   in find ty; unmark_type ty; !lowest
 
-let find_expansion_scope env path =
-  (Env.find_type path env).type_expansion_scope
-
 let add_gadt_equation env source destination =
   (* Format.eprintf "@[add_gadt_equation %s %a@]@."
     (Path.name source) !Btype.print_raw destination; *)
@@ -2683,18 +2684,8 @@ let rec unify (env:Env.t ref) t1 t2 =
         update_level_for Unify !env t1.level t2;
         update_scope_for Unify t1.scope t2;
         link_type t1 t2
-    | (Tconstr (p1, [], _), Tconstr (p2, [], _))
-      when Env.has_local_constraints !env
-      && is_newtype !env p1 && is_newtype !env p2 ->
-        (* Do not use local constraints more than necessary *)
-        begin try
-          if find_expansion_scope !env p1 > find_expansion_scope !env p2 then
-            unify env t1 (try_expand_safe !env t2)
-          else
-            unify env (try_expand_safe !env t1) t2
-        with Cannot_expand ->
-          unify2 env t1 t2
-        end
+    | (Tconstr _, Tconstr _) when Env.has_local_constraints !env ->
+        unify2_rec env t1 t1 t2 t2
     | _ ->
         unify2 env t1 t2
     end;
@@ -2703,13 +2694,35 @@ let rec unify (env:Env.t ref) t1 t2 =
     reset_trace_gadt_instances reset_tracing;
     raise( Unify (Errortrace.diff t1 t2 :: trace) )
 
-and unify2 env t1 t2 =
+and unify2 env t1 t2 = unify2_expand env t1 t1 t2 t2
+
+and unify2_rec env t10 t1 t20 t2 =
+  let t1 = repr t1 and t2 = repr t2 in
+  if unify_eq t1 t2 then () else
+  try match (t1.desc, t2.desc) with
+  | (Tconstr (p1, tl1, a1), Tconstr (p2, tl2, a2)) ->
+      if Path.same p1 p2 && tl1 = [] && tl2 = [] && is_public_type !env p1
+      && not (has_cached_expansion p1 !a1 || has_cached_expansion p2 !a2)
+      then begin
+        update_level_for Unify !env t1.level t2;
+        update_scope_for Unify t1.scope t2;
+        link_type t1 t2
+      end else
+        if find_expansion_scope !env p1 > find_expansion_scope !env p2
+        then unify2_rec env t10 t1 t20 (try_expand_safe !env t2)
+        else unify2_rec env t10 (try_expand_safe !env t1) t20 t2
+  | _ ->
+      raise Cannot_expand
+  with Cannot_expand ->
+    unify2_expand env t10 t1 t20 t2
+
+and unify2_expand env t1 t1' t2 t2' =
   (* Second step: expansion of abbreviations *)
   (* Expansion may change the representative of the types. *)
-  ignore (expand_head_unif !env t1);
-  ignore (expand_head_unif !env t2);
-  let t1' = expand_head_unif !env t1 in
-  let t2' = expand_head_unif !env t2 in
+  ignore (expand_head_unif !env t1');
+  ignore (expand_head_unif !env t2');
+  let t1' = expand_head_unif !env t1' in
+  let t2' = expand_head_unif !env t2' in
   let lv = Int.min t1'.level t2'.level in
   let scope = Int.max t1'.scope t2'.scope in
   update_level_for Unify !env lv t2;
