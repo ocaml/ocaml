@@ -386,8 +386,6 @@ int caml_runtime_warnings_active(void);
 
 extern uintnat caml_float_array_alloc_warning;
 int caml_float_array_alloc_warning_active(void);
-extern uintnat caml_float_array_alloc_callstack_size;
-int caml_get_float_array_alloc_callstack_size(void);
 
 #ifdef DEBUG
 #ifdef ARCH_SIXTYFOUR

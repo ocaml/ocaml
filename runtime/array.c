@@ -259,7 +259,7 @@ CAMLprim value caml_make_vect(value len, value init)
 #else
     fprintf(stderr, "[ocaml] allocating a boxed float array\n");
 #endif
-    caml_print_current_callstack(caml_float_array_alloc_callstack_size);
+    caml_print_current_callstack(caml_float_array_alloc_warning);
   }
   // Give the GC a chance to run, and run memprof callbacks
   caml_process_pending_actions ();
