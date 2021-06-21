@@ -41,8 +41,7 @@
    If multiple domains write to the same output channel such as
    {{!Stdlib.stdout}stdout} and {{!Stdlib.stderr}stderr} using distinct
    formatters on each domain, the output from the domains will be interleaved
-   with each other. It is expected that the user of this library will implement
-   the necessary synchronisation.
+   with each other at new lines.
 
    Warning: Since {{!section:formatter}formatters} contain mutable state, it is
    not thread-safe to use the same formatter on multiple domains in parallel

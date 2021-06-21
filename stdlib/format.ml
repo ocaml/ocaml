@@ -1026,17 +1026,44 @@ module DLS = Domain.DLS
 let stdbuf_key = DLS.new_key pp_make_buffer
 let _ = DLS.set stdbuf_key stdbuf
 
-let std_formatter_key = DLS.new_key (fun () ->
-  formatter_of_out_channel Stdlib.stdout)
-let _ = DLS.set std_formatter_key std_formatter
-
-let err_formatter_key = DLS.new_key (fun () ->
-  formatter_of_out_channel Stdlib.stderr)
-let _ = DLS.set err_formatter_key err_formatter
-
 let str_formatter_key = DLS.new_key (fun () ->
   formatter_of_buffer (DLS.get stdbuf_key))
 let _ = DLS.set str_formatter_key str_formatter
+
+let buffered_out_string key str ofs len =
+  Buffer.add_substring (Domain.DLS.get key) str ofs len
+
+let buffered_out_flush oc key () =
+  let buf = Domain.DLS.get key in
+  let len = Buffer.length buf in
+  let str = Buffer.contents buf in
+  output_substring oc str 0 len ;
+  Buffer.clear buf
+
+let std_buf_key = Domain.DLS.new_key (fun () -> Buffer.create 80)
+let err_buf_key = Domain.DLS.new_key (fun () -> Buffer.create 80)
+
+let std_formatter_key = DLS.new_key (fun () ->
+  let ppf =
+    pp_make_formatter (buffered_out_string std_buf_key)
+      (buffered_out_flush Stdlib.stdout std_buf_key) ignore ignore ignore
+  in
+  ppf.pp_out_newline <- display_newline ppf;
+  ppf.pp_out_spaces <- display_blanks ppf;
+  ppf.pp_out_indent <- display_indent ppf;
+  ppf)
+let _ = DLS.set std_formatter_key std_formatter
+
+let err_formatter_key = DLS.new_key (fun () ->
+  let ppf =
+    pp_make_formatter (buffered_out_string err_buf_key)
+      (buffered_out_flush Stdlib.stderr err_buf_key) ignore ignore ignore
+  in
+  ppf.pp_out_newline <- display_newline ppf;
+  ppf.pp_out_spaces <- display_blanks ppf;
+  ppf.pp_out_indent <- display_indent ppf;
+  ppf)
+let _ = DLS.set err_formatter_key err_formatter
 
 let get_std_formatter () = DLS.get std_formatter_key
 let get_err_formatter () = DLS.get err_formatter_key
@@ -1430,6 +1457,17 @@ let flush_standard_formatters () =
   pp_print_flush (DLS.get err_formatter_key) ()
 
 let () = at_exit flush_standard_formatters
+
+let () = Domain.at_first_spawn (fun () ->
+  flush_standard_formatters ();
+  let fs = pp_get_formatter_out_functions std_formatter () in
+  pp_set_formatter_out_functions std_formatter
+    {fs with out_string = buffered_out_string std_buf_key;
+             out_flush = buffered_out_flush Stdlib.stdout std_buf_key};
+  let fs = pp_get_formatter_out_functions err_formatter () in
+  pp_set_formatter_out_functions err_formatter
+    {fs with out_string = buffered_out_string err_buf_key;
+             out_flush = buffered_out_flush Stdlib.stderr err_buf_key})
 
 (*
 
