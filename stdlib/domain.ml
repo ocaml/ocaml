@@ -137,15 +137,11 @@ let spawn f =
   let termination_mutex = Mutex.create () in
   let state = Atomic.make Running in
   let body () =
-    DLS.create_dls ();
-    let res = f () in
-    do_at_exit ();
-    res
-  in
-  let wrapped_body () =
-    let result = match body () with
+    let result = match DLS.create_dls (); f () with
       | x -> Ok x
-      | exception ex -> Error ex in
+      | exception ex -> Error ex
+    in
+    do_at_exit ();
     spin (fun () ->
       match Atomic.get state with
       | Running ->
@@ -156,7 +152,7 @@ let spawn f =
       | Joined | Finished _ ->
          failwith "internal error: I'm already finished?")
   in
-  { domain = Raw.spawn wrapped_body termination_mutex; termination_mutex; state }
+  { domain = Raw.spawn body termination_mutex; termination_mutex; state }
 
 let termination_wait termination_mutex =
   (* Raw.spawn returns with the mutex locked, so this will block if the
