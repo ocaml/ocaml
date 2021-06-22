@@ -95,14 +95,14 @@ type existential_restriction =
 
 type error =
   | Constructor_arity_mismatch of Longident.t * int * int
-  | Label_mismatch of Longident.t * Errortrace.unification Errortrace.t
+  | Label_mismatch of Longident.t * Errortrace.unification_error
   | Pattern_type_clash :
-      Errortrace.unification Errortrace.t * _ pattern_desc option -> error
-  | Or_pattern_type_clash of Ident.t * Errortrace.unification Errortrace.t
+      Errortrace.unification_error * _ pattern_desc option -> error
+  | Or_pattern_type_clash of Ident.t * Errortrace.unification_error
   | Multiply_bound_variable of string
   | Orpat_vars of Ident.t * Ident.t list
   | Expr_type_clash of
-      Errortrace.unification Errortrace.t * type_forcing_context option
+      Errortrace.unification_error * type_forcing_context option
       * expression_desc option
   | Apply_non_function of type_expr
   | Apply_wrong_label of arg_label * type_expr * bool
@@ -113,6 +113,7 @@ type error =
   | Name_type_mismatch of
       Datatype_kind.t * Longident.t * (Path.t * Path.t) * (Path.t * Path.t) list
   | Invalid_format of string
+  | Not_an_object of type_expr * type_forcing_context option
   | Undefined_method of type_expr * string * string list option
   | Undefined_inherited_method of string * string list
   | Virtual_class of Longident.t
@@ -121,17 +122,23 @@ type error =
   | Private_constructor of constructor_description * type_expr
   | Unbound_instance_variable of string * string list
   | Instance_variable_not_mutable of string
-  | Not_subtype of Errortrace.Subtype.t * Errortrace.unification Errortrace.t
+  | Not_subtype of Errortrace.Subtype.error
   | Outside_class
   | Value_multiply_overridden of string
   | Coercion_failure of
-      type_expr * type_expr * Errortrace.unification Errortrace.t * bool
-  | Too_many_arguments of bool * type_expr * type_forcing_context option
-  | Abstract_wrong_label of arg_label * type_expr * type_forcing_context option
+      Errortrace.expanded_type * Errortrace.unification_error * bool
+  | Not_a_function of type_expr * type_forcing_context option
+  | Too_many_arguments of type_expr * type_forcing_context option
+  | Abstract_wrong_label of
+      { got           : arg_label
+      ; expected      : arg_label
+      ; expected_type : type_expr
+      ; explanation   : type_forcing_context option
+      }
   | Scoping_let_module of string * type_expr
   | Not_a_polymorphic_variant_type of Longident.t
   | Incoherent_label_order
-  | Less_general of string * Errortrace.unification Errortrace.t
+  | Less_general of string * Errortrace.unification_error
   | Modules_not_allowed
   | Cannot_infer_signature
   | Not_a_packed_module of type_expr
@@ -151,9 +158,9 @@ type error =
   | Illegal_letrec_pat
   | Illegal_letrec_expr
   | Illegal_class_expr
-  | Letop_type_clash of string * Errortrace.unification Errortrace.t
-  | Andop_type_clash of string * Errortrace.unification Errortrace.t
-  | Bindings_type_clash of Errortrace.unification Errortrace.t
+  | Letop_type_clash of string * Errortrace.unification_error
+  | Andop_type_clash of string * Errortrace.unification_error
+  | Bindings_type_clash of Errortrace.unification_error
   | Unbound_existential of Ident.t list * type_expr
   | Missing_type_constraint
   | Wrong_expected_kind of wrong_kind_sort * wrong_kind_context * type_expr
@@ -163,15 +170,15 @@ exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
 
 let trace_of_error = function
-    Label_mismatch (_,tr)
-  | Pattern_type_clash (tr,_)
-  | Or_pattern_type_clash (_,tr)
-  | Expr_type_clash (tr,_,_)
-  | Coercion_failure (_,_,tr,_)
-  | Less_general (_,tr)
-  | Letop_type_clash (_,tr)
-  | Andop_type_clash (_,tr)
-  | Bindings_type_clash tr -> Some tr
+    Label_mismatch (_,{trace})
+  | Pattern_type_clash ({trace},_)
+  | Or_pattern_type_clash (_,{trace})
+  | Expr_type_clash ({trace},_,_)
+  | Coercion_failure (_,{trace},_)
+  | Less_general (_,{trace})
+  | Letop_type_clash (_,{trace})
+  | Andop_type_clash (_,{trace})
+  | Bindings_type_clash {trace} -> Some trace
   | _ -> None
 
 (* Forward declaration, to be filled in by Typemod.type_module *)
@@ -349,8 +356,8 @@ let unify_exp_types loc env ty expected_ty =
   try
     unify env ty expected_ty
   with
-    Unify trace ->
-      raise(Error(loc, env, Expr_type_clash(trace, None, None)))
+    Unify err ->
+      raise(Error(loc, env, Expr_type_clash(err, None, None)))
   | Tags(l1,l2) ->
       raise(Typetexp.Error(loc, env, Typetexp.Variant_tags (l1, l2)))
 
@@ -374,8 +381,8 @@ let unify_pat_types_return_equated_pairs ?(refine = None) loc env ty ty' =
         unify !env ty ty';
         nothing_equated
   with
-  | Unify trace ->
-      raise(Error(loc, !env, Pattern_type_clash(trace, None)))
+  | Unify err ->
+      raise(Error(loc, !env, Pattern_type_clash(err, None)))
   | Tags(l1,l2) ->
       raise(Typetexp.Error(loc, !env, Typetexp.Variant_tags (l1, l2)))
 
@@ -384,8 +391,8 @@ let unify_pat_types ?refine loc env ty ty' =
 
 let unify_pat ?refine env pat expected_ty =
   try unify_pat_types ?refine pat.pat_loc env pat.pat_type expected_ty
-  with Error (loc, env, Pattern_type_clash(trace, None)) ->
-    raise(Error(loc, env, Pattern_type_clash(trace, Some pat.pat_desc)))
+  with Error (loc, env, Pattern_type_clash(err, None)) ->
+    raise(Error(loc, env, Pattern_type_clash(err, Some pat.pat_desc)))
 
 (* unification of a type with a Tconstr with freshly created arguments *)
 let unify_head_only ~refine loc env ty constr =
@@ -516,8 +523,8 @@ let enter_orpat_variables loc env  p1_vs p2_vs =
               unify_var env (newvar ()) t1;
               unify env t1 t2
             with
-            | Unify trace ->
-                raise(Error(loc, env, Or_pattern_type_clash(x1, trace)))
+            | Unify err ->
+                raise(Error(loc, env, Or_pattern_type_clash(x1, err)))
             end;
           (x2,x1)::unify_vars rem1 rem2
           end
@@ -753,9 +760,9 @@ let solve_Ppat_record_field ~refine loc env label label_lid record_ty =
   let (_, ty_arg, ty_res) = instance_label false label in
   begin try
     unify_pat_types ~refine loc env ty_res (instance record_ty)
-  with Error(_loc, _env, Pattern_type_clash(trace, _)) ->
+  with Error(_loc, _env, Pattern_type_clash(err, _)) ->
     raise(Error(label_lid.loc, !env,
-                Label_mismatch(label_lid.txt, trace)))
+                Label_mismatch(label_lid.txt, err)))
   end;
   end_def ();
   generalize_structure ty_res;
@@ -1340,8 +1347,13 @@ let rec has_literal_pattern p = match p.ppat_desc with
 
 let check_scope_escape loc env level ty =
   try Ctype.check_scope_escape env level ty
-  with Escape trace ->
-    raise(Error(loc, env, Pattern_type_clash([Escape trace], None)))
+  with Escape esc ->
+    (* We don't expand the type here because if we do, we might expand to the
+       type that escaped, leading to confusing error messages. *)
+    let trace = Errortrace.[Escape (map_escape trivial_expansion esc)] in
+    raise (Error(loc,
+                 env,
+                 Pattern_type_clash(Errortrace.unification_error ~trace, None)))
 
 type pattern_checking_mode =
   | Normal
@@ -2473,8 +2485,8 @@ let rec type_approx env sexp =
   | Pexp_constraint (e, sty) ->
       let ty = type_approx env e in
       let ty1 = approx_type env sty in
-      begin try unify env ty ty1 with Unify trace ->
-        raise(Error(sexp.pexp_loc, env, Expr_type_clash (trace, None, None)))
+      begin try unify env ty ty1 with Unify err ->
+        raise(Error(sexp.pexp_loc, env, Expr_type_clash (err, None, None)))
       end;
       ty1
   | Pexp_coerce (e, sty1, sty2) ->
@@ -2485,8 +2497,8 @@ let rec type_approx env sexp =
       let ty = type_approx env e
       and ty1 = approx_ty_opt sty1
       and ty2 = approx_type env sty2 in
-      begin try unify env ty ty1 with Unify trace ->
-        raise(Error(sexp.pexp_loc, env, Expr_type_clash (trace, None, None)))
+      begin try unify env ty ty1 with Unify err ->
+        raise(Error(sexp.pexp_loc, env, Expr_type_clash (err, None, None)))
       end;
       ty2
   | _ -> newvar ()
@@ -2528,8 +2540,12 @@ let check_univars env kind exp ty_expected vars =
   let ty, complete = polyfy env exp_ty vars in
   if not complete then
     let ty_expected = instance ty_expected in
-    raise (Error (exp.exp_loc, env,
-                  Less_general(kind, [Errortrace.diff ty ty_expected])))
+    raise (Error(exp.exp_loc,
+                 env,
+                 Less_general(kind,
+                              Errortrace.unification_error
+                                ~trace:[Ctype.expanded_diff env
+                                          ~got:ty ~expected:ty_expected])))
 
 let generalize_and_check_univars env kind exp ty_expected vars =
   generalize exp.exp_type;
@@ -2750,8 +2766,8 @@ let unify_exp env exp expected_ty =
   let loc = proper_exp_loc exp in
   try
     unify_exp_types loc env exp.exp_type expected_ty
-  with Error(loc, env, Expr_type_clash(trace, tfc, None)) ->
-    raise (Error(loc, env, Expr_type_clash(trace, tfc, Some exp.exp_desc)))
+  with Error(loc, env, Expr_type_clash(err, tfc, None)) ->
+    raise (Error(loc, env, Expr_type_clash(err, tfc, Some exp.exp_desc)))
 
 (* If [is_inferred e] is true, [e] will be typechecked without using
    the "expected type" provided by the context. *)
@@ -2771,9 +2787,9 @@ let with_explanation explanation f =
   | None -> f ()
   | Some explanation ->
       try f ()
-      with Error (loc', env', Expr_type_clash(trace', None, exp'))
+      with Error (loc', env', Expr_type_clash(err', None, exp'))
         when not loc'.Location.loc_ghost ->
-        let err = Expr_type_clash(trace', Some explanation, exp') in
+        let err = Expr_type_clash(err', Some explanation, exp') in
         raise (Error (loc', env', err))
 
 let rec type_exp ?recarg env sexp =
@@ -3386,17 +3402,17 @@ and type_expect_
                   if not gen && !Clflags.principal then
                     Location.prerr_warning loc
                       (Warnings.Not_principal "this ground coercion");
-                with Subtype (tr1, tr2) ->
+                with Subtype err ->
                   (* prerr_endline "coercion failed"; *)
-                  raise(Error(loc, env, Not_subtype(tr1, tr2)))
+                  raise (Error(loc, env, Not_subtype err))
                 end;
             | _ ->
                 let ty, b = enlarge_type env ty' in
                 force ();
-                begin try Ctype.unify env arg.exp_type ty with Unify trace ->
+                begin try Ctype.unify env arg.exp_type ty with Unify err ->
                   let expanded = full_expand ~may_forget_scope:true env ty' in
                   raise(Error(sarg.pexp_loc, env,
-                              Coercion_failure(ty', expanded, trace, b)))
+                              Coercion_failure({ty = ty'; expanded}, err, b)))
                 end
             end;
             (arg, ty', None, cty')
@@ -3410,8 +3426,8 @@ and type_expect_
             begin try
               let force'' = subtype env ty ty' in
               force (); force' (); force'' ()
-            with Subtype (tr1, tr2) ->
-              raise(Error(loc, env, Not_subtype(tr1, tr2)))
+            with Subtype err ->
+              raise (Error(loc, env, Not_subtype err))
             end;
             end_def ();
             generalize_structure ty;
@@ -3533,22 +3549,31 @@ and type_expect_
           exp_type = typ;
           exp_attributes = sexp.pexp_attributes;
           exp_env = env }
-      with Unify _ ->
-        let valid_methods =
-          match !obj_meths with
-          | Some meths ->
-             Some (Meths.fold (fun meth _meth_ty li -> meth::li) !meths [])
-          | None ->
-             match (expand_head env obj.exp_type).desc with
-             | Tobject (fields, _) ->
-                let (fields, _) = Ctype.flatten_fields fields in
-                let collect_fields li (meth, meth_kind, _meth_ty) =
-                  if meth_kind = Fpresent then meth::li else li in
-                Some (List.fold_left collect_fields [] fields)
-             | _ -> None
+      with Filter_method_failed err ->
+        let error =
+          match err with
+          | Unification_error err ->
+              Expr_type_clash(err, explanation, None)
+          | Not_an_object ty ->
+              Not_an_object(ty, explanation)
+          | Not_a_method ->
+              let valid_methods =
+                match !obj_meths with
+                | Some meths ->
+                    Some
+                      (Meths.fold (fun meth _meth_ty li -> meth::li) !meths [])
+                | None ->
+                    match (expand_head env obj.exp_type).desc with
+                    | Tobject (fields, _) ->
+                        let (fields, _) = Ctype.flatten_fields fields in
+                        let collect_fields li (meth, meth_kind, _meth_ty) =
+                          if meth_kind = Fpresent then meth::li else li in
+                        Some (List.fold_left collect_fields [] fields)
+                    | _ -> None
+              in
+              Undefined_method(obj.exp_type, met, valid_methods)
         in
-        raise(Error(e.pexp_loc, env,
-                    Undefined_method (obj.exp_type, met, valid_methods)))
+        raise (Error(e.pexp_loc, env, error))
       end
   | Pexp_new cl ->
       let (cl_path, cl_decl) = Env.lookup_class ~loc:cl.loc cl.txt env in
@@ -3858,8 +3883,8 @@ and type_expect_
       in
       begin try
         unify env op_type ty_op
-      with Unify trace ->
-        raise(Error(let_loc, env, Letop_type_clash(slet.pbop_op.txt, trace)))
+      with Unify err ->
+        raise(Error(let_loc, env, Letop_type_clash(slet.pbop_op.txt, err)))
       end;
       if !Clflags.principal then begin
         end_def ();
@@ -3978,16 +4003,19 @@ and type_function ?(in_function : (Location.t * type_expr) option)
   if separate then begin_def ();
   let (ty_arg, ty_res) =
     try filter_arrow env (instance ty_expected) arg_label
-    with Unify _ ->
-      match expand_head env ty_expected with
-        {desc = Tarrow _} as ty ->
-          raise(Error(loc, env,
-                      Abstract_wrong_label(arg_label, ty, explanation)))
-      | _ ->
-          raise(Error(loc_fun, env,
-                      Too_many_arguments (in_function <> None,
-                                          ty_fun,
-                                          explanation)))
+    with Filter_arrow_failed err ->
+      let err = match err with
+        | Unification_error unif_err ->
+            Expr_type_clash(unif_err, explanation, None)
+        | Label_mismatch { got; expected; expected_type} ->
+            Abstract_wrong_label { got; expected; expected_type; explanation }
+        | Not_a_function -> begin
+            match in_function with
+            | Some _ -> Too_many_arguments(ty_fun, explanation)
+            | None   -> Not_a_function(ty_fun, explanation)
+          end
+      in
+      raise (Error(loc_fun, env, err))
   in
   let ty_arg =
     if is_optional arg_label then
@@ -4307,8 +4335,8 @@ and type_label_exp create env loc ty_expected
   end;
   begin try
     unify env (instance ty_res) (instance ty_expected)
-  with Unify trace ->
-    raise (Error(lid.loc, env, Label_mismatch(lid.txt, trace)))
+  with Unify err ->
+    raise (Error(lid.loc, env, Label_mismatch(lid.txt, err)))
   end;
   (* Instantiate so that we can generalize internal nodes *)
   let ty_arg = instance ty_arg in
@@ -4635,7 +4663,7 @@ and type_application env funct sargs =
   let is_ignore funct =
     is_prim ~name:"%ignore" funct &&
     (try ignore (filter_arrow env (instance funct.exp_type) Nolabel); true
-     with Unify _ -> false)
+     with Filter_arrow_failed _ -> false)
   in
   match sargs with
   | (* Special case for ignore: avoid discarding warning *)
@@ -5326,8 +5354,8 @@ and type_andops env sarg sands expected_ty =
         let ty_op = newty (Tarrow(Nolabel, ty_rest, ty_rest_fun, Cok)) in
         begin try
           unify env op_type ty_op
-        with Unify trace ->
-          raise(Error(sop.loc, env, Andop_type_clash(sop.txt, trace)))
+        with Unify err ->
+          raise(Error(sop.loc, env, Andop_type_clash(sop.txt, err)))
         end;
         if !Clflags.principal then begin
           end_def ();
@@ -5339,8 +5367,8 @@ and type_andops env sarg sands expected_ty =
         let exp = type_expect env sexp (mk_expected ty_arg) in
         begin try
           unify env (instance ty_result) (instance expected_ty)
-        with Unify trace ->
-          raise(Error(loc, env, Bindings_type_clash(trace)))
+        with Unify err ->
+          raise(Error(loc, env, Bindings_type_clash(err)))
         end;
         let andop =
           { bop_op_name = sop;
@@ -5438,7 +5466,7 @@ let report_literal_type_constraint expected_type const =
   | _, _ -> []
 
 let report_literal_type_constraint const = function
-  | Some Errortrace.{ expected = { t = { desc = Tconstr (typ, [], _) } } } ->
+  | Some Errortrace.{ expected = { ty = { desc = Tconstr (typ, [], _) } } } ->
       report_literal_type_constraint typ const
   | Some _ | None -> []
 
@@ -5482,10 +5510,10 @@ let report_type_expected_explanation_opt expl ppf =
   | None -> ()
   | Some expl -> report_type_expected_explanation expl ppf
 
-let report_unification_error ~loc ?sub env trace
+let report_unification_error ~loc ?sub env err
     ?type_expected_explanation txt1 txt2 =
   Location.error_of_printer ~loc ?sub (fun ppf () ->
-    Printtyp.report_unification_error ppf env trace
+    Printtyp.report_unification_error ppf env err
       ?type_expected_explanation txt1 txt2
   ) ()
 
@@ -5495,24 +5523,24 @@ let report_error ~loc env = function
        "@[The constructor %a@ expects %i argument(s),@ \
         but is applied here to %i argument(s)@]"
        longident lid expected provided
-  | Label_mismatch(lid, trace) ->
-      report_unification_error ~loc env trace
+  | Label_mismatch(lid, err) ->
+      report_unification_error ~loc env err
         (function ppf ->
            fprintf ppf "The record field %a@ belongs to the type"
                    longident lid)
         (function ppf ->
            fprintf ppf "but is mixed here with fields of type")
-  | Pattern_type_clash (trace, pat) ->
-      let diff = type_clash_of_trace trace in
+  | Pattern_type_clash (err, pat) ->
+      let diff = type_clash_of_trace err.trace in
       let sub = report_pattern_type_clash_hints pat diff in
-      report_unification_error ~loc ~sub env trace
+      report_unification_error ~loc ~sub env err
         (function ppf ->
           fprintf ppf "This pattern matches values of type")
         (function ppf ->
           fprintf ppf "but a pattern was expected which matches values of \
                        type");
-  | Or_pattern_type_clash (id, trace) ->
-      report_unification_error ~loc env trace
+  | Or_pattern_type_clash (id, err) ->
+      report_unification_error ~loc env err
         (function ppf ->
           fprintf ppf "The variable %s on the left-hand side of this \
                        or-pattern has type" (Ident.name id))
@@ -5529,10 +5557,10 @@ let report_error ~loc env = function
           (Ident.name id);
         spellcheck_idents ppf id valid_idents
       ) ()
-  | Expr_type_clash (trace, explanation, exp) ->
-      let diff = type_clash_of_trace trace in
+  | Expr_type_clash (err, explanation, exp) ->
+      let diff = type_clash_of_trace err.trace in
       let sub = report_expr_type_clash_hints exp diff in
-      report_unification_error ~loc ~sub env trace
+      report_unification_error ~loc ~sub env err
         ~type_expected_explanation:
           (report_type_expected_explanation_opt explanation)
         (function ppf ->
@@ -5616,6 +5644,13 @@ let report_error ~loc env = function
       ) ()
   | Invalid_format msg ->
       Location.errorf ~loc "%s" msg
+  | Not_an_object (ty, explanation) ->
+    Location.error_of_printer ~loc (fun ppf () ->
+      fprintf ppf "This expression is not an object;@ \
+                   it has type %a"
+        Printtyp.type_expr ty;
+      report_type_expected_explanation_opt explanation ppf
+    ) ()
   | Undefined_method (ty, me, valid_methods) ->
       Location.error_of_printer ~loc (fun ppf () ->
         Printtyp.wrap_printing_env ~error:true env (fun () ->
@@ -5642,9 +5677,9 @@ let report_error ~loc env = function
       ) ()
   | Instance_variable_not_mutable v ->
       Location.errorf ~loc "The instance variable %s is not mutable" v
-  | Not_subtype(tr1, tr2) ->
+  | Not_subtype err ->
       Location.error_of_printer ~loc (fun ppf () ->
-        Printtyp.Subtype.report_error ppf env tr1 "is not a subtype of" tr2
+        Printtyp.Subtype.report_error ppf env err "is not a subtype of"
       ) ()
   | Outside_class ->
       Location.errorf ~loc
@@ -5653,14 +5688,14 @@ let report_error ~loc env = function
       Location.errorf ~loc
         "The instance variable %s is overridden several times"
         v
-  | Coercion_failure (ty, ty', trace, b) ->
+  | Coercion_failure (ty_exp, err, b) ->
       Location.error_of_printer ~loc (fun ppf () ->
-        Printtyp.report_unification_error ppf env trace
+        Printtyp.report_unification_error ppf env err
           (function ppf ->
-             let ty, ty' = Printtyp.prepare_expansion (ty, ty') in
+             let ty_exp = Printtyp.prepare_expansion ty_exp in
              fprintf ppf "This expression cannot be coerced to type@;<1 2>%a;@ \
                           it has type"
-             (Printtyp.type_expansion ty) ty')
+             (Printtyp.type_expansion Type) ty_exp)
           (function ppf ->
              fprintf ppf "but is here used with type");
         if b then
@@ -5669,30 +5704,35 @@ let report_error ~loc env = function
             "Hint: Consider using a fully explicit coercion"
             "of the form: `(foo : ty1 :> ty2)'."
       ) ()
-  | Too_many_arguments (in_function, ty, explanation) ->
-      if in_function then begin
-        Location.errorf ~loc
-          "This function expects too many arguments,@ \
-           it should have type@ %a%t"
-          Printtyp.type_expr ty
-          (report_type_expected_explanation_opt explanation)
-      end else begin
-        Location.errorf ~loc
-          "This expression should not be a function,@ \
-           the expected type is@ %a%t"
-          Printtyp.type_expr ty
-          (report_type_expected_explanation_opt explanation)
-      end
-  | Abstract_wrong_label (l, ty, explanation) ->
-      let label_mark = function
-        | Nolabel -> "but its first argument is not labelled"
-        | l -> sprintf "but its first argument is labelled %s"
-                       (prefixed_label_name l) in
+  | Not_a_function (ty, explanation) ->
       Location.errorf ~loc
-        "@[<v>@[<2>This function should have type@ %a%t@]@,%s@]"
+        "This expression should not be a function,@ \
+         the expected type is@ %a%t"
         Printtyp.type_expr ty
         (report_type_expected_explanation_opt explanation)
-        (label_mark l)
+  | Too_many_arguments (ty, explanation) ->
+      Location.errorf ~loc
+        "This function expects too many arguments,@ \
+         it should have type@ %a%t"
+        Printtyp.type_expr ty
+        (report_type_expected_explanation_opt explanation)
+  | Abstract_wrong_label {got; expected; expected_type; explanation} ->
+      let label ~long = function
+        | Nolabel -> "unlabeled"
+        | l       -> (if long then "labeled " else "") ^ prefixed_label_name l
+      in
+      let second_long = match got, expected with
+        | Nolabel, _ | _, Nolabel -> true
+        | _                       -> false
+      in
+      Location.errorf ~loc
+        "@[<v>@[<2>This function should have type@ %a%t@]@,\
+         @[but its first argument is %s@ instead of %s%s@]@]"
+        Printtyp.type_expr expected_type
+        (report_type_expected_explanation_opt explanation)
+        (label ~long:true got)
+        (if second_long then "being " else "")
+        (label ~long:second_long expected)
   | Scoping_let_module(id, ty) ->
       Location.errorf ~loc
         "This `let module' expression has type@ %a@ \
@@ -5715,8 +5755,8 @@ let report_error ~loc env = function
         "This function is applied to arguments@ \
         in an order different from other calls.@ \
         This is only allowed when the real type is known."
-  | Less_general (kind, trace) ->
-      report_unification_error ~loc env trace
+  | Less_general (kind, err) ->
+      report_unification_error ~loc env err
         (fun ppf -> fprintf ppf "This %s has type" kind)
         (fun ppf -> fprintf ppf "which is less general than")
   | Modules_not_allowed ->
@@ -5807,20 +5847,20 @@ let report_error ~loc env = function
   | Illegal_class_expr ->
       Location.errorf ~loc
         "This kind of recursive class expression is not allowed"
-  | Letop_type_clash(name, trace) ->
-      report_unification_error ~loc env trace
+  | Letop_type_clash(name, err) ->
+      report_unification_error ~loc env err
         (function ppf ->
           fprintf ppf "The operator %s has type" name)
         (function ppf ->
           fprintf ppf "but it was expected to have type")
-  | Andop_type_clash(name, trace) ->
-      report_unification_error ~loc env trace
+  | Andop_type_clash(name, err) ->
+      report_unification_error ~loc env err
         (function ppf ->
           fprintf ppf "The operator %s has type" name)
         (function ppf ->
           fprintf ppf "but it was expected to have type")
-  | Bindings_type_clash(trace) ->
-      report_unification_error ~loc env trace
+  | Bindings_type_clash(err) ->
+      report_unification_error ~loc env err
         (function ppf ->
           fprintf ppf "These bindings have type")
         (function ppf ->

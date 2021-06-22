@@ -171,6 +171,8 @@ let _ = add_directive "mod_use" (Directive_string (dir_mod_use std_out))
 
 (* Install, remove a printer *)
 
+exception Bad_printing_function
+
 let filter_arrow ty =
   let ty = Ctype.expand_head !toplevel_env ty in
   match ty.desc with
@@ -179,10 +181,10 @@ let filter_arrow ty =
 
 let rec extract_last_arrow desc =
   match filter_arrow desc with
-  | None -> raise (Ctype.Unify [])
+  | None -> raise Bad_printing_function
   | Some (_, r as res) ->
       try extract_last_arrow r
-      with Ctype.Unify _ -> res
+      with Bad_printing_function -> res
 
 let extract_target_type ty = fst (extract_last_arrow ty)
 let extract_target_parameters ty =
@@ -211,9 +213,13 @@ let printer_type ppf typename =
 let match_simple_printer_type desc printer_type =
   Ctype.begin_def();
   let ty_arg = Ctype.newvar() in
-  Ctype.unify !toplevel_env
-    (Ctype.newconstr printer_type [ty_arg])
-    (Ctype.instance desc.val_type);
+  begin try
+    Ctype.unify !toplevel_env
+      (Ctype.newconstr printer_type [ty_arg])
+      (Ctype.instance desc.val_type);
+  with Ctype.Unify _ ->
+    raise Bad_printing_function
+  end;
   Ctype.end_def();
   Ctype.generalize ty_arg;
   (ty_arg, None)
@@ -229,13 +235,17 @@ let match_generic_printer_type desc path args printer_type =
       (fun ty_arg ty -> Ctype.newty (Tarrow (Asttypes.Nolabel, ty_arg, ty,
                                              Cunknown)))
       ty_args (Ctype.newconstr printer_type [ty_target]) in
-  Ctype.unify !toplevel_env
-    ty_expected
-    (Ctype.instance desc.val_type);
+  begin try
+    Ctype.unify !toplevel_env
+      ty_expected
+      (Ctype.instance desc.val_type);
+  with Ctype.Unify _ ->
+    raise Bad_printing_function
+  end;
   Ctype.end_def();
   Ctype.generalize ty_expected;
   if not (Ctype.all_distinct_vars !toplevel_env args) then
-    raise (Ctype.Unify []);
+    raise Bad_printing_function;
   (ty_expected, Some (path, ty_args))
 
 let match_printer_type ppf desc =
@@ -243,10 +253,10 @@ let match_printer_type ppf desc =
   let printer_type_old = printer_type ppf "printer_type_old" in
   try
     (match_simple_printer_type desc printer_type_new, false)
-  with Ctype.Unify _ ->
+  with Bad_printing_function ->
     try
       (match_simple_printer_type desc printer_type_old, true)
-    with Ctype.Unify _ as exn ->
+    with Bad_printing_function as exn ->
       match extract_target_parameters desc.val_type with
       | None -> raise exn
       | Some (path, args) ->
@@ -258,8 +268,8 @@ let find_printer_type ppf lid =
   | (path, desc) -> begin
     match match_printer_type ppf desc with
     | (ty_arg, is_old_style) -> (ty_arg, path, is_old_style)
-    | exception Ctype.Unify _ ->
-      fprintf ppf "%a has a wrong type for a printing function.@."
+    | exception Bad_printing_function ->
+      fprintf ppf "%a has the wrong type for a printing function.@."
       Printtyp.longident lid;
       raise Exit
   end

@@ -597,6 +597,14 @@ let cut_at s c =
   let pos = String.index s c in
   String.sub s 0 pos, String.sub s (pos+1) (String.length s - pos - 1)
 
+let ordinal_suffix n =
+  let teen = (n mod 100)/10 = 1 in
+  match n mod 10 with
+  | 1 when not teen -> "st"
+  | 2 when not teen -> "nd"
+  | 3 when not teen -> "rd"
+  | _ -> "th"
+
 (* Color handling *)
 module Color = struct
   (* use ANSI color codes, see https://en.wikipedia.org/wiki/ANSI_escape_code *)

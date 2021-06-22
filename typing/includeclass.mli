@@ -29,4 +29,5 @@ val class_declarations:
   Env.t -> class_declaration -> class_declaration ->
   class_match_failure list
 
-val report_error: formatter -> class_match_failure list -> unit
+val report_error :
+  Printtyp.type_or_scheme -> formatter -> class_match_failure list -> unit

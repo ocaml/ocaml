@@ -26,9 +26,9 @@ Error: Signature mismatch:
          type t = Foo of int * int
        Constructors do not match:
          Foo of float * int
-       is not compatible with:
+       is not the same as:
          Foo of int * int
-       The types are not equal.
+       The type float is not equal to the type int
 |}];;
 
 module M2 : sig
@@ -55,7 +55,7 @@ Error: Signature mismatch:
          type t = Foo of int * int
        Constructors do not match:
          Foo of float
-       is not compatible with:
+       is not the same as:
          Foo of int * int
        They have different arities.
 |}];;
@@ -84,13 +84,13 @@ Error: Signature mismatch:
          type t = Foo of { x : int; y : int; }
        Constructors do not match:
          Foo of { x : float; y : int; }
-       is not compatible with:
+       is not the same as:
          Foo of { x : int; y : int; }
        Fields do not match:
          x : float;
-       is not compatible with:
+       is not the same as:
          x : int;
-       The types are not equal.
+       The type float is not equal to the type int
 |}];;
 
 module M4 : sig
@@ -117,7 +117,7 @@ Error: Signature mismatch:
          type t = Foo of { x : int; y : int; }
        Constructors do not match:
          Foo of float
-       is not compatible with:
+       is not the same as:
          Foo of { x : int; y : int; }
        The second uses inline records and the first doesn't.
 |}];;
@@ -146,7 +146,7 @@ Error: Signature mismatch:
          type 'a t = Foo : int -> int t
        Constructors do not match:
          Foo of 'a
-       is not compatible with:
+       is not the same as:
          Foo : int -> int t
        The second has explicit return type and the first doesn't.
 |}];;
@@ -172,9 +172,9 @@ Error: Signature mismatch:
          type ('a, 'b) t = A of 'a
        Constructors do not match:
          A of 'b
-       is not compatible with:
+       is not the same as:
          A of 'a
-       The types are not equal.
+       The type 'b is not equal to the type 'a
 |}];;
 
 module M : sig
@@ -198,7 +198,7 @@ Error: Signature mismatch:
          type ('a, 'b) t = A of 'a
        Constructors do not match:
          A of 'a
-       is not compatible with:
+       is not the same as:
          A of 'a
-       The types are not equal.
+       The type 'a is not equal to the type 'b
 |}];;

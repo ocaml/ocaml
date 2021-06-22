@@ -782,77 +782,155 @@ let best_type_path p =
 
 (* Print a type expression *)
 
-let names = ref ([] : (type_expr * string) list)
-let name_counter = ref 0
-let named_vars = ref ([] : string list)
+(* When printing a type scheme, we print weak names.  When printing a plain
+   type, we do not.  This type controls that behavior *)
+type type_or_scheme = Type | Type_scheme
 
-let weak_counter = ref 1
-let weak_var_map = ref TypeMap.empty
-let named_weak_vars = ref String.Set.empty
+let is_non_gen mode ty =
+  match mode with
+  | Type_scheme -> is_Tvar ty && ty.level <> generic_level
+  | Type        -> false
 
-let reset_names () = names := []; name_counter := 0; named_vars := []
-let add_named_var ty =
-  match ty.desc with
-    Tvar (Some name) | Tunivar (Some name) ->
-      if List.mem name !named_vars then () else
-      named_vars := name :: !named_vars
-  | _ -> ()
+module Names : sig
+  val reset_names : unit -> unit
 
-let name_is_already_used name =
-  List.mem name !named_vars
-  || List.exists (fun (_, name') -> name = name') !names
-  || String.Set.mem name !named_weak_vars
+  val add_named_var : type_expr -> unit
+  val add_subst : (type_expr * type_expr) list -> unit
 
-let rec new_name () =
-  let name =
-    if !name_counter < 26
-    then String.make 1 (Char.chr(97 + !name_counter))
-    else String.make 1 (Char.chr(97 + !name_counter mod 26)) ^
-           Int.to_string(!name_counter / 26) in
-  incr name_counter;
-  if name_is_already_used name then new_name () else name
+  val has_name : type_expr -> bool
 
-let rec new_weak_name ty () =
-  let name = "weak" ^ Int.to_string !weak_counter in
-  incr weak_counter;
-  if name_is_already_used name then new_weak_name ty ()
-  else begin
-      named_weak_vars := String.Set.add name !named_weak_vars;
-      weak_var_map := TypeMap.add ty name !weak_var_map;
-      name
-    end
+  val new_name : unit -> string
+  val new_weak_name : type_expr -> unit -> string
 
-let name_of_type name_generator t =
-  (* We've already been through repr at this stage, so t is our representative
-     of the union-find class. *)
-  try List.assq t !names with Not_found ->
-    try TypeMap.find t !weak_var_map with Not_found ->
+  val name_of_type : (unit -> string) -> type_expr -> string
+  val check_name_of_type : type_expr -> unit
+
+  val remove_names : type_expr list -> unit
+
+  val with_local_names : (unit -> 'a) -> 'a
+
+  (* Refresh the weak variable map in the toplevel; for [print_items], which is
+     itself for the toplevel *)
+  val refresh_weak : unit -> unit
+end = struct
+  (* We map from types to names, but not directly; we also store a substitution,
+     which maps from types to types.  The lookup process is
+     "type -> apply substitution -> find name".  The substitution is presumed to
+     be acyclic. *)
+  let names = ref ([] : (type_expr * string) list)
+  let name_subst = ref ([] : (type_expr * type_expr) list)
+  let name_counter = ref 0
+  let named_vars = ref ([] : string list)
+
+  let weak_counter = ref 1
+  let weak_var_map = ref TypeMap.empty
+  let named_weak_vars = ref String.Set.empty
+
+  let reset_names () =
+    names := []; name_subst := []; name_counter := 0; named_vars := []
+
+  let add_named_var ty =
+    match ty.desc with
+      Tvar (Some name) | Tunivar (Some name) ->
+        if List.mem name !named_vars then () else
+        named_vars := name :: !named_vars
+    | _ -> ()
+
+  let rec substitute ty =
+    match List.assq ty !name_subst with
+    | ty' -> substitute ty'
+    | exception Not_found -> ty
+
+  let add_subst subst =
+    name_subst := subst @ !name_subst
+
+  let has_name ty =
+    List.mem_assq (substitute ty) !names
+
+  let name_is_already_used name =
+    List.mem name !named_vars
+    || List.exists (fun (_, name') -> name = name') !names
+    || String.Set.mem name !named_weak_vars
+
+  let rec new_name () =
     let name =
-      match t.desc with
-        Tvar (Some name) | Tunivar (Some name) ->
-          (* Some part of the type we've already printed has assigned another
-           * unification variable to that name. We want to keep the name, so try
-           * adding a number until we find a name that's not taken. *)
-          let current_name = ref name in
-          let i = ref 0 in
-          while List.exists (fun (_, name') -> !current_name = name') !names do
-            current_name := name ^ (Int.to_string !i);
-            i := !i + 1;
-          done;
-          !current_name
-      | _ ->
-          (* No name available, create a new one *)
-          name_generator ()
-    in
-    (* Exception for type declarations *)
-    if name <> "_" then names := (t, name) :: !names;
-    name
+      if !name_counter < 26
+      then String.make 1 (Char.chr(97 + !name_counter))
+      else String.make 1 (Char.chr(97 + !name_counter mod 26)) ^
+             Int.to_string(!name_counter / 26) in
+    incr name_counter;
+    if name_is_already_used name then new_name () else name
 
-let check_name_of_type t = ignore(name_of_type new_name t)
+  let rec new_weak_name ty () =
+    let name = "weak" ^ Int.to_string !weak_counter in
+    incr weak_counter;
+    if name_is_already_used name then new_weak_name ty ()
+    else begin
+        named_weak_vars := String.Set.add name !named_weak_vars;
+        weak_var_map := TypeMap.add ty name !weak_var_map;
+        name
+      end
 
-let remove_names tyl =
-  let tyl = List.map repr tyl in
-  names := List.filter (fun (ty,_) -> not (List.memq ty tyl)) !names
+  let name_of_type name_generator t =
+    (* We've already been through repr at this stage, so t is our representative
+       of the union-find class. *)
+    let t = substitute t in
+    try List.assq t !names with Not_found ->
+      try TypeMap.find t !weak_var_map with Not_found ->
+      let name =
+        match t.desc with
+          Tvar (Some name) | Tunivar (Some name) ->
+            (* Some part of the type we've already printed has assigned another
+             * unification variable to that name. We want to keep the name, so
+             * try adding a number until we find a name that's not taken. *)
+            let current_name = ref name in
+            let i = ref 0 in
+            while List.exists
+                    (fun (_, name') -> !current_name = name')
+                    !names
+            do
+              current_name := name ^ (Int.to_string !i);
+              i := !i + 1;
+            done;
+            !current_name
+        | _ ->
+            (* No name available, create a new one *)
+            name_generator ()
+      in
+      (* Exception for type declarations *)
+      if name <> "_" then names := (t, name) :: !names;
+      name
+
+  let check_name_of_type t = ignore(name_of_type new_name t)
+
+  let remove_names tyl =
+    let tyl = List.map (fun ty -> substitute (repr ty)) tyl in
+    names := List.filter (fun (ty,_) -> not (List.memq ty tyl)) !names
+
+  let with_local_names f =
+    let old_names = !names in
+    let old_subst = !name_subst in
+    names      := [];
+    name_subst := [];
+    try_finally
+      ~always:(fun () ->
+        names      := old_names;
+        name_subst := old_subst)
+      f
+
+  let refresh_weak () =
+    let refresh t name (m,s) =
+      if is_non_gen Type_scheme (repr t) then
+        begin
+          TypeMap.add t name m,
+          String.Set.add name s
+        end
+      else m, s in
+    let m, s =
+      TypeMap.fold refresh !weak_var_map (TypeMap.empty ,String.Set.empty) in
+    named_weak_vars := s;
+    weak_var_map := m
+end
 
 let visited_objects = ref ([] : type_expr list)
 let aliased = ref ([] : type_expr list)
@@ -866,7 +944,7 @@ let add_alias ty =
   let px = proxy ty in
   if not (is_aliased px) then begin
     aliased := px :: !aliased;
-    add_named_var px
+    Names.add_named_var px
   end
 
 let aliasable ty =
@@ -892,7 +970,7 @@ let rec mark_loops_rec visited ty =
   if List.memq px visited && aliasable ty then add_alias px else
     let visited = px :: visited in
     match ty.desc with
-    | Tvar _ -> add_named_var ty
+    | Tvar _ -> Names.add_named_var ty
     | Tarrow(_, ty1, ty2, _) ->
         mark_loops_rec visited ty1; mark_loops_rec visited ty2
     | Ttuple tyl -> List.iter (mark_loops_rec visited) tyl
@@ -940,7 +1018,7 @@ let rec mark_loops_rec visited ty =
     | Tpoly (ty, tyl) ->
         List.iter (fun t -> add_alias t) tyl;
         mark_loops_rec visited ty
-    | Tunivar _ -> add_named_var ty
+    | Tunivar _ -> Names.add_named_var ty
 
 let mark_loops ty =
   normalize_type ty;
@@ -950,7 +1028,7 @@ let reset_loop_marks () =
   visited_objects := []; aliased := []; delayed := []
 
 let reset_except_context () =
-  reset_names (); reset_loop_marks ()
+  Names.reset_names (); reset_loop_marks ()
 
 let reset () =
   reset_naming_context (); Conflicts.reset ();
@@ -965,22 +1043,27 @@ let reset_and_mark_loops_list tyl =
 (* Disabled in classic mode when printing an unification error *)
 let print_labels = ref true
 
-let rec tree_of_typexp sch ty =
+let rec tree_of_typexp mode ty =
   let ty = repr ty in
   let px = proxy ty in
-  if List.mem_assq px !names && not (List.memq px !delayed) then
-   let mark = is_non_gen sch ty in
-   let name = name_of_type (if mark then new_weak_name ty else new_name) px in
+  if Names.has_name px && not (List.memq px !delayed) then
+   let mark = is_non_gen mode ty in
+   let name = Names.name_of_type
+                (if mark then Names.new_weak_name ty else Names.new_name)
+                px
+   in
    Otyp_var (mark, name) else
 
   let pr_typ () =
     match ty.desc with
     | Tvar _ ->
         (*let lev =
-          if is_non_gen sch ty then "/" ^ Int.to_string ty.level else "" in*)
-        let non_gen = is_non_gen sch ty in
-        let name_gen = if non_gen then new_weak_name ty else new_name in
-        Otyp_var (non_gen, name_of_type name_gen ty)
+          if is_non_gen mode ty then "/" ^ Int.to_string ty.level else "" in*)
+        let non_gen = is_non_gen mode ty in
+        let name_gen =
+          if non_gen then Names.new_weak_name ty else Names.new_name
+        in
+        Otyp_var (non_gen, Names.name_of_type name_gen ty)
     | Tarrow(l, ty1, ty2, _) ->
         let lab =
           if !print_labels || is_optional l then string_of_label l else ""
@@ -990,17 +1073,18 @@ let rec tree_of_typexp sch ty =
             match (repr ty1).desc with
             | Tconstr(path, [ty], _)
               when Path.same path Predef.path_option ->
-                tree_of_typexp sch ty
+                tree_of_typexp mode ty
             | _ -> Otyp_stuff "<hidden>"
-          else tree_of_typexp sch ty1 in
-        Otyp_arrow (lab, t1, tree_of_typexp sch ty2)
+          else tree_of_typexp mode ty1 in
+        Otyp_arrow (lab, t1, tree_of_typexp mode ty2)
     | Ttuple tyl ->
-        Otyp_tuple (tree_of_typlist sch tyl)
+        Otyp_tuple (tree_of_typlist mode tyl)
     | Tconstr(p, tyl, _abbrev) ->
         let p', s = best_type_path p in
         let tyl' = apply_subst s tyl in
-        if is_nth s && not (tyl'=[]) then tree_of_typexp sch (List.hd tyl') else
-        Otyp_constr (tree_of_path Type p', tree_of_typlist sch tyl')
+        if is_nth s && not (tyl'=[])
+        then tree_of_typexp mode (List.hd tyl')
+        else Otyp_constr (tree_of_path Type p', tree_of_typlist mode tyl')
     | Tvariant row ->
         let row = row_repr row in
         let fields =
@@ -1020,82 +1104,82 @@ let rec tree_of_typexp sch ty =
         | Some(p, tyl) when namable_row row ->
             let (p', s) = best_type_path p in
             let id = tree_of_path Type p' in
-            let args = tree_of_typlist sch (apply_subst s tyl) in
+            let args = tree_of_typlist mode (apply_subst s tyl) in
             let out_variant =
               if is_nth s then List.hd args else Otyp_constr (id, args) in
             if row.row_closed && all_present then
               out_variant
             else
-              let non_gen = is_non_gen sch px in
+              let non_gen = is_non_gen mode px in
               let tags =
                 if all_present then None else Some (List.map fst present) in
               Otyp_variant (non_gen, Ovar_typ out_variant, row.row_closed, tags)
         | _ ->
             let non_gen =
-              not (row.row_closed && all_present) && is_non_gen sch px in
-            let fields = List.map (tree_of_row_field sch) fields in
+              not (row.row_closed && all_present) && is_non_gen mode px in
+            let fields = List.map (tree_of_row_field mode) fields in
             let tags =
               if all_present then None else Some (List.map fst present) in
             Otyp_variant (non_gen, Ovar_fields fields, row.row_closed, tags)
         end
     | Tobject (fi, nm) ->
-        tree_of_typobject sch fi !nm
+        tree_of_typobject mode fi !nm
     | Tnil | Tfield _ ->
-        tree_of_typobject sch ty None
+        tree_of_typobject mode ty None
     | Tsubst _ ->
         (* This case should only happen when debugging the compiler *)
         Otyp_stuff "<Tsubst>"
     | Tlink _ ->
         fatal_error "Printtyp.tree_of_typexp"
     | Tpoly (ty, []) ->
-        tree_of_typexp sch ty
+        tree_of_typexp mode ty
     | Tpoly (ty, tyl) ->
         (*let print_names () =
           List.iter (fun (_, name) -> prerr_string (name ^ " ")) !names;
           prerr_string "; " in *)
         let tyl = List.map repr tyl in
-        if tyl = [] then tree_of_typexp sch ty else begin
+        if tyl = [] then tree_of_typexp mode ty else begin
           let old_delayed = !delayed in
           (* Make the names delayed, so that the real type is
              printed once when used as proxy *)
           List.iter add_delayed tyl;
-          let tl = List.map (name_of_type new_name) tyl in
-          let tr = Otyp_poly (tl, tree_of_typexp sch ty) in
+          let tl = List.map (Names.name_of_type Names.new_name) tyl in
+          let tr = Otyp_poly (tl, tree_of_typexp mode ty) in
           (* Forget names when we leave scope *)
-          remove_names tyl;
+          Names.remove_names tyl;
           delayed := old_delayed; tr
         end
     | Tunivar _ ->
-        Otyp_var (false, name_of_type new_name ty)
+        Otyp_var (false, Names.name_of_type Names.new_name ty)
     | Tpackage (p, fl) ->
         let fl =
           List.map
             (fun (li, ty) -> (
               String.concat "." (Longident.flatten li),
-              tree_of_typexp sch ty
+              tree_of_typexp mode ty
             )) fl in
         Otyp_module (tree_of_path Module_type p, fl)
   in
   if List.memq px !delayed then delayed := List.filter ((!=) px) !delayed;
   if is_aliased px && aliasable ty then begin
-    check_name_of_type px;
-    Otyp_alias (pr_typ (), name_of_type new_name px) end
+    Names.check_name_of_type px;
+    Otyp_alias (pr_typ (), Names.name_of_type Names.new_name px) end
   else pr_typ ()
 
-and tree_of_row_field sch (l, f) =
+and tree_of_row_field mode (l, f) =
   match row_field_repr f with
   | Rpresent None | Reither(true, [], _, _) -> (l, false, [])
-  | Rpresent(Some ty) -> (l, false, [tree_of_typexp sch ty])
+  | Rpresent(Some ty) -> (l, false, [tree_of_typexp mode ty])
   | Reither(c, tyl, _, _) ->
       if c (* contradiction: constant constructor with an argument *)
-      then (l, true, tree_of_typlist sch tyl)
-      else (l, false, tree_of_typlist sch tyl)
+      then (l, true, tree_of_typlist mode tyl)
+      else (l, false, tree_of_typlist mode tyl)
   | Rabsent -> (l, false, [] (* actually, an error *))
 
-and tree_of_typlist sch tyl =
-  List.map (tree_of_typexp sch) tyl
+and tree_of_typlist mode tyl =
+  List.map (tree_of_typexp mode) tyl
 
-and tree_of_typobject sch fi nm =
+and tree_of_typobject mode fi nm =
   begin match nm with
   | None ->
       let pr_fields fi =
@@ -1110,12 +1194,12 @@ and tree_of_typobject sch fi nm =
         let sorted_fields =
           List.sort
             (fun (n, _) (n', _) -> String.compare n n') present_fields in
-        tree_of_typfields sch rest sorted_fields in
+        tree_of_typfields mode rest sorted_fields in
       let (fields, rest) = pr_fields fi in
       Otyp_object (fields, rest)
   | Some (p, ty :: tyl) ->
-      let non_gen = is_non_gen sch (repr ty) in
-      let args = tree_of_typlist sch tyl in
+      let non_gen = is_non_gen mode (repr ty) in
+      let args = tree_of_typlist mode tyl in
       let (p', s) = best_type_path p in
       assert (s = Id);
       Otyp_class (non_gen, tree_of_path Type p', args)
@@ -1123,28 +1207,25 @@ and tree_of_typobject sch fi nm =
       fatal_error "Printtyp.tree_of_typobject"
   end
 
-and is_non_gen sch ty =
-    sch && is_Tvar ty && ty.level <> generic_level
-
-and tree_of_typfields sch rest = function
+and tree_of_typfields mode rest = function
   | [] ->
       let rest =
         match rest.desc with
-        | Tvar _ | Tunivar _ -> Some (is_non_gen sch rest)
+        | Tvar _ | Tunivar _ -> Some (is_non_gen mode rest)
         | Tconstr _ -> Some false
         | Tnil -> None
         | _ -> fatal_error "typfields (1)"
       in
       ([], rest)
   | (s, t) :: l ->
-      let field = (s, tree_of_typexp sch t) in
-      let (fields, rest) = tree_of_typfields sch rest l in
+      let field = (s, tree_of_typexp mode t) in
+      let (fields, rest) = tree_of_typfields mode rest l in
       (field :: fields, rest)
 
-let typexp sch ppf ty =
-  !Oprint.out_type ppf (tree_of_typexp sch ty)
+let typexp mode ppf ty =
+  !Oprint.out_type ppf (tree_of_typexp mode ty)
 
-let marked_type_expr ppf ty = typexp false ppf ty
+let marked_type_expr ppf ty = typexp Type ppf ty
 
 let type_expr ppf ty =
   (* [type_expr] is used directly by error message printers,
@@ -1152,9 +1233,9 @@ let type_expr ppf ty =
   reset_and_mark_loops ty;
   marked_type_expr ppf ty
 
-and type_sch ppf ty = typexp true ppf ty
+and type_sch ppf ty = typexp Type_scheme ppf ty
 
-and type_scheme ppf ty = reset_and_mark_loops ty; typexp true ppf ty
+and type_scheme ppf ty = reset_and_mark_loops ty; typexp Type_scheme ppf ty
 
 let type_path ppf p =
   let (p', s) = best_type_path p in
@@ -1164,11 +1245,13 @@ let type_path ppf p =
 
 (* Maxence *)
 let type_scheme_max ?(b_reset_names=true) ppf ty =
-  if b_reset_names then reset_names () ;
-  typexp true ppf ty
+  if b_reset_names then Names.reset_names () ;
+  typexp Type_scheme ppf ty
 (* End Maxence *)
 
-let tree_of_type_scheme ty = reset_and_mark_loops ty; tree_of_typexp true ty
+let tree_of_type_scheme ty =
+  reset_and_mark_loops ty;
+  tree_of_typexp Type_scheme ty
 
 (* Print one type declaration *)
 
@@ -1177,8 +1260,8 @@ let tree_of_constraints params =
     (fun ty list ->
        let ty' = unalias ty in
        if proxy ty != proxy ty' then
-         let tr = tree_of_typexp true ty in
-         (tr, tree_of_typexp true ty') :: list
+         let tr = tree_of_typexp Type_scheme ty in
+         (tr, tree_of_typexp Type_scheme ty') :: list
        else list)
     params []
 
@@ -1219,7 +1302,7 @@ let rec tree_of_type_decl id decl =
 
   List.iter add_alias params;
   List.iter mark_loops params;
-  List.iter check_name_of_type (List.map proxy params);
+  List.iter Names.check_name_of_type (List.map proxy params);
   let ty_manifest =
     match decl.type_manifest with
     | None -> None
@@ -1289,13 +1372,13 @@ let rec tree_of_type_decl id decl =
         decl.type_params decl.type_variance
     in
     (Ident.name id,
-     List.map2 (fun ty cocn -> type_param (tree_of_typexp false ty), cocn)
+     List.map2 (fun ty cocn -> type_param (tree_of_typexp Type ty), cocn)
        params vari)
   in
   let tree_of_manifest ty1 =
     match ty_manifest with
     | None -> ty1
-    | Some ty -> Otyp_manifest (tree_of_typexp false ty, ty1)
+    | Some ty -> Otyp_manifest (tree_of_typexp Type ty, ty1)
   in
   let (name, args) = type_defined decl in
   let constraints = tree_of_constraints params in
@@ -1305,7 +1388,7 @@ let rec tree_of_type_decl id decl =
         begin match ty_manifest with
         | None -> (Otyp_abstract, Public, false)
         | Some ty ->
-            tree_of_typexp false ty, decl.type_private, false
+            tree_of_typexp Type ty, decl.type_private, false
         end
     | Type_variant (cstrs, rep) ->
         tree_of_manifest (Otyp_sum (List.map tree_of_constructor cstrs)),
@@ -1329,7 +1412,7 @@ let rec tree_of_type_decl id decl =
       otype_cstrs = constraints }
 
 and tree_of_constructor_arguments = function
-  | Cstr_tuple l -> tree_of_typlist false l
+  | Cstr_tuple l -> tree_of_typlist Type l
   | Cstr_record l -> [ Otyp_record (List.map tree_of_label l) ]
 
 and tree_of_constructor cd =
@@ -1338,15 +1421,13 @@ and tree_of_constructor cd =
   match cd.cd_res with
   | None -> (name, arg (), None)
   | Some res ->
-      let nm = !names in
-      names := [];
-      let ret = tree_of_typexp false res in
-      let args = arg () in
-      names := nm;
-      (name, args, Some ret)
+      Names.with_local_names (fun () ->
+        let ret = tree_of_typexp Type res in
+        let args = arg () in
+        (name, args, Some ret))
 
 and tree_of_label l =
-  (Ident.name l.ld_id, l.ld_mutable = Mutable, tree_of_typexp false l.ld_type)
+  (Ident.name l.ld_id, l.ld_mutable = Mutable, tree_of_typexp Type l.ld_type)
 
 let constructor ppf c =
   reset_except_context ();
@@ -1372,12 +1453,10 @@ let extension_constructor_args_and_ret_type_subtree ext_args ext_ret_type =
   match ext_ret_type with
   | None -> (tree_of_constructor_arguments ext_args, None)
   | Some res ->
-    let nm = !names in
-    names := [];
-    let ret = tree_of_typexp false res in
-    let args = tree_of_constructor_arguments ext_args in
-    names := nm;
-    (args, Some ret)
+      Names.with_local_names (fun () ->
+        let ret = tree_of_typexp Type res in
+        let args = tree_of_constructor_arguments ext_args in
+        (args, Some ret))
 
 let tree_of_extension_constructor id ext es =
   reset_except_context ();
@@ -1385,7 +1464,7 @@ let tree_of_extension_constructor id ext es =
   let ty_params = filter_params ext.ext_type_params in
   List.iter add_alias ty_params;
   List.iter mark_loops ty_params;
-  List.iter check_name_of_type (List.map proxy ty_params);
+  List.iter Names.check_name_of_type (List.map proxy ty_params);
   mark_loops_constructor_arguments ext.ext_args;
   Option.iter mark_loops ext.ext_ret_type;
   let type_param =
@@ -1394,7 +1473,7 @@ let tree_of_extension_constructor id ext es =
     | _ -> "?"
   in
   let ty_params =
-    List.map (fun ty -> type_param (tree_of_typexp false ty)) ty_params
+    List.map (fun ty -> type_param (tree_of_typexp Type ty)) ty_params
   in
   let name = Ident.name id in
   let args, ret =
@@ -1461,14 +1540,14 @@ let method_type (_, kind, ty) =
     Fpresent, {desc=Tpoly(ty, tyl)} -> (ty, tyl)
   | _       , ty                    -> (ty, [])
 
-let tree_of_metho sch concrete csil (lab, kind, ty) =
+let tree_of_metho mode concrete csil (lab, kind, ty) =
   if lab <> dummy_method then begin
     let kind = field_kind_repr kind in
     let priv = kind <> Fpresent in
     let virt = not (Concr.mem lab concrete) in
     let (ty, tyl) = method_type (lab, kind, ty) in
-    let tty = tree_of_typexp sch ty in
-    remove_names tyl;
+    let tty = tree_of_typexp mode ty in
+    Names.remove_names tyl;
     Ocsg_method (lab, priv, virt, tty) :: csil
   end
   else csil
@@ -1496,22 +1575,22 @@ let rec prepare_class_type params = function
       mark_loops ty;
       prepare_class_type params cty
 
-let rec tree_of_class_type sch params =
+let rec tree_of_class_type mode params =
   function
   | Cty_constr (p', tyl, cty) ->
       let sty = Ctype.self_type cty in
       if List.memq (proxy sty) !visited_objects
       || not (List.for_all is_Tvar params)
       then
-        tree_of_class_type sch params cty
+        tree_of_class_type mode params cty
       else
         let namespace = Namespace.best_class_namespace p' in
-        Octy_constr (tree_of_path namespace p', tree_of_typlist true tyl)
+        Octy_constr (tree_of_path namespace p', tree_of_typlist Type_scheme tyl)
   | Cty_signature sign ->
       let sty = repr sign.csig_self in
       let self_ty =
         if is_aliased sty then
-          Some (Otyp_var (false, name_of_type new_name (proxy sty)))
+          Some (Otyp_var (false, Names.name_of_type Names.new_name (proxy sty)))
         else None
       in
       let (fields, _) =
@@ -1531,12 +1610,12 @@ let rec tree_of_class_type sch params =
       let csil =
         List.fold_left
           (fun csil (l, m, v, t) ->
-            Ocsg_value (l, m = Mutable, v = Virtual, tree_of_typexp sch t)
+            Ocsg_value (l, m = Mutable, v = Virtual, tree_of_typexp mode t)
             :: csil)
           csil all_vars
       in
       let csil =
-        List.fold_left (tree_of_metho sch sign.csig_concr) csil fields
+        List.fold_left (tree_of_metho mode sign.csig_concr) csil fields
       in
       Octy_signature (self_ty, List.rev csil)
   | Cty_arrow (l, ty, cty) ->
@@ -1547,18 +1626,18 @@ let rec tree_of_class_type sch params =
        if is_optional l then
          match (repr ty).desc with
          | Tconstr(path, [ty], _) when Path.same path Predef.path_option ->
-             tree_of_typexp sch ty
+             tree_of_typexp mode ty
          | _ -> Otyp_stuff "<hidden>"
-       else tree_of_typexp sch ty in
-      Octy_arrow (lab, tr, tree_of_class_type sch params cty)
+       else tree_of_typexp mode ty in
+      Octy_arrow (lab, tr, tree_of_class_type mode params cty)
 
 let class_type ppf cty =
   reset ();
   prepare_class_type [] cty;
-  !Oprint.out_class_type ppf (tree_of_class_type false [] cty)
+  !Oprint.out_class_type ppf (tree_of_class_type Type [] cty)
 
 let tree_of_class_param param variance =
-  (match tree_of_typexp true param with
+  (match tree_of_typexp Type_scheme param with
     Otyp_var (_, s) -> s
   | _ -> "?"),
   if is_Tvar (repr param) then Asttypes.(NoVariance, NoInjectivity)
@@ -1580,14 +1659,14 @@ let tree_of_class_declaration id cl rs =
   let sty = Ctype.self_type cl.cty_type in
   List.iter mark_loops params;
 
-  List.iter check_name_of_type (List.map proxy params);
-  if is_aliased sty then check_name_of_type (proxy sty);
+  List.iter Names.check_name_of_type (List.map proxy params);
+  if is_aliased sty then Names.check_name_of_type (proxy sty);
 
   let vir_flag = cl.cty_new = None in
   Osig_class
     (vir_flag, Ident.name id,
      List.map2 tree_of_class_param params (class_variance cl.cty_variance),
-     tree_of_class_type true params cl.cty_type,
+     tree_of_class_type Type_scheme params cl.cty_type,
      tree_of_rec rs)
 
 let class_declaration id ppf cl =
@@ -1602,8 +1681,8 @@ let tree_of_cltype_declaration id cl rs =
   let sty = Ctype.self_type cl.clty_type in
   List.iter mark_loops params;
 
-  List.iter check_name_of_type (List.map proxy params);
-  if is_aliased sty then check_name_of_type (proxy sty);
+  List.iter Names.check_name_of_type (List.map proxy params);
+  if is_aliased sty then Names.check_name_of_type (proxy sty);
 
   let sign = Ctype.signature_of_class_type cl.clty_type in
 
@@ -1620,7 +1699,7 @@ let tree_of_cltype_declaration id cl rs =
   Osig_class_type
     (virt, Ident.name id,
      List.map2 tree_of_class_param params (class_variance cl.clty_variance),
-     tree_of_class_type true params cl.clty_type,
+     tree_of_class_type Type_scheme params cl.clty_type,
      tree_of_rec rs)
 
 let cltype_declaration id ppf cl =
@@ -1823,22 +1902,8 @@ let modtype_declaration id ppf decl =
 
 (* For the toplevel: merge with tree_of_signature? *)
 
-(* Refresh weak variable map in the toplevel *)
-let refresh_weak () =
-  let refresh t name (m,s) =
-    if is_non_gen true (repr t) then
-      begin
-        TypeMap.add t name m,
-        String.Set.add name s
-      end
-    else m, s in
-  let m, s =
-    TypeMap.fold refresh !weak_var_map (TypeMap.empty ,String.Set.empty)  in
-  named_weak_vars := s;
-  weak_var_map := m
-
 let print_items showval env x =
-  refresh_weak();
+  Names.refresh_weak();
   reset_naming_context ();
   Conflicts.reset ();
   let extend_val env (sigitem,outcome) = outcome, showval env sigitem in
@@ -1869,7 +1934,25 @@ let printed_signature sourcefile ppf sg =
   end;
   fprintf ppf "%a" print_signature t
 
-(* Print an unification error *)
+(* Trace-specific printing *)
+
+(* A configuration type that controls which trace we print.  This could be
+   exposed, but we instead expose three separate
+   [report_{unification,equality,moregen}_error] functions.  This also lets us
+   give the unification case an extra optional argument without adding it to the
+   equality and moregen cases. *)
+type 'variety trace_format =
+  | Unification : Errortrace.unification trace_format
+  | Equality    : Errortrace.comparison  trace_format
+  | Moregen     : Errortrace.comparison  trace_format
+
+let incompatibility_phrase (type variety) : variety trace_format -> string =
+  function
+  | Unification -> "is not compatible with type"
+  | Equality    -> "is not equal to type"
+  | Moregen     -> "is not compatible with type"
+
+(* Print a unification error *)
 
 let same_path t t' =
   let t = repr t and t' = repr t' in
@@ -1890,15 +1973,15 @@ let same_path t t' =
 
 type 'a diff = Same of 'a | Diff of 'a * 'a
 
-let trees_of_type_expansion (t,t') =
+let trees_of_type_expansion mode Errortrace.{ty = t; expanded = t'} =
   if same_path t t'
-  then begin add_delayed (proxy t); Same (tree_of_typexp false t) end
+  then begin add_delayed (proxy t); Same (tree_of_typexp mode t) end
   else
     let t' = if proxy t == proxy t' then unalias t' else t' in
     (* beware order matter due to side effect,
        e.g. when printing object types *)
-    let first = tree_of_typexp false t in
-    let second = tree_of_typexp false t' in
+    let first = tree_of_typexp mode t in
+    let second = tree_of_typexp mode t' in
     if first = second then Same first
     else Diff(first,second)
 
@@ -1907,7 +1990,8 @@ let type_expansion ppf = function
   | Diff(t,t') ->
       fprintf ppf "@[<2>%a@ =@ %a@]"  !Oprint.out_type t  !Oprint.out_type t'
 
-let trees_of_trace = List.map (Errortrace.map_diff trees_of_type_expansion)
+let trees_of_trace mode =
+  List.map (Errortrace.map_diff (trees_of_type_expansion mode))
 
 let trees_of_type_path_expansion (tp,tp') =
   if Path.same tp tp' then Same(tree_of_path Type tp) else
@@ -1940,28 +2024,13 @@ type printing_status =
       type error.
   *)
 
-let diff_printing_status { Errortrace.got=t1, t1'; expected=t2, t2'} =
+let diff_printing_status Errortrace.{ got      = {ty = t1; expanded = t1'};
+                                      expected = {ty = t2; expanded = t2'} } =
   if  is_constr_row ~allow_ident:true t1'
    || is_constr_row ~allow_ident:true t2'
   then Discard
   else if same_path t1 t1' && same_path t2 t2' then Optional_refinement
   else Keep
-
-(* A configuration type that controls which trace we print.  This could be
-   exposed, but we instead expose three separate
-   [report_{unification,equality,moregen}_error] functions.  This also lets us
-   give the unification case an extra optional argument without adding it to the
-   equality and moregen cases. *)
-type 'variety trace_format =
-  | Unification : Errortrace.unification trace_format
-  | Equality    : Errortrace.comparison  trace_format
-  | Moregen     : Errortrace.comparison  trace_format
-
-let incompatibility_phrase (type variety) : variety trace_format -> string =
-  function
-  | Unification -> "is not compatible with type"
-  | Equality    -> "is not equal to type"
-  | Moregen     -> "is not compatible with type"
 
 let printing_status = function
   | Errortrace.Diff d -> diff_printing_status d
@@ -1983,11 +2052,14 @@ let prepare_any_trace printing_status tr =
   | elt :: rem -> elt :: List.fold_right clean_trace rem []
 
 let prepare_trace f tr =
-  prepare_any_trace printing_status (Errortrace.flatten f tr)
+  prepare_any_trace printing_status (Errortrace.map f tr)
 
 (** Keep elements that are not [Diff _ ] and take the decision
     for the last element, require a prepared trace *)
-let rec filter_trace trace_format keep_last = function
+let rec filter_trace
+          (trace_format : 'variety trace_format)
+          keep_last
+  : ('a, 'variety) Errortrace.t -> _ = function
   | [] -> []
   | [Errortrace.Diff d as elt]
     when printing_status elt = Optional_refinement ->
@@ -2008,17 +2080,17 @@ let hide_variant_name t =
                    row_more = newvar2 (row_more row).level})
   | _ -> t
 
-let prepare_expansion (t, t') =
-  let t' = hide_variant_name t' in
-  mark_loops t;
-  if not (same_path t t') then mark_loops t';
-  (t, t')
+let prepare_expansion Errortrace.{ty; expanded} =
+  let expanded = hide_variant_name expanded in
+  mark_loops ty;
+  if not (same_path ty expanded) then mark_loops expanded;
+  Errortrace.{ty; expanded}
 
-let may_prepare_expansion compact (t, t') =
-  match (repr t').desc with
+let may_prepare_expansion compact (Errortrace.{ty; expanded} as ty_exp) =
+  match (repr expanded).desc with
     Tvariant _ | Tobject _ when compact ->
-      mark_loops t; (t, t)
-  | _ -> prepare_expansion (t, t')
+      mark_loops ty; Errortrace.{ty; expanded = ty}
+  | _ -> prepare_expansion ty_exp
 
 let print_path p = Format.dprintf "%a" !Oprint.out_ident (tree_of_path Type p)
 
@@ -2099,10 +2171,18 @@ let explain_variant (type variety) : variety Errortrace.variant -> _ = function
       (* this case never happens *)
       None
   (* Equality & Moregen *)
+  | Errortrace.Presence_not_guaranteed_for (pos, s) -> Some(
+      dprintf
+        "@,@[The tag `%s is guaranteed to be present in the %a variant type,\
+         @ but not in the %a@]"
+        s
+        Errortrace.print_pos (Errortrace.swap_position pos)
+        Errortrace.print_pos pos
+    )
   | Errortrace.Openness pos ->
-    Some(dprintf "@,The %a variant type is open and the %a is not"
-           Errortrace.print_pos pos
-           Errortrace.print_pos (Errortrace.swap_position pos))
+      Some(dprintf "@,The %a variant type is open and the %a is not"
+             Errortrace.print_pos pos
+             Errortrace.print_pos (Errortrace.swap_position pos))
 
 let explain_escape pre = function
   | Errortrace.Univ u -> Some(
@@ -2118,7 +2198,7 @@ let explain_escape pre = function
         "%t@,@[The module type@;<1 2>%a@ would escape its scope@]"
         pre path p
     )
-  | Errortrace.Equation (_,t) -> Some(
+  | Errortrace.Equation Errortrace.{ty = _; expanded = t} -> Some(
       dprintf "%t @,@[<hov>This instance of %a is ambiguous:@ %s@]"
         pre type_expr t
         "it would escape the scope of its equation"
@@ -2142,10 +2222,10 @@ let explain_object (type variety) : variety Errortrace.obj -> _ = function
       Some (dprintf "@,Self type cannot be unified with a closed object type")
 
 let explanation (type variety) intro prev env
-  : ('a, variety) Errortrace.elt -> _ = function
-  | Errortrace.Diff { Errortrace.got = _,s; expected = _,t } ->
-    explanation_diff env s t
-  | Errortrace.Escape {kind;context} ->
+  : (Errortrace.expanded_type, variety) Errortrace.elt -> _ = function
+  | Errortrace.Diff {got; expected} ->
+    explanation_diff env got.expanded expected.expanded
+  | Errortrace.Escape {kind; context} ->
     let pre =
       match context, kind, prev with
       | Some ctx, _, _ ->
@@ -2205,23 +2285,32 @@ let prepare_expansion_head empty_tr = function
       Some (Errortrace.map_diff (may_prepare_expansion empty_tr) d)
   | _ -> None
 
-let head_error_printer txt_got txt_but = function
+let head_error_printer mode txt_got txt_but = function
   | None -> ignore
   | Some d ->
-      let d = Errortrace.map_diff trees_of_type_expansion d in
+      let d = Errortrace.map_diff (trees_of_type_expansion mode) d in
       dprintf "%t@;<1 2>%a@ %t@;<1 2>%a"
         txt_got type_expansion d.Errortrace.got
         txt_but type_expansion d.Errortrace.expected
 
 let warn_on_missing_defs env ppf = function
   | None -> ()
-  | Some {Errortrace.got=te1,_; expected=te2,_ } ->
+  | Some Errortrace.{got      = {ty=te1; expanded=_};
+                     expected = {ty=te2; expanded=_} } ->
       warn_on_missing_def env ppf te1;
       warn_on_missing_def env ppf te2
 
-let error trace_format env tr txt1 ppf txt2 ty_expect_explanation =
+(* [subst] comes out of equality, and is [[]] otherwise *)
+let error trace_format mode subst env tr txt1 ppf txt2 ty_expect_explanation =
   reset ();
-  let tr = prepare_trace (fun t t' -> t, hide_variant_name t') tr in
+  (* We want to substitute in the opposite order from [Eqtype] *)
+  Names.add_subst (List.map (fun (ty1,ty2) -> ty2,ty1) subst);
+  let tr =
+    prepare_trace
+      (fun ty_exp ->
+         Errortrace.{ty_exp with expanded = hide_variant_name ty_exp.expanded})
+      tr
+  in
   let mis = mismatch txt1 env tr in
   match tr with
   | [] -> assert false
@@ -2231,8 +2320,8 @@ let error trace_format env tr txt1 ppf txt2 ty_expect_explanation =
       let tr = filter_trace trace_format (mis = None) tr in
       let head = prepare_expansion_head (tr=[]) elt in
       let tr = List.map (Errortrace.map_diff prepare_expansion) tr in
-      let head_error = head_error_printer txt1 txt2 head in
-      let tr = trees_of_trace tr in
+      let head_error = head_error_printer mode txt1 txt2 head in
+      let tr = trees_of_trace mode tr in
       fprintf ppf
         "@[<v>\
           @[%t%t@]%a%t\
@@ -2249,19 +2338,32 @@ let error trace_format env tr txt1 ppf txt2 ty_expect_explanation =
       print_labels := true;
       raise exn
 
-let report_error trace_format ppf env tr
+let report_error trace_format ppf mode env tr
+      ?(subst = [])
       ?(type_expected_explanation = fun _ -> ())
       txt1 txt2 =
-  wrap_printing_env env (fun () -> error trace_format env tr txt1 ppf txt2
-                                     type_expected_explanation)
-    ~error:true
+  wrap_printing_env ~error:true env (fun () ->
+    error trace_format mode subst env tr txt1 ppf txt2
+      type_expected_explanation)
 
-let report_unification_error =
-  report_error Unification
-let report_equality_error =
-  report_error Equality ?type_expected_explanation:None
-let report_moregen_error =
-  report_error Moregen ?type_expected_explanation:None
+let report_unification_error
+      ppf env ({trace} : Errortrace.unification_error) =
+  report_error Unification ppf Type env
+    ?subst:None trace
+
+let report_equality_error
+      ppf mode env ({subst; trace} : Errortrace.equality_error) =
+  report_error Equality ppf mode env
+    ~subst ?type_expected_explanation:None trace
+
+let report_moregen_error
+      ppf mode env ({trace} : Errortrace.moregen_error) =
+  report_error Moregen ppf mode env
+    ?subst:None ?type_expected_explanation:None trace
+
+let report_comparison_error ppf mode env = function
+  | Errortrace.Equality_error error -> report_equality_error ppf mode env error
+  | Errortrace.Moregen_error  error -> report_moregen_error  ppf mode env error
 
 module Subtype = struct
   (* There's a frustrating amount of code duplication between this module and
@@ -2276,7 +2378,7 @@ module Subtype = struct
   let prepare_unification_trace = prepare_trace
 
   let prepare_trace f tr =
-    prepare_any_trace printing_status (Errortrace.Subtype.flatten f tr)
+    prepare_any_trace printing_status (Errortrace.Subtype.map f tr)
 
   let trace filter_trace get_diff fst keep_last txt ppf tr =
     print_labels := not !Clflags.classic;
@@ -2284,7 +2386,7 @@ module Subtype = struct
       | elt :: tr' ->
         let diffed_elt = get_diff elt in
         let tr =
-          trees_of_trace
+          trees_of_trace Type
           @@ List.map (Errortrace.map_diff prepare_expansion)
           @@ filter_trace keep_last tr' in
         let tr =
@@ -2311,32 +2413,33 @@ module Subtype = struct
 
   let unification_get_diff = function
     | Errortrace.Diff diff ->
-        Some (Errortrace.map_diff trees_of_type_expansion diff)
+        Some (Errortrace.map_diff (trees_of_type_expansion Type) diff)
     | _ -> None
 
   let subtype_get_diff = function
     | Errortrace.Subtype.Diff diff ->
-        Some (Errortrace.map_diff trees_of_type_expansion diff)
+        Some (Errortrace.map_diff (trees_of_type_expansion Type) diff)
 
-  let report_error ppf env tr1 txt1 tr2 =
+  let report_error
+        ppf
+        env
+        (Errortrace.Subtype.{trace = tr_sub; unification_trace = tr_unif})
+        txt1 =
     wrap_printing_env ~error:true env (fun () ->
       reset ();
-      let tr1 =
-        prepare_trace (fun t t' -> prepare_expansion (t, t')) tr1
-      in
-      let tr2 =
-        prepare_unification_trace (fun t t' -> prepare_expansion (t, t')) tr2
-      in
-      let keep_first = match tr2 with
+      let tr_sub = prepare_trace prepare_expansion tr_sub in
+      let tr_unif = prepare_unification_trace prepare_expansion tr_unif in
+      let keep_first = match tr_unif with
         | [Obj _ | Variant _ | Escape _ ] | [] -> true
         | _ -> false in
       fprintf ppf "@[<v>%a"
-        (trace filter_subtype_trace subtype_get_diff true keep_first txt1) tr1;
-      if tr2 = [] then fprintf ppf "@]" else
-        let mis = mismatch (dprintf "Within this type") env tr2 in
+        (trace filter_subtype_trace subtype_get_diff true keep_first txt1)
+        tr_sub;
+      if tr_unif = [] then fprintf ppf "@]" else
+        let mis = mismatch (dprintf "Within this type") env tr_unif in
         fprintf ppf "%a%t%t@]"
           (trace filter_unification_trace unification_get_diff false
-             (mis = None) "is not compatible with type") tr2
+             (mis = None) "is not compatible with type") tr_unif
           (explain mis)
           Conflicts.print_explanations
     )
@@ -2366,8 +2469,8 @@ let report_ambiguous_type_error ppf env tp0 tpl txt1 txt2 txt3 =
 (* Adapt functions to exposed interface *)
 let tree_of_path = tree_of_path Other
 let tree_of_modtype = tree_of_modtype ~ellipsis:false
-let type_expansion ty ppf ty' =
-  type_expansion ppf (trees_of_type_expansion (ty,ty'))
+let type_expansion mode ppf ty_exp =
+  type_expansion ppf (trees_of_type_expansion mode ty_exp)
 let tree_of_type_declaration ident td rs =
   with_hidden_items [{hide=true; ident}]
     (fun () -> tree_of_type_declaration ident td rs)

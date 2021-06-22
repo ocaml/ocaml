@@ -322,9 +322,9 @@ Error: Signature mismatch:
          type ('a, 'b) bar += A of int
        Constructors do not match:
          A of float
-       is not compatible with:
+       is not the same as:
          A of int
-       The types are not equal.
+       The type float is not equal to the type int
 |}]
 
 module M : sig
@@ -348,9 +348,9 @@ Error: Signature mismatch:
          type ('a, 'b) bar += A of 'a
        Constructors do not match:
          A of 'b
-       is not compatible with:
+       is not the same as:
          A of 'a
-       The types are not equal.
+       The type 'b is not equal to the type 'a
 |}]
 
 module M : sig
@@ -374,9 +374,9 @@ Error: Signature mismatch:
          type ('a, 'b) bar = A of 'a
        Constructors do not match:
          A of 'a
-       is not compatible with:
+       is not the same as:
          A of 'a
-       The types are not equal.
+       The type 'a is not equal to the type 'b
 |}];;
 
 
@@ -401,9 +401,9 @@ Error: Signature mismatch:
          type ('a, 'b) bar += A : 'c -> ('c, 'd) bar
        Constructors do not match:
          A : 'd -> ('c, 'd) bar
-       is not compatible with:
+       is not the same as:
          A : 'c -> ('c, 'd) bar
-       The types are not equal.
+       The type 'd is not equal to the type 'c
 |}]
 
 (* Extensions can be rebound *)
