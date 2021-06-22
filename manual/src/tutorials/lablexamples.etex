@@ -59,7 +59,7 @@ let hline ~x:x1 ~x:x2 ~y = (x1, x2, y);;
 hline ~x:3 ~y:2 ~x:5;;
 \end{caml_example}
 
-\subsection{s:optional-arguments}{Optional arguments}
+\section{s:optional-arguments}{Optional arguments}
 
 An interesting feature of labeled arguments is that they can be made
 optional. For optional parameters, the question mark "?" replaces the
