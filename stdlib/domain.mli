@@ -29,7 +29,8 @@ val at_first_spawn : (unit -> unit) -> unit
 
 val at_exit : (unit -> unit) -> unit
 (** Register the given function to be called at when a domain exits. This
-    function is also registered with {!Stdlib.at_exit}. *)
+    function is also registered with {!Stdlib.at_exit}. If the registered
+    function raises an exception, the exceptions are ignored. *)
 
 type nanoseconds = int64
 val timer_ticks : unit -> nanoseconds
