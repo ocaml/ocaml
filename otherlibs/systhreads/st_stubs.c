@@ -495,9 +495,9 @@ CAMLexport int caml_c_thread_register(void)
   }
   /* Associate the thread descriptor with the thread */
   st_tls_set(Thread_key, (void *) th);
-  st_thread_set_id(Ident(th->descr));
   /* Allocate the thread descriptor on the heap */
   th->descr = caml_thread_new_descriptor(Val_unit);  /* no closure */
+  st_thread_set_id(Ident(th->descr));
   /* Release the master lock */
   st_masterlock_release(&Thread_main_lock);
   return 1;
