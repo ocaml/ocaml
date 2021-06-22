@@ -123,11 +123,12 @@ let do_at_first_spawn () =
 let exit_function = Atomic.make (fun () -> ())
 
 let rec at_exit f =
+  let wrapped_f () = try f () with _ -> () in
   let old_exit = Atomic.get exit_function in
-  let new_exit () = f (); old_exit () in
+  let new_exit () = wrapped_f (); old_exit () in
   let success = Atomic.compare_and_set exit_function old_exit new_exit in
   if success then
-    Stdlib.at_exit f
+    Stdlib.at_exit wrapped_f
   else at_exit f
 
 let do_at_exit () = (Atomic.get exit_function) ()
