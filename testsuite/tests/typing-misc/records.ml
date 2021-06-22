@@ -137,8 +137,7 @@ Error: Unbound record field Complex.z
 Line 1, characters 2-6:
 1 | { true with contents = 0 };;
       ^^^^
-Error: This expression has type bool but an expression was expected of type
-         'a ref
+Error: This expression has type bool which is not a record type.
 |}];;
 
 type ('a, 'b) t = { fst : 'a; snd : 'b };;
@@ -198,7 +197,8 @@ Line 1, characters 0-40:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type
          (int, [> `A ]) def
-       Their constraints differ.
+       Their parameters differ
+       The type int is not equal to the type 'a
 |}]
 
 type ('a,'b) kind = ('a, 'b) def = A constraint 'b = [> `A];;
@@ -221,7 +221,7 @@ Line 2, characters 0-37:
 Error: This variant or record definition does not match that of type d
        Fields do not match:
          y : int;
-       is not compatible with:
+       is not the same as:
          mutable y : int;
        This is mutable and the original is not.
 |}]
@@ -243,17 +243,19 @@ Line 1, characters 0-31:
 Error: This variant or record definition does not match that of type d
        Fields do not match:
          x : int;
-       is not compatible with:
+       is not the same as:
          x : float;
-       The types are not equal.
+       The type int is not equal to the type float
 |}]
 
-type unboxed = d = {x:float} [@@unboxed]
+type mono = {foo:int}
+type unboxed = mono = {foo:int} [@@unboxed]
 [%%expect{|
-Line 1, characters 0-40:
-1 | type unboxed = d = {x:float} [@@unboxed]
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type d
+type mono = { foo : int; }
+Line 2, characters 0-43:
+2 | type unboxed = mono = {foo:int} [@@unboxed]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This variant or record definition does not match that of type mono
        Their internal representations differ:
        this definition uses unboxed representation.
 |}]

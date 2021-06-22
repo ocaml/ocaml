@@ -31,6 +31,7 @@ type t =
     modules: Path.t Path.Map.t;
     modtypes: module_type Path.Map.t;
     for_saving: bool;
+    loc: Location.t option;
   }
 
 let identity =
@@ -38,6 +39,7 @@ let identity =
     modules = Path.Map.empty;
     modtypes = Path.Map.empty;
     for_saving = false;
+    loc = None;
   }
 
 let add_type_path id p s = { s with types = Path.Map.add id (Path p) s.types }
@@ -54,8 +56,13 @@ let add_modtype id ty s = add_modtype_path (Pident id) ty s
 
 let for_saving s = { s with for_saving = true }
 
+let change_locs s loc = { s with loc = Some loc }
+
 let loc s x =
-  if s.for_saving && not !Clflags.keep_locs then Location.none else x
+  match s.loc with
+  | Some l -> l
+  | None ->
+    if s.for_saving && not !Clflags.keep_locs then Location.none else x
 
 let remove_loc =
   let open Ast_mapper in
@@ -198,8 +205,9 @@ let rec typexp copy_scope s ty =
          | Type_function { params; body } ->
             Tlink (!ctype_apply_env_empty params body args)
          end
-      | Tpackage(p, n, tl) ->
-          Tpackage(modtype_path s p, n, List.map (typexp copy_scope s) tl)
+      | Tpackage(p, fl) ->
+          Tpackage(modtype_path s p,
+                    List.map (fun (n, ty) -> (n, typexp copy_scope s ty)) fl)
       | Tobject (t1, name) ->
           let t1' = typexp copy_scope s t1 in
           let name' =
@@ -298,8 +306,9 @@ let type_declaration' copy_scope s decl =
     type_kind =
       begin match decl.type_kind with
         Type_abstract -> Type_abstract
-      | Type_variant cstrs ->
-          Type_variant (List.map (constructor_declaration copy_scope s) cstrs)
+      | Type_variant (cstrs, rep) ->
+          Type_variant (List.map (constructor_declaration copy_scope s) cstrs,
+                        rep)
       | Type_record(lbls, rep) ->
           Type_record (List.map (label_declaration copy_scope s) lbls, rep)
       | Type_open -> Type_open
@@ -318,7 +327,7 @@ let type_declaration' copy_scope s decl =
     type_loc = loc s decl.type_loc;
     type_attributes = attrs s decl.type_attributes;
     type_immediate = decl.type_immediate;
-    type_unboxed = decl.type_unboxed;
+    type_unboxed_default = decl.type_unboxed_default;
     type_uid = decl.type_uid;
   }
 
@@ -546,6 +555,11 @@ and modtype_declaration scoping s decl  =
 let merge_path_maps f m1 m2 =
   Path.Map.fold (fun k d accu -> Path.Map.add k (f d) accu) m1 m2
 
+let keep_latest_loc l1 l2 =
+  match l2 with
+  | None -> l1
+  | Some _ -> l2
+
 let type_replacement s = function
   | Path p -> Path (type_path s p)
   | Type_function { params; body } ->
@@ -562,4 +576,5 @@ let compose s1 s2 =
     modules = merge_path_maps (module_path s2) s1.modules s2.modules;
     modtypes = merge_path_maps (modtype Keep s2) s1.modtypes s2.modtypes;
     for_saving = s1.for_saving || s2.for_saving;
+    loc = keep_latest_loc s1.loc s2.loc;
   }

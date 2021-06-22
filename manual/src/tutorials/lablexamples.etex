@@ -59,36 +59,7 @@ let hline ~x:x1 ~x:x2 ~y = (x1, x2, y);;
 hline ~x:3 ~y:2 ~x:5;;
 \end{caml_example}
 
-As an exception to the above parameter matching rules, if an
-application is total (omitting all optional arguments), labels may be
-omitted.
-In practice, many applications are total, so that labels can often be
-omitted.
-\begin{caml_example}{toplevel}
-f 3 2;;
-ListLabels.map succ [1;2;3];;
-\end{caml_example}
-But beware that functions like "ListLabels.fold_left" whose result
-type is a type variable will never be considered as totally applied.
-\begin{caml_example}{toplevel}[error]
-ListLabels.fold_left ( + ) 0 [1;2;3];;
-\end{caml_example}
-
-When a function is passed as an argument to a higher-order function,
-labels must match in both types. Neither adding nor removing labels
-are allowed.
-\begin{caml_example}{toplevel}
-let h g = g ~x:3 ~y:2;;
-h f;;
-h ( + ) [@@expect error];;
-\end{caml_example}
-Note that when you don't need an argument, you can still use a wildcard
-pattern, but you must prefix it with the label.
-\begin{caml_example}{toplevel}
-h (fun ~x:_ ~y -> y+1);;
-\end{caml_example}
-
-\section{s:optional-arguments}{Optional arguments}
+\subsection{s:optional-arguments}{Optional arguments}
 
 An interesting feature of labeled arguments is that they can be made
 optional. For optional parameters, the question mark "?" replaces the

@@ -35,7 +35,7 @@ COBJS=accept.o access.o addrofstr.o alarm.o bind.o channels.o chdir.o \
   gettimeofday.o getserv.o getsockname.o getuid.o gmtime.o \
   initgroups.o isatty.o itimer.o kill.o link.o listen.o lockf.o lseek.o \
   mkdir.o mkfifo.o mmap.o mmap_ba.o \
-  nice.o open.o opendir.o pipe.o putenv.o read.o \
+  nice.o open.o opendir.o pipe.o putenv.o read.o realpath.o \
   readdir.o readlink.o rename.o rewinddir.o rmdir.o select.o sendrecv.o \
   setgid.o setgroups.o setsid.o setuid.o shutdown.o signals.o \
   sleep.o socket.o socketaddr.o \
@@ -51,6 +51,6 @@ include ../Makefile.otherlibs.common
 
 .PHONY: depend
 depend:
-	$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash *.mli *.ml > .depend
+	$(OCAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash *.mli *.ml > .depend
 
 include .depend

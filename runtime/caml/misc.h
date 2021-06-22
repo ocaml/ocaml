@@ -78,7 +78,7 @@ CAMLdeprecated_typedef(addr, char *);
 
 #ifndef CAMLDLLIMPORT
   #if defined(SUPPORT_DYNAMIC_LINKING) && defined(ARCH_SIXTYFOUR) \
-      && defined(__CYGWIN__)
+      && (defined(__CYGWIN__) || defined(__MINGW32__))
     #define CAMLDLLIMPORT __declspec(dllimport)
   #else
     #define CAMLDLLIMPORT
@@ -294,6 +294,8 @@ extern double caml_log1p(double);
 #define mktemp_os _wmktemp
 #define fopen_os _wfopen
 
+#define clock_os caml_win32_clock
+
 #define caml_stat_strdup_os caml_stat_wcsdup
 #define caml_stat_strconcat_os caml_stat_wcsconcat
 
@@ -329,6 +331,8 @@ extern double caml_log1p(double);
 #define strcpy_os strcpy
 #define mktemp_os mktemp
 #define fopen_os fopen
+
+#define clock_os clock
 
 #define caml_stat_strdup_os caml_stat_strdup
 #define caml_stat_strconcat_os caml_stat_strconcat

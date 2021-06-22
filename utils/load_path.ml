@@ -14,13 +14,13 @@
 
 open Local_store
 
-module SMap = Misc.Stdlib.String.Map
+module STbl = Misc.Stdlib.String.Tbl
 
 (* Mapping from basenames to full filenames *)
-type registry = string SMap.t ref
+type registry = string STbl.t
 
-let files : registry = s_ref SMap.empty
-let files_uncap : registry = s_ref SMap.empty
+let files : registry ref = s_table STbl.create 42
+let files_uncap : registry ref = s_table STbl.create 42
 
 module Dir = struct
   type t = {
@@ -48,32 +48,23 @@ let dirs = s_ref []
 
 let reset () =
   assert (not Config.merlin || Local_store.is_bound ());
-  files := SMap.empty;
-  files_uncap := SMap.empty;
+  STbl.clear !files;
+  STbl.clear !files_uncap;
   dirs := []
 
 let get () = List.rev !dirs
 let get_paths () = List.rev_map Dir.path !dirs
-
-let add_to_maps fn basenames files files_uncap =
-  List.fold_left (fun (files, files_uncap) base ->
-      let fn = fn base in
-      SMap.add base fn files,
-      SMap.add (String.uncapitalize_ascii base) fn files_uncap
-    ) (files, files_uncap) basenames
 
 (* Optimized version of [add] below, for use in [init] and [remove_dir]: since
    we are starting from an empty cache, we can avoid checking whether a unit
    name already exists in the cache simply by adding entries in reverse
    order. *)
 let add dir =
-  assert (not Config.merlin || Local_store.is_bound ());
-  let new_files, new_files_uncap =
-    add_to_maps (Filename.concat dir.Dir.path)
-      dir.Dir.files !files !files_uncap
-  in
-  files := new_files;
-  files_uncap := new_files_uncap
+  List.iter (fun base ->
+      let fn = Filename.concat dir.Dir.path base in
+      STbl.replace !files base fn;
+      STbl.replace !files_uncap (String.uncapitalize_ascii base) fn
+    ) dir.Dir.files
 
 let init l =
   reset ();
@@ -94,13 +85,15 @@ let remove_dir dir =
    order to enforce left-to-right precedence. *)
 let add dir =
   assert (not Config.merlin || Local_store.is_bound ());
-  let new_files, new_files_uncap =
-    add_to_maps (Filename.concat dir.Dir.path) dir.Dir.files
-      SMap.empty SMap.empty
-  in
-  let first _ fn _ = Some fn in
-  files := SMap.union first !files new_files;
-  files_uncap := SMap.union first !files_uncap new_files_uncap;
+  List.iter
+    (fun base ->
+       let fn = Filename.concat dir.Dir.path base in
+       if not (STbl.mem !files base) then
+         STbl.replace !files base fn;
+       let ubase = String.uncapitalize_ascii base in
+       if not (STbl.mem !files_uncap ubase) then
+         STbl.replace !files_uncap ubase fn)
+    dir.Dir.files;
   dirs := dir :: !dirs
 
 let add_dir dir = add (Dir.create dir)
@@ -110,13 +103,13 @@ let is_basename fn = Filename.basename fn = fn
 let find fn =
   assert (not Config.merlin || Local_store.is_bound ());
   if is_basename fn && not !Sys.interactive then
-    SMap.find fn !files
+    STbl.find !files fn
   else
     Misc.find_in_path (get_paths ()) fn
 
 let find_uncap fn =
   assert (not Config.merlin || Local_store.is_bound ());
   if is_basename fn && not !Sys.interactive then
-    SMap.find (String.uncapitalize_ascii fn) !files_uncap
+    STbl.find !files_uncap (String.uncapitalize_ascii fn)
   else
     Misc.find_in_path_uncap (get_paths ()) fn

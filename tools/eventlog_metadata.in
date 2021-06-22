@@ -203,7 +203,7 @@ event {
 
 /*
  Flush events are used to track the time spent by the tracing runtime flushing
- data to disk, useful to remove flushing overhead for other runtime mesurements
+ data to disk, useful to remove flushing overhead for other runtime measurements
  in the trace.
 */
 event {

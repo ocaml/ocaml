@@ -70,11 +70,6 @@ let constructor_args ~current_unit priv cd_args cd_res path rep =
   | Cstr_record lbls ->
       let arg_vars_set = free_vars ~param:true (newgenty (Ttuple tyl)) in
       let type_params = TypeSet.elements arg_vars_set in
-      let type_unboxed =
-        match rep with
-        | Record_unboxed _ -> unboxed_true_default_false
-        | _ -> unboxed_false_default_false
-      in
       let arity = List.length type_params in
       let tdecl =
         {
@@ -90,7 +85,7 @@ let constructor_args ~current_unit priv cd_args cd_res path rep =
           type_loc = Location.none;
           type_attributes = [];
           type_immediate = Unknown;
-          type_unboxed;
+          type_unboxed_default = false;
           type_uid = Uid.mk ~current_unit;
         }
       in
@@ -98,7 +93,7 @@ let constructor_args ~current_unit priv cd_args cd_res path rep =
       [ newgenconstr path type_params ],
       Some tdecl
 
-let constructor_descrs ~current_unit ty_path decl cstrs =
+let constructor_descrs ~current_unit ty_path decl cstrs rep =
   let ty_res = newgenconstr ty_path decl.type_params in
   let num_consts = ref 0 and num_nonconsts = ref 0  and num_normal = ref 0 in
   List.iter
@@ -115,20 +110,22 @@ let constructor_descrs ~current_unit ty_path decl cstrs =
           | None -> ty_res
         in
         let (tag, descr_rem) =
-          match cd_args with
-          | _ when decl.type_unboxed.unboxed ->
+          match cd_args, rep with
+          | _, Variant_unboxed ->
             assert (rem = []);
             (Cstr_unboxed, [])
-          | Cstr_tuple [] -> (Cstr_constant idx_const,
-                   describe_constructors (idx_const+1) idx_nonconst rem)
-          | _  -> (Cstr_block idx_nonconst,
-                   describe_constructors idx_const (idx_nonconst+1) rem) in
+          | Cstr_tuple [], Variant_regular ->
+             (Cstr_constant idx_const,
+              describe_constructors (idx_const+1) idx_nonconst rem)
+          | _, Variant_regular  ->
+             (Cstr_block idx_nonconst,
+              describe_constructors idx_const (idx_nonconst+1) rem) in
         let cstr_name = Ident.name cd_id in
         let existentials, cstr_args, cstr_inlined =
           let representation =
-            if decl.type_unboxed.unboxed
-            then Record_unboxed true
-            else Record_inlined idx_nonconst
+            match rep with
+            | Variant_unboxed -> Record_unboxed true
+            | Variant_regular -> Record_inlined idx_nonconst
           in
           constructor_args ~current_unit decl.type_private cd_args cd_res
             (Path.Pdot (ty_path, cstr_name)) representation
@@ -233,7 +230,8 @@ let find_constr_by_tag tag cstrlist =
 
 let constructors_of_type ~current_unit ty_path decl =
   match decl.type_kind with
-  | Type_variant cstrs -> constructor_descrs ~current_unit ty_path decl cstrs
+  | Type_variant (cstrs,rep) ->
+     constructor_descrs ~current_unit ty_path decl cstrs rep
   | Type_record _ | Type_abstract | Type_open -> []
 
 let labels_of_type ty_path decl =

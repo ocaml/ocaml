@@ -703,7 +703,10 @@ let run_codegen log env =
     flags env;
     "-S " ^ testfile
   ] in
-  let expected_exit_status = 0 in
+  let expected_exit_status =
+    Actions_helpers.exit_status_of_variable env
+      Ocaml_variables.codegen_exit_status
+  in
   let exit_status =
     Actions_helpers.run_cmd
       ~environment:default_ocaml_env
@@ -713,12 +716,15 @@ let run_codegen log env =
       log env commandline in
   if exit_status=expected_exit_status
   then begin
-    let finalise =
-       if Ocamltest_config.ccomptype="msvc"
-      then finalise_codegen_msvc
-      else finalise_codegen_cc
-    in
-    finalise testfile_basename log env
+    if exit_status=0
+    then begin
+      let finalise =
+        if Ocamltest_config.ccomptype="msvc"
+        then finalise_codegen_msvc
+        else finalise_codegen_cc
+      in
+      finalise testfile_basename log env
+    end else (Result.pass, env)
   end else begin
     let reason =
       (Actions_helpers.mkreason
@@ -1080,7 +1086,8 @@ let config_variables _log env =
     Ocaml_variables.nativecc_libs, Ocamltest_config.nativecc_libs;
     Ocaml_variables.mkdll,
       Sys.getenv_with_default_value "MKDLL" Ocamltest_config.mkdll;
-    Ocaml_variables.mkexe, Ocamltest_config.mkexe;
+    Ocaml_variables.mkexe,
+      Sys.getenv_with_default_value "MKEXE" Ocamltest_config.mkexe;
     Ocaml_variables.c_preprocessor, Ocamltest_config.c_preprocessor;
     Ocaml_variables.cc, Ocamltest_config.cc;
     Ocaml_variables.csc, Ocamltest_config.csc;
@@ -1088,6 +1095,7 @@ let config_variables _log env =
     Ocaml_variables.shared_library_cflags,
       Ocamltest_config.shared_library_cflags;
     Ocaml_variables.objext, Ocamltest_config.objext;
+    Ocaml_variables.libext, Ocamltest_config.libext;
     Ocaml_variables.asmext, Ocamltest_config.asmext;
     Ocaml_variables.sharedobjext, Ocamltest_config.sharedobjext;
     Ocaml_variables.ocamlc_default_flags,

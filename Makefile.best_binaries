@@ -40,7 +40,7 @@ choose_best = $(strip $(if \
    $(and $(USE_BEST_BINARIES),$(wildcard $(ROOTDIR)/$1.opt$(EXE)),$(strip \
       $(call check_not_stale,$1$(EXE),$1.opt$(EXE)))), \
     $(ROOTDIR)/$1.opt$(EXE), \
-    $(CAMLRUN) $(ROOTDIR)/$1$(EXE)))
+    $(OCAMLRUN) $(ROOTDIR)/$1$(EXE)))
 
 BEST_OCAMLC := $(call choose_best,ocamlc)
 BEST_OCAMLOPT := $(call choose_best,ocamlopt)
@@ -50,7 +50,7 @@ BEST_OCAMLLEX := $(call choose_best,lex/ocamllex)
 # is not built yet, using the bootstrap compiler.
 
 # Unlike other tools, there is no risk of mixing incompatible
-# bootrap-compiler and host-compiler object files, as ocamldep only
+# bootstrap-compiler and host-compiler object files, as ocamldep only
 # produces text output.
 BEST_OCAMLDEP := $(strip $(if \
    $(and $(USE_BEST_BINARIES),$(wildcard $(ROOTDIR)/ocamlc.opt$(EXE)),$(strip \

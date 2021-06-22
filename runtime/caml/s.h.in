@@ -45,12 +45,20 @@
 #undef HAS_C99_FLOAT_OPS
 
 /* Define HAS_C99_FLOAT_OPS if <math.h> conforms to ISO C99.
-   In particular, it should provide expm1(), log1p(), hypot(), copysign(). */
+   In particular, it should provide expm1(), log1p(), hypot(), fma(),
+   exp2(), log2(), cbrt(), acosh(), asinh(), atanh(), erf(), erfc(),
+   trunc(), round(), copysign(). */
 
 #undef HAS_WORKING_FMA
 
 /* Define HAS_WORKING_FMA if the fma function is correctly implemented. The
-   newlib library (intentionally) just has return x * y + z. */
+   newlib library (intentionally) just has return x * y + z. This hatch is
+   also used for https://sourceforge.net/p/mingw-w64/bugs/848/ */
+
+#undef HAS_WORKING_ROUND
+
+/* Define HAS_WORKING_ROUND is the round function is correctly implemented. This
+   hatch exists primarily for https://sourceforge.net/p/mingw-w64/bugs/573/ */
 
 #undef HAS_GETRUSAGE
 
@@ -140,6 +148,9 @@
 #undef HAS_SYMLINK
 
 /* Define HAS_SYMLINK if you have symlink() and readlink() and lstat(). */
+
+#undef HAS_REALPATH
+/* Define HAS_REALPATH if you have realpath(). */
 
 #undef HAS_WAIT4
 #undef HAS_WAITPID

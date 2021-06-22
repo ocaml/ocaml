@@ -351,6 +351,12 @@ val cut_at : string -> char -> string * string
    @since 4.01
 *)
 
+val ordinal_suffix : int -> string
+(** [ordinal_suffix n] is the appropriate suffix to append to the numeral [n] as
+    an ordinal number: [1] -> ["st"], [2] -> ["nd"], [3] -> ["rd"],
+    [4] -> ["th"], and so on.  Handles larger numbers (e.g., [42] -> ["nd"]) and
+    the numbers 11--13 (which all get ["th"]) correctly. *)
+
 (* Color handling *)
 module Color : sig
   type color =
@@ -369,6 +375,8 @@ module Color : sig
     | BG of color (* background *)
     | Bold
     | Reset
+
+  type Format.stag += Style of style list
 
   val ansi_of_style_l : style list -> string
   (* ANSI escape sequence for the given style *)

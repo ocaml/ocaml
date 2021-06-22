@@ -34,3 +34,12 @@ OC_DLL_LDFLAGS=@oc_dll_ldflags@
 
 # The rlwrap command (for the *runtop targets)
 RLWRAP=@rlwrap@
+
+# Which document generator: odoc or ocamldoc?
+DOCUMENTATION_TOOL=@documentation_tool@
+DOCUMENTATION_TOOL_CMD=@documentation_tool_cmd@
+
+# The location of the FlexDLL sources to use (usually provided as the flexdll
+# Git submodule)
+FLEXDLL_SOURCES=@flexdir@
+BOOTSTRAPPING_FLEXDLL=@bootstrapping_flexdll@

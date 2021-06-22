@@ -85,7 +85,14 @@ module Ints =
 
 let id_compare (id1,_) (id2,_) = String.compare id1 id2
 
-let tag_compare t1 t2 = Stdlib.compare t1 t2
+let tag_compare
+      {id=id1; start=start1; action=action1}
+      {id=id2; start=start2; action=action2} =
+  let c = String.compare id1 id2 in
+  if c <> 0 then c else
+  let c = Bool.compare start1 start2 in
+  if c <> 0 then c else
+  Int.compare action1 action2
 
 module Tags = Set.Make(struct type t = tag_info let compare = tag_compare end)
 
@@ -487,7 +494,7 @@ let encode_casedef casedef =
         Alt(reg, Seq(r, Action count)),
         (count, m ,act) :: actions,
         (succ count),
-        max loc_ntags ntags)
+        Int.max loc_ntags ntags)
       (Empty, [], 0, 0)
       casedef in
   r

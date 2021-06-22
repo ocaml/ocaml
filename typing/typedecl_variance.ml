@@ -119,11 +119,11 @@ let compute_variance env visited vari ty =
     | Tpoly (ty, _) ->
         compute_same ty
     | Tvar _ | Tnil | Tlink _ | Tunivar _ -> ()
-    | Tpackage (_, _, tyl) ->
+    | Tpackage (_, fl) ->
         let v =
           Variance.(if mem Pos vari || mem Neg vari then full else unknown)
         in
-        List.iter (compute_variance_rec v) tyl
+        List.iter (fun (_, ty) -> compute_variance_rec v ty) fl
   in
   compute_variance_rec vari ty
 
@@ -219,7 +219,7 @@ let compute_variance_type env ~check (required, loc) decl tyl =
       let v2 =
         TypeMap.fold
           (fun t vt v ->
-            if Ctype.equal env false [ty] [t] then union vt v else v)
+             if Ctype.is_equal env false [ty] [t] then union vt v else v)
           !tvl2 null in
       Btype.backtrack snap;
       let (c1,n1) = get_upper v1 and (c2,n2,_,i2) = get_lower v2 in
@@ -321,7 +321,7 @@ let compute_variance_decl env ~check decl (required, _ as rloc) =
   match decl.type_kind with
     Type_abstract | Type_open ->
       compute_variance_type env ~check rloc decl mn
-  | Type_variant tll ->
+  | Type_variant (tll,_rep) ->
       if List.for_all (fun c -> c.Types.cd_res = None) tll then
         compute_variance_type env ~check rloc decl
           (mn @ List.flatten (List.map (fun c -> for_constr c.Types.cd_args)

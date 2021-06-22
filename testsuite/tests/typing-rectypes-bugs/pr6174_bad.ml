@@ -1,5 +1,5 @@
 (* TEST
-flags = " -w a -rectypes "
+flags = " -w -a -rectypes "
 ocamlc_byte_exit_status = "2"
 * setup-ocamlc.byte-build-env
 ** ocamlc.byte

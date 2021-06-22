@@ -1,12 +1,12 @@
-TOPDIR = ../../..
-include $(TOPDIR)/Makefile.tools
+ROOTDIR = ../../..
+include $(ROOTDIR)/Makefile.common
 
-LD_PATH = "$(TOPDIR)/otherlibs/str:$(TOPDIR)/otherlibs/unix"
+LD_PATH = "$(ROOTDIR)/otherlibs/str:$(ROOTDIR)/otherlibs/unix"
 
 TOOLS = ../../tools
 CAMLLATEX = $(SET_LD_PATH) \
-  $(OCAMLRUN) $(TOPDIR)/tools/caml-tex \
-  -repo-root $(TOPDIR) -n 80 -v false
+  $(OCAMLRUN) $(ROOTDIR)/tools/caml-tex \
+  -repo-root $(ROOTDIR) -n 80 -v false
 TEXQUOTE = $(OCAMLRUN) $(TOOLS)/texquote2
 TRANSF = $(SET_LD_PATH) $(OCAMLRUN) $(TOOLS)/transf
 

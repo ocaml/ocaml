@@ -48,6 +48,7 @@ _build
 /ocaml-*.cache
 /config.log
 /config.status
+/flexlink.opt
 /libtool
 /ocamlc.opt
 /expunge
@@ -67,8 +68,10 @@ _build
 /asmcomp/CSE.ml
 
 /boot/ocamlrun
+/boot/ocamlruns
 /boot/camlheader
 /boot/ocamlc.opt
+/boot/flexlink.byte
 
 /bytecomp/opcodes.ml
 /bytecomp/opcodes.mli
@@ -80,6 +83,8 @@ _build
 
 /emacs/ocamltags
 /emacs/*.elc
+
+/flexdll-sources
 
 /lambda/runtimedef.ml
 
@@ -93,12 +98,9 @@ _build
 /manual/src/cmds/warnings-help.etex
 /manual/src/warnings-help.etex
 
-/api_docgen/man
-/api_docgen/html
 /api_docgen/build
-/api_docgen/latex
-/api_docgen/texi
-/api_docgen/Compiler_libs.mld
+/api_docgen/odoc/build
+/api_docgen/ocamldoc/build
 
 /ocamldoc/ocamldoc
 /ocamldoc/ocamldoc.opt

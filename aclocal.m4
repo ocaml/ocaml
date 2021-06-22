@@ -58,7 +58,8 @@ unknown
 #endif]
     )],
     [AC_CACHE_VAL([ocaml_cv_cc_vendor],
-      [ocaml_cv_cc_vendor=`grep ['^[a-z]'] conftest.i | tr -s ' ' '-'`])],
+      [ocaml_cv_cc_vendor=`grep ['^[a-z]'] conftest.i | tr -s ' ' '-' \
+                                                      | tr -d '\r'`])],
     [AC_MSG_FAILURE([unexpected preprocessor failure])])
   AC_MSG_RESULT([$ocaml_cv_cc_vendor])
 ])
@@ -130,6 +131,7 @@ AC_DEFUN([OCAML_CC_SAVE_VARIABLES], [
   saved_CC="$CC"
   saved_CFLAGS="$CFLAGS"
   saved_CPPFLAGS="$CPPFLAGS"
+  saved_LIBS="$LIBS"
   saved_ac_ext="$ac_ext"
   saved_ac_compile="$ac_compile"
   # Move the content of confdefs.h to another file so it does not
@@ -147,6 +149,7 @@ AC_DEFUN([OCAML_CC_RESTORE_VARIABLES], [
   CPPFLAGS="$saved_CPPFLAGS"
   CFLAGS="$saved_CFLAGS"
   CC="$saved_CC"
+  LIBS="$saved_LIBS"
 ])
 
 AC_DEFUN([OCAML_AS_HAS_DEBUG_PREFIX_MAP], [
@@ -289,4 +292,180 @@ AC_DEFUN([OCAML_CHECK_LIBUNWIND], [
     [libunwind_available=false])
   LDFLAGS="$SAVED_LDFLAGS"
   CFLAGS="$SAVED_CFLAGS"
+])
+
+AC_DEFUN([OCAML_TEST_FLEXLINK], [
+  OCAML_CC_SAVE_VARIABLES
+
+  AC_MSG_CHECKING([whether $1 works])
+
+  AC_COMPILE_IFELSE(
+    [AC_LANG_SOURCE([int answer = 42;])],
+    [# Create conftest1.$ac_objext as a symlink on Cygwin to ensure that native
+    # flexlink can cope. The reverse test is unnecessary (a Cygwin-compiled
+    # flexlink can read anything).
+    mv conftest.$ac_objext conftest1.$ac_objext
+    AS_CASE([$4],[*-pc-cygwin],
+      [ln -s conftest1.$ac_objext conftest2.$ac_objext],
+      [cp conftest1.$ac_objext conftest2.$ac_objext])
+
+    CC="$1 -chain $2 -exe"
+    LIBS="conftest2.$ac_objext"
+    CPPFLAGS="$3 $CPPFLAGS"
+    AC_LINK_IFELSE(
+      [AC_LANG_SOURCE([int main() { return 0; }])],
+      [AC_MSG_RESULT([yes])],
+      [AC_MSG_RESULT([no])
+      AC_MSG_ERROR([$1 does not work])])],
+    [AC_MSG_RESULT([unexpected compile error])
+    AC_MSG_ERROR([error calling the C compiler])])
+
+  OCAML_CC_RESTORE_VARIABLES
+])
+
+AC_DEFUN([OCAML_TEST_FLEXDLL_H], [
+  OCAML_CC_SAVE_VARIABLES
+
+  AS_IF([test -n "$1"],[CPPFLAGS="-I $1 $CPPFLAGS"])
+  have_flexdll_h=no
+  AC_CHECK_HEADER([flexdll.h],[have_flexdll_h=yes],[have_flexdll_h=no])
+  AS_IF([test x"$have_flexdll_h" = 'xno'],
+    [AS_IF([test -n "$1"],
+      [AC_MSG_ERROR([$1/flexdll.h appears unusable])])])
+
+  OCAML_CC_RESTORE_VARIABLES
+])
+
+AC_DEFUN([OCAML_TEST_FLEXLINK_WHERE], [
+  OCAML_CC_SAVE_VARIABLES
+
+  AC_MSG_CHECKING([if "$1 -where" includes flexdll.h])
+  flexlink_where="$($1 -where | tr -d '\r')"
+  CPPFLAGS="$CPPFLAGS -I \"$flexlink_where\""
+  cat > conftest.c <<"EOF"
+#include <flexdll.h>
+int main (void) {return 0;}
+EOF
+  cat > conftest.Makefile <<EOF
+all:
+	$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.c $LIBS
+EOF
+  AS_IF([make -f conftest.Makefile >/dev/null 2>/dev/null],
+    [have_flexdll_h=yes
+    AC_MSG_RESULT([yes])],
+    [AC_MSG_RESULT([no])])
+
+  OCAML_CC_RESTORE_VARIABLES
+])
+
+AC_DEFUN([OCAML_HOST_IS_EXECUTABLE], [
+  AC_MSG_CHECKING([whether host executables can be run in the build])
+  old_cross_compiling="$cross_compiling"
+  cross_compiling='no'
+  AC_RUN_IFELSE(
+    [AC_LANG_SOURCE([[int main (void) {return 0;}]])],
+    [AC_MSG_RESULT([yes])
+    host_runnable=true],
+    [AC_MSG_RESULT([no])
+    host_runnable=false],
+    # autoconf displays a warning if this parameter is missing, but
+    # cross-compilation mode was disabled above.
+    [assert=false])
+  cross_compiling="$old_cross_compiling"
+])
+
+# This is AC_RUN_IFELSE but taking $host_runnable into account (i.e. if the
+# program can be run, then it is run)
+AC_DEFUN([OCAML_RUN_IFELSE], [
+  old_cross_compiling="$cross_compiling"
+  AS_IF([test "x$host_runnable" = 'xtrue'], [cross_compiling='no'])
+  AC_RUN_IFELSE([$1],[$2],[$3],[$4])
+  cross_compiling="$old_cross_compiling"
+])
+
+AC_DEFUN([OCAML_C99_CHECK_ROUND], [
+  AC_MSG_CHECKING([whether round works])
+  OCAML_RUN_IFELSE(
+    [AC_LANG_SOURCE([[
+#include <math.h>
+int main (void) {
+  static volatile double d = 0.49999999999999994449;
+  return (fpclassify(round(d)) != FP_ZERO);
+}
+    ]])],
+    [AC_MSG_RESULT([yes])
+    AC_DEFINE([HAS_WORKING_ROUND])],
+    [AC_MSG_RESULT([no])
+    AS_CASE([$enable_imprecise_c99_float_ops,$target],
+      [no,*], [hard_error=true],
+      [yes,*], [hard_error=false],
+      [*,x86_64-w64-mingw32], [hard_error=false],
+      [hard_error=true])
+    AS_IF([test x"$hard_error" = "xtrue"],
+      [AC_MSG_ERROR(m4_normalize([
+        round does not work, enable emulation with
+        --enable-imprecise-c99-float-ops]))],
+      [AC_MSG_WARN(m4_normalize([
+        round does not work; emulation enabled]))])],
+    [AS_CASE([$target],
+      [x86_64-w64-mingw32],[AC_MSG_RESULT([cross-compiling; assume not])],
+      [AC_MSG_RESULT([cross-compiling; assume yes])
+      AC_DEFINE([HAS_WORKING_ROUND])])])
+])
+
+AC_DEFUN([OCAML_C99_CHECK_FMA], [
+  AC_MSG_CHECKING([whether fma works])
+  OCAML_RUN_IFELSE(
+    [AC_LANG_SOURCE([[
+#include <math.h>
+int main (void) {
+  /* Tests 264-266 from testsuite/tests/fma/fma.ml. These tests trigger the
+     broken implementations of Cygwin64, mingw-w64 (x86_64) and VS2013-2017.
+     The static volatile variables aim to thwart GCC's constant folding. */
+  static volatile double x, y, z;
+  double t264, t265, t266;
+  x = 0x3.bd5b7dde5fddap-496;
+  y = 0x3.bd5b7dde5fddap-496;
+  z = -0xd.fc352bc352bap-992;
+  t264 = fma(x, y, z);
+  x = 0x3.bd5b7dde5fddap-504;
+  y = 0x3.bd5b7dde5fddap-504;
+  z = -0xd.fc352bc352bap-1008;
+  t265 = fma(x, y, z);
+  x = 0x8p-540;
+  y = 0x4p-540;
+  z = 0x4p-1076;
+  t266 = fma(x, y, z);
+  return (!(t264 == 0x1.0989687cp-1044 ||
+            t264 == 0x0.000004277ca1fp-1022 || /* Acceptable emulated values */
+            t264 == 0x0.00000428p-1022)
+       || !(t265 == 0x1.0988p-1060 ||
+            t265 == 0x0.0000000004278p-1022 ||  /* Acceptable emulated values */
+            t265 == 0x0.000000000428p-1022)
+       || !(t266 == 0x8p-1076));
+}
+    ]])],
+    [AC_MSG_RESULT([yes])
+    AC_DEFINE([HAS_WORKING_FMA])],
+    [AC_MSG_RESULT([no])
+    AS_CASE([$enable_imprecise_c99_float_ops,$target],
+      [no,*], [hard_error=true],
+      [yes,*], [hard_error=false],
+      [*,x86_64-w64-mingw32|*,x86_64-*-cygwin*], [hard_error=false],
+      [AS_CASE([$ocaml_cv_cc_vendor],
+        [msvc-*], [AS_IF([test "${ocaml_cv_cc_vendor#msvc-}" -lt 1920 ],
+          [hard_error=false],
+          [hard_error=true])],
+        [hard_error=true])])
+    AS_IF([test x"$hard_error" = "xtrue"],
+      [AC_MSG_ERROR(m4_normalize([
+        fma does not work, enable emulation with
+        --enable-imprecise-c99-float-ops]))],
+      [AC_MSG_WARN(m4_normalize([
+        fma does not work; emulation enabled]))])],
+    [AS_CASE([$target],
+      [x86_64-w64-mingw32|x86_64-*-cygwin*],
+        [AC_MSG_RESULT([cross-compiling; assume not])],
+      [AC_MSG_RESULT([cross-compiling; assume yes])
+      AC_DEFINE([HAS_WORKING_FMA])])])
 ])

@@ -21,7 +21,7 @@
 type ('a, 'b) t =
   { mutable size: int;                        (* number of entries *)
     mutable data: ('a, 'b) bucketlist array;  (* the buckets *)
-    mutable seed: int;                        (* for randomization *)
+    seed: int;                        (* for randomization *)
     mutable initial_size: int;                (* initial array size *)
   }
 
@@ -236,7 +236,7 @@ let rec bucket_length accu = function
 
 let stats h =
   let mbl =
-    Array.fold_left (fun m b -> max m (bucket_length 0 b)) 0 h.data in
+    Array.fold_left (fun m b -> Int.max m (bucket_length 0 b)) 0 h.data in
   let histo = Array.make (mbl + 1) 0 in
   Array.iter
     (fun b ->

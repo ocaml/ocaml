@@ -37,7 +37,6 @@ type var_info =
     linear_let_bound_vars : V.Set.t;
     assigned : V.Set.t;
     closure_environment : V.Set.t;
-    let_bound_vars_that_can_be_moved : V.Set.t;
   }
 
 let ignore_uconstant (_ : Clambda.uconstant) = ()
@@ -244,7 +243,6 @@ let make_var_info (clam : Clambda.ulambda) : var_info =
   in
   { used_let_bound_vars; linear_let_bound_vars; assigned;
     closure_environment = !environment_vars;
-    let_bound_vars_that_can_be_moved = V.Set.empty;
   }
 
 (* When sequences of [let]-bindings match the evaluation order in a subsequent

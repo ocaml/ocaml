@@ -143,9 +143,11 @@ let load_file = Topeval.load_file false
 
 (* Load commands from a file *)
 
-let dir_use ppf name = ignore(Toploop.use_file ppf name)
+let dir_use ppf name =
+  ignore (Toploop.use_input ppf (Toploop.File name))
 let dir_use_output ppf name = ignore(Toploop.use_output ppf name)
-let dir_mod_use ppf name = ignore(Toploop.mod_use_file ppf name)
+let dir_mod_use ppf name =
+  ignore (Toploop.mod_use_input ppf (Toploop.File name))
 
 let _ = add_directive "use" (Directive_string (dir_use std_out))
     {
@@ -169,6 +171,8 @@ let _ = add_directive "mod_use" (Directive_string (dir_mod_use std_out))
 
 (* Install, remove a printer *)
 
+exception Bad_printing_function
+
 let filter_arrow ty =
   let ty = Ctype.expand_head !toplevel_env ty in
   match ty.desc with
@@ -177,10 +181,10 @@ let filter_arrow ty =
 
 let rec extract_last_arrow desc =
   match filter_arrow desc with
-  | None -> raise (Ctype.Unify [])
+  | None -> raise Bad_printing_function
   | Some (_, r as res) ->
       try extract_last_arrow r
-      with Ctype.Unify _ -> res
+      with Bad_printing_function -> res
 
 let extract_target_type ty = fst (extract_last_arrow ty)
 let extract_target_parameters ty =
@@ -209,9 +213,13 @@ let printer_type ppf typename =
 let match_simple_printer_type desc printer_type =
   Ctype.begin_def();
   let ty_arg = Ctype.newvar() in
-  Ctype.unify !toplevel_env
-    (Ctype.newconstr printer_type [ty_arg])
-    (Ctype.instance desc.val_type);
+  begin try
+    Ctype.unify !toplevel_env
+      (Ctype.newconstr printer_type [ty_arg])
+      (Ctype.instance desc.val_type);
+  with Ctype.Unify _ ->
+    raise Bad_printing_function
+  end;
   Ctype.end_def();
   Ctype.generalize ty_arg;
   (ty_arg, None)
@@ -227,13 +235,17 @@ let match_generic_printer_type desc path args printer_type =
       (fun ty_arg ty -> Ctype.newty (Tarrow (Asttypes.Nolabel, ty_arg, ty,
                                              Cunknown)))
       ty_args (Ctype.newconstr printer_type [ty_target]) in
-  Ctype.unify !toplevel_env
-    ty_expected
-    (Ctype.instance desc.val_type);
+  begin try
+    Ctype.unify !toplevel_env
+      ty_expected
+      (Ctype.instance desc.val_type);
+  with Ctype.Unify _ ->
+    raise Bad_printing_function
+  end;
   Ctype.end_def();
   Ctype.generalize ty_expected;
   if not (Ctype.all_distinct_vars !toplevel_env args) then
-    raise (Ctype.Unify []);
+    raise Bad_printing_function;
   (ty_expected, Some (path, ty_args))
 
 let match_printer_type ppf desc =
@@ -241,10 +253,10 @@ let match_printer_type ppf desc =
   let printer_type_old = printer_type ppf "printer_type_old" in
   try
     (match_simple_printer_type desc printer_type_new, false)
-  with Ctype.Unify _ ->
+  with Bad_printing_function ->
     try
       (match_simple_printer_type desc printer_type_old, true)
-    with Ctype.Unify _ as exn ->
+    with Bad_printing_function as exn ->
       match extract_target_parameters desc.val_type with
       | None -> raise exn
       | Some (path, args) ->
@@ -256,8 +268,8 @@ let find_printer_type ppf lid =
   | (path, desc) -> begin
     match match_printer_type ppf desc with
     | (ty_arg, is_old_style) -> (ty_arg, path, is_old_style)
-    | exception Ctype.Unify _ ->
-      fprintf ppf "%a has a wrong type for a printing function.@."
+    | exception Bad_printing_function ->
+      fprintf ppf "%a has the wrong type for a printing function.@."
       Printtyp.longident lid;
       raise Exit
   end
@@ -318,7 +330,7 @@ let _ = add_directive "remove_printer"
     }
 
 let parse_warnings ppf iserr s =
-  try Warnings.parse_options iserr s
+  try Option.iter Location.(prerr_alert none) @@ Warnings.parse_options iserr s
   with Arg.Bad err -> fprintf ppf "%s.@." err
 
 (* Typing information *)
@@ -384,11 +396,40 @@ let () =
     )
     "Print the signature of the corresponding value."
 
+let is_nonrec_type id td =
+  (* We track both recursive uses of t (`type t = X of t`) and
+     nonrecursive uses (`type nonrec t = t`) to only print the nonrec keyword
+     when it is necessary to make the type printable.
+  *)
+  let recursive_use = ref false in
+  let nonrecursive_use = ref false in
+  let it_path = function
+    | Path.Pident id' when Ident.name id' = Ident.name id ->
+        if Ident.same id id' then
+          recursive_use := true
+        else
+          nonrecursive_use:= true
+    | _ -> ()
+  in
+  let it =  Btype.{type_iterators with it_path } in
+  let () =
+    it.it_type_declaration it td;
+    Btype.unmark_iterators.it_type_declaration Btype.unmark_iterators td
+  in
+  match !recursive_use, !nonrecursive_use with
+  | false, true -> Trec_not
+  | true, _ | _, false -> Trec_first
+    (* note: true, true is possible *)
+
 let () =
   reg_show_prim "show_type"
     (fun env loc id lid ->
-       let _path, desc = Env.lookup_type ~loc lid env in
-       [ Sig_type (id, desc, Trec_not, Exported) ]
+       let path, desc = Env.lookup_type ~loc lid env in
+       let id, rs = match path with
+         | Pident id -> id, is_nonrec_type id desc
+         | _ -> id, Trec_first
+       in
+       [ Sig_type (id, desc, rs, Exported) ]
     )
     "Print the signature of the corresponding type constructor."
 
@@ -398,7 +439,7 @@ let () =
  * one for exception constructors and another for
  * non-exception constructors (normal and extensible variants). *)
 let is_exception_constructor env type_expr =
-  Ctype.equal env true [type_expr] [Predef.type_exn]
+  Ctype.is_equal env true [type_expr] [Predef.type_exn]
 
 let is_extension_constructor = function
   | Cstr_extension _ -> true
@@ -469,22 +510,42 @@ let () =
     )
     "Print the signature of the corresponding exception."
 
+let is_rec_module id md =
+  let exception Exit in
+  let rec it_path = function
+    | Path.Pdot(root, _ ) -> it_path root
+    | Path.Pident id' -> if (Ident.same id id') then raise Exit
+    | _ -> ()
+  in
+  let it =  Btype.{type_iterators with it_path } in
+  let rs = match it.it_module_declaration it md with
+    | () -> Trec_not
+    | exception Exit -> Trec_first
+  in
+  Btype.unmark_iterators.it_module_declaration Btype.unmark_iterators md;
+  rs
+
+
 let () =
   reg_show_prim "show_module"
     (fun env loc id lid ->
+       let path, md = Env.lookup_module ~loc lid env in
+       let id = match path with
+         | Pident id -> id
+         | _ -> id
+       in
        let rec accum_aliases md acc =
-         let acc =
+         let acc rs =
            Sig_module (id, Mp_present,
                        {md with md_type = trim_signature md.md_type},
-                       Trec_not, Exported) :: acc in
+                       rs, Exported) :: acc in
          match md.md_type with
          | Mty_alias path ->
              let md = Env.find_module path env in
-             accum_aliases md acc
+             accum_aliases md (acc Trec_not)
          | Mty_ident _ | Mty_signature _ | Mty_functor _ ->
-             List.rev acc
+             List.rev (acc (is_rec_module id md))
        in
-       let _, md = Env.lookup_module ~loc lid env in
        accum_aliases md []
     )
     "Print the signature of the corresponding module."

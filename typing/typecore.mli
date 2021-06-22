@@ -68,6 +68,17 @@ type wrong_name = {
   valid_names: string list;
 }
 
+type wrong_kind_context =
+  | Pattern
+  | Expression of type_forcing_context option
+
+type wrong_kind_sort =
+  | Constructor
+  | Record
+  | Boolean
+  | List
+  | Unit
+
 type existential_restriction =
   | At_toplevel (** no existential types at the toplevel *)
   | In_group (** nor with [let ... and ...] *)
@@ -127,14 +138,15 @@ val self_coercion : (Path.t * Location.t list ref) list ref
 
 type error =
   | Constructor_arity_mismatch of Longident.t * int * int
-  | Label_mismatch of Longident.t * Ctype.Unification_trace.t
+  | Label_mismatch of Longident.t * Errortrace.unification_error
   | Pattern_type_clash :
-      Ctype.Unification_trace.t * _ Typedtree.pattern_desc option -> error
-  | Or_pattern_type_clash of Ident.t * Ctype.Unification_trace.t
+      Errortrace.unification_error * _ Typedtree.pattern_desc option
+      -> error
+  | Or_pattern_type_clash of Ident.t * Errortrace.unification_error
   | Multiply_bound_variable of string
   | Orpat_vars of Ident.t * Ident.t list
   | Expr_type_clash of
-      Ctype.Unification_trace.t * type_forcing_context option
+      Errortrace.unification_error * type_forcing_context option
       * Typedtree.expression_desc option
   | Apply_non_function of type_expr
   | Apply_wrong_label of arg_label * type_expr * bool
@@ -145,6 +157,7 @@ type error =
   | Name_type_mismatch of
       Datatype_kind.t * Longident.t * (Path.t * Path.t) * (Path.t * Path.t) list
   | Invalid_format of string
+  | Not_an_object of type_expr * type_forcing_context option
   | Undefined_method of type_expr * string * string list option
   | Undefined_inherited_method of string * string list
   | Virtual_class of Longident.t
@@ -153,17 +166,23 @@ type error =
   | Private_constructor of constructor_description * type_expr
   | Unbound_instance_variable of string * string list
   | Instance_variable_not_mutable of string
-  | Not_subtype of Ctype.Unification_trace.t * Ctype.Unification_trace.t
+  | Not_subtype of Errortrace.Subtype.error
   | Outside_class
   | Value_multiply_overridden of string
   | Coercion_failure of
-      type_expr * type_expr * Ctype.Unification_trace.t * bool
-  | Too_many_arguments of bool * type_expr * type_forcing_context option
-  | Abstract_wrong_label of arg_label * type_expr * type_forcing_context option
+      Errortrace.expanded_type * Errortrace.unification_error * bool
+  | Not_a_function of type_expr * type_forcing_context option
+  | Too_many_arguments of type_expr * type_forcing_context option
+  | Abstract_wrong_label of
+      { got           : arg_label
+      ; expected      : arg_label
+      ; expected_type : type_expr
+      ; explanation   : type_forcing_context option
+      }
   | Scoping_let_module of string * type_expr
-  | Not_a_variant_type of Longident.t
+  | Not_a_polymorphic_variant_type of Longident.t
   | Incoherent_label_order
-  | Less_general of string * Ctype.Unification_trace.t
+  | Less_general of string * Errortrace.unification_error
   | Modules_not_allowed
   | Cannot_infer_signature
   | Not_a_packed_module of type_expr
@@ -183,11 +202,13 @@ type error =
   | Illegal_letrec_pat
   | Illegal_letrec_expr
   | Illegal_class_expr
-  | Letop_type_clash of string * Ctype.Unification_trace.t
-  | Andop_type_clash of string * Ctype.Unification_trace.t
-  | Bindings_type_clash of Ctype.Unification_trace.t
+  | Letop_type_clash of string * Errortrace.unification_error
+  | Andop_type_clash of string * Errortrace.unification_error
+  | Bindings_type_clash of Errortrace.unification_error
   | Unbound_existential of Ident.t list * type_expr
   | Missing_type_constraint
+  | Wrong_expected_kind of wrong_kind_sort * wrong_kind_context * type_expr
+  | Expr_not_a_record_type of type_expr
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -212,12 +233,8 @@ val type_object:
   (Env.t -> Location.t -> Parsetree.class_structure ->
    Typedtree.class_structure * Types.class_signature * string list) ref
 val type_package:
-  (Env.t -> Parsetree.module_expr -> Path.t -> Longident.t list ->
-  Typedtree.module_expr * type_expr list) ref
-
-val create_package_type : Location.t -> Env.t ->
-  Longident.t * (Longident.t * Parsetree.core_type) list ->
-  Path.t * (Longident.t * Typedtree.core_type) list * Types.type_expr
+  (Env.t -> Parsetree.module_expr -> Path.t -> (Longident.t * type_expr) list ->
+  Typedtree.module_expr * (Longident.t * type_expr) list) ref
 
 val constant: Parsetree.constant -> (Asttypes.constant, error) result
 

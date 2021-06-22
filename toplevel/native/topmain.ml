@@ -13,9 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-let usage = "Usage: ocamlnat <options> <object-files> [script-file]\n\
-             options are:"
-
 let preload_objects = ref []
 
 (* Position of the first non expanded argument *)
@@ -51,12 +48,13 @@ let prepare ppf =
       Format.fprintf ppf "Uncaught exception: %s\n" (Printexc.to_string x);
       false
 
-let file_argument name =
+let input_argument name =
+  let filename = Toploop.filename_of_input name in
   let ppf = Format.err_formatter in
-  if Filename.check_suffix name ".cmxs"
-    || Filename.check_suffix name ".cmx"
-    || Filename.check_suffix name ".cmxa"
-  then preload_objects := name :: !preload_objects
+  if Filename.check_suffix filename ".cmxs"
+    || Filename.check_suffix filename ".cmx"
+    || Filename.check_suffix filename ".cmxa"
+  then preload_objects := filename :: !preload_objects
   else if is_expanded !current then begin
     (* Script files are not allowed in expand options because otherwise the
        check in override arguments may fail since the new argv can be larger
@@ -64,7 +62,7 @@ let file_argument name =
     *)
     Printf.eprintf "For implementation reasons, the toplevel does not support\
     \ having script files (here %S) inside expanded arguments passed through\
-    \ the -args{,0} command-line option.\n" name;
+    \ the -args{,0} command-line option.\n" filename;
     raise (Compenv.Exit_with_status 2)
   end else begin
     let newargs = Array.sub !argv !Arg.current
@@ -76,6 +74,8 @@ let file_argument name =
       else raise (Compenv.Exit_with_status 2)
     end
 
+let file_argument x = input_argument (Toploop.File x)
+
 let wrap_expand f s =
   let start = !current in
   let arr = f s in
@@ -84,10 +84,12 @@ let wrap_expand f s =
 
 module Options = Main_args.Make_opttop_options (struct
     include Main_args.Default.Opttopmain
-    let _stdin () = file_argument ""
+    let _stdin () = input_argument Toploop.Stdin
     let _args = wrap_expand Arg.read_arg
     let _args0 = wrap_expand Arg.read_arg0
     let anonymous s = file_argument s
+    let _eval s = input_argument (Toploop.String s)
+
 end);;
 
 let () =
@@ -99,17 +101,12 @@ let () =
   Clflags.include_dirs := List.rev_append extra_paths !Clflags.include_dirs
 
 let main () =
+  let ppf = Format.err_formatter in
   Clflags.native_code := true;
-  let list = ref Options.list in
-  begin
-    try
-      Arg.parse_and_expand_argv_dynamic current argv list file_argument usage;
-    with
-    | Arg.Bad msg -> Format.fprintf Format.err_formatter "%s%!" msg;
-                     raise (Compenv.Exit_with_status 2)
-    | Arg.Help msg -> Format.fprintf Format.std_formatter "%s%!" msg;
-                      raise (Compenv.Exit_with_status 0)
-  end;
+  let program = "ocamlnat" in
+  Compenv.readenv ppf Before_args;
+  Clflags.add_arguments __LOC__ Options.list;
+  Compenv.parse_arguments ~current argv file_argument program;
   Compmisc.read_clflags_from_env ();
   if not (prepare Format.err_formatter) then raise (Compenv.Exit_with_status 2);
   Compmisc.init_path ();

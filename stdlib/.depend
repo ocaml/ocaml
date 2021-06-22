@@ -3,6 +3,7 @@ stdlib__Arg.cmo : arg.ml \
     stdlib__String.cmi \
     stdlib__Printf.cmi \
     stdlib__List.cmi \
+    stdlib__Int.cmi \
     stdlib__Buffer.cmi \
     stdlib__Array.cmi \
     stdlib__Arg.cmi
@@ -11,6 +12,7 @@ stdlib__Arg.cmx : arg.ml \
     stdlib__String.cmx \
     stdlib__Printf.cmx \
     stdlib__List.cmx \
+    stdlib__Int.cmx \
     stdlib__Buffer.cmx \
     stdlib__Array.cmx \
     stdlib__Arg.cmi
@@ -80,12 +82,14 @@ stdlib__Bytes.cmo : bytes.ml \
     stdlib__Sys.cmi \
     stdlib.cmi \
     stdlib__Seq.cmi \
+    stdlib__Int.cmi \
     stdlib__Char.cmi \
     stdlib__Bytes.cmi
 stdlib__Bytes.cmx : bytes.ml \
     stdlib__Sys.cmx \
     stdlib.cmx \
     stdlib__Seq.cmx \
+    stdlib__Int.cmx \
     stdlib__Char.cmx \
     stdlib__Bytes.cmi
 stdlib__Bytes.cmi : bytes.mli \
@@ -146,16 +150,14 @@ camlinternalLazy.cmx : \
     camlinternalLazy.cmi
 camlinternalLazy.cmi :
 camlinternalMod.cmo : \
-    stdlib__Sys.cmi \
     stdlib__Obj.cmi \
-    stdlib__Nativeint.cmi \
+    stdlib__Lazy.cmi \
     camlinternalOO.cmi \
     stdlib__Array.cmi \
     camlinternalMod.cmi
 camlinternalMod.cmx : \
-    stdlib__Sys.cmx \
     stdlib__Obj.cmx \
-    stdlib__Nativeint.cmx \
+    stdlib__Lazy.cmx \
     camlinternalOO.cmx \
     stdlib__Array.cmx \
     camlinternalMod.cmi
@@ -213,6 +215,7 @@ stdlib__Ephemeron.cmo : ephemeron.ml \
     stdlib__Random.cmi \
     stdlib__Obj.cmi \
     stdlib__Lazy.cmi \
+    stdlib__Int.cmi \
     stdlib__Hashtbl.cmi \
     stdlib__Array.cmi \
     stdlib__Ephemeron.cmi
@@ -222,6 +225,7 @@ stdlib__Ephemeron.cmx : ephemeron.ml \
     stdlib__Random.cmx \
     stdlib__Obj.cmx \
     stdlib__Lazy.cmx \
+    stdlib__Int.cmx \
     stdlib__Hashtbl.cmx \
     stdlib__Array.cmx \
     stdlib__Ephemeron.cmi
@@ -269,8 +273,10 @@ stdlib__Format.cmo : format.ml \
     stdlib__Queue.cmi \
     stdlib__List.cmi \
     stdlib__Int.cmi \
+    stdlib__Either.cmi \
     camlinternalFormatBasics.cmi \
     camlinternalFormat.cmi \
+    stdlib__Bytes.cmi \
     stdlib__Buffer.cmi \
     stdlib__Format.cmi
 stdlib__Format.cmx : format.ml \
@@ -281,13 +287,16 @@ stdlib__Format.cmx : format.ml \
     stdlib__Queue.cmx \
     stdlib__List.cmx \
     stdlib__Int.cmx \
+    stdlib__Either.cmx \
     camlinternalFormatBasics.cmx \
     camlinternalFormat.cmx \
+    stdlib__Bytes.cmx \
     stdlib__Buffer.cmx \
     stdlib__Format.cmi
 stdlib__Format.cmi : format.mli \
     stdlib.cmi \
     stdlib__Seq.cmi \
+    stdlib__Either.cmi \
     stdlib__Buffer.cmi
 stdlib__Fun.cmo : fun.ml \
     stdlib__Printexc.cmi \
@@ -335,6 +344,7 @@ stdlib__Hashtbl.cmo : hashtbl.ml \
     stdlib__Random.cmi \
     stdlib__Obj.cmi \
     stdlib__Lazy.cmi \
+    stdlib__Int.cmi \
     stdlib__Array.cmi \
     stdlib__Hashtbl.cmi
 stdlib__Hashtbl.cmx : hashtbl.ml \
@@ -344,6 +354,7 @@ stdlib__Hashtbl.cmx : hashtbl.ml \
     stdlib__Random.cmx \
     stdlib__Obj.cmx \
     stdlib__Lazy.cmx \
+    stdlib__Int.cmx \
     stdlib__Array.cmx \
     stdlib__Hashtbl.cmi
 stdlib__Hashtbl.cmi : hashtbl.mli \
@@ -384,12 +395,14 @@ stdlib__Lazy.cmi : lazy.mli \
 stdlib__Lexing.cmo : lexing.ml \
     stdlib__Sys.cmi \
     stdlib__String.cmi \
+    stdlib__Int.cmi \
     stdlib__Bytes.cmi \
     stdlib__Array.cmi \
     stdlib__Lexing.cmi
 stdlib__Lexing.cmx : lexing.ml \
     stdlib__Sys.cmx \
     stdlib__String.cmx \
+    stdlib__Int.cmx \
     stdlib__Bytes.cmx \
     stdlib__Array.cmx \
     stdlib__Lexing.cmi
@@ -578,6 +591,7 @@ stdlib__Scanf.cmo : scanf.ml \
     stdlib.cmi \
     stdlib__Printf.cmi \
     stdlib__List.cmi \
+    stdlib__Int.cmi \
     camlinternalFormatBasics.cmi \
     camlinternalFormat.cmi \
     stdlib__Bytes.cmi \
@@ -588,6 +602,7 @@ stdlib__Scanf.cmx : scanf.ml \
     stdlib.cmx \
     stdlib__Printf.cmx \
     stdlib__List.cmx \
+    stdlib__Int.cmx \
     camlinternalFormatBasics.cmx \
     camlinternalFormat.cmx \
     stdlib__Bytes.cmx \
@@ -692,12 +707,14 @@ stdlib__Unit.cmi : unit.mli
 stdlib__Weak.cmo : weak.ml \
     stdlib__Sys.cmi \
     stdlib__Obj.cmi \
+    stdlib__Int.cmi \
     stdlib__Hashtbl.cmi \
     stdlib__Array.cmi \
     stdlib__Weak.cmi
 stdlib__Weak.cmx : weak.ml \
     stdlib__Sys.cmx \
     stdlib__Obj.cmx \
+    stdlib__Int.cmx \
     stdlib__Hashtbl.cmx \
     stdlib__Array.cmx \
     stdlib__Weak.cmi

@@ -82,3 +82,11 @@ let print_specific_operation printreg op ppf arg =
   | Imultsubf true ->
       fprintf ppf "-f (%a *f %a -f %a)"
         printreg arg.(0) printreg arg.(1) printreg arg.(2)
+
+(* Specific operations that are pure *)
+
+let operation_is_pure _ = true
+
+(* Specific operations that can raise *)
+
+let operation_can_raise _ = false

@@ -42,9 +42,11 @@ Error: Signature mismatch:
          }
        Fields do not match:
          f0 : unit * unit * unit * float * unit * unit * unit;
-       is not compatible with:
+       is not the same as:
          f0 : unit * unit * unit * int * unit * unit * unit;
-       The types are not equal.
+       The type unit * unit * unit * float * unit * unit * unit
+       is not equal to the type unit * unit * unit * int * unit * unit * unit
+       Type float is not equal to type int
 |}];;
 
 
@@ -88,7 +90,7 @@ Error: Signature mismatch:
          }
        Fields do not match:
          f0 : unit * unit * unit * float * unit * unit * unit;
-       is not compatible with:
+       is not the same as:
          mutable f0 : unit * unit * unit * int * unit * unit * unit;
        The second is mutable and the first is not.
 |}];;

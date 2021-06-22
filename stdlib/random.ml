@@ -49,7 +49,7 @@ module State = struct
       s.st.(i) <- i;
     done;
     let accu = ref "x" in
-    for i = 0 to 54 + max 55 l do
+    for i = 0 to 54 + Int.max 55 l do
       let j = i mod 55 in
       let k = i mod l in
       accu := combine !accu seed.(k);
@@ -92,6 +92,39 @@ module State = struct
     if bound > 0x3FFFFFFF || bound <= 0
     then invalid_arg "Random.int"
     else intaux s bound
+
+  let rec int63aux s n =
+    let max_int_32 = (1 lsl 30) + 0x3FFFFFFF in (* 0x7FFFFFFF *)
+    let b1 = bits s in
+    let b2 = bits s in
+    let (r, max_int) =
+      if n <= max_int_32 then
+        (* 31 random bits on both 64-bit OCaml and JavaScript.
+           Use upper 15 bits of b1 and 16 bits of b2. *)
+        let bpos =
+          (((b2 land 0x3FFFC000) lsl 1) lor (b1 lsr 15))
+        in
+          (bpos, max_int_32)
+      else
+        let b3 = bits s in
+        (* 62 random bits on 64-bit OCaml; unreachable on JavaScript.
+           Use upper 20 bits of b1 and 21 bits of b2 and b3. *)
+        let bpos =
+          ((((b3 land 0x3FFFFE00) lsl 12) lor (b2 lsr 9)) lsl 20)
+            lor (b1 lsr 10)
+        in
+          (bpos, max_int)
+    in
+    let v = r mod n in
+    if r - v > max_int - n + 1 then int63aux s n else v
+
+  let full_int s bound =
+    if bound <= 0 then
+      invalid_arg "Random.full_int"
+    else if bound > 0x3FFFFFFF then
+      int63aux s bound
+    else
+      intaux s bound
 
 
   let rec int32aux s n =
@@ -165,6 +198,7 @@ let default = {
 
 let bits () = State.bits default
 let int bound = State.int default bound
+let full_int bound = State.full_int default bound
 let int32 bound = State.int32 default bound
 let nativeint bound = State.nativeint default bound
 let int64 bound = State.int64 default bound

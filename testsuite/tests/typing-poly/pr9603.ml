@@ -29,8 +29,5 @@ Error: This expression has type
          < m : 'left 'right. < left : 'left; right : 'right > pair >
        but an expression was expected of type
          < m : 'left 'right. < left : 'left; right : 'right > pair >
-       Type < left : 'left; right : 'right > pair = 'a * 'b
-       is not compatible with type < left : 'left0; right : 'right0 > pair
-       The method left has type 'a, but the expected method type was 'left
-       The universal variable 'left would escape its scope
+       Types for method m are incompatible
 |}]

@@ -391,7 +391,7 @@ Line 5, characters 28-29:
 5 |   let f = function A -> 1 | B -> 2
                                 ^
 Error: This variant pattern is expected to have type a
-       The constructor B does not belong to type a
+       There is no constructor B within type a
 |}];;
 
 module PR6849 = struct
@@ -1096,6 +1096,14 @@ Line 3, characters 2-26:
 Error: This expression has type < bar : int; foo : int; .. >
        but an expression was expected of type 'a
        The type constructor $1 would escape its scope
+|}, Principal{|
+Line 3, characters 2-26:
+3 |   (x:<foo:int;bar:int;..>)
+      ^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This expression has type < bar : int; foo : int; .. >
+       but an expression was expected of type 'a
+       This instance of $1 is ambiguous:
+       it would escape the scope of its equation
 |}];;
 
 let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) : t =
@@ -1112,6 +1120,13 @@ let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) =
 ;;
 [%%expect{|
 val g : 't -> 't int_foo -> 't int_bar -> 't * int * int = <fun>
+|}, Principal{|
+Line 3, characters 5-10:
+3 |   x, x#foo, x#bar
+         ^^^^^
+Error: This expression has type int but an expression was expected of type 'a
+       This instance of int is ambiguous:
+       it would escape the scope of its equation
 |}];;
 
 (* PR#5554 *)
@@ -1231,3 +1246,136 @@ Error: This expression has type a = int
        This instance of int is ambiguous:
        it would escape the scope of its equation
 |}];;
+
+module M = struct
+  type t
+end
+type (_,_) eq = Refl: ('a,'a) eq
+let f (x:M.t) (y: (M.t, int -> int) eq) =
+  let Refl = y in
+  if true then x else fun x -> x + 1
+[%%expect{|
+module M : sig type t end
+type (_, _) eq = Refl : ('a, 'a) eq
+Line 7, characters 22-36:
+7 |   if true then x else fun x -> x + 1
+                          ^^^^^^^^^^^^^^
+Error: This expression has type 'a -> 'b
+       but an expression was expected of type M.t = int -> int
+       This instance of int -> int is ambiguous:
+       it would escape the scope of its equation
+|}]
+
+(* Check got/expected when the order changes *)
+module M = struct
+  type t
+end
+type (_,_) eq = Refl: ('a,'a) eq
+let f (x:M.t) (y: (M.t, int -> int) eq) =
+  let Refl = y in
+  if true then fun x -> x + 1 else x
+[%%expect{|
+module M : sig type t end
+type (_, _) eq = Refl : ('a, 'a) eq
+Line 7, characters 35-36:
+7 |   if true then fun x -> x + 1 else x
+                                       ^
+Error: This expression has type M.t = int -> int
+       but an expression was expected of type int -> int
+       This instance of int -> int is ambiguous:
+       it would escape the scope of its equation
+|}]
+
+module M = struct
+  type t
+end
+type (_,_) eq = Refl: ('a,'a) eq
+let f w (x:M.t) (y: (M.t, <m:int>) eq) =
+  let Refl = y in
+  let z = if true then x else w in
+  z#m
+[%%expect{|
+module M : sig type t end
+type (_, _) eq = Refl : ('a, 'a) eq
+Line 8, characters 2-3:
+8 |   z#m
+      ^
+Error: This expression has type M.t but an expression was expected of type
+         < m : 'a; .. >
+       This instance of < m : int > is ambiguous:
+       it would escape the scope of its equation
+|}]
+
+(* Check got/expected when the order changes *)
+module M = struct
+  type t
+end
+type (_,_) eq = Refl: ('a,'a) eq
+let f w (x:M.t) (y: (M.t, <m:int>) eq) =
+  let Refl = y in
+  let z = if true then w else x in
+  z#m
+[%%expect{|
+module M : sig type t end
+type (_, _) eq = Refl : ('a, 'a) eq
+Line 8, characters 2-3:
+8 |   z#m
+      ^
+Error: This expression has type M.t but an expression was expected of type
+         < m : 'a; .. >
+       This instance of < m : int > is ambiguous:
+       it would escape the scope of its equation
+|}]
+
+type (_,_) eq = Refl: ('a,'a) eq
+module M = struct
+  type t = C : (<m:int; ..> as 'a) * ('a, <m:int; b:bool>) eq -> t
+end
+let f (C (x,y) : M.t) =
+  let g w =
+    let Refl = y in
+    let z = if true then w else x in
+    z#b
+  in ()
+[%%expect{|
+type (_, _) eq = Refl : ('a, 'a) eq
+module M :
+  sig
+    type t =
+        C : (< m : int; .. > as 'a) * ('a, < b : bool; m : int >) eq -> t
+  end
+Line 9, characters 4-5:
+9 |     z#b
+        ^
+Error: This expression has type $C_'a = < b : bool >
+       but an expression was expected of type < b : 'a; .. >
+       This instance of < b : bool > is ambiguous:
+       it would escape the scope of its equation
+|}]
+
+(* Check got/expected when the order changes *)
+type (_,_) eq = Refl: ('a,'a) eq
+module M = struct
+  type t = C : (<m:int; ..> as 'a) * ('a, <m:int; b:bool>) eq -> t
+end
+let f (C (x,y) : M.t) =
+  let g w =
+    let Refl = y in
+    let z = if true then x else w in
+    z#b
+  in ()
+[%%expect{|
+type (_, _) eq = Refl : ('a, 'a) eq
+module M :
+  sig
+    type t =
+        C : (< m : int; .. > as 'a) * ('a, < b : bool; m : int >) eq -> t
+  end
+Line 9, characters 4-5:
+9 |     z#b
+        ^
+Error: This expression has type $C_'a = < b : bool >
+       but an expression was expected of type < b : 'a; .. >
+       This instance of < b : bool > is ambiguous:
+       it would escape the scope of its equation
+|}]

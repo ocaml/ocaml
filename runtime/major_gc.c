@@ -56,6 +56,7 @@ struct mark_stack {
 };
 
 uintnat caml_percent_free;
+static uintnat marked_words, heap_wsz_at_cycle_start;
 uintnat caml_major_heap_increment;
 CAMLexport char *caml_heap_start;
 char *caml_gc_sweep_hp;
@@ -304,6 +305,7 @@ void caml_darken (value v, value *p)
     if (Is_white_hd (h)){
       ephe_list_pure = 0;
       Hd_val (v) = Blackhd_hd (h);
+      marked_words += Whsize_hd (h);
       if (t < No_scan_tag){
         mark_stack_push(Caml_state->mark_stack, v, 0, NULL);
       }
@@ -380,8 +382,10 @@ static void start_cycle (void)
   CAMLassert (Caml_state->mark_stack->count == 0);
   CAMLassert (redarken_first_chunk == NULL);
   caml_gc_message (0x01, "Starting new major GC cycle\n");
+  marked_words = 0;
   caml_darken_all_roots_start ();
   caml_gc_phase = Phase_mark;
+  heap_wsz_at_cycle_start = Caml_state->stat_heap_wsz;
   caml_gc_subphase = Subphase_mark_roots;
   ephe_list_pure = 1;
   ephes_checked_if_pure = &caml_ephe_list_head;
@@ -459,7 +463,7 @@ Caml_inline void mark_slice_darken(struct mark_stack* stk, value v, mlsize_t i,
       if( Tag_hd(chd) < No_scan_tag ) {
         mark_stack_push(stk, child, 0, work);
       } else {
-        *work -= 1; /* Account for header */
+        *work -= Whsize_hd (chd);
       }
     }
   }
@@ -538,7 +542,7 @@ static void mark_ephe_aux (struct mark_stack *stk, intnat *work,
       ephes_to_check = &Field(v,CAML_EPHE_LINK_OFFSET);
       return;
     }
-  } else {  /* a simily weak pointer or an already alive data */
+  } else {  /* a similarly weak pointer or an already alive data */
     *work -= 1;
   }
 
@@ -571,6 +575,7 @@ static void mark_slice (intnat work)
   caml_gc_message (0x40, "Marking %"ARCH_INTNAT_PRINTF_FORMAT"d words\n", work);
   caml_gc_message (0x40, "Subphase = %d\n", caml_gc_subphase);
 
+  marked_words += work;
   while (1){
     int can_mark = 0;
 
@@ -620,7 +625,9 @@ static void mark_slice (intnat work)
       }
     } else if (caml_gc_subphase == Subphase_mark_roots) {
       CAML_EV_BEGIN(EV_MAJOR_MARK_ROOTS);
+      marked_words -= work;
       work = caml_darken_all_roots_slice (work);
+      marked_words += work;
       CAML_EV_END(EV_MAJOR_MARK_ROOTS);
       if (work > 0){
         caml_gc_subphase = Subphase_mark_main;
@@ -659,6 +666,7 @@ static void mark_slice (intnat work)
           /* Initialise the sweep phase. */
           init_sweep_phase();
         }
+        marked_words -= work;
         work = 0;
         CAML_EV_END(EV_MAJOR_MARK_FINAL);
       }
@@ -667,6 +675,7 @@ static void mark_slice (intnat work)
       }
     }
   }
+  marked_words -= work;  /* work may be negative */
   CAML_EV_COUNTER(EV_C_MAJOR_MARK_SLICE_FIELDS, slice_fields);
   CAML_EV_COUNTER(EV_C_MAJOR_MARK_SLICE_POINTERS, slice_pointers);
 }
@@ -945,8 +954,25 @@ void caml_major_collection_slice (intnat howmuch)
   }
 
   if (caml_gc_phase == Phase_idle){
+    double previous_overhead; // overhead at the end of the previous cycle
+
     CAML_EV_BEGIN(EV_MAJOR_CHECK_AND_COMPACT);
-    caml_compact_heap_maybe ();
+    caml_gc_message (0x200, "marked words = %"
+                     ARCH_INTNAT_PRINTF_FORMAT "u words\n",
+                     marked_words);
+    caml_gc_message (0x200, "heap size at start of cycle = %"
+                     ARCH_INTNAT_PRINTF_FORMAT "u words\n",
+                     heap_wsz_at_cycle_start);
+    if (marked_words == 0){
+      previous_overhead = 1000000.;
+      caml_gc_message (0x200, "overhead at start of cycle = +inf\n");
+    }else{
+      previous_overhead =
+        100.0 * (heap_wsz_at_cycle_start - marked_words) / marked_words;
+      caml_gc_message (0x200, "overhead at start of cycle = %.0f%%\n",
+                       previous_overhead);
+    }
+    caml_compact_heap_maybe (previous_overhead);
     CAML_EV_END(EV_MAJOR_CHECK_AND_COMPACT);
   }
 

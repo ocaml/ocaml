@@ -258,7 +258,7 @@
 % Notations pour les metavariables
 \def\nmth#1#2#3{\({#1}_{#2}^{#3}\)}
 \def\optvar#1{[\var{#1}\/]}
-\def\event{§§}
+\def\event{$\bowtie$}
 \def\fromoneto#1#2{$#1 = 1,\ldots{} , #2$}
 
 \newcommand{\vfill}{}
@@ -282,9 +282,22 @@
 
 \newenvironment{linklist}{\begin{links}}{\end{links}}
 
+\ifocamldoc
 \newcommand{\moduleref}[3]{\ahref{#1/#2.html}{#3}}
 \newcommand{\stdmoduleref}[1]{\moduleref{libref}{#1}{\texttt{#1}}}
-
+\else
+\newcommand{\moduleref}[3]{\ahref{#1/#2/index.html}{#3}}
+\newcommand{\stdmoduleref}[1]{\moduleref{libref}{Stdlib/#1}{\texttt{#1}}}
+\fi
 \newcommand{\docitem}[3]{\item \moduleref{#1}{#2}{Module \texttt{#2}}: #3}
-\newcommand{\stddocitem}[2]{\docitem{libref}{#1}{#2}}
+\newcommand{\libdocitem}[2]{\docitem{libref}{#1}{#2}}
 \newcommand{\compilerdocitem}[2]{\docitem{compilerlibref}{#1}{#2}}
+
+%%% Missing macro
+\newcommand{\DeclareUnicodeCharacter}[2]{}
+
+\ifocamldoc
+\newcommand{\stddocitem}[2]{\libdocitem{#1}{#2}}
+\else
+\newcommand{\stddocitem}[2]{\docitem{libref/Stdlib}{#1}{#2}}
+\fi

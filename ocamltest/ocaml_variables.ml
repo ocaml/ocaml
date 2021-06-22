@@ -62,6 +62,9 @@ let caml_ld_library_path =
     ("ld_library_path",
       "List of paths to lookup for loading dynamic libraries")
 
+let codegen_exit_status = make ("codegen_exit_status",
+  "Expected exit status of codegen")
+
 let compare_programs = make ("compare_programs",
   "Set to \"false\" to disable program comparison")
 
@@ -122,6 +125,9 @@ let nativecc_libs = make ("nativecc_libs",
 
 let objext = make ("objext",
   "Extension of object files")
+
+let libext = make ("libext",
+  "Extension of library files")
 
 let asmext = make ("asmext",
   "Extension of assembly files")
@@ -240,6 +246,7 @@ let _ = List.iter register_variable
     bytecc_libs;
     c_preprocessor;
     caml_ld_library_path;
+    codegen_exit_status;
     compare_programs;
     compiler_directory_suffix;
     compiler_reference;
@@ -260,6 +267,7 @@ let _ = List.iter register_variable
     modules;
     nativecc_libs;
     objext;
+    libext;
     asmext;
     ocamlc_byte;
     ocamlopt_byte;

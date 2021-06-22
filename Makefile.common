@@ -34,23 +34,30 @@ INSTALL_LIBDIR := $(DESTDIR)$(LIBDIR)
 INSTALL_STUBLIBDIR := $(DESTDIR)$(STUBLIBDIR)
 INSTALL_MANDIR := $(DESTDIR)$(MANDIR)
 
-ifeq "$(UNIX_OR_WIN32)" "win32"
 FLEXDLL_SUBMODULE_PRESENT := $(wildcard $(ROOTDIR)/flexdll/Makefile)
-else
-FLEXDLL_SUBMODULE_PRESENT =
-endif
+
+# Variables used to represent the OCaml runtime system
+# Most of the time, boot/ocamlrun and runtime/ocamlrun are the same.
+# However, under some circumstances it is important to be able to
+# distinguish one from the other, hence these two variables.
+# Boot/ocamlrun is the most frequently used in the build system, so
+# we use OCAMLRUN to designate it and keep NEW_OCAMLRUN to refer
+# to runtime/ocamlrun, because it's less frequently used.
+OCAMLRUN ?= $(ROOTDIR)/boot/ocamlrun$(EXE)
+NEW_OCAMLRUN ?= $(ROOTDIR)/runtime/ocamlrun$(EXE)
+
+TEST_BOOT_OCAMLC_OPT = $(shell \
+  test $(ROOTDIR)/boot/ocamlc.opt -nt $(ROOTDIR)/boot/ocamlc; \
+  echo $$?)
 
 # Use boot/ocamlc.opt if available
-CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun$(EXE)
-ifeq (0,$(shell \
-  test $(ROOTDIR)/boot/ocamlc.opt -nt $(ROOTDIR)/boot/ocamlc; \
-  echo $$?))
+ifeq "$(TEST_BOOT_OCAMLC_OPT)" "0"
   BOOT_OCAMLC = $(ROOTDIR)/boot/ocamlc.opt
 else
-  BOOT_OCAMLC = $(CAMLRUN) $(ROOTDIR)/boot/ocamlc
+  BOOT_OCAMLC = $(OCAMLRUN) $(ROOTDIR)/boot/ocamlc
 endif
 
-ifeq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
+ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
   FLEXLINK_ENV =
   CAMLOPT_CMD = $(CAMLOPT)
   OCAMLOPT_CMD = $(OCAMLOPT)
@@ -58,14 +65,20 @@ ifeq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
   ocamlc_cmd = $(ocamlc)
   ocamlopt_cmd = $(ocamlopt)
 else
+ifeq "$(wildcard $(ROOTDIR)/flexlink.opt$(EXE))" ""
   FLEXLINK_ENV = \
-    OCAML_FLEXLINK="$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe"
+    OCAML_FLEXLINK="$(ROOTDIR)/boot/ocamlrun$(EXE) \
+                    $(ROOTDIR)/boot/flexlink.byte$(EXE)"
+else
+  FLEXLINK_ENV = \
+    OCAML_FLEXLINK="$(ROOTDIR)/flexlink.opt$(EXE) -I $(ROOTDIR)/stdlib/flexdll"
+endif # ifeq "$(wildcard $(ROOTDIR)/flexlink.opt$(EXE))" ""
   CAMLOPT_CMD = $(FLEXLINK_ENV) $(CAMLOPT)
   OCAMLOPT_CMD = $(FLEXLINK_ENV) $(OCAMLOPT)
   MKLIB_CMD = $(FLEXLINK_ENV) $(MKLIB)
   ocamlc_cmd = $(FLEXLINK_ENV) $(ocamlc)
   ocamlopt_cmd = $(FLEXLINK_ENV) $(ocamlopt)
-endif
+endif # ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
 
 OPTCOMPFLAGS=
 ifeq "$(FUNCTION_SECTIONS)" "true"
@@ -126,11 +139,13 @@ endef # PROGRAM_SYNONYM
 
 # Lexer generation
 
-BOOT_OCAMLLEX ?= $(CAMLRUN) $(ROOTDIR)/boot/ocamllex
-# The OCAMLLEX command used in the recipe below is defined in the individual
-# makefiles, because its default value is directory-specific.
-# By default, some directories use BOOT_OCAMLLEX while others use the
-# freshly compiled lexer generator.
+BOOT_OCAMLLEX ?= $(OCAMLRUN) $(ROOTDIR)/boot/ocamllex
+
+# Default value for OCAMLLEX
+# In those directories where this needs to be overridden, the overriding
+# should take place *before* Makefile.common is included.
+
+OCAMLLEX ?= $(BEST_OCAMLLEX)
 
 OCAMLLEXFLAGS ?= -q
 

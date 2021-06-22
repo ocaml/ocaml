@@ -105,7 +105,7 @@ rem needs upgrading.
 set CYGWIN_PACKAGES=cygwin make diffutils
 set CYGWIN_COMMANDS=cygcheck make diff
 if "%PORT%" equ "mingw32" (
-  rem mingw64-i686-runtime does not need explictly installing, but it's useful
+  rem mingw64-i686-runtime does not need explicitly installing, but it's useful
   rem to have the version reported.
   set CYGWIN_PACKAGES=%CYGWIN_PACKAGES% mingw64-i686-gcc-core mingw64-i686-runtime
   set CYGWIN_COMMANDS=%CYGWIN_COMMANDS% i686-w64-mingw32-gcc cygcheck
@@ -122,6 +122,7 @@ if "%PORT%" equ "cygwin64" (
   set CYGWIN_PACKAGES=%CYGWIN_PACKAGES% gcc-core flexdll
   set CYGWIN_COMMANDS=%CYGWIN_COMMANDS% x86_64-pc-cygwin-gcc flexlink
 )
+if "%PORT:~0,6%%BOOTSTRAP_FLEXDLL%" equ "cygwinfalse" set CYGWIN_PACKAGES=%CYGWIN_PACKAGES% flexdll
 
 set CYGWIN_INSTALL_PACKAGES=
 set CYGWIN_UPGRADE_REQUIRED=%FORCE_CYGWIN_UPGRADE%
@@ -138,5 +139,10 @@ goto :EOF
 goto :EOF
 
 :test
-if "%BUILD_MODE%" neq "C" "%CYG_ROOT%\bin\bash.exe" -lc "$APPVEYOR_BUILD_FOLDER/tools/ci/appveyor/appveyor_build.sh test" || exit /b 1
+rem No tests run in the "C" build mode
+if "%BUILD_MODE%" equ "C" goto :EOF
+rem Add a C# compiler in PATH for the testsuite for mingw
+if "%PORT%" equ "mingw64" call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat"
+if "%PORT%" equ "mingw32" call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\vcvars32.bat"
+"%CYG_ROOT%\bin\bash.exe" -lc "$APPVEYOR_BUILD_FOLDER/tools/ci/appveyor/appveyor_build.sh test" || exit /b 1
 goto :EOF

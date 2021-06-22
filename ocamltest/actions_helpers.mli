@@ -33,7 +33,7 @@ val words_of_variable : Environments.t -> Variables.t -> string list
 
 val exit_status_of_variable : Environments.t -> Variables.t -> int
 
-val files : Environments.t -> string list
+val readonly_files : Environments.t -> string list
 
 val setup_symlinks : string -> string -> string list -> unit
 

@@ -18,10 +18,13 @@
 BASEDIR := $(shell pwd)
 
 FIND=find
-TOPDIR := ..
-include $(TOPDIR)/Makefile.tools
+ROOTDIR = ..
+include $(ROOTDIR)/Makefile.common
 
-OCAMLTESTDIR_CYGPATH=$(shell $(CYGPATH) $(BASEDIR)/$(DIR)/_ocamltest)
+BASEDIR_HOST := $(shell $(CYGPATH) "$(BASEDIR)")
+ROOTDIR_HOST := $(BASEDIR_HOST)/$(ROOTDIR)
+
+OCAMLTESTDIR = $(BASEDIR_HOST)/$(DIR)/_ocamltest
 
 failstamp := failure.stamp
 
@@ -39,32 +42,43 @@ ifeq "$(UNIX_OR_WIN32)" "unix"
   else # Non-cygwin Unix
     find := find
   endif
-  FLEXLINK_ENV =
 else # Windows
   find := /usr/bin/find
-  FLEXDLL_SUBMODULE_PRESENT := $(wildcard ../flexdll/Makefile)
-  ifeq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
-    FLEXLINK_ENV =
-  else
-    ROOT := $(shell cd .. && pwd| cygpath -m -f -)
-    FLEXLINK_ENV = \
-      OCAML_FLEXLINK="$(ROOT)/boot/ocamlrun $(ROOT)/flexdll/flexlink.exe"
-  endif
 endif
+
+ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
+  FLEXLINK_ENV =
+else
+  # The testsuite needs an absolute path to the runtime, so override the
+  # definition in Makefile.common
+  FLEXLINK_DLL_LDFLAGS=$(if $(OC_DLL_LDFLAGS), -link "$(OC_DLL_LDFLAGS)")
+  FLEXLINK_EXE_LDFLAGS=$(if $(OC_LDFLAGS), -link "$(OC_LDFLAGS)")
+ifeq "$(wildcard $(ROOTDIR_HOST)/flexlink.opt$(EXE))" ""
+  FLEXLINK_ENV = \
+    OCAML_FLEXLINK="$(ROOTDIR_HOST)/boot/ocamlrun$(EXE) \
+                    $(ROOTDIR_HOST)/boot/flexlink.byte$(EXE)"
+  MKDLL=$(ROOTDIR_HOST)/boot/ocamlrun$(EXE) \
+        $(ROOTDIR_HOST)/boot/flexlink.byte$(EXE) \
+        $(FLEXLINK_FLAGS) $(FLEXLINK_DLL_LDFLAGS)
+  MKEXE=$(ROOTDIR_HOST)/boot/ocamlrun$(EXE) \
+        $(ROOTDIR_HOST)/boot/flexlink.byte$(EXE) \
+        $(FLEXLINK_FLAGS) -exe $(FLEXLINK_EXE_LDFLAGS)
+else
+  FLEXLINK_ENV = \
+    OCAML_FLEXLINK="$(ROOTDIR_HOST)/flexlink.opt$(EXE) \
+      -I $(ROOTDIR_HOST)/stdlib/flexdll"
+  MKDLL=$(ROOTDIR_HOST)/flexlink.opt$(EXE) -I $(ROOTDIR_HOST)/stdlib/flexdll \
+        $(FLEXLINK_FLAGS) $(FLEXLINK_DLL_LDFLAGS)
+  MKEXE=$(ROOTDIR_HOST)/flexlink.opt$(EXE) -I $(ROOTDIR_HOST)/stdlib/flexdll \
+        $(FLEXLINK_FLAGS) -exe $(FLEXLINK_EXE_LDFLAGS)
+endif # ifeq "$(wildcard $(ROOTDIR_HOST)/flexlink.opt$(EXE))" ""
+endif # ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
 
 ifeq "$(ocamltest_program)" ""
   ocamltest = $(error ocamltest not found in $(ocamltest_directory))
 else
-  ifeq "$(FLEXLINK_ENV)" ""
-    ocamltest := MKDLL="$(MKDLL)" SORT=$(SORT) MAKE=$(MAKE) $(ocamltest_program)
-  else
-    FLEXLINK_DLL_LDFLAGS=$(if $(OC_DLL_LDFLAGS), -link "$(OC_DLL_LDFLAGS)")
-    MKDLL=$(WINTOPDIR)/boot/ocamlrun $(WINTOPDIR)/flexdll/flexlink.exe \
-                                     $(FLEXLINK_FLAGS) $(FLEXLINK_DLL_LDFLAGS)
-
-    ocamltest := $(FLEXLINK_ENV) MKDLL="$(MKDLL)" SORT=$(SORT) MAKE=$(MAKE) \
-                                 $(ocamltest_program)
-  endif
+  ocamltest := $(FLEXLINK_ENV) MKEXE="$(MKEXE)" MKDLL="$(MKDLL)" SORT=$(SORT) \
+                               MAKE=$(MAKE) $(ocamltest_program)
 endif
 
 # PROMOTE is only meant to be used internally in recursive calls;
@@ -92,6 +106,20 @@ OCAMLTESTFLAGS := \
   -timeout $(TIMEOUT) \
   $(OCAMLTEST_PROMOTE_FLAG) \
   $(OCAMLTEST_KEEP_TEST_DIR_ON_SUCCESS_FLAG)
+
+# Make sure USE_RUNTIME is defined
+USE_RUNTIME ?=
+
+ifneq ($(USE_RUNTIME),)
+# Check USE_RUNTIME value
+ifeq ($(findstring $(USE_RUNTIME),d i),)
+$(error If set, USE_RUNTIME must be equal to "d" (debug runtime) \
+        or "i" (instrumented runtime))
+endif
+# When using the debug or instrumented runtime,
+# set the runtime's verbosity to 0 by default
+export OCAMLRUNPARAM?=v=0
+endif
 
 .PHONY: default
 default:
@@ -233,7 +261,7 @@ exec-one:
 	@if $(ocamltest) -list-tests $(DIR) >/dev/null 2>&1; then \
 	  echo "Running tests from '$$DIR' ..."; \
 	  $(MAKE) exec-ocamltest DIR=$(DIR) \
-	    OCAMLTESTENV="OCAMLTESTDIR=$(OCAMLTESTDIR_CYGPATH)"; \
+	    OCAMLTESTENV="OCAMLTESTDIR=$(OCAMLTESTDIR)"; \
 	else \
 	  for dir in $(DIR)/*; do \
 	    if [ -d $$dir ]; then \
@@ -277,7 +305,7 @@ promote:
 	fi
 	@if $(ocamltest) -list-tests $(DIR) >/dev/null 2>&1; then \
 	  $(MAKE) exec-ocamltest DIR=$(DIR) \
-	    OCAMLTESTENV="OCAMLTESTDIR=$(OCAMLTESTDIR_CYGPATH)" \
+	    OCAMLTESTENV="OCAMLTESTDIR=$(OCAMLTESTDIR)" \
 	    PROMOTE="true"; \
 	else \
 	  cd $(DIR) && $(MAKE) TERM=dumb BASEDIR=$(BASEDIR) promote; \

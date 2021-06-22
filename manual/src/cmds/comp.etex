@@ -358,6 +358,41 @@ command line, and possibly the "-custom" option.
 
 This section describes and explains in detail some warnings:
 
+\subsection{ss:warn6}{Warning 6: Label omitted in function application}
+
+OCaml supports "labels-omitted" full applications: if the function has
+a known arity, all the arguments are unlabeled, and their number
+matches the number of non-optional parameters, then labels are ignored
+and non-optional parameters are matched in their definition
+order. Optional arguments are defaulted.
+
+\begin{verbatim}
+let f ~x ~y = x + y
+let test = f 2 3
+
+> let test = f 2 3
+>            ^
+> Warning 6 [labels-omitted]: labels x, y were omitted in the application of this function.
+\end{verbatim}
+
+This support for "labels-omitted" application was introduced when
+labels were added to OCaml, to ease the progressive introduction of
+labels in a codebase. However, it has the downside of weakening the
+labeling discipline: if you use labels to prevent callers from
+mistakenly reordering two parameters of the same type, labels-omitted
+make this mistake possible again.
+
+Warning 6 warns when labels-omitted applications are used, to
+discourage their use. When labels were introduced, this warning was
+not enabled by default, so users would use labels-omitted
+applications, often without noticing.
+
+Over time, it has become idiomatic to enable this warning to avoid
+argument-order mistakes. The warning is now on by default, since OCaml
+4.13. Labels-omitted applications are not recommended anymore, but
+users wishing to preserve this transitory style can disable the
+warning explicitly.
+
 \subsection{ss:warn9}{Warning 9: missing fields in a record pattern}
 
   When pattern matching on records, it can be useful to match only few
@@ -409,25 +444,19 @@ let dy { y; _ } = y (* explicit field elision: do not trigger warning 9 *)
   the future, by using the attribute "ocaml.warn_on_literal_pattern"
   (see the manual section on builtin attributes in
   \ref{ss:builtin-attributes}):
-\begin{verbatim}
-  type t =
-    | Foo of string [@ocaml.warn_on_literal_pattern]
-    | Bar of string
+\begin{caml_example*}{verbatim}[warning=52]
+type t =
+  | Foo of string [@ocaml.warn_on_literal_pattern]
+  | Bar of string
 
-  let no_warning = function
-    | Bar "specific value" -> 0
-    | _ -> 1
+let no_warning = function
+  | Bar "specific value" -> 0
+  | _ -> 1
 
-  let warning = function
-    | Foo "specific value" -> 0
-    | _ -> 1
-
->    | Foo "specific value" -> 0
->          ^^^^^^^^^^^^^^^^
-> Warning 52: Code should not depend on the actual values of
-> this constructor's arguments. They are only for information
-> and may change in future versions. (See manual section 8.5)
-\end{verbatim}
+let warning = function
+  | Foo "specific value" -> 0
+  | _ -> 1
+\end{caml_example*}
 
   In particular, all built-in exceptions with a string argument have
   this attribute set: "Invalid_argument", "Failure", "Sys_error" will

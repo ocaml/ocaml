@@ -52,23 +52,22 @@ endif
 
 ifeq "$(UNIX_OR_WIN32)" "win32"
   ocamlsrcdir := $(shell echo "$(abspath $(shell pwd)/..)" | cygpath -w -f -)
+  CSC := csc
+  ifeq "$(HOST:i686-%=i686)" "i686"
+    CSCFLAGS := /platform:x86
+  else
+    CSCFLAGS :=
+  endif
+  CSCFLAGS += /nologo /nowarn:1668
 else
   ocamlsrcdir := $(abspath $(shell pwd)/..)
+  CSC :=
+  CSCFLAGS :=
 endif
 mkexe := $(MKEXE)
 
 ifeq "$(TOOLCHAIN)" "msvc"
 CPP := $(CPP) 2> nul
-CSC := csc
-ifeq "$(HOST)" "i686-pc-windows"
-CSCFLAGS := /platform:x86
-else
-CSCFLAGS :=
-endif
-CSCFLAGS += /nologo /nowarn:1668
-else
-CSC :=
-CSCFLAGS :=
 endif
 
 ifeq "$(WITH_OCAMLDOC)" "ocamldoc"
@@ -190,7 +189,7 @@ include_directories := $(addprefix -I , $(directories))
 
 flags := -g -nostdlib $(include_directories) \
   -strict-sequence -safe-string -strict-formats \
-  -w +a-4-9-41-42-44-45-48 -warn-error A
+  -w +a-4-9-41-42-44-45-48 -warn-error +A
 
 ocamlc = $(BEST_OCAMLC) $(flags)
 
@@ -199,8 +198,6 @@ ocamlopt = $(BEST_OCAMLOPT) $(flags)
 ocamldep := $(BEST_OCAMLDEP)
 depflags := -slash
 depincludes :=
-
-OCAMLLEX ?= $(BEST_OCAMLLEX)
 
 .SECONDARY: $(lexers:.mll=.ml) $(parsers:.mly=.mli) $(parsers:.mly=.ml)
 
@@ -257,6 +254,7 @@ ocamltest_config.ml: ocamltest_config.ml.in Makefile ../Makefile.config
 	    $(call SUBST,WITH_OCAMLDOC) \
 	    $(call SUBST,WITH_OCAMLDEBUG) \
 	    $(call SUBST,O) \
+	    $(call SUBST,A) \
 	    $(call SUBST,S) \
 	    $(call SUBST,NATIVE_COMPILER) \
 	    $(call SUBST,NATDYNLINK) \

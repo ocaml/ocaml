@@ -18,12 +18,33 @@
 open Typedtree
 open Types
 
-exception Dont_match
+type position = Errortrace.position = First | Second
 
-type position = Ctype.Unification_trace.position = First | Second
+type primitive_mismatch =
+  | Name
+  | Arity
+  | No_alloc of position
+  | Native_name
+  | Result_repr
+  | Argument_repr of int
+
+type value_mismatch =
+  | Primitive_mismatch of primitive_mismatch
+  | Not_a_primitive
+  | Type of Errortrace.moregen_error
+
+exception Dont_match of value_mismatch
+
+(* Documents which kind of private thing would be revealed *)
+type privacy_mismatch =
+  | Private_type_abbreviation
+  | Private_variant_type
+  | Private_record_type
+  | Private_extensible_variant
+  | Private_row_type
 
 type label_mismatch =
-  | Type
+  | Type of Errortrace.equality_error
   | Mutability of position
 
 type record_mismatch =
@@ -33,7 +54,7 @@ type record_mismatch =
   | Unboxed_float_representation of position
 
 type constructor_mismatch =
-  | Type
+  | Type of Errortrace.equality_error
   | Arity
   | Inline_record of record_mismatch
   | Kind of position
@@ -53,12 +74,25 @@ type extension_constructor_mismatch =
                             * extension_constructor
                             * constructor_mismatch
 
+type private_variant_mismatch =
+  | Only_outer_closed
+  | Missing of position * string
+  | Presence of string
+  | Incompatible_types_for of string
+  | Types of Errortrace.equality_error
+
+type private_object_mismatch =
+  | Missing of string
+  | Types of Errortrace.equality_error
+
 type type_mismatch =
   | Arity
-  | Privacy
+  | Privacy of privacy_mismatch
   | Kind
-  | Constraint
-  | Manifest
+  | Constraint of Errortrace.equality_error
+  | Manifest of Errortrace.equality_error
+  | Private_variant of type_expr * type_expr * private_variant_mismatch
+  | Private_object of type_expr * type_expr * private_object_mismatch
   | Variance
   | Record_mismatch of record_mismatch
   | Variant_mismatch of variant_mismatch
@@ -84,7 +118,17 @@ val class_types:
         Env.t -> class_type -> class_type -> bool
 *)
 
-val report_type_mismatch:
-    string -> string -> string -> Format.formatter -> type_mismatch -> unit
-val report_extension_constructor_mismatch: string -> string -> string ->
+val report_value_mismatch :
+  string -> string ->
+  Env.t ->
+  Format.formatter -> value_mismatch -> unit
+
+val report_type_mismatch :
+  string -> string -> string ->
+  Env.t ->
+  Format.formatter -> type_mismatch -> unit
+
+val report_extension_constructor_mismatch :
+  string -> string -> string ->
+  Env.t ->
   Format.formatter -> extension_constructor_mismatch -> unit

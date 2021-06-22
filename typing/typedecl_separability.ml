@@ -56,13 +56,13 @@ let structure : type_definition -> type_structure = fun def ->
       | Some type_expr -> Synonym type_expr
       end
 
-  | ( Type_record ([{ld_type = ty; _}], _)
-    | Type_variant [{cd_args = Cstr_tuple [ty]; _}]
-    | Type_variant [{cd_args = Cstr_record [{ld_type = ty; _}]; _}])
-       when def.type_unboxed.unboxed ->
+  | ( Type_record ([{ld_type = ty; _}], Record_unboxed _)
+    | Type_variant ([{cd_args = Cstr_tuple [ty]; _}], Variant_unboxed)
+    | Type_variant ([{cd_args = Cstr_record [{ld_type = ty; _}]; _}],
+                    Variant_unboxed)) ->
      let params =
        match def.type_kind with
-       | Type_variant [{cd_res = Some ret_type}] ->
+       | Type_variant ([{cd_res = Some ret_type}], _) ->
           begin match Ctype.repr ret_type with
           | {desc=Tconstr (_, tyl, _)} ->
              List.map Ctype.repr tyl
@@ -133,9 +133,8 @@ let rec immediate_subtypes : type_expr -> type_expr list = fun ty ->
      on which immediate_subtypes is called from [check_type] *)
   | Tarrow(_,ty1,ty2,_) ->
       [ty1; ty2]
-  | Ttuple(tys)
-  | Tpackage(_,_,tys) ->
-      tys
+  | Ttuple(tys) -> tys
+  | Tpackage(_, fl) -> (snd (List.split fl))
   | Tobject(row,class_ty) ->
       let class_subtys =
         match !class_ty with
@@ -415,14 +414,14 @@ let check_type
     | (Tvariant(_)        , Sep    )
     | (Tobject(_,_)       , Sep    )
     | ((Tnil | Tfield _)  , Sep    )
-    | (Tpackage(_,_,_)    , Sep    ) -> empty
+    | (Tpackage(_,_)      , Sep    ) -> empty
     (* "Deeply separable" case for these same constructors. *)
     | (Tarrow _           , Deepsep)
     | (Ttuple _           , Deepsep)
     | (Tvariant(_)        , Deepsep)
     | (Tobject(_,_)       , Deepsep)
     | ((Tnil | Tfield _)  , Deepsep)
-    | (Tpackage(_,_,_)    , Deepsep) ->
+    | (Tpackage(_,_)      , Deepsep) ->
         let tys = immediate_subtypes ty in
         let on_subtype context ty =
           context ++ check_type (Hyps.guard hyps) ty Deepsep in

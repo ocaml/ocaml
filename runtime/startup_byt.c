@@ -321,7 +321,7 @@ static int parse_command_line(char_os **argv)
         exit(0);
         break;
       case 'b':
-        caml_record_backtrace(Val_true);
+        caml_record_backtraces(1);
         break;
       case 'I':
         if (argv[i + 1] != NULL) {

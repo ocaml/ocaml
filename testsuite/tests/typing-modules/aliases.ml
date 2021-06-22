@@ -691,9 +691,9 @@ Error: Module type declarations do not match:
        does not match
          module type A = sig module M = F(List) end
        At position module type A = <here>
-       Modules do not match:
+       Module types do not match:
          sig module M = F(List) end
-       is not included in
+       is not equal to
          sig module M = F(List) end
        At position module type A = sig module M : <here> end
        Module F(List) cannot be aliased

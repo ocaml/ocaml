@@ -84,14 +84,12 @@ type changes =
   | Unchanged
   | Invalid
 
-let trail = s_table Weak.create 1
+let trail = s_table ref Unchanged
 
 let log_change ch =
-  match Weak.get !trail 0 with None -> ()
-  | Some r ->
-      let r' = ref Unchanged in
-      r := Change (ch, r');
-      Weak.set !trail 0 (Some r')
+  let r' = ref Unchanged in
+  !trail := Change (ch, r');
+  trail := r'
 
 (**** Representative of a type ****)
 
@@ -326,7 +324,8 @@ let rec fold_type_expr f init ty =
   | Tpoly (ty, tyl)     ->
     let result = f init ty in
     List.fold_left f result tyl
-  | Tpackage (_, _, l)  -> List.fold_left f init l
+  | Tpackage (_, fl)  ->
+    List.fold_left (fun result (_n, ty) -> f result ty) init fl
 
 let iter_type_expr f ty =
   fold_type_expr (fun () v -> f v) () ty
@@ -349,7 +348,7 @@ type type_iterators =
     it_functor_param: type_iterators -> functor_parameter -> unit;
     it_module_type: type_iterators -> module_type -> unit;
     it_class_type: type_iterators -> class_type -> unit;
-    it_type_kind: type_iterators -> type_kind -> unit;
+    it_type_kind: type_iterators -> type_decl_kind -> unit;
     it_do_type_expr: type_iterators -> type_expr -> unit;
     it_type_expr: type_iterators -> type_expr -> unit;
     it_path: Path.t -> unit; }
@@ -365,7 +364,7 @@ let map_type_expr_cstr_args f = function
 
 let iter_type_expr_kind f = function
   | Type_abstract -> ()
-  | Type_variant cstrs ->
+  | Type_variant (cstrs, _) ->
       List.iter
         (fun cd ->
            iter_type_expr_cstr_args f cd.cd_args;
@@ -444,7 +443,7 @@ let type_iterators =
     match ty.desc with
       Tconstr (p, _, _)
     | Tobject (_, {contents=Some (p, _)})
-    | Tpackage (p, _, _) ->
+    | Tpackage (p, _) ->
         it.it_path p
     | Tvariant row ->
         Option.iter (fun (p,_) -> it.it_path p) (row_repr row).row_name
@@ -505,7 +504,7 @@ let rec copy_type_desc ?(keep_names=false) f = function
   | Tpoly (ty, tyl)     ->
       let tyl = List.map f tyl in
       Tpoly (f ty, tyl)
-  | Tpackage (p, n, l)  -> Tpackage (p, n, List.map f l)
+  | Tpackage (p, fl)  -> Tpackage (p, List.map (fun (n, ty) -> (n, f ty)) fl)
 
 (* Utilities for copying *)
 
@@ -725,11 +724,7 @@ let set_commu rc c =
 let snapshot () =
   let old = !last_snapshot in
   last_snapshot := !new_id;
-  match Weak.get !trail 0 with Some r -> (r, old)
-  | None ->
-      let r = ref Unchanged in
-      Weak.set !trail 0 (Some r);
-      (r, old)
+  (!trail, old)
 
 let rec rev_log accu = function
     Unchanged -> accu
@@ -749,7 +744,7 @@ let backtrack (changes, old) =
       List.iter undo_change backlog;
       changes := Unchanged;
       last_snapshot := old;
-      Weak.set !trail 0 (Some changes)
+      trail := changes
 
 let rec rev_compress_log log r =
   match !r with

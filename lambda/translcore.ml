@@ -88,20 +88,41 @@ type binding =
   | Bind_value of value_binding list
   | Bind_module of Ident.t * string option loc * module_presence * module_expr
 
-let rec push_defaults loc bindings cases partial =
+let wrap_bindings bindings exp =
+  List.fold_left
+    (fun exp binds ->
+      {exp with exp_desc =
+       match binds with
+       | Bind_value binds -> Texp_let(Nonrecursive, binds, exp)
+       | Bind_module (id, name, pres, mexpr) ->
+           Texp_letmodule (Some id, name, pres, mexpr, exp)})
+    exp bindings
+
+let rec trivial_pat pat =
+  match pat.pat_desc with
+    Tpat_var _
+  | Tpat_any -> true
+  | Tpat_construct (_, cd, [], _) ->
+      not cd.cstr_generalized && cd.cstr_consts = 1 && cd.cstr_nonconsts = 0
+  | Tpat_tuple patl ->
+      List.for_all trivial_pat patl
+  | _ -> false
+
+let rec push_defaults loc bindings use_lhs cases partial =
   match cases with
     [{c_lhs=pat; c_guard=None;
       c_rhs={exp_desc = Texp_function { arg_label; param; cases; partial; } }
-        as exp}] ->
-      let cases = push_defaults exp.exp_loc bindings cases partial in
+        as exp}] when bindings = [] || trivial_pat pat ->
+      let cases = push_defaults exp.exp_loc bindings false cases partial in
       [{c_lhs=pat; c_guard=None;
         c_rhs={exp with exp_desc = Texp_function { arg_label; param; cases;
           partial; }}}]
   | [{c_lhs=pat; c_guard=None;
       c_rhs={exp_attributes=[{Parsetree.attr_name = {txt="#default"};_}];
              exp_desc = Texp_let
-               (Nonrecursive, binds, ({exp_desc = Texp_function _} as e2))}}] ->
-      push_defaults loc (Bind_value binds :: bindings)
+               (Nonrecursive, binds,
+                ({exp_desc = Texp_function _} as e2))}}] ->
+      push_defaults loc (Bind_value binds :: bindings) true
                    [{c_lhs=pat;c_guard=None;c_rhs=e2}]
                    partial
   | [{c_lhs=pat; c_guard=None;
@@ -109,21 +130,12 @@ let rec push_defaults loc bindings cases partial =
              exp_desc = Texp_letmodule
                (Some id, name, pres, mexpr,
                 ({exp_desc = Texp_function _} as e2))}}] ->
-      push_defaults loc (Bind_module (id, name, pres, mexpr) :: bindings)
+      push_defaults loc (Bind_module (id, name, pres, mexpr) :: bindings) true
                    [{c_lhs=pat;c_guard=None;c_rhs=e2}]
                    partial
-  | [case] ->
-      let exp =
-        List.fold_left
-          (fun exp binds ->
-            {exp with exp_desc =
-             match binds with
-             | Bind_value binds -> Texp_let(Nonrecursive, binds, exp)
-             | Bind_module (id, name, pres, mexpr) ->
-                 Texp_letmodule (Some id, name, pres, mexpr, exp)})
-          case.c_rhs bindings
-      in
-      [{case with c_rhs=exp}]
+  | [{c_lhs=pat; c_guard=None; c_rhs=exp} as case]
+    when use_lhs || trivial_pat pat && exp.exp_desc <> Texp_unreachable ->
+      [{case with c_rhs = wrap_bindings bindings exp}]
   | {c_lhs=pat; c_rhs=exp; c_guard=_} :: _ when bindings <> [] ->
       let param = Typecore.name_cases "param" cases in
       let desc =
@@ -145,12 +157,12 @@ let rec push_defaults loc bindings cases partial =
                 (Path.Pident param, mknoloc (Longident.Lident name), desc)},
              cases, partial) }
       in
-      push_defaults loc bindings
-        [{c_lhs={pat with pat_desc = Tpat_var (param, mknoloc name)};
-          c_guard=None; c_rhs=exp}]
-        Total
+      [{c_lhs = {pat with pat_desc = Tpat_var (param, mknoloc name)};
+        c_guard = None; c_rhs= wrap_bindings bindings exp}]
   | _ ->
       cases
+
+let push_defaults loc = push_defaults loc [] false
 
 (* Insertion of debugging events *)
 
@@ -851,7 +863,7 @@ and transl_function ~scopes e param cases partial =
   let ((kind, params, return), body) =
     event_function ~scopes e
       (function repr ->
-         let pl = push_defaults e.exp_loc [] cases partial in
+         let pl = push_defaults e.exp_loc cases partial in
          let return_kind = function_return_value_kind e.exp_env e.exp_type in
          transl_curried_function ~scopes e.exp_loc return_kind
            repr partial param pl)

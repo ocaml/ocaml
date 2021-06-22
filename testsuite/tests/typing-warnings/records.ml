@@ -1,5 +1,5 @@
 (* TEST
-   flags = " -w A -strict-sequence "
+   flags = " -w +A -strict-sequence "
    * expect
 *)
 
@@ -324,7 +324,7 @@ Line 4, characters 22-23:
 4 |   let b : bar = {x=3; y=4}
                           ^
 Error: This record expression is expected to have type bar
-       The field y does not belong to type bar
+       There is no field y within type bar
 |}]
 
 module M = struct type foo = {x:int;y:int} end;;
@@ -404,7 +404,7 @@ Line 3, characters 44-45:
 3 |   let f r = ignore (r: foo); {r with x = 2; z = 3}
                                                 ^
 Error: This record expression is expected to have type M.foo
-       The field z does not belong to type M.foo
+       There is no field z within type M.foo
 |}]
 module M = struct
   include M
@@ -432,7 +432,7 @@ Line 3, characters 45-46:
 3 |   let f r = ignore (r: foo); { r with x = 3; a = 4 }
                                                  ^
 Error: This record expression is expected to have type M.foo
-       The field a does not belong to type M.foo
+       There is no field a within type M.foo
 |}]
 module F7 = struct
   open M
@@ -454,7 +454,7 @@ Line 4, characters 18-19:
 4 |   let r: other = {x=1; y=2}
                       ^
 Error: This record expression is expected to have type M.other
-       The field x does not belong to type M.other
+       There is no field x within type M.other
 |}]
 
 module A = struct type t = {x: int} end
@@ -483,7 +483,7 @@ Line 3, characters 19-22:
 3 |   let a : t = {x=1;yyz=2}
                        ^^^
 Error: This record expression is expected to have type t
-       The field yyz does not belong to type t
+       There is no field yyz within type t
 Hint: Did you mean yyy?
 |}]
 

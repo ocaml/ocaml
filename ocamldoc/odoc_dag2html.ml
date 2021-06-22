@@ -24,7 +24,7 @@ and idag = int
 external int_of_idag : idag -> int = "%identity";;
 external idag_of_int : int -> idag = "%identity";;
 
-type 'a table = { mutable table : 'a data array array }
+type 'a table = { table : 'a data array array }
 and 'a data = { mutable elem : 'a elem; mutable span : span_id }
 and 'a elem = Elem of 'a | Ghost of ghost_id | Nothing
 and span_id
@@ -228,7 +228,7 @@ let html_table_struct indi_txt phony d t =
                     next_l next_j;
                   flush stderr
                 end;
-              let next_l = min next_l next_j in
+              let next_l = Int.min next_l next_j in
               let colspan = 3 * (next_l - l) - 2 in
               let les =
                 match t.table.(i).(l).elem, t.table.(i + 1).(l).elem with
@@ -343,8 +343,8 @@ let rec get_block t i j =
       match get_block t i (j + 1) with
         Some ((x1, c1) :: list, mpc, span) ->
           let (list, mpc) =
-            if x1 = x.elem then (x1, c1 + 1) :: list, max mpc (c1 + 1)
-            else (x.elem, 1) :: (x1, c1) :: list, max mpc c1
+            if x1 = x.elem then (x1, c1 + 1) :: list, Int.max mpc (c1 + 1)
+            else (x.elem, 1) :: (x1, c1) :: list, Int.max mpc c1
           in
           Some (list, mpc, span)
       | _ -> assert false
@@ -753,7 +753,7 @@ let find_block_with_parents t i jj1 jj2 jj3 jj4 =
     in
     if nii <> ii || njj1 <> jj1 || njj2 <> jj2 || njj3 <> jj3 ||
        njj4 <> jj4 then
-      let nii = min ii nii in
+      let nii = Int.min ii nii in
       let (jj1, jj2, jj3, jj4) =
         find_linked_children t nii njj1 njj2 njj3 njj4
       in

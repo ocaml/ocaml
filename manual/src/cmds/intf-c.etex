@@ -1448,7 +1448,7 @@ the value \var{a} and returns the value returned by~\var{f}.
 \item "caml_callback3("\var{f, a, b, c}")" applies the functional value \var{f}
 (a curried OCaml function with three arguments) to \var{a}, \var{b} and \var{c}.
 \item "caml_callbackN("\var{f, n, args}")" applies the functional value \var{f}
-to the \var{n} arguments contained in the array of values \var{args}.
+to the \var{n} arguments contained in the C array of values \var{args}.
 \end{itemize}
 If the function \var{f} does not return, but raises an exception that
 escapes the scope of the application, then this exception is
@@ -1740,7 +1740,8 @@ information is available, but the backtrace mechanism needs to be
 turned on programmatically.   This can be achieved from the OCaml side
 by calling "Printexc.record_backtrace true" in the initialization of
 one of the OCaml modules.  This can also be achieved from the C side
-by calling "caml_record_backtrace(Val_int(1));" in the OCaml-C glue code.
+by calling "caml_record_backtraces(1);" in the OCaml-C glue code.
+("caml_record_backtraces" is declared in "backtrace.h")
 
 \paragraph{Unloading the runtime.}
 
@@ -2539,10 +2540,6 @@ use the OCaml run-time system, typically a blocking input/output operation.
 This section contains some general guidelines for writing C stubs that use
 Windows Unicode APIs.
 
-{\bf Note:} This is an experimental feature of OCaml: the set of APIs below, as
-well as their exact semantics are not final and subject to change in future
-releases.
-
 The OCaml system under Windows can be configured at build time in one of two
 modes:
 
@@ -2645,9 +2642,7 @@ of the function to bind:
 The rest of the binding is the same for both platforms:
 
 \begin{verbatim}
-/* The following define is necessary because the API is experimental */
 #define CAML_NAME_SPACE
-#define CAML_INTERNALS
 
 #include <caml/mlvalues.h>
 #include <caml/misc.h>

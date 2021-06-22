@@ -77,7 +77,7 @@ let mk_config f =
 
 let mk_config_var f =
   "-config-var", Arg.String f,
-  " Print the value of a configuration variable, a newline, and exit\n\
+  " Print the value of a configuration variable, without a newline, and exit\n\
 \    (print nothing and exit with error value if the variable does not exist)"
 ;;
 
@@ -92,6 +92,11 @@ let mk_dllib f =
 let mk_dllpath f =
   "-dllpath", Arg.String f,
   "<dir>  Add <dir> to the run-time search path for shared libraries"
+;;
+
+let mk_eval f =
+  "-e", Arg.String f,
+  "<script>  Evaluate given script"
 ;;
 
 let mk_function_sections f =
@@ -779,6 +784,10 @@ let mk_dcamlprimc f =
   "-dcamlprimc", Arg.Unit f, " (undocumented)"
 ;;
 
+let mk_dcmm_invariants f =
+  "-dcmm-invariants", Arg.Unit f, " Extra sanity checks on Cmm"
+;;
+
 let mk_dcmm f =
   "-dcmm", Arg.Unit f, " (undocumented)"
 ;;
@@ -797,16 +806,6 @@ let mk_dcse f =
 
 let mk_dlive f =
   "-dlive", Arg.Unit f, " (undocumented)"
-;;
-
-let mk_davail f =
-  "-davail", Arg.Unit f, " Print register availability info when printing \
-    liveness"
-;;
-
-let mk_drunavail f =
-  "-drunavail", Arg.Unit f, " Run register availability pass (for testing \
-    only; needs -g)"
 ;;
 
 let mk_dspill f =
@@ -1021,6 +1020,7 @@ module type Toplevel_options = sig
   val _args0 : string -> string array
   val _color : string -> unit
   val _error_style : string -> unit
+  val _eval: string -> unit
 end
 ;;
 
@@ -1087,13 +1087,12 @@ module type Optcommon_options = sig
   val _dflambda_verbose : unit -> unit
   val _drawclambda : unit -> unit
   val _dclambda : unit -> unit
+  val _dcmm_invariants : unit -> unit
   val _dcmm : unit -> unit
   val _dsel : unit -> unit
   val _dcombine : unit -> unit
   val _dcse : unit -> unit
   val _dlive : unit -> unit
-  val _davail : unit -> unit
-  val _drunavail : unit -> unit
   val _dspill : unit -> unit
   val _dsplit : unit -> unit
   val _dinterf : unit -> unit
@@ -1317,6 +1316,7 @@ struct
 
     mk_args F._args;
     mk_args0 F._args0;
+    mk_eval F._eval;
   ]
 end;;
 
@@ -1445,6 +1445,7 @@ struct
     mk_dlambda F._dlambda;
     mk_drawclambda F._drawclambda;
     mk_dclambda F._dclambda;
+    mk_dcmm_invariants F._dcmm_invariants;
     mk_dflambda F._dflambda;
     mk_drawflambda F._drawflambda;
     mk_dflambda_invariants F._dflambda_invariants;
@@ -1456,8 +1457,6 @@ struct
     mk_dcombine F._dcombine;
     mk_dcse F._dcse;
     mk_dlive F._dlive;
-    mk_davail F._davail;
-    mk_drunavail F._drunavail;
     mk_dspill F._dspill;
     mk_dsplit F._dsplit;
     mk_dinterf F._dinterf;
@@ -1555,6 +1554,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_drawlambda F._drawlambda;
     mk_drawclambda F._drawclambda;
     mk_dclambda F._dclambda;
+    mk_dcmm_invariants F._dcmm_invariants;
     mk_drawflambda F._drawflambda;
     mk_dflambda F._dflambda;
     mk_dcmm F._dcmm;
@@ -1562,8 +1562,6 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_dcombine F._dcombine;
     mk_dcse F._dcse;
     mk_dlive F._dlive;
-    mk_davail F._davail;
-    mk_drunavail F._drunavail;
     mk_dspill F._dspill;
     mk_dsplit F._dsplit;
     mk_dinterf F._dinterf;
@@ -1575,6 +1573,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_dinterval F._dinterval;
     mk_dstartup F._dstartup;
     mk_dump_pass F._dump_pass;
+    mk_eval F._eval;
   ]
 end;;
 
@@ -1700,7 +1699,8 @@ module Default = struct
     let _strict_sequence = set strict_sequence
     let _unboxed_types = set unboxed_types
     let _unsafe_string = set unsafe_string
-    let _w s = Warnings.parse_options false s
+    let _w s =
+      Warnings.parse_options false s |> Option.iter Location.(prerr_alert none)
 
     let anonymous = Compenv.anonymous
 
@@ -1724,7 +1724,8 @@ module Default = struct
     let _nopervasives = set nopervasives
     let _ppx s = Compenv.first_ppx := (s :: (!Compenv.first_ppx))
     let _unsafe = set unsafe
-    let _warn_error s = Warnings.parse_options true s
+    let _warn_error s =
+      Warnings.parse_options true s |> Option.iter Location.(prerr_alert none)
     let _warn_help = Warnings.help_warnings
   end
 
@@ -1734,9 +1735,9 @@ module Default = struct
     let _classic_inlining () = classic_inlining := true
     let _compact = clear optimize_for_speed
     let _dalloc = set dump_regalloc
-    let _davail () = dump_avail := true
     let _dclambda = set dump_clambda
     let _dcmm = set dump_cmm
+    let _dcmm_invariants = set cmm_invariants
     let _dcombine = set dump_combine
     let _dcse = set dump_cse
     let _dflambda = set dump_flambda
@@ -1753,7 +1754,6 @@ module Default = struct
     let _drawclambda = set dump_rawclambda
     let _drawflambda = set dump_rawflambda
     let _dreload = set dump_reload
-    let _drunavail () = debug_runavail := true
     let _dscheduling = set dump_scheduling
     let _dsel = set dump_selection
     let _dspill = set dump_spill
@@ -1913,6 +1913,7 @@ module Default = struct
     let _stdin () = (* placeholder: file_argument ""*) ()
     let _version () = print_version ()
     let _vnum () = print_version_num ()
+    let _eval (_:string) = ()
   end
 
   module Topmain = struct

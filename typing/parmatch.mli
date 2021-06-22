@@ -68,7 +68,7 @@ val set_args_erase_mutable : pattern -> pattern list -> pattern list
 val pat_of_constr : pattern -> constructor_description -> pattern
 val complete_constrs :
     constructor_description pattern_data ->
-    constructor_tag list ->
+    constructor_description list ->
     constructor_description list
 
 (** [ppat_of_type] builds an untyped pattern from its expected type,

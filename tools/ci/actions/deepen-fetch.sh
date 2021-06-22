@@ -26,19 +26,21 @@
 
 # GitHub Actions doesn't support the ternary operator, so the dance is done here
 # Each script has:
-#   $1 - event type ('pull_request' or 'push')
-#   $2 - upstream branch name
-#   $3 - upstream branch SHA
-#   $4 - PR branch name
-#   $5 - PR SHA
-#   $6 - full ref being pushed
-#   $7 - upstream SHA prior to push
-#   $8 - repeats $6
-#   $9 - upstream SHA after the push
-if [[ $1 = 'pull_request' ]]; then
-  shift 1
+#   $1 - ref to fetch when deepening
+#   $2 - event type ('pull_request' or 'push')
+#   $3 - upstream branch name
+#   $4 - upstream branch SHA
+#   $5 - PR branch name
+#   $6 - PR SHA
+#   $7 - full ref being pushed
+#   $8 - upstream SHA prior to push
+#   $9 - repeats $7
+#  $10 - upstream SHA after the push
+FETCH_REF="${1}"
+if [[ $2 = 'pull_request' ]]; then
+  shift 2
 else
-  shift 5
+  shift 6
 fi
 
 # Record FETCH_HEAD (if it hasn't been by a previous step)
@@ -72,8 +74,8 @@ if ! git merge-base "$UPSTREAM_HEAD" "$PR_HEAD" &> /dev/null; then
 
   while ! git merge-base "$UPSTREAM_HEAD" "$PR_HEAD" &> /dev/null
   do
-    echo " - $MSG by $DEEPEN commits"
-    git fetch origin --deepen=$DEEPEN "$PR_BRANCH" &> /dev/null
+    echo " - $MSG by $DEEPEN commits from $FETCH_REF"
+    git fetch origin --deepen=$DEEPEN "$FETCH_REF" &> /dev/null
     MSG='Further deepening'
     ((DEEPEN*=2))
   done

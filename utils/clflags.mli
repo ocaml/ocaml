@@ -13,6 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+
+
 (** Command line flags *)
 
 (** Optimization parameters represented as ints indexed by round number. *)
@@ -142,8 +144,6 @@ val dump_cmm : bool ref
 val dump_selection : bool ref
 val dump_cse : bool ref
 val dump_live : bool ref
-val dump_avail : bool ref
-val debug_runavail : bool ref
 val dump_spill : bool ref
 val dump_split : bool ref
 val dump_interf : bool ref
@@ -201,6 +201,7 @@ val default_unbox_closures_factor : int
 val unbox_free_vars_of_closures : bool ref
 val unbox_specialised_args : bool ref
 val clambda_checks : bool ref
+val cmm_invariants : bool ref
 val default_inline_max_depth : int
 val inline_max_depth : Int_arg_helper.parsed ref
 val remove_unused_arguments : bool ref
@@ -260,11 +261,8 @@ val arg_spec : (string * Arg.spec * string) list ref
    added. *)
 val add_arguments : string -> (string * Arg.spec * string) list -> unit
 
-(* [parse_arguments argv anon_arg usage] will parse the arguments, using
-  the arguments provided in [Clflags.arg_spec].
-*)
-val parse_arguments : string array -> Arg.anon_fun -> string -> unit
-
+(* [create_usage_msg program] creates a usage message for [program] *)
+val create_usage_msg: string -> string
 (* [print_arguments usage] print the standard usage message *)
 val print_arguments : string -> unit
 

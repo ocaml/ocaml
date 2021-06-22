@@ -58,16 +58,17 @@ let ranlib = "%%RANLIBCMD%%"
 let default_rpath = "%%RPATH%%"
 let mksharedlibrpath = "%%MKSHAREDLIBRPATH%%"
 let ar = "%%ARCMD%%"
+let supports_shared_libraries = %%SUPPORTS_SHARED_LIBRARIES%%
 let mkdll, mkexe, mkmaindll =
   (* @@DRA Cygwin - but only if shared libraries are enabled, which we
      should be able to detect? *)
-  if Sys.os_type = "Win32" then
+  if Sys.win32 || Sys.cygwin && supports_shared_libraries then
     try
       let flexlink =
         let flexlink = Sys.getenv "OCAML_FLEXLINK" in
         let f i =
           let c = flexlink.[i] in
-          if c = '/' then '\\' else c in
+          if c = '/' && Sys.win32 then '\\' else c in
         (String.init (String.length flexlink) f) ^ " %%FLEXLINK_FLAGS%%" in
       flexlink ^ "%%FLEXLINK_DLL_LDFLAGS%%",
       flexlink ^ " -exe%%FLEXLINK_LDFLAGS%%",
@@ -79,36 +80,36 @@ let mkdll, mkexe, mkmaindll =
 
 let flambda = %%FLAMBDA%%
 let with_flambda_invariants = %%WITH_FLAMBDA_INVARIANTS%%
+let with_cmm_invariants = %%WITH_CMM_INVARIANTS%%
 let safe_string = %%FORCE_SAFE_STRING%%
 let default_safe_string = %%DEFAULT_SAFE_STRING%%
 let windows_unicode = %%WINDOWS_UNICODE%% != 0
-let supports_shared_libraries = %%SUPPORTS_SHARED_LIBRARIES%%
 
 let flat_float_array = %%FLAT_FLOAT_ARRAY%%
 
 let function_sections = %%FUNCTION_SECTIONS%%
 let afl_instrument = %%AFL_INSTRUMENT%%
 
-let exec_magic_number = "Caml1999X029"
+let exec_magic_number = "Caml1999X030"
     (* exec_magic_number is duplicated in runtime/caml/exec.h *)
-and cmi_magic_number = "Caml1999I029"
-and cmo_magic_number = "Caml1999O029"
-and cma_magic_number = "Caml1999A029"
+and cmi_magic_number = "Caml1999I030"
+and cmo_magic_number = "Caml1999O030"
+and cma_magic_number = "Caml1999A030"
 and cmx_magic_number =
   if flambda then
-    "Caml1999y029"
+    "Caml1999y030"
   else
-    "Caml1999Y029"
+    "Caml1999Y030"
 and cmxa_magic_number =
   if flambda then
-    "Caml1999z029"
+    "Caml1999z030"
   else
-    "Caml1999Z029"
-and ast_impl_magic_number = "Caml1999M029"
-and ast_intf_magic_number = "Caml1999N029"
-and cmxs_magic_number = "Caml1999D029"
-and cmt_magic_number = "Caml1999T029"
-and linear_magic_number = "Caml1999L029"
+    "Caml1999Z030"
+and ast_impl_magic_number = "Caml1999M030"
+and ast_intf_magic_number = "Caml1999N030"
+and cmxs_magic_number = "Caml1999D030"
+and cmt_magic_number = "Caml1999T030"
+and linear_magic_number = "Caml1999L030"
 
 let interface_suffix = ref ".mli"
 

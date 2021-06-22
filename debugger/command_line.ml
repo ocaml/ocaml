@@ -799,7 +799,7 @@ let instr_list _ppf lexbuf =
               1
           | None ->
               begin try
-                max 1 (line - 10)
+                Int.max 1 (line - 10)
               with Out_of_range ->
                 1
               end
