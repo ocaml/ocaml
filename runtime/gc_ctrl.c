@@ -798,5 +798,5 @@ CAMLprim value caml_ml_enable_float_array_alloc_warning(value vsize)
 CAMLprim value caml_ml_float_array_alloc_warning_enabled(value unit)
 {
   CAMLassert (unit == Val_unit);
-  return Val_bool(caml_float_array_alloc_warning);
+  return Val_int(caml_float_array_alloc_warning);
 }

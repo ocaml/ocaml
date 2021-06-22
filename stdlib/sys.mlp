@@ -132,12 +132,14 @@ external c_enable_float_array_alloc_warning: int -> unit =
 external c_float_array_alloc_warning_enabled: unit -> int =
   "caml_ml_float_array_alloc_warning_enabled"
 
-let enable_float_array_alloc_warning size_opt =
-  let size = Option.value size_opt ~default:0 in
-  if size < 0 then
-    invalid_arg "Sys.enable_float_array_alloc_warning"
-  else
-    c_enable_float_array_alloc_warning size
+let enable_float_array_alloc_warning size_opt = match size_opt with
+  | None -> c_enable_float_array_alloc_warning 0
+  | Some size ->
+      if size <= 0 then
+        invalid_arg
+          "Sys.enable_float_array_alloc_warning: callstack size should be > 0"
+      else
+        c_enable_float_array_alloc_warning size
 
 let float_array_alloc_warning_enabled () =
   let size = c_float_array_alloc_warning_enabled () in
