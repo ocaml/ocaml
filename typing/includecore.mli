@@ -48,7 +48,7 @@ type label_mismatch =
   | Mutability of position
 
 type record_change =
-  (Types.label_declaration, label_mismatch) Diffing_with_keys.change
+  (Types.label_declaration as 'ld, 'ld, label_mismatch) Diffing_with_keys.change
 
 type record_mismatch =
   | Label_mismatch of record_change list
@@ -68,7 +68,7 @@ type extension_constructor_mismatch =
                             * extension_constructor
                             * constructor_mismatch
 type variant_change =
-  (Types.constructor_declaration, constructor_mismatch)
+  (Types.constructor_declaration as 'cd, 'cd, constructor_mismatch)
     Diffing_with_keys.change
 
 type private_variant_mismatch =

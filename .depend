@@ -708,7 +708,6 @@ typing/includecore.cmo : \
     typing/errortrace.cmi \
     typing/env.cmi \
     utils/diffing_with_keys.cmi \
-    utils/diffing.cmi \
     typing/ctype.cmi \
     parsing/builtin_attributes.cmi \
     typing/btype.cmi \
@@ -726,7 +725,6 @@ typing/includecore.cmx : \
     typing/errortrace.cmx \
     typing/env.cmx \
     utils/diffing_with_keys.cmx \
-    utils/diffing.cmx \
     typing/ctype.cmx \
     parsing/builtin_attributes.cmx \
     typing/btype.cmx \

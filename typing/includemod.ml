@@ -797,13 +797,27 @@ let compunit env ~mark impl_name impl_sig intf_name intf_sig =
  *)
 
 module Functor_inclusion_diff = struct
-  open Diffing
+
+  module Defs = struct
+    type left = Types.functor_parameter
+    type right = left
+    type eq = Typedtree.module_coercion
+    type diff = (Types.functor_parameter, unit) Error.functor_param_symptom
+    type state = {
+      res: module_type option;
+      env: Env.t;
+      subst: Subst.t;
+    }
+  end
+  open Defs
+
+  module Diff = Diffing.Define(Defs)
 
   let param_name = function
       | Named(x,_) -> x
       | Unit -> None
 
-  let weight = function
+  let weight: Diff.change -> _ = function
     | Insert _ -> 10
     | Delete _ -> 10
     | Change _ -> 10
@@ -818,11 +832,7 @@ module Functor_inclusion_diff = struct
         | Some _,  None | None, Some _ -> 1
       end
 
-  type state = {
-    res: module_type option;
-    env: Env.t;
-    subst: Subst.t;
-  }
+
 
   let keep_expansible_param = function
     | Mty_ident _ | Mty_alias _ as mty -> Some mty
@@ -842,7 +852,7 @@ module Functor_inclusion_diff = struct
     | None -> state, [||]
     | Some (res, expansion) -> { state with res }, expansion
 
-  let update d st = match d with
+  let update (d:Diff.change) st = match d with
     | Insert (Unit | Named (None,_))
     | Delete (Unit | Named (None,_))
     | Keep (Unit,_,_)
@@ -874,28 +884,38 @@ module Functor_inclusion_diff = struct
       end
 
   let diff env (l1,res1) (l2,_) =
-    let update = Diffing.With_left_extensions update in
-    let test st mty1 mty2 =
-      let loc = Location.none in
-      let res, _, _ =
-        functor_param ~loc st.env ~mark:Mark_neither st.subst mty1 mty2
-      in
-      res
+    let module Compute = Diff.Left_variadic(struct
+        let test st mty1 mty2 =
+          let loc = Location.none in
+          let res, _, _ =
+            functor_param ~loc st.env ~mark:Mark_neither st.subst mty1 mty2
+          in
+          res
+        let update = update
+        let weight = weight
+      end)
     in
     let param1 = Array.of_list l1 in
     let param2 = Array.of_list l2 in
     let state =
       { env; subst = Subst.identity; res = keep_expansible_param res1}
     in
-    Diffing.variadic_diff ~weight ~test ~update state param1 param2
+    Compute.diff state param1 param2
 
 end
 
 module Functor_app_diff = struct
   module I = Functor_inclusion_diff
-  open Diffing
+  module Defs= struct
+    type left = Error.functor_arg_descr * Types.module_type
+    type right = Types.functor_parameter
+    type eq = Typedtree.module_coercion
+    type diff = (Error.functor_arg_descr, unit) Error.functor_param_symptom
+    type state = I.Defs.state
+  end
+  module Diff = Diffing.Define(Defs)
 
-  let weight = function
+  let weight: Diff.change -> _ = function
     | Insert _ -> 10
     | Delete _ -> 10
     | Change _ -> 10
@@ -914,7 +934,7 @@ module Functor_app_diff = struct
           | Named _,  None | (Unit | Anonymous), Some _ -> 1
         end
 
-  let update (d: (_,Types.functor_parameter,_,_) change) (st:I.state) =
+  let update (d: Diff.change) (st:Defs.state) =
     let open Error in
     match d with
     | Insert _
@@ -958,29 +978,32 @@ module Functor_app_diff = struct
 
   let diff env ~f ~args =
     let params, res = retrieve_functor_params env f in
-    let update = Diffing.With_right_extensions update in
-    let test (state:I.state) (arg,arg_mty) param =
-      let loc = Location.none in
-      let res = match (arg:Error.functor_arg_descr), param with
-        | Unit, Unit -> Ok Tcoerce_none
-        | Unit, Named _ | (Anonymous | Named _), Unit ->
-            Result.Error (Error.Incompatible_params(arg,param))
-        | ( Anonymous | Named _ ) , Named (_, param) ->
-            match
-              modtypes ~loc state.env ~mark:Mark_neither state.subst
-                arg_mty param
-            with
-            | Error mty -> Result.Error (Error.Mismatch mty)
-            | Ok _ as x -> x
-      in
-      res
+    let module Compute = Diff.Right_variadic(struct
+        let update = update
+        let test (state:Defs.state) (arg,arg_mty) param =
+          let loc = Location.none in
+          let res = match (arg:Error.functor_arg_descr), param with
+            | Unit, Unit -> Ok Tcoerce_none
+            | Unit, Named _ | (Anonymous | Named _), Unit ->
+                Result.Error (Error.Incompatible_params(arg,param))
+            | ( Anonymous | Named _ ) , Named (_, param) ->
+                match
+                  modtypes ~loc state.env ~mark:Mark_neither state.subst
+                    arg_mty param
+                with
+                | Error mty -> Result.Error (Error.Mismatch mty)
+                | Ok _ as x -> x
+          in
+          res
+        let weight = weight
+      end)
     in
     let args = Array.of_list args in
     let params = Array.of_list params in
-    let state : I.state =
+    let state : Defs.state =
       { env; subst = Subst.identity; res = I.keep_expansible_param res }
     in
-    Diffing.variadic_diff ~weight ~test ~update state args params
+    Compute.diff state args params
 
 end
 
