@@ -333,6 +333,9 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
     domain_state->extra_heap_resources = 0.0;
     domain_state->extra_heap_resources_minor = 0.0;
 
+    domain_state->dependent_size = 0;
+    domain_state->dependent_allocated = 0;
+
     if (caml_init_signal_stack() < 0) {
       goto init_signal_stack_failure;
     }

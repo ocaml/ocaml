@@ -344,7 +344,7 @@ double caml_mean_space_overhead ()
 }
 
 static void update_major_slice_work() {
-  double p, heap_words;
+  double p, dp, heap_words;
   intnat computed_work, limit;
   caml_domain_state *dom_st = Caml_state;
   uintnat heap_size, heap_sweep_words, saved_terminated_words;
@@ -390,6 +390,14 @@ static void update_major_slice_work() {
     while(!atomic_compare_exchange_strong(&terminated_domains_allocated_words, &saved_terminated_words, 0));
   }
   p = (double) (saved_terminated_words + dom_st->allocated_words) * 3.0 * (100 + caml_percent_free) / heap_words / caml_percent_free / 2.0;
+
+  if (dom_st->dependent_size > 0){
+    dp = (double) dom_st->dependent_allocated * (100 + caml_percent_free)
+         / dom_st->dependent_size / caml_percent_free;
+  }else{
+    dp = 0.0;
+  }
+  if (p < dp) p = dp;
 
   if (p < dom_st->extra_heap_resources) p = dom_st->extra_heap_resources;
 
@@ -440,6 +448,7 @@ static void update_major_slice_work() {
 
   dom_st->stat_major_words += dom_st->allocated_words;
   dom_st->allocated_words = 0;
+  dom_st->dependent_allocated = 0;
   dom_st->extra_heap_resources = 0.0;
 }
 
