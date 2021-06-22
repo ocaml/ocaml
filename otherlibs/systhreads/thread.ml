@@ -34,6 +34,12 @@ external exit_stub : unit -> unit = "caml_thread_exit"
 
 let[@inline never] check_memprof_cb () = ref ()
 
+let default_uncaught_exception_handler = thread_uncaught_exception
+
+let uncaught_exception_handler = ref default_uncaught_exception_handler
+
+let set_uncaught_exception_handler fn = uncaught_exception_handler := fn
+
 let create fn arg =
   thread_new
     (fun () ->
@@ -41,8 +47,20 @@ let create fn arg =
         fn arg;
         ignore (Sys.opaque_identity (check_memprof_cb ()))
       with exn ->
-             flush stdout; flush stderr;
-             thread_uncaught_exception exn)
+        let raw_backtrace = Printexc.get_raw_backtrace () in
+        flush stdout; flush stderr;
+        try
+          !uncaught_exception_handler exn
+        with exn' ->
+          Printf.eprintf
+            "Fatal error in thread %d : %s\n"
+             (id (self ())) (Printexc.to_string exn);
+          Printexc.print_raw_backtrace stderr raw_backtrace;
+          Printf.eprintf
+            "Fatal error in uncaught exception handler : %s\n"
+            (Printexc.to_string exn');
+          Printexc.print_backtrace stdout;
+          flush stderr)
 
 let exit () =
   ignore (Sys.opaque_identity (check_memprof_cb ()));
