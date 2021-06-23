@@ -718,24 +718,25 @@ let mark_partial =
 
 let close_variant env row =
   let Row {fields; more; name=orig_name; closed; fixed} = row_repr row in
-  let name =
+  let name, static =
     List.fold_left
-      (fun nm (_tag,f) ->
+      (fun (nm, static) (_tag,f) ->
         match row_field_repr f with
         | Reither(_, _, false, e) ->
             (* m=false means that this tag is not explicitly matched *)
             set_row_field e Rabsent;
-            None
-        | Rabsent | Reither (_, _, true, _) | Rpresent _ -> nm)
-      orig_name fields in
-  if not closed || name != orig_name then begin
+            (None, static)
+        | Reither (_, _, true, _) -> (nm, false)
+        | Rabsent | Rpresent _ -> (nm, static))
+      (orig_name, true) fields in
+  if not closed || name != orig_name then
+    let more' = if static then Btype.newgenty Tnil else Btype.newgenvar () in
     (* this unification cannot fail *)
     Ctype.unify env more
       (Btype.newgenty
          (Tvariant
-            (create_row ~fields:[] ~more:(Btype.newgenvar())
+            (create_row ~fields:[] ~more:more'
                ~closed:true ~name ~fixed)))
-  end
 
 (*
   Check whether the first column of env makes up a complete signature or
