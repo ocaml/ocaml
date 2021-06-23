@@ -332,3 +332,16 @@ int unix_cloexec_p(value cloexec)
   else
     return unix_cloexec_default;
 }
+
+int win_set_inherit(HANDLE fd, BOOL inherit)
+{
+  /* According to the MSDN, SetHandleInformation may not work
+     for console handles on WinNT4 and earlier versions. */
+  if (! SetHandleInformation(fd,
+                             HANDLE_FLAG_INHERIT,
+                             inherit ? HANDLE_FLAG_INHERIT : 0)) {
+    win32_maperr(GetLastError());
+    return -1;
+  }
+  return 0;
+}

@@ -17,7 +17,27 @@
 #define CAML_SOCKETADDR_H
 
 #include "caml/misc.h"
-#ifndef _WIN32
+
+#ifdef _WIN32
+
+/* Code duplication with runtime/debugger.c is inevitable, because
+ * pulling winsock2.h creates many naming conflicts. */
+#include <winsock2.h>
+#ifdef HAS_AFUNIX_H
+#include <afunix.h>
+#else
+#define UNIX_PATH_MAX 108
+
+struct sockaddr_un {
+  ADDRESS_FAMILY sun_family;
+  char sun_path[UNIX_PATH_MAX];
+};
+
+#define SIO_AF_UNIX_GETPEERPID _WSAIOR(IOC_VENDOR, 256)
+
+#endif
+
+#else
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -27,9 +47,7 @@
 
 union sock_addr_union {
   struct sockaddr s_gen;
-#ifndef _WIN32
   struct sockaddr_un s_unix;
-#endif
   struct sockaddr_in s_inet;
 #ifdef HAS_IPV6
   struct sockaddr_in6 s_inet6;

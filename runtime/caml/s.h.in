@@ -76,10 +76,19 @@
 
 /* Define HAS_SOCKETS if you have BSD sockets. */
 
+#undef HAS_SOCKETPAIR
+
+/* Define HAS_SOCKETPAIR if you have the socketpair function. Only
+   relevant on Windows. */
+
 #undef HAS_SOCKLEN_T
 
 /* Define HAS_SOCKLEN_T if the type socklen_t is defined in
    /usr/include/sys/socket.h. */
+
+#undef HAS_AFUNIX_H
+
+/* Define HAS_AFUNIX_H if you have <afunix.h>. */
 
 #undef HAS_INET_ATON
 

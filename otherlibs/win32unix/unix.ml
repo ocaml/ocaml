@@ -696,8 +696,10 @@ type msg_flag =
 external socket :
   ?cloexec: bool -> socket_domain -> socket_type -> int -> file_descr
   = "unix_socket"
-let socketpair ?cloexec:_ _dom _ty _proto =
-  invalid_arg "Unix.socketpair not implemented"
+external socketpair :
+  ?cloexec: bool -> socket_domain -> socket_type -> int ->
+                                           file_descr * file_descr
+  = "unix_socketpair"
 external accept :
   ?cloexec: bool -> file_descr -> file_descr * sockaddr = "unix_accept"
 external bind : file_descr -> sockaddr -> unit = "unix_bind"
