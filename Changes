@@ -31,6 +31,10 @@ Working version
 
 ### Build system:
 
+- #10471: Fix detection of arm32 architectures with musl in the configure
+  script.
+  (Louis Gesbert)
+
 ### Bug fixes:
 
 OCaml 4.13.0
