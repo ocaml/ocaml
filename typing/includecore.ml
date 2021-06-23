@@ -475,11 +475,11 @@ module Record_diffing = struct
     | Keep (x,y,_) ->
         (* We need to add equality between existential type parameters
            (in inline records) *)
-        (snd x).ld_type::params1, (snd y).ld_type::params2
+        x.data.ld_type::params1, y.data.ld_type::params2
 
   let test _loc env (params1,params2)
-      (pos, lbl1: Diff.left)
-      (_, lbl2: Diff.right)
+      ({pos; data=lbl1}: Diff.left)
+      ({data=lbl2; _ }: Diff.right)
     =
     let name1, name2 = Ident.name lbl1.ld_id, Ident.name lbl2.ld_id in
     if  name1 <> name2 then
@@ -626,7 +626,9 @@ module Variant_diffing = struct
     | Change _ -> 10
 
 
-  let test loc env (params1,params2) (pos,cd1: D.left) (_,cd2: D.right) =
+  let test loc env (params1,params2)
+      ({pos; data=cd1}: D.left)
+      ({data=cd2; _}: D.right) =
     let name1, name2 = Ident.name cd1.cd_id, Ident.name cd2.cd_id in
     if  name1 <> name2 then
       let types_match =

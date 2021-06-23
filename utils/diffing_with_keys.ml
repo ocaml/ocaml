@@ -14,11 +14,8 @@
 (**************************************************************************)
 
 
-type 'a with_pos = int * 'a
-let with_pos l = List.mapi (fun n x -> n+1,x) l
-let pos (x,_) = x
-let data (_,x) = x
-let mk_pos pos data = pos, data
+type 'a with_pos = {pos:int; data:'a}
+let with_pos l = List.mapi (fun n data -> {pos=n+1; data}) l
 
 (** Composite change and mismatches *)
 type ('l,'r,'diff) mismatch =
@@ -114,12 +111,12 @@ module Define(D:Diffing.Defs with type eq := unit) = struct
 
     (** Compute the partial cycle and edge associated to an edge *)
     let edge state (x:left) (y:right) =
-      let kx, ky = key_left (data x), key_right (data y) in
+      let kx, ky = key_left x.data, key_right y.data in
       let edge =
         if kx <= ky then
-          Left (pos x, state, (x,y))
+          Left (x.pos, state, (x,y))
         else
-          Right (pos x,state, (x,y))
+          Right (x.pos,state, (x,y))
       in
       Two_cycle.create kx ky, edge
 
@@ -140,11 +137,11 @@ module Define(D:Diffing.Defs with type eq := unit) = struct
             let k, edge = edge state x y in
             Swap.update k (merge_edge edge) swaps, moves
         | Insert nx ->
-            let k = key_right (data nx) in
-            let edge = Right (pos nx, state,nx) in
+            let k = key_right nx.data in
+            let edge = Right (nx.pos, state,nx) in
             swaps, Move.update k (merge_edge edge) moves
         | Delete nx ->
-            let k, edge = key_left (data nx), Left (pos nx, state, nx) in
+            let k, edge = key_left nx.data, Left (nx.pos, state, nx) in
             swaps, Move.update k (merge_edge edge) moves
         | _ -> swaps, moves
       in
@@ -152,28 +149,28 @@ module Define(D:Diffing.Defs with type eq := unit) = struct
 
     (** Check if an edge belongs to a known 2-cycle *)
     let swap swaps x y =
-      let kx, ky = key_left (data x), key_right (data y) in
+      let kx, ky = key_left x.data, key_right y.data in
       let key = Two_cycle.create kx ky in
       match Swap.find_opt key swaps with
       | None | Some (Left _ | Right _)-> None
       | Some Both (state, (ll,lr),(rl,rr)) ->
           match test state ll rr,  test state rl lr with
           | Ok _, Ok _ ->
-              Some (mk_pos (pos ll) kx, mk_pos (pos rl) ky)
+              Some ({pos=ll.pos; data=kx}, {pos=rl.pos; data=ky})
           | Error _, _ | _, Error _ -> None
 
     let move moves x =
       let name =
         match x with
-        | Either.Left x -> key_left (data x)
-        | Either.Right x -> key_right (data x)
+        | Either.Left x -> key_left x.data
+        | Either.Right x -> key_right x.data
       in
       match Move.find_opt name moves with
       | None | Some (Left _ | Right _)-> None
       | Some Both (state,got,expected) ->
           match test state got expected with
           | Ok _ ->
-              Some (Move {name; got=pos got; expected=pos expected})
+              Some (Move {name; got=got.pos; expected=expected.pos})
           | Error _ -> None
 
     let refine state patch =
@@ -183,17 +180,17 @@ module Define(D:Diffing.Defs with type eq := unit) = struct
         | Insert x ->
             begin match move moves (Either.Right x) with
             | Some _ as move -> move
-            | None -> Some (Insert {pos=pos x;insert=data x})
+            | None -> Some (Insert {pos=x.pos;insert=x.data})
             end
         | Delete x ->
             begin match move moves (Either.Left x) with
             | Some _ -> None
-            | None -> Some (Delete {pos=pos x;delete=data x})
+            | None -> Some (Delete {pos=x.pos; delete=x.data})
             end
         | Change(x,y, reason) ->
             match swap swaps x y with
-            | Some ((pos1,first),(pos2,last)) ->
-                if pos x = pos1 then
+            | Some ({pos=pos1; data=first}, {pos=pos2; data=last}) ->
+                if x.pos = pos1 then
                   Some (Swap { pos = pos1, pos2; first; last})
                 else None
             | None -> Some (Change reason)

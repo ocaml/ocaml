@@ -29,7 +29,7 @@
 
 *)
 
-type 'a with_pos = int * 'a
+type 'a with_pos = {pos: int; data:'a}
 val with_pos: 'a list -> 'a with_pos list
 
 type ('l,'r,'diff) mismatch =
