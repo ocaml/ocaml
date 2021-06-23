@@ -30,7 +30,7 @@ value caml_gc_major(value);
 
 #define caml_stat_top_heap_wsz caml_top_heap_words(Caml_state->shared_heap)
 #define caml_stat_compactions 0
-#define caml_stat_heap_wsz caml_heap_size(Caml_state->shared_heap)
+#define caml_stat_heap_wsz Wsize_bsize(caml_heap_size(Caml_state->shared_heap))
 #define caml_stat_heap_chunks caml_heap_blocks(Caml_state->shared_heap)
 #define caml_stat_major_collections Caml_state->stat_major_collections
 #define caml_stat_minor_collections Caml_state->stat_minor_collections
