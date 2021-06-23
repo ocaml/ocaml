@@ -5,7 +5,7 @@ let () =
     Domain.spawn (fun () ->
           for j = 1 to 10000000 do () done;
           for j = 1 to 100 do
-            Format.printf "21. +. 21. is %f\n" (21. +. 21.);
+            Format.printf "21. +. 21. is %f@." (21. +. 21.);
           done
       )
     ) in
