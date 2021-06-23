@@ -89,7 +89,6 @@ let mkcf ~loc ?attrs ?docs d =
   Cf.mk ~loc:(make_loc loc) ?attrs ?docs d
 
 let mkrhs rhs loc = mkloc rhs (make_loc loc)
-let ghrhs rhs loc = mkloc rhs (ghost_loc loc)
 
 let push_loc x acc =
   if x.Location.loc_ghost
@@ -177,31 +176,6 @@ let mkpat_cons_desc consloc args =
   Ppat_construct(mkrhs (Lident "::") consloc, Some ([], args))
 let mkpat_cons ~loc consloc args =
   mkpat ~loc (mkpat_cons_desc consloc args)
-
-let ghexp_cons_desc consloc args =
-  Pexp_construct(ghrhs (Lident "::") consloc, Some args)
-let ghpat_cons_desc consloc args =
-  Ppat_construct(ghrhs (Lident "::") consloc, Some ([], args))
-
-let rec mktailexp nilloc = let open Location in function
-    [] ->
-      let nil = ghloc ~loc:nilloc (Lident "[]") in
-      Pexp_construct (nil, None), nilloc
-  | e1 :: el ->
-      let exp_el, el_loc = mktailexp nilloc el in
-      let loc = (e1.pexp_loc.loc_start, snd el_loc) in
-      let arg = ghexp ~loc (Pexp_tuple [e1; ghexp ~loc:el_loc exp_el]) in
-      ghexp_cons_desc loc arg, loc
-
-let rec mktailpat nilloc = let open Location in function
-    [] ->
-      let nil = ghloc ~loc:nilloc (Lident "[]") in
-      Ppat_construct (nil, None), nilloc
-  | p1 :: pl ->
-      let pat_pl, el_loc = mktailpat nilloc pl in
-      let loc = (p1.ppat_loc.loc_start, snd el_loc) in
-      let arg = ghpat ~loc (Ppat_tuple [p1; ghpat ~loc:el_loc pat_pl]) in
-      ghpat_cons_desc loc arg, loc
 
 let mkstrexp e attrs =
   { pstr_desc = Pstr_eval (e, attrs); pstr_loc = e.pexp_loc }
@@ -2435,14 +2409,12 @@ simple_expr:
     LBRACKETBAR expr_semi_list error
       { unclosed "[|" $loc($3) "|]" $loc($5) }
   | LBRACKET expr_semi_list RBRACKET
-      { fst (mktailexp $loc($3) $2) }
+      { Pexp_list $2 }
   | LBRACKET expr_semi_list error
       { unclosed "[" $loc($1) "]" $loc($3) }
   | od=open_dot_declaration DOT LBRACKET expr_semi_list RBRACKET
       { let list_exp =
-          (* TODO: review the location of list_exp *)
-          let tail_exp, _tail_loc = mktailexp $loc($5) $4 in
-          mkexp ~loc:($startpos($3), $endpos) tail_exp in
+          mkexp ~loc:($startpos($3), $endpos) (Pexp_list $4) in
         Pexp_open(od, list_exp) }
   | od=open_dot_declaration DOT mkrhs(LBRACKET RBRACKET {Lident "[]"})
       { Pexp_open(od, mkexp ~loc:$loc($3) (Pexp_construct($3, None))) }
@@ -2812,7 +2784,7 @@ simple_delimited_pattern:
     | LBRACE record_pat_content error
       { unclosed "{" $loc($1) "}" $loc($3) }
     | LBRACKET pattern_semi_list RBRACKET
-      { fst (mktailpat $loc($3) $2) }
+      { Ppat_list $2 }
     | LBRACKET pattern_semi_list error
       { unclosed "[" $loc($1) "]" $loc($3) }
     | LBRACKETBAR pattern_semi_list BARRBRACKET

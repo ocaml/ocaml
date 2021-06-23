@@ -241,6 +241,9 @@ and rw_exp iflag sexp =
   | Pexp_array(sargl) ->
     rewrite_exp_list iflag sargl
 
+  | Pexp_list(sargl) ->
+    rewrite_exp_list iflag sargl
+
   | Pexp_ifthenelse(scond, sifso, None) ->
       rewrite_exp iflag scond;
       rewrite_ifbody iflag sexp.pexp_loc.loc_ghost sifso

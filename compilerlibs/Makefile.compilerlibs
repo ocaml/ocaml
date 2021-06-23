@@ -62,6 +62,7 @@ PARSING = \
   parsing/printast.cmo \
   parsing/ast_mapper.cmo \
   parsing/ast_iterator.cmo \
+  parsing/ast_desugar.cmo \
   parsing/attr_helper.cmo \
   parsing/builtin_attributes.cmo \
   parsing/ast_invariants.cmo \

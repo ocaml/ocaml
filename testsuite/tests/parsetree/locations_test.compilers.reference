@@ -549,26 +549,13 @@ Ptop_def
             module_expr (//toplevel//[2,1+8]..[2,1+9])
               Pmod_ident "M" (//toplevel//[2,1+8]..[2,1+9])
             expression (//toplevel//[2,1+10]..[2,1+18])
-              Pexp_construct "::" (//toplevel//[2,1+12]..[2,1+18]) ghost
-              Some
-                expression (//toplevel//[2,1+12]..[2,1+18]) ghost
-                  Pexp_tuple
-                  [
-                    expression (//toplevel//[2,1+12]..[2,1+13])
-                      Pexp_constant PConst_int (3,None)
-                    expression (//toplevel//[2,1+15]..[2,1+18]) ghost
-                      Pexp_construct "::" (//toplevel//[2,1+15]..[2,1+18]) ghost
-                      Some
-                        expression (//toplevel//[2,1+15]..[2,1+18]) ghost
-                          Pexp_tuple
-                          [
-                            expression (//toplevel//[2,1+15]..[2,1+16])
-                              Pexp_constant PConst_int (4,None)
-                            expression (//toplevel//[2,1+17]..[2,1+18]) ghost
-                              Pexp_construct "[]" (//toplevel//[2,1+17]..[2,1+18]) ghost
-                              None
-                          ]
-                  ]
+              Pexp_list
+              [
+                expression (//toplevel//[2,1+12]..[2,1+13])
+                  Pexp_constant PConst_int (3,None)
+                expression (//toplevel//[2,1+15]..[2,1+16])
+                  Pexp_constant PConst_int (4,None)
+              ]
       ]
   ]
 
@@ -1308,4 +1295,72 @@ Ptop_def
   ]
 
 - : < f : int > = <obj>
+Ptop_def
+  [
+    structure_item (//toplevel//[4,14+0]..[8,94+11])
+      Pstr_value Nonrec
+      [
+        <def>
+          pattern (//toplevel//[4,14+4]..[4,14+5])
+            Ppat_any
+          expression (//toplevel//[5,22+2]..[8,94+11])
+            Pexp_match
+            expression (//toplevel//[5,22+8]..[5,22+10])
+              Pexp_construct "[]" (//toplevel//[5,22+8]..[5,22+10])
+              None
+            [
+              <case>
+                pattern (//toplevel//[6,38+4]..[6,38+6])
+                  Ppat_construct "[]" (//toplevel//[6,38+4]..[6,38+6])
+                  None
+                expression (//toplevel//[6,38+10]..[6,38+12])
+                  Pexp_construct "[]" (//toplevel//[6,38+10]..[6,38+12])
+                  None
+              <case>
+                pattern (//toplevel//[7,51+4]..[7,51+21])
+                  Ppat_construct "::" (//toplevel//[7,51+8]..[7,51+10])
+                  Some
+                    []
+                    pattern (//toplevel//[7,51+6]..[7,51+19]) ghost
+                      Ppat_tuple
+                      [
+                        pattern (//toplevel//[7,51+6]..[7,51+7])
+                          Ppat_constant PConst_int (1,None)
+                        pattern (//toplevel//[7,51+11]..[7,51+19])
+                          Ppat_list
+                          [
+                            pattern (//toplevel//[7,51+13]..[7,51+14])
+                              Ppat_constant PConst_int (2,None)
+                            pattern (//toplevel//[7,51+16]..[7,51+17])
+                              Ppat_constant PConst_int (3,None)
+                          ]
+                      ]
+                expression (//toplevel//[7,51+25]..[7,51+42])
+                  Pexp_construct "::" (//toplevel//[7,51+29]..[7,51+31])
+                  Some
+                    expression (//toplevel//[7,51+27]..[7,51+40]) ghost
+                      Pexp_tuple
+                      [
+                        expression (//toplevel//[7,51+27]..[7,51+28])
+                          Pexp_constant PConst_int (4,None)
+                        expression (//toplevel//[7,51+32]..[7,51+40])
+                          Pexp_list
+                          [
+                            expression (//toplevel//[7,51+34]..[7,51+35])
+                              Pexp_constant PConst_int (5,None)
+                            expression (//toplevel//[7,51+37]..[7,51+38])
+                              Pexp_constant PConst_int (6,None)
+                          ]
+                      ]
+              <case>
+                pattern (//toplevel//[8,94+4]..[8,94+5])
+                  Ppat_any
+                expression (//toplevel//[8,94+9]..[8,94+11])
+                  Pexp_construct "[]" (//toplevel//[8,94+9]..[8,94+11])
+                  None
+            ]
+      ]
+  ]
+
+- : int list = []
 
