@@ -1040,8 +1040,8 @@ let buffered_out_flush oc key () =
   output_substring oc str 0 len ;
   Buffer.clear buf
 
-let std_buf_key = Domain.DLS.new_key (fun () -> Buffer.create 80)
-let err_buf_key = Domain.DLS.new_key (fun () -> Buffer.create 80)
+let std_buf_key = Domain.DLS.new_key (fun () -> Buffer.create pp_buffer_size)
+let err_buf_key = Domain.DLS.new_key (fun () -> Buffer.create pp_buffer_size)
 
 let std_formatter_key = DLS.new_key (fun () ->
   let ppf =
@@ -1164,13 +1164,13 @@ and open_tag v = pp_open_tag (DLS.get std_formatter_key) v
 and close_tag v = pp_close_tag (DLS.get std_formatter_key) v
 and open_stag v = pp_open_stag (DLS.get std_formatter_key) v
 and close_stag v = pp_close_stag (DLS.get std_formatter_key) v
-and print_as v = pp_print_as (DLS.get std_formatter_key) v
+and print_as v w = pp_print_as (DLS.get std_formatter_key) v w
 and print_string v = pp_print_string (DLS.get std_formatter_key) v
 and print_int v = pp_print_int (DLS.get std_formatter_key) v
 and print_float v = pp_print_float (DLS.get std_formatter_key) v
 and print_char v = pp_print_char (DLS.get std_formatter_key) v
 and print_bool v = pp_print_bool (DLS.get std_formatter_key) v
-and print_break v = pp_print_break (DLS.get std_formatter_key) v
+and print_break v w = pp_print_break (DLS.get std_formatter_key) v w
 and print_cut v = pp_print_cut (DLS.get std_formatter_key) v
 and print_space v = pp_print_space (DLS.get std_formatter_key) v
 and force_newline v = pp_force_newline (DLS.get std_formatter_key) v
@@ -1180,7 +1180,7 @@ and print_if_newline v = pp_print_if_newline (DLS.get std_formatter_key) v
 
 and open_tbox v = pp_open_tbox (DLS.get std_formatter_key) v
 and close_tbox v = pp_close_tbox (DLS.get std_formatter_key) v
-and print_tbreak v = pp_print_tbreak (DLS.get std_formatter_key) v
+and print_tbreak v w = pp_print_tbreak (DLS.get std_formatter_key) v w
 
 and set_tab v = pp_set_tab (DLS.get std_formatter_key) v
 and print_tab v = pp_print_tab (DLS.get std_formatter_key) v
@@ -1191,10 +1191,10 @@ and get_margin v = pp_get_margin (DLS.get std_formatter_key) v
 and set_max_indent v = pp_set_max_indent (DLS.get std_formatter_key) v
 and get_max_indent v = pp_get_max_indent (DLS.get std_formatter_key) v
 
-and set_geometry ~max_indent =
-  pp_set_geometry (DLS.get std_formatter_key) ~max_indent
-and safe_set_geometry ~max_indent =
-  pp_safe_set_geometry (DLS.get std_formatter_key) ~max_indent
+and set_geometry ~max_indent ~margin =
+  pp_set_geometry (DLS.get std_formatter_key) ~max_indent ~margin
+and safe_set_geometry ~max_indent ~margin =
+  pp_safe_set_geometry (DLS.get std_formatter_key) ~max_indent ~margin
 and get_geometry v = pp_get_geometry (DLS.get std_formatter_key) v
 and update_geometry v = pp_update_geometry (DLS.get std_formatter_key) v
 
@@ -1213,8 +1213,8 @@ and set_formatter_out_functions v =
 and get_formatter_out_functions v =
   pp_get_formatter_out_functions (DLS.get std_formatter_key) v
 
-and set_formatter_output_functions v =
-  pp_set_formatter_output_functions (DLS.get std_formatter_key) v
+and set_formatter_output_functions v w =
+  pp_set_formatter_output_functions (DLS.get std_formatter_key) v w
 and get_formatter_output_functions v =
   pp_get_formatter_output_functions (DLS.get std_formatter_key) v
 
