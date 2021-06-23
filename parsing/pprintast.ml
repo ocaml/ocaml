@@ -1108,7 +1108,10 @@ and signature_item ctxt f x : unit =
   | Psig_type (rf, l) ->
       type_def_list ctxt f (rf, true, l)
   | Psig_typesubst l ->
-      type_def_list ctxt f (Nonrecursive, false, l)
+      (* Psig_typesubst is never recursive, but we specify [Recursive] here to
+         avoid printing a [nonrec] flag, which would be rejected by the parser.
+      *)
+      type_def_list ctxt f (Recursive, false, l)
   | Psig_value vd ->
       let intro = if vd.pval_prim = [] then "val" else "external" in
       pp f "@[<2>%s@ %a@ :@ %a@]%a" intro

@@ -603,6 +603,10 @@ OCaml 4.13.0
 - #10454: Check row_more in nondep_type_rec.
   (Leo White, review by Thomas Refis)
 
+- #10468: Correctly pretty print local type substitution, e.g. type t := ...,
+  with -dsource
+  (Matt Else, review by Florian Angeletti)
+
 OCaml 4.12.0 (24 February 2021)
 -------------------------------
 
