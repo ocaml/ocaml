@@ -302,6 +302,11 @@ OCaml 4.13.0
   documentation comments
   (Florian Angeletti, report by Hendrik Tews, review by Gabriel Scherer)
 
+- #10206: Split labels and polymorphic variants tutorials
+  Splits the labels and polymorphic variants tutorial into two. Moves the GADTs
+  tutorial from the Language Extensions chapter to the tutorials.
+  (John Whitington, review by Florian Angeletti and Xavier Leroy)
+
 - #10247: Add initial tranche of examples to reference manual.
   Adds some eighty examples to the reference manual, principally to the
   expressions and patterns sections.
