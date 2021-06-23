@@ -31,22 +31,26 @@
    - {!err_formatter} outputs to {{!Stdlib.stderr}stderr}
 
    Most functions in the {!Format} module come in two variants: a short version
-   that operates on the current domain's {!std_formatter} and the generic
-   version prefixed by [pp_] that takes a formatter as its first argument.
+   that operates on the current domain's standard formatter as obtained using
+   {!get_std_formatter} and the generic version prefixed by [pp_] that takes a
+   formatter as its first argument. For the version that operates on the
+   current domain's standard formatter, the call to {!get_std_formatter} is
+   delayed until the last argument is received.
 
    More formatters can be created with {!formatter_of_out_channel},
    {!formatter_of_buffer}, {!formatter_of_symbolic_output_buffer} or using
    {{!section:formatter}custom formatters}.
 
-   If multiple domains write to the same output channel such as
-   {{!Stdlib.stdout}stdout} and {{!Stdlib.stderr}stderr} using distinct
-   formatters on each domain, the output from the domains will be interleaved
-   with each other at new lines.
-
    Warning: Since {{!section:formatter}formatters} contain mutable state, it is
    not thread-safe to use the same formatter on multiple domains in parallel
    without synchronisation.
 
+   If multiple domains write write to the same output channel using the
+   predefined formatters (as obtained by {!get_std_formatter} or
+   {!get_err_formatter}), the output from the domains will be interleaved with
+   each other at points where the formatters are flushed, such as with
+   {!print_flush}. This synchronisation is not performed by formatters obtained
+   from {!formatter_of_out_channel} (on the standard out channels or others).
 *)
 
 (** {1 Introduction}
@@ -1239,13 +1243,17 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a
 val printf : ('a, formatter, unit) format -> 'a
 (** Same as [fprintf] above, but output on [get_std_formatter ()].
 
-    It is defined as [fun fmt -> fprintf (get_std_formatter ()) fmt].
+    It is defined similarly to [fun fmt -> fprintf (get_std_formatter ()) fmt]
+    but delays calling [get_std_formatter] until after the final argument
+    required by the [format] is received.
 *)
 
 val eprintf : ('a, formatter, unit) format -> 'a
 (** Same as [fprintf] above, but output on [get_err_formatter ()].
 
-    It is defined as [fun fmt -> fprintf (get_err_formatter ()) fmt].
+    It is defined similarly to [fun fmt -> fprintf (get_err_formatter ()) fmt]
+    but delays calling [get_err_formatter] until after the final argument
+    required by the [format] is received.
 *)
 
 val sprintf : ('a, unit, string) format -> 'a
