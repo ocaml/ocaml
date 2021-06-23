@@ -45,7 +45,6 @@ and type_desc =
 and row_desc =
     { row_fields: (label * row_field) list;
       row_more: type_expr;
-      row_bound: unit;
       row_closed: bool;
       row_fixed: fixed_explanation option;
       row_name: (Path.t * type_expr list) option }
@@ -565,7 +564,7 @@ let compare_type t1 t2 = compare (get_id t1) (get_id t2)
 (* Constructor and accessors for [row_desc] *)
 
 let create_row ~fields ~more ~closed ~fixed ~name =
-    { row_fields=fields; row_more=more; row_bound=();
+    { row_fields=fields; row_more=more;
       row_closed=closed; row_fixed=fixed; row_name=name }
 
 let rec rev_concat l ll =
@@ -615,9 +614,6 @@ let row_repr row =
         closed = row.row_closed;
         fixed = row.row_fixed;
         name = row.row_name }
-
-(* just to avoid the "unused constructor" warning.. *)
-let _row_bound row = row.row_bound
 
 let rec row_field_repr_aux tl = function
     Reither(_, tl', _, {contents = Some fi}) ->
