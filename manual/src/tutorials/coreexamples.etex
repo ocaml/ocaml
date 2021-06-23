@@ -6,8 +6,8 @@ good familiarity with programming in a conventional languages (say, C or Java)
 is assumed, but no prior exposure to functional languages is required. The
 present chapter introduces the core language. Chapter~\ref{c:moduleexamples}
 deals with the module system, chapter~\ref{c:objectexamples} with the
-object-oriented features, chapter~\ref{c:labl-examples} with extensions to the
-core language (labeled arguments and polymorphic variants),
+object-oriented features, chapter~\ref{c:labl-examples} with labeled
+arguments, chapter~\ref{c:poly-variant} with polymorphic variants,
 chapter~\ref{c:polymorphism} with the limitations of polymorphism, and
 chapter~\ref{c:advexamples} gives some advanced examples.
 
