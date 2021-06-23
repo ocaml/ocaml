@@ -1308,4 +1308,64 @@ Ptop_def
   ]
 
 - : < f : int > = <obj>
+Ptop_def
+  [
+    structure_item (//toplevel//[3,66+0]..[5,98+12])
+      Pstr_value Nonrec
+      [
+        <def>
+          pattern (//toplevel//[3,66+4]..[3,66+5])
+            Ppat_var "g" (//toplevel//[3,66+4]..[3,66+5])
+          expression (//toplevel//[3,66+6]..[5,98+12]) ghost
+            Pexp_fun
+            Nolabel
+            None
+            pattern (//toplevel//[3,66+6]..[3,66+7])
+              Ppat_var "y" (//toplevel//[3,66+6]..[3,66+7])
+            expression (//toplevel//[4,76+2]..[5,98+12])
+              Pexp_let Nonrec
+              [
+                <def>
+                  pattern (//toplevel//[4,76+6]..[4,76+7])
+                    Ppat_var "f" (//toplevel//[4,76+6]..[4,76+7])
+                  expression (//toplevel//[4,76+8]..[4,76+18]) ghost
+                    Pexp_fun
+                    Labelled "y"
+                    None
+                    pattern (//toplevel//[4,76+9]..[4,76+10])
+                      Ppat_var "y" (//toplevel//[4,76+9]..[4,76+10])
+                    expression (//toplevel//[4,76+13]..[4,76+18])
+                      Pexp_apply
+                      expression (//toplevel//[4,76+15]..[4,76+16])
+                        Pexp_ident "+" (//toplevel//[4,76+15]..[4,76+16])
+                      [
+                        <arg>
+                        Nolabel
+                          expression (//toplevel//[4,76+13]..[4,76+14])
+                            Pexp_ident "y" (//toplevel//[4,76+13]..[4,76+14])
+                        <arg>
+                        Nolabel
+                          expression (//toplevel//[4,76+17]..[4,76+18])
+                            Pexp_constant PConst_int (1,None)
+                      ]
+              ]
+              expression (//toplevel//[5,98+2]..[5,98+12])
+                Pexp_apply
+                expression (//toplevel//[5,98+2]..[5,98+3])
+                  Pexp_ident "f" (//toplevel//[5,98+2]..[5,98+3])
+                [
+                  <arg>
+                  Labelled "y"
+                    expression (//toplevel//[5,98+5]..[5,98+12]) ghost
+                      Pexp_constraint
+                      expression (//toplevel//[5,98+6]..[5,98+7])
+                        Pexp_ident "y" (//toplevel//[5,98+6]..[5,98+7])
+                      core_type (//toplevel//[5,98+8]..[5,98+11])
+                        Ptyp_constr "int" (//toplevel//[5,98+8]..[5,98+11])
+                        []
+                ]
+      ]
+  ]
+
+val g : int -> int = <fun>
 
