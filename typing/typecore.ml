@@ -3106,7 +3106,7 @@ and type_expect_
         let arg = Option.map (type_exp env) sarg in
         let arg_type = Option.map (fun arg -> arg.exp_type) arg in
         let row =
-          create_row 
+          create_row
             ~fields: [l, Rpresent arg_type]
             ~more:   (newvar ())
             ~closed: false
