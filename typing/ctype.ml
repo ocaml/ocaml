@@ -244,11 +244,6 @@ let newconstr path tyl = newty (Tconstr (path, tyl, ref Mnil))
 
 let none = newty (Ttuple [])                (* Clearly ill-formed type *)
 
-(**** Representative of a type ****)
-
-(* Re-export repr *)
-(* let repr = repr *)
-
 (**** unification mode ****)
 
 type unification_mode =
