@@ -1080,12 +1080,25 @@ let flush_buffer_formatter buf ppf =
   Buffer.reset buf;
   s
 
-
 (* Flush [str_formatter] and get the contents of [stdbuf]. *)
 let flush_str_formatter () =
   let stdbuf = DLS.get stdbuf_key in
   let str_formatter = DLS.get str_formatter_key in
   flush_buffer_formatter stdbuf str_formatter
+
+let make_synchronized_formatter output flush =
+  DLS.new_key (fun () ->
+    let buf = Buffer.create pp_buffer_size in
+    let output' = Buffer.add_substring buf in
+    let flush' () =
+      output (Buffer.contents buf) 0 (Buffer.length buf);
+      Buffer.clear buf;
+      flush ()
+    in
+    make_formatter output' flush')
+
+let synchronized_formatter_of_out_channel oc =
+  make_synchronized_formatter (output_substring oc) (fun () -> flush oc)
 
 (*
   Symbolic pretty-printing
