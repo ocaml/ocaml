@@ -2744,8 +2744,7 @@ and unify2 env t1 t2 =
 
   let t1, t2 =
     if !Clflags.principal
-    && (find_lowest_level  t1' < lv ||
-        find_lowest_level  t2' < lv) then
+    && (find_lowest_level t1' < lv || find_lowest_level t2' < lv) then
       (* Expand abbreviations hiding a lower level *)
       (* Should also do it for parameterized types, after unification... *)
       (match get_desc t1 with Tconstr (_, [], _) -> t1' | _ -> t1),
