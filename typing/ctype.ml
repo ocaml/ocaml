@@ -1167,7 +1167,7 @@ let rec copy ?partial ?keep_names scope ty =
                 match partial with
                   Some (free_univars, false) ->
                     let more' =
-                      if eq_type more more' then
+                      if not (eq_type more more') then
                         more' (* we've already made a copy *)
                       else
                         newvar ()
