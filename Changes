@@ -36,6 +36,10 @@ Working version
 - #10434: Pun labelled arguments with type constraint in function applications.
   (Greta Yorsh, review by Nicolas Chataing and Nicolás Ojeda Bär)
 
+- #10470: Remove unused `cstr_normal` field from the `constructor_description`
+  type
+  (Nicolas Chataing, review by ???)
+
 ### Build system:
 
 ### Bug fixes:
