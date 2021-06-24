@@ -41,6 +41,9 @@
         .type name, @function; \
 name:
 
+#define END_FUNCTION(name) \
+        .size name, .-name
+
 #if defined(__PIC__)
         .option pic
 #define PLT(r) r@plt
@@ -173,7 +176,7 @@ FUNCTION(caml_call_gc)
         LOAD    ra, 0x8(sp)
         addi    sp, sp, 0x170
         ret
-        .size   caml_call_gc, .-caml_call_gc
+END_FUNCTION(caml_call_gc)
 
 /* Call a C function from OCaml */
 /* Function to call is in ARG */
@@ -193,7 +196,7 @@ FUNCTION(caml_c_call)
         LOAD    ALLOC_PTR, Caml_state(young_ptr)
         /* Return */
         jr      s2
-        .size   caml_c_call, .-caml_c_call
+END_FUNCTION(caml_c_call)
 
 /* Raise an exception from OCaml */
 FUNCTION(caml_raise_exn)
@@ -217,7 +220,7 @@ FUNCTION(caml_raise_exn)
         /* Restore exception bucket and raise */
         mv      a0, s2
         j       1b
-        .size   caml_raise_exn, .-caml_raise_exn
+END_FUNCTION(caml_raise_exn)
 
         .globl  caml_reraise_exn
         .type   caml_reraise_exn, @function
@@ -245,7 +248,7 @@ FUNCTION(caml_raise_exception)
         call    PLT(caml_stash_backtrace)
         mv      a0, s2
         j       1b
-        .size   caml_raise_exception, .-caml_raise_exception
+END_FUNCTION(caml_raise_exception)
 
 /* Start the OCaml program */
 
@@ -347,7 +350,7 @@ FUNCTION(caml_start_program)
         ret
         .type   .Lcaml_retaddr, @function
         .size   .Lcaml_retaddr, .-.Lcaml_retaddr
-        .size   caml_start_program, .-caml_start_program
+END_FUNCTION(caml_start_program)
 
         .align  2
 .Ltrap_handler:
@@ -355,7 +358,7 @@ FUNCTION(caml_start_program)
         ori     a0, a0, 2
         j       .Lreturn_result
         .type   .Ltrap_handler, @function
-        .size   .Ltrap_handler, .-.Ltrap_handler
+END_FUNCTION(.Ltrap_handler)
 
 /* Callback from C to OCaml */
 
@@ -367,7 +370,7 @@ FUNCTION(caml_callback_asm)
                             /* a1 = closure environment */
         LOAD    ARG, 0(a1)  /* code pointer */
         j       .Ljump_to_caml
-        .size   caml_callback_asm, .-caml_callback_asm
+END_FUNCTION(caml_callback_asm)
 
 FUNCTION(caml_callback2_asm)
         /* Initial shuffling of arguments */
@@ -379,7 +382,7 @@ FUNCTION(caml_callback2_asm)
         mv      a2, TMP
         la      ARG, caml_apply2
         j       .Ljump_to_caml
-        .size   caml_callback2_asm, .-caml_callback2_asm
+END_FUNCTION(caml_callback2_asm)
 
 FUNCTION(caml_callback3_asm)
         /* Initial shuffling of arguments */
@@ -391,14 +394,14 @@ FUNCTION(caml_callback3_asm)
         LOAD    a2, 16(a2)
         la      ARG, caml_apply3
         j       .Ljump_to_caml
-        .size   caml_callback3_asm, .-caml_callback3_asm
+END_FUNCTION(caml_callback3_asm)
 
 FUNCTION(caml_ml_array_bound_error)
         /* Load address of [caml_array_bound_error] in ARG */
         la      ARG, caml_array_bound_error
         /* Call that function */
         tail    caml_c_call
-        .size   caml_ml_array_bound_error, .-caml_ml_array_bound_error
+END_FUNCTION(caml_ml_array_bound_error)
 
         .globl  caml_system__code_end
 caml_system__code_end:
