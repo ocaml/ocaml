@@ -94,11 +94,10 @@ let constructor_args ~current_unit priv cd_args cd_res path rep =
 
 let constructor_descrs ~current_unit ty_path decl cstrs rep =
   let ty_res = newgenconstr ty_path decl.type_params in
-  let num_consts = ref 0 and num_nonconsts = ref 0  and num_normal = ref 0 in
+  let num_consts = ref 0 and num_nonconsts = ref 0 in
   List.iter
-    (fun {cd_args; cd_res; _} ->
-      if cd_args = Cstr_tuple [] then incr num_consts else incr num_nonconsts;
-      if cd_res = None then incr num_normal)
+    (fun {cd_args; _} ->
+      if cd_args = Cstr_tuple [] then incr num_consts else incr num_nonconsts)
     cstrs;
   let rec describe_constructors idx_const idx_nonconst = function
       [] -> []

@@ -38,7 +38,7 @@ Working version
 
 - #10470: Remove unused `cstr_normal` field from the `constructor_description`
   type
-  (Nicolas Chataing, review by ???)
+  (Nicolas Chataing, review by Gabriel Scherer)
 
 ### Build system:
 
