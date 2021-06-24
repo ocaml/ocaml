@@ -45,7 +45,7 @@
    not thread-safe to use the same formatter on multiple domains in parallel
    without synchronization.
 
-   If multiple domains write write to the same output channel using the
+   If multiple domains write to the same output channel using the
    predefined formatters (as obtained by {!get_std_formatter} or
    {!get_err_formatter}), the output from the domains will be interleaved with
    each other at points where the formatters are flushed, such as with
