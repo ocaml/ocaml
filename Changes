@@ -44,6 +44,10 @@ Working version
 
 ### Bug fixes:
 
+- #10473: Add CFI directives to RISC-V runtime and asmcomp.
+  This allows stacktraces to work in gdb through C and OCaml calls.
+  (Edwin Török, review by Nicolás Ojeda Bär and Xavier Leroy)
+
 OCaml 4.13.0
 -------------
 
