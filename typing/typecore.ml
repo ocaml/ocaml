@@ -3091,8 +3091,7 @@ and type_expect_
         get_desc (expand_head env ty_expected0)
       with
       | Some sarg, Tvariant row, Tvariant row0 ->
-          begin match row_field_repr (List.assoc l (row_fields row)),
-          row_field_repr (List.assoc l (row_fields row0)) with
+          begin match row_field l row, row_field l row0 with
             Rpresent (Some ty), Rpresent (Some ty0) ->
               let arg = type_argument env sarg ty ty0 in
               re { exp_desc = Texp_variant(l, Some arg);
@@ -3100,10 +3099,10 @@ and type_expect_
                    exp_type = ty_expected0;
                    exp_attributes = sexp.pexp_attributes;
                    exp_env = env }
-          | _ -> raise Not_found
+          | _ -> raise Exit
           end
-      | _ -> raise Not_found
-      with Not_found ->
+      | _ -> raise Exit
+      with Exit ->
         let arg = Option.map (type_exp env) sarg in
         let arg_type = Option.map (fun arg -> arg.exp_type) arg in
         let row =
