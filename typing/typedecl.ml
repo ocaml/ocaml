@@ -142,7 +142,11 @@ let get_unboxed_type_representation env ty =
 (* Determine if a type's values are represented by floats at run-time. *)
 let is_float env ty =
   match get_unboxed_type_representation env ty with
-    Some {desc = Tconstr(p, _, _); _} -> Path.same p Predef.path_float
+    Some ty' ->
+      begin match get_desc ty' with
+        Tconstr(p, _, _) -> Path.same p Predef.path_float
+      | _ -> false
+      end
   | _ -> false
 
 (* Determine if a type definition defines a fixed type. (PW) *)
@@ -174,10 +178,10 @@ let set_private_row env loc p decl =
     | Some t -> Ctype.expand_head env t
   in
   let rv =
-    match tm.desc with
+    match get_desc tm with
       Tvariant row ->
         let row = Btype.row_repr row in
-        Btype.set_type_desc tm
+        set_type_desc tm
           (Tvariant {row with row_fixed = Some Fixed_private});
         if Btype.static_row row then
           (* the syntax hinted at the existence of a row variable,
@@ -193,7 +197,7 @@ let set_private_row env loc p decl =
         r
     | _ -> assert false
   in
-  Btype.set_type_desc rv (Tconstr (p, decl.type_params, ref Mnil))
+  set_type_desc rv (Tconstr (p, decl.type_params, ref Mnil))
 
 (* Translate one type declaration *)
 
@@ -231,7 +235,7 @@ let transl_labels env closed lbls =
     List.map
       (fun ld ->
          let ty = ld.ld_type.ctyp_type in
-         let ty = match ty.desc with Tpoly(t,[]) -> t | _ -> ty in
+         let ty = match get_desc ty with Tpoly(t,[]) -> t | _ -> ty in
          {Types.ld_id = ld.ld_id;
           ld_mutable = ld.ld_mutable;
           ld_type = ty;
@@ -271,7 +275,7 @@ let make_constructor env type_path type_params sargs sret_type =
       let tret_type = transl_simple_type env false sret_type in
       let ret_type = tret_type.ctyp_type in
       (* TODO add back type_path as a parameter ? *)
-      begin match (Ctype.repr ret_type).desc with
+      begin match get_desc ret_type with
         | Tconstr (p', _, _) when Path.same type_path p' -> ()
         | _ ->
           let trace =
@@ -480,10 +484,9 @@ module TypeSet = Btype.TypeSet
 module TypeMap = Btype.TypeMap
 
 let rec check_constraints_rec env loc visited ty =
-  let ty = Ctype.repr ty in
   if TypeSet.mem ty !visited then () else begin
   visited := TypeSet.add ty !visited;
-  match ty.desc with
+  match get_desc ty with
   | Tconstr (path, args, _) ->
       let decl =
         try Env.find_type path env
@@ -586,7 +589,7 @@ let check_coherence env loc dpath decl =
   match decl with
     { type_kind = (Type_variant _ | Type_record _| Type_open);
       type_manifest = Some ty } ->
-      begin match (Ctype.repr ty).desc with
+      begin match get_desc ty with
         Tconstr(path, args, _) ->
           begin try
             let decl' = Env.find_type path env in
@@ -624,10 +627,9 @@ let check_abbrev env sdecl (id, decl) =
 let check_well_founded env loc path to_check ty =
   let visited = ref TypeMap.empty in
   let rec check ty0 parents ty =
-    let ty = Btype.repr ty in
     if TypeSet.mem ty parents then begin
       (*Format.eprintf "@[%a@]@." Printtyp.raw_type_expr ty;*)
-      if match ty0.desc with
+      if match get_desc ty0 with
       | Tconstr (p, _, _) -> Path.same p path
       | _ -> false
       then raise (Error (loc, Recursive_abbrev (Path.name path)))
@@ -643,7 +645,7 @@ let check_well_founded env loc path to_check ty =
     in
     if fini then () else
     let rec_ok =
-      match ty.desc with
+      match get_desc ty with
         Tconstr(p,_,_) ->
           !Clflags.recursive_types && Ctype.is_contractive env p
       | Tobject _ | Tvariant _ -> true
@@ -660,7 +662,7 @@ let check_well_founded env loc path to_check ty =
       with e ->
         visited := visited'; Some e
     in
-    match ty.desc with
+    match get_desc ty with
     | Tconstr(p, _, _) when arg_exn <> None || to_check p ->
         if to_check p then Option.iter raise arg_exn
         else Btype.iter_type_expr (check ty0 TypeSet.empty) ty;
@@ -699,13 +701,12 @@ let check_recursion ~orig_env env loc path decl to_check =
 
   if decl.type_params = [] then () else
 
-  let visited = ref [] in
+  let visited = ref TypeSet.empty in
 
   let rec check_regular cpath args prev_exp prev_expansions ty =
-    let ty = Ctype.repr ty in
-    if not (List.memq ty !visited) then begin
-      visited := ty :: !visited;
-      match ty.desc with
+    if not (TypeSet.mem ty !visited) then begin
+      visited := TypeSet.add ty !visited;
+      match get_desc ty with
       | Tconstr(path', args', _) ->
           if Path.same path path' then begin
             if not (Ctype.is_equal orig_env false args args') then
@@ -799,11 +800,10 @@ let name_recursion sdecl id decl =
   | { type_kind = Type_abstract;
       type_manifest = Some ty;
       type_private = Private; } when is_fixed_type sdecl ->
-    let ty = Ctype.repr ty in
-    let ty' = Btype.newty2 ty.level ty.desc in
+    let ty' = newty2 ~level:(get_level ty) (get_desc ty) in
     if Ctype.deep_occur ty ty' then
       let td = Tconstr(Path.Pident id, decl.type_params, ref Mnil) in
-      Btype.link_type ty (Btype.newty2 ty.level td);
+      link_type ty (newty2 ~level:(get_level ty) td);
       {decl with type_manifest = Some ty'}
     else decl
   | _ -> decl
@@ -1009,16 +1009,16 @@ let transl_extension_constructor ~scope env type_path type_params
           let vars =
             Ctype.free_variables (Btype.newgenty (Ttuple args))
           in
-            List.iter
-              (function {desc = Tvar (Some "_")} as ty
-                  when List.memq ty vars ->
-                    Btype.set_type_desc ty (Tvar None)
-                | _ -> ())
-              typext_params
+          List.iter
+            (fun ty ->
+              if get_desc ty = Tvar (Some "_")
+              && List.exists (eq_type ty) vars
+              then set_type_desc ty (Tvar None))
+            typext_params
         end;
         (* Ensure that constructor's type matches the type being extended *)
         let cstr_type_path, cstr_type_params =
-          match cdescr.cstr_res.desc with
+          match get_desc cdescr.cstr_res with
             Tconstr (p, _, _) ->
               let decl = Env.find_type p env in
                 p, decl.type_params
@@ -1055,8 +1055,8 @@ let transl_extension_constructor ~scope env type_path type_params
               Types.Cstr_tuple args
           | Some decl ->
               let tl =
-                match args with
-                | [ {desc=Tconstr(_, tl, _)} ] -> tl
+                match List.map get_desc args with
+                | [ Tconstr(_, tl, _) ] -> tl
                 | _ -> assert false
               in
               let decl = Ctype.instance_declaration decl in
@@ -1267,7 +1267,7 @@ let get_native_repr_attribute attrs ~global_repr =
     raise (Error (loc, Multiple_native_repr_attributes))
 
 let native_repr_of_type env kind ty =
-  match kind, (Ctype.expand_head_opt env ty).desc with
+  match kind, get_desc (Ctype.expand_head_opt env ty) with
   | Untagged, Tconstr (path, _, _) when Path.same path Predef.path_int ->
     Some Untagged_int
   | Unboxed, Tconstr (path, _, _) when Path.same path Predef.path_float ->
@@ -1313,7 +1313,7 @@ let make_native_repr env core_type ty ~global_repr =
     end
 
 let rec parse_native_repr_attributes env core_type ty ~global_repr =
-  match core_type.ptyp_desc, (Ctype.repr ty).desc,
+  match core_type.ptyp_desc, get_desc ty,
     get_native_repr_attribute core_type.ptyp_attributes ~global_repr:None
   with
   | Ptyp_arrow _, Tarrow _, Native_repr_attr_present kind  ->
@@ -1330,8 +1330,8 @@ let rec parse_native_repr_attributes env core_type ty ~global_repr =
 
 let check_unboxable env loc ty =
   let check_type acc ty : Path.Set.t =
-    let ty = Ctype.repr (Ctype.expand_head_opt env ty) in
-    try match ty.desc with
+    let ty = Ctype.expand_head_opt env ty in
+    try match get_desc ty with
       | Tconstr (p, _, _) ->
         let tydecl = Env.find_type p env in
         if tydecl.type_unboxed_default then
@@ -1635,15 +1635,15 @@ let explain_unbound ppf tv tl typ kwd lab =
 let explain_unbound_single ppf tv ty =
   let trivial ty =
     explain_unbound ppf tv [ty] (fun t -> t) "type" (fun _ -> "") in
-  match (Ctype.repr ty).desc with
+  match get_desc ty with
     Tobject(fi,_) ->
       let (tl, rv) = Ctype.flatten_fields fi in
-      if rv == tv then trivial ty else
+      if eq_type rv tv then trivial ty else
       explain_unbound ppf tv tl (fun (_,_,t) -> t)
         "method" (fun (lab,_,_) -> lab ^ ": ")
   | Tvariant row ->
       let row = Btype.row_repr row in
-      if row.row_more == tv then trivial ty else
+      if eq_type row.row_more tv then trivial ty else
       explain_unbound ppf tv row.row_fields
         (fun (_l,f) -> match Btype.row_field_repr f with
           Rpresent (Some t) -> t
@@ -1746,7 +1746,6 @@ let report_error ppf = function
                    for native-code compilation@]"
   | Unbound_type_var (ty, decl) ->
       fprintf ppf "@[A type variable is unbound in this type declaration";
-      let ty = Ctype.repr ty in
       begin match decl.type_kind, decl.type_manifest with
       | Type_variant (tl, _rep), _ ->
           explain_unbound_gen ppf ty tl (fun c ->

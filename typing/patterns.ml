@@ -194,9 +194,9 @@ end = struct
             | Some a -> true, [a]
           in
           let type_row () =
-            match Ctype.expand_head q.pat_env q.pat_type with
-              | {desc = Tvariant type_row} -> Btype.row_repr type_row
-              | _ -> assert false
+            match get_desc (Ctype.expand_head q.pat_env q.pat_type) with
+            | Tvariant type_row -> Btype.row_repr type_row
+            | _ -> assert false
           in
           Variant {tag; has_arg; cstr_row; type_row}, pats
       | `Array args ->

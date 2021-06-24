@@ -19,11 +19,13 @@ open Asttypes
 
 (* Type expressions for the core language *)
 
-type type_expr =
+type transient_expr =
   { mutable desc: type_desc;
     mutable level: int;
     mutable scope: int;
     id: int }
+
+and type_expr = transient_expr
 
 and type_desc =
     Tvar of string option
@@ -72,19 +74,13 @@ and commutable =
   | Cunknown
   | Clink of commutable ref
 
-module TypeOps = struct
+module TransientTypeOps = struct
   type t = type_expr
   let compare t1 t2 = t1.id - t2.id
   let hash t = t.id
   let equal t1 t2 = t1 == t2
 end
 
-module Private_type_expr = struct
-  let create desc ~level ~scope ~id = {desc; level; scope; id}
-  let set_desc ty d = ty.desc <- d
-  let set_level ty lv = ty.level <- lv
-  let set_scope ty sc = ty.scope <- sc
-end
 (* *)
 
 module Uid = struct
@@ -477,3 +473,223 @@ let signature_item_id = function
   | Sig_class (id, _, _, _)
   | Sig_class_type (id, _, _, _)
     -> id
+
+(* migrating repr from Btype.. *)
+
+(**** Definitions for backtracking ****)
+
+type change =
+    Ctype of type_expr * type_desc
+  | Ccompress of type_expr * type_desc * type_desc
+  | Clevel of type_expr * int
+  | Cscope of type_expr * int
+  | Cname of
+      (Path.t * type_expr list) option ref * (Path.t * type_expr list) option
+  | Crow of row_field option ref * row_field option
+  | Ckind of field_kind option ref * field_kind option
+  | Ccommu of commutable ref * commutable
+  | Cuniv of type_expr option ref * type_expr option
+
+type changes =
+    Change of change * changes ref
+  | Unchanged
+  | Invalid
+
+let trail = Local_store.s_table ref Unchanged
+
+let log_change ch =
+  let r' = ref Unchanged in
+  !trail := Change (ch, r');
+  trail := r'
+
+(**** Representative of a type ****)
+
+let rec field_kind_repr =
+  function
+    Fvar {contents = Some kind} -> field_kind_repr kind
+  | kind                        -> kind
+
+let rec repr_link (t : type_expr) d : type_expr -> type_expr =
+ function
+   {desc = Tlink t' as d'} ->
+     repr_link t d' t'
+ | {desc = Tfield (_, k, _, t') as d'} when field_kind_repr k = Fabsent ->
+     repr_link t d' t'
+ | t' ->
+     log_change (Ccompress (t, t.desc, d));
+     t.desc <- d;
+     t'
+
+let repr_link1 t = function
+   {desc = Tlink t' as d'} ->
+     repr_link t d' t'
+ | {desc = Tfield (_, k, _, t') as d'} when field_kind_repr k = Fabsent ->
+     repr_link t d' t'
+ | t' -> t'
+
+let repr t =
+  match t.desc with
+   Tlink t' ->
+     repr_link1 t t'
+ | Tfield (_, k, _, t') when field_kind_repr k = Fabsent ->
+     repr_link1 t t'
+ | _ -> t
+
+(* getters for type_expr *)
+
+let get_desc t = (repr t).desc
+let get_level t = (repr t).level
+let get_scope t = (repr t).scope
+let get_id t = (repr t).id
+
+(* transient type_expr *)
+
+module Transient_expr = struct
+  let create desc ~level ~scope ~id = {desc; level; scope; id}
+  let set_desc ty d = ty.desc <- d
+  let set_stub_desc ty d = assert (ty.desc = Tvar None); ty.desc <- d
+  let set_level ty lv = ty.level <- lv
+  let set_scope ty sc = ty.scope <- sc
+  let coerce ty = ty
+  let repr = repr
+  let type_expr ty = ty
+end
+
+(* Comparison for [type_expr]; cannot be used for functors *)
+
+let eq_type t1 t2 = t1 == t2 || repr t1 == repr t2
+let compare_type t1 t2 = compare (get_id t1) (get_id t2)
+
+(**** Some type creators ****)
+
+let new_id = Local_store.s_ref (-1)
+
+let create_expr = Transient_expr.create
+
+let newty3 ~level ~scope desc  =
+  incr new_id;
+  create_expr desc ~level ~scope ~id:!new_id
+
+let newty2 ~level desc =
+  newty3 ~level ~scope:Ident.lowest_scope desc
+
+                  (**********************************)
+                  (*  Utilities for backtracking    *)
+                  (**********************************)
+
+let undo_change = function
+    Ctype  (ty, desc) -> Transient_expr.set_desc ty desc
+  | Ccompress  (ty, desc, _) -> Transient_expr.set_desc ty desc
+  | Clevel (ty, level) -> Transient_expr.set_level ty level
+  | Cscope (ty, scope) -> Transient_expr.set_scope ty scope
+  | Cname  (r, v) -> r := v
+  | Crow   (r, v) -> r := v
+  | Ckind  (r, v) -> r := v
+  | Ccommu (r, v) -> r := v
+  | Cuniv  (r, v) -> r := v
+
+type snapshot = changes ref * int
+let last_snapshot = Local_store.s_ref 0
+
+let log_type ty =
+  if ty.id <= !last_snapshot then log_change (Ctype (ty, ty.desc))
+let link_type ty ty' =
+  let ty = repr ty in
+  let ty' = repr ty' in
+  log_type ty;
+  let desc = ty.desc in
+  Transient_expr.set_desc ty (Tlink ty');
+  (* Name is a user-supplied name for this unification variable (obtained
+   * through a type annotation for instance). *)
+  match desc, ty'.desc with
+    Tvar name, Tvar name' ->
+      begin match name, name' with
+      | Some _, None -> log_type ty'; Transient_expr.set_desc ty' (Tvar name)
+      | None, Some _ -> ()
+      | Some _, Some _ ->
+          if ty.level < ty'.level then
+            (log_type ty'; Transient_expr.set_desc ty' (Tvar name))
+      | None, None   -> ()
+      end
+  | _ -> ()
+  (* ; assert (check_memorized_abbrevs ()) *)
+  (*  ; check_expans [] ty' *)
+(* TODO: consider eliminating set_type_desc, replacing it with link types *)
+let set_type_desc ty td =
+  let ty = repr ty in
+  if td != ty.desc then begin
+    log_type ty;
+    Transient_expr.set_desc ty td
+  end
+(* TODO: separate set_level into two specific functions: *)
+(*  set_lower_level and set_generic_level *)
+let set_level ty level =
+  let ty = repr ty in
+  if level <> ty.level then begin
+    if ty.id <= !last_snapshot then log_change (Clevel (ty, ty.level));
+    Transient_expr.set_level ty level
+  end
+(* TODO: introduce a guard and rename it to set_higher_scope? *)
+let set_scope ty scope =
+  let ty = repr ty in
+  if scope <> ty.scope then begin
+    if ty.id <= !last_snapshot then log_change (Cscope (ty, ty.scope));
+    Transient_expr.set_scope ty scope
+  end
+let set_univar rty ty =
+  log_change (Cuniv (rty, !rty)); rty := Some ty
+let set_name nm v =
+  log_change (Cname (nm, !nm)); nm := v
+let set_row_field e v =
+  log_change (Crow (e, !e)); e := Some v
+let set_kind rk k =
+  log_change (Ckind (rk, !rk)); rk := Some k
+let set_commu rc c =
+  log_change (Ccommu (rc, !rc)); rc := c
+
+let snapshot () =
+  let old = !last_snapshot in
+  last_snapshot := !new_id;
+  (!trail, old)
+
+let rec rev_log accu = function
+    Unchanged -> accu
+  | Invalid -> assert false
+  | Change (ch, next) ->
+      let d = !next in
+      next := Invalid;
+      rev_log (ch::accu) d
+
+let backtrack ~cleanup_abbrev (changes, old) =
+  match !changes with
+    Unchanged -> last_snapshot := old
+  | Invalid -> failwith "Btype.backtrack"
+  | Change _ as change ->
+      cleanup_abbrev ();
+      let backlog = rev_log [] change in
+      List.iter undo_change backlog;
+      changes := Unchanged;
+      last_snapshot := old;
+      trail := changes
+
+let rec rev_compress_log log r =
+  match !r with
+    Unchanged | Invalid ->
+      log
+  | Change (Ccompress _, next) ->
+      rev_compress_log (r::log) next
+  | Change (_, next) ->
+      rev_compress_log log next
+
+let undo_compress (changes, _old) =
+  match !changes with
+    Unchanged
+  | Invalid -> ()
+  | Change _ ->
+      let log = rev_compress_log [] changes in
+      List.iter
+        (fun r -> match !r with
+          Change (Ccompress (ty, desc, d), next) when ty.desc == d ->
+            Transient_expr.set_desc ty desc; r := !next
+        | _ -> ())
+        log

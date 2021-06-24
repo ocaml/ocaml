@@ -716,7 +716,7 @@ and class_field_aux self_loc cl_num self_type meths vars
                     let ty' = cty'.ctyp_type in
               Ctype.unify val_env ty' ty
           end;
-          begin match (Ctype.repr ty).desc with
+          begin match get_desc ty with
             Tvar _ ->
               let ty' = Ctype.newvar () in
               Ctype.unify val_env (Ctype.newty (Tpoly (ty', []))) ty;
@@ -838,7 +838,7 @@ and class_structure cl_num final val_env met_env loc
     List.iter
       (fun (lab,kind,ty) ->
         let k =
-          if Btype.field_kind_repr kind = Fpresent then Public else Private in
+          if Types.field_kind_repr kind = Fpresent then Public else Private in
         try Ctype.unify val_env ty
             (Ctype.filter_method val_env lab k self_type)
         with _ -> assert false)
@@ -864,7 +864,7 @@ and class_structure cl_num final val_env met_env loc
       csig_inher = inher} in
   let methods = get_methods self_type in
   let priv_meths =
-    List.filter (fun (_,kind,_) -> Btype.field_kind_repr kind <> Fpresent)
+    List.filter (fun (_,kind,_) -> Types.field_kind_repr kind <> Fpresent)
       methods in
   (* ensure that inherited methods are listed too *)
   List.iter (fun (met, _kind, _ty) ->
@@ -911,7 +911,7 @@ and class_structure cl_num final val_env met_env loc
 
   (* Check for private methods made public *)
   let pub_meths' =
-    List.filter (fun (_,kind,_) -> Btype.field_kind_repr kind = Fpresent)
+    List.filter (fun (_,kind,_) -> Types.field_kind_repr kind = Fpresent)
       (get_methods public_self) in
   let names = List.map (fun (x,_,_) -> x) in
   let l1 = names priv_meths and l2 = names pub_meths' in
@@ -1220,9 +1220,11 @@ and class_expr_aux cl_num val_env met_env scl =
       Typetexp.widen context;
       Ctype.end_def ();
 
-      limited_generalize (Ctype.row_variable (Ctype.self_type cl.cl_type))
-          cl.cl_type;
-      limited_generalize (Ctype.row_variable (Ctype.self_type clty.cltyp_type))
+      limited_generalize
+        (Ctype.row_variable (Ctype.self_type cl.cl_type))
+        cl.cl_type;
+      limited_generalize
+        (Ctype.row_variable (Ctype.self_type clty.cltyp_type))
         clty.cltyp_type;
 
       begin match
@@ -1444,7 +1446,8 @@ let class_infos define_class kind
     let (cl_params', cl_type) = Ctype.instance_class params typ in
     let ty = Ctype.self_type cl_type in
     Ctype.hide_private_methods ty;
-    Ctype.set_object_name obj_id (Ctype.row_variable ty) cl_params ty;
+    Ctype.set_object_name
+      obj_id (Ctype.row_variable ty) cl_params ty;
     begin try
       List.iter2 (Ctype.unify env) cl_params cl_params'
     with Ctype.Unify _ ->
@@ -1572,7 +1575,8 @@ let class_infos define_class kind
     Ctype.instance_parameterized_type params (Ctype.self_type typ)
   in
   Ctype.hide_private_methods cl_ty;
-  Ctype.set_object_name obj_id (Ctype.row_variable cl_ty) cl_params cl_ty;
+  Ctype.set_object_name
+    obj_id (Ctype.row_variable cl_ty) cl_params cl_ty;
   let cl_abbr =
     let arity = List.length cl_params in
     {
@@ -1614,8 +1618,8 @@ let final_decl env define_class
     in
     List.iter (fun (lab,kind,_) ->
       if lab = dummy_method then
-        match Btype.field_kind_repr kind with
-          Fvar r -> Btype.set_kind r Fabsent
+        match Types.field_kind_repr kind with
+          Fvar r -> Types.set_kind r Fabsent
         | _ -> ()
     ) methods
   end;

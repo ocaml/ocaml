@@ -203,7 +203,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           Oide_ident name
       | Pdot(p, _s) ->
           if
-            match (find (Lident (Out_name.print name)) env).desc with
+            match get_desc (find (Lident (Out_name.print name)) env) with
             | Tconstr(ty_path', _, _) -> Path.same ty_path ty_path'
             | _ -> false
             | exception Not_found -> false
@@ -215,12 +215,12 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
     let tree_of_constr =
       tree_of_qualified
         (fun lid env ->
-           (Env.find_constructor_by_name lid env).cstr_res)
+          (Env.find_constructor_by_name lid env).cstr_res)
 
     and tree_of_label =
       tree_of_qualified
         (fun lid env ->
-           (Env.find_label_by_name lid env).lbl_res)
+          (Env.find_label_by_name lid env).lbl_res)
 
     (* An abstract type *)
 
@@ -260,7 +260,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         try
           find_printer depth env ty obj
         with Not_found ->
-          match (Ctype.repr ty).desc with
+          match get_desc ty with
           | Tvar _ | Tunivar _ ->
               Oval_stuff "<poly>"
           | Tarrow _ ->
@@ -397,7 +397,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                     let type_params =
                       match cd_res with
                         Some t ->
-                          begin match (Ctype.repr t).desc with
+                          begin match get_desc t with
                             Tconstr (_,params,_) ->
                               params
                           | _ -> assert false end
@@ -559,7 +559,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         if not (EVP.same_value slot (EVP.eval_address addr))
         then raise Not_found;
         let type_params =
-          match (Ctype.repr cstr.cstr_res).desc with
+          match get_desc cstr.cstr_res with
             Tconstr (_,params,_) ->
              params
           | _ -> assert false
@@ -592,7 +592,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           then printer
           else find remainder
       | (_name, Generic (path, fn)) :: remainder ->
-          begin match (Ctype.expand_head env ty).desc with
+          begin match get_desc (Ctype.expand_head env ty) with
           | Tconstr (p, args, _) when Path.same p path ->
               begin try apply_generic_printer path (fn depth) args
               with exn -> (fun _obj -> out_exn path exn) end

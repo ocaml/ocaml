@@ -538,6 +538,7 @@ typing/ctype.cmi : \
     typing/ident.cmi \
     typing/errortrace.cmi \
     typing/env.cmi \
+    typing/btype.cmi \
     parsing/asttypes.cmi
 typing/datarepr.cmo : \
     typing/types.cmi \
@@ -1722,6 +1723,7 @@ typing/types.cmo : \
     utils/misc.cmi \
     parsing/longident.cmi \
     parsing/location.cmi \
+    utils/local_store.cmi \
     utils/identifiable.cmi \
     typing/ident.cmi \
     utils/config.cmi \
@@ -1735,6 +1737,7 @@ typing/types.cmx : \
     utils/misc.cmx \
     parsing/longident.cmx \
     parsing/location.cmx \
+    utils/local_store.cmx \
     utils/identifiable.cmx \
     typing/ident.cmx \
     utils/config.cmx \
@@ -6399,6 +6402,7 @@ toplevel/byte/topeval.cmi : \
     toplevel/topcommon.cmi \
     parsing/parsetree.cmi
 toplevel/byte/topmain.cmo : \
+    typing/types.cmi \
     toplevel/byte/trace.cmi \
     toplevel/toploop.cmi \
     toplevel/byte/topeval.cmi \
@@ -6416,6 +6420,7 @@ toplevel/byte/topmain.cmo : \
     utils/clflags.cmi \
     toplevel/byte/topmain.cmi
 toplevel/byte/topmain.cmx : \
+    typing/types.cmx \
     toplevel/byte/trace.cmx \
     toplevel/toploop.cmx \
     toplevel/byte/topeval.cmx \

@@ -55,13 +55,9 @@ open Asttypes
 
     Note on mutability: TBD.
  *)
-type type_expr = private
-  { mutable desc: type_desc;
-    mutable level: int;
-    mutable scope: int;
-    id: int }
+type type_expr
 
-and type_desc =
+type type_desc =
   | Tvar of string option
   (** [Tvar (Some "a")] ==> ['a] or ['_a]
       [Tvar None]       ==> [_] *)
@@ -236,19 +232,64 @@ and commutable =
   | Cunknown
   | Clink of commutable ref
 
-module Private_type_expr : sig
-  val create : type_desc -> level: int -> scope: int -> id: int -> type_expr
-  val set_desc : type_expr -> type_desc -> unit
-  val set_level : type_expr -> int -> unit
-  val set_scope : type_expr -> int -> unit
+(** Getters for type_expr; calls repr before answering a value *)
+
+val get_desc: type_expr -> type_desc
+val get_level: type_expr -> int
+val get_scope: type_expr -> int
+val get_id: type_expr -> int
+
+(** Transient [type_expr].
+    Should only be used immediately after [Transient_expr.repr] *)
+type transient_expr = private
+      { mutable desc: type_desc;
+        mutable level: int;
+        mutable scope: int;
+        id: int }
+
+module Transient_expr : sig
+  (** Operations on [transient_expr] *)
+
+  val create: type_desc -> level: int -> scope: int -> id: int -> transient_expr
+  val set_desc: transient_expr -> type_desc -> unit
+  val set_level: transient_expr -> int -> unit
+  val set_scope: transient_expr -> int -> unit
+  val repr: type_expr -> transient_expr
+  val type_expr: transient_expr -> type_expr
+  val coerce: type_expr -> transient_expr
+      (** Coerce without normalizing with [repr] *)
+
+  val set_stub_desc: type_expr -> type_desc -> unit
+      (** Instantiate a not yet instantiated stub.
+          Fail if already instantiated. *)
 end
 
-module TypeOps : sig
-  type t = type_expr
+val create_expr: type_desc -> level: int -> scope: int -> id: int -> type_expr
+
+(** Functions and definitions moved from Btype *)
+
+val newty3: level:int -> scope:int -> type_desc -> type_expr
+        (** Create a type with a fresh id *)
+
+val newty2: level:int -> type_desc -> type_expr
+        (** Create a type with a fresh id and no scope *)
+
+val field_kind_repr: field_kind -> field_kind
+        (** Return the canonical representative of an object field kind. *)
+
+module TransientTypeOps : sig
+  (** Comparisons for functors *)
+
+  type t = transient_expr
   val compare : t -> t -> int
   val equal : t -> t -> bool
   val hash : t -> int
 end
+
+(** Comparisons for [type_expr]; cannot be used for functors *)
+
+val eq_type: type_expr -> type_expr -> bool
+val compare_type: type_expr -> type_expr -> int
 
 (* *)
 
@@ -587,3 +628,35 @@ type label_description =
 val bound_value_identifiers: signature -> Ident.t list
 
 val signature_item_id : signature_item -> Ident.t
+
+(**** Utilities for backtracking ****)
+
+type snapshot
+        (* A snapshot for backtracking *)
+val snapshot: unit -> snapshot
+        (* Make a snapshot for later backtracking. Costs nothing *)
+val backtrack: cleanup_abbrev:(unit -> unit) -> snapshot -> unit
+        (* Backtrack to a given snapshot. Only possible if you have
+           not already backtracked to a previous snapshot.
+           Calls [cleanup_abbrev] internally *)
+val undo_compress: snapshot -> unit
+        (* Backtrack only path compression. Only meaningful if you have
+           not already backtracked to a previous snapshot.
+           Does not call [cleanup_abbrev] *)
+
+(* Functions to use when modifying a type (only Ctype?) *)
+val link_type: type_expr -> type_expr -> unit
+        (* Set the desc field of [t1] to [Tlink t2], logging the old
+           value if there is an active snapshot *)
+val set_type_desc: type_expr -> type_desc -> unit
+        (* Set directly the desc field, without sharing *)
+val set_level: type_expr -> int -> unit
+val set_scope: type_expr -> int -> unit
+val set_name:
+    (Path.t * type_expr list) option ref ->
+    (Path.t * type_expr list) option -> unit
+val set_row_field: row_field option ref -> row_field -> unit
+val set_univar: type_expr option ref -> type_expr -> unit
+val set_kind: field_kind option ref -> field_kind -> unit
+val set_commu: commutable ref -> commutable -> unit
+        (* Set references, logging the old value *)
