@@ -50,13 +50,16 @@ and row_desc =
       row_name: (Path.t * type_expr list) option }
 and fixed_explanation =
   | Univar of type_expr | Fixed_private | Reified of Path.t | Rigid
-and row_field =
-    Rpresent of type_expr option
-  | Reither of bool * type_expr list * bool * row_field option ref
-        (* 1st true denotes a constant constructor *)
-        (* 2nd true denotes a tag in a pattern matching, and
-           is erased later *)
-  | Rabsent
+and row_field = [`some] row_field_gen
+and _ row_field_gen =
+    RFpresent : type_expr option -> [> `some] row_field_gen
+  | RFeither :
+      { no_arg: bool;
+        arg_type: type_expr list;
+        matched: bool;
+        ext: [`some | `none] row_field_gen ref} -> [> `some] row_field_gen
+  | RFabsent : [> `some] row_field_gen
+  | RFnone : [> `none] row_field_gen
 
 and abbrev_memo =
     Mnil
@@ -479,8 +482,6 @@ let signature_item_id = function
   | Sig_class_type (id, _, _, _)
     -> id
 
-(* migrating repr from Btype.. *)
-
 (**** Definitions for backtracking ****)
 
 type change =
@@ -490,7 +491,7 @@ type change =
   | Cscope of type_expr * int
   | Cname of
       (Path.t * type_expr list) option ref * (Path.t * type_expr list) option
-  | Crow of row_field option ref * row_field option
+  | Crow of [`none|`some] row_field_gen ref
   | Ckind of [`var] field_kind_gen
   | Ccommu of [`var] commutable_gen
   | Cuniv of type_expr option ref * type_expr option
@@ -618,6 +619,16 @@ let row_closed row = (row_repr_no_fields row).row_closed
 let row_fixed row = (row_repr_no_fields row).row_fixed
 let row_name row = (row_repr_no_fields row).row_name
 
+let rec get_row_field tag row =
+  let rec find = function
+    | (tag',f) :: fields ->
+        if tag = tag' then f else find fields
+    | [] ->
+        match get_desc row.row_more with
+        | Tvariant row' -> get_row_field tag row'
+        | _ -> RFabsent
+  in find row.row_fields
+
 let set_row_name row row_name =
   let row_fields = row_fields row in
   let row = row_repr_no_fields row in
@@ -639,26 +650,69 @@ let row_repr row =
         fixed = row.row_fixed;
         name = row.row_name }
 
-let rec row_field_repr_aux tl = function
-    Reither(_, tl', _, {contents = Some fi}) ->
-      row_field_repr_aux (tl@tl') fi
-  | Reither(c, tl', m, r) ->
-      Reither(c, tl@tl', m, r)
-  | Rpresent (Some _) when tl <> [] ->
-      Rpresent (Some (List.hd tl))
-  | fi -> fi
+type row_field_view =
+    Rpresent of type_expr option
+  | Reither of bool * type_expr list * bool
+        (* 1st true denotes a constant constructor *)
+        (* 2nd true denotes a tag in a pattern matching, and
+           is erased later *)
+  | Rabsent
 
-let row_field_repr fi = row_field_repr_aux [] fi
+let rec row_field_repr_aux tl : row_field -> row_field = function
+  | RFeither ({ext = {contents = RFnone}} as r) ->
+      RFeither {r with arg_type = tl@r.arg_type}
+  | RFeither {arg_type;
+              ext = {contents = RFeither _ | RFpresent _ | RFabsent as rf}} ->
+      row_field_repr_aux (tl@arg_type) rf
+  | RFpresent (Some _) when tl <> [] ->
+      RFpresent (Some (List.hd tl))
+  | RFpresent _ as rf -> rf
+  | RFabsent -> RFabsent
 
-let rec row_field tag row =
-  let rec find = function
-    | (tag',f) :: fields ->
-        if tag = tag' then row_field_repr f else find fields
-    | [] ->
-        match get_desc row.row_more with
-        | Tvariant row' -> row_field tag row'
-        | _ -> Rabsent
-  in find row.row_fields
+let row_field_repr fi =
+  match row_field_repr_aux [] fi with
+  | RFeither {no_arg; arg_type; matched} -> Reither (no_arg, arg_type, matched)
+  | RFpresent t -> Rpresent t
+  | RFabsent -> Rabsent
+
+let rec row_field_ext (fi : row_field) =
+  match fi with
+  | RFeither {ext = {contents = RFnone} as ext} -> ext
+  | RFeither {ext = {contents = RFeither _ | RFpresent _ | RFabsent as rf}} ->
+      row_field_ext rf
+  | _ -> Misc.fatal_error "Types.row_field_ext "
+
+let rf_present oty = RFpresent oty
+let rf_absent = RFabsent
+let rf_either ?use_ext_of ~no_arg arg_type ~matched =
+  let ext =
+    match use_ext_of with
+      Some rf -> row_field_ext rf
+    | None -> ref RFnone
+  in
+  RFeither {no_arg; arg_type; matched; ext}
+
+let rf_either_of = function
+  | None ->
+      RFeither {no_arg=true; arg_type=[]; matched=false; ext=ref RFnone}
+  | Some ty ->
+      RFeither {no_arg=false; arg_type=[ty]; matched=false; ext=ref RFnone}
+
+let eq_row_field_ext rf1 rf2 =
+  row_field_ext rf1 == row_field_ext rf2
+
+let match_row_field ~present ~absent ~either (f : row_field) =
+  match f with
+  | RFabsent -> absent ()
+  | RFpresent t -> present t
+  | RFeither {no_arg; arg_type; matched; ext} ->
+      let e : row_field option =
+        match !ext with
+        | RFnone -> None
+        | RFeither _ | RFpresent _ | RFabsent as e -> Some e
+      in
+      either no_arg arg_type matched e
+
 
 (**** Some type creators ****)
 
@@ -679,14 +733,14 @@ let newty2 ~level desc =
 
 let undo_change = function
     Ctype  (ty, desc) -> Transient_expr.set_desc ty desc
-  | Ccompress  (ty, desc, _) -> Transient_expr.set_desc ty desc
+  | Ccompress (ty, desc, _) -> Transient_expr.set_desc ty desc
   | Clevel (ty, level) -> Transient_expr.set_level ty level
   | Cscope (ty, scope) -> Transient_expr.set_scope ty scope
-  | Cname  (r, v) -> r := v
-  | Crow   (r, v) -> r := v
+  | Cname  (r, v)    -> r := v
+  | Crow   r         -> r := RFnone
   | Ckind  (FKvar r) -> r.field_kind <- FKprivate
-  | Ccommu (Cvar r) -> r.commu <- Cunknown
-  | Cuniv  (r, v) -> r := v
+  | Ccommu (Cvar r)  -> r.commu <- Cunknown
+  | Cuniv  (r, v)    -> r := v
 
 type snapshot = changes ref * int
 let last_snapshot = Local_store.s_ref 0
@@ -740,8 +794,15 @@ let set_univar rty ty =
   log_change (Cuniv (rty, !rty)); rty := Some ty
 let set_name nm v =
   log_change (Cname (nm, !nm)); nm := v
-let set_row_field e v =
-  log_change (Crow (e, !e)); e := Some v
+
+let rec link_row_field_ext ~(inside : row_field) (v : row_field) =
+  match inside with
+  | RFeither {ext = {contents = RFnone} as e} ->
+      let RFeither _ | RFpresent _ | RFabsent as v = v in
+      log_change (Crow e); e := v
+  | RFeither {ext = {contents = RFeither _ | RFpresent _ | RFabsent as rf}} ->
+      link_row_field_ext ~inside:rf v
+  | _ -> invalid_arg "Types.link_row_field_ext"
 
 let rec link_kind ~(inside : field_kind) (k : field_kind) =
   match inside with
@@ -791,7 +852,7 @@ let rec rev_log accu = function
 let backtrack ~cleanup_abbrev (changes, old) =
   match !changes with
     Unchanged -> last_snapshot := old
-  | Invalid -> failwith "Btype.backtrack"
+  | Invalid -> failwith "Types.backtrack"
   | Change _ as change ->
       cleanup_abbrev ();
       let backlog = rev_log [] change in
@@ -799,6 +860,12 @@ let backtrack ~cleanup_abbrev (changes, old) =
       changes := Unchanged;
       last_snapshot := old;
       trail := changes
+
+let undo_first_change_after (changes, _) =
+  match !changes with
+  | Change (ch, _) ->
+      undo_change ch
+  | _ -> ()
 
 let rec rev_compress_log log r =
   match !r with
