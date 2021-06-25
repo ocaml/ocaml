@@ -1,12 +1,12 @@
-Thread 1 killed on uncaught exception Not_found
-Raised at Uncaught_exception_handler.fn in file "uncaught_exception_handler.ml", line 25, characters 12-111
-Called from Thread.create.(fun) in file "thread.ml", line 47, characters 8-14
-[thread 2] caught Not_found
-Raised at Uncaught_exception_handler.fn in file "uncaught_exception_handler.ml", line 25, characters 12-111
-Called from Thread.create.(fun) in file "thread.ml", line 47, characters 8-14
-Fatal error in thread 2 : Not_found
-Raised at Uncaught_exception_handler.fn in file "uncaught_exception_handler.ml", line 25, characters 12-111
-Called from Thread.create.(fun) in file "thread.ml", line 47, characters 8-14
-Fatal error in uncaught exception handler : Not_found
-Raised at Uncaught_exception_handler.handler in file "uncaught_exception_handler.ml", line 23, characters 2-11
-Called from Thread.create.(fun) in file "thread.ml", line 53, characters 10-41
+Thread 1 killed on uncaught exception Uncaught_exception_handler.CallbackExn
+Raised at Uncaught_exception_handler.fn in file "uncaught_exception_handler.ml", line 28, characters 12-113
+Called from Thread.create.(fun) in file "thread.ml", line 51, characters 8-14
+[thread 2] caught Uncaught_exception_handler.CallbackExn
+Raised at Uncaught_exception_handler.fn in file "uncaught_exception_handler.ml", line 28, characters 12-113
+Called from Thread.create.(fun) in file "thread.ml", line 51, characters 8-14
+Thread 2 killed on uncaught exception Uncaught_exception_handler.CallbackExn
+Raised at Uncaught_exception_handler.fn in file "uncaught_exception_handler.ml", line 28, characters 12-113
+Called from Thread.create.(fun) in file "thread.ml", line 51, characters 8-14
+Thread 2 uncaught exception handler raised Uncaught_exception_handler.UncaughtHandlerExn
+Raised at Uncaught_exception_handler.handler in file "uncaught_exception_handler.ml", line 26, characters 2-26
+Called from Thread.create.(fun) in file "thread.ml", line 57, characters 10-41

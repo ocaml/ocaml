@@ -14,16 +14,19 @@ include systhreads
 
 let () = Printexc.record_backtrace true
 
+exception UncaughtHandlerExn
+exception CallbackExn
+
 let handler exn =
   let id = Thread.self () |> Thread.id in
   let msg = Printexc.to_string exn in
   Printf.eprintf "[thread %d] caught %s\n" id msg;
   Printexc.print_backtrace stderr;
   flush stderr;
-  raise exn
+  raise UncaughtHandlerExn
 
 let fn () = Printexc.raise_with_backtrace
-              Not_found
+              CallbackExn
               (Printexc.get_raw_backtrace ())
 
 let _ =
