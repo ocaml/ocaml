@@ -8,11 +8,20 @@ Working version
 
 ### Standard library:
 
+* #7812, #10475: `Filename.chop_suffix name suff` now checks that `suff`
+  is actually a suffix of `name` and raises Invalid_argument otherwise.
+  (Xavier Leroy, report by whitequark, review by David Allsopp)
+
 ### Other libraries:
 
 ### Tools:
 
 ### Manual and documentation:
+
+- #7812, #10475: reworded the description of the behaviors of
+  float->int conversions in case of overflow, and of iterators
+  in case of concurrent modifications.
+  (Xavier Leroy, report by whitequark, review by David Allsopp)
 
 ### Compiler user-interface and warnings:
 
