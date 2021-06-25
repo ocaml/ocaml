@@ -16,6 +16,8 @@
 /* Asm part of the runtime system, RISC-V processor, 64-bit mode */
 /* Must be preprocessed by cpp */
 
+#include "caml/m.h"
+
 #define ARG_DOMAIN_STATE_PTR t0
 #define DOMAIN_STATE_PTR s11
 #define TRAP_PTR s1
@@ -25,6 +27,20 @@
 
 #define STORE sd
 #define LOAD ld
+
+#if defined(ASM_CFI_SUPPORTED)
+#define CFI_STARTPROC .cfi_startproc
+#define CFI_ENDPROC .cfi_endproc
+#define CFI_ADJUST(n) .cfi_adjust_cfa_offset n
+#define CFI_REGISTER(r1,r2) .cfi_register r1,r2
+#define CFI_OFFSET(r,n) .cfi_offset r,n
+#else
+#define CFI_STARTPROC
+#define CFI_ENDPROC
+#define CFI_ADJUST(n)
+#define CFI_REGISTER(r1,r2)
+#define CFI_OFFSET(r,n)
+#endif
 
         .set    domain_curr_field, 0
 #define DOMAIN_STATE(c_type, name) \
@@ -39,7 +55,12 @@
         .align 2; \
         .globl name; \
         .type name, @function; \
-name:
+name:; \
+        CFI_STARTPROC
+
+#define END_FUNCTION(name) \
+        CFI_ENDPROC; \
+        .size name, .-name
 
 #if defined(__PIC__)
         .option pic
@@ -66,7 +87,9 @@ FUNCTION(caml_call_gc)
             20 caller-save float regs) * 8 */
         /* + 1 for alignment */
         addi    sp, sp, -0x170
+        CFI_ADJUST(0x170)
         STORE   ra, 0x8(sp)
+        CFI_OFFSET(ra, -0x170+8)
         /* Save allocatable integer registers on the stack,
            in the order given in proc.ml */
         STORE   a0, 0x10(sp)
@@ -172,8 +195,9 @@ FUNCTION(caml_call_gc)
         /* Free stack space and return to caller */
         LOAD    ra, 0x8(sp)
         addi    sp, sp, 0x170
+        CFI_ADJUST(-0x170)
         ret
-        .size   caml_call_gc, .-caml_call_gc
+END_FUNCTION(caml_call_gc)
 
 /* Call a C function from OCaml */
 /* Function to call is in ARG */
@@ -181,6 +205,7 @@ FUNCTION(caml_call_gc)
 FUNCTION(caml_c_call)
         /* Preserve return address in callee-save register s2 */
         mv      s2, ra
+        CFI_REGISTER(ra, s2)
         /* Record lowest stack address and return address */
         STORE   ra, Caml_state(last_return_address)
         STORE   sp, Caml_state(bottom_of_stack)
@@ -193,7 +218,7 @@ FUNCTION(caml_c_call)
         LOAD    ALLOC_PTR, Caml_state(young_ptr)
         /* Return */
         jr      s2
-        .size   caml_c_call, .-caml_c_call
+END_FUNCTION(caml_c_call)
 
 /* Raise an exception from OCaml */
 FUNCTION(caml_raise_exn)
@@ -206,6 +231,7 @@ FUNCTION(caml_raise_exn)
         LOAD    TMP, 8(sp)
         LOAD    TRAP_PTR, 0(sp)
         addi    sp, sp, 16
+        CFI_ADJUST(-16)
         jr      TMP
 2:      /* Preserve exception bucket in callee-save register s2 */
         mv      s2, a0
@@ -217,7 +243,7 @@ FUNCTION(caml_raise_exn)
         /* Restore exception bucket and raise */
         mv      a0, s2
         j       1b
-        .size   caml_raise_exn, .-caml_raise_exn
+END_FUNCTION(caml_raise_exn)
 
         .globl  caml_reraise_exn
         .type   caml_reraise_exn, @function
@@ -236,6 +262,7 @@ FUNCTION(caml_raise_exception)
         LOAD    TMP, 8(sp)
         LOAD    TRAP_PTR, 0(sp)
         addi    sp, sp, 16
+        CFI_ADJUST(-16)
         jr      TMP
 2:      /* Preserve exception bucket in callee-save register s2 */
         mv      s2, a0
@@ -245,7 +272,7 @@ FUNCTION(caml_raise_exception)
         call    PLT(caml_stash_backtrace)
         mv      a0, s2
         j       1b
-        .size   caml_raise_exception, .-caml_raise_exception
+END_FUNCTION(caml_raise_exception)
 
 /* Start the OCaml program */
 
@@ -258,7 +285,9 @@ FUNCTION(caml_start_program)
 .Ljump_to_caml:
         /* Set up stack frame and save callee-save registers */
         addi    sp, sp, -0xd0
+        CFI_ADJUST(0xd0)
         STORE   ra, 0xc0(sp)
+        CFI_OFFSET(ra, -0xd0+0xc0)
         STORE   s0, 0x0(sp)
         STORE   s1, 0x8(sp)
         STORE   s2, 0x10(sp)
@@ -284,6 +313,7 @@ FUNCTION(caml_start_program)
         fsd     fs10, 0xb0(sp)
         fsd     fs11, 0xb8(sp)
         addi    sp, sp, -32
+        CFI_ADJUST(32)
         /* Load domain state pointer from argument */
         mv      DOMAIN_STATE_PTR, ARG_DOMAIN_STATE_PTR
         /* Setup a callback link on the stack */
@@ -295,6 +325,7 @@ FUNCTION(caml_start_program)
         STORE   TMP, 16(sp)
         /* set up a trap frame */
         addi    sp, sp, -16
+        CFI_ADJUST(16)
         LOAD    TMP, Caml_state(exception_pointer)
         STORE   TMP, 0(sp)
         lla     TMP, .Ltrap_handler
@@ -307,6 +338,7 @@ FUNCTION(caml_start_program)
         LOAD    TMP, 0(sp)
         STORE   TMP, Caml_state(exception_pointer)
         addi    sp, sp, 16
+        CFI_ADJUST(-16)
 .Lreturn_result:        /* pop callback link, restoring global variables */
         LOAD    TMP, 0(sp)
         STORE   TMP, Caml_state(bottom_of_stack)
@@ -315,6 +347,7 @@ FUNCTION(caml_start_program)
         LOAD    TMP, 16(sp)
         STORE   TMP, Caml_state(gc_regs)
         addi    sp, sp, 32
+        CFI_ADJUST(-32)
         /* Update allocation pointer */
         STORE   ALLOC_PTR, Caml_state(young_ptr)
         /* reload callee-save registers and return */
@@ -344,18 +377,20 @@ FUNCTION(caml_start_program)
         fld     fs10, 0xb0(sp)
         fld     fs11, 0xb8(sp)
         addi    sp, sp, 0xd0
+        CFI_ADJUST(-0xd0)
         ret
         .type   .Lcaml_retaddr, @function
         .size   .Lcaml_retaddr, .-.Lcaml_retaddr
-        .size   caml_start_program, .-caml_start_program
+END_FUNCTION(caml_start_program)
 
         .align  2
 .Ltrap_handler:
+        CFI_STARTPROC
         STORE   TRAP_PTR, Caml_state(exception_pointer)
         ori     a0, a0, 2
         j       .Lreturn_result
         .type   .Ltrap_handler, @function
-        .size   .Ltrap_handler, .-.Ltrap_handler
+END_FUNCTION(.Ltrap_handler)
 
 /* Callback from C to OCaml */
 
@@ -367,7 +402,7 @@ FUNCTION(caml_callback_asm)
                             /* a1 = closure environment */
         LOAD    ARG, 0(a1)  /* code pointer */
         j       .Ljump_to_caml
-        .size   caml_callback_asm, .-caml_callback_asm
+END_FUNCTION(caml_callback_asm)
 
 FUNCTION(caml_callback2_asm)
         /* Initial shuffling of arguments */
@@ -379,7 +414,7 @@ FUNCTION(caml_callback2_asm)
         mv      a2, TMP
         la      ARG, caml_apply2
         j       .Ljump_to_caml
-        .size   caml_callback2_asm, .-caml_callback2_asm
+END_FUNCTION(caml_callback2_asm)
 
 FUNCTION(caml_callback3_asm)
         /* Initial shuffling of arguments */
@@ -391,14 +426,14 @@ FUNCTION(caml_callback3_asm)
         LOAD    a2, 16(a2)
         la      ARG, caml_apply3
         j       .Ljump_to_caml
-        .size   caml_callback3_asm, .-caml_callback3_asm
+END_FUNCTION(caml_callback3_asm)
 
 FUNCTION(caml_ml_array_bound_error)
         /* Load address of [caml_array_bound_error] in ARG */
         la      ARG, caml_array_bound_error
         /* Call that function */
         tail    caml_c_call
-        .size   caml_ml_array_bound_error, .-caml_ml_array_bound_error
+END_FUNCTION(caml_ml_array_bound_error)
 
         .globl  caml_system__code_end
 caml_system__code_end:
