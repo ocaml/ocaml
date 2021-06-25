@@ -24,7 +24,7 @@ end
 Line 3, characters 2-36:
 3 |   include Comparable with type t = t
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Illegal shadowing of included type t/100 by t/104
+Error: Illegal shadowing of included type t/100 by t/105
        Line 2, characters 2-19:
          Type t/100 came from this include
        Line 3, characters 2-23:
