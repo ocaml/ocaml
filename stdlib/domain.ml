@@ -99,13 +99,50 @@ let rec spin f =
 let cas r vold vnew =
   if not (Atomic.compare_and_set r vold vnew) then raise Retry
 
+let first_domain_spawned = Atomic.make false
+
+let first_spawn_function = ref (fun () -> ())
+
+let at_first_spawn f =
+  if Atomic.get first_domain_spawned then
+    raise (Invalid_argument "First domain already spawned")
+  else begin
+    let old_f = !first_spawn_function in
+    let new_f () = f (); old_f () in
+    first_spawn_function := new_f
+  end
+
+let do_at_first_spawn () =
+  if not (Atomic.get first_domain_spawned) then begin
+    Atomic.set first_domain_spawned true;
+    !first_spawn_function();
+    (* Release the old function *)
+    first_spawn_function := (fun () -> ())
+  end
+
+let exit_function = Atomic.make (fun () -> ())
+
+let rec at_exit f =
+  let wrapped_f () = try f () with _ -> () in
+  let old_exit = Atomic.get exit_function in
+  let new_exit () = wrapped_f (); old_exit () in
+  let success = Atomic.compare_and_set exit_function old_exit new_exit in
+  if success then
+    Stdlib.at_exit wrapped_f
+  else at_exit f
+
+let do_at_exit () = (Atomic.get exit_function) ()
+
 let spawn f =
+  do_at_first_spawn ();
   let termination_mutex = Mutex.create () in
   let state = Atomic.make Running in
   let body () =
     let result = match DLS.create_dls (); f () with
       | x -> Ok x
-      | exception ex -> Error ex in
+      | exception ex -> Error ex
+    in
+    do_at_exit ();
     spin (fun () ->
       match Atomic.get state with
       | Running ->

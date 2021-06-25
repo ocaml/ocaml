@@ -21,6 +21,17 @@ val get_id : 'a t -> id
 val self : unit -> id
 (** [self ()] is the identifier of the currently running domain *)
 
+val at_first_spawn : (unit -> unit) -> unit
+(** Register the given function to be called before the first domain is
+    spawned.
+
+    @raise Invalid_argument if the first domain has already been spawned. *)
+
+val at_exit : (unit -> unit) -> unit
+(** Register the given function to be called at when a domain exits. This
+    function is also registered with {!Stdlib.at_exit}. If the registered
+    function raises an exception, the exceptions are ignored. *)
+
 type nanoseconds = int64
 val timer_ticks : unit -> nanoseconds
 (** Returns the number of nanoseconds elapsed since the OCaml
