@@ -21,8 +21,19 @@ open Longident
 open Types
 open Toploop
 
-(* The standard output formatter *)
-let std_out = std_formatter
+(* The error formatter for directives
+   In the toplevel, we print directly on stdout.
+*)
+
+type error_handler =
+  {
+    exit: int -> unit;
+    ppf: Format.formatter
+  }
+
+let error_handler = ref { exit = ignore; ppf = std_formatter }
+let set_error_handler eh = error_handler := eh
+let exit_failure = 125
 
 (* Directive sections (used in #help) *)
 let section_general = "General"
@@ -122,18 +133,24 @@ let _ = add_directive "cd" (Directive_string dir_cd)
       doc = "Change the current working directory.";
     }
 
-let dir_load ppf name = ignore (Topeval.load_file false ppf name)
 
-let _ = add_directive "load" (Directive_string (dir_load std_out))
+let with_error f x = f !error_handler x
+let boolean_exit {exit; _ } b = if b then exit 0 else exit exit_failure
+
+let dir_load h name =
+  boolean_exit h (Topeval.load_file false h.ppf name)
+
+let _ = add_directive "load" (Directive_string (with_error dir_load))
     {
       section = section_run;
       doc = "Load in memory a bytecode object, produced by ocamlc.";
     }
 
-let dir_load_rec ppf name = ignore (Topeval.load_file true ppf name)
+let dir_load_rec h name =
+  boolean_exit h (Topeval.load_file true h.ppf name)
 
 let _ = add_directive "load_rec"
-    (Directive_string (dir_load_rec std_out))
+    (Directive_string (with_error dir_load_rec))
     {
       section = section_run;
       doc = "As #load, but loads dependencies recursively.";
@@ -143,26 +160,27 @@ let load_file = Topeval.load_file false
 
 (* Load commands from a file *)
 
-let dir_use ppf name =
-  ignore (Toploop.use_input ppf (Toploop.File name))
-let dir_use_output ppf name = ignore(Toploop.use_output ppf name)
-let dir_mod_use ppf name =
-  ignore (Toploop.mod_use_input ppf (Toploop.File name))
+let dir_use h name =
+  boolean_exit h (Toploop.use_input h.ppf (Toploop.File name))
+let dir_use_output h name = boolean_exit h (Toploop.use_output h.ppf name)
+let dir_mod_use h name =
+  boolean_exit h  (Toploop.mod_use_input h.ppf (Toploop.File name))
 
-let _ = add_directive "use" (Directive_string (dir_use std_out))
+let _ = add_directive "use" (Directive_string (with_error dir_use))
     {
       section = section_run;
       doc = "Read, compile and execute source phrases from the given file.";
     }
 
-let _ = add_directive "use_output" (Directive_string (dir_use_output std_out))
+let _ = add_directive "use_output"
+    (Directive_string (with_error dir_use_output))
     {
       section = section_run;
       doc = "Execute a command and read, compile and execute source phrases \
              from its output.";
     }
 
-let _ = add_directive "mod_use" (Directive_string (dir_mod_use std_out))
+let _ = add_directive "mod_use" (Directive_string (with_error dir_mod_use))
     {
       section = section_run;
       doc = "Usage is identical to #use but #mod_use \
@@ -278,10 +296,10 @@ let find_printer_type ppf lid =
       fprintf ppf "Unbound value %a.@." Printtyp.longident lid;
       raise Exit
 
-let dir_install_printer ppf lid =
+let dir_install_printer h lid =
   try
     let ((ty_arg, ty), path, is_old_style) =
-      find_printer_type ppf lid in
+      find_printer_type h.ppf lid in
     let v = eval_value_path !toplevel_env path in
     match ty with
     | None ->
@@ -306,33 +324,33 @@ let dir_install_printer ppf lid =
        install_generic_printer' path ty_path (build v ty_args)
   with Exit -> ()
 
-let dir_remove_printer ppf lid =
+let dir_remove_printer h lid =
   try
-    let (_ty_arg, path, _is_old_style) = find_printer_type ppf lid in
+    let (_ty_arg, path, _is_old_style) = find_printer_type h.ppf lid in
     begin try
       remove_printer path
     with Not_found ->
-      fprintf ppf "No printer named %a.@." Printtyp.longident lid
+      fprintf h.ppf "No printer named %a.@." Printtyp.longident lid
     end
   with Exit -> ()
 
 let _ = add_directive "install_printer"
-    (Directive_ident (dir_install_printer std_out))
+    (Directive_ident (with_error dir_install_printer))
     {
       section = section_print;
       doc = "Registers a printer for values of a certain type.";
     }
 
 let _ = add_directive "remove_printer"
-    (Directive_ident (dir_remove_printer std_out))
+    (Directive_ident (with_error dir_remove_printer))
     {
       section = section_print;
       doc = "Remove the named function from the table of toplevel printers.";
     }
 
-let parse_warnings ppf iserr s =
+let parse_warnings h iserr s =
   try Option.iter Location.(prerr_alert none) @@ Warnings.parse_options iserr s
-  with Arg.Bad err -> fprintf ppf "%s.@." err
+  with Arg.Bad err -> fprintf h.ppf "%s.@." err; h.exit exit_failure
 
 (* Typing information *)
 
@@ -383,7 +401,7 @@ let reg_show_prim name to_sig doc =
   all_show_funs := to_sig :: !all_show_funs;
   add_directive
     name
-    (Directive_ident (show_prim to_sig std_out))
+    (Directive_ident (show_prim to_sig std_formatter))
     {
       section = section_env;
       doc;
@@ -584,7 +602,7 @@ let show env loc id lid =
   if sg = [] then raise Not_found else sg
 
 let () =
-  add_directive "show" (Directive_ident (show_prim show std_out))
+  add_directive "show" (Directive_ident (show_prim show std_formatter))
     {
       section = section_env;
       doc = "Print the signatures of components \
@@ -639,14 +657,14 @@ let _ = add_directive "ppx"
     }
 
 let _ = add_directive "warnings"
-    (Directive_string (parse_warnings std_out false))
+    (Directive_string (fun s -> parse_warnings !error_handler false s))
     {
       section = section_options;
       doc = "Enable or disable warnings according to the argument.";
     }
 
 let _ = add_directive "warn_error"
-    (Directive_string (parse_warnings std_out true))
+    (Directive_string (fun s -> parse_warnings !error_handler true s))
     {
       section = section_options;
       doc = "Treat as errors the warnings enabled by the argument.";
@@ -716,7 +734,7 @@ let print_directives ppf () =
   List.iter (print_section ppf) (directive_sections ())
 
 let _ = add_directive "help"
-    (Directive_none (print_directives std_out))
+    (Directive_none (print_directives std_formatter))
     {
       section = section_general;
       doc = "Prints a list of all available directives, with \

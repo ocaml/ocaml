@@ -6549,6 +6549,7 @@ toplevel/native/topeval.cmi : \
 toplevel/native/topmain.cmo : \
     toplevel/toploop.cmi \
     toplevel/native/topeval.cmi \
+    toplevel/topdirs.cmi \
     toplevel/topcommon.cmi \
     utils/misc.cmi \
     driver/main_args.cmi \
@@ -6560,6 +6561,7 @@ toplevel/native/topmain.cmo : \
 toplevel/native/topmain.cmx : \
     toplevel/toploop.cmx \
     toplevel/native/topeval.cmx \
+    toplevel/topdirs.cmx \
     toplevel/topcommon.cmx \
     utils/misc.cmx \
     driver/main_args.cmx \

@@ -16,6 +16,10 @@ Working version
 
 ### Tools:
 
+- #3959, #7202: ocaml, directive errors (`#use "";;`) in script mode use stderr
+  and exit with an error
+  (Florian Angeletti, review by ??)
+
 ### Manual and documentation:
 
 ### Compiler user-interface and warnings:

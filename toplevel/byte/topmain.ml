@@ -178,7 +178,11 @@ let input_argument name =
       in
       Compenv.readenv ppf Before_link;
       Compmisc.read_clflags_from_env ();
-      if prepare ppf && Toploop.run_script ppf name newargs
+      if prepare ppf && (
+          let exit x = raise (Compenv.Exit_with_status x) in
+          Topdirs.set_error_handler { exit; ppf };
+          Toploop.run_script ppf name newargs
+          )
       then raise (Compenv.Exit_with_status 0)
       else raise (Compenv.Exit_with_status 2)
     end
