@@ -53,12 +53,12 @@ let create fn arg =
           !uncaught_exception_handler exn
         with exn' ->
           Printf.eprintf
-            "Fatal error in thread %d : %s\n"
-             (id (self ())) (Printexc.to_string exn);
+            "Thread %d killed on uncaught exception %s\n"
+            (id (self ())) (Printexc.to_string exn);
           Printexc.print_raw_backtrace stderr raw_backtrace;
           Printf.eprintf
-            "Fatal error in uncaught exception handler : %s\n"
-            (Printexc.to_string exn');
+            "Thread %d uncaught exception handler raised %s\n"
+            (id (self ())) (Printexc.to_string exn');
           Printexc.print_backtrace stdout;
           flush stderr)
 
