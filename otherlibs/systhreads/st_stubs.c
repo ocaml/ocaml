@@ -523,9 +523,9 @@ static ST_THREAD_FUNCTION caml_thread_start(void * arg)
 
   /* Associate the thread descriptor with the thread */
   st_tls_set(thread_descriptor_key, (void *) th);
-  st_thread_set_id(Ident(th->descr));
   /* Acquire the global mutex */
   caml_leave_blocking_section();
+  st_thread_set_id(Ident(th->descr));
   caml_setup_stack_overflow_detection();
 #ifdef NATIVE_CODE
   /* Setup termination handler (for caml_thread_exit) */
