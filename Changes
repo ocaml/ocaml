@@ -16,7 +16,7 @@ Working version
 
 - #10469: Add Thread.set_uncaught_exception_handler and
   Thread.default_uncaught_exception_handler.
-  (Enguerrand Decorne)
+  (Enguerrand Decorne, review by David Allsopp)
 
 ### Tools:
 
