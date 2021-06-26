@@ -8,6 +8,9 @@ Working version
 
 ### Standard library:
 
+- #10464: Add List.is_empty.
+  (Craig Ferguson, review by David Allsopp)
+
 ### Other libraries:
 
 - #10192: Add support for Unix domain sockets on Windows and use them
