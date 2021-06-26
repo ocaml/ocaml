@@ -44,6 +44,9 @@ Working version
   type
   (Nicolas Chataing, review by Gabriel Scherer)
 
+- #10382: Don't repeat environment entries in Typemod.check_type_decl
+  (Leo White, review by Gabriel Scherer)
+
 ### Build system:
 
 ### Bug fixes:

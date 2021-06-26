@@ -133,7 +133,7 @@ let replace_in_place f sg =
     match current with
     | [] -> next_group f (commit ghosts) sg
     | a :: q ->
-        match f ~rec_group:q ~ghosts a.src with
+        match f ~ghosts a.src with
         | Some (info, {ghosts; replace_by}) ->
             let after = List.concat_map flatten q @ sg in
             let after = match recursive_sigitem a.src, replace_by with
