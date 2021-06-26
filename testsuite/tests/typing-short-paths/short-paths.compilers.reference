@@ -96,6 +96,7 @@ Error: Signature mismatch:
          type t = int
        is not included in
          type t = string
+       The type t is not equal to the type string
 module A : sig module B : sig type t = T end end
 module M2 : sig type u = A.B.t type foo = int type v = u end
 

@@ -164,3 +164,12 @@ and sanity checks that could help you pinpoint the problem.
 * On HP 9000/700 machines under HP/UX 9, some versions of `cc` are unable to
   compile correctly the runtime system (wrong code is generated for `(x - y)`
   where `x` is a pointer and `y` an integer). Fix: use `gcc`.
+
+* In the unlikely case that a platform does not offer all C99 float operations
+  that the runtime needs, a configuration error will result.  Users
+  can work around this problem by calling `configure` with the flag
+  `--enable-imprecise-c99-float-ops`.  This will enable simple but potentially
+  imprecise implementations of C99 float operations.  Users with exacting
+  requirements for mathematical accuracy, numerical precision, and proper
+  handling of mathematical corner cases and error conditions may need to
+  consider running their code on a platform with better C99 support.

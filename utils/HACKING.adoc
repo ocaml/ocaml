@@ -46,5 +46,5 @@ tested on a large scale: this is when tool authors may update their
 tools to test the new release, and if you update *after* that you risk
 breaking them again without them noticing.
 
-For example, the magic numbers for 4.10 were updated in
-  6423e5c9d11cfac1c07208aec9f761f37c1640f0
+For example, the magic numbers for 4.13 were updated in
+  dd7927e156b7cb2f9

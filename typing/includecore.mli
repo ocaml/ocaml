@@ -31,33 +31,35 @@ type primitive_mismatch =
 type value_mismatch =
   | Primitive_mismatch of primitive_mismatch
   | Not_a_primitive
-  | Type of Env.t * Errortrace.comparison Errortrace.t
+  | Type of Errortrace.moregen_error
 
 exception Dont_match of value_mismatch
 
+(* Documents which kind of private thing would be revealed *)
+type privacy_mismatch =
+  | Private_type_abbreviation
+  | Private_variant_type
+  | Private_record_type
+  | Private_extensible_variant
+  | Private_row_type
+
 type label_mismatch =
-  | Type of Env.t * Errortrace.comparison Errortrace.t
+  | Type of Errortrace.equality_error
   | Mutability of position
 
+type record_change =
+  (Types.label_declaration as 'ld, 'ld, label_mismatch) Diffing_with_keys.change
+
 type record_mismatch =
-  | Label_mismatch of label_declaration * label_declaration * label_mismatch
-  | Label_names of int * Ident.t * Ident.t
-  | Label_missing of position * Ident.t
+  | Label_mismatch of record_change list
   | Unboxed_float_representation of position
 
 type constructor_mismatch =
-  | Type of Env.t * Errortrace.comparison Errortrace.t
+  | Type of Errortrace.equality_error
   | Arity
-  | Inline_record of record_mismatch
+  | Inline_record of record_change list
   | Kind of position
   | Explicit_return_type of position
-
-type variant_mismatch =
-  | Constructor_mismatch of constructor_declaration
-                            * constructor_declaration
-                            * constructor_mismatch
-  | Constructor_names of int * Ident.t * Ident.t
-  | Constructor_missing of position * Ident.t
 
 type extension_constructor_mismatch =
   | Constructor_privacy
@@ -65,29 +67,32 @@ type extension_constructor_mismatch =
                             * extension_constructor
                             * extension_constructor
                             * constructor_mismatch
+type variant_change =
+  (Types.constructor_declaration as 'cd, 'cd, constructor_mismatch)
+    Diffing_with_keys.change
 
 type private_variant_mismatch =
-  | Openness
+  | Only_outer_closed
   | Missing of position * string
   | Presence of string
   | Incompatible_types_for of string
-  | Types of Env.t * Errortrace.comparison Errortrace.t
+  | Types of Errortrace.equality_error
 
 type private_object_mismatch =
   | Missing of string
-  | Types of Env.t * Errortrace.comparison Errortrace.t
+  | Types of Errortrace.equality_error
 
 type type_mismatch =
   | Arity
-  | Privacy
+  | Privacy of privacy_mismatch
   | Kind
-  | Constraint of Env.t * Errortrace.comparison Errortrace.t
-  | Manifest of Env.t * Errortrace.comparison Errortrace.t
+  | Constraint of Errortrace.equality_error
+  | Manifest of Errortrace.equality_error
   | Private_variant of type_expr * type_expr * private_variant_mismatch
   | Private_object of type_expr * type_expr * private_object_mismatch
   | Variance
   | Record_mismatch of record_mismatch
-  | Variant_mismatch of variant_mismatch
+  | Variant_mismatch of variant_change list
   | Unboxed_representation of position
   | Immediate of Type_immediacy.Violation.t
 
@@ -110,7 +115,17 @@ val class_types:
         Env.t -> class_type -> class_type -> bool
 *)
 
-val report_type_mismatch:
-    string -> string -> string -> Format.formatter -> type_mismatch -> unit
-val report_extension_constructor_mismatch: string -> string -> string ->
+val report_value_mismatch :
+  string -> string ->
+  Env.t ->
+  Format.formatter -> value_mismatch -> unit
+
+val report_type_mismatch :
+  string -> string -> string ->
+  Env.t ->
+  Format.formatter -> type_mismatch -> unit
+
+val report_extension_constructor_mismatch :
+  string -> string -> string ->
+  Env.t ->
   Format.formatter -> extension_constructor_mismatch -> unit

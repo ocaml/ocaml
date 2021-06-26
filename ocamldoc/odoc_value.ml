@@ -72,7 +72,7 @@ let update_value_parameters_text v =
    [parameter_list_from_arrows t = [ a ; b ]] if t = a -> b -> c.*)
 let parameter_list_from_arrows typ =
   let rec iter t =
-    match t.Types.desc with
+    match Types.get_desc t with
       Types.Tarrow (l, t1, t2, _) ->
         (l, t1) :: (iter t2)
     | Types.Tlink texp
@@ -102,7 +102,7 @@ let dummy_parameter_list typ =
   Printtyp.mark_loops typ;
   let liste_param = parameter_list_from_arrows typ in
   let rec iter (label, t) =
-    match t.Types.desc with
+    match Types.get_desc t with
     | Types.Ttuple l ->
         let open Asttypes in
         if label = Nolabel then
@@ -129,7 +129,7 @@ let dummy_parameter_list typ =
 (** Return true if the value is a function, i.e. has a functional type.*)
 let is_function v =
   let rec f t =
-    match t.Types.desc with
+    match Types.get_desc t with
       Types.Tarrow _ ->
         true
     | Types.Tlink t ->

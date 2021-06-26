@@ -94,6 +94,11 @@ let mk_dllpath f =
   "<dir>  Add <dir> to the run-time search path for shared libraries"
 ;;
 
+let mk_eval f =
+  "-e", Arg.String f,
+  "<script>  Evaluate given script"
+;;
+
 let mk_function_sections f =
   if Config.function_sections then
     "-function-sections",  Arg.Unit f,
@@ -686,7 +691,7 @@ let mk_nopervasives f =
 
 let mk_match_context_rows f =
   "-match-context-rows", Arg.Int f,
-  let[@manual.ref "s:comp-options"] chapter, section = 9, 2 in
+  let[@manual.ref "s:comp-options"] chapter, section = 11, 2 in
   Printf.sprintf
   "<n>  (advanced, see manual section %d.%d.)" chapter section
 ;;
@@ -1015,6 +1020,7 @@ module type Toplevel_options = sig
   val _args0 : string -> string array
   val _color : string -> unit
   val _error_style : string -> unit
+  val _eval: string -> unit
 end
 ;;
 
@@ -1310,6 +1316,7 @@ struct
 
     mk_args F._args;
     mk_args0 F._args0;
+    mk_eval F._eval;
   ]
 end;;
 
@@ -1566,6 +1573,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_dinterval F._dinterval;
     mk_dstartup F._dstartup;
     mk_dump_pass F._dump_pass;
+    mk_eval F._eval;
   ]
 end;;
 
@@ -1905,6 +1913,7 @@ module Default = struct
     let _stdin () = (* placeholder: file_argument ""*) ()
     let _version () = print_version ()
     let _vnum () = print_version_num ()
+    let _eval (_:string) = ()
   end
 
   module Topmain = struct

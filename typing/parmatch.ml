@@ -339,12 +339,12 @@ exception Empty (* Empty pattern *)
 
 (* May need a clean copy, cf. PR#4745 *)
 let clean_copy ty =
-  if ty.level = Btype.generic_level then ty
+  if get_level ty = Btype.generic_level then ty
   else Subst.type_expr Subst.identity ty
 
 let get_constructor_type_path ty tenv =
-  let ty = Ctype.repr (Ctype.expand_head tenv (clean_copy ty)) in
-  match ty.desc with
+  let ty = Ctype.expand_head tenv (clean_copy ty) in
+  match get_desc ty with
   | Tconstr (path,_,_) -> path
   | _ -> assert false
 
@@ -724,7 +724,7 @@ let close_variant env row =
         match Btype.row_field_repr f with
         | Reither(_, _, false, e) ->
             (* m=false means that this tag is not explicitly matched *)
-            Btype.set_row_field e Rabsent;
+            set_row_field e Rabsent;
             None
         | Rabsent | Reither (_, _, true, _) | Rpresent _ -> nm)
       row.row_name row.row_fields in
@@ -732,7 +732,8 @@ let close_variant env row =
     (* this unification cannot fail *)
     Ctype.unify env row.row_more
       (Btype.newgenty
-         (Tvariant {row with row_fields = []; row_more = Btype.newgenvar();
+         (Tvariant {row with row_fields = [];
+                    row_more = Btype.newgenvar();
                     row_closed = true; row_name = nm}))
   end
 
@@ -801,35 +802,6 @@ let should_extend ext env = match ext with
       end
 end
 
-module ConstructorTagHashtbl = Hashtbl.Make(
-  struct
-    type t = Types.constructor_tag
-    let hash = Hashtbl.hash
-    let equal = Types.equal_tag
-  end
-)
-
-(* complement constructor tags *)
-let complete_tags nconsts nconstrs tags =
-  let seen_const = Array.make nconsts false
-  and seen_constr = Array.make nconstrs false in
-  List.iter
-    (function
-      | Cstr_constant i -> seen_const.(i) <- true
-      | Cstr_block i -> seen_constr.(i) <- true
-      | _  -> assert false)
-    tags ;
-  let r = ConstructorTagHashtbl.create (nconsts+nconstrs) in
-  for i = 0 to nconsts-1 do
-    if not seen_const.(i) then
-      ConstructorTagHashtbl.add r (Cstr_constant i) ()
-  done ;
-  for i = 0 to nconstrs-1 do
-    if not seen_constr.(i) then
-      ConstructorTagHashtbl.add r (Cstr_block i) ()
-  done ;
-  r
-
 (* build a pattern from a constructor description *)
 let pat_of_constr ex_pat cstr =
   {ex_pat with pat_desc =
@@ -851,7 +823,7 @@ let pat_of_constrs ex_pat cstrs =
 
 let pats_of_type ?(always=false) env ty =
   let ty' = Ctype.expand_head env ty in
-  match ty'.desc with
+  match get_desc ty' with
   | Tconstr (path, _, _) ->
       begin match Env.find_type_descrs path env with
       | exception Not_found -> [omega]
@@ -873,7 +845,7 @@ let pats_of_type ?(always=false) env ty =
   | _ -> [omega]
 
 let rec get_variant_constructors env ty =
-  match (Ctype.repr ty).desc with
+  match get_desc ty with
   | Tconstr (path,_,_) -> begin
       try match Env.find_type path env, Env.find_type_descrs path env with
       | _, Type_variant (cstrs,_) -> cstrs
@@ -886,15 +858,21 @@ let rec get_variant_constructors env ty =
     end
   | _ -> fatal_error "Parmatch.get_variant_constructors"
 
-(* Sends back a pattern that complements constructor tags all_tag *)
-let complete_constrs constr all_tags =
+module ConstructorSet = Set.Make(struct
+  type t = constructor_description
+  let compare c1 c2 = String.compare c1.cstr_name c2.cstr_name
+end)
+
+(* Sends back a pattern that complements the given constructors used_constrs *)
+let complete_constrs constr used_constrs =
   let c = constr.pat_desc in
-  let not_tags = complete_tags c.cstr_consts c.cstr_nonconsts all_tags in
   let constrs = get_variant_constructors constr.pat_env c.cstr_res in
+  let used_constrs = ConstructorSet.of_list used_constrs in
   let others =
     List.filter
-      (fun cnstr -> ConstructorTagHashtbl.mem not_tags cnstr.cstr_tag)
+      (fun cnstr -> not (ConstructorSet.mem cnstr used_constrs))
       constrs in
+  (* Split constructors to put constant ones first *)
   let const, nonconst =
     List.partition (fun cnstr -> cnstr.cstr_arity = 0) others in
   const @ nonconst
@@ -902,14 +880,16 @@ let complete_constrs constr all_tags =
 let build_other_constrs env p =
   let open Patterns.Head in
   match p.pat_desc with
-  | Construct ({ cstr_tag = Cstr_constant _ | Cstr_block _ } as c) ->
-      let constr = { p with pat_desc = c } in
-      let get_tag q =
-        match q.pat_desc with
-        | Construct c -> c.cstr_tag
-        | _ -> fatal_error "Parmatch.get_tag" in
-      let all_tags =  List.map (fun (p,_) -> get_tag p) env in
-      pat_of_constrs p (complete_constrs constr all_tags)
+  | Construct ({ cstr_tag = Cstr_extension _ }) -> extra_pat
+  | Construct
+      ({ cstr_tag = Cstr_constant _ | Cstr_block _ | Cstr_unboxed } as c) ->
+        let constr = { p with pat_desc = c } in
+        let get_constr q =
+          match q.pat_desc with
+          | Construct c -> c
+          | _ -> fatal_error "Parmatch.get_constr" in
+        let used_constrs =  List.map (fun (p,_) -> get_constr p) env in
+        pat_of_constrs p (complete_constrs constr used_constrs)
   | _ -> extra_pat
 
 (* Auxiliary for build_other *)

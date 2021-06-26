@@ -221,6 +221,12 @@ val pp_print_string : formatter -> string -> unit
 val print_string : string -> unit
 (** [pp_print_string ppf s] prints [s] in the current pretty-printing box. *)
 
+val pp_print_bytes : formatter -> bytes -> unit
+val print_bytes : bytes -> unit
+(** [pp_print_bytes ppf b] prints [b] in the current pretty-printing box.
+    @since 4.13.0
+*)
+
 val pp_print_as : formatter -> int -> string -> unit
 val print_as : int -> string -> unit
 (** [pp_print_as ppf len s] prints [s] in the current pretty-printing box.
@@ -706,6 +712,8 @@ type stag += RGB of {r:int;g:int;b:int}
   Semantic tag operations may be set on or off with {!set_tags}.
   Tag-marking operations may be set on or off with {!set_mark_tags}.
   Tag-printing operations may be set on or off with {!set_print_tags}.
+
+  @since 4.08.0
 *)
 
 type tag = string
@@ -713,6 +721,8 @@ type stag += String_tag of tag
 (** [String_tag s] is a string tag [s]. String tags can be inserted either
     by explicitly using the constructor [String_tag] or by using the dedicated
     format syntax ["@{<s> ... @}"].
+
+    @since 4.08.0
 *)
 
 val pp_open_stag : formatter -> stag -> unit
@@ -722,6 +732,8 @@ val open_stag : stag -> unit
   The [print_open_stag] tag-printing function of the formatter is called with
   [t] as argument; then the opening tag marker for [t], as given by
   [mark_open_stag t], is written into the output device of the formatter.
+
+  @since 4.08.0
 *)
 
 val pp_close_stag : formatter -> unit -> unit
@@ -731,6 +743,8 @@ val close_stag : unit -> unit
   The closing tag marker, as given by [mark_close_stag t], is written into the
   output device of the formatter; then the [print_close_stag] tag-printing
   function of the formatter is called with [t] as argument.
+
+  @since 4.08.0
 *)
 
 val pp_set_tags : formatter -> bool -> unit
@@ -874,6 +888,8 @@ type formatter_stag_functions = {
   those markers as 0 length tokens in the output device of the formatter.
   [print] versions are the 'tag-printing' functions that can perform
   regular printing when a tag is closed or opened.
+
+  @since 4.08.0
 *)
 
 val pp_set_formatter_stag_functions :
@@ -894,13 +910,17 @@ val set_formatter_stag_functions : formatter_stag_functions -> unit
   The [print_] field of the record contains the tag-printing functions that
   are called at tag opening and tag closing time, to output regular material
   in the pretty-printer queue.
+
+  @since 4.08.0
 *)
 
 val pp_get_formatter_stag_functions :
   formatter -> unit -> formatter_stag_functions
 val get_formatter_stag_functions : unit -> formatter_stag_functions
 (** Return the current semantic tag operation functions of the standard
-  pretty-printer. *)
+    pretty-printer.
+
+    @since 4.08.0 *)
 
 (** {1:formatter Defining formatters}
 

@@ -1617,11 +1617,9 @@ Error: The functor application is ill-typed.
             type t = Y of X.t
           Constructors do not match:
             Y of int
-          is not compatible with:
+          is not the same as:
             Y of X.t
-          The types are not equal.
-          Line 5, characters 0-32:
-            Definition of module X/1
+          The type int is not equal to the type X.t
        4. Modules do not match:
             Z : sig type t = Z.t = Z of int end
           is not included in
@@ -1632,9 +1630,9 @@ Error: The functor application is ill-typed.
             type t = Z of X.t
           Constructors do not match:
             Z of int
-          is not compatible with:
+          is not the same as:
             Z of X.t
-          The types are not equal.
+          The type int is not equal to the type X.t
 |}]
 
 (** Final state in the presence of extensions

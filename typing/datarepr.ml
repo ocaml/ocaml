@@ -24,16 +24,15 @@ open Btype
 let free_vars ?(param=false) ty =
   let ret = ref TypeSet.empty in
   let rec loop ty =
-    let ty = repr ty in
     if try_mark_node ty then
-      match ty.desc with
+      match get_desc ty with
       | Tvar _ ->
           ret := TypeSet.add ty !ret
       | Tvariant row ->
           let row = row_repr row in
           iter_row loop row;
           if not (static_row row) then begin
-            match row.row_more.desc with
+            match get_desc row.row_more with
             | Tvar _ when param -> ret := TypeSet.add ty !ret
             | _ -> loop row.row_more
           end
@@ -95,11 +94,10 @@ let constructor_args ~current_unit priv cd_args cd_res path rep =
 
 let constructor_descrs ~current_unit ty_path decl cstrs rep =
   let ty_res = newgenconstr ty_path decl.type_params in
-  let num_consts = ref 0 and num_nonconsts = ref 0  and num_normal = ref 0 in
+  let num_consts = ref 0 and num_nonconsts = ref 0 in
   List.iter
-    (fun {cd_args; cd_res; _} ->
-      if cd_args = Cstr_tuple [] then incr num_consts else incr num_nonconsts;
-      if cd_res = None then incr num_normal)
+    (fun {cd_args; _} ->
+      if cd_args = Cstr_tuple [] then incr num_consts else incr num_nonconsts)
     cstrs;
   let rec describe_constructors idx_const idx_nonconst = function
       [] -> []
@@ -139,7 +137,6 @@ let constructor_descrs ~current_unit ty_path decl cstrs rep =
             cstr_tag = tag;
             cstr_consts = !num_consts;
             cstr_nonconsts = !num_nonconsts;
-            cstr_normal = !num_normal;
             cstr_private = decl.type_private;
             cstr_generalized = cd_res <> None;
             cstr_loc = cd_loc;
@@ -169,7 +166,6 @@ let extension_descr ~current_unit path_ext ext =
       cstr_consts = -1;
       cstr_nonconsts = -1;
       cstr_private = ext.ext_private;
-      cstr_normal = -1;
       cstr_generalized = ext.ext_ret_type <> None;
       cstr_loc = ext.ext_loc;
       cstr_attributes = ext.ext_attributes;
@@ -177,9 +173,10 @@ let extension_descr ~current_unit path_ext ext =
       cstr_uid = ext.ext_uid;
     }
 
-let none = Private_type_expr.create (Ttuple [])
-    ~level:(-1) ~scope:Btype.generic_level ~id:(-1)
-                                        (* Clearly ill-formed type *)
+let none =
+  create_expr (Ttuple []) ~level:(-1) ~scope:Btype.generic_level ~id:(-1)
+    (* Clearly ill-formed type *)
+
 let dummy_label =
   { lbl_name = ""; lbl_res = none; lbl_arg = none; lbl_mut = Immutable;
     lbl_pos = (-1); lbl_all = [||]; lbl_repres = Record_regular;

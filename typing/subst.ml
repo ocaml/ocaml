@@ -140,7 +140,7 @@ let reset_for_saving () = new_id := -1
 
 let newpersty desc =
   decr new_id;
-  Private_type_expr.create
+  create_expr
     desc ~level:generic_level ~scope:Btype.lowest_level ~id:!new_id
 
 (* ensure that all occurrences of 'Tvar None' are physically shared *)
@@ -155,24 +155,21 @@ let ctype_apply_env_empty = ref (fun _ -> assert false)
 
 (* Similar to [Ctype.nondep_type_rec]. *)
 let rec typexp copy_scope s ty =
-  let ty = repr ty in
-  match ty.desc with
-    Tvar _ | Tunivar _ as desc ->
-      if s.for_saving || ty.id < 0 then
+  let desc = get_desc ty in
+  match desc with
+    Tvar _ | Tunivar _ ->
+      if s.for_saving || get_id ty < 0 then
         let ty' =
           if s.for_saving then newpersty (norm desc)
-          else newty2 ty.level desc
+          else newty2 ~level:(get_level ty) desc
         in
-        For_copy.save_desc copy_scope ty desc;
-        Private_type_expr.set_desc ty (Tsubst (ty', None));
-        (* TODO: move this line to btype.ml
-           there is a similar problem also in ctype.ml *)
+        For_copy.redirect_desc copy_scope ty (Tsubst (ty', None));
         ty'
       else ty
   | Tsubst (ty, _) ->
       ty
   | Tfield (m, k, _t1, _t2) when not s.for_saving && m = dummy_method
-      && field_kind_repr k <> Fabsent && (repr ty).level < generic_level ->
+      && field_kind_repr k <> Fabsent && get_level ty < generic_level ->
       (* do not copy the type of self when it is not generalized *)
       ty
 (* cannot do it, since it would omit substitution
@@ -180,18 +177,18 @@ let rec typexp copy_scope s ty =
       ty
 *)
   | _ ->
-    let desc = ty.desc in
-    For_copy.save_desc copy_scope ty desc;
     let tm = row_of_type ty in
     let has_fixed_row =
       not (is_Tconstr ty) && is_constr_row ~allow_ident:false tm in
     (* Make a stub *)
-    let ty' = if s.for_saving then newpersty (Tvar None) else newgenvar () in
-    Private_type_expr.set_scope ty' ty.scope;
-    Private_type_expr.set_desc ty (Tsubst (ty', None));
-    Private_type_expr.set_desc ty'
-      begin if has_fixed_row then
-        match tm.desc with (* PR#7348 *)
+    let ty' =
+      if s.for_saving then newpersty (Tvar None)
+      else newgenstub ~scope:(get_scope ty)
+    in
+    For_copy.redirect_desc copy_scope ty (Tsubst (ty', None));
+    let desc =
+      if has_fixed_row then
+        match get_desc tm with (* PR#7348 *)
           Tconstr (Pdot(m,i), tl, _abbrev) ->
             let i' = String.sub i 0 (String.length i - 4) in
             Tconstr(type_path s (Pdot(m,i')), tl, ref Mnil)
@@ -221,32 +218,33 @@ let rec typexp copy_scope s ty =
           Tobject (t1', ref name')
       | Tvariant row ->
           let row = row_repr row in
-          let more = repr row.row_more in
+          let more = row.row_more in
+          let mored = get_desc more in
           (* We must substitute in a subtle way *)
           (* Tsubst takes a tuple containing the row var and the variant *)
-          begin match more.desc with
+          begin match mored with
             Tsubst (_, Some ty2) ->
               (* This variant type has been already copied *)
-              Private_type_expr.set_desc ty (Tsubst (ty2, None));
-              (* avoid Tlink in the new type *)
+              (* Change the stub to avoid Tlink in the new type *)
+              For_copy.redirect_desc copy_scope ty (Tsubst (ty2, None));
               Tlink ty2
           | _ ->
               let dup =
-                s.for_saving || more.level = generic_level || static_row row ||
-                match more.desc with Tconstr _ -> true | _ -> false in
+                s.for_saving || get_level more = generic_level ||
+                static_row row || is_Tconstr more in
               (* Various cases for the row variable *)
               let more' =
-                match more.desc with
+                match mored with
                   Tsubst (ty, None) -> ty
                 | Tconstr _ | Tnil -> typexp copy_scope s more
                 | Tunivar _ | Tvar _ ->
-                    For_copy.save_desc copy_scope more more.desc;
-                    if s.for_saving then newpersty (norm more.desc) else
-                    if dup && is_Tvar more then newgenty more.desc else more
+                    if s.for_saving then newpersty (norm mored)
+                    else if dup && is_Tvar more then newgenty mored
+                    else more
                 | _ -> assert false
               in
               (* Register new type first for recursion *)
-              Private_type_expr.set_desc more
+              For_copy.redirect_desc copy_scope more
                 (Tsubst (more', Some ty'));
               (* TODO: check if more' can be eliminated *)
               (* Return a new copy *)
@@ -264,7 +262,8 @@ let rec typexp copy_scope s ty =
       | Tfield(_label, kind, _t1, t2) when field_kind_repr kind = Fabsent ->
           Tlink (typexp copy_scope s t2)
       | _ -> copy_type_desc (typexp copy_scope s) desc
-      end;
+    in
+    Transient_expr.set_stub_desc ty' desc;
     ty'
 
 (*

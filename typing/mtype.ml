@@ -518,9 +518,9 @@ let scrape_for_type_of ~remove_aliases env mty =
 let lower_nongen nglev mty =
   let open Btype in
   let it_type_expr it ty =
-    let ty = repr ty in
-    match ty with
-      {desc=Tvar _; level} ->
+    match get_desc ty with
+      Tvar _ ->
+        let level = get_level ty in
         if level < generic_level && level > nglev then set_level ty nglev
     | _ ->
         type_iterators.it_type_expr it ty

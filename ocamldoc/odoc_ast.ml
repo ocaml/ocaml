@@ -258,7 +258,7 @@ module Analyser =
 
         | Typedtree.Tpat_construct (_, cons_desc, _, _) when
             (* we give a name to the parameter only if it is unit *)
-            (match cons_desc.cstr_res.desc with
+            (match get_desc cons_desc.cstr_res with
               Tconstr (p, _, _) ->
                 Path.same p Predef.path_unit
             | _ ->
@@ -585,7 +585,7 @@ module Analyser =
               with Not_found -> raise (Failure (Odoc_messages.method_type_not_found current_class_name label))
             in
             let real_type =
-              match met_type.Types.desc with
+              match get_desc met_type with
               Tarrow (_, _, t, _) ->
                 t
             |  _ ->
@@ -627,7 +627,7 @@ module Analyser =
             with Not_found -> raise (Failure (Odoc_messages.method_not_found_in_typedtree complete_name))
           in
           let real_type =
-            match exp.exp_type.desc with
+            match get_desc exp.exp_type with
               Tarrow (_, _, t,_) ->
                 t
             |  _ ->

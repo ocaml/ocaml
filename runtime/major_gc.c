@@ -463,7 +463,7 @@ Caml_inline void mark_slice_darken(struct mark_stack* stk, value v, mlsize_t i,
       if( Tag_hd(chd) < No_scan_tag ) {
         mark_stack_push(stk, child, 0, work);
       } else {
-        *work -= 1; /* Account for header */
+        *work -= Whsize_hd (chd);
       }
     }
   }
@@ -542,7 +542,7 @@ static void mark_ephe_aux (struct mark_stack *stk, intnat *work,
       ephes_to_check = &Field(v,CAML_EPHE_LINK_OFFSET);
       return;
     }
-  } else {  /* a simily weak pointer or an already alive data */
+  } else {  /* a similarly weak pointer or an already alive data */
     *work -= 1;
   }
 

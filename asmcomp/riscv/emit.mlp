@@ -102,6 +102,12 @@ let emit_stack_adjustment = function
       `	li	{emit_reg reg_tmp}, {emit_int n}\n`;
       `	add	sp, sp, {emit_reg reg_tmp}\n`
 
+(* Adjust stack_offset and emit corresponding CFI directive *)
+
+let adjust_stack_offset env delta =
+  env.stack_offset <- env.stack_offset + delta;
+  cfi_adjust_cfa_offset delta
+
 let emit_mem_op op src ofs =
   if is_immediate ofs then
     `	{emit_string op}	{emit_string src}, {emit_int ofs}(sp)\n`
@@ -237,7 +243,11 @@ let emit_instr env i =
       assert (env.f.fun_prologue_required);
       let n = frame_size env in
       emit_stack_adjustment (-n);
-      if env.f.fun_contains_calls then store_ra n
+      if n > 0 then cfi_adjust_cfa_offset n;
+      if env.f.fun_contains_calls then begin
+        store_ra n;
+        cfi_offset ~reg:1 (* ra *) ~offset:(-size_addr)
+      end;
   | Lop(Imove | Ispill | Ireload) ->
       let src = i.arg.(0) and dst = i.res.(0) in
       if src.loc <> dst.loc then begin
@@ -301,7 +311,7 @@ let emit_instr env i =
   | Lop(Istackoffset n) ->
       assert (n mod 16 = 0);
       emit_stack_adjustment (-n);
-      env.stack_offset <- env.stack_offset + n
+      adjust_stack_offset env n
   | Lop(Iload(Single, Iindexed ofs, _mut)) ->
       `	flw	{emit_reg i.res.(0)}, {emit_int ofs}({emit_reg i.arg.(0)})\n`;
       `	fcvt.d.s	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
@@ -316,7 +326,7 @@ let emit_instr env i =
         | Thirtytwo_signed -> "lw"
         | Word_int | Word_val -> "ld"
         | Single -> assert false
-        | Double | Double_u -> "fld"
+        | Double -> "fld"
       in
       `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_int ofs}({emit_reg i.arg.(0)})\n`
   | Lop(Istore(Single, Iindexed ofs, _)) ->
@@ -331,7 +341,7 @@ let emit_instr env i =
         | Thirtytwo_unsigned | Thirtytwo_signed -> "sw"
         | Word_int | Word_val -> "sd"
         | Single -> assert false
-        | Double | Double_u -> "fsd"
+        | Double -> "fsd"
       in
       `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_int ofs}({emit_reg i.arg.(1)})\n`
   | Lop(Ialloc {bytes; dbginfo}) ->
@@ -489,18 +499,18 @@ let emit_instr env i =
   | Ladjust_trap_depth { delta_traps } ->
       (* each trap occupes 16 bytes on the stack *)
       let delta = 16 * delta_traps in
-      env.stack_offset <- env.stack_offset + delta
+      adjust_stack_offset env delta
   | Lpushtrap {lbl_handler} ->
       `	la	{emit_reg reg_tmp}, {emit_label lbl_handler}\n`;
       `	addi	sp, sp, -16\n`;
-      env.stack_offset <- env.stack_offset + 16;
+      adjust_stack_offset env 16;
       emit_store reg_tmp size_addr;
       emit_store reg_trap 0;
       `	mv	{emit_reg reg_trap}, sp\n`
   | Lpoptrap ->
       emit_load reg_trap 0;
       `	addi	sp, sp, 16\n`;
-      env.stack_offset <- env.stack_offset - 16
+      adjust_stack_offset env (-16)
   | Lraise k ->
       begin match k with
       | Lambda.Raise_regular ->
@@ -534,9 +544,11 @@ let fundecl fundecl =
   `	.align	2\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
   emit_debug_info fundecl.fun_dbg;
+  cfi_startproc();
   emit_all env fundecl.fun_body;
   List.iter emit_call_gc env.call_gc_sites;
   List.iter emit_call_bound_error env.bound_error_sites;
+  cfi_endproc();
   `	.size	{emit_symbol fundecl.fun_name}, .-{emit_symbol fundecl.fun_name}\n`;
   (* Emit the float literals *)
   if env.float_literals <> [] then begin

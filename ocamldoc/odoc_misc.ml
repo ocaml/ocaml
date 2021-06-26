@@ -492,22 +492,27 @@ let is_optional = Btype.is_optional
 let label_name = Btype.label_name
 
 let remove_option typ =
-  let rec iter t =
+  let open Types in
+  let rec trim t =
     match t with
-    | Types.Tconstr(path, [ty], _) when Path.same path Predef.path_option -> ty.Types.desc
-    | Types.Tconstr _
-    | Types.Tvar _
-    | Types.Tunivar _
-    | Types.Tpoly _
-    | Types.Tarrow _
-    | Types.Ttuple _
-    | Types.Tobject _
-    | Types.Tfield _
-    | Types.Tnil
-    | Types.Tvariant _
-    | Types.Tpackage _ -> t
-    | Types.Tlink t2 -> iter t2.Types.desc
-    | Types.Tsubst _ -> assert false
+    | Tconstr(path, [ty], _)
+      when Path.same path Predef.path_option -> get_desc ty
+    | Tconstr _
+    | Tvar _
+    | Tunivar _
+    | Tpoly _
+    | Tarrow _
+    | Ttuple _
+    | Tobject _
+    | Tfield _
+    | Tnil
+    | Tvariant _
+    | Tpackage _ -> t
+    | Tlink t2 -> trim (get_desc t2)
+    | Tsubst _ -> assert false
   in
-  Types.Private_type_expr.create (iter typ.Types.desc)
-    ~level:typ.Types.level ~scope:typ.Types.scope ~id:typ.Types.id
+  Transient_expr.type_expr
+    (Transient_expr.create (trim (get_desc typ))
+       ~level:(get_level typ)
+       ~scope:(get_scope typ)
+       ~id:(get_id typ))

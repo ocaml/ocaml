@@ -565,7 +565,7 @@ let emit_instr env fallthrough i =
           I.movsxd (addressing addr DWORD i 0) dest
       | Single ->
           I.cvtss2sd (addressing addr REAL4 i 0) dest
-      | Double | Double_u ->
+      | Double ->
           I.movsd (addressing addr REAL8 i 0) dest
       end
   | Lop(Istore(chunk, addr, _)) ->
@@ -581,7 +581,7 @@ let emit_instr env fallthrough i =
       | Single ->
           I.cvtsd2ss (arg i 0) xmm15;
           I.movss xmm15 (addressing addr REAL4 i 1)
-      | Double | Double_u ->
+      | Double ->
           I.movsd (arg i 0) (addressing addr REAL8 i 1)
       end
   | Lop(Ialloc { bytes = n; dbginfo }) ->

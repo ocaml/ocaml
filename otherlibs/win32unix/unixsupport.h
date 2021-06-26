@@ -74,6 +74,10 @@ extern void cstringvect_free(wchar_t **);
 
 extern int unix_cloexec_default;
 extern int unix_cloexec_p(value cloexec);
+extern int win_set_inherit(HANDLE fd, BOOL inherit);
+/* This is a best effort, not guaranteed to work, so don't fail on error */
+#define win_set_cloexec(fd, cloexec) \
+  win_set_inherit((fd), ! unix_cloexec_p((cloexec)))
 
 /* Information stored in flags_fd, describing more precisely the socket
  * and its status. The whole flags_fd is initialized to 0.
