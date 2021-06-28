@@ -21,19 +21,16 @@ open Longident
 open Types
 open Toploop
 
-(* The error formatter for directives
-   In the toplevel, we print directly on stdout.
-*)
+let error_status = 125
+let error_fmt () =
+  if !Sys.interactive then
+    Format.std_formatter
+  else
+    Format.err_formatter
 
-type error_handler =
-  {
-    exit: int -> unit;
-    ppf: Format.formatter
-  }
+let fail () =
+  if not !Sys.interactive then raise (Compenv.Exit_with_status error_status)
 
-let error_handler = ref { exit = ignore; ppf = std_formatter }
-let set_error_handler eh = error_handler := eh
-let exit_failure = 125
 
 (* Directive sections (used in #help) *)
 let section_general = "General"
@@ -134,11 +131,11 @@ let _ = add_directive "cd" (Directive_string dir_cd)
     }
 
 
-let with_error f x = f !error_handler x
-let boolean_exit {exit; _ } b = if b then exit 0 else exit exit_failure
+let with_error f x = f (error_fmt ()) x
+let action_on_suberror b = if not b then fail ()
 
-let dir_load h name =
-  boolean_exit h (Topeval.load_file false h.ppf name)
+let dir_load ppf name =
+  action_on_suberror (Topeval.load_file false ppf name)
 
 let _ = add_directive "load" (Directive_string (with_error dir_load))
     {
@@ -146,8 +143,8 @@ let _ = add_directive "load" (Directive_string (with_error dir_load))
       doc = "Load in memory a bytecode object, produced by ocamlc.";
     }
 
-let dir_load_rec h name =
-  boolean_exit h (Topeval.load_file true h.ppf name)
+let dir_load_rec ppf name =
+  action_on_suberror (Topeval.load_file true ppf name)
 
 let _ = add_directive "load_rec"
     (Directive_string (with_error dir_load_rec))
@@ -160,11 +157,11 @@ let load_file = Topeval.load_file false
 
 (* Load commands from a file *)
 
-let dir_use h name =
-  boolean_exit h (Toploop.use_input h.ppf (Toploop.File name))
-let dir_use_output h name = boolean_exit h (Toploop.use_output h.ppf name)
-let dir_mod_use h name =
-  boolean_exit h  (Toploop.mod_use_input h.ppf (Toploop.File name))
+let dir_use ppf name =
+  action_on_suberror (Toploop.use_input ppf (Toploop.File name))
+let dir_use_output ppf name = action_on_suberror (Toploop.use_output ppf name)
+let dir_mod_use ppf name =
+  action_on_suberror (Toploop.mod_use_input ppf (Toploop.File name))
 
 let _ = add_directive "use" (Directive_string (with_error dir_use))
     {
@@ -296,10 +293,10 @@ let find_printer_type ppf lid =
       fprintf ppf "Unbound value %a.@." Printtyp.longident lid;
       raise Exit
 
-let dir_install_printer h lid =
+let dir_install_printer ppf lid =
   try
     let ((ty_arg, ty), path, is_old_style) =
-      find_printer_type h.ppf lid in
+      find_printer_type ppf lid in
     let v = eval_value_path !toplevel_env path in
     match ty with
     | None ->
@@ -324,13 +321,13 @@ let dir_install_printer h lid =
        install_generic_printer' path ty_path (build v ty_args)
   with Exit -> ()
 
-let dir_remove_printer h lid =
+let dir_remove_printer ppf lid =
   try
-    let (_ty_arg, path, _is_old_style) = find_printer_type h.ppf lid in
+    let (_ty_arg, path, _is_old_style) = find_printer_type ppf lid in
     begin try
       remove_printer path
     with Not_found ->
-      fprintf h.ppf "No printer named %a.@." Printtyp.longident lid
+      fprintf ppf "No printer named %a.@." Printtyp.longident lid
     end
   with Exit -> ()
 
@@ -348,9 +345,9 @@ let _ = add_directive "remove_printer"
       doc = "Remove the named function from the table of toplevel printers.";
     }
 
-let parse_warnings h iserr s =
+let parse_warnings ppf iserr s =
   try Option.iter Location.(prerr_alert none) @@ Warnings.parse_options iserr s
-  with Arg.Bad err -> fprintf h.ppf "%s.@." err; h.exit exit_failure
+  with Arg.Bad err -> fprintf ppf "%s.@." err; fail ()
 
 (* Typing information *)
 
@@ -657,14 +654,14 @@ let _ = add_directive "ppx"
     }
 
 let _ = add_directive "warnings"
-    (Directive_string (fun s -> parse_warnings !error_handler false s))
+    (Directive_string (fun s -> parse_warnings (error_fmt ()) false s))
     {
       section = section_options;
       doc = "Enable or disable warnings according to the argument.";
     }
 
 let _ = add_directive "warn_error"
-    (Directive_string (fun s -> parse_warnings !error_handler true s))
+    (Directive_string (fun s -> parse_warnings (error_fmt ()) true s))
     {
       section = section_options;
       doc = "Treat as errors the warnings enabled by the argument.";
