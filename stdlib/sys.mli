@@ -355,10 +355,11 @@ val runtime_warnings_enabled: unit -> bool
     @since 4.03.0 *)
 
 val enable_float_array_alloc_warning: int option -> unit
-(** Control whether the OCaml runtime system can emit warnings when values
-    of type [float array] arrays are allocated.
-    None   -> the warning is disabled
-    Some s -> the warning is enabled with a backtrace of size s
+(** Control whether the OCaml runtime system emits warnings when values
+    of type [float array] arrays are allocated. If the argument is [None]
+    then the warning is disabled; if the argument is [Some s], the
+    warning  is enabled with a backtrace of size [s].
+    @raise Invalid_argument if called with [Some s] and [s < 0]
 
     @since 4.14.0 *)
 
