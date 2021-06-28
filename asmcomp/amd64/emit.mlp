@@ -525,16 +525,7 @@ let emit_instr env fallthrough i =
         load_symbol_addr func rax;
         emit_call "caml_c_call";
         record_frame env i.live (Dbg_other i.dbg);
-        if system <> S_win64 then begin
-          (* TODO: investigate why such a diff.
-             This comes from:
-            http://caml.inria.fr/cgi-bin/viewvc.cgi?view=revision&revision=12664
-
-             If we do the same for Win64, we probably need to change
-             amd64nt.asm accordingly.
-          *)
-          I.mov (domain_field Domainstate.Domain_young_ptr) r15
-        end
+        I.mov (domain_field Domainstate.Domain_young_ptr) r15
       end else begin
         emit_call func
       end
