@@ -125,28 +125,8 @@ module HofM (M: Map.S) : Hashtbl.S with type key = M.key =
   struct
     type key = M.key
     type 'a t = (key, 'a) Hashtbl.t
-    let create s = Hashtbl.create s
-    let clear = Hashtbl.clear
-    let reset = Hashtbl.reset
-    let copy = Hashtbl.copy
-    let add = Hashtbl.add
-    let remove = Hashtbl.remove
-    let find = Hashtbl.find
-    let find_opt = Hashtbl.find_opt
-    let find_all = Hashtbl.find_all
-    let replace = Hashtbl.replace
-    let mem = Hashtbl.mem
-    let iter = Hashtbl.iter
-    let fold = Hashtbl.fold
-    let length = Hashtbl.length
-    let stats = Hashtbl.stats
-    let filter_map_inplace = Hashtbl.filter_map_inplace
-    let to_seq = Hashtbl.to_seq
-    let to_seq_keys = Hashtbl.to_seq_keys
-    let to_seq_values = Hashtbl.to_seq_values
-    let of_seq = Hashtbl.of_seq
-    let add_seq = Hashtbl.add_seq
-    let replace_seq = Hashtbl.replace_seq
+    include (Hashtbl : module type of Hashtbl with type ('a, 'b) t := ('a, 'b) Hashtbl.t)
+    let create n = create ?random:None n
   end
 
 module HS1 = HofM(MS)

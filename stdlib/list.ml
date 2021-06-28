@@ -187,6 +187,8 @@ let rec memq x = function
     [] -> false
   | a::l -> a == x || memq x l
 
+let cons_assoc k v l = (k, v) :: l
+
 let rec assoc x = function
     [] -> raise Not_found
   | (a,b)::l -> if compare a x = 0 then b else assoc x l
@@ -219,6 +221,21 @@ let rec remove_assoc x = function
 let rec remove_assq x = function
   | [] -> []
   | (a, _ as pair) :: l -> if a == x then l else pair :: remove_assq x l
+
+let rec iter_assoc f l =
+  match l with
+  | [] -> ()
+  | (k, v) :: l -> f k v; iter_assoc f l
+
+let rec fold_assoc_left f accu l =
+  match l with
+  | [] -> accu
+  | (k, v) :: l -> fold_assoc_left f (f accu k v) l
+
+let rec fold_assoc_right f l accu =
+  match l with
+  | [] -> accu
+  | (k, v) :: l -> f k v (fold_assoc_right f l accu)
 
 let rec find p = function
   | [] -> raise Not_found
