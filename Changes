@@ -170,9 +170,6 @@ OCaml 4.13.0
   of the current overhead.
   (Damien Doligez, review by Stephen Dolan)
 
-- #10481: Reduce diff between amd64nt.asm and amd64.S
-  (Nicolás Ojeda Bär, review by Stephen Dolan)
-
 ### Code generation and optimizations:
 
 - #1400: Add an optional invariants check on Cmm, which can be activated

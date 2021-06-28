@@ -525,7 +525,18 @@ let emit_instr env fallthrough i =
         load_symbol_addr func rax;
         emit_call "caml_c_call";
         record_frame env i.live (Dbg_other i.dbg);
-        I.mov (domain_field Domainstate.Domain_young_ptr) r15
+        if system <> S_win64 then begin
+
+          (* In amd64.S, "caml_c_call" tail-calls the C function (in order to
+             produce nicer backtraces), so we need to restore r15 manually after
+             it returns (note that this increases code size).
+
+             In amd64nt.asm (used for Win64), "caml_c_call" invokes the C
+             function via a regular call, and restores r15 itself, thus avoiding
+             the code size increase. *)
+
+          I.mov (domain_field Domainstate.Domain_young_ptr) r15
+        end
       end else begin
         emit_call func
       end

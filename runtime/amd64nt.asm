@@ -166,11 +166,6 @@ caml_c_call:
         pop     r12
         Store_last_return_address r12
         Store_bottom_of_stack rsp
-    ; Push last return address
-    ; Note that it is not equivalent to doing "sub rsp, 8"
-    ; because the red zone on Windows is zero, see
-    ; https://devblogs.microsoft.com/oldnewthing/20190111-00/?p=100685
-        push    r12
     ; Touch the stack to trigger a recoverable segfault
     ; if insufficient space remains
         sub     rsp, 01000h
@@ -179,7 +174,12 @@ caml_c_call:
     ; Make the alloc ptr available to the C code
         Store_young_ptr r15
     ; Call the function (address in rax)
-        jmp     rax
+        call    rax
+    ; Reload alloc ptr
+        Load_young_ptr r15
+    ; Return to caller
+        push    r12
+        ret
 
 ; Start the OCaml program
 
