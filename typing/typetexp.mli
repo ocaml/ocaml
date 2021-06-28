@@ -24,7 +24,7 @@ val make_poly_univars : string list -> poly_univars
   (* Create a set of univars with given names *)
 val check_poly_univars :
    Env.t -> Location.t -> poly_univars -> type_expr list
-  (* Verify that the given univars are universally quantifier,
+  (* Verify that the given univars are universally quantified,
      and return the list of variables. The type in which the
      univars are used must be generalised *)
 val instance_poly_univars :
