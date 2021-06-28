@@ -397,6 +397,7 @@ let transl_declaration env sdecl (id, uid) =
           let tcstr =
             { cd_id = name;
               cd_name = scstr.pcd_name;
+              cd_vars = scstr.pcd_vars;
               cd_args = targs;
               cd_res = tret_type;
               cd_loc = scstr.pcd_loc;
@@ -1000,7 +1001,7 @@ let transl_extension_constructor ~scope env type_path type_params
           make_constructor env sext.pext_loc type_path typext_params
             svars sargs sret_type
         in
-          args, ret_type, Text_decl(targs, tret_type)
+          args, ret_type, Text_decl(svars, targs, tret_type)
     | Pext_rebind lid ->
         let usage : Env.constructor_usage =
           if priv = Public then Env.Exported else Env.Exported_private
