@@ -384,7 +384,7 @@ void caml_gc_message (int, char *, ...)
 extern uintnat caml_runtime_warnings;
 int caml_runtime_warnings_active(void);
 
-extern uintnat caml_float_array_alloc_warning;
+extern intnat caml_float_array_alloc_warning;
 int caml_float_array_alloc_warning_active(void);
 
 #ifdef DEBUG

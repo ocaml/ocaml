@@ -203,14 +203,14 @@ int caml_runtime_warnings_active(void)
   return 1;
 }
 
-uintnat caml_float_array_alloc_warning = 0;
-/* <= 0 -> warning disabled
-    > 0 -> warning printed with callstack of this size */
+intnat caml_float_array_alloc_warning = -1;
+/*  < 0 -> warning disabled
+   >= 0 -> warning printed with callstack of this size */
 static int caml_float_array_alloc_warning_first = 1;
 
 int caml_float_array_alloc_warning_active(void)
 {
-  if (caml_float_array_alloc_warning <= 0) return 0;
+  if (caml_float_array_alloc_warning < 0) return 0;
   if (caml_float_array_alloc_warning_first) {
     fprintf(stderr, "[ocaml] (use Sys.enable_float_array_alloc_warning to "
                     "control these warnings)\n");
