@@ -166,8 +166,11 @@ caml_c_call:
         pop     r12
         Store_last_return_address r12
         Store_bottom_of_stack rsp
-    ; equivalent to pushing last return address
-        sub     rsp, 8
+    ; Push last return address
+    ; Note that it is not equivalent to doing "sub rsp, 8"
+    ; because the red zone on Windows is zero, see
+    ; https://devblogs.microsoft.com/oldnewthing/20190111-00/?p=100685
+        push    r12
     ; Touch the stack to trigger a recoverable segfault
     ; if insufficient space remains
         sub     rsp, 01000h
