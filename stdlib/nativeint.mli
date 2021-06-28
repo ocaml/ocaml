@@ -164,9 +164,9 @@ external of_float : float -> nativeint
   [@@unboxed] [@@noalloc]
 (** Convert the given floating-point number to a native integer,
    discarding the fractional part (truncate towards 0).
-   The result of the conversion is undefined if, after truncation,
-   the number is outside the range
-   \[{!Nativeint.min_int}, {!Nativeint.max_int}\]. *)
+   If the truncated floating-point number is outside the range
+   \[{!Nativeint.min_int}, {!Nativeint.max_int}\], no exception is raised,
+   and an unspecified, platform-dependent integer is returned. *)
 
 external to_float : nativeint -> float
   = "caml_nativeint_to_float" "caml_nativeint_to_float_unboxed"

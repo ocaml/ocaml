@@ -95,7 +95,7 @@ val transfer : 'a t -> 'a t -> unit
 
 val to_seq : 'a t -> 'a Seq.t
 (** Iterate on the queue, in front-to-back order.
-    The behavior is not defined if the queue is modified
+    The behavior is not specified if the queue is modified
     during the iteration.
     @since 4.07 *)
 
