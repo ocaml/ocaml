@@ -1209,6 +1209,8 @@ static void domain_terminate()
     }
     caml_plat_unlock(&all_domains_lock);
   }
+  /* We can not touch domain_self->interruptor after here
+     because it may be reused */
   caml_sample_gc_collect(domain_state);
   caml_remove_generational_global_root(&domain_state->unique_token_root);
   caml_remove_generational_global_root(&domain_state->dls_root);
@@ -1229,9 +1231,6 @@ static void domain_terminate()
   if(domain_state->current_stack != NULL) {
     caml_free_stack(domain_state->current_stack);
   }
-
-  /* we shouldn't have any unserviced interrupts pending */
-  Assert(!domain_self->interruptor.interrupt_pending);
 
   atomic_store_rel(&domain_self->backup_thread_msg, BT_TERMINATE);
   caml_plat_signal(&domain_self->domain_cond);
