@@ -226,7 +226,7 @@ let check_poll_local loc attr =
   | Error_poll, Always_local ->
       Location.prerr_warning loc
         (Warnings.Inlining_impossible
-          "[@error_poll] disables local function optimization")
+          "[@poll error] is incompatible with local function optimization")
   | _ ->
       ()
 
