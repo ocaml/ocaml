@@ -1109,6 +1109,7 @@ typing/printtyped.cmo : \
     typing/types.cmi \
     typing/typedtree.cmi \
     parsing/printast.cmi \
+    parsing/pprintast.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
     parsing/longident.cmi \
@@ -1121,6 +1122,7 @@ typing/printtyped.cmx : \
     typing/types.cmx \
     typing/typedtree.cmx \
     parsing/printast.cmx \
+    parsing/pprintast.cmx \
     typing/path.cmx \
     parsing/parsetree.cmi \
     parsing/longident.cmx \
