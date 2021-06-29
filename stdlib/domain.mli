@@ -45,6 +45,7 @@ module Sync : sig
       will improve performance on some CPU architectures *)
 
   val poll : unit -> unit
+  [@@ocaml.deprecated "Poll is now a no-op"]
   (** poll for interrupts *)
 end
 
