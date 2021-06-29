@@ -12,6 +12,11 @@ Working version
   is actually a suffix of `name` and raises Invalid_argument otherwise.
   (Xavier Leroy, report by whitequark, review by David Allsopp)
 
+* #10482: mark the Stream and Genlex modules as deprecated, in preparation
+  for a future removal.  These modules (without deprecation alert)
+  are now provided by the camlp-streams library.
+  (Xavier Leroy, review by Nicolás Ojeda Bär)
+
 ### Other libraries:
 
 - #10192: Add support for Unix domain sockets on Windows and use them
