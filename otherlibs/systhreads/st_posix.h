@@ -36,6 +36,9 @@
 
 #include <pthread.h>
 #include <signal.h>
+#ifdef HAS_SYS_SELECT_H
+#include <sys/select.h>
+#endif
 
 typedef int st_retcode;
 
