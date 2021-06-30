@@ -39,16 +39,26 @@
 
 typedef int st_retcode;
 
+#define SIGPREEMPTION SIGVTALRM
+#define Thread_timeout 50
+
+/* Variables used to stop "tick" threads */
+static atomic_uintnat tick_thread_stop[Max_domains];
+#define Tick_thread_stop tick_thread_stop[Caml_state->id]
+
 /* OS-specific initialization */
 
-/* static int st_initialize(void) */
-/* { */
-/*   return 0; */
-/* } */
+static int st_initialize(void)
+{
+  /* caml_sigmask_hook = pthread_sigmask; */
+  atomic_store_rel(&Tick_thread_stop, 0);
+  return 0;
+}
 
 /* Thread creation.  Created in detached mode if [res] is NULL. */
 
 typedef pthread_t st_thread_id;
+
 
 static int st_thread_create(st_thread_id * res,
                             void * (*fn)(void *), void * arg)
@@ -71,6 +81,12 @@ static int st_thread_create(st_thread_id * res,
 Caml_inline void st_thread_cleanup(void)
 {
   return;
+}
+
+static void st_thread_join(st_thread_id thr)
+{
+  pthread_join(thr, NULL);
+  /* best effort: ignore errors */
 }
 
 /* Thread termination */
@@ -298,6 +314,32 @@ static int st_event_wait(st_event e)
   return rc;
 }
 
+/* The tick thread: posts a SIGPREEMPTION signal periodically */
+
+static void * caml_thread_tick(void * arg)
+{
+  uintnat *domain_id = (uintnat *) arg;
+  struct timeval timeout;
+  sigset_t mask;
+
+  caml_init_domain_self(*domain_id);
+
+  /* Block all signals so that we don't try to execute an OCaml signal handler*/
+  sigfillset(&mask);
+  pthread_sigmask(SIG_BLOCK, &mask, NULL);
+  while(! Tick_thread_stop) {
+    /* select() seems to be the most efficient way to suspend the
+       thread for sub-second intervals */
+    timeout.tv_sec = 0;
+    timeout.tv_usec = Thread_timeout * 1000;
+    select(0, NULL, NULL, NULL, &timeout);
+    /* The preemption signal should never cause a callback, so don't
+     go through caml_handle_signal(), just record signal delivery via
+     caml_record_signal(). */
+    caml_record_signal(SIGPREEMPTION);
+  }
+  return NULL;
+}
 
 /* "At fork" processing */
 
