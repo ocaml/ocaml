@@ -61,19 +61,6 @@ Caml_inline void caml_delete_global_root(struct skiplist * list, value * r)
   caml_plat_unlock(&roots_mutex);
 }
 
-/* Iterate a GC scanning action over a global root list */
-
-static void caml_iterate_global_roots(scanning_action f,
-                                      struct skiplist * rootlist, void* fdata)
-{
-  caml_plat_lock(&roots_mutex);
-  FOREACH_SKIPLIST_ELEMENT(e, rootlist, {
-      value * r = (value *) (e->key);
-      f(fdata, *r, r);
-    })
-  caml_plat_unlock(&roots_mutex);
-}
-
 /* Register a global C root of the mutable kind */
 
 CAMLexport void caml_register_global_root(value *r)
@@ -228,11 +215,23 @@ static void scan_native_globals(scanning_action f, void* fdata)
 
 #endif
 
+/* Iterate a GC scanning action over a global root list */
+Caml_inline void caml_iterate_global_roots(scanning_action f,
+                                      struct skiplist * rootlist, void* fdata)
+{
+  FOREACH_SKIPLIST_ELEMENT(e, rootlist, {
+      value * r = (value *) (e->key);
+      f(fdata, *r, r);
+    })
+}
+
 /* Scan all global roots */
 void caml_scan_global_roots(scanning_action f, void* fdata) {
+  caml_plat_lock(&roots_mutex);
   caml_iterate_global_roots(f, &caml_global_roots, fdata);
   caml_iterate_global_roots(f, &caml_global_roots_young, fdata);
   caml_iterate_global_roots(f, &caml_global_roots_old, fdata);
+  caml_plat_unlock(&roots_mutex);
 
   #ifdef NATIVE_CODE
   scan_native_globals(f, fdata);
@@ -240,19 +239,19 @@ void caml_scan_global_roots(scanning_action f, void* fdata) {
 }
 
 /* Scan global roots for a minor collection */
-
 void caml_scan_global_young_roots(scanning_action f, void* fdata)
 {
+  caml_plat_lock(&roots_mutex);
+
   caml_iterate_global_roots(f, &caml_global_roots, fdata);
   caml_iterate_global_roots(f, &caml_global_roots_young, fdata);
-  /* Move young roots to old roots */
 
-  caml_plat_lock(&roots_mutex);
+  /* Move young roots to old roots */
   FOREACH_SKIPLIST_ELEMENT(e, &caml_global_roots_young, {
       value * r = (value *) (e->key);
       caml_skiplist_insert(&caml_global_roots_old, (uintnat) r, 0);
     });
-  caml_plat_unlock(&roots_mutex);
-
   caml_skiplist_empty(&caml_global_roots_young);
+
+  caml_plat_unlock(&roots_mutex);
 }
