@@ -2,6 +2,9 @@ Working version
 ----------------
 ### Language features:
 
+- #10437: Allow explicit binders for type variables.
+  (Stephen Dolan, review by Leo White)
+
 ### Runtime system:
 
 ### Code generation and optimizations:

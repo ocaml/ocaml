@@ -210,7 +210,7 @@ let make_params env params =
   in
     List.map make_param params
 
-let transl_labels env closed lbls =
+let transl_labels env univars closed lbls =
   assert (lbls <> []);
   let all_labels = ref String.Set.empty in
   List.iter
@@ -224,7 +224,7 @@ let transl_labels env closed lbls =
     Builtin_attributes.warning_scope attrs
       (fun () ->
          let arg = Ast_helper.Typ.force_poly arg in
-         let cty = transl_simple_type env closed arg in
+         let cty = transl_simple_type env ?univars closed arg in
          {ld_id = Ident.create_local name.txt;
           ld_name = name; ld_mutable = mut;
           ld_type = cty; ld_loc = loc; ld_attributes = attrs}
@@ -247,21 +247,21 @@ let transl_labels env closed lbls =
       lbls in
   lbls, lbls'
 
-let transl_constructor_arguments env closed = function
+let transl_constructor_arguments env univars closed = function
   | Pcstr_tuple l ->
-      let l = List.map (transl_simple_type env closed) l in
+      let l = List.map (transl_simple_type env ?univars closed) l in
       Types.Cstr_tuple (List.map (fun t -> t.ctyp_type) l),
       Cstr_tuple l
   | Pcstr_record l ->
-      let lbls, lbls' = transl_labels env closed l in
+      let lbls, lbls' = transl_labels env univars closed l in
       Types.Cstr_record lbls',
       Cstr_record lbls
 
-let make_constructor env type_path type_params sargs sret_type =
+let make_constructor env loc type_path type_params svars sargs sret_type =
   match sret_type with
   | None ->
       let args, targs =
-        transl_constructor_arguments env true sargs
+        transl_constructor_arguments env None true sargs
       in
         targs, None, args, None
   | Some sret_type ->
@@ -269,10 +269,17 @@ let make_constructor env type_path type_params sargs sret_type =
          then widen so as to not introduce any new constraints *)
       let z = narrow () in
       reset_type_variables ();
-      let args, targs =
-        transl_constructor_arguments env false sargs
+      let univars, closed =
+        match svars with
+        | [] -> None, false
+        | vs ->
+           Ctype.begin_def();
+           Some (make_poly_univars (List.map (fun v -> v.txt) vs)), true
       in
-      let tret_type = transl_simple_type env false sret_type in
+      let args, targs =
+        transl_constructor_arguments env univars closed sargs
+      in
+      let tret_type = transl_simple_type env ?univars closed sret_type in
       let ret_type = tret_type.ctyp_type in
       (* TODO add back type_path as a parameter ? *)
       begin match get_desc ret_type with
@@ -289,6 +296,17 @@ let make_constructor env type_path type_params sargs sret_type =
           raise (Error(sret_type.ptyp_loc,
                        Constraint_failed(env,
                                          Errortrace.unification_error ~trace)))
+      end;
+      begin match univars with
+      | None -> ()
+      | Some univars ->
+         Ctype.end_def();
+         Btype.iter_type_expr_cstr_args Ctype.generalize args;
+         Ctype.generalize ret_type;
+         let _vars = instance_poly_univars env loc univars in
+         let set_level t = Ctype.unify_var env (Ctype.newvar()) t in
+         Btype.iter_type_expr_cstr_args set_level args;
+         set_level ret_type;
       end;
       widen z;
       targs, Some tret_type, args, Some ret_type
@@ -373,12 +391,13 @@ let transl_declaration env sdecl (id, uid) =
         let make_cstr scstr =
           let name = Ident.create_local scstr.pcd_name.txt in
           let targs, tret_type, args, ret_type =
-            make_constructor env (Path.Pident id) params
-                             scstr.pcd_args scstr.pcd_res
+            make_constructor env scstr.pcd_loc (Path.Pident id) params
+                             scstr.pcd_vars scstr.pcd_args scstr.pcd_res
           in
           let tcstr =
             { cd_id = name;
               cd_name = scstr.pcd_name;
+              cd_vars = scstr.pcd_vars;
               cd_args = targs;
               cd_res = tret_type;
               cd_loc = scstr.pcd_loc;
@@ -402,7 +421,7 @@ let transl_declaration env sdecl (id, uid) =
         let tcstrs, cstrs = List.split (List.map make_cstr scstrs) in
           Ttype_variant tcstrs, Type_variant (cstrs, rep)
       | Ptype_record lbls ->
-          let lbls, lbls' = transl_labels env true lbls in
+          let lbls, lbls' = transl_labels env None true lbls in
           let rep =
             if unbox then Record_unboxed false
             else if List.for_all (fun l -> is_float env l.Types.ld_type) lbls'
@@ -977,12 +996,12 @@ let transl_extension_constructor ~scope env type_path type_params
   let id = Ident.create_scoped ~scope sext.pext_name.txt in
   let args, ret_type, kind =
     match sext.pext_kind with
-      Pext_decl(sargs, sret_type) ->
+      Pext_decl(svars, sargs, sret_type) ->
         let targs, tret_type, args, ret_type =
-          make_constructor env type_path typext_params
-            sargs sret_type
+          make_constructor env sext.pext_loc type_path typext_params
+            svars sargs sret_type
         in
-          args, ret_type, Text_decl(targs, tret_type)
+          args, ret_type, Text_decl(svars, targs, tret_type)
     | Pext_rebind lid ->
         let usage : Env.constructor_usage =
           if priv = Public then Env.Exported else Env.Exported_private
@@ -1324,6 +1343,8 @@ let rec parse_native_repr_attributes env core_type ty ~global_repr =
       parse_native_repr_attributes env ct2 t2 ~global_repr
     in
     (repr_arg :: repr_args, repr_res)
+  | Ptyp_poly (_, t), _, _ ->
+     parse_native_repr_attributes env t ty ~global_repr
   | Ptyp_arrow _, _, _ | _, Tarrow _, _ -> assert false
   | _ -> ([], make_native_repr env core_type ty ~global_repr)
 

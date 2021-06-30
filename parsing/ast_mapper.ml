@@ -206,8 +206,10 @@ module T = struct
       (sub.extension_constructor sub ptyexn_constructor)
 
   let map_extension_constructor_kind sub = function
-      Pext_decl(ctl, cto) ->
-        Pext_decl(map_constructor_arguments sub ctl, map_opt (sub.typ sub) cto)
+      Pext_decl(vars, ctl, cto) ->
+        Pext_decl(List.map (map_loc sub) vars,
+                  map_constructor_arguments sub ctl,
+                  map_opt (sub.typ sub) cto)
     | Pext_rebind li ->
         Pext_rebind (map_loc sub li)
 
@@ -698,9 +700,11 @@ let default_mapper =
 
 
     constructor_declaration =
-      (fun this {pcd_name; pcd_args; pcd_res; pcd_loc; pcd_attributes} ->
+      (fun this {pcd_name; pcd_vars; pcd_args;
+                 pcd_res; pcd_loc; pcd_attributes} ->
         Type.constructor
           (map_loc this pcd_name)
+          ~vars:(List.map (map_loc this) pcd_vars)
           ~args:(T.map_constructor_arguments this pcd_args)
           ?res:(map_opt (this.typ this) pcd_res)
           ~loc:(this.location this pcd_loc)
