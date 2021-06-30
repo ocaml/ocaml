@@ -53,6 +53,9 @@ Working version
   type
   (Nicolas Chataing, review by Gabriel Scherer)
 
+- #10472: refactor caml_sys_random_seed to ease future Multicore changes
+  (Gabriel Scherer, review by Xavier Leroy)
+
 ### Build system:
 
 ### Bug fixes:
