@@ -29,7 +29,11 @@ module-type:
 ;
 mod-constraint:
           'type' [type-params] typeconstr type-equation { type-constraint }
+          'type' [type-params] typeconstr type-substitution { type-constraint }
         | 'module' module-path '=' extended-module-path
+;
+type-substitution:
+          ':=' typexpr
 ;
 %BEGIN LATEX
 \end{syntax}
