@@ -21,16 +21,15 @@ open Longident
 open Types
 open Toploop
 
-let error_status = 125
 let error_fmt () =
   if !Sys.interactive then
     Format.std_formatter
   else
     Format.err_formatter
 
-let fail () =
-  if not !Sys.interactive then raise (Compenv.Exit_with_status error_status)
-
+let action_on_suberror b =
+  if not b && not !Sys.interactive then
+    raise (Compenv.Exit_with_status 125)
 
 (* Directive sections (used in #help) *)
 let section_general = "General"
@@ -132,7 +131,6 @@ let _ = add_directive "cd" (Directive_string dir_cd)
 
 
 let with_error f x = f (error_fmt ()) x
-let action_on_suberror b = if not b then fail ()
 
 let dir_load ppf name =
   action_on_suberror (Topeval.load_file false ppf name)
@@ -347,7 +345,7 @@ let _ = add_directive "remove_printer"
 
 let parse_warnings ppf iserr s =
   try Option.iter Location.(prerr_alert none) @@ Warnings.parse_options iserr s
-  with Arg.Bad err -> fprintf ppf "%s.@." err; fail ()
+  with Arg.Bad err -> fprintf ppf "%s.@." err; action_on_suberror true
 
 (* Typing information *)
 
