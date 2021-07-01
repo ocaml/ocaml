@@ -216,8 +216,11 @@ let instrument_fundecl ~future_funcnames:_ (f : Mach.fundecl) : Mach.fundecl =
     | [] -> ()
     | _ -> raise (Error (Poll_error poll_instrs))
   end;
-    let new_contains_calls = f.fun_contains_calls || contains_poll new_body in
-    { f with fun_body = new_body; fun_contains_calls = new_contains_calls }
+    let new_contains_calls =
+      f.fun_contains_calls || contains_poll new_body in
+        { f with
+          fun_body = new_body;
+          fun_contains_calls = new_contains_calls }
 
 let requires_prologue_poll ~future_funcnames i =
   potentially_recursive_tailcall ~fwd_func:future_funcnames i

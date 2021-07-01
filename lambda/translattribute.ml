@@ -217,7 +217,8 @@ let check_poll_inline loc attr =
   match attr.poll, attr.inline with
   | Error_poll, (Always_inline | Hint_inline | Unroll _) ->
       Location.prerr_warning loc
-        (Warnings.Inlining_impossible "[@poll error] is incompatible with inlining")
+        (Warnings.Inlining_impossible
+          "[@poll error] is incompatible with inlining")
   | _ ->
       ()
 
