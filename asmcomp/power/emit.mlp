@@ -555,16 +555,14 @@ let emit_poll env i return_label far =
       end
     end;
   end else begin
-    let lbl = match return_label with
-      | None -> new_label()
-      | Some lbl -> lbl
-    in
+    let lbl = new_label () in
     `	bge	{emit_label lbl}\n`;
     `	bl	{emit_label env.call_gc_label}\n`;
     record_frame env i.live (Dbg_alloc []);
+    ` {emit_label lbl}:	\n`;
     match return_label with
-    | None ->   ` {emit_label lbl}:	\n`;
-    | Some _ -> ` b   {emit_label lbl}\n`;
+    | None ->   ()
+    | Some return_label -> ` b   {emit_label return_label}\n`
   end
 
 (* Output the assembly code for an instruction *)
