@@ -148,6 +148,12 @@ let operation op arg ppf res =
   | Iopaque -> fprintf ppf "opaque %a" reg arg.(0)
   | Ispecific op ->
       Arch.print_specific_operation reg op ppf arg
+  | Ipoll { return_label } ->
+      fprintf ppf "poll call";
+      match return_label with
+      | None -> ()
+      | Some return_label ->
+        fprintf ppf " returning to L%d" return_label
 
 let rec instr ppf i =
   if !Clflags.dump_live then begin

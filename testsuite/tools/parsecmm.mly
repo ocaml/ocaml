@@ -180,6 +180,8 @@ fundecl:
              No_CSE;
            ]
            else [ Reduce_code_size ];
+         fun_poll_error = false;
+         fun_suppress_polls = false;
          fun_dbg = debuginfo ()} }
 ;
 fun_name:

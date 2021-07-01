@@ -24,7 +24,7 @@ end
 
 module Backward(D: DOMAIN) = struct
 
-let analyze ?(exnhandler = fun x -> x) ~transfer instr =
+let analyze ?(exnhandler = fun x -> x) ?(exnescape = D.bot) ~transfer instr =
 
   let lbls =
     (Hashtbl.create 20 : (int, D.t) Hashtbl.t) in
@@ -80,7 +80,7 @@ let analyze ?(exnhandler = fun x -> x) ~transfer instr =
     | Iraise _ ->
         transfer i ~next:D.bot ~exn
   in
-    let b = before D.bot D.bot instr in
+    let b = before D.bot exnescape instr in
     (b, get_lbl)
 
 end

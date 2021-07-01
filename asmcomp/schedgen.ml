@@ -154,7 +154,7 @@ method oper_in_basic_block = function
   | Itailcall_imm _ -> false
   | Iextcall _ -> false
   | Istackoffset _ -> false
-  | Ialloc _ -> false
+  | Ialloc _ | Ipoll _ -> false
   | _ -> true
 
 (* Determine whether an instruction ends a basic block or not *)

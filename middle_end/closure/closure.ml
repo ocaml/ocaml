@@ -1233,15 +1233,19 @@ and close_functions { backend; fenv; cenv; mutable_vars } fun_defs =
   let uncurried_defs =
     List.map
       (function
-          (id, Lfunction{kind; params; return; body; loc}) ->
+          (id, Lfunction{kind; params; return; body; loc; attr}) ->
             let label = Compilenv.make_symbol (Some (V.unique_name id)) in
             let arity = List.length params in
+            let poll_error = match attr.poll with
+              | Error_poll -> true
+              | _ -> false in
             let fundesc =
               {fun_label = label;
                fun_arity = (if kind = Tupled then -arity else arity);
                fun_closed = initially_closed;
                fun_inline = None;
-               fun_float_const_prop = !Clflags.float_const_prop } in
+               fun_float_const_prop = !Clflags.float_const_prop;
+               fun_poll_error = poll_error } in
             let dbg = Debuginfo.from_location loc in
             (id, params, return, body, fundesc, dbg)
         | (_, _) -> fatal_error "Closure.close_functions")
@@ -1293,6 +1297,7 @@ and close_functions { backend; fenv; cenv; mutable_vars } fun_defs =
         body   = ubody;
         dbg;
         env = Some env_param;
+        poll_error = fundesc.fun_poll_error
       }
     in
     (* give more chance of function with default parameters (i.e.
