@@ -100,6 +100,91 @@
 #define ENTRIES_PER_TRAIL_BLOCK  1025
 #define SIZE_EXTERN_OUTPUT_BLOCK 8100
 
+/* Flags affecting marshaling */
+
+enum {
+  NO_SHARING = 1,               /* Flag to ignore sharing */
+  CLOSURES = 2,                 /* Flag to allow marshaling code pointers */
+  COMPAT_32 = 4                 /* Flag to ensure that output can safely
+                                   be read back on a 32-bit platform */
+};
+
+/* Stack for pending values to marshal */
+
+#define EXTERN_STACK_INIT_SIZE 256
+#define EXTERN_STACK_MAX_SIZE (1024*1024*100)
+
+struct caml_extern_item { value * v; mlsize_t count; };
+
+/* Hash table to record already-marshaled objects and their positions */
+
+struct caml_object_position { value obj; uintnat pos; };
+
+/* The hash table uses open addressing, linear probing, and a redundant
+   representation:
+   - a bitvector [present] records which entries of the table are occupied;
+   - an array [entries] records (object, position) pairs for the entries
+     that are occupied.
+   The bitvector is much smaller than the array (1/128th on 64-bit
+   platforms, 1/64th on 32-bit platforms), so it has better locality,
+   making it faster to determine that an object is not in the table.
+   Also, it makes it faster to empty or initialize a table: only the
+   [present] bitvector needs to be filled with zeros, the [entries]
+   array can be left uninitialized.
+*/
+
+struct caml_position_table {
+  int shift;
+  mlsize_t size;                    /* size == 1 << (wordsize - shift) */
+  mlsize_t mask;                    /* mask == size - 1 */
+  mlsize_t threshold;               /* threshold == a fixed fraction of size */
+  uintnat * present;                /* [Bitvect_size(size)] */
+  struct caml_object_position * entries; /* [size]  */
+};
+
+#define Bits_word (8 * sizeof(uintnat))
+#define Bitvect_size(n) (((n) + Bits_word - 1) / Bits_word)
+
+#define POS_TABLE_INIT_SIZE_LOG2 8
+#define POS_TABLE_INIT_SIZE (1 << POS_TABLE_INIT_SIZE_LOG2)
+
+struct output_block {
+  struct output_block * next;
+  char * end;
+  char data[SIZE_EXTERN_OUTPUT_BLOCK];
+};
+
+struct caml_extern_state {
+
+  int extern_flags;        /* logical or of some of the flags */
+
+	uintnat obj_counter;  	/* Number of objects emitted so far */
+	uintnat size_32;  		 	/* Size in words of 32-bit block for struct. */
+	uintnat size_64;  		 	/* Size in words of 64-bit block for struct. */
+
+	/* Stack for pending value to marshal */
+  struct caml_extern_item * extern_stack_init;
+	struct caml_extern_item * extern_stack;
+	struct caml_extern_item * extern_stack_limit;
+
+  /* Hash table to record already marshalled objects */
+	uintnat * pos_table_present_init;
+	struct caml_object_position * pos_table_entries_init;
+	struct caml_position_table pos_table;
+
+  /* To buffer the output */
+
+  char * extern_userprovided_output;
+  char * extern_ptr;
+  char * extern_limit;
+
+  struct output_block * extern_output_first;
+  struct output_block * extern_output_block;
+};
+
+struct caml_extern_state* caml_alloc_extern_state (void);
+void caml_free_extern_state (struct caml_extern_state*);
+
 /* The entry points */
 
 void caml_output_val (struct channel * chan, value v, value flags);
