@@ -15,8 +15,8 @@
 
 open Mach
 
+module Int = Numbers.Int
 module String = Misc.Stdlib.String
-module IntSet = Set.Make(Int)
 
 (* replace with starts_with when it arrives *)
 let isprefix s1 s2 =
@@ -173,7 +173,7 @@ let instr_body handler_safe i =
   let add_unsafe_handler ube (k, _) =
     match handler_safe k with
     | Safe -> ube
-    | Unsafe -> IntSet.add k ube
+    | Unsafe -> Int.Set.add k ube
   in
   let rec instr ube i =
     match i.desc with
@@ -202,7 +202,7 @@ let instr_body handler_safe i =
         next = instr ube i.next;
       }
     | Iexit k ->
-        if IntSet.mem k ube
+        if Int.Set.mem k ube
         then add_poll i
         else i
     | Itrywith (body, hdl) ->
@@ -214,7 +214,7 @@ let instr_body handler_safe i =
     | Iop _ -> { i with next = instr ube i.next }
 
   in
-  instr IntSet.empty i
+  instr Int.Set.empty i
 
 let contains_poll instr =
   let poll = ref false in
