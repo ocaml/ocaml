@@ -122,4 +122,32 @@ let () =
   test (threshold + 1) (* Tail-recursive case *)
 ;;
 
+(* Sort *)
+let () =
+  (* check that List.sort_uniq keeps the last duplicate element, see PR#10238 *)
+  let remove_nonlast_dups cmp = function
+    | [] -> []
+    | x :: xs ->
+        let rec loop pred = function
+          | curr :: rest ->
+              if cmp pred curr = 0 then loop curr rest
+              else pred :: loop curr rest
+          | [] -> [pred]
+        in
+        loop x xs
+  in
+  let check_sort_uniq_keeps_last_dup cmp l =
+    let s = remove_nonlast_dups cmp (List.stable_sort cmp l) in
+    let u = List.sort_uniq cmp l in
+    assert (compare s u = 0)
+  in
+  let cmp_fst (x, _) (y, _) = compare x y in
+  List.iter (check_sort_uniq_keeps_last_dup cmp_fst)
+    [ [(2, 0); (2, 1)]
+    ; [(2, 0); (2, 0); (2, 1)]
+    ; [(1, 0); (1, 1); (2, 0)]
+    ; [(0, 0); (0, 0); (0, 0); (0, 1)]
+    ; [(0, 0); (0, 0); (2, 0); (2, 1)]
+    ; [(0, 0); (0, 0); (3, 0); (3, 1); (0, 0)] ]
+
 let () = print_endline "OK";;
