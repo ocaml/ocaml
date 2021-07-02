@@ -75,10 +75,10 @@ let polled_loops_analysis funbody =
     | Iop (Ialloc _ | Ipoll _)
     | Iop (Itailcall_ind | Itailcall_imm _) -> Safe
     | Iop op ->
-        if operation_can_raise op
-        then next && exn
-        else next
-    | Ireturn -> true
+      if operation_can_raise op
+      then Unsafe_or_safe.join next exn
+      else next
+    | Ireturn -> Safe
     | Iifthenelse _ | Iswitch _ | Icatch _ | Iexit _ | Itrywith _ -> next
     | Iraise _ -> exn
   in
@@ -152,9 +152,9 @@ let potentially_recursive_tailcall ~future_funcnames funbody =
       then Might_not_poll
       else Always_polls
     | Iop op ->
-        if operation_can_raise op
-        then Polls_before_prtc.join next exn
-        else next
+      if operation_can_raise op
+      then Polls_before_prtc.join next exn
+      else next
     | Ireturn -> Always_polls
     | Iifthenelse _ | Iswitch _ | Icatch _ | Iexit _ | Itrywith _ -> next
     | Iraise _ -> exn
@@ -207,9 +207,9 @@ let instr_body handler_safe i =
         next = instr ube i.next;
       }
     | Iexit k ->
-        if Int.Set.mem k ube
-        then add_poll i
-        else i
+      if Int.Set.mem k ube
+      then add_poll i
+      else i
     | Itrywith (body, hdl) ->
       { i with
         desc = Itrywith (instr ube body, instr ube hdl);
@@ -217,15 +217,14 @@ let instr_body handler_safe i =
       }
     | Iend | Ireturn | Iraise _ -> i
     | Iop _ -> { i with next = instr ube i.next }
-
   in
   instr Int.Set.empty i
 
 let contains_poll instr =
   let poll = ref false in
   Mach.instr_iter
-      (fun i -> match i.desc with Iop (Ipoll _) -> poll := true | _ -> ())
-      instr;
+    (fun i -> match i.desc with Iop (Ipoll _) -> poll := true | _ -> ())
+    instr;
   !poll
 
 let instrument_fundecl ~future_funcnames:_ (f : Mach.fundecl) : Mach.fundecl =
