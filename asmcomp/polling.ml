@@ -160,10 +160,14 @@ let potentially_recursive_tailcall ~future_funcnames funbody =
 
    Given the result of the analysis of recursive handlers, add [Ipoll]
    instructions at the [Iexit] instructions before unguarded back edges,
-   thus ensuring that every loop contains a poll point.
+   thus ensuring that every loop contains a poll point.  Also compute whether
+   the resulting function contains any [Ipoll] instructions.
 *)
 
+let contains_polls = ref false
+
 let add_poll i =
+  contains_polls := true;
   Mach.instr_cons (Iop (Ipoll { return_label = None })) [||] [||] i
 
 let instr_body handler_safe i =
@@ -208,24 +212,24 @@ let instr_body handler_safe i =
         next = instr ube i.next;
       }
     | Iend | Ireturn | Iraise _ -> i
-    | Iop _ -> { i with next = instr ube i.next }
+    | Iop op ->
+      begin match op with
+      | Ipoll _ -> contains_polls := true
+      | _ -> ()
+      end;
+      { i with next = instr ube i.next }
   in
   instr Int.Set.empty i
 
-let contains_poll instr =
-  let poll = ref false in
-  Mach.instr_iter
-    (fun i -> match i.desc with Iop (Ipoll _) -> poll := true | _ -> ())
-    instr;
-  !poll
-
 let instrument_fundecl ~future_funcnames:_ (f : Mach.fundecl) : Mach.fundecl =
   if function_is_assumed_to_never_poll f.fun_name then f
-  else
+  else begin
     let handler_needs_poll = polled_loops_analysis f.fun_body in
+    contains_polls := false;
     let new_body = instr_body handler_needs_poll f.fun_body in
-    let new_contains_calls = f.fun_contains_calls || contains_poll new_body in
+    let new_contains_calls = f.fun_contains_calls || !contains_polls in
     { f with fun_body = new_body; fun_contains_calls = new_contains_calls }
+  end
 
 let requires_prologue_poll ~future_funcnames ~fun_name i =
   if function_is_assumed_to_never_poll fun_name then false
