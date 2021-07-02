@@ -125,7 +125,7 @@ end
 
 module PTRCAnalysis = Dataflow.Backward(Polls_before_prtc)
 
-let potentially_recursive_tailcall ~fwd_func funbody =
+let potentially_recursive_tailcall ~future_funcnames funbody =
   let transfer i ~next ~exn =
     match i.desc with
     | Iend -> next
@@ -146,9 +146,9 @@ let potentially_recursive_tailcall ~fwd_func funbody =
 
          So, every such infinite sequence must contain many forward-referencing
          tail calls, so polling only on those suffices.  This is checked using
-         the set [fwd_func]. *)
-      if String.Set.mem func fwd_func
-         || is_assume_suppressed_poll_fun func
+         the set [future_funcnames]. *)
+      if String.Set.mem func future_funcnames
+         || function_is_assumed_to_never_poll func
       then Might_not_poll
       else Always_polls
     | Iop op ->
@@ -229,12 +229,16 @@ let contains_poll instr =
   !poll
 
 let instrument_fundecl ~future_funcnames:_ (f : Mach.fundecl) : Mach.fundecl =
-  let handler_needs_poll = polled_loops_analysis f.fun_body in
-  let new_body = instr_body handler_needs_poll f.fun_body in
-  let new_contains_calls = f.fun_contains_calls || contains_poll new_body in
-  { f with fun_body = new_body; fun_contains_calls = new_contains_calls }
+  if function_is_assumed_to_never_poll f.fun_name then f
+  else
+    let handler_needs_poll = polled_loops_analysis f.fun_body in
+    let new_body = instr_body handler_needs_poll f.fun_body in
+    let new_contains_calls = f.fun_contains_calls || contains_poll new_body in
+    { f with fun_body = new_body; fun_contains_calls = new_contains_calls }
 
-let requires_prologue_poll ~future_funcnames i =
-  match potentially_recursive_tailcall ~fwd_func:future_funcnames i with
-  | Might_not_poll -> true
-  | Always_polls -> false
+let requires_prologue_poll ~future_funcnames ~fun_name i =
+  if function_is_assumed_to_never_poll fun_name then false
+  else
+    match potentially_recursive_tailcall ~future_funcnames i with
+    | Might_not_poll -> true
+    | Always_polls -> false
