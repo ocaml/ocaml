@@ -22,13 +22,8 @@ open Mach
 module Int = Numbers.Int
 module String = Misc.Stdlib.String
 
-(* replace with starts_with when it arrives *)
-let isprefix s1 s2 =
-  String.length s1 <= String.length s2
-  && String.sub s2 0 (String.length s1) = s1
-
 let is_assume_suppressed_poll_fun s =
-  isprefix "caml_apply" s
+  String.starts_with ~prefix:"caml_apply" s
 
 (* Detection of recursive handlers that are not guaranteed to poll
    at every loop iteration. *)
