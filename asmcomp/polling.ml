@@ -155,20 +155,18 @@ let potentially_recursive_tailcall ~future_funcnames funbody =
   in
   fst (PTRCAnalysis.analyze ~transfer funbody)
 
-(* Given the result of the analysis of recursive handlers,
-   add polls to make sure that every loop polls or allocate or ...
+(* We refer to the set of recursive handler labels that need extra polling
+   as the "unguarded back edges" ("ube").
 
-   [Ipoll] instructions are added before unguarded back edges
-   ([Iexit] instructions that go back to a recursive handler that
-   needs extra polling).
+   Given the result of the analysis of recursive handlers, add [Ipoll]
+   instructions at the [Iexit] instructions before unguarded back edges,
+   thus ensuring that every loop contains a poll point.
 *)
 
 let add_poll i =
   Mach.instr_cons (Iop (Ipoll { return_label = None })) [||] [||] i
 
 let instr_body handler_safe i =
-  (* [ube] (unguarded back edges) is the set of recursive handler labels
-     that need extra polling. *)
   let add_unsafe_handler ube (k, _) =
     match handler_safe k with
     | Safe -> ube
