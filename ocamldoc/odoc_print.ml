@@ -39,8 +39,7 @@ let (modtype_fmt, flush_modtype_fmt) = new_fmt ()
 
 
 let string_of_type_expr t =
-  Printtyp.mark_loops t;
-  Printtyp.type_scheme_max ~b_reset_names: false type_fmt t;
+  Printtyp.shared_type_scheme type_fmt t;
   flush_type_fmt ()
 
 exception Use_code of string

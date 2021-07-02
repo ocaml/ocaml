@@ -1632,16 +1632,16 @@ let explain_unbound_gen ppf tv tl typ kwd pr =
     let ti = List.find (fun ti -> Ctype.deep_occur tv (typ ti)) tl in
     let ty0 = (* Hack to force aliasing when needed *)
       Btype.newgenty (Tobject(tv, ref None)) in
-    Printtyp.reset_and_mark_loops_list [typ ti; ty0];
+    Printtyp.prepare_for_printing [typ ti; ty0];
     fprintf ppf
       ".@ @[<hov2>In %s@ %a@;<1 -2>the variable %a is unbound@]"
-      kwd pr ti Printtyp.marked_type_expr tv
+      kwd pr ti Printtyp.prepared_type_expr tv
   with Not_found -> ()
 
 let explain_unbound ppf tv tl typ kwd lab =
   explain_unbound_gen ppf tv tl typ kwd
     (fun ppf ti ->
-       fprintf ppf "%s%a" (lab ti) Printtyp.marked_type_expr (typ ti)
+       fprintf ppf "%s%a" (lab ti) Printtyp.prepared_type_expr (typ ti)
     )
 
 let explain_unbound_single ppf tv ty =
@@ -1710,8 +1710,7 @@ let report_error ppf = function
       let comma ppf () = Format.fprintf ppf ",@;<1 2>" in
       let pp_expansions ppf expansions =
         Format.(pp_print_list ~pp_sep:comma pp_expansion) ppf expansions in
-      Printtyp.reset_and_mark_loops used_as;
-      Printtyp.mark_loops defined_as;
+      Printtyp.prepare_for_printing [used_as; defined_as];
       Printtyp.Naming_context.reset ();
       begin match expansions with
       | [] ->
