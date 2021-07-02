@@ -84,51 +84,77 @@ let polled_loops_analysis funbody =
 (* Detection of functions that can loop via a tail-call without going
    through a poll point. *)
 
-(* The result of the analysis is a single Boolean b.
+(* We use a backwards dataflow analysis to compute a single value: either
+   "Might_not_poll" or "Always_polls".
 
-   b is true if there exists a path from the function entry to a
+   "Might_not_poll" means there exists a path from the function entry to a
    Potentially Recursive Tail Call (an Itailcall_ind or
    Itailcall_imm to a forward function)
    that does not go through an Ialloc or Ipoll instruction.
 
-   b is false, therefore, if the function always polls (via Ialloc or Ipoll)
-   before doing a PRTC.
-
-   To compute b, we do a backward dataflow analysis starting from
-   false, using || (Boolean "or") as the join operator, and with the
-   following transfer function:
-
-   TRANSF(Ialloc | Ipoll, x) = false
-   TRANSF(Itailcall_ind, x) = true
-   TRANSF(Itailcall_imm f, x) = f is a forward function
-   TRANSF(all other operations, x) = x
+   "Always_polls", therefore, means the function always polls (via Ialloc or
+   Ipoll) before doing a PRTC.
 *)
 
-module PTRCAnalysis = Dataflow.Backward(struct
-  type t = bool
-  let bot = false
-  let join = (||)
-  let lessequal a b = (not a) || b
-end)
+type polls_before_prtc = Might_not_poll | Always_polls
+
+module Polls_before_prtc = struct
+  type t = polls_before_prtc
+
+  let bot = Always_polls
+
+  let join t1 t2 =
+    match t1, t2 with
+    | Might_not_poll, Might_not_poll
+    | Might_not_poll, Always_polls
+    | Always_polls, Might_not_poll -> Might_not_poll
+    | Always_polls, Always_polls -> Always_polls
+
+  let lessequal t1 t2 =
+    match t1, t2 with
+    | Always_polls, Always_polls
+    | Always_polls, Might_not_poll
+    | Might_not_poll, Might_not_poll -> true
+    | Might_not_poll, Always_polls -> false
+end
+
+module PTRCAnalysis = Dataflow.Backward(Polls_before_prtc)
 
 let potentially_recursive_tailcall ~fwd_func funbody =
   let transfer i ~next ~exn =
     match i.desc with
     | Iend -> next
-    | Iop (Ialloc _ | Ipoll _) -> false
-    | Iop (Itailcall_ind) -> true
+    | Iop (Ialloc _ | Ipoll _) -> Always_polls
+    | Iop (Itailcall_ind) -> Might_not_poll
     | Iop (Itailcall_imm { func }) ->
-      String.Set.mem func fwd_func ||
-      is_assume_suppressed_poll_fun func
+      (* We optimise by making a partial ordering over Mach functions: in
+         definition order within a compilation unit, and dependency order
+         between compilation units. This order is acyclic, as OCaml does not
+         allow circular dependencies between modules.  It's also finite, so if
+         there's an infinite sequence of function calls then something has to
+         make a forward reference.
+
+         Also, in such an infinite sequence of function calls, at most finitely
+         many of them can be non-tail calls. (If there are infinitely many
+         non-tail calls, then the program soon terminates with a stack
+         overflow).
+
+         So, every such infinite sequence must contain many forward-referencing
+         tail calls, so polling only on those suffices.  This is checked using
+         the set [fwd_func]. *)
+      if String.Set.mem func fwd_func
+         || is_assume_suppressed_poll_fun func
+      then Might_not_poll
+      else Always_polls
     | Iop op ->
         if operation_can_raise op
-        then next || exn
+        then Polls_before_prtc.join next exn
         else next
-    | Ireturn -> false
+    | Ireturn -> Always_polls
     | Iifthenelse _ | Iswitch _ | Icatch _ | Iexit _ | Itrywith _ -> next
     | Iraise _ -> exn
   in
-    fst (PTRCAnalysis.analyze ~transfer funbody)
+  fst (PTRCAnalysis.analyze ~transfer funbody)
 
 (* Given the result of the analysis of recursive handlers,
    add polls to make sure that every loop polls or allocate or ...
@@ -204,4 +230,6 @@ let instrument_fundecl ~future_funcnames:_ (f : Mach.fundecl) : Mach.fundecl =
   { f with fun_body = new_body; fun_contains_calls = new_contains_calls }
 
 let requires_prologue_poll ~future_funcnames i =
-  potentially_recursive_tailcall ~fwd_func:future_funcnames i
+  match potentially_recursive_tailcall ~fwd_func:future_funcnames i with
+  | Might_not_poll -> true
+  | Always_polls -> false
