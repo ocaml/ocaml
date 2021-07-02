@@ -29,48 +29,57 @@ let is_assume_suppressed_poll_fun s =
 (* Detection of recursive handlers that are not guaranteed to poll
    at every loop iteration. *)
 
-(* The result of the analysis is a mapping from handlers H
-   (= loop heads) to Booleans b.
+(* We use a backwards dataflow analysis to compute a mapping from handlers H
+   (= loop heads) to either "safe" or "unsafe".
 
-   b is true if every path starting from H goes through an Ialloc,
+   H is "safe" if every path starting from H goes through an Ialloc,
    Ipoll, Ireturn, Itailcall_ind or Itailcall_imm instruction.
-   In this case, we say that H is "safe".
 
-   b is false, therefore, if starting from H we can loop infinitely
+   H is "unsafe", therefore, if starting from H we can loop infinitely
    without crossing an Ialloc or Ipoll instruction.
-   In this case, we say that H is "unsafe".
 *)
 
-(* The analysis is a backward dataflow analysis starting from false,
-   using && (Boolean "and") as the join operator,
-   and with the following transfer function:
+type unsafe_or_safe = Unsafe | Safe
 
-   TRANSF(Ialloc | Ipoll | Itailcall_ind | Itailcall_imm _ | Ireturn) = true
-   TRANSF(all other operations, x) = x
-*)
+module Unsafe_or_safe = struct
+  type t = unsafe_or_safe
 
-module PolledLoopsAnalysis = Dataflow.Backward(struct
-  type t = bool
-  let bot = false
-  let join = (&&)
-  let lessequal a b = (not a) || b
-end)
+  let bot = Unsafe
+
+  let join t1 t2 =
+    match t1, t2 with
+    | Unsafe, Unsafe
+    | Unsafe, Safe
+    | Safe, Unsafe -> Unsafe
+    | Safe, Safe -> Safe
+
+  let lessequal t1 t2 =
+    match t1, t2 with
+    | Unsafe, Unsafe
+    | Unsafe, Safe
+    | Safe, Safe -> true
+    | Safe, Unsafe -> false
+end
+
+module PolledLoopsAnalysis = Dataflow.Backward(Unsafe_or_safe)
 
 let polled_loops_analysis funbody =
   let transfer i ~next ~exn =
     match i.desc with
     | Iend -> next
-    | Iop (Ialloc _ | Ipoll _) -> true
-    | Iop (Itailcall_ind | Itailcall_imm _) -> true
+    | Iop (Ialloc _ | Ipoll _)
+    | Iop (Itailcall_ind | Itailcall_imm _) -> Safe
     | Iop op ->
         if operation_can_raise op
-        then next && exn
+        then Unsafe_or_safe.join next exn
         else next
-    | Ireturn -> true
+    | Ireturn -> Safe
     | Iifthenelse _ | Iswitch _ | Icatch _ | Iexit _ | Itrywith _ -> next
     | Iraise _ -> exn
   in
-    snd (PolledLoopsAnalysis.analyze ~exnescape:true ~transfer funbody)
+  (* [exnescape] is [Safe] because we can't loop infinitely having
+     returned from the function via an unhandled exception. *)
+  snd (PolledLoopsAnalysis.analyze ~exnescape:Safe ~transfer funbody)
 
 (* Detection of functions that can loop via a tail-call without going
    through a poll point. *)
@@ -136,7 +145,10 @@ let instr_body handler_safe i =
   (* [ube] (unguarded back edges) is the set of recursive handler labels
      that need extra polling. *)
   let add_unsafe_handler ube (k, _) =
-    if handler_safe k then ube else IntSet.add k ube in
+    match handler_safe k with
+    | Safe -> ube
+    | Unsafe -> IntSet.add k ube
+  in
   let rec instr ube i =
     match i.desc with
     | Iifthenelse (test, i0, i1) ->
