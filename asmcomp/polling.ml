@@ -186,9 +186,9 @@ let instr_body handler_safe i =
       }
     | Icatch (rc, hdl, body) ->
       let ube' =
-        if rc = Cmm.Recursive
-        then List.fold_left add_unsafe_handler ube hdl
-        else ube in
+        match rc with
+        | Cmm.Recursive -> List.fold_left add_unsafe_handler ube hdl
+        | Cmm.Nonrecursive -> ube in
       let instr_handler (k, i0) =
         let i1 = instr ube' i0 in
         (k, i1) in
