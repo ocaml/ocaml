@@ -196,10 +196,13 @@ let instr_body handler_safe i =
       let instr_handler (k, i0) =
         let i1 = instr ube' i0 in
         (k, i1) in
+      (* Since we are only interested in unguarded _back_ edges, we don't
+         use [ube'] for instrumenting [body], but just [ube] instead. *)
+      let body = instr ube body in
       { i with
         desc = Icatch (rc,
                        List.map instr_handler hdl,
-                       instr ube body);
+                       body);
         next = instr ube i.next;
       }
     | Iexit k ->
