@@ -599,6 +599,8 @@ and constructor_tag =
   | Cstr_extension of Path.t * bool     (* Extension constructor
                                            true if a constant false if a block*)
 
+val cstr_type_path : constructor_description -> Path.t
+
 (* Constructors are the same *)
 val equal_tag :  constructor_tag -> constructor_tag -> bool
 

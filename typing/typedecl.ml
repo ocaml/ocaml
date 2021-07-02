@@ -1036,13 +1036,8 @@ let transl_extension_constructor ~scope env type_path type_params
             typext_params
         end;
         (* Ensure that constructor's type matches the type being extended *)
-        let cstr_type_path, cstr_type_params =
-          match get_desc cdescr.cstr_res with
-            Tconstr (p, _, _) ->
-              let decl = Env.find_type p env in
-                p, decl.type_params
-          | _ -> assert false
-        in
+        let cstr_type_path = cstr_type_path cdescr in
+        let cstr_type_params = (Env.find_type cstr_type_path env).type_params in
         let cstr_types =
           (Btype.newgenty
              (Tconstr(cstr_type_path, cstr_type_params, ref Mnil)))

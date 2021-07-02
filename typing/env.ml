@@ -2417,11 +2417,7 @@ let mark_label_used usage ld =
   | exception Not_found -> ()
 
 let mark_constructor_description_used usage env cstr =
-  let ty_path =
-    match get_desc cstr.cstr_res with
-    | Tconstr(path, _, _) -> path
-    | _ -> assert false
-  in
+  let ty_path = cstr_type_path cstr in
   mark_type_path_used env ty_path;
   match Types.Uid.Tbl.find !used_constructors cstr.cstr_uid with
   | mark -> mark usage
