@@ -420,11 +420,7 @@ void open_files(void)
       open_error(interface_file_name);
 }
 
-#ifdef _WIN32
-int wmain(int argc, wchar_t **argv)
-#else
-int main(int argc, char **argv)
-#endif
+int main_os(int argc, char_os **argv)
 {
     set_signals();
     getargs(argc, argv);
