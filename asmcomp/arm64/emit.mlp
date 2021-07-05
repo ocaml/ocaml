@@ -584,9 +584,7 @@ let assembly_code_for_allocation env i ~n ~far ~dbginfo =
   end
 
 let assembly_code_for_poll env i ~far ~return_label =
-  let lbl_frame =
-    record_frame_label env i.live (Dbg_alloc [])
-  in
+  let lbl_frame = record_frame_label env i.live (Dbg_alloc []) in
   let lbl_call_gc = new_label() in
   let lbl_after_poll = match return_label with
   | None -> new_label()
@@ -596,19 +594,23 @@ let assembly_code_for_poll env i ~far ~return_label =
     `	cmp	{emit_reg reg_alloc_ptr}, {emit_reg reg_tmp1}\n`;
   if not far then begin
     match return_label with
-    | None -> `	b.ls	{emit_label lbl_call_gc}\n`
+    | None ->
+        `	b.ls	{emit_label lbl_call_gc}\n`;
+        `{emit_label lbl_after_poll}:\n`
     | Some return_label ->
-      begin
-        ` b.hi {emit_label return_label}\n`;
-        ` b    {emit_label lbl_call_gc}\n`;
-      end
+        `	b.hi	{emit_label return_label}\n`;
+        `	b	{emit_label lbl_call_gc}\n`;
   end else begin
-    `	b.hi	{emit_label lbl_after_poll}\n`;
-    ` b     {emit_label lbl_call_gc}\n`
-  end;
-  begin match return_label with
-  | None -> `{emit_label lbl_after_poll}:`
-  | _ -> ()
+    match return_label with
+    | None ->
+        `	b.hi	{emit_label lbl_after_poll}\n`;
+        `	b	{emit_label lbl_call_gc}\n`;
+        `{emit_label lbl_after_poll}:\n`
+    | Some return_label ->
+        let lbl = new_label () in
+        `	b.ls	{emit_label lbl}\n`;
+        `	b	{emit_label return_label}\n`;
+        `{emit_label lbl}:	b	{emit_label lbl_call_gc}\n`
   end;
   env.call_gc_sites <-
     { gc_lbl = lbl_call_gc;
