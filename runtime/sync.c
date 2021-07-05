@@ -12,6 +12,7 @@
 #include "caml/memory.h"
 
 #include "caml/sync.h"
+#include "caml/eventlog.h"
 
 /* Mutex operations */
 
@@ -193,12 +194,14 @@ CAMLprim value caml_ml_condition_wait(value wcond, value wmut)           /* ML *
   sync_mutex mut = Mutex_val(wmut);
   sync_retcode retcode;
 
+  CAML_EV_BEGIN(EV_DOMAIN_CONDITION_WAIT);
   Begin_roots2(wcond, wmut)
     caml_enter_blocking_section();
     retcode = sync_condvar_wait(cond, mut);
     caml_leave_blocking_section();
   End_roots();
   sync_check_error(retcode, "Condition.wait");
+  CAML_EV_END(EV_DOMAIN_CONDITION_WAIT);
 
   return Val_unit;
 }

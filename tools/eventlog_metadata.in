@@ -132,7 +132,8 @@ enum gc_phase : uint16_t {
     "stw_handler",
     "stw_leader",
     "major_finish_sweeping",
-    "minor_finalizers_admin"
+    "minor_finalizers_admin",
+    "domain/condition_wait"
 };
 
 /*
