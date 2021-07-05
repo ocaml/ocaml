@@ -61,7 +61,7 @@ Working version
 
 - #10487: Move logic to get the type path from a constructor return type in
   Types
-  (Nicolas Chataing, review by ???)
+  (Nicolas Chataing, review by Jacques Garrigue)
 
 ### Build system:
 
