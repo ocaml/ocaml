@@ -1036,7 +1036,7 @@ let transl_extension_constructor ~scope env type_path type_params
             typext_params
         end;
         (* Ensure that constructor's type matches the type being extended *)
-        let cstr_type_path = cstr_type_path cdescr in
+        let cstr_type_path = Btype.cstr_type_path cdescr in
         let cstr_type_params = (Env.find_type cstr_type_path env).type_params in
         let cstr_types =
           (Btype.newgenty

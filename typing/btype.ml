@@ -697,3 +697,10 @@ let unmark_class_signature sign =
 
 let unmark_class_type cty =
   unmark_iterators.it_class_type unmark_iterators cty
+
+(**** Type information getter ****)
+
+let cstr_type_path cstr =
+  match get_desc cstr.cstr_res with
+  | Tconstr (p, _, _) -> p
+  | _ -> assert false

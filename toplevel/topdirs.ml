@@ -454,7 +454,7 @@ let () =
        let desc = Env.lookup_constructor ~loc Env.Positive lid env in
        if is_exception_constructor env desc.cstr_res then
          raise Not_found;
-       let path = cstr_type_path desc in
+       let path = Btype.cstr_type_path desc in
        let type_decl = Env.find_type path env in
        if is_extension_constructor desc.cstr_tag then
          let ret_type =

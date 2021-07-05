@@ -541,11 +541,6 @@ let get_level t = (repr t).level
 let get_scope t = (repr t).scope
 let get_id t = (repr t).id
 
-let cstr_type_path cstr =
-  match get_desc cstr.cstr_res with
-  | Tconstr (p, _, _) -> p
-  | _ -> assert false
-
 (* transient type_expr *)
 
 module Transient_expr = struct
