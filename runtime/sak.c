@@ -26,6 +26,17 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
+
+#ifdef _WIN32
+#define strncmp_os wcsncmp
+#define toupper_os towupper
+#define printf_os wprintf
+#else
+#define strncmp_os strncmp
+#define toupper_os toupper
+#define printf_os printf
+#endif
 
 /* Operations
    - translate. Used for the OCAML_STDLIB_DIR macro in runtime/build_config.h
@@ -36,6 +47,11 @@
 
      On Windows, `sak translate "C:\OCaml🐫\lib"` returns
      `L"C:\\OCaml\xd83d\xdc2b\\lib"`
+   - prefix. Used in stdlib/StdlibModules to convert the list of basenames given
+     in STDLIB_MODULE_BASENAMES to the actual file basenames in STDLIB_MODULES.
+
+     For example, `sak prefix stdlib camlinternalAtomic Sys` returns
+     ` stdlib camlinternalAtomic stdlib__Sys`
  */
 
 void usage(void)
@@ -45,6 +61,7 @@ void usage(void)
     "Usage: sak command\n"
     "Commands:\n"
     " * translate path - converts path to a C string constant\n"
+    " * prefix name1 name2 ... - prefix standard library module names\n"
   );
 }
 
@@ -86,6 +103,31 @@ void emit_c_string(char_os *path)
   putchar('"');
 }
 
+/* Print the given array of module names to stdout. "stdlib" and names beginning
+   "camlinternal" are printed unaltered. All other names are prefixed "stdlib__"
+   with the original name capitalised (i.e. "foo" prints "stdlib__Foo"). */
+void prefix_stdlib_modules(int count, char_os **names)
+{
+  int i;
+  char_os *name;
+
+  for (i = 0; i < count; i++) {
+    name = *names++;
+
+    /* "stdlib" and camlinternal* do not get changed. All other names get
+       capitalised and prefixed "stdlib__". */
+    if (strcmp_os(T("stdlib"), name) == 0
+     || strncmp_os(T("camlinternal"), name, 12) == 0) {
+      printf_os(T(" %s"), name);
+    } else {
+      /* name is a null-terminated string, so an empty string simply has the
+         null-terminator "capitalised". */
+      *name = toupper_os(*name);
+      printf_os(T(" stdlib__%s"), name);
+    }
+  }
+}
+
 #ifdef _WIN32
 int wmain(int argc, wchar_t **argv)
 #else
@@ -94,6 +136,8 @@ int main(int argc, char **argv)
 {
   if (argc == 3 && !strcmp_os(argv[1], T("translate"))) {
     emit_c_string(argv[2]);
+  } else if (argc > 1 && !strcmp_os(argv[1], T("prefix"))) {
+    prefix_stdlib_modules(argc - 2, &argv[2]);
   } else {
     usage();
     return 1;
