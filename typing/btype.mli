@@ -271,3 +271,7 @@ val extract_label :
 
 (**** Forward declarations ****)
 val print_raw: (Format.formatter -> type_expr -> unit) ref
+
+(**** Type information getter ****)
+
+val cstr_type_path : constructor_description -> Path.t
