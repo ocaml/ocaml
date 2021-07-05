@@ -160,3 +160,15 @@ OCAMLYACCFLAGS ?=
 
 %.ml %.mli: %.mly
 	$(OCAMLYACC) $(OCAMLYACCFLAGS) $<
+
+SAK = $(ROOTDIR)/runtime/sak$(EXE)
+
+# stdlib/StdlibModules cannot be include'd unless $(SAK) has been built. These
+# two rules add that dependency. They have to be pattern rules since
+# Makefile.common is included before default targets.
+$(ROOTDIR)/%/sak$(EXE):
+	$(MAKE) -C $(ROOTDIR)/$* sak$(EXE)
+
+ifneq "$(REQUIRES_CONFIGURATION)" ""
+$(ROOTDIR)/%/StdlibModules: $(SAK) ;
+endif

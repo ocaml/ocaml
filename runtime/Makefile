@@ -142,7 +142,8 @@ endif
 # Build, install and clean targets
 
 .PHONY: all
-all: $(BYTECODE_STATIC_LIBRARIES) $(BYTECODE_SHARED_LIBRARIES) $(PROGRAMS)
+all: $(BYTECODE_STATIC_LIBRARIES) $(BYTECODE_SHARED_LIBRARIES) $(PROGRAMS) \
+     sak$(EXE)
 
 .PHONY: allopt
 ifneq "$(NATIVE_COMPILER)" "false"
