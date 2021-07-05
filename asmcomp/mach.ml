@@ -92,7 +92,6 @@ type fundecl =
     fun_body: instruction;
     fun_codegen_options : Cmm.codegen_option list;
     fun_dbg : Debuginfo.t;
-    fun_suppress_polls: bool;
     fun_num_stack_slots: int array;
     fun_contains_calls: bool;
   }
