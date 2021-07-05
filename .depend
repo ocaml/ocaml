@@ -2788,12 +2788,14 @@ asmcomp/mach.cmi : \
     parsing/asttypes.cmi \
     asmcomp/arch.cmo
 asmcomp/polling.cmo : \
+    utils/numbers.cmi \
     utils/misc.cmi \
     asmcomp/mach.cmi \
     asmcomp/dataflow.cmi \
     asmcomp/cmm.cmi \
     asmcomp/polling.cmi
 asmcomp/polling.cmx : \
+    utils/numbers.cmx \
     utils/misc.cmx \
     asmcomp/mach.cmx \
     asmcomp/dataflow.cmx \
