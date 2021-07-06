@@ -42,11 +42,13 @@ stdlib__Atomic.cmx : atomic.ml \
 stdlib__Atomic.cmi : atomic.mli
 stdlib__Bigarray.cmo : bigarray.ml \
     stdlib__Sys.cmi \
+    stdlib__Float.cmi \
     stdlib__Complex.cmi \
     stdlib__Array.cmi \
     stdlib__Bigarray.cmi
 stdlib__Bigarray.cmx : bigarray.ml \
     stdlib__Sys.cmx \
+    stdlib__Float.cmx \
     stdlib__Complex.cmx \
     stdlib__Array.cmx \
     stdlib__Bigarray.cmi
