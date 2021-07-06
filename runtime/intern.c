@@ -275,7 +275,8 @@ static void stack_realloc(struct intern_stack* s, value save) {
   CAMLreturn0;
 }
 
-static void stack_push(struct intern_stack* s, value v, int field, int op, intnat arg) {
+static void stack_push(struct intern_stack* s, value v,
+                       int field, int op, intnat arg) {
   if (Is_block(v)) {
     Assert(field < Wosize_hd(Hd_val(v)));
   }
@@ -309,14 +310,25 @@ static int stack_curr_field(struct intern_stack* s) {
   return Int_val(STACK_FIELD(s->curr_vals, s->sp - 1));
 }
 
-static void stack_advance_field(struct intern_stack* s) {
-  int field;
+static intnat stack_curr_arg(struct intern_stack* s) {
   Assert(!stack_is_empty(s));
-  field = Int_val(STACK_FIELD(s->curr_vals, s->sp - 1));
-  field++;
-  STACK_FIELD(s->curr_vals, s->sp - 1) = Val_int(field);
-  if (field == Int_val(STACK_ARG(s->curr_vals, s->sp - 1))) {
+  return Int_val(STACK_ARG(s->curr_vals, s->sp - 1));
+}
+
+static void stack_advance_field(struct intern_stack* s) {
+  intnat field, length;
+
+  Assert(!stack_is_empty(s));
+
+  length = Int_val(STACK_ARG(s->curr_vals, s->sp - 1));
+  length--;
+  if (length == 0) {
     stack_pop(s);
+  } else {
+    STACK_ARG(s->curr_vals, s->sp - 1) = Val_int(length);
+    field = Int_val(STACK_FIELD(s->curr_vals, s->sp - 1));
+    field++;
+    STACK_FIELD(s->curr_vals, s->sp - 1) = Val_int(field);
   }
 }
 
@@ -386,12 +398,9 @@ static value intern_rec(mlsize_t whsize, mlsize_t num_objects)
       stack_pop(&S);
       break;
     case OShift:
-      caml_failwith("shift op");
-      /* Shift value by an offset */
-      /* !! */
-      /* *dest += sp->arg; */
-      /* Pop item and iterate */
-      /* sp--; */
+      Store_field (dest, curr_field,
+                   Field(dest, curr_field) + stack_curr_arg(&S));
+      stack_pop(&S);
       break;
     case OReadItems:
       /* Pop item */
@@ -407,8 +416,6 @@ static value intern_rec(mlsize_t whsize, mlsize_t num_objects)
           if (size == 0) {
             v = Atom(tag);
           } else {
-            Assert(tag != Closure_tag);
-            Assert(tag != Infix_tag);
             v = caml_alloc(size, tag);
             for (i = 0; i < size; i++) Field(v, i) = Val_unit;
             if (use_intern_table) Store_field(intern_obj_table, obj_counter++, v);
@@ -513,10 +520,9 @@ static value intern_rec(mlsize_t whsize, mlsize_t num_objects)
             len = read32u();
             goto read_double_array;
           case CODE_CODEPOINTER:
-            caml_failwith("wtfff");
             ofs = read32u();
             readblock(digest, 16);
-            codeptr = intern_resolve_code_pointer(digest, ofs); /* !! */
+            codeptr = intern_resolve_code_pointer(digest, ofs);
             if (codeptr != NULL) {
               v = (value) codeptr;
             } else {
@@ -531,18 +537,11 @@ static value intern_rec(mlsize_t whsize, mlsize_t num_objects)
             }
             break;
           case CODE_INFIXPOINTER:
-            caml_failwith("wtf");
-#if 0
             ofs = read32u();
-            /* Read a value to *dest, then offset *dest by ofs */
-            PushItem();
-            sp->dest = dest;
-            sp->op = OShift;
-            sp->arg = ofs;
-            ReadItems(dest, 1);
+            /* Read a value to dest[curr_field], then offset it by ofs */
+            stack_push(&S, dest, curr_field, OShift, ofs);
+            stack_push(&S, dest, curr_field, OReadItems, 1);
             continue;  /* with next iteration of main loop, skipping *dest = v */
-#endif
-
           case CODE_CUSTOM:
           case CODE_CUSTOM_LEN:
           case CODE_CUSTOM_FIXED: {
