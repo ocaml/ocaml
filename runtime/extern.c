@@ -34,6 +34,79 @@
 #include "caml/reverse.h"
 #include "caml/shared_heap.h"
 
+/* Stack for pending values to marshal */
+
+#define EXTERN_STACK_INIT_SIZE 256
+#define EXTERN_STACK_MAX_SIZE (1024*1024*100)
+
+struct extern_item { value * v; mlsize_t count; };
+
+/* Hash table to record already-marshaled objects and their positions */
+
+struct object_position { value obj; uintnat pos; };
+
+/* The hash table uses open addressing, linear probing, and a redundant
+   representation:
+   - a bitvector [present] records which entries of the table are occupied;
+   - an array [entries] records (object, position) pairs for the entries
+     that are occupied.
+   The bitvector is much smaller than the array (1/128th on 64-bit
+   platforms, 1/64th on 32-bit platforms), so it has better locality,
+   making it faster to determine that an object is not in the table.
+   Also, it makes it faster to empty or initialize a table: only the
+   [present] bitvector needs to be filled with zeros, the [entries]
+   array can be left uninitialized.
+*/
+
+struct position_table {
+  int shift;
+  mlsize_t size;                    /* size == 1 << (wordsize - shift) */
+  mlsize_t mask;                    /* mask == size - 1 */
+  mlsize_t threshold;               /* threshold == a fixed fraction of size */
+  uintnat * present;                /* [Bitvect_size(size)] */
+  struct object_position * entries; /* [size]  */
+};
+
+#define Bits_word (8 * sizeof(uintnat))
+#define Bitvect_size(n) (((n) + Bits_word - 1) / Bits_word)
+
+#define POS_TABLE_INIT_SIZE_LOG2 8
+#define POS_TABLE_INIT_SIZE (1 << POS_TABLE_INIT_SIZE_LOG2)
+
+struct output_block {
+  struct output_block * next;
+  char * end;
+  char data[SIZE_EXTERN_OUTPUT_BLOCK];
+};
+
+struct caml_extern_state {
+
+  int extern_flags;        /* logical or of some of the flags */
+
+	uintnat obj_counter;  	/* Number of objects emitted so far */
+	uintnat size_32;  		 	/* Size in words of 32-bit block for struct. */
+	uintnat size_64;  		 	/* Size in words of 64-bit block for struct. */
+
+	/* Stack for pending value to marshal */
+  struct extern_item extern_stack_init[EXTERN_STACK_INIT_SIZE];
+	struct extern_item * extern_stack;
+	struct extern_item * extern_stack_limit;
+
+  /* Hash table to record already marshalled objects */
+	uintnat pos_table_present_init[Bitvect_size(POS_TABLE_INIT_SIZE)];
+	struct object_position pos_table_entries_init[POS_TABLE_INIT_SIZE];
+	struct position_table pos_table;
+
+  /* To buffer the output */
+
+  char * extern_userprovided_output;
+  char * extern_ptr;
+  char * extern_limit;
+
+  struct output_block * extern_output_first;
+  struct output_block * extern_output_block;
+};
+
 struct caml_extern_state* caml_alloc_extern_state ()
 {
   struct caml_extern_state* extern_state;
@@ -41,55 +114,21 @@ struct caml_extern_state* caml_alloc_extern_state ()
   extern_state =
     caml_stat_alloc_noexc(sizeof(struct caml_extern_state));
   if (extern_state == NULL) {
-    goto create_extern_state_failure;
+    return NULL;
   }
 
   extern_state->obj_counter = 0;
   extern_state->size_32 = 0;
   extern_state->size_64 = 0;
-
-  extern_state->extern_stack_init =
-    caml_stat_calloc_noexc(EXTERN_STACK_INIT_SIZE,
-                           sizeof(struct caml_extern_item));
-  if (extern_state->extern_stack_init == NULL){
-    goto create_extern_stack_init_failure;
-  }
   extern_state->extern_stack = extern_state->extern_stack_init;
   extern_state->extern_stack_limit =
     extern_state->extern_stack + EXTERN_STACK_INIT_SIZE;
 
-  extern_state->pos_table_present_init =
-    caml_stat_calloc_noexc(Bitvect_size(POS_TABLE_INIT_SIZE), sizeof(uintnat));
-  if (extern_state->pos_table_present_init == NULL) {
-    goto create_pos_table_present_init_failure;
-  }
-
-  extern_state->pos_table_entries_init =
-    caml_stat_calloc_noexc(POS_TABLE_INIT_SIZE,
-                           sizeof(struct caml_object_position));
-  if (extern_state->pos_table_entries_init == NULL) {
-    goto create_pos_table_entries_init_failure;
-  }
-
   return extern_state;
-
-create_pos_table_entries_init_failure:
-  caml_stat_free(extern_state->pos_table_present_init);
-create_pos_table_present_init_failure:
-  caml_stat_free(extern_state->extern_stack);
-create_extern_stack_init_failure:
-  caml_stat_free(extern_state);
-create_extern_state_failure:
-  return NULL;
 }
 
 void caml_free_extern_state (struct caml_extern_state* extern_state)
 {
-  CAMLassert (extern_state);
-
-  caml_stat_free(extern_state->pos_table_entries_init);
-  caml_stat_free(extern_state->pos_table_present_init);
-  caml_stat_free(extern_state->extern_stack_init);
   caml_stat_free(extern_state);
   extern_state = NULL;
 
@@ -128,19 +167,21 @@ static void extern_free_stack(struct caml_extern_state* s)
 }
 
 
-static struct caml_extern_item * extern_resize_stack(struct caml_extern_state* s,
-                                                     struct caml_extern_item * sp)
+static struct extern_item * extern_resize_stack(struct caml_extern_state* s,
+                                                     struct extern_item * sp)
 {
   asize_t newsize = 2 * (s->extern_stack_limit - s->extern_stack);
   asize_t sp_offset = sp - s->extern_stack;
-  struct caml_extern_item * newstack;
+  struct extern_item * newstack;
   int i;
 
   if (newsize >= EXTERN_STACK_MAX_SIZE) extern_stack_overflow(s);
-  newstack = caml_stat_calloc_noexc(newsize, sizeof(struct caml_extern_item));
+  newstack = caml_stat_calloc_noexc(newsize, sizeof(struct extern_item));
   if (newstack == NULL) extern_stack_overflow(s);
 
   /* Copy item from the old stack to the new stack */
+  memcpy (newstack, s->extern_stack,
+          sizeof(struct extern_item) * sp_offset);
   for (i = 0; i < sp_offset; i++)
     newstack[i] = s->extern_stack[i];
 
@@ -213,9 +254,9 @@ static void extern_resize_position_table(struct caml_extern_state *s)
   mlsize_t new_size, new_byte_size;
   int new_shift;
   uintnat * new_present;
-  struct caml_object_position * new_entries;
+  struct object_position * new_entries;
   uintnat i, h;
-  struct caml_position_table old = s->pos_table;
+  struct position_table old = s->pos_table;
 
   /* Grow the table quickly (x 8) up to 10^6 entries,
      more slowly (x 2) afterwards. */
@@ -227,7 +268,7 @@ static void extern_resize_position_table(struct caml_extern_state *s)
     new_shift = old.shift - 1;
   }
   if (new_size == 0
-      || caml_umul_overflow(new_size, sizeof(struct caml_object_position),
+      || caml_umul_overflow(new_size, sizeof(struct object_position),
                             &new_byte_size))
     extern_out_of_memory(s);
   new_entries = caml_stat_alloc_noexc(new_byte_size);
@@ -651,6 +692,7 @@ static void extern_code_pointer(struct caml_extern_state* s, char * codeptr)
     digest = (const char *) caml_digest_of_code_fragment(cf);
     if (digest == NULL)
       extern_invalid_argument(s, "output_value: private function");
+    CAMLassert (cf == caml_find_code_fragment_by_digest((unsigned char*)digest));
     writecode32(s, CODE_CODEPOINTER, codeptr - cf->code_start);
     writeblock(s, digest, 16);
   } else {
@@ -689,7 +731,7 @@ Caml_inline mlsize_t extern_closure_up_to_env(struct caml_extern_state* s,
 
 static void extern_rec(struct caml_extern_state* s, value v)
 {
-  struct caml_extern_item * sp;
+  struct extern_item * sp;
   uintnat h = 0;
   uintnat pos = 0;
 
@@ -1146,7 +1188,7 @@ CAMLexport void caml_serialize_block_float_8(void * data, intnat len)
 CAMLprim value caml_obj_reachable_words(value v)
 {
   intnat size;
-  struct caml_extern_item * sp;
+  struct extern_item * sp;
   uintnat h = 0;
   uintnat pos = 0;
   struct caml_extern_state *s = Caml_state->extern_state;
