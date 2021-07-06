@@ -6,7 +6,6 @@
 # If an entire directory is listed, those tests won't even be run.
 
 # These depend on marshalling of closures or Custom_tag objects (#75)
-lib-marshal
 tests/typing-objects/'Tests.ml' with 1 (expect)
 tests/lib-dynlink-bytecode/'main.ml' with 1.1.1.1.1.1.1.1.1.1 (check-program-output)
 tests/lib-dynlink-native/'main.ml' with 1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.2.2.1.1.1.1.1.1.1.1.1.1.1 (check-program-output)

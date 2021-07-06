@@ -15,10 +15,9 @@ let rec fill_minor accu = function
   | n -> fill_minor (n::accu) (n-1)
 
 let rec callback c0 () =
-  print_endline "Hello, world\n";
   seek_in c0 0;
-  ignore (Marshal.from_channel c0)
-  [@@inline never]
+  let a = Marshal.from_channel c0 in
+  Array.iter (fun v -> assert (v = 0)) a
 
 let () =
   let c0 = open_in_bin "data0" in
