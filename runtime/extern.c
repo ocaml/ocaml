@@ -130,9 +130,6 @@ struct caml_extern_state* caml_alloc_extern_state ()
 void caml_free_extern_state (struct caml_extern_state* extern_state)
 {
   caml_stat_free(extern_state);
-  extern_state = NULL;
-
-  return;
 }
 
 /* Forward declarations */
@@ -480,7 +477,7 @@ Caml_inline void writeblock_float8(struct caml_extern_state* s,
 #if ARCH_FLOAT_ENDIANNESS == 0x01234567 || ARCH_FLOAT_ENDIANNESS == 0x76543210
   writeblock(s, (const char *) data, ndoubles * 8);
 #else
-  caml_serialize_block_float_8(s, data, ndoubles);
+  caml_serialize_block_float_8(data, ndoubles);
 #endif
 }
 

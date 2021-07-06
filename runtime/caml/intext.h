@@ -119,8 +119,8 @@ void caml_output_val (struct channel * chan, value v, value flags);
   /* Output [v] with flags [flags] on the channel [chan]. */
 
 struct caml_intern_state;
-//struct caml_intern_state* caml_alloc_intern_state (void);
-//void caml_free_intern_state (struct caml_intern_state*);
+struct caml_intern_state* caml_alloc_intern_state (void);
+void caml_free_intern_state (struct caml_intern_state*);
 
 #endif /* CAML_INTERNALS */
 
