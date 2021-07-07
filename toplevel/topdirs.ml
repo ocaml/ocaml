@@ -130,12 +130,12 @@ let _ = add_directive "cd" (Directive_string dir_cd)
     }
 
 
-let with_error f x = f (error_fmt ()) x
+let with_error_fmt f x = f (error_fmt ()) x
 
 let dir_load ppf name =
   action_on_suberror (Topeval.load_file false ppf name)
 
-let _ = add_directive "load" (Directive_string (with_error dir_load))
+let _ = add_directive "load" (Directive_string (with_error_fmt dir_load))
     {
       section = section_run;
       doc = "Load in memory a bytecode object, produced by ocamlc.";
@@ -145,7 +145,7 @@ let dir_load_rec ppf name =
   action_on_suberror (Topeval.load_file true ppf name)
 
 let _ = add_directive "load_rec"
-    (Directive_string (with_error dir_load_rec))
+    (Directive_string (with_error_fmt dir_load_rec))
     {
       section = section_run;
       doc = "As #load, but loads dependencies recursively.";
@@ -161,21 +161,21 @@ let dir_use_output ppf name = action_on_suberror (Toploop.use_output ppf name)
 let dir_mod_use ppf name =
   action_on_suberror (Toploop.mod_use_input ppf (Toploop.File name))
 
-let _ = add_directive "use" (Directive_string (with_error dir_use))
+let _ = add_directive "use" (Directive_string (with_error_fmt dir_use))
     {
       section = section_run;
       doc = "Read, compile and execute source phrases from the given file.";
     }
 
 let _ = add_directive "use_output"
-    (Directive_string (with_error dir_use_output))
+    (Directive_string (with_error_fmt dir_use_output))
     {
       section = section_run;
       doc = "Execute a command and read, compile and execute source phrases \
              from its output.";
     }
 
-let _ = add_directive "mod_use" (Directive_string (with_error dir_mod_use))
+let _ = add_directive "mod_use" (Directive_string (with_error_fmt dir_mod_use))
     {
       section = section_run;
       doc = "Usage is identical to #use but #mod_use \
@@ -330,14 +330,14 @@ let dir_remove_printer ppf lid =
   with Exit -> ()
 
 let _ = add_directive "install_printer"
-    (Directive_ident (with_error dir_install_printer))
+    (Directive_ident (with_error_fmt dir_install_printer))
     {
       section = section_print;
       doc = "Registers a printer for values of a certain type.";
     }
 
 let _ = add_directive "remove_printer"
-    (Directive_ident (with_error dir_remove_printer))
+    (Directive_ident (with_error_fmt dir_remove_printer))
     {
       section = section_print;
       doc = "Remove the named function from the table of toplevel printers.";
@@ -652,14 +652,14 @@ let _ = add_directive "ppx"
     }
 
 let _ = add_directive "warnings"
-    (Directive_string (fun s -> parse_warnings (error_fmt ()) false s))
+    (Directive_string (with_error_fmt(fun ppf s -> parse_warnings ppf false s)))
     {
       section = section_options;
       doc = "Enable or disable warnings according to the argument.";
     }
 
 let _ = add_directive "warn_error"
-    (Directive_string (fun s -> parse_warnings (error_fmt ()) true s))
+    (Directive_string (with_error_fmt(fun ppf s -> parse_warnings ppf true s)))
     {
       section = section_options;
       doc = "Treat as errors the warnings enabled by the argument.";
