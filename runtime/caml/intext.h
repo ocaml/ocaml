@@ -100,15 +100,6 @@
 #define ENTRIES_PER_TRAIL_BLOCK  1025
 #define SIZE_EXTERN_OUTPUT_BLOCK 8100
 
-/* Flags affecting marshaling */
-
-enum {
-  NO_SHARING = 1,               /* Flag to ignore sharing */
-  CLOSURES = 2,                 /* Flag to allow marshaling code pointers */
-  COMPAT_32 = 4                 /* Flag to ensure that output can safely
-                                   be read back on a 32-bit platform */
-};
-
 struct caml_extern_state;
 struct caml_extern_state* caml_alloc_extern_state (void);
 void caml_free_extern_state (struct caml_extern_state*);

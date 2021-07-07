@@ -34,6 +34,15 @@
 #include "caml/reverse.h"
 #include "caml/shared_heap.h"
 
+/* Flags affecting marshaling */
+
+enum {
+  NO_SHARING = 1,               /* Flag to ignore sharing */
+  CLOSURES = 2,                 /* Flag to allow marshaling code pointers */
+  COMPAT_32 = 4                 /* Flag to ensure that output can safely
+                                   be read back on a 32-bit platform */
+};
+
 /* Stack for pending values to marshal */
 
 #define EXTERN_STACK_INIT_SIZE 256
