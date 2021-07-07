@@ -151,7 +151,7 @@ static void intern_save_state ()
 {
   struct caml_intern_state *t;
 
-  if (Caml_state->intern_state->intern_input == NULL)
+  if (Caml_state->intern_state->intern_src == NULL)
     return;
 
   /* There are two reasons why you may end up here.
@@ -399,6 +399,7 @@ static void stack_push_items(struct intern_stack* s, value dest, int n) {
 
 static void intern_cleanup(struct caml_intern_state* s)
 {
+  s->intern_src = NULL;
   if (s->intern_input != NULL) {
     caml_stat_free (s->intern_input);
     s->intern_input = NULL;
@@ -461,7 +462,7 @@ static value intern_rec(struct caml_intern_state* s,
     case OFreshOID:
       /* Refresh the object ID */
       /* but do not do it for predefined exception slots */
-      if (Int_field(dest, 1) >= 0)
+      if (Long_val(Field(dest, 1)) >= 0)
         caml_set_oo_id(dest);
       /* Pop item and iterate */
       stack_pop(&S);
@@ -848,18 +849,26 @@ CAMLexport value caml_input_val_from_bytes(value str, intnat ofs)
   CAMLlocal1 (obj);
   struct marshal_header h;
   struct caml_intern_state* s;
+  char *buffer = NULL;
+  mlsize_t length;
+
+  /* Copy the string contents to a non-moving buffer */
+  length = caml_string_length(str);
+  buffer = caml_stat_alloc_noexc(length - ofs);
+  if (buffer == NULL)
+    caml_failwith ("input_val_from_bytes: out of memory");
+  memcpy (buffer, &Byte_u(str, ofs), length - ofs);
 
   /* Initialize global state */
   intern_save_state ();
   s = Caml_state->intern_state;
-  intern_init(s, &Byte_u(str, ofs), NULL);
+  intern_init(s, buffer, buffer);
   caml_parse_header(s, "input_val_from_string", &h);
   if (ofs + h.header_len + h.data_len > caml_string_length(str))
     caml_failwith("input_val_from_string: bad length");
-  s->intern_src = &Byte_u(str, ofs + h.header_len); /* If a GC occurred */
   /* Fill it in */
   obj = intern_rec(s, h.whsize, h.num_objects);
-  /* Free everything */
+  /* Free everything, including the buffer */
   intern_cleanup(s);
   CAMLreturn (caml_check_urgent_gc(obj));
 }
