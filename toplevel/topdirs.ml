@@ -21,8 +21,15 @@ open Longident
 open Types
 open Toploop
 
-(* The standard output formatter *)
-let std_out = std_formatter
+let error_fmt () =
+  if !Sys.interactive then
+    Format.std_formatter
+  else
+    Format.err_formatter
+
+let action_on_suberror b =
+  if not b && not !Sys.interactive then
+    raise (Compenv.Exit_with_status 125)
 
 (* Directive sections (used in #help) *)
 let section_general = "General"
@@ -122,18 +129,23 @@ let _ = add_directive "cd" (Directive_string dir_cd)
       doc = "Change the current working directory.";
     }
 
-let dir_load ppf name = ignore (Topeval.load_file false ppf name)
 
-let _ = add_directive "load" (Directive_string (dir_load std_out))
+let with_error_fmt f x = f (error_fmt ()) x
+
+let dir_load ppf name =
+  action_on_suberror (Topeval.load_file false ppf name)
+
+let _ = add_directive "load" (Directive_string (with_error_fmt dir_load))
     {
       section = section_run;
       doc = "Load in memory a bytecode object, produced by ocamlc.";
     }
 
-let dir_load_rec ppf name = ignore (Topeval.load_file true ppf name)
+let dir_load_rec ppf name =
+  action_on_suberror (Topeval.load_file true ppf name)
 
 let _ = add_directive "load_rec"
-    (Directive_string (dir_load_rec std_out))
+    (Directive_string (with_error_fmt dir_load_rec))
     {
       section = section_run;
       doc = "As #load, but loads dependencies recursively.";
@@ -144,25 +156,26 @@ let load_file = Topeval.load_file false
 (* Load commands from a file *)
 
 let dir_use ppf name =
-  ignore (Toploop.use_input ppf (Toploop.File name))
-let dir_use_output ppf name = ignore(Toploop.use_output ppf name)
+  action_on_suberror (Toploop.use_input ppf (Toploop.File name))
+let dir_use_output ppf name = action_on_suberror (Toploop.use_output ppf name)
 let dir_mod_use ppf name =
-  ignore (Toploop.mod_use_input ppf (Toploop.File name))
+  action_on_suberror (Toploop.mod_use_input ppf (Toploop.File name))
 
-let _ = add_directive "use" (Directive_string (dir_use std_out))
+let _ = add_directive "use" (Directive_string (with_error_fmt dir_use))
     {
       section = section_run;
       doc = "Read, compile and execute source phrases from the given file.";
     }
 
-let _ = add_directive "use_output" (Directive_string (dir_use_output std_out))
+let _ = add_directive "use_output"
+    (Directive_string (with_error_fmt dir_use_output))
     {
       section = section_run;
       doc = "Execute a command and read, compile and execute source phrases \
              from its output.";
     }
 
-let _ = add_directive "mod_use" (Directive_string (dir_mod_use std_out))
+let _ = add_directive "mod_use" (Directive_string (with_error_fmt dir_mod_use))
     {
       section = section_run;
       doc = "Usage is identical to #use but #mod_use \
@@ -317,14 +330,14 @@ let dir_remove_printer ppf lid =
   with Exit -> ()
 
 let _ = add_directive "install_printer"
-    (Directive_ident (dir_install_printer std_out))
+    (Directive_ident (with_error_fmt dir_install_printer))
     {
       section = section_print;
       doc = "Registers a printer for values of a certain type.";
     }
 
 let _ = add_directive "remove_printer"
-    (Directive_ident (dir_remove_printer std_out))
+    (Directive_ident (with_error_fmt dir_remove_printer))
     {
       section = section_print;
       doc = "Remove the named function from the table of toplevel printers.";
@@ -332,7 +345,7 @@ let _ = add_directive "remove_printer"
 
 let parse_warnings ppf iserr s =
   try Option.iter Location.(prerr_alert none) @@ Warnings.parse_options iserr s
-  with Arg.Bad err -> fprintf ppf "%s.@." err
+  with Arg.Bad err -> fprintf ppf "%s.@." err; action_on_suberror true
 
 (* Typing information *)
 
@@ -383,7 +396,7 @@ let reg_show_prim name to_sig doc =
   all_show_funs := to_sig :: !all_show_funs;
   add_directive
     name
-    (Directive_ident (show_prim to_sig std_out))
+    (Directive_ident (show_prim to_sig std_formatter))
     {
       section = section_env;
       doc;
@@ -580,7 +593,7 @@ let show env loc id lid =
   if sg = [] then raise Not_found else sg
 
 let () =
-  add_directive "show" (Directive_ident (show_prim show std_out))
+  add_directive "show" (Directive_ident (show_prim show std_formatter))
     {
       section = section_env;
       doc = "Print the signatures of components \
@@ -635,14 +648,14 @@ let _ = add_directive "ppx"
     }
 
 let _ = add_directive "warnings"
-    (Directive_string (parse_warnings std_out false))
+    (Directive_string (with_error_fmt(fun ppf s -> parse_warnings ppf false s)))
     {
       section = section_options;
       doc = "Enable or disable warnings according to the argument.";
     }
 
 let _ = add_directive "warn_error"
-    (Directive_string (parse_warnings std_out true))
+    (Directive_string (with_error_fmt(fun ppf s -> parse_warnings ppf true s)))
     {
       section = section_options;
       doc = "Treat as errors the warnings enabled by the argument.";
@@ -712,7 +725,7 @@ let print_directives ppf () =
   List.iter (print_section ppf) (directive_sections ())
 
 let _ = add_directive "help"
-    (Directive_none (print_directives std_out))
+    (Directive_none (print_directives std_formatter))
     {
       section = section_general;
       doc = "Prints a list of all available directives, with \

@@ -23,6 +23,10 @@ Working version
 
 ### Tools:
 
+- #3959, #7202, #10476: ocaml, in script mode, directive errors
+  (`#use "missing_file";;`) use stderr and exit with an error.
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Manual and documentation:
 
 - #7812, #10475: reworded the description of the behaviors of
