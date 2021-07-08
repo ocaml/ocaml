@@ -38,6 +38,7 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/osdeps.h"
+#include "caml/platform.h"
 #include "caml/signals.h"
 #include "caml/sys.h"
 
@@ -52,7 +53,9 @@
 #define lseek _lseeki64
 #endif
 
-/* List of opened channels */
+/* List of opened channels and its mutex */
+CAMLexport caml_plat_mutex
+  caml_all_opened_channels_mutex = CAML_PLAT_MUTEX_INITIALIZER;
 CAMLexport struct channel * caml_all_opened_channels = NULL;
 
 /* Basic functions over type struct channel *.
@@ -87,13 +90,17 @@ CAMLexport struct channel * caml_open_descriptor_in(int fd)
   channel->revealed = 0;
   channel->old_revealed = 0;
   channel->refcount = 0;
-  channel->flags = descriptor_is_in_binary_mode(fd) ? 0 : CHANNEL_TEXT_MODE;
-  channel->next = caml_all_opened_channels;
   channel->prev = NULL;
   channel->name = NULL;
+  channel->flags = descriptor_is_in_binary_mode(fd) ? 0 : CHANNEL_TEXT_MODE;
+
+  caml_plat_lock (&caml_all_opened_channels_mutex);
+  channel->next = caml_all_opened_channels;
   if (caml_all_opened_channels != NULL)
     caml_all_opened_channels->prev = channel;
   caml_all_opened_channels = channel;
+  caml_plat_unlock (&caml_all_opened_channels_mutex);
+
   return channel;
 }
 
@@ -109,10 +116,12 @@ CAMLexport struct channel * caml_open_descriptor_out(int fd)
 static void unlink_channel(struct channel *channel)
 {
   if (channel->prev == NULL) {
+    caml_plat_lock (&caml_all_opened_channels_mutex);
     CAMLassert (channel == caml_all_opened_channels);
     caml_all_opened_channels = caml_all_opened_channels->next;
     if (caml_all_opened_channels != NULL)
       caml_all_opened_channels->prev = NULL;
+    caml_plat_unlock (&caml_all_opened_channels_mutex);
   } else {
     channel->prev->next = channel->next;
     if (channel->next != NULL) channel->next->prev = channel->prev;
@@ -504,6 +513,7 @@ CAMLprim value caml_ml_out_channels_list (value unit)
   struct channel * channel;
 
   res = Val_emptylist;
+  caml_plat_lock (&caml_all_opened_channels_mutex);
   for (channel = caml_all_opened_channels;
        channel != NULL;
        channel = channel->next)
@@ -516,6 +526,7 @@ CAMLprim value caml_ml_out_channels_list (value unit)
       Field (res, 0) = chan;
       Field (res, 1) = tail;
     }
+  caml_plat_unlock (&caml_all_opened_channels_mutex);
   CAMLreturn (res);
 }
 
