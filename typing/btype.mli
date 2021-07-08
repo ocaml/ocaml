@@ -34,6 +34,7 @@ module TypeMap : sig
                      and type 'a t = 'a TransientTypeMap.t
   val add: type_expr -> 'a -> 'a t -> 'a t
   val find: type_expr -> 'a t -> 'a
+  val mem: type_expr -> 'a t -> bool
   val singleton: type_expr -> 'a -> 'a t
   val fold: (type_expr -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
 end
@@ -41,6 +42,7 @@ module TypeHash : sig
   include Hashtbl.S with type key = transient_expr
   val add: 'a t -> type_expr -> 'a -> unit
   val find: 'a t -> type_expr -> 'a
+  val mem : 'a t -> type_expr -> bool
   val iter: (type_expr -> 'a -> unit) -> 'a t -> unit
 end
 module TypePairs : sig

@@ -40,6 +40,7 @@ module TypeMap = struct
   include TransientTypeMap
   let add ty = wrap_repr add ty
   let find ty = wrap_repr find ty
+  let mem ty = wrap_repr mem ty
   let singleton ty = wrap_repr singleton ty
   let fold f = TransientTypeMap.fold (wrap_type_expr f)
 end
@@ -47,6 +48,7 @@ module TransientTypeHash = Hashtbl.Make(TransientTypeOps)
 module TypeHash = struct
   include TransientTypeHash
   let add hash = wrap_repr (add hash)
+  let mem hash = wrap_repr (mem hash)
   let find hash = wrap_repr (find hash)
   let iter f = TransientTypeHash.iter (wrap_type_expr f)
 end
