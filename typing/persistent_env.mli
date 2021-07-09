@@ -43,7 +43,7 @@ end
 
 type can_load_cmis =
   | Can_load_cmis
-  | Cannot_load_cmis of Misc.EnvLazy.log
+  | Cannot_load_cmis of Lazy_backtrack.log
 
 type 'a t
 

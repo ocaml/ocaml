@@ -184,6 +184,12 @@ val fold_left : f:('a -> 'b -> 'a) -> init:'a -> 'b array -> 'a
    [f (... (f (f init a.(0)) a.(1)) ...) a.(n-1)],
    where [n] is the length of the array [a]. *)
 
+val fold_left_map :
+  f:('a -> 'b -> 'a * 'c) -> init:'a -> 'b array -> 'a * 'c array
+(** [fold_left_map] is a combination of {!fold_left} and {!map} that threads an
+    accumulator through calls to [f].
+    @since 4.13.0 *)
+
 val fold_right : f:('b -> 'a -> 'a) -> 'b array -> init:'a -> 'a
 (** [fold_right ~f a ~init] computes
    [f a.(0) (f a.(1) ( ... (f a.(n-1) init) ...))],
@@ -311,17 +317,17 @@ val fast_sort : cmp:('a -> 'a -> int) -> 'a array -> unit
     faster on typical input. *)
 
 
-(** {1 Iterators} *)
+(** {1 Arrays and Sequences} *)
 
 val to_seq : 'a array -> 'a Seq.t
 (** Iterate on the array, in increasing order. Modifications of the
-    array during iteration will be reflected in the iterator.
+    array during iteration will be reflected in the sequence.
     @since 4.07 *)
 
 val to_seqi : 'a array -> (int * 'a) Seq.t
 (** Iterate on the array, in increasing order, yielding indices along elements.
     Modifications of the array during iteration will be reflected in the
-    iterator.
+    sequence.
     @since 4.07 *)
 
 val of_seq : 'a Seq.t -> 'a array

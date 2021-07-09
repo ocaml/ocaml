@@ -71,9 +71,9 @@ let win64 = Arch.win64
        3. C callee-saved registers.
      This translates to the set { r10, r11 }.  These registers hence cannot
      be used for OCaml parameter passing and must also be marked as
-     destroyed across [Ialloc] (otherwise a call to caml_call_gc@PLT might
-     clobber these two registers before the assembly stub saves them into
-     the GC regs block).
+     destroyed across [Ialloc] and [Ipoll] (otherwise a call to
+     caml_call_gc@PLT might clobber these two registers before the assembly
+     stub saves them into the GC regs block).
 *)
 
 let max_arguments_for_tailcalls = 10
@@ -294,7 +294,7 @@ let destroyed_at_c_call =
        100;101;102;103;104;105;106;107;
        108;109;110;111;112;113;114;115])
 
-let destroyed_at_alloc =
+let destroyed_at_alloc_or_poll =
   if X86_proc.use_plt then
     destroyed_by_plt_stub
   else
@@ -307,7 +307,7 @@ let destroyed_at_oper = function
   | Iop(Iintop(Idiv | Imod)) | Iop(Iintop_imm((Idiv | Imod), _))
         -> [| rax; rdx |]
   | Iop(Istore(Single, _, _)) -> [| rxmm15 |]
-  | Iop(Ialloc _) -> destroyed_at_alloc
+  | Iop(Ialloc _ | Ipoll _) -> destroyed_at_alloc_or_poll
   | Iop(Iintop(Imulh | Icomp _) | Iintop_imm((Icomp _), _))
         -> [| rax |]
   | Iswitch(_, _) -> [| rax; rdx |]
@@ -339,7 +339,7 @@ let max_register_pressure = function
         if fp then [| 3; 0 |] else  [| 4; 0 |]
   | Iintop(Idiv | Imod) | Iintop_imm((Idiv | Imod), _) ->
     if fp then [| 10; 16 |] else [| 11; 16 |]
-  | Ialloc _ ->
+  | Ialloc _ | Ipoll _ ->
     if fp then [| 11 - num_destroyed_by_plt_stub; 16 |]
     else [| 12 - num_destroyed_by_plt_stub; 16 |]
   | Iintop(Icomp _) | Iintop_imm((Icomp _), _) ->
@@ -347,17 +347,6 @@ let max_register_pressure = function
   | Istore(Single, _, _) ->
     if fp then [| 12; 15 |] else [| 13; 15 |]
   | _ -> if fp then [| 12; 16 |] else [| 13; 16 |]
-
-(* Pure operations (without any side effect besides updating their result
-   registers). *)
-
-let op_is_pure = function
-  | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
-  | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
-  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) -> false
-  | Ispecific(Ilea _|Isextend32|Izextend32) -> true
-  | Ispecific _ -> false
-  | _ -> true
 
 (* Layout of the stack frame *)
 

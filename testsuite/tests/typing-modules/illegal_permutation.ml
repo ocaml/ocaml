@@ -237,9 +237,9 @@ Error: Signature mismatch:
          module type a =
            sig module type b = sig val x : int val y : int end end
        At position module type a = <here>
-       Modules do not match:
+       Module types do not match:
          sig module type b = sig val y : int val x : int end end
-       is not included in
+       is not equal to
          sig module type b = sig val x : int val y : int end end
        At position module type a = <here>
        Module type declarations do not match:

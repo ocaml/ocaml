@@ -24,10 +24,7 @@ NR == 1 { printf ("# 1 \"%s\"\n", FILENAME) }
     state=2;
   else if ($1 == "module")
   { if (ocamldoc!="true") printf("\n(** @canonical %s *)", $2);
-    first_letter=substr($4,1,1);
-    if (dune_wrapped!="true")
-      first_letter=tolower(first_letter);
-    printf("\nmodule %s = Stdlib__%s%s\n", $2, first_letter, substr($4,2));
+    printf("\nmodule %s = Stdlib__%s\n", $2, $4);
   }
   else
     print

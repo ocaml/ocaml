@@ -1,6 +1,6 @@
 (* TEST
 
-files = "cmdline_prog.ml"
+readonly_files = "cmdline_prog.ml"
 
 * hasunix
 ** setup-ocamlc.byte-build-env

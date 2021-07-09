@@ -107,7 +107,6 @@ let pbytessetu = "Pbytessetu"
 let pccall = "Pccall"
 let pctconst = "Pctconst"
 let pcvtbint = "Pcvtbint"
-let pdirapply = "Pdirapply"
 let pdivbint = "Pdivbint"
 let pdivfloat = "Pdivfloat"
 let pdivint = "Pdivint"
@@ -119,7 +118,6 @@ let pfloatcomp = "Pfloatcomp"
 let pfloatfield = "Pfloatfield"
 let pfloatofint = "Pfloatofint"
 let pgetglobal = "Pgetglobal"
-let pidentity = "Pidentity"
 let pignore = "Pignore"
 let pint_as_pointer = "Pint_as_pointer"
 let pintcomp = "Pintcomp"
@@ -153,7 +151,6 @@ let porbint = "Porbint"
 let porint = "Porint"
 let praise = "Praise"
 let predef_exn = "predef_exn"
-let prevapply = "Prevapply"
 let project_closure = "project_closure"
 let psequand = "Psequand"
 let psequor = "Psequor"
@@ -209,7 +206,6 @@ let pbytessetu_arg = "Pbytessetu_arg"
 let pccall_arg = "Pccall_arg"
 let pctconst_arg = "Pctconst_arg"
 let pcvtbint_arg = "Pcvtbint_arg"
-let pdirapply_arg = "Pdirapply_arg"
 let pdivbint_arg = "Pdivbint_arg"
 let pdivfloat_arg = "Pdivfloat_arg"
 let pdivint_arg = "Pdivint_arg"
@@ -221,7 +217,6 @@ let pfloatcomp_arg = "Pfloatcomp_arg"
 let pfloatfield_arg = "Pfloatfield_arg"
 let pfloatofint_arg = "Pfloatofint_arg"
 let pgetglobal_arg = "Pgetglobal_arg"
-let pidentity_arg = "Pidentity_arg"
 let pignore_arg = "Pignore_arg"
 let pint_as_pointer_arg = "Pint_as_pointer_arg"
 let pintcomp_arg = "Pintcomp_arg"
@@ -253,7 +248,6 @@ let popaque_arg = "Popaque_arg"
 let porbint_arg = "Porbint_arg"
 let porint_arg = "Porint_arg"
 let praise_arg = "Praise_arg"
-let prevapply_arg = "Prevapply_arg"
 let psequand_arg = "Psequand_arg"
 let psequor_arg = "Psequor_arg"
 let psetfield_arg = "Psetfield_arg"
@@ -310,12 +304,9 @@ let anon_fn_with_loc (sloc: Lambda.scoped_location) =
       (Filename.basename file) line pp_chars
 
 let of_primitive : Lambda.primitive -> string = function
-  | Pidentity -> pidentity
   | Pbytes_of_string -> pbytes_of_string
   | Pbytes_to_string -> pbytes_to_string
   | Pignore -> pignore
-  | Prevapply -> prevapply
-  | Pdirapply -> pdirapply
   | Pgetglobal _ -> pgetglobal
   | Psetglobal _ -> psetglobal
   | Pmakeblock _ -> pmakeblock
@@ -416,12 +407,9 @@ let of_primitive : Lambda.primitive -> string = function
   | Popaque -> popaque
 
 let of_primitive_arg : Lambda.primitive -> string = function
-  | Pidentity -> pidentity_arg
   | Pbytes_of_string -> pbytes_of_string_arg
   | Pbytes_to_string -> pbytes_to_string_arg
   | Pignore -> pignore_arg
-  | Prevapply -> prevapply_arg
-  | Pdirapply -> pdirapply_arg
   | Pgetglobal _ -> pgetglobal_arg
   | Psetglobal _ -> psetglobal_arg
   | Pmakeblock _ -> pmakeblock_arg

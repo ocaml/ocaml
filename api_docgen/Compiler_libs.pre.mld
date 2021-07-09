@@ -1,0 +1,6 @@
+{1 Warning}
+  This library is part of the internal OCaml compiler API, and is
+not the language standard library.
+  There are no compatibility guarantees between releases, so code written
+against these modules must be willing to depend on specific OCaml compiler
+versions.

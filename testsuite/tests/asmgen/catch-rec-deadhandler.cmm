@@ -1,6 +1,6 @@
 (* TEST
 flags = "-dlive"
-files = "main.c"
+readonly_files = "main.c"
 arguments = "-DUNIT_INT -DFUN=catch_rec_deadhandler main.c"
 * asmgen
 ** run

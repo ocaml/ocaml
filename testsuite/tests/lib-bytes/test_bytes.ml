@@ -108,6 +108,37 @@ let () =
        length r = 7
        && check r 1 "abcde");
 
+    (*
+       abcde
+       edcba
+    *)
+    Testing.test
+      (let r = copy abcde in
+       let l = fold_left (fun acc x -> (make 1 x)::acc) [] r in
+       let result = concat (Bytes.of_string "") l in
+       length result = 5
+       && check result 0 "edcba");
+
+    (*
+       abcde
+       abcde
+    *)
+    Testing.test
+      (let r = copy abcde in
+       let l = fold_right (fun x acc -> (make 1 x)::acc) r [] in
+       let result = concat (Bytes.of_string "") l in
+       length result = 5
+       && check result 0 "abcde");
+
+    (*
+       test exists and for_all
+    *)
+    Testing.test
+      (exists (fun c -> c = 'b') abcde
+      && not (exists (fun c -> c = 'f') abcde)
+      && for_all (fun c -> c <> 'f') abcde
+      && not (for_all (fun c -> c = 'b') abcde));
+
     (* length + left + right < 0 *)
     test_raises_invalid_argument
       (fun () -> extend abcde (-3) (-3)) ();

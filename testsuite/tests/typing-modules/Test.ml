@@ -97,9 +97,9 @@ Line 3, characters 23-33:
 Error: This variant or record definition does not match that of type u
        Constructors do not match:
          X of bool
-       is not compatible with:
+       is not the same as:
          X of int
-       The types are not equal.
+       The type bool is not equal to the type int
 |}];;
 
 (* PR#5815 *)
@@ -147,7 +147,7 @@ Error: Signature mismatch:
          type t += E
        Constructors do not match:
          E of int
-       is not compatible with:
+       is not the same as:
          E
        They have different arities.
 |}];;
@@ -168,9 +168,9 @@ Error: Signature mismatch:
          type t += E of char
        Constructors do not match:
          E of int
-       is not compatible with:
+       is not the same as:
          E of char
-       The types are not equal.
+       The type int is not equal to the type char
 |}];;
 
 module M : sig type t += C of int end = struct type t += E of int end;;
@@ -207,7 +207,7 @@ Error: Signature mismatch:
          type t += E of { x : int; }
        Constructors do not match:
          E of int
-       is not compatible with:
+       is not the same as:
          E of { x : int; }
        The second uses inline records and the first doesn't.
 |}];;

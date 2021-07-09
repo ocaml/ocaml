@@ -30,7 +30,8 @@
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include "caml/config.h"
-#ifdef SUPPORT_DYNAMIC_LINKING
+#if defined(SUPPORT_DYNAMIC_LINKING) && !defined(BUILDING_LIBCAMLRUNS)
+#define WITH_DYNAMIC_LINKING
 #ifdef __CYGWIN__
 #include "flexdll.h"
 #else
@@ -225,7 +226,7 @@ caml_stat_string caml_search_dll_in_path(struct ext_table * path,
   return res;
 }
 
-#ifdef SUPPORT_DYNAMIC_LINKING
+#ifdef WITH_DYNAMIC_LINKING
 #ifdef __CYGWIN__
 /* Use flexdll */
 
@@ -256,7 +257,7 @@ char * caml_dlerror(void)
   return flexdll_dlerror();
 }
 
-#else
+#else /* ! __CYGWIN__ */
 /* Use normal dlopen */
 
 #ifndef RTLD_GLOBAL
@@ -296,7 +297,7 @@ char * caml_dlerror(void)
   return (char*) dlerror();
 }
 
-#endif
+#endif /* __CYGWIN__ */
 #else
 
 void * caml_dlopen(char * libname, int for_execution, int global)
@@ -323,7 +324,7 @@ char * caml_dlerror(void)
   return "dynamic loading not supported on this platform";
 }
 
-#endif
+#endif /* WITH_DYNAMIC_LINKING */
 
 /* Add to [contents] the (short) names of the files contained in
    the directory named [dirname].  No entries are added for [.] and [..].

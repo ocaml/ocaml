@@ -1,7 +1,7 @@
 (* TEST
 flags = "-no-alias-deps -w -49"
 compile_only = "true"
-files = "a2235.ml lib__2235.ml lib2235.ml user_of_lib2235.ml"
+readonly_files = "a2235.ml lib__2235.ml lib2235.ml user_of_lib2235.ml"
 * setup-ocamlc.byte-build-env
 ** ocamlc.byte
 module = "lib__2235.ml"

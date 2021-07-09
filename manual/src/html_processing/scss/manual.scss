@@ -1,0 +1,356 @@
+// SOURCE FILE
+
+/* If the above line does not say "SOURCE FILE", then do not edit. It */
+/* means this file is generated from [sass manual.scss] */
+
+/* CSS file for the Ocaml manual */
+
+/* San Vu Ngoc, 2019-2020 */
+
+@import "common";
+@charset "UTF-8";
+
+.content{
+    @include content-frame;
+    #part-title{
+	float:left;
+	color:#777;
+	cursor: context-menu;
+	font-family:"Fira Sans",Helvetica,Arial,sans-serif;
+	span{ /* menu icon */
+	    font-size:22px;
+	    margin-right:1ex;
+	}
+    }
+    ul{list-style:none;}
+    ul.itemize li::before{@include disc;}
+
+    /* When the TOC is repeated in the main content */
+    ul.ul-content {
+    }
+    /* navigation links at the bottom of page */
+    .bottom-navigation {
+	margin-bottom:1em;
+	a.next {
+	    float: right;
+	}
+    }
+    .copyright{
+	font-size:smaller;
+	display:inline-block;
+    }
+}
+.index{ /* index.html */
+    ul{
+	list-style: none;
+	li {
+	    margin-left: 0.5ex;
+	    span {
+		color:#c88b5f;
+	    }
+	    span.c003{
+		color:#564233;
+	    }
+	}
+    }
+    /* only for Contents/Foreword in index.html: */
+    ul.ul-content li::before{
+	@include disc;
+	margin-left: 0;
+    }
+    /* table of contents: (manual.001.html): */
+    ul.toc ul.toc ul.toc{
+	font-size:smaller;
+    }
+    section>ul>li>a{ /* for Parts title */
+	font-family:"Fira Sans",Helvetica,Arial,sans-serif;
+	font-size:larger;
+	background:linear-gradient(to left,#fff 0,#ede8e5 100%);
+    }
+    section>ul>li>ul>li:hover{ /* Chapters */
+	background:linear-gradient(to left,#fff 0,#ede8e5 100%);
+    }
+    section>ul>li>ul>li{ 	
+	transition: background 0.5s;
+    }
+}
+b{
+    font-weight:500
+}
+em,i{
+    font-style:italic
+}
+.ocaml {
+    background:#f7f5f4;
+}
+.ocaml,pre{
+    margin-top:.8em;
+    margin-bottom:1.2em
+}
+.ocaml .pre{
+    white-space:pre
+}
+p,ul{
+    margin-top:.5em;
+    margin-bottom:1em
+}
+ul{
+    list-style-position:outside
+}
+ul>li{
+    margin-left:22px
+}
+li>:first-child{
+    margin-top:0
+}
+.left{
+    text-align:left
+}
+.right{
+    text-align:right
+}
+a{
+    text-decoration:none;
+    color:#92370a
+}
+a:hover{
+    box-shadow:0 1px 0 0 #92370a
+}
+:target{
+    background-color:rgba(255,215,181,.3)!important;
+    box-shadow:0 0 0 1px rgba(255,215,181,.8)!important;
+    border-radius:1px
+}
+:hover>a.section-anchor{
+    visibility:visible
+}
+a.section-anchor:before{
+    content:"#"
+}
+a.section-anchor:hover{
+    box-shadow:none;
+    text-decoration:none;
+    color:#555
+}
+a.section-anchor{
+    visibility:hidden;
+    position:absolute;
+    margin-left:-1.3em;
+    font-weight:400;
+    font-style:normal;
+    padding-right:.4em;
+    padding-left:.4em;
+    color:#d5d5d5
+}
+.h10,.h7,.h8,.h9,h1,h2,h3,h4,h5,h6{
+    font-family:"Fira Sans",Helvetica,Arial,sans-serif;
+    font-weight:400;
+    margin:.5em 0 .5em 0;
+    padding-top:.1em;
+    line-height:1.2;
+    overflow-wrap:break-word
+}
+h1{
+    font-weight:500;
+    font-size:2.441em;
+    margin-top:1.214em
+}
+h1{
+    font-weight:500;
+    font-size:1.953em;
+    box-shadow:0 1px 0 0 #ddd
+}
+h2{
+    font-size:1.563em
+}
+h3{
+    font-size:1.25em
+}
+h1 code{
+    font-size:inherit;
+    font-weight:inherit
+}
+h2 code{
+    font-size:inherit;
+    font-weight:inherit
+}
+h3 code{
+    font-size:inherit;
+    font-weight:inherit
+}
+h3 code{
+    font-size:inherit;
+    font-weight:inherit
+}
+h4{
+    font-size:1.12em
+}
+.ocaml,.pre,code,pre,tt{
+    font-family:"Fira Mono",courier;
+    font-weight:400
+}
+.pre,pre{
+    border-left:4px solid #e69c7f;
+    overflow-x:auto;
+    padding-left:1ex
+}
+.ocaml .pre{
+    overflow-x:initial;
+}
+.caml-example .ocaml{
+    overflow-x:auto;
+}
+li code,p code{
+    background-color:#f6f8fa;
+    color:#0d2b3e;
+    border-radius:3px;
+    padding:0 .3ex
+}
+.pre .code,.pre.code,pre code{
+    background-color:inherit
+}
+p a>code{
+    color:#92370a}
+.pre code.ocaml,.pre.code.ocaml,pre code.ocaml{
+    font-size:.893rem}
+.keyword,.ocamlkeyword{
+    font-weight:500}
+section+section{
+    margin-top:25px}
+
+/* Table of Contents in the Left-hand sidebar */
+nav.toc{
+    @include nav-toc;
+    &.brand{
+	@include brand;
+    }
+    .toc_title{
+	display:block;
+	margin:.5em 0 1.414em}
+/* .toc_title a{ */
+/*     color:#777; */
+/*     font-size:1em; */
+/*     line-height:1.2; */
+    /*     font-weight:500} */
+
+}
+.tableau {
+    table {
+	border-collapse: collapse;
+    }
+    td {
+	background:#f8f7f6;
+	border:1px solid #ccc;
+	padding-left:3px;
+	padding-right:3px;
+    }
+}
+
+pre{
+    background:linear-gradient(to left,#fff 0,#ede8e5 100%)
+}
+code.caml-output.ok,div.caml-output.ok{
+    color:#045804
+}
+code.caml-output.error,div.caml-output.error{
+    color:#ff4500;
+    white-space:normal
+}
+.chapter span,.tutorial span,.maintitle h1 span{
+    color:$logocolor
+}
+h1 span{
+    color: #d28853;
+}
+blockquote.quote{
+    margin:0;
+    /*font-size: smaller;*/
+    hr{
+	display:none;
+    }
+}
+#part-menu{
+    font-family:"Fira Sans";
+    text-align:right;
+    list-style:none;
+    overflow-y:hidden;
+    transition:height 0.3s;
+}
+#part-menu li.active a{
+    color:#000;
+    &::before{@include diamond}
+}
+span.c003{
+    color:#564233;
+    font-family:"Fira Mono",courier;
+    background-color:#f3ece6;
+    border-radius:6px
+}
+div.caml-example.toplevel code.caml-input::before,
+div.caml-example.toplevel div.caml-input::before{
+    /* content:"#"; */ /* pre-4.11 */
+    color:#888
+}
+span.number{
+    padding-right: 1ex;
+}
+span.c004, span.c002{
+    color:#888
+}
+span.c006{
+    font-weight:700;
+    color:#564233;
+    font-family:"Fira Mono",courier;
+}
+span.c009{
+    font-style:italic;
+    background-color:#f3ece6;
+    border-radius:6px
+}
+span.authors{
+    font-style:italic;
+    background-color:inherit
+}
+span.c013{
+    font-weight:700
+}
+.caml-input{
+    span.ocamlkeyword{
+	font-weight:500;
+	color:#444
+    }
+    span.ocamlhighlight{
+	font-weight:500;
+	text-decoration:underline
+    }
+    span.id{
+	color:#523b74
+    }
+    span.ocamlstring,.caml-input span.string{
+	color:#df5000
+    }
+    span.comment, .caml-input span.ocamlcomment{
+	color:#969896
+    }
+}
+.ocaml span.ocamlerror{
+    font-weight:500
+}
+
+
+/* Mobile */
+@media only screen and (max-width:95ex){
+    @include mobile;
+    @include sidebar-button;
+    .content #part-menu{
+	    display:inline-block;
+	    height:0;
+	    width:100%;
+	}
+       nav.toc{
+	@include nav-toc-mobile; 
+    }
+    header{
+	@include header-mobile;
+    }
+} 

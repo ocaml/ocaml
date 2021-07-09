@@ -1,0 +1,97 @@
+\chapter{The unix library: Unix system calls}
+%HEVEA\cutname{libunix.html}
+\label{c:unix}
+
+The "unix" library makes many Unix
+system calls and system-related library functions available to
+OCaml programs. This chapter describes briefly the functions
+provided.  Refer to sections 2~and~3 of the Unix manual for more
+details on the behavior of these functions.
+
+\ifouthtml
+\begin{linklist}
+\libdocitem{Unix}{Unix system calls}
+\libdocitem{UnixLabels}{Labeled Unix system calls}
+\end{linklist}
+\fi
+
+Not all functions are provided by all Unix variants. If some functions
+are not available, they will raise "Invalid_arg" when called.
+
+Programs that use the "unix" library must be linked as follows:
+\begin{alltt}
+        ocamlc \var{other options} unix.cma \var{other files}
+        ocamlopt \var{other options} unix.cmxa \var{other files}
+\end{alltt}
+For interactive use of the "unix" library, do:
+\begin{alltt}
+        ocamlmktop -o mytop unix.cma
+        ./mytop
+\end{alltt}
+or (if dynamic linking of C libraries is supported on your platform),
+start "ocaml" and type "#load \"unix.cma\";;".
+
+\begin{latexonly}
+\begin{windows}
+A fairly complete emulation of the Unix system calls is provided in
+the Windows version of OCaml. The end of this chapter gives
+more information on the functions that are not supported under Windows.
+\end{windows}
+
+\begin{linklist}
+\libdocitem{Unix}{Unix system calls}
+\end{linklist}
+
+\section{UnixLabels}{Module \texttt{UnixLabels}: labelized version of the interface}
+\index{UnixLabels (module)@\verb~UnixLabels~ (module)}%
+
+This module is identical to "Unix"~(\ref{Unix}), and only differs by
+the addition of labels. You may see these labels directly by looking
+at "unixLabels.mli", or by using the "ocamlbrowser" tool.
+\newpage
+\end{latexonly}
+
+\begin{windows}
+The Cygwin port of OCaml fully implements all functions from
+the Unix module.  The native Win32 ports implement a subset of them.
+Below is a list of the functions that are not implemented, or only
+partially implemented, by the Win32 ports. Functions not mentioned are
+fully implemented and behave as described previously in this chapter.
+\end{windows}
+
+\begin{tableau}{|l|p{8cm}|}{Functions}{Comment}
+\entree{"fork"}{not implemented, use "create_process" or threads}
+\entree{"wait"}{not implemented, use "waitpid"}
+\entree{"waitpid"}{can only wait for a given PID, not any child process}
+\entree{"getppid"}{not implemented (meaningless under Windows)}
+\entree{"nice"}{not implemented}
+\entree{"truncate", "ftruncate"}{implemented (since 4.10.0)}
+\entree{"link"}{implemented (since 3.02)}
+\entree{"fchmod"}{not implemented}
+\entree{"chown", "fchown"}{not implemented (make no sense on a DOS
+file system)}
+\entree{"umask"}{not implemented}
+\entree{"access"}{execute permission "X_OK" cannot be tested,
+  it just tests for read permission instead}
+\entree{"chroot"}{not implemented}
+\entree{"mkfifo"}{not implemented}
+\entree{"symlink", "readlink"}{implemented (since 4.03.0)}
+\entree{"kill"}{partially implemented (since 4.00.0): only the "sigkill" signal
+is implemented}
+\entree{"sigprocmask", "sigpending", "sigsuspend"}{not implemented (no inter-process signals on Windows}
+\entree{"pause"}{not implemented (no inter-process signals in Windows)}
+\entree{"alarm"}{not implemented}
+\entree{"times"}{partially implemented, will not report timings for child
+processes}
+\entree{"getitimer", "setitimer"}{not implemented}
+\entree{"getuid", "geteuid", "getgid", "getegid"}{always return 1}
+\entree{"setuid", "setgid", "setgroups", "initgroups"}{not implemented}
+\entree{"getgroups"}{always returns "[|1|]" (since 2.00)}
+\entree{"getpwnam", "getpwuid"}{always raise "Not_found"}
+\entree{"getgrnam", "getgrgid"}{always raise "Not_found"}
+\entree{type "socket_domain"}{"PF_INET" is fully supported;
+"PF_INET6" is fully supported (since 4.01.0); "PF_UNIX" is supported since 4.14.0, but only works on Windows 10 1803 and later.}
+\entree{"establish_server"}{not implemented; use threads}
+\entree{terminal functions ("tc*")}{not implemented}
+\entree{"setsid"}{not implemented}
+\end{tableau}

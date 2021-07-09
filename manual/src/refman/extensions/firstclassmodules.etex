@@ -1,0 +1,226 @@
+(Introduced in OCaml 3.12; pattern syntax and package type inference
+introduced in 4.00; structural comparison of package types introduced in 4.02.;
+fewer parens required starting from 4.05)
+
+\begin{syntax}
+typexpr:
+      ...
+    | '(''module' package-type')'
+;
+module-expr:
+      ...
+    | '(''val' expr [':' package-type]')'
+;
+expr:
+      ...
+    | '(''module' module-expr [':' package-type]')'
+;
+pattern:
+      ...
+    | '(''module' module-name [':' package-type]')'
+;
+package-type:
+      modtype-path
+    | modtype-path 'with' package-constraint { 'and' package-constraint }
+;
+package-constraint:
+          'type' typeconstr '=' typexpr
+;
+\end{syntax}
+
+Modules are typically thought of as static components. This extension
+makes it possible to pack a module as a first-class value, which can
+later be dynamically unpacked into a module.
+
+The expression @'(' 'module' module-expr ':' package-type ')'@ converts the
+module (structure or functor) denoted by module expression @module-expr@
+to a value of the core language that encapsulates this module.  The
+type of this core language value is @'(' 'module' package-type ')'@.
+The @package-type@ annotation can be omitted if it can be inferred
+from the context.
+
+Conversely, the module expression @'(' 'val' expr ':' package-type ')'@
+evaluates the core language expression @expr@ to a value, which must
+have type @'module' package-type@, and extracts the module that was
+encapsulated in this value. Again @package-type@ can be omitted if the
+type of @expr@ is known.
+If the module expression is already parenthesized, like the arguments
+of functors are, no additional parens are needed: "Map.Make(val key)".
+
+The pattern @'(' 'module' module-name ':' package-type ')'@ matches a
+package with type @package-type@ and binds it to @module-name@.
+It is not allowed in toplevel let bindings.
+Again @package-type@ can be omitted if it can be inferred from the
+enclosing pattern.
+
+The @package-type@ syntactic class appearing in the  @'(' 'module'
+package-type ')'@ type expression and in the annotated forms represents a
+subset of module types.
+This subset consists of named module types with optional constraints
+of a limited form: only non-parametrized types can be specified.
+
+For type-checking purposes (and starting from OCaml 4.02), package types
+are compared using the structural comparison of module types.
+
+In general, the module expression @'(' "val" expr ":" package-type
+')'@ cannot be used in the body of a functor, because this could cause
+unsoundness in conjunction with applicative functors.
+Since OCaml 4.02, this is relaxed in two ways:
+if @package-type@ does not contain nominal type declarations ({\em
+  i.e.} types that are created with a proper identity), then this
+expression can be used anywhere, and even if it contains such types
+it can be used inside the body of a generative
+functor, described in section~\ref{s:generative-functors}.
+It can also be used anywhere in the context of a local module binding
+@'let' 'module' module-name '=' '(' "val" expr_1 ":" package-type ')'
+ "in" expr_2@.
+
+\lparagraph{p:fst-mod-example}{Basic example} A typical use of first-class modules is to
+select at run-time among several implementations of a signature.
+Each implementation is a structure that we can encapsulate as a
+first-class module, then store in a data structure such as a hash
+table:
+\begin{caml_example*}{verbatim}
+type picture = unit[@ellipsis]
+module type DEVICE = sig
+  val draw : picture -> unit
+  [@@@ellipsis]
+end
+let devices : (string, (module DEVICE)) Hashtbl.t = Hashtbl.create 17
+
+module SVG = struct let draw () = () [@@ellipsis] end
+let _ = Hashtbl.add devices "SVG" (module SVG : DEVICE)
+
+module PDF = struct let draw () = () [@@ellipsis] end
+let _ = Hashtbl.add devices "PDF" (module PDF : DEVICE)
+\end{caml_example*}
+
+We can then select one implementation based on command-line
+arguments, for instance:
+\begin{caml_example*}{verbatim}
+let parse_cmdline () = "SVG"[@ellipsis]
+module Device =
+  (val (let device_name = parse_cmdline () in
+        try Hashtbl.find devices device_name
+        with Not_found ->
+          Printf.eprintf "Unknown device %s\n" device_name;
+          exit 2)
+   : DEVICE)
+\end{caml_example*}
+Alternatively, the selection can be performed within a function:
+\begin{caml_example*}{verbatim}
+let draw_using_device device_name picture =
+  let module Device =
+    (val (Hashtbl.find devices device_name) : DEVICE)
+  in
+  Device.draw picture
+\end{caml_example*}
+
+\lparagraph{p:fst-mod-advexamples}{Advanced examples}
+With first-class modules, it is possible to parametrize some code over the
+implementation of a module without using a functor.
+
+\begin{caml_example}{verbatim}
+let sort (type s) (module Set : Set.S with type elt = s) l =
+  Set.elements (List.fold_right Set.add l Set.empty)
+\end{caml_example}
+
+To use this function, one can wrap the "Set.Make" functor:
+
+\begin{caml_example}{verbatim}
+let make_set (type s) cmp =
+  let module S = Set.Make(struct
+    type t = s
+    let compare = cmp
+  end) in
+  (module S : Set.S with type elt = s)
+\end{caml_example}
+
+\iffalse
+Another advanced use of first-class module is to encode existential
+types. In particular, they can be used to simulate generalized
+algebraic data types (GADT). To demonstrate this, we first define a type
+of witnesses for type equalities:
+
+\begin{caml_example*}{verbatim}
+module TypEq : sig
+  type ('a, 'b) t
+  val apply: ('a, 'b) t -> 'a -> 'b
+  val refl: ('a, 'a) t
+  val sym: ('a, 'b) t -> ('b, 'a) t
+end = struct
+  type ('a, 'b) t = ('a -> 'b) * ('b -> 'a)
+  let refl = (fun x -> x), (fun x -> x)
+  let apply (f, _) x = f x
+  let sym (f, g) = (g, f)
+end
+\end{caml_example*}
+
+We can then define a parametrized algebraic data type whose
+constructors provide some information about the type parameter:
+
+\begin{caml_example*}{verbatim}
+module rec Typ : sig
+  module type PAIR = sig
+    type t and t1 and t2
+    val eq: (t, t1 * t2) TypEq.t
+    val t1: t1 Typ.typ
+    val t2: t2 Typ.typ
+  end
+
+  type 'a typ =
+    | Int of ('a, int) TypEq.t
+    | String of ('a, string) TypEq.t
+    | Pair of (module PAIR with type t = 'a)
+end = Typ
+\end{caml_example*}
+
+Values of type "'a typ" are supposed to be runtime representations for
+the type "'a". The constructors "Int" and "String" are easy: they
+directly give a witness of type equality between the parameter "'a"
+and the ground types "int" (resp. "string"). The constructor "Pair" is
+more complex. One wants to give a witness of type equality between
+"'a" and a type of the form "t1 * t2" together with the representations
+for "t1" and "t2". However, these two types are unknown. The code above
+shows how to use first-class modules to simulate existentials.
+
+Here is how to construct values of type "'a typ":
+
+\begin{caml_example*}{verbatim}
+let int = Typ.Int TypEq.refl
+
+let str = Typ.String TypEq.refl
+
+let pair (type s1) (type s2) t1 t2 =
+  let module P = struct
+    type t = s1 * s2
+    type t1 = s1
+    type t2 = s2
+    let eq = TypEq.refl
+    let t1 = t1
+    let t2 = t2
+  end in
+  let pair = (module P : Typ.PAIR with type t = s1 * s2) in
+  Typ.Pair pair
+\end{caml_example*}
+
+And finally, here is an example of a polymorphic function that takes the
+runtime representation of some type "'a" and a value of the same type,
+then pretty-prints the value into a string:
+
+\begin{caml_example*}{verbatim}
+open Typ
+let rec to_string: 'a. 'a Typ.typ -> 'a -> string =
+  fun (type s) t x ->
+    match t with
+    | Int eq -> Int.to_string (TypEq.apply eq x)
+    | String eq -> Printf.sprintf "%S" (TypEq.apply eq x)
+    | Pair p ->
+        let module P = (val p : PAIR with type t = s) in
+        let (x1, x2) = TypEq.apply P.eq x in
+        Printf.sprintf "(%s,%s)" (to_string P.t1 x1) (to_string P.t2 x2)
+\end{caml_example*}
+
+Note that this function uses an explicit polymorphic annotation to obtain
+polymorphic recursion.
+\fi

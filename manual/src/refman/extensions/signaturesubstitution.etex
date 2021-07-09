@@ -1,0 +1,165 @@
+\subsection{ss:destructive-substitution}{Destructive substitutions}
+
+(Introduced in OCaml 3.12, generalized in 4.06)
+
+\begin{syntax}
+mod-constraint:
+          ...
+        | 'type' [type-params] typeconstr-name ':=' typexpr
+        | 'module' module-path ':=' extended-module-path
+\end{syntax}
+
+A ``destructive'' substitution (@'with' ... ':=' ...@) behaves essentially like
+normal signature constraints (@'with' ... '=' ...@), but it additionally removes
+the redefined type or module from the signature.
+
+Prior to OCaml 4.06, there were a number of restrictions: one could only remove
+types and modules at the outermost level (not inside submodules), and in the
+case of @'with type'@ the definition had to be another type constructor with the
+same type parameters.
+
+A natural application of destructive substitution is merging two
+signatures sharing a type name.
+\begin{caml_example*}{verbatim}
+module type Printable = sig
+  type t
+  val print : Format.formatter -> t -> unit
+end
+module type Comparable = sig
+  type t
+  val compare : t -> t -> int
+end
+module type PrintableComparable = sig
+  include Printable
+  include Comparable with type t := t
+end
+\end{caml_example*}
+
+One can also use this to completely remove a field:
+\begin{caml_example}{verbatim}
+module type S = Comparable with type t := int
+\end{caml_example}
+or to rename one:
+\begin{caml_example}{verbatim}
+module type S = sig
+  type u
+  include Comparable with type t := u
+end
+\end{caml_example}
+
+Note that you can also remove manifest types, by substituting with the
+same type.
+\begin{caml_example}{verbatim}
+module type ComparableInt = Comparable with type t = int ;;
+module type CompareInt = ComparableInt with type t := int
+\end{caml_example}
+
+\subsection{ss:local-substitution}{Local substitution declarations}
+
+(Introduced in OCaml 4.08)
+
+\begin{syntax}
+specification:
+          ...
+        | 'type' type-subst { 'and' type-subst }
+        | 'module' module-name ':=' extended-module-path
+        | 'module' 'type' module-name ':=' module-type
+
+;
+
+type-subst:
+          [type-params] typeconstr-name ':=' typexpr { type-constraint }
+\end{syntax}
+
+
+Local substitutions behave like destructive substitutions (@'with' ... ':=' ...@)
+but instead of being applied to a whole signature after the fact, they are
+introduced during the specification of the signature, and will apply to all the
+items that follow.
+
+This provides a convenient way to introduce local names for types and modules
+when defining a signature:
+
+\begin{caml_example}{verbatim}
+module type S = sig
+  type t
+  module Sub : sig
+    type outer := t
+    type t
+    val to_outer : t -> outer
+  end
+end
+\end{caml_example}
+
+Note that, unlike type declarations, type substitution declarations are not
+recursive, so substitutions like the following are rejected:
+
+\begin{caml_example}{toplevel}
+module type S = sig
+  type 'a poly_list := [ `Cons of 'a * 'a poly_list | `Nil ]
+end [@@expect error];;
+\end{caml_example}
+
+\subsection{ss:module-type-substitution}{Module type substitutions}
+
+(Introduced in OCaml 4.13)
+
+\begin{syntax}
+mod-constraint:
+          ...
+        | 'module ' 'type' modtype-path  '=' module-type
+        | 'module ' 'type' modtype-path  ':=' module-type
+\end{syntax}
+
+Module type substitution essentially behaves like type substitutions.
+They are useful to refine an abstract module type in a signature into
+a concrete module type,
+
+\begin{caml_example}{toplevel}
+module type ENDO = sig
+  module type T
+  module F: T -> T
+end
+module Endo(X: sig module type T end): ENDO with module type T = X.T =
+struct
+    module type T = X.T
+    module F(X:T) = X
+ end;;
+\end{caml_example}
+
+It is also possible to substitute a concrete module type with an
+equivalent module types.
+
+\begin{caml_example*}{verbatim}
+module type A = sig
+  type x
+  module type R = sig
+    type a = A of x
+    type b
+  end
+end
+module type S = sig
+  type a = A of int
+  type b
+end
+module type B = A with type x = int and module type R = S
+\end{caml_example*}
+However, such substitutions are never necessary.
+
+Destructive module type substitution removes the module type substitution
+from the signature
+\begin{caml_example}{toplevel}
+module type ENDO' = ENDO with module type T := ENDO;;
+\end{caml_example}
+If the right hand side of the substitution is not a path, then the destructive
+substitution is only valid if the left-hand side of the substitution is never
+used as the type of a first-class module in the original module type.
+
+\begin{caml_example}{verbatim}[error]
+module type T = sig module type S val x: (module S) end
+module type Error = T with module type S := sig end
+\end{caml_example}
+
+\section{s:module-alias}{Type-level module aliases}
+\ikwd{module\@\texttt{module}}
+%HEVEA\cutname{modulealias.html}

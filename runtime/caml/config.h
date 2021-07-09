@@ -41,10 +41,6 @@
 
 #include "s.h"
 
-#ifdef BOOTSTRAPPING_FLEXLINK
-#undef SUPPORT_DYNAMIC_LINKING
-#endif
-
 #ifndef CAML_NAME_SPACE
 #include "compatibility.h"
 #endif
@@ -240,7 +236,7 @@ typedef uint64_t uintnat;
 /* Default speed setting for the major GC.  The heap will grow until
    the dead objects and the free list represent this percentage of the
    total size of live objects. */
-#define Percent_free_def 80
+#define Percent_free_def 120
 
 /* Default setting for the compacter: 500%
    (i.e. trigger the compacter when 5/6 of the heap is free or garbage)
@@ -269,5 +265,8 @@ typedef uint64_t uintnat;
    in the minor heap.
    Documented in gc.mli */
 #define Custom_minor_max_bsz_def 8192
+
+/* Default allocation policy. */
+#define Allocation_policy_def caml_policy_best_fit
 
 #endif /* CAML_CONFIG_H */

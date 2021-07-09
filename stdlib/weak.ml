@@ -175,7 +175,7 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
     Array.fold_right (count_bucket 0) t.table 0
 
 
-  let next_sz n = min (3 * n / 2 + 3) Sys.max_array_length
+  let next_sz n = Int.min (3 * n / 2 + 3) Sys.max_array_length
   let prev_sz n = ((n - 3) * 2 + 2) / 3
 
   let test_shrink_bucket t =
@@ -238,7 +238,7 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
     let rec loop i =
       if i >= sz then begin
         let newsz =
-          min (3 * sz / 2 + 3) (Sys.max_array_length - additional_values)
+          Int.min (3 * sz / 2 + 3) (Sys.max_array_length - additional_values)
         in
         if newsz <= sz then failwith "Weak.Make: hash bucket cannot grow more";
         let newbucket = weak_create newsz in

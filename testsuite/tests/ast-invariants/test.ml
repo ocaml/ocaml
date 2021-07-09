@@ -30,7 +30,7 @@ let invariants : type a. a kind -> a -> unit = function
   | Interf -> Ast_invariants.signature
 
 let check_file kind fn =
-  Warnings.parse_options false "-a";
+  ignore (Warnings.parse_options false "-a");
   let ic = open_in fn in
   Location.input_name := fn;
   let lexbuf = Lexing.from_channel ic in

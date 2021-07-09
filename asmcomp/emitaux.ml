@@ -15,6 +15,11 @@
 
 (* Common functions for emitting assembly code *)
 
+type error =
+  | Stack_frame_too_large of int
+
+exception Error of error
+
 let output_channel = ref stdout
 
 let emit_string s = output_string !output_channel s
@@ -69,7 +74,7 @@ let emit_string_directive directive s =
   end else begin
     let i = ref 0 in
     while !i < l do
-      let n = min (l - !i) 80 in
+      let n = Int.min (l - !i) 80 in
       emit_string directive;
       emit_string_literal (String.sub s !i n);
       emit_char '\n';
@@ -178,6 +183,12 @@ let emit_frames a =
       Label_table.add debuginfos key lbl;
       lbl
   in
+  let efa_16_checked n =
+    assert (n >= 0);
+    if n < 0x1_0000
+    then a.efa_16 n
+    else raise (Error(Stack_frame_too_large n))
+  in
   let emit_frame fd =
     assert (fd.fd_frame_size land 3 = 0);
     let flags =
@@ -191,9 +202,9 @@ let emit_frames a =
         then 3 else 2
     in
     a.efa_code_label fd.fd_lbl;
-    a.efa_16 (fd.fd_frame_size + flags);
-    a.efa_16 (List.length fd.fd_live_offset);
-    List.iter a.efa_16 fd.fd_live_offset;
+    efa_16_checked (fd.fd_frame_size + flags);
+    efa_16_checked (List.length fd.fd_live_offset);
+    List.iter efa_16_checked fd.fd_live_offset;
     begin match fd.fd_debuginfo with
     | _ when flags = 0 ->
       ()
@@ -237,9 +248,9 @@ let emit_frames a =
     a.efa_string defname
   in
   let pack_info fd_raise d has_next =
-    let line = min 0xFFFFF d.Debuginfo.dinfo_line
-    and char_start = min 0xFF d.Debuginfo.dinfo_char_start
-    and char_end = min 0x3FF d.Debuginfo.dinfo_char_end
+    let line = Int.min 0xFFFFF d.Debuginfo.dinfo_line
+    and char_start = Int.min 0xFF d.Debuginfo.dinfo_char_start
+    and char_end = Int.min 0x3FF d.Debuginfo.dinfo_char_end
     and kind = if fd_raise then 1 else 0
     and has_next = if has_next then 1 else 0 in
     Int64.(add (shift_left (of_int line) 44)
@@ -370,3 +381,25 @@ let reset () =
 
 let binary_backend_available = ref false
 let create_asm_file = ref true
+
+let report_error ppf = function
+  | Stack_frame_too_large n ->
+      Format.fprintf ppf "stack frame too large (%d bytes)" n
+
+let mk_env f : Emitenv.per_function_env =
+  {
+    f;
+    stack_offset = 0;
+    call_gc_sites = [];
+    bound_error_sites = [];
+    bound_error_call = None;
+    call_gc_label = 0;
+    jumptables_lbl = None;
+    jumptables = [];
+    float_literals = [];
+    int_literals = [];
+    offset_literals = [];
+    gotrel_literals = [];
+    symbol_literals = [];
+    size_literals = 0;
+  }

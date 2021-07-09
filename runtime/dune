@@ -60,6 +60,7 @@
   (wrapped false)
   (modules runtime)
   (flags (-nostdlib -nopervasives))
+  (library_flags -cclib "-I runtime")
   (self_build_stubs_archive (runtime)))
 
 (rule

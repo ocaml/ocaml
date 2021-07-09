@@ -50,7 +50,8 @@ CAMLprim value unix_socketpair(value cloexec, value domain,
 
 #else
 
-CAMLprim value unix_socketpair(value domain, value type, value proto)
+CAMLprim value unix_socketpair(value cloexec, value domain, value type,
+                               value proto)
 { caml_invalid_argument("socketpair not implemented"); }
 
 #endif

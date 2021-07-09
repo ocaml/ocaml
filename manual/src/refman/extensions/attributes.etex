@@ -1,0 +1,392 @@
+(Introduced in OCaml 4.02,
+infix notations for constructs other than expressions added in 4.03)
+
+Attributes are ``decorations'' of the syntax tree which are mostly
+ignored by the type-checker but can be used by external tools.  An
+attribute is made of an identifier and a payload, which can be a
+structure, a type expression (prefixed with ":"), a signature
+(prefixed with ":") or a pattern (prefixed with "?") optionally
+followed by a "when" clause:
+
+
+\begin{syntax}
+attr-id:
+    lowercase-ident
+ |  capitalized-ident
+ |  attr-id '.' attr-id
+;
+attr-payload:
+    [ module-items ]
+ |  ':' typexpr
+ |  ':' [ specification ]
+ |  '?' pattern ['when' expr]
+;
+\end{syntax}
+
+The first form of attributes is attached with a postfix notation on
+``algebraic'' categories:
+
+\begin{syntax}
+attribute:
+    '[@' attr-id attr-payload ']'
+;
+expr: ...
+     | expr attribute
+;
+typexpr: ...
+     | typexpr attribute
+;
+pattern: ...
+     | pattern attribute
+;
+module-expr: ...
+     | module-expr attribute
+;
+module-type: ...
+     | module-type attribute
+;
+class-expr: ...
+     | class-expr attribute
+;
+class-type: ...
+     | class-type attribute
+;
+\end{syntax}
+
+This form of attributes can also be inserted after the @'`'tag-name@
+in polymorphic variant type expressions (@tag-spec-first@, @tag-spec@,
+@tag-spec-full@) or after the @method-name@ in @method-type@.
+
+The same syntactic form is also used to attach attributes to labels and
+constructors in type declarations:
+
+\begin{syntax}
+field-decl:
+          ['mutable'] field-name ':' poly-typexpr {attribute}
+;
+constr-decl:
+          (constr-name || '()') [ 'of' constr-args ] {attribute}
+;
+\end{syntax}
+
+Note: when a label declaration is followed by a semi-colon, attributes
+can also be put after the semi-colon (in which case they are merged to
+those specified before).
+
+
+The second form of attributes are attached to ``blocks'' such as type
+declarations, class fields, etc:
+
+\begin{syntax}
+item-attribute:
+    '[@@' attr-id attr-payload ']'
+;
+typedef: ...
+   | typedef item-attribute
+;
+exception-definition:
+        'exception' constr-decl
+      | 'exception' constr-name '=' constr
+;
+module-items:
+        [';;'] ( definition || expr { item-attribute } ) { [';;'] definition || ';;' expr { item-attribute } } [';;']
+;
+class-binding: ...
+   | class-binding item-attribute
+;
+class-spec: ...
+   | class-spec item-attribute
+;
+classtype-def: ...
+   | classtype-def item-attribute
+;
+definition:
+          'let' ['rec'] let-binding { 'and' let-binding }
+        | 'external' value-name ':' typexpr '=' external-declaration { item-attribute }
+        | type-definition
+        | exception-definition { item-attribute }
+        | class-definition
+        | classtype-definition
+        | 'module' module-name { '(' module-name ':' module-type ')' }
+                   [ ':' module-type ] \\ '=' module-expr { item-attribute }
+        | 'module' 'type' modtype-name '=' module-type { item-attribute }
+        | 'open' module-path { item-attribute }
+        | 'include' module-expr { item-attribute }
+        | 'module' 'rec' module-name ':' module-type '=' \\
+          module-expr { item-attribute } \\
+          { 'and' module-name ':' module-type '=' module-expr \\
+          { item-attribute } }
+;
+specification:
+          'val' value-name ':' typexpr { item-attribute }
+        | 'external' value-name ':' typexpr '=' external-declaration { item-attribute }
+        | type-definition
+        | 'exception' constr-decl { item-attribute }
+        | class-specification
+        | classtype-definition
+        | 'module' module-name ':' module-type { item-attribute }
+        | 'module' module-name { '(' module-name ':' module-type ')' }
+          ':' module-type { item-attribute }
+        | 'module' 'type' modtype-name { item-attribute }
+        | 'module' 'type' modtype-name '=' module-type { item-attribute }
+        | 'open' module-path { item-attribute }
+        | 'include' module-type { item-attribute }
+;
+class-field-spec: ...
+        | class-field-spec item-attribute
+;
+class-field: ...
+        | class-field item-attribute
+;
+\end{syntax}
+
+A third form of attributes appears as stand-alone structure or
+signature items in the module or class sub-languages.  They are not
+attached to any specific node in the syntax tree:
+
+\begin{syntax}
+floating-attribute:
+    '[@@@' attr-id attr-payload ']'
+;
+definition: ...
+   | floating-attribute
+;
+specification: ...
+   | floating-attribute
+;
+class-field-spec: ...
+   | floating-attribute
+;
+class-field: ...
+   | floating-attribute
+;
+\end{syntax}
+
+(Note: contrary to what the grammar above describes, @item-attributes@
+cannot be attached to these floating attributes in @class-field-spec@
+and @class-field@.)
+
+
+It is also possible to specify attributes using an infix syntax. For instance:
+
+\begin{verbatim}
+let[@foo] x = 2 in x + 1          === (let x = 2 [@@foo] in x + 1)
+begin[@foo][@bar x] ... end       === (begin ... end)[@foo][@bar x]
+module[@foo] M = ...              === module M = ... [@@foo]
+type[@foo] t = T                  === type t = T [@@foo]
+method[@foo] m = ...              === method m = ... [@@foo]
+\end{verbatim}
+
+For "let", the attributes are applied to each bindings:
+
+\begin{verbatim}
+let[@foo] x = 2 and y = 3 in x + y === (let x = 2 [@@foo] and y = 3 in x + y)
+let[@foo] x = 2
+and[@bar] y = 3 in x + y           === (let x = 2 [@@foo] and y = 3 [@@bar] in x + y)
+\end{verbatim}
+
+
+\subsection{ss:builtin-attributes}{Built-in attributes}
+
+Some attributes are understood by the type-checker:
+\begin{itemize}
+\item
+ ``ocaml.warning'' or ``warning'', with a string literal payload.
+ This can be used as floating attributes in a
+ signature/structure/object/object type.  The string is parsed and has
+ the same effect as the "-w" command-line option, in the scope between
+ the attribute and the end of the current
+ signature/structure/object/object type.  The attribute can also be
+ attached to any kind of syntactic item which support attributes
+ (such as an expression, or a type expression)
+ in which case its scope is limited to that item.
+ Note that it is not well-defined which scope is used for a specific
+ warning.  This is implementation dependent and can change between versions.
+ Some warnings are even completely outside the control of ``ocaml.warning''
+ (for instance, warnings 1, 2, 14, 29 and 50).
+
+\item
+ ``ocaml.warnerror'' or ``warnerror'', with a string literal payload.
+ Same as ``ocaml.warning'', for the "-warn-error" command-line option.
+
+\item
+ ``ocaml.alert'' or ``alert'': see section~\ref{s:alerts}.
+
+\item
+  ``ocaml.deprecated'' or ``deprecated'': alias for the
+  ``deprecated'' alert, see section~\ref{s:alerts}.
+\item
+  ``ocaml.deprecated_mutable'' or ``deprecated_mutable''.
+  Can be applied to a mutable record label.  If the label is later
+  used to modify the field (with ``expr.l <- expr''), the ``deprecated'' alert
+  will be triggered.  If the payload of the attribute is a string literal,
+  the alert message includes this text.
+\item
+  ``ocaml.ppwarning'' or ``ppwarning'', in any context, with
+  a string literal payload.  The text is reported as warning (22)
+  by the compiler (currently, the warning location is the location
+  of the string payload).  This is mostly useful for preprocessors which
+  need to communicate warnings to the user.  This could also be used
+  to mark explicitly some code location for further inspection.
+\item
+  ``ocaml.warn_on_literal_pattern'' or ``warn_on_literal_pattern'' annotate
+  constructors in type definition. A warning (52) is then emitted when this
+  constructor is pattern matched with a constant literal as argument. This
+  attribute denotes constructors whose argument is purely informative and
+  may change in the future. Therefore, pattern matching on this argument
+  with a constant literal is unreliable. For instance, all built-in exception
+  constructors are marked as ``warn_on_literal_pattern''.
+  Note that, due to an implementation limitation, this warning (52) is only
+  triggered for single argument constructor.
+\item
+  ``ocaml.tailcall'' or ``tailcall'' can be applied to function
+  application in order to check that the call is tailcall optimized.
+  If it it not the case, a warning (51) is emitted.
+\item
+  ``ocaml.inline'' or ``inline'' take either ``never'', ``always''
+  or nothing as payload on a function or functor definition. If no payload
+  is provided, the default value is ``always''. This payload controls when
+  applications of the annotated functions should be inlined.
+\item
+  ``ocaml.inlined'' or ``inlined'' can be applied to any function or functor
+  application to check that the call is inlined by the compiler. If the call
+  is not inlined, a warning (55) is emitted.
+\item
+  ``ocaml.noalloc'', ``ocaml.unboxed''and ``ocaml.untagged'' or
+  ``noalloc'', ``unboxed'' and ``untagged'' can be used on external
+  definitions to obtain finer control over the C-to-OCaml interface. See
+  \ref{s:C-cheaper-call} for more details.
+\item
+  ``ocaml.immediate'' or ``immediate'' applied on an abstract type mark the type as
+  having a non-pointer implementation (e.g. ``int'', ``bool'', ``char'' or
+  enumerated types). Mutation of these immediate types does not activate the
+  garbage collector's write barrier, which can significantly boost performance in
+  programs relying heavily on mutable state.
+\item
+  ``ocaml.immediate64'' or ``immediate64'' applied on an abstract type mark the
+  type as having a non-pointer implementation on 64 bit platforms. No assumption
+  is made on other platforms. In order to produce a type with the
+  ``immediate64`` attribute, one must use ``Sys.Immediate64.Make`` functor.
+\item
+  "ocaml.unboxed" or "unboxed" can be used on a type definition if the
+  type is a single-field record or a concrete type with a single
+  constructor that has a single argument. It tells the compiler to
+  optimize the representation of the type by removing the block that
+  represents the record or the constructor (i.e. a value of this type
+  is physically equal to its argument). In the case of GADTs, an
+  additional restriction applies: the argument must not be an
+  existential variable, represented by an existential type variable,
+  or an abstract type constructor applied to an existential type
+  variable.
+\item
+   "ocaml.boxed" or "boxed" can be used on type definitions to mean
+   the opposite of "ocaml.unboxed": keep the unoptimized
+   representation of the type. When there is no annotation, the
+   default is currently "boxed" but it may change in the future.
+ \item
+   "ocaml.local" or "local" take either "never", "always", "maybe" or
+   nothing as payload on a function definition.  If no payload is
+   provided, the default is "always".  The attribute controls an
+   optimization which consists in compiling a function into a static
+   continuation.  Contrary to inlining, this optimization does not
+   duplicate the function's body.  This is possible when all
+   references to the function are full applications, all sharing the
+   same continuation (for instance, the returned value of several
+   branches of a pattern matching). "never" disables the optimization,
+   "always" asserts that the optimization applies (otherwise a warning
+   55 is emitted) and "maybe" lets the optimization apply when
+   possible (this is the default behavior when the attribute is not
+   specified).  The optimization is implicitly disabled when using the
+   bytecode compiler in debug mode (-g), and for functions marked with
+   an "ocaml.inline always" or "ocaml.unrolled" attribute which
+   supersede "ocaml.local".
+\end{itemize}
+
+\begin{caml_example*}{verbatim}
+module X = struct
+  [@@@warning "+9"]  (* locally enable warning 9 in this structure *)
+  [@@@ellipsis]
+end
+[@@deprecated "Please use module 'Y' instead."]
+
+let x = begin[@warning "+9"] [()[@ellipsis]] end
+
+type t = A | B
+  [@@deprecated "Please use type 's' instead."]
+\end{caml_example*}
+
+\begin{caml_example*}{verbatim}[warning=22]
+let fires_warning_22 x =
+  assert (x >= 0) [@ppwarning "TODO: remove this later"]
+\end{caml_example*}
+
+\begin{caml_example*}{verbatim}[warning=51]
+let rec is_a_tail_call = function
+  | [] -> ()
+  | _ :: q -> (is_a_tail_call[@tailcall]) q
+
+let rec not_a_tail_call = function
+  | [] -> []
+  | x :: q -> x :: (not_a_tail_call[@tailcall]) q
+\end{caml_example*}
+
+\begin{caml_example*}{verbatim}
+let f x = x [@@inline]
+
+let () = (f[@inlined]) ()
+\end{caml_example}
+
+\begin{caml_example*}{verbatim}
+type fragile =
+  | Int of int [@warn_on_literal_pattern]
+  | String of string [@warn_on_literal_pattern]
+\end{caml_example*}
+
+\begin{caml_example}{verbatim}[warning=52]
+let fragile_match_1 = function
+| Int 0 -> ()
+| _ -> ()
+\end{caml_example}
+
+\begin{caml_example}{verbatim}[warning=52]
+let fragile_match_2 = function
+| String "constant" -> ()
+| _ -> ()
+\end{caml_example}
+
+\begin{caml_example*}{verbatim}
+module Immediate: sig
+  type t [@@immediate]
+  val x: t ref
+end = struct
+  type t = A | B
+  let x = ref A
+end
+\end{caml_example*}
+
+\begin{caml_example*}{verbatim}
+module Int_or_int64 : sig
+  type t [@@immediate64]
+  val zero : t
+  val one : t
+  val add : t -> t -> t
+end = struct
+
+  include Sys.Immediate64.Make(Int)(Int64)
+
+  module type S = sig
+    val zero : t
+    val one : t
+    val add : t -> t -> t
+  end
+
+  let impl : (module S) =
+    match repr with
+    | Immediate ->
+        (module Int : S)
+    | Non_immediate ->
+        (module Int64 : S)
+
+  include (val impl : S)
+end
+\end{caml_example*}

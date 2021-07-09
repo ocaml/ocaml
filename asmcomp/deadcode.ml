@@ -43,7 +43,7 @@ let rec deadcode i =
       { i; regs; exits = Int.Set.empty; }
   | Iop op ->
       let s = deadcode i.next in
-      if Proc.op_is_pure op                     (* no side effects *)
+      if operation_is_pure op                  (* no side effects *)
       && Reg.disjoint_set_array s.regs i.res   (* results are not used after *)
       && not (Proc.regs_are_volatile i.arg)    (* no stack-like hard reg *)
       && not (Proc.regs_are_volatile i.res)    (*            is involved *)

@@ -114,3 +114,18 @@ let _ = Array.find_map (fun _ -> None) a;;
 val a : int array = [|1; 2|]
 - : 'a option = None
 |}]
+
+let a = Array.init 8 succ;;
+let _ = Array.fold_left_map (fun a b -> a + b, string_of_int b) 0 a;;
+a (* [a] is unchanged *);;
+[%%expect {|
+val a : int array = [|1; 2; 3; 4; 5; 6; 7; 8|]
+- : int * string array = (36, [|"1"; "2"; "3"; "4"; "5"; "6"; "7"; "8"|])
+- : int array = [|1; 2; 3; 4; 5; 6; 7; 8|]
+|}]
+
+let (_ : (_ * unit array)) =
+  Array.fold_left_map (fun _ _ -> assert false) 0 [||];;
+[%%expect{|
+- : int * unit array = (0, [||])
+|}]

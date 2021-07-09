@@ -322,6 +322,7 @@ external isatty : file_descr -> bool = "unix_isatty"
 external unlink : string -> unit = "unix_unlink"
 external rename : string -> string -> unit = "unix_rename"
 external link : ?follow:bool -> string -> string -> unit = "unix_link"
+external realpath : string -> string = "unix_realpath"
 
 module LargeFile =
   struct
@@ -598,13 +599,13 @@ type socket_bool_option =
     SO_DEBUG
   | SO_BROADCAST
   | SO_REUSEADDR
-  | SO_REUSEPORT
   | SO_KEEPALIVE
   | SO_DONTROUTE
   | SO_OOBINLINE
   | SO_ACCEPTCONN
   | TCP_NODELAY
   | IPV6_ONLY
+  | SO_REUSEPORT
 
 type socket_int_option =
     SO_SNDBUF
@@ -890,7 +891,7 @@ let system cmd =
   let pid = spawn shell [| shell; "-c"; cmd |] None false [| 0; 1; 2 |] in
   snd(waitpid_non_intr pid)
 
-let create_process_gen usepath cmd args optenv
+let create_process_gen cmd args optenv
                        new_stdin new_stdout new_stderr =
   let toclose = ref [] in
   let close_after () =
@@ -917,13 +918,13 @@ let create_process_gen usepath cmd args optenv
     (if new_stderr = 2 then 2 else file_descr_not_standard new_stderr)
   |] in
   Fun.protect ~finally:close_after
-    (fun () -> spawn cmd args optenv usepath redirections)
+    (fun () -> spawn cmd args optenv true (* usepath *) redirections)
 
 let create_process cmd args new_stdin new_stdout new_stderr =
-  create_process_gen true cmd args None new_stdin new_stdout new_stderr
+  create_process_gen cmd args None new_stdin new_stdout new_stderr
 
 let create_process_env cmd args env new_stdin new_stdout new_stderr =
-  create_process_gen true cmd args (Some env) new_stdin new_stdout new_stderr
+  create_process_gen cmd args (Some env) new_stdin new_stdout new_stderr
 
 type popen_process =
     Process of in_channel * out_channel
@@ -935,7 +936,7 @@ let popen_processes = (Hashtbl.create 7 : (popen_process, int) Hashtbl.t)
 
 let open_proc prog args envopt proc input output error =
   let pid =
-    create_process_gen false prog args envopt input output error in
+    create_process_gen prog args envopt input output error in
   Hashtbl.add popen_processes proc pid
 
 let open_process_args_in prog args =

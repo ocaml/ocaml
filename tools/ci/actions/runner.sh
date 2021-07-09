@@ -21,6 +21,8 @@ PREFIX=~/local
 MAKE="make $MAKE_ARG"
 SHELL=dash
 
+MAKE_WARN="$MAKE --warn-undefined-variables"
+
 export PATH=$PREFIX/bin:$PATH
 
 Configure () {
@@ -61,8 +63,8 @@ EOF
 }
 
 Build () {
-  $MAKE world.opt
-  $MAKE ocamlnat
+  script --return --command "$MAKE_WARN world.opt" build.log
+  script --return --append --command "$MAKE_WARN ocamlnat" build.log
   echo Ensuring that all names are prefixed in the runtime
   ./tools/check-symbol-names runtime/*.a
 }
@@ -78,7 +80,7 @@ Test () {
 
 API_Docs () {
   echo Ensuring that all library documentation compiles
-  $MAKE -C ocamldoc html_doc pdf_doc texi_doc
+  $MAKE -C api_docgen html pdf texi
 }
 
 Install () {
@@ -86,6 +88,15 @@ Install () {
 }
 
 Checks () {
+  set +x
+  STATUS=0
+  if grep -Fq ' warning: undefined variable ' build.log; then
+    echo -e '\e[31mERROR\e[0m Undefined Makefile variables detected!'
+    grep -F ' warning: undefined variable ' build.log | sort | uniq
+    STATUS=1
+  fi
+  rm build.log
+  set -x
   if fgrep 'SUPPORTS_SHARED_LIBRARIES=true' Makefile.config &>/dev/null ; then
     echo Check the code examples in the manual
     $MAKE manual-pregen
@@ -100,12 +111,14 @@ Checks () {
   # check that the 'clean' target also works
   $MAKE clean
   $MAKE -C manual clean
+  $MAKE -C manual distclean
   # check that the `distclean` target definitely cleans the tree
   $MAKE distclean
   # Check the working tree is clean
   test -z "$(git status --porcelain)"
   # Check that there are no ignored files
   test -z "$(git ls-files --others -i --exclude-standard)"
+  exit $STATUS
 }
 
 CheckManual () {
@@ -121,13 +134,50 @@ EOF
 
 }
 
+BuildManual () {
+  $MAKE -C manual/src/html_processing duniverse
+  $MAKE -C manual manual
+  $MAKE -C manual web
+}
+
+# ReportBuildStatus accepts an exit code as a parameter (defaults to 1) and also
+# instructs GitHub Actions to set build-status to 'failed' on non-zero exit or
+# 'success' otherwise.
+ReportBuildStatus () {
+  CODE=${1:-1}
+  if ((CODE)); then
+    STATUS='failed'
+  else
+    STATUS='success'
+  fi
+  echo "::set-output name=build-status::$STATUS"
+  exit $CODE
+}
+
+BasicCompiler () {
+  trap ReportBuildStatus ERR
+
+  ./configure --disable-dependency-generation \
+              --disable-debug-runtime \
+              --disable-instrumented-runtime
+
+  # Need a runtime
+  make -j coldstart
+  # And generated files (ocamllex compiles ocamlyacc)
+  make -j ocamllex
+
+  ReportBuildStatus 0
+}
+
 case $1 in
 configure) Configure;;
 build) Build;;
 test) Test;;
 api-docs) API_Docs;;
 install) Install;;
+manual) BuildManual;;
 other-checks) Checks;;
+basic-compiler) BasicCompiler;;
 *) echo "Unknown CI instruction: $1"
    exit 1;;
 esac

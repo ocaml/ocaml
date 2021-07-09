@@ -179,7 +179,9 @@ let warning_attribute ?(ppwarning = true) =
   let process loc txt errflag payload =
     match string_of_payload payload with
     | Some s ->
-        begin try Warnings.parse_options errflag s
+        begin try
+          Option.iter (Location.prerr_alert loc)
+            (Warnings.parse_options errflag s)
         with Arg.Bad msg -> warn_payload loc txt msg
         end
     | None ->

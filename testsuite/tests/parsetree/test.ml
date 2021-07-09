@@ -1,6 +1,6 @@
 (* TEST
    include ocamlcommon
-   files = "source.ml"
+   readonly_files = "source.ml"
 *)
 
 (* (c) Alain Frisch / Lexifi *)

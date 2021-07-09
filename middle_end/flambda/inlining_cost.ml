@@ -172,7 +172,7 @@ module Threshold = struct
     | Never_inline, _ -> Never_inline
     | _, Never_inline -> Never_inline
     | Can_inline_if_no_larger_than i1, Can_inline_if_no_larger_than i2 ->
-      Can_inline_if_no_larger_than (min i1 i2)
+      Can_inline_if_no_larger_than (Int.min i1 i2)
 
   let equal t1 t2 =
     match t1, t2 with
@@ -674,7 +674,7 @@ let maximum_interesting_size_of_function_body_base =
         let inline_call_cost = cost !Clflags.inline_call_cost ~round in
         direct_call_size + (inline_call_cost * benefit_factor)
       in
-      max_cost := max !max_cost max_size
+      max_cost := Int.max !max_cost max_size
     done;
     !max_cost
   end
@@ -687,7 +687,7 @@ let maximum_interesting_size_of_function_body_multiplier =
         let inline_prim_cost = cost !Clflags.inline_prim_cost ~round in
         inline_prim_cost * benefit_factor
       in
-      max_cost := max !max_cost max_size
+      max_cost := Int.max !max_cost max_size
     done;
     !max_cost
   end

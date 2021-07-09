@@ -155,6 +155,10 @@ let arg_label i ppf = function
   | Labelled s -> line i ppf "Labelled \"%s\"\n" s
 ;;
 
+let typevars ppf vs =
+  List.iter (fun x -> fprintf ppf " %a" Pprintast.tyvar x.txt) vs
+;;
+
 let record_representation i ppf = let open Types in function
   | Record_regular -> line i ppf "Record_regular\n"
   | Record_float -> line i ppf "Record_float\n"
@@ -245,9 +249,15 @@ and pattern : type k . _ -> _ -> k general_pattern -> unit = fun i ppf x ->
   | Tpat_tuple (l) ->
       line i ppf "Tpat_tuple\n";
       list i pattern ppf l;
-  | Tpat_construct (li, _, po) ->
+  | Tpat_construct (li, _, po, vto) ->
       line i ppf "Tpat_construct %a\n" fmt_longident li;
       list i pattern ppf po;
+      option i
+        (fun i ppf (vl,ct) ->
+          let names = List.map (fun {txt} -> "\""^Ident.name txt^"\"") vl in
+          line i ppf "[%s]\n" (String.concat "; " names);
+          core_type i ppf ct)
+        ppf vto
   | Tpat_variant (l, po, _) ->
       line i ppf "Tpat_variant \"%s\"\n" l;
       option i pattern ppf po;
@@ -508,8 +518,9 @@ and extension_constructor i ppf x =
 
 and extension_constructor_kind i ppf x =
   match x with
-      Text_decl(a, r) ->
+      Text_decl(v, a, r) ->
         line i ppf "Text_decl\n";
+        if v <> [] then line (i+1) ppf "vars%a\n" typevars v;
         constructor_arguments (i+1) ppf a;
         option (i+1) core_type ppf r;
     | Text_rebind(p, _) ->
@@ -732,6 +743,10 @@ and signature_item i ppf x =
       line i ppf "Tsig_modtype \"%a\"\n" fmt_ident x.mtd_id;
       attributes i ppf x.mtd_attributes;
       modtype_declaration i ppf x.mtd_type
+  | Tsig_modtypesubst x ->
+      line i ppf "Tsig_modtypesubst \"%a\"\n" fmt_ident x.mtd_id;
+      attributes i ppf x.mtd_attributes;
+      modtype_declaration i ppf x.mtd_type
   | Tsig_open od ->
       line i ppf "Tsig_open %a %a\n"
         fmt_override_flag od.open_override
@@ -774,6 +789,12 @@ and with_constraint i ppf x =
       type_declaration (i+1) ppf td;
   | Twith_module (li,_) -> line i ppf "Twith_module %a\n" fmt_path li;
   | Twith_modsubst (li,_) -> line i ppf "Twith_modsubst %a\n" fmt_path li;
+  | Twith_modtype mty ->
+      line i ppf "Twith_modtype\n";
+      module_type (i+1) ppf mty
+  | Twith_modtypesubst mty ->
+      line i ppf "Twith_modtype\n";
+      module_type (i+1) ppf mty
 
 and module_expr i ppf x =
   line i ppf "module_expr %a\n" fmt_location x.mod_loc;
@@ -866,10 +887,11 @@ and core_type_x_core_type_x_location i ppf (ct1, ct2, l) =
   core_type (i+1) ppf ct1;
   core_type (i+1) ppf ct2;
 
-and constructor_decl i ppf {cd_id; cd_name = _; cd_args; cd_res; cd_loc;
-                            cd_attributes} =
+and constructor_decl i ppf {cd_id; cd_name = _; cd_vars;
+                            cd_args; cd_res; cd_loc; cd_attributes} =
   line i ppf "%a\n" fmt_location cd_loc;
   line (i+1) ppf "%a\n" fmt_ident cd_id;
+  if cd_vars <> [] then line (i+1) ppf "cd_vars =%a\n" typevars cd_vars;
   attributes i ppf cd_attributes;
   constructor_arguments (i+1) ppf cd_args;
   option (i+1) core_type ppf cd_res

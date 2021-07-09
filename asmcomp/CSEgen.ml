@@ -25,7 +25,7 @@ type valnum = int
 type op_class =
   | Op_pure           (* pure arithmetic, produce one or several result *)
   | Op_checkbound     (* checkbound-style: no result, can raise an exn *)
-  | Op_load           (* memory load *)
+  | Op_load of Asttypes.mutable_flag (* memory load *)
   | Op_store of bool  (* memory store, false = init, true = assign *)
   | Op_other   (* anything else that does not allocate nor store in memory *)
 
@@ -40,29 +40,30 @@ module Equations = struct
     Map.Make(struct type t = rhs let compare = Stdlib.compare end)
 
   type 'a t =
-    { load_equations : 'a Rhs_map.t;
+    { mutable_load_equations : 'a Rhs_map.t;
       other_equations : 'a Rhs_map.t }
 
   let empty =
-    { load_equations = Rhs_map.empty;
+    { mutable_load_equations = Rhs_map.empty;
       other_equations = Rhs_map.empty }
 
   let add op_class op v m =
     match op_class with
-    | Op_load ->
-      { m with load_equations = Rhs_map.add op v m.load_equations }
+    | Op_load Mutable ->
+      { m with mutable_load_equations =
+                 Rhs_map.add op v m.mutable_load_equations }
     | _ ->
       { m with other_equations = Rhs_map.add op v m.other_equations }
 
   let find op_class op m =
     match op_class with
-    | Op_load ->
-      Rhs_map.find op m.load_equations
+    | Op_load Mutable ->
+      Rhs_map.find op m.mutable_load_equations
     | _ ->
       Rhs_map.find op m.other_equations
 
-  let remove_loads m =
-    { load_equations = Rhs_map.empty;
+  let remove_mutable_loads m =
+    { mutable_load_equations = Rhs_map.empty;
       other_equations = m.other_equations }
 end
 
@@ -190,8 +191,8 @@ let set_unknown_regs n rs =
 
 (* Keep only the equations satisfying the given predicate. *)
 
-let remove_load_numbering n =
-  { n with num_eqs = Equations.remove_loads n.num_eqs }
+let remove_mutable_load_numbering n =
+  { n with num_eqs = Equations.remove_mutable_loads n.num_eqs }
 
 (* Forget everything we know about registers of type [Addr]. *)
 
@@ -223,11 +224,11 @@ method class_of_operation op =
   | Imove | Ispill | Ireload -> assert false   (* treated specially *)
   | Iconst_int _ | Iconst_float _ | Iconst_symbol _ -> Op_pure
   | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
-  | Iextcall _ -> assert false                 (* treated specially *)
+  | Iextcall _ | Iopaque -> assert false       (* treated specially *)
   | Istackoffset _ -> Op_other
-  | Iload(_,_) -> Op_load
+  | Iload(_,_,mut) -> Op_load mut
   | Istore(_,_,asg) -> Op_store asg
-  | Ialloc _ -> assert false                   (* treated specially *)
+  | Ialloc _ | Ipoll _ -> assert false     (* treated specially *)
   | Iintop(Icheckbound) -> Op_checkbound
   | Iintop _ -> Op_pure
   | Iintop_imm(Icheckbound, _) -> Op_checkbound
@@ -235,7 +236,6 @@ method class_of_operation op =
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat -> Op_pure
   | Ispecific _ -> Op_other
-  | Iname_for_debugger _ -> Op_pure
 
 (* Operations that are so cheap that it isn't worth factoring them. *)
 
@@ -244,11 +244,11 @@ method is_cheap_operation op =
   | Iconst_int _ -> true
   | _ -> false
 
-(* Forget all equations involving memory loads.  Performed after a
-   non-initializing store *)
+(* Forget all equations involving mutable memory loads.
+   Performed after a non-initializing store *)
 
 method private kill_loads n =
-  remove_load_numbering n
+  remove_mutable_load_numbering n
 
 (* Perform CSE on the given instruction [i] and its successors.
    [n] is the value numbering current at the beginning of [i]. *)
@@ -277,23 +277,26 @@ method private cse n i =
          arguments is always a memory load.  For simplicity, we
          just forget everything. *)
       {i with next = self#cse empty_numbering i.next}
-  | Iop (Ialloc _) ->
+  | Iop Iopaque ->
+      (* Assume arbitrary side effects from Iopaque *)
+      {i with next = self#cse empty_numbering i.next}
+  | Iop (Ialloc _) | Iop (Ipoll _) ->
       (* For allocations, we must avoid extending the live range of a
          pseudoregister across the allocation if this pseudoreg
          is a derived heap pointer (a pointer into the heap that does
          not point to the beginning of a Caml block).  PR#6484 is an
          example of this situation.  Such pseudoregs have type [Addr].
          Pseudoregs with types other than [Addr] can be kept.
-         Moreover, allocation can trigger the asynchronous execution
+         Moreover, allocations and polls can trigger the asynchronous execution
          of arbitrary Caml code (finalizer, signal handler, context
          switch), which can contain non-initializing stores.
-         Hence, all equations over loads must be removed. *)
+         Hence, all equations over mutable loads must be removed. *)
        let n1 = kill_addr_regs (self#kill_loads n) in
        let n2 = set_unknown_regs n1 i.res in
        {i with next = self#cse n2 i.next}
   | Iop op ->
       begin match self#class_of_operation op with
-      | (Op_pure | Op_checkbound | Op_load) as op_class ->
+      | (Op_pure | Op_checkbound | Op_load _) as op_class ->
           let (n1, varg) = valnum_regs n i.arg in
           let n2 = set_unknown_regs n1 (Proc.destroyed_at_oper i.desc) in
           begin match find_equation op_class n1 (op, varg) with
@@ -331,7 +334,7 @@ method private cse n i =
          {i with next = self#cse n2 i.next}
       | Op_store true ->
           (* A non-initializing store can invalidate
-             anything we know about prior loads. *)
+             anything we know about prior mutable loads. *)
          let n1 = set_unknown_regs n (Proc.destroyed_at_oper i.desc) in
          let n2 = set_unknown_regs n1 i.res in
          let n3 = self#kill_loads n2 in

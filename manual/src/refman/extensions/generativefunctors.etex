@@ -1,0 +1,37 @@
+(Introduced in OCaml 4.02)
+
+\begin{syntax}
+module-expr:
+          ...
+        | 'functor' '()' '->' module-expr
+        | module-expr '()'
+;
+definition:
+          ...
+        | 'module' module-name { '(' module-name ':' module-type ')' || '()' }
+                   [ ':' module-type ] \\ '=' module-expr
+;
+module-type:
+          ...
+        | 'functor' '()' '->' module-type
+;
+specification:
+          ...
+        | 'module' module-name { '(' module-name ':' module-type ')' || '()' }
+          ':' module-type
+;
+\end{syntax}
+
+A generative functor takes a unit "()" argument.
+In order to use it, one must necessarily apply it to this unit argument,
+ensuring that all type components in the result of the functor behave
+in a generative way, {\em i.e.} they are different from types obtained
+by other applications of the same functor.
+This is equivalent to taking an argument of signature "sig end", and always
+applying to "struct end", but not to some defined module (in the
+latter case, applying twice to the same module would return identical
+types).
+
+As a side-effect of this generativity, one is allowed to unpack
+first-class modules in the body of generative functors.
+

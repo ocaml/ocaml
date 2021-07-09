@@ -146,8 +146,8 @@ module CorrectEnvConstructionTest :
         and +'a abstract
         module M :
           sig
-            type 'a user = 'a user = Foo of 'a abstract
-            and 'a abstract = 'a abstract
+            type 'a user = 'a user = Foo of 'a abstract/1
+            and 'a abstract = 'a abstract/2
           end
         type 'a foo = 'a M.user
       end

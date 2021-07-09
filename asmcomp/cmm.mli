@@ -135,8 +135,8 @@ type memory_chunk =
   | Word_int                           (* integer or pointer outside heap *)
   | Word_val                           (* pointer inside heap or encoded int *)
   | Single
-  | Double                             (* 64-bit-aligned 64-bit float *)
-  | Double_u                           (* word-aligned 64-bit float *)
+  | Double                             (* word-aligned 64-bit float
+                                          see PR#10433 *)
 
 and operation =
     Capply of machtype
@@ -162,6 +162,7 @@ and operation =
                    then the index.
                    It results in a bounds error if the index is greater than
                    or equal to the bound. *)
+  | Copaque (* Sys.opaque_identity *)
 
 (** Every basic block should have a corresponding [Debuginfo.t] for its
     beginning. *)

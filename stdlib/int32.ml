@@ -63,8 +63,8 @@ let unsigned_to_int =
           None
   | 64 ->
       (* So that it compiles in 32-bit *)
-      let move = int_of_string "0x1_0000_0000" in
-      fun n -> let i = to_int n in Some (if i < 0 then i + move else i)
+      let mask = 0xFFFF lsl 16 lor 0xFFFF in
+      fun n -> Some (to_int n land mask)
   | _ ->
       assert false
 
@@ -85,6 +85,9 @@ let equal (x: t) (y: t) = compare x y = 0
 
 let unsigned_compare n m =
   compare (sub n min_int) (sub m min_int)
+
+let min x y : t = if x <= y then x else y
+let max x y : t = if x >= y then x else y
 
 (* Unsigned division from signed division of the same
    bitness. See Warren Jr., Henry S. (2013). Hacker's Delight (2 ed.), Sec 9-3.

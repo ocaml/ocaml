@@ -121,7 +121,7 @@ let rec longest_path critical_outputs node =
         node.length <-
           List.fold_left
             (fun len (son, delay) ->
-              max len (longest_path critical_outputs son + delay))
+              Int.max len (longest_path critical_outputs son + delay))
             0 sons
   end;
   node.length
@@ -135,7 +135,7 @@ let rec remove_instr node = function
 
 (* We treat Lreloadretaddr as a word-sized load *)
 
-let some_load = (Iload(Cmm.Word_int, Arch.identity_addressing))
+let some_load = (Iload(Cmm.Word_int, Arch.identity_addressing, Mutable))
 
 (* The generic scheduler *)
 
@@ -154,7 +154,7 @@ method oper_in_basic_block = function
   | Itailcall_imm _ -> false
   | Iextcall _ -> false
   | Istackoffset _ -> false
-  | Ialloc _ -> false
+  | Ialloc _ | Ipoll _ -> false
   | _ -> true
 
 (* Determine whether an instruction ends a basic block or not *)
@@ -181,7 +181,7 @@ method is_store = function
   | _ -> false
 
 method is_load = function
-    Iload(_, _) -> true
+    Iload(_, _, _) -> true
   | _ -> false
 
 method is_checkbound = function

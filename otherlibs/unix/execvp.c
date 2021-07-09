@@ -106,7 +106,7 @@ int unix_execvpe_emulation(const char * name,
   int r, got_eacces;
 
   /* If name contains a '/', do not search in path */
-  if (index(name, '/') != NULL) return unix_execve_script(name, argv, envp);
+  if (strchr(name, '/') != NULL) return unix_execve_script(name, argv, envp);
   /* Determine search path */
   searchpath = getenv("PATH");
   if (searchpath == NULL) searchpath = "/bin:/usr/bin";

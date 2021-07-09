@@ -22,6 +22,7 @@
 #include "unixsupport.h"
 #include <fcntl.h>
 #include <io.h>
+#include <errno.h>
 
 /* Check that the given file descriptor has "stream semantics" and
    can therefore be used as part of buffered I/O.  Things that
@@ -119,7 +120,7 @@ CAMLprim value win_filedescr_of_channel(value vchan)
   HANDLE h;
 
   chan = Channel(vchan);
-  if (chan->fd == -1) uerror("descr_of_channel", Nothing);
+  if (chan->fd == -1) unix_error(EBADF, "descr_of_channel", Nothing);
   h = (HANDLE) _get_osfhandle(chan->fd);
   if (chan->flags & CHANNEL_FLAG_FROM_SOCKET)
     fd = win_alloc_socket((SOCKET) h);

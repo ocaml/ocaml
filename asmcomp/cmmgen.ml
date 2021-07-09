@@ -424,7 +424,7 @@ let rec transl env e =
       let args = List.map (transl env) args in
       send kind met obj args dbg
   | Ulet(str, kind, id, exp, body) ->
-      transl_let env str kind id exp body
+      transl_let env str kind id exp (fun env -> transl env body)
   | Uphantom_let (var, defining_expr, body) ->
       let defining_expr =
         match defining_expr with
@@ -785,7 +785,7 @@ and transl_prim_1 env p arg dbg =
   match p with
   (* Generic operations *)
     Popaque ->
-      transl env arg
+      opaque (transl env arg) dbg
   (* Heap operations *)
   | Pfield n ->
       get_field env (transl env arg) n dbg
@@ -1117,7 +1117,7 @@ and transl_unbox_sized size dbg env exp =
   | Thirty_two -> transl_unbox_int dbg env Pint32 exp
   | Sixty_four -> transl_unbox_int dbg env Pint64 exp
 
-and transl_let env str kind id exp body =
+and transl_let env str kind id exp transl_body =
   let dbg = Debuginfo.none in
   let cexp = transl env exp in
   let unboxing =
@@ -1151,16 +1151,16 @@ and transl_let env str kind id exp body =
       (* N.B. [body] must still be traversed even if [exp] will never return:
          there may be constant closures inside that need lifting out. *)
       begin match str, kind with
-      | Immutable, _ -> Clet(id, cexp, transl env body)
-      | Mutable, Pintval -> Clet_mut(id, typ_int, cexp, transl env body)
-      | Mutable, _ -> Clet_mut(id, typ_val, cexp, transl env body)
+      | Immutable, _ -> Clet(id, cexp, transl_body env)
+      | Mutable, Pintval -> Clet_mut(id, typ_int, cexp, transl_body env)
+      | Mutable, _ -> Clet_mut(id, typ_val, cexp, transl_body env)
       end
   | Boxed (boxed_number, false) ->
       let unboxed_id = V.create_local (VP.name id) in
       let v = VP.create unboxed_id in
       let cexp = unbox_number dbg boxed_number cexp in
       let body =
-        transl (add_unboxed_id (VP.var id) unboxed_id boxed_number env) body in
+        transl_body (add_unboxed_id (VP.var id) unboxed_id boxed_number env) in
       begin match str, boxed_number with
       | Immutable, _ -> Clet (v, cexp, body)
       | Mutable, bn -> Clet_mut (v, typ_of_boxed_number bn, cexp, body)
@@ -1202,6 +1202,9 @@ and transl_if env (approx : then_else)
         ifso_dbg arg2
         then_dbg then_
         else_dbg else_
+  | Ulet(str, kind, id, exp, cond) ->
+      transl_let env str kind id exp (fun env ->
+        transl_if env approx dbg cond then_dbg then_ else_dbg else_)
   | Uprim (Psequand, [arg1; arg2], inner_dbg) ->
       transl_sequand env approx
         inner_dbg arg1

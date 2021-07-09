@@ -13,17 +13,15 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Module [Seq]: functional iterators *)
+(** Sequences (functional iterators).
 
-(** {1 Functional Iterators} *)
+    The type ['a Seq.t] is a {b delayed list}, i.e. a list where some
+    evaluation is needed to access the next element. This makes it possible
+    to build infinite sequences, to build sequences as we traverse them, and
+    to transform them in a lazy fashion rather than upfront.
 
-(** The type ['a t] is a {b delayed list}, i.e. a list where some evaluation
-    is needed to access the next element. This makes it possible to build
-    infinite sequences, to build sequences as we traverse them, and to transform
-    them in a lazy fashion rather than upfront.
+    @since 4.07
 *)
-
-(** @since 4.07 *)
 
 type 'a t = unit -> 'a node
 (** The type of delayed lists containing elements of type ['a].
@@ -70,11 +68,23 @@ val filter_map : ('a -> 'b option) -> 'a t -> 'b t
     This transformation is lazy, it only applies when the result is
     traversed. *)
 
+val concat : 'a t t -> 'a t
+(** concatenate a sequence of sequences.
+
+    @since 4.13
+ *)
+
 val flat_map : ('a -> 'b t) -> 'a t -> 'b t
 (** Map each element to a subsequence, then return each element of this
     sub-sequence in turn.
     This transformation is lazy, it only applies when the result is
     traversed. *)
+
+val concat_map : ('a -> 'b t) -> 'a t -> 'b t
+(** Alias for {!flat_map}.
+
+    @since 4.13
+*)
 
 val fold_left : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a
 (** Traverse the sequence from left to right, combining each element with the

@@ -1,6 +1,6 @@
 (* TEST
   arguments = "io.ml"
-  files = "test-file-short-lines"
+  readonly_files = "test-file-short-lines"
 *)
 
 (* Test a file copy function *)

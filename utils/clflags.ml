@@ -119,7 +119,6 @@ and dump_cmm = ref false                (* -dcmm *)
 let dump_selection = ref false          (* -dsel *)
 let dump_cse = ref false                (* -dcse *)
 let dump_live = ref false               (* -dlive *)
-let dump_avail = ref false              (* -davail *)
 let dump_spill = ref false              (* -dspill *)
 let dump_split = ref false              (* -dsplit *)
 let dump_interf = ref false             (* -dinterf *)
@@ -133,12 +132,12 @@ let keep_startup_file = ref false       (* -dstartup *)
 let dump_combine = ref false            (* -dcombine *)
 let profile_columns : Profile.column list ref = ref [] (* -dprofile/-dtimings *)
 
-let debug_runavail = ref false          (* -drunavail *)
-
 let native_code = ref false             (* set to true under ocamlopt *)
 
 let force_slash = ref false             (* for ocamldep *)
 let clambda_checks = ref false          (* -clambda-checks *)
+let cmm_invariants =
+  ref Config.with_cmm_invariants        (* -dcmm-invariants *)
 
 let flambda_invariant_checks =
   ref Config.with_flambda_invariants    (* -flambda-(no-)invariants *)
@@ -461,7 +460,7 @@ module Compiler_pass = struct
   (* If you add a new pass, the following must be updated:
      - the variable `passes` below
      - the manpages in man/ocaml{c,opt}.m
-     - the manual manual/manual/cmds/unified-options.etex
+     - the manual manual/src/cmds/unified-options.etex
   *)
   type t = Parsing | Typing | Scheduling | Emit
 
@@ -567,17 +566,10 @@ let add_arguments loc args =
       arg_names := String.Map.add arg_name loc !arg_names
   ) args
 
-let print_arguments usage =
-  Arg.usage !arg_spec usage
+let create_usage_msg program =
+  Printf.sprintf "Usage: %s <options> <files>\n\
+    Try '%s --help' for more information." program program
 
-(* This function is almost the same as [Arg.parse_expand], except
-   that [Arg.parse_expand] could not be used because it does not take a
-   reference for [arg_spec].*)
-let parse_arguments argv f msg =
-  try
-    let argv = ref argv in
-    let current = ref 0 in
-    Arg.parse_and_expand_argv_dynamic current argv arg_spec f msg
-  with
-  | Arg.Bad msg -> Printf.eprintf "%s" msg; exit 2
-  | Arg.Help msg -> Printf.printf "%s" msg; exit 0
+
+let print_arguments program =
+  Arg.usage !arg_spec (create_usage_msg program)

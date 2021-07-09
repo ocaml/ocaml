@@ -3,7 +3,7 @@
 * hassysthreads
 include systhreads
 
-files = "sigint.c"
+readonly_files = "sigint.c"
 
 ** libunix (* excludes mingw32/64 and msvc32/64 *)
 

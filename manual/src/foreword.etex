@@ -1,0 +1,79 @@
+\chapter*{Foreword}
+\markboth{Foreword}{}
+%HEVEA\cutname{foreword.html}
+
+This manual documents the release \ocamlversion\ of the OCaml
+system. It is organized as follows.
+\begin{itemize}
+\item Part~\ref{p:tutorials}, ``An introduction to OCaml'',
+gives an overview of the language.
+\item Part~\ref{p:refman}, ``The OCaml language'', is the
+reference description of the language.
+\item Part~\ref{p:commands}, ``The OCaml tools'', documents
+the compilers, toplevel system, and programming utilities.
+\item Part~\ref{p:library}, ``The OCaml library'', describes the
+modules provided in the standard library.
+\begin{latexonly}
+\item Part~\ref{p:indexes}, ``Indexes'', contains an
+index of all identifiers defined in the standard library, and an
+index of keywords.
+\end{latexonly}
+\end{itemize}
+
+\section*{conventions}{Conventions}
+
+OCaml runs on several operating systems. The parts of
+this manual that are specific to one operating system are presented as
+shown below:
+
+\begin{unix} This is material specific to the Unix family of operating
+systems, including Linux and macOS.
+\end{unix}
+
+\begin{windows} This is material specific to Microsoft Windows
+  (Vista, 7, 8, 10).
+\end{windows}
+
+\section*{license}{License}
+
+The OCaml system is copyright \copyright\ 1996--\number\year\
+Institut National de Recherche en Informatique et en
+Automatique (INRIA).
+INRIA holds all ownership rights to the OCaml system.
+
+The OCaml system is open source and can be freely
+redistributed.  See the file "LICENSE" in the distribution for
+licensing information.
+
+The OCaml documentation and user's manual is
+copyright \copyright\ \number\year\
+Institut National de Recherche en Informatique et en
+Automatique (INRIA).
+
+\begin{latexonly}
+The OCaml documentation and user's manual is licensed under a Creative
+Commons Attribution-ShareAlike 4.0 International License (CC BY-SA
+4.0), \url{https://creativecommons.org/licenses/by-sa/4.0/}.
+\end{latexonly}
+
+\begin{htmlonly}
+\begin{rawhtml}
+<a id="cc_license_logo" rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png"></a>
+The OCaml documentation and user's manual is licensed under a
+<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+\end{rawhtml}
+\end{htmlonly}
+
+\section*{availability}{Availability}
+
+\begin{latexonly}
+The complete OCaml distribution can be accessed via the website
+\url{https://ocaml.org/}.  This site contains a lot of additional
+information on OCaml.
+\end{latexonly}
+
+\begin{htmlonly}
+The complete OCaml distribution can be accessed via the
+\href{https://ocaml.org/}{ocaml.org website}.
+This site contains a lot of additional information on OCaml.
+\end{htmlonly}

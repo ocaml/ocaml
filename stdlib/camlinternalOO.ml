@@ -334,6 +334,7 @@ let make_class pub_meths class_init =
   (env_init (Obj.repr 0), class_init, env_init, Obj.repr 0)
 
 type init_table = { mutable env_init: t; mutable class_init: table -> t }
+[@@warning "-unused-field"]
 
 let make_class_store pub_meths class_init init_table =
   let table = create_table pub_meths in

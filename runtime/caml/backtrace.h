@@ -16,9 +16,19 @@
 #ifndef CAML_BACKTRACE_H
 #define CAML_BACKTRACE_H
 
+#include "mlvalues.h"
+
+/* [caml_record_backtraces] controls backtrace recording.
+ * This function can be called at runtime by user-code, or during
+ * initialization if backtraces were requested.
+ *
+ * It might be called before GC initialization, so it shouldn't do OCaml
+ * allocation.
+ */
+CAMLextern void caml_record_backtraces(int);
+
 #ifdef CAML_INTERNALS
 
-#include "mlvalues.h"
 #include "exec.h"
 
 /* Runtime support for backtrace generation.
@@ -52,7 +62,8 @@
  *   OCaml values of algebraic data-type [Printexc.backtrace_slot]
  */
  /* [Caml_state->backtrace_active] is non zero iff backtraces are recorded.
- * This variable must be changed with [caml_record_backtrace].
+ * This variable must be changed with [caml_record_backtrace] in OCaml or
+ * [caml_record_backtraces] in C.
  */
 #define caml_backtrace_active (Caml_state_field(backtrace_active))
 /* The [Caml_state->backtrace_buffer] and [Caml_state->backtrace_last_exn]
@@ -88,16 +99,6 @@
  * - directly resetting [Caml_state->backtrace_pos] to 0 in native
      runtimes for raise.
  */
-
-/* [caml_record_backtrace] toggle backtrace recording on and off.
- * This function can be called at runtime by user-code, or during
- * initialization if backtraces were requested.
- *
- * It might be called before GC initialization, so it shouldn't do OCaml
- * allocation.
- */
-CAMLextern value caml_record_backtrace(value vflag);
-
 
 #ifndef NATIVE_CODE
 

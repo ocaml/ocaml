@@ -1,5 +1,5 @@
 (* TEST
-files = "foo.ml gen_cached_cmi.ml input.ml"
+readonly_files = "foo.ml gen_cached_cmi.ml input.ml"
 * setup-ocamlc.byte-build-env
 ** ocamlc.byte
 module = "foo.ml"

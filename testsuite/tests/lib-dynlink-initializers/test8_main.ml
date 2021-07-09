@@ -2,7 +2,7 @@
 
 include dynlink
 
-files = "test8_plugin_a.ml test8_plugin_b.ml test8_plugin_b.mli"
+readonly_files = "test8_plugin_a.ml test8_plugin_b.ml test8_plugin_b.mli"
 
 libraries = ""
 

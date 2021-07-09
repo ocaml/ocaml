@@ -27,6 +27,11 @@
 #include "mlvalues.h"
 
 #ifdef CAML_INTERNALS
+/* Built-in exceptions. In bytecode, these exceptions are the first fields in
+   caml_global_data (which is loaded from the bytecode DATA section) - see
+   bytecomp/bytelink.ml. In native code, these exceptions are created if
+   needed in the startup object - see asmcomp/asmlink.ml and
+   Cmm_helpers.predef_exception. */
 #define OUT_OF_MEMORY_EXN 0     /* "Out_of_memory" */
 #define SYS_ERROR_EXN 1         /* "Sys_error" */
 #define FAILURE_EXN 2           /* "Failure" */

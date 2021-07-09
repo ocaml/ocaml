@@ -1,0 +1,166 @@
+\input{book.hva}
+\renewcommand{\@indexsection}[1]{\chapter{#1}}
+\newcommand{\black}{\htmlcolor{#000000}}
+\newcommand{\machine}{\tt}
+\newenvironment{machineenv}{\begin{alltt}}{\end{alltt}}
+\newenvironment{camlunder}{\@style{U}}{}
+\newcommand{\?}{\black\#\blue }
+
+\newcommand{\ocamltag}[2]{\begin{ocaml#1}#2\end{ocaml#1}}
+\newcommand{\ocamlkeyword}{\bfseries}
+\newcommand{\ocamlhighlight}{\bfseries\underline}
+\newcommand{\ocamlerror}{\bfseries}
+\newcommand{\ocamlwarning}{\bfseries}
+\newcommand{\ocamlcomment}{\normalfont\small}
+\newcommand{\ocamlstring}{\bfseries}
+\newenvironment{ocamllongtable}[2][]{\begin{tabular}{#2}}{\end{tabular}}
+
+\newenvironment{caml}{\begin{alltt}}{\\\end{alltt}}
+\newenvironment{camlexample}[1]{}{}
+
+\newcommand{\var}[1]{\textit{#1}}
+
+\newenvironment{library}{}{}
+\newcounter{page}
+\newenvironment{comment}{\begin{quote}}{\end{quote}}
+\newcommand{\nth}[2]{\({#1}_{#2}\)}
+\newenvironment{options}{\begin{description}}{\end{description}}
+
+% Section macros with mandatory labels
+% Note: hevea and normal latex are forked due to the use of \@ifstar on the latex side
+
+% First, we save the normal macros
+\let\@oldsection=\section
+\let\@oldsubsection=\subsection
+\let\@oldsubsubsection=\subsubsection
+% The *-version are distincts macros in hevea
+\let\@oldsection*=\section*
+\let\@oldsubsection*=\subsection*
+\let\@oldsubsubsection*=\subsubsection*
+
+%We go back to standard macros for ocamldoc generated files
+\newcommand{\ocamldocinputstart}{%
+\let\section=\@oldsection
+\let\subsection=\@oldsubsection
+\let\subsubsection=\@oldsubsubsection
+% The *-version are distincts macros in hevea
+\let\section*=\@oldsection*
+\let\subsection*=\@oldsubsection*
+\let\subsubsection*=\@oldsubsubsection*
+}
+
+\renewcommand{\section}[2]{\@oldsection{\label{#1}#2}}
+\renewcommand{\section*}[2]{\@oldsection*{\label{#1}#2}}
+\renewcommand{\subsection}[2]{\@oldsubsection{\label{#1}#2}}
+\renewcommand{\subsection*}[2]{\@oldsubsection*{\label{#1}#2}}
+\renewcommand{\subsubsection}[2]{\@oldsubsubsection{\label{#1}#2}}
+\renewcommand{\subsubsection*}[2]{\@oldsubsubsection*{\label{#1}#2}}
+
+% For paragraph, we do not make labels compulsory
+\newcommand{\lparagraph}[2]{\paragraph{\label{#1}#2}}
+
+%%venant de macros.tex
+\newif\ifouthtml\outhtmlfalse
+\def\versionspecific#1{
+\quad\textsf{#1:}
+\begin{quote}}
+
+\def\unix{\versionspecific{Unix}}
+\def\endunix{\end{quote}}
+\def\windows{\versionspecific{Windows}}
+\def\endwindows{\end{quote}}
+
+\def\requirements{\trivlist \item[\hskip\labelsep {\bf Requirements.}]}
+\def\endrequirements{\endtrivlist}
+\def\installation{\trivlist \item[\hskip\labelsep {\bf Installation.}]}
+\def\endinstallation{\endtrivlist}
+\def\troubleshooting{\trivlist \item[\hskip\labelsep {\bf Troubleshooting.}]}
+\def\endtroubleshooting{\endtrivlist}
+
+\newtheorem{gcrule}{Rule}
+
+% Pour les tables de priorites et autres tableaux a deux colonnes, encadres
+
+%\def\entree#1#2{#1 & #2 \\}
+%\def\tableau#1#2#3{%
+%\par\begin{center}%
+%\begin{tabular}{#1}%
+%\multicolumn{1}{c}{\textbf{#2}} &
+%\multicolumn{1}{c}{\textbf{#3}} \\
+%%#2 & #3 \\%
+%}%
+%\def\endtableau{\end{tabular}\end{center}\par}
+
+% Pour les tables de priorites et autres tableaux a deux colonnes, encadres
+
+\def\tableau#1#2#3{%
+\begin{center}
+\begin{tabular}{#1}
+\hline
+\multicolumn{1}{|c|}{\textbf{#2}} & \multicolumn{1}{c|}{\textbf{#3}} \\
+\hline
+}
+\def\endtableau{\hline\end{tabular}\end{center}}
+\def\entree#1#2{#1 & #2 \\}
+
+
+
+% L'environnement library (pour composer les descriptions des modules
+% de bibliotheque).
+
+
+\def\restoreindent{\begingroup\let\@listI=\@savedlistI}
+\def\endrestoreindent{\endgroup}
+
+
+% PDF stuff
+
+\def\pdfchapterfold#1#2{}
+\def\pdfsection#1{}
+\def\pdfchapter{\pdfchapterfold{0}}
+
+%%% Pour camlidl
+
+\def\transl#1{$[\![\mbox{#1}]\!]$}
+
+% Pour l'index
+\usepackage{multind}
+\let\indexentry=\index
+\renewcommand{\index}[1]{\indexentry{\jobname}{#1}}
+\def\ikwd#1{\indexentry{\jobname.kwd}{#1}}
+
+
+% nth
+\def\th{^{\mbox{\scriptsize th}}}
+\renewcommand{\hbox}[1]{\mbox{#1}}
+
+% Notations pour les metavariables
+\def\nmth#1#2#3{\({#1}_{#2}^{#3}\)}
+\def\optvar#1{[\var{#1}\/]}
+\def\event{§§}
+\def\fromoneto#1#2{$#1 = 1,\ldots{} , #2$}
+
+\newcommand{\vfill}{}
+\def\number{}
+\def\year{2013}
+
+% Pour alltt
+
+\def\rminalltt#1{{\rm #1}}
+
+\def\goodbreak{\ \\}
+
+\def\@savedlistI{}
+
+
+% Linking to modules
+\newenvironment{linklist}{\begingroup\ocamldocinputstart}{\endgroup}
+
+\newcommand{\compilerdocitem}[2]{\input{#1.tex}}
+\newcommand{\libdocitem}[2]{\input{#1.tex}}
+\ifocamldoc
+\newcommand{\stddocitem}[2]{\libdocitem{#1}{#2}}
+\else
+\newcommand{\stddocitem}[2]{\libdocitem{Stdlib.#1}{#2}}
+\fi
+\newenvironment{maintitle}{\begin{center}}{\end{center}}

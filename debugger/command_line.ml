@@ -623,7 +623,7 @@ let instr_break ppf lexbuf =
         in
         begin try
           let (v, ty) = Eval.expression !selected_event env expr in
-          match (Ctype.repr ty).desc with
+          match get_desc ty with
           | Tarrow _ ->
               add_breakpoint_after_pc (Remote_value.closure_code v)
           | _ ->
@@ -799,7 +799,7 @@ let instr_list _ppf lexbuf =
               1
           | None ->
               begin try
-                max 1 (line - 10)
+                Int.max 1 (line - 10)
               with Out_of_range ->
                 1
               end

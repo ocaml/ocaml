@@ -526,6 +526,8 @@ produced.  If the
 option is given, specify the name of the
 packed object file produced.  If the
 .B \-output\-obj
+or
+.B \-output\-complete\-obj
 option is given,
 specify the name of the output file produced.
 This can also be used when compiling an interface or implementation
@@ -558,6 +560,12 @@ must be set with the
 option. This
 option can also be used to produce a C source file (.c extension) or
 a compiled shared/dynamic library (.so extension).
+.TP
+.B \-output\-complete\-obj
+Same as
+.B \-output\-obj
+except when creating an object file where it includes the runtime and
+autolink libraries.
 .TP
 .B \-pack
 Build a bytecode object file (.cmo file) and its associated compiled
@@ -1017,7 +1025,7 @@ mentioned here corresponds to the empty set.
 
 .IP
 The default setting is
-.BR \-w\ +a\-4\-6\-7\-9\-27\-29\-30\-32..42\-44\-45\-48\-50\-60\-66\-67\-68 .
+.BR \-w\ +a\-4\-7\-9\-27\-29\-30\-32..42\-44\-45\-48\-50\-60\-66..70 .
 Note that warnings
 .BR 5 \ and \ 10
 are not always triggered, depending on the internals of the type checker.

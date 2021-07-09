@@ -26,9 +26,9 @@
 
    For example:
    {[
-      open MoreLabels
+     open MoreLabels
 
-      Hashtbl.iter ~f:(fun ~key ~data -> g key data) table
+     Hashtbl.iter ~f:(fun ~key ~data -> g key data) table
    ]}
 *)
 
@@ -150,7 +150,7 @@ module Hashtbl : sig
      of OCaml.  For randomized hash tables, the order of enumeration
      is entirely random.
 
-     The behavior is not defined if the hash table is modified
+     The behavior is not specified if the hash table is modified
      by [f] during the iteration.
   *)
 
@@ -183,7 +183,7 @@ module Hashtbl : sig
      of OCaml.  For randomized hash tables, the order of enumeration
      is entirely random.
 
-     The behavior is not defined if the hash table is modified
+     The behavior is not specified if the hash table is modified
      by [f] during the iteration.
   *)
 
@@ -255,7 +255,7 @@ module Hashtbl : sig
      buckets by size.
      @since 4.00.0 *)
 
-  (** {1 Iterators} *)
+  (** {1 Hash tables and Sequences} *)
 
   val to_seq : ('a,'b) t -> ('a * 'b) Seq.t
   (** Iterate on the whole table.  The order in which the bindings
@@ -263,7 +263,7 @@ module Hashtbl : sig
       several bindings for the same key, they appear in reversed order of
       introduction, that is, the most recent binding appears first.
 
-      The behavior is not defined if the hash table is modified
+      The behavior is not specified if the hash table is modified
       during the iteration.
 
       @since 4.07 *)
@@ -846,7 +846,7 @@ module Map : sig
       (** Same as {!S.map}, but the function receives as arguments both the
          key and the associated value for each binding of the map. *)
 
-      (** {1 Iterators} *)
+      (** {1 Maps and Sequences} *)
 
       val to_seq : 'a t -> (key * 'a) Seq.t
       (** Iterate on the whole map, in ascending order of keys

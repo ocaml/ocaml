@@ -134,18 +134,6 @@ extern struct longjmp_buffer caml_termination_jmpbuf;
 extern void (*caml_termination_hook)(void);
 #endif
 
-#ifdef _WIN32
-/* Integer identifier for the currently-executing thread.
-   This is a tagged integer, so it is never 0. */
-
-static intnat st_current_thread_id(void)
-{
-  caml_thread_t th = st_tls_get(thread_descriptor_key);
-  return Ident(th->descr);
-}
-
-#endif
-
 /* Hook for scanning the stacks of the other threads */
 
 static void (*prev_scan_roots_hook) (scanning_action);
@@ -245,6 +233,12 @@ static void caml_thread_enter_blocking_section(void)
 
 static void caml_thread_leave_blocking_section(void)
 {
+#ifdef _WIN32
+  /* TlsGetValue calls SetLastError which will mask any error which occurred
+     prior to the caml_thread_leave_blocking_section call. EnterCriticalSection
+     does not do this. */
+  DWORD error = GetLastError();
+#endif
   /* Wait until the runtime is free */
   st_masterlock_acquire(&caml_master_lock);
   /* Update curr_thread to point to the thread descriptor corresponding
@@ -252,6 +246,9 @@ static void caml_thread_leave_blocking_section(void)
   curr_thread = st_tls_get(thread_descriptor_key);
   /* Restore the runtime state from the curr_thread descriptor */
   caml_thread_restore_runtime_state();
+#ifdef _WIN32
+  SetLastError(error);
+#endif
 }
 
 /* Hooks for I/O locking */
@@ -459,6 +456,7 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
      caml_enter_blocking_section */
   /* Associate the thread descriptor with the thread */
   st_tls_set(thread_descriptor_key, (void *) curr_thread);
+  st_thread_set_id(Ident(curr_thread->descr));
   /* Set up the hooks */
   prev_scan_roots_hook = caml_scan_roots_hook;
   caml_scan_roots_hook = caml_thread_scan_roots;
@@ -536,6 +534,7 @@ static ST_THREAD_FUNCTION caml_thread_start(void * arg)
   st_tls_set(thread_descriptor_key, (void *) th);
   /* Acquire the global mutex */
   caml_leave_blocking_section();
+  st_thread_set_id(Ident(th->descr));
   caml_setup_stack_overflow_detection();
 #ifdef NATIVE_CODE
   /* Setup termination handler (for caml_thread_exit) */
@@ -622,6 +621,7 @@ CAMLexport int caml_c_thread_register(void)
   /* Now we can re-enter the run-time system and heap-allocate the descriptor */
   caml_leave_blocking_section();
   th->descr = caml_thread_new_descriptor(Val_unit);  /* no closure */
+  st_thread_set_id(Ident(th->descr));
   /* Create the tick thread if not already done.  */
   if (! caml_tick_thread_running) {
     err = st_thread_create(&caml_tick_thread_id, caml_thread_tick, NULL);

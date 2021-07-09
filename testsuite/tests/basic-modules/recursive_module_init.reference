@@ -1,0 +1,13 @@
+   f1[real]: nonrec => 42, self => 42, mod => __
+   f2[real]: nonrec => 42, self => 42, mod => __
+   f3[stub]: nonrec => __, self => __, mod => __
+   f4[real]: nonrec => 42, self => 42, mod => __
+   f5[stub]: nonrec => __, self => __, mod => __
+ M.f1[real]: nonrec => 42, self => 42, mod => 42
+ M.f2[real]: nonrec => 42, self => 42, mod => 42
+ M.f3[stub]: nonrec => 42, self => 42, mod => 42
+ M.f4[real]: nonrec => 42, self => 42, mod => 42
+ M.f5[real]: nonrec => 42, self => 42, mod => 42
+go
+go
+go

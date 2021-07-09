@@ -1,5 +1,5 @@
 (* TEST
-   files = "mpr7769.txt"
+   readonly_files = "mpr7769.txt"
 *)
 
 let () =

@@ -95,7 +95,7 @@ module General = struct
        `Constant cst
     | Tpat_tuple ps ->
        `Tuple ps
-    | Tpat_construct (cstr, cstr_descr, args) ->
+    | Tpat_construct (cstr, cstr_descr, args, _) ->
        `Construct (cstr, cstr_descr, args)
     | Tpat_variant (cstr, arg, row_desc) ->
        `Variant (cstr, arg, row_desc)
@@ -115,7 +115,7 @@ module General = struct
     | `Constant cst -> Tpat_constant cst
     | `Tuple ps -> Tpat_tuple ps
     | `Construct (cstr, cst_descr, args) ->
-       Tpat_construct (cstr, cst_descr, args)
+       Tpat_construct (cstr, cst_descr, args, None)
     | `Variant (cstr, arg, row_desc) ->
        Tpat_variant (cstr, arg, row_desc)
     | `Record (fields, closed) ->
@@ -194,9 +194,9 @@ end = struct
             | Some a -> true, [a]
           in
           let type_row () =
-            match Ctype.expand_head q.pat_env q.pat_type with
-              | {desc = Tvariant type_row} -> Btype.row_repr type_row
-              | _ -> assert false
+            match get_desc (Ctype.expand_head q.pat_env q.pat_type) with
+            | Tvariant type_row -> Btype.row_repr type_row
+            | _ -> assert false
           in
           Variant {tag; has_arg; cstr_row; type_row}, pats
       | `Array args ->
@@ -232,7 +232,7 @@ end = struct
       | Array n -> Tpat_array (omegas n)
       | Construct c ->
           let lid_loc = mkloc (Longident.Lident c.cstr_name) in
-          Tpat_construct (lid_loc, c, omegas c.cstr_arity)
+          Tpat_construct (lid_loc, c, omegas c.cstr_arity, None)
       | Variant { tag; has_arg; cstr_row } ->
           let arg_opt = if has_arg then Some omega else None in
           Tpat_variant (tag, arg_opt, cstr_row)

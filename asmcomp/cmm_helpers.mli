@@ -318,6 +318,9 @@ val check_bound :
   expression -> expression -> expression ->
   expression
 
+(** Sys.opaque_identity *)
+val opaque : expression -> Debuginfo.t -> expression
+
 (** Generic application functions *)
 
 (** Get the symbol for the generic application with [n] arguments, and

@@ -182,6 +182,27 @@ val mapi : f:(int -> char -> char) -> bytes -> bytes
     index (in increasing index order) and stores the resulting bytes
     in a new sequence that is returned as the result. *)
 
+val fold_left : f:('a -> char -> 'a) -> init:'a -> bytes -> 'a
+(** [fold_left f x s] computes
+    [f (... (f (f x (get s 0)) (get s 1)) ...) (get s (n-1))],
+    where [n] is the length of [s].
+    @since 4.13.0 *)
+
+val fold_right : f:(char -> 'a -> 'a) -> bytes -> init:'a -> 'a
+(** [fold_right f s x] computes
+    [f (get s 0) (f (get s 1) ( ... (f (get s (n-1)) x) ...))],
+    where [n] is the length of [s].
+    @since 4.13.0 *)
+
+val for_all : f:(char -> bool) -> bytes -> bool
+(** [for_all p s] checks if all characters in [s] satisfy the predicate [p].
+    @since 4.13.0 *)
+
+val exists : f:(char -> bool) -> bytes -> bool
+(** [exists p s] checks if at least one character of [s] satisfies the predicate
+    [p].
+    @since 4.13.0 *)
+
 val trim : bytes -> bytes
 (** Return a copy of the argument, without leading and trailing
     whitespace. The bytes regarded as whitespace are the ASCII
@@ -323,6 +344,19 @@ val equal: t -> t -> bool
 (** The equality function for byte sequences.
     @since 4.03.0 (4.05.0 in BytesLabels) *)
 
+val starts_with :
+  prefix (* comment thwarts tools/sync_stdlib_docs *) :bytes -> bytes -> bool
+(** [starts_with ][~][prefix s] is [true] if and only if [s] starts with
+    [prefix].
+
+    @since 4.13.0 *)
+
+val ends_with :
+  suffix (* comment thwarts tools/sync_stdlib_docs *) :bytes -> bytes -> bool
+(** [ends_with suffix s] is [true] if and only if [s] ends with [suffix].
+
+    @since 4.13.0 *)
+
 (** {1:unsafe Unsafe conversions (for advanced users)}
 
     This section describes unsafe, low-level conversion functions
@@ -453,11 +487,26 @@ let s = Bytes.of_string "hello"
 *)
 
 
+val split_on_char: sep:char -> bytes -> bytes list
+(** [split_on_char sep s] returns the list of all (possibly empty)
+    subsequences of [s] that are delimited by the [sep] character.
+
+    The function's output is specified by the following invariants:
+
+    - The list is not empty.
+    - Concatenating its elements using [sep] as a separator returns a
+      byte sequence equal to the input ([Bytes.concat (Bytes.make 1 sep)
+      (Bytes.split_on_char sep s) = s]).
+    - No byte sequence in the result contains the [sep] character.
+
+    @since 4.13.0
+*)
+
 (** {1 Iterators} *)
 
 val to_seq : t -> char Seq.t
 (** Iterate on the string, in increasing index order. Modifications of the
-    string during iteration will be reflected in the iterator.
+    string during iteration will be reflected in the sequence.
     @since 4.07 *)
 
 val to_seqi : t -> (int * char) Seq.t

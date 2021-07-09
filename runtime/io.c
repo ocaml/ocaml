@@ -103,8 +103,6 @@ CAMLexport struct channel * caml_open_descriptor_in(int fd)
   channel->curr = channel->max = channel->buff;
   channel->end = channel->buff + IO_BUFFER_SIZE;
   channel->mutex = NULL;
-  channel->revealed = 0;
-  channel->old_revealed = 0;
   channel->refcount = 0;
   channel->flags = descriptor_is_in_binary_mode(fd) ? 0 : CHANNEL_TEXT_MODE;
   channel->next = caml_all_opened_channels;
@@ -141,7 +139,6 @@ static void unlink_channel(struct channel *channel)
 CAMLexport void caml_close_channel(struct channel *channel)
 {
   close(channel->fd);
-  if (channel->refcount > 0) return;
   if (caml_channel_mutex_free != NULL) (*caml_channel_mutex_free)(channel);
   unlink_channel(channel);
   caml_stat_free(channel->name);
@@ -213,6 +210,16 @@ CAMLexport void caml_flush(struct channel *channel)
 }
 
 /* Output data */
+
+#define Putch(channel, ch) do{                                            \
+  if ((channel)->curr >= (channel)->end) caml_flush_partial(channel);     \
+  *((channel)->curr)++ = (ch);                                            \
+}while(0)
+
+CAMLexport void caml_putch(struct channel *channel, int ch)
+{
+  Putch(channel, ch);
+}
 
 CAMLexport void caml_putword(struct channel *channel, uint32_t w)
 {
@@ -299,6 +306,16 @@ CAMLexport unsigned char caml_refill(struct channel *channel)
   return (unsigned char)(channel->buff[0]);
 }
 
+#define Getch(channel)                                                      \
+  ((channel)->curr >= (channel)->max                                        \
+   ? caml_refill(channel)                                                   \
+   : (unsigned char) *((channel)->curr)++)
+
+CAMLexport unsigned char caml_getch(struct channel *channel)
+{
+  return Getch(channel);
+}
+
 CAMLexport uint32_t caml_getword(struct channel *channel)
 {
   int i;
@@ -308,7 +325,7 @@ CAMLexport uint32_t caml_getword(struct channel *channel)
     caml_failwith("input_binary_int: not a binary channel");
   res = 0;
   for(i = 0; i < 4; i++) {
-    res = (res << 8) + caml_getch(channel);
+    res = (res << 8) + Getch(channel);
   }
   return res;
 }
@@ -488,7 +505,7 @@ static struct custom_operations channel_operations = {
 CAMLexport value caml_alloc_channel(struct channel *chan)
 {
   value res;
-  chan->refcount++;             /* prevent finalization during next alloc */
+  chan->refcount++;
   res = caml_alloc_custom_mem(&channel_operations, sizeof(struct channel *),
                               sizeof(struct channel));
   Channel(res) = chan;
@@ -520,8 +537,6 @@ CAMLprim value caml_ml_set_channel_name(value vchannel, value vname)
   return Val_unit;
 }
 
-#define Pair_tag 0
-
 CAMLprim value caml_ml_out_channels_list (value unit)
 {
   CAMLparam0 ();
@@ -532,12 +547,14 @@ CAMLprim value caml_ml_out_channels_list (value unit)
   for (channel = caml_all_opened_channels;
        channel != NULL;
        channel = channel->next)
-    /* Testing channel->fd >= 0 looks unnecessary, as
+    /* Include only output channels opened from OCaml and not closed yet.
+       Testing channel->fd >= 0 looks unnecessary, as
        caml_ml_close_channel changes max when setting fd to -1. */
-    if (channel->max == NULL) {
+    if (channel->max == NULL
+        && channel->flags & CHANNEL_FLAG_MANAGED_BY_GC) {
       chan = caml_alloc_channel (channel);
       tail = res;
-      res = caml_alloc_small (2, Pair_tag);
+      res = caml_alloc_small (2, Tag_cons);
       Field (res, 0) = chan;
       Field (res, 1) = tail;
     }
@@ -554,29 +571,24 @@ CAMLprim value caml_channel_descriptor(value vchannel)
 CAMLprim value caml_ml_close_channel(value vchannel)
 {
   int result;
-  int do_syscall;
   int fd;
 
   /* For output channels, must have flushed before */
   struct channel * channel = Channel(vchannel);
-  if (channel->fd != -1){
-    fd = channel->fd;
-    channel->fd = -1;
-    do_syscall = 1;
-  }else{
-    do_syscall = 0;
-    result = 0;
-  }
+
   /* Ensure that every read or write on the channel will cause an
      immediate caml_flush_partial or caml_refill, thus raising a Sys_error
      exception */
   channel->curr = channel->max = channel->end;
 
-  if (do_syscall) {
-    caml_enter_blocking_section_no_pending();
-    result = close(fd);
-    caml_leave_blocking_section();
-  }
+  /* If already closed, we are done */
+  if (channel->fd == -1) return Val_unit;
+
+  fd = channel->fd;
+  channel->fd = -1;
+  caml_enter_blocking_section_no_pending();
+  result = close(fd);
+  caml_leave_blocking_section();
 
   if (result == -1) caml_sys_error (NO_ARG);
   return Val_unit;
@@ -663,7 +675,7 @@ CAMLprim value caml_ml_output_char(value vchannel, value ch)
   struct channel * channel = Channel(vchannel);
 
   Lock(channel);
-  caml_putch(channel, Long_val(ch));
+  Putch(channel, Long_val(ch));
   Unlock(channel);
   CAMLreturn (Val_unit);
 }
@@ -746,7 +758,7 @@ CAMLprim value caml_ml_input_char(value vchannel)
   unsigned char c;
 
   Lock(channel);
-  c = caml_getch(channel);
+  c = Getch(channel);
   Unlock(channel);
   CAMLreturn (Val_long(c));
 }

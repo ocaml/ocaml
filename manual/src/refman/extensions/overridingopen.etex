@@ -1,0 +1,32 @@
+(Introduced in OCaml 4.01)
+
+\begin{syntax}
+definition:
+      ...
+   |  'open!' module-path
+;
+specification:
+      ...
+   |  'open!' module-path
+;
+expr:
+       ...
+     | 'let' 'open!' module-path 'in' expr
+;
+class-body-type:
+       ...
+   |  'let' 'open!' module-path 'in' class-body-type
+;
+class-expr:
+       ...
+   |  'let' 'open!' module-path 'in' class-expr
+;
+\end{syntax}
+
+Since OCaml 4.01, @"open"@ statements shadowing an existing identifier
+(which is later used) trigger the warning 44.  Adding a @"!"@
+character after the @"open"@ keyword indicates that such a shadowing is
+intentional and should not trigger the warning.
+
+This is also available (since OCaml 4.06) for local opens in class
+expressions and class type expressions.

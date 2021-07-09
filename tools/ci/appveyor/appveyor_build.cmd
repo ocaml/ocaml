@@ -20,6 +20,10 @@
 @rem Do not call setlocal!
 @echo off
 
+chcp 65001 > nul
+set BUILD_PREFIX=🐫реализация
+set OCAMLROOT=%PROGRAMFILES%\Бактріан🐫
+
 if "%1" neq "install" goto %1
 setlocal enabledelayedexpansion
 echo AppVeyor Environment
@@ -58,7 +62,7 @@ goto :EOF
 
 :UpgradeCygwin
 if "%CYGWIN_INSTALL_PACKAGES%" neq "" "%CYG_ROOT%\setup-x86_64.exe" --quiet-mode --no-shortcuts --no-startmenu --no-desktop --only-site --root "%CYG_ROOT%" --site "%CYG_MIRROR%" --local-package-dir "%CYG_CACHE%" --packages %CYGWIN_INSTALL_PACKAGES:~1% > nul
-for %%P in (%CYGWIN_COMMANDS%) do "%CYG_ROOT%\bin\%%P.exe" --version > nul || set CYGWIN_UPGRADE_REQUIRED=1
+for %%P in (%CYGWIN_COMMANDS%) do "%CYG_ROOT%\bin\%%P.exe" --version 2> nul > nul || set CYGWIN_UPGRADE_REQUIRED=1
 "%CYG_ROOT%\bin\bash.exe" -lc "cygcheck -dc %CYGWIN_PACKAGES%"
 if %CYGWIN_UPGRADE_REQUIRED% equ 1 (
   echo Cygwin package upgrade required - please go and drink coffee
@@ -68,16 +72,18 @@ if %CYGWIN_UPGRADE_REQUIRED% equ 1 (
 goto :EOF
 
 :install
-chcp 65001 > nul
-rem This must be kept in sync with appveyor_build.sh
-set BUILD_PREFIX=🐫реализация
-git worktree add "..\%BUILD_PREFIX%-%PORT%" -b appveyor-build-%PORT%
-if "%PORT%" equ "msvc64" (
-  git worktree add "..\%BUILD_PREFIX%-msvc32" -b appveyor-build-%PORT%32
+
+if defined SDK set SDK=call %SDK%
+if not defined SDK (
+  if "%PORT%" equ "msvc64" set SDK=call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat"
+  if "%PORT%" equ "msvc32" set SDK=call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\vcvars32.bat"
 )
+%SDK%
+
+git worktree add "..\%BUILD_PREFIX%-%PORT%" -b appveyor-build-%PORT%
 
 cd "..\%BUILD_PREFIX%-%PORT%"
-if "%PORT%" equ "mingw32" (
+if "%BOOTSTRAP_FLEXDLL%" equ "true" (
   git submodule update --init flexdll
 )
 
@@ -99,12 +105,27 @@ rem needs upgrading.
 set CYGWIN_PACKAGES=cygwin make diffutils
 set CYGWIN_COMMANDS=cygcheck make diff
 if "%PORT%" equ "mingw32" (
-  set CYGWIN_PACKAGES=%CYGWIN_PACKAGES% mingw64-i686-gcc-core
-  set CYGWIN_COMMANDS=%CYGWIN_COMMANDS% i686-w64-mingw32-gcc
+  rem mingw64-i686-runtime does not need explicitly installing, but it's useful
+  rem to have the version reported.
+  set CYGWIN_PACKAGES=%CYGWIN_PACKAGES% mingw64-i686-gcc-core mingw64-i686-runtime
+  set CYGWIN_COMMANDS=%CYGWIN_COMMANDS% i686-w64-mingw32-gcc cygcheck
 )
+if "%PORT%" equ "mingw64" (
+  set CYGWIN_PACKAGES=%CYGWIN_PACKAGES% mingw64-x86_64-gcc-core
+  set CYGWIN_COMMANDS=%CYGWIN_COMMANDS% x86_64-w64-mingw32-gcc
+)
+if "%PORT%" equ "cygwin32" (
+  set CYGWIN_PACKAGES=%CYGWIN_PACKAGES% cygwin32-gcc-core flexdll
+  set CYGWIN_COMMANDS=%CYGWIN_COMMANDS% i686-pc-cygwin-gcc flexlink
+)
+if "%PORT%" equ "cygwin64" (
+  set CYGWIN_PACKAGES=%CYGWIN_PACKAGES% gcc-core flexdll
+  set CYGWIN_COMMANDS=%CYGWIN_COMMANDS% x86_64-pc-cygwin-gcc flexlink
+)
+if "%PORT:~0,6%%BOOTSTRAP_FLEXDLL%" equ "cygwinfalse" set CYGWIN_PACKAGES=%CYGWIN_PACKAGES% flexdll
 
 set CYGWIN_INSTALL_PACKAGES=
-set CYGWIN_UPGRADE_REQUIRED=0
+set CYGWIN_UPGRADE_REQUIRED=%FORCE_CYGWIN_UPGRADE%
 
 for %%P in (%CYGWIN_PACKAGES%) do call :CheckPackage %%P
 call :UpgradeCygwin
@@ -114,23 +135,14 @@ call :UpgradeCygwin
 goto :EOF
 
 :build
-if "%PORT%" equ "msvc64" (
-  setlocal
-  call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat"
-)
-rem Do the main build (either msvc64 or mingw32)
 "%CYG_ROOT%\bin\bash.exe" -lc "$APPVEYOR_BUILD_FOLDER/tools/ci/appveyor/appveyor_build.sh" || exit /b 1
-
-if "%PORT%" neq "msvc64" goto :EOF
-
-rem Reconfigure the environment and run the msvc32 partial build
-endlocal
-call "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x86
-"%CYG_ROOT%\bin\bash.exe" -lc "$APPVEYOR_BUILD_FOLDER/tools/ci/appveyor/appveyor_build.sh msvc32-only" || exit /b 1
 goto :EOF
 
 :test
-rem Reconfigure the environment for the msvc64 build
-call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat"
+rem No tests run in the "C" build mode
+if "%BUILD_MODE%" equ "C" goto :EOF
+rem Add a C# compiler in PATH for the testsuite for mingw
+if "%PORT%" equ "mingw64" call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat"
+if "%PORT%" equ "mingw32" call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\vcvars32.bat"
 "%CYG_ROOT%\bin\bash.exe" -lc "$APPVEYOR_BUILD_FOLDER/tools/ci/appveyor/appveyor_build.sh test" || exit /b 1
 goto :EOF

@@ -1,0 +1,5 @@
+File "pr10338.ml", line 7, characters 21-65:
+7 | let f ?(s="hello") = function x when (print_endline s; true) -> x;;
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+All clauses in this pattern-matching are guarded.

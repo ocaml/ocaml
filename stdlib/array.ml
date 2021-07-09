@@ -164,6 +164,20 @@ let fold_left f x a =
   done;
   !r
 
+let fold_left_map f acc input_array =
+  let len = length input_array in
+  if len = 0 then (acc, [||]) else begin
+    let acc, elt = f acc (unsafe_get input_array 0) in
+    let output_array = create len elt in
+    let acc = ref acc in
+    for i = 1 to len - 1 do
+      let acc', elt = f !acc (unsafe_get input_array i) in
+      acc := acc';
+      unsafe_set output_array i elt;
+    done;
+    !acc, output_array
+  end
+
 let fold_right f a x =
   let r = ref x in
   for i = length a - 1 downto 0 do

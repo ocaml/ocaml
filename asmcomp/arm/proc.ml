@@ -301,7 +301,8 @@ let destroyed_at_oper = function
   | Iop(Iintop (Icomp _) | Iintop_imm(Icomp _, _))
     when !arch >= ARMv8 && !thumb ->
       [| phys_reg 3 |]  (* r3 destroyed *)
-  | Iop(Iintoffloat | Ifloatofint | Iload(Single, _) | Istore(Single, _, _)) ->
+  | Iop(Iintoffloat | Ifloatofint
+  | Iload(Single, _, _) | Istore(Single, _, _)) ->
       [| phys_reg 107 |]            (* d7 (s14-s15) destroyed *)
   | _ -> [||]
 
@@ -325,19 +326,9 @@ let max_register_pressure = function
   | Ialloc _ -> if abi = EABI then [| 7; 0; 0 |] else [| 7; 8; 8 |]
   | Iconst_symbol _ when !Clflags.pic_code -> [| 7; 16; 32 |]
   | Iintoffloat | Ifloatofint
-  | Iload(Single, _) | Istore(Single, _, _) -> [| 9; 15; 31 |]
+  | Iload(Single, _, _) | Istore(Single, _, _) -> [| 9; 15; 31 |]
   | Iintop Imulh when !arch < ARMv6 -> [| 8; 16; 32 |]
   | _ -> [| 9; 16; 32 |]
-
-(* Pure operations (without any side effect besides updating their result
-   registers). *)
-
-let op_is_pure = function
-  | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
-  | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
-  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _)
-  | Ispecific(Ishiftcheckbound _) -> false
-  | _ -> true
 
 (* Layout of the stack *)
 

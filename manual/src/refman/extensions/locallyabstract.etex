@@ -1,0 +1,88 @@
+(Introduced in OCaml 3.12, short syntax added in 4.03)
+
+\begin{syntax}
+parameter:
+       ...
+     | '(' "type" {{typeconstr-name}} ')'
+\end{syntax}
+
+The expression @"fun" '(' "type" typeconstr-name ')' "->" expr@ introduces a
+type constructor named @typeconstr-name@ which is considered abstract
+in the scope of the sub-expression, but then replaced by a fresh type
+variable.  Note that contrary to what the syntax could suggest, the
+expression @"fun" '(' "type" typeconstr-name ')' "->" expr@ itself does not
+suspend the evaluation of @expr@ as a regular abstraction would.  The
+syntax has been chosen to fit nicely in the context of function
+declarations, where it is generally used. It is possible to freely mix
+regular function parameters with pseudo type parameters, as in:
+\begin{caml_example*}{verbatim}
+let f = fun (type t) (foo : t list) -> (assert false)[@ellipsis]
+\end{caml_example*}
+and even use the alternative syntax for declaring functions:
+\begin{caml_example*}{verbatim}
+let f (type t) (foo : t list) = (assert false)[@ellipsis]
+\end{caml_example*}
+If several locally abstract types need to be introduced, it is possible to use
+the syntax
+@"fun" '(' "type" typeconstr-name_1 \ldots typeconstr-name_n ')' "->" expr@
+as syntactic sugar for @"fun" '(' "type" typeconstr-name_1 ')' "->" \ldots "->"
+"fun" '(' "type" typeconstr-name_n ')' "->" expr@. For instance,
+\begin{caml_example*}{verbatim}
+let f = fun (type t u v) -> fun (foo : (t * u * v) list) -> (assert false)[@ellipsis]
+let f' (type t u v) (foo : (t * u * v) list) = (assert false)[@ellipsis]
+\end{caml_example}
+
+This construction is useful because the type constructors it introduces
+can be used in places where a type variable is not allowed. For
+instance, one can use it to define an exception in a local module
+within a polymorphic function.
+\begin{caml_example*}{verbatim}
+let f (type t) () =
+  let module M = struct exception E of t end in
+  (fun x -> M.E x), (function M.E x -> Some x | _ -> None)
+\end{caml_example*}
+
+Here is another example:
+\begin{caml_example*}{verbatim}
+let sort_uniq (type s) (cmp : s -> s -> int) =
+  let module S = Set.Make(struct type t = s let compare = cmp end) in
+  fun l ->
+    S.elements (List.fold_right S.add l S.empty)
+\end{caml_example*}
+
+It is also extremely useful for first-class modules (see
+section~\ref{s:first-class-modules}) and generalized algebraic datatypes
+(GADTs: see section~\ref{s:gadts}).
+
+\lparagraph{p:polymorpic-locally-abstract}{Polymorphic syntax} (Introduced in OCaml 4.00)
+
+\begin{syntax}
+let-binding:
+       ...
+     | value-name ':' 'type' {{ typeconstr-name }} '.' typexpr '=' expr
+;
+class-field:
+          ...
+        | 'method' ['private'] method-name ':' 'type'
+          {{ typeconstr-name }} '.' typexpr '=' expr
+        | 'method!' ['private'] method-name ':' 'type'
+          {{ typeconstr-name }} '.' typexpr '=' expr
+\end{syntax}
+
+The @"(type" typeconstr-name")"@ syntax construction by itself does not make
+polymorphic the type variable it introduces, but it can be combined
+with explicit polymorphic annotations where needed.
+The above rule is provided as syntactic sugar to make this easier:
+\begin{caml_example*}{verbatim}
+let rec f : type t1 t2. t1 * t2 list -> t1 = (assert false)[@ellipsis]
+\end{caml_example*}
+\noindent
+is automatically expanded into
+\begin{caml_example*}{verbatim}
+let rec f : 't1 't2. 't1 * 't2 list -> 't1 =
+  fun (type t1) (type t2) -> ( (assert false)[@ellipsis] : t1 * t2 list -> t1)
+\end{caml_example*}
+This syntax can be very useful when defining recursive functions involving
+GADTs, see the section~\ref{s:gadts} for a more detailed explanation.
+
+The same feature is provided for method definitions.

@@ -51,16 +51,16 @@ type operation =
                   ty_res : Cmm.machtype; ty_args : Cmm.exttype list;
                   alloc : bool; }
   | Istackoffset of int
-  | Iload of Cmm.memory_chunk * Arch.addressing_mode
+  | Iload of Cmm.memory_chunk * Arch.addressing_mode * Asttypes.mutable_flag
   | Istore of Cmm.memory_chunk * Arch.addressing_mode * bool
   | Ialloc of { bytes : int; dbginfo : Debuginfo.alloc_dbginfo; }
   | Iintop of integer_operation
   | Iintop_imm of integer_operation * int
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat
+  | Iopaque
   | Ispecific of Arch.specific_operation
-  | Iname_for_debugger of { ident : Backend_var.t; which_parameter : int option;
-      provenance : unit option; is_assignment : bool; }
+  | Ipoll of { return_label: Cmm.label option }
 
 type instruction =
   { desc: instruction_desc;
@@ -68,9 +68,7 @@ type instruction =
     arg: Reg.t array;
     res: Reg.t array;
     dbg: Debuginfo.t;
-    mutable live: Reg.Set.t;
-    mutable available_before: Reg_availability_set.t;
-    mutable available_across: Reg_availability_set.t option;
+    mutable live: Reg.Set.t
   }
 
 and instruction_desc =
@@ -100,9 +98,7 @@ let rec dummy_instr =
     arg = [||];
     res = [||];
     dbg = Debuginfo.none;
-    live = Reg.Set.empty;
-    available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;
-    available_across = None;
+    live = Reg.Set.empty
   }
 
 let end_instr () =
@@ -111,23 +107,16 @@ let end_instr () =
     arg = [||];
     res = [||];
     dbg = Debuginfo.none;
-    live = Reg.Set.empty;
-    available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;
-    available_across = None;
+    live = Reg.Set.empty
   }
 
 let instr_cons d a r n =
   { desc = d; next = n; arg = a; res = r;
-    dbg = Debuginfo.none; live = Reg.Set.empty;
-    available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;
-    available_across = None;
+    dbg = Debuginfo.none; live = Reg.Set.empty
   }
 
 let instr_cons_debug d a r dbg n =
-  { desc = d; next = n; arg = a; res = r; dbg = dbg; live = Reg.Set.empty;
-    available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;
-    available_across = None;
-  }
+  { desc = d; next = n; arg = a; res = r; dbg = dbg; live = Reg.Set.empty }
 
 let rec instr_iter f i =
   match i.desc with
@@ -155,9 +144,17 @@ let rec instr_iter f i =
       | _ ->
           instr_iter f i.next
 
+let operation_is_pure = function
+  | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
+  | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _ | Ipoll _
+  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) | Iopaque -> false
+  | Ispecific sop -> Arch.operation_is_pure sop
+  | _ -> true
+
 let operation_can_raise op =
   match op with
   | Icall_ind | Icall_imm _ | Iextcall _
   | Iintop (Icheckbound) | Iintop_imm (Icheckbound, _)
-  | Ialloc _ -> true
+  | Ialloc _ | Ipoll _ -> true
+  | Ispecific sop -> Arch.operation_can_raise sop
   | _ -> false

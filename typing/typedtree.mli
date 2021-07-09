@@ -89,11 +89,15 @@ and 'k pattern_desc =
          *)
   | Tpat_construct :
       Longident.t loc * Types.constructor_description *
-        value general_pattern list ->
+        value general_pattern list * (Ident.t loc list * core_type) option ->
       value pattern_desc
-        (** C                []
-            C P              [P]
-            C (P1, ..., Pn)  [P1; ...; Pn]
+        (** C                             ([], None)
+            C P                           ([P], None)
+            C (P1, ..., Pn)               ([P1; ...; Pn], None)
+            C (P : t)                     ([P], Some ([], t))
+            C (P1, ..., Pn : t)           ([P1; ...; Pn], Some ([], t))
+            C (type a) (P : t)            ([P], Some ([a], t))
+            C (type a) (P1, ..., Pn : t)  ([P1; ...; Pn], Some ([a], t))
           *)
   | Tpat_variant :
       label * value general_pattern option * Types.row_desc ref ->
@@ -490,6 +494,7 @@ and signature_item_desc =
   | Tsig_modsubst of module_substitution
   | Tsig_recmodule of module_declaration list
   | Tsig_modtype of module_type_declaration
+  | Tsig_modtypesubst of module_type_declaration
   | Tsig_open of open_description
   | Tsig_include of include_description
   | Tsig_class of class_description list
@@ -555,8 +560,10 @@ and include_declaration = module_expr include_infos
 and with_constraint =
     Twith_type of type_declaration
   | Twith_module of Path.t * Longident.t loc
+  | Twith_modtype of module_type
   | Twith_typesubst of type_declaration
   | Twith_modsubst of Path.t * Longident.t loc
+  | Twith_modtypesubst of module_type
 
 and core_type =
   { mutable ctyp_desc : core_type_desc;
@@ -652,6 +659,7 @@ and constructor_declaration =
     {
      cd_id: Ident.t;
      cd_name: string loc;
+     cd_vars: string loc list;
      cd_args: constructor_arguments;
      cd_res: core_type option;
      cd_loc: Location.t;
@@ -691,7 +699,7 @@ and extension_constructor =
   }
 
 and extension_constructor_kind =
-    Text_decl of constructor_arguments * core_type option
+    Text_decl of string loc list * constructor_arguments * core_type option
   | Text_rebind of Path.t * Longident.t loc
 
 and class_type =

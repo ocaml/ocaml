@@ -8,12 +8,12 @@
 
 #show list;;
 [%%expect {|
-type nonrec 'a list = [] | (::) of 'a * 'a list
+type 'a list = [] | (::) of 'a * 'a list
 |}];;
 
 type 'a t;;
 #show t;;
 [%%expect {|
 type 'a t
-type nonrec 'a t
+type 'a t
 |}];;

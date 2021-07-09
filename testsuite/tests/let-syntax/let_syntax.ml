@@ -720,11 +720,12 @@ Line 4, characters 11-19:
                ^^^^^^^^
 Warning 18 [not-principal]: typing this pattern requires considering GADT_ordering.point and a as equal.
 But the knowledge of these types is not principal.
-Line 5, characters 13-14:
+Line 5, characters 11-19:
 5 |       and+ { x; y } = a in
-                 ^
-Error: The record field x belongs to the type GADT_ordering.point
-       but is mixed here with fields of type a = GADT_ordering.point
+               ^^^^^^^^
+Error: This pattern matches values of type GADT_ordering.point
+       but a pattern was expected which matches values of type
+         a = GADT_ordering.point
        This instance of GADT_ordering.point is ambiguous:
        it would escape the scope of its equation
 |}];;

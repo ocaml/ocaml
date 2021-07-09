@@ -1,0 +1,194 @@
+\documentclass[11pt]{book}
+\usepackage{ae}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+% HEVEA\@def@charset{UTF-8}%
+% Unicode character declarations
+\DeclareUnicodeCharacter{207A}{{}^{+}}
+\DeclareUnicodeCharacter{2014}{---}
+
+\usepackage{fullpage}
+\usepackage{syntaxdef}
+\usepackage{multind}
+\usepackage{html}
+\usepackage{textcomp}
+\usepackage{ocamldoc}
+\usepackage{xspace}
+\usepackage{color}
+
+% Package for code examples:
+\usepackage{listings}
+\usepackage{alltt}
+\usepackage{lmodern}% for supporting bold ttfamily in code examples
+\usepackage[normalem]{ulem}% for underlining errors in code examples
+\input{ifocamldoc}
+\ifocamldoc\else
+\usepackage{changepage}
+\fi
+\input{macros.tex}
+% Listing environments
+\lstnewenvironment{camloutput}{
+  \lstset{
+    inputencoding=utf8,
+    extendedchars=true,
+    basicstyle=\small\ttfamily\slshape,
+    showstringspaces=false,
+    language=caml,
+    escapeinside={$}{$},
+    columns=fullflexible,
+    stringstyle=\ocamlstring,
+    keepspaces=true,
+    keywordstyle=\ocamlkeyword,
+    keywords={[2]{val}}, keywordstyle={[2]\ocamlkeyword},
+    aboveskip=0\baselineskip,
+  }
+\ifouthtml
+  \setenvclass{lstlisting}{pre caml-output ok}
+  \lstset {basicstyle=\ttfamily}
+\else
+  \lstset{
+    upquote=true,
+    literate=%
+    {⁺}{{${}^{+}$}}1%
+    {—}{{---}}1%
+    {'"'}{\textquotesingle "\textquotesingle}3%
+    {'\\"'}{\textquotesingle \textbackslash"\textquotesingle}4,
+}
+\fi
+}{}
+
+\lstnewenvironment{camlinput}{
+  \lstset{
+    inputencoding=utf8,
+    extendedchars=true,
+    basicstyle=\ttfamily,
+    showstringspaces=false,
+    language=caml,
+    escapeinside={$}{$},
+    columns=fullflexible,
+    stringstyle=\ocamlstring,
+    commentstyle=\ocamlcomment,
+    keepspaces=true,
+    keywordstyle=\ocamlkeyword,
+    moredelim=[is][\ocamlhighlight]{<<}{>>},
+    moredelim=[s][\ocamlstring]{\{|}{|\}},
+    moredelim=[s][\ocamlstring]{\{delimiter|}{|delimiter\}},
+    keywords={[2]{val,initializer,nonrec}}, keywordstyle={[2]\ocamlkeyword},
+    belowskip=0\baselineskip
+  }
+\ifouthtml
+  \setenvclass{lstlisting}{pre caml-input}
+\else
+%not implemented in hevea: upquote and literate
+  \lstset{
+    upquote=true,
+    literate=%
+    {⁺}{{${}^{+}$}}1%
+    {—}{{---}}1%
+    {'"'}{\textquotesingle "\textquotesingle}3%
+    {'\\"'}{\textquotesingle \textbackslash"\textquotesingle}4,
+}
+\fi
+}{}
+
+\lstnewenvironment{camlerror}{
+  \lstset{
+    escapeinside={$}{$},
+    showstringspaces=false,
+    basicstyle=\small\ttfamily\slshape,
+    emph={Error}, emphstyle={\ocamlerror},
+  }
+\ifouthtml
+  \setenvclass{lstlisting}{pre caml-output error}
+  \lstset { basicstyle=\ttfamily }
+\else
+\lstset{upquote=true}
+\fi
+}
+{}
+
+\lstnewenvironment{camlwarn}{
+  \lstset{
+    escapeinside={$}{$},
+    showstringspaces=false,
+    basicstyle=\small\ttfamily\slshape,
+    emph={Warning}, emphstyle={\ocamlwarning},
+  }
+\ifouthtml
+\setenvclass{lstlisting}{pre caml-output warn}
+\lstset { basicstyle=\ttfamily }
+\else
+\lstset{upquote=true}
+\fi
+}{}
+
+\newcommand{\?}{\color{black}\normalsize\tt\#{}}
+
+\ifocamldoc\else
+\lstnewenvironment{ocamlcodeblock}{
+  \lstset{
+    backgroundcolor = \color{lightgray},
+    basicstyle=\ttfamily,
+    showstringspaces=false,
+    language=caml,
+    escapeinside={$}{$},
+    columns=fullflexible,
+    stringstyle=\ocamlstring,
+    commentstyle=\ocamlcomment,
+    keepspaces=true,
+    keywordstyle=\ocamlkeyword,
+    moredelim=[is][\ocamlhighlight]{<<}{>>},
+    moredelim=[s][\ocamlstring]{\{|}{|\}},
+    moredelim=[s][\ocamlstring]{\{delimiter|}{|delimiter\}},
+    keywords={[2]{val,initializer,nonrec}}, keywordstyle={[2]\ocamlkeyword},
+    belowskip=0\baselineskip,
+    upquote=true,
+    literate={'"'}{\textquotesingle "\textquotesingle}3
+    {'\\"'}{\textquotesingle \textbackslash"\textquotesingle}4,
+  }
+  }{}
+
+\newcommand{\ocamltag}[2]{\begin{ocaml#1}#2\end{ocaml#1}}
+\newcommand{\ocamlcodefragment}[1]{{\ttfamily\setlength{\parindent}{0cm}%
+\raggedright#1}}
+\newcommand{\ocamlinlinecode}[1]{{\ttfamily#1}}
+\newenvironment{ocamlexception}{\bfseries}{}
+\newenvironment{ocamlextension}{\bfseries}{}
+\newenvironment{ocamlconstructor}{\bfseries}{}
+\newenvironment{ocamltype-var}{\itshape\ttfamily}{}
+\definecolor{lightgray}{gray}{0.97}
+\definecolor{gray}{gray}{0.5}
+\newenvironment{ocamlindent}{\begin{adjustwidth}{2em}{0pt}}{\end{adjustwidth}}
+\newenvironment{ocamltabular}[1]{\begin{tabular}{#1}}%
+{\end{tabular}}
+\newcommand{\bold}[1]{{\bfseries#1}}
+\fi
+
+% Add meta tag to the generated head tag
+\ifouthtml
+\let\oldmeta=\@meta
+\renewcommand{\@meta}{
+\oldmeta
+\begin{rawhtml}
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+\end{rawhtml}
+}
+\fi
+
+\usepackage[colorlinks,linkcolor=blue]{hyperref}
+
+% Make _ a normal character in text mode
+% it must be the last package included
+\usepackage[strings,nohyphen]{underscore}
+
+%\makeatletter \def\@wrindex#1#2{\xdef \@indexfile{\csname #1@idxfile\endcsname}\@@wrindex#2||\\}\makeatother
+\def\th{^{\hbox{\scriptsize th}}}
+
+
+\raggedbottom
+\input{version.tex}
+%HEVEA\tocnumber
+%HEVEA\setcounter{cuttingdepth}{1}
+%HEVEA\title{The OCaml system, release \ocamlversion}
+\input{allfiles.tex}

@@ -1,5 +1,5 @@
 (* TEST
-files = "main.c"
+readonly_files = "main.c"
 arguments = "-DINT_FLOAT -DFUN=is_even main.c"
 * asmgen
 *)

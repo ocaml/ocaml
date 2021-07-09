@@ -23,14 +23,12 @@
 #include <caml/osdeps.h>
 #include "unixsupport.h"
 
-extern int error_table[];
-
 CAMLprim value unix_error_message(value err)
 {
   int errnum;
   wchar_t buffer[512];
 
-  errnum = Is_block(err) ? Int_val(Field(err, 0)) : error_table[Int_val(err)];
+  errnum = code_of_unix_error(err);
   if (errnum > 0)
     return caml_copy_string(strerror(errnum));
   if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,

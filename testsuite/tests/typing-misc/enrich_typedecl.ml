@@ -31,6 +31,7 @@ Error: Signature mismatch:
          type t = A.t = A | B
        is not included in
          type t = int * string
+       The type A.t is not equal to the type int * string
 |}]
 
 module rec B : sig
@@ -62,6 +63,7 @@ Error: Signature mismatch:
          type 'a t = 'a B.t = A of 'a | B
        is not included in
          type 'a t = 'a
+       The type 'a B.t is not equal to the type 'a
 |}];;
 
 module rec C : sig
@@ -126,6 +128,7 @@ Error: Signature mismatch:
          type 'a t = 'a D.t = A of 'a | B
        is not included in
          type 'a t = int
+       The type 'a D.t is not equal to the type int
 |}];;
 
 module rec E : sig
@@ -157,6 +160,7 @@ Error: Signature mismatch:
          type 'a t = 'a E.t = A of 'a | B
        is not included in
          type 'a t = 'a constraint 'a = [> `Foo ]
+       The type 'a is not equal to the type [> `Foo ]
 |}];;
 
 module rec E2 : sig
@@ -188,6 +192,7 @@ Error: Signature mismatch:
          type 'a t = 'a E2.t = A of 'a | B
        is not included in
          type 'a t = [ `Foo ]
+       The type 'a E2.t is not equal to the type [ `Foo ]
 |}];;
 
 module rec E3 : sig
@@ -219,6 +224,7 @@ Error: Signature mismatch:
          type 'a t = 'a E3.t = A of 'a | B
        is not included in
          type 'a t = 'a constraint 'a = [< `Foo ]
+       The type 'a is not equal to the type [< `Foo ]
 |}];;
 
 
@@ -254,7 +260,7 @@ Error: Signature mismatch:
          type ('a, 'b) t = Foo of 'a
        Constructors do not match:
          Foo of 'b
-       is not compatible with:
+       is not the same as:
          Foo of 'a
-       The types are not equal.
+       The type 'b is not equal to the type 'a
 |}];;

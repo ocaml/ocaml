@@ -43,7 +43,7 @@ let rec uniq1 cmp x ys =
       []
   | y :: ys ->
       if cmp x y = 0 then
-        uniq1 compare x ys
+        uniq1 cmp x ys
       else
         y :: uniq1 cmp y ys
 
@@ -85,7 +85,6 @@ let rec foldr f xs accu =
       accu
   | Cons (x, xs) ->
       f x (foldr f xs accu)
-
 end
 module Convert = struct
 (******************************************************************************)
@@ -291,9 +290,9 @@ module type INCREMENTAL_ENGINE = sig
     | Rejected
 
   (* [offer] allows the user to resume the parser after it has suspended
-     itself with a checkpoint of the form [InputNeeded env]. [offer] expects the
-     old checkpoint as well as a new token and produces a new checkpoint. It does not
-     raise any exception. *)
+     itself with a checkpoint of the form [InputNeeded env]. [offer] expects
+     the old checkpoint as well as a new token and produces a new checkpoint.
+     It does not raise any exception. *)
 
   val offer:
     'a checkpoint ->
@@ -302,10 +301,30 @@ module type INCREMENTAL_ENGINE = sig
 
   (* [resume] allows the user to resume the parser after it has suspended
      itself with a checkpoint of the form [AboutToReduce (env, prod)] or
-     [HandlingError env]. [resume] expects the old checkpoint and produces a new
-     checkpoint. It does not raise any exception. *)
+     [HandlingError env]. [resume] expects the old checkpoint and produces a
+     new checkpoint. It does not raise any exception. *)
+
+  (* The optional argument [strategy] influences the manner in which [resume]
+     deals with checkpoints of the form [ErrorHandling _]. Its default value
+     is [`Legacy]. It can be briefly described as follows:
+
+     - If the [error] token is used only to report errors (that is, if the
+       [error] token appears only at the end of a production, whose semantic
+       action raises an exception) then the simplified strategy should be
+       preferred. (This includes the case where the [error] token does not
+       appear at all in the grammar.)
+
+     - If the [error] token is used to recover after an error, or if
+       perfect backward compatibility is required, the legacy strategy
+       should be selected.
+
+     More details on these strategies appear in the file [Engine.ml]. *)
+
+  type strategy =
+    [ `Legacy | `Simplified ]
 
   val resume:
+    ?strategy:strategy ->
     'a checkpoint ->
     'a checkpoint
 
@@ -315,7 +334,8 @@ module type INCREMENTAL_ENGINE = sig
   type supplier =
     unit -> token * position * position
 
-  (* A pair of a lexer and a lexing buffer can be easily turned into a supplier. *)
+  (* A pair of a lexer and a lexing buffer can be easily turned into a
+     supplier. *)
 
   val lexer_lexbuf_to_supplier:
     (Lexing.lexbuf -> token) ->
@@ -330,9 +350,11 @@ module type INCREMENTAL_ENGINE = sig
   (* [loop supplier checkpoint] begins parsing from [checkpoint], reading
      tokens from [supplier]. It continues parsing until it reaches a
      checkpoint of the form [Accepted v] or [Rejected]. In the former case, it
-     returns [v]. In the latter case, it raises the exception [Error]. *)
+     returns [v]. In the latter case, it raises the exception [Error].
+     The optional argument [strategy], whose default value is [Legacy],
+     is passed to [resume] and influences the error-handling strategy. *)
 
-  val loop: supplier -> 'a checkpoint -> 'a
+  val loop: ?strategy:strategy -> supplier -> 'a checkpoint -> 'a
 
   (* [loop_handle succeed fail supplier checkpoint] begins parsing from
      [checkpoint], reading tokens from [supplier]. It continues parsing until
@@ -341,10 +363,10 @@ module type INCREMENTAL_ENGINE = sig
      observed first). In the former case, it calls [succeed v]. In the latter
      case, it calls [fail] with this checkpoint. It cannot raise [Error].
 
-     This means that Menhir's traditional error-handling procedure (which pops
-     the stack until a state that can act on the [error] token is found) does
-     not get a chance to run. Instead, the user can implement her own error
-     handling code, in the [fail] continuation. *)
+     This means that Menhir's error-handling procedure does not get a chance
+     to run. For this reason, there is no [strategy] parameter. Instead, the
+     user can implement her own error handling code, in the [fail]
+     continuation. *)
 
   val loop_handle:
     ('a -> 'answer) ->
@@ -1012,6 +1034,7 @@ module type MONOLITHIC_ENGINE = sig
   exception Error
 
   val entry:
+    (* strategy: *) [ `Legacy | `Simplified ] -> (* see [IncrementalEngine] *)
     state ->
     (Lexing.lexbuf -> token) ->
     Lexing.lexbuf ->
@@ -1137,6 +1160,74 @@ module Make (T : TABLE) = struct
 
   (* ------------------------------------------------------------------------ *)
 
+  (* As of 2020/12/16, we introduce a choice between multiple error handling
+     strategies. *)
+
+  (* Regardless of the strategy, when a syntax error is encountered, the
+     function [initiate] is called, a [HandlingError] checkpoint is produced,
+     and (after resuming) the function [error] is called. This function checks
+     whether the current state allows shifting, reducing, or neither, when the
+     lookahead token is [error]. Its behavior, then, depends on the strategy,
+     as follows. *)
+
+  (* In the legacy strategy, which until now was the only strategy,
+
+     - If shifting is possible, then a [Shifting] checkpoint is produced,
+       whose field [please_discard] is [true], so (after resuming) an
+       [InputNeeded] checkpoint is produced, and (after a new token
+       has been provided) the parser leaves error-handling mode and
+       returns to normal mode.
+
+     - If reducing is possible, then one or more reductions are performed.
+       Default reductions are announced via [AboutToReduce] checkpoints,
+       whereas ordinary reductions are performed silently. (It is unclear
+       why this is so.) The parser remains in error-handling mode, so
+       another [HandlingError] checkpoint is produced, and the function
+       [error] is called again.
+
+     - If neither action is possible and if the stack is nonempty, then a
+       cell is popped off the stack, then a [HandlingError] checkpoint is
+       produced, and the function [error] is called again.
+
+     - If neither action is possible and if the stack is empty, then the
+       parse dies with a [Reject] checkpoint. *)
+
+  (* The simplified strategy differs from the legacy strategy as follows:
+
+     - When shifting, a [Shifting] checkpoint is produced, whose field
+       [please_discard] is [false], so the parser does not request another
+       token, and the parser remains in error-handling mode. (If the
+       destination state of this shift transition has a default reduction,
+       then the parser will perform this reduction as its next step.)
+
+     - When reducing, all reductions are announced by [AboutToReduce]
+       checkpoints.
+
+     - If neither shifting [error] nor reducing on [error] is possible,
+       then the parser dies with a [Reject] checkpoint. (The parser does
+       not attempt to pop cells off the stack one by one.)
+
+     This simplified strategy is appropriate when the grammar uses the [error]
+     token in a limited way, where the [error] token always appears at the end
+     of a production whose semantic action raises an exception (whose purpose
+     is to signal a syntax error and perhaps produce a custom message). Then,
+     the parser must not request one token past the syntax error. (In a REPL,
+     that would be undesirable.) It must perform as many reductions on [error]
+     as possible, then (if possible) shift the [error] token and move to a new
+     state where a default reduction will be possible. (Because the [error]
+     token always appears at the end of a production, no other action can
+     exist in that state, so a default reduction must exist.) The semantic
+     action raises an exception, and that is it. *)
+
+  (* Let us note that it is also possible to perform no error handling at
+     all, or to perform customized error handling, by stopping as soon as
+     the first [ErrorHandling] checkpoint appears. *)
+
+  type strategy =
+    [ `Legacy | `Simplified ]
+
+  (* ------------------------------------------------------------------------ *)
+
   (* In the code-based back-end, the [run] function is sometimes responsible
      for pushing a new cell on the stack. This is motivated by code sharing
      concerns. In this interpreter, there is no such concern; [run]'s caller
@@ -1222,8 +1313,9 @@ module Make (T : TABLE) = struct
     (* Note that, if [please_discard] was true, then we have just called
        [discard], so the lookahead token cannot be [error]. *)
 
-    (* Returning [HandlingError env] is equivalent to calling [error env]
-       directly, except it allows the user to regain control. *)
+    (* Returning [HandlingError env] is like calling [error ~strategy env]
+       directly, except it allows the user to regain control and choose an
+       error-handling strategy. *)
 
     if env.error then begin
       if log then
@@ -1374,7 +1466,7 @@ module Make (T : TABLE) = struct
 
   (* [error] handles errors. *)
 
-  and error env =
+  and error ~strategy env =
     assert env.error;
 
     (* Consult the column associated with the [error] pseudo-token in the
@@ -1384,39 +1476,63 @@ module Make (T : TABLE) = struct
       env.current                    (* determines a row *)
       T.error_terminal               (* determines a column *)
       T.error_value
-      error_shift                    (* shift continuation *)
-      error_reduce                   (* reduce continuation *)
-      error_fail                     (* failure continuation *)
+      (error_shift ~strategy)        (* shift continuation *)
+      (error_reduce ~strategy)       (* reduce continuation *)
+      (error_fail ~strategy)         (* failure continuation *)
       env
 
-  and error_shift env please_discard terminal value s' =
-
-    (* Here, [terminal] is [T.error_terminal],
-       and [value] is [T.error_value]. *)
-
+  and error_shift ~strategy env please_discard terminal value s' =
     assert (terminal = T.error_terminal && value = T.error_value);
 
     (* This state is capable of shifting the [error] token. *)
 
     if log then
       Log.handling_error env.current;
+
+    (* In the simplified strategy, we change [please_discard] to [false],
+       which means that we won't request the next token and (therefore)
+       we will remain in error-handling mode after shifting the [error]
+       token. *)
+
+    let please_discard =
+      match strategy with `Legacy -> please_discard | `Simplified -> false
+    in
+
     shift env please_discard terminal value s'
 
-  and error_reduce env prod =
+  and error_reduce ~strategy env prod =
 
     (* This state is capable of performing a reduction on [error]. *)
 
     if log then
       Log.handling_error env.current;
-    reduce env prod
-      (* Intentionally calling [reduce] instead of [announce_reduce].
-         It does not seem very useful, and it could be confusing, to
-         expose the reduction steps taken during error handling. *)
 
-  and error_fail env =
+    (* In the legacy strategy, we call [reduce] instead of [announce_reduce],
+       apparently in an attempt to hide the reduction steps performed during
+       error handling. In the simplified strategy, all reductions steps are
+       announced. *)
 
-    (* This state is unable to handle errors. Attempt to pop a stack
-       cell. *)
+    match strategy with
+    | `Legacy ->
+        reduce env prod
+    | `Simplified ->
+        announce_reduce env prod
+
+  and error_fail ~strategy env =
+
+    (* This state is unable to handle errors. In the simplified strategy, we
+       die immediately. In the legacy strategy, we attempt to pop a stack
+       cell. (This amounts to forgetting part of what we have just read, in
+       the hope of reaching a state where we can shift the [error] token and
+       resume parsing in normal mode. Forgetting past input is not appropriate
+       when the goal is merely to produce a good syntax error message.) *)
+
+    match strategy with
+    | `Simplified ->
+        Rejected
+    | `Legacy ->
+
+    (* Attempt to pop a stack cell. *)
 
     let cell = env.stack in
     let next = cell.next in
@@ -1429,7 +1545,15 @@ module Make (T : TABLE) = struct
     else begin
 
       (* The stack is nonempty. Pop a cell, updating the current state
-         with that found in the popped cell, and try again. *)
+         to the state [cell.state] found in the popped cell, and continue
+         error handling there. *)
+
+      (* I note that if the new state [cell.state] has a default reduction,
+         then it is ignored. It is unclear whether this is intentional. It
+         could be a good thing, as it avoids a scenario where the parser
+         diverges by repeatedly popping, performing a default reduction of
+         an epsilon production, popping, etc. Still, the question of whether
+         to obey default reductions while error handling seems obscure. *)
 
       let env = { env with
         stack = next;
@@ -1526,9 +1650,11 @@ module Make (T : TABLE) = struct
     | _ ->
         invalid_arg "offer expects InputNeeded"
 
-  let resume : 'a . 'a checkpoint -> 'a checkpoint = function
+  let resume : 'a . ?strategy:strategy -> 'a checkpoint -> 'a checkpoint =
+  fun ?(strategy=`Legacy) checkpoint ->
+    match checkpoint with
     | HandlingError env ->
-        Obj.magic error env
+        Obj.magic error ~strategy env
     | Shifting (_, env, please_discard) ->
         Obj.magic run env please_discard
     | AboutToReduce (env, prod) ->
@@ -1572,8 +1698,8 @@ module Make (T : TABLE) = struct
      All of the cheating resides in the types assigned to [offer] and [handle]
      above. *)
 
-  let rec loop : 'a . supplier -> 'a checkpoint -> 'a =
-    fun read checkpoint ->
+  let rec loop : 'a . ?strategy:strategy -> supplier -> 'a checkpoint -> 'a =
+    fun ?(strategy=`Legacy) read checkpoint ->
     match checkpoint with
     | InputNeeded _ ->
         (* The parser needs a token. Request one from the lexer,
@@ -1581,14 +1707,14 @@ module Make (T : TABLE) = struct
            checkpoint. Then, repeat. *)
         let triple = read() in
         let checkpoint = offer checkpoint triple in
-        loop read checkpoint
+        loop ~strategy read checkpoint
     | Shifting _
     | AboutToReduce _
     | HandlingError _ ->
         (* The parser has suspended itself, but does not need
            new input. Just resume the parser. Then, repeat. *)
-        let checkpoint = resume checkpoint in
-        loop read checkpoint
+        let checkpoint = resume ~strategy checkpoint in
+        loop ~strategy read checkpoint
     | Accepted v ->
         (* The parser has succeeded and produced a semantic value.
            Return this semantic value to the user. *)
@@ -1597,9 +1723,9 @@ module Make (T : TABLE) = struct
         (* The parser rejects this input. Raise an exception. *)
         raise Error
 
-  let entry (s : state) lexer lexbuf : semantic_value =
+  let entry strategy (s : state) lexer lexbuf : semantic_value =
     let initial = lexbuf.Lexing.lex_curr_p in
-    loop (lexer_lexbuf_to_supplier lexer lexbuf) (start s initial)
+    loop ~strategy (lexer_lexbuf_to_supplier lexer lexbuf) (start s initial)
 
   (* ------------------------------------------------------------------------ *)
 
@@ -1615,6 +1741,8 @@ module Make (T : TABLE) = struct
         loop_handle succeed fail read checkpoint
     | Shifting _
     | AboutToReduce _ ->
+        (* Which strategy is passed to [resume] here is irrelevant,
+           since this checkpoint is not [HandlingError _]. *)
         let checkpoint = resume checkpoint in
         loop_handle succeed fail read checkpoint
     | HandlingError _
@@ -1648,6 +1776,8 @@ module Make (T : TABLE) = struct
         loop_handle_undo succeed fail read (inputneeded, checkpoint)
     | Shifting _
     | AboutToReduce _ ->
+        (* Which strategy is passed to [resume] here is irrelevant,
+           since this checkpoint is not [HandlingError _]. *)
         let checkpoint = resume checkpoint in
         loop_handle_undo succeed fail read (inputneeded, checkpoint)
     | HandlingError _
@@ -1681,6 +1811,8 @@ module Make (T : TABLE) = struct
         Some env
     | AboutToReduce _ ->
         (* The parser wishes to reduce. Just follow. *)
+        (* Which strategy is passed to [resume] here is irrelevant,
+           since this checkpoint is not [HandlingError _]. *)
         shifts (resume checkpoint)
     | HandlingError _ ->
         (* The parser fails, which means it rejects the terminal symbol
@@ -1965,9 +2097,6 @@ let update buffer x =
     | Two (_, x1), x2 ->
         Two (x1, x2)
 
-(* [show f buffer] prints the contents of the buffer. The function [f] is
-   used to print an element. *)
-
 let show f buffer : string =
   match !buffer with
   | Zero ->
@@ -1981,9 +2110,6 @@ let show f buffer : string =
       (* In the most likely case, we have read two tokens. *)
       Printf.sprintf "after '%s' and before '%s'" (f valid) (f invalid)
 
-(* [last buffer] returns the last element of the buffer (that is, the invalid
-   token). *)
-
 let last buffer =
   match !buffer with
   | Zero ->
@@ -1993,8 +2119,6 @@ let last buffer =
   | One invalid
   | Two (_, invalid) ->
       invalid
-
-(* [wrap buffer lexer] *)
 
 open Lexing
 
@@ -2006,7 +2130,156 @@ let wrap lexer =
     update buffer (lexbuf.lex_start_p, lexbuf.lex_curr_p);
     token
 
+let wrap_supplier supplier =
+  let buffer = ref Zero in
+  buffer,
+  fun () ->
+    let (_token, pos1, pos2) as triple = supplier() in
+    update buffer (pos1, pos2);
+    triple
+
 (* -------------------------------------------------------------------------- *)
+
+let extract text (pos1, pos2) : string =
+  let ofs1 = pos1.pos_cnum
+  and ofs2 = pos2.pos_cnum in
+  let len = ofs2 - ofs1 in
+  try
+    String.sub text ofs1 len
+  with Invalid_argument _ ->
+    (* In principle, this should not happen, but if it does, let's make this
+       a non-fatal error. *)
+    "???"
+
+let sanitize text =
+  String.map (fun c ->
+    if Char.code c < 32 then ' ' else c
+  ) text
+
+(* If we were willing to depend on [Str], we could implement [compress] as
+   follows:
+
+   let compress text =
+     Str.global_replace (Str.regexp "[ \t\n\r]+") " " text
+
+ *)
+
+let rec compress n b i j skipping =
+  if j < n then
+    let c, j = Bytes.get b j, j + 1 in
+    match c with
+    | ' ' | '\t' | '\n' | '\r' ->
+        let i = if not skipping then (Bytes.set b i ' '; i + 1) else i in
+        let skipping = true in
+        compress n b i j skipping
+    | _ ->
+        let i = Bytes.set b i c; i + 1 in
+        let skipping = false in
+        compress n b i j skipping
+  else
+    Bytes.sub_string b 0 i
+
+let compress text =
+  let b = Bytes.of_string text in
+  let n = Bytes.length b in
+  compress n b 0 0 false
+
+let shorten k text =
+  let n = String.length text in
+  if n <= 2 * k + 3 then
+    text
+  else
+    String.sub text 0 k ^
+    "..." ^
+    String.sub text (n - k) k
+
+let is_digit c =
+  let c = Char.code c in
+  Char.code '0' <= c && c <= Char.code '9'
+
+exception Copy
+
+let expand f text =
+  let n = String.length text in
+  let b = Buffer.create n in
+  let rec loop i =
+    if i < n then begin
+      let c, i = text.[i], i + 1 in
+      loop (
+        try
+          if c <> '$' then raise Copy;
+          let j = ref i in
+          while !j < n && is_digit text.[!j] do incr j done;
+          if i = !j then raise Copy;
+          let k = int_of_string (String.sub text i (!j - i)) in
+          Buffer.add_string b (f k);
+          !j
+        with Copy ->
+          (* We reach this point if either [c] is not '$' or [c] is '$'
+             but is not followed by an integer literal. *)
+          Buffer.add_char b c;
+          i
+      )
+    end
+    else
+      Buffer.contents b
+  in
+  loop 0
+end
+module LexerUtil = struct
+(******************************************************************************)
+(*                                                                            *)
+(*                                   Menhir                                   *)
+(*                                                                            *)
+(*                       François Pottier, Inria Paris                        *)
+(*              Yann Régis-Gianas, PPS, Université Paris Diderot              *)
+(*                                                                            *)
+(*  Copyright Inria. All rights reserved. This file is distributed under the  *)
+(*  terms of the GNU Library General Public License version 2, with a         *)
+(*  special exception on linking, as described in the file LICENSE.           *)
+(*                                                                            *)
+(******************************************************************************)
+
+open Lexing
+open Printf
+
+let init filename lexbuf =
+  lexbuf.lex_curr_p <- {
+    pos_fname = filename;
+    pos_lnum  = 1;
+    pos_bol   = 0;
+    pos_cnum  = 0
+  };
+  lexbuf
+
+let read filename =
+  let c = open_in filename in
+  let text = really_input_string c (in_channel_length c) in
+  close_in c;
+  let lexbuf = Lexing.from_string text in
+  text, init filename lexbuf
+
+let newline lexbuf =
+  let pos = lexbuf.lex_curr_p in
+  lexbuf.lex_curr_p <- { pos with
+    pos_lnum = pos.pos_lnum + 1;
+    pos_bol = pos.pos_cnum;
+  }
+
+let is_dummy (pos1, pos2) =
+  pos1 == dummy_pos || pos2 == dummy_pos
+
+let range ((pos1, pos2) as range) =
+  if is_dummy range then
+    sprintf "At an unknown location:\n"
+  else
+    let file = pos1.pos_fname in
+    let line = pos1.pos_lnum in
+    let char1 = pos1.pos_cnum - pos1.pos_bol in
+    let char2 = pos2.pos_cnum - pos1.pos_bol in (* yes, [pos1.pos_bol] *)
+    sprintf "File \"%s\", line %d, characters %d-%d:\n"
+      file line char1 char2
+      (* use [char1 + 1] and [char2 + 1] if *not* using Caml mode *)
 end
 module Printers = struct
 (******************************************************************************)
@@ -3133,8 +3406,14 @@ module Make
   type item =
       int * int
 
+  let low_bits =
+    10
+
+  let low_limit =
+    1 lsl low_bits
+
   let export t : item =
-    (t lsr 7, t mod 128)
+    (t lsr low_bits, t mod low_limit)
 
   let items s =
     (* Map [s] to its LR(0) core. *)
@@ -3513,5 +3792,5 @@ module MakeEngineTable (T : TableFormat.TABLES) = struct
 end
 end
 module StaticVersion = struct
-let require_20190924 = ()
+let require_20210419 = ()
 end

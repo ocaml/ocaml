@@ -83,6 +83,19 @@ module IndirectPriv = I(struct end);;
 module IndirectPriv : sig type t end
 |}]
 
+(* These two behave as though a functor was defined *)
+module DirectPrivEta =
+  (functor (X : sig end) -> Priv(X))(struct end);;
+[%%expect{|
+module DirectPrivEta : sig type t end
+|}]
+
+module DirectPrivEtaUnit =
+  (functor (_ : sig end) -> Priv)(struct end)(struct end);;
+[%%expect{|
+module DirectPrivEtaUnit : sig type t end
+|}]
+
 (*** Test proposed by Jacques in
      https://github.com/ocaml/ocaml/pull/1826#discussion_r194290729 ***)
 
@@ -112,6 +125,9 @@ Error: Signature mismatch:
          type s = t
        is not included in
          type s = private [ `Bar of int | `Foo of 'a -> int ] as 'a
+       The type [ `Bar of int | `Foo of t -> int ] is not equal to the type
+         [ `Bar of int | `Foo of 'a -> int ] as 'a
+       Types for tag `Foo are incompatible
 |}]
 
 (* nondep_type_decl + nondep_type_rec *)

@@ -1,5 +1,5 @@
 (* TEST
-   flags += " -w a "
+   flags += " -w -a "
    modules = "globrootsprim.c"
 *)
 

@@ -48,6 +48,5 @@ val lambda_to_flambda
    : backend:(module Backend_intf.S)
   -> module_ident:Ident.t
   -> size:int
-  -> filename:string
   -> Lambda.lambda
   -> Flambda.program

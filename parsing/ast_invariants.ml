@@ -24,6 +24,8 @@ let no_args loc = err loc "Function application with no argument."
 let empty_let loc = err loc "Let with no bindings."
 let empty_type loc = err loc "Type declarations cannot be empty."
 let complex_id loc = err loc "Functor application not allowed here."
+let module_type_substitution_missing_rhs loc =
+  err loc "Module type substitution with no right hand side"
 
 let simple_longident id =
   let rec is_simple = function
@@ -53,7 +55,7 @@ let iterator =
   in
   let pat self pat =
     begin match pat.ppat_desc with
-    | Ppat_construct (_, Some ({ppat_desc = Ppat_tuple _} as p))
+    | Ppat_construct (_, Some (_, ({ppat_desc = Ppat_tuple _} as p)))
       when Builtin_attributes.explicit_arity pat.ppat_attributes ->
         super.pat self p (* allow unary tuple, see GPR#523. *)
     | _ ->
@@ -140,6 +142,8 @@ let iterator =
     let loc = sg.psig_loc in
     match sg.psig_desc with
     | Psig_type (_, []) -> empty_type loc
+    | Psig_modtypesubst {pmtd_type=None; _ } ->
+        module_type_substitution_missing_rhs loc
     | _ -> ()
   in
   let row_field self field =

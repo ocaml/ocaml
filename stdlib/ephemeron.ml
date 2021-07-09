@@ -49,7 +49,7 @@ module GenHashTable = struct
     type 'a t =
       { mutable size: int;                  (* number of entries *)
         mutable data: 'a bucketlist array;  (* the buckets *)
-        mutable seed: int;                  (* for randomization *)
+        seed: int;                          (* for randomization *)
         initial_size: int;                  (* initial array size *)
       }
 
@@ -345,7 +345,7 @@ module GenHashTable = struct
 
     let stats h =
       let mbl =
-        Array.fold_left (fun m b -> max m (bucket_length 0 b)) 0 h.data in
+        Array.fold_left (fun m b -> Int.max m (bucket_length 0 b)) 0 h.data in
       let histo = Array.make (mbl + 1) 0 in
       Array.iter
         (fun b ->
@@ -366,7 +366,9 @@ module GenHashTable = struct
     let stats_alive h =
       let size = ref 0 in
       let mbl =
-        Array.fold_left (fun m b -> max m (bucket_length_alive 0 b)) 0 h.data in
+        Array.fold_left
+          (fun m b -> Int.max m (bucket_length_alive 0 b)) 0 h.data
+      in
       let histo = Array.make (mbl + 1) 0 in
       Array.iter
         (fun b ->

@@ -862,7 +862,8 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
   let module B = (val backend : Backend_intf.S) in
   match lam with
   | Lvar id ->
-      close_approx_var env id
+     close_approx_var env id
+  | Lmutvar id -> (Uvar id, Value_unknown)
   | Lconst cst ->
       let str ?(shared = true) cst =
         let name =
@@ -991,23 +992,24 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
        Value_unknown)
   | Llet(str, kind, id, lam, body) ->
       let (ulam, alam) = close_named env id lam in
-      begin match (str, alam) with
-        (Variable, _) ->
-          let env = {env with mutable_vars = V.Set.add id env.mutable_vars} in
-          let (ubody, abody) = close env body in
-          (Ulet(Mutable, kind, VP.create id, ulam, ubody), abody)
-      | (_, Value_const _)
-        when str = Alias || is_pure ulam ->
-          close { backend; fenv = (V.Map.add id alam fenv); cenv; mutable_vars }
-            body
-      | (_, _) ->
-          let (ubody, abody) =
-            close
-              { backend; fenv = (V.Map.add id alam fenv); cenv; mutable_vars }
-              body
-          in
-          (Ulet(Immutable, kind, VP.create id, ulam, ubody), abody)
+      begin match alam with
+        Value_const _
+           when str = Alias || is_pure ulam ->
+         close { backend; fenv = (V.Map.add id alam fenv); cenv; mutable_vars }
+           body
+      | _ ->
+         let (ubody, abody) =
+           close
+             { backend; fenv = (V.Map.add id alam fenv); cenv; mutable_vars }
+             body
+         in
+         (Ulet(Immutable, kind, VP.create id, ulam, ubody), abody)
       end
+  | Lmutlet(kind, id, lam, body) ->
+     let (ulam, _) = close_named env id lam in
+     let env = {env with mutable_vars = V.Set.add id env.mutable_vars} in
+     let (ubody, abody) = close env body in
+     (Ulet(Mutable, kind, VP.create id, ulam, ubody), abody)
   | Lletrec(defs, body) ->
       if List.for_all
            (function (_id, Lfunction _) -> true | _ -> false)
@@ -1064,19 +1066,8 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
   | Lprim(Pignore, [arg], _loc) ->
       let expr, approx = make_const_int 0 in
       Usequence(fst (close env arg), expr), approx
-  | Lprim((Pidentity | Pbytes_to_string | Pbytes_of_string), [arg], _loc) ->
+  | Lprim((Pbytes_to_string | Pbytes_of_string), [arg], _loc) ->
       close env arg
-  | Lprim(Pdirapply,[funct;arg], loc)
-  | Lprim(Prevapply,[arg;funct], loc) ->
-      close env
-        (Lapply{
-           ap_loc=loc;
-           ap_func=funct;
-           ap_args=[arg];
-           ap_tailcall=Default_tailcall;
-           ap_inlined=Default_inline;
-           ap_specialised=Default_specialise;
-         })
   | Lprim(Pgetglobal id, [], loc) ->
       let dbg = Debuginfo.from_location loc in
       check_constant_result (getglobal dbg id)

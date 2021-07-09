@@ -1,5 +1,5 @@
 (* TEST
-  * hasinstrumentedruntime
+  * instrumented-runtime
   ** native
     flags = "-runtime-variant=i"
 *)

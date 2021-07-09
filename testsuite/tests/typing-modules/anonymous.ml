@@ -29,7 +29,7 @@ end
 ;;
 [%%expect{|
 module type S =
-  sig module rec A : sig type t = B/2.t end and B : sig type t end end
+  sig module rec A : sig type t = B.t end and B : sig type t end end
 |}]
 
 let f (module _ : S) = ()

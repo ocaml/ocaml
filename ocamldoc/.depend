@@ -125,6 +125,7 @@ odoc_ast.cmo : \
     odoc_class.cmo \
     ../parsing/location.cmi \
     ../typing/ident.cmi \
+    ../typing/btype.cmi \
     ../parsing/asttypes.cmi \
     odoc_ast.cmi
 odoc_ast.cmx : \
@@ -147,6 +148,7 @@ odoc_ast.cmx : \
     odoc_class.cmx \
     ../parsing/location.cmx \
     ../typing/ident.cmx \
+    ../typing/btype.cmx \
     ../parsing/asttypes.cmi \
     odoc_ast.cmi
 odoc_ast.cmi : \

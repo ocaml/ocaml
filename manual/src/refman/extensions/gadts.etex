@@ -1,0 +1,33 @@
+Generalized algebraic datatypes, or GADTs, extend usual sum types in
+two ways: constraints on type parameters may change depending on the
+value constructor, and some type variables may be existentially
+quantified. They are described in chapter \ref{c:gadts-tutorial}.
+
+(Introduced in OCaml 4.00)
+
+\begin{syntax}
+constr-decl:
+          ...
+        | constr-name ':' [ constr-args '->' ] typexpr
+;
+type-param:
+          ...
+        | [variance] '_'
+\end{syntax}
+
+Refutation cases. (Introduced in OCaml 4.03)
+
+\begin{syntax}
+matching-case:
+     pattern ['when' expr] '->' expr
+   | pattern '->' '.'
+\end{syntax}
+
+Explicit naming of existentials. (Introduced in OCaml 4.13.0)
+
+\begin{syntax}
+pattern:
+     ...
+   | constr '(' "type" {{typeconstr-name}} ')' '(' pattern ')'
+;
+\end{syntax}

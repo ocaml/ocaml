@@ -58,9 +58,6 @@ val destroyed_at_reloadretaddr : Reg.t array
 (* Volatile registers: those that change value when read *)
 val regs_are_volatile: Reg.t array -> bool
 
-(* Pure operations *)
-val op_is_pure: Mach.operation -> bool
-
 (* Info for laying out the stack frame *)
 val frame_required : Mach.fundecl -> bool
 

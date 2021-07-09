@@ -1,4 +1,5 @@
 (* TEST
+   flags="-w +48"
 *)
 
 external ( @@ ) :  ('a -> 'b) -> 'a -> 'b = "%apply"
@@ -37,3 +38,7 @@ let _ =
       h @@ g @@ f @@ 3; (* 37 *)
       add 4 @@ g @@ f @@ add 3 @@ add 2 @@ 3; (* 260 *)
     ]
+
+(* PR#10081 *)
+let bump ?(cap = 100) x = min cap (x + 1)
+let _f x = bump @@ x (* no warning 48 *)

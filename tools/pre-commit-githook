@@ -15,7 +15,7 @@
 
 # Bump this on any changes. It's vital that HOOK_VERSION followed by equals
 # appears nowhere else in these sources!
-HOOK_VERSION=4
+HOOK_VERSION=5
 
 # For what it's worth, allow for empty trees!
 if git rev-parse --verify HEAD >/dev/null 2>&1
@@ -73,13 +73,122 @@ not_pruned () {
 }
 
 # Now run check-typo over all the files in the index
-ERRORS=0
+STATUS=0
 export OCAML_CT_PREFIX=:
 export OCAML_CT_CAT="git cat-file --textconv"
 export OCAML_CT_CA_FLAG=--cached
-git diff --diff-filter=d --staged --name-only | (while IFS= read -r path
+while IFS= read -r path
 do
   if not_pruned "$path" && ! tools/check-typo "./$path" ; then
-    ERRORS=1
+    STATUS=1
   fi
-done; exit $ERRORS)
+done < <(git diff --diff-filter=d --staged --name-only)
+
+# If any files affecting the generation of configure have been updated, test
+# whether the index includes an up-to-date configure script.
+# See also tools/ci/actions/check-configure.sh
+
+AUTOCONF_FILES=\
+'configure configure.ac VERSION aclocal.m4 build-aux/* '\
+'tools/autogen tools/git-dev-options.sh'
+
+# Convert $AUTOCONF_FILES to a BRE
+PATHS="${AUTOCONF_FILES//./\\.}"
+PATHS="${PATHS//\*/.*}"
+PATHS="${PATHS// /\\|}"
+
+OVERRIDE_MESSAGE='(you can override githooks with git-commit --no-verify)'
+WRONG_AUTOCONF=0
+
+if git diff --diff-filter=d --staged --name-only | grep -qx "$PATHS" ; then
+  # Get the AC_PREREQ line in configure.ac for the required autoconf version
+  PREREQ="$(git cat-file --textconv :configure.ac \
+              | sed -ne 's/^AC_PREREQ(\[\(.*\)\])/\1/p')"
+  if [[ -z $PREREQ ]]; then
+    echo 'Unable to find/parse the AC_PREREQ macro in configure.ac'
+    echo 'This line should be of the form AC_PREREQ([2.69])'
+    echo '(with no whitespace or comment)'
+    STATUS=1
+  else
+    # Check for autoconf and its version
+    AUTOCONF_TOOL='autoconf'
+    # Check version of autoconf
+    set -o pipefail
+    AUTOCONF_VERSION="$($AUTOCONF_TOOL --version 2>/dev/null | head -n 1)"
+    if [[ $? -ne 0 ]]; then
+      echo 'Files affecting configure updated, but autoconf not found'
+      echo 'Unable to verify that configure is up-to-date'
+      echo "$OVERRIDE_MESSAGE"
+      STATUS=1
+    else
+      AUTOCONF_VERSION="${AUTOCONF_VERSION##* }"
+      if [[ $AUTOCONF_VERSION != $PREREQ ]]; then
+        # Found autoconf, but it's the wrong version. If it's older,
+        # tools/autogen will fail. If it's newer, it may succeed, but CI may
+        # fail. autoconf is frequently available at an exact version, so try
+        # the two known names for it.
+        for tool in $AUTOCONF_TOOL-$PREREQ $AUTOCONF_TOOL$PREREQ; do
+          VERSION="$($tool --version 2>/dev/null | head -n 1)"
+          if [[ $? -eq 0 ]]; then
+            VERSION="${VERSION##* }"
+            if [[ $VERSION != $PREREQ ]]; then
+              continue
+            fi
+          else
+            continue
+          fi
+          echo "autoconf has version $AUTOCONF_VERSION; using $tool instead"
+          AUTOCONF_TOOL="$tool"
+          AUTOCONF_VERSION="$VERSION"
+          break
+        done
+      fi
+
+      if [[ $AUTOCONF_VERSION != $PREREQ ]]; then
+        # We're using the wrong version of autoconf: if all other tests succeed,
+        # display a warning that CI may complain (CI uses the version specified
+        # by AC_PREREQ).
+        WRONG_AUTOCONF=1
+      fi
+
+      # Checkout the relevant files from the index to a temporary directory to
+      # test them.
+      BUILD_DIR="$(mktemp -d)"
+      BUILD_DIR="${BUILD_DIR%%/}/"
+      if [[ -z $BUILD_DIR ]]; then
+        echo 'Unable to create a temporary directory to test configure.ac'
+        STATUS=1
+      else
+        git checkout-index --prefix "$BUILD_DIR" -- $AUTOCONF_FILES
+        pushd "$BUILD_DIR" > /dev/null
+        mkdir -p a b
+        mv configure a/
+        echo 'Regenerating configure...'
+        if tools/autogen "$AUTOCONF_TOOL"; then
+          mv configure b/
+          if diff a/configure b/configure > /dev/null; then
+            if ((WRONG_AUTOCONF)); then
+              echo '*** Warning! configure.ac generates the configure script'
+              echo "*** However, this is using autoconf $AUTOCONF_VERSION"
+              echo "*** configure.ac requires autoconf $PREREQ; the CI check on"
+              echo '*** GitHub may fail.'
+            fi
+          else
+            echo 'configure.ac does not appear to generate configure'
+            echo 'Try running make -B configure and stage the changes'
+            echo "$OVERRIDE_MESSAGE"
+            git diff --text --no-index a b
+            STATUS=1
+          fi
+        else
+          echo 'tools/autogen failed'
+          STATUS=1
+        fi
+        popd > /dev/null
+        rm -rf "$BUILD_DIR"
+      fi
+    fi
+  fi
+fi
+
+exit $STATUS

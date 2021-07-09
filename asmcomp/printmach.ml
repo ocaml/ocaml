@@ -21,8 +21,6 @@ open Reg
 open Mach
 open Interval
 
-module V = Backend_var
-
 let reg ppf r =
   if not (Reg.anonymous r) then
     fprintf ppf "%s" (Reg.name r)
@@ -122,8 +120,11 @@ let operation op arg ppf res =
       (if alloc then "" else " (noalloc)")
   | Istackoffset n ->
       fprintf ppf "offset stack %i" n
-  | Iload(chunk, addr) ->
+  | Iload(chunk, addr, Immutable) ->
       fprintf ppf "%s[%a]"
+       (Printcmm.chunk chunk) (Arch.print_addressing reg addr) arg
+  | Iload(chunk, addr, Mutable) ->
+      fprintf ppf "%s mut[%a]"
        (Printcmm.chunk chunk) (Arch.print_addressing reg addr) arg
   | Istore(chunk, addr, is_assign) ->
       fprintf ppf "%s[%a] := %a %s"
@@ -144,31 +145,21 @@ let operation op arg ppf res =
   | Idivf -> fprintf ppf "%a /f %a" reg arg.(0) reg arg.(1)
   | Ifloatofint -> fprintf ppf "floatofint %a" reg arg.(0)
   | Iintoffloat -> fprintf ppf "intoffloat %a" reg arg.(0)
-  | Iname_for_debugger { ident; which_parameter; } ->
-    fprintf ppf "name_for_debugger %a%s=%a"
-      V.print ident
-      (match which_parameter with
-        | None -> ""
-        | Some index -> sprintf "[P%d]" index)
-      reg arg.(0)
+  | Iopaque -> fprintf ppf "opaque %a" reg arg.(0)
   | Ispecific op ->
       Arch.print_specific_operation reg op ppf arg
+  | Ipoll { return_label } ->
+      fprintf ppf "poll call";
+      match return_label with
+      | None -> ()
+      | Some return_label ->
+        fprintf ppf " returning to L%d" return_label
 
 let rec instr ppf i =
   if !Clflags.dump_live then begin
     fprintf ppf "@[<1>{%a" regsetaddr i.live;
     if Array.length i.arg > 0 then fprintf ppf "@ +@ %a" regs i.arg;
     fprintf ppf "}@]@,";
-    if !Clflags.dump_avail then begin
-      let module RAS = Reg_availability_set in
-      fprintf ppf "@[<1>AB={%a}" (RAS.print ~print_reg:reg) i.available_before;
-      begin match i.available_across with
-      | None -> ()
-      | Some available_across ->
-        fprintf ppf ",AA={%a}" (RAS.print ~print_reg:reg) available_across
-      end;
-      fprintf ppf "@]@,"
-    end
   end;
   begin match i.desc with
   | Iend -> ()

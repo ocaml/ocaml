@@ -10,7 +10,11 @@
    Note that those tests are here to record this behavior and not to enshrine it.
 *)
 
-[@@@warning "-10-18-8-5"];;
+[@@@warning "-non-unit-statement"];;
+[@@@warning "-not-principal"];;
+[@@@warning "-partial-match"];;
+[@@@warning "-ignored-partial-application"];;
+
 type t = A | () and b = B : _ -> b;;
 [%%expect{|
 type t = A | ()
@@ -35,6 +39,7 @@ true
 |}]
 ;;
 
+[@@@warning "-labels-omitted"];;
 Clflags.strict_sequence := false;;
 let f () = let g ~y = (raise Not_found : 'a) in
            if false then ((assert false : 'a); g ()) else g ()

@@ -260,7 +260,7 @@ let buffer_check_size buf overhead =
   let len = Bytes.length buf.bytes in
   let min_len = buf.ind + overhead in
   if min_len > len then (
-    let new_len = max (len * 2) min_len in
+    let new_len = Int.max (len * 2) min_len in
     let new_str = Bytes.create new_len in
     Bytes.blit buf.bytes 0 new_str 0 len;
     buf.bytes <- new_str;

@@ -62,12 +62,6 @@ let dumpenv = make
   (fun log env ->
     Environments.dump log env; (Result.pass, env))
 
-let hasinstrumentedruntime = make
-  "hasinstrumentedruntime"
-  (Actions_helpers.pass_or_skip (Ocamltest_config.has_instrumented_runtime)
-    "instrumented runtime available"
-    "instrumented runtime not available")
-
 let hasunix = make
   "hasunix"
   (Actions_helpers.pass_or_skip (Ocamltest_config.libunix <> None)
@@ -221,6 +215,57 @@ let check_program_output = make
     Builtin_variables.output
     Builtin_variables.reference)
 
+let file_exists_action _log env =
+  match Environments.lookup Builtin_variables.file env with
+    | None ->
+      let reason = reason_with_fallback env "the file variable is undefined" in
+      let result = Result.fail_with_reason reason in
+      (result, env)
+    | Some filename ->
+      if Sys.file_exists filename
+      then begin
+        let default_reason = Printf.sprintf "File %s exists" filename in
+        let reason = reason_with_fallback env default_reason in
+        let result = Result.pass_with_reason reason in
+        (result, env)
+      end else begin
+        let default_reason =
+          Printf.sprintf "File %s does not exist" filename
+        in
+        let reason = reason_with_fallback env default_reason in
+        let result = Result.fail_with_reason reason in
+        (result, env)
+      end
+let file_exists = make "file-exists" file_exists_action
+
+let copy_action log env =
+  let do_copy src dst =
+    let (entry_type, f) =
+      if Sys.is_directory src
+      then ("directory", Sys.copy_directory)
+      else ("file", Sys.copy_file)
+    in
+    Printf.fprintf log "Copying %s %s to %s\n%!" entry_type src dst;
+    f src dst
+  in
+  let src = Environments.lookup Builtin_variables.src env in
+  let dst = Environments.lookup Builtin_variables.dst env in
+  match (src, dst) with
+    | (None, _) | (_, None) ->
+      let reason = reason_with_fallback env "src or dst are undefined" in
+      let result = Result.fail_with_reason reason in
+      (result, env)
+    | (Some src, Some dst) ->
+      let f =
+        if String.ends_with ~suffix:"/" dst
+        then fun src -> do_copy src (dst ^ (Filename.basename src))
+        else fun src -> do_copy src dst
+      in
+      List.iter f (String.words src);
+      (Result.pass, env)
+
+let copy = make "copy" copy_action
+
 let initialize_test_exit_status_variables _log env =
   Environments.add_bindings
   [
@@ -239,7 +284,6 @@ let _ =
     fail;
     cd;
     dumpenv;
-    hasinstrumentedruntime;
     hasunix;
     hassysthreads;
     hasstr;
@@ -254,6 +298,7 @@ let _ =
     arch64;
     has_symlink;
     setup_build_env;
+    setup_simple_build_env;
     run;
     script;
     check_program_output;
@@ -263,5 +308,7 @@ let _ =
     arch_i386;
     arch_power;
     function_sections;
-    naked_pointers
+    naked_pointers;
+    file_exists;
+    copy;
   ]

@@ -1,0 +1,2401 @@
+File "use_file: HASH LIDENT TRUE WITH", line 1, characters 14-18:
+Error: Syntax error
+File "use_file: QUOTED_STRING_ITEM RBRACKET", line 1, characters 17-18:
+Error: Syntax error
+File "use_file: UIDENT LBRACKETATAT AND RBRACKET AND", line 1, characters 17-20:
+Error: Syntax error
+File "use_file: UIDENT WITH", line 1, characters 7-11:
+Error: Syntax error
+File "use_file: WITH", line 1, characters 0-4:
+Error: Syntax error
+File "toplevel_phrase: HASH UIDENT UIDENT DOT WITH", line 1, characters 18-22:
+Error: Syntax error
+File "toplevel_phrase: HASH UIDENT UIDENT WITH", line 1, characters 16-20:
+Error: Syntax error
+File "toplevel_phrase: HASH UIDENT VAL", line 1, characters 9-12:
+Error: Syntax error
+File "toplevel_phrase: HASH UIDENT WITH", line 1, characters 9-13:
+Error: Syntax error
+File "toplevel_phrase: HASH WITH", line 1, characters 2-6:
+Error: Syntax error
+File "toplevel_phrase: QUOTED_STRING_ITEM RBRACKET", line 1, characters 17-18:
+Error: Syntax error
+File "toplevel_phrase: UIDENT LBRACKETATAT AND RBRACKET VAL", line 1, characters 17-20:
+Error: Syntax error
+File "toplevel_phrase: UIDENT WITH", line 1, characters 7-11:
+Error: Syntax error
+File "toplevel_phrase: WITH", line 1, characters 0-4:
+Error: Syntax error
+File "implementation: ASSERT LBRACKETAT AND RBRACKET ASSERT", line 1, characters 16-22:
+Error: Syntax error
+File "implementation: ASSERT PERCENT AND ASSERT", line 1, characters 13-19:
+Error: Syntax error
+File "implementation: ASSERT UIDENT UIDENT", line 1, characters 14-20:
+Error: Syntax error
+File "implementation: ASSERT WITH", line 1, characters 7-11:
+Error: Syntax error
+File "implementation: BACKQUOTE UIDENT UIDENT UIDENT", line 1, characters 16-22:
+Error: Syntax error
+File "implementation: BACKQUOTE UIDENT WHILE", line 1, characters 9-14:
+Error: Syntax error
+File "implementation: BACKQUOTE WITH", line 1, characters 2-6:
+Error: Syntax error
+File "implementation: BANG WITH", line 1, characters 2-6:
+Error: Syntax error
+File "implementation: BEGIN LBRACKETAT AND RBRACKET AND", line 1, characters 15-18:
+Error: Syntax error
+File "implementation: BEGIN PERCENT AND VIRTUAL", line 1, characters 12-19:
+Error: Syntax error
+File "implementation: BEGIN UIDENT WITH", line 1, characters 13-17:
+Error: Syntax error: 'end' expected
+File "implementation: BEGIN UIDENT WITH", line 1, characters 0-5:
+  This 'begin' might be unmatched
+File "implementation: BEGIN WITH", line 1, characters 6-10:
+Error: Syntax error
+File "implementation: CLASS LBRACKET UNDERSCORE RBRACKET WITH", line 1, characters 12-16:
+Error: Syntax error
+File "implementation: CLASS LBRACKET UNDERSCORE WITH", line 1, characters 10-14:
+Error: Syntax error
+File "implementation: CLASS LBRACKET WITH", line 1, characters 8-12:
+Error: Syntax error
+File "implementation: CLASS LBRACKETAT AND RBRACKET LBRACELESS", line 1, characters 15-17:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON LBRACKET UNDERSCORE RBRACKET WITH", line 1, characters 21-25:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON LBRACKET UNDERSCORE WITH", line 1, characters 19-23:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON LBRACKET WITH", line 1, characters 17-21:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON LET OPEN BANG LBRACKETAT AND RBRACKET WHILE", line 1, characters 35-40:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON LET OPEN BANG UIDENT IN QUOTED_STRING_EXPR WITH", line 1, characters 52-56:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON LET OPEN BANG UIDENT IN WITH", line 1, characters 36-40:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON LET OPEN BANG UIDENT WITH", line 1, characters 33-37:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON LET OPEN BANG WITH", line 1, characters 26-30:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON LET OPEN LBRACKETAT AND RBRACKET WHILE", line 1, characters 33-38:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON LET OPEN UIDENT IN QUOTED_STRING_EXPR WITH", line 1, characters 50-54:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON LET OPEN UIDENT IN WITH", line 1, characters 34-38:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON LET OPEN UIDENT WITH", line 1, characters 31-35:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON LET OPEN WITH", line 1, characters 24-28:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON LET WITH", line 1, characters 19-23:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON LIDENT COLON UNDERSCORE MINUSGREATER WITH", line 1, characters 29-33:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON LIDENT COLON UNDERSCORE WITH", line 1, characters 26-30:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON LIDENT COLON WITH", line 1, characters 24-28:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON LIDENT WITH", line 1, characters 22-26:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON OBJECT CONSTRAINT LBRACKETAT AND RBRACKET WHILE", line 1, characters 42-47:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON OBJECT CONSTRAINT UNDERSCORE EQUAL LIDENT INITIALIZER", line 1, characters 44-55:
+Error: Syntax error: 'end' expected
+File "implementation: CLASS LIDENT COLON OBJECT CONSTRAINT UNDERSCORE EQUAL LIDENT INITIALIZER", line 1, characters 15-21:
+  This 'object' might be unmatched
+File "implementation: CLASS LIDENT COLON OBJECT CONSTRAINT WITH", line 1, characters 33-37:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON OBJECT END WITH", line 1, characters 26-30:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON OBJECT INHERIT LBRACKETAT AND RBRACKET WHILE", line 1, characters 39-44:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON OBJECT INHERIT QUOTED_STRING_EXPR WITH", line 1, characters 46-50:
+Error: Syntax error: 'end' expected
+File "implementation: CLASS LIDENT COLON OBJECT INHERIT QUOTED_STRING_EXPR WITH", line 1, characters 15-21:
+  This 'object' might be unmatched
+File "implementation: CLASS LIDENT COLON OBJECT INHERIT WITH", line 1, characters 30-34:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON OBJECT LBRACKETAT AND RBRACKET WHILE", line 1, characters 31-36:
+Error: Syntax error: 'end' expected
+File "implementation: CLASS LIDENT COLON OBJECT LBRACKETAT AND RBRACKET WHILE", line 1, characters 15-21:
+  This 'object' might be unmatched
+File "implementation: CLASS LIDENT COLON OBJECT LBRACKETATATAT AND RBRACKET WITH", line 1, characters 33-37:
+Error: Syntax error: 'end' expected
+File "implementation: CLASS LIDENT COLON OBJECT LBRACKETATATAT AND RBRACKET WITH", line 1, characters 15-21:
+  This 'object' might be unmatched
+File "implementation: CLASS LIDENT COLON OBJECT LPAREN UNDERSCORE RPAREN WITH", line 1, characters 28-32:
+Error: Syntax error: 'end' expected
+File "implementation: CLASS LIDENT COLON OBJECT LPAREN UNDERSCORE RPAREN WITH", line 1, characters 15-21:
+  This 'object' might be unmatched
+File "implementation: CLASS LIDENT COLON OBJECT LPAREN UNDERSCORE WITH", line 1, characters 26-30:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON OBJECT LPAREN WITH", line 1, characters 24-28:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON OBJECT METHOD LBRACKETAT AND RBRACKET WHILE", line 1, characters 38-43:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON OBJECT METHOD LIDENT COLON UNDERSCORE INITIALIZER", line 1, characters 40-51:
+Error: Syntax error: 'end' expected
+File "implementation: CLASS LIDENT COLON OBJECT METHOD LIDENT COLON UNDERSCORE INITIALIZER", line 1, characters 15-21:
+  This 'object' might be unmatched
+File "implementation: CLASS LIDENT COLON OBJECT METHOD LIDENT COLON WITH", line 1, characters 38-42:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON OBJECT METHOD LIDENT WITH", line 1, characters 36-40:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON OBJECT METHOD PRIVATE WITH", line 1, characters 37-41:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON OBJECT METHOD VIRTUAL PRIVATE WITH", line 1, characters 45-49:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON OBJECT METHOD VIRTUAL WITH", line 1, characters 37-41:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON OBJECT METHOD WITH", line 1, characters 29-33:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON OBJECT QUOTED_STRING_ITEM WITH", line 1, characters 39-43:
+Error: Syntax error: 'end' expected
+File "implementation: CLASS LIDENT COLON OBJECT QUOTED_STRING_ITEM WITH", line 1, characters 15-21:
+  This 'object' might be unmatched
+File "implementation: CLASS LIDENT COLON OBJECT VAL LBRACKETAT AND RBRACKET WHILE", line 1, characters 35-40:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON OBJECT VAL LIDENT COLON UNDERSCORE WITH", line 1, characters 37-41:
+Error: Syntax error: 'end' expected
+File "implementation: CLASS LIDENT COLON OBJECT VAL LIDENT COLON UNDERSCORE WITH", line 1, characters 15-21:
+  This 'object' might be unmatched
+File "implementation: CLASS LIDENT COLON OBJECT VAL LIDENT COLON WITH", line 1, characters 35-39:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON OBJECT VAL LIDENT WITH", line 1, characters 33-37:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON OBJECT VAL MUTABLE WITH", line 1, characters 34-38:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON OBJECT VAL VIRTUAL MUTABLE WITH", line 1, characters 42-46:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON OBJECT VAL VIRTUAL WITH", line 1, characters 34-38:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON OBJECT VAL WITH", line 1, characters 26-30:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON OBJECT WITH", line 1, characters 22-26:
+Error: Syntax error: 'end' expected
+File "implementation: CLASS LIDENT COLON OBJECT WITH", line 1, characters 15-21:
+  This 'object' might be unmatched
+File "implementation: CLASS LIDENT COLON OPTLABEL UNDERSCORE MINUSGREATER WITH", line 1, characters 28-32:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON OPTLABEL UNDERSCORE WITH", line 1, characters 25-29:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON OPTLABEL WITH", line 1, characters 23-27:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON QUOTED_STRING_EXPR EQUAL QUOTED_STRING_EXPR WITH", line 1, characters 49-53:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON QUOTED_STRING_EXPR EQUAL WITH", line 1, characters 33-37:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON QUOTED_STRING_EXPR VAL", line 1, characters 31-34:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON QUOTED_STRING_EXPR WITH", line 1, characters 31-35:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON UIDENT DOT LIDENT WITH", line 1, characters 31-35:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON UNDERSCORE MINUSGREATER WITH", line 1, characters 20-24:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON UNDERSCORE WITH", line 1, characters 17-21:
+Error: Syntax error
+File "implementation: CLASS LIDENT COLON WITH", line 1, characters 15-19:
+Error: Syntax error
+File "implementation: CLASS LIDENT EQUAL QUOTED_STRING_EXPR AND LBRACKET UNDERSCORE RBRACKET WITH", line 1, characters 41-45:
+Error: Syntax error
+File "implementation: CLASS LIDENT EQUAL QUOTED_STRING_EXPR AND LBRACKETAT AND RBRACKET WHILE", line 1, characters 44-49:
+Error: Syntax error
+File "implementation: CLASS LIDENT EQUAL QUOTED_STRING_EXPR AND LIDENT EQUAL LIDENT LBRACKETATAT AND RBRACKET METHOD", line 1, characters 61-67:
+Error: Syntax error
+File "implementation: CLASS LIDENT EQUAL QUOTED_STRING_EXPR AND LIDENT WITH", line 1, characters 42-46:
+Error: Syntax error
+File "implementation: CLASS LIDENT EQUAL QUOTED_STRING_EXPR AND VIRTUAL LBRACELESS", line 1, characters 43-45:
+Error: Syntax error
+File "implementation: CLASS LIDENT EQUAL QUOTED_STRING_EXPR AND WITH", line 1, characters 35-39:
+Error: Syntax error
+File "implementation: CLASS LIDENT EQUAL QUOTED_STRING_EXPR LBRACKETATAT AND RBRACKET METHOD", line 1, characters 41-47:
+Error: Syntax error
+File "implementation: CLASS LIDENT EQUAL QUOTED_STRING_EXPR WITH", line 1, characters 31-35:
+Error: Syntax error
+File "implementation: CLASS LIDENT EQUAL WITH", line 1, characters 15-19:
+Error: Syntax error
+File "implementation: CLASS LIDENT UNDERSCORE WITH", line 1, characters 15-19:
+Error: Syntax error
+File "implementation: CLASS LIDENT WITH", line 1, characters 13-17:
+Error: Syntax error
+File "implementation: CLASS PERCENT AND LBRACELESS", line 1, characters 12-14:
+Error: Syntax error
+File "implementation: CLASS TYPE LBRACKET UNDERSCORE RBRACKET WITH", line 1, characters 17-21:
+Error: Syntax error
+File "implementation: CLASS TYPE LBRACKETAT AND RBRACKET LBRACELESS", line 1, characters 20-22:
+Error: Syntax error
+File "implementation: CLASS TYPE LIDENT EQUAL LBRACKET WITH", line 1, characters 22-26:
+Error: Syntax error
+File "implementation: CLASS TYPE LIDENT EQUAL QUOTED_STRING_EXPR AND LBRACKET UNDERSCORE RBRACKET WITH", line 1, characters 46-50:
+Error: Syntax error
+File "implementation: CLASS TYPE LIDENT EQUAL QUOTED_STRING_EXPR AND LBRACKETAT AND RBRACKET LBRACELESS", line 1, characters 49-51:
+Error: Syntax error
+File "implementation: CLASS TYPE LIDENT EQUAL QUOTED_STRING_EXPR AND LIDENT EQUAL QUOTED_STRING_EXPR LBRACKETATAT AND RBRACKET METHOD", line 1, characters 75-81:
+Error: Syntax error
+File "implementation: CLASS TYPE LIDENT EQUAL QUOTED_STRING_EXPR AND LIDENT EQUAL QUOTED_STRING_EXPR WITH", line 1, characters 65-69:
+Error: Syntax error
+File "implementation: CLASS TYPE LIDENT EQUAL QUOTED_STRING_EXPR AND LIDENT EQUAL WITH", line 1, characters 49-53:
+Error: Syntax error
+File "implementation: CLASS TYPE LIDENT EQUAL QUOTED_STRING_EXPR AND LIDENT WITH", line 1, characters 47-51:
+Error: Syntax error
+File "implementation: CLASS TYPE LIDENT EQUAL QUOTED_STRING_EXPR AND VIRTUAL LBRACELESS", line 1, characters 48-50:
+Error: Syntax error
+File "implementation: CLASS TYPE LIDENT EQUAL QUOTED_STRING_EXPR AND WITH", line 1, characters 40-44:
+Error: Syntax error
+File "implementation: CLASS TYPE LIDENT EQUAL QUOTED_STRING_EXPR LBRACKETATAT AND RBRACKET METHOD", line 1, characters 46-52:
+Error: Syntax error
+File "implementation: CLASS TYPE LIDENT EQUAL QUOTED_STRING_EXPR WITH", line 1, characters 36-40:
+Error: Syntax error
+File "implementation: CLASS TYPE LIDENT EQUAL WITH", line 1, characters 20-24:
+Error: Syntax error
+File "implementation: CLASS TYPE LIDENT WITH", line 1, characters 18-22:
+Error: Syntax error
+File "implementation: CLASS TYPE PERCENT AND LBRACELESS", line 1, characters 17-19:
+Error: Syntax error
+File "implementation: CLASS TYPE VIRTUAL LBRACELESS", line 1, characters 19-21:
+Error: Syntax error
+File "implementation: CLASS TYPE WITH", line 1, characters 11-15:
+Error: Syntax error
+File "implementation: CLASS VIRTUAL LBRACELESS", line 1, characters 14-16:
+Error: Syntax error
+File "implementation: CLASS WITH", line 1, characters 6-10:
+Error: Syntax error
+File "implementation: EXCEPTION LBRACKET WITH", line 1, characters 12-16:
+Error: Syntax error
+File "implementation: EXCEPTION LBRACKETAT AND RBRACKET EXTERNAL", line 1, characters 19-27:
+Error: Syntax error
+File "implementation: EXCEPTION LPAREN COLONCOLON WITH", line 1, characters 15-19:
+Error: Syntax error
+File "implementation: EXCEPTION LPAREN WITH", line 1, characters 12-16:
+Error: Syntax error
+File "implementation: EXCEPTION PERCENT AND EXTERNAL", line 1, characters 16-24:
+Error: Syntax error
+File "implementation: EXCEPTION UIDENT COLON UNDERSCORE MINUSGREATER UNDERSCORE WITH", line 1, characters 26-30:
+Error: Syntax error
+File "implementation: EXCEPTION UIDENT COLON UNDERSCORE MINUSGREATER WITH", line 1, characters 24-28:
+Error: Syntax error
+File "implementation: EXCEPTION UIDENT COLON UNDERSCORE STAR LIDENT VAL", line 1, characters 30-33:
+Error: Syntax error
+File "implementation: EXCEPTION UIDENT COLON UNDERSCORE WITH", line 1, characters 21-25:
+Error: Syntax error
+File "implementation: EXCEPTION UIDENT COLON WITH", line 1, characters 19-23:
+Error: Syntax error
+File "implementation: EXCEPTION UIDENT EQUAL LPAREN WITH", line 1, characters 21-25:
+Error: Syntax error
+File "implementation: EXCEPTION UIDENT EQUAL UIDENT BAR", line 1, characters 26-27:
+Error: Syntax error
+File "implementation: EXCEPTION UIDENT EQUAL UIDENT DOT LPAREN WITH", line 1, characters 30-34:
+Error: Syntax error
+File "implementation: EXCEPTION UIDENT EQUAL UIDENT DOT WITH", line 1, characters 28-32:
+Error: Syntax error
+File "implementation: EXCEPTION UIDENT EQUAL UIDENT LBRACKETAT AND RBRACKET WHILE", line 1, characters 35-40:
+Error: Syntax error
+File "implementation: EXCEPTION UIDENT EQUAL UIDENT WITH", line 1, characters 26-30:
+Error: Syntax error
+File "implementation: EXCEPTION UIDENT EQUAL WITH", line 1, characters 19-23:
+Error: Syntax error
+File "implementation: EXCEPTION UIDENT LBRACKETAT AND RBRACKET CHAR", line 1, characters 26-29:
+Error: Syntax error
+File "implementation: EXCEPTION UIDENT OF LBRACE LIDENT COLON LIDENT SEMI LBRACKETAT AND RBRACKET WHILE", line 1, characters 49-54:
+Error: Syntax error
+File "implementation: EXCEPTION UIDENT OF LBRACE LIDENT COLON UNDERSCORE GREATER", line 1, characters 33-34:
+Error: Syntax error
+File "implementation: EXCEPTION UIDENT OF LBRACE LIDENT COLON UNDERSCORE LBRACKETAT AND RBRACKET WHILE", line 1, characters 42-47:
+Error: Syntax error
+File "implementation: EXCEPTION UIDENT OF LBRACE LIDENT COLON UNDERSCORE SEMI WITH", line 1, characters 35-39:
+Error: Syntax error
+File "implementation: EXCEPTION UIDENT OF LBRACE LIDENT COLON WITH", line 1, characters 31-35:
+Error: Syntax error
+File "implementation: EXCEPTION UIDENT OF LBRACE LIDENT WITH", line 1, characters 29-33:
+Error: Syntax error
+File "implementation: EXCEPTION UIDENT OF LBRACE MUTABLE LETOP", line 1, characters 30-34:
+Error: Syntax error
+File "implementation: EXCEPTION UIDENT OF LBRACE WITH", line 1, characters 22-26:
+Error: Syntax error
+File "implementation: EXCEPTION UIDENT OF LIDENT BAR", line 1, characters 27-28:
+Error: Syntax error
+File "implementation: EXCEPTION UIDENT OF UNDERSCORE STAR UNDERSCORE WITH", line 1, characters 26-30:
+Error: Syntax error
+File "implementation: EXCEPTION UIDENT OF UNDERSCORE STAR WITH", line 1, characters 24-28:
+Error: Syntax error
+File "implementation: EXCEPTION UIDENT OF UNDERSCORE WITH", line 1, characters 22-26:
+Error: Syntax error
+File "implementation: EXCEPTION UIDENT OF WITH", line 1, characters 20-24:
+Error: Syntax error
+File "implementation: EXCEPTION UIDENT WITH", line 1, characters 17-21:
+Error: Syntax error
+File "implementation: EXCEPTION WITH", line 1, characters 10-14:
+Error: Syntax error
+File "implementation: EXTERNAL LBRACKETAT AND RBRACKET WHILE", line 1, characters 18-23:
+Error: Syntax error
+File "implementation: EXTERNAL LIDENT COLON UNDERSCORE EQUAL STRING WITH", line 1, characters 30-34:
+Error: Syntax error
+File "implementation: EXTERNAL LIDENT COLON UNDERSCORE EQUAL WITH", line 1, characters 22-26:
+Error: Syntax error
+File "implementation: EXTERNAL LIDENT COLON UNDERSCORE WITH", line 1, characters 20-24:
+Error: Syntax error
+File "implementation: EXTERNAL LIDENT COLON WITH", line 1, characters 18-22:
+Error: Syntax error
+File "implementation: EXTERNAL LIDENT WITH", line 1, characters 16-20:
+Error: Syntax error
+File "implementation: EXTERNAL LPAREN MODULE WITH", line 1, characters 18-22:
+Error: Syntax error: module-expr expected.
+File "implementation: EXTERNAL LPAREN WITH", line 1, characters 11-15:
+Error: Syntax error: operator expected.
+File "implementation: EXTERNAL PERCENT AND LBRACKET", line 1, characters 15-16:
+Error: Syntax error
+File "implementation: EXTERNAL WITH", line 1, characters 9-13:
+Error: Syntax error
+File "implementation: FOR LBRACKETAT AND RBRACKET ASSERT", line 1, characters 13-19:
+Error: Syntax error
+File "implementation: FOR PERCENT AND ASSERT", line 1, characters 10-16:
+Error: Syntax error
+File "implementation: FOR UNDERSCORE EQUAL UIDENT TO UIDENT DO UIDENT WITH", line 1, characters 35-39:
+Error: Syntax error
+File "implementation: FOR UNDERSCORE EQUAL UIDENT TO UIDENT DO WITH", line 1, characters 28-32:
+Error: Syntax error
+File "implementation: FOR UNDERSCORE EQUAL UIDENT TO UIDENT WITH", line 1, characters 25-29:
+Error: Syntax error
+File "implementation: FOR UNDERSCORE EQUAL UIDENT TO WITH", line 1, characters 18-22:
+Error: Syntax error
+File "implementation: FOR UNDERSCORE EQUAL UIDENT WITH", line 1, characters 15-19:
+Error: Syntax error
+File "implementation: FOR UNDERSCORE EQUAL WITH", line 1, characters 8-12:
+Error: Syntax error
+File "implementation: FOR UNDERSCORE WITH", line 1, characters 6-10:
+Error: Syntax error
+File "implementation: FOR WITH", line 1, characters 4-8:
+Error: Syntax error
+File "implementation: FUN LABEL WITH", line 1, characters 12-16:
+Error: Syntax error
+File "implementation: FUN LBRACKETAT AND RBRACKET ASSERT", line 1, characters 13-19:
+Error: Syntax error
+File "implementation: FUN LPAREN TYPE LIDENT DOT", line 1, characters 18-19:
+Error: Syntax error
+File "implementation: FUN LPAREN TYPE LIDENT RPAREN WITH", line 1, characters 20-24:
+Error: Syntax error
+File "implementation: FUN LPAREN TYPE LIDENT WITH", line 1, characters 18-22:
+Error: Syntax error
+File "implementation: FUN LPAREN TYPE WITH", line 1, characters 11-15:
+Error: Syntax error
+File "implementation: FUN LPAREN WITH", line 1, characters 6-10:
+Error: Syntax error: operator expected.
+File "implementation: FUN OPTLABEL LPAREN UNDERSCORE COLON UNDERSCORE WITH", line 1, characters 20-24:
+Error: Syntax error
+File "implementation: FUN OPTLABEL LPAREN UNDERSCORE COLON WITH", line 1, characters 18-22:
+Error: Syntax error
+File "implementation: FUN OPTLABEL LPAREN UNDERSCORE EQUAL CHAR WITH", line 1, characters 22-26:
+Error: Syntax error
+File "implementation: FUN OPTLABEL LPAREN UNDERSCORE WITH", line 1, characters 16-20:
+Error: Syntax error
+File "implementation: FUN OPTLABEL LPAREN WITH", line 1, characters 14-18:
+Error: Syntax error
+File "implementation: FUN OPTLABEL WITH", line 1, characters 12-16:
+Error: Syntax error
+File "implementation: FUN PERCENT AND ASSERT", line 1, characters 10-16:
+Error: Syntax error
+File "implementation: FUN QUESTION LPAREN LIDENT EQUAL UIDENT WITH", line 1, characters 24-28:
+Error: Syntax error
+File "implementation: FUN QUESTION LPAREN LIDENT EQUAL WITH", line 1, characters 17-21:
+Error: Syntax error
+File "implementation: FUN QUESTION LPAREN WITH", line 1, characters 8-12:
+Error: Syntax error
+File "implementation: FUN QUESTION WITH", line 1, characters 6-10:
+Error: Syntax error
+File "implementation: FUN TILDE LPAREN LIDENT COLON UNDERSCORE WITH", line 1, characters 19-23:
+Error: Syntax error
+File "implementation: FUN TILDE LPAREN LIDENT COLON WITH", line 1, characters 17-21:
+Error: Syntax error
+File "implementation: FUN TILDE LPAREN LIDENT EQUAL", line 1, characters 15-16:
+Error: Syntax error
+File "implementation: FUN TILDE LPAREN LIDENT WITH", line 1, characters 15-19:
+Error: Syntax error
+File "implementation: FUN TILDE LPAREN WITH", line 1, characters 8-12:
+Error: Syntax error
+File "implementation: FUN TILDE WITH", line 1, characters 6-10:
+Error: Syntax error
+File "implementation: FUN UNDERSCORE COLON UNDERSCORE MINUSGREATER WITH", line 1, characters 13-17:
+Error: Syntax error
+File "implementation: FUN UNDERSCORE COLON UNDERSCORE WITH", line 1, characters 10-14:
+Error: Syntax error
+File "implementation: FUN UNDERSCORE COLON WITH", line 1, characters 8-12:
+Error: Syntax error
+File "implementation: FUN UNDERSCORE LPAREN TYPE LIDENT DOT", line 1, characters 20-21:
+Error: Syntax error
+File "implementation: FUN UNDERSCORE LPAREN TYPE LIDENT RPAREN WITH", line 1, characters 22-26:
+Error: Syntax error
+File "implementation: FUN UNDERSCORE LPAREN TYPE WITH", line 1, characters 13-17:
+Error: Syntax error
+File "implementation: FUN UNDERSCORE LPAREN WITH", line 1, characters 8-12:
+Error: Syntax error: operator expected.
+File "implementation: FUN UNDERSCORE MINUSGREATER WITH", line 1, characters 9-13:
+Error: Syntax error
+File "implementation: FUN UNDERSCORE UNDERSCORE WITH", line 1, characters 8-12:
+Error: Syntax error
+File "implementation: FUN UNDERSCORE WITH", line 1, characters 6-10:
+Error: Syntax error
+File "implementation: FUN WITH", line 1, characters 4-8:
+Error: Syntax error
+File "implementation: FUNCTION BAR WITH", line 1, characters 11-15:
+Error: Syntax error
+File "implementation: FUNCTION EXCEPTION LBRACKETAT AND RBRACKET ASSERT", line 1, characters 28-34:
+Error: Syntax error
+File "implementation: FUNCTION EXCEPTION PERCENT AND ASSERT", line 1, characters 25-31:
+Error: Syntax error
+File "implementation: FUNCTION EXCEPTION WITH", line 1, characters 19-23:
+Error: Syntax error
+File "implementation: FUNCTION LBRACKETAT AND RBRACKET ASSERT", line 1, characters 18-24:
+Error: Syntax error
+File "implementation: FUNCTION PERCENT AND ASSERT", line 1, characters 15-21:
+Error: Syntax error
+File "implementation: FUNCTION UNDERSCORE AS WITH", line 1, characters 14-18:
+Error: Syntax error: identifier expected.
+File "implementation: FUNCTION UNDERSCORE BAR UNDERSCORE WITH", line 1, characters 15-19:
+Error: Syntax error
+File "implementation: FUNCTION UNDERSCORE BAR WITH", line 1, characters 13-17:
+Error: Syntax error: pattern expected.
+File "implementation: FUNCTION UNDERSCORE COLONCOLON UNDERSCORE WITH", line 1, characters 16-20:
+Error: Syntax error
+File "implementation: FUNCTION UNDERSCORE COLONCOLON WITH", line 1, characters 14-18:
+Error: Syntax error: pattern expected.
+File "implementation: FUNCTION UNDERSCORE COMMA CHAR COMMA UNDERSCORE WITH", line 1, characters 21-25:
+Error: Syntax error
+File "implementation: FUNCTION UNDERSCORE COMMA CHAR COMMA WITH", line 1, characters 19-23:
+Error: Syntax error
+File "implementation: FUNCTION UNDERSCORE COMMA UNDERSCORE WITH", line 1, characters 15-19:
+Error: Syntax error
+File "implementation: FUNCTION UNDERSCORE COMMA WITH", line 1, characters 13-17:
+Error: Syntax error: pattern expected.
+File "implementation: FUNCTION UNDERSCORE MINUSGREATER CHAR BAR WITH", line 1, characters 20-24:
+Error: Syntax error
+File "implementation: FUNCTION UNDERSCORE MINUSGREATER DOT WHILE", line 1, characters 16-21:
+Error: Syntax error
+File "implementation: FUNCTION UNDERSCORE MINUSGREATER WITH", line 1, characters 14-18:
+Error: Syntax error
+File "implementation: FUNCTION UNDERSCORE WHEN UIDENT MINUSGREATER WITH", line 1, characters 26-30:
+Error: Syntax error
+File "implementation: FUNCTION UNDERSCORE WHEN UIDENT WITH", line 1, characters 23-27:
+Error: Syntax error
+File "implementation: FUNCTION UNDERSCORE WHEN WITH", line 1, characters 16-20:
+Error: Syntax error
+File "implementation: FUNCTION UNDERSCORE WITH", line 1, characters 11-15:
+Error: Syntax error
+File "implementation: FUNCTION WITH", line 1, characters 9-13:
+Error: Syntax error
+File "implementation: IF LBRACKETAT AND RBRACKET AND", line 1, characters 12-15:
+Error: Syntax error
+File "implementation: IF PERCENT AND VIRTUAL", line 1, characters 9-16:
+Error: Syntax error
+File "implementation: IF UIDENT THEN OBJECT END WHILE", line 1, characters 26-31:
+Error: Syntax error
+File "implementation: IF UIDENT THEN UIDENT ELSE OBJECT END WHILE", line 1, characters 38-43:
+Error: Syntax error
+File "implementation: IF UIDENT THEN UIDENT ELSE WITH", line 1, characters 27-31:
+Error: Syntax error
+File "implementation: IF UIDENT THEN WITH", line 1, characters 15-19:
+Error: Syntax error
+File "implementation: IF UIDENT WITH", line 1, characters 10-14:
+Error: Syntax error
+File "implementation: IF WITH", line 1, characters 3-7:
+Error: Syntax error
+File "implementation: INCLUDE LBRACKETAT AND RBRACKET FUNCTION", line 1, characters 17-25:
+Error: Syntax error
+File "implementation: INCLUDE PERCENT AND FUNCTION", line 1, characters 14-22:
+Error: Syntax error
+File "implementation: INCLUDE UIDENT WITH", line 1, characters 15-19:
+Error: Syntax error
+File "implementation: INCLUDE WITH", line 1, characters 8-12:
+Error: Syntax error
+File "implementation: LAZY LBRACKETAT AND RBRACKET ASSERT", line 1, characters 14-20:
+Error: Syntax error
+File "implementation: LAZY PERCENT AND ASSERT", line 1, characters 11-17:
+Error: Syntax error
+File "implementation: LAZY UIDENT UIDENT", line 1, characters 12-18:
+Error: Syntax error
+File "implementation: LAZY WITH", line 1, characters 5-9:
+Error: Syntax error
+File "implementation: LBRACE LIDENT COLONGREATER LIDENT RPAREN", line 1, characters 19-20:
+Error: Syntax error: '}' expected
+File "implementation: LBRACE LIDENT COLONGREATER LIDENT RPAREN", line 1, characters 0-1:
+  This '{' might be unmatched
+File "implementation: LBRACE LIDENT EQUAL CHAR GREATERRBRACE", line 1, characters 15-17:
+Error: Syntax error: '}' expected
+File "implementation: LBRACE LIDENT EQUAL CHAR GREATERRBRACE", line 1, characters 0-1:
+  This '{' might be unmatched
+File "implementation: LBRACE LIDENT SEMI WITH", line 1, characters 11-15:
+Error: Syntax error: '}' expected
+File "implementation: LBRACE LIDENT SEMI WITH", line 1, characters 0-1:
+  This '{' might be unmatched
+File "implementation: LBRACE LIDENT WHILE", line 1, characters 9-14:
+Error: Syntax error: '}' expected
+File "implementation: LBRACE LIDENT WHILE", line 1, characters 0-1:
+  This '{' might be unmatched
+File "implementation: LBRACE TRUE DOT LBRACE UIDENT WITH", line 1, characters 18-22:
+Error: Syntax error: '}' expected
+File "implementation: LBRACE TRUE DOT LBRACE UIDENT WITH", line 1, characters 9-10:
+  This '{' might be unmatched
+File "implementation: LBRACE TRUE DOT LBRACE WITH", line 1, characters 11-15:
+Error: Syntax error
+File "implementation: LBRACE TRUE DOT LBRACKET UIDENT WITH", line 1, characters 18-22:
+Error: Syntax error: ']' expected
+File "implementation: LBRACE TRUE DOT LBRACKET UIDENT WITH", line 1, characters 9-10:
+  This '[' might be unmatched
+File "implementation: LBRACE TRUE DOT LBRACKET WITH", line 1, characters 11-15:
+Error: Syntax error
+File "implementation: LBRACE TRUE DOT LPAREN UIDENT WITH", line 1, characters 18-22:
+Error: Syntax error: ')' expected
+File "implementation: LBRACE TRUE DOT LPAREN UIDENT WITH", line 1, characters 9-10:
+  This '(' might be unmatched
+File "implementation: LBRACE TRUE DOT LPAREN WITH", line 1, characters 11-15:
+Error: Syntax error
+File "implementation: LBRACE TRUE DOT UIDENT DOTOP LBRACE UIDENT RPAREN", line 1, characters 28-29:
+Error: Syntax error: '}' expected
+File "implementation: LBRACE TRUE DOT UIDENT DOTOP LBRACE UIDENT RPAREN", line 1, characters 19-20:
+  This '{' might be unmatched
+File "implementation: LBRACE TRUE DOT UIDENT DOTOP LBRACE WITH", line 1, characters 21-25:
+Error: Syntax error
+File "implementation: LBRACE TRUE DOT UIDENT DOTOP LBRACKET UIDENT RPAREN", line 1, characters 28-29:
+Error: Syntax error: ']' expected
+File "implementation: LBRACE TRUE DOT UIDENT DOTOP LBRACKET UIDENT RPAREN", line 1, characters 19-20:
+  This '[' might be unmatched
+File "implementation: LBRACE TRUE DOT UIDENT DOTOP LBRACKET WITH", line 1, characters 21-25:
+Error: Syntax error
+File "implementation: LBRACE TRUE DOT UIDENT DOTOP LPAREN UIDENT RBRACKET", line 1, characters 28-29:
+Error: Syntax error: ')' expected
+File "implementation: LBRACE TRUE DOT UIDENT DOTOP LPAREN UIDENT RBRACKET", line 1, characters 19-20:
+  This '(' might be unmatched
+File "implementation: LBRACE TRUE DOT UIDENT DOTOP LPAREN WITH", line 1, characters 21-25:
+Error: Syntax error
+File "implementation: LBRACE TRUE DOT UIDENT DOTOP WITH", line 1, characters 19-23:
+Error: Syntax error
+File "implementation: LBRACE TRUE DOT UIDENT WITH", line 1, characters 16-20:
+Error: Syntax error
+File "implementation: LBRACE TRUE DOT WITH", line 1, characters 9-13:
+Error: Syntax error
+File "implementation: LBRACE TRUE WHILE", line 1, characters 7-12:
+Error: Syntax error
+File "implementation: LBRACE UIDENT DOT LIDENT WHILE", line 1, characters 18-23:
+Error: Syntax error: '}' expected
+File "implementation: LBRACE UIDENT DOT LIDENT WHILE", line 1, characters 0-1:
+  This '{' might be unmatched
+File "implementation: LBRACE UIDENT DOT WITH", line 1, characters 11-15:
+Error: Syntax error
+File "implementation: LBRACE UIDENT DOTOP LBRACE UIDENT SEMI RPAREN", line 1, characters 23-24:
+Error: Syntax error: '}' expected
+File "implementation: LBRACE UIDENT DOTOP LBRACE UIDENT SEMI RPAREN", line 1, characters 12-13:
+  This '{' might be unmatched
+File "implementation: LBRACE UIDENT DOTOP LBRACE WITH", line 1, characters 14-18:
+Error: Syntax error
+File "implementation: LBRACE UIDENT DOTOP LBRACKET UIDENT RPAREN", line 1, characters 21-22:
+Error: Syntax error: ']' expected
+File "implementation: LBRACE UIDENT DOTOP LBRACKET UIDENT RPAREN", line 1, characters 12-13:
+  This '[' might be unmatched
+File "implementation: LBRACE UIDENT DOTOP LBRACKET WITH", line 1, characters 14-18:
+Error: Syntax error
+File "implementation: LBRACE UIDENT DOTOP LPAREN UIDENT RBRACKET", line 1, characters 21-22:
+Error: Syntax error: ')' expected
+File "implementation: LBRACE UIDENT DOTOP LPAREN UIDENT RBRACKET", line 1, characters 12-13:
+  This '(' might be unmatched
+File "implementation: LBRACE UIDENT DOTOP LPAREN WITH", line 1, characters 14-18:
+Error: Syntax error
+File "implementation: LBRACE UIDENT DOTOP WITH", line 1, characters 12-16:
+Error: Syntax error
+File "implementation: LBRACE UIDENT WHILE", line 1, characters 9-14:
+Error: Syntax error
+File "implementation: LBRACE UIDENT WITH LIDENT WITH", line 1, characters 21-25:
+Error: Syntax error: '}' expected
+File "implementation: LBRACE UIDENT WITH LIDENT WITH", line 1, characters 0-1:
+  This '{' might be unmatched
+File "implementation: LBRACE UIDENT WITH WITH", line 1, characters 14-18:
+Error: Syntax error
+File "implementation: LBRACE WITH", line 1, characters 2-6:
+Error: Syntax error
+File "implementation: LBRACELESS LIDENT EQUAL UIDENT RBRACE", line 1, characters 19-20:
+Error: Syntax error: '>}' expected
+File "implementation: LBRACELESS LIDENT EQUAL UIDENT RBRACE", line 1, characters 0-2:
+  This '{<' might be unmatched
+File "implementation: LBRACELESS LIDENT EQUAL UIDENT WITH", line 1, characters 19-23:
+Error: Syntax error: '>}' expected
+File "implementation: LBRACELESS LIDENT EQUAL UIDENT WITH", line 1, characters 0-2:
+  This '{<' might be unmatched
+File "implementation: LBRACELESS LIDENT EQUAL WITH", line 1, characters 12-16:
+Error: Syntax error
+File "implementation: LBRACELESS LIDENT SEMI WITH", line 1, characters 12-16:
+Error: Syntax error: '>}' expected
+File "implementation: LBRACELESS LIDENT SEMI WITH", line 1, characters 0-2:
+  This '{<' might be unmatched
+File "implementation: LBRACELESS LIDENT WITH", line 1, characters 10-14:
+Error: Syntax error: '>}' expected
+File "implementation: LBRACELESS LIDENT WITH", line 1, characters 0-2:
+  This '{<' might be unmatched
+File "implementation: LBRACELESS WITH", line 1, characters 3-7:
+Error: Syntax error
+File "implementation: LBRACKET UIDENT RPAREN", line 1, characters 9-10:
+Error: Syntax error: ']' expected
+File "implementation: LBRACKET UIDENT RPAREN", line 1, characters 0-1:
+  This '[' might be unmatched
+File "implementation: LBRACKET WITH", line 1, characters 2-6:
+Error: Syntax error
+File "implementation: LBRACKETATATAT UNDERSCORE", line 1, characters 5-6:
+Error: Syntax error
+File "implementation: LBRACKETATATAT WITH UIDENT WHEN", line 1, characters 18-22:
+Error: Syntax error
+File "implementation: LBRACKETATATAT WITH VIRTUAL", line 1, characters 10-17:
+Error: Syntax error
+File "implementation: LBRACKETBAR UIDENT RPAREN", line 1, characters 10-11:
+Error: Syntax error: '|]' expected
+File "implementation: LBRACKETBAR UIDENT RPAREN", line 1, characters 0-2:
+  This '[|' might be unmatched
+File "implementation: LBRACKETBAR UIDENT SEMI WITH", line 1, characters 12-16:
+Error: Syntax error: '|]' expected
+File "implementation: LBRACKETBAR UIDENT SEMI WITH", line 1, characters 0-2:
+  This '[|' might be unmatched
+File "implementation: LBRACKETBAR UIDENT WITH", line 1, characters 10-14:
+Error: Syntax error: '|]' expected
+File "implementation: LBRACKETBAR UIDENT WITH", line 1, characters 0-2:
+  This '[|' might be unmatched
+File "implementation: LBRACKETBAR WITH", line 1, characters 3-7:
+Error: Syntax error
+File "implementation: LBRACKETPERCENT UNDERSCORE", line 1, characters 3-4:
+Error: Syntax error
+File "implementation: LBRACKETPERCENT WITH UIDENT WHEN", line 1, characters 16-20:
+Error: Syntax error
+File "implementation: LBRACKETPERCENT WITH VIRTUAL", line 1, characters 8-15:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT UNDERSCORE", line 1, characters 4-5:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON CLASS LBRACKET UNDERSCORE RBRACKET WITH", line 1, characters 23-27:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON CLASS LBRACKETAT AND RBRACKET WHILE", line 1, characters 26-31:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON CLASS LIDENT COLON QUOTED_STRING_EXPR AND LBRACKET UNDERSCORE RBRACKET WITH", line 1, characters 52-56:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON CLASS LIDENT COLON QUOTED_STRING_EXPR AND LBRACKETAT AND RBRACKET WHILE", line 1, characters 55-60:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON CLASS LIDENT COLON QUOTED_STRING_EXPR AND LIDENT COLON QUOTED_STRING_EXPR LBRACKETATAT AND RBRACKET METHOD", line 1, characters 81-87:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON CLASS LIDENT COLON QUOTED_STRING_EXPR AND LIDENT COLON QUOTED_STRING_EXPR RPAREN", line 1, characters 71-72:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON CLASS LIDENT COLON QUOTED_STRING_EXPR AND LIDENT COLON WITH", line 1, characters 55-59:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON CLASS LIDENT COLON QUOTED_STRING_EXPR AND LIDENT WITH", line 1, characters 53-57:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON CLASS LIDENT COLON QUOTED_STRING_EXPR AND VIRTUAL LBRACELESS", line 1, characters 54-56:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON CLASS LIDENT COLON QUOTED_STRING_EXPR AND WITH", line 1, characters 46-50:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON CLASS LIDENT COLON QUOTED_STRING_EXPR LBRACKETATAT AND RBRACKET METHOD", line 1, characters 52-58:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON CLASS LIDENT COLON QUOTED_STRING_EXPR RPAREN", line 1, characters 42-43:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON CLASS LIDENT COLON WITH", line 1, characters 26-30:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON CLASS LIDENT WITH", line 1, characters 24-28:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON CLASS PERCENT AND LBRACELESS", line 1, characters 23-25:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON CLASS VIRTUAL LBRACELESS", line 1, characters 25-27:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON CLASS WITH", line 1, characters 17-21:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON EXCEPTION LBRACKETAT AND RBRACKET WHILE", line 1, characters 30-35:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON EXCEPTION PERCENT AND EXTERNAL", line 1, characters 27-35:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON EXCEPTION UIDENT WITH", line 1, characters 28-32:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON EXCEPTION WITH", line 1, characters 21-25:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON INCLUDE LBRACKETAT AND RBRACKET WHILE", line 1, characters 28-33:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON INCLUDE PERCENT AND FUNCTION", line 1, characters 25-33:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON INCLUDE UIDENT RPAREN", line 1, characters 26-27:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON INCLUDE WITH", line 1, characters 19-23:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE LBRACKETAT AND RBRACKET WHILE", line 1, characters 27-32:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE PERCENT AND LBRACKET", line 1, characters 24-25:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE REC UNDERSCORE COLON UIDENT AND LBRACKETAT AND RBRACKET WHILE", line 1, characters 46-51:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE REC UNDERSCORE COLON UIDENT AND UNDERSCORE COLON UIDENT LBRACKETATAT AND RBRACKET METHOD", line 1, characters 58-64:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE REC UNDERSCORE COLON UIDENT AND UNDERSCORE COLON UIDENT RPAREN", line 1, characters 48-49:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE REC UNDERSCORE COLON UIDENT AND UNDERSCORE COLON WITH", line 1, characters 41-45:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE REC UNDERSCORE COLON UIDENT AND UNDERSCORE WITH", line 1, characters 39-43:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE REC UNDERSCORE COLON UIDENT AND WITH", line 1, characters 37-41:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE REC UNDERSCORE COLON UIDENT LBRACKETATAT AND RBRACKET METHOD", line 1, characters 43-49:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE REC UNDERSCORE COLON UIDENT RPAREN", line 1, characters 33-34:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE REC UNDERSCORE COLON WITH", line 1, characters 26-30:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE REC UNDERSCORE WITH", line 1, characters 24-28:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE REC WITH", line 1, characters 22-26:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE TYPE UIDENT LET", line 1, characters 30-33:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE UIDENT COLONEQUAL UIDENT WITH", line 1, characters 35-39:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE UIDENT COLONEQUAL WITH", line 1, characters 28-32:
+Error: Syntax error: module path expected.
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE UIDENT WITH", line 1, characters 25-29:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE UNDERSCORE COLON UIDENT RPAREN", line 1, characters 29-30:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE UNDERSCORE COLON WITH", line 1, characters 22-26:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE UNDERSCORE EQUAL UIDENT WITH", line 1, characters 29-33:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE UNDERSCORE EQUAL WITH", line 1, characters 22-26:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE UNDERSCORE LPAREN RPAREN WITH", line 1, characters 24-28:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE UNDERSCORE WITH", line 1, characters 20-24:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE WITH", line 1, characters 18-22:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON OPEN BANG LBRACKETAT AND RBRACKET WHILE", line 1, characters 27-32:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON OPEN BANG PERCENT AND LBRACKET", line 1, characters 24-25:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON OPEN BANG UIDENT WITH", line 1, characters 25-29:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON OPEN BANG WITH", line 1, characters 18-22:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON OPEN LBRACKETAT AND RBRACKET WHILE", line 1, characters 25-30:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON OPEN PERCENT AND LBRACKET", line 1, characters 22-23:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON OPEN UIDENT WITH", line 1, characters 23-27:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON OPEN WITH", line 1, characters 16-20:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON QUOTED_STRING_ITEM WITH", line 1, characters 28-32:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON SEMISEMI WITH", line 1, characters 14-18:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON TYPE LBRACKETAT AND RBRACKET WHILE", line 1, characters 25-30:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON TYPE LIDENT COLONEQUAL BAR AND LBRACKETAT AND RBRACKET WHILE", line 1, characters 41-46:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON TYPE LIDENT COLONEQUAL BAR AND LIDENT COLONEQUAL UNDERSCORE LBRACKETATAT AND RBRACKET METHOD", line 1, characters 54-60:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON TYPE LIDENT COLONEQUAL BAR AND LIDENT COLONEQUAL UNDERSCORE LET", line 1, characters 44-47:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON TYPE LIDENT COLONEQUAL BAR AND LIDENT COLONEQUAL WITH", line 1, characters 42-46:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON TYPE LIDENT COLONEQUAL BAR AND LIDENT WITH", line 1, characters 39-43:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON TYPE LIDENT COLONEQUAL BAR AND UNDERSCORE LETOP", line 1, characters 34-38:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON TYPE LIDENT COLONEQUAL BAR AND WITH", line 1, characters 32-36:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON TYPE LIDENT COLONEQUAL BAR LBRACKETATAT AND RBRACKET METHOD", line 1, characters 38-44:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON TYPE LIDENT COLONEQUAL UNDERSCORE LET", line 1, characters 28-31:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON TYPE LIDENT COLONEQUAL WITH", line 1, characters 26-30:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON TYPE LIDENT PLUSEQ PRIVATE BANG", line 1, characters 34-35:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON TYPE LIDENT PLUSEQ UIDENT LET", line 1, characters 33-36:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON TYPE LIDENT PLUSEQ WITH", line 1, characters 26-30:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON TYPE LIDENT WITH", line 1, characters 23-27:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON TYPE NONREC LIDENT LET", line 1, characters 30-33:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON TYPE PERCENT AND BACKQUOTE", line 1, characters 22-23:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON TYPE UIDENT DOT LIDENT WITH", line 1, characters 32-36:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON TYPE UNDERSCORE LETOP", line 1, characters 18-22:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON TYPE WITH", line 1, characters 16-20:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON UNDERSCORE WITH", line 1, characters 13-17:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON WITH", line 1, characters 11-15:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH DOT UNDERSCORE", line 1, characters 11-12:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH QUESTION UNDERSCORE WHEN WITH", line 1, characters 18-22:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH QUESTION UNDERSCORE WITH", line 1, characters 13-17:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH QUESTION WITH", line 1, characters 11-15:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH UIDENT WHEN", line 1, characters 17-21:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH VIRTUAL", line 1, characters 9-16:
+Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH WITH", line 1, characters 9-13:
+Error: Syntax error
+File "implementation: LET CHAR EQUAL CHAR AND LBRACKETAT AND RBRACKET WHILE", line 1, characters 27-32:
+Error: Syntax error
+File "implementation: LET CHAR EQUAL CHAR AND UNDERSCORE EQUAL CHAR WITH", line 1, characters 26-30:
+Error: Syntax error
+File "implementation: LET CHAR EQUAL CHAR AND WITH", line 1, characters 18-22:
+Error: Syntax error
+File "implementation: LET CHAR EQUAL CHAR IN WITH", line 1, characters 17-21:
+Error: Syntax error
+File "implementation: LET CHAR EQUAL CHAR LBRACKETATAT AND RBRACKET METHOD", line 1, characters 24-30:
+Error: Syntax error
+File "implementation: LET EXCEPTION LBRACKETAT AND RBRACKET EXTERNAL", line 1, characters 23-31:
+Error: Syntax error
+File "implementation: LET EXCEPTION PERCENT AND EXTERNAL", line 1, characters 20-28:
+Error: Syntax error
+File "implementation: LET EXCEPTION UIDENT IN WITH", line 1, characters 24-28:
+Error: Syntax error
+File "implementation: LET EXCEPTION UIDENT LBRACKETAT AND RBRACKET WHILE", line 1, characters 30-35:
+Error: Syntax error
+File "implementation: LET EXCEPTION UIDENT OF UNDERSCORE EXTERNAL", line 1, characters 26-34:
+Error: Syntax error
+File "implementation: LET EXCEPTION UIDENT WITH", line 1, characters 21-25:
+Error: Syntax error
+File "implementation: LET EXCEPTION WITH", line 1, characters 14-18:
+Error: Syntax error
+File "implementation: LET LBRACKETAT AND RBRACKET ASSERT", line 1, characters 13-19:
+Error: Syntax error
+File "implementation: LET LIDENT COLON QUOTE LIDENT DOT UNDERSCORE EQUAL WITH", line 1, characters 28-32:
+Error: Syntax error
+File "implementation: LET LIDENT COLON QUOTE LIDENT DOT UNDERSCORE WITH", line 1, characters 26-30:
+Error: Syntax error
+File "implementation: LET LIDENT COLON QUOTE LIDENT DOT WITH", line 1, characters 24-28:
+Error: Syntax error
+File "implementation: LET LIDENT COLON QUOTE LIDENT QUOTE LIDENT WITH", line 1, characters 31-35:
+Error: Syntax error
+File "implementation: LET LIDENT COLON QUOTE LIDENT QUOTE WITH", line 1, characters 24-28:
+Error: Syntax error
+File "implementation: LET LIDENT COLON QUOTE UIDENT WITH", line 1, characters 22-26:
+Error: Syntax error
+File "implementation: LET LIDENT COLON QUOTE WITH", line 1, characters 15-19:
+Error: Syntax error
+File "implementation: LET LIDENT COLON TYPE LIDENT DOT UNDERSCORE EQUAL WITH", line 1, characters 31-35:
+Error: Syntax error
+File "implementation: LET LIDENT COLON TYPE LIDENT DOT UNDERSCORE WITH", line 1, characters 29-33:
+Error: Syntax error
+File "implementation: LET LIDENT COLON TYPE LIDENT DOT WITH", line 1, characters 27-31:
+Error: Syntax error
+File "implementation: LET LIDENT COLON TYPE LIDENT RPAREN", line 1, characters 25-26:
+Error: Syntax error
+File "implementation: LET LIDENT COLON TYPE WITH", line 1, characters 18-22:
+Error: Syntax error
+File "implementation: LET LIDENT COLON WITH", line 1, characters 13-17:
+Error: Syntax error
+File "implementation: LET LIDENT COLONGREATER UNDERSCORE EQUAL WITH", line 1, characters 18-22:
+Error: Syntax error
+File "implementation: LET LIDENT COLONGREATER UNDERSCORE SEMI", line 1, characters 16-17:
+Error: Syntax error
+File "implementation: LET LIDENT WITH", line 1, characters 11-15:
+Error: Syntax error
+File "implementation: LET MODULE LBRACKETAT AND RBRACKET WHILE", line 1, characters 20-25:
+Error: Syntax error
+File "implementation: LET MODULE PERCENT AND LBRACKET", line 1, characters 17-18:
+Error: Syntax error
+File "implementation: LET MODULE UNDERSCORE EQUAL UIDENT IN WITH", line 1, characters 25-29:
+Error: Syntax error
+File "implementation: LET MODULE UNDERSCORE EQUAL UIDENT VAL", line 1, characters 22-25:
+Error: Syntax error
+File "implementation: LET MODULE UNDERSCORE WITH", line 1, characters 13-17:
+Error: Syntax error
+File "implementation: LET MODULE WITH", line 1, characters 11-15:
+Error: Syntax error
+File "implementation: LET OPEN BANG LBRACKETAT AND RBRACKET WHILE", line 1, characters 20-25:
+Error: Syntax error
+File "implementation: LET OPEN BANG PERCENT AND WHILE", line 1, characters 17-22:
+Error: Syntax error
+File "implementation: LET OPEN BANG UIDENT IN WITH", line 1, characters 21-25:
+Error: Syntax error
+File "implementation: LET OPEN BANG UIDENT WITH", line 1, characters 18-22:
+Error: Syntax error
+File "implementation: LET OPEN BANG WITH", line 1, characters 11-15:
+Error: Syntax error
+File "implementation: LET OPEN LBRACKETAT AND RBRACKET FUNCTION", line 1, characters 18-26:
+Error: Syntax error
+File "implementation: LET OPEN PERCENT AND FUNCTION", line 1, characters 15-23:
+Error: Syntax error
+File "implementation: LET OPEN UIDENT IN WITH", line 1, characters 19-23:
+Error: Syntax error
+File "implementation: LET OPEN UIDENT WITH", line 1, characters 16-20:
+Error: Syntax error
+File "implementation: LET OPEN WITH", line 1, characters 9-13:
+Error: Syntax error
+File "implementation: LET PERCENT AND ASSERT", line 1, characters 10-16:
+Error: Syntax error
+File "implementation: LET REC ASSERT", line 1, characters 8-14:
+Error: Syntax error
+File "implementation: LET UIDENT UNDERSCORE WITH", line 1, characters 13-17:
+Error: Syntax error
+File "implementation: LET UNDERSCORE COLON UNDERSCORE EQUAL WITH", line 1, characters 12-16:
+Error: Syntax error
+File "implementation: LET UNDERSCORE COLON UNDERSCORE WITH", line 1, characters 10-14:
+Error: Syntax error
+File "implementation: LET UNDERSCORE COLON WITH", line 1, characters 8-12:
+Error: Syntax error
+File "implementation: LET UNDERSCORE EQUAL CHAR WITH", line 1, characters 12-16:
+Error: Syntax error
+File "implementation: LET UNDERSCORE EQUAL WITH", line 1, characters 8-12:
+Error: Syntax error
+File "implementation: LET UNDERSCORE WITH", line 1, characters 6-10:
+Error: Syntax error
+File "implementation: LET WITH", line 1, characters 4-8:
+Error: Syntax error
+File "implementation: LETOP BACKQUOTE UIDENT WITH", line 1, characters 14-18:
+Error: Syntax error
+File "implementation: LETOP HASH WITH", line 1, characters 7-11:
+Error: Syntax error
+File "implementation: LETOP LAZY LBRACKETAT AND RBRACKET ASSERT", line 1, characters 19-25:
+Error: Syntax error
+File "implementation: LETOP LAZY PERCENT AND WHILE", line 1, characters 16-21:
+Error: Syntax error
+File "implementation: LETOP LAZY WITH", line 1, characters 10-14:
+Error: Syntax error
+File "implementation: LETOP LBRACE LIDENT COLON UNDERSCORE WITH", line 1, characters 18-22:
+Error: Syntax error: '}' expected
+File "implementation: LETOP LBRACE LIDENT COLON UNDERSCORE WITH", line 1, characters 5-6:
+  This '{' might be unmatched
+File "implementation: LETOP LBRACE LIDENT COLON WITH", line 1, characters 16-20:
+Error: Syntax error
+File "implementation: LETOP LBRACE LIDENT EQUAL UNDERSCORE WITH", line 1, characters 18-22:
+Error: Syntax error: '}' expected
+File "implementation: LETOP LBRACE LIDENT EQUAL UNDERSCORE WITH", line 1, characters 5-6:
+  This '{' might be unmatched
+File "implementation: LETOP LBRACE LIDENT EQUAL WITH", line 1, characters 16-20:
+Error: Syntax error
+File "implementation: LETOP LBRACE LIDENT SEMI UNDERSCORE SEMI WITH", line 1, characters 20-24:
+Error: Syntax error: '}' expected
+File "implementation: LETOP LBRACE LIDENT SEMI UNDERSCORE SEMI WITH", line 1, characters 5-6:
+  This '{' might be unmatched
+File "implementation: LETOP LBRACE LIDENT SEMI UNDERSCORE WITH", line 1, characters 18-22:
+Error: Syntax error: '}' expected
+File "implementation: LETOP LBRACE LIDENT SEMI UNDERSCORE WITH", line 1, characters 5-6:
+  This '{' might be unmatched
+File "implementation: LETOP LBRACE LIDENT SEMI WITH", line 1, characters 16-20:
+Error: Syntax error: '}' expected
+File "implementation: LETOP LBRACE LIDENT SEMI WITH", line 1, characters 5-6:
+  This '{' might be unmatched
+File "implementation: LETOP LBRACE LIDENT WITH", line 1, characters 14-18:
+Error: Syntax error: '}' expected
+File "implementation: LETOP LBRACE LIDENT WITH", line 1, characters 5-6:
+  This '{' might be unmatched
+File "implementation: LETOP LBRACE WITH", line 1, characters 7-11:
+Error: Syntax error
+File "implementation: LETOP LBRACKET UNDERSCORE BARRBRACKET", line 1, characters 9-11:
+Error: Syntax error: ']' expected
+File "implementation: LETOP LBRACKET UNDERSCORE BARRBRACKET", line 1, characters 5-6:
+  This '[' might be unmatched
+File "implementation: LETOP LBRACKET WITH", line 1, characters 7-11:
+Error: Syntax error
+File "implementation: LETOP LBRACKETBAR UNDERSCORE RBRACKET", line 1, characters 10-11:
+Error: Syntax error: '|]' expected
+File "implementation: LETOP LBRACKETBAR UNDERSCORE RBRACKET", line 1, characters 5-7:
+  This '[|' might be unmatched
+File "implementation: LETOP LBRACKETBAR UNDERSCORE SEMI WITH", line 1, characters 12-16:
+Error: Syntax error: '|]' expected
+File "implementation: LETOP LBRACKETBAR UNDERSCORE SEMI WITH", line 1, characters 5-7:
+  This '[|' might be unmatched
+File "implementation: LETOP LBRACKETBAR UNDERSCORE WITH", line 1, characters 10-14:
+Error: Syntax error: '|]' expected
+File "implementation: LETOP LBRACKETBAR UNDERSCORE WITH", line 1, characters 5-7:
+  This '[|' might be unmatched
+File "implementation: LETOP LBRACKETBAR WITH", line 1, characters 8-12:
+Error: Syntax error
+File "implementation: LETOP LIDENT ANDOP WITH", line 1, characters 17-21:
+Error: Syntax error
+File "implementation: LETOP LIDENT EQUAL WITH", line 1, characters 14-18:
+Error: Syntax error
+File "implementation: LETOP LIDENT IN WITH", line 1, characters 15-19:
+Error: Syntax error
+File "implementation: LETOP LIDENT LPAREN TYPE LIDENT DOT", line 1, characters 26-27:
+Error: Syntax error
+File "implementation: LETOP LIDENT LPAREN TYPE LIDENT RPAREN WITH", line 1, characters 28-32:
+Error: Syntax error
+File "implementation: LETOP LIDENT LPAREN TYPE WITH", line 1, characters 19-23:
+Error: Syntax error
+File "implementation: LETOP LIDENT LPAREN WITH", line 1, characters 14-18:
+Error: Syntax error: operator expected.
+File "implementation: LETOP LIDENT UNDERSCORE COLONGREATER LIDENT EQUAL WITH", line 1, characters 26-30:
+Error: Syntax error
+File "implementation: LETOP LIDENT UNDERSCORE COLONGREATER LIDENT SEMI", line 1, characters 24-25:
+Error: Syntax error
+File "implementation: LETOP LIDENT UNDERSCORE WITH", line 1, characters 14-18:
+Error: Syntax error
+File "implementation: LETOP LIDENT WITH", line 1, characters 12-16:
+Error: Syntax error
+File "implementation: LETOP LPAREN MINUS WITH", line 1, characters 9-13:
+Error: Syntax error: ')' expected
+File "implementation: LETOP LPAREN MINUS WITH", line 1, characters 5-6:
+  This '(' might be unmatched
+File "implementation: LETOP LPAREN MODULE LBRACKETAT AND RBRACKET WHILE", line 1, characters 23-28:
+Error: Syntax error
+File "implementation: LETOP LPAREN MODULE PERCENT AND WHILE", line 1, characters 20-25:
+Error: Syntax error
+File "implementation: LETOP LPAREN MODULE UNDERSCORE COLON UIDENT VAL", line 1, characters 25-28:
+Error: Syntax error: ')' expected
+File "implementation: LETOP LPAREN MODULE UNDERSCORE COLON UIDENT VAL", line 1, characters 5-6:
+  This '(' might be unmatched
+File "implementation: LETOP LPAREN MODULE UNDERSCORE COLON WITH", line 1, characters 18-22:
+Error: Syntax error
+File "implementation: LETOP LPAREN MODULE UNDERSCORE WITH", line 1, characters 16-20:
+Error: Syntax error
+File "implementation: LETOP LPAREN MODULE WITH", line 1, characters 14-18:
+Error: Syntax error: module-expr expected.
+File "implementation: LETOP LPAREN PLUS WITH", line 1, characters 9-13:
+Error: Syntax error: ')' expected
+File "implementation: LETOP LPAREN PLUS WITH", line 1, characters 5-6:
+  This '(' might be unmatched
+File "implementation: LETOP LPAREN UNDERSCORE COLON UNDERSCORE WITH", line 1, characters 13-17:
+Error: Syntax error: ')' expected
+File "implementation: LETOP LPAREN UNDERSCORE COLON UNDERSCORE WITH", line 1, characters 5-6:
+  This '(' might be unmatched
+File "implementation: LETOP LPAREN UNDERSCORE COLON WITH", line 1, characters 11-15:
+Error: Syntax error: type expected.
+File "implementation: LETOP LPAREN UNDERSCORE WITH", line 1, characters 9-13:
+Error: Syntax error: ')' expected
+File "implementation: LETOP LPAREN UNDERSCORE WITH", line 1, characters 5-6:
+  This '(' might be unmatched
+File "implementation: LETOP LPAREN WITH", line 1, characters 7-11:
+Error: Syntax error: operator expected.
+File "implementation: LETOP MINUS WITH", line 1, characters 7-11:
+Error: Syntax error
+File "implementation: LETOP PLUS WITH", line 1, characters 7-11:
+Error: Syntax error
+File "implementation: LETOP STRING DOTDOT WITH", line 1, characters 16-20:
+Error: Syntax error
+File "implementation: LETOP STRING WITH", line 1, characters 13-17:
+Error: Syntax error
+File "implementation: LETOP UIDENT DOT LBRACKET WITH", line 1, characters 16-20:
+Error: Syntax error
+File "implementation: LETOP UIDENT DOT LPAREN UNDERSCORE WITH", line 1, characters 18-22:
+Error: Syntax error: ')' expected
+File "implementation: LETOP UIDENT DOT LPAREN UNDERSCORE WITH", line 1, characters 14-15:
+  This '(' might be unmatched
+File "implementation: LETOP UIDENT DOT LPAREN WITH", line 1, characters 16-20:
+Error: Syntax error: pattern expected.
+File "implementation: LETOP UIDENT DOT WITH", line 1, characters 14-18:
+Error: Syntax error
+File "implementation: LETOP UIDENT LIDENT WITH", line 1, characters 19-23:
+Error: Syntax error
+File "implementation: LETOP UIDENT TILDE", line 1, characters 12-13:
+Error: Syntax error
+File "implementation: LETOP UIDENT WITH", line 1, characters 12-16:
+Error: Syntax error
+File "implementation: LETOP UNDERSCORE AS WITH", line 1, characters 10-14:
+Error: Syntax error: identifier expected.
+File "implementation: LETOP UNDERSCORE BAR UNDERSCORE WITH", line 1, characters 11-15:
+Error: Syntax error
+File "implementation: LETOP UNDERSCORE BAR WITH", line 1, characters 9-13:
+Error: Syntax error: pattern expected.
+File "implementation: LETOP UNDERSCORE COLON UNDERSCORE EQUAL WITH", line 1, characters 13-17:
+Error: Syntax error
+File "implementation: LETOP UNDERSCORE COLON UNDERSCORE WITH", line 1, characters 11-15:
+Error: Syntax error
+File "implementation: LETOP UNDERSCORE COLON WITH", line 1, characters 9-13:
+Error: Syntax error
+File "implementation: LETOP UNDERSCORE COLONCOLON UNDERSCORE WITH", line 1, characters 12-16:
+Error: Syntax error
+File "implementation: LETOP UNDERSCORE COLONCOLON WITH", line 1, characters 10-14:
+Error: Syntax error: pattern expected.
+File "implementation: LETOP UNDERSCORE COMMA CHAR COMMA UNDERSCORE WITH", line 1, characters 17-21:
+Error: Syntax error
+File "implementation: LETOP UNDERSCORE COMMA CHAR COMMA WITH", line 1, characters 15-19:
+Error: Syntax error
+File "implementation: LETOP UNDERSCORE COMMA UNDERSCORE WITH", line 1, characters 11-15:
+Error: Syntax error
+File "implementation: LETOP UNDERSCORE COMMA WITH", line 1, characters 9-13:
+Error: Syntax error: pattern expected.
+File "implementation: LETOP UNDERSCORE EQUAL CHAR WITH", line 1, characters 13-17:
+Error: Syntax error
+File "implementation: LETOP UNDERSCORE EQUAL WITH", line 1, characters 9-13:
+Error: Syntax error
+File "implementation: LETOP UNDERSCORE WITH", line 1, characters 7-11:
+Error: Syntax error
+File "implementation: LETOP WITH", line 1, characters 5-9:
+Error: Syntax error
+File "implementation: LIDENT LESSMINUS OBJECT END WHILE", line 1, characters 21-26:
+Error: Syntax error
+File "implementation: LIDENT LESSMINUS WITH", line 1, characters 10-14:
+Error: Syntax error
+File "implementation: LIDENT WHILE", line 1, characters 7-12:
+Error: Syntax error
+File "implementation: LPAREN BANG WITH", line 1, characters 4-8:
+Error: Syntax error: ')' expected
+File "implementation: LPAREN BANG WITH", line 1, characters 0-1:
+  This '(' might be unmatched
+File "implementation: LPAREN COLONCOLON WITH", line 1, characters 5-9:
+Error: Syntax error
+File "implementation: LPAREN DOTOP LBRACE RBRACE WITH", line 1, characters 9-13:
+Error: Syntax error: ')' expected
+File "implementation: LPAREN DOTOP LBRACE RBRACE WITH", line 1, characters 0-1:
+  This '(' might be unmatched
+File "implementation: LPAREN DOTOP LBRACE SEMI DOTDOT WITH", line 1, characters 12-16:
+Error: Syntax error
+File "implementation: LPAREN DOTOP LBRACE WITH", line 1, characters 7-11:
+Error: Syntax error
+File "implementation: LPAREN DOTOP LBRACKET RBRACKET WITH", line 1, characters 9-13:
+Error: Syntax error: ')' expected
+File "implementation: LPAREN DOTOP LBRACKET RBRACKET WITH", line 1, characters 0-1:
+  This '(' might be unmatched
+File "implementation: LPAREN DOTOP LBRACKET SEMI DOTDOT WITH", line 1, characters 12-16:
+Error: Syntax error
+File "implementation: LPAREN DOTOP LBRACKET WITH", line 1, characters 7-11:
+Error: Syntax error
+File "implementation: LPAREN DOTOP LPAREN RPAREN WITH", line 1, characters 9-13:
+Error: Syntax error: ')' expected
+File "implementation: LPAREN DOTOP LPAREN RPAREN WITH", line 1, characters 0-1:
+  This '(' might be unmatched
+File "implementation: LPAREN DOTOP LPAREN SEMI DOTDOT WITH", line 1, characters 12-16:
+Error: Syntax error
+File "implementation: LPAREN DOTOP LPAREN SEMI WITH", line 1, characters 9-13:
+Error: Syntax error
+File "implementation: LPAREN DOTOP LPAREN WITH", line 1, characters 7-11:
+Error: Syntax error
+File "implementation: LPAREN DOTOP WITH", line 1, characters 5-9:
+Error: Syntax error
+File "implementation: LPAREN LETOP WITH", line 1, characters 7-11:
+Error: Syntax error: ')' expected
+File "implementation: LPAREN LETOP WITH", line 1, characters 0-1:
+  This '(' might be unmatched
+File "implementation: LPAREN MINUS WITH", line 1, characters 4-8:
+Error: Syntax error: ')' expected
+File "implementation: LPAREN MINUS WITH", line 1, characters 0-1:
+  This '(' might be unmatched
+File "implementation: LPAREN MINUSDOT WITH", line 1, characters 5-9:
+Error: Syntax error: ')' expected
+File "implementation: LPAREN MINUSDOT WITH", line 1, characters 0-1:
+  This '(' might be unmatched
+File "implementation: LPAREN MODULE LBRACKETAT AND RBRACKET FUNCTION", line 1, characters 18-26:
+Error: Syntax error
+File "implementation: LPAREN MODULE PERCENT AND WHILE", line 1, characters 15-20:
+Error: Syntax error
+File "implementation: LPAREN MODULE UIDENT COLON UIDENT VAL", line 1, characters 25-28:
+Error: Syntax error
+File "implementation: LPAREN MODULE UIDENT COLON WITH", line 1, characters 18-22:
+Error: Syntax error: ')' expected
+File "implementation: LPAREN MODULE UIDENT COLON WITH", line 1, characters 0-1:
+  This '(' might be unmatched
+File "implementation: LPAREN MODULE UIDENT WITH", line 1, characters 16-20:
+Error: Syntax error
+File "implementation: LPAREN MODULE WITH", line 1, characters 9-13:
+Error: Syntax error: module-expr expected.
+File "implementation: LPAREN PLUS WITH", line 1, characters 4-8:
+Error: Syntax error: ')' expected
+File "implementation: LPAREN PLUS WITH", line 1, characters 0-1:
+  This '(' might be unmatched
+File "implementation: LPAREN PLUSDOT WITH", line 1, characters 5-9:
+Error: Syntax error: ')' expected
+File "implementation: LPAREN PLUSDOT WITH", line 1, characters 0-1:
+  This '(' might be unmatched
+File "implementation: LPAREN PREFIXOP WITH", line 1, characters 5-9:
+Error: Syntax error: ')' expected
+File "implementation: LPAREN PREFIXOP WITH", line 1, characters 0-1:
+  This '(' might be unmatched
+File "implementation: LPAREN STAR WITH", line 1, characters 4-8:
+Error: Syntax error: ')' expected
+File "implementation: LPAREN STAR WITH", line 1, characters 0-1:
+  This '(' might be unmatched
+File "implementation: LPAREN UIDENT COLON UNDERSCORE COLONGREATER UNDERSCORE WITH", line 1, characters 18-22:
+Error: Syntax error
+File "implementation: LPAREN UIDENT COLON UNDERSCORE COLONGREATER WITH", line 1, characters 16-20:
+Error: Syntax error
+File "implementation: LPAREN UIDENT COLON UNDERSCORE WITH", line 1, characters 13-17:
+Error: Syntax error
+File "implementation: LPAREN UIDENT COLON WITH", line 1, characters 11-15:
+Error: Syntax error
+File "implementation: LPAREN UIDENT COLONGREATER LIDENT SEMI", line 1, characters 19-20:
+Error: Syntax error
+File "implementation: LPAREN UIDENT COLONGREATER UNDERSCORE WITH", line 1, characters 14-18:
+Error: Syntax error
+File "implementation: LPAREN UIDENT COLONGREATER WITH", line 1, characters 12-16:
+Error: Syntax error
+File "implementation: LPAREN UIDENT WITH", line 1, characters 9-13:
+Error: Syntax error: ')' expected
+File "implementation: LPAREN UIDENT WITH", line 1, characters 0-1:
+  This '(' might be unmatched
+File "implementation: LPAREN WITH", line 1, characters 2-6:
+Error: Syntax error: operator expected.
+File "implementation: MATCH LBRACKETAT AND RBRACKET AND", line 1, characters 15-18:
+Error: Syntax error
+File "implementation: MATCH PERCENT AND VIRTUAL", line 1, characters 12-19:
+Error: Syntax error
+File "implementation: MATCH UIDENT VAL", line 1, characters 13-16:
+Error: Syntax error
+File "implementation: MATCH UIDENT WITH UNDERSCORE MINUSGREATER DOT WHILE", line 1, characters 25-30:
+Error: Syntax error
+File "implementation: MATCH UIDENT WITH WITH", line 1, characters 18-22:
+Error: Syntax error
+File "implementation: MATCH WITH", line 1, characters 6-10:
+Error: Syntax error
+File "implementation: MINUSDOT WITH", line 1, characters 3-7:
+Error: Syntax error
+File "implementation: MODULE LBRACKETAT AND RBRACKET WHILE", line 1, characters 16-21:
+Error: Syntax error
+File "implementation: MODULE PERCENT AND LBRACKET", line 1, characters 13-14:
+Error: Syntax error
+File "implementation: MODULE REC UNDERSCORE EQUAL QUOTED_STRING_EXPR AND LBRACKETAT AND RBRACKET WHILE", line 1, characters 44-49:
+Error: Syntax error
+File "implementation: MODULE REC UNDERSCORE EQUAL QUOTED_STRING_EXPR AND UNDERSCORE EQUAL QUOTED_STRING_EXPR IN", line 1, characters 55-57:
+Error: Syntax error
+File "implementation: MODULE REC UNDERSCORE EQUAL QUOTED_STRING_EXPR AND UNDERSCORE EQUAL QUOTED_STRING_EXPR LBRACKETATAT AND RBRACKET METHOD", line 1, characters 65-71:
+Error: Syntax error
+File "implementation: MODULE REC UNDERSCORE EQUAL QUOTED_STRING_EXPR AND UNDERSCORE WITH", line 1, characters 37-41:
+Error: Syntax error
+File "implementation: MODULE REC UNDERSCORE EQUAL QUOTED_STRING_EXPR AND WITH", line 1, characters 35-39:
+Error: Syntax error
+File "implementation: MODULE REC UNDERSCORE EQUAL QUOTED_STRING_EXPR IN", line 1, characters 31-33:
+Error: Syntax error
+File "implementation: MODULE REC UNDERSCORE EQUAL QUOTED_STRING_EXPR LBRACKETATAT AND RBRACKET METHOD", line 1, characters 41-47:
+Error: Syntax error
+File "implementation: MODULE REC UNDERSCORE WITH", line 1, characters 13-17:
+Error: Syntax error
+File "implementation: MODULE REC WITH", line 1, characters 11-15:
+Error: Syntax error
+File "implementation: MODULE TYPE LBRACKETAT AND RBRACKET WHILE", line 1, characters 21-26:
+Error: Syntax error
+File "implementation: MODULE TYPE PERCENT AND WHILE", line 1, characters 18-23:
+Error: Syntax error
+File "implementation: MODULE TYPE UIDENT EQUAL UIDENT RPAREN", line 1, characters 28-29:
+Error: Syntax error
+File "implementation: MODULE TYPE UIDENT EQUAL WITH", line 1, characters 21-25:
+Error: Syntax error
+File "implementation: MODULE TYPE UIDENT WITH", line 1, characters 19-23:
+Error: Syntax error
+File "implementation: MODULE TYPE WITH", line 1, characters 12-16:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON FUNCTOR LBRACKETAT AND RBRACKET WHILE", line 1, characters 28-33:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON FUNCTOR LPAREN RPAREN MINUSGREATER QUOTED_STRING_EXPR WHILE", line 1, characters 42-47:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON FUNCTOR LPAREN RPAREN MINUSGREATER WITH", line 1, characters 26-30:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON FUNCTOR LPAREN RPAREN WITH", line 1, characters 23-27:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON FUNCTOR WITH", line 1, characters 19-23:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON LPAREN UIDENT VAL", line 1, characters 20-23:
+Error: Syntax error: ')' expected
+File "implementation: MODULE UNDERSCORE COLON LPAREN UIDENT VAL", line 1, characters 11-12:
+  This '(' might be unmatched
+File "implementation: MODULE UNDERSCORE COLON LPAREN WITH", line 1, characters 13-17:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON MODULE TYPE OF LBRACKETAT AND RBRACKET FUNCTION", line 1, characters 35-43:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON MODULE TYPE OF UIDENT IN", line 1, characters 33-35:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON MODULE TYPE OF WITH", line 1, characters 26-30:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON MODULE TYPE WITH", line 1, characters 23-27:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON MODULE WITH", line 1, characters 18-22:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON SIG LBRACKETAT AND RBRACKET WHILE", line 1, characters 24-29:
+Error: Syntax error: 'end' expected
+File "implementation: MODULE UNDERSCORE COLON SIG LBRACKETAT AND RBRACKET WHILE", line 1, characters 11-14:
+  This 'sig' might be unmatched
+File "implementation: MODULE UNDERSCORE COLON SIG SEMISEMI RBRACKET", line 1, characters 18-19:
+Error: Syntax error: 'end' expected
+File "implementation: MODULE UNDERSCORE COLON SIG SEMISEMI RBRACKET", line 1, characters 11-14:
+  This 'sig' might be unmatched
+File "implementation: MODULE UNDERSCORE COLON SIG WITH", line 1, characters 15-19:
+Error: Syntax error: 'end' expected
+File "implementation: MODULE UNDERSCORE COLON SIG WITH", line 1, characters 11-14:
+  This 'sig' might be unmatched
+File "implementation: MODULE UNDERSCORE COLON UIDENT DOT UIDENT WHILE", line 1, characters 27-32:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON UIDENT DOT WITH", line 1, characters 20-24:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON UIDENT EQUAL UIDENT WITH", line 1, characters 27-31:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON UIDENT EQUAL WITH", line 1, characters 20-24:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON UIDENT LPAREN UIDENT RPAREN WITH", line 1, characters 29-33:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON UIDENT MINUSGREATER QUOTED_STRING_EXPR WHILE", line 1, characters 37-42:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON UIDENT MINUSGREATER WITH", line 1, characters 21-25:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON UIDENT VAL", line 1, characters 18-21:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON UIDENT WHILE", line 1, characters 18-23:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON UIDENT WITH MODULE UIDENT COLONEQUAL UIDENT WHILE", line 1, characters 47-52:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON UIDENT WITH MODULE UIDENT COLONEQUAL WITH", line 1, characters 40-44:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON UIDENT WITH MODULE UIDENT EQUAL UIDENT WHILE", line 1, characters 46-51:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON UIDENT WITH MODULE UIDENT EQUAL WITH", line 1, characters 39-43:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON UIDENT WITH MODULE UIDENT WITH", line 1, characters 37-41:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON UIDENT WITH MODULE WITH", line 1, characters 30-34:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON UIDENT WITH TYPE LIDENT COLONEQUAL UNDERSCORE SEMI", line 1, characters 40-41:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON UIDENT WITH TYPE LIDENT COLONEQUAL WITH", line 1, characters 38-42:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON UIDENT WITH TYPE LIDENT EQUAL PRIVATE WITH", line 1, characters 45-49:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON UIDENT WITH TYPE LIDENT EQUAL UNDERSCORE AND WITH", line 1, characters 43-47:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON UIDENT WITH TYPE LIDENT EQUAL UNDERSCORE SEMI", line 1, characters 39-40:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON UIDENT WITH TYPE LIDENT EQUAL WITH", line 1, characters 37-41:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON UIDENT WITH TYPE LIDENT WITH", line 1, characters 35-39:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON UIDENT WITH TYPE UNDERSCORE LETOP", line 1, characters 30-34:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON UIDENT WITH TYPE WITH", line 1, characters 28-32:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON UIDENT WITH WITH", line 1, characters 23-27:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON WITH", line 1, characters 11-15:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE EQUAL QUOTED_STRING_EXPR IN", line 1, characters 27-29:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE EQUAL UIDENT WITH", line 1, characters 18-22:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE EQUAL WITH", line 1, characters 11-15:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE LPAREN RPAREN WITH", line 1, characters 13-17:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE LPAREN UNDERSCORE COLON UIDENT VAL", line 1, characters 22-25:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE LPAREN UNDERSCORE COLON WITH", line 1, characters 15-19:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE LPAREN UNDERSCORE WITH", line 1, characters 13-17:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE LPAREN WITH", line 1, characters 11-15:
+Error: Syntax error
+File "implementation: MODULE UNDERSCORE WITH", line 1, characters 9-13:
+Error: Syntax error
+File "implementation: MODULE WITH", line 1, characters 7-11:
+Error: Syntax error
+File "implementation: NEW LBRACKETAT AND RBRACKET WHILE", line 1, characters 13-18:
+Error: Syntax error
+File "implementation: NEW PERCENT AND LBRACKET", line 1, characters 10-11:
+Error: Syntax error
+File "implementation: NEW UIDENT DOT WITH", line 1, characters 13-17:
+Error: Syntax error
+File "implementation: NEW UIDENT WITH", line 1, characters 11-15:
+Error: Syntax error
+File "implementation: NEW WITH", line 1, characters 4-8:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT HASH WITH", line 1, characters 20-24:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LBRACKET BACKQUOTE UIDENT GREATER", line 1, characters 29-30:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LBRACKET BACKQUOTE UIDENT OF AMPERSAND WITH", line 1, characters 34-38:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LBRACKET BACKQUOTE UIDENT OF UNDERSCORE AMPERSAND UNDERSCORE WITH", line 1, characters 38-42:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LBRACKET BACKQUOTE UIDENT OF UNDERSCORE AMPERSAND WITH", line 1, characters 36-40:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LBRACKET BACKQUOTE UIDENT OF UNDERSCORE WITH", line 1, characters 34-38:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LBRACKET BACKQUOTE UIDENT OF WITH", line 1, characters 32-36:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LBRACKET BACKQUOTE UIDENT WITH", line 1, characters 29-33:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LBRACKET BAR UNDERSCORE GREATER", line 1, characters 24-25:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LBRACKET BAR WITH", line 1, characters 22-26:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LBRACKET UNDERSCORE BAR UNDERSCORE GREATER", line 1, characters 26-27:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LBRACKET UNDERSCORE BAR WITH", line 1, characters 24-28:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LBRACKET UNDERSCORE RBRACKET", line 1, characters 22-23:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LBRACKET UNDERSCORE WITH", line 1, characters 22-26:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LBRACKET WITH", line 1, characters 20-24:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LBRACKETAT AND RBRACKET GREATER", line 1, characters 27-28:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LBRACKETGREATER BAR ASSERT", line 1, characters 23-29:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LBRACKETGREATER UNDERSCORE GREATER", line 1, characters 23-24:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LBRACKETGREATER WITH", line 1, characters 21-25:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LBRACKETLESS BACKQUOTE UIDENT LBRACKETAT AND RBRACKET WHILE", line 1, characters 39-44:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LBRACKETLESS BAR ASSERT", line 1, characters 23-29:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LBRACKETLESS UNDERSCORE BAR WITH", line 1, characters 25-29:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LBRACKETLESS UNDERSCORE GREATER BACKQUOTE LIDENT WITH", line 1, characters 34-38:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LBRACKETLESS UNDERSCORE GREATER WITH", line 1, characters 25-29:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LBRACKETLESS WITH", line 1, characters 21-25:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LESS DOTDOT WITH", line 1, characters 23-27:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LESS LIDENT COLON QUOTE UIDENT DOT UNDERSCORE WITH", line 1, characters 42-46:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LESS LIDENT COLON QUOTE UIDENT DOT WITH", line 1, characters 40-44:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LESS LIDENT COLON QUOTE UIDENT QUOTE LIDENT WITH", line 1, characters 47-51:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LESS LIDENT COLON UNDERSCORE LBRACKETAT AND RBRACKET FUNCTOR", line 1, characters 40-47:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LESS LIDENT COLON UNDERSCORE RBRACE", line 1, characters 31-32:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LESS LIDENT COLON UNDERSCORE SEMI LBRACKETAT AND RBRACKET CONSTRAINT", line 1, characters 42-52:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LESS LIDENT COLON UNDERSCORE SEMI WITH", line 1, characters 33-37:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LESS LIDENT COLON UNDERSCORE WITH", line 1, characters 31-35:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LESS LIDENT COLON WITH", line 1, characters 29-33:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LESS LIDENT WITH", line 1, characters 27-31:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LESS UNDERSCORE SEMI WITH", line 1, characters 24-28:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LESS UNDERSCORE WITH", line 1, characters 22-26:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LESS WITH", line 1, characters 20-24:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LIDENT COLON UNDERSCORE MINUSGREATER WITH", line 1, characters 32-36:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LIDENT COLON UNDERSCORE WITH", line 1, characters 29-33:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LIDENT COLON WITH", line 1, characters 27-31:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LIDENT WHILE", line 1, characters 25-30:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LPAREN MODULE LBRACKETAT AND RBRACKET WHILE", line 1, characters 36-41:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LPAREN MODULE PERCENT AND FUNCTION", line 1, characters 33-41:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LPAREN MODULE UIDENT VAL", line 1, characters 34-37:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LPAREN MODULE WITH", line 1, characters 27-31:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LPAREN UNDERSCORE COMMA LIDENT COMMA UNDERSCORE WITH", line 1, characters 35-39:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LPAREN UNDERSCORE COMMA LIDENT COMMA WITH", line 1, characters 33-37:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LPAREN UNDERSCORE COMMA LIDENT RPAREN HASH WITH", line 1, characters 35-39:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LPAREN UNDERSCORE COMMA LIDENT RPAREN WITH", line 1, characters 33-37:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LPAREN UNDERSCORE COMMA UNDERSCORE WITH", line 1, characters 26-30:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LPAREN UNDERSCORE COMMA WITH", line 1, characters 24-28:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LPAREN UNDERSCORE WITH", line 1, characters 22-26:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT LPAREN WITH", line 1, characters 20-24:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT OPTLABEL UNDERSCORE MINUSGREATER WITH", line 1, characters 31-35:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT OPTLABEL UNDERSCORE WITH", line 1, characters 28-32:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT OPTLABEL WITH", line 1, characters 26-30:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT QUESTION LIDENT WITH", line 1, characters 27-31:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT QUESTION WITH", line 1, characters 20-24:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT QUOTE WITH", line 1, characters 20-24:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT UNDERSCORE AMPERSAND", line 1, characters 20-21:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT UNDERSCORE AS QUOTE WITH", line 1, characters 25-29:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT UNDERSCORE AS WITH", line 1, characters 23-27:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT UNDERSCORE EQUAL UNDERSCORE WITH", line 1, characters 24-28:
+Error: Syntax error: 'end' expected
+File "implementation: OBJECT CONSTRAINT UNDERSCORE EQUAL UNDERSCORE WITH", line 1, characters 0-6:
+  This 'object' might be unmatched
+File "implementation: OBJECT CONSTRAINT UNDERSCORE EQUAL WITH", line 1, characters 22-26:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT UNDERSCORE HASH WITH", line 1, characters 22-26:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT UNDERSCORE MINUSGREATER WITH", line 1, characters 23-27:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT UNDERSCORE STAR LIDENT STAR UNDERSCORE WHILE", line 1, characters 33-38:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT UNDERSCORE STAR LIDENT STAR WITH", line 1, characters 31-35:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT UNDERSCORE STAR UNDERSCORE WHILE", line 1, characters 24-29:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT UNDERSCORE STAR WITH", line 1, characters 22-26:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT UNDERSCORE WHILE", line 1, characters 20-25:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT UNDERSCORE WITH", line 1, characters 20-24:
+Error: Syntax error
+File "implementation: OBJECT CONSTRAINT WITH", line 1, characters 18-22:
+Error: Syntax error
+File "implementation: OBJECT END WHILE", line 1, characters 11-16:
+Error: Syntax error
+File "implementation: OBJECT INHERIT BANG LBRACKETAT AND RBRACKET WHILE", line 1, characters 26-31:
+Error: Syntax error
+File "implementation: OBJECT INHERIT BANG QUOTED_STRING_EXPR AS LIDENT WITH", line 1, characters 43-47:
+Error: Syntax error: 'end' expected
+File "implementation: OBJECT INHERIT BANG QUOTED_STRING_EXPR AS LIDENT WITH", line 1, characters 0-6:
+  This 'object' might be unmatched
+File "implementation: OBJECT INHERIT BANG QUOTED_STRING_EXPR WITH", line 1, characters 33-37:
+Error: Syntax error: 'end' expected
+File "implementation: OBJECT INHERIT BANG QUOTED_STRING_EXPR WITH", line 1, characters 0-6:
+  This 'object' might be unmatched
+File "implementation: OBJECT INHERIT BANG WITH", line 1, characters 17-21:
+Error: Syntax error
+File "implementation: OBJECT INHERIT FUN LBRACKETAT AND RBRACKET WHILE", line 1, characters 28-33:
+Error: Syntax error
+File "implementation: OBJECT INHERIT FUN UNDERSCORE MINUSGREATER QUOTED_STRING_EXPR WITH", line 1, characters 40-44:
+Error: Syntax error: 'end' expected
+File "implementation: OBJECT INHERIT FUN UNDERSCORE MINUSGREATER QUOTED_STRING_EXPR WITH", line 1, characters 0-6:
+  This 'object' might be unmatched
+File "implementation: OBJECT INHERIT FUN UNDERSCORE MINUSGREATER WITH", line 1, characters 24-28:
+Error: Syntax error
+File "implementation: OBJECT INHERIT FUN UNDERSCORE WITH", line 1, characters 21-25:
+Error: Syntax error
+File "implementation: OBJECT INHERIT FUN WITH", line 1, characters 19-23:
+Error: Syntax error
+File "implementation: OBJECT INHERIT LBRACKET UNDERSCORE COMMA UNDERSCORE WITH", line 1, characters 23-27:
+Error: Syntax error
+File "implementation: OBJECT INHERIT LBRACKET UNDERSCORE COMMA WITH", line 1, characters 21-25:
+Error: Syntax error
+File "implementation: OBJECT INHERIT LBRACKET UNDERSCORE RBRACKET WITH", line 1, characters 21-25:
+Error: Syntax error
+File "implementation: OBJECT INHERIT LBRACKET UNDERSCORE WITH", line 1, characters 19-23:
+Error: Syntax error
+File "implementation: OBJECT INHERIT LBRACKET WITH", line 1, characters 17-21:
+Error: Syntax error
+File "implementation: OBJECT INHERIT LBRACKETAT AND RBRACKET FOR", line 1, characters 24-27:
+Error: Syntax error
+File "implementation: OBJECT INHERIT LET CHAR EQUAL CHAR IN QUOTED_STRING_EXPR WITH", line 1, characters 48-52:
+Error: Syntax error: 'end' expected
+File "implementation: OBJECT INHERIT LET CHAR EQUAL CHAR IN QUOTED_STRING_EXPR WITH", line 1, characters 0-6:
+  This 'object' might be unmatched
+File "implementation: OBJECT INHERIT LET CHAR EQUAL CHAR IN WITH", line 1, characters 32-36:
+Error: Syntax error
+File "implementation: OBJECT INHERIT LET CHAR EQUAL CHAR LBRACKETATAT AND RBRACKET VAL", line 1, characters 39-42:
+Error: Syntax error
+File "implementation: OBJECT INHERIT LET LBRACKETAT AND RBRACKET WHILE", line 1, characters 28-33:
+Error: Syntax error
+File "implementation: OBJECT INHERIT LET OPEN BANG LBRACKETAT AND RBRACKET WHILE", line 1, characters 35-40:
+Error: Syntax error
+File "implementation: OBJECT INHERIT LET OPEN BANG UIDENT IN QUOTED_STRING_EXPR WITH", line 1, characters 52-56:
+Error: Syntax error: 'end' expected
+File "implementation: OBJECT INHERIT LET OPEN BANG UIDENT IN QUOTED_STRING_EXPR WITH", line 1, characters 0-6:
+  This 'object' might be unmatched
+File "implementation: OBJECT INHERIT LET OPEN BANG UIDENT IN WITH", line 1, characters 36-40:
+Error: Syntax error
+File "implementation: OBJECT INHERIT LET OPEN BANG UIDENT WITH", line 1, characters 33-37:
+Error: Syntax error
+File "implementation: OBJECT INHERIT LET OPEN BANG WITH", line 1, characters 26-30:
+Error: Syntax error
+File "implementation: OBJECT INHERIT LET OPEN LBRACKETAT AND RBRACKET WHILE", line 1, characters 33-38:
+Error: Syntax error
+File "implementation: OBJECT INHERIT LET OPEN UIDENT IN QUOTED_STRING_EXPR WITH", line 1, characters 50-54:
+Error: Syntax error: 'end' expected
+File "implementation: OBJECT INHERIT LET OPEN UIDENT IN QUOTED_STRING_EXPR WITH", line 1, characters 0-6:
+  This 'object' might be unmatched
+File "implementation: OBJECT INHERIT LET OPEN UIDENT IN WITH", line 1, characters 34-38:
+Error: Syntax error
+File "implementation: OBJECT INHERIT LET OPEN UIDENT WITH", line 1, characters 31-35:
+Error: Syntax error
+File "implementation: OBJECT INHERIT LET OPEN WITH", line 1, characters 24-28:
+Error: Syntax error
+File "implementation: OBJECT INHERIT LET REC ASSERT", line 1, characters 23-29:
+Error: Syntax error
+File "implementation: OBJECT INHERIT LET UNDERSCORE EQUAL CHAR WITH", line 1, characters 27-31:
+Error: Syntax error
+File "implementation: OBJECT INHERIT LET WITH", line 1, characters 19-23:
+Error: Syntax error
+File "implementation: OBJECT INHERIT LIDENT UIDENT WITH", line 1, characters 29-33:
+Error: Syntax error: 'end' expected
+File "implementation: OBJECT INHERIT LIDENT UIDENT WITH", line 1, characters 0-6:
+  This 'object' might be unmatched
+File "implementation: OBJECT INHERIT LIDENT WITH", line 1, characters 22-26:
+Error: Syntax error: 'end' expected
+File "implementation: OBJECT INHERIT LIDENT WITH", line 1, characters 0-6:
+  This 'object' might be unmatched
+File "implementation: OBJECT INHERIT LPAREN QUOTED_STRING_EXPR COLON QUOTED_STRING_EXPR VAL", line 1, characters 51-54:
+Error: Syntax error: ')' expected
+File "implementation: OBJECT INHERIT LPAREN QUOTED_STRING_EXPR COLON QUOTED_STRING_EXPR VAL", line 1, characters 15-16:
+  This '(' might be unmatched
+File "implementation: OBJECT INHERIT LPAREN QUOTED_STRING_EXPR COLON WITH", line 1, characters 35-39:
+Error: Syntax error
+File "implementation: OBJECT INHERIT LPAREN QUOTED_STRING_EXPR WITH", line 1, characters 33-37:
+Error: Syntax error: ')' expected
+File "implementation: OBJECT INHERIT LPAREN QUOTED_STRING_EXPR WITH", line 1, characters 15-16:
+  This '(' might be unmatched
+File "implementation: OBJECT INHERIT LPAREN WITH", line 1, characters 17-21:
+Error: Syntax error
+File "implementation: OBJECT INHERIT OBJECT LBRACKETAT AND RBRACKET WHILE", line 1, characters 31-36:
+Error: Syntax error: 'end' expected
+File "implementation: OBJECT INHERIT OBJECT LBRACKETAT AND RBRACKET WHILE", line 1, characters 15-21:
+  This 'object' might be unmatched
+File "implementation: OBJECT INHERIT OBJECT LPAREN CHAR RPAREN WITH", line 1, characters 30-34:
+Error: Syntax error: 'end' expected
+File "implementation: OBJECT INHERIT OBJECT LPAREN CHAR RPAREN WITH", line 1, characters 15-21:
+  This 'object' might be unmatched
+File "implementation: OBJECT INHERIT OBJECT WITH", line 1, characters 22-26:
+Error: Syntax error: 'end' expected
+File "implementation: OBJECT INHERIT OBJECT WITH", line 1, characters 15-21:
+  This 'object' might be unmatched
+File "implementation: OBJECT INHERIT QUOTED_STRING_EXPR AS LIDENT WITH", line 1, characters 41-45:
+Error: Syntax error: 'end' expected
+File "implementation: OBJECT INHERIT QUOTED_STRING_EXPR AS LIDENT WITH", line 1, characters 0-6:
+  This 'object' might be unmatched
+File "implementation: OBJECT INHERIT QUOTED_STRING_EXPR AS WITH", line 1, characters 34-38:
+Error: Syntax error
+File "implementation: OBJECT INHERIT QUOTED_STRING_EXPR WITH", line 1, characters 31-35:
+Error: Syntax error: 'end' expected
+File "implementation: OBJECT INHERIT QUOTED_STRING_EXPR WITH", line 1, characters 0-6:
+  This 'object' might be unmatched
+File "implementation: OBJECT INHERIT WITH", line 1, characters 15-19:
+Error: Syntax error
+File "implementation: OBJECT INITIALIZER LBRACKETAT AND RBRACKET AND", line 1, characters 28-31:
+Error: Syntax error
+File "implementation: OBJECT INITIALIZER UIDENT WITH", line 1, characters 26-30:
+Error: Syntax error: 'end' expected
+File "implementation: OBJECT INITIALIZER UIDENT WITH", line 1, characters 0-6:
+  This 'object' might be unmatched
+File "implementation: OBJECT INITIALIZER WITH", line 1, characters 19-23:
+Error: Syntax error
+File "implementation: OBJECT LBRACKETAT AND RBRACKET CLASS", line 1, characters 16-21:
+Error: Syntax error: 'end' expected
+File "implementation: OBJECT LBRACKETAT AND RBRACKET CLASS", line 1, characters 0-6:
+  This 'object' might be unmatched
+File "implementation: OBJECT LBRACKETATATAT AND RBRACKET WITH", line 1, characters 18-22:
+Error: Syntax error: 'end' expected
+File "implementation: OBJECT LBRACKETATATAT AND RBRACKET WITH", line 1, characters 0-6:
+  This 'object' might be unmatched
+File "implementation: OBJECT LPAREN UNDERSCORE COLON UNDERSCORE WITH", line 1, characters 15-19:
+Error: Syntax error
+File "implementation: OBJECT LPAREN UNDERSCORE COLON WITH", line 1, characters 13-17:
+Error: Syntax error
+File "implementation: OBJECT LPAREN UNDERSCORE RPAREN COMMENT", line 1, characters 0-2:
+Error: Syntax error: 'end' expected
+File "implementation: OBJECT LPAREN UNDERSCORE RPAREN COMMENT", line 1, characters 0-6:
+  This 'object' might be unmatched
+File "implementation: OBJECT LPAREN UNDERSCORE WITH", line 1, characters 11-15:
+Error: Syntax error
+File "implementation: OBJECT LPAREN WITH", line 1, characters 9-13:
+Error: Syntax error
+File "implementation: OBJECT METHOD BANG LBRACKETAT AND RBRACKET WHILE", line 1, characters 25-30:
+Error: Syntax error
+File "implementation: OBJECT METHOD BANG LIDENT COLON TYPE LIDENT DOT UNDERSCORE EQUAL WITH", line 1, characters 43-47:
+Error: Syntax error
+File "implementation: OBJECT METHOD BANG LIDENT COLON TYPE LIDENT DOT UNDERSCORE WITH", line 1, characters 41-45:
+Error: Syntax error
+File "implementation: OBJECT METHOD BANG LIDENT COLON TYPE LIDENT DOT WITH", line 1, characters 39-43:
+Error: Syntax error
+File "implementation: OBJECT METHOD BANG LIDENT COLON TYPE LIDENT RPAREN", line 1, characters 37-38:
+Error: Syntax error
+File "implementation: OBJECT METHOD BANG LIDENT COLON TYPE WITH", line 1, characters 30-34:
+Error: Syntax error
+File "implementation: OBJECT METHOD BANG LIDENT COLON UNDERSCORE EQUAL WITH", line 1, characters 29-33:
+Error: Syntax error
+File "implementation: OBJECT METHOD BANG LIDENT COLON UNDERSCORE VAL", line 1, characters 27-30:
+Error: Syntax error
+File "implementation: OBJECT METHOD BANG LIDENT COLON WITH", line 1, characters 25-29:
+Error: Syntax error
+File "implementation: OBJECT METHOD BANG LIDENT WITH", line 1, characters 23-27:
+Error: Syntax error
+File "implementation: OBJECT METHOD BANG PRIVATE LETOP", line 1, characters 24-28:
+Error: Syntax error
+File "implementation: OBJECT METHOD BANG WITH", line 1, characters 16-20:
+Error: Syntax error
+File "implementation: OBJECT METHOD LBRACKETAT AND RBRACKET WHILE", line 1, characters 23-28:
+Error: Syntax error
+File "implementation: OBJECT METHOD LIDENT COLON QUOTE LIDENT DOT UNDERSCORE WITH", line 1, characters 36-40:
+Error: Syntax error
+File "implementation: OBJECT METHOD LIDENT COLON QUOTE LIDENT DOT WITH", line 1, characters 34-38:
+Error: Syntax error
+File "implementation: OBJECT METHOD LIDENT COLON QUOTE LIDENT QUOTE LIDENT WITH", line 1, characters 41-45:
+Error: Syntax error
+File "implementation: OBJECT METHOD LIDENT COLON TYPE LIDENT DOT UNDERSCORE EQUAL WITH", line 1, characters 41-45:
+Error: Syntax error
+File "implementation: OBJECT METHOD LIDENT COLON TYPE LIDENT DOT UNDERSCORE WITH", line 1, characters 39-43:
+Error: Syntax error
+File "implementation: OBJECT METHOD LIDENT COLON TYPE LIDENT DOT WITH", line 1, characters 37-41:
+Error: Syntax error
+File "implementation: OBJECT METHOD LIDENT COLON TYPE LIDENT RPAREN", line 1, characters 35-36:
+Error: Syntax error
+File "implementation: OBJECT METHOD LIDENT COLON TYPE WITH", line 1, characters 28-32:
+Error: Syntax error
+File "implementation: OBJECT METHOD LIDENT COLON UNDERSCORE EQUAL WITH", line 1, characters 27-31:
+Error: Syntax error
+File "implementation: OBJECT METHOD LIDENT COLON UNDERSCORE VAL", line 1, characters 25-28:
+Error: Syntax error
+File "implementation: OBJECT METHOD LIDENT COLON UNDERSCORE WITH", line 1, characters 25-29:
+Error: Syntax error
+File "implementation: OBJECT METHOD LIDENT COLON WITH", line 1, characters 23-27:
+Error: Syntax error
+File "implementation: OBJECT METHOD LIDENT EQUAL CHAR WITH", line 1, characters 27-31:
+Error: Syntax error: 'end' expected
+File "implementation: OBJECT METHOD LIDENT EQUAL CHAR WITH", line 1, characters 0-6:
+  This 'object' might be unmatched
+File "implementation: OBJECT METHOD LIDENT WITH", line 1, characters 21-25:
+Error: Syntax error
+File "implementation: OBJECT METHOD PRIVATE WITH", line 1, characters 22-26:
+Error: Syntax error
+File "implementation: OBJECT METHOD VIRTUAL LIDENT COLON WITH", line 1, characters 31-35:
+Error: Syntax error
+File "implementation: OBJECT METHOD VIRTUAL LIDENT WITH", line 1, characters 29-33:
+Error: Syntax error
+File "implementation: OBJECT METHOD VIRTUAL PRIVATE WITH", line 1, characters 30-34:
+Error: Syntax error
+File "implementation: OBJECT METHOD VIRTUAL WITH", line 1, characters 22-26:
+Error: Syntax error
+File "implementation: OBJECT METHOD WITH", line 1, characters 14-18:
+Error: Syntax error
+File "implementation: OBJECT PERCENT AND COLON", line 1, characters 13-14:
+Error: Syntax error: 'end' expected
+File "implementation: OBJECT PERCENT AND COLON", line 1, characters 0-6:
+  This 'object' might be unmatched
+File "implementation: OBJECT QUOTED_STRING_ITEM WITH", line 1, characters 24-28:
+Error: Syntax error: 'end' expected
+File "implementation: OBJECT QUOTED_STRING_ITEM WITH", line 1, characters 0-6:
+  This 'object' might be unmatched
+File "implementation: OBJECT VAL BANG LBRACKETAT AND RBRACKET WHILE", line 1, characters 22-27:
+Error: Syntax error
+File "implementation: OBJECT VAL BANG LIDENT COLONGREATER LIDENT EQUAL WITH", line 1, characters 32-36:
+Error: Syntax error
+File "implementation: OBJECT VAL BANG LIDENT COLONGREATER LIDENT SEMI", line 1, characters 30-31:
+Error: Syntax error
+File "implementation: OBJECT VAL BANG LIDENT EQUAL WITH", line 1, characters 22-26:
+Error: Syntax error
+File "implementation: OBJECT VAL BANG LIDENT WITH", line 1, characters 20-24:
+Error: Syntax error
+File "implementation: OBJECT VAL BANG MUTABLE LETOP", line 1, characters 21-25:
+Error: Syntax error
+File "implementation: OBJECT VAL BANG WITH", line 1, characters 13-17:
+Error: Syntax error
+File "implementation: OBJECT VAL LBRACKETAT AND RBRACKET WHILE", line 1, characters 20-25:
+Error: Syntax error
+File "implementation: OBJECT VAL LIDENT COLONGREATER LIDENT EQUAL WITH", line 1, characters 30-34:
+Error: Syntax error
+File "implementation: OBJECT VAL LIDENT COLONGREATER LIDENT SEMI", line 1, characters 28-29:
+Error: Syntax error
+File "implementation: OBJECT VAL LIDENT EQUAL CHAR WITH", line 1, characters 24-28:
+Error: Syntax error: 'end' expected
+File "implementation: OBJECT VAL LIDENT EQUAL CHAR WITH", line 1, characters 0-6:
+  This 'object' might be unmatched
+File "implementation: OBJECT VAL LIDENT EQUAL WITH", line 1, characters 20-24:
+Error: Syntax error
+File "implementation: OBJECT VAL LIDENT WITH", line 1, characters 18-22:
+Error: Syntax error
+File "implementation: OBJECT VAL MUTABLE WITH", line 1, characters 19-23:
+Error: Syntax error
+File "implementation: OBJECT VAL VIRTUAL LIDENT COLON UNDERSCORE WITH", line 1, characters 30-34:
+Error: Syntax error: 'end' expected
+File "implementation: OBJECT VAL VIRTUAL LIDENT COLON UNDERSCORE WITH", line 1, characters 0-6:
+  This 'object' might be unmatched
+File "implementation: OBJECT VAL VIRTUAL LIDENT COLON WITH", line 1, characters 28-32:
+Error: Syntax error
+File "implementation: OBJECT VAL VIRTUAL LIDENT WITH", line 1, characters 26-30:
+Error: Syntax error
+File "implementation: OBJECT VAL VIRTUAL MUTABLE WITH", line 1, characters 27-31:
+Error: Syntax error
+File "implementation: OBJECT VAL VIRTUAL WITH", line 1, characters 19-23:
+Error: Syntax error
+File "implementation: OBJECT VAL WITH", line 1, characters 11-15:
+Error: Syntax error
+File "implementation: OBJECT WITH", line 1, characters 7-11:
+Error: Syntax error: 'end' expected
+File "implementation: OBJECT WITH", line 1, characters 0-6:
+  This 'object' might be unmatched
+File "implementation: OPEN BANG LBRACKETAT AND RBRACKET FUNCTION", line 1, characters 16-24:
+Error: Syntax error
+File "implementation: OPEN BANG PERCENT AND WHILE", line 1, characters 13-18:
+Error: Syntax error
+File "implementation: OPEN BANG UIDENT WITH", line 1, characters 14-18:
+Error: Syntax error
+File "implementation: OPEN BANG WITH", line 1, characters 7-11:
+Error: Syntax error
+File "implementation: OPEN FUNCTOR LBRACKETAT AND RBRACKET WHILE", line 1, characters 22-27:
+Error: Syntax error
+File "implementation: OPEN FUNCTOR LPAREN RPAREN MINUSGREATER QUOTED_STRING_EXPR WHILE", line 1, characters 36-41:
+Error: Syntax error
+File "implementation: OPEN FUNCTOR LPAREN RPAREN MINUSGREATER WITH", line 1, characters 20-24:
+Error: Syntax error
+File "implementation: OPEN FUNCTOR LPAREN RPAREN WITH", line 1, characters 17-21:
+Error: Syntax error
+File "implementation: OPEN FUNCTOR WITH", line 1, characters 13-17:
+Error: Syntax error
+File "implementation: OPEN LBRACKETAT AND RBRACKET FUNCTION", line 1, characters 14-22:
+Error: Syntax error
+File "implementation: OPEN LBRACKETAT AND RBRACKET WITH", line 1, characters 14-18:
+Error: Syntax error
+File "implementation: OPEN LPAREN UIDENT COLON UIDENT VAL", line 1, characters 23-26:
+Error: Syntax error: ')' expected
+File "implementation: OPEN LPAREN UIDENT COLON UIDENT VAL", line 1, characters 5-6:
+  This '(' might be unmatched
+File "implementation: OPEN LPAREN UIDENT COLON WITH", line 1, characters 16-20:
+Error: Syntax error
+File "implementation: OPEN LPAREN UIDENT WITH", line 1, characters 14-18:
+Error: Syntax error: ')' expected
+File "implementation: OPEN LPAREN UIDENT WITH", line 1, characters 5-6:
+  This '(' might be unmatched
+File "implementation: OPEN LPAREN VAL LBRACKETAT AND RBRACKET VIRTUAL", line 1, characters 20-27:
+Error: Syntax error
+File "implementation: OPEN LPAREN VAL UIDENT COLON UIDENT COLONGREATER UIDENT VAL", line 1, characters 37-40:
+Error: Syntax error
+File "implementation: OPEN LPAREN VAL UIDENT COLON UIDENT COLONGREATER WITH", line 1, characters 30-34:
+Error: Syntax error
+File "implementation: OPEN LPAREN VAL UIDENT COLON UIDENT VAL", line 1, characters 27-30:
+Error: Syntax error
+File "implementation: OPEN LPAREN VAL UIDENT COLON WITH", line 1, characters 20-24:
+Error: Syntax error: ')' expected
+File "implementation: OPEN LPAREN VAL UIDENT COLON WITH", line 1, characters 5-6:
+  This '(' might be unmatched
+File "implementation: OPEN LPAREN VAL UIDENT COLONGREATER UIDENT VAL", line 1, characters 28-31:
+Error: Syntax error
+File "implementation: OPEN LPAREN VAL UIDENT COLONGREATER WITH", line 1, characters 21-25:
+Error: Syntax error: ')' expected
+File "implementation: OPEN LPAREN VAL UIDENT COLONGREATER WITH", line 1, characters 5-6:
+  This '(' might be unmatched
+File "implementation: OPEN LPAREN VAL UIDENT WITH", line 1, characters 18-22:
+Error: Syntax error: ')' expected
+File "implementation: OPEN LPAREN VAL UIDENT WITH", line 1, characters 5-6:
+  This '(' might be unmatched
+File "implementation: OPEN LPAREN VAL WITH", line 1, characters 11-15:
+Error: Syntax error
+File "implementation: OPEN LPAREN WITH", line 1, characters 7-11:
+Error: Syntax error
+File "implementation: OPEN PERCENT AND FUNCTION", line 1, characters 11-19:
+Error: Syntax error
+File "implementation: OPEN PERCENT UNDERSCORE", line 1, characters 7-8:
+Error: Syntax error
+File "implementation: OPEN STRUCT LBRACKETAT AND RBRACKET AND", line 1, characters 21-24:
+Error: Syntax error: 'end' expected
+File "implementation: OPEN STRUCT LBRACKETAT AND RBRACKET AND", line 1, characters 5-11:
+  This 'struct' might be unmatched
+File "implementation: OPEN STRUCT UIDENT RBRACKET", line 1, characters 19-20:
+Error: Syntax error: 'end' expected
+File "implementation: OPEN STRUCT UIDENT RBRACKET", line 1, characters 5-11:
+  This 'struct' might be unmatched
+File "implementation: OPEN STRUCT WITH", line 1, characters 12-16:
+Error: Syntax error: 'end' expected
+File "implementation: OPEN STRUCT WITH", line 1, characters 5-11:
+  This 'struct' might be unmatched
+File "implementation: OPEN UIDENT DOT WITH", line 1, characters 14-18:
+Error: Syntax error
+File "implementation: OPEN UIDENT LPAREN WITH", line 1, characters 14-18:
+Error: Syntax error
+File "implementation: OPEN UIDENT WHILE", line 1, characters 12-17:
+Error: Syntax error
+File "implementation: OPEN UIDENT WITH", line 1, characters 12-16:
+Error: Syntax error
+File "implementation: OPEN WITH", line 1, characters 5-9:
+Error: Syntax error
+File "implementation: PLUSDOT LET CHAR EQUAL CHAR VAL", line 1, characters 17-20:
+Error: Syntax error
+File "implementation: PLUSDOT WITH", line 1, characters 3-7:
+Error: Syntax error
+File "implementation: PREFIXOP WITH", line 1, characters 3-7:
+Error: Syntax error
+File "implementation: QUOTED_STRING_ITEM HASH", line 1, characters 17-18:
+Error: Syntax error
+File "implementation: QUOTED_STRING_ITEM LBRACKETATAT AND RBRACKET WITH", line 1, characters 27-31:
+Error: Syntax error
+File "implementation: QUOTED_STRING_ITEM LBRACKETATAT UNDERSCORE", line 1, characters 21-22:
+Error: Syntax error
+File "implementation: QUOTED_STRING_ITEM LBRACKETATAT WITH UIDENT WHEN", line 1, characters 34-38:
+Error: Syntax error
+File "implementation: QUOTED_STRING_ITEM LBRACKETATAT WITH VIRTUAL", line 1, characters 26-33:
+Error: Syntax error
+File "implementation: QUOTED_STRING_ITEM LET CHAR EQUAL CHAR IN", line 1, characters 31-33:
+Error: Syntax error
+File "implementation: QUOTED_STRING_ITEM LET WITH", line 1, characters 21-25:
+Error: Syntax error
+File "implementation: QUOTED_STRING_ITEM WITH", line 1, characters 17-21:
+Error: Syntax error
+File "implementation: STRING TRUE WHILE", line 1, characters 13-18:
+Error: Syntax error
+File "implementation: STRING UIDENT AS", line 1, characters 15-17:
+Error: Syntax error
+File "implementation: STRING WHILE", line 1, characters 8-13:
+Error: Syntax error
+File "implementation: TRUE DOT LBRACE UIDENT RBRACE LESSMINUS OBJECT END WHILE", line 1, characters 32-37:
+Error: Syntax error
+File "implementation: TRUE DOT LBRACE UIDENT RBRACE LESSMINUS WITH", line 1, characters 21-25:
+Error: Syntax error
+File "implementation: TRUE DOT LBRACE UIDENT RBRACE WHILE", line 1, characters 18-23:
+Error: Syntax error
+File "implementation: TRUE DOT LBRACE UIDENT WITH", line 1, characters 16-20:
+Error: Syntax error: '}' expected
+File "implementation: TRUE DOT LBRACE UIDENT WITH", line 1, characters 7-8:
+  This '{' might be unmatched
+File "implementation: TRUE DOT LBRACE WITH", line 1, characters 9-13:
+Error: Syntax error
+File "implementation: TRUE DOT LBRACKET UIDENT RBRACKET LESSMINUS OBJECT END WHILE", line 1, characters 32-37:
+Error: Syntax error
+File "implementation: TRUE DOT LBRACKET UIDENT RBRACKET LESSMINUS WITH", line 1, characters 21-25:
+Error: Syntax error
+File "implementation: TRUE DOT LBRACKET UIDENT RBRACKET WHILE", line 1, characters 18-23:
+Error: Syntax error
+File "implementation: TRUE DOT LBRACKET UIDENT WITH", line 1, characters 16-20:
+Error: Syntax error: ']' expected
+File "implementation: TRUE DOT LBRACKET UIDENT WITH", line 1, characters 7-8:
+  This '[' might be unmatched
+File "implementation: TRUE DOT LBRACKET WITH", line 1, characters 9-13:
+Error: Syntax error
+File "implementation: TRUE DOT LIDENT LESSMINUS OBJECT END WHILE", line 1, characters 28-33:
+Error: Syntax error
+File "implementation: TRUE DOT LIDENT LESSMINUS WITH", line 1, characters 17-21:
+Error: Syntax error
+File "implementation: TRUE DOT LIDENT WHILE", line 1, characters 14-19:
+Error: Syntax error
+File "implementation: TRUE DOT LPAREN UIDENT RPAREN LESSMINUS OBJECT END WHILE", line 1, characters 32-37:
+Error: Syntax error
+File "implementation: TRUE DOT LPAREN UIDENT RPAREN LESSMINUS WITH", line 1, characters 21-25:
+Error: Syntax error
+File "implementation: TRUE DOT LPAREN UIDENT RPAREN WHILE", line 1, characters 18-23:
+Error: Syntax error
+File "implementation: TRUE DOT LPAREN UIDENT WITH", line 1, characters 16-20:
+Error: Syntax error: ')' expected
+File "implementation: TRUE DOT LPAREN UIDENT WITH", line 1, characters 7-8:
+  This '(' might be unmatched
+File "implementation: TRUE DOT LPAREN WITH", line 1, characters 9-13:
+Error: Syntax error
+File "implementation: TRUE DOT UIDENT DOTOP LBRACE UIDENT RBRACE LESSMINUS OBJECT END WHILE", line 1, characters 42-47:
+Error: Syntax error
+File "implementation: TRUE DOT UIDENT DOTOP LBRACE UIDENT RBRACE LESSMINUS WITH", line 1, characters 31-35:
+Error: Syntax error
+File "implementation: TRUE DOT UIDENT DOTOP LBRACE UIDENT RBRACE WHILE", line 1, characters 28-33:
+Error: Syntax error
+File "implementation: TRUE DOT UIDENT DOTOP LBRACE UIDENT RPAREN", line 1, characters 26-27:
+Error: Syntax error: '}' expected
+File "implementation: TRUE DOT UIDENT DOTOP LBRACE UIDENT RPAREN", line 1, characters 17-18:
+  This '{' might be unmatched
+File "implementation: TRUE DOT UIDENT DOTOP LBRACE WITH", line 1, characters 19-23:
+Error: Syntax error
+File "implementation: TRUE DOT UIDENT DOTOP LBRACKET UIDENT RBRACKET LESSMINUS OBJECT END WHILE", line 1, characters 42-47:
+Error: Syntax error
+File "implementation: TRUE DOT UIDENT DOTOP LBRACKET UIDENT RBRACKET LESSMINUS WITH", line 1, characters 31-35:
+Error: Syntax error
+File "implementation: TRUE DOT UIDENT DOTOP LBRACKET UIDENT RBRACKET WHILE", line 1, characters 28-33:
+Error: Syntax error
+File "implementation: TRUE DOT UIDENT DOTOP LBRACKET UIDENT RPAREN", line 1, characters 26-27:
+Error: Syntax error: ']' expected
+File "implementation: TRUE DOT UIDENT DOTOP LBRACKET UIDENT RPAREN", line 1, characters 17-18:
+  This '[' might be unmatched
+File "implementation: TRUE DOT UIDENT DOTOP LBRACKET WITH", line 1, characters 19-23:
+Error: Syntax error
+File "implementation: TRUE DOT UIDENT DOTOP LPAREN UIDENT RBRACKET", line 1, characters 26-27:
+Error: Syntax error: ')' expected
+File "implementation: TRUE DOT UIDENT DOTOP LPAREN UIDENT RBRACKET", line 1, characters 17-18:
+  This '(' might be unmatched
+File "implementation: TRUE DOT UIDENT DOTOP LPAREN UIDENT RPAREN LESSMINUS OBJECT END WHILE", line 1, characters 42-47:
+Error: Syntax error
+File "implementation: TRUE DOT UIDENT DOTOP LPAREN UIDENT RPAREN LESSMINUS WITH", line 1, characters 31-35:
+Error: Syntax error
+File "implementation: TRUE DOT UIDENT DOTOP LPAREN UIDENT RPAREN WHILE", line 1, characters 28-33:
+Error: Syntax error
+File "implementation: TRUE DOT UIDENT DOTOP LPAREN WITH", line 1, characters 19-23:
+Error: Syntax error
+File "implementation: TRUE DOT UIDENT DOTOP WITH", line 1, characters 17-21:
+Error: Syntax error
+File "implementation: TRUE DOT UIDENT WITH", line 1, characters 14-18:
+Error: Syntax error
+File "implementation: TRUE DOT WITH", line 1, characters 7-11:
+Error: Syntax error
+File "implementation: TRY LBRACKETAT AND RBRACKET AND", line 1, characters 13-16:
+Error: Syntax error
+File "implementation: TRY PERCENT AND VIRTUAL", line 1, characters 10-17:
+Error: Syntax error
+File "implementation: TRY UIDENT VAL", line 1, characters 11-14:
+Error: Syntax error
+File "implementation: TRY UIDENT WITH UNDERSCORE MINUSGREATER DOT WHILE", line 1, characters 23-28:
+Error: Syntax error
+File "implementation: TRY UIDENT WITH WITH", line 1, characters 16-20:
+Error: Syntax error
+File "implementation: TRY WITH", line 1, characters 4-8:
+Error: Syntax error
+File "implementation: TYPE BANG WITH", line 1, characters 7-11:
+Error: Syntax error
+File "implementation: TYPE LBRACKETAT AND RBRACKET BACKQUOTE", line 1, characters 14-15:
+Error: Syntax error
+File "implementation: TYPE LIDENT AND LBRACKETAT AND RBRACKET WHILE", line 1, characters 25-30:
+Error: Syntax error
+File "implementation: TYPE LIDENT AND LIDENT EQUAL DOTDOT AMPERSAND", line 1, characters 28-29:
+Error: Syntax error
+File "implementation: TYPE LIDENT AND LIDENT LBRACKETATAT AND RBRACKET METHOD", line 1, characters 33-39:
+Error: Syntax error
+File "implementation: TYPE LIDENT AND LIDENT WITH", line 1, characters 23-27:
+Error: Syntax error
+File "implementation: TYPE LIDENT AND UNDERSCORE LETOP", line 1, characters 18-22:
+Error: Syntax error
+File "implementation: TYPE LIDENT AND WITH", line 1, characters 16-20:
+Error: Syntax error
+File "implementation: TYPE LIDENT CONSTRAINT UNDERSCORE EQUAL UNDERSCORE SEMI", line 1, characters 29-30:
+Error: Syntax error
+File "implementation: TYPE LIDENT CONSTRAINT UNDERSCORE EQUAL WITH", line 1, characters 27-31:
+Error: Syntax error
+File "implementation: TYPE LIDENT CONSTRAINT UNDERSCORE WITH", line 1, characters 25-29:
+Error: Syntax error
+File "implementation: TYPE LIDENT CONSTRAINT WITH", line 1, characters 23-27:
+Error: Syntax error
+File "implementation: TYPE LIDENT EQUAL BAR UIDENT OF LIDENT IN", line 1, characters 33-35:
+Error: Syntax error
+File "implementation: TYPE LIDENT EQUAL BAR UIDENT WITH", line 1, characters 23-27:
+Error: Syntax error
+File "implementation: TYPE LIDENT EQUAL BAR WITH", line 1, characters 16-20:
+Error: Syntax error
+File "implementation: TYPE LIDENT EQUAL DOTDOT AMPERSAND", line 1, characters 17-18:
+Error: Syntax error
+File "implementation: TYPE LIDENT EQUAL LBRACE WITH", line 1, characters 16-20:
+Error: Syntax error
+File "implementation: TYPE LIDENT EQUAL LBRACKET WITH", line 1, characters 16-20:
+Error: Syntax error
+File "implementation: TYPE LIDENT EQUAL LPAREN WITH", line 1, characters 16-20:
+Error: Syntax error
+File "implementation: TYPE LIDENT EQUAL PRIVATE LBRACE WITH", line 1, characters 24-28:
+Error: Syntax error
+File "implementation: TYPE LIDENT EQUAL PRIVATE UNDERSCORE WITH", line 1, characters 24-28:
+Error: Syntax error
+File "implementation: TYPE LIDENT EQUAL PRIVATE WITH", line 1, characters 22-26:
+Error: Syntax error
+File "implementation: TYPE LIDENT EQUAL TRUE WITH", line 1, characters 19-23:
+Error: Syntax error
+File "implementation: TYPE LIDENT EQUAL UIDENT BAR WITH", line 1, characters 23-27:
+Error: Syntax error
+File "implementation: TYPE LIDENT EQUAL UIDENT LBRACKETAT AND RBRACKET WHILE", line 1, characters 30-35:
+Error: Syntax error
+File "implementation: TYPE LIDENT EQUAL UIDENT OF LIDENT IN", line 1, characters 31-33:
+Error: Syntax error
+File "implementation: TYPE LIDENT EQUAL UIDENT WITH", line 1, characters 21-25:
+Error: Syntax error
+File "implementation: TYPE LIDENT EQUAL UNDERSCORE EQUAL LBRACE WITH", line 1, characters 20-24:
+Error: Syntax error
+File "implementation: TYPE LIDENT EQUAL UNDERSCORE EQUAL PRIVATE LBRACE WITH", line 1, characters 28-32:
+Error: Syntax error
+File "implementation: TYPE LIDENT EQUAL UNDERSCORE EQUAL PRIVATE WITH", line 1, characters 26-30:
+Error: Syntax error
+File "implementation: TYPE LIDENT EQUAL UNDERSCORE EQUAL WITH", line 1, characters 18-22:
+Error: Syntax error
+File "implementation: TYPE LIDENT EQUAL UNDERSCORE WITH", line 1, characters 16-20:
+Error: Syntax error
+File "implementation: TYPE LIDENT EQUAL WITH", line 1, characters 14-18:
+Error: Syntax error
+File "implementation: TYPE LIDENT LBRACKETATAT WITH RBRACKET METHOD", line 1, characters 23-29:
+Error: Syntax error
+File "implementation: TYPE LIDENT PLUSEQ BAR UIDENT EQUAL TRUE WITH", line 1, characters 31-35:
+Error: Syntax error
+File "implementation: TYPE LIDENT PLUSEQ BAR UIDENT EQUAL WITH", line 1, characters 26-30:
+Error: Syntax error
+File "implementation: TYPE LIDENT PLUSEQ BAR UIDENT WITH", line 1, characters 24-28:
+Error: Syntax error
+File "implementation: TYPE LIDENT PLUSEQ BAR WITH", line 1, characters 17-21:
+Error: Syntax error
+File "implementation: TYPE LIDENT PLUSEQ PRIVATE BANG", line 1, characters 23-24:
+Error: Syntax error
+File "implementation: TYPE LIDENT PLUSEQ UIDENT EQUAL TRUE WITH", line 1, characters 29-33:
+Error: Syntax error
+File "implementation: TYPE LIDENT PLUSEQ UIDENT EQUAL WITH", line 1, characters 24-28:
+Error: Syntax error
+File "implementation: TYPE LIDENT PLUSEQ UIDENT OF LIDENT CONSTRAINT", line 1, characters 32-42:
+Error: Syntax error
+File "implementation: TYPE LIDENT PLUSEQ UIDENT WITH", line 1, characters 22-26:
+Error: Syntax error
+File "implementation: TYPE LIDENT PLUSEQ WITH", line 1, characters 15-19:
+Error: Syntax error
+File "implementation: TYPE LIDENT WITH", line 1, characters 12-16:
+Error: Syntax error
+File "implementation: TYPE LPAREN UNDERSCORE COMMA WITH", line 1, characters 11-15:
+Error: Syntax error
+File "implementation: TYPE LPAREN UNDERSCORE WITH", line 1, characters 9-13:
+Error: Syntax error
+File "implementation: TYPE LPAREN WITH", line 1, characters 7-11:
+Error: Syntax error
+File "implementation: TYPE MINUS WITH", line 1, characters 7-11:
+Error: Syntax error
+File "implementation: TYPE NONREC LIDENT EQUAL DOTDOT AMPERSAND", line 1, characters 24-25:
+Error: Syntax error
+File "implementation: TYPE NONREC LIDENT WITH", line 1, characters 19-23:
+Error: Syntax error
+File "implementation: TYPE NONREC UNDERSCORE LETOP", line 1, characters 14-18:
+Error: Syntax error
+File "implementation: TYPE NONREC WITH", line 1, characters 12-16:
+Error: Syntax error
+File "implementation: TYPE PERCENT AND WHILE", line 1, characters 11-16:
+Error: Syntax error
+File "implementation: TYPE PLUS WITH", line 1, characters 7-11:
+Error: Syntax error
+File "implementation: TYPE PREFIXOP WITH", line 1, characters 8-12:
+Error: Syntax error
+File "implementation: TYPE QUOTE WITH", line 1, characters 7-11:
+Error: Syntax error
+File "implementation: TYPE UIDENT DOT LIDENT WITH", line 1, characters 21-25:
+Error: Syntax error
+File "implementation: TYPE UIDENT DOT WITH", line 1, characters 14-18:
+Error: Syntax error
+File "implementation: TYPE UIDENT LPAREN UIDENT DOT WITH", line 1, characters 23-27:
+Error: Syntax error
+File "implementation: TYPE UIDENT LPAREN UIDENT WITH", line 1, characters 21-25:
+Error: Syntax error
+File "implementation: TYPE UIDENT LPAREN WITH", line 1, characters 14-18:
+Error: Syntax error: module path expected.
+File "implementation: TYPE UIDENT WITH", line 1, characters 12-16:
+Error: Syntax error
+File "implementation: TYPE UNDERSCORE LETOP", line 1, characters 7-11:
+Error: Syntax error
+File "implementation: TYPE WITH", line 1, characters 5-9:
+Error: Syntax error
+File "implementation: UIDENT AMPERAMPER OBJECT END WHILE", line 1, characters 21-26:
+Error: Syntax error
+File "implementation: UIDENT AMPERAMPER WITH", line 1, characters 10-14:
+Error: Syntax error
+File "implementation: UIDENT AMPERSAND OBJECT END WHILE", line 1, characters 20-25:
+Error: Syntax error
+File "implementation: UIDENT AMPERSAND WITH", line 1, characters 9-13:
+Error: Syntax error
+File "implementation: UIDENT AS", line 1, characters 7-9:
+Error: Syntax error
+File "implementation: UIDENT BARBAR OBJECT END WHILE", line 1, characters 21-26:
+Error: Syntax error
+File "implementation: UIDENT BARBAR WITH", line 1, characters 10-14:
+Error: Syntax error
+File "implementation: UIDENT COLONCOLON OBJECT END WHILE", line 1, characters 21-26:
+Error: Syntax error
+File "implementation: UIDENT COLONCOLON WITH", line 1, characters 10-14:
+Error: Syntax error
+File "implementation: UIDENT COLONEQUAL OBJECT END WHILE", line 1, characters 21-26:
+Error: Syntax error
+File "implementation: UIDENT COLONEQUAL WITH", line 1, characters 10-14:
+Error: Syntax error
+File "implementation: UIDENT COMMA CHAR COMMA OBJECT END WHILE", line 1, characters 26-31:
+Error: Syntax error
+File "implementation: UIDENT COMMA CHAR COMMA WITH", line 1, characters 15-19:
+Error: Syntax error
+File "implementation: UIDENT COMMA OBJECT END WHILE", line 1, characters 20-25:
+Error: Syntax error
+File "implementation: UIDENT COMMA WITH", line 1, characters 9-13:
+Error: Syntax error
+File "implementation: UIDENT DOT LBRACE WITH", line 1, characters 11-15:
+Error: Syntax error
+File "implementation: UIDENT DOT LBRACELESS WITH", line 1, characters 12-16:
+Error: Syntax error
+File "implementation: UIDENT DOT LBRACKET UIDENT RPAREN", line 1, characters 18-19:
+Error: Syntax error: ']' expected
+File "implementation: UIDENT DOT LBRACKET UIDENT RPAREN", line 1, characters 9-10:
+  This '[' might be unmatched
+File "implementation: UIDENT DOT LBRACKET WITH", line 1, characters 11-15:
+Error: Syntax error
+File "implementation: UIDENT DOT LBRACKETBAR UIDENT RPAREN", line 1, characters 19-20:
+Error: Syntax error: '|]' expected
+File "implementation: UIDENT DOT LBRACKETBAR UIDENT RPAREN", line 1, characters 9-11:
+  This '[|' might be unmatched
+File "implementation: UIDENT DOT LBRACKETBAR WITH", line 1, characters 12-16:
+Error: Syntax error
+File "implementation: UIDENT DOT LPAREN COLONCOLON WITH", line 1, characters 14-18:
+Error: Syntax error
+File "implementation: UIDENT DOT LPAREN MODULE LBRACKETAT AND RBRACKET WHILE", line 1, characters 27-32:
+Error: Syntax error
+File "implementation: UIDENT DOT LPAREN MODULE PERCENT AND FUNCTION", line 1, characters 24-32:
+Error: Syntax error
+File "implementation: UIDENT DOT LPAREN MODULE UIDENT COLON UIDENT VAL", line 1, characters 34-37:
+Error: Syntax error
+File "implementation: UIDENT DOT LPAREN MODULE UIDENT COLON WITH", line 1, characters 27-31:
+Error: Syntax error: ')' expected
+File "implementation: UIDENT DOT LPAREN MODULE UIDENT COLON WITH", line 1, characters 9-10:
+  This '(' might be unmatched
+File "implementation: UIDENT DOT LPAREN MODULE UIDENT WITH", line 1, characters 25-29:
+Error: Syntax error
+File "implementation: UIDENT DOT LPAREN MODULE WITH", line 1, characters 18-22:
+Error: Syntax error: module-expr expected.
+File "implementation: UIDENT DOT LPAREN UIDENT WITH", line 1, characters 18-22:
+Error: Syntax error: ')' expected
+File "implementation: UIDENT DOT LPAREN UIDENT WITH", line 1, characters 9-10:
+  This '(' might be unmatched
+File "implementation: UIDENT DOT LPAREN WITH", line 1, characters 11-15:
+Error: Syntax error: operator expected.
+File "implementation: UIDENT DOT WITH", line 1, characters 9-13:
+Error: Syntax error
+File "implementation: UIDENT DOTOP LBRACE UIDENT RBRACE LESSMINUS OBJECT END WHILE", line 1, characters 35-40:
+Error: Syntax error
+File "implementation: UIDENT DOTOP LBRACE UIDENT RBRACE LESSMINUS WITH", line 1, characters 24-28:
+Error: Syntax error
+File "implementation: UIDENT DOTOP LBRACE UIDENT RBRACE WHILE", line 1, characters 21-26:
+Error: Syntax error
+File "implementation: UIDENT DOTOP LBRACE UIDENT SEMI RPAREN", line 1, characters 21-22:
+Error: Syntax error: '}' expected
+File "implementation: UIDENT DOTOP LBRACE UIDENT SEMI RPAREN", line 1, characters 10-11:
+  This '{' might be unmatched
+File "implementation: UIDENT DOTOP LBRACE UIDENT WITH", line 1, characters 19-23:
+Error: Syntax error: '}' expected
+File "implementation: UIDENT DOTOP LBRACE UIDENT WITH", line 1, characters 10-11:
+  This '{' might be unmatched
+File "implementation: UIDENT DOTOP LBRACE WITH", line 1, characters 12-16:
+Error: Syntax error
+File "implementation: UIDENT DOTOP LBRACKET UIDENT RBRACKET LESSMINUS OBJECT END WHILE", line 1, characters 35-40:
+Error: Syntax error
+File "implementation: UIDENT DOTOP LBRACKET UIDENT RBRACKET LESSMINUS WITH", line 1, characters 24-28:
+Error: Syntax error
+File "implementation: UIDENT DOTOP LBRACKET UIDENT RBRACKET WHILE", line 1, characters 21-26:
+Error: Syntax error
+File "implementation: UIDENT DOTOP LBRACKET UIDENT RPAREN", line 1, characters 19-20:
+Error: Syntax error: ']' expected
+File "implementation: UIDENT DOTOP LBRACKET UIDENT RPAREN", line 1, characters 10-11:
+  This '[' might be unmatched
+File "implementation: UIDENT DOTOP LBRACKET WITH", line 1, characters 12-16:
+Error: Syntax error
+File "implementation: UIDENT DOTOP LPAREN UIDENT RBRACKET", line 1, characters 19-20:
+Error: Syntax error: ')' expected
+File "implementation: UIDENT DOTOP LPAREN UIDENT RBRACKET", line 1, characters 10-11:
+  This '(' might be unmatched
+File "implementation: UIDENT DOTOP LPAREN UIDENT RPAREN LESSMINUS OBJECT END WHILE", line 1, characters 35-40:
+Error: Syntax error
+File "implementation: UIDENT DOTOP LPAREN UIDENT RPAREN LESSMINUS WITH", line 1, characters 24-28:
+Error: Syntax error
+File "implementation: UIDENT DOTOP LPAREN UIDENT RPAREN WHILE", line 1, characters 21-26:
+Error: Syntax error
+File "implementation: UIDENT DOTOP LPAREN WITH", line 1, characters 12-16:
+Error: Syntax error
+File "implementation: UIDENT DOTOP WITH", line 1, characters 10-14:
+Error: Syntax error
+File "implementation: UIDENT EQUAL OBJECT END WHILE", line 1, characters 20-25:
+Error: Syntax error
+File "implementation: UIDENT EQUAL WITH", line 1, characters 9-13:
+Error: Syntax error
+File "implementation: UIDENT GREATER OBJECT END WHILE", line 1, characters 20-25:
+Error: Syntax error
+File "implementation: UIDENT GREATER WITH", line 1, characters 9-13:
+Error: Syntax error
+File "implementation: UIDENT HASH WITH", line 1, characters 9-13:
+Error: Syntax error
+File "implementation: UIDENT HASHOP TRUE WHILE", line 1, characters 15-20:
+Error: Syntax error
+File "implementation: UIDENT HASHOP WITH", line 1, characters 10-14:
+Error: Syntax error
+File "implementation: UIDENT INFIXOP0 OBJECT END WHILE", line 1, characters 21-26:
+Error: Syntax error
+File "implementation: UIDENT INFIXOP0 WITH", line 1, characters 10-14:
+Error: Syntax error
+File "implementation: UIDENT INFIXOP1 OBJECT END WHILE", line 1, characters 20-25:
+Error: Syntax error
+File "implementation: UIDENT INFIXOP1 WITH", line 1, characters 9-13:
+Error: Syntax error
+File "implementation: UIDENT INFIXOP2 OBJECT END WHILE", line 1, characters 21-26:
+Error: Syntax error
+File "implementation: UIDENT INFIXOP2 WITH", line 1, characters 10-14:
+Error: Syntax error
+File "implementation: UIDENT INFIXOP3 OBJECT END WHILE", line 1, characters 23-28:
+Error: Syntax error
+File "implementation: UIDENT INFIXOP3 WITH", line 1, characters 12-16:
+Error: Syntax error
+File "implementation: UIDENT INFIXOP4 OBJECT END WHILE", line 1, characters 21-26:
+Error: Syntax error
+File "implementation: UIDENT INFIXOP4 WITH", line 1, characters 10-14:
+Error: Syntax error
+File "implementation: UIDENT LABEL TRUE WHILE", line 1, characters 20-25:
+Error: Syntax error
+File "implementation: UIDENT LABEL WITH", line 1, characters 15-19:
+Error: Syntax error
+File "implementation: UIDENT LBRACKETAT UNDERSCORE", line 1, characters 10-11:
+Error: Syntax error
+File "implementation: UIDENT LBRACKETAT WITH UIDENT WHEN", line 1, characters 23-27:
+Error: Syntax error
+File "implementation: UIDENT LBRACKETAT WITH VIRTUAL", line 1, characters 15-22:
+Error: Syntax error
+File "implementation: UIDENT LBRACKETATAT AND RBRACKET AND", line 1, characters 17-20:
+Error: Syntax error
+File "implementation: UIDENT LESS OBJECT END WHILE", line 1, characters 20-25:
+Error: Syntax error
+File "implementation: UIDENT LESS WITH", line 1, characters 9-13:
+Error: Syntax error
+File "implementation: UIDENT MINUS OBJECT END WHILE", line 1, characters 20-25:
+Error: Syntax error
+File "implementation: UIDENT MINUS WITH", line 1, characters 9-13:
+Error: Syntax error
+File "implementation: UIDENT MINUSDOT OBJECT END WHILE", line 1, characters 21-26:
+Error: Syntax error
+File "implementation: UIDENT MINUSDOT WITH", line 1, characters 10-14:
+Error: Syntax error
+File "implementation: UIDENT OPTLABEL TRUE WHILE", line 1, characters 20-25:
+Error: Syntax error
+File "implementation: UIDENT OPTLABEL WITH", line 1, characters 15-19:
+Error: Syntax error
+File "implementation: UIDENT OR OBJECT END WHILE", line 1, characters 21-26:
+Error: Syntax error
+File "implementation: UIDENT OR WITH", line 1, characters 10-14:
+Error: Syntax error
+File "implementation: UIDENT PERCENT OBJECT END WHILE", line 1, characters 20-25:
+Error: Syntax error
+File "implementation: UIDENT PERCENT WITH", line 1, characters 9-13:
+Error: Syntax error
+File "implementation: UIDENT PLUS OBJECT END WHILE", line 1, characters 20-25:
+Error: Syntax error
+File "implementation: UIDENT PLUS WITH", line 1, characters 9-13:
+Error: Syntax error
+File "implementation: UIDENT PLUSDOT OBJECT END WHILE", line 1, characters 21-26:
+Error: Syntax error
+File "implementation: UIDENT PLUSDOT WITH", line 1, characters 10-14:
+Error: Syntax error
+File "implementation: UIDENT PLUSEQ OBJECT END WHILE", line 1, characters 21-26:
+Error: Syntax error
+File "implementation: UIDENT PLUSEQ WITH", line 1, characters 10-14:
+Error: Syntax error
+File "implementation: UIDENT QUESTION WITH", line 1, characters 9-13:
+Error: Syntax error
+File "implementation: UIDENT RBRACKET", line 1, characters 7-8:
+Error: Syntax error
+File "implementation: UIDENT SEMI PERCENT UNDERSCORE", line 1, characters 11-12:
+Error: Syntax error
+File "implementation: UIDENT SEMI PERCENT WITH VIRTUAL", line 1, characters 16-23:
+Error: Syntax error
+File "implementation: UIDENT SEMI WHEN", line 1, characters 9-13:
+Error: Syntax error
+File "implementation: UIDENT STAR OBJECT END WHILE", line 1, characters 20-25:
+Error: Syntax error
+File "implementation: UIDENT STAR WITH", line 1, characters 9-13:
+Error: Syntax error
+File "implementation: UIDENT TILDE WITH", line 1, characters 9-13:
+Error: Syntax error
+File "implementation: UIDENT UIDENT UIDENT", line 1, characters 14-20:
+Error: Syntax error
+File "implementation: UIDENT WHILE", line 1, characters 7-12:
+Error: Syntax error
+File "implementation: UIDENT WITH", line 1, characters 7-11:
+Error: Syntax error
+File "implementation: VAL LBRACKETAT AND RBRACKET WHILE", line 1, characters 13-18:
+Error: Syntax error
+File "implementation: VAL LIDENT COLON UNDERSCORE WITH", line 1, characters 15-19:
+Error: Syntax error
+File "implementation: VAL LIDENT COLON WITH", line 1, characters 13-17:
+Error: Syntax error
+File "implementation: VAL LIDENT WITH", line 1, characters 11-15:
+Error: Syntax error
+File "implementation: VAL PERCENT AND LBRACKET", line 1, characters 10-11:
+Error: Syntax error
+File "implementation: VAL WITH", line 1, characters 4-8:
+Error: Syntax error
+File "implementation: WHILE LBRACKETAT WITH RBRACKET AND", line 1, characters 16-19:
+Error: Syntax error
+File "implementation: WHILE PERCENT WITH VIRTUAL", line 1, characters 13-20:
+Error: Syntax error
+File "implementation: WHILE UIDENT DO UIDENT WITH", line 1, characters 23-27:
+Error: Syntax error
+File "implementation: WHILE UIDENT DO WITH", line 1, characters 16-20:
+Error: Syntax error
+File "implementation: WHILE UIDENT WITH", line 1, characters 13-17:
+Error: Syntax error
+File "implementation: WHILE WITH", line 1, characters 6-10:
+Error: Syntax error
+File "implementation: WITH", line 1, characters 0-4:
+Error: Syntax error
+

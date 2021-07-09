@@ -6,4 +6,4 @@ the rest of the compiler sources:
 
 - `check-stdlib-modules` checks that all stdlib modules are linked from the
   main entry of the stdlib in the manual:
-  `manual/manual/library/stdlib-blurb.etex`
+  `manual/src/library/stdlib-blurb.etex`

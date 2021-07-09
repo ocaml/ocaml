@@ -26,11 +26,7 @@ Error: Syntax error
 Line 4, characters 9-10:
 4 |   and u3 = char
              ^
-Error: Syntax error: 'end' expected
-Line 2, characters 24-27:
-2 | module type Rejected3 = sig
-                            ^^^
-  This 'sig' might be unmatched
+Error: Syntax error
 Line 3, characters 7-13:
 3 |   type nonrec t := int
            ^^^^^^

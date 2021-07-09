@@ -124,13 +124,15 @@ let add_reloads regset i =
     (fun r i -> instr_cons (Iop Ireload) [|spill_reg r|] [|r|] i)
     regset i
 
-let reload_at_exit = ref []
+let reload_at_exit : (int, Reg.Set.t) Hashtbl.t = Hashtbl.create 20
 
-let find_reload_at_exit k =
-  try
-    List.assoc k !reload_at_exit
-  with
-  | Not_found -> Misc.fatal_error "Spill.find_reload_at_exit"
+let get_reload_at_exit k =
+  match Hashtbl.find_opt reload_at_exit k with
+  | None -> Reg.Set.empty
+  | Some s -> s
+
+let set_reload_at_exit k s =
+  Hashtbl.replace reload_at_exit k s
 
 let rec reload i before =
   incr current_date;
@@ -169,7 +171,7 @@ let rec reload i before =
       let date_ifso = !current_date in
       current_date := date_fork;
       let (new_ifnot, after_ifnot) = reload ifnot at_fork in
-      current_date := max date_ifso !current_date;
+      current_date := Int.max date_ifso !current_date;
       let (new_next, finally) =
         reload i.next (Reg.Set.union after_ifso after_ifnot) in
       let new_i =
@@ -189,7 +191,7 @@ let rec reload i before =
             current_date := date_fork;
             let (new_c, after_c) = reload c at_fork in
             after_cases := Reg.Set.union !after_cases after_c;
-            date_join := max !date_join !current_date;
+            date_join := Int.max !date_join !current_date;
             new_c)
           cases in
       current_date := !date_join;
@@ -199,31 +201,32 @@ let rec reload i before =
                                i.arg i.res new_next),
        finally)
   | Icatch(rec_flag, handlers, body) ->
-      let new_sets = List.map
-          (fun (nfail, _) -> nfail, ref Reg.Set.empty) handlers in
-      let previous_reload_at_exit = !reload_at_exit in
-      reload_at_exit := new_sets @ !reload_at_exit ;
       let (new_body, after_body) = reload body before in
       let rec fixpoint () =
-        let at_exits = List.map (fun (nfail, set) -> (nfail, !set)) new_sets in
+        let at_exits =
+          List.map (fun (nfail, _) -> (nfail, get_reload_at_exit nfail))
+                   handlers in
         let res =
-          List.map2 (fun (nfail', handler) (nfail, at_exit) ->
+          List.map2
+            (fun (nfail', handler) (nfail, at_exit) ->
               assert(nfail = nfail');
-              reload handler at_exit) handlers at_exits in
+              reload handler at_exit)
+            handlers at_exits in
         match rec_flag with
         | Cmm.Nonrecursive ->
             res
         | Cmm.Recursive ->
-            let equal = List.for_all2 (fun (nfail', at_exit) (nfail, new_set) ->
-                assert(nfail = nfail');
-                Reg.Set.equal at_exit !new_set)
-                at_exits new_sets in
+            let equal =
+              List.for_all2
+                (fun (nfail', _) (nfail, at_exit) ->
+                  assert(nfail = nfail');
+                  Reg.Set.equal at_exit (get_reload_at_exit nfail))
+                handlers at_exits in
             if equal
             then res
             else fixpoint ()
       in
       let res = fixpoint () in
-      reload_at_exit := previous_reload_at_exit;
       let union = List.fold_left
           (fun acc (_, after_handler) -> Reg.Set.union acc after_handler)
           after_body res in
@@ -235,8 +238,8 @@ let rec reload i before =
          (Icatch(rec_flag, new_handlers, new_body)) i.arg i.res new_next,
        finally)
   | Iexit nfail ->
-      let set = find_reload_at_exit nfail in
-      set := Reg.Set.union !set before;
+      set_reload_at_exit nfail
+                         (Reg.Set.union (get_reload_at_exit nfail) before);
       (i, Reg.Set.empty)
   | Itrywith(body, handler) ->
       let (new_body, after_body) = reload body before in
@@ -268,17 +271,15 @@ let rec reload i before =
    NB ter: is it the same thing for catch bodies ?
 *)
 
-(* CR mshinwell for pchambart: Try to test the new algorithms for dealing
-   with Icatch. *)
+let spill_at_exit : (int, Reg.Set.t) Hashtbl.t = Hashtbl.create 20
 
-let spill_at_exit = ref []
-let find_spill_at_exit k =
-  try
-    let used, set = List.assoc k !spill_at_exit in
-    used := true;
-    set
-  with
-  | Not_found -> Misc.fatal_error "Spill.find_spill_at_exit"
+let get_spill_at_exit k =
+  match Hashtbl.find_opt spill_at_exit k with
+  | None -> Reg.Set.empty
+  | Some s -> s
+
+let set_spill_at_exit k s =
+  Hashtbl.replace spill_at_exit k s
 
 let spill_at_raise = ref Reg.Set.empty
 let inside_loop = ref false
@@ -301,16 +302,13 @@ let rec spill i finally =
       let before1 = Reg.diff_set_array after i.res in
       (instr_cons i.desc i.arg i.res new_next,
        Reg.add_set_array before1 i.res)
-  | Iop _ ->
+  | Iop op ->
       let (new_next, after) = spill i.next finally in
       let before1 = Reg.diff_set_array after i.res in
       let before =
-        match i.desc with
-          Iop(Icall_ind) | Iop(Icall_imm _) | Iop(Iextcall _) | Iop(Ialloc _)
-        | Iop(Iintop (Icheckbound)) | Iop(Iintop_imm(Icheckbound, _)) ->
-            Reg.Set.union before1 !spill_at_raise
-        | _ ->
-            before1 in
+        if operation_can_raise op
+        then Reg.Set.union before1 !spill_at_raise
+        else before1 in
       (instr_cons_debug i.desc i.arg i.res i.dbg
                   (add_spills (Reg.inter_set_array after i.res) new_next),
        before)
@@ -357,45 +355,30 @@ let rec spill i finally =
       let (new_next, at_join) = spill i.next finally in
       let saved_inside_catch = !inside_catch in
       inside_catch := true ;
-      let previous_spill_at_exit = !spill_at_exit in
-      let spill_at_exit_add at_exits = List.map2
-          (fun (nfail,_) at_exit -> nfail, (ref false, at_exit))
-          handlers at_exits
-      in
-      let rec fixpoint at_exits =
-        let spill_at_exit_add = spill_at_exit_add at_exits in
-        spill_at_exit := spill_at_exit_add @ !spill_at_exit;
+      let rec fixpoint () =
         let res =
-          List.map (fun (_, handler) -> spill handler at_join) handlers
-        in
-        spill_at_exit := previous_spill_at_exit;
-        match rec_flag with
-        | Cmm.Nonrecursive ->
-            res
-        | Cmm.Recursive ->
-            let equal =
-              List.for_all2
-                (fun (_new_handler, new_at_exit) (_, (used, at_exit)) ->
-                   Reg.Set.equal at_exit new_at_exit || not !used)
-                res spill_at_exit_add in
-            if equal
-            then res
-            else fixpoint (List.map snd res)
+          List.map (fun (_, handler) -> spill handler at_join) handlers in
+        let update changed (k, _handler) (_new_handler, before_handler) =
+          if Reg.Set.equal before_handler (get_spill_at_exit k)
+          then changed
+          else (set_spill_at_exit k before_handler; true) in
+        let changed =
+          List.fold_left2 update false handlers res in
+        if rec_flag = Cmm.Recursive && changed
+        then fixpoint ()
+        else res
       in
-      let res = fixpoint (List.map (fun _ -> Reg.Set.empty) handlers) in
+      let res = fixpoint () in
       inside_catch := saved_inside_catch ;
-      let spill_at_exit_add = spill_at_exit_add (List.map snd res) in
-      spill_at_exit := spill_at_exit_add @ !spill_at_exit;
       let (new_body, before) = spill body at_join in
-      spill_at_exit := previous_spill_at_exit;
       let new_handlers = List.map2
-          (fun (nfail, _) (handler, _) -> nfail, handler)
+          (fun (nfail, _) (new_handler, _) -> (nfail, new_handler))
           handlers res in
       (instr_cons (Icatch(rec_flag, new_handlers, new_body))
          i.arg i.res new_next,
        before)
   | Iexit nfail ->
-      (i, find_spill_at_exit nfail)
+      (i, get_spill_at_exit nfail)
   | Itrywith(body, handler) ->
       let (new_next, at_join) = spill i.next finally in
       let (new_handler, before_handler) = spill handler at_join in
@@ -414,18 +397,17 @@ let reset () =
   spill_env := Reg.Map.empty;
   use_date := Reg.Map.empty;
   current_date := 0;
-  destroyed_at_fork := []
+  destroyed_at_fork := [];
+  Hashtbl.clear reload_at_exit;
+  Hashtbl.clear spill_at_exit
 
 let fundecl f =
   reset ();
-
   let (body1, _) = reload f.fun_body Reg.Set.empty in
   let (body2, tospill_at_entry) = spill body1 Reg.Set.empty in
   let new_body =
     add_spills (Reg.inter_set_array tospill_at_entry f.fun_args) body2 in
-  spill_env := Reg.Map.empty;
-  use_date := Reg.Map.empty;
-  destroyed_at_fork := [];
+  reset ();
   { fun_name = f.fun_name;
     fun_args = f.fun_args;
     fun_body = new_body;

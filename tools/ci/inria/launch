@@ -1,0 +1,31 @@
+#!/bin/sh
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*              Xavier Leroy, projet Cambium, INRIA Paris                 *
+#*                                                                        *
+#*   Copyright 2021 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
+# Set up the execution environment before launching the CI script
+# given as argument.
+
+# Currently, the only setup performed is to make sure that ARM-based Macs
+# run the script in ARM64 mode or in x86-64 mode, depending on what
+# the OCAML_ARCH parameter requires.
+# If OCAML_ARCH is just "macos", the default mode is used.
+
+set -x
+
+case "${OCAML_ARCH}" in
+  macos-arm) OCAML_ARCH=macos exec /usr/bin/arch -arm64 "$@";;
+  macos-x86) OCAML_ARCH=macos exec /usr/bin/arch -x86_64 "$@";;
+  *) exec "$@";;
+esac

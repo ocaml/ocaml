@@ -75,6 +75,10 @@
 #endif
 #endif
 
+#ifndef M_LOG2E
+#define M_LOG2E 1.44269504088896340735992468100 /* log_2 (e) */
+#endif
+
 #ifdef ARCH_ALIGN_DOUBLE
 
 CAMLexport double caml_Double_val(value val)
@@ -463,6 +467,20 @@ CAMLprim value caml_exp_float(value f)
   return caml_copy_double(exp(Double_val(f)));
 }
 
+CAMLexport double caml_exp2(double x)
+{
+#ifdef HAS_C99_FLOAT_OPS
+  return exp2(x);
+#else
+  return pow(2, x);
+#endif
+}
+
+CAMLprim value caml_exp2_float(value f)
+{
+  return caml_copy_double(caml_exp2(Double_val(f)));
+}
+
 CAMLexport double caml_trunc(double x)
 {
 #ifdef HAS_C99_FLOAT_OPS
@@ -479,7 +497,7 @@ CAMLprim value caml_trunc_float(value f)
 
 CAMLexport double caml_round(double f)
 {
-#ifdef HAS_C99_FLOAT_OPS
+#ifdef HAS_WORKING_ROUND
   return round(f);
 #else
   union { uint64_t i; double d; } u, pred_one_half; /* predecessor of 0.5 */
@@ -746,12 +764,13 @@ CAMLprim value caml_fmod_float(value f1, value f2)
 
 CAMLprim value caml_frexp_float(value f)
 {
-  CAMLparam1 (f);
-  CAMLlocal2 (res, mantissa);
+  CAMLparam0 ();
+  CAMLlocal1 (mantissa);
+  value res;
   int exponent;
 
   mantissa = caml_copy_double(frexp (Double_val(f), &exponent));
-  res = caml_alloc_tuple(2);
+  res = caml_alloc_small(2, 0);
   Field(res, 0) = mantissa;
   Field(res, 1) = Val_int(exponent);
   CAMLreturn (res);
@@ -779,16 +798,30 @@ CAMLprim value caml_log10_float(value f)
   return caml_copy_double(log10(Double_val(f)));
 }
 
+CAMLexport double caml_log2(double x)
+{
+#ifdef HAS_C99_FLOAT_OPS
+  return log2(x);
+#else
+  return log(x) * M_LOG2E;
+#endif
+}
+
+CAMLprim value caml_log2_float(value f)
+{
+  return caml_copy_double(caml_log2(Double_val(f)));
+}
+
 CAMLprim value caml_modf_float(value f)
 {
+  CAMLparam0 ();
+  CAMLlocal2 (quo, rem);
+  value res;
   double frem;
-
-  CAMLparam1 (f);
-  CAMLlocal3 (res, quo, rem);
 
   quo = caml_copy_double(modf (Double_val(f), &frem));
   rem = caml_copy_double(frem);
-  res = caml_alloc_tuple(2);
+  res = caml_alloc_small(2, 0);
   Field(res, 0) = quo;
   Field(res, 1) = rem;
   CAMLreturn (res);
@@ -797,6 +830,22 @@ CAMLprim value caml_modf_float(value f)
 CAMLprim value caml_sqrt_float(value f)
 {
   return caml_copy_double(sqrt(Double_val(f)));
+}
+
+CAMLexport double caml_cbrt(double x)
+{
+#ifdef HAS_C99_FLOAT_OPS
+  return cbrt(x);
+#else
+  static const double third = 1.0 / 3.0;
+  double res = exp(third * log(fabs(x)));
+  return (x >= 0) ? res : -res;
+#endif
+}
+
+CAMLprim value caml_cbrt_float(value f)
+{
+  return caml_copy_double(caml_cbrt(Double_val(f)));
 }
 
 CAMLprim value caml_power_float(value f, value g)
@@ -839,14 +888,56 @@ CAMLprim value caml_asin_float(value f)
   return caml_copy_double(asin(Double_val(f)));
 }
 
+CAMLexport double caml_asinh(double x)
+{
+#ifdef HAS_C99_FLOAT_OPS
+  return asinh(x);
+#else
+  return log(x + sqrt(x * x + 1.0));
+#endif
+}
+
+CAMLprim value caml_asinh_float(value f)
+{
+  return caml_copy_double(caml_asinh(Double_val(f)));
+}
+
 CAMLprim value caml_acos_float(value f)
 {
   return caml_copy_double(acos(Double_val(f)));
 }
 
+CAMLexport double caml_acosh(double x)
+{
+#ifdef HAS_C99_FLOAT_OPS
+  return acosh(x);
+#else
+  return log(x + sqrt(x * x - 1.0));
+#endif
+}
+
+CAMLprim value caml_acosh_float(value f)
+{
+  return caml_copy_double(caml_acosh(Double_val(f)));
+}
+
 CAMLprim value caml_atan_float(value f)
 {
   return caml_copy_double(atan(Double_val(f)));
+}
+
+CAMLexport double caml_atanh(double x)
+{
+#ifdef HAS_C99_FLOAT_OPS
+  return atanh(x);
+#else
+  return 0.5 * log((1.0 + x) / (1.0 - x));
+#endif
+}
+
+CAMLprim value caml_atanh_float(value f)
+{
+  return caml_copy_double(caml_atanh(Double_val(f)));
 }
 
 CAMLprim value caml_atan2_float(value f, value g)
@@ -919,6 +1010,53 @@ CAMLprim value caml_expm1_float(value f)
 CAMLprim value caml_log1p_float(value f)
 {
   return caml_copy_double(caml_log1p(Double_val(f)));
+}
+
+#ifndef HAS_C99_FLOAT_OPS
+Caml_inline double simple_erf(double x)
+{
+  /* This algorithm for calculating the error function is based on formula
+     7.1.26 from the "Handbook of Mathematical Functions" by Abramowitz
+     and Stegun.  The implementation using Horner's method for evaluating the
+     polynomial approximation is derived from Python code by John D. Cook. */
+  double a1 =  0.254829592, a2 = -0.284496736, a3 = 1.421413741,
+         a4 = -1.453152027, a5 =  1.061405429, p  = 0.3275911,
+         t, y;
+
+  int sign = (x >= 0) ? 1 : -1;
+  x = fabs(x);
+  t = 1.0 / (1.0 + p * x);
+  y = 1.0 - (((((a5 *t  + a4) * t) + a3) * t + a2) * t + a1) * t * exp(-x * x);
+  return sign * y;
+}
+#endif
+
+CAMLexport double caml_erf(double x)
+{
+#ifdef HAS_C99_FLOAT_OPS
+  return erf(x);
+#else
+  return simple_erf(x);
+#endif
+}
+
+CAMLprim value caml_erf_float(value f)
+{
+  return caml_copy_double(caml_erf(Double_val(f)));
+}
+
+CAMLexport double caml_erfc(double x)
+{
+#ifdef HAS_C99_FLOAT_OPS
+  return erfc(x);
+#else
+  return 1.0 - simple_erf(x);
+#endif
+}
+
+CAMLprim value caml_erfc_float(value f)
+{
+  return caml_copy_double(caml_erfc(Double_val(f)));
 }
 
 union double_as_two_int32 {

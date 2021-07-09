@@ -262,3 +262,15 @@ let is_immediate n =
     s := !s + 2
   done;
   !s <= m
+
+(* Specific operations that are pure *)
+
+let operation_is_pure = function
+  | Ishiftcheckbound _ -> false
+  | _ -> true
+
+(* Specific operations that can raise *)
+
+let operation_can_raise = function
+  | Ishiftcheckbound _ -> true
+  | _ -> false

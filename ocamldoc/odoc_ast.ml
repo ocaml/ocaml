@@ -256,13 +256,9 @@ module Analyser =
               (List.map iter_pattern patlist,
                Odoc_env.subst_type env pat.pat_type)
 
-        | Typedtree.Tpat_construct (_, cons_desc, _) when
-            (* we give a name to the parameter only if it unit *)
-            (match cons_desc.cstr_res.desc with
-              Tconstr (p, _, _) ->
-                Path.same p Predef.path_unit
-            | _ ->
-                false)
+        | Typedtree.Tpat_construct (_, cons_desc, _, _) when
+            (* we give a name to the parameter only if it is unit *)
+            Path.same (Btype.cstr_type_path cons_desc) Predef.path_unit
           ->
             (* a () argument, it never has description *)
             Simple_name { sn_name = "()" ;
@@ -585,7 +581,7 @@ module Analyser =
               with Not_found -> raise (Failure (Odoc_messages.method_type_not_found current_class_name label))
             in
             let real_type =
-              match met_type.Types.desc with
+              match get_desc met_type with
               Tarrow (_, _, t, _) ->
                 t
             |  _ ->
@@ -627,7 +623,7 @@ module Analyser =
             with Not_found -> raise (Failure (Odoc_messages.method_not_found_in_typedtree complete_name))
           in
           let real_type =
-            match exp.exp_type.desc with
+            match get_desc exp.exp_type with
               Tarrow (_, _, t,_) ->
                 t
             |  _ ->
@@ -1294,7 +1290,7 @@ module Analyser =
                     let ext_loc_end =  tt_ext.ext_loc.Location.loc_end.Lexing.pos_cnum in
                     let new_xt =
                       match tt_ext.ext_kind with
-                          Text_decl(args, ret_type) ->
+                          Text_decl(_, args, ret_type) ->
                           let xt_args =
                             Sig.get_cstr_args new_env ext_loc_end args in
                             {
@@ -1350,7 +1346,7 @@ module Analyser =
           let new_env = Odoc_env.add_extension env complete_name in
           let new_ext =
             match tt_ext.Typedtree.tyexn_constructor.ext_kind with
-              Text_decl(tt_args, tt_ret_type) ->
+              Text_decl(_, tt_args, tt_ret_type) ->
                 let loc_start = loc.Location.loc_start.Lexing.pos_cnum in
                 let loc_end =  loc.Location.loc_end.Lexing.pos_cnum in
                 let ex_args =

@@ -2,7 +2,7 @@
    * native-compiler
    ** script
        script = "sh ${test_source_directory}/has-afl-showmap.sh"
-       files = "harness.ml  test.ml"
+       readonly_files = "harness.ml test.ml"
    *** setup-ocamlopt.byte-build-env
    **** ocamlopt.byte
          module = "test.ml"

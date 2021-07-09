@@ -1,0 +1,109 @@
+(Introduced in 4.06)
+
+\begin{syntax}
+
+dot-ext:
+   | dot-operator-char { operator-char }
+;
+dot-operator-char:
+  '!' ||  '?' || core-operator-char || '%' || ':'
+;
+expr:
+          ...
+        | expr '.' [module-path '.'] dot-ext ( '(' expr ')' || '[' expr ']' || '{' expr '}' ) [ '<-' expr ]
+;
+operator-name:
+          ...
+        | '.' dot-ext ('()' || '[]' || '{}') ['<-']
+;
+\end{syntax}
+
+
+This extension provides syntactic sugar for getting and setting elements
+for user-defined indexed types. For instance, we can define python-like
+dictionaries with
+\begin{caml_example*}{verbatim}
+module Dict = struct
+include Hashtbl
+let ( .%{} ) tabl index = find tabl index
+let ( .%{}<- ) tabl index value = add tabl index value
+end
+let dict =
+  let dict = Dict.create 10 in
+  let () =
+    dict.Dict.%{"one"} <- 1;
+    let open Dict in
+    dict.%{"two"} <- 2 in
+  dict
+\end{caml_example*}
+\begin{caml_example}{toplevel}
+dict.Dict.%{"one"};;
+let open Dict in dict.%{"two"};;
+\end{caml_example}
+
+\subsection{ss:multiindexing}{Multi-index notation}
+\begin{syntax}
+expr:
+          ...
+        | expr '.' [module-path '.'] dot-ext '(' expr {{';' expr }} ')' [ '<-' expr ]
+        | expr '.' [module-path '.'] dot-ext '[' expr {{';' expr }} ']' [ '<-' expr ]
+        | expr '.' [module-path '.'] dot-ext '{' expr {{';' expr }} '}' [ '<-' expr ]
+;
+operator-name:
+          ...
+        | '.' dot-ext ('(;..)' || '[;..]' || '{;..}') ['<-']
+;
+\end{syntax}
+
+Multi-index are also supported through a second variant of indexing operators
+
+\begin{caml_example*}{verbatim}
+let (.%[;..]) = Bigarray.Genarray.get
+let (.%{;..}) = Bigarray.Genarray.get
+let (.%(;..)) = Bigarray.Genarray.get
+\end{caml_example*}
+
+which is called when an index literals contain a semicolon separated list
+of expressions with two and more elements:
+
+\begin{caml_example*}{verbatim}
+let sum x y = x.%[1;2;3] + y.%[1;2]
+(* is equivalent to *)
+let sum x y = (.%[;..]) x [|1;2;3|] + (.%[;..]) y [|1;2|]
+\end{caml_example*}
+
+In particular this multi-index notation makes it possible to uniformly handle
+indexing Genarray and other implementations of multidimensional arrays.
+
+\begin{caml_example*}{verbatim}
+module A = Bigarray.Genarray
+let (.%{;..}) = A.get
+let (.%{;..}<- ) = A.set
+let (.%{ }) a k = A.get a [|k|]
+let (.%{ }<-) a k x = A.set a [|k|] x
+let syntax_compare vec mat t3 t4 =
+          vec.%{0} = A.get vec [|0|]
+   &&   mat.%{0;0} = A.get mat [|0;0|]
+   &&   t3.%{0;0;0} = A.get t3 [|0;0;0|]
+   && t4.%{0;0;0;0} = t4.{0,0,0,0}
+\end{caml_example*}
+
+Beware that the differentiation between the multi-index and single index
+operators is purely syntactic: multi-index operators are restricted to
+index expressions that contain one or more semicolons ";". For instance,
+\begin{caml_example*}{verbatim}
+  let pair vec mat = vec.%{0}, mat.%{0;0}
+\end{caml_example*}
+is equivalent to
+\begin{caml_example*}{verbatim}
+  let pair vec mat = (.%{ }) vec 0, (.%{;..}) mat [|0;0|]
+\end{caml_example*}
+Notice that in the "vec" case, we are calling the single index operator, "(.%{})", and
+not the multi-index variant, "(.{;..})".
+For this reason, it is expected that most users of multi-index operators will need
+to define conjointly a single index variant
+\begin{caml_example*}{verbatim}
+let (.%{;..}) = A.get
+let (.%{ }) a k = A.get a [|k|]
+\end{caml_example*}
+to handle both cases uniformly.

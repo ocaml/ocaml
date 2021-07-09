@@ -37,6 +37,8 @@ module type TESTSIG = sig
     val div: t -> t -> t
     val unsigned_div: t -> t -> t
     val rem: t -> t -> t
+    val min: t -> t -> t
+    val max: t -> t -> t
     val logand: t -> t -> t
     val logor: t -> t -> t
     val logxor: t -> t -> t
@@ -226,6 +228,10 @@ struct
        10, 1234567, 12345678;
        11, 1234567, -12345678];
     test 12 (rem min_int (of_int (-1))) (of_int 0);
+
+    testing_function "min/max";
+    test 1 (max (of_int 2) (of_int 3)) (of_int 3);
+    test 2 (min (of_int 2) (of_int 3)) (of_int 2);
 
     testing_function "and";
     List.iter
@@ -486,6 +492,10 @@ struct
        10, 1234567, 12345678;
        11, 1234567, -12345678];
     test 12 (rem min_int (of_int (-1))) (of_int 0);
+
+    testing_function "min/max";
+    test 1 (max (of_int 2) (of_int 3)) (of_int 3);
+    test 2 (min (of_int 2) (of_int 3)) (of_int 2);
 
     testing_function "and";
     List.iter

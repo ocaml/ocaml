@@ -33,6 +33,11 @@ val lookup_as_bool : Variables.t -> t -> bool option
     [Some false] if it is set to another string, and
     [None] if not set. *)
 
+val lookup_as_int : Variables.t -> t -> int option
+(** returns [Some n] if the variable is set to a string
+    representation of the integer [n],
+    and [None] if it is not an integer or not set. *)
+
 val add : Variables.t -> string -> t -> t
 val add_if_undefined : Variables.t -> string -> t -> t
 val add_bindings : (Variables.t * string) list -> t -> t

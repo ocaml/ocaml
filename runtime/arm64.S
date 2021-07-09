@@ -20,10 +20,9 @@
 
 /* Special registers */
 
-#define DOMAIN_STATE_PTR x25
+#define DOMAIN_STATE_PTR x28
 #define TRAP_PTR x26
 #define ALLOC_PTR x27
-#define ALLOC_LIMIT x28
 #define ADDITIONAL_ARG x8
 #define TMP x16
 #define TMP2 x17
@@ -64,7 +63,7 @@
 #include "../runtime/caml/domain_state.tbl"
 #undef DOMAIN_STATE
 
-#define Caml_state(var) [x25, 8*domain_field_caml_##var]
+#define Caml_state(var) [DOMAIN_STATE_PTR, 8*domain_field_caml_##var]
 
 /* Globals and labels */
 #if defined(SYS_macosx)
@@ -233,9 +232,8 @@ L(caml_call_gc):
         ldp     d26, d27, [sp, 352]
         ldp     d28, d29, [sp, 368]
         ldp     d30, d31, [sp, 384]
-    /* Reload new allocation pointer and allocation limit */
+    /* Reload new allocation pointer */
         ldr     ALLOC_PTR, Caml_state(young_ptr)
-        ldr     ALLOC_LIMIT, Caml_state(young_limit)
     /* Free stack space and return to caller */
         ldp     x29, x30, [sp], 400
         ret
@@ -244,8 +242,9 @@ L(caml_call_gc):
 
 FUNCTION(caml_alloc1)
         CFI_STARTPROC
+        ldr     TMP, Caml_state(young_limit)
         sub     ALLOC_PTR, ALLOC_PTR, #16
-        cmp     ALLOC_PTR, ALLOC_LIMIT
+        cmp     ALLOC_PTR, TMP
         b.lo    L(caml_call_gc)
         ret
         CFI_ENDPROC
@@ -253,8 +252,9 @@ FUNCTION(caml_alloc1)
 
 FUNCTION(caml_alloc2)
         CFI_STARTPROC
+        ldr     TMP, Caml_state(young_limit)
         sub     ALLOC_PTR, ALLOC_PTR, #24
-        cmp     ALLOC_PTR, ALLOC_LIMIT
+        cmp     ALLOC_PTR, TMP
         b.lo    L(caml_call_gc)
         ret
         CFI_ENDPROC
@@ -262,8 +262,9 @@ FUNCTION(caml_alloc2)
 
 FUNCTION(caml_alloc3)
         CFI_STARTPROC
+        ldr     TMP, Caml_state(young_limit)
         sub     ALLOC_PTR, ALLOC_PTR, #32
-        cmp     ALLOC_PTR, ALLOC_LIMIT
+        cmp     ALLOC_PTR, TMP
         b.lo    L(caml_call_gc)
         ret
         CFI_ENDPROC
@@ -271,8 +272,9 @@ FUNCTION(caml_alloc3)
 
 FUNCTION(caml_allocN)
         CFI_STARTPROC
+        ldr     TMP, Caml_state(young_limit)
         sub     ALLOC_PTR, ALLOC_PTR, ADDITIONAL_ARG
-        cmp     ALLOC_PTR, ALLOC_LIMIT
+        cmp     ALLOC_PTR, TMP
         b.lo    L(caml_call_gc)
         ret
         CFI_ENDPROC
@@ -295,9 +297,8 @@ FUNCTION(caml_c_call)
         str     TRAP_PTR, Caml_state(exception_pointer)
     /* Call the function */
         blr     ADDITIONAL_ARG
-    /* Reload alloc ptr and alloc limit */
+    /* Reload alloc ptr  */
         ldr     ALLOC_PTR, Caml_state(young_ptr)
-        ldr     ALLOC_LIMIT, Caml_state(young_limit)
     /* Return */
         ret     x19
         CFI_ENDPROC
@@ -346,9 +347,8 @@ L(jump_to_caml):
         stp     x8, x9, [sp, -16]!
         CFI_ADJUST(16)
         add     TRAP_PTR, sp, #0
-    /* Reload allocation pointers */
+    /* Reload allocation pointer */
         ldr     ALLOC_PTR, Caml_state(young_ptr)
-        ldr     ALLOC_LIMIT, Caml_state(young_limit)
     /* Call the OCaml code */
         blr     TMP2
 L(caml_retaddr):
@@ -431,10 +431,9 @@ FUNCTION(caml_raise_exception)
         mov     DOMAIN_STATE_PTR, C_ARG_1
     /* Load the exception bucket */
         mov     x0, C_ARG_2
-    /* Reload trap ptr, alloc ptr and alloc limit */
+    /* Reload trap ptr and alloc ptr */
         ldr     TRAP_PTR, Caml_state(exception_pointer)
         ldr     ALLOC_PTR, Caml_state(young_ptr)
-        ldr     ALLOC_LIMIT, Caml_state(young_limit)
     /* Test if backtrace is active */
         ldr     TMP, Caml_state(backtrace_active)
         cbnz    TMP, 2f

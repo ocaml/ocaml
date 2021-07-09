@@ -14,25 +14,30 @@
 
 .NOTPARALLEL:
 
-TOPDIR = ../..
+ROOTDIR = ../..
 
-COMPILERLIBSDIR = $(TOPDIR)/compilerlibs
+COMPILERLIBSDIR = $(ROOTDIR)/compilerlibs
 
 RUNTIME_VARIANT ?=
 ASPPFLAGS ?=
 
-include $(TOPDIR)/Makefile.tools
+include $(ROOTDIR)/Makefile.common
+include $(ROOTDIR)/Makefile.best_binaries
+
+STDLIBFLAGS = -nostdlib -I $(ROOTDIR)/stdlib
+OCAMLC ?= $(BEST_OCAMLC) $(STDLIBFLAGS)
+OCAMLOPT ?= $(BEST_OCAMLOPT) $(STDLIBFLAGS)
 
 expect_MAIN=expect_test
 expect_PROG=$(expect_MAIN)$(EXE)
 expect_DIRS = parsing utils driver typing toplevel
-expect_OCAMLFLAGS = $(addprefix -I $(TOPDIR)/,$(expect_DIRS))
+expect_OCAMLFLAGS = $(addprefix -I $(ROOTDIR)/,$(expect_DIRS))
 expect_LIBS := $(addprefix $(COMPILERLIBSDIR)/,\
   ocamlcommon ocamlbytecomp ocamltoplevel)
 
 codegen_PROG = codegen$(EXE)
 codegen_DIRS = parsing utils typing middle_end bytecomp lambda asmcomp
-codegen_OCAMLFLAGS = $(addprefix -I $(TOPDIR)/, $(codegen_DIRS)) -w +40 -g
+codegen_OCAMLFLAGS = $(addprefix -I $(ROOTDIR)/, $(codegen_DIRS)) -w +40 -g
 
 codegen_LIBS = $(addprefix $(COMPILERLIBSDIR)/,\
   ocamlcommon ocamloptcomp)
@@ -63,13 +68,7 @@ $(codegen_PROG): COMPFLAGS = $(codegen_OCAMLFLAGS)
 codegen_main.cmo: parsecmm.cmo
 
 $(codegen_PROG): $(codegen_OBJECTS)
-	$(OCAMLC) -o $@ $(codegen_LIBS:=.cma) $^
-
-parsecmm.mli parsecmm.ml: parsecmm.mly
-	$(OCAMLYACC) -q parsecmm.mly
-
-lexcmm.ml: lexcmm.mll
-	$(OCAMLLEX) -q lexcmm.mll
+	$(OCAMLC) -o $@ $(COMPFLAGS) $(codegen_LIBS:=.cma) $^
 
 parsecmmaux.cmo: parsecmmaux.cmi
 
@@ -82,13 +81,13 @@ asmgen_i386.obj: asmgen_i386nt.asm
 	$(ASM) $@ $^ | tail -n +2
 
 %.cmi: %.mli
-	$(OCAMLC) -c $<
+	$(OCAMLC) $(COMPFLAGS) -c $<
 
 %.cmo: %.ml
-	$(OCAMLC) -c $<
+	$(OCAMLC) $(COMPFLAGS) -c $<
 
 %.cmx: %.ml
-	$(OCAMLOPT) -c $<
+	$(OCAMLOPT) $(COMPFLAGS) -c $<
 
 %.$(O): %.S
 	$(ASPP) $(ASPPFLAGS) -DSYS_$(SYSTEM) -DMODEL_$(MODEL) -o $@ $<

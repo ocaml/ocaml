@@ -24,6 +24,16 @@ type loc = {
   loc_ghost: bool;
 }
 
+type field_usage_warning =
+  | Unused
+  | Not_read
+  | Not_mutated
+
+type constructor_usage_warning =
+  | Unused
+  | Not_constructed
+  | Only_exported_private
+
 type t =
   | Comment_start                           (*  1 *)
   | Comment_not_end                         (*  2 *)
@@ -61,8 +71,8 @@ type t =
   | Unused_type_declaration of string       (* 34 *)
   | Unused_for_index of string              (* 35 *)
   | Unused_ancestor of string               (* 36 *)
-  | Unused_constructor of string * bool * bool  (* 37 *)
-  | Unused_extension of string * bool * bool * bool (* 38 *)
+  | Unused_constructor of string * constructor_usage_warning (* 37 *)
+  | Unused_extension of string * bool * constructor_usage_warning (* 38 *)
   | Unused_rec_flag                         (* 39 *)
   | Name_out_of_scope of string * string list * bool (* 40 *)
   | Ambiguous_name of string list * string list *  bool * string (* 41 *)
@@ -93,6 +103,8 @@ type t =
   | Unused_open_bang of string              (* 66 *)
   | Unused_functor_parameter of string      (* 67 *)
   | Match_on_mutable_state_prevent_uncurry  (* 68 *)
+  | Unused_field of string * field_usage_warning (* 69 *)
+  | Missing_mli                             (* 70 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -171,9 +183,11 @@ let number = function
   | Unused_open_bang _ -> 66
   | Unused_functor_parameter _ -> 67
   | Match_on_mutable_state_prevent_uncurry -> 68
+  | Unused_field _ -> 69
+  | Missing_mli -> 70
 ;;
 
-let last_warning_number = 68
+let last_warning_number = 70
 ;;
 
 (* Third component of each tuple is the list of names for each warning. The
@@ -332,6 +346,10 @@ let descriptions =
     68, "Pattern-matching depending on mutable state prevents the remaining \
          arguments from being uncurried.",
     ["match-on-mutable-state-prevent-uncurry"];
+    69, "Unused record field.",
+    ["unused-field"];
+    70, "Missing interface file.",
+    ["missing-mli"]
   ]
 ;;
 
@@ -487,26 +505,87 @@ let parse_alert_option s =
   in
   scan 0
 
-let parse_opt error active errflag s =
-  let flags = if errflag then error else active in
-  let set i =
-    if i = 3 then set_alert ~error:errflag ~enable:true "deprecated"
-    else flags.(i) <- true
+type modifier =
+  | Set (** +a *)
+  | Clear (** -a *)
+  | Set_all (** @a *)
+
+type token =
+  | Letter of char * modifier option
+  | Num of int * int * modifier
+
+let letter_alert tokens =
+  let print_warning_char ppf c =
+    let lowercase = Char.lowercase_ascii c = c in
+    Format.fprintf ppf "%c%c"
+      (if lowercase then '-' else '+') c
   in
-  let clear i =
-    if i = 3 then set_alert ~error:errflag ~enable:false "deprecated"
-    else flags.(i) <- false
+  let print_modifier ppf = function
+    | Set_all -> Format.fprintf ppf "@"
+    | Clear -> Format.fprintf ppf "-"
+    | Set -> Format.fprintf ppf "+"
   in
-  let set_all i =
-    if i = 3 then begin
-      set_alert ~error:false ~enable:true "deprecated";
-      set_alert ~error:true ~enable:true "deprecated"
-    end
-    else begin
-      active.(i) <- true;
-      error.(i) <- true
-    end
+  let print_token ppf = function
+    | Num (a,b,m) -> if a = b then
+          Format.fprintf ppf "%a%d" print_modifier m a
+        else
+          Format.fprintf ppf "%a%d..%d" print_modifier m a b
+    | Letter(l,Some m) -> Format.fprintf ppf "%a%c" print_modifier m l
+    | Letter(l,None) -> print_warning_char ppf l
   in
+  let consecutive_letters =
+    (* we are tracking sequences of 2 or more consecutive unsigned letters
+       in warning strings, for instance in '-w "not-principa"'. *)
+    let commit_chunk l = function
+      | [] | [ _ ] -> l
+      | _ :: _ :: _ as chunk -> List.rev chunk :: l
+    in
+    let group_consecutive_letters (l,current) = function
+    | Letter (x, None) -> (l, x::current)
+    | _ -> (commit_chunk l current, [])
+    in
+    let l, on_going =
+      List.fold_left group_consecutive_letters ([],[]) tokens
+    in
+    commit_chunk l on_going
+  in
+  match consecutive_letters with
+  | [] -> None
+  | example :: _  ->
+      let pos = { Lexing.dummy_pos with pos_fname = "_none_" } in
+      let nowhere = { loc_start=pos; loc_end=pos; loc_ghost=true } in
+      let spelling_hint ppf =
+        let max_seq_len =
+          List.fold_left (fun l x -> Int.max l (List.length x))
+            0 consecutive_letters
+        in
+        if max_seq_len >= 5 then
+          Format.fprintf ppf
+            "@ @[Hint: Did you make a spelling mistake \
+             when using a mnemonic name?@]"
+        else
+          ()
+      in
+      let message =
+        Format.asprintf
+          "@[<v>@[Setting a warning with a sequence of lowercase \
+           or uppercase letters,@ like '%a',@ is deprecated.@]@ \
+           @[Use the equivalent signed form:@ %t.@]@ \
+           @[Hint: Enabling or disabling a warning by its mnemonic name \
+           requires a + or - prefix.@]\
+           %t@?@]"
+          Format.(pp_print_list ~pp_sep:(fun _ -> ignore) pp_print_char) example
+          (fun ppf -> List.iter (print_token ppf) tokens)
+          spelling_hint
+      in
+      Some {
+        kind="ocaml_deprecated_cli";
+        use=nowhere; def=nowhere;
+        message
+      }
+
+
+let parse_warnings s =
   let error () = raise (Arg.Bad "Ill-formed list of warnings") in
   let rec get_num n i =
     if i >= String.length s then i, n
@@ -523,65 +602,94 @@ let parse_opt error active errflag s =
     else
       i, n1, n1
   in
-  let rec loop i =
-    if i >= String.length s then () else
+  let rec loop tokens i =
+    if i >= String.length s then List.rev tokens else
     match s.[i] with
-    | 'A' .. 'Z' ->
-       List.iter set (letter (Char.lowercase_ascii s.[i]));
-       loop (i+1)
-    | 'a' .. 'z' ->
-       List.iter clear (letter s.[i]);
-       loop (i+1)
-    | '+' -> loop_letter_num set (i+1)
-    | '-' -> loop_letter_num clear (i+1)
-    | '@' -> loop_letter_num set_all (i+1)
+    | 'A' .. 'Z' | 'a' .. 'z' ->
+        loop (Letter(s.[i],None)::tokens) (i+1)
+    | '+' -> loop_letter_num tokens Set (i+1)
+    | '-' -> loop_letter_num tokens Clear (i+1)
+    | '@' -> loop_letter_num tokens Set_all (i+1)
     | _ -> error ()
-  and loop_letter_num myset i =
+  and loop_letter_num tokens modifier i =
     if i >= String.length s then error () else
     match s.[i] with
     | '0' .. '9' ->
         let i, n1, n2 = get_range i in
-        for n = n1 to min n2 last_warning_number do myset n done;
-        loop i
-    | 'A' .. 'Z' ->
-       List.iter myset (letter (Char.lowercase_ascii s.[i]));
-       loop (i+1)
-    | 'a' .. 'z' ->
-       List.iter myset (letter s.[i]);
-       loop (i+1)
+        loop (Num(n1,n2,modifier)::tokens) i
+    | 'A' .. 'Z' | 'a' .. 'z' ->
+       loop (Letter(s.[i],Some modifier)::tokens) (i+1)
     | _ -> error ()
   in
-  match name_to_number s with
-  | Some n -> set n
+  loop [] 0
+
+let parse_opt error active errflag s =
+  let flags = if errflag then error else active in
+  let action modifier i = match modifier with
+    | Set ->
+        if i = 3 then set_alert ~error:errflag ~enable:true "deprecated"
+        else flags.(i) <- true
+    | Clear ->
+        if i = 3 then set_alert ~error:errflag ~enable:false "deprecated"
+        else flags.(i) <- false
+    | Set_all ->
+        if i = 3 then begin
+          set_alert ~error:false ~enable:true "deprecated";
+          set_alert ~error:true ~enable:true "deprecated"
+        end
+        else begin
+          active.(i) <- true;
+          error.(i) <- true
+        end
+  in
+  let eval = function
+    | Letter(c, m) ->
+        let lc = Char.lowercase_ascii c in
+        let modifier = match m with
+          | None -> if c = lc then Clear else Set
+          | Some m -> m
+        in
+        List.iter (action modifier) (letter lc)
+    | Num(n1,n2,modifier) ->
+        for n = n1 to Int.min n2 last_warning_number do action modifier n done
+  in
+  let parse_and_eval s =
+    let tokens = parse_warnings s in
+    List.iter eval tokens;
+    letter_alert tokens
+  in
+   match name_to_number s with
+  | Some n -> action Set n; None
   | None ->
-      if s = "" then loop 0
+      if s = "" then parse_and_eval s
       else begin
         let rest = String.sub s 1 (String.length s - 1) in
         match s.[0], name_to_number rest with
-        | '+', Some n -> set n
-        | '-', Some n -> clear n
-        | '@', Some n -> set_all n
-        | _ -> loop 0
+        | '+', Some n -> action Set n; None
+        | '-', Some n -> action Clear n; None
+        | '@', Some n -> action Set_all n; None
+        | _ -> parse_and_eval s
       end
 ;;
 
 let parse_options errflag s =
   let error = Array.copy (!current).error in
   let active = Array.copy (!current).active in
-  parse_opt error active errflag s;
-  current := {(!current) with error; active}
+  let alerts = parse_opt error active errflag s in
+  current := {(!current) with error; active};
+  alerts
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
-let defaults_w = "+a-4-6-7-9-27-29-30-32..42-44-45-48-50-60-66-67-68";;
+let defaults_w = "+a-4-7-9-27-29-30-32..42-44-45-48-50-60-66..70";;
 let defaults_warn_error = "-a+31";;
 
-let () = parse_options false defaults_w;;
-let () = parse_options true defaults_warn_error;;
+let () = ignore @@ parse_options false defaults_w;;
+let () = ignore @@ parse_options true defaults_warn_error;;
 
 let ref_manual_explanation () =
   (* manual references are checked a posteriori by the manual
      cross-reference consistency check in manual/tests*)
-  let[@manual.ref "s:comp-warnings"] chapter, section = 9, 5 in
+  let[@manual.ref "s:comp-warnings"] chapter, section = 11, 5 in
   Printf.sprintf "(See manual section %d.%d)" chapter section
 
 let message = function
@@ -668,26 +776,26 @@ let message = function
   | Unused_type_declaration s -> "unused type " ^ s ^ "."
   | Unused_for_index s -> "unused for-loop index " ^ s ^ "."
   | Unused_ancestor s -> "unused ancestor variable " ^ s ^ "."
-  | Unused_constructor (s, false, false) -> "unused constructor " ^ s ^ "."
-  | Unused_constructor (s, true, _) ->
+  | Unused_constructor (s, Unused) -> "unused constructor " ^ s ^ "."
+  | Unused_constructor (s, Not_constructed) ->
       "constructor " ^ s ^
       " is never used to build values.\n\
         (However, this constructor appears in patterns.)"
-  | Unused_constructor (s, false, true) ->
+  | Unused_constructor (s, Only_exported_private) ->
       "constructor " ^ s ^
       " is never used to build values.\n\
         Its type is exported as a private type."
-  | Unused_extension (s, is_exception, cu_pattern, cu_privatize) ->
+  | Unused_extension (s, is_exception, complaint) ->
      let kind =
        if is_exception then "exception" else "extension constructor" in
      let name = kind ^ " " ^ s in
-     begin match cu_pattern, cu_privatize with
-       | false, false -> "unused " ^ name
-       | true, _ ->
+     begin match complaint with
+       | Unused -> "unused " ^ name
+       | Not_constructed ->
           name ^
           " is never used to build values.\n\
            (However, this constructor appears in patterns.)"
-       | false, true ->
+       | Only_exported_private ->
           name ^
           " is never used to build values.\n\
             It is exported or rebound as a private extension."
@@ -815,6 +923,16 @@ let message = function
     "This pattern depends on mutable state.\n\
      It prevents the remaining arguments from being uncurried, which will \
      cause additional closure allocations."
+  | Unused_field (s, Unused) -> "unused record field " ^ s ^ "."
+  | Unused_field (s, Not_read) ->
+      "record field " ^ s ^
+      " is never read.\n\
+        (However, this field is used to build or mutate values.)"
+  | Unused_field (s, Not_mutated) ->
+      "mutable record field " ^ s ^
+      " is never mutated."
+  | Missing_mli ->
+    "Cannot find interface file."
 ;;
 
 let nerrors = ref 0;;

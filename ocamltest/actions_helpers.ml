@@ -58,7 +58,9 @@ let exit_status_of_variable env variable =
     (Environments.safe_lookup variable env)
   with _ -> 0
 
-let files env = words_of_variable env Builtin_variables.files
+let readonly_files env = words_of_variable env Builtin_variables.readonly_files
+
+let subdirectories env = words_of_variable env Builtin_variables.subdirectories
 
 let setup_symlinks test_source_directory build_directory files =
   let symlink filename =
@@ -84,14 +86,25 @@ let setup_symlinks test_source_directory build_directory files =
   Sys.make_directory build_directory;
   List.iter f files
 
+let setup_subdirectories source_directory build_directory subdirs =
+  let full_src_path name = Filename.concat source_directory name in
+  let full_dst_path name = Filename.concat build_directory name in
+  let cp_dir name =
+    Sys.copy_directory (full_src_path name) (full_dst_path name)
+  in
+  List.iter cp_dir subdirs
+
 let setup_build_env add_testfile additional_files (_log : out_channel) env =
+  let source_dir = (test_source_directory env) in
   let build_dir = (test_build_directory env) in
-  let some_files = additional_files @ (files env) in
+  let some_files = additional_files @ (readonly_files env) in
   let files =
     if add_testfile
     then (testfile env) :: some_files
     else some_files in
-  setup_symlinks (test_source_directory env) build_dir files;
+  setup_symlinks source_dir build_dir files;
+  let subdirs = subdirectories env in
+  setup_subdirectories source_dir build_dir subdirs;
   Sys.chdir build_dir;
   (Result.pass, env)
 
@@ -107,7 +120,7 @@ let run_cmd
     ?(stdout_variable=Builtin_variables.stdout)
     ?(stderr_variable=Builtin_variables.stderr)
     ?(append=false)
-    ?(timeout=0)
+    ?timeout
     log env original_cmd
   =
   let log_redirection std filename =
@@ -150,6 +163,13 @@ let run_cmd
     Array.append
       environment
       (Environments.to_system_env env)
+  in
+  let timeout =
+    match timeout with
+    | Some timeout -> timeout
+    | None ->
+        Option.value ~default:0
+          (Environments.lookup_as_int Builtin_variables.timeout env)
   in
   let n =
     Run_command.run {
@@ -273,6 +293,9 @@ let run_hook hook_name log input_env =
     Builtin_variables.ocamltest_response response_file input_env in
   let systemenv =
     Environments.to_system_env hookenv in
+  let timeout =
+    Option.value ~default:0
+      (Environments.lookup_as_int Builtin_variables.timeout input_env) in
   let open Run_command in
   let settings = {
     progname = "sh";
@@ -282,7 +305,7 @@ let run_hook hook_name log input_env =
     stdout_filename = "";
     stderr_filename = "";
     append = false;
-    timeout = 0;
+    timeout = timeout;
     log = log;
   } in let exit_status = run settings in
   let final_value = match exit_status with

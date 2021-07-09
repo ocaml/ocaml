@@ -28,8 +28,6 @@
      let everything = Array.create_matrix ~dimx:42 ~dimy:42 42
    ]}
 
-   Detailed interfaces documenting the function argument labels can be found
-   at {!ArrayLabels}, {!BytesLabels}, {!ListLabels} and {!StringLabels}.
 *)
 
 module Array = ArrayLabels

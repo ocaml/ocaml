@@ -1,0 +1,373 @@
+\section{s:patterns}{Patterns}
+\ikwd{as\@\texttt{as}}
+%HEVEA\cutname{patterns.html}
+\begin{syntax}
+pattern:
+    value-name
+  | '_'
+  | constant
+  | pattern 'as' value-name
+  | '(' pattern ')'
+  | '(' pattern ':' typexpr ')'
+  | pattern '|' pattern
+  | constr pattern
+  | "`"tag-name pattern
+  | "#"typeconstr
+  | pattern {{ ',' pattern }}
+  | '{' field [':' typexpr] ['=' pattern]%
+    { ';' field [':' typexpr] ['=' pattern] } [';' '_' ] [ ';' ] '}'
+  | '[' pattern { ';' pattern } [ ';' ] ']'
+  | pattern '::' pattern
+  | '[|' pattern { ';' pattern } [ ';' ] '|]'
+  | char-literal '..' char-literal
+  | 'lazy' pattern
+  | 'exception' pattern
+  | module-path '.(' pattern ')'
+  | module-path '.[' pattern ']'
+  | module-path '.[|' pattern '|]'
+  | module-path '.{' pattern '}'
+\end{syntax}
+See also the following language extensions:
+\hyperref[s:first-class-modules]{first-class modules},
+\hyperref[s:attributes]{attributes} and
+\hyperref[s:extension-nodes]{extension nodes}.
+
+The table below shows the relative precedences and associativity of
+operators and non-closed pattern constructions. The constructions with
+higher precedences come first.
+\ikwd{as\@\texttt{as}}
+\begin{tableau}{|l|l|}{Operator}{Associativity}
+\entree{".."}{--}
+\entree{"lazy" (see section~\ref{sss:pat-lazy})}{--}
+\entree{Constructor application, Tag application}{right}
+\entree{"::"}{right}
+\entree{","}{--}
+\entree{"|"}{left}
+\entree{"as"}{--}
+\end{tableau}
+
+Patterns are templates that allow selecting data structures of a
+given shape, and binding identifiers to components of the data
+structure. This selection operation is called pattern matching; its
+outcome is either ``this value does not match this pattern'', or
+``this value matches this pattern, resulting in the following bindings
+of names to values''.
+
+\subsubsection*{sss:pat-variable}{Variable patterns}
+
+A pattern that consists in a value name matches any value,
+binding the name to the value. The pattern @"_"@ also matches
+any value, but does not bind any name.
+
+\begin{caml_example}{toplevel}
+let is_empty = function
+  | [] -> true
+  | _ :: _ -> false;;
+\end{caml_example}
+
+Patterns are {\em linear\/}: a variable cannot be bound several times by
+a given pattern. In particular, there is no way to test for equality
+between two parts of a data structure using only a pattern:
+
+\begin{caml_example}{toplevel}[error]
+let pair_equal = function
+  | x, x -> true
+  | x, y -> false;;
+\end{caml_example}
+
+However, we can use a @"when"@ guard for this purpose:
+
+\begin{caml_example}{toplevel}
+let pair_equal = function
+  | x, y when x = y -> true
+  | _ -> false;;
+\end{caml_example}
+
+\subsubsection*{sss:pat-const}{Constant patterns}
+
+A pattern consisting in a constant matches the values that
+are equal to this constant.
+
+\begin{caml_example}{toplevel}
+let bool_of_string = function
+  | "true" -> true
+  | "false" -> false
+  | _ -> raise (Invalid_argument "bool_of_string");;
+\end{caml_example}
+
+%% FIXME for negative numbers, blanks are allowed between the minus
+%% sign and the first digit.
+
+\subsubsection*{sss:pat-alias}{Alias patterns}
+\ikwd{as\@\texttt{as}}
+
+The pattern @pattern_1 "as" value-name@ matches the same values as
+@pattern_1@. If the matching against @pattern_1@ is successful,
+the name @value-name@ is bound to the matched value, in addition to the
+bindings performed by the matching against @pattern_1@.
+
+\begin{caml_example}{toplevel}
+let sort_pair ((x, y) as p) =
+  if x <= y then p else (y, x);;
+\end{caml_example}
+
+\subsubsection*{sss:pat-parenthesized}{Parenthesized patterns}
+
+The pattern @"(" pattern_1 ")"@ matches the same values as
+@pattern_1@. A type constraint can appear in a
+parenthesized pattern, as in @"(" pattern_1 ":" typexpr ")"@. This
+constraint forces the type of @pattern_1@ to be compatible with
+@typexpr@.
+
+\begin{caml_example}{toplevel}
+let int_triple_is_ordered ((a, b, c) : int * int * int) =
+  a <= b && b <= c;;
+\end{caml_example}
+
+\subsubsection*{sss:pat-or}{``Or'' patterns}
+
+The pattern @pattern_1 "|" pattern_2@ represents the logical ``or'' of
+the two patterns @pattern_1@ and @pattern_2@. A value matches
+@pattern_1 "|" pattern_2@ if it matches @pattern_1@ or
+@pattern_2@. The two sub-patterns @pattern_1@ and @pattern_2@
+must bind exactly the same identifiers to values having the same types.
+Matching is performed from left to right.
+More precisely,
+in case some value~$v$ matches @pattern_1 "|" pattern_2@, the bindings
+performed are those of @pattern_1@ when $v$ matches @pattern_1@.
+Otherwise, value~$v$ matches @pattern_2@ whose bindings are performed.
+
+\begin{caml_example}{toplevel}
+type shape = Square of float | Rect of (float * float) | Circle of float
+
+let is_rectangular = function
+  | Square _ | Rect _ -> true
+  | Circle _ -> false;;
+\end{caml_example}
+
+\subsubsection*{sss:pat-variant}{Variant patterns}
+
+The pattern @constr '(' pattern_1 ',' \ldots ',' pattern_n ')'@ matches
+all variants whose
+constructor is equal to @constr@, and whose arguments match
+@pattern_1 \ldots pattern_n@.  It is a type error if $n$ is not the
+number of arguments expected by the constructor.
+
+The pattern @constr '_'@ matches all variants whose constructor is
+@constr@.
+
+\begin{caml_example}{toplevel}
+type 'a tree = Lf | Br of 'a tree * 'a * 'a tree
+
+let rec total = function
+  | Br (l, x, r) -> total l + x + total r
+  | Lf -> 0;;
+\end{caml_example}
+
+The pattern @pattern_1 "::" pattern_2@ matches non-empty lists whose
+heads match @pattern_1@, and whose tails match @pattern_2@.
+
+The pattern @"[" pattern_1 ";" \ldots ";" pattern_n "]"@ matches lists
+of length $n$ whose elements match @pattern_1@ \ldots @pattern_n@,
+respectively. This pattern behaves like
+@pattern_1 "::" \ldots "::" pattern_n "::" "[]"@.
+
+\begin{caml_example}{toplevel}
+let rec destutter = function
+  | [] -> []
+  | [a] -> [a]
+  | a :: b :: t -> if a = b then destutter (b :: t) else a :: destutter (b :: t);;
+\end{caml_example}
+
+\subsubsection*{sss:pat-polyvar}{Polymorphic variant patterns}
+
+The pattern @"`"tag-name pattern_1@ matches all polymorphic variants
+whose tag is equal to @tag-name@, and whose argument matches
+@pattern_1@.
+
+\begin{caml_example}{toplevel}
+let rec split = function
+  | [] -> ([], [])
+  | h :: t ->
+      let ss, gs = split t in
+        match h with
+        | `Sheep _ as s -> (s :: ss, gs)
+        | `Goat _ as g -> (ss, g :: gs);;
+\end{caml_example}
+
+\subsubsection*{sss:pat-polyvar-abbrev}{Polymorphic variant abbreviation patterns}
+
+If the type @["('a,'b,"\ldots")"] typeconstr = "[" "`"tag-name_1 typexpr_1 "|"
+\ldots "|" "`"tag-name_n typexpr_n"]"@ is defined, then the pattern @"#"typeconstr@
+is a shorthand for the following or-pattern:
+@"(" "`"tag-name_1"(_" ":" typexpr_1")" "|" \ldots "|" "`"tag-name_n"(_"
+":" typexpr_n"))"@. It matches all values of type @"[<" typeconstr "]"@.
+
+\begin{caml_example}{toplevel}
+type 'a rectangle = [`Square of 'a | `Rectangle of 'a * 'a]
+type 'a shape = [`Circle of 'a | 'a rectangle]
+
+let try_rectangle = function
+  | #rectangle as r -> Some r
+  | `Circle _ -> None;;
+\end{caml_example}
+
+\subsubsection*{sss:pat-tuple}{Tuple patterns}
+
+The pattern @pattern_1 "," \ldots "," pattern_n@ matches $n$-tuples
+whose components match the patterns @pattern_1@ through @pattern_n@. That
+is, the pattern matches the tuple values $(v_1, \ldots, v_n)$ such that
+@pattern_i@ matches $v_i$ for \fromoneto{i}{n}.
+
+\begin{caml_example}{toplevel}
+let vector (x0, y0) (x1, y1) =
+  (x1 -. x0, y1 -. y0);;
+\end{caml_example}
+
+\subsubsection*{sss:pat-record}{Record patterns}
+
+The pattern @"{" field_1 ["=" pattern_1] ";" \ldots ";" field_n ["="
+pattern_n] "}"@ matches records that define at least the fields
+@field_1@ through @field_n@, and such that the value associated to
+@field_i@ matches the pattern @pattern_i@, for \fromoneto{i}{n}.
+A single identifier @field_k@ stands for @field_k '=' field_k @,
+and a single qualified identifier @module-path '.' field_k@ stands
+for @module-path '.' field_k '=' field_k @.
+The record value can define more fields than @field_1@ \ldots
+@field_n@; the values associated to these extra fields are not taken
+into account for matching. Optionally, a record pattern can be terminated
+by @';' '_'@ to convey the fact that not all fields of the record type are
+listed in the record pattern and that it is intentional.
+Optional type constraints can be added field by field with
+@"{" field_1 ":" typexpr_1 "=" pattern_1 ";"%
+\ldots ";"field_n ":" typexpr_n "=" pattern_n "}"@ to force the type
+of @field_k@ to be compatible with @typexpr_k@.
+
+\begin{caml_example}{toplevel}
+let bytes_allocated
+    {Gc.minor_words = minor;
+     Gc.major_words = major;
+     Gc.promoted_words = prom;
+     _}
+  =
+    (Sys.word_size / 4) * int_of_float (minor +. major -. prom);;
+\end{caml_example}
+
+\subsubsection*{sss:pat-array}{Array patterns}
+
+The pattern @"[|" pattern_1 ";" \ldots ";" pattern_n "|]"@
+matches arrays of length $n$ such that the $i$-th array element
+matches the pattern @pattern_i@, for \fromoneto{i}{n}.
+
+\begin{caml_example}{toplevel}
+let matrix3_is_symmetric = function
+  | [|[|_; b; c|];
+      [|d; _; f|];
+      [|g; h; _|]|] -> b = d && c = g && f = h
+  | _ -> failwith "matrix3_is_symmetric: not a 3x3 matrix";;
+\end{caml_example}
+
+\subsubsection*{sss:pat-range}{Range patterns}
+
+The pattern
+@"'" @c@ "'" ".." "'" @d@ "'"@ is a shorthand for the pattern
+\begin{center}
+@"'" @c@ "'" "|" "'" @c@_1 "'" "|" "'" @c@_2 "'" "|" \ldots
+        "|" "'" @c@_n "'" "|" "'" @d@ "'"@
+\end{center}
+where \nth{c}{1}, \nth{c}{2}, \ldots, \nth{c}{n} are the characters
+that occur between \var{c} and \var{d} in the ASCII character set. For
+instance, the pattern "'0'"@'..'@"'9'" matches all characters that are digits.
+
+\begin{caml_example}{toplevel}
+type char_class = Uppercase | Lowercase | Digit | Other
+
+let classify_char = function
+  | 'A'..'Z' -> Uppercase
+  | 'a'..'z' -> Lowercase
+  | '0'..'9' -> Digit
+  | _ -> Other;;
+\end{caml_example}
+
+\subsubsection{sss:pat-lazy}{Lazy patterns}
+
+\ikwd{lazy\@\texttt{lazy}}
+
+(Introduced in Objective Caml 3.11)
+
+\begin{syntax}
+pattern: ...
+\end{syntax}
+
+The pattern @"lazy" pattern@ matches a value \var{v} of type "Lazy.t",
+provided @pattern@ matches the result of forcing \var{v} with
+"Lazy.force". A successful match of a pattern containing @"lazy"@
+sub-patterns forces the corresponding parts of the value being matched, even
+those that imply no test such as @"lazy" value-name@ or @"lazy" "_"@.
+Matching a value with a @pattern-matching@ where some patterns
+contain @"lazy"@ sub-patterns may imply forcing parts of the value,
+even when the pattern selected in the end has no @"lazy"@ sub-pattern.
+
+\begin{caml_example}{toplevel}
+let force_opt = function
+  | Some (lazy n) -> n
+  | None -> 0;;
+\end{caml_example}
+
+For more information, see the description of module "Lazy" in the
+standard library (module \stdmoduleref{Lazy}).
+%
+\index{Lazy (module)\@\verb`Lazy` (module)}%
+\index{force\@\verb`force`}%
+
+\subsubsection*{sss:exception-match}{Exception patterns}
+(Introduced in OCaml 4.02)
+
+A new form of exception pattern, @ 'exception' pattern @, is allowed
+only as a toplevel pattern or inside a toplevel or-pattern under
+a "match"..."with" pattern-matching
+(other occurrences are rejected by the type-checker).
+
+Cases with such a toplevel pattern are called ``exception cases'',
+as opposed to regular ``value cases''.  Exception cases are applied
+when the evaluation of the matched expression raises an exception.
+The exception value is then matched against all the exception cases
+and re-raised if none of them accept the exception (as with a
+"try"..."with" block).  Since the bodies of all exception and value
+cases are outside the scope of the exception handler, they are all
+considered to be in tail-position: if the "match"..."with" block
+itself is in tail position in the current function, any function call
+in tail position in one of the case bodies results in an actual tail
+call.
+
+A pattern match must contain at least one value case. It is an error if
+all cases are exceptions, because there would be no code to handle
+the return of a value.
+
+\begin{caml_example}{toplevel}
+let find_opt p l =
+  match List.find p l with
+  | exception Not_found -> None
+  | x -> Some x;;
+\end{caml_example}
+
+\subsubsection*{sss:pat-open}{Local opens for patterns}
+\ikwd{open\@\texttt{open}}
+(Introduced in OCaml 4.04)
+
+For patterns, local opens are limited to the
+@module-path'.('pattern')'@ construction. This
+construction locally opens the module referred to by the module path
+@module-path@ in the scope of the pattern @pattern@.
+
+When the body of a local open pattern is delimited by
+@'[' ']'@,  @'[|' '|]'@,  or @'{' '}'@, the parentheses can be omitted.
+For example, @module-path'.['pattern']'@ is equivalent to
+@module-path'.(['pattern'])'@, and @module-path'.[|' pattern '|]'@ is
+equivalent to @module-path'.([|' pattern '|])'@.
+
+\begin{caml_example}{toplevel}
+let bytes_allocated Gc.{minor_words; major_words; promoted_words; _} =
+    (Sys.word_size / 4)
+  * int_of_float (minor_words +. major_words -. promoted_words);;
+\end{caml_example}

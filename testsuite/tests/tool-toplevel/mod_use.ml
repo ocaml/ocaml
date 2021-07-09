@@ -1,5 +1,5 @@
 (* TEST
-   files = "mod.ml"
+   readonly_files = "mod.ml"
    * expect
 *)
 

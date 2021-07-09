@@ -22,7 +22,7 @@
    templates/float.template.mli instead.
  *)
 
-(** {1 Floating-point arithmetic}
+(** Floating-point arithmetic.
 
     OCaml's floating-point numbers follow the
     IEEE 754 standard, using double precision (64 bits) numbers.
@@ -70,9 +70,14 @@ external fma : float -> float -> float -> float =
 (** [fma x y z] returns [x * y + z], with a best effort for computing
    this expression with a single rounding, using either hardware
    instructions (providing full IEEE compliance) or a software
-   emulation.  Note: since software emulation of the fma is costly,
-   make sure that you are using hardware fma support if performance
-   matters.  @since 4.08.0 *)
+   emulation.
+
+   On 64-bit Cygwin, 64-bit mingw-w64 and MSVC 2017 and earlier, this function
+   may be emulated owing to known bugs on limitations on these platforms.
+   Note: since software emulation of the fma is costly, make sure that you are
+   using hardware fma support if performance matters.
+
+   @since 4.08.0 *)
 
 external rem : float -> float -> float = "caml_fmod_float" "fmod"
 [@@unboxed] [@@noalloc]
@@ -123,23 +128,24 @@ val epsilon : float
     floating-point number greater than [1.0]. *)
 
 val is_finite : float -> bool
-(** [is_finite x] is [true] iff [x] is finite i.e., not infinite and
+(** [is_finite x] is [true] if and only if [x] is finite i.e., not infinite and
    not {!nan}.
 
    @since 4.08.0 *)
 
 val is_infinite : float -> bool
-(** [is_infinite x] is [true] iff [x] is {!infinity} or {!neg_infinity}.
+(** [is_infinite x] is [true] if and only if [x] is {!infinity} or
+    {!neg_infinity}.
 
    @since 4.08.0 *)
 
 val is_nan : float -> bool
-(** [is_nan x] is [true] iff [x] is not a number (see {!nan}).
+(** [is_nan x] is [true] if and only if [x] is not a number (see {!nan}).
 
    @since 4.08.0 *)
 
 val is_integer : float -> bool
-(** [is_integer x] is [true] iff [x] is an integer.
+(** [is_integer x] is [true] if and only if [x] is an integer.
 
    @since 4.08.0 *)
 
@@ -196,8 +202,22 @@ external sqrt : float -> float = "caml_sqrt_float" "sqrt"
 [@@unboxed] [@@noalloc]
 (** Square root. *)
 
+external cbrt : float -> float = "caml_cbrt_float" "caml_cbrt"
+  [@@unboxed] [@@noalloc]
+(** Cube root.
+
+    @since 4.13.0
+*)
+
 external exp : float -> float = "caml_exp_float" "exp" [@@unboxed] [@@noalloc]
 (** Exponential. *)
+
+external exp2 : float -> float = "caml_exp2_float" "caml_exp2"
+  [@@unboxed] [@@noalloc]
+(** Base 2 exponential function.
+
+    @since 4.13.0
+*)
 
 external log : float -> float = "caml_log_float" "log" [@@unboxed] [@@noalloc]
 (** Natural logarithm. *)
@@ -205,6 +225,13 @@ external log : float -> float = "caml_log_float" "log" [@@unboxed] [@@noalloc]
 external log10 : float -> float = "caml_log10_float" "log10"
 [@@unboxed] [@@noalloc]
 (** Base 10 logarithm. *)
+
+external log2 : float -> float = "caml_log2_float" "caml_log2"
+  [@@unboxed] [@@noalloc]
+(** Base 2 logarithm.
+
+    @since 4.13.0
+*)
 
 external expm1 : float -> float = "caml_expm1_float" "caml_expm1"
 [@@unboxed] [@@noalloc]
@@ -266,6 +293,50 @@ external tanh : float -> float = "caml_tanh_float" "tanh"
 [@@unboxed] [@@noalloc]
 (** Hyperbolic tangent.  Argument is in radians. *)
 
+external acosh : float -> float = "caml_acosh_float" "caml_acosh"
+  [@@unboxed] [@@noalloc]
+(** Hyperbolic arc cosine.  The argument must fall within the range
+    [[1.0, inf]].
+    Result is in radians and is between [0.0] and [inf].
+
+    @since 4.13.0
+*)
+
+external asinh : float -> float = "caml_asinh_float" "caml_asinh"
+  [@@unboxed] [@@noalloc]
+(** Hyperbolic arc sine.  The argument and result range over the entire
+    real line.
+    Result is in radians.
+
+    @since 4.13.0
+*)
+
+external atanh : float -> float = "caml_atanh_float" "caml_atanh"
+  [@@unboxed] [@@noalloc]
+(** Hyperbolic arc tangent.  The argument must fall within the range
+    [[-1.0, 1.0]].
+    Result is in radians and ranges over the entire real line.
+
+    @since 4.13.0
+*)
+
+external erf : float -> float = "caml_erf_float" "caml_erf"
+  [@@unboxed] [@@noalloc]
+(** Error function.  The argument ranges over the entire real line.
+    The result is always within [[-1.0, 1.0]].
+
+    @since 4.13.0
+*)
+
+external erfc : float -> float = "caml_erfc_float" "caml_erfc"
+  [@@unboxed] [@@noalloc]
+(** Complementary error function ([erfc x = 1 - erf x]).
+    The argument ranges over the entire real line.
+    The result is always within [[-1.0, 1.0]].
+
+    @since 4.13.0
+*)
+
 external trunc : float -> float = "caml_trunc_float" "caml_trunc"
                                     [@@unboxed] [@@noalloc]
 (** [trunc x] rounds [x] to the nearest integer whose absolute value is
@@ -279,6 +350,9 @@ external round : float -> float = "caml_round_float" "caml_round"
    values of 0.5) rounded away from zero, regardless of the current
    rounding direction.  If [x] is an integer, [+0.], [-0.], [nan], or
    infinite, [x] itself is returned.
+
+   On 64-bit mingw-w64, this function may be emulated owing to a bug in the
+   C runtime library (CRT) on this platform.
 
    @since 4.08.0 *)
 
@@ -320,7 +394,7 @@ external copy_sign : float -> float -> float
 
 external sign_bit : (float [@unboxed]) -> bool
   = "caml_signbit_float" "caml_signbit" [@@noalloc]
-(** [sign_bit x] is [true] iff the sign bit of [x] is set.
+(** [sign_bit x] is [true] if and only if the sign bit of [x] is set.
     For example [sign_bit 1.] and [signbit 0.] are [false] while
     [sign_bit (-1.)] and [sign_bit (-0.)] are [true].
 
@@ -583,16 +657,16 @@ module Array : sig
   (** Same as {!sort} or {!stable_sort}, whichever is faster
       on typical input. *)
 
-  (** {2 Iterators} *)
+  (** {2 Float arrays and Sequences} *)
 
   val to_seq : t -> float Seq.t
   (** Iterate on the floatarray, in increasing order. Modifications of the
-      floatarray during iteration will be reflected in the iterator. *)
+      floatarray during iteration will be reflected in the sequence. *)
 
   val to_seqi : t -> (int * float) Seq.t
   (** Iterate on the floatarray, in increasing order, yielding indices along
       elements. Modifications of the floatarray during iteration will be
-      reflected in the iterator. *)
+      reflected in the sequence. *)
 
   val of_seq : float Seq.t -> t
   (** Create an array from the generator. *)
@@ -616,6 +690,7 @@ module Array : sig
   external unsafe_set : t -> int -> float -> unit = "%floatarray_unsafe_set"
 
 end
+(** Float arrays with packed representation. *)
 
 module ArrayLabels : sig
   type t = floatarray
@@ -804,16 +879,16 @@ module ArrayLabels : sig
   (** Same as {!sort} or {!stable_sort}, whichever is faster
       on typical input. *)
 
-  (** {2 Iterators} *)
+  (** {2 Float arrays and Sequences} *)
 
   val to_seq : t -> float Seq.t
   (** Iterate on the floatarray, in increasing order. Modifications of the
-      floatarray during iteration will be reflected in the iterator. *)
+      floatarray during iteration will be reflected in the sequence. *)
 
   val to_seqi : t -> (int * float) Seq.t
   (** Iterate on the floatarray, in increasing order, yielding indices along
       elements. Modifications of the floatarray during iteration will be
-      reflected in the iterator. *)
+      reflected in the sequence. *)
 
   val of_seq : float Seq.t -> t
   (** Create an array from the generator. *)
@@ -837,3 +912,4 @@ module ArrayLabels : sig
   external unsafe_set : t -> int -> float -> unit = "%floatarray_unsafe_set"
 
 end
+(** Float arrays with packed representation (labeled functions). *)

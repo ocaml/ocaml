@@ -1,0 +1,66 @@
+(Introduced in Objective Caml 1.00)
+
+As mentioned in section~\ref{sss:expr-localdef}, the @'let' 'rec'@ binding
+construct, in addition to the definition of recursive functions,
+also supports a certain class of recursive definitions of
+non-functional values, such as
+\begin{center}
+@"let" "rec" name_1 "=" "1" "::" name_2
+"and" name_2 "=" "2" "::" name_1
+"in" expr@
+\end{center}
+which binds @name_1@ to the cyclic list "1::2::1::2::"\ldots, and
+@name_2@ to the cyclic list "2::1::2::1::"\ldots
+Informally, the class of accepted definitions consists of those
+definitions where the defined names occur only inside function
+bodies or as argument to a data constructor.
+
+More precisely, consider the expression:
+\begin{center}
+@"let" "rec" name_1 "=" expr_1 "and" \ldots "and" name_n "=" expr_n "in" expr@
+\end{center}
+It will be accepted if each one of @expr_1 \ldots expr_n@ is
+statically constructive with respect to @name_1 \ldots name_n@,
+is not immediately linked to any of @name_1 \ldots name_n@,
+and is not an array constructor whose arguments have abstract type.
+
+An expression @@e@@ is said to be {\em statically constructive
+with respect to} the variables @name_1 \ldots name_n@ if at least
+one of the following conditions is true:
+\begin{itemize}
+\item @@e@@ has no free occurrence of any of @name_1 \ldots name_n@
+\item @@e@@ is a variable
+\item @@e@@ has the form @"fun" \ldots "->" \ldots@
+\item @@e@@ has the form @"function" \ldots "->" \ldots@
+\item @@e@@ has the form @"lazy" "(" \ldots ")"@
+\item @@e@@ has one of the following forms, where each one of
+  @expr_1 \ldots expr_m@ is statically constructive with respect to
+  @name_1 \ldots name_n@, and @expr_0@ is statically constructive with
+  respect to @name_1 \ldots name_n, xname_1 \ldots xname_m@:
+  \begin{itemize}
+  \item @"let" ["rec"] xname_1 "=" expr_1 "and" \ldots
+         "and" xname_m "=" expr_m "in" expr_0@
+  \item @"let" "module" \ldots "in" expr_1@
+  \item @constr "("expr_1"," \ldots "," expr_m")"@
+  \item @"`"tag-name "("expr_1"," \ldots "," expr_m")"@
+  \item @"[|" expr_1";" \ldots ";" expr_m "|]"@
+  \item @"{" field_1 "=" expr_1";" \ldots ";" field_m = expr_m "}"@
+  \item @"{" expr_1 "with" field_2 "=" expr_2";" \ldots ";"
+             field_m = expr_m "}"@ where @expr_1@ is not immediately
+             linked to @name_1 \ldots name_n@
+  \item @"(" expr_1"," \ldots "," expr_m ")"@
+  \item @expr_1";" \ldots ";" expr_m@
+  \end{itemize}
+\end{itemize}
+
+An expression @@e@@ is said to be {\em immediately linked to} the variable
+@name@ in the following cases:
+\begin{itemize}
+\item @@e@@ is @name@
+\item @@e@@ has the form @expr_1";" \ldots ";" expr_m@ where @expr_m@
+   is immediately linked to @name@
+\item @@e@@ has the form @"let" ["rec"] xname_1 "=" expr_1 "and" \ldots
+   "and" xname_m "=" expr_m "in" expr_0@ where @expr_0@ is immediately
+   linked to @name@ or to one of the @xname_i@ such that @expr_i@
+   is immediately linked to @name@.
+\end{itemize}

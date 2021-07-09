@@ -72,7 +72,6 @@ command_line.cmo : \
     debugger_lexer.cmi \
     debugger_config.cmi \
     debugcom.cmi \
-    ../typing/ctype.cmi \
     checkpoints.cmi \
     breakpoints.cmi \
     command_line.cmi
@@ -110,7 +109,6 @@ command_line.cmx : \
     debugger_lexer.cmx \
     debugger_config.cmx \
     debugcom.cmx \
-    ../typing/ctype.cmx \
     checkpoints.cmx \
     breakpoints.cmx \
     command_line.cmi

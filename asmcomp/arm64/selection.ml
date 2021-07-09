@@ -31,7 +31,7 @@ let is_offset chunk n =
         n land 1 = 0 && n lsr 1 < 0x1000
     | Thirtytwo_unsigned | Thirtytwo_signed | Single ->
         n land 3 = 0 && n lsr 2 < 0x1000
-    | Word_int | Word_val | Double | Double_u ->
+    | Word_int | Word_val | Double ->
         n land 7 = 0 && n lsr 3 < 0x1000)
 
 let is_logical_immediate n =
@@ -212,4 +212,5 @@ method! insert_move_extcall_arg env ty_arg src dst =
   else self#insert_moves env src dst
 end
 
-let fundecl f = (new selector)#emit_fundecl f
+let fundecl ~future_funcnames f = (new selector)#emit_fundecl
+                                            ~future_funcnames f

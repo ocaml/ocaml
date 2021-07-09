@@ -36,6 +36,7 @@ type parser_env =
     mutable sp : int;                   (* Saved sp for parse_engine *)
     mutable state : int;                (* Saved state for parse_engine *)
     mutable errflag : int }             (* Saved error flag for parse_engine *)
+[@@warning "-unused-field"]
 
 type parse_tables =
   { actions : (parser_env -> Obj.t) array;

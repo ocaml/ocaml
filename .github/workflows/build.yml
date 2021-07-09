@@ -1,0 +1,93 @@
+name: Build
+
+on: [push, pull_request]
+
+jobs:
+  no-naked-pointers:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: configure tree
+      run: ./configure --disable-naked-pointers --disable-stdlib-manpages --disable-dependency-generation --enable-ocamltest
+    - name: Build
+      run: |
+        make -j world.opt
+    - name: Run the testsuite
+      run: |
+        make -C testsuite USE_RUNTIME=d all
+  i386-static:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Packages
+      run: |
+        sudo apt-get update -y && sudo apt-get install -y gcc-multilib gfortran-multilib
+    - name: configure tree
+      run: |
+        XARCH=i386 CONFIG_ARG='--disable-stdlib-manpages --disable-shared --enable-cmm-invariants' bash -xe tools/ci/actions/runner.sh configure
+    - name: Build
+      run: |
+        bash -xe tools/ci/actions/runner.sh build
+    - name: Run the testsuite
+      run: |
+        bash -xe tools/ci/actions/runner.sh test
+    - name: Install
+      run: |
+        bash -xe tools/ci/actions/runner.sh install
+    - name: Other checks
+      run: |
+        bash -xe tools/ci/actions/runner.sh other-checks
+  full-flambda:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 50
+    - name: Packages
+      run: |
+        sudo apt-get update -y && sudo apt-get install -y texlive-latex-extra texlive-fonts-recommended hevea sass
+  # Ensure that make distclean can be run from an empty tree
+    - name: distclean
+      run: |
+        MAKE_ARG=-j make distclean
+    - name: configure tree
+      run: |
+        MAKE_ARG=-j XARCH=x64 CONFIG_ARG='--enable-flambda --enable-cmm-invariants --enable-dependency-generation' OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh configure
+    - name: Build
+      run: |
+        MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh build
+    - name: Run the testsuite
+      run: |
+        MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh test
+    - name: Build API Documentation
+      run: |
+        MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh api-docs
+    - name: Install
+      run: |
+        MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh install
+    - name: Check for manual changes
+      id: manual
+      run: >-
+        tools/ci/actions/check-manual-modified.sh
+        '${{ github.ref }}'
+        '${{ github.event_name }}'
+        '${{ github.event.pull_request.base.ref }}'
+        '${{ github.event.pull_request.base.sha }}'
+        '${{ github.event.pull_request.head.ref }}'
+        '${{ github.event.pull_request.head.sha }}'
+        '${{ github.event.ref }}'
+        '${{ github.event.before }}'
+        '${{ github.event.ref }}'
+        '${{ github.event.after }}'
+        '${{ github.event.repository.full_name }}'
+    - name: Build the manual
+      run: |
+        MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh manual
+      # Temporarily disabled 23-Apr-2021 while Dune isn't building
+      if: steps.manual.outputs.changed == 'disabled'
+    - name: Other checks
+      run: |
+        MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh other-checks

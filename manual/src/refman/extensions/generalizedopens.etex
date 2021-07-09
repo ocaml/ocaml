@@ -1,0 +1,115 @@
+(Introduced in 4.08)
+
+\begin{syntax}
+definition:
+      ...
+   |  'open'  module-expr
+   |  'open!' module-expr
+;
+specification:
+      ...
+   |  'open'  extended-module-path
+   |  'open!' extended-module-path
+;
+expr:
+       ...
+     | 'let' 'open'  module-expr 'in' expr
+     | 'let' 'open!' module-expr 'in' expr
+;
+\end{syntax}
+
+
+This extension makes it possible to open any module expression in
+module structures and expressions. A similar mechanism is also available
+inside module types, but only for extended module paths (e.g. "F(X).G(Y)").
+
+For instance, a module can be constrained when opened with
+
+\begin{caml_example*}{verbatim}[error]
+module M = struct let x = 0 let hidden = 1 end
+open (M:sig val x: int end)
+let y = hidden
+\end{caml_example*}
+
+
+Another possibility is to immediately open the result of a functor application
+
+\begin{caml_example}{verbatim}
+  let sort (type x) (x:x list) =
+    let open Set.Make(struct type t = x let compare=compare end) in
+    elements (of_list x)
+\end{caml_example}
+
+Going further, this construction can introduce local components inside a
+structure,
+
+\begin{caml_example}{verbatim}
+module M = struct
+  let x = 0
+  open! struct
+    let x = 0
+    let y = 1
+  end
+  let w = x + y
+end
+\end{caml_example}
+
+One important restriction is that types introduced by @'open' 'struct' ...
+'end'@ cannot appear in the signature of the enclosing structure, unless they
+are defined equal to some non-local type.
+So:
+
+\begin{caml_example}{verbatim}
+module M = struct
+  open struct type 'a t = 'a option = None | Some of 'a end
+  let x : int t = Some 1
+end
+\end{caml_example}
+is OK, but:
+
+\begin{caml_example}{verbatim}[error]
+module M = struct
+  open struct type t = A end
+  let x = A
+end
+\end{caml_example}
+is not because "x" cannot be given any type other than "t", which only exists
+locally. Although the above would be OK if "x" too was local:
+
+\begin{caml_example}{verbatim}
+module M: sig end = struct
+  open struct
+  type t = A
+  end
+  [@@@ellipsis]
+  open struct let x = A end
+  [@@@ellipsis]
+end
+\end{caml_example}
+
+Inside signatures, extended opens are limited to extended module paths,
+\begin{caml_example}{verbatim}
+module type S = sig
+  module F: sig end -> sig type t end
+  module X: sig end
+  open F(X)
+  val f: t
+end
+\end{caml_example}
+
+and not
+
+\begin{verbatim}
+  open struct type t = int end
+\end{verbatim}
+
+In those situations, local substitutions(see \ref{ss:local-substitution})
+can be used instead.
+
+Beware that this extension is not available inside class definitions:
+
+\begin{verbatim}
+class c =
+  let open Set.Make(Int) in
+  ...
+\end{verbatim}

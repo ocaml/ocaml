@@ -28,7 +28,6 @@ let name_expr_from_var = Flambda_utils.name_expr_from_var
 type t = {
   current_unit_id : Ident.t;
   symbol_for_global' : (Ident.t -> Symbol.t);
-  filename : string;
   backend : (module Backend_intf.S);
   mutable imported_symbols : Symbol.Set.t;
   mutable declared_symbols : (Symbol.t * Flambda.constant_defining_value) list;
@@ -171,15 +170,20 @@ let lambda_const_int i : Lambda.structured_constant =
 let rec close t env (lam : Lambda.lambda) : Flambda.t =
   match lam with
   | Lvar id ->
-    begin match Env.find_var_exn env id with
-    | var -> Var var
-    | exception Not_found ->
-      match Env.find_mutable_var_exn env id with
-      | mut_var ->
-        name_expr (Read_mutable mut_var) ~name:Names.read_mutable
-      | exception Not_found ->
+     begin match Env.find_var_exn env id with
+     | var -> Var var
+     | exception Not_found ->
         Misc.fatal_errorf "Closure_conversion.close: unbound identifier %a"
           Ident.print id
+     end
+  | Lmutvar id ->
+    begin match Env.find_mutable_var_exn env id with
+    | mut_var ->
+       name_expr (Read_mutable mut_var) ~name:Names.read_mutable
+    | exception Not_found ->
+       Misc.fatal_errorf
+         "Closure_conversion.close: unbound mutable identifier %a"
+         Ident.print id
     end
   | Lconst cst ->
     let cst, name = close_const t cst in
@@ -192,7 +196,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     in
     let body = close t (Env.add_var env id var) body in
     Flambda.create_let var defining_expr body
-  | Llet (Variable, block_kind, id, defining_expr, body) ->
+  | Lmutlet (block_kind, id, defining_expr, body) ->
     let mut_var = Mutable_variable.create_with_same_name_as_ident id in
     let var = Variable.create_with_same_name_as_ident id in
     let defining_expr =
@@ -403,7 +407,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
         (If_then_else (cond, arg2, Var const_false)))
   | Lprim ((Psequand | Psequor), _, _) ->
     Misc.fatal_error "Psequand / Psequor must have exactly two arguments"
-  | Lprim ((Pidentity | Pbytes_to_string | Pbytes_of_string), [arg], _) ->
+  | Lprim ((Pbytes_to_string | Pbytes_of_string), [arg], _) ->
     close t env arg
   | Lprim (Pignore, [arg], _) ->
     let var = Variable.create Names.ignore in
@@ -412,21 +416,6 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     in
     Flambda.create_let var defining_expr
       (name_expr (Const (Int 0)) ~name:Names.unit)
-  | Lprim (Pdirapply, [funct; arg], loc)
-  | Lprim (Prevapply, [arg; funct], loc) ->
-    let apply : Lambda.lambda_apply =
-      { ap_func = funct;
-        ap_args = [arg];
-        ap_loc = loc;
-        (* CR-someday lwhite: it would be nice to be able to give
-           application attributes to functions applied with the application
-           operators. *)
-        ap_tailcall = Default_tailcall;
-        ap_inlined = Default_inline;
-        ap_specialised = Default_specialise;
-      }
-    in
-    close t env (Lambda.Lapply apply)
   | Lprim (Praise kind, [arg], loc) ->
     let arg_var = Variable.create Names.raise_arg in
     let dbg = Debuginfo.from_location loc in
@@ -677,7 +666,7 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env
         ~var:let_bound_var))
   | lam -> Expr (close t env lam)
 
-let lambda_to_flambda ~backend ~module_ident ~size ~filename lam
+let lambda_to_flambda ~backend ~module_ident ~size lam
       : Flambda.program =
   let lam = add_default_argument_wrappers lam in
   let module Backend = (val backend : Backend_intf.S) in
@@ -685,7 +674,6 @@ let lambda_to_flambda ~backend ~module_ident ~size ~filename lam
   let t =
     { current_unit_id = Compilation_unit.get_persistent_ident compilation_unit;
       symbol_for_global' = Backend.symbol_for_global';
-      filename;
       backend;
       imported_symbols = Symbol.Set.empty;
       declared_symbols = [];

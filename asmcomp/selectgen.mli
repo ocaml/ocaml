@@ -63,7 +63,7 @@ class virtual selector_generic : object
   (* The following methods must or can be overridden by the processor
      description *)
   method is_immediate : Mach.integer_operation -> int -> bool
-    (* Must be overriden to indicate whether a constant is a suitable
+    (* Must be overridden to indicate whether a constant is a suitable
        immediate operand to the given integer arithmetic instruction.
        The default implementation handles shifts by immediate amounts,
        but produces no immediate operations otherwise. *)
@@ -139,12 +139,14 @@ class virtual selector_generic : object
      above; overloading this is useful if Ispecific instructions need
      marking *)
 
-  (* The following method is the entry point and should not be overridden. *)
-  method emit_fundecl : Cmm.fundecl -> Mach.fundecl
+  (* The following method is the entry point and should not be overridden *)
+  method emit_fundecl : future_funcnames:Misc.Stdlib.String.Set.t
+                                              -> Cmm.fundecl -> Mach.fundecl
 
   (* The following methods should not be overridden.  They cannot be
      declared "private" in the current implementation because they
      are not always applied to "self", but ideally they should be private. *)
+  method extract_onto : Mach.instruction -> Mach.instruction
   method extract : Mach.instruction
   method insert :
     environment -> Mach.instruction_desc -> Reg.t array -> Reg.t array -> unit

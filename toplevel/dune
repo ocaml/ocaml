@@ -12,12 +12,14 @@
 ;*                                                                        *
 ;**************************************************************************
 
+(copy_files# byte/*.ml)
+
 (library
  (name ocamltoplevel)
  (wrapped false)
  (flags (:standard -principal -nostdlib))
  (libraries stdlib ocamlcommon ocamlbytecomp)
- (modules genprintval toploop trace topdirs topmain))
+ (modules :standard \ topstart expunge))
 
 (executable
  (name topstart)
@@ -94,5 +96,5 @@
                     stdlib__Uchar
                     stdlib__Weak
                     ; the rest
-                    outcometree topdirs toploop
+                    outcometree topdirs topeval toploop topmain topcommon
  )))

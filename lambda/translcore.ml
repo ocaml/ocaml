@@ -88,20 +88,41 @@ type binding =
   | Bind_value of value_binding list
   | Bind_module of Ident.t * string option loc * module_presence * module_expr
 
-let rec push_defaults loc bindings cases partial =
+let wrap_bindings bindings exp =
+  List.fold_left
+    (fun exp binds ->
+      {exp with exp_desc =
+       match binds with
+       | Bind_value binds -> Texp_let(Nonrecursive, binds, exp)
+       | Bind_module (id, name, pres, mexpr) ->
+           Texp_letmodule (Some id, name, pres, mexpr, exp)})
+    exp bindings
+
+let rec trivial_pat pat =
+  match pat.pat_desc with
+    Tpat_var _
+  | Tpat_any -> true
+  | Tpat_construct (_, cd, [], _) ->
+      not cd.cstr_generalized && cd.cstr_consts = 1 && cd.cstr_nonconsts = 0
+  | Tpat_tuple patl ->
+      List.for_all trivial_pat patl
+  | _ -> false
+
+let rec push_defaults loc bindings use_lhs cases partial =
   match cases with
     [{c_lhs=pat; c_guard=None;
       c_rhs={exp_desc = Texp_function { arg_label; param; cases; partial; } }
-        as exp}] ->
-      let cases = push_defaults exp.exp_loc bindings cases partial in
+        as exp}] when bindings = [] || trivial_pat pat ->
+      let cases = push_defaults exp.exp_loc bindings false cases partial in
       [{c_lhs=pat; c_guard=None;
         c_rhs={exp with exp_desc = Texp_function { arg_label; param; cases;
           partial; }}}]
   | [{c_lhs=pat; c_guard=None;
       c_rhs={exp_attributes=[{Parsetree.attr_name = {txt="#default"};_}];
              exp_desc = Texp_let
-               (Nonrecursive, binds, ({exp_desc = Texp_function _} as e2))}}] ->
-      push_defaults loc (Bind_value binds :: bindings)
+               (Nonrecursive, binds,
+                ({exp_desc = Texp_function _} as e2))}}] ->
+      push_defaults loc (Bind_value binds :: bindings) true
                    [{c_lhs=pat;c_guard=None;c_rhs=e2}]
                    partial
   | [{c_lhs=pat; c_guard=None;
@@ -109,21 +130,12 @@ let rec push_defaults loc bindings cases partial =
              exp_desc = Texp_letmodule
                (Some id, name, pres, mexpr,
                 ({exp_desc = Texp_function _} as e2))}}] ->
-      push_defaults loc (Bind_module (id, name, pres, mexpr) :: bindings)
+      push_defaults loc (Bind_module (id, name, pres, mexpr) :: bindings) true
                    [{c_lhs=pat;c_guard=None;c_rhs=e2}]
                    partial
-  | [case] ->
-      let exp =
-        List.fold_left
-          (fun exp binds ->
-            {exp with exp_desc =
-             match binds with
-             | Bind_value binds -> Texp_let(Nonrecursive, binds, exp)
-             | Bind_module (id, name, pres, mexpr) ->
-                 Texp_letmodule (Some id, name, pres, mexpr, exp)})
-          case.c_rhs bindings
-      in
-      [{case with c_rhs=exp}]
+  | [{c_lhs=pat; c_guard=None; c_rhs=exp} as case]
+    when use_lhs || trivial_pat pat && exp.exp_desc <> Texp_unreachable ->
+      [{case with c_rhs = wrap_bindings bindings exp}]
   | {c_lhs=pat; c_rhs=exp; c_guard=_} :: _ when bindings <> [] ->
       let param = Typecore.name_cases "param" cases in
       let desc =
@@ -145,12 +157,12 @@ let rec push_defaults loc bindings cases partial =
                 (Path.Pident param, mknoloc (Longident.Lident name), desc)},
              cases, partial) }
       in
-      push_defaults loc bindings
-        [{c_lhs={pat with pat_desc = Tpat_var (param, mknoloc name)};
-          c_guard=None; c_rhs=exp}]
-        Total
+      [{c_lhs = {pat with pat_desc = Tpat_var (param, mknoloc name)};
+        c_guard = None; c_rhs= wrap_bindings bindings exp}]
   | _ ->
       cases
+
+let push_defaults loc = push_defaults loc [] false
 
 (* Insertion of debugging events *)
 
@@ -219,6 +231,14 @@ let transl_ident loc env ty path desc =
   |  _ -> fatal_error "Translcore.transl_exp: bad Texp_ident"
 
 let rec transl_exp ~scopes e =
+  transl_exp1 ~scopes ~in_new_scope:false e
+
+(* ~in_new_scope tracks whether we just opened a new scope.
+
+   We go to some trouble to avoid introducing many new anonymous function
+   scopes, as `let f a b = ...` is desugared to several Pexp_fun.
+*)
+and transl_exp1 ~scopes ~in_new_scope e =
   List.iter (Translattribute.check_attribute e) e.exp_attributes;
   let eval_once =
     (* Whether classes for immediate objects must be cached *)
@@ -226,10 +246,10 @@ let rec transl_exp ~scopes e =
       Texp_function _ | Texp_for _ | Texp_while _ -> false
     | _ -> true
   in
-  if eval_once then transl_exp0 ~scopes e else
-  Translobj.oo_wrap e.exp_env true (transl_exp0 ~scopes) e
+  if eval_once then transl_exp0 ~scopes ~in_new_scope  e else
+  Translobj.oo_wrap e.exp_env true (transl_exp0 ~scopes ~in_new_scope) e
 
-and transl_exp0 ~scopes e =
+and transl_exp0 ~in_new_scope ~scopes e =
   match e.exp_desc with
   | Texp_ident(path, _, desc) ->
       transl_ident (of_location ~scopes e.exp_loc)
@@ -240,7 +260,10 @@ and transl_exp0 ~scopes e =
       transl_let ~scopes rec_flag pat_expr_list
         (event_before ~scopes body (transl_exp ~scopes body))
   | Texp_function { arg_label = _; param; cases; partial; } ->
-      let scopes = enter_anonymous_function ~scopes in
+      let scopes =
+        if in_new_scope then scopes
+        else enter_anonymous_function ~scopes
+      in
       transl_function ~scopes e param cases partial
   | Texp_apply({ exp_desc = Texp_ident(path, _, {val_kind = Val_prim p});
                 exp_type = prim_type } as funct, oargs)
@@ -840,7 +863,7 @@ and transl_function ~scopes e param cases partial =
   let ((kind, params, return), body) =
     event_function ~scopes e
       (function repr ->
-         let pl = push_defaults e.exp_loc [] cases partial in
+         let pl = push_defaults e.exp_loc cases partial in
          let return_kind = function_return_value_kind e.exp_env e.exp_type in
          transl_curried_function ~scopes e.exp_loc return_kind
            repr partial param pl)
@@ -850,18 +873,11 @@ and transl_function ~scopes e param cases partial =
   let lam = Lfunction{kind; params; return; body; attr; loc} in
   Translattribute.add_function_attributes lam e.exp_loc e.exp_attributes
 
-(* Like transl_exp, but used when introducing a new scope.
-   Goes to some trouble to avoid introducing many new anonymous function
-   scopes, as `let f a b = ...` is desugared to several Pexp_fun *)
+(* Like transl_exp, but used when a new scope was just introduced. *)
 and transl_scoped_exp ~scopes expr =
-  match expr.exp_desc with
-  | Texp_function { arg_label = _; param; cases; partial } ->
-     transl_function ~scopes expr param cases partial
-  | _ ->
-     transl_exp ~scopes expr
+  transl_exp1 ~scopes ~in_new_scope:true expr
 
-(* Calls transl_scoped_exp or transl_exp, according to whether a pattern
-   binding should introduce a new scope *)
+(* Decides whether a pattern binding should introduce a new scope. *)
 and transl_bound_exp ~scopes ~in_structure pat expr =
   let should_introduce_scope =
     match expr.exp_desc with

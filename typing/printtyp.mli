@@ -113,7 +113,6 @@ val tree_of_type_scheme: type_expr -> out_type
 val type_sch : formatter -> type_expr -> unit
 val type_scheme: formatter -> type_expr -> unit
 (* Maxence *)
-val reset_names: unit -> unit
 val type_scheme_max: ?b_reset_names: bool ->
         formatter -> type_expr -> unit
 (* End Maxence *)
@@ -145,8 +144,26 @@ val signature: formatter -> signature -> unit
 val tree_of_modtype: module_type -> out_module_type
 val tree_of_modtype_declaration:
     Ident.t -> modtype_declaration -> out_sig_item
+
+(** Print a list of functor parameters while adjusting the printing environment
+    for each functor argument.
+
+    Currently, we are disabling disambiguation for functor argument name to
+    avoid the need to track the moving association between identifiers and
+    syntactic names in situation like:
+
+    got: (X: sig module type T end) (Y:X.T) (X:sig module type T end) (Z:X.T)
+    expect: (_: sig end) (Y:X.T) (_:sig end) (Z:X.T)
+*)
+val functor_parameters:
+  sep:(Format.formatter -> unit -> unit) ->
+  ('b -> Format.formatter -> unit) ->
+  (Ident.t option * 'b) list -> Format.formatter -> unit
+
+type type_or_scheme = Type | Type_scheme
+
 val tree_of_signature: Types.signature -> out_sig_item list
-val tree_of_typexp: bool -> type_expr -> out_type
+val tree_of_typexp: type_or_scheme -> type_expr -> out_type
 val modtype_declaration: Ident.t -> formatter -> modtype_declaration -> unit
 val class_type: formatter -> class_type -> unit
 val tree_of_class_declaration:
@@ -155,23 +172,49 @@ val class_declaration: Ident.t -> formatter -> class_declaration -> unit
 val tree_of_cltype_declaration:
     Ident.t -> class_type_declaration -> rec_status -> out_sig_item
 val cltype_declaration: Ident.t -> formatter -> class_type_declaration -> unit
-val type_expansion: type_expr -> Format.formatter -> type_expr -> unit
-val prepare_expansion: type_expr * type_expr -> type_expr * type_expr
-val trace:
-  bool -> bool-> string -> formatter
-  -> (type_expr * type_expr) Ctype.Unification_trace.elt list -> unit
-val report_unification_error:
-    formatter -> Env.t ->
-    Ctype.Unification_trace.t ->
-    ?type_expected_explanation:(formatter -> unit) ->
-    (formatter -> unit) -> (formatter -> unit) ->
-    unit
-val report_subtyping_error:
-    formatter -> Env.t -> Ctype.Unification_trace.t -> string
-    -> Ctype.Unification_trace.t -> unit
+val type_expansion :
+  type_or_scheme -> Format.formatter -> Errortrace.expanded_type -> unit
+val prepare_expansion: Errortrace.expanded_type -> Errortrace.expanded_type
 val report_ambiguous_type_error:
     formatter -> Env.t -> (Path.t * Path.t) -> (Path.t * Path.t) list ->
     (formatter -> unit) -> (formatter -> unit) -> (formatter -> unit) -> unit
+
+val report_unification_error :
+  formatter ->
+  Env.t -> Errortrace.unification_error ->
+  ?type_expected_explanation:(formatter -> unit) ->
+  (formatter -> unit) -> (formatter -> unit) ->
+  unit
+
+val report_equality_error :
+  formatter ->
+  type_or_scheme ->
+  Env.t -> Errortrace.equality_error ->
+  (formatter -> unit) -> (formatter -> unit) ->
+  unit
+
+val report_moregen_error :
+  formatter ->
+  type_or_scheme ->
+  Env.t -> Errortrace.moregen_error ->
+  (formatter -> unit) -> (formatter -> unit) ->
+  unit
+
+val report_comparison_error :
+  formatter ->
+  type_or_scheme ->
+  Env.t -> Errortrace.comparison_error ->
+  (formatter -> unit) -> (formatter -> unit) ->
+  unit
+
+module Subtype : sig
+  val report_error :
+    formatter ->
+    Env.t ->
+    Errortrace.Subtype.error ->
+    string ->
+    unit
+end
 
 (* for toploop *)
 val print_items: (Env.t -> signature_item -> 'a option) ->

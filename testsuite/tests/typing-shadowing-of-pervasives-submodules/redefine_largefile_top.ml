@@ -1,5 +1,5 @@
 (* TEST
-   files = "largeFile.ml"
+   readonly_files = "largeFile.ml"
    * setup-ocaml-build-env
    ** ocamlc.byte
    compile_only = "true"

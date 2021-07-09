@@ -164,7 +164,7 @@ module Analyser :
          by associating the comment found in the parsetree of each constructor/field, if any.*)
       val get_type_kind :
           Odoc_env.env -> (string * Odoc_types.info option) list ->
-            Types.type_kind -> Odoc_type.type_kind
+            Types.type_decl_kind -> Odoc_type.type_kind
 
       (** This function converts a [Types.constructor_arguments] into a
           [Odoc_type.constructor_args], by associating the comment found

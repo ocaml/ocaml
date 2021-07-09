@@ -53,6 +53,7 @@ module Sys : sig
   val dump_file : out_channel -> ?prefix:string -> string -> unit
   val copy_chan : in_channel -> out_channel -> unit
   val copy_file : string -> string -> unit
+  val copy_directory : string -> string -> unit
   val force_remove : string -> unit
   val with_chdir : string -> (unit -> 'a) -> 'a
   val getenv_with_default_value : string -> string -> string

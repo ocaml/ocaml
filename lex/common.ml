@@ -55,7 +55,7 @@ let copy_buffer = Bytes.create 1024
 let copy_chars_unix ic oc start stop =
   let n = ref (stop - start) in
   while !n > 0 do
-    let m = input ic copy_buffer 0 (min !n 1024) in
+    let m = input ic copy_buffer 0 (Int.min !n 1024) in
     output oc copy_buffer 0 m;
     n := !n - m
   done

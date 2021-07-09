@@ -132,7 +132,6 @@ let make_package_object ~ppf_dump members targetobj targetname coercion
         program, Closure_middle_end.lambda_to_clambda
     in
     Asmgen.compile_implementation ~backend
-      ~filename:targetname
       ~prefixname
       ~middle_end
       ~ppf_dump

@@ -569,9 +569,9 @@ let unbox_float dbg =
           | Some (Uconst_float x) ->
               Cconst_float (x, dbg) (* or keep _dbg? *)
           | _ ->
-              Cop(Cload (Double_u, Immutable), [cmm], dbg)
+              Cop(Cload (Double, Immutable), [cmm], dbg)
           end
-      | cmm -> Cop(Cload (Double_u, Immutable), [cmm], dbg)
+      | cmm -> Cop(Cload (Double, Immutable), [cmm], dbg)
     )
 
 (* Complex *)
@@ -579,8 +579,8 @@ let unbox_float dbg =
 let box_complex dbg c_re c_im =
   Cop(Calloc, [alloc_floatarray_header 2 dbg; c_re; c_im], dbg)
 
-let complex_re c dbg = Cop(Cload (Double_u, Immutable), [c], dbg)
-let complex_im c dbg = Cop(Cload (Double_u, Immutable),
+let complex_re c dbg = Cop(Cload (Double, Immutable), [c], dbg)
+let complex_im c dbg = Cop(Cload (Double, Immutable),
                         [Cop(Cadda, [c; Cconst_int (size_float, dbg)], dbg)],
                         dbg)
 
@@ -728,7 +728,7 @@ let int_array_ref arr ofs dbg =
   Cop(Cload (Word_int, Mutable),
     [array_indexing log2_size_addr arr ofs dbg], dbg)
 let unboxed_float_array_ref arr ofs dbg =
-  Cop(Cload (Double_u, Mutable),
+  Cop(Cload (Double, Mutable),
     [array_indexing log2_size_float arr ofs dbg], dbg)
 let float_array_ref arr ofs dbg =
   box_float dbg (unboxed_float_array_ref arr ofs dbg)
@@ -743,7 +743,7 @@ let int_array_set arr ofs newval dbg =
   Cop(Cstore (Word_int, Lambda.Assignment),
     [array_indexing log2_size_addr arr ofs dbg; newval], dbg)
 let float_array_set arr ofs newval dbg =
-  Cop(Cstore (Double_u, Lambda.Assignment),
+  Cop(Cstore (Double, Lambda.Assignment),
     [array_indexing log2_size_float arr ofs dbg; newval], dbg)
 
 (* String length *)
@@ -1328,6 +1328,9 @@ let check_bound safety access_size dbg length a2 k =
         sub_int length (Cconst_int (offset, dbg)) dbg
       in
       Csequence(make_checkbound dbg [max_or_zero a1 dbg; a2], k)
+
+let opaque e dbg =
+  Cop(Copaque, [e], dbg)
 
 let unaligned_set size ptr idx newval dbg =
   match (size : Clambda_primitives.memory_access_size) with
@@ -2093,7 +2096,7 @@ let generic_functions shared units =
 type unary_primitive = expression -> Debuginfo.t -> expression
 
 let floatfield n ptr dbg =
-  Cop(Cload (Double_u, Mutable),
+  Cop(Cload (Double, Mutable),
       [if n = 0 then ptr
        else Cop(Cadda, [ptr; Cconst_int(n * size_float, dbg)], dbg)],
       dbg)
@@ -2197,7 +2200,7 @@ let setfield n ptr init arg1 arg2 dbg =
 
 let setfloatfield n init arg1 arg2 dbg =
   return_unit dbg (
-    Cop(Cstore (Double_u, init),
+    Cop(Cstore (Double, init),
         [if n = 0 then arg1
          else Cop(Cadda, [arg1; Cconst_int(n * size_float, dbg)], dbg);
          arg2], dbg))

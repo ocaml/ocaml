@@ -28,7 +28,7 @@
 */
 void caml_compact_heap (intnat new_allocation_policy);
 
-void caml_compact_heap_maybe (void);
+void caml_compact_heap_maybe (double previous_overhead);
 void caml_invert_root (value v, value *p);
 
 #endif /* CAML_INTERNALS */

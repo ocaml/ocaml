@@ -52,23 +52,22 @@ endif
 
 ifeq "$(UNIX_OR_WIN32)" "win32"
   ocamlsrcdir := $(shell echo "$(abspath $(shell pwd)/..)" | cygpath -w -f -)
+  CSC := csc
+  ifeq "$(HOST:i686-%=i686)" "i686"
+    CSCFLAGS := /platform:x86
+  else
+    CSCFLAGS :=
+  endif
+  CSCFLAGS += /nologo /nowarn:1668
 else
   ocamlsrcdir := $(abspath $(shell pwd)/..)
+  CSC :=
+  CSCFLAGS :=
 endif
 mkexe := $(MKEXE)
 
 ifeq "$(TOOLCHAIN)" "msvc"
 CPP := $(CPP) 2> nul
-CSC := csc
-ifeq "$(HOST)" "i686-pc-windows"
-CSCFLAGS := /platform:x86
-else
-CSCFLAGS :=
-endif
-CSCFLAGS += /nologo /nowarn:1668
-else
-CSC :=
-CSCFLAGS :=
 endif
 
 ifeq "$(WITH_OCAMLDOC)" "ocamldoc"
@@ -155,8 +154,6 @@ cmo_files := $(ml_files:.ml=.cmo)
 
 cmx_files := $(ml_files:.ml=.cmx)
 
-ocaml_objects := $(ml_files:.ml=.$(O))
-
 # List of .mli files for ocamldep
 mli_files := \
   $(filter %.mli,$(subst .mly,.mli,$(sources)))
@@ -192,7 +189,7 @@ include_directories := $(addprefix -I , $(directories))
 
 flags := -g -nostdlib $(include_directories) \
   -strict-sequence -safe-string -strict-formats \
-  -w +a-4-9-41-42-44-45-48 -warn-error A
+  -w +a-4-9-41-42-44-45-48 -warn-error +A
 
 ocamlc = $(BEST_OCAMLC) $(flags)
 
@@ -201,14 +198,6 @@ ocamlopt = $(BEST_OCAMLOPT) $(flags)
 ocamldep := $(BEST_OCAMLDEP)
 depflags := -slash
 depincludes :=
-
-ocamllex := $(BEST_OCAMLLEX)
-
-ocamlyacc := $(ROOTDIR)/yacc/ocamlyacc$(EXE)
-
-ocamlcdefaultflags :=
-
-ocamloptdefaultflags := $(shell ./getocamloptdefaultflags $(TARGET))
 
 .SECONDARY: $(lexers:.mll=.ml) $(parsers:.mly=.mli) $(parsers:.mly=.ml)
 
@@ -244,19 +233,13 @@ ocamltest.opt$(EXE): $(deps_opt) $(native_modules)
 %.cmi: %.mli $(deps_byte)
 	$(ocamlc) -c $<
 
-%.ml %.mli: %.mly
-	$(ocamlyacc) $<
-
-%.ml: %.mll
-	$(ocamllex) $(OCAMLLEX_FLAGS) $<
-
 ocamltest_unix.ml: ocamltest_unix_$(ocamltest_unix).ml
 	echo '# 1 "$^"' > $@
 	cat $^ >> $@
 
 ocamltest_config.ml: ocamltest_config.ml.in Makefile ../Makefile.config
 	sed $(call SUBST,AFL_INSTRUMENT) \
-	    $(call SUBST,RUNTIMEI) \
+	    $(call SUBST,INSTRUMENTED_RUNTIME) \
 	    $(call SUBST,ARCH) \
 	    $(call SUBST,SUPPORTS_SHARED_LIBRARIES) \
 	    $(call SUBST,unix) \
@@ -264,8 +247,6 @@ ocamltest_config.ml: ocamltest_config.ml.in Makefile ../Makefile.config
 	    $(call SUBST,str) \
 	    $(call SUBST,SYSTEM) \
 	    $(call SUBST_STRING,CPP) \
-	    $(call SUBST_STRING,ocamlcdefaultflags) \
-	    $(call SUBST_STRING,ocamloptdefaultflags) \
 	    $(call SUBST_STRING,ocamlsrcdir) \
 	    $(call SUBST,FLAMBDA) \
 	    $(call SUBST,FORCE_SAFE_STRING) \
@@ -273,6 +254,7 @@ ocamltest_config.ml: ocamltest_config.ml.in Makefile ../Makefile.config
 	    $(call SUBST,WITH_OCAMLDOC) \
 	    $(call SUBST,WITH_OCAMLDEBUG) \
 	    $(call SUBST,O) \
+	    $(call SUBST,A) \
 	    $(call SUBST,S) \
 	    $(call SUBST,NATIVE_COMPILER) \
 	    $(call SUBST,NATDYNLINK) \

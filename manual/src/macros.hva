@@ -1,0 +1,303 @@
+% Section macros with mandatory labels
+% Note: hevea and normal latex are forked due to the use of \@ifstar on the latex side
+
+% First, we save the normal macros
+\let\@oldsection=\section
+\let\@oldsubsection=\subsection
+\let\@oldsubsubsection=\subsubsection
+% The *-version are distincts macros in hevea
+\let\@oldsection*=\section*
+\let\@oldsubsection*=\subsection*
+\let\@oldsubsubsection*=\subsubsection*
+
+%We go back to standard macros for ocamldoc generated files
+\newcommand{\ocamldocinputstart}{%
+\let\section=\@oldsection
+\let\subsection=\@oldsubsection
+\let\subsubsection=\@oldsubsubsection
+% The *-version are distincts macros in hevea
+\let\section*=\@oldsection*
+\let\subsection*=\@oldsubsection*
+\let\subsubsection*=\@oldsubsubsection*
+}
+
+\renewcommand{\section}[2]{\@oldsection{\label{#1}#2}}
+\renewcommand{\section*}[2]{\@oldsection*{\label{#1}#2}}
+\renewcommand{\subsection}[2]{\@oldsubsection{\label{#1}#2}}
+\renewcommand{\subsection*}[2]{\@oldsubsection*{\label{#1}#2}}
+\renewcommand{\subsubsection}[2]{\@oldsubsubsection{\label{#1}#2}}
+\renewcommand{\subsubsection*}[2]{\@oldsubsubsection*{\label{#1}#2}}
+
+% For paragraph, we do not make labels compulsory
+\newcommand{\lparagraph}[2]{\paragraph{\label{#1}#2}}
+
+% Colors for links
+
+\newstyle{a.section-anchor::after}{
+  content:"\@print@u{128279}";
+  font-size:smaller;
+  margin-left:-1.5em;
+  padding-right:0.5em;
+}
+
+
+\newstyle{a.section-anchor}{
+  visibility:hidden;
+  color:grey !important;
+  text-decoration:none !important;
+}
+
+\newstyle{*:hover>a.section-anchor}{
+  visibility:visible;
+}
+
+\def\visited@color{\#0d46a3}
+\def\link@color{\#4286f4}
+\newstyle{a:link}{color:\link@color;text-decoration:underline;}
+\newstyle{a:visited}{color:\visited@color;text-decoration:underline;}
+\newstyle{a:hover}{color:black;text-decoration:underline;}
+
+
+\newstyle{@media all}{@font-face \{
+/* fira-sans-regular - latin */
+  font-family: 'Fira Sans';
+  font-style: normal;
+  font-weight: 400;
+  src: url('fonts/fira-sans-v8-latin-regular.eot'); /* IE9 Compat Modes */
+  src: local('Fira Sans Regular'), local('FiraSans-Regular'),
+       url('fonts/fira-sans-v8-latin-regular.eot?\#iefix') format('embedded-opentype'), /* IE6-IE8 */
+       url('fonts/fira-sans-v8-latin-regular.woff2') format('woff2'), /* Super Modern Browsers */
+       url('fonts/fira-sans-v8-latin-regular.woff') format('woff'), /* Modern Browsers */
+       url('fonts/fira-sans-v8-latin-regular.ttf') format('truetype'), /* Safari, Android, iOS */
+       url('fonts/fira-sans-v8-latin-regular.svg\#FiraSans') format('svg'); /* Legacy iOS */
+\}}
+
+% Compact layout
+\newstyle{body}{
+  max-width:750px;
+  width: 85\%;
+  margin: auto;
+  background: \#f7f7f7;
+  margin-top: 80px;
+  font-size: 1rem;
+}
+
+% selects the index's title
+\newstyle{.maintitle}{
+  font-family: "Fira Sans", sans-serif;
+  text-align: center;
+}
+
+\newstyle{h1, h2, h3}{
+  font-family: "Fira Sans", sans-serif;
+  font-weight: normal;
+  border-bottom: 1px solid black;
+}
+
+
+\newstyle{div.ocaml}{
+  margin:2ex 0px;
+  font-size: 1rem;
+  background: beige;
+  border: 1px solid grey;
+  padding: 10px;
+  overflow-y:auto;
+  display:flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+}
+
+\newstyle{div.ocaml .pre}{
+  white-space: pre;
+  font-family: monospace;
+}
+
+
+
+\newstyle{.ocamlkeyword}{
+  font-weight:bold;
+}
+
+
+\newstyle{.ocamlhighlight}{
+  font-weight:bold;
+  text-decoration:underline;
+}
+
+\newstyle{.ocamlerror}{
+  font-weight:bold;
+  color:red;
+}
+
+\newstyle{.ocamlwarning}{
+  font-weight:bold;
+  color:purple;
+}
+
+\newstyle{.ocamlcomment}{
+  color:grey;
+}
+
+\newstyle{.ocamlstring}{
+  opacity:0.75;
+}
+
+% Creative commons license logo
+\newstyle{\#cc_license_logo}{
+  float:left;
+  margin-right: 1em;
+}
+
+% More spacing between lines and inside tables
+\newstyle{p,ul}{line-height:1.3em}
+\newstyle{.cellpadding1 tr td}{padding:1px 4px}
+
+%Styles for caml-example and friends
+\newstyle{div.caml-output}{color:maroon;}
+% Styles for toplevel mode only
+\newstyle{div.caml-example.toplevel div.caml-input}{color:\#006000;}
+
+%%% Code examples
+\newcommand{\input@color}{\htmlcolor{006000}}
+\newcommand{\output@color}{\maroon}
+\newcommand{\machine}{\tt}
+\newenvironment{machineenv}{\begin{alltt}}{\end{alltt}}
+\newcommand{\var}[1]{\textit{#1}}
+
+%% Caml-example environment
+\newcommand{\camlexample}[1]{
+  \@open{div}{class="caml-example #1"}
+}
+\newcommand{\endcamlexample}{
+  \@close{div}
+}
+
+\newenvironment{caml}{\@open{div}{class=ocaml}}{\@close{div}}
+\newcommand{\ocamlkeyword}{\@span{class="ocamlkeyword"}}
+\newcommand{\ocamlhighlight}{\@span{class="ocamlhighlight"}}
+\newcommand{\ocamlerror}{\@span{class="ocamlerror"}}
+\newcommand{\ocamlwarning}{\@span{class="ocamlwarning"}}
+\newcommand{\ocamlcomment}{\@span{class="ocamlcomment"}}
+\newcommand{\ocamlstring}{\@span{class="ocamlstring"}}
+
+
+%%% End of code example
+
+\newenvironment{library}{}{}
+\newcounter{page}
+\newenvironment{comment}{\begin{quote}}{\end{quote}}
+\newcommand{\nth}[2]{\({#1}_{#2}\)}
+\newenvironment{options}{\begin{description}}{\end{description}}
+
+
+%%venant de macros.tex
+
+\def\versionspecific#1{\begin{quote}\textsf{#1:}\quad}
+\def\unix{\versionspecific{Unix}}
+\def\endunix{\end{quote}}
+\def\windows{\versionspecific{Windows}}
+\def\endwindows{\end{quote}}
+
+\def\requirements{\trivlist \item[\hskip\labelsep {\bf Requirements.}]}
+\def\endrequirements{\endtrivlist}
+\def\installation{\trivlist \item[\hskip\labelsep {\bf Installation.}]}
+\def\endinstallation{\endtrivlist}
+\def\troubleshooting{\trivlist \item[\hskip\labelsep {\bf Troubleshooting.}]}
+\def\endtroubleshooting{\endtrivlist}
+
+\newtheorem{gcrule}{Rule}
+
+% Pour les tables de priorites et autres tableaux a deux colonnes, encadres
+
+\def\entree#1#2{#1 & #2 \\}
+\def\tableau#1#2#3{%
+\par
+\@open{div}{class="tableau"}
+\begin{center}%
+\begin{tabular*}{.8\linewidth}{#1}%
+\multicolumn{1}{c}{\textbf{#2}} &
+\multicolumn{1}{c}{\textbf{#3}} \\
+%%#2 & #3 \\%
+}%
+\def\endtableau{\end{tabular*}\end{center}\@close{div}\par}
+
+\newstyle{.tableau, .syntax, .syntaxleft}{
+  /* same width as body */
+  max-width: 750px;
+  overflow-y: auto;
+}
+
+% L'environnement library (pour composer les descriptions des modules
+% de bibliotheque).
+
+
+\def\restoreindent{\begingroup\let\@listI=\@savedlistI}
+\def\endrestoreindent{\endgroup}
+
+
+% PDF stuff
+
+\def\pdfchapterfold#1#2{}
+\def\pdfsection#1{}
+\def\pdfchapter{\pdfchapterfold{0}}
+
+%%% Pour camlidl
+
+\def\transl#1{$[\![\mbox{#1}]\!]$}
+
+% Pour l'index
+\usepackage{multind}
+\let\indexentry=\index
+\renewcommand{\index}[1]{\indexentry{\jobname}{#1}}
+\def\ikwd#1{\indexentry{\jobname.kwd}{#1}}
+% nth
+
+\def\th{^{\mbox{\scriptsize th}}}
+\renewcommand{\hbox}[1]{\mbox{#1}}
+
+% Notations pour les metavariables
+\def\nmth#1#2#3{\({#1}_{#2}^{#3}\)}
+\def\optvar#1{[\var{#1}\/]}
+\def\event{$\bowtie$}
+\def\fromoneto#1#2{$#1 = 1,\ldots{} , #2$}
+
+\newcommand{\vfill}{}
+\def\number{}
+\def\year{\arabic{year}}
+
+% Pour alltt
+\def\rminalltt#1{{\rm #1}}
+\def\goodbreak{\ \\}
+\def\@savedlistI{}
+
+%List of links with no space around items
+\newstyle{.li-links}{margin:0ex 0ex;}
+\newenvironment{links}
+{\setenvclass{itemize}{ftoc2}\setenvclass{li-itemize}{li-links}\itemize}
+{\enditemize}
+
+\newenvironment{maintitle}{\@open{div}{class="maintitle"}}{\@close{div}}
+
+%%% Linking to modules
+
+\newenvironment{linklist}{\begin{links}}{\end{links}}
+
+\ifocamldoc
+\newcommand{\moduleref}[3]{\ahref{#1/#2.html}{#3}}
+\newcommand{\stdmoduleref}[1]{\moduleref{libref}{#1}{\texttt{#1}}}
+\else
+\newcommand{\moduleref}[3]{\ahref{#1/#2/index.html}{#3}}
+\newcommand{\stdmoduleref}[1]{\moduleref{libref}{Stdlib/#1}{\texttt{#1}}}
+\fi
+\newcommand{\docitem}[3]{\item \moduleref{#1}{#2}{Module \texttt{#2}}: #3}
+\newcommand{\libdocitem}[2]{\docitem{libref}{#1}{#2}}
+\newcommand{\compilerdocitem}[2]{\docitem{compilerlibref}{#1}{#2}}
+
+%%% Missing macro
+\newcommand{\DeclareUnicodeCharacter}[2]{}
+
+\ifocamldoc
+\newcommand{\stddocitem}[2]{\libdocitem{#1}{#2}}
+\else
+\newcommand{\stddocitem}[2]{\docitem{libref/Stdlib}{#1}{#2}}
+\fi

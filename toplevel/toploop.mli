@@ -15,11 +15,20 @@
 
 open Format
 
+(* type of toplevel inputs *)
+type input =
+  | Stdin
+  | File of string
+  | String of string
+
 (* Accessors for the table of toplevel value bindings.  These functions
    must appear as first and second exported functions in this module.
    (See module Translmod.) *)
 val getvalue : string -> Obj.t
 val setvalue : string -> Obj.t -> unit
+
+
+val filename_of_input: input -> string
 
 (* Set the load paths, before running anything *)
 
@@ -31,7 +40,7 @@ val loop : formatter -> unit
 
 (* Read and execute a script from the given file *)
 
-val run_script : formatter -> string -> string array -> bool
+val run_script : formatter -> input -> string array -> bool
         (* true if successful, false if error *)
 
 (* Interface with toplevel directives *)
@@ -53,11 +62,19 @@ val add_directive : string -> directive_fun -> directive_info -> unit
 
            @since 4.03 *)
 
-val directive_table : (string, directive_fun) Hashtbl.t
-  (* Deprecated: please use [add_directive] instead of inserting
+val get_directive : string -> directive_fun option
+
+val get_directive_info : string -> directive_info option
+
+val all_directive_names : unit -> string list
+
+val[@deprecated] directive_table : (string, directive_fun) Hashtbl.t
+  (* @deprecated please use [add_directive] instead of inserting
      in this table directly. *)
 
-val directive_info_table : (string, directive_info) Hashtbl.t
+val[@deprecated] directive_info_table : (string, directive_info) Hashtbl.t
+  (* @deprecated please use [add_directive] instead of inserting
+     in this table directly. *)
 
 val toplevel_env : Env.t ref
         (* Typing environment for the toplevel *)
@@ -74,20 +91,22 @@ val preprocess_phrase :
       formatter -> Parsetree.toplevel_phrase ->  Parsetree.toplevel_phrase
         (* Preprocess the given toplevel phrase using regular and ppx
            preprocessors. Return the updated phrase. *)
-val use_file : formatter -> string -> bool
+val use_input : formatter -> input -> bool
 val use_output : formatter -> string -> bool
-val use_silently : formatter -> string -> bool
-val mod_use_file : formatter -> string -> bool
+val use_silently : formatter -> input -> bool
+val mod_use_input : formatter -> input -> bool
         (* Read and execute commands from a file.
-           [use_file] prints the types and values of the results.
+           [use_input] prints the types and values of the results.
            [use_silently] does not print them.
-           [mod_use_file] wrap the file contents into a module. *)
+           [mod_use_input] wrap the file contents into a module. *)
 val eval_module_path: Env.t -> Path.t -> Obj.t
 val eval_value_path: Env.t -> Path.t -> Obj.t
 val eval_extension_path: Env.t -> Path.t -> Obj.t
 val eval_class_path: Env.t -> Path.t -> Obj.t
         (* Return the toplevel object referred to by the given path *)
 val record_backtrace : unit -> unit
+
+val load_file: formatter -> string -> bool
 
 (* Printing of values *)
 

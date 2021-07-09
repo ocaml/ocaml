@@ -24,7 +24,7 @@
 
 <pre><span id="VALheterological"><span class="keyword">val</span> heterological</span> : <code class="type">unit</code></pre><div class="info ">
 <div class="info-deprecated">
-<span class="warning">Deprecated.</span>since the start of time</div>
+<span class="warning">Deprecated. </span>since the start of time</div>
 <ul class="info-attributes">
 <li><b>Author(s):</b> yes</li>
 <li><b>Before Time </b> not implemented</li>

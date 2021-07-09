@@ -1,7 +1,7 @@
 (* TEST
 flags += " -g "
 ocamldebug_script = "${test_source_directory}/input_script"
-files = "printer.ml"
+readonly_files = "printer.ml"
 include debugger
 * debugger
 ** shared-libraries

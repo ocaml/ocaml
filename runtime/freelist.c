@@ -1662,6 +1662,7 @@ static header_t *bf_merge_block (value bp, char *limit)
     }
     caml_fl_cur_wsz += Whsize_val (cur);
   next:
+    caml_prefetch(Hp_val(cur + 4096));
     cur = Next_in_mem (cur);
     if (Hp_val (cur) >= (header_t *) limit){
       CAMLassert (Hp_val (cur) == (header_t *) limit);
@@ -1746,16 +1747,6 @@ static void bf_make_free_blocks (value *p, mlsize_t size, int do_merge,
   }
 }
 
-/*********************** policy selection *****************************/
-
-enum {
-  policy_next_fit = 0,
-  policy_first_fit = 1,
-  policy_best_fit = 2,
-};
-
-uintnat caml_allocation_policy = policy_next_fit;
-
 /********************* exported functions *****************************/
 
 /* [caml_fl_allocate] does not set the header of the newly allocated block.
@@ -1763,25 +1754,25 @@ uintnat caml_allocation_policy = policy_next_fit;
    [caml_fl_allocate] returns a head pointer, or NULL if no suitable block
    is found in the free set.
 */
-header_t *(*caml_fl_p_allocate) (mlsize_t wo_sz) = &nf_allocate;
+header_t *(*caml_fl_p_allocate) (mlsize_t wo_sz) = NULL;
 
 /* Initialize the merge_block machinery (at start of sweeping). */
-void (*caml_fl_p_init_merge) (void) = &nf_init_merge;
+void (*caml_fl_p_init_merge) (void) = NULL;
 
 /* These are called internally. */
-static void (*caml_fl_p_init) (void) = &nf_init;
-static void (*caml_fl_p_reset) (void) = &nf_reset;
+static void (*caml_fl_p_init) (void) = NULL;
+static void (*caml_fl_p_reset) (void) = NULL;
 
 /* [caml_fl_merge_block] returns the head pointer of the next block after [bp],
    because merging blocks may change the size of [bp]. */
-header_t *(*caml_fl_p_merge_block) (value bp, char *limit) = &nf_merge_block;
+header_t *(*caml_fl_p_merge_block) (value bp, char *limit) = NULL;
 
 /* [bp] must point to a list of blocks of wosize >= 1 chained by their field 0,
    terminated by Val_NULL, and field 1 of the first block must point to
    the last block.
    The blocks must be blue.
 */
-void (*caml_fl_p_add_blocks) (value bp) = &nf_add_blocks;
+void (*caml_fl_p_add_blocks) (value bp) = NULL;
 
 /* Cut a block of memory into pieces of size [Max_wosize], give them headers,
    and optionally merge them into the free list.
@@ -1795,16 +1786,21 @@ void (*caml_fl_p_add_blocks) (value bp) = &nf_add_blocks;
 */
 void (*caml_fl_p_make_free_blocks)
   (value *p, mlsize_t size, int do_merge, int color)
-  = &nf_make_free_blocks;
+  = NULL;
+
 #ifdef DEBUG
-void (*caml_fl_p_check) (void) = &nf_check;
+void (*caml_fl_p_check) (void) = NULL;
 #endif
 
-void caml_set_allocation_policy (intnat p)
+/* This variable and the above function pointers must be initialized with
+   a call to [caml_set_allocation_policy]. */
+uintnat caml_allocation_policy = 999;
+
+void caml_set_allocation_policy (uintnat p)
 {
   switch (p){
-  case policy_next_fit: default:
-    caml_allocation_policy = policy_next_fit;
+  case caml_policy_next_fit:
+    caml_allocation_policy = p;
     caml_fl_p_allocate = &nf_allocate;
     caml_fl_p_init_merge = &nf_init_merge;
     caml_fl_p_reset = &nf_reset;
@@ -1816,8 +1812,9 @@ void caml_set_allocation_policy (intnat p)
     caml_fl_p_check = &nf_check;
 #endif
     break;
-  case policy_first_fit:
-    caml_allocation_policy = policy_first_fit;
+
+  case caml_policy_first_fit:
+    caml_allocation_policy = p;
     caml_fl_p_allocate = &ff_allocate;
     caml_fl_p_init_merge = &ff_init_merge;
     caml_fl_p_reset = &ff_reset;
@@ -1829,8 +1826,10 @@ void caml_set_allocation_policy (intnat p)
     caml_fl_p_check = &ff_check;
 #endif
     break;
-  case policy_best_fit:
-    caml_allocation_policy = policy_best_fit;
+
+  default:
+  case caml_policy_best_fit:
+    caml_allocation_policy = caml_policy_best_fit;
     caml_fl_p_allocate = &bf_allocate;
     caml_fl_p_init_merge = &bf_init_merge;
     caml_fl_p_reset = &bf_reset;

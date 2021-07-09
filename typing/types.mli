@@ -55,13 +55,9 @@ open Asttypes
 
     Note on mutability: TBD.
  *)
-type type_expr =
-  { mutable desc: type_desc;
-    mutable level: int;
-    mutable scope: int;
-    id: int }
+type type_expr
 
-and type_desc =
+type type_desc =
   | Tvar of string option
   (** [Tvar (Some "a")] ==> ['a] or ['_a]
       [Tvar None]       ==> [_] *)
@@ -108,10 +104,13 @@ and type_desc =
   | Tlink of type_expr
   (** Indirection used by unification engine. *)
 
-  | Tsubst of type_expr         (* for copying *)
+  | Tsubst of type_expr * type_expr option
   (** [Tsubst] is used temporarily to store information in low-level
       functions manipulating representation of types, such as
       instantiation or copy.
+      The first argument contains a copy of the original node.
+      The second is available only when the first is the row variable of
+      a polymorphic variant.  It then contains a copy of the whole variant.
       This constructor should not appear outside of these cases. *)
 
   | Tvariant of row_desc
@@ -126,7 +125,7 @@ and type_desc =
       where 'a1 ... 'an are names given to types in tyl
       and occurrences of those types in ty. *)
 
-  | Tpackage of Path.t * Longident.t list * type_expr list
+  | Tpackage of Path.t * (Longident.t * type_expr) list
   (** Type of a first-class module (a.k.a package). *)
 
 (** [  `X | `Y ]       (row_closed = true)
@@ -233,12 +232,64 @@ and commutable =
   | Cunknown
   | Clink of commutable ref
 
-module TypeOps : sig
-  type t = type_expr
+(** Getters for type_expr; calls repr before answering a value *)
+
+val get_desc: type_expr -> type_desc
+val get_level: type_expr -> int
+val get_scope: type_expr -> int
+val get_id: type_expr -> int
+
+(** Transient [type_expr].
+    Should only be used immediately after [Transient_expr.repr] *)
+type transient_expr = private
+      { mutable desc: type_desc;
+        mutable level: int;
+        mutable scope: int;
+        id: int }
+
+module Transient_expr : sig
+  (** Operations on [transient_expr] *)
+
+  val create: type_desc -> level: int -> scope: int -> id: int -> transient_expr
+  val set_desc: transient_expr -> type_desc -> unit
+  val set_level: transient_expr -> int -> unit
+  val set_scope: transient_expr -> int -> unit
+  val repr: type_expr -> transient_expr
+  val type_expr: transient_expr -> type_expr
+  val coerce: type_expr -> transient_expr
+      (** Coerce without normalizing with [repr] *)
+
+  val set_stub_desc: type_expr -> type_desc -> unit
+      (** Instantiate a not yet instantiated stub.
+          Fail if already instantiated. *)
+end
+
+val create_expr: type_desc -> level: int -> scope: int -> id: int -> type_expr
+
+(** Functions and definitions moved from Btype *)
+
+val newty3: level:int -> scope:int -> type_desc -> type_expr
+        (** Create a type with a fresh id *)
+
+val newty2: level:int -> type_desc -> type_expr
+        (** Create a type with a fresh id and no scope *)
+
+val field_kind_repr: field_kind -> field_kind
+        (** Return the canonical representative of an object field kind. *)
+
+module TransientTypeOps : sig
+  (** Comparisons for functors *)
+
+  type t = transient_expr
   val compare : t -> t -> int
   val equal : t -> t -> bool
   val hash : t -> int
 end
+
+(** Comparisons for [type_expr]; cannot be used for functors *)
+
+val eq_type: type_expr -> type_expr -> bool
+val compare_type: type_expr -> type_expr -> int
 
 (* *)
 
@@ -349,7 +400,7 @@ end
 type type_declaration =
   { type_params: type_expr list;
     type_arity: int;
-    type_kind: type_kind;
+    type_kind: type_decl_kind;
     type_private: private_flag;
     type_manifest: type_expr option;
     type_variance: Variance.t list;
@@ -360,14 +411,17 @@ type type_declaration =
     type_loc: Location.t;
     type_attributes: Parsetree.attributes;
     type_immediate: Type_immediacy.t;
-    type_unboxed: unboxed_status;
+    type_unboxed_default: bool;
+    (* true if the unboxed-ness of this type was chosen by a compiler flag *)
     type_uid: Uid.t;
   }
 
-and type_kind =
+and type_decl_kind = (label_declaration, constructor_declaration) type_kind
+
+and ('lbl, 'cstr) type_kind =
     Type_abstract
-  | Type_record of label_declaration list  * record_representation
-  | Type_variant of constructor_declaration list
+  | Type_record of 'lbl list  * record_representation
+  | Type_variant of 'cstr list * variant_representation
   | Type_open
 
 and record_representation =
@@ -376,6 +430,10 @@ and record_representation =
   | Record_unboxed of bool    (* Unboxed single-field record, inlined or not *)
   | Record_inlined of int               (* Inlined record *)
   | Record_extension of Path.t          (* Inlined record under extension *)
+
+and variant_representation =
+    Variant_regular          (* Constant or boxed constructors *)
+  | Variant_unboxed          (* One unboxed single-field constructor *)
 
 and label_declaration =
   {
@@ -400,20 +458,6 @@ and constructor_declaration =
 and constructor_arguments =
   | Cstr_tuple of type_expr list
   | Cstr_record of label_declaration list
-
-and unboxed_status = private
-  (* This type must be private in order to ensure perfect sharing of the
-     four possible values. Otherwise, ocamlc.byte and ocamlc.opt produce
-     different executables. *)
-  {
-    unboxed: bool;
-    default: bool; (* True for unannotated unboxable types. *)
-  }
-
-val unboxed_false_default_false : unboxed_status
-val unboxed_false_default_true : unboxed_status
-val unboxed_true_default_false : unboxed_status
-val unboxed_true_default_true : unboxed_status
 
 type extension_constructor =
   {
@@ -540,7 +584,6 @@ type constructor_description =
     cstr_tag: constructor_tag;          (* Tag for heap blocks *)
     cstr_consts: int;                   (* Number of constant constructors *)
     cstr_nonconsts: int;                (* Number of non-const constructors *)
-    cstr_normal: int;                   (* Number of non generalized constrs *)
     cstr_generalized: bool;             (* Constrained return type? *)
     cstr_private: private_flag;         (* Read-only constructor? *)
     cstr_loc: Location.t;
@@ -584,3 +627,35 @@ type label_description =
 val bound_value_identifiers: signature -> Ident.t list
 
 val signature_item_id : signature_item -> Ident.t
+
+(**** Utilities for backtracking ****)
+
+type snapshot
+        (* A snapshot for backtracking *)
+val snapshot: unit -> snapshot
+        (* Make a snapshot for later backtracking. Costs nothing *)
+val backtrack: cleanup_abbrev:(unit -> unit) -> snapshot -> unit
+        (* Backtrack to a given snapshot. Only possible if you have
+           not already backtracked to a previous snapshot.
+           Calls [cleanup_abbrev] internally *)
+val undo_compress: snapshot -> unit
+        (* Backtrack only path compression. Only meaningful if you have
+           not already backtracked to a previous snapshot.
+           Does not call [cleanup_abbrev] *)
+
+(* Functions to use when modifying a type (only Ctype?) *)
+val link_type: type_expr -> type_expr -> unit
+        (* Set the desc field of [t1] to [Tlink t2], logging the old
+           value if there is an active snapshot *)
+val set_type_desc: type_expr -> type_desc -> unit
+        (* Set directly the desc field, without sharing *)
+val set_level: type_expr -> int -> unit
+val set_scope: type_expr -> int -> unit
+val set_name:
+    (Path.t * type_expr list) option ref ->
+    (Path.t * type_expr list) option -> unit
+val set_row_field: row_field option ref -> row_field -> unit
+val set_univar: type_expr option ref -> type_expr -> unit
+val set_kind: field_kind option ref -> field_kind -> unit
+val set_commu: commutable ref -> commutable -> unit
+        (* Set references, logging the old value *)

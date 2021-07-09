@@ -15,6 +15,9 @@
 
 (* The "trace" facility *)
 
+(* /!\ Not available in native code /!\
+   functions will raise [Invalid_argument] if called in a native toplevel *)
+
 open Format
 
 type codeptr

@@ -39,6 +39,6 @@ int main(int argc, char **argv)
 #endif
 
   caml_main(argv);
-  caml_sys_exit(Val_int(0));
+  caml_do_exit(0);
   return 0; /* not reached */
 }

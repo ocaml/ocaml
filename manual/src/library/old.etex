@@ -1,0 +1,80 @@
+\chapter{Recently removed or moved libraries (Graphics, Bigarray, Num, LablTk)}
+%HEVEA\cutname{old.html}
+
+This chapter describes three libraries which were formerly part of the OCaml
+distribution (Graphics, Num, and LablTk), and a library which has now become
+part of OCaml's standard library, and is documented there (Bigarray).
+
+
+\section{s:graphics-removed}{The Graphics Library}
+
+Since OCaml 4.09, the "graphics" library is distributed as an external
+package. Its new home is:
+
+\url{https://github.com/ocaml/graphics}
+
+If you are using the opam package manager, you should install the
+corresponding "graphics" package:
+
+\begin{alltt}
+        opam install graphics
+\end{alltt}
+
+Before OCaml 4.09, this package simply ensures that the "graphics"
+library was installed by the compiler, and starting from OCaml 4.09
+this package effectively provides the "graphics" library.
+
+\section{s:bigarray-moved}{The Bigarray Library}
+
+As of OCaml 4.07, the "bigarray" library has been integrated into OCaml's
+standard library.
+
+The "bigarray" functionality may now be found in the standard library
+\ifouthtml
+  \ahref{libref/Bigarray.html}{\texttt{Bigarray} module},
+\else
+  \texttt{Bigarray} module,
+\fi
+except for the "map_file" function which is now
+part of the \hyperref[c:unix]{Unix library}. The documentation has
+been integrated into the documentation for the standard library.
+
+The legacy "bigarray" library bundled with the compiler is a
+compatibility library with exactly the same interface as before,
+i.e. with "map_file" included.
+
+We strongly recommend that you port your code to use the standard
+library version instead, as the changes required are minimal.
+
+If you choose to use the compatibility library, you must link your
+programs as follows:
+\begin{alltt}
+        ocamlc \var{other options} bigarray.cma \var{other files}
+        ocamlopt \var{other options} bigarray.cmxa \var{other files}
+\end{alltt}
+For interactive use of the "bigarray" compatibility library, do:
+\begin{alltt}
+        ocamlmktop -o mytop bigarray.cma
+        ./mytop
+\end{alltt}
+or (if dynamic linking of C libraries is supported on your platform),
+start "ocaml" and type "#load \"bigarray.cma\";;".
+
+\section{s:graphics-removed}{The Num Library}
+
+The "num" library implements integer arithmetic and rational
+arithmetic in arbitrary precision. It was split off the core
+OCaml distribution starting with the 4.06.0 release, and can now be found
+at \url{https://github.com/ocaml/num}.
+
+New applications that need arbitrary-precision arithmetic should use the
+"Zarith" library (\url{https://github.com/ocaml/Zarith}) instead of the "Num"
+library, and older applications that already use "Num" are encouraged to
+switch to "Zarith". "Zarith" delivers much better performance than "Num"
+and has a nicer API.
+
+\section{s:labltk-removed}{The Labltk Library and OCamlBrowser}
+
+Since OCaml version 4.02, the OCamlBrowser tool and the Labltk library
+are distributed separately from the OCaml compiler. The project is now
+hosted at \url{https://github.com/garrigue/labltk}.

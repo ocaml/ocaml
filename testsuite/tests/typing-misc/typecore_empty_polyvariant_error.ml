@@ -1,5 +1,5 @@
 (* TEST
-  files="empty_ppx.ml"
+  readonly_files = "empty_ppx.ml"
   * setup-ocamlc.byte-build-env
   ** ocamlc.byte with ocamlcommon
   all_modules="empty_ppx.ml"

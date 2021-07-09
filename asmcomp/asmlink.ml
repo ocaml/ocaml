@@ -124,19 +124,6 @@ let runtime_lib () =
   with Not_found ->
     raise(Error(File_not_found libname))
 
-let object_file_name name =
-  let file_name =
-    try
-      Load_path.find name
-    with Not_found ->
-      fatal_errorf "Asmlink.object_file_name: %s not found" name in
-  if Filename.check_suffix file_name ".cmx" then
-    Filename.chop_suffix file_name ".cmx" ^ ext_obj
-  else if Filename.check_suffix file_name ".cmxa" then
-    Filename.chop_suffix file_name ".cmxa" ^ ext_lib
-  else
-    fatal_error "Asmlink.object_file_name: bad ext"
-
 (* First pass: determine which units are needed *)
 
 let missing_globals = (Hashtbl.create 17 : (string, string list ref) Hashtbl.t)
@@ -164,6 +151,17 @@ type file =
   | Unit of string * unit_infos * Digest.t
   | Library of string * library_infos
 
+let object_file_name_of_file = function
+  | Unit (fname, _, _) -> Some (Filename.chop_suffix fname ".cmx" ^ ext_obj)
+  | Library (fname, infos) ->
+      let obj_file = Filename.chop_suffix fname ".cmxa" ^ ext_lib in
+      (* MSVC doesn't support empty .lib files, and macOS struggles to make
+         them (#6550), so there shouldn't be one if the .cmxa contains no
+         units. The file_exists check is added to be ultra-defensive for the
+         case where a user has manually added things to the .a/.lib file *)
+      if infos.lib_units = [] && not (Sys.file_exists obj_file) then None else
+      Some obj_file
+
 let read_file obj_name =
   let file_name =
     try
@@ -186,42 +184,30 @@ let read_file obj_name =
   end
   else raise(Error(Not_an_object_file file_name))
 
-let scan_file obj_name (tolink, objfiles) = match read_file obj_name with
+let scan_file file tolink = match file with
   | Unit (file_name,info,crc) ->
       (* This is a .cmx file. It must be linked in any case. *)
       remove_required info.ui_name;
       List.iter (add_required file_name) info.ui_imports_cmx;
-      ((info, file_name, crc) :: tolink, obj_name :: objfiles)
+      (info, file_name, crc) :: tolink
   | Library (file_name,infos) ->
       (* This is an archive file. Each unit contained in it will be linked
          in only if needed. *)
       add_ccobjs (Filename.dirname file_name) infos;
-      let tolink =
-        List.fold_right
-          (fun (info, crc) reqd ->
-             if info.ui_force_link
-               || !Clflags.link_everything
-               || is_required info.ui_name
-             then begin
-               remove_required info.ui_name;
-               List.iter (add_required (Printf.sprintf "%s(%s)"
-                                          file_name info.ui_name))
-                 info.ui_imports_cmx;
-               (info, file_name, crc) :: reqd
-             end else
-               reqd)
-          infos.lib_units tolink
-      and objfiles =
-        if infos.lib_units = []
-        && not (Sys.file_exists (object_file_name obj_name)) then
-          (* MSVC doesn't support empty .lib files, and macOS struggles to make
-             them (#6550), so there shouldn't be one if the .cmxa contains no
-             units. The file_exists check is added to be ultra-defensive for the
-             case where a user has manually added things to the .a/.lib file *)
-          objfiles
-        else
-          obj_name :: objfiles
-      in (tolink, objfiles)
+      List.fold_right
+        (fun (info, crc) reqd ->
+           if info.ui_force_link
+           || !Clflags.link_everything
+           || is_required info.ui_name
+           then begin
+             remove_required info.ui_name;
+             List.iter (add_required (Printf.sprintf "%s(%s)"
+                                        file_name info.ui_name))
+               info.ui_imports_cmx;
+             (info, file_name, crc) :: reqd
+           end else
+           reqd)
+        infos.lib_units tolink
 
 (* Second pass: generate the startup file and link it with everything else *)
 
@@ -295,17 +281,16 @@ let call_linker_shared file_list output_name =
 
 let link_shared ~ppf_dump objfiles output_name =
   Profile.record_call output_name (fun () ->
-    let units_tolink, objfiles =
-      List.fold_right scan_file objfiles ([], [])
-    in
+    let obj_infos = List.map read_file objfiles in
+    let units_tolink = List.fold_right scan_file obj_infos [] in
     List.iter
       (fun (info, file_name, crc) -> check_consistency file_name info crc)
       units_tolink;
     Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs;
     Clflags.all_ccopts := !lib_ccopts @ !Clflags.all_ccopts;
-    let objfiles = List.rev_map object_file_name objfiles @
+    let objfiles =
+      List.rev (List.filter_map object_file_name_of_file obj_infos) @
       (List.rev !Clflags.ccobjs) in
-
     let startup =
       if !Clflags.keep_startup_file || !Emitaux.binary_backend_available
       then output_name ^ ".startup" ^ ext_asm
@@ -355,9 +340,8 @@ let link ~ppf_dump objfiles output_name =
       if !Clflags.nopervasives then objfiles
       else if !Clflags.output_c_object then stdlib :: objfiles
       else stdlib :: (objfiles @ [stdexit]) in
-    let units_tolink, objfiles =
-      List.fold_right scan_file objfiles ([], [])
-    in
+    let obj_infos = List.map read_file objfiles in
+    let units_tolink = List.fold_right scan_file obj_infos [] in
     Array.iter remove_required Runtimedef.builtin_exceptions;
     begin match extract_missing_globals() with
       [] -> ()
@@ -381,7 +365,7 @@ let link ~ppf_dump objfiles output_name =
       (fun () -> make_startup_file ~ppf_dump units_tolink ~crc_interfaces);
     Misc.try_finally
       (fun () ->
-         call_linker (List.map object_file_name objfiles)
+         call_linker (List.filter_map object_file_name_of_file obj_infos)
            startup_obj output_name)
       ~always:(fun () -> remove_file startup_obj)
   )

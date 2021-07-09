@@ -2,10 +2,18 @@
 
 (* modified glibc's fma() tests *)
 
+let string_of_fpclass = function
+| Float.FP_normal -> "normal"
+| FP_subnormal -> "subnormal"
+| FP_zero -> "zero"
+| FP_infinite -> "infinite"
+| FP_nan -> "nan"
+
 let error l x y z r c =
   Printf.fprintf stdout
-                 "%s FAIL!\tfma (%h, %h, %h) returned %h instead of %h.\n"
-                 l x y z c (List.hd r)
+                 "%s FAIL!\tfma (%h, %h, %h) returned %h (%s) instead of %h.\n"
+                 l x y z c (string_of_fpclass (Float.classify_float c))
+                 (List.hd r)
 
 let success l =
   Printf.fprintf stdout "%s OK!\n" l

@@ -1,7 +1,7 @@
 (* TEST
 
 include dynlink
-files = "lib.ml lib2.ml test.c"
+readonly_files = "lib.ml lib2.ml test.c"
 ld_library_path += "${test_build_directory}"
 
 * shared-libraries

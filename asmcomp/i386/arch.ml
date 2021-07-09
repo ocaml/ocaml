@@ -162,3 +162,15 @@ let stack_alignment =
   | "win32" -> 4     (* MSVC *)
   | _ -> 16
   (* PR#6038: GCC and Clang seem to require 16-byte alignment nowadays *)
+
+(* Specific operations that are pure *)
+
+let operation_is_pure = function
+  | Ilea _ -> true
+  | _ -> false
+(* x87 floating-point operations are not pure because they push and pop
+   on the FP stack as a side effect *)
+
+(* Specific operations that can raise *)
+
+let operation_can_raise _ = false
