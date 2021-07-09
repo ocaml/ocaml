@@ -60,6 +60,7 @@ type operation =
   | Ifloatofint | Iintoffloat
   | Iopaque
   | Ispecific of Arch.specific_operation
+  | Ipoll of { return_label: Cmm.label option }
 
 type instruction =
   { desc: instruction_desc;
@@ -145,7 +146,7 @@ let rec instr_iter f i =
 
 let operation_is_pure = function
   | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
-  | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
+  | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _ | Ipoll _
   | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) | Iopaque -> false
   | Ispecific sop -> Arch.operation_is_pure sop
   | _ -> true
@@ -154,6 +155,6 @@ let operation_can_raise op =
   match op with
   | Icall_ind | Icall_imm _ | Iextcall _
   | Iintop (Icheckbound) | Iintop_imm (Icheckbound, _)
-  | Ialloc _ -> true
+  | Ialloc _ | Ipoll _ -> true
   | Ispecific sop -> Arch.operation_can_raise sop
   | _ -> false

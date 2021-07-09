@@ -212,4 +212,5 @@ method! insert_move_extcall_arg env ty_arg src dst =
   else self#insert_moves env src dst
 end
 
-let fundecl f = (new selector)#emit_fundecl f
+let fundecl ~future_funcnames f = (new selector)#emit_fundecl
+                                            ~future_funcnames f

@@ -415,9 +415,9 @@ method mark_instr = function
       self#mark_call
   | Iop (Itailcall_ind | Itailcall_imm _) ->
       self#mark_tailcall
-  | Iop (Ialloc _) ->
-      self#mark_call (* caml_alloc*, caml_garbage_collection *)
-  | Iop (Iintop(Icheckbound) | Iintop_imm(Icheckbound, _)) ->
+  | Iop (Ialloc _) | Iop (Ipoll _) ->
+      self#mark_call (* caml_alloc*, caml_garbage_collection (incl. polls) *)
+  | Iop (Iintop (Icheckbound) | Iintop_imm(Icheckbound, _)) ->
       self#mark_c_tailcall (* caml_ml_array_bound_error *)
   | Iraise raise_kind ->
     begin match raise_kind with
@@ -556,12 +556,15 @@ method insert_debug _env desc dbg arg res =
 method insert _env desc arg res =
   instr_seq <- instr_cons desc arg res instr_seq
 
-method extract =
+method extract_onto o =
   let rec extract res i =
     if i == dummy_instr
-    then res
-    else extract {i with next = res} i.next in
-  extract (end_instr ()) instr_seq
+      then res
+      else extract {i with next = res} i.next in
+    extract o instr_seq
+
+method extract =
+  self#extract_onto (end_instr ())
 
 (* Insert a sequence of moves from one pseudoreg set to another. *)
 
@@ -1158,7 +1161,7 @@ method private emit_tail_sequence env exp =
 
 (* Sequentialization of a function definition *)
 
-method emit_fundecl f =
+method emit_fundecl ~future_funcnames f =
   current_function_name := f.Cmm.fun_name;
   let rargs =
     List.map
@@ -1170,13 +1173,23 @@ method emit_fundecl f =
     List.fold_right2
       (fun (id, _ty) r env -> env_add id r env)
       f.Cmm.fun_args rargs env_empty in
-  self#insert_moves env loc_arg rarg;
   self#emit_tail env f.Cmm.fun_body;
   let body = self#extract in
-  instr_iter (fun instr -> self#mark_instr instr.Mach.desc) body;
+  instr_seq <- dummy_instr;
+  self#insert_moves env loc_arg rarg;
+  let polled_body =
+    if Polling.requires_prologue_poll ~future_funcnames
+         ~fun_name:f.Cmm.fun_name body
+      then
+      instr_cons (Iop(Ipoll { return_label = None })) [||] [||] body
+    else
+      body
+    in
+  let body_with_prologue = self#extract_onto polled_body in
+  instr_iter (fun instr -> self#mark_instr instr.Mach.desc) body_with_prologue;
   { fun_name = f.Cmm.fun_name;
     fun_args = loc_arg;
-    fun_body = body;
+    fun_body = body_with_prologue;
     fun_codegen_options = f.Cmm.fun_codegen_options;
     fun_dbg  = f.Cmm.fun_dbg;
     fun_num_stack_slots = Array.make Proc.num_register_classes 0;

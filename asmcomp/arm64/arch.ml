@@ -42,6 +42,7 @@ type cmm_label = int
   (* Do not introduce a dependency to Cmm *)
 
 type specific_operation =
+  | Ifar_poll of { return_label: cmm_label option }
   | Ifar_alloc of { bytes : int; dbginfo : Debuginfo.alloc_dbginfo }
   | Ifar_intop_checkbound
   | Ifar_intop_imm_checkbound of { bound : int; }
@@ -105,6 +106,8 @@ let print_addressing printreg addr ppf arg =
 
 let print_specific_operation printreg op ppf arg =
   match op with
+  | Ifar_poll _ ->
+    fprintf ppf "(far) poll"
   | Ifar_alloc { bytes; } ->
     fprintf ppf "(far) alloc %i" bytes
   | Ifar_intop_checkbound ->
