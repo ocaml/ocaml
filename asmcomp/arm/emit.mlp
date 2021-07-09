@@ -622,6 +622,11 @@ let emit_instr env i =
           `{emit_label lbl_frame}:	add	{emit_reg i.res.(0)}, alloc_ptr, #4\n`;
           1 + ninstr
         end
+    | Lop(Ipoll { return_label }) ->
+        begin match return_label with
+          None -> 0
+        | Some lbl -> `     b    {emit_label lbl}\n`; 1
+        end
     | Lop(Iintop(Icomp cmp)) ->
         `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
         1 + emit_set_condition cmp i.res.(0)

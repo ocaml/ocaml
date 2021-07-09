@@ -248,7 +248,7 @@ let destroyed_at_alloc =
 let destroyed_at_oper = function
   | Iop(Icall_ind | Icall_imm _ | Iextcall{alloc = true; _}) -> all_phys_regs
   | Iop(Iextcall{alloc = false; _}) -> destroyed_at_c_call
-  | Iop(Ialloc _) -> destroyed_at_alloc
+  | Iop(Ialloc _) | Iop(Ipoll _) -> destroyed_at_alloc
   | Iop(Istore(Single, _, _)) -> [| phys_reg 100 |]
   | Iswitch _ -> [| phys_reg 22 |]  (* t0 *)
   | _ -> [||]

@@ -61,6 +61,7 @@ type operation =
   | Ifloatofint | Iintoffloat
   | Iopaque
   | Ispecific of Arch.specific_operation
+  | Ipoll of { return_label: Cmm.label option }
 
 type instruction =
   { desc: instruction_desc;
