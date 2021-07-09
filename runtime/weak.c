@@ -578,8 +578,12 @@ CAMLexport void caml_ephemeron_blit_key(value ars, mlsize_t offset_s,
        && caml_ephe_list_pure
        && Field(ard, CAML_EPHE_DATA_OFFSET) != caml_ephe_none
        && !Is_white_val(ard)
+       && !Is_White_During_Mark(Field(ard, CAML_EPHE_DATA_OFFSET))
        ){
-    /* If the destination is in set (2) it is because of a white key */
+    /* We check here if darkening of the data of the destination is needed
+       because the destination could be in (2). Indeed a white key could disappear from
+       the destination after blitting and being in (2) requires if the ephemeron is
+       alive without white key to have a black or none data. */
 
     dest_has_white_value = 0;
 
