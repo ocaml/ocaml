@@ -58,6 +58,8 @@ let ocamldoc = %%WITH_OCAMLDOC%%
 
 let ocamldebug = %%WITH_OCAMLDEBUG%%
 
+let native_compiler = %%NATIVE_COMPILER%%
+
 let native_dynlink = %%NATDYNLINK%%
 
 let shared_library_cflags = "%%SHAREDLIB_CFLAGS%%"

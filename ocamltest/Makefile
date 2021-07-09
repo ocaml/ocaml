@@ -274,6 +274,7 @@ ocamltest_config.ml: ocamltest_config.ml.in Makefile ../Makefile.config
 	    $(call SUBST,WITH_OCAMLDEBUG) \
 	    $(call SUBST,O) \
 	    $(call SUBST,S) \
+	    $(call SUBST,NATIVE_COMPILER) \
 	    $(call SUBST,NATDYNLINK) \
 	    $(call SUBST_STRING,SHAREDLIB_CFLAGS) \
 	    $(call SUBST,SO) \

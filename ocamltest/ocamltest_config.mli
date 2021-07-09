@@ -16,7 +16,7 @@
 (* Interface for ocamltest's configuration module *)
 
 val arch : string
-(** Architecture for the native compiler, "none" if it is disabled *)
+(** Architecture for the native compiler *)
 
 val afl_instrument : bool
 (** Whether AFL support has been enabled in the compiler *)
@@ -81,6 +81,9 @@ val ocamldoc : bool
 
 val ocamldebug : bool
 (** Whether ocamldebug has been enabled at configure time *)
+
+val native_compiler : bool
+(** Whether the native compiler has been enabled at configure time *)
 
 val native_dynlink : bool
 (** Whether support for native dynlink is available or not *)

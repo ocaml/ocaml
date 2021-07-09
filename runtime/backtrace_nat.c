@@ -280,13 +280,12 @@ void caml_debuginfo_location(debuginfo dbg, /*out*/ struct caml_loc_info * li)
   li->loc_endchr = ((info2 & 0xF) << 6) | (info1 >> 26);
 }
 
-CAMLprim value caml_add_debug_info(backtrace_slot start, value size,
-                                   value events)
+value caml_add_debug_info(backtrace_slot start, value size, value events)
 {
   return Val_unit;
 }
 
-CAMLprim value caml_remove_debug_info(backtrace_slot start)
+value caml_remove_debug_info(backtrace_slot start)
 {
   return Val_unit;
 }

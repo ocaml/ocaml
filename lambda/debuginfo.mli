@@ -14,17 +14,10 @@
 (**************************************************************************)
 
 module Scoped_location : sig
-  type scope_item =
-    | Sc_anonymous_function
-    | Sc_value_definition of string
-    | Sc_module_definition of string
-    | Sc_class_definition of string
-    | Sc_method_definition of string
-
-  type scopes = scope_item list
-  val string_of_scope_item : scope_item -> string
+  type scopes
   val string_of_scopes : scopes -> string
 
+  val empty_scopes : scopes
   val enter_anonymous_function : scopes:scopes -> scopes
   val enter_value_definition : scopes:scopes -> Ident.t -> scopes
   val enter_module_definition : scopes:scopes -> Ident.t -> scopes

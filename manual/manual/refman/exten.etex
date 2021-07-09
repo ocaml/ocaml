@@ -2390,7 +2390,25 @@ let syntax_compare vec mat t3 t4 =
    && t4.%{0;0;0;0} = t4.{0,0,0,0}
 \end{caml_example*}
 
-
+Beware that the differentiation between the multi-index and single index
+operators is purely syntactic: multi-index operators are restricted to
+index expressions that contain one or more semicolons ";". For instance,
+\begin{caml_example*}{verbatim}
+  let pair vec mat = vec.%{0}, mat.%{0;0}
+\end{caml_example*}
+is equivalent to
+\begin{caml_example*}{verbatim}
+  let pair vec mat = (.%{ }) vec 0, (.%{;..}) mat [|0;0|]
+\end{caml_example*}
+Notice that in the "vec" case, we are calling the single index operator, "(.%{})", and
+not the multi-index variant, "(.{;..})".
+For this reason, it is expected that most users of multi-index operators will need
+to define conjointly a single index variant
+\begin{caml_example*}{verbatim}
+let (.%{;..}) = A.get
+let (.%{ }) a k = A.get a [|k|]
+\end{caml_example*}
+to handle both cases uniformly.
 
 \section{s:empty-variants}{Empty variant types}
 %HEVEA\cutname{emptyvariants.html}

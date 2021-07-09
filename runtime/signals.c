@@ -229,6 +229,11 @@ value caml_execute_signal_exn(int signal_number, int in_signal_handler)
 
 void caml_update_young_limit (void)
 {
+  CAMLassert(Caml_state->young_alloc_start <= caml_memprof_young_trigger &&
+             caml_memprof_young_trigger <= Caml_state->young_alloc_end);
+  CAMLassert(Caml_state->young_alloc_start <= Caml_state->young_trigger &&
+             Caml_state->young_trigger < Caml_state->young_alloc_end);
+
   /* The minor heap grows downwards. The first trigger is the largest one. */
   Caml_state->young_limit =
     caml_memprof_young_trigger < Caml_state->young_trigger ?
@@ -303,6 +308,11 @@ CAMLno_tsan /* The access to [caml_something_to_do] is not synchronized. */
 int caml_check_pending_actions()
 {
   return caml_something_to_do;
+}
+
+value caml_process_pending_actions_with_root_exn(value extra_root)
+{
+  return process_pending_actions_with_root_exn(extra_root);
 }
 
 value caml_process_pending_actions_with_root(value extra_root)

@@ -20,13 +20,12 @@ open Actions
 
 (* Extracting information from environment *)
 
-let native_support = Ocamltest_config.arch <> "none"
-
 let no_native_compilers _log env =
   (Result.skip_with_reason "native compilers disabled", env)
 
 let native_action a =
-  if native_support then a else (Actions.update a no_native_compilers)
+  if Ocamltest_config.native_compiler then a
+  else (Actions.update a no_native_compilers)
 
 let get_backend_value_from_env env bytecode_var native_var =
   Ocaml_backends.make_backend_function
@@ -1138,7 +1137,7 @@ let no_shared_libraries = Actions.make
 
 let native_compiler = Actions.make
   "native-compiler"
-  (Actions_helpers.pass_or_skip (Ocamltest_config.arch <> "none")
+  (Actions_helpers.pass_or_skip Ocamltest_config.native_compiler
     "native compiler available"
     "native compiler not available")
 

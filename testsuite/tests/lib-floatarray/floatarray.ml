@@ -211,6 +211,15 @@ module Test (A : S) : sig end = struct
   check_inval (A.blit a 0 a (-1)) 0;
   check_inval (A.blit a 0 a 100) 1;
   check_inval (A.blit a 0 a 101) 0;
+  let test_blit_overlap a ofs1 ofs2 len =
+    let a = A.of_list a in
+    let b = A.copy a in
+    A.blit a ofs1 a ofs2 len;
+    for i = 0 to len - 1 do
+      assert (A.get b (ofs1 + i) = A.get a (ofs2 + i))
+    done
+  in
+  test_blit_overlap [1.; 2.; 3.; 4.] 1 2 2;
 
   (* [to_list] [of_list] *)
   let a = A.init 1000 Float.of_int in
