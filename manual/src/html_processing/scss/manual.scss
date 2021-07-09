@@ -185,6 +185,9 @@ h3 code{
 h4{
     font-size:1.12em
 }
+h2, h3, h4, h5 {
+	font-weight: 500;
+}
 .ocaml,.pre,code,pre,tt{
     font-family:"Fira Mono",courier;
     font-weight:400
