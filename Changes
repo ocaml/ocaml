@@ -75,6 +75,11 @@ Working version
   This allows stacktraces to work in gdb through C and OCaml calls.
   (Edwin Török, review by Nicolás Ojeda Bär and Xavier Leroy)
 
+- #10461: `caml_send*` helper functions take derived pointers as arguments.
+  Those must be declared with type Addr instead of Val.
+  (Vincent Laviron, review by Xavier Leroy)
+
+
 OCaml 4.13.0
 -------------
 
