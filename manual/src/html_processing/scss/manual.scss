@@ -280,6 +280,14 @@ blockquote.quote{
     color:#000;
     &::before{@include diamond}
 }
+.center {
+	text-align: center;
+	margin-left: auto;
+	margin-right: auto;
+}
+.display {
+	margin: 0 auto;
+}
 span.c003{
     color:#564233;
     font-family:"Fira Mono",courier;
