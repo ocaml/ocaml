@@ -212,6 +212,7 @@ stdlib__digest.cmx : \
 stdlib__digest.cmi :
 stdlib__domain.cmo : \
     stdlib__sys.cmi \
+    stdlib.cmi \
     stdlib__obj.cmi \
     stdlib__mutex.cmi \
     stdlib__atomic.cmi \
@@ -219,6 +220,7 @@ stdlib__domain.cmo : \
     stdlib__domain.cmi
 stdlib__domain.cmx : \
     stdlib__sys.cmx \
+    stdlib.cmx \
     stdlib__obj.cmx \
     stdlib__mutex.cmx \
     stdlib__atomic.cmx \
@@ -313,6 +315,7 @@ stdlib__format.cmx : \
 stdlib__format.cmi : \
     stdlib.cmi \
     stdlib__seq.cmi \
+    stdlib__domain.cmi \
     stdlib__buffer.cmi
 stdlib__fun.cmo : \
     stdlib__printexc.cmi \
