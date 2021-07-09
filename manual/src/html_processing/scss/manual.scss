@@ -293,7 +293,13 @@ div.caml-example.toplevel div.caml-input::before{
 span.number{
     padding-right: 1ex;
 }
-span.c004, span.c002{
+span.c004, span.c005 {
+	font-family: "Fira Mono", courier, monospace;
+}
+span.c003, span.c005 {
+	color: rgba(91, 33, 6, 0.87);
+}
+span.c002{
     color:#888
 }
 span.c006{
