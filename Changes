@@ -7,8 +7,9 @@ OCaml 4.13.0
   Add poll points to native generated code. These are effectively
   zero-sized allocations and fix some signal and remembered set
   issues. Also multicore prerequisite.
-  (Sadiq Jaffer, Damien Doligez, Mark Shinwell, Anmol Sahoo, Stephen Dolan,
-  Xavier Leroy reviewed by ??)
+  (Sadiq Jaffer, Stephen Dolan, Damien Doligez, Xavier Leroy,
+   Anmol Sahoo, Mark Shinwell, review by Damien Doligez, Xavier Leroy,
+   and Mark Shinwell)
 
 - #9331: Improve error messages for functor application and functor types.
   (Florian Angeletti and Gabriel Radanne, review by Leo White)
