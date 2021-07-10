@@ -1,6 +1,6 @@
 (* TEST
 
-unset FOO
+unset DOES_NOT_EXIST
 
 * hassysthreads
 include systhreads
@@ -17,5 +17,5 @@ let crashme v =
   | s -> print_string "Surprising but OK\n"
 
 let _ =
-  let th = Thread.create crashme "FOO" in
+  let th = Thread.create crashme "DOES_NOT_EXIST" in
   Thread.join th
