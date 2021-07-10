@@ -34,7 +34,7 @@ let default_ui_export_info =
 let read_info name =
   let filename =
     try
-      Load_path.find name
+      Load_path.Cache.find name
     with Not_found ->
       raise(Error(File_not_found name)) in
   let (info, crc) = Compilenv.read_unit_info filename in

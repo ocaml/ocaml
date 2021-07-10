@@ -270,7 +270,7 @@ let load_compunit ic filename ppf compunit =
 
 let rec load_file recursive ppf name =
   let filename =
-    try Some (Load_path.find name) with Not_found -> None
+    try Some (Load_path.Cache.find name) with Not_found -> None
   in
   match filename with
   | None -> fprintf ppf "Cannot find file %s.@." name; false
@@ -293,7 +293,7 @@ and really_load_file recursive ppf name filename ic =
             | (Reloc_getglobal id, _)
               when not (Symtable.is_global_defined id) ->
                 let file = Ident.name id ^ ".cmo" in
-                begin match Load_path.find_uncap file with
+                begin match Load_path.Cache.find_uncap file with
                 | exception Not_found -> ()
                 | file ->
                     if not (load_file recursive ppf file) then raise Load_failed

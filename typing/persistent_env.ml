@@ -38,7 +38,7 @@ module Persistent_signature = struct
       cmi : Cmi_format.cmi_infos }
 
   let load = ref (fun ~unit_name ->
-      match Load_path.find_uncap (unit_name ^ ".cmi") with
+      match Load_path.Cache.find_uncap (unit_name ^ ".cmi") with
       | filename -> Some { filename; cmi = read_cmi filename }
       | exception Not_found -> None)
 end

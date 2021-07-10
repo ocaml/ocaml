@@ -81,7 +81,7 @@ let use_input ppf ~wrap_in_module input =
     let lexbuf = Lexing.from_string value in
     use_lexbuf ppf ~wrap_in_module lexbuf "" "(command-line input)"
   | File name ->
-    match Load_path.find name with
+    match Load_path.Cache.find name with
     | filename ->
       let ic = open_in_bin filename in
       Misc.try_finally ~always:(fun () -> close_in ic)

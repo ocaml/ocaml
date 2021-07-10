@@ -21,8 +21,8 @@ type source_file =
   | Intf_file of string
   | Text_file of string
 
-(** The include_dirs in the OCaml compiler. *)
-val include_dirs : string list ref
+(** The load path in the OCaml compiler. *)
+val load_path : Load_path.t ref
 
 (** The merge options to be used. *)
 val merge_options : Odoc_types.merge_option list ref

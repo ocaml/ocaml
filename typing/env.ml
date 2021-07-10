@@ -2341,8 +2341,8 @@ let unit_name_of_filename fn =
     end
   | _ -> None
 
-let persistent_structures_of_dir dir =
-  Load_path.Dir.files dir
+let persistent_structures_of_path path =
+  Load_path.Cache.Path.files path
   |> List.to_seq
   |> Seq.filter_map unit_name_of_filename
   |> String.Set.of_seq

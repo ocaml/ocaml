@@ -104,14 +104,14 @@ module Module = Odoc_module
 
 let analyse_files
     ?(merge_options=([] : Odoc_types.merge_option list))
-    ?(include_dirs=([] : string list))
+    ?(load_path=(Load_path.empty : Load_path.t))
     ?(labels=false)
     ?(sort_modules=false)
     ?(no_stop=false)
     ?(init=[])
     files =
   Odoc_global.merge_options := merge_options;
-  Odoc_global.include_dirs := include_dirs;
+  Odoc_global.load_path := load_path;
   Odoc_global.classic := not labels;
   Odoc_global.sort_modules := sort_modules;
   Odoc_global.no_stop := no_stop;

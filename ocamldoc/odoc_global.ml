@@ -23,7 +23,7 @@ type source_file =
   | Intf_file of string
   | Text_file of string
 
-let include_dirs = Clflags.include_dirs
+let load_path = Clflags.load_path
 
 let errors = ref 0
 
