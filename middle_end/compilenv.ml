@@ -360,6 +360,9 @@ let new_const_symbol () =
   incr const_label;
   make_symbol (Some (Int.to_string !const_label))
 
+let method_cache_symbol () =
+  make_symbol (Some "method_cache")
+
 let snapshot () = !structured_constants
 let backtrack s = structured_constants := s
 

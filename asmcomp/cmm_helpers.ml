@@ -771,6 +771,11 @@ let bigstring_length ba dbg =
 
 (* Message sending *)
 
+let generate_cache_entry dbg =
+  let offset = Cmmgen_state.next_method () in
+  Cop (Caddi, [Cconst_symbol (Compilenv.method_cache_symbol (), dbg);
+               Cconst_int (offset, dbg)], dbg)
+
 let lookup_tag obj tag dbg =
   bind "tag" tag (fun tag ->
     Cop(Cextcall("caml_get_public_method", typ_val, [], false),
@@ -782,9 +787,9 @@ let lookup_label obj lab dbg =
     let table = Cop (Cload (Word_val, Mutable), [obj], dbg) in
     addr_array_ref table lab dbg)
 
-let call_cached_method obj tag cache pos args dbg =
+let call_cached_method obj tag args dbg =
   let arity = List.length args in
-  let cache = array_indexing log2_size_addr cache pos dbg in
+  let cache = generate_cache_entry dbg in
   Compilenv.need_send_fun arity;
   Cop(Capply typ_val,
       Cconst_symbol("caml_send" ^ Int.to_string arity, dbg) ::
@@ -1707,8 +1712,9 @@ let send kind met obj args dbg =
           bind "met" (lookup_label obj met dbg)
             (call_met obj args)
       | Public ->
-          bind "met" (lookup_tag obj met dbg)
-            (call_met obj args))
+          call_cached_method obj met args dbg)
+          (* bind "met" (lookup_tag obj met dbg)
+           *   (call_met obj args)) *)
 
 (*
 CAMLprim value caml_cache_public_method (value meths, value tag, value *cache)
@@ -1863,7 +1869,7 @@ let send_function arity =
   let cache = cache in
   let fun_name = "caml_send" ^ Int.to_string arity in
   let fun_args =
-    [obj, typ_val; tag, typ_int; cache, typ_val]
+    [obj, typ_val; tag, typ_int; cache, typ_int]
     @ List.map (fun id -> (id, typ_val)) (List.tl args) in
   let fun_dbg = placeholder_fun_dbg ~human_name:fun_name in
   Cfunction
