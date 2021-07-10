@@ -48,7 +48,7 @@ jobs:
         fetch-depth: 50
     - name: Packages
       run: |
-        sudo apt-get update -y && sudo apt-get install -y texlive-latex-extra texlive-fonts-recommended hevea sass
+        sudo apt-get update -y && sudo apt-get install -y texlive-latex-extra texlive-fonts-recommended hevea sass language-pack-nl
   # Ensure that make distclean can be run from an empty tree
     - name: distclean
       run: |
