@@ -92,19 +92,19 @@ struct caml_extern_state {
 
   int extern_flags;        /* logical or of some of the flags */
 
-	uintnat obj_counter;  	/* Number of objects emitted so far */
-	uintnat size_32;  		 	/* Size in words of 32-bit block for struct. */
-	uintnat size_64;  		 	/* Size in words of 64-bit block for struct. */
+  uintnat obj_counter;    /* Number of objects emitted so far */
+  uintnat size_32;        /* Size in words of 32-bit block for struct. */
+  uintnat size_64;        /* Size in words of 64-bit block for struct. */
 
-	/* Stack for pending value to marshal */
+  /* Stack for pending value to marshal */
   struct extern_item extern_stack_init[EXTERN_STACK_INIT_SIZE];
-	struct extern_item * extern_stack;
-	struct extern_item * extern_stack_limit;
+  struct extern_item * extern_stack;
+  struct extern_item * extern_stack_limit;
 
   /* Hash table to record already marshalled objects */
-	uintnat pos_table_present_init[Bitvect_size(POS_TABLE_INIT_SIZE)];
-	struct object_position pos_table_entries_init[POS_TABLE_INIT_SIZE];
-	struct position_table pos_table;
+  uintnat pos_table_present_init[Bitvect_size(POS_TABLE_INIT_SIZE)];
+  struct object_position pos_table_entries_init[POS_TABLE_INIT_SIZE];
+  struct position_table pos_table;
 
   /* To buffer the output */
 
