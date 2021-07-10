@@ -1702,13 +1702,11 @@ let send kind met obj args dbg =
     generic_apply Asttypes.Mutable clos (obj :: args) dbg
   in
   bind "obj" obj (fun obj ->
-      match (kind : Lambda.meth_kind), args with
-        Self, _ ->
+      match (kind : Lambda.meth_kind) with
+        Self ->
           bind "met" (lookup_label obj met dbg)
             (call_met obj args)
-      | Cached, cache :: pos :: args ->
-          call_cached_method obj met cache pos args dbg
-      | _ ->
+      | Public ->
           bind "met" (lookup_tag obj met dbg)
             (call_met obj args))
 

@@ -220,7 +220,6 @@ let rec lam ppf (flam : t) =
       match kind with
       | Self -> "self"
       | Public -> "public"
-      | Cached -> "cached"
     in
     fprintf ppf "@[<2>(send%s@ %a@ %a%a)@]" kind
       Variable.print obj Variable.print meth

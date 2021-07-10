@@ -470,9 +470,8 @@ and transl_exp0 ~in_new_scope ~scopes e =
         match met with
           Tmeth_val id -> Lsend (Self, Lvar id, obj, [], loc)
         | Tmeth_name nm ->
-            let (tag, cache) = Translobj.meth obj nm in
-            let kind = if cache = [] then Public else Cached in
-            Lsend (kind, tag, obj, cache, loc)
+            let tag = Translobj.meth_tag nm in
+            Lsend (Public, tag, obj, [], loc)
       in
       event_after ~scopes e lam
   | Texp_new (cl, {Location.loc=loc}, _) ->

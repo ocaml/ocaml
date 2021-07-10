@@ -694,12 +694,8 @@ let lambda_of_prim prim_name prim loc args arg_exps =
       Lsend(Public, meth, obj, [], loc)
   | Send_self, [obj; meth] ->
       Lsend(Self, meth, obj, [], loc)
-  | Send_cache, [obj; meth; cache; pos] ->
-      (* Cached mode only works in the native backend *)
-      if !Clflags.native_code then
-        Lsend(Cached, meth, obj, [cache; pos], loc)
-      else
-        Lsend(Public, meth, obj, [], loc)
+  | Send_cache, [obj; meth; _cache; _pos] ->
+      Lsend(Public, meth, obj, [], loc)
   | Frame_pointers, [] ->
       let frame_pointers =
         if !Clflags.native_code && Config.with_frame_pointers then 1 else 0

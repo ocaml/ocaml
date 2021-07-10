@@ -1379,7 +1379,8 @@ let transl_store_gen ~scopes module_name ({ str_items = str }, restr) topl =
           (transl_exp ~scopes expr)
     | str -> transl_store_structure ~scopes module_id map prims aliases str
   in
-  transl_store_label_init module_id size f str
+  let expr, size = transl_label_init (fun () -> f str, size) in
+  size, expr
   (*size, transl_label_init (transl_store_structure module_id map prims str)*)
 
 let transl_store_phrases module_name str =

@@ -228,10 +228,7 @@ and lam ppf = function
   | Usend (k, met, obj, largs, _) ->
       let args ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
-      let kind =
-        if k = Lambda.Self then "self"
-        else if k = Lambda.Cached then "cache"
-        else "" in
+      let kind = if k = Lambda.Self then "self" else "" in
       fprintf ppf "@[<2>(send%s@ %a@ %a%a)@]" kind lam obj lam met args largs
   | Uunreachable ->
       fprintf ppf "unreachable"
