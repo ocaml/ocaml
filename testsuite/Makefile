@@ -17,9 +17,18 @@
 
 BASEDIR := $(shell pwd)
 
-FIND=find
 ROOTDIR = ..
 include $(ROOTDIR)/Makefile.common
+
+ifeq "$(UNIX_OR_WIN32)" "win32"
+  CYGPATH=cygpath -m
+  # Ensure that the test runners definitely use Cygwin's sort and not the
+  # Windows sort command
+  SORT=/usr/bin/sort
+else
+  CYGPATH=echo
+  SORT=sort
+endif
 
 BASEDIR_HOST := $(shell $(CYGPATH) "$(BASEDIR)")
 ROOTDIR_HOST := $(BASEDIR_HOST)/$(ROOTDIR)
@@ -323,7 +332,7 @@ tools:
 clean:
 	@$(MAKE) -C lib clean
 	@cd tools && $(MAKE) BASEDIR=$(BASEDIR) clean
-	$(FIND) . -name '*_ocamltest*' | xargs rm -rf
+	find . -name '*_ocamltest*' | xargs rm -rf
 	rm -f $(failstamp)
 
 .PHONY: report
