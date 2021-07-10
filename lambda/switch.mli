@@ -37,8 +37,6 @@ type ('a, 'ctx) t_store =
      act_store : 'ctx -> 'a -> int ;
      act_store_shared : 'ctx -> 'a -> int ; }
 
-exception Not_simple
-
 module type Stored = sig
   type t
   type key
