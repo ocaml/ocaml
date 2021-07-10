@@ -43,7 +43,9 @@ val add : Variables.t -> string -> t -> t
 val add_if_undefined : Variables.t -> string -> t -> t
 val add_bindings : (Variables.t * string) list -> t -> t
 
-val remove : Variables.t -> t -> t
+val unsetenv : Variables.t -> t -> t
+(** [unsetenv env name] causes [name] to be ignored from the underlying system
+    environment *)
 
 val append : Variables.t -> string -> t -> t
 

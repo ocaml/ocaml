@@ -48,7 +48,7 @@ let expand env = function
 let append_to_system_env environment env =
   (* Augment env with any bindings which are only in environment. This must be
      done here as the Windows C implementation doesn't process multiple values
-     coming in in settings.envp. *)
+     in settings.envp. *)
   let env =
     let update env binding =
       let name, value =
@@ -119,7 +119,9 @@ let append variable appened_value environment =
   let new_value = previous_value ^ appened_value in
   VariableMap.add variable (Some new_value) environment
 
-let remove variable environment =
+let remove = VariableMap.remove
+
+let unsetenv variable environment =
   VariableMap.add variable None environment
 
 let add_bindings bindings env =
@@ -131,7 +133,8 @@ let from_bindings bindings = add_bindings bindings empty
 let dump_assignment log = function
   | (variable, Some value) ->
     Printf.fprintf log "%s = %s\n%!" (Variables.name_of_variable variable) value
-  | (_, None) -> ()
+  | (variable, None) ->
+    Printf.fprintf log "unsetenv %s\n%!" (Variables.name_of_variable variable)
 
 let dump log environment =
   List.iter (dump_assignment log) (VariableMap.bindings environment)
@@ -195,7 +198,6 @@ let rec apply_modifier environment = function
     apply_modifiers environment (find_modifiers modifiers_name)
   | Add (variable, value) -> add variable value environment
   | Append (variable, value) -> append variable value environment
-    (* XXX Is this used any where - does it actually work? *)
-  | Remove variable -> VariableMap.remove variable environment
+  | Remove variable -> remove variable environment
 and apply_modifiers environment modifiers =
   List.fold_left apply_modifier environment modifiers

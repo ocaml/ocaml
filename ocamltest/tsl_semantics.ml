@@ -80,7 +80,7 @@ let interpret_environment_statement env statement = match statement.node with
         | None -> Variables.make (var.node,"User variable")
         | Some var -> var
       in
-      Environments.remove var env
+      Environments.unsetenv var env
 
 let interpret_environment_statements env l =
   List.fold_left interpret_environment_statement env l
