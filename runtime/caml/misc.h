@@ -269,6 +269,8 @@ extern double caml_log1p(double);
 
 #ifdef CAML_INTERNALS
 #define T(x) L ## x
+
+#define main_os wmain
 #endif
 
 #define access_os _waccess
@@ -307,6 +309,8 @@ extern double caml_log1p(double);
 
 #ifdef CAML_INTERNALS
 #define T(x) x
+
+#define main_os main
 #endif
 
 #define access_os access
