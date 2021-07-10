@@ -190,9 +190,9 @@ static LPVOID prepare_environment(WCHAR **localenv)
       if (!wcscmp(*q, p)) copy = 0;
       if (pos_eq2) *pos_eq2 = L'=';
     }
+    *pos_eq = L'=';
     if (copy) {
       /* This name is not marked for deletion/update in localenv, so copy */
-      *pos_eq = L'=';
       memcpy(r, p, l * sizeof(WCHAR));
       r += l;
     }
