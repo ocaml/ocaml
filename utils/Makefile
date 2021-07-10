@@ -34,8 +34,10 @@ SUBST_QUOTE2=\
   -e 's!%%$1%%!$(if $2,$(call SED_ESCAPE,"$(call OCAML_ESCAPE,$2)"))!'
 SUBST_QUOTE=$(call SUBST_QUOTE2,$1,$($1))
 
-FLEXLINK_LDFLAGS=$(if $(OC_LDFLAGS), -link "$(OC_LDFLAGS)")
-FLEXLINK_DLL_LDFLAGS=$(if $(OC_DLL_LDFLAGS), -link "$(OC_DLL_LDFLAGS)")
+prefix_and_quote = $(if $(1), $(2)$(if $(word 2,$(1)),"$(1)",$(1)))
+
+FLEXLINK_LDFLAGS = $(call prefix_and_quote,$(OC_LDFLAGS),-link $(EMPTY))
+FLEXLINK_DLL_LDFLAGS = $(call prefix_and_quote,$(OC_DLL_LDFLAGS),-link $(EMPTY))
 
 config.ml: config.mlp $(ROOTDIR)/Makefile.config Makefile
 	sed $(call SUBST,AFL_INSTRUMENT) \
@@ -57,6 +59,7 @@ config.ml: config.mlp $(ROOTDIR)/Makefile.config Makefile
 	    $(call SUBST,WITH_CMM_INVARIANTS) \
 	    $(call SUBST_STRING,FLEXLINK_FLAGS) \
 	    $(call SUBST_QUOTE,FLEXDLL_DIR) \
+	    $(call SUBST_STRING,FLEXDLL_CHAIN) \
 	    $(call SUBST,HOST) \
 	    $(call SUBST_STRING,BINDIR) \
 	    $(call SUBST_STRING,LIBDIR) \

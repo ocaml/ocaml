@@ -160,3 +160,9 @@ OCAMLYACCFLAGS ?=
 
 %.ml %.mli: %.mly
 	$(OCAMLYACC) $(OCAMLYACCFLAGS) $<
+
+# Used with the Microsoft toolchain to merge generated manifest files into
+# executables
+if_file_exists = ( test ! -f $(1) || $(2) && rm -f $(1) )
+MERGEMANIFESTEXE = $(call if_file_exists, $(1).manifest, \
+  mt -nologo -outputresource:$(1) -manifest $(1).manifest)

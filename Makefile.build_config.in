@@ -28,10 +28,6 @@ INSTALL_PROG ?= @INSTALL_PROGRAM@
 DEP_CC=@DEP_CC@ -MM
 COMPUTE_DEPS=@compute_deps@
 
-# This is munged into utils/config.ml, not overridable by other parts of
-# the build system.
-OC_DLL_LDFLAGS=@oc_dll_ldflags@
-
 # The rlwrap command (for the *runtop targets)
 RLWRAP=@rlwrap@
 

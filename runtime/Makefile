@@ -267,7 +267,7 @@ ocamlrun$(EXE): prims.$(O) libcamlrun.$(A)
 	$(MKEXE) -o $@ $^ $(LIBS)
 
 ocamlruns$(EXE): prims.$(O) libcamlrun_non_shared.$(A)
-	$(call MKEXE_USING_COMPILER,$@,$^ $(LIBS))
+	$(call MKEXE_VIA_CC,$@,$^ $(LIBS))
 
 libcamlrun.$(A): $(libcamlrun_OBJECTS)
 	$(call MKLIB,$@, $^)

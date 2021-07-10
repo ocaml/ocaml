@@ -59,18 +59,18 @@ ifeq "$(wildcard $(ROOTDIR_HOST)/flexlink.opt$(EXE))" ""
                     $(ROOTDIR_HOST)/boot/flexlink.byte$(EXE)"
   MKDLL=$(ROOTDIR_HOST)/boot/ocamlrun$(EXE) \
         $(ROOTDIR_HOST)/boot/flexlink.byte$(EXE) \
-        $(FLEXLINK_FLAGS) $(FLEXLINK_DLL_LDFLAGS)
+        -chain $(FLEXDLL_CHAIN) $(FLEXLINK_FLAGS) $(FLEXLINK_DLL_LDFLAGS)
   MKEXE=$(ROOTDIR_HOST)/boot/ocamlrun$(EXE) \
         $(ROOTDIR_HOST)/boot/flexlink.byte$(EXE) \
-        $(FLEXLINK_FLAGS) -exe $(FLEXLINK_EXE_LDFLAGS)
+        -exe -chain $(FLEXDLL_CHAIN) $(FLEXLINK_FLAGS) $(FLEXLINK_EXE_LDFLAGS)
 else
   FLEXLINK_ENV = \
     OCAML_FLEXLINK="$(ROOTDIR_HOST)/flexlink.opt$(EXE) \
       -I $(ROOTDIR_HOST)/stdlib/flexdll"
   MKDLL=$(ROOTDIR_HOST)/flexlink.opt$(EXE) -I $(ROOTDIR_HOST)/stdlib/flexdll \
-        $(FLEXLINK_FLAGS) $(FLEXLINK_DLL_LDFLAGS)
+        -chain $(FLEXDLL_CHAIN) $(FLEXLINK_FLAGS) $(FLEXLINK_DLL_LDFLAGS)
   MKEXE=$(ROOTDIR_HOST)/flexlink.opt$(EXE) -I $(ROOTDIR_HOST)/stdlib/flexdll \
-        $(FLEXLINK_FLAGS) -exe $(FLEXLINK_EXE_LDFLAGS)
+        -exe -chain $(FLEXDLL_CHAIN) $(FLEXLINK_FLAGS) $(FLEXLINK_EXE_LDFLAGS)
 endif # ifeq "$(wildcard $(ROOTDIR_HOST)/flexlink.opt$(EXE))" ""
 endif # ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
 

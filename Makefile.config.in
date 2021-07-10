@@ -75,6 +75,7 @@ AS_HAS_DEBUG_PREFIX_MAP=@as_has_debug_prefix_map@
 # To support dynamic loading of shared libraries (they need to look at
 # our own symbols):
 OC_LDFLAGS=@oc_ldflags@
+OC_DLL_LDFLAGS=@oc_dll_ldflags@
 
 LDFLAGS?=@LDFLAGS@
 
@@ -203,7 +204,6 @@ OCAMLOPT_CPPFLAGS=@ocamlc_cppflags@
 NATIVECCLIBS=@nativecclibs@
 SYSTHREAD_SUPPORT=@systhread_support@
 PACKLD=@PACKLD@
-FLEXDLL_CHAIN=@flexdll_chain@
 EXTRALIBS=@extralibs@
 CCOMPTYPE=@ccomptype@
 TOOLCHAIN=@toolchain@
@@ -213,11 +213,17 @@ CMXS=@cmxs@
 #   $(FLEXLINK_CMD) $(FLEXLINK_FLAGS) [-exe|-maindll]
 # or OCAML_FLEXLINK overriding will not work (see utils/config.mlp)
 
-MKEXE=@mkexe@
-MKDLL=@mksharedlib@
-MKMAINDLL=@mkmaindll@
+FLEXDLL_CHAIN=@flexdll_chain@
+FLEXLINK_FLAGS=@mkexe_extra_flags@
+FLEXLINK_CMD=flexlink
 
+MKEXE=@mkexe_cmd@@mkexe_cflags@@mkexe_extra_flags@ @mkexe_ldflags@
+MKDLL=@mksharedlib@ @mkdll_ldflags@
+MKMAINDLL=@mkmaindll@ @mkdll_ldflags@
 MKEXEDEBUGFLAG=@mkexedebugflag@
+MKEXE_VIA_CC=$(CC) $(OC_CFLAGS) $(CFLAGS) \
+  @mkexe_via_cc_ldflags@@mkexe_via_cc_extra_cmd@
+
 RUNTIMED=@debug_runtime@
 INSTRUMENTED_RUNTIME=@instrumented_runtime@
 INSTRUMENTED_RUNTIME_LIBS=@instrumented_runtime_libs@
@@ -245,19 +251,6 @@ AWK=@AWK@
 STDLIB_MANPAGES=@stdlib_manpages@
 NAKED_POINTERS=@naked_pointers@
 
-### Native command to build ocamlrun.exe
-
-ifeq "$(TOOLCHAIN)" "msvc"
-  MERGEMANIFESTEXE=test ! -f $(1).manifest \
-          || mt -nologo -outputresource:$(1) -manifest $(1).manifest \
-          && rm -f $(1).manifest
-  MKEXE_USING_COMPILER=$(CC) $(OC_CFLAGS) $(CFLAGS) $(OUTPUTEXE)$(1) $(2) \
-    /link /subsystem:console $(OC_LDFLAGS) $(LDFLAGS) && ($(MERGEMANIFESTEXE))
-else
-  MKEXE_USING_COMPILER=$(CC) $(OC_CFLAGS) $(CFLAGS) $(OC_LDFLAGS) $(LDFLAGS) \
-    $(OUTPUTEXE)$(1) $(2)
-endif # ifeq "$(TOOLCHAIN)" "msvc"
-
 # The following variables were defined only in the Windows-specific makefiles.
 # They were not defined by the configure script used on Unix systems,
 # so we also make sure to provide them only under Windows
@@ -276,10 +269,6 @@ else # ifeq "$(UNIX_OR_WIN32)" "win32"
   CYGPATH=echo
   SET_LD_PATH=CAML_LD_LIBRARY_PATH="$(LD_PATH)"
 endif # ifeq "$(UNIX_OR_WIN32)" "win32"
-
-FLEXLINK_FLAGS=@flexlink_flags@
-FLEXLINK_CMD=flexlink
-FLEXLINK=$(FLEXLINK_CMD) $(FLEXLINK_FLAGS)
 
 # Deprecated variables
 

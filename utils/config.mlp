@@ -60,21 +60,21 @@ let mksharedlibrpath = "%%MKSHAREDLIBRPATH%%"
 let ar = "%%ARCMD%%"
 let supports_shared_libraries = %%SUPPORTS_SHARED_LIBRARIES%%
 let mkdll, mkexe, mkmaindll =
-  (* @@DRA Cygwin - but only if shared libraries are enabled, which we
-     should be able to detect? *)
   if Sys.win32 || Sys.cygwin && supports_shared_libraries then
-    try
+    let flexlink =
       let flexlink =
-        let flexlink = Sys.getenv "OCAML_FLEXLINK" in
-        let f i =
-          let c = flexlink.[i] in
-          if c = '/' && Sys.win32 then '\\' else c in
-        (String.init (String.length flexlink) f) ^ " %%FLEXLINK_FLAGS%%" in
-      flexlink ^ "%%FLEXLINK_DLL_LDFLAGS%%",
-      flexlink ^ " -exe%%FLEXLINK_LDFLAGS%%",
-      flexlink ^ " -maindll%%FLEXLINK_DLL_LDFLAGS%%"
-    with Not_found ->
-      "%%MKDLL%%", "%%MKEXE%%", "%%MKMAINDLL%%"
+        Option.value ~default:"flexlink" (Sys.getenv_opt "OCAML_FLEXLINK")
+      in
+      let f i =
+        let c = flexlink.[i] in
+        if c = '/' && Sys.win32 then '\\' else c
+      in
+      String.init (String.length flexlink) f
+    in
+    let flags = " -chain %%FLEXDLL_CHAIN%% %%FLEXLINK_FLAGS%%" in
+    flexlink ^ flags ^ "%%FLEXLINK_DLL_LDFLAGS%%",
+    flexlink ^ " -exe" ^ flags ^ "%%FLEXLINK_LDFLAGS%%",
+    flexlink ^ " -maindll" ^ flags ^ "%%FLEXLINK_DLL_LDFLAGS%%"
   else
     "%%MKDLL%%", "%%MKEXE%%", "%%MKMAINDLL%%"
 
