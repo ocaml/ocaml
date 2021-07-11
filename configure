@@ -12657,6 +12657,38 @@ $as_echo "no" >&6; }
    posix_2008_supported=no
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+if test "$posix_2008_supported" = "no"; then :
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for POSIX 1003.1-2001 support" >&5
+$as_echo_n "checking for POSIX 1003.1-2001 support... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#define _POSIX_C_SOURCE 200112L
+#include <unistd.h>
+#if _POSIX_VERSION < 200112L
+#error POSIX 1003.1-2001 not supported
+#endif
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+   posix_2001_supported=yes
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+   posix_2001_supported=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
 
 otherlibraries="dynlink"
 case $host,$enable_unix_lib,$posix_2008_supported in #(

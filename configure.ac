@@ -526,6 +526,7 @@ AS_CASE([$host],
   [exeext=''])
 
 OCAML_POSIX_SUPPORT
+AS_IF([test "$posix_2008_supported" = "no"], [OCAML_POSIX_SUPPORT2])
 
 otherlibraries="dynlink"
 AS_CASE([$host,$enable_unix_lib,$posix_2008_supported],
