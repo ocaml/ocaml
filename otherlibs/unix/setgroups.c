@@ -21,9 +21,7 @@
 #ifdef HAS_SETGROUPS
 
 #include <sys/types.h>
-#ifdef HAS_UNISTD
 #include <unistd.h>
-#endif
 #include <limits.h>
 #include <grp.h>
 #include "unixsupport.h"

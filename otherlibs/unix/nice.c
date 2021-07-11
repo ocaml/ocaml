@@ -16,9 +16,7 @@
 #include <caml/mlvalues.h>
 #include "unixsupport.h"
 #include <errno.h>
-#ifdef HAS_UNISTD
 #include <unistd.h>
-#endif
 
 CAMLprim value caml_unix_nice(value incr)
 {

@@ -17,21 +17,9 @@
 #include <caml/alloc.h>
 #include "unixsupport.h"
 
-#ifdef HAS_UNISTD
-#include <unistd.h>
-#else
-#define SEEK_SET 0
-#define SEEK_CUR 1
-#define SEEK_END 2
-#endif
-
 static DWORD seek_command_table[] = {
   FILE_BEGIN, FILE_CURRENT, FILE_END
 };
-
-#ifndef INVALID_SET_FILE_POINTER
-#define INVALID_SET_FILE_POINTER (-1)
-#endif
 
 static __int64 caml_set_file_pointer(HANDLE h, __int64 dist, DWORD mode)
 {

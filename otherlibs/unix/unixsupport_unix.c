@@ -21,9 +21,7 @@
 #include "unixsupport.h"
 #include "cst2constr.h"
 #include <errno.h>
-#ifdef HAS_UNISTD
 #include <unistd.h>
-#endif
 #include <fcntl.h>
 
 #ifndef E2BIG
