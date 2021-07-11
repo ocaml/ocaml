@@ -22,15 +22,8 @@
 #ifdef HAS_SYMLINK
 
 #include <sys/param.h>
+#include <limits.h>
 #include "unixsupport.h"
-
-#ifndef PATH_MAX
-#ifdef MAXPATHLEN
-#define PATH_MAX MAXPATHLEN
-#else
-#define PATH_MAX 512
-#endif
-#endif
 
 CAMLprim value caml_unix_readlink(value path)
 {
