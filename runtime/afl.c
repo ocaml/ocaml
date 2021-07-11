@@ -16,8 +16,8 @@
 #include "caml/config.h"
 
 /* Values used by the instrumentation logic (see cmmgen.ml) */
-static unsigned char afl_area_initial[1 << 16];
-unsigned char* caml_afl_area_ptr = afl_area_initial;
+static int initial_afl_area_size = (1 << 16) * sizeof(unsigned char);
+unsigned char* caml_afl_area_ptr;
 uintnat caml_afl_prev_loc;
 
 #if !defined(HAS_SYS_SHM_H) || !defined(HAS_SHMAT)
@@ -87,6 +87,7 @@ CAMLexport value caml_setup_afl(value unit)
   shm_id_str = caml_secure_getenv("__AFL_SHM_ID");
   if (shm_id_str == NULL) {
     /* Not running under afl-fuzz, continue as normal */
+    caml_afl_area_ptr = malloc(initial_afl_area_size);
     return Val_unit;
   }
 
@@ -159,7 +160,7 @@ CAMLexport value caml_setup_afl(value unit)
 CAMLprim value caml_reset_afl_instrumentation(value full)
 {
   if (full != Val_int(0)) {
-    memset(caml_afl_area_ptr, 0, sizeof(afl_area_initial));
+    memset(caml_afl_area_ptr, 0, initial_afl_area_size);
   }
   caml_afl_prev_loc = 0;
   return Val_unit;
