@@ -23,7 +23,7 @@
 #include "unixsupport.h"
 #include "cst2constr.h"
 
-#if defined(HAS_SOCKETS) && defined(HAS_IPV6)
+#ifdef HAS_IPV6
 
 #include "socketaddr.h"
 #ifndef _WIN32

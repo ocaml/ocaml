@@ -19,78 +19,17 @@
 #include <caml/fail.h>
 #include "unixsupport.h"
 
-#ifdef HAS_SOCKETS
-
 #include <errno.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/tcp.h>
+#include <netinet/in.h>
 
 #include "socketaddr.h"
 
-#ifndef SO_DEBUG
-#define SO_DEBUG (-1)
-#endif
-#ifndef SO_BROADCAST
-#define SO_BROADCAST (-1)
-#endif
-#ifndef SO_REUSEADDR
-#define SO_REUSEADDR (-1)
-#endif
 #ifndef SO_REUSEPORT
 #define SO_REUSEPORT (-1)
-#endif
-#ifndef SO_KEEPALIVE
-#define SO_KEEPALIVE (-1)
-#endif
-#ifndef SO_DONTROUTE
-#define SO_DONTROUTE (-1)
-#endif
-#ifndef SO_OOBINLINE
-#define SO_OOBINLINE (-1)
-#endif
-#ifndef SO_ACCEPTCONN
-#define SO_ACCEPTCONN (-1)
-#endif
-#ifndef SO_SNDBUF
-#define SO_SNDBUF (-1)
-#endif
-#ifndef SO_RCVBUF
-#define SO_RCVBUF (-1)
-#endif
-#ifndef SO_ERROR
-#define SO_ERROR (-1)
-#endif
-#ifndef SO_TYPE
-#define SO_TYPE (-1)
-#endif
-#ifndef SO_RCVLOWAT
-#define SO_RCVLOWAT (-1)
-#endif
-#ifndef SO_SNDLOWAT
-#define SO_SNDLOWAT (-1)
-#endif
-#ifndef SO_LINGER
-#define SO_LINGER (-1)
-#endif
-#ifndef SO_RCVTIMEO
-#define SO_RCVTIMEO (-1)
-#endif
-#ifndef SO_SNDTIMEO
-#define SO_SNDTIMEO (-1)
-#endif
-#ifndef TCP_NODELAY
-#define TCP_NODELAY (-1)
-#endif
-#ifndef SO_ERROR
-#define SO_ERROR (-1)
-#endif
-#ifndef IPPROTO_IPV6
-#define IPPROTO_IPV6 (-1)
-#endif
-#ifndef IPV6_V6ONLY
-#define IPV6_V6ONLY (-1)
 #endif
 
 enum option_type {
@@ -291,14 +230,3 @@ CAMLprim value caml_unix_setsockopt(value vty, value vsocket, value voption,
                              vsocket,
                              val);
 }
-
-#else
-
-CAMLprim value caml_unix_getsockopt(value vty, value socket, value option)
-{ caml_invalid_argument("getsockopt not implemented"); }
-
-CAMLprim value caml_unix_setsockopt(value vty, value socket, value option,
-                                    value val)
-{ caml_invalid_argument("setsockopt not implemented"); }
-
-#endif

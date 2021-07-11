@@ -17,9 +17,6 @@
 #include <caml/alloc.h>
 #include <caml/fail.h>
 #include "unixsupport.h"
-
-#ifdef HAS_SOCKETS
-
 #include <sys/socket.h>
 
 extern int caml_unix_socket_domain_table[], caml_unix_socket_type_table[];
@@ -47,11 +44,3 @@ CAMLprim value caml_unix_socketpair(value cloexec, value domain,
   Field(res,1) = Val_int(sv[1]);
   return res;
 }
-
-#else
-
-CAMLprim value caml_unix_socketpair(value cloexec, value domain, value type,
-                               value proto)
-{ caml_invalid_argument("socketpair not implemented"); }
-
-#endif

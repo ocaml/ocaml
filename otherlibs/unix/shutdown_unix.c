@@ -16,9 +16,6 @@
 #include <caml/fail.h>
 #include <caml/mlvalues.h>
 #include "unixsupport.h"
-
-#ifdef HAS_SOCKETS
-
 #include <sys/socket.h>
 
 static int shutdown_command_table[] = {
@@ -31,10 +28,3 @@ CAMLprim value caml_unix_shutdown(value sock, value cmd)
     caml_uerror("shutdown", Nothing);
   return Val_unit;
 }
-
-#else
-
-CAMLprim value caml_unix_shutdown(value sock, value cmd)
-{ caml_invalid_argument("shutdown not implemented"); }
-
-#endif

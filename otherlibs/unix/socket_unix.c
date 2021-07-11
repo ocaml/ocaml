@@ -17,9 +17,6 @@
 #include <caml/fail.h>
 #include <caml/mlvalues.h>
 #include "unixsupport.h"
-
-#ifdef HAS_SOCKETS
-
 #include <sys/types.h>
 #include <sys/socket.h>
 
@@ -55,11 +52,3 @@ CAMLprim value caml_unix_socket(value cloexec, value domain,
 #endif
   return Val_int(retcode);
 }
-
-#else
-
-CAMLprim value caml_unix_socket(value cloexec, value domain,
-                           value type,value proto)
-{ caml_invalid_argument("socket not implemented"); }
-
-#endif

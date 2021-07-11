@@ -17,9 +17,6 @@
 #include <caml/alloc.h>
 #include <caml/fail.h>
 #include "unixsupport.h"
-
-#ifdef HAS_SOCKETS
-
 #include "socketaddr.h"
 
 CAMLprim value caml_unix_string_of_inet_addr(value a)
@@ -65,10 +62,3 @@ CAMLprim value caml_unix_string_of_inet_addr(value a)
   if (res == NULL) caml_uerror("string_of_inet_addr", Nothing);
   return caml_copy_string(res);
 }
-
-#else
-
-CAMLprim value caml_unix_string_of_inet_addr(value a)
-{ caml_invalid_argument("string_of_inet_addr not implemented"); }
-
-#endif

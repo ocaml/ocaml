@@ -19,9 +19,6 @@
 #include <caml/memory.h>
 #include <errno.h>
 #include "unixsupport.h"
-
-#ifdef HAS_SOCKETS
-
 #include "socketaddr.h"
 
 #ifdef _WIN32
@@ -166,5 +163,3 @@ value caml_unix_alloc_sockaddr(union sock_addr_union * adr /*in*/,
   }
   CAMLreturn(res);
 }
-
-#endif

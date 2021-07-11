@@ -16,9 +16,6 @@
 #include <caml/fail.h>
 #include <caml/mlvalues.h>
 #include "unixsupport.h"
-
-#ifdef HAS_SOCKETS
-
 #include "socketaddr.h"
 
 CAMLprim value caml_unix_bind(value socket, value address)
@@ -32,10 +29,3 @@ CAMLprim value caml_unix_bind(value socket, value address)
   if (ret == -1) caml_uerror("bind", Nothing);
   return Val_unit;
 }
-
-#else
-
-CAMLprim value caml_unix_bind(value socket, value address)
-{ caml_invalid_argument("bind not implemented"); }
-
-#endif

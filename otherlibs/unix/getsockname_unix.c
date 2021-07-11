@@ -16,9 +16,6 @@
 #include <caml/fail.h>
 #include <caml/mlvalues.h>
 #include "unixsupport.h"
-
-#ifdef HAS_SOCKETS
-
 #include "socketaddr.h"
 
 CAMLprim value caml_unix_getsockname(value sock)
@@ -32,10 +29,3 @@ CAMLprim value caml_unix_getsockname(value sock)
   if (retcode == -1) caml_uerror("getsockname", Nothing);
   return caml_unix_alloc_sockaddr(&addr, addr_len, -1);
 }
-
-#else
-
-CAMLprim value caml_unix_getsockname(value sock)
-{ caml_invalid_argument("getsockname not implemented"); }
-
-#endif

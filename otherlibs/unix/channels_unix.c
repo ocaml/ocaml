@@ -22,11 +22,8 @@
 #include <caml/io.h>
 #include <caml/signals.h>
 #include "unixsupport.h"
-
-#ifdef HAS_SOCKETS
 #include <sys/socket.h>
 #include "socketaddr.h"
-#endif
 
 /* Check that the given file descriptor has "stream semantics" and
    can therefore be used as part of buffered I/O.  Things that
@@ -43,7 +40,6 @@ static int caml_unix_check_stream_semantics(int fd)
   case S_IFREG: case S_IFCHR: case S_IFIFO:
     /* These have stream semantics */
     return 0;
-#ifdef HAS_SOCKETS
   case S_IFSOCK: {
     int so_type;
     socklen_param_type so_type_len = sizeof(so_type);
@@ -56,7 +52,6 @@ static int caml_unix_check_stream_semantics(int fd)
       return EINVAL;
     }
     }
-#endif
   default:
     /* All other file types are suspect: block devices, directories,
        symbolic links, whatnot. */
