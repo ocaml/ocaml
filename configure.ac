@@ -525,11 +525,19 @@ AS_CASE([$host],
     [exeext=".exe"],
   [exeext=''])
 
+OCAML_POSIX_SUPPORT
+
 otherlibraries="dynlink"
-AS_IF([test x"$enable_unix_lib" != "xno"],
-  [AS_IF([test x"$enable_bigarray_lib" != "xno"],
-    [otherlibraries="$otherlibraries $unixlib bigarray"],
-    [otherlibraries="$otherlibraries $unixlib"])])
+AS_CASE([$host,$enable_unix_lib,$posix_2008_supported],
+  [*,no,*], [],
+  [*-*-mingw32,*,*|*-pc-windows,*,*|*,*,yes],
+    [AS_IF([test x"$enable_bigarray_lib" != "xno"],
+      [otherlibraries="$otherlibraries $unixlib bigarray"],
+      [otherlibraries="$otherlibraries $unixlib"])],
+  [*,yes,no],
+    [AC_MSG_ERROR([libunix requires a POSIX 1003.1-2008 compliant host])],
+  [*,*,no],
+    [AC_MSG_WARN([libunix will not be built])])
 AS_IF([test x"$enable_str_lib" != "xno"],
   [otherlibraries="$otherlibraries str"])
 
