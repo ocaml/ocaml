@@ -16926,38 +16926,6 @@ else $as_nop
 fi
 
 
-## gethostname
-# Note: detection fails on Windows so hardcoding the result
-# (should be debugged later)
-case $host in #(
-  *-*-mingw32|*-pc-windows) :
-    printf "%s\n" "#define HAS_GETHOSTNAME 1" >>confdefs.h
- ;; #(
-  *) :
-    ac_fn_c_check_func "$LINENO" "gethostname" "ac_cv_func_gethostname"
-if test "x$ac_cv_func_gethostname" = xyes
-then :
-  printf "%s\n" "#define HAS_GETHOSTNAME 1" >>confdefs.h
-
-fi
- ;;
-esac
-
-## uname
-
-ac_fn_c_check_header_compile "$LINENO" "sys/utsname.h" "ac_cv_header_sys_utsname_h" "$ac_includes_default"
-if test "x$ac_cv_header_sys_utsname_h" = xyes
-then :
-  ac_fn_c_check_func "$LINENO" "uname" "ac_cv_func_uname"
-if test "x$ac_cv_func_uname" = xyes
-then :
-  printf "%s\n" "#define HAS_UNAME 1" >>confdefs.h
-
-fi
-
-fi
-
-
 ## gettimeofday
 
 ac_fn_c_check_func "$LINENO" "gettimeofday" "ac_cv_func_gettimeofday"

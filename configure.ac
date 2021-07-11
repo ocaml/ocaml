@@ -1707,18 +1707,6 @@ AC_CHECK_FUNC([setitimer],
   ],
   [setitimer=false])
 
-## gethostname
-# Note: detection fails on Windows so hardcoding the result
-# (should be debugged later)
-AS_CASE([$host],
-  [*-*-mingw32|*-pc-windows], [AC_DEFINE([HAS_GETHOSTNAME])],
-  [AC_CHECK_FUNC([gethostname], [AC_DEFINE([HAS_GETHOSTNAME])])])
-
-## uname
-
-AC_CHECK_HEADER([sys/utsname.h],
-  [AC_CHECK_FUNC([uname], [AC_DEFINE([HAS_UNAME])])])
-
 ## gettimeofday
 
 AC_CHECK_FUNC([gettimeofday],

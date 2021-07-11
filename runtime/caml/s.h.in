@@ -176,14 +176,6 @@
 
 /* Define HAS_SETITIMER if you have setitimer(). */
 
-#undef HAS_GETHOSTNAME
-
-/* Define HAS_GETHOSTNAME if you have gethostname(). */
-
-#undef HAS_UNAME
-
-/* Define HAS_UNAME if you have uname(). */
-
 #undef HAS_GETTIMEOFDAY
 
 /* Define HAS_GETTIMEOFDAY if you have gettimeofday(). */
