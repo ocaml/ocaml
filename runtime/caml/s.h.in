@@ -130,10 +130,8 @@
 /* Define HAS_REALPATH if you have realpath(). */
 
 #undef HAS_WAIT4
-#undef HAS_WAITPID
 
-/* Define HAS_WAIT4 if you have wait4().
-   Define HAS_WAITPID if you have waitpid(). */
+/* Define HAS_WAIT4 if you have wait4(). */
 
 #undef HAS_GETGROUPS
 

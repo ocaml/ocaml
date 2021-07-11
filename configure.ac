@@ -1468,15 +1468,6 @@ AC_CHECK_FUNC([symlink],
 
 AC_CHECK_FUNC([realpath], [AC_DEFINE([HAS_REALPATH])])
 
-# wait
-AC_CHECK_FUNC(
-  [waitpid],
-  [
-    wait=true
-    AC_DEFINE([HAS_WAITPID])
-  ],
-  [wait=false])
-
 # wait4
 AC_CHECK_FUNC(
   [wait4],

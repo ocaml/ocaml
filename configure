@@ -15530,19 +15530,6 @@ if test "x$ac_cv_func_realpath" = xyes; then :
 fi
 
 
-# wait
-ac_fn_c_check_func "$LINENO" "waitpid" "ac_cv_func_waitpid"
-if test "x$ac_cv_func_waitpid" = xyes; then :
-
-    wait=true
-    $as_echo "#define HAS_WAITPID 1" >>confdefs.h
-
-
-else
-  wait=false
-fi
-
-
 # wait4
 ac_fn_c_check_func "$LINENO" "wait4" "ac_cv_func_wait4"
 if test "x$ac_cv_func_wait4" = xyes; then :
