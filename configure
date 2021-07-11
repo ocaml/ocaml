@@ -12662,8 +12662,12 @@ otherlibraries="dynlink"
 case $host,$enable_unix_lib,$posix_2008_supported in #(
   *,no,*) :
      ;; #(
-  *-*-mingw32,*,*|*-pc-windows,*,*|*,*,yes) :
-    if test x"$enable_bigarray_lib" != "xno"; then :
+  *-*-mingw32,*,*|*-pc-windows,*,*|*,*,*) :
+    if test x"$posix_2008_support" = "xno"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: POSIX 1003.1-2008 compliance not detected; risking it" >&5
+$as_echo "$as_me: WARNING: POSIX 1003.1-2008 compliance not detected; risking it" >&2;}
+fi
+     if test x"$enable_bigarray_lib" != "xno"; then :
   otherlibraries="$otherlibraries $unixlib bigarray"
 else
   otherlibraries="$otherlibraries $unixlib"

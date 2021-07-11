@@ -530,8 +530,10 @@ OCAML_POSIX_SUPPORT
 otherlibraries="dynlink"
 AS_CASE([$host,$enable_unix_lib,$posix_2008_supported],
   [*,no,*], [],
-  [*-*-mingw32,*,*|*-pc-windows,*,*|*,*,yes],
-    [AS_IF([test x"$enable_bigarray_lib" != "xno"],
+  [*-*-mingw32,*,*|*-pc-windows,*,*|*,*,*],
+    [AS_IF([test x"$posix_2008_support" = "xno"],
+      [AC_MSG_WARN([POSIX 1003.1-2008 compliance not detected; risking it])])
+     AS_IF([test x"$enable_bigarray_lib" != "xno"],
       [otherlibraries="$otherlibraries $unixlib bigarray"],
       [otherlibraries="$otherlibraries $unixlib"])],
   [*,yes,no],
