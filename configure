@@ -15475,13 +15475,6 @@ if test "x$ac_cv_func_lockf" = xyes; then :
 fi
 
 
-ac_fn_c_check_func "$LINENO" "mkfifo" "ac_cv_func_mkfifo"
-if test "x$ac_cv_func_mkfifo" = xyes; then :
-  $as_echo "#define HAS_MKFIFO 1" >>confdefs.h
-
-fi
-
-
 ac_fn_c_check_func "$LINENO" "getcwd" "ac_cv_func_getcwd"
 if test "x$ac_cv_func_getcwd" = xyes; then :
   $as_echo "#define HAS_GETCWD 1" >>confdefs.h
