@@ -16886,14 +16886,6 @@ fi
 fi
 
 
-ac_fn_c_check_func "$LINENO" "nanosleep" "ac_cv_func_nanosleep"
-if test "x$ac_cv_func_nanosleep" = xyes
-then :
-  printf "%s\n" "#define HAS_NANOSLEEP 1" >>confdefs.h
-
-fi
-
-
 ac_fn_c_check_func "$LINENO" "symlink" "ac_cv_func_symlink"
 if test "x$ac_cv_func_symlink" = xyes
 then :

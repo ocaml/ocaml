@@ -161,9 +161,6 @@
 /* Define HAS_SYS_SELECT_H if /usr/include/sys/select.h exists
    and should be included before using select(). */
 
-#undef HAS_NANOSLEEP
-/* Define HAS_NANOSLEEP if you have nanosleep(). */
-
 #undef HAS_SYMLINK
 
 /* Define HAS_SYMLINK if you have symlink() and readlink() and lstat(). */
@@ -184,6 +181,7 @@
 #undef HAS_SETGROUPS
 
 /* Define HAS_SETGROUPS if you have setgroups(). */
+/* Define HAS_WAIT4 if you have wait4(). */
 
 #undef HAS_INITGROUPS
 
