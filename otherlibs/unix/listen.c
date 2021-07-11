@@ -16,9 +16,6 @@
 #include <caml/fail.h>
 #include <caml/mlvalues.h>
 #include "unixsupport.h"
-
-#ifdef HAS_SOCKETS
-
 #include <sys/socket.h>
 
 CAMLprim value unix_listen(value sock, value backlog)
@@ -26,10 +23,3 @@ CAMLprim value unix_listen(value sock, value backlog)
   if (listen(Int_val(sock), Int_val(backlog)) == -1) uerror("listen", Nothing);
   return Val_unit;
 }
-
-#else
-
-CAMLprim value unix_listen(value sock, value backlog)
-{ caml_invalid_argument("listen not implemented"); }
-
-#endif

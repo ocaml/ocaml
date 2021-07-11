@@ -20,9 +20,6 @@
 #include <caml/memory.h>
 #include <caml/signals.h>
 #include "unixsupport.h"
-
-#ifdef HAS_SOCKETS
-
 #include "socketaddr.h"
 #ifndef _WIN32
 #include <sys/types.h>
@@ -161,13 +158,3 @@ CAMLprim value unix_gethostbyname(value name)
   if (hp == (struct hostent *) NULL) caml_raise_not_found();
   return alloc_host_entry(hp);
 }
-
-#else
-
-CAMLprim value unix_gethostbyaddr(value name)
-{ caml_invalid_argument("gethostbyaddr not implemented"); }
-
-CAMLprim value unix_gethostbyname(value name)
-{ caml_invalid_argument("gethostbyname not implemented"); }
-
-#endif
