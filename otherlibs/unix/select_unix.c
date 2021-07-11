@@ -19,14 +19,9 @@
 #include <caml/memory.h>
 #include <caml/signals.h>
 #include "unixsupport.h"
-
-#ifdef HAS_SELECT
-
 #include <sys/types.h>
 #include <sys/time.h>
-#ifdef HAS_SYS_SELECT_H
 #include <sys/select.h>
-#endif
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
@@ -101,11 +96,3 @@ CAMLprim value caml_unix_select(value readfds, value writefds, value exceptfds,
   Field(res, 2) = exceptfds;
   CAMLreturn(res);
 }
-
-#else
-
-CAMLprim value caml_unix_select(value readfds, value writefds, value exceptfds,
-                           value timeout)
-{ caml_invalid_argument("select not implemented"); }
-
-#endif

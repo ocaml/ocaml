@@ -152,15 +152,6 @@
 /* Define HAS_TRUNCATE if you have truncate() and
    ftruncate(). */
 
-#undef HAS_SELECT
-
-/* Define HAS_SELECT if you have select(). */
-
-#undef HAS_SYS_SELECT_H
-
-/* Define HAS_SYS_SELECT_H if /usr/include/sys/select.h exists
-   and should be included before using select(). */
-
 #undef HAS_SYMLINK
 
 /* Define HAS_SYMLINK if you have symlink() and readlink() and lstat(). */

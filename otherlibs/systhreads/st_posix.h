@@ -15,9 +15,7 @@
 
 /* POSIX thread implementation of the "st" interface */
 
-#ifdef HAS_SYS_SELECT_H
 #include <sys/select.h>
-#endif
 
 Caml_inline void st_msleep(int msec)
 {

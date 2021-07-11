@@ -14479,15 +14479,6 @@ then :
 fi
 
 
-ac_fn_c_check_header_compile "$LINENO" "sys/select.h" "ac_cv_header_sys_select_h" "#include <sys/types.h>
-"
-if test "x$ac_cv_header_sys_select_h" = xyes
-then :
-  printf "%s\n" "#define HAS_SYS_SELECT_H 1" >>confdefs.h
-
-fi
-
-
 ac_fn_c_check_header_compile "$LINENO" "stdatomic.h" "ac_cv_header_stdatomic_h" "$ac_includes_default"
 if test "x$ac_cv_header_stdatomic_h" = xyes
 then :
@@ -16865,27 +16856,6 @@ fi
 fi
 
 
-## select
-ac_fn_c_check_func "$LINENO" "select" "ac_cv_func_select"
-if test "x$ac_cv_func_select" = xyes
-then :
-  ac_fn_c_check_type "$LINENO" "fd_set" "ac_cv_type_fd_set" "
-#include <sys/types.h>
-#include <sys/select.h>
-
-"
-if test "x$ac_cv_type_fd_set" = xyes
-then :
-  printf "%s\n" "#define HAS_SELECT 1" >>confdefs.h
-
-    select=true
-else $as_nop
-  select=false
-fi
-
-fi
-
-
 ac_fn_c_check_func "$LINENO" "symlink" "ac_cv_func_symlink"
 if test "x$ac_cv_func_symlink" = xyes
 then :
@@ -16926,6 +16896,7 @@ else $as_nop
 fi
 
 
+# wait4
 ac_fn_c_check_func "$LINENO" "wait4" "ac_cv_func_wait4"
 if test "x$ac_cv_func_wait4" = xyes
 then :

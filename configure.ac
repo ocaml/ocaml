@@ -975,9 +975,6 @@ AC_CHECK_HEADER([pthread_np.h],[AC_DEFINE([HAS_PTHREAD_NP_H])])
 AC_CHECK_HEADER([dirent.h], [AC_DEFINE([HAS_DIRENT])], [],
   [#include <sys/types.h>])
 
-AC_CHECK_HEADER([sys/select.h], [AC_DEFINE([HAS_SYS_SELECT_H])], [],
-  [#include <sys/types.h>])
-
 AC_CHECK_HEADER([stdatomic.h], [AC_DEFINE([HAS_STDATOMIC_H])])
 
 AC_CHECK_HEADER([sys/mman.h], [AC_DEFINE([HAS_SYS_MMAN_H])])
@@ -1681,15 +1678,6 @@ AC_CHECK_FUNC([fchmod],
 AC_CHECK_FUNC([truncate],
   [AC_CHECK_FUNC([ftruncate], [AC_DEFINE([HAS_TRUNCATE])])])
 
-## select
-AC_CHECK_FUNC([select],
-  [AC_CHECK_TYPE([fd_set],
-    [AC_DEFINE([HAS_SELECT])
-    select=true], [select=false], [
-#include <sys/types.h>
-#include <sys/select.h>
-  ])])
-
 AC_CHECK_FUNC([symlink],
   [AC_CHECK_FUNC([readlink],
     [AC_CHECK_FUNC([lstat], [AC_DEFINE([HAS_SYMLINK])])])])
@@ -1705,6 +1693,7 @@ AC_CHECK_FUNC(
   ],
   [wait=false])
 
+# wait4
 AC_CHECK_FUNC(
   [wait4],
   [
