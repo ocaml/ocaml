@@ -36,16 +36,12 @@ CAMLexport value alloc_inet_addr(struct in_addr * a)
   return res;
 }
 
-#ifdef HAS_IPV6
-
 CAMLexport value alloc_inet6_addr(struct in6_addr * a)
 {
   value res;
   res = caml_alloc_initialized_string(16, (char *)a);
   return res;
 }
-
-#endif
 
 void get_sockaddr(value mladr,
                   union sock_addr_union * adr /*out*/,
@@ -72,7 +68,6 @@ void get_sockaddr(value mladr,
       break;
     }
   case 1:                       /* ADDR_INET */
-#ifdef HAS_IPV6
     if (caml_string_length(Field(mladr, 0)) == 16) {
       memset(&adr->s_inet6, 0, sizeof(struct sockaddr_in6));
       adr->s_inet6.sin6_family = AF_INET6;
@@ -84,7 +79,6 @@ void get_sockaddr(value mladr,
       *adr_len = sizeof(struct sockaddr_in6);
       break;
     }
-#endif
     memset(&adr->s_inet, 0, sizeof(struct sockaddr_in));
     adr->s_inet.sin_family = AF_INET;
     adr->s_inet.sin_addr = GET_INET_ADDR(Field(mladr, 0));
@@ -148,7 +142,6 @@ value alloc_sockaddr(union sock_addr_union * adr /*in*/,
       End_roots();
       break;
     }
-#ifdef HAS_IPV6
   case AF_INET6:
     { value a = alloc_inet6_addr(&adr->s_inet6.sin6_addr);
       Begin_root (a);
@@ -158,7 +151,6 @@ value alloc_sockaddr(union sock_addr_union * adr /*in*/,
       End_roots();
       break;
     }
-#endif
   default:
     if (close_on_error != -1) close (close_on_error);
     unix_error(EAFNOSUPPORT, "", Nothing);

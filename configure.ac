@@ -1427,8 +1427,6 @@ AS_CASE([$host],
   [AC_CHECK_TYPE([socklen_t], [AC_DEFINE([HAS_SOCKLEN_T])], [],
     [#include <sys/socket.h>])])
 
-AC_CHECK_FUNC([inet_aton], [AC_DEFINE([HAS_INET_ATON])])
-
 ## Unix domain sockets support on Windows
 
 AS_CASE([$host],
@@ -1462,9 +1460,6 @@ AS_IF([$ipv6],
 
 AS_IF([$ipv6],
   [AC_CHECK_FUNC([inet_pton], [], [ipv6=false])])
-
-AS_IF([$ipv6],
-  [AC_CHECK_FUNC([inet_ntop], [AC_DEFINE([HAS_IPV6])])])
 
 AC_CHECK_FUNC([rewinddir], [AC_DEFINE([HAS_REWINDDIR])])
 
@@ -2006,7 +2001,6 @@ AS_CASE([$host],
   [*-pc-windows],
     [AC_DEFINE([HAS_BROKEN_PRINTF])
     AC_DEFINE([HAS_STRERROR])
-    AC_DEFINE([HAS_IPV6])
     AC_DEFINE([HAS_NICE])],
   [*-*-solaris*],
     # This is required as otherwise floats are printed
