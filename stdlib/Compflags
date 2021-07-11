@@ -37,7 +37,5 @@ case $1 in
   stdlib__Float.cm[ox]) echo ' -nolabels -no-alias-deps';;
   stdlib__Oo.cmi) echo ' -no-principal';;
     # preserve structure sharing in Oo.copy (PR#9767)
-  stdlib__Genlex.cm[iox]) echo ' -w -3';;
-    # ignore the "deprecated" alert on the Stream module
   *) echo ' ';;
 esac
