@@ -28,6 +28,13 @@ external tag : t -> int = "caml_obj_tag" [@@noalloc]
 external set_tag : t -> int -> unit = "caml_obj_set_tag"
 external size : t -> int = "%obj_size"
 external reachable_words : t -> int = "caml_obj_reachable_words"
+external reachable_words_many :
+  bool -> t array -> t array -> int array =
+  "caml_obj_reachable_words_many"
+
+let reachable_words_many ?without_closures ?(except = [||]) values =
+  reachable_words_many (without_closures = None) except values
+
 external field : t -> int -> t = "%obj_field"
 external set_field : t -> int -> t -> unit = "%obj_set_field"
 external floatarray_get : floatarray -> int -> float = "caml_floatarray_get"

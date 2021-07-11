@@ -1127,16 +1127,16 @@ CAMLexport void caml_serialize_block_float_8(void * data, intnat len)
 #endif
 }
 
-CAMLprim value caml_obj_reachable_words(value v)
-{
-  intnat size;
-  struct extern_item * sp;
+static intnat reachable_words_traverse(
+                                       int traverse,
+                                       int scan_closures,
+                                       value v
+                                       ) {
+  struct extern_item * sp = extern_stack;
+  intnat size = 0;
   uintnat h = 0;
   uintnat pos;
 
-  extern_init_position_table();
-  sp = extern_stack;
-  size = 0;
   while (1) {
     if (Is_long(v)) {
       /* Tagged integers contribute 0 to the size, nothing to do */
@@ -1159,23 +1159,25 @@ CAMLprim value caml_obj_reachable_words(value v)
       }
       /* Remember that we've visited this block */
       extern_record_location(v, h);
-      /* The block contributes to the total size */
-      size += 1 + sz;           /* header word included */
-      if (tag < No_scan_tag) {
-        /* i is the position of the first field to traverse recursively */
-        uintnat i =
-          tag == Closure_tag ? Start_env_closinfo(Closinfo_val(v)) : 0;
-        if (i < sz) {
-          if (i < sz - 1) {
-            /* Remember that we need to count fields i + 1 ... sz - 1 */
-            sp++;
-            if (sp >= extern_stack_limit) sp = extern_resize_stack(sp);
-            sp->v = &Field(v, i + 1);
-            sp->count = sz - i - 1;
+      if (traverse && (scan_closures || tag != Closure_tag)) {
+        /* The block contributes to the total size */
+        size += 1 + sz;           /* header word included */
+        if (tag < No_scan_tag) {
+          /* i is the position of the first field to traverse recursively */
+          uintnat i =
+            tag == Closure_tag ? Start_env_closinfo(Closinfo_val(v)) : 0;
+          if (i < sz) {
+            if (i < sz - 1) {
+              /* Remember that we need to count fields i + 1 ... sz - 1 */
+              sp++;
+              if (sp >= extern_stack_limit) sp = extern_resize_stack(sp);
+              sp->v = &Field(v, i + 1);
+              sp->count = sz - i - 1;
+            }
+            /* Continue with field i */
+            v = Field(v, i);
+            continue;
           }
-          /* Continue with field i */
-          v = Field(v, i);
-          continue;
         }
       }
     }
@@ -1184,7 +1186,48 @@ CAMLprim value caml_obj_reachable_words(value v)
     v = *((sp->v)++);
     if (--(sp->count) == 0) sp--;
   }
+  return size;
+}
+
+
+CAMLprim value caml_obj_reachable_words(value v) {
+  intnat size;
+  extern_init_position_table();
+  size = reachable_words_traverse(1, 1, v);
   extern_free_stack();
   extern_free_position_table();
   return Val_long(size);
+}
+
+CAMLprim value caml_obj_reachable_words_many(
+                                             value v_scan_closures,
+                                             value except_values,
+                                             value values
+                                             ) {
+  CAMLparam2(except_values, values);
+  CAMLlocal1(sizes);
+  mlsize_t n_values;
+  int scan_closures = Bool_val(v_scan_closures);
+  int j;
+
+  /* Protect against [| Obj.repr 42. |] in flat-float array mode */
+  if (Tag_val(values) != 0 || Tag_val(except_values) != 0)
+    caml_invalid_argument("reachable_words_many");
+
+  extern_init_position_table();
+
+  n_values = Wosize_val(except_values);
+  for (j = 0; j < n_values; j++)
+    reachable_words_traverse(0, 0, Field(except_values, j));
+
+  n_values = Wosize_val(values);
+  sizes = caml_alloc(n_values, 0);
+  for (j = 0; j < n_values; j++)
+    Field(sizes, j) =
+      Val_long(reachable_words_traverse(1, scan_closures, Field(values, j)));
+
+  extern_free_stack();
+  extern_free_position_table();
+
+  CAMLreturn(sizes);
 }
