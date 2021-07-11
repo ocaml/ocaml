@@ -29,9 +29,7 @@
 #include "unixsupport.h"
 
 #include <errno.h>
-#ifdef HAS_UNISTD
 #include <unistd.h>
-#endif
 #ifdef HAS_MMAP
 #include <sys/types.h>
 #include <sys/mman.h>

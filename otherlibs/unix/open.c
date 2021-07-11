@@ -20,19 +20,12 @@
 #include <caml/signals.h>
 #include "unixsupport.h"
 #include <string.h>
-#ifdef HAS_UNISTD
 #include <unistd.h>
-#endif
 #include <fcntl.h>
 
-#ifndef O_NONBLOCK
-#define O_NONBLOCK O_NDELAY
-#endif
+/* O_DSYNC and O_RSYNC are part of POSIX Synchronized IO option */
 #ifndef O_DSYNC
 #define O_DSYNC 0
-#endif
-#ifndef O_SYNC
-#define O_SYNC 0
 #endif
 #ifndef O_RSYNC
 #define O_RSYNC 0

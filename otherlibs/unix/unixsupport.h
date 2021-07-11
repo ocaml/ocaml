@@ -16,9 +16,7 @@
 #ifndef CAML_UNIXSUPPORT_H
 #define CAML_UNIXSUPPORT_H
 
-#ifdef HAS_UNISTD
 #include <unistd.h>
-#endif
 
 #ifdef __cplusplus
 extern "C" {

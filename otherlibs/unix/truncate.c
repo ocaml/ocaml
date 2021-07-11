@@ -22,9 +22,7 @@
 #include <caml/signals.h>
 #include <caml/io.h>
 #include "unixsupport.h"
-#ifdef HAS_UNISTD
 #include <unistd.h>
-#endif
 
 #ifdef HAS_TRUNCATE
 

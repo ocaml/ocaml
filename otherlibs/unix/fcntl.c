@@ -16,9 +16,7 @@
 #include <caml/fail.h>
 #include <caml/mlvalues.h>
 #include "unixsupport.h"
-#ifdef HAS_UNISTD
 #include <unistd.h>
-#endif
 #include <fcntl.h>
 
 #ifndef O_NONBLOCK

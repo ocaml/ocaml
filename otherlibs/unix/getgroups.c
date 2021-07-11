@@ -20,9 +20,7 @@
 #ifdef HAS_GETGROUPS
 
 #include <sys/types.h>
-#ifdef HAS_UNISTD
 #include <unistd.h>
-#endif
 #include <limits.h>
 #include "unixsupport.h"
 
