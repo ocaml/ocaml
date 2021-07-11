@@ -449,6 +449,17 @@ If `boot/ocamlc` changes (e.g. because you ran `make bootstrap`), then
 the build will revert to the slower bytecode-compiled `ocamlc` until
 you do the above step again.
 
+=== Speeding up native builds on architectures with a lot of registers
+
+On architectures with a lot of registers you can also speed up the build by using
+the linear scan register allocator, e.g.:
+
+----
+export OCAMLPARAM=_,linscan=1
+----
+
+You can try this if building driver/main_args takes a lot of time.
+
 === Using merlin
 
 During the development of the compiler, the internal format of compiled object
