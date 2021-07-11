@@ -52,11 +52,7 @@ union sock_addr_union {
   struct sockaddr_in6 s_inet6;
 };
 
-#ifdef HAS_SOCKLEN_T
 typedef socklen_t socklen_param_type;
-#else
-typedef int socklen_param_type;
-#endif
 
 #ifdef __cplusplus
 extern "C" {

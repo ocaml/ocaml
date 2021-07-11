@@ -1607,15 +1607,6 @@ AS_CASE([$host],
 
 AS_IF([$sockets], [AC_DEFINE([HAS_SOCKETS])])
 
-## socklen_t
-
-AS_CASE([$host],
-  [*-*-mingw32|*-pc-windows],
-    [AC_CHECK_TYPE([socklen_t], [AC_DEFINE([HAS_SOCKLEN_T])], [],
-      [#include <ws2tcpip.h>])],
-  [AC_CHECK_TYPE([socklen_t], [AC_DEFINE([HAS_SOCKLEN_T])], [],
-    [#include <sys/socket.h>])])
-
 ## Unix domain sockets support on Windows
 
 AS_CASE([$host],
