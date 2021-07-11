@@ -116,10 +116,6 @@
 
 /* Define HAS_REWINDDIR if you have rewinddir(). */
 
-#undef HAS_LOCKF
-
-/* Define HAS_LOCKF if the library provides the lockf() function. */
-
 #undef HAS_GETCWD
 
 /* Define HAS_GETCWD if the library provides the getcwd() function. */
