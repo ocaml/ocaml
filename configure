@@ -17135,36 +17135,6 @@ else $as_nop
 printf "%s\n" "$as_me: Dynamic loading of shared libraries is not supported." >&6;}
 fi
 
-## mmap
-
-ac_fn_c_check_header_compile "$LINENO" "sys/mman.h" "ac_cv_header_sys_mman_h" "$ac_includes_default"
-if test "x$ac_cv_header_sys_mman_h" = xyes
-then :
-  ac_fn_c_check_func "$LINENO" "mmap" "ac_cv_func_mmap"
-if test "x$ac_cv_func_mmap" = xyes
-then :
-  ac_fn_c_check_func "$LINENO" "munmap" "ac_cv_func_munmap"
-if test "x$ac_cv_func_munmap" = xyes
-then :
-  printf "%s\n" "#define HAS_MMAP 1" >>confdefs.h
-
-fi
-
-fi
-
-fi
-
-
-## pwrite
-
-ac_fn_c_check_func "$LINENO" "pwrite" "ac_cv_func_pwrite"
-if test "x$ac_cv_func_pwrite" = xyes
-then :
-  printf "%s\n" "#define HAS_PWRITE 1" >>confdefs.h
-
-fi
-
-
 ## -fdebug-prefix-map support by the C compiler
 case $ocaml_cv_cc_vendor,$host in #(
   *,*-*-mingw32) :

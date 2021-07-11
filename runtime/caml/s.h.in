@@ -210,13 +210,6 @@
 
 /* Define HAS_STRTOD_L if you have strtod_l */
 
-#undef HAS_MMAP
-
-/* Define HAS_MMAP if you have the include file <sys/mman.h> and the
-   functions mmap() and munmap(). */
-
-#undef HAS_PWRITE
-
 #undef HAS_NANOSECOND_STAT
 
 #undef HAS_GETHOSTBYNAME_R

@@ -1774,16 +1774,6 @@ AS_IF([$supports_shared_libraries],
   AC_DEFINE([SUPPORT_DYNAMIC_LINKING])],
   [AC_MSG_NOTICE([Dynamic loading of shared libraries is not supported.])])
 
-## mmap
-
-AC_CHECK_HEADER([sys/mman.h],
-  [AC_CHECK_FUNC([mmap],
-    [AC_CHECK_FUNC([munmap], [AC_DEFINE([HAS_MMAP])])])])
-
-## pwrite
-
-AC_CHECK_FUNC([pwrite], [AC_DEFINE([HAS_PWRITE])])
-
 ## -fdebug-prefix-map support by the C compiler
 AS_CASE([$ocaml_cv_cc_vendor,$host],
   [*,*-*-mingw32], [cc_has_debug_prefix_map=false],
