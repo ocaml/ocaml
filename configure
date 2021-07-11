@@ -16771,42 +16771,6 @@ then :
 
 fi
 
-## utime
-## Note: this was defined in config/s-nt.h but the autoconf macros do not
-# seem to detect it properly on Windows so we hardcode the definition
-# of HAS_UTIME on Windows but this will probably need to be clarified
-case $host in #(
-  *-*-mingw32|*-pc-windows) :
-    printf "%s\n" "#define HAS_UTIME 1" >>confdefs.h
- ;; #(
-  *) :
-    ac_fn_c_check_header_compile "$LINENO" "sys/types.h" "ac_cv_header_sys_types_h" "$ac_includes_default"
-if test "x$ac_cv_header_sys_types_h" = xyes
-then :
-  ac_fn_c_check_header_compile "$LINENO" "utime.h" "ac_cv_header_utime_h" "$ac_includes_default"
-if test "x$ac_cv_header_utime_h" = xyes
-then :
-  ac_fn_c_check_func "$LINENO" "utime" "ac_cv_func_utime"
-if test "x$ac_cv_func_utime" = xyes
-then :
-  printf "%s\n" "#define HAS_UTIME 1" >>confdefs.h
-
-fi
-
-fi
-
-fi
- ;;
-esac
-
-ac_fn_c_check_func "$LINENO" "utimes" "ac_cv_func_utimes"
-if test "x$ac_cv_func_utimes" = xyes
-then :
-  printf "%s\n" "#define HAS_UTIMES 1" >>confdefs.h
-
-fi
-
-
 ac_fn_c_check_func "$LINENO" "fchmod" "ac_cv_func_fchmod"
 if test "x$ac_cv_func_fchmod" = xyes
 then :

@@ -1651,18 +1651,6 @@ AC_CHECK_FUNC([getcwd], [AC_DEFINE([HAS_GETCWD])])
 
 AC_CHECK_DECL([system], [AC_DEFINE([HAS_SYSTEM])], [], [[#include <stdlib.h>]])
 
-## utime
-## Note: this was defined in config/s-nt.h but the autoconf macros do not
-# seem to detect it properly on Windows so we hardcode the definition
-# of HAS_UTIME on Windows but this will probably need to be clarified
-AS_CASE([$host],
-  [*-*-mingw32|*-pc-windows], [AC_DEFINE([HAS_UTIME])],
-  [AC_CHECK_HEADER([sys/types.h],
-    [AC_CHECK_HEADER([utime.h],
-      [AC_CHECK_FUNC([utime], [AC_DEFINE([HAS_UTIME])])])])])
-
-AC_CHECK_FUNC([utimes], [AC_DEFINE([HAS_UTIMES])])
-
 AC_CHECK_FUNC([fchmod],
   [AC_CHECK_FUNC([fchown], [AC_DEFINE([HAS_FCHMOD])])])
 

@@ -132,12 +132,6 @@
 
 /* Define HAS_SYSTEM if the library provides the system() function. */
 
-#undef HAS_UTIME
-#undef HAS_UTIMES
-
-/* Define HAS_UTIME if you have /usr/include/utime.h and the library
-   provides utime(). Define HAS_UTIMES if the library provides utimes(). */
-
 #undef HAS_FCHMOD
 
 /* Define HAS_FCHMOD if you have fchmod() and fchown(). */
