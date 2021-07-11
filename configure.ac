@@ -619,6 +619,7 @@ AS_CASE([$host],
   [exeext=''])
 
 OCAML_POSIX_SUPPORT
+AS_IF([test "$posix_2008_supported" = "no"], [OCAML_POSIX_SUPPORT2])
 
 otherlibraries="dynlink runtime_events"
 lib_dynlink=true
