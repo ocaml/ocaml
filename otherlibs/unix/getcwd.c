@@ -20,17 +20,10 @@
 #include <caml/fail.h>
 #include <caml/osdeps.h>
 #include "unixsupport.h"
+#include <limits.h>
 
-#if !defined (_WIN32) && !macintosh
-#include <sys/param.h>
-#endif
-
-#ifndef PATH_MAX
-#ifdef MAXPATHLEN
-#define PATH_MAX MAXPATHLEN
-#else
-#define PATH_MAX 512
-#endif
+#if defined(_WIN32) && !defined(PATH_MAX)
+#define PATH_MAX MAX_PATH
 #endif
 
 CAMLprim value caml_unix_getcwd(value unit)
