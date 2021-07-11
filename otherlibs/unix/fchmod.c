@@ -20,8 +20,6 @@
 #include <caml/signals.h>
 #include "unixsupport.h"
 
-#ifdef HAS_FCHMOD
-
 CAMLprim value unix_fchmod(value fd, value perm)
 {
   int result;
@@ -31,10 +29,3 @@ CAMLprim value unix_fchmod(value fd, value perm)
   if (result == -1) uerror("fchmod", Nothing);
   return Val_unit;
 }
-
-#else
-
-CAMLprim value unix_fchmod(value fd, value perm)
-{ caml_invalid_argument("fchmod not implemented"); }
-
-#endif

@@ -1449,16 +1449,9 @@ AS_IF([$ipv6],
 AS_IF([$ipv6],
   [AC_CHECK_FUNC([inet_pton], [], [ipv6=false])])
 
-AC_CHECK_FUNC([rewinddir], [AC_DEFINE([HAS_REWINDDIR])])
-
 AC_CHECK_FUNC([getcwd], [AC_DEFINE([HAS_GETCWD])])
 
 AC_CHECK_DECL([system], [AC_DEFINE([HAS_SYSTEM])], [], [[#include <stdlib.h>]])
-
-AC_CHECK_FUNC([fchmod],
-  [AC_CHECK_FUNC([fchown], [AC_DEFINE([HAS_FCHMOD])])])
-
-AC_CHECK_FUNC([realpath], [AC_DEFINE([HAS_REALPATH])])
 
 # wait4
 AC_CHECK_FUNC(
@@ -1468,32 +1461,11 @@ AC_CHECK_FUNC(
     AC_DEFINE([HAS_WAIT4])
   ])
 
-## getgroups
-AC_CHECK_FUNC([getgroups], [AC_DEFINE([HAS_GETGROUPS])])
-
 ## setgroups
 AC_CHECK_FUNC([setgroups], [AC_DEFINE([HAS_SETGROUPS])])
 
 ## initgroups
 AC_CHECK_FUNC([initgroups], [AC_DEFINE([HAS_INITGROUPS])])
-
-## termios
-
-AC_CHECK_HEADER([termios.h],
-  [AC_CHECK_FUNC([tcgetattr],
-    [AC_CHECK_FUNC([tcsetattr],
-      [AC_CHECK_FUNC([tcsendbreak],
-        [AC_CHECK_FUNC([tcflush],
-          [AC_CHECK_FUNC([tcflow], [AC_DEFINE([HAS_TERMIOS])])])])])])])
-
-## setitimer
-
-AC_CHECK_FUNC([setitimer],
-  [
-    setitimer=true
-    AC_DEFINE([HAS_SETITIMER])
-  ],
-  [setitimer=false])
 
 ## gettimeofday
 
@@ -1503,20 +1475,6 @@ AC_CHECK_FUNC([gettimeofday],
     AC_DEFINE([HAS_GETTIMEOFDAY])
   ],
   [gettimeofday=false])
-
-## mktime
-
-AC_CHECK_FUNC([mktime], [AC_DEFINE([HAS_MKTIME])])
-
-## setsid
-
-AS_CASE([$host],
-  [*-cygwin|*-*-mingw32|*-pc-windows], [],
-  [AC_CHECK_FUNC([setsid], [AC_DEFINE([HAS_SETSID])])])
-
-## putenv
-
-AC_CHECK_FUNC([putenv], [AC_DEFINE([HAS_PUTENV])])
 
 ## setenv and unsetenv
 
@@ -1626,10 +1584,6 @@ AS_CASE([$ac_cv_func_which_gethostbyaddr_r],
 ## mkstemp
 
 AC_CHECK_FUNC([mkstemp], [AC_DEFINE([HAS_MKSTEMP])])
-
-## nice
-
-AC_CHECK_FUNC([nice], [AC_DEFINE([HAS_NICE])])
 
 ## dup3
 
@@ -1914,12 +1868,10 @@ AS_IF([test x"$prefix" = "xNONE"],
 AS_CASE([$host],
   [*-*-mingw32],
     [AC_DEFINE([HAS_BROKEN_PRINTF])
-    AC_DEFINE([HAS_STRERROR])
-    AC_DEFINE([HAS_NICE])],
+    AC_DEFINE([HAS_STRERROR])],
   [*-pc-windows],
     [AC_DEFINE([HAS_BROKEN_PRINTF])
-    AC_DEFINE([HAS_STRERROR])
-    AC_DEFINE([HAS_NICE])],
+    AC_DEFINE([HAS_STRERROR])],
   [*-*-solaris*],
     # This is required as otherwise floats are printed
     # as "Infinity" and "Inf" instead of the expected "inf"

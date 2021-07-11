@@ -18,8 +18,6 @@
 #include <caml/signals.h>
 #include "unixsupport.h"
 
-#ifdef HAS_FCHMOD
-
 CAMLprim value unix_fchown(value fd, value uid, value gid)
 {
   int result;
@@ -29,10 +27,3 @@ CAMLprim value unix_fchown(value fd, value uid, value gid)
   if (result == -1) uerror("fchown", Nothing);
   return Val_unit;
 }
-
-#else
-
-CAMLprim value unix_fchown(value fd, value uid, value gid)
-{ caml_invalid_argument("fchown not implemented"); }
-
-#endif

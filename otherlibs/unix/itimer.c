@@ -19,8 +19,6 @@
 #include <caml/memory.h>
 #include "unixsupport.h"
 
-#ifdef HAS_SETITIMER
-
 #include <math.h>
 #include <sys/time.h>
 
@@ -64,12 +62,3 @@ CAMLprim value unix_getitimer(value which)
     uerror("getitimer", Nothing);
   return unix_convert_itimer(&val);
 }
-
-#else
-
-CAMLprim value unix_setitimer(value which, value newval)
-{ caml_invalid_argument("setitimer not implemented"); }
-CAMLprim value unix_getitimer(value which)
-{ caml_invalid_argument("getitimer not implemented"); }
-
-#endif

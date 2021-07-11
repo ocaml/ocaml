@@ -57,8 +57,6 @@ CAMLprim value unix_localtime(value t)
   return alloc_tm(tm);
 }
 
-#ifdef HAS_MKTIME
-
 CAMLprim value unix_mktime(value t)
 {
   struct tm tm;
@@ -86,10 +84,3 @@ CAMLprim value unix_mktime(value t)
   End_roots ();
   return res;
 }
-
-#else
-
-CAMLprim value unix_mktime(value t)
-{ caml_invalid_argument("mktime not implemented"); }
-
-#endif
