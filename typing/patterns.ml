@@ -49,22 +49,36 @@ end
    statically allowed at a particular place *)
 
 module Simple = struct
-  type view = [
+
+  type core_view = [
     | `Any
     | `Constant of constant
     | `Tuple of pattern list
     | `Construct of
         Longident.t loc * constructor_description * pattern list
     | `Variant of label * pattern option * row_desc ref
-    | `Record of
-        (Longident.t loc * label_description * pattern) list * closed_flag
     | `Array of pattern list
     | `Lazy of pattern
   ]
 
+  type record_view = [
+      `Record of
+        (Longident.t loc * label_description * pattern) list * closed_flag
+  ]
+
+  type expanded_record_view = [
+      `Expanded_record of (Longident.t loc * label_description * pattern) list
+  ]
+
+  type view = [ core_view | expanded_record_view ]
+  type nonexpanded_view = [ view | record_view ]
+
+
   type pattern = view pattern_data
+  type nonexpanded_pattern = nonexpanded_view pattern_data
 
   let omega = { omega with pat_desc = `Any }
+
 end
 
 module Half_simple = struct
@@ -73,12 +87,21 @@ module Half_simple = struct
     | `Or of pattern * pattern * row_desc option
   ]
 
+
+  type nonexpanded_view = [
+    | Simple.nonexpanded_view
+    | `Or of pattern * pattern * row_desc option
+  ]
+
   type pattern = view pattern_data
+  type nonexpanded_pattern = nonexpanded_view pattern_data
+
 end
 
 module General = struct
   type view = [
     | Half_simple.view
+    | Simple.record_view
     | `Var of Ident.t * string loc
     | `Alias of pattern * Ident.t * string loc
   ]
@@ -120,6 +143,8 @@ module General = struct
        Tpat_variant (cstr, arg, row_desc)
     | `Record (fields, closed) ->
        Tpat_record (fields, closed)
+    | `Expanded_record fields->
+        Tpat_record (fields, Closed)
     | `Array ps -> Tpat_array ps
     | `Or (p, q, row_desc) -> Tpat_or (p, q, row_desc)
     | `Lazy p -> Tpat_lazy p
@@ -127,11 +152,11 @@ module General = struct
   let erase p : Typedtree.pattern =
     { p with pat_desc = erase_desc p.pat_desc }
 
-  let rec strip_vars (p : pattern) : Half_simple.pattern =
+  let rec strip_vars (p : pattern) : Half_simple.nonexpanded_pattern =
     match p.pat_desc with
     | `Alias (p, _, _) -> strip_vars (view p)
     | `Var _ -> { p with pat_desc = `Any }
-    | #Half_simple.view as view -> { p with pat_desc = view }
+    | #Half_simple.nonexpanded_view as view -> { p with pat_desc = view }
 end
 
 (* the head constructor of a simple pattern *)
@@ -151,16 +176,22 @@ module Head : sig
     | Lazy
 
   type t = desc pattern_data
+  type expanded = private t
 
-  val arity : t -> int
+  val arity : expanded -> int
+  val simple_to_head: Simple.pattern -> expanded
+  val desc: expanded -> desc
 
   (** [deconstruct p] returns the head of [p] and the list of sub patterns. *)
-  val deconstruct : Simple.pattern -> t * pattern list
+  val deconstruct : Simple.pattern -> expanded * pattern list
+  val nonexpanded_deconstruct :
+    Simple.nonexpanded_view pattern_data -> t * pattern list
+
 
   (** reconstructs a pattern, putting wildcards as sub-patterns. *)
   val to_omega_pattern : t -> pattern
 
-  val omega : t
+  val omega : expanded
 end = struct
   type desc =
     | Any
@@ -178,8 +209,9 @@ end = struct
     | Lazy
 
   type t = desc pattern_data
+  type expanded = t
 
-  let deconstruct (q : Simple.pattern) =
+  let nonexpanded_deconstruct (q : Simple.nonexpanded_view pattern_data) =
     let deconstruct_desc = function
       | `Any -> Any, []
       | `Constant c -> Constant c, []
@@ -201,7 +233,7 @@ end = struct
           Variant {tag; has_arg; cstr_row; type_row}, pats
       | `Array args ->
           Array (List.length args), args
-      | `Record (largs, _) ->
+      | `Expanded_record largs | `Record (largs, _) ->
           let lbls = List.map (fun (_,lbl,_) -> lbl) largs in
           let pats = List.map (fun (_,_,pat) -> pat) largs in
           Record lbls, pats
@@ -210,6 +242,9 @@ end = struct
     in
     let desc, pats = deconstruct_desc q.pat_desc in
     { q with pat_desc = desc }, pats
+
+  let deconstruct (p:Simple.pattern) =
+    nonexpanded_deconstruct (p:>Simple.nonexpanded_view pattern_data)
 
   let arity t =
     match t.pat_desc with
@@ -251,4 +286,6 @@ end = struct
     }
 
   let omega = { omega with pat_desc = Any }
+  let simple_to_head (p:Simple.pattern)= fst @@ deconstruct p
+  let desc x = x.pat_desc
 end
