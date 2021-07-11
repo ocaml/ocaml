@@ -17,8 +17,6 @@
 #include <caml/alloc.h>
 #include <caml/fail.h>
 
-#ifdef HAS_GETGROUPS
-
 #include <sys/types.h>
 #include <unistd.h>
 #include <limits.h>
@@ -38,10 +36,3 @@ CAMLprim value caml_unix_getgroups(value unit)
     Field(res, i) = Val_int(gidset[i]);
   return res;
 }
-
-#else
-
-CAMLprim value caml_unix_getgroups(value unit)
-{ caml_invalid_argument("getgroups not implemented"); }
-
-#endif

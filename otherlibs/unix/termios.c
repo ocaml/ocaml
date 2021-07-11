@@ -17,9 +17,6 @@
 #include <caml/alloc.h>
 #include <caml/fail.h>
 #include "unixsupport.h"
-
-#ifdef HAS_TERMIOS
-
 #include <termios.h>
 #include <errno.h>
 
@@ -367,25 +364,3 @@ CAMLprim value caml_unix_tcflow(value fd, value action)
     caml_uerror("tcflow", Nothing);
   return Val_unit;
 }
-
-#else
-
-CAMLprim value caml_unix_tcgetattr(value fd)
-{ caml_invalid_argument("tcgetattr not implemented"); }
-
-CAMLprim value caml_unix_tcsetattr(value fd, value when, value arg)
-{ caml_invalid_argument("tcsetattr not implemented"); }
-
-CAMLprim value caml_unix_tcsendbreak(value fd, value delay)
-{ caml_invalid_argument("tcsendbreak not implemented"); }
-
-CAMLprim value caml_unix_tcdrain(value fd)
-{ caml_invalid_argument("tcdrain not implemented"); }
-
-CAMLprim value caml_unix_tcflush(value fd, value queue)
-{ caml_invalid_argument("tcflush not implemented"); }
-
-CAMLprim value caml_unix_tcflow(value fd, value action)
-{ caml_invalid_argument("tcflow not implemented"); }
-
-#endif

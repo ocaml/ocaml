@@ -26,8 +26,6 @@
 
 #include "unixsupport.h"
 
-#ifdef HAS_PUTENV
-
 CAMLprim value caml_unix_putenv(value name, value val)
 {
   char * s;
@@ -46,10 +44,3 @@ CAMLprim value caml_unix_putenv(value name, value val)
   }
   return Val_unit;
 }
-
-#else
-
-CAMLprim value caml_unix_putenv(value name, value val)
-{ caml_invalid_argument("putenv not implemented"); }
-
-#endif

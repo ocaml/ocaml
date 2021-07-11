@@ -16731,14 +16731,6 @@ fi
 
 fi
 
-ac_fn_c_check_func "$LINENO" "rewinddir" "ac_cv_func_rewinddir"
-if test "x$ac_cv_func_rewinddir" = xyes
-then :
-  printf "%s\n" "#define HAS_REWINDDIR 1" >>confdefs.h
-
-fi
-
-
 ac_fn_c_check_func "$LINENO" "getcwd" "ac_cv_func_getcwd"
 if test "x$ac_cv_func_getcwd" = xyes
 then :
@@ -16754,36 +16746,6 @@ then :
   printf "%s\n" "#define HAS_SYSTEM 1" >>confdefs.h
 
 fi
-
-ac_fn_c_check_func "$LINENO" "fchmod" "ac_cv_func_fchmod"
-if test "x$ac_cv_func_fchmod" = xyes
-then :
-  ac_fn_c_check_func "$LINENO" "fchown" "ac_cv_func_fchown"
-if test "x$ac_cv_func_fchown" = xyes
-then :
-  printf "%s\n" "#define HAS_FCHMOD 1" >>confdefs.h
-
-fi
-
-fi
-
-
-ac_fn_c_check_func "$LINENO" "realpath" "ac_cv_func_realpath"
-if test "x$ac_cv_func_realpath" = xyes
-then :
-  printf "%s\n" "#define HAS_REALPATH 1" >>confdefs.h
-
-fi
-
-
-## getgroups
-ac_fn_c_check_func "$LINENO" "getgroups" "ac_cv_func_getgroups"
-if test "x$ac_cv_func_getgroups" = xyes
-then :
-  printf "%s\n" "#define HAS_GETGROUPS 1" >>confdefs.h
-
-fi
-
 
 ## setgroups
 ac_fn_c_check_func "$LINENO" "setgroups" "ac_cv_func_setgroups"
@@ -16803,56 +16765,6 @@ then :
 fi
 
 
-## termios
-
-ac_fn_c_check_header_compile "$LINENO" "termios.h" "ac_cv_header_termios_h" "$ac_includes_default"
-if test "x$ac_cv_header_termios_h" = xyes
-then :
-  ac_fn_c_check_func "$LINENO" "tcgetattr" "ac_cv_func_tcgetattr"
-if test "x$ac_cv_func_tcgetattr" = xyes
-then :
-  ac_fn_c_check_func "$LINENO" "tcsetattr" "ac_cv_func_tcsetattr"
-if test "x$ac_cv_func_tcsetattr" = xyes
-then :
-  ac_fn_c_check_func "$LINENO" "tcsendbreak" "ac_cv_func_tcsendbreak"
-if test "x$ac_cv_func_tcsendbreak" = xyes
-then :
-  ac_fn_c_check_func "$LINENO" "tcflush" "ac_cv_func_tcflush"
-if test "x$ac_cv_func_tcflush" = xyes
-then :
-  ac_fn_c_check_func "$LINENO" "tcflow" "ac_cv_func_tcflow"
-if test "x$ac_cv_func_tcflow" = xyes
-then :
-  printf "%s\n" "#define HAS_TERMIOS 1" >>confdefs.h
-
-fi
-
-fi
-
-fi
-
-fi
-
-fi
-
-fi
-
-
-## setitimer
-
-ac_fn_c_check_func "$LINENO" "setitimer" "ac_cv_func_setitimer"
-if test "x$ac_cv_func_setitimer" = xyes
-then :
-
-    setitimer=true
-    printf "%s\n" "#define HAS_SETITIMER 1" >>confdefs.h
-
-
-else $as_nop
-  setitimer=false
-fi
-
-
 ## gettimeofday
 
 ac_fn_c_check_func "$LINENO" "gettimeofday" "ac_cv_func_gettimeofday"
@@ -16865,41 +16777,6 @@ then :
 
 else $as_nop
   gettimeofday=false
-fi
-
-
-## mktime
-
-ac_fn_c_check_func "$LINENO" "mktime" "ac_cv_func_mktime"
-if test "x$ac_cv_func_mktime" = xyes
-then :
-  printf "%s\n" "#define HAS_MKTIME 1" >>confdefs.h
-
-fi
-
-
-## setsid
-
-case $host in #(
-  *-cygwin|*-*-mingw32|*-pc-windows) :
-     ;; #(
-  *) :
-    ac_fn_c_check_func "$LINENO" "setsid" "ac_cv_func_setsid"
-if test "x$ac_cv_func_setsid" = xyes
-then :
-  printf "%s\n" "#define HAS_SETSID 1" >>confdefs.h
-
-fi
- ;;
-esac
-
-## putenv
-
-ac_fn_c_check_func "$LINENO" "putenv" "ac_cv_func_putenv"
-if test "x$ac_cv_func_putenv" = xyes
-then :
-  printf "%s\n" "#define HAS_PUTENV 1" >>confdefs.h
-
 fi
 
 
@@ -17572,16 +17449,6 @@ ac_fn_c_check_func "$LINENO" "mkstemp" "ac_cv_func_mkstemp"
 if test "x$ac_cv_func_mkstemp" = xyes
 then :
   printf "%s\n" "#define HAS_MKSTEMP 1" >>confdefs.h
-
-fi
-
-
-## nice
-
-ac_fn_c_check_func "$LINENO" "nice" "ac_cv_func_nice"
-if test "x$ac_cv_func_nice" = xyes
-then :
-  printf "%s\n" "#define HAS_NICE 1" >>confdefs.h
 
 fi
 
@@ -19257,17 +19124,11 @@ case $host in #(
     printf "%s\n" "#define HAS_BROKEN_PRINTF 1" >>confdefs.h
 
     printf "%s\n" "#define HAS_STRERROR 1" >>confdefs.h
-
-    printf "%s\n" "#define HAS_IPV6 1" >>confdefs.h
-
-    printf "%s\n" "#define HAS_NICE 1" >>confdefs.h
  ;; #(
   *-pc-windows) :
     printf "%s\n" "#define HAS_BROKEN_PRINTF 1" >>confdefs.h
 
     printf "%s\n" "#define HAS_STRERROR 1" >>confdefs.h
-
-    printf "%s\n" "#define HAS_NICE 1" >>confdefs.h
  ;; #(
   *-*-solaris*) :
     # This is required as otherwise floats are printed

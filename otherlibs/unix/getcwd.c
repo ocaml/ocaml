@@ -33,8 +33,6 @@
 #endif
 #endif
 
-#ifdef HAS_GETCWD
-
 CAMLprim value caml_unix_getcwd(value unit)
 {
   char_os buff[PATH_MAX];
@@ -43,10 +41,3 @@ CAMLprim value caml_unix_getcwd(value unit)
   if (ret == 0) caml_uerror("getcwd", Nothing);
   return caml_copy_string_of_os(buff);
 }
-
-#else
-
-CAMLprim value caml_unix_getcwd(value unit)
-{ caml_invalid_argument("getcwd not implemented"); }
-
-#endif

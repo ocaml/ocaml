@@ -57,8 +57,6 @@ CAMLprim value caml_unix_localtime(value t)
   return alloc_tm(tm);
 }
 
-#ifdef HAS_MKTIME
-
 CAMLprim value caml_unix_mktime(value t)
 {
   CAMLparam0();
@@ -85,10 +83,3 @@ CAMLprim value caml_unix_mktime(value t)
   Field(res, 1) = tmval;
   CAMLreturn(res);
 }
-
-#else
-
-CAMLprim value caml_unix_mktime(value t)
-{ caml_invalid_argument("mktime not implemented"); }
-
-#endif

@@ -19,8 +19,6 @@
 #include <caml/fail.h>
 #include "unixsupport.h"
 
-#ifdef HAS_REALPATH
-
 CAMLprim value caml_unix_realpath (value p)
 {
   CAMLparam1 (p);
@@ -34,10 +32,3 @@ CAMLprim value caml_unix_realpath (value p)
   free (r);
   CAMLreturn (rp);
 }
-
-#else
-
-CAMLprim value caml_unix_realpath (value p)
-{ caml_invalid_argument ("realpath not implemented"); }
-
-#endif

@@ -112,10 +112,6 @@
    Otherwise, we'll load /usr/include/sys/dir.h, and readdir() is expected to
    return a struct direct *. */
 
-#undef HAS_REWINDDIR
-
-/* Define HAS_REWINDDIR if you have rewinddir(). */
-
 #undef HAS_GETCWD
 
 /* Define HAS_GETCWD if the library provides the getcwd() function. */
@@ -124,50 +120,17 @@
 
 /* Define HAS_SYSTEM if the library provides the system() function. */
 
-#undef HAS_FCHMOD
-
-/* Define HAS_FCHMOD if you have fchmod() and fchown(). */
-
-#undef HAS_REALPATH
-/* Define HAS_REALPATH if you have realpath(). */
-
-#undef HAS_GETGROUPS
-
-/* Define HAS_GETGROUPS if you have getgroups(). */
-
 #undef HAS_SETGROUPS
 
 /* Define HAS_SETGROUPS if you have setgroups(). */
-/* Define HAS_WAIT4 if you have wait4(). */
 
 #undef HAS_INITGROUPS
 
 /* Define HAS_INITGROUPS if you have initgroups(). */
 
-#undef HAS_TERMIOS
-
-/* Define HAS_TERMIOS if you have /usr/include/termios.h and it is
-   Posix-compliant. */
-
-#undef HAS_SETITIMER
-
-/* Define HAS_SETITIMER if you have setitimer(). */
-
 #undef HAS_GETTIMEOFDAY
 
 /* Define HAS_GETTIMEOFDAY if you have gettimeofday(). */
-
-#undef HAS_MKTIME
-
-/* Define HAS_MKTIME if you have mktime(). */
-
-#undef HAS_SETSID
-
-/* Define HAS_SETSID if you have setsid(). */
-
-#undef HAS_PUTENV
-
-/* Define HAS_PUTENV if you have putenv(). */
 
 #undef HAS_SETENV_UNSETENV
 
@@ -204,10 +167,6 @@
    (7 is the Solaris version, 8 is the Linux version). */
 
 #undef HAS_MKSTEMP
-
-#undef HAS_NICE
-
-/* Define HAS_NICE if you have nice(). */
 
 #undef HAS_DUP3
 

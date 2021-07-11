@@ -20,8 +20,6 @@
 #include <sys/types.h>
 #include <dirent.h>
 
-#ifdef HAS_REWINDDIR
-
 CAMLprim value caml_unix_rewinddir(value vd)
 {
   DIR * d = DIR_Val(vd);
@@ -29,10 +27,3 @@ CAMLprim value caml_unix_rewinddir(value vd)
   rewinddir(d);
   return Val_unit;
 }
-
-#else
-
-CAMLprim value caml_unix_rewinddir(value d)
-{ caml_invalid_argument("rewinddir not implemented"); }
-
-#endif
