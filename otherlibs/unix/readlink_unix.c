@@ -18,9 +18,6 @@
 #include <caml/alloc.h>
 #include <caml/fail.h>
 #include <caml/signals.h>
-
-#ifdef HAS_SYMLINK
-
 #include <sys/param.h>
 #include <limits.h>
 #include "unixsupport.h"
@@ -41,10 +38,3 @@ CAMLprim value caml_unix_readlink(value path)
   buffer[len] = '\0';
   CAMLreturn(caml_copy_string(buffer));
 }
-
-#else
-
-CAMLprim value caml_unix_readlink(value path)
-{ caml_invalid_argument("readlink not implemented"); }
-
-#endif

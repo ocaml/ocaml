@@ -1654,10 +1654,6 @@ AC_CHECK_DECL([system], [AC_DEFINE([HAS_SYSTEM])], [], [[#include <stdlib.h>]])
 AC_CHECK_FUNC([fchmod],
   [AC_CHECK_FUNC([fchown], [AC_DEFINE([HAS_FCHMOD])])])
 
-AC_CHECK_FUNC([symlink],
-  [AC_CHECK_FUNC([readlink],
-    [AC_CHECK_FUNC([lstat], [AC_DEFINE([HAS_SYMLINK])])])])
-
 AC_CHECK_FUNC([realpath], [AC_DEFINE([HAS_REALPATH])])
 
 ## getgroups

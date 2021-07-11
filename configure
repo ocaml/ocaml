@@ -16784,24 +16784,6 @@ fi
 fi
 
 
-ac_fn_c_check_func "$LINENO" "symlink" "ac_cv_func_symlink"
-if test "x$ac_cv_func_symlink" = xyes
-then :
-  ac_fn_c_check_func "$LINENO" "readlink" "ac_cv_func_readlink"
-if test "x$ac_cv_func_readlink" = xyes
-then :
-  ac_fn_c_check_func "$LINENO" "lstat" "ac_cv_func_lstat"
-if test "x$ac_cv_func_lstat" = xyes
-then :
-  printf "%s\n" "#define HAS_SYMLINK 1" >>confdefs.h
-
-fi
-
-fi
-
-fi
-
-
 ac_fn_c_check_func "$LINENO" "realpath" "ac_cv_func_realpath"
 if test "x$ac_cv_func_realpath" = xyes
 then :

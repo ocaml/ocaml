@@ -107,11 +107,7 @@ CAMLprim value caml_unix_lstat(value path)
   caml_unix_check_path(path, "lstat");
   p = caml_stat_strdup(String_val(path));
   caml_enter_blocking_section();
-#ifdef HAS_SYMLINK
   ret = lstat(p, &buf);
-#else
-  ret = stat(p, &buf);
-#endif
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret == -1) caml_uerror("lstat", path);
@@ -158,11 +154,7 @@ CAMLprim value caml_unix_lstat_64(value path)
   caml_unix_check_path(path, "lstat");
   p = caml_stat_strdup(String_val(path));
   caml_enter_blocking_section();
-#ifdef HAS_SYMLINK
   ret = lstat(p, &buf);
-#else
-  ret = stat(p, &buf);
-#endif
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret == -1) caml_uerror("lstat", path);
