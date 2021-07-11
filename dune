@@ -156,7 +156,9 @@
    emit emitaux emitenv
    interf interval
    linear linearize linscan
-   liveness mach printcmm printlinear printmach proc reg reload reloadgen
+   liveness mach
+   polling printcmm printlinear printmach proc
+   reg reload reloadgen
    schedgen scheduling selectgen selection spill split
    strmatch x86_ast x86_dsl x86_gas x86_masm x86_proc
 
