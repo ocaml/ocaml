@@ -24,10 +24,6 @@
 #include "unixsupport.h"
 #include <unistd.h>
 
-#ifndef EOVERFLOW
-#define EOVERFLOW ERANGE
-#endif
-
 static int seek_command_table[] = {
   SEEK_SET, SEEK_CUR, SEEK_END
 };

@@ -40,10 +40,6 @@
 #define S_IFBLK 0
 #endif
 
-#ifndef EOVERFLOW
-#define EOVERFLOW ERANGE
-#endif
-
 static int file_kind_table[] = {
   S_IFREG, S_IFDIR, S_IFCHR, S_IFBLK, S_IFLNK, S_IFIFO, S_IFSOCK
 };
