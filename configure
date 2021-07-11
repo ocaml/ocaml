@@ -16810,32 +16810,6 @@ then :
 fi
 
 
-# wait
-ac_fn_c_check_func "$LINENO" "waitpid" "ac_cv_func_waitpid"
-if test "x$ac_cv_func_waitpid" = xyes
-then :
-
-    wait=true
-    printf "%s\n" "#define HAS_WAITPID 1" >>confdefs.h
-
-
-else $as_nop
-  wait=false
-fi
-
-
-# wait4
-ac_fn_c_check_func "$LINENO" "wait4" "ac_cv_func_wait4"
-if test "x$ac_cv_func_wait4" = xyes
-then :
-
-    has_wait=true
-    printf "%s\n" "#define HAS_WAIT4 1" >>confdefs.h
-
-
-fi
-
-
 ## getgroups
 ac_fn_c_check_func "$LINENO" "getgroups" "ac_cv_func_getgroups"
 if test "x$ac_cv_func_getgroups" = xyes
