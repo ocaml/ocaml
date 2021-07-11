@@ -1848,12 +1848,6 @@ AC_CHECK_HEADER([sys/shm.h],
 
 AC_CHECK_FUNC([execvpe], [AC_DEFINE([HAS_EXECVPE])])
 
-## posix_spawn
-
-AC_CHECK_HEADER([spawn.h],
-  [AC_CHECK_FUNC([posix_spawn],
-    [AC_CHECK_FUNC([posix_spawnp], [AC_DEFINE([HAS_POSIX_SPAWN])])])])
-
 ## ffs or _BitScanForward
 
 AC_CHECK_FUNC([ffs], [AC_DEFINE([HAS_FFS])])
