@@ -19,11 +19,7 @@
 #include <caml/signals.h>
 #include "unixsupport.h"
 #include <sys/types.h>
-#ifdef HAS_DIRENT
 #include <dirent.h>
-#else
-#include <sys/dir.h>
-#endif
 
 CAMLprim value caml_unix_opendir(value path)
 {
