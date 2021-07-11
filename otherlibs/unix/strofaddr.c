@@ -22,7 +22,6 @@
 CAMLprim value caml_unix_string_of_inet_addr(value a)
 {
   char * res;
-#ifdef HAS_IPV6
 #ifdef _WIN32
   char buffer[64];
   union sock_addr_union sa;
@@ -55,9 +54,6 @@ CAMLprim value caml_unix_string_of_inet_addr(value a)
     res = (char *)
       inet_ntop(AF_INET, (const void *) &GET_INET_ADDR(a),
                 buffer, sizeof(buffer));
-#endif
-#else
-  res = inet_ntoa(GET_INET_ADDR(a));
 #endif
   if (res == NULL) caml_uerror("string_of_inet_addr", Nothing);
   return caml_copy_string(res);

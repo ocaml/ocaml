@@ -102,10 +102,6 @@
 
 /* Define HAS_AFUNIX_H if you have <afunix.h>. */
 
-#undef HAS_INET_ATON
-
-#undef HAS_IPV6
-
 #undef HAS_STDINT_H
 
 #undef HAS_PTHREAD_NP_H

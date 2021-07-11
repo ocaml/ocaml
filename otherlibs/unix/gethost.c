@@ -84,7 +84,6 @@ CAMLprim value caml_unix_gethostbyaddr(value a)
   struct hostent * hp;
   int addr_type = AF_INET;
   socklen_t addr_len = 4;
-#if HAS_IPV6
   struct in6_addr in6;
   if (caml_string_length(a) == 16) {
     addr_type = AF_INET6;
@@ -92,12 +91,9 @@ CAMLprim value caml_unix_gethostbyaddr(value a)
     in6 = GET_INET6_ADDR(a);
     adr = (char *)&in6;
   } else {
-#endif
     in4 = GET_INET_ADDR(a);
     adr = (char *)&in4;
-#if HAS_IPV6
   }
-#endif
 #if HAS_GETHOSTBYADDR_R == 7
   struct hostent h;
   char buffer[NETDB_BUFFER_SIZE];

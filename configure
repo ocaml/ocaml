@@ -16674,14 +16674,6 @@ fi
  ;;
 esac
 
-ac_fn_c_check_func "$LINENO" "inet_aton" "ac_cv_func_inet_aton"
-if test "x$ac_cv_func_inet_aton" = xyes
-then :
-  printf "%s\n" "#define HAS_INET_ATON 1" >>confdefs.h
-
-fi
-
-
 ## Unix domain sockets support on Windows
 
 case $host in #(
@@ -16767,17 +16759,6 @@ then :
 
 else $as_nop
   ipv6=false
-fi
-
-fi
-
-if $ipv6
-then :
-  ac_fn_c_check_func "$LINENO" "inet_ntop" "ac_cv_func_inet_ntop"
-if test "x$ac_cv_func_inet_ntop" = xyes
-then :
-  printf "%s\n" "#define HAS_IPV6 1" >>confdefs.h
-
 fi
 
 fi
@@ -19536,8 +19517,6 @@ case $host in #(
     printf "%s\n" "#define HAS_BROKEN_PRINTF 1" >>confdefs.h
 
     printf "%s\n" "#define HAS_STRERROR 1" >>confdefs.h
-
-    printf "%s\n" "#define HAS_IPV6 1" >>confdefs.h
 
     printf "%s\n" "#define HAS_NICE 1" >>confdefs.h
  ;; #(

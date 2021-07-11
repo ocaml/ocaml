@@ -21,14 +21,7 @@
 #include <sys/socket.h>
 
 int caml_unix_socket_domain_table[] = {
-  PF_UNIX, PF_INET,
-#if defined(HAS_IPV6)
-  PF_INET6
-#elif defined(PF_UNSPEC)
-  PF_UNSPEC
-#else
-  0
-#endif
+  PF_UNIX, PF_INET, PF_INET6
 };
 
 int caml_unix_socket_type_table[] = {
