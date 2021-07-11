@@ -30,6 +30,7 @@ type t = {
   mutable data_items : Cmm.data_item list list;
   structured_constants : (string,  Clambda.ustructured_constant) Hashtbl.t;
   functions : Clambda.ufunction Queue.t;
+  mutable method_count : int;
 }
 
 let empty = {
@@ -37,6 +38,7 @@ let empty = {
   data_items = [];
   functions = Queue.create ();
   structured_constants = Hashtbl.create 16;
+  method_count = 0;
 }
 
 let state = empty
@@ -58,7 +60,14 @@ let get_and_clear_constants () =
 let get_and_clear_data_items () =
   let data_items = List.concat (List.rev state.data_items) in
   state.data_items <- [];
-  data_items
+  let method_cache =
+    if state.method_count > 0 then
+      Cmm.Cdefine_symbol (Compilenv.method_cache_symbol ())
+      :: (List.init state.method_count (fun _ -> Cmm.Cint Nativeint.zero))
+    else []
+  in
+  state.method_count <- 0;
+  method_cache @ data_items
 
 let next_function () =
   match Queue.take state.functions with
@@ -86,3 +95,8 @@ let structured_constant_of_sym s =
   match Compilenv.structured_constant_of_symbol s with
   | None -> get_structured_constant s
   | Some _ as r -> r
+
+let next_method () =
+  let r = state.method_count in
+  state.method_count <- state.method_count + 1;
+  r

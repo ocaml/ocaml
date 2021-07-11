@@ -242,7 +242,7 @@ type let_kind = Strict | Alias | StrictOpt
       we can discard e if x does not appear in e'
  *)
 
-type meth_kind = Self | Public | Cached
+type meth_kind = Self | Public
 
 val equal_meth_kind : meth_kind -> meth_kind -> bool
 

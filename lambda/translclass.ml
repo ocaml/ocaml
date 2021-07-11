@@ -576,9 +576,6 @@ let rec builtin_meths self env env2 body =
   | Lsend(Public, met, arg, [], _) ->
       let s, args = conv arg in
       ("send_"^s, met :: args)
-  | Lsend(Cached, met, arg, [_;_], _) ->
-      let s, args = conv arg in
-      ("send_"^s, met :: args)
   | Lfunction {kind = Curried; params = [x, _]; body} ->
       let rec enter self = function
         | Lprim(Parraysetu _, [Lvar s; Lvar n; Lvar x'], _)

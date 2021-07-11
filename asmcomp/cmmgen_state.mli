@@ -45,3 +45,5 @@ val add_structured_constant : string -> Clambda.ustructured_constant -> unit
 
 (* Also looks up using Compilenv.structured_constant_of_symbol *)
 val structured_constant_of_sym : string -> Clambda.ustructured_constant option
+
+val next_method : unit -> int

@@ -251,14 +251,13 @@ type function_kind = Curried | Tupled
 
 type let_kind = Strict | Alias | StrictOpt
 
-type meth_kind = Self | Public | Cached
+type meth_kind = Self | Public
 
 let equal_meth_kind x y =
   match x, y with
   | Self, Self -> true
   | Public, Public -> true
-  | Cached, Cached -> true
-  | (Self | Public | Cached), _ -> false
+  | (Self | Public), _ -> false
 
 type shared_code = (int * int) list
 

@@ -627,7 +627,7 @@ let rec lam ppf = function
       let args ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
       let kind =
-        if k = Self then "self" else if k = Cached then "cache" else "" in
+        if k = Self then "self" else "" in
       fprintf ppf "@[<2>(send%s@ %a@ %a%a)@]" kind lam obj lam met args largs
   | Levent(expr, ev) ->
       let kind =
