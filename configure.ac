@@ -625,8 +625,10 @@ lib_dynlink=true
 lib_runtime_events=true
 AS_CASE([$host,$enable_unix_lib,$posix_2008_supported],
   [*,no,*], [ocamltest_libunix="None"],
-  [*-*-mingw32,*,*|*-pc-windows,*,*|*,*,yes],
-    [enable_unix_lib=yes
+  [*-*-mingw32,*,*|*-pc-windows,*,*|*,*,*],
+    [AS_IF([test x"$posix_2008_support" = "xno"],
+      [AC_MSG_WARN([POSIX 1003.1-2008 compliance not detected; risking it])])
+    enable_unix_lib=yes
     AC_CONFIG_FILES([otherlibs/unix/META])
     lib_unix=true
     ocamltest_unix_impl="real"
@@ -635,11 +637,7 @@ AS_CASE([$host,$enable_unix_lib,$posix_2008_supported],
     ocamltest_unix_include='-I $(ROOTDIR)/otherlibs/unix '
     otherlibraries="$otherlibraries unix"],
   [*,yes,no],
-    [AC_MSG_ERROR([libunix requires a POSIX 1003.1-2008 compliant host])],
-  [*,*,no],
-    [enable_unix_lib=no
-    ocamltest_libunix="None"
-    AC_MSG_WARN([libunix will not be built])])
+    [AC_MSG_ERROR([libunix requires a POSIX 1003.1-2008 compliant host])])
 AS_IF([test x"$enable_str_lib" != "xno"],
   [otherlibraries="$otherlibraries str"
   lib_str=true

@@ -13587,7 +13587,12 @@ lib_runtime_events=true
 case $host,$enable_unix_lib,$posix_2008_supported in #(
   *,no,*) :
     ocamltest_libunix="None" ;; #(
-  *-*-mingw32,*,*|*-pc-windows,*,*|*,*,yes) :
+  *-*-mingw32,*,*|*-pc-windows,*,*|*,*,*) :
+    if test x"$posix_2008_support" = "xno"
+then :
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: POSIX 1003.1-2008 compliance not detected; risking it" >&5
+printf "%s\n" "$as_me: WARNING: POSIX 1003.1-2008 compliance not detected; risking it" >&2;}
+fi
     enable_unix_lib=yes
     ac_config_files="$ac_config_files otherlibs/unix/META"
 
@@ -13599,11 +13604,6 @@ case $host,$enable_unix_lib,$posix_2008_supported in #(
     otherlibraries="$otherlibraries unix" ;; #(
   *,yes,no) :
     as_fn_error $? "libunix requires a POSIX 1003.1-2008 compliant host" "$LINENO" 5 ;; #(
-  *,*,no) :
-    enable_unix_lib=no
-    ocamltest_libunix="None"
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: libunix will not be built" >&5
-printf "%s\n" "$as_me: WARNING: libunix will not be built" >&2;} ;; #(
   *) :
      ;;
 esac
