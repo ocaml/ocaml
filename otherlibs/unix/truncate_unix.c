@@ -24,8 +24,6 @@
 #include "unixsupport.h"
 #include <unistd.h>
 
-#ifdef HAS_TRUNCATE
-
 CAMLprim value caml_unix_truncate(value path, value len)
 {
   CAMLparam2(path, len);
@@ -58,13 +56,3 @@ CAMLprim value caml_unix_truncate_64(value path, value vlen)
     caml_uerror("truncate", path);
   CAMLreturn(Val_unit);
 }
-
-#else
-
-CAMLprim value caml_unix_truncate(value path, value len)
-{ caml_invalid_argument("truncate not implemented"); }
-
-CAMLprim value caml_unix_truncate_64(value path, value len)
-{ caml_invalid_argument("truncate not implemented"); }
-
-#endif

@@ -136,11 +136,6 @@
 
 /* Define HAS_FCHMOD if you have fchmod() and fchown(). */
 
-#undef HAS_TRUNCATE
-
-/* Define HAS_TRUNCATE if you have truncate() and
-   ftruncate(). */
-
 #undef HAS_SYMLINK
 
 /* Define HAS_SYMLINK if you have symlink() and readlink() and lstat(). */

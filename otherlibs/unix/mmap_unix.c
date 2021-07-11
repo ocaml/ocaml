@@ -49,7 +49,6 @@ static int caml_grow_file(int fd, file_offset size)
    */
   c = 0;
   p = pwrite(fd, &c, 1, size - 1);
-#ifdef HAS_TRUNCATE
   if (p == -1 && errno == ESPIPE) {
     /* Plan B. Check if at least ftruncate is possible. There are
        some non-seekable descriptor types that do not support pwrite
@@ -59,7 +58,6 @@ static int caml_grow_file(int fd, file_offset size)
      */
     p = ftruncate(fd, size);
   }
-#endif
   return p;
 }
 
