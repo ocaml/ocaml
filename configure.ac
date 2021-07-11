@@ -1645,8 +1645,6 @@ AC_CHECK_FUNC([rewinddir], [AC_DEFINE([HAS_REWINDDIR])])
 
 AC_CHECK_FUNC([lockf], [AC_DEFINE([HAS_LOCKF])])
 
-AC_CHECK_FUNC([mkfifo], [AC_DEFINE([HAS_MKFIFO])])
-
 AC_CHECK_FUNC([getcwd], [AC_DEFINE([HAS_GETCWD])])
 
 AC_CHECK_DECL([system], [AC_DEFINE([HAS_SYSTEM])], [], [[#include <stdlib.h>]])

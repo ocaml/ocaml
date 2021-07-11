@@ -120,10 +120,6 @@
 
 /* Define HAS_LOCKF if the library provides the lockf() function. */
 
-#undef HAS_MKFIFO
-
-/* Define HAS_MKFIFO if the library provides the mkfifo() function. */
-
 #undef HAS_GETCWD
 
 /* Define HAS_GETCWD if the library provides the getcwd() function. */
