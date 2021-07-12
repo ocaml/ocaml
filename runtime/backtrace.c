@@ -104,8 +104,8 @@ static void print_location(struct caml_loc_info * li, int index)
   }
 }
 
-/* Print a backtrace */
-CAMLexport void caml_print_exception_backtrace(void)
+/* Print a callstack backtrace */
+void caml_print_backtrace_buffer(backtrace_slot * buffer, int len)
 {
   int i;
   struct caml_loc_info li;
@@ -117,8 +117,8 @@ CAMLexport void caml_print_exception_backtrace(void)
     return;
   }
 
-  for (i = 0; i < Caml_state->backtrace_pos; i++) {
-    for (dbg = caml_debuginfo_extract(Caml_state->backtrace_buffer[i]);
+  for (i = 0; i < len; i++) {
+    for (dbg = caml_debuginfo_extract(buffer[i]);
          dbg != NULL;
          dbg = caml_debuginfo_next(dbg))
     {
@@ -126,6 +126,13 @@ CAMLexport void caml_print_exception_backtrace(void)
       print_location(&li, i);
     }
   }
+}
+
+/* Print a backtrace */
+CAMLexport void caml_print_exception_backtrace(void)
+{
+  caml_print_backtrace_buffer(Caml_state->backtrace_buffer,
+                              Caml_state->backtrace_pos);
 
   /* See also printexc.ml */
   switch (caml_debug_info_status()) {
@@ -377,4 +384,23 @@ CAMLprim value caml_get_current_callstack(value max_frames_value)
   memcpy(Op_val(res), callstack, sizeof(value) * callstack_len);
   caml_stat_free(callstack);
   CAMLreturn(res);
+}
+
+void caml_print_current_callstack(int max_frames)
+{
+  value bt;
+  int callstack_len;
+  backtrace_slot* bt_buffer;
+  int i;
+
+  bt = caml_get_current_callstack(Val_long(max_frames));
+
+  callstack_len = Wosize_val(bt);
+  bt_buffer = caml_stat_alloc(callstack_len * sizeof(backtrace_slot));
+  for (i = 0; i < callstack_len; i++)
+    bt_buffer[i] = Backtrace_slot_val(Field(bt,i));
+
+  caml_print_backtrace_buffer(bt_buffer, callstack_len);
+
+  caml_stat_free(bt_buffer);
 }

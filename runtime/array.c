@@ -18,6 +18,7 @@
 /* Operations on arrays */
 #include <string.h>
 #include "caml/alloc.h"
+#include "caml/backtrace.h"
 #include "caml/fail.h"
 #include "caml/memory.h"
 #include "caml/misc.h"
@@ -248,6 +249,17 @@ CAMLprim value caml_make_vect(value len, value init)
          no need to call [caml_initialize]. */
       for (i = 0; i < size; i++) Field(res, i) = init;
     }
+  }
+  if (caml_float_array_alloc_warning_active()
+      && Is_block(init)
+      && Is_in_value_area(init)
+      && Tag_val(init) == Double_tag) {
+#ifdef FLAT_FLOAT_ARRAY
+    fprintf(stderr, "[ocaml] allocating a float array\n");
+#else
+    fprintf(stderr, "[ocaml] allocating a boxed float array\n");
+#endif
+    caml_print_current_callstack(caml_float_array_alloc_warning);
   }
   // Give the GC a chance to run, and run memprof callbacks
   caml_process_pending_actions ();

@@ -126,6 +126,25 @@ external enable_runtime_warnings: bool -> unit =
 external runtime_warnings_enabled: unit -> bool =
   "caml_ml_runtime_warnings_enabled"
 
+external c_enable_float_array_alloc_warning: int -> unit =
+  "caml_ml_enable_float_array_alloc_warning"
+
+external c_float_array_alloc_warning_enabled: unit -> int =
+  "caml_ml_float_array_alloc_warning_enabled"
+
+let enable_float_array_alloc_warning size_opt = match size_opt with
+  | None -> c_enable_float_array_alloc_warning (-1)
+  | Some size ->
+      if size < 0 then
+        invalid_arg
+          "Sys.enable_float_array_alloc_warning: callstack size should be >= 0"
+      else
+        c_enable_float_array_alloc_warning size
+
+let float_array_alloc_warning_enabled () =
+  let size = c_float_array_alloc_warning_enabled () in
+  if size < 0 then None else Some size
+
 (* The version string is found in file ../VERSION *)
 
 let ocaml_version = "%%VERSION%%"
