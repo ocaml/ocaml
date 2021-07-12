@@ -784,11 +784,10 @@ let lookup_label obj lab dbg =
 
 let call_cached_method obj tag cache pos args dbg =
   let arity = List.length args in
-  let cache = array_indexing log2_size_addr cache pos dbg in
   Compilenv.need_send_fun arity;
   Cop(Capply typ_val,
       Cconst_symbol("caml_send" ^ Int.to_string arity, dbg) ::
-        obj :: tag :: cache :: args,
+        obj :: tag :: cache :: pos :: args,
       dbg)
 
 (* Allocation *)
@@ -1726,7 +1725,7 @@ CAMLprim value caml_cache_public_method (value meths, value tag, value *cache)
 }
 *)
 
-let cache_public_method meths tag cache dbg =
+let cache_public_method meths tag cache pos dbg =
   let raise_num = Lambda.next_raise_count () in
   let cconst_int i = Cconst_int (i, dbg) in
   let li = V.create_local "*li*" and hi = V.create_local "*hi*"
@@ -1770,7 +1769,7 @@ let cache_public_method meths tag cache dbg =
     VP.create tagged,
       Cop(Caddi, [lsl_const (Cvar li) log2_size_addr dbg;
         cconst_int(1 - 3 * size_addr)], dbg),
-    Csequence(Cop (Cstore (Word_int, Assignment), [cache; Cvar tagged], dbg),
+    Csequence(int_array_set cache pos (Cvar tagged) dbg,
               Cvar tagged)))))
 
 (* CR mshinwell: These will be filled in by later pull requests. *)
@@ -1831,10 +1830,12 @@ let send_function arity =
   let cconst_int i = Cconst_int (i, dbg ()) in
   let (args, clos', body) = apply_function_body (1+arity) in
   let cache = V.create_local "cache"
+  and pos = V.create_local "pos"
   and obj = List.hd args
   and tag = V.create_local "tag" in
   let clos =
-    let cache = Cvar cache and obj = Cvar obj and tag = Cvar tag in
+    let cache = Cvar cache and obj = Cvar obj and tag = Cvar tag
+    and pos = Cvar pos in
     let meths = V.create_local "meths" and cached = V.create_local "cached" in
     let real = V.create_local "real" in
     let mask = get_field_gen Asttypes.Mutable (Cvar meths) 1 (dbg ()) in
@@ -1846,13 +1847,13 @@ let send_function arity =
     VP.create meths, Cop(Cload (Word_val, Mutable), [obj], dbg ()),
     Clet (
     VP.create cached,
-      Cop(Cand, [Cop(Cload (Word_int, Mutable), [cache], dbg ()); mask],
+      Cop(Cand, [int_array_ref cache pos (dbg ()); mask],
           dbg ()),
     Clet (
     VP.create real,
     Cifthenelse(Cop(Ccmpa Cne, [tag'; tag], dbg ()),
                 dbg (),
-                cache_public_method (Cvar meths) tag cache (dbg ()),
+                cache_public_method (Cvar meths) tag cache pos (dbg ()),
                 dbg (),
                 cached_pos,
                 dbg ()),
@@ -1865,7 +1866,7 @@ let send_function arity =
   let cache = cache in
   let fun_name = "caml_send" ^ Int.to_string arity in
   let fun_args =
-    [obj, typ_val; tag, typ_int; cache, typ_val]
+    [obj, typ_val; tag, typ_int; cache, typ_val; pos, typ_int]
     @ List.map (fun id -> (id, typ_val)) (List.tl args) in
   let fun_dbg = placeholder_fun_dbg ~human_name:fun_name in
   Cfunction
