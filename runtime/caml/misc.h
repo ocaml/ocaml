@@ -273,7 +273,9 @@ extern double caml_log1p(double);
 
 #define access_os _waccess
 #define open_os _wopen
+#ifndef CAML_INTERNALS
 #define stat_os _wstati64
+#endif
 #define unlink_os _wunlink
 #define rename_os caml_win32_rename
 #define chdir_os _wchdir
@@ -311,7 +313,9 @@ extern double caml_log1p(double);
 
 #define access_os access
 #define open_os open
+#ifndef CAML_INTERNALS
 #define stat_os stat
+#endif
 #define unlink_os unlink
 #define rename_os rename
 #define chdir_os chdir
@@ -343,6 +347,12 @@ extern double caml_log1p(double);
 
 #endif /* _WIN32 */
 
+#ifdef CAML_INTERNALS
+/* stat cannot be used in a cross-platform because Windows implementations are
+   unreliable. Windows-specific code will almost certainly be needed and you
+   should not trust any documentation which suggests using _wstati64! */
+#define stat_os(path, buf) @dont_use_stat_see_misc_h
+#endif
 
 /* Data structures */
 
