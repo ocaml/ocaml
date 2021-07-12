@@ -68,7 +68,6 @@ build: [
     #"PARTIALLD=ld -r -melf_i386" {ocaml-option-32bit:installed & os="linux"}
     # 32bit options above commented out just to reduce diff with ocaml-variants.4.12.0+options
     "LIBS=-static" {ocaml-option-static:installed}
-    "--disable-warn-error"
   ]
   [make "-j%{jobs}%"]
 ]
