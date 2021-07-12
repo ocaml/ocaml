@@ -79,9 +79,11 @@ struct ev_info {
   code_t ev_pc;
   char *ev_filename;
   char *ev_defname;
-  int ev_lnum;
-  int ev_startchr;
-  int ev_endchr;
+  int ev_start_lnum;
+  int ev_start_chr;  /* Relative to ev_start_lnum */
+  int ev_end_lnum;
+  int ev_end_chr;    /* Relative to ev_end_lnum */
+  int ev_end_offset; /* Relative to ev_start_lnum */
 };
 
 struct debug_info {
@@ -113,25 +115,27 @@ static int cmp_ev_info(const void *a, const void *b)
   int num_b;
 
   /* Perform a full lexicographic comparison to make sure the resulting order is
-     the same under all implementations of qsort (which is not stable). */
+     the same under all implementations of qsort (which is not stable).
+     NB a->ev_end_offset == b->ev_end_offset =>
+           a->ev_end_lnum == b->ev_end_lnum && a->ev_end_chr == b->ev_end_chr */
 
   if (pc_a > pc_b) return 1;
   if (pc_a < pc_b) return -1;
 
-  num_a = ev_a->ev_lnum;
-  num_b = ev_b->ev_lnum;
+  num_a = ev_a->ev_start_lnum;
+  num_b = ev_b->ev_start_lnum;
 
   if (num_a > num_b) return 1;
   if (num_a < num_b) return -1;
 
-  num_a = ev_a->ev_startchr;
-  num_b = ev_b->ev_startchr;
+  num_a = ev_a->ev_start_chr;
+  num_b = ev_b->ev_start_chr;
 
   if (num_a > num_b) return 1;
   if (num_a < num_b) return -1;
 
-  num_a = ev_a->ev_endchr;
-  num_b = ev_b->ev_endchr;
+  num_a = ev_a->ev_end_offset;
+  num_b = ev_b->ev_end_offset;
 
   if (num_a > num_b) return 1;
   if (num_a < num_b) return -1;
@@ -144,7 +148,7 @@ static struct ev_info *process_debug_events(code_t code_start,
                                             mlsize_t *num_events)
 {
   CAMLparam1(events_heap);
-  CAMLlocal3(l, ev, ev_start);
+  CAMLlocal4(l, ev, ev_start, ev_end);
   mlsize_t i, j;
   struct ev_info *events;
 
@@ -170,6 +174,7 @@ static struct ev_info *process_debug_events(code_t code_start,
                                  + Long_val(Field(ev, EV_POS)));
 
       ev_start = Field(Field(ev, EV_LOC), LOC_START);
+      ev_end = Field(Field(ev, EV_LOC), LOC_END);
 
       {
         const char *fname = String_val(Field(ev_start, POS_FNAME));
@@ -188,13 +193,14 @@ static struct ev_info *process_debug_events(code_t code_start,
         events[j].ev_defname = "<old bytecode>";
       }
 
-      events[j].ev_lnum = Int_val(Field(ev_start, POS_LNUM));
-      events[j].ev_startchr =
-        Int_val(Field(ev_start, POS_CNUM))
-        - Int_val(Field(ev_start, POS_BOL));
-      events[j].ev_endchr =
-        Int_val(Field(Field(Field(ev, EV_LOC), LOC_END), POS_CNUM))
-        - Int_val(Field(ev_start, POS_BOL));
+      events[j].ev_start_lnum = Int_val(Field(ev_start, POS_LNUM));
+      events[j].ev_start_chr =
+        Int_val(Field(ev_start, POS_CNUM)) - Int_val(Field(ev_start, POS_BOL));
+      events[j].ev_end_lnum = Int_val(Field(ev_end, POS_LNUM));
+      events[j].ev_end_chr =
+        Int_val(Field(ev_end, POS_CNUM)) - Int_val(Field(ev_end, POS_BOL));
+      events[j].ev_end_offset =
+        Int_val(Field(ev_end, POS_CNUM)) - Int_val(Field(ev_start, POS_BOL));
 
       j++;
     }
@@ -494,9 +500,11 @@ void caml_debuginfo_location(debuginfo dbg,
   li->loc_is_inlined = 0;
   li->loc_filename = event->ev_filename;
   li->loc_defname = event->ev_defname;
-  li->loc_lnum = event->ev_lnum;
-  li->loc_startchr = event->ev_startchr;
-  li->loc_endchr = event->ev_endchr;
+  li->loc_start_lnum = event->ev_start_lnum;
+  li->loc_start_chr = event->ev_start_chr;
+  li->loc_end_lnum = event->ev_end_lnum;
+  li->loc_end_chr = event->ev_end_chr;
+  li->loc_end_offset = event->ev_end_offset;
 }
 
 debuginfo caml_debuginfo_extract(backtrace_slot slot)

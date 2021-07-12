@@ -37,9 +37,11 @@ struct caml_loc_info {
   int loc_is_raise;
   char * loc_filename;
   char * loc_defname;
-  int loc_lnum;
-  int loc_startchr;
-  int loc_endchr;
+  int loc_start_lnum;
+  int loc_start_chr;
+  int loc_end_lnum;
+  int loc_end_chr;
+  int loc_end_offset;
   int loc_is_inlined;
 };
 
