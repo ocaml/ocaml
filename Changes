@@ -7,6 +7,10 @@ Working version
 
 ### Runtime system:
 
+* #9391, #9424: Fix failed assertion in runtime due to ephemerons *set_*
+  function during Mark phase
+  (François Bobot, reported by Stephen Dolan, review by Damien Doligez)
+
 ### Code generation and optimizations:
 
 ### Standard library:
