@@ -114,9 +114,23 @@ let implementation info ~backend =
     List.iter (fun suf -> remove_file (suf info)) sufs;
   in
   Misc.try_finally ?always:None ~exceptionally (fun () ->
-    let parsed = parse_impl info in
     if Clflags.(should_stop_after Compiler_pass.Parsing) then () else begin
-      let typed = typecheck_impl info parsed in
+      let typed =
+        match Filename.check_suffix info.source_file ".cmt" with
+        | false ->
+            let parsed = parse_impl info in
+            typecheck_impl info parsed
+        | true ->
+            let cmt_infos = Cmt_format.read_cmt info.source_file in
+            let (structure, coercion) =
+              match cmt_infos.cmt_annots with
+              | Implementation (structure, coercion) -> (structure, coercion)
+              | _ -> Misc.fatal_errorf "%s cannot be used for compilation"
+                       info.source_file
+            in
+            let signature = [] (* not used anyway *) in
+            { Typedtree. structure ; coercion ; signature }
+      in
       if Clflags.(should_stop_after Compiler_pass.Typing) then () else begin
         backend info typed
       end;

@@ -5892,6 +5892,7 @@ driver/compile_common.cmo : \
     utils/config.cmi \
     driver/compmisc.cmi \
     driver/compenv.cmi \
+    file_formats/cmt_format.cmi \
     utils/clflags.cmi \
     parsing/builtin_attributes.cmi \
     driver/compile_common.cmi
@@ -5912,6 +5913,7 @@ driver/compile_common.cmx : \
     utils/config.cmx \
     driver/compmisc.cmx \
     driver/compenv.cmx \
+    file_formats/cmt_format.cmx \
     utils/clflags.cmx \
     parsing/builtin_attributes.cmx \
     driver/compile_common.cmi

@@ -30,7 +30,7 @@ let read_magic_number ic =
 
 type binary_annots =
   | Packed of Types.signature * string list
-  | Implementation of structure
+  | Implementation of structure * module_coercion
   | Interface of signature
   | Partial_implementation of binary_part array
   | Partial_interface of binary_part array
@@ -91,7 +91,8 @@ let clear_part = function
 let clear_env binary_annots =
   if need_to_clear_env then
     match binary_annots with
-    | Implementation s -> Implementation (cenv.structure cenv s)
+    | Implementation (s, coercion) ->
+        Implementation (cenv.structure cenv s, coercion)
     | Interface s -> Interface (cenv.signature cenv s)
     | Packed _ -> binary_annots
     | Partial_implementation array ->
