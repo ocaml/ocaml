@@ -206,21 +206,33 @@ let ignore_high_bit_int = function
         [Cop(Clsl, [c; Cconst_int (1, _)], _); Cconst_int (1, _)], _) -> c
   | c -> c
 
-let lsr_int c1 c2 dbg =
+let size_int_in_bits = size_int * 8
+
+let rec lsr_int c1 c2 dbg =
   match c2 with
     Cconst_int (0, _) ->
       c1
-  | Cconst_int (n, _) when n > 0 ->
-      Cop(Clsr, [ignore_low_bit_int c1; c2], dbg)
+  | Cconst_int (n, _) when n > 0 -> begin
+      match ignore_low_bit_int c1 with
+      | Cop(Clsr, [c11; Cconst_int (m, _)], _)
+           when m > 0 && (m + n) < size_int_in_bits ->
+         lsr_int c11 (Cconst_int (m + n, dbg)) dbg
+      | c1 -> Cop(Clsr, [c1; c2], dbg)
+    end
   | _ ->
       Cop(Clsr, [c1; c2], dbg)
 
-let asr_int c1 c2 dbg =
+let rec asr_int c1 c2 dbg =
   match c2 with
     Cconst_int (0, _) ->
       c1
-  | Cconst_int (n, _) when n > 0 ->
-      Cop(Casr, [ignore_low_bit_int c1; c2], dbg)
+  | Cconst_int (n, _) when n > 0 -> begin
+      match ignore_low_bit_int c1 with
+      | Cop (Casr, [c11; Cconst_int (m, _)], _)
+           when m > 0 && (m + n) < size_int_in_bits ->
+         asr_int c11 (Cconst_int (m + n, dbg)) dbg
+      | c1 -> Cop(Casr, [c1; c2], dbg)
+    end
   | _ ->
       Cop(Casr, [c1; c2], dbg)
 
