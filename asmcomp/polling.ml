@@ -24,6 +24,7 @@ module String = Misc.Stdlib.String
 
 let function_is_assumed_to_never_poll func =
   String.starts_with ~prefix:"caml_apply" func
+  || String.starts_with ~prefix:"caml_send" func
 
 (* Detection of recursive handlers that are not guaranteed to poll
    at every loop iteration. *)
