@@ -67,10 +67,6 @@ CAMLprim value unix_wait(value unit)
   return alloc_process_status(pid, status);
 }
 
-#ifdef HAS_WAIT4
-#define waitpid(pid,status,opts) wait4(pid,status,opts,NULL)
-#endif
-
 static int wait_flag_table[] = {
   WNOHANG, WUNTRACED
 };

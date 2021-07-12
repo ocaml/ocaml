@@ -106,10 +106,6 @@
 
 /* Define HAS_SYSTEM if the library provides the system() function. */
 
-#undef HAS_WAIT4
-
-/* Define HAS_WAIT4 if you have wait4(). */
-
 #undef HAS_SETGROUPS
 
 /* Define HAS_SETGROUPS if you have setgroups(). */

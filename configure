@@ -15512,17 +15512,6 @@ if test "x$ac_cv_have_decl_system" = xyes; then :
 fi
 
 
-# wait4
-ac_fn_c_check_func "$LINENO" "wait4" "ac_cv_func_wait4"
-if test "x$ac_cv_func_wait4" = xyes; then :
-
-    has_wait=true
-    $as_echo "#define HAS_WAIT4 1" >>confdefs.h
-
-
-fi
-
-
 ## setgroups
 ac_fn_c_check_func "$LINENO" "setgroups" "ac_cv_func_setgroups"
 if test "x$ac_cv_func_setgroups" = xyes; then :

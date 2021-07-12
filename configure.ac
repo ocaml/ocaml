@@ -1456,14 +1456,6 @@ AC_CHECK_FUNC([getcwd], [AC_DEFINE([HAS_GETCWD])])
 
 AC_CHECK_DECL([system], [AC_DEFINE([HAS_SYSTEM])], [], [[#include <stdlib.h>]])
 
-# wait4
-AC_CHECK_FUNC(
-  [wait4],
-  [
-    has_wait=true
-    AC_DEFINE([HAS_WAIT4])
-  ])
-
 ## setgroups
 AC_CHECK_FUNC([setgroups], [AC_DEFINE([HAS_SETGROUPS])])
 
