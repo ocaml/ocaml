@@ -74,6 +74,15 @@ CAMLdeprecated_typedef(addr, char *);
   #define Noreturn
 #endif
 
+/* Manually preventing inlining */
+#if defined(__GNUC__)
+  #define Caml_noinline __attribute__ ((noinline))
+#elif defined(_MSC_VER)
+  #define Caml_noinline __declspec(noinline)
+#else
+  #define Caml_noinline
+#endif
+
 /* Export control (to mark primitives and to handle Windows DLL) */
 
 #ifndef CAMLDLLIMPORT

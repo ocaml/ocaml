@@ -251,25 +251,21 @@ int caml_page_table_remove(int kind, void * start, void * end)
 */
 char *caml_alloc_for_heap (asize_t request)
 {
+  char *mem;
   if (caml_use_huge_pages){
-#ifdef HAS_HUGE_PAGES
+#ifndef HAS_HUGE_PAGES
+    return NULL;
+#else
     uintnat size = Round_mmap_size (sizeof (heap_chunk_head) + request);
     void *block;
-    char *mem;
     block = mmap (NULL, size, PROT_READ | PROT_WRITE,
                   MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, -1, 0);
     if (block == MAP_FAILED) return NULL;
     mem = (char *) block + sizeof (heap_chunk_head);
     Chunk_size (mem) = size - sizeof (heap_chunk_head);
     Chunk_block (mem) = block;
-    Chunk_redarken_start(mem) = (value*)(mem + Chunk_size(mem));
-    Chunk_redarken_end(mem) = (value*)mem;
-    return mem;
-#else
-    return NULL;
 #endif
   }else{
-    char *mem;
     void *block;
 
     request = ((request + Page_size - 1) >> Page_log) << Page_log;
@@ -279,10 +275,11 @@ char *caml_alloc_for_heap (asize_t request)
     mem += sizeof (heap_chunk_head);
     Chunk_size (mem) = request;
     Chunk_block (mem) = block;
-    Chunk_redarken_start(mem) = (value*)(mem + Chunk_size(mem));
-    Chunk_redarken_end(mem) = (value*)mem;
-    return mem;
   }
+  Chunk_head (mem)->redarken_first.start = (value*)(mem + Chunk_size(mem));
+  Chunk_head (mem)->redarken_first.end = (value*)(mem + Chunk_size(mem));
+  Chunk_head (mem)->redarken_end = (value*)mem;
+  return mem;
 }
 
 /* Use this function to free a block allocated with [caml_alloc_for_heap]
