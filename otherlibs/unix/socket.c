@@ -17,21 +17,11 @@
 #include <caml/fail.h>
 #include <caml/mlvalues.h>
 #include "unixsupport.h"
-
-#ifdef HAS_SOCKETS
-
 #include <sys/types.h>
 #include <sys/socket.h>
 
 int socket_domain_table[] = {
-  PF_UNIX, PF_INET,
-#if defined(HAS_IPV6)
-  PF_INET6
-#elif defined(PF_UNSPEC)
-  PF_UNSPEC
-#else
-  0
-#endif
+  PF_UNIX, PF_INET, PF_INET6
 };
 
 int socket_type_table[] = {
@@ -55,11 +45,3 @@ CAMLprim value unix_socket(value cloexec, value domain,
 #endif
   return Val_int(retcode);
 }
-
-#else
-
-CAMLprim value unix_socket(value cloexec, value domain,
-                           value type,value proto)
-{ caml_invalid_argument("socket not implemented"); }
-
-#endif

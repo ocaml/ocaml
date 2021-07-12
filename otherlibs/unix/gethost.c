@@ -20,9 +20,6 @@
 #include <caml/memory.h>
 #include <caml/signals.h>
 #include "unixsupport.h"
-
-#ifdef HAS_SOCKETS
-
 #include "socketaddr.h"
 #ifndef _WIN32
 #include <sys/types.h>
@@ -43,13 +40,11 @@ extern int socket_domain_table[];
 static value alloc_one_addr(char const *a)
 {
   struct in_addr addr;
-#ifdef HAS_IPV6
   struct in6_addr addr6;
   if (entry_h_length == 16) {
     memmove(&addr6, a, 16);
     return alloc_inet6_addr(&addr6);
   }
-#endif
   memmove (&addr, a, 4);
   return alloc_inet_addr(&addr);
 }
@@ -161,13 +156,3 @@ CAMLprim value unix_gethostbyname(value name)
   if (hp == (struct hostent *) NULL) caml_raise_not_found();
   return alloc_host_entry(hp);
 }
-
-#else
-
-CAMLprim value unix_gethostbyaddr(value name)
-{ caml_invalid_argument("gethostbyaddr not implemented"); }
-
-CAMLprim value unix_gethostbyname(value name)
-{ caml_invalid_argument("gethostbyname not implemented"); }
-
-#endif

@@ -20,9 +20,6 @@
 #include <caml/memory.h>
 #include <caml/signals.h>
 #include "unixsupport.h"
-
-#ifdef HAS_SOCKETS
-
 #include "socketaddr.h"
 
 CAMLprim value unix_accept(value cloexec, value sock)
@@ -55,10 +52,3 @@ CAMLprim value unix_accept(value cloexec, value sock)
   End_roots();
   return res;
 }
-
-#else
-
-CAMLprim value unix_accept(value cloexec, value sock)
-{ caml_invalid_argument("accept not implemented"); }
-
-#endif

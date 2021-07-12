@@ -22,11 +22,7 @@
 #include <caml/signals.h>
 #include <caml/io.h>
 #include "unixsupport.h"
-#ifdef HAS_UNISTD
 #include <unistd.h>
-#endif
-
-#ifdef HAS_TRUNCATE
 
 CAMLprim value unix_truncate(value path, value len)
 {
@@ -60,13 +56,3 @@ CAMLprim value unix_truncate_64(value path, value vlen)
     uerror("truncate", path);
   CAMLreturn(Val_unit);
 }
-
-#else
-
-CAMLprim value unix_truncate(value path, value len)
-{ caml_invalid_argument("truncate not implemented"); }
-
-CAMLprim value unix_truncate_64(value path, value len)
-{ caml_invalid_argument("truncate not implemented"); }
-
-#endif

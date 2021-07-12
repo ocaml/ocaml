@@ -18,13 +18,7 @@
 #include "unixsupport.h"
 #include <errno.h>
 #include <sys/types.h>
-#ifdef HAS_DIRENT
 #include <dirent.h>
-#else
-#include <sys/dir.h>
-#endif
-
-#ifdef HAS_REWINDDIR
 
 CAMLprim value unix_rewinddir(value vd)
 {
@@ -33,10 +27,3 @@ CAMLprim value unix_rewinddir(value vd)
   rewinddir(d);
   return Val_unit;
 }
-
-#else
-
-CAMLprim value unix_rewinddir(value d)
-{ caml_invalid_argument("rewinddir not implemented"); }
-
-#endif

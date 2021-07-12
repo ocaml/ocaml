@@ -18,9 +18,6 @@
 #include <caml/fail.h>
 #include <caml/memory.h>
 #include "unixsupport.h"
-
-#ifdef HAS_SOCKETS
-
 #include <sys/types.h>
 
 #ifndef _WIN32
@@ -65,13 +62,3 @@ CAMLprim value unix_getservbyport(value port, value proto)
   if (entry == (struct servent *) NULL) caml_raise_not_found();
   return alloc_service_entry(entry);
 }
-
-#else
-
-CAMLprim value unix_getservbyport(value port, value proto)
-{ caml_invalid_argument("getservbyport not implemented"); }
-
-CAMLprim value unix_getservbyname(value name, value proto)
-{ caml_invalid_argument("getservbyname not implemented"); }
-
-#endif

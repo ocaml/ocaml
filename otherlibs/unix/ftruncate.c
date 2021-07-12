@@ -21,11 +21,7 @@
 #include <caml/io.h>
 #include <caml/signals.h>
 #include "unixsupport.h"
-#ifdef HAS_UNISTD
 #include <unistd.h>
-#endif
-
-#ifdef HAS_TRUNCATE
 
 CAMLprim value unix_ftruncate(value fd, value len)
 {
@@ -47,13 +43,3 @@ CAMLprim value unix_ftruncate_64(value fd, value len)
   if (result == -1) uerror("ftruncate", Nothing);
   return Val_unit;
 }
-
-#else
-
-CAMLprim value unix_ftruncate(value fd, value len)
-{ caml_invalid_argument("ftruncate not implemented"); }
-
-CAMLprim value unix_ftruncate_64(value fd, value len)
-{ caml_invalid_argument("ftruncate not implemented"); }
-
-#endif
