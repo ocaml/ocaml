@@ -169,18 +169,6 @@ type error =
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
 
-let trace_of_error = function
-    Label_mismatch (_,{trace})
-  | Pattern_type_clash ({trace},_)
-  | Or_pattern_type_clash (_,{trace})
-  | Expr_type_clash ({trace},_,_)
-  | Coercion_failure (_,{trace},_)
-  | Less_general (_,{trace})
-  | Letop_type_clash (_,{trace})
-  | Andop_type_clash (_,{trace})
-  | Bindings_type_clash {trace} -> Some trace
-  | _ -> None
-
 (* Forward declaration, to be filled in by Typemod.type_module *)
 
 let type_module =
@@ -313,13 +301,19 @@ let extract_option_type env ty =
     Tconstr(path, [ty], _) when Path.same path Predef.path_option -> ty
   | _ -> assert false
 
+let protect_expansion env ty =
+  if Env.has_local_constraints env then generic_instance ty else ty
+
 type record_extraction_result =
   | Record_type of Path.t * Path.t * Types.label_declaration list
   | Not_a_record_type
   | Maybe_a_record_type
 
+let extract_concrete_typedecl_protected env ty =
+  extract_concrete_typedecl env (protect_expansion env ty)
+
 let extract_concrete_record env ty =
-  match extract_concrete_typedecl env ty with
+  match extract_concrete_typedecl_protected env ty with
   | Typedecl(p0, p, {type_kind=Type_record (fields, _)}) ->
     Record_type (p0, p, fields)
   | Has_no_typedecl | Typedecl(_, _, _) -> Not_a_record_type
@@ -331,7 +325,7 @@ type variant_extraction_result =
   | Maybe_a_variant_type
 
 let extract_concrete_variant env ty =
-  match extract_concrete_typedecl env ty with
+  match extract_concrete_typedecl_protected env ty with
   | Typedecl(p0, p, {type_kind=Type_variant (cstrs, _)}) ->
     Variant_type (p0, p, cstrs)
   | Typedecl(p0, p, {type_kind=Type_open}) ->
@@ -2850,7 +2844,7 @@ and type_expect_
   | Pexp_constant(Pconst_string (str, _, _) as cst) -> (
     let cst = constant_or_raise env loc cst in
     (* Terrible hack for format strings *)
-    let ty_exp = expand_head env ty_expected in
+    let ty_exp = expand_head env (protect_expansion env ty_expected) in
     let fmt6_path =
       Path.(Pdot (Pident (Ident.create_persistent "CamlinternalFormatBasics"),
                   "format6"))
@@ -3052,9 +3046,10 @@ and type_expect_
       type_construct env loc lid sarg ty_expected_explained sexp.pexp_attributes
   | Pexp_variant(l, sarg) ->
       (* Keep sharing *)
+      let ty_expected1 = protect_expansion env ty_expected in
       let ty_expected0 = instance ty_expected in
       begin try match
-        sarg, get_desc (expand_head env ty_expected),
+        sarg, get_desc (expand_head env ty_expected1),
         get_desc (expand_head env ty_expected0)
       with
       | Some sarg, Tvariant row, Tvariant row0 ->
@@ -3737,7 +3732,7 @@ and type_expect_
   | Pexp_poly(sbody, sty) ->
       if !Clflags.principal then begin_def ();
       let ty, cty =
-        match sty with None -> ty_expected, None
+        match sty with None -> protect_expansion env ty_expected, None
         | Some sty ->
             let sty = Ast_helper.Typ.force_poly sty in
             let cty = Typetexp.transl_simple_type env false sty in
@@ -3821,7 +3816,8 @@ and type_expect_
         match get_desc (Ctype.expand_head env (instance ty_expected)) with
           Tpackage (p, fl) ->
             if !Clflags.principal &&
-              get_level (Ctype.expand_head env ty_expected)
+              get_level (Ctype.expand_head env
+                           (protect_expansion env ty_expected))
                 < Btype.generic_level
             then
               Location.prerr_warning loc
@@ -4428,7 +4424,7 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
         (lv <> generic_level || get_level ty_fun' <> generic_level)
       and ty_fun = instance ty_fun' in
       let ty_arg, ty_res =
-        match get_desc (expand_head env ty_expected') with
+        match get_desc (expand_head env ty_expected) with
           Tarrow(Nolabel,ty_arg,ty_res,_) -> ty_arg, ty_res
         | _ -> assert false
       in
@@ -4946,7 +4942,9 @@ and type_cases
   ) half_typed_cases;
   (* type bodies *)
   let in_function = if List.length caselist = 1 then in_function else None in
-  let mk_cases interbranch_propagation =
+  let ty_res' = instance ty_res in
+  if !Clflags.principal then begin_def ();
+  let cases =
     List.map
       (fun { typed_pat = pat; branch_env = ext_env; pat_vars = pvs; unpacks;
              untyped_case = {pc_lhs = _; pc_guard; pc_rhs};
@@ -4968,14 +4966,9 @@ and type_cases
              tu_uid = Uid.mk ~current_unit:(Env.get_unit_name ())}
           ) unpacks
         in
-        let ty_res' =
-          if !Clflags.principal then begin
-            begin_def ();
-            let ty = instance ~partial:true ty_res in
-            end_def ();
-            generalize_structure ty; ty
-          end
-          else if contains_gadt && interbranch_propagation then
+        let ty_expected =
+          if contains_gadt && not !Clflags.principal then
+            (* allow propagation from preceding branches *)
             correct_levels ty_res
           else ty_res in
         let guard =
@@ -4988,45 +4981,17 @@ and type_cases
         in
         let exp =
           type_unpacks ?in_function ext_env
-            unpacks pc_rhs (mk_expected ?explanation ty_res')
+            unpacks pc_rhs (mk_expected ?explanation ty_expected)
         in
         {
          c_lhs = pat;
          c_guard = guard;
-         c_rhs = {exp with exp_type = instance ty_res'}
+         c_rhs = {exp with exp_type = ty_res'}
         }
       )
       half_typed_cases
   in
-  let cases =
-    let may_backtrack = does_contain_gadt && not !Clflags.principal in
-    if not may_backtrack then mk_cases false else
-    let state = save_state (ref env) in
-    let has_equation_escape err =
-      match trace_of_error err with
-        Some tr ->
-          List.exists Errortrace.
-            (function Escape {kind=Equation _} -> true | _ -> false) tr
-      | None -> false
-    in
-    try mk_cases false
-    with Error(_,_,err) when has_equation_escape err ->
-      set_state state (ref env);
-      let cases = mk_cases true in
-      let msg =
-        Format.asprintf
-          "@[<v2>@ @[<hov>The return type of this pattern-matching \
-           is ambiguous.@ \
-           Please add a type annotation,@ as the choice of `@[%a@]'@]@]"
-          Printtyp.type_expr ty_res
-      in
-      Location.prerr_warning loc (Warnings.Not_principal msg);
-      cases
-  in
-  if !Clflags.principal || does_contain_gadt then begin
-    let ty_res' = instance ty_res in
-    List.iter (fun c -> unify_exp env c.c_rhs ty_res') cases
-  end;
+  if !Clflags.principal then end_def ();
   let do_init = may_contain_gadts || needs_exhaust_check in
   let ty_arg_check =
     if do_init then
@@ -5065,7 +5030,7 @@ and type_cases
   if may_contain_gadts then begin
     end_def ();
     (* Ensure that existential types do not escape *)
-    unify_exp_types loc env (instance ty_res) (newvar ()) ;
+    unify_exp_types loc env ty_res' (newvar ()) ;
   end;
   cases, partial
 

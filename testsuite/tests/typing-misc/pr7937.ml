@@ -12,13 +12,6 @@ Line 3, characters 35-39:
                                        ^^^^
 Error: This expression has type bool but an expression was expected of type
          ([< `X of int & 'a ] as 'a) r
-|}, Principal{|
-type 'a r = 'a constraint 'a = [< `X of int & 'a ]
-Line 3, characters 35-39:
-3 | let f: 'a. 'a r -> 'a r = fun x -> true;;
-                                       ^^^^
-Error: This expression has type bool but an expression was expected of type
-         ([< `X of 'b & 'a & 'c ] as 'a) r
 |}]
 
 let g: 'a. 'a r -> 'a r = fun x -> { contents = 0 };;
@@ -28,13 +21,6 @@ Line 1, characters 35-51:
                                        ^^^^^^^^^^^^^^^^
 Error: This expression has type int ref
        but an expression was expected of type ([< `X of int & 'a ] as 'a) r
-|}, Principal{|
-Line 1, characters 35-51:
-1 | let g: 'a. 'a r -> 'a r = fun x -> { contents = 0 };;
-                                       ^^^^^^^^^^^^^^^^
-Error: This expression has type int ref
-       but an expression was expected of type
-         ([< `X of 'b & 'a & 'c ] as 'a) r
 |}]
 
 let h: 'a. 'a r -> _ = function true | false -> ();;

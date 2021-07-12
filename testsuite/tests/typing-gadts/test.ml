@@ -361,13 +361,6 @@ module Propagation = struct
 end
 ;;
 [%%expect{|
-Lines 11-13, characters 12-20:
-11 | ............match x with
-12 |     | IntLit n -> (n : s )
-13 |     | BoolLit b -> b
-Warning 18 [not-principal]:
-  The return type of this pattern-matching is ambiguous.
-  Please add a type annotation, as the choice of `s' is not principal.
 module Propagation :
   sig
     type _ t = IntLit : int -> int t | BoolLit : bool -> bool t
@@ -377,7 +370,10 @@ module Propagation :
 Line 13, characters 19-20:
 13 |     | BoolLit b -> b
                         ^
-Error: This expression has type bool but an expression was expected of type s
+Error: This expression has type bool but an expression was expected of type
+         s = bool
+       This instance of bool is ambiguous:
+       it would escape the scope of its equation
 |}];;
 
 module Normal_constrs = struct
@@ -635,15 +631,6 @@ let f (type a) (x : a t) y =
     in M.z
 ;; (* fails because of aliasing... *)
 [%%expect{|
-Lines 2-4, characters 2-10:
-2 | ..match x with Int ->
-3 |     let module M = struct type b = a let z = (y : b) end
-4 |     in M.z
-Warning 18 [not-principal]:
-  The return type of this pattern-matching is ambiguous.
-  Please add a type annotation, as the choice of `a' is not principal.
-val f : 'a t -> 'a -> 'a = <fun>
-|}, Principal{|
 Line 3, characters 46-47:
 3 |     let module M = struct type b = a let z = (y : b) end
                                                   ^
@@ -798,13 +785,6 @@ Error: This expression has type [> `A of a ]
        Type a is not compatible with type b = a
        This instance of a is ambiguous:
        it would escape the scope of its equation
-|}, Principal{|
-Line 2, characters 9-15:
-2 |   fun Eq o -> o ;; (* fail *)
-             ^^^^^^
-Error: This expression has type ([> `A of b ] as 'a) -> 'a
-       but an expression was expected of type [> `A of a ] -> [> `A of b ]
-       Types for tag `A are incompatible
 |}];;
 
 let f (type a b) (eq : (a,b) eq) (v : [> `A of a]) : [> `A of b] =
