@@ -32,6 +32,7 @@
   #define CONTEXT_SP (context->uc_mcontext.gregs[REG_RSP])
   #define CONTEXT_YOUNG_PTR (context->uc_mcontext.gregs[REG_R15])
   #define CONTEXT_FAULTING_ADDRESS ((char *)context->uc_mcontext.gregs[REG_CR2])
+  #define INFO_CODE (info->si_code)
 
 /****************** AMD64, MacOSX */
 
@@ -62,6 +63,7 @@
   #define CONTEXT_YOUNG_PTR (CONTEXT_STATE.CONTEXT_REG(r15))
   #define CONTEXT_SP (CONTEXT_STATE.CONTEXT_REG(rsp))
   #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
+  #define INFO_CODE (info->si_code)
 
   #define RETURN_AFTER_STACK_OVERFLOW
 
@@ -85,6 +87,7 @@
   #define CONTEXT_EXCEPTION_POINTER (context->uc_mcontext.arm_fp)
   #define CONTEXT_YOUNG_PTR (context->uc_mcontext.arm_r8)
   #define CONTEXT_FAULTING_ADDRESS ((char *) context->uc_mcontext.fault_address)
+  #define INFO_CODE (info->si_code)
 
 /****************** ARM64, Linux */
 
@@ -105,6 +108,7 @@
   #define CONTEXT_EXCEPTION_POINTER (context->uc_mcontext.regs[26])
   #define CONTEXT_YOUNG_PTR (context->uc_mcontext.regs[27])
   #define CONTEXT_FAULTING_ADDRESS ((char *) context->uc_mcontext.fault_address)
+  #define INFO_CODE (info->si_code)
 
 /****************** ARM64, FreeBSD */
 
@@ -125,7 +129,7 @@
   #define CONTEXT_EXCEPTION_POINTER (context->uc_mcontext.mc_gpregs.gp_x[26])
   #define CONTEXT_YOUNG_PTR (context->uc_mcontext.mc_gpregs.gp_x[27])
   #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
-
+  #define INFO_CODE (info->si_code)
 
 /****************** AMD64, Solaris x86 */
 
@@ -146,6 +150,7 @@
   #define CONTEXT_SP (context->uc_mcontext.gregs[REG_RSP])
   #define CONTEXT_YOUNG_PTR (context->uc_mcontext.gregs[REG_R15])
   #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
+  #define INFO_CODE (info->si_code)
 
 /****************** AMD64, OpenBSD */
 
@@ -163,6 +168,7 @@
  #define CONTEXT_SP (context->sc_rsp)
  #define CONTEXT_YOUNG_PTR (context->sc_r15)
  #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
+ #define INFO_CODE (info->si_code)
 
 /****************** AMD64, NetBSD */
 
@@ -181,6 +187,7 @@
  #define CONTEXT_SP (_UC_MACHINE_SP(context))
  #define CONTEXT_YOUNG_PTR (context->uc_mcontext.gregs[REG_R15])
  #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
+ #define INFO_CODE (info->si_code)
 
 /****************** I386, Linux */
 
@@ -197,6 +204,7 @@
   #define CONTEXT_PC (context->uc_mcontext.gregs[REG_EIP])
   #define CONTEXT_SP (context->uc_mcontext.gregs[REG_ESP])
   #define CONTEXT_FAULTING_ADDRESS ((char *)context->uc_mcontext.cr2)
+  #define INFO_CODE (info->si_code)
 
 /****************** I386, BSD_ELF */
 
@@ -223,6 +231,7 @@
   #define CONTEXT_SP (context->sc_esp)
  #endif
  #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
+ #define INFO_CODE (info->si_code)
 
 /****************** I386, BSD */
 
@@ -236,6 +245,7 @@
      sigact.sa_flags = SA_SIGINFO
 
   #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
+  #define INFO_CODE (info->si_code)
 
 /****************** I386, MacOS X */
 
@@ -263,6 +273,7 @@
   #define CONTEXT_PC (CONTEXT_STATE.CONTEXT_REG(eip))
   #define CONTEXT_SP (CONTEXT_STATE.CONTEXT_REG(esp))
   #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
+  #define INFO_CODE (info->si_code)
 
 /****************** I386, Solaris x86 */
 
@@ -276,6 +287,7 @@
     sigact.sa_flags = SA_SIGINFO
 
   #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
+  #define INFO_CODE (info->si_code)
 
 /****************** PowerPC, MacOS X */
 
@@ -318,6 +330,7 @@
   #define CONTEXT_YOUNG_PTR (CONTEXT_STATE.CONTEXT_REG(r31))
   #define CONTEXT_SP (CONTEXT_STATE.CONTEXT_REG(r1))
   #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
+  #define INFO_CODE (info->si_code)
 
 /****************** PowerPC 32 bits, ELF (Linux) */
 
@@ -353,6 +366,7 @@
   #define CONTEXT_YOUNG_PTR (context->uc_mcontext.gp_regs[31])
   #define CONTEXT_SP (context->uc_mcontext.gp_regs[1])
   #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
+  #define INFO_CODE (info->si_code)
 
 /****************** PowerPC, NetBSD */
 
@@ -372,6 +386,7 @@
   #define CONTEXT_YOUNG_PTR (context->uc_mcontext.__gregs[_REG_R31])
   #define CONTEXT_SP (_UC_MACHINE_SP(context))
   #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
+  #define INFO_CODE (info->si_code)
 
 
 /****************** PowerPC, other BSDs */
@@ -408,6 +423,7 @@
   #define CONTEXT_YOUNG_PTR (context->uc_mcontext.gregs[11])
   #define CONTEXT_SP (context->uc_mcontext.gregs[15])
   #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
+  #define INFO_CODE (info->si_code)
 
 /******************** Default */
 
