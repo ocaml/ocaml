@@ -144,9 +144,18 @@ let test_open_in () =
 ;;
 
 let test_getenv () =
+  let equiv l r =
+    assert (l = r);
+    l, r
+  in
   let doit key s =
     Unix.putenv key s;
-    Sys.getenv key, getenvironmentenv key
+    let l = equiv (Sys.getenv key) (getenvironmentenv key) in
+    let r =
+      Unix.putenv key (s ^ s);
+      equiv (Sys.getenv key) (getenvironmentenv key)
+    in
+      l, r
   in
   List.map2 doit foreign_names foreign_names2
 ;;

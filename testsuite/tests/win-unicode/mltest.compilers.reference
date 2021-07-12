@@ -14,7 +14,8 @@ val unix_readdir : string -> string list = <fun>
 val sys_readdir : string -> string list = <fun>
 val test_readdir : (string -> string list) -> string list = <fun>
 val test_open_in : unit -> string list = <fun>
-val test_getenv : unit -> (string * string) list = <fun>
+val test_getenv : unit -> ((string * string) * (string * string)) list =
+  <fun>
 val test_mkdir : unit -> (bool * bool) list = <fun>
 val test_chdir : (string -> unit) -> (unit -> 'a) -> 'a list = <fun>
 val test_rmdir : unit -> bool list = <fun>
@@ -76,8 +77,11 @@ val t_sys_rename : ((bool * bool) * (bool * bool)) list =
 val t_sys_chdir : string list = ["été"; "simple"; "sœur"; "你好"]
 val t_unix_chdir : string list = ["été"; "simple"; "sœur"; "你好"]
 - : bool list = [false; false; false; false]
-val t_getenv : (string * string) list =
-  [("верблюды", "верблюды"); ("骆驼", "骆驼");
-   ("קעמל", "קעמל"); ("اونٹ", "اونٹ")]
+val t_getenv : ((string * string) * (string * string)) list =
+  [(("верблюды", "верблюды"),
+    ("верблюдыверблюды", "верблюдыверблюды"));
+   (("骆驼", "骆驼"), ("骆驼骆驼", "骆驼骆驼"));
+   (("קעמל", "קעמל"), ("קעמלקעמל", "קעמלקעמל"));
+   (("اونٹ", "اونٹ"), ("اونٹاونٹ", "اونٹاونٹ"))]
 - : bool = true
 

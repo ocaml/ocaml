@@ -160,9 +160,9 @@ let run_cmd
   log_redirection "stdout" stdout_filename;
   log_redirection "stderr" stderr_filename;
   let systemenv =
-    Array.append
+    Environments.append_to_system_env
       environment
-      (Environments.to_system_env env)
+      env
   in
   let timeout =
     match timeout with

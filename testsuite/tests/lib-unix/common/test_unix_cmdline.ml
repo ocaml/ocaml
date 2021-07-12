@@ -31,27 +31,25 @@ all_modules= "test_unix_cmdline.ml"
 
 *)
 
-open Unix
-
 let prog_name = "cmdline_prog.exe"
 
 let run args =
-  let out, inp = pipe () in
-  let in_chan = in_channel_of_descr out in
+  let out, inp = Unix.pipe () in
+  let in_chan = Unix.in_channel_of_descr out in
   set_binary_mode_in in_chan false;
   let pid =
-    create_process ("./" ^ prog_name) (Array.of_list (prog_name :: args))
+    Unix.create_process ("./" ^ prog_name) (Array.of_list (prog_name :: args))
       Unix.stdin inp Unix.stderr in
   List.iter (fun arg ->
       let s = input_line in_chan in
       Printf.printf "%S -> %S [%s]\n" arg s (if s = arg then "OK" else "FAIL")
     ) args;
   close_in in_chan;
-  let _, exit = waitpid [] pid in
-  assert (exit = WEXITED 0)
+  let _, exit = Unix.waitpid [] pid in
+  assert (exit = Unix.WEXITED 0)
 
 let exec args =
-  execv ("./" ^ prog_name) (Array.of_list (prog_name :: args))
+  Unix.execv ("./" ^ prog_name) (Array.of_list (prog_name :: args))
 
 let () =
   List.iter run

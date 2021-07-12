@@ -47,6 +47,7 @@ rule token = parse
       match s with
         | "include" -> INCLUDE
         | "set" -> SET
+        | "unset" -> UNSET
         | "with" -> WITH
         | _ -> IDENTIFIER s
     }

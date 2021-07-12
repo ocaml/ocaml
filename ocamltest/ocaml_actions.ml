@@ -533,9 +533,9 @@ let debug log env =
     program
   ] in
   let systemenv =
-    Array.append
+    Environments.append_to_system_env
       default_ocaml_env
-      (Environments.to_system_env (env_with_lib_unix env))
+      (env_with_lib_unix env)
   in
   let expected_exit_status = 0 in
   let exit_status =
@@ -570,12 +570,13 @@ let objinfo log env =
   ] in
   let ocamllib = [| (Printf.sprintf "OCAMLLIB=%s" tools_directory) |] in
   let systemenv =
-    Array.concat
-    [
-      default_ocaml_env;
-      ocamllib;
-      (Environments.to_system_env (env_with_lib_unix env))
-    ]
+    Environments.append_to_system_env
+      (Array.concat
+       [
+         default_ocaml_env;
+         ocamllib;
+       ])
+      (env_with_lib_unix env)
   in
   let expected_exit_status = 0 in
   let exit_status =

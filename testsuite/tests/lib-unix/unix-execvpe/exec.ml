@@ -1,4 +1,5 @@
 (* TEST
+   unset FOO
    * hasunix
    include unix
    script = "sh ${test_source_directory}/has-execvpe.sh"

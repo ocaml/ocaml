@@ -1,7 +1,9 @@
-(* TEST *)
+(* TEST
+unset DOES_NOT_EXIST
+*)
 
 let () =
-  assert(Sys.getenv_opt "FOOBAR_UNLIKELY_TO_EXIST_42" = None);
+  assert(Sys.getenv_opt "DOES_NOT_EXIST" = None);
 
   assert(int_of_string_opt "foo" = None);
   assert(int_of_string_opt "42" = Some 42);

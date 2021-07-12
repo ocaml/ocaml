@@ -86,7 +86,7 @@ let rec run_test log common_prefix path behavior = function
   let (msg, children_behavior, summary) = match behavior with
     | Skip_all_tests -> "n/a", Skip_all_tests, No_failure
     | Run env ->
-      let testenv0 = interprete_environment_statements env testenvspec in
+      let testenv0 = interpret_environment_statements env testenvspec in
       let testenv = List.fold_left apply_modifiers testenv0 env_modifiers in
       let (result, newenv) = Tests.run log testenv test in
       let msg = Result.string_of_result result in
@@ -193,8 +193,7 @@ let test_file test_filename =
        let rootenv =
          Environments.initialize Environments.Pre log initial_environment in
        let rootenv =
-         interprete_environment_statements
-           rootenv rootenv_statements in
+         interpret_environment_statements rootenv rootenv_statements in
        let rootenv = Environments.initialize Environments.Post log rootenv in
        let common_prefix = " ... testing '" ^ test_basename ^ "' with" in
        let initial_status =
