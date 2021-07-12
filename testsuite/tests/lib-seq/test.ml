@@ -42,4 +42,21 @@ let () =
       = (let (!?) = List.to_seq in
          List.of_seq (Seq.concat !?[!?[1]; !?[]; !?[2; 3]])))
 
+(* range *)
+let () = 
+  assert (List.of_seq (Seq.range ~stop:5) = [0;1;2;3;4]);
+  assert (List.of_seq (Seq.range ~start:5 ~stop:0 ~step:(-1)) = [5;4;3;2;1]);
+  let start = -2 and stop = 12 and step = 3 in 
+  let l= List.of_seq (Seq.range ~start ~stop ~step) in
+  l 
+  |> List.iteri begin fun index value -> 
+      assert (value = start + index * step); 
+      if step > 0 then
+        assert (value < stop)
+      else if step < 0 then 
+        assert (value > stop)
+  end ;
+  assert (List.length l = (abs ((stop - start) / step)) + 1) 
+;;
+
 let () = print_endline "OK";;

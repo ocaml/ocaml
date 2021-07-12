@@ -84,3 +84,11 @@ let rec unfold f u () =
   match f u with
   | None -> Nil
   | Some (x, u') -> Cons (x, unfold f u')
+
+
+let rec range ?(start=0) ?stop ?(step=1) () = 
+  match stop with
+  | None -> Cons(start, range ~start:(start + step) ?stop ~step)
+  | Some f when step > 0 && start < f -> Cons(start, range ~start:(start + step) ?stop ~step)
+  | Some f when step < 0 && start > f -> Cons(start, range ~start:(start + step) ?stop ~step)
+  | _ -> Nil
