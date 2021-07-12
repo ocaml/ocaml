@@ -527,7 +527,8 @@ AS_CASE([$host],
 
 otherlibraries="dynlink"
 AS_IF([test x"$enable_unix_lib" != "xno"],
-  [AS_IF([test x"$enable_bigarray_lib" != "xno"],
+  [enable_unix_lib=yes
+  AS_IF([test x"$enable_bigarray_lib" != "xno"],
     [otherlibraries="$otherlibraries $unixlib bigarray"],
     [otherlibraries="$otherlibraries $unixlib"])])
 AS_IF([test x"$enable_str_lib" != "xno"],
@@ -1773,9 +1774,13 @@ AS_CASE([$arch,$system],
 
 ## Determine if the POSIX threads library is supported
 
-AS_IF([test x"$enable_systhreads" = "xno"],
-  [systhread_support=false
-  AC_MSG_NOTICE([the Win32/POSIX threads library is disabled])],
+AS_CASE([$enable_systhreads,$enable_unix_lib],
+  [yes,no],
+    [systhread_support=false
+    AC_MSG_ERROR([the Win32/POSIX threads library requires the unix library])],
+  [no,*|*,no],
+    [systhread_support=false
+    AC_MSG_NOTICE([the Win32/POSIX threads library is disabled])],
   [AS_CASE([$host],
     [*-*-mingw32|*-pc-windows],
       [systhread_support=true
