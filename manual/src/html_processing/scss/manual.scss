@@ -185,6 +185,9 @@ h3 code{
 h4{
     font-size:1.12em
 }
+h2, h3, h4 {
+	font-weight: 500;
+}
 .ocaml,.pre,code,pre,tt{
     font-family:"Fira Mono",courier;
     font-weight:400
@@ -280,10 +283,17 @@ blockquote.quote{
     color:#000;
     &::before{@include diamond}
 }
+.center {
+	text-align: center;
+	margin-left: auto;
+	margin-right: auto;
+}
+.display {
+	margin: 0 auto;
+}
 span.c003{
     color:#564233;
     font-family:"Fira Mono",courier;
-    background-color:#f3ece6;
     border-radius:6px
 }
 div.caml-example.toplevel code.caml-input::before,
@@ -294,7 +304,13 @@ div.caml-example.toplevel div.caml-input::before{
 span.number{
     padding-right: 1ex;
 }
-span.c004, span.c002{
+span.c004, span.c005 {
+	font-family: "Fira Mono", courier, monospace;
+}
+span.c003, span.c005 {
+	color: rgba(91, 33, 6, 0.87);
+}
+span.c002{
     color:#888
 }
 span.c006{
@@ -310,6 +326,9 @@ span.c009{
 span.authors{
     font-style:italic;
     background-color:inherit
+}
+span.c011 {
+	font-style: italic;
 }
 span.c013{
     font-weight:700
