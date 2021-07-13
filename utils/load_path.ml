@@ -96,7 +96,21 @@ let add dir =
     dir.Dir.files;
   dirs := dir :: !dirs
 
+let append_dir = add
+
 let add_dir dir = add (Dir.create dir)
+
+(* Add the directory at the start of load path - so basenames are
+   unconditionally added. *)
+let prepend_dir dir =
+  assert (not Config.merlin || Local_store.is_bound ());
+  List.iter
+    (fun base ->
+       let fn = Filename.concat dir.Dir.path base in
+       STbl.replace !files base fn;
+       STbl.replace !files_uncap (String.uncapitalize_ascii base) fn)
+    dir.Dir.files;
+  dirs := !dirs @ [dir]
 
 let is_basename fn = Filename.basename fn = fn
 
