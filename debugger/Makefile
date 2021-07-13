@@ -52,7 +52,10 @@ libraries = $(ROOTDIR)/compilerlibs/ocamlcommon.cma \
 
 all: ocamldebug$(EXE)
 
-ocamldebug$(EXE): $(libraries) $(all_objects)
+ocamldebug.cmo: $(all_objects)
+	$(CAMLC) -pack $(COMPFLAGS) -o $@ $^
+
+ocamldebug$(EXE): $(libraries) ocamldebug.cmo ocamldebug_entry.cmo
 	$(CAMLC) $(LINKFLAGS) -o $@ -linkall $^
 
 install:
@@ -62,11 +65,14 @@ clean::
 	rm -f ocamldebug ocamldebug.exe
 	rm -f *.cmo *.cmi
 
-%.cmo: %.ml
+ocamldebug_entry.cmo: ocamldebug_entry.ml ocamldebug.cmo
 	$(CAMLC) -c $(COMPFLAGS) $<
 
+%.cmo: %.ml
+	$(CAMLC) -c $(COMPFLAGS) -for-pack ocamldebug $<
+
 %.cmi: %.mli
-	$(CAMLC) -c $(COMPFLAGS) $<
+	$(CAMLC) -c $(COMPFLAGS) -for-pack ocamldebug $<
 
 depend: beforedepend
 	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mli *.ml \

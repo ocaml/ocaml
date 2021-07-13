@@ -244,6 +244,3 @@ let main () =
   | Cmi_format.Error e ->
       report Cmi_format.report_error e;
       exit 2
-
-let _ =
-  Unix.handle_unix_error main ()
