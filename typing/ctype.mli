@@ -95,10 +95,9 @@ val associate_fields:
         (string * field_kind * type_expr) list
 val opened_object: type_expr -> bool
 val close_object: type_expr -> bool
-val row_variable: type_expr -> type_expr
         (* Return the row variable of an open object type *)
 val set_object_name:
-        Ident.t -> type_expr -> type_expr list -> type_expr -> unit
+        Ident.t -> type_expr list -> type_expr -> unit
 val remove_object_name: type_expr -> unit
 val hide_private_methods: type_expr -> unit
 val find_cltype_for_path: Env.t -> Path.t -> type_declaration * type_expr
@@ -239,8 +238,12 @@ val check_filter_method: Env.t -> string -> private_flag -> type_expr -> unit
 val occur_in: Env.t -> type_expr -> type_expr -> bool
 val deep_occur: type_expr -> type_expr -> bool
 val filter_self_method:
-        Env.t -> string -> private_flag -> (Ident.t * type_expr) Meths.t ->
-        type_expr -> (Ident.t * type_expr) Meths.t * (Ident.t * type_expr)
+        Env.t -> string -> private_flag -> virtual_flag ->
+        (Ident.t * private_flag * virtual_flag * type_expr) Meths.t ->
+        type_expr ->
+        bool
+        * (Ident.t * private_flag * virtual_flag * type_expr) Meths.t
+        * (Ident.t * private_flag * virtual_flag * type_expr)
         (* Raises [Filter_method_failed] instead of [Unify], and only if the
            self type is closed at this point. *)
 val moregeneral: Env.t -> bool -> type_expr -> type_expr -> unit
@@ -359,16 +362,15 @@ val free_variables: ?env:Env.t -> type_expr -> type_expr list
         (* If env present, then check for incomplete definitions too *)
 val closed_type_decl: type_declaration -> type_expr option
 val closed_extension_constructor: extension_constructor -> type_expr option
-type closed_class_failure =
-    CC_Method of type_expr * bool * string * type_expr
-  | CC_Value of type_expr * bool * string * type_expr
 val closed_class:
-        type_expr list -> class_signature -> closed_class_failure option
+        type_expr list -> class_signature ->
+        (type_expr * bool * string * type_expr) option
         (* Check whether all type variables are bound *)
 
 val unalias: type_expr -> type_expr
 val signature_of_class_type: class_type -> class_signature
 val self_type: class_type -> type_expr
+val self_type_row: class_type -> type_expr
 val class_type_arity: class_type -> int
 val arity: type_expr -> int
         (* Return the arity (as for curried functions) of the given type. *)

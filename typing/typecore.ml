@@ -210,7 +210,7 @@ let type_package =
 let type_object =
   ref (fun _env _s -> assert false :
        Env.t -> Location.t -> Parsetree.class_structure ->
-         Typedtree.class_structure * Types.class_signature * string list)
+         Typedtree.class_structure * string list)
 
 (*
   Saving and outputting type information.
@@ -3426,13 +3426,15 @@ and type_expect_
       begin try
         let (meth, exp, typ) =
           match obj.exp_desc with
-            Texp_ident(_path, _, {val_kind = Val_self (meths, _, _, privty)}) ->
+            Texp_ident(_path, _,
+                       {val_kind = Val_self(meths, _, _, self_ty) }) ->
               obj_meths := Some meths;
-              let new_meths, (id, typ) =
-                filter_self_method env met Private !meths privty
+              let existing, new_meths, (id, _, _, typ) =
+                filter_self_method env met Private Virtual
+                  !meths self_ty
               in
               meths := new_meths;
-              if is_Tvar typ then
+              if not existing then
                 Location.prerr_warning loc
                   (Warnings.Undeclared_virtual_method met);
               (Tmeth_val id, None, typ)
@@ -3450,11 +3452,12 @@ and type_expect_
                 Env.find_value_by_name
                   (Longident.Lident ("self-" ^cl_num)) env
               with
-              | (_, ({val_kind = Val_self (meths, _, _, privty)} as desc)),
+              | (_, ({val_kind = Val_self(meths, _, _, self_ty)} as desc)),
                 (path, _) ->
                   obj_meths := Some meths;
-                  let (new_meths, (_, typ)) =
-                    filter_self_method env met Private !meths privty
+                  let _, new_meths, (_, _, _, typ) =
+                    filter_self_method env met Private Virtual
+                      !meths self_ty
                   in
                   meths := new_meths;
                   let method_type = newvar () in
@@ -3607,11 +3610,11 @@ and type_expect_
         (path_self, _) ->
           let type_override (lab, snewval) =
             begin try
-              let (id, _, _, ty) = Vars.find lab.txt !vars in
+              let (id, _, _, ty) = Vars.find lab.txt vars in
               (id, lab, type_expect env snewval (mk_expected (instance ty)))
             with
               Not_found ->
-                let vars = Vars.fold (fun var _ li -> var::li) !vars [] in
+                let vars = Vars.fold (fun var _ li -> var::li) vars [] in
                 raise(Error(loc, env,
                             Unbound_instance_variable (lab.txt, vars)))
             end
@@ -3706,11 +3709,11 @@ and type_expect_
         exp_env = env;
       }
   | Pexp_object s ->
-      let desc, sign, meths = !type_object env loc s in
+      let desc, meths = !type_object env loc s in
       rue {
-        exp_desc = Texp_object (desc, (*sign,*) meths);
+        exp_desc = Texp_object (desc, meths);
         exp_loc = loc; exp_extra = [];
-        exp_type = sign.csig_self;
+        exp_type = desc.cstr_type.csig_self;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env;
       }

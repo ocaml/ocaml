@@ -107,12 +107,13 @@ type error =
   | Bad_parameters of Ident.t * type_expr * type_expr
   | Class_match_failure of Ctype.class_match_failure list
   | Unbound_val of string
-  | Unbound_type_var of (formatter -> unit) * Ctype.closed_class_failure
+  | Unbound_type_var of
+      (formatter -> unit) * (type_expr * bool * string * type_expr)
   | Non_generalizable_class of Ident.t * Types.class_declaration
   | Cannot_coerce_self of type_expr
   | Non_collapsable_conjunction of
       Ident.t * Types.class_declaration * Errortrace.unification_error
-  | Final_self_clash of Errortrace.unification_error
+  | Self_clash of Errortrace.unification_error
   | Mutability_mismatch of string * mutable_flag
   | No_overriding of string * string
   | Duplicate of string * string

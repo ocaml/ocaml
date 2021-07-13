@@ -152,10 +152,10 @@ and value_kind =
     Val_reg                             (* Regular value *)
   | Val_prim of Primitive.description   (* Primitive *)
   | Val_ivar of mutable_flag * string   (* Instance variable (mutable ?) *)
-  | Val_self of (Ident.t * type_expr) Meths.t ref *
-                (Ident.t * Asttypes.mutable_flag *
-                 Asttypes.virtual_flag * type_expr) Vars.t ref *
-                string * type_expr
+  | Val_self of
+      (Ident.t * private_flag * virtual_flag * type_expr) Meths.t ref *
+      (Ident.t * mutable_flag * virtual_flag * type_expr) Vars.t *
+      string * type_expr
                                         (* Self *)
   | Val_anc of (string * Ident.t) list * string
                                         (* Ancestor *)
@@ -309,9 +309,9 @@ type class_type =
 
 and class_signature =
   { csig_self: type_expr;
-    csig_vars:
-      (Asttypes.mutable_flag * Asttypes.virtual_flag * type_expr) Vars.t;
-    csig_concr: Concr.t;
+    mutable csig_self_row: type_expr;
+    csig_vars: (mutable_flag * virtual_flag * type_expr) Vars.t;
+    mutable csig_meths: (private_flag * virtual_flag * type_expr) Meths.t;
     csig_inher: (Path.t * type_expr list) list }
 
 type class_declaration =

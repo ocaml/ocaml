@@ -411,7 +411,9 @@ let type_iterators =
         it.it_class_type it cty
     | Cty_signature cs ->
         it.it_type_expr it cs.csig_self;
+        it.it_type_expr it cs.csig_self_row;
         Vars.iter (fun _ (_,_,ty) -> it.it_type_expr it ty) cs.csig_vars;
+        Meths.iter (fun _ (_,_,ty) -> it.it_type_expr it ty) cs.csig_meths;
         List.iter
           (fun (p, tl) -> it.it_path p; List.iter (it.it_type_expr it) tl)
           cs.csig_inher
@@ -693,7 +695,9 @@ let unmark_extension_constructor ext =
 
 let unmark_class_signature sign =
   unmark_type sign.csig_self;
-  Vars.iter (fun _l (_m, _v, t) -> unmark_type t) sign.csig_vars
+  unmark_type sign.csig_self_row;
+  Vars.iter (fun _l (_m, _v, t) -> unmark_type t) sign.csig_vars;
+  Meths.iter (fun _l (_m, _v, t) -> unmark_type t) sign.csig_meths
 
 let unmark_class_type cty =
   unmark_iterators.it_class_type unmark_iterators cty

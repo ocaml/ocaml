@@ -81,12 +81,13 @@ type error =
   | Bad_parameters of Ident.t * type_expr * type_expr
   | Class_match_failure of Ctype.class_match_failure list
   | Unbound_val of string
-  | Unbound_type_var of (formatter -> unit) * Ctype.closed_class_failure
+  | Unbound_type_var of
+      (formatter -> unit) * (type_expr * bool * string * type_expr)
   | Non_generalizable_class of Ident.t * Types.class_declaration
   | Cannot_coerce_self of type_expr
   | Non_collapsable_conjunction of
       Ident.t * Types.class_declaration * Errortrace.unification_error
-  | Final_self_clash of Errortrace.unification_error
+  | Self_clash of Errortrace.unification_error
   | Mutability_mismatch of string * mutable_flag
   | No_overriding of string * string
   | Duplicate of string * string
@@ -136,17 +137,63 @@ let rec scrape_class_type =
     Cty_constr (_, _, cty) -> scrape_class_type cty
   | cty                     -> cty
 
+(* Return the methods of a class type *)
+let methods sign =
+  Meths.fold
+    (fun name _ l -> name :: l)
+    sign.csig_meths []
+
 (* Return the virtual methods of a class type *)
 let virtual_methods sign =
-  let (fields, _) =
-    Ctype.flatten_fields (Ctype.object_fields sign.Types.csig_self)
-  in
-  List.fold_left
-    (fun virt (lab, _, _) ->
-       if lab = dummy_method then virt else
-       if Concr.mem lab sign.csig_concr then virt else
-       lab::virt)
-    [] fields
+  Meths.fold
+    (fun name (_priv, vr, _ty) l ->
+       match vr with
+       | Virtual -> name :: l
+       | Concrete -> l)
+    sign.csig_meths []
+
+(* Return the concrete methods of a class type *)
+let concrete_methods sign =
+  Meths.fold
+    (fun name (_priv, vr, _ty) s ->
+       match vr with
+       | Virtual -> s
+       | Concrete -> Concr.add name s)
+    sign.csig_meths Concr.empty
+
+(* Return the public methods of a class type *)
+let public_methods sign =
+  Meths.fold
+    (fun name (priv, _vr, _ty) l ->
+       match priv with
+       | Private -> l
+       | Public -> name :: l)
+    sign.csig_meths []
+
+(* Return the instance variables of a class type *)
+let vars sign =
+  Vars.fold
+    (fun name _ l -> name :: l)
+    sign.csig_vars []
+
+(* Return the virtual instance variables of a class type *)
+let virtual_vars sign =
+  Vars.fold
+    (fun name (_mut, vr, _ty) l ->
+       match vr with
+       | Virtual -> name :: l
+       | Concrete -> l)
+    sign.csig_vars []
+
+(* Return the concrete instance variables of a class type *)
+let concrete_vals sign =
+  Vars.fold
+    (fun name (_mut, vr, _ty) s ->
+       match vr with
+       | Virtual -> s
+       | Concrete -> Concr.add name s)
+    sign.csig_vars Concr.empty
+
 
 (* Return the constructor type associated to a class type *)
 let rec constructor_type constr cty =
@@ -169,16 +216,7 @@ let rec class_body cty =
 
 let extract_constraints cty =
   let sign = Ctype.signature_of_class_type cty in
-  (Vars.fold (fun lab _ vars -> lab :: vars) sign.csig_vars [],
-   begin let (fields, _) =
-     Ctype.flatten_fields (Ctype.object_fields sign.csig_self)
-   in
-   List.fold_left
-     (fun meths (lab, _, _) ->
-        if lab = dummy_method then meths else lab::meths)
-     [] fields
-   end,
-   sign.csig_concr)
+  (vars sign, methods sign, concrete_methods sign)
 
 let rec abbreviate_class_type path params cty =
   match cty with
@@ -197,9 +235,13 @@ let rec closed_class_type =
   | Cty_signature sign ->
       Ctype.closed_schema Env.empty sign.csig_self
         &&
+      Ctype.closed_schema Env.empty sign.csig_self_row
+        &&
+      Meths.fold (fun _ (_, _, ty) cc -> Ctype.closed_schema Env.empty ty && cc)
+        sign.csig_meths true
+        &&
       Vars.fold (fun _ (_, _, ty) cc -> Ctype.closed_schema Env.empty ty && cc)
-        sign.csig_vars
-        true
+        sign.csig_vars true
   | Cty_arrow (_, ty, cty) ->
       Ctype.closed_schema Env.empty ty
         &&
@@ -217,8 +259,11 @@ let rec limited_generalize rv =
       limited_generalize rv cty
   | Cty_signature sign ->
       Ctype.limited_generalize rv sign.csig_self;
+      Ctype.limited_generalize rv sign.csig_self_row;
       Vars.iter (fun _ (_, _, ty) -> Ctype.limited_generalize rv ty)
         sign.csig_vars;
+      Meths.iter (fun _ (_, _, ty) -> Ctype.limited_generalize rv ty)
+        sign.csig_meths;
       List.iter (fun (_, tl) -> List.iter (Ctype.limited_generalize rv) tl)
         sign.csig_inher
   | Cty_arrow (_, ty, cty) ->
@@ -230,25 +275,52 @@ let rc node =
   Cmt_format.add_saved_type (Cmt_format.Partial_class_expr node);
   node
 
+let complete_class_signature env sign =
+  let self = Ctype.expand_head env sign.Types.csig_self in
+  let fields, row = Ctype.flatten_fields (Ctype.object_fields self) in
+  let meths =
+    List.fold_left
+      (fun meths (lab, k, ty) ->
+         if lab = dummy_method then meths
+         else begin
+           match Meths.find lab meths with
+           | priv, virt, ty' -> begin
+               match priv, field_kind_repr k with
+               | Public, _ -> meths
+               | Private, Fpresent -> Meths.add lab (Public, virt, ty') meths
+               | Private, _ -> meths
+             end
+           | exception Not_found -> begin
+               match field_kind_repr k with
+               | Fpresent -> Meths.add lab (Public, Virtual, ty) meths
+               | Fvar _ -> Meths.add lab (Private, Virtual, ty) meths
+               | Fabsent -> meths
+             end
+         end)
+      sign.csig_meths fields
+  in
+  sign.csig_meths <- meths;
+  sign.csig_self_row <- row;
+  Ctype.hide_private_methods self
+
+
+let complete_class_type env typ =
+  let sign = Ctype.signature_of_class_type typ in
+  complete_class_signature env sign
 
                 (***********************************)
                 (*  Primitives for typing classes  *)
                 (***********************************)
 
-let concr_vals vars =
-  Vars.fold
-    (fun id (_, vf, _) s -> if vf = Virtual then s else Concr.add id s)
-    vars Concr.empty
-
-let inheritance self_type env ovf concr_meths warn_vals loc parent =
+let inheritance self_type env ovf meths warn_vals loc parent =
   match scrape_class_type parent with
     Cty_signature cl_sig ->
 
       (* Methods *)
       begin try
         Ctype.unify env self_type cl_sig.csig_self
-      with Ctype.Unify {trace} ->
-        match trace with
+      with Ctype.Unify err ->
+        match err.trace with
         | Diff _ :: Incompatible_fields {name = n; _ } :: rem ->
             raise (Error(loc,
                          env,
@@ -256,12 +328,35 @@ let inheritance self_type env ovf concr_meths warn_vals loc parent =
                            "method",
                            n,
                            Errortrace.unification_error ~trace:rem)))
-        | _ -> assert false
+        | _ ->
+            raise(Error(loc, env, Self_clash err))
       end;
 
       (* Overriding *)
-      let over_meths = Concr.inter cl_sig.csig_concr concr_meths in
-      let concr_vals = concr_vals cl_sig.csig_vars in
+      let meths, over_meths =
+        Meths.fold
+          (fun lab (priv, virt, ty) (meths, over_meths)->
+             let over_meths =
+               match virt with
+               | Virtual -> over_meths
+               | Concrete ->
+                   match Meths.find lab meths with
+                   | (_, _, Concrete, _) -> Concr.add lab over_meths
+                   | (_, _, Virtual, _) -> over_meths
+                   | exception Not_found -> over_meths
+             in
+             let _, meths, (_, _, _, ty') =
+               Ctype.filter_self_method env lab priv virt meths self_type
+             in
+             begin
+               try Ctype.unify env ty ty' with Ctype.Unify trace ->
+                 raise(Error(loc, env,
+                             Field_type_mismatch ("method", lab, trace)))
+             end;
+             (meths, over_meths))
+          cl_sig.csig_meths (meths, Concr.empty)
+      in
+      let concr_vals = concrete_vals cl_sig in
       let over_vals = Concr.inter concr_vals warn_vals in
       begin match ovf with
         Some Fresh ->
@@ -282,20 +377,17 @@ let inheritance self_type env ovf concr_meths warn_vals loc parent =
         raise (Error(loc, env, No_overriding ("","")))
       | _ -> ()
       end;
-
-      let concr_meths = Concr.union cl_sig.csig_concr concr_meths
-      and warn_vals = Concr.union concr_vals warn_vals in
-
-      (cl_sig, concr_meths, warn_vals)
+      let warn_vals = Concr.union concr_vals warn_vals in
+      (cl_sig, meths, warn_vals)
 
   | _ ->
       raise(Error(loc, env, Structure_expected parent))
 
 let delayed_meth_specs = ref []
 
-let declare_method val_env meths self_type lab priv sty loc =
-  let meths, (_, ty') =
-     Ctype.filter_self_method val_env lab priv meths self_type
+let declare_method val_env meths self_type lab priv virt sty loc =
+  let _, meths, (_, _, _, ty') =
+     Ctype.filter_self_method val_env lab priv virt meths self_type
   in
   let unif ty =
     try Ctype.unify val_env ty ty' with Ctype.Unify err ->
@@ -356,8 +448,7 @@ let rec class_type_field env self_type arg ctf =
   Builtin_attributes.warning_scope ctf.pctf_attributes
     (fun () -> class_type_field_aux env self_type arg ctf)
 
-and class_type_field_aux env self_type
-    (fields, val_sig, concr_meths, inher, meths) ctf =
+and class_type_field_aux env self_type (fields, val_sig, inher, meths) ctf =
 
   let loc = ctf.pctf_loc in
   let mkctf desc =
@@ -371,55 +462,46 @@ and class_type_field_aux env self_type
           Cty_constr (p, tl, _) -> (p, tl) :: inher
         | _ -> inher
       in
-      let (cl_sig, concr_meths, _) =
-        inheritance self_type env None concr_meths Concr.empty sparent.pcty_loc
+      let (cl_sig, meths, _) =
+        inheritance self_type env None meths Concr.empty sparent.pcty_loc
           parent.cltyp_type
       in
       let val_sig =
         Vars.fold add_val cl_sig.csig_vars val_sig in
-      (mkctf (Tctf_inherit parent) :: fields,
-       val_sig, concr_meths, inher, meths)
+      (mkctf (Tctf_inherit parent) :: fields, val_sig, inher, meths)
 
   | Pctf_val ({txt=lab}, mut, virt, sty) ->
       let cty = transl_simple_type env false sty in
       let ty = cty.ctyp_type in
       (mkctf (Tctf_val (lab, mut, virt, cty)) :: fields,
-      add_val lab (mut, virt, ty) val_sig, concr_meths, inher, meths)
+      add_val lab (mut, virt, ty) val_sig, inher, meths)
 
   | Pctf_method ({txt=lab}, priv, virt, sty)  ->
       let meths, cty =
-        declare_method env meths self_type lab priv sty ctf.pctf_loc
-      in
-      let concr_meths =
-        match virt with
-        | Concrete -> Concr.add lab concr_meths
-        | Virtual -> concr_meths
+        declare_method env meths self_type lab priv virt sty ctf.pctf_loc
       in
       (mkctf (Tctf_method (lab, priv, virt, cty)) :: fields,
-        val_sig, concr_meths, inher, meths)
+        val_sig, inher, meths)
 
   | Pctf_constraint (sty, sty') ->
       let (cty, cty') = type_constraint env sty sty'  ctf.pctf_loc in
-      (mkctf (Tctf_constraint (cty, cty')) :: fields,
-        val_sig, concr_meths, inher, meths)
+      (mkctf (Tctf_constraint (cty, cty')) :: fields, val_sig, inher, meths)
 
   | Pctf_attribute x ->
       Builtin_attributes.warning_attribute x;
-      (mkctf (Tctf_attribute x) :: fields,
-        val_sig, concr_meths, inher, meths)
+      (mkctf (Tctf_attribute x) :: fields, val_sig, inher, meths)
 
   | Pctf_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
 
 and class_signature env {pcsig_self=sty; pcsig_fields=sign} =
   let self_cty = transl_simple_type env false sty in
-  let self_cty = { self_cty with
-    ctyp_type = Ctype.expand_head env self_cty.ctyp_type } in
   let self_type =  self_cty.ctyp_type in
 
   (* Check that the binder is a correct type, and introduce a dummy
      method preventing self type from being closed. *)
-  let dummy_obj = Ctype.newvar () in
+  let row = Ctype.newvar () in
+  let dummy_obj = Ctype.newobj row in
   Ctype.unify env (Ctype.filter_method env dummy_method Private dummy_obj)
     (Ctype.newty (Ttuple []));
   begin try
@@ -429,18 +511,23 @@ and class_signature env {pcsig_self=sty; pcsig_fields=sign} =
   end;
 
   (* Class type fields *)
-  let (rev_fields, val_sig, concr_meths, inher, _) =
+  let (rev_fields, val_sig, inher, meths) =
     Builtin_attributes.warning_scope []
       (fun () ->
          List.fold_left (class_type_field env self_type)
-           ([], Vars.empty, Concr.empty, [], Meths.empty)
+           ([], Vars.empty, [], Meths.empty)
            sign
       )
   in
-  let cty =   {csig_self = self_type;
-   csig_vars = val_sig;
-   csig_concr = concr_meths;
-   csig_inher = inher}
+  let meths =
+    Meths.map (fun (_, priv, virt, ty) -> (priv, virt, ty)) meths
+  in
+  let cty =
+    { csig_self = self_type;
+      csig_self_row = row;
+      csig_vars = val_sig;
+      csig_meths = meths;
+      csig_inher = inher; }
   in
   { csig_self = self_cty;
     csig_fields = List.rev rev_fields;
@@ -540,13 +627,13 @@ let enter_ancestor_met ~loc name ~meths ~cl_num ~ty ~attrs met_env =
   in
   Env.enter_value ~check name desc met_env
 
-let add_self_met loc id meths_ref vars_ref cl_num
+let add_self_met loc id meths_ref vars cl_num
       private_self as_var ty attrs met_env =
   let check =
     if as_var then (fun s -> Warnings.Unused_var s)
     else (fun s -> Warnings.Unused_var_strict s)
   in
-  let kind = Val_self (meths_ref, vars_ref, cl_num, private_self) in
+  let kind = Val_self (meths_ref, vars, cl_num, private_self) in
   let desc =
     { val_type = ty; val_kind = kind;
       val_attributes = attrs;
@@ -663,16 +750,15 @@ type first_pass_accummulater =
   { rev_fields : intermediate_class_field list;
     val_env : Env.t;
     par_env : Env.t;
-    concr_meths : Concr.t;
     warn_vals : Concr.t;
     inher : (Path.t * type_expr list) list;
     local_meths : Concr.t;
     local_vals : Concr.t;
     vars : (Ident.t * mutable_flag * virtual_flag * type_expr) Vars.t;
-    meths : (Ident.t * type_expr) Meths.t; }
+    meths : (Ident.t * private_flag * virtual_flag * type_expr) Meths.t; }
 
 let rec class_field_first_pass self_loc cl_num self_type acc cf =
-  let { rev_fields; val_env; par_env; concr_meths; warn_vals;
+  let { rev_fields; val_env; par_env; warn_vals;
         inher; local_meths; local_vals; vars; meths } = acc
   in
   let loc = cf.pcf_loc in
@@ -682,14 +768,15 @@ let rec class_field_first_pass self_loc cl_num self_type acc cf =
       Builtin_attributes.warning_scope cf.pcf_attributes
         (fun () ->
            let parent = class_expr cl_num val_env par_env sparent in
+           complete_class_type par_env parent.cl_type;
            let inher =
              match parent.cl_type with
              | Cty_constr (p, tl, _) -> (p, tl) :: inher
              | _ -> inher
            in
-           let (cl_sig, concr_meths, warn_vals) =
+           let (cl_sig, meths, warn_vals) =
              inheritance self_type val_env (Some override)
-               concr_meths warn_vals sparent.pcl_loc parent.cl_type
+               meths warn_vals sparent.pcl_loc parent.cl_type
            in
            (* Variables *)
            let (val_env, par_env, inherited_vars, vars) =
@@ -705,8 +792,12 @@ let rec class_field_first_pass self_loc cl_num self_type acc cf =
            in
            (* Inherited concrete methods *)
            let inherited_meths =
-             Concr.fold (fun lab rem -> (lab, Ident.create_local lab)::rem)
-               cl_sig.csig_concr []
+             Meths.fold
+               (fun lab (_, virt, _) rem ->
+                  match virt with
+                  | Concrete -> (lab, Ident.create_local lab)::rem
+                  | Virtual -> rem)
+               cl_sig.csig_meths []
            in
            (* Super *)
            let (val_env, par_env, super) =
@@ -724,7 +815,7 @@ let rec class_field_first_pass self_loc cl_num self_type acc cf =
            in
            let rev_fields = field :: rev_fields in
            { acc with rev_fields; val_env; par_env;
-                      concr_meths; warn_vals; inher; vars })
+                      warn_vals; inher; vars; meths })
   | Pcf_val (label, mut, Cfk_virtual styp) ->
       Builtin_attributes.warning_scope cf.pcf_attributes
         (fun () ->
@@ -784,8 +875,9 @@ let rec class_field_first_pass self_loc cl_num self_type acc cf =
   | Pcf_method (label, priv, Cfk_virtual sty) ->
       Builtin_attributes.warning_scope cf.pcf_attributes
         (fun () ->
-           let meths, (_, ty') =
-             Ctype.filter_self_method val_env label.txt priv meths self_type
+           let _, meths, (_, _, _, ty') =
+             Ctype.filter_self_method val_env label.txt
+               priv Virtual meths self_type
            in
            let sty = Ast_helper.Typ.force_poly sty in
            let cty = transl_simple_type val_env false sty in
@@ -811,18 +903,25 @@ let rec class_field_first_pass self_loc cl_num self_type acc cf =
            in
            if Concr.mem label.txt local_meths then
              raise(Error(loc, val_env, Duplicate ("method", label.txt)));
-           if Concr.mem label.txt concr_meths then begin
+           let previously_defined =
+             match Meths.find label.txt meths with
+             | (_, _, Concrete, _) -> true
+             | (_, _, Virtual, _) -> false
+             | exception Not_found -> false
+           in
+           if previously_defined then begin
              if override = Fresh then begin
-               Location.prerr_warning loc
-                 (Warnings.Method_override [label.txt])
+                 Location.prerr_warning loc
+                   (Warnings.Method_override [label.txt])
              end
            end else begin
              if override = Override then begin
                raise(Error(loc, val_env, No_overriding("method", label.txt)))
              end
            end;
-           let meths, (_, ty) =
-             Ctype.filter_self_method val_env label.txt priv meths self_type
+           let _, meths, (_, _, _, ty) =
+             Ctype.filter_self_method val_env label.txt
+               priv Concrete meths self_type
            in
            begin try match expr.pexp_desc with
              Pexp_poly (sbody, sty) ->
@@ -859,9 +958,8 @@ let rec class_field_first_pass self_loc cl_num self_type acc cf =
                  warning_state; loc; attributes }
            in
            let rev_fields = field :: rev_fields in
-           let concr_meths = Concr.add label.txt concr_meths in
            let local_meths = Concr.add label.txt local_meths in
-           { acc with rev_fields; concr_meths; local_meths; meths })
+           { acc with rev_fields; local_meths; meths })
 
   | Pcf_constraint (sty1, sty2) ->
       Builtin_attributes.warning_scope cf.pcf_attributes
@@ -894,7 +992,6 @@ let rec class_field_first_pass self_loc cl_num self_type acc cf =
 and class_fields_first_pass self_loc cl_num self_type
       val_env par_env cfs =
   let rev_fields = [] in
-  let concr_meths = Concr.empty in
   let warn_vals = Concr.empty in
   let inher = [] in
   let local_meths = Concr.empty in
@@ -902,8 +999,8 @@ and class_fields_first_pass self_loc cl_num self_type
   let vars = Vars.empty in
   let meths = Meths.empty in
   let init_acc =
-    { rev_fields; val_env; par_env; concr_meths;
-      warn_vals; inher; local_meths; local_vals; vars; meths }
+    { rev_fields; val_env; par_env; warn_vals;
+      inher; local_meths; local_vals; vars; meths }
   in
   let acc =
     Builtin_attributes.warning_scope []
@@ -912,7 +1009,7 @@ and class_fields_first_pass self_loc cl_num self_type
           (class_field_first_pass self_loc cl_num self_type)
           init_acc cfs)
   in
-  List.rev acc.rev_fields, acc.concr_meths, acc.inher, acc.vars, acc.meths
+  List.rev acc.rev_fields, acc.inher, acc.vars, acc.meths
 
 and class_field_second_pass cl_num self_type meths met_env field =
   let mkcf desc loc attrs =
@@ -979,7 +1076,7 @@ and class_field_second_pass cl_num self_type meths met_env field =
       Warnings.with_state warning_state
         (fun () ->
            (* Read the generalized type *)
-           let (_, ty) = Meths.find label.txt meths in
+           let (_, _, _, ty) = Meths.find label.txt meths in
            let meth_type =
              mk_expected
                (Btype.newgenty (Tarrow(Nolabel, self_type, ty, Cok)))
@@ -1037,9 +1134,10 @@ and class_structure cl_num final val_env met_env loc
   let par_env = met_env in
 
   (* Location of self. Used for locations of self arguments *)
+  let self_row = Ctype.newvar () in
   let self_loc = {spat.ppat_loc with Location.loc_ghost = true} in
 
-  let self_type = Ctype.newobj (Ctype.newvar ()) in
+  let self_type = Ctype.newobj self_row in
 
   (* Adding a dummy method to the self type prevents it from being closed /
      escaping.
@@ -1088,47 +1186,22 @@ and class_structure cl_num final val_env met_env loc
   end;
 
   (* Typing of class fields *)
-  let (fields, concr_meths, inher, vars, meths) =
+  let (fields, inher, vars, meths) =
     class_fields_first_pass self_loc cl_num self_type
            val_env par_env str
   in
   Ctype.unify val_env self_type (Ctype.newvar ()); (* useless ? *)
-  let sign =
-    {csig_self = public_self;
-     csig_vars = Vars.map (fun (_id, mut, vr, ty) -> (mut, vr, ty)) vars;
-     csig_concr = concr_meths;
-      csig_inher = inher}
-  in
+
   let methods = get_methods self_type in
   let priv_meths =
     List.filter (fun (_,kind,_) -> Types.field_kind_repr kind <> Fpresent)
       methods
   in
-  (* ensure that inherited methods are listed too *)
-  let meths =
-    List.fold_left
-      (fun meths (met, _kind, _ty) ->
-         if Meths.mem met meths then meths
-         else begin
-           let meths, _ =
-             Ctype.filter_self_method val_env met Private meths self_type
-           in
-           meths
-         end)
-      meths methods
-  in
   if final then begin
     (* Unify private_self and a copy of self_type. self_type will not
        be modified after this point *)
-    if not (Ctype.close_object self_type) then
+    if not (Ctype.close_object (Ctype.expand_head val_env self_type)) then
       raise(Error(loc, val_env, Closing_self_type self_type));
-    let mets = virtual_methods {sign with csig_self = self_type} in
-    let vals =
-      Vars.fold
-        (fun name (_mut, vr, _ty) l -> if vr = Virtual then name :: l else l)
-        sign.csig_vars [] in
-    if mets <> [] || vals <> [] then
-      raise(Error(loc, val_env, Virtual_class(true, final, mets, vals)));
     let self_methods =
       List.fold_right
         (fun (lab,kind,ty) rem ->
@@ -1138,31 +1211,34 @@ and class_structure cl_num final val_env met_env loc
       Ctype.unify val_env private_self
         (Ctype.newty (Tobject(self_methods, ref None)));
       Ctype.unify val_env public_self self_type
-    with Ctype.Unify err -> raise(Error(loc, val_env, Final_self_clash err))
+    with Ctype.Unify err -> raise(Error(loc, val_env, Self_clash err))
     end;
   end;
 
   (* Typing of method bodies *)
   (* Generalize the spine of methods accessed through self *)
-  Meths.iter (fun _ (_,ty) -> Ctype.generalize_spine ty) meths;
+  Meths.iter (fun _ (_, _, _, ty) -> Ctype.generalize_spine ty) meths;
   let self_meths =
-    Meths.map (fun (id,ty) -> (id, Ctype.generic_instance ty)) meths
+    Meths.map
+      (fun (id, priv, virt, ty) ->
+         (id, priv, virt, Ctype.generic_instance ty))
+      meths
   in
   (* But keep levels correct on the type of self *)
-  Meths.iter (fun _ (_,ty) -> Ctype.unify val_env ty (Ctype.newvar ())) meths;
-  let vars_ref = ref vars in
+  Meths.iter
+    (fun _ (_, _, _, ty) -> Ctype.unify val_env ty (Ctype.newvar ()))
+    meths;
   let meths_ref = ref self_meths in
   let met_env =
     List.fold_right
       (fun {pv_id; pv_type; pv_loc; pv_as_var; pv_attributes} met_env ->
-         add_self_met pv_loc pv_id meths_ref vars_ref cl_num
+         add_self_met pv_loc pv_id meths_ref vars cl_num
            private_self pv_as_var pv_type pv_attributes met_env)
       self_pat_vars met_env
   in
   let fields =
     class_fields_second_pass cl_num self_type self_meths met_env fields
   in
-  let meths = Meths.map (function (id, _ty) -> id) !meths_ref in
 
   (* Check for private methods made public *)
   let pub_meths' =
@@ -1173,13 +1249,22 @@ and class_structure cl_num final val_env met_env loc
   let added = List.filter (fun x -> List.mem x l1) l2 in
   if added <> [] then
     Location.prerr_warning loc (Warnings.Implicit_public_methods added);
-  let sign = if final then sign else
-      {sign with Types.csig_self = Ctype.expand_head val_env public_self} in
-  {
-    cstr_self = self_pat;
+  let sig_vars = Vars.map (fun (_, mut, virt, ty) -> (mut, virt, ty)) vars in
+  let sig_meths =
+    Meths.map (fun (_, priv, virt, ty) -> (priv, virt, ty)) !meths_ref
+  in
+  let str_meths = Meths.map (fun (id, _, _, _) -> id) !meths_ref in
+  let sign =
+    { csig_self = public_self;
+      csig_self_row = self_row;
+      csig_vars = sig_vars;
+      csig_meths = sig_meths;
+      csig_inher = inher }
+  in
+  { cstr_self = self_pat;
     cstr_fields = fields;
     cstr_type = sign;
-    cstr_meths = meths}, sign (* redondant, since already in cstr_type *)
+    cstr_meths = str_meths; }
 
 and class_expr cl_num val_env met_env scl =
   Builtin_attributes.warning_scope scl.pcl_attributes
@@ -1225,11 +1310,12 @@ and class_expr_aux cl_num val_env met_env scl =
           cl_attributes = []; (* attributes are kept on the inner cl node *)
          }
   | Pcl_structure cl_str ->
-      let (desc, ty) =
-        class_structure cl_num false val_env met_env scl.pcl_loc cl_str in
+      let desc =
+        class_structure cl_num false val_env met_env scl.pcl_loc cl_str
+      in
       rc {cl_desc = Tcl_structure desc;
           cl_loc = scl.pcl_loc;
-          cl_type = Cty_signature ty;
+          cl_type = Cty_signature desc.cstr_type;
           cl_env = val_env;
           cl_attributes = scl.pcl_attributes;
          }
@@ -1469,18 +1555,16 @@ and class_expr_aux cl_num val_env met_env scl =
       Ctype.begin_class_def ();
       let context = Typetexp.narrow () in
       let cl = class_expr cl_num val_env met_env scl' in
+      complete_class_type val_env cl.cl_type;
       Typetexp.widen context;
       let context = Typetexp.narrow () in
       let clty = class_type val_env scty in
+      complete_class_type val_env clty.cltyp_type;
       Typetexp.widen context;
       Ctype.end_def ();
 
-      limited_generalize
-        (Ctype.row_variable (Ctype.self_type cl.cl_type))
-        cl.cl_type;
-      limited_generalize
-        (Ctype.row_variable (Ctype.self_type clty.cltyp_type))
-        clty.cltyp_type;
+      limited_generalize (Ctype.self_type_row cl.cl_type) cl.cl_type;
+      limited_generalize (Ctype.self_type_row clty.cltyp_type) clty.cltyp_type;
 
       begin match
         Includeclass.class_types val_env cl.cl_type clty.cltyp_type
@@ -1580,8 +1664,9 @@ let initial_env define_class approx
   let dummy_cty =
     Cty_signature
       { csig_self = Ctype.newvar ();
+        csig_self_row = Ctype.newvar ();
         csig_vars = Vars.empty;
-        csig_concr = Concr.empty;
+        csig_meths = Meths.empty;
         csig_inher = [] }
   in
   let dummy_class =
@@ -1658,28 +1743,20 @@ let class_infos define_class kind
     with exn ->
       Typecore.self_coercion := []; raise exn
   in
+  let sign = Ctype.signature_of_class_type typ in
 
   Ctype.end_def ();
 
-  let sty = Ctype.self_type typ in
-
-  (* First generalize the type of the dummy method (cf PR#6123) *)
-  let (fields, _) = Ctype.flatten_fields (Ctype.object_fields sty) in
-  List.iter (fun (met, _, ty) -> if met = dummy_method then Ctype.generalize ty)
-    fields;
   (* Generalize the row variable *)
-  let rv = Ctype.row_variable sty in
-  List.iter (Ctype.limited_generalize rv) params;
-  limited_generalize rv typ;
+  List.iter (Ctype.limited_generalize sign.csig_self_row) params;
+  limited_generalize sign.csig_self_row typ;
 
   (* Check the abbreviation for the object type *)
   let (obj_params', obj_type) = Ctype.instance_class params typ in
   let constr = Ctype.newconstr (Path.Pident obj_id) obj_params in
   begin
-    let ty = Ctype.self_type obj_type in
-    Ctype.hide_private_methods ty;
-    if not (Ctype.close_object ty) then
-      raise(Error(cl.pci_loc, env, Closing_self_type ty));
+    let row = Ctype.self_type_row obj_type in
+    Ctype.unify env row (Ctype.newty Tnil);
     begin try
       List.iter2 (Ctype.unify env) obj_params obj_params'
     with Ctype.Unify _ ->
@@ -1688,6 +1765,7 @@ let class_infos define_class kind
                             Ctype.newconstr (Path.Pident obj_id)
                                             obj_params')))
     end;
+    let ty = Ctype.self_type obj_type in
     begin try
       Ctype.unify env ty constr
     with Ctype.Unify _ ->
@@ -1700,9 +1778,7 @@ let class_infos define_class kind
   begin
     let (cl_params', cl_type) = Ctype.instance_class params typ in
     let ty = Ctype.self_type cl_type in
-    Ctype.hide_private_methods ty;
-    Ctype.set_object_name
-      obj_id (Ctype.row_variable ty) cl_params ty;
+    Ctype.set_object_name obj_id cl_params ty;
     begin try
       List.iter2 (Ctype.unify env) cl_params cl_params'
     with Ctype.Unify _ ->
@@ -1763,12 +1839,8 @@ let class_infos define_class kind
   in
 
   if cl.pci_virt = Concrete then begin
-    let sign = Ctype.signature_of_class_type typ in
     let mets = virtual_methods sign in
-    let vals =
-      Vars.fold
-        (fun name (_mut, vr, _ty) l -> if vr = Virtual then name :: l else l)
-        sign.csig_vars [] in
+    let vals = virtual_vars sign in
     if mets <> []  || vals <> [] then
       raise(Error(cl.pci_loc, env, Virtual_class(define_class, false, mets,
                                                  vals)));
@@ -1776,12 +1848,7 @@ let class_infos define_class kind
 
   (* Misc. *)
   let arity = Ctype.class_type_arity typ in
-  let pub_meths =
-    let (fields, _) =
-      Ctype.flatten_fields (Ctype.object_fields (Ctype.expand_head env obj_ty))
-    in
-    List.map (function (lab, _, _) -> lab) fields
-  in
+  let pub_meths = public_methods sign in
 
   (* Final definitions *)
   let (params', typ') = Ctype.instance_class params typ in
@@ -1829,9 +1896,7 @@ let class_infos define_class kind
   let (cl_params, cl_ty) =
     Ctype.instance_parameterized_type params (Ctype.self_type typ)
   in
-  Ctype.hide_private_methods cl_ty;
-  Ctype.set_object_name
-    obj_id (Ctype.row_variable cl_ty) cl_params cl_ty;
+  Ctype.set_object_name obj_id cl_params cl_ty;
   let cl_abbr =
     let arity = List.length cl_params in
     {
@@ -1862,21 +1927,6 @@ let final_decl env define_class
   begin try Ctype.collapse_conj_params env clty.cty_params
   with Ctype.Unify err ->
     raise(Error(cl.pci_loc, env, Non_collapsable_conjunction (id, clty, err)))
-  end;
-
-  (* make the dummy method disappear *)
-  begin
-    let self_type = Ctype.self_type clty.cty_type in
-    let methods, _ =
-      Ctype.flatten_fields
-        (Ctype.object_fields (Ctype.expand_head env self_type))
-    in
-    List.iter (fun (lab,kind,_) ->
-      if lab = dummy_method then
-        match Types.field_kind_repr kind with
-          Fvar r -> Types.set_kind r Fabsent
-        | _ -> ()
-    ) methods
   end;
 
   List.iter Ctype.generalize clty.cty_params;
@@ -2034,10 +2084,12 @@ let class_num = ref 0
 let class_declaration env sexpr =
   incr class_num;
   let expr = class_expr (Int.to_string !class_num) env env sexpr in
+  complete_class_type env expr.cl_type;
   (expr, expr.cl_type)
 
 let class_description env sexpr =
   let expr = class_type env sexpr in
+  complete_class_type env expr.cltyp_type;
   (expr, expr.cltyp_type)
 
 let class_declarations env cls =
@@ -2100,14 +2152,18 @@ and unify_parents_struct env ty st =
 
 let type_object env loc s =
   incr class_num;
-  let (desc, sign) =
-    class_structure (Int.to_string !class_num) true env env loc s in
-  let sty = Ctype.expand_head env sign.csig_self in
-  Ctype.hide_private_methods sty;
-  let (fields, _) = Ctype.flatten_fields (Ctype.object_fields sty) in
-  let meths = List.map (fun (s,_,_) -> s) fields in
-  unify_parents_struct env sign.csig_self desc;
-  (desc, sign, meths)
+  let desc =
+    class_structure (Int.to_string !class_num) true env env loc s
+  in
+  complete_class_signature env desc.cstr_type;
+  let virtual_meths = virtual_methods desc.cstr_type in
+  let virtual_vals = virtual_vars desc.cstr_type in
+  if virtual_meths <> []  || virtual_vals <> [] then
+    raise(Error(loc, env,
+      Virtual_class(true, true, virtual_meths, virtual_vals)));
+  let meths = public_methods desc.cstr_type in
+  unify_parents_struct env desc.cstr_type.csig_self desc;
+  (desc, meths)
 
 let () =
   Typecore.type_object := type_object
@@ -2224,21 +2280,15 @@ let report_error env ppf = function
   | Unbound_val lab ->
       fprintf ppf "Unbound instance variable %s" lab
   | Unbound_type_var (printer, reason) ->
-      let print_common ppf kind ty0 real lab ty =
+      let print_reason ppf (ty0, real, lab, ty) =
         let ty1 =
           if real then ty0 else Btype.newgenty(Tobject(ty0, ref None)) in
         List.iter Printtyp.mark_loops [ty; ty1];
         fprintf ppf
-          "The %s %s@ has type@;<1 2>%a@ where@ %a@ is unbound"
-          kind lab
+          "The method %s@ has type@;<1 2>%a@ where@ %a@ is unbound"
+          lab
           !Oprint.out_type (Printtyp.tree_of_typexp Type ty)
           !Oprint.out_type (Printtyp.tree_of_typexp Type ty0)
-      in
-      let print_reason ppf = function
-      | Ctype.CC_Method (ty0, real, lab, ty) ->
-          print_common ppf "method" ty0 real lab ty
-      | Ctype.CC_Value (ty0, real, lab, ty) ->
-          print_common ppf "instance variable" ty0 real lab ty
       in
       Printtyp.reset ();
       fprintf ppf
@@ -2265,7 +2315,7 @@ let report_error env ppf = function
             (fun ppf -> fprintf ppf "Type")
             (fun ppf -> fprintf ppf "is not compatible with type")
         )
-  | Final_self_clash err ->
+  | Self_clash err ->
       Printtyp.report_unification_error ppf env err
         (function ppf ->
            fprintf ppf "This object is expected to have type")
