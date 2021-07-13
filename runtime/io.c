@@ -31,6 +31,7 @@
 #include </usr/include/io.h>
 #endif
 #include "caml/alloc.h"
+#include "caml/camlatomic.h"
 #include "caml/custom.h"
 #include "caml/fail.h"
 #include "caml/io.h"
@@ -89,7 +90,7 @@ CAMLexport struct channel * caml_open_descriptor_in(int fd)
   caml_plat_mutex_init(&channel->mutex);
   channel->revealed = 0;
   channel->old_revealed = 0;
-  channel->refcount = 0;
+  atomic_store_rel(&channel->refcount, 0);
   channel->prev = NULL;
   channel->name = NULL;
   channel->flags = descriptor_is_in_binary_mode(fd) ? 0 : CHANNEL_TEXT_MODE;
@@ -131,7 +132,7 @@ static void unlink_channel(struct channel *channel)
 CAMLexport void caml_close_channel(struct channel *channel)
 {
   close(channel->fd);
-  if (channel->refcount > 0) return;
+  if (atomic_load_acq(&channel->refcount) > 0) return;
   caml_plat_mutex_free(&channel->mutex);
   unlink_channel(channel);
   caml_stat_free(channel->name);
@@ -410,7 +411,8 @@ void caml_finalize_channel(value vchan)
 {
   struct channel * chan = Channel(vchan);
   if ((chan->flags & CHANNEL_FLAG_MANAGED_BY_GC) == 0) return;
-  if (--chan->refcount > 0) return;
+  if (atomic_fetch_add (&chan->refcount, -1) > 1)
+    return;
   caml_plat_mutex_free(&chan->mutex);
   /* TODO KC: See commented out section */
 #if 0
@@ -472,7 +474,8 @@ static const struct custom_operations channel_operations = {
 CAMLexport value caml_alloc_channel(struct channel *chan)
 {
   value res;
-  chan->refcount++;             /* prevent finalization during next alloc */
+  /* prevent finalization during next alloc */
+  atomic_fetch_add (&chan->refcount, 1);
   res = caml_alloc_custom_mem(&channel_operations, sizeof(struct channel *),
                               sizeof(struct channel));
   Channel(res) = chan;
@@ -506,27 +509,54 @@ CAMLprim value caml_ml_set_channel_name(value vchannel, value vname)
 
 #define Pair_tag 0
 
+struct channel_list {
+  struct channel* channel;
+  struct channel_list* next;
+};
+
 CAMLprim value caml_ml_out_channels_list (value unit)
 {
   CAMLparam0 ();
   CAMLlocal3 (res, tail, chan);
   struct channel * channel;
+  struct channel_list *channel_list = NULL, *cl_tmp;
+  mlsize_t i, num_channels = 0;
 
-  res = Val_emptylist;
   caml_plat_lock (&caml_all_opened_channels_mutex);
   for (channel = caml_all_opened_channels;
        channel != NULL;
-       channel = channel->next)
+       channel = channel->next) {
     /* Testing channel->fd >= 0 looks unnecessary, as
        caml_ml_close_channel changes max when setting fd to -1. */
     if (channel->max == NULL) {
-      chan = caml_alloc_channel (channel);
-      tail = res;
-      res = caml_alloc_small (2, Pair_tag);
-      Field (res, 0) = chan;
-      Field (res, 1) = tail;
+      /* refcount is incremented here to keep the channel alive */
+      atomic_fetch_add (&channel->refcount, 1);
+      num_channels++;
+      cl_tmp = caml_stat_alloc_noexc (sizeof(struct channel_list));
+      if (cl_tmp == NULL)
+        caml_fatal_error ("caml_ml_out_channels_list: out of memory");
+      cl_tmp->channel = channel;
+      cl_tmp->next = channel_list;
+      channel_list = cl_tmp;
     }
+  }
   caml_plat_unlock (&caml_all_opened_channels_mutex);
+
+  res = Val_emptylist;
+  cl_tmp = NULL;
+  for (i = 0; i < num_channels; i++) {
+    chan = caml_alloc_channel (channel_list->channel);
+    /* refcount would have been incremented by caml_alloc_channel. Decrement
+     * our earlier increment */
+    atomic_fetch_add (&channel_list->channel->refcount, -1);
+    tail = res;
+    res = caml_alloc_small (2, Pair_tag);
+    Field (res, 0) = chan;
+    Field (res, 1) = tail;
+    cl_tmp = channel_list;
+    channel_list = channel_list->next;
+    caml_stat_free (cl_tmp);
+  }
   CAMLreturn (res);
 }
 
