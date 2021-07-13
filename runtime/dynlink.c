@@ -36,6 +36,8 @@
 #include "caml/prims.h"
 #include "caml/signals.h"
 
+#include "build_config.h"
+
 #ifndef NATIVE_CODE
 
 /* The table of primitives */

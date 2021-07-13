@@ -160,3 +160,5 @@ OCAMLYACCFLAGS ?=
 
 %.ml %.mli: %.mly
 	$(OCAMLYACC) $(OCAMLYACCFLAGS) $<
+
+SAK = $(ROOTDIR)/runtime/sak$(EXE)

@@ -773,6 +773,9 @@ partialclean::
 
 # The runtime system for the bytecode compiler
 
+$(SAK):
+	make -C runtime sak$(EXE)
+
 .PHONY: runtime
 runtime: stdlib/libcamlrun.$(A)
 
@@ -822,16 +825,16 @@ clean::
 # The standard library
 
 .PHONY: library
-library: ocamlc
+library: ocamlc | $(SAK)
 	$(MAKE) -C stdlib $(BOOT_FLEXLINK_CMD) all
 
 .PHONY: library-cross
-library-cross:
+library-cross: | $(SAK)
 	$(MAKE) -C stdlib \
 	  $(BOOT_FLEXLINK_CMD) OCAMLRUN=../runtime/ocamlrun$(EXE) all
 
 .PHONY: libraryopt
-libraryopt:
+libraryopt: | $(SAK)
 	$(MAKE) -C stdlib $(BOOT_FLEXLINK_CMD) allopt
 
 partialclean::
