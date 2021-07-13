@@ -349,6 +349,8 @@ val lambda_unit: lambda
 val name_lambda: let_kind -> lambda -> (Ident.t -> lambda) -> lambda
 val name_lambda_list: lambda list -> (lambda list -> lambda) -> lambda
 
+val collapse_apply : lambda_apply -> lambda
+
 val iter_head_constructor: (lambda -> unit) -> lambda -> unit
 (** [iter_head_constructor f lam] apply [f] to only the first level of
     sub expressions of [lam]. It does not recursively traverse the

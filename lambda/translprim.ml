@@ -708,7 +708,7 @@ let lambda_of_prim prim_name prim loc args arg_exps =
   | Identity, [arg] -> arg
   | Apply, [func; arg]
   | Revapply, [arg; func] ->
-      Lapply {
+      Lambda.collapse_apply {
         ap_func = func;
         ap_args = [arg];
         ap_loc = loc;
