@@ -94,10 +94,12 @@ end
 
 val reset: unit -> unit
 
-(** Print out a type.  This type expression will not share type variable names
-    with any other type expressions; this function resets the global printing
-    state first.  If you want multiple types to use common names for type
-    variables, see [prepare_for_printing] and [prepared_type_expr].  *)
+(** Print out a type.  This will pick names for type variables, and will not
+    reuse names for common type variables shared across multiple type
+    expressions.  (It will also reset the printing state, which matters for
+    other type formatters such as [prepared_type_expr].)  If you want multiple
+    types to use common names for type variables, see [prepare_for_printing] and
+    [prepared_type_expr].  *)
 val type_expr: formatter -> type_expr -> unit
 
 (** [prepare_for_printing] resets the global printing environment, a la [reset],
@@ -121,8 +123,10 @@ val tree_of_type_scheme: type_expr -> out_type
 val type_scheme: formatter -> type_expr -> unit
 val shared_type_scheme: formatter -> type_expr -> unit
 (** [shared_type_scheme] is very similar to [type_scheme], but does not reset
-    the printing context first.  Odds are, you're looking for [type_scheme]
-    instead. *)
+    the printing context first.  This is intended to be used in cases where the
+    printing should have a particularly wide context, such as documentation
+    generators; most use cases, such as error messages, have narrower contexts
+    for which [type_scheme] is better suited. *)
 
 val tree_of_value_description: Ident.t -> value_description -> out_sig_item
 val value_description: Ident.t -> formatter -> value_description -> unit

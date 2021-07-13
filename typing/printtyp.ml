@@ -801,7 +801,10 @@ let nameable_row row =
        | _ -> true)
     (row_fields row)
 
-let iter_type_expr_for_printing f ty =
+(* This specialized version of [Btype.iter_type_expr] normalizes and
+   short-circuits the traversal of the [type_expr], so that it covers only the
+   subterms that would be printed by the type printer. *)
+let printer_iter_type_expr f ty =
   match get_desc ty with
   | Tconstr(p, tyl, _) ->
       let (_p', s) = best_type_path p in
@@ -889,7 +892,7 @@ end = struct
       | Tvar _ | Tunivar _ ->
           add_named_var tty
       | _ ->
-          iter_type_expr_for_printing add_named_vars ty
+          printer_iter_type_expr add_named_vars ty
     end
 
   let rec substitute ty =
@@ -997,6 +1000,10 @@ let aliased = ref ([] : transient_expr list)
 let delayed = ref ([] : transient_expr list)
 let printed_aliases = ref ([] : transient_expr list)
 
+(* [printed_aliases] is a subset of [aliased] that records only those aliased
+   types that have actually been printed; this allows us to avoid naming loops
+   that the user will never see. *)
+
 let add_delayed t =
   if not (List.memq t !delayed) then delayed := t :: !delayed
 
@@ -1028,22 +1035,22 @@ let should_visit_object ty =
   | _ -> false
 
 let rec mark_loops_rec visited ty =
-  let tty = Transient_expr.repr ty in
   let px = proxy ty in
   if List.memq px visited && aliasable ty then add_alias_proxy px else
+    let tty = Transient_expr.repr ty in
     let visited = px :: visited in
     match tty.desc with
     | Tvariant _ | Tobject _ ->
         if List.memq px !visited_objects then add_alias_proxy px else begin
           if should_visit_object ty then
             visited_objects := px :: !visited_objects;
-          iter_type_expr_for_printing (mark_loops_rec visited) ty
+          printer_iter_type_expr (mark_loops_rec visited) ty
         end
     | Tpoly(ty, tyl) ->
         List.iter add_alias tyl;
         mark_loops_rec visited ty
     | _ ->
-        iter_type_expr_for_printing (mark_loops_rec visited) ty
+        printer_iter_type_expr (mark_loops_rec visited) ty
 
 let mark_loops ty =
   mark_loops_rec [] ty;;
@@ -1257,7 +1264,9 @@ let type_expr ppf ty =
   prepare_for_printing [ty];
   prepared_type_expr ppf ty
 
-let named_type_expr ppf ty =
+(* "Half-prepared" type expression: [ty] should have had its names reserved, but
+   should not have had its loops marked. *)
+let type_expr_with_reserved_names ppf ty =
   reset_loop_marks ();
   mark_loops ty;
   prepared_type_expr ppf ty
@@ -2186,7 +2195,7 @@ let explain_fixed_row pos expl = match expl with
   | Univar x ->
     reserve_names x;
     dprintf "The %a variant type is bound to the universal type variable %a"
-      Errortrace.print_pos pos named_type_expr x
+      Errortrace.print_pos pos type_expr_with_reserved_names x
   | Reified p ->
     dprintf "The %a variant type is bound to %t"
       Errortrace.print_pos pos (print_path p)
@@ -2234,7 +2243,7 @@ let explain_escape pre = function
       reserve_names u;
       Some(
         dprintf "%t@,The universal variable %a would escape its scope"
-          pre named_type_expr u)
+          pre type_expr_with_reserved_names u)
   | Errortrace.Constructor p -> Some(
       dprintf
         "%t@,@[The type constructor@;<1 2>%a@ would escape its scope@]"
@@ -2249,7 +2258,7 @@ let explain_escape pre = function
       reserve_names t;
       Some(
         dprintf "%t @,@[<hov>This instance of %a is ambiguous:@ %s@]"
-          pre named_type_expr t
+          pre type_expr_with_reserved_names t
           "it would escape the scope of its equation"
       )
   | Errortrace.Self ->
@@ -2279,13 +2288,15 @@ let explanation (type variety) intro prev env
       match context, kind, prev with
       | Some ctx, _, _ ->
         reserve_names ctx;
-        dprintf "@[%t@;<1 2>%a@]" intro named_type_expr ctx
+        dprintf "@[%t@;<1 2>%a@]" intro type_expr_with_reserved_names ctx
       | None, Univ _, Some(Errortrace.Incompatible_fields {name; diff}) ->
         reserve_names diff.got;
         reserve_names diff.expected;
         dprintf "@,@[The method %s has type@ %a,@ \
                  but the expected method type was@ %a@]"
-          name named_type_expr diff.got named_type_expr diff.expected
+          name
+          type_expr_with_reserved_names diff.got
+          type_expr_with_reserved_names diff.expected
       | _ -> ignore
     in
     explain_escape pre kind
