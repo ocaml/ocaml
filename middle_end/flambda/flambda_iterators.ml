@@ -101,9 +101,12 @@ let map_subexpressions f f_named (tree:Flambda.t) : Flambda.t =
     else
       Let_mutable { mutable_let with body = new_body }
   | Switch (arg, sw) ->
-    let aux = map_snd_sharing (fun _ v -> f v) in
-    let new_consts = list_map_sharing aux sw.consts in
-    let new_blocks = list_map_sharing aux sw.blocks in
+    let new_consts =
+      list_map_sharing (map_snd_sharing (fun _ v -> f v)) sw.consts
+    in
+    let new_blocks =
+      list_map_sharing (map_snd_sharing (fun _ v -> f v)) sw.blocks
+    in
     let new_failaction = may_map_sharing f sw.failaction in
     if sw.failaction == new_failaction &&
        new_consts == sw.consts &&

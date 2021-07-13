@@ -212,7 +212,11 @@ let variable_and_symbol_invariants (program : Flambda.program) =
       List.iter (fun (n, e) ->
           ignore_int n;
           loop env e)
-        (consts @ blocks);
+        consts;
+      List.iter (fun (k, e) ->
+          let _: Flambda.switch_block_key = k in
+          loop env e)
+        blocks;
       Option.iter (loop env) failaction
     | String_switch (arg, cases, e_opt) ->
       check_variable_is_bound env arg;
