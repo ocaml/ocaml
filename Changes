@@ -119,13 +119,6 @@ OCaml 4.13.0
   existentials freshly introduced by GADT constructors.
   (Jacques Garrigue, review by Leo White and Gabriel Scherer)
 
-* #9811: remove propagation from previous branches
-  Type information inferred from previous branches was propagated in
-  non-principal mode. Revert this for better compatibility with
-  -principal mode.
-  For the time being, infringing code should result in a principality warning.
-  (Jacques Garrigue, review by Thomas Refis and Gabriel Scherer)
-
 - #10174: Make Tsubst more robust by avoiding strange workarounds
   (Takafumi Saikawa and Jacques Garrigue, review by Gabriel Scherer and
    Florian Angeletti)
