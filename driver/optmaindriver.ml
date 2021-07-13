@@ -37,6 +37,7 @@ let backend = (module Backend : Backend_intf.S)
 module Options = Main_args.Make_optcomp_options (Main_args.Default.Optmain)
 let main argv ppf =
   native_code := true;
+  Lambda.set_num_parameter_regs Proc.max_arguments_for_tailcalls;
   let program = "ocamlopt" in
   match
     Compenv.readenv ppf Before_args;

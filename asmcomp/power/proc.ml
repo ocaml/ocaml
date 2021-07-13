@@ -155,17 +155,17 @@ let incoming ofs = Incoming ofs
 let outgoing ofs = Outgoing ofs
 let not_supported _ofs = fatal_error "Proc.loc_results: cannot call"
 
-let max_arguments_for_tailcalls = 8
+let max_arguments_for_tailcalls = 16
 
 let loc_arguments arg =
-    calling_conventions 0 7 100 112 outgoing arg
+    calling_conventions 0 15 100 112 outgoing arg
 
 let loc_parameters arg =
-  let (loc, _ofs) = calling_conventions 0 7 100 112 incoming arg
+  let (loc, _ofs) = calling_conventions 0 15 100 112 incoming arg
   in loc
 
 let loc_results res =
-  let (loc, _ofs) = calling_conventions 0 7 100 112 not_supported res
+  let (loc, _ofs) = calling_conventions 0 15 100 112 not_supported res
   in loc
 
 (* C calling conventions for ELF32:
