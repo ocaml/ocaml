@@ -546,18 +546,19 @@ and raw_type_desc ppf = function
         raw_type t
         raw_type_list tl
   | Tvariant row ->
+      let Row {fields; more; name; fixed; closed} = row_repr row in
       fprintf ppf
         "@[<hov1>{@[%s@,%a;@]@ @[%s@,%a;@]@ %s%B;@ %s%a;@ @[<1>%s%t@]}@]"
         "row_fields="
         (raw_list (fun ppf (l, f) ->
           fprintf ppf "@[%s,@ %a@]" l raw_field f))
-        row.row_fields
-        "row_more=" raw_type row.row_more
-        "row_closed=" row.row_closed
-        "row_fixed=" raw_row_fixed row.row_fixed
+        fields
+        "row_more=" raw_type more
+        "row_closed=" closed
+        "row_fixed=" raw_row_fixed fixed
         "row_name="
         (fun ppf ->
-          match row.row_name with None -> fprintf ppf "None"
+          match name with None -> fprintf ppf "None"
           | Some(p,tl) ->
               fprintf ppf "Some(@,%a,@,%a)" path p raw_type_list tl)
   | Tpackage (p, fl) ->
@@ -957,14 +958,14 @@ let aliasable ty =
   | _ -> true
 
 let namable_row row =
-  row.row_name <> None &&
+  row_name row <> None &&
   List.for_all
     (fun (_, f) ->
        match row_field_repr f with
        | Reither(c, l, _, _) ->
-           row.row_closed && if c then l = [] else List.length l = 1
+           row_closed row && if c then l = [] else List.length l = 1
        | _ -> true)
-    row.row_fields
+    (row_fields row)
 
 let rec mark_loops_rec visited ty =
   let px = proxy ty in
@@ -984,10 +985,9 @@ let rec mark_loops_rec visited ty =
     | Tvariant row ->
         if List.memq px !visited_objects then add_alias_proxy px else
          begin
-          let row = row_repr row in
           if not (static_row row) then
             visited_objects := px :: !visited_objects;
-          match row.row_name with
+          match row_name row with
           | Some(_p, tyl) when namable_row row ->
               List.iter (mark_loops_rec visited) tyl
           | _ ->
@@ -1086,12 +1086,12 @@ let rec tree_of_typexp mode ty =
         then tree_of_typexp mode (List.hd tyl')
         else Otyp_constr (tree_of_path Type p', tree_of_typlist mode tyl')
     | Tvariant row ->
-        let row = row_repr row in
+        let Row {fields; name; closed} = row_repr row in
         let fields =
-          if row.row_closed then
+          if closed then
             List.filter (fun (_, f) -> row_field_repr f <> Rabsent)
-              row.row_fields
-          else row.row_fields in
+              fields
+          else fields in
         let present =
           List.filter
             (fun (_, f) ->
@@ -1100,28 +1100,28 @@ let rec tree_of_typexp mode ty =
                | _ -> false)
             fields in
         let all_present = List.length present = List.length fields in
-        begin match row.row_name with
+        begin match name with
         | Some(p, tyl) when namable_row row ->
             let (p', s) = best_type_path p in
             let id = tree_of_path Type p' in
             let args = tree_of_typlist mode (apply_subst s tyl) in
             let out_variant =
               if is_nth s then List.hd args else Otyp_constr (id, args) in
-            if row.row_closed && all_present then
+            if closed && all_present then
               out_variant
             else
               let non_gen = is_non_gen mode (Transient_expr.type_expr px) in
               let tags =
                 if all_present then None else Some (List.map fst present) in
-              Otyp_variant (non_gen, Ovar_typ out_variant, row.row_closed, tags)
+              Otyp_variant (non_gen, Ovar_typ out_variant, closed, tags)
         | _ ->
             let non_gen =
-              not (row.row_closed && all_present) &&
+              not (closed && all_present) &&
               is_non_gen mode (Transient_expr.type_expr px) in
             let fields = List.map (tree_of_row_field mode) fields in
             let tags =
               if all_present then None else Some (List.map fst present) in
-            Otyp_variant (non_gen, Ovar_fields fields, row.row_closed, tags)
+            Otyp_variant (non_gen, Ovar_fields fields, closed, tags)
         end
     | Tobject (fi, nm) ->
         tree_of_typobject mode fi !nm
@@ -1312,10 +1312,9 @@ let rec tree_of_type_decl id decl =
           (* Special hack to hide variant name *)
           match get_desc ty with
             Tvariant row ->
-              let row = row_repr row in
-              begin match row.row_name with
+              begin match row_name row with
                 Some (Pident id', _) when Ident.same id id' ->
-                  newgenty (Tvariant {row with row_name = None})
+                  newgenty (Tvariant (set_row_name row None))
               | _ -> ty
               end
           | _ -> ty
@@ -2074,10 +2073,13 @@ let type_path_list =
 (* Hide variant name and var, to force printing the expanded type *)
 let hide_variant_name t =
   match get_desc t with
-  | Tvariant row when (row_repr row).row_name <> None ->
+  | Tvariant row ->
+      let Row {fields; more; name; fixed; closed} = row_repr row in
+      if name = None then t else
       newty2 ~level:(get_level t)
-        (Tvariant {(row_repr row) with row_name = None;
-                   row_more = newvar2 (get_level (row_more row))})
+        (Tvariant
+           (create_row ~fields ~fixed ~closed ~name:None
+              ~more:(newvar2 (get_level more))))
   | _ -> t
 
 let prepare_expansion Errortrace.{ty; expanded} =

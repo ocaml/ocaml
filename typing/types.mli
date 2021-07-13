@@ -57,6 +57,8 @@ open Asttypes
  *)
 type type_expr
 
+type row_desc
+
 type type_desc =
   | Tvar of string option
   (** [Tvar (Some "a")] ==> ['a] or ['_a]
@@ -128,39 +130,6 @@ type type_desc =
   | Tpackage of Path.t * (Longident.t * type_expr) list
   (** Type of a first-class module (a.k.a package). *)
 
-(** [  `X | `Y ]       (row_closed = true)
-    [< `X | `Y ]       (row_closed = true)
-    [> `X | `Y ]       (row_closed = false)
-    [< `X | `Y > `X ]  (row_closed = true)
-
-    type t = [> `X ] as 'a      (row_more = Tvar a)
-    type t = private [> `X ]    (row_more = Tconstr (t#row, [], ref Mnil))
-
-    And for:
-
-        let f = function `X -> `X -> | `Y -> `X
-
-    the type of "f" will be a [Tarrow] whose lhs will (basically) be:
-
-        Tvariant { row_fields = [("X", _)];
-                   row_more   =
-                     Tvariant { row_fields = [("Y", _)];
-                                row_more   =
-                                  Tvariant { row_fields = [];
-                                             row_more   = _;
-                                             _ };
-                                _ };
-                   _
-                 }
-
-*)
-and row_desc =
-    { row_fields: (label * row_field) list;
-      row_more: type_expr;
-      row_bound: unit; (* kept for compatibility *)
-      row_closed: bool;
-      row_fixed: fixed_explanation option;
-      row_name: (Path.t * type_expr list) option }
 and fixed_explanation =
   | Univar of type_expr (** The row type was bound to an univar *)
   | Fixed_private (** The row type is private *)
@@ -290,6 +259,64 @@ end
 
 val eq_type: type_expr -> type_expr -> bool
 val compare_type: type_expr -> type_expr -> int
+
+(** Constructor and accessors for [row_desc] *)
+
+(** [  `X | `Y ]       (row_closed = true)
+    [< `X | `Y ]       (row_closed = true)
+    [> `X | `Y ]       (row_closed = false)
+    [< `X | `Y > `X ]  (row_closed = true)
+
+    type t = [> `X ] as 'a      (row_more = Tvar a)
+    type t = private [> `X ]    (row_more = Tconstr ("t#row", [], ref Mnil))
+
+    And for:
+
+        let f = function `X -> `X -> | `Y -> `X
+
+    the type of "f" will be a [Tarrow] whose lhs will (basically) be:
+
+        Tvariant { row_fields = [("X", _)];
+                   row_more   =
+                     Tvariant { row_fields = [("Y", _)];
+                                row_more   =
+                                  Tvariant { row_fields = [];
+                                             row_more   = _;
+                                             _ };
+                                _ };
+                   _
+                 }
+
+*)
+
+val create_row:
+  fields:(label * row_field) list ->
+  more:type_expr ->
+  closed:bool ->
+  fixed:fixed_explanation option ->
+  name:(Path.t * type_expr list) option -> row_desc
+
+val row_fields: row_desc -> (label * row_field) list
+val row_more: row_desc -> type_expr
+val row_closed: row_desc -> bool
+val row_fixed: row_desc -> fixed_explanation option
+val row_name: row_desc -> (Path.t * type_expr list) option
+
+val set_row_name: row_desc -> (Path.t * type_expr list) option -> row_desc
+
+(** get all fields at once; different from the old [row_repr] *)
+type row_desc_repr =
+    Row of { fields: (label * row_field) list;
+             more:type_expr;
+             closed:bool;
+             fixed:fixed_explanation option;
+             name:(Path.t * type_expr list) option }
+
+val row_repr: row_desc -> row_desc_repr
+
+(** Return the canonical representative of a row field *)
+val row_field_repr: row_field -> row_field
+val row_field: label -> row_desc -> row_field
 
 (* *)
 

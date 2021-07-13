@@ -943,7 +943,6 @@ typing/patterns.cmo : \
     typing/ident.cmi \
     typing/env.cmi \
     typing/ctype.cmi \
-    typing/btype.cmi \
     parsing/asttypes.cmi \
     typing/patterns.cmi
 typing/patterns.cmx : \
@@ -954,7 +953,6 @@ typing/patterns.cmx : \
     typing/ident.cmx \
     typing/env.cmx \
     typing/ctype.cmx \
-    typing/btype.cmx \
     parsing/asttypes.cmi \
     typing/patterns.cmi
 typing/patterns.cmi : \

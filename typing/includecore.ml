@@ -695,7 +695,7 @@ let privacy_mismatch env decl1 decl2 =
             let ty1 = Ctype.expand_head env ty1 in
             match get_desc ty1 with
             | Tvariant row when Btype.is_constr_row ~allow_ident:true
-                                  (Btype.row_more row) ->
+                                  (row_more row) ->
                 Some Private_row_type
             | Tobject (fi, _) when Btype.is_constr_row ~allow_ident:true
                                      (snd (Ctype.flatten_fields fi)) ->
@@ -714,12 +714,14 @@ let privacy_mismatch env decl1 decl2 =
 
 let private_variant env row1 params1 row2 params2 =
     let r1, r2, pairs =
-      Ctype.merge_row_fields row1.row_fields row2.row_fields
+      Ctype.merge_row_fields (row_fields row1) (row_fields row2)
     in
+    let row1_closed = row_closed row1 in
+    let row2_closed = row_closed row2 in
     let err =
-      if row2.row_closed && not row1.row_closed then Some Only_outer_closed
+      if row2_closed && not row1_closed then Some Only_outer_closed
       else begin
-        match row2.row_closed, Ctype.filter_row_fields false r1 with
+        match row2_closed, Ctype.filter_row_fields false r1 with
         | true, (s, _) :: _ ->
             Some (Missing (Second, s) : private_variant_mismatch)
         | _, _ -> None
@@ -730,7 +732,7 @@ let private_variant env row1 params1 row2 params2 =
       let missing =
         List.find_opt
           (fun (_,f) ->
-             match Btype.row_field_repr f with
+             match row_field_repr f with
              | Rabsent | Reither _ -> false
              | Rpresent _ -> true)
           r2
@@ -749,7 +751,7 @@ let private_variant env row1 params1 row2 params2 =
           | () -> None
         end
       | (s, f1, f2) :: pairs -> begin
-          match Btype.row_field_repr f1, Btype.row_field_repr f2 with
+          match row_field_repr f1, row_field_repr f2 with
           | Rpresent to1, Rpresent to2 -> begin
               match to1, to2 with
               | Some t1, Some t2 ->
@@ -805,9 +807,8 @@ let type_manifest env ty1 params1 ty2 params2 priv2 kind2 =
   let ty1' = Ctype.expand_head env ty1 and ty2' = Ctype.expand_head env ty2 in
   match get_desc ty1', get_desc ty2' with
   | Tvariant row1, Tvariant row2
-    when is_absrow env (Btype.row_more row2) -> begin
-      let row1 = Btype.row_repr row1 and row2 = Btype.row_repr row2 in
-      assert (Ctype.is_equal env true (ty1::params1) (row2.row_more::params2));
+    when is_absrow env (row_more row2) -> begin
+      assert (Ctype.is_equal env true (ty1::params1) (row_more row2::params2));
       match private_variant env row1 params1 row2 params2 with
       | None -> None
       | Some err -> Some (Private_variant(ty1, ty2, err))
@@ -828,7 +829,7 @@ let type_manifest env ty1 params1 ty2 params2 priv2 kind2 =
             (* Same checks as the [when] guards from above, inverted *)
             match get_desc ty2' with
             | Tvariant row ->
-                not (is_absrow env (Btype.row_more row))
+                not (is_absrow env (row_more row))
             | Tobject (fi, _) ->
                 not (is_absrow env (snd (Ctype.flatten_fields fi)))
             | _ -> true

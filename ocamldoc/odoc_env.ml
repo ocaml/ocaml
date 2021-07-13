@@ -186,10 +186,15 @@ let subst_type env t =
           let new_p =
             Odoc_name.to_path (full_type_name env (Odoc_name.from_path p)) in
           r := Some (new_p, tyl)
-      | Tvariant ({row_name=Some(p, tyl)} as row) ->
-          let new_p =
-            Odoc_name.to_path (full_type_name env (Odoc_name.from_path p)) in
-          set_type_desc t (Tvariant {row with row_name=Some(new_p, tyl)})
+      | Tvariant row ->
+          begin match row_name row with
+          | Some (p, tyl) ->
+              let new_p =
+                Odoc_name.to_path (full_type_name env (Odoc_name.from_path p))
+              in
+              set_type_desc t (Tvariant (set_row_name row (Some(new_p, tyl))))
+          | None -> ()
+          end
       | _ ->
           ()
     end

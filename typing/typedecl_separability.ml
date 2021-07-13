@@ -166,9 +166,9 @@ and immediate_subtypes_variant_row acc desc =
   let add_subtypes acc =
     let add_subtype acc (_l, rf) =
       immediate_subtypes_variant_row_field acc rf in
-    List.fold_left add_subtype acc desc.row_fields in
+    List.fold_left add_subtype acc (row_fields desc) in
   let add_row acc =
-    let row = Btype.row_more desc in
+    let row = row_more desc in
     match get_desc row with
     | Tvariant more -> immediate_subtypes_variant_row acc more
     | _ -> row :: acc
