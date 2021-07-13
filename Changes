@@ -52,6 +52,12 @@ Working version
   when module inclusion fails.
   (Antal Spector-Zabusky, review by Florian Angeletti)
 
+- #10488: Improve type variable name generation and recursive type detection
+  when printing type errors; this ensures that the names given to type variables
+  are always reused in the following portion of the trace and also removes
+  spurious `as 'a`s in types.
+  (Antal Spector-Zabusky, review by Florian Angeletti)
+
 ### Internal/compiler-libs changes:
 
 - #10433: Remove the distinction between 32-bit aligned and 64-bit aligned

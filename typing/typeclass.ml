@@ -1916,7 +1916,7 @@ let report_error env ppf = function
       Printtyp.longident cl
   | Abbrev_type_clash (abbrev, actual, expected) ->
       (* XXX Afficher une trace ? | Print a trace? *)
-      Printtyp.reset_and_mark_loops_list [abbrev; actual; expected];
+      Printtyp.prepare_for_printing [abbrev; actual; expected];
       fprintf ppf "@[The abbreviation@ %a@ expands to type@ %a@ \
        but is used with type@ %a@]"
         !Oprint.out_type (Printtyp.tree_of_typexp Type abbrev)
@@ -1957,7 +1957,7 @@ let report_error env ppf = function
         (function ppf ->
            fprintf ppf "does not meet its constraint: it should be")
   | Bad_parameters (id, params, cstrs) ->
-      Printtyp.reset_and_mark_loops_list [params; cstrs];
+      Printtyp.prepare_for_printing [params; cstrs];
       fprintf ppf
         "@[The abbreviation %a@ is used with parameters@ %a@ \
            which are incompatible with constraints@ %a@]"
@@ -1972,7 +1972,7 @@ let report_error env ppf = function
       let print_common ppf kind ty0 real lab ty =
         let ty1 =
           if real then ty0 else Btype.newgenty(Tobject(ty0, ref None)) in
-        List.iter Printtyp.mark_loops [ty; ty1];
+        Printtyp.prepare_for_printing [ty; ty1];
         fprintf ppf
           "The %s %s@ has type@;<1 2>%a@ where@ %a@ is unbound"
           kind lab
@@ -1985,7 +1985,6 @@ let report_error env ppf = function
       | Ctype.CC_Value (ty0, real, lab, ty) ->
           print_common ppf "instance variable" ty0 real lab ty
       in
-      Printtyp.reset ();
       fprintf ppf
         "@[<v>@[Some type variables are unbound in this type:@;<1 2>%t@]@ \
               @[%a@]@]"

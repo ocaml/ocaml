@@ -99,7 +99,6 @@ let parameter_list_from_arrows typ =
    parameter names from the .ml and the type from the .mli file. *)
 let dummy_parameter_list typ =
   let normal_name = Odoc_misc.label_name in
-  Printtyp.mark_loops typ;
   let liste_param = parameter_list_from_arrows typ in
   let rec iter (label, t) =
     match Types.get_desc t with

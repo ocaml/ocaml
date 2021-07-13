@@ -163,7 +163,6 @@ let subst_type env t =
   print_env_types env ;
   print_newline ();
 *)
-  Printtyp.mark_loops t;
   let deja_vu = ref [] in
   let rec iter t =
     if List.memq t !deja_vu then () else begin

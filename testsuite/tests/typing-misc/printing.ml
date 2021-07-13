@@ -96,7 +96,7 @@ Line 3, characters 22-23:
                           ^
 Error: This expression has type t1 but an expression was expected of type t2
        The method m has type 'c. 'c * ('a * < m : 'c. 'b >) as 'b,
-       but the expected method type was 'a. 'a * ('a * < m : 'a. 'b >) as 'b
+       but the expected method type was 'a. 'a * ('a * < m : 'a. 'd >) as 'd
        The universal variable 'a would escape its scope
 |}]
 

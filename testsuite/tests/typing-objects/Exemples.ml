@@ -589,7 +589,8 @@ Error: This expression has type
        but an expression was expected of type
          #comparable as 'a = < cmp : 'a -> int; .. >
        Type int_comparable = < cmp : int_comparable -> int; x : int >
-       is not compatible with type 'a = < cmp : 'a -> int; .. >
+       is not compatible with type
+         #comparable as 'a = < cmp : 'a -> int; .. >
        The first object type has no method setx
 |}];;   (* Error; strange message with -principal *)
 
