@@ -197,11 +197,11 @@ quickly as it will be unable to link `ocamlrun`.
 
 Now run:
 
-        ./configure --build=i686-pc-cygwin --host=i686-pc-windows
+        ./configure --host=i686-pc-windows
 
 for 32-bit, or:
 
-        ./configure --build=x86_64-unknown-cygwin --host=x86_64-pc-windows
+        ./configure --host=x86_64-pc-windows
 
 for 64-bit.
 
@@ -262,11 +262,11 @@ the WinZip Options Window.)
 
 Now run:
 
-        ./configure --build=i686-pc-cygwin --host=i686-w64-mingw32
+        ./configure --host=i686-w64-mingw32
 
 for 32-bit, or:
 
-        ./configure --build=x86_64-unknown-cygwin --host=x86_64-w64-mingw32
+        ./configure --host=x86_64-w64-mingw32
 
 for 64-bit.
 
