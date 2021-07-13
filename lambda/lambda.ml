@@ -469,6 +469,32 @@ let name_lambda_list args fn =
       Llet(Strict, Pgenval, id, arg, name_list (Lvar id :: names) rem) in
   name_list [] args
 
+let collapse_apply
+    ({ ap_loc; ap_func; ap_args;
+       ap_tailcall=_; ap_inlined=_; ap_specialised=_; }
+     as apply) =
+  (* Note: We're dropping the attributes specific to this application
+     if we merge it with another application.
+     But consider this case:
+
+     let f x = f_body in
+     let g x = do_something (); f in
+     (((g @[inlined]) a) [@inlined]) b
+
+     Here it seems legitimate to put both annotations, and it seems wrong to
+     discard the second one.
+     So it might be better to never collapse applications if the outer one has
+     non-default attributes. *)
+  match ap_func with
+  | Lsend(k, lmet, lobj, largs, _) ->
+      Lsend(k, lmet, lobj, largs @ ap_args, ap_loc)
+  | Levent(Lsend(k, lmet, lobj, largs, _), _) ->
+      Lsend(k, lmet, lobj, largs @ ap_args, ap_loc)
+  | Lapply ap ->
+      Lapply {ap with ap_args = ap.ap_args @ ap_args; ap_loc}
+  | _ ->
+      Lapply apply
+
 
 let iter_opt f = function
   | None -> ()

@@ -682,22 +682,14 @@ and transl_apply ~scopes
       lam sargs loc
   =
   let lapply funct args =
-    match funct with
-      Lsend(k, lmet, lobj, largs, _) ->
-        Lsend(k, lmet, lobj, largs @ args, loc)
-    | Levent(Lsend(k, lmet, lobj, largs, _), _) ->
-        Lsend(k, lmet, lobj, largs @ args, loc)
-    | Lapply ap ->
-        Lapply {ap with ap_args = ap.ap_args @ args; ap_loc = loc}
-    | lexp ->
-        Lapply {
-          ap_loc=loc;
-          ap_func=lexp;
-          ap_args=args;
-          ap_tailcall=tailcall;
-          ap_inlined=inlined;
-          ap_specialised=specialised;
-        }
+    Lambda.collapse_apply {
+      ap_loc=loc;
+      ap_func=funct;
+      ap_args=args;
+      ap_tailcall=tailcall;
+      ap_inlined=inlined;
+      ap_specialised=specialised;
+    }
   in
   let rec build_apply lam args = function
       (None, optional) :: l ->
