@@ -58,6 +58,20 @@ quote1 () {
 }
 
 #########################################################################
+# Display environment information
+uname -a
+for i in issue redhat-release ; do
+  if test -e /etc/$i ; then
+    echo "/etc/$i content:"
+    cat /etc/$i | sed -e 's/^/| /'
+  fi
+done
+if command -v gcc >/dev/null ; then
+  echo "gcc info:"
+  gcc --version --verbose 2>&1 | sed -e 's/^/| /'
+fi
+
+#########################################################################
 # be verbose
 set -x
 
