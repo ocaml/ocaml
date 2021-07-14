@@ -748,10 +748,11 @@ CAMLprim value caml_runtime_parameters (value unit)
 
   CAMLassert (unit == Val_unit);
   return caml_alloc_sprintf
-    ("a=%d,b=%d,H=%"F_Z"u,i=%"F_Z"u,l=%"F_Z"u,o=%"F_Z"u,O=%"F_Z"u,p=%d,"
-     "s=%"F_S"u,t=%"F_Z"u,v=%"F_Z"u,w=%d,W=%"F_Z"u",
+    ("a=%d,b=%d,F=%ld,H=%"F_Z"u,i=%"F_Z"u,l=%"F_Z"u,o=%"F_Z"u,O=%"F_Z"u,"
+     "p=%d,s=%"F_S"u,t=%"F_Z"u,v=%"F_Z"u,w=%d,W=%"F_Z"u",
      /* a */ (int) caml_allocation_policy,
      /* b */ (int) Caml_state->backtrace_active,
+     /* F */ caml_float_array_alloc_warning,
      /* h */ /* missing */ /* FIXME add when changed to min_heap_size */
      /* H */ caml_use_huge_pages,
      /* i */ caml_major_heap_increment,
@@ -786,4 +787,16 @@ CAMLprim value caml_ml_runtime_warnings_enabled(value unit)
 {
   CAMLassert (unit == Val_unit);
   return Val_bool(caml_runtime_warnings);
+}
+
+CAMLprim value caml_ml_enable_float_array_alloc_warning(value vsize)
+{
+  caml_float_array_alloc_warning = Int_val(vsize);
+  return Val_unit;
+}
+
+CAMLprim value caml_ml_float_array_alloc_warning_enabled(value unit)
+{
+  CAMLassert (unit == Val_unit);
+  return Val_int(caml_float_array_alloc_warning);
 }
