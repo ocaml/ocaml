@@ -153,6 +153,9 @@ module Exp:
     val setfield: ?loc:loc -> ?attrs:attrs -> expression -> lid -> expression
                   -> expression
     val array: ?loc:loc -> ?attrs:attrs -> expression list -> expression
+    val list_comprehension: ?loc:loc -> ?attrs:attrs -> expression -> pattern
+                            -> expression -> expression -> direction_flag  
+                            -> expression
     val ifthenelse: ?loc:loc -> ?attrs:attrs -> expression -> expression
                     -> expression option -> expression
     val sequence: ?loc:loc -> ?attrs:attrs -> expression -> expression

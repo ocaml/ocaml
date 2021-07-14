@@ -258,7 +258,7 @@ and rw_exp iflag sexp =
     if !instr_loops && not sexp.pexp_loc.loc_ghost
     then insert_profile rw_exp sbody
     else rewrite_exp iflag sbody
-
+  | Pexp_list_comprehension (_, _, _, _, _) -> assert false  
   | Pexp_for(_, slow, shigh, _, sbody) ->
     rewrite_exp iflag slow;
     rewrite_exp iflag shigh;

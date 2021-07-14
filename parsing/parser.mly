@@ -2376,6 +2376,9 @@ simple_expr:
       { fst (mktailexp $loc($3) $2) }
   | LBRACKET expr_semi_list error
       { unclosed "[" $loc($1) "]" $loc($3) }
+  | LBRACKET simple_expr FOR ext_attributes pattern
+      EQUAL seq_expr direction_flag seq_expr RBRACKET
+      { Pexp_list_comprehension($2, $5, $7, $9, $8) }
   | od=open_dot_declaration DOT LBRACKET expr_semi_list RBRACKET
       { let list_exp =
           (* TODO: review the location of list_exp *)

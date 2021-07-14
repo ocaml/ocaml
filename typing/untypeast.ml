@@ -457,6 +457,10 @@ let expression sub exp =
         Pexp_sequence (sub.expr sub exp1, sub.expr sub exp2)
     | Texp_while (exp1, exp2) ->
         Pexp_while (sub.expr sub exp1, sub.expr sub exp2)
+    | Texp_list_comprehension (_id, exp1, name, exp2, exp3, dir) -> 
+      Pexp_list_comprehension (
+          sub.expr sub exp1, name, sub.expr sub exp2,
+          sub.expr sub exp3, dir)  
     | Texp_for (_id, name, exp1, exp2, dir, exp3) ->
         Pexp_for (name,
           sub.expr sub exp1, sub.expr sub exp2,

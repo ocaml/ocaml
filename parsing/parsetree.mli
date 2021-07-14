@@ -331,6 +331,10 @@ and expression_desc =
         (* E1; E2 *)
   | Pexp_while of expression * expression
         (* while E1 do E2 done *)
+  | Pexp_list_comprehension of  
+        (*[ E1 for i = E2 to E3 ]      (flag = Upto)
+          [ E1 for i = E2 downto E3 ]  (flag = downto)*)
+      expression * pattern * expression * expression * direction_flag
   | Pexp_for of
       pattern *  expression * expression * direction_flag * expression
         (* for i = E1 to E2 do E3 done      (flag = Upto)

@@ -49,6 +49,7 @@
                     camlinternalFormatBasics
                     camlinternalLazy
                     camlinternalMod
+                    camlinternalComprehension
                     camlinternalOO
                     stdlib__Char
                     stdlib__Complex

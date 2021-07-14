@@ -381,6 +381,12 @@ and expression i ppf x =
       line i ppf "Texp_while\n";
       expression i ppf e1;
       expression i ppf e2;
+  | Texp_list_comprehension (s, e1, _, e2, e3, df) -> 
+    line i ppf "Texp_list_comprehension \"%a\" %a\n" 
+         fmt_ident s fmt_direction_flag df;
+    expression i ppf e1;
+    expression i ppf e2;
+    expression i ppf e3;
   | Texp_for (s, _, e1, e2, df, e3) ->
       line i ppf "Texp_for \"%a\" %a\n" fmt_ident s fmt_direction_flag df;
       expression i ppf e1;

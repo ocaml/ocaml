@@ -38,7 +38,7 @@ STDLIB_MODS=\
   printexc fun gc digest random hashtbl weak \
   format scanf callback camlinternalOO oo camlinternalMod genlex ephemeron \
   filename complex arrayLabels listLabels bytesLabels stringLabels moreLabels \
-  stdLabels bigarray
+  stdLabels bigarray camlinternalComprehension
 
 STDLIB_MODULES=\
   $(foreach module, $(STDLIB_MODS), $(call add_stdlib_prefix,$(module)))

@@ -177,6 +177,7 @@ let classify_expression : Typedtree.expression -> sd =
     | Texp_apply _ ->
         Dynamic
 
+    | Texp_list_comprehension _
     | Texp_for _
     | Texp_constant _
     | Texp_new _
@@ -540,6 +541,13 @@ let rec expression : Typedtree.expression -> term_judg =
           List.split (List.map (fun c -> case c mode) cases) in
         let env_e = expression e (List.fold_left Mode.join Ignore pat_modes) in
         Env.join_list (env_e :: pat_envs))
+    | Texp_list_comprehension (_, body, _, low, high, _) -> 
+      join [
+        expression body << Guard;
+        expression low << Dereference;
+        expression high << Dereference;
+        
+      ]
     | Texp_for (_, _, low, high, _, body) ->
       (*
         G1 |- low: m[Dereference]

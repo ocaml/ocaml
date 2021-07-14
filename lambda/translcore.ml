@@ -152,6 +152,12 @@ let rec push_defaults loc bindings cases partial =
   | _ ->
       cases
 
+let list_comp_prim dir= 
+  let m input_line= Lambda.transl_prim "CamlinternalComprehension" input_line in
+    match dir with 
+    | Upto -> m "map_from_to"
+    | Downto -> m "map_from_downto" 
+
 (* Insertion of debugging events *)
 
 let event_before ~scopes exp lam =
@@ -447,6 +453,23 @@ and transl_exp0 ~in_new_scope ~scopes e =
   | Texp_while(cond, body) ->
       Lwhile(transl_exp ~scopes cond,
              event_before ~scopes body (transl_exp ~scopes body))
+  | Texp_list_comprehension(param, body, _, low, high, dir) -> 
+    let fn = Lfunction {kind = Curried;
+                        params= [param, Pgenval];
+                        return = Pgenval;
+                        attr = default_function_attribute;
+                        loc = Loc_unknown;
+                        body = transl_exp ~scopes  body} in
+    Lapply{
+      ap_loc=Loc_unknown;
+      ap_func=list_comp_prim dir;
+      ap_args=[
+        fn; transl_exp ~scopes  low;
+        transl_exp ~scopes  high];
+      ap_tailcall=Default_tailcall;
+      ap_inlined=Default_inline;
+      ap_specialised=Default_specialise;
+    }
   | Texp_for(param, _, low, high, dir, body) ->
       Lfor(param, transl_exp ~scopes low, transl_exp ~scopes high, dir,
            event_before ~scopes body (transl_exp ~scopes body))

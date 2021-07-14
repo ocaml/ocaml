@@ -2155,6 +2155,7 @@ let rec is_nonexpansive exp =
   | Texp_try _
   | Texp_setfield _
   | Texp_while _
+  | Texp_list_comprehension _
   | Texp_for _
   | Texp_send _
   | Texp_instvar _
@@ -2366,11 +2367,11 @@ let check_partial_application statement exp =
             | Texp_ident _ | Texp_constant _ | Texp_tuple _
             | Texp_construct _ | Texp_variant _ | Texp_record _
             | Texp_field _ | Texp_setfield _ | Texp_array _
-            | Texp_while _ | Texp_for _ | Texp_instvar _
-            | Texp_setinstvar _ | Texp_override _ | Texp_assert _
-            | Texp_lazy _ | Texp_object _ | Texp_pack _ | Texp_unreachable
-            | Texp_extension_constructor _ | Texp_ifthenelse (_, _, None)
-            | Texp_function _ ->
+            | Texp_while _ | Texp_list_comprehension _ | Texp_for _ 
+            | Texp_instvar _|  Texp_setinstvar _ | Texp_override _ 
+            | Texp_assert _ | Texp_lazy _ | Texp_object _ | Texp_pack _ 
+            | Texp_unreachable | Texp_extension_constructor _ 
+            | Texp_ifthenelse (_, _, None) | Texp_function _ ->
                 check_statement ()
             | Texp_match (_, cases, _) ->
                 List.iter (fun {c_rhs; _} -> check c_rhs) cases
@@ -3066,6 +3067,39 @@ and type_expect_
         exp_desc = Texp_while(cond, body);
         exp_loc = loc; exp_extra = [];
         exp_type = instance Predef.type_unit;
+        exp_attributes = sexp.pexp_attributes;
+        exp_env = env }
+  | Pexp_list_comprehension(sbody, param, slow, shigh, dir) ->  
+      let low = type_expect env slow
+          (mk_expected ~explanation:For_loop_start_index Predef.type_int) in
+      let high = type_expect env shigh
+          (mk_expected ~explanation:For_loop_stop_index Predef.type_int) in
+      let id, new_env =
+        match param.ppat_desc with
+        | Ppat_any -> Ident.create_local "_for", env
+        | Ppat_var {txt} ->
+            Env.enter_value txt
+              {val_type = instance Predef.type_int;
+               val_attributes = [];
+               val_kind = Val_reg;
+               val_loc = loc;
+               val_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
+              } env
+              ~check:(fun s -> Warnings.Unused_for_index s)
+        | _ ->
+            raise (Error (param.ppat_loc, env, Invalid_for_loop_index))
+      in
+      begin_def ();
+      let ty = Ctype.newvar ()  in
+      let list_ty = instance (Predef.type_list ty) in
+      unify_exp_types loc env list_ty (instance ty_expected);
+      end_def();
+      generalize_structure ty;
+      let body = type_expect new_env sbody (mk_expected ty) in
+      re {
+        exp_desc = Texp_list_comprehension(id, body, param, low, high, dir);
+        exp_loc = loc; exp_extra = [];
+        exp_type = instance (Predef.type_list body.exp_type);
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_for(param, slow, shigh, dir, sbody) ->

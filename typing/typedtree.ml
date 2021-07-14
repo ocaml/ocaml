@@ -120,6 +120,9 @@ and expression_desc =
   | Texp_ifthenelse of expression * expression * expression option
   | Texp_sequence of expression * expression
   | Texp_while of expression * expression
+  | Texp_list_comprehension of 
+      Ident.t * expression * Parsetree.pattern * expression * expression *
+        direction_flag
   | Texp_for of
       Ident.t * Parsetree.pattern * expression * expression * direction_flag *
         expression
