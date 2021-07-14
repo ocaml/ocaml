@@ -55,7 +55,6 @@ ocamlc_cflags=""
 ocamlc_cppflags=""
 oc_ldflags=""
 oc_dll_ldflags=""
-with_sharedlibs=true
 ostype="Unix"
 SO="so"
 toolchain="cc"
@@ -693,10 +692,11 @@ AS_CASE([$host],
 #    [enable_shared=yes])
 
 AS_IF([test x"$enable_shared" = "xno"],
-  [with_sharedlibs=false
+  [supports_shared_libraries=false
   AS_CASE([$host],
     [*-pc-windows|*-w64-mingw32],
-    [AC_MSG_ERROR([Cannot build native Win32 with --disable-shared])])])
+    [AC_MSG_ERROR([Cannot build native Win32 with --disable-shared])])],
+  [supports_shared_libraries=true])
 
 # Define flexlink chain and flags correctly for the different Windows ports
 AS_CASE([$host],
@@ -721,7 +721,7 @@ AS_CASE([$host],
     [flexdll_chain='msvc64'
     flexlink_flags="-x64 -merge-manifest -stack 33554432"])
 
-AS_IF([test x"$enable_shared" != 'xno'], [
+AS_IF([test x"$supports_shared_libraries" != 'xfalse'], [
   AC_MSG_CHECKING([for flexdll sources])
   AS_IF([test x"$with_flexdll" = "xno"],
     [flexdir=''
@@ -782,8 +782,8 @@ AS_IF([test x"$enable_shared" != 'xno'], [
 AS_IF([test x"$have_flexdll_h" = 'xno'],
   [AS_CASE([$host],
     [*-*-cygwin*],
-      [AS_IF([$with_sharedlibs],
-        [with_sharedlibs=false
+      [AS_IF([$supports_shared_libraries],
+        [supports_shared_libraries=false
         AC_MSG_WARN([flexdll.h not found: shared library support disabled.])
         ])],
     [*-w64-mingw32|*-pc-windows],
@@ -792,9 +792,9 @@ AS_IF([test x"$have_flexdll_h" = 'xno'],
 AS_IF([test -z "$flexdir" -o x"$have_flexdll_h" = 'xno'],
   [AS_CASE([$host],
     [*-*-cygwin*],
-      [AS_IF([$with_sharedlibs],
+      [AS_IF([$supports_shared_libraries],
         [AS_IF([test -z "$flexlink"],
-          [with_sharedlibs=false
+          [supports_shared_libraries=false
           AC_MSG_WARN(
           [flexlink/flexdll.h not found: shared library support disabled.])
         ])])],
@@ -809,7 +809,7 @@ AS_CASE([$CC,$host],
   [*,*-*-haiku*], [mathlib=""],
   [*,*-*-cygwin*],
     [common_cppflags="$common_cppflags -U_WIN32"
-    AS_IF([$with_sharedlibs],
+    AS_IF([$supports_shared_libraries],
       [mkexe='$(FLEXLINK) -exe $(if $(OC_LDFLAGS),-link "$(OC_LDFLAGS)")'
       mkexedebugflag="-link -g"],
       [mkexe="$mkexe -Wl,--stack,16777216"
@@ -932,7 +932,6 @@ AS_IF([! $arch64],
 
 # Shared library support
 
-shared_libraries_supported=false
 sharedlib_cflags=''
 mksharedlib='shared-libs-not-available'
 rpath=''
@@ -945,33 +944,30 @@ AS_IF([test x"$enable_shared" != "xno"],
       [mksharedlib="$CC -shared \
                    -flat_namespace -undefined suppress -Wl,-no_compact_unwind \
                    \$(LDFLAGS)"
-      shared_libraries_supported=true],
+      supports_shared_libraries=true],
     [*-*-mingw32],
       [mksharedlib='$(FLEXLINK)'
       mkmaindll='$(FLEXLINK) -maindll'
       AS_IF([test -n "$oc_dll_ldflags"],[
         mksharedlib="$mksharedlib -link \"$oc_dll_ldflags\""
-        mkmaindll="$mkmaindll -link \"$oc_dll_ldflags\""])
-      shared_libraries_supported=$with_sharedlibs],
+        mkmaindll="$mkmaindll -link \"$oc_dll_ldflags\""])],
     [*-pc-windows],
       [mksharedlib='$(FLEXLINK)'
-      mkmaindll='$(FLEXLINK) -maindll'
-      shared_libraries_supported=$with_sharedlibs],
+      mkmaindll='$(FLEXLINK) -maindll'],
     [*-*-cygwin*],
       [mksharedlib='$(FLEXLINK)'
-      mkmaindll='$(FLEXLINK) -maindll'
-      shared_libraries_supported=$with_sharedlibs],
+      mkmaindll='$(FLEXLINK) -maindll'],
     [powerpc-ibm-aix*],
       [AS_CASE([$ocaml_cv_cc_vendor],
                [xlc*],
                [mksharedlib="$CC -qmkshrobj -G \$(LDFLAGS)"
-                shared_libraries_supported=true])],
+                supports_shared_libraries=true])],
     [*-*-solaris*],
       [sharedlib_cflags="-fPIC"
       mksharedlib="$CC -shared"
       rpath="-Wl,-rpath,"
       mksharedlibrpath="-Wl,-rpath,"
-      shared_libraries_supported=true],
+      supports_shared_libraries=true],
     [[*-*-linux*|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*]],
       [sharedlib_cflags="-fPIC"
@@ -983,7 +979,7 @@ AS_IF([test x"$enable_shared" != "xno"],
       rpath="-Wl,-rpath,"
       mksharedlibrpath="-Wl,-rpath,"
       natdynlinkopts="-Wl,-E"
-      shared_libraries_supported=true])])
+      supports_shared_libraries=true])])
 
 AS_IF([test -z "$mkmaindll"], [mkmaindll=$mksharedlib])
 
@@ -991,7 +987,7 @@ AS_IF([test -z "$mkmaindll"], [mkmaindll=$mksharedlib])
 
 natdynlink=false
 
-AS_IF([test x"$shared_libraries_supported" = 'xtrue'],
+AS_IF([test x"$supports_shared_libraries" = 'xtrue'],
   [AS_CASE(["$host"],
     [*-*-cygwin*], [natdynlink=true],
     [*-*-mingw32], [natdynlink=true],
@@ -1614,10 +1610,10 @@ AS_CASE([$host],
   [AC_CHECK_FUNC([strtod_l], [AC_DEFINE([HAS_STRTOD_L])])])
 
 ## shared library support
-AS_IF([$shared_libraries_supported],
+AS_IF([$supports_shared_libraries],
   [AS_CASE([$host],
     [*-*-mingw32|*-pc-windows|*-*-cygwin*],
-      [supports_shared_libraries=$shared_libraries_supported; DLLIBS=""],
+      [DLLIBS=""],
     [AC_CHECK_FUNC([dlopen],
       [supports_shared_libraries=true DLLIBS=""],
       [AC_CHECK_LIB([dl], [dlopen],
