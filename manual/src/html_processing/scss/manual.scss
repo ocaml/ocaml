@@ -16,7 +16,7 @@
 	float:left;
 	color:#777;
 	cursor: context-menu;
-	font-family:"Fira Sans",Helvetica,Arial,sans-serif;
+	font-family: $font-sans;
 	span{ /* menu icon */
 	    font-size:22px;
 	    margin-right:1ex;
@@ -63,7 +63,7 @@
 	font-size:smaller;
     }
     section>ul>li>a{ /* for Parts title */
-	font-family:"Fira Sans",Helvetica,Arial,sans-serif;
+	font-family: $font-sans;
 	font-size:larger;
 	background:linear-gradient(to left,#fff 0,#ede8e5 100%);
     }
@@ -143,7 +143,7 @@ a.section-anchor{
     color:#d5d5d5
 }
 .h10,.h7,.h8,.h9,h1,h2,h3,h4,h5,h6{
-    font-family:"Fira Sans",Helvetica,Arial,sans-serif;
+    font-family: $font-sans;
     font-weight:400;
     margin:.5em 0 .5em 0;
     padding-top:.1em;
@@ -189,7 +189,7 @@ h2, h3, h4, h5 {
 	font-weight: 500;
 }
 .ocaml,.pre,code,pre,tt{
-    font-family:"Fira Mono",courier;
+    font-family: $font-mono;
     font-weight:400
 }
 .pre,pre{
@@ -273,7 +273,7 @@ blockquote.quote{
     }
 }
 #part-menu{
-    font-family:"Fira Sans";
+    font-family: $font-sans;
     text-align:right;
     list-style:none;
     overflow-y:hidden;
@@ -293,7 +293,7 @@ blockquote.quote{
 }
 span.c003{
     color:#564233;
-    font-family:"Fira Mono",courier;
+    font-family: $font-mono;
     border-radius:6px
 }
 div.caml-example.toplevel code.caml-input::before,
@@ -305,7 +305,7 @@ span.number{
     padding-right: 1ex;
 }
 span.c004, span.c005 {
-	font-family: "Fira Mono", courier, monospace;
+	font-family: $font-mono;
 }
 span.c003, span.c005 {
 	color: rgba(91, 33, 6, 0.87);
@@ -316,7 +316,7 @@ span.c002{
 span.c006{
     font-weight:700;
     color:#564233;
-    font-family:"Fira Mono",courier;
+    font-family: $font-mono;
 }
 span.c009{
     font-style:italic;
