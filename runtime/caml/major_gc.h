@@ -43,6 +43,7 @@ extern uintnat caml_allocated_words;
 extern double caml_extra_heap_resources;
 extern uintnat caml_dependent_size, caml_dependent_allocated;
 extern uintnat caml_fl_wsz_at_phase_change;
+extern int caml_ephe_list_pure;
 
 #define Phase_mark 0
 #define Phase_clean 1
