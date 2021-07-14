@@ -5,14 +5,6 @@
 # Either an entire directory or a specific file can be disabled here.
 # If an entire directory is listed, those tests won't even be run.
 
-# These depend on marshalling of closures or Custom_tag objects (#75)
-lib-marshal
-tests/typing-objects/'Tests.ml' with 1 (expect)
-tests/lib-dynlink-bytecode/'main.ml' with 1.1.1.1.1.1.1.1.1.1 (check-program-output)
-tests/lib-dynlink-native/'main.ml' with 1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.2.2.1.1.1.1.1.1.1.1.1.1.1 (check-program-output)
-tests/runtime-objects/'Tests.ml' with 1 (native)
-tests/runtime-objects/'Tests.ml' with 2 (bytecode)
-
 # TODO: dynlink isn't 100% working in multicore
 # (this test below fails on Linux with travis but we can not recreate locally)
 tests/lib-dynlink-private/'test.ml' with 1.2.1.2.8.19.1 (run)

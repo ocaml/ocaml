@@ -100,10 +100,18 @@
 #define ENTRIES_PER_TRAIL_BLOCK  1025
 #define SIZE_EXTERN_OUTPUT_BLOCK 8100
 
+struct caml_extern_state;
+struct caml_extern_state* caml_alloc_extern_state (void);
+void caml_free_extern_state (struct caml_extern_state*);
+
 /* The entry points */
 
 void caml_output_val (struct channel * chan, value v, value flags);
   /* Output [v] with flags [flags] on the channel [chan]. */
+
+struct caml_intern_state;
+struct caml_intern_state* caml_alloc_intern_state (void);
+void caml_free_intern_state (struct caml_intern_state*);
 
 #endif /* CAML_INTERNALS */
 

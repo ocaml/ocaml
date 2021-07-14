@@ -120,6 +120,9 @@ DOMAIN_STATE(double, extra_heap_resources_minor)
 DOMAIN_STATE(uintnat, dependent_size)
 DOMAIN_STATE(uintnat, dependent_allocated)
 
+DOMAIN_STATE(struct caml_extern_state*, extern_state)
+DOMAIN_STATE(struct caml_intern_state*, intern_state)
+
 /*****************************************************************************/
 /* GC stats (see gc_ctrl.c and the Gc module) */
 /*****************************************************************************/
