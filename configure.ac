@@ -779,28 +779,19 @@ AS_IF([test x"$supports_shared_libraries" != 'xfalse'], [
   ])
 ])
 
-AS_IF([test x"$have_flexdll_h" = 'xno'],
-  [AS_CASE([$host],
-    [*-*-cygwin*],
-      [AS_IF([$supports_shared_libraries],
-        [supports_shared_libraries=false
-        AC_MSG_WARN([flexdll.h not found: shared library support disabled.])
-        ])],
-    [*-w64-mingw32|*-pc-windows],
-      [AC_MSG_ERROR([flexdll.h is required for native Win32])])])
+AS_CASE([$have_flexdll_h,$supports_shared_libraries,$host],
+ [no,true,*-*-cygwin*],
+   [supports_shared_libraries=false
+   AC_MSG_WARN([flexdll.h not found: shared library support disabled.])],
+ [no,*,*-w64-mingw32|no,*,*-pc-windows],
+   [AC_MSG_ERROR([flexdll.h is required for native Win32])])
 
-AS_IF([test -z "$flexdir" -o x"$have_flexdll_h" = 'xno'],
-  [AS_CASE([$host],
-    [*-*-cygwin*],
-      [AS_IF([$supports_shared_libraries],
-        [AS_IF([test -z "$flexlink"],
-          [supports_shared_libraries=false
-          AC_MSG_WARN(
-          [flexlink/flexdll.h not found: shared library support disabled.])
-        ])])],
-    [*-w64-mingw32|*-pc-windows],
-      [AS_IF([test -z "$flexlink"],
-        [AC_MSG_ERROR([flexlink is required for native Win32])])])])
+AS_CASE([$flexdir,$supports_shared_libraries,$flexlink,$host],
+  [,true,,*-*-cygwin*],
+    [supports_shared_libraries=false
+    AC_MSG_WARN([flexlink not found: shared library support disabled.])],
+  [,*,,*-w64-mingw32|,*,,*-pc-windows],
+    [AC_MSG_ERROR([flexlink is required for native Win32])])
 
 AS_CASE([$CC,$host],
   [*,*-*-darwin*],

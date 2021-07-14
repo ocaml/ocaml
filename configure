@@ -13160,41 +13160,27 @@ fi
 
 fi
 
-if test x"$have_flexdll_h" = 'xno'; then :
-  case $host in #(
-  *-*-cygwin*) :
-    if $supports_shared_libraries; then :
-  supports_shared_libraries=false
-        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: flexdll.h not found: shared library support disabled." >&5
-$as_echo "$as_me: WARNING: flexdll.h not found: shared library support disabled." >&2;}
-
-fi ;; #(
-  *-w64-mingw32|*-pc-windows) :
+case $have_flexdll_h,$supports_shared_libraries,$host in #(
+  no,true,*-*-cygwin*) :
+    supports_shared_libraries=false
+   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: flexdll.h not found: shared library support disabled." >&5
+$as_echo "$as_me: WARNING: flexdll.h not found: shared library support disabled." >&2;} ;; #(
+  no,*,*-w64-mingw32|no,*,*-pc-windows) :
     as_fn_error $? "flexdll.h is required for native Win32" "$LINENO" 5 ;; #(
   *) :
      ;;
 esac
-fi
 
-if test -z "$flexdir" -o x"$have_flexdll_h" = 'xno'; then :
-  case $host in #(
-  *-*-cygwin*) :
-    if $supports_shared_libraries; then :
-  if test -z "$flexlink"; then :
-  supports_shared_libraries=false
-          { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: flexlink/flexdll.h not found: shared library support disabled." >&5
-$as_echo "$as_me: WARNING: flexlink/flexdll.h not found: shared library support disabled." >&2;}
-
-fi
-fi ;; #(
-  *-w64-mingw32|*-pc-windows) :
-    if test -z "$flexlink"; then :
-  as_fn_error $? "flexlink is required for native Win32" "$LINENO" 5
-fi ;; #(
+case $flexdir,$supports_shared_libraries,$flexlink,$host in #(
+  ,true,,*-*-cygwin*) :
+    supports_shared_libraries=false
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: flexlink not found: shared library support disabled." >&5
+$as_echo "$as_me: WARNING: flexlink not found: shared library support disabled." >&2;} ;; #(
+  ,*,,*-w64-mingw32|,*,,*-pc-windows) :
+    as_fn_error $? "flexlink is required for native Win32" "$LINENO" 5 ;; #(
   *) :
      ;;
 esac
-fi
 
 case $CC,$host in #(
   *,*-*-darwin*) :
