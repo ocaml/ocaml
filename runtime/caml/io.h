@@ -20,6 +20,7 @@
 
 #ifdef CAML_INTERNALS
 
+#include "camlatomic.h"
 #include "misc.h"
 #include "mlvalues.h"
 #include "platform.h"
@@ -45,7 +46,7 @@ struct channel {
   struct channel * next, * prev;/* Double chaining of channels (flush_all) */
   int revealed;                 /* For Cash only */
   int old_revealed;             /* For Cash only */
-  int refcount;                 /* For flush_all and for Cash */
+  atomic_uintnat refcount;      /* For flush_all and for Cash */
   int flags;                    /* Bitfield */
   char buff[IO_BUFFER_SIZE];    /* The buffer itself */
   char * name;                  /* Optional name (to report fd leaks) */
