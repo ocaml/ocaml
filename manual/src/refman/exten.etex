@@ -16,6 +16,11 @@ that are implemented in OCaml, but not described in chapter \ref{c:refman}.
 %HEVEA\cutname{recursivemodules.html}
 \input{recursivemodules.tex}
 
+\section{s:private-types}{Private types}
+%HEVEA\cutname{privatetypes.html}
+\ikwd{private\@\texttt{private}}
+\input{privatetypes.tex}
+
 \section{s:locally-abstract}{Locally abstract types}
 \ikwd{type\@\texttt{type}}
 \ikwd{fun\@\texttt{fun}}
