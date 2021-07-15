@@ -48,6 +48,16 @@ type type_expected = private {
   explanation: type_forcing_context option;
 }
 
+(* Variables in patterns *)
+type pattern_variable =
+  {
+    pv_id: Ident.t;
+    pv_type: type_expr;
+    pv_loc: Location.t;
+    pv_as_var: bool;
+    pv_attributes: Typedtree.attributes;
+  }
+
 val mk_expected:
   ?explanation:type_forcing_context ->
   type_expr ->
@@ -104,12 +114,8 @@ val type_class_arg_pattern:
         (Ident.t * Ident.t * type_expr) list *
         Env.t * Env.t
 val type_self_pattern:
-        string -> type_expr -> Env.t -> Env.t -> Env.t -> Parsetree.pattern ->
-        Typedtree.pattern *
-        (Ident.t * type_expr) Meths.t ref *
-        (Ident.t * Asttypes.mutable_flag * Asttypes.virtual_flag * type_expr)
-            Vars.t ref *
-        Env.t * Env.t * Env.t
+        Env.t -> Parsetree.pattern ->
+        Typedtree.pattern * pattern_variable list
 val check_partial:
         ?lev:int -> Env.t -> type_expr ->
         Location.t -> Typedtree.value Typedtree.case list -> Typedtree.partial
@@ -159,7 +165,7 @@ type error =
   | Invalid_format of string
   | Not_an_object of type_expr * type_forcing_context option
   | Undefined_method of type_expr * string * string list option
-  | Undefined_inherited_method of string * string list
+  | Undefined_self_method of string * string list
   | Virtual_class of Longident.t
   | Private_type of type_expr
   | Private_label of Longident.t * type_expr
@@ -231,7 +237,7 @@ val type_open_decl:
 (* Forward declaration, to be filled in by Typeclass.class_structure *)
 val type_object:
   (Env.t -> Location.t -> Parsetree.class_structure ->
-   Typedtree.class_structure * Types.class_signature * string list) ref
+   Typedtree.class_structure * string list) ref
 val type_package:
   (Env.t -> Parsetree.module_expr -> Path.t -> (Longident.t * type_expr) list ->
   Typedtree.module_expr * (Longident.t * type_expr) list) ref

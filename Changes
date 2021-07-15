@@ -444,6 +444,9 @@ OCaml 4.13.0
 
 ### Internal/compiler-libs changes:
 
+- #8516: Change representation of class signatures
+  (Leo White, review by Thomas Refis)
+
 - #9243, simplify parser rules for array indexing operations
   (Florian Angeletti, review by Damien Doligez and Gabriel Scherer)
 

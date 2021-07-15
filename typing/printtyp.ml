@@ -616,7 +616,7 @@ type best_path = Paths of Path.t list | Best of Path.t
     cache for short-paths
  *)
 let printing_old = ref Env.empty
-let printing_pers = ref Concr.empty
+let printing_pers = ref String.Set.empty
 (** {!printing_old} and  {!printing_pers} are the keys of the one-slot cache *)
 
 let printing_depth = ref 0
@@ -680,7 +680,7 @@ let rec path_size = function
 
 let same_printing_env env =
   let used_pers = Env.used_persistent () in
-  Env.same_types !printing_old env && Concr.equal !printing_pers used_pers
+  Env.same_types !printing_old env && String.Set.equal !printing_pers used_pers
 
 let set_printing_env env =
   printing_env := env;
@@ -941,7 +941,8 @@ let add_delayed t =
 
 let proxy ty = Transient_expr.repr (proxy ty)
 
-let is_aliased ty = List.memq (proxy ty) !aliased
+let is_aliased_proxy px =
+  List.memq px !aliased
 let add_alias_proxy px =
   if not (List.memq px !aliased) then begin
     aliased := px :: !aliased;
@@ -1162,7 +1163,7 @@ let rec tree_of_typexp mode ty =
         Otyp_module (tree_of_path Module_type p, fl)
   in
   if List.memq px !delayed then delayed := List.filter ((!=) px) !delayed;
-  if is_aliased (Transient_expr.type_expr px) && aliasable ty then begin
+  if is_aliased_proxy px && aliasable ty then begin
     Names.check_name_of_type px;
     Otyp_alias (pr_typ (), Names.name_of_type Names.new_name px) end
   else pr_typ ()
@@ -1537,41 +1538,38 @@ let value_description id ppf decl =
 
 (* Print a class type *)
 
-let method_type (_, kind, ty) =
-  match field_kind_repr kind, get_desc ty with
-    Fpresent, Tpoly(ty, tyl) -> (ty, tyl)
-  | _       , _              -> (ty, [])
+let method_type priv ty =
+  match priv, get_desc ty with
+  | Public, Tpoly(ty, tyl) -> (ty, tyl)
+  | _ , _ -> (ty, [])
 
-let tree_of_metho mode concrete csil (lab, kind, ty) =
-  if lab <> dummy_method then begin
-    let kind = field_kind_repr kind in
-    let priv = kind <> Fpresent in
-    let virt = not (Concr.mem lab concrete) in
-    let (ty, tyl) = method_type (lab, kind, ty) in
-    let tty = tree_of_typexp mode ty in
-    Names.remove_names (List.map Transient_expr.repr tyl);
-    Ocsg_method (lab, priv, virt, tty) :: csil
-  end
-  else csil
+let prepare_method _lab (priv, _virt, ty) =
+  let ty, _ = method_type priv ty in
+  mark_loops ty
+
+let tree_of_method mode (lab, priv, virt, ty) =
+  let (ty, tyl) = method_type priv ty in
+  let tty = tree_of_typexp mode ty in
+  Names.remove_names (List.map Transient_expr.repr tyl);
+  let priv = priv = Private in
+  let virt = virt = Virtual in
+  Ocsg_method (lab, priv, virt, tty)
 
 let rec prepare_class_type params = function
   | Cty_constr (_p, tyl, cty) ->
-      let sty = Ctype.self_type cty in
-      if List.memq (proxy sty) !visited_objects
+      let row = Btype.self_type_row cty in
+      if List.memq (proxy row) !visited_objects
       || not (List.for_all is_Tvar params)
-      || List.exists (deep_occur sty) tyl
+      || List.exists (deep_occur row) tyl
       then prepare_class_type params cty
       else List.iter mark_loops tyl
   | Cty_signature sign ->
       (* Self may have a name *)
-      let px = proxy sign.csig_self in
-      if List.memq px !visited_objects then add_alias sign.csig_self
+      let px = proxy sign.csig_self_row in
+      if List.memq px !visited_objects then add_alias_proxy px
       else visited_objects := px :: !visited_objects;
-      let (fields, _) =
-        Ctype.flatten_fields (Ctype.object_fields sign.csig_self)
-      in
-      List.iter (fun met -> mark_loops (fst (method_type met))) fields;
-      Vars.iter (fun _ (_, _, ty) -> mark_loops ty) sign.csig_vars
+      Vars.iter (fun _ (_, _, ty) -> mark_loops ty) sign.csig_vars;
+      Meths.iter prepare_method sign.csig_meths
   | Cty_arrow (_, ty, cty) ->
       mark_loops ty;
       prepare_class_type params cty
@@ -1579,8 +1577,8 @@ let rec prepare_class_type params = function
 let rec tree_of_class_type mode params =
   function
   | Cty_constr (p', tyl, cty) ->
-      let sty = Ctype.self_type cty in
-      if List.memq (proxy sty) !visited_objects
+      let row = Btype.self_type_row cty in
+      if List.memq (proxy row) !visited_objects
       || not (List.for_all is_Tvar params)
       then
         tree_of_class_type mode params cty
@@ -1588,14 +1586,12 @@ let rec tree_of_class_type mode params =
         let namespace = Namespace.best_class_namespace p' in
         Octy_constr (tree_of_path namespace p', tree_of_typlist Type_scheme tyl)
   | Cty_signature sign ->
-      let sty = sign.csig_self in
+      let px = proxy sign.csig_self_row in
       let self_ty =
-        if is_aliased sty then
-          Some (Otyp_var (false, Names.name_of_type Names.new_name (proxy sty)))
+        if is_aliased_proxy px then
+          Some
+            (Otyp_var (false, Names.name_of_type Names.new_name px))
         else None
-      in
-      let (fields, _) =
-        Ctype.flatten_fields (Ctype.object_fields sign.csig_self)
       in
       let csil = [] in
       let csil =
@@ -1615,8 +1611,16 @@ let rec tree_of_class_type mode params =
             :: csil)
           csil all_vars
       in
+      let all_meths =
+        Meths.fold
+          (fun l (p, v, t) all -> (l, p, v, t) :: all)
+          sign.csig_meths []
+      in
+      let all_meths = List.rev all_meths in
       let csil =
-        List.fold_left (tree_of_metho mode sign.csig_concr) csil fields
+        List.fold_left
+          (fun csil meth -> tree_of_method mode meth :: csil)
+          csil all_meths
       in
       Octy_signature (self_ty, List.rev csil)
   | Cty_arrow (l, ty, cty) ->
@@ -1657,11 +1661,11 @@ let tree_of_class_declaration id cl rs =
   reset_except_context ();
   List.iter add_alias params;
   prepare_class_type params cl.cty_type;
-  let sty = Ctype.self_type cl.cty_type in
+  let px = proxy (Btype.self_type_row cl.cty_type) in
   List.iter mark_loops params;
 
   List.iter Names.check_name_of_type (List.map proxy params);
-  if is_aliased sty then Names.check_name_of_type (proxy sty);
+  if is_aliased_proxy px then Names.check_name_of_type px;
 
   let vir_flag = cl.cty_new = None in
   Osig_class
@@ -1679,26 +1683,23 @@ let tree_of_cltype_declaration id cl rs =
   reset_except_context ();
   List.iter add_alias params;
   prepare_class_type params cl.clty_type;
-  let sty = Ctype.self_type cl.clty_type in
+  let px = proxy (Btype.self_type_row cl.clty_type) in
   List.iter mark_loops params;
 
   List.iter Names.check_name_of_type (List.map proxy params);
-  if is_aliased sty then Names.check_name_of_type (proxy sty);
+  if is_aliased_proxy px then Names.check_name_of_type px;
 
-  let sign = Ctype.signature_of_class_type cl.clty_type in
-
-  let virt =
-    let (fields, _) =
-      Ctype.flatten_fields (Ctype.object_fields sign.csig_self) in
-    List.exists
-      (fun (lab, _, _) ->
-         not (lab = dummy_method || Concr.mem lab sign.csig_concr))
-      fields
-    || Vars.fold (fun _ (_,vr,_) b -> vr = Virtual || b) sign.csig_vars false
+  let sign = Btype.signature_of_class_type cl.clty_type in
+  let has_virtual_vars =
+    Vars.fold (fun _ (_,vr,_) b -> vr = Virtual || b)
+      sign.csig_vars false
   in
-
+  let has_virtual_meths =
+    Meths.fold (fun _ (_,vr,_) b -> vr = Virtual || b)
+      sign.csig_meths false
+  in
   Osig_class_type
-    (virt, Ident.name id,
+    (has_virtual_vars || has_virtual_meths, Ident.name id,
      List.map2 tree_of_class_param params (class_variance cl.clty_variance),
      tree_of_class_type Type_scheme params cl.clty_type,
      tree_of_rec rs)

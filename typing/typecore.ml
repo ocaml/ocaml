@@ -115,7 +115,7 @@ type error =
   | Invalid_format of string
   | Not_an_object of type_expr * type_forcing_context option
   | Undefined_method of type_expr * string * string list option
-  | Undefined_inherited_method of string * string list
+  | Undefined_self_method of string * string list
   | Virtual_class of Longident.t
   | Private_type of type_expr
   | Private_label of Longident.t * type_expr
@@ -198,7 +198,7 @@ let type_package =
 let type_object =
   ref (fun _env _s -> assert false :
        Env.t -> Location.t -> Parsetree.class_structure ->
-         Typedtree.class_structure * Types.class_signature * string list)
+         Typedtree.class_structure * string list)
 
 (*
   Saving and outputting type information.
@@ -2207,41 +2207,17 @@ let type_class_arg_pattern cl_num val_env met_env l spat =
   in
   (pat, pv, val_env, met_env)
 
-let type_self_pattern cl_num privty val_env met_env par_env spat =
+let type_self_pattern env spat =
   let open Ast_helper in
-  let spat =
-    Pat.mk (Ppat_alias (Pat.mk(Ppat_alias (spat, mknoloc "selfpat-*")),
-                        mknoloc ("selfpat-" ^ cl_num)))
-  in
+  let spat = Pat.mk(Ppat_alias (spat, mknoloc "selfpat-*")) in
   reset_pattern false;
   let nv = newvar() in
   let pat =
-    type_pat Value ~no_existentials:In_self_pattern (ref val_env) spat nv in
+    type_pat Value ~no_existentials:In_self_pattern (ref env) spat nv in
   List.iter (fun f -> f()) (get_ref pattern_force);
-  let meths = ref Meths.empty in
-  let vars = ref Vars.empty in
   let pv = !pattern_variables in
   pattern_variables := [];
-  let (val_env, met_env, par_env) =
-    List.fold_right
-      (fun {pv_id; pv_type; pv_loc; pv_as_var; pv_attributes}
-           (val_env, met_env, par_env) ->
-         let name = Ident.name pv_id in
-         (Env.enter_unbound_value name Val_unbound_self val_env,
-          Env.add_value pv_id
-            {val_type = pv_type;
-             val_kind = Val_self (meths, vars, cl_num, privty);
-             val_attributes = pv_attributes;
-             val_loc = pv_loc;
-             val_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
-            }
-            ~check:(fun s -> if pv_as_var then Warnings.Unused_var s
-                             else Warnings.Unused_var_strict s)
-            met_env,
-          Env.enter_unbound_value name Val_unbound_self par_env))
-      pv (val_env, met_env, par_env)
-  in
-  (pat, meths, vars, val_env, met_env, par_env)
+  pat, pv
 
 let delayed_checks = ref []
 let reset_delayed_checks () = delayed_checks := []
@@ -2320,7 +2296,7 @@ let rec is_nonexpansive exp =
   | Texp_ifthenelse(_cond, ifso, ifnot) ->
       is_nonexpansive ifso && is_nonexpansive_opt ifnot
   | Texp_sequence (_e1, e2) -> is_nonexpansive e2  (* PR#4354 *)
-  | Texp_new (_, _, cl_decl) -> Ctype.class_type_arity cl_decl.cty_type > 0
+  | Texp_new (_, _, cl_decl) -> Btype.class_type_arity cl_decl.cty_type > 0
   (* Note: nonexpansive only means no _observable_ side effects *)
   | Texp_lazy e -> is_nonexpansive e
   | Texp_object ({cstr_fields=fields; cstr_type = { csig_vars=vars}}, _) ->
@@ -2822,7 +2798,7 @@ and type_expect_
                          match lid.txt with
                              Longident.Lident txt -> { txt; loc = lid.loc }
                            | _ -> assert false)
-        | Val_self (_, _, cl_num, _) ->
+        | Val_self (_, _, _, cl_num) ->
             let (path, _) =
               Env.find_value_by_name (Longident.Lident ("self-" ^ cl_num)) env
             in
@@ -3431,134 +3407,111 @@ and type_expect_
   | Pexp_send (e, {txt=met}) ->
       if !Clflags.principal then begin_def ();
       let obj = type_exp env e in
-      let obj_meths = ref None in
-      begin try
-        let (meth, exp, typ) =
-          match obj.exp_desc with
-            Texp_ident(_path, _, {val_kind = Val_self (meths, _, _, privty)}) ->
-              obj_meths := Some meths;
-              let (id, typ) =
-                filter_self_method env met Private meths privty
-              in
-              if is_Tvar typ then
-                Location.prerr_warning loc
-                  (Warnings.Undeclared_virtual_method met);
-              (Tmeth_val id, None, typ)
-          | Texp_ident(_path, lid, {val_kind = Val_anc (methods, cl_num)}) ->
-              let method_id =
-                begin try List.assoc met methods with Not_found ->
-                  let valid_methods = List.map fst methods in
-                  raise(Error(e.pexp_loc, env,
-                              Undefined_inherited_method (met, valid_methods)))
+      let (meth, typ) =
+        match obj.exp_desc with
+        | Texp_ident(_, _, {val_kind = Val_self(sign, meths, _, _)}) ->
+            let id, typ =
+              match meths with
+              | Self_concrete meths ->
+                  let id =
+                    match Meths.find met meths with
+                    | id -> id
+                    | exception Not_found ->
+                        let valid_methods =
+                          Meths.fold (fun lab _ acc -> lab :: acc) meths []
+                        in
+                        raise (Error(e.pexp_loc, env,
+                          Undefined_self_method (met, valid_methods)))
+                  in
+                  let typ = Btype.method_type met sign in
+                  id, typ
+              | Self_virtual meths_ref -> begin
+                  match Meths.find met !meths_ref with
+                  | id -> id, Btype.method_type met sign
+                  | exception Not_found ->
+                      let id = Ident.create_local met in
+                      let ty = newvar () in
+                      meths_ref := Meths.add met id !meths_ref;
+                      add_method env met Private Virtual ty sign;
+                      Location.prerr_warning loc
+                        (Warnings.Undeclared_virtual_method met);
+                      id, ty
                 end
-              in
-              begin match
-                Env.find_value_by_name
-                  (Longident.Lident ("selfpat-" ^ cl_num)) env,
-                Env.find_value_by_name
-                  (Longident.Lident ("self-" ^cl_num)) env
-              with
-              | (_, ({val_kind = Val_self (meths, _, _, privty)} as desc)),
-                (path, _) ->
-                  obj_meths := Some meths;
-                  let (_, typ) =
-                    filter_self_method env met Private meths privty
+            in
+            Tmeth_val id, typ
+        | Texp_ident(_, _, {val_kind = Val_anc (sign, meths, cl_num)}) ->
+            let id =
+              match Meths.find met meths with
+              | id -> id
+              | exception Not_found ->
+                  let valid_methods =
+                    Meths.fold (fun lab _ acc -> lab :: acc) meths []
                   in
-                  let method_type = newvar () in
-                  let (obj_ty, res_ty) = filter_arrow env method_type Nolabel in
-                  unify env obj_ty desc.val_type;
-                  unify env res_ty (instance typ);
-                  let method_desc =
-                    {val_type = method_type;
-                     val_kind = Val_reg;
-                     val_attributes = [];
-                     val_loc = Location.none;
-                     val_uid = Uid.internal_not_actually_unique;
-                    }
-                  in
-                  let exp_env = Env.add_value method_id method_desc env in
-                  let exp =
-                    Texp_apply({exp_desc =
-                                Texp_ident(Path.Pident method_id,
-                                           lid, method_desc);
-                                exp_loc = loc; exp_extra = [];
-                                exp_type = method_type;
-                                exp_attributes = []; (* check *)
-                                exp_env = exp_env},
-                          [ Nolabel,
-                            Some {exp_desc = Texp_ident(path, lid, desc);
-                                  exp_loc = obj.exp_loc; exp_extra = [];
-                                  exp_type = desc.val_type;
-                                  exp_attributes = []; (* check *)
-                                  exp_env = exp_env}
-                          ])
-                  in
-                  (Tmeth_name met, Some (re {exp_desc = exp;
-                                             exp_loc = loc; exp_extra = [];
-                                             exp_type = typ;
-                                             exp_attributes = []; (* check *)
-                                             exp_env = exp_env}), typ)
-              |  _ ->
-                  assert false
-              end
-          | _ ->
-              (Tmeth_name met, None,
-               filter_method env met Public obj.exp_type)
-        in
-        if !Clflags.principal then begin
-          end_def ();
-          generalize_structure typ;
-        end;
-        let typ =
-          match get_desc typ with
-            Tpoly (ty, []) ->
-              instance ty
-          | Tpoly (ty, tl) ->
-              if !Clflags.principal && get_level typ <> generic_level then
-                Location.prerr_warning loc
-                  (Warnings.Not_principal "this use of a polymorphic method");
-              snd (instance_poly false tl ty)
-          | Tvar _ ->
-              let ty' = newvar () in
-              unify env (instance typ) (newty(Tpoly(ty',[])));
-              (* if not !Clflags.nolabels then
-                 Location.prerr_warning loc (Warnings.Unknown_method met); *)
-              ty'
-          | _ ->
-              assert false
-        in
-        rue {
-          exp_desc = Texp_send(obj, meth, exp);
-          exp_loc = loc; exp_extra = [];
-          exp_type = typ;
-          exp_attributes = sexp.pexp_attributes;
-          exp_env = env }
-      with Filter_method_failed err ->
-        let error =
-          match err with
-          | Unification_error err ->
-              Expr_type_clash(err, explanation, None)
-          | Not_an_object ty ->
-              Not_an_object(ty, explanation)
-          | Not_a_method ->
-              let valid_methods =
-                match !obj_meths with
-                | Some meths ->
-                    Some
-                      (Meths.fold (fun meth _meth_ty li -> meth::li) !meths [])
-                | None ->
-                    match get_desc (expand_head env obj.exp_type) with
-                    | Tobject (fields, _) ->
-                        let (fields, _) = Ctype.flatten_fields fields in
-                        let collect_fields li (meth, meth_kind, _meth_ty) =
-                          if meth_kind = Fpresent then meth::li else li in
-                        Some (List.fold_left collect_fields [] fields)
-                    | _ -> None
-              in
-              Undefined_method(obj.exp_type, met, valid_methods)
-        in
-        raise (Error(e.pexp_loc, env, error))
-      end
+                  raise (Error(e.pexp_loc, env,
+                    Undefined_self_method (met, valid_methods)))
+            in
+            let typ = Btype.method_type met sign in
+            let (self_path, _) =
+              Env.find_value_by_name
+                (Longident.Lident ("self-" ^ cl_num)) env
+            in
+            Tmeth_ancestor(id, self_path), typ
+        | _ ->
+            let ty =
+              match filter_method env met obj.exp_type with
+              | ty -> ty
+              | exception Filter_method_failed err ->
+                let error =
+                  match err with
+                  | Unification_error err ->
+                      Expr_type_clash(err, explanation, None)
+                  | Not_an_object ty ->
+                      Not_an_object(ty, explanation)
+                  | Not_a_method ->
+                      let valid_methods =
+                        match get_desc (expand_head env obj.exp_type) with
+                        | Tobject (fields, _) ->
+                            let (fields, _) = Ctype.flatten_fields fields in
+                            let collect_fields li (meth, meth_kind, _meth_ty) =
+                              if meth_kind = Fpresent then meth::li else li
+                            in
+                            Some (List.fold_left collect_fields [] fields)
+                        | _ -> None
+                      in
+                      Undefined_method(obj.exp_type, met, valid_methods)
+                in
+                raise (Error(e.pexp_loc, env, error))
+            in
+            Tmeth_name met, ty
+      in
+      if !Clflags.principal then begin
+        end_def ();
+        generalize_structure typ;
+      end;
+      let typ =
+        match get_desc typ with
+        | Tpoly (ty, []) ->
+            instance ty
+        | Tpoly (ty, tl) ->
+            if !Clflags.principal && get_level typ <> generic_level then
+              Location.prerr_warning loc
+                (Warnings.Not_principal "this use of a polymorphic method");
+            snd (instance_poly false tl ty)
+        | Tvar _ ->
+            let ty' = newvar () in
+            unify env (instance typ) (newty(Tpoly(ty',[])));
+            (* if not !Clflags.nolabels then
+               Location.prerr_warning loc (Warnings.Unknown_method met); *)
+            ty'
+        | _ ->
+            assert false
+      in
+      rue {
+        exp_desc = Texp_send(obj, meth);
+        exp_loc = loc; exp_extra = [];
+        exp_type = typ;
+        exp_attributes = sexp.pexp_attributes;
+        exp_env = env }
   | Pexp_new cl ->
       let (cl_path, cl_decl) = Env.lookup_class ~loc:cl.loc cl.txt env in
       begin match cl_decl.cty_new with
@@ -3610,16 +3563,16 @@ and type_expect_
         with Not_found ->
           raise(Error(loc, env, Outside_class))
       with
-        (_, {val_type = self_ty; val_kind = Val_self (_, vars, _, _)}),
+        (_, {val_type = self_ty; val_kind = Val_self (sign, _, vars, _)}),
         (path_self, _) ->
           let type_override (lab, snewval) =
             begin try
-              let (id, _, _, ty) = Vars.find lab.txt !vars in
-              (Path.Pident id, lab,
-               type_expect env snewval (mk_expected (instance ty)))
+              let id = Vars.find lab.txt vars in
+              let ty = Btype.instance_variable_type lab.txt sign in
+              (id, lab, type_expect env snewval (mk_expected (instance ty)))
             with
               Not_found ->
-                let vars = Vars.fold (fun var _ li -> var::li) !vars [] in
+                let vars = Vars.fold (fun var _ li -> var::li) vars [] in
                 raise(Error(loc, env,
                             Unbound_instance_variable (lab.txt, vars)))
             end
@@ -3714,11 +3667,11 @@ and type_expect_
         exp_env = env;
       }
   | Pexp_object s ->
-      let desc, sign, meths = !type_object env loc s in
+      let desc, meths = !type_object env loc s in
       rue {
-        exp_desc = Texp_object (desc, (*sign,*) meths);
+        exp_desc = Texp_object (desc, meths);
         exp_loc = loc; exp_extra = [];
-        exp_type = sign.csig_self;
+        exp_type = desc.cstr_type.csig_self;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env;
       }
@@ -3968,7 +3921,7 @@ and type_binding_op_ident env s =
     match desc.val_kind with
     | Val_ivar _ ->
         fatal_error "Illegal name for instance variable"
-    | Val_self (_, _, cl_num, _) ->
+    | Val_self (_, _, _, cl_num) ->
         let path, _ =
           Env.find_value_by_name (Longident.Lident ("self-" ^ cl_num)) env
         in
@@ -5629,7 +5582,7 @@ let report_error ~loc env = function
             | Some valid_methods -> spellcheck ppf me valid_methods
           end
       )) ()
-  | Undefined_inherited_method (me, valid_methods) ->
+  | Undefined_self_method (me, valid_methods) ->
       Location.error_of_printer ~loc (fun ppf () ->
         fprintf ppf "This expression has no method %s" me;
         spellcheck ppf me valid_methods;

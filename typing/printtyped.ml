@@ -396,14 +396,15 @@ and expression i ppf x =
       expression i ppf e1;
       expression i ppf e2;
       expression i ppf e3;
-  | Texp_send (e, Tmeth_name s, eo) ->
+  | Texp_send (e, Tmeth_name s) ->
       line i ppf "Texp_send \"%s\"\n" s;
-      expression i ppf e;
-      option i expression ppf eo
-  | Texp_send (e, Tmeth_val s, eo) ->
+      expression i ppf e
+  | Texp_send (e, Tmeth_val s) ->
       line i ppf "Texp_send \"%a\"\n" fmt_ident s;
-      expression i ppf e;
-      option i expression ppf eo
+      expression i ppf e
+  | Texp_send (e, Tmeth_ancestor(s, _)) ->
+      line i ppf "Texp_send \"%a\"\n" fmt_ident s;
+      expression i ppf e
   | Texp_new (li, _, _) -> line i ppf "Texp_new %a\n" fmt_path li;
   | Texp_setinstvar (_, s, _, e) ->
       line i ppf "Texp_setinstvar \"%a\"\n" fmt_path s;
@@ -930,7 +931,7 @@ and value_binding i ppf x =
   expression (i+1) ppf x.vb_expr
 
 and string_x_expression i ppf (s, _, e) =
-  line i ppf "<override> \"%a\"\n" fmt_path s;
+  line i ppf "<override> \"%a\"\n" fmt_ident s;
   expression (i+1) ppf e;
 
 and record_field i ppf = function

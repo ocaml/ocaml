@@ -135,8 +135,12 @@ end
 
 (* Maps of methods and instance variables *)
 
+module MethSet = Misc.Stdlib.String.Set
+module VarSet = Misc.Stdlib.String.Set
+
 module Meths = Misc.Stdlib.String.Map
-module Vars = Meths
+module Vars = Misc.Stdlib.String.Map
+
 
 (* Value descriptions *)
 
@@ -152,13 +156,21 @@ and value_kind =
     Val_reg                             (* Regular value *)
   | Val_prim of Primitive.description   (* Primitive *)
   | Val_ivar of mutable_flag * string   (* Instance variable (mutable ?) *)
-  | Val_self of (Ident.t * type_expr) Meths.t ref *
-                (Ident.t * Asttypes.mutable_flag *
-                 Asttypes.virtual_flag * type_expr) Vars.t ref *
-                string * type_expr
+  | Val_self of
+      class_signature * self_meths * Ident.t Vars.t * string
                                         (* Self *)
-  | Val_anc of (string * Ident.t) list * string
+  | Val_anc of class_signature * Ident.t Meths.t * string
                                         (* Ancestor *)
+
+and self_meths =
+  | Self_concrete of Ident.t Meths.t
+  | Self_virtual of Ident.t Meths.t ref
+
+and class_signature =
+  { csig_self: type_expr;
+    mutable csig_self_row: type_expr;
+    mutable csig_vars: (mutable_flag * virtual_flag * type_expr) Vars.t;
+    mutable csig_meths: (private_flag * virtual_flag * type_expr) Meths.t; }
 
 (* Variance *)
 
@@ -300,19 +312,10 @@ and type_transparence =
 
 (* Type expressions for the class language *)
 
-module Concr = Misc.Stdlib.String.Set
-
 type class_type =
     Cty_constr of Path.t * type_expr list * class_type
   | Cty_signature of class_signature
   | Cty_arrow of arg_label * type_expr * class_type
-
-and class_signature =
-  { csig_self: type_expr;
-    csig_vars:
-      (Asttypes.mutable_flag * Asttypes.virtual_flag * type_expr) Vars.t;
-    csig_concr: Concr.t;
-    csig_inher: (Path.t * type_expr list) list }
 
 type class_declaration =
   { cty_params: type_expr list;

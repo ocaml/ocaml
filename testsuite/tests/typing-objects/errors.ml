@@ -48,6 +48,5 @@ let foo = object (self) method foo = self#bar end;;
 Line 1, characters 37-41:
 1 | let foo = object (self) method foo = self#bar end;;
                                          ^^^^
-Error: This expression has type < foo : 'a >
-       It has no method bar
+Error: This expression has no method bar
 |}]

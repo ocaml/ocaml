@@ -55,6 +55,7 @@ val set_levels: levels -> unit
 val create_scope : unit -> int
 
 val newty: type_desc -> type_expr
+val new_scoped_ty: int -> type_desc -> type_expr
 val newvar: ?name:string -> unit -> type_expr
 val newvar2: ?name:string -> int -> type_expr
         (* Return a fresh variable *)
@@ -94,13 +95,9 @@ val associate_fields:
         (string * field_kind * type_expr) list *
         (string * field_kind * type_expr) list
 val opened_object: type_expr -> bool
-val close_object: type_expr -> bool
-val row_variable: type_expr -> type_expr
-        (* Return the row variable of an open object type *)
 val set_object_name:
-        Ident.t -> type_expr -> type_expr list -> type_expr -> unit
+        Ident.t -> type_expr list -> type_expr -> unit
 val remove_object_name: type_expr -> unit
-val hide_private_methods: type_expr -> unit
 val find_cltype_for_path: Env.t -> Path.t -> type_declaration * type_expr
 
 val sort_row_fields: (label * row_field) list -> (label * row_field) list
@@ -119,16 +116,19 @@ val lower_contravariant: Env.t -> type_expr -> unit
 val generalize_structure: type_expr -> unit
         (* Generalize the structure of a type, lowering variables
            to !current_level *)
-val generalize_class_type :
-  bool -> class_type -> unit
+val generalize_class_type : class_type -> unit
         (* Generalize the components of a class type *)
-val generalize_spine: type_expr -> unit
-        (* Special function to generalize a method during inference *)
+val generalize_class_type_structure : class_type -> unit
+       (* Generalize the structure of the components of a class type *)
+val generalize_class_signature_spine : Env.t -> class_signature -> unit
+       (* Special function to generalize methods during inference *)
 val correct_levels: type_expr -> type_expr
         (* Returns a copy with decreasing levels *)
 val limited_generalize: type_expr -> type_expr -> unit
         (* Only generalize some part of the type
            Make the remaining of the type non-generalizable *)
+val limited_generalize_class_type: type_expr -> class_type -> unit
+        (* Same, but for class types *)
 
 val fully_generic: type_expr -> bool
 
@@ -165,6 +165,7 @@ val generic_instance_declaration: type_declaration -> type_declaration
         (* Same as instance_declaration, but new nodes at generic_level *)
 val instance_class:
         type_expr list -> class_type -> type_expr list * class_type
+
 val instance_poly:
         ?keep_names:bool ->
         bool -> type_expr list -> type_expr -> type_expr list * type_expr
@@ -230,19 +231,11 @@ val unify_var: Env.t -> type_expr -> type_expr -> unit
 val filter_arrow: Env.t -> type_expr -> arg_label -> type_expr * type_expr
         (* A special case of unification with [l:'a -> 'b].  Raises
            [Filter_arrow_failed] instead of [Unify]. *)
-val filter_method: Env.t -> string -> private_flag -> type_expr -> type_expr
+val filter_method: Env.t -> string -> type_expr -> type_expr
         (* A special case of unification (with {m : 'a; 'b}).  Raises
            [Filter_method_failed] instead of [Unify]. *)
-val check_filter_method: Env.t -> string -> private_flag -> type_expr -> unit
-        (* A special case of unification (with {m : 'a; 'b}), returning unit.
-           Raises [Filter_method_failed] instead of [Unify]. *)
 val occur_in: Env.t -> type_expr -> type_expr -> bool
 val deep_occur: type_expr -> type_expr -> bool
-val filter_self_method:
-        Env.t -> string -> private_flag -> (Ident.t * type_expr) Meths.t ref ->
-        type_expr -> Ident.t * type_expr
-        (* Raises [Filter_method_failed] instead of [Unify], and only if the
-           self type is closed at this point. *)
 val moregeneral: Env.t -> bool -> type_expr -> type_expr -> unit
         (* Check if the first type scheme is more general than the second. *)
 val is_moregeneral: Env.t -> bool -> type_expr -> type_expr -> bool
@@ -327,6 +320,46 @@ val subtype: Env.t -> type_expr -> type_expr -> unit -> unit
            enforce and returns a function that enforces this
            constraints. *)
 
+(* Operations on class signatures *)
+
+val new_class_signature : unit -> class_signature
+val add_dummy_method : Env.t -> scope:int -> class_signature -> unit
+
+type add_method_failure =
+  | Unexpected_method
+  | Type_mismatch of Errortrace.unification_error
+
+exception Add_method_failed of add_method_failure
+
+val add_method : Env.t ->
+  label -> private_flag -> virtual_flag -> type_expr -> class_signature -> unit
+
+type add_instance_variable_failure =
+  | Mutability_mismatch of mutable_flag
+  | Type_mismatch of Errortrace.unification_error
+
+exception Add_instance_variable_failed of add_instance_variable_failure
+
+val add_instance_variable : strict:bool -> Env.t ->
+  label -> mutable_flag -> virtual_flag -> type_expr -> class_signature -> unit
+
+type inherit_class_signature_failure =
+  | Self_type_mismatch of Errortrace.unification_error
+  | Method of label * add_method_failure
+  | Instance_variable of label * add_instance_variable_failure
+
+exception Inherit_class_signature_failed of inherit_class_signature_failure
+
+val inherit_class_signature : strict:bool -> Env.t ->
+  class_signature -> class_signature -> unit
+
+val update_class_signature :
+  Env.t -> class_signature -> label list * label list
+
+val hide_private_methods : Env.t -> class_signature -> unit
+
+val close_class_signature : Env.t -> class_signature -> bool
+
 exception Nondep_cannot_erase of Ident.t
 
 val nondep_type: Env.t -> Ident.t list -> type_expr -> type_expr
@@ -351,25 +384,25 @@ val nondep_cltype_declaration:
 val is_contractive: Env.t -> Path.t -> bool
 val normalize_type: type_expr -> unit
 
-val closed_schema: Env.t -> type_expr -> bool
+val nongen_schema: Env.t -> type_expr -> bool
         (* Check whether the given type scheme contains no non-generic
            type variables *)
+
+val nongen_class_declaration: class_declaration -> bool
+        (* Check whether the given class type contains no non-generic
+           type variables. Uses the empty environment.  *)
 
 val free_variables: ?env:Env.t -> type_expr -> type_expr list
         (* If env present, then check for incomplete definitions too *)
 val closed_type_decl: type_declaration -> type_expr option
 val closed_extension_constructor: extension_constructor -> type_expr option
-type closed_class_failure =
-    CC_Method of type_expr * bool * string * type_expr
-  | CC_Value of type_expr * bool * string * type_expr
 val closed_class:
-        type_expr list -> class_signature -> closed_class_failure option
+        type_expr list -> class_signature ->
+        (type_expr * bool * string * type_expr) option
         (* Check whether all type variables are bound *)
 
 val unalias: type_expr -> type_expr
-val signature_of_class_type: class_type -> class_signature
-val self_type: class_type -> type_expr
-val class_type_arity: class_type -> int
+
 val arity: type_expr -> int
         (* Return the arity (as for curried functions) of the given type. *)
 

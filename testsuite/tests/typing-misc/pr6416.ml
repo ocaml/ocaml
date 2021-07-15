@@ -219,8 +219,8 @@ Error: Signature mismatch:
          class b : a
        does not match
          class b : a/2
-       The first class type has no method m
        The public method c cannot be hidden
+       The first class type has no method m
        Line 5, characters 4-74:
          Definition of class type a/1
        Line 2, characters 2-36:
