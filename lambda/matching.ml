@@ -2329,9 +2329,10 @@ module SArg = struct
 
   let gtint = Pintcomp Cgt
 
-  type act = Lambda.lambda
-
   type loc = Lambda.scoped_location
+  type arg = Lambda.lambda
+  type test = Lambda.lambda
+  type act = Lambda.lambda
 
   let make_prim p args = Lprim (p, args, Loc_unknown)
 
@@ -2355,6 +2356,8 @@ module SArg = struct
   let make_isout h arg = Lprim (Pisout, [ h; arg ], Loc_unknown)
 
   let make_isin h arg = Lprim (Pnot, [ make_isout h arg ], Loc_unknown)
+
+  let make_is_nonzero arg = arg
 
   let make_if cond ifso ifnot = Lifthenelse (cond, ifso, ifnot)
 

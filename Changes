@@ -200,6 +200,9 @@ Working version
 - #10637: Outcometree: introduce a record type for constructors
   (Gabriel Scherer, review by Thomas Refis)
 
+- #10516: refactor the compilation of the 'switch' construct
+  (Gabriel Scherer, review by Wiktor Kuchta and Luc Maranget)
+
 ### Build system:
 
 ### Bug fixes:

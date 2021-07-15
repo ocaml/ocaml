@@ -1504,8 +1504,10 @@ struct
   let geint = Ccmpi Cge
   let gtint = Ccmpi Cgt
 
-  type act = expression
   type loc = Debuginfo.t
+  type arg = expression
+  type test = expression
+  type act = expression
 
   (* CR mshinwell: GPR#2294 will fix the Debuginfo here *)
 
@@ -1514,6 +1516,7 @@ struct
   let make_offset arg n = add_const arg n Debuginfo.none
   let make_isout h arg = Cop (Ccmpa Clt, [h ; arg], Debuginfo.none)
   let make_isin h arg = Cop (Ccmpa Cge, [h ; arg], Debuginfo.none)
+  let make_is_nonzero arg = arg
   let make_if cond ifso ifnot =
     Cifthenelse (cond, Debuginfo.none, ifso, Debuginfo.none, ifnot,
       Debuginfo.none)
