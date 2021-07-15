@@ -1,0 +1,166 @@
+Private type declarations in module signatures, of the form
+"type t = private ...", enable libraries to
+reveal some, but not all aspects of the implementation of a type to
+clients of the library.  In this respect, they strike a middle ground
+between abstract type declarations, where no information is revealed
+on the type implementation, and data type definitions and type
+abbreviations, where all aspects of the type implementation are
+publicized.  Private type declarations come in three flavors: for
+variant and record types (section~\ref{ss:private-types-variant}),
+for type abbreviations (section~\ref{ss:private-types-abbrev}),
+and for row types (section~\ref{ss:private-rows}).
+
+\subsection{ss:private-types-variant}{Private variant and record types}
+
+
+(Introduced in Objective Caml 3.07)
+
+\begin{syntax}
+type-representation:
+          ...
+        | '=' 'private' [ '|' ] constr-decl { '|' constr-decl }
+        | '=' 'private' record-decl
+\end{syntax}
+
+Values of a variant or record type declared @"private"@
+can be de-structured normally in pattern-matching or via
+the @expr '.' field@ notation for record accesses.  However, values of
+these types cannot be constructed directly by constructor application
+or record construction.  Moreover, assignment on a mutable field of a
+private record type is not allowed.
+
+The typical use of private types is in the export signature of a
+module, to ensure that construction of values of the private type always
+go through the functions provided by the module, while still allowing
+pattern-matching outside the defining module.  For example:
+\begin{caml_example*}{verbatim}
+module M : sig
+  type t = private A | B of int
+  val a : t
+  val b : int -> t
+end = struct
+  type t = A | B of int
+  let a = A
+  let b n = assert (n > 0); B n
+end
+\end{caml_example*}
+Here, the @"private"@ declaration ensures that in any value of type
+"M.t", the argument to the "B" constructor is always a positive integer.
+
+With respect to the variance of their parameters, private types are
+handled like abstract types. That is, if a private type has
+parameters, their variance is the one explicitly given by prefixing
+the parameter by a `"+"' or a `"-"', it is invariant otherwise.
+
+\subsection{ss:private-types-abbrev}{Private type abbreviations}
+
+(Introduced in Objective Caml 3.11)
+
+\begin{syntax}
+type-equation:
+          ...
+        | '=' 'private' typexpr
+\end{syntax}
+
+Unlike a regular type abbreviation, a private type abbreviation
+declares a type that is distinct from its implementation type @typexpr@.
+However, coercions from the type to @typexpr@ are permitted.
+Moreover, the compiler ``knows'' the implementation type and can take
+advantage of this knowledge to perform type-directed optimizations.
+
+The following example uses a private type abbreviation to define a
+module of nonnegative integers:
+\begin{caml_example*}{verbatim}
+module N : sig
+  type t = private int
+  val of_int: int -> t
+  val to_int: t -> int
+end = struct
+  type t = int
+  let of_int n = assert (n >= 0); n
+  let to_int n = n
+end
+\end{caml_example*}
+The type "N.t" is incompatible with "int", ensuring that nonnegative
+integers and regular integers are not confused.  However, if "x" has
+type "N.t", the coercion "(x :> int)" is legal and returns the
+underlying integer, just like "N.to_int x".  Deep coercions are also
+supported: if "l" has type "N.t list", the coercion "(l :> int list)"
+returns the list of underlying integers, like "List.map N.to_int l"
+but without copying the list "l".
+
+Note that the coercion @"(" expr ":>" typexpr ")"@ is actually an abbreviated
+form,
+and will only work in presence of private abbreviations if neither the
+type of @expr@ nor @typexpr@ contain any type variables. If they do,
+you must use the full form @"(" expr ":" typexpr_1 ":>" typexpr_2 ")"@ where
+@typexpr_1@ is the expected type of @expr@. Concretely, this would be "(x :
+N.t :> int)" and "(l : N.t list :> int list)" for the above examples.
+
+\subsection{ss:private-rows}{Private row types}
+\ikwd{private\@\texttt{private}}
+
+(Introduced in Objective Caml 3.09)
+
+\begin{syntax}
+type-equation:
+          ...
+        | '=' 'private' typexpr
+\end{syntax}
+
+Private row types are type abbreviations where part of the
+structure of the type is left abstract. Concretely @typexpr@ in the
+above should denote either an object type or a polymorphic variant
+type, with some possibility of refinement left. If the private
+declaration is used in an interface, the corresponding implementation
+may either provide a ground instance, or a refined private type.
+\begin{caml_example*}{verbatim}
+module M : sig type c = private < x : int; .. > val o : c end =
+struct
+  class c = object method x = 3 method y = 2 end
+  let o = new c
+end
+\end{caml_example*}
+This declaration does more than hiding the "y" method, it also makes
+the type "c" incompatible with any other closed object type, meaning
+that only "o" will be of type "c". In that respect it behaves
+similarly to private record types. But private row types are
+more flexible with respect to incremental refinement. This feature can
+be used in combination with functors.
+\begin{caml_example*}{verbatim}
+module F(X : sig type c = private < x : int; .. > end) =
+struct
+  let get_x (o : X.c) = o#x
+end
+module G(X : sig type c = private < x : int; y : int; .. > end) =
+struct
+  include F(X)
+  let get_y (o : X.c) = o#y
+end
+\end{caml_example*}
+
+A polymorphic variant type [t], for example
+\begin{caml_example*}{verbatim}
+type t = [ `A of int | `B of bool ]
+\end{caml_example*}
+can be refined in two ways. A definition [u] may add new field to [t],
+and the declaration
+\begin{caml_example*}{verbatim}
+type u = private [> t]
+\end{caml_example*}
+will keep those new fields abstract. Construction of values of type
+[u] is possible using the known variants of [t], but any
+pattern-matching will require a default case to handle the potential
+extra fields. Dually, a declaration [u] may restrict the fields of [t]
+through abstraction: the declaration
+\begin{caml_example*}{verbatim}
+type v = private [< t > `A]
+\end{caml_example*}
+corresponds to private variant types. One cannot create a value of the
+private type [v], except using the constructors that are explicitly
+listed as present, "(`A n)" in this example; yet, when
+patter-matching on a [v], one should assume that any of the
+constructors of [t] could be present.
+
+Similarly to abstract types, the variance of type parameters
+is not inferred, and must be given explicitly.
