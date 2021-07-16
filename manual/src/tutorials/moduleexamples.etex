@@ -24,7 +24,7 @@ module PrioQueue =
       match queue with
         Empty -> Node(prio, elt, Empty, Empty)
       | Node(p, e, left, right) ->
-          if prio <= p
+          if prio < p
           then Node(prio, elt, insert right p e, left)
           else Node(p, e, insert right prio elt, left)
     exception Queue_is_empty
@@ -34,7 +34,7 @@ module PrioQueue =
       | Node(prio, elt, Empty, right) -> right
       | Node(prio, elt, (Node(lprio, lelt, _, _) as left),
                         (Node(rprio, relt, _, _) as right)) ->
-          if lprio <= rprio
+          if lprio < rprio
           then Node(lprio, lelt, remove_top left, right)
           else Node(rprio, relt, left, remove_top right)
     let extract = function
