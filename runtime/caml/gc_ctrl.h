@@ -39,9 +39,6 @@ value caml_gc_major(value);
 #define caml_stat_major_words Caml_state->stat_major_words
 #define caml_stat_minor_words Caml_state->stat_minor_words
 
-#define caml_young_end Caml_state->young_end
-#define caml_young_ptr Caml_state->young_ptr
-
 #ifdef DEBUG
 void caml_heap_check (void);
 #endif
