@@ -362,11 +362,10 @@ let default_stub_attribute =
    For that reason, they should not include cycles.
 *)
 
-exception Not_simple
-
 let max_raw = 32
 
 let make_key e =
+  let exception Not_simple in
   let count = ref 0   (* Used for controlling size *)
   and make_key = Ident.make_key_generator () in
   (* make_key is used for normalizing let-bound variables *)
