@@ -3,6 +3,7 @@
 
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
+\usepackage{microtype}
 % HEVEA\@def@charset{UTF-8}%
 % Unicode character declarations
 \DeclareUnicodeCharacter{207A}{{}^{+}}
@@ -27,6 +28,10 @@
 \usepackage{changepage}
 \fi
 \input{macros.tex}
+
+% No ligatures in typewriter font
+\DisableLigatures{encoding = T1, family = tt* }
+
 % Listing environments
 \lstnewenvironment{camloutput}{
   \lstset{
