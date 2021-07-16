@@ -198,7 +198,7 @@ static void encode_terminal_status(value *dst)
   long * pc;
   int i;
 
-  for(pc = terminal_io_descr; *pc != End; ) {
+  for(pc = terminal_io_descr; *pc != End; dst++) {
     switch(*pc++) {
     case Bool:
       { int * src = (int *) (*pc++);
