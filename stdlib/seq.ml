@@ -85,10 +85,12 @@ let rec unfold f u () =
   | None -> Nil
   | Some (x, u') -> Cons (x, unfold f u')
 
+let rec range ?(step=1) start stop () = 
+  if (stop - start) * step > 0 then 
+    (*check that start-stop and step have the same sign and are nononzero*)
+    Cons (start, range ~step (start + step) stop)
+  else 
+    Nil
+;;
 
-let rec range ?(start=0) ?stop ?(step=1) () = 
-  match stop with
-  | None -> Cons(start, range ~start:(start + step) ?stop ~step)
-  | Some f when step > 0 && start < f -> Cons(start, range ~start:(start + step) ?stop ~step)
-  | Some f when step < 0 && start > f -> Cons(start, range ~start:(start + step) ?stop ~step)
-  | _ -> Nil
+let rec count_from ?(step=1) start () = Cons (start, count_from ~step (start + step))

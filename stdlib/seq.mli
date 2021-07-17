@@ -108,19 +108,29 @@ val unfold : ('b -> ('a * 'b) option) -> 'b -> 'a t
     is equivalent to [List.to_seq l].
     @since 4.11 *)
 
-val range : ?start: int -> ?stop: int -> ?step: int -> int t
+val range : ?step:int -> int -> int -> int t 
 (**
-   Build a sequence containing a range of integers.
-   [range ~start ~stop ~step] 
+   Build a finite sequence containing a range of integers.
+   [range ~step start stop ] 
    returns a sequence s so that
    [s_i = start + step * i] (for i integer)
    that stops once it reaches or passes [stop] (not included)
 
+   if not specified, step defaults at 1. 
+
+   Remark: if [step] is 0, then the sequence is empty (therefore this sequence is always finite).
+   *)
+
+val count_from : ?step:int -> int -> int t
+(**
+   Build an infinite sequence containing a range of integers.
+   [count_from ~step start] 
+   returns a sequence s so that
+   [s_i = start + step * i] (for i integer)
+   that never stops
+
    if not specified, start defaults at 0, step defaults at 1. 
-   If stop is not specified, then the sequence is not bounded (unless step is 0). 
    Behaviour is not specified once max_int or min_int has been reached.
 
-   Remark: if [step] is 0 and [stop] is specified, then the sequence is empty. 
-   If [step] is 0 and  [stop] is not specified, 
-   then the sequence is an infinite repetition of [start] 
+   Remark: if [step] is 0 then the sequence is an infinite repetition of [start] 
    *)
