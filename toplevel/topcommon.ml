@@ -338,7 +338,21 @@ let try_run_directive ppf dir_name pdir_arg =
       | Directive_ident f, Some {pdira_desc = Pdir_ident lid} -> f lid; true
       | Directive_bool f, Some {pdira_desc = Pdir_bool b} -> f b; true
       | _ ->
-          fprintf ppf "Wrong type of argument for directive `%s'.@."
-            dir_name;
+          let dir_type = match d with
+          | Directive_none _   -> "no argument"
+          | Directive_string _ -> "a `string' literal"
+          | Directive_int _    -> "an `int' literal"
+          | Directive_ident _  -> "an identifier"
+          | Directive_bool _   -> "a `bool' literal"
+          in
+          let arg_type = match pdir_arg with
+          | None                              -> "no argument"
+          | Some {pdira_desc = Pdir_string _} -> "a `string' literal"
+          | Some {pdira_desc = Pdir_int _}    -> "an `int' literal"
+          | Some {pdira_desc = Pdir_ident _}  -> "an identifier"
+          | Some {pdira_desc = Pdir_bool _}   -> "a `bool' literal"
+          in
+          fprintf ppf "Directive `%s' expects %s, got %s.@."
+            dir_name dir_type arg_type;
           false
   end
