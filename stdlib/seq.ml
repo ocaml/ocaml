@@ -87,7 +87,7 @@ let rec unfold f u () =
 
 let rec range ?(step=1) start stop () = 
   if (stop - start) * step > 0 then 
-    (*check that start-stop and step have the same sign and are nononzero*)
+    (*check that stop - start and step have the same sign and are nononzero*)
     Cons (start, range ~step (start + step) stop)
   else 
     Nil
