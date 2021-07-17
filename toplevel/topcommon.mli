@@ -143,6 +143,9 @@ val get_directive_info : string -> directive_info option
 
 val all_directive_names : unit -> string list
 
+val try_run_directive :
+  formatter -> string -> Parsetree.directive_argument option -> bool
+
 val[@deprecated] directive_table : (string, directive_fun) Hashtbl.t
   (* @deprecated please use [add_directive] instead of inserting
      in this table directly. *)
