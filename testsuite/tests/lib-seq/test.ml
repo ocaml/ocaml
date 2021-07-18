@@ -7,9 +7,9 @@ let filter1 x = x mod 2 = 0 ;;
 let () =
   assert
     ([2;4] =
-      (List.to_seq [1;2;3;4;5]
+     (List.to_seq [1;2;3;4;5]
       |> Seq.filter (fun x -> x mod 2 = 0)
-     |> List.of_seq));
+      |> List.of_seq));
   ()
 ;;
 
@@ -17,7 +17,7 @@ let () =
 let () =
   let range first last =
     let step i = if i > last then None
-                 else Some (i, succ i) in
+      else Some (i, succ i) in
     Seq.unfold step first
   in
   begin
@@ -30,7 +30,7 @@ let () =
 let () =
   assert
     ([| 1;2;3 |] =
-      (Array.to_seq [| 1;2;3 |]
+     (Array.to_seq [| 1;2;3 |]
       |> Array.of_seq));
   ()
 ;;
@@ -38,9 +38,9 @@ let () =
 (* concat *)
 let () =
   assert (
-      List.concat [[1]; []; [2; 3];]
-      = (let (!?) = List.to_seq in
-         List.of_seq (Seq.concat !?[!?[1]; !?[]; !?[2; 3]])))
+    List.concat [[1]; []; [2; 3];]
+    = (let (!?) = List.to_seq in
+       List.of_seq (Seq.concat !?[!?[1]; !?[]; !?[2; 3]])))
 
 (* range *)
 let () = 
@@ -50,11 +50,11 @@ let () =
   let l= List.of_seq (Seq.range ~step start stop) in
   l 
   |> List.iteri begin fun index value -> 
-      assert (value = start + index * step); 
-      if step > 0 then
-        assert (value < stop)
-      else if step < 0 then 
-        assert (value > stop)
+    assert (value = start + index * step); 
+    if step > 0 then
+      assert (value < stop)
+    else if step < 0 then 
+      assert (value > stop)
   end ;
   assert (List.length l = (abs ((stop - start) / step)) + 1) 
 ;;
@@ -65,10 +65,10 @@ let () =
   let s : int Seq.t ref = ref (Seq.count_from ~step start) in 
   (Seq.range ~step start stop) 
   |> Seq.iter begin fun x -> 
-      match (!s) () with 
-      | Cons (y, new_s)  -> assert (x = y); s := new_s
-      | Nil -> assert false 
-    end
+    match (!s) () with 
+    | Cons (y, new_s)  -> assert (x = y); s := new_s
+    | Nil -> assert false 
+  end
 
 
 let () = print_endline "OK";;
