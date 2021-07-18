@@ -17,7 +17,7 @@
 
    This module implements buffers that automatically expand
    as necessary.  It provides accumulative concatenation of strings
-   in quasi-linear time (instead of quadratic time when strings are
+   in linear time (instead of quadratic time when strings are
    concatenated pairwise). For example:
 
 {[
