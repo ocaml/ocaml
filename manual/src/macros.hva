@@ -295,6 +295,7 @@
 
 %%% Missing macro
 \newcommand{\DeclareUnicodeCharacter}[2]{}
+\newcommand{\DisableLigatures}[1]{}
 
 \ifocamldoc
 \newcommand{\stddocitem}[2]{\libdocitem{#1}{#2}}

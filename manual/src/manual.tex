@@ -1,8 +1,9 @@
 \documentclass[11pt]{book}
-\usepackage{ae}
+\usepackage{lmodern}% for T1 encoding and support of bold ttfamily
 
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
+\usepackage{microtype}
 % HEVEA\@def@charset{UTF-8}%
 % Unicode character declarations
 \DeclareUnicodeCharacter{207A}{{}^{+}}
@@ -20,13 +21,16 @@
 % Package for code examples:
 \usepackage{listings}
 \usepackage{alltt}
-\usepackage{lmodern}% for supporting bold ttfamily in code examples
 \usepackage[normalem]{ulem}% for underlining errors in code examples
 \input{ifocamldoc}
 \ifocamldoc\else
 \usepackage{changepage}
 \fi
 \input{macros.tex}
+
+% No ligatures in typewriter font
+\DisableLigatures{encoding = T1, family = tt* }
+
 % Listing environments
 \lstnewenvironment{camloutput}{
   \lstset{
