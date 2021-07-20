@@ -308,3 +308,51 @@ let get_directive_info name =
 
 let all_directive_names () =
   Hashtbl.fold (fun dir _ acc -> dir::acc) directive_table []
+
+let try_run_directive ppf dir_name pdir_arg =
+  begin match get_directive dir_name with
+  | None ->
+      fprintf ppf "Unknown directive `%s'." dir_name;
+      let directives = all_directive_names () in
+      Misc.did_you_mean ppf
+        (fun () -> Misc.spellcheck directives dir_name);
+      fprintf ppf "@.";
+      false
+  | Some d ->
+      match d, pdir_arg with
+      | Directive_none f, None -> f (); true
+      | Directive_string f, Some {pdira_desc = Pdir_string s} -> f s; true
+      | Directive_int f, Some {pdira_desc = Pdir_int (n,None) } ->
+         begin match Misc.Int_literal_converter.int n with
+         | n -> f n; true
+         | exception _ ->
+           fprintf ppf "Integer literal exceeds the range of \
+                        representable integers for directive `%s'.@."
+                   dir_name;
+           false
+         end
+      | Directive_int _, Some {pdira_desc = Pdir_int (_, Some _)} ->
+          fprintf ppf "Wrong integer literal for directive `%s'.@."
+            dir_name;
+          false
+      | Directive_ident f, Some {pdira_desc = Pdir_ident lid} -> f lid; true
+      | Directive_bool f, Some {pdira_desc = Pdir_bool b} -> f b; true
+      | _ ->
+          let dir_type = match d with
+          | Directive_none _   -> "no argument"
+          | Directive_string _ -> "a `string' literal"
+          | Directive_int _    -> "an `int' literal"
+          | Directive_ident _  -> "an identifier"
+          | Directive_bool _   -> "a `bool' literal"
+          in
+          let arg_type = match pdir_arg with
+          | None                              -> "no argument"
+          | Some {pdira_desc = Pdir_string _} -> "a `string' literal"
+          | Some {pdira_desc = Pdir_int _}    -> "an `int' literal"
+          | Some {pdira_desc = Pdir_ident _}  -> "an identifier"
+          | Some {pdira_desc = Pdir_bool _}   -> "a `bool' literal"
+          in
+          fprintf ppf "Directive `%s' expects %s, got %s.@."
+            dir_name dir_type arg_type;
+          false
+  end

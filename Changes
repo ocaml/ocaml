@@ -32,6 +32,9 @@ Working version
   (`#use "missing_file";;`) use stderr and exit with an error.
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #10524: Directive argument type error now shows expected and received type.
+  (Wiktor Kuchta, review by Gabriel Scherer)
+
 ### Manual and documentation:
 
 - #7812, #10475: reworded the description of the behaviors of
