@@ -48,8 +48,8 @@ type stat =
        words.
 
        Note that "live" words refers to every word in the major heap that isn't
-       currently known to be collectable, which includes words that haven't been
-       reachable by the program since after the start of the previous gc cycle.
+       currently known to be collectable, which includes words that have become
+       unreachable by the program after the start of the previous gc cycle.
        It is typically much simpler and more predictable to call
        {!Gc.full_major} (or {!Gc.compact}) then computing gc stats, as then
        "live" words has the simple meaning of "reachable by the program". One
