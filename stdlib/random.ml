@@ -176,6 +176,22 @@ module State = struct
 
   let bool s = (bits s land 1 = 0)
 
+  let bits32 s =
+    let b1 = Int32.(shift_right_logical (of_int (bits s)) 14) in  (* 16 bits *)
+    let b2 = Int32.(shift_right_logical (of_int (bits s)) 14) in  (* 16 bits *)
+    Int32.(logor b1 (shift_left b2 16))
+
+  let bits64 s =
+    let b1 = Int64.(shift_right_logical (of_int (bits s)) 9) in  (* 21 bits *)
+    let b2 = Int64.(shift_right_logical (of_int (bits s)) 9) in  (* 21 bits *)
+    let b3 = Int64.(shift_right_logical (of_int (bits s)) 8) in  (* 22 bits *)
+    Int64.(logor b1 (logor (shift_left b2 21) (shift_left b3 42)))
+
+  let nativebits =
+    if Nativeint.size = 32
+    then fun s -> Nativeint.of_int32 (bits32 s)
+    else fun s -> Int64.to_nativeint (bits64 s)
+
 end
 
 (* This is the state you get with [init 27182818] and then applying
@@ -204,6 +220,9 @@ let nativeint bound = State.nativeint default bound
 let int64 bound = State.int64 default bound
 let float scale = State.float default scale
 let bool () = State.bool default
+let bits32 () = State.bits32 default
+let bits64 () = State.bits64 default
+let nativebits () = State.nativebits default
 
 let full_init seed = State.full_init default seed
 let init seed = State.full_init default [| seed |]

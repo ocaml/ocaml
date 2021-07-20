@@ -74,6 +74,21 @@ val float : float -> float
 val bool : unit -> bool
 (** [Random.bool ()] returns [true] or [false] with probability 0.5 each. *)
 
+val bits32 : unit -> Int32.t
+(** [Random.bits32 ()] returns 32 random bits as an integer between
+    {!Int32.min_int} and {!Int32.max_int}.
+    @since 4.14.0 *)
+
+val bits64 : unit -> Int64.t
+(** [Random.bits64 ()] returns 64 random bits as an integer between
+    {!Int64.min_int} and {!Int64.max_int}.
+    @since 4.14.0 *)
+
+val nativebits : unit -> Nativeint.t
+(** [Random.nativebits ()] returns 32 or 64 random bits (depending on
+    the bit width of the platform) as an integer between
+    {!Nativeint.min_int} and {!Nativeint.max_int}.
+    @since 4.14.0 *)
 
 (** {1 Advanced functions} *)
 
@@ -106,6 +121,9 @@ module State : sig
   val int64 : t -> Int64.t -> Int64.t
   val float : t -> float -> float
   val bool : t -> bool
+  val bits32 : t -> Int32.t
+  val bits64 : t -> Int64.t
+  val nativebits : t -> Nativeint.t
   (** These functions are the same as the basic functions, except that they
       use (and update) the given PRNG state instead of the default one.
   *)
