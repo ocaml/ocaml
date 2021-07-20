@@ -89,14 +89,16 @@ int caml_gc_subphase;     /* Subphase_{mark_roots,mark_main,mark_final} */
     At the start of mark phase, (1) and (2) are empty.
 
     In mark phase:
-      - the ephemerons in (1) have a data alive or none
-        (nb: new ephemerons are added in this part by weak.c)
-      - the ephemerons in (2) have at least a white key or are white
-        if ephe_list_pure is true, otherwise they are in an unknown state and
-        must be checked again.
+      - An ephemeron in (1) have a data alive (grey/black if in the heap)
+        or none (nb: new ephemerons are added in this part by weak.c)
+      - An ephemeron in (2):
+         - is in any state if caml_ephe_list_pure is false
+         - otherwise has at least a white key or is white or its data is
+           black or none.
+           The third case can happen only using a set_* of weak.c
       - the ephemerons in (3) are in an unknown state and must be checked
 
-    At the end of mark phase, (3) is empty and ephe_list_pure is true.
+    At the end of mark phase, (3) is empty and caml_ephe_list_pure is true.
     The ephemeron in (1) and (2) will be cleaned (white keys and data
     replaced by none or the ephemeron is removed from the list if it is white)
     in clean phase.
@@ -112,7 +114,7 @@ int caml_gc_subphase;     /* Subphase_{mark_roots,mark_main,mark_final} */
     - the ephemerons in (3) should be cleaned or removed if white.
 
  */
-static int ephe_list_pure;
+int caml_ephe_list_pure;
 /** The ephemerons is pure if since the start of its iteration
     no value have been darkened. */
 static value *ephes_checked_if_pure;
@@ -303,7 +305,7 @@ void caml_darken (value v, value *p)
 #endif
     CAMLassert (!Is_blue_hd (h));
     if (Is_white_hd (h)){
-      ephe_list_pure = 0;
+      caml_ephe_list_pure = 0;
       Hd_val (v) = Blackhd_hd (h);
       marked_words += Whsize_hd (h);
       if (t < No_scan_tag){
@@ -387,7 +389,7 @@ static void start_cycle (void)
   caml_gc_phase = Phase_mark;
   heap_wsz_at_cycle_start = Caml_state->stat_heap_wsz;
   caml_gc_subphase = Subphase_mark_roots;
-  ephe_list_pure = 1;
+  caml_ephe_list_pure = 1;
   ephes_checked_if_pure = &caml_ephe_list_head;
   ephes_to_check = &caml_ephe_list_head;
 #ifdef DEBUG
@@ -458,7 +460,7 @@ Caml_inline void mark_slice_darken(struct mark_stack* stk, value v, mlsize_t i,
     CAMLassert (Is_in_heap (child) || Is_black_hd (chd));
 #endif
     if (Is_white_hd (chd)){
-      ephe_list_pure = 0;
+      caml_ephe_list_pure = 0;
       Hd_val (child) = Blackhd_hd (chd);
       if( Tag_hd(chd) < No_scan_tag ) {
         mark_stack_push(stk, child, 0, work);
@@ -635,9 +637,9 @@ static void mark_slice (intnat work)
     } else if (*ephes_to_check != (value) NULL) {
       /* Continue to scan the list of ephe */
       mark_ephe_aux(stk,&work,&slice_pointers);
-    } else if (!ephe_list_pure){
+    } else if (!caml_ephe_list_pure){
       /* We must scan again the list because some value have been darken */
-      ephe_list_pure = 1;
+      caml_ephe_list_pure = 1;
       ephes_to_check = ephes_checked_if_pure;
     }else{
       switch (caml_gc_subphase){
