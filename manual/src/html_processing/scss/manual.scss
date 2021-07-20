@@ -266,7 +266,6 @@ h1 span{
     color: #d28853;
 }
 blockquote.quote{
-    margin:0;
     /*font-size: smaller;*/
     hr{
 	display:none;
@@ -321,6 +320,9 @@ span.c006{
     font-weight:700;
     color:#564233;
     font-family: $font-mono;
+}
+.c008 {
+	font-family: $font-sans;
 }
 span.c010 {
 	font-style: italic;
