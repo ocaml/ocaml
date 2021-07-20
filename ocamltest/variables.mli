@@ -17,7 +17,7 @@
 
 type value = string
 
-type exporter = value -> string
+type exporter = value -> string * string
 
 type t
 

@@ -149,6 +149,8 @@ static void update_environment(array local_env)
       setenv(name, value, 1); /* 1 means overwrite */
       free(name);
       free(value);
+    } else {
+      unsetenv(*envp);
     }
   }
 }
