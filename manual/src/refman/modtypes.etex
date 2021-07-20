@@ -262,6 +262,17 @@ No restrictions are placed on the type of the functor argument; in
 particular, a functor may take another functor as argument
 (``higher-order'' functor).
 
+When the result module type is itself a functor,
+\begin{center}
+@'functor' '(' name_1 ':' module-type_1 ')' '->' \ldots '->'
+ 'functor' '(' name_n ':' module-type_n ')' '->' module-type@
+\end{center}
+one may use the abbreviated form
+\begin{center}
+@'functor' '(' name_1 ':' module-type_1 ')' \ldots
+           '(' name_n ':' module-type_n ')' '->' module-type@
+\end{center}
+
 \subsection{ss:mty-with}{The "with" operator}
 
 \ikwd{with\@\texttt{with}}
