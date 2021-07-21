@@ -84,6 +84,7 @@ let with_cmm_invariants = %%WITH_CMM_INVARIANTS%%
 let safe_string = %%FORCE_SAFE_STRING%%
 let default_safe_string = %%DEFAULT_SAFE_STRING%%
 let windows_unicode = %%WINDOWS_UNICODE%% != 0
+let naked_pointers = %%NAKED_POINTERS%%
 
 let flat_float_array = %%FLAT_FLOAT_ARRAY%%
 
@@ -203,6 +204,7 @@ let configuration_variables =
   p_bool "afl_instrument" afl_instrument;
   p_bool "windows_unicode" windows_unicode;
   p_bool "supports_shared_libraries" supports_shared_libraries;
+  p_bool "naked_pointers" naked_pointers;
 
   p "exec_magic_number" exec_magic_number;
   p "cmi_magic_number" cmi_magic_number;

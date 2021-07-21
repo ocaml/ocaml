@@ -244,6 +244,11 @@ val function_sections : bool
 val windows_unicode: bool
 (** Whether Windows Unicode runtime is enabled *)
 
+val naked_pointers : bool
+(** Whether the runtime supports naked pointers
+
+    @since 4.14.0 *)
+
 val supports_shared_libraries: bool
 (** Whether shared libraries are supported
 
