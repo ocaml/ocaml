@@ -1072,12 +1072,13 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
       let dbg = Debuginfo.from_location loc in
       check_constant_result (getglobal dbg id)
                             (Compilenv.global_approx id)
-  | Lprim(Pfield n, [lam], loc) ->
+  | Lprim(Pfield ({ index = n; _ }, _), [lam], loc) ->
       let (ulam, approx) = close env lam in
       let dbg = Debuginfo.from_location loc in
       check_constant_result (Uprim(P.Pfield n, [ulam], dbg))
                             (field_approx n approx)
-  | Lprim(Psetfield(n, is_ptr, init), [Lprim(Pgetglobal id, [], _); lam], loc)->
+  | Lprim(Psetfield({ index = n; _ }, is_ptr, init),
+          [Lprim(Pgetglobal id, [], _); lam], loc) ->
       let (ulam, approx) = close env lam in
       if approx <> Value_unknown then
         (!global_approx).(n) <- approx;
@@ -1098,10 +1099,14 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
   | Lswitch(arg, sw, dbg) ->
       let fn fail =
         let (uarg, _) = close env arg in
+        let sw_blocks =
+          List.map (fun ({ Lambda. sw_tag; sw_size = _; }, arm) -> sw_tag, arm)
+            sw.sw_blocks
+        in
         let const_index, const_actions, fconst =
           close_switch env sw.sw_consts sw.sw_numconsts fail
         and block_index, block_actions, fblock =
-          close_switch env sw.sw_blocks sw.sw_numblocks fail in
+          close_switch env sw_blocks sw.sw_numblocks fail in
         let ulam =
           Uswitch
             (uarg,

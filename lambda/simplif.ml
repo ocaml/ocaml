@@ -42,9 +42,10 @@ let rec eliminate_ref id = function
   | Lletrec(idel, e2) ->
       Lletrec(List.map (fun (v, e) -> (v, eliminate_ref id e)) idel,
               eliminate_ref id e2)
-  | Lprim(Pfield 0, [Lvar v], _) when Ident.same v id ->
+  | Lprim(Pfield ({ index = 0; _ }, _), [Lvar v], _) when Ident.same v id ->
       Lmutvar id
-  | Lprim(Psetfield(0, _, _), [Lvar v; e], _) when Ident.same v id ->
+  | Lprim(Psetfield({index = 0; _ }, _, _), [Lvar v; e], _)
+    when Ident.same v id ->
       Lassign(id, eliminate_ref id e)
   | Lprim(Poffsetref delta, [Lvar v], loc) when Ident.same v id ->
       Lassign(id, Lprim(Poffsetint delta, [Lmutvar id], loc))
@@ -656,8 +657,8 @@ let rec emit_tail_infos is_tail lambda =
       list_emit_tail_infos false l
   | Lswitch (lam, sw, _loc) ->
       emit_tail_infos false lam;
-      list_emit_tail_infos_fun snd is_tail sw.sw_consts;
-      list_emit_tail_infos_fun snd is_tail sw.sw_blocks;
+      list_emit_tail_infos_fun0 snd is_tail sw.sw_consts;
+      list_emit_tail_infos_fun1 snd is_tail sw.sw_blocks;
       Option.iter  (emit_tail_infos is_tail) sw.sw_failaction
   | Lstringswitch (lam, sw, d, _) ->
       emit_tail_infos false lam;
@@ -697,7 +698,10 @@ let rec emit_tail_infos is_tail lambda =
       emit_tail_infos is_tail lam
   | Lifused (_, lam) ->
       emit_tail_infos is_tail lam
-and list_emit_tail_infos_fun f is_tail =
+(* CR mshinwell: Why doesn't this generalise when eta expanded? *)
+and list_emit_tail_infos_fun0 f is_tail =
+  List.iter (fun x -> emit_tail_infos is_tail (f x))
+and list_emit_tail_infos_fun1 f is_tail =
   List.iter (fun x -> emit_tail_infos is_tail (f x))
 and list_emit_tail_infos is_tail =
   List.iter (emit_tail_infos is_tail)

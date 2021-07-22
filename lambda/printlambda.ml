@@ -146,6 +146,11 @@ let float_comparison ppf = function
   | CFge -> fprintf ppf ">=."
   | CFnge -> fprintf ppf "!>=."
 
+let field_read_semantics ppf sem =
+  match sem with
+  | Reads_agree -> ()
+  | Reads_vary -> fprintf ppf "_mut"
+
 let primitive ppf = function
   | Pbytes_to_string -> fprintf ppf "bytes_to_string"
   | Pbytes_of_string -> fprintf ppf "bytes_of_string"
@@ -156,9 +161,11 @@ let primitive ppf = function
       fprintf ppf "makeblock %i%a" tag block_shape shape
   | Pmakeblock(tag, Mutable, shape) ->
       fprintf ppf "makemutable %i%a" tag block_shape shape
-  | Pfield n -> fprintf ppf "field %i" n
-  | Pfield_computed -> fprintf ppf "field_computed"
-  | Psetfield(n, ptr, init) ->
+  | Pfield ({index = n; block_info = _;}, sem) ->
+      fprintf ppf "field%a %i" field_read_semantics sem n
+  | Pfield_computed sem ->
+      fprintf ppf "field_computed%a" field_read_semantics sem
+  | Psetfield({index = n; block_info = _;}, ptr, init) ->
       let instr =
         match ptr with
         | Pointer -> "ptr"
@@ -184,7 +191,8 @@ let primitive ppf = function
         | Assignment -> ""
       in
       fprintf ppf "setfield_%s%s_computed" instr init
-  | Pfloatfield n -> fprintf ppf "floatfield %i" n
+  | Pfloatfield (n, sem) ->
+      fprintf ppf "floatfield%a %i" field_read_semantics sem n
   | Psetfloatfield (n, init) ->
       let init =
         match init with
@@ -349,7 +357,7 @@ let name_of_primitive = function
   | Psetglobal _ -> "Psetglobal"
   | Pmakeblock _ -> "Pmakeblock"
   | Pfield _ -> "Pfield"
-  | Pfield_computed -> "Pfield_computed"
+  | Pfield_computed _ -> "Pfield_computed"
   | Psetfield _ -> "Psetfield"
   | Psetfield_computed _ -> "Psetfield_computed"
   | Pfloatfield _ -> "Pfloatfield"
@@ -563,9 +571,9 @@ let rec lam ppf = function
            fprintf ppf "@[<hv 1>case int %i:@ %a@]" n lam l)
          sw.sw_consts;
         List.iter
-          (fun (n, l) ->
+          (fun ({ sw_tag = tag; sw_size = _; }, l) ->
             if !spc then fprintf ppf "@ " else spc := true;
-            fprintf ppf "@[<hv 1>case tag %i:@ %a@]" n lam l)
+            fprintf ppf "@[<hv 1>case tag %i:@ %a@]" tag lam l)
           sw.sw_blocks ;
         begin match sw.sw_failaction with
         | None  -> ()

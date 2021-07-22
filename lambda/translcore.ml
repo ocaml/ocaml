@@ -48,6 +48,21 @@ let transl_object =
 let prim_fresh_oo_id =
   Pccall (Primitive.simple ~name:"caml_fresh_oo_id" ~arity:1 ~alloc:false)
 
+let record_field_info lbl =
+  let size = Array.length lbl.lbl_all in
+  let is_ext, tag =
+    match lbl.lbl_repres with
+    | Record_extension _ -> true, 0
+    | Record_regular -> false, 0
+    | Record_inlined tag -> false, tag
+    | Record_float | Record_unboxed _ ->
+      assert false
+  in
+  { index = lbl.lbl_pos + (if is_ext then 1 else 0);
+    block_info =
+      { tag; size = Known (size + (if is_ext then 1 else 0)); };
+  }
+
 let transl_extension_constructor ~scopes env path ext =
   let path =
     Printtyp.wrap_printing_env env ~error:true (fun () ->
@@ -335,11 +350,12 @@ and transl_exp0 ~in_new_scope ~scopes e =
           Lconst(const_int n)
       | Cstr_unboxed ->
           (match ll with [v] -> v | _ -> assert false)
-      | Cstr_block n ->
+      | Cstr_block { tag; size; mutability = _; } ->
+          assert (size = List.length ll);
           begin try
-            Lconst(Const_block(n, List.map extract_constant ll))
+            Lconst(Const_block(tag, List.map extract_constant ll))
           with Not_constant ->
-            Lprim(Pmakeblock(n, Immutable, Some shape), ll,
+            Lprim(Pmakeblock(tag, Immutable, Some shape), ll,
                   of_location ~scopes e.exp_loc)
           end
       | Cstr_extension(path, is_const) ->
@@ -371,16 +387,21 @@ and transl_exp0 ~in_new_scope ~scopes e =
         fields representation extended_expression
   | Texp_field(arg, _, lbl) ->
       let targ = transl_exp ~scopes arg in
+      let sem =
+        match lbl.lbl_mut with
+        | Immutable -> Reads_agree
+        | Mutable -> Reads_vary
+      in
       begin match lbl.lbl_repres with
           Record_regular | Record_inlined _ ->
-          Lprim (Pfield lbl.lbl_pos, [targ],
+          Lprim (Pfield (record_field_info lbl, sem), [targ],
                  of_location ~scopes e.exp_loc)
         | Record_unboxed _ -> targ
         | Record_float ->
-          Lprim (Pfloatfield lbl.lbl_pos, [targ],
+          Lprim (Pfloatfield (lbl.lbl_pos, sem), [targ],
                  of_location ~scopes e.exp_loc)
         | Record_extension _ ->
-          Lprim (Pfield (lbl.lbl_pos + 1), [targ],
+          Lprim (Pfield (record_field_info lbl, sem), [targ],
                  of_location ~scopes e.exp_loc)
       end
   | Texp_setfield(arg, _, lbl, newval) ->
@@ -388,11 +409,11 @@ and transl_exp0 ~in_new_scope ~scopes e =
         match lbl.lbl_repres with
           Record_regular
         | Record_inlined _ ->
-          Psetfield(lbl.lbl_pos, maybe_pointer newval, Assignment)
+          Psetfield(record_field_info lbl, maybe_pointer newval, Assignment)
         | Record_unboxed _ -> assert false
         | Record_float -> Psetfloatfield (lbl.lbl_pos, Assignment)
         | Record_extension _ ->
-          Psetfield (lbl.lbl_pos + 1, maybe_pointer newval, Assignment)
+          Psetfield (record_field_info lbl, maybe_pointer newval, Assignment)
       in
       Lprim(access, [transl_exp ~scopes arg; transl_exp ~scopes newval],
             of_location ~scopes e.exp_loc)
@@ -486,10 +507,18 @@ and transl_exp0 ~in_new_scope ~scopes e =
       event_after ~scopes e lam
   | Texp_new (cl, {Location.loc=loc}, _) ->
       let loc = of_location ~scopes loc in
+      let field_info = {
+        index = 0;
+        (* CR vlaviron: Maybe size should be Unknown
+           (but this is coherent with translclass) *)
+        block_info = { tag = 0; size = Known 4; };
+      }
+      in
       Lapply{
         ap_loc=loc;
         ap_func=
-          Lprim(Pfield 0, [transl_class_path loc e.exp_env cl], loc);
+          Lprim(Pfield (field_info, Reads_vary),
+              [transl_class_path loc e.exp_env cl], loc);
         ap_args=[lambda_unit];
         ap_tailcall=Default_tailcall;
         ap_inlined=Default_inline;
@@ -499,7 +528,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
       let loc = of_location ~scopes e.exp_loc in
       let self = transl_value_path loc e.exp_env path_self in
       let var = transl_value_path loc e.exp_env path in
-      Lprim(Pfield_computed, [self; var], loc)
+      Lprim(Pfield_computed Reads_vary, [self; var], loc)
   | Texp_setinstvar(path_self, path, _, expr) ->
       let loc = of_location ~scopes e.exp_loc in
       let self = transl_value_path loc e.exp_env path_self in
@@ -622,7 +651,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
           let body, _ =
             List.fold_left (fun (body, pos) id ->
               Llet(Alias, Pgenval, id,
-                   Lprim(Pfield pos, [Lvar oid],
+                   Lprim(mod_field pos, [Lvar oid],
                          of_location ~scopes od.open_loc), body),
               pos + 1
             ) (transl_exp ~scopes e, 0)
@@ -949,16 +978,28 @@ and transl_record ~scopes loc env fields repres opt_init_expr =
     let init_id = Ident.create_local "init" in
     let lv =
       Array.mapi
-        (fun i (_, definition) ->
+        (fun i (lbl, definition) ->
            match definition with
            | Kept typ ->
                let field_kind = value_kind env typ in
+               let sem =
+                 match lbl.lbl_mut with
+                 | Immutable -> Reads_agree
+                 | Mutable -> Reads_vary
+               in
+               let field_info is_ext tag i =
+                 let offset = if is_ext then 1 else 0 in
+                 { index = i + offset;
+                   block_info = { tag; size = Known (size + offset); };
+                 }
+               in
                let access =
                  match repres with
-                   Record_regular | Record_inlined _ -> Pfield i
+                   Record_regular -> Pfield (field_info false 0 i, sem)
+                 | Record_inlined tag -> Pfield (field_info false tag i, sem)
                  | Record_unboxed _ -> assert false
-                 | Record_extension _ -> Pfield (i + 1)
-                 | Record_float -> Pfloatfield i in
+                 | Record_extension _ -> Pfield (field_info true 0 i, sem)
+                 | Record_float -> Pfloatfield (i, sem) in
                Lprim(access, [Lvar init_id],
                      of_location ~scopes loc),
                field_kind
@@ -1015,11 +1056,11 @@ and transl_record ~scopes loc env fields repres opt_init_expr =
             match repres with
               Record_regular
             | Record_inlined _ ->
-                Psetfield(lbl.lbl_pos, maybe_pointer expr, Assignment)
+                Psetfield(record_field_info lbl, maybe_pointer expr, Assignment)
             | Record_unboxed _ -> assert false
             | Record_float -> Psetfloatfield (lbl.lbl_pos, Assignment)
             | Record_extension _ ->
-                Psetfield(lbl.lbl_pos + 1, maybe_pointer expr, Assignment)
+                Psetfield(record_field_info lbl, maybe_pointer expr, Assignment)
           in
           Lsequence(Lprim(upd, [Lvar copy_id; transl_exp ~scopes expr],
                           of_location ~scopes loc),

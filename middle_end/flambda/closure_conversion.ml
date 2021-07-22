@@ -475,21 +475,32 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
           ~name:(Names.of_primitive lambda_p))
   | Lswitch (arg, sw, _loc) ->
     let scrutinee = Variable.create Names.switch in
-    let aux (i, lam) = i, close t env lam in
-    let nums sw_num cases default =
+    let nums getkey sw_num cases default =
       let module I = Numbers.Int in
       match default with
       | Some _ ->
           I.zero_to_n (sw_num - 1)
       | None ->
-          List.fold_left (fun set (i, _) -> I.Set.add i set) I.Set.empty cases
+          List.fold_left (fun set (i, _) -> I.Set.add (getkey i) set)
+            I.Set.empty cases
+    in
+    let convert_key k =
+      { Flambda.tag = k.Lambda.sw_tag;
+        Flambda.size = k.Lambda.sw_size;
+        Flambda.mutability = k.Lambda.sw_mutability;
+      }
     in
     Flambda.create_let scrutinee (Expr (close t env arg))
       (Switch (scrutinee,
-        { numconsts = nums sw.sw_numconsts sw.sw_consts sw.sw_failaction;
-          consts = List.map aux sw.sw_consts;
-          numblocks = nums sw.sw_numblocks sw.sw_blocks sw.sw_failaction;
-          blocks = List.map aux sw.sw_blocks;
+        { numconsts =
+            nums (fun i -> i) sw.sw_numconsts sw.sw_consts sw.sw_failaction;
+          consts = List.map (fun (i, lam) -> i, close t env lam) sw.sw_consts;
+          numblocks =
+            nums (fun k -> k.Lambda.sw_tag)
+              sw.sw_numblocks sw.sw_blocks sw.sw_failaction;
+          blocks =
+            List.map (fun (k, lam) -> convert_key k, close t env lam)
+              sw.sw_blocks;
           failaction = Option.map (close t env) sw.sw_failaction;
         }))
   | Lstringswitch (arg, sw, def, _) ->

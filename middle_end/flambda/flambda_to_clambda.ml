@@ -276,7 +276,10 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
         to_clambda_switch t env sw.consts sw.numconsts sw.failaction
       in
       let block_index, block_actions =
-        to_clambda_switch t env sw.blocks sw.numblocks sw.failaction
+        let blocks =
+          List.map (fun (b, branch) -> b.Flambda.tag, branch) sw.blocks
+        in
+        to_clambda_switch t env blocks sw.numblocks sw.failaction
       in
       Uswitch (subst_var env arg,
         { us_index_consts = const_index;

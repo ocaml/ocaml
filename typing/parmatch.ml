@@ -800,8 +800,8 @@ let should_extend ext env = match ext with
       | Constant _ | Tuple _ | Variant _ | Record _ | Array _ | Lazy -> false
       | Any -> assert false
       end
-end
-
+              end
+              
 (* build a pattern from a constructor description *)
 let pat_of_constr ex_pat cstr =
   {ex_pat with pat_desc =
@@ -870,7 +870,7 @@ let complete_constrs constr used_constrs =
   let used_constrs = ConstructorSet.of_list used_constrs in
   let others =
     List.filter
-      (fun cnstr -> not (ConstructorSet.mem cnstr used_constrs))
+    (fun cnstr -> not (ConstructorSet.mem cnstr used_constrs))
       constrs in
   (* Split constructors to put constant ones first *)
   let const, nonconst =

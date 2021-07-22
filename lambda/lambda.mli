@@ -45,6 +45,24 @@ type is_safe =
   | Safe
   | Unsafe
 
+type field_read_semantics =
+  | Reads_agree    (** Immutable read *)
+  | Reads_vary     (** Mutable read *)
+
+type block_size =
+  | Known of int
+  | Unknown
+
+type block_info =
+  { tag : int;
+    size : block_size;
+  }
+
+type field_info =
+  { index : int;
+    block_info : block_info;
+  }
+
 type primitive =
   | Pbytes_to_string
   | Pbytes_of_string
@@ -54,11 +72,11 @@ type primitive =
   | Psetglobal of Ident.t
   (* Operations on heap blocks *)
   | Pmakeblock of int * mutable_flag * block_shape
-  | Pfield of int
-  | Pfield_computed
-  | Psetfield of int * immediate_or_pointer * initialization_or_assignment
+  | Pfield of field_info * field_read_semantics
+  | Pfield_computed of field_read_semantics
+  | Psetfield of field_info * immediate_or_pointer * initialization_or_assignment
   | Psetfield_computed of immediate_or_pointer * initialization_or_assignment
-  | Pfloatfield of int
+  | Pfloatfield of int * field_read_semantics
   | Psetfloatfield of int * initialization_or_assignment
   | Pduprecord of Types.record_representation * int
   (* External call *)
@@ -307,8 +325,15 @@ and lambda_switch =
   { sw_numconsts: int;                  (* Number of integer cases *)
     sw_consts: (int * lambda) list;     (* Integer cases *)
     sw_numblocks: int;                  (* Number of tag block cases *)
-    sw_blocks: (int * lambda) list;     (* Tag block cases *)
+    sw_blocks: (lambda_switch_block_key * lambda) list;  (* Tag block cases *)
     sw_failaction : lambda option}      (* Action to take if failure *)
+
+and lambda_switch_block_key =
+  { sw_tag : int;
+    sw_size : int;
+    sw_mutability : Asttypes.mutable_flag;
+  }
+
 and lambda_event =
   { lev_loc: scoped_location;
     lev_kind: lambda_event_kind;
@@ -452,3 +477,14 @@ val merge_inline_attributes
   -> inline_attribute option
 
 val reset: unit -> unit
+
+(** Helpers for module block accesses.
+   Size is considered to be unknown in all cases,
+   because coercions can reuse longer but compatible module blocks,
+   so the actual size of a module block may be greater than what its
+   type would suggest.
+   Module accesses are always immutable, except in translobj where the
+   method cache is stored in a mutable module field.
+*)
+val mod_field: ?read_semantics: field_read_semantics -> int -> primitive
+val mod_setfield: int -> primitive
