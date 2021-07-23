@@ -650,6 +650,16 @@ CAMLprim value caml_ml_set_binary_mode(value vchannel, value mode)
   return Val_unit;
 }
 
+CAMLprim value caml_ml_set_channel_unbuffered(value vchannel, value mode)
+{
+  struct channel * channel = Channel(vchannel);
+  if (Bool_val(mode))
+    channel->flags |= CHANNEL_FLAG_UNBUFFERED;
+  else
+    channel->flags &= ~CHANNEL_FLAG_UNBUFFERED;
+  return Val_unit;
+}
+
 /*
    If the channel is closed, DO NOT raise a "bad file descriptor"
    exception, but do nothing (the buffer is already empty).
@@ -676,6 +686,7 @@ CAMLprim value caml_ml_output_char(value vchannel, value ch)
 
   Lock(channel);
   Putch(channel, Long_val(ch));
+  if (channel->flags & CHANNEL_FLAG_UNBUFFERED) caml_flush(channel);
   Unlock(channel);
   CAMLreturn (Val_unit);
 }
@@ -687,6 +698,7 @@ CAMLprim value caml_ml_output_int(value vchannel, value w)
 
   Lock(channel);
   caml_putword(channel, (uint32_t) Long_val(w));
+  if (channel->flags & CHANNEL_FLAG_UNBUFFERED) caml_flush(channel);
   Unlock(channel);
   CAMLreturn (Val_unit);
 }
@@ -707,6 +719,7 @@ CAMLprim value caml_ml_output_bytes(value vchannel, value buff, value start,
       pos += written;
       len -= written;
     }
+    if (channel->flags & CHANNEL_FLAG_UNBUFFERED) caml_flush(channel);
   Unlock(channel);
   CAMLreturn (Val_unit);
 }

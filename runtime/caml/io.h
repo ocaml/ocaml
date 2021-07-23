@@ -52,6 +52,7 @@ enum {
   CHANNEL_FLAG_FROM_SOCKET = 1,  /* For Windows */
   CHANNEL_FLAG_MANAGED_BY_GC = 4,  /* Free and close using GC finalization */
   CHANNEL_TEXT_MODE = 8,           /* "Text mode" for Windows and Cygwin */
+  CHANNEL_FLAG_UNBUFFERED = 16     /* Unbuffered (for output channels only) */
 };
 
 /* For an output channel:
