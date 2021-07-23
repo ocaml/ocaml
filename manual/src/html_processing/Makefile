@@ -26,7 +26,7 @@ $(WEBDIR)/%:
 $(WEBDIRMAN)/manual.css: scss/_common.scss scss/manual.scss | $(WEBDIRMAN)
 	sass scss/manual.scss > $(WEBDIRMAN)/manual.css
 
-$(WEBDIRAPI)/style.css: scss/_common.scss scss/style.scss | $(WEBDIRAPI)
+$(WEBDIRAPI)/style.css: scss/_common.scss scss/style.scss | $(WEBDIRAPI) $(WEBDIRCOMP)
 	sass scss/style.scss > $(WEBDIRAPI)/style.css
 	cp $(WEBDIRAPI)/style.css $(WEBDIRCOMP)/style.css
 
