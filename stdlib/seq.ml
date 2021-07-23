@@ -40,8 +40,8 @@ let rec filter_map f seq () = match seq() with
   | Nil -> Nil
   | Cons (x, next) ->
       match f x with
-      | None -> filter_map f next ()
-      | Some y -> Cons (y, filter_map f next)
+        | None -> filter_map f next ()
+        | Some y -> Cons (y, filter_map f next)
 
 let rec filter f seq () = match seq() with
   | Nil -> Nil
@@ -53,12 +53,12 @@ let rec filter f seq () = match seq() with
 let rec concat seq () = match seq () with
   | Nil -> Nil
   | Cons (x, next) ->
-      append x (concat next) ()
+     append x (concat next) ()
 
 let rec flat_map f seq () = match seq () with
   | Nil -> Nil
   | Cons (x, next) ->
-      append (f x) (flat_map f next) ()
+    append (f x) (flat_map f next) ()
 
 let concat_map = flat_map
 

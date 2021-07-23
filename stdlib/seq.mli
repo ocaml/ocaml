@@ -72,7 +72,7 @@ val concat : 'a t t -> 'a t
 (** concatenate a sequence of sequences.
 
     @since 4.13
-*)
+ *)
 
 val flat_map : ('a -> 'b t) -> 'a t -> 'b t
 (** Map each element to a subsequence, then return each element of this
@@ -119,7 +119,7 @@ val range : ?step:int -> int -> int -> int t
    if not specified, step defaults at 1. 
 
    Remark: if [step] is 0, then the sequence is empty (therefore this sequence is always finite).
-*)
+   *)
 
 val count_from : ?step:int -> int -> int t
 (**
@@ -133,4 +133,4 @@ val count_from : ?step:int -> int -> int t
    Behaviour is not specified once max_int or min_int has been reached.
 
    Remark: if [step] is 0 then the sequence is an infinite repetition of [start] 
-*)
+   *)
