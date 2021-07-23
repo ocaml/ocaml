@@ -81,6 +81,8 @@ let unaligned_tag = 1002
 
 external clone_continuation : ('a,'b) continuation -> ('a,'b) continuation =
   "caml_clone_continuation"
+external drop_continuation : ('a,'b) continuation -> unit =
+  "caml_drop_continuation"
 
 module Closure = struct
   type info = {
