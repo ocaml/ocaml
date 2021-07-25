@@ -317,10 +317,8 @@ let stdin = open_descriptor_in 0
 let stdout = open_descriptor_out 1
 let stderr = open_descriptor_out 2
 
-external isatty : out_channel -> bool = "caml_sys_isatty"
-
 let () =
-  if isatty stderr then set_channel_unbuffered stderr true
+  set_channel_unbuffered stderr true
 
 (* General output functions *)
 
