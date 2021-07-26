@@ -522,3 +522,10 @@ void caml_continuation_replace(value cont, struct stack_info* stk)
   CAMLassert(b);
   (void)b; /* squash unused warning */
 }
+
+CAMLprim value caml_drop_continuation (value cont)
+{
+  struct stack_info* stk = Ptr_val(caml_continuation_use(cont));
+  caml_free_stack(stk);
+  return Val_unit;
+}

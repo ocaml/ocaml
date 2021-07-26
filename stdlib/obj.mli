@@ -137,6 +137,8 @@ val unmarshal : bytes -> int -> t * int
 
 external clone_continuation : ('a,'b) continuation -> ('a,'b) continuation =
   "caml_clone_continuation"
+external drop_continuation : ('a,'b) continuation -> unit =
+  "caml_drop_continuation"
 
 module Ephemeron: sig
   (** Ephemeron with arbitrary arity and untyped *)
