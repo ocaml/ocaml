@@ -231,7 +231,7 @@ and transl_type_aux env policy styp =
       if Btype.is_optional l
       then newty (Tconstr(Predef.path_option,[ty1], ref Mnil))
       else ty1 in
-    let ty = newty (Tarrow(l, ty1, cty2.ctyp_type, Cok)) in
+    let ty = newty (Tarrow(l, ty1, cty2.ctyp_type, commu_ok)) in
     ctyp (Ttyp_arrow (l, cty1, cty2)) ty
   | Ptyp_tuple stl ->
     assert (List.length stl >= 2);
@@ -582,7 +582,7 @@ and transl_fields env policy o fields =
      | Open, Univars -> new_pre_univar ()
      | Open, _ -> newvar () in
   let ty = List.fold_left (fun ty (s, ty') ->
-      newty (Tfield (s, Fpresent, ty', ty))) ty_init fields in
+      newty (Tfield (s, field_public, ty', ty))) ty_init fields in
   ty, object_fields
 
 

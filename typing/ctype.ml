@@ -1354,8 +1354,8 @@ let rec copy_sep ~cleanup_scope ~fixed ~free ~bound ~may_share
             copy_sep ~cleanup_scope ~fixed ~free ~bound ~may_share:true
               visited t1 in
           Tpoly (body, tl')
-      | Tfield (p, k, ty1, ty2) -> (* the kind is kept shared *)
-          Tfield (p, field_kind_repr k, copy_rec ~may_share:true ty1,
+      | Tfield (p, k, ty1, ty2) -> (* see Btype.copy_type_desc *)
+          Tfield (p, field_kind_internal_repr k, copy_rec ~may_share:true ty1,
                   copy_rec ~may_share:false ty2)
       | _ -> copy_type_desc (copy_rec ~may_share:true) desc
     in
@@ -2278,7 +2278,7 @@ and mcomp_fields type_pairs env ty1 ty2 =
   let (fields1, rest1) = flatten_fields ty1 in
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
   let has_present =
-    List.exists (fun (_, k, _) -> field_kind_repr k = Fpresent) in
+    List.exists (fun (_, k, _) -> field_kind_repr k = Fpublic) in
   mcomp type_pairs env rest1 rest2;
   if has_present miss1  && get_desc (object_row ty2) = Tnil
   || has_present miss2  && get_desc (object_row ty1) = Tnil
@@ -2293,9 +2293,9 @@ and mcomp_kind k1 k2 =
   let k1 = field_kind_repr k1 in
   let k2 = field_kind_repr k2 in
   match k1, k2 with
-    (Fpresent, Fabsent)
-  | (Fabsent, Fpresent) -> raise Incompatible
-  | _                   -> ()
+    (Fpublic, Fabsent)
+  | (Fabsent, Fpublic) -> raise Incompatible
+  | _                  -> ()
 
 and mcomp_row type_pairs env row1 row2 =
   let r1, r2, pairs = merge_row_fields (row_fields row1) (row_fields row2) in
@@ -2704,10 +2704,11 @@ and unify3 env t1 t1' t2 t2' =
         (!Clflags.classic || !umode = Pattern) &&
         not (is_optional l1 || is_optional l2) ->
           unify  env t1 t2; unify env  u1 u2;
-          begin match commu_repr c1, commu_repr c2 with
-            Clink r, c2 -> set_commu r c2
-          | c1, Clink r -> set_commu r c1
-          | _ -> ()
+          begin match is_commu_ok c1, is_commu_ok c2 with
+          | false, true -> set_commu_ok c1
+          | true, false -> set_commu_ok c2
+          | false, false -> link_commu ~inside:c1 c2
+          | true, true -> ()
           end
       | (Ttuple tl1, Ttuple tl2) ->
           unify_list env tl1 tl2
@@ -2797,8 +2798,8 @@ and unify3 env t1 t1' t2 t2' =
           end
       | (Tfield(f,kind,_,rem), Tnil) | (Tnil, Tfield(f,kind,_,rem)) ->
           begin match field_kind_repr kind with
-            Fvar r when f <> dummy_method ->
-              set_kind r Fabsent;
+            Fprivate when f <> dummy_method ->
+              link_kind ~inside:kind field_absent;
               if d2 = Tnil then unify env rem t2'
               else unify env (newgenty Tnil) rem
           | _      ->
@@ -2902,14 +2903,11 @@ and unify_fields env ty1 ty2 =          (* Optimization *)
     raise exn
 
 and unify_kind k1 k2 =
-  let k1 = field_kind_repr k1 in
-  let k2 = field_kind_repr k2 in
-  if k1 == k2 then () else
-  match k1, k2 with
-    (Fvar r, (Fvar _ | Fpresent)) -> set_kind r k2
-  | (Fpresent, Fvar r)            -> set_kind r k1
-  | (Fpresent, Fpresent)          -> ()
-  | _                             -> assert false
+  match field_kind_repr k1, field_kind_repr k2 with
+    (Fprivate, (Fprivate | Fpublic)) -> link_kind ~inside:k1 k2
+  | (Fpublic, Fprivate)              -> link_kind ~inside:k2 k1
+  | (Fpublic, Fpublic)               -> ()
+  | _                                -> assert false
 
 and unify_row env row1 row2 =
   let Row {fields = row1_fields; more = rm1;
@@ -3195,7 +3193,7 @@ exception Filter_arrow_failed of filter_arrow_failure
 let filter_arrow env t l =
   let function_type level =
     let t1 = newvar2 level and t2 = newvar2 level in
-    let t' = newty2 ~level (Tarrow (l, t1, t2, Cok)) in
+    let t' = newty2 ~level (Tarrow (l, t1, t2, commu_ok)) in
     t', t1, t2
   in
   let t =
@@ -3233,7 +3231,7 @@ exception Filter_method_failed of filter_method_failure
 let rec filter_method_field env name ty =
   let method_type ~level =
       let ty1 = newvar2 level and ty2 = newvar2 level in
-      let ty' = newty2 ~level (Tfield (name, Fpresent, ty1, ty2)) in
+      let ty' = newty2 ~level (Tfield (name, field_public, ty1, ty2)) in
       ty', ty1
   in
   let ty =
@@ -3254,9 +3252,8 @@ let rec filter_method_field env name ty =
       link_type ty ty';
       ty1
   | Tfield(n, kind, ty1, ty2) ->
-      let kind = field_kind_repr kind in
-      if (n = name) && (kind <> Fabsent) then begin
-        unify_kind kind Fpresent;
+      if n = name then begin
+        unify_kind kind field_public;
         ty1
       end else
         filter_method_field env name ty2
@@ -3306,17 +3303,16 @@ let rec filter_method_row env name priv ty =
       let row = newvar2 level in
       let kind =
         match priv with
-        | Private -> Fvar (ref None)
-        | Public  -> Fpresent
+        | Private -> field_private ()
+        | Public  -> field_public
       in
       let ty' = newty2 ~level (Tfield (name, kind, field, row)) in
       link_type ty ty';
       field, row
   | Tfield(n, kind, ty1, ty2) ->
-      let kind = field_kind_repr kind in
-      if (n = name) && (kind <> Fabsent) then begin
+      if n = name then begin
         if priv = Public then
-          unify_kind kind Fpresent;
+          unify_kind kind field_public;
         ty1, ty2
       end else begin
         let level = get_level ty in
@@ -3490,7 +3486,7 @@ let update_class_signature env sign =
                let meths, implicitly_public =
                  match priv, field_kind_repr k with
                  | Public, _ -> meths, implicitly_public
-                 | Private, Fpresent ->
+                 | Private, Fpublic ->
                      let meths = Meths.add lab (Public, virt, ty') meths in
                      let implicitly_public = lab :: implicitly_public in
                      meths, implicitly_public
@@ -3500,11 +3496,11 @@ let update_class_signature env sign =
            | exception Not_found ->
                let meths, implicitly_declared =
                  match field_kind_repr k with
-                 | Fpresent ->
+                 | Fpublic ->
                      let meths = Meths.add lab (Public, Virtual, ty) meths in
                      let implicitly_declared = lab :: implicitly_declared in
                      meths, implicitly_declared
-                 | Fvar _ ->
+                 | Fprivate ->
                      let meths = Meths.add lab (Private, Virtual, ty) meths in
                      let implicitly_declared = lab :: implicitly_declared in
                      meths, implicitly_declared
@@ -3524,8 +3520,8 @@ let hide_private_methods env sign =
   List.iter
     (fun (_, k, _) ->
        match field_kind_repr k with
-       | Fvar r -> set_kind r Fabsent
-       | _      -> ())
+       | Fprivate -> link_kind ~inside:k field_absent
+       | _    -> ())
     fields
 
 let close_class_signature env sign =
@@ -3679,14 +3675,11 @@ and moregen_fields inst_nongen type_pairs env ty1 ty2 =
     pairs
 
 and moregen_kind k1 k2 =
-  let k1 = field_kind_repr k1 in
-  let k2 = field_kind_repr k2 in
-  if k1 == k2 then () else
-  match k1, k2 with
-    (Fvar r, (Fvar _ | Fpresent))  -> set_kind r k2
-  | (Fpresent, Fpresent)           -> ()
-  | (Fpresent, Fvar _)             -> raise Public_method_to_private_method
-  | (Fabsent, _) | (_, Fabsent)    -> assert false
+  match field_kind_repr k1, field_kind_repr k2 with
+    (Fprivate, (Fprivate | Fpublic)) -> link_kind ~inside:k1 k2
+  | (Fpublic, Fpublic)               -> ()
+  | (Fpublic, Fprivate)              -> raise Public_method_to_private_method
+  | (Fabsent, _) | (_, Fabsent)      -> assert false
 
 and moregen_row inst_nongen type_pairs env row1 row2 =
   let Row {fields = row1_fields; more = rm1; closed = row1_closed} =
@@ -4041,8 +4034,8 @@ and eqtype_kind k1 k2 =
   let k1 = field_kind_repr k1 in
   let k2 = field_kind_repr k2 in
   match k1, k2 with
-  | (Fvar _, Fvar _)
-  | (Fpresent, Fpresent) -> ()
+  | (Fprivate, Fprivate)
+  | (Fpublic, Fpublic)   -> ()
   | _                    -> raise_unexplained_for Unify
                             (* It's probably not possible to hit this case with
                                real OCaml code *)
@@ -4497,7 +4490,8 @@ let rec build_subtype env (visited : transient_expr list)
       let (t1', c1) = build_subtype env visited loops (not posi) level t1 in
       let (t2', c2) = build_subtype env visited loops posi level t2 in
       let c = max_change c1 c2 in
-      if c > Unchanged then (newty (Tarrow(l, t1', t2', Cok)), c)
+      if c > Unchanged
+      then (newty (Tarrow(l, t1', t2', commu_ok)), c)
       else (t, Unchanged)
   | Ttuple tlist ->
       let tt = Transient_expr.repr t in
@@ -4626,7 +4620,7 @@ let rec build_subtype env (visited : transient_expr list)
       let (t1', c1) = build_subtype env visited loops posi level t1 in
       let (t2', c2) = build_subtype env visited loops posi level t2 in
       let c = max_change c1 c2 in
-      if c > Unchanged then (newty (Tfield(s, Fpresent, t1', t2')), c)
+      if c > Unchanged then (newty (Tfield(s, field_public, t1', t2')), c)
       else (t, Unchanged)
   | Tnil ->
       if posi then
@@ -4983,7 +4977,7 @@ let rec nongen_schema_rec env ty =
           raise Nongen
         end
     | Tfield(_, kind, t1, t2) ->
-        if field_kind_repr kind = Fpresent then
+        if field_kind_repr kind = Fpublic then
           nongen_schema_rec env t1;
         nongen_schema_rec env t2
     | Tvariant row ->

@@ -78,9 +78,6 @@ val is_Tunivar: type_expr -> bool
 val is_Tconstr: type_expr -> bool
 val dummy_method: label
 
-val commu_repr: commutable -> commutable
-        (* Return the canonical representative of a commutation lock *)
-
 (**** polymorphic variants ****)
 
 val is_fixed: row_desc -> bool
@@ -164,7 +161,6 @@ val copy_type_desc:
 val copy_row:
     (type_expr -> type_expr) ->
     bool -> row_desc -> bool -> type_expr -> row_desc
-val copy_kind: field_kind -> field_kind
 
 module For_copy : sig
 

@@ -461,28 +461,11 @@ let raw_list pr ppf = function
 let kind_vars = ref []
 let kind_count = ref 0
 
-let rec safe_kind_repr v = function
-    Fvar {contents=Some k}  ->
-      if List.memq k v then "Fvar loop" else
-      safe_kind_repr (k::v) k
-  | Fvar r ->
-      let vid =
-        try List.assq r !kind_vars
-        with Not_found ->
-          let c = incr kind_count; !kind_count in
-          kind_vars := (r,c) :: !kind_vars;
-          c
-      in
-      Printf.sprintf "Fvar {None}@%d" vid
-  | Fpresent -> "Fpresent"
+let string_of_field_kind v =
+  match field_kind_repr v with
+  | Fpublic -> "Fpublic"
   | Fabsent -> "Fabsent"
-
-let rec safe_commu_repr v = function
-    Cok -> "Cok"
-  | Cunknown -> "Cunknown"
-  | Clink r ->
-      if List.memq r v then "Clink loop" else
-      safe_commu_repr (r::v) !r
+  | Fprivate -> "Fprivate"
 
 let rec safe_repr v t =
   match Transient_expr.coerce t with
@@ -518,7 +501,7 @@ and raw_type_desc ppf = function
   | Tarrow(l,t1,t2,c) ->
       fprintf ppf "@[<hov1>Tarrow(\"%s\",@,%a,@,%a,@,%s)@]"
         (string_of_label l) raw_type t1 raw_type t2
-        (safe_commu_repr [] c)
+        (if is_commu_ok c then "Cok" else "Cunknown")
   | Ttuple tl ->
       fprintf ppf "@[<1>Ttuple@,%a@]" raw_type_list tl
   | Tconstr (p, tl, abbrev) ->
@@ -533,7 +516,7 @@ and raw_type_desc ppf = function
               fprintf ppf "(Some(@,%a,@,%a))" path p raw_type_list tl)
   | Tfield (f, k, t1, t2) ->
       fprintf ppf "@[<hov1>Tfield(@,%s,@,%s,@,%a,@;<0 -1>%a)@]" f
-        (safe_kind_repr [] k)
+        (string_of_field_kind k)
         raw_type t1 raw_type t2
   | Tnil -> fprintf ppf "Tnil"
   | Tlink t -> fprintf ppf "@[<1>Tlink@,%a@]" raw_type t
@@ -822,14 +805,14 @@ let printer_iter_type_expr f ty =
           let fields, _ = flatten_fields fi in
           List.iter
             (fun (_, kind, ty) ->
-               if field_kind_repr kind = Fpresent then
+               if field_kind_repr kind = Fpublic then
                  f ty)
             fields
       | Some (_, l) ->
           List.iter f (List.tl l)
     end
   | Tfield(_, kind, ty1, ty2) ->
-      if field_kind_repr kind = Fpresent then
+      if field_kind_repr kind = Fpublic then
         f ty1;
       f ty2
   | _ ->
@@ -1219,7 +1202,7 @@ and tree_of_typobject mode fi nm =
           List.fold_right
             (fun (n, k, t) l ->
                match field_kind_repr k with
-               | Fpresent -> (n, t) :: l
+               | Fpublic -> (n, t) :: l
                | _ -> l)
             fields [] in
         let sorted_fields =
