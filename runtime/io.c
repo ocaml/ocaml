@@ -80,6 +80,7 @@ static void link_channel (struct channel* channel)
 {
   caml_plat_lock (&caml_all_opened_channels_mutex);
   channel->next = caml_all_opened_channels;
+  channel->prev = NULL;
   if (caml_all_opened_channels != NULL)
     caml_all_opened_channels->prev = channel;
   caml_all_opened_channels = channel;
