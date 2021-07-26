@@ -633,7 +633,7 @@ Caml_noinline static intnat do_some_marking
   uintnat half_young_len =
     ((uintnat)Caml_state->young_end - (uintnat)Caml_state->young_start) >> 1;
 #define Is_block_and_not_young(v) \
-  (((intnat)rotate1((uintnat)v - young_start)) > (intnat)half_young_len)
+  (((intnat)rotate1((uintnat)v - young_start)) >= (intnat)half_young_len)
 #ifdef NO_NAKED_POINTERS
   #define Is_major_block(v) Is_block_and_not_young(v)
 #else
