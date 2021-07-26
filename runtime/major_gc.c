@@ -620,7 +620,7 @@ Caml_noinline static intnat do_some_marking
 #ifndef CAML_INSTR
   (intnat work)
 #else
-  (intnat work, int* slice_fields, int* slice_pointers)
+  (intnat work, int* pslice_fields, int* pslice_pointers)
 #endif
 {
   uintnat pb_enqueued = 0, pb_dequeued = 0;
@@ -638,6 +638,10 @@ Caml_noinline static intnat do_some_marking
   #define Is_major_block(v) Is_block_and_not_young(v)
 #else
   #define Is_major_block(v) (Is_block_and_not_young(v) && Is_in_heap(v))
+#endif
+
+#ifdef CAML_INSTR
+  int slice_fields = 0, slice_pointers = 0;
 #endif
 
   while (1) {
@@ -702,9 +706,13 @@ Caml_noinline static intnat do_some_marking
 
     for (; scan < scan_end; scan++) {
       value v = *scan;
-      CAML_EVENTLOG_DO({ (*slice_fields) ++; });
+#ifdef CAML_INSTR
+      slice_fields ++;
+#endif
       if (Is_major_block(v)) {
-        CAML_EVENTLOG_DO({ (*slice_pointers) ++; });
+#ifdef CAML_INSTR
+        slice_pointers ++;
+#endif
         if (pb_enqueued == pb_dequeued + Pb_size) {
           break; /* Prefetch buffer is full */
         }
@@ -736,6 +744,10 @@ Caml_noinline static intnat do_some_marking
   *Caml_state->mark_stack = stk;
   if (darkened_anything)
     ephe_list_pure = 0;
+#ifdef CAML_INSTR
+  *pslice_fields += slice_fields;
+  *pslice_pointers += slice_pointers;
+#endif
   return work;
 }
 
