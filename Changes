@@ -476,6 +476,9 @@ OCaml 4.13.0
   newlines.
   (David Allsopp, review by Florian Angeletti and Sébastien Hinderer)
 
+- #10471: Fix detection of arm32 architectures with musl in configure.
+  (Louis Gesbert, review by David Allsopp)
+
 ### Bug fixes:
 
 - #6654, #9774, #10401: make `include` and with `constraints` handle correctly
