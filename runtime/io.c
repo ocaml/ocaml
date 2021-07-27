@@ -80,6 +80,7 @@ static void link_channel (struct channel* channel)
 {
   caml_plat_lock (&caml_all_opened_channels_mutex);
   channel->next = caml_all_opened_channels;
+  CAMLassert(channel->prev == NULL);
   if (caml_all_opened_channels != NULL)
     caml_all_opened_channels->prev = channel;
   caml_all_opened_channels = channel;
@@ -98,6 +99,8 @@ static void unlink_channel(struct channel *channel)
     channel->prev->next = channel->next;
     if (channel->next != NULL) channel->next->prev = channel->prev;
   }
+  channel->next = NULL;
+  channel->prev = NULL;
   caml_plat_unlock (&caml_all_opened_channels_mutex);
 }
 
