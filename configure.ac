@@ -436,7 +436,7 @@ AS_CASE([$host],
   [*-pc-windows],
     [AC_CHECK_TOOLS(
       [DEP_CC],
-      [$DEP_CC gcc cc x86_64-w64-mingw32-gcc],
+      [$DEP_CC gcc cc x86_64-w64-mingw32-gcc i686-w64-mingw32-gcc],
       [false])],
   [DEP_CC="$CC"])
 
@@ -667,10 +667,17 @@ AS_CASE([$host],
 
 internal_cppflags="-DCAML_NAME_SPACE $internal_cppflags"
 
+# Enable SSE2 on x86 mingw to avoid using 80-bit registers.
+AS_CASE([$host],
+  [i686-*-mingw32],
+    [internal_cflags="$internal_cflags -mfpmath=sse -msse2"])
+
 # Use 64-bit file offset if possible
 # See also AC_SYS_LARGEFILE
 # Problem: flags are added to CC rather than CPPFLAGS
-common_cppflags="$common_cppflags -D_FILE_OFFSET_BITS=64"
+AS_CASE([$host],
+  [*-*-mingw32|*-pc-windows], [],
+  [common_cppflags="$common_cppflags -D_FILE_OFFSET_BITS=64"])
 
 # Adjust according to target
 
@@ -688,14 +695,23 @@ AS_IF([test x"$enable_shared" = "xno"],
 
 # Define flexlink chain and flags correctly for the different Windows ports
 AS_CASE([$host],
+  [i686-*-cygwin],
+    [flexdll_chain='cygwin'
+    flexlink_flags="-chain $flexdll_chain -merge-manifest -stack 16777216"],
   [x86_64-*-cygwin],
     [flexdll_chain='cygwin64'
     flexlink_flags="-chain $flexdll_chain -merge-manifest -stack 16777216"],
   [*-*-cygwin*],
-    [AC_MSG_ERROR([unsupported cygwin variant])],
+    [AC_MSG_ERROR([unknown cygwin variant])],
+  [i686-w64-mingw32],
+    [flexdll_chain='mingw'
+    flexlink_flags="-chain $flexdll_chain -stack 16777216"],
   [x86_64-w64-mingw32],
     [flexdll_chain='mingw64'
     flexlink_flags="-chain $flexdll_chain -stack 33554432"],
+  [i686-pc-windows],
+    [flexdll_chain='msvc'
+    flexlink_flags="-merge-manifest -stack 16777216"],
   [x86_64-pc-windows],
     [flexdll_chain='msvc64'
     flexlink_flags="-x64 -merge-manifest -stack 33554432"])
@@ -796,7 +812,9 @@ AS_CASE([$CC,$host],
     )
     ostype="Cygwin"],
   [*,*-*-mingw32],
-    [mkexedebugflag="-link -g"
+    [AS_CASE([$host],
+      [i686-*-*], [oc_dll_ldflags="-static-libgcc"])
+    mkexedebugflag="-link -g"
     ostype="Win32"
     toolchain="mingw"
     mkexe='$(FLEXLINK) -exe $(if $(OC_LDFLAGS),-link "$(OC_LDFLAGS)")'
@@ -1083,9 +1101,12 @@ AS_CASE([$host],
     [arch=riscv; model=riscv64; system=linux]
 )
 
-AS_IF([test x"$enable_native_compiler" = "xno"],
-  [native_compiler=false
-  AC_MSG_NOTICE([the native compiler is disabled])],
+AS_CASE([$arch,$enable_native_compiler],
+  [none,yes],
+    [AC_MSG_ERROR(m4_normalize([
+      The native compiler is not available for $host]))],
+  [none,*|*,no],
+    [native_compiler=false],
   [native_compiler=true])
 
 AS_IF([! $native_compiler], [natdynlink=false])
@@ -1930,7 +1951,9 @@ AS_CASE([$host],
 # Define default prefix correctly for the different Windows ports
 AS_IF([test x"$prefix" = "xNONE"],
   [AS_CASE([$host],
+    [i686-w64-mingw32], [prefix='C:/ocamlmgw'],
     [x86_64-w64-mingw32], [prefix='C:/ocamlmgw64'],
+    [i686-pc-windows], [prefix='C:/ocamlms'],
     [x86_64-pc-windows], [prefix='C:/ocamlms64'])],
   [AS_IF([test x"$unix_or_win32" = "xwin32" \
           && test "$host_vendor-$host_os" != "$build_vendor-$build_os" ],

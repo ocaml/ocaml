@@ -12346,7 +12346,7 @@ case $host in #(
     DEP_CC="false" ;; #(
   *-pc-windows) :
     if test -n "$ac_tool_prefix"; then
-  for ac_prog in $DEP_CC gcc cc x86_64-w64-mingw32-gcc
+  for ac_prog in $DEP_CC gcc cc x86_64-w64-mingw32-gcc i686-w64-mingw32-gcc
   do
     # Extract the first word of "$ac_tool_prefix$ac_prog", so it can be a program name with args.
 set dummy $ac_tool_prefix$ac_prog; ac_word=$2
@@ -12390,7 +12390,7 @@ fi
 fi
 if test -z "$DEP_CC"; then
   ac_ct_DEP_CC=$DEP_CC
-  for ac_prog in $DEP_CC gcc cc x86_64-w64-mingw32-gcc
+  for ac_prog in $DEP_CC gcc cc x86_64-w64-mingw32-gcc i686-w64-mingw32-gcc
 do
   # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
@@ -12813,10 +12813,23 @@ esac
 
 internal_cppflags="-DCAML_NAME_SPACE $internal_cppflags"
 
+# Enable SSE2 on x86 mingw to avoid using 80-bit registers.
+case $host in #(
+  i686-*-mingw32) :
+    internal_cflags="$internal_cflags -mfpmath=sse -msse2" ;; #(
+  *) :
+     ;;
+esac
+
 # Use 64-bit file offset if possible
 # See also AC_SYS_LARGEFILE
 # Problem: flags are added to CC rather than CPPFLAGS
-common_cppflags="$common_cppflags -D_FILE_OFFSET_BITS=64"
+case $host in #(
+  *-*-mingw32|*-pc-windows) :
+     ;; #(
+  *) :
+    common_cppflags="$common_cppflags -D_FILE_OFFSET_BITS=64" ;;
+esac
 
 # Adjust according to target
 
@@ -12838,14 +12851,23 @@ fi
 
 # Define flexlink chain and flags correctly for the different Windows ports
 case $host in #(
+  i686-*-cygwin) :
+    flexdll_chain='cygwin'
+    flexlink_flags="-chain $flexdll_chain -merge-manifest -stack 16777216" ;; #(
   x86_64-*-cygwin) :
     flexdll_chain='cygwin64'
     flexlink_flags="-chain $flexdll_chain -merge-manifest -stack 16777216" ;; #(
   *-*-cygwin*) :
-    as_fn_error $? "unsupported cygwin variant" "$LINENO" 5 ;; #(
+    as_fn_error $? "unknown cygwin variant" "$LINENO" 5 ;; #(
+  i686-w64-mingw32) :
+    flexdll_chain='mingw'
+    flexlink_flags="-chain $flexdll_chain -stack 16777216" ;; #(
   x86_64-w64-mingw32) :
     flexdll_chain='mingw64'
     flexlink_flags="-chain $flexdll_chain -stack 33554432" ;; #(
+  i686-pc-windows) :
+    flexdll_chain='msvc'
+    flexlink_flags="-merge-manifest -stack 16777216" ;; #(
   x86_64-pc-windows) :
     flexdll_chain='msvc64'
     flexlink_flags="-x64 -merge-manifest -stack 33554432" ;; #(
@@ -13186,6 +13208,12 @@ else
 fi
     ostype="Cygwin" ;; #(
   *,*-*-mingw32) :
+    case $host in #(
+  i686-*-*) :
+    oc_dll_ldflags="-static-libgcc" ;; #(
+  *) :
+     ;;
+esac
     mkexedebugflag="-link -g"
     ostype="Win32"
     toolchain="mingw"
@@ -14269,13 +14297,14 @@ fi; system=elf ;; #(
      ;;
 esac
 
-if test x"$enable_native_compiler" = "xno"; then :
-  native_compiler=false
-  { $as_echo "$as_me:${as_lineno-$LINENO}: the native compiler is disabled" >&5
-$as_echo "$as_me: the native compiler is disabled" >&6;}
-else
-  native_compiler=true
-fi
+case $arch,$enable_native_compiler in #(
+  none,yes) :
+    as_fn_error $? "The native compiler is not available for $host" "$LINENO" 5 ;; #(
+  none,*|*,no) :
+    native_compiler=false ;; #(
+  *) :
+    native_compiler=true ;;
+esac
 
 if ! $native_compiler; then :
   natdynlink=false
@@ -17713,8 +17742,12 @@ esac
 # Define default prefix correctly for the different Windows ports
 if test x"$prefix" = "xNONE"; then :
   case $host in #(
+  i686-w64-mingw32) :
+    prefix='C:/ocamlmgw' ;; #(
   x86_64-w64-mingw32) :
     prefix='C:/ocamlmgw64' ;; #(
+  i686-pc-windows) :
+    prefix='C:/ocamlms' ;; #(
   x86_64-pc-windows) :
     prefix='C:/ocamlms64' ;; #(
   *) :
