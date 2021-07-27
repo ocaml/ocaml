@@ -477,7 +477,7 @@ let rec copy_type_desc ?(keep_names=false) f = function
   | Tobject (ty, _)     -> Tobject (f ty, ref None)
   | Tvariant _          -> assert false (* too ambiguous *)
   | Tfield (p, k, ty1, ty2) -> (* the kind is kept shared *)
-      Tfield (p, copy_kind k, f ty1, f ty2)
+      Tfield (p, field_kind_repr k, f ty1, f ty2)
   | Tnil                -> Tnil
   | Tlink ty            -> copy_type_desc f (get_desc ty)
   | Tsubst _            -> assert false
