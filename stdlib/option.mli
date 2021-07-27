@@ -45,6 +45,9 @@ val bind : 'a option -> ('a -> 'b option) -> 'b option
 val join : 'a option option -> 'a option
 (** [join oo] is [Some v] if [oo] is [Some (Some v)] and [None] otherwise. *)
 
+val either : 'a option -> 'a option -> 'a option
+(** [either o1 o2] returns [o1] if it is [Some _] and [o2] otherwise. *)
+
 val either_or : 'a option -> (unit -> 'a option) -> 'a option
 (** [either_or o f] returns [o] if it is [Some _] and [f ()] otherwise. *)
 
