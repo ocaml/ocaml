@@ -41,7 +41,7 @@ CAMLprim value caml_record_backtrace(value vflag)
       caml_modify_generational_global_root(&Caml_state->backtrace_last_exn, Val_unit);
     } else {
       caml_remove_generational_global_root(&Caml_state->backtrace_last_exn);
-      Caml_state->backtrace_last_exn = (value) NULL;
+      Caml_state->backtrace_last_exn = (value) Val_unit;
     }
   }
   return Val_unit;
