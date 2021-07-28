@@ -415,9 +415,6 @@ val reset_reified_var_counter: unit -> unit
 
 val immediacy : Env.t -> type_expr -> Type_immediacy.t
 
-val maybe_pointer_type : Env.t -> type_expr -> bool
-       (* True if type is possibly pointer, false if definitely not a pointer *)
-
 (* Stubs *)
 val package_subtype :
     (Env.t -> Path.t -> (Longident.t * type_expr) list ->
