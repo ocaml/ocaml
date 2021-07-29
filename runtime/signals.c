@@ -57,14 +57,13 @@ static int check_for_pending_signals(void)
 CAMLexport value caml_process_pending_signals_exn(void)
 {
   int i;
-  intnat specific_signal_pending, total_signals_pending;
+  intnat specific_signal_pending;
   value exn;
 #ifdef POSIX_SIGNALS
   sigset_t set;
 #endif
 
-total_signals_pending = atomic_load_explicit(&total_signals_pending, memory_order_acquire);
-if( total_signals_pending == 0 )
+if( atomic_load_explicit(&total_signals_pending, memory_order_acquire) == 0 )
   return Val_unit;
 
 /* Check that there is indeed a pending signal before issuing the
