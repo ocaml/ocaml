@@ -113,7 +113,7 @@ void caml_garbage_collection()
   /* Re-do the allocation: we now have enough space in the minor heap. */
   Caml_state->young_ptr -= alloc_bsize;
 
-  caml_process_pending_signals();
+  caml_raise_if_exception(caml_process_pending_signals_exn());
 }
 
 DECLARE_SIGNAL_HANDLER(handle_signal)

@@ -7,6 +7,7 @@
 #include <string.h>
 #include "config.h"
 #include "mlvalues.h"
+#include "signals.h"
 
 #if defined(MAP_ANON) && !defined(MAP_ANONYMOUS)
 #define MAP_ANONYMOUS MAP_ANON
