@@ -1079,7 +1079,7 @@ void caml_handle_gc_interrupt()
 {
   handle_gc_interrupt();
 
-  caml_raise_if_exception(caml_process_pending_signals_exn());
+  caml_process_pending_signals();
 }
 
 CAMLexport int caml_bt_is_in_blocking_section(void)
