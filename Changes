@@ -543,6 +543,10 @@ OCaml 4.13.0
 - #10307: Make build_other_constrs work with names instead of tags.
   (Nicolas Chataing, review by Florian Angeletti)
 
+- #10543: Fix Ast_mapper to apply the mapping function to the constants in
+  "interval" patterns `c1..c2`.
+  (Guillaume Petiot, review by Gabriel Scherer and Nicolás Ojeda Bär)
+
 ### Build system:
 
 - #10289, #10406: Do not print option documentation in usage messages.
