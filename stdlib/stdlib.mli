@@ -1062,6 +1062,12 @@ val set_binary_mode_out : out_channel -> bool -> unit
    This function has no effect under operating systems that
    do not distinguish between text mode and binary mode. *)
 
+val set_channel_unbuffered : out_channel -> bool -> unit
+(** [set_channel_unbuffered oc true] sets the channel [oc] to
+    unbuffered mode: the data passed to output functions on [oc]
+    will be visible as soon as they return.
+
+    @since 4.14.0 *)
 
 (** {2 General input functions} *)
 

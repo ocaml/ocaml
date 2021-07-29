@@ -317,9 +317,6 @@ let stdin = open_descriptor_in 0
 let stdout = open_descriptor_out 1
 let stderr = open_descriptor_out 2
 
-let () =
-  set_channel_unbuffered stderr true
-
 (* General output functions *)
 
 type open_flag =
