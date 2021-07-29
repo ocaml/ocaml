@@ -650,14 +650,14 @@ CAMLprim value caml_ml_set_binary_mode(value vchannel, value mode)
   return Val_unit;
 }
 
-CAMLprim value caml_ml_set_channel_unbuffered(value vchannel, value mode)
+CAMLprim value caml_ml_set_channel_buffered(value vchannel, value mode)
 {
   struct channel * channel = Channel(vchannel);
   if (Bool_val(mode)) {
+    channel->flags &= ~CHANNEL_FLAG_UNBUFFERED;
+  } else {
     channel->flags |= CHANNEL_FLAG_UNBUFFERED;
     caml_flush(channel);
-  } else {
-    channel->flags &= ~CHANNEL_FLAG_UNBUFFERED;
   }
   return Val_unit;
 }
