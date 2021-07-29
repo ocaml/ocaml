@@ -779,6 +779,7 @@ inline-text: {{inline-text-element}}
         in \ref{sss:ocamldoc-target-specific-syntax}) \\
 @||@&@ '{!' string '}' @ & insert a cross-reference to an element
         (see section \ref{sss:ocamldoc-crossref} for the syntax of cross-references).\\
+@||@&@ '{{!' string '}' inline-text '}' @ & insert a cross-reference with the given text. \\
 @||@&@ '{!modules:' string string ... '}' @ & insert an index table
 for the given module names. Used in HTML only.\\
 @||@&@ '{!indexlist}' @ & insert a table of links to the various indexes
