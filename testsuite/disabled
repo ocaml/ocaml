@@ -67,5 +67,5 @@ tests/promotion/bigrecmod.ml
 tests/instrumented-runtime/'main.ml' with 1.1 (native)
 
 # disabled until the follow-up EINTR PR
-tests/lib-systhreads/'eintr.ml' with 1.1.2 (native) 
-tests/lib-systhreads/'eintr.ml' with 1.1.1 (bytecode) 
+tests/lib-systhreads/'eintr.ml' with 1.1.2 (native)
+tests/lib-systhreads/'eintr.ml' with 1.1.1 (bytecode)
