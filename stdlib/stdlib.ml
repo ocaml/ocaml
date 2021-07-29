@@ -311,8 +311,6 @@ external open_descriptor_out : int -> out_channel
                              = "caml_ml_open_descriptor_out"
 external open_descriptor_in : int -> in_channel = "caml_ml_open_descriptor_in"
 
-external set_channel_unbuffered : out_channel -> bool -> unit = "caml_ml_set_channel_unbuffered"
-
 let stdin = open_descriptor_in 0
 let stdout = open_descriptor_out 1
 let stderr = open_descriptor_out 2
@@ -397,6 +395,8 @@ let close_out_noerr oc =
   (try close_out_channel oc with _ -> ())
 external set_binary_mode_out : out_channel -> bool -> unit
                              = "caml_ml_set_binary_mode"
+external set_channel_unbuffered : out_channel -> bool -> unit
+  = "caml_ml_set_channel_unbuffered"
 
 (* General input functions *)
 
