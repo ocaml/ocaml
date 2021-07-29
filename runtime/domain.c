@@ -991,6 +991,11 @@ int caml_try_run_on_all_domains(void (*handler)(caml_domain_state*, void*, int, 
   return caml_try_run_on_all_domains_with_spin_work(handler, data, leader_setup, 0, 0);
 }
 
+int caml_check_pending_actions() {
+  return (((uintnat)Caml_state->young_ptr - Bhsize_wosize(Max_young_wosize) <
+       (uintnat)Caml_state->young_start));
+}
+
 void caml_interrupt_self() {
   interrupt_domain(&domain_self->interruptor);
 }
@@ -1043,8 +1048,7 @@ static void caml_poll_gc_work()
   }
 }
 
-void caml_handle_gc_interrupt()
-{
+static void handle_gc_interrupt() {
   atomic_uintnat* young_limit = domain_self->interruptor.interrupt_word;
   CAMLalloc_point_here;
 
@@ -1061,7 +1065,21 @@ void caml_handle_gc_interrupt()
   }
 
   caml_poll_gc_work();
+
   CAML_EV_END(EV_INTERRUPT_GC);
+}
+
+
+void caml_handle_gc_interrupt_no_async_exceptions()
+{
+  handle_gc_interrupt();
+}
+
+void caml_handle_gc_interrupt()
+{
+  handle_gc_interrupt();
+
+  caml_raise_if_exception(caml_process_pending_signals_exn());
 }
 
 CAMLexport int caml_bt_is_in_blocking_section(void)

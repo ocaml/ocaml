@@ -149,7 +149,7 @@ CAMLexport value caml_copy_double(double d)
 {
   value res;
 
-  Alloc_small(res, Double_wosize, Double_tag, { caml_handle_gc_interrupt(); });
+  Alloc_small(res, Double_wosize, Double_tag, { caml_handle_gc_interrupt_no_async_exceptions(); });
   Store_double_val(res, d);
   return res;
 }
