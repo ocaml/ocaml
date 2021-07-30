@@ -5390,14 +5390,6 @@ let same_constr env t1 t2 =
 let () =
   Env.same_constr := same_constr
 
-let is_immediate = function
-  | Type_immediacy.Unknown -> false
-  | Type_immediacy.Always -> true
-  | Type_immediacy.Always_on_64bits ->
-      (* In bytecode, we don't know at compile time whether we are
-         targeting 32 or 64 bits. *)
-      !Clflags.native_code && Sys.word_size = 64
-
 let immediacy env typ =
    match get_desc typ with
   | Tconstr(p, _args, _abbrev) ->
@@ -5424,5 +5416,3 @@ let immediacy env typ =
       else
         Type_immediacy.Always
   | _ -> Type_immediacy.Unknown
-
-let maybe_pointer_type env typ = not (is_immediate (immediacy env typ))
