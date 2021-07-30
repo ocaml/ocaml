@@ -73,7 +73,7 @@ val ccobjs : string list ref
 val dllibs : string list ref
 val compile_only : bool ref
 val output_name : string option ref
-val include_dirs : string list ref
+val load_path : Load_path.t ref
 val no_std_include : bool ref
 val print_types : bool ref
 val make_archive : bool ref

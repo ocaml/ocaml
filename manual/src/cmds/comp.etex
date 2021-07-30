@@ -173,13 +173,13 @@ the name of the module they describe (for ".cmi" files) or implement
 (for ".cmo" files).
 
 When the compiler encounters a reference to a free module identifier
-"Mod", it looks in the search path for a file named "Mod.cmi" or "mod.cmi"
-and loads the compiled interface
+"Mod", it looks in the load path (see below) for a file named "Mod.cmi"
+or "mod.cmi" and loads the compiled interface
 contained in that file. As a consequence, renaming ".cmi" files is not
 advised: the name of a ".cmi" file must always correspond to the name
 of the compilation unit it implements. It is admissible to move them
-to another directory, if their base name is preserved, and the correct
-"-I" options are given to the compiler. The compiler will flag an
+to another directory, if their base name is preserved, and the file
+can still be found in the load path. The compiler will flag an
 error if it loads a ".cmi" file that has been renamed.
 
 Compiled bytecode files (".cmo" files), on the other hand, can be
@@ -187,6 +187,13 @@ freely renamed once created. That's because the linker never attempts
 to find by itself the ".cmo" file that implements a module with a
 given name: it relies instead on the user providing the list of ".cmo"
 files by hand.
+
+The {\em load path} is a list of directories and single files maintained by the
+compiler to look up, in order, for files needed to compile and/or link programs.
+
+By default the load path consists of the current directory and the standard
+library directory, but new entries can be added by using the "-I" and "-inc"
+flags.
 
 \section{s:comp-errors}{Common errors}
 
@@ -197,7 +204,7 @@ error messages.
 
 \item[Cannot find file \var{filename}]
 The named file could not be found in the current directory, nor in the
-directories of the search path. The \var{filename} is either a
+directories of the load path. The \var{filename} is either a
 compiled interface file (".cmi" file), or a compiled bytecode file
 (".cmo" file). If \var{filename} has the format \var{mod}".cmi", this
 means you are trying to compile a file that references identifiers

@@ -26,7 +26,7 @@ val event_mark_after : string
 val shell : string
 val runtime_program : string
 val history_size : int ref
-val load_path_for : (string, string list) Hashtbl.t
+val load_path_for : (string, Load_path.t) Hashtbl.t
 
 (*** Time travel parameters. ***)
 

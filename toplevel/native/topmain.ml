@@ -98,7 +98,8 @@ let () =
     | exception Not_found -> []
     | s -> Misc.split_path_contents s
   in
-  Clflags.include_dirs := List.rev_append extra_paths !Clflags.include_dirs
+  Clflags.load_path :=
+    Load_path.concat [!Clflags.load_path; Load_path.of_dirs extra_paths]
 
 let main () =
   let ppf = Format.err_formatter in

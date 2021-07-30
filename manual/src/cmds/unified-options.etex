@@ -256,9 +256,9 @@ and edit that file to remove all declarations of unexported names.
 }%notop
 
 \item["-I" \var{directory}]
-Add the given directory to the list of directories searched for
-\nat{compiled interface files (".cmi"), compiled object code files (".cmx"),
-and libraries (".cmxa").}
+Add the given directory to the {em load path}, the list of directories and
+files searched for \nat{compiled interface files (".cmi"), compiled object
+code files (".cmx"), and libraries (".cmxa").}
 \comp{compiled interface files (".cmi"), compiled object code files ".cmo",
 libraries (".cma") and C libraries specified with "-cclib -lxxx".}
 \top{source and compiled files.}
@@ -269,13 +269,38 @@ but before the standard library directory. See also option "-nostdlib".
 
 If the given directory starts with "+", it is taken relative to the
 standard library directory.  For instance, "-I +unix" adds the
-subdirectory "unix" of the standard library to the search path.
+subdirectory "unix" of the standard library to the load path.
+
+Note that "<dir>" will be searched whenever the compiler needs to look up a file
+given by a relative path. This includes the case of compilation objects of
+top-level modules mentioned in the program text, but also relative paths passed
+on the command-line.
 
 \top{%
 Directories can also be added to the list once
 the toplevel is running with the "#directory" directive
 (section~\ref{s:toplevel-directives}).
 }%top
+
+\item["-inc" \var{file}]
+
+Add the given file to the {em load path} (see also option "-I"). In contrast to
+"-I", this flag only adds the given file to the load path, the rest of the files
+in the parent directory of "file" remain hidden from the compiler unless they
+are added to the load path in some other way.
+
+As for "-I", files added to the load path using this flag are inserted in order
+after the current directory but before the standard library directory, and
+precedence is left-to-right.
+
+Similarly, if the given file starts with "+", it is taken relative to the
+standard library directory.  For instance, "-inc +list.cmi" adds the file
+"list.cmi" of the standard library to the load path.
+
+Note that in contrast to "-I", arguments to "-inc" will only be used when
+looking up paths consisting of a single basename. This includes the case of
+compilation objects of top-level modules mentioned in the program text, but also
+basenames passed on the command line.
 
 \top{%
 \item["-init" \var{file}]

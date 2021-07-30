@@ -1,0 +1,44 @@
+
+# ${OCAMLC} -c d/a.ml
+
+# ${OCAMLC} -c main.ml
+File "main.ml", line 1, characters 9-12:
+1 | let () = A.f ()
+             ^^^
+Error: Unbound module A
+
+# ${OCAMLC} -inc d/a.cmi -c main.ml
+
+# ${OCAMLC} -c d2/a.ml
+
+# ${OCAMLC} -inc d/a.cmi -I d2 -c main.ml
+
+# ${OCAMLC} -I d2 -inc d/a.cmi -c main.ml
+File "main.ml", line 1, characters 9-15:
+1 | let () = A.f ()
+             ^^^^^^
+Error: This expression has type int but an expression was expected of type
+         unit
+
+# ${OCAMLC} -inc d/a.cmi -inc d2/a.cmi -c main.ml
+
+# ${OCAMLC} -inc d2/a.cmi -inc d/a.cmi -c main.ml
+File "main.ml", line 1, characters 9-15:
+1 | let () = A.f ()
+             ^^^^^^
+Error: This expression has type int but an expression was expected of type
+         unit
+
+# ${OCAMLC} -inc foo/a.cmi -c main.ml
+File "main.ml", line 1:
+Error: I/O error: foo/a.cmi: No such file or directory
+
+# ${OCAMLC} -inc foo/foo.cmi -inc d/a.cmi -c main.ml
+
+# ${OCAMLC} -inc $(pwd)/d/a.cmi -c main.ml
+
+# ${OCAMLC} -inc ${ocamlsrcdir}/parsing/longident.cmi main.ml
+File "main.ml", line 1:
+Error: Module `Longident' is unavailable (required by `Main')
+
+# ${OCAMLC} -inc ${ocamlsrcdir}/parsing/longident.cmi -inc ${ocamlsrcdir}/compilerlibs/ocamlcommon.cma ocamlcommon.cma main.ml
