@@ -14244,8 +14244,6 @@ case $host in #(
     arch=i386; system=bsd_elf ;; #(
   i[3456]86-*-haiku*) :
     arch=i386; system=beos ;; #(
-  x86_64-unknown-haiku) :
-    arch=amd64; system=beos ;; #(
   i[3456]86-*-cygwin) :
     arch=i386; system=cygwin ;; #(
   i[3456]86-*-gnu*) :
@@ -14313,6 +14311,8 @@ fi; system=elf ;; #(
     arch=amd64; system=netbsd ;; #(
   x86_64-*-openbsd*) :
     arch=amd64; system=openbsd ;; #(
+  x86_64-*-haiku*) :
+    arch=amd64; system=beos ;; #(
   arm64-*-darwin*) :
     arch=arm64; system=macosx ;; #(
   aarch64-*-darwin*) :
