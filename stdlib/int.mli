@@ -103,10 +103,20 @@ external shift_right_logical : int -> int -> int = "%lsrint"
 (** {1:preds Predicates and comparisons} *)
 
 val equal : int -> int -> bool
-(** [equal x y] is [true] iff [x = y]. *)
+(** [equal x y] is [true] if and only if [x = y]. *)
 
 val compare : int -> int -> int
 (** [compare x y] is {!Stdlib.compare}[ x y] but more efficient. *)
+
+val min : int -> int -> int
+(** Return the smaller of the two arguments.
+    @since 4.13.0
+*)
+
+val max : int -> int -> int
+(** Return the greater of the two arguments.
+    @since 4.13.0
+ *)
 
 (** {1:convert Converting} *)
 

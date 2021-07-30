@@ -210,7 +210,7 @@ let line_loop ppf line_buffer =
       done
     with
     | Exit ->
-        stop_user_input ()
+        ()
 (*    | Sys_error s ->
         error ("System error: " ^ s) *)
 
@@ -567,20 +567,17 @@ let instr_source ppf lexbuf =
       | Not_found -> error "Source file not found."
       | (Unix_error _) as x  -> Unix_tools.report_error x; raise Toplevel
     in
-      try
-        interactif := false;
-        user_channel := io_chan;
-        line_loop ppf (Lexing.from_function read_user_input);
+      interactif := false;
+      user_channel := io_chan;
+      let loop () =
+        line_loop ppf (Lexing.from_function read_user_input)
+      and finally () =
+        stop_user_input ();
         close_io io_chan;
         interactif := old_state;
         user_channel := old_channel
-      with
-      | x ->
-          stop_user_input ();
-          close_io io_chan;
-          interactif := old_state;
-          user_channel := old_channel;
-          raise x
+      in
+      Fun.protect ~finally loop
 
 let instr_set =
   find_variable
@@ -626,7 +623,7 @@ let instr_break ppf lexbuf =
         in
         begin try
           let (v, ty) = Eval.expression !selected_event env expr in
-          match (Ctype.repr ty).desc with
+          match get_desc ty with
           | Tarrow _ ->
               add_breakpoint_after_pc (Remote_value.closure_code v)
           | _ ->
@@ -802,7 +799,7 @@ let instr_list _ppf lexbuf =
               1
           | None ->
               begin try
-                max 1 (line - 10)
+                Int.max 1 (line - 10)
               with Out_of_range ->
                 1
               end

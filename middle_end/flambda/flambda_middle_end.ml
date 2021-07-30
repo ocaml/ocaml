@@ -31,7 +31,7 @@ let _dump_function_sizes flam ~backend =
           | None -> assert false)
         set_of_closures.function_decls.funs)
 
-let lambda_to_flambda ~ppf_dump ~prefixname ~backend ~size ~filename
+let lambda_to_flambda ~ppf_dump ~prefixname ~backend ~size
       ~module_ident ~module_initializer =
   Profile.record_call "flambda" (fun () ->
     let previous_warning_reporter = !Location.warning_reporter in
@@ -83,7 +83,7 @@ let lambda_to_flambda ~ppf_dump ~prefixname ~backend ~size ~filename
                (fun () ->
                   module_initializer
                   |> Closure_conversion.lambda_to_flambda ~backend
-                       ~module_ident ~size ~filename)
+                       ~module_ident ~size)
            in
            if !Clflags.dump_rawflambda
            then
@@ -169,7 +169,7 @@ let lambda_to_flambda ~ppf_dump ~prefixname ~backend ~size ~filename
            (* Check that there aren't any unused "always inline" attributes. *)
            Flambda_iterators.iter_apply_on_program flam ~f:(fun apply ->
              match apply.inline with
-             | Default_inline | Never_inline -> ()
+             | Default_inline | Never_inline | Hint_inline -> ()
              | Always_inline ->
                (* CR-someday mshinwell: consider a different error message if
                   this triggers as a result of the propagation of a user's
@@ -183,7 +183,7 @@ let lambda_to_flambda ~ppf_dump ~prefixname ~backend ~size ~filename
              | Unroll _ ->
                Location.prerr_warning (Debuginfo.to_location apply.dbg)
                  (Warnings.Inlining_impossible
-                    "[@unroll] attribute was not used on this function \
+                    "[@unrolled] attribute was not used on this function \
                      application (the optimizer did not know what function \
                      was being applied)"));
            if !Clflags.dump_flambda
@@ -212,12 +212,11 @@ let flambda_raw_clambda_dump_if ppf
   if !Clflags.dump_cmm then Format.fprintf ppf "@.cmm:@.";
   input
 
-let lambda_to_clambda ~backend ~filename ~prefixname ~ppf_dump
+let lambda_to_clambda ~backend ~prefixname ~ppf_dump
       (program : Lambda.program) =
   let program =
     lambda_to_flambda ~ppf_dump ~prefixname ~backend
       ~size:program.main_module_block_size
-      ~filename
       ~module_ident:program.module_ident
       ~module_initializer:program.code
   in

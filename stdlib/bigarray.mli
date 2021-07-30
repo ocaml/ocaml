@@ -255,7 +255,7 @@ val fortran_layout : fortran_layout layout
 
 module Genarray :
   sig
-  type ('a, 'b, 'c) t
+  type (!'a, !'b, !'c) t
   (** The type [Genarray.t] is the type of Bigarrays with variable
      numbers of dimensions.  Any number of dimensions between 0 and 16
      is supported.
@@ -298,6 +298,34 @@ module Genarray :
      is not in the range 0 to 16 inclusive, or if one of the dimensions
      is negative. *)
 
+  val init: ('a, 'b) kind -> 'c layout -> int array -> (int array -> 'a) ->
+            ('a, 'b, 'c) t
+  (** [Genarray.init kind layout dimensions f] returns a new Bigarray [b]
+      whose element kind is determined by the parameter [kind] (one of
+      [float32], [float64], [int8_signed], etc) and whose layout is
+      determined by the parameter [layout] (one of [c_layout] or
+      [fortran_layout]).  The [dimensions] parameter is an array of
+      integers that indicate the size of the Bigarray in each dimension.
+      The length of [dimensions] determines the number of dimensions
+      of the Bigarray.
+
+      Each element [Genarray.get b i] is initialized to the result of [f i].
+      In other words, [Genarray.init kind layout dimensions f] tabulates
+      the results of [f] applied to the indices of a new Bigarray whose
+      layout is described by [kind], [layout] and [dimensions].  The index
+      array [i] may be shared and mutated between calls to f.
+
+      For instance, [Genarray.init int c_layout [|2; 1; 3|]
+      (Array.fold_left (+) 0)] returns a fresh Bigarray of integers, in C
+      layout, having three dimensions (2, 1, 3, respectively), with the
+      element values 0, 1, 2, 1, 2, 3.
+
+      [Genarray.init] raises [Invalid_argument] if the number of dimensions
+      is not in the range 0 to 16 inclusive, or if one of the dimensions
+      is negative.
+
+      @since 4.12.0 *)
+
   external num_dims: ('a, 'b, 'c) t -> int = "caml_ba_num_dims"
   (** Return the number of dimensions of the given Bigarray. *)
 
@@ -310,7 +338,7 @@ module Genarray :
      Bigarray [a].  The first dimension corresponds to [n = 0];
      the second dimension corresponds to [n = 1]; the last dimension,
      to [n = Genarray.num_dims a - 1].
-     Raise [Invalid_argument] if [n] is less than 0 or greater or equal than
+     @raise Invalid_argument if [n] is less than 0 or greater or equal than
      [Genarray.num_dims a]. *)
 
   external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "caml_ba_kind"
@@ -347,14 +375,16 @@ module Genarray :
      and strictly less than the corresponding dimensions of [a].
      If [a] has Fortran layout, the coordinates must be greater or equal
      than 1 and less or equal than the corresponding dimensions of [a].
-     Raise [Invalid_argument] if the array [a] does not have exactly [N]
-     dimensions, or if the coordinates are outside the array bounds.
 
      If [N > 3], alternate syntax is provided: you can write
      [a.{i1, i2, ..., iN}] instead of [Genarray.get a [|i1; ...; iN|]].
      (The syntax [a.{...}] with one, two or three coordinates is
      reserved for accessing one-, two- and three-dimensional arrays
-     as described below.) *)
+     as described below.)
+
+     @raise Invalid_argument if the array [a] does not have exactly [N]
+     dimensions, or if the coordinates are outside the array bounds.
+  *)
 
   external set: ('a, 'b, 'c) t -> int array -> 'a -> unit
     = "caml_ba_set_generic"
@@ -389,7 +419,7 @@ module Genarray :
      array [a].
 
      [Genarray.sub_left] applies only to Bigarrays in C layout.
-     Raise [Invalid_argument] if [ofs] and [len] do not designate
+     @raise Invalid_argument if [ofs] and [len] do not designate
      a valid sub-array of [a], that is, if [ofs < 0], or [len < 0],
      or [ofs + len > Genarray.nth_dim a 0]. *)
 
@@ -409,7 +439,7 @@ module Genarray :
      array [a].
 
      [Genarray.sub_right] applies only to Bigarrays in Fortran layout.
-     Raise [Invalid_argument] if [ofs] and [len] do not designate
+     @raise Invalid_argument if [ofs] and [len] do not designate
      a valid sub-array of [a], that is, if [ofs < 1], or [len < 0],
      or [ofs + len > Genarray.nth_dim a (Genarray.num_dims a - 1)]. *)
 
@@ -428,7 +458,7 @@ module Genarray :
      the original array share the same storage space.
 
      [Genarray.slice_left] applies only to Bigarrays in C layout.
-     Raise [Invalid_argument] if [M >= N], or if [[|i1; ... ; iM|]]
+     @raise Invalid_argument if [M >= N], or if [[|i1; ... ; iM|]]
      is outside the bounds of [a]. *)
 
   external slice_right:
@@ -446,7 +476,7 @@ module Genarray :
      the original array share the same storage space.
 
      [Genarray.slice_right] applies only to Bigarrays in Fortran layout.
-     Raise [Invalid_argument] if [M >= N], or if [[|i1; ... ; iM|]]
+     @raise Invalid_argument if [M >= N], or if [[|i1; ... ; iM|]]
      is outside the bounds of [a]. *)
 
   external blit: ('a, 'b, 'c) t -> ('a, 'b, 'c) t -> unit
@@ -475,7 +505,7 @@ module Genarray :
    faster operations, and more precise static type-checking.
    @since 4.05.0 *)
 module Array0 : sig
-  type ('a, 'b, 'c) t
+  type (!'a, !'b, !'c) t
   (** The type of zero-dimensional Bigarrays whose elements have
      OCaml type ['a], representation kind ['b], and memory layout ['c]. *)
 
@@ -483,6 +513,12 @@ module Array0 : sig
   (** [Array0.create kind layout] returns a new Bigarray of zero dimension.
      [kind] and [layout] determine the array element kind and the array
      layout as described for {!Genarray.create}. *)
+
+  val init: ('a, 'b) kind -> 'c layout -> 'a -> ('a, 'b, 'c) t
+  (** [Array0.init kind layout v] behaves like [Array0.create kind layout]
+     except that the element is additionally initialized to the value [v].
+
+     @since 4.12.0 *)
 
   external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "caml_ba_kind"
   (** Return the kind of the given Bigarray. *)
@@ -533,7 +569,7 @@ end
    Statically knowing the number of dimensions of the array allows
    faster operations, and more precise static type-checking. *)
 module Array1 : sig
-  type ('a, 'b, 'c) t
+  type (!'a, !'b, !'c) t
   (** The type of one-dimensional Bigarrays whose elements have
      OCaml type ['a], representation kind ['b], and memory layout ['c]. *)
 
@@ -542,6 +578,22 @@ module Array1 : sig
      one dimension, whose size is [dim].  [kind] and [layout]
      determine the array element kind and the array layout
      as described for {!Genarray.create}. *)
+
+  val init: ('a, 'b) kind -> 'c layout -> int -> (int -> 'a) ->
+            ('a, 'b, 'c) t
+  (** [Array1.init kind layout dim f] returns a new Bigarray [b]
+     of one dimension, whose size is [dim].  [kind] and [layout]
+     determine the array element kind and the array layout
+     as described for {!Genarray.create}.
+
+     Each element [Array1.get b i] of the array is initialized to the
+     result of [f i].
+
+     In other words, [Array1.init kind layout dimensions f] tabulates
+     the results of [f] applied to the indices of a new Bigarray whose
+     layout is described by [kind], [layout] and [dim].
+
+     @since 4.12.0 *)
 
   external dim: ('a, 'b, 'c) t -> int = "%caml_ba_dim_1"
   (** Return the size (dimension) of the given one-dimensional
@@ -630,16 +682,33 @@ end
    case of two-dimensional arrays. *)
 module Array2 :
   sig
-  type ('a, 'b, 'c) t
+  type (!'a, !'b, !'c) t
   (** The type of two-dimensional Bigarrays whose elements have
      OCaml type ['a], representation kind ['b], and memory layout ['c]. *)
 
   val create: ('a, 'b) kind ->  'c layout -> int -> int -> ('a, 'b, 'c) t
   (** [Array2.create kind layout dim1 dim2] returns a new Bigarray of
-     two dimension, whose size is [dim1] in the first dimension
+     two dimensions, whose size is [dim1] in the first dimension
      and [dim2] in the second dimension.  [kind] and [layout]
      determine the array element kind and the array layout
      as described for {!Bigarray.Genarray.create}. *)
+
+  val init: ('a, 'b) kind ->  'c layout -> int -> int ->
+            (int -> int -> 'a) -> ('a, 'b, 'c) t
+  (** [Array2.init kind layout dim1 dim2 f] returns a new Bigarray [b]
+     of two dimensions, whose size is [dim2] in the first dimension
+     and [dim2] in the second dimension.  [kind] and [layout]
+     determine the array element kind and the array layout
+     as described for {!Bigarray.Genarray.create}.
+
+     Each element [Array2.get b i j] of the array is initialized to
+     the result of [f i j].
+
+     In other words, [Array2.init kind layout dim1 dim2 f] tabulates
+     the results of [f] applied to the indices of a new Bigarray whose
+     layout is described by [kind], [layout], [dim1] and [dim2].
+
+     @since 4.12.0 *)
 
   external dim1: ('a, 'b, 'c) t -> int = "%caml_ba_dim_1"
   (** Return the first dimension of the given two-dimensional Bigarray. *)
@@ -746,16 +815,33 @@ end
    of three-dimensional arrays. *)
 module Array3 :
   sig
-  type ('a, 'b, 'c) t
+  type (!'a, !'b, !'c) t
   (** The type of three-dimensional Bigarrays whose elements have
      OCaml type ['a], representation kind ['b], and memory layout ['c]. *)
 
   val create: ('a, 'b) kind -> 'c layout -> int -> int -> int -> ('a, 'b, 'c) t
   (** [Array3.create kind layout dim1 dim2 dim3] returns a new Bigarray of
-     three dimension, whose size is [dim1] in the first dimension,
+     three dimensions, whose size is [dim1] in the first dimension,
      [dim2] in the second dimension, and [dim3] in the third.
      [kind] and [layout] determine the array element kind and
      the array layout as described for {!Bigarray.Genarray.create}. *)
+
+  val init: ('a, 'b) kind ->  'c layout -> int -> int -> int ->
+            (int -> int -> int -> 'a) -> ('a, 'b, 'c) t
+  (** [Array3.init kind layout dim1 dim2 dim3 f] returns a new Bigarray [b]
+     of three dimensions, whose size is [dim1] in the first dimension,
+     [dim2] in the second dimension, and [dim3] in the third.
+     [kind] and [layout] determine the array element kind and the array
+     layout as described for {!Bigarray.Genarray.create}.
+
+     Each element [Array3.get b i j k] of the array is initialized to
+     the result of [f i j k].
+
+     In other words, [Array3.init kind layout dim1 dim2 dim3 f] tabulates
+     the results of [f] applied to the indices of a new Bigarray whose
+     layout is described by [kind], [layout], [dim1], [dim2] and [dim3].
+
+     @since 4.12.0 *)
 
   external dim1: ('a, 'b, 'c) t -> int = "%caml_ba_dim_1"
   (** Return the first dimension of the given three-dimensional Bigarray. *)
@@ -904,23 +990,27 @@ external genarray_of_array3 :
 
 val array0_of_genarray : ('a, 'b, 'c) Genarray.t -> ('a, 'b, 'c) Array0.t
 (** Return the zero-dimensional Bigarray corresponding to the given
-   generic Bigarray.  Raise [Invalid_argument] if the generic Bigarray
+   generic Bigarray.
+   @raise Invalid_argument if the generic Bigarray
    does not have exactly zero dimension.
    @since 4.05.0 *)
 
 val array1_of_genarray : ('a, 'b, 'c) Genarray.t -> ('a, 'b, 'c) Array1.t
 (** Return the one-dimensional Bigarray corresponding to the given
-   generic Bigarray.  Raise [Invalid_argument] if the generic Bigarray
+   generic Bigarray.
+   @raise Invalid_argument if the generic Bigarray
    does not have exactly one dimension. *)
 
 val array2_of_genarray : ('a, 'b, 'c) Genarray.t -> ('a, 'b, 'c) Array2.t
 (** Return the two-dimensional Bigarray corresponding to the given
-   generic Bigarray.  Raise [Invalid_argument] if the generic Bigarray
+   generic Bigarray.
+   @raise Invalid_argument if the generic Bigarray
    does not have exactly two dimensions. *)
 
 val array3_of_genarray : ('a, 'b, 'c) Genarray.t -> ('a, 'b, 'c) Array3.t
 (** Return the three-dimensional Bigarray corresponding to the given
-   generic Bigarray.  Raise [Invalid_argument] if the generic Bigarray
+   generic Bigarray.
+   @raise Invalid_argument if the generic Bigarray
    does not have exactly three dimensions. *)
 
 

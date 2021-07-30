@@ -31,8 +31,16 @@ external get_current_dlls: unit -> dll_handle array
 (* Current search path for DLLs *)
 let search_path = ref ([] : string list)
 
+type opened_dll =
+  | Checking of Binutils.t
+  | Execution of dll_handle
+
+let dll_close = function
+  | Checking _ -> ()
+  | Execution dll -> dll_close dll
+
 (* DLLs currently opened *)
-let opened_dlls = ref ([] : dll_handle list)
+let opened_dlls = ref ([] : opened_dll list)
 
 (* File names for those DLLs *)
 let names_of_opened_dlls = ref ([] : string list)
@@ -67,12 +75,24 @@ let open_dll mode name =
       else fullname
     with Not_found -> name in
   if not (List.mem fullname !names_of_opened_dlls) then begin
-    try
-      let dll = dll_open mode fullname in
-      names_of_opened_dlls := fullname :: !names_of_opened_dlls;
-      opened_dlls := dll :: !opened_dlls
-    with Failure msg ->
-      failwith (fullname ^ ": " ^ msg)
+    let dll =
+      match mode with
+      | For_checking ->
+          begin match Binutils.read fullname with
+          | Ok t -> Checking t
+          | Error err ->
+              failwith (fullname ^ ": " ^ Binutils.error_to_string err)
+          end
+      | For_execution ->
+          begin match dll_open mode fullname with
+          | dll ->
+              Execution dll
+          | exception Failure msg ->
+              failwith (fullname ^ ": " ^ msg)
+          end
+    in
+    names_of_opened_dlls := fullname :: !names_of_opened_dlls;
+    opened_dlls := dll :: !opened_dlls
   end
 
 let open_dlls mode names =
@@ -85,19 +105,28 @@ let close_all_dlls () =
   opened_dlls := [];
   names_of_opened_dlls := []
 
-(* Find a primitive in the currently opened DLLs.
-   Raise [Not_found] if not found. *)
+(* Find a primitive in the currently opened DLLs. *)
+
+type primitive_address =
+  | Prim_loaded of dll_address
+  | Prim_exists
 
 let find_primitive prim_name =
   let rec find seen = function
     [] ->
-      raise Not_found
-  | dll :: rem ->
+      None
+  | Execution dll as curr :: rem ->
       let addr = dll_sym dll prim_name in
-      if addr == Obj.magic () then find (dll :: seen) rem else begin
-        if seen <> [] then opened_dlls := dll :: List.rev_append seen rem;
-        addr
-      end in
+      if addr == Obj.magic () then find (curr :: seen) rem else begin
+        if seen <> [] then opened_dlls := curr :: List.rev_append seen rem;
+        Some (Prim_loaded addr)
+      end
+  | Checking t as curr :: rem ->
+      if Binutils.defines_symbol t prim_name then
+        Some Prim_exists
+      else
+        find (curr :: seen) rem
+  in
   find [] !opened_dlls
 
 (* If linking in core (dynlink or toplevel), synchronize the VM
@@ -156,7 +185,9 @@ let init_toplevel dllpath =
     ld_library_path_contents() @
     split_dll_path dllpath @
     ld_conf_contents();
-  opened_dlls := Array.to_list (get_current_dlls());
+  opened_dlls :=
+    List.map (fun dll -> Execution dll)
+      (Array.to_list (get_current_dlls()));
   names_of_opened_dlls := [];
   linking_in_core := true
 

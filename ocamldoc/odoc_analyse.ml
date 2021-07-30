@@ -16,8 +16,6 @@
 (** Analysis of source files. This module is strongly inspired from
     driver/main.ml :-) *)
 
-let print_DEBUG s = print_string s ; print_newline ()
-
 open Format
 open Typedtree
 
@@ -153,7 +151,8 @@ let process_file sourcefile =
          match parsetree_typedtree_opt with
            None ->
              None
-         | Some (parsetree, typedtree) ->
+         | Some (parsetree, Typedtree.{structure; coercion; _}) ->
+             let typedtree = (structure, coercion) in
              let file_module = Ast_analyser.analyse_typed_tree file
                  input_file parsetree typedtree
              in

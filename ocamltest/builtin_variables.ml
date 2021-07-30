@@ -31,11 +31,16 @@ let cwd = Variables.make ("cwd",
 let commandline = Variables.make ("commandline",
   "Specify the commandline of a tool")
 
+let dst = Variables.make ("dst", "Location where to copy files and directories")
+
 let exit_status = Variables.make ("exit_status",
   "Expected program exit status")
 
-let files = Variables.make ("files",
-  "Files used by the tests")
+let file = Variables.make ("file",
+  "File whose existence should be tested")
+
+let readonly_files = Variables.make ("readonly_files",
+  "Files which are only read by the tests")
 
 let make = Variables.make ("MAKE",
   "Command used to invoke make")
@@ -76,9 +81,14 @@ let skip_header_bytes =
 let script = Variables.make ("script",
   "External script to run")
 
+let src = Variables.make ("src", "Files and directories to copy")
+
 let stdin = Variables.make ("stdin", "Default standard input")
 let stdout = Variables.make ("stdout", "Default standard output")
 let stderr = Variables.make ("stderr", "Default standard error")
+
+let subdirectories = Variables.make ("subdirectories",
+  "Subdirectories to copy recursively from test source to test build directory")
 
 let test_build_directory = Variables.make ("test_build_directory",
   "Directory for files produced during a test")
@@ -101,15 +111,18 @@ let test_skip = Variables.make ("TEST_SKIP",
 let test_fail = Variables.make ("TEST_FAIL",
   "Exit code to let a script report failure")
 
-
+let timeout = Variables.make ("timeout",
+  "Maximal execution time for every command (in seconds)")
 
 let _ = List.iter Variables.register_variable
   [
     arguments;
     cwd;
     commandline;
+    dst;
     exit_status;
-    files;
+    file;
+    readonly_files;
     make;
     ocamltest_response;
     ocamltest_log;
@@ -117,16 +130,19 @@ let _ = List.iter Variables.register_variable
     program; program2;
     reason;
     reference;
+    src;
     skip_header_lines;
     skip_header_bytes;
     script;
     stdin;
     stdout;
     stderr;
+    subdirectories;
     test_build_directory;
     test_file;
     test_source_directory;
     test_pass;
     test_skip;
     test_fail;
+    timeout;
   ]

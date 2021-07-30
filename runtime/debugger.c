@@ -24,10 +24,12 @@
 #include <string.h>
 
 #include "caml/alloc.h"
+#include "caml/codefrag.h"
 #include "caml/config.h"
 #include "caml/debugger.h"
 #include "caml/misc.h"
 #include "caml/osdeps.h"
+#include "caml/skiplist.h"
 
 int caml_debugger_in_use = 0;
 uintnat caml_event_count;
@@ -43,7 +45,7 @@ void caml_debugger(enum event_kind event, value param)
 {
 }
 
-void caml_debugger_cleanup_fork(void)
+CAMLexport void caml_debugger_cleanup_fork(void)
 {
 }
 
@@ -53,6 +55,7 @@ void caml_debugger_cleanup_fork(void)
 #include <unistd.h>
 #endif
 #include <errno.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #ifndef _WIN32
 #include <sys/wait.h>
@@ -63,10 +66,20 @@ void caml_debugger_cleanup_fork(void)
 #include <netdb.h>
 #else
 #define ATOM ATOM_WS
-#include <winsock.h>
+#include <winsock2.h>
 #undef ATOM
+/* Code duplication with otherlibs/unix/socketaddr.h is inevitable
+ * because pulling winsock2.h creates many naming conflicts. */
+#ifdef HAS_AFUNIX_H
+#include <afunix.h>
+#else
+struct sockaddr_un {
+  ADDRESS_FAMILY sun_family;
+  char sun_path[108];
+};
+#endif /* HAS_AFUNIX_H */
 #include <process.h>
-#endif
+#endif /* _WIN32 */
 
 #include "caml/fail.h"
 #include "caml/fix_code.h"
@@ -82,9 +95,7 @@ static value marshal_flags = Val_emptylist;
 static int sock_domain;         /* Socket domain for the debugger */
 static union {                  /* Socket address for the debugger */
   struct sockaddr s_gen;
-#ifndef _WIN32
   struct sockaddr_un s_unix;
-#endif
   struct sockaddr_in s_inet;
 } sock_addr;
 static int sock_addr_len;       /* Length of sock_addr */
@@ -95,49 +106,42 @@ static struct channel * dbg_out;/* Output channel on the socket */
 
 static char *dbg_addr = NULL;
 
-static struct ext_table breakpoints_table;
+static struct skiplist event_points_table = SKIPLIST_STATIC_INITIALIZER;
 
 static void open_connection(void)
 {
 #ifdef _WIN32
-  /* Set socket to synchronous mode so that file descriptor-oriented
-     functions (read()/write() etc.) can be used */
-
-  int oldvalue, oldvaluelen, newvalue, retcode;
-  oldvaluelen = sizeof(oldvalue);
-  retcode = getsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
-                       (char *) &oldvalue, &oldvaluelen);
-  if (retcode == 0) {
-      newvalue = SO_SYNCHRONOUS_NONALERT;
-      setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
-                 (char *) &newvalue, sizeof(newvalue));
-  }
-#endif
-  dbg_socket = socket(sock_domain, SOCK_STREAM, 0);
-#ifdef _WIN32
-  if (retcode == 0) {
-    /* Restore initial mode */
-    setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
-               (char *) &oldvalue, oldvaluelen);
-  }
-#endif
-  if (dbg_socket == -1 ||
-      connect(dbg_socket, &sock_addr.s_gen, sock_addr_len) == -1){
-    caml_fatal_error
-    (
-      "cannot connect to debugger at %s\n"
-      "error: %s",
-      (dbg_addr ? dbg_addr : "(none)"),
-      strerror (errno)
-    );
-  }
-#ifdef _WIN32
-  dbg_socket = _open_osfhandle(dbg_socket, 0);
+  /* Set socket to synchronous mode (= non-overlapped) so that file
+     descriptor-oriented functions (read()/write() etc.) can be
+     used */
+  SOCKET sock = WSASocket(sock_domain, SOCK_STREAM, 0,
+                          NULL, 0,
+                          0 /* not WSA_FLAG_OVERLAPPED */);
+  if (sock == INVALID_SOCKET
+      || connect(sock, &sock_addr.s_gen, sock_addr_len) != 0)
+    caml_fatal_error("cannot connect to debugger at %s\n"
+                     "WSA error code: %d",
+                     (dbg_addr ? dbg_addr : "(none)"),
+                     WSAGetLastError());
+  dbg_socket = _open_osfhandle(sock, 0);
   if (dbg_socket == -1)
-    caml_fatal_error("_open_osfhandle failed");
+#else
+  dbg_socket = socket(sock_domain, SOCK_STREAM, 0);
+  if (dbg_socket == -1 ||
+      connect(dbg_socket, &sock_addr.s_gen, sock_addr_len) == -1)
 #endif
+    caml_fatal_error("cannot connect to debugger at %s\n"
+                     "error: %s",
+                     (dbg_addr ? dbg_addr : "(none)"),
+                     strerror (errno));
   dbg_in = caml_open_descriptor_in(dbg_socket);
   dbg_out = caml_open_descriptor_out(dbg_socket);
+  /* The code in this file does not bracket channel I/O operations with
+     Lock and Unlock, so fail if those are not no-ops. */
+  if (caml_channel_mutex_lock != NULL ||
+      caml_channel_mutex_unlock != NULL ||
+      caml_channel_mutex_unlock_exn != NULL)
+    caml_fatal_error("debugger does not support channel locks");
   if (!caml_debugger_in_use) caml_putword(dbg_out, -1); /* first connection */
 #ifdef _WIN32
   caml_putword(dbg_out, _getpid());
@@ -172,7 +176,6 @@ void caml_debugger_init(void)
 {
   char * address;
   char_os * a;
-  size_t a_len;
   char * port, * p;
   struct hostent * host;
   int n;
@@ -188,7 +191,14 @@ void caml_debugger_init(void)
   if (dbg_addr != NULL) caml_stat_free(dbg_addr);
   dbg_addr = address;
 
-  caml_ext_table_init(&breakpoints_table, 16);
+  /* #8676: erase the CAML_DEBUG_SOCKET variable so that processes
+     created by the program being debugged do not try to connect with
+     the debugger. */
+#if defined(_WIN32)
+  _wputenv(L"CAML_DEBUG_SOCKET=");
+#elif defined(HAS_SETENV_UNSETENV)
+  unsetenv("CAML_DEBUG_SOCKET");
+#endif
 
 #ifdef _WIN32
   winsock_startup();
@@ -200,7 +210,7 @@ void caml_debugger_init(void)
     if (*p == ':') { *p = 0; port = p+1; break; }
   }
   if (port == NULL) {
-#ifndef _WIN32
+    size_t a_len;
     /* Unix domain */
     sock_domain = PF_UNIX;
     sock_addr.s_unix.sun_family = AF_UNIX;
@@ -217,9 +227,6 @@ void caml_debugger_init(void)
     sock_addr_len =
       ((char *)&(sock_addr.s_unix.sun_path) - (char *)&(sock_addr.s_unix))
         + a_len;
-#else
-    caml_fatal_error("unix sockets not supported");
-#endif
   } else {
     /* Internet domain */
     sock_domain = PF_INET;
@@ -271,38 +278,14 @@ static void safe_output_value(struct channel *chan, value val)
   Caml_state->external_raise = saved_external_raise;
 }
 
-struct breakpoint {
-  code_t pc;
-  opcode_t saved;
-};
-
-static struct breakpoint *find_breakpoint(code_t pc)
-{
-  struct breakpoint *bpti;
-  int i;
-
-  for (i = 0; i < breakpoints_table.size; i++) {
-    bpti = (struct breakpoint *) breakpoints_table.contents[i];
-    if (bpti->pc == pc)
-      return bpti;
-  }
-
-  return NULL;
-}
-
 static void save_instruction(code_t pc)
 {
-  struct breakpoint *bpt;
-
-  if (find_breakpoint(pc) != NULL) {
+  uintnat saved;
+  if (caml_skiplist_find(&event_points_table, (uintnat) pc, &saved)) {
     /* Already saved. Nothing to do. */
     return;
   }
-
-  bpt = caml_stat_alloc(sizeof(struct breakpoint));
-  bpt->pc = pc;
-  bpt->saved = *pc;
-  caml_ext_table_add(&breakpoints_table, bpt);
+  caml_skiplist_insert(&event_points_table, (uintnat) pc, *pc);
 }
 
 static void set_instruction(code_t pc, opcode_t opcode)
@@ -313,56 +296,49 @@ static void set_instruction(code_t pc, opcode_t opcode)
 
 static void restore_instruction(code_t pc)
 {
-  struct breakpoint *bpt = find_breakpoint(pc);
-  CAMLassert (bpt != NULL);
-
-  *pc = bpt->saved;
-  caml_ext_table_remove(&breakpoints_table, bpt);
+  CAMLunused_start int found; CAMLunused_end
+  uintnat saved;
+  found = caml_skiplist_find(&event_points_table, (uintnat) pc, &saved);
+  CAMLassert(found);
+  *pc = saved;
+  caml_skiplist_remove(&event_points_table, (uintnat) pc);
 }
 
 static code_t pc_from_pos(int frag, intnat pos)
 {
-  struct code_fragment *cf;
-  CAMLassert (frag >= 0);
-  CAMLassert (frag < caml_code_fragments_table.size);
-  CAMLassert (pos >= 0);
-  CAMLassert (pos < caml_code_size);
-
-  cf = (struct code_fragment *) caml_code_fragments_table.contents[frag];
+  struct code_fragment *cf = caml_find_code_fragment_by_num(frag);
+  CAMLassert(cf != NULL);
   return (code_t) (cf->code_start + pos);
 }
 
 opcode_t caml_debugger_saved_instruction(code_t pc)
 {
-  struct breakpoint *bpt = find_breakpoint(pc);
-  CAMLassert (bpt != NULL);
-
-  return bpt->saved;
+  CAMLunused_start int found; CAMLunused_end
+  uintnat saved;
+  found = caml_skiplist_find(&event_points_table, (uintnat) pc, &saved);
+  CAMLassert(found);
+  return saved;
 }
 
 void caml_debugger_code_unloaded(int index)
 {
   struct code_fragment *cf;
-  struct breakpoint *bpti;
-  int i;
+  char * pc;
 
   if (!caml_debugger_in_use) return;
 
   caml_putch(dbg_out, REP_CODE_UNLOADED);
   caml_putword(dbg_out, index);
 
-  cf = (struct code_fragment *) caml_code_fragments_table.contents[index];
+  cf = caml_find_code_fragment_by_num(index);
+  CAMLassert(cf != NULL);
 
-  for (i = 0; i < breakpoints_table.size; i++) {
-    bpti = (struct breakpoint *) breakpoints_table.contents[i];
-    if ((char*) bpti->pc >= cf->code_start && (char*) bpti->pc < cf->code_end) {
-      caml_ext_table_remove(&breakpoints_table, bpti);
-      /* caml_ext_table_remove has shifted the next element in place
-         of the one we just removed. Decrement i for the next
-         iteration. */
-      i--;
+  FOREACH_SKIPLIST_ELEMENT(elt, &event_points_table, {
+    pc = (char *) elt->key;
+    if (pc >= cf->code_start && pc < cf->code_end) {
+      caml_skiplist_remove(&event_points_table, (uintnat) pc);
     }
-  }
+  })
 }
 
 #define Pc(sp) ((code_t)((sp)[0]))
@@ -375,9 +351,8 @@ void caml_debugger(enum event_kind event, value param)
   value *frame, *newframe;
   intnat i, pos;
   value val;
-  int frag, found = 0;
+  int frag;
   struct code_fragment *cf;
-  (void) found; /* Silence unused variable warning. */
 
   if (dbg_socket == -1) return;  /* Not connected to a debugger. */
 
@@ -425,9 +400,9 @@ void caml_debugger(enum event_kind event, value param)
   caml_putword(dbg_out, caml_event_count);
   if (event == EVENT_COUNT || event == BREAKPOINT) {
     caml_putword(dbg_out, Caml_state->stack_high - frame);
-    found = caml_find_code_fragment((char*) Pc(frame), &frag, &cf);
-    CAMLassert(found);
-    caml_putword(dbg_out, frag);
+    cf = caml_find_code_fragment_by_pc((char*) Pc(frame));
+    CAMLassert(cf != NULL);
+    caml_putword(dbg_out, cf->fragnum);
     caml_putword(dbg_out, (char*) Pc(frame) - cf->code_start);
   } else {
     /* No PC and no stack frame associated with other events */
@@ -490,8 +465,8 @@ void caml_debugger(enum event_kind event, value param)
     case REQ_GET_FRAME:
       caml_putword(dbg_out, Caml_state->stack_high - frame);
       if (frame < Caml_state->stack_high &&
-          caml_find_code_fragment((char*) Pc(frame), &frag, &cf)) {
-        caml_putword(dbg_out, frag);
+          (cf = caml_find_code_fragment_by_pc((char*) Pc(frame))) != NULL) {
+        caml_putword(dbg_out, cf->fragnum);
         caml_putword(dbg_out, (char*) Pc(frame) - cf->code_start);
       } else {
         caml_putword(dbg_out, 0);
@@ -507,12 +482,12 @@ void caml_debugger(enum event_kind event, value param)
       i = caml_getword(dbg_in);
       newframe = frame + Extra_args(frame) + i + 3;
       if (newframe >= Caml_state->stack_high ||
-          !caml_find_code_fragment((char*) Pc(newframe), &frag, &cf)) {
+          (cf = caml_find_code_fragment_by_pc((char *) Pc(newframe))) == NULL) {
         caml_putword(dbg_out, -1);
       } else {
         frame = newframe;
         caml_putword(dbg_out, Caml_state->stack_high - frame);
-        caml_putword(dbg_out, frag);
+        caml_putword(dbg_out, cf->fragnum);
         caml_putword(dbg_out, (char*) Pc(frame) - cf->code_start);
       }
       caml_flush(dbg_out);
@@ -565,9 +540,9 @@ void caml_debugger(enum event_kind event, value param)
       break;
     case REQ_GET_CLOSURE_CODE:
       val = getval(dbg_in);
-      found = caml_find_code_fragment((char*) Code_val(val), &frag, &cf);
-      CAMLassert(found);
-      caml_putword(dbg_out, frag);
+      cf = caml_find_code_fragment_by_pc((char*) Code_val(val));
+      CAMLassert(cf != NULL);
+      caml_putword(dbg_out, cf->fragnum);
       caml_putword(dbg_out, (char*) Code_val(val) - cf->code_start);
       caml_flush(dbg_out);
       break;
@@ -578,9 +553,9 @@ void caml_debugger(enum event_kind event, value param)
   }
 }
 
-void caml_debugger_cleanup_fork(void)
+CAMLexport void caml_debugger_cleanup_fork(void)
 {
-  /* We could remove all of the breakpoints, but closing the connection
+  /* We could remove all of the event points, but closing the connection
    * means that they'll just be skipped anyway. */
   close_connection();
   caml_debugger_in_use = 0;

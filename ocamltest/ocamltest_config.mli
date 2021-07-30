@@ -16,7 +16,7 @@
 (* Interface for ocamltest's configuration module *)
 
 val arch : string
-(** Architecture for the native compiler, "none" if it is disabled *)
+(** Architecture for the native compiler *)
 
 val afl_instrument : bool
 (** Whether AFL support has been enabled in the compiler *)
@@ -49,6 +49,9 @@ val str : bool
 val objext : string
 (** Extension of object files *)
 
+val libext : string
+(** Extension of library files *)
+
 val asmext : string
 (** Extension of assembly files *)
 
@@ -70,9 +73,6 @@ val ocamlsrcdir : string
 val flambda : bool
 (** Whether flambda has been enabled at configure time *)
 
-val spacetime : bool
-(** Whether Spacetime profiling has been enabled at configure time *)
-
 val safe_string : bool
 (** Whether the compiler was configured with -safe-string *)
 
@@ -84,6 +84,9 @@ val ocamldoc : bool
 
 val ocamldebug : bool
 (** Whether ocamldebug has been enabled at configure time *)
+
+val native_compiler : bool
+(** Whether the native compiler has been enabled at configure time *)
 
 val native_dynlink : bool
 (** Whether support for native dynlink is available or not *)
@@ -100,6 +103,9 @@ val csc : string
 val csc_flags : string
 (** Flags for the CSharp compiler *)
 
+val exe : string
+(** Extension of executable files *)
+
 val mkdll : string
 val mkexe : string
 
@@ -112,3 +118,9 @@ val windows_unicode : bool
 val function_sections : bool
 (** Whether the compiler was configured to generate
     each function in a separate section *)
+
+val instrumented_runtime : bool
+(** Whether the instrumented runtime is available *)
+
+val naked_pointers : bool
+(** Whether the runtime system supports naked pointers outside the heap *)

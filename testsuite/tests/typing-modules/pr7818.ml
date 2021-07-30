@@ -254,6 +254,7 @@ module MkT :
       val for_all : (elt -> bool) -> t -> bool
       val exists : (elt -> bool) -> t -> bool
       val filter : (elt -> bool) -> t -> t
+      val filter_map : (elt -> elt option) -> t -> t
       val partition : (elt -> bool) -> t -> t * t
       val cardinal : t -> int
       val elements : t -> elt list
@@ -273,6 +274,7 @@ module MkT :
       val of_list : elt list -> t
       val to_seq_from : elt -> t -> elt Seq.t
       val to_seq : t -> elt Seq.t
+      val to_rev_seq : t -> elt Seq.t
       val add_seq : elt Seq.t -> t -> t
       val of_seq : elt Seq.t -> t
     end
@@ -315,13 +317,16 @@ module type S' =
   end
 module Asc : sig type t = int val compare : int -> int -> int end
 module Desc : sig type t = int val compare : int -> int -> int end
-Line 15, characters 16-64:
+Line 15, characters 0-69:
 15 | module rec M1 : S' with module Term0 := Asc and module T := Desc = M1;;
-                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type M.t
        Constructors do not match:
          E of (MkT(M.T).t, MkT(M.T).t) eq
-       is not compatible with:
+       is not the same as:
          E of (MkT(Desc).t, MkT(Desc).t) eq
-       The types are not equal.
+       The type (MkT(M.T).t, MkT(M.T).t) eq is not equal to the type
+         (MkT(Desc).t, MkT(Desc).t) eq
+       Type MkT(M.T).t = Set.Make(M.Term0).t is not equal to type
+         MkT(Desc).t = Set.Make(Desc).t
 |}]

@@ -49,6 +49,7 @@
 #include "caml/debugger.h"
 #include "caml/fail.h"
 #include "caml/gc_ctrl.h"
+#include "caml/major_gc.h"
 #include "caml/io.h"
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
@@ -112,10 +113,8 @@ static void caml_sys_check_path(value name)
   }
 }
 
-CAMLprim value caml_sys_exit(value retcode_v)
+CAMLexport void caml_do_exit(int retcode)
 {
-  int retcode = Int_val(retcode_v);
-
   if ((caml_verb_gc & 0x400) != 0) {
     /* cf caml_gc_counters */
     double minwords = Caml_state->stat_minor_words
@@ -130,6 +129,7 @@ CAMLprim value caml_sys_exit(value retcode_v)
     intnat heap_chunks = Caml_state->stat_heap_chunks;
     intnat top_heap_words = Caml_state->stat_top_heap_wsz;
     intnat cpct = Caml_state->stat_compactions;
+    intnat forcmajcoll = Caml_state->stat_forced_major_collections;
     caml_gc_message(0x400, "allocated_words: %.0f\n", allocated_words);
     caml_gc_message(0x400, "minor_words: %.0f\n", minwords);
     caml_gc_message(0x400, "promoted_words: %.0f\n", prowords);
@@ -146,18 +146,32 @@ CAMLprim value caml_sys_exit(value retcode_v)
                     top_heap_words);
     caml_gc_message(0x400, "compactions: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
                     cpct);
+    caml_gc_message(0x400,
+                    "forced_major_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+                    forcmajcoll);
   }
 
 #ifndef NATIVE_CODE
   caml_debugger(PROGRAM_EXIT, Val_unit);
 #endif
-  caml_instr_atexit ();
   if (caml_cleanup_on_exit)
     caml_shutdown();
 #ifdef _WIN32
   caml_restore_win32_terminal();
 #endif
+#ifdef NAKED_POINTERS_CHECKER
+  if (retcode == 0 && caml_naked_pointers_detected) {
+    fprintf (stderr, "\nOut-of-heap pointers were detected by the runtime.\n"
+                     "The process would otherwise have terminated normally.\n");
+    retcode = 70; /* EX_SOFTWARE; see sysexits.h */
+  }
+#endif
   exit(retcode);
+}
+
+CAMLprim value caml_sys_exit(value retcode)
+{
+  caml_do_exit(Int_val(retcode));
 }
 
 #ifndef O_BINARY
@@ -316,6 +330,36 @@ CAMLprim value caml_sys_chdir(value dirname)
   CAMLreturn(Val_unit);
 }
 
+CAMLprim value caml_sys_mkdir(value path, value perm)
+{
+  CAMLparam2(path, perm);
+  char_os * p;
+  int ret;
+  caml_sys_check_path(path);
+  p = caml_stat_strdup_to_os(String_val(path));
+  caml_enter_blocking_section();
+  ret = mkdir_os(p, Int_val(perm));
+  caml_leave_blocking_section();
+  caml_stat_free(p);
+  if (ret == -1) caml_sys_error(path);
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value caml_sys_rmdir(value path)
+{
+  CAMLparam1(path);
+  char_os * p;
+  int ret;
+  caml_sys_check_path(path);
+  p = caml_stat_strdup_to_os(String_val(path));
+  caml_enter_blocking_section();
+  ret = rmdir_os(p);
+  caml_leave_blocking_section();
+  caml_stat_free(p);
+  if (ret == -1) caml_sys_error(path);
+  CAMLreturn(Val_unit);
+}
+
 CAMLprim value caml_sys_getcwd(value unit)
 {
   char_os buff[4096];
@@ -428,6 +472,7 @@ void caml_sys_init(char_os * exe_name, char_os **argv)
 #endif
 #endif
 
+#ifdef HAS_SYSTEM
 CAMLprim value caml_sys_system_command(value command)
 {
   CAMLparam1 (command);
@@ -450,6 +495,12 @@ CAMLprim value caml_sys_system_command(value command)
     retcode = 255;
   CAMLreturn (Val_int(retcode));
 }
+#else
+CAMLprim value caml_sys_system_command(value command)
+{
+  caml_invalid_argument("Sys.command not implemented");
+}
+#endif
 
 double caml_sys_time_include_children_unboxed(value include_children)
 {
@@ -488,7 +539,7 @@ double caml_sys_time_include_children_unboxed(value include_children)
   #else
     /* clock() is standard ANSI C. We have no way of getting
        subprocess times in this branch. */
-    return (double)clock() / CLOCKS_PER_SEC;
+    return (double)clock_os() / CLOCKS_PER_SEC;
   #endif
 #endif
 }
@@ -510,6 +561,41 @@ CAMLprim value caml_sys_time(value unit)
 
 #ifdef _WIN32
 extern int caml_win32_random_seed (intnat data[16]);
+#else
+int caml_unix_random_seed(intnat data[16])
+{
+  int fd;
+  int n = 0;
+
+  /* Try /dev/urandom first */
+  fd = open("/dev/urandom", O_RDONLY, 0);
+  if (fd != -1) {
+    unsigned char buffer[12];
+    int nread = read(fd, buffer, 12);
+    close(fd);
+    while (nread > 0) data[n++] = buffer[--nread];
+  }
+  /* If the read from /dev/urandom fully succeeded, we now have 96 bits
+     of good random data and can stop here. */
+  if (n >= 12) return n;
+  /* Otherwise, complement whatever we got (probably nothing)
+     with some not-very-random data. */
+  {
+#ifdef HAS_GETTIMEOFDAY
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    if (n < 16) data[n++] = tv.tv_usec;
+    if (n < 16) data[n++] = tv.tv_sec;
+#else
+    if (n < 16) data[n++] = time(NULL);
+#endif
+#ifdef HAS_UNISTD
+    if (n < 16) data[n++] = getpid();
+    if (n < 16) data[n++] = getppid();
+#endif
+    return n;
+  }
+}
 #endif
 
 CAMLprim value caml_sys_random_seed (value unit)
@@ -520,33 +606,7 @@ CAMLprim value caml_sys_random_seed (value unit)
 #ifdef _WIN32
   n = caml_win32_random_seed(data);
 #else
-  int fd;
-  n = 0;
-  /* Try /dev/urandom first */
-  fd = open("/dev/urandom", O_RDONLY, 0);
-  if (fd != -1) {
-    unsigned char buffer[12];
-    int nread = read(fd, buffer, 12);
-    close(fd);
-    while (nread > 0) data[n++] = buffer[--nread];
-  }
-  /* If the read from /dev/urandom fully succeeded, we now have 96 bits
-     of good random data and can stop here.  Otherwise, complement
-     whatever we got (probably nothing) with some not-very-random data. */
-  if (n < 12) {
-#ifdef HAS_GETTIMEOFDAY
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    data[n++] = tv.tv_usec;
-    data[n++] = tv.tv_sec;
-#else
-    data[n++] = time(NULL);
-#endif
-#ifdef HAS_UNISTD
-    data[n++] = getpid();
-    data[n++] = getppid();
-#endif
-  }
+  n = caml_unix_random_seed(data);
 #endif
   /* Convert to an OCaml array of ints */
   res = caml_alloc_small(n, 0);
@@ -657,4 +717,13 @@ CAMLprim value caml_sys_isatty(value chan)
 #endif
 
   return ret;
+}
+
+CAMLprim value caml_sys_const_naked_pointers_checked(value unit)
+{
+#ifdef NAKED_POINTERS_CHECKER
+  return Val_true;
+#else
+  return Val_false;
+#endif
 }

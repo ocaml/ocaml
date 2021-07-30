@@ -1,0 +1,46 @@
+#!/bin/sh
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*            Sebastien Hinderer, projet Gallium, INRIA Paris             *
+#*                                                                        *
+#*   Copyright 2017 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
+# Commands to run for the 'other-configs' job on Inria's CI
+
+# Stop on error
+set -e
+
+mainjob=./tools/ci/inria/main
+main="${mainjob} -j8"
+
+# The "MIN_BUILD" (formerly on Travis) builds with everything disabled (apart
+# from ocamltest). Its goals:
+#  - Ensure that the system builds correctly without native compilation
+#  - Ensure ocamltest builds correctly with Unix
+#  - Ensure the testsuite runs correctly with everything switched off
+${main} -conf --disable-native-compiler \
+        -conf --disable-shared \
+        -conf --disable-debug-runtime \
+        -conf --disable-instrumented-runtime \
+        -conf --disable-systhreads \
+        -conf --disable-str-lib \
+        -conf --disable-unix-lib \
+        -conf --disable-bigarray-lib \
+        -conf --disable-ocamldoc \
+        -conf --disable-native-compiler \
+        -conf --disable-dependency-generation \
+        -no-native
+${main} -conf --disable-naked-pointers
+${main} -with-bootstrap -conf --disable-flat-float-array
+${main} -conf --enable-flambda -conf --disable-naked-pointers
+${main} -conf --enable-reserved-header-bits=27
+OCAMLRUNPARAM="c=1" ${main}

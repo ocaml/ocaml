@@ -58,29 +58,53 @@ let exit_status_of_variable env variable =
     (Environments.safe_lookup variable env)
   with _ -> 0
 
-let files env = words_of_variable env Builtin_variables.files
+let readonly_files env = words_of_variable env Builtin_variables.readonly_files
+
+let subdirectories env = words_of_variable env Builtin_variables.subdirectories
 
 let setup_symlinks test_source_directory build_directory files =
   let symlink filename =
+    (* Emulate ln -sfT *)
     let src = Filename.concat test_source_directory filename in
-    let cmd = "ln -sf " ^ src ^" " ^ build_directory in
-    Sys.run_system_command cmd in
+    let dst = Filename.concat build_directory filename in
+    let () =
+      if Sys.file_exists dst then
+        if Sys.win32 && Sys.is_directory dst then
+          (* Native symbolic links to directories don't disappear with unlink;
+             doing rmdir here is technically slightly more than ln -sfT would
+             do *)
+          Sys.rmdir dst
+        else
+          Sys.remove dst
+    in
+      Unix.symlink src dst in
   let copy filename =
     let src = Filename.concat test_source_directory filename in
     let dst = Filename.concat build_directory filename in
     Sys.copy_file src dst in
-  let f = if Sys.os_type="Win32" then copy else symlink in
+  let f = if Unix.has_symlink () then symlink else copy in
   Sys.make_directory build_directory;
   List.iter f files
 
+let setup_subdirectories source_directory build_directory subdirs =
+  let full_src_path name = Filename.concat source_directory name in
+  let full_dst_path name = Filename.concat build_directory name in
+  let cp_dir name =
+    Sys.copy_directory (full_src_path name) (full_dst_path name)
+  in
+  List.iter cp_dir subdirs
+
 let setup_build_env add_testfile additional_files (_log : out_channel) env =
+  let source_dir = (test_source_directory env) in
   let build_dir = (test_build_directory env) in
-  let some_files = additional_files @ (files env) in
+  let some_files = additional_files @ (readonly_files env) in
   let files =
     if add_testfile
     then (testfile env) :: some_files
     else some_files in
-  setup_symlinks (test_source_directory env) build_dir files;
+  setup_symlinks source_dir build_dir files;
+  let subdirs = subdirectories env in
+  setup_subdirectories source_dir build_dir subdirs;
   Sys.chdir build_dir;
   (Result.pass, env)
 
@@ -96,7 +120,7 @@ let run_cmd
     ?(stdout_variable=Builtin_variables.stdout)
     ?(stderr_variable=Builtin_variables.stderr)
     ?(append=false)
-    ?(timeout=0)
+    ?timeout
     log env original_cmd
   =
   let log_redirection std filename =
@@ -122,7 +146,7 @@ let run_cmd
   in
   let lst = List.concat (List.map String.words cmd) in
   let quoted_lst =
-    if Sys.os_type="Win32"
+    if Sys.win32
     then List.map Filename.maybe_quote lst
     else lst in
   let cmd' = String.concat " " quoted_lst in
@@ -136,21 +160,40 @@ let run_cmd
   log_redirection "stdout" stdout_filename;
   log_redirection "stderr" stderr_filename;
   let systemenv =
-    Array.append
+    Environments.append_to_system_env
       environment
-      (Environments.to_system_env env)
+      env
   in
-  Run_command.run {
-    Run_command.progname = progname;
-    Run_command.argv = arguments;
-    Run_command.envp = systemenv;
-    Run_command.stdin_filename = stdin_filename;
-    Run_command.stdout_filename = stdout_filename;
-    Run_command.stderr_filename = stderr_filename;
-    Run_command.append = append;
-    Run_command.timeout = timeout;
-    Run_command.log = log
-  }
+  let timeout =
+    match timeout with
+    | Some timeout -> timeout
+    | None ->
+        Option.value ~default:0
+          (Environments.lookup_as_int Builtin_variables.timeout env)
+  in
+  let n =
+    Run_command.run {
+      Run_command.progname = progname;
+      Run_command.argv = arguments;
+      Run_command.envp = systemenv;
+      Run_command.stdin_filename = stdin_filename;
+      Run_command.stdout_filename = stdout_filename;
+      Run_command.stderr_filename = stderr_filename;
+      Run_command.append = append;
+      Run_command.timeout = timeout;
+      Run_command.log = log
+    }
+  in
+  let dump_file s fn =
+    if not (Sys.file_is_empty fn) then begin
+      Printf.fprintf log "### begin %s ###\n" s;
+      Sys.dump_file log fn;
+      Printf.fprintf log "### end %s ###\n" s
+    end
+  in
+  dump_file "stdout" stdout_filename;
+  if stdout_filename <> stderr_filename then dump_file "stderr" stderr_filename;
+  n
 
 let run
     (log_message : string)
@@ -250,6 +293,9 @@ let run_hook hook_name log input_env =
     Builtin_variables.ocamltest_response response_file input_env in
   let systemenv =
     Environments.to_system_env hookenv in
+  let timeout =
+    Option.value ~default:0
+      (Environments.lookup_as_int Builtin_variables.timeout input_env) in
   let open Run_command in
   let settings = {
     progname = "sh";
@@ -259,7 +305,7 @@ let run_hook hook_name log input_env =
     stdout_filename = "";
     stderr_filename = "";
     append = false;
-    timeout = 0;
+    timeout = timeout;
     log = log;
   } in let exit_status = run settings in
   let final_value = match exit_status with

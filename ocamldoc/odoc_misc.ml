@@ -87,22 +87,6 @@ let rec string_of_longident li =
   | Longident.Lapply(l1, l2) ->
       string_of_longident l1 ^ "(" ^ string_of_longident l2 ^ ")"
 
-let get_fields type_expr =
-  let (fields, _) = Ctype.flatten_fields (Ctype.object_fields type_expr) in
-  List.fold_left
-    (fun acc -> fun (label, field_kind, typ) ->
-      match field_kind with
-        Types.Fabsent ->
-          acc
-      | _ ->
-          if label = "*dummy method*" then
-            acc
-          else
-            acc @ [label, typ]
-    )
-    []
-    fields
-
 let rec string_of_text t =
   let rec iter t_ele =
     match t_ele with
@@ -217,7 +201,7 @@ let string_of_info i =
   let module M = Odoc_types in
   (match i.M.i_deprecated with
     None -> ""
-  | Some d -> Odoc_messages.deprecated^"! "^(string_of_text d)^"\n")^
+  | Some d -> Odoc_messages.deprecated^". "^(string_of_text d)^"\n")^
   (match i.M.i_desc with
     None -> ""
   | Some d when d = [Odoc_types.Raw ""] -> ""
@@ -492,21 +476,27 @@ let is_optional = Btype.is_optional
 let label_name = Btype.label_name
 
 let remove_option typ =
-  let rec iter t =
+  let open Types in
+  let rec trim t =
     match t with
-    | Types.Tconstr(path, [ty], _) when Path.same path Predef.path_option -> ty.Types.desc
-    | Types.Tconstr _
-    | Types.Tvar _
-    | Types.Tunivar _
-    | Types.Tpoly _
-    | Types.Tarrow _
-    | Types.Ttuple _
-    | Types.Tobject _
-    | Types.Tfield _
-    | Types.Tnil
-    | Types.Tvariant _
-    | Types.Tpackage _ -> t
-    | Types.Tlink t2
-    | Types.Tsubst t2 -> iter t2.Types.desc
+    | Tconstr(path, [ty], _)
+      when Path.same path Predef.path_option -> get_desc ty
+    | Tconstr _
+    | Tvar _
+    | Tunivar _
+    | Tpoly _
+    | Tarrow _
+    | Ttuple _
+    | Tobject _
+    | Tfield _
+    | Tnil
+    | Tvariant _
+    | Tpackage _ -> t
+    | Tlink t2 -> trim (get_desc t2)
+    | Tsubst _ -> assert false
   in
-  { typ with Types.desc = iter typ.Types.desc }
+  Transient_expr.type_expr
+    (Transient_expr.create (trim (get_desc typ))
+       ~level:(get_level typ)
+       ~scope:(get_scope typ)
+       ~id:(get_id typ))

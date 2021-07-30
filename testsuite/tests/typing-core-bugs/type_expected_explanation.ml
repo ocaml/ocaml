@@ -172,7 +172,7 @@ Line 3, characters 22-26:
                           ^^^^
 Error: This variant expression is expected to have type unit
          because it is in the result of a conditional with no else branch
-       The constructor :: does not belong to type unit
+       There is no constructor :: within type unit
 |}];;
 
 (function
@@ -187,3 +187,14 @@ Error: This expression has type int but an expression was expected of type
          bool
        because it is in a when-guard
 |}];;
+
+(* #10106 *)
+if false then (match () with () -> true);;
+[%%expect{|
+Line 1, characters 35-39:
+1 | if false then (match () with () -> true);;
+                                       ^^^^
+Error: This variant expression is expected to have type unit
+         because it is in the result of a conditional with no else branch
+       There is no constructor true within type unit
+|}]

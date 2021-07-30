@@ -41,6 +41,9 @@ let bytecc_libs = make ("bytecc_libs",
 let c_preprocessor = make ("c_preprocessor",
   "Command to use to invoke the C preprocessor")
 
+let cc = make ("cc",
+  "Command to use to invoke the C compiler")
+
 let caml_ld_library_path_name = "CAML_LD_LIBRARY_PATH"
 
 let export_caml_ld_library_path value =
@@ -51,13 +54,16 @@ let export_caml_ld_library_path value =
     if local_value="" then current_value else
     if current_value="" then local_value else
     String.concat Filename.path_sep [local_value; current_value] in
-  Printf.sprintf "%s=%s" caml_ld_library_path_name new_value
+  (caml_ld_library_path_name, new_value)
 
 let caml_ld_library_path =
   make_with_exporter
     export_caml_ld_library_path
     ("ld_library_path",
       "List of paths to lookup for loading dynamic libraries")
+
+let codegen_exit_status = make ("codegen_exit_status",
+  "Expected exit status of codegen")
 
 let compare_programs = make ("compare_programs",
   "Set to \"false\" to disable program comparison")
@@ -120,6 +126,9 @@ let nativecc_libs = make ("nativecc_libs",
 let objext = make ("objext",
   "Extension of object files")
 
+let libext = make ("libext",
+  "Extension of library files")
+
 let asmext = make ("asmext",
   "Extension of assembly files")
 
@@ -174,7 +183,7 @@ let ocamlopt_opt_exit_status = make ("ocamlopt_opt_exit_status",
   "Expected exit status of ocamlopt.opt")
 
 let export_ocamlrunparam value =
-  Printf.sprintf "%s=%s" "OCAMLRUNPARAM" value
+  ("OCAMLRUNPARAM", value)
 
 let ocamlrunparam =
   make_with_exporter
@@ -237,6 +246,7 @@ let _ = List.iter register_variable
     bytecc_libs;
     c_preprocessor;
     caml_ld_library_path;
+    codegen_exit_status;
     compare_programs;
     compiler_directory_suffix;
     compiler_reference;
@@ -257,6 +267,7 @@ let _ = List.iter register_variable
     modules;
     nativecc_libs;
     objext;
+    libext;
     asmext;
     ocamlc_byte;
     ocamlopt_byte;

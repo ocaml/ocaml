@@ -39,6 +39,7 @@ module type S = sig
 
        N.B. The only instructions supported are the following:
                 - Lop (Ialloc _)
+                - Lop (Ipoll _)
                 - Lop (Iintop Icheckbound)
                 - Lop (Iintop_imm (Icheckbound, _))
                 - Lop (Ispecific _)
@@ -55,22 +56,25 @@ module type S = sig
   val offset_pc_at_branch : distance
 
   (* The maximum size of a given instruction. *)
-  val instr_size : Linear.instruction_desc -> distance
+  val instr_size : Linear.fundecl -> Linear.instruction_desc -> distance
 
   (* Insertion of target-specific code to relax operations that cannot be
      relaxed generically.  It is assumed that these rewrites do not change
      the size of out-of-line code (cf. branch_relaxation.mli). *)
   val relax_allocation
      : num_bytes:int
-    -> label_after_call_gc:Cmm.label option
     -> dbginfo:Debuginfo.alloc_dbginfo
     -> Linear.instruction_desc
+
+  val relax_poll
+     : return_label:Cmm.label option
+    -> Linear.instruction_desc
+
   val relax_intop_checkbound
-     : label_after_error:Cmm.label option
+     : unit
     -> Linear.instruction_desc
   val relax_intop_imm_checkbound
      : bound:int
-    -> label_after_error:Cmm.label option
     -> Linear.instruction_desc
   val relax_specific_op : Arch.specific_operation -> Linear.instruction_desc
 end

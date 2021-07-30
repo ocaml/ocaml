@@ -1,0 +1,162 @@
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*            Gabriel Scherer, projet Parsifal, INRIA Saclay              *
+#*                                                                        *
+#*   Copyright 2018 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
+# This makefile contains common definitions and rules shared by
+# other Makefiles
+
+include $(ROOTDIR)/Makefile.config_if_required
+
+# %(DEPDIR) must be kept in sync with entries in .gitignore
+DEPDIR=.dep
+D=d
+MKDIR=mkdir -p
+
+# $(EMPTY) is defined in Makefile.config, but may not have been loaded
+EMPTY :=
+# $(SPACE) contains a single space
+SPACE := $(EMPTY) $(EMPTY)
+
+DESTDIR ?=
+INSTALL_BINDIR := $(DESTDIR)$(BINDIR)
+INSTALL_LIBDIR := $(DESTDIR)$(LIBDIR)
+INSTALL_STUBLIBDIR := $(DESTDIR)$(STUBLIBDIR)
+INSTALL_MANDIR := $(DESTDIR)$(MANDIR)
+
+FLEXDLL_SUBMODULE_PRESENT := $(wildcard $(ROOTDIR)/flexdll/Makefile)
+
+# Variables used to represent the OCaml runtime system
+# Most of the time, boot/ocamlrun and runtime/ocamlrun are the same.
+# However, under some circumstances it is important to be able to
+# distinguish one from the other, hence these two variables.
+# Boot/ocamlrun is the most frequently used in the build system, so
+# we use OCAMLRUN to designate it and keep NEW_OCAMLRUN to refer
+# to runtime/ocamlrun, because it's less frequently used.
+OCAMLRUN ?= $(ROOTDIR)/boot/ocamlrun$(EXE)
+NEW_OCAMLRUN ?= $(ROOTDIR)/runtime/ocamlrun$(EXE)
+
+TEST_BOOT_OCAMLC_OPT = $(shell \
+  test $(ROOTDIR)/boot/ocamlc.opt -nt $(ROOTDIR)/boot/ocamlc; \
+  echo $$?)
+
+# Use boot/ocamlc.opt if available
+ifeq "$(TEST_BOOT_OCAMLC_OPT)" "0"
+  BOOT_OCAMLC = $(ROOTDIR)/boot/ocamlc.opt
+else
+  BOOT_OCAMLC = $(OCAMLRUN) $(ROOTDIR)/boot/ocamlc
+endif
+
+ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
+  FLEXLINK_ENV =
+  CAMLOPT_CMD = $(CAMLOPT)
+  OCAMLOPT_CMD = $(OCAMLOPT)
+  MKLIB_CMD = $(MKLIB)
+  ocamlc_cmd = $(ocamlc)
+  ocamlopt_cmd = $(ocamlopt)
+else
+ifeq "$(wildcard $(ROOTDIR)/flexlink.opt$(EXE))" ""
+  FLEXLINK_ENV = \
+    OCAML_FLEXLINK="$(ROOTDIR)/boot/ocamlrun$(EXE) \
+                    $(ROOTDIR)/boot/flexlink.byte$(EXE)"
+else
+  FLEXLINK_ENV = \
+    OCAML_FLEXLINK="$(ROOTDIR)/flexlink.opt$(EXE) -I $(ROOTDIR)/stdlib/flexdll"
+endif # ifeq "$(wildcard $(ROOTDIR)/flexlink.opt$(EXE))" ""
+  CAMLOPT_CMD = $(FLEXLINK_ENV) $(CAMLOPT)
+  OCAMLOPT_CMD = $(FLEXLINK_ENV) $(OCAMLOPT)
+  MKLIB_CMD = $(FLEXLINK_ENV) $(MKLIB)
+  ocamlc_cmd = $(FLEXLINK_ENV) $(ocamlc)
+  ocamlopt_cmd = $(FLEXLINK_ENV) $(ocamlopt)
+endif # ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
+
+OPTCOMPFLAGS=
+ifeq "$(FUNCTION_SECTIONS)" "true"
+OPTCOMPFLAGS += -function-sections
+endif
+
+# Escape special characters in the argument string.
+# There are four characters that need escaping:
+# - backslash and ampersand, which are special in the replacement text
+#   of sed's "s" command
+# - exclamation mark, which is the delimiter we use for sed's "s" command
+# - single quote, which interferes with shell quoting.  We are inside
+#   single quotes already, so the proper escape is '\''
+#   (close single quotation, insert single quote character,
+#    reopen single quotation).
+SED_ESCAPE=$(subst ','\'',$(subst !,\!,$(subst &,\&,$(subst \,\\,$1))))
+
+# Escape special characters in an OCaml string literal "..."
+# There are two: backslash and double quote.
+OCAML_ESCAPE=$(subst ",\",$(subst \,\\,$1))
+
+# SUBST generates the sed substitution for the variable *named* in $1
+SUBST=-e 's!%%$1%%!$(call SED_ESCAPE,$($1))!'
+
+# SUBST_STRING does the same, for a variable that occurs between "..."
+# in config.mlp.  Thus, backslashes and double quotes must be escaped.
+SUBST_STRING=-e 's!%%$1%%!$(call SED_ESCAPE,$(call OCAML_ESCAPE,$($1)))!'
+
+# The rule to compile C files
+
+# This rule is similar to GNU make's implicit rule, except that it is more
+# general (it supports both .o and .obj)
+
+ifneq "$(COMPUTE_DEPS)" "false"
+RUNTIME_HEADERS :=
+REQUIRED_HEADERS :=
+else
+RUNTIME_HEADERS := $(wildcard $(ROOTDIR)/runtime/caml/*.tbl) \
+                   $(wildcard $(ROOTDIR)/runtime/caml/*.h)
+REQUIRED_HEADERS := $(RUNTIME_HEADERS) $(wildcard *.h)
+endif
+
+%.$(O): %.c $(REQUIRED_HEADERS)
+	$(CC) -c $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
+	  $(OUTPUTOBJ)$@ $<
+
+$(DEPDIR):
+	$(MKDIR) $@
+
+# When executable files have an extension (e.g. ".exe"),
+# provide phony synonyms
+define PROGRAM_SYNONYM
+ifneq ($(EXE),)
+.PHONY: $(1)
+$(1): $(1)$(EXE)
+endif
+endef # PROGRAM_SYNONYM
+
+# Lexer generation
+
+BOOT_OCAMLLEX ?= $(OCAMLRUN) $(ROOTDIR)/boot/ocamllex
+
+# Default value for OCAMLLEX
+# In those directories where this needs to be overridden, the overriding
+# should take place *before* Makefile.common is included.
+
+OCAMLLEX ?= $(BEST_OCAMLLEX)
+
+OCAMLLEXFLAGS ?= -q
+
+%.ml: %.mll
+	$(OCAMLLEX) $(OCAMLLEXFLAGS) $<
+
+# Parser generation
+
+OCAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc$(EXE)
+
+OCAMLYACCFLAGS ?=
+
+%.ml %.mli: %.mly
+	$(OCAMLYACC) $(OCAMLYACCFLAGS) $<

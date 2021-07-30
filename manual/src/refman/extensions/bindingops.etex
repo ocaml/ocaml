@@ -1,0 +1,150 @@
+(Introduced in 4.08.0)
+
+\begin{syntax}
+let-operator:
+ | 'let' (core-operator-char || '<') { dot-operator-char }
+;
+and-operator:
+ | 'and' (core-operator-char || '<') { dot-operator-char }
+;
+operator-name :
+          ...
+        | let-operator
+        | and-operator
+;
+letop-binding :
+          pattern '=' expr
+        | value-name
+;
+expr:
+          ...
+        | let-operator letop-binding { and-operator letop-binding } in expr
+;
+\end{syntax}
+
+Users can define {\em let operators}:
+
+\begin{caml_example}{verbatim}
+let ( let* ) o f =
+  match o with
+  | None -> None
+  | Some x -> f x
+
+let return x = Some x
+\end{caml_example}
+
+and then apply them using this convenient syntax:
+
+\begin{caml_example}{verbatim}
+let find_and_sum tbl k1 k2 =
+  let* x1 = Hashtbl.find_opt tbl k1 in
+  let* x2 = Hashtbl.find_opt tbl k2 in
+    return (x1 + x2)
+\end{caml_example}
+
+which is equivalent to this expanded form:
+
+\begin{caml_example}{verbatim}
+let find_and_sum tbl k1 k2 =
+  ( let* ) (Hashtbl.find_opt tbl k1)
+    (fun x1 ->
+       ( let* ) (Hashtbl.find_opt tbl k2)
+         (fun x2 -> return (x1 + x2)))
+\end{caml_example}
+
+Users can also define {\em and operators}:
+
+\begin{caml_example}{verbatim}
+module ZipSeq = struct
+
+  type 'a t = 'a Seq.t
+
+  open Seq
+
+  let rec return x =
+    fun () -> Cons(x, return x)
+
+  let rec prod a b =
+    fun () ->
+      match a (), b () with
+      | Nil, _ | _, Nil -> Nil
+      | Cons(x, a), Cons(y, b) -> Cons((x, y), prod a b)
+
+  let ( let+ ) f s = map s f
+  let ( and+ ) a b = prod a b
+
+end
+\end{caml_example}
+
+to support the syntax:
+
+\begin{caml_example}{verbatim}
+open ZipSeq
+let sum3 z1 z2 z3 =
+  let+ x1 = z1
+  and+ x2 = z2
+  and+ x3 = z3 in
+    x1 + x2 + x3
+\end{caml_example}
+
+which is equivalent to this expanded form:
+
+\begin{caml_example}{verbatim}
+open ZipSeq
+let sum3 z1 z2 z3 =
+  ( let+ ) (( and+ ) (( and+ ) z1 z2) z3)
+    (fun ((x1, x2), x3) -> x1 + x2 + x3)
+\end{caml_example}
+
+
+\subsection{ss:letops-punning}{Short notation for variable bindings (let-punning)}
+
+(Introduced in 4.13.0)
+
+When the expression being bound is a variable, it can be convenient to
+use the shorthand notation "let+ x in ...", which expands to "let+ x =
+x in ...".  This notation, also known as let-punning, allows the
+"sum3" function above can be written more concisely as:
+
+\begin{caml_example}{verbatim}
+open ZipSeq
+let sum3 z1 z2 z3 =
+  let+ z1 and+ z2 and+ z3 in
+  z1 + z2 + z3
+\end{caml_example}
+
+This notation is also supported for extension nodes, expanding
+"let%foo x in ..." to "let%foo x = x in ...". However, to avoid
+confusion, this notation is not supported for plain "let" bindings.
+
+\subsection{ss:letops-rationale}{Rationale}
+
+This extension is intended to provide a convenient syntax for working
+with monads and applicatives.
+
+An applicative should provide a module implementing the following
+interface:
+
+\begin{caml_example*}{verbatim}
+module type Applicative_syntax = sig
+  type 'a t
+  val ( let+ ) : 'a t -> ('a -> 'b) -> 'b t
+  val ( and+ ): 'a t -> 'b t -> ('a * 'b) t
+end
+\end{caml_example*}
+
+where "(let+)" is bound to the "map" operation and "(and+)" is bound to
+the monoidal product operation.
+
+A monad should provide a module implementing the following interface:
+
+\begin{caml_example*}{verbatim}
+module type Monad_syntax = sig
+  include Applicative_syntax
+  val ( let* ) : 'a t -> ('a -> 'b t) -> 'b t
+  val ( and* ): 'a t -> 'b t -> ('a * 'b) t
+end
+\end{caml_example*}
+
+where "(let*)" is bound to the "bind" operation, and "(and*)" is also
+bound to the monoidal product operation.

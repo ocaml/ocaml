@@ -15,12 +15,6 @@
 
 (* Representation of machine code by sequences of pseudoinstructions *)
 
-(** N.B. Backends vary in their treatment of call gc and checkbound
-    points.  If the positioning of any labels associated with these is
-    important for some new feature in the compiler, the relevant backends'
-    behaviour should be checked. *)
-type label = Cmm.label
-
 type integer_comparison =
     Isigned of Cmm.integer_comparison
   | Iunsigned of Cmm.integer_comparison
@@ -29,11 +23,7 @@ type integer_operation =
     Iadd | Isub | Imul | Imulh | Idiv | Imod
   | Iand | Ior | Ixor | Ilsl | Ilsr | Iasr
   | Icomp of integer_comparison
-  | Icheckbound of { label_after_error : label option;
-        spacetime_index : int; }
-    (** For Spacetime only, [Icheckbound] operations take two arguments, the
-        second being the pointer to the trie node for the current function
-        (and the first being as per non-Spacetime mode). *)
+  | Icheckbound
 
 type float_comparison = Cmm.float_comparison
 
@@ -53,32 +43,25 @@ type operation =
   | Iconst_int of nativeint
   | Iconst_float of int64
   | Iconst_symbol of string
-  | Icall_ind of { label_after : label; }
-  | Icall_imm of { func : string; label_after : label; }
-  | Itailcall_ind of { label_after : label; }
-  | Itailcall_imm of { func : string; label_after : label; }
-  | Iextcall of { func : string; alloc : bool; label_after : label; }
+  | Icall_ind
+  | Icall_imm of { func : string; }
+  | Itailcall_ind
+  | Itailcall_imm of { func : string; }
+  | Iextcall of { func : string;
+                  ty_res : Cmm.machtype; ty_args : Cmm.exttype list;
+                  alloc : bool; }
   | Istackoffset of int
-  | Iload of Cmm.memory_chunk * Arch.addressing_mode
+  | Iload of Cmm.memory_chunk * Arch.addressing_mode * Asttypes.mutable_flag
   | Istore of Cmm.memory_chunk * Arch.addressing_mode * bool
                                  (* false = initialization, true = assignment *)
-  | Ialloc of { bytes : int; label_after_call_gc : label option;
-      dbginfo : Debuginfo.alloc_dbginfo; spacetime_index : int; }
-    (** For Spacetime only, Ialloc instructions take one argument, being the
-        pointer to the trie node for the current function. *)
+  | Ialloc of { bytes : int; dbginfo : Debuginfo.alloc_dbginfo; }
   | Iintop of integer_operation
   | Iintop_imm of integer_operation * int
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat
+  | Iopaque
   | Ispecific of Arch.specific_operation
-  | Iname_for_debugger of { ident : Backend_var.t; which_parameter : int option;
-      provenance : unit option; is_assignment : bool; }
-    (** [Iname_for_debugger] has the following semantics:
-        (a) The argument register(s) is/are deemed to contain the value of the
-            given identifier.
-        (b) If [is_assignment] is [true], any information about other [Reg.t]s
-            that have been previously deemed to hold the value of that
-            identifier is forgotten. *)
+  | Ipoll of { return_label: Cmm.label option }
 
 type instruction =
   { desc: instruction_desc;
@@ -86,9 +69,7 @@ type instruction =
     arg: Reg.t array;
     res: Reg.t array;
     dbg: Debuginfo.t;
-    mutable live: Reg.Set.t;
-    mutable available_before: Reg_availability_set.t;
-    mutable available_across: Reg_availability_set.t option;
+    mutable live: Reg.Set.t
   }
 
 and instruction_desc =
@@ -102,26 +83,12 @@ and instruction_desc =
   | Itrywith of instruction * instruction
   | Iraise of Lambda.raise_kind
 
-type spacetime_part_of_shape =
-  | Direct_call_point of { callee : string; (* the symbol *) }
-  | Indirect_call_point
-  | Allocation_point
-
-(** A description of the layout of a Spacetime profiling node associated with
-    a given function.  Each call and allocation point instrumented within
-    the function is marked with a label in the code and assigned a place
-    within the node.  This information is stored within the executable and
-    extracted when the user saves a profile.  The aim is to minimise runtime
-    memory usage within the nodes and increase performance. *)
-type spacetime_shape = (spacetime_part_of_shape * Cmm.label) list
-
 type fundecl =
   { fun_name: string;
     fun_args: Reg.t array;
     fun_body: instruction;
     fun_codegen_options : Cmm.codegen_option list;
     fun_dbg : Debuginfo.t;
-    fun_spacetime_shape : spacetime_shape option;
     fun_num_stack_slots: int array;
     fun_contains_calls: bool;
   }
@@ -136,6 +103,11 @@ val instr_cons_debug:
         instruction -> instruction
 val instr_iter: (instruction -> unit) -> instruction -> unit
 
-val spacetime_node_hole_pointer_is_live_before : instruction -> bool
+val operation_is_pure : operation -> bool
+  (** Returns [true] if the given operation only produces a result
+      in its destination registers, but has no side effects whatsoever:
+      it doesn't raise exceptions, it doesn't modify already-allocated
+      blocks, it doesn't adjust the stack frame, etc. *)
 
 val operation_can_raise : operation -> bool
+  (** Returns [true] if the given operation can raise an exception. *)

@@ -21,13 +21,13 @@
 
 #include <string.h>
 #include "caml/alloc.h"
+#include "caml/codefrag.h"
 #include "caml/config.h"
 #include "caml/custom.h"
 #include "caml/fail.h"
 #include "caml/gc.h"
 #include "caml/intext.h"
 #include "caml/io.h"
-#include "caml/md5.h"
 #include "caml/memory.h"
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
@@ -48,23 +48,6 @@ enum {
 
 static int extern_flags;        /* logical or of some of the flags above */
 
-/* Trail mechanism to undo forwarding pointers put inside objects */
-
-struct trail_entry {
-  value obj;    /* address of object + initial color in low 2 bits */
-  value field0; /* initial contents of field 0 */
-};
-
-struct trail_block {
-  struct trail_block * previous;
-  struct trail_entry entries[ENTRIES_PER_TRAIL_BLOCK];
-};
-
-static struct trail_block extern_trail_first;
-static struct trail_block * extern_trail_block;
-static struct trail_entry * extern_trail_cur, * extern_trail_limit;
-
-
 /* Stack for pending values to marshal */
 
 struct extern_item { value * v; mlsize_t count; };
@@ -77,6 +60,43 @@ static struct extern_item extern_stack_init[EXTERN_STACK_INIT_SIZE];
 static struct extern_item * extern_stack = extern_stack_init;
 static struct extern_item * extern_stack_limit = extern_stack_init
                                                    + EXTERN_STACK_INIT_SIZE;
+
+/* Hash table to record already-marshaled objects and their positions */
+
+struct object_position { value obj; uintnat pos; };
+
+/* The hash table uses open addressing, linear probing, and a redundant
+   representation:
+   - a bitvector [present] records which entries of the table are occupied;
+   - an array [entries] records (object, position) pairs for the entries
+     that are occupied.
+   The bitvector is much smaller than the array (1/128th on 64-bit
+   platforms, 1/64th on 32-bit platforms), so it has better locality,
+   making it faster to determine that an object is not in the table.
+   Also, it makes it faster to empty or initialize a table: only the
+   [present] bitvector needs to be filled with zeros, the [entries]
+   array can be left uninitialized.
+*/
+
+struct position_table {
+  int shift;
+  mlsize_t size;                    /* size == 1 << (wordsize - shift) */
+  mlsize_t mask;                    /* mask == size - 1 */
+  mlsize_t threshold;               /* threshold == a fixed fraction of size */
+  uintnat * present;                /* [Bitvect_size(size)] */
+  struct object_position * entries; /* [size]  */
+};
+
+#define Bits_word (8 * sizeof(uintnat))
+#define Bitvect_size(n) (((n) + Bits_word - 1) / Bits_word)
+
+#define POS_TABLE_INIT_SIZE_LOG2 8
+#define POS_TABLE_INIT_SIZE (1 << POS_TABLE_INIT_SIZE_LOG2)
+
+static uintnat pos_table_present_init[Bitvect_size(POS_TABLE_INIT_SIZE)];
+static struct object_position pos_table_entries_init[POS_TABLE_INIT_SIZE];
+
+static struct position_table pos_table;
 
 /* Forward declarations */
 
@@ -96,7 +116,6 @@ CAMLnoreturn_start
 static void extern_stack_overflow(void)
 CAMLnoreturn_end;
 
-static void extern_replay_trail(void);
 static void free_extern_output(void);
 
 /* Free the extern stack if needed */
@@ -132,68 +151,148 @@ static struct extern_item * extern_resize_stack(struct extern_item * sp)
   return newstack + sp_offset;
 }
 
-/* Initialize the trail */
+/* Multiplicative Fibonacci hashing
+   (Knuth, TAOCP vol 3, section 6.4, page 518).
+   HASH_FACTOR is (sqrt(5) - 1) / 2 * 2^wordsize. */
+#ifdef ARCH_SIXTYFOUR
+#define HASH_FACTOR 11400714819323198486UL
+#else
+#define HASH_FACTOR 2654435769UL
+#endif
+#define Hash(v) (((uintnat)(v) * HASH_FACTOR) >> pos_table.shift)
 
-static void init_extern_trail(void)
+/* When the table becomes 2/3 full, its size is increased. */
+#define Threshold(sz) (((sz) * 2) / 3)
+
+/* Initialize the position table */
+
+static void extern_init_position_table(void)
 {
-  extern_trail_block = &extern_trail_first;
-  extern_trail_cur = extern_trail_block->entries;
-  extern_trail_limit = extern_trail_block->entries + ENTRIES_PER_TRAIL_BLOCK;
-}
-
-/* Replay the trail, undoing the in-place modifications
-   performed on objects */
-
-static void extern_replay_trail(void)
-{
-  struct trail_block * blk, * prevblk;
-  struct trail_entry * ent, * lim;
-
-  blk = extern_trail_block;
-  lim = extern_trail_cur;
-  while (1) {
-    for (ent = &(blk->entries[0]); ent < lim; ent++) {
-      value obj = ent->obj;
-      color_t colornum = obj & 3;
-      obj = obj & ~3;
-      Hd_val(obj) = Coloredhd_hd(Hd_val(obj), colornum);
-      Field(obj, 0) = ent->field0;
-    }
-    if (blk == &extern_trail_first) break;
-    prevblk = blk->previous;
-    caml_stat_free(blk);
-    blk = prevblk;
-    lim = &(blk->entries[ENTRIES_PER_TRAIL_BLOCK]);
-  }
-  /* Protect against a second call to extern_replay_trail */
-  extern_trail_block = &extern_trail_first;
-  extern_trail_cur = extern_trail_block->entries;
-}
-
-/* Set forwarding pointer on an object and add corresponding entry
-   to the trail. */
-
-static void extern_record_location(value obj)
-{
-  header_t hdr;
-
   if (extern_flags & NO_SHARING) return;
-  if (extern_trail_cur == extern_trail_limit) {
-    struct trail_block * new_block =
-      caml_stat_alloc_noexc(sizeof(struct trail_block));
-    if (new_block == NULL) extern_out_of_memory();
-    new_block->previous = extern_trail_block;
-    extern_trail_block = new_block;
-    extern_trail_cur = extern_trail_block->entries;
-    extern_trail_limit = extern_trail_block->entries + ENTRIES_PER_TRAIL_BLOCK;
+  pos_table.size = POS_TABLE_INIT_SIZE;
+  pos_table.shift = 8 * sizeof(value) - POS_TABLE_INIT_SIZE_LOG2;
+  pos_table.mask = POS_TABLE_INIT_SIZE - 1;
+  pos_table.threshold = Threshold(POS_TABLE_INIT_SIZE);
+  pos_table.present = pos_table_present_init;
+  pos_table.entries = pos_table_entries_init;
+  memset(pos_table_present_init, 0, sizeof(pos_table_present_init));
+}
+
+/* Free the position table */
+
+static void extern_free_position_table(void)
+{
+  if (pos_table.present != pos_table_present_init) {
+    caml_stat_free(pos_table.present);
+    caml_stat_free(pos_table.entries);
+    /* Protect against repeated calls to extern_free_position_table */
+    pos_table.present = pos_table_present_init;
   }
-  hdr = Hd_val(obj);
-  extern_trail_cur->obj = obj | Colornum_hd(hdr);
-  extern_trail_cur->field0 = Field(obj, 0);
-  extern_trail_cur++;
-  Hd_val(obj) = Bluehd_hd(hdr);
-  Field(obj, 0) = (value) obj_counter;
+}
+
+/* Accessing bitvectors */
+
+Caml_inline uintnat bitvect_test(uintnat * bv, uintnat i)
+{
+  return bv[i / Bits_word] & ((uintnat) 1 << (i & (Bits_word - 1)));
+}
+
+Caml_inline void bitvect_set(uintnat * bv, uintnat i)
+{
+  bv[i / Bits_word] |= ((uintnat) 1 << (i & (Bits_word - 1)));
+}
+
+/* Grow the position table */
+
+static void extern_resize_position_table(void)
+{
+  mlsize_t new_size, new_byte_size;
+  int new_shift;
+  uintnat * new_present;
+  struct object_position * new_entries;
+  uintnat i, h;
+  struct position_table old = pos_table;
+
+  /* Grow the table quickly (x 8) up to 10^6 entries,
+     more slowly (x 2) afterwards. */
+  if (old.size < 1000000) {
+    new_size = 8 * old.size;
+    new_shift = old.shift - 3;
+  } else {
+    new_size = 2 * old.size;
+    new_shift = old.shift - 1;
+  }
+  if (new_size == 0
+      || caml_umul_overflow(new_size, sizeof(struct object_position),
+                            &new_byte_size))
+    extern_out_of_memory();
+  new_entries = caml_stat_alloc_noexc(new_byte_size);
+  if (new_entries == NULL) extern_out_of_memory();
+  new_present =
+    caml_stat_calloc_noexc(Bitvect_size(new_size), sizeof(uintnat));
+  if (new_present == NULL) {
+    caml_stat_free(new_entries);
+    extern_out_of_memory();
+  }
+  pos_table.size = new_size;
+  pos_table.shift = new_shift;
+  pos_table.mask = new_size - 1;
+  pos_table.threshold = Threshold(new_size);
+  pos_table.present = new_present;
+  pos_table.entries = new_entries;
+
+  /* Insert every entry of the old table in the new table */
+  for (i = 0; i < old.size; i++) {
+    if (! bitvect_test(old.present, i)) continue;
+    h = Hash(old.entries[i].obj);
+    while (bitvect_test(new_present, h)) {
+      h = (h + 1) & pos_table.mask;
+    }
+    bitvect_set(new_present, h);
+    new_entries[h] = old.entries[i];
+  }
+
+  /* Free the old tables if not statically allocated */
+  if (old.present != pos_table_present_init) {
+    caml_stat_free(old.present);
+    caml_stat_free(old.entries);
+  }
+}
+
+/* Determine whether the given object [obj] is in the hash table.
+   If so, set [*pos_out] to its position in the output and return 1.
+   If not, set [*h_out] to the hash value appropriate for
+   [extern_record_location] and return 0. */
+
+Caml_inline int extern_lookup_position(value obj,
+                                       uintnat * pos_out, uintnat * h_out)
+{
+  uintnat h = Hash(obj);
+  while (1) {
+    if (! bitvect_test(pos_table.present, h)) {
+      *h_out = h;
+      return 0;
+    }
+    if (pos_table.entries[h].obj == obj) {
+      *pos_out = pos_table.entries[h].pos;
+      return 1;
+    }
+    h = (h + 1) & pos_table.mask;
+  }
+}
+
+/* Record the output position for the given object [obj]. */
+/* The [h] parameter is the index in the hash table where the object
+   must be inserted.  It was determined during lookup. */
+
+static void extern_record_location(value obj, uintnat h)
+{
+  if (extern_flags & NO_SHARING) return;
+  bitvect_set(pos_table.present, h);
+  pos_table.entries[h].obj = obj;
+  pos_table.entries[h].pos = obj_counter;
   obj_counter++;
+  if (obj_counter >= pos_table.threshold) extern_resize_position_table();
 }
 
 /* To buffer the output */
@@ -231,13 +330,15 @@ static void free_extern_output(void)
 {
   struct output_block * blk, * nextblk;
 
-  if (extern_userprovided_output != NULL) return;
-  for (blk = extern_output_first; blk != NULL; blk = nextblk) {
-    nextblk = blk->next;
-    caml_stat_free(blk);
+  if (extern_userprovided_output == NULL) {
+    for (blk = extern_output_first; blk != NULL; blk = nextblk) {
+      nextblk = blk->next;
+      caml_stat_free(blk);
+    }
+    extern_output_first = NULL;
   }
-  extern_output_first = NULL;
   extern_free_stack();
+  extern_free_position_table();
 }
 
 static void grow_extern_output(intnat required)
@@ -280,21 +381,18 @@ static intnat extern_output_length(void)
 
 static void extern_out_of_memory(void)
 {
-  extern_replay_trail();
   free_extern_output();
   caml_raise_out_of_memory();
 }
 
 static void extern_invalid_argument(char *msg)
 {
-  extern_replay_trail();
   free_extern_output();
   caml_invalid_argument(msg);
 }
 
 static void extern_failwith(char *msg)
 {
-  extern_replay_trail();
   free_extern_output();
   caml_failwith(msg);
 }
@@ -302,7 +400,6 @@ static void extern_failwith(char *msg)
 static void extern_stack_overflow(void)
 {
   caml_gc_message (0x04, "Stack overflow in marshaling value\n");
-  extern_replay_trail();
   free_extern_output();
   caml_raise_out_of_memory();
 }
@@ -383,37 +480,228 @@ static void writecode64(int code, intnat val)
 }
 #endif
 
-/* Marshal the given value in the output buffer */
+/* Marshaling integers */
 
-int caml_extern_allow_out_of_heap = 0;
-
-static void extern_rec(value v)
+Caml_inline void extern_int(intnat n)
 {
-  struct code_fragment * cf;
-  struct extern_item * sp;
-  sp = extern_stack;
-
-  while(1) {
-  if (Is_long(v)) {
-    intnat n = Long_val(v);
-    if (n >= 0 && n < 0x40) {
-      write(PREFIX_SMALL_INT + n);
-    } else if (n >= -(1 << 7) && n < (1 << 7)) {
-      writecode8(CODE_INT8, n);
-    } else if (n >= -(1 << 15) && n < (1 << 15)) {
-      writecode16(CODE_INT16, n);
+  if (n >= 0 && n < 0x40) {
+    write(PREFIX_SMALL_INT + n);
+  } else if (n >= -(1 << 7) && n < (1 << 7)) {
+    writecode8(CODE_INT8, n);
+  } else if (n >= -(1 << 15) && n < (1 << 15)) {
+    writecode16(CODE_INT16, n);
 #ifdef ARCH_SIXTYFOUR
-    } else if (n < -((intnat)1 << 30) || n >= ((intnat)1 << 30)) {
+  } else if (n < -((intnat)1 << 30) || n >= ((intnat)1 << 30)) {
       if (extern_flags & COMPAT_32)
         extern_failwith("output_value: integer cannot be read back on "
                         "32-bit platform");
       writecode64(CODE_INT64, n);
 #endif
-    } else
-      writecode32(CODE_INT32, n);
-    goto next_item;
+  } else {
+    writecode32(CODE_INT32, n);
   }
-  if (Is_in_value_area(v) || caml_extern_allow_out_of_heap) {
+}
+
+/* Marshaling references to previously-marshaled blocks */
+
+Caml_inline void extern_shared_reference(uintnat d)
+{
+  if (d < 0x100) {
+    writecode8(CODE_SHARED8, d);
+  } else if (d < 0x10000) {
+    writecode16(CODE_SHARED16, d);
+#ifdef ARCH_SIXTYFOUR
+  } else if (d >= (uintnat)1 << 32) {
+    writecode64(CODE_SHARED64, d);
+#endif
+  } else {
+    writecode32(CODE_SHARED32, d);
+  }
+}
+
+/* Marshaling block headers */
+
+Caml_inline void extern_header(mlsize_t sz, tag_t tag)
+{
+  if (tag < 16 && sz < 8) {
+    write(PREFIX_SMALL_BLOCK + tag + (sz << 4));
+  } else {
+    header_t hd = Make_header(sz, tag, Caml_white);
+#ifdef ARCH_SIXTYFOUR
+    if (sz > 0x3FFFFF && (extern_flags & COMPAT_32))
+      extern_failwith("output_value: array cannot be read back on "
+                      "32-bit platform");
+    if (hd < (uintnat)1 << 32)
+      writecode32(CODE_BLOCK32, hd);
+    else
+      writecode64(CODE_BLOCK64, hd);
+#else
+    writecode32(CODE_BLOCK32, hd);
+#endif
+  }
+}
+
+/* Marshaling strings */
+
+Caml_inline void extern_string(value v, mlsize_t len)
+{
+  if (len < 0x20) {
+    write(PREFIX_SMALL_STRING + len);
+  } else if (len < 0x100) {
+    writecode8(CODE_STRING8, len);
+  } else {
+#ifdef ARCH_SIXTYFOUR
+    if (len > 0xFFFFFB && (extern_flags & COMPAT_32))
+      extern_failwith("output_value: string cannot be read back on "
+                      "32-bit platform");
+    if (len < (uintnat)1 << 32)
+      writecode32(CODE_STRING32, len);
+    else
+      writecode64(CODE_STRING64, len);
+#else
+    writecode32(CODE_STRING32, len);
+#endif
+  }
+  writeblock(String_val(v), len);
+}
+
+/* Marshaling FP numbers */
+
+Caml_inline void extern_double(value v)
+{
+  write(CODE_DOUBLE_NATIVE);
+  writeblock_float8((double *) v, 1);
+}
+
+/* Marshaling FP arrays */
+
+Caml_inline void extern_double_array(value v, mlsize_t nfloats)
+{
+  if (nfloats < 0x100) {
+    writecode8(CODE_DOUBLE_ARRAY8_NATIVE, nfloats);
+  } else {
+#ifdef ARCH_SIXTYFOUR
+    if (nfloats > 0x1FFFFF && (extern_flags & COMPAT_32))
+      extern_failwith("output_value: float array cannot be read back on "
+                      "32-bit platform");
+    if (nfloats < (uintnat) 1 << 32)
+      writecode32(CODE_DOUBLE_ARRAY32_NATIVE, nfloats);
+    else
+      writecode64(CODE_DOUBLE_ARRAY64_NATIVE, nfloats);
+#else
+    writecode32(CODE_DOUBLE_ARRAY32_NATIVE, nfloats);
+#endif
+  }
+  writeblock_float8((double *) v, nfloats);
+}
+
+/* Marshaling custom blocks */
+
+Caml_inline void extern_custom(value v,
+                               /*out*/ uintnat * sz_32,
+                               /*out*/ uintnat * sz_64)
+{
+  char * size_header;
+  char const * ident = Custom_ops_val(v)->identifier;
+  void (*serialize)(value v, uintnat * bsize_32, uintnat * bsize_64)
+        = Custom_ops_val(v)->serialize;
+  const struct custom_fixed_length* fixed_length
+        = Custom_ops_val(v)->fixed_length;
+  if (serialize == NULL)
+    extern_invalid_argument("output_value: abstract value (Custom)");
+  if (fixed_length == NULL) {
+    write(CODE_CUSTOM_LEN);
+    writeblock(ident, strlen(ident) + 1);
+    /* Reserve 12 bytes for the lengths (sz_32 and sz_64). */
+    if (extern_ptr + 12 >= extern_limit) grow_extern_output(12);
+    size_header = extern_ptr;
+    extern_ptr += 12;
+    serialize(v, sz_32, sz_64);
+    /* Store length before serialized block */
+    store32(size_header, *sz_32);
+    store64(size_header + 4, *sz_64);
+  } else {
+    write(CODE_CUSTOM_FIXED);
+    writeblock(ident, strlen(ident) + 1);
+    serialize(v, sz_32, sz_64);
+        if (*sz_32 != fixed_length->bsize_32 ||
+            *sz_64 != fixed_length->bsize_64)
+          caml_fatal_error(
+            "output_value: incorrect fixed sizes specified by %s",
+            ident);
+  }
+}
+
+/* Marshaling code pointers */
+
+static void extern_code_pointer(char * codeptr)
+{
+  struct code_fragment * cf;
+  const char * digest;
+
+  cf = caml_find_code_fragment_by_pc(codeptr);
+  if (cf != NULL) {
+    if ((extern_flags & CLOSURES) == 0)
+      extern_invalid_argument("output_value: functional value");
+    digest = (const char *) caml_digest_of_code_fragment(cf);
+    if (digest == NULL)
+      extern_invalid_argument("output_value: private function");
+    writecode32(CODE_CODEPOINTER, codeptr - cf->code_start);
+    writeblock(digest, 16);
+  } else {
+    extern_invalid_argument("output_value: abstract value (outside heap)");
+  }
+}
+
+/* Marshaling the non-environment part of closures */
+
+#ifdef NO_NAKED_POINTERS
+Caml_inline mlsize_t extern_closure_up_to_env(value v)
+{
+  mlsize_t startenv, i;
+  value info;
+
+  startenv = Start_env_closinfo(Closinfo_val(v));
+  i = 0;
+  do {
+    /* The infix header */
+    if (i > 0) extern_int(Long_val(Field(v, i++)));
+    /* The default entry point */
+    extern_code_pointer((char *) Field(v, i++));
+    /* The closure info. */
+    info = Field(v, i++);
+    extern_int(Long_val(info));
+    /* The direct entry point if arity is neither 0 nor 1 */
+    if (Arity_closinfo(info) != 0 && Arity_closinfo(info) != 1) {
+      extern_code_pointer((char *) Field(v, i++));
+    }
+  } while (i < startenv);
+  CAMLassert(i == startenv);
+  return startenv;
+}
+#endif
+
+/* Marshal the given value in the output buffer */
+
+static void extern_rec(value v)
+{
+  struct extern_item * sp;
+  uintnat h = 0;
+  uintnat pos = 0;
+
+  extern_init_position_table();
+  sp = extern_stack;
+
+  while(1) {
+  if (Is_long(v)) {
+    extern_int(Long_val(v));
+  }
+  else if (! (Is_in_value_area(v))) {
+    /* Naked pointer outside the heap: try to marshal it as a code pointer,
+       otherwise fail. */
+    extern_code_pointer((char *) v);
+  }
+  else {
     header_t hd = Hd_val(v);
     tag_t tag = Tag_hd(hd);
     mlsize_t sz = Wosize_hd(hd);
@@ -436,95 +724,42 @@ static void extern_rec(value v)
     /* Atoms are treated specially for two reasons: they are not allocated
        in the externed block, and they are automatically shared. */
     if (sz == 0) {
-      if (tag < 16) {
-        write(PREFIX_SMALL_BLOCK + tag);
-      } else {
-#ifdef WITH_PROFINFO
-        writecode32(CODE_BLOCK32, Hd_no_profinfo(hd));
-#else
-        writecode32(CODE_BLOCK32, hd);
-#endif
-      }
+      extern_header(0, tag);
       goto next_item;
     }
-    /* Check if already seen */
-    if (Color_hd(hd) == Caml_blue) {
-      uintnat d = obj_counter - (uintnat) Field(v, 0);
-      if (d < 0x100) {
-        writecode8(CODE_SHARED8, d);
-      } else if (d < 0x10000) {
-        writecode16(CODE_SHARED16, d);
-#ifdef ARCH_SIXTYFOUR
-      } else if (d >= (uintnat)1 << 32) {
-        writecode64(CODE_SHARED64, d);
-#endif
-      } else {
-        writecode32(CODE_SHARED32, d);
+    /* Check if object already seen */
+    if (! (extern_flags & NO_SHARING)) {
+      if (extern_lookup_position(v, &pos, &h)) {
+        extern_shared_reference(obj_counter - pos);
+        goto next_item;
       }
-      goto next_item;
     }
-
     /* Output the contents of the object */
     switch(tag) {
     case String_tag: {
       mlsize_t len = caml_string_length(v);
-      if (len < 0x20) {
-        write(PREFIX_SMALL_STRING + len);
-      } else if (len < 0x100) {
-        writecode8(CODE_STRING8, len);
-      } else {
-#ifdef ARCH_SIXTYFOUR
-        if (len > 0xFFFFFB && (extern_flags & COMPAT_32))
-          extern_failwith("output_value: string cannot be read back on "
-                          "32-bit platform");
-        if (len < (uintnat)1 << 32)
-          writecode32(CODE_STRING32, len);
-        else
-          writecode64(CODE_STRING64, len);
-#else
-        writecode32(CODE_STRING32, len);
-#endif
-      }
-      writeblock(String_val(v), len);
+      extern_string(v, len);
       size_32 += 1 + (len + 4) / 4;
       size_64 += 1 + (len + 8) / 8;
-      extern_record_location(v);
+      extern_record_location(v, h);
       break;
     }
     case Double_tag: {
-      if (sizeof(double) != 8)
-        extern_invalid_argument("output_value: non-standard floats");
-      write(CODE_DOUBLE_NATIVE);
-      writeblock_float8((double *) v, 1);
+      CAMLassert(sizeof(double) == 8);
+      extern_double(v);
       size_32 += 1 + 2;
       size_64 += 1 + 1;
-      extern_record_location(v);
+      extern_record_location(v, h);
       break;
     }
     case Double_array_tag: {
       mlsize_t nfloats;
-      if (sizeof(double) != 8)
-        extern_invalid_argument("output_value: non-standard floats");
+      CAMLassert(sizeof(double) == 8);
       nfloats = Wosize_val(v) / Double_wosize;
-      if (nfloats < 0x100) {
-        writecode8(CODE_DOUBLE_ARRAY8_NATIVE, nfloats);
-      } else {
-#ifdef ARCH_SIXTYFOUR
-        if (nfloats > 0x1FFFFF && (extern_flags & COMPAT_32))
-          extern_failwith("output_value: float array cannot be read back on "
-                          "32-bit platform");
-        if (nfloats < (uintnat) 1 << 32)
-          writecode32(CODE_DOUBLE_ARRAY32_NATIVE, nfloats);
-        else
-          writecode64(CODE_DOUBLE_ARRAY64_NATIVE, nfloats);
-#else
-        writecode32(CODE_DOUBLE_ARRAY32_NATIVE, nfloats);
-#endif
-      }
-      writeblock_float8((double *) v, nfloats);
+      extern_double_array(v, nfloats);
       size_32 += 1 + nfloats * 2;
       size_64 += 1 + nfloats;
-      extern_record_location(v);
+      extern_record_location(v, h);
       break;
     }
     case Abstract_tag:
@@ -536,97 +771,57 @@ static void extern_rec(value v)
       continue;
     case Custom_tag: {
       uintnat sz_32, sz_64;
-      char * size_header;
-      char const * ident = Custom_ops_val(v)->identifier;
-      void (*serialize)(value v, uintnat * bsize_32,
-                        uintnat * bsize_64)
-        = Custom_ops_val(v)->serialize;
-      const struct custom_fixed_length* fixed_length
-        = Custom_ops_val(v)->fixed_length;
-      if (serialize == NULL)
-        extern_invalid_argument("output_value: abstract value (Custom)");
-      if (fixed_length == NULL) {
-        write(CODE_CUSTOM_LEN);
-        writeblock(ident, strlen(ident) + 1);
-        /* Reserve 12 bytes for the lengths (sz_32 and sz_64). */
-        if (extern_ptr + 12 >= extern_limit) grow_extern_output(12);
-        size_header = extern_ptr;
-        extern_ptr += 12;
-        serialize(v, &sz_32, &sz_64);
-        /* Store length before serialized block */
-        store32(size_header, sz_32);
-        store64(size_header + 4, sz_64);
-      } else {
-        write(CODE_CUSTOM_FIXED);
-        writeblock(ident, strlen(ident) + 1);
-        serialize(v, &sz_32, &sz_64);
-        if (sz_32 != fixed_length->bsize_32 ||
-            sz_64 != fixed_length->bsize_64)
-          caml_fatal_error(
-            "output_value: incorrect fixed sizes specified by %s",
-            ident);
-      }
+      extern_custom(v, &sz_32, &sz_64);
       size_32 += 2 + ((sz_32 + 3) >> 2);  /* header + ops + data */
       size_64 += 2 + ((sz_64 + 7) >> 3);
-      extern_record_location(v);
+      extern_record_location(v, h);
       break;
     }
-    default: {
-      value field0;
-      if (tag < 16 && sz < 8) {
-        write(PREFIX_SMALL_BLOCK + tag + (sz << 4));
-      } else {
-#ifdef ARCH_SIXTYFOUR
-#ifdef WITH_PROFINFO
-        header_t hd_erased = Hd_no_profinfo(hd);
-#else
-        header_t hd_erased = hd;
-#endif
-        if (sz > 0x3FFFFF && (extern_flags & COMPAT_32))
-          extern_failwith("output_value: array cannot be read back on "
-                          "32-bit platform");
-        if (hd_erased < (uintnat)1 << 32)
-          writecode32(CODE_BLOCK32, Whitehd_hd (hd_erased));
-        else
-          writecode64(CODE_BLOCK64, Whitehd_hd (hd_erased));
-#else
-        writecode32(CODE_BLOCK32, Whitehd_hd (hd));
-#endif
-      }
+#ifdef NO_NAKED_POINTERS
+    case Closure_tag: {
+      mlsize_t i;
+      extern_header(sz, tag);
       size_32 += 1 + sz;
       size_64 += 1 + sz;
-      field0 = Field(v, 0);
-      extern_record_location(v);
+      extern_record_location(v, h);
+      i = extern_closure_up_to_env(v);
+      if (i >= sz) goto next_item;
+      /* Remember that we still have to serialize fields i + 1 ... sz - 1 */
+      if (i < sz - 1) {
+        sp++;
+        if (sp >= extern_stack_limit) sp = extern_resize_stack(sp);
+        sp->v = &Field(v, i + 1);
+        sp->count = sz - i - 1;
+      }
+      /* Continue serialization with the first environment field */
+      v = Field(v, i);
+      continue;
+    }
+#endif
+    default: {
+      extern_header(sz, tag);
+      size_32 += 1 + sz;
+      size_64 += 1 + sz;
+      extern_record_location(v, h);
       /* Remember that we still have to serialize fields 1 ... sz - 1 */
       if (sz > 1) {
         sp++;
         if (sp >= extern_stack_limit) sp = extern_resize_stack(sp);
-        sp->v = &Field(v,1);
-        sp->count = sz-1;
+        sp->v = &Field(v, 1);
+        sp->count = sz - 1;
       }
       /* Continue serialization with the first field */
-      v = field0;
+      v = Field(v, 0);
       continue;
     }
     }
-  }
-  else if (caml_find_code_fragment((char*) v, NULL, &cf)) {
-    if ((extern_flags & CLOSURES) == 0)
-      extern_invalid_argument("output_value: functional value");
-    if (! cf->digest_computed) {
-      caml_md5_block(cf->digest, cf->code_start, cf->code_end - cf->code_start);
-      cf->digest_computed = 1;
-    }
-    writecode32(CODE_CODEPOINTER, (char *) v - cf->code_start);
-    writeblock((const char *)cf->digest, 16);
-  } else {
-    extern_invalid_argument("output_value: abstract value (outside heap)");
   }
   next_item:
     /* Pop one more item to marshal, if any */
     if (sp == extern_stack) {
         /* We are done.   Cleanup the stack and leave the function */
         extern_free_stack();
+        extern_free_position_table();
         return;
     }
     v = *((sp->v)++);
@@ -645,7 +840,6 @@ static intnat extern_value(value v, value flags,
   /* Parse flag list */
   extern_flags = caml_convert_flag_list(flags, extern_flag_values);
   /* Initializations */
-  init_extern_trail();
   obj_counter = 0;
   size_32 = 0;
   size_64 = 0;
@@ -653,8 +847,6 @@ static intnat extern_value(value v, value flags,
   extern_rec(v);
   /* Record end of output */
   close_extern_output();
-  /* Undo the modifications done on externed blocks */
-  extern_replay_trail();
   /* Write the header */
   res_len = extern_output_length();
 #ifdef ARCH_SIXTYFOUR
@@ -793,7 +985,7 @@ CAMLexport void caml_output_value_to_malloc(value v, value flags,
   int header_len;
   intnat data_len;
   char * res;
-  struct output_block * blk;
+  struct output_block * blk, * nextblk;
 
   init_extern_output();
   data_len = extern_value(v, flags, header, &header_len);
@@ -803,12 +995,13 @@ CAMLexport void caml_output_value_to_malloc(value v, value flags,
   *len = header_len + data_len;
   memcpy(res, header, header_len);
   res += header_len;
-  for (blk = extern_output_first; blk != NULL; blk = blk->next) {
+  for (blk = extern_output_first; blk != NULL; blk = nextblk) {
     intnat n = blk->end - blk->data;
     memcpy(res, blk->data, n);
     res += n;
+    nextblk = blk->next;
+    caml_stat_free(blk);
   }
-  free_extern_output();
 }
 
 /* Functions for writing user-defined marshallers */
@@ -932,4 +1125,66 @@ CAMLexport void caml_serialize_block_float_8(void * data, intnat len)
     extern_ptr = q;
   }
 #endif
+}
+
+CAMLprim value caml_obj_reachable_words(value v)
+{
+  intnat size;
+  struct extern_item * sp;
+  uintnat h = 0;
+  uintnat pos;
+
+  extern_init_position_table();
+  sp = extern_stack;
+  size = 0;
+  while (1) {
+    if (Is_long(v)) {
+      /* Tagged integers contribute 0 to the size, nothing to do */
+    } else if (! Is_in_heap_or_young(v)) {
+      /* Out-of-heap blocks contribute 0 to the size, nothing to do */
+      /* However, in no-naked-pointers mode, we don't distinguish
+         between major heap blocks and out-of-heap blocks,
+         and the test above is always false,
+         so we end up counting out-of-heap blocks too. */
+    } else if (extern_lookup_position(v, &pos, &h)) {
+      /* Already seen and counted, nothing to do */
+    } else {
+      header_t hd = Hd_val(v);
+      tag_t tag = Tag_hd(hd);
+      mlsize_t sz = Wosize_hd(hd);
+      /* Infix pointer: go back to containing closure */
+      if (tag == Infix_tag) {
+        v = v - Infix_offset_hd(hd);
+        continue;
+      }
+      /* Remember that we've visited this block */
+      extern_record_location(v, h);
+      /* The block contributes to the total size */
+      size += 1 + sz;           /* header word included */
+      if (tag < No_scan_tag) {
+        /* i is the position of the first field to traverse recursively */
+        uintnat i =
+          tag == Closure_tag ? Start_env_closinfo(Closinfo_val(v)) : 0;
+        if (i < sz) {
+          if (i < sz - 1) {
+            /* Remember that we need to count fields i + 1 ... sz - 1 */
+            sp++;
+            if (sp >= extern_stack_limit) sp = extern_resize_stack(sp);
+            sp->v = &Field(v, i + 1);
+            sp->count = sz - i - 1;
+          }
+          /* Continue with field i */
+          v = Field(v, i);
+          continue;
+        }
+      }
+    }
+    /* Pop one more item to traverse, if any */
+    if (sp == extern_stack) break;
+    v = *((sp->v)++);
+    if (--(sp->count) == 0) sp--;
+  }
+  extern_free_stack();
+  extern_free_position_table();
+  return Val_long(size);
 }

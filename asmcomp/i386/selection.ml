@@ -89,7 +89,7 @@ let rec float_needs = function
       let n1 = float_needs arg1 in
       let n2 = float_needs arg2 in
       if n1 = n2 then 1 + n1 else if n1 > n2 then n1 else n2
-  | Cop(Cextcall(fn, _ty_res, _alloc, _label), args, _dbg)
+  | Cop(Cextcall(fn, _ty_res, _ty_args, _alloc), args, _dbg)
     when !fast_math && List.mem fn inline_float_ops ->
       begin match args with
         [arg] -> float_needs arg
@@ -133,7 +133,7 @@ let pseudoregs_for_operation op arg res =
   (* For floating-point operations and floating-point loads,
      the result is always left at the top of the floating-point stack *)
   | Iconst_float _ | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
-  | Ifloatofint | Iload((Single | Double | Double_u), _)
+  | Ifloatofint | Iload((Single | Double ), _, _)
   | Ispecific(Isubfrev | Idivfrev | Ifloatarithmem _ | Ifloatspecial _) ->
       (arg, [| tos |], false)           (* don't move it immediately *)
   (* For storing a byte, the argument must be in eax...edx.
@@ -149,7 +149,6 @@ let pseudoregs_for_operation op arg res =
 let chunk_double = function
     Single -> false
   | Double -> true
-  | Double_u -> true
   | _ -> assert false
 
 (* The selector class *)
@@ -158,11 +157,18 @@ class selector = object (self)
 
 inherit Selectgen.selector_generic as super
 
-method is_immediate (_n : int) = true
+method! is_immediate op n =
+  match op with
+  | Iadd | Isub | Imul | Iand | Ior | Ixor | Icomp _ | Icheckbound ->
+      true
+  | _ ->
+      super#is_immediate op n
+
+method is_immediate_test _cmp _n = true
 
 method! is_simple_expr e =
   match e with
-  | Cop(Cextcall(fn, _, _alloc, _), args, _)
+  | Cop(Cextcall(fn, _, _, _), args, _)
     when !fast_math && List.mem fn inline_float_ops ->
       (* inlined float ops are simple if their arguments are *)
       List.for_all self#is_simple_expr args
@@ -194,11 +200,7 @@ method! select_store is_assign addr exp =
   match exp with
     Cconst_int (n, _) ->
       (Ispecific(Istore_int(Nativeint.of_int n, addr, is_assign)), Ctuple [])
-  | (Cconst_natint (n, _) | Cblockheader (n, _)) ->
-      (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
-  | Cconst_pointer (n, _) ->
-      (Ispecific(Istore_int(Nativeint.of_int n, addr, is_assign)), Ctuple [])
-  | Cconst_natpointer (n, _) ->
+  | Cconst_natint (n, _) ->
       (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
   | Cconst_symbol (s, _) ->
       (Ispecific(Istore_symbol(s, addr, is_assign)), Ctuple [])
@@ -237,12 +239,9 @@ method! select_operation op args dbg =
           super#select_operation op args dbg
       end
   (* Recognize inlined floating point operations *)
-  | Cextcall(fn, _ty_res, false, _label)
+  | Cextcall(fn, _ty_res, _ty_args, false)
     when !fast_math && List.mem fn inline_float_ops ->
       (Ispecific(Ifloatspecial fn), args)
-  (* i386 does not support immediate operands for multiply high signed *)
-  | Cmulhi ->
-      (Iintop Imulh, args)
   (* Default *)
   | _ -> super#select_operation op args dbg
 
@@ -289,22 +288,19 @@ method select_push exp =
   match exp with
     Cconst_int (n, _) -> (Ispecific(Ipush_int(Nativeint.of_int n)), Ctuple [])
   | Cconst_natint (n, _) -> (Ispecific(Ipush_int n), Ctuple [])
-  | Cconst_pointer (n, _) ->
-      (Ispecific(Ipush_int(Nativeint.of_int n)), Ctuple [])
-  | Cconst_natpointer (n, _) -> (Ispecific(Ipush_int n), Ctuple [])
   | Cconst_symbol (s, _) -> (Ispecific(Ipush_symbol s), Ctuple [])
   | Cop(Cload ((Word_int | Word_val as chunk), _), [loc], _) ->
       let (addr, arg) = self#select_addressing chunk loc in
       (Ispecific(Ipush_load addr), arg)
-  | Cop(Cload (Double_u, _), [loc], _) ->
-      let (addr, arg) = self#select_addressing Double_u loc in
+  | Cop(Cload (Double, _), [loc], _) ->
+      let (addr, arg) = self#select_addressing Double loc in
       (Ispecific(Ipush_load_float addr), arg)
   | _ -> (Ispecific(Ipush), exp)
 
 method! mark_c_tailcall =
   contains_calls := true
 
-method! emit_extcall_args env args =
+method! emit_extcall_args env _ty_args args =
   let rec size_pushes = function
   | [] -> 0
   | e :: el -> Selectgen.size_expr env e + size_pushes el in
@@ -325,4 +321,5 @@ method! emit_extcall_args env args =
 
 end
 
-let fundecl f = (new selector)#emit_fundecl f
+let fundecl ~future_funcnames f = (new selector)#emit_fundecl
+                                            ~future_funcnames f

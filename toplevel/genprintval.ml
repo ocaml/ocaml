@@ -203,7 +203,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           Oide_ident name
       | Pdot(p, _s) ->
           if
-            match (find (Lident (Out_name.print name)) env).desc with
+            match get_desc (find (Lident (Out_name.print name)) env) with
             | Tconstr(ty_path', _, _) -> Path.same ty_path ty_path'
             | _ -> false
             | exception Not_found -> false
@@ -215,12 +215,12 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
     let tree_of_constr =
       tree_of_qualified
         (fun lid env ->
-           (Env.find_constructor_by_name lid env).cstr_res)
+          (Env.find_constructor_by_name lid env).cstr_res)
 
     and tree_of_label =
       tree_of_qualified
         (fun lid env ->
-           (Env.find_label_by_name lid env).lbl_res)
+          (Env.find_label_by_name lid env).lbl_res)
 
     (* An abstract type *)
 
@@ -260,7 +260,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         try
           find_printer depth env ty obj
         with Not_found ->
-          match (Ctype.repr ty).desc with
+          match get_desc ty with
           | Tvar _ | Tunivar _ ->
               Oval_stuff "<poly>"
           | Tarrow _ ->
@@ -360,8 +360,11 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                     a case (PR#6669).
 
                     Unfortunately, there is a corner-case that *is*
-                    a real cycle: using -rectypes one can define
-                      let rec x = lazy x
+                    a real cycle: using unboxed types one can define
+
+                       type t = T : t Lazy.t -> t [@@unboxed]
+                       let rec x = lazy (T x)
+
                     which creates a Forward_tagged block that points to
                     itself. For this reason, we still "nest"
                     (detect head cycles) on forward tags.
@@ -381,10 +384,9 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                     Oval_stuff "<abstr>"
                 | {type_kind = Type_abstract; type_manifest = Some body} ->
                     tree_of_val depth obj
-                      (try Ctype.apply env decl.type_params body ty_list with
-                         Ctype.Cannot_apply -> abstract_type)
-                | {type_kind = Type_variant constr_list; type_unboxed} ->
-                    let unbx = type_unboxed.unboxed in
+                      (instantiate_type env decl.type_params ty_list body)
+                | {type_kind = Type_variant (constr_list,rep)} ->
+                    let unbx = (rep = Variant_unboxed) in
                     let tag =
                       if unbx then Cstr_unboxed
                       else if O.is_block obj
@@ -395,7 +397,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                     let type_params =
                       match cd_res with
                         Some t ->
-                          begin match (Ctype.repr t).desc with
+                          begin match get_desc t with
                             Tconstr (_,params,_) ->
                               params
                           | _ -> assert false end
@@ -405,12 +407,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                       match cd_args with
                       | Cstr_tuple l ->
                           let ty_args =
-                            List.map
-                              (function ty ->
-                                try Ctype.apply env type_params ty ty_list with
-                                  Ctype.Cannot_apply -> abstract_type)
-                              l
-                          in
+                            instantiate_types env type_params ty_list l in
                           tree_of_constr_with_args (tree_of_constr env path)
                             (Ident.name cd_id) false 0 depth obj
                             ty_args unbx
@@ -441,7 +438,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                           lbl_list pos obj unbx
                     end
                 | {type_kind = Type_open} ->
-                    tree_of_extension path depth obj
+                    tree_of_extension path ty_list depth obj
               with
                 Not_found ->                (* raised by Env.find_type *)
                   Oval_stuff "<abstr>"
@@ -476,9 +473,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                 find row.row_fields
           | Tobject (_, _) ->
               Oval_stuff "<obj>"
-          | Tsubst ty ->
-              tree_of_val (depth - 1) obj ty
-          | Tfield(_, _, _, _) | Tnil | Tlink _ ->
+          | Tsubst _ | Tfield(_, _, _, _) | Tnil | Tlink _ ->
               fatal_error "Printval.outval_of_value"
           | Tpoly (ty, _) ->
               tree_of_val (depth - 1) obj ty
@@ -491,12 +486,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         let rec tree_of_fields pos = function
           | [] -> []
           | {ld_id; ld_type} :: remainder ->
-              let ty_arg =
-                try
-                  Ctype.apply env type_params ld_type
-                    ty_list
-                with
-                  Ctype.Cannot_apply -> abstract_type in
+              let ty_arg = instantiate_type env type_params ty_list ld_type in
               let name = Ident.name ld_id in
               (* PR#5722: print full module path only
                  for first record field *)
@@ -541,7 +531,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         in
         Oval_constr (lid, args)
 
-    and tree_of_extension type_path depth bucket =
+    and tree_of_extension type_path ty_list depth bucket =
       let slot =
         if O.tag bucket <> 0 then bucket
         else O.field bucket 0
@@ -568,10 +558,17 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
            identifier contained in the exception bucket *)
         if not (EVP.same_value slot (EVP.eval_address addr))
         then raise Not_found;
+        let type_params =
+          match get_desc cstr.cstr_res with
+            Tconstr (_,params,_) ->
+             params
+          | _ -> assert false
+        in
+        let args = instantiate_types env type_params ty_list cstr.cstr_args in
         tree_of_constr_with_args
            (fun x -> Oide_ident x) name (cstr.cstr_inlined <> None)
            1 depth bucket
-           cstr.cstr_args false
+           args false
       with Not_found | EVP.Error ->
         match check_depth depth bucket ty with
           Some x -> x
@@ -580,15 +577,22 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         | None ->
             Oval_stuff "<extension>"
 
+    and instantiate_type env type_params ty_list ty =
+      try Ctype.apply env type_params ty ty_list
+      with Ctype.Cannot_apply -> abstract_type
+
+    and instantiate_types env type_params ty_list args =
+      List.map (instantiate_type env type_params ty_list) args
+
     and find_printer depth env ty =
       let rec find = function
       | [] -> raise Not_found
       | (_name, Simple (sch, printer)) :: remainder ->
-          if Ctype.moregeneral env false sch ty
+          if Ctype.is_moregeneral env false sch ty
           then printer
           else find remainder
       | (_name, Generic (path, fn)) :: remainder ->
-          begin match (Ctype.expand_head env ty).desc with
+          begin match get_desc (Ctype.expand_head env ty) with
           | Tconstr (p, args, _) when Path.same p path ->
               begin try apply_generic_printer path (fn depth) args
               with exn -> (fun _obj -> out_exn path exn) end
@@ -610,6 +614,6 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
             Oval_printer printer)
 
 
-    in nest tree_of_val max_depth obj ty
+    in nest tree_of_val max_depth obj (Ctype.correct_levels ty)
 
 end

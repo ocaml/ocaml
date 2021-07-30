@@ -1,0 +1,32 @@
+#!/bin/sh
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*             Sebastien Hinderer projet Cambium, INRIA Paris             *
+#*                                                                        *
+#*   Copyright 2020 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
+# Be verbose and stop on errors
+set -ex
+
+jobs=-j8
+instdir="$HOME/ocaml-tmp-install-$$"
+
+# Make sure the repository is clean
+git clean -q -f -d -x
+
+./configure --prefix "$instdir" --disable-dependency-generation
+make $jobs world
+make $jobs opt
+make $jobs opt.opt
+make install
+rm -rf "$instdir"
+# It's a build system test only, so we don't bother testing the compiler

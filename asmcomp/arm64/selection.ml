@@ -31,50 +31,18 @@ let is_offset chunk n =
         n land 1 = 0 && n lsr 1 < 0x1000
     | Thirtytwo_unsigned | Thirtytwo_signed | Single ->
         n land 3 = 0 && n lsr 2 < 0x1000
-    | Word_int | Word_val | Double | Double_u ->
+    | Word_int | Word_val | Double ->
         n land 7 = 0 && n lsr 3 < 0x1000)
 
-(* An automaton to recognize ( 0+1+0* | 1+0+1* )
-
-               0          1          0
-              / \        / \        / \
-              \ /        \ /        \ /
-        -0--> [1] --1--> [2] --0--> [3]
-       /
-     [0]
-       \
-        -1--> [4] --0--> [5] --1--> [6]
-              / \        / \        / \
-              \ /        \ /        \ /
-               1          0          1
-
-The accepting states are 2, 3, 5 and 6. *)
-
-let auto_table = [|   (* accepting?, next on 0, next on 1 *)
-  (* state 0 *) (false, 1, 4);
-  (* state 1 *) (false, 1, 2);
-  (* state 2 *) (true,  3, 2);
-  (* state 3 *) (true,  3, 7);
-  (* state 4 *) (false, 5, 4);
-  (* state 5 *) (true,  5, 6);
-  (* state 6 *) (true,  7, 6);
-  (* state 7 *) (false, 7, 7)   (* error state *)
-|]
-
-let rec run_automata nbits state input =
-  let (acc, next0, next1) = auto_table.(state) in
-  if nbits <= 0
-  then acc
-  else run_automata (nbits - 1)
-                    (if input land 1 = 0 then next0 else next1)
-                    (input asr 1)
-
-(* We are very conservative wrt what ARM64 supports: we don't support
-   repetitions of a 000111000 or 1110000111 pattern, just a single
-   pattern of this kind. *)
-
 let is_logical_immediate n =
-  n <> 0 && n <> -1 && run_automata 64 0 n
+  Arch.is_logical_immediate (Nativeint.of_int n)
+
+(* Signed immediates are simpler *)
+
+let is_immediate n =
+  let mn = -n in
+  n land 0xFFF = n || n land 0xFFF_000 = n
+  || mn land 0xFFF = mn || mn land 0xFFF_000 = mn
 
 (* If you update [inline_ops], you may need to update [is_simple_expr] and/or
    [effects_of], below. *)
@@ -83,7 +51,12 @@ let inline_ops =
     "caml_int64_direct_bswap"; "caml_nativeint_direct_bswap" ]
 
 let use_direct_addressing _symb =
-  not !Clflags.dlcode
+  (not !Clflags.dlcode) && (not Arch.macosx)
+
+let is_stack_slot rv =
+  Reg.(match rv with
+        | [| { loc = Stack _ } |] -> true
+        | _ -> false)
 
 (* Instruction selection *)
 
@@ -91,10 +64,15 @@ class selector = object(self)
 
 inherit Selectgen.selector_generic as super
 
-method is_immediate n =
-  let mn = -n in
-  n land 0xFFF = n || n land 0xFFF_000 = n
-  || mn land 0xFFF = mn || mn land 0xFFF_000 = mn
+method is_immediate_test _cmp n =
+  is_immediate n
+
+method! is_immediate op n =
+  match op with
+  | Iadd | Isub  -> n <= 0xFFF_FFF && n >= -0xFFF_FFF
+  | Iand | Ior | Ixor -> is_logical_immediate n
+  | Icomp _ | Icheckbound -> is_immediate n
+  | _ -> super#is_immediate op n
 
 method! is_simple_expr = function
   (* inlined floating-point ops are simple if their arguments are *)
@@ -130,13 +108,6 @@ method! select_operation op args dbg =
   (* Integer addition *)
   | Caddi | Caddv | Cadda ->
       begin match args with
-      (* Add immediate *)
-      | [arg; Cconst_int (n, _)] when self#is_immediate n ->
-          ((if n >= 0 then Iintop_imm(Iadd, n) else Iintop_imm(Isub, -n)),
-           [arg])
-      | [Cconst_int (n, _); arg] when self#is_immediate n ->
-          ((if n >= 0 then Iintop_imm(Iadd, n) else Iintop_imm(Isub, -n)),
-           [arg])
       (* Shift-add *)
       | [arg1; Cop(Clsl, [arg2; Cconst_int (n, _)], _)] when n > 0 && n < 64 ->
           (Ispecific(Ishiftarith(Ishiftadd, n)), [arg1; arg2])
@@ -162,10 +133,6 @@ method! select_operation op args dbg =
   (* Integer subtraction *)
   | Csubi ->
       begin match args with
-      (* Sub immediate *)
-      | [arg; Cconst_int (n, _)] when self#is_immediate n ->
-          ((if n >= 0 then Iintop_imm(Isub, n) else Iintop_imm(Iadd, -n)),
-           [arg])
       (* Shift-sub *)
       | [arg1; Cop(Clsl, [arg2; Cconst_int (n, _)], _)] when n > 0 && n < 64 ->
           (Ispecific(Ishiftarith(Ishiftsub, n)), [arg1; arg2])
@@ -188,22 +155,19 @@ method! select_operation op args dbg =
   | Ccheckbound ->
       begin match args with
       | [Cop(Clsr, [arg1; Cconst_int (n, _)], _); arg2] when n > 0 && n < 64 ->
-          (Ispecific(Ishiftcheckbound { shift = n; label_after_error = None; }),
+          (Ispecific(Ishiftcheckbound { shift = n; }),
             [arg1; arg2])
       | _ ->
           super#select_operation op args dbg
       end
-  (* Integer multiplication *)
-  (* ARM does not support immediate operands for multiplication *)
-  | Cmuli ->
-      (Iintop Imul, args)
-  | Cmulhi ->
-      (Iintop Imulh, args)
-  (* Bitwise logical operations have a different range of immediate
-     operands than the other instructions *)
-  | Cand -> self#select_logical Iand args
-  | Cor -> self#select_logical Ior args
-  | Cxor -> self#select_logical Ixor args
+  (* Recognize sign extension *)
+  | Casr ->
+      begin match args with
+        [Cop(Clsl, [k; Cconst_int (n, _)], _); Cconst_int (n', _)]
+        when n' = n && 0 < n && n < 64 ->
+          (Ispecific (Isignext (64 - n)), [k])
+        | _ -> super#select_operation op args dbg
+      end
   (* Recognize floating-point negate and multiply *)
   | Cnegf ->
       begin match args with
@@ -242,14 +206,11 @@ method! select_operation op args dbg =
   | _ ->
       super#select_operation op args dbg
 
-method select_logical op = function
-  | [arg; Cconst_int (n, _)] when is_logical_immediate n ->
-      (Iintop_imm(op, n), [arg])
-  | [Cconst_int (n, _); arg] when is_logical_immediate n ->
-      (Iintop_imm(op, n), [arg])
-  | args ->
-      (Iintop op, args)
-
+method! insert_move_extcall_arg env ty_arg src dst =
+  if macosx && ty_arg = XInt32 && is_stack_slot dst
+  then self#insert env (Iop (Ispecific Imove32)) src dst
+  else self#insert_moves env src dst
 end
 
-let fundecl f = (new selector)#emit_fundecl f
+let fundecl ~future_funcnames f = (new selector)#emit_fundecl
+                                            ~future_funcnames f

@@ -1,15 +1,5 @@
-inline_test.ml
-line 16
-characters 2-24
-inline_test.ml
-line 19
-characters 2-5
-inline_test.ml
-line 22
-characters 12-17
-inline_test.ml
-line 25
-characters 5-8
-inline_test.ml
-line 29
-characters 2-6
+File "inline_test.ml", line 14, characters 2-24
+File "inline_test.ml", line 17, characters 2-5
+File "inline_test.ml", line 20, characters 12-17
+File "inline_test.ml", line 23, characters 5-8
+File "inline_test.ml", line 26, characters 2-6

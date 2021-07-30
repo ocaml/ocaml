@@ -137,14 +137,24 @@ let linear i n contains_calls =
   let rec linear i n =
     match i.Mach.desc with
       Iend -> n
-    | Iop(Itailcall_ind _ | Itailcall_imm _ as op) ->
-        if not Config.spacetime then
-          copy_instr (Lop op) i (discard_dead_code n)
-        else
-          copy_instr (Lop op) i (linear i.Mach.next n)
+    | Iop(Itailcall_ind | Itailcall_imm _ as op) ->
+        copy_instr (Lop op) i (discard_dead_code n)
     | Iop(Imove | Ireload | Ispill)
       when i.Mach.arg.(0).loc = i.Mach.res.(0).loc ->
         linear i.Mach.next n
+    | Iop((Ipoll { return_label = None; _ }) as op) ->
+        (* If the poll call does not already specify where to jump to after
+           the poll (the expected situation in the current implementation),
+           absorb any branch after the poll call into the poll call itself.
+           This, in particular, optimises polls at the back edges of loops. *)
+        let n = linear i.Mach.next n in
+        let op, n =
+          match n.desc with
+          | Lbranch lbl ->
+            Mach.Ipoll { return_label = Some lbl }, n.next
+          | _ -> op, n
+        in
+        copy_instr (Lop op) i n
     | Iop op ->
         copy_instr (Lop op) i (linear i.Mach.next n)
     | Ireturn ->
@@ -248,7 +258,7 @@ let linear i n contains_calls =
           get_label (cons_instr Lentertrap (linear handler n1))
         in
         incr try_depth;
-        assert (i.Mach.arg = [| |] || Config.spacetime);
+        assert (i.Mach.arg = [| |]);
         let n3 = cons_instr (Lpushtrap { lbl_handler; })
                    (linear body
                       (cons_instr
@@ -262,63 +272,52 @@ let linear i n contains_calls =
   in linear i n
 
 let add_prologue first_insn prologue_required =
-  (* The prologue needs to come after any [Iname_for_debugger] operations that
-     refer to parameters.  (Such operations always come in a contiguous
-     block, cf. [Selectgen].) *)
-  let rec skip_naming_ops (insn : instruction) : label * instruction =
-    match insn.desc with
-    | Lop (Iname_for_debugger _) ->
-      let tailrec_entry_point_label, next = skip_naming_ops insn.next in
-      tailrec_entry_point_label, { insn with next; }
-    | _ ->
-      let tailrec_entry_point_label = Cmm.new_label () in
-      let tailrec_entry_point =
-        { desc = Llabel tailrec_entry_point_label;
-          next = insn;
-          arg = [| |];
-          res = [| |];
-          dbg = insn.dbg;
-          live = insn.live;
-        }
-      in
-      (* We expect [Lprologue] to expand to at least one instruction---as such,
-         if no prologue is required, we avoid adding the instruction here.
-         The reason is subtle: an empty expansion of [Lprologue] can cause
-         two labels, one either side of the [Lprologue], to point at the same
-         location.  This means that we lose the property (cf. [Coalesce_labels])
-         that we can check if two labels point at the same location by
-         comparing them for equality.  This causes trouble when the function
-         whose prologue is in question lands at the top of the object file
-         and we are emitting DWARF debugging information:
-           foo_code_begin:
-           foo:
-           .L1:
-           ; empty prologue
-           .L2:
-           ...
-         If we were to emit a location list entry from L1...L2, not realising
-         that they point at the same location, then the beginning and ending
-         points of the range would be both equal to each other and (relative to
-         "foo_code_begin") equal to zero.  This appears to confuse objdump,
-         which seemingly misinterprets the entry as an end-of-list entry
-         (which is encoded with two zero words), then complaining about a
-         "hole in location list" (as it ignores any remaining list entries
-         after the misinterpreted entry). *)
-      if prologue_required then
-        let prologue =
-          { desc = Lprologue;
-            next = tailrec_entry_point;
-            arg = [| |];
-            res = [| |];
-            dbg = tailrec_entry_point.dbg;
-            live = Reg.Set.empty;  (* will not be used *)
-          }
-        in
-        tailrec_entry_point_label, prologue
-      else
-        tailrec_entry_point_label, tailrec_entry_point
+  let tailrec_entry_point_label = Cmm.new_label () in
+  let tailrec_entry_point =
+    { desc = Llabel tailrec_entry_point_label;
+      next = first_insn;
+      arg = [| |];
+      res = [| |];
+      dbg = first_insn.dbg;
+      live = first_insn.live;
+    }
   in
-  skip_naming_ops first_insn
+  (* We expect [Lprologue] to expand to at least one instruction---as such,
+     if no prologue is required, we avoid adding the instruction here.
+     The reason is subtle: an empty expansion of [Lprologue] can cause
+     two labels, one either side of the [Lprologue], to point at the same
+     location.  This means that we lose the property (cf. [Coalesce_labels])
+     that we can check if two labels point at the same location by
+     comparing them for equality.  This causes trouble when the function
+     whose prologue is in question lands at the top of the object file
+     and we are emitting DWARF debugging information:
+       foo_code_begin:
+       foo:
+       .L1:
+       ; empty prologue
+       .L2:
+       ...
+     If we were to emit a location list entry from L1...L2, not realising
+     that they point at the same location, then the beginning and ending
+     points of the range would be both equal to each other and (relative to
+     "foo_code_begin") equal to zero.  This appears to confuse objdump,
+     which seemingly misinterprets the entry as an end-of-list entry
+     (which is encoded with two zero words), then complaining about a
+     "hole in location list" (as it ignores any remaining list entries
+     after the misinterpreted entry). *)
+  if prologue_required then
+    let prologue =
+      { desc = Lprologue;
+        next = tailrec_entry_point;
+        arg = [| |];
+        res = [| |];
+        dbg = tailrec_entry_point.dbg;
+        live = Reg.Set.empty;  (* will not be used *)
+      }
+    in
+    tailrec_entry_point_label, prologue
+  else
+    tailrec_entry_point_label, tailrec_entry_point
 
 let fundecl f =
   let fun_prologue_required = Proc.prologue_required f in
@@ -331,7 +330,6 @@ let fundecl f =
     fun_body;
     fun_fast = not (List.mem Cmm.Reduce_code_size f.Mach.fun_codegen_options);
     fun_dbg  = f.Mach.fun_dbg;
-    fun_spacetime_shape = f.Mach.fun_spacetime_shape;
     fun_tailrec_entry_point_label;
     fun_contains_calls = contains_calls;
     fun_num_stack_slots = f.Mach.fun_num_stack_slots;

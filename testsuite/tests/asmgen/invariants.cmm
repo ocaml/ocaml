@@ -1,0 +1,24 @@
+(* TEST
+* native-compiler
+** setup-simple-build-env
+*** codegen
+codegen_exit_status = "2"
+*)
+
+(*
+This test is here to ensure that the Cmm invariant checks
+correctly catch broken Cmm programs.
+*)
+
+(function "bad_continuations" (x:int)
+  (* Bad arity *)
+  (catch
+    (exit cont 0)
+   with (cont) 1)
+  (* Multiple handler definition *)
+  (catch
+    (exit cont 0)
+   with (cont y:int) y)
+  (* Exit out of scope of its handler *)
+  (exit cont 0)
+)

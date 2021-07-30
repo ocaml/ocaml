@@ -26,12 +26,16 @@ typedef struct {
   asize_t alloc;         /* in bytes, used for compaction */
   asize_t size;          /* in bytes */
   char *next;
+  value* redarken_start;  /* first block in chunk to redarken */
+  value* redarken_end;    /* last block in chunk that needs redarkening */
 } heap_chunk_head;
 
 #define Chunk_size(c) (((heap_chunk_head *) (c)) [-1]).size
 #define Chunk_alloc(c) (((heap_chunk_head *) (c)) [-1]).alloc
 #define Chunk_next(c) (((heap_chunk_head *) (c)) [-1]).next
 #define Chunk_block(c) (((heap_chunk_head *) (c)) [-1]).block
+#define Chunk_redarken_start(c) (((heap_chunk_head *) (c)) [-1]).redarken_start
+#define Chunk_redarken_end(c) (((heap_chunk_head *) (c)) [-1]).redarken_end
 
 extern int caml_gc_phase;
 extern int caml_gc_subphase;
@@ -39,6 +43,7 @@ extern uintnat caml_allocated_words;
 extern double caml_extra_heap_resources;
 extern uintnat caml_dependent_size, caml_dependent_allocated;
 extern uintnat caml_fl_wsz_at_phase_change;
+extern int caml_ephe_list_pure;
 
 #define Phase_mark 0
 #define Phase_clean 1
@@ -80,6 +85,7 @@ void caml_init_major_heap (asize_t);           /* size in bytes */
 asize_t caml_clip_heap_chunk_wsz (asize_t wsz);
 void caml_darken (value, value *);
 void caml_major_collection_slice (intnat);
+void caml_shrink_mark_stack ();
 void major_collection (void);
 void caml_finish_major_cycle (void);
 void caml_set_major_window (int);
@@ -92,6 +98,10 @@ void caml_set_major_window (int);
    should only be used on runtime shutdown.
 */
 void caml_finalise_heap (void);
+
+#ifdef NAKED_POINTERS_CHECKER
+extern int caml_naked_pointers_detected;
+#endif
 
 #endif /* CAML_INTERNALiS */
 

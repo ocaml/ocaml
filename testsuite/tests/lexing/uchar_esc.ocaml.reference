@@ -25,11 +25,11 @@ Error: Illegal backslash escape in string or character (\u{01234567}): too many 
 Line 1, characters 21-23:
 1 | let no_hex_digits = "\u{}" ;;
                          ^^
-Warning 14: illegal backslash escape in string.
+Warning 14 [illegal-backslash]: illegal backslash escape in string.
 val no_hex_digits : string = "\\u{}"
 Line 1, characters 25-27:
 1 | let illegal_hex_digit = "\u{u}" ;;
                              ^^
-Warning 14: illegal backslash escape in string.
+Warning 14 [illegal-backslash]: illegal backslash escape in string.
 val illegal_hex_digit : string = "\\u{u}"
 

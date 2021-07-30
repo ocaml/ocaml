@@ -31,8 +31,8 @@ Here is how to perform a change that requires a bootstrap:
 safer. Similarly, `make world.opt` will also bring you to such a stable
 state but builds more things than actually required.)
 
-4. Now, and only now, edit the sources. Changes here may include adding,
-   removing or renaming a primitive in the runtime, changing the magic
+4. Now, and only now, edit the sources. Changes here may include removing
+   or renaming a primitive in the runtime, changing the magic
    number of bytecode executable files, changing the way types are
    represented or anything else in the format of .cmi files, etc.
 
@@ -53,10 +53,57 @@ This will rebuild runtime/ocamlrun, ocamlc, etc.
 
         make bootstrap
 
+= Problems
+
 If you notice that this procedure fails for a given change you are
 trying to implement, please report it so that the procedure can be
 updated to also cope with your change.
 
+= Upstreaming
+
 If you want to upstream your changes, indicate in the message of the
 commit that the changes need a bootstrap. Perform the bootstrap and
 commit the result of the bootstrap separately, after that commit.
+
+= Adding, removing and renaming primitives
+
+Primitives can be added without having to bootstrap, however it is necessary
+to repeat `make coldstart` in order to use your new primitive in the standard
+library.
+
+There are five steps to renaming a primitive:
+
+1. Rename the primitive and its uses
+
+2. Create a temporary stub with the old primitive's name. This stub simply
+   passes its arguments on to the new primitive:
+
+        CAMLprim value caml_old_primitive(value a1, value a2) {
+          return caml_new_primitive(a1, a2);
+        }
+
+3. Deal with the addition of the new primitive:
+
+        make coldstart
+
+4. Ensure the system still works:
+
+        make coreall
+
+5. Now remove the old primitive stub and issue:
+
+        make bootstrap
+
+It is desirable for bootstraps to be easily repeatable, so you should commit
+changes after step 4.
+
+= Bootstrap test script
+
+A script is provided (and used on Inria's continuous
+integration infrastructure) to make sure the bootstrap works. This
+script implements the bootstrap procedure described above and performs
+two changes to the compiler: it updates the magic numbers and removes
+a primitive from the runtime. It then makes sure the bootstrap still
+works after these changes. This script can be run locally as follows:
+
+        OCAML_ARCH=linux ./tools/ci/inria/bootstrap

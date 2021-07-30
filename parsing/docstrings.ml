@@ -44,18 +44,18 @@ let docstrings : docstring list ref = ref []
 (* Warn for unused and ambiguous docstrings *)
 
 let warn_bad_docstrings () =
-  if Warnings.is_active (Warnings.Bad_docstring true) then begin
+  if Warnings.is_active (Warnings.Unexpected_docstring true) then begin
     List.iter
       (fun ds ->
          match ds.ds_attached with
          | Info -> ()
          | Unattached ->
-           prerr_warning ds.ds_loc (Warnings.Bad_docstring true)
+           prerr_warning ds.ds_loc (Warnings.Unexpected_docstring true)
          | Docs ->
              match ds.ds_associated with
              | Zero | One -> ()
              | Many ->
-               prerr_warning ds.ds_loc (Warnings.Bad_docstring false))
+               prerr_warning ds.ds_loc (Warnings.Unexpected_docstring false))
       (List.rev !docstrings)
 end
 
@@ -89,18 +89,20 @@ let doc_loc = {txt = "ocaml.doc"; loc = Location.none}
 
 let docs_attr ds =
   let open Parsetree in
+  let body = ds.ds_body in
+  let loc = ds.ds_loc in
   let exp =
-    { pexp_desc = Pexp_constant (Pconst_string(ds.ds_body, ds.ds_loc, None));
-      pexp_loc = ds.ds_loc;
+    { pexp_desc = Pexp_constant (Pconst_string(body, loc, None));
+      pexp_loc = loc;
       pexp_loc_stack = [];
       pexp_attributes = []; }
   in
   let item =
-    { pstr_desc = Pstr_eval (exp, []); pstr_loc = exp.pexp_loc }
+    { pstr_desc = Pstr_eval (exp, []); pstr_loc = loc }
   in
   { attr_name = doc_loc;
     attr_payload = PStr [item];
-    attr_loc = Location.none }
+    attr_loc = loc }
 
 let add_docs_attrs docs attrs =
   let attrs =
@@ -139,18 +141,20 @@ let text_loc = {txt = "ocaml.text"; loc = Location.none}
 
 let text_attr ds =
   let open Parsetree in
+  let body = ds.ds_body in
+  let loc = ds.ds_loc in
   let exp =
-    { pexp_desc = Pexp_constant (Pconst_string(ds.ds_body, ds.ds_loc, None));
-      pexp_loc = ds.ds_loc;
+    { pexp_desc = Pexp_constant (Pconst_string(body, loc, None));
+      pexp_loc = loc;
       pexp_loc_stack = [];
       pexp_attributes = []; }
   in
   let item =
-    { pstr_desc = Pstr_eval (exp, []); pstr_loc = exp.pexp_loc }
+    { pstr_desc = Pstr_eval (exp, []); pstr_loc = loc }
   in
   { attr_name = text_loc;
     attr_payload = PStr [item];
-    attr_loc = Location.none }
+    attr_loc = loc }
 
 let add_text_attrs dsl attrs =
   let fdsl = List.filter (function {ds_body=""} -> false| _ ->true) dsl in

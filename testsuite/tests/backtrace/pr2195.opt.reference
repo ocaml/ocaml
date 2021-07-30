@@ -1,0 +1,5 @@
+Fatal error: exception Stdlib.Exit
+Raised by primitive operation at Stdlib.open_in_gen in file "stdlib.ml", line 405, characters 28-54
+Called from Stdlib.open_in in file "stdlib.ml" (inlined), line 410, characters 2-45
+Called from Pr2195 in file "pr2195.ml", line 24, characters 6-19
+Re-raised at Pr2195 in file "pr2195.ml", line 29, characters 4-41

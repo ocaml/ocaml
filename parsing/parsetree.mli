@@ -142,6 +142,8 @@ and core_type_desc =
            - As the pld_type field of a label_declaration.
 
            - As a core_type of a Ptyp_object node.
+
+           - As the pval_type field of a value_description.
          *)
 
   | Ptyp_package of package_type
@@ -174,7 +176,7 @@ and row_field_desc =
             (see 4.2 in the manual)
         *)
   | Rinherit of core_type
-        (* [ T ] *)
+        (* [ | t ] *)
 
 and object_field = {
   pof_desc : object_field_desc;
@@ -215,10 +217,12 @@ and pattern_desc =
 
            Invariant: n >= 2
         *)
-  | Ppat_construct of Longident.t loc * pattern option
-        (* C                None
-           C P              Some P
-           C (P1, ..., Pn)  Some (Ppat_tuple [P1; ...; Pn])
+  | Ppat_construct of
+      Longident.t loc * (string loc list * pattern) option
+        (* C                    None
+           C P                  Some ([], P)
+           C (P1, ..., Pn)      Some ([], Ppat_tuple [P1; ...; Pn])
+           C (type a b) P       Some ([a; b], P)
          *)
   | Ppat_variant of label * pattern option
         (* `A             (None)
@@ -429,7 +433,7 @@ and value_description =
 and type_declaration =
     {
      ptype_name: string loc;
-     ptype_params: (core_type * variance) list;
+     ptype_params: (core_type * (variance * injectivity)) list;
            (* ('a1,...'an) t; None represents  _*)
      ptype_cstrs: (core_type * core_type * Location.t) list;
            (* ... constraint T1=T1'  ... constraint Tn=Tn' *)
@@ -475,6 +479,7 @@ and label_declaration =
 and constructor_declaration =
     {
      pcd_name: string loc;
+     pcd_vars: string loc list;
      pcd_args: constructor_arguments;
      pcd_res: core_type option;
      pcd_loc: Location.t;
@@ -497,7 +502,7 @@ and constructor_arguments =
 and type_extension =
     {
      ptyext_path: Longident.t loc;
-     ptyext_params: (core_type * variance) list;
+     ptyext_params: (core_type * (variance * injectivity)) list;
      ptyext_constructors: extension_constructor list;
      ptyext_private: private_flag;
      ptyext_loc: Location.t;
@@ -524,11 +529,12 @@ and type_exception =
   }
 
 and extension_constructor_kind =
-    Pext_decl of constructor_arguments * core_type option
+    Pext_decl of string loc list * constructor_arguments * core_type option
       (*
-         | C of T1 * ... * Tn     ([T1; ...; Tn], None)
-         | C: T0                  ([], Some T0)
-         | C: T1 * ... * Tn -> T0 ([T1; ...; Tn], Some T0)
+         | C of T1 * ... * Tn     ([], [T1; ...; Tn], None)
+         | C: T0                  ([], [], Some T0)
+         | C: T1 * ... * Tn -> T0 ([], [T1; ...; Tn], Some T0)
+         | C: 'a... . T1... -> T0 (['a;...]; [T1;...], Some T0)
        *)
   | Pext_rebind of Longident.t loc
       (*
@@ -598,7 +604,7 @@ and class_type_field_desc =
 and 'a class_infos =
     {
      pci_virt: virtual_flag;
-     pci_params: (core_type * variance) list;
+     pci_params: (core_type * (variance * injectivity)) list;
      pci_name: string loc;
      pci_expr: 'a;
      pci_loc: Location.t;
@@ -767,6 +773,8 @@ and signature_item_desc =
   | Psig_modtype of module_type_declaration
         (* module type S = MT
            module type S *)
+  | Psig_modtypesubst of module_type_declaration
+        (* module type S :=  ...  *)
   | Psig_open of open_description
         (* open X *)
   | Psig_include of include_description
@@ -850,6 +858,10 @@ and with_constraint =
            the name of the type_declaration. *)
   | Pwith_module of Longident.t loc * Longident.t loc
         (* with module X.Y = Z *)
+  | Pwith_modtype of Longident.t loc * module_type
+        (* with module type X.Y = Z *)
+  | Pwith_modtypesubst of Longident.t loc * module_type
+        (* with module type X.Y := sig end *)
   | Pwith_typesubst of Longident.t loc * type_declaration
         (* with type X.t := ..., same format as [Pwith_type] *)
   | Pwith_modsubst of Longident.t loc * Longident.t loc

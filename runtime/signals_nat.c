@@ -20,9 +20,13 @@
 #if defined(TARGET_amd64) && defined (SYS_linux)
 #define _GNU_SOURCE
 #endif
+#if defined(TARGET_i386) && defined (SYS_linux_elf)
+#define _GNU_SOURCE
+#endif
 #include <signal.h>
 #include <errno.h>
 #include <stdio.h>
+#include "caml/codefrag.h"
 #include "caml/fail.h"
 #include "caml/memory.h"
 #include "caml/osdeps.h"
@@ -30,7 +34,6 @@
 #include "caml/signals_machdep.h"
 #include "signals_osdep.h"
 #include "caml/stack.h"
-#include "caml/spacetime.h"
 #include "caml/memprof.h"
 #include "caml/finalise.h"
 
@@ -45,18 +48,6 @@ extern signal_handler caml_win32_signal(int sig, signal_handler action);
 #define signal(sig,act) caml_win32_signal(sig,act)
 extern void caml_win32_overflow_detection();
 #endif
-
-extern char * caml_code_area_start, * caml_code_area_end;
-extern char caml_system__code_begin, caml_system__code_end;
-
-/* Do not use the macro from address_class.h here. */
-#undef Is_in_code_area
-#define Is_in_code_area(pc) \
- ( ((char *)(pc) >= caml_code_area_start && \
-    (char *)(pc) <= caml_code_area_end)     \
-|| ((char *)(pc) >= &caml_system__code_begin && \
-    (char *)(pc) <= &caml_system__code_end)     \
-|| (Classify_addr(pc) & In_code_area) )
 
 /* This routine is the common entry point for garbage collection
    and signal handling.  It can trigger a callback to OCaml code.
@@ -88,14 +79,23 @@ void caml_garbage_collection(void)
      including allocations combined by Comballoc */
   alloc_len = (unsigned char*)(&d->live_ofs[d->num_live]);
   nallocs = *alloc_len++;
-  for (i = 0; i < nallocs; i++) {
-    allocsz += Whsize_wosize(Wosize_encoded_alloc_len(alloc_len[i]));
-  }
-  /* We have computed whsize (including header), but need wosize (without) */
-  allocsz -= 1;
 
-  caml_alloc_small_dispatch(allocsz, CAML_DO_TRACK | CAML_FROM_CAML,
-                            nallocs, alloc_len);
+  if (nallocs == 0) {
+    /* This is a poll */
+    caml_process_pending_actions();
+  }
+  else
+  {
+    for (i = 0; i < nallocs; i++) {
+      allocsz += Whsize_wosize(Wosize_encoded_alloc_len(alloc_len[i]));
+    }
+
+    /* We have computed whsize (including header), but need wosize (without) */
+    allocsz -= 1;
+
+    caml_alloc_small_dispatch(allocsz, CAML_DO_TRACK | CAML_FROM_CAML,
+                              nallocs, alloc_len);
+  }
 }
 
 DECLARE_SIGNAL_HANDLER(handle_signal)
@@ -107,19 +107,7 @@ DECLARE_SIGNAL_HANDLER(handle_signal)
   signal(sig, handle_signal);
 #endif
   if (sig < 0 || sig >= NSIG) return;
-  if (caml_try_leave_blocking_section_hook ()) {
-    caml_raise_if_exception(caml_execute_signal_exn(sig, 1));
-    caml_enter_blocking_section_hook();
-  } else {
-    caml_record_signal(sig);
-  /* Some ports cache [Caml_state->young_limit] in a register.
-     Use the signal context to modify that register too, but only if
-     we are inside OCaml code (not inside C code). */
-#if defined(CONTEXT_PC) && defined(CONTEXT_YOUNG_LIMIT)
-    if (Is_in_code_area(CONTEXT_PC))
-      CONTEXT_YOUNG_LIMIT = (context_reg) Caml_state->young_limit;
-#endif
-  }
+  caml_record_signal(sig);
   errno = saved_errno;
 }
 
@@ -195,8 +183,6 @@ DECLARE_SIGNAL_HANDLER(trap_handler)
 #error "CONTEXT_SP is required if HAS_STACK_OVERFLOW_DETECTION is defined"
 #endif
 
-static char sig_alt_stack[SIGSTKSZ];
-
 /* Code compiled with ocamlopt never accesses more than
    EXTRA_STACK bytes below the stack pointer. */
 #define EXTRA_STACK 256
@@ -223,7 +209,7 @@ DECLARE_SIGNAL_HANDLER(segv_handler)
       && fault_addr < Caml_state->top_of_stack
       && (uintnat)fault_addr >= CONTEXT_SP - EXTRA_STACK
 #ifdef CONTEXT_PC
-      && Is_in_code_area(CONTEXT_PC)
+      && caml_find_code_fragment_by_pc((char *) CONTEXT_PC) != NULL
 #endif
       ) {
 #ifdef RETURN_AFTER_STACK_OVERFLOW
@@ -244,6 +230,14 @@ DECLARE_SIGNAL_HANDLER(segv_handler)
 #endif
     caml_raise_stack_overflow();
 #endif
+#ifdef NAKED_POINTERS_CHECKER
+  } else if (Caml_state->checking_pointer_pc) {
+#ifdef CONTEXT_PC
+    CONTEXT_PC = (context_reg)Caml_state->checking_pointer_pc;
+#else
+#error "CONTEXT_PC must be defined if RETURN_AFTER_STACK_OVERFLOW is"
+#endif /* CONTEXT_PC */
+#endif /* NAKED_POINTERS_CHECKER */
   } else {
     /* Otherwise, deactivate our exception handler and return,
        causing fatal signal to be generated at point of error. */
@@ -282,28 +276,33 @@ void caml_init_signals(void)
 #endif
 
 #ifdef HAS_STACK_OVERFLOW_DETECTION
-  {
-    stack_t stk;
+  if (caml_setup_stack_overflow_detection() != -1) {
     struct sigaction act;
-    stk.ss_sp = sig_alt_stack;
-    stk.ss_size = SIGSTKSZ;
-    stk.ss_flags = 0;
     SET_SIGACT(act, segv_handler);
     act.sa_flags |= SA_ONSTACK | SA_NODEFER;
     sigemptyset(&act.sa_mask);
-    if (sigaltstack(&stk, NULL) == 0) { sigaction(SIGSEGV, &act, NULL); }
+    sigaction(SIGSEGV, &act, NULL);
   }
 #endif
 }
 
-void caml_setup_stack_overflow_detection(void)
+/* Allocate and select an alternate stack for handling signals,
+   especially SIGSEGV signals.
+   Each thread needs its own alternate stack.
+   The alternate stack used to be statically-allocated for the main thread,
+   but this is incompatible with Glibc 2.34 and newer, where SIGSTKSZ
+   may not be a compile-time constant (issue #10250). */
+
+CAMLexport int caml_setup_stack_overflow_detection(void)
 {
 #ifdef HAS_STACK_OVERFLOW_DETECTION
   stack_t stk;
   stk.ss_sp = malloc(SIGSTKSZ);
+  if (stk.ss_sp == NULL) return -1;
   stk.ss_size = SIGSTKSZ;
   stk.ss_flags = 0;
-  if (stk.ss_sp)
-    sigaltstack(&stk, NULL);
+  return sigaltstack(&stk, NULL);
+#else
+  return 0;
 #endif
 }

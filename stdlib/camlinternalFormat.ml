@@ -260,7 +260,7 @@ let buffer_check_size buf overhead =
   let len = Bytes.length buf.bytes in
   let min_len = buf.ind + overhead in
   if min_len > len then (
-    let new_len = max (len * 2) min_len in
+    let new_len = Int.max (len * 2) min_len in
     let new_str = Bytes.create new_len in
     Bytes.blit buf.bytes 0 new_str 0 len;
     buf.bytes <- new_str;
@@ -2305,7 +2305,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
     and get_prec    () = prec_used  := true; prec
     and get_padprec () = pad_used   := true; padprec in
 
-    let get_int_pad () =
+    let get_int_pad () : (x,y) padding =
       (* %5.3d is accepted and meaningful: pad to length 5 with
          spaces, but first pad with zeros upto length 3 (0-padding
          is the interpretation of "precision" for integer formats).
@@ -2330,7 +2330,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
          | Arg_padding _ as pad, _ -> pad in
 
     (* Check that padty <> Zeros. *)
-    let check_no_0 symb (type a) (type b) (pad : (a, b) padding) =
+    let check_no_0 symb (type a b) (pad : (a, b) padding) : (a,b) padding =
       match pad with
       | No_padding -> pad
       | Lit_padding ((Left | Right), _) -> pad

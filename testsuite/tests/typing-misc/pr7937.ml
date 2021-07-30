@@ -12,17 +12,13 @@ Line 3, characters 35-39:
                                        ^^^^
 Error: This expression has type bool but an expression was expected of type
          ([< `X of int & 'a ] as 'a) r
-       Types for tag `X are incompatible
 |}, Principal{|
 type 'a r = 'a constraint 'a = [< `X of int & 'a ]
-Line 3, characters 30-31:
+Line 3, characters 35-39:
 3 | let f: 'a. 'a r -> 'a r = fun x -> true;;
-                                  ^
-Error: This pattern matches values of type
-         ([< `X of 'b & 'a & 'c & 'd & 'e ] as 'a) r
-       but a pattern was expected which matches values of type
-         ([< `X of int & 'f ] as 'f) r
-       Types for tag `X are incompatible
+                                       ^^^^
+Error: This expression has type bool but an expression was expected of type
+         ([< `X of 'b & 'a & 'c ] as 'a) r
 |}]
 
 let g: 'a. 'a r -> 'a r = fun x -> { contents = 0 };;
@@ -32,16 +28,13 @@ Line 1, characters 35-51:
                                        ^^^^^^^^^^^^^^^^
 Error: This expression has type int ref
        but an expression was expected of type ([< `X of int & 'a ] as 'a) r
-       Types for tag `X are incompatible
 |}, Principal{|
-Line 1, characters 30-31:
+Line 1, characters 35-51:
 1 | let g: 'a. 'a r -> 'a r = fun x -> { contents = 0 };;
-                                  ^
-Error: This pattern matches values of type
-         ([< `X of 'b & 'a & 'c & 'd & 'e ] as 'a) r
-       but a pattern was expected which matches values of type
-         ([< `X of int & 'f ] as 'f) r
-       Types for tag `X are incompatible
+                                       ^^^^^^^^^^^^^^^^
+Error: This expression has type int ref
+       but an expression was expected of type
+         ([< `X of 'b & 'a & 'c ] as 'a) r
 |}]
 
 let h: 'a. 'a r -> _ = function true | false -> ();;
@@ -49,18 +42,8 @@ let h: 'a. 'a r -> _ = function true | false -> ();;
 Line 1, characters 32-36:
 1 | let h: 'a. 'a r -> _ = function true | false -> ();;
                                     ^^^^
-Error: This pattern matches values of type bool
-       but a pattern was expected which matches values of type
-         ([< `X of int & 'a ] as 'a) r
-       Types for tag `X are incompatible
-|}, Principal{|
-Line 1, characters 32-36:
-1 | let h: 'a. 'a r -> _ = function true | false -> ();;
-                                    ^^^^
-Error: This pattern matches values of type bool
-       but a pattern was expected which matches values of type
-         ([< `X of 'b & 'a & 'c ] as 'a) r
-       Types for tag `X are incompatible
+Error: This pattern should not be a boolean literal, the expected type is
+       ([< `X of int & 'a ] as 'a) r
 |}]
 
 
@@ -69,16 +52,6 @@ let i: 'a. 'a r -> _ = function { contents = 0 } -> ();;
 Line 1, characters 32-48:
 1 | let i: 'a. 'a r -> _ = function { contents = 0 } -> ();;
                                     ^^^^^^^^^^^^^^^^
-Error: This pattern matches values of type int ref
-       but a pattern was expected which matches values of type
-         ([< `X of int & 'a ] as 'a) r
-       Types for tag `X are incompatible
-|}, Principal{|
-Line 1, characters 32-48:
-1 | let i: 'a. 'a r -> _ = function { contents = 0 } -> ();;
-                                    ^^^^^^^^^^^^^^^^
-Error: This pattern matches values of type int ref
-       but a pattern was expected which matches values of type
-         ([< `X of 'b & 'a & 'c ] as 'a) r
-       Types for tag `X are incompatible
+Error: This pattern should not be a record, the expected type is
+       ([< `X of int & 'a ] as 'a) r
 |}]

@@ -32,13 +32,18 @@ let abi =
   | "ppc64le" -> ELF64v2
   | _ -> assert false
 
+type cmm_label = int
+(* Do not introduce a dependency to Cmm *)
+
 (* Machine-specific command-line options *)
 
-let big_toc = ref false
+let big_toc = ref true
 
 let command_line_options = [
   "-flarge-toc", Arg.Set big_toc,
-     " Support TOC (table of contents) greater than 64 kbytes"
+     " Support TOC (table of contents) greater than 64 kbytes (default)";
+  "-fsmall-toc", Arg.Clear big_toc,
+     " TOC (table of contents) is limited to 64 kbytes"
 ]
 
 (* Specific operations *)
@@ -47,15 +52,8 @@ type specific_operation =
     Imultaddf                           (* multiply and add *)
   | Imultsubf                           (* multiply and subtract *)
   | Ialloc_far of                       (* allocation in large functions *)
-      { bytes : int; label_after_call_gc : int (*Cmm.label*) option;
-        dbginfo : Debuginfo.alloc_dbginfo }
-
-(* note: we avoid introducing a dependency to Cmm since this dep
-   is not detected when "make depend" is run under amd64 *)
-
-let spacetime_node_hole_pointer_is_live_before = function
-  | Imultaddf | Imultsubf -> false
-  | Ialloc_far _ -> true
+      { bytes : int; dbginfo : Debuginfo.alloc_dbginfo }
+  | Ipoll_far of { return_label : cmm_label option }
 
 (* Addressing modes *)
 
@@ -121,3 +119,17 @@ let print_specific_operation printreg op ppf arg =
         printreg arg.(0) printreg arg.(1) printreg arg.(2)
   | Ialloc_far { bytes; _ } ->
       fprintf ppf "alloc_far %d" bytes
+  | Ipoll_far _ ->
+      fprintf ppf "poll_far"
+
+(* Specific operations that are pure *)
+
+let operation_is_pure = function
+  | Ialloc_far _ | Ipoll_far _ -> false
+  | _ -> true
+
+(* Specific operations that can raise *)
+
+let operation_can_raise = function
+  | Ialloc_far _ | Ipoll_far _ -> true
+  | _ -> false

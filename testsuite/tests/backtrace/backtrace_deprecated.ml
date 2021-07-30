@@ -1,7 +1,6 @@
 (* TEST
    flags = "-g"
    ocamlrunparam += ",b=1"
-   compare_programs = "false"
 *)
 
 (* A test for stack backtraces *)
@@ -36,7 +35,6 @@ let run args =
         trace
 
 let _ =
-  Printexc.record_backtrace true;
   run [| "a" |];
   run [| "b" |];
   run [| "c" |];

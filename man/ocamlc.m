@@ -526,6 +526,8 @@ produced.  If the
 option is given, specify the name of the
 packed object file produced.  If the
 .B \-output\-obj
+or
+.B \-output\-complete\-obj
 option is given,
 specify the name of the output file produced.
 This can also be used when compiling an interface or implementation
@@ -558,6 +560,12 @@ must be set with the
 option. This
 option can also be used to produce a C source file (.c extension) or
 a compiled shared/dynamic library (.so extension).
+.TP
+.B \-output\-complete\-obj
+Same as
+.B \-output\-obj
+except when creating an object file where it includes the runtime and
+autolink libraries.
 .TP
 .B \-pack
 Build a bytecode object file (.cmo file) and its associated compiled
@@ -697,7 +705,7 @@ Enable, disable, or mark as fatal the warnings specified by the argument
 Each warning can be
 .IR enabled \ or\  disabled ,
 and each warning can be
-.IR fatal or
+.IR fatal \ or
 .IR non-fatal .
 If a warning is disabled, it isn't displayed and doesn't affect
 compilation in any way (even if it is fatal).  If a warning is enabled,
@@ -960,6 +968,10 @@ mutually recursive types.
 67
 \ \ Unused functor parameter.
 
+68
+\ \ Pattern-matching depending on mutable state prevents the remaining
+arguments from being uncurried.
+
 The letters stand for the following sets of warnings.  Any letter not
 mentioned here corresponds to the empty set.
 
@@ -1013,7 +1025,7 @@ mentioned here corresponds to the empty set.
 
 .IP
 The default setting is
-.BR \-w\ +a\-4\-6\-7\-9\-27\-29\-30\-32..42\-44\-45\-48\-50\-60\-66 .
+.BR \-w\ +a\-4\-7\-9\-27\-29\-30\-32..42\-44\-45\-48\-50\-60\-66..70 .
 Note that warnings
 .BR 5 \ and \ 10
 are not always triggered, depending on the internals of the type checker.

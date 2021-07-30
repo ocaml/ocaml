@@ -27,8 +27,17 @@ let command cmdline =
 
 let run_command cmdline = ignore(command cmdline)
 
-(* Build @responsefile to work around Windows limitations on
-   command-line length *)
+(* Build @responsefile to work around OS limitations on
+   command-line length.
+   Under Windows, the max length is 8187 minus the length of the
+   COMSPEC variable (or 7 if it's not set).  To be on the safe side,
+   we'll use a response file if we need to pass 4096 or more bytes of
+   arguments.
+   For Unix-like systems, the threshold is 2^16 (64 KiB), which is
+   within the lowest observed limits (2^17 per argument under Linux;
+   between 70000 and 80000 for macOS).
+*)
+
 let build_diversion lst =
   let (responsefile, oc) = Filename.open_temp_file "camlresp" "" in
   List.iter (fun f -> Printf.fprintf oc "%s\n" f) lst;
@@ -40,7 +49,8 @@ let quote_files lst =
   let lst = List.filter (fun f -> f <> "") lst in
   let quoted = List.map Filename.quote lst in
   let s = String.concat " " quoted in
-  if String.length s >= 4096 && Sys.os_type = "Win32"
+  if String.length s >= 65536
+  || (String.length s >= 4096 && Sys.os_type = "Win32")
   then build_diversion quoted
   else s
 
@@ -89,11 +99,12 @@ let compile_file ?output ?(opt="") ?stable_name name =
          (match !Clflags.c_compiler with
           | Some cc -> cc
           | None ->
-              let (cflags, cppflags) =
-                  if !Clflags.native_code
-                  then (Config.ocamlopt_cflags, Config.ocamlopt_cppflags)
-                  else (Config.ocamlc_cflags, Config.ocamlc_cppflags) in
-              (String.concat " " [Config.c_compiler; cflags; cppflags]))
+              (* #7678: ocamlopt only calls the C compiler to process .c files
+                 from the command line, and the behaviour between
+                 ocamlc/ocamlopt should be identical. *)
+              (String.concat " " [Config.c_compiler;
+                                  Config.ocamlc_cflags;
+                                  Config.ocamlc_cppflags]))
          debug_prefix_map
          (match output with
           | None -> ""
@@ -117,36 +128,18 @@ let compile_file ?output ?(opt="") ?stable_name name =
   then display_msvc_output file name;
   exit
 
-let macos_create_empty_archive ~quoted_archive =
-  let result =
-    command (Printf.sprintf "%s rc %s /dev/null" Config.ar quoted_archive)
-  in
-  if result <> 0 then result
-  else
-    let result =
-      command (Printf.sprintf "%s %s 2> /dev/null" Config.ranlib quoted_archive)
-    in
-    if result <> 0 then result
-    else
-      command (Printf.sprintf "%s d %s /dev/null" Config.ar quoted_archive)
-
 let create_archive archive file_list =
   Misc.remove_file archive;
   let quoted_archive = Filename.quote archive in
-  match Config.ccomp_type with
-    "msvc" ->
-      command(Printf.sprintf "link /lib /nologo /out:%s %s"
-                             quoted_archive (quote_files file_list))
-  | _ ->
-      assert(String.length Config.ar > 0);
-      let is_macosx =
-        match Config.system with
-        | "macosx" -> true
-        | _ -> false
-      in
-      if is_macosx && file_list = [] then  (* PR#6550 *)
-        macos_create_empty_archive ~quoted_archive
-      else
+  if file_list = [] then
+    0 (* Don't call the archiver: #6550/#1094/#9011 *)
+  else
+    match Config.ccomp_type with
+      "msvc" ->
+        command(Printf.sprintf "link /lib /nologo /out:%s %s"
+                               quoted_archive (quote_files file_list))
+    | _ ->
+        assert(String.length Config.ar > 0);
         let r1 =
           command(Printf.sprintf "%s rc %s %s"
                   Config.ar quoted_archive (quote_files file_list)) in
@@ -154,17 +147,16 @@ let create_archive archive file_list =
         then r1
         else command(Config.ranlib ^ " " ^ quoted_archive)
 
-let expand_libname name =
-  if String.length name < 2 || String.sub name 0 2 <> "-l"
-  then name
-  else begin
-    let libname =
-      "lib" ^ String.sub name 2 (String.length name - 2) ^ Config.ext_lib in
-    try
-      Load_path.find libname
-    with Not_found ->
-      libname
-  end
+let expand_libname cclibs =
+  cclibs |> List.map (fun cclib ->
+    if String.starts_with ~prefix:"-l" cclib then
+      let libname =
+        "lib" ^ String.sub cclib 2 (String.length cclib - 2) ^ Config.ext_lib in
+      try
+        Load_path.find libname
+      with Not_found ->
+        libname
+    else cclib)
 
 type link_mode =
   | Exe
@@ -184,10 +176,10 @@ let call_linker mode output_name files extra =
   Profile.record_call "c-linker" (fun () ->
     let cmd =
       if mode = Partial then
-        let l_prefix =
+        let (l_prefix, files) =
           match Config.ccomp_type with
-          | "msvc" -> "/libpath:"
-          | _ -> "-L"
+          | "msvc" -> ("/libpath:", expand_libname files)
+          | _ -> ("-L", files)
         in
         Printf.sprintf "%s%s %s %s %s"
           Config.native_pack_linker
@@ -211,5 +203,11 @@ let call_linker mode output_name files extra =
           (quote_files files)
           extra
     in
-    command cmd = 0
+    command cmd
   )
+
+let linker_is_flexlink =
+  (* Config.mkexe, Config.mkdll and Config.mkmaindll are all flexlink
+     invocations for the native Windows ports and for Cygwin, if shared library
+     support is enabled. *)
+  Sys.win32 || Config.supports_shared_libraries && Sys.cygwin

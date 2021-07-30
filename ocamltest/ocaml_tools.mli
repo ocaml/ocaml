@@ -16,7 +16,7 @@
 (* Descriptions of the OCaml tools *)
 
 class tool :
-  name : (string -> string) ->
+  name : string ->
   family : string ->
   flags : string ->
   directory : string ->
@@ -24,7 +24,7 @@ class tool :
   reference_variable : Variables.t ->
   output_variable : Variables.t ->
 object
-  method name : string -> string
+  method name : string
   method family : string
   method flags : string
   method directory : string

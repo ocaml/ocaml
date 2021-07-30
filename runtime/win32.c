@@ -38,7 +38,7 @@
 #include <string.h>
 #include <signal.h>
 #include "caml/alloc.h"
-#include "caml/address_class.h"
+#include "caml/codefrag.h"
 #include "caml/fail.h"
 #include "caml/io.h"
 #include "caml/memory.h"
@@ -48,7 +48,12 @@
 #include "caml/sys.h"
 
 #include "caml/config.h"
-#ifdef SUPPORT_DYNAMIC_LINKING
+
+#if defined(SUPPORT_DYNAMIC_LINKING) && !defined(BUILDING_LIBCAMLRUNS)
+#define WITH_DYNAMIC_LINKING
+#endif
+
+#ifdef WITH_DYNAMIC_LINKING
 #include <flexdll.h>
 #endif
 
@@ -87,7 +92,7 @@ int caml_read_fd(int fd, int flags, void * buf, int n)
 {
   int retcode;
   if ((flags & CHANNEL_FLAG_FROM_SOCKET) == 0) {
-    caml_enter_blocking_section();
+    caml_enter_blocking_section_no_pending();
     retcode = read(fd, buf, n);
     /* Large reads from console can fail with ENOMEM.  Reduce requested size
        and try again. */
@@ -97,7 +102,7 @@ int caml_read_fd(int fd, int flags, void * buf, int n)
     caml_leave_blocking_section();
     if (retcode == -1) caml_sys_io_error(NO_ARG);
   } else {
-    caml_enter_blocking_section();
+    caml_enter_blocking_section_no_pending();
     retcode = recv((SOCKET) _get_osfhandle(fd), buf, n, 0);
     caml_leave_blocking_section();
     if (retcode == -1) caml_win32_sys_error(WSAGetLastError());
@@ -109,20 +114,12 @@ int caml_write_fd(int fd, int flags, void * buf, int n)
 {
   int retcode;
   if ((flags & CHANNEL_FLAG_FROM_SOCKET) == 0) {
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-  if (flags & CHANNEL_FLAG_BLOCKING_WRITE) {
-    retcode = write(fd, buf, n);
-  } else {
-#endif
-    caml_enter_blocking_section();
+    caml_enter_blocking_section_no_pending();
     retcode = write(fd, buf, n);
     caml_leave_blocking_section();
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-  }
-#endif
     if (retcode == -1) caml_sys_io_error(NO_ARG);
   } else {
-    caml_enter_blocking_section();
+    caml_enter_blocking_section_no_pending();
     retcode = send((SOCKET) _get_osfhandle(fd), buf, n, 0);
     caml_leave_blocking_section();
     if (retcode == -1) caml_win32_sys_error(WSAGetLastError());
@@ -222,7 +219,7 @@ wchar_t * caml_search_dll_in_path(struct ext_table * path, const wchar_t * name)
   return res;
 }
 
-#ifdef SUPPORT_DYNAMIC_LINKING
+#ifdef WITH_DYNAMIC_LINKING
 
 void * caml_dlopen(wchar_t * libname, int for_execution, int global)
 {
@@ -249,7 +246,7 @@ void * caml_dlsym(void * handle, const char * name)
 
 void * caml_globalsym(const char * name)
 {
-  return flexdll_dlsym(flexdll_dlopen(NULL,0), name);
+  return flexdll_dlsym(flexdll_wdlopen(NULL,0), name);
 }
 
 char * caml_dlerror(void)
@@ -283,7 +280,7 @@ char * caml_dlerror(void)
   return "dynamic loading not supported on this platform";
 }
 
-#endif
+#endif /* WITH_DYNAMIC_LINKING */
 
 /* Proper emulation of signal(), including ctrl-C and ctrl-break */
 
@@ -410,7 +407,8 @@ CAMLexport void caml_expand_command_line(int * argcp, wchar_t *** argvp)
    the directory named [dirname].  No entries are added for [.] and [..].
    Return 0 on success, -1 on error; set errno in the case of error. */
 
-int caml_read_directory(wchar_t * dirname, struct ext_table * contents)
+CAMLexport int caml_read_directory(wchar_t * dirname,
+                                   struct ext_table * contents)
 {
   size_t dirnamelen;
   wchar_t * template;
@@ -457,7 +455,7 @@ void caml_signal_thread(void * lpParam)
     char iobuf[2];
     /* This shall always return a single character */
     ret = ReadFile(h, iobuf, 1, &numread, NULL);
-    if (!ret || numread != 1) caml_sys_exit(Val_int(2));
+    if (!ret || numread != 1) caml_do_exit(2);
     switch (iobuf[0]) {
     case 'C':
       caml_record_signal(SIGINT);
@@ -539,7 +537,8 @@ static LONG CALLBACK
   DWORD *ctx_ip = &(ctx->Eip);
   DWORD *ctx_sp = &(ctx->Esp);
 
-  if (code == EXCEPTION_STACK_OVERFLOW && Is_in_code_area (*ctx_ip))
+  if (code == EXCEPTION_STACK_OVERFLOW &&
+      caml_find_code_fragment_by_pc((char *) (*ctx_ip)) != NULL)
     {
       uintnat faulting_address;
       uintnat * alt_esp;
@@ -561,24 +560,14 @@ static LONG CALLBACK
 
 #else
 
-/* Do not use the macro from address_class.h here. */
-#undef Is_in_code_area
-#define Is_in_code_area(pc) \
- ( ((char *)(pc) >= caml_code_area_start && \
-    (char *)(pc) <= caml_code_area_end)     \
-|| ((char *)(pc) >= &caml_system__code_begin && \
-    (char *)(pc) <= &caml_system__code_end)     \
-|| (Classify_addr(pc) & In_code_area) )
-extern char caml_system__code_begin, caml_system__code_end;
-
-
 static LONG CALLBACK
     caml_stack_overflow_VEH (EXCEPTION_POINTERS* exn_info)
 {
   DWORD code   = exn_info->ExceptionRecord->ExceptionCode;
   CONTEXT *ctx = exn_info->ContextRecord;
 
-  if (code == EXCEPTION_STACK_OVERFLOW && Is_in_code_area (ctx->Rip))
+  if (code == EXCEPTION_STACK_OVERFLOW &&
+      caml_find_code_fragment_by_pc((char *) (ctx->Rip)) != NULL)
     {
       uintnat faulting_address;
       uintnat * alt_rsp;
@@ -683,32 +672,40 @@ wchar_t * caml_executable_name(void)
 
 /* snprintf emulation */
 
-#if defined(_WIN32) && !defined(_UCRT)
-int caml_snprintf(char * buf, size_t size, const char * format, ...)
-{
-  int len;
-  va_list args;
-
-  if (size > 0) {
-    va_start(args, format);
-    len = _vsnprintf(buf, size, format, args);
-    va_end(args);
-    if (len >= 0 && len < size) {
-      /* [len] characters were stored in [buf],
-         a null-terminator was appended. */
-      return len;
-    }
-    /* [size] characters were stored in [buf], without null termination.
-       Put a null terminator, truncating the output. */
-    buf[size - 1] = 0;
-  }
-  /* Compute the actual length of output, excluding null terminator */
-  va_start(args, format);
-  len = _vscprintf(format, args);
-  va_end(args);
-  return len;
+#define CAML_SNPRINTF(_vsnprintf, _vscprintf) \
+{ \
+  int len; \
+  va_list args; \
+\
+  if (size > 0) { \
+    va_start(args, format); \
+    len = _vsnprintf(buf, size, format, args); \
+    va_end(args); \
+    if (len >= 0 && len < size) { \
+      /* [len] characters were stored in [buf], \
+         a null-terminator was appended. */ \
+      return len; \
+    } \
+    /* [size] characters were stored in [buf], without null termination. \
+       Put a null terminator, truncating the output. */ \
+    buf[size - 1] = 0; \
+  } \
+  /* Compute the actual length of output, excluding null terminator */ \
+  va_start(args, format); \
+  len = _vscprintf(format, args); \
+  va_end(args); \
+  return len; \
 }
+
+#ifndef _UCRT
+int caml_snprintf(char * buf, size_t size, const char * format, ...)
+CAML_SNPRINTF(_vsnprintf, _vscprintf)
 #endif
+
+int caml_snwprintf(wchar_t * buf, size_t size, const wchar_t * format, ...)
+CAML_SNPRINTF(_vsnwprintf, _vscwprintf)
+
+#undef CAML_SNPRINTF
 
 wchar_t *caml_secure_getenv (wchar_t const *var)
 {
@@ -1021,4 +1018,27 @@ CAMLexport int caml_win32_isatty(int fd)
 int caml_num_rows_fd(int fd)
 {
   return -1;
+}
+
+/* UCRT clock function returns wall-clock time */
+CAMLexport clock_t caml_win32_clock(void)
+{
+  FILETIME c, e, stime, utime;
+  ULARGE_INTEGER tmp;
+  ULONGLONG total, clocks_per_sec;
+
+  if (!(GetProcessTimes(GetCurrentProcess(), &c, &e, &stime, &utime))) {
+    return (clock_t)(-1);
+  }
+
+  tmp.u.LowPart = stime.dwLowDateTime;
+  tmp.u.HighPart = stime.dwHighDateTime;
+  total = tmp.QuadPart;
+  tmp.u.LowPart = utime.dwLowDateTime;
+  tmp.u.HighPart = utime.dwHighDateTime;
+  total += tmp.QuadPart;
+
+  /* total in 100-nanosecond intervals (1e7 / CLOCKS_PER_SEC) */
+  clocks_per_sec = INT64_LITERAL(10000000U) / (ULONGLONG)CLOCKS_PER_SEC;
+  return (clock_t)(total / clocks_per_sec);
 }

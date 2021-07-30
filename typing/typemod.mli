@@ -21,7 +21,6 @@
 *)
 
 open Types
-open Format
 
 module Signature_names : sig
   type t
@@ -32,19 +31,19 @@ end
 val type_module:
         Env.t -> Parsetree.module_expr -> Typedtree.module_expr
 val type_structure:
-  Env.t -> Parsetree.structure -> Location.t ->
+  Env.t -> Parsetree.structure ->
   Typedtree.structure * Types.signature * Signature_names.t * Env.t
 val type_toplevel_phrase:
   Env.t -> Parsetree.structure ->
   Typedtree.structure * Types.signature * Signature_names.t * Env.t
 val type_implementation:
-  string -> string -> string -> Env.t -> Parsetree.structure ->
-  Typedtree.structure * Typedtree.module_coercion
+  string -> string -> string -> Env.t ->
+  Parsetree.structure -> Typedtree.implementation
 val type_interface:
         Env.t -> Parsetree.signature -> Typedtree.signature
 val transl_signature:
         Env.t -> Parsetree.signature -> Typedtree.signature
-val check_nongen_schemes:
+val check_nongen_signature:
         Env.t -> Types.signature -> unit
         (*
 val type_open_:
@@ -54,7 +53,7 @@ val type_open_:
         *)
 val modtype_of_package:
         Env.t -> Location.t ->
-        Path.t -> Longident.t list -> type_expr list -> module_type
+        Path.t -> (Longident.t * type_expr) list -> module_type
 
 val path_of_module : Typedtree.module_expr -> Path.t option
 
@@ -104,19 +103,18 @@ type hiding_error =
 
 type error =
     Cannot_apply of module_type
-  | Not_included of Includemod.error list
+  | Not_included of Includemod.explanation
   | Cannot_eliminate_dependency of module_type
   | Signature_expected
   | Structure_expected of module_type
   | With_no_component of Longident.t
-  | With_mismatch of Longident.t * Includemod.error list
+  | With_mismatch of Longident.t * Includemod.explanation
   | With_makes_applicative_functor_ill_typed of
-      Longident.t * Path.t * Includemod.error list
+      Longident.t * Path.t * Includemod.explanation
   | With_changes_module_alias of Longident.t * Ident.t * Path.t
   | With_cannot_remove_constrained_type
   | Repeated_name of Sig_component_kind.t * string
   | Non_generalizable of type_expr
-  | Non_generalizable_class of Ident.t * class_declaration
   | Non_generalizable_module of module_type
   | Implementation_is_required of string
   | Interface_not_compiled of string
@@ -127,11 +125,14 @@ type error =
   | Recursive_module_require_explicit_type
   | Apply_generative
   | Cannot_scrape_alias of Path.t
+  | Cannot_scrape_package_type of Path.t
   | Badly_formed_signature of string * Typedecl.error
   | Cannot_hide_id of hiding_error
   | Invalid_type_subst_rhs
+  | Unpackable_local_modtype_subst of Path.t
+  | With_cannot_remove_packed_modtype of Path.t * module_type
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
 
-val report_error: Env.t -> formatter -> error -> unit
+val report_error: Env.t -> loc:Location.t -> error -> Location.error

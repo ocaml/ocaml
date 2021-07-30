@@ -143,7 +143,7 @@ let type_exception sub {tyexn_constructor; _} =
 
 let extension_constructor sub {ext_kind; _} =
   match ext_kind with
-  | Text_decl (ctl, cto) ->
+  | Text_decl (_, ctl, cto) ->
       constructor_args sub ctl;
       Option.iter (sub.typ sub) cto
   | Text_rebind _ -> ()
@@ -164,7 +164,9 @@ let pat
   | Tpat_var _ -> ()
   | Tpat_constant _ -> ()
   | Tpat_tuple l -> List.iter (sub.pat sub) l
-  | Tpat_construct (_, _, l) -> List.iter (sub.pat sub) l
+  | Tpat_construct (_, _, l, vto) ->
+      List.iter (sub.pat sub) l;
+      Option.iter (fun (_ids, ct) -> sub.typ sub ct) vto
   | Tpat_variant (_, po, _) -> Option.iter (sub.pat sub) po
   | Tpat_record (l, _) -> List.iter (fun (_, _, i) -> sub.pat sub i) l
   | Tpat_array l -> List.iter (sub.pat sub) l
@@ -232,9 +234,8 @@ let expr sub {exp_extra; exp_desc; exp_env; _} =
       sub.expr sub exp1;
       sub.expr sub exp2;
       sub.expr sub exp3
-  | Texp_send (exp, _, expo) ->
-      sub.expr sub exp;
-      Option.iter (sub.expr sub) expo
+  | Texp_send (exp, _) ->
+      sub.expr sub exp
   | Texp_new _ -> ()
   | Texp_instvar _ -> ()
   | Texp_setinstvar (_, _, _, exp) ->sub.expr sub exp
@@ -282,6 +283,7 @@ let signature_item sub {sig_desc; sig_env; _} =
   | Tsig_modsubst x -> sub.module_substitution sub x
   | Tsig_recmodule list -> List.iter (sub.module_declaration sub) list
   | Tsig_modtype x -> sub.module_type_declaration sub x
+  | Tsig_modtypesubst x -> sub.module_type_declaration sub x
   | Tsig_include incl -> include_infos (sub.module_type sub) incl
   | Tsig_class list -> List.iter (sub.class_description sub) list
   | Tsig_class_type list -> List.iter (sub.class_type_declaration sub) list
@@ -314,6 +316,9 @@ let with_constraint sub = function
   | Twith_typesubst decl -> sub.type_declaration sub decl
   | Twith_module    _    -> ()
   | Twith_modsubst  _    -> ()
+  | Twith_modtype   _    -> ()
+  | Twith_modtypesubst _ -> ()
+
 
 let open_description sub {open_env; _} = sub.env sub open_env
 

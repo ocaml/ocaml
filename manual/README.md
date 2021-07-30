@@ -4,7 +4,7 @@ OCAML DOCUMENTATION
 Prerequisites
 -------------
 
-- Any prerequisites required to build OCaml from sources.
+- Any prerequisites required to build the OCaml compiler from sources.
 
 - A LaTeX installation.
 
@@ -15,16 +15,19 @@ Note that you must make sure `hevea.sty` is installed into TeX properly. Your
 package manager may not do this for you. Run `kpsewhich hevea.sty` to check.
 
 
-Building
+Building the manual
 --------
 
-0. Install the OCaml distribution.
+0. Build the OCaml compiler (including the native one) from sources.
 
-1. Run `make` in the manual.
+You don't need to install the compiler since the manual is built using
+the one from the source tree.
+
+1. Run `make` in the manual directory.
 
 NB: If you already set `LD_LIBRARY_PATH` (OS X: `DYLD_LIBRARY_PATH`)
- in your environment don't forget to add
- `otherlibs/unix:otherlibs/str` to it in an absolute way.
+ in your environment don't forget to append the absolute paths to
+ `otherlibs/unix` and `otherlibs/str` to it.
 
 Outputs
 -------
@@ -41,10 +44,11 @@ In the manual:
 
 Source files
 ------------
-The manual is written in an extended dialect of latex and is split in many
-source files. During the build process, the sources files are converted into
-classical latex file using the tools available in `tools`. These files are
-then converted to the different output formats using either latex or hevea.
+The manual is written in an extended dialect of LaTeX and is split across many
+source files. During the build process, these source files are converted into
+classical LaTeX files using the tools available in the `manual/tools`
+directory. These files are then converted to the different output
+formats using either LaTeX or hevea.
 
 Each part of the manual corresponds to a specific directory, and each distinct
 chapters (or sometimes sections) are mapped to a distinct `.etex` file:
@@ -57,12 +61,12 @@ chapters (or sometimes sections) are mapped to a distinct `.etex` file:
   - Advanced examples with classes and modules: `advexamples.etex`
 
 - Part II, The OCaml language: `refman`
-  This part is separated in two very distinct  chapters; the
+  This part is divided in two very distinct chapters; the
   `OCaml language` chapter and the `Language extensions` chapter.
 
   - The OCaml language: `refman.etex`
     This chapter consists in a technical description of the OCaml language.
-    Each section of this chapter is mapped to a separated latex file:
+    Each section of this chapter is mapped to a separate LaTeX file:
      - `lex.etex`, `values.etex`, `names.etex`, `types.etex`, `const.etex`,
      `patterns.etex`, `expr.etex`, `typedecl.etex`, `classes.etex`,
      `modtypes.etex`, `compunit.etex`
@@ -78,15 +82,13 @@ chapters (or sometimes sections) are mapped to a distinct `.etex` file:
     - Native-code compilation (ocamlopt): `native.etex`
     - Lexer and parser generators (ocamllex, ocamlyacc): `lexyacc.etex`
     - Dependency generator (ocamldep): `ocamldep.etex`
-    - The browser/editor (ocamlbrowser): `browser.etex`
     - The documentation generator (ocamldoc): `ocamldoc.etex`
     - The debugger (ocamldebug): `debugger.etex`
     - Profiling (ocamlprof): `profil.etex`
-    - The ocamlbuild compilation manager: `ocamlbuild.etex`
     - Interfacing C with OCaml: `intf-c.etex`
     - Optimisation with Flambda: `flambda.etex`
-    - Memory profiling with Spacetime: `spacetime-chapter.etex`
     - Fuzzing with afl-fuzz: `afl-fuzz.etex`
+    - Runtime tracing with the instrumented runtime: `instrumented-runtime.etex`
 
 Note that ocamlc,ocamlopt and the toplevel options overlap a lot.
 Consequently, these options are described together in the file
@@ -101,14 +103,10 @@ of `unified-options.etex` contains the relevant information.
     - The standard library: `stdlib-blurb.etex`
     - The compiler front-end: `compilerlibs.etex`
     - The unix library: Unix system calls: `libunix.etex`
-    - The legacy num library: this library has been removed from the core
-      distribution, see `libnum.etex`
     - The str library: regular expressions and string processing: `libstr.etex`
     - The threads library: `libthreads.etex`
-    - The graphics library: `libgraph.etex`
     - The dynlink library: dynamic loading and linking of object files:
       `libdynlink.etex`
-    - The bigarray library: `libbigarray.etex`
 
 Latex extensions
 ----------------
@@ -133,13 +131,13 @@ A similar macro, `\lparagraph`, is provided for paragraphs.
 
 ### Caml environments
 
-The tool `tools/caml-tex` is used to generate the latex code for the examples
+The tool `tools/caml-tex` is used to generate the LaTeX code for the examples
 in the introduction and language extension parts of the manual. It implements
 two pseudo-environments: `caml_example` and `caml_eval`.
 
 The pseudo-environment `caml_example` evaluates its contents using an ocaml
 interpreter and then translates both the input code and the interpreter output
-to latex code, e.g.
+to LaTeX code, e.g.
 ```latex
 \begin{caml_example}{toplevel}
 let f x = x;;

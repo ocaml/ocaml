@@ -22,7 +22,7 @@
    Failure to do so can lead to a crash.
 *)
 
-type 'a t
+type !'a t
 (** The type of queues containing elements of type ['a]. *)
 
 
@@ -95,14 +95,14 @@ val transfer : 'a t -> 'a t -> unit
 
 val to_seq : 'a t -> 'a Seq.t
 (** Iterate on the queue, in front-to-back order.
-    The behavior is not defined if the queue is modified
+    The behavior is not specified if the queue is modified
     during the iteration.
     @since 4.07 *)
 
 val add_seq : 'a t -> 'a Seq.t -> unit
-(** Add the elements from the generator to the end of the queue
+(** Add the elements from a sequence to the end of the queue.
     @since 4.07 *)
 
 val of_seq : 'a Seq.t -> 'a t
-(** Create a queue from the generator
+(** Create a queue from a sequence.
     @since 4.07 *)

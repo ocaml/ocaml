@@ -147,6 +147,10 @@ static void update_environment(array local_env)
       memcpy(value, pos_eq + 1, value_length);
       value[value_length] = '\0';
       setenv(name, value, 1); /* 1 means overwrite */
+      free(name);
+      free(value);
+    } else {
+      unsetenv(*envp);
     }
   }
 }
@@ -248,8 +252,8 @@ static int handle_process_termination(
   if (WIFEXITED(status)) return WEXITSTATUS(status);
 
   if ( !WIFSIGNALED(status) )
-    error("Process %d neither terminated normally nor received a" \
-          "signal!?", pid);
+    error("Process %lld neither terminated normally nor received a" \
+          "signal!?", (long long) pid);
 
   /* From here we know that the process terminated due to a signal */
   signal = WTERMSIG(status);
@@ -258,8 +262,8 @@ static int handle_process_termination(
 #endif /* WCOREDUMP */
   corestr = core ? "" : "no ";
   fprintf(stderr,
-    "Process %d got signal %d(%s), %score dumped\n",
-    pid, signal, strsignal(signal), corestr
+    "Process %lld got signal %d(%s), %score dumped\n",
+    (long long) pid, signal, strsignal(signal), corestr
   );
 
   if (core)
@@ -273,7 +277,7 @@ static int handle_process_termination(
         fprintf(stderr, "Out of memory while processing core file.\n");
       else {
         snprintf(corefile, corefile_len,
-          "%s.%d.core", corefilename_prefix, pid);
+          "%s.%lld.core", corefilename_prefix, (long long) pid);
         if ( rename(COREFILENAME, corefile) == -1)
           fprintf(stderr, "The core file exists but could not be renamed.\n");
         else
@@ -312,7 +316,7 @@ static int run_command_parent(const command_settings *settings, pid_t child_pid)
           if ((settings->timeout > 0) && (timeout_expired))
           {
             timeout_expired = 0;
-            fprintf(stderr, "Timeout expired, killing all child processes");
+            fprintf(stderr, "Timeout expired, killing all child processes\n");
             if (kill(-child_pid, SIGKILL) == -1) myperror("kill");
           };
           break;

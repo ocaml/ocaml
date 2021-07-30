@@ -24,6 +24,7 @@ let in_file name =
 ;;
 
 let none = in_file "_none_";;
+let is_none l = (l = none);;
 
 let curr lexbuf = {
   loc_start = lexbuf.lex_start_p;
@@ -293,19 +294,19 @@ struct
     List.exists (fun ((_, s), (_, e)) -> s <= pos && pos <= e) iset
 
   let find_bound_in iset ~range:(start, end_)  =
-    Misc.Stdlib.List.find_map (fun ((a, x), (b, y)) ->
+    List.find_map (fun ((a, x), (b, y)) ->
       if start <= x && x <= end_ then Some (a, x)
       else if start <= y && y <= end_ then Some (b, y)
       else None
     ) iset
 
   let is_start iset ~pos =
-    Misc.Stdlib.List.find_map (fun ((a, x), _) ->
+    List.find_map (fun ((a, x), _) ->
       if pos = x then Some a else None
     ) iset
 
   let is_end iset ~pos =
-    Misc.Stdlib.List.find_map (fun (_, (b, y)) ->
+    List.find_map (fun (_, (b, y)) ->
       if pos = y then Some b else None
     ) iset
 
@@ -720,13 +721,19 @@ let batch_mode_printer : report_printer =
   let pp_txt ppf txt = Format.fprintf ppf "@[%t@]" txt in
   let pp self ppf report =
     setup_colors ();
-    (* Make sure we keep [num_loc_lines] updated. *)
+    (* Make sure we keep [num_loc_lines] updated.
+       The tabulation box is here to give submessage the option
+       to be aligned with the main message box
+    *)
     print_updating_num_loc_lines ppf (fun ppf () ->
-      Format.fprintf ppf "@[<v>%a%a: %a%a@]@."
+      Format.fprintf ppf "@[<v>%a%a%a: %a%a%a%a@]@."
+      Format.pp_open_tbox ()
       (self.pp_main_loc self report) report.main.loc
       (self.pp_report_kind self report) report.kind
+      Format.pp_set_tab ()
       (self.pp_main_txt self report) report.main.txt
       (self.pp_submsgs self report) report.sub
+      Format.pp_close_tbox ()
     ) ()
   in
   let pp_report_kind _self _ ppf = function

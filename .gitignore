@@ -40,7 +40,7 @@ _build
 
 # local to root directory
 
-/Makefile.common
+/Makefile.build_config
 /Makefile.config
 /autom4te.cache
 /ocamlc
@@ -48,6 +48,7 @@ _build
 /ocaml-*.cache
 /config.log
 /config.status
+/flexlink.opt
 /libtool
 /ocamlc.opt
 /expunge
@@ -67,8 +68,10 @@ _build
 /asmcomp/CSE.ml
 
 /boot/ocamlrun
+/boot/ocamlruns
 /boot/camlheader
 /boot/ocamlc.opt
+/boot/flexlink.byte
 
 /bytecomp/opcodes.ml
 /bytecomp/opcodes.mli
@@ -81,6 +84,8 @@ _build
 /emacs/ocamltags
 /emacs/*.elc
 
+/flexdll-sources
+
 /lambda/runtimedef.ml
 
 /lex/parser.ml
@@ -90,8 +95,12 @@ _build
 /lex/ocamllex.opt
 /lex/parser.output
 
-/manual/manual/cmds/warnings-help.etex
-/manual/manual/warnings-help.etex
+/manual/src/cmds/warnings-help.etex
+/manual/src/warnings-help.etex
+
+/api_docgen/build
+/api_docgen/odoc/build
+/api_docgen/ocamldoc/build
 
 /ocamldoc/ocamldoc
 /ocamldoc/ocamldoc.opt
@@ -105,23 +114,22 @@ _build
 /ocamldoc/odoc_text_lexer.ml
 /ocamldoc/odoc_text_parser.ml
 /ocamldoc/odoc_text_parser.mli
-/ocamldoc/stdlib_man
-/ocamldoc/stdlib_html
-/ocamldoc/stdlib_latex
-/ocamldoc/stdlib_texi
 /ocamldoc/*.output
 /ocamldoc/test_stdlib
 /ocamldoc/test_latex
 /ocamldoc/test
 
+/ocamltest/.dep
 /ocamltest/ocamltest
 /ocamltest/ocamltest.opt
 /ocamltest/ocamltest_config.ml
+/ocamltest/ocamltest_unix.ml
 /ocamltest/tsl_lexer.ml
 /ocamltest/tsl_parser.ml
 /ocamltest/tsl_parser.mli
 /ocamltest/ocamltest.html
 
+/otherlibs/*/.dep
 /otherlibs/dynlink/extract_crc
 /otherlibs/dynlink/dynlink_platform_intf.mli
 /otherlibs/dynlink/byte/dynlink.mli
@@ -161,6 +169,7 @@ _build
 /otherlibs/win32unix/time.c
 /otherlibs/win32unix/unlink.c
 /otherlibs/win32unix/fsync.c
+/otherlibs/win32unix/mkdir.c
 
 /parsing/parser.ml
 /parsing/parser.mli
@@ -171,6 +180,7 @@ _build
 /parsing/parser.output
 /parsing/parser.automaton
 /parsing/parser.conflicts
+/parsing/parser.auto.messages
 /parsing/camlinternalMenhirLib.ml
 /parsing/camlinternalMenhirLib.mli
 
@@ -186,11 +196,8 @@ _build
 /runtime/ocamlrund
 /runtime/ocamlruni
 /runtime/ld.conf
-/runtime/interp.a.lst
-/runtime/*.[sd]obj
 /runtime/.gdb_history
-/runtime/*.d.c
-/runtime/*.pic.c
+/runtime/.dep
 /runtime/domain_state32.inc
 /runtime/domain_state64.inc
 
@@ -223,7 +230,6 @@ _build
 
 /tools/ocamldep
 /tools/ocamldep.opt
-/tools/ocamldep.bak
 /tools/ocamlprof
 /tools/ocamlprof.opt
 /tools/opnames.ml
@@ -234,7 +240,6 @@ _build
 /tools/ocamlobjinfo.opt
 /tools/cvt_emit
 /tools/cvt_emit.opt
-/tools/cvt_emit.bak
 /tools/cvt_emit.ml
 /tools/ocamlcp
 /tools/ocamlcp.opt
@@ -248,10 +253,8 @@ _build
 /tools/keywords
 /tools/ocamlmklib
 /tools/ocamlmklib.opt
-/tools/ocamlmklibconfig.ml
-/tools/objinfo_helper
-/tools/read_cmt
-/tools/read_cmt.opt
+/tools/ocamlcmt
+/tools/ocamlcmt.opt
 /tools/cmpbyt
 /tools/cmpbyt.opt
 /tools/stripdebug
@@ -259,6 +262,14 @@ _build
 /tools/make_opcodes
 /tools/make_opcodes.ml
 /tools/caml-tex
+/tools/eventlog_metadata
+
+/toplevel/byte/topeval.mli
+/toplevel/byte/trace.mli
+/toplevel/byte/topmain.mli
+/toplevel/native/topeval.mli
+/toplevel/native/trace.mli
+/toplevel/native/topmain.mli
 
 /utils/config.ml
 /utils/domainstate.ml

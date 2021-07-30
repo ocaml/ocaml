@@ -33,10 +33,6 @@
 #include "caml/memprof.h"
 #include "caml/finalise.h"
 
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-#include "caml/spacetime.h"
-#endif
-
 #ifndef NSIG
 #define NSIG 64
 #endif
@@ -62,12 +58,20 @@ CAMLexport int (*caml_sigmask_hook)(int, const sigset_t *, sigset_t *)
   = sigprocmask_wrapper;
 #endif
 
-/* Execute all pending signals */
-
-value caml_process_pending_signals_exn(void)
+static int check_for_pending_signals(void)
 {
   int i;
-  int really_pending;
+  for (i = 0; i < NSIG; i++) {
+    if (caml_pending_signals[i]) return 1;
+  }
+  return 0;
+}
+
+/* Execute all pending signals */
+
+CAMLexport value caml_process_pending_signals_exn(void)
+{
+  int i;
 #ifdef POSIX_SIGNALS
   sigset_t set;
 #endif
@@ -78,13 +82,7 @@ value caml_process_pending_signals_exn(void)
 
   /* Check that there is indeed a pending signal before issuing the
      syscall in [caml_sigmask_hook]. */
-  really_pending = 0;
-  for (i = 0; i < NSIG; i++)
-    if (caml_pending_signals[i]) {
-      really_pending = 1;
-      break;
-    }
-  if(!really_pending)
+  if (!check_for_pending_signals())
     return Val_unit;
 
 #ifdef POSIX_SIGNALS
@@ -127,7 +125,8 @@ void caml_set_action_pending(void)
      caml_garbage_collection and caml_alloc_small_dispatch.
 */
 
-CAMLno_tsan void caml_record_signal(int signal_number)
+CAMLno_tsan
+CAMLexport void caml_record_signal(int signal_number)
 {
   caml_pending_signals[signal_number] = 1;
   signals_are_pending = 1;
@@ -136,33 +135,18 @@ CAMLno_tsan void caml_record_signal(int signal_number)
 
 /* Management of blocking sections. */
 
-static intnat volatile caml_async_signal_mode = 0;
-
 static void caml_enter_blocking_section_default(void)
 {
-  CAMLassert (caml_async_signal_mode == 0);
-  caml_async_signal_mode = 1;
 }
 
 static void caml_leave_blocking_section_default(void)
 {
-  CAMLassert (caml_async_signal_mode == 1);
-  caml_async_signal_mode = 0;
-}
-
-static int caml_try_leave_blocking_section_default(void)
-{
-  intnat res;
-  Read_and_clear(res, caml_async_signal_mode);
-  return res;
 }
 
 CAMLexport void (*caml_enter_blocking_section_hook)(void) =
    caml_enter_blocking_section_default;
 CAMLexport void (*caml_leave_blocking_section_hook)(void) =
    caml_leave_blocking_section_default;
-CAMLexport int (*caml_try_leave_blocking_section_hook)(void) =
-   caml_try_leave_blocking_section_default;
 
 CAMLno_tsan /* The read of [caml_something_to_do] is not synchronized. */
 CAMLexport void caml_enter_blocking_section(void)
@@ -176,6 +160,11 @@ CAMLexport void caml_enter_blocking_section(void)
     if (! signals_are_pending) break;
     caml_leave_blocking_section_hook ();
   }
+}
+
+CAMLexport void caml_enter_blocking_section_no_pending(void)
+{
+  caml_enter_blocking_section_hook ();
 }
 
 CAMLexport void caml_leave_blocking_section(void)
@@ -197,8 +186,10 @@ CAMLexport void caml_leave_blocking_section(void)
      examined by [caml_process_pending_signals_exn], then
      [signals_are_pending] is 0 but the signal needs to be
      handled at this point. */
-  signals_are_pending = 1;
-  caml_raise_if_exception(caml_process_pending_signals_exn());
+  if (check_for_pending_signals()) {
+    signals_are_pending = 1;
+    caml_set_action_pending();
+  }
 
   errno = saved_errno;
 }
@@ -211,9 +202,6 @@ value caml_execute_signal_exn(int signal_number, int in_signal_handler)
 {
   value res;
   value handler;
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-  void* saved_spacetime_trie_node_ptr;
-#endif
 #ifdef POSIX_SIGNALS
   sigset_t nsigs, sigs;
   /* Block the signal before executing the handler, and record in sigs
@@ -222,36 +210,10 @@ value caml_execute_signal_exn(int signal_number, int in_signal_handler)
   sigaddset(&nsigs, signal_number);
   caml_sigmask_hook(SIG_BLOCK, &nsigs, &sigs);
 #endif
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-  /* We record the signal handler's execution separately, in the same
-     trie used for finalisers. */
-  saved_spacetime_trie_node_ptr
-    = caml_spacetime_trie_node_ptr;
-  caml_spacetime_trie_node_ptr
-    = caml_spacetime_finaliser_trie_root;
-#endif
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-  /* Handled action may have no associated handler, which we interpret
-     as meaning the signal should be handled by a call to exit.  This is
-     used to allow spacetime profiles to be completed on interrupt */
-  if (caml_signal_handlers == 0) {
-    res = caml_sys_exit(Val_int(2));
-  } else {
-    handler = Field(caml_signal_handlers, signal_number);
-    if (!Is_block(handler)) {
-      res = caml_sys_exit(Val_int(2));
-    } else {
-#else
   handler = Field(caml_signal_handlers, signal_number);
-#endif
     res = caml_callback_exn(
              handler,
              Val_int(caml_rev_convert_signal_number(signal_number)));
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-    }
-  }
-  caml_spacetime_trie_node_ptr = saved_spacetime_trie_node_ptr;
-#endif
 #ifdef POSIX_SIGNALS
   if (! in_signal_handler) {
     /* Restore the original signal mask */
@@ -267,6 +229,11 @@ value caml_execute_signal_exn(int signal_number, int in_signal_handler)
 
 void caml_update_young_limit (void)
 {
+  CAMLassert(Caml_state->young_alloc_start <= caml_memprof_young_trigger &&
+             caml_memprof_young_trigger <= Caml_state->young_alloc_end);
+  CAMLassert(Caml_state->young_alloc_start <= Caml_state->young_trigger &&
+             Caml_state->young_trigger < Caml_state->young_alloc_end);
+
   /* The minor heap grows downwards. The first trigger is the largest one. */
   Caml_state->young_limit =
     caml_memprof_young_trigger < Caml_state->young_trigger ?
@@ -335,6 +302,17 @@ Caml_inline value process_pending_actions_with_root_exn(value extra_root)
     CAMLdrop;
   }
   return extra_root;
+}
+
+CAMLno_tsan /* The access to [caml_something_to_do] is not synchronized. */
+int caml_check_pending_actions()
+{
+  return caml_something_to_do;
+}
+
+value caml_process_pending_actions_with_root_exn(value extra_root)
+{
+  return process_pending_actions_with_root_exn(extra_root);
 }
 
 value caml_process_pending_actions_with_root(value extra_root)
@@ -495,23 +473,8 @@ CAMLprim value caml_install_signal_handler(value signal_number, value action)
     res = Val_int(1);
     break;
   case 2:                       /* was Signal_handle */
-    #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-      /* Handled action may have no associated handler
-         which we treat as Signal_default */
-      if (caml_signal_handlers == 0) {
-        res = Val_int(0);
-      } else {
-        if (!Is_block(Field(caml_signal_handlers, sig))) {
-          res = Val_int(0);
-        } else {
-          res = caml_alloc_small (1, 0);
-          Field(res, 0) = Field(caml_signal_handlers, sig);
-        }
-      }
-    #else
     res = caml_alloc_small (1, 0);
     Field(res, 0) = Field(caml_signal_handlers, sig);
-    #endif
     break;
   default:                      /* error in caml_set_signal_action */
     caml_sys_error(NO_ARG);

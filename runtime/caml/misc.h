@@ -27,16 +27,11 @@
 
 #include <stddef.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <stdarg.h>
 
 /* Basic types and constants */
 
 typedef size_t asize_t;
-
-#ifndef NULL
-#define NULL 0
-#endif
 
 #if defined(__GNUC__) || defined(__clang__)
   /* Supported since at least GCC 3.1 */
@@ -79,13 +74,20 @@ CAMLdeprecated_typedef(addr, char *);
   #define Noreturn
 #endif
 
-
-
 /* Export control (to mark primitives and to handle Windows DLL) */
+
+#ifndef CAMLDLLIMPORT
+  #if defined(SUPPORT_DYNAMIC_LINKING) && defined(ARCH_SIXTYFOUR) \
+      && (defined(__CYGWIN__) || defined(__MINGW32__))
+    #define CAMLDLLIMPORT __declspec(dllimport)
+  #else
+    #define CAMLDLLIMPORT
+  #endif
+#endif
 
 #define CAMLexport
 #define CAMLprim
-#define CAMLextern extern
+#define CAMLextern CAMLDLLIMPORT extern
 
 /* Weak function definitions that can be overridden by external libs */
 /* Conservatively restricted to ELF and MacOSX platforms */
@@ -101,12 +103,25 @@ CAMLdeprecated_typedef(addr, char *);
 /* we need to be able to compute the exact offset of each member. */
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
 #define CAMLalign(n) _Alignas(n)
+#elif defined(__cplusplus) && (__cplusplus >= 201103L || _MSC_VER >= 1900)
+#define CAMLalign(n) alignas(n)
 #elif defined(SUPPORTS_ALIGNED_ATTRIBUTE)
 #define CAMLalign(n) __attribute__((aligned(n)))
 #elif _MSC_VER >= 1500
 #define CAMLalign(n) __declspec(align(n))
 #else
 #error "How do I align values on this platform?"
+#endif
+
+/* Prefetching */
+
+#ifdef CAML_INTERNALS
+#if defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__))
+#define caml_prefetch(p) __builtin_prefetch((p), 1, 3)
+/* 1 = intent to write; 3 = all cache levels */
+#else
+#define caml_prefetch(p)
+#endif
 #endif
 
 /* CAMLunused is preserved for compatibility reasons.
@@ -262,6 +277,7 @@ extern double caml_log1p(double);
 #define unlink_os _wunlink
 #define rename_os caml_win32_rename
 #define chdir_os _wchdir
+#define mkdir_os(path, perm) _wmkdir(path)
 #define getcwd_os _wgetcwd
 #define system_os _wsystem
 #define rmdir_os _wrmdir
@@ -277,6 +293,8 @@ extern double caml_log1p(double);
 #define strcpy_os wcscpy
 #define mktemp_os _wmktemp
 #define fopen_os _wfopen
+
+#define clock_os caml_win32_clock
 
 #define caml_stat_strdup_os caml_stat_wcsdup
 #define caml_stat_strconcat_os caml_stat_wcsconcat
@@ -297,6 +315,7 @@ extern double caml_log1p(double);
 #define unlink_os unlink
 #define rename_os rename
 #define chdir_os chdir
+#define mkdir_os mkdir
 #define getcwd_os getcwd
 #define system_os system
 #define rmdir_os rmdir
@@ -312,6 +331,8 @@ extern double caml_log1p(double);
 #define strcpy_os strcpy
 #define mktemp_os mktemp
 #define fopen_os fopen
+
+#define clock_os clock
 
 #define caml_stat_strdup_os caml_stat_strdup
 #define caml_stat_strconcat_os caml_stat_strconcat
@@ -337,6 +358,9 @@ extern void caml_ext_table_remove(struct ext_table * tbl, void * data);
 extern void caml_ext_table_free(struct ext_table * tbl, int free_entries);
 extern void caml_ext_table_clear(struct ext_table * tbl, int free_entries);
 
+/* Add to [contents] the (short) names of the files contained in
+   the directory named [dirname].  No entries are added for [.] and [..].
+   Return 0 on success, -1 on error; set errno in the case of error. */
 CAMLextern int caml_read_directory(char_os * dirname,
                                    struct ext_table * contents);
 
@@ -406,107 +430,19 @@ extern void caml_set_fields (intnat v, uintnat, uintnat);
 
 /* snprintf emulation for Win32 */
 
-#if defined(_WIN32) && !defined(_UCRT)
+#ifdef _WIN32
+#ifndef _UCRT
 extern int caml_snprintf(char * buf, size_t size, const char * format, ...);
 #define snprintf caml_snprintf
 #endif
 
-#ifdef CAML_INSTR
-/* Timers and counters for GC latency profiling (Linux-only) */
-
-#include <time.h>
-#include <stdio.h>
-
-extern intnat caml_instr_starttime, caml_instr_stoptime;
-
-struct caml_instr_block {
-  struct timespec ts[10];
-  char *tag[10];
-  int index;
-  struct caml_instr_block *next;
-};
-
-extern struct caml_instr_block *caml_instr_log;
-
-/* Declare a timer/counter name. [t] must be a new variable name. */
-#define CAML_INSTR_DECLARE(t)                                       \
-  struct caml_instr_block *t = NULL
-
-/* Allocate the data block for a given name.
-   [t] must have been declared with [CAML_INSTR_DECLARE]. */
-#define CAML_INSTR_ALLOC(t) do{                                             \
-    if (Caml_state_field(stat_minor_collections) >= caml_instr_starttime    \
-        && Caml_state_field(stat_minor_collections) < caml_instr_stoptime){ \
-      t = caml_stat_alloc_noexc (sizeof (struct caml_instr_block));         \
-      t->index = 0;                                                         \
-      t->tag[0] = "";                                                       \
-      t->next = caml_instr_log;                                             \
-      caml_instr_log = t;                                                   \
-    }                                                                       \
-  }while(0)
-
-/* Allocate the data block and start the timer.
-   [t] must have been declared with [CAML_INSTR_DECLARE]
-   and allocated with [CAML_INSTR_ALLOC]. */
-#define CAML_INSTR_START(t, msg) do{                                \
-    if (t != NULL){                                                 \
-      t->tag[0] = msg;                                              \
-      clock_gettime (CLOCK_REALTIME, &(t->ts[0]));                  \
-    }                                                               \
-  }while(0)
-
-/* Declare a timer, allocate its data, and start it.
-   [t] must be a new variable name. */
-#define CAML_INSTR_SETUP(t, msg)                                    \
-  CAML_INSTR_DECLARE (t);                                           \
-  CAML_INSTR_ALLOC (t);                                             \
-  CAML_INSTR_START (t, msg)
-
-/* Record an intermediate time within a given timer.
-   [t] must have been declared, allocated, and started. */
-#define CAML_INSTR_TIME(t, msg) do{                                 \
-    if (t != NULL){                                                 \
-      ++ t->index;                                                  \
-      t->tag[t->index] = (msg);                                     \
-      clock_gettime (CLOCK_REALTIME, &(t->ts[t->index]));           \
-    }                                                               \
-  }while(0)
-
-/* Record an integer data point.
-   If [msg] ends with # it will be interpreted as an integer-valued event.
-   If it ends with @ it will be interpreted as an event counter.
-*/
-#define CAML_INSTR_INT(msg, data) do{                               \
-    CAML_INSTR_SETUP (__caml_tmp, "");                              \
-    if (__caml_tmp != NULL){                                        \
-      __caml_tmp->index = 1;                                        \
-      __caml_tmp->tag[1] = msg;                                     \
-      __caml_tmp->ts[1].tv_sec = 0;                                 \
-      __caml_tmp->ts[1].tv_nsec = (data);                           \
-    }                                                               \
-  }while(0)
-
-/* This function is called at the start of the program to set up
-   the data for the above macros.
-*/
-extern void caml_instr_init (void);
-
-/* This function is automatically called by the runtime to output
-   the collected data to the dump file. */
-extern void caml_instr_atexit (void);
-
-#else /* CAML_INSTR */
-
-#define CAML_INSTR_DECLARE(t) /**/
-#define CAML_INSTR_ALLOC(t) /**/
-#define CAML_INSTR_START(t, name) /**/
-#define CAML_INSTR_SETUP(t, name) /**/
-#define CAML_INSTR_TIME(t, msg) /**/
-#define CAML_INSTR_INT(msg, c) /**/
-#define caml_instr_init() /**/
-#define caml_instr_atexit() /**/
-
-#endif /* CAML_INSTR */
+extern int caml_snwprintf(wchar_t * buf,
+                          size_t size,
+                          const wchar_t * format, ...);
+#define snprintf_os caml_snwprintf
+#else
+#define snprintf_os snprintf
+#endif
 
 /* Macro used to deactivate thread and address sanitizers on some
    functions. */
@@ -522,18 +458,6 @@ extern void caml_instr_atexit (void);
 #    define CAMLno_asan __attribute__((no_sanitize("address")))
 #  endif
 #endif
-
-/* A table of all code fragments (main program and dynlinked modules) */
-struct code_fragment {
-  char *code_start;
-  char *code_end;
-  unsigned char digest[16];
-  char digest_computed;
-};
-
-extern struct ext_table caml_code_fragments_table;
-
-int caml_find_code_fragment(char *pc, int *index, struct code_fragment **cf);
 
 #endif /* CAML_INTERNALS */
 

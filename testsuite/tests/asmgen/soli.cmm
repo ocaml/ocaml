@@ -1,5 +1,5 @@
 (* TEST
-files = "main.c"
+readonly_files = "main.c"
 arguments = "-DUNIT_INT -DFUN=solitaire main.c"
 * asmgen
 *)
@@ -72,7 +72,7 @@ arguments = "-DUNIT_INT -DFUN=solitaire main.c"
                                  (intaset (addraref "board" i1) j1 1)
                                  (intaset (addraref "board" i2) j2 2)
                                  (if (app "solve" (+ m 1) int)
-                                     (raise_notrace 0a)
+                                     (raise_notrace 0)
                                    [])
                                  (intaset (addraref "board" i) j 2)
                                  (intaset (addraref "board" i1) j1 2)

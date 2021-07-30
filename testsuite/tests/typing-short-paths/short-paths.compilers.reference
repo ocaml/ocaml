@@ -34,6 +34,7 @@ module Core :
             val for_all : (key -> 'a -> bool) -> 'a t -> bool
             val exists : (key -> 'a -> bool) -> 'a t -> bool
             val filter : (key -> 'a -> bool) -> 'a t -> 'a t
+            val filter_map : (key -> 'a -> 'b option) -> 'a t -> 'b t
             val partition : (key -> 'a -> bool) -> 'a t -> 'a t * 'a t
             val cardinal : 'a t -> key
             val bindings : 'a t -> (key * 'a) list
@@ -53,6 +54,7 @@ module Core :
             val map : ('a -> 'b) -> 'a t -> 'b t
             val mapi : (key -> 'a -> 'b) -> 'a t -> 'b t
             val to_seq : 'a t -> (key * 'a) Seq.t
+            val to_rev_seq : 'a t -> (key * 'a) Seq.t
             val to_seq_from : key -> 'a t -> (key * 'a) Seq.t
             val add_seq : (key * 'a) Seq.t -> 'a t -> 'a t
             val of_seq : (key * 'a) Seq.t -> 'a t
@@ -94,6 +96,7 @@ Error: Signature mismatch:
          type t = int
        is not included in
          type t = string
+       The type t is not equal to the type string
 module A : sig module B : sig type t = T end end
 module M2 : sig type u = A.B.t type foo = int type v = u end
 

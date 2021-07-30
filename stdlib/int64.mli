@@ -56,7 +56,8 @@ external mul : int64 -> int64 -> int64 = "%int64_mul"
 (** Multiplication. *)
 
 external div : int64 -> int64 -> int64 = "%int64_div"
-(** Integer division.  Raise [Division_by_zero] if the second
+(** Integer division.
+   @raise Division_by_zero if the second
    argument is zero.  This division rounds the real quotient of
    its arguments towards zero, as specified for {!Stdlib.(/)}. *)
 
@@ -145,8 +146,9 @@ external of_float : float -> int64
   [@@unboxed] [@@noalloc]
 (** Convert the given floating-point number to a 64-bit integer,
    discarding the fractional part (truncate towards 0).
-   The result of the conversion is undefined if, after truncation,
-   the number is outside the range \[{!Int64.min_int}, {!Int64.max_int}\]. *)
+   If the truncated floating-point number is outside the range
+   \[{!Int64.min_int}, {!Int64.max_int}\], no exception is raised, and
+   an unspecified, platform-dependent integer is returned. *)
 
 external to_float : int64 -> float
   = "caml_int64_to_float" "caml_int64_to_float_unboxed"
@@ -187,7 +189,7 @@ external of_string : string -> int64 = "caml_int64_of_string"
 
    The [_] (underscore) character can appear anywhere in the string
    and is ignored.
-   Raise [Failure "Int64.of_string"] if the given string is not
+   @raise Failure if the given string is not
    a valid representation of an integer, or if the integer represented
    exceeds the range of integers representable in type [int64]. *)
 
@@ -232,6 +234,16 @@ val unsigned_compare: t -> t -> int
 val equal: t -> t -> bool
 (** The equal function for int64s.
     @since 4.03.0 *)
+
+val min: t -> t -> t
+(** Return the smaller of the two arguments.
+    @since 4.13.0
+*)
+
+val max: t -> t -> t
+(** Return the greater of the two arguments.
+    @since 4.13.0
+ *)
 
 (**/**)
 

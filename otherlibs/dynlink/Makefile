@@ -21,23 +21,19 @@
 
 ROOTDIR = ../..
 
-include $(ROOTDIR)/Makefile.config
 include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
-
-CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 
 OCAMLC=$(BEST_OCAMLC) -g -nostdlib -I $(ROOTDIR)/stdlib
 OCAMLOPT=$(BEST_OCAMLOPT) -g -nostdlib -I $(ROOTDIR)/stdlib
 
 # COMPFLAGS should be in sync with the toplevel Makefile's COMPFLAGS.
-COMPFLAGS=-strict-sequence -principal -absname -w +a-4-9-40-41-42-44-45-48-66 \
-	  -warn-error A \
+COMPFLAGS=-strict-sequence -principal -absname \
+          -w +a-4-9-40-41-42-44-45-48-66-70 \
+          -warn-error +A \
           -bin-annot -safe-string -strict-formats
 ifeq "$(FLAMBDA)" "true"
-OPTCOMPFLAGS=-O3
-else
-OPTCOMPFLAGS=
+OPTCOMPFLAGS += -O3
 endif
 
 COMPFLAGS += -I byte
@@ -76,6 +72,7 @@ COMPILERLIBS_INTFS=\
 
 # .ml files from compilerlibs that have corresponding .mli files.
 COMPILERLIBS_SOURCES=\
+  utils/binutils.ml \
   utils/config.ml \
   utils/build_path_prefix_map.ml \
   utils/misc.ml \
@@ -87,7 +84,10 @@ COMPILERLIBS_SOURCES=\
   utils/consistbl.ml \
   utils/terminfo.ml \
   utils/warnings.ml \
+  utils/local_store.ml \
   utils/load_path.ml \
+  utils/int_replace_polymorphic_compare.ml \
+  utils/lazy_backtrack.ml \
   parsing/location.ml \
   parsing/longident.ml \
   parsing/docstrings.ml \
@@ -108,6 +108,7 @@ COMPILERLIBS_SOURCES=\
   file_formats/cmi_format.ml \
   typing/persistent_env.ml \
   typing/env.ml \
+  lambda/debuginfo.ml \
   lambda/lambda.ml \
   lambda/runtimedef.ml \
   bytecomp/instruct.ml \
@@ -205,7 +206,9 @@ native/dynlink_compilerlibs.cmx: $(COMPILERLIBS_CMX)
 
 # The main dynlink rules start here.
 
-all: dynlink.cma extract_crc
+extract_crc := extract_crc$(EXE)
+
+all: dynlink.cma $(extract_crc)
 
 allopt: dynlink.cmxa
 
@@ -229,7 +232,9 @@ dynlink.cmxa: $(NATOBJS)
 dynlink_platform_intf.mli: dynlink_platform_intf.ml
 	cp $< $@
 
-extract_crc: dynlink.cma byte/dynlink_compilerlibs.cmo extract_crc.cmo
+$(eval $(call PROGRAM_SYNONYM,extract_crc))
+
+$(extract_crc): dynlink.cma byte/dynlink_compilerlibs.cmo extract_crc.cmo
 	$(OCAMLC) -o $@ $^
 
 install:
@@ -241,8 +246,7 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	  dynlink.cmti dynlink.mli \
 	  "$(INSTALL_LIBDIR)"
 endif
-	$(INSTALL_PROG) \
-	  extract_crc "$(INSTALL_LIBDIR)/extract_crc$(EXE)"
+	$(INSTALL_PROG) $(extract_crc) "$(INSTALL_LIBDIR)"
 
 installopt:
 	if $(NATDYNLINK); then \
@@ -253,13 +257,15 @@ installopt:
 	fi
 
 partialclean:
-	rm -f extract_crc *.cm[ioaxt] *.cmti *.cmxa \
+	rm -f $(extract_crc) *.cm[ioaxt] *.cmti *.cmxa \
 	      byte/*.cm[iot] byte/*.cmti \
-	      native/*.cm[ixt] native/*.cmti native/*.$(O) \
-	      $(LOCAL_SRC)/*.cm[ioaxt] $(LOCAL_SRC)/*.cmti $(LOCAL_SRC)/*.$(O)
+	      native/*.cm[ixt] native/*.cmti native/*.o native/*.obj \
+	      $(LOCAL_SRC)/*.cm[ioaxt] $(LOCAL_SRC)/*.cmti \
+        $(LOCAL_SRC)/*.o $(LOCAL_SRC)/*.obj
 
 clean: partialclean
-	rm -f *.$(A) *.$(O) *.so *.dll dynlink_platform_intf.mli \
+	rm -f extract_crc extract_crc.exe
+	rm -f *.a *.lib *.o *.obj *.so *.dll dynlink_platform_intf.mli \
 	      $(LOCAL_SRC)/*.ml $(LOCAL_SRC)/*.mli $(LOCAL_SRC)/Makefile \
 	      $(LOCAL_SRC)/.depend byte/dynlink.mli native/dynlink.mli
 
@@ -267,10 +273,6 @@ clean: partialclean
 beforedepend: dynlink_platform_intf.mli
 
 .PHONY: depend
-ifeq "$(TOOLCHAIN)" "msvc"
-depend:
-	$(error Dependencies cannot be regenerated using the MSVC ports)
-else
 DEPEND_DUMMY_FILES=\
   native/dynlink_compilerlibs.ml \
   byte/dynlink_compilerlibs.mli \
@@ -279,22 +281,19 @@ DEPEND_DUMMY_FILES=\
 
 depend: beforedepend
 	touch $(DEPEND_DUMMY_FILES)
-	$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash \
+	$(OCAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash \
 	  -I byte -bytecode *.mli *.ml byte/dynlink.ml > .depend
-	$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash \
+	$(OCAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash \
 	  -I native -native *.ml native/dynlink.ml >> .depend
 	rm -f $(DEPEND_DUMMY_FILES)
-endif
 
 include .depend
 
-.SUFFIXES: .ml .mli .cmi .cmo .cmx .$(O)
-
-.mli.cmi:
+%.cmi: %.mli
 	$(OCAMLC) -c $(COMPFLAGS) $<
 
-.ml.cmo:
+%.cmo: %.ml
 	$(OCAMLC) -c $(COMPFLAGS) $<
 
-.ml.cmx:
+%.cmx: %.ml
 	$(OCAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<

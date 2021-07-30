@@ -36,6 +36,7 @@ struct caml_loc_info {
   int loc_valid;
   int loc_is_raise;
   char * loc_filename;
+  char * loc_defname;
   int loc_lnum;
   int loc_startchr;
   int loc_endchr;
@@ -50,6 +51,12 @@ typedef void * debuginfo;
 /* Check availability of debug information before extracting a trace.
  * Relevant for bytecode, always true for native code. */
 int caml_debug_info_available(void);
+
+/* Check load status of debug information for the main program. This is always 1
+ * for native code. For bytecode, it is 1 if the debug information has been
+ * loaded, 0 if it has not been loaded or one of the error constants in
+ * startup.h if something went wrong loading the debug information. */
+int caml_debug_info_status(void);
 
 /* Return debuginfo associated to a slot or NULL. */
 debuginfo caml_debuginfo_extract(backtrace_slot slot);

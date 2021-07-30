@@ -1,0 +1,70 @@
+-----------
+Raised by primitive operation at Callstacks.alloc_list_literal in file "callstacks.ml", line 18, characters 30-53
+Called from Callstacks.test in file "callstacks.ml", line 92, characters 2-10
+Called from Stdlib__List.iter in file "list.ml", line 110, characters 12-15
+Called from Callstacks in file "callstacks.ml", line 99, characters 2-27
+-----------
+Raised by primitive operation at Callstacks.alloc_pair in file "callstacks.ml", line 21, characters 30-76
+Called from Callstacks.test in file "callstacks.ml", line 92, characters 2-10
+Called from Stdlib__List.iter in file "list.ml", line 110, characters 12-15
+Called from Callstacks in file "callstacks.ml", line 99, characters 2-27
+-----------
+Raised by primitive operation at Callstacks.alloc_record in file "callstacks.ml", line 26, characters 12-66
+Called from Callstacks.test in file "callstacks.ml", line 92, characters 2-10
+Called from Stdlib__List.iter in file "list.ml", line 110, characters 12-15
+Called from Callstacks in file "callstacks.ml", line 99, characters 2-27
+-----------
+Raised by primitive operation at Callstacks.alloc_some in file "callstacks.ml", line 29, characters 30-60
+Called from Callstacks.test in file "callstacks.ml", line 92, characters 2-10
+Called from Stdlib__List.iter in file "list.ml", line 110, characters 12-15
+Called from Callstacks in file "callstacks.ml", line 99, characters 2-27
+-----------
+Raised by primitive operation at Callstacks.alloc_array_literal in file "callstacks.ml", line 32, characters 30-55
+Called from Callstacks.test in file "callstacks.ml", line 92, characters 2-10
+Called from Stdlib__List.iter in file "list.ml", line 110, characters 12-15
+Called from Callstacks in file "callstacks.ml", line 99, characters 2-27
+-----------
+Raised by primitive operation at Callstacks.alloc_float_array_literal in file "callstacks.ml", line 36, characters 12-62
+Called from Callstacks.test in file "callstacks.ml", line 92, characters 2-10
+Called from Stdlib__List.iter in file "list.ml", line 110, characters 12-15
+Called from Callstacks in file "callstacks.ml", line 99, characters 2-27
+-----------
+Raised by primitive operation at Callstacks.do_alloc_unknown_array_literal in file "callstacks.ml", line 39, characters 22-27
+Called from Callstacks.alloc_unknown_array_literal in file "callstacks.ml", line 41, characters 30-65
+Called from Callstacks.test in file "callstacks.ml", line 92, characters 2-10
+Called from Stdlib__List.iter in file "list.ml", line 110, characters 12-15
+Called from Callstacks in file "callstacks.ml", line 99, characters 2-27
+-----------
+Raised by primitive operation at Callstacks.alloc_small_array in file "callstacks.ml", line 44, characters 30-69
+Called from Callstacks.test in file "callstacks.ml", line 92, characters 2-10
+Called from Stdlib__List.iter in file "list.ml", line 110, characters 12-15
+Called from Callstacks in file "callstacks.ml", line 99, characters 2-27
+-----------
+Raised by primitive operation at Callstacks.alloc_large_array in file "callstacks.ml", line 47, characters 30-73
+Called from Callstacks.test in file "callstacks.ml", line 92, characters 2-10
+Called from Stdlib__List.iter in file "list.ml", line 110, characters 12-15
+Called from Callstacks in file "callstacks.ml", line 99, characters 2-27
+-----------
+Raised by primitive operation at Callstacks.alloc_closure.(fun) in file "callstacks.ml", line 51, characters 30-43
+Called from Callstacks.test in file "callstacks.ml", line 92, characters 2-10
+Called from Stdlib__List.iter in file "list.ml", line 110, characters 12-15
+Called from Callstacks in file "callstacks.ml", line 99, characters 2-27
+-----------
+No callstack
+-----------
+Raised by primitive operation at Stdlib__Marshal.from_bytes in file "marshal.ml", line 61, characters 9-35
+Called from Callstacks.alloc_unmarshal in file "callstacks.ml", line 62, characters 12-87
+Called from Callstacks.test in file "callstacks.ml", line 92, characters 2-10
+Called from Stdlib__List.iter in file "list.ml", line 110, characters 12-15
+Called from Callstacks in file "callstacks.ml", line 99, characters 2-27
+-----------
+Raised by primitive operation at Callstacks.alloc_ref in file "callstacks.ml", line 65, characters 30-59
+Called from Callstacks.test in file "callstacks.ml", line 92, characters 2-10
+Called from Stdlib__List.iter in file "list.ml", line 110, characters 12-15
+Called from Callstacks in file "callstacks.ml", line 99, characters 2-27
+-----------
+Raised by primitive operation at Callstacks.prod_floats in file "callstacks.ml", line 68, characters 37-43
+Called from Callstacks.alloc_boxedfloat in file "callstacks.ml", line 70, characters 30-49
+Called from Callstacks.test in file "callstacks.ml", line 92, characters 2-10
+Called from Stdlib__List.iter in file "list.ml", line 110, characters 12-15
+Called from Callstacks in file "callstacks.ml", line 99, characters 2-27

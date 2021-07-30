@@ -519,11 +519,11 @@ value caml_interprete(code_t prog, asize_t prog_size)
     }
 
     Instruct(RESTART): {
-      int num_args = Wosize_val(env) - 2;
+      int num_args = Wosize_val(env) - 3;
       int i;
       sp -= num_args;
-      for (i = 0; i < num_args; i++) sp[i] = Field(env, i + 2);
-      env = Field(env, 1);
+      for (i = 0; i < num_args; i++) sp[i] = Field(env, i + 3);
+      env = Field(env, 2);
       extra_args += num_args;
       Next;
     }
@@ -535,11 +535,11 @@ value caml_interprete(code_t prog, asize_t prog_size)
       } else {
         mlsize_t num_args, i;
         num_args = 1 + extra_args; /* arg1 + extra args */
-        Alloc_small(accu, num_args + 2, Closure_tag);
-        Field(accu, 1) = env;
-        for (i = 0; i < num_args; i++) Field(accu, i + 2) = sp[i];
-        CAMLassert(!Is_in_value_area(pc-3));
+        Alloc_small(accu, num_args + 3, Closure_tag);
+        Field(accu, 2) = env;
+        for (i = 0; i < num_args; i++) Field(accu, i + 3) = sp[i];
         Code_val(accu) = pc - 3; /* Point to the preceding RESTART instr. */
+        Closinfo_val(accu) = Make_closinfo(0, 2);
         sp += num_args;
         pc = (code_t)(sp[0]);
         env = sp[1];
@@ -553,21 +553,21 @@ value caml_interprete(code_t prog, asize_t prog_size)
       int nvars = *pc++;
       int i;
       if (nvars > 0) *--sp = accu;
-      if (nvars < Max_young_wosize) {
-        /* nvars + 1 <= Max_young_wosize, can allocate in minor heap */
-        Alloc_small(accu, 1 + nvars, Closure_tag);
-        for (i = 0; i < nvars; i++) Field(accu, i + 1) = sp[i];
+      if (nvars <= Max_young_wosize - 2) {
+        /* nvars + 2 <= Max_young_wosize, can allocate in minor heap */
+        Alloc_small(accu, 2 + nvars, Closure_tag);
+        for (i = 0; i < nvars; i++) Field(accu, i + 2) = sp[i];
       } else {
         /* PR#6385: must allocate in major heap */
         /* caml_alloc_shr and caml_initialize never trigger a GC,
            so no need to Setup_for_gc */
-        accu = caml_alloc_shr(1 + nvars, Closure_tag);
-        for (i = 0; i < nvars; i++) caml_initialize(&Field(accu, i + 1), sp[i]);
+        accu = caml_alloc_shr(2 + nvars, Closure_tag);
+        for (i = 0; i < nvars; i++) caml_initialize(&Field(accu, i + 2), sp[i]);
       }
       /* The code pointer is not in the heap, so no need to go through
          caml_initialize. */
-      CAMLassert(!Is_in_value_area(pc + *pc));
       Code_val(accu) = pc + *pc;
+      Closinfo_val(accu) = Make_closinfo(0, 2);
       pc++;
       sp += nvars;
       Next;
@@ -576,35 +576,36 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(CLOSUREREC): {
       int nfuncs = *pc++;
       int nvars = *pc++;
-      mlsize_t blksize = nfuncs * 2 - 1 + nvars;
+      mlsize_t envofs = nfuncs * 3 - 1;
+      mlsize_t blksize = envofs + nvars;
       int i;
       value * p;
       if (nvars > 0) *--sp = accu;
       if (blksize <= Max_young_wosize) {
         Alloc_small(accu, blksize, Closure_tag);
-        p = &Field(accu, nfuncs * 2 - 1);
+        p = &Field(accu, envofs);
         for (i = 0; i < nvars; i++, p++) *p = sp[i];
       } else {
         /* PR#6385: must allocate in major heap */
         /* caml_alloc_shr and caml_initialize never trigger a GC,
            so no need to Setup_for_gc */
         accu = caml_alloc_shr(blksize, Closure_tag);
-        p = &Field(accu, nfuncs * 2 - 1);
+        p = &Field(accu, envofs);
         for (i = 0; i < nvars; i++, p++) caml_initialize(p, sp[i]);
       }
       sp += nvars;
       /* The code pointers and infix headers are not in the heap,
          so no need to go through caml_initialize. */
-      p = &Field(accu, 0);
-      *p = (value) (pc + pc[0]);
       *--sp = accu;
-      p++;
+      p = &Field(accu, 0);
+      *p++ = (value) (pc + pc[0]);
+      *p++ = Make_closinfo(0, envofs);
       for (i = 1; i < nfuncs; i++) {
-        *p = Make_header(i * 2, Infix_tag, Caml_white);  /* color irrelevant. */
-        p++;
-        *p = (value) (pc + pc[i]);
+        *p++ = Make_header(i * 3, Infix_tag, Caml_white); /* color irrelevant */
         *--sp = (value) p;
-        p++;
+        *p++ = (value) (pc + pc[i]);
+        envofs -= 3;
+        *p++ = Make_closinfo(0, envofs);
       }
       pc += nfuncs;
       Next;
@@ -615,18 +616,18 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(OFFSETCLOSURE):
       accu = env + *pc++ * sizeof(value); Next;
 
-    Instruct(PUSHOFFSETCLOSUREM2):
+    Instruct(PUSHOFFSETCLOSUREM3):
       *--sp = accu; /* fallthrough */
-    Instruct(OFFSETCLOSUREM2):
-      accu = env - 2 * sizeof(value); Next;
+    Instruct(OFFSETCLOSUREM3):
+      accu = env - 3 * sizeof(value); Next;
     Instruct(PUSHOFFSETCLOSURE0):
       *--sp = accu; /* fallthrough */
     Instruct(OFFSETCLOSURE0):
       accu = env; Next;
-    Instruct(PUSHOFFSETCLOSURE2):
+    Instruct(PUSHOFFSETCLOSURE3):
       *--sp = accu; /* fallthrough */
-    Instruct(OFFSETCLOSURE2):
-      accu = env + 2 * sizeof(value); Next;
+    Instruct(OFFSETCLOSURE3):
+      accu = env + 3 * sizeof(value); Next;
 
 
 /* Access to global variables */
@@ -847,7 +848,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(PUSHTRAP):
       sp -= 4;
       Trap_pc(sp) = pc + *pc;
-      Trap_link(sp) = Caml_state->trapsp;
+      Trap_link_offset(sp) = Val_long(Caml_state->trapsp - sp);
       sp[2] = env;
       sp[3] = Val_long(extra_args);
       Caml_state->trapsp = sp;
@@ -862,7 +863,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
         pc--; /* restart the POPTRAP after processing the signal */
         goto process_actions;
       }
-      Caml_state->trapsp = Trap_link(sp);
+      Caml_state->trapsp = sp + Long_val(Trap_link_offset(sp));
       sp += 4;
       Next;
 
@@ -895,7 +896,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       }
       sp = Caml_state->trapsp;
       pc = Trap_pc(sp);
-      Caml_state->trapsp = Trap_link(sp);
+      Caml_state->trapsp = sp + Long_val(Trap_link_offset(sp));
       env = sp[2];
       extra_args = Long_val(sp[3]);
       sp += 4;
@@ -1081,10 +1082,6 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
 #define Lookup(obj, lab) Field (Field (obj, 0), Int_val(lab))
 
-      /* please don't forget to keep below code in sync with the
-         functions caml_cache_public_method and
-         caml_cache_public_method2 in obj.c */
-
     Instruct(GETMETHOD):
       accu = Lookup(sp[0], accu);
       Next;
@@ -1180,21 +1177,4 @@ value caml_interprete(code_t prog, asize_t prog_size)
     }
   }
 #endif
-}
-
-void caml_prepare_bytecode(code_t prog, asize_t prog_size) {
-  /* other implementations of the interpreter (such as an hypothetical
-     JIT translator) might want to do something with a bytecode before
-     running it */
-  CAMLassert(prog);
-  CAMLassert(prog_size>0);
-  /* actually, the threading of the bytecode might be done here */
-}
-
-void caml_release_bytecode(code_t prog, asize_t prog_size) {
-  /* other implementations of the interpreter (such as an hypothetical
-     JIT translator) might want to know when a bytecode is removed */
-  /* check that we have a program */
-  CAMLassert(prog);
-  CAMLassert(prog_size>0);
 }

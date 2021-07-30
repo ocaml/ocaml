@@ -77,6 +77,21 @@ let ge_component comp1 comp2 =
   | Float, (Int | Addr | Val) ->
     assert false
 
+type exttype =
+  | XInt
+  | XInt32
+  | XInt64
+  | XFloat
+
+let machtype_of_exttype = function
+  | XInt -> typ_int
+  | XInt32 -> typ_int
+  | XInt64 -> if Arch.size_int = 4 then [|Int;Int|] else typ_int
+  | XFloat -> typ_float
+
+let machtype_of_exttype_list xtl =
+  Array.concat (List.map machtype_of_exttype xtl)
+
 type integer_comparison = Lambda.integer_comparison =
   | Ceq | Cne | Clt | Cgt | Cle | Cge
 
@@ -94,7 +109,18 @@ let negate_float_comparison = Lambda.negate_float_comparison
 let swap_float_comparison = Lambda.swap_float_comparison
 type label = int
 
-let label_counter = ref 99
+let init_label = 99
+
+let label_counter = ref init_label
+
+let set_label l =
+  if (l < !label_counter) then begin
+    Misc.fatal_errorf "Cannot set label counter to %d, it must be >= %d"
+      l !label_counter ()
+  end;
+  label_counter := l
+
+let cur_label () = !label_counter
 
 let new_label() = incr label_counter; !label_counter
 
@@ -120,13 +146,10 @@ type memory_chunk =
   | Word_val
   | Single
   | Double
-  | Double_u
 
 and operation =
     Capply of machtype
-  | Cextcall of string * machtype * bool * label option
-    (** If specified, the given label will be placed immediately after the
-        call (at the same place as any frame descriptor would reference). *)
+  | Cextcall of string * machtype * exttype list * bool
   | Cload of memory_chunk * Asttypes.mutable_flag
   | Calloc
   | Cstore of memory_chunk * Lambda.initialization_or_assignment
@@ -141,15 +164,13 @@ and operation =
   | Ccmpf of float_comparison
   | Craise of Lambda.raise_kind
   | Ccheckbound
+  | Copaque
 
 type expression =
     Cconst_int of int * Debuginfo.t
   | Cconst_natint of nativeint * Debuginfo.t
   | Cconst_float of float * Debuginfo.t
   | Cconst_symbol of string * Debuginfo.t
-  | Cconst_pointer of int * Debuginfo.t
-  | Cconst_natpointer of nativeint * Debuginfo.t
-  | Cblockheader of nativeint * Debuginfo.t
   | Cvar of Backend_var.t
   | Clet of Backend_var.With_provenance.t * expression * expression
   | Clet_mut of Backend_var.With_provenance.t * machtype
@@ -207,7 +228,7 @@ let ccatch (i, ids, e1, e2, dbg) =
   Ccatch(Nonrecursive, [i, ids, e2, dbg], e1)
 
 let reset () =
-  label_counter := 99
+  label_counter := init_label
 
 let iter_shallow_tail f = function
   | Clet(_, _, body) | Cphantom_let (_, _, body) | Clet_mut(_, _, _, body) ->
@@ -237,9 +258,6 @@ let iter_shallow_tail f = function
   | Cconst_natint _
   | Cconst_float _
   | Cconst_symbol _
-  | Cconst_pointer _
-  | Cconst_natpointer _
-  | Cblockheader _
   | Cvar _
   | Cassign _
   | Ctuple _
@@ -276,9 +294,6 @@ let rec map_tail f = function
   | Cconst_natint _
   | Cconst_float _
   | Cconst_symbol _
-  | Cconst_pointer _
-  | Cconst_natpointer _
-  | Cblockheader _
   | Cvar _
   | Cassign _
   | Ctuple _
@@ -315,9 +330,6 @@ let map_shallow f = function
   | Cconst_natint _
   | Cconst_float _
   | Cconst_symbol _
-  | Cconst_pointer _
-  | Cconst_natpointer _
-  | Cblockheader _
   | Cvar _
     as c ->
       c

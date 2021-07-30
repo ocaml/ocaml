@@ -12,12 +12,20 @@ for i in `cat $TMPDIR/stdlib-$$-modules`; do
   case $i in
     Stdlib | Camlinternal* | *Labels | Obj | Pervasives) continue;;
   esac
-  grep -q -e '"'$i'" & p\.~\\pageref{'$i'} &' $1/manual/manual/library/stdlib-blurb.etex || {
-    echo "Module $i is missing from stdlib-blurb.etex." >&2
+  grep -q -e '"'$i'" & p\.~\\stdpageref{'$i'} &' $1/manual/src/library/stdlib-blurb.etex || {
+    echo "Module $i is missing from the module description in library/stdlib-blurb.etex." >&2
+    exitcode=2
+  } &&
+  grep -q -e '\\stddocitem{'$i'}' $1/manual/src/library/stdlib-blurb.etex || {
+    echo "Module $i is missing from the linklist in library/stdlib-blurb.etex." >&2
     exitcode=2
   }
 done
 
 rm -f $TMPDIR/stdlib-$$-*
+
+if [ $exitcode -eq 0 ]; then
+  echo "All Standard Library modules are referenced"
+fi
 
 exit $exitcode

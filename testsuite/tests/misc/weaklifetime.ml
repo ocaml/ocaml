@@ -29,6 +29,8 @@ let data =
 
 let gccount () = (Gc.quick_stat ()).Gc.major_collections;;
 
+type change = No_change | Fill | Erase;;
+
 (* Check the correctness condition on the data at (i,j):
    1. if the block is present, the weak pointer must be full
    2. if the block was removed at GC n, and the weak pointer is still
@@ -40,19 +42,28 @@ let gccount () = (Gc.quick_stat ()).Gc.major_collections;;
 *)
 let check_and_change i j =
   let gc1 = gccount () in
-  match data.(i).objs.(j), Weak.check data.(i).wp j with
-  | Present x, false -> assert false
-  | Absent n, true -> assert (gc1 <= n+1)
-  | Absent _, false ->
+  let change =
+    (* we only read data.(i).objs.(j) in this local binding to ensure
+        that it does not remain reachable on the bytecode stack
+        in the rest of the function below, when we overwrite the value
+        and try to observe its collection.  *)
+    match data.(i).objs.(j), Weak.check data.(i).wp j with
+    | Present x, false -> assert false
+    | Absent n, true -> assert (gc1 <= n+1); No_change
+    | Absent _, false -> Fill
+    | Present _, true ->
+      if Random.int 10 = 0 then Erase else No_change
+  in
+  match change with
+  | No_change -> ()
+  | Fill ->
     let x = Array.make (1 + Random.int 10) 42 in
     data.(i).objs.(j) <- Present x;
     Weak.set data.(i).wp j (Some x);
-  | Present _, true ->
-    if Random.int 10 = 0 then begin
-      data.(i).objs.(j) <- Absent gc1;
-      let gc2 = gccount () in
-      if gc1 <> gc2 then data.(i).objs.(j) <- Absent gc2;
-    end
+  | Erase ->
+    data.(i).objs.(j) <- Absent gc1;
+    let gc2 = gccount () in
+    if gc1 <> gc2 then data.(i).objs.(j) <- Absent gc2;
 ;;
 
 let dummy = ref [||];;

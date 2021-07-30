@@ -1,5 +1,6 @@
 (* TEST
-   files = "mpr7769.txt"
+   flags = "-w -3"
+   readonly_files = "mpr7769.txt"
 *)
 
 let () =

@@ -1,0 +1,63 @@
+(Introduced in OCaml 4.02.2, extended in 4.03)
+
+Some syntactic constructions are accepted during parsing and rejected
+during type checking. These syntactic constructions can therefore not
+be used directly in vanilla OCaml. However, "-ppx" rewriters and other
+external tools can exploit this parser leniency to extend the language
+with these new syntactic constructions by rewriting them to
+vanilla constructions.
+\subsection{ss:extension-operators}{Extension operators} \label{s:ext-ops}
+(Introduced in OCaml 4.02.2, extended to unary operators in OCaml 4.12.0)
+\begin{syntax}
+infix-symbol:
+          ...
+        | "#" {operator-char} "#" {operator-char || "#"}
+;
+prefix-symbol:
+          ...
+        | ('?'||'~'||'!') { operator-char } "#" { operator-char || "#"}
+;
+\end{syntax}
+
+There are two classes of operators available for extensions:
+infix operators with a name starting with a "#" character and containing more
+than one "#" character, and unary operators with a name (starting with a "?",
+"~", or "!" character) containing at least one "#" character.
+
+For instance:
+\begin{caml_example}{toplevel}[error]
+let infix x y = x##y;;
+let prefix x = !#x;;
+\end{caml_example}
+Note that both "##" and "!#" must be eliminated by a ppx rewriter to make
+this example valid.
+
+\subsection{ss:extension-literals}{Extension literals}
+(Introduced in OCaml 4.03)
+\begin{syntax}
+float-literal:
+       ...
+     | ["-"] ("0"\ldots"9") { "0"\ldots"9"||"_" } ["." { "0"\ldots"9"||"_" }]
+       [("e"||"E") ["+"||"-"] ("0"\ldots"9") { "0"\ldots"9"||"_" }]
+       ["g"\ldots"z"||"G"\ldots"Z"]
+     | ["-"] ("0x"||"0X")
+       ("0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f")
+       { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }\\
+       ["." { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }]
+       [("p"||"P") ["+"||"-"] ("0"\ldots"9") { "0"\ldots"9"||"_" }]
+       ["g"\ldots"z"||"G"\ldots"Z"]
+;
+int-literal:
+           ...
+        | ["-"] ("0"\ldots"9") { "0"\ldots"9" || "_" }["g"\ldots"z"||"G"\ldots"Z"]
+        | ["-"] ("0x"||"0X") ("0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f")
+          { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }
+          ["g"\ldots"z"||"G"\ldots"Z"]
+        | ["-"] ("0o"||"0O") ("0"\ldots"7") { "0"\ldots"7"||"_" }
+          ["g"\ldots"z"||"G"\ldots"Z"]
+        | ["-"] ("0b"||"0B") ("0"\ldots"1") { "0"\ldots"1"||"_" }
+          ["g"\ldots"z"||"G"\ldots"Z"]
+;
+\end{syntax}
+Int and float literals followed by an one-letter identifier in the
+range @["g".."z"||"G".."Z"]@ are extension-only literals.

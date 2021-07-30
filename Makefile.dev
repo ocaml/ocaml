@@ -27,8 +27,8 @@ build-all-asts:
 	@$(MAKE) --no-print-directory $(AST_FILES)
 
 CAMLC_DPARSETREE := \
-	$(CAMLRUN) ./ocamlc -nostdlib -nopervasives \
-	  -stop-after parsing -dparsetree
+  $(OCAMLRUN) ./ocamlc -nostdlib -nopervasives \
+                       -stop-after parsing -dparsetree
 
 %.ml.ast: %.ml ocamlc
 	$(CAMLC_DPARSETREE) $< 2> $@ || exit 0

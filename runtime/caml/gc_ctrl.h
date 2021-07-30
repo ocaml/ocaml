@@ -40,14 +40,14 @@
   window    : cf. window_size in gc.mli
   custom_maj: cf. custom_major_ratio in gc.mli
   custom_min: cf. custom_minor_ratio in gc.mli
-  custom_sz : cf. custom_minor_max_size in gc.mli
+  custom_bsz: cf. custom_minor_max_size in gc.mli
+  policy    : cf. allocation_policy in gc.mli
 */
 void caml_init_gc (uintnat minor_size, uintnat major_size, uintnat major_incr,
                    uintnat percent_fr, uintnat percent_m, uintnat window,
-                   uintnat custom_maj, uintnat custom_min, uintnat custom_bsz);
+                   uintnat custom_maj, uintnat custom_min, uintnat custom_bsz,
+                   uintnat policy);
 
-
-CAMLextern value caml_gc_stat(value v);
 
 #ifdef DEBUG
 void caml_heap_check (void);

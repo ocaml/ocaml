@@ -23,13 +23,14 @@ open Lambda
 
 let scrape_ty env ty =
   let ty = Ctype.expand_head_opt env (Ctype.correct_levels ty) in
-  match ty.desc with
+  match get_desc ty with
   | Tconstr (p, _, _) ->
       begin match Env.find_type p env with
-      | {type_unboxed = {unboxed = true; _}; _} ->
-        begin match Typedecl.get_unboxed_type_representation env ty with
-        | None -> ty
-        | Some ty2 -> ty2
+      | {type_kind = ( Type_variant (_, Variant_unboxed)
+                     | Type_record (_, Record_unboxed _) ); _} -> begin
+          match Typedecl_unboxed.get_unboxed_type_representation env ty with
+          | None -> ty
+          | Some ty2 -> ty2
         end
       | _ -> ty
       | exception Not_found -> ty
@@ -37,7 +38,13 @@ let scrape_ty env ty =
   | _ -> ty
 
 let scrape env ty =
-  (scrape_ty env ty).desc
+  get_desc (scrape_ty env ty)
+
+let scrape_poly env ty =
+  let ty = scrape_ty env ty in
+  match get_desc ty with
+  | Tpoly (ty, _) -> get_desc ty
+  | d -> d
 
 let is_function_type env ty =
   match scrape env ty with
@@ -49,12 +56,18 @@ let is_base_type env ty base_ty_path =
   | Tconstr(p, _, _) -> Path.same p base_ty_path
   | _ -> false
 
+let is_immediate = function
+  | Type_immediacy.Unknown -> false
+  | Type_immediacy.Always -> true
+  | Type_immediacy.Always_on_64bits ->
+      (* In bytecode, we don't know at compile time whether we are
+         targeting 32 or 64 bits. *)
+      !Clflags.native_code && Sys.word_size = 64
+
 let maybe_pointer_type env ty =
   let ty = scrape_ty env ty in
-  if Ctype.maybe_pointer_type env ty then
-    Pointer
-  else
-    Immediate
+  if is_immediate (Ctype.immediacy env ty) then Immediate
+  else Pointer
 
 let maybe_pointer exp = maybe_pointer_type exp.exp_env exp.exp_type
 
@@ -68,7 +81,7 @@ type classification =
 let classify env ty =
   let ty = scrape_ty env ty in
   if maybe_pointer_type env ty = Immediate then Int
-  else match ty.desc with
+  else match get_desc ty with
   | Tvar _ | Tunivar _ ->
       Any
   | Tconstr (p, _args, _abbrev) ->
@@ -99,17 +112,15 @@ let classify env ty =
       assert false
 
 let array_type_kind env ty =
-  match scrape env ty with
-  | Tconstr(p, [elt_ty], _) | Tpoly({desc = Tconstr(p, [elt_ty], _)}, _)
-    when Path.same p Predef.path_array ->
+  match scrape_poly env ty with
+  | Tconstr(p, [elt_ty], _) when Path.same p Predef.path_array ->
       begin match classify env elt_ty with
       | Any -> if Config.flat_float_array then Pgenarray else Paddrarray
       | Float -> if Config.flat_float_array then Pfloatarray else Paddrarray
       | Addr | Lazy -> Paddrarray
       | Int -> Pintarray
       end
-  | Tconstr(p, [], _) | Tpoly({desc = Tconstr(p, [], _)}, _)
-    when Path.same p Predef.path_floatarray ->
+  | Tconstr(p, [], _) when Path.same p Predef.path_floatarray ->
       Pfloatarray
   | _ ->
       (* This can happen with e.g. Obj.field *)
@@ -122,7 +133,7 @@ let array_pattern_kind pat = array_type_kind pat.pat_env pat.pat_type
 let bigarray_decode_type env ty tbl dfl =
   match scrape env ty with
   | Tconstr(Pdot(Pident mod_id, type_name), [], _)
-    when Ident.name mod_id = "Stdlib__bigarray" ->
+    when Ident.name mod_id = "Stdlib__Bigarray" ->
       begin try List.assoc type_name tbl with Not_found -> dfl end
   | _ ->
       dfl
@@ -155,21 +166,21 @@ let bigarray_type_kind_and_layout env typ =
       (Pbigarray_unknown, Pbigarray_unknown_layout)
 
 let value_kind env ty =
-  match scrape env ty with
-  | Tconstr(p, _, _) when Path.same p Predef.path_int ->
-      Pintval
-  | Tconstr(p, _, _) when Path.same p Predef.path_char ->
-      Pintval
-  | Tconstr(p, _, _) when Path.same p Predef.path_float ->
-      Pfloatval
-  | Tconstr(p, _, _) when Path.same p Predef.path_int32 ->
-      Pboxedintval Pint32
-  | Tconstr(p, _, _) when Path.same p Predef.path_int64 ->
-      Pboxedintval Pint64
-  | Tconstr(p, _, _) when Path.same p Predef.path_nativeint ->
-      Pboxedintval Pnativeint
-  | _ ->
-      Pgenval
+  let ty = scrape_ty env ty in
+  if is_immediate (Ctype.immediacy env ty) then Pintval
+  else begin
+    match get_desc ty with
+    | Tconstr(p, _, _) when Path.same p Predef.path_float ->
+        Pfloatval
+    | Tconstr(p, _, _) when Path.same p Predef.path_int32 ->
+        Pboxedintval Pint32
+    | Tconstr(p, _, _) when Path.same p Predef.path_int64 ->
+        Pboxedintval Pint64
+    | Tconstr(p, _, _) when Path.same p Predef.path_nativeint ->
+        Pboxedintval Pnativeint
+    | _ ->
+        Pgenval
+  end
 
 let function_return_value_kind env ty =
   match is_function_type env ty with

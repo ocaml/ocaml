@@ -101,3 +101,23 @@ Line 3, characters 11-12:
                ^
 Error: Unbound type constructor t
 |}]
+
+type ('a, 'b) foo = Foo
+
+type 'a s = 'b list constraint 'a = (int, 'b) foo
+
+module type S = sig
+  type 'a t := 'a s * bool
+  type 'a bar = (int, 'a) foo
+  val x : string bar t
+end
+[%%expect{|
+type ('a, 'b) foo = Foo
+type 'a s = 'b list constraint 'a = (int, 'b) foo
+Line 6, characters 2-26:
+6 |   type 'a t := 'a s * bool
+      ^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Destructive substitutions are not supported for constrained
+       types (other than when replacing a type constructor with
+       a type constructor with the same arguments).
+|}]

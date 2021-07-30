@@ -18,6 +18,7 @@
 #define CAML_STATE_H
 
 #include <stddef.h>
+#include <stdio.h>
 #include "misc.h"
 #include "mlvalues.h"
 
@@ -32,6 +33,7 @@ typedef struct {
 #endif
 #include "domain_state.tbl"
 #undef DOMAIN_STATE
+    CAMLalign(8) char end_of_domain_state;
 } caml_domain_state;
 
 enum {
@@ -44,9 +46,8 @@ enum {
 /* Check that the structure was laid out without padding,
    since the runtime assumes this in computing offsets */
 CAML_STATIC_ASSERT(
-  sizeof(caml_domain_state) ==
-   (Domain_state_num_fields
-   ) * 8);
+    offsetof(caml_domain_state, end_of_domain_state) ==
+    Domain_state_num_fields * 8);
 
 CAMLextern caml_domain_state* Caml_state;
 #ifdef CAML_NAME_SPACE

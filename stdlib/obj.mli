@@ -20,18 +20,21 @@
 
 type t
 
+type raw_data = nativeint  (* @since 4.12 *)
+
 external repr : 'a -> t = "%identity"
 external obj : t -> 'a = "%identity"
 external magic : 'a -> 'b = "%identity"
 val [@inline always] is_block : t -> bool
 external is_int : t -> bool = "%obj_is_int"
-external tag : t -> int = "caml_obj_tag"
+external tag : t -> int = "caml_obj_tag" [@@noalloc]
 external size : t -> int = "%obj_size"
 external reachable_words : t -> int = "caml_obj_reachable_words"
   (**
      Computes the total size (in words, including the headers) of all
      heap blocks accessible from the argument.  Statically
-     allocated blocks are excluded.
+     allocated blocks are excluded, unless the runtime system
+     was configured with [--disable-naked-pointers].
 
      @Since 4.04
   *)
@@ -60,6 +63,13 @@ external set_tag : t -> int -> unit = "caml_obj_set_tag"
 val [@inline always] double_field : t -> int -> float  (* @since 3.11.2 *)
 val [@inline always] set_double_field : t -> int -> float -> unit
   (* @since 3.11.2 *)
+
+external raw_field : t -> int -> raw_data = "caml_obj_raw_field"
+  (* @since 4.12 *)
+external set_raw_field : t -> int -> raw_data -> unit
+                                          = "caml_obj_set_raw_field"
+  (* @since 4.12 *)
+
 external new_block : int -> int -> t = "caml_obj_block"
 external dup : t -> t = "caml_obj_dup"
 external truncate : t -> int -> unit = "caml_obj_truncate"
@@ -89,6 +99,14 @@ val final_tag : int
 val int_tag : int
 val out_of_heap_tag : int
 val unaligned_tag : int   (* should never happen @since 3.11.0 *)
+
+module Closure : sig
+  type info = {
+    arity: int;
+    start_env: int;
+  }
+  val info : t -> info
+end
 
 module Extension_constructor :
 sig

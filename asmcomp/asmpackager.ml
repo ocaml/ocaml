@@ -132,7 +132,6 @@ let make_package_object ~ppf_dump members targetobj targetname coercion
         program, Closure_middle_end.lambda_to_clambda
     in
     Asmgen.compile_implementation ~backend
-      ~filename:targetname
       ~prefixname
       ~middle_end
       ~ppf_dump
@@ -141,11 +140,11 @@ let make_package_object ~ppf_dump members targetobj targetname coercion
       List.map
         (fun m -> Filename.remove_extension m.pm_file ^ Config.ext_obj)
         (List.filter (fun m -> m.pm_kind <> PM_intf) members) in
-    let ok =
+    let exitcode =
       Ccomp.call_linker Ccomp.Partial targetobj (objtemp :: objfiles) ""
     in
     remove_file objtemp;
-    if not ok then raise(Error Linking_error)
+    if not (exitcode = 0) then raise(Error Linking_error)
   )
 
 (* Make the .cmx file for the package *)

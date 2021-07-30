@@ -124,11 +124,15 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 #ifdef WITH_PROFINFO
 #define PROFINFO_SHIFT (Gen_profinfo_shift(PROFINFO_WIDTH))
 #define PROFINFO_MASK (Gen_profinfo_mask(PROFINFO_WIDTH))
+/* Use NO_PROFINFO to debug problems with profinfo macros */
+#define NO_PROFINFO 0xff
 #define Hd_no_profinfo(hd) ((hd) & ~(PROFINFO_MASK << PROFINFO_SHIFT))
 #define Wosize_hd(hd) ((mlsize_t) ((Hd_no_profinfo(hd)) >> 10))
 #define Profinfo_hd(hd) (Gen_profinfo_hd(PROFINFO_WIDTH, hd))
 #else
+#define NO_PROFINFO 0
 #define Wosize_hd(hd) ((mlsize_t) ((hd) >> 10))
+#define Profinfo_hd(hd) NO_PROFINFO
 #endif /* WITH_PROFINFO */
 
 #define Hd_val(val) (((header_t *) (val)) [-1])        /* Also an l-value. */
@@ -145,7 +149,11 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 
 #define Num_tags (1 << 8)
 #ifdef ARCH_SIXTYFOUR
+#ifdef WITH_PROFINFO
 #define Max_wosize (((intnat)1 << (54-PROFINFO_WIDTH)) - 1)
+#else
+#define Max_wosize (((intnat)1 << 54) - 1)
+#endif
 #else
 #define Max_wosize ((1 << 22) - 1)
 #endif /* ARCH_SIXTYFOUR */
@@ -214,7 +222,7 @@ typedef opcode_t * code_t;
 
 /* If tag == Infix_tag : an infix header inside a closure */
 /* Infix_tag must be odd so that the infix header is scanned as an integer */
-/* Infix_tag must be 1 modulo 4 and infix headers can only occur in blocks
+/* Infix_tag must be 1 modulo 2 and infix headers can only occur in blocks
    with tag Closure_tag (see compact.c). */
 
 #define Infix_tag 249
@@ -235,6 +243,23 @@ CAMLextern value caml_get_public_method (value obj, value tag);
 /* Special case of tuples of fields: closures */
 #define Closure_tag 247
 #define Code_val(val) (((code_t *) (val)) [0])     /* Also an l-value. */
+#define Closinfo_val(val) Field((val), 1)          /* Arity and start env */
+/* In the closure info field, the top 8 bits are the arity (signed).
+   The low bit is set to one, to look like an integer.
+   The remaining bits are the field number for the first word of the
+   environment, or, in other words, the offset (in words) from the closure
+   to the environment part. */
+#ifdef ARCH_SIXTYFOUR
+#define Arity_closinfo(info) ((intnat)(info) >> 56)
+#define Start_env_closinfo(info) (((uintnat)(info) << 8) >> 9)
+#define Make_closinfo(arity,delta) \
+  (((uintnat)(arity) << 56) + ((uintnat)(delta) << 1) + 1)
+#else
+#define Arity_closinfo(info) ((intnat)(info) >> 24)
+#define Start_env_closinfo(info) (((uintnat)(info) << 8) >> 9)
+#define Make_closinfo(arity,delta) \
+  (((uintnat)(arity) << 24) + ((uintnat)(delta) << 1) + 1)
+#endif
 
 /* This tag is used (with Forward_tag) to implement lazy values.
    See major_gc.c and stdlib/lazy.ml. */
@@ -373,11 +398,28 @@ CAMLextern header_t *caml_atom_table;
 #define Val_emptylist Val_int(0)
 #define Tag_cons 0
 
+/* Option constructors */
+
+#define Val_none Val_int(0)
+#define Some_val(v) Field(v, 0)
+#define Tag_some 0
+#define Is_none(v) ((v) == Val_none)
+#define Is_some(v) Is_block(v)
+
 /* The table of global identifiers */
 
 extern value caml_global_data;
 
 CAMLextern value caml_set_oo_id(value obj);
+
+/* Header for out-of-heap blocks. */
+
+#define Caml_out_of_heap_header(wosize, tag)                                  \
+      (/*CAMLassert ((wosize) <= Max_wosize),*/                               \
+       ((header_t) (((header_t) (wosize) << 10)                               \
+                    + (3 << 8) /* matches [Caml_black]. See [gc.h] */         \
+                    + (tag_t) (tag)))                                         \
+      )
 
 #ifdef __cplusplus
 }

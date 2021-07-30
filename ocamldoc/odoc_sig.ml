@@ -17,9 +17,6 @@
 
 open Asttypes
 open Types
-
-let print_DEBUG s = print_string s ; print_newline ();;
-
 open Odoc_parameter
 open Odoc_value
 open Odoc_type
@@ -107,8 +104,8 @@ module Signature_search =
       type_expr
 
     let search_method_type name class_sig =
-      let fields = Odoc_misc.get_fields class_sig.Types.csig_self in
-      List.assoc name fields
+      let (_, _, type_expr) = Types.Meths.find name class_sig.Types.csig_meths in
+      type_expr
   end
 
 module type Info_retriever =
@@ -344,7 +341,7 @@ module Analyser =
 
 
     let manifest_structure env name_comment_list type_expr =
-      match type_expr.desc with
+      match get_desc type_expr with
       | Tobject (fields, _) ->
         let f (field_name, _, type_expr) =
           let comment_opt =
@@ -376,7 +373,7 @@ module Analyser =
       match type_kind with
         Types.Type_abstract ->
           Odoc_type.Type_abstract
-      | Types.Type_variant l ->
+      | Types.Type_variant (l,_) ->
           let f {Types.cd_id=constructor_name;cd_args;cd_res=ret_type} =
             let constructor_name = Ident.name constructor_name in
             let comment_opt =
@@ -391,8 +388,14 @@ module Analyser =
               | Cstr_record l ->
                   Cstr_record (List.map (get_field env name_comment_list) l)
             in
+            let vc_name = match constructor_name with
+              | "::" ->
+                  (* The only infix constructor is always printed (::) *)
+                  "(::)"
+              | s -> s
+            in
             {
-              vc_name = constructor_name ;
+              vc_name;
               vc_args;
               vc_ret =  Option.map (Odoc_env.subst_type env) ret_type;
               vc_text = comment_opt
@@ -448,11 +451,14 @@ module Analyser =
     let erased_names_of_constraints constraints acc =
       List.fold_right (fun constraint_ acc ->
         match constraint_ with
-        | Parsetree.Pwith_type _ | Parsetree.Pwith_module _ -> acc
+        | Parsetree.Pwith_type _ | Parsetree.Pwith_module _ | Parsetree.Pwith_modtype _ -> acc
         | Parsetree.Pwith_typesubst (s, typedecl) ->
            constraint_for_subitem acc s (fun s -> Parsetree.Pwith_typesubst (s, typedecl))
         | Parsetree.Pwith_modsubst (s, modpath) ->
-           constraint_for_subitem acc s (fun s -> Parsetree.Pwith_modsubst (s, modpath)))
+           constraint_for_subitem acc s (fun s -> Parsetree.Pwith_modsubst (s, modpath))
+        | Parsetree.Pwith_modtypesubst (s, modpath) ->
+            constraint_for_subitem acc s
+              (fun s -> Parsetree.Pwith_modtypesubst (s, modpath)))
         constraints acc
 
     let is_erased ident map =
@@ -507,6 +513,7 @@ module Analyser =
            end
         | Parsetree.Psig_modtype {Parsetree.pmtd_name=name} as m ->
           if is_erased name.txt erased then acc else take_item m
+        | Parsetree.Psig_modtypesubst _  -> acc
         | Parsetree.Psig_recmodule mods ->
           (match List.filter
                    (fun pmd ->
@@ -954,23 +961,6 @@ module Analyser =
                       pos_limit2
                       type_decl
                   in
-(* DEBUG *)       begin
-(* DEBUG *)         let comm =
-(* DEBUG *)           match assoc_com with
-(* DEBUG *)           | None -> "sans commentaire"
-(* DEBUG *)           | Some c -> Odoc_misc.string_of_info c
-(* DEBUG *)         in
-(* DEBUG *)         print_DEBUG ("Type "^name.txt^" : "^comm);
-(* DEBUG *)         let f_DEBUG (name, c_opt) =
-(* DEBUG *)           let comm =
-(* DEBUG *)             match c_opt with
-(* DEBUG *)             | None -> "sans commentaire"
-(* DEBUG *)             | Some c -> Odoc_misc.string_of_info c
-(* DEBUG *)           in
-(* DEBUG *)           print_DEBUG ("constructor/field "^name^": "^comm)
-(* DEBUG *)         in
-(* DEBUG *)         List.iter f_DEBUG name_comment_list;
-(* DEBUG *)       end;
                   (* get the information for the type in the signature *)
                   let sig_type_decl =
                     try Signature_search.search_type table name.txt
@@ -1062,23 +1052,6 @@ module Analyser =
                       pos_limit2
                       type_decl
                   in
-(* DEBUG *)       begin
-(* DEBUG *)         let comm =
-(* DEBUG *)           match assoc_com with
-(* DEBUG *)           | None -> "sans commentaire"
-(* DEBUG *)           | Some c -> Odoc_misc.string_of_info c
-(* DEBUG *)         in
-(* DEBUG *)         print_DEBUG ("Type "^name.txt^" : "^comm);
-(* DEBUG *)         let f_DEBUG (name, c_opt) =
-(* DEBUG *)           let comm =
-(* DEBUG *)             match c_opt with
-(* DEBUG *)             | None -> "sans commentaire"
-(* DEBUG *)             | Some c -> Odoc_misc.string_of_info c
-(* DEBUG *)           in
-(* DEBUG *)           print_DEBUG ("constructor/field "^name^": "^comm)
-(* DEBUG *)         in
-(* DEBUG *)         List.iter f_DEBUG name_comment_list;
-(* DEBUG *)       end;
                   (* get the information for the type in the signature *)
                   let sig_type_decl =
                     try Signature_search.search_type table name.txt
@@ -1218,9 +1191,7 @@ module Analyser =
                         (* FIXME : can this be a Tmty_ident? in this case, we wouldn't have the signature *)
                         Types.Mty_signature s ->
                           Odoc_env.add_signature e complete_name ~rel: name s
-                      | _ ->
-                          print_DEBUG "not a Tmty_signature";
-                          e
+                      | _ -> e
                     )
                     env
                     decls
@@ -1321,7 +1292,8 @@ module Analyser =
             let (maybe_more, mods) = f ~first: true 0 pos_start_ele decls in
             (maybe_more, new_env, mods)
 
-        | Parsetree.Psig_modtype {Parsetree.pmtd_name=name; pmtd_type=pmodtype_decl} ->
+        | Parsetree.Psig_modtype {Parsetree.pmtd_name=name; pmtd_type=pmodtype_decl}
+        | Parsetree.Psig_modtypesubst {Parsetree.pmtd_name=name; pmtd_type=pmodtype_decl} ->
             let complete_name = Name.concat current_module_name name.txt in
             let sig_mtype =
               try Signature_search.search_module_type table name.txt
@@ -1589,7 +1561,6 @@ module Analyser =
            let loc_start = Loc.start loc in
            let loc_end = Loc.end_ loc in
            let mp_type_code = get_string_of_file loc_start loc_end in
-           print_DEBUG (Printf.sprintf "mp_type_code=%s" mp_type_code);
            match sig_module_type with
              Types.Mty_functor (param, body_module_type) ->
                let mp_name, mp_kind =
@@ -1689,7 +1660,6 @@ module Analyser =
                let loc_start = Loc.start loc in
                let loc_end = Loc.end_ loc in
                let mp_type_code = get_string_of_file loc_start loc_end in
-               print_DEBUG (Printf.sprintf "mp_type_code=%s" mp_type_code);
                let mp_name, mp_kind =
                  match param2, param with
                    Parsetree.Named (_, pmty), Types.Named (Some ident, mty) ->
@@ -1744,7 +1714,6 @@ module Analyser =
       match parse_class_type.Parsetree.pcty_desc, sig_class_type with
         (Parsetree.Pcty_constr (_, _) (*of Longident.t * core_type list *),
          Types.Cty_constr (p, typ_list, _) (*of Path.t * type_expr list * class_type*)) ->
-          print_DEBUG "Cty_constr _";
            let path_name = Name.from_path p in
            let name = Odoc_env.full_class_or_class_type_name env path_name in
            let k =
@@ -1795,7 +1764,6 @@ module Analyser =
       match parse_class_type.Parsetree.pcty_desc, sig_class_type with
         (Parsetree.Pcty_constr (_, _) (*of Longident.t * core_type list *),
          Types.Cty_constr (p, typ_list, _) (*of Path.t * type_expr list * class_type*)) ->
-          print_DEBUG "Cty_constr _";
           Class_type
             {
               cta_name = Odoc_env.full_class_or_class_type_name env (Name.from_path p) ;

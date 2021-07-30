@@ -87,6 +87,9 @@ open struct
   let current () = !counter
 end
 [%%expect{|
+val inc : unit -> unit = <fun>
+val dec : unit -> unit = <fun>
+val current : unit -> int = <fun>
 |}]
 
 let () =
@@ -100,9 +103,9 @@ include struct open struct type t = T end let x = T end
 Line 1, characters 15-41:
 1 | include struct open struct type t = T end let x = T end
                    ^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The type t/149 introduced by this open appears in the signature
+Error: The type t/150 introduced by this open appears in the signature
        Line 1, characters 46-47:
-         The value x has no valid type if t/149 is hidden
+         The value x has no valid type if t/150 is hidden
 |}];;
 
 module A = struct
@@ -120,9 +123,9 @@ Lines 3-6, characters 4-7:
 4 |       type t = T
 5 |       let x = T
 6 |     end
-Error: The type t/154 introduced by this open appears in the signature
+Error: The type t/155 introduced by this open appears in the signature
        Line 7, characters 8-9:
-         The value y has no valid type if t/154 is hidden
+         The value y has no valid type if t/155 is hidden
 |}];;
 
 module A = struct
@@ -139,9 +142,9 @@ Lines 3-5, characters 4-7:
 3 | ....open struct
 4 |       type t = T
 5 |     end
-Error: The type t/159 introduced by this open appears in the signature
+Error: The type t/160 introduced by this open appears in the signature
        Line 6, characters 8-9:
-         The value y has no valid type if t/159 is hidden
+         The value y has no valid type if t/160 is hidden
 |}]
 
 (* It was decided to not allow this anymore. *)
@@ -381,9 +384,9 @@ val print_list_of_int : Print_int.t list -> unit = <fun>
 let f () = let open functor(X: sig end) -> struct end in ();;
 
 [%%expect{|
-Line 1, characters 20-53:
+Line 1, characters 27-53:
 1 | let f () = let open functor(X: sig end) -> struct end in ();;
-                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This module is not a structure; it has type
        functor (X : sig end) -> sig end
 |}]

@@ -81,24 +81,29 @@ let string_of_module_type ?code ?(complete=false) t =
    from the signatures. Used when we don't want to print a too long class type.*)
 let simpl_class_type t =
   let rec iter t =
+    let open Types in
     match t with
-      Types.Cty_constr _ -> t
-    | Types.Cty_signature cs ->
+      Cty_constr _ -> t
+    | Cty_signature cs ->
         (* we delete vals and methods in order to not print them when
            displaying the type *)
-      let tnil =
-        { Types.desc = Types.Tnil ; Types.level = 0
-        ; Types.scope = Btype.lowest_level ; Types.id = 0 }
+      let self_row =
+        Transient_expr.create Tnil
+          ~level:0 ~scope:Btype.lowest_level ~id:0
       in
-        Types.Cty_signature { Types.csig_self = { cs.Types.csig_self with
-                                                  Types.desc = Types.Tobject (tnil, ref None) };
-                              csig_vars = Types.Vars.empty ;
-                              csig_concr = Types.Concr.empty ;
-                              csig_inher = []
-                             }
+      let tself =
+        let t = cs.csig_self in
+        let desc = Tobject (Transient_expr.type_expr self_row, ref None) in
+        Transient_expr.create desc
+          ~level:(get_level t) ~scope:(get_scope t) ~id:(get_id t)
+      in
+        Types.Cty_signature { csig_self = Transient_expr.type_expr tself;
+                              csig_self_row = Transient_expr.type_expr self_row;
+                              csig_vars = Vars.empty ;
+                              csig_meths = Meths.empty ; }
     | Types.Cty_arrow (l, texp, ct) ->
         let new_ct = iter ct in
-        Types.Cty_arrow (l, texp, new_ct)
+        Cty_arrow (l, texp, new_ct)
   in
   iter t
 

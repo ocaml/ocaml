@@ -15,17 +15,17 @@
 
 (* Flags used in OCaml commands *)
 
-val stdlib : string -> string
+val stdlib : string
 
-val include_toplevel_directory : string -> string
+val include_toplevel_directory : string
 
-val c_includes : string -> string
+val c_includes : string
 
 val runtime_flags :
-  string -> Environments.t -> Ocaml_backends.t -> bool -> string
+  Environments.t -> Ocaml_backends.t -> bool -> string
 
 val toplevel_default_flags : string
 
-val ocamldebug_default_flags : string -> string
+val ocamldebug_default_flags : string
 
 val ocamlobjinfo_default_flags : string

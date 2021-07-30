@@ -14,8 +14,10 @@
 #**************************************************************************
 
 ROOTDIR=..
-include $(ROOTDIR)/Makefile.config
 include $(ROOTDIR)/Makefile.common
+
+OTHERLIBRARIES ?= bigarray dynlink str systhreads \
+                  unix win32unix
 
 # $1: target name to dispatch to all otherlibs/*/Makefile
 define dispatch_

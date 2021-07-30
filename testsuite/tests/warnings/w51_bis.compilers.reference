@@ -1,4 +1,4 @@
 File "w51_bis.ml", line 15, characters 12-48:
 15 |         try (foldl [@tailcall]) op (op x acc) xs
                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 51: expected tailcall
+Warning 51 [wrong-tailcall-expectation]: expected tailcall

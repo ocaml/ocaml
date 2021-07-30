@@ -29,7 +29,7 @@ method oper_latency = function
   (* Loads have a latency of two cycles in general *)
     Iconst_symbol _
   | Iconst_float _
-  | Iload(_, _)
+  | Iload(_, _, _)
   | Ireload
   | Ifloatofint       (* mcr/mrc count as memory access *)
   | Iintoffloat -> 2
@@ -58,8 +58,8 @@ method oper_issue_cycles = function
   | Iintop(Ilsl | Ilsr | Iasr) -> 2
   | Iintop(Icomp _)
   | Iintop_imm(Icomp _, _) -> 3
-  | Iintop(Icheckbound _)
-  | Iintop_imm(Icheckbound _, _) -> 2
+  | Iintop(Icheckbound)
+  | Iintop_imm(Icheckbound, _) -> 2
   | Ispecific(Ishiftcheckbound _) -> 3
   | Iintop(Imul | Imulh)
   | Ispecific(Imuladd | Imulsub | Imulhadd) -> 2

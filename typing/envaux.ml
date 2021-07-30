@@ -44,7 +44,7 @@ let rec env_from_summary sum subst =
             (Subst.type_declaration subst desc)
             (env_from_summary s subst)
       | Env_extension(s, id, desc) ->
-          Env.add_extension ~check:false id
+          Env.add_extension ~check:false ~rebind:false id
             (Subst.extension_constructor subst desc)
             (env_from_summary s subst)
       | Env_module(s, id, pres, desc) ->
@@ -64,9 +64,9 @@ let rec env_from_summary sum subst =
           let env = env_from_summary s subst in
           let path' = Subst.module_path subst path in
           begin match Env.open_signature Asttypes.Override path' env with
-          | Some env -> env
-          | None -> assert false
-          | exception Not_found -> raise (Error (Module_not_found path'))
+          | Ok env -> env
+          | Error `Functor -> assert false
+          | Error `Not_found -> raise (Error (Module_not_found path'))
           end
       | Env_functor_arg(Env_module(s, id, pres, desc), id')
             when Ident.same id id' ->

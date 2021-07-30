@@ -181,7 +181,7 @@ let new_checkpoint_list checkpoint_count accepted rejected =
     let (k, l) =
       list_truncate2 (checkpoint_count - List.length accepted) rejected
     in
-      (List.merge (fun {c_time = t1} {c_time = t2} -> compare t2 t1) accepted k,
+      (List.merge (fun t1 t2 -> compare t2.c_time t1.c_time) accepted k,
        l)
 
 (* Clean the checkpoint list. *)
@@ -506,7 +506,7 @@ let rec back_to time time_max =
   let
     {c_time = t} = find_checkpoint_before (pre64 time_max)
   in
-    go_to (max time t);
+    go_to (Int64.max time t);
     let (new_time, break) = find_last_breakpoint time_max in
     if break <> None || (new_time <= time) then begin
       go_to new_time;
@@ -520,7 +520,7 @@ let rec back_to time time_max =
 let step_backward duration =
   let time = current_time () in
     if time > _0 then
-      back_to (max _0 (time -- duration)) time
+      back_to (Int64.max _0 (time -- duration)) time
 
 (* Run the program from current time. *)
 (* Stop at the first breakpoint, or at the end of the program. *)

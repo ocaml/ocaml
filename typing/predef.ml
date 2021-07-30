@@ -149,7 +149,7 @@ let mk_add_type add_type type_ident
      type_expansion_scope = lowest_level;
      type_attributes = [];
      type_immediate = immediate;
-     type_unboxed = unboxed_false_default_false;
+     type_unboxed_default = false;
      type_uid = Uid.of_predef_id type_ident;
     }
   in
@@ -173,7 +173,7 @@ let common_initial_env add_type add_extension empty_env =
        type_expansion_scope = lowest_level;
        type_attributes = [];
        type_immediate = Unknown;
-       type_unboxed = unboxed_false_default_false;
+       type_unboxed_default = false;
        type_uid = Uid.of_predef_id type_ident;
       }
     in
@@ -216,19 +216,22 @@ let common_initial_env add_type add_extension empty_env =
   add_type1 ident_option ~variance:Variance.covariant
     ~separability:Separability.Ind
     ~kind:(fun tvar ->
-      Type_variant([cstr ident_none []; cstr ident_some [tvar]])
+      Type_variant([cstr ident_none []; cstr ident_some [tvar]],
+                   Variant_regular)
     ) (
   add_type1 ident_list ~variance:Variance.covariant
     ~separability:Separability.Ind
     ~kind:(fun tvar ->
-      Type_variant([cstr ident_nil []; cstr ident_cons [tvar; type_list tvar]])
+      Type_variant([cstr ident_nil []; cstr ident_cons [tvar; type_list tvar]],
+                   Variant_regular)
     ) (
   add_type1 ident_array ~variance:Variance.full ~separability:Separability.Ind (
   add_type ident_exn ~kind:Type_open (
   add_type ident_unit ~immediate:Always
-    ~kind:(Type_variant([cstr ident_void []])) (
+    ~kind:(Type_variant([cstr ident_void []], Variant_regular)) (
   add_type ident_bool ~immediate:Always
-    ~kind:(Type_variant([cstr ident_false []; cstr ident_true []])) (
+    ~kind:(Type_variant([cstr ident_false []; cstr ident_true []],
+                        Variant_regular)) (
   add_type ident_float (
   add_type ident_string (
   add_type ident_char ~immediate:Always (

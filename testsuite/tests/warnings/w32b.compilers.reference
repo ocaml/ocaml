@@ -1,8 +1,8 @@
 File "w32b.ml", line 13, characters 18-24:
 13 | module Q (M : sig type t end) = struct end
                        ^^^^^^
-Warning 34: unused type t.
+Warning 34 [unused-type-declaration]: unused type t.
 File "w32b.ml", line 13, characters 10-11:
 13 | module Q (M : sig type t end) = struct end
                ^
-Warning 60: unused module M.
+Warning 60 [unused-module]: unused module M.

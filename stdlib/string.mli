@@ -13,338 +13,558 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** String operations.
+(* NOTE:
+   If this file is stringLabels.mli, run tools/sync_stdlib_docs after editing
+   it to generate string.mli.
 
-  A string is an immutable data structure that contains a
-  fixed-length sequence of (single-byte) characters. Each character
-  can be accessed in constant time through its index.
+   If this file is string.mli, do not edit it directly -- edit
+   stringLabels.mli instead.
+ *)
 
-  Given a string [s] of length [l], we can access each of the [l]
-  characters of [s] via its index in the sequence. Indexes start at
-  [0], and we will call an index valid in [s] if it falls within the
-  range [[0...l-1]] (inclusive). A position is the point between two
-  characters or at the beginning or end of the string.  We call a
-  position valid in [s] if it falls within the range [[0...l]]
-  (inclusive). Note that the character at index [n] is between
-  positions [n] and [n+1].
+(** Strings.
 
-  Two parameters [start] and [len] are said to designate a valid
-  substring of [s] if [len >= 0] and [start] and [start+len] are
-  valid positions in [s].
+    A string [s] of length [n] is an indexable and immutable sequence
+    of [n] bytes. For historical reasons these bytes are referred to
+    as characters.
 
-  Note: OCaml strings used to be modifiable in place, for instance via
-  the {!String.set} and {!String.blit} functions described below. This
-  usage is only possible when the compiler is put in "unsafe-string"
-  mode by giving the [-unsafe-string] command-line option. This
-  compatibility mode makes the types [string] and [bytes] (see module
-  {!Bytes}) interchangeable so that functions expecting byte sequences
-  can also accept strings as arguments and modify them.
+    The semantics of string functions is defined in terms of
+    indices and positions. These are depicted and described
+    as follows.
 
-  The distinction between [bytes] and [string] was introduced in OCaml
-  4.02, and the "unsafe-string" compatibility mode was the default
-  until OCaml 4.05. Starting with 4.06, the compatibility mode is
-  opt-in; we intend to remove the option in the future.
+{v
+positions  0   1   2   3   4    n-1    n
+           +---+---+---+---+     +-----+
+  indices  | 0 | 1 | 2 | 3 | ... | n-1 |
+           +---+---+---+---+     +-----+
+v}
+    {ul
+    {- An {e index} [i] of [s] is an integer in the range \[[0];[n-1]\].
+       It represents the [i]th byte (character) of [s] which can be
+       accessed using the constant time string indexing operator
+       [s.[i]].}
+    {- A {e position} [i] of [s] is an integer in the range
+       \[[0];[n]\]. It represents either the point at the beginning of
+       the string, or the point between two indices, or the point at
+       the end of the string. The [i]th byte index is between position
+       [i] and [i+1].}}
+
+    Two integers [start] and [len] are said to define a {e valid
+    substring} of [s] if [len >= 0] and [start], [start+len] are
+    positions of [s].
+
+    {b Unicode text.} Strings being arbitrary sequences of bytes, they
+    can hold any kind of textual encoding. However the recommended
+    encoding for storing Unicode text in OCaml strings is UTF-8. This
+    is the encoding used by Unicode escapes in string literals. For
+    example the string ["\u{1F42B}"] is the UTF-8 encoding of the
+    Unicode character U+1F42B.
+
+    {b Past mutability.} OCaml strings used to be modifiable in place,
+    for instance via the {!String.set} and {!String.blit}
+    functions. This use is nowadays only possible when the compiler is
+    put in "unsafe-string" mode by giving the [-unsafe-string]
+    command-line option. This compatibility mode makes the types
+    [string] and [bytes] (see {!Bytes.t}) interchangeable so that
+    functions expecting byte sequences can also accept strings as
+    arguments and modify them.
+
+    The distinction between [bytes] and [string] was introduced in
+    OCaml 4.02, and the "unsafe-string" compatibility mode was the
+    default until OCaml 4.05. Starting with 4.06, the compatibility
+    mode is opt-in; we intend to remove the option in the future.
+
+    The labeled version of this module can be used as described in the
+    {!StdLabels} module.
+*)
+
+(** {1:strings Strings} *)
+
+type t = string
+(** The type for strings. *)
+
+val make : int -> char -> string
+(** [make n c] is a string of length [n] with each index holding the
+    character [c].
+
+    @raise Invalid_argument if [n < 0] or [n > ]{!Sys.max_string_length}. *)
+
+val init : int -> (int -> char) -> string
+(** [init n f] is a string of length [n] with index
+    [i] holding the character [f i] (called in increasing index order).
+
+    @raise Invalid_argument if [n < 0] or [n > ]{!Sys.max_string_length}.
+    @since 4.02.0 *)
+
+val empty : string
+(** The empty string.
+
+    @since 4.13.0
+*)
+
+val of_bytes : bytes -> string
+(** Return a new string that contains the same bytes as the given byte
+    sequence.
+
+    @since 4.13.0
+*)
+
+val to_bytes : string -> bytes
+(** Return a new byte sequence that contains the same bytes as the given
+    string.
+
+    @since 4.13.0
 *)
 
 external length : string -> int = "%string_length"
-(** Return the length (number of characters) of the given string. *)
+(** [length s] is the length (number of bytes/characters) of [s]. *)
 
 external get : string -> int -> char = "%string_safe_get"
-(** [String.get s n] returns the character at index [n] in string [s].
-   You can also write [s.[n]] instead of [String.get s n].
+(** [get s i] is the character at index [i] in [s]. This is the same
+    as writing [s.[i]].
 
-   Raise [Invalid_argument] if [n] not a valid index in [s]. *)
+    @raise Invalid_argument if [i] not an index of [s]. *)
 
+(** {1:concat Concatenating}
 
-external set : bytes -> int -> char -> unit = "%string_safe_set"
-  [@@ocaml.deprecated "Use Bytes.set instead."]
-(** [String.set s n c] modifies byte sequence [s] in place,
-   replacing the byte at index [n] with [c].
-   You can also write [s.[n] <- c] instead of [String.set s n c].
+    {b Note.} The {!Stdlib.( ^ )} binary operator concatenates two
+    strings. *)
 
-   Raise [Invalid_argument] if [n] is not a valid index in [s].
+val concat : string -> string list -> string
+(** [concat sep ss] concatenates the list of strings [ss], inserting
+    the separator string [sep] between each.
 
-   @deprecated This is a deprecated alias of {!Bytes.set}.[ ] *)
+    @raise Invalid_argument if the result is longer than
+    {!Sys.max_string_length} bytes. *)
 
-external create : int -> bytes = "caml_create_string"
-  [@@ocaml.deprecated "Use Bytes.create instead."]
-(** [String.create n] returns a fresh byte sequence of length [n].
-   The sequence is uninitialized and contains arbitrary bytes.
+val cat : string -> string -> string
+(** [cat s1 s2] concatenates s1 and s2 ([s1 ^ s2]).
 
-   Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}.
+    @raise Invalid_argument if the result is longer then
+    than {!Sys.max_string_length} bytes.
 
-   @deprecated This is a deprecated alias of {!Bytes.create}.[ ] *)
-
-val make : int -> char -> string
-(** [String.make n c] returns a fresh string of length [n],
-   filled with the character [c].
-
-   Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}. *)
-
-val init : int -> (int -> char) -> string
-(** [String.init n f] returns a string of length [n], with character
-    [i] initialized to the result of [f i] (called in increasing
-    index order).
-
-    Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}.
-
-    @since 4.02.0
+    @since 4.13.0
 *)
 
-val copy : string -> string [@@ocaml.deprecated]
+(** {1:predicates Predicates and comparisons} *)
+
+val equal : t -> t -> bool
+(** [equal s0 s1] is [true] if and only if [s0] and [s1] are character-wise
+    equal.
+    @since 4.03.0 (4.05.0 in StringLabels) *)
+
+val compare : t -> t -> int
+(** [compare s0 s1] sorts [s0] and [s1] in lexicographical order. [compare]
+    behaves like {!Stdlib.compare} on strings but may be more efficient. *)
+
+val starts_with :
+  prefix (* comment thwarts tools/sync_stdlib_docs *) :string -> string -> bool
+(** [starts_with ][~][prefix s] is [true] if and only if [s] starts with
+    [prefix].
+
+    @since 4.13.0 *)
+
+val ends_with :
+  suffix (* comment thwarts tools/sync_stdlib_docs *) :string -> string -> bool
+(** [ends_with suffix s] is [true] if and only if [s] ends with [suffix].
+
+    @since 4.13.0 *)
+
+val contains_from : string -> int -> char -> bool
+(** [contains_from s start c] is [true] if and only if [c] appears in [s]
+    after position [start].
+
+    @raise Invalid_argument if [start] is not a valid position in [s]. *)
+
+val rcontains_from : string -> int -> char -> bool
+(** [rcontains_from s stop c] is [true] if and only if [c] appears in [s]
+    before position [stop+1].
+
+    @raise Invalid_argument if [stop < 0] or [stop+1] is not a valid
+    position in [s]. *)
+
+val contains : string -> char -> bool
+(** [contains s c] is {!String.contains_from}[ s 0 c]. *)
+
+(** {1:extract Extracting substrings} *)
+
+val sub : string -> int -> int -> string
+(** [sub s pos len] is a string of length [len], containing the
+    substring of [s] that starts at position [pos] and has length
+    [len].
+
+    @raise Invalid_argument if [pos] and [len] do not designate a valid
+    substring of [s]. *)
+
+val split_on_char : char -> string -> string list
+(** [split_on_char sep s] is the list of all (possibly empty)
+    substrings of [s] that are delimited by the character [sep].
+
+    The function's result is specified by the following invariants:
+    {ul
+    {- The list is not empty.}
+    {- Concatenating its elements using [sep] as a separator returns a
+      string equal to the input ([concat (make 1 sep)
+      (split_on_char sep s) = s]).}
+    {- No string in the result contains the [sep] character.}}
+
+    @since 4.04.0 (4.05.0 in StringLabels) *)
+
+(** {1:transforming Transforming} *)
+
+val map : (char -> char) -> string -> string
+(** [map f s] is the string resulting from applying [f] to all the
+    characters of [s] in increasing order.
+
+    @since 4.00.0 *)
+
+val mapi : (int -> char -> char) -> string -> string
+(** [mapi f s] is like {!map} but the index of the character is also
+    passed to [f].
+
+    @since 4.02.0 *)
+
+val fold_left : ('a -> char -> 'a) -> 'a -> string -> 'a
+(** [fold_left f x s] computes [f (... (f (f x s.[0]) s.[1]) ...) s.[n-1]],
+    where [n] is the length of the string [s].
+    @since 4.13.0 *)
+
+val fold_right : (char -> 'a -> 'a) -> string -> 'a -> 'a
+(** [fold_right f s x] computes [f s.[0] (f s.[1] ( ... (f s.[n-1] x) ...))],
+    where [n] is the length of the string [s].
+    @since 4.13.0 *)
+
+val for_all : (char -> bool) -> string -> bool
+(** [for_all p s] checks if all characters in [s] satisfy the predicate [p].
+    @since 4.13.0 *)
+
+val exists : (char -> bool) -> string -> bool
+(** [exists p s] checks if at least one character of [s] satisfies the predicate
+    [p].
+    @since 4.13.0 *)
+
+val trim : string -> string
+(** [trim s] is [s] without leading and trailing whitespace. Whitespace
+    characters are: [' '], ['\x0C'] (form feed), ['\n'], ['\r'], and ['\t'].
+
+    @since 4.00.0 *)
+
+val escaped : string -> string
+(** [escaped s] is [s] with special characters represented by escape
+    sequences, following the lexical conventions of OCaml.
+
+    All characters outside the US-ASCII printable range \[0x20;0x7E\] are
+    escaped, as well as backslash (0x2F) and double-quote (0x22).
+
+    The function {!Scanf.unescaped} is a left inverse of [escaped],
+    i.e. [Scanf.unescaped (escaped s) = s] for any string [s] (unless
+    [escaped s] fails).
+
+    @raise Invalid_argument if the result is longer than
+    {!Sys.max_string_length} bytes. *)
+
+val uppercase_ascii : string -> string
+(** [uppercase_ascii s] is [s] with all lowercase letters
+    translated to uppercase, using the US-ASCII character set.
+
+    @since 4.03.0 (4.05.0 in StringLabels) *)
+
+val lowercase_ascii : string -> string
+(** [lowercase_ascii s] is [s] with all uppercase letters translated
+    to lowercase, using the US-ASCII character set.
+
+    @since 4.03.0 (4.05.0 in StringLabels) *)
+
+val capitalize_ascii : string -> string
+(** [capitalize_ascii s] is [s] with the first character set to
+    uppercase, using the US-ASCII character set.
+
+    @since 4.03.0 (4.05.0 in StringLabels) *)
+
+val uncapitalize_ascii : string -> string
+(** [uncapitalize_ascii s] is [s] with the first character set to lowercase,
+    using the US-ASCII character set.
+
+    @since 4.03.0 (4.05.0 in StringLabels) *)
+
+(** {1:traversing Traversing} *)
+
+val iter : (char -> unit) -> string -> unit
+(** [iter f s] applies function [f] in turn to all the characters of [s].
+    It is equivalent to [f s.[0]; f s.[1]; ...; f s.[length s - 1]; ()]. *)
+
+val iteri : (int -> char -> unit) -> string -> unit
+(** [iteri] is like {!iter}, but the function is also given the
+    corresponding character index.
+
+    @since 4.00.0 *)
+
+(** {1:searching Searching} *)
+
+val index_from : string -> int -> char -> int
+(** [index_from s i c] is the index of the first occurrence of [c] in
+    [s] after position [i].
+
+    @raise Not_found if [c] does not occur in [s] after position [i].
+    @raise Invalid_argument if [i] is not a valid position in [s]. *)
+
+
+val index_from_opt : string -> int -> char -> int option
+(** [index_from_opt s i c] is the index of the first occurrence of [c]
+    in [s] after position [i] (if any).
+
+    @raise Invalid_argument if [i] is not a valid position in [s].
+    @since 4.05 *)
+
+val rindex_from : string -> int -> char -> int
+(** [rindex_from s i c] is the index of the last occurrence of [c] in
+    [s] before position [i+1].
+
+    @raise Not_found if [c] does not occur in [s] before position [i+1].
+    @raise Invalid_argument if [i+1] is not a valid position in [s]. *)
+
+val rindex_from_opt : string -> int -> char -> int option
+(** [rindex_from_opt s i c] is the index of the last occurrence of [c]
+    in [s] before position [i+1] (if any).
+
+    @raise Invalid_argument if [i+1] is not a valid position in [s].
+    @since 4.05 *)
+
+val index : string -> char -> int
+(** [index s c] is {!String.index_from}[ s 0 c]. *)
+
+val index_opt : string -> char -> int option
+(** [index_opt s c] is {!String.index_from_opt}[ s 0 c].
+
+    @since 4.05 *)
+
+val rindex : string -> char -> int
+(** [rindex s c] is {!String.rindex_from}[ s (length s - 1) c]. *)
+
+val rindex_opt : string -> char -> int option
+(** [rindex_opt s c] is {!String.rindex_from_opt}[ s (length s - 1) c].
+
+    @since 4.05 *)
+
+(** {1 Strings and Sequences} *)
+
+val to_seq : t -> char Seq.t
+(** [to_seq s] is a sequence made of the string's characters in
+    increasing order. In ["unsafe-string"] mode, modifications of the string
+    during iteration will be reflected in the sequence.
+
+    @since 4.07 *)
+
+val to_seqi : t -> (int * char) Seq.t
+(** [to_seqi s] is like {!to_seq} but also tuples the corresponding index.
+
+    @since 4.07 *)
+
+val of_seq : char Seq.t -> t
+(** [of_seq s] is a string made of the sequence's characters.
+
+    @since 4.07 *)
+
+(** {1:deprecated Deprecated functions} *)
+
+external create : int -> bytes = "caml_create_string"
+  [@@ocaml.deprecated "Use Bytes.create/BytesLabels.create instead."]
+(** [create n] returns a fresh byte sequence of length [n].
+    The sequence is uninitialized and contains arbitrary bytes.
+    @raise Invalid_argument if [n < 0] or [n > ]{!Sys.max_string_length}.
+
+    @deprecated This is a deprecated alias of
+    {!Bytes.create}/{!BytesLabels.create}. *)
+
+external set : bytes -> int -> char -> unit = "%string_safe_set"
+  [@@ocaml.deprecated "Use Bytes.set/BytesLabels.set instead."]
+(** [set s n c] modifies byte sequence [s] in place,
+    replacing the byte at index [n] with [c].
+    You can also write [s.[n] <- c] instead of [set s n c].
+    @raise Invalid_argument if [n] is not a valid index in [s].
+
+    @deprecated This is a deprecated alias of
+    {!Bytes.set}/{!BytesLabels.set}. *)
+
+val blit :
+  string -> int -> bytes -> int -> int -> unit
+(** [blit src src_pos dst dst_pos len] copies [len] bytes
+    from the string [src], starting at index [src_pos],
+    to byte sequence [dst], starting at character number [dst_pos].
+
+    @raise Invalid_argument if [src_pos] and [len] do not
+    designate a valid range of [src], or if [dst_pos] and [len]
+    do not designate a valid range of [dst]. *)
+
+val copy : string -> string
+  [@@ocaml.deprecated "Strings now immutable: no need to copy"]
 (** Return a copy of the given string.
 
     @deprecated Because strings are immutable, it doesn't make much
     sense to make identical copies of them. *)
 
-val sub : string -> int -> int -> string
-(** [String.sub s start len] returns a fresh string of length [len],
-   containing the substring of [s] that starts at position [start] and
-   has length [len].
-
-   Raise [Invalid_argument] if [start] and [len] do not
-   designate a valid substring of [s]. *)
-
 val fill : bytes -> int -> int -> char -> unit
-  [@@ocaml.deprecated "Use Bytes.fill instead."]
-(** [String.fill s start len c] modifies byte sequence [s] in place,
-   replacing [len] bytes with [c], starting at [start].
+  [@@ocaml.deprecated "Use Bytes.fill/BytesLabels.fill instead."]
+(** [fill s pos len c] modifies byte sequence [s] in place,
+    replacing [len] bytes by [c], starting at [pos].
+    @raise Invalid_argument if [pos] and [len] do not
+    designate a valid substring of [s].
 
-   Raise [Invalid_argument] if [start] and [len] do not
-   designate a valid range of [s].
-
-   @deprecated This is a deprecated alias of {!Bytes.fill}.[ ] *)
-
-val blit : string -> int -> bytes -> int -> int -> unit
-(** Same as {!Bytes.blit_string}. *)
-
-val concat : string -> string list -> string
-(** [String.concat sep sl] concatenates the list of strings [sl],
-    inserting the separator string [sep] between each.
-
-    Raise [Invalid_argument] if the result is longer than
-    {!Sys.max_string_length} bytes. *)
-
-val iter : (char -> unit) -> string -> unit
-(** [String.iter f s] applies function [f] in turn to all
-   the characters of [s].  It is equivalent to
-   [f s.[0]; f s.[1]; ...; f s.[String.length s - 1]; ()]. *)
-
-val iteri : (int -> char -> unit) -> string -> unit
-(** Same as {!String.iter}, but the
-   function is applied to the index of the element as first argument
-   (counting from 0), and the character itself as second argument.
-   @since 4.00.0 *)
-
-val map : (char -> char) -> string -> string
-(** [String.map f s] applies function [f] in turn to all the
-    characters of [s] (in increasing index order) and stores the
-    results in a new string that is returned.
-    @since 4.00.0 *)
-
-val mapi : (int -> char -> char) -> string -> string
-(** [String.mapi f s] calls [f] with each character of [s] and its
-    index (in increasing index order) and stores the results in a new
-    string that is returned.
-    @since 4.02.0 *)
-
-val trim : string -> string
-(** Return a copy of the argument, without leading and trailing
-   whitespace.  The characters regarded as whitespace are: [' '],
-   ['\012'], ['\n'], ['\r'], and ['\t'].  If there is neither leading nor
-   trailing whitespace character in the argument, return the original
-   string itself, not a copy.
-   @since 4.00.0 *)
-
-val escaped : string -> string
-(** Return a copy of the argument, with special characters
-    represented by escape sequences, following the lexical
-    conventions of OCaml.
-    All characters outside the ASCII printable range (32..126) are
-    escaped, as well as backslash and double-quote.
-
-    If there is no special character in the argument that needs
-    escaping, return the original string itself, not a copy.
-
-    Raise [Invalid_argument] if the result is longer than
-    {!Sys.max_string_length} bytes.
-
-    The function {!Scanf.unescaped} is a left inverse of [escaped],
-    i.e. [Scanf.unescaped (escaped s) = s] for any string [s] (unless
-    [escape s] fails). *)
-
-val index : string -> char -> int
-(** [String.index s c] returns the index of the first
-   occurrence of character [c] in string [s].
-
-   Raise [Not_found] if [c] does not occur in [s]. *)
-
-val index_opt: string -> char -> int option
-(** [String.index_opt s c] returns the index of the first
-    occurrence of character [c] in string [s], or
-    [None] if [c] does not occur in [s].
-    @since 4.05 *)
-
-val rindex : string -> char -> int
-(** [String.rindex s c] returns the index of the last
-   occurrence of character [c] in string [s].
-
-   Raise [Not_found] if [c] does not occur in [s]. *)
-
-val rindex_opt: string -> char -> int option
-(** [String.rindex_opt s c] returns the index of the last occurrence
-    of character [c] in string [s], or [None] if [c] does not occur in
-    [s].
-    @since 4.05 *)
-
-val index_from : string -> int -> char -> int
-(** [String.index_from s i c] returns the index of the
-   first occurrence of character [c] in string [s] after position [i].
-   [String.index s c] is equivalent to [String.index_from s 0 c].
-
-   Raise [Invalid_argument] if [i] is not a valid position in [s].
-   Raise [Not_found] if [c] does not occur in [s] after position [i]. *)
-
-val index_from_opt: string -> int -> char -> int option
-(** [String.index_from_opt s i c] returns the index of the
-    first occurrence of character [c] in string [s] after position [i]
-    or [None] if [c] does not occur in [s] after position [i].
-
-    [String.index_opt s c] is equivalent to [String.index_from_opt s 0 c].
-    Raise [Invalid_argument] if [i] is not a valid position in [s].
-
-    @since 4.05
-*)
-
-val rindex_from : string -> int -> char -> int
-(** [String.rindex_from s i c] returns the index of the
-   last occurrence of character [c] in string [s] before position [i+1].
-   [String.rindex s c] is equivalent to
-   [String.rindex_from s (String.length s - 1) c].
-
-   Raise [Invalid_argument] if [i+1] is not a valid position in [s].
-   Raise [Not_found] if [c] does not occur in [s] before position [i+1]. *)
-
-val rindex_from_opt: string -> int -> char -> int option
-(** [String.rindex_from_opt s i c] returns the index of the
-   last occurrence of character [c] in string [s] before position [i+1]
-   or [None] if [c] does not occur in [s] before position [i+1].
-
-   [String.rindex_opt s c] is equivalent to
-   [String.rindex_from_opt s (String.length s - 1) c].
-
-   Raise [Invalid_argument] if [i+1] is not a valid position in [s].
-
-    @since 4.05
-*)
-
-val contains : string -> char -> bool
-(** [String.contains s c] tests if character [c]
-   appears in the string [s]. *)
-
-val contains_from : string -> int -> char -> bool
-(** [String.contains_from s start c] tests if character [c]
-   appears in [s] after position [start].
-   [String.contains s c] is equivalent to
-   [String.contains_from s 0 c].
-
-   Raise [Invalid_argument] if [start] is not a valid position in [s]. *)
-
-val rcontains_from : string -> int -> char -> bool
-(** [String.rcontains_from s stop c] tests if character [c]
-   appears in [s] before position [stop+1].
-
-   Raise [Invalid_argument] if [stop < 0] or [stop+1] is not a valid
-   position in [s]. *)
+    @deprecated This is a deprecated alias of
+    {!Bytes.fill}/{!BytesLabels.fill}. *)
 
 val uppercase : string -> string
-  [@@ocaml.deprecated "Use String.uppercase_ascii instead."]
+  [@@ocaml.deprecated
+    "Use String.uppercase_ascii/StringLabels.uppercase_ascii instead."]
 (** Return a copy of the argument, with all lowercase letters
-   translated to uppercase, including accented letters of the ISO
-   Latin-1 (8859-1) character set.
-   @deprecated Functions operating on Latin-1 character set are deprecated. *)
+    translated to uppercase, including accented letters of the ISO
+    Latin-1 (8859-1) character set.
+
+    @deprecated Functions operating on Latin-1 character set are deprecated. *)
 
 val lowercase : string -> string
-  [@@ocaml.deprecated "Use String.lowercase_ascii instead."]
+  [@@ocaml.deprecated
+    "Use String.lowercase_ascii/StringLabels.lowercase_ascii instead."]
 (** Return a copy of the argument, with all uppercase letters
-   translated to lowercase, including accented letters of the ISO
-   Latin-1 (8859-1) character set.
-   @deprecated Functions operating on Latin-1 character set are deprecated. *)
+    translated to lowercase, including accented letters of the ISO
+    Latin-1 (8859-1) character set.
+
+    @deprecated Functions operating on Latin-1 character set are deprecated. *)
 
 val capitalize : string -> string
-  [@@ocaml.deprecated "Use String.capitalize_ascii instead."]
+  [@@ocaml.deprecated
+    "Use String.capitalize_ascii/StringLabels.capitalize_ascii instead."]
 (** Return a copy of the argument, with the first character set to uppercase,
-   using the ISO Latin-1 (8859-1) character set..
-   @deprecated Functions operating on Latin-1 character set are deprecated. *)
+    using the ISO Latin-1 (8859-1) character set..
+
+    @deprecated Functions operating on Latin-1 character set are deprecated. *)
 
 val uncapitalize : string -> string
-  [@@ocaml.deprecated "Use String.uncapitalize_ascii instead."]
+  [@@ocaml.deprecated
+    "Use String.uncapitalize_ascii/StringLabels.uncapitalize_ascii instead."]
 (** Return a copy of the argument, with the first character set to lowercase,
-   using the ISO Latin-1 (8859-1) character set..
-   @deprecated Functions operating on Latin-1 character set are deprecated. *)
+    using the ISO Latin-1 (8859-1) character set.
 
-val uppercase_ascii : string -> string
-(** Return a copy of the argument, with all lowercase letters
-   translated to uppercase, using the US-ASCII character set.
-   @since 4.03.0 *)
+    @deprecated Functions operating on Latin-1 character set are deprecated. *)
 
-val lowercase_ascii : string -> string
-(** Return a copy of the argument, with all uppercase letters
-   translated to lowercase, using the US-ASCII character set.
-   @since 4.03.0 *)
+(** {1 Binary decoding of integers} *)
 
-val capitalize_ascii : string -> string
-(** Return a copy of the argument, with the first character set to uppercase,
-   using the US-ASCII character set.
-   @since 4.03.0 *)
+(** The functions in this section binary decode integers from strings.
 
-val uncapitalize_ascii : string -> string
-(** Return a copy of the argument, with the first character set to lowercase,
-   using the US-ASCII character set.
-   @since 4.03.0 *)
+    All following functions raise [Invalid_argument] if the characters
+    needed at index [i] to decode the integer are not available.
 
-type t = string
-(** An alias for the type of strings. *)
+    Little-endian (resp. big-endian) encoding means that least
+    (resp. most) significant bytes are stored first.  Big-endian is
+    also known as network byte order.  Native-endian encoding is
+    either little-endian or big-endian depending on {!Sys.big_endian}.
 
-val compare: t -> t -> int
-(** The comparison function for strings, with the same specification as
-    {!Stdlib.compare}.  Along with the type [t], this function [compare]
-    allows the module [String] to be passed as argument to the functors
-    {!Set.Make} and {!Map.Make}. *)
+    32-bit and 64-bit integers are represented by the [int32] and
+    [int64] types, which can be interpreted either as signed or
+    unsigned numbers.
 
-val equal: t -> t -> bool
-(** The equal function for strings.
-    @since 4.03.0 *)
-
-val split_on_char: char -> string -> string list
-(** [String.split_on_char sep s] returns the list of all (possibly empty)
-    substrings of [s] that are delimited by the [sep] character.
-
-    The function's output is specified by the following invariants:
-
-    - The list is not empty.
-    - Concatenating its elements using [sep] as a separator returns a
-      string equal to the input ([String.concat (String.make 1 sep)
-      (String.split_on_char sep s) = s]).
-    - No string in the result contains the [sep] character.
-
-    @since 4.04.0
+    8-bit and 16-bit integers are represented by the [int] type,
+    which has more bits than the binary encoding.  These extra bits
+    are sign-extended (or zero-extended) for functions which decode 8-bit
+    or 16-bit integers and represented them with [int] values.
 *)
 
-(** {1 Iterators} *)
+val get_uint8 : string -> int -> int
+(** [get_uint8 b i] is [b]'s unsigned 8-bit integer starting at character
+    index [i].
 
-val to_seq : t -> char Seq.t
-(** Iterate on the string, in increasing index order. Modifications of the
-    string during iteration will be reflected in the iterator.
-    @since 4.07 *)
+    @since 4.13.0
+*)
 
-val to_seqi : t -> (int * char) Seq.t
-(** Iterate on the string, in increasing order, yielding indices along chars
-    @since 4.07 *)
+val get_int8 : string -> int -> int
+(** [get_int8 b i] is [b]'s signed 8-bit integer starting at character
+    index [i].
 
-val of_seq : char Seq.t -> t
-(** Create a string from the generator
-    @since 4.07 *)
+    @since 4.13.0
+*)
+
+val get_uint16_ne : string -> int -> int
+(** [get_uint16_ne b i] is [b]'s native-endian unsigned 16-bit integer
+    starting at character index [i].
+
+    @since 4.13.0
+*)
+
+val get_uint16_be : string -> int -> int
+(** [get_uint16_be b i] is [b]'s big-endian unsigned 16-bit integer
+    starting at character index [i].
+
+    @since 4.13.0
+*)
+
+val get_uint16_le : string -> int -> int
+(** [get_uint16_le b i] is [b]'s little-endian unsigned 16-bit integer
+    starting at character index [i].
+
+    @since 4.13.0
+*)
+
+val get_int16_ne : string -> int -> int
+(** [get_int16_ne b i] is [b]'s native-endian signed 16-bit integer
+    starting at character index [i].
+
+    @since 4.13.0
+*)
+
+val get_int16_be : string -> int -> int
+(** [get_int16_be b i] is [b]'s big-endian signed 16-bit integer
+    starting at character index [i].
+
+    @since 4.13.0
+*)
+
+val get_int16_le : string -> int -> int
+(** [get_int16_le b i] is [b]'s little-endian signed 16-bit integer
+    starting at character index [i].
+
+    @since 4.13.0
+*)
+
+val get_int32_ne : string -> int -> int32
+(** [get_int32_ne b i] is [b]'s native-endian 32-bit integer
+    starting at character index [i].
+
+    @since 4.13.0
+*)
+
+val get_int32_be : string -> int -> int32
+(** [get_int32_be b i] is [b]'s big-endian 32-bit integer
+    starting at character index [i].
+
+    @since 4.13.0
+*)
+
+val get_int32_le : string -> int -> int32
+(** [get_int32_le b i] is [b]'s little-endian 32-bit integer
+    starting at character index [i].
+
+    @since 4.13.0
+*)
+
+val get_int64_ne : string -> int -> int64
+(** [get_int64_ne b i] is [b]'s native-endian 64-bit integer
+    starting at character index [i].
+
+    @since 4.13.0
+*)
+
+val get_int64_be : string -> int -> int64
+(** [get_int64_be b i] is [b]'s big-endian 64-bit integer
+    starting at character index [i].
+
+    @since 4.13.0
+*)
+
+val get_int64_le : string -> int -> int64
+(** [get_int64_le b i] is [b]'s little-endian 64-bit integer
+    starting at character index [i].
+
+    @since 4.13.0
+*)
 
 (**/**)
 
@@ -354,8 +574,8 @@ external unsafe_get : string -> int -> char = "%string_unsafe_get"
 external unsafe_set : bytes -> int -> char -> unit = "%string_unsafe_set"
   [@@ocaml.deprecated]
 external unsafe_blit :
-  string -> int -> bytes -> int -> int -> unit
-  = "caml_blit_string" [@@noalloc]
+  string -> int -> bytes -> int -> int ->
+    unit = "caml_blit_string" [@@noalloc]
 external unsafe_fill :
   bytes -> int -> int -> char -> unit = "caml_fill_string" [@@noalloc]
   [@@ocaml.deprecated]

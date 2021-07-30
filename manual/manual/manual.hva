@@ -1,3 +1,0 @@
-\input{anchored_book.hva}
-\input{macros.hva}
-\newif\ifouthtml\outhtmltrue

@@ -15,8 +15,6 @@
 
 (** Generation of html documentation.*)
 
-let print_DEBUG s = print_string s ; print_newline ()
-
 open Odoc_info
 open Value
 open Type
@@ -32,6 +30,7 @@ let index_only = ref false
 let colorize_code = ref false
 let html_short_functors = ref false
 let charset = ref "iso-8859-1"
+let show_navbar = ref true
 
 
 (** The functions used for naming files and html marks.*)
@@ -319,7 +318,6 @@ class virtual text =
 
     (** Print the html code for the [text_element] in parameter. *)
     method html_of_text_element b txt =
-      print_DEBUG "text::html_of_text_element";
       match txt with
       | Odoc_info.Raw s -> self#html_of_Raw b s
       | Odoc_info.Code s -> self#html_of_Code b s
@@ -746,7 +744,7 @@ class virtual info =
           | Some d ->
                bs b "<div class=\"info-deprecated\">\n";
                bs b "<span class=\"warning\">";
-               bs b Odoc_messages.deprecated ;
+               bs b (Odoc_messages.deprecated^". ");
                bs b "</span>" ;
                self#html_of_text b d;
                bs b "</div>\n"
@@ -818,12 +816,17 @@ let print_concat b sep f =
   in
   iter
 
-let newline_to_indented_br s =
+
+(** Escape "\n", "<", ">", and "&" *)
+let text_to_html s =
   let len = String.length s in
   let b = Buffer.create len in
   for i = 0 to len - 1 do
     match s.[i] with
-      '\n' -> Buffer.add_string b "<br>     "
+    | '\n' -> Buffer.add_string b "<br>     "
+    | '<' -> Buffer.add_string b "&lt;"
+    | '>' -> Buffer.add_string b "&gt;"
+    | '&' -> Buffer.add_string b "&amp;"
     | c -> Buffer.add_char b c
   done;
   Buffer.contents b
@@ -1185,32 +1188,34 @@ class html =
        @param post optional name for optional next module/class
        @param name name of current module/class *)
     method print_navbar b pre post name =
-      bs b "<div class=\"navbar\">";
-      (
-       match pre with
-         None -> ()
-       | Some name ->
-           bp b "<a class=\"pre\" href=\"%s\" title=\"%s\">%s</a>\n"
-             (fst (Naming.html_files name))
-             name
-             Odoc_messages.previous
-      );
-      bs b "&nbsp;";
-      let father = Name.father name in
-      let href = if father = "" then self#index else fst (Naming.html_files father) in
-      let father_name = if father = "" then "Index" else father in
-      bp b "<a class=\"up\" href=\"%s\" title=\"%s\">%s</a>\n" href father_name Odoc_messages.up;
-      bs b "&nbsp;";
-      (
-       match post with
-         None -> ()
-       | Some name ->
-           bp b "<a class=\"post\" href=\"%s\" title=\"%s\">%s</a>\n"
-             (fst (Naming.html_files name))
-             name
-             Odoc_messages.next
-      );
-      bs b "</div>\n"
+      if !show_navbar then begin
+        bs b "<div class=\"navbar\">";
+        (
+         match pre with
+           None -> ()
+         | Some name ->
+             bp b "<a class=\"pre\" href=\"%s\" title=\"%s\">%s</a>\n"
+               (fst (Naming.html_files name))
+               name
+               Odoc_messages.previous
+        );
+        bs b "&nbsp;";
+        let father = Name.father name in
+        let href = if father = "" then self#index else fst (Naming.html_files father) in
+        let father_name = if father = "" then "Index" else father in
+        bp b "<a class=\"up\" href=\"%s\" title=\"%s\">%s</a>\n" href father_name Odoc_messages.up;
+        bs b "&nbsp;";
+        (
+         match post with
+           None -> ()
+         | Some name ->
+             bp b "<a class=\"post\" href=\"%s\" title=\"%s\">%s</a>\n"
+               (fst (Naming.html_files name))
+               name
+               Odoc_messages.next
+        );
+        bs b "</div>\n"
+      end
 
     (** Return html code with the given string in the keyword style.*)
     method keyword s =
@@ -1307,25 +1312,21 @@ class html =
     (** Print html code to display a [Types.type_expr]. *)
     method html_of_type_expr b m_name t =
       let s = Odoc_info.remove_ending_newline (Odoc_info.string_of_type_expr t) in
-      let s2 = newline_to_indented_br s in
+      let s2 = text_to_html s in
       bs b "<code class=\"type\">";
       bs b (self#create_fully_qualified_idents_links m_name s2);
       bs b "</code>"
 
     (** Print html code to display a [Types.type_expr list]. *)
     method html_of_cstr_args ?par b m_name c_name sep l =
-      print_DEBUG "html#html_of_cstr_args";
       match l with
       | Cstr_tuple l ->
-          print_DEBUG "html#html_of_cstr_args: 1";
           let s = Odoc_info.string_of_type_list ?par sep l in
-          let s2 = newline_to_indented_br s in
-          print_DEBUG "html#html_of_cstr_args: 2";
+          let s2 = text_to_html s in
           bs b "<code class=\"type\">";
           bs b (self#create_fully_qualified_idents_links m_name s2);
           bs b "</code>"
       | Cstr_record l ->
-          print_DEBUG "html#html_of_cstr_args: 1 bis";
           bs b "<code>";
           self#html_of_record ~father:m_name ~close_env: "</code>"
             (Naming.inline_recfield_target m_name c_name)
@@ -1335,7 +1336,7 @@ class html =
        of a class of class type. *)
     method html_of_class_type_param_expr_list b m_name l =
       let s = Odoc_info.string_of_class_type_param_list l in
-      let s2 = newline_to_indented_br s in
+      let s2 = text_to_html s in
       bs b "<code class=\"type\">[";
       bs b (self#create_fully_qualified_idents_links m_name s2);
       bs b "]</code>"
@@ -1343,7 +1344,7 @@ class html =
     method html_of_class_parameter_list b father c =
       let s = Odoc_info.string_of_class_params c in
       let s = Odoc_info.remove_ending_newline s in
-      let s2 = newline_to_indented_br s in
+      let s2 = text_to_html s in
       bs b "<code class=\"type\">";
       bs b (self#create_fully_qualified_idents_links father s2);
       bs b "</code>"
@@ -1351,7 +1352,7 @@ class html =
     (** Print html code to display a list of type parameters for the given type.*)
     method html_of_type_expr_param_list b m_name t =
       let s = Odoc_info.string_of_type_param_list t in
-      let s2 = newline_to_indented_br s in
+      let s2 = text_to_html s in
       bs b "<code class=\"type\">";
       bs b (self#create_fully_qualified_idents_links m_name s2);
       bs b "</code>"
@@ -1567,7 +1568,7 @@ class html =
       bs b "<pre><code>";
       bs b ((self#keyword "type")^" ");
       let s = Odoc_info.string_of_type_extension_param_list te in
-      let s2 = newline_to_indented_br s in
+      let s2 = text_to_html s in
       bs b "<code class=\"type\">";
       bs b (self#create_fully_qualified_idents_links m_name s2);
       bs b "</code>";
@@ -2227,7 +2228,6 @@ class html =
            }
         );
       bs b ((self#keyword "class")^" ");
-      print_DEBUG "html#html_of_class : virtual or not" ;
       if c.cl_virtual then bs b ((self#keyword "virtual")^" ");
       (
        match c.cl_type_parameters with
@@ -2236,7 +2236,6 @@ class html =
            self#html_of_class_type_param_expr_list b father l;
            bs b " "
       );
-      print_DEBUG "html#html_of_class : with link or not" ;
       (
        if with_link then
          bp b "<a href=\"%s\">%s</a>" html_file (Name.simple c.cl_name)
@@ -2248,7 +2247,6 @@ class html =
       self#html_of_class_parameter_list b father c ;
       self#html_of_class_kind b father ~cl: c c.cl_kind;
       bs b "</pre>" ;
-      print_DEBUG "html#html_of_class : info" ;
       (
        if complete then
          self#html_of_info ~cls: "class top" ~indent: true
@@ -2394,11 +2392,12 @@ class html =
     (** A method to create index files. *)
     method generate_elements_index :
         'a.
-        'a list ->
-          ('a -> Odoc_info.Name.t) ->
-            ('a -> Odoc_info.info option) ->
-              ('a -> string) -> string -> string -> unit =
-    fun elements name info target title simple_file ->
+        ?strip_libname:bool ->
+          'a list ->
+            ('a -> Odoc_info.Name.t) ->
+              ('a -> Odoc_info.info option) ->
+                ('a -> string) -> string -> string -> unit =
+    fun ?(strip_libname=false) elements name info target title simple_file ->
       try
         let chanout = open_out (Filename.concat !Global.target_dir simple_file) in
         let b = new_buf () in
@@ -2418,7 +2417,10 @@ class html =
         let f_ele e =
           let simple_name = Name.simple (name e) in
           let father_name = Name.father (name e) in
-          if father_name = "Stdlib" && father_name <> simple_name then
+          if strip_libname &&
+               !Odoc_global.library_namespace <> "" &&
+                 father_name = !Odoc_global.library_namespace &&
+                   father_name <> simple_name then
             (* avoid duplicata *) ()
           else
             begin
@@ -2839,6 +2841,7 @@ class html =
     (** Generate the modules index in the file [index_modules.html]. *)
     method generate_modules_index _module_list =
       self#generate_elements_index
+        ~strip_libname:true
         self#list_modules
         (fun m -> m.m_name)
         (fun m -> m.m_info)

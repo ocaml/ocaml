@@ -24,155 +24,239 @@
 # linked in the archive, but they are marked as dependencies to ensure
 # that they are consistent with the interface digests in the archives.
 
-UTILS=utils/config.cmo utils/build_path_prefix_map.cmo utils/misc.cmo \
-	utils/identifiable.cmo utils/numbers.cmo utils/arg_helper.cmo \
-	utils/clflags.cmo utils/profile.cmo utils/load_path.cmo \
-	utils/terminfo.cmo utils/ccomp.cmo utils/warnings.cmo \
-	utils/consistbl.cmo utils/strongly_connected_components.cmo \
-	utils/targetint.cmo utils/int_replace_polymorphic_compare.cmo \
-	utils/domainstate.cmo
-UTILS_CMI=
+UTILS = \
+  utils/config.cmo \
+  utils/build_path_prefix_map.cmo \
+  utils/misc.cmo \
+  utils/identifiable.cmo \
+  utils/numbers.cmo \
+  utils/arg_helper.cmo \
+  utils/clflags.cmo \
+  utils/profile.cmo \
+  utils/local_store.cmo \
+  utils/load_path.cmo \
+  utils/terminfo.cmo \
+  utils/ccomp.cmo \
+  utils/warnings.cmo \
+  utils/consistbl.cmo \
+  utils/strongly_connected_components.cmo \
+  utils/targetint.cmo \
+  utils/int_replace_polymorphic_compare.cmo \
+  utils/domainstate.cmo \
+  utils/binutils.cmo \
+  utils/lazy_backtrack.cmo \
+  utils/diffing.cmo \
+  utils/diffing_with_keys.cmo
+UTILS_CMI =
 
-PARSING=parsing/location.cmo parsing/longident.cmo \
-  parsing/docstrings.cmo parsing/syntaxerr.cmo \
+PARSING = \
+  parsing/location.cmo \
+  parsing/longident.cmo \
+  parsing/docstrings.cmo \
+  parsing/syntaxerr.cmo \
   parsing/ast_helper.cmo \
   parsing/pprintast.cmo \
-  parsing/camlinternalMenhirLib.cmo parsing/parser.cmo \
-  parsing/lexer.cmo parsing/parse.cmo parsing/printast.cmo \
-  parsing/ast_mapper.cmo parsing/ast_iterator.cmo parsing/attr_helper.cmo \
-  parsing/builtin_attributes.cmo parsing/ast_invariants.cmo parsing/depend.cmo
-PARSING_CMI=\
+  parsing/camlinternalMenhirLib.cmo \
+  parsing/parser.cmo \
+  parsing/lexer.cmo \
+  parsing/parse.cmo \
+  parsing/printast.cmo \
+  parsing/ast_mapper.cmo \
+  parsing/ast_iterator.cmo \
+  parsing/attr_helper.cmo \
+  parsing/builtin_attributes.cmo \
+  parsing/ast_invariants.cmo \
+  parsing/depend.cmo
+PARSING_CMI = \
   parsing/asttypes.cmi \
   parsing/parsetree.cmi
 
-TYPING=typing/ident.cmo typing/path.cmo \
-  typing/primitive.cmo typing/type_immediacy.cmo typing/types.cmo \
-  typing/btype.cmo typing/oprint.cmo \
-  typing/subst.cmo typing/predef.cmo \
-  typing/datarepr.cmo file_formats/cmi_format.cmo \
-  typing/persistent_env.cmo typing/env.cmo \
-  typing/typedtree.cmo typing/printtyped.cmo typing/ctype.cmo \
-  typing/printtyp.cmo typing/includeclass.cmo \
-  typing/mtype.cmo typing/envaux.cmo typing/includecore.cmo \
-  typing/tast_iterator.cmo typing/tast_mapper.cmo typing/stypes.cmo \
-  file_formats/cmt_format.cmo typing/cmt2annot.cmo typing/untypeast.cmo \
-  typing/includemod.cmo typing/typetexp.cmo typing/printpat.cmo \
+TYPING = \
+  typing/ident.cmo \
+  typing/path.cmo \
+  typing/primitive.cmo \
+  typing/type_immediacy.cmo \
+  typing/types.cmo \
+  typing/btype.cmo \
+  typing/oprint.cmo \
+  typing/subst.cmo \
+  typing/predef.cmo \
+  typing/datarepr.cmo \
+  file_formats/cmi_format.cmo \
+  typing/persistent_env.cmo \
+  typing/env.cmo \
+  typing/errortrace.cmo \
+  typing/typedtree.cmo \
+  typing/signature_group.cmo \
+  typing/printtyped.cmo \
+  typing/ctype.cmo \
+  typing/printtyp.cmo \
+  typing/includeclass.cmo \
+  typing/mtype.cmo \
+  typing/envaux.cmo \
+  typing/includecore.cmo \
+  typing/tast_iterator.cmo \
+  typing/tast_mapper.cmo \
+  typing/stypes.cmo \
+  file_formats/cmt_format.cmo \
+  typing/cmt2annot.cmo \
+  typing/untypeast.cmo \
+  typing/includemod.cmo \
+  typing/includemod_errorprinter.cmo \
+  typing/typetexp.cmo \
+  typing/printpat.cmo \
+  typing/patterns.cmo \
   typing/parmatch.cmo \
-  typing/typedecl_properties.cmo typing/typedecl_variance.cmo \
-  typing/typedecl_unboxed.cmo typing/typedecl_immediacy.cmo \
+  typing/typedecl_properties.cmo \
+  typing/typedecl_variance.cmo \
+  typing/typedecl_unboxed.cmo \
+  typing/typedecl_immediacy.cmo \
   typing/typedecl_separability.cmo \
-  typing/typedecl.cmo typing/typeopt.cmo \
-  typing/rec_check.cmo typing/typecore.cmo typing/typeclass.cmo \
+  typing/typedecl.cmo \
+  typing/typeopt.cmo \
+  typing/rec_check.cmo \
+  typing/typecore.cmo \
+  typing/typeclass.cmo \
   typing/typemod.cmo
-TYPING_CMI=\
+TYPING_CMI = \
   typing/annot.cmi \
   typing/outcometree.cmi
 
-LAMBDA=lambda/debuginfo.cmo \
-  lambda/lambda.cmo lambda/printlambda.cmo \
-  lambda/switch.cmo lambda/matching.cmo \
-  lambda/translobj.cmo lambda/translattribute.cmo \
-  lambda/translprim.cmo lambda/translcore.cmo \
-  lambda/translclass.cmo lambda/translmod.cmo \
-  lambda/simplif.cmo lambda/runtimedef.cmo
-LAMBDA_CMI=
+LAMBDA = \
+  lambda/debuginfo.cmo \
+  lambda/lambda.cmo \
+  lambda/printlambda.cmo \
+  lambda/switch.cmo \
+  lambda/matching.cmo \
+  lambda/translobj.cmo \
+  lambda/translattribute.cmo \
+  lambda/translprim.cmo \
+  lambda/translcore.cmo \
+  lambda/translclass.cmo \
+  lambda/translmod.cmo \
+  lambda/simplif.cmo \
+  lambda/runtimedef.cmo
+LAMBDA_CMI =
 
-COMP=\
-  bytecomp/meta.cmo bytecomp/opcodes.cmo \
-  bytecomp/bytesections.cmo bytecomp/dll.cmo \
+COMP = \
+  bytecomp/meta.cmo \
+  bytecomp/opcodes.cmo \
+  bytecomp/bytesections.cmo \
+  bytecomp/dll.cmo \
   bytecomp/symtable.cmo \
-  driver/pparse.cmo driver/compenv.cmo \
-  driver/main_args.cmo driver/compmisc.cmo \
+  driver/pparse.cmo \
+  driver/compenv.cmo \
+  driver/main_args.cmo \
+  driver/compmisc.cmo \
   driver/makedepend.cmo \
   driver/compile_common.cmo
-COMP_CMI=\
+COMP_CMI = \
   file_formats/cmo_format.cmi \
   file_formats/cmx_format.cmi \
   file_formats/cmxs_format.cmi
 # All file format descriptions (including cmx{,s}) are in the
 # ocamlcommon library so that ocamlobjinfo can depend on them.
 
-COMMON_CMI=$(UTILS_CMI) $(PARSING_CMI) $(TYPING_CMI) $(LAMBDA_CMI) $(COMP_CMI)
+COMMON_CMI = $(UTILS_CMI) $(PARSING_CMI) $(TYPING_CMI) $(LAMBDA_CMI) $(COMP_CMI)
 
-COMMON=$(UTILS) $(PARSING) $(TYPING) $(LAMBDA) $(COMP)
+COMMON = $(UTILS) $(PARSING) $(TYPING) $(LAMBDA) $(COMP)
 
-BYTECOMP=bytecomp/instruct.cmo bytecomp/bytegen.cmo \
-  bytecomp/printinstr.cmo bytecomp/emitcode.cmo \
-  bytecomp/bytelink.cmo bytecomp/bytelibrarian.cmo bytecomp/bytepackager.cmo \
-  driver/errors.cmo driver/compile.cmo
-BYTECOMP_CMI=
+BYTECOMP = \
+  bytecomp/instruct.cmo \
+  bytecomp/bytegen.cmo \
+  bytecomp/printinstr.cmo \
+  bytecomp/emitcode.cmo \
+  bytecomp/bytelink.cmo \
+  bytecomp/bytelibrarian.cmo \
+  bytecomp/bytepackager.cmo \
+  driver/errors.cmo \
+  driver/compile.cmo \
+  driver/maindriver.cmo
+BYTECOMP_CMI =
 
-ARCH_SPECIFIC =\
-  asmcomp/arch.ml asmcomp/proc.ml asmcomp/CSE.ml asmcomp/selection.ml \
-  asmcomp/scheduling.ml asmcomp/reload.ml
-ARCH_SPECIFIC_CMI=
-
-INTEL_ASM=\
+INTEL_ASM = \
   asmcomp/x86_proc.cmo \
   asmcomp/x86_dsl.cmo \
   asmcomp/x86_gas.cmo \
   asmcomp/x86_masm.cmo
-INTEL_ASM_CMI=\
+INTEL_ASM_CMI = \
   asmcomp/x86_ast.cmi
 
-ARCH_SPECIFIC_ASMCOMP=
+ARCH_SPECIFIC_ASMCOMP =
+ARCH_SPECIFIC_ASMCOMP_CMI =
 ifeq ($(ARCH),i386)
-ARCH_SPECIFIC_ASMCOMP=$(INTEL_ASM)
-ARCH_SPECIFIC_ASMCOMP_CMI=$(INTEL_ASM_CMI)
+ARCH_SPECIFIC_ASMCOMP = $(INTEL_ASM)
+ARCH_SPECIFIC_ASMCOMP_CMI = $(INTEL_ASM_CMI)
 endif
 ifeq ($(ARCH),amd64)
-ARCH_SPECIFIC_ASMCOMP=$(INTEL_ASM)
-ARCH_SPECIFIC_ASMCOMP_CMI=$(INTEL_ASM_CMI)
+ARCH_SPECIFIC_ASMCOMP = $(INTEL_ASM)
+ARCH_SPECIFIC_ASMCOMP_CMI = $(INTEL_ASM_CMI)
 endif
 
-ASMCOMP=\
+ASMCOMP = \
   $(ARCH_SPECIFIC_ASMCOMP) \
   asmcomp/arch.cmo \
-  asmcomp/cmm.cmo asmcomp/printcmm.cmo \
-  asmcomp/reg.cmo asmcomp/debug/reg_with_debug_info.cmo \
-  asmcomp/debug/reg_availability_set.cmo \
-  asmcomp/mach.cmo asmcomp/proc.cmo \
+  asmcomp/cmm.cmo \
+  asmcomp/printcmm.cmo \
+  asmcomp/reg.cmo \
+  asmcomp/mach.cmo \
+  asmcomp/proc.cmo \
   asmcomp/afl_instrument.cmo \
   asmcomp/strmatch.cmo \
   asmcomp/cmmgen_state.cmo \
   asmcomp/cmm_helpers.cmo \
   asmcomp/cmmgen.cmo \
+  asmcomp/cmm_invariants.cmo \
   asmcomp/interval.cmo \
-  asmcomp/printmach.cmo asmcomp/selectgen.cmo \
-  asmcomp/spacetime_profiling.cmo asmcomp/selection.cmo \
+  asmcomp/printmach.cmo \
+  asmcomp/dataflow.cmo \
+  asmcomp/polling.cmo \
+  asmcomp/selectgen.cmo \
+  asmcomp/selection.cmo \
   asmcomp/comballoc.cmo \
-  asmcomp/CSEgen.cmo asmcomp/CSE.cmo \
+  asmcomp/CSEgen.cmo \
+  asmcomp/CSE.cmo \
   asmcomp/liveness.cmo \
-  asmcomp/spill.cmo asmcomp/split.cmo \
-  asmcomp/interf.cmo asmcomp/coloring.cmo \
+  asmcomp/spill.cmo \
+  asmcomp/split.cmo \
+  asmcomp/interf.cmo \
+  asmcomp/coloring.cmo \
   asmcomp/linscan.cmo \
-  asmcomp/reloadgen.cmo asmcomp/reload.cmo \
+  asmcomp/reloadgen.cmo \
+  asmcomp/reload.cmo \
   asmcomp/deadcode.cmo \
-  asmcomp/linear.cmo asmcomp/printlinear.cmo asmcomp/linearize.cmo \
-  asmcomp/debug/available_regs.cmo \
-  asmcomp/debug/compute_ranges_intf.cmo \
-  asmcomp/debug/compute_ranges.cmo \
-  asmcomp/schedgen.cmo asmcomp/scheduling.cmo \
+  asmcomp/linear.cmo \
+  asmcomp/printlinear.cmo \
+  asmcomp/linearize.cmo \
+  file_formats/linear_format.cmo \
+  asmcomp/schedgen.cmo \
+  asmcomp/scheduling.cmo \
   asmcomp/branch_relaxation_intf.cmo \
   asmcomp/branch_relaxation.cmo \
-  asmcomp/emitaux.cmo asmcomp/emit.cmo asmcomp/asmgen.cmo \
-  asmcomp/asmlink.cmo asmcomp/asmlibrarian.cmo asmcomp/asmpackager.cmo \
-  driver/opterrors.cmo driver/optcompile.cmo
-ASMCOMP_CMI=$(ARCH_SPECIFIC_ASMCOMP_CMI)
+  asmcomp/emitaux.cmo \
+  asmcomp/emit.cmo \
+  asmcomp/asmgen.cmo \
+  asmcomp/asmlink.cmo \
+  asmcomp/asmlibrarian.cmo \
+  asmcomp/asmpackager.cmo \
+  driver/opterrors.cmo \
+  driver/optcompile.cmo \
+  driver/optmaindriver.cmo
+ASMCOMP_CMI = $(ARCH_SPECIFIC_ASMCOMP_CMI)
 
 # Files under middle_end/ are not to reference files under asmcomp/.
 # This ensures that the middle end can be linked (e.g. for objinfo) even when
 # the native code compiler is not present for some particular target.
 
-MIDDLE_END_CLOSURE=\
+MIDDLE_END_CLOSURE = \
   middle_end/closure/closure.cmo \
   middle_end/closure/closure_middle_end.cmo
-MIDDLE_END_CLOSURE_CMI=
+MIDDLE_END_CLOSURE_CMI =
 
 # Owing to dependencies through [Compilenv], which would be
 # difficult to remove, some of the lower parts of Flambda (anything that is
 # saved in a .cmx file) have to be included in the [MIDDLE_END] stanza, below.
-MIDDLE_END_FLAMBDA=\
+MIDDLE_END_FLAMBDA = \
   middle_end/flambda/import_approx.cmo \
   middle_end/flambda/lift_code.cmo \
   middle_end/flambda/closure_conversion_aux.cmo \
@@ -211,11 +295,11 @@ MIDDLE_END_FLAMBDA=\
   middle_end/flambda/un_anf.cmo \
   middle_end/flambda/flambda_to_clambda.cmo \
   middle_end/flambda/flambda_middle_end.cmo
-MIDDLE_END_FLAMBDA_CMI=\
+MIDDLE_END_FLAMBDA_CMI = \
   middle_end/flambda/inlining_decision_intf.cmi \
   middle_end/flambda/simplify_boxed_integer_ops_intf.cmi
 
-MIDDLE_END=\
+MIDDLE_END = \
   middle_end/internal_variable_names.cmo \
   middle_end/linkage_name.cmo \
   middle_end/compilation_unit.cmo \
@@ -255,25 +339,68 @@ MIDDLE_END=\
   middle_end/compilenv.cmo \
   $(MIDDLE_END_CLOSURE) \
   $(MIDDLE_END_FLAMBDA)
-MIDDLE_END_CMI=\
+MIDDLE_END_CMI = \
   middle_end/backend_intf.cmi \
   $(MIDDLE_END_CLOSURE_CMI) \
   $(MIDDLE_END_FLAMBDA_CMI)
 
-OPTCOMP=$(MIDDLE_END) $(ASMCOMP)
-OPTCOMP_CMI=$(MIDDLE_END_CMI) $(ASMCOMP_CMI)
+OPTCOMP = $(MIDDLE_END) $(ASMCOMP)
+OPTCOMP_CMI = $(MIDDLE_END_CMI) $(ASMCOMP_CMI)
 
-TOPLEVEL=toplevel/genprintval.cmo toplevel/toploop.cmo \
-  toplevel/trace.cmo toplevel/topdirs.cmo toplevel/topmain.cmo
-TOPLEVEL_CMI=
+TOPLEVEL = \
+  toplevel/genprintval.cmo \
+  toplevel/topcommon.cmo \
+  toplevel/byte/topeval.cmo \
+  toplevel/byte/trace.cmo \
+  toplevel/toploop.cmo \
+  toplevel/topdirs.cmo \
+  toplevel/byte/topmain.cmo
+TOPLEVEL_CMI = \
+  toplevel/topcommon.cmi \
+  toplevel/byte/topeval.cmi \
+  toplevel/byte/trace.cmi \
+  toplevel/toploop.cmi \
+  toplevel/topdirs.cmi \
+  toplevel/byte/topmain.cmi
 
-OPTTOPLEVEL=toplevel/genprintval.cmo toplevel/opttoploop.cmo \
-  toplevel/opttopdirs.cmo toplevel/opttopmain.cmo
-OPTTOPLEVEL_CMI=
+OPTTOPLEVEL = \
+  toplevel/genprintval.cmo \
+  toplevel/topcommon.cmo \
+  toplevel/native/topeval.cmo \
+  toplevel/native/trace.cmo \
+  toplevel/toploop.cmo \
+  toplevel/topdirs.cmo \
+  toplevel/native/topmain.cmo
+OPTTOPLEVEL_CMI = \
+  toplevel/topcommon.cmi \
+  toplevel/native/topeval.cmi \
+  toplevel/native/trace.cmi \
+  toplevel/toploop.cmi \
+  toplevel/topdirs.cmi \
+  toplevel/native/topmain.cmi
 
+TOPLEVEL_SHARED_MLIS = topeval.mli trace.mli topmain.mli
+TOPLEVEL_SHARED_CMIS = $(TOPLEVEL_SHARED_MLIS:%.mli=%.cmi)
+TOPLEVEL_SHARED_ARTEFACTS = $(TOPLEVEL_SHARED_MLIS) $(TOPLEVEL_SHARED_CMIS)
 
-$(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(OPTCOMP:.cmo=.cmx): ocamlopt
-$(OPTTOPLEVEL:.cmo=.cmx): ocamlopt
+$(addprefix toplevel/byte/, $(TOPLEVEL_SHARED_CMIS)):\
+toplevel/byte/%.cmi: toplevel/%.cmi
+	cp $< toplevel/$*.mli $(@D)
+
+$(addprefix toplevel/native/, $(TOPLEVEL_SHARED_CMIS)):\
+toplevel/native/%.cmi: toplevel/%.cmi
+	cp $< toplevel/$*.mli $(@D)
+
+beforedepend::
+	cd toplevel ; cp $(TOPLEVEL_SHARED_MLIS) byte/
+	cd toplevel ; cp $(TOPLEVEL_SHARED_MLIS) native/
+
+partialclean::
+	cd toplevel/byte ; rm -f $(TOPLEVEL_SHARED_ARTEFACTS)
+	cd toplevel/native ; rm -f $(TOPLEVEL_SHARED_ARTEFACTS)
+
+$(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(OPTCOMP:.cmo=.cmx): ocamlopt$(EXE)
+$(OPTTOPLEVEL:.cmo=.cmx): ocamlopt$(EXE)
 
 
 compilerlibs/ocamlcommon.cma: $(COMMON_CMI) $(COMMON)
@@ -284,7 +411,8 @@ partialclean::
 compilerlibs/ocamlcommon.cmxa: $(COMMON_CMI) $(COMMON:.cmo=.cmx)
 	$(CAMLOPT) -a -linkall -o $@ $(COMMON:.cmo=.cmx)
 partialclean::
-	rm -f compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlcommon.$(A)
+	rm -f compilerlibs/ocamlcommon.cmxa \
+	      compilerlibs/ocamlcommon.a compilerlibs/ocamlcommon.lib
 
 
 compilerlibs/ocamlbytecomp.cma: $(BYTECOMP_CMI) $(BYTECOMP)
@@ -295,7 +423,8 @@ partialclean::
 compilerlibs/ocamlbytecomp.cmxa: $(BYTECOMP_CMI) $(BYTECOMP:.cmo=.cmx)
 	$(CAMLOPT) -a $(OCAML_NATDYNLINKOPTS) -o $@ $(BYTECOMP:.cmo=.cmx)
 partialclean::
-	rm -f compilerlibs/ocamlbytecomp.cmxa compilerlibs/ocamlbytecomp.$(A)
+	rm -f compilerlibs/ocamlbytecomp.cmxa \
+	      compilerlibs/ocamlbytecomp.a compilerlibs/ocamlbytecomp.lib
 
 
 compilerlibs/ocamlmiddleend.cma: $(MIDDLE_END_CMI) $(MIDDLE_END)
@@ -305,7 +434,8 @@ compilerlibs/ocamlmiddleend.cmxa: $(MIDDLE_END_CMI) $(MIDDLE_END:%.cmo=%.cmx)
 partialclean::
 	rm -f compilerlibs/ocamlmiddleend.cma \
 	      compilerlibs/ocamlmiddleend.cmxa \
-	      compilerlibs/ocamlmiddleend.$(A)
+	      compilerlibs/ocamlmiddleend.a \
+	      compilerlibs/ocamlmiddleend.lib
 
 
 compilerlibs/ocamloptcomp.cma: $(OPTCOMP_CMI) $(OPTCOMP)
@@ -316,16 +446,17 @@ partialclean::
 compilerlibs/ocamloptcomp.cmxa: $(OPTCOMP_CMI) $(OPTCOMP:.cmo=.cmx)
 	$(CAMLOPT) -a -o $@ $(OPTCOMP:.cmo=.cmx)
 partialclean::
-	rm -f compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamloptcomp.$(A)
+	rm -f compilerlibs/ocamloptcomp.cmxa \
+	      compilerlibs/ocamloptcomp.a compilerlibs/ocamloptcomp.lib
 
 
 compilerlibs/ocamltoplevel.cma: $(TOPLEVEL_CMI) $(TOPLEVEL)
-	$(CAMLC) -a -o $@ $(TOPLEVEL)
+	$(CAMLC) -a -o $@ -I toplevel/byte $(TOPLEVEL)
 partialclean::
 	rm -f compilerlibs/ocamltoplevel.cma
 
-compilerlibs/ocamlopttoplevel.cmxa: $(OPTTOPLEVEL_CMI) $(OPTTOPLEVEL:.cmo=.cmx)
-	$(CAMLOPT) -a -o $@ $(OPTTOPLEVEL:.cmo=.cmx)
+compilerlibs/ocamltoplevel.cmxa: $(OPTTOPLEVEL_CMI) $(OPTTOPLEVEL:.cmo=.cmx)
+	$(CAMLOPT) -a -o $@ -I toplevel/native $(OPTTOPLEVEL:.cmo=.cmx)
 partialclean::
-	rm -f compilerlibs/ocamlopttoplevel.cmxa \
-	  compilerlibs/ocamlopttoplevel.$(A)
+	rm -f compilerlibs/ocamltoplevel.cmxa \
+	  compilerlibs/ocamltoplevel.a compilerlibs/ocamltoplevel.lib

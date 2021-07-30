@@ -1,33 +1,23 @@
 |=====
-| Branch `trunk` | Branch `4.10` | Branch `4.09` | Branch  `4.08`  | Branch  `4.07`  | Branch `4.06` | Branch `4.05`
+| Branch `trunk` | Branch `4.12` | Branch `4.11` | Branch `4.10`
 
-| image:https://travis-ci.org/ocaml/ocaml.svg?branch=trunk["TravisCI Build Status (trunk branch)",
-     link="https://travis-ci.org/ocaml/ocaml"]
+| image:https://github.com/ocaml/ocaml/workflows/Build/badge.svg?branch=trunk["Github CI Build Status (trunk branch)",
+     link="https://github.com/ocaml/ocaml/actions?query=workflow%3ABuild"]
+  image:https://github.com/ocaml/ocaml/workflows/Hygiene/badge.svg?branch=trunk["Github CI Hygiene Status (trunk branch)",
+     link="https://github.com/ocaml/ocaml/actions?query=workflow%3AHygiene"]
   image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=trunk&svg=true["AppVeyor Build Status (trunk branch)",
+     link="https://ci.appveyor.com/project/avsm/ocaml"]
+| image:https://github.com/ocaml/ocaml/workflows/main/badge.svg?branch=4.12["Github CI Build Status (4.12 branch)",
+     link="https://github.com/ocaml/ocaml/actions?query=workflow%3Amain"]
+  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.12&svg=true["AppVeyor Build Status (4.12 branch)",
+     link="https://ci.appveyor.com/project/avsm/ocaml"]
+| image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.11["TravisCI Build Status (4.11 branch)",
+     link="https://travis-ci.org/ocaml/ocaml"]
+  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.11&svg=true["AppVeyor Build Status (4.11 branch)",
      link="https://ci.appveyor.com/project/avsm/ocaml"]
 | image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.10["TravisCI Build Status (4.10 branch)",
      link="https://travis-ci.org/ocaml/ocaml"]
   image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.10&svg=true["AppVeyor Build Status (4.10 branch)",
-     link="https://ci.appveyor.com/project/avsm/ocaml"]
-| image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.09["TravisCI Build Status (4.09 branch)",
-     link="https://travis-ci.org/ocaml/ocaml"]
-  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.09&svg=true["AppVeyor Build Status (4.09 branch)",
-     link="https://ci.appveyor.com/project/avsm/ocaml"]
-| image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.08["TravisCI Build Status (4.08 branch)",
-     link="https://travis-ci.org/ocaml/ocaml"]
-  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.08&svg=true["AppVeyor Build Status (4.08 branch)",
-     link="https://ci.appveyor.com/project/avsm/ocaml"]
-| image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.07["TravisCI Build Status (4.07 branch)",
-     link="https://travis-ci.org/ocaml/ocaml"]
-  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.07&svg=true["AppVeyor Build Status (4.07 branch)",
-     link="https://ci.appveyor.com/project/avsm/ocaml"]
-| image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.06["TravisCI Build Status (4.06 branch)",
-     link="https://travis-ci.org/ocaml/ocaml"]
-  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.06&svg=true["AppVeyor Build Status (4.06 branch)",
-     link="https://ci.appveyor.com/project/avsm/ocaml"]
-| image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.05["TravisCI Build Status (4.05 branch)",
-     link="https://travis-ci.org/ocaml/ocaml"]
-  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.05&svg=true["AppVeyor Build Status (4.05 branch)",
      link="https://ci.appveyor.com/project/avsm/ocaml"]
 |=====
 
@@ -35,17 +25,17 @@
 
 == Overview
 
-OCaml is an implementation of the ML language, based on the Caml Light
-dialect extended with a complete class-based object system and a powerful
-module system in the style of Standard ML.
+OCaml is a functional, statically-typed programming language from the
+ML family, offering a powerful module system extending that of
+Standard ML and a feature-rich, class-based object system.
 
 OCaml comprises two compilers. One generates bytecode which is then
-interpreted by a C program. This compiler runs quickly, generates compact
-code with moderate memory requirements, and is portable to essentially any
-32 or 64 bit Unix platform. Performance of generated programs is quite good
-for a bytecoded implementation.  This compiler can be used either as a
-standalone, batch-oriented compiler that produces standalone programs, or as
-an interactive, toplevel-based system.
+interpreted by a C program. This compiler runs quickly, generates
+compact code with moderate memory requirements, and is portable to
+many 32 or 64 bit platforms. Performance of generated programs is
+quite good for a bytecoded implementation.  This compiler can be used
+either as a standalone, batch-oriented compiler that produces
+standalone programs, or as an interactive REPL system.
 
 The other compiler generates high-performance native code for a number of
 processors. Compilation takes longer and generates bigger code, but the
@@ -58,10 +48,11 @@ compiler currently runs on the following platforms:
 
 | x86 64 bits    | Linux, macOS, Windows, FreeBSD  |  NetBSD, OpenBSD
 | x86 32 bits    | Linux, Windows                  |  FreeBSD, NetBSD, OpenBSD
-| ARM 64 bits    | Linux                           |  FreeBSD
+| ARM 64 bits    | Linux, macOS                    |  FreeBSD
 | ARM 32 bits    | Linux                           |  FreeBSD, NetBSD, OpenBSD
 | Power 64 bits  | Linux                           |
-| Power 32 bits  |                                 |  Linux
+| Power 32 bits  | Linux                           |
+| RISC-V 64 bits | Linux                           |
 | IBM Z (s390x)  | Linux                           |
 |====
 
@@ -71,16 +62,15 @@ the compiler may work under other operating systems with little work.
 
 == Copyright
 
-All files marked "Copyright INRIA" in this distribution are copyright 1996,
-1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008,
-2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
-Institut National de Recherche en Informatique et en Automatique (INRIA)
-and distributed under the conditions stated in file LICENSE.
+All files marked "Copyright INRIA" in this distribution are
+Copyright (C) 1996-2021 Institut National de Recherche en Informatique et
+en Automatique (INRIA) and distributed under the conditions stated in
+file LICENSE.
 
 == Installation
 
 See the file link:INSTALL.adoc[] for installation instructions on
-machines running Unix, Linux, OS X and Cygwin.  For native Microsoft
+machines running Unix, Linux, macOS and Cygwin.  For native Microsoft
 Windows, see link:README.win32.adoc[].
 
 == Documentation
@@ -88,15 +78,19 @@ Windows, see link:README.win32.adoc[].
 The OCaml manual is distributed in HTML, PDF, and Emacs
 Info files.  It is available at
 
-http://caml.inria.fr/pub/docs/manual-ocaml/
+https://ocaml.org/releases/latest/manual.html
 
 == Availability
 
 The complete OCaml distribution can be accessed at
 
-http://ocaml.org/docs/install.html
+https://ocaml.org/docs/install.html
 
 == Keeping in Touch with the Caml Community
+
+There is an active and friendly discussion forum at
+
+https://discuss.ocaml.org/
 
 The OCaml mailing list is the longest-running forum for OCaml users.
 You can email it at
@@ -107,15 +101,15 @@ You can subscribe and access list archives via the Web interface at
 
 https://sympa.inria.fr/sympa/subscribe/caml-list
 
-You can also access a newer discussion forum at
+An alternative archive of the mailing list is also available at
 
-https://discuss.ocaml.org/
+https://inbox.ocaml.org/
 
 There also exist other mailing lists, chat channels, and various other forums
 around the internet for getting in touch with the OCaml and ML family language
 community. These can be accessed at
 
-http://ocaml.org/community/
+https://ocaml.org/community/
 
 In particular, the IRC channel `#ocaml` on https://freenode.net/[Freenode] has a
 long history and welcomes questions.
@@ -131,3 +125,17 @@ using (machine type, etc).
 
 For information on contributing to OCaml, see link:HACKING.adoc[] and
 link:CONTRIBUTING.md[].
+
+== Separately maintained components
+
+Some libraries and tools which used to be part of the OCaml distribution are
+now maintained separately. Please use the issue trackers at their respective
+new homes:
+
+- https://github.com/ocaml/graphics/issues[The Graphics library] (removed in OCaml 4.09)
+- https://github.com/ocaml/num/issues[The Num library] (removed in OCaml 4.06)
+- https://github.com/ocaml/ocamlbuild/issues[The OCamlbuild tool] (removed in OCaml 4.03)
+- https://github.com/camlp4/camlp4/issues[The camlp4 tool] (removed in OCaml 4.02)
+- https://github.com/garrigue/labltk/issues[The LablTk library] (removed in OCaml 4.02)
+- https://github.com/ocaml/dbm/issues[The CamlDBM library] (removed in OCaml 4.00)
+- https://github.com/xavierleroy/ocamltopwin/issues[The OCamlWinTop Windows toplevel] (removed in OCaml 4.00)

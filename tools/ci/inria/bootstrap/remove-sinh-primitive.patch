@@ -1,0 +1,90 @@
+The patch below removes the 'sinh' primitive from the OCaml runtime
+and standard library.
+
+It is used on Inria's CI to make sure the bootstrap procedure works.
+
+diff --git a/runtime/floats.c b/runtime/floats.c
+index 7561bfba8..db246978c 100644
+--- a/runtime/floats.c
++++ b/runtime/floats.c
+@@ -858,11 +858,6 @@ CAMLprim value caml_sin_float(value f)
+   return caml_copy_double(sin(Double_val(f)));
+ }
+ 
+-CAMLprim value caml_sinh_float(value f)
+-{
+-  return caml_copy_double(sinh(Double_val(f)));
+-}
+-
+ CAMLprim value caml_cos_float(value f)
+ {
+   return caml_copy_double(cos(Double_val(f)));
+diff --git a/stdlib/float.ml b/stdlib/float.ml
+index ab5cd5c07..e09cbe215 100644
+--- a/stdlib/float.ml
++++ b/stdlib/float.ml
+@@ -85,8 +85,6 @@ external hypot : float -> float -> float
+                = "caml_hypot_float" "caml_hypot" [@@unboxed] [@@noalloc]
+ external cosh : float -> float = "caml_cosh_float" "cosh"
+   [@@unboxed] [@@noalloc]
+-external sinh : float -> float = "caml_sinh_float" "sinh"
+-  [@@unboxed] [@@noalloc]
+ external tanh : float -> float = "caml_tanh_float" "tanh"
+   [@@unboxed] [@@noalloc]
+ external acosh : float -> float = "caml_acosh_float" "caml_acosh"
+diff --git a/stdlib/float.mli b/stdlib/float.mli
+index ba84d9b0e..8132f93f7 100644
+--- a/stdlib/float.mli
++++ b/stdlib/float.mli
+@@ -285,10 +285,6 @@ external cosh : float -> float = "caml_cosh_float" "cosh"
+ [@@unboxed] [@@noalloc]
+ (** Hyperbolic cosine.  Argument is in radians. *)
+ 
+-external sinh : float -> float = "caml_sinh_float" "sinh"
+-[@@unboxed] [@@noalloc]
+-(** Hyperbolic sine.  Argument is in radians. *)
+-
+ external tanh : float -> float = "caml_tanh_float" "tanh"
+ [@@unboxed] [@@noalloc]
+ (** Hyperbolic tangent.  Argument is in radians. *)
+diff --git a/stdlib/pervasives.ml b/stdlib/pervasives.ml
+index e9b2e5cde..3a39cf754 100644
+--- a/stdlib/pervasives.ml
++++ b/stdlib/pervasives.ml
+@@ -99,8 +99,6 @@ external hypot : float -> float -> float = "caml_hypot_float" "caml_hypot"
+   [@@unboxed] [@@noalloc]
+ external cosh : float -> float = "caml_cosh_float" "cosh"
+   [@@unboxed] [@@noalloc]
+-external sinh : float -> float = "caml_sinh_float" "sinh"
+-  [@@unboxed] [@@noalloc]
+ external tanh : float -> float = "caml_tanh_float" "tanh"
+   [@@unboxed] [@@noalloc]
+ external ceil : float -> float = "caml_ceil_float" "ceil"
+diff --git a/stdlib/stdlib.ml b/stdlib/stdlib.ml
+index aac8fcc17..663ce44f2 100644
+--- a/stdlib/stdlib.ml
++++ b/stdlib/stdlib.ml
+@@ -146,8 +146,6 @@ external log10 : float -> float = "caml_log10_float" "log10"
+ external log1p : float -> float = "caml_log1p_float" "caml_log1p"
+   [@@unboxed] [@@noalloc]
+ external sin : float -> float = "caml_sin_float" "sin" [@@unboxed] [@@noalloc]
+-external sinh : float -> float = "caml_sinh_float" "sinh"
+-  [@@unboxed] [@@noalloc]
+ external asinh : float -> float = "caml_asinh_float" "caml_asinh"
+   [@@unboxed] [@@noalloc]
+ external sqrt : float -> float = "caml_sqrt_float" "sqrt"
+diff --git a/stdlib/stdlib.mli b/stdlib/stdlib.mli
+index e2e898266..2e18f16d3 100644
+--- a/stdlib/stdlib.mli
++++ b/stdlib/stdlib.mli
+@@ -556,10 +556,6 @@ external cosh : float -> float = "caml_cosh_float" "cosh"
+   [@@unboxed] [@@noalloc]
+ (** Hyperbolic cosine.  Argument is in radians. *)
+ 
+-external sinh : float -> float = "caml_sinh_float" "sinh"
+-  [@@unboxed] [@@noalloc]
+-(** Hyperbolic sine.  Argument is in radians. *)
+-
+ external tanh : float -> float = "caml_tanh_float" "tanh"
+   [@@unboxed] [@@noalloc]
+ (** Hyperbolic tangent.  Argument is in radians. *)

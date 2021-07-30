@@ -171,7 +171,7 @@ end = struct
     | export_id -> export_id
 
   let new_unit_descr t =
-    new_descr t (Value_constptr 0)
+    new_descr t (Value_int 0)
 
   let add_approx t var approx =
     if Variable.Map.mem var t.var then begin
@@ -199,12 +199,8 @@ end
 
 let descr_of_constant (c : Flambda.const) : Export_info.descr =
   match c with
-  (* [Const_pointer] is an immediate value of a type whose values may be
-     boxed (typically a variant type with both constant and non-constant
-     constructors). *)
   | Int i -> Value_int i
   | Char c -> Value_char c
-  | Const_pointer i -> Value_constptr i
 
 let descr_of_allocated_constant (c : Allocated_const.t) : Export_info.descr =
   match c with
@@ -602,7 +598,6 @@ let build_transient ~(backend : (module Backend_intf.S))
           | Value_mutable_block _
           | Value_int _
           | Value_char _
-          | Value_constptr _
           | Value_float _
           | Value_float_array _
           | Value_string _
@@ -644,7 +639,6 @@ let build_transient ~(backend : (module Backend_intf.S))
           | Value_mutable_block _
           | Value_int _
           | Value_char _
-          | Value_constptr _
           | Value_float _
           | Value_float_array _
           | Value_string _
@@ -688,9 +682,8 @@ let build_transient ~(backend : (module Backend_intf.S))
         ~root_symbol:(Compilenv.current_unit_symbol ())
     in
     let sets_of_closures =
-      Set_of_closures_id.Map.filter_map
-        function_declarations_map
-        ~f:(fun key (fun_decls : Simple_value_approx.function_declarations) ->
+      function_declarations_map |> Set_of_closures_id.Map.filter_map
+        (fun key (fun_decls : Simple_value_approx.function_declarations) ->
           if Set_of_closures_id.Set.mem key relevant_set_of_closures then
             Some fun_decls
           else if begin

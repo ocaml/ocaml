@@ -13,27 +13,27 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Ephemerons and weak hash table *)
+(** Ephemerons and weak hash tables.
 
-(** Ephemerons and weak hash table are useful when one wants to cache
+    Ephemerons and weak hash tables are useful when one wants to cache
     or memorize the computation of a function, as long as the
     arguments and the function are used, without creating memory leaks
     by continuously keeping old computation results that are not
     useful anymore because one argument or the function is freed. An
     implementation using {!Hashtbl.t} is not suitable because all
-    associations would keep in memory the arguments and the result.
+    associations would keep the arguments and the result in memory.
 
     Ephemerons can also be used for "adding" a field to an arbitrary
-    boxed ocaml value: you can attach an information to a value
+    boxed OCaml value: you can attach some information to a value
     created by an external library without memory leaks.
 
     Ephemerons hold some keys and one or no data. They are all boxed
-    ocaml values. The keys of an ephemeron have the same behavior
-    than weak pointers according to the garbage collector. In fact
-    ocaml weak pointers are implemented as ephemerons without data.
+    OCaml values. The keys of an ephemeron have the same behavior
+    as weak pointers according to the garbage collector. In fact
+    OCaml weak pointers are implemented as ephemerons without data.
 
     The keys and data of an ephemeron are said to be full if they
-    point to a value, empty if the value have never been set, have
+    point to a value, or empty if the value has never been set, has
     been unset, or was erased by the GC. In the function that accesses
     the keys or data these two states are represented by the [option]
     type.
@@ -60,7 +60,7 @@
     {!Marshal} module.
 
     Ephemerons are defined in a language agnostic way in this paper:
-    B. Hayes, Ephemerons: a New Finalization Mechanism, OOPSLA'9
+    B. Hayes, Ephemerons: A New Finalization Mechanism, OOPSLA'97
 
     @since 4.03.0
 *)
@@ -188,6 +188,7 @@ module K1 : sig
       The seed is similar to the one of {!Hashtbl.MakeSeeded}. *)
 
 end
+(** Ephemerons with one key. *)
 
 module K2 : sig
   type ('k1,'k2,'d) t (** an ephemeron with two keys *)
@@ -266,6 +267,7 @@ module K2 : sig
       The seed is similar to the one of {!Hashtbl.MakeSeeded}. *)
 
 end
+(** Emphemerons with two keys. *)
 
 module Kn : sig
   type ('k,'d) t (** an ephemeron with an arbitrary number of keys
@@ -322,6 +324,7 @@ module Kn : sig
       The seed is similar to the one of {!Hashtbl.MakeSeeded}. *)
 
 end
+(** Emphemerons with arbitrary number of keys of the same type. *)
 
 module GenHashTable: sig
   (** Define a hash table on generic containers which have a notion of
@@ -329,7 +332,8 @@ module GenHashTable: sig
       automatically remove it. *)
 
   type equal =
-  | ETrue | EFalse
+  | ETrue
+  | EFalse
   | EDead (** the container is dead *)
 
   module MakeSeeded(H:
@@ -369,3 +373,4 @@ module GenHashTable: sig
       for keeping the information given *)
 
 end
+(** Hash tables on generic containers with notion of death and aliveness. *)

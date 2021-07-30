@@ -15,9 +15,10 @@
 
 open Typedtree
 open Lambda
+open Debuginfo.Scoped_location
 
 val transl_class :
-  Ident.t list -> Ident.t ->
+  scopes:scopes -> Ident.t list -> Ident.t ->
   string list -> class_expr -> Asttypes.virtual_flag -> lambda;;
 
 type error = Tags of string * string

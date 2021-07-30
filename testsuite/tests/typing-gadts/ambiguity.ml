@@ -233,6 +233,10 @@ Error: Signature mismatch:
          val r : '_weak1 list ref
        is not included in
          val r : T.u list ref
+       The type '_weak1 list ref is not compatible with the type T.u list ref
+       Type '_weak1 is not compatible with type T.u = T.t
+       This instance of T.t is ambiguous:
+       it would escape the scope of its equation
 |}]
 
 module M = struct
@@ -264,4 +268,8 @@ Error: Signature mismatch:
          val r : '_weak2 list ref
        is not included in
          val r : T.t list ref
+       The type '_weak2 list ref is not compatible with the type T.t list ref
+       Type '_weak2 is not compatible with type T.t = T.u
+       This instance of T.u is ambiguous:
+       it would escape the scope of its equation
 |}]

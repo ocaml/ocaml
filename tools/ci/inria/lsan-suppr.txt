@@ -1,2 +1,0 @@
-# ocamlyacc doesn't clean memory on exit
-leak:ocamlyacc

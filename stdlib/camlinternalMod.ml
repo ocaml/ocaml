@@ -13,8 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-external make_forward : Obj.t -> Obj.t -> unit = "caml_obj_make_forward"
-
 type shape =
   | Function
   | Lazy
@@ -22,58 +20,71 @@ type shape =
   | Module of shape array
   | Value of Obj.t
 
-let overwrite o n =
-  assert (Obj.size o >= Obj.size n);
-  for i = 0 to Obj.size n - 1 do
-    Obj.set_field o i (Obj.field n i)
+let rec init_mod_field modu i loc shape =
+  let init =
+    match shape with
+    | Function ->
+       let rec fn (x : 'a) =
+         let fn' : 'a -> 'b = Obj.obj (Obj.field modu i) in
+         if fn == fn' then
+           raise (Undefined_recursive_module loc)
+         else
+           fn' x in
+       Obj.repr fn
+    | Lazy ->
+       let rec l =
+         lazy (
+           let l' = Obj.obj (Obj.field modu i) in
+           if l == l' then
+             raise (Undefined_recursive_module loc)
+           else
+             Lazy.force l') in
+       Obj.repr l
+    | Class ->
+       Obj.repr (CamlinternalOO.dummy_class loc)
+    | Module comps ->
+       Obj.repr (init_mod_block loc comps)
+    | Value v -> v
+  in
+  Obj.set_field modu i init
+
+and init_mod_block loc comps =
+  let length = Array.length comps in
+  let modu = Obj.new_block 0 length in
+  for i = 0 to length - 1 do
+    init_mod_field modu i loc comps.(i)
+  done;
+  modu
+
+let init_mod loc shape =
+  match shape with
+  | Module comps ->
+     Obj.repr (init_mod_block loc comps)
+  | _ -> failwith "CamlinternalMod.init_mod: not a module"
+
+let rec update_mod_field modu i shape n =
+  match shape with
+  | Function | Lazy ->
+     Obj.set_field modu i n
+  | Value _ ->
+     () (* the value is already there *)
+  | Class ->
+     assert (Obj.tag n = 0 && Obj.size n = 4);
+     let cl = Obj.field modu i in
+     for j = 0 to 3 do
+       Obj.set_field cl j (Obj.field n j)
+     done
+  | Module comps ->
+     update_mod_block comps (Obj.field modu i) n
+
+and update_mod_block comps o n =
+  assert (Obj.tag n = 0 && Obj.size n >= Array.length comps);
+  for i = 0 to Array.length comps - 1 do
+    update_mod_field o i comps.(i) (Obj.field n i)
   done
 
-let rec init_mod loc shape =
+let update_mod shape o n =
   match shape with
-  | Function ->
-      (* Two code pointer words (curried and full application), arity
-         and eight environment entries makes 11 words. *)
-      let closure = Obj.new_block Obj.closure_tag 11 in
-      let template =
-        Obj.repr (fun _ -> raise (Undefined_recursive_module loc))
-      in
-      overwrite closure template;
-      closure
-  | Lazy ->
-      Obj.repr (lazy (raise (Undefined_recursive_module loc)))
-  | Class ->
-      Obj.repr (CamlinternalOO.dummy_class loc)
   | Module comps ->
-      Obj.repr (Array.map (init_mod loc) comps)
-  | Value v ->
-      v
-
-let rec update_mod shape o n =
-  match shape with
-  | Function ->
-      (* The optimisation below is invalid on bytecode since
-         the RESTART instruction checks the length of closures.
-         See PR#4008 *)
-      if Sys.backend_type = Sys.Native
-      && Obj.tag n = Obj.closure_tag
-      && Obj.size n <= Obj.size o
-      then begin overwrite o n end
-      else overwrite o (Obj.repr (fun x -> (Obj.obj n : _ -> _) x))
-  | Lazy ->
-      if Obj.tag n = Obj.lazy_tag then
-        Obj.set_field o 0 (Obj.field n 0)
-      else if Obj.tag n = Obj.forward_tag then begin (* PR#4316 *)
-        make_forward o (Obj.field n 0)
-      end else begin
-        (* forwarding pointer was shortcut by GC *)
-        make_forward o n
-      end
-  | Class ->
-      assert (Obj.tag n = 0 && Obj.size n = 4);
-      overwrite o n
-  | Module comps ->
-      assert (Obj.tag n = 0 && Obj.size n >= Array.length comps);
-      for i = 0 to Array.length comps - 1 do
-        update_mod comps.(i) (Obj.field o i) (Obj.field n i)
-      done
-  | Value _ -> () (* the value is already there *)
+     update_mod_block comps o n
+  | _ -> failwith "CamlinternalMod.update_mod: not a module"

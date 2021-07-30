@@ -149,7 +149,7 @@ char * caml_instr_string (code_t pc)
     snprintf(buf, sizeof(buf), "%s %d, %d", nam, pc[0], pc[1]);
     break;
   case SWITCH:
-    snprintf(buf, sizeof(buf), "SWITCH sz%#lx=%ld::ntag%ld nint%ld",
+    snprintf(buf, sizeof(buf), "SWITCH sz%#lx=%ld::ntag%lu nint%lu",
             (long) pc[0], (long) pc[0], (unsigned long) pc[0] >> 16,
             (unsigned long) pc[0] & 0xffff);
     break;

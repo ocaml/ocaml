@@ -36,6 +36,9 @@ type spec =
                                   call the function with the symbol. *)
   | Rest of (string -> unit)   (* Stop interpreting keywords and call the
                                   function with each remaining argument *)
+  | Rest_all of (string list -> unit)
+                               (* Stop interpreting keywords and call the
+                                  function with all remaining arguments. *)
   | Expand of (string -> string array) (* If the remaining arguments to process
                                           are of the form
                                           [["-foo"; "arg"] @ rest] where "foo"
@@ -251,6 +254,14 @@ let parse_and_expand_argv_dynamic_aux allow_expand current argv speclist anonfun
               f !argv.(!current + 1);
               consume_arg ();
             done;
+        | Rest_all f ->
+            no_arg ();
+            let acc = ref [] in
+            while !current < Array.length !argv - 1 do
+              acc := !argv.(!current + 1) :: !acc;
+              consume_arg ();
+            done;
+            f (List.rev !acc)
         | Expand f ->
             if not allow_expand then
               raise (Invalid_argument "Arg.Expand is is only allowed with \
@@ -328,8 +339,8 @@ let second_word s =
 
 let max_arg_len cur (kwd, spec, doc) =
   match spec with
-  | Symbol _ -> max cur (String.length kwd)
-  | _ -> max cur (String.length kwd + second_word doc)
+  | Symbol _ -> Int.max cur (String.length kwd)
+  | _ -> Int.max cur (String.length kwd + second_word doc)
 
 
 let replace_leading_tab s =
@@ -344,7 +355,7 @@ let add_padding len ksd =
       ksd
   | (kwd, (Symbol _ as spec), msg) ->
       let cutcol = second_word msg in
-      let spaces = String.make ((max 0 (len - cutcol)) + 3) ' ' in
+      let spaces = String.make ((Int.max 0 (len - cutcol)) + 3) ' ' in
       (kwd, spec, "\n" ^ spaces ^ replace_leading_tab msg)
   | (kwd, spec, msg) ->
       let cutcol = second_word msg in
@@ -362,7 +373,7 @@ let add_padding len ksd =
 let align ?(limit=max_int) speclist =
   let completed = add_help speclist in
   let len = List.fold_left max_arg_len 0 completed in
-  let len = min len limit in
+  let len = Int.min len limit in
   List.map (add_padding len) completed
 
 let trim_cr s =

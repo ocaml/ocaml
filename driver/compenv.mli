@@ -13,6 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+exception Exit_with_status of int
+
 val module_of_filename : string -> string -> string
 
 val output_prefix : string -> string
@@ -35,6 +37,7 @@ val last_objfiles : string list ref
 val first_objfiles : string list ref
 
 val stop_early : bool ref
+val has_linker_inputs : bool ref
 
 type filename = string
 
@@ -69,10 +72,16 @@ val intf : string -> unit
 
 val process_deferred_actions :
   Format.formatter *
-  (source_file:string -> output_prefix:string -> unit) *
+  (start_from:Clflags.Compiler_pass.t ->
+   source_file:string -> output_prefix:string -> unit) *
   (* compile implementation *)
   (source_file:string -> output_prefix:string -> unit) *
   (* compile interface *)
   string * (* ocaml module extension *)
   string -> (* ocaml library extension *)
   unit
+(* [parse_arguments ?current argv anon_arg program] will parse the arguments,
+ using the arguments provided in [Clflags.arg_spec].
+*)
+val parse_arguments : ?current:(int ref)
+      -> string array ref -> Arg.anon_fun -> string -> unit

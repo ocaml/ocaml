@@ -530,7 +530,7 @@ type t = [ `A of X.t | `B of X.s | `C of X.u ]
 Line 1, characters 20-33:
 1 | [@@@ocaml.ppwarning "Pp warning!"]
                         ^^^^^^^^^^^^^
-Warning 22: Pp warning!
+Warning 22 [preprocessor]: Pp warning!
 |}]
 
 
@@ -541,11 +541,11 @@ let x = () [@ocaml.ppwarning "Pp warning 1!"]
 Line 2, characters 24-39:
 2 |     [@@ocaml.ppwarning  "Pp warning 2!"]
                             ^^^^^^^^^^^^^^^
-Warning 22: Pp warning 2!
+Warning 22 [preprocessor]: Pp warning 2!
 Line 1, characters 29-44:
 1 | let x = () [@ocaml.ppwarning "Pp warning 1!"]
                                  ^^^^^^^^^^^^^^^
-Warning 22: Pp warning 1!
+Warning 22 [preprocessor]: Pp warning 1!
 val x : unit = ()
 |}]
 
@@ -556,7 +556,7 @@ type t = unit
 Line 2, characters 22-35:
 2 |     [@ocaml.ppwarning "Pp warning!"]
                           ^^^^^^^^^^^^^
-Warning 22: Pp warning!
+Warning 22 [preprocessor]: Pp warning!
 type t = unit
 |}]
 
@@ -574,7 +574,7 @@ end
 Line 8, characters 22-36:
 8 |   [@@@ocaml.ppwarning "Pp warning2!"]
                           ^^^^^^^^^^^^^^
-Warning 22: Pp warning2!
+Warning 22 [preprocessor]: Pp warning2!
 module X : sig end
 |}]
 
@@ -586,7 +586,7 @@ let x =
 Line 3, characters 23-38:
 3 |     [@ocaml.ppwarning  "Pp warning 2!"]
                            ^^^^^^^^^^^^^^^
-Warning 22: Pp warning 2!
+Warning 22 [preprocessor]: Pp warning 2!
 val x : unit = ()
 |}]
 
@@ -599,11 +599,11 @@ type t =
 Line 4, characters 21-36:
 4 |   [@@ocaml.ppwarning "Pp warning 3!"]
                          ^^^^^^^^^^^^^^^
-Warning 22: Pp warning 3!
+Warning 22 [preprocessor]: Pp warning 3!
 Line 3, characters 21-36:
 3 |   [@ocaml.ppwarning  "Pp warning 2!"]
                          ^^^^^^^^^^^^^^^
-Warning 22: Pp warning 2!
+Warning 22 [preprocessor]: Pp warning 2!
 type t = unit
 |}]
 
@@ -613,11 +613,11 @@ let ([][@ocaml.ppwarning "XX"]) = []
 Line 1, characters 25-29:
 1 | let ([][@ocaml.ppwarning "XX"]) = []
                              ^^^^
-Warning 22: XX
+Warning 22 [preprocessor]: XX
 Line 1, characters 4-31:
 1 | let ([][@ocaml.ppwarning "XX"]) = []
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 _::_
 |}]

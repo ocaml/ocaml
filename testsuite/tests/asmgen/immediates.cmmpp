@@ -1,0 +1,26 @@
+#define T TEST
+
+(* T
+readonly_files = "mainimmed.c"
+arguments = "-I ${test_source_directory} mainimmed.c"
+* asmgen
+*)
+
+(* Regenerate with  cpp -P immediates.cmmpp > immediates.cmm *)
+
+#define F(N) \
+  (addraset r i (+ x N)) (assign i (+ i 1)) \
+  (addraset r i (- x N)) (assign i (+ i 1)) \
+  (addraset r i ( * x N)) (assign i (+ i 1)) \
+  (addraset r i (and x N)) (assign i (+ i 1)) \
+  (addraset r i (or x N)) (assign i (+ i 1)) \
+  (addraset r i (xor x N)) (assign i (+ i 1)) \
+  (addraset r i (< x N)) (assign i (+ i 1)) \
+  (checkbound i N)
+
+(function "testimm" ()
+  (let x (load int "X")
+  (let r "R"
+  (letmut i int 0
+#include "immediates.tbl"
+))))

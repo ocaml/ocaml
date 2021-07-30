@@ -1,0 +1,4 @@
+*.tex
+*.htex
+/extensions/*.tex
+/extensions/*.htex

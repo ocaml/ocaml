@@ -13,6 +13,11 @@ bbbb
 789
 ** create_process swap 1-2
 123
+** create_process >file 2>&1
+---- File tmpout.txt
+123
+456
+789
 ** open_process_in
 123
 456

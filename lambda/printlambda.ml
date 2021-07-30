@@ -29,7 +29,6 @@ let rec struct_const ppf = function
   | Const_base(Const_int32 n) -> fprintf ppf "%lil" n
   | Const_base(Const_int64 n) -> fprintf ppf "%LiL" n
   | Const_base(Const_nativeint n) -> fprintf ppf "%nin" n
-  | Const_pointer n -> fprintf ppf "%ia" n
   | Const_block(tag, []) ->
       fprintf ppf "[%i]" tag
   | Const_block(tag, sc1::scl) ->
@@ -148,12 +147,9 @@ let float_comparison ppf = function
   | CFnge -> fprintf ppf "!>=."
 
 let primitive ppf = function
-  | Pidentity -> fprintf ppf "id"
   | Pbytes_to_string -> fprintf ppf "bytes_to_string"
   | Pbytes_of_string -> fprintf ppf "bytes_of_string"
   | Pignore -> fprintf ppf "ignore"
-  | Prevapply -> fprintf ppf "revapply"
-  | Pdirapply -> fprintf ppf "dirapply"
   | Pgetglobal id -> fprintf ppf "global %a" Ident.print id
   | Psetglobal id -> fprintf ppf "setglobal %a" Ident.print id
   | Pmakeblock(tag, Immutable, shape) ->
@@ -346,12 +342,9 @@ let primitive ppf = function
   | Popaque -> fprintf ppf "opaque"
 
 let name_of_primitive = function
-  | Pidentity -> "Pidentity"
   | Pbytes_of_string -> "Pbytes_of_string"
   | Pbytes_to_string -> "Pbytes_to_string"
   | Pignore -> "Pignore"
-  | Prevapply -> "Prevapply"
-  | Pdirapply -> "Pdirapply"
   | Pgetglobal _ -> "Pgetglobal"
   | Psetglobal _ -> "Psetglobal"
   | Pmakeblock _ -> "Pmakeblock"
@@ -459,6 +452,7 @@ let function_attribute ppf { inline; specialise; local; is_a_functor; stub } =
   begin match inline with
   | Default_inline -> ()
   | Always_inline -> fprintf ppf "always_inline@ "
+  | Hint_inline -> fprintf ppf "hint_inline@ "
   | Never_inline -> fprintf ppf "never_inline@ "
   | Unroll i -> fprintf ppf "unroll(%i)@ " i
   end;
@@ -473,14 +467,18 @@ let function_attribute ppf { inline; specialise; local; is_a_functor; stub } =
   | Never_local -> fprintf ppf "never_local@ "
   end
 
-let apply_tailcall_attribute ppf tailcall =
-  if tailcall then
-    fprintf ppf " @@tailcall"
+let apply_tailcall_attribute ppf = function
+  | Default_tailcall -> ()
+  | Tailcall_expectation true ->
+    fprintf ppf " tailcall"
+  | Tailcall_expectation false ->
+    fprintf ppf " tailcall(false)"
 
 let apply_inlined_attribute ppf = function
   | Default_inline -> ()
   | Always_inline -> fprintf ppf " always_inline"
   | Never_inline -> fprintf ppf " never_inline"
+  | Hint_inline -> fprintf ppf " hint_inline"
   | Unroll i -> fprintf ppf " never_inline(%i)" i
 
 let apply_specialised_attribute ppf = function
@@ -491,13 +489,15 @@ let apply_specialised_attribute ppf = function
 let rec lam ppf = function
   | Lvar id ->
       Ident.print ppf id
+  | Lmutvar id ->
+      fprintf ppf "*%a" Ident.print id
   | Lconst cst ->
       struct_const ppf cst
   | Lapply ap ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
       fprintf ppf "@[<2>(apply@ %a%a%a%a%a)@]" lam ap.ap_func lams ap.ap_args
-        apply_tailcall_attribute ap.ap_should_be_tailcall
+        apply_tailcall_attribute ap.ap_tailcall
         apply_inlined_attribute ap.ap_inlined
         apply_specialised_attribute ap.ap_specialised
   | Lfunction{kind; params; return; body; attr} ->
@@ -518,18 +518,26 @@ let rec lam ppf = function
             fprintf ppf ")" in
       fprintf ppf "@[<2>(function%a@ %a%a%a)@]" pr_params params
         function_attribute attr return_kind return lam body
-  | Llet(str, k, id, arg, body) ->
-      let kind = function
-          Alias -> "a" | Strict -> "" | StrictOpt -> "o" | Variable -> "v"
+  | Llet(_, k, id, arg, body)
+  | Lmutlet(k, id, arg, body) as l ->
+      let let_kind = begin function
+        | Llet(str,_,_,_,_) ->
+           begin match str with
+             Alias -> "a" | Strict -> "" | StrictOpt -> "o"
+           end
+        | Lmutlet _ -> "mut"
+        | _ -> assert false
+        end
       in
       let rec letbody = function
-        | Llet(str, k, id, arg, body) ->
-            fprintf ppf "@ @[<2>%a =%s%a@ %a@]"
-              Ident.print id (kind str) value_kind k lam arg;
-            letbody body
+        | Llet(_, k, id, arg, body)
+        | Lmutlet(k, id, arg, body) as l ->
+           fprintf ppf "@ @[<2>%a =%s%a@ %a@]"
+             Ident.print id (let_kind l) value_kind k lam arg;
+           letbody body
         | expr -> expr in
       fprintf ppf "@[<2>(let@ @[<hv 1>(@[<2>%a =%s%a@ %a@]"
-        Ident.print id (kind str) value_kind k lam arg;
+        Ident.print id (let_kind l) value_kind k lam arg;
       let expr = letbody body in
       fprintf ppf ")@]@ %a)@]" lam expr
   | Lletrec(id_arg_list, body) ->
@@ -636,14 +644,18 @@ let rec lam ppf = function
          the end-user goal when using -dno-locations), as it strongly
          reduces the nesting level of subterms. *)
       if not !Clflags.locations then lam ppf expr
-      else begin
-        fprintf ppf "@[<2>(%s %s(%i)%s:%i-%i@ %a)@]" kind
-              ev.lev_loc.Location.loc_start.Lexing.pos_fname
-              ev.lev_loc.Location.loc_start.Lexing.pos_lnum
-              (if ev.lev_loc.Location.loc_ghost then "<ghost>" else "")
-              ev.lev_loc.Location.loc_start.Lexing.pos_cnum
-              ev.lev_loc.Location.loc_end.Lexing.pos_cnum
-              lam expr
+      else begin match ev.lev_loc with
+      | Loc_unknown ->
+        fprintf ppf "@[<2>(%s <unknown location>@ %a)@]" kind lam expr
+      | Loc_known {scopes; loc} ->
+        fprintf ppf "@[<2>(%s %s %s(%i)%s:%i-%i@ %a)@]" kind
+                (Debuginfo.Scoped_location.string_of_scopes scopes)
+                loc.Location.loc_start.Lexing.pos_fname
+                loc.Location.loc_start.Lexing.pos_lnum
+                (if loc.Location.loc_ghost then "<ghost>" else "")
+                loc.Location.loc_start.Lexing.pos_cnum
+                loc.Location.loc_end.Lexing.pos_cnum
+                lam expr
       end
   | Lifused(id, expr) ->
       fprintf ppf "@[<2>(ifused@ %a@ %a)@]" Ident.print id lam expr

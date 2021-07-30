@@ -281,7 +281,8 @@ let default_options = Options.list @
   "-index-only", Arg.Set Odoc_html.index_only, M.index_only ;
   "-colorize-code", Arg.Set Odoc_html.colorize_code, M.colorize_code ;
   "-short-functors", Arg.Set Odoc_html.html_short_functors, M.html_short_functors ;
-  "-charset", Arg.Set_string Odoc_html.charset, (M.charset !Odoc_html.charset)^
+  "-charset", Arg.Set_string Odoc_html.charset, (M.charset !Odoc_html.charset) ;
+  "-nonavbar", Arg.Clear Odoc_html.show_navbar, M.no_navbar ^
   "\n\n *** LaTeX options ***\n";
 
 (* latex only options *)
@@ -377,9 +378,12 @@ let add_option o =
 let parse () =
   if modified_options () then append_last_doc "\n";
   let options = !options @ !help_options in
-  Arg.parse (Arg.align ~limit:13 options)
+  begin try
+    Arg.parse (Arg.align ~limit:13 options)
       anonymous
-      (M.usage^M.options_are);
+      (M.usage^M.options_are)
+  with Compenv.Exit_with_status n -> exit n
+  end;
   (* we sort the hidden modules by name, to be sure that for example,
      A.B is before A, so we will match against A.B before A in
      Odoc_name.hide_modules.*)

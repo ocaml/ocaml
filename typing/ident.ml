@@ -13,6 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open Local_store
+
 let lowest_scope  = 0
 let highest_scope = 100000000
 
@@ -26,8 +28,8 @@ type t =
 
 (* A stamp of 0 denotes a persistent identifier *)
 
-let currentstamp = ref 0
-let predefstamp = ref 0
+let currentstamp = s_ref 0
+let predefstamp = s_ref 0
 
 let create_scoped ~scope s =
   incr currentstamp;

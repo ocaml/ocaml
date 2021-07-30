@@ -31,9 +31,9 @@
 
     Literals for native integers are suffixed by n:
     {[
-      let zero: nativeint = 0n
-      let one: nativeint = 1n
-      let m_one: nativeint = -1n
+     let zero: nativeint = 0n
+     let one: nativeint = 1n
+     let m_one: nativeint = -1n
     ]}
 *)
 
@@ -59,9 +59,11 @@ external mul : nativeint -> nativeint -> nativeint = "%nativeint_mul"
 (** Multiplication. *)
 
 external div : nativeint -> nativeint -> nativeint = "%nativeint_div"
-(** Integer division.  Raise [Division_by_zero] if the second
-   argument is zero.  This division rounds the real quotient of
-   its arguments towards zero, as specified for {!Stdlib.(/)}. *)
+(** Integer division. This division rounds the real quotient of
+   its arguments towards zero, as specified for {!Stdlib.(/)}.
+
+   @raise Division_by_zero if the second
+   argument is zero. *)
 
 val unsigned_div : nativeint -> nativeint -> nativeint
 (** Same as {!div}, except that arguments and result are interpreted as {e
@@ -162,9 +164,9 @@ external of_float : float -> nativeint
   [@@unboxed] [@@noalloc]
 (** Convert the given floating-point number to a native integer,
    discarding the fractional part (truncate towards 0).
-   The result of the conversion is undefined if, after truncation,
-   the number is outside the range
-   \[{!Nativeint.min_int}, {!Nativeint.max_int}\]. *)
+   If the truncated floating-point number is outside the range
+   \[{!Nativeint.min_int}, {!Nativeint.max_int}\], no exception is raised,
+   and an unspecified, platform-dependent integer is returned. *)
 
 external to_float : nativeint -> float
   = "caml_nativeint_to_float" "caml_nativeint_to_float_unboxed"
@@ -193,7 +195,7 @@ external of_string : string -> nativeint = "caml_nativeint_of_string"
    it is converted to the signed integer
    [Int64.min_int + input - Nativeint.max_int - 1].
 
-   Raise [Failure "Nativeint.of_string"] if the given string is not
+   @raise Failure if the given string is not
    a valid representation of an integer, or if the integer represented
    exceeds the range of integers representable in type [nativeint]. *)
 
@@ -222,6 +224,17 @@ val unsigned_compare: t -> t -> int
 val equal: t -> t -> bool
 (** The equal function for native ints.
     @since 4.03.0 *)
+
+val min: t -> t -> t
+(** Return the smaller of the two arguments.
+    @since 4.13.0
+*)
+
+val max: t -> t -> t
+(** Return the greater of the two arguments.
+    @since 4.13.0
+ *)
+
 
 (**/**)
 

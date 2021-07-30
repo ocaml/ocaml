@@ -37,7 +37,7 @@ let bytecode =
     check_ocamlc_byte_output;
     run;
     check_program_output;
-  ] @ (if Ocamltest_config.arch<>"none" then opt_actions else [])
+  ] @ (if Ocamltest_config.native_compiler then opt_actions else [])
 }
 
 let native =
@@ -51,13 +51,12 @@ let native =
     setup_ocamlopt_opt_build_env;
     ocamlopt_opt;
     check_ocamlopt_opt_output;
-    compare_native_programs;
   ] in
   {
     test_name = "native";
     test_run_by_default = true;
     test_actions =
-      (if Ocamltest_config.arch<>"none" then opt_actions else [skip])
+      (if Ocamltest_config.native_compiler then opt_actions else [skip])
   }
 
 let toplevel = {
@@ -108,9 +107,6 @@ let ocamldoc =
 let asmgen_skip_on_bytecode_only =
   Actions_helpers.skip_with_reason "native compiler disabled"
 
-let asmgen_skip_on_spacetime =
-  Actions_helpers.skip_with_reason "not ported to Spacetime yet"
-
 let msvc64 =
   Ocamltest_config.ccomptype = "msvc" && Ocamltest_config.arch="amd64"
 
@@ -118,8 +114,7 @@ let asmgen_skip_on_msvc64 =
   Actions_helpers.skip_with_reason "not ported to MSVC64 yet"
 
 let asmgen_actions =
-  if Ocamltest_config.arch="none" then [asmgen_skip_on_bytecode_only]
-  else if Ocamltest_config.spacetime then [asmgen_skip_on_spacetime]
+  if not Ocamltest_config.native_compiler then [asmgen_skip_on_bytecode_only]
   else if msvc64 then [asmgen_skip_on_msvc64]
   else [
     setup_simple_build_env;

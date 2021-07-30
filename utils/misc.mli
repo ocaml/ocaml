@@ -59,6 +59,10 @@ val try_finally :
     for easier debugging.
 *)
 
+val reraise_preserving_backtrace : exn -> (unit -> unit) -> 'a
+(** [reraise_preserving_backtrace e f] is (f (); raise e) except that the
+    current backtrace is preserved, even if [f] uses exceptions internally. *)
+
 
 val map_end: ('a -> 'b) -> 'a list -> 'b list -> 'b list
         (* [map_end f l t] is [map f l @ t], just more efficient. *)
@@ -94,12 +98,8 @@ module Stdlib : sig
         There is no constraint on the relative lengths of the lists. *)
 
     val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
-    (** Returns [true] iff the given lists have the same length and content
-        with respect to the given equality function. *)
-
-    val find_map : ('a -> 'b option) -> 'a t -> 'b option
-    (** [find_map f l] returns the first evaluation of [f] that returns [Some],
-       or returns None if there is no such element. *)
+    (** Returns [true] if and only if the given lists have the same length and
+        content with respect to the given equality function. *)
 
     val some_if_all_elements_are_some : 'a option t -> 'a t option
     (** If all elements of the given list are [Some _] then [Some xs]
@@ -121,8 +121,8 @@ module Stdlib : sig
       -> 'a list
       -> of_:'a list
       -> bool
-    (** Returns [true] iff the given list, with respect to the given equality
-        function on list members, is a prefix of the list [of_]. *)
+    (** Returns [true] if and only if the given list, with respect to the given
+        equality function on list members, is a prefix of the list [of_]. *)
 
     type 'a longest_common_prefix_result = private {
       longest_common_prefix : 'a list;
@@ -351,6 +351,12 @@ val cut_at : string -> char -> string * string
    @since 4.01
 *)
 
+val ordinal_suffix : int -> string
+(** [ordinal_suffix n] is the appropriate suffix to append to the numeral [n] as
+    an ordinal number: [1] -> ["st"], [2] -> ["nd"], [3] -> ["rd"],
+    [4] -> ["th"], and so on.  Handles larger numbers (e.g., [42] -> ["nd"]) and
+    the numbers 11--13 (which all get ["th"]) correctly. *)
+
 (* Color handling *)
 module Color : sig
   type color =
@@ -369,6 +375,8 @@ module Color : sig
     | BG of color (* background *)
     | Bold
     | Reset
+
+  type Format.stag += Style of style list
 
   val ansi_of_style_l : style list -> string
   (* ANSI escape sequence for the given style *)
@@ -463,29 +471,6 @@ type modname = string
 type crcs = (modname * Digest.t option) list
 
 type alerts = string Stdlib.String.Map.t
-
-
-module EnvLazy: sig
-  type ('a,'b) t
-
-  type log
-
-  val force : ('a -> 'b) -> ('a,'b) t -> 'b
-  val create : 'a -> ('a,'b) t
-  val get_arg : ('a,'b) t -> 'a option
-  val create_forced : 'b -> ('a, 'b) t
-  val create_failed : exn -> ('a, 'b) t
-
-  (* [force_logged log f t] is equivalent to [force f t] but if [f]
-     returns [Error _] then [t] is recorded in [log]. [backtrack log]
-     will then reset all the recorded [t]s back to their original
-     state. *)
-  val log : unit -> log
-  val force_logged :
-    log -> ('a -> ('b, 'c) result) -> ('a,('b, 'c) result) t -> ('b, 'c) result
-  val backtrack : log -> unit
-
-end
 
 
 module Magic_number : sig

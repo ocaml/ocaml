@@ -50,9 +50,9 @@ val f : (module S with type t = int) -> int = <fun>
 
 let f (module M : S with type t = 'a) = M.x;; (* Error *)
 [%%expect{|
-Line 1, characters 6-37:
+Line 1, characters 14-15:
 1 | let f (module M : S with type t = 'a) = M.x;; (* Error *)
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                  ^
 Error: The type of this packed module contains variables:
        (module S with type t = 'a)
 |}];;
@@ -303,7 +303,7 @@ end
 module type MapT =
   sig
     type key
-    type +'a t
+    type +!'a t
     val empty : 'a t
     val is_empty : 'a t -> bool
     val mem : key -> 'a t -> bool
@@ -321,6 +321,7 @@ module type MapT =
     val for_all : (key -> 'a -> bool) -> 'a t -> bool
     val exists : (key -> 'a -> bool) -> 'a t -> bool
     val filter : (key -> 'a -> bool) -> 'a t -> 'a t
+    val filter_map : (key -> 'a -> 'b option) -> 'a t -> 'b t
     val partition : (key -> 'a -> bool) -> 'a t -> 'a t * 'a t
     val cardinal : 'a t -> int
     val bindings : 'a t -> (key * 'a) list
@@ -340,6 +341,7 @@ module type MapT =
     val map : ('a -> 'b) -> 'a t -> 'b t
     val mapi : (key -> 'a -> 'b) -> 'a t -> 'b t
     val to_seq : 'a t -> (key * 'a) Seq.t
+    val to_rev_seq : 'a t -> (key * 'a) Seq.t
     val to_seq_from : key -> 'a t -> (key * 'a) Seq.t
     val add_seq : (key * 'a) Seq.t -> 'a t -> 'a t
     val of_seq : (key * 'a) Seq.t -> 'a t
@@ -372,6 +374,7 @@ module SSMap :
     val for_all : (key -> 'a -> bool) -> 'a t -> bool
     val exists : (key -> 'a -> bool) -> 'a t -> bool
     val filter : (key -> 'a -> bool) -> 'a t -> 'a t
+    val filter_map : (key -> 'a -> 'b option) -> 'a t -> 'b t
     val partition : (key -> 'a -> bool) -> 'a t -> 'a t * 'a t
     val cardinal : 'a t -> int
     val bindings : 'a t -> (key * 'a) list
@@ -391,6 +394,7 @@ module SSMap :
     val map : ('a -> 'b) -> 'a t -> 'b t
     val mapi : (key -> 'a -> 'b) -> 'a t -> 'b t
     val to_seq : 'a t -> (key * 'a) Seq.t
+    val to_rev_seq : 'a t -> (key * 'a) Seq.t
     val to_seq_from : key -> 'a t -> (key * 'a) Seq.t
     val add_seq : (key * 'a) Seq.t -> 'a t -> 'a t
     val of_seq : (key * 'a) Seq.t -> 'a t

@@ -188,8 +188,8 @@ let type_exception sub x =
 let extension_constructor sub x =
   let ext_kind =
     match x.ext_kind with
-      Text_decl(ctl, cto) ->
-        Text_decl(constructor_args sub ctl, Option.map (sub.typ sub) cto)
+      Text_decl(v, ctl, cto) ->
+        Text_decl(v, constructor_args sub ctl, Option.map (sub.typ sub) cto)
     | Text_rebind _ as d -> d
   in
   {x with ext_kind}
@@ -211,8 +211,9 @@ let pat
     | Tpat_var _
     | Tpat_constant _ -> x.pat_desc
     | Tpat_tuple l -> Tpat_tuple (List.map (sub.pat sub) l)
-    | Tpat_construct (loc, cd, l) ->
-        Tpat_construct (loc, cd, List.map (sub.pat sub) l)
+    | Tpat_construct (loc, cd, l, vto) ->
+        let vto = Option.map (fun (vl,cty) -> vl, sub.typ sub cty) vto in
+        Tpat_construct (loc, cd, List.map (sub.pat sub) l, vto)
     | Tpat_variant (l, po, rd) ->
         Tpat_variant (l, Option.map (sub.pat sub) po, rd)
     | Tpat_record (l, closed) ->
@@ -319,12 +320,11 @@ let expr sub x =
           dir,
           sub.expr sub exp3
         )
-    | Texp_send (exp, meth, expo) ->
+    | Texp_send (exp, meth) ->
         Texp_send
           (
             sub.expr sub exp,
-            meth,
-            Option.map (sub.expr sub) expo
+            meth
           )
     | Texp_new _
     | Texp_instvar _ as d -> d
@@ -415,7 +415,9 @@ let signature_item sub x =
         Tsig_recmodule (List.map (sub.module_declaration sub) list)
     | Tsig_modtype x ->
         Tsig_modtype (sub.module_type_declaration sub x)
-    | Tsig_include incl ->
+   | Tsig_modtypesubst x ->
+        Tsig_modtypesubst (sub.module_type_declaration sub x)
+   | Tsig_include incl ->
         Tsig_include (include_infos (sub.module_type sub) incl)
     | Tsig_class list ->
         Tsig_class (List.map (sub.class_description sub) list)
@@ -457,7 +459,9 @@ let with_constraint sub = function
   | Twith_type decl -> Twith_type (sub.type_declaration sub decl)
   | Twith_typesubst decl -> Twith_typesubst (sub.type_declaration sub decl)
   | Twith_module _
-  | Twith_modsubst _ as d -> d
+  | Twith_modsubst _
+  | Twith_modtype _
+  | Twith_modtypesubst _ as d -> d
 
 let open_description sub od =
   {od with open_env = sub.env sub od.open_env}

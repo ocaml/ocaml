@@ -1,0 +1,95 @@
+name: Hygiene
+on:
+  push:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+jobs:
+  hygiene:
+    name: Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: GitHub Context
+        run: echo $GITHUB_CONTEXT
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        # Comment out the line below to enable (debugging) display of the github
+        # context variable.
+        if: failure()
+
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 50
+
+      - name: Changes updated
+        run: >-
+          tools/ci/actions/check-changes-modified.sh
+          '${{ github.ref }}'
+          'pull_request'
+          '${{ github.event.pull_request.base.ref }}'
+          '${{ github.event.pull_request.base.sha }}'
+          '${{ github.event.pull_request.head.ref }}'
+          '${{ github.event.pull_request.head.sha }}'
+        if: >-
+          !contains(github.event.pull_request.labels.*.name, 'no-change-entry-needed')
+          && github.event_name == 'pull_request'
+
+      - name: configure correctly generated
+        run: >-
+          tools/ci/actions/check-configure.sh
+          '${{ github.ref }}'
+          '${{ github.event_name }}'
+          '${{ github.event.pull_request.base.ref }}'
+          '${{ github.event.pull_request.base.sha }}'
+          '${{ github.event.pull_request.head.ref }}'
+          '${{ github.event.pull_request.head.sha }}'
+          '${{ github.event.ref }}'
+          '${{ github.event.before }}'
+          '${{ github.event.ref }}'
+          '${{ github.event.after }}'
+        if: ${{ always() }}
+
+      - name: check-typo revered
+        run: >-
+          tools/ci/actions/check-typo.sh
+          '${{ github.ref }}'
+          '${{ github.event_name }}'
+          '${{ github.event.pull_request.base.ref }}'
+          '${{ github.event.pull_request.base.sha }}'
+          '${{ github.event.pull_request.head.ref }}'
+          '${{ github.event.pull_request.head.sha }}'
+          '${{ github.event.ref }}'
+          '${{ github.event.before }}'
+          '${{ github.event.ref }}'
+          '${{ github.event.after }}'
+        if: ${{ always() }}
+
+      - name: check-typo on whole tree
+        run: tools/check-typo
+        if: >-
+          github.event_name == 'push'
+          && (startsWith(github.event.ref, 'refs/heads/4.')
+             || github.event.ref == 'refs/heads/trunk')
+          && always()
+
+      - name: Check that labelled/unlabelled .mli files are in sync
+        run: tools/ci/actions/check-labelled-interfaces.sh
+        if: always()
+
+        # This step records the build success in the variable build-status,
+        # allowing the last two steps to skip, rather than go beserk with a
+        # faulty compiler.
+      - name: Build a minimal compiler for alldepend
+        id: compiler
+        run: tools/ci/actions/runner.sh basic-compiler
+        if: always()
+
+      - name: Check that dependency info is up-to-date
+        run: tools/ci/actions/check-alldepend.sh
+        if: steps.compiler.outputs.build-status == 'success' && always()
+
+      - name: Check global structure of the reference manual
+        run: |
+          # Required configuration info is left-over from the previous step
+          make -C manual/tests check-stdlib check-case-collision
+        if: steps.compiler.outputs.build-status == 'success' && always()

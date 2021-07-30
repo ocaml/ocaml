@@ -19,12 +19,17 @@ open Format
 open Misc
 open Longident
 open Types
-open Cmo_format
-open Trace
 open Toploop
 
-(* The standard output formatter *)
-let std_out = std_formatter
+let error_fmt () =
+  if !Sys.interactive then
+    Format.std_formatter
+  else
+    Format.err_formatter
+
+let action_on_suberror b =
+  if not b && not !Sys.interactive then
+    raise (Compenv.Exit_with_status 125)
 
 (* Directive sections (used in #help) *)
 let section_general = "General"
@@ -54,11 +59,11 @@ let order_of_sections =
     section_undocumented;
   ])
 (* Do not forget to keep the directives synchronized with the manual in
-   manual/manual/cmds/top.etex *)
+   manual/src/cmds/top.etex *)
 
 (* To quit *)
 
-let dir_quit () = exit 0
+let dir_quit () = raise (Compenv.Exit_with_status 0)
 
 let _ = add_directive "quit" (Directive_none dir_quit)
     {
@@ -104,6 +109,16 @@ let _ = add_directive "remove_directory" (Directive_string dir_remove_directory)
       section = section_run;
       doc = "Remove the given directory from the search path.";
     }
+
+let dir_show_dirs () =
+  List.iter print_endline (Load_path.get_paths ())
+
+let _ = add_directive "show_dirs" (Directive_none dir_show_dirs)
+    {
+      section = section_run;
+      doc = "List directories currently in the search path.";
+    }
+
 (* To change the current directory *)
 
 let dir_cd s = Sys.chdir s
@@ -113,150 +128,54 @@ let _ = add_directive "cd" (Directive_string dir_cd)
       section = section_run;
       doc = "Change the current working directory.";
     }
-(* Load in-core a .cmo file *)
 
-exception Load_failed
 
-let check_consistency ppf filename cu =
-  try Env.import_crcs ~source:filename cu.cu_imports
-  with Persistent_env.Consistbl.Inconsistency {
-      unit_name = name;
-      inconsistent_source = user;
-      original_source = auth;
-    } ->
-    fprintf ppf "@[<hv 0>The files %s@ and %s@ \
-                 disagree over interface %s@]@."
-            user auth name;
-    raise Load_failed
+let with_error_fmt f x = f (error_fmt ()) x
 
-let load_compunit ic filename ppf compunit =
-  check_consistency ppf filename compunit;
-  seek_in ic compunit.cu_pos;
-  let code_size = compunit.cu_codesize + 8 in
-  let code = LongString.create code_size in
-  LongString.input_bytes_into code ic compunit.cu_codesize;
-  LongString.set code compunit.cu_codesize (Char.chr Opcodes.opRETURN);
-  LongString.blit_string "\000\000\000\001\000\000\000" 0
-                     code (compunit.cu_codesize + 1) 7;
-  let initial_symtable = Symtable.current_state() in
-  Symtable.patch_object code compunit.cu_reloc;
-  Symtable.update_global_table();
-  let events =
-    if compunit.cu_debug = 0 then [| |]
-    else begin
-      seek_in ic compunit.cu_debug;
-      [| input_value ic |]
-    end in
-  begin try
-    may_trace := true;
-    let _bytecode, closure = Meta.reify_bytecode code events None in
-    ignore (closure ());
-    may_trace := false;
-  with exn ->
-    record_backtrace ();
-    may_trace := false;
-    Symtable.restore_state initial_symtable;
-    print_exception_outcome ppf exn;
-    raise Load_failed
-  end
+let dir_load ppf name =
+  action_on_suberror (Topeval.load_file false ppf name)
 
-let rec load_file recursive ppf name =
-  let filename =
-    try Some (Load_path.find name) with Not_found -> None
-  in
-  match filename with
-  | None -> fprintf ppf "Cannot find file %s.@." name; false
-  | Some filename ->
-      let ic = open_in_bin filename in
-      Misc.try_finally
-        ~always:(fun () -> close_in ic)
-        (fun () -> really_load_file recursive ppf name filename ic)
-
-and really_load_file recursive ppf name filename ic =
-  let buffer = really_input_string ic (String.length Config.cmo_magic_number) in
-  try
-    if buffer = Config.cmo_magic_number then begin
-      let compunit_pos = input_binary_int ic in  (* Go to descriptor *)
-      seek_in ic compunit_pos;
-      let cu : compilation_unit = input_value ic in
-      if recursive then
-        List.iter
-          (function
-            | (Reloc_getglobal id, _)
-              when not (Symtable.is_global_defined id) ->
-                let file = Ident.name id ^ ".cmo" in
-                begin match Load_path.find_uncap file with
-                | exception Not_found -> ()
-                | file ->
-                    if not (load_file recursive ppf file) then raise Load_failed
-                end
-            | _ -> ()
-          )
-          cu.cu_reloc;
-      load_compunit ic filename ppf cu;
-      true
-    end else
-      if buffer = Config.cma_magic_number then begin
-        let toc_pos = input_binary_int ic in  (* Go to table of contents *)
-        seek_in ic toc_pos;
-        let lib = (input_value ic : library) in
-        List.iter
-          (fun dllib ->
-            let name = Dll.extract_dll_name dllib in
-            try Dll.open_dlls Dll.For_execution [name]
-            with Failure reason ->
-              fprintf ppf
-                "Cannot load required shared library %s.@.Reason: %s.@."
-                name reason;
-              raise Load_failed)
-          lib.lib_dllibs;
-        List.iter (load_compunit ic filename ppf) lib.lib_units;
-        true
-      end else begin
-        fprintf ppf "File %s is not a bytecode object file.@." name;
-        false
-      end
-  with Load_failed -> false
-
-let dir_load ppf name = ignore (load_file false ppf name)
-
-let _ = add_directive "load" (Directive_string (dir_load std_out))
+let _ = add_directive "load" (Directive_string (with_error_fmt dir_load))
     {
       section = section_run;
       doc = "Load in memory a bytecode object, produced by ocamlc.";
     }
 
-let dir_load_rec ppf name = ignore (load_file true ppf name)
+let dir_load_rec ppf name =
+  action_on_suberror (Topeval.load_file true ppf name)
 
 let _ = add_directive "load_rec"
-    (Directive_string (dir_load_rec std_out))
+    (Directive_string (with_error_fmt dir_load_rec))
     {
       section = section_run;
       doc = "As #load, but loads dependencies recursively.";
     }
 
-let load_file = load_file false
+let load_file = Topeval.load_file false
 
 (* Load commands from a file *)
 
-let dir_use ppf name = ignore(Toploop.use_file ppf name)
-let dir_use_output ppf name = ignore(Toploop.use_output ppf name)
-let dir_mod_use ppf name = ignore(Toploop.mod_use_file ppf name)
+let dir_use ppf name =
+  action_on_suberror (Toploop.use_input ppf (Toploop.File name))
+let dir_use_output ppf name = action_on_suberror (Toploop.use_output ppf name)
+let dir_mod_use ppf name =
+  action_on_suberror (Toploop.mod_use_input ppf (Toploop.File name))
 
-let _ = add_directive "use" (Directive_string (dir_use std_out))
+let _ = add_directive "use" (Directive_string (with_error_fmt dir_use))
     {
       section = section_run;
       doc = "Read, compile and execute source phrases from the given file.";
     }
 
-let _ = add_directive "use_output" (Directive_string (dir_use_output std_out))
+let _ = add_directive "use_output"
+    (Directive_string (with_error_fmt dir_use_output))
     {
       section = section_run;
       doc = "Execute a command and read, compile and execute source phrases \
              from its output.";
     }
 
-let _ = add_directive "mod_use" (Directive_string (dir_mod_use std_out))
+let _ = add_directive "mod_use" (Directive_string (with_error_fmt dir_mod_use))
     {
       section = section_run;
       doc = "Usage is identical to #use but #mod_use \
@@ -265,25 +184,28 @@ let _ = add_directive "mod_use" (Directive_string (dir_mod_use std_out))
 
 (* Install, remove a printer *)
 
+exception Bad_printing_function
+
 let filter_arrow ty =
   let ty = Ctype.expand_head !toplevel_env ty in
-  match ty.desc with
+  match get_desc ty with
   | Tarrow (lbl, l, r, _) when not (Btype.is_optional lbl) -> Some (l, r)
   | _ -> None
 
 let rec extract_last_arrow desc =
   match filter_arrow desc with
-  | None -> raise (Ctype.Unify [])
+  | None -> raise Bad_printing_function
   | Some (_, r as res) ->
       try extract_last_arrow r
-      with Ctype.Unify _ -> res
+      with Bad_printing_function -> res
 
 let extract_target_type ty = fst (extract_last_arrow ty)
 let extract_target_parameters ty =
   let ty = extract_target_type ty |> Ctype.expand_head !toplevel_env in
-  match ty.desc with
+  match get_desc ty with
   | Tconstr (path, (_ :: _ as args), _)
-      when Ctype.all_distinct_vars !toplevel_env args -> Some (path, args)
+      when Ctype.all_distinct_vars !toplevel_env args ->
+        Some (path, args)
   | _ -> None
 
 type 'a printer_type_new = Format.formatter -> 'a -> unit
@@ -305,9 +227,13 @@ let printer_type ppf typename =
 let match_simple_printer_type desc printer_type =
   Ctype.begin_def();
   let ty_arg = Ctype.newvar() in
-  Ctype.unify !toplevel_env
-    (Ctype.newconstr printer_type [ty_arg])
-    (Ctype.instance desc.val_type);
+  begin try
+    Ctype.unify !toplevel_env
+      (Ctype.newconstr printer_type [ty_arg])
+      (Ctype.instance desc.val_type);
+  with Ctype.Unify _ ->
+    raise Bad_printing_function
+  end;
   Ctype.end_def();
   Ctype.generalize ty_arg;
   (ty_arg, None)
@@ -323,13 +249,17 @@ let match_generic_printer_type desc path args printer_type =
       (fun ty_arg ty -> Ctype.newty (Tarrow (Asttypes.Nolabel, ty_arg, ty,
                                              Cunknown)))
       ty_args (Ctype.newconstr printer_type [ty_target]) in
-  Ctype.unify !toplevel_env
-    ty_expected
-    (Ctype.instance desc.val_type);
+  begin try
+    Ctype.unify !toplevel_env
+      ty_expected
+      (Ctype.instance desc.val_type);
+  with Ctype.Unify _ ->
+    raise Bad_printing_function
+  end;
   Ctype.end_def();
   Ctype.generalize ty_expected;
   if not (Ctype.all_distinct_vars !toplevel_env args) then
-    raise (Ctype.Unify []);
+    raise Bad_printing_function;
   (ty_expected, Some (path, ty_args))
 
 let match_printer_type ppf desc =
@@ -337,10 +267,10 @@ let match_printer_type ppf desc =
   let printer_type_old = printer_type ppf "printer_type_old" in
   try
     (match_simple_printer_type desc printer_type_new, false)
-  with Ctype.Unify _ ->
+  with Bad_printing_function ->
     try
       (match_simple_printer_type desc printer_type_old, true)
-    with Ctype.Unify _ as exn ->
+    with Bad_printing_function as exn ->
       match extract_target_parameters desc.val_type with
       | None -> raise exn
       | Some (path, args) ->
@@ -352,8 +282,8 @@ let find_printer_type ppf lid =
   | (path, desc) -> begin
     match match_printer_type ppf desc with
     | (ty_arg, is_old_style) -> (ty_arg, path, is_old_style)
-    | exception Ctype.Unify _ ->
-      fprintf ppf "%a has a wrong type for a printing function.@."
+    | exception Bad_printing_function ->
+      fprintf ppf "%a has the wrong type for a printing function.@."
       Printtyp.longident lid;
       raise Exit
   end
@@ -400,94 +330,22 @@ let dir_remove_printer ppf lid =
   with Exit -> ()
 
 let _ = add_directive "install_printer"
-    (Directive_ident (dir_install_printer std_out))
+    (Directive_ident (with_error_fmt dir_install_printer))
     {
       section = section_print;
       doc = "Registers a printer for values of a certain type.";
     }
 
 let _ = add_directive "remove_printer"
-    (Directive_ident (dir_remove_printer std_out))
+    (Directive_ident (with_error_fmt dir_remove_printer))
     {
       section = section_print;
       doc = "Remove the named function from the table of toplevel printers.";
     }
 
-(* The trace *)
-
-external current_environment: unit -> Obj.t = "caml_get_current_environment"
-
-let tracing_function_ptr =
-  get_code_pointer
-    (Obj.repr (fun arg -> Trace.print_trace (current_environment()) arg))
-
-let dir_trace ppf lid =
-  match Env.find_value_by_name lid !toplevel_env with
-  | (path, desc) -> begin
-      (* Check if this is a primitive *)
-      match desc.val_kind with
-      | Val_prim _ ->
-          fprintf ppf "%a is an external function and cannot be traced.@."
-          Printtyp.longident lid
-      | _ ->
-          let clos = eval_value_path !toplevel_env path in
-          (* Nothing to do if it's not a closure *)
-          if Obj.is_block clos
-          && (Obj.tag clos = Obj.closure_tag || Obj.tag clos = Obj.infix_tag)
-          && (match Ctype.(repr (expand_head !toplevel_env desc.val_type))
-              with {desc=Tarrow _} -> true | _ -> false)
-          then begin
-          match is_traced clos with
-          | Some opath ->
-              fprintf ppf "%a is already traced (under the name %a).@."
-              Printtyp.path path
-              Printtyp.path opath
-          | None ->
-              (* Instrument the old closure *)
-              traced_functions :=
-                { path = path;
-                  closure = clos;
-                  actual_code = get_code_pointer clos;
-                  instrumented_fun =
-                    instrument_closure !toplevel_env lid ppf desc.val_type }
-                :: !traced_functions;
-              (* Redirect the code field of the closure to point
-                 to the instrumentation function *)
-              set_code_pointer clos tracing_function_ptr;
-              fprintf ppf "%a is now traced.@." Printtyp.longident lid
-          end else fprintf ppf "%a is not a function.@." Printtyp.longident lid
-    end
-  | exception Not_found ->
-      fprintf ppf "Unbound value %a.@." Printtyp.longident lid
-
-let dir_untrace ppf lid =
-  match Env.find_value_by_name lid !toplevel_env with
-  | (path, _desc) ->
-      let rec remove = function
-      | [] ->
-          fprintf ppf "%a was not traced.@." Printtyp.longident lid;
-          []
-      | f :: rem ->
-          if Path.same f.path path then begin
-            set_code_pointer f.closure f.actual_code;
-            fprintf ppf "%a is no longer traced.@." Printtyp.longident lid;
-            rem
-          end else f :: remove rem in
-      traced_functions := remove !traced_functions
-  | exception Not_found ->
-      fprintf ppf "Unbound value %a.@." Printtyp.longident lid
-
-let dir_untrace_all ppf () =
-  List.iter
-    (fun f ->
-      set_code_pointer f.closure f.actual_code;
-      fprintf ppf "%a is no longer traced.@." Printtyp.path f.path)
-    !traced_functions;
-  traced_functions := []
-
 let parse_warnings ppf iserr s =
-  try Warnings.parse_options iserr s
-  with Arg.Bad err -> fprintf ppf "%s.@." err
+  try Option.iter Location.(prerr_alert none) @@ Warnings.parse_options iserr s
+  with Arg.Bad err -> fprintf ppf "%s.@." err; action_on_suberror true
 
 (* Typing information *)
 
@@ -512,7 +370,7 @@ let trim_signature = function
   | mty -> mty
 
 let show_prim to_sig ppf lid =
-  let env = !Toploop.toplevel_env in
+  let env = !toplevel_env in
   let loc = Location.none in
   try
     let s =
@@ -538,7 +396,7 @@ let reg_show_prim name to_sig doc =
   all_show_funs := to_sig :: !all_show_funs;
   add_directive
     name
-    (Directive_ident (show_prim to_sig std_out))
+    (Directive_ident (show_prim to_sig std_formatter))
     {
       section = section_env;
       doc;
@@ -552,11 +410,40 @@ let () =
     )
     "Print the signature of the corresponding value."
 
+let is_nonrec_type id td =
+  (* We track both recursive uses of t (`type t = X of t`) and
+     nonrecursive uses (`type nonrec t = t`) to only print the nonrec keyword
+     when it is necessary to make the type printable.
+  *)
+  let recursive_use = ref false in
+  let nonrecursive_use = ref false in
+  let it_path = function
+    | Path.Pident id' when Ident.name id' = Ident.name id ->
+        if Ident.same id id' then
+          recursive_use := true
+        else
+          nonrecursive_use:= true
+    | _ -> ()
+  in
+  let it =  Btype.{type_iterators with it_path } in
+  let () =
+    it.it_type_declaration it td;
+    Btype.unmark_iterators.it_type_declaration Btype.unmark_iterators td
+  in
+  match !recursive_use, !nonrecursive_use with
+  | false, true -> Trec_not
+  | true, _ | _, false -> Trec_first
+    (* note: true, true is possible *)
+
 let () =
   reg_show_prim "show_type"
     (fun env loc id lid ->
-       let _path, desc = Env.lookup_type ~loc lid env in
-       [ Sig_type (id, desc, Trec_first, Exported) ]
+       let path, desc = Env.lookup_type ~loc lid env in
+       let id, rs = match path with
+         | Pident id -> id, is_nonrec_type id desc
+         | _ -> id, Trec_first
+       in
+       [ Sig_type (id, desc, rs, Exported) ]
     )
     "Print the signature of the corresponding type constructor."
 
@@ -566,7 +453,7 @@ let () =
  * one for exception constructors and another for
  * non-exception constructors (normal and extensible variants). *)
 let is_exception_constructor env type_expr =
-  Ctype.equal env true [type_expr] [Predef.type_exn]
+  Ctype.is_equal env true [type_expr] [Predef.type_exn]
 
 let is_extension_constructor = function
   | Cstr_extension _ -> true
@@ -580,11 +467,7 @@ let () =
        let desc = Env.lookup_constructor ~loc Env.Positive lid env in
        if is_exception_constructor env desc.cstr_res then
          raise Not_found;
-       let path =
-         match Ctype.repr desc.cstr_res with
-         | {desc=Tconstr(path, _, _)} -> path
-         | _ -> raise Not_found
-       in
+       let path = Btype.cstr_type_path desc in
        let type_decl = Env.find_type path env in
        if is_extension_constructor desc.cstr_tag then
          let ret_type =
@@ -637,22 +520,42 @@ let () =
     )
     "Print the signature of the corresponding exception."
 
+let is_rec_module id md =
+  let exception Exit in
+  let rec it_path = function
+    | Path.Pdot(root, _ ) -> it_path root
+    | Path.Pident id' -> if (Ident.same id id') then raise Exit
+    | _ -> ()
+  in
+  let it =  Btype.{type_iterators with it_path } in
+  let rs = match it.it_module_declaration it md with
+    | () -> Trec_not
+    | exception Exit -> Trec_first
+  in
+  Btype.unmark_iterators.it_module_declaration Btype.unmark_iterators md;
+  rs
+
+
 let () =
   reg_show_prim "show_module"
     (fun env loc id lid ->
+       let path, md = Env.lookup_module ~loc lid env in
+       let id = match path with
+         | Pident id -> id
+         | _ -> id
+       in
        let rec accum_aliases md acc =
-         let acc =
+         let acc rs =
            Sig_module (id, Mp_present,
                        {md with md_type = trim_signature md.md_type},
-                       Trec_not, Exported) :: acc in
+                       rs, Exported) :: acc in
          match md.md_type with
          | Mty_alias path ->
              let md = Env.find_module path env in
-             accum_aliases md acc
+             accum_aliases md (acc Trec_not)
          | Mty_ident _ | Mty_signature _ | Mty_functor _ ->
-             List.rev acc
+             List.rev (acc (is_rec_module id md))
        in
-       let _, md = Env.lookup_module ~loc lid env in
        accum_aliases md []
     )
     "Print the signature of the corresponding module."
@@ -690,33 +593,11 @@ let show env loc id lid =
   if sg = [] then raise Not_found else sg
 
 let () =
-  add_directive "show" (Directive_ident (show_prim show std_out))
+  add_directive "show" (Directive_ident (show_prim show std_formatter))
     {
       section = section_env;
       doc = "Print the signatures of components \
              from any of the categories below.";
-    }
-
-let _ = add_directive "trace"
-    (Directive_ident (dir_trace std_out))
-    {
-      section = section_trace;
-      doc = "All calls to the function \
-          named function-name will be traced.";
-    }
-
-let _ = add_directive "untrace"
-    (Directive_ident (dir_untrace std_out))
-    {
-      section = section_trace;
-      doc = "Stop tracing the given function.";
-    }
-
-let _ = add_directive "untrace_all"
-    (Directive_none (dir_untrace_all std_out))
-    {
-      section = section_trace;
-      doc = "Stop tracing all functions traced so far.";
     }
 
 (* Control the printing of values *)
@@ -767,14 +648,14 @@ let _ = add_directive "ppx"
     }
 
 let _ = add_directive "warnings"
-    (Directive_string (parse_warnings std_out false))
+    (Directive_string (with_error_fmt(fun ppf s -> parse_warnings ppf false s)))
     {
       section = section_options;
       doc = "Enable or disable warnings according to the argument.";
     }
 
 let _ = add_directive "warn_error"
-    (Directive_string (parse_warnings std_out true))
+    (Directive_string (with_error_fmt(fun ppf s -> parse_warnings ppf true s)))
     {
       section = section_options;
       doc = "Treat as errors the warnings enabled by the argument.";
@@ -784,17 +665,22 @@ let _ = add_directive "warn_error"
 
 let directive_sections () =
   let sections = Hashtbl.create 10 in
-  let add_dir name dir =
+  let add_dir name =
+    let dir =
+      match get_directive name with
+      | Some dir -> dir
+      | None -> assert false
+    in
     let section, doc =
-      match Hashtbl.find directive_info_table name with
-      | { section; doc } -> section, Some doc
-      | exception Not_found -> "Undocumented", None
+      match get_directive_info name with
+      | Some { section; doc } -> section, Some doc
+      | None -> "Undocumented", None
     in
     Hashtbl.replace sections section
       ((name, dir, doc)
        :: (try Hashtbl.find sections section with Not_found -> []))
   in
-  Hashtbl.iter add_dir directive_table;
+  List.iter add_dir (all_directive_names ());
   let take_section section =
     if not (Hashtbl.mem sections section) then (section, [])
     else begin
@@ -839,7 +725,7 @@ let print_directives ppf () =
   List.iter (print_section ppf) (directive_sections ())
 
 let _ = add_directive "help"
-    (Directive_none (print_directives std_out))
+    (Directive_none (print_directives std_formatter))
     {
       section = section_general;
       doc = "Prints a list of all available directives, with \

@@ -301,7 +301,7 @@ let analyse_functions ~backend ~param_to_param
 
    Notice that having (f, x) <- (g, a) and (f, x) <- (g, b) does not make
    x not unchanging. This is because (g, a) and (g, b) represent necessarily
-   different values only if g is the externaly called function. If some
+   different values only if g is the externally called function. If some
    value where created during the execution of the function that could
    flow to (g, a), then (g, a) <- Top, so (f, x) <- Top.
 

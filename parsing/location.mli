@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** {1 Source code locations (ranges of positions), used in parsetree}
+(** Source code locations (ranges of positions), used in parsetree.
 
   {b Warning:} this module is unstable and part of
   {{!Compiler_libs}compiler-libs}.
@@ -37,6 +37,9 @@ type t = Warnings.loc = {
 
 val none : t
 (** An arbitrary value of type [t]; describes an empty ghost range. *)
+
+val is_none : t -> bool
+(** True for [Location.none], false any other location *)
 
 val in_file : string -> t
 (** Return an empty ghost range located in a given file. *)

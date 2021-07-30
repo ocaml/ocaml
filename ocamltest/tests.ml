@@ -54,7 +54,7 @@ let run_actions log testenv actions =
     | [] -> (Result.pass, env)
     | action::remaining_actions ->
       begin
-        Printf.fprintf log "Running action %d/%d (%s)\n%!"
+        Printf.fprintf log "\nRunning action %d/%d (%s)\n%!"
           action_number total (Actions.name action);
         let (result, env') = Actions.run log env action in
         Printf.fprintf log "Action %d/%d (%s) %s\n%!"

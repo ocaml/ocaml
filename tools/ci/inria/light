@@ -1,0 +1,90 @@
+#!/bin/sh
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*     Damien Doligez and Xavier Leroy, projet Cambium, INRIA Paris       *
+#*                                                                        *
+#*   Copyright 2020 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
+# This script performs a minimal build of the OCaml system
+# sufficient to run the test suite.
+# It is a lightweight version of the 'main' script, intended to run
+# on slow machines such as QEMU virtual machines.
+# It does not work under Windows.
+
+# Environment variables that are honored:
+#   OCAML_ARCH                architecture of the test machine
+#   OCAML_JOBS                number of jobs to run in parallel (make -j)
+
+# Command-line arguments:
+# -jNN                    pass "-jNN" option to make for parallel builds
+
+error () {
+  echo "$1" >&2
+  exit 3
+}
+
+# be verbose and stop on error
+set -ex
+
+# set up variables
+
+# default values
+make=make
+jobs=''
+
+case "${OCAML_ARCH}" in
+  bsd|solaris)
+    make=gmake
+  ;;
+  cygwin|cygwin64|mingw|mingw64|msvc|msvc64)
+    error "Unsupported architecture ${OCAML_ARCH}"
+  ;;
+esac
+
+case "${OCAML_JOBS}" in
+  [1-9]|[1-9][0-9]) jobs="-j${OCAML_JOBS}" ;;
+esac
+
+#########################################################################
+# parse optional command-line arguments
+
+while [ $# -gt 0 ]; do
+  case $1 in
+    -j[1-9]|-j[1-9][0-9]) jobs="$1";;
+    *) error "unknown option $1";;
+  esac
+  shift
+done
+
+#########################################################################
+# Do the work
+
+# Tell gcc to use only ASCII in its diagnostic outputs.
+export LC_ALL=C
+
+git clean -q -f -d -x
+
+./configure \
+   --disable-shared \
+   --disable-debug-runtime \
+   --disable-instrumented-runtime \
+   --disable-dependency-generation \
+   --disable-ocamldoc \
+   --disable-stdlib-manpages
+
+$make $jobs --warn-undefined-variables
+
+cd testsuite
+if test -n "$jobs" && test -x /usr/bin/parallel
+then PARALLEL="$jobs $PARALLEL" $make --warn-undefined-variables parallel
+else $make --warn-undefined-variables all
+fi

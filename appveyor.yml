@@ -26,17 +26,28 @@ environment:
     CYG_ROOT: C:/cygwin64
     CYG_MIRROR: http://mirrors.kernel.org/sourceware/cygwin/
     CYG_CACHE: C:/cygwin64/var/cache/setup
-    FLEXDLL_VERSION: 0.37
+    FLEXDLL_VERSION: 0.39
     OCAMLRUNPARAM: v=0,b
+    FORCE_CYGWIN_UPGRADE: 0
+    BUILD_MODE: world.opt
   matrix:
     - PORT: mingw32
+      BOOTSTRAP_FLEXDLL: true
     - PORT: msvc64
+      BOOTSTRAP_FLEXDLL: false
+      BUILD_MODE: steps
+    - PORT: msvc32
+      BOOTSTRAP_FLEXDLL: false
+      BUILD_MODE: C
+      SDK: |-
+        "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x86
 
 matrix:
   fast_finish: true
 
 cache:
   - C:\cygwin64\var\cache\setup
+  - C:\projects\cache
 
 install:
 # This is a hangover from monitoring effects of MPR#7452

@@ -117,7 +117,7 @@ let transl_label_init_flambda f =
       Llet (Strict, Pgenval, method_cache_id,
         Lprim (Pccall prim_makearray,
                [int !method_count; int 0],
-               Location.none),
+               Loc_unknown),
         expr)
   in
   transl_label_init_general (fun () -> expr, size)
@@ -126,19 +126,19 @@ let transl_store_label_init glob size f arg =
   assert(not Config.flambda);
   assert(!Clflags.native_code);
   method_cache := Lprim(Pfield size,
-                        [Lprim(Pgetglobal glob, [], Location.none)],
-                        Location.none);
+                        [Lprim(Pgetglobal glob, [], Loc_unknown)],
+                        Loc_unknown);
   let expr = f arg in
   let (size, expr) =
     if !method_count = 0 then (size, expr) else
     (size+1,
      Lsequence(
      Lprim(Psetfield(size, Pointer, Root_initialization),
-           [Lprim(Pgetglobal glob, [], Location.none);
+           [Lprim(Pgetglobal glob, [], Loc_unknown);
             Lprim (Pccall prim_makearray,
                    [int !method_count; int 0],
-                   Location.none)],
-           Location.none),
+                   Loc_unknown)],
+           Loc_unknown),
      expr))
   in
   let lam, size = transl_label_init_general (fun () -> (expr, size)) in
@@ -180,7 +180,7 @@ let oo_wrap env req f x =
                 Llet(StrictOpt, Pgenval, id,
                      Lprim(Pmakeblock(0, Mutable, None),
                            [lambda_unit; lambda_unit; lambda_unit],
-                           Location.none),
+                           Loc_unknown),
                      lambda))
              lambda !classes
          in

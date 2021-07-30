@@ -13,11 +13,18 @@
 #*                                                                        *
 #**************************************************************************
 
-TOPDIR = ../..
+.NOTPARALLEL:
+
+ROOTDIR = ../..
 COMPFLAGS ?=
 RUNTIME_VARIANT ?=
 
-include $(TOPDIR)/Makefile.tools
+include $(ROOTDIR)/Makefile.common
+include $(ROOTDIR)/Makefile.best_binaries
+
+STDLIBFLAGS = -nostdlib -I $(ROOTDIR)/stdlib
+OCAMLC ?= $(BEST_OCAMLC) $(STDLIBFLAGS)
+OCAMLOPT ?= $(BEST_OCAMLOPT) $(STDLIBFLAGS)
 
 libraries := testing.cmi testing.cma lib.cmo
 
@@ -47,4 +54,4 @@ testing.cmo : testing.cmi
 
 .PHONY: clean
 clean:
-	rm -f *.cm* *.$(O) *.$(A)
+	rm -f *.cm* *.o *.obj *.a *.lib

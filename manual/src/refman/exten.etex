@@ -1,0 +1,122 @@
+\chapter{Language extensions} \label{c:extensions}
+%HEVEA\cutname{extn.html}
+
+This chapter describes language extensions and convenience features
+that are implemented in OCaml, but not described in chapter \ref{c:refman}.
+
+
+%HEVEA\cutdef{section}
+\section{s:letrecvalues}{Recursive definitions of values}
+%HEVEA\cutname{letrecvalues.html}
+\input{letrecvalues.tex}
+
+\section{s:recursive-modules}{Recursive modules}
+\ikwd{module\@\texttt{module}}
+\ikwd{and\@\texttt{and}}
+%HEVEA\cutname{recursivemodules.html}
+\input{recursivemodules.tex}
+
+\section{s:private-types}{Private types}
+%HEVEA\cutname{privatetypes.html}
+\ikwd{private\@\texttt{private}}
+\input{privatetypes.tex}
+
+\section{s:locally-abstract}{Locally abstract types}
+\ikwd{type\@\texttt{type}}
+\ikwd{fun\@\texttt{fun}}
+%HEVEA\cutname{locallyabstract.html}
+\input{locallyabstract.tex}
+
+\section{s:first-class-modules}{First-class modules}
+\ikwd{module\@\texttt{module}}
+\ikwd{val\@\texttt{val}}
+\ikwd{with\@\texttt{with}}
+\ikwd{and\@\texttt{and}}
+%HEVEA\cutname{firstclassmodules.html}
+\input{firstclassmodules.tex}
+
+\section{s:module-type-of}{Recovering the type of a module}
+%HEVEA\cutname{moduletypeof.html}
+\ikwd{module\@\texttt{module}}
+\ikwd{type\@\texttt{type}}
+\ikwd{of\@\texttt{of}}
+\ikwd{include\@\texttt{include}}
+\input{moduletypeof.tex}
+
+\section{s:signature-substitution}{Substituting inside a signature}
+\ikwd{with\@\texttt{with}}
+\ikwd{module\@\texttt{module}}
+\ikwd{type\@\texttt{type}}
+%HEVEA\cutname{signaturesubstitution.html}
+\input{signaturesubstitution.tex}
+
+\section{s:module-alias}{Type-level module aliases}
+\ikwd{module\@\texttt{module}}
+%HEVEA\cutname{modulealias.html}
+\input{modulealias.tex}
+
+\section{s:explicit-overriding-open}{Overriding in open statements}
+\ikwd{open.\@\texttt{open\char33}}
+%HEVEA\cutname{overridingopen.html}
+\input{overridingopen.tex}
+
+\section{s:gadts}{Generalized algebraic datatypes} \ikwd{type\@\texttt{type}}
+\ikwd{match\@\texttt{match}}
+%HEVEA\cutname{gadts.html}
+\input{gadts.tex}
+
+\section{s:bigarray-access}{Syntax for Bigarray access}
+%HEVEA\cutname{bigarray.html}
+\input{bigarray.tex}
+
+\section{s:attributes}{Attributes}
+%HEVEA\cutname{attributes.html}
+\ikwd{when\@\texttt{when}}
+\input{attributes.tex}
+
+\section{s:extension-nodes}{Extension nodes}
+%HEVEA\cutname{extensionnodes.html}
+\input{extensionnodes.tex}
+
+\section{s:extensible-variants}{Extensible variant types}
+%HEVEA\cutname{extensiblevariants.html}
+\input{extensiblevariants.tex}
+
+\section{s:generative-functors}{Generative functors}
+%HEVEA\cutname{generativefunctors.html}
+\input{generativefunctors.tex}
+
+\section{s:extension-syntax}{Extension-only syntax}
+%HEVEA\cutname{extensionsyntax.html}
+\input{extensionsyntax.tex}
+
+\section{s:inline-records}{Inline records}
+%HEVEA\cutname{inlinerecords.html}
+\input{inlinerecords.tex}
+
+\section{s:doc-comments}{Documentation comments}
+%HEVEA\cutname{doccomments.html}
+\input{doccomments.tex}
+
+\section{s:index-operators}{Extended indexing operators }
+%HEVEA\cutname{indexops.html}
+\input{indexops.tex}
+
+\section{s:empty-variants}{Empty variant types}
+%HEVEA\cutname{emptyvariants.html}
+(Introduced in 4.07.0)
+\input{emptyvariants.tex}
+
+\section{s:alerts}{Alerts}
+%HEVEA\cutname{alerts.html}
+\input{alerts.tex}
+
+\section{s:generalized-open}{Generalized open statements}
+%HEVEA\cutname{generalizedopens.html}
+\input{generalizedopens.tex}
+
+\section{s:binding-operators}{Binding operators}
+%HEVEA\cutname{bindingops.html}
+\input{bindingops.tex}
+
+%HEVEA\cutend

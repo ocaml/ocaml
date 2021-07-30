@@ -18,13 +18,14 @@
 val interface:
   source_file:string -> output_prefix:string -> unit
 val implementation:
+  start_from:Clflags.Compiler_pass.t ->
   source_file:string -> output_prefix:string -> unit
 
 (** {2 Internal functions} **)
 
 val to_bytecode :
   Compile_common.info ->
-  Typedtree.structure * Typedtree.module_coercion ->
+  Typedtree.implementation ->
   Instruct.instruction list * Ident.Set.t
 (** [to_bytecode info typed] takes a typechecked implementation
     and returns its bytecode.

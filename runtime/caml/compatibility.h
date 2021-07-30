@@ -217,8 +217,6 @@
 #define page_table caml_page_table
 
 /* **** md5.c */
-#define md5_string caml_md5_string
-#define md5_chan caml_md5_chan
 #define MD5Init caml_MD5Init
 #define MD5Update caml_MD5Update
 #define MD5Final caml_MD5Final
@@ -264,7 +262,6 @@
 #define something_to_do caml_something_to_do
 #define enter_blocking_section_hook caml_enter_blocking_section_hook
 #define leave_blocking_section_hook caml_leave_blocking_section_hook
-#define try_leave_blocking_section_hook caml_try_leave_blocking_section_hook
 #define enter_blocking_section caml_enter_blocking_section
 #define leave_blocking_section caml_leave_blocking_section
 #define convert_signal_number caml_convert_signal_number
@@ -290,7 +287,6 @@
 
 /* **** sys.c */
 #define sys_error caml_sys_error
-#define sys_exit caml_sys_exit
 
 /* **** terminfo.c */
 

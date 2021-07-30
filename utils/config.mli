@@ -23,6 +23,9 @@
 val version: string
 (** The current version number of the system *)
 
+val bindir: string
+(** The directory containing the binary programs *)
+
 val standard_library: string
 (** The directory containing the standard libraries *)
 
@@ -51,10 +54,14 @@ val ocamlc_cppflags : string
 (** The flags ocamlc should pass to the C preprocessor *)
 
 val ocamlopt_cflags : string
-(** The flags ocamlopt should pass to the C compiler *)
+  [@@ocaml.deprecated "Use ocamlc_cflags instead."]
+(** @deprecated {!ocamlc_cflags} should be used instead.
+    The flags ocamlopt should pass to the C compiler *)
 
 val ocamlopt_cppflags : string
-(** The flags ocamlopt should pass to the C preprocessor *)
+  [@@ocaml.deprecated "Use ocamlc_cppflags instead."]
+(** @deprecated {!ocamlc_cppflags} should be used instead.
+    The flags ocamlopt should pass to the C preprocessor *)
 
 val bytecomp_c_libraries: string
 (** The C libraries to link with custom runtimes *)
@@ -77,6 +84,14 @@ val mkmaindll: string
 
 val ranlib: string
 (** Command to randomize a library, or "" if not needed *)
+
+val default_rpath: string
+(** Option to add a directory to be searched for libraries at runtime
+    (used by ocamlmklib) *)
+
+val mksharedlibrpath: string
+(** Option to add a directory to be searched for shared libraries at runtime
+    (used by ocamlmklib) *)
 
 val ar: string
 (** Name of the ar command, or "" if not needed  (MSVC) *)
@@ -113,6 +128,9 @@ val cmxs_magic_number: string
 
 val cmt_magic_number: string
 (** Magic number for compiled interface files *)
+
+val linear_magic_number: string
+(** Magic number for Linear internal representation files *)
 
 val max_tag: int
 (** Biggest tag that can be stored in the header of a regular block. *)
@@ -166,6 +184,11 @@ val ext_lib: string
 val ext_dll: string
 (** Extension for dynamically-loaded libraries, e.g. [.so] under Unix.*)
 
+val ext_exe: string
+(** Extension for executable programs, e.g. [.exe] under Windows.
+
+    @since 4.12.0 *)
+
 val default_executable_name: string
 (** Name of executable produced by linking if none is given with -o,
     e.g. [a.out] under Unix. *)
@@ -188,11 +211,8 @@ val flambda : bool
 val with_flambda_invariants : bool
 (** Whether the invariants checks for flambda are enabled *)
 
-val spacetime : bool
-(** Whether the compiler was configured for Spacetime profiling *)
-
-val enable_call_counts : bool
-(** Whether call counts are to be available when Spacetime profiling *)
+val with_cmm_invariants : bool
+(** Whether the invariants checks for Cmm are enabled *)
 
 val profinfo : bool
 (** Whether the compiler was configured for profiling *)
@@ -200,12 +220,6 @@ val profinfo : bool
 val profinfo_width : int
 (** How many bits are to be used in values' headers for profiling
     information *)
-
-val libunwind_available : bool
-(** Whether the libunwind library is available on the target *)
-
-val libunwind_link_flags : string
-(** Linker flags to use libunwind *)
 
 val safe_string: bool
 (** Whether the compiler was configured with -force-safe-string;
@@ -244,3 +258,9 @@ val print_config : out_channel -> unit
 
 val config_var : string -> string option
 (** the configuration value of a variable, if it exists *)
+
+(**/**)
+
+val merlin : bool
+
+(**/**)

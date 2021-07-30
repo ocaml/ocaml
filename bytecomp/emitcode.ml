@@ -77,7 +77,6 @@ exception AsInt
 let const_as_int = function
   | Const_base(Const_int i) -> i
   | Const_base(Const_char c) -> Char.code c
-  | Const_pointer i -> i
   | _ -> raise AsInt
 
 let is_immed i = immed_min <= i && i <= immed_max
@@ -227,8 +226,8 @@ let emit_instr = function
       let org = !out_position in
       List.iter (out_label_with_orig org) lbls
   | Koffsetclosure ofs ->
-      if ofs = -2 || ofs = 0 || ofs = 2
-      then out (opOFFSETCLOSURE0 + ofs / 2)
+      if ofs = -3 || ofs = 0 || ofs = 3
+      then out (opOFFSETCLOSURE0 + ofs / 3)
       else (out opOFFSETCLOSURE; out_int ofs)
   | Kgetglobal q -> out opGETGLOBAL; slot_for_getglobal q
   | Ksetglobal q -> out opSETGLOBAL; slot_for_setglobal q
@@ -240,10 +239,6 @@ let emit_instr = function
           else (out opCONSTINT; out_int i)
       | Const_base(Const_char c) ->
           out opCONSTINT; out_int (Char.code c)
-      | Const_pointer i ->
-          if i >= 0 && i <= 3
-          then out (opCONST0 + i)
-          else (out opCONSTINT; out_int i)
       | Const_block(t, []) ->
           if t = 0 then out opATOM0 else (out opATOM; out_int t)
       | _ ->
@@ -356,8 +351,8 @@ let rec emit = function
       else (out opPUSHENVACC; out_int n);
       emit c
   | Kpush :: Koffsetclosure ofs :: c ->
-      if ofs = -2 || ofs = 0 || ofs = 2
-      then out(opPUSHOFFSETCLOSURE0 + ofs / 2)
+      if ofs = -3 || ofs = 0 || ofs = 3
+      then out(opPUSHOFFSETCLOSURE0 + ofs / 3)
       else (out opPUSHOFFSETCLOSURE; out_int ofs);
       emit c
   | Kpush :: Kgetglobal id :: Kgetfield n :: c ->
@@ -372,10 +367,6 @@ let rec emit = function
           else (out opPUSHCONSTINT; out_int i)
       | Const_base(Const_char c) ->
           out opPUSHCONSTINT; out_int(Char.code c)
-      | Const_pointer i ->
-          if i >= 0 && i <= 3
-          then out (opPUSHCONST0 + i)
-          else (out opPUSHCONSTINT; out_int i)
       | Const_block(t, []) ->
           if t = 0 then out opPUSHATOM0 else (out opPUSHATOM; out_int t)
       | _ ->

@@ -28,8 +28,9 @@ type error =
   | Custom_runtime
   | File_exists of filepath
   | Cannot_open_dll of filepath
-  | Required_module_unavailable of modname
+  | Required_module_unavailable of modname * modname
   | Camlheader of string * filepath
+  | Wrong_link_order of (modname * modname) list
 
 exception Error of error
 
@@ -86,17 +87,22 @@ let add_ccobjs origin l =
 
 (* First pass: determine which units are needed *)
 
-let missing_globals = ref Ident.Set.empty
+let missing_globals = ref Ident.Map.empty
+let provided_globals = ref Ident.Set.empty
+let badly_ordered_dependencies : (string * string) list ref = ref []
 
 let is_required (rel, _pos) =
   match rel with
     Reloc_setglobal id ->
-      Ident.Set.mem id !missing_globals
+      Ident.Map.mem id !missing_globals
   | _ -> false
 
 let add_required compunit =
   let add id =
-    missing_globals := Ident.Set.add id !missing_globals
+    if Ident.Set.mem id !provided_globals then
+      badly_ordered_dependencies :=
+        ((Ident.name id), compunit.cu_name) :: !badly_ordered_dependencies;
+    missing_globals := Ident.Map.add id compunit.cu_name !missing_globals
   in
   List.iter add (Symtable.required_globals compunit.cu_reloc);
   List.iter add compunit.cu_required_globals
@@ -104,7 +110,8 @@ let add_required compunit =
 let remove_required (rel, _pos) =
   match rel with
     Reloc_setglobal id ->
-      missing_globals := Ident.Set.remove id !missing_globals
+      missing_globals := Ident.Map.remove id !missing_globals;
+      provided_globals := Ident.Set.add id !provided_globals;
   | _ -> ()
 
 let scan_file obj_name tolink =
@@ -188,7 +195,7 @@ let check_consistency file_name cu =
   begin try
     let source = List.assoc cu.cu_name !implementations_defined in
     Location.prerr_warning (Location.in_file file_name)
-      (Warnings.Multiple_definition(cu.cu_name,
+      (Warnings.Module_linked_twice(cu.cu_name,
                                     Location.show_filename file_name,
                                     Location.show_filename source))
   with Not_found -> ()
@@ -466,13 +473,15 @@ let link_bytecode_as_c tolink outfile with_main =
     (fun () ->
        (* The bytecode *)
        output_string outchan "\
-#define CAML_INTERNALS\
+#define CAML_INTERNALS\n\
+#define CAMLDLLIMPORT\
 \n\
 \n#ifdef __cplusplus\
 \nextern \"C\" {\
 \n#endif\
 \n#include <caml/mlvalues.h>\
-\n#include <caml/startup.h>\n";
+\n#include <caml/startup.h>\
+\n#include <caml/sys.h>\n";
        output_string outchan "static int caml_code[] = {\n";
        Symtable.init();
        clear_crc_interfaces ();
@@ -515,6 +524,7 @@ let link_bytecode_as_c tolink outfile with_main =
 \n                    caml_sections, sizeof(caml_sections),\
 \n                    /* pooling */ 0,\
 \n                    argv);\
+\n  caml_do_exit(0);\
 \n  return 0; /* not reached */\
 \n}\n"
        end else begin
@@ -560,7 +570,7 @@ let link_bytecode_as_c tolink outfile with_main =
 \n}\
 \n#endif\n";
     );
-  if !Clflags.debug then
+  if not with_main && !Clflags.debug then
     output_cds_file ((Filename.chop_extension outfile) ^ ".cds")
 
 (* Build a custom runtime *)
@@ -572,12 +582,21 @@ let build_custom_runtime prim_name exec_name =
     else "-lcamlrun" ^ !Clflags.runtime_variant in
   let debug_prefix_map =
     if Config.c_has_debug_prefix_map && not !Clflags.keep_camlprimc_file then
-      [Printf.sprintf "-fdebug-prefix-map=%s=camlprim.c" prim_name]
+      let flag =
+        [Printf.sprintf "-fdebug-prefix-map=%s=camlprim.c" prim_name]
+      in
+        if Ccomp.linker_is_flexlink then
+          "-link" :: flag
+        else
+          flag
     else
       [] in
+  let exitcode =
+    (Clflags.std_include_flag "-I" ^ " " ^ Config.bytecomp_c_libraries)
+  in
   Ccomp.call_linker Ccomp.Exe exec_name
     (debug_prefix_map @ [prim_name] @ List.rev !Clflags.ccobjs @ [runtime_lib])
-    (Clflags.std_include_flag "-I" ^ " " ^ Config.bytecomp_c_libraries)
+    exitcode = 0
 
 let append_bytecode bytecode_name exec_name =
   let oc = open_out_gen [Open_wronly; Open_append; Open_binary] 0 exec_name in
@@ -599,17 +618,28 @@ let fix_exec_name name =
 
 let link objfiles output_name =
   let objfiles =
-    if !Clflags.nopervasives then objfiles
-    else if !Clflags.output_c_object then "stdlib.cma" :: objfiles
-    else "stdlib.cma" :: (objfiles @ ["std_exit.cmo"]) in
+    match
+      !Clflags.nopervasives,
+      !Clflags.output_c_object,
+      !Clflags.output_complete_executable
+    with
+    | true, _, _         -> objfiles
+    | false, true, false -> "stdlib.cma" :: objfiles
+    | _                  -> "stdlib.cma" :: objfiles @ ["std_exit.cmo"]
+  in
   let tolink = List.fold_right scan_file objfiles [] in
   let missing_modules =
-    Ident.Set.filter (fun id -> not (Ident.is_predef id)) !missing_globals
+    Ident.Map.filter (fun id _ -> not (Ident.is_predef id)) !missing_globals
   in
   begin
-    match Ident.Set.elements missing_modules with
+    match Ident.Map.bindings missing_modules with
     | [] -> ()
-    | id :: _ -> raise (Error (Required_module_unavailable (Ident.name id)))
+    | (id, cu_name) :: _ ->
+        match !badly_ordered_dependencies with
+        | [] ->
+            raise (Error (Required_module_unavailable (Ident.name id, cu_name)))
+        | l ->
+            raise (Error (Wrong_link_order l))
   end;
   Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs; (* put user's libs last *)
   Clflags.all_ccopts := !lib_ccopts @ !Clflags.all_ccopts;
@@ -703,7 +733,7 @@ let link objfiles output_name =
                    else "-lcamlrun" ^ !Clflags.runtime_variant in
                  Ccomp.call_linker mode output_name
                    ([obj_file] @ List.rev !Clflags.ccobjs @ [runtime_lib])
-                   c_libs
+                   c_libs = 0
                ) then raise (Error Custom_runtime);
            end
          end;
@@ -741,10 +771,16 @@ let report_error ppf = function
   | Cannot_open_dll file ->
       fprintf ppf "Error on dynamically loaded library: %a"
         Location.print_filename file
-  | Required_module_unavailable s ->
-      fprintf ppf "Required module `%s' is unavailable" s
+  | Required_module_unavailable (s, m) ->
+      fprintf ppf "Module `%s' is unavailable (required by `%s')" s m
   | Camlheader (msg, header) ->
       fprintf ppf "System error while copying file %s: %s" header msg
+  | Wrong_link_order l ->
+      let depends_on ppf (dep, depending) =
+        fprintf ppf "%s depends on %s" depending dep
+      in
+      fprintf ppf "@[<hov 2>Wrong link order: %a@]"
+        (pp_print_list ~pp_sep:(fun ppf () -> fprintf ppf ",@ ") depends_on) l
 
 let () =
   Location.register_error_of_exn
@@ -757,7 +793,7 @@ let reset () =
   lib_ccobjs := [];
   lib_ccopts := [];
   lib_dllibs := [];
-  missing_globals := Ident.Set.empty;
+  missing_globals := Ident.Map.empty;
   Consistbl.clear crc_interfaces;
   implementations_defined := [];
   debug_info := [];

@@ -69,6 +69,7 @@ void caml_init_domain ()
   Caml_state->stat_heap_wsz = 0;
   Caml_state->stat_top_heap_wsz = 0;
   Caml_state->stat_compactions = 0;
+  Caml_state->stat_forced_major_collections = 0;
   Caml_state->stat_heap_chunks = 0;
 
   Caml_state->backtrace_active = 0;
@@ -80,4 +81,14 @@ void caml_init_domain ()
   Caml_state->local_roots = NULL;
   Caml_state->requested_major_slice = 0;
   Caml_state->requested_minor_gc = 0;
+
+  Caml_state->eventlog_enabled = 0;
+  Caml_state->eventlog_paused = 0;
+  Caml_state->eventlog_startup_pid = 0;
+  Caml_state->eventlog_startup_timestamp = 0;
+  Caml_state->eventlog_out = NULL;
+
+#if defined(NAKED_POINTERS_CHECKER) && !defined(_WIN32)
+  Caml_state->checking_pointer_pc = NULL;
+  #endif
 }

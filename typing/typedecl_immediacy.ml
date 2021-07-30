@@ -21,19 +21,15 @@ exception Error of Location.t * error
 
 let compute_decl env tdecl =
   match (tdecl.type_kind, tdecl.type_manifest) with
-  | (Type_variant [{cd_args = Cstr_tuple [arg]; _}], _)
-    | (Type_variant [{cd_args = Cstr_record [{ld_type = arg; _}]; _}], _)
-    | (Type_record ([{ld_type = arg; _}], _), _)
-  when tdecl.type_unboxed.unboxed ->
+  | (Type_variant ([{cd_args = Cstr_tuple [arg]
+                            | Cstr_record [{ld_type = arg; _}]; _}],
+                   Variant_unboxed)
+    | Type_record ([{ld_type = arg; _}], Record_unboxed _)), _ ->
     begin match Typedecl_unboxed.get_unboxed_type_representation env arg with
-    | Typedecl_unboxed.Unavailable -> Type_immediacy.Unknown
-    | Typedecl_unboxed.This argrepr -> Ctype.immediacy env argrepr
-    | Typedecl_unboxed.Only_on_64_bits argrepr ->
-        match Ctype.immediacy env argrepr with
-        | Type_immediacy.Always -> Type_immediacy.Always_on_64bits
-        | Type_immediacy.Always_on_64bits | Type_immediacy.Unknown as x -> x
+    | None -> Type_immediacy.Unknown
+    | Some argrepr -> Ctype.immediacy env argrepr
     end
-  | (Type_variant (_ :: _ as cstrs), _) ->
+  | (Type_variant (_ :: _ as cstrs, _), _) ->
     if not (List.exists (fun c -> c.Types.cd_args <> Types.Cstr_tuple []) cstrs)
     then
       Type_immediacy.Always

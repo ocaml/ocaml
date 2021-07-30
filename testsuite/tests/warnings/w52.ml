@@ -1,5 +1,5 @@
 (* TEST
-   flags = "-w A"
+   flags = "-w +A"
    * expect
 *)
 
@@ -8,9 +8,9 @@ let () = try () with Invalid_argument "Any" -> ();;
 Line 1, characters 38-43:
 1 | let () = try () with Invalid_argument "Any" -> ();;
                                           ^^^^^
-Warning 52: Code should not depend on the actual values of
+Warning 52 [fragile-literal-pattern]: Code should not depend on the actual values of
 this constructor's arguments. They are only for information
-and may change in future versions. (See manual section 9.5)
+and may change in future versions. (See manual section 11.5)
 |}];;
 
 let () = try () with Match_failure ("Any",_,_) -> ();;
@@ -18,9 +18,9 @@ let () = try () with Match_failure ("Any",_,_) -> ();;
 Line 1, characters 35-46:
 1 | let () = try () with Match_failure ("Any",_,_) -> ();;
                                        ^^^^^^^^^^^
-Warning 52: Code should not depend on the actual values of
+Warning 52 [fragile-literal-pattern]: Code should not depend on the actual values of
 this constructor's arguments. They are only for information
-and may change in future versions. (See manual section 9.5)
+and may change in future versions. (See manual section 11.5)
 |}];;
 
 let () = try () with Match_failure (_,0,_) -> ();;
@@ -28,9 +28,9 @@ let () = try () with Match_failure (_,0,_) -> ();;
 Line 1, characters 35-42:
 1 | let () = try () with Match_failure (_,0,_) -> ();;
                                        ^^^^^^^
-Warning 52: Code should not depend on the actual values of
+Warning 52 [fragile-literal-pattern]: Code should not depend on the actual values of
 this constructor's arguments. They are only for information
-and may change in future versions. (See manual section 9.5)
+and may change in future versions. (See manual section 11.5)
 |}];;
 
 type t =
@@ -53,9 +53,9 @@ let f = function
 Line 2, characters 7-17:
 2 | | Warn "anything" -> ()
            ^^^^^^^^^^
-Warning 52: Code should not depend on the actual values of
+Warning 52 [fragile-literal-pattern]: Code should not depend on the actual values of
 this constructor's arguments. They are only for information
-and may change in future versions. (See manual section 9.5)
+and may change in future versions. (See manual section 11.5)
 val f : t -> unit = <fun>
 |}];;
 
@@ -66,9 +66,9 @@ let g = function
 Line 2, characters 8-10:
 2 | | Warn' 0n -> ()
             ^^
-Warning 52: Code should not depend on the actual values of
+Warning 52 [fragile-literal-pattern]: Code should not depend on the actual values of
 this constructor's arguments. They are only for information
-and may change in future versions. (See manual section 9.5)
+and may change in future versions. (See manual section 11.5)
 val g : t -> unit = <fun>
 |}];;
 
@@ -93,8 +93,8 @@ let j = function
 Line 2, characters 7-34:
 2 | | Deep (_ :: _ :: ("deep",_) :: _) -> ()
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 52: Code should not depend on the actual values of
+Warning 52 [fragile-literal-pattern]: Code should not depend on the actual values of
 this constructor's arguments. They are only for information
-and may change in future versions. (See manual section 9.5)
+and may change in future versions. (See manual section 11.5)
 val j : t -> unit = <fun>
 |}];;

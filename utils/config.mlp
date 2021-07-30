@@ -17,6 +17,8 @@
 (* The main OCaml version string has moved to ../VERSION *)
 let version = Sys.ocaml_version
 
+let bindir = "%%BINDIR%%"
+
 let standard_library_default = "%%LIBDIR%%"
 
 let standard_library =
@@ -35,7 +37,9 @@ let c_has_debug_prefix_map = %%CC_HAS_DEBUG_PREFIX_MAP%%
 let as_has_debug_prefix_map = %%AS_HAS_DEBUG_PREFIX_MAP%%
 let ocamlc_cflags = "%%OCAMLC_CFLAGS%%"
 let ocamlc_cppflags = "%%OCAMLC_CPPFLAGS%%"
-let ocamlopt_cflags = "%%OCAMLOPT_CFLAGS%%"
+(* #7678: ocamlopt uses these only to compile .c files, and the behaviour for
+          the two drivers should be identical. *)
+let ocamlopt_cflags = "%%OCAMLC_CFLAGS%%"
 let ocamlopt_cppflags = "%%OCAMLOPT_CPPFLAGS%%"
 let bytecomp_c_libraries = "%%BYTECCLIBS%%"
 (* bytecomp_c_compiler and native_c_compiler have been supported for a
@@ -51,21 +55,24 @@ let native_c_compiler =
 let native_c_libraries = "%%NATIVECCLIBS%%"
 let native_pack_linker = "%%PACKLD%%"
 let ranlib = "%%RANLIBCMD%%"
+let default_rpath = "%%RPATH%%"
+let mksharedlibrpath = "%%MKSHAREDLIBRPATH%%"
 let ar = "%%ARCMD%%"
+let supports_shared_libraries = %%SUPPORTS_SHARED_LIBRARIES%%
 let mkdll, mkexe, mkmaindll =
   (* @@DRA Cygwin - but only if shared libraries are enabled, which we
      should be able to detect? *)
-  if Sys.os_type = "Win32" then
+  if Sys.win32 || Sys.cygwin && supports_shared_libraries then
     try
       let flexlink =
         let flexlink = Sys.getenv "OCAML_FLEXLINK" in
         let f i =
           let c = flexlink.[i] in
-          if c = '/' then '\\' else c in
+          if c = '/' && Sys.win32 then '\\' else c in
         (String.init (String.length flexlink) f) ^ " %%FLEXLINK_FLAGS%%" in
-      flexlink,
+      flexlink ^ "%%FLEXLINK_DLL_LDFLAGS%%",
       flexlink ^ " -exe%%FLEXLINK_LDFLAGS%%",
-      flexlink ^ " -maindll"
+      flexlink ^ " -maindll%%FLEXLINK_DLL_LDFLAGS%%"
     with Not_found ->
       "%%MKDLL%%", "%%MKEXE%%", "%%MKMAINDLL%%"
   else
@@ -73,35 +80,36 @@ let mkdll, mkexe, mkmaindll =
 
 let flambda = %%FLAMBDA%%
 let with_flambda_invariants = %%WITH_FLAMBDA_INVARIANTS%%
+let with_cmm_invariants = %%WITH_CMM_INVARIANTS%%
 let safe_string = %%FORCE_SAFE_STRING%%
 let default_safe_string = %%DEFAULT_SAFE_STRING%%
 let windows_unicode = %%WINDOWS_UNICODE%% != 0
-let supports_shared_libraries = %%SUPPORTS_SHARED_LIBRARIES%%
 
 let flat_float_array = %%FLAT_FLOAT_ARRAY%%
 
 let function_sections = %%FUNCTION_SECTIONS%%
 let afl_instrument = %%AFL_INSTRUMENT%%
 
-let exec_magic_number = "Caml1999X027"
+let exec_magic_number = "Caml1999X030"
     (* exec_magic_number is duplicated in runtime/caml/exec.h *)
-and cmi_magic_number = "Caml1999I027"
-and cmo_magic_number = "Caml1999O027"
-and cma_magic_number = "Caml1999A027"
+and cmi_magic_number = "Caml1999I030"
+and cmo_magic_number = "Caml1999O030"
+and cma_magic_number = "Caml1999A030"
 and cmx_magic_number =
   if flambda then
-    "Caml1999y027"
+    "Caml1999y030"
   else
-    "Caml1999Y027"
+    "Caml1999Y030"
 and cmxa_magic_number =
   if flambda then
-    "Caml1999z027"
+    "Caml1999z030"
   else
-    "Caml1999Z027"
-and ast_impl_magic_number = "Caml1999M027"
-and ast_intf_magic_number = "Caml1999N027"
-and cmxs_magic_number = "Caml1999D027"
-and cmt_magic_number = "Caml1999T027"
+    "Caml1999Z030"
+and ast_impl_magic_number = "Caml1999M030"
+and ast_intf_magic_number = "Caml1999N030"
+and cmxs_magic_number = "Caml1999D030"
+and cmt_magic_number = "Caml1999T030"
+and linear_magic_number = "Caml1999L030"
 
 let interface_suffix = ref ".mli"
 
@@ -122,10 +130,6 @@ let system = "%%SYSTEM%%"
 let asm = "%%ASM%%"
 let asm_cfi_supported = %%ASM_CFI_SUPPORTED%%
 let with_frame_pointers = %%WITH_FRAME_POINTERS%%
-let spacetime = %%WITH_SPACETIME%%
-let enable_call_counts = %%ENABLE_CALL_COUNTS%%
-let libunwind_available = %%LIBUNWIND_AVAILABLE%%
-let libunwind_link_flags = "%%LIBUNWIND_LINK_FLAGS%%"
 let profinfo = %%WITH_PROFINFO%%
 let profinfo_width = %%PROFINFO_WIDTH%%
 
@@ -192,7 +196,6 @@ let configuration_variables =
   p "host" host;
   p "target" target;
   p_bool "flambda" flambda;
-  p_bool "spacetime" spacetime;
   p_bool "safe_string" safe_string;
   p_bool "default_safe_string" default_safe_string;
   p_bool "flat_float_array" flat_float_array;
@@ -211,6 +214,7 @@ let configuration_variables =
   p "ast_intf_magic_number" ast_intf_magic_number;
   p "cmxs_magic_number" cmxs_magic_number;
   p "cmt_magic_number" cmt_magic_number;
+  p "linear_magic_number" linear_magic_number;
 ]
 
 let print_config_value oc = function
@@ -238,3 +242,5 @@ let config_var x =
         | Bool b -> string_of_bool b
       in
       Some s
+
+let merlin = false

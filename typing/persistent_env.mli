@@ -43,7 +43,7 @@ end
 
 type can_load_cmis =
   | Can_load_cmis
-  | Cannot_load_cmis of Misc.EnvLazy.log
+  | Cannot_load_cmis of Lazy_backtrack.log
 
 type 'a t
 
@@ -76,6 +76,10 @@ val is_imported : 'a t -> modname -> bool
 (* [is_imported_opaque penv md] checks if [md] has been imported
    in [penv] as an opaque module *)
 val is_imported_opaque : 'a t -> modname -> bool
+
+(* [register_import_as_opaque penv md] registers [md] in [penv] as an
+   opaque module *)
+val register_import_as_opaque : 'a t -> modname -> unit
 
 val make_cmi : 'a t -> modname -> Types.signature -> alerts
   -> Cmi_format.cmi_infos

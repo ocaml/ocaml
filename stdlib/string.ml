@@ -41,8 +41,11 @@ let make n c =
   B.make n c |> bts
 let init n f =
   B.init n f |> bts
+let empty = ""
 let copy s =
   B.copy (bos s) |> bts
+let of_bytes = B.to_string
+let to_bytes = B.of_string
 let sub s ofs len =
   B.sub (bos s) ofs len |> bts
 let fill =
@@ -73,6 +76,8 @@ let concat sep = function
             (B.create (sum_lengths 0 seplen l))
             0 sep seplen l
 
+let cat = ( ^ )
+
 (* duplicated in bytes.ml *)
 let iter f s =
   for i = 0 to length s - 1 do f (unsafe_get s i) done
@@ -85,6 +90,14 @@ let map f s =
   B.map f (bos s) |> bts
 let mapi f s =
   B.mapi f (bos s) |> bts
+let fold_right f x a =
+  B.fold_right f (bos x) a
+let fold_left f a x =
+  B.fold_left f a (bos x)
+let exists f s =
+  B.exists f (bos s)
+let for_all f s =
+  B.for_all f (bos s)
 
 (* Beware: we cannot use B.trim or B.escape because they always make a
    copy, but String.mli spells out some cases where we are not allowed
@@ -197,11 +210,28 @@ let capitalize_ascii s =
 let uncapitalize_ascii s =
   B.uncapitalize_ascii (bos s) |> bts
 
-type t = string
+(* duplicated in bytes.ml *)
+let starts_with ~prefix s =
+  let len_s = length s
+  and len_pre = length prefix in
+  let rec aux i =
+    if i = len_pre then true
+    else if unsafe_get s i <> unsafe_get prefix i then false
+    else aux (i + 1)
+  in len_s >= len_pre && aux 0
 
-let compare (x: t) (y: t) = Stdlib.compare x y
-external equal : string -> string -> bool = "caml_string_equal" [@@noalloc]
+(* duplicated in bytes.ml *)
+let ends_with ~suffix s =
+  let len_s = length s
+  and len_suf = length suffix in
+  let diff = len_s - len_suf in
+  let rec aux i =
+    if i = len_suf then true
+    else if unsafe_get s (diff + i) <> unsafe_get suffix i then false
+    else aux (i + 1)
+  in diff >= 0 && aux 0
 
+(* duplicated in bytes.ml *)
 let split_on_char sep s =
   let r = ref [] in
   let j = ref (length s) in
@@ -224,6 +254,11 @@ let capitalize s =
 let uncapitalize s =
   B.uncapitalize (bos s) |> bts
 
+type t = string
+
+let compare (x: t) (y: t) = Stdlib.compare x y
+external equal : string -> string -> bool = "caml_string_equal" [@@noalloc]
+
 (** {1 Iterators} *)
 
 let to_seq s = bos s |> B.to_seq
@@ -231,3 +266,21 @@ let to_seq s = bos s |> B.to_seq
 let to_seqi s = bos s |> B.to_seqi
 
 let of_seq g = B.of_seq g |> bts
+
+(** {6 Binary encoding/decoding of integers} *)
+
+external get_uint8 : string -> int -> int = "%string_safe_get"
+external get_uint16_ne : string -> int -> int = "%caml_string_get16"
+external get_int32_ne : string -> int -> int32 = "%caml_string_get32"
+external get_int64_ne : string -> int -> int64 = "%caml_string_get64"
+
+let get_int8 s i = B.get_int8 (bos s) i
+let get_uint16_le s i = B.get_uint16_le (bos s) i
+let get_uint16_be s i = B.get_uint16_be (bos s) i
+let get_int16_ne s i = B.get_int16_ne (bos s) i
+let get_int16_le s i = B.get_int16_le (bos s) i
+let get_int16_be s i = B.get_int16_be (bos s) i
+let get_int32_le s i = B.get_int32_le (bos s) i
+let get_int32_be s i = B.get_int32_be (bos s) i
+let get_int64_le s i = B.get_int64_le (bos s) i
+let get_int64_be s i = B.get_int64_be (bos s) i

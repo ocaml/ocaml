@@ -12,13 +12,15 @@
 (*                                                                        *)
 (**************************************************************************)
 
-module SMap = Misc.Stdlib.String.Map
+open Local_store
+
+module STbl = Misc.Stdlib.String.Tbl
 
 (* Mapping from basenames to full filenames *)
-type registry = string SMap.t ref
+type registry = string STbl.t
 
-let files : registry = ref SMap.empty
-let files_uncap : registry = ref SMap.empty
+let files : registry ref = s_table STbl.create 42
+let files_uncap : registry ref = s_table STbl.create 42
 
 module Dir = struct
   type t = {
@@ -42,48 +44,72 @@ module Dir = struct
     { path; files = Array.to_list (readdir_compat path) }
 end
 
-let dirs = ref []
+let dirs = s_ref []
 
 let reset () =
-  files := SMap.empty;
-  files_uncap := SMap.empty;
+  assert (not Config.merlin || Local_store.is_bound ());
+  STbl.clear !files;
+  STbl.clear !files_uncap;
   dirs := []
 
-let get () = !dirs
-let get_paths () = List.map Dir.path !dirs
+let get () = List.rev !dirs
+let get_paths () = List.rev_map Dir.path !dirs
 
+(* Optimized version of [add] below, for use in [init] and [remove_dir]: since
+   we are starting from an empty cache, we can avoid checking whether a unit
+   name already exists in the cache simply by adding entries in reverse
+   order. *)
 let add dir =
-  let add_file base =
-    let fn = Filename.concat dir.Dir.path base in
-    files := SMap.add base fn !files;
-    files_uncap := SMap.add (String.uncapitalize_ascii base) fn !files_uncap;
-  in
-  List.iter add_file dir.Dir.files;
-  dirs := dir :: !dirs
-
-let remove_dir dir =
-  let new_dirs = List.filter (fun d -> Dir.path d <> dir) !dirs in
-  if new_dirs <> !dirs then begin
-    reset ();
-    List.iter add (List.rev new_dirs)
-  end
-
-let add_dir dir = add (Dir.create dir)
+  List.iter (fun base ->
+      let fn = Filename.concat dir.Dir.path base in
+      STbl.replace !files base fn;
+      STbl.replace !files_uncap (String.uncapitalize_ascii base) fn
+    ) dir.Dir.files
 
 let init l =
   reset ();
-  List.iter add_dir (List.rev l)
+  dirs := List.rev_map Dir.create l;
+  List.iter add !dirs
+
+let remove_dir dir =
+  assert (not Config.merlin || Local_store.is_bound ());
+  let new_dirs = List.filter (fun d -> Dir.path d <> dir) !dirs in
+  if List.compare_lengths new_dirs !dirs <> 0 then begin
+    reset ();
+    List.iter add new_dirs;
+    dirs := new_dirs
+  end
+
+(* General purpose version of function to add a new entry to load path: We only
+   add a basename to the cache if it is not already present in the cache, in
+   order to enforce left-to-right precedence. *)
+let add dir =
+  assert (not Config.merlin || Local_store.is_bound ());
+  List.iter
+    (fun base ->
+       let fn = Filename.concat dir.Dir.path base in
+       if not (STbl.mem !files base) then
+         STbl.replace !files base fn;
+       let ubase = String.uncapitalize_ascii base in
+       if not (STbl.mem !files_uncap ubase) then
+         STbl.replace !files_uncap ubase fn)
+    dir.Dir.files;
+  dirs := dir :: !dirs
+
+let add_dir dir = add (Dir.create dir)
 
 let is_basename fn = Filename.basename fn = fn
 
 let find fn =
-  if is_basename fn then
-    SMap.find fn !files
+  assert (not Config.merlin || Local_store.is_bound ());
+  if is_basename fn && not !Sys.interactive then
+    STbl.find !files fn
   else
     Misc.find_in_path (get_paths ()) fn
 
 let find_uncap fn =
-  if is_basename fn then
-    SMap.find (String.uncapitalize_ascii fn) !files_uncap
+  assert (not Config.merlin || Local_store.is_bound ());
+  if is_basename fn && not !Sys.interactive then
+    STbl.find !files_uncap (String.uncapitalize_ascii fn)
   else
     Misc.find_in_path_uncap (get_paths ()) fn

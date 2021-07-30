@@ -54,7 +54,8 @@ enum {
   EV_POS = 0,
   EV_MODULE = 1,
   EV_LOC = 2,
-  EV_KIND = 3
+  EV_KIND = 3,
+  EV_DEFNAME = 4
 };
 
 /* Location of fields in the Location.t record. */
@@ -77,6 +78,7 @@ enum {
 struct ev_info {
   code_t ev_pc;
   char *ev_filename;
+  char *ev_defname;
   int ev_lnum;
   int ev_startchr;
   int ev_endchr;
@@ -176,6 +178,16 @@ static struct ev_info *process_debug_events(code_t code_start,
           caml_fatal_error ("caml_add_debug_info: out of memory");
       }
 
+      if (Is_block(Field(ev, EV_DEFNAME)) &&
+          Tag_val(Field(ev, EV_DEFNAME)) == String_tag) {
+        const char *dname = String_val(Field(ev, EV_DEFNAME));
+        events[j].ev_defname = caml_stat_strdup_noexc(dname);
+        if (events[j].ev_defname == NULL)
+          caml_fatal_error ("caml_add_debug_info: out of memory");
+      } else {
+        events[j].ev_defname = "<old bytecode>";
+      }
+
       events[j].ev_lnum = Int_val(Field(ev_start, POS_LNUM));
       events[j].ev_startchr =
         Int_val(Field(ev_start, POS_CNUM))
@@ -197,8 +209,7 @@ static struct ev_info *process_debug_events(code_t code_start,
 
 /* Processes a (Instruct.debug_event list array) into a form suitable
    for quick lookup and registers it for the (code_start,code_size) pc range. */
-CAMLprim value caml_add_debug_info(code_t code_start, value code_size,
-                                   value events_heap)
+value caml_add_debug_info(code_t code_start, value code_size, value events_heap)
 {
   CAMLparam1(events_heap);
   struct debug_info *debug_info;
@@ -226,7 +237,7 @@ CAMLprim value caml_add_debug_info(code_t code_start, value code_size,
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_remove_debug_info(code_t start)
+value caml_remove_debug_info(code_t start)
 {
   CAMLparam0();
   CAMLlocal2(dis, prev);
@@ -292,7 +303,7 @@ code_t caml_next_frame_pointer(value ** sp, value ** trsp)
     if (Is_long(*spv)) continue;
     p = (code_t*) spv;
     if(&Trap_pc(*trsp) == p) {
-      *trsp = Trap_link(*trsp);
+      *trsp = *trsp + Long_val(Trap_link_offset(*trsp));
       continue;
     }
 
@@ -365,8 +376,9 @@ static void read_main_debug_info(struct debug_info *di)
   }
 
   fd = caml_attempt_open(&exec_name, &trail, 1);
-  if (fd < 0){
-    caml_fatal_error ("executable program file not found");
+  if (fd < 0) {
+    /* Record the failure of caml_attempt_open in di->already-read */
+    di->already_read = fd;
     CAMLreturn0;
   }
 
@@ -374,6 +386,7 @@ static void read_main_debug_info(struct debug_info *di)
   if (caml_seek_optional_section(fd, &trail, "DBUG") != -1) {
     chan = caml_open_descriptor_in(fd);
 
+    Lock(chan);
     num_events = caml_getword(chan);
     events = caml_alloc(num_events, 0);
 
@@ -389,10 +402,13 @@ static void read_main_debug_info(struct debug_info *di)
       /* Record event list */
       Store_field(events, i, evl);
     }
+    Unlock(chan);
 
     caml_close_channel(chan);
 
     di->events = process_debug_events(caml_start_code, events, &di->num_events);
+  } else {
+    close(fd);
   }
 
   CAMLreturn0;
@@ -404,9 +420,25 @@ CAMLexport void caml_init_debug_info(void)
   caml_add_debug_info(caml_start_code, Val_long(caml_code_size), Val_unit);
 }
 
+CAMLexport void caml_load_main_debug_info(void)
+{
+  if (Caml_state->backtrace_active > 1) {
+    read_main_debug_info(caml_debug_info.contents[0]);
+  }
+}
+
 int caml_debug_info_available(void)
 {
   return (caml_debug_info.size != 0);
+}
+
+int caml_debug_info_status(void)
+{
+  if (!caml_debug_info_available()) {
+    return 0;
+  } else {
+    return ((struct debug_info *)caml_debug_info.contents[0])->already_read;
+  }
 }
 
 /* Search the event index for the given PC.  Return -1 if not found. */
@@ -461,6 +493,7 @@ void caml_debuginfo_location(debuginfo dbg,
   li->loc_valid = 1;
   li->loc_is_inlined = 0;
   li->loc_filename = event->ev_filename;
+  li->loc_defname = event->ev_defname;
   li->loc_lnum = event->ev_lnum;
   li->loc_startchr = event->ev_startchr;
   li->loc_endchr = event->ev_endchr;

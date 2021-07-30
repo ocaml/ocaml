@@ -22,9 +22,15 @@
 
 (rule
  (targets ocamltest_config.ml)
- (deps ../Makefile.config ../Makefile.common ../Makefile.best_binaries Makefile
-       ./ocamltest_config.ml.in ./getocamloptdefaultflags)
- (action (run make %{targets})))
+ (deps
+   ../Makefile.config
+   ../Makefile.build_config
+   ../Makefile.config_if_required
+   ../Makefile.common
+   ../Makefile.best_binaries
+   Makefile
+   ./ocamltest_config.ml.in)
+ (action (run make %{targets} COMPUTE_DEPS=false)))
 
 ;; FIXME: handle UNIX_OR_WIN32 or something similar
 (library
@@ -32,10 +38,13 @@
  (modes byte)
  (wrapped false)
  (flags (:standard -nostdlib))
- (libraries ocamlcommon stdlib)
+ (libraries ocamlcommon stdlib
+  (select ocamltest_unix.ml from
+   (unix -> ocamltest_unix_real.ml)
+   (-> ocamltest_unix_dummy.ml)))
  (modules (:standard \ options main))
  (c_flags (-DCAML_INTERNALS -I%{project_root}/runtime)) ; fixme
- (c_names run_unix run_stubs ocamltest_stdlib_stubs))
+ (c_names run_unix run_stubs))
 
 (rule
  (targets empty.ml)

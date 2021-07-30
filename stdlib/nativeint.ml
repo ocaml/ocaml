@@ -75,6 +75,9 @@ let equal (x: t) (y: t) = compare x y = 0
 let unsigned_compare n m =
   compare (sub n min_int) (sub m min_int)
 
+let min x y : t = if x <= y then x else y
+let max x y : t = if x >= y then x else y
+
 (* Unsigned division from signed division of the same
    bitness. See Warren Jr., Henry S. (2013). Hacker's Delight (2 ed.), Sec 9-3.
 *)

@@ -1,7 +1,6 @@
 (* TEST
    flags = "-g"
    ocamlrunparam += ",b=1"
-   compare_programs = "false"
 *)
 
 exception Exn
@@ -44,7 +43,6 @@ let run f =
     Printf.printf "---------------------------\n%!"
 
 let _ =
-  Printexc.record_backtrace true;
   run without_reraise;
   run with_reraise;
   run trickier

@@ -47,7 +47,6 @@ void caml_realloc_stack(asize_t required_space)
 {
   asize_t size;
   value * new_low, * new_high, * new_sp;
-  value * p;
 
   CAMLassert(Caml_state->extern_sp >= Caml_state->stack_low);
   size = Caml_state->stack_high - Caml_state->stack_low;
@@ -72,8 +71,6 @@ void caml_realloc_stack(asize_t required_space)
   caml_stat_free(Caml_state->stack_low);
   Caml_state->trapsp = (value *) shift(Caml_state->trapsp);
   Caml_state->trap_barrier = (value *) shift(Caml_state->trap_barrier);
-  for (p = Caml_state->trapsp; p < new_high; p = Trap_link(p))
-    Trap_link(p) = (value *) shift(Trap_link(p));
   Caml_state->stack_low = new_low;
   Caml_state->stack_high = new_high;
   Caml_state->stack_threshold =

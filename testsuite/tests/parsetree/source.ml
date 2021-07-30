@@ -171,11 +171,14 @@ and[@foo] y = x
 type%foo[@foo] t = int
 and[@foo] t = int
 type%foo[@foo] t += T
+type t += A = M.A[@a]
+type t += B = M.A[@b] | C = M.A[@c][@@t]
 
 class%foo[@foo] x = x
 class type%foo[@foo] x = x
 external%foo[@foo] x : _  = ""
 exception%foo[@foo] X
+exception A = M.A[@a]
 
 module%foo[@foo] M = M
 module%foo[@foo] rec M : S = M
@@ -7372,3 +7375,69 @@ let f = function
 
 let () =
   f (fun (type t) -> x)
+
+(* #9778 *)
+
+type t = unit
+
+let rec equal : 'a. ('a -> 'a -> bool) -> 'a t -> 'a t -> bool =
+ (fun poly_a (_ : unit) (_ : unit) -> true) [@ocaml.warning "-A"]
+ [@@ocaml.warning "-39"]
+
+(* Issue #9548, PR #9591 *)
+
+type u = [ `A ] ;;
+type v = [ u | `B ] ;;
+let f = fun (x : [ | u ]) -> x ;;
+
+(* Issue #9999 *)
+let test = function
+  | `A | `B as x -> ignore x
+
+let test = function
+  | `A as x | (`B as x) -> ignore x
+
+let test = function
+  | `A as x | (`B as x) as z -> ignore (z, x)
+
+let test = function
+  | (`A as x) | (`B as x) as z -> ignore (z, x)
+
+let test = function
+  | (`A | `B) | `C -> ()
+
+let test = function
+  | `A | (`B | `C) -> ()
+
+let test = function
+  | `A | `B | `C -> ()
+
+let test = function
+  | (`A | `B) as x | `C -> ()
+
+(* Let-punning *)
+module M = struct
+  let (let*) x f = f x
+  let (and*) a b = (a, b)
+  let x = 1 and y = 2 and z = 3
+  let p =
+    let* x and* y and* z in (x,y,z)
+  let q =
+    let%foo x and y and z in (x,y,z)
+end
+
+(* No surrounding parentheses for immediate objects *)
+let x = object method f = 1 end;;
+let x = object method f = 1 end # f;;
+let x = Some object method f = 1 end;;
+let x = Some object method f = 1 end # f;;
+
+let f x y z = x in
+f object method f = 1 end
+  object method f = 1 end # f
+  object end
+
+(* Punning of labelled function argument with type constraint *)
+let g y =
+  let f ~y = y + 1 in
+  f ~(y:int)

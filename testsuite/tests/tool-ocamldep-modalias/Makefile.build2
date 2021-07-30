@@ -5,6 +5,8 @@
 # will not necessarily be ran by GNU make
 # The same holds for $< and $@
 
+.NOTPARALLEL:
+
 SOURCES = A.ml B.ml C.ml
 OBJECTS = $(SOURCES:%.ml=Lib%.cmo)
 NOBJECTS = $(OBJECTS:%.cmo=%.cmx)
@@ -54,10 +56,8 @@ include depend.mk2
 clean:
 	rm -f *.cm* lib.ml
 
-.SUFFIXES: .ml .cmo .cmx
-
-.ml.cmo:
+%.cmo: %.ml
 	$(OCAMLC) -no-alias-deps -c $<
 
-.ml.cmx:
+%.cmx: %.ml
 	$(OCAMLOPT) -no-alias-deps -c $<

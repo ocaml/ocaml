@@ -1,25 +1,25 @@
 \begin{camlexample}{toplevel}
 \begin{caml}
 \begin{camlinput}
-$\?$[@@@warning "+A"];;
+$\?$ [@@@warning "+A"];;
 \end{camlinput}
 \end{caml}
 \begin{caml}
 \begin{camlinput}
-$\?$1 + <<2.>> ;;
+$\?$ 1 + <<2.>> ;;
 \end{camlinput}
 \begin{camlerror}
-$\:$Error: This expression has type float but an expression was expected of type
-$\:$         int
+Error: This expression has type float but an expression was expected of type
+         int
 \end{camlerror}
 \end{caml}
 \begin{caml}
 \begin{camlinput}
-$\?$let f <<x>> = () ;;
+$\?$ let f <<x>> = () ;;
 \end{camlinput}
 \begin{camlwarn}
-$\:$Warning 27: unused variable x.
-$\:$val f : 'a -> unit = <fun>
+Warning 27 [unused-var-strict]: unused variable x.
+val f : 'a -> unit = <fun>
 \end{camlwarn}
 \end{caml}
 \end{camlexample}
@@ -27,13 +27,13 @@ $\:$val f : 'a -> unit = <fun>
 \begin{camlexample}{toplevel}
 \begin{caml}
 \begin{camlinput}
-$\?$Format.printf "Hello@.";
-$\?$print_endline "world";;
+$\?$ Format.printf "Hello@.";
+  print_endline "world";;
 \end{camlinput}
 \begin{camloutput}
-$\:$Hello
-$\:$world
-$\:$- : unit = ()
+Hello
+world
+- : unit = ()
 \end{camloutput}
 \end{caml}
 \end{camlexample}

@@ -17,6 +17,7 @@
 
 /* Start-up code */
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -35,6 +36,7 @@
 #include "caml/debugger.h"
 #include "caml/domain.h"
 #include "caml/dynlink.h"
+#include "caml/eventlog.h"
 #include "caml/exec.h"
 #include "caml/fail.h"
 #include "caml/fix_code.h"
@@ -69,6 +71,7 @@
 
 static char magicstr[EXEC_MAGIC_LENGTH+1];
 static int print_magic = 0;
+static int print_config = 0;
 
 /* Print the specified error message followed by an end-of-line and exit */
 static void error(char *msg, ...)
@@ -127,7 +130,10 @@ int caml_attempt_open(char_os **name, struct exec_trailer *trail,
   if (fd == -1) {
     caml_stat_free(truename);
     caml_gc_message(0x100, "Cannot open file\n");
-    return FILE_NOT_FOUND;
+    if (errno == EMFILE)
+      return NO_FDS;
+    else
+      return FILE_NOT_FOUND;
   }
   if (!do_open_script) {
     err = read (fd, buf, 2);
@@ -268,57 +274,170 @@ Algorithm:
 
 */
 
+static void do_print_help(void)
+{
+  printf("%s\n",
+    "Usage: ocamlrun [<options>] [--] <executable> [<command-line>]\n"
+    "Options are:\n"
+    "  -b  Set runtime parameter b (detailed exception backtraces)\n"
+    "  -config  Print configuration values and exit\n"
+    "  -I <dir>  Add <dir> to the list of DLL search directories\n"
+    "  -m  Print the magic number of <executable> and exit\n"
+    "  -M  Print the magic number expected by this runtime and exit\n"
+    "  -p  Print the names of the primitives known to this runtime\n"
+    "  -t  Trace the execution of the bytecode interpreter (specify multiple\n"
+    "      times to increase verbosity)\n"
+    "  -v  Set runtime parameter v=61 (GC event information)\n"
+    "  -version  Print version string and exit\n"
+    "  -vnum  Print short version number and exit\n"
+    "  -help  Display this list of options\n"
+    "  --help  Display this list of options");
+}
+
 /* Parse options on the command line */
 
 static int parse_command_line(char_os **argv)
 {
-  int i, j;
+  int i, j, len, parsed;
 
   for(i = 1; argv[i] != NULL && argv[i][0] == '-'; i++) {
-    switch(argv[i][1]) {
-    case 't':
-      ++ caml_trace_level; /* ignored unless DEBUG mode */
-      break;
-    case 'v':
-      if (!strcmp_os (argv[i], T("-version"))){
-        printf ("%s\n", "The OCaml runtime, version " OCAML_VERSION_STRING);
-        exit (0);
-      }else if (!strcmp_os (argv[i], T("-vnum"))){
-        printf ("%s\n", OCAML_VERSION_STRING);
-        exit (0);
-      }else{
+    len = strlen_os(argv[i]);
+    parsed = 1;
+    if (len == 2) {
+      /* Single-letter options, e.g. -v */
+      switch(argv[i][1]) {
+      case '-':
+        return i + 1;
+        break;
+      case 't':
+        ++ caml_trace_level; /* ignored unless DEBUG mode */
+        break;
+      case 'v':
         caml_verb_gc = 0x001+0x004+0x008+0x010+0x020;
+        break;
+      case 'p':
+        for (j = 0; caml_names_of_builtin_cprim[j] != NULL; j++)
+          printf("%s\n", caml_names_of_builtin_cprim[j]);
+        exit(0);
+        break;
+      case 'b':
+        caml_record_backtraces(1);
+        break;
+      case 'I':
+        if (argv[i + 1] != NULL) {
+          caml_ext_table_add(&caml_shared_libs_path, argv[i + 1]);
+          i++;
+        } else {
+          error("option '-I' needs an argument.");
+        }
+        break;
+      case 'm':
+        print_magic = 1;
+        break;
+      case 'M':
+        printf("%s\n", EXEC_MAGIC);
+        exit(0);
+        break;
+      default:
+        parsed = 0;
       }
-      break;
-    case 'p':
-      for (j = 0; caml_names_of_builtin_cprim[j] != NULL; j++)
-        printf("%s\n", caml_names_of_builtin_cprim[j]);
-      exit(0);
-      break;
-    case 'b':
-      caml_record_backtrace(Val_true);
-      break;
-    case 'I':
-      if (argv[i + 1] != NULL) {
-        caml_ext_table_add(&caml_shared_libs_path, argv[i + 1]);
-        i++;
+    } else {
+      /* Named options, e.g. -version */
+      if (!strcmp_os(argv[i], T("-version"))) {
+        printf("%s\n", "The OCaml runtime, version " OCAML_VERSION_STRING);
+        exit(0);
+      } else if (!strcmp_os(argv[i], T("-vnum"))) {
+        printf("%s\n", OCAML_VERSION_STRING);
+        exit(0);
+      } else if (!strcmp_os(argv[i], T("-help")) ||
+                 !strcmp_os(argv[i], T("--help"))) {
+        do_print_help();
+        exit(0);
+      } else if (!strcmp_os(argv[i], T("-config"))) {
+        print_config = 1;
+      } else {
+        parsed = 0;
       }
-      break;
-    case 'm':
-      print_magic = 1;
-      break;
-    case 'M':
-      printf ( "%s\n", EXEC_MAGIC);
-      exit(0);
-      break;
-    default:
-      error("unknown option %s", caml_stat_strdup_of_os(argv[i]));
     }
+
+    if (!parsed)
+      error("unknown option %s", caml_stat_strdup_of_os(argv[i]));
   }
+
   return i;
 }
 
-extern void caml_init_ieee_floats (void);
+/* Print the configuration of the runtime to stdout; memory allocated is not
+   freed, since the runtime will terminate after calling this. */
+static void do_print_config(void)
+{
+  int i;
+  char_os * dir;
+
+  /* Print the runtime configuration */
+  printf("version: %s\n", OCAML_VERSION_STRING);
+  printf("standard_library_default: %s\n",
+         caml_stat_strdup_of_os(OCAML_STDLIB_DIR));
+  printf("standard_library: %s\n",
+         caml_stat_strdup_of_os(caml_get_stdlib_location()));
+  printf("int_size: %d\n", 8 * (int)sizeof(value));
+  printf("word_size: %d\n", 8 * (int)sizeof(value) - 1);
+  printf("os_type: %s\n", OCAML_OS_TYPE);
+  printf("host: %s\n", HOST);
+  printf("flat_float_array: %s\n",
+#ifdef FLAT_FLOAT_ARRAY
+         "true");
+#else
+         "false");
+#endif
+  printf("supports_afl: %s\n",
+#ifdef HAS_SYS_SHM_H
+         "true");
+#else
+         "false");
+#endif
+  printf("windows_unicode: %s\n",
+#if WINDOWS_UNICODE
+         "true");
+#else
+         "false");
+#endif
+  printf("supports_shared_libraries: %s\n",
+#ifdef SUPPORT_DYNAMIC_LINKING
+         "true");
+#else
+         "false");
+#endif
+  printf("no_naked_pointers: %s\n",
+#ifdef NO_NAKED_POINTERS
+         "true");
+#else
+         "false");
+#endif
+  printf("profinfo: %s\n"
+         "profinfo_width: %d\n",
+#ifdef WITH_PROFINFO
+         "true", PROFINFO_WIDTH);
+#else
+         "false", 0);
+#endif
+  printf("exec_magic_number: %s\n", EXEC_MAGIC);
+
+  /* Parse ld.conf and print the effective search path */
+  puts("shared_libs_path:");
+  caml_parse_ld_conf();
+  for (i = 0; i < caml_shared_libs_path.size; i++) {
+    dir = caml_shared_libs_path.contents[i];
+    if (dir[0] == 0)
+#ifdef _WIN32
+      /* See caml_search_in_path in win32.c */
+      continue;
+#else
+      dir = ".";
+#endif
+    printf("  %s\n", caml_stat_strdup_of_os(dir));
+  }
+}
 
 #ifdef _WIN32
 extern void caml_signal_thread(void * lpParam);
@@ -330,8 +449,6 @@ extern void caml_signal_thread(void * lpParam);
 extern void caml_install_invalid_parameter_handler();
 
 #endif
-
-extern int caml_ensure_spacetime_dot_o_is_included;
 
 /* Main entry point when loading code from a file */
 
@@ -345,8 +462,6 @@ CAMLexport void caml_main(char_os **argv)
   char_os * shared_lib_path, * shared_libs;
   char_os * exe_name, * proc_self_exe;
 
-  caml_ensure_spacetime_dot_o_is_included++;
-
   /* Initialize the domain */
   caml_init_domain();
 
@@ -355,15 +470,13 @@ CAMLexport void caml_main(char_os **argv)
   caml_verb_gc = 0x3F;
 #endif
   caml_parse_ocamlrunparam();
+  CAML_EVENTLOG_INIT();
 #ifdef DEBUG
   caml_gc_message (-1, "### OCaml runtime: debug mode ###\n");
 #endif
   if (!caml_startup_aux(/* pooling */ caml_cleanup_on_exit))
     return;
 
-  /* Machine-dependent initialization of the floating-point hardware
-     so that it behaves as much as possible as specified in IEEE */
-  caml_init_ieee_floats();
   caml_init_locale();
 #if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
   caml_install_invalid_parameter_handler();
@@ -391,6 +504,10 @@ CAMLexport void caml_main(char_os **argv)
 
   if (fd < 0) {
     pos = parse_command_line(argv);
+    if (print_config) {
+      do_print_config();
+      exit(0);
+    }
     if (argv[pos] == 0) {
       error("no bytecode file specified");
     }
@@ -423,7 +540,7 @@ CAMLexport void caml_main(char_os **argv)
                 caml_init_heap_chunk_sz, caml_init_percent_free,
                 caml_init_max_percent_free, caml_init_major_window,
                 caml_init_custom_major_ratio, caml_init_custom_minor_ratio,
-                caml_init_custom_minor_max_bsz);
+                caml_init_custom_minor_max_bsz, caml_init_policy);
   caml_init_stack (caml_init_max_stack_wsz);
   caml_init_atom_table();
   caml_init_backtrace();
@@ -447,7 +564,9 @@ CAMLexport void caml_main(char_os **argv)
   /* Load the globals */
   caml_seek_section(fd, &trail, "DATA");
   chan = caml_open_descriptor_in(fd);
+  Lock(chan);
   caml_global_data = caml_input_val(chan);
+  Unlock(chan);
   caml_close_channel(chan); /* this also closes fd */
   caml_stat_free(trail.section);
   /* Ensure that the globals are in the major heap. */
@@ -455,6 +574,8 @@ CAMLexport void caml_main(char_os **argv)
   caml_oldify_mopup ();
   /* Initialize system libraries */
   caml_sys_init(exe_name, argv + pos);
+  /* Load debugging info, if b>=2 */
+  caml_load_main_debug_info();
 #ifdef _WIN32
   /* Start a thread to handle signals */
   if (caml_secure_getenv(T("CAMLSIGPIPE")))
@@ -493,6 +614,7 @@ CAMLexport value caml_startup_code_exn(
   caml_verb_gc = 0x3F;
 #endif
   caml_parse_ocamlrunparam();
+  CAML_EVENTLOG_INIT();
 #ifdef DEBUG
   caml_gc_message (-1, "### OCaml runtime: debug mode ###\n");
 #endif
@@ -501,7 +623,6 @@ CAMLexport value caml_startup_code_exn(
   if (!caml_startup_aux(pooling))
     return Val_unit;
 
-  caml_init_ieee_floats();
   caml_init_locale();
 #if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
   caml_install_invalid_parameter_handler();
@@ -518,7 +639,7 @@ CAMLexport value caml_startup_code_exn(
                 caml_init_heap_chunk_sz, caml_init_percent_free,
                 caml_init_max_percent_free, caml_init_major_window,
                 caml_init_custom_major_ratio, caml_init_custom_minor_ratio,
-                caml_init_custom_minor_max_bsz);
+                caml_init_custom_minor_max_bsz, caml_init_policy);
   caml_init_stack (caml_init_max_stack_wsz);
   caml_init_atom_table();
   caml_init_backtrace();
@@ -546,6 +667,8 @@ CAMLexport value caml_startup_code_exn(
   caml_section_table_size = section_table_size;
   /* Initialize system libraries */
   caml_sys_init(exe_name, argv);
+  /* Load debugging info, if b>=2 */
+  caml_load_main_debug_info();
   /* Execute the program */
   caml_debugger(PROGRAM_START, Val_unit);
   return caml_interprete(caml_start_code, caml_code_size);

@@ -38,11 +38,8 @@ CAMLextern double caml_sys_time_unboxed(value);
 CAMLextern void caml_sys_init (char_os * exe_name, char_os ** argv);
 
 CAMLnoreturn_start
-CAMLextern value caml_sys_exit (value)
+CAMLextern void caml_do_exit (int)
 CAMLnoreturn_end;
-
-extern double caml_sys_time_unboxed(value);
-CAMLextern value caml_sys_get_argv(value unit);
 
 extern char_os * caml_exe_name;
 

@@ -30,8 +30,7 @@
   do { win32_maperr(GetLastError()); uerror(func, arg); } while(0)
 
 /* Defined in [mmap_ba.c] */
-CAMLextern value
-caml_unix_mapped_alloc(int flags, int num_dims, void * data, intnat * dim);
+extern value caml_unix_mapped_alloc(int, int, void *, intnat *);
 
 #ifndef INVALID_SET_FILE_POINTER
 #define INVALID_SET_FILE_POINTER (-1)

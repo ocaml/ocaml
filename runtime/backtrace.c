@@ -27,6 +27,7 @@
 #include "caml/backtrace_prim.h"
 #include "caml/fail.h"
 #include "caml/debugger.h"
+#include "caml/startup.h"
 
 void caml_init_backtrace(void)
 {
@@ -34,10 +35,8 @@ void caml_init_backtrace(void)
 }
 
 /* Start or stop the backtrace machinery */
-CAMLprim value caml_record_backtrace(value vflag)
+CAMLexport void caml_record_backtraces(int flag)
 {
-  int flag = Int_val(vflag);
-
   if (flag != Caml_state->backtrace_active) {
     Caml_state->backtrace_active = flag;
     Caml_state->backtrace_pos = 0;
@@ -48,6 +47,12 @@ CAMLprim value caml_record_backtrace(value vflag)
        Caml_state->backtrace_buffer). So we don't have to allocate it here.
     */
   }
+  return;
+}
+
+CAMLprim value caml_record_backtrace(value flag)
+{
+  caml_record_backtraces(Int_val(flag));
   return Val_unit;
 }
 
@@ -93,8 +98,8 @@ static void print_location(struct caml_loc_info * li, int index)
   if (! li->loc_valid) {
     fprintf(stderr, "%s unknown location%s\n", info, inlined);
   } else {
-    fprintf (stderr, "%s file \"%s\"%s, line %d, characters %d-%d\n",
-             info, li->loc_filename, inlined, li->loc_lnum,
+    fprintf (stderr, "%s %s in file \"%s\"%s, line %d, characters %d-%d\n",
+             info, li->loc_defname, li->loc_filename, inlined, li->loc_lnum,
              li->loc_startchr, li->loc_endchr);
   }
 }
@@ -121,6 +126,38 @@ CAMLexport void caml_print_exception_backtrace(void)
       print_location(&li, i);
     }
   }
+
+  /* See also printexc.ml */
+  switch (caml_debug_info_status()) {
+  case FILE_NOT_FOUND:
+    fprintf(stderr,
+            "(Cannot print locations:\n "
+             "bytecode executable program file not found)\n");
+    break;
+  case BAD_BYTECODE:
+    fprintf(stderr,
+            "(Cannot print locations:\n "
+             "bytecode executable program file appears to be corrupt)\n");
+    break;
+  case WRONG_MAGIC:
+    fprintf(stderr,
+            "(Cannot print locations:\n "
+             "bytecode executable program file has wrong magic number)\n");
+    break;
+  case NO_FDS:
+    fprintf(stderr,
+            "(Cannot print locations:\n "
+             "bytecode executable program file cannot be opened;\n "
+             "-- too many open files. Try running with OCAMLRUNPARAM=b=2)\n");
+    break;
+  }
+}
+
+/* Return the status of loading backtrace information (error reporting in
+   bytecode) */
+CAMLprim value caml_ml_debug_info_status(value unit)
+{
+  return Val_int(caml_debug_info_status());
 }
 
 /* Get a copy of the latest backtrace */
@@ -188,20 +225,22 @@ CAMLprim value caml_restore_raw_backtrace(value exn, value backtrace)
 static value caml_convert_debuginfo(debuginfo dbg)
 {
   CAMLparam0();
-  CAMLlocal2(p, fname);
+  CAMLlocal3(p, fname, dname);
   struct caml_loc_info li;
 
   caml_debuginfo_location(dbg, &li);
 
   if (li.loc_valid) {
     fname = caml_copy_string(li.loc_filename);
-    p = caml_alloc_small(6, 0);
+    dname = caml_copy_string(li.loc_defname);
+    p = caml_alloc_small(7, 0);
     Field(p, 0) = Val_bool(li.loc_is_raise);
     Field(p, 1) = fname;
     Field(p, 2) = Val_int(li.loc_lnum);
     Field(p, 3) = Val_int(li.loc_startchr);
     Field(p, 4) = Val_int(li.loc_endchr);
     Field(p, 5) = Val_bool(li.loc_is_inlined);
+    Field(p, 6) = dname;
   } else {
     p = caml_alloc_small(1, 1);
     Field(p, 0) = Val_bool(li.loc_is_raise);

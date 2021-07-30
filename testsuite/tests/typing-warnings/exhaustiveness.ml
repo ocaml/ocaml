@@ -1,9 +1,8 @@
 (* TEST
-   flags = " -w A -strict-sequence "
+   flags = " -w +A -strict-sequence "
    * expect
 *)
 
-(* Warn about all relevant cases when possible *)
 let f = function
     None, None -> 1
   | Some _, Some _ -> 2;;
@@ -12,13 +11,12 @@ Lines 1-3, characters 8-23:
 1 | ........function
 2 |     None, None -> 1
 3 |   | Some _, Some _ -> 2..
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
-((Some _, None)|(None, Some _))
+(None, Some _)
 val f : 'a option * 'b option -> int = <fun>
 |}]
 
-(* Exhaustiveness check is very slow *)
 type _ t =
   A : int t | B : bool t | C : char t | D : float t
 type (_,_,_,_) u = U : (int, int, int, int) u
@@ -30,42 +28,18 @@ type (_, _, _, _) u = U : (int, int, int, int) u
 type v = E | F | G
 |}]
 
-let f : type a b c d e f g.
-      a t * b t * c t * d t * e t * f t * g t * v
-       * (a,b,c,d) u * (e,f,g,g) u -> int =
- function A, A, A, A, A, A, A, _, U, U -> 1
-   | _, _, _, _, _, _, _, G, _, _ -> 1
-   (*| _ -> _ *)
-;;
-[%%expect {|
-Lines 4-5, characters 1-38:
-4 | .function A, A, A, A, A, A, A, _, U, U -> 1
-5 |    | _, _, _, _, _, _, _, G, _, _ -> 1
-Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-(A, A, A, A, A, A, B, (E|F), _, _)
-Line 5, characters 5-33:
-5 |    | _, _, _, _, _, _, _, G, _, _ -> 1
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 56: this match case is unreachable.
-Consider replacing it with a refutation case '<pat> -> .'
-val f :
-  'a t * 'b t * 'c t * 'd t * 'e t * 'f t * 'g t * v * ('a, 'b, 'c, 'd) u *
-  ('e, 'f, 'g, 'g) u -> int = <fun>
-|}]
-
 (* Unused cases *)
 let f (x : int t) = match x with A -> 1 | _ -> 2;; (* warn *)
 [%%expect {|
 Line 1, characters 20-48:
 1 | let f (x : int t) = match x with A -> 1 | _ -> 2;; (* warn *)
                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 4: this pattern-matching is fragile.
+Warning 4 [fragile-match]: this pattern-matching is fragile.
 It will remain exhaustive when constructors are added to type t.
 Line 1, characters 42-43:
 1 | let f (x : int t) = match x with A -> 1 | _ -> 2;; (* warn *)
                                               ^
-Warning 56: this match case is unreachable.
+Warning 56 [unreachable-case]: this match case is unreachable.
 Consider replacing it with a refutation case '<pat> -> .'
 val f : int t -> int = <fun>
 |}]
@@ -75,7 +49,7 @@ let f (x : unit t option) = match x with None -> 1 | _ -> 2 ;; (* warn? *)
 Line 1, characters 53-54:
 1 | let f (x : unit t option) = match x with None -> 1 | _ -> 2 ;; (* warn? *)
                                                          ^
-Warning 56: this match case is unreachable.
+Warning 56 [unreachable-case]: this match case is unreachable.
 Consider replacing it with a refutation case '<pat> -> .'
 val f : unit t option -> int = <fun>
 |}]
@@ -85,7 +59,7 @@ let f (x : unit t option) = match x with None -> 1 | Some _ -> 2 ;; (* warn *)
 Line 1, characters 53-59:
 1 | let f (x : unit t option) = match x with None -> 1 | Some _ -> 2 ;; (* warn *)
                                                          ^^^^^^
-Warning 56: this match case is unreachable.
+Warning 56 [unreachable-case]: this match case is unreachable.
 Consider replacing it with a refutation case '<pat> -> .'
 val f : unit t option -> int = <fun>
 |}]
@@ -100,7 +74,7 @@ let f (x : int t option) = match x with None -> 1;; (* warn *)
 Line 1, characters 27-49:
 1 | let f (x : int t option) = match x with None -> 1;; (* warn *)
                                ^^^^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some A
 val f : int t option -> int = <fun>
@@ -120,7 +94,7 @@ let f : (int t box pair * bool) option -> unit = function None -> ();;
 Line 1, characters 49-68:
 1 | let f : (int t box pair * bool) option -> unit = function None -> ();;
                                                      ^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some ({left=Box A; right=Box A}, _)
 val f : (int t box pair * bool) option -> unit = <fun>
@@ -136,7 +110,7 @@ let f = function {left=Box 0; _ } -> ();;
 Line 1, characters 8-39:
 1 | let f = function {left=Box 0; _ } -> ();;
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {left=Box 1; _ }
 val f : int box pair -> unit = <fun>
@@ -147,9 +121,9 @@ let f = function {left=Box 0;right=Box 1} -> ();;
 Line 1, characters 8-47:
 1 | let f = function {left=Box 0;right=Box 1} -> ();;
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
-({left=Box 0; right=Box 0}|{left=Box 1; right=Box _})
+{left=Box 0; right=Box 0}
 val f : int box pair -> unit = <fun>
 |}]
 
@@ -204,7 +178,7 @@ let f : (A.a, A.b) cmp -> unit = function Any -> ()
 Line 1, characters 33-51:
 1 | let f : (A.a, A.b) cmp -> unit = function Any -> ()
                                      ^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Eq
 val f : (A.a, A.b) cmp -> unit = <fun>
@@ -257,7 +231,7 @@ let harder : (zero succ, zero succ, zero succ) plus option -> bool =
 Line 2, characters 2-24:
 2 |   function None -> false
       ^^^^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some (PlusS _)
 val harder : (zero succ, zero succ, zero succ) plus option -> bool = <fun>
@@ -334,7 +308,7 @@ let f x y = match 1 with 1 when x = y -> 1;;
 Line 1, characters 12-42:
 1 | let f x y = match 1 with 1 when x = y -> 1;;
                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 All clauses in this pattern-matching are guarded.
 val f : 'a -> 'a -> int = <fun>
 |}]
@@ -345,7 +319,7 @@ let f = function {contents=_}, 0 -> 0;;
 Line 1, characters 8-37:
 1 | let f = function {contents=_}, 0 -> 0;;
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (_, 1)
 val f : 'a ref * int -> int = <fun>
@@ -363,9 +337,45 @@ Lines 1-4, characters 8-28:
 2 |   | None -> ()
 3 |   | Some x when x > 0 -> ()
 4 |   | Some x when x <= 0 -> ()
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some _
 (However, some guarded clause may match this value.)
 val f : int option -> unit = <fun>
+|}]
+
+(* in the single-row case we can generate more compact witnesses *)
+module Single_row_optim = struct
+type t = A | B
+
+(* This synthetic program is representative of user-written programs
+   that try to distinguish the cases "only A" and "at least one B"
+   while avoiding a fragile pattern-matching (using just _ in the last
+   row would be fragile).
+
+   It is a "single row" program from the point of view of
+   exhaustiveness checking because the first row is subsumed by the
+   second and thus removed by the [get_mins] preprocessing of
+   Parmatch.
+
+   With the single-row optimization implemented in the compiler, it
+   generates a single counter-example that contains
+   or-patterns. Without this optimization, it would generate 2^(N-1)
+   counter-examples (here N=4 so 8), one for each possible expansion
+   of the or-patterns.
+*)
+let non_exhaustive : t * t * t * t -> unit = function
+| A, A, A, A -> ()
+| (A|B), (A|B), (A|B), A (*missing B here*) -> ()
+end;;
+[%%expect {|
+Lines 20-22, characters 45-49:
+20 | .............................................function
+21 | | A, A, A, A -> ()
+22 | | (A|B), (A|B), (A|B), A (*missing B here*) -> ()
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+((A|B), (A|B), (A|B), B)
+module Single_row_optim :
+  sig type t = A | B val non_exhaustive : t * t * t * t -> unit end
 |}]

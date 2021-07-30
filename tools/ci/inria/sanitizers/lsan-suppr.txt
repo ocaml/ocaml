@@ -1,0 +1,4 @@
+# ocamlyacc doesn't clean memory on exit
+leak:ocamlyacc
+# Alternate signal stacks are currently never freed (see #10266)
+leak:caml_setup_stack_overflow_detection

@@ -15,8 +15,6 @@
 
 (** Environment for finding complete names from relative names. *)
 
-let print_DEBUG s = print_string s ; print_newline ();;
-
 module Name = Odoc_name
 
 (** relative name * complete name *)
@@ -118,17 +116,11 @@ let add_class_type env full_name =
 
 let full_module_name env n =
   try List.assoc n env.env_modules
-  with Not_found ->
-    print_DEBUG ("Module "^n^" not found with env=");
-    List.iter (fun (sn, fn) -> print_DEBUG ("("^sn^", "^fn^")")) env.env_modules;
-    n
+  with Not_found -> n
 
 let full_module_type_name env n =
   try List.assoc n env.env_module_types
-  with Not_found ->
-    print_DEBUG ("Module "^n^" not found with env=");
-    List.iter (fun (sn, fn) -> print_DEBUG ("("^sn^", "^fn^")")) env.env_modules;
-    n
+  with Not_found -> n
 
 let full_module_or_module_type_name env n =
   try List.assoc n env.env_modules
@@ -151,24 +143,15 @@ let full_value_name env n =
 
 let full_extension_constructor_name env n =
   try List.assoc n env.env_extensions
-  with Not_found ->
-    print_DEBUG ("Extension "^n^" not found with env=");
-    List.iter (fun (sn, fn) -> print_DEBUG ("("^sn^", "^fn^")")) env.env_extensions;
-    n
+  with Not_found -> n
 
 let full_class_name env n =
   try List.assoc n env.env_classes
-  with Not_found ->
-    print_DEBUG ("Class "^n^" not found with env=");
-    List.iter (fun (sn, fn) -> print_DEBUG ("("^sn^", "^fn^")")) env.env_classes;
-    n
+  with Not_found -> n
 
 let full_class_type_name env n =
   try List.assoc n env.env_class_types
-  with Not_found ->
-    print_DEBUG ("Class type "^n^" not found with env=");
-    List.iter (fun (sn, fn) -> print_DEBUG ("("^sn^", "^fn^")")) env.env_class_types;
-    n
+  with Not_found -> n
 
 let full_class_or_class_type_name env n =
   try List.assoc n env.env_classes
@@ -186,26 +169,27 @@ let subst_type env t =
     if List.memq t !deja_vu then () else begin
       deja_vu := t :: !deja_vu;
       Btype.iter_type_expr iter t;
-      match t.Types.desc with
-      | Types.Tconstr (p, [_], _) when Path.same p Predef.path_option ->
+      let open Types in
+      match get_desc t with
+      | Tconstr (p, [_], _) when Path.same p Predef.path_option ->
           ()
-      | Types.Tconstr (p, l, a) ->
+      | Tconstr (p, l, a) ->
           let new_p =
             Odoc_name.to_path (full_type_name env (Odoc_name.from_path p)) in
-          t.Types.desc <- Types.Tconstr (new_p, l, a)
-      | Types.Tpackage (p, n, l) ->
+          set_type_desc t (Tconstr (new_p, l, a))
+      | Tpackage (p, fl) ->
           let new_p =
-            Odoc_name.to_path (full_module_type_name env (Odoc_name.from_path p)) in
-          t.Types.desc <- Types.Tpackage (new_p, n, l)
-      | Types.Tobject (_, ({contents=Some(p,tyl)} as r)) ->
+            Odoc_name.to_path
+              (full_module_type_name env (Odoc_name.from_path p)) in
+          set_type_desc t (Tpackage (new_p, fl))
+      | Tobject (_, ({contents=Some(p,tyl)} as r)) ->
           let new_p =
             Odoc_name.to_path (full_type_name env (Odoc_name.from_path p)) in
           r := Some (new_p, tyl)
-      | Types.Tvariant ({Types.row_name=Some(p, tyl)} as row) ->
+      | Tvariant ({row_name=Some(p, tyl)} as row) ->
           let new_p =
             Odoc_name.to_path (full_type_name env (Odoc_name.from_path p)) in
-          t.Types.desc <-
-            Types.Tvariant {row with Types.row_name=Some(new_p, tyl)}
+          set_type_desc t (Tvariant {row with row_name=Some(new_p, tyl)})
       | _ ->
           ()
     end
@@ -219,7 +203,9 @@ let subst_module_type env t =
     let open Types in
     match t with
       Mty_ident p ->
-        let new_p = Odoc_name.to_path (full_module_type_name env (Odoc_name.from_path p)) in
+        let new_p =
+          Odoc_name.to_path (full_module_type_name env (Odoc_name.from_path p))
+        in
         Mty_ident new_p
     | Mty_alias _
     | Mty_signature _ ->
@@ -232,18 +218,20 @@ let subst_module_type env t =
 
 let subst_class_type env t =
   let rec iter t =
+    let open Types in
     match t with
-      Types.Cty_constr (p,texp_list,ct) ->
-        let new_p = Odoc_name.to_path (full_type_name env (Odoc_name.from_path p)) in
+      Cty_constr (p,texp_list,ct) ->
+        let new_p =
+          Odoc_name.to_path (full_type_name env (Odoc_name.from_path p)) in
         let new_texp_list = List.map (subst_type env) texp_list in
         let new_ct = iter ct in
-        Types.Cty_constr (new_p, new_texp_list, new_ct)
-    | Types.Cty_signature _ ->
+        Cty_constr (new_p, new_texp_list, new_ct)
+    | Cty_signature _ ->
         (* we don't handle vals and methods *)
         t
-    | Types.Cty_arrow (l, texp, ct) ->
+    | Cty_arrow (l, texp, ct) ->
         let new_texp = subst_type env texp in
         let new_ct = iter ct in
-        Types.Cty_arrow (l, new_texp, new_ct)
+        Cty_arrow (l, new_texp, new_ct)
   in
   iter t

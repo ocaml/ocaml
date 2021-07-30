@@ -63,11 +63,12 @@ let inline env r ~lhs_of_application
           (* Merge call site annotation and function annotation.
              The call site annotation takes precedence *)
           match (inline_requested : Lambda.inline_attribute) with
-          | Always_inline | Never_inline | Unroll _ -> inline_requested
+          | Always_inline | Hint_inline | Never_inline | Unroll _ ->
+              inline_requested
           | Default_inline -> function_body.inline
         in
         match inline_annotation with
-        | Always_inline -> false, true, false, env
+        | Always_inline | Hint_inline -> false, true, false, env
         | Never_inline -> false, false, true, env
         | Default_inline -> false, false, false, env
         | Unroll count ->
@@ -493,7 +494,7 @@ let for_call_site ~env ~r ~(function_decls : A.function_declarations)
         | Some _ -> Default_inline
         | None -> inline_requested
       end
-    | Always_inline | Default_inline | Never_inline ->
+    | Always_inline | Hint_inline | Default_inline | Never_inline ->
         inline_requested
   in
   let original =

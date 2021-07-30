@@ -33,6 +33,7 @@
 #include "caml/mlvalues.h"
 #include "caml/signals.h"
 #include "caml/memprof.h"
+#include "caml/eventlog.h"
 
 int caml_huge_fallback_count = 0;
 /* Number of times that mmapping big pages fails and we fell back to small
@@ -51,7 +52,7 @@ extern uintnat caml_percent_free;                   /* major_gc.c */
 /* Page table management */
 
 #define Page(p) ((uintnat) (p) >> Page_log)
-#define Page_mask ((uintnat) -1 << Page_log)
+#define Page_mask ((~(uintnat)0) << Page_log)
 
 #ifdef ARCH_SIXTYFOUR
 
@@ -261,6 +262,8 @@ char *caml_alloc_for_heap (asize_t request)
     mem = (char *) block + sizeof (heap_chunk_head);
     Chunk_size (mem) = size - sizeof (heap_chunk_head);
     Chunk_block (mem) = block;
+    Chunk_redarken_start(mem) = (value*)(mem + Chunk_size(mem));
+    Chunk_redarken_end(mem) = (value*)mem;
     return mem;
 #else
     return NULL;
@@ -276,17 +279,10 @@ char *caml_alloc_for_heap (asize_t request)
     mem += sizeof (heap_chunk_head);
     Chunk_size (mem) = request;
     Chunk_block (mem) = block;
+    Chunk_redarken_start(mem) = (value*)(mem + Chunk_size(mem));
+    Chunk_redarken_end(mem) = (value*)mem;
     return mem;
   }
-}
-
-/* Use this function if a block allocated with [caml_alloc_for_heap] is
-   not actually going to be added to the heap.  The caller is responsible
-   for freeing it. */
-void caml_disown_for_heap (char* mem)
-{
-  /* Currently a no-op. */
-  (void)mem; /* can CAMLunused_{start,end} be used here? */
 }
 
 /* Use this function to free a block allocated with [caml_alloc_for_heap]
@@ -399,7 +395,7 @@ static value *expand_heap (mlsize_t request)
   }else{
     Field (Val_hp (prev), 0) = (value) NULL;
     if (remain == 1) {
-      Hd_hp (hp) = Make_header_allocated_here (0, 0, Caml_white);
+      Hd_hp (hp) = Make_header (0, 0, Caml_white);
     }
   }
   CAMLassert (Wosize_hp (mem) >= request);
@@ -428,7 +424,7 @@ void caml_shrink_heap (char *chunk)
 
   Caml_state->stat_heap_wsz -= Wsize_bsize (Chunk_size (chunk));
   caml_gc_message (0x04, "Shrinking heap to %"
-                   ARCH_INTNAT_PRINTF_FORMAT "uk words\n",
+                   ARCH_INTNAT_PRINTF_FORMAT "dk words\n",
                    Caml_state->stat_heap_wsz / 1024);
 
 #ifdef DEBUG
@@ -454,7 +450,7 @@ void caml_shrink_heap (char *chunk)
   caml_free_for_heap (chunk);
 }
 
-color_t caml_allocation_color (void *hp)
+CAMLexport color_t caml_allocation_color (void *hp)
 {
   if (caml_gc_phase == Phase_mark || caml_gc_phase == Phase_clean ||
       (caml_gc_phase == Phase_sweep && (char *)hp >= (char *)caml_gc_sweep_hp)){
@@ -468,28 +464,17 @@ color_t caml_allocation_color (void *hp)
 }
 
 Caml_inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag, int track,
-                                      int raise_oom, uintnat profinfo)
+                                      uintnat profinfo)
 {
   header_t *hp;
   value *new_block;
 
-  if (wosize > Max_wosize) {
-    if (raise_oom)
-      caml_raise_out_of_memory ();
-    else
-      return 0;
-  }
+  if (wosize > Max_wosize) return 0;
+  CAML_EV_ALLOC(wosize);
   hp = caml_fl_allocate (wosize);
   if (hp == NULL){
     new_block = expand_heap (wosize);
-    if (new_block == NULL) {
-      if (!raise_oom)
-        return 0;
-      else if (Caml_state->in_minor_collection)
-        caml_fatal_error ("out of memory");
-      else
-        caml_raise_out_of_memory ();
-    }
+    if (new_block == NULL) return 0;
     caml_fl_add_blocks ((value) new_block);
     hp = caml_fl_allocate (wosize);
   }
@@ -511,7 +496,7 @@ Caml_inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag, int track,
                                   profinfo));
   caml_allocated_words += Whsize_wosize (wosize);
   if (caml_allocated_words > Caml_state->minor_heap_wsz){
-    CAML_INSTR_INT ("request_major/alloc_shr@", 1);
+    CAML_EV_COUNTER (EV_C_REQUEST_MAJOR_ALLOC_SHR, 1);
     caml_request_major_slice ();
   }
 #ifdef DEBUG
@@ -527,58 +512,38 @@ Caml_inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag, int track,
   return Val_hp (hp);
 }
 
-#ifdef WITH_PROFINFO
-
-/* Use this to debug problems with macros... */
-#define NO_PROFINFO 0xff
+Caml_inline value check_oom(value v)
+{
+  if (v == 0) {
+    if (Caml_state->in_minor_collection)
+      caml_fatal_error ("out of memory");
+    else
+      caml_raise_out_of_memory ();
+  }
+  return v;
+}
 
 CAMLexport value caml_alloc_shr_with_profinfo (mlsize_t wosize, tag_t tag,
                                                intnat profinfo)
 {
-  return caml_alloc_shr_aux(wosize, tag, 1, 1, profinfo);
+  return check_oom(caml_alloc_shr_aux(wosize, tag, 1, profinfo));
 }
 
 CAMLexport value caml_alloc_shr_for_minor_gc (mlsize_t wosize,
-                                              tag_t tag, header_t old_header)
+                                              tag_t tag, header_t old_hd)
 {
-  return caml_alloc_shr_aux (wosize, tag, 0, 1, Profinfo_hd(old_header));
+  return check_oom(caml_alloc_shr_aux(wosize, tag, 0, Profinfo_hd(old_hd)));
 }
-
-#else
-#define NO_PROFINFO 0
-
-CAMLexport value caml_alloc_shr_for_minor_gc (mlsize_t wosize,
-                                              tag_t tag, header_t old_header)
-{
-  return caml_alloc_shr_aux (wosize, tag, 0, 1, NO_PROFINFO);
-}
-#endif /* WITH_PROFINFO */
-
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-#include "caml/spacetime.h"
 
 CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
 {
-  return caml_alloc_shr_with_profinfo (wosize, tag,
-    caml_spacetime_my_profinfo (NULL, wosize));
+  return caml_alloc_shr_with_profinfo(wosize, tag, NO_PROFINFO);
 }
 
 CAMLexport value caml_alloc_shr_no_track_noexc (mlsize_t wosize, tag_t tag)
 {
-  return caml_alloc_shr_aux (wosize, tag, 0, 0,
-                             caml_spacetime_my_profinfo (NULL, wosize));
+  return caml_alloc_shr_aux(wosize, tag, 0, NO_PROFINFO);
 }
-#else
-CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
-{
-  return caml_alloc_shr_aux (wosize, tag, 1, 1, NO_PROFINFO);
-}
-
-CAMLexport value caml_alloc_shr_no_track_noexc (mlsize_t wosize, tag_t tag)
-{
-  return caml_alloc_shr_aux (wosize, tag, 0, 0, NO_PROFINFO);
-}
-#endif
 
 /* Dependent memory is all memory blocks allocated out of the heap
    that depend on the GC (and finalizers) for deallocation.
@@ -618,7 +583,7 @@ CAMLexport void caml_adjust_gc_speed (mlsize_t res, mlsize_t max)
   if (res > max) res = max;
   caml_extra_heap_resources += (double) res / (double) max;
   if (caml_extra_heap_resources > 1.0){
-    CAML_INSTR_INT ("request_major/adjust_gc_speed_1@", 1);
+    CAML_EV_COUNTER (EV_C_REQUEST_MAJOR_ADJUST_GC_SPEED, 1);
     caml_extra_heap_resources = 1.0;
     caml_request_major_slice ();
   }

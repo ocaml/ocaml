@@ -121,7 +121,7 @@ let rec longest_path critical_outputs node =
         node.length <-
           List.fold_left
             (fun len (son, delay) ->
-              max len (longest_path critical_outputs son + delay))
+              Int.max len (longest_path critical_outputs son + delay))
             0 sons
   end;
   node.length
@@ -135,7 +135,7 @@ let rec remove_instr node = function
 
 (* We treat Lreloadretaddr as a word-sized load *)
 
-let some_load = (Iload(Cmm.Word_int, Arch.identity_addressing))
+let some_load = (Iload(Cmm.Word_int, Arch.identity_addressing, Mutable))
 
 (* The generic scheduler *)
 
@@ -148,13 +148,13 @@ val mutable trywith_nesting = 0
    that terminate a basic block. *)
 
 method oper_in_basic_block = function
-    Icall_ind _ -> false
+    Icall_ind -> false
   | Icall_imm _ -> false
-  | Itailcall_ind _ -> false
+  | Itailcall_ind -> false
   | Itailcall_imm _ -> false
   | Iextcall _ -> false
   | Istackoffset _ -> false
-  | Ialloc _ -> false
+  | Ialloc _ | Ipoll _ -> false
   | _ -> true
 
 (* Determine whether an instruction ends a basic block or not *)
@@ -181,12 +181,12 @@ method is_store = function
   | _ -> false
 
 method is_load = function
-    Iload(_, _) -> true
+    Iload(_, _, _) -> true
   | _ -> false
 
 method is_checkbound = function
-    Iintop (Icheckbound _) -> true
-  | Iintop_imm(Icheckbound _, _) -> true
+    Iintop(Icheckbound) -> true
+  | Iintop_imm(Icheckbound, _) -> true
   | _ -> false
 
 method private instr_is_store instr =
@@ -376,7 +376,7 @@ method schedule_fundecl f =
     else begin
       let critical_outputs =
         match i.desc with
-          Lop(Icall_ind _ | Itailcall_ind _) -> [| i.arg.(0) |]
+          Lop(Icall_ind | Itailcall_ind) -> [| i.arg.(0) |]
         | Lop(Icall_imm _ | Itailcall_imm _ | Iextcall _) -> [||]
         | Lreturn -> [||]
         | _ -> i.arg in
@@ -391,7 +391,6 @@ method schedule_fundecl f =
       fun_body = new_body;
       fun_fast = f.fun_fast;
       fun_dbg  = f.fun_dbg;
-      fun_spacetime_shape = f.fun_spacetime_shape;
       fun_tailrec_entry_point_label = f.fun_tailrec_entry_point_label;
       fun_contains_calls = f.fun_contains_calls;
       fun_num_stack_slots = f.fun_num_stack_slots;

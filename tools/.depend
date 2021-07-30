@@ -92,14 +92,14 @@ objinfo.cmo : \
     ../middle_end/linkage_name.cmi \
     ../typing/ident.cmi \
     ../middle_end/flambda/export_info.cmi \
-    ../utils/config.cmi \
     ../middle_end/compilation_unit.cmi \
     ../file_formats/cmxs_format.cmi \
     ../file_formats/cmx_format.cmi \
     ../file_formats/cmt_format.cmi \
     ../file_formats/cmo_format.cmi \
     ../file_formats/cmi_format.cmi \
-    ../bytecomp/bytesections.cmi
+    ../bytecomp/bytesections.cmi \
+    ../utils/binutils.cmi
 objinfo.cmx : \
     ../bytecomp/symtable.cmx \
     ../middle_end/symbol.cmx \
@@ -108,40 +108,66 @@ objinfo.cmx : \
     ../middle_end/linkage_name.cmx \
     ../typing/ident.cmx \
     ../middle_end/flambda/export_info.cmx \
-    ../utils/config.cmx \
     ../middle_end/compilation_unit.cmx \
     ../file_formats/cmxs_format.cmi \
     ../file_formats/cmx_format.cmi \
     ../file_formats/cmt_format.cmx \
     ../file_formats/cmo_format.cmi \
     ../file_formats/cmi_format.cmx \
-    ../bytecomp/bytesections.cmx
+    ../bytecomp/bytesections.cmx \
+    ../utils/binutils.cmx
+ocamlcmt.cmo : \
+    ../typing/untypeast.cmi \
+    ../typing/stypes.cmi \
+    ../parsing/pprintast.cmi \
+    ../parsing/location.cmi \
+    ../utils/load_path.cmi \
+    ../typing/envaux.cmi \
+    ../driver/compmisc.cmi \
+    ../file_formats/cmt_format.cmi \
+    ../typing/cmt2annot.cmo \
+    ../utils/clflags.cmi \
+    ../typing/annot.cmi
+ocamlcmt.cmx : \
+    ../typing/untypeast.cmx \
+    ../typing/stypes.cmx \
+    ../parsing/pprintast.cmx \
+    ../parsing/location.cmx \
+    ../utils/load_path.cmx \
+    ../typing/envaux.cmx \
+    ../driver/compmisc.cmx \
+    ../file_formats/cmt_format.cmx \
+    ../typing/cmt2annot.cmx \
+    ../utils/clflags.cmx \
+    ../typing/annot.cmi
 ocamlcp.cmo : \
-    ../driver/main_args.cmi
+    ../driver/main_args.cmi \
+    ../driver/compenv.cmi
 ocamlcp.cmx : \
-    ../driver/main_args.cmx
+    ../driver/main_args.cmx \
+    ../driver/compenv.cmx
 ocamldep.cmo : \
     ../driver/makedepend.cmi
 ocamldep.cmx : \
     ../driver/makedepend.cmx
 ocamlmklib.cmo : \
-    ocamlmklibconfig.cmo \
     ../utils/misc.cmi \
     ../utils/config.cmi
 ocamlmklib.cmx : \
-    ocamlmklibconfig.cmx \
     ../utils/misc.cmx \
     ../utils/config.cmx
-ocamlmklibconfig.cmo :
-ocamlmklibconfig.cmx :
 ocamlmktop.cmo : \
+    ../utils/config.cmi \
     ../utils/ccomp.cmi
 ocamlmktop.cmx : \
+    ../utils/config.cmx \
     ../utils/ccomp.cmx
 ocamloptp.cmo : \
-    ../driver/main_args.cmi
+    ../driver/main_args.cmi \
+    ../driver/compenv.cmi
 ocamloptp.cmx : \
-    ../driver/main_args.cmx
+    ../driver/main_args.cmx \
+    ../driver/compenv.cmx
 ocamlprof.cmo : \
     ../utils/warnings.cmi \
     ../parsing/parsetree.cmi \
@@ -167,30 +193,6 @@ profiling.cmo : \
 profiling.cmx : \
     profiling.cmi
 profiling.cmi :
-read_cmt.cmo : \
-    ../typing/untypeast.cmi \
-    ../typing/stypes.cmi \
-    ../parsing/pprintast.cmi \
-    ../parsing/location.cmi \
-    ../utils/load_path.cmi \
-    ../typing/envaux.cmi \
-    ../driver/compmisc.cmi \
-    ../file_formats/cmt_format.cmi \
-    ../typing/cmt2annot.cmo \
-    ../utils/clflags.cmi \
-    ../typing/annot.cmi
-read_cmt.cmx : \
-    ../typing/untypeast.cmx \
-    ../typing/stypes.cmx \
-    ../parsing/pprintast.cmx \
-    ../parsing/location.cmx \
-    ../utils/load_path.cmx \
-    ../typing/envaux.cmx \
-    ../driver/compmisc.cmx \
-    ../file_formats/cmt_format.cmx \
-    ../typing/cmt2annot.cmx \
-    ../utils/clflags.cmx \
-    ../typing/annot.cmi
 stripdebug.cmo : \
     ../utils/misc.cmi \
     ../bytecomp/bytesections.cmi

@@ -30,7 +30,8 @@
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include "caml/config.h"
-#ifdef SUPPORT_DYNAMIC_LINKING
+#if defined(SUPPORT_DYNAMIC_LINKING) && !defined(BUILDING_LIBCAMLRUNS)
+#define WITH_DYNAMIC_LINKING
 #ifdef __CYGWIN__
 #include "flexdll.h"
 #else
@@ -74,12 +75,13 @@
 int caml_read_fd(int fd, int flags, void * buf, int n)
 {
   int retcode;
-  do {
-    caml_enter_blocking_section();
-    retcode = read(fd, buf, n);
-    caml_leave_blocking_section();
-  } while (retcode == -1 && errno == EINTR);
-  if (retcode == -1) caml_sys_io_error(NO_ARG);
+  caml_enter_blocking_section_no_pending();
+  retcode = read(fd, buf, n);
+  caml_leave_blocking_section();
+  if (retcode == -1) {
+    if (errno == EINTR) return Io_interrupted;
+    else caml_sys_io_error(NO_ARG);
+  }
   return retcode;
 }
 
@@ -87,19 +89,11 @@ int caml_write_fd(int fd, int flags, void * buf, int n)
 {
   int retcode;
  again:
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-  if (flags & CHANNEL_FLAG_BLOCKING_WRITE) {
-    retcode = write(fd, buf, n);
-  } else {
-#endif
-  caml_enter_blocking_section();
+  caml_enter_blocking_section_no_pending();
   retcode = write(fd, buf, n);
   caml_leave_blocking_section();
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-  }
-#endif
   if (retcode == -1) {
-    if (errno == EINTR) goto again;
+    if (errno == EINTR) return Io_interrupted;
     if ((errno == EAGAIN || errno == EWOULDBLOCK) && n > 1) {
       /* We couldn't do a partial write here, probably because
          n <= PIPE_BUF and POSIX says that writes of less than
@@ -232,7 +226,7 @@ caml_stat_string caml_search_dll_in_path(struct ext_table * path,
   return res;
 }
 
-#ifdef SUPPORT_DYNAMIC_LINKING
+#ifdef WITH_DYNAMIC_LINKING
 #ifdef __CYGWIN__
 /* Use flexdll */
 
@@ -263,7 +257,7 @@ char * caml_dlerror(void)
   return flexdll_dlerror();
 }
 
-#else
+#else /* ! __CYGWIN__ */
 /* Use normal dlopen */
 
 #ifndef RTLD_GLOBAL
@@ -303,7 +297,7 @@ char * caml_dlerror(void)
   return (char*) dlerror();
 }
 
-#endif
+#endif /* __CYGWIN__ */
 #else
 
 void * caml_dlopen(char * libname, int for_execution, int global)
@@ -330,7 +324,7 @@ char * caml_dlerror(void)
   return "dynamic loading not supported on this platform";
 }
 
-#endif
+#endif /* WITH_DYNAMIC_LINKING */
 
 /* Add to [contents] the (short) names of the files contained in
    the directory named [dirname].  No entries are added for [.] and [..].

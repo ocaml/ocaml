@@ -39,6 +39,21 @@ let machtype ppf mty =
            fprintf ppf "*%a" machtype_component mty.(i)
          done
 
+let exttype ppf = function
+  | XInt -> fprintf ppf "int"
+  | XInt32 -> fprintf ppf "int32"
+  | XInt64 -> fprintf ppf "int64"
+  | XFloat -> fprintf ppf "float"
+
+let extcall_signature ppf (ty_res, ty_args) =
+  begin match ty_args with
+  | [] -> ()
+  | ty_arg1 :: ty_args ->
+      exttype ppf ty_arg1;
+      List.iter (fun ty -> fprintf ppf ",%a" exttype ty) ty_args
+  end;
+  fprintf ppf "->%a" machtype ty_res
+
 let integer_comparison = function
   | Ceq -> "=="
   | Cne -> "!="
@@ -70,7 +85,6 @@ let chunk = function
   | Word_val -> "val"
   | Single -> "float32"
   | Double -> "float64"
-  | Double_u -> "float64u"
 
 let phantom_defining_expr ppf defining_expr =
   match defining_expr with
@@ -101,7 +115,7 @@ let location d =
 
 let operation d = function
   | Capply _ty -> "app" ^ location d
-  | Cextcall(lbl, _ty, _alloc, _) ->
+  | Cextcall(lbl, _ty_res, _ty_args, _alloc) ->
       Printf.sprintf "extcall \"%s\"%s" lbl (location d)
   | Cload (c, Asttypes.Immutable) -> Printf.sprintf "load %s" (chunk c)
   | Cload (c, Asttypes.Mutable) -> Printf.sprintf "load_mut %s" (chunk c)
@@ -141,18 +155,14 @@ let operation d = function
   | Ccmpf c -> Printf.sprintf "%sf" (float_comparison c)
   | Craise k -> Lambda.raise_kind k ^ location d
   | Ccheckbound -> "checkbound" ^ location d
+  | Copaque -> "opaque"
 
 let rec expr ppf = function
   | Cconst_int (n, _dbg) -> fprintf ppf "%i" n
   | Cconst_natint (n, _dbg) ->
     fprintf ppf "%s" (Nativeint.to_string n)
-  | Cblockheader(n, d) ->
-    fprintf ppf "block-hdr(%s)%s"
-      (Nativeint.to_string n) (location d)
   | Cconst_float (n, _dbg) -> fprintf ppf "%F" n
   | Cconst_symbol (s, _dbg) -> fprintf ppf "\"%s\"" s
-  | Cconst_pointer (n, _dbg) -> fprintf ppf "%ia" n
-  | Cconst_natpointer (n, _dbg) -> fprintf ppf "%sa" (Nativeint.to_string n)
   | Cvar id -> V.print ppf id
   | Clet(id, def, (Clet(_, _, _) as body)) ->
       let print_binding id ppf def =
@@ -209,7 +219,8 @@ let rec expr ppf = function
       List.iter (fun e -> fprintf ppf "@ %a" expr e) el;
       begin match op with
       | Capply mty -> fprintf ppf "@ %a" machtype mty
-      | Cextcall(_, mty, _, _) -> fprintf ppf "@ %a" machtype mty
+      | Cextcall(_, ty_res, ty_args, _) ->
+          fprintf ppf "@ %a" extcall_signature (ty_res, ty_args)
       | _ -> ()
       end;
       fprintf ppf ")@]"

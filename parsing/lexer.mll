@@ -27,6 +27,7 @@ type error =
   | Unterminated_comment of Location.t
   | Unterminated_string
   | Unterminated_string_in_comment of Location.t * Location.t
+  | Empty_character_literal
   | Keyword_as_label of string
   | Invalid_literal of string
   | Invalid_directive of string * string option
@@ -300,6 +301,12 @@ let prepare_error loc = function
       Location.errorf ~loc
         "This comment contains an unterminated string literal"
         ~sub:[Location.msg ~loc:literal_loc "String literal begins here"]
+  | Empty_character_literal ->
+      let msg = "Illegal empty character literal ''" in
+      let sub =
+        [Location.msg
+           "Hint: Did you mean ' ' or a type variable 'a?"] in
+      Location.error ~loc ~sub msg
   | Keyword_as_label kwd ->
       Location.errorf ~loc
         "`%s' is a keyword, it cannot be used as label name" kwd
@@ -331,10 +338,14 @@ let lowercase_latin1 = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
 let uppercase_latin1 = ['A'-'Z' '\192'-'\214' '\216'-'\222']
 let identchar_latin1 =
   ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
+(* This should be kept in sync with the [is_identchar] function in [env.ml] *)
+
 let symbolchar =
   ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
 let dotsymbolchar =
   ['!' '$' '%' '&' '*' '+' '-' '/' ':' '=' '>' '?' '@' '^' '|']
+let symbolchar_or_hash =
+  symbolchar | '#'
 let kwdopchar =
   ['$' '&' '*' '+' '-' '/' '<' '=' '>' '@' '^' '|']
 
@@ -455,6 +466,8 @@ rule token = parse
       { CHAR(char_for_hexadecimal_code lexbuf 3) }
   | "\'" ("\\" _ as esc)
       { error lexbuf (Illegal_escape (esc, None)) }
+  | "\'\'"
+      { error lexbuf Empty_character_literal }
   | "(*"
       { let s, loc = wrap_comment_lexer comment lexbuf in
         COMMENT (s, loc) }
@@ -547,9 +560,9 @@ rule token = parse
   | "-"  { MINUS }
   | "-." { MINUSDOT }
 
-  | "!" symbolchar + as op
+  | "!" symbolchar_or_hash + as op
             { PREFIXOP op }
-  | ['~' '?'] symbolchar + as op
+  | ['~' '?'] symbolchar_or_hash + as op
             { PREFIXOP op }
   | ['=' '<' '>' '|' '&' '$'] symbolchar * as op
             { INFIXOP0 op }
@@ -562,7 +575,7 @@ rule token = parse
   | '%'     { PERCENT }
   | ['*' '/' '%'] symbolchar * as op
             { INFIXOP3 op }
-  | '#' (symbolchar | '#') + as op
+  | '#' symbolchar_or_hash + as op
             { HASHOP op }
   | "let" kwdopchar dotsymbolchar * as op
             { LETOP op }

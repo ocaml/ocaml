@@ -1,0 +1,15 @@
+name: "Close stale issues"
+on:
+  schedule:
+  - cron: "15 4 * * 1,3,5"
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/stale@v3
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        stale-issue-message: 'This issue has been open one year with no activity.  Consequently, it is being marked with the "stale" label.  What this means is that the issue will be automatically closed in 30 days unless more comments are added or the "stale" label is removed.  Comments that provide new information on the issue are especially welcome: is it still reproducible? did it appear in other contexts? how critical is it? etc.'
+        days-before-stale: 366
+        days-before-close: 30

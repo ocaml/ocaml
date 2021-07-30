@@ -1,8 +1,15 @@
 (* TEST
    flags = "-g -w -5"
-   * native
-     compare_programs = "false"
-   * bytecode
+
+   * flat-float-array
+     reference = "${test_source_directory}/callstacks.flat-float-array.reference"
+   ** native
+   ** bytecode
+
+   * no-flat-float-array
+     reference = "${test_source_directory}/callstacks.no-flat-float-array.reference"
+   ** native
+   ** bytecode
 *)
 
 open Gc.Memprof
@@ -71,20 +78,21 @@ let allocators =
 let test alloc =
   Printf.printf "-----------\n%!";
   let callstack = ref None in
-  start ~callstack_size:10
-        ~minor_alloc_callback:(fun info ->
-           callstack := Some info.callstack;
-           None
-        )
-        ~major_alloc_callback:(fun info ->
-           callstack := Some info.callstack;
-           None
-        )
-        ~sampling_rate:1. ();
+  start ~callstack_size:10 ~sampling_rate:1.
+    { null_tracker with
+      alloc_minor = (fun info ->
+         callstack := Some info.callstack;
+         None
+      );
+      alloc_major = (fun info ->
+         callstack := Some info.callstack;
+         None
+      );
+    };
   alloc ();
   stop ();
   match !callstack with
-  | None -> assert false
+  | None -> Printf.printf "No callstack\n%!";
   | Some cs -> Printexc.print_raw_backtrace stdout cs
 
 let () =

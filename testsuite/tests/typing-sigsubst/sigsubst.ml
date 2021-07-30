@@ -24,11 +24,11 @@ end
 Line 3, characters 2-36:
 3 |   include Comparable with type t = t
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Illegal shadowing of included type t/97 by t/101
+Error: Illegal shadowing of included type t/98 by t/102
        Line 2, characters 2-19:
-         Type t/97 came from this include
+         Type t/98 came from this include
        Line 3, characters 2-23:
-         The value print has no valid type if t/97 is shadowed
+         The value print has no valid type if t/98 is shadowed
 |}]
 
 module type Sunderscore = sig
@@ -39,25 +39,15 @@ module type Sunderscore = sig type (_, 'a) t = int * 'a end
 |}]
 
 
-(* Valid substitutions in a recursive module may fail due to the ordering of
-   the modules. *)
-
+(* Valid substitutions in a recursive module used to fail
+   due to the ordering of the modules. This is fixed since #9623. *)
 module type S0 = sig
   module rec M : sig type t = M2.t end
   and M2 : sig type t = int end
 end with type M.t = int
 [%%expect {|
-Lines 1-4, characters 17-23:
-1 | .................sig
-2 |   module rec M : sig type t = M2.t end
-3 |   and M2 : sig type t = int end
-4 | end with type M.t = int
-Error: In this `with' constraint, the new definition of M.t
-       does not match its original definition in the constrained signature:
-       Type declarations do not match:
-         type t = int
-       is not included in
-         type t = M2.t
+module type S0 =
+  sig module rec M : sig type t = int end and M2 : sig type t = int end end
 |}]
 
 

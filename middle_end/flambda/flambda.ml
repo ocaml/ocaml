@@ -24,7 +24,6 @@ type call_kind =
 type const =
   | Int of int
   | Char of char
-  | Const_pointer of int
 
 type apply = {
   func : Variable.t;
@@ -202,6 +201,7 @@ let rec lam ppf (flam : t) =
       match inline with
       | Always_inline -> fprintf ppf "<always>"
       | Never_inline -> fprintf ppf "<never>"
+      | Hint_inline -> fprintf ppf "<hint>"
       | Unroll i -> fprintf ppf "<unroll %i>" i
       | Default_inline -> ()
     in
@@ -375,7 +375,7 @@ and print_function_declaration ppf var (f : function_declaration) =
   in
   let inline =
     match f.inline with
-    | Always_inline -> " *inline*"
+    | Always_inline | Hint_inline -> " *inline*"
     | Never_inline -> " *never_inline*"
     | Unroll _ -> " *unroll*"
     | Default_inline -> ""
@@ -427,7 +427,6 @@ and print_const ppf (c : const) =
   match c with
   | Int n -> fprintf ppf "%i" n
   | Char c -> fprintf ppf "%C" c
-  | Const_pointer n -> fprintf ppf "%ia" n
 
 let print_function_declarations ppf (fd : function_declarations) =
   let funs ppf =
@@ -1024,10 +1023,12 @@ let create_function_declaration ~params ~body ~stub ~dbg
       : function_declaration =
   begin match stub, inline with
   | true, (Never_inline | Default_inline)
-  | false, (Never_inline | Default_inline | Always_inline | Unroll _) -> ()
-  | true, (Always_inline | Unroll _) ->
+  | false, (Never_inline | Default_inline
+           | Always_inline | Hint_inline | Unroll _) -> ()
+  | true, (Always_inline | Hint_inline | Unroll _) ->
     Misc.fatal_errorf
-      "Stubs may not be annotated as [Always_inline] or [Unroll]: %a"
+      "Stubs may not be annotated as [Always_inline], \
+       [Hint_inline] or [Unroll]: %a"
       print body
   end;
   begin match stub, specialise with
@@ -1186,11 +1187,8 @@ let compare_const (c1:const) (c2:const) =
   match c1, c2 with
   | Int i1, Int i2 -> compare i1 i2
   | Char i1, Char i2 -> Char.compare i1 i2
-  | Const_pointer i1, Const_pointer i2 -> compare i1 i2
-  | Int _, (Char _ | Const_pointer _) -> -1
-  | (Char _ | Const_pointer _), Int _ -> 1
-  | Char _, Const_pointer _ -> -1
-  | Const_pointer _, Char _ -> 1
+  | Int _, Char _ -> -1
+  | Char _, Int _ -> 1
 
 let compare_constant_defining_value_block_field
     (c1:constant_defining_value_block_field)

@@ -1,0 +1,131 @@
+(Introduced in OCaml 4.02,
+infix notations for constructs other than expressions added in 4.03,
+infix notation (e1 ;\%ext e2) added in 4.04.
+)
+
+Extension nodes are generic placeholders in the syntax tree. They are
+rejected by the type-checker and are intended to be ``expanded'' by external
+tools such as "-ppx" rewriters.
+
+Extension nodes share the same notion of identifier and payload as
+attributes~\ref{s:attributes}.
+
+The first form of extension node is used for ``algebraic'' categories:
+
+\begin{syntax}
+extension:
+    '[%' attr-id attr-payload ']'
+;
+expr: ...
+     | extension
+;
+typexpr: ...
+     | extension
+;
+pattern: ...
+     | extension
+;
+module-expr: ...
+     | extension
+;
+module-type: ...
+     | extension
+;
+class-expr: ...
+     | extension
+;
+class-type: ...
+     | extension
+;
+\end{syntax}
+
+A second form of extension node can be used in structures and
+signatures, both in the module and object languages:
+
+\begin{syntax}
+item-extension:
+    '[%%' attr-id attr-payload ']'
+;
+definition: ...
+   | item-extension
+;
+specification: ...
+   | item-extension
+;
+class-field-spec: ...
+   | item-extension
+;
+class-field: ...
+   | item-extension
+;
+\end{syntax}
+
+An infix form is available for extension nodes when
+the payload is of the same kind
+(expression with expression, pattern with pattern ...).
+
+Examples:
+
+\begin{verbatim}
+let%foo x = 2 in x + 1     === [%foo let x = 2 in x + 1]
+begin%foo ... end          === [%foo begin ... end]
+x ;%foo 2                  === [%foo x; 2]
+module%foo M = ..          === [%%foo module M = ... ]
+val%foo x : t              === [%%foo: val x : t]
+\end{verbatim}
+
+When this form is used together with the infix syntax for attributes,
+the attributes are considered to apply to the payload:
+
+\begin{verbatim}
+fun%foo[@bar] x -> x + 1 === [%foo (fun x -> x + 1)[@bar ] ];
+\end{verbatim}
+
+An additional shorthand "let%foo x in ..." is available for
+convenience when extension nodes are used to implement binding
+operators (See \ref{ss:letops-punning}).
+
+Furthermore, quoted strings "{|...|}" can be combined with extension nodes
+to embed foreign syntax fragments. Those fragments can be interpreted
+by a preprocessor and turned into OCaml code without requiring escaping
+quotes. A syntax shortcut is available for them:
+
+\begin{verbatim}
+{%%foo|...|}               === [%%foo{|...|}]
+let x = {%foo|...|}        === let x = [%foo{|...|}]
+let y = {%foo bar|...|bar} === let y = [%foo{bar|...|bar}]
+\end{verbatim}
+
+For instance, you can use "{%sql|...|}" to
+represent arbitrary SQL statements -- assuming you have a ppx-rewriter
+that recognizes the "%sql" extension.
+
+Note that the word-delimited form, for example "{sql|...|sql}", should
+not be used for signaling that an extension is in use.
+Indeed, the user cannot see from the code whether this string literal has
+different semantics than they expect. Moreover, giving semantics to a
+specific delimiter limits the freedom to change the delimiter to avoid
+escaping issues.
+
+\subsection{ss:builtin-extension-nodes}{Built-in extension nodes}
+
+(Introduced in OCaml 4.03)
+
+Some extension nodes are understood by the compiler itself:
+\begin{itemize}
+  \item
+    ``ocaml.extension_constructor'' or ``extension_constructor''
+    take as payload a constructor from an extensible variant type
+    (see \ref{s:extensible-variants}) and return its extension
+    constructor slot.
+\end{itemize}
+
+\begin{caml_example*}{verbatim}
+type t = ..
+type t += X of int | Y of string
+let x = [%extension_constructor X]
+let y = [%extension_constructor Y]
+\end{caml_example*}
+\begin{caml_example}{toplevel}
+ x <> y;;
+\end{caml_example}

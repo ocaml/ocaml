@@ -22,7 +22,7 @@ module type OrderedType =
 module type S =
   sig
     type key
-    type +'a t
+    type !+'a t
     val empty: 'a t
     val is_empty: 'a t -> bool
     val mem:  key -> 'a t -> bool
@@ -40,6 +40,7 @@ module type S =
     val for_all: (key -> 'a -> bool) -> 'a t -> bool
     val exists: (key -> 'a -> bool) -> 'a t -> bool
     val filter: (key -> 'a -> bool) -> 'a t -> 'a t
+    val filter_map: (key -> 'a -> 'b option) -> 'a t -> 'b t
     val partition: (key -> 'a -> bool) -> 'a t -> 'a t * 'a t
     val cardinal: 'a t -> int
     val bindings: 'a t -> (key * 'a) list
@@ -59,6 +60,7 @@ module type S =
     val map: ('a -> 'b) -> 'a t -> 'b t
     val mapi: (key -> 'a -> 'b) -> 'a t -> 'b t
     val to_seq : 'a t -> (key * 'a) Seq.t
+    val to_rev_seq : 'a t -> (key * 'a) Seq.t
     val to_seq_from : key -> 'a t -> (key * 'a) Seq.t
     val add_seq : (key * 'a) Seq.t -> 'a t -> 'a t
     val of_seq : (key * 'a) Seq.t -> 'a t
@@ -425,6 +427,18 @@ module Make(Ord: OrderedType) = struct
           if pvd then if l==l' && r==r' then m else join l' v d r'
           else concat l' r'
 
+    let rec filter_map f = function
+        Empty -> Empty
+      | Node {l; v; d; r} ->
+          (* call [f] in the expected left-to-right order *)
+          let l' = filter_map f l in
+          let fvd = f v d in
+          let r' = filter_map f r in
+          begin match fvd with
+            | Some d' -> join l' v d' r'
+            | None -> concat l' r'
+          end
+
     let rec partition p = function
         Empty -> (Empty, Empty)
       | Node {l; v; d; r} ->
@@ -494,6 +508,19 @@ module Make(Ord: OrderedType) = struct
 
     let to_seq m =
       seq_of_enum_ (cons_enum m End)
+
+    let rec snoc_enum s e =
+      match s with
+        Empty -> e
+      | Node{l; v; d; r} -> snoc_enum r (More(v, d, l, e))
+
+    let rec rev_seq_of_enum_ c () = match c with
+      | End -> Seq.Nil
+      | More (k,v,t,rest) ->
+          Seq.Cons ((k,v), rev_seq_of_enum_ (snoc_enum t rest))
+
+    let to_rev_seq c =
+      rev_seq_of_enum_ (snoc_enum c End)
 
     let to_seq_from low m =
       let rec aux low m c = match m with

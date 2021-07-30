@@ -58,6 +58,20 @@ quote1 () {
 }
 
 #########################################################################
+# Display environment information
+uname -a
+for i in issue redhat-release ; do
+  if test -e /etc/$i ; then
+    echo "/etc/$i content:"
+    cat /etc/$i | sed -e 's/^/| /'
+  fi
+done
+if command -v gcc >/dev/null ; then
+  echo "gcc info:"
+  gcc --version --verbose 2>&1 | sed -e 's/^/| /'
+fi
+
+#########################################################################
 # be verbose
 set -x
 
@@ -71,7 +85,7 @@ echo jenkinsdir=${jenkinsdir}
 # Unix environment variables (e.g. PATH).
 
 case "${OCAML_ARCH}" in
-  bsd|macos|linux) ;;
+  bsd|macos|linux|solaris) ;;
   cygwin|cygwin64|mingw|mingw64)
     . /etc/profile
     . "$HOME/.profile"
@@ -93,7 +107,7 @@ esac
 
 # be considerate towards other potential users of the test machine
 case "${OCAML_ARCH}" in
-  bsd|macos|linux) renice 10 $$ ;;
+  bsd|linux) renice 10 $$ ;;
 esac
 
 # be verbose and stop on error
@@ -112,8 +126,6 @@ case $NODE_NAME in
   ocaml-ppc-64)
     CCOMP="CC='gcc -m64'"
     OCAML_CONFIGURE_OPTIONS=;;
-  ocaml-openbsd-64)
-    OCAML_CONFIGURE_OPTIONS='--with-bfd'
 esac
 
 #########################################################################
@@ -125,19 +137,20 @@ host=''
 conffile=Makefile.config
 make=make
 instdir="$HOME/ocaml-tmp-install"
-confoptions="--enable-ocamltest ${OCAML_CONFIGURE_OPTIONS}"
+confoptions="--enable-ocamltest --enable-dependency-generation \
+${OCAML_CONFIGURE_OPTIONS}"
 make_native=true
 cleanup=false
 check_make_alldepend=false
-dorebase=false
 jobs=''
+bootstrap=false
 
 case "${OCAML_ARCH}" in
-  bsd)
+  bsd|solaris)
     make=gmake
   ;;
   macos)
-    confoptions="$confoptions --with-bfd "
+    # Nothing special but we must not fall through the "arch_error" case
   ;;
   linux)
     check_make_alldepend=true
@@ -149,8 +162,6 @@ case "${OCAML_ARCH}" in
   cygwin64)
     cleanup=true
     check_make_alldepend=true
-    dorebase=false
-    confoptions="$confoptions --disable-shared "
   ;;
   mingw)
     build='--build=i686-pc-cygwin'
@@ -211,6 +222,7 @@ while [ $# -gt 0 ]; do
     -patch1) patch -f -p1 <"$2"; shift;;
     -no-native) make_native=false;;
     -j[1-9]|-j[1-9][0-9]) jobs="$1";;
+    -with-bootstrap) bootstrap=true;;
     *) error "unknown option $1";;
   esac
   shift
@@ -225,28 +237,38 @@ export LC_ALL=C
 git clean -q -f -d -x
 
 if $flambda; then
-  confoptions="$confoptions --enable-flambda --enable-flambda-invariants"
+  confoptions="$confoptions --enable-flambda --enable-flambda-invariants \
+--disable-naked-pointers"
 fi
 
 eval ./configure "$CCOMP" $build $host --prefix='$instdir' $confoptions
 
-if $make_native; then
-  $make $jobs --warn-undefined-variables
-  if $check_make_alldepend; then $make --warn-undefined-variables alldepend; fi
+if $bootstrap; then
+  $make $jobs --warn-undefined-variables core
+  $make $jobs --warn-undefined-variables coreboot
+  if $make_native; then
+    $make $jobs --warn-undefined-variables opt.opt
+  else
+    $make $jobs --warn-undefined-variables all
+  fi
 else
   $make $jobs --warn-undefined-variables
 fi
-if $dorebase; then
-    # temporary solution to the cygwin fork problem
-    # see https://github.com/alainfrisch/flexdll/issues/50
-    rebase -b 0x7cd20000 otherlibs/unix/dllunix.so
-    rebase -b 0x7cdc0000 otherlibs/systhreads/dllthreads.so
-fi
-$make --warn-undefined-variables install
 
+
+if $make_native && $check_make_alldepend; then
+  $make --warn-undefined-variables alldepend
+fi
+
+$make --warn-undefined-variables install
 rm -rf "$instdir"
+
 cd testsuite
 if test -n "$jobs" && test -x /usr/bin/parallel
 then PARALLEL="$jobs $PARALLEL" $make --warn-undefined-variables parallel
 else $make --warn-undefined-variables all
+fi
+
+if $bootstrap; then
+  git checkout ../boot/ocamlc ../boot/ocamllex
 fi

@@ -1,0 +1,35 @@
+#!/bin/sh
+
+export OCAML_EVENTLOG_ENABLED=1
+export OCAML_EVENTLOG_PREFIX=${program}
+
+if [ "${os_type}" = "Win32" ] ; then
+  program=$(cygpath "$program")
+fi
+
+rm -f "${program}"*.eventlog*
+${program} > ${output} &
+
+pid=$!
+wait $pid
+
+ls "${program}".*.eventlog | grep '\.[0-9][0-9]*\.eventlog$' | \
+while IFS= read -r file; do
+  touch ${program}.eventlogs
+  if [ ! -e "${program}.eventlog" ] ; then
+    touch ${program}.eventlog
+  else
+    rm -f ${program}.eventlog
+    break
+  fi
+done
+
+if [ -f "${program}.eventlog" ]; then
+  exit ${TEST_PASS}
+elif [ -f "${program}.eventlogs" ]; then
+  echo 'too many runtime traces found!' > ${ocamltest_response}
+  exit ${TEST_FAIL}
+else
+  echo 'instrumented runtime trace not found!' > ${ocamltest_response}
+  exit ${TEST_FAIL}
+fi

@@ -42,6 +42,14 @@ module type S = sig
   val map_from_array : ('a -> float) -> 'a array -> t
   val unsafe_get : t -> int -> float
   val unsafe_set : t -> int -> float -> unit
+
+  (* From Sys, rather than Float.Array *)
+  val max_length : int
+end
+
+module Flat_float_array : S = struct
+  include Stdlib.Float.Array
+  let max_length = Sys.max_floatarray_length
 end
 
 (* module [Array] specialized to [float] and with a few changes,
@@ -53,6 +61,7 @@ module Float_array : S = struct
   let map_from_array f a = map f a
   let mem_ieee x a = exists ((=) x) a
   type t = float array
+  let max_length = Sys.max_array_length
 end
 
 module Test (A : S) : sig end = struct
@@ -91,9 +100,9 @@ module Test (A : S) : sig end = struct
   check_inval (fun i -> A.set a i 1.0) (-1);
   check_inval (fun i -> A.set a i 1.0) 1000;
   check_inval A.create (-1);
-  check_inval A.create (Sys.max_floatarray_length + 1);
+  check_inval A.create (A.max_length + 1);
   check_inval (fun i -> A.make i 1.0) (-1);
-  check_inval (fun i -> A.make i 1.0) (Sys.max_floatarray_length + 1);
+  check_inval (fun i -> A.make i 1.0) (A.max_length + 1);
 
   (* [length] *)
   let test_length l = assert (l = (A.length (A.create l))) in
@@ -109,7 +118,7 @@ module Test (A : S) : sig end = struct
   let a = A.init 1000 Float.of_int in
   check_i a;
   check_inval (fun i -> A.init i Float.of_int) (-1);
-  check_inval (fun i -> A.init i Float.of_int) (Sys.max_floatarray_length + 1);
+  check_inval (fun i -> A.init i Float.of_int) (A.max_length + 1);
 
   (* [append] *)
   let check m n =
@@ -202,6 +211,15 @@ module Test (A : S) : sig end = struct
   check_inval (A.blit a 0 a (-1)) 0;
   check_inval (A.blit a 0 a 100) 1;
   check_inval (A.blit a 0 a 101) 0;
+  let test_blit_overlap a ofs1 ofs2 len =
+    let a = A.of_list a in
+    let b = A.copy a in
+    A.blit a ofs1 a ofs2 len;
+    for i = 0 to len - 1 do
+      assert (A.get b (ofs1 + i) = A.get a (ofs2 + i))
+    done
+  in
+  test_blit_overlap [1.; 2.; 3.; 4.] 1 2 2;
 
   (* [to_list] [of_list] *)
   let a = A.init 1000 Float.of_int in
@@ -524,5 +542,5 @@ module Test (A : S) : sig end = struct
 end
 
 (* We run the same tests on [Float.Array] and [Array]. *)
-module T1 = Test (Stdlib.Float.Array)
+module T1 = Test (Flat_float_array)
 module T2 = Test (Float_array)

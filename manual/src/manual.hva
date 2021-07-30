@@ -1,0 +1,4 @@
+\input{anchored_book.hva}
+\input{ifocamldoc}
+\input{macros.hva}
+\newif\ifouthtml\outhtmltrue

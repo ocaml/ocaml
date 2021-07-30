@@ -17,12 +17,14 @@
 
 type t
 
+type raw_data = nativeint
+
 external repr : 'a -> t = "%identity"
 external obj : t -> 'a = "%identity"
 external magic : 'a -> 'b = "%identity"
 external is_int : t -> bool = "%obj_is_int"
 let [@inline always] is_block a = not (is_int a)
-external tag : t -> int = "caml_obj_tag"
+external tag : t -> int = "caml_obj_tag" [@@noalloc]
 external set_tag : t -> int -> unit = "caml_obj_set_tag"
 external size : t -> int = "%obj_size"
 external reachable_words : t -> int = "caml_obj_reachable_words"
@@ -34,6 +36,10 @@ external floatarray_set :
 let [@inline always] double_field x i = floatarray_get (obj x : floatarray) i
 let [@inline always] set_double_field x i v =
   floatarray_set (obj x : floatarray) i v
+external raw_field : t -> int -> raw_data = "caml_obj_raw_field"
+external set_raw_field : t -> int -> raw_data -> unit
+                                          = "caml_obj_set_raw_field"
+
 external new_block : int -> int -> t = "caml_obj_block"
 external dup : t -> t = "caml_obj_dup"
 external truncate : t -> int -> unit = "caml_obj_truncate"
@@ -67,6 +73,33 @@ let final_tag = custom_tag
 let int_tag = 1000
 let out_of_heap_tag = 1001
 let unaligned_tag = 1002
+
+module Closure = struct
+  type info = {
+    arity: int;
+    start_env: int;
+  }
+
+  let info_of_raw (info : nativeint) =
+    let open Nativeint in
+    let arity =
+      (* signed: negative for tupled functions *)
+      if Sys.word_size = 64 then
+        to_int (shift_right info 56)
+      else
+        to_int (shift_right info 24)
+    in
+    let start_env =
+      (* start_env is unsigned, but we know it can always fit an OCaml
+         integer so we use [to_int] instead of [unsigned_to_int]. *)
+      to_int (shift_right_logical (shift_left info 8) 9) in
+    { arity; start_env }
+
+  (* note: we expect a closure, not an infix pointer *)
+  let info (obj : t) =
+    assert (tag obj = closure_tag);
+    info_of_raw (raw_field obj 1)
+end
 
 module Extension_constructor =
 struct

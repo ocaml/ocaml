@@ -92,7 +92,6 @@ let rec print_struct_const = function
   | Const_base(Const_int32 i) -> printf "%ldl" i
   | Const_base(Const_nativeint i) -> printf "%ndn" i
   | Const_base(Const_int64 i) -> printf "%LdL" i
-  | Const_pointer n -> printf "%da" n
   | Const_block(tag, args) ->
       printf "<%d>" tag;
       begin match args with
@@ -297,13 +296,13 @@ let op_shapes = [
   opGRAB, Uint;
   opCLOSURE, Uint_Disp;
   opCLOSUREREC, Closurerec;
-  opOFFSETCLOSUREM2, Nothing;
+  opOFFSETCLOSUREM3, Nothing;
   opOFFSETCLOSURE0, Nothing;
-  opOFFSETCLOSURE2, Nothing;
+  opOFFSETCLOSURE3, Nothing;
   opOFFSETCLOSURE, Sint;  (* was Uint *)
-  opPUSHOFFSETCLOSUREM2, Nothing;
+  opPUSHOFFSETCLOSUREM3, Nothing;
   opPUSHOFFSETCLOSURE0, Nothing;
-  opPUSHOFFSETCLOSURE2, Nothing;
+  opPUSHOFFSETCLOSURE3, Nothing;
   opPUSHOFFSETCLOSURE, Sint; (* was Nothing *)
   opGETGLOBAL, Getglobal;
   opPUSHGETGLOBAL, Getglobal;

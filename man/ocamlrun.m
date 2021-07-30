@@ -151,8 +151,7 @@ The initial size of the major heap (in words).
 .BR a \ (allocation_policy)
 The policy used for allocating in the OCaml heap.  Possible values
 are 0 for the next-fit policy, 1 for the first-fit
-policy, and 2 for the best-fit policy. Best-fit is still experimental,
-but probably the best of the three. The default is 0.
+policy, and 2 for the best-fit policy. The default is 2.
 See the Gc module documentation for details.
 .TP
 .BR s \ (minor_heap_size)
@@ -211,7 +210,7 @@ What GC messages to print to stderr.  This is a sum of values selected
 from the following:
 
 .B 0x001
-Start of major GC cycle.
+Start and end of major GC cycle.
 
 .B 0x002
 Minor collection and major GC slice.

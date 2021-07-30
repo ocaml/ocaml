@@ -1,25 +1,3 @@
-run_unix.$(O): run_unix.c run.h ../runtime/caml/misc.h \
- ../runtime/caml/config.h ../runtime/caml/m.h ../runtime/caml/s.h \
- run_common.h
-run_stubs.$(O): run_stubs.c run.h ../runtime/caml/misc.h \
- ../runtime/caml/config.h ../runtime/caml/m.h ../runtime/caml/s.h \
- ../runtime/caml/mlvalues.h ../runtime/caml/misc.h \
- ../runtime/caml/domain_state.h ../runtime/caml/mlvalues.h \
- ../runtime/caml/domain_state.tbl ../runtime/caml/memory.h \
- ../runtime/caml/gc.h ../runtime/caml/major_gc.h \
- ../runtime/caml/freelist.h ../runtime/caml/minor_gc.h \
- ../runtime/caml/address_class.h ../runtime/caml/domain.h \
- ../runtime/caml/io.h ../runtime/caml/osdeps.h ../runtime/caml/memory.h
-ocamltest_stdlib_stubs.$(O): ocamltest_stdlib_stubs.c \
- ../runtime/caml/config.h ../runtime/caml/m.h ../runtime/caml/s.h \
- ../runtime/caml/mlvalues.h ../runtime/caml/config.h \
- ../runtime/caml/misc.h ../runtime/caml/domain_state.h \
- ../runtime/caml/mlvalues.h ../runtime/caml/domain_state.tbl \
- ../runtime/caml/memory.h ../runtime/caml/gc.h ../runtime/caml/major_gc.h \
- ../runtime/caml/freelist.h ../runtime/caml/minor_gc.h \
- ../runtime/caml/address_class.h ../runtime/caml/domain.h \
- ../runtime/caml/alloc.h ../runtime/caml/signals.h \
- ../runtime/caml/osdeps.h ../runtime/caml/memory.h
 actions.cmo : \
     variables.cmi \
     result.cmi \
@@ -243,10 +221,12 @@ ocaml_directories.cmi :
 ocaml_files.cmo : \
     ocamltest_stdlib.cmi \
     ocamltest_config.cmi \
+    ocaml_directories.cmi \
     ocaml_files.cmi
 ocaml_files.cmx : \
     ocamltest_stdlib.cmx \
     ocamltest_config.cmx \
+    ocaml_directories.cmx \
     ocaml_files.cmi
 ocaml_files.cmi :
 ocaml_filetypes.cmo : \
@@ -366,10 +346,20 @@ ocamltest_config.cmx : \
     ocamltest_config.cmi
 ocamltest_config.cmi :
 ocamltest_stdlib.cmo : \
+    ocamltest_unix.cmi \
+    ocamltest_config.cmi \
     ocamltest_stdlib.cmi
 ocamltest_stdlib.cmx : \
+    ocamltest_unix.cmx \
+    ocamltest_config.cmx \
     ocamltest_stdlib.cmi
-ocamltest_stdlib.cmi :
+ocamltest_stdlib.cmi : \
+    ocamltest_unix.cmi
+ocamltest_unix.cmo : \
+    ocamltest_unix.cmi
+ocamltest_unix.cmx : \
+    ocamltest_unix.cmi
+ocamltest_unix.cmi :
 options.cmo : \
     variables.cmi \
     tests.cmi \

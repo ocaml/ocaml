@@ -56,10 +56,12 @@ val empty: t
 val initial_safe_string: t
 val initial_unsafe_string: t
 val diff: t -> t -> Ident.t list
-val copy_local: from:t -> t -> t
 
-type type_descriptions =
-    constructor_description list * label_description list
+type type_descr_kind =
+  (label_description, constructor_description) type_kind
+
+  (* alias for compatibility *)
+type type_descriptions = type_descr_kind
 
 (* For short-paths *)
 type iter_cont
@@ -68,7 +70,7 @@ val iter_types:
     t -> iter_cont
 val run_iter_cont: iter_cont list -> (Path.t * iter_cont) list
 val same_types: t -> t -> bool
-val used_persistent: unit -> Concr.t
+val used_persistent: unit -> Stdlib.String.Set.t
 val find_shadowed_types: Path.t -> t -> Path.t list
 val without_cmis: ('a -> 'b) -> 'a -> 'b
 (* [without_cmis f arg] applies [f] to [arg], but does not
@@ -133,11 +135,16 @@ val mark_value_used: Uid.t -> unit
 val mark_module_used: Uid.t -> unit
 val mark_type_used: Uid.t -> unit
 
-type constructor_usage = Positive | Pattern | Privatize
+type constructor_usage = Positive | Pattern | Exported_private | Exported
 val mark_constructor_used:
     constructor_usage -> constructor_declaration -> unit
 val mark_extension_used:
     constructor_usage -> extension_constructor -> unit
+
+type label_usage =
+    Projection | Mutation | Construct | Exported_private | Exported
+val mark_label_used:
+    label_usage -> label_declaration -> unit
 
 (* Lookup by long identifiers *)
 
@@ -217,14 +224,14 @@ val lookup_all_constructors_from_type:
   (constructor_description * (unit -> unit)) list
 
 val lookup_label:
-  ?use:bool -> loc:Location.t -> Longident.t -> t ->
+  ?use:bool -> loc:Location.t -> label_usage -> Longident.t -> t ->
   label_description
 val lookup_all_labels:
-  ?use:bool -> loc:Location.t -> Longident.t -> t ->
+  ?use:bool -> loc:Location.t -> label_usage -> Longident.t -> t ->
   ((label_description * (unit -> unit)) list,
    Location.t * t * lookup_error) result
 val lookup_all_labels_from_type:
-  ?use:bool -> loc:Location.t -> Path.t -> t ->
+  ?use:bool -> loc:Location.t -> label_usage -> Path.t -> t ->
   (label_description * (unit -> unit)) list
 
 val lookup_instance_variable:
@@ -265,7 +272,8 @@ val make_copy_of_types: t -> (t -> t)
 val add_value:
     ?check:(string -> Warnings.t) -> Ident.t -> value_description -> t -> t
 val add_type: check:bool -> Ident.t -> type_declaration -> t -> t
-val add_extension: check:bool -> Ident.t -> extension_constructor -> t -> t
+val add_extension:
+  check:bool -> rebind:bool -> Ident.t -> extension_constructor -> t -> t
 val add_module:
   ?arg:bool -> Ident.t -> module_presence -> module_type -> t -> t
 val add_module_declaration: ?arg:bool -> check:bool -> Ident.t ->
@@ -306,9 +314,11 @@ val open_signature:
     ?used_slot:bool ref ->
     ?loc:Location.t -> ?toplevel:bool ->
     Asttypes.override_flag -> Path.t ->
-      t -> t option
+    t -> (t, [`Not_found | `Functor]) result
 
-val open_pers_signature: string -> t -> t
+val open_pers_signature: string -> t -> (t, [`Not_found]) result
+
+val remove_last_open: Path.t -> t -> t option
 
 (* Insertion by name *)
 
@@ -317,7 +327,8 @@ val enter_value:
     string -> value_description -> t -> Ident.t * t
 val enter_type: scope:int -> string -> type_declaration -> t -> Ident.t * t
 val enter_extension:
-  scope:int -> string -> extension_constructor -> t -> Ident.t * t
+  scope:int -> rebind:bool -> string ->
+  extension_constructor -> t -> Ident.t * t
 val enter_module:
   scope:int -> ?arg:bool -> string -> module_presence ->
   module_type -> t -> Ident.t * t
@@ -370,8 +381,11 @@ val imports: unit -> crcs
 (* may raise Persistent_env.Consistbl.Inconsistency *)
 val import_crcs: source:string -> crcs -> unit
 
-(* [is_imported_opaque md] returns true if [md] is an opaque imported module  *)
+(* [is_imported_opaque md] returns true if [md] is an opaque imported module *)
 val is_imported_opaque: modname -> bool
+
+(* [register_import_as_opaque md] registers [md] as an opaque imported module *)
+val register_import_as_opaque: modname -> unit
 
 (* Summaries -- compact representation of an environment, to be
    exported in debugging information. *)
@@ -411,8 +425,12 @@ val set_type_used_callback:
 
 (* Forward declaration to break mutual recursion with Includemod. *)
 val check_functor_application:
-      (errors:bool -> loc:Location.t -> t -> module_type ->
-         Path.t -> module_type -> Path.t -> unit) ref
+  (errors:bool -> loc:Location.t ->
+   lid_whole_app:Longident.t ->
+   f0_path:Path.t -> args:(Path.t * Types.module_type) list ->
+   arg_path:Path.t -> arg_mty:Types.module_type ->
+   param_mty:Types.module_type ->
+   t -> unit) ref
 (* Forward declaration to break mutual recursion with Typemod. *)
 val check_well_formed_module:
     (t -> Location.t -> string -> module_type -> unit) ref
@@ -427,6 +445,38 @@ val same_constr: (t -> type_expr -> type_expr -> bool) ref
 val print_longident: (Format.formatter -> Longident.t -> unit) ref
 (* Forward declaration to break mutual recursion with Printtyp. *)
 val print_path: (Format.formatter -> Path.t -> unit) ref
+
+
+(** Folds *)
+
+val fold_values:
+  (string -> Path.t -> value_description -> 'a -> 'a) ->
+  Longident.t option -> t -> 'a -> 'a
+val fold_types:
+  (string -> Path.t -> type_declaration -> 'a -> 'a) ->
+  Longident.t option -> t -> 'a -> 'a
+val fold_constructors:
+  (constructor_description -> 'a -> 'a) ->
+  Longident.t option -> t -> 'a -> 'a
+val fold_labels:
+  (label_description -> 'a -> 'a) ->
+  Longident.t option -> t -> 'a -> 'a
+
+(** Persistent structures are only traversed if they are already loaded. *)
+val fold_modules:
+  (string -> Path.t -> module_declaration -> 'a -> 'a) ->
+  Longident.t option -> t -> 'a -> 'a
+
+val fold_modtypes:
+  (string -> Path.t -> modtype_declaration -> 'a -> 'a) ->
+  Longident.t option -> t -> 'a -> 'a
+val fold_classes:
+  (string -> Path.t -> class_declaration -> 'a -> 'a) ->
+  Longident.t option -> t -> 'a -> 'a
+val fold_cltypes:
+  (string -> Path.t -> class_type_declaration -> 'a -> 'a) ->
+  Longident.t option -> t -> 'a -> 'a
+
 
 (** Utilities *)
 val scrape_alias: t -> module_type -> module_type

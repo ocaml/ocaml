@@ -23,15 +23,15 @@ module type S = sig type x type y type t = E of x type u = t = E of y end
 
 module rec M1 : S with type x = int and type y = bool = M1;;
 [%%expect{|
-Line 1, characters 16-53:
+Line 1, characters 0-58:
 1 | module rec M1 : S with type x = int and type y = bool = M1;;
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type M1.t
        Constructors do not match:
          E of M1.x
-       is not compatible with:
+       is not the same as:
          E of M1.y
-       The types are not equal.
+       The type M1.x = int is not equal to the type M1.y = bool
 |}]
 
 let bool_of_int x =
@@ -75,13 +75,14 @@ let (E eq : M1.u) = (E Eq : M1.t);;
 let cast : type a b. (a,b) eq -> a -> b = fun Eq x -> x;;
 cast eq 3;;
 [%%expect{|
-Line 1, characters 16-53:
+Line 1, characters 0-58:
 1 | module rec M1 : S with type x = int and type y = bool = M1;;
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type M1.t
        Constructors do not match:
          E of (M1.x, M1.x) eq
-       is not compatible with:
+       is not the same as:
          E of (M1.x, M1.y) eq
-       The types are not equal.
+       The type (M1.x, M1.x) eq is not equal to the type (M1.x, M1.y) eq
+       Type M1.x = int is not equal to type M1.y = bool
 |}]

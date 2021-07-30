@@ -66,7 +66,10 @@ let optlist =
     :: ("-p", Arg.String add_profarg, "[afilmt]  Same as option -P")
     :: Main_args.options_with_command_line_syntax Options.list rev_compargs
 in
-Arg.parse_expand optlist anon usage;
+begin try
+  Arg.parse_expand optlist anon usage
+with Compenv.Exit_with_status n -> exit n
+end;
 if !with_impl && !with_intf then begin
   fprintf stderr "ocamlcp cannot deal with both \"-impl\" and \"-intf\"\n";
   fprintf stderr "please compile interfaces and implementations separately\n";

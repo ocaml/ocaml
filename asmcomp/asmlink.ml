@@ -29,7 +29,7 @@ type error =
   | Inconsistent_interface of modname * filepath * filepath
   | Inconsistent_implementation of modname * filepath * filepath
   | Assembler_error of filepath
-  | Linking_error
+  | Linking_error of int
   | Multiple_definition of modname * filepath * filepath
   | Missing_cmx of filepath * modname
 
@@ -124,19 +124,6 @@ let runtime_lib () =
   with Not_found ->
     raise(Error(File_not_found libname))
 
-let object_file_name name =
-  let file_name =
-    try
-      Load_path.find name
-    with Not_found ->
-      fatal_errorf "Asmlink.object_file_name: %s not found" name in
-  if Filename.check_suffix file_name ".cmx" then
-    Filename.chop_suffix file_name ".cmx" ^ ext_obj
-  else if Filename.check_suffix file_name ".cmxa" then
-    Filename.chop_suffix file_name ".cmxa" ^ ext_lib
-  else
-    fatal_error "Asmlink.object_file_name: bad ext"
-
 (* First pass: determine which units are needed *)
 
 let missing_globals = (Hashtbl.create 17 : (string, string list ref) Hashtbl.t)
@@ -164,6 +151,17 @@ type file =
   | Unit of string * unit_infos * Digest.t
   | Library of string * library_infos
 
+let object_file_name_of_file = function
+  | Unit (fname, _, _) -> Some (Filename.chop_suffix fname ".cmx" ^ ext_obj)
+  | Library (fname, infos) ->
+      let obj_file = Filename.chop_suffix fname ".cmxa" ^ ext_lib in
+      (* MSVC doesn't support empty .lib files, and macOS struggles to make
+         them (#6550), so there shouldn't be one if the .cmxa contains no
+         units. The file_exists check is added to be ultra-defensive for the
+         case where a user has manually added things to the .a/.lib file *)
+      if infos.lib_units = [] && not (Sys.file_exists obj_file) then None else
+      Some obj_file
+
 let read_file obj_name =
   let file_name =
     try
@@ -186,7 +184,7 @@ let read_file obj_name =
   end
   else raise(Error(Not_an_object_file file_name))
 
-let scan_file obj_name tolink = match read_file obj_name with
+let scan_file file tolink = match file with
   | Unit (file_name,info,crc) ->
       (* This is a .cmx file. It must be linked in any case. *)
       remove_required info.ui_name;
@@ -199,8 +197,8 @@ let scan_file obj_name tolink = match read_file obj_name with
       List.fold_right
         (fun (info, crc) reqd ->
            if info.ui_force_link
-             || !Clflags.link_everything
-             || is_required info.ui_name
+           || !Clflags.link_everything
+           || is_required info.ui_name
            then begin
              remove_required info.ui_name;
              List.iter (add_required (Printf.sprintf "%s(%s)"
@@ -208,7 +206,7 @@ let scan_file obj_name tolink = match read_file obj_name with
                info.ui_imports_cmx;
              (info, file_name, crc) :: reqd
            end else
-             reqd)
+           reqd)
         infos.lib_units tolink
 
 (* Second pass: generate the startup file and link it with everything else *)
@@ -255,9 +253,6 @@ let make_startup_file ~ppf_dump units_list ~crc_interfaces =
     compile_phrase(Cmm_helpers.code_segment_table("_startup" :: name_list));
   let all_names = "_startup" :: "_system" :: name_list in
   compile_phrase (Cmm_helpers.frame_table all_names);
-  if Config.spacetime then begin
-    compile_phrase (Cmm_helpers.spacetime_shapes all_names);
-  end;
   if !Clflags.output_complete_object then
     force_linking_of_startup ~ppf_dump;
   Emit.end_assembly ()
@@ -280,27 +275,30 @@ let make_shared_startup_file ~ppf_dump units =
   Emit.end_assembly ()
 
 let call_linker_shared file_list output_name =
-  if not (Ccomp.call_linker Ccomp.Dll output_name file_list "")
-  then raise(Error Linking_error)
+  let exitcode = Ccomp.call_linker Ccomp.Dll output_name file_list "" in
+  if not (exitcode = 0)
+  then raise(Error(Linking_error exitcode))
 
 let link_shared ~ppf_dump objfiles output_name =
   Profile.record_call output_name (fun () ->
-    let units_tolink = List.fold_right scan_file objfiles [] in
+    let obj_infos = List.map read_file objfiles in
+    let units_tolink = List.fold_right scan_file obj_infos [] in
     List.iter
       (fun (info, file_name, crc) -> check_consistency file_name info crc)
       units_tolink;
     Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs;
     Clflags.all_ccopts := !lib_ccopts @ !Clflags.all_ccopts;
-    let objfiles = List.rev (List.map object_file_name objfiles) @
+    let objfiles =
+      List.rev (List.filter_map object_file_name_of_file obj_infos) @
       (List.rev !Clflags.ccobjs) in
-
     let startup =
       if !Clflags.keep_startup_file || !Emitaux.binary_backend_available
       then output_name ^ ".startup" ^ ext_asm
       else Filename.temp_file "camlstartup" ext_asm in
     let startup_obj = output_name ^ ".startup" ^ ext_obj in
-    Asmgen.compile_unit
-      startup !Clflags.keep_startup_file startup_obj
+    Asmgen.compile_unit ~output_prefix:output_name
+      ~asm_filename:startup ~keep_asm:!Clflags.keep_startup_file
+      ~obj_filename:startup_obj
       (fun () ->
          make_shared_startup_file ~ppf_dump
            (List.map (fun (ui,_,crc) -> (ui,crc)) units_tolink)
@@ -315,14 +313,9 @@ let call_linker file_list startup_file output_name =
   and main_obj_runtime = !Clflags.output_complete_object
   in
   let files = startup_file :: (List.rev file_list) in
-  let libunwind =
-    if not Config.spacetime then []
-    else if not Config.libunwind_available then []
-    else String.split_on_char ' ' Config.libunwind_link_flags
-  in
   let files, c_lib =
     if (not !Clflags.output_c_object) || main_dll || main_obj_runtime then
-      files @ (List.rev !Clflags.ccobjs) @ runtime_lib () @ libunwind,
+      files @ (List.rev !Clflags.ccobjs) @ runtime_lib (),
       (if !Clflags.nopervasives || (main_obj_runtime && not main_dll)
        then "" else Config.native_c_libraries)
     else
@@ -333,8 +326,9 @@ let call_linker file_list startup_file output_name =
     else if !Clflags.output_c_object then Ccomp.Partial
     else Ccomp.Exe
   in
-  if not (Ccomp.call_linker mode output_name files c_lib)
-  then raise(Error Linking_error)
+  let exitcode = Ccomp.call_linker mode output_name files c_lib in
+  if not (exitcode = 0)
+  then raise(Error(Linking_error exitcode))
 
 (* Main entry point *)
 
@@ -346,7 +340,8 @@ let link ~ppf_dump objfiles output_name =
       if !Clflags.nopervasives then objfiles
       else if !Clflags.output_c_object then stdlib :: objfiles
       else stdlib :: (objfiles @ [stdexit]) in
-    let units_tolink = List.fold_right scan_file objfiles [] in
+    let obj_infos = List.map read_file objfiles in
+    let units_tolink = List.fold_right scan_file obj_infos [] in
     Array.iter remove_required Runtimedef.builtin_exceptions;
     begin match extract_missing_globals() with
       [] -> ()
@@ -364,12 +359,13 @@ let link ~ppf_dump objfiles output_name =
       then output_name ^ ".startup" ^ ext_asm
       else Filename.temp_file "camlstartup" ext_asm in
     let startup_obj = Filename.temp_file "camlstartup" ext_obj in
-    Asmgen.compile_unit
-      startup !Clflags.keep_startup_file startup_obj
+    Asmgen.compile_unit ~output_prefix:output_name
+      ~asm_filename:startup ~keep_asm:!Clflags.keep_startup_file
+      ~obj_filename:startup_obj
       (fun () -> make_startup_file ~ppf_dump units_tolink ~crc_interfaces);
     Misc.try_finally
       (fun () ->
-         call_linker (List.map object_file_name objfiles)
+         call_linker (List.filter_map object_file_name_of_file obj_infos)
            startup_obj output_name)
       ~always:(fun () -> remove_file startup_obj)
   )
@@ -414,8 +410,8 @@ let report_error ppf = function
        intf
   | Assembler_error file ->
       fprintf ppf "Error while assembling %a" Location.print_filename file
-  | Linking_error ->
-      fprintf ppf "Error during linking"
+  | Linking_error exitcode ->
+      fprintf ppf "Error during linking (exit code %d)" exitcode
   | Multiple_definition(modname, file1, file2) ->
       fprintf ppf
         "@[<hov>Files %a@ and %a@ both define a module named %s@]"

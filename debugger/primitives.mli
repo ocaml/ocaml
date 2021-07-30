@@ -22,6 +22,10 @@ val nothing : 'a -> unit
 (*** Types and exceptions. ***)
 exception Out_of_range
 
+(* [cleanup e f x] runs evaluates [f x] and reraises [e] with its original
+   backtrace. If [f x] raises, then [e] is not raised. *)
+val cleanup : exn -> (unit -> unit) -> 'a
+
 (*** Operations on lists. ***)
 
 (* Remove an element from a list *)

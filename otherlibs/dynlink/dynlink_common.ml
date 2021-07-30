@@ -62,15 +62,6 @@ module Make (P : Dynlink_platform_intf.S) = struct
          were privately loaded. *)
     }
 
-    let invariant t =
-      let ifaces = String.Map.keys t.ifaces in
-      let implems = String.Map.keys t.implems in
-      assert (String.Set.subset implems ifaces);
-      assert (String.Set.subset t.main_program_units ifaces);
-      assert (String.Set.subset t.main_program_units implems);
-      assert (String.Set.subset t.public_dynamically_loaded_units ifaces);
-      assert (String.Set.subset t.public_dynamically_loaded_units implems)
-
     let empty = {
       ifaces = String.Map.empty;
       implems = String.Map.empty;
@@ -275,7 +266,6 @@ module Make (P : Dynlink_platform_intf.S) = struct
           public_dynamically_loaded_units;
         }
       in
-      State.invariant state;
       state
     end
 
@@ -316,12 +306,15 @@ module Make (P : Dynlink_platform_intf.S) = struct
     global_state := state
 
   let main_program_units () =
+    init ();
     String.Set.elements (!global_state).main_program_units
 
   let public_dynamically_loaded_units () =
+    init ();
     String.Set.elements (!global_state).public_dynamically_loaded_units
 
   let all_units () =
+    init ();
     String.Set.elements (String.Set.union
       (!global_state).main_program_units
       (!global_state).public_dynamically_loaded_units)

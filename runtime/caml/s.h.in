@@ -45,12 +45,20 @@
 #undef HAS_C99_FLOAT_OPS
 
 /* Define HAS_C99_FLOAT_OPS if <math.h> conforms to ISO C99.
-   In particular, it should provide expm1(), log1p(), hypot(), copysign(). */
+   In particular, it should provide expm1(), log1p(), hypot(), fma(),
+   exp2(), log2(), cbrt(), acosh(), asinh(), atanh(), erf(), erfc(),
+   trunc(), round(), copysign(). */
 
 #undef HAS_WORKING_FMA
 
 /* Define HAS_WORKING_FMA if the fma function is correctly implemented. The
-   newlib library (intentionally) just has return x * y + z. */
+   newlib library (intentionally) just has return x * y + z. This hatch is
+   also used for https://sourceforge.net/p/mingw-w64/bugs/848/ */
+
+#undef HAS_WORKING_ROUND
+
+/* Define HAS_WORKING_ROUND is the round function is correctly implemented. This
+   hatch exists primarily for https://sourceforge.net/p/mingw-w64/bugs/573/ */
 
 #undef HAS_GETRUSAGE
 
@@ -68,10 +76,19 @@
 
 /* Define HAS_SOCKETS if you have BSD sockets. */
 
+#undef HAS_SOCKETPAIR
+
+/* Define HAS_SOCKETPAIR if you have the socketpair function. Only
+   relevant on Windows. */
+
 #undef HAS_SOCKLEN_T
 
 /* Define HAS_SOCKLEN_T if the type socklen_t is defined in
    /usr/include/sys/socket.h. */
+
+#undef HAS_AFUNIX_H
+
+/* Define HAS_AFUNIX_H if you have <afunix.h>. */
 
 #undef HAS_INET_ATON
 
@@ -106,6 +123,10 @@
 
 /* Define HAS_GETCWD if the library provides the getcwd() function. */
 
+#undef HAS_SYSTEM
+
+/* Define HAS_SYSTEM if the library provides the system() function. */
+
 #undef HAS_UTIME
 #undef HAS_UTIMES
 
@@ -136,6 +157,9 @@
 #undef HAS_SYMLINK
 
 /* Define HAS_SYMLINK if you have symlink() and readlink() and lstat(). */
+
+#undef HAS_REALPATH
+/* Define HAS_REALPATH if you have realpath(). */
 
 #undef HAS_WAIT4
 #undef HAS_WAITPID
@@ -187,6 +211,10 @@
 #undef HAS_PUTENV
 
 /* Define HAS_PUTENV if you have putenv(). */
+
+#undef HAS_SETENV_UNSETENV
+
+/* Define HAS_SETENV_UNSETENV if you have setenv() and unsetenv(). */
 
 #undef HAS_LOCALE_H
 
@@ -241,7 +269,11 @@
 
 #undef HAS_SYS_SHM_H
 
+#undef HAS_SHMAT
+
 #undef HAS_EXECVPE
+
+#undef HAS_POSIX_SPAWN
 
 #undef HAS_FFS
 #undef HAS_BITSCANFORWARD
@@ -250,14 +282,14 @@
 
 #undef HAS_SIGWAIT
 
-#undef HAS_LIBBFD
-
 #undef HAS_HUGE_PAGES
 
 #undef HUGE_PAGE_SIZE
 
-#undef HAS_LIBUNWIND
-
 #undef HAS_BROKEN_PRINTF
 
 #undef HAS_STRERROR
+
+#undef HAS_POSIX_MONOTONIC_CLOCK
+
+#undef HAS_MACH_ABSOLUTE_TIME

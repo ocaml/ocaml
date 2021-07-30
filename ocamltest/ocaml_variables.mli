@@ -28,7 +28,11 @@ val bytecc_libs : Variables.t
 
 val c_preprocessor : Variables.t
 
+val cc : Variables.t
+
 val caml_ld_library_path : Variables.t
+
+val codegen_exit_status : Variables.t
 
 val compare_programs : Variables.t
 
@@ -74,6 +78,7 @@ val nativecc_libs : Variables.t
 (** Libraries to link with for native code *)
 
 val objext : Variables.t
+val libext : Variables.t
 val asmext : Variables.t
 
 val ocamlc_byte : Variables.t

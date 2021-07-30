@@ -51,9 +51,8 @@ val check_suffix : string -> string -> bool
 
 val chop_suffix : string -> string -> string
 (** [chop_suffix name suff] removes the suffix [suff] from
-   the filename [name]. The behavior is undefined if [name] does not
-   end with the suffix [suff]. [chop_suffix_opt] is thus recommended
-   instead.
+    the filename [name].
+    @raise Invalid_argument if [name] does not end with the suffix [suff].
 *)
 
 val chop_suffix_opt: suffix:string -> string -> string option
@@ -135,7 +134,7 @@ val temp_file : ?temp_dir: string -> string -> string -> string
    (readable and writable only by the file owner).  The file is
    guaranteed to be different from any other file that existed when
    [temp_file] was called.
-   Raise [Sys_error] if the file could not be created.
+   @raise Sys_error if the file could not be created.
    @before 3.11.2 no ?temp_dir optional argument
 *)
 
@@ -221,6 +220,6 @@ val quote_command :
     if any are quoted using {!Filename.quote}, then concatenated.
     Under Win32, additional quoting is performed as required by the
     [cmd.exe] shell that is called by {!Sys.command}.
-
-    Raise [Failure] if the command cannot be escaped on the current platform.
+    @raise Failure if the command cannot be escaped on the current platform.
+    @since 4.10.0
 *)

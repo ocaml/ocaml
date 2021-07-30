@@ -26,7 +26,6 @@
 (copy_files# bytecomp/*.ml{,i})
 (copy_files# driver/*.ml{,i})
 (copy_files# asmcomp/*.ml{,i})
-(copy_files# asmcomp/debug/*.ml{,i})
 (copy_files# file_formats/*.ml{,i})
 (copy_files# lambda/*.ml{,i})
 (copy_files# middle_end/*.ml{,i})
@@ -45,7 +44,8 @@
    ;; UTILS
    config build_path_prefix_map misc identifiable numbers arg_helper clflags
    profile terminfo ccomp warnings consistbl strongly_connected_components
-   targetint load_path int_replace_polymorphic_compare
+   targetint load_path int_replace_polymorphic_compare binutils local_store
+   lazy_backtrack diffing diffing_with_keys
 
    ;; PARSING
    location longident docstrings syntaxerr ast_helper camlinternalMenhirLib
@@ -56,10 +56,12 @@
 
    ;; TYPING
    ident path primitive types btype oprint subst predef datarepr
-   cmi_format persistent_env env type_immediacy
+   cmi_format persistent_env env type_immediacy errortrace
    typedtree printtyped ctype printtyp includeclass mtype envaux includecore
-   tast_iterator tast_mapper cmt_format untypeast includemod
-   typetexp printpat parmatch stypes typedecl typeopt rec_check typecore
+   tast_iterator tast_mapper signature_group cmt_format untypeast
+   includemod includemod_errorprinter
+   typetexp patterns printpat parmatch stypes typedecl typeopt rec_check
+   typecore
    typeclass typemod typedecl_variance typedecl_properties typedecl_immediacy
    typedecl_unboxed typedecl_separability cmt2annot
    ; manual update: mli only files
@@ -90,7 +92,7 @@
     bytegen bytelibrarian bytelink bytepackager emitcode printinstr
 
     ;; driver/
-    errors compile
+    errors compile maindriver
  ))
 
 (library
@@ -143,23 +145,28 @@
  (wrapped false)
  (flags (:standard -principal -nostdlib))
  (libraries stdlib ocamlcommon ocamlmiddleend)
- (modules_without_implementation x86_ast)
+ (modules_without_implementation x86_ast emitenv)
  (modules
    ;; asmcomp/
    afl_instrument arch asmgen asmlibrarian asmlink asmpackager branch_relaxation
    branch_relaxation_intf cmm_helpers cmm cmmgen cmmgen_state coloring comballoc
+   cmm_invariants
    CSE CSEgen
-   deadcode domainstate emit emitaux interf interval linear linearize linscan
-   liveness mach printcmm printlinear printmach proc reg reload reloadgen
-   schedgen scheduling selectgen selection spacetime_profiling spill split
+   dataflow deadcode domainstate
+   emit emitaux emitenv
+   interf interval
+   linear linearize linscan
+   liveness mach
+   polling printcmm printlinear printmach proc
+   reg reload reloadgen
+   schedgen scheduling selectgen selection spill split
    strmatch x86_ast x86_dsl x86_gas x86_masm x86_proc
 
-   ;; asmcomp/debug/
-   reg_availability_set compute_ranges_intf available_regs reg_with_debug_info
-   compute_ranges
+   ;; file_formats/
+   linear_format
 
    ;; driver/
-   optcompile opterrors
+   optcompile opterrors optmaindriver
  )
 )
 

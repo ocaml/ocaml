@@ -48,7 +48,7 @@ MENHIR ?= menhir
 
 ## Unused tokens
 
-# tokens COMMENT, DOCSTRING and EOL are produced by special lexer
+# The tokens COMMENT, DOCSTRING and EOL are produced by special lexer
 # modes used by other consumers than the parser.
 
 # GREATERBRACKET ">]" was added by the parser by symmetry with "[<"
@@ -57,11 +57,29 @@ MENHIR ?= menhir
 
 unused_tokens := COMMENT DOCSTRING EOL GREATERRBRACKET
 
-## Menhir compilation flags
+## Menhir's flags.
 
-MENHIRFLAGS := --explain --dump --ocamlc "$(CAMLC) $(COMPFLAGS)" --infer \
-	--lalr --strict --table -lg 1 -la 1 \
-        $(addprefix --unused-token ,$(unused_tokens)) --fixed-exception
+# The basic flags influence the analysis of the grammar and the construction
+# of the automaton. The complete set of flags includes extra flags that
+# influence type inference and code production.
+
+MENHIRBASICFLAGS := \
+  --lalr \
+  --explain \
+  --dump \
+  --require-aliases \
+  --strict \
+  -lg 1 \
+  -la 1 \
+  $(addprefix --unused-token ,$(unused_tokens)) \
+
+MENHIRFLAGS := \
+  $(MENHIRBASICFLAGS) \
+  --infer \
+  --ocamlc "$(CAMLC) $(COMPFLAGS)" \
+  --fixed-exception \
+  --table \
+  --strategy simplified \
 
 ## promote-menhir
 
@@ -132,7 +150,9 @@ test-menhir: parsing/parser.mly
 partialclean-menhir::
 	rm -f \
 	  $(addprefix parsing/parser.,ml mli) \
-	  $(addprefix parsing/camlinternalMenhirLib.,ml mli)
+	  $(addprefix parsing/camlinternalMenhirLib.,ml mli) \
+	  $(addprefix parsing/parser.,automaton conflicts) \
+	  $(addprefix parsing/parser.,auto.messages) \
 
 clean-menhir: partialclean-menhir
 
@@ -157,7 +177,126 @@ include .depend.menhir
 
 interpret-menhir:
 	@ echo "Please wait, I am building the LALR automaton..."
-	@ $(MENHIR) $(MENHIRFLAGS) parsing/parser.mly \
+	@ $(MENHIR) $(MENHIRBASICFLAGS) parsing/parser.mly \
 	    --interpret \
 	    --interpret-show-cst \
 	    --trace \
+
+## list-parse-errors
+
+# This rule runs Menhir's reachability analysis, which produces a list of all
+# states where a syntax error can be detected (and a corresponding list of of
+# erroneous sentences). This data is stored in parsing/parser.auto.messages.
+# This analysis requires about 3 minutes and 6GB of RAM.
+
+# The analysis is performed on a copy of the grammar where every block
+# of text comprised between the markers BEGIN AVOID and END AVOID has
+# been removed. This allows us to avoid certain syntactic forms in the
+# sentences that we produce. See parser.mly for more explanations.
+
+# Because of this, we must run Menhir twice: once on a modified copy of the
+# grammar to produce the sentences, and once on the original grammar to update
+# the auto-comments (which would otherwise be incorrect).
+
+.PHONY: list-parse-errors
+list-parse-errors:
+	@ tmp=`mktemp -d /tmp/parser.XXXX` && \
+	  sed -e '/BEGIN AVOID/,/END AVOID/d' \
+	    parsing/parser.mly > $$tmp/parser.mly && \
+	  $(MENHIR) $(MENHIRBASICFLAGS) $$tmp/parser.mly \
+	    --list-errors -la 2 \
+	    > parsing/parser.auto.messages && \
+	  rm -rf $$tmp
+	@ cp parsing/parser.auto.messages parsing/parser.auto.messages.bak
+	@ $(MENHIR) $(MENHIRBASICFLAGS) parsing/parser.mly \
+	    --update-errors parsing/parser.auto.messages.bak \
+	    > parsing/parser.auto.messages
+	@ rm -f parsing/parser.auto.messages.bak
+
+## generate-parse-errors
+
+# This rule assumes that [make list-parse-errors] has been run first.
+
+# This rule turns the error sentences stored in parsing/parser.auto.messages
+# into one .ml file.
+
+# (It would in principle be preferable to create one file per sentence, but
+# that would be much slower. We abuse the ability of the OCaml toplevel to
+# resynchronize after an error, and put all sentences into a single file.)
+
+# This requires Menhir 20201214 or newer.
+
+GPE_DIR   := tests/generated-parse-errors
+GPE_ML    := errors.ml
+GPE_REF   := errors.compilers.reference
+GPE_START := implementation use_file toplevel_phrase
+
+.PHONY: generate-parse-errors
+generate-parse-errors:
+	@ \
+	mkdir -p testsuite/$(GPE_DIR) && \
+	$(MENHIR) $(MENHIRBASICFLAGS) parsing/parser.mly \
+	    --echo-errors-concrete parsing/parser.auto.messages 2>/dev/null | \
+	(cd testsuite/$(GPE_DIR) && touch $(GPE_REF) && ( \
+	  echo "(* TEST\n   * toplevel\n*)" && \
+	  while IFS= read -r symbolic ; do \
+	    IFS= read -r concrete ; \
+	    concrete=$${concrete#### Concrete syntax: } ; \
+	    : '$$symbolic is the sentence in symbolic form' ; \
+	    : '$$concrete is the sentence in concrete form' ; \
+	    case "$$symbolic" in \
+	    *": SEMISEMI"*) \
+	      : 'If the sentence begins with SEMISEMI, ignore it. Our hack' ; \
+	      : 'does not support these sentences, and there are only 6 of' ; \
+	      : 'them anyway.' ; \
+	      continue ;; \
+	    *) \
+	      case "$$symbolic" in \
+	      *"EOF") \
+	        : 'If the sentence ends with EOF, replace it on the fly' ; \
+	        : 'with some other token (say, WHEN).' ; \
+	        echo "#0 \"$${symbolic%%EOF}WHEN\"" ; \
+	        echo "$$concrete when"   ; \
+	        echo ";;"                ;; \
+	      *) \
+	        : 'Emit a # directive containing the symbolic sentence.' ; \
+	        echo "#0 \"$$symbolic\"" ; \
+	        : 'Emit the concrete sentence.' ; \
+	        echo "$$concrete"        ; \
+	        : 'Emit a double semicolon to allow resynchronization.' ; \
+	        echo ";;"                ;; \
+	      esac \
+	    esac \
+	  done) \
+	  > $(GPE_ML) && \
+	  : 'Count how many sentences we have emitted, per start symbol.' ; \
+	  for symbol in $(GPE_START) ; do \
+	    count=$$(grep -h -e "$$symbol:" $(GPE_ML) | wc -l) && \
+	    echo "$$count sentences whose start symbol is $$symbol." ; \
+	  done \
+	)
+	@ \
+	read -p "Re-generate the expected output for this test? " -n 1 -r && \
+	echo && \
+	if [[ $$REPLY =~ ^[Yy]$$ ]] ; then \
+	  make -C testsuite promote DIR=$(GPE_DIR) >/dev/null 2>&1 && \
+	  echo "Done." ; \
+	  make classify-parse-errors ; \
+	else \
+	  echo "OK, stop." ; \
+	fi
+
+.PHONY: classify-parse-errors
+classify-parse-errors:
+	@ ( \
+	cd testsuite/$(GPE_DIR) && \
+	echo "The parser's output can be described as follows:" && \
+	c=$$(grep "^Error: Syntax error" $(GPE_REF) | wc -l) && \
+	echo "$${c} syntax errors reported." && \
+	c=$$(grep "^Error: Syntax error$$" $(GPE_REF) | wc -l) && \
+	echo "$${c} errors without an explanation." && \
+	c=$$(grep "^Error: Syntax" $(GPE_REF) | grep expected | wc -l) && \
+	echo "$${c} errors with an indication of what was expected." && \
+	c=$$(grep "might be unmatched" $(GPE_REF) | wc -l) && \
+	echo "$${c} errors with an indication of an unmatched delimiter." && \
+	true)

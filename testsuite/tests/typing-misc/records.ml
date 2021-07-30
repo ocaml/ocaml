@@ -137,8 +137,7 @@ Error: Unbound record field Complex.z
 Line 1, characters 2-6:
 1 | { true with contents = 0 };;
       ^^^^
-Error: This expression has type bool but an expression was expected of type
-         'a ref
+Error: This expression has type bool which is not a record type.
 |}];;
 
 type ('a, 'b) t = { fst : 'a; snd : 'b };;
@@ -165,6 +164,17 @@ Error: This expression has type string t
        Type string is not compatible with type int
 |}]
 
+(* PR#7696 *)
+let r = { (assert false) with contents = 1 } ;;
+[%%expect{|
+Line 1, characters 8-44:
+1 | let r = { (assert false) with contents = 1 } ;;
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 23 [useless-record-with]: all the fields are explicitly listed in this record:
+the 'with' clause is useless.
+Exception: Assert_failure ("", 1, 10).
+|}]
+
 (* reexport *)
 
 type ('a,'b) def = { x:int } constraint 'b = [> `A]
@@ -187,7 +197,8 @@ Line 1, characters 0-40:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type
          (int, [> `A ]) def
-       Their constraints differ.
+       Their parameters differ
+       The type int is not equal to the type 'a
 |}]
 
 type ('a,'b) kind = ('a, 'b) def = A constraint 'b = [> `A];;
@@ -210,7 +221,7 @@ Line 2, characters 0-37:
 Error: This variant or record definition does not match that of type d
        Fields do not match:
          y : int;
-       is not compatible with:
+       is not the same as:
          mutable y : int;
        This is mutable and the original is not.
 |}]
@@ -221,7 +232,7 @@ Line 1, characters 0-28:
 1 | type missing = d = { x:int }
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type d
-       The field y is only present in the original definition.
+       An extra field, y, is provided in the original definition.
 |}]
 
 type wrong_type = d = {x:float}
@@ -230,19 +241,22 @@ Line 1, characters 0-31:
 1 | type wrong_type = d = {x:float}
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type d
-       Fields do not match:
+       1. Fields do not match:
          x : int;
-       is not compatible with:
+       is not the same as:
          x : float;
-       The types are not equal.
+       The type int is not equal to the type float
+       2. An extra field, y, is provided in the original definition.
 |}]
 
-type unboxed = d = {x:float} [@@unboxed]
+type mono = {foo:int}
+type unboxed = mono = {foo:int} [@@unboxed]
 [%%expect{|
-Line 1, characters 0-40:
-1 | type unboxed = d = {x:float} [@@unboxed]
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type d
+type mono = { foo : int; }
+Line 2, characters 0-43:
+2 | type unboxed = mono = {foo:int} [@@unboxed]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This variant or record definition does not match that of type mono
        Their internal representations differ:
        this definition uses unboxed representation.
 |}]
@@ -253,5 +267,5 @@ Line 1, characters 0-30:
 1 | type perm = d = {y:int; x:int}
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type d
-       Fields number 1 have different names, x and y.
+       Fields x and y have been swapped.
 |}]

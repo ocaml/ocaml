@@ -41,10 +41,6 @@
 
 #include "s.h"
 
-#ifdef BOOTSTRAPPING_FLEXLINK
-#undef SUPPORT_DYNAMIC_LINKING
-#endif
-
 #ifndef CAML_NAME_SPACE
 #include "compatibility.h"
 #endif
@@ -59,6 +55,19 @@
 
 #ifdef HAS_STDINT_H
 #include <stdint.h>
+#endif
+
+/* Disable the mingw-w64 *printf shims */
+#if defined(CAML_INTERNALS) && defined(__MINGW32__)
+  /* Headers may have already included <_mingw.h>, so #undef if necessary. */
+  #ifdef __USE_MINGW_ANSI_STDIO
+    #undef __USE_MINGW_ANSI_STDIO
+  #endif
+  /* <stdio.h> must either be #include'd before this header or
+     __USE_MINGW_ANSI_STDIO needs to be 0 when <stdio.h> is processed. The final
+     effect will be the same - stdio.h will define snprintf and misc.h will make
+     snprintf a macro (referring to caml_snprintf). */
+  #define __USE_MINGW_ANSI_STDIO 0
 #endif
 
 #if defined(__MINGW32__) || (defined(_MSC_VER) && _MSC_VER < 1800)
@@ -88,7 +97,7 @@
 #endif
 #endif
 
-#ifdef __MINGW32__
+#if defined(__MINGW32__) && !__USE_MINGW_ANSI_STDIO
   #define ARCH_INT64_TYPE long long
   #define ARCH_UINT64_TYPE unsigned long long
   #define ARCH_INT64_PRINTF_FORMAT "I64"
@@ -122,6 +131,7 @@ typedef unsigned short uint16_t;
 #else
 #error "No 16-bit integer type available"
 #endif
+typedef unsigned char uint8_t;
 #endif
 
 #if SIZEOF_PTR == SIZEOF_LONG
@@ -165,7 +175,7 @@ typedef uint64_t uintnat;
    as first-class values (GCC 2.x). */
 
 #if defined(__GNUC__) && __GNUC__ >= 2 && !defined(DEBUG) \
-    && !defined (SHRINKED_GNUC) && !defined(CAML_JIT)
+    && !defined (SHRINKED_GNUC)
 #define THREADED_CODE
 #endif
 
@@ -226,7 +236,7 @@ typedef uint64_t uintnat;
 /* Default speed setting for the major GC.  The heap will grow until
    the dead objects and the free list represent this percentage of the
    total size of live objects. */
-#define Percent_free_def 80
+#define Percent_free_def 120
 
 /* Default setting for the compacter: 500%
    (i.e. trigger the compacter when 5/6 of the heap is free or garbage)
@@ -255,5 +265,8 @@ typedef uint64_t uintnat;
    in the minor heap.
    Documented in gc.mli */
 #define Custom_minor_max_bsz_def 8192
+
+/* Default allocation policy. */
+#define Allocation_policy_def caml_policy_best_fit
 
 #endif /* CAML_CONFIG_H */

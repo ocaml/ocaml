@@ -17,19 +17,21 @@
 
 ROOTDIR = ..
 
-include $(ROOTDIR)/Makefile.config
+# NOTE: it is important that OCAMLLEX is defined *before* Makefile.common
+# gets included, so that its definition here takes precedence
+# over the one there.
+OCAMLLEX ?= $(BOOT_OCAMLLEX)
+
 include $(ROOTDIR)/Makefile.common
 
-CAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc
+OCAMLYACCFLAGS = -v
 
 CAMLC = $(BOOT_OCAMLC) -strict-sequence -nostdlib \
         -I $(ROOTDIR)/boot -use-prims $(ROOTDIR)/runtime/primitives
-CAMLOPT = $(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
-COMPFLAGS = -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
+CAMLOPT = $(OCAMLRUN) $(ROOTDIR)/ocamlopt$(EXE) -nostdlib -I $(ROOTDIR)/stdlib
+COMPFLAGS = -absname -w +a-4-9-41-42-44-45-48-70 -warn-error +A \
             -safe-string -strict-sequence -strict-formats -bin-annot
 LINKFLAGS =
-YACCFLAGS = -v
-CAMLLEX = $(CAMLRUN) $(ROOTDIR)/boot/ocamllex
 CAMLDEP = $(BOOT_OCAMLC) -depend
 DEPFLAGS = -slash
 DEPINCLUDES =
@@ -37,47 +39,42 @@ DEPINCLUDES =
 OBJS=cset.cmo syntax.cmo parser.cmo lexer.cmo table.cmo lexgen.cmo \
      compact.cmo common.cmo output.cmo outputbis.cmo main.cmo
 
+programs := ocamllex ocamllex.opt
+
+$(foreach program, $(programs), $(eval $(call PROGRAM_SYNONYM,$(program))))
+
 .PHONY: all allopt opt.opt # allopt and opt.opt are synonyms
 all: ocamllex
 allopt: ocamllex.opt
 opt.opt: allopt
 
-ocamllex: $(OBJS)
-	$(CAMLC) $(LINKFLAGS) -compat-32 -o ocamllex $(OBJS)
+ocamllex$(EXE): $(OBJS)
+	$(CAMLC) $(LINKFLAGS) -compat-32 -o $@ $^
 
-ocamllex.opt: $(OBJS:.cmo=.cmx)
-	$(CAMLOPT_CMD) -o ocamllex.opt $(OBJS:.cmo=.cmx)
+ocamllex.opt$(EXE): $(OBJS:.cmo=.cmx)
+	$(CAMLOPT_CMD) -o $@ $^
 
 clean::
-	rm -f ocamllex ocamllex.opt
-	rm -f *.cmo *.cmi *.cmx *.cmt *.cmti *.$(O)
-
-parser.ml parser.mli: parser.mly
-	$(CAMLYACC) $(YACCFLAGS) parser.mly
+	rm -f $(programs) $(programs:=.exe)
+	rm -f *.cmo *.cmi *.cmx *.cmt *.cmti *.o *.obj
 
 clean::
 	rm -f parser.ml parser.mli parser.output
 
 beforedepend:: parser.ml parser.mli
 
-lexer.ml: lexer.mll
-	$(CAMLLEX) $(OCAMLLEX_FLAGS) $<
-
 clean::
 	rm -f lexer.ml
 
 beforedepend:: lexer.ml
 
-.SUFFIXES:
-.SUFFIXES: .ml .cmo .mli .cmi .cmx
-
-.ml.cmo:
+%.cmo: %.ml
 	$(CAMLC) -c $(COMPFLAGS) $<
 
-.mli.cmi:
+%.cmi: %.mli
 	$(CAMLC) -c $(COMPFLAGS) $<
 
-.ml.cmx:
+%.cmx: %.ml
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
 depend: beforedepend

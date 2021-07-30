@@ -18,7 +18,16 @@
    This module implements buffers that automatically expand
    as necessary.  It provides accumulative concatenation of strings
    in quasi-linear time (instead of quadratic time when strings are
-   concatenated pairwise).
+   concatenated pairwise). For example:
+
+{[
+     let concat_strings ss =
+       let b = Buffer.create 16 in
+         List.iter (Buffer.add_string b) ss;
+         Buffer.contents b
+
+]}
+
 *)
 
 type t
@@ -50,23 +59,22 @@ val to_bytes : t -> bytes
 val sub : t -> int -> int -> string
 (** [Buffer.sub b off len] returns a copy of [len] bytes from the
     current contents of the buffer [b], starting at offset [off].
-
-    Raise [Invalid_argument] if [srcoff] and [len] do not designate a valid
+    @raise Invalid_argument if [off] and [len] do not designate a valid
     range of [b]. *)
 
 val blit : t -> int -> bytes -> int -> int -> unit
 (** [Buffer.blit src srcoff dst dstoff len] copies [len] characters from
    the current contents of the buffer [src], starting at offset [srcoff]
    to [dst], starting at character [dstoff].
-
-   Raise [Invalid_argument] if [srcoff] and [len] do not designate a valid
+   @raise Invalid_argument if [srcoff] and [len] do not designate a valid
    range of [src], or if [dstoff] and [len] do not designate a valid
    range of [dst].
    @since 3.11.2
 *)
 
 val nth : t -> int -> char
-(** Get the n-th character of the buffer. Raise [Invalid_argument] if
+(** Get the n-th character of the buffer.
+    @raise Invalid_argument if
     index out of bounds *)
 
 val length : t -> int
@@ -81,6 +89,22 @@ val reset : t -> unit
    of length [n] that was allocated by {!Buffer.create} [n].
    For long-lived buffers that may have grown a lot, [reset] allows
    faster reclamation of the space used by the buffer. *)
+
+val output_buffer : out_channel -> t -> unit
+(** [output_buffer oc b] writes the current contents of buffer [b]
+   on the output channel [oc]. *)
+
+val truncate : t -> int -> unit
+(** [truncate b len] truncates the length of [b] to [len]
+  Note: the internal byte sequence is not shortened.
+  @raise Invalid_argument if [len < 0] or [len > length b].
+  @since 4.05.0 *)
+
+(** {1 Appending} *)
+
+(** Note: all [add_*] operations can raise [Failure] if the internal byte
+    sequence of the buffer would need to grow beyond {!Sys.max_string_length}.
+*)
 
 val add_char : t -> char -> unit
 (** [add_char b c] appends the character [c] at the end of buffer [b]. *)
@@ -114,11 +138,18 @@ val add_bytes : t -> bytes -> unit
 
 val add_substring : t -> string -> int -> int -> unit
 (** [add_substring b s ofs len] takes [len] characters from offset
-   [ofs] in string [s] and appends them at the end of buffer [b]. *)
+   [ofs] in string [s] and appends them at the end of buffer [b].
+
+    @raise Invalid_argument if [ofs] and [len] do not designate a valid
+    range of [s]. *)
 
 val add_subbytes : t -> bytes -> int -> int -> unit
 (** [add_subbytes b s ofs len] takes [len] characters from offset
     [ofs] in byte sequence [s] and appends them at the end of buffer [b].
+
+    @raise Invalid_argument if [ofs] and [len] do not designate a valid
+    range of [s].
+
     @since 4.02 *)
 
 val add_substitute : t -> (string -> string) -> string -> unit
@@ -134,7 +165,7 @@ val add_substitute : t -> (string -> string) -> string -> unit
    matching parentheses or curly brackets.
    An escaped [$] character is a [$] that immediately follows a backslash
    character; it then stands for a plain [$].
-   Raise [Not_found] if the closing character of a parenthesized variable
+   @raise Not_found if the closing character of a parenthesized variable
    cannot be found. *)
 
 val add_buffer : t -> t -> unit
@@ -144,30 +175,25 @@ val add_buffer : t -> t -> unit
 val add_channel : t -> in_channel -> int -> unit
 (** [add_channel b ic n] reads at most [n] characters from the
    input channel [ic] and stores them at the end of buffer [b].
-   Raise [End_of_file] if the channel contains fewer than [n]
+   @raise End_of_file if the channel contains fewer than [n]
    characters. In this case, the characters are still added to
-   the buffer, so as to avoid loss of data. *)
+   the buffer, so as to avoid loss of data.
 
-val output_buffer : out_channel -> t -> unit
-(** [output_buffer oc b] writes the current contents of buffer [b]
-   on the output channel [oc]. *)
+   @raise Invalid_argument if [len < 0] or [len > Sys.max_string_length].
+ *)
 
-val truncate : t -> int -> unit
-(** [truncate b len] truncates the length of [b] to [len]
-  Note: the internal byte sequence is not shortened.
-  Raise [Invalid_argument] if [len < 0] or [len > length b].
-  @since 4.05.0 *)
-
-(** {1 Iterators} *)
+(** {1 Buffers and Sequences} *)
 
 val to_seq : t -> char Seq.t
 (** Iterate on the buffer, in increasing order.
-    Modification of the buffer during iteration is undefined behavior.
+
+    The behavior is not specified if the buffer is modified during iteration.
     @since 4.07 *)
 
 val to_seqi : t -> (int * char) Seq.t
 (** Iterate on the buffer, in increasing order, yielding indices along chars.
-    Modification of the buffer during iteration is undefined behavior.
+
+    The behavior is not specified if the buffer is modified during iteration.
     @since 4.07 *)
 
 val add_seq : t -> char Seq.t -> unit

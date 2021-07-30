@@ -54,9 +54,8 @@ and strengthen_sig ~aliasable env sg p =
     [] -> []
   | (Sig_value(_, _, _) as sigelt) :: rem ->
       sigelt :: strengthen_sig ~aliasable env rem p
-  | Sig_type(id, {type_kind=Type_abstract}, _, _) ::
-    (Sig_type(id', {type_private=Private}, _, _) :: _ as rem)
-    when Ident.name id = Ident.name id' ^ "#row" ->
+  | Sig_type(id, {type_kind=Type_abstract}, _, _) :: rem
+    when Btype.is_row_name (Ident.name id) ->
       strengthen_sig ~aliasable env rem p
   | Sig_type(id, decl, rs, vis) :: rem ->
       let newdecl =
@@ -222,6 +221,8 @@ and nondep_sig_item env va ids = function
       Sig_class_type(id, Ctype.nondep_cltype_declaration env ids d, rs, vis)
 
 and nondep_sig env va ids sg =
+  let scope = Ctype.create_scope () in
+  let sg, env = Env.enter_signature ~scope sg env in
   List.map (nondep_sig_item env va ids) sg
 
 and nondep_modtype_decl env ids mtd =
@@ -234,11 +235,14 @@ let enrich_typedecl env p id decl =
   match decl.type_manifest with
     Some _ -> decl
   | None ->
-      try
-        let orig_decl = Env.find_type p env in
+    match Env.find_type p env with
+    | exception Not_found -> decl
+        (* Type which was not present in the signature, so we don't have
+           anything to do. *)
+    | orig_decl ->
         if decl.type_arity <> orig_decl.type_arity then
           decl
-        else
+        else begin
           let orig_ty =
             Ctype.reify_univars env
               (Btype.newgenty(Tconstr(p, orig_decl.type_params, ref Mnil)))
@@ -248,19 +252,18 @@ let enrich_typedecl env p id decl =
               (Btype.newgenty(Tconstr(Pident id, decl.type_params, ref Mnil)))
           in
           let env = Env.add_type ~check:false id decl env in
-          Ctype.mcomp env orig_ty new_ty;
-          let orig_ty =
-            Btype.newgenty(Tconstr(p, decl.type_params, ref Mnil))
-          in
-          {decl with type_manifest = Some orig_ty}
-      with Not_found | Ctype.Unify _ ->
-        (* - Not_found: type which was not present in the signature, so we don't
-           have anything to do.
-           - Unify: the current declaration is not compatible with the one we
-           got from the signature. We should just fail now, but then, we could
-           also have failed if the arities of the two decls were different,
-           which we didn't. *)
-        decl
+          match Ctype.mcomp env orig_ty new_ty with
+          | exception Ctype.Incompatible -> decl
+              (* The current declaration is not compatible with the one we got
+                 from the signature. We should just fail now, but then, we could
+                 also have failed if the arities of the two decls were
+                 different, which we didn't. *)
+          | () ->
+              let orig_ty =
+                Btype.newgenty(Tconstr(p, decl.type_params, ref Mnil))
+              in
+              {decl with type_manifest = Some orig_ty}
+        end
 
 let rec enrich_modtype env p mty =
   match mty with
@@ -515,9 +518,9 @@ let scrape_for_type_of ~remove_aliases env mty =
 let lower_nongen nglev mty =
   let open Btype in
   let it_type_expr it ty =
-    let ty = repr ty in
-    match ty with
-      {desc=Tvar _; level} ->
+    match get_desc ty with
+      Tvar _ ->
+        let level = get_level ty in
         if level < generic_level && level > nglev then set_level ty nglev
     | _ ->
         type_iterators.it_type_expr it ty

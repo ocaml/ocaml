@@ -286,12 +286,11 @@ class printable_color_point y c = object (self)
     Format.print_string ")"
 end;;
 [%%expect{|
-Line 3, characters 10-27:
+Line 3, characters 2-36:
 3 |   inherit printable_point y as super
-              ^^^^^^^^^^^^^^^^^
-Warning 13: the following instance variables are overridden by the class printable_point :
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 13 [instance-variable-override]: the following instance variables are overridden by the class printable_point :
   x
-The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
 class printable_color_point :
   int ->
   string ->
@@ -589,20 +588,6 @@ Error: This expression has type
        but an expression was expected of type
          #comparable as 'a = < cmp : 'a -> int; .. >
        Type int_comparable = < cmp : int_comparable -> int; x : int >
-       is not compatible with type
-         int_comparable3 =
-           < cmp : int_comparable -> int; setx : int -> unit; x : int >
-       The first object type has no method setx
-|}, Principal{|
-Line 1, characters 25-27:
-1 | (new sorted_list ())#add c3;;
-                             ^^
-Error: This expression has type
-         int_comparable3 =
-           < cmp : int_comparable -> int; setx : int -> unit; x : int >
-       but an expression was expected of type
-         #comparable as 'a = < cmp : 'a -> int; .. >
-       Type int_comparable = < cmp : int_comparable -> int; x : int >
        is not compatible with type 'a = < cmp : 'a -> int; .. >
        The first object type has no method setx
 |}];;   (* Error; strange message with -principal *)
@@ -618,7 +603,7 @@ let pr l =
 Line 2, characters 2-69:
 2 |   List.map (fun c -> Format.print_int c#x; Format.print_string " ") l;
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 10: this expression should have type unit.
+Warning 10 [non-unit-statement]: this expression should have type unit.
 val pr : < x : int; .. > list -> unit = <fun>
 |}];;
 let l = [new int_comparable 5; (new int_comparable3 2 :> int_comparable);

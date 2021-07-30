@@ -17,7 +17,7 @@ open Printf
 
 type t = exn = ..
 
-let printers = ref []
+let printers = Atomic.make []
 
 let locfmt = format_of_string "File \"%s\", line %d, characters %d-%d: %s"
 
@@ -50,7 +50,7 @@ let use_printers x =
          | None | exception _ -> conv tl
          | Some s -> Some s)
     | [] -> None in
-  conv !printers
+  conv (Atomic.get printers)
 
 let to_string_default = function
   | Out_of_memory -> "Out of memory"
@@ -92,7 +92,10 @@ let catch fct arg =
     exit 2
 
 type raw_backtrace_slot
-type raw_backtrace
+type raw_backtrace_entry = private int
+type raw_backtrace = raw_backtrace_entry array
+
+let raw_backtrace_entries bt = bt
 
 external get_raw_backtrace:
   unit -> raw_backtrace = "caml_get_exception_raw_backtrace"
@@ -108,6 +111,7 @@ type backtrace_slot =
       start_char  : int;
       end_char    : int;
       is_inline   : bool;
+      defname     : string;
     }
   | Unknown_location of {
       is_raise : bool
@@ -116,7 +120,7 @@ type backtrace_slot =
 (* to avoid warning *)
 let _ = [Known_location { is_raise = false; filename = "";
                           line_number = 0; start_char = 0; end_char = 0;
-                          is_inline = false };
+                          is_inline = false; defname = "" };
          Unknown_location { is_raise = false }]
 
 external convert_raw_backtrace_slot:
@@ -143,8 +147,8 @@ let format_backtrace_slot pos slot =
       else
         Some (sprintf "%s unknown location" (info false))
   | Known_location l ->
-      Some (sprintf "%s file \"%s\"%s, line %d, characters %d-%d"
-              (info l.is_raise) l.filename
+      Some (sprintf "%s %s in file \"%s\"%s, line %d, characters %d-%d"
+              (info l.is_raise) l.defname l.filename
               (if l.is_inline then " (inlined)" else "")
               l.line_number l.start_char l.end_char)
 
@@ -208,6 +212,11 @@ let backtrace_slot_location = function
       end_char    = l.end_char;
     }
 
+let backtrace_slot_defname = function
+  | Unknown_location _
+  | Known_location { defname = "" } -> None
+  | Known_location l -> Some l.defname
+
 let backtrace_slots raw_backtrace =
   (* The documentation of this function guarantees that Some is
      returned only if a part of the trace is usable. This gives us
@@ -228,16 +237,19 @@ let backtrace_slots raw_backtrace =
       then Some backtrace
       else None
 
+let backtrace_slots_of_raw_entry entry =
+  backtrace_slots [| entry |]
+
 module Slot = struct
   type t = backtrace_slot
   let format = format_backtrace_slot
   let is_raise = backtrace_slot_is_raise
   let is_inline = backtrace_slot_is_inline
   let location = backtrace_slot_location
+  let name = backtrace_slot_defname
 end
 
-external raw_backtrace_length :
-  raw_backtrace -> int = "caml_raw_backtrace_length" [@@noalloc]
+let raw_backtrace_length bt = Array.length bt
 
 external get_raw_backtrace_slot :
   raw_backtrace -> int -> raw_backtrace_slot = "caml_raw_backtrace_slot"
@@ -253,8 +265,11 @@ let get_backtrace () = raw_backtrace_to_string (get_raw_backtrace ())
 external record_backtrace: bool -> unit = "caml_record_backtrace"
 external backtrace_status: unit -> bool = "caml_backtrace_status"
 
-let register_printer fn =
-  printers := fn :: !printers
+let rec register_printer fn =
+  let old_printers = Atomic.get printers in
+  let new_printers = fn :: old_printers in
+  let success = Atomic.compare_and_set printers old_printers new_printers in
+  if not success then register_printer fn
 
 external get_callstack: int -> raw_backtrace = "caml_get_current_callstack"
 
@@ -270,16 +285,38 @@ let exn_slot_name x =
   let slot = exn_slot x in
   (Obj.obj (Obj.field slot 0) : string)
 
+external get_debug_info_status : unit -> int = "caml_ml_debug_info_status"
+
+(* Descriptions for errors in startup.h. See also backtrace.c *)
+let errors = [| "";
+  (* FILE_NOT_FOUND *)
+  "(Cannot print locations:\n \
+      bytecode executable program file not found)";
+  (* BAD_BYTECODE *)
+  "(Cannot print locations:\n \
+      bytecode executable program file appears to be corrupt)";
+  (* WRONG_MAGIC *)
+  "(Cannot print locations:\n \
+      bytecode executable program file has wrong magic number)";
+  (* NO_FDS *)
+  "(Cannot print locations:\n \
+      bytecode executable program file cannot be opened;\n \
+      -- too many open files. Try running with OCAMLRUNPARAM=b=2)"
+|]
+
 let default_uncaught_exception_handler exn raw_backtrace =
   eprintf "Fatal error: exception %s\n" (to_string exn);
   print_raw_backtrace stderr raw_backtrace;
+  let status = get_debug_info_status () in
+  if status < 0 then
+    prerr_endline errors.(abs status);
   flush stderr
 
 let uncaught_exception_handler = ref default_uncaught_exception_handler
 
 let set_uncaught_exception_handler fn = uncaught_exception_handler := fn
 
-let empty_backtrace : raw_backtrace = Obj.obj (Obj.new_block Obj.abstract_tag 0)
+let empty_backtrace : raw_backtrace = [| |]
 
 let try_get_raw_backtrace () =
   try

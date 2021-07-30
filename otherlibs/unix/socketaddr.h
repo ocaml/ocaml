@@ -17,11 +17,33 @@
 #define CAML_SOCKETADDR_H
 
 #include "caml/misc.h"
+
+#ifdef _WIN32
+
+/* Code duplication with runtime/debugger.c is inevitable, because
+ * pulling winsock2.h creates many naming conflicts. */
+#include <winsock2.h>
+#ifdef HAS_AFUNIX_H
+#include <afunix.h>
+#else
+#define UNIX_PATH_MAX 108
+
+struct sockaddr_un {
+  ADDRESS_FAMILY sun_family;
+  char sun_path[UNIX_PATH_MAX];
+};
+
+#define SIO_AF_UNIX_GETPEERPID _WSAIOR(IOC_VENDOR, 256)
+
+#endif
+
+#else
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#endif
 
 union sock_addr_union {
   struct sockaddr s_gen;
@@ -45,13 +67,13 @@ extern "C" {
 extern void get_sockaddr (value mladdr,
                           union sock_addr_union * addr /*out*/,
                           socklen_param_type * addr_len /*out*/);
-CAMLexport value alloc_sockaddr (union sock_addr_union * addr /*in*/,
+extern value alloc_sockaddr (union sock_addr_union * addr /*in*/,
                       socklen_param_type addr_len, int close_on_error);
-CAMLexport value alloc_inet_addr (struct in_addr * inaddr);
+extern value alloc_inet_addr (struct in_addr * inaddr);
 #define GET_INET_ADDR(v) (*((struct in_addr *) (v)))
 
 #ifdef HAS_IPV6
-CAMLexport value alloc_inet6_addr (struct in6_addr * inaddr);
+extern value alloc_inet6_addr (struct in6_addr * inaddr);
 #define GET_INET6_ADDR(v) (*((struct in6_addr *) (v)))
 #endif
 

@@ -24,7 +24,7 @@ module VP = Backend_var.With_provenance
 module type I = sig
   val string_block_length : Cmm.expression -> Cmm.expression
   val transl_switch :
-      Location.t -> Cmm.expression -> int -> int ->
+      Debuginfo.t -> Cmm.expression -> int -> int ->
         (int * Cmm.expression) list -> Cmm.expression ->
           Cmm.expression
 end
@@ -88,7 +88,7 @@ module Make(I:I) = struct
   let mk_cmp_gen cmp_op id nat ifso ifnot =
     let dbg = Debuginfo.none in
     let test =
-      Cop (Ccmpi cmp_op, [ Cvar id; Cconst_natpointer (nat, dbg) ], dbg)
+      Cop (Ccmpi cmp_op, [ Cvar id; Cconst_natint (nat, dbg) ], dbg)
     in
     Cifthenelse (test, dbg, ifso, dbg, ifnot, dbg)
 
@@ -353,8 +353,7 @@ module Make(I:I) = struct
             (len,act))
           (by_size cases) in
       let id = gen_size_id () in
-      let loc = Debuginfo.to_location dbg in
-      let switch = I.transl_switch loc (Cvar id) 1 max_int size_cases default in
+      let switch = I.transl_switch dbg (Cvar id) 1 max_int size_cases default in
       mk_let_size (VP.create id) str switch
 
 (*

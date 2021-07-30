@@ -21,8 +21,6 @@ open Reg
 open Mach
 open Interval
 
-module V = Backend_var
-
 let reg ppf r =
   if not (Reg.anonymous r) then
     fprintf ppf "%s" (Reg.name r)
@@ -90,16 +88,7 @@ let intop = function
   | Ilsr -> " >>u "
   | Iasr -> " >>s "
   | Icomp cmp -> intcomp cmp
-  | Icheckbound { label_after_error; spacetime_index; } ->
-    if not Config.spacetime then " check > "
-    else
-      Printf.sprintf "check[lbl=%s,index=%d] > "
-        begin
-          match label_after_error with
-          | None -> ""
-          | Some lbl -> Int.to_string lbl
-        end
-        spacetime_index
+  | Icheckbound -> Printf.sprintf "check > "
 
 let test tst ppf arg =
   match tst with
@@ -122,17 +111,20 @@ let operation op arg ppf res =
   | Iconst_int n -> fprintf ppf "%s" (Nativeint.to_string n)
   | Iconst_float f -> fprintf ppf "%F" (Int64.float_of_bits f)
   | Iconst_symbol s -> fprintf ppf "\"%s\"" s
-  | Icall_ind _ -> fprintf ppf "call %a" regs arg
-  | Icall_imm { func; _ } -> fprintf ppf "call \"%s\" %a" func regs arg
-  | Itailcall_ind _ -> fprintf ppf "tailcall %a" regs arg
+  | Icall_ind -> fprintf ppf "call %a" regs arg
+  | Icall_imm { func; } -> fprintf ppf "call \"%s\" %a" func regs arg
+  | Itailcall_ind -> fprintf ppf "tailcall %a" regs arg
   | Itailcall_imm { func; } -> fprintf ppf "tailcall \"%s\" %a" func regs arg
   | Iextcall { func; alloc; _ } ->
       fprintf ppf "extcall \"%s\" %a%s" func regs arg
       (if alloc then "" else " (noalloc)")
   | Istackoffset n ->
       fprintf ppf "offset stack %i" n
-  | Iload(chunk, addr) ->
+  | Iload(chunk, addr, Immutable) ->
       fprintf ppf "%s[%a]"
+       (Printcmm.chunk chunk) (Arch.print_addressing reg addr) arg
+  | Iload(chunk, addr, Mutable) ->
+      fprintf ppf "%s mut[%a]"
        (Printcmm.chunk chunk) (Arch.print_addressing reg addr) arg
   | Istore(chunk, addr, is_assign) ->
       fprintf ppf "%s[%a] := %a %s"
@@ -141,11 +133,8 @@ let operation op arg ppf res =
        (Array.sub arg 1 (Array.length arg - 1))
        reg arg.(0)
        (if is_assign then "(assign)" else "(init)")
-  | Ialloc { bytes = n; _ } ->
+  | Ialloc { bytes = n; } ->
     fprintf ppf "alloc %i" n;
-    if Config.spacetime then begin
-      fprintf ppf "(spacetime node = %a)" reg arg.(0)
-    end
   | Iintop(op) -> fprintf ppf "%a%s%a" reg arg.(0) (intop op) reg arg.(1)
   | Iintop_imm(op, n) -> fprintf ppf "%a%s%i" reg arg.(0) (intop op) n
   | Inegf -> fprintf ppf "-f %a" reg arg.(0)
@@ -156,31 +145,21 @@ let operation op arg ppf res =
   | Idivf -> fprintf ppf "%a /f %a" reg arg.(0) reg arg.(1)
   | Ifloatofint -> fprintf ppf "floatofint %a" reg arg.(0)
   | Iintoffloat -> fprintf ppf "intoffloat %a" reg arg.(0)
-  | Iname_for_debugger { ident; which_parameter; } ->
-    fprintf ppf "name_for_debugger %a%s=%a"
-      V.print ident
-      (match which_parameter with
-        | None -> ""
-        | Some index -> sprintf "[P%d]" index)
-      reg arg.(0)
+  | Iopaque -> fprintf ppf "opaque %a" reg arg.(0)
   | Ispecific op ->
       Arch.print_specific_operation reg op ppf arg
+  | Ipoll { return_label } ->
+      fprintf ppf "poll call";
+      match return_label with
+      | None -> ()
+      | Some return_label ->
+        fprintf ppf " returning to L%d" return_label
 
 let rec instr ppf i =
   if !Clflags.dump_live then begin
     fprintf ppf "@[<1>{%a" regsetaddr i.live;
     if Array.length i.arg > 0 then fprintf ppf "@ +@ %a" regs i.arg;
     fprintf ppf "}@]@,";
-    if !Clflags.dump_avail then begin
-      let module RAS = Reg_availability_set in
-      fprintf ppf "@[<1>AB={%a}" (RAS.print ~print_reg:reg) i.available_before;
-      begin match i.available_across with
-      | None -> ()
-      | Some available_across ->
-        fprintf ppf ",AA={%a}" (RAS.print ~print_reg:reg) available_across
-      end;
-      fprintf ppf "@]@,"
-    end
   end;
   begin match i.desc with
   | Iend -> ()

@@ -26,8 +26,6 @@ type type_definition = type_declaration
    a single argument, [argument_to_unbox] represents the
    information we need to check the argument for separability. *)
 type argument_to_unbox = {
-  kind: parameter_kind; (* for error messages *)
-  mutability: Asttypes.mutable_flag;
   argument_type: type_expr;
   result_type_parameter_instances: type_expr list;
   (** result_type_parameter_instances represents the domain of the
@@ -38,23 +36,7 @@ type argument_to_unbox = {
      For example, [type 'a t = 'b constraint 'a = 'b * int] has
      [['b * int]] as [result_type_parameter_instances], and so does
      [type _ t = T : 'b -> ('b * int) t]. *)
-  location : Location.t;
 }
-and parameter_kind =
-  | Record_field
-  | Constructor_parameter
-  | Constructor_field (** inlined records *)
-
-(** ['a multiplicity] counts the number of ['a] in
-    a structure in which expect to see only one ['a]. *)
-type 'a multiplicity =
-  | Zero
-  | One of 'a
-  | Several
-
-type arity = argument_to_unbox multiplicity (**how many parameters?*)
-
-type branching = arity multiplicity (**how many constructors?*)
 
 (** Summarize the right-hand-side of a type declaration,
     for separability-checking purposes. See {!structure} below. *)
@@ -62,14 +44,8 @@ type type_structure =
   | Synonym of type_expr
   | Abstract
   | Open
-  | Algebraic of branching
-
-let demultiply_list
-  : type a b. a list -> (a -> b) -> b multiplicity
-  = fun li f -> match li with
-  | [] -> Zero
-  | [v] -> One (f v)
-  | _::_::_ -> Several
+  | Algebraic
+  | Unboxed of argument_to_unbox
 
 let structure : type_definition -> type_structure = fun def ->
   match def.type_kind with
@@ -79,51 +55,23 @@ let structure : type_definition -> type_structure = fun def ->
       | None -> Abstract
       | Some type_expr -> Synonym type_expr
       end
-  | Type_record (labels, _) ->
-      Algebraic (One (
-        demultiply_list labels @@ fun ld -> {
-          location = ld.ld_loc;
-          kind = Record_field;
-          mutability = ld.ld_mutable;
-          argument_type = ld.ld_type;
-          result_type_parameter_instances = def.type_params;
-        }
-      ))
-  | Type_variant constructors ->
-      Algebraic (demultiply_list constructors @@ fun cd ->
-        let result_type_parameter_instances =
-          match cd.cd_res with
-          (* cd_res is the optional return type (in a GADT);
-             if None, just use the type parameters *)
-          | None -> def.type_params
-          | Some ret_type ->
-              begin match Ctype.repr ret_type with
-              | {desc=Tconstr (_, tyl, _)} ->
-                  List.map Ctype.repr tyl
-              | _ -> assert false
-              end
-        in
-        begin match cd.cd_args with
-        | Cstr_tuple tys ->
-            demultiply_list tys @@ fun argument_type -> {
-              location = cd.cd_loc;
-              kind = Constructor_parameter;
-              mutability = Asttypes.Immutable;
-              argument_type;
-              result_type_parameter_instances;
-            }
-        | Cstr_record labels ->
-            demultiply_list labels @@ fun ld ->
-              let argument_type = ld.ld_type in
-              {
-                location = ld.ld_loc;
-                kind = Constructor_field;
-                mutability = ld.ld_mutable;
-                argument_type;
-                result_type_parameter_instances;
-              }
-        end)
 
+  | ( Type_record ([{ld_type = ty; _}], Record_unboxed _)
+    | Type_variant ([{cd_args = Cstr_tuple [ty]; _}], Variant_unboxed)
+    | Type_variant ([{cd_args = Cstr_record [{ld_type = ty; _}]; _}],
+                    Variant_unboxed)) ->
+     let params =
+       match def.type_kind with
+       | Type_variant ([{cd_res = Some ret_type}], _) ->
+          begin match get_desc ret_type with
+          | Tconstr (_, tyl, _) -> tyl
+          | _ -> assert false
+          end
+       | _ -> def.type_params
+     in
+     Unboxed { argument_type = ty; result_type_parameter_instances = params }
+
+  | Type_record _ | Type_variant _ -> Algebraic
 
 type error =
   | Non_separable_evar of string option
@@ -179,14 +127,13 @@ let rec immediate_subtypes : type_expr -> type_expr list = fun ty ->
        parameters as well as the subtype
      - it performs a shallow traversal of object types,
        while our implementation collects all method types *)
-  match (Ctype.repr ty).desc with
+  match get_desc ty with
   (* these are the important cases,
      on which immediate_subtypes is called from [check_type] *)
   | Tarrow(_,ty1,ty2,_) ->
       [ty1; ty2]
-  | Ttuple(tys)
-  | Tpackage(_,_,tys) ->
-      tys
+  | Ttuple(tys) -> tys
+  | Tpackage(_, fl) -> (snd (List.split fl))
   | Tobject(row,class_ty) ->
       let class_subtys =
         match !class_ty with
@@ -208,7 +155,7 @@ let rec immediate_subtypes : type_expr -> type_expr list = fun ty ->
   | Tpoly (pty, _) -> [pty]
   | Tconstr (_path, tys, _) -> tys
 
-and immediate_subtypes_object_row acc ty = match (Ctype.repr ty).desc with
+and immediate_subtypes_object_row acc ty = match get_desc ty with
   | Tnil -> acc
   | Tfield (_label, _kind, ty, rest) ->
       let acc = ty :: acc in
@@ -221,8 +168,8 @@ and immediate_subtypes_variant_row acc desc =
       immediate_subtypes_variant_row_field acc rf in
     List.fold_left add_subtype acc desc.row_fields in
   let add_row acc =
-    let row = Ctype.repr desc.row_more in
-    match row.desc with
+    let row = Btype.row_more desc in
+    match get_desc row with
     | Tvariant more -> immediate_subtypes_variant_row acc more
     | _ -> row :: acc
   in
@@ -240,10 +187,10 @@ and immediate_subtypes_variant_row_field acc = function
       end
 
 let free_variables ty =
-  Ctype.free_variables (Ctype.repr ty)
-  |> List.map (fun {desc; id; _} ->
-      match desc with
-      | Tvar text -> {text; id}
+  Ctype.free_variables ty
+  |> List.map (fun ty ->
+      match get_desc ty with
+        Tvar text -> {text; id = get_id ty}
       | _ ->
           (* Ctype.free_variables only returns Tvar nodes *)
           assert false)
@@ -445,12 +392,11 @@ let check_type
   : Env.t -> type_expr -> mode -> context
   = fun env ty m ->
   let rec check_type hyps ty m =
-    let ty = Ctype.repr ty in
     if Hyps.safe ty m hyps then empty
     else if Hyps.unsafe ty m hyps then worst_case ty
     else
     let hyps = Hyps.add ty m hyps in
-    match (ty.desc, m) with
+    match (get_desc ty, m) with
     (* Impossible case due to the call to [Ctype.repr]. *)
     | (Tlink _            , _      ) -> assert false
     (* Impossible case (according to comment in [typing/types.mli]. *)
@@ -459,21 +405,21 @@ let check_type
     | (_                  , Ind    ) -> empty
     (* Variable case, add constraint. *)
     | (Tvar(alpha)        , m      ) ->
-        TVarMap.singleton {text = alpha; id = ty.Types.id} m
+        TVarMap.singleton {text = alpha; id = get_id ty} m
     (* "Separable" case for constructors with known memory representation. *)
     | (Tarrow _           , Sep    )
     | (Ttuple _           , Sep    )
     | (Tvariant(_)        , Sep    )
     | (Tobject(_,_)       , Sep    )
     | ((Tnil | Tfield _)  , Sep    )
-    | (Tpackage(_,_,_)    , Sep    ) -> empty
+    | (Tpackage(_,_)      , Sep    ) -> empty
     (* "Deeply separable" case for these same constructors. *)
     | (Tarrow _           , Deepsep)
     | (Ttuple _           , Deepsep)
     | (Tvariant(_)        , Deepsep)
     | (Tobject(_,_)       , Deepsep)
     | ((Tnil | Tfield _)  , Deepsep)
-    | (Tpackage(_,_,_)    , Deepsep) ->
+    | (Tpackage(_,_)      , Deepsep) ->
         let tys = immediate_subtypes ty in
         let on_subtype context ty =
           context ++ check_type (Hyps.guard hyps) ty Deepsep in
@@ -587,7 +533,6 @@ let msig_of_context : decl_loc:Location.t -> parameters:type_expr list
          we build a list of modes by repeated consing into
          an accumulator variable [acc], setting existential variables
          to Ind as we go. *)
-      let param_instance = Ctype.repr param_instance in
       let get context var =
         try TVarMap.find var context with Not_found -> Ind in
       let set_ind context var =
@@ -595,9 +540,9 @@ let msig_of_context : decl_loc:Location.t -> parameters:type_expr list
       let is_ind context var = match get context var with
         | Ind -> true
         | Sep | Deepsep -> false in
-      match param_instance.desc with
+      match get_desc param_instance with
       | Tvar text ->
-          let var = {text; id = param_instance.Types.id} in
+          let var = {text; id = get_id param_instance} in
           (get context var) :: acc, (set_ind context var)
       | _ ->
           let instance_exis = free_variables param_instance in
@@ -658,34 +603,50 @@ let msig_of_context : decl_loc:Location.t -> parameters:type_expr list
 (** [check_def env def] returns the signature required
     for the type definition [def] in the typing environment [env].
 
-    The exception [Not_separable] is raised if we discover that
-    no such signature exists -- the definition will always be invalid. This
-    only happens when the definition is marked to be unboxed. *)
+    The exception [Error] is raised if we discover that
+    no such signature exists -- the definition will always be invalid.
+    This only happens when the definition is marked to be unboxed. *)
+
 let check_def
   : Env.t -> type_definition -> Sep.signature
   = fun env def ->
-  let boxed = not def.type_unboxed.unboxed in
   match structure def with
   | Abstract ->
-      assert boxed;
       msig_of_external_type def
   | Synonym type_expr ->
       check_type env type_expr Sep
       |> msig_of_context ~decl_loc:def.type_loc ~parameters:def.type_params
-  | Open | Algebraic (Zero | Several | One (Zero | Several)) ->
-      assert boxed;
+  | Open | Algebraic ->
       best_msig def
-  | Algebraic (One (One constructor)) ->
-    if boxed then best_msig def
-    else
+  | Unboxed constructor ->
       check_type env constructor.argument_type Sep
       |> msig_of_context ~decl_loc:def.type_loc
            ~parameters:constructor.result_type_parameter_instances
 
 let compute_decl env decl =
-  if not Config.flat_float_array then best_msig decl
-  else check_def env decl
+  if Config.flat_float_array then check_def env decl
+  else
+    (* Hack: in -no-flat-float-array mode, instead of always returning
+       [best_msig], we first compute the separability signature --
+       falling back to [best_msig] if it fails.
 
+       This discipline is conservative: it never
+       rejects -no-flat-float-array programs. At the same time it
+       guarantees that, for any program that is also accepted
+       in -flat-float-array mode, the same separability will be
+       inferred in the two modes. In particular, the same .cmi files
+       and digests will be produced.
+
+       Before we introduced this hack, the production of different
+       .cmi files would break the build system of the compiler itself,
+       when trying to build a -no-flat-float-array system from
+       a bootstrap compiler itself using -flat-float-array. See #9291.
+       *)
+    try check_def env decl with
+    | Error _ ->
+       (* It could be nice to emit a warning here, so that users know
+          that their definition would be rejected in -flat-float-array mode *)
+       best_msig decl
 
 (** Separability as a generic property *)
 type prop = Types.Separability.signature

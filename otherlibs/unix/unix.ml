@@ -205,72 +205,13 @@ type wait_flag =
 external execv : string -> string array -> 'a = "unix_execv"
 external execve : string -> string array -> string array -> 'a = "unix_execve"
 external execvp : string -> string array -> 'a = "unix_execvp"
-external execvpe_c :
-            string -> string array -> string array -> 'a = "unix_execvpe"
-
-let execvpe_ml name args env =
-  (* Try to execute the given file *)
-  let exec file =
-    try
-      execve file args env
-    with Unix_error(ENOEXEC, _, _) ->
-      (* Assume this is a script and try to execute through the shell *)
-      let argc = Array.length args in
-      (* Drop the original args.(0) if it is there *)
-      let new_args = Array.append
-        [| shell; file |]
-        (if argc = 0 then args else Array.sub args 1 (argc - 1)) in
-      execve new_args.(0) new_args env in
-  (* Try each path element in turn *)
-  let rec scan_dir eacces = function
-  | [] ->
-      (* No matching file was found (if [eacces = false]) or
-         a matching file was found but we got a "permission denied"
-         error while trying to execute it (if [eacces = true]).
-         Raise the error appropriate to each case. *)
-      raise (Unix_error((if eacces then EACCES else ENOENT),
-                        "execvpe", name))
-  | dir :: rem ->
-      let dir =  (* an empty path element means the current directory *)
-        if dir = "" then Filename.current_dir_name else dir in
-      try
-        exec (Filename.concat dir name)
-      with Unix_error(err, _, _) as exn ->
-        match err with
-        (* The following errors are treated as nonfatal, meaning that
-           we will ignore them and continue searching in the path.
-           Among those errors, EACCES is recorded specially so as
-           to produce the correct exception in the end.
-           To determine which errors are nonfatal, we looked at the
-           execvpe() sources in Glibc and in OpenBSD. *)
-        | EACCES ->
-            scan_dir true rem
-        | EISDIR|ELOOP|ENAMETOOLONG|ENODEV|ENOENT|ENOTDIR|ETIMEDOUT ->
-            scan_dir eacces rem
-        (* Other errors, e.g. E2BIG, are fatal and abort the search. *)
-        | _ ->
-            raise exn in
-  if String.contains name '/' then
-    (* If the command name contains "/" characters, don't search in path *)
-    exec name
-  else
-    (* Split path into elements and search in these elements *)
-    (try unsafe_getenv "PATH" with Not_found -> "/bin:/usr/bin")
-    |> String.split_on_char ':'
-    |> scan_dir false
-      (* [unsafe_getenv] and not [getenv] to be consistent with [execvp],
-         which looks up the PATH environment variable whether SUID or not. *)
-
-let execvpe name args env =
-  try
-    execvpe_c name args env
-  with Unix_error(ENOSYS, _, _) ->
-    execvpe_ml name args env
+external execvpe : string -> string array -> string array -> 'a = "unix_execvpe"
 
 external fork : unit -> int = "unix_fork"
 external wait : unit -> int * process_status = "unix_wait"
 external waitpid : wait_flag list -> int -> int * process_status
    = "unix_waitpid"
+external _exit : int -> 'a = "unix_exit"
 external getpid : unit -> int = "unix_getpid"
 external getppid : unit -> int = "unix_getppid"
 external nice : int -> int = "unix_nice"
@@ -381,6 +322,7 @@ external isatty : file_descr -> bool = "unix_isatty"
 external unlink : string -> unit = "unix_unlink"
 external rename : string -> string -> unit = "unix_rename"
 external link : ?follow:bool -> string -> string -> unit = "unix_link"
+external realpath : string -> string = "unix_realpath"
 
 module LargeFile =
   struct
@@ -497,8 +439,10 @@ type tm =
     tm_yday : int;
     tm_isdst : bool }
 
-external time : unit -> float = "unix_time"
-external gettimeofday : unit -> float = "unix_gettimeofday"
+external time : unit -> (float [@unboxed]) =
+  "unix_time" "unix_time_unboxed" [@@noalloc]
+external gettimeofday : unit -> (float [@unboxed]) =
+  "unix_gettimeofday" "unix_gettimeofday_unboxed" [@@noalloc]
 external gmtime : float -> tm = "unix_gmtime"
 external localtime : float -> tm = "unix_localtime"
 external mktime : tm -> float * tm = "unix_mktime"
@@ -661,6 +605,7 @@ type socket_bool_option =
   | SO_ACCEPTCONN
   | TCP_NODELAY
   | IPV6_ONLY
+  | SO_REUSEPORT
 
 type socket_int_option =
     SO_SNDBUF
@@ -938,67 +883,48 @@ let rec waitpid_non_intr pid =
   try waitpid [] pid
   with Unix_error (EINTR, _, _) -> waitpid_non_intr pid
 
-external sys_exit : int -> 'a = "caml_sys_exit"
+external spawn : string -> string array -> string array option ->
+                 bool -> int array -> int
+               = "unix_spawn"
 
 let system cmd =
-  match fork() with
-     0 -> begin try
-            execv shell [| shell; "-c"; cmd |]
-          with _ ->
-            sys_exit 127
-          end
-  | id -> snd(waitpid_non_intr id)
+  let pid = spawn shell [| shell; "-c"; cmd |] None false [| 0; 1; 2 |] in
+  snd(waitpid_non_intr pid)
 
-(* Duplicate [fd] if needed to make sure it isn't one of the
-   standard descriptors (stdin, stdout, stderr).
-   Note that this function always leaves the standard descriptors open,
-   the caller must take care of closing them if needed.
-   The "cloexec" mode doesn't matter, because
-   the descriptor returned by [dup] will be closed before the [exec],
-   and because no other thread is running concurrently
-   (we are in the child process of a fork).
- *)
-let rec file_descr_not_standard fd =
-  if fd >= 3 then fd else file_descr_not_standard (dup fd)
-
-let safe_close fd =
-  try close fd with Unix_error(_,_,_) -> ()
-
-let perform_redirections new_stdin new_stdout new_stderr =
-  let new_stdin = file_descr_not_standard new_stdin in
-  let new_stdout = file_descr_not_standard new_stdout in
-  let new_stderr = file_descr_not_standard new_stderr in
-  (*  The three dup2 close the original stdin, stdout, stderr,
-      which are the descriptors possibly left open
-      by file_descr_not_standard *)
-  dup2 ~cloexec:false new_stdin stdin;
-  dup2 ~cloexec:false new_stdout stdout;
-  dup2 ~cloexec:false new_stderr stderr;
-  safe_close new_stdin;
-  safe_close new_stdout;
-  safe_close new_stderr
+let create_process_gen cmd args optenv
+                       new_stdin new_stdout new_stderr =
+  let toclose = ref [] in
+  let close_after () =
+    List.iter
+      (fun fd -> try close fd with Unix_error(_,_,_) -> ())
+      !toclose in
+  (* Duplicate [fd] if needed to make sure it isn't one of the
+     standard descriptors (stdin, stdout, stderr).
+     The temporary file descriptors created here will be closed
+     after the spawn, both in the parent (call to [close_after] below)
+     and in the child (they are close-on-exec). *)
+  let rec file_descr_not_standard fd =
+    if fd >= 3 then fd else begin
+      let fd' = dup ~cloexec:true fd in
+      toclose := fd' :: !toclose;
+      file_descr_not_standard fd'
+    end in
+  (* As an optimization, if a standard descriptor is not redirected,
+     i.e. "redirected to itself", don't duplicate it: the [unix_spawn]
+     C stub will perform no redirection either. *)
+  let redirections = [|
+    (if new_stdin = 0 then 0 else file_descr_not_standard new_stdin);
+    (if new_stdout = 1 then 1 else file_descr_not_standard new_stdout);
+    (if new_stderr = 2 then 2 else file_descr_not_standard new_stderr)
+  |] in
+  Fun.protect ~finally:close_after
+    (fun () -> spawn cmd args optenv true (* usepath *) redirections)
 
 let create_process cmd args new_stdin new_stdout new_stderr =
-  match fork() with
-    0 ->
-      begin try
-        perform_redirections new_stdin new_stdout new_stderr;
-        execvp cmd args
-      with _ ->
-        sys_exit 127
-      end
-  | id -> id
+  create_process_gen cmd args None new_stdin new_stdout new_stderr
 
 let create_process_env cmd args env new_stdin new_stdout new_stderr =
-  match fork() with
-    0 ->
-      begin try
-        perform_redirections new_stdin new_stdout new_stderr;
-        execvpe cmd args env
-      with _ ->
-        sys_exit 127
-      end
-  | id -> id
+  create_process_gen cmd args (Some env) new_stdin new_stdout new_stderr
 
 type popen_process =
     Process of in_channel * out_channel
@@ -1009,16 +935,9 @@ type popen_process =
 let popen_processes = (Hashtbl.create 7 : (popen_process, int) Hashtbl.t)
 
 let open_proc prog args envopt proc input output error =
-  match fork() with
-    0 -> perform_redirections input output error;
-      begin try
-        match envopt with
-        | Some env -> execve prog args env
-        | None     -> execv prog args
-      with _ ->
-        sys_exit 127
-      end
-  | id -> Hashtbl.add popen_processes proc id
+  let pid =
+    create_process_gen prog args envopt input output error in
+  Hashtbl.add popen_processes proc pid
 
 let open_process_args_in prog args =
   let (in_read, in_write) = pipe ~cloexec:true () in
@@ -1187,8 +1106,8 @@ let establish_server server_fun sockaddr =
     (* The "double fork" trick, the process which calls server_fun will not
        leave a zombie process *)
     match fork() with
-       0 -> if fork() <> 0 then sys_exit 0;
-                                (* The son exits, the grandson works *)
+       0 -> if fork() <> 0 then _exit 0;
+                                (* The child exits, the grandchild works *)
             close sock;
             let inchan = in_channel_of_descr s in
             let outchan = out_channel_of_descr s in
@@ -1197,5 +1116,5 @@ let establish_server server_fun sockaddr =
                have done it already, and we are about to exit anyway
                (PR#3794) *)
             exit 0
-    | id -> close s; ignore(waitpid_non_intr id) (* Reclaim the son *)
+    | id -> close s; ignore(waitpid_non_intr id) (* Reclaim the child *)
   done

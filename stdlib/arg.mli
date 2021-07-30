@@ -16,16 +16,38 @@
 (** Parsing of command line arguments.
 
    This module provides a general mechanism for extracting options and
-   arguments from the command line to the program.
+   arguments from the command line to the program. For example:
+
+{[
+     let usage_msg = "append [-verbose] <file1> [<file2>] ... -o <output>"
+     let verbose = ref false
+     let input_files = ref []
+     let output_file = ref ""
+
+     let anon_fun filename =
+       input_files := filename::!input_files
+
+     let speclist =
+       [("-verbose", Arg.Set verbose, "Output debug information");
+        ("-o", Arg.Set_string output_file, "Set output file name")]
+
+     let () =
+       Arg.parse speclist anon_fun usage_msg;
+       (* Main functionality here *)
+]}
 
    Syntax of command lines:
     A keyword is a character string starting with a [-].
     An option is a keyword alone or followed by an argument.
     The types of keywords are: [Unit], [Bool], [Set], [Clear],
     [String], [Set_string], [Int], [Set_int], [Float], [Set_float],
-    [Tuple], [Symbol], and [Rest].
-    [Unit], [Set] and [Clear] keywords take no argument. A [Rest]
-    keyword takes the remaining of the command line as arguments.
+    [Tuple], [Symbol], [Rest], [Rest_all] and [Expand].
+
+    [Unit], [Set] and [Clear] keywords take no argument.
+
+    A [Rest] or [Rest_all] keyword takes the remainder of the command line
+    as arguments. (More explanations below.)
+
     Every other keyword takes the following word on the command line
     as argument.  For compatibility with GNU getopt_long, [keyword=arg]
     is also allowed.
@@ -39,6 +61,14 @@
 -   [cmd a b c           ](three anonymous arguments: ["a"], ["b"], and ["c"])
 -   [cmd a b -- c d      ](two anonymous arguments and a rest option with
                            two arguments)
+
+    [Rest] takes a function that is called repeatedly for each
+    remaining command line argument. [Rest_all] takes a function that
+    is called once, with the list of all remaining arguments.
+
+    Note that if no arguments follow a [Rest] keyword then the function
+    is not called at all whereas the function for a [Rest_all] keyword
+    is called with an empty list.
 *)
 
 type spec =
@@ -59,6 +89,9 @@ type spec =
                                    call the function with the symbol *)
   | Rest of (string -> unit)   (** Stop interpreting keywords and call the
                                    function with each remaining argument *)
+  | Rest_all of (string list -> unit)
+                               (** Stop interpreting keywords and call the
+                                   function with all remaining arguments *)
   | Expand of (string -> string array) (** If the remaining arguments to process
                                            are of the form
                                            [["-foo"; "arg"] @ rest] where "foo"
