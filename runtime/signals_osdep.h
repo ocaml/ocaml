@@ -65,6 +65,61 @@
 
   #define RETURN_AFTER_STACK_OVERFLOW
 
+/****************** AMD64, Solaris x86 */
+
+#elif defined(TARGET_amd64) && defined (SYS_solaris)
+
+  #include <ucontext.h>
+
+  #define DECLARE_SIGNAL_HANDLER(name) \
+    static void name(int sig, siginfo_t * info, ucontext_t * context)
+
+  #define SET_SIGACT(sigact,name) \
+    sigact.sa_sigaction = (void (*)(int,siginfo_t *,void *)) (name); \
+    sigact.sa_flags = SA_SIGINFO
+
+  typedef greg_t context_reg;
+  #define CONTEXT_PC (context->uc_mcontext.gregs[REG_RIP])
+  #define CONTEXT_C_ARG_1 (context->uc_mcontext.gregs[REG_RDI])
+  #define CONTEXT_SP (context->uc_mcontext.gregs[REG_RSP])
+  #define CONTEXT_YOUNG_PTR (context->uc_mcontext.gregs[REG_R15])
+  #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
+
+/****************** AMD64, OpenBSD */
+
+#elif defined(TARGET_amd64) && defined (SYS_openbsd)
+
+ #define DECLARE_SIGNAL_HANDLER(name) \
+ static void name(int sig, siginfo_t * info, struct sigcontext * context)
+
+ #define SET_SIGACT(sigact,name) \
+ sigact.sa_sigaction = (void (*)(int,siginfo_t *,void *)) (name); \
+ sigact.sa_flags = SA_SIGINFO
+
+ #define CONTEXT_PC (context->sc_rip)
+ #define CONTEXT_C_ARG_1 (context->sc_rdi)
+ #define CONTEXT_SP (context->sc_rsp)
+ #define CONTEXT_YOUNG_PTR (context->sc_r15)
+ #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
+
+/****************** AMD64, NetBSD */
+
+#elif defined(TARGET_amd64) && defined (SYS_netbsd)
+
+ #include <ucontext.h>
+ #define DECLARE_SIGNAL_HANDLER(name) \
+ static void name(int sig, siginfo_t * info, ucontext_t * context)
+
+ #define SET_SIGACT(sigact,name) \
+ sigact.sa_sigaction = (void (*)(int,siginfo_t *,void *)) (name); \
+ sigact.sa_flags = SA_SIGINFO
+
+ #define CONTEXT_PC (_UC_MACHINE_PC(context))
+ #define CONTEXT_C_ARG_1 (context->uc_mcontext.gregs[REG_RDI])
+ #define CONTEXT_SP (_UC_MACHINE_SP(context))
+ #define CONTEXT_YOUNG_PTR (context->uc_mcontext.gregs[REG_R15])
+ #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
+
 /****************** ARM, Linux */
 
 #elif defined(TARGET_arm) && (defined(SYS_linux_eabi) \
@@ -126,61 +181,6 @@
   #define CONTEXT_YOUNG_PTR (context->uc_mcontext.mc_gpregs.gp_x[27])
   #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
 
-
-/****************** AMD64, Solaris x86 */
-
-#elif defined(TARGET_amd64) && defined (SYS_solaris)
-
-  #include <ucontext.h>
-
-  #define DECLARE_SIGNAL_HANDLER(name) \
-    static void name(int sig, siginfo_t * info, ucontext_t * context)
-
-  #define SET_SIGACT(sigact,name) \
-    sigact.sa_sigaction = (void (*)(int,siginfo_t *,void *)) (name); \
-    sigact.sa_flags = SA_SIGINFO
-
-  typedef greg_t context_reg;
-  #define CONTEXT_PC (context->uc_mcontext.gregs[REG_RIP])
-  #define CONTEXT_C_ARG_1 (context->uc_mcontext.gregs[REG_RDI])
-  #define CONTEXT_SP (context->uc_mcontext.gregs[REG_RSP])
-  #define CONTEXT_YOUNG_PTR (context->uc_mcontext.gregs[REG_R15])
-  #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
-
-/****************** AMD64, OpenBSD */
-
-#elif defined(TARGET_amd64) && defined (SYS_openbsd)
-
- #define DECLARE_SIGNAL_HANDLER(name) \
- static void name(int sig, siginfo_t * info, struct sigcontext * context)
-
- #define SET_SIGACT(sigact,name) \
- sigact.sa_sigaction = (void (*)(int,siginfo_t *,void *)) (name); \
- sigact.sa_flags = SA_SIGINFO
-
- #define CONTEXT_PC (context->sc_rip)
- #define CONTEXT_C_ARG_1 (context->sc_rdi)
- #define CONTEXT_SP (context->sc_rsp)
- #define CONTEXT_YOUNG_PTR (context->sc_r15)
- #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
-
-/****************** AMD64, NetBSD */
-
-#elif defined(TARGET_amd64) && defined (SYS_netbsd)
-
- #include <ucontext.h>
- #define DECLARE_SIGNAL_HANDLER(name) \
- static void name(int sig, siginfo_t * info, ucontext_t * context)
-
- #define SET_SIGACT(sigact,name) \
- sigact.sa_sigaction = (void (*)(int,siginfo_t *,void *)) (name); \
- sigact.sa_flags = SA_SIGINFO
-
- #define CONTEXT_PC (_UC_MACHINE_PC(context))
- #define CONTEXT_C_ARG_1 (context->uc_mcontext.gregs[REG_RDI])
- #define CONTEXT_SP (_UC_MACHINE_SP(context))
- #define CONTEXT_YOUNG_PTR (context->uc_mcontext.gregs[REG_R15])
- #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
 
 /****************** I386, Linux */
 
