@@ -161,6 +161,27 @@
   #define CONTEXT_YOUNG_PTR (context->uc_mcontext.regs[27])
   #define CONTEXT_FAULTING_ADDRESS ((char *) context->uc_mcontext.fault_address)
 
+/****************** ARM64, MacOSX */
+
+#elif defined(TARGET_arm64) && defined (SYS_macosx)
+
+  #include <sys/ucontext.h>
+
+  #define DECLARE_SIGNAL_HANDLER(name) \
+    static void name(int sig, siginfo_t * info, void * context)
+
+  #define SET_SIGACT(sigact,name) \
+     sigact.sa_sigaction = (name); \
+     sigact.sa_flags = SA_SIGINFO
+
+  typedef unsigned long long context_reg;
+  #define CONTEXT_STATE (((ucontext_t *)context)->uc_mcontext->__ss)
+  #define CONTEXT_PC (CONTEXT_STATE.__pc)
+  #define CONTEXT_SP (CONTEXT_STATE.__sp)
+  #define CONTEXT_EXCEPTION_POINTER (CONTEXT_STATE.__x[26])
+  #define CONTEXT_YOUNG_PTR (CONTEXT_STATE.__x[27])
+  #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
+
 /****************** ARM64, FreeBSD */
 
 #elif defined(TARGET_arm64) && defined(SYS_freebsd)
