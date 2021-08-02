@@ -719,6 +719,11 @@ Caml_noinline static intnat do_some_marking
         prefetch_block(v);
         pb[(pb_enqueued++) & Pb_mask] = v;
       }
+#if defined(NAKED_POINTERS_CHECKER) && defined(NATIVE_CODE)
+      else if (Is_block_and_not_young (v) && !Is_in_heap (v)){
+        is_naked_pointer_safe (v, scan);
+      }
+#endif
     }
 
     if (scan < obj_end) {
@@ -743,7 +748,7 @@ Caml_noinline static intnat do_some_marking
   CAMLassert(pb_enqueued == pb_dequeued);
   *Caml_state->mark_stack = stk;
   if (darkened_anything)
-    ephe_list_pure = 0;
+    caml_ephe_list_pure = 0;
 #ifdef CAML_INSTR
   *pslice_fields += slice_fields;
   *pslice_pointers += slice_pointers;
