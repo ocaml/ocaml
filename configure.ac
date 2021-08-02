@@ -1841,7 +1841,8 @@ AS_IF([test x"$enable_naked_pointers_checker" = "xyes" ],
    AS_CASE(["$arch","$system"],
     [amd64,linux|amd64,macosx \
     |amd64,openbsd|amd64,win64 \
-    |amd64,freebsd|amd64,solaris],
+    |amd64,freebsd|amd64,solaris \
+    |arm64,linux|arm64,macosx],
       [naked_pointers_checker=true
       AC_DEFINE([NAKED_POINTERS_CHECKER])],
     [*],
