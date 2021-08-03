@@ -7441,3 +7441,5 @@ f object method f = 1 end
 let g y =
   let f ~y = y + 1 in
   f ~(y:int)
+
+let goober a = match a with C (type a b) y -> y
