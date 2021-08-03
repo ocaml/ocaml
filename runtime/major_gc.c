@@ -626,6 +626,7 @@ Caml_noinline static intnat do_some_marking
   uintnat pb_enqueued = 0, pb_dequeued = 0;
   int darkened_anything = 0;
   value pb[Pb_size];
+  uintnat min_pb = Pb_min; /* keep pb at least this full */
   /* These global values are cached in locals,
      so that they can be stored in registers */
   struct mark_stack stk = *Caml_state->mark_stack;
@@ -646,15 +647,6 @@ Caml_noinline static intnat do_some_marking
 
   while (1) {
     value *scan, *obj_end, *scan_end;
-    uintnat min_pb = Pb_min; /* keep pb at least this full */
-
-    if (work <= 0 || stk.count == 0) {
-      if (pb_enqueued == pb_dequeued)
-        break;
-      /* Dequeue from pb even when close to empty, because
-         we have nothing else to do */
-      min_pb = 0;
-    }
 
     if (pb_enqueued > pb_dequeued + min_pb) {
       /* Dequeue from prefetch buffer */
@@ -691,6 +683,16 @@ Caml_noinline static intnat do_some_marking
         uintnat env_offset = Start_env_closinfo(Closinfo_val(block));
         work -= env_offset;
         scan += env_offset;
+      }
+    } else if (work <= 0 || stk.count == 0) {
+      if (min_pb > 0) {
+        /* Dequeue from pb even when close to empty, because
+           we have nothing else to do */
+        min_pb = 0;
+        continue;
+      } else {
+        /* Couldn't find work with min_pb == 0, so there's nothing to do */
+        break;
       }
     } else {
       mark_entry m = stk.stack[--stk.count];
@@ -743,6 +745,9 @@ Caml_noinline static intnat do_some_marking
         }
       });
       stk.stack[stk.count++] = m;
+      /* We may have just discovered more work when we were about to run out.
+         Reset min_pb so that we try to refill the buffer again. */
+      min_pb = Pb_min;
     }
   }
   CAMLassert(pb_enqueued == pb_dequeued);
