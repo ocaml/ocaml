@@ -107,6 +107,8 @@ Working version
 - #10542: Fix detection of immediate64 types through unboxed types.
   (Leo White, review by Stephen Dolan and Gabriel Scherer)
 
+- #10550: fix pretty-print of gadt-pattern-with-type-vars (Chet Murthy)
+
 OCaml 4.13.0
 -------------
 
