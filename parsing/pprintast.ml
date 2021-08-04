@@ -95,6 +95,8 @@ let needs_parens txt =
 let needs_spaces txt =
   first_is '*' txt || last_is '*' txt
 
+let string_loc ppf x = fprintf ppf "%s" x.txt
+
 (* add parentheses to binders when they are in fact infix or prefix operators *)
 let protect_ident ppf txt =
   let format : (_, _, _) format =
@@ -446,7 +448,7 @@ and pattern1 ctxt (f:Format.formatter) (x:pattern) : unit =
                pp f "%a@;%a"  longident_loc li (simple_pattern ctxt) x
            | Some (vl, x) ->
                pp f "%a@ (type %a)@;%a" longident_loc li
-                 (list ~sep:"@ " tyvar_loc) vl
+                 (list ~sep:"@ " string_loc) vl
                  (simple_pattern ctxt) x
            | None -> pp f "%a" longident_loc li)
     | _ -> simple_pattern ctxt f x

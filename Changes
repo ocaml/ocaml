@@ -582,6 +582,8 @@ OCaml 4.13.0
   otherwise the derived pointer is live across a poll point.
   (Vincent Laviron and Xavier Leroy, review by Xavier Leroy and Sadiq Jaffer)
 
+- #10550, #10551: fix pretty-print of gadt-pattern-with-type-vars
+  (Chet Murthy, review by Gabriel Scherer)
 
 OCaml 4.12, maintenance version
 -------------------------------

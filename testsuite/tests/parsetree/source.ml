@@ -7425,3 +7425,5 @@ module M = struct
   let q =
     let%foo x and y and z in (x,y,z)
 end
+
+let goober a = match a with C (type a b) y -> y
