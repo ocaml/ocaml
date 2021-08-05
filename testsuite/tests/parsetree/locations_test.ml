@@ -57,6 +57,10 @@ let x = function { contents : int } -> contents;;
 
 let x = function { contents : int = i } -> i;;
 
+let _ =
+  object val foo = 12 method x foo = {< foo >} end
+;;
+
 (* Local open *)
 
 let x = M.{ contents = 3 };;
