@@ -2636,7 +2636,7 @@ record_expr_content:
           match eo with
           | None ->
               (* No pattern; this is a pun. Desugar it. *)
-              exp_of_longident ~loc:$sloc label
+              exp_of_longident ~loc:$loc(label) label
           | Some e ->
               e
         in
