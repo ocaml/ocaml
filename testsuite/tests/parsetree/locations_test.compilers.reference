@@ -359,9 +359,9 @@ Ptop_def
             expression (//toplevel//[4,17+17]..[4,17+29])
               Pexp_record
               [
-                "contents" (//toplevel//[4,17+19]..[4,17+27])
-                  expression (//toplevel//[4,17+19]..[4,17+27]) ghost
-                    Pexp_ident "contents" (//toplevel//[4,17+19]..[4,17+27]) ghost
+                "contents" (//toplevel//[4,17+19]..[4,17+27]) ghost
+                  expression (//toplevel//[4,17+19]..[4,17+27])
+                    Pexp_ident "contents" (//toplevel//[4,17+19]..[4,17+27])
               ]
               None
       ]
@@ -410,11 +410,11 @@ Ptop_def
             expression (//toplevel//[2,1+17]..[2,1+35])
               Pexp_record
               [
-                "contents" (//toplevel//[2,1+19]..[2,1+27])
-                  expression (//toplevel//[2,1+28]..[2,1+33])
+                "contents" (//toplevel//[2,1+19]..[2,1+27]) ghost
+                  expression (//toplevel//[2,1+19]..[2,1+33])
                     Pexp_constraint
-                    expression (//toplevel//[2,1+19]..[2,1+27]) ghost
-                      Pexp_ident "contents" (//toplevel//[2,1+19]..[2,1+27]) ghost
+                    expression (//toplevel//[2,1+19]..[2,1+27])
+                      Pexp_ident "contents" (//toplevel//[2,1+19]..[2,1+27])
                     core_type (//toplevel//[2,1+30]..[2,1+33])
                       Ptyp_constr "int" (//toplevel//[2,1+30]..[2,1+33])
                       []
@@ -466,7 +466,7 @@ Ptop_def
                   Ppat_record Closed
                   [
                     "contents" (//toplevel//[2,1+19]..[2,1+27]) ghost
-                      pattern (//toplevel//[2,1+28]..[2,1+33])
+                      pattern (//toplevel//[2,1+19]..[2,1+33])
                         Ppat_constraint
                         pattern (//toplevel//[2,1+19]..[2,1+27])
                           Ppat_var "contents" (//toplevel//[2,1+19]..[2,1+27])
@@ -547,8 +547,8 @@ Ptop_def
                         expression (//toplevel//[3,9+37]..[3,9+46])
                           Pexp_override
                           [
-                            <override> "foo" (//toplevel//[3,9+40]..[3,9+43])
-                              expression (//toplevel//[3,9+40]..[3,9+43]) ghost
+                            <override> "foo" (//toplevel//[3,9+40]..[3,9+43]) ghost
+                              expression (//toplevel//[3,9+40]..[3,9+43])
                                 Pexp_ident "foo" (//toplevel//[3,9+40]..[3,9+43])
                           ]
                       None
