@@ -231,7 +231,7 @@ Ptop_def
               core_type (//toplevel//[4,29+8]..[4,29+11])
                 Ptyp_constr "int" (//toplevel//[4,29+8]..[4,29+11])
                 []
-          expression (//toplevel//[4,29+4]..[4,29+15]) ghost
+          expression (//toplevel//[4,29+4]..[4,29+15])
             Pexp_constraint
             expression (//toplevel//[4,29+14]..[4,29+15])
               Pexp_constant PConst_int (3,None)
@@ -359,9 +359,9 @@ Ptop_def
             expression (//toplevel//[4,17+17]..[4,17+29])
               Pexp_record
               [
-                "contents" (//toplevel//[4,17+19]..[4,17+27])
-                  expression (//toplevel//[4,17+19]..[4,17+27]) ghost
-                    Pexp_ident "contents" (//toplevel//[4,17+19]..[4,17+27]) ghost
+                "contents" (//toplevel//[4,17+19]..[4,17+27]) ghost
+                  expression (//toplevel//[4,17+19]..[4,17+27])
+                    Pexp_ident "contents" (//toplevel//[4,17+19]..[4,17+27])
               ]
               None
       ]
@@ -380,7 +380,7 @@ Ptop_def
             Pexp_record
             [
               "contents" (//toplevel//[2,1+10]..[2,1+18])
-                expression (//toplevel//[2,1+10]..[2,1+28]) ghost
+                expression (//toplevel//[2,1+19]..[2,1+28])
                   Pexp_constraint
                   expression (//toplevel//[2,1+27]..[2,1+28])
                     Pexp_constant PConst_int (3,None)
@@ -410,11 +410,11 @@ Ptop_def
             expression (//toplevel//[2,1+17]..[2,1+35])
               Pexp_record
               [
-                "contents" (//toplevel//[2,1+19]..[2,1+27])
-                  expression (//toplevel//[2,1+19]..[2,1+33]) ghost
+                "contents" (//toplevel//[2,1+19]..[2,1+27]) ghost
+                  expression (//toplevel//[2,1+19]..[2,1+33])
                     Pexp_constraint
-                    expression (//toplevel//[2,1+19]..[2,1+33]) ghost
-                      Pexp_ident "contents" (//toplevel//[2,1+19]..[2,1+27]) ghost
+                    expression (//toplevel//[2,1+19]..[2,1+27])
+                      Pexp_ident "contents" (//toplevel//[2,1+19]..[2,1+27])
                     core_type (//toplevel//[2,1+30]..[2,1+33])
                       Ptyp_constr "int" (//toplevel//[2,1+30]..[2,1+33])
                       []
@@ -466,7 +466,7 @@ Ptop_def
                   Ppat_record Closed
                   [
                     "contents" (//toplevel//[2,1+19]..[2,1+27]) ghost
-                      pattern (//toplevel//[2,1+19]..[2,1+33]) ghost
+                      pattern (//toplevel//[2,1+19]..[2,1+33])
                         Ppat_constraint
                         pattern (//toplevel//[2,1+19]..[2,1+27])
                           Ppat_var "contents" (//toplevel//[2,1+19]..[2,1+27])
@@ -497,7 +497,7 @@ Ptop_def
                   Ppat_record Closed
                   [
                     "contents" (//toplevel//[2,1+19]..[2,1+27])
-                      pattern (//toplevel//[2,1+19]..[2,1+37]) ghost
+                      pattern (//toplevel//[2,1+28]..[2,1+37])
                         Ppat_constraint
                         pattern (//toplevel//[2,1+36]..[2,1+37])
                           Ppat_var "i" (//toplevel//[2,1+36]..[2,1+37])
@@ -512,6 +512,51 @@ Ptop_def
   ]
 
 val x : int ref -> int = <fun>
+Ptop_def
+  [
+    structure_item (//toplevel//[2,1+0]..[3,9+50])
+      Pstr_value Nonrec
+      [
+        <def>
+          pattern (//toplevel//[2,1+4]..[2,1+5])
+            Ppat_any
+          expression (//toplevel//[3,9+2]..[3,9+50])
+            Pexp_object
+            class_structure
+              pattern (//toplevel//[3,9+8]..[3,9+8]) ghost
+                Ppat_any
+              [
+                class_field (//toplevel//[3,9+9]..[3,9+21])
+                  Pcf_val Immutable
+                    "foo" (//toplevel//[3,9+13]..[3,9+16])
+                    Concrete Fresh
+                    expression (//toplevel//[3,9+19]..[3,9+21])
+                      Pexp_constant PConst_int (12,None)
+                class_field (//toplevel//[3,9+22]..[3,9+46])
+                  Pcf_method Public
+                    "x" (//toplevel//[3,9+29]..[3,9+30])
+                    Concrete Fresh
+                    expression (//toplevel//[3,9+31]..[3,9+46]) ghost
+                      Pexp_poly
+                      expression (//toplevel//[3,9+31]..[3,9+46]) ghost
+                        Pexp_fun
+                        Nolabel
+                        None
+                        pattern (//toplevel//[3,9+31]..[3,9+34])
+                          Ppat_var "foo" (//toplevel//[3,9+31]..[3,9+34])
+                        expression (//toplevel//[3,9+37]..[3,9+46])
+                          Pexp_override
+                          [
+                            <override> "foo" (//toplevel//[3,9+40]..[3,9+43]) ghost
+                              expression (//toplevel//[3,9+40]..[3,9+43])
+                                Pexp_ident "foo" (//toplevel//[3,9+40]..[3,9+43])
+                          ]
+                      None
+              ]
+      ]
+  ]
+
+- : < x : int -> 'a > as 'a = <obj>
 Ptop_def
   [
     structure_item (//toplevel//[4,19+0]..[4,19+26])
@@ -1356,7 +1401,7 @@ Ptop_def
                 [
                   <arg>
                   Labelled "y"
-                    expression (//toplevel//[5,98+5]..[5,98+12]) ghost
+                    expression (//toplevel//[5,98+5]..[5,98+12])
                       Pexp_constraint
                       expression (//toplevel//[5,98+6]..[5,98+7])
                         Pexp_ident "y" (//toplevel//[5,98+6]..[5,98+7])
