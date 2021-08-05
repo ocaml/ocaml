@@ -96,6 +96,8 @@ let mod_use_input ppf name =
   use_input ppf ~wrap_in_module:true name
 let use_input ppf name =
   use_input ppf ~wrap_in_module:false name
+let use_file ppf name =
+  use_input ppf (File name)
 
 let use_silently ppf name =
   Misc.protect_refs
