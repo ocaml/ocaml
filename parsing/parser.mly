@@ -394,7 +394,7 @@ let exp_of_longident ~loc lid =
   ghexp ~loc (Pexp_ident lid)
 
 let exp_of_label ~loc lbl =
-  mkexp ~loc (Pexp_ident (loc_lident lbl))
+  ghexp ~loc (Pexp_ident (loc_lident lbl))
 
 let pat_of_label lbl =
   Pat.mk ~loc:lbl.loc  (Ppat_var (loc_last lbl))
