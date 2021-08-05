@@ -41,10 +41,6 @@ void caml_handle_gc_interrupt(void);
 
 void caml_handle_incoming_interrupts(void);
 
-void caml_request_major_slice (void);
-
-void caml_request_minor_gc (void);
-
 void caml_interrupt_self(void);
 
 void caml_print_stats(void);
@@ -56,12 +52,6 @@ CAMLexport void caml_bt_enter_ocaml(void);
 CAMLexport void caml_bt_exit_ocaml(void);
 CAMLexport void caml_acquire_domain_lock(void);
 CAMLexport void caml_release_domain_lock(void);
-
-CAMLextern void caml_enter_blocking_section(void);
-CAMLextern void caml_leave_blocking_section(void);
-
-CAMLextern void (*caml_enter_blocking_section_hook)(void);
-CAMLextern void (*caml_leave_blocking_section_hook)(void);
 
 CAMLextern void (*caml_atfork_hook)(void);
 
