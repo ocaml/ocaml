@@ -185,9 +185,6 @@ module For_copy : sig
   val redirect_desc: copy_scope -> type_expr -> type_desc -> unit
         (* Temporarily change a type description *)
 
-  val dup_kind: copy_scope -> field_kind option ref -> unit
-        (* Save a None field_kind, and make it point to a fresh Fvar *)
-
   val with_scope: (copy_scope -> 'a) -> 'a
         (* [with_scope f] calls [f] and restores saved type descriptions
            before returning its result. *)

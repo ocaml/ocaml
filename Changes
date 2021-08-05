@@ -104,6 +104,12 @@ Working version
   otherwise the derived pointer is live across a poll point.
   (Vincent Laviron and Xavier Leroy, review by Xavier Leroy and Sadiq Jaffer)
 
+- #10539: Field kinds should be kept when copying types
+  Losing the sharing meant that one could desynchronize them between several
+  occurences of self, allowing a method to be both public and hidden,
+  which broke type soundness.
+  (Jacques Garrigue, review by Leo White)
+
 - #10542: Fix detection of immediate64 types through unboxed types.
   (Leo White, review by Stephen Dolan and Gabriel Scherer)
 
