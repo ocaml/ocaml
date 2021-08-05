@@ -413,7 +413,7 @@ Ptop_def
                 "contents" (//toplevel//[2,1+19]..[2,1+27])
                   expression (//toplevel//[2,1+28]..[2,1+33])
                     Pexp_constraint
-                    expression (//toplevel//[2,1+19]..[2,1+33]) ghost
+                    expression (//toplevel//[2,1+19]..[2,1+27]) ghost
                       Pexp_ident "contents" (//toplevel//[2,1+19]..[2,1+27]) ghost
                     core_type (//toplevel//[2,1+30]..[2,1+33])
                       Ptyp_constr "int" (//toplevel//[2,1+30]..[2,1+33])
@@ -512,6 +512,51 @@ Ptop_def
   ]
 
 val x : int ref -> int = <fun>
+Ptop_def
+  [
+    structure_item (//toplevel//[2,1+0]..[3,9+50])
+      Pstr_value Nonrec
+      [
+        <def>
+          pattern (//toplevel//[2,1+4]..[2,1+5])
+            Ppat_any
+          expression (//toplevel//[3,9+2]..[3,9+50])
+            Pexp_object
+            class_structure
+              pattern (//toplevel//[3,9+8]..[3,9+8]) ghost
+                Ppat_any
+              [
+                class_field (//toplevel//[3,9+9]..[3,9+21])
+                  Pcf_val Immutable
+                    "foo" (//toplevel//[3,9+13]..[3,9+16])
+                    Concrete Fresh
+                    expression (//toplevel//[3,9+19]..[3,9+21])
+                      Pexp_constant PConst_int (12,None)
+                class_field (//toplevel//[3,9+22]..[3,9+46])
+                  Pcf_method Public
+                    "x" (//toplevel//[3,9+29]..[3,9+30])
+                    Concrete Fresh
+                    expression (//toplevel//[3,9+31]..[3,9+46]) ghost
+                      Pexp_poly
+                      expression (//toplevel//[3,9+31]..[3,9+46]) ghost
+                        Pexp_fun
+                        Nolabel
+                        None
+                        pattern (//toplevel//[3,9+31]..[3,9+34])
+                          Ppat_var "foo" (//toplevel//[3,9+31]..[3,9+34])
+                        expression (//toplevel//[3,9+37]..[3,9+46])
+                          Pexp_override
+                          [
+                            <override> "foo" (//toplevel//[3,9+40]..[3,9+43])
+                              expression (//toplevel//[3,9+40]..[3,9+43]) ghost
+                                Pexp_ident "foo" (//toplevel//[3,9+40]..[3,9+43])
+                          ]
+                      None
+              ]
+      ]
+  ]
+
+- : < x : int -> 'a > as 'a = <obj>
 Ptop_def
   [
     structure_item (//toplevel//[4,19+0]..[4,19+26])
