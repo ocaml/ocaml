@@ -2640,7 +2640,7 @@ record_expr_content:
           | Some e ->
               e
         in
-        label, mkexp_opt_constraint ~loc:$sloc e c }
+        label, mkexp_opt_constraint ~loc:($startpos(c), $endpos) e c }
 ;
 %inline object_expr_content:
   xs = separated_or_terminated_nonempty_list(SEMI, object_expr_field)
@@ -2854,7 +2854,7 @@ pattern_comma_list(self):
         | Some pat ->
             label, pat
       in
-      label, mkpat_opt_constraint ~loc:$sloc pat octy
+      label, mkpat_opt_constraint ~loc:($startpos(octy), $endpos) pat octy
     }
 ;
 
