@@ -95,7 +95,7 @@ if (!check_for_pending_signals())
         goto again;
       }
 
-      atomic_fetch_sub_explicit(&total_signals_pending, 1, memory_order_relaxed);
+      atomic_fetch_sub_explicit(&total_signals_pending, 1, memory_order_acq_rel);
 
       exn = caml_execute_signal_exn(i, 0);
       if (Is_exception_result(exn)) return exn;
@@ -115,8 +115,8 @@ if (!check_for_pending_signals())
 CAMLno_tsan
 CAMLexport void caml_record_signal(int signal_number)
 {
-  atomic_fetch_add_explicit(&caml_pending_signals[signal_number], 1, memory_order_relaxed);
-  atomic_fetch_add_explicit(&total_signals_pending, 1, memory_order_release);
+  atomic_fetch_add_explicit(&caml_pending_signals[signal_number], 1, memory_order_seq_cst);
+  atomic_fetch_add_explicit(&total_signals_pending, 1, memory_order_seq_cst);
   caml_interrupt_self();
 }
 
@@ -147,7 +147,7 @@ CAMLexport void caml_enter_blocking_section(void)
     caml_enter_blocking_section_hook ();
     /* Check again for pending signals.
        If none, done; otherwise, try again */
-    if ( atomic_load_explicit(&total_signals_pending, memory_order_relaxed) == 0 ) break;
+    if ( atomic_load_explicit(&total_signals_pending, memory_order_acquire) == 0 ) break;
     caml_leave_blocking_section_hook ();
   }
 }
