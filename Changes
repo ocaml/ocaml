@@ -87,7 +87,7 @@ Working version
   (Nicolas Chataing, review by Jacques Garrigue)
 
 - #10555: Do not use ghost locations for type constraints
-  (Nicolás Ojeda Bär, report by Anton Bachin)
+  (Nicolás Ojeda Bär, report by Anton Bachin, review by Thomas Refis)
 
 ### Build system:
 
