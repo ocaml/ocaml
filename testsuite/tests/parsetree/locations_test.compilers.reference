@@ -380,7 +380,7 @@ Ptop_def
             Pexp_record
             [
               "contents" (//toplevel//[2,1+10]..[2,1+18])
-                expression (//toplevel//[2,1+10]..[2,1+28])
+                expression (//toplevel//[2,1+19]..[2,1+28])
                   Pexp_constraint
                   expression (//toplevel//[2,1+27]..[2,1+28])
                     Pexp_constant PConst_int (3,None)
@@ -411,7 +411,7 @@ Ptop_def
               Pexp_record
               [
                 "contents" (//toplevel//[2,1+19]..[2,1+27])
-                  expression (//toplevel//[2,1+19]..[2,1+33])
+                  expression (//toplevel//[2,1+28]..[2,1+33])
                     Pexp_constraint
                     expression (//toplevel//[2,1+19]..[2,1+33]) ghost
                       Pexp_ident "contents" (//toplevel//[2,1+19]..[2,1+27]) ghost
@@ -466,7 +466,7 @@ Ptop_def
                   Ppat_record Closed
                   [
                     "contents" (//toplevel//[2,1+19]..[2,1+27]) ghost
-                      pattern (//toplevel//[2,1+19]..[2,1+33])
+                      pattern (//toplevel//[2,1+28]..[2,1+33])
                         Ppat_constraint
                         pattern (//toplevel//[2,1+19]..[2,1+27])
                           Ppat_var "contents" (//toplevel//[2,1+19]..[2,1+27])
@@ -497,7 +497,7 @@ Ptop_def
                   Ppat_record Closed
                   [
                     "contents" (//toplevel//[2,1+19]..[2,1+27])
-                      pattern (//toplevel//[2,1+19]..[2,1+37])
+                      pattern (//toplevel//[2,1+28]..[2,1+37])
                         Ppat_constraint
                         pattern (//toplevel//[2,1+36]..[2,1+37])
                           Ppat_var "i" (//toplevel//[2,1+36]..[2,1+37])
