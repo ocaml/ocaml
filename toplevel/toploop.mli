@@ -194,3 +194,7 @@ val override_sys_argv : string array -> unit
    This is called by [run_script] so that [Sys.argv] represents
    "script.ml args..." instead of the full command line:
    "ocamlrun unix.cma ... script.ml args...". *)
+
+(**/**)
+
+val dir_install_printer : (formatter -> Longident.t -> unit) ref

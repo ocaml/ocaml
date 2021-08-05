@@ -17,6 +17,8 @@ open Format
 include Topcommon
 include Topeval
 
+let dir_install_printer : (formatter -> Longident.t -> unit) ref = ref (fun _ -> assert false)
+
 type input =
   | Stdin
   | File of string
@@ -27,6 +29,53 @@ let use_print_results = ref true
 let filename_of_input = function
   | File name -> name
   | Stdin | String _ -> ""
+
+let execute_phrase =
+  let new_cmis = ref []in
+  let default_load = !Persistent_env.Persistent_signature.load in
+  let load ~unit_name =
+    let res = default_load ~unit_name in
+    (match res with None -> () | Some x -> new_cmis := x.cmi :: !new_cmis);
+    res
+  in
+  Persistent_env.Persistent_signature.load := load;
+
+  let rec collect_printers path signature acc =
+    List.fold_left (fun acc item ->
+        match (item : Types.signature_item) with
+        | Sig_module (id, _, {md_type = Mty_signature s; _}, _, _) ->
+            collect_printers (Longident.Ldot (path, Ident.name id)) s acc
+        | Sig_value (id, vd, _) ->
+            if List.exists (fun attr ->
+                let open Parsetree in
+                match attr.attr_name with
+                | {Asttypes.txt = "toplevel_printer" | "ocaml.toplevel_printer"; _} ->
+                    true
+                | _ -> false)
+                vd.val_attributes
+            then
+              Longident.Ldot (path, Ident.name id) :: acc
+            else acc
+        | _ -> acc)
+      acc signature
+  in
+
+  let acknowledge_new_cmis () =
+    let l = !new_cmis in
+    new_cmis := [];
+    let printers =
+      List.fold_left (fun acc (cmi : Cmi_format.cmi_infos) ->
+          collect_printers (Longident.Lident cmi.cmi_name) cmi.cmi_sign acc )
+        [] l
+    in
+    List.iter (!dir_install_printer Format.err_formatter) printers
+  in
+
+  fun b pp phrase ->
+    acknowledge_new_cmis ();
+    let res = execute_phrase b pp phrase in
+    acknowledge_new_cmis ();
+    res
 
 let use_lexbuf ppf ~wrap_in_module lb name filename =
   Warnings.reset_fatal ();

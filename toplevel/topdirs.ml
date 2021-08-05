@@ -731,3 +731,6 @@ let _ = add_directive "help"
       doc = "Prints a list of all available directives, with \
           corresponding argument type if appropriate.";
     }
+
+let () =
+  Toploop.dir_install_printer := dir_install_printer
