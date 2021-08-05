@@ -42,6 +42,10 @@ Working version
 - #10524: Directive argument type error now shows expected and received type.
   (Wiktor Kuchta, review by Gabriel Scherer)
 
+- #10559: Toplevel printers in loaded modules can now be installed by annotating
+  their signature with `[@@toplevel_printer]`.
+  (Jérémie Dimino, Nicolás Ojeda Bär)
+
 ### Manual and documentation:
 
 - #7812, #10475: reworded the description of the behaviors of
