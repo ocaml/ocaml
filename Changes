@@ -694,6 +694,11 @@ OCaml 4.13.0
   (Damien Doligez, report by Stephen Dolan, review by Nicolás Ojeda Bär
    and Sadiq Jaffer)
 
+- #10450, #10558: keep %apply and %revapply primitives working with abstract
+  types. This breach of backward compatibility was only present in the alpha
+  releases of OCaml 4.13.0 .
+  (Florian Angeletti, review by Thomas Refis and Leo White)
+
 - #10454: Check row_more in nondep_type_rec.
   (Leo White, review by Thomas Refis)
 
