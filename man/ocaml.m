@@ -263,6 +263,9 @@ not empty or "dumb", and that isatty(stderr) holds.
 The environment variable "OCAML_COLOR" is considered if \-color is not
 provided. Its values are auto/always/never as above.
 
+If \-color is not provided, "OCAML_COLOR" is not set and the environment
+variable "NO_COLOR" is set, then color output is disabled.
+
 .TP
 .BI \-error\-style \ mode
 Control the way error messages and warnings are printed.
