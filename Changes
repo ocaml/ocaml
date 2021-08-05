@@ -86,6 +86,9 @@ Working version
   Types
   (Nicolas Chataing, review by Jacques Garrigue)
 
+- #10555: Do not use ghost locations for type constraints
+  (Nicolás Ojeda Bär, report by Anton Bachin)
+
 ### Build system:
 
 - #10471: Fix detection of arm32 architectures with musl in the configure
