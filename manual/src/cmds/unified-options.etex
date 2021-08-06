@@ -126,15 +126,15 @@ The following modes are supported:
   \item["always"] enable colors unconditionally;
   \item["never"] disable color output.
 \end{description}
-The default setting is 'auto', and the current heuristic
-checks that the "TERM" environment variable exists and is
-not empty or "dumb", and that 'isatty(stderr)' holds.
 
 The environment variable "OCAML_COLOR" is considered if "-color" is not
 provided. Its values are auto/always/never as above.
 
 If "-color" is not provided, "OCAML_COLOR" is not set and the environment
-variable "NO_COLOR" is set, then color output is disabled.
+variable "NO_COLOR" is set, then color output is disabled. Otherwise,
+the default setting is 'auto', and the current heuristic
+checks that the "TERM" environment variable exists and is
+not empty or "dumb", and that 'isatty(stderr)' holds.
 }%notop
 
 \notop{%
