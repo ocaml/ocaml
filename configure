@@ -13199,7 +13199,8 @@ case $CC,$host in #(
     $as_echo "#define HAS_ARCH_CODE32 1" >>confdefs.h
  ;; #(
   *,*-*-haiku*) :
-    mathlib="" ;; #(
+    ostype="BeOS"
+     mathlib="" ;; #(
   *,*-*-cygwin*) :
     common_cppflags="$common_cppflags -U_WIN32"
     if $with_sharedlibs; then :
