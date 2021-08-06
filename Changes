@@ -42,6 +42,11 @@ Working version
 - #10524: Directive argument type error now shows expected and received type.
   (Wiktor Kuchta, review by Gabriel Scherer)
 
+- #10560: Disable colors if the env variable `NO_COLOR` is set.  If
+  `OCAML_COLOR` is set, its setting takes precedence over `NO_COLOR`.
+  (Nicolás Ojeda Bär, report by Gabriel Scherer, review by Daniel Bünzli,
+  Gabriel Scherer and David Allsopp)
+
 ### Manual and documentation:
 
 - #7812, #10475: reworded the description of the behaviors of
