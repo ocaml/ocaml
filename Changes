@@ -590,6 +590,13 @@ OCaml 4.12, maintenance version
 
 ### Bug fixes:
 
+- #10442, #10446: Fix regression in the toplevel to #directory caused by
+  corrections and improvements to the Load_path in #9611. #directory now
+  adds the path to the start of the load path again (so files in the newly
+  added directory take priority).
+  (David Allsopp, report by Vasile Rotaru, review by Florian Angeletti
+   and Nicolás Ojeda Bär)
+
 - #10478: Fix segfault under Windows due to a mistaken initialization of thread
   ID when a thread starts.
   (David Allsopp, Nicolás Ojeda Bär, review by Xavier Leroy)
