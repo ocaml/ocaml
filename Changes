@@ -44,8 +44,8 @@ Working version
 
 - #10560: Disable colors if the env variable `NO_COLOR` is set.  If
   `OCAML_COLOR` is set, its setting takes precedence over `NO_COLOR`.
-  (Nicolás Ojeda Bär, report by Gabriel Scherer, review by Daniel Bünzli and
-  Gabriel Scherer)
+  (Nicolás Ojeda Bär, report by Gabriel Scherer, review by Daniel Bünzli,
+  Gabriel Scherer and David Allsopp)
 
 ### Manual and documentation:
 
