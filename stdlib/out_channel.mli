@@ -4,11 +4,11 @@ val stdout : t
 
 val stderr : t
 
-val create : string -> t
+val open' : string -> t
 
-val create_bin : string -> t
+val open_bin : string -> t
 
-val create_gen : open_flag list -> string -> t
+val open_gen : open_flag list -> string -> t
 
 val seek : t -> int64 -> unit
 

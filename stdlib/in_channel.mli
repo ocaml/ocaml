@@ -2,11 +2,11 @@ type t = in_channel
 
 val stdin : t
 
-val create : string -> t
+val open' : string -> t
 
-val create_bin : string -> t
+val open_bin : string -> t
 
-val create_gen : open_flag list -> t
+val open_gen : open_flag list -> t
 
 val seek : t -> int64 -> unit
 
