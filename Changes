@@ -33,6 +33,10 @@ Working version
   to emulate Unix.socketpair (only available on Windows 1803+)
   (Antonin Décimo, review by David Allsopp)
 
+- #10469: Add Thread.set_uncaught_exception_handler and
+  Thread.default_uncaught_exception_handler.
+  (Enguerrand Decorne, review by David Allsopp)
+
 ### Tools:
 
 - #3959, #7202, #10476: ocaml, in script mode, directive errors
