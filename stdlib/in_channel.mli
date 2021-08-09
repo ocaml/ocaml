@@ -1,5 +1,16 @@
 type t = in_channel
 
+type open_flag = Stdlib.open_flag =
+  | Open_rdonly
+  | Open_wronly
+  | Open_append
+  | Open_creat
+  | Open_trunc
+  | Open_excl
+  | Open_binary
+  | Open_text
+  | Open_nonblock
+
 val stdin : t
 
 val open' : string -> t
