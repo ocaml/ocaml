@@ -66,7 +66,7 @@ let add_to_maps fn basenames files files_uncap =
    we are starting from an empty cache, we can avoid checking whether a unit
    name already exists in the cache simply by adding entries in reverse
    order. *)
-let add dir =
+let prepend_add dir =
   assert (not Config.merlin || Local_store.is_bound ());
   let new_files, new_files_uncap =
     add_to_maps (Filename.concat dir.Dir.path)
@@ -78,14 +78,14 @@ let add dir =
 let init l =
   reset ();
   dirs := List.rev_map Dir.create l;
-  List.iter add !dirs
+  List.iter prepend_add !dirs
 
 let remove_dir dir =
   assert (not Config.merlin || Local_store.is_bound ());
   let new_dirs = List.filter (fun d -> Dir.path d <> dir) !dirs in
   if List.compare_lengths new_dirs !dirs <> 0 then begin
     reset ();
-    List.iter add new_dirs;
+    List.iter prepend_add new_dirs;
     dirs := new_dirs
   end
 
@@ -103,7 +103,16 @@ let add dir =
   files_uncap := SMap.union first !files_uncap new_files_uncap;
   dirs := dir :: !dirs
 
+let append_dir = add
+
 let add_dir dir = add (Dir.create dir)
+
+(* Add the directory at the start of load path - so basenames are
+   unconditionally added. *)
+let prepend_dir dir =
+  assert (not Config.merlin || Local_store.is_bound ());
+  prepend_add dir;
+  dirs := !dirs @ [dir]
 
 let is_basename fn = Filename.basename fn = fn
 
