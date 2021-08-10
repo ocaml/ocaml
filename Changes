@@ -565,6 +565,9 @@ OCaml 4.13.0
 - #10376: Link runtime libraries correctly on msvc64 in -output-complete-obj
   (David Allsopp, review by Gabriel Scherer)
 
+- #10380: Correct handling of UTF-8 paths in configure on Windows
+  (David Allsopp, review by Sébastien Hinderer)
+
 - #10449: Fix major GC work accounting (the GC was running too fast).
   (Damien Doligez, report by Stephen Dolan, review by Nicolás Ojeda Bär and
    Sadiq Jaffer)
