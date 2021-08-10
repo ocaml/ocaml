@@ -195,6 +195,10 @@ OCaml 4.13.0
   platforms without AFL support.
   (David Allsopp, review by Xavier Leroy)
 
+- #10195: Speed up GC by prefetching during marking
+  (Stephen Dolan, review by Xavier Leroy, Guillaume Munch-Maccagnoni,
+   Jacques-Henri Jourdan and Damien Doligez)
+
 * #10098: Improve command-line parsing in ocamlrun: strictly recognise options,
   be more informative for `ocamlrun -I` and support `--` for terminating options
   parsing.

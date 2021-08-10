@@ -21,21 +21,28 @@
 #include "freelist.h"
 #include "misc.h"
 
+/* An interval of a single object to be scanned.
+   The end pointer must always be one-past-the-end of a heap block,
+   but the start pointer is not necessarily the start of the block */
+typedef struct {
+  value* start;
+  value* end;
+} mark_entry;
+
 typedef struct {
   void *block;           /* address of the malloced block this chunk lives in */
   asize_t alloc;         /* in bytes, used for compaction */
   asize_t size;          /* in bytes */
   char *next;
-  value* redarken_start;  /* first block in chunk to redarken */
-  value* redarken_end;    /* last block in chunk that needs redarkening */
+  mark_entry redarken_first;  /* first block in chunk to redarken */
+  value* redarken_end;     /* one-past-end of last block for redarkening */
 } heap_chunk_head;
 
-#define Chunk_size(c) (((heap_chunk_head *) (c)) [-1]).size
-#define Chunk_alloc(c) (((heap_chunk_head *) (c)) [-1]).alloc
-#define Chunk_next(c) (((heap_chunk_head *) (c)) [-1]).next
-#define Chunk_block(c) (((heap_chunk_head *) (c)) [-1]).block
-#define Chunk_redarken_start(c) (((heap_chunk_head *) (c)) [-1]).redarken_start
-#define Chunk_redarken_end(c) (((heap_chunk_head *) (c)) [-1]).redarken_end
+#define Chunk_head(c) (((heap_chunk_head *) (c)) - 1)
+#define Chunk_size(c) Chunk_head(c)->size
+#define Chunk_alloc(c) Chunk_head(c)->alloc
+#define Chunk_next(c) Chunk_head(c)->next
+#define Chunk_block(c) Chunk_head(c)->block
 
 extern int caml_gc_phase;
 extern int caml_gc_subphase;
