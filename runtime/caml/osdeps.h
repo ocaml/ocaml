@@ -207,6 +207,27 @@ CAMLextern char* caml_stat_strdup_noexc_of_utf16(const wchar_t *s);
 */
 CAMLextern char* caml_stat_strdup_of_utf16(const wchar_t *s);
 
+/* [caml_stat_strndup_to_utf16(s, n, &out_n)] returns a copy of the first n
+   bytes of s re-encoded in UTF-16. If out_n is not NULL, then the size of the
+   result is recorded in *out_n.
+
+   The returned string is allocated with [caml_stat_alloc], so it should be
+   freed using [caml_stat_free].
+*/
+CAMLextern wchar_t *caml_stat_strndup_to_utf16(const char *s,
+                                               size_t len, size_t *out_len);
+
+/* [caml_stat_strndup_to_utf16(s, n, &out_n)] returns a copy of the first n
+   bytes of s re-encoded in UTF-8 if [caml_windows_unicode_runtime_enabled] is
+   non-zero or the current Windows code page otherwise . If out_n is not NULL,
+   then the size of the result is recorded in *out_n.
+
+   The returned string is allocated with [caml_stat_alloc], so it should be
+   freed using [caml_stat_free].
+*/
+CAMLextern char *caml_stat_strndup_of_utf16(const wchar_t *s,
+                                            size_t len, size_t *out_len);
+
 /* [caml_copy_string_of_utf16(s)] returns an OCaml string containing a copy of
    [s] re-encoded in UTF-8 if [caml_windows_unicode_runtime_enabled] is non-zero
    or in the current code page otherwise.
