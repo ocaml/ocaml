@@ -375,6 +375,10 @@ let dump_byte ic =
            | SYMB ->
                let symb = Bytesections.read_section_struct toc ic section in
                print_global_table symb
+           | ORUN ->
+               let ocamlrunparam =
+                 Bytesections.read_section_string toc ic section in
+               printf "Overridden OCAMLRUNPARAM defaults: %s\n" ocamlrunparam
            | OSLD ->
                let caml_standard_library_default =
                  Bytesections.read_section_string toc ic section in

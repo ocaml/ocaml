@@ -26,6 +26,7 @@ module Name = struct
     | DBUG (** debug info *)
     | DLLS (** dll names *)
     | DLPT (** dll paths *)
+    | ORUN (** embedded runtime parameters  *)
     | OSLD (** OCaml Standard Library Default location *)
     | PRIM (** primitives names *)
     | RNTM (** The path to the bytecode interpreter (use_runtime mode) *)
@@ -38,6 +39,7 @@ module Name = struct
     | "DLPT" -> DLPT
     | "DLLS" -> DLLS
     | "DATA" -> DATA
+    | "ORUN" -> ORUN
     | "OSLD" -> OSLD
     | "PRIM" -> PRIM
     | "SYMB" -> SYMB
@@ -54,6 +56,7 @@ module Name = struct
     | DLPT -> "DLPT"
     | DLLS -> "DLLS"
     | DATA -> "DATA"
+    | ORUN -> "ORUN"
     | OSLD -> "OSLD"
     | PRIM -> "PRIM"
     | SYMB -> "SYMB"

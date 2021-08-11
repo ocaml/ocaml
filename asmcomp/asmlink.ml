@@ -234,6 +234,9 @@ let make_startup_file ~ppf_dump units_list ~crc_interfaces =
   Array.iteri
     (fun i name -> compile_phrase (Cmm_helpers.predef_exception i name))
     Runtimedef.builtin_exceptions;
+  compile_phrase (Cmm_helpers.emit_global_char_os_constant
+                    "caml_executable_ocamlrunparam"
+                    (Compenv.overridden_runtime_parameters ()));
   if need_stdlib then begin
     let standard_library_default =
       Option.value ~default:Config.standard_library_default

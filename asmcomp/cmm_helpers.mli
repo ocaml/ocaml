@@ -628,6 +628,10 @@ val code_segment_table: string list -> phrase
 (** Generate data for a predefined exception *)
 val predef_exception: int -> string -> phrase
 
+(** Generate data for a global NUL-terminated string represented using [char_os]
+    (i.e. [wchar_t] on Windows; [char] on Unix). Must be valid UTF-8. *)
+val emit_global_char_os_constant: string -> string option -> phrase
+
 (** Generate data for a global string constant *)
 val emit_global_string_constant: string -> string -> phrase
 

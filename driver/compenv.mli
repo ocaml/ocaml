@@ -83,3 +83,7 @@ val parse_arguments : ?current:(int ref)
 
 (** Validate a single -set-runtime-default parameter specification. *)
 val parse_runtime_parameter : string -> unit
+
+(** Return {!Clflags.runtime_parameters} in the same format as the contents of
+    the [OCAMLRUNPARAM] environment variable. *)
+val overridden_runtime_parameters : unit -> string option

@@ -67,8 +67,10 @@ echo '  0 };'
 # ocamlrun values for symbols which are provided by the bytecode linker
 # - ocamlrun is able to use any of the mechanisms to load the bytecode
 # - caml_runtime_standard_library_default for bytecode images on this runtime
+# - stub default OCAMLRUNPARAM string
 cat <<'EOF'
 
 const enum caml_byte_program_mode caml_byte_program_mode = STANDARD;
 const char_os *caml_runtime_standard_library_default = OCAML_STDLIB_DIR;
+const char_os *caml_executable_ocamlrunparam = NULL;
 EOF

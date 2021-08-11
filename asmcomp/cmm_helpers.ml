@@ -2663,6 +2663,37 @@ let predef_exception i name =
 let emit_global_string_constant name value =
   Cdata (emit_string_constant (name, Global) value [])
 
+module String = Misc.Stdlib.String
+
+let os_bytes_of_string =
+  if Config.target_win32 then
+    fun s ->
+      let b = Buffer.create (String.length s * 2) in
+      Seq.iter (Buffer.add_utf_16le_uchar b) (String.to_utf_8_seq s);
+      Buffer.add_utf_16le_uchar b (Uchar.of_int 0);
+      Buffer.contents b
+  else
+    fun s -> s ^ "\000"
+
+let emit_global_char_os_constant name value =
+  let data =
+    Cglobal_symbol name
+      :: Cdefine_symbol name
+      :: match value with
+         | Some s ->
+             if String.is_valid_utf_8 s then
+               let value = os_bytes_of_string s in
+               let value_sym = Compilenv.new_const_symbol () in
+               [Csymbol_address value_sym;
+                Cdefine_symbol value_sym;
+                Cstring value]
+             else
+               invalid_arg "Cmm_helpers.emit_global_string_constant"
+         | None ->
+             [cint_zero]
+  in
+  Cdata data
+
 (* Header for a plugin *)
 
 let plugin_header units =

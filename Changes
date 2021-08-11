@@ -436,6 +436,10 @@ Working version
   hard-coded path.
   (David Allsopp, review by Damien Doligez and Samuel Hym)
 
+- #14???: Extend -set-runtime-default to allow the default values of all runtime
+  parameters to be overridden for any given binary.
+  (David Allsopp and Antonin Décimo, review by ???)
+
 - #14190: `ocaml -e` now also processes `-init` (previously it was ignored).
   (Emile Trotignon, review by David Allsopp and @ygrek)
 

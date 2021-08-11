@@ -781,13 +781,105 @@ let parse_arguments ?(current=ref 0) argv f program =
       Printf.printf "%s\n%s" help_msg err_msg;
       raise (Exit_with_status 0)
 
+(* Parse and apply multipliers to runtime parameter values
+   cf. runtime/startup_aux.c *)
+let scanmult name opt =
+  let val_mult v = function
+    | 'k' -> v * 1024
+    | 'M' -> v * 1024 * 1024
+    | 'G' -> v * 1024 * 1024 * 1024
+    | c ->
+        fatalf "-set-runtime-default: unknown multiplier %c in %s=%s."
+               c name opt
+  in
+  let scanners = [
+    (fun () -> Scanf.sscanf_opt opt "0x%x%c%!" val_mult);
+    (fun () -> Scanf.sscanf_opt opt "0x%x%!" Fun.id);
+    (fun () -> Scanf.sscanf_opt opt "%u%c%!" val_mult);
+    (fun () -> Scanf.sscanf_opt opt "%u%!" Fun.id)] in
+  match List.find_map (fun f -> f ()) scanners with
+  | Some v -> v
+  | None ->
+      fatalf "-set-runtime-default: could not parse integer value %s for %s."
+             opt name
+
+(* The list of runtime parameters for which "=1" can be omitted. Note that while
+   b is technically a boolean, it has two values for true as b>1 causes
+   backtrace information to be loaded on bytecode startup *)
+let boolish_runtime_parameters =
+  ["b"; "c"; "p"; "R"]
+let integer_runtime_parameters =
+  ["d"; "e"; "l"; "M"; "m"; "n"; "o"; "s"; "t"; "v"; "V"; "W"]
+
+(* To keep in sync with startup_aux.c *)
 let parse_runtime_parameter opt =
-  let k, setting =
-    try Misc.cut_at opt '='
-    with Not_found ->
-      fatalf "-set-runtime-default: invalid runtime parameter '%s'. \
-              Expected <name>=<value>." opt in
+  if List.mem opt boolish_runtime_parameters then
+    Hashtbl.replace Clflags.runtime_parameters opt "1"
+  else if opt <> "" then
+    let k, setting =
+      try Misc.cut_at opt '='
+      with Not_found ->
+        if List.mem opt integer_runtime_parameters then
+          fatalf "-set-runtime-default: runtime parameter %s requires a \
+                  parameter." opt
+        else
+          fatalf "-set-runtime-default: invalid runtime parameter %s. \
+                  Expected <name>[=<value>]." opt in
+    let set_parameter k setting =
+      let () =
+        let v = scanmult k setting in
+        match k with
+        | "b" ->
+            if v > 2 then
+              fatal "-set-runtime-default: runtime parameter b can only be set \
+                     to 0, 1, or 2."
+        | "d" ->
+            (* cf. Max_domains_max in runtime/caml/domain.h *)
+            let max_domains_max = 4096 in
+            if v < 1 then
+              fatal "-set-runtime-default: max_domains(d) must be at least 1";
+            if v > max_domains_max then
+              fatalf "-set-runtime-default: max_domains(d) is too large. \
+                      The maximum value is %d." max_domains_max
+        | k when List.mem k boolish_runtime_parameters ->
+            if v > 1 then
+              fatalf "-set-runtime-default: runtime parameter %s can only be \
+                      set to 0 or 1." k
+        | k ->
+            if not (List.mem k integer_runtime_parameters) then
+              fatalf "-set-runtime-default: unrecognized runtime parameter \
+                      %s." k
+      in
+      Hashtbl.replace Clflags.runtime_parameters k setting
+    in
     if k = "standard_library_default" then
       Clflags.standard_library_default := Some setting
     else
-      fatalf "-set-runtime-default: unrecognized runtime parameter %s." k
+      set_parameter k setting
+
+let overridden_runtime_parameters () =
+  if Hashtbl.length Clflags.runtime_parameters = 0 then
+    None
+  else
+    let sort (l, _) (r, _) =
+      (* Parameters in alphabetical order; if an option has both upper/lower
+         then upper first cf. caml_runtime_parameters *)
+      let l', r' = String.lowercase_ascii l, String.lowercase_ascii r in
+      if l' = r' then
+        String.compare l r
+      else
+        String.compare l' r'
+    in
+    let convert (parameter, value) =
+      if List.mem parameter boolish_runtime_parameters && value = "1" then
+        parameter
+      else
+        parameter ^ "=" ^ value
+    in
+    let ocamlrunparam =
+      Hashtbl.fold (fun k v acc -> (k, v) :: acc) Clflags.runtime_parameters []
+      |> List.sort sort
+      |> List.map convert
+      |> String.concat ","
+    in
+    Some ocamlrunparam

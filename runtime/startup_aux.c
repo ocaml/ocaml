@@ -77,7 +77,7 @@ static void init_startup_params(void)
   params.event_trace = 0;
 }
 
-static void scanmult (char_os *opt, uintnat *var)
+static void scanmult (const char_os *opt, uintnat *var)
 {
   char_os mult = ' ';
   unsigned int val = 1;
@@ -91,15 +91,10 @@ static void scanmult (char_os *opt, uintnat *var)
   }
 }
 
-void caml_parse_ocamlrunparam(void)
+/* To keep in sync with Compenv.parse_runtime_parameter */
+static void parse_ocamlrunparam(const char_os *opt)
 {
-  init_startup_params();
   uintnat val;
-
-  char_os *opt = caml_secure_getenv (T("OCAMLRUNPARAM"));
-  if (opt == NULL || *opt == '\0')
-    opt = caml_secure_getenv (T("CAMLRUNPARAM"));
-
   if (opt != NULL){
     while (*opt != '\0'){
       switch (*opt++){
@@ -141,6 +136,20 @@ void caml_parse_ocamlrunparam(void)
     caml_fatal_error("OCAMLRUNPARAM: max_domains(d) is too large. "
                      "The maximum value is %d.", Max_domains_max);
   }
+}
+
+void caml_parse_ocamlrunparam(void)
+{
+  init_startup_params();
+
+  /* Update any of this runtime's default parameter values with the defaults
+     specified in the executable/image */
+  parse_ocamlrunparam(caml_executable_ocamlrunparam);
+
+  /* Now parse OCAMLRUNPARAM/CAMLRUNPARAM for values specified by the user */
+  const char_os *opt = caml_secure_getenv (T("OCAMLRUNPARAM"));
+  if (opt == NULL || *opt == '\0') opt = caml_secure_getenv (T("CAMLRUNPARAM"));
+  parse_ocamlrunparam(opt);
 }
 
 /* The number of outstanding calls to caml_startup */

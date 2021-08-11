@@ -60,6 +60,8 @@ struct caml_params {
 
 extern const struct caml_params* const caml_params;
 
+extern const char_os *caml_executable_ocamlrunparam;
+
 extern void caml_parse_ocamlrunparam (void);
 
 /* Common entry point to caml_startup.

@@ -302,12 +302,12 @@ static void do_print_help(void)
 
 /* Parse options on the command line */
 
-static int parse_command_line(char_os **argv)
+static int parse_command_line(char_os **argv,
+                              uintnat *trace_level,
+                              uintnat *backtrace_enabled,
+                              uintnat *event_trace)
 {
   int i, len, parsed;
-  /* cast to make caml_params mutable; this assumes we are only called
-     by one thread at startup */
-  struct caml_params* params = (struct caml_params*)caml_params;
 
   for(i = 1; argv[i] != NULL && argv[i][0] == '-'; i++) {
     len = strlen_os(argv[i]);
@@ -319,7 +319,7 @@ static int parse_command_line(char_os **argv)
         return i + 1;
         break;
       case 't':
-        params->trace_level += 1; /* ignored unless DEBUG mode */
+        *trace_level += 1; /* ignored unless DEBUG mode */
         break;
       case 'v':
         atomic_store_relaxed(&caml_verb_gc, CAML_GC_MSG_VERBOSE);
@@ -330,7 +330,7 @@ static int parse_command_line(char_os **argv)
         exit(0);
         break;
       case 'b':
-        params->backtrace_enabled = 1;
+        *backtrace_enabled = 1;
         break;
       case 'I':
         if (argv[i + 1] != NULL) {
@@ -359,7 +359,7 @@ static int parse_command_line(char_os **argv)
         printf("%s\n", OCAML_VERSION_STRING);
         exit(0);
       } else if (!strcmp_os(argv[i], T("-events"))) {
-        params->event_trace = 1; /* Ignored unless DEBUG mode */
+        *event_trace = 1; /* Ignored unless DEBUG mode */
       } else if (!strcmp_os(argv[i], T("-help")) ||
                  !strcmp_os(argv[i], T("--help"))) {
         do_print_help();
@@ -462,8 +462,17 @@ CAMLexport void caml_main(char_os **argv)
   char * req_prims;
   char_os * shared_lib_path, * shared_libs;
   char_os * exe_name = NULL, * proc_self_exe, * argv0, * tofree = NULL;
+  /* Only one thread at startup - caml_params won't be mutated once the VM
+     starts */
+  struct caml_params* params = (struct caml_params*)caml_params;
+  uintnat trace_level = 0, backtrace_enabled = 0, event_trace = 0;
 
-  /* Determine options */
+  /* Parse OCAMLRUNPARAM - for -custom, -output-obj, etc. this will take
+     caml_executable_ocamlrunparam into account, but for tendered bytecode
+     images (or for explicit invocation as ocamlrun ./foo.byte) the ORUN section
+     has not yet been read. The only relevant setting between here and ORUN
+     being read is c=1 (pooling), which is prohibited by the bytecode linker
+     from appearing in an ORUN section. */
   caml_parse_ocamlrunparam();
 
   if (!caml_startup_aux(/* pooling */ caml_params->cleanup_on_exit))
@@ -587,7 +596,9 @@ CAMLexport void caml_main(char_os **argv)
     }
 
     if (fd < 0) {
-      pos = parse_command_line(argv);
+      pos =
+        parse_command_line(argv,
+                           &trace_level, &backtrace_enabled, &event_trace);
       if (print_config) {
         caml_runtime_standard_library_effective =
           caml_locate_standard_library(argv0,
@@ -605,6 +616,11 @@ CAMLexport void caml_main(char_os **argv)
     }
   }
 
+  params->trace_level += trace_level;
+  if (backtrace_enabled)
+    params->backtrace_enabled = 1;
+  if (event_trace)
+    params->event_trace = 1;
   switch(fd) {
   case FILE_NOT_FOUND:
     error("cannot find file '%s'",
@@ -627,6 +643,25 @@ CAMLexport void caml_main(char_os **argv)
 
   /* Read the table of contents (section descriptors) */
   caml_read_section_descriptors(fd, &trail);
+
+  /* If caml_executable_ocamlrunparam was set, don't also process ORUN */
+  if (!caml_executable_ocamlrunparam) {
+    /* Load the embedded runtime parameters */
+    caml_executable_ocamlrunparam = read_section_to_os(fd, &trail, "ORUN");
+
+    /* Re-parse options, taking these defaults into account (see note when
+       caml_parse-ocamlrunparam was previously called in this function) */
+    if (caml_executable_ocamlrunparam)
+      caml_parse_ocamlrunparam();
+
+    /* caml_parse_ocamlrunparam resets the params fields: re-apply the three
+       which are affected by command-line parsing. */
+    params->trace_level += trace_level;
+    if (backtrace_enabled)
+      params->backtrace_enabled = 1;
+    if (event_trace)
+      params->event_trace = 1;
+  }
 
   caml_runtime_standard_library_effective =
     caml_locate_standard_library(argv0,

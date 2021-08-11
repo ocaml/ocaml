@@ -391,6 +391,8 @@ CAMLprim value caml_runtime_parameters (value unit)
 #define F_S CAML_PRIuSZT
 
   CAMLassert (unit == Val_unit);
+  /* Parameters in alphabetical order; if an option has both upper/lower then
+     upper first cf. Compenv.overridden_runtime_parameters */
   return caml_alloc_sprintf
       ("b=%d,c=%"F_Z",e=%"F_Z",l=%"F_Z",M=%"F_Z",m=%"F_Z",n=%"F_Z","
        "o=%"F_Z",p=%d,R=%u,s=%"F_S",t=%"F_Z",V=%"F_Z",v=%"F_Z",W=%"F_Z"",

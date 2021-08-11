@@ -150,8 +150,10 @@ See the Gc module documentation for details.
 .TP
 .B b
 Trigger the printing of a stack backtrace
-when an uncaught exception aborts the program.
-This option takes no argument.
+when an uncaught exception aborts the program.  Possible values
+are 0 for disabled, 1 for enabled, and 2 which, in bytecode, causes the
+required debugging information to be loaded when the program starts instead
+of when the program aborts.
 .TP
 .B c
 (cleanup_on_exit) Shut the runtime down gracefully on exit. The option
@@ -219,13 +221,12 @@ Turn on debugging support for
 .BR ocamlyacc -generated
 parsers.  When this option is on,
 the pushdown automaton that executes the parsers prints a
-trace of its actions.  This option takes no argument.
+trace of its actions.
 .TP
 .BR R
 Turn on randomization of all hash tables by default (see the
 .B Hashtbl
-module of the standard library). This option takes no
-argument.
+module of the standard library).
 .TP
 .BR s " (minor_heap_size)"
 The size of the minor heap (in words).
