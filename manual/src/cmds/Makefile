@@ -8,7 +8,7 @@ CAMLLATEX = $(SET_LD_PATH) \
   $(OCAMLRUN) $(ROOTDIR)/tools/caml-tex \
   -repo-root $(ROOTDIR) -n 80 -v false
 TEXQUOTE = $(OCAMLRUN) $(TOOLS)/texquote2
-TRANSF = $(SET_LD_PATH) $(OCAMLRUN) $(TOOLS)/transf
+TRANSF = $(OCAMLRUN) $(TOOLS)/transf
 
 FILES = comp.tex top.tex runtime.tex native.tex lexyacc.tex intf-c.tex \
   ocamldep.tex profil.tex debugger.tex ocamldoc.tex \

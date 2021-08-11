@@ -8,7 +8,7 @@ CAMLLATEX = $(SET_LD_PATH) \
   $(OCAMLRUN) $(ROOTDIR)/tools/caml-tex \
   -repo-root $(ROOTDIR) -n 80 -v false
 TEXQUOTE = $(OCAMLRUN) $(TOOLS)/texquote2
-TRANSF = $(SET_LD_PATH) $(OCAMLRUN) $(TOOLS)/transf
+TRANSF = $(OCAMLRUN) $(TOOLS)/transf
 
 
 FILES = coreexamples.tex lablexamples.tex objectexamples.tex \
