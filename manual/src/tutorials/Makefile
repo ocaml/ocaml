@@ -1,14 +1,13 @@
 ROOTDIR = ../../..
 include $(ROOTDIR)/Makefile.common
 
-LD_PATH = "$(ROOTDIR)/otherlibs/str:$(ROOTDIR)/otherlibs/unix"
+LD_PATH = $(ROOTDIR)/otherlibs/str $(ROOTDIR)/otherlibs/unix
 
 TOOLS = ../../tools
-CAMLLATEX = $(SET_LD_PATH) \
-  $(OCAMLRUN) $(ROOTDIR)/tools/caml-tex \
-  -repo-root $(ROOTDIR) -n 80 -v false
+CAMLLATEX = $(OCAMLRUN) $(addprefix -I ,$(LD_PATH)) \
+  $(ROOTDIR)/tools/caml-tex -repo-root $(ROOTDIR) -n 80 -v false
 TEXQUOTE = $(OCAMLRUN) $(TOOLS)/texquote2
-TRANSF = $(SET_LD_PATH) $(OCAMLRUN) $(TOOLS)/transf
+TRANSF = $(OCAMLRUN) $(TOOLS)/transf
 
 
 FILES = coreexamples.tex lablexamples.tex polyvariant.tex objectexamples.tex \
