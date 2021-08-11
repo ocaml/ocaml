@@ -951,44 +951,81 @@ CAMLexport value caml_copy_string_of_utf16(const wchar_t *s)
   return v;
 }
 
-CAMLexport wchar_t* caml_stat_strdup_noexc_to_utf16(const char *s)
+Caml_inline wchar_t *char_array_to_utf16_noexc(const char *s,
+                                               int slen, size_t *out_size)
 {
   wchar_t * ws;
   int retcode;
 
-  retcode = caml_win32_multi_byte_to_wide_char(s, -1, NULL, 0);
-  ws = caml_stat_alloc_noexc(retcode * sizeof(*ws));
-  if (ws != NULL)
-    caml_win32_multi_byte_to_wide_char(s, -1, ws, retcode);
+  retcode = caml_win32_multi_byte_to_wide_char(s, slen, NULL, 0);
+  ws = caml_stat_alloc_noexc(retcode * sizeof(wchar_t));
+  if (ws != NULL) {
+    caml_win32_multi_byte_to_wide_char(s, slen, ws, retcode);
+    if (out_size != NULL)
+      *out_size = retcode;
+  }
 
   return ws;
 }
 
-CAMLexport wchar_t* caml_stat_strdup_to_utf16(const char *s)
+CAMLexport wchar_t *caml_stat_strdup_noexc_to_utf16(const char *s)
 {
-  wchar_t out = caml_stat_strdup_noexc_to_utf16(s);
+  return char_array_to_utf16_noexc(s, -1, NULL);
+}
+
+CAMLexport wchar_t *caml_stat_strdup_to_utf16(const char *s)
+{
+  wchar_t *out = caml_stat_strdup_noexc_to_utf16(s);
   if (out == NULL)
     caml_raise_out_of_memory();
   return out;
 }
 
-CAMLexport caml_stat_string caml_stat_strdup_noexc_of_utf16(const wchar_t *s)
+CAMLexport wchar_t *caml_stat_char_array_to_utf16(const char *s, size_t size,
+                                                  size_t *out_size)
+{
+  wchar_t *out = char_array_to_utf16_noexc(s, size, out_size);
+  if (out == NULL)
+    caml_raise_out_of_memory();
+  return out;
+}
+
+Caml_inline caml_stat_string char_array_of_utf16_noexc(const wchar_t *s,
+                                                       int slen,
+                                                       size_t *out_size)
 {
   caml_stat_string out;
   int retcode;
 
-  retcode = caml_win32_wide_char_to_multi_byte(s, -1, NULL, 0);
+  retcode = caml_win32_wide_char_to_multi_byte(s, slen, NULL, 0);
   out = caml_stat_alloc_noexc(retcode);
   if (out != NULL) {
-    caml_win32_wide_char_to_multi_byte(s, -1, out, retcode);
+    caml_win32_wide_char_to_multi_byte(s, slen, out, retcode);
+    if (out_size != NULL)
+      *out_size = retcode;
   }
 
   return out;
 }
 
+CAMLexport caml_stat_string caml_stat_strdup_noexc_of_utf16(const wchar_t *s)
+{
+  return char_array_of_utf16_noexc(s, -1, NULL);
+}
+
 CAMLexport caml_stat_string caml_stat_strdup_of_utf16(const wchar_t *s)
 {
   caml_stat_string out = caml_stat_strdup_noexc_of_utf16(s);
+  if (out == NULL)
+    caml_raise_out_of_memory();
+  return out;
+}
+
+CAMLexport caml_stat_string caml_stat_char_array_of_utf16(const wchar_t *s,
+                                                          size_t size,
+                                                          size_t *out_size)
+{
+  caml_stat_string out = char_array_of_utf16_noexc(s, size, out_size);
   if (out == NULL)
     caml_raise_out_of_memory();
   return out;
