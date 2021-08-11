@@ -85,14 +85,6 @@ ifeq "$(FUNCTION_SECTIONS)" "true"
 OPTCOMPFLAGS += -function-sections
 endif
 
-# This used to live in Makefile.config - it's only used now by the manual's
-# build system.
-ifeq "$(UNIX_OR_WIN32)" "win32"
-  SET_LD_PATH=PATH="$(PATH):$(LD_PATH)"
-else # ifeq "$(UNIX_OR_WIN32)" "win32"
-  SET_LD_PATH=CAML_LD_LIBRARY_PATH="$(LD_PATH)"
-endif # ifeq "$(UNIX_OR_WIN32)" "win32"
-
 # Escape special characters in the argument string.
 # There are four characters that need escaping:
 # - backslash and ampersand, which are special in the replacement text
