@@ -1890,9 +1890,11 @@ bytecomp/bytegen.cmi : \
     lambda/lambda.cmi \
     bytecomp/instruct.cmi
 bytecomp/bytelibrarian.cmo : \
+    bytecomp/symtable.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
     utils/load_path.cmi \
+    typing/ident.cmi \
     bytecomp/emitcode.cmi \
     utils/config.cmi \
     file_formats/cmo_format.cmi \
@@ -1900,16 +1902,19 @@ bytecomp/bytelibrarian.cmo : \
     bytecomp/bytelink.cmi \
     bytecomp/bytelibrarian.cmi
 bytecomp/bytelibrarian.cmx : \
+    bytecomp/symtable.cmx \
     utils/misc.cmx \
     parsing/location.cmx \
     utils/load_path.cmx \
+    typing/ident.cmx \
     bytecomp/emitcode.cmx \
     utils/config.cmx \
     file_formats/cmo_format.cmi \
     utils/clflags.cmx \
     bytecomp/bytelink.cmx \
     bytecomp/bytelibrarian.cmi
-bytecomp/bytelibrarian.cmi :
+bytecomp/bytelibrarian.cmi : \
+    utils/misc.cmi
 bytecomp/bytelink.cmo : \
     utils/warnings.cmi \
     bytecomp/symtable.cmi \
