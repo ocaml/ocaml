@@ -7,6 +7,7 @@ readonly_files = "test4_plugin_a.ml test4_plugin_b.ml"
 libraries = ""
 
 * shared-libraries
+(*
 ** setup-ocamlc.byte-build-env
 *** ocamlc.byte
 module = "test4_main.ml"
@@ -23,6 +24,7 @@ program = "${test_build_directory}/test4.byte"
 libraries = "dynlink"
 all_modules = "test4_main.cmo"
 **** run
+*)
 
 ** native-dynlink
 *** setup-ocamlopt.byte-build-env
