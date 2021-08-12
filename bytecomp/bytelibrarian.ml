@@ -174,6 +174,9 @@ let () =
     )
 
 let reset () =
+  missing_globals := Ident.Map.empty;
+  provided_globals := Ident.Set.empty;
+  badly_ordered_dependencies := [];
   lib_ccobjs := [];
   lib_ccopts := [];
   lib_dllibs := []
