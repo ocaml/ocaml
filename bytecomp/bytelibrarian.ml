@@ -22,11 +22,45 @@ open Cmo_format
 type error =
     File_not_found of string
   | Not_an_object_file of string
+  | Wrong_link_order of (modname * modname) list
 
 exception Error of error
 
+let missing_globals = ref Ident.Map.empty
+let provided_globals = ref Ident.Set.empty
+let badly_ordered_dependencies : (string * string) list ref = ref []
+
+(* Note: unlike Bytelink, which traverses units from right to left,
+   here we traverse units from left to right so the logic around
+   missing and provided globals is different. *)
+let add_required compunit =
+  let add id =
+    if not (Ident.Set.mem id !provided_globals) then
+      missing_globals := Ident.Map.add id compunit.cu_name !missing_globals
+  in
+  List.iter add (Symtable.required_globals compunit.cu_reloc);
+  List.iter add compunit.cu_required_globals
+
+let remove_required (rel, _pos) =
+  match rel with
+    Reloc_setglobal id ->
+      begin try
+        let name = Ident.Map.find id !missing_globals in
+        badly_ordered_dependencies :=
+          ((Ident.name id), name) :: !badly_ordered_dependencies;
+      with Not_found -> ()
+      end;
+      missing_globals := Ident.Map.remove id !missing_globals;
+      provided_globals := Ident.Set.add id !provided_globals;
+  | _ -> ()
+
 (* Copy a compilation unit from a .cmo or .cma into the archive *)
 let copy_compunit ic oc compunit =
+  (* The order between remove_required and add_required is important for
+     packed units, where a single unit defines several globals that can depend
+     on each other.  *)
+  List.iter remove_required compunit.cu_reloc;
+  add_required compunit;
   seek_in ic compunit.cu_pos;
   compunit.cu_pos <- pos_out oc;
   compunit.cu_force_link <- compunit.cu_force_link || !Clflags.link_everything;
@@ -111,6 +145,10 @@ let create_archive file_list lib_name =
          outchan toc;
        seek_out outchan ofs_pos_toc;
        output_binary_int outchan pos_toc;
+       begin match !badly_ordered_dependencies with
+       | [] -> ()
+       | l -> raise (Error (Wrong_link_order l))
+       end;
     )
 
 open Format
@@ -121,6 +159,12 @@ let report_error ppf = function
   | Not_an_object_file name ->
       fprintf ppf "The file %a is not a bytecode object file"
         Location.print_filename name
+  | Wrong_link_order l ->
+      let depends_on ppf (dep, depending) =
+        fprintf ppf "%s depends on %s" depending dep
+      in
+      fprintf ppf "@[<hov 2>Wrong link order: %a@]"
+        (pp_print_list ~pp_sep:(fun ppf () -> fprintf ppf ",@ ") depends_on) l
 
 let () =
   Location.register_error_of_exn

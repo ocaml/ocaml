@@ -27,6 +27,7 @@ val create_archive: string list -> string -> unit
 type error =
     File_not_found of string
   | Not_an_object_file of string
+  | Wrong_link_order of (Misc.modname * Misc.modname) list
 
 exception Error of error
 
