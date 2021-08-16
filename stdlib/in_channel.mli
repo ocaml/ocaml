@@ -95,8 +95,8 @@ val input_line : t -> string option
 
 val input_binary_int : t -> int option
 (** Read an integer encoded in binary format (4 bytes, big-endian) from the
-    given input channel. See {!Out_channel.output_binary_int}.  Returns [None] if an
-    end of file was reached while reading the integer. *)
+    given input channel. See {!Out_channel.output_binary_int}.  Returns [None]
+    if an end of file was reached while reading the integer. *)
 
 val input : t -> bytes -> int -> int -> int
 (** [input ic buf pos len] reads up to [len] characters from the given channel
@@ -109,8 +109,8 @@ val input : t -> bytes -> int -> int -> int
     A return value between 0 and [len] exclusive means that not all requested
     [len] characters were read, either because no more characters were available
     at that time, or because the implementation found it convenient to do a
-    partial read; {!input} must be called again to read the remaining characters,
-    if desired.  (See also {!really_input} for reading exactly [len]
+    partial read; {!input} must be called again to read the remaining
+    characters, if desired.  (See also {!really_input} for reading exactly [len]
     characters.)
 
     @raise Invalid_argument if [pos] and [len] do not designate a valid range of
