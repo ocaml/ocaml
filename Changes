@@ -41,6 +41,10 @@ Working version
    by the functions from module Marshal)
   (François Pottier, review by Gabriel Scherer and Kate Deplaix)
 
+- #10545: Add {In,Out}_channel modules.
+  (Nicolás Ojeda Bär, review by Daniel Bünzli, Simon Cruanes, Gabriel Scherer,
+  Guillaume Munch-Maccagnoni and Xavier Leroy)
+
 ### Other libraries:
 
 - #10192: Add support for Unix domain sockets on Windows and use them
