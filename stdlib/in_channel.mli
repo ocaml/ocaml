@@ -45,7 +45,7 @@ val open_bin : string -> t
     distinguish between text mode and binary mode, this function behaves like
     {!open'}. *)
 
-val open_gen : open_flag list -> t
+val open_gen : open_flag list -> int -> string -> t
 (** [open_gen mode perm filename] opens the named file for reading, as described
     above. The extra arguments [mode] and [perm] specify the opening mode and
     file permissions.  {!open'} and {!open_bin} are special cases of this
