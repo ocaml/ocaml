@@ -50,7 +50,7 @@ let quote_files lst =
   let quoted = List.map Filename.quote lst in
   let s = String.concat " " quoted in
   if String.length s >= 65536
-  || (String.length s >= 4096 && Sys.os_type = "Win32")
+  || (String.length s >= 4096 && Sys.win32)
   then build_diversion quoted
   else s
 
@@ -141,7 +141,7 @@ let create_archive archive file_list =
     | _ ->
         assert(String.length Config.ar > 0);
         let r1 =
-          command(Printf.sprintf "%s rc %s %s"
+          command(Printf.sprintf "%s rcs %s %s"
                   Config.ar quoted_archive (quote_files file_list)) in
         if r1 <> 0 || String.length Config.ranlib = 0
         then r1
