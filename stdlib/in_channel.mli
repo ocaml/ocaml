@@ -90,8 +90,8 @@ val input_byte : t -> int option
 val input_line : t -> string option
 (** [input_line ic] reads characters from [ic] until a newline or the end of
     file is reached.  Returns the string of all characters read, without the
-    newline (if any).  Returns [None] if the end of the file is reached at the
-    beginning of line.
+    newline (if any).  Returns [None] if the end of the file is reached or if
+    the last line is empty.
 
     A newline is the character [\n] unless the file is open in text mode and
     {!Sys.win32} is [true] in which case it is the sequence of characters
