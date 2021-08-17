@@ -51,6 +51,19 @@ val open_gen : open_flag list -> int -> string -> t
     file permissions.  {!open_text} and {!open_bin} are special cases of this
     function. *)
 
+val with_open_bin : string -> (t -> 'a) -> 'a
+(** [with_open_bin fn f] opens file [fn] for reading, and passes the resulting
+    channel to [f]. The channel is closed before [f] returns with a value or by
+    raising an exception. *)
+
+val with_open_text : string -> (t -> 'a) -> 'a
+(** Like {!with_open_bin}, but the channel is opened in text mode (see
+    {!open_text}). *)
+
+val with_open_gen : open_flag list -> int -> string -> (t -> 'a) -> 'a
+(** Like {!with_open_bin}, but can specify the opening mode and file permission,
+    in case the file must be created (see {!open_gen}). *)
+
 val seek : t -> int64 -> unit
 (** [seek chan pos] sets the current reading position to [pos] for channel
     [chan]. This works only for regular files. On files of other kinds, the
@@ -122,6 +135,13 @@ val really_input_string : t -> int -> string option
 (** [really_input_string ic len] reads [len] characters from channel [ic] and
     returns them in a new string.  Returns [None] if the end of file is reached
     before [len] characters have been read. *)
+
+val input_all : t -> string
+(** [input_all ic] reads all remaining data in [ic]. *)
+
+val input_lines : t -> string list
+(** [input_lines ic] reads all remaining data in [ic], splits it at each newline
+    character [\n], and returns the resulting list. *)
 
 val set_binary_mode : t -> bool -> unit
 (** [set_binary_mode ic true] sets the channel [ic] to binary mode: no
