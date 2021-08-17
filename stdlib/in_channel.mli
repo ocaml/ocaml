@@ -85,7 +85,7 @@ val input_char : t -> char option
 
 val input_byte : t -> int option
 (** Same as {!input_char}, but return the 8-bit integer representing the
-    character. Returns [None] if an end of file was reached. *)
+    character. Returns [None] if the end of file was reached. *)
 
 val input_line : t -> string option
 (** Read characters from the given input channel, until a newline character is
@@ -96,7 +96,7 @@ val input_line : t -> string option
 val input_binary_int : t -> int option
 (** Read an integer encoded in binary format (4 bytes, big-endian) from the
     given input channel. See {!Out_channel.output_binary_int}.  Returns [None]
-    if an end of file was reached while reading the integer. *)
+    if the end of file was reached while reading the integer. *)
 
 val input : t -> bytes -> int -> int -> int
 (** [input ic buf pos len] reads up to [len] characters from the given channel

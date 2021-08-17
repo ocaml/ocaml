@@ -1128,12 +1128,12 @@ val really_input_string : in_channel -> int -> string
 val input_byte : in_channel -> int
 (** Same as {!Stdlib.input_char}, but return the 8-bit integer representing
    the character.
-   @raise End_of_file if an end of file was reached. *)
+   @raise End_of_file if the end of file was reached. *)
 
 val input_binary_int : in_channel -> int
 (** Read an integer encoded in binary format (4 bytes, big-endian)
    from the given input channel. See {!Stdlib.output_binary_int}.
-   @raise End_of_file if an end of file was reached while reading the
+   @raise End_of_file if the end of file was reached while reading the
    integer. *)
 
 val input_value : in_channel -> 'a
