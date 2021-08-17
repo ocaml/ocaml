@@ -88,10 +88,14 @@ val input_byte : t -> int option
     character. Returns [None] if the end of file was reached. *)
 
 val input_line : t -> string option
-(** Read characters from the given input channel, until a newline character is
-    encountered. Return the string of all characters read, without the newline
-    character at the end.  Returns [None] if the end of the file is reached at
-    the beginning of line. *)
+(** [input_line ic] reads characters from [ic] until a newline or the end of
+    file is reached.  Returns the string of all characters read, without the
+    newline (if any).  Returns [None] if the end of the file is reached at the
+    beginning of line.
+
+    A newline is the character [\n] unless the file is open in text mode and
+    {!Sys.win32} is [true] in which case it is the sequence of characters
+    [\r\n]. *)
 
 val input_binary_int : t -> int option
 (** Read an integer encoded in binary format (4 bytes, big-endian) from the
