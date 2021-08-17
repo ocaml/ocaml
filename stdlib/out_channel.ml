@@ -28,8 +28,8 @@ type open_flag = Stdlib.open_flag =
 
 let stdout = Stdlib.stdout
 let stderr = Stdlib.stderr
-let open_text = Stdlib.open_out
 let open_bin = Stdlib.open_out_bin
+let open_text = Stdlib.open_out
 let open_gen = Stdlib.open_out_gen
 let seek = Stdlib.LargeFile.seek_out
 let pos = Stdlib.LargeFile.pos_out

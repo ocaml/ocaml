@@ -35,15 +35,15 @@ type open_flag = Stdlib.open_flag =
 val stdin : t
 (** The standard input for the process. *)
 
-val open_text : string -> t
+val open_bin : string -> t
 (** Open the named file for reading, and return a new input channel on that
     file, positioned at the beginning of the file. *)
 
-val open_bin : string -> t
-(** Same as {!open_text}, but the file is opened in binary mode, so that no
+val open_text : string -> t
+(** Same as {!open_bin}, but the file is opened in text mode, so that newline
     translation takes place during reads. On operating systems that do not
     distinguish between text mode and binary mode, this function behaves like
-    {!open_text}. *)
+    {!open_bin}. *)
 
 val open_gen : open_flag list -> int -> string -> t
 (** [open_gen mode perm filename] opens the named file for reading, as described
