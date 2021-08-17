@@ -38,22 +38,23 @@ val stdout : t
 val stderr : t
 (** The standard error output for the process. *)
 
-val open' : string -> t
+val open_text : string -> t
 (** Open the named file for writing, and return a new output channel on that
     file, positioned at the beginning of the file. The file is truncated to zero
     length if it already exists. It is created if it does not already exists. *)
 
 val open_bin : string -> t
-(** Same as {!open'}, but the file is opened in binary mode, so that no
+(** Same as {!open_text}, but the file is opened in binary mode, so that no
     translation takes place during writes. On operating systems that do not
     distinguish between text mode and binary mode, this function behaves like
-    {!open'}. *)
+    {!open_text}. *)
 
 val open_gen : open_flag list -> int -> string -> t
 (** [open_gen mode perm filename] opens the named file for writing, as described
     above. The extra argument [mode] specifies the opening mode. The extra
     argument [perm] specifies the file permissions, in case the file must be
-    created.  {!open'} and {!open_bin} are special cases of this function. *)
+    created.  {!open_text} and {!open_bin} are special cases of this
+    function. *)
 
 val seek : t -> int64 -> unit
 (** [seek chan pos] sets the current writing position to [pos] for channel

@@ -27,7 +27,7 @@ type open_flag = Stdlib.open_flag =
   | Open_nonblock
 
 let stdin = Stdlib.stdin
-let open' = Stdlib.open_in
+let open_text = Stdlib.open_in
 let open_bin = Stdlib.open_in_bin
 let open_gen = Stdlib.open_in_gen
 let seek = Stdlib.LargeFile.seek_in
