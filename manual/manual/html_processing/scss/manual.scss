@@ -16,7 +16,7 @@
 	float:left;
 	color:#777;
 	cursor: context-menu;
-	font-family:"Fira Sans",Helvetica,Arial,sans-serif;
+	font-family: $font-sans;
 	span{ /* menu icon */
 	    font-size:22px;
 	    margin-right:1ex;
@@ -63,7 +63,7 @@
 	font-size:smaller;
     }
     section>ul>li>a{ /* for Parts title */
-	font-family:"Fira Sans",Helvetica,Arial,sans-serif;
+	font-family: $font-sans;
 	font-size:larger;
 	background:linear-gradient(to left,#fff 0,#ede8e5 100%);
     }
@@ -143,7 +143,7 @@ a.section-anchor{
     color:#d5d5d5
 }
 .h10,.h7,.h8,.h9,h1,h2,h3,h4,h5,h6{
-    font-family:"Fira Sans",Helvetica,Arial,sans-serif;
+    font-family: $font-sans;
     font-weight:400;
     margin:.5em 0 .5em 0;
     padding-top:.1em;
@@ -185,8 +185,11 @@ h3 code{
 h4{
     font-size:1.12em
 }
+h2, h3, h4, h5 {
+	font-weight: 500;
+}
 .ocaml,.pre,code,pre,tt{
-    font-family:"Fira Mono",courier;
+    font-family: $font-mono;
     font-weight:400
 }
 .pre,pre{
@@ -263,14 +266,13 @@ h1 span{
     color: #d28853;
 }
 blockquote.quote{
-    margin:0;
     /*font-size: smaller;*/
     hr{
 	display:none;
     }
 }
 #part-menu{
-    font-family:"Fira Sans";
+    font-family: $font-sans;
     text-align:right;
     list-style:none;
     overflow-y:hidden;
@@ -280,10 +282,21 @@ blockquote.quote{
     color:#000;
     &::before{@include diamond}
 }
+.center {
+	text-align: center;
+	margin-left: auto;
+	margin-right: auto;
+}
+.display {
+	margin: 0 auto;
+}
+.c001 {
+	border-spacing: 6px;
+	border-collapse: separate;
+}
 span.c003{
     color:#564233;
-    font-family:"Fira Mono",courier;
-    background-color:#f3ece6;
+    font-family: $font-mono;
     border-radius:6px
 }
 div.caml-example.toplevel code.caml-input::before,
@@ -294,25 +307,51 @@ div.caml-example.toplevel div.caml-input::before{
 span.number{
     padding-right: 1ex;
 }
-span.c004, span.c002{
+span.c004, span.c005, span.c007 {
+	font-family: $font-mono;
+}
+span.c003, span.c005 {
+	color: rgba(91, 33, 6, 0.87);
+}
+span.c002{
     color:#888
 }
 span.c006{
     font-weight:700;
     color:#564233;
-    font-family:"Fira Mono",courier;
+    font-family: $font-mono;
 }
-span.c009{
-    font-style:italic;
-    background-color:#f3ece6;
-    border-radius:6px
+.c008 {
+	font-family: $font-sans;
+}
+span.c010 {
+	font-style: italic;
 }
 span.authors{
     font-style:italic;
     background-color:inherit
 }
+span.c011 {
+	font-style: italic;
+}
+.c012 {
+	font-style: italic;
+}
 span.c013{
-    font-weight:700
+    font-style: italic;
+}
+.center table {
+	margin-left: inherit;
+	margin-right: inherit;
+}
+td .c014 {
+	font-weight: bold;
+}
+.c016 {
+	text-align: center;
+}
+.cellpadding1 tr td {
+	padding: 1px 4px;
 }
 .caml-input{
     span.ocamlkeyword{

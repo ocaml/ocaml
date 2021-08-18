@@ -33,6 +33,11 @@ OCaml 4.12, maintenance version
   ID when a thread starts.
   (David Allsopp, Nicolás Ojeda Bär, review by Xavier Leroy)
 
+### Manual and documentation
+
+- #10497: Styling changes in the post-processed HTML manual (webman)
+  (Wiktor Kuchta, review by Florian Angeletti)
+
 OCaml 4.12.0 (24 February 2021)
 -------------------------------
 
