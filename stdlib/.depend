@@ -361,9 +361,13 @@ stdlib__Hashtbl.cmi : hashtbl.mli \
     stdlib__Seq.cmi
 stdlib__In_channel.cmo : in_channel.ml \
     stdlib.cmi \
+    stdlib__List.cmi \
+    stdlib__Bytes.cmi \
     stdlib__In_channel.cmi
 stdlib__In_channel.cmx : in_channel.ml \
     stdlib.cmx \
+    stdlib__List.cmx \
+    stdlib__Bytes.cmx \
     stdlib__In_channel.cmi
 stdlib__In_channel.cmi : in_channel.mli \
     stdlib.cmi
