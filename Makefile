@@ -1145,6 +1145,7 @@ distclean: clean
 	rm -f tools/eventlog_metadata
 	rm -f tools/*.bak
 	rm -f testsuite/_log*
+	make -C stdlib distclean
 
 include .depend
 
