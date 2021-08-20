@@ -208,7 +208,7 @@ _build
 /stdlib/camlheader_ur
 /stdlib/labelled-*
 /stdlib/caml
-/stdlib/sys.ml
+/stdlib/Sys.ml
 
 /testsuite/**/*.result
 /testsuite/**/*.opt_result

@@ -27,6 +27,12 @@ Working version
 - #10526: add Random.bits32, Random.bits64, Random.nativebits
   (Xavier Leroy, review by Gabriel Scherer and François Bobot)
 
+* #10576: capitalize the first letter of all the standard library modules.
+  This is marked as a breaking change because it modifies backtraces when
+  they include name of files belonging to the stdlib, e.g. "list.ml" will
+  now appear as "List.ml" in the backtraces.
+  (Sébastien Hinderer, reviewed by Florian Angeletti, ???)
+
 ### Other libraries:
 
 - #10192: Add support for Unix domain sockets on Windows and use them

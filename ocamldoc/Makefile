@@ -306,10 +306,10 @@ test_latex_simple:
 	$(MKDIR) $@
 	$(OCAMLDOC_RUN) -latex -sort -o $@/test.tex -d $@ $(INCLUDES) \
 	-latextitle 6,subsection -latextitle 7,subsubection \
-	$(ROOTDIR)/stdlib/hashtbl.mli \
-	$(ROOTDIR)/stdlib/arg.mli \
+	$(ROOTDIR)/stdlib/Hashtbl.mli \
+	$(ROOTDIR)/stdlib/Arg.mli \
 	$(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.mli \
-	$(ROOTDIR)/stdlib/map.mli
+	$(ROOTDIR)/stdlib/Map.mli
 
 .PHONY: test_man
 test_man:

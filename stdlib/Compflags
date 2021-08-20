@@ -15,27 +15,27 @@
 #**************************************************************************
 
 case $1 in
-  stdlib.cm[iox])
+  Stdlib.cm[iox])
       echo ' -nopervasives -no-alias-deps -w -49' \
            ' -pp "$AWK -f ./expand_module_aliases.awk"';;
   # stdlib dependencies
-  camlinternalFormatBasics*.cm[iox]) echo ' -nopervasives';;
-  camlinternalAtomic.cm[iox]) echo ' -nopervasives';;
+  CamlinternalFormatBasics*.cm[iox]) echo ' -nopervasives';;
+  CamlinternalAtomic.cm[iox]) echo ' -nopervasives';;
   # end stdlib dependencies
-  camlinternalOO.cmx) echo ' -inline 0 -afl-inst-ratio 0';;
-  camlinternalLazy.cmx) echo ' -afl-inst-ratio 0';;
+  CamlinternalOO.cmx) echo ' -inline 0 -afl-inst-ratio 0';;
+  CamlinternalLazy.cmx) echo ' -afl-inst-ratio 0';;
     # never instrument camlinternalOO or camlinternalLazy (PR#7725)
-  stdlib__Buffer.cmx) echo ' -inline 3';;
+  Stdlib__Buffer.cmx) echo ' -inline 3';;
                            # make sure add_char is inlined (PR#5872)
-  stdlib__Buffer.cm[io]) echo ' -w +A';;
-  camlinternalFormat.cm[io]) echo ' -w +A -w -fragile-match';;
-  stdlib__Printf.cm[io]|stdlib__Format.cm[io]|stdlib__Scanf.cm[io])
+  Stdlib__Buffer.cm[io]) echo ' -w +A';;
+  CamlinternalFormat.cm[io]) echo ' -w +A -w -fragile-match';;
+  Stdlib__Printf.cm[io]|stdlib__Format.cm[io]|Stdlib__Scanf.cm[io])
       echo ' -w +A -w -fragile-match';;
-  stdlib__Scanf.cmx) echo ' -inline 9';;
+  Stdlib__Scanf.cmx) echo ' -inline 9';;
   *Labels.cmi) echo ' -pp "$AWK -f ./expand_module_aliases.awk"';;
   *Labels.cm[ox]) echo ' -nolabels -no-alias-deps';;
-  stdlib__Float.cm[ox]) echo ' -nolabels -no-alias-deps';;
-  stdlib__Oo.cmi) echo ' -no-principal';;
+  Stdlib__Float.cm[ox]) echo ' -nolabels -no-alias-deps';;
+  Stdlib__Oo.cmi) echo ' -no-principal';;
     # preserve structure sharing in Oo.copy (PR#9767)
   *) echo ' ';;
 esac

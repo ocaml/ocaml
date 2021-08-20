@@ -37,7 +37,7 @@ OC_CPPFLAGS += -I$(ROOTDIR)/runtime
 include StdlibModules
 
 OBJS=$(addsuffix .cmo,$(STDLIB_MODULES))
-NOSTDLIB= camlinternalFormatBasics.cmo camlinternalAtomic.cmo stdlib.cmo
+NOSTDLIB= CamlinternalFormatBasics.cmo CamlinternalAtomic.cmo Stdlib.cmo
 OTHERS=$(filter-out $(NOSTDLIB),$(OBJS))
 
 .PHONY: all
@@ -200,12 +200,12 @@ stdlib.cma: $(OBJS)
 stdlib.cmxa: $(OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o $@ $^
 
-sys.ml: $(ROOTDIR)/VERSION sys.mlp
-	sed -e "s|%%VERSION%%|`sed -e 1q $< | tr -d '\r'`|" sys.mlp > $@
+Sys.ml: $(ROOTDIR)/VERSION Sys.mlp
+	sed -e "s|%%VERSION%%|`sed -e 1q $< | tr -d '\r'`|" Sys.mlp > $@
 
 .PHONY: clean
 clean::
-	rm -f sys.ml
+	rm -f Sys.ml
 
 clean::
 	rm -f $(CAMLHEADERS)
@@ -215,27 +215,27 @@ export AWK
 %.cmi: %.mli
 	$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) -c $<
 
-# The dependency on the .mli file is in .depend (since stdlib__Foo.cmi
-# depends on stdlib__foo.mli)
-stdlib__%.cmi:
+# The dependency on the .mli file is in .depend (since Stdlib__Foo.cmi
+# depends on Stdlib__Foo.mli)
+Stdlib__%.cmi:
 	$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) \
 	         -o $@ -c $(filter %.mli, $^)
 
 %.cmo: %.ml
 	$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) -c $<
 
-# The dependency on the .ml file is in .depend (since stdlib__Foo.cmo
-# depends on stdlib__foo.ml)
-stdlib__%.cmo:
+# The dependency on the .ml file is in .depend (since Stdlib__Foo.cmo
+# depends on Stdlib__foo.ml)
+Stdlib__%.cmo:
 	$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) \
 	         -o $@ -c $(filter %.ml, $^)
 
 %.cmx: %.ml
 	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) $(shell ./Compflags $@) -c $<
 
-# The dependency on the .ml file is in .depend (since stdlib__Foo.cmx
-# depends on stdlib__foo.ml)
-stdlib__%.cmx:
+# The dependency on the .ml file is in .depend (since Stdlib__Foo.cmx
+# depends on Stdlib__foo.ml)
+Stdlib__%.cmx:
 	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) $(shell ./Compflags $@) \
 	           -o $@ -c $(filter %.ml, $^)
 
@@ -247,10 +247,10 @@ $(OBJS:.cmo=.cmx) std_exit.cmx: $(OPTCOMPILER)
 
 # Dependencies on Stdlib (not tracked by ocamlc -depend)
 
-$(OTHERS) std_exit.cmo: stdlib.cmi
-$(OTHERS:.cmo=.cmi) std_exit.cmi: stdlib.cmi
-$(OBJS:.cmo=.cmx) std_exit.cmx: stdlib.cmi
-$(OTHERS:.cmo=.cmx) std_exit.cmx: stdlib.cmx
+$(OTHERS) std_exit.cmo: Stdlib.cmi
+$(OTHERS:.cmo=.cmi) std_exit.cmi: Stdlib.cmi
+$(OBJS:.cmo=.cmx) std_exit.cmx: Stdlib.cmi
+$(OTHERS:.cmo=.cmx) std_exit.cmx: Stdlib.cmx
 
 clean::
 	rm -f *.cm* *.o *.obj *.a *.lib *.odoc
@@ -262,12 +262,12 @@ STDLIB_NAMESPACE_MODULES = $(subst $(SPACE),|,$(STDLIB_PREFIXED_MODULES))
 
 .PHONY: depend
 depend:
-	$(CAMLDEP) $(DEPFLAGS) $(filter-out stdlib.%,$(wildcard *.mli *.ml)) \
+	$(CAMLDEP) $(DEPFLAGS) $(filter-out Stdlib.%,$(wildcard *.mli *.ml)) \
 	  > .depend.tmp
 	$(CAMLDEP) $(DEPFLAGS) -pp "$(AWK) -f ./remove_module_aliases.awk" \
-	  stdlib.ml stdlib.mli >> .depend.tmp
+	  Stdlib.ml Stdlib.mli >> .depend.tmp
 	sed -E \
 	-e 's/^(${STDLIB_NAMESPACE_MODULES})(\.[^i]*)(i?) :/\1\2\3 : \1.ml\3/' \
-	-e 's#(^| )(${STDLIB_NAMESPACE_MODULES})[.]#\1stdlib__\u\2.#' \
+	-e 's#(^| )(${STDLIB_NAMESPACE_MODULES})[.]#\1Stdlib__\2.#' \
 	  .depend.tmp > .depend
 	rm -f .depend.tmp

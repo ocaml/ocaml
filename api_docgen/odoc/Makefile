@@ -72,7 +72,7 @@ $(libref:%=build/libref/%.odoc):\
 build/libref/%.odoc: %.cmti | build/libref
 	$(odoc) compile -I build/libref  --package libref $< -o $@
 
-# pervasives is handled separatedly due to the lack of cmti file
+# Pervasives is handled separatedly due to the lack of cmti file
 $(libref_EXTRA:%=build/libref/%.odoc):build/libref/%.odoc:%.cmt
 	$(odoc) compile -I build/libref --package libref $< -o $@
 
