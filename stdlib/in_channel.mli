@@ -105,17 +105,10 @@ val input_binary_int : t -> int option
 val input : t -> bytes -> int -> int -> int
 (** [input ic buf pos len] reads up to [len] characters from the given channel
     [ic], storing them in byte sequence [buf], starting at character number
-    [pos].  It returns the actual number of characters read, between 0 and [len]
-    (inclusive).
+    [pos]. It returns the actual number of characters read, between 0 and [len]
+    (inclusive). A return value of 0 means that the end of file was reached.
 
-    A return value of 0 means that the end of file was reached.
-
-    A return value between 0 and [len] exclusive means that not all requested
-    [len] characters were read, either because no more characters were available
-    at that time, or because the implementation found it convenient to do a
-    partial read; {!input} must be called again to read the remaining
-    characters, if desired.  (See also {!really_input} for reading exactly [len]
-    characters.)
+    Use {!really_input} to read exactly [len] characters.
 
     @raise Invalid_argument if [pos] and [len] do not designate a valid range of
     [buf]. *)
