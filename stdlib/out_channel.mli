@@ -129,3 +129,15 @@ val set_binary_mode : t -> bool -> unit
 
     This function has no effect under operating systems that do not distinguish
     between text mode and binary mode. *)
+
+val set_buffering_mode : out_channel -> bool -> unit
+(** [set_buffering_mode oc true] sets the channel [oc] to {e buffered} mode. In
+    this mode, data output on [oc] will be buffered until either the internal
+    buffer is full or the function {!flush} or {!flush_all} is called, at which
+    point it will be sent to the output device.
+
+    [set_buffering_mode oc false] sets the channel [oc] to {e unbuffered}
+    mode. In this mode, data output on [oc] will be sent to the output device
+    immediately.
+
+    All channels are open in {e buffered} mode by default. *)

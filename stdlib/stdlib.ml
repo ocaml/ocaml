@@ -395,8 +395,6 @@ let close_out_noerr oc =
   (try close_out_channel oc with _ -> ())
 external set_binary_mode_out : out_channel -> bool -> unit
                              = "caml_ml_set_binary_mode"
-external set_channel_buffered : out_channel -> bool -> unit
-  = "caml_ml_set_channel_buffered"
 
 (* General input functions *)
 

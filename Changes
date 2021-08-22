@@ -45,9 +45,9 @@ Working version
   (Nicolás Ojeda Bär, review by Daniel Bünzli, Simon Cruanes, Gabriel Scherer,
   Guillaume Munch-Maccagnoni, Alain Frisch and Xavier Leroy)
 
-- #10538: add Stdlib.set_channel_buffered to allow disabling
-  buffering on an output channel.
-  (Nicolás Ojeda Bär)
+- #10538: add Out_channel.set_buffering_mode to allow changing the buffering
+  mode of output channels.
+  (Nicolás Ojeda Bär, review by John Whitington and Xavier Leroy)
 
 ### Other libraries:
 
