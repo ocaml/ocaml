@@ -2738,6 +2738,32 @@ let rec is_inferred sexp =
   | Pexp_ifthenelse (_, e1, Some e2) -> is_inferred e1 && is_inferred e2
   | _ -> false
 
+(* check if the type of %apply or %revapply matches the type expected by
+   the specialized typing rule for those primitives.
+*)
+type apply_prim =
+  | Apply
+  | Revapply
+let check_apply_prim_type prim typ =
+  match get_desc typ with
+  | Tarrow (Nolabel,a,b,_) ->
+      begin match get_desc b with
+      | Tarrow(Nolabel,c,d,_) ->
+          let f, x, res =
+            match prim with
+            | Apply -> a, c, d
+            | Revapply -> c, a, d
+          in
+          begin match get_desc f with
+          | Tarrow(Nolabel,fl,fr,_) ->
+              is_Tvar fl && is_Tvar fr && is_Tvar x && is_Tvar res
+              && Types.eq_type fl x && Types.eq_type fr res
+          | _ -> false
+          end
+      | _ -> false
+      end
+  | _ -> false
+
 (* Merge explanation to type clash error *)
 
 let with_explanation explanation f =
@@ -2943,12 +2969,16 @@ and type_expect_
       let funct, sargs =
         let funct = type_sfunct sfunct in
         match funct.exp_desc, sargs with
-        | Texp_ident (_, _, {val_kind = Val_prim {prim_name = "%revapply"}}),
+        | Texp_ident (_, _,
+                      {val_kind = Val_prim {prim_name="%revapply"}; val_type}),
           [Nolabel, sarg; Nolabel, actual_sfunct]
-          when is_inferred actual_sfunct ->
+          when is_inferred actual_sfunct
+            && check_apply_prim_type Revapply val_type ->
             type_sfunct actual_sfunct, [Nolabel, sarg]
-        | Texp_ident (_, _, {val_kind = Val_prim {prim_name = "%apply"}}),
-          [Nolabel, actual_sfunct; Nolabel, sarg] ->
+        | Texp_ident (_, _,
+                      {val_kind = Val_prim {prim_name="%apply"}; val_type}),
+          [Nolabel, actual_sfunct; Nolabel, sarg]
+          when check_apply_prim_type Apply val_type ->
             type_sfunct actual_sfunct, [Nolabel, sarg]
         | _ ->
             funct, sargs
