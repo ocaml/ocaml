@@ -1,5 +1,6 @@
 Working version
 ----------------
+
 ### Language features:
 
 - #10437: Allow explicit binders for type variables.
@@ -26,6 +27,11 @@ Working version
 
 - #10526: add Random.bits32, Random.bits64, Random.nativebits
   (Xavier Leroy, review by Gabriel Scherer and François Bobot)
+
+* #10568: remove Obj.marshal and Obj.unmarshal
+  (these functions have been deprecated for a while and are superseded
+   by the functions from module Marshal)
+  (François Pottier, review by Gabriel Scherer and Kate Deplaix)
 
 ### Other libraries:
 
