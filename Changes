@@ -101,6 +101,9 @@ OCaml 4.13.0
   of the current overhead.
   (Damien Doligez, review by Stephen Dolan)
 
+- #10549: Stack overflow detection and naked pointers checking for ARM64
+  (Xavier Leroy, review by Stephen Dolan)
+
 ### Code generation and optimizations:
 
 - #1400: Add an optional invariants check on Cmm, which can be activated

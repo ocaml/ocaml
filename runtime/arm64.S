@@ -457,6 +457,26 @@ FUNCTION(caml_raise_exception)
         CFI_ENDPROC
         END_FUNCTION(caml_raise_exception)
 
+/* Raise a Stack_overflow exception on return from segv_handler()
+   (in runtime/signals_nat.c).  On entry, the stack is full, so we
+   cannot record a backtrace.
+   No CFI information here since this function disrupts the stack
+   backtrace anyway.
+   Since we have returned from the signal handler, the DOMAIN_STATE_PTR,
+   TRAP_PTR and ALLOC_PTR registers should have the same values
+   they had in the faulting OCaml code, so don't try to reload them. */
+
+FUNCTION(caml_stack_overflow)
+    /* Load the exception bucket */
+        ADDRGLOBAL(x0, caml_exn_Stack_overflow)
+    /* Cut stack at current trap handler */
+        mov     sp, TRAP_PTR
+    /* Pop previous handler and jump to it */
+        ldr     TMP, [sp, 8]
+        ldr     TRAP_PTR, [sp], 16
+        br      TMP
+        END_FUNCTION(caml_stack_overflow)
+
 /* Callback from C to OCaml */
 
 FUNCTION(caml_callback_asm)

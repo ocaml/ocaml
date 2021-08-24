@@ -1125,7 +1125,7 @@ void caml_finalise_heap (void)
 
 #if defined(NAKED_POINTERS_CHECKER) && defined(NATIVE_CODE)
 
-#ifdef _WIN32
+#if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
@@ -1144,7 +1144,7 @@ Caml_inline int safe_load(volatile header_t * p, header_t * result)
   return 1;
 }
 
-#else
+#elif defined(TARGET_amd64)
 
 Caml_inline int safe_load (header_t * addr, /*out*/ header_t * contents)
 {
@@ -1168,6 +1168,32 @@ Caml_inline int safe_load (header_t * addr, /*out*/ header_t * contents)
   return ok;
 }
 
+#elif defined(TARGET_arm64)
+
+Caml_inline int safe_load (header_t * addr, /*out*/ header_t * contents)
+{
+  int ok;
+  header_t h;
+  intnat tmp;
+
+  asm volatile(
+      "adr %[tmp], 1f \n\t"
+      "str %[tmp], [%[handler]] \n\t"
+      "mov %w[ok], #0 \n\t"
+      "ldr %[h], [%[addr]] \n\t"
+      "mov %w[ok], #1 \n\t"
+  "1: \n\t"
+      "mov %[tmp], #0 \n\t"
+      "str %[tmp], [%[handler]]"
+      : [tmp] "=&r" (tmp), [ok] "=&r" (ok), [h] "=&r" (h)
+      : [addr] "r" (addr),
+        [handler] "r" (&(Caml_state->checking_pointer_pc)));
+  *contents = h;
+  return ok;
+}
+
+#else
+#error "NAKED_POINTERS_CHECKER not supported on this platform"
 #endif
 
 static void is_naked_pointer_safe (value v, value *p)
