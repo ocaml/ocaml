@@ -11,6 +11,10 @@ Working version
   *blit_* function during Mark phase
   (François Bobot, reported by Stephen Dolan, reviewed by Damien Doligez)
 
+- #10549: Stack overflow detection and naked pointers checking for ARM64
+  (Xavier Leroy, review by Stephen Dolan)
+
+
 ### Code generation and optimizations:
 
 ### Standard library:
