@@ -244,8 +244,8 @@ let type_constant = function
   | Const_int64 _ -> instance Predef.type_int64
   | Const_nativeint _ -> instance Predef.type_nativeint
 
-let constant : Parsetree.constant -> (Asttypes.constant, error) result =
-  function
+let constant : Parsetree.constant -> (Asttypes.constant, error) result = fun const ->
+  match const.pconst_desc with
   | Pconst_integer (i,None) ->
      begin
        try Ok (Const_int (Misc.Int_literal_converter.int i))
@@ -1720,14 +1720,16 @@ and type_pat_aux
         pat_type = type_constant cst;
         pat_attributes = sp.ppat_attributes;
         pat_env = !env }
-  | Ppat_interval (Pconst_char c1, Pconst_char c2) ->
+  | Ppat_interval
+      ({pconst_desc= Pconst_char c1; _}, {pconst_desc= Pconst_char c2; _}) ->
       let open Ast_helper.Pat in
       let gloc = {loc with Location.loc_ghost=true} in
       let rec loop c1 c2 =
-        if c1 = c2 then constant ~loc:gloc (Pconst_char c1)
+        if c1 = c2 then
+          constant ~loc:gloc (Ast_helper.Const.mk (Pconst_char c1))
         else
           or_ ~loc:gloc
-            (constant ~loc:gloc (Pconst_char c1))
+            (constant ~loc:gloc (Ast_helper.Const.mk (Pconst_char c1)))
             (loop (Char.chr(Char.code c1 + 1)) c2)
       in
       let p = if c1 <= c2 then loop c1 c2 else loop c2 c1 in
@@ -2837,7 +2839,7 @@ and type_expect_
         exp_type = instance desc.val_type;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
-  | Pexp_constant(Pconst_string (str, _, _) as cst) -> (
+  | Pexp_constant({pconst_desc= Pconst_string (str, _, _); _} as cst) -> (
     let cst = constant_or_raise env loc cst in
     (* Terrible hack for format strings *)
     let ty_exp = expand_head env ty_expected in
@@ -4066,7 +4068,7 @@ and type_format loc str env =
           | [ e ]       -> Some e
           | _ :: _ :: _ -> Some (mk_exp_loc (Pexp_tuple args)) in
         mk_exp_loc (Pexp_construct (mk_lid_loc lid, arg)) in
-      let mk_cst cst = mk_exp_loc (Pexp_constant cst) in
+      let mk_cst cst = mk_exp_loc (Pexp_constant (Ast_helper.Const.mk cst)) in
       let mk_int n = mk_cst (Pconst_integer (Int.to_string n, None))
       and mk_string str = mk_cst (Pconst_string (str, loc, None))
       and mk_char chr = mk_cst (Pconst_char chr) in

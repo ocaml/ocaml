@@ -131,13 +131,14 @@ let rec extract_letop_patterns n pat =
 (** Mapping functions. *)
 
 let constant = function
-  | Const_char c -> Pconst_char c
-  | Const_string (s,loc,d) -> Pconst_string (s,loc,d)
-  | Const_int i -> Pconst_integer (Int.to_string i, None)
-  | Const_int32 i -> Pconst_integer (Int32.to_string i, Some 'l')
-  | Const_int64 i -> Pconst_integer (Int64.to_string i, Some 'L')
-  | Const_nativeint i -> Pconst_integer (Nativeint.to_string i, Some 'n')
-  | Const_float f -> Pconst_float (f,None)
+  | Const_char c -> Const.mk (Pconst_char c)
+  | Const_string (s,loc,d) -> Const.mk (Pconst_string (s,loc,d))
+  | Const_int i -> Const.mk (Pconst_integer (Int.to_string i, None))
+  | Const_int32 i -> Const.mk (Pconst_integer (Int32.to_string i, Some 'l'))
+  | Const_int64 i -> Const.mk (Pconst_integer (Int64.to_string i, Some 'L'))
+  | Const_nativeint i ->
+      Const.mk (Pconst_integer (Nativeint.to_string i, Some 'n'))
+  | Const_float f -> Const.mk (Pconst_float (f,None))
 
 let attribute sub a = {
     attr_name = map_loc sub a.attr_name;

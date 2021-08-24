@@ -224,7 +224,8 @@ let rec longident f = function
 
 let longident_loc f x = pp f "%a" longident x.txt
 
-let constant f = function
+let constant f x =
+  match x.pconst_desc with
   | Pconst_char i ->
       pp f "%C"  i
   | Pconst_string (i, _, None) ->
