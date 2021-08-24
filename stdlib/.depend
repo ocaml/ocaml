@@ -471,13 +471,11 @@ stdlib__Nativeint.cmi : nativeint.mli
 stdlib__Obj.cmo : obj.ml \
     stdlib__Sys.cmi \
     stdlib__Nativeint.cmi \
-    stdlib__Marshal.cmi \
     stdlib__Int32.cmi \
     stdlib__Obj.cmi
 stdlib__Obj.cmx : obj.ml \
     stdlib__Sys.cmx \
     stdlib__Nativeint.cmx \
-    stdlib__Marshal.cmx \
     stdlib__Int32.cmx \
     stdlib__Obj.cmi
 stdlib__Obj.cmi : obj.mli \
