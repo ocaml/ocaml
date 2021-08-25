@@ -132,7 +132,7 @@ Working version
 
 - #10539: Field kinds should be kept when copying types
   Losing the sharing meant that one could desynchronize them between several
-  occurences of self, allowing a method to be both public and hidden,
+  occurrences of self, allowing a method to be both public and hidden,
   which broke type soundness.
   (Jacques Garrigue, review by Leo White)
 

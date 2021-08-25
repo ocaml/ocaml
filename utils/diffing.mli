@@ -64,10 +64,10 @@ module type Defs = sig
   type left
   type right
   type eq
-  (** Detailled equality trace *)
+  (** Detailed equality trace *)
 
   type diff
-  (** Detailled difference trace *)
+  (** Detailed difference trace *)
 
   type state
   (** environment of a partial patch *)

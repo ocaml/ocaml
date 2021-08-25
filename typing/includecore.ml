@@ -105,7 +105,7 @@ let is_absrow env ty =
   | Tconstr(Pident _, _, _) ->
       (* This function is checking for an abstract row on the side that is being
          included into (usually numbered with "2" in this file).  In this case,
-         the abstract row variable has been subsituted for an object or variant
+         the abstract row variable has been substituted for an object or variant
          type. *)
       begin match get_desc (Ctype.expand_head env ty) with
       | Tobject _|Tvariant _ -> true
