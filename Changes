@@ -588,6 +588,10 @@ OCaml 4.13.0
   "interval" patterns `c1..c2`.
   (Guillaume Petiot, review by Gabriel Scherer and Nicolás Ojeda Bär)
 
+- #7449 #10458: Change the size heuristics of switch in flambda to avoid
+  inlining too large jump tables. (Pierre Chambart, review by Gabriel Scherer,
+  report by Mark Hayden)
+
 ### Build system:
 
 - #10289, #10406: Do not print option documentation in usage messages.
