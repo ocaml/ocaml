@@ -69,14 +69,12 @@ let rec fold_left f acc seq =
         let acc = f acc x in
         fold_left f acc next
 
-let iter f seq =
-  let rec aux seq = match seq () with
+let rec iter f seq =
+  match seq () with
     | Nil -> ()
     | Cons (x, next) ->
         f x;
-        aux next
-  in
-  aux seq
+        iter f next
 
 let rec unfold f u () =
   match f u with
