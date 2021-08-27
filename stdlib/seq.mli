@@ -13,15 +13,77 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Sequences (functional iterators).
+(**
 
-    The type ['a Seq.t] is a {b delayed list}, i.e. a list where some
-    evaluation is needed to access the next element. This makes it possible
-    to build infinite sequences, to build sequences as we traverse them, and
-    to transform them in a lazy fashion rather than upfront.
+   A sequence of type ['a Seq.t] can be thought of as a {b delayed list},
+   that is, a list whose elements are computed only when they are demanded
+   by a consumer. This allows sequences to be produced and transformed
+   lazily (one element at a time) rather than eagerly (all elements at
+   once). This also allows constructing conceptually infinite sequences.
 
-    @since 4.07
-*)
+   The type ['a Seq.t] is defined as a synonym for [unit -> 'a Seq.node].
+   This is a function type: therefore, it is opaque. The consumer can {b
+   query} a sequence in order to request the next element (if there is
+   one), but cannot otherwise inspect the sequence in any way.
+
+   Because it is opaque, the type ['a Seq.t] does {i not} reveal whether
+   a sequence is:
+   - {b ephemeral},
+     which means that the sequence can be used at most once,
+     and that producing an element can have an observable side effect,
+     such as incrementing a mutable counter or reading a file; or
+   - {b persistent},
+     which means that the sequence can be used as many times as desired,
+     producing the same elements every time,
+     just like an immutable list.
+
+   It also does {i not} reveal whether the elements of the sequence are:
+
+   - {b pre-computed and stored} in memory,
+     which means that querying the sequence is cheap;
+   - {b computed when first demanded and then stored} in memory,
+     which means that querying the sequence once can be expensive,
+     but querying the same sequence again is cheap; or
+   - {b re-computed every time they are demanded},
+     which may or may not be cheap.
+
+   It is up to the programmer to keep these distinctions in mind
+   so as to understand the time and space requirements of sequences.
+
+   For the sake of simplicity, most of the documentation that follows
+   is written under the implicit assumption that the sequences at hand
+   are persistent.
+   We normally do not point out {i when} or {i how many times}
+   each function is invoked, because that would be too verbose.
+   For instance, in the description of [map], we write:
+   "if [xs] is the sequence [x0; x1; ...]
+    then [map f xs] is the sequence [f x0; f x1; ...]".
+   If we wished to be more explicit,
+   we could point out that the transformation takes place on demand:
+   that is, the elements of [map f xs] are computed only when they
+   are demanded. In other words,
+   the definition [let ys = map f xs] terminates immediately and
+   does not invoke [f]. The function call [f x0] takes place only when the
+   first element of [ys] is demanded, via the function call [ys()].
+   Furthermore, calling [ys()] twice causes [f x0] to be called twice
+   as well. If one wishes for [f] to be applied at most once to each
+   element of [xs], even in scenarios where [ys] is queried more than once,
+   then one should use [let ys = memoize (map f xs)].
+
+   As a general rule, the functions that build sequences, such as [map],
+   [filter], [scan], [take], etc., produce sequences whose elements are
+   computed only on demand. The functions that eagerly consume sequences,
+   such as [is_empty], [head], [tail], [find], [length], [iter], [fold_left],
+   etc., are the functions that force computation to take place.
+
+   When possible, we recommend using sequences rather than iterators
+   (functions of type [unit -> 'a option] that produce elements upon
+   demand). Whereas sequences can be persistent or ephemeral, iterators
+   are always ephemeral, and are typically more difficult to work with
+   than sequences. Two conversion functions, {!to_iterator} and
+   {!of_iterator}, are provided.
+
+    @since 4.07 *)
 
 type 'a t = unit -> 'a node
 (** The type of delayed lists containing elements of type ['a].
