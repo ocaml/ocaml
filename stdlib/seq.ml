@@ -62,14 +62,12 @@ let rec flat_map f seq () = match seq () with
 
 let concat_map = flat_map
 
-let fold_left f acc seq =
-  let rec aux f acc seq = match seq () with
+let rec fold_left f acc seq =
+  match seq () with
     | Nil -> acc
     | Cons (x, next) ->
         let acc = f acc x in
-        aux f acc next
-  in
-  aux f acc seq
+        fold_left f acc next
 
 let iter f seq =
   let rec aux seq = match seq () with
