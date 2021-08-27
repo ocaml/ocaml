@@ -86,88 +86,113 @@
     @since 4.07 *)
 
 type 'a t = unit -> 'a node
-(** The type of delayed lists containing elements of type ['a].
-    Note that the concrete list node ['a node] is delayed under a closure,
-    not a [lazy] block, which means it might be recomputed every time
-    we access it. *)
+(** A sequence [xs] of type ['a t] is a delayed list of elements of
+    type ['a]. Such a sequence is queried by performing a function
+    application [xs()]. This function application returns a node,
+    allowing the caller to determine whether the sequence is empty
+    or nonempty, and in the latter case, to obtain its head and tail. *)
 
 and +'a node =
   | Nil
   | Cons of 'a * 'a t (**)
-(** A fully-evaluated list node, either empty or containing an element
-    and a delayed tail. *)
+(** A node is either [Nil], which means that the sequence is empty,
+    or [Cons (x, xs)], which means that [x] is the first element
+    of the sequence and that [xs] is the remainder of the sequence. *)
 
 val empty : 'a t
-(** The empty sequence, containing no elements. *)
+(** [empty] is the empty sequence.
+    It has no elements. Its length is 0. *)
 
 val return : 'a -> 'a t
-(** The singleton sequence containing only the given element. *)
+(** [return x] is the sequence whose sole element is [x].
+    Its length is 1. *)
 
 val cons : 'a -> 'a t -> 'a t
-(** [cons x xs] is the sequence containing the element [x] followed by
-    the sequence [xs] @since 4.11 *)
+(** [cons x xs] is the sequence that begins with the element [x],
+    followed with the sequence [xs].
+
+    Writing [cons (f()) xs] causes the function call [f()]
+    to take place immediately. For this call to be delayed until the
+    sequence is queried, one must instead write
+    [(fun () -> Cons(f(), xs))].
+
+    @since 4.11 *)
 
 val append : 'a t -> 'a t -> 'a t
-(** [append xs ys] is the sequence [xs] followed by the sequence [ys]
+(** [append xs ys] is the concatenation of the sequences [xs] and [ys].
+
+    Its elements are the elements of [xs], followed with the elements of [ys].
+
     @since 4.11 *)
 
 val map : ('a -> 'b) -> 'a t -> 'b t
-(** [map f seq] returns a new sequence whose elements are the elements of
-    [seq], transformed by [f].
-    This transformation is lazy, it only applies when the result is traversed.
+(** [map f xs] is the image of the sequence [xs] through the
+    transformation [f].
 
-    If [seq = [1;2;3]], then [map f seq = [f 1; f 2; f 3]]. *)
+    If [xs] is the sequence [x0; x1; ...] then
+    [map f xs] is the sequence [f x0; f x1; ...]. *)
 
 val filter : ('a -> bool) -> 'a t -> 'a t
-(** Remove from the sequence the elements that do not satisfy the
-    given predicate.
-    This transformation is lazy, it only applies when the result is
-    traversed. *)
+(** [filter p xs] is the sequence of the elements [x] of [xs]
+    that satisfy [p x].
+
+    In other words, [filter p xs] is the sequence [xs],
+    deprived of the elements [x] such that [p x] is false. *)
 
 val filter_map : ('a -> 'b option) -> 'a t -> 'b t
-(** Apply the function to every element; if [f x = None] then [x] is dropped;
-    if [f x = Some y] then [y] is returned.
-    This transformation is lazy, it only applies when the result is
-    traversed. *)
+(** [filter_map f xs] is the sequence of the elements [y] such that
+    [f x = Some y], where [x] ranges over [xs].
+
+    [filter_map f xs] is equivalent to
+    [map Option.get (filter Option.is_some (map f xs))]. *)
 
 val concat : 'a t t -> 'a t
-(** concatenate a sequence of sequences.
+(** If [xss] is a sequence of sequences,
+    then [concat xss] is its concatenation.
 
-    @since 4.13
- *)
+    If [xss] is the sequence [xs0; xs1; ...] then
+    [concat xss] is the sequence [xs0 @ xs1 @ ...].
+
+    @since 4.13 *)
 
 val flat_map : ('a -> 'b t) -> 'a t -> 'b t
-(** Map each element to a subsequence, then return each element of this
-    sub-sequence in turn.
-    This transformation is lazy, it only applies when the result is
-    traversed. *)
+(** [flat_map f xs] is equivalent to [concat (map f xs)]. *)
 
 val concat_map : ('a -> 'b t) -> 'a t -> 'b t
-(** Alias for {!flat_map}.
+(** [concat_map f xs] is equivalent to [concat (map f xs)].
 
-    @since 4.13
-*)
+    [concat_map] is an alias for [flat_map].
+
+    @since 4.13 *)
 
 val fold_left : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a
-(** Traverse the sequence from left to right, combining each element with the
-    accumulator using the given function.
-    The traversal happens immediately and will not terminate on infinite
-    sequences.
+(** [fold_left f _ xs] invokes [f _ x] successively
+    for every element [x] of the sequence [xs],
+    from left to right.
 
-    Also see {!List.fold_left} *)
+    An accumulator of type ['a] is threaded through the calls to [f].
+
+    The sequence [xs] must be finite. *)
 
 val iter : ('a -> unit) -> 'a t -> unit
-(** Iterate on the sequence, calling the (imperative) function on every element.
-    The traversal happens immediately and will not terminate on infinite
-    sequences. *)
+(** [iter f xs] invokes [f x] successively
+    for every element [x] of the sequence [xs],
+    from left to right.
+
+    The sequence [xs] must be finite. *)
 
 val unfold : ('b -> ('a * 'b) option) -> 'b -> 'a t
-(** Build a sequence from a step function and an initial value.
-    [unfold f u] returns [empty] if [f u] returns [None],
-    or [fun () -> Cons (x, unfold f y)] if [f u] returns [Some (x, y)].
+(** [unfold] constructs a sequence
+    out of a step function and an initial state.
 
-    For example, [unfold (function [] -> None | h::t -> Some (h,t)) l]
+    If [f u] is [None] then
+    [unfold f u] is the empty sequence.
+    If [f u] is [Some (x, u')] then
+    [unfold f u] is the nonempty sequence [cons x (unfold f u')].
+
+    For example, [unfold (function [] -> None | h :: t -> Some (h, t)) l]
     is equivalent to [List.to_seq l].
+
     @since 4.11 *)
 
 (** {1 Consuming sequences} *)
