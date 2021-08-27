@@ -99,102 +99,6 @@ and +'a node =
     or [Cons (x, xs)], which means that [x] is the first element
     of the sequence and that [xs] is the remainder of the sequence. *)
 
-val empty : 'a t
-(** [empty] is the empty sequence.
-    It has no elements. Its length is 0. *)
-
-val return : 'a -> 'a t
-(** [return x] is the sequence whose sole element is [x].
-    Its length is 1. *)
-
-val cons : 'a -> 'a t -> 'a t
-(** [cons x xs] is the sequence that begins with the element [x],
-    followed with the sequence [xs].
-
-    Writing [cons (f()) xs] causes the function call [f()]
-    to take place immediately. For this call to be delayed until the
-    sequence is queried, one must instead write
-    [(fun () -> Cons(f(), xs))].
-
-    @since 4.11 *)
-
-val append : 'a t -> 'a t -> 'a t
-(** [append xs ys] is the concatenation of the sequences [xs] and [ys].
-
-    Its elements are the elements of [xs], followed with the elements of [ys].
-
-    @since 4.11 *)
-
-val map : ('a -> 'b) -> 'a t -> 'b t
-(** [map f xs] is the image of the sequence [xs] through the
-    transformation [f].
-
-    If [xs] is the sequence [x0; x1; ...] then
-    [map f xs] is the sequence [f x0; f x1; ...]. *)
-
-val filter : ('a -> bool) -> 'a t -> 'a t
-(** [filter p xs] is the sequence of the elements [x] of [xs]
-    that satisfy [p x].
-
-    In other words, [filter p xs] is the sequence [xs],
-    deprived of the elements [x] such that [p x] is false. *)
-
-val filter_map : ('a -> 'b option) -> 'a t -> 'b t
-(** [filter_map f xs] is the sequence of the elements [y] such that
-    [f x = Some y], where [x] ranges over [xs].
-
-    [filter_map f xs] is equivalent to
-    [map Option.get (filter Option.is_some (map f xs))]. *)
-
-val concat : 'a t t -> 'a t
-(** If [xss] is a sequence of sequences,
-    then [concat xss] is its concatenation.
-
-    If [xss] is the sequence [xs0; xs1; ...] then
-    [concat xss] is the sequence [xs0 @ xs1 @ ...].
-
-    @since 4.13 *)
-
-val flat_map : ('a -> 'b t) -> 'a t -> 'b t
-(** [flat_map f xs] is equivalent to [concat (map f xs)]. *)
-
-val concat_map : ('a -> 'b t) -> 'a t -> 'b t
-(** [concat_map f xs] is equivalent to [concat (map f xs)].
-
-    [concat_map] is an alias for [flat_map].
-
-    @since 4.13 *)
-
-val fold_left : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a
-(** [fold_left f _ xs] invokes [f _ x] successively
-    for every element [x] of the sequence [xs],
-    from left to right.
-
-    An accumulator of type ['a] is threaded through the calls to [f].
-
-    The sequence [xs] must be finite. *)
-
-val iter : ('a -> unit) -> 'a t -> unit
-(** [iter f xs] invokes [f x] successively
-    for every element [x] of the sequence [xs],
-    from left to right.
-
-    The sequence [xs] must be finite. *)
-
-val unfold : ('b -> ('a * 'b) option) -> 'b -> 'a t
-(** [unfold] constructs a sequence
-    out of a step function and an initial state.
-
-    If [f u] is [None] then
-    [unfold f u] is the empty sequence.
-    If [f u] is [Some (x, u')] then
-    [unfold f u] is the nonempty sequence [cons x (unfold f u')].
-
-    For example, [unfold (function [] -> None | h :: t -> Some (h, t)) l]
-    is equivalent to [List.to_seq l].
-
-    @since 4.11 *)
-
 (** {1 Consuming sequences} *)
 
 (**
@@ -262,6 +166,22 @@ val length : 'a t -> int
     The sequence [xs] must be finite.
 
     @since 4.14 *)
+
+val iter : ('a -> unit) -> 'a t -> unit
+(** [iter f xs] invokes [f x] successively
+    for every element [x] of the sequence [xs],
+    from left to right.
+
+    The sequence [xs] must be finite. *)
+
+val fold_left : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a
+(** [fold_left f _ xs] invokes [f _ x] successively
+    for every element [x] of the sequence [xs],
+    from left to right.
+
+    An accumulator of type ['a] is threaded through the calls to [f].
+
+    The sequence [xs] must be finite. *)
 
 val iteri : (int -> 'a -> unit) -> 'a t -> unit
 (** [iteri f xs] invokes [f i x] successively
@@ -408,6 +328,25 @@ val compare : ('a -> 'b -> int) -> 'a t -> 'b t -> int
 (** The functions in this section are lazy: that is, they return sequences
     whose elements are computed only when demanded. *)
 
+val empty : 'a t
+(** [empty] is the empty sequence.
+    It has no elements. Its length is 0. *)
+
+val return : 'a -> 'a t
+(** [return x] is the sequence whose sole element is [x].
+    Its length is 1. *)
+
+val cons : 'a -> 'a t -> 'a t
+(** [cons x xs] is the sequence that begins with the element [x],
+    followed with the sequence [xs].
+
+    Writing [cons (f()) xs] causes the function call [f()]
+    to take place immediately. For this call to be delayed until the
+    sequence is queried, one must instead write
+    [(fun () -> Cons(f(), xs))].
+
+    @since 4.11 *)
+
 val init : int -> (int -> 'a) -> 'a t
 (** [init n f] is the sequence [f 0; f 1; ...; f (n-1)].
 
@@ -417,6 +356,20 @@ val init : int -> (int -> 'a) -> 'a t
 
     @raise Invalid_argument if [n] is negative.
     @since 4.14 *)
+
+val unfold : ('b -> ('a * 'b) option) -> 'b -> 'a t
+(** [unfold] constructs a sequence
+    out of a step function and an initial state.
+
+    If [f u] is [None] then
+    [unfold f u] is the empty sequence.
+    If [f u] is [Some (x, u')] then
+    [unfold f u] is the nonempty sequence [cons x (unfold f u')].
+
+    For example, [unfold (function [] -> None | h :: t -> Some (h, t)) l]
+    is equivalent to [List.to_seq l].
+
+    @since 4.11 *)
 
 val repeat : 'a -> 'a t
 (** [repeat x] is the infinite sequence
@@ -464,6 +417,13 @@ val iterate : ('a -> 'a) -> 'a -> 'a t
 (** The functions in this section are lazy: that is, they return sequences
     whose elements are computed only when demanded. *)
 
+val map : ('a -> 'b) -> 'a t -> 'b t
+(** [map f xs] is the image of the sequence [xs] through the
+    transformation [f].
+
+    If [xs] is the sequence [x0; x1; ...] then
+    [map f xs] is the sequence [f x0; f x1; ...]. *)
+
 val mapi : (int -> 'a -> 'b) -> 'a t -> 'b t
 (** [mapi] is analogous to [map], but applies the function [f] to
     an index and an element.
@@ -471,6 +431,20 @@ val mapi : (int -> 'a -> 'b) -> 'a t -> 'b t
     [mapi f xs] is equivalent to [map2 f (ints 0) xs].
 
     @since 4.14 *)
+
+val filter : ('a -> bool) -> 'a t -> 'a t
+(** [filter p xs] is the sequence of the elements [x] of [xs]
+    that satisfy [p x].
+
+    In other words, [filter p xs] is the sequence [xs],
+    deprived of the elements [x] such that [p x] is false. *)
+
+val filter_map : ('a -> 'b option) -> 'a t -> 'b t
+(** [filter_map f xs] is the sequence of the elements [y] such that
+    [f x = Some y], where [x] ranges over [xs].
+
+    [filter_map f xs] is equivalent to
+    [map Option.get (filter Option.is_some (map f xs))]. *)
 
 val scan : ('b -> 'a -> 'b) -> 'b -> 'a t -> 'b t
 (** If [xs] is a sequence [[x0; x1; x2; ...]], then
@@ -616,6 +590,32 @@ val diagonals : 'a t t -> 'a t t
     @since 4.14 *)
 
 (** {1 Combining sequences} *)
+
+val append : 'a t -> 'a t -> 'a t
+(** [append xs ys] is the concatenation of the sequences [xs] and [ys].
+
+    Its elements are the elements of [xs], followed with the elements of [ys].
+
+    @since 4.11 *)
+
+val concat : 'a t t -> 'a t
+(** If [xss] is a sequence of sequences,
+    then [concat xss] is its concatenation.
+
+    If [xss] is the sequence [xs0; xs1; ...] then
+    [concat xss] is the sequence [xs0 @ xs1 @ ...].
+
+    @since 4.13 *)
+
+val flat_map : ('a -> 'b t) -> 'a t -> 'b t
+(** [flat_map f xs] is equivalent to [concat (map f xs)]. *)
+
+val concat_map : ('a -> 'b t) -> 'a t -> 'b t
+(** [concat_map f xs] is equivalent to [concat (map f xs)].
+
+    [concat_map] is an alias for [flat_map].
+
+    @since 4.13 *)
 
 val zip : 'a t -> 'b t -> ('a * 'b) t
 (** [zip xs ys] is the sequence of pairs [(x, y)]
