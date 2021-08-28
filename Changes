@@ -18,6 +18,10 @@ Working version
 
 ### Code generation and optimizations:
 
+- #10578: Increase the number of integer registers used for
+  parameter passing on PowerPC (16 registers) and on s390x (8 registers).
+  (Xavier Leroy, review by Mark Shinwell)
+
 ### Standard library:
 
 * #7812, #10475: `Filename.chop_suffix name suff` now checks that `suff`
