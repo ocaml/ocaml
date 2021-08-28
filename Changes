@@ -61,6 +61,9 @@ Working version
   (Nicolás Ojeda Bär, report by Gabriel Scherer, review by Daniel Bünzli,
   Gabriel Scherer and David Allsopp)
 
+- #10565: Toplevel value printing: truncate strings only after 8 bytes.
+  (Wiktor Kuchta, review by Xavier Leroy)
+
 ### Manual and documentation:
 
 - #7812, #10475: reworded the description of the behaviors of
