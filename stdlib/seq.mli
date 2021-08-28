@@ -721,19 +721,19 @@ val unzip : ('a * 'b) t -> 'a t * 'b t
 
     @since 4.14 *)
 
-val dispatch : ('a, 'b) Either.t t -> 'a t * 'b t
-(** [dispatch] transforms a sequence of fruit (either apples or oranges)
+val partition_either : ('a, 'b) Either.t t -> 'a t * 'b t
+(** [partition_either] transforms a sequence of fruit (either apples or oranges)
     into a pair of a sequence of apples and a sequence of oranges.
 
-    [dispatch xs] is equivalent to
+    [partition_either xs] is equivalent to
     [(filter_map Either.find_left xs, filter_map Either.find_right xs)].
 
-    Querying either of the sequences returned by [dispatch xs]
+    Querying either of the sequences returned by [partition_either xs]
     causes [xs] to be queried.
     Therefore, querying both of them
     causes [xs] to be queried twice.
     Thus, [xs] must be persistent and cheap.
-    If that is not the case, use [dispatch (memoize xs)].
+    If that is not the case, use [partition_either (memoize xs)].
 
     @since 4.14 *)
 

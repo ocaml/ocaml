@@ -594,7 +594,7 @@ let rec filter_map_find_right xs () =
   | Cons (Either.Right x, xs) ->
       Cons (x, filter_map_find_right xs)
 
-let dispatch xs =
+let partition_either xs =
   filter_map_find_left xs,
   filter_map_find_right xs
 
