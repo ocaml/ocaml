@@ -132,16 +132,16 @@ let rec iteri_aux f i xs =
 let[@inline] iteri f xs =
   iteri_aux f 0 xs
 
-let rec fold_left_i_aux f i accu xs =
+let rec fold_lefti_aux f i accu xs =
   match xs() with
   | Nil ->
       accu
   | Cons (x, xs) ->
       let accu = f i accu x in
-      fold_left_i_aux f (i+1) accu xs
+      fold_lefti_aux f (i+1) accu xs
 
-let fold_left_i f accu xs =
-  fold_left_i_aux f 0 accu xs
+let fold_lefti f accu xs =
+  fold_lefti_aux f 0 accu xs
 
 let rec for_all p xs =
   match xs() with
@@ -427,7 +427,7 @@ let rec group eq xs () =
   | Cons (x, xs) ->
       Cons (cons x (take_while (eq x) xs), group eq (drop_while (eq x) xs))
 
-exception ForcedTwice
+exception Forced_twice
 
 module Suspension = struct
 
@@ -453,10 +453,10 @@ module Suspension = struct
   let failure : _ suspension =
     fun () ->
       (* A suspension created by [once] has been forced twice. *)
-      raise ForcedTwice
+      raise Forced_twice
 
   (* If [f] is a suspension, then [once f] is a suspension that can be forced
-     at most once. If it is forced more than once, then [ForcedTwice] is
+     at most once. If it is forced more than once, then [Forced_twice] is
      raised. *)
 
   let once (f : 'a suspension) : 'a suspension =

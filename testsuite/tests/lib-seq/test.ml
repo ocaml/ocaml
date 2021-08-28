@@ -84,11 +84,11 @@ let () =
   let xs = Seq.(init 4 (fun i -> i+10)) in
   assert (!!xs = [10;11;12;13])
 
-(* [fold_left_i] *)
+(* [fold_lefti] *)
 let () =
   let xs = !?["a"; "b"] in
   assert (
-    Seq.fold_left_i (fun i acc x -> (i, x) :: acc) [] xs = [ 1, "b"; 0, "a" ]
+    Seq.fold_lefti (fun i acc x -> (i, x) :: acc) [] xs = [ 1, "b"; 0, "a" ]
   )
 
 (* [scan] *)
@@ -210,7 +210,7 @@ let () =
   try
     let (_ : int) = Seq.length xs in
     print_endline "Oops"
-  with Seq.ForcedTwice ->
+  with Seq.Forced_twice ->
     ()
 
 (* [memoize] *)

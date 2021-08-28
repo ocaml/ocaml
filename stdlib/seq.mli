@@ -194,15 +194,15 @@ val iteri : (int -> 'a -> unit) -> 'a t -> unit
 
     @since 4.14 *)
 
-val fold_left_i : (int -> 'b -> 'a -> 'b) -> 'b -> 'a t -> 'b
-(** [fold_left_i f _ xs] invokes [f _ i x] successively
+val fold_lefti : (int -> 'b -> 'a -> 'b) -> 'b -> 'a t -> 'b
+(** [fold_lefti f _ xs] invokes [f _ i x] successively
     for every element [x] located at index [i] of the sequence [xs].
 
     An accumulator of type ['a] is threaded through the calls to [f].
 
     The sequence [xs] must be finite.
 
-    [fold_left_i f accu xs] is equivalent to
+    [fold_lefti f accu xs] is equivalent to
     [fold_left (fun accu (i, x) -> f accu i x) accu (zip (ints 0) xs)].
 
     @since 4.14 *)
@@ -541,7 +541,7 @@ val memoize : 'a t -> 'a t
     [xs] is queried at most once.
     @since 4.14 *)
 
-exception ForcedTwice
+exception Forced_twice
 (** This exception is raised when a sequence returned by [once]
     (or a suffix of it) is queried more than once.
     @since 4.14 *)
@@ -552,10 +552,10 @@ val once: 'a t -> 'a t
     Regardless of whether [xs] is ephemeral or persistent,
     [once xs] is an ephemeral sequence: it can be queried at most once.
     If it (or a suffix of it) is queried more than once, then the exception
-    [ForcedTwice] is raised. This can be useful, while debugging or testing,
+    [Forced_twice] is raised. This can be useful, while debugging or testing,
     to ensure that a sequence is consumed at most once.
 
-    @raise ForcedTwice if [once xs], or a suffix of it,
+    @raise Forced_twice if [once xs], or a suffix of it,
            is queried more than once.
     @since 4.14 *)
 
