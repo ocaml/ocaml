@@ -104,13 +104,18 @@ let slot_offset env loc cl =
   | Outgoing n ->
       assert (n >= 0);
       n
+  | Domainstate _ -> assert false  (* not a stack slot *)
 
 (* Output a stack reference *)
 
 let emit_stack env r =
   match r.loc with
+  | Stack (Domainstate n) ->
+      let ofs = n + Domainstate.(idx_of_field Domain_extra_params) * 8 in
+      `[{emit_reg reg_domain_state_ptr}, #{emit_int ofs}]`
   | Stack s ->
-      let ofs = slot_offset env s (register_class r) in `[sp, #{emit_int ofs}]`
+      let ofs = slot_offset env s (register_class r) in
+      `[sp, #{emit_int ofs}]`
   | _ -> fatal_error "Emit.emit_stack"
 
 (* Output an addressing mode *)

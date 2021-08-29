@@ -39,12 +39,17 @@ let frame_size env =
 let slot_offset env loc cls =
   match loc with
   | Local n ->
-      if cls = 0
-      then env.stack_offset + env.f.fun_num_stack_slots.(1) * size_float
-           + n * size_int
-      else env.stack_offset + n * size_float
-  | Incoming n -> frame_size env + n
-  | Outgoing n -> n
+      ("sp",
+       if cls = 0
+       then env.stack_offset + env.f.fun_num_stack_slots.(1) * size_float
+            + n * size_int
+       else env.stack_offset + n * size_float)
+  | Incoming n ->
+      ("sp", frame_size env + n)
+  | Outgoing n ->
+      ("sp", n)
+  | Domainstate n -> 
+      ("s11", n + Domainstate.(idx_of_field Domain_extra_params) * 8)
 
 (* Output a symbol *)
 
@@ -108,38 +113,32 @@ let adjust_stack_offset env delta =
   env.stack_offset <- env.stack_offset + delta;
   cfi_adjust_cfa_offset delta
 
-let emit_mem_op op src ofs =
+let emit_mem_op ?(base = "sp") op src ofs =
   if is_immediate ofs then
-    `	{emit_string op}	{emit_string src}, {emit_int ofs}(sp)\n`
+    `	{emit_string op}	{emit_string src}, {emit_int ofs}({emit_string base})\n`
   else begin
     `	li	{emit_reg reg_tmp}, {emit_int ofs}\n`;
-    `	add	{emit_reg reg_tmp}, sp, {emit_reg reg_tmp}\n`;
+    `	add	{emit_reg reg_tmp}, {emit_string base}, {emit_reg reg_tmp}\n`;
     `	{emit_string op}	{emit_string src}, 0({emit_reg reg_tmp})\n`
   end
 
-let emit_store src ofs =
-  emit_mem_op "sd" src ofs
-
-let emit_load dst ofs =
-  emit_mem_op "ld" dst ofs
-
 let reload_ra n =
-  emit_load "ra" (n - size_addr)
+  emit_mem_op "ld" "ra" (n - size_addr)
 
 let store_ra n =
-  emit_store "ra" (n - size_addr)
+  emit_mem_op "sd" "ra" (n - size_addr)
 
-let emit_store src ofs =
-  emit_store (reg_name src) ofs
+let emit_store ?base src ofs =
+  emit_mem_op ?base "sd" (reg_name src) ofs
 
-let emit_load dst ofs =
-  emit_load (reg_name dst) ofs
+let emit_load ?base dst ofs =
+  emit_mem_op ?base "ld" (reg_name dst) ofs
 
-let emit_float_load dst ofs =
-  emit_mem_op "fld" (reg_name dst) ofs
+let emit_float_load ?base dst ofs =
+  emit_mem_op ?base "fld" (reg_name dst) ofs
 
-let emit_float_store src ofs =
-  emit_mem_op "fsd" (reg_name src) ofs
+let emit_float_store ?base src ofs =
+  emit_mem_op ?base "fsd" (reg_name src) ofs
 
 (* Record live pointers at call points *)
 
@@ -151,7 +150,9 @@ let record_frame_label env live dbg =
         {typ = Val; loc = Reg r} ->
           live_offset := (r lsl 1) + 1 :: !live_offset
       | {typ = Val; loc = Stack s} as reg ->
-          live_offset := slot_offset env s (register_class reg) :: !live_offset
+          let (base, ofs) = slot_offset env s (register_class reg) in
+          assert (base = "sp");
+          live_offset := ofs :: !live_offset
       | {typ = Addr} as r ->
           Misc.fatal_error ("bad GC root " ^ Reg.name r)
       | _ -> ()
@@ -259,17 +260,17 @@ let emit_instr env i =
         | {loc = Reg _; typ = Float}, {loc = Reg _; typ = (Val | Int | Addr)} ->
             `	fmv.x.d {emit_reg dst}, {emit_reg src}\n`
         | {loc = Reg _; typ = (Val | Int | Addr)}, {loc = Stack s} ->
-            let ofs = slot_offset env s (register_class dst) in
-            emit_store src ofs
+            let (base, ofs) = slot_offset env s (register_class dst) in
+            emit_store ~base src ofs
         | {loc = Reg _; typ = Float}, {loc = Stack s} ->
-            let ofs = slot_offset env s (register_class dst) in
-            emit_float_store src ofs
+            let (base, ofs) = slot_offset env s (register_class dst) in
+            emit_float_store ~base src ofs
         | {loc = Stack s; typ = (Val | Int | Addr)}, {loc = Reg _} ->
-            let ofs = slot_offset env s (register_class src) in
-            emit_load dst ofs
+            let (base, ofs) = slot_offset env s (register_class src) in
+            emit_load ~base dst ofs
         | {loc = Stack s; typ = Float}, {loc = Reg _} ->
-            let ofs = slot_offset env s (register_class src) in
-            emit_float_load dst ofs
+            let (base, ofs) = slot_offset env s (register_class src) in
+            emit_float_load ~base dst ofs
         | {loc = Stack _}, {loc = Stack _}
         | {loc = Unknown}, _ | _, {loc = Unknown} ->
             Misc.fatal_error "Emit: Imove"
