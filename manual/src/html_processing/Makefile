@@ -59,7 +59,7 @@ $(WEBDIRAPI)/search_icon.svg: | $(WEBDIRAPI)
 $(WEBDIRCOMP)/%: $(WEBDIRAPI)/% | $(WEBDIRCOMP)
 	cp $< $@
 
-$(WEBDIRMAIN)/%: $(WEBDIRAPI/% | $(WEBDIRAPI)
+$(WEBDIRMAN)/%: $(WEBDIRAPI)/% | $(WEBDIRMAN)
 	cp $< $@
 
 LOGO := colour-logo.svg
