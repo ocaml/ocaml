@@ -24,8 +24,6 @@
 %\stx@alias{name}{othername}
 %will make reference to 'name' point to the definition of non-terminal
 %'othername'
-\newif\ifspace
-\def\addspace{\ifspace\;\spacefalse\fi}
 \ifhtml
 \newcommand{\token}[1]{\textnormal{\@span{class=syntax-token}#1}}
 \newstyle{.syntax-token}{color:blue;font-family:monospace}
@@ -137,23 +135,23 @@
 \def\nt#1{\textnormal{\@span{class=nonterminal}#1}}
 \newstyle{.nonterminal}{color:maroon;font-style:oblique}
 %%%Link for non-terminal and format
-\def\nonterm#1{\addspace\nt{\@anchor{#1}}\spacetrue}
-\def\brepet{\addspace\{}
+\def\nonterm#1{\nt{\@anchor{#1}}}
+\def\brepet{\{}
 \def\erepet{\}}
-\def\boption{\addspace[}
+\def\boption{[}
 \def\eoption{]}
-\def\brepets{\addspace\{}
+\def\brepets{\{}
 \def\erepets{\}^+}
-\def\bparen{\addspace(}
+\def\bparen{(}
 \def\eparen{)}
-\def\orelse{\mid \spacefalse}
-\def\is{ & ::= & \spacefalse }
-\def\alt{ \\ & \mid & \spacefalse }
-\def\sep{ \\ \\ \spacefalse }
+\def\orelse{\mid}
+\def\is{&::=&}
+\def\alt{\\&\mid&}
+\def\sep{\\\\}
 \def\cutline{}
 \def\emptystring{\epsilon}
-\def\syntax{\@open{div}{class="syntax"}$$\begin{array}{>{\set@name}rcl}\spacefalse}
+\def\syntax{\@open{div}{class="syntax"}$$\begin{array}{>{\set@name}rcl}}
 \def\endsyntax{\end{array}$$\@close{div}}
-\def\syntaxleft{\@open{div}{class="syntaxleft"}$\begin{array}{>{\set@name}rcl}\spacefalse}
+\def\syntaxleft{\@open{div}{class="syntaxleft"}$\begin{array}{>{\set@name}rcl}}
 \def\endsyntaxleft{\end{array}$\@close{div}}
-\def\synt#1{$\spacefalse#1$}
+\def\synt#1{$#1$}
