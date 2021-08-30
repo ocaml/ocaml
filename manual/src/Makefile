@@ -1,8 +1,5 @@
-ROOTDIR = $(abspath ../..)
+ROOTDIR = ../..
 -include $(ROOTDIR)/Makefile.config
-
-export LD_LIBRARY_PATH   ?= "$(ROOTDIR)/otherlibs/unix/:$(ROOTDIR)/otherlibs/str/"
-export DYLD_LIBRARY_PATH ?= "$(ROOTDIR)/otherlibs/unix/:$(ROOTDIR)/otherlibs/str/"
 
 TEXQUOTE = $(ROOTDIR)/runtime/ocamlrun ../tools/texquote2
 
