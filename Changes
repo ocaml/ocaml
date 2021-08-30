@@ -764,7 +764,7 @@ OCaml 4.13.0
 
 - #10584, #10856: Standard Library documentation build no longer fails if
   optional libraries have been disabled.
-  (David Allsopp, report by Yuri Victorovich review by ???)
+  (David Allsopp, report by Yuri Victorovich review by Florian Angeletti)
 
 OCaml 4.12, maintenance version
 -------------------------------
