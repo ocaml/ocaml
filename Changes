@@ -762,6 +762,10 @@ OCaml 4.13.0
 - #10550, #10551: fix pretty-print of gadt-pattern-with-type-vars
   (Chet Murthy, review by Gabriel Scherer)
 
+- #10584, #10856: Standard Library documentation build no longer fails if
+  optional libraries have been disabled.
+  (David Allsopp, report by Yuri Victorovich review by ???)
+
 OCaml 4.12, maintenance version
 -------------------------------
 
