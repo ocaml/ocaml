@@ -172,6 +172,7 @@ let _escaped ?(escape_unicode=false) s =
     let a = char_code c in
     unsafe_set str !pos '\\';
     incr pos;
+
     unsafe_set str !pos (char_chr (48 + a / 100));
     incr pos;
     unsafe_set str !pos (char_chr (48 + (a / 10) mod 10));
@@ -184,6 +185,8 @@ let _escaped ?(escape_unicode=false) s =
       (match unsafe_get s i with
        | '\"' | '\\' | '\n' | '\t' | '\r' | '\b' -> 2
        | ' ' .. '~' -> 1
+       | '\x80' .. '\xFF' ->
+         if escape_unicode then 4 else 1
        | _ -> 4)
   done;
   if !n = length s then copy s else begin
