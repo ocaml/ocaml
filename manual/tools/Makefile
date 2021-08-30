@@ -1,5 +1,4 @@
 ROOTDIR = ../..
-COMPFLAGS = -I $(ROOTDIR)/otherlibs/str -I $(ROOTDIR)/otherlibs/unix
 include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 
