@@ -113,60 +113,9 @@ let trim s =
     then bts (B.trim (bos s))
   else s
 
-let escaped s =
-  let rec escape_if_needed s n i =
-    if i >= n then s else
-      match unsafe_get s i with
-      | '\"' | '\\' | '\000'..'\031' | '\127'.. '\255' ->
-          bts (B.escaped (bos s))
-      | _ -> escape_if_needed s n (i+1)
-  in
-  escape_if_needed s (length s) 0
-
-let escape_ascii = escaped
-
-let escape s =
-  (* Escape only C0 control characters (bytes <= 0x1F), DEL(0x7F), '\\'
-     and '"' *)
-   let n = ref 0 in
-  for i = 0 to length s - 1 do
-    n := !n +
-      (match unsafe_get s i with
-       | '\"' | '\\' | '\n' | '\t' | '\r' | '\b' -> 2
-       | '\x00' .. '\x1F'
-       | '\x7F' -> 4
-       | _ -> 1)
-  done;
-  if !n = length s then s else begin
-    let s' = B.create !n in
-    n := 0;
-    for i = 0 to length s - 1 do
-      begin match unsafe_get s i with
-      | ('\"' | '\\') as c ->
-          B.unsafe_set s' !n '\\'; incr n; B.unsafe_set s' !n c
-      | '\n' ->
-          B.unsafe_set s' !n '\\'; incr n; B.unsafe_set s' !n 'n'
-      | '\t' ->
-          B.unsafe_set s' !n '\\'; incr n; B.unsafe_set s' !n 't'
-      | '\r' ->
-          B.unsafe_set s' !n '\\'; incr n; B.unsafe_set s' !n 'r'
-      | '\b' ->
-          B.unsafe_set s' !n '\\'; incr n; B.unsafe_set s' !n 'b'
-      | '\x00' .. '\x1F' | '\x7F' as c ->
-          let a = Char.code c in
-          B.unsafe_set s' !n '\\';
-          incr n;
-          B.unsafe_set s' !n (Char.chr (48 + a / 100));
-          incr n;
-          B.unsafe_set s' !n (Char.chr (48 + (a / 10) mod 10));
-          incr n;
-          B.unsafe_set s' !n (Char.chr (48 + a mod 10));
-      | c -> B.unsafe_set s' !n c
-      end;
-      incr n
-    done;
-    B.to_string s'
-  end
+let escaped_ascii s = bos s |> B.escaped_ascii |> bts
+let escaped = escaped_ascii
+let escaped_utf8 s = bos s |> B.escaped_utf8 |> bts
 
 (* duplicated in bytes.ml *)
 let rec index_rec s lim i c =

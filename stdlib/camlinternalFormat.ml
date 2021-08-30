@@ -1369,7 +1369,7 @@ let fix_int_precision prec str =
 
 (* Escape a string according to the OCaml lexing convention. *)
 let string_to_caml_string str =
-  let str = String.escape_ascii str in
+  let str = String.escaped_ascii str in
   let l = String.length str in
   let res = Bytes.make (l + 2) '\"' in
   String.unsafe_blit str 0 res 1 l;

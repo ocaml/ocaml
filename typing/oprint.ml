@@ -105,7 +105,7 @@ let print_out_string ppf s =
         | None -> true
         | Some f -> f in
   if not_escaped then
-    fprintf ppf "\"%s\"" (String.escape s)
+    fprintf ppf "\"%s\"" (String.escaped_utf8 s)
   else
     fprintf ppf "%S" s
 

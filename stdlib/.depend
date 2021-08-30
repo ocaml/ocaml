@@ -669,12 +669,10 @@ stdlib__Stream.cmx : stream.ml \
 stdlib__Stream.cmi : stream.mli
 stdlib__String.cmo : string.ml \
     stdlib.cmi \
-    stdlib__Char.cmi \
     stdlib__Bytes.cmi \
     stdlib__String.cmi
 stdlib__String.cmx : string.ml \
     stdlib.cmx \
-    stdlib__Char.cmx \
     stdlib__Bytes.cmx \
     stdlib__String.cmi
 stdlib__String.cmi : string.mli \

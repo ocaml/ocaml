@@ -262,11 +262,11 @@ val escaped : string -> string
     @raise Invalid_argument if the result is longer than
     {!Sys.max_string_length} bytes. *)
 
-val escape_ascii : string -> string
+val escaped_ascii : string -> string
 (** [escape_ascii s] is [s] with all characters outside the printable US-ASCII
     range represented by escape sequences.
 
-    All characters outside the US-ASCII printable range \[0x20;0x7E\] are
+    All characters outside the US-ASCII printable range \[0x20 .. 0x7E\] are
     escaped, as well as backslash (0x2F) and double-quote (0x22).
 
     The function {!Scanf.unescaped} is a left inverse of [escaped],
@@ -278,14 +278,14 @@ val escape_ascii : string -> string
 
     @since 4.14.0 *)
 
-val escape : string -> string
+val escaped_utf8 : string -> string
 (** [escape s] is [s] with special characters replaced with escape sequences,
     following the lexical conventions of OCaml.
 
     The following characters are escaped:
     double quote (['\"'], newline (['\n']), carriage return (['\r']),
-    tab (['\t\]), backspace (['\b']), DEL (0x7F),
-    and everything in the ['\x00' .. '\x1F'] range.
+    tab (['\t']), backspace (['\b']), DEL (0x7F),
+    and everything in the \[0x00 .. 0x1F\] range.
 
     @raise Invalid_argument if the result is longer than
     {!Sys.max_string_length} bytes.

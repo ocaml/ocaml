@@ -167,7 +167,17 @@ let trim s =
   else
     empty
 
-let escaped s =
+let _escaped ?(escape_unicode=false) s =
+  let add_escaped_char c str pos =
+    let a = char_code c in
+    unsafe_set str !pos '\\';
+    incr pos;
+    unsafe_set str !pos (char_chr (48 + a / 100));
+    incr pos;
+    unsafe_set str !pos (char_chr (48 + (a / 10) mod 10));
+    incr pos;
+    unsafe_set str !pos (char_chr (48 + a mod 10))
+  in
   let n = ref 0 in
   for i = 0 to length s - 1 do
     n := !n +
@@ -192,20 +202,22 @@ let escaped s =
       | '\b' ->
           unsafe_set s' !n '\\'; incr n; unsafe_set s' !n 'b'
       | (' ' .. '~') as c -> unsafe_set s' !n c
+      | '\x80' .. '\xFF' as c ->
+        if escape_unicode then add_escaped_char c s' n
+        else unsafe_set s' !n c
       | c ->
-          let a = char_code c in
-          unsafe_set s' !n '\\';
-          incr n;
-          unsafe_set s' !n (char_chr (48 + a / 100));
-          incr n;
-          unsafe_set s' !n (char_chr (48 + (a / 10) mod 10));
-          incr n;
-          unsafe_set s' !n (char_chr (48 + a mod 10));
+        add_escaped_char c s' n
       end;
       incr n
     done;
     s'
   end
+
+let escaped s = _escaped ~escape_unicode:true s
+
+let escaped_ascii = escaped
+
+let escaped_utf8 s = _escaped ~escape_unicode:false s
 
 let map f s =
   let l = length s in
