@@ -43,7 +43,7 @@ Working version
 
 - #10545: Add In_channel and Out_channel modules.
   (Nicolás Ojeda Bär, review by Daniel Bünzli, Simon Cruanes, Gabriel Scherer,
-  Guillaume Munch-Maccagnoni and Xavier Leroy)
+  Guillaume Munch-Maccagnoni, Alain Frisch and Xavier Leroy)
 
 ### Other libraries:
 
