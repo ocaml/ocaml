@@ -44,5 +44,4 @@ let output_string = Stdlib.output_string
 let output_bytes = Stdlib.output_bytes
 let output = Stdlib.output
 let output_substring = Stdlib.output_substring
-let output_binary_int = Stdlib.output_binary_int
 let set_binary_mode = Stdlib.set_binary_mode_out

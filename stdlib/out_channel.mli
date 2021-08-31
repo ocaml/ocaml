@@ -118,12 +118,6 @@ val output_substring : t -> string -> int -> int -> unit
 (** Same as {!output} but take a string as argument instead of a byte
     sequence. *)
 
-val output_binary_int : t -> int -> unit
-(** Write one integer in binary format (4 bytes, big-endian) on the given output
-    channel.  The given integer is taken modulo 2{^32}.  The only reliable way
-    to read it back is through the {!In_channel.input_binary_int} function. The
-    format is compatible across all machines for a given version of OCaml. *)
-
 val set_binary_mode : t -> bool -> unit
 (** [set_binary_mode oc true] sets the channel [oc] to binary mode: no
     translations take place during output.

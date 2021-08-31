@@ -51,11 +51,6 @@ let input_line ic =
   | s -> Some s
   | exception End_of_file -> None
 
-let input_binary_int ic =
-  match Stdlib.input_binary_int ic with
-  | n -> Some n
-  | exception End_of_file -> None
-
 let input = Stdlib.input
 
 let really_input ic buf pos len =

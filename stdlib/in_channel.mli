@@ -97,11 +97,6 @@ val input_line : t -> string option
     {!Sys.win32} is [true] in which case it is the sequence of characters
     [\r\n]. *)
 
-val input_binary_int : t -> int option
-(** Read an integer encoded in binary format (4 bytes, big-endian) from the
-    given input channel. See {!Out_channel.output_binary_int}.  Returns [None]
-    if the end of file was reached while reading the integer. *)
-
 val input : t -> bytes -> int -> int -> int
 (** [input ic buf pos len] reads up to [len] characters from the given channel
     [ic], storing them in byte sequence [buf], starting at character number
