@@ -89,8 +89,12 @@ let lambda_smaller' lam ~than:threshold =
       List.iter (fun (_, lam) -> lambda_named_size lam) bindings;
       lambda_size body
     | Switch (_, sw) ->
-      let aux = function _::_::_ -> size := !size + 5 | _ -> () in
-      aux sw.consts; aux sw.blocks;
+      let cost cases =
+        let size = List.length cases in
+        if size <= 1 then 0
+        else 3 + size
+      in
+      size := !size + cost sw.consts + cost sw.blocks;
       List.iter (fun (_, lam) -> lambda_size lam) sw.consts;
       List.iter (fun (_, lam) -> lambda_size lam) sw.blocks;
       Option.iter lambda_size sw.failaction

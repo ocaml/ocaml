@@ -128,14 +128,14 @@ let incoming ofs = Incoming ofs
 let outgoing ofs = Outgoing ofs
 let not_supported _ofs = fatal_error "Proc.loc_results: cannot call"
 
-let max_arguments_for_tailcalls = 5
+let max_arguments_for_tailcalls = 8
 
 let loc_arguments arg =
-  calling_conventions 0 4 100 103 outgoing 0 arg
+  calling_conventions 0 7 100 103 outgoing 0 arg
 let loc_parameters arg =
-  let (loc, _ofs) = calling_conventions 0 4 100 103 incoming 0 arg in loc
+  let (loc, _ofs) = calling_conventions 0 7 100 103 incoming 0 arg in loc
 let loc_results res =
-  let (loc, _ofs) = calling_conventions 0 4 100 103 not_supported 0 res in loc
+  let (loc, _ofs) = calling_conventions 0 7 100 103 not_supported 0 res in loc
 
 (*   C calling conventions under SVR4:
      use GPR 2-6 and FPR 0,2,4,6 just like ML calling conventions.

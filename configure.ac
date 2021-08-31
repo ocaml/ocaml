@@ -176,6 +176,7 @@ AC_SUBST([naked_pointers_checker])
 
 AC_CONFIG_FILES([Makefile.build_config])
 AC_CONFIG_FILES([Makefile.config])
+AC_CONFIG_FILES([stdlib/sys.ml])
 AC_CONFIG_FILES([tools/eventlog_metadata])
 AC_CONFIG_HEADERS([runtime/caml/m.h])
 AC_CONFIG_HEADERS([runtime/caml/s.h])
@@ -1772,7 +1773,7 @@ AC_MSG_CHECKING([whether stack overflows can be detected])
 
 AS_CASE([$arch,$system],
   [i386,linux_elf|amd64,linux|amd64,macosx \
-    |amd64,openbsd|i386,bsd_elf],
+    |amd64,openbsd|i386,bsd_elf|arm64,linux|arm64,macosx],
     [AC_DEFINE([HAS_STACK_OVERFLOW_DETECTION])
     AC_MSG_RESULT([yes])],
   [AC_MSG_RESULT([no])])
@@ -1842,7 +1843,8 @@ AS_IF([test x"$enable_naked_pointers_checker" = "xyes" ],
    AS_CASE(["$arch","$system"],
     [amd64,linux|amd64,macosx \
     |amd64,openbsd|amd64,win64 \
-    |amd64,freebsd|amd64,solaris],
+    |amd64,freebsd|amd64,solaris \
+    |arm64,linux|arm64,macosx],
       [naked_pointers_checker=true
       AC_DEFINE([NAKED_POINTERS_CHECKER])],
     [*],
@@ -1991,7 +1993,7 @@ AS_IF([test x"$prefix" = "xNONE"],
   [AS_IF([test x"$unix_or_win32" = "xwin32" \
           && test "$host_vendor-$host_os" != "$build_vendor-$build_os" ],
     [AS_CASE([$build],
-      [*-pc-cygwin], [prefix=`cygpath -m "$prefix"`])])])
+      [*-pc-cygwin], [prefix="$(LC_ALL=C.UTF-8 cygpath -m "$prefix")"])])])
 
 # Define a few macros that were defined in config/m-nt.h
 # but whose value is not guessed properly by configure

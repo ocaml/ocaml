@@ -111,7 +111,7 @@ community. These can be accessed at
 
 https://ocaml.org/community/
 
-In particular, the IRC channel `#ocaml` on https://freenode.net/[Freenode] has a
+In particular, the IRC channel `#ocaml` on https://libera.chat/[Libera] has a
 long history and welcomes questions.
 
 == Bug Reports and User Feedback

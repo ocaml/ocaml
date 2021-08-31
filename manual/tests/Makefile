@@ -22,8 +22,7 @@ cross-reference-checker: cross_reference_checker.ml
 # check cross-references between the manual and error messages
 .PHONY: check-cross-references
 check-cross-references: cross-reference-checker
-	$(SET_LD_PATH) \
-	  $(OCAMLRUN) ./cross-reference-checker \
+	$(OCAMLRUN) ./cross-reference-checker \
 	  -auxfile $(MANUAL)/texstuff/manual.aux \
 	  $(ROOTDIR)/utils/warnings.ml \
 	  $(ROOTDIR)/driver/main_args.ml \

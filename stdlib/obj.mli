@@ -122,14 +122,6 @@ val [@inline always] extension_name : extension_constructor -> string
 val [@inline always] extension_id : extension_constructor -> int
   [@@ocaml.deprecated "use Obj.Extension_constructor.id"]
 
-(** The following two functions are deprecated.  Use module {!Marshal}
-    instead. *)
-
-val marshal : t -> bytes
-  [@@ocaml.deprecated "Use Marshal.to_bytes instead."]
-val unmarshal : bytes -> int -> t * int
-  [@@ocaml.deprecated "Use Marshal.from_bytes and Marshal.total_size instead."]
-
 module Ephemeron: sig
   (** Ephemeron with arbitrary arity and untyped *)
 

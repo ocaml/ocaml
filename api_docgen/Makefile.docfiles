@@ -42,11 +42,20 @@ STDLIB=$(filter-out stdlib__Pervasives, $(STDLIB_MODULES))
 
 stdlib_UNPREFIXED=$(filter-out pervasives, $(STDLIB_MODULE_BASENAMES))
 
-otherlibref= \
-  $(str_MLIS:%.mli=%) \
-  $(unix_MLIS:%.mli=%) \
-  $(dynlink_MLIS:%.mli=%) \
-  $(thread_MLIS:%.mli=%)
+otherlibref := $(dynlink_MLIS:%.mli=%)
+
+ifneq "$(filter str,$(OTHERLIBRARIES))" ""
+otherlibref += $(str_MLIS:%.mli=%)
+endif
+
+ifneq "$(filter %unix,$(OTHERLIBRARIES))" ""
+otherlibref += $(unix_MLIS:%.mli=%)
+endif
+
+ifneq "$(filter systhreads,$(OTHERLIBRARIES))" ""
+otherlibref += $(thread_MLIS:%.mli=%)
+endif
+
 libref_EXTRA=stdlib__pervasives
 libref_TEXT=Ocaml_operators Format_tutorial
 libref_C=$(call capitalize,$(libref) $(libref_EXTRA))
