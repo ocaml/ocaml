@@ -451,31 +451,38 @@ module Lazy_types = struct
       mdl_loc: Location.t;
       mdl_uid: Uid.t;
     }
-  
+
   and modtype =
     | MtyL_ident of Path.t
     | MtyL_signature of signature
     | MtyL_functor of functor_parameter * modtype
     | MtyL_alias of Path.t
-  
-  
+
+  and modtype_declaration =
+    {
+      mtdl_type: modtype option;
+      mtdl_attributes: Parsetree.attributes;
+      mtdl_loc: Location.t;
+      mtdl_uid: Uid.t;
+    }
+
   and signature' =
     | S_eager of Types.signature
     | S_lazy of signature_item list
-  
+
   and signature =
     (scoping * t * signature', signature') Lazy_backtrack.t
-  
+
   and signature_item =
       SigL_value of Ident.t * value_description * visibility
     | SigL_type of Ident.t * type_declaration * rec_status * visibility
     | SigL_typext of Ident.t * extension_constructor * ext_status * visibility
     | SigL_module of
         Ident.t * module_presence * module_decl * rec_status * visibility
-    | SigL_modtype of Ident.t * modtype_declaration * visibility (* FIXME *)
+    | SigL_modtype of Ident.t * modtype_declaration * visibility
     | SigL_class of Ident.t * class_declaration * rec_status * visibility
     | SigL_class_type of Ident.t * class_type_declaration * rec_status * visibility
-  
+
   and functor_parameter =
     | Unit
     | Named of Ident.t option * modtype
@@ -544,8 +551,8 @@ let rec lazy_module_decl md =
 and subst_lazy_module_decl scoping s md =
   let mdl_type = subst_lazy_modtype scoping s md.mdl_type in
   { mdl_type;
-    mdl_attributes = md.mdl_attributes;
-    mdl_loc = md.mdl_loc;
+    mdl_attributes = attrs s md.mdl_attributes;
+    mdl_loc = loc s md.mdl_loc;
     mdl_uid = md.mdl_uid }
 
 and force_module_decl md =
@@ -564,10 +571,9 @@ and lazy_modtype = function
   | Mty_alias p -> MtyL_alias p
 
 and subst_lazy_modtype scoping s = function
-  | MtyL_ident p when scoping = Keep && s == identity -> MtyL_ident p
   | MtyL_ident p ->
       begin match Path.Map.find p s.modtypes with
-       | mty -> subst_lazy_modtype Keep identity (lazy_modtype mty)
+       | mty -> lazy_modtype mty
        | exception Not_found ->
           begin match p with
           | Pident _ -> MtyL_ident p
@@ -602,9 +608,29 @@ and force_modtype = function
      Mty_functor (param, force_modtype res)
   | MtyL_alias p -> Mty_alias p
 
+and lazy_modtype_decl mtd =
+  let mtdl_type = Option.map lazy_modtype mtd.mtd_type in
+  { mtdl_type;
+    mtdl_attributes = mtd.mtd_attributes;
+    mtdl_loc = mtd.mtd_loc;
+    mtdl_uid = mtd.mtd_uid }
+
+and subst_lazy_modtype_decl scoping s mtd =
+  { mtdl_type = Option.map (subst_lazy_modtype scoping s) mtd.mtdl_type;
+    mtdl_attributes = attrs s mtd.mtdl_attributes;
+    mtdl_loc = loc s mtd.mtdl_loc;
+    mtdl_uid = mtd.mtdl_uid }
+
+and force_modtype_decl mtd =
+  let mtd_type = Option.map force_modtype mtd.mtdl_type in
+  { mtd_type;
+    mtd_attributes = mtd.mtdl_attributes;
+    mtd_loc = mtd.mtdl_loc;
+    mtd_uid = mtd.mtdl_uid }
+
 and subst_lazy_signature scoping s sg =
-  match Lazy_backtrack.get_arg sg with
-  | Some (scoping', s', sg) ->
+  match Lazy_backtrack.get_contents sg with
+  | Left (scoping', s', sg) ->
      let scoping =
        match scoping', scoping with
        | sc, Keep -> sc
@@ -612,8 +638,7 @@ and subst_lazy_signature scoping s sg =
      in
      let s = compose s' s in
      Lazy_backtrack.create (scoping, s, sg)
-  | None ->
-     let sg = Lazy_backtrack.force (fun _ -> assert false) sg in
+  | Right sg ->
      Lazy_backtrack.create (scoping, s, sg)
 
 and force_signature sg =
@@ -647,7 +672,7 @@ and lazy_signature_item = function
   | Sig_module(id, res, d, rs, vis) ->
      SigL_module(id, res, lazy_module_decl d, rs, vis)
   | Sig_modtype(id, d, vis) ->
-     SigL_modtype(id, d, vis)
+     SigL_modtype(id, lazy_modtype_decl d, vis)
   | Sig_class(id, d, rs, vis) ->
      SigL_class(id, d, rs, vis)
   | Sig_class_type(id, d, rs, vis) ->
@@ -664,7 +689,7 @@ and subst_lazy_signature_item' copy_scope scoping s comp =
   | SigL_module(id, pres, d, rs, vis) ->
       SigL_module(id, pres, subst_lazy_module_decl scoping s d, rs, vis)
   | SigL_modtype(id, d, vis) ->
-      SigL_modtype(id, modtype_declaration scoping s d, vis)
+      SigL_modtype(id, subst_lazy_modtype_decl scoping s d, vis)
   | SigL_class(id, d, rs, vis) ->
       SigL_class(id, class_declaration' copy_scope s d, rs, vis)
   | SigL_class_type(id, d, rs, vis) ->
@@ -677,18 +702,10 @@ and force_signature_item = function
   | SigL_module(id, pres, d, rs, vis) ->
      Sig_module(id, pres, force_module_decl d, rs, vis)
   | SigL_modtype(id, d, vis) ->
-     Sig_modtype (id, d, vis)
+     Sig_modtype (id, force_modtype_decl d, vis)
   | SigL_class(id, d, rs, vis) -> Sig_class(id, d, rs, vis)
   | SigL_class_type(id, d, rs, vis) -> Sig_class_type(id, d, rs, vis)
 
-(* FIXME make these lazy too *)
-and modtype_declaration scoping s decl  =
-  {
-    mtd_type = Option.map (modtype scoping s) decl.mtd_type;
-    mtd_attributes = attrs s decl.mtd_attributes;
-    mtd_loc = loc s decl.mtd_loc;
-    mtd_uid = decl.mtd_uid;
-  }
 and modtype scoping s t =
   t |> lazy_modtype |> subst_lazy_modtype scoping s |> force_modtype
 
@@ -709,28 +726,28 @@ let subst_lazy_signature_item scoping s comp =
     (fun copy_scope -> subst_lazy_signature_item' copy_scope scoping s comp)
 
 let module_declaration scoping s decl =
-  {
-    md_type = modtype scoping s decl.md_type;
-    md_attributes = attrs s decl.md_attributes;
-    md_loc = loc s decl.md_loc;
-    md_uid = decl.md_uid;
-  }
+  decl
+  |> lazy_module_decl |> subst_lazy_module_decl scoping s |> force_module_decl
 
 module Lazy = struct
   include Lazy_types
 
   let of_module_decl = lazy_module_decl
   let of_modtype = lazy_modtype
+  let of_modtype_decl = lazy_modtype_decl
   let of_signature sg = Lazy_backtrack.create_forced (S_eager sg)
+  let of_signature_items sg = Lazy_backtrack.create_forced (S_lazy sg)
   let of_signature_item = lazy_signature_item
 
   let module_decl = subst_lazy_module_decl
   let modtype = subst_lazy_modtype
+  let modtype_decl = subst_lazy_modtype_decl
   let signature = subst_lazy_signature
   let signature_item = subst_lazy_signature_item
 
   let force_module_decl = force_module_decl
   let force_modtype = force_modtype
+  let force_modtype_decl = force_modtype_decl
   let force_signature = force_signature
   let force_signature_once = force_signature_once
   let force_signature_item = force_signature_item
@@ -741,3 +758,6 @@ let signature sc s sg =
 
 let signature_item sc s comp =
   Lazy.(comp|> of_signature_item |> signature_item sc s |> force_signature_item)
+
+let modtype_declaration sc s decl =
+  Lazy.(decl |> of_modtype_decl |> modtype_decl sc s |> force_modtype_decl)

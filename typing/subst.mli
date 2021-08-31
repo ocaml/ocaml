@@ -104,6 +104,14 @@ module Lazy : sig
     | MtyL_functor of functor_parameter * modtype
     | MtyL_alias of Path.t
 
+  and modtype_declaration =
+    {
+      mtdl_type: modtype option;  (* Note: abstract *)
+      mtdl_attributes: Parsetree.attributes;
+      mtdl_loc: Location.t;
+      mtdl_uid: Uid.t;
+    }
+
   and signature
 
   and signature_item =
@@ -112,7 +120,7 @@ module Lazy : sig
     | SigL_typext of Ident.t * extension_constructor * ext_status * visibility
     | SigL_module of
         Ident.t * module_presence * module_decl * rec_status * visibility
-    | SigL_modtype of Ident.t * modtype_declaration * visibility (* FIXME *)
+    | SigL_modtype of Ident.t * modtype_declaration * visibility
     | SigL_class of Ident.t * class_declaration * rec_status * visibility
     | SigL_class_type of Ident.t * class_type_declaration * rec_status * visibility
 
@@ -123,16 +131,20 @@ module Lazy : sig
 
   val of_module_decl : Types.module_declaration -> module_decl
   val of_modtype : Types.module_type -> modtype
+  val of_modtype_decl : Types.modtype_declaration -> modtype_declaration
   val of_signature : Types.signature -> signature
+  val of_signature_items : signature_item list -> signature
   val of_signature_item : Types.signature_item -> signature_item
 
   val module_decl : scoping -> t -> module_decl -> module_decl
   val modtype : scoping -> t -> modtype -> modtype
+  val modtype_decl : scoping -> t -> modtype_declaration -> modtype_declaration
   val signature : scoping -> t -> signature -> signature
   val signature_item : scoping -> t -> signature_item -> signature_item
 
   val force_module_decl : module_decl -> Types.module_declaration
   val force_modtype : modtype -> Types.module_type
+  val force_modtype_decl : modtype_declaration -> Types.modtype_declaration
   val force_signature : signature -> Types.signature
   val force_signature_once : signature -> signature_item list
   val force_signature_item : signature_item -> Types.signature_item

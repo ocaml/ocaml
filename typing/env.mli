@@ -278,7 +278,11 @@ val add_module:
   ?arg:bool -> Ident.t -> module_presence -> module_type -> t -> t
 val add_module_declaration: ?arg:bool -> check:bool -> Ident.t ->
   module_presence -> module_declaration -> t -> t
+val add_module_declaration_lazy: update_summary:bool ->
+  Ident.t -> module_presence -> Subst.Lazy.module_decl -> t -> t
 val add_modtype: Ident.t -> modtype_declaration -> t -> t
+val add_modtype_lazy: update_summary:bool ->
+   Ident.t -> Subst.Lazy.modtype_declaration -> t -> t
 val add_class: Ident.t -> class_declaration -> t -> t
 val add_cltype: Ident.t -> class_type_declaration -> t -> t
 val add_local_type: Path.t -> type_declaration -> t -> t

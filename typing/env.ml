@@ -580,7 +580,7 @@ and module_entry =
   | Mod_persistent
   | Mod_unbound of module_unbound_reason
 
-and modtype_data = modtype_declaration
+and modtype_data = Subst.Lazy.modtype_declaration
 
 and class_data =
   { clda_declaration : class_declaration;
@@ -1016,6 +1016,20 @@ let find_module ~alias path env =
       if alias then md (fc.fcomp_res)
       else md (modtype_of_functor_appl fc p1 p2)
 
+let find_module_lazy path env =
+  match path with
+  | Pident id ->
+      let data = find_ident_module id env in
+      data.mda_declaration
+  | Pdot(p, s) ->
+      let sc = find_structure_components p env in
+      let data = NameMap.find s sc.comp_modules in
+      data.mda_declaration
+  | Papply(p1, p2) ->
+      let fc = find_functor_components p1 env in
+      let md = md (modtype_of_functor_appl fc p1 p2) in
+      Subst.Lazy.of_module_decl md
+
 let find_value_full path env =
   match path with
   | Pident id -> begin
@@ -1036,13 +1050,16 @@ let find_type_full path env =
       NameMap.find s sc.comp_types
   | Papply _ -> raise Not_found
 
-let find_modtype path env =
+let find_modtype_lazy path env =
   match path with
   | Pident id -> IdTbl.find_same id env.modtypes
   | Pdot(p, s) ->
       let sc = find_structure_components p env in
       NameMap.find s sc.comp_modtypes
   | Papply _ -> raise Not_found
+
+let find_modtype path env =
+  Subst.Lazy.force_modtype_decl (find_modtype_lazy path env)
 
 let find_class_full path env =
   match path with
@@ -1276,8 +1293,8 @@ let rec normalize_modtype_path env path =
   expand_modtype_path env path
 
 and expand_modtype_path env path =
-  match (find_modtype path env).mtd_type with
-  | Some (Mty_ident path) -> normalize_modtype_path env path
+  match (find_modtype_lazy path env).mtdl_type with
+  | Some (MtyL_ident path) -> normalize_modtype_path env path
   | _ | exception Not_found -> path
 
 let find_module path env =
@@ -1312,10 +1329,13 @@ let find_type_expansion_opt path env =
       (decl.type_params, body, decl.type_expansion_scope)
   | _ -> raise Not_found
 
-let find_modtype_expansion path env =
-  match (find_modtype path env).mtd_type with
+let find_modtype_expansion_lazy path env =
+  match (find_modtype_lazy path env).mtdl_type with
   | None -> raise Not_found
   | Some mty -> mty
+
+let find_modtype_expansion path env =
+  Subst.Lazy.force_modtype (find_modtype_expansion_lazy path env)
 
 let rec is_functor_arg path env =
   match path with
@@ -1493,14 +1513,14 @@ let rec scrape_alias env sub ?path mty =
         | _ -> assert false (* only [Mty_ident]s in [sub] *)
       in
       begin try
-        scrape_alias env sub (of_modtype (find_modtype_expansion p env)) ?path
+        scrape_alias env sub (find_modtype_expansion_lazy p env) ?path
       with Not_found ->
         mty
       end
   | MtyL_alias path, _ ->
       let path = may_subst Subst.module_path sub path in
       begin try
-        scrape_alias env sub (of_modtype (find_module path env).md_type) ~path
+        scrape_alias env sub ((find_module_lazy path env).mdl_type) ~path
       with Not_found ->
         (*Location.prerr_warning Location.none
           (Warnings.No_cmi_file (Path.name path));*)
@@ -1607,6 +1627,17 @@ let module_declaration_address env id presence md =
   | Mp_absent -> begin
       match md.md_type with
       | Mty_alias path -> Lazy_backtrack.create (ModAlias {env; path})
+      | _ -> assert false
+    end
+  | Mp_present ->
+      Lazy_backtrack.create_forced (Aident id)
+
+let module_declaration_address_lazy env id presence md =
+  match presence with
+  | Mp_absent -> begin
+      let open Subst.Lazy in
+      match md.mdl_type with
+      | MtyL_alias path -> Lazy_backtrack.create (ModAlias {env; path})
       | _ -> assert false
     end
   | Mp_present ->
@@ -1748,18 +1779,18 @@ let rec components_of_module_maker
             let fresh_decl =
               (* the fresh_decl is only going in the local temporary env, and
                  shouldn't be used for anything. So we make the items local. *)
-              may_subst (Subst.modtype_declaration Make_local) freshening_sub
+              may_subst (Subst.Lazy.modtype_decl Make_local) freshening_sub
                 decl
             in
             let final_decl =
               (* The prefixed items get the same scope as [cm_path], which is
                  the prefix. *)
-              Subst.modtype_declaration (Rescope (Path.scope cm_path))
+              Subst.Lazy.modtype_decl (Rescope (Path.scope cm_path))
                 prefixing_sub fresh_decl
             in
             c.comp_modtypes <-
               NameMap.add (Ident.name id) final_decl c.comp_modtypes;
-            env := store_modtype id fresh_decl !env
+            env := store_modtype ~update_summary:false id fresh_decl !env
         | SigL_class(id, decl, _, _) ->
             let decl' = Subst.class_declaration sub decl in
             let addr = next_address () in
@@ -1989,10 +2020,13 @@ and store_module ?(update_summary=true) ~check ~freshening_sub id addr presence 
     modules = IdTbl.add id (Mod_local mda) env.modules;
     summary }
 
-and store_modtype id info env =
+and store_modtype ?(update_summary=true) id info env =
+  let summary =
+    if not update_summary then env.summary
+    else Env_modtype (env.summary, id, Subst.Lazy.force_modtype_decl info) in
   { env with
     modtypes = IdTbl.add id info env.modtypes;
-    summary = Env_modtype(env.summary, id, info) }
+    summary }
 
 and store_class id addr desc env =
   let clda = { clda_declaration = desc; clda_address = addr } in
@@ -2074,8 +2108,17 @@ and add_module_declaration ?(arg=false) ~check id presence md env =
   let env = store_module ~freshening_sub:None ~check id addr presence md env in
   if arg then add_functor_arg id env else env
 
+and add_module_declaration_lazy ~update_summary id presence md env =
+  let addr = module_declaration_address_lazy env id presence md in
+  let env = store_module ~update_summary ~freshening_sub:None
+              ~check:None id addr presence md env in
+  env
+
 and add_modtype id info env =
-  store_modtype id info env
+  store_modtype id (Subst.Lazy.of_modtype_decl info) env
+
+and add_modtype_lazy ~update_summary id info env =
+  store_modtype ~update_summary id info env
 
 and add_class id ty env =
   let addr = class_declaration_address env id ty in
@@ -2120,7 +2163,7 @@ let enter_module_declaration ~scope ?arg s presence md env =
 
 let enter_modtype ~scope name mtd env =
   let id = Ident.create_scoped ~scope name in
-  let env = store_modtype id mtd env in
+  let env = store_modtype id (Subst.Lazy.of_modtype_decl mtd) env in
   (id, env)
 
 let enter_class ~scope name desc env =
@@ -2522,9 +2565,10 @@ let use_type ~use ~loc path tda =
   end
 
 let use_modtype ~use ~loc path desc =
+  let open Subst.Lazy in
   if use then begin
-    mark_modtype_used desc.mtd_uid;
-    Builtin_attributes.check_alerts loc desc.mtd_attributes
+    mark_modtype_used desc.mtdl_uid;
+    Builtin_attributes.check_alerts loc desc.mtdl_attributes
       (Path.name path)
   end
 
@@ -2613,9 +2657,9 @@ let lookup_ident_type ~errors ~use ~loc s env =
 
 let lookup_ident_modtype ~errors ~use ~loc s env =
   match IdTbl.find_name wrap_identity ~mark:use s env.modtypes with
-  | (path, data) as res ->
+  | (path, data) ->
       use_modtype ~use ~loc path data;
-      res
+      (path, Subst.Lazy.force_modtype_decl data)
   | exception Not_found ->
       may_lookup_error errors loc env (Unbound_modtype (Lident s))
 
@@ -2803,7 +2847,7 @@ let lookup_dot_modtype ~errors ~use ~loc l s env =
   | desc ->
       let path = Pdot(p, s) in
       use_modtype ~use ~loc path desc;
-      (path, desc)
+      (path, Subst.Lazy.force_modtype_decl desc)
   | exception Not_found ->
       may_lookup_error errors loc env (Unbound_modtype (Ldot(l, s)))
 
@@ -3192,6 +3236,7 @@ and fold_types f =
     (fun env -> env.types) (fun sc -> sc.comp_types)
     (fun k p tda acc -> f k p tda.tda_declaration acc)
 and fold_modtypes f =
+  let f l path data acc = f l path (Subst.Lazy.force_modtype_decl data) acc in
   find_all wrap_identity
     (fun env -> env.modtypes) (fun sc -> sc.comp_modtypes) f
 and fold_classes f =
