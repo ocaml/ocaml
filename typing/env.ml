@@ -1016,7 +1016,7 @@ let find_module ~alias path env =
       if alias then md (fc.fcomp_res)
       else md (modtype_of_functor_appl fc p1 p2)
 
-let find_module_lazy path env =
+let find_module_lazy ~alias path env =
   match path with
   | Pident id ->
       let data = find_ident_module id env in
@@ -1027,7 +1027,10 @@ let find_module_lazy path env =
       data.mda_declaration
   | Papply(p1, p2) ->
       let fc = find_functor_components p1 env in
-      let md = md (modtype_of_functor_appl fc p1 p2) in
+      let md =
+        if alias then md (fc.fcomp_res)
+        else md (modtype_of_functor_appl fc p1 p2)
+      in
       Subst.Lazy.of_module_decl md
 
 let find_value_full path env =
@@ -1236,8 +1239,8 @@ let rec normalize_module_path lax env = function
       expand_module_path lax env path
 
 and expand_module_path lax env path =
-  try match find_module ~alias:true path env with
-    {md_type=Mty_alias path1} ->
+  try match find_module_lazy ~alias:true path env with
+    {mdl_type=MtyL_alias path1} ->
       let path' = normalize_module_path lax env path1 in
       if lax || !Clflags.transparent_modules then path' else
       let id = Path.head path in
@@ -1299,6 +1302,9 @@ and expand_modtype_path env path =
 
 let find_module path env =
   find_module ~alias:false path env
+
+let find_module_lazy path env =
+  find_module_lazy ~alias:false path env
 
 (* Find the manifest type associated to a type when appropriate:
    - the type should be public or should have a private row,
@@ -1623,16 +1629,6 @@ let class_declaration_address (_ : t) id (_ : class_declaration) =
   Lazy_backtrack.create_forced (Aident id)
 
 let module_declaration_address env id presence md =
-  match presence with
-  | Mp_absent -> begin
-      match md.md_type with
-      | Mty_alias path -> Lazy_backtrack.create (ModAlias {env; path})
-      | _ -> assert false
-    end
-  | Mp_present ->
-      Lazy_backtrack.create_forced (Aident id)
-
-let module_declaration_address_lazy env id presence md =
   match presence with
   | Mp_absent -> begin
       let open Subst.Lazy in
@@ -2103,13 +2099,13 @@ and add_module_declaration ?(arg=false) ~check id presence md env =
     else
       Some (fun s -> Warnings.Unused_module s)
   in
-  let addr = module_declaration_address env id presence md in
   let md = Subst.Lazy.of_module_decl md in
+  let addr = module_declaration_address env id presence md in
   let env = store_module ~freshening_sub:None ~check id addr presence md env in
   if arg then add_functor_arg id env else env
 
 and add_module_declaration_lazy ~update_summary id presence md env =
-  let addr = module_declaration_address_lazy env id presence md in
+  let addr = module_declaration_address env id presence md in
   let env = store_module ~update_summary ~freshening_sub:None
               ~check:None id addr presence md env in
   env
@@ -2659,7 +2655,7 @@ let lookup_ident_modtype ~errors ~use ~loc s env =
   match IdTbl.find_name wrap_identity ~mark:use s env.modtypes with
   | (path, data) ->
       use_modtype ~use ~loc path data;
-      (path, Subst.Lazy.force_modtype_decl data)
+      (path, data)
   | exception Not_found ->
       may_lookup_error errors loc env (Unbound_modtype (Lident s))
 
@@ -2847,7 +2843,7 @@ let lookup_dot_modtype ~errors ~use ~loc l s env =
   | desc ->
       let path = Pdot(p, s) in
       use_modtype ~use ~loc path desc;
-      (path, Subst.Lazy.force_modtype_decl desc)
+      (path, desc)
   | exception Not_found ->
       may_lookup_error errors loc env (Unbound_modtype (Ldot(l, s)))
 
@@ -2931,11 +2927,15 @@ let lookup_type ~errors ~use ~loc lid env =
   let (path, tda) = lookup_type_full ~errors ~use ~loc lid env in
   path, tda.tda_declaration
 
-let lookup_modtype ~errors ~use ~loc lid env =
+let lookup_modtype_lazy ~errors ~use ~loc lid env =
   match lid with
   | Lident s -> lookup_ident_modtype ~errors ~use ~loc s env
   | Ldot(l, s) -> lookup_dot_modtype ~errors ~use ~loc l s env
   | Lapply _ -> assert false
+
+let lookup_modtype ~errors ~use ~loc lid env =
+  let (path, mt) = lookup_modtype_lazy ~errors ~use ~loc lid env in
+  path, Subst.Lazy.force_modtype_decl mt
 
 let lookup_class ~errors ~use ~loc lid env =
   match lid with
@@ -3048,6 +3048,9 @@ let lookup_type ?(use=true) ~loc lid env =
 
 let lookup_modtype ?(use=true) ~loc lid env =
   lookup_modtype ~errors:true ~use ~loc lid env
+
+let lookup_modtype_path ?(use=true) ~loc lid env =
+  fst (lookup_modtype_lazy ~errors:true ~use ~loc lid env)
 
 let lookup_class ?(use=true) ~loc lid env =
   lookup_class ~errors:true ~use ~loc lid env

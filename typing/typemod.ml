@@ -767,8 +767,8 @@ let map_ext fn exts rem =
 let rec approx_modtype env smty =
   match smty.pmty_desc with
     Pmty_ident lid ->
-      let (path, _info) =
-        Env.lookup_modtype ~use:false ~loc:smty.pmty_loc lid.txt env
+      let path =
+        Env.lookup_modtype_path ~use:false ~loc:smty.pmty_loc lid.txt env
       in
       Mty_ident path
   | Pmty_alias lid ->
@@ -809,9 +809,11 @@ let rec approx_modtype env smty =
           | Pwith_module (_, lid') ->
               (* Lookup the module to make sure that it is not recursive.
                  (GPR#1626) *)
-              ignore (Env.lookup_module ~use:false ~loc:lid'.loc lid'.txt env)
+              ignore (Env.lookup_module_path ~use:false ~load:false 
+                        ~loc:lid'.loc lid'.txt env)
           | Pwith_modsubst (_, lid') ->
-              ignore (Env.lookup_module ~use:false ~loc:lid'.loc lid'.txt env))
+              ignore (Env.lookup_module_path ~use:false ~load:false
+                        ~loc:lid'.loc lid'.txt env))
         constraints;
       body
   | Pmty_typeof smod ->
@@ -1262,8 +1264,7 @@ let has_remove_aliases_attribute attr =
 (* Check and translate a module type expression *)
 
 let transl_modtype_longident loc env lid =
-  let (path, _info) = Env.lookup_modtype ~loc lid env in
-  path
+  Env.lookup_modtype_path ~loc lid env
 
 let transl_module_alias loc env lid =
   Env.lookup_module_path ~load:false ~loc lid env

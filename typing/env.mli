@@ -211,6 +211,8 @@ val lookup_cltype:
 
 val lookup_module_path:
   ?use:bool -> loc:Location.t -> load:bool -> Longident.t -> t -> Path.t
+val lookup_modtype_path:
+  ?use:bool -> loc:Location.t -> Longident.t -> t -> Path.t
 
 val lookup_constructor:
   ?use:bool -> loc:Location.t -> constructor_usage -> Longident.t -> t ->
