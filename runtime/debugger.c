@@ -137,11 +137,9 @@ static void open_connection(void)
   dbg_in = caml_open_descriptor_in(dbg_socket);
   dbg_out = caml_open_descriptor_out(dbg_socket);
   /* The code in this file does not bracket channel I/O operations with
-     Lock and Unlock, so fail if those are not no-ops. */
-  if (caml_channel_mutex_lock != NULL ||
-      caml_channel_mutex_unlock != NULL ||
-      caml_channel_mutex_unlock_exn != NULL)
-    caml_fatal_error("debugger does not support channel locks");
+     Lock and Unlock, but this is safe because the debugger only works
+     with single-threaded programs.  The program being debugged
+     will abort when it creates a thread. */
   if (!caml_debugger_in_use) caml_putword(dbg_out, -1); /* first connection */
 #ifdef _WIN32
   caml_putword(dbg_out, _getpid());
