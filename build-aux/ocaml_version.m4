@@ -40,6 +40,7 @@ m4_define([OCAML__VERSION_EXTRA], [dev0-2021-06-03])
 # Development releases, for instance, should use a [+] prefix.
 m4_define([OCAML__VERSION_EXTRA_PREFIX], [+])
 m4_define([OCAML__VERSION_SHORT], [OCAML__VERSION_MAJOR.OCAML__VERSION_MINOR])
+# The OCAML__VERSION below must be in the format specified in stdlib/sys.mli
 m4_define([OCAML__VERSION],
   [m4_do(
     OCAML__VERSION_SHORT.OCAML__VERSION_PATCHLEVEL,
@@ -54,7 +55,15 @@ m4_define([OCAML__VERSION],
 m4_syscmd([cat > VERSION << END_OF_VERSION_FILE
 ]OCAML__VERSION[
 
-# The version string is the first line of this file.
-# It must be in the format described in stdlib/sys.mli
+# Starting with OCaml 4.14, although the version string that appears above is
+# still correct and this file can thus still be used to figure it out,
+# the version itself is actually defined in the build-aux/ocaml_version.m4
+# file (See the OCAML__VERSION* macros there.)
+# To update the present VERSION file:
+# 1. Update build-aux/ocaml_version.m4
+# 2. Run tools/autogen.
+# 3. If you are in a context where version control matters,
+# commit the changes to both build-aux/ocaml_version.m4 and VERSION.
+# The version string must be in the format described in stdlib/sys.mli
 END_OF_VERSION_FILE
 ])
