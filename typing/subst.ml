@@ -417,137 +417,6 @@ let extension_constructor s ext =
   For_copy.with_scope
     (fun copy_scope -> extension_constructor' copy_scope s ext)
 
-type scoping =
-  | Keep
-  | Make_local
-  | Rescope of int
-
-let rename_bound_idents scoping s sg =
-  let rename =
-    let open Ident in
-    match scoping with
-    | Keep -> (fun id -> create_scoped ~scope:(scope id) (name id))
-    | Make_local -> Ident.rename
-    | Rescope scope -> (fun id -> create_scoped ~scope (name id))
-  in
-  let rec rename_bound_idents s sg = function
-    | [] -> sg, s
-    | Sig_type(id, td, rs, vis) :: rest ->
-        let id' = rename id in
-        rename_bound_idents
-          (add_type id (Pident id') s)
-          (Sig_type(id', td, rs, vis) :: sg)
-          rest
-    | Sig_module(id, pres, md, rs, vis) :: rest ->
-        let id' = rename id in
-        rename_bound_idents
-          (add_module id (Pident id') s)
-          (Sig_module (id', pres, md, rs, vis) :: sg)
-          rest
-    | Sig_modtype(id, mtd, vis) :: rest ->
-        let id' = rename id in
-        rename_bound_idents
-          (add_modtype id (Mty_ident(Pident id')) s)
-          (Sig_modtype(id', mtd, vis) :: sg)
-          rest
-    | Sig_class(id, cd, rs, vis) :: rest ->
-        (* cheat and pretend they are types cf. PR#6650 *)
-        let id' = rename id in
-        rename_bound_idents
-          (add_type id (Pident id') s)
-          (Sig_class(id', cd, rs, vis) :: sg)
-          rest
-    | Sig_class_type(id, ctd, rs, vis) :: rest ->
-        (* cheat and pretend they are types cf. PR#6650 *)
-        let id' = rename id in
-        rename_bound_idents
-          (add_type id (Pident id') s)
-          (Sig_class_type(id', ctd, rs, vis) :: sg)
-          rest
-    | Sig_value(id, vd, vis) :: rest ->
-        (* scope doesn't matter for value identifiers. *)
-        let id' = Ident.rename id in
-        rename_bound_idents s (Sig_value(id', vd, vis) :: sg) rest
-    | Sig_typext(id, ec, es, vis) :: rest ->
-        let id' = rename id in
-        rename_bound_idents s (Sig_typext(id',ec,es,vis) :: sg) rest
-  in
-  rename_bound_idents s [] sg
-
-let rec modtype scoping s = function
-    Mty_ident p as mty ->
-      begin match Path.Map.find p s.modtypes with
-       | mty -> mty
-       | exception Not_found ->
-          begin match p with
-          | Pident _ -> mty
-          | Pdot(p, n) ->
-             Mty_ident(Pdot(module_path s p, n))
-          | Papply _ ->
-             fatal_error "Subst.modtype"
-          end
-      end
-  | Mty_signature sg ->
-      Mty_signature(signature scoping s sg)
-  | Mty_functor(Unit, res) ->
-      Mty_functor(Unit, modtype scoping s res)
-  | Mty_functor(Named (None, arg), res) ->
-      Mty_functor(Named (None, (modtype scoping s) arg), modtype scoping s res)
-  | Mty_functor(Named (Some id, arg), res) ->
-      let id' = Ident.rename id in
-      Mty_functor(Named (Some id', (modtype scoping s) arg),
-                  modtype scoping (add_module id (Pident id') s) res)
-  | Mty_alias p ->
-      Mty_alias (module_path s p)
-
-and signature scoping s sg =
-  (* Components of signature may be mutually recursive (e.g. type declarations
-     or class and type declarations), so first build global renaming
-     substitution... *)
-  let (sg', s') = rename_bound_idents scoping s sg in
-  (* ... then apply it to each signature component in turn *)
-  For_copy.with_scope (fun copy_scope ->
-    List.rev_map (signature_item' copy_scope scoping s') sg'
-  )
-
-
-and signature_item' copy_scope scoping s comp =
-  match comp with
-    Sig_value(id, d, vis) ->
-      Sig_value(id, value_description' copy_scope s d, vis)
-  | Sig_type(id, d, rs, vis) ->
-      Sig_type(id, type_declaration' copy_scope s d, rs, vis)
-  | Sig_typext(id, ext, es, vis) ->
-      Sig_typext(id, extension_constructor' copy_scope s ext, es, vis)
-  | Sig_module(id, pres, d, rs, vis) ->
-      Sig_module(id, pres, module_declaration scoping s d, rs, vis)
-  | Sig_modtype(id, d, vis) ->
-      Sig_modtype(id, modtype_declaration scoping s d, vis)
-  | Sig_class(id, d, rs, vis) ->
-      Sig_class(id, class_declaration' copy_scope s d, rs, vis)
-  | Sig_class_type(id, d, rs, vis) ->
-      Sig_class_type(id, cltype_declaration' copy_scope s d, rs, vis)
-
-and signature_item scoping s comp =
-  For_copy.with_scope
-    (fun copy_scope -> signature_item' copy_scope scoping s comp)
-
-and module_declaration scoping s decl =
-  {
-    md_type = modtype scoping s decl.md_type;
-    md_attributes = attrs s decl.md_attributes;
-    md_loc = loc s decl.md_loc;
-    md_uid = decl.md_uid;
-  }
-
-and modtype_declaration scoping s decl  =
-  {
-    mtd_type = Option.map (modtype scoping s) decl.mtd_type;
-    mtd_attributes = attrs s decl.mtd_attributes;
-    mtd_loc = loc s decl.mtd_loc;
-    mtd_uid = decl.mtd_uid;
-  }
-
 
 (* For every binding k |-> d of m1, add k |-> f d to m2
    and return resulting merged map. *)
@@ -568,13 +437,307 @@ let type_replacement s = function
      let body = typexp copy_scope s body in
      Type_function { params; body })
 
+type scoping =
+  | Keep
+  | Make_local
+  | Rescope of int
+
+module Lazy_types = struct
+
+  type module_decl =
+    {
+      mdl_type: modtype;
+      mdl_attributes: Parsetree.attributes;
+      mdl_loc: Location.t;
+      mdl_uid: Uid.t;
+    }
+  
+  and modtype =
+    | MtyL_ident of Path.t
+    | MtyL_signature of signature
+    | MtyL_functor of functor_parameter * modtype
+    | MtyL_alias of Path.t
+  
+  
+  and signature' =
+    | S_eager of Types.signature
+    | S_lazy of signature_item list
+  
+  and signature =
+    (scoping * t * signature', signature') Lazy_backtrack.t
+  
+  and signature_item =
+      SigL_value of Ident.t * value_description * visibility
+    | SigL_type of Ident.t * type_declaration * rec_status * visibility
+    | SigL_typext of Ident.t * extension_constructor * ext_status * visibility
+    | SigL_module of
+        Ident.t * module_presence * module_decl * rec_status * visibility
+    | SigL_modtype of Ident.t * modtype_declaration * visibility (* FIXME *)
+    | SigL_class of Ident.t * class_declaration * rec_status * visibility
+    | SigL_class_type of Ident.t * class_type_declaration * rec_status * visibility
+  
+  and functor_parameter =
+    | Unit
+    | Named of Ident.t option * modtype
+
+end
+open Lazy_types
+
+let rename_bound_idents scoping s sg =
+  let rename =
+    let open Ident in
+    match scoping with
+    | Keep -> (fun id -> create_scoped ~scope:(scope id) (name id))
+    | Make_local -> Ident.rename
+    | Rescope scope -> (fun id -> create_scoped ~scope (name id))
+  in
+  let rec rename_bound_idents s sg = function
+    | [] -> sg, s
+    | SigL_type(id, td, rs, vis) :: rest ->
+        let id' = rename id in
+        rename_bound_idents
+          (add_type id (Pident id') s)
+          (SigL_type(id', td, rs, vis) :: sg)
+          rest
+    | SigL_module(id, pres, md, rs, vis) :: rest ->
+        let id' = rename id in
+        rename_bound_idents
+          (add_module id (Pident id') s)
+          (SigL_module (id', pres, md, rs, vis) :: sg)
+          rest
+    | SigL_modtype(id, mtd, vis) :: rest ->
+        let id' = rename id in
+        rename_bound_idents
+          (add_modtype id (Mty_ident(Pident id')) s)
+          (SigL_modtype(id', mtd, vis) :: sg)
+          rest
+    | SigL_class(id, cd, rs, vis) :: rest ->
+        (* cheat and pretend they are types cf. PR#6650 *)
+        let id' = rename id in
+        rename_bound_idents
+          (add_type id (Pident id') s)
+          (SigL_class(id', cd, rs, vis) :: sg)
+          rest
+    | SigL_class_type(id, ctd, rs, vis) :: rest ->
+        (* cheat and pretend they are types cf. PR#6650 *)
+        let id' = rename id in
+        rename_bound_idents
+          (add_type id (Pident id') s)
+          (SigL_class_type(id', ctd, rs, vis) :: sg)
+          rest
+    | SigL_value(id, vd, vis) :: rest ->
+        (* scope doesn't matter for value identifiers. *)
+        let id' = Ident.rename id in
+        rename_bound_idents s (SigL_value(id', vd, vis) :: sg) rest
+    | SigL_typext(id, ec, es, vis) :: rest ->
+        let id' = rename id in
+        rename_bound_idents s (SigL_typext(id',ec,es,vis) :: sg) rest
+  in
+  rename_bound_idents s [] sg
+
+let rec lazy_module_decl md =
+  { mdl_type = lazy_modtype md.md_type;
+    mdl_attributes = md.md_attributes;
+    mdl_loc = md.md_loc;
+    mdl_uid = md.md_uid }
+
+and subst_lazy_module_decl scoping s md =
+  let mdl_type = subst_lazy_modtype scoping s md.mdl_type in
+  { mdl_type;
+    mdl_attributes = md.mdl_attributes;
+    mdl_loc = md.mdl_loc;
+    mdl_uid = md.mdl_uid }
+
+and force_module_decl md =
+  let md_type = force_modtype md.mdl_type in
+  { md_type;
+    md_attributes = md.mdl_attributes;
+    md_loc = md.mdl_loc;
+    md_uid = md.mdl_uid }
+
+and lazy_modtype = function
+  | Mty_ident p -> MtyL_ident p
+  | Mty_signature sg -> MtyL_signature (Lazy_backtrack.create_forced (S_eager sg))
+  | Mty_functor (Unit, mty) -> MtyL_functor (Unit, lazy_modtype mty)
+  | Mty_functor (Named (id, arg), res) ->
+     MtyL_functor (Named (id, lazy_modtype arg), lazy_modtype res)
+  | Mty_alias p -> MtyL_alias p
+
+and subst_lazy_modtype scoping s = function
+  | MtyL_ident p when scoping = Keep && s == identity -> MtyL_ident p
+  | MtyL_ident p ->
+      begin match Path.Map.find p s.modtypes with
+       | mty -> subst_lazy_modtype Keep identity (lazy_modtype mty)
+       | exception Not_found ->
+          begin match p with
+          | Pident _ -> MtyL_ident p
+          | Pdot(p, n) ->
+             MtyL_ident(Pdot(module_path s p, n))
+          | Papply _ ->
+             fatal_error "Subst.modtype"
+          end
+      end
+  | MtyL_signature sg ->
+      MtyL_signature(subst_lazy_signature scoping s sg)
+  | MtyL_functor(Unit, res) ->
+      MtyL_functor(Unit, subst_lazy_modtype scoping s res)
+  | MtyL_functor(Named (None, arg), res) ->
+      MtyL_functor(Named (None, (subst_lazy_modtype scoping s) arg),
+                   subst_lazy_modtype scoping s res)
+  | MtyL_functor(Named (Some id, arg), res) ->
+      let id' = Ident.rename id in
+      MtyL_functor(Named (Some id', (subst_lazy_modtype scoping s) arg),
+                  subst_lazy_modtype scoping (add_module id (Pident id') s) res)
+  | MtyL_alias p ->
+      MtyL_alias (module_path s p)
+
+and force_modtype = function
+  | MtyL_ident p -> Mty_ident p
+  | MtyL_signature sg -> Mty_signature (force_signature sg)
+  | MtyL_functor (param, res) ->
+     let param : Types.functor_parameter =
+       match param with
+       | Unit -> Unit
+       | Named (id, mty) -> Named (id, force_modtype mty) in
+     Mty_functor (param, force_modtype res)
+  | MtyL_alias p -> Mty_alias p
+
+and subst_lazy_signature scoping s sg =
+  match Lazy_backtrack.get_arg sg with
+  | Some (scoping', s', sg) ->
+     let scoping =
+       match scoping', scoping with
+       | sc, Keep -> sc
+       | _, (Make_local|Rescope _) -> scoping
+     in
+     let s = compose s' s in
+     Lazy_backtrack.create (scoping, s, sg)
+  | None ->
+     let sg = Lazy_backtrack.force (fun _ -> assert false) sg in
+     Lazy_backtrack.create (scoping, s, sg)
+
+and force_signature sg =
+  List.map force_signature_item (force_signature_once sg)
+
+and force_signature_once sg =
+  lazy_signature' (Lazy_backtrack.force force_signature_once' sg)
+
+and lazy_signature' = function
+  | S_lazy sg -> sg
+  | S_eager sg -> List.map lazy_signature_item sg
+
+and force_signature_once' (scoping, s, sg) =
+  let sg = lazy_signature' sg in
+  (* Components of signature may be mutually recursive (e.g. type declarations
+     or class and type declarations), so first build global renaming
+     substitution... *)
+  let (sg', s') = rename_bound_idents scoping s sg in
+  (* ... then apply it to each signature component in turn *)
+  For_copy.with_scope (fun copy_scope ->
+    S_lazy (List.rev_map (subst_lazy_signature_item' copy_scope scoping s') sg')
+  )
+
+and lazy_signature_item = function
+  | Sig_value(id, d, vis) ->
+     SigL_value(id, d, vis)
+  | Sig_type(id, d, rs, vis) ->
+     SigL_type(id, d, rs, vis)
+  | Sig_typext(id, ext, es, vis) ->
+     SigL_typext(id, ext, es, vis)
+  | Sig_module(id, res, d, rs, vis) ->
+     SigL_module(id, res, lazy_module_decl d, rs, vis)
+  | Sig_modtype(id, d, vis) ->
+     SigL_modtype(id, d, vis)
+  | Sig_class(id, d, rs, vis) ->
+     SigL_class(id, d, rs, vis)
+  | Sig_class_type(id, d, rs, vis) ->
+     SigL_class_type(id, d, rs, vis)
+
+and subst_lazy_signature_item' copy_scope scoping s comp =
+  match comp with
+    SigL_value(id, d, vis) ->
+      SigL_value(id, value_description' copy_scope s d, vis)
+  | SigL_type(id, d, rs, vis) ->
+      SigL_type(id, type_declaration' copy_scope s d, rs, vis)
+  | SigL_typext(id, ext, es, vis) ->
+      SigL_typext(id, extension_constructor' copy_scope s ext, es, vis)
+  | SigL_module(id, pres, d, rs, vis) ->
+      SigL_module(id, pres, subst_lazy_module_decl scoping s d, rs, vis)
+  | SigL_modtype(id, d, vis) ->
+      SigL_modtype(id, modtype_declaration scoping s d, vis)
+  | SigL_class(id, d, rs, vis) ->
+      SigL_class(id, class_declaration' copy_scope s d, rs, vis)
+  | SigL_class_type(id, d, rs, vis) ->
+      SigL_class_type(id, cltype_declaration' copy_scope s d, rs, vis)
+
+and force_signature_item = function
+  | SigL_value(id, vd, vis) -> Sig_value(id, vd, vis)
+  | SigL_type(id, d, rs, vis) -> Sig_type(id, d, rs, vis)
+  | SigL_typext(id, ext, es, vis) -> Sig_typext(id, ext, es, vis)
+  | SigL_module(id, pres, d, rs, vis) ->
+     Sig_module(id, pres, force_module_decl d, rs, vis)
+  | SigL_modtype(id, d, vis) ->
+     Sig_modtype (id, d, vis)
+  | SigL_class(id, d, rs, vis) -> Sig_class(id, d, rs, vis)
+  | SigL_class_type(id, d, rs, vis) -> Sig_class_type(id, d, rs, vis)
+
+(* FIXME make these lazy too *)
+and modtype_declaration scoping s decl  =
+  {
+    mtd_type = Option.map (modtype scoping s) decl.mtd_type;
+    mtd_attributes = attrs s decl.mtd_attributes;
+    mtd_loc = loc s decl.mtd_loc;
+    mtd_uid = decl.mtd_uid;
+  }
+and modtype scoping s t =
+  t |> lazy_modtype |> subst_lazy_modtype scoping s |> force_modtype
+
 (* Composition of substitutions:
      apply (compose s1 s2) x = apply s2 (apply s1 x) *)
 
-let compose s1 s2 =
+and compose s1 s2 =
   { types = merge_path_maps (type_replacement s2) s1.types s2.types;
     modules = merge_path_maps (module_path s2) s1.modules s2.modules;
     modtypes = merge_path_maps (modtype Keep s2) s1.modtypes s2.modtypes;
     for_saving = s1.for_saving || s2.for_saving;
     loc = keep_latest_loc s1.loc s2.loc;
   }
+
+
+let subst_lazy_signature_item scoping s comp =
+  For_copy.with_scope
+    (fun copy_scope -> subst_lazy_signature_item' copy_scope scoping s comp)
+
+let module_declaration scoping s decl =
+  {
+    md_type = modtype scoping s decl.md_type;
+    md_attributes = attrs s decl.md_attributes;
+    md_loc = loc s decl.md_loc;
+    md_uid = decl.md_uid;
+  }
+
+module Lazy = struct
+  include Lazy_types
+
+  let of_module_decl = lazy_module_decl
+  let of_modtype = lazy_modtype
+  let of_signature sg = Lazy_backtrack.create_forced (S_eager sg)
+  let of_signature_item = lazy_signature_item
+
+  let module_decl = subst_lazy_module_decl
+  let modtype = subst_lazy_modtype
+  let signature = subst_lazy_signature
+  let signature_item = subst_lazy_signature_item
+
+  let force_module_decl = force_module_decl
+  let force_modtype = force_modtype
+  let force_signature = force_signature
+  let force_signature_once = force_signature_once
+  let force_signature_item = force_signature_item
+end
+
+let signature sc s sg =
+  Lazy.(sg |> of_signature |> signature sc s |> force_signature)
+
+let signature_item sc s comp =
+  Lazy.(comp|> of_signature_item |> signature_item sc s |> force_signature_item)

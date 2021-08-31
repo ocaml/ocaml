@@ -87,3 +87,53 @@ val compose: t -> t -> t
 (* A forward reference to be filled in ctype.ml. *)
 val ctype_apply_env_empty:
   (type_expr list -> type_expr -> type_expr list -> type_expr) ref
+
+
+module Lazy : sig
+  type module_decl =
+    {
+      mdl_type: modtype;
+      mdl_attributes: Parsetree.attributes;
+      mdl_loc: Location.t;
+      mdl_uid: Uid.t;
+    }
+
+  and modtype =
+    | MtyL_ident of Path.t
+    | MtyL_signature of signature
+    | MtyL_functor of functor_parameter * modtype
+    | MtyL_alias of Path.t
+
+  and signature
+
+  and signature_item =
+      SigL_value of Ident.t * value_description * visibility
+    | SigL_type of Ident.t * type_declaration * rec_status * visibility
+    | SigL_typext of Ident.t * extension_constructor * ext_status * visibility
+    | SigL_module of
+        Ident.t * module_presence * module_decl * rec_status * visibility
+    | SigL_modtype of Ident.t * modtype_declaration * visibility (* FIXME *)
+    | SigL_class of Ident.t * class_declaration * rec_status * visibility
+    | SigL_class_type of Ident.t * class_type_declaration * rec_status * visibility
+
+  and functor_parameter =
+    | Unit
+    | Named of Ident.t option * modtype
+
+
+  val of_module_decl : Types.module_declaration -> module_decl
+  val of_modtype : Types.module_type -> modtype
+  val of_signature : Types.signature -> signature
+  val of_signature_item : Types.signature_item -> signature_item
+
+  val module_decl : scoping -> t -> module_decl -> module_decl
+  val modtype : scoping -> t -> modtype -> modtype
+  val signature : scoping -> t -> signature -> signature
+  val signature_item : scoping -> t -> signature_item -> signature_item
+
+  val force_module_decl : module_decl -> Types.module_declaration
+  val force_modtype : modtype -> Types.module_type
+  val force_signature : signature -> Types.signature
+  val force_signature_once : signature -> signature_item list
+  val force_signature_item : signature_item -> Types.signature_item
+end
