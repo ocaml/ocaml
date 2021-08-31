@@ -1150,12 +1150,12 @@ distclean: clean
 	      boot/flexdll_*.o boot/flexdll_*.obj \
 	      boot/*.cm* boot/libcamlrun.a boot/libcamlrun.lib boot/ocamlc.opt
 	rm -f Makefile.config Makefile.build_config
-	rm -f runtime/caml/m.h runtime/caml/s.h
 	rm -rf autom4te.cache flexdll-sources
 	rm -f config.log config.status libtool
 	rm -f tools/eventlog_metadata
 	rm -f tools/*.bak
 	rm -f testsuite/_log*
+	$(MAKE) -C runtime distclean
 	$(MAKE) -C stdlib distclean
 
 include .depend

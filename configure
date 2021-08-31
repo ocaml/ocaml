@@ -2959,6 +2959,22 @@ ac_config_headers="$ac_config_headers runtime/caml/m.h"
 
 ac_config_headers="$ac_config_headers runtime/caml/s.h"
 
+ac_config_headers="$ac_config_headers runtime/caml/version.h"
+
+
+# Definitions related to the version of OCaml
+$as_echo "#define OCAML_VERSION_MAJOR 4" >>confdefs.h
+
+$as_echo "#define OCAML_VERSION_MINOR 14" >>confdefs.h
+
+$as_echo "#define OCAML_VERSION_PATCHLEVEL 0" >>confdefs.h
+
+$as_echo "#define OCAML_VERSION_ADDITIONAL \"dev0-2021-06-03\"" >>confdefs.h
+
+$as_echo "#define OCAML_VERSION 41400" >>confdefs.h
+
+$as_echo "#define OCAML_VERSION_STRING \"4.14.0+dev0-2021-06-03\"" >>confdefs.h
+
 
 # Checks for system types
 
@@ -18823,6 +18839,7 @@ do
     "tools/eventlog_metadata") CONFIG_FILES="$CONFIG_FILES tools/eventlog_metadata" ;;
     "runtime/caml/m.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/m.h" ;;
     "runtime/caml/s.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/s.h" ;;
+    "runtime/caml/version.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/version.h" ;;
     "libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
