@@ -192,10 +192,11 @@ type process_status = Unix.process_status =
            the argument is the return code. *)
   | WSIGNALED of int
         (** The process was killed by a signal;
-           the argument is the signal number. *)
+           the argument is the `standard signal number'.
+           See below for more information. *)
   | WSTOPPED of int
         (** The process was stopped by a signal; the argument is the
-           signal number. *)
+           `standard signal number'. See below for more information. *)
 (** The termination status of a process.  See module {!Sys} for the
     definitions of the standard signal numbers.  Note that they are
     not the numbers used by the OS. *)
