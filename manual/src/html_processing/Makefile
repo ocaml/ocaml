@@ -50,24 +50,25 @@ $(WEBDIRCOMP)/%.js: js/%.js | $(WEBDIRCOMP)
 
 js: $(JS_FILES)
 
+CURL = curl -s
 # download images for local use
 SEARCH := search_icon.svg
 $(WEBDIRAPI)/search_icon.svg: | $(WEBDIRAPI)
-	curl "https://ocaml.org/img/search.svg" > $(WEBDIRAPI)/$(SEARCH)
+	$(CURL) "https://ocaml.org/img/search.svg" > $(WEBDIRAPI)/$(SEARCH)
 
 $(WEBDIRCOMP)/%: $(WEBDIRAPI)/% | $(WEBDIRCOMP)
 	cp $< $@
 
-$(WEBDIRMAIN)/%: $(WEBDIRAPI/% | $(WEBDIRAPI)
+$(WEBDIRMAN)/%: $(WEBDIRAPI)/% | $(WEBDIRMAN)
 	cp $< $@
 
 LOGO := colour-logo.svg
 $(WEBDIRAPI)/colour-logo.svg: | $(WEBDIRAPI) $(WEBDIRMAN) $(WEBDIRCOMP)
-	curl "https://raw.githubusercontent.com/ocaml/ocaml-logo/master/Colour/SVG/colour-logo.svg" > $(WEBDIRAPI)/$(LOGO)
+	$(CURL) "https://raw.githubusercontent.com/ocaml/ocaml-logo/master/Colour/SVG/colour-logo.svg" > $(WEBDIRAPI)/$(LOGO)
 
 ICON := favicon.ico
 $(WEBDIRAPI)/favicon.ico: | $(WEBDIRAPI) $(WEBDIRMAN) $(WEBDIRCOMP)
-	curl "https://raw.githubusercontent.com/ocaml/ocaml-logo/master/Colour/Favicon/32x32.ico" > $(WEBDIRAPI)/$(ICON)
+	$(CURL) "https://raw.githubusercontent.com/ocaml/ocaml-logo/master/Colour/Favicon/32x32.ico" > $(WEBDIRAPI)/$(ICON)
 
 IMG_FILES0 := colour-logo.svg
 IMG_FILES := $(addprefix $(WEBDIRAPI)/, $(IMG_FILES0)) $(addprefix $(WEBDIRCOMP)/, $(IMG_FILES0)) $(addprefix $(WEBDIRMAN)/, $(IMG_FILES0)) 
