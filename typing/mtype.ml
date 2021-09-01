@@ -94,10 +94,12 @@ and strengthen_lazy_sig' ~aliasable env sg p =
   | SigL_modtype(id, decl, vis) :: rem ->
       let newdecl =
         match decl.mtdl_type with
-          None ->
-            {decl with mtdl_type = Some(MtyL_ident(Pdot(p,Ident.name id)))}
-        | Some _ ->
+        | Some _ when not aliasable ->
+            (* [not alisable] condition needed because of recursive modules.
+               See [Typemod.check_recmodule_inclusion]. *)
             decl
+        | _ ->
+            {decl with mtdl_type = Some(MtyL_ident(Pdot(p,Ident.name id)))}
       in
       let env = Env.add_modtype_lazy ~update_summary:false id decl env in
       SigL_modtype(id, newdecl, vis) ::
