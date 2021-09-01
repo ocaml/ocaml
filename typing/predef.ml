@@ -195,8 +195,11 @@ let common_initial_env add_type add_extension empty_env =
   in
   empty_env
   (* Predefined types - alphabetical order *)
-  |> add_type1 ident_array ~variance:Variance.full ~separability:Separability.Ind
-  |> add_type ident_bool ~immediate:Always
+  |> add_type1 ident_array
+       ~variance:Variance.full
+       ~separability:Separability.Ind
+  |> add_type ident_bool
+       ~immediate:Always
        ~kind:(Type_variant([cstr ident_false []; cstr ident_true []],
                            Variant_regular))
   |> add_type ident_char ~immediate:Always
@@ -207,21 +210,25 @@ let common_initial_env add_type add_extension empty_env =
   |> add_type ident_int ~immediate:Always
   |> add_type ident_int32
   |> add_type ident_int64
-  |> add_type1 ident_lazy_t ~variance:Variance.covariant
+  |> add_type1 ident_lazy_t
+       ~variance:Variance.covariant
        ~separability:Separability.Ind
-  |> add_type1 ident_list ~variance:Variance.covariant
+  |> add_type1 ident_list
+       ~variance:Variance.covariant
        ~separability:Separability.Ind
        ~kind:(fun tvar ->
          Type_variant([cstr ident_nil []; cstr ident_cons [tvar; type_list tvar]],
                       Variant_regular))
   |> add_type ident_nativeint
-  |> add_type1 ident_option ~variance:Variance.covariant
+  |> add_type1 ident_option
+       ~variance:Variance.covariant
        ~separability:Separability.Ind
        ~kind:(fun tvar ->
          Type_variant([cstr ident_none []; cstr ident_some [tvar]],
                       Variant_regular))
   |> add_type ident_string
-  |> add_type ident_unit ~immediate:Always
+  |> add_type ident_unit
+       ~immediate:Always
        ~kind:(Type_variant([cstr ident_void []], Variant_regular))
   (* Predefined exceptions - alphabetical order *)
   |> add_extension ident_assert_failure
