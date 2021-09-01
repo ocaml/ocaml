@@ -17,6 +17,8 @@
    that use deprecated functions to preserve legacy behavior.
    It overrides -w @3 given on the command line. *)
 
+external str_initialize : unit -> unit = "caml_str_initialize"
+
 (** String utilities *)
 
 let string_before s n = String.sub s 0 n
@@ -26,6 +28,8 @@ let string_after s n = String.sub s n (String.length s - n)
 let first_chars s n = String.sub s 0 n
 
 let last_chars s n = String.sub s (String.length s - n) n
+
+let () = str_initialize ()
 
 (** Representation of character sets **)
 
