@@ -155,7 +155,7 @@ let word_addressed = false
 
 (* Calling conventions *)
 
-let size_domainstate_args = 64 * 8
+let size_domainstate_args = 64 * size_int
 
 let calling_conventions first_int last_int first_float last_float
                         make_stack first_stack

@@ -109,7 +109,7 @@ let stack_slot slot ty =
 
 (* Calling conventions *)
 
-let size_domainstate_args = 64 * 8
+let size_domainstate_args = 64 * size_int
 
 let loc_int last_int make_stack int ofs =
   if !int <= last_int then begin
