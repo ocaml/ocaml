@@ -952,14 +952,16 @@ end) = struct
 
   (* warn if there are several distinct candidates in scope *)
   let warn_if_ambiguous warn lid env lbl rest =
-    Printtyp.Conflicts.reset ();
-    let paths = ambiguous_types env lbl rest in
-    let expansion =
-      Format.asprintf "%t" Printtyp.Conflicts.print_explanations in
-    if paths <> [] then
-      warn lid.loc
-        (Warnings.Ambiguous_name ([Longident.last lid.txt],
-                                  paths, false, expansion))
+    if Warnings.is_active (Ambiguous_name ([],[],false,"")) then begin
+      Printtyp.Conflicts.reset ();
+      let paths = ambiguous_types env lbl rest in
+      let expansion =
+        Format.asprintf "%t" Printtyp.Conflicts.print_explanations in
+      if paths <> [] then
+        warn lid.loc
+          (Warnings.Ambiguous_name ([Longident.last lid.txt],
+                                    paths, false, expansion))
+    end
 
   (* a non-principal type was used for disambiguation *)
   let warn_non_principal warn lid =
@@ -970,11 +972,13 @@ end) = struct
 
   (* we selected a name out of the lexical scope *)
   let warn_out_of_scope warn lid env tpath =
-    let path_s =
-      Printtyp.wrap_printing_env ~error:true env
-        (fun () -> Printtyp.string_of_path tpath) in
-    warn lid.loc
-      (Warnings.Name_out_of_scope (path_s, [Longident.last lid.txt], false))
+    if Warnings.is_active (Name_out_of_scope ("",[],false)) then begin
+      let path_s =
+        Printtyp.wrap_printing_env ~error:true env
+          (fun () -> Printtyp.string_of_path tpath) in
+      warn lid.loc
+        (Warnings.Name_out_of_scope (path_s, [Longident.last lid.txt], false))
+    end
 
   (* warn if the selected name is not the last introduced in scope
      -- in these cases the resolution is different from pre-disambiguation OCaml
@@ -4755,6 +4759,7 @@ and type_statement ?explanation env sexp =
 
 and type_unpacks ?(in_function : (Location.t * type_expr) option)
     env (unpacks : to_unpack list) sbody expected_ty =
+  if unpacks = [] then type_expect ?in_function env sbody expected_ty else
   let ty = newvar() in
   (* remember original level *)
   let extended_env, tunpacks =
