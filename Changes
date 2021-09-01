@@ -68,6 +68,13 @@ Working version
 - #10565: Toplevel value printing: truncate strings only after 8 bytes.
   (Wiktor Kuchta, review by Xavier Leroy)
 
+### Debugging:
+
+- #10517, #10594: when running ocamldebug on a program linked with the
+  threads library, don't fail immediately; instead, allow debugging
+  until the program creates a thread for the first time, then fail cleanly.
+  (Xavier Leroy, report by @anentropic, review by Gabriel Scherer)
+
 ### Manual and documentation:
 
 - #7812, #10475: reworded the description of the behaviors of
