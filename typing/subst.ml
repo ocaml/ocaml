@@ -713,6 +713,8 @@ and modtype scoping s t =
      apply (compose s1 s2) x = apply s2 (apply s1 x) *)
 
 and compose s1 s2 =
+  if s1 == identity then s2 else
+  if s2 == identity then s1 else
   { types = merge_path_maps (type_replacement s2) s1.types s2.types;
     modules = merge_path_maps (module_path s2) s1.modules s2.modules;
     modtypes = merge_path_maps (modtype Keep s2) s1.modtypes s2.modtypes;
