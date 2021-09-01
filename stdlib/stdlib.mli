@@ -1062,6 +1062,7 @@ val set_binary_mode_out : out_channel -> bool -> unit
    This function has no effect under operating systems that
    do not distinguish between text mode and binary mode. *)
 
+
 (** {2 General input functions} *)
 
 val open_in : string -> in_channel
