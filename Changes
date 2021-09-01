@@ -47,7 +47,7 @@ Working version
 
 - #10538: add Out_channel.set_buffering_mode to allow changing the buffering
   mode of output channels.
-  (Nicolás Ojeda Bär, review by John Whitington and Xavier Leroy)
+  (Nicolás Ojeda Bär, review by John Whitington, David Allsopp and Xavier Leroy)
 
 ### Other libraries:
 
