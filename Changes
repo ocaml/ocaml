@@ -603,6 +603,10 @@ OCaml 4.13.0
   optional libraries have been disabled.
   (David Allsopp, report by Yuri Victorovich review by Florian Angeletti)
 
+- #10593: Fix untyping of patterns without named existential quantifiers. This
+  bug was only present in the beta version of OCaml 4.13.0.
+  (Ulysse Gérard, review by Florian Angeletti)
+
 OCaml 4.12, maintenance version
 -------------------------------
 
