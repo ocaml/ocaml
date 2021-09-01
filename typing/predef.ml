@@ -193,6 +193,7 @@ let common_initial_env add_type add_extension empty_env =
         ext_uid = Uid.of_predef_id id;
       }
   in
+  let variant constrs = Type_variant (constrs, Variant_regular) in
   empty_env
   (* Predefined types - alphabetical order *)
   |> add_type1 ident_array
@@ -200,8 +201,7 @@ let common_initial_env add_type add_extension empty_env =
        ~separability:Separability.Ind
   |> add_type ident_bool
        ~immediate:Always
-       ~kind:(Type_variant([cstr ident_false []; cstr ident_true []],
-                           Variant_regular))
+       ~kind:(variant [cstr ident_false []; cstr ident_true []])
   |> add_type ident_char ~immediate:Always
   |> add_type ident_exn ~kind:Type_open
   |> add_type ident_extension_constructor
@@ -217,19 +217,17 @@ let common_initial_env add_type add_extension empty_env =
        ~variance:Variance.covariant
        ~separability:Separability.Ind
        ~kind:(fun tvar ->
-         Type_variant([cstr ident_nil []; cstr ident_cons [tvar; type_list tvar]],
-                      Variant_regular))
+         variant [cstr ident_nil []; cstr ident_cons [tvar; type_list tvar]])
   |> add_type ident_nativeint
   |> add_type1 ident_option
        ~variance:Variance.covariant
        ~separability:Separability.Ind
        ~kind:(fun tvar ->
-         Type_variant([cstr ident_none []; cstr ident_some [tvar]],
-                      Variant_regular))
+         variant [cstr ident_none []; cstr ident_some [tvar]])
   |> add_type ident_string
   |> add_type ident_unit
        ~immediate:Always
-       ~kind:(Type_variant([cstr ident_void []], Variant_regular))
+       ~kind:(variant [cstr ident_void []])
   (* Predefined exceptions - alphabetical order *)
   |> add_extension ident_assert_failure
        [newgenty (Ttuple[type_string; type_int; type_int])]
