@@ -151,8 +151,14 @@ let calling_conventions
   done;
   (loc, Misc.align (max 0 !ofs) 16) (* Keep stack 16-aligned. *)
 
-let incoming ofs = Incoming ofs
-let outgoing ofs = Outgoing ofs
+let incoming ofs =
+  if ofs >= 0
+  then Incoming ofs
+  else Domainstate (ofs + size_domainstate_args)
+let outgoing ofs =
+  if ofs >= 0
+  then Outgoing ofs
+  else Domainstate (ofs + size_domainstate_args)
 let not_supported _ = fatal_error "Proc.loc_results: cannot call"
 
 let max_arguments_for_tailcalls = 16 (* in regs *) + 64 (* in domain state *)
