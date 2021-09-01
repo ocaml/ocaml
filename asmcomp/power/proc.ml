@@ -174,7 +174,7 @@ let loc_parameters arg =
   in loc
 
 let loc_results res =
-  let (loc, _ofs) = calling_conventions 0 7 100 112 not_supported 0 res
+  let (loc, _ofs) = calling_conventions 0 15 100 112 not_supported 0 res
   in loc
 
 (* C calling conventions for ELF32:
