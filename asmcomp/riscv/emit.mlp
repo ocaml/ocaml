@@ -48,7 +48,7 @@ let slot_offset env loc cls =
       ("sp", frame_size env + n)
   | Outgoing n ->
       ("sp", n)
-  | Domainstate n -> 
+  | Domainstate n ->
       ("s11", n + Domainstate.(idx_of_field Domain_extra_params) * 8)
 
 (* Output a symbol *)
