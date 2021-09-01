@@ -110,6 +110,8 @@ CAMLextern struct channel * caml_all_opened_channels;
   if (caml_channel_mutex_unlock != NULL) (*caml_channel_mutex_unlock)(channel)
 #define Unlock_exn() \
   if (caml_channel_mutex_unlock_exn != NULL) (*caml_channel_mutex_unlock_exn)()
+#define Flush_if_unbuffered(channel) \
+  if (channel->flags & CHANNEL_FLAG_UNBUFFERED) caml_flush(channel)
 
 /* Conversion between file_offset and int64_t */
 

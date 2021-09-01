@@ -688,7 +688,7 @@ CAMLprim value caml_ml_output_char(value vchannel, value ch)
 
   Lock(channel);
   Putch(channel, Long_val(ch));
-  if (channel->flags & CHANNEL_FLAG_UNBUFFERED) caml_flush(channel);
+  Flush_if_unbuffered(channel);
   Unlock(channel);
   CAMLreturn (Val_unit);
 }
@@ -700,7 +700,7 @@ CAMLprim value caml_ml_output_int(value vchannel, value w)
 
   Lock(channel);
   caml_putword(channel, (uint32_t) Long_val(w));
-  if (channel->flags & CHANNEL_FLAG_UNBUFFERED) caml_flush(channel);
+  Flush_if_unbuffered(channel);
   Unlock(channel);
   CAMLreturn (Val_unit);
 }
@@ -721,7 +721,7 @@ CAMLprim value caml_ml_output_bytes(value vchannel, value buff, value start,
       pos += written;
       len -= written;
     }
-    if (channel->flags & CHANNEL_FLAG_UNBUFFERED) caml_flush(channel);
+    Flush_if_unbuffered(channel);
   Unlock(channel);
   CAMLreturn (Val_unit);
 }
