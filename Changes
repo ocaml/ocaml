@@ -132,10 +132,6 @@ Working version
 
 ### Build system:
 
-- #10471: Fix detection of arm32 architectures with musl in the configure
-  script.
-  (Louis Gesbert)
-
 ### Bug fixes:
 
 - #10473: Add CFI directives to RISC-V runtime and asmcomp.
@@ -658,6 +654,9 @@ OCaml 4.13.0
   of the constant on Unix for paths with backslashes, double-quotes and
   newlines.
   (David Allsopp, review by Florian Angeletti and Sébastien Hinderer)
+
+- #10471: Fix detection of arm32 architectures with musl in configure.
+  (Louis Gesbert, review by David Allsopp)
 
 ### Bug fixes:
 
