@@ -34,9 +34,8 @@ let open_gen = Stdlib.open_out_gen
 
 let with_open openfun s f =
   let oc = openfun s in
-  match f oc with
-  | r -> Stdlib.close_out oc; r
-  | exception e -> Stdlib.close_out_noerr oc; raise e
+  Fun.protect ~finally:(fun () -> Stdlib.close_out_noerr oc)
+    (fun () -> f oc)
 
 let with_open_bin s f =
   with_open Stdlib.open_out_bin s f
