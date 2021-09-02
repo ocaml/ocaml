@@ -1,8 +1,8 @@
-SRC = ../../..
+ROOTDIR = ../../..
 
-CSLDIR = $(SRC)
+CSLDIR = $(ROOTDIR)
 
-TEXQUOTE = $(SRC)/runtime/ocamlrun ../../tools/texquote2
+TEXQUOTE = $(ROOTDIR)/runtime/ocamlrun ../../tools/texquote2
 
 FILES = core.tex builtin.tex stdlib-blurb.tex compilerlibs.tex \
   libunix.tex libstr.tex old.tex libthreads.tex libdynlink.tex

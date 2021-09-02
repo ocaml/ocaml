@@ -10,7 +10,6 @@ depends: [
 ]
 conflict-class: "ocaml-core-compiler"
 flags: compiler
-setenv: CAML_LD_LIBRARY_PATH = "%{lib}%/stublibs"
 build: [
   ["./configure" "--prefix=%{prefix}%"]
   [make "-j%{jobs}%"]
