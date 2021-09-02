@@ -129,11 +129,7 @@ void add_stdlib_prefix(int count, char_os **names)
   }
 }
 
-#ifdef _WIN32
-int wmain(int argc, wchar_t **argv)
-#else
-int main(int argc, char **argv)
-#endif
+int main_os(int argc, char_os **argv)
 {
   if (argc == 3 && !strcmp_os(argv[1], T("encode-C-literal"))) {
     encode_C_literal(argv[2]);
