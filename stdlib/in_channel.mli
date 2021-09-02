@@ -139,10 +139,6 @@ val really_input_string : t -> int -> string option
 val input_all : t -> string
 (** [input_all ic] reads all remaining data in [ic]. *)
 
-val input_lines : t -> string list
-(** [input_lines ic] reads all remaining data in [ic], splits it at each newline
-    character [\n], and returns the resulting list. *)
-
 val set_binary_mode : t -> bool -> unit
 (** [set_binary_mode ic true] sets the channel [ic] to binary mode: no
     translations take place during input.

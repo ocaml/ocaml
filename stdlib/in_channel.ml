@@ -95,12 +95,4 @@ let input_all ic =
   in
   loop (Bytes.create bufsz) 0
 
-let input_lines ic =
-  let rec loop accu =
-    match Stdlib.input_line ic with
-    | s -> loop (s :: accu)
-    | exception End_of_file -> List.rev accu
-  in
-  loop []
-
 let set_binary_mode = Stdlib.set_binary_mode_in
