@@ -229,8 +229,8 @@
 \fi
 \newenvironment{linklist}{\begingroup\ocamldocinputstart}{\endgroup}
 
-\newcommand{\compilerdocitem}[2]{\input{#1.tex}}
-\newcommand{\libdocitem}[2]{\input{#1.tex}}
+\newcommand{\compilerdocitem}[2]{\input{library/#1.tex}}
+\newcommand{\libdocitem}[2]{\input{library/#1.tex}}
 \ifocamldoc
 \newcommand{\stddocitem}[2]{\libdocitem{#1}{#2}}
 \else
