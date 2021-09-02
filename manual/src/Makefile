@@ -1,5 +1,5 @@
 ROOTDIR = ../..
--include $(ROOTDIR)/Makefile.config
+-include $(ROOTDIR)/Makefile.build_config
 
 TEXQUOTE = $(ROOTDIR)/runtime/ocamlrun ../tools/texquote2
 
@@ -145,7 +145,7 @@ cmds/warnings-help.etex: $(ROOTDIR)/utils/warnings.ml $(ROOTDIR)/ocamlc
 	  mv $@.tmp $@;\
 	done
 
-ifocamldoc.tex: $(ROOTDIR)/Makefile.config
+ifocamldoc.tex: $(ROOTDIR)/Makefile.build_config
 	$(MAKE) -C $(APIDOC) build/latex/ifocamldoc.tex
 	cp $(APIDOC)/build/latex/ifocamldoc.tex $@
 
