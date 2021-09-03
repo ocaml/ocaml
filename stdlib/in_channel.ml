@@ -79,20 +79,41 @@ let really_input_string ic len =
   | exception End_of_file -> None
 
 let input_all ic =
-  let bufsz = 65536 in (* IO_BUFFER_SIZE *)
   let rec loop buf ofs =
-    let buf =
-      if Bytes.length buf - ofs >= bufsz then
-        buf
-      else begin
-        let newbuf = Bytes.create (2 * Bytes.length buf + 1) in
-        Bytes.blit buf 0 newbuf 0 ofs;
-        newbuf
-      end
-    in
-    let r = Stdlib.input ic buf ofs bufsz in
-    if r = 0 then Bytes.sub_string buf 0 ofs else loop buf (ofs + r)
+    let len = Bytes.length buf in
+    if len > ofs then
+      let rem = len - ofs in
+      let r = Stdlib.input ic buf ofs rem in
+      if r = rem then
+        Bytes.unsafe_to_string buf
+      else if r = 0 then
+        Bytes.sub_string buf 0 ofs
+      else
+        loop buf (ofs + r)
+    else
+      let new_buf =
+        let new_len = 2 * Bytes.length buf in
+        let new_len =
+          if new_len <= Sys.max_string_length then
+            new_len
+          else if len < Sys.max_string_length then
+            Sys.max_string_length
+          else
+            failwith "In_channel.input_all: cannot grow buffer"
+        in
+        let new_buf = Bytes.create new_len in
+        Bytes.blit buf 0 new_buf 0 ofs;
+        new_buf
+      in
+      loop new_buf ofs
   in
-  loop (Bytes.create bufsz) 0
+  let initial_size =
+    try
+      Stdlib.in_channel_length ic - Stdlib.pos_in ic
+    with Sys_error _ ->
+      0
+  in
+  let initial_size = if initial_size <= 0 then 65563 else initial_size in
+  loop (Bytes.create initial_size) 0
 
 let set_binary_mode = Stdlib.set_binary_mode_in
