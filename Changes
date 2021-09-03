@@ -71,6 +71,10 @@ Working version
   (Nicolás Ojeda Bär, review by John Whitington, Daniel Bünzli, David Allsopp
   and Xavier Leroy)
 
+- #10596: Add with_open_bin, with_open_text and with_open_gen to In_channel and
+  Out_channel. Also, add In_channel.input_all.
+  (Nicolás Ojeda Bär, review by Daniel Bünzli and Xavier Leroy)
+
 ### Other libraries:
 
 - #10192: Add support for Unix domain sockets on Windows and use them
