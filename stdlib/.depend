@@ -360,14 +360,14 @@ stdlib__Hashtbl.cmx : hashtbl.ml \
 stdlib__Hashtbl.cmi : hashtbl.mli \
     stdlib__Seq.cmi
 stdlib__In_channel.cmo : in_channel.ml \
+    stdlib__Sys.cmi \
     stdlib.cmi \
-    stdlib__List.cmi \
     stdlib__Fun.cmi \
     stdlib__Bytes.cmi \
     stdlib__In_channel.cmi
 stdlib__In_channel.cmx : in_channel.ml \
+    stdlib__Sys.cmx \
     stdlib.cmx \
-    stdlib__List.cmx \
     stdlib__Fun.cmx \
     stdlib__Bytes.cmx \
     stdlib__In_channel.cmi
