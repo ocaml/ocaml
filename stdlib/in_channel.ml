@@ -81,31 +81,31 @@ let really_input_string ic len =
 let input_all ic =
   let rec loop buf ofs =
     let len = Bytes.length buf in
-    if len > ofs then
-      let rem = len - ofs in
-      let r = Stdlib.input ic buf ofs rem in
-      if r = rem then
-        Bytes.unsafe_to_string buf
-      else if r = 0 then
+    if ofs < len then
+      let r = Stdlib.input ic buf ofs (len - ofs) in
+      if r = 0 then
         Bytes.sub_string buf 0 ofs
       else
         loop buf (ofs + r)
-    else
-      let new_buf =
-        let new_len = 2 * Bytes.length buf in
-        let new_len =
-          if new_len <= Sys.max_string_length then
-            new_len
-          else if len < Sys.max_string_length then
-            Sys.max_string_length
-          else
-            failwith "In_channel.input_all: cannot grow buffer"
-        in
-        let new_buf = Bytes.create new_len in
-        Bytes.blit buf 0 new_buf 0 ofs;
-        new_buf
-      in
-      loop new_buf ofs
+    else begin (* ofs = len *)
+      match Stdlib.input_char ic with
+      | exception End_of_file ->
+          Bytes.unsafe_to_string buf
+      | c ->
+          let new_len = 2 * Bytes.length buf in
+          let new_len =
+            if new_len <= Sys.max_string_length then
+              new_len
+            else if len < Sys.max_string_length then
+              Sys.max_string_length
+            else
+              failwith "In_channel.input_all: cannot grow buffer"
+          in
+          let new_buf = Bytes.create new_len in
+          Bytes.blit buf 0 new_buf 0 ofs;
+          Bytes.set buf ofs c;
+          loop new_buf ofs
+    end
   in
   let initial_size =
     try
