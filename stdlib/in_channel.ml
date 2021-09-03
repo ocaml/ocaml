@@ -113,7 +113,7 @@ let input_all ic =
     with Sys_error _ ->
       0
   in
-  let initial_size = if initial_size <= 0 then 65563 else initial_size in
+  let initial_size = if initial_size <= 0 then 65536 else initial_size in
   loop (Bytes.create initial_size) 0
 
 let set_binary_mode = Stdlib.set_binary_mode_in
