@@ -52,9 +52,9 @@ val open_gen : open_flag list -> int -> string -> t
     function. *)
 
 val with_open_bin : string -> (t -> 'a) -> 'a
-(** [with_open_bin fn f] opens file [fn] for reading, and passes the resulting
-    channel to [f]. The channel is closed before [f] returns with a value or by
-    raising an exception. *)
+(** [with_open_bin fn f] opens a channel [ic] on file [fn] and returns
+    [f ic]. After the function returns, either with a value or by raising an
+    exception, [ic] is guaranteed to be closed. *)
 
 val with_open_text : string -> (t -> 'a) -> 'a
 (** Like {!with_open_bin}, but the channel is opened in text mode (see
@@ -137,7 +137,7 @@ val really_input_string : t -> int -> string option
     before [len] characters have been read. *)
 
 val input_all : t -> string
-(** [input_all ic] reads all remaining data in [ic]. *)
+(** [input_all ic] reads all remaining data from [ic]. *)
 
 val set_binary_mode : t -> bool -> unit
 (** [set_binary_mode ic true] sets the channel [ic] to binary mode: no
