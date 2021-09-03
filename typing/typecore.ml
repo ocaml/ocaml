@@ -2566,8 +2566,8 @@ let check_partial_application statement exp =
             in
             loop exp
     in
-    match ty, exp.exp_desc with
-    | Tarrow _, _ ->
+    match ty with
+    | Tarrow _ ->
         let rec check {exp_desc; exp_loc; exp_extra; _} =
           if List.exists (function
               | (Texp_constraint _, _, _) -> true
@@ -2598,7 +2598,7 @@ let check_partial_application statement exp =
           end
         in
         check exp
-    | Tvar _, _ ->
+    | Tvar _ ->
         if delay then add_delayed_check (fun () -> f false)
     | _ ->
         check_statement ()
