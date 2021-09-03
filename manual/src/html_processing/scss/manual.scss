@@ -307,24 +307,23 @@ div.caml-example.toplevel div.caml-input::before{
 span.number{
     padding-right: 1ex;
 }
-span.c004, span.syntax-token, span.c007 {
+span.machine, span.syntax-token {
 	font-family: $font-mono;
 }
 span.syntax-token {
 	color: rgba(91, 33, 6, 0.87);
 }
-span.c002{
+span.ocamlprompt{
     color:#888
 }
-span.c006{
+span.font-bold.machine{
     font-weight:700;
     color:#564233;
-    font-family: $font-mono;
 }
-.c008 {
+.osvariant {
 	font-family: $font-sans;
 }
-span.c010 {
+span.font-it {
 	font-style: italic;
 }
 span.authors{
@@ -334,20 +333,20 @@ span.authors{
 span.nonterminal {
 	font-style: italic;
 }
-.c012 {
-	font-style: italic;
+.font-sl {
+	font-style: oblique;
 }
-span.c013{
-    font-style: italic;
+span.sl{
+    font-style: oblique;
 }
 .center table {
 	margin-left: inherit;
 	margin-right: inherit;
 }
-td .c014 {
+td .font-bold {
 	font-weight: bold;
 }
-.c016 {
+.syntax-token {
 	text-align: center;
 }
 .cellpadding1 tr td {

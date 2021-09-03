@@ -160,7 +160,8 @@
 %%% Code examples
 \newcommand{\input@color}{\htmlcolor{006000}}
 \newcommand{\output@color}{\maroon}
-\newcommand{\machine}{\tt}
+\newcommand{\machine}{\@span{class=machine}}
+\newstyle{.machine}{font-family:monospace}
 \newenvironment{machineenv}{\begin{alltt}}{\end{alltt}}
 \newcommand{\var}[1]{\textit{#1}}
 
@@ -180,6 +181,8 @@
 \newcommand{\ocamlcomment}{\@span{class="ocamlcomment"}}
 \newcommand{\ocamlstring}{\@span{class="ocamlstring"}}
 
+\newcommand{\?}{\@span{class=ocamlprompt}\#}
+\newstyle{.ocamlprompt}{color:black;}
 
 %%% End of code example
 
@@ -191,8 +194,9 @@
 
 
 %%venant de macros.tex
-
-\def\versionspecific#1{\begin{quote}\textsf{#1:}\quad}
+\newcommand{\osvariant}{\@span{class=osvariant}}
+\newstyle{.osvariant}{font-family:sans-serif}
+\def\versionspecific#1{\begin{quote}{\osvariant{}#1:}\quad}
 \def\unix{\versionspecific{Unix}}
 \def\endunix{\end{quote}}
 \def\windows{\versionspecific{Windows}}
@@ -252,7 +256,8 @@
 \def\ikwd#1{\indexentry{\jobname.kwd}{#1}}
 % nth
 
-\def\th{^{\mbox{\scriptsize th}}}
+\def\th{^{\mbox{\@span{class=th}th}}}
+\newstyle{.th}{font-size:small;}
 \renewcommand{\hbox}[1]{\mbox{#1}}
 
 % Notations pour les metavariables
@@ -302,3 +307,13 @@
 \else
 \newcommand{\stddocitem}[2]{\docitem{libref/Stdlib}{#1}{#2}}
 \fi
+
+\renewcommand{\tt}{\@span{class=font-tt}}
+\newstyle{.font-tt}{font-family:monospace;}
+\renewcommand{\it}{\@span{class=font-it}}
+\newstyle{.font-it}{font-style:italic;}
+\renewcommand{\bf}{\@span{class=font-bold}}
+\newstyle{.font-bold}{font-weight:bold;}
+\renewcommand{\sl}{\ifmath\ifmathml\@span{class='sl-math'}%
+\else\@span{class="font-sl"}\fi\else\@span{class="font-sl"}\fi}
+\newstyle{.font-sl}{font-style:oblique;}
