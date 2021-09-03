@@ -27,6 +27,11 @@ Working version
   and long register allocation times.
   (Xavier Leroy, report by Edwin Török, review by Nicolás Ojeda Bär)
 
+- #10595: Tail calls with up to 64 arguments are guaranteed to be compiled
+  as tail calls.  To this end, memory locations in the domain state
+  are used for passing arguments that do not fit in registers.
+  (Xavier Leroy, review by Vincent Laviron)
+
 ### Standard library:
 
 * #7812, #10475: `Filename.chop_suffix name suff` now checks that `suff`
