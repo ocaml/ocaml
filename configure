@@ -16672,6 +16672,7 @@ $as_echo "$as_me: the Win32/POSIX threads library is disabled" >&6;} ;; #(
   *-*-mingw32|*-pc-windows) :
     systhread_support=true
       otherlibraries="$otherlibraries systhreads"
+      PTHREAD_LIBS="-lpthread"
       { $as_echo "$as_me:${as_lineno-$LINENO}: the Win32 threads library is supported" >&5
 $as_echo "$as_me: the Win32 threads library is supported" >&6;} ;; #(
   *) :

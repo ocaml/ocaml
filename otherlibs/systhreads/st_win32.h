@@ -4,7 +4,7 @@
 /*                                                                        */
 /*          Xavier Leroy and Damien Doligez, INRIA Rocquencourt           */
 /*                                                                        */
-/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*   Copyright 2009 Institut National de Recherche en Informatique et     */
 /*     en Automatique.                                                    */
 /*                                                                        */
 /*   All rights reserved.  This file is distributed under the terms of    */
@@ -13,25 +13,11 @@
 /*                                                                        */
 /**************************************************************************/
 
-#ifndef CAML_ROOTS_H
-#define CAML_ROOTS_H
+/* Win32 implementation of the "st" interface */
 
-#ifdef CAML_INTERNALS
+#undef _WIN32_WINNT
+#define _WIN32_WINNT 0x0400
+#include <windows.h>
 
-#include "misc.h"
-#include "memory.h"
-
-typedef void (*scanning_action) (void*, value, value *);
-CAMLextern void (*caml_scan_roots_hook)(scanning_action, void*,
-                                        caml_domain_state*);
-
-CAMLextern void caml_do_roots (scanning_action f, void* data,
-                               caml_domain_state* d, int do_final_val);
-CAMLextern void caml_do_local_roots(scanning_action f, void* data,
-                                    struct caml__roots_block* local_roots,
-                                    struct stack_info *current_stack,
-                                    value * v_gc_regs);
-
-#endif /* CAML_INTERNALS */
-
-#endif /* CAML_ROOTS_H */
+/* FIXME Replace winpthreads implementation with native */
+#include "st_posix.h"

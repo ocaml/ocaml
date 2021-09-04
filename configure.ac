@@ -1812,6 +1812,7 @@ AS_CASE([$enable_systhreads,$enable_unix_lib],
     [*-*-mingw32|*-pc-windows],
       [systhread_support=true
       otherlibraries="$otherlibraries systhreads"
+      PTHREAD_LIBS="-lpthread"
       AC_MSG_NOTICE([the Win32 threads library is supported])],
     [AX_PTHREAD(
       [systhread_support=true

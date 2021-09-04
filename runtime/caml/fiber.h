@@ -107,7 +107,7 @@ extern value caml_global_data;
 #define Trap_link(tp) ((tp)[1])
 
 struct stack_info** caml_alloc_stack_cache (void);
-struct stack_info* caml_alloc_main_stack (uintnat init_size);
+CAMLextern struct stack_info* caml_alloc_main_stack (uintnat init_size);
 void caml_scan_stack(scanning_action f, void* fdata,
                      struct stack_info* stack, value* v_gc_regs);
 /* try to grow the stack until at least required_size words are available.
@@ -115,7 +115,7 @@ void caml_scan_stack(scanning_action f, void* fdata,
 int caml_try_realloc_stack (asize_t required_size);
 void caml_change_max_stack_size (uintnat new_max_size);
 void caml_maybe_expand_stack();
-void caml_free_stack(struct stack_info* stk);
+CAMLextern void caml_free_stack(struct stack_info* stk);
 
 #ifdef NATIVE_CODE
 void caml_get_stack_sp_pc (struct stack_info* stack,
