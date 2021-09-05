@@ -2538,12 +2538,13 @@ let generalize_and_check_univars env kind exp ty_expected vars =
    is retried after typechecking. *)
 
 let check_partial_application statement exp =
-  let rec f delay =
+  let doit () =
     let ty = get_desc (expand_head exp.exp_env exp.exp_type) in
     let check_statement () =
       match ty with
       | Tconstr (p, _, _)  when Path.same p Predef.path_unit ->
           ()
+      | Tvar _ -> ()
       | _ ->
           if statement then
             let rec loop {exp_loc; exp_desc; exp_extra; _} =
@@ -2598,12 +2599,18 @@ let check_partial_application statement exp =
           end
         in
         check exp
-    | Tvar _ ->
-        if delay then add_delayed_check (fun () -> f false)
     | _ ->
         check_statement ()
   in
-  f true
+  let ty = get_desc (expand_head exp.exp_env exp.exp_type) in
+  match ty with
+  | Tvar _ ->
+      (* The type of [exp] is not known. Delay the check until after
+         typechecking in order to give a chance for the type to become known
+         through unification. *)
+      add_delayed_check doit
+  | _ ->
+      doit ()
 
 (* Check that a type is generalizable at some level *)
 let generalizable level ty =
