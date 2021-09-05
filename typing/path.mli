@@ -35,6 +35,8 @@ val print: Format.formatter -> t -> unit
 
 val heads: t -> Ident.t list
 
+val has_apply : t -> bool
+
 val last: t -> string
 
 val is_uident: string -> bool

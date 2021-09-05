@@ -1329,14 +1329,23 @@ let find_modtype_expansion path env =
   | None -> raise Not_found
   | Some mty -> mty
 
-let rec is_functor_arg path env =
+let rec is_functor_arg_or_apply path env =
   match path with
     Pident id ->
       begin try Ident.find_same id env.functor_args; true
       with Not_found -> false
       end
-  | Pdot (p, _s) -> is_functor_arg p env
+  | Pdot (p, _s) -> is_functor_arg_or_apply p env
   | Papply _ -> true
+
+let rec is_functor_arg path env =
+  match path with
+  | Pident id ->
+      begin try Ident.find_same id env.functor_args; true
+      with Not_found -> false
+      end
+  | Pdot (p, _s) -> is_functor_arg p env
+  | Papply (p1, p2) -> is_functor_arg p1 env || is_functor_arg p2 env
 
 (* Copying types associated with values *)
 

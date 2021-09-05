@@ -371,8 +371,7 @@ let rec modtypes ~loc env ~mark subst mty1 mty2 =
 and try_modtypes ~loc env ~mark subst mty1 mty2 =
   match mty1, mty2 with
   | (Mty_ascribe (p1, res1), Mty_ascribe (p2, res2)) ->
-      if Env.is_functor_arg p2 env then
-        (* TODO: Relax this restriction. *)
+      if Path.has_apply p2 then
         Error (Error.Invalid_module_alias p2)
       else if equal_module_paths env p1 subst p2 then
         try_modtypes ~loc env ~mark subst
@@ -381,15 +380,14 @@ and try_modtypes ~loc env ~mark subst mty1 mty2 =
       else
         Error Error.(Mt_core Incompatible_aliases)
   | (Mty_alias p1, Mty_ascribe (p2, res2)) ->
-      if Env.is_functor_arg p2 env then
-        (* TODO: Relax this restriction. *)
+      if Path.has_apply p2 then
         Error (Error.Invalid_module_alias p2)
       else if equal_module_paths env p1 subst p2 then
         try_modtypes ~loc env ~mark subst mty1 res2
       else
         Error Error.(Mt_core Incompatible_aliases)
   | (Mty_ascribe (p1, res1), Mty_alias p2) ->
-      if Env.is_functor_arg p2 env then
+      if Env.is_functor_arg_or_apply p2 env then
         Error (Error.Invalid_module_alias p2)
       else if not (equal_module_paths env p1 subst p2) then
         Error Error.(Mt_core Incompatible_aliases)
@@ -430,7 +428,7 @@ and try_modtypes ~loc env ~mark subst mty1 mty2 =
           end
     end
   | (Mty_alias p1, Mty_alias p2) ->
-      if Env.is_functor_arg p2 env then
+      if Env.is_functor_arg_or_apply p2 env then
         Error (Error.Invalid_module_alias p2)
       else if not (equal_module_paths env p1 subst p2) then
           Error Error.(Mt_core Incompatible_aliases)
@@ -789,12 +787,7 @@ and check_modtype_equiv ~loc env ~mark mty1 mty2 =
 (* Simplified inclusion check between module types (for Env) *)
 
 let can_alias env path =
-  let rec no_apply = function
-    | Path.Pident _ -> true
-    | Path.Pdot(p, _) -> no_apply p
-    | Path.Papply _ -> false
-  in
-  no_apply path && not (Env.is_functor_arg path env)
+  not (Env.is_functor_arg_or_apply path env)
 
 
 

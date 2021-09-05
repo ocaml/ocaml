@@ -106,6 +106,7 @@ val find_class_address: Path.t -> t -> address
 val find_constructor_address: Path.t -> t -> address
 
 val add_functor_arg: Ident.t -> t -> t
+val is_functor_arg_or_apply: Path.t -> t -> bool
 val is_functor_arg: Path.t -> t -> bool
 
 val normalize_module_path: Location.t option -> t -> Path.t -> Path.t

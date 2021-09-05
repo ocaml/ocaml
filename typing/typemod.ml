@@ -641,7 +641,7 @@ let merge_constraint initial_env loc sg lid constr =
     | Sig_module(id, _, md, _rs, _), [s], With_modsubst (lid',path,md')
       when Ident.name id = s ->
         let aliasable =
-          if Env.is_functor_arg path sig_env then Misc.Str_none
+          if Env.is_functor_arg_or_apply path sig_env then Misc.Str_none
           else Misc.Str_alias
         in
         ignore
@@ -1543,7 +1543,7 @@ and transl_signature env sg =
               Env.lookup_module ~loc:pms.pms_manifest.loc
                 pms.pms_manifest.txt env
             in
-            let aliasable = not (Env.is_functor_arg path env) in
+            let aliasable = not (Env.is_functor_arg_or_apply path env) in
             let md =
               if not aliasable then
                 md
@@ -2136,7 +2136,7 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
                  mod_env = env;
                  mod_attributes = smod.pmod_attributes;
                  mod_loc = smod.pmod_loc } in
-      let aliasable = not (Env.is_functor_arg path env) in
+      let aliasable = not (Env.is_functor_arg_or_apply path env) in
       let md =
         if alias && aliasable then
           (Env.add_required_global (Path.head path); md)
