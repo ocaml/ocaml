@@ -141,7 +141,8 @@ case "$1" in
           "$FULL_BUILD_PREFIX-$PORT/tools/check-symbol-names" \
           $FULL_BUILD_PREFIX-$PORT/runtime/*.a
     fi
-    run "test $PORT" $MAKE -C "$FULL_BUILD_PREFIX-$PORT/testsuite" parallel
+    run "test $PORT" \
+        $MAKE -C "$FULL_BUILD_PREFIX-$PORT/testsuite" SHOW_TIMINGS=1 parallel
     run "install $PORT" $MAKE -C "$FULL_BUILD_PREFIX-$PORT" install
     if [[ $PORT = 'msvc64' ]] ; then
       run "$MAKE check_all_arches" \

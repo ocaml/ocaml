@@ -51,7 +51,7 @@ jobs:
       - name: Run the testsuite
         if: ${{ matrix.name != 'linux-O0' }}
         run: |
-          bash -xe tools/ci/actions/runner.sh test
+          bash -c 'SHOW_TIMINGS=1 tools/ci/actions/runner.sh test'
       - name: Run the testsuite (linux-O0, parallel)
         if: ${{ matrix.name == 'linux-O0' }}
         env:
