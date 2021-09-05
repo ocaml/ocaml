@@ -259,6 +259,9 @@ module MT = struct
         List.iter (sub.with_constraint sub) l
     | Pmty_typeof me -> sub.module_expr sub me
     | Pmty_extension x -> sub.extension sub x
+    | Pmty_ascribe (s, mt) ->
+        iter_loc sub s;
+        sub.module_type sub mt
 
   let iter_with_constraint sub = function
     | Pwith_type (lid, d) ->

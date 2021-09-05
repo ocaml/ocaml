@@ -256,6 +256,7 @@ module Mty:
       with_constraint list -> module_type
     val typeof_: ?loc:loc -> ?attrs:attrs -> module_expr -> module_type
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> module_type
+    val ascribe: ?loc:loc -> ?attrs:attrs -> lid -> module_type -> module_type
   end
 
 (** Module expressions *)

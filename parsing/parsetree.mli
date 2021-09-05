@@ -733,6 +733,8 @@ and module_type_desc =
         (* [%id] *)
   | Pmty_alias of Longident.t loc
         (* (module M) *)
+  | Pmty_ascribe of Longident.t loc * module_type
+        (* (M :> ...) *)
 
 and functor_parameter =
   | Unit

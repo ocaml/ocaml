@@ -310,6 +310,7 @@ let module_type sub {mty_desc; mty_env; _} =
       sub.module_type sub mtype;
       List.iter (fun (_, _, e) -> sub.with_constraint sub e) list
   | Tmty_typeof mexpr -> sub.module_expr sub mexpr
+  | Tmty_ascribe (_, _, mtype) -> sub.module_type sub mtype
 
 let with_constraint sub = function
   | Twith_type      decl -> sub.type_declaration sub decl

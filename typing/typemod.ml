@@ -819,6 +819,7 @@ let rec approx_modtype env smty =
       mty
   | Pmty_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
+  | Pmty_ascribe (_lid, mty) -> approx_modtype env mty
 
 and approx_module_declaration env pmd =
   {
@@ -1356,6 +1357,24 @@ and transl_modtype_aux env smty =
       mkmty (Tmty_typeof tmty) mty env loc smty.pmty_attributes
   | Pmty_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
+  | Pmty_ascribe (lid, smty_res) ->
+      let path = transl_module_alias loc env lid.txt in
+      let tmty_res = transl_modtype env smty_res in
+      let coercion =
+        try
+          Includemod.modtypes ~loc env ~mark:Mark_both (Mty_alias path)
+            tmty_res.mty_type
+        with Includemod.Error msg ->
+          raise(Error(loc, env, Not_included msg))
+      in
+      (* TODO *)
+      ignore coercion;
+      let mty_type =
+        (* TODO: Propagate ascription. *)
+        Mtype.strengthen ~aliasable:false env tmty_res.mty_type path
+      in
+      mkmty (Tmty_ascribe (path, lid, tmty_res)) mty_type env loc
+        smty.pmty_attributes
 
 and transl_with ~loc env remove_aliases (rev_tcstrs,sg) constr =
   let lid, with_info = match constr with

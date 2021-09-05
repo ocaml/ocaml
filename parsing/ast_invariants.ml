@@ -111,6 +111,7 @@ let iterator =
     super.module_type self mty;
     match mty.pmty_desc with
     | Pmty_alias id -> simple_longident id
+    | Pmty_ascribe (id, _) -> simple_longident id
     | _ -> ()
   in
   let open_description self opn =

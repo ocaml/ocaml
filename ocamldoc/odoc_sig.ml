@@ -1358,6 +1358,8 @@ module Analyser =
                   | _ -> "??"
                   end
               | Parsetree.Pmty_extension _ -> assert false
+              | Parsetree.Pmty_ascribe (longident, _) ->
+                  Name.from_longident longident.txt
             in
             let name = f incl.Parsetree.pincl_mod.Parsetree.pmty_desc in
             let full_name = Odoc_env.full_module_or_module_type_name env name in
@@ -1614,6 +1616,18 @@ module Analyser =
 
       | Parsetree.Pmty_extension _ -> assert false
 
+      | Parsetree.Pmty_ascribe (longident, _module_type) ->
+          let name =
+            match sig_module_type with
+              Types.Mty_alias path -> Name.from_path path
+            | _ -> Name.from_longident longident.txt
+          in
+          (* TODO: Expose ascribed type. *)
+          (* Wrong naming... *)
+          Module_type_alias { mta_name = Odoc_env.full_module_name env name ;
+                              mta_module = None }
+
+
     (** analyse of a Parsetree.module_type and a Types.module_type.*)
     and analyse_module_kind
         ?(erased = Name.Map.empty) env current_module_name module_type sig_module_type =
@@ -1706,6 +1720,10 @@ module Analyser =
           Module_typeof s
 
       | Parsetree.Pmty_extension _ -> assert false
+
+      | Parsetree.Pmty_ascribe (_longident, module_type) ->
+          (* TODO *)
+          analyse_module_kind ~erased env current_module_name module_type sig_module_type
 
 
     (** Analyse of a Parsetree.class_type and a Types.class_type to return a couple

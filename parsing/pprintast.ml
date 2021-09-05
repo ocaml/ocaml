@@ -1101,6 +1101,9 @@ and module_type1 ctxt f x =
     | Pmty_typeof me ->
         pp f "@[<hov2>module@ type@ of@ %a@]" (module_expr ctxt) me
     | Pmty_extension e -> extension ctxt f e
+    | Pmty_ascribe (li, mt) ->
+        pp f "@[<hov2>(module %a@ :>@ %a)]" longident_loc li
+          (module_type ctxt) mt
     | _ -> paren true (module_type ctxt) f x
 
 and signature ctxt f x =  list ~sep:"@\n" (signature_item ctxt) f x
@@ -1145,6 +1148,13 @@ and signature_item ctxt f x : unit =
       pp f "@[<hov>module@ %s@ =@ %a@]%a"
         (Option.value pmd.pmd_name.txt ~default:"_")
         longident_loc alias
+        (item_attributes ctxt) pmd.pmd_attributes
+  | Psig_module ({pmd_type={pmty_desc=Pmty_ascribe (alias, mty);
+                            pmty_attributes=[]; _};_} as pmd) ->
+      pp f "@[<hov>module@ %s@ =@ (%a@ :@ %a)@]%a"
+        (Option.value pmd.pmd_name.txt ~default:"_")
+        longident_loc alias
+        (module_type ctxt) mty
         (item_attributes ctxt) pmd.pmd_attributes
   | Psig_module pmd ->
       pp f "@[<hov>module@ %s@ :@ %a@]%a"

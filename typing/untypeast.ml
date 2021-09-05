@@ -634,6 +634,8 @@ let module_type (sub : mapper) mty =
           List.map (sub.with_constraint sub) list)
     | Tmty_typeof mexpr ->
         Pmty_typeof (sub.module_expr sub mexpr)
+    | Tmty_ascribe (_path, lid, mtype) ->
+        Pmty_ascribe (map_loc sub lid, sub.module_type sub mtype)
   in
   Mty.mk ~loc ~attrs desc
 

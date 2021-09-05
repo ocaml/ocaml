@@ -289,6 +289,8 @@ module MT = struct
           (List.map (sub.with_constraint sub) l)
     | Pmty_typeof me -> typeof_ ~loc ~attrs (sub.module_expr sub me)
     | Pmty_extension x -> extension ~loc ~attrs (sub.extension sub x)
+    | Pmty_ascribe (s, mt) ->
+        ascribe ~loc ~attrs (map_loc sub s) (sub.module_type sub mt)
 
   let map_with_constraint sub = function
     | Pwith_type (lid, d) ->

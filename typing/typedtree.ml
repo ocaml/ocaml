@@ -325,6 +325,7 @@ and module_type_desc =
   | Tmty_with of module_type * (Path.t * Longident.t loc * with_constraint) list
   | Tmty_typeof of module_expr
   | Tmty_alias of Path.t * Longident.t loc
+  | Tmty_ascribe of Path.t * Longident.t loc * module_type
 
 (* Keep primitive type information for type-based lambda-code specialization *)
 and primitive_coercion =

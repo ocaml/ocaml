@@ -452,6 +452,8 @@ let module_type sub x =
         )
     | Tmty_typeof mexpr ->
         Tmty_typeof (sub.module_expr sub mexpr)
+    | Tmty_ascribe (p, li, mtype) ->
+        Tmty_ascribe (p, li, sub.module_type sub mtype)
   in
   {x with mty_desc; mty_env}
 

@@ -1606,6 +1606,8 @@ module_type:
         { Pmty_with($1, $3) }
 /*  | LPAREN MODULE mkrhs(mod_longident) RPAREN
         { Pmty_alias $3 } */
+/*  | LPAREN MODULE mkrhs(mod_longident) COLONGREATER module_type RPAREN
+        { Pmty_ascribe ($3, $5) } */
     | extension
         { Pmty_extension $1 }
     )
@@ -1706,7 +1708,7 @@ module_declaration_body:
   ext = ext attrs1 = attributes
   name = mkrhs(module_name)
   EQUAL
-  body = module_expr_alias
+  body = module_alias_body
   attrs2 = post_item_attributes
   {
     let attrs = attrs1 @ attrs2 in
@@ -1715,9 +1717,16 @@ module_declaration_body:
     Md.mk name body ~attrs ~loc ~docs, ext
   }
 ;
+%inline module_alias_body:
+    module_expr_alias { $1 }
+  | module_expr_ascribe { $1 }
 %inline module_expr_alias:
   id = mkrhs(mod_longident)
     { Mty.alias ~loc:(make_loc $sloc) id }
+;
+%inline module_expr_ascribe:
+  LPAREN id = mkrhs(mod_longident) COLONGREATER mty = module_type RPAREN
+    { Mty.ascribe ~loc:(make_loc $sloc) id mty }
 ;
 (* A module substitution (in a signature). *)
 module_subst:

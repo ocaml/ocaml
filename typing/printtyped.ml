@@ -707,6 +707,9 @@ and module_type i ppf x =
   | Tmty_typeof m ->
       line i ppf "Tmty_typeof\n";
       module_expr i ppf m;
+  | Tmty_ascribe (li, _, mt) ->
+      line i ppf "Tmty_ascribe %a\n" fmt_path li;
+      module_type i ppf mt
 
 and signature i ppf x = list i signature_item ppf x.sig_items
 
