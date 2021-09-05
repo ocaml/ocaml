@@ -1212,45 +1212,44 @@ let add_required_global id =
   && not (List.exists (Ident.same id) !required_globals)
   then required_globals := id :: !required_globals
 
-let rec normalize_module_path lax env = function
+let rec normalize_module_path lax unascribe env = function
   | Pident id as path when lax && Ident.persistent id ->
       path (* fast path (avoids lookup) *)
   | Pdot (p, s) as path ->
-      let p' = normalize_module_path lax env p in
-      if p == p' then expand_module_path lax env path
-      else expand_module_path lax env (Pdot(p', s))
+      let p' = normalize_module_path lax unascribe env p in
+      if p == p' then expand_module_path lax unascribe env path
+      else expand_module_path lax unascribe env (Pdot(p', s))
   | Papply (p1, p2) as path ->
-      let p1' = normalize_module_path lax env p1 in
-      let p2' = normalize_module_path true env p2 in
-      if p1 == p1' && p2 == p2' then expand_module_path lax env path
-      else expand_module_path lax env (Papply(p1', p2'))
+      let p1' = normalize_module_path lax unascribe env p1 in
+      let p2' = normalize_module_path true true env p2 in
+      if p1 == p1' && p2 == p2' then expand_module_path lax unascribe env path
+      else expand_module_path lax unascribe env (Papply(p1', p2'))
   | Pident _ as path ->
-      expand_module_path lax env path
+      expand_module_path lax unascribe env path
 
-and expand_module_path lax env path =
+and expand_module_path lax unascribe env path =
   try match find_module ~alias:true path env with
     {md_type=Mty_alias path1} ->
-      let path' = normalize_module_path lax env path1 in
+      let path' = normalize_module_path lax unascribe env path1 in
       if lax || !Clflags.transparent_modules then path' else
       let id = Path.head path in
       if Ident.global id && not (Ident.same id (Path.head path'))
       then add_required_global id;
       path'
-  | {md_type= Mty_ascribe _} ->
-      (* TODO *)
-      path
+  | {md_type= Mty_ascribe (path1, _)} when unascribe ->
+      normalize_module_path lax unascribe env path1
   | _ -> path
   with Not_found when lax
   || (match path with Pident id -> not (Ident.persistent id) | _ -> true) ->
       path
 
 let normalize_module_path oloc env path =
-  try normalize_module_path (oloc = None) env path
+  try normalize_module_path (oloc = None) false env path
   with Not_found ->
     match oloc with None -> assert false
     | Some loc ->
         error (Missing_module(loc, path,
-                              normalize_module_path true env path))
+                              normalize_module_path true false env path))
 
 let normalize_path_prefix oloc env path =
   match path with
