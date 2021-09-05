@@ -2565,7 +2565,7 @@ let check_statement exp =
    If the type of [exp] is not known at the time this function is called, the
    check is retried again after typechecking. *)
 
-let check_partial_application statement exp =
+let check_partial_application ~statement exp =
   let check_statement () = if statement then check_statement exp in
   let doit () =
     let ty = get_desc (expand_head exp.exp_env exp.exp_type) in
@@ -3030,7 +3030,7 @@ and type_expect_
         try rue exp
         with Error (_, _, Expr_type_clash _) as err ->
           Misc.reraise_preserving_backtrace err (fun () ->
-            check_partial_application false exp)
+            check_partial_application ~statement:false exp)
       end
   | Pexp_match(sarg, caselist) ->
       begin_def ();
@@ -4673,7 +4673,7 @@ and type_application env funct sargs =
     [Nolabel, sarg] when is_ignore funct ->
       let ty_arg, ty_res = filter_arrow env (instance funct.exp_type) Nolabel in
       let exp = type_expect env sarg (mk_expected ty_arg) in
-      check_partial_application false exp;
+      check_partial_application ~statement:false exp;
       ([Nolabel, Some exp], ty_res)
   | _ ->
     let ty = funct.exp_type in
@@ -4781,7 +4781,7 @@ and type_statement ?explanation env sexp =
       unify_exp env exp expected_ty);
     exp
   else begin
-    check_partial_application true exp;
+    check_partial_application ~statement:true exp;
     unify_var env tv ty;
     exp
   end
@@ -5315,7 +5315,7 @@ and type_let
       | {vb_pat = {pat_desc = Tpat_any; pat_extra; _}; vb_expr; _} ->
           if not (List.exists (function (Tpat_constraint _, _, _) -> true
                                       | _ -> false) pat_extra) then
-            check_partial_application false vb_expr
+            check_partial_application ~statement:false vb_expr
       | _ -> ()) l;
   (l, new_env, unpacks)
 
