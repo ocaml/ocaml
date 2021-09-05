@@ -2517,56 +2517,58 @@ let generalize_and_check_univars env kind exp ty_expected vars =
   List.iter generalize vars;
   check_univars env kind exp ty_expected vars
 
-(* [check_partial_application] implements both the [non-unit-statemnt] and the
-   [ignored-partial-application] warnings.
+(* [check_statement] implements the [non-unit-statement] check.
 
-   [non-unit-statemnt] verifies that [exp] has type [unit]. It is applied in
-   contexts where their value of [exp] is known to be discarded (eg the lhs of a
-   sequence).
+   It is checked that [exp] has type [unit]. This check is applied in contexts
+   where their value is known to be discarded (eg the lhs of a sequence). *)
 
-   [ignored-partial-application] verifies that if [exp] has a function type then
-   it is not syntactically the result of a function application. It is applied
-   in contexts where this is often a bug (eg the rhs of a let-binding or in the
-   argument of [ignore]). This check can be disabled by explicitly annotating
-   the expression with a type constraint, eg [(e : _ -> _)].
+let check_statement exp =
+  let ty = get_desc (expand_head exp.exp_env exp.exp_type) in
+  match ty with
+  | Tconstr (p, _, _)  when Path.same p Predef.path_unit -> ()
+  | Tvar _ -> ()
+  | _ ->
+      let rec loop {exp_loc; exp_desc; exp_extra; _} =
+        match exp_desc with
+        | Texp_let (_, _, e)
+        | Texp_sequence (_, e)
+        | Texp_letexception (_, e)
+        | Texp_letmodule (_, _, _, _, e) ->
+            loop e
+        | _ ->
+            let loc =
+              match List.find_opt (function
+                  | (Texp_constraint _, _, _) -> true
+                  | _ -> false) exp_extra
+              with
+              | Some (_, loc, _) -> loc
+              | None -> exp_loc
+            in
+            Location.prerr_warning loc Warnings.Non_unit_statement
+      in
+      loop exp
 
-   If [statement] is [true] and [ignored-partial-application] is {em not}
-   triggered, then the [non-unit-statement] check is performaed. If [statement]
-   is [false], only the [ignored-partial-application] check is performed.
 
-   If the type of [exp] is not known when the function is called, then the check
-   is retried after typechecking. *)
+(* [check_partial_application] implements the [ignored-partial-application]
+   warning (and if [statement] is [true], also [non-unit-statement]).
+
+   If [exp] has a function type, we check that it is not syntactically the
+   result of a function application, as this is often a bug in certain contexts
+   (eg the rhs of a let-binding or in the argument of [ignore]). The check can
+   be disabled by explicitly annotating the expression with a type constraint,
+   eg [(e : _ -> _)].
+
+   If [statement] is [true] and the [ignored-partial-application] is {em not}
+   triggered, then the [non-unit-statement] check is performaed (see
+   [check_statement]).
+
+   If the type of [exp] is not known at the time this function is called, the
+   check is retried again after typechecking. *)
 
 let check_partial_application statement exp =
+  let check_statement () = if statement then check_statement exp in
   let doit () =
     let ty = get_desc (expand_head exp.exp_env exp.exp_type) in
-    let check_statement () =
-      match ty with
-      | Tconstr (p, _, _)  when Path.same p Predef.path_unit ->
-          ()
-      | Tvar _ -> ()
-      | _ ->
-          if statement then
-            let rec loop {exp_loc; exp_desc; exp_extra; _} =
-              match exp_desc with
-              | Texp_let (_, _, e)
-              | Texp_sequence (_, e)
-              | Texp_letexception (_, e)
-              | Texp_letmodule (_, _, _, _, e) ->
-                  loop e
-              | _ ->
-                  let loc =
-                    match List.find_opt (function
-                        | (Texp_constraint _, _, _) -> true
-                        | _ -> false) exp_extra
-                    with
-                    | Some (_, loc, _) -> loc
-                    | None -> exp_loc
-                  in
-                  Location.prerr_warning loc Warnings.Non_unit_statement
-            in
-            loop exp
-    in
     match ty with
     | Tarrow _ ->
         let rec check {exp_desc; exp_loc; exp_extra; _} =
