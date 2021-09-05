@@ -1243,18 +1243,18 @@ and expand_module_path lax unascribe env path =
   || (match path with Pident id -> not (Ident.persistent id) | _ -> true) ->
       path
 
-let normalize_module_path oloc env path =
-  try normalize_module_path (oloc = None) false env path
+let normalize_module_path ?(unascribe = false) oloc env path =
+  try normalize_module_path (oloc = None) unascribe env path
   with Not_found ->
     match oloc with None -> assert false
     | Some loc ->
         error (Missing_module(loc, path,
-                              normalize_module_path true false env path))
+                              normalize_module_path true unascribe env path))
 
 let normalize_path_prefix oloc env path =
   match path with
     Pdot(p, s) ->
-      let p2 = normalize_module_path oloc env p in
+      let p2 = normalize_module_path ~unascribe:true oloc env p in
       if p == p2 then path else Pdot(p2, s)
   | Pident _ ->
       path
@@ -1276,7 +1276,7 @@ let normalize_type_path oloc env path =
           normalize_path_prefix oloc env p
         else
           (* Regular M.t, Ext M.C *)
-          normalize_module_path oloc env p
+          normalize_module_path ~unascribe:true oloc env p
       in
       if p == p2 then path else Pdot (p2, s)
   | Papply _ ->

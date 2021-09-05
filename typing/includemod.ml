@@ -316,8 +316,8 @@ and print_coercion3 ppf (i, n, c) =
 
 let equal_module_paths env p1 subst p2 =
   Path.same p1 p2
-  || Path.same (Env.normalize_module_path None env p1)
-       (Env.normalize_module_path None env
+  || Path.same (Env.normalize_module_path ~unascribe:true None env p1)
+       (Env.normalize_module_path ~unascribe:true None env
           (Subst.module_path subst p2))
 
 let equal_modtype_paths env p1 subst p2 =

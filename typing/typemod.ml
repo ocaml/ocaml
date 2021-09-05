@@ -2158,7 +2158,6 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
                   Mtype.strengthen ~aliasable:Misc.Str_alias env mty p1
                 else mty }
         | Mty_ascribe (p1, mty1) when not alias ->
-            let p1 = Env.normalize_module_path (Some smod.pmod_loc) env p1 in
             let mty =
               if sttn then
                 Mtype.strengthen ~aliasable:Misc.Str_ascribe env mty1 p1

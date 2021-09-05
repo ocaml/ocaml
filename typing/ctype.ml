@@ -673,7 +673,7 @@ let rec normalize_package_path env p =
       match p with
         Path.Pdot (p1, s) ->
           (* For module aliases *)
-          let p1' = Env.normalize_module_path None env p1 in
+          let p1' = Env.normalize_module_path ~unascribe:true None env p1 in
           if Path.same p1 p1' then p else
           normalize_package_path env (Path.Pdot (p1', s))
       | _ -> p
