@@ -526,6 +526,7 @@ type module_type =
   | Mty_signature of signature
   | Mty_functor of functor_parameter * module_type
   | Mty_alias of Path.t
+  | Mty_ascribe of Path.t * module_type (* TODO: Combine with mty_alias *)
 
 and functor_parameter =
   | Unit

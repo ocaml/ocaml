@@ -952,6 +952,7 @@ let get_components c =
 let modtype_of_functor_appl fcomp p1 p2 =
   match fcomp.fcomp_res with
   | Mty_alias _ as mty -> mty
+  | Mty_ascribe _ as mty -> mty
   | mty ->
       try
         Hashtbl.find fcomp.fcomp_subst_cache p2
@@ -1234,6 +1235,9 @@ and expand_module_path lax env path =
       if Ident.global id && not (Ident.same id (Path.head path'))
       then add_required_global id;
       path'
+  | {md_type= Mty_ascribe _} ->
+      (* TODO *)
+      path
   | _ -> path
   with Not_found when lax
   || (match path with Pident id -> not (Ident.persistent id) | _ -> true) ->
@@ -1511,6 +1515,9 @@ let rec scrape_alias env sub ?path mty =
           (Warnings.No_cmi_file (Path.name path));*)
         mty
       end
+  | Mty_ascribe (path', mty'), _ ->
+      (* TODO: This strengthening should push down ascriptions. *)
+      scrape_alias env sub ?path (!strengthen ~aliasable:false env mty' path')
   | mty, Some path ->
       !strengthen ~aliasable:true env mty path
   | _ -> mty
@@ -1792,6 +1799,7 @@ let rec components_of_module_maker
           fcomp_subst_cache = Hashtbl.create 17 })
   | Mty_ident _ -> Error No_components_abstract
   | Mty_alias p -> Error (No_components_alias p)
+  | Mty_ascribe _ -> assert false
 
 (* Insertion of bindings by identifier + path *)
 
@@ -2321,7 +2329,7 @@ let read_signature modname filename =
   let md = Lazy_backtrack.force subst_modtype_maker mda.mda_declaration in
   match md.md_type with
   | Mty_signature sg -> sg
-  | Mty_ident _ | Mty_functor _ | Mty_alias _ -> assert false
+  | Mty_ident _ | Mty_functor _ | Mty_alias _ | Mty_ascribe _ -> assert false
 
 let is_identchar_latin1 = function
   | 'A'..'Z' | 'a'..'z' | '_' | '\192'..'\214' | '\216'..'\246'

@@ -122,14 +122,14 @@ let rec path_concat head p =
 let extract_sig env loc mty =
   match Env.scrape_alias env mty with
     Mty_signature sg -> sg
-  | Mty_alias path ->
+  | Mty_alias path | Mty_ascribe (path, _) ->
       raise(Error(loc, env, Cannot_scrape_alias path))
   | _ -> raise(Error(loc, env, Signature_expected))
 
 let extract_sig_open env loc mty =
   match Env.scrape_alias env mty with
     Mty_signature sg -> sg
-  | Mty_alias path ->
+  | Mty_alias path | Mty_ascribe (path, _) ->
       raise(Error(loc, env, Cannot_scrape_alias path))
   | mty -> raise(Error(loc, env, Structure_expected mty))
 
@@ -337,7 +337,14 @@ let retype_applicative_functor_type ~loc env funct arg =
 let check_usage_of_path_of_substituted_item paths ~loc ~lid env super =
     { super with
       Btype.it_signature_item = (fun self -> function
-      | Sig_module (id, _, { md_type = Mty_alias aliased_path; _ }, _, _)
+      | Sig_module
+          (id
+          , _
+          , { md_type =
+                (Mty_alias aliased_path | Mty_ascribe (aliased_path, _))
+            ; _ }
+          , _
+          , _)
         when List.exists
                (fun path -> path_is_strict_prefix path ~prefix:aliased_path)
                paths
@@ -645,7 +652,7 @@ let merge_constraint initial_env loc sg lid constr =
         real_ids := path :: !real_ids;
         let item =
           match md.md_type, constr with
-            Mty_alias _, (With_module _ | With_type _) ->
+            (Mty_alias _ | Mty_ascribe _), (With_module _ | With_type _) ->
               (* A module alias cannot be refined, so keep it
                  and just check that the constraint is correct *)
               item
@@ -819,7 +826,13 @@ let rec approx_modtype env smty =
       mty
   | Pmty_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
-  | Pmty_ascribe (_lid, mty) -> approx_modtype env mty
+  | Pmty_ascribe (lid, mty) ->
+      let path =
+        Env.lookup_module_path ~use:false ~load:false
+          ~loc:smty.pmty_loc lid.txt env
+      in
+      let mty = approx_modtype env mty in
+      Mty_ascribe(path, mty)
 
 and approx_module_declaration env pmd =
   {
@@ -1360,18 +1373,13 @@ and transl_modtype_aux env smty =
   | Pmty_ascribe (lid, smty_res) ->
       let path = transl_module_alias loc env lid.txt in
       let tmty_res = transl_modtype env smty_res in
-      let coercion =
+      let mty_type = Mty_ascribe (path, tmty_res.mty_type) in
+      let _coercion =
         try
           Includemod.modtypes ~loc env ~mark:Mark_both (Mty_alias path)
-            tmty_res.mty_type
+            mty_type
         with Includemod.Error msg ->
           raise(Error(loc, env, Not_included msg))
-      in
-      (* TODO *)
-      ignore coercion;
-      let mty_type =
-        (* TODO: Propagate ascription. *)
-        Mtype.strengthen ~aliasable:false env tmty_res.mty_type path
       in
       mkmty (Tmty_ascribe (path, lid, tmty_res)) mty_type env loc
         smty.pmty_attributes
@@ -1848,6 +1856,7 @@ let path_of_module mexp =
 let rec nongen_modtype env = function
     Mty_ident _ -> false
   | Mty_alias _ -> false
+  | Mty_ascribe _ -> false
   | Mty_signature sg ->
       let env = Env.add_signature sg env in
       List.exists (nongen_signature_item env) sg
@@ -2050,7 +2059,7 @@ and package_constraints env loc mty constrs =
     match Mtype.scrape env mty with
     | Mty_signature sg ->
         Mty_signature (package_constraints_sig env loc sg constrs)
-    | Mty_functor _ | Mty_alias _ -> assert false
+    | Mty_functor _ | Mty_alias _ | Mty_ascribe _ -> assert false
     | Mty_ident p -> raise(Error(loc, env, Cannot_scrape_package_type p))
   end
 
@@ -2137,6 +2146,22 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
               mod_type =
                 if sttn then Mtype.strengthen ~aliasable:true env mty p1
                 else mty }
+        | Mty_ascribe (p1, mty1) when not alias ->
+            let p1 = Env.normalize_module_path (Some smod.pmod_loc) env p1 in
+            let mty =
+              if sttn then
+                (* TODO: This strengthening should push down ascriptions. *)
+                Mtype.strengthen ~aliasable:false env mty1 p1
+              else
+                mty1
+            in
+            let coerce =
+              Includemod.modtypes ~loc:smod.pmod_loc env ~mark:Mark_neither
+                (Mty_alias path) mty
+            in
+            { md with
+              mod_desc = Tmod_constraint (md, mty1, Tmodtype_implicit, coerce);
+              mod_type = mty }
         | mty ->
             let mty =
               if sttn then Mtype.strengthen ~aliasable env mty path
@@ -2719,6 +2744,7 @@ let type_structure = type_structure false None
 let rec normalize_modtype = function
     Mty_ident _
   | Mty_alias _ -> ()
+  | Mty_ascribe (_, mty) -> normalize_modtype mty
   | Mty_signature sg -> normalize_signature sg
   | Mty_functor(_param, body) -> normalize_modtype body
 

@@ -553,7 +553,7 @@ let () =
          | Mty_alias path ->
              let md = Env.find_module path env in
              accum_aliases md (acc Trec_not)
-         | Mty_ident _ | Mty_signature _ | Mty_functor _ ->
+         | Mty_ascribe _ | Mty_ident _ | Mty_signature _ | Mty_functor _ ->
              List.rev (acc (is_rec_module id md))
        in
        accum_aliases md []

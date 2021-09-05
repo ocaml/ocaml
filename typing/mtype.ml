@@ -109,6 +109,9 @@ let () = Env.strengthen := strengthen
 let rec make_aliases_absent pres mty =
   match mty with
   | Mty_alias _ -> Mp_absent, mty
+  | Mty_ascribe (p, mty) ->
+      let _, mty = make_aliases_absent Mp_present mty in
+      pres, Mty_ascribe (p, mty)
   | Mty_signature sg ->
       pres, Mty_signature(make_aliases_absent_sig sg)
   | Mty_functor(arg, res) ->
@@ -136,6 +139,8 @@ let scrape_for_type_of env pres mty =
           loop env (Some path) md.md_type
         with Not_found -> mty
       end
+    | Mty_ascribe (path, mty), _ ->
+        strengthen ~aliasable:false env mty path
     | mty, Some path ->
         strengthen ~aliasable:false env mty path
     | _ -> mty
@@ -171,6 +176,25 @@ let rec nondep_mty_with_presence env va ids pres mty =
           in
           nondep_mty_with_presence env va ids Mp_present expansion.md_type
       | None -> pres, mty
+      end
+  | Mty_ascribe (p, mty) ->
+      let mty = nondep_mty env va ids mty in
+      begin match Path.find_free_opt ids p with
+      | Some _id ->
+          let expansion =
+            try Some (Env.find_module p env)
+            with Not_found -> None
+          in
+          begin match expansion with
+          | Some {md_type= Mty_alias p | Mty_ascribe (p, _)} ->
+              (* Note that ((M :> S) :> S') is the same as (M :> S') *)
+              nondep_mty_with_presence env va ids pres (Mty_ascribe (p, mty))
+          | _ ->
+              (* TODO: This strengthening should push down ascriptions. *)
+              nondep_mty_with_presence env va ids Mp_present
+                (strengthen ~aliasable:false env mty p)
+          end
+      | None -> pres, Mty_ascribe (p, mty)
       end
   | Mty_signature sg ->
       let mty = Mty_signature(nondep_sig env va ids sg) in
@@ -289,6 +313,7 @@ let rec type_paths env p mty =
   match scrape env mty with
     Mty_ident _ -> []
   | Mty_alias _ -> []
+  | Mty_ascribe (_, mty) -> type_paths env p mty
   | Mty_signature sg -> type_paths_sig env p sg
   | Mty_functor _ -> []
 
@@ -316,6 +341,7 @@ let rec no_code_needed_mod env pres mty =
       | Mty_signature sg -> no_code_needed_sig env sg
       | Mty_functor _ -> false
       | Mty_alias _ -> false
+      | Mty_ascribe _ -> false
     end
 
 and no_code_needed_sig env sg =
@@ -350,7 +376,7 @@ let rec contains_type env = function
       contains_type_sig env sg
   | Mty_functor (_, body) ->
       contains_type env body
-  | Mty_alias _ ->
+  | Mty_alias _ | Mty_ascribe _ ->
       ()
 
 and contains_type_sig env = List.iter (contains_type_item env)
@@ -425,7 +451,7 @@ let collect_arg_paths mty =
   and it_signature_item it si =
     type_iterators.it_signature_item it si;
     match si with
-    | Sig_module (id, _, {md_type=Mty_alias p}, _, _) ->
+    | Sig_module (id, _, {md_type=Mty_alias p | Mty_ascribe(p, _)}, _, _) ->
         bindings := Ident.add id p !bindings
     | Sig_module (id, _, {md_type=Mty_signature sg}, _, _) ->
         List.iter
@@ -453,7 +479,7 @@ let rec remove_aliases_mty env args pres mty =
     match args.scrape env mty with
       Mty_signature sg ->
         Mp_present, Mty_signature (remove_aliases_sig env args' sg)
-    | Mty_alias _ ->
+    | Mty_alias _ | Mty_ascribe _ ->
         let mty' = Env.scrape_alias env mty in
         if mty' = mty then begin
           pres, mty
@@ -479,6 +505,9 @@ and remove_aliases_sig env args sg =
         match md.md_type with
           Mty_alias p when args.exclude id p ->
             pres, md.md_type
+        | Mty_ascribe (p, mty) when args.exclude id p ->
+            let _, mty = remove_aliases_mty env args Mp_present mty in
+            pres, Mty_ascribe (p, mty)
         | mty ->
             remove_aliases_mty env args pres mty
       in

@@ -98,7 +98,7 @@ let rec module_path s path =
 let modtype_path s path =
       match Path.Map.find path s.modtypes with
       | Mty_ident p -> p
-      | Mty_alias _ | Mty_signature _ | Mty_functor _ ->
+      | Mty_alias _ | Mty_ascribe _ | Mty_signature _ | Mty_functor _ ->
          fatal_error "Subst.modtype_path"
       | exception Not_found ->
          match path with
@@ -499,6 +499,8 @@ let rec modtype scoping s = function
                   modtype scoping (add_module id (Pident id') s) res)
   | Mty_alias p ->
       Mty_alias (module_path s p)
+  | Mty_ascribe (p, mty) ->
+      Mty_ascribe (module_path s p, modtype scoping s mty)
 
 and signature scoping s sg =
   (* Components of signature may be mutually recursive (e.g. type declarations

@@ -146,6 +146,7 @@ module Illegal_permutation = struct
         | None -> raise Not_found
         | Some mt -> find env ctx path mt
         end
+    | Mty_ascribe (_, mt), _ -> find env ctx path mt
     | Mty_signature s , [] -> List.rev ctx, s
     | Mty_signature s, Item k :: q ->
         begin match runtime_item k s with
@@ -292,6 +293,7 @@ module With_shorthand = struct
   let modtype (r : _ named) = match r.item with
     | Types.Mty_ident _
     | Types.Mty_alias _
+    | Types.Mty_ascribe _
     | Types.Mty_signature []
       -> Original r.item
     | Types.Mty_signature _ | Types.Mty_functor _

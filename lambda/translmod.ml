@@ -231,6 +231,8 @@ let init_shape id modl =
     | Mty_alias _ ->
         raise (Initialization_failure
                 (Unsafe {reason=Unsafe_module_binding;loc;subid}))
+    | Mty_ascribe (_, mty) ->
+        init_shape_mod subid loc env mty
     | Mty_signature sg ->
         Const_block(0, [Const_block(0, init_shape_struct env sg)])
     | Mty_functor _ ->
