@@ -22,6 +22,10 @@ Working version
   parameter passing on PowerPC (16 registers) and on s390x (8 registers).
   (Xavier Leroy, review by Mark Shinwell)
 
+- #10608: Fix a bug in the RISC-V native-code backend that could result in
+  long compilation times under certain circumstances.
+  (Nicolás Ojeda Bär, report by Edwin Török, review by Xavier Leroy)
+
 ### Standard library:
 
 * #7812, #10475: `Filename.chop_suffix name suff` now checks that `suff`
