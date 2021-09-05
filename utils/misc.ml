@@ -1124,3 +1124,5 @@ module Magic_number = struct
            | Error err -> Error (Unexpected_error err)
            | Ok () -> Ok info
 end
+
+type strengthening = Str_alias | Str_ascribe | Str_none

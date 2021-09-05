@@ -352,8 +352,7 @@ let retrieve_functor_params env mty =
     | Mty_functor (p, res) -> retrieve_functor_params (p :: before) env res
     | Mty_signature _ as res -> List.rev before, res
     | Mty_ascribe (p, mty) ->
-        (* TODO: This strengthening should push down ascriptions. *)
-        let mty = Mtype.strengthen ~aliasable:false env mty p in
+        let mty = Mtype.strengthen ~aliasable:Misc.Str_ascribe env mty p in
         retrieve_functor_params before env mty
   in
   retrieve_functor_params [] env mty
@@ -376,10 +375,9 @@ and try_modtypes ~loc env ~mark subst mty1 mty2 =
         (* TODO: Relax this restriction. *)
         Error (Error.Invalid_module_alias p2)
       else if equal_module_paths env p1 subst p2 then
-        (* TODO: These strengthenings should push down ascriptions. *)
         try_modtypes ~loc env ~mark subst
-          (Mtype.strengthen ~aliasable:false env res1 p1)
-          (Mtype.strengthen ~aliasable:false env res2 p2)
+          (Mtype.strengthen ~aliasable:Misc.Str_ascribe env res1 p1)
+          (Mtype.strengthen ~aliasable:Misc.Str_ascribe env res2 p2)
       else
         Error Error.(Mt_core Incompatible_aliases)
   | (Mty_alias p1, Mty_ascribe (p2, res2)) ->
@@ -405,9 +403,12 @@ and try_modtypes ~loc env ~mark subst mty1 mty2 =
             begin match expand_module_alias env  p2 with
             | Error e -> Error (Error.Mt_core e)
             | Ok mty2 ->
-                (* TODO: This strengthening should push down ascriptions. *)
-                let mty1 = Mtype.strengthen ~aliasable:false env res1 p1 in
-                let mty2 = Mtype.strengthen ~aliasable:true env mty2 p2 in
+                let mty1 =
+                  Mtype.strengthen ~aliasable:Misc.Str_ascribe env res1 p1
+                in
+                let mty2 =
+                  Mtype.strengthen ~aliasable:Misc.Str_alias env mty2 p2
+                in
                 match modtypes ~loc env ~mark subst mty1 mty2 with
                 | Ok _ -> Ok Tcoerce_none
                 | Error reason -> Error (Error.After_alias_expansion reason)
@@ -420,9 +421,9 @@ and try_modtypes ~loc env ~mark subst mty1 mty2 =
       | exception Env.Error (Env.Missing_module (_, _, path)) ->
           Error Error.(Mt_core(Unbound_module_path path))
       | p1 ->
-          (* TODO: This strengthening should push down ascriptions. *)
-          begin match strengthened_modtypes ~loc ~aliasable:false env ~mark
-                  subst res1 p1 mty2
+          begin match
+            strengthened_modtypes ~loc ~aliasable:Misc.Str_ascribe env ~mark
+              subst res1 p1 mty2
           with
           | Ok _ as x -> x
           | Error reason -> Error (Error.After_alias_expansion reason)
@@ -444,8 +445,9 @@ and try_modtypes ~loc env ~mark subst mty1 mty2 =
           begin match expand_module_alias env  p1 with
           | Error e -> Error (Error.Mt_core e)
           | Ok mty1 ->
-              match strengthened_modtypes ~loc ~aliasable:true env ~mark
-                      subst mty1 p1 mty2
+              match
+                strengthened_modtypes ~loc ~aliasable:Misc.Str_alias env ~mark
+                  subst mty1 p1 mty2
               with
               | Ok _ as x -> x
               | Error reason -> Error (Error.After_alias_expansion reason)
@@ -743,7 +745,7 @@ and module_declarations ~loc env ~mark  subst id1 md1 md2 =
   let p1 = Path.Pident id1 in
   if mark_positive mark then
     Env.mark_module_used md1.md_uid;
-  strengthened_modtypes ~loc ~aliasable:true env ~mark subst
+  strengthened_modtypes ~loc ~aliasable:Misc.Str_ascribe env ~mark subst
     md1.md_type p1 md2.md_type
 
 (* Inclusion between module type specifications *)
@@ -808,7 +810,9 @@ exception Apply_error of {
   }
 
 let check_modtype_inclusion_raw ~loc env mty1 path1 mty2 =
-  let aliasable = can_alias env path1 in
+  let aliasable =
+    if can_alias env path1 then Misc.Str_alias else Misc.Str_none
+  in
   strengthened_modtypes ~loc ~aliasable env ~mark:Mark_both
     Subst.identity mty1 path1 mty2
 
@@ -825,7 +829,9 @@ let check_functor_application_in_path
   | Error _errs ->
       if errors then
         let prepare_arg (arg_path, arg_mty) =
-          let aliasable = can_alias env arg_path in
+          let aliasable =
+            if can_alias env arg_path then Misc.Str_alias else Misc.Str_none
+          in
           let smd = Mtype.strengthen ~aliasable env arg_mty arg_path in
           (Error.Named arg_path, smd)
         in

@@ -630,7 +630,9 @@ let merge_constraint initial_env loc sg lid constr =
         let mty = md'.md_type in
         let mty = Mtype.scrape_for_type_of ~remove_aliases sig_env mty in
         let md'' = { md' with md_type = mty } in
-        let newmd = Mtype.strengthen_decl ~aliasable:false sig_env md'' path in
+        let newmd =
+          Mtype.strengthen_decl ~aliasable:Misc.Str_none sig_env md'' path
+        in
         ignore(Includemod.modtypes  ~mark:Mark_both ~loc sig_env
                  newmd.md_type md.md_type);
         return
@@ -638,7 +640,10 @@ let merge_constraint initial_env loc sg lid constr =
           (Pident id, lid, Twith_module (path, lid'))
     | Sig_module(id, _, md, _rs, _), [s], With_modsubst (lid',path,md')
       when Ident.name id = s ->
-        let aliasable = not (Env.is_functor_arg path sig_env) in
+        let aliasable =
+          if Env.is_functor_arg path sig_env then Misc.Str_none
+          else Misc.Str_alias
+        in
         ignore
           (Includemod.strengthened_module_decl ~loc ~mark:Mark_both
              ~aliasable sig_env md' path md);
@@ -1948,7 +1953,7 @@ let check_recmodule_inclusion env bindings =
     match id with
     | None -> mty
     | Some id ->
-        Mtype.strengthen ~aliasable:false env mty
+        Mtype.strengthen ~aliasable:Misc.Str_none env mty
           (Subst.module_path s (Pident id))
   in
 
@@ -2144,14 +2149,14 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
                 Tmod_constraint (md, mty, Tmodtype_implicit,
                                  Tcoerce_alias (env, path, Tcoerce_none));
               mod_type =
-                if sttn then Mtype.strengthen ~aliasable:true env mty p1
+                if sttn then
+                  Mtype.strengthen ~aliasable:Misc.Str_alias env mty p1
                 else mty }
         | Mty_ascribe (p1, mty1) when not alias ->
             let p1 = Env.normalize_module_path (Some smod.pmod_loc) env p1 in
             let mty =
               if sttn then
-                (* TODO: This strengthening should push down ascriptions. *)
-                Mtype.strengthen ~aliasable:false env mty1 p1
+                Mtype.strengthen ~aliasable:Misc.Str_ascribe env mty1 p1
               else
                 mty1
             in
@@ -2163,6 +2168,9 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
               mod_desc = Tmod_constraint (md, mty1, Tmodtype_implicit, coerce);
               mod_type = mty }
         | mty ->
+            let aliasable =
+              if aliasable then Misc.Str_alias else Misc.Str_none
+            in
             let mty =
               if sttn then Mtype.strengthen ~aliasable env mty path
               else mty

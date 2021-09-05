@@ -151,7 +151,7 @@ val modtypes:
   module_type -> module_type -> module_coercion
 
 val strengthened_module_decl:
-  loc:Location.t -> aliasable:bool -> Env.t -> mark:mark ->
+  loc:Location.t -> aliasable:Misc.strengthening -> Env.t -> mark:mark ->
   module_declaration -> Path.t -> module_declaration -> module_coercion
 
 val check_modtype_inclusion :

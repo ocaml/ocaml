@@ -747,7 +747,8 @@ let check_functor_application =
 let strengthen =
   (* to be filled with Mtype.strengthen *)
   ref ((fun ~aliasable:_ _env _mty _path -> assert false) :
-         aliasable:bool -> t -> module_type -> Path.t -> module_type)
+         aliasable:Misc.strengthening -> t -> module_type -> Path.t ->
+           module_type)
 
 let md md_type =
   {md_type; md_attributes=[]; md_loc=Location.none
@@ -1517,9 +1518,10 @@ let rec scrape_alias env sub ?path mty =
       end
   | Mty_ascribe (path', mty'), _ ->
       (* TODO: This strengthening should push down ascriptions. *)
-      scrape_alias env sub ?path (!strengthen ~aliasable:false env mty' path')
+      scrape_alias env sub ?path
+        (!strengthen ~aliasable:Str_ascribe env mty' path')
   | mty, Some path ->
-      !strengthen ~aliasable:true env mty path
+      !strengthen ~aliasable:Str_alias env mty path
   | _ -> mty
 
 (* Given a signature and a root path, prefix all idents in the signature

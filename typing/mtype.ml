@@ -40,12 +40,12 @@ let rec strengthen ~aliasable env mty p =
   | Mty_functor(Named (Some param, arg), res)
     when !Clflags.applicative_functors ->
       Mty_functor(Named (Some param, arg),
-        strengthen ~aliasable:false env res (Papply(p, Pident param)))
+        strengthen ~aliasable:Misc.Str_none env res (Papply(p, Pident param)))
   | Mty_functor(Named (None, arg), res)
     when !Clflags.applicative_functors ->
       let param = Ident.create_scoped ~scope:(Path.scope p) "Arg" in
       Mty_functor(Named (Some param, arg),
-        strengthen ~aliasable:false env res (Papply(p, Pident param)))
+        strengthen ~aliasable:Misc.Str_none env res (Papply(p, Pident param)))
   | mty ->
       mty
 
@@ -99,10 +99,12 @@ and strengthen_sig ~aliasable env sg p =
       sigelt :: strengthen_sig ~aliasable env rem p
 
 and strengthen_decl ~aliasable env md p =
-  match md.md_type with
-  | Mty_alias _ -> md
-  | _ when aliasable -> {md with md_type = Mty_alias p}
-  | mty -> {md with md_type = strengthen ~aliasable env mty p}
+  match md.md_type, aliasable with
+  | Mty_alias _, _ -> md
+  | _, Misc.Str_alias -> {md with md_type = Mty_alias p}
+  | Mty_ascribe _, _ -> md
+  | _, Misc.Str_ascribe -> {md with md_type = Mty_ascribe (p, md.md_type)}
+  | mty, _ -> {md with md_type = strengthen ~aliasable env mty p}
 
 let () = Env.strengthen := strengthen
 
@@ -140,9 +142,9 @@ let scrape_for_type_of env pres mty =
         with Not_found -> mty
       end
     | Mty_ascribe (path, mty), _ ->
-        strengthen ~aliasable:false env mty path
+        strengthen ~aliasable:Misc.Str_none env mty path
     | mty, Some path ->
-        strengthen ~aliasable:false env mty path
+        strengthen ~aliasable:Misc.Str_none env mty path
     | _ -> mty
   in
   make_aliases_absent pres (loop env None mty)
@@ -190,9 +192,8 @@ let rec nondep_mty_with_presence env va ids pres mty =
               (* Note that ((M :> S) :> S') is the same as (M :> S') *)
               nondep_mty_with_presence env va ids pres (Mty_ascribe (p, mty))
           | _ ->
-              (* TODO: This strengthening should push down ascriptions. *)
               nondep_mty_with_presence env va ids Mp_present
-                (strengthen ~aliasable:false env mty p)
+                (strengthen ~aliasable:Str_ascribe env mty p)
           end
       | None -> pres, Mty_ascribe (p, mty)
       end
