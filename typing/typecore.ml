@@ -2517,6 +2517,26 @@ let generalize_and_check_univars env kind exp ty_expected vars =
   List.iter generalize vars;
   check_univars env kind exp ty_expected vars
 
+(* [check_partial_application] implements both the [non-unit-statemnt] and the
+   [ignored-partial-application] warnings.
+
+   [non-unit-statemnt] verifies that [exp] has type [unit]. It is applied in
+   contexts where their value of [exp] is known to be discarded (eg the lhs of a
+   sequence).
+
+   [ignored-partial-application] verifies that if [exp] has a function type then
+   it is not syntactically the result of a function application. It is applied
+   in contexts where this is often a bug (eg the rhs of a let-binding or in the
+   argument of [ignore]). This check can be disabled by explicitly annotating
+   the expression with a type constraint, eg [(e : _ -> _)].
+
+   If [statement] is [true] and [ignored-partial-application] is {em not}
+   triggered, then the [non-unit-statement] check is performaed. If [statement]
+   is [false], only the [ignored-partial-application] check is performed.
+
+   If the type of [exp] is not known when the function is called, then the check
+   is retried after typechecking. *)
+
 let check_partial_application statement exp =
   let rec f delay =
     let ty = get_desc (expand_head exp.exp_env exp.exp_type) in
