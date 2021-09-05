@@ -786,8 +786,7 @@ and check_modtype_equiv ~loc env ~mark mty1 mty2 =
 
 (* Simplified inclusion check between module types (for Env) *)
 
-let can_alias env path =
-  not (Env.is_functor_arg_or_apply path env)
+let can_alias env path = not (Env.is_functor_arg_or_apply path env)
 
 
 

@@ -2131,12 +2131,17 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
       let path =
         Env.lookup_module_path ~load:(not alias) ~loc:smod.pmod_loc lid.txt env
       in
+      let has_apply = Path.has_apply path in
+      let is_functor_arg = Env.is_functor_arg path env in
       let md = { mod_desc = Tmod_ident (path, lid);
-                 mod_type = Mty_alias path;
+                 mod_type =
+                   (if is_functor_arg then
+                     Mty_ascribe (path, (Env.find_module path env).md_type)
+                   else Mty_alias path);
                  mod_env = env;
                  mod_attributes = smod.pmod_attributes;
                  mod_loc = smod.pmod_loc } in
-      let aliasable = not (Env.is_functor_arg_or_apply path env) in
+      let aliasable = not has_apply in
       let md =
         if alias && aliasable then
           (Env.add_required_global (Path.head path); md)
@@ -2169,7 +2174,9 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
               mod_type = mty }
         | mty ->
             let aliasable =
-              if aliasable then Misc.Str_alias else Misc.Str_none
+              if has_apply then Misc.Str_none
+              else if is_functor_arg then Misc.Str_ascribe
+              else Misc.Str_alias
             in
             let mty =
               if sttn then Mtype.strengthen ~aliasable env mty path
