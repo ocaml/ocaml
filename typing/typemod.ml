@@ -2135,15 +2135,16 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
       let is_functor_arg = Env.is_functor_arg path env in
       let md = { mod_desc = Tmod_ident (path, lid);
                  mod_type =
-                   (if is_functor_arg then
-                     Mty_ascribe (path, (Env.find_module path env).md_type)
+                   (if alias && is_functor_arg && not has_apply then
+                     match (Env.find_module path env).md_type with
+                     | Mty_alias _ | Mty_ascribe _ as mty -> mty
+                     | mty -> Mty_ascribe (path, mty)
                    else Mty_alias path);
                  mod_env = env;
                  mod_attributes = smod.pmod_attributes;
                  mod_loc = smod.pmod_loc } in
-      let aliasable = not has_apply in
       let md =
-        if alias && aliasable then
+        if alias && not has_apply then
           (Env.add_required_global (Path.head path); md)
         else match (Env.find_module path env).md_type with
         | Mty_alias p1 when not alias ->
