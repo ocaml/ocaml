@@ -47,7 +47,7 @@ static int check_for_pending_signals(void)
 {
   int i;
   for (i = 0; i < NSIG; i++) {
-    if (atomic_load_explicit(&caml_pending_signals[i], memory_order_acquire)) return 1;
+    if (atomic_load_explicit(&caml_pending_signals[i], memory_order_seq_cst)) return 1;
   }
   return 0;
 }
@@ -63,12 +63,12 @@ CAMLexport value caml_process_pending_signals_exn(void)
   sigset_t set;
 #endif
 
-if( atomic_load_explicit(&total_signals_pending, memory_order_acquire) == 0 )
+if( atomic_load_explicit(&total_signals_pending, memory_order_seq_cst) == 0 )
   return Val_unit;
 
 /* Check that there is indeed a pending signal before issuing the
     syscall in [pthread_sigmask]. It is possible for there to be a
-    race between checking [total_signals_pending] and checking the 
+    race between checking [total_signals_pending] and checking the
     actual pending signals so there may not be a signal to handle. */
 if (!check_for_pending_signals())
   return Val_unit;
@@ -77,17 +77,17 @@ if (!check_for_pending_signals())
   pthread_sigmask(/* dummy */ SIG_BLOCK, NULL, &set);
 #endif
   for (i = 0; i < NSIG; i++) {
-    if ( atomic_load_explicit(&caml_pending_signals[i], memory_order_acquire) == 0 )
+    if ( atomic_load_explicit(&caml_pending_signals[i], memory_order_seq_cst) == 0 )
       continue;
 #ifdef POSIX_SIGNALS
     if(sigismember(&set, i))
       continue;
 #endif
   again:
-    specific_signal_pending = atomic_load_explicit(&caml_pending_signals[i], memory_order_acquire);
+    specific_signal_pending = atomic_load_explicit(&caml_pending_signals[i], memory_order_seq_cst);
     if( specific_signal_pending > 0 ) {
       if( !atomic_compare_exchange_strong(
-            &caml_pending_signals[i], 
+            &caml_pending_signals[i],
              &specific_signal_pending, specific_signal_pending - 1) ) {
         /* We failed our CAS because another thread beat us to processing
            this signal. Try again to see if there are more of this signal
@@ -95,7 +95,7 @@ if (!check_for_pending_signals())
         goto again;
       }
 
-      atomic_fetch_sub_explicit(&total_signals_pending, 1, memory_order_acq_rel);
+      atomic_fetch_sub_explicit(&total_signals_pending, 1, memory_order_seq_cst);
 
       exn = caml_execute_signal_exn(i, 0);
       if (Is_exception_result(exn)) return exn;
@@ -147,7 +147,7 @@ CAMLexport void caml_enter_blocking_section(void)
     caml_enter_blocking_section_hook ();
     /* Check again for pending signals.
        If none, done; otherwise, try again */
-    if ( atomic_load_explicit(&total_signals_pending, memory_order_acquire) == 0 ) break;
+    if ( atomic_load_explicit(&total_signals_pending, memory_order_seq_cst) == 0 ) break;
     caml_leave_blocking_section_hook ();
   }
 }
@@ -221,7 +221,7 @@ void caml_request_minor_gc (void)
 
 CAMLextern value caml_process_pending_signals_with_root_exn(value extra_root)
 {
-  if (atomic_load_explicit(&total_signals_pending, memory_order_acquire) > 0) {
+  if (atomic_load_explicit(&total_signals_pending, memory_order_seq_cst) > 0) {
     CAMLparam1(extra_root);
     value exn = caml_process_pending_signals_exn();
     if (Is_exception_result(exn))
