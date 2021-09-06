@@ -91,7 +91,7 @@ void caml_garbage_collection()
     if (nallocs == 0) {
       /* This is a poll */
       caml_handle_gc_interrupt(); // process pending actions?
-      caml_process_pending_signals();
+      caml_raise_if_exception(caml_process_pending_signals_exn());
       return;
     }
     else
