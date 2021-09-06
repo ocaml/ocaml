@@ -1062,8 +1062,6 @@ void caml_handle_gc_interrupt_no_async_exceptions()
 void caml_handle_gc_interrupt()
 {
   handle_gc_interrupt();
-
-  caml_process_pending_signals();
 }
 
 CAMLexport int caml_bt_is_in_blocking_section(void)

@@ -44,7 +44,8 @@ module Sync : sig
   (** If busy-waiting, calling cpu_relax () between iterations
       will improve performance on some CPU architectures *)
 
-  external poll : unit -> unit = "%poll"
+  val poll : unit -> unit
+  [@@ocaml.deprecated "Poll is now a no-op"]
   (** poll for interrupts *)
 end
 

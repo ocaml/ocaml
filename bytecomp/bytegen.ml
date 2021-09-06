@@ -109,7 +109,7 @@ let rec is_tailcall = function
    from the tail call optimization? *)
 
 let preserve_tailcall_for_prim = function
-    Prunstack | Pperform | Presume | Preperform | Ppoll |
+    Prunstack | Pperform | Presume | Preperform |
     Pidentity | Popaque | Pdirapply | Prevapply | Psequor | Psequand ->
       true
   | Pbytes_to_string | Pbytes_of_string | Pignore | Pgetglobal _ | Psetglobal _
@@ -685,7 +685,7 @@ let rec comp_expr env exp sz cont =
         in
         comp_init env sz decl_size
       end
-  | Lprim((Pidentity | Pnop | Ppoll | Popaque |
+  | Lprim((Pidentity | Pnop | Popaque |
            Pbytes_to_string | Pbytes_of_string), [arg], _) ->
       comp_expr env arg sz cont
   | Lprim(Pignore, [arg], _) ->

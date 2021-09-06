@@ -227,7 +227,7 @@ method class_of_operation op =
   | Istackoffset _ -> Op_other
   | Iload(_,_) -> Op_load
   | Istore(_,_,asg) -> Op_store asg
-  | Ialloc _ -> assert false                   (* treated specially *)
+  | Ialloc _ | Ipoll _ -> assert false     (* treated specially *)
   | Iintop(Icheckbound) -> Op_checkbound
   | Iintop _ -> Op_pure
   | Iintop_imm(Icheckbound, _) -> Op_checkbound
@@ -235,8 +235,6 @@ method class_of_operation op =
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat -> Op_pure
   | Ispecific _ -> Op_other
-  | Iname_for_debugger _ -> Op_pure
-  | Ipoll -> Op_checkbound
   | Inop ->
       (* not correct, but enough to force CSE from leaving nops alone *)
       Op_store true
@@ -281,14 +279,14 @@ method private cse n i =
          arguments is always a memory load.  For simplicity, we
          just forget everything. *)
       {i with next = self#cse empty_numbering i.next}
-  | Iop (Ialloc _) ->
+  | Iop (Ialloc _) | Iop (Ipoll _) ->
       (* For allocations, we must avoid extending the live range of a
          pseudoregister across the allocation if this pseudoreg
          is a derived heap pointer (a pointer into the heap that does
          not point to the beginning of a Caml block).  PR#6484 is an
          example of this situation.  Such pseudoregs have type [Addr].
          Pseudoregs with types other than [Addr] can be kept.
-         Moreover, allocation can trigger the asynchronous execution
+         Moreover, allocations and polls can trigger the asynchronous execution
          of arbitrary Caml code (finalizer, signal handler, context
          switch), which can contain non-initializing stores.
          Hence, all equations over loads must be removed. *)

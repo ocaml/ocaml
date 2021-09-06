@@ -12,7 +12,7 @@ let rec make d =
   if d = 0 then Node(Empty, Empty)
   else let d = d - 1 in Node(make d, make d)
 
-let rec check = function Empty -> 0 | Node(l, r) -> (Domain.Sync.poll (); 1 + check l + check r)
+let rec check = function Empty -> 0 | Node(l, r) -> (1 + check l + check r)
 
 let finalise_count = Atomic.make 0
 let work_count = Atomic.make 0
