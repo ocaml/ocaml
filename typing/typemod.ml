@@ -809,7 +809,7 @@ let rec approx_modtype env smty =
           | Pwith_module (_, lid') ->
               (* Lookup the module to make sure that it is not recursive.
                  (GPR#1626) *)
-              ignore (Env.lookup_module_path ~use:false ~load:false 
+              ignore (Env.lookup_module_path ~use:false ~load:false
                         ~loc:lid'.loc lid'.txt env)
           | Pwith_modsubst (_, lid') ->
               ignore (Env.lookup_module_path ~use:false ~load:false
@@ -2108,23 +2108,25 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
       let md =
         if alias && aliasable then
           (Env.add_required_global (Path.head path); md)
-        else match (Env.find_module path env).md_type with
-        | Mty_alias p1 when not alias ->
-            let p1 = Env.normalize_module_path (Some smod.pmod_loc) env p1 in
-            let mty = Includemod.expand_module_alias env p1 in
-            { md with
-              mod_desc =
-                Tmod_constraint (md, mty, Tmodtype_implicit,
-                                 Tcoerce_alias (env, path, Tcoerce_none));
-              mod_type =
-                if sttn then Mtype.strengthen ~aliasable:true env mty p1
-                else mty }
-        | mty ->
-            let mty =
-              if sttn then Mtype.strengthen ~aliasable env mty path
-              else mty
-            in
-            { md with mod_type = mty }
+        else
+          let mty =
+            if sttn then
+              Env.find_strengthened_module ~aliasable path env
+            else
+              (Env.find_module path env).md_type
+          in
+          match mty with
+          | Mty_alias p1 when not alias ->
+              let p1 = Env.normalize_module_path (Some smod.pmod_loc) env p1 in
+              let mty = Includemod.expand_module_alias
+                          ~strengthen:sttn env p1 in
+              { md with
+                mod_desc =
+                  Tmod_constraint (md, mty, Tmodtype_implicit,
+                                   Tcoerce_alias (env, path, Tcoerce_none));
+                mod_type = mty }
+          | mty ->
+              { md with mod_type = mty }
       in md
   | Pmod_structure sstr ->
       let (str, sg, names, _finalenv) =

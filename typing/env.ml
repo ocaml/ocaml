@@ -1033,6 +1033,11 @@ let find_module_lazy ~alias path env =
       in
       Subst.Lazy.of_module_decl md
 
+let find_strengthened_module ~aliasable path env =
+  let md = find_module_lazy ~alias:true path env in
+  let mty = !strengthen ~aliasable env md.mdl_type path in
+  Subst.Lazy.force_modtype mty
+
 let find_value_full path env =
   match path with
   | Pident id -> begin
