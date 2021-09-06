@@ -670,6 +670,13 @@ let module_types {Err.got=mty1; expected=mty2} =
     !Oprint.out_module_type (Printtyp.tree_of_modtype mty1)
     !Oprint.out_module_type (Printtyp.tree_of_modtype mty2)
 
+let module_aliases {Err.got=mty1; expected=mty2} =
+  Format.dprintf
+    "@[<hv 2>Modules aliases do not match:@ \
+     %a@;<1 -2>is not equal to@ %a@]"
+    !Oprint.out_module_type (Printtyp.tree_of_modtype mty1)
+    !Oprint.out_module_type (Printtyp.tree_of_modtype mty2)
+
 let eq_module_types {Err.got=mty1; expected=mty2} =
   Format.dprintf
     "@[<hv 2>Module types do not match:@ \
@@ -726,6 +733,8 @@ and module_type_symptom ~eqmode ~expansion_token ~env ~before ~ctx = function
   | Functor f -> functor_symptom ~expansion_token ~env ~before ~ctx f
   | After_alias_expansion diff ->
       module_type ~eqmode ~expansion_token ~env ~before ~ctx diff
+  | After_ascription_expansion diff ->
+      module_ascription_expansion ~expansion_token ~env ~before ~ctx diff
   | Invalid_module_alias path ->
       let printer =
         Format.dprintf "Module %a cannot be aliased" Printtyp.path path
@@ -806,6 +815,26 @@ and module_type_decl ~expansion_token ~env ~before ~ctx id diff =
             (Illegal_permutation.pp Context.alt_pp env) (mty,c)
           :: before
       end
+and module_ascription_expansion ~expansion_token ~env ~before ~ctx diff =
+  let next = dwith_context_and_elision ctx module_aliases diff in
+  let before = next :: before in
+  match diff.symptom with
+  | Not_less_than mts ->
+      let before =
+        Location.msg "The first module is not included in the second"
+        :: before
+      in
+      module_type ~expansion_token ~eqmode:true ~before ~env ~ctx mts
+  | Not_greater_than mts ->
+      let before =
+        Location.msg "The second module is not included in the first"
+        :: before in
+      module_type ~expansion_token ~eqmode:true ~before ~env ~ctx mts
+  | Incomparable mts ->
+      module_type ~expansion_token ~eqmode:true ~env ~before ~ctx mts.less_than
+  | Illegal_permutation c ->
+      with_context ctx (Illegal_permutation.pp Context.alt_pp env) (diff.got,c)
+      :: before
 
 and functor_arg_diff ~expansion_token env (patch: _ Diffing.change) =
   match patch with

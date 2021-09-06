@@ -70,6 +70,8 @@ module Error: sig
     | Functor of functor_symptom
     | Invalid_module_alias of Path.t
     | After_alias_expansion of module_type_diff
+    | After_ascription_expansion of
+        (module_type, module_type_declaration_symptom) diff
 
 
   and module_type_diff = (Types.module_type, module_type_symptom) diff
