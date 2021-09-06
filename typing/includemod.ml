@@ -743,7 +743,7 @@ and module_declarations ~loc env ~mark  subst id1 md1 md2 =
   let p1 = Path.Pident id1 in
   if mark_positive mark then
     Env.mark_module_used md1.md_uid;
-  strengthened_modtypes ~loc ~aliasable:Misc.Str_ascribe env ~mark subst
+  strengthened_modtypes ~loc ~aliasable:Misc.Str_alias env ~mark subst
     md1.md_type p1 md2.md_type
 
 (* Inclusion between module type specifications *)
