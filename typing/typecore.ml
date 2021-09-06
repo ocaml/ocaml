@@ -2355,7 +2355,8 @@ let rec is_nonexpansive exp =
 and is_nonexpansive_mod mexp =
   match mexp.mod_desc with
   | Tmod_ident _
-  | Tmod_functor _ -> true
+  | Tmod_functor _
+  | Tmod_ascribe _ -> true
   | Tmod_unpack (e, _) -> is_nonexpansive e
   | Tmod_constraint (m, _, _, _) -> is_nonexpansive_mod m
   | Tmod_structure str ->

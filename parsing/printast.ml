@@ -814,6 +814,9 @@ and module_expr i ppf x =
   | Pmod_unpack (e) ->
       line i ppf "Pmod_unpack\n";
       expression i ppf e;
+  | Pmod_ascribe (li, mt) ->
+      line i ppf "Pmod_ascribe %a\n" fmt_longident_loc li;
+      module_type i ppf mt;
   | Pmod_extension (s, arg) ->
       line i ppf "Pmod_extension \"%s\"\n" s.txt;
       payload i ppf arg

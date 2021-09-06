@@ -893,6 +893,8 @@ and module_expr_desc =
         (* (val E) *)
   | Pmod_extension of extension
         (* [%id] *)
+  | Pmod_ascribe of Longident.t loc * module_type
+        (* (X :> MT) *)
 
 and structure = structure_item list
 

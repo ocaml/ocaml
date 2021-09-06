@@ -517,6 +517,13 @@ let module_expr sub x =
             sub.expr sub exp,
             mty
           )
+    | Tmod_ascribe (p, li, mtype, c) ->
+        Tmod_ascribe (
+          p,
+          li,
+          sub.module_type sub mtype,
+          sub.module_coercion sub c
+        )
   in
   {x with mod_desc; mod_env}
 

@@ -828,6 +828,9 @@ and module_expr i ppf x =
   | Tmod_unpack (e, _) ->
       line i ppf "Tmod_unpack\n";
       expression i ppf e;
+  | Tmod_ascribe (li, _, mt, _) ->
+      line i ppf "Tmod_ident %a\n" fmt_path li;
+      module_type i ppf mt;
 
 and structure i ppf x = list i structure_item ppf x.str_items
 

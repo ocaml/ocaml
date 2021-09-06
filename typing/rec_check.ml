@@ -848,6 +848,24 @@ and class_field_kind : Typedtree.class_field_kind -> term_judg =
       expression e << Dereference
 
 and modexp : Typedtree.module_expr -> term_judg =
+  let rec coercion coe k = match coe with
+    | Tcoerce_none ->
+      k Return
+    | Tcoerce_structure _
+    | Tcoerce_functor _ ->
+      (* These coercions perform a shallow copy of the input module,
+         by creating a new module with fields obtained by accessing
+         the same fields in the input module. *)
+       k Dereference
+    | Tcoerce_primitive _ ->
+      (* This corresponds to 'external' declarations,
+         and the coercion ignores its argument *)
+      k Ignore
+    | Tcoerce_alias (_, pth, coe) ->
+      (* Alias coercions ignore their arguments, but they evaluate
+         their alias module 'pth' under another coercion. *)
+      coercion coe (fun m -> path pth << m)
+  in
   fun mexp -> match mexp.mod_desc with
     | Tmod_ident (pth, _) ->
       path pth
@@ -861,27 +879,11 @@ and modexp : Typedtree.module_expr -> term_judg =
         modexp p << Dereference;
       ]
     | Tmod_constraint (mexp, _, _, coe) ->
-      let rec coercion coe k = match coe with
-        | Tcoerce_none ->
-          k Return
-        | Tcoerce_structure _
-        | Tcoerce_functor _ ->
-          (* These coercions perform a shallow copy of the input module,
-             by creating a new module with fields obtained by accessing
-             the same fields in the input module. *)
-           k Dereference
-        | Tcoerce_primitive _ ->
-          (* This corresponds to 'external' declarations,
-             and the coercion ignores its argument *)
-          k Ignore
-        | Tcoerce_alias (_, pth, coe) ->
-          (* Alias coercions ignore their arguments, but they evaluate
-             their alias module 'pth' under another coercion. *)
-          coercion coe (fun m -> path pth << m)
-      in
       coercion coe (fun m -> modexp mexp << m)
     | Tmod_unpack (e, _) ->
       expression e
+    | Tmod_ascribe (pth, _, _, coe) ->
+      coercion coe (fun m -> path pth << m)
 
 
 (* G |- pth : m *)

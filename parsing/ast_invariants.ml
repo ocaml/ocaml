@@ -127,7 +127,7 @@ let iterator =
   let module_expr self me =
     super.module_expr self me;
     match me.pmod_desc with
-    | Pmod_ident id -> simple_longident id
+    | Pmod_ident id | Pmod_ascribe (id, _) -> simple_longident id
     | _ -> ()
   in
   let structure_item self st =

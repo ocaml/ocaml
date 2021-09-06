@@ -320,6 +320,8 @@ module M = struct
     | Pmod_constraint (m, mty) ->
         sub.module_expr sub m; sub.module_type sub mty
     | Pmod_unpack e -> sub.expr sub e
+    | Pmod_ascribe (x, mty) ->
+        iter_loc sub x; sub.module_type sub mty
     | Pmod_extension x -> sub.extension sub x
 
   let iter_structure_item sub {pstr_loc = loc; pstr_desc = desc} =

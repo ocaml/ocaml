@@ -1349,10 +1349,14 @@ module Analyser =
               | Parsetree.Pmty_typeof mexpr ->
                   let open Parsetree in
                   begin match mexpr.pmod_desc with
-                    Pmod_ident longident -> Name.from_longident longident.txt
+                    Pmod_ident longident | Pmod_ascribe (longident, _) ->
+                      Name.from_longident longident.txt
                   | Pmod_structure [
                       {pstr_desc=Pstr_include
-                           {pincl_mod={pmod_desc=Pmod_ident longident}}
+                           {pincl_mod=
+                             {pmod_desc=
+                               Pmod_ident longident
+                               |Pmod_ascribe (longident, _) }}
                       }] -> (* include module type of struct include M end*)
                       Name.from_longident longident.txt
                   | _ -> "??"

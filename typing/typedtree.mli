@@ -396,6 +396,7 @@ and module_expr_desc =
         (ME : MT)   (constraint = Tmodtype_explicit MT)
      *)
   | Tmod_unpack of expression * Types.module_type
+  | Tmod_ascribe of Path.t * Longident.t loc * module_type * module_coercion
 
 and structure = {
   str_items : structure_item list;

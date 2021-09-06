@@ -530,6 +530,9 @@ and transl_module ~scopes cc rootpath mexp =
            ap_specialised=Default_specialise})
   | Tmod_constraint(arg, _, _, ccarg) ->
       transl_module ~scopes (compose_coercions cc ccarg) rootpath arg
+  | Tmod_ascribe (path, _, _, cc_path) ->
+      apply_coercion loc Strict (compose_coercions cc cc_path)
+        (transl_module_path loc mexp.mod_env path)
   | Tmod_unpack(arg, _) ->
       apply_coercion loc Strict cc (Translcore.transl_exp ~scopes arg)
 

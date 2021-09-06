@@ -1240,6 +1240,8 @@ and module_expr ctxt f x =
         (* Cf: #7200 *)
     | Pmod_unpack e ->
         pp f "(val@ %a)" (expression ctxt) e
+    | Pmod_ascribe (li, mt) ->
+        pp f "(%a@ :>@ %a)" longident_loc li (module_type ctxt) mt
     | Pmod_extension e -> extension ctxt f e
 
 and structure ctxt f x = list ~sep:"@\n" (structure_item ctxt) f x

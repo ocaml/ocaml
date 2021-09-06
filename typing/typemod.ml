@@ -1845,7 +1845,7 @@ exception Not_a_path
 
 let rec path_of_module mexp =
   match mexp.mod_desc with
-  | Tmod_ident (p,_) -> p
+  | Tmod_ident (p,_) | Tmod_ascribe (p, _, _, _) -> p
   | Tmod_apply(funct, arg, _coercion) when !Clflags.applicative_functors ->
       Papply(path_of_module funct, path_of_module arg)
   | Tmod_constraint (mexp, _, _, _) ->
@@ -2101,6 +2101,20 @@ let wrap_constraint env mark arg mty explicit =
     mod_attributes = [];
     mod_loc = arg.mod_loc }
 
+let wrap_ascription env mark path lid mt mty =
+  let mark = if mark then Includemod.Mark_both else Includemod.Mark_neither in
+  let coercion =
+    try
+      Includemod.modtypes ~loc:lid.loc env ~mark mt mty.mty_type
+    with Includemod.Error msg ->
+      raise(Error(lid.loc, env, Not_included msg))
+  in
+  { mod_desc = Tmod_ascribe(path, lid, mty, coercion);
+    mod_type = Mty_ascribe(path, mty.mty_type);
+    mod_env = env;
+    mod_attributes = [];
+    mod_loc = lid.loc }
+
 (* Type a module value expression *)
 
 
@@ -2274,6 +2288,22 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
         mod_env = env;
         mod_attributes = smod.pmod_attributes;
         mod_loc = smod.pmod_loc }
+  | Pmod_ascribe (lid, smty) ->
+      let sarg =
+        {pmod_desc= Pmod_ident lid; pmod_loc= lid.loc; pmod_attributes= []}
+      in
+      let arg = type_module ~alias true funct_body anchor env sarg in
+      let mty = transl_modtype env smty in
+      let path =
+        match arg.mod_desc with
+        | Tmod_ident (path, _) -> path
+        | _ -> assert false
+      in
+      let md = wrap_ascription env true path lid arg.mod_type mty in
+      { md with
+        mod_loc = smod.pmod_loc;
+        mod_attributes = smod.pmod_attributes;
+      }
   | Pmod_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
 
