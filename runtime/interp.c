@@ -1012,6 +1012,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     process_signal:
       Setup_for_event;
       caml_handle_gc_interrupt();
+      caml_raise_if_exception(caml_process_pending_signals_exn());
       Restore_after_event;
       Next;
 

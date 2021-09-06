@@ -30,6 +30,7 @@
 #include "caml/mlvalues.h"
 #include "caml/platform.h"
 #include "caml/roots.h"
+#include "caml/signals.h"
 #include "caml/shared_heap.h"
 #include "caml/startup_aux.h"
 #include "caml/weak.h"
