@@ -991,24 +991,13 @@ int caml_try_run_on_all_domains(void (*handler)(caml_domain_state*, void*, int, 
   return caml_try_run_on_all_domains_with_spin_work(handler, data, leader_setup, 0, 0);
 }
 
+int caml_check_pending_actions() {
+  return (((uintnat)Caml_state->young_ptr - Bhsize_wosize(Max_young_wosize) <
+       (uintnat)Caml_state->young_start));
+}
+
 void caml_interrupt_self() {
   interrupt_domain(&domain_self->interruptor);
-}
-
-/* Arrange for a major GC slice to be performed on the current domain
-   as soon as possible */
-void caml_request_major_slice (void)
-{
-  Caml_state->requested_major_slice = 1;
-  caml_interrupt_self();
-}
-
-/* Arrange for a minor GC to be performed on the current domain
-   as soon as possible */
-void caml_request_minor_gc (void)
-{
-  Caml_state->requested_minor_gc = 1;
-  caml_interrupt_self();
 }
 
 static void caml_poll_gc_work()
@@ -1043,8 +1032,7 @@ static void caml_poll_gc_work()
   }
 }
 
-void caml_handle_gc_interrupt()
-{
+static void handle_gc_interrupt() {
   atomic_uintnat* young_limit = domain_self->interruptor.interrupt_word;
   CAMLalloc_point_here;
 
@@ -1061,7 +1049,19 @@ void caml_handle_gc_interrupt()
   }
 
   caml_poll_gc_work();
+
   CAML_EV_END(EV_INTERRUPT_GC);
+}
+
+
+void caml_handle_gc_interrupt_no_async_exceptions()
+{
+  handle_gc_interrupt();
+}
+
+void caml_handle_gc_interrupt()
+{
+  handle_gc_interrupt();
 }
 
 CAMLexport int caml_bt_is_in_blocking_section(void)
@@ -1115,34 +1115,6 @@ CAMLexport void caml_bt_exit_ocaml(void)
     /* Wakeup backup thread if it is sleeping */
     caml_plat_signal(&self->domain_cond);
   }
-}
-
-static void caml_enter_blocking_section_default(void)
-{
-  caml_bt_exit_ocaml();
-  caml_release_domain_lock();
-}
-
-static void caml_leave_blocking_section_default(void)
-{
-  caml_bt_enter_ocaml();
-  caml_acquire_domain_lock();
-}
-
-CAMLexport void (*caml_enter_blocking_section_hook)(void) =
-   caml_enter_blocking_section_default;
-CAMLexport void (*caml_leave_blocking_section_hook)(void) =
-   caml_leave_blocking_section_default;
-
-CAMLexport void caml_leave_blocking_section() {
-  caml_leave_blocking_section_hook();
-  caml_process_pending_signals();
-}
-
-CAMLexport void caml_enter_blocking_section() {
-
-  caml_process_pending_signals();
-  caml_enter_blocking_section_hook();
 }
 
 /* default handler for unix_fork, will be called by unix_fork. */

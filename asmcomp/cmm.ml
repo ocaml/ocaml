@@ -168,7 +168,6 @@ and operation =
   | Ccmpf of float_comparison
   | Craise of Lambda.raise_kind
   | Ccheckbound
-  | Cpoll
   | Cnop
   | Cdls_get
 

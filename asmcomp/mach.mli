@@ -61,15 +61,7 @@ type operation =
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat
   | Ispecific of Arch.specific_operation
-  | Iname_for_debugger of { ident : Backend_var.t; which_parameter : int option;
-      provenance : unit option; is_assignment : bool; }
-    (** [Iname_for_debugger] has the following semantics:
-        (a) The argument register(s) is/are deemed to contain the value of the
-            given identifier.
-        (b) If [is_assignment] is [true], any information about other [Reg.t]s
-            that have been previously deemed to hold the value of that
-            identifier is forgotten. *)
-  | Ipoll
+  | Ipoll of { return_label: Cmm.label option }
   | Inop
   | Idls_get
 

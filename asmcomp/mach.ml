@@ -60,9 +60,7 @@ type operation =
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat
   | Ispecific of Arch.specific_operation
-  | Iname_for_debugger of { ident : Backend_var.t; which_parameter : int option;
-      provenance : unit option; is_assignment : bool; }
-  | Ipoll
+  | Ipoll of { return_label: Cmm.label option }
   | Inop
   | Idls_get
 
@@ -163,5 +161,5 @@ let operation_can_raise op =
   match op with
   | Icall_ind | Icall_imm _ | Iextcall _
   | Iintop (Icheckbound) | Iintop_imm (Icheckbound, _)
-  | Ialloc _ -> true
+  | Ialloc _ | Ipoll _ -> true
   | _ -> false

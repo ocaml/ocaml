@@ -165,7 +165,6 @@ and operation =
                    then the index.
                    It results in a bounds error if the index is greater than
                    or equal to the bound. *)
-  | Cpoll
   | Cnop
   | Cdls_get
 
