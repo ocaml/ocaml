@@ -38,12 +38,8 @@ int caml_reallocate_minor_heap(asize_t);
 int caml_incoming_interrupts_queued(void);
 
 void caml_handle_gc_interrupt(void);
-
+void caml_handle_gc_interrupt_no_async_exceptions(void);
 void caml_handle_incoming_interrupts(void);
-
-void caml_request_major_slice (void);
-
-void caml_request_minor_gc (void);
 
 void caml_interrupt_self(void);
 
@@ -56,12 +52,6 @@ CAMLexport void caml_bt_enter_ocaml(void);
 CAMLexport void caml_bt_exit_ocaml(void);
 CAMLexport void caml_acquire_domain_lock(void);
 CAMLexport void caml_release_domain_lock(void);
-
-CAMLextern void caml_enter_blocking_section(void);
-CAMLextern void caml_leave_blocking_section(void);
-
-CAMLextern void (*caml_enter_blocking_section_hook)(void);
-CAMLextern void (*caml_leave_blocking_section_hook)(void);
 
 CAMLextern void (*caml_atfork_hook)(void);
 

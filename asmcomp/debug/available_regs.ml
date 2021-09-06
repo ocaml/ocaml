@@ -18,7 +18,6 @@ module M = Mach
 module R = Reg
 module RAS = Reg_availability_set
 module RD = Reg_with_debug_info
-module V = Backend_var
 
 (* This pass treats [avail_at_exit] like a "result" structure whereas the
    equivalent in [Liveness] is like an "environment".  (Which means we need
@@ -97,43 +96,6 @@ let rec available_regs (instr : M.instruction)
       | Ireturn -> None, unreachable
       | Iop (Itailcall_ind) | Iop (Itailcall_imm _) ->
         Some (ok Reg_with_debug_info.Set.empty), unreachable
-      | Iop (Iname_for_debugger { ident; which_parameter; provenance;
-          is_assignment; }) ->
-        (* First forget about any existing debug info to do with [ident]
-           if the naming corresponds to an assignment operation. *)
-        let forgetting_ident =
-          if not is_assignment then
-            avail_before
-          else
-            RD.Set.map (fun reg ->
-                match RD.debug_info reg with
-                | None -> reg
-                | Some debug_info ->
-                  if V.same
-                    (RD.Debug_info.holds_value_of debug_info) ident
-                  then RD.clear_debug_info reg
-                  else reg)
-              avail_before
-        in
-        let avail_after = ref forgetting_ident in
-        let num_parts_of_value = Array.length instr.arg in
-        (* Add debug info about [ident], but only for registers that are known
-           to be available. *)
-        for part_of_value = 0 to num_parts_of_value - 1 do
-          let reg = instr.arg.(part_of_value) in
-          if RD.Set.mem_reg forgetting_ident reg then begin
-            let regd =
-              RD.create ~reg
-                ~holds_value_of:ident
-                ~part_of_value
-                ~num_parts_of_value
-                ~which_parameter
-                ~provenance
-            in
-            avail_after := RD.Set.add regd (RD.Set.filter_reg !avail_after reg)
-          end
-        done;
-        Some (ok avail_before), ok !avail_after
       | Iop (Imove | Ireload | Ispill) ->
         (* Moves are special: they enable us to propagate names.
            No-op moves need to be handled specially---in this case, we may

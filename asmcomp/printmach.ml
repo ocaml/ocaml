@@ -21,8 +21,6 @@ open Reg
 open Mach
 open Interval
 
-module V = Backend_var
-
 let reg ppf r =
   if not (Reg.anonymous r) then
     fprintf ppf "%s" (Reg.name r)
@@ -144,18 +142,16 @@ let operation op arg ppf res =
   | Idivf -> fprintf ppf "%a /f %a" reg arg.(0) reg arg.(1)
   | Ifloatofint -> fprintf ppf "floatofint %a" reg arg.(0)
   | Iintoffloat -> fprintf ppf "intoffloat %a" reg arg.(0)
-  | Iname_for_debugger { ident; which_parameter; } ->
-    fprintf ppf "name_for_debugger %a%s=%a"
-      V.print ident
-      (match which_parameter with
-        | None -> ""
-        | Some index -> sprintf "[P%d]" index)
-      reg arg.(0)
   | Ispecific op ->
       Arch.print_specific_operation reg op ppf arg
-  | Ipoll -> fprintf ppf "poll"
   | Inop -> fprintf ppf "nop"
   | Idls_get -> fprintf ppf "dls_get"
+  | Ipoll { return_label } ->
+      fprintf ppf "poll call";
+      match return_label with
+      | None -> ()
+      | Some return_label ->
+        fprintf ppf " returning to L%d" return_label
 
 let rec instr ppf i =
   if !Clflags.dump_live then begin

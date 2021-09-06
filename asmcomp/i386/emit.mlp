@@ -608,6 +608,11 @@ let emit_instr fallthrough i =
             I.fstp (addressing addr REAL8 i 1)
           end
       end
+  | Lop(Ipoll { return_label }) ->
+    begin match return_label with
+      None -> ()
+    | Some lbl -> I.jmp (label lbl)
+    end
   | Lop(Ialloc { bytes = n; dbginfo }) ->
       if !fastcode_flag then begin
         load_domain_state ebx;
@@ -799,7 +804,6 @@ let emit_instr fallthrough i =
       if Array.length i.arg = 2 && is_tos i.arg.(1) then
         I.fxch st1;
       emit_floatspecial s
-  | Lop (Iname_for_debugger _) -> ()
   | Lreloadretaddr ->
       ()
   | Lreturn ->

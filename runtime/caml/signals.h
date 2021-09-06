@@ -16,6 +16,10 @@
 #ifndef CAML_SIGNALS_H
 #define CAML_SIGNALS_H
 
+#if defined(CAML_INTERNALS) && defined(POSIX_SIGNALS)
+#include<signal.h>
+#endif
+
 #ifndef CAML_NAME_SPACE
 #include "compatibility.h"
 #endif
@@ -26,30 +30,36 @@
 extern "C" {
 #endif
 
-#ifdef CAML_INTERNALS
-CAMLextern intnat volatile caml_signals_are_pending;
-CAMLextern intnat volatile caml_pending_signals[];
-CAMLextern int volatile caml_something_to_do;
-int caml_init_signal_stack(void);
-void caml_free_signal_stack(void);
-void caml_init_signal_handling(void);
-/* </private> */
-
 CAMLextern void caml_enter_blocking_section (void);
+CAMLextern void caml_enter_blocking_section_no_pending (void);
 CAMLextern void caml_leave_blocking_section (void);
 
+#ifdef CAML_INTERNALS
+CAMLextern atomic_intnat caml_pending_signals[];
+
+/* Global variables moved to Caml_state in 4.10 */
+#define caml_requested_major_slice (Caml_state_field(requested_major_slice))
+#define caml_requested_minor_gc (Caml_state_field(requested_minor_gc))
+
+void caml_update_young_limit(void);
+void caml_request_major_slice (void);
+void caml_request_minor_gc (void);
 CAMLextern int caml_convert_signal_number (int);
 CAMLextern int caml_rev_convert_signal_number (int);
+value caml_execute_signal_exn(int signal_number, int in_signal_handler);
 CAMLextern void caml_record_signal(int signal_number);
-CAMLextern void caml_process_pending_signals(void);
+CAMLextern value caml_process_pending_signals_exn(void);
+void caml_set_action_pending (void);
 int caml_set_signal_action(int signo, int action);
 
+CAMLextern value caml_process_pending_signals_with_root_exn (value extra_root);
+void caml_init_signal_handling(void);
+int caml_init_signal_stack(void);
+void caml_free_signal_stack(void);
 
-CAMLextern void (* volatile caml_async_action_hook)(void);
+CAMLextern void (*caml_enter_blocking_section_hook)(void);
+CAMLextern void (*caml_leave_blocking_section_hook)(void);
 #endif /* CAML_INTERNALS */
-
-CAMLextern void caml_enter_blocking_section (void);
-CAMLextern void caml_leave_blocking_section (void);
 
 #ifdef __cplusplus
 }
