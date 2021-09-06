@@ -1706,10 +1706,10 @@ module Analyser =
         | (Parsetree.Pmod_ident _,
            Typedtree.Tmod_constraint
              ({Typedtree.mod_desc = Typedtree.Tmod_ident (path, _)}, _, _, _))
-        | (Parsetree.Pmod_ascribe _, Typedtree.Tmod_ascribe (path, _, _))
+        | (Parsetree.Pmod_ascribe _, Typedtree.Tmod_ascribe (path, _, _, _))
         | (Parsetree.Pmod_ascribe _,
            Typedtree.Tmod_constraint
-             ({Typedtree.mod_desc = Typedtree.Tmod_ascribe (path, _, _)}, _, _, _))
+             ({Typedtree.mod_desc = Typedtree.Tmod_ascribe (path, _, _, _)}, _, _, _))
           ->
           let alias_name = Odoc_env.full_module_name env (Name.from_path path) in
           { m_base with m_kind = Module_alias { ma_name = alias_name ;
