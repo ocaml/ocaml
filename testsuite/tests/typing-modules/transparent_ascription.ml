@@ -2,7 +2,7 @@
    * expect
 *)
 
-(* Acription to restrict a module's type. *)
+(* Ascription to restrict a module's type. *)
 module type Restrict = sig
   module M : sig type t end
   module M' = (M :> sig end)
@@ -66,7 +66,7 @@ Error: Signature mismatch:
        The type `u' is required but not provided
 |}]
 
-(* Acription can restrict values. *)
+(* Ascription can restrict values. *)
 module type Restrict_values = sig
   module M : sig type t val create : unit -> t end
   module M' = (M :> sig type t end)
