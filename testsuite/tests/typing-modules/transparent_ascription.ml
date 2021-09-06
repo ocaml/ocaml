@@ -779,3 +779,50 @@ type t = F(A.N).t
 type u = F(A.O).t
 val f : t -> u -> u * t = <fun>
 |}]
+
+(* Ascription syntax generates an ascription type. *)
+module M = struct
+  module A = struct
+    type t = int
+    let create () = 15
+  end
+  module B = struct
+    type t = unit -> int
+    let create () () = 15
+  end
+  module C = B
+end
+module N = (M :> sig module A : sig type t val create : unit -> t end end)
+module type S = sig module B : sig type t val create : unit -> t end end
+module O = (M :> S)
+module P = (M :> sig module C = M.B end)
+
+[%%expect {|
+module M :
+  sig
+    module A : sig type t = int val create : unit -> int end
+    module B : sig type t = unit -> int val create : unit -> unit -> int end
+    module C = B
+  end
+module N = (M :> sig module A : sig type t val create : unit -> t end end)
+module type S = sig module B : sig type t val create : unit -> t end end
+module O = (M :> S)
+module P = (M :> sig module C = M.B end)
+|}]
+
+(* Ascription syntax as functor arguments. *)
+module F (A : S) : S = A
+module F_N = F((M :> S))
+module F' (A : S) = A
+module F'_N = F'((M :> S))
+
+[%%expect {|
+module F : functor (A : S) -> S
+module F_N :
+  sig module B : sig type t = F(M).B.t val create : unit -> t end end
+module F' :
+  functor (A : S) ->
+    sig module B = (A.B :> sig type t val create : unit -> t end) end
+module F'_N :
+  sig module B = (M.B :> sig type t val create : unit -> t end) end
+|}]
