@@ -36,9 +36,12 @@ module Make1 :
   functor
     (T' : sig
             module Term0 : Termsig.Term0.S
-            module T : sig module Id : sig end end
+            module T = (Term0 :> sig module Id : sig end end)
           end)
-    -> sig module T : sig module Id : sig end val u : int end end
+    ->
+    sig
+      module T : sig module Id = (T'.Term0.Id :> sig end) val u : int end
+    end
 |}]
 
 module Make2 (T' : Termsig.Term.S) = struct
@@ -53,11 +56,16 @@ module Make2 :
   functor
     (T' : sig
             module Term0 : Termsig.Term0.S
-            module T : sig module Id : sig end end
+            module T = (Term0 :> sig module Id : sig end end)
           end)
     ->
     sig
-      module T : sig module Id : sig end module Id2 = Id val u : int end
+      module T :
+        sig
+          module Id = (T'.Term0.Id :> sig end)
+          module Id2 = Id
+          val u : int
+        end
     end
 |}]
 
@@ -74,11 +82,16 @@ module Make3 :
   functor
     (T' : sig
             module Term0 : Termsig.Term0.S
-            module T : sig module Id : sig end end
+            module T = (Term0 :> sig module Id : sig end end)
           end)
     ->
     sig
-      module T : sig module Id : sig end module Id2 = Id val u : int end
+      module T :
+        sig
+          module Id = (T'.Term0.Id :> sig end)
+          module Id2 = Id
+          val u : int
+        end
     end
 |}]
 
@@ -99,9 +112,9 @@ module Make1 :
   functor
     (T' : sig
             module Term0 : sig module Id : sig end end
-            module T : sig module Id : sig end end
+            module T = (Term0 :> sig module Id : sig end end)
           end)
-    -> sig module Id : sig end module Id2 = Id end
+    -> sig module Id = (T'.Term0.Id :> sig end) module Id2 = Id end
 |}]
 
 module Make2 (T' : S) : sig module Id : sig end module Id2 = Id end
@@ -117,7 +130,7 @@ Lines 2-5, characters 57-3:
 5 | end..
 Error: Signature mismatch:
        Modules do not match:
-         sig module Id : sig end module Id2 = Id end
+         sig module Id = (T'.Term0.Id :> sig end) module Id2 = Id end
        is not included in
          sig module Id2 = T'.Term0.Id end
        In module Id2:
@@ -137,11 +150,16 @@ module Make3 :
   functor
     (T' : sig
             module Term0 : sig module Id : sig end end
-            module T : sig module Id : sig end end
+            module T = (Term0 :> sig module Id : sig end end)
           end)
     ->
     sig
-      module T : sig module Id : sig end module Id2 = Id val u : int end
+      module T :
+        sig
+          module Id = (T'.Term0.Id :> sig end)
+          module Id2 = Id
+          val u : int
+        end
     end
 |}]
 
@@ -191,17 +209,23 @@ module Make1 :
   functor
     (T' : sig
             module Term0 : sig module Id : sig end end
-            module T : sig module Id : sig end end
+            module T = (Term0 :> sig module Id : sig end end)
             type t = MkT(T).t
           end)
-    -> sig module Id : sig end module Id2 = Id type t = T'.t end
+    ->
+    sig
+      module Id = (T'.Term0.Id :> sig end)
+      module Id2 = Id
+      type t = T'.t
+    end
 module IS :
   sig
     module Term0 : sig module Id : sig val x : string end end
     module T = Term0
     type t = MkT(T).t
   end
-module M : sig module Id : sig end module Id2 = Id type t = IS.t end
+module M :
+  sig module Id = (IS.Term0.Id :> sig end) module Id2 = Id type t = IS.t end
 |}]
 
 
@@ -211,6 +235,117 @@ module M : sig module Id : sig end module Id2 = Id type t = IS.t end
 (* It seems to only work if Term0 and Term contain identical types *)
 (* It may also be possible to do the same thing using
    Mtype.nondep_supertype anyway *)
+type (_,_) eq = Eq : ('a,'a) eq
+module MkT(X : Set.OrderedType) = Set.Make(X)
+module type S = sig
+  module Term0 : Set.OrderedType with type t = int
+  module T = Term0
+  type t = E of (MkT(T).t,MkT(T).t) eq
+  type u = t = E of (MkT(Term0).t,MkT(T).t) eq
+end;;
+module F(X:S) : S = X;;
+module rec M : S = M;;
+module M' = F(M);;
+module type S' = module type of M';;
+module Asc = struct type t = int let compare x y = x - y end;;
+module Desc = struct type t = int let compare x y = y - x end;;
+module rec M1 : S' with module Term0 := Asc and module T := Desc = M1;;
+(* And now we have a witness of MkT(Asc).t = MkT(Desc).t ... *)
+let (E eq : M1.u) = (E Eq : M1.t);;
+[%%expect{|
+type (_, _) eq = Eq : ('a, 'a) eq
+module MkT :
+  functor (X : Set.OrderedType) ->
+    sig
+      type elt = X.t
+      type t = Set.Make(X).t
+      val empty : t
+      val is_empty : t -> bool
+      val mem : elt -> t -> bool
+      val add : elt -> t -> t
+      val singleton : elt -> t
+      val remove : elt -> t -> t
+      val union : t -> t -> t
+      val inter : t -> t -> t
+      val disjoint : t -> t -> bool
+      val diff : t -> t -> t
+      val compare : t -> t -> int
+      val equal : t -> t -> bool
+      val subset : t -> t -> bool
+      val iter : (elt -> unit) -> t -> unit
+      val map : (elt -> elt) -> t -> t
+      val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
+      val for_all : (elt -> bool) -> t -> bool
+      val exists : (elt -> bool) -> t -> bool
+      val filter : (elt -> bool) -> t -> t
+      val filter_map : (elt -> elt option) -> t -> t
+      val partition : (elt -> bool) -> t -> t * t
+      val cardinal : t -> int
+      val elements : t -> elt list
+      val min_elt : t -> elt
+      val min_elt_opt : t -> elt option
+      val max_elt : t -> elt
+      val max_elt_opt : t -> elt option
+      val choose : t -> elt
+      val choose_opt : t -> elt option
+      val split : elt -> t -> t * bool * t
+      val find : elt -> t -> elt
+      val find_opt : elt -> t -> elt option
+      val find_first : (elt -> bool) -> t -> elt
+      val find_first_opt : (elt -> bool) -> t -> elt option
+      val find_last : (elt -> bool) -> t -> elt
+      val find_last_opt : (elt -> bool) -> t -> elt option
+      val of_list : elt list -> t
+      val to_seq_from : elt -> t -> elt Seq.t
+      val to_seq : t -> elt Seq.t
+      val to_rev_seq : t -> elt Seq.t
+      val add_seq : elt Seq.t -> t -> t
+      val of_seq : elt Seq.t -> t
+    end
+module type S =
+  sig
+    module Term0 : sig type t = int val compare : t -> t -> int end
+    module T = Term0
+    type t = E of (MkT(T).t, MkT(T).t) eq
+    type u = t = E of (MkT(Term0).t, MkT(T).t) eq
+  end
+module F :
+  functor
+    (X : sig
+           module Term0 : sig type t = int val compare : t -> t -> int end
+           module T = (Term0 :>
+             sig type t = int val compare : t -> t -> int end)
+           type t = E of (MkT(T).t, MkT(T).t) eq
+           type u = t = E of (MkT(Term0).t, MkT(T).t) eq
+         end)
+    -> S
+module rec M : S
+module M' :
+  sig
+    module Term0 : sig type t = int val compare : t -> t -> int end
+    module T = Term0
+    type t = F(M).t = E of (MkT(T).t, MkT(T).t) eq
+    type u = t = E of (MkT(Term0).t, MkT(T).t) eq
+  end
+module type S' =
+  sig
+    module Term0 : sig type t = int val compare : t -> t -> int end
+    module T = Term0
+    type t = F(M).t = E of (MkT(T).t, MkT(T).t) eq
+    type u = t = E of (MkT(Term0).t, MkT(T).t) eq
+  end
+module Asc : sig type t = int val compare : int -> int -> int end
+module Desc : sig type t = int val compare : int -> int -> int end
+Line 15, characters 16-64:
+15 | module rec M1 : S' with module Term0 := Asc and module T := Desc = M1;;
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In this `with' constraint, the new definition of T
+       does not match its original definition in the constrained signature:
+       Modules do not match: (module Desc) is not included in (module Asc)
+|}]
+
+
+(* cannot_alias5.ml *)
 type (_,_) eq = Eq : ('a,'a) eq
 module MkT(X : Set.OrderedType) = Set.Make(X)
 module type S = sig
@@ -289,44 +424,45 @@ module F :
   functor
     (X : sig
            module Term0 : sig type t = int val compare : t -> t -> int end
-           module T : sig type t = int val compare : t -> t -> int end
+           module T = (Term0 :>
+             sig type t = int val compare : t -> t -> int end)
            type t = E of (MkT(T).t, MkT(T).t) eq
            type u = t = E of (MkT(Term0).t, MkT(T).t) eq
          end)
     ->
     sig
-      module Term0 : sig type t = int val compare : t -> t -> int end
-      module T : sig type t = int val compare : t -> t -> int end
+      module Term0 = (X.Term0 :>
+        sig type t = int val compare : t -> t -> int end)
+      module T = (Term0 :> sig type t = int val compare : t -> t -> int end)
       type t = X.t = E of (MkT(T).t, MkT(T).t) eq
       type u = t = E of (MkT(Term0).t, MkT(T).t) eq
     end
 module rec M : S
 module M' :
   sig
-    module Term0 : sig type t = int val compare : t -> t -> int end
-    module T : sig type t = int val compare : t -> t -> int end
+    module Term0 = (M.Term0 :>
+      sig type t = int val compare : t -> t -> int end)
+    module T = (Term0 :> sig type t = int val compare : t -> t -> int end)
     type t = M.t = E of (MkT(T).t, MkT(T).t) eq
     type u = t = E of (MkT(Term0).t, MkT(T).t) eq
   end
 module type S' =
   sig
-    module Term0 : sig type t = int val compare : t -> t -> int end
-    module T : sig type t = int val compare : t -> t -> int end
+    module Term0 = (M.Term0 :>
+      sig type t = int val compare : t -> t -> int end)
+    module T = (Term0 :> sig type t = int val compare : t -> t -> int end)
     type t = M.t = E of (MkT(T).t, MkT(T).t) eq
     type u = t = E of (MkT(Term0).t, MkT(T).t) eq
   end
 module Asc : sig type t = int val compare : int -> int -> int end
 module Desc : sig type t = int val compare : int -> int -> int end
-Line 15, characters 0-69:
+Line 15, characters 16-64:
 15 | module rec M1 : S' with module Term0 := Asc and module T := Desc = M1;;
-     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type M.t
-       Constructors do not match:
-         E of (MkT(M.T).t, MkT(M.T).t) eq
-       is not the same as:
-         E of (MkT(Desc).t, MkT(Desc).t) eq
-       The type (MkT(M.T).t, MkT(M.T).t) eq is not equal to the type
-         (MkT(Desc).t, MkT(Desc).t) eq
-       Type MkT(M.T).t = Set.Make(M.Term0).t is not equal to type
-         MkT(Desc).t = Set.Make(Desc).t
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In this `with' constraint, the new definition of Term0
+       does not match its original definition in the constrained signature:
+       Modules do not match:
+         (module Asc)
+       is not included in
+         (module M.Term0 :> sig type t = int val compare : t -> t -> int end)
 |}]
