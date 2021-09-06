@@ -191,7 +191,8 @@ val rev_map : f:('a -> 'b) -> 'a list -> 'b list
 val filter_map : f:('a -> 'b option) -> 'a list -> 'b list
 (** [filter_map ~f l] applies [f] to every element of [l], filters
     out the [None] elements and returns the list of the arguments of
-    the [Some] elements.
+    the [Some] elements. It preserves the order of the elements (by
+    means of an internal reversal). It is tail-recursive.
     @since 4.08.0
  *)
 
