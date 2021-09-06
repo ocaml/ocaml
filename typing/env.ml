@@ -740,7 +740,8 @@ let check_functor_application =
 let strengthen =
   (* to be filled with Mtype.strengthen *)
   ref ((fun ~aliasable:_ _env _mty _path -> assert false) :
-         aliasable:bool -> t -> Subst.Lazy.modtype -> Path.t -> Subst.Lazy.modtype)
+         aliasable:bool -> t -> Subst.Lazy.modtype ->
+         Path.t -> Subst.Lazy.modtype)
 
 let md md_type =
   {md_type; md_attributes=[]; md_loc=Location.none
@@ -1407,7 +1408,8 @@ let rec scrape_alias_for_visit env (sub : Subst.t option) mty =
           && not (Persistent_env.looked_up !persistent_env (Ident.name id)) ->
           false
       | path -> (* PR#6600: find_module may raise Not_found *)
-          try scrape_alias_for_visit env sub (find_module_lazy path env).mdl_type
+          try
+            scrape_alias_for_visit env sub (find_module_lazy path env).mdl_type
           with Not_found -> false
       end
   | _ -> true
@@ -1775,7 +1777,8 @@ let rec components_of_module_maker
             c.comp_modules <-
               NameMap.add (Ident.name id) mda c.comp_modules;
             env :=
-              store_module ~update_summary:false ~freshening_sub ~check:None id addr pres md !env
+              store_module ~update_summary:false ~freshening_sub ~check:None
+                id addr pres md !env
         | SigL_modtype(id, decl, _) ->
             let fresh_decl =
               (* the fresh_decl is only going in the local temporary env, and
@@ -1808,6 +1811,7 @@ let rec components_of_module_maker
         may_subst Subst.compose cm_freshening_subst cm_prefixing_subst
       in
       let scoping = Subst.Rescope (Path.scope cm_path) in
+      let open Subst.Lazy in
         Ok (Functor_comps {
           (* fcomp_arg and fcomp_res must be prefixed eagerly, because
              they are interpreted in the outer environment *)
@@ -1815,8 +1819,8 @@ let rec components_of_module_maker
             (match arg with
             | Unit -> Unit
             | Named (param, ty_arg) ->
-              Named (param, Subst.Lazy.(force_modtype (modtype scoping sub ty_arg))));
-          fcomp_res = Subst.Lazy.(force_modtype (modtype scoping sub ty_res));
+              Named (param, force_modtype (modtype scoping sub ty_arg)));
+          fcomp_res = force_modtype (modtype scoping sub ty_res);
           fcomp_cache = Hashtbl.create 17;
           fcomp_subst_cache = Hashtbl.create 17 })
   | MtyL_ident _ -> Error No_components_abstract
@@ -1994,7 +1998,8 @@ and store_extension ~check ~rebind id addr ext env =
     constrs = TycompTbl.add id cda env.constrs;
     summary = Env_extension(env.summary, id, ext) }
 
-and store_module ?(update_summary=true) ~check ~freshening_sub id addr presence md env =
+and store_module ?(update_summary=true) ~check ~freshening_sub
+                 id addr presence md env =
   let open Subst.Lazy in
   let loc = md.mdl_loc in
   Option.iter

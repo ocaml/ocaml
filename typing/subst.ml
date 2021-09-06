@@ -481,7 +481,8 @@ module Lazy_types = struct
         Ident.t * module_presence * module_decl * rec_status * visibility
     | SigL_modtype of Ident.t * modtype_declaration * visibility
     | SigL_class of Ident.t * class_declaration * rec_status * visibility
-    | SigL_class_type of Ident.t * class_type_declaration * rec_status * visibility
+    | SigL_class_type of Ident.t * class_type_declaration *
+                           rec_status * visibility
 
   and functor_parameter =
     | Unit
@@ -564,7 +565,8 @@ and force_module_decl md =
 
 and lazy_modtype = function
   | Mty_ident p -> MtyL_ident p
-  | Mty_signature sg -> MtyL_signature (Lazy_backtrack.create_forced (S_eager sg))
+  | Mty_signature sg ->
+     MtyL_signature (Lazy_backtrack.create_forced (S_eager sg))
   | Mty_functor (Unit, mty) -> MtyL_functor (Unit, lazy_modtype mty)
   | Mty_functor (Named (id, arg), res) ->
      MtyL_functor (Named (id, lazy_modtype arg), lazy_modtype res)

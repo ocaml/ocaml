@@ -79,7 +79,8 @@ and strengthen_lazy_sig' ~aliasable env sg p =
             else
               { decl with type_manifest = manif }
       in
-      SigL_type(id, newdecl, rs, vis) :: strengthen_lazy_sig' ~aliasable env rem p
+      SigL_type(id, newdecl, rs, vis) ::
+        strengthen_lazy_sig' ~aliasable env rem p
   | (SigL_typext _ as sigelt) :: rem ->
       sigelt :: strengthen_lazy_sig' ~aliasable env rem p
   | SigL_module(id, pres, md, rs, vis) :: rem ->
@@ -129,7 +130,8 @@ let strengthen ~aliasable env mty p =
   Subst.Lazy.force_modtype mty
 
 let strengthen_decl ~aliasable env md p =
-  let md = strengthen_lazy_decl ~aliasable env (Subst.Lazy.of_module_decl md) p in
+  let md = strengthen_lazy_decl ~aliasable env
+             (Subst.Lazy.of_module_decl md) p in
   Subst.Lazy.force_module_decl md
 
 let rec make_aliases_absent pres mty =
