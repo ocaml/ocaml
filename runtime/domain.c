@@ -995,22 +995,6 @@ void caml_interrupt_self() {
   interrupt_domain(&domain_self->interruptor);
 }
 
-/* Arrange for a major GC slice to be performed on the current domain
-   as soon as possible */
-void caml_request_major_slice (void)
-{
-  Caml_state->requested_major_slice = 1;
-  caml_interrupt_self();
-}
-
-/* Arrange for a minor GC to be performed on the current domain
-   as soon as possible */
-void caml_request_minor_gc (void)
-{
-  Caml_state->requested_minor_gc = 1;
-  caml_interrupt_self();
-}
-
 static void caml_poll_gc_work()
 {
   CAMLalloc_point_here;
@@ -1115,34 +1099,6 @@ CAMLexport void caml_bt_exit_ocaml(void)
     /* Wakeup backup thread if it is sleeping */
     caml_plat_signal(&self->domain_cond);
   }
-}
-
-static void caml_enter_blocking_section_default(void)
-{
-  caml_bt_exit_ocaml();
-  caml_release_domain_lock();
-}
-
-static void caml_leave_blocking_section_default(void)
-{
-  caml_bt_enter_ocaml();
-  caml_acquire_domain_lock();
-}
-
-CAMLexport void (*caml_enter_blocking_section_hook)(void) =
-   caml_enter_blocking_section_default;
-CAMLexport void (*caml_leave_blocking_section_hook)(void) =
-   caml_leave_blocking_section_default;
-
-CAMLexport void caml_leave_blocking_section() {
-  caml_leave_blocking_section_hook();
-  caml_process_pending_signals();
-}
-
-CAMLexport void caml_enter_blocking_section() {
-
-  caml_process_pending_signals();
-  caml_enter_blocking_section_hook();
 }
 
 /* default handler for unix_fork, will be called by unix_fork. */
