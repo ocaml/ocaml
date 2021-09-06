@@ -130,6 +130,9 @@ Working version
 - #10555: Do not use ghost locations for type constraints
   (Nicolás Ojeda Bär, report by Anton Bachin, review by Thomas Refis)
 
+- #10559: Evaluate signature substitutions lazily
+  (Stephen Dolan, review by Leo White)
+
 ### Build system:
 
 - #10471: Fix detection of arm32 architectures with musl in the configure
