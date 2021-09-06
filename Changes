@@ -36,6 +36,10 @@ Working version
 - #10526: add Random.bits32, Random.bits64, Random.nativebits
   (Xavier Leroy, review by Gabriel Scherer and François Bobot)
 
+- #10609: add List.rev_filter_map; document that and filter_map as
+  tail-recursive; do the same for ListLabels.
+  (Thomas Sanders)
+
 * #10568: remove Obj.marshal and Obj.unmarshal
   (these functions have been deprecated for a while and are superseded
    by the functions from module Marshal)

@@ -251,15 +251,18 @@ let filteri p l =
   in
   aux 0 [] l
 
-let filter_map f =
+let rev_filter_map f =
   let rec aux accu = function
-    | [] -> rev accu
+    | [] -> accu
     | x :: l ->
         match f x with
         | None -> aux accu l
         | Some v -> aux (v :: accu) l
   in
   aux []
+
+let filter_map f l =
+  rev (rev_filter_map f l)
 
 let concat_map f l =
   let rec aux f acc = function

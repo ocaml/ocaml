@@ -83,6 +83,7 @@ let () =
   assert (List.compare_length_with ['1'] 1 = 0);
   assert (List.compare_length_with ['1'] 2 < 0);
   assert (List.filter_map string_of_even_opt l = ["0";"2";"4";"6";"8"]);
+  assert (List.rev_filter_map string_of_even_opt l = ["8";"6";"4";"2";"0"]);
   assert (List.concat_map (fun i -> [i; i+1]) [1; 5] = [1; 2; 5; 6]);
   assert (
     let count = ref 0 in

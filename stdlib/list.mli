@@ -196,6 +196,14 @@ val filter_map : ('a -> 'b option) -> 'a list -> 'b list
     @since 4.08.0
  *)
 
+val rev_filter_map : ('a -> 'b option) -> 'a list -> 'b list
+(** [rev_filter_map f l] gives the same result as
+    {!rev}[ (]{!filter_map}[ f l)], but is more efficient:
+    [filter_map f l] is implemented as [rev (rev_filter_map f l)].
+    (Both are tail-recursive.)
+    @since 4.14.0
+ *)
+
 val concat_map : ('a -> 'b list) -> 'a list -> 'b list
 (** [concat_map f l] gives the same result as
     {!concat}[ (]{!map}[ f l)]. Tail-recursive.
