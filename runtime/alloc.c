@@ -40,7 +40,7 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
   if (wosize == 0){
     result = Atom (tag);
   } else if (wosize <= Max_young_wosize) {
-    Alloc_small (result, wosize, tag, { caml_handle_gc_interrupt(); });
+    Alloc_small (result, wosize, tag, { caml_handle_gc_interrupt_no_async_exceptions(); });
     if (tag < No_scan_tag){
       for (i = 0; i < wosize; i++) {
         Field(result, i) = Val_unit;
@@ -63,7 +63,7 @@ Caml_inline void enter_gc_preserving_vals(mlsize_t wosize, value* vals)
      the fast path. */
   CAMLlocalN(vals_copy, wosize);
   for (i = 0; i < wosize; i++) vals_copy[i] = vals[i];
-  caml_handle_gc_interrupt();
+  caml_handle_gc_interrupt_no_async_exceptions();
   for (i = 0; i < wosize; i++) vals[i] = vals_copy[i];
   CAMLreturn0;
 }
@@ -241,7 +241,7 @@ value caml_alloc_float_array(mlsize_t len)
   if (wosize == 0) {
     return Atom(0);
   } else if (wosize <= Max_young_wosize) {
-    Alloc_small (result, wosize, Double_array_tag, { caml_handle_gc_interrupt(); });
+    Alloc_small (result, wosize, Double_array_tag, { caml_handle_gc_interrupt_no_async_exceptions(); });
   } else {
     result = caml_alloc_shr (wosize, Double_array_tag);
     result = caml_check_urgent_gc (result);
