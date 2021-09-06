@@ -1524,7 +1524,6 @@ let rec scrape_alias env sub ?path mty =
         mty
       end
   | Mty_alias (path', Some mty'), _ ->
-      (* TODO: This strengthening should push down ascriptions. *)
       scrape_alias env sub ?path
         (!strengthen ~aliasable:Str_ascribe env mty' path')
   | mty, Some path ->

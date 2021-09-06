@@ -651,7 +651,7 @@ let merge_constraint initial_env loc sg lid constr =
         real_ids := path :: !real_ids;
         let item =
           match md.md_type, constr with
-            (Mty_alias _), (With_module _ | With_type _) ->
+            Mty_alias _, (With_module _ | With_type _) ->
               (* A module alias cannot be refined, so keep it
                  and just check that the constraint is correct *)
               item
