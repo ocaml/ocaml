@@ -2519,8 +2519,10 @@ let generalize_and_check_univars env kind exp ty_expected vars =
 
 (* [check_statement] implements the [non-unit-statement] check.
 
-   It is checked that [exp] has type [unit]. This check is applied in contexts
-   where their value is known to be discarded (eg the lhs of a sequence). *)
+   This check is called in contexts where the value of the expression is known
+   to be discarded (eg. the lhs of a sequence). We check that [exp] has type
+   unit, or has an explicit type annotation; otherwise we raise the
+   [non-unit-statement] warning. *)
 
 let check_statement exp =
   let ty = get_desc (expand_head exp.exp_env exp.exp_type) in
@@ -2554,9 +2556,12 @@ let check_statement exp =
 
    If [exp] has a function type, we check that it is not syntactically the
    result of a function application, as this is often a bug in certain contexts
-   (eg the rhs of a let-binding or in the argument of [ignore]). The check can
-   be disabled by explicitly annotating the expression with a type constraint,
-   eg [(e : _ -> _)].
+   (eg the rhs of a let-binding or in the argument of [ignore]). For example,
+   [ignore (List.map print_int)] written by mistake instad of [ignore (List.map
+   print_int li)].
+
+   The check can be disabled by explicitly annotating the expression with a type
+   constraint, eg [(e : _ -> _)].
 
    If [statement] is [true] and the [ignored-partial-application] is {em not}
    triggered, then the [non-unit-statement] check is performaed (see
