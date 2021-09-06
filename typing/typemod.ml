@@ -2094,11 +2094,13 @@ let wrap_constraint env mark arg mty explicit =
     mod_attributes = [];
     mod_loc = arg.mod_loc }
 
-let wrap_ascription env mark path lid mt mty =
+let wrap_ascription env mark path lid mt mt_pre_coercion mty =
   let mark = if mark then Includemod.Mark_both else Includemod.Mark_neither in
   let coercion =
     try
-      Includemod.modtypes ~loc:lid.loc env ~mark mt mty.mty_type
+      Includemod.compose_coercions
+        (Includemod.modtypes ~loc:lid.loc env ~mark mt mty.mty_type)
+        (Option.value ~default:Tcoerce_none mt_pre_coercion)
     with Includemod.Error msg ->
       raise(Error(lid.loc, env, Not_included msg))
   in
@@ -2287,12 +2289,15 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
       in
       let arg = type_module ~alias true funct_body anchor env sarg in
       let mty = transl_modtype env smty in
-      let path =
+      let path, coercion =
         match arg.mod_desc with
-        | Tmod_ident (path, _) -> path
+        | Tmod_ident (path, _) -> path, None
+        | Tmod_constraint
+            ({mod_desc=Tmod_ident (path,_)}, _, Tmodtype_implicit, coercion) ->
+            path, Some coercion
         | _ -> assert false
       in
-      let md = wrap_ascription env true path lid arg.mod_type mty in
+      let md = wrap_ascription env true path lid arg.mod_type coercion mty in
       { md with
         mod_loc = smod.pmod_loc;
         mod_attributes = smod.pmod_attributes;
