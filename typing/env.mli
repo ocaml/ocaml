@@ -99,6 +99,7 @@ val find_type_expansion_opt:
 (* Find the manifest type information associated to a type for the sake
    of the compiler's type-based optimisations. *)
 val find_modtype_expansion: Path.t -> t -> module_type
+val find_modtype_expansion_lazy: Path.t -> t -> Subst.Lazy.modtype
 
 val find_hash_type: Path.t -> t -> type_declaration
 (* Find the "#t" type given the path for "t" *)

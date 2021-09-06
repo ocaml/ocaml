@@ -19,21 +19,21 @@ open Asttypes
 open Path
 open Types
 
-
-let rec scrape env mty =
+let rec scrape_lazy env mty =
+  let open Subst.Lazy in
   match mty with
-    Mty_ident p ->
+    MtyL_ident p ->
       begin try
-        scrape env (Env.find_modtype_expansion p env)
+        scrape_lazy env (Env.find_modtype_expansion_lazy p env)
       with Not_found ->
         mty
       end
   | _ -> mty
 
-let scrape_lazy env mty =
-  let open Subst.Lazy in
+let scrape env mty =
   match mty with
-    MtyL_ident p -> of_modtype (scrape env (Mty_ident p))
+    Mty_ident p ->
+     Subst.Lazy.force_modtype (scrape_lazy env (MtyL_ident p))
   | _ -> mty
 
 let freshen ~scope mty =
