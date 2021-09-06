@@ -179,6 +179,18 @@ val type_declarations:
 
 val print_coercion: Format.formatter -> module_coercion -> unit
 
+val compose_coercions: module_coercion -> module_coercion -> module_coercion
+(** [compose_coercions c1 c2] composes the coercions [c1] and [c2], equivalent
+    to performing [c2] first and then [c1].
+    If [c1] coerces [mty2] to [mty3] and [c2] coerces [mty1] to [mty2],
+    then [compose_coercions c1 c2] coerces [mty1] to [mty3].
+
+    For the purposes of translation,
+    [Translmod.apply_coercion c1 (Translmod.apply_coercion c2 e)]
+    behaves like
+    [Translmod.apply_coercion (compose_coercions c1 c2) e].
+*)
+
 type symptom =
     Missing_field of Ident.t * Location.t * string (* kind *)
   | Value_descriptions of

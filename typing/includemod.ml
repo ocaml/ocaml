@@ -359,6 +359,40 @@ let retrieve_functor_params env mty =
   in
   retrieve_functor_params [] env mty
 
+(* Compose two coercions *)
+
+let rec compose_coercions c1 c2 =
+  match (c1, c2) with
+    (Tcoerce_none, c2) -> c2
+  | (c1, Tcoerce_none) -> c1
+  | (Tcoerce_structure (pc1, ids1), Tcoerce_structure (pc2, ids2)) ->
+      let v2 = Array.of_list pc2 in
+      let ids1 =
+        List.map (fun (id,pos1,c1) ->
+          let (pos2,c2) = v2.(pos1) in (id, pos2, compose_coercions c1 c2))
+          ids1
+      in
+      Tcoerce_structure
+        (List.map
+           (fun pc ->
+              match pc with
+              | _, (Tcoerce_primitive _ | Tcoerce_alias _) ->
+                (* These cases do not take an argument (the position is -1),
+                   so they do not need adjusting. *)
+                pc
+              | (p1, c1) ->
+                let (p2, c2) = v2.(p1) in
+                (p2, compose_coercions c1 c2))
+          pc1,
+         ids1 @ ids2)
+  | (Tcoerce_functor(arg1, res1), Tcoerce_functor(arg2, res2)) ->
+      Tcoerce_functor(compose_coercions arg2 arg1,
+                      compose_coercions res1 res2)
+  | (c1, Tcoerce_alias (env, path, c2)) ->
+      Tcoerce_alias (env, path, compose_coercions c1 c2)
+  | (_, _) ->
+      fatal_error "Translmod.compose_coercions"
+
 (* Inclusion between module types.
    Return the restriction that transforms a value of the smaller type
    into a value of the bigger type. *)
