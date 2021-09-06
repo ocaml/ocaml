@@ -472,7 +472,8 @@ let collect_arg_paths mty =
 type remove_alias_args =
     { mutable modified: bool;
       exclude: Ident.t -> Path.t -> bool;
-      scrape: Env.t -> module_type -> module_type }
+      scrape: Env.t -> module_type -> module_type;
+      weaken_aliases: bool }
 
 let rec remove_aliases_mty env args pres mty =
   let args' = {args with modified = false} in
@@ -480,6 +481,23 @@ let rec remove_aliases_mty env args pres mty =
     match args.scrape env mty with
       Mty_signature sg ->
         Mp_present, Mty_signature (remove_aliases_sig env args' sg)
+    | Mty_ascribe (p, mty) when args'.weaken_aliases ->
+        let args'' = {args with weaken_aliases = false} in
+        let _, mty = remove_aliases_mty env args'' Mp_present mty in
+        args'.modified <- args''.modified;
+        pres, Mty_ascribe (p, mty)
+    | Mty_alias p when args'.weaken_aliases ->
+        let mty' = Env.scrape_alias env mty in
+        if mty' = mty then begin
+          pres, mty
+        end else begin
+          args'.modified <- true;
+          match mty' with
+          | Mty_alias _ | Mty_ascribe _ ->
+              remove_aliases_mty env args' Mp_present mty'
+          | _ ->
+              remove_aliases_mty env args' Mp_present (Mty_ascribe (p, mty'))
+        end
     | Mty_alias _ | Mty_ascribe _ ->
         let mty' = Env.scrape_alias env mty in
         if mty' = mty then begin
@@ -525,7 +543,9 @@ let scrape_for_functor_arg env mty =
     try ignore (Env.find_module p env); true with Not_found -> false
   in
   let _, mty =
-    remove_aliases_mty env {modified=false; exclude; scrape} Mp_present mty
+    remove_aliases_mty env
+      {modified=false; exclude; scrape; weaken_aliases= true}
+      Mp_present mty
   in
   mty
 
@@ -535,7 +555,9 @@ let scrape_for_type_of ~remove_aliases env mty =
     let exclude id _p = Ident.Set.mem id excl in
     let scrape _ mty = mty in
     let _, mty =
-      remove_aliases_mty env {modified=false; exclude; scrape} Mp_present mty
+      remove_aliases_mty env
+        {modified=false; exclude; scrape; weaken_aliases= false}
+        Mp_present mty
     in
     mty
   end else begin
