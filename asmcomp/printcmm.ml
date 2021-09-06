@@ -158,7 +158,6 @@ let operation d = function
   | Ccmpf c -> Printf.sprintf "%sf" (float_comparison c)
   | Craise k -> Lambda.raise_kind k ^ location d
   | Ccheckbound -> "checkbound" ^ location d
-  | Cpoll -> "poll"
   | Cnop -> "nop"
   | Cdls_get -> "dls_get"
 

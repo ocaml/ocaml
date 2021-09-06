@@ -6,7 +6,6 @@ include unix
 *)
 
 let rec loop () =
-  Domain.Sync.poll ();
   loop ()
 
 let _ =
