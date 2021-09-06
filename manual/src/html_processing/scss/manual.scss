@@ -323,7 +323,7 @@ span.font-bold.machine{
 .osvariant {
 	font-family: $font-sans;
 }
-span.font-it {
+.font-it {
 	font-style: italic;
 }
 span.authors{
@@ -331,13 +331,10 @@ span.authors{
     background-color:inherit
 }
 span.nonterminal {
-	font-style: italic;
+	font-style: oblique;
 }
 .font-sl {
 	font-style: oblique;
-}
-span.sl{
-    font-style: oblique;
 }
 .center table {
 	margin-left: inherit;
@@ -346,7 +343,7 @@ span.sl{
 td .font-bold {
 	font-weight: bold;
 }
-.syntax-token {
+.c003 {
 	text-align: center;
 }
 .cellpadding1 tr td {

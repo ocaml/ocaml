@@ -135,7 +135,7 @@
 \fi
 %%%Format non-terminal
 \def\nt#1{{\@span{class=nonterminal}#1}}
-\newstyle{.nonterminal}{color:maroon;font-style:italic}
+\newstyle{.nonterminal}{color:maroon;font-style:oblique}
 %%%Link for non-terminal and format
 \def\nonterm#1{\addspace\nt{\@anchor{#1}}\spacetrue}
 \def\brepet{\addspace\{}
