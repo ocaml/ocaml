@@ -207,13 +207,12 @@ let subst_module_type env t =
           Odoc_name.to_path (full_module_type_name env (Odoc_name.from_path p))
         in
         Mty_ident new_p
-    | Mty_alias _
     | Mty_signature _ ->
         t
     | Mty_functor (Unit, mt) -> Mty_functor (Unit, iter mt)
     | Mty_functor (Named (name, mt1), mt2) ->
       Mty_functor (Named (name, iter mt1), iter mt2)
-    | Mty_ascribe (p, mt) -> Mty_ascribe (p, iter mt)
+    | Mty_alias (p, mt) -> Mty_alias (p, Option.map iter mt)
   in
   iter t
 

@@ -3631,7 +3631,7 @@ and type_expect_
       Mtype.lower_nongen (get_level ty) modl.mod_type;
       let pres =
         match modl.mod_type with
-        | Mty_alias _ -> Mp_absent
+        | Mty_alias (_, None) -> Mp_absent
         | _ -> Mp_present
       in
       let scope = create_scope () in
@@ -4778,7 +4778,7 @@ and type_unpacks ?(in_function : (Location.t * type_expr) option)
       Mtype.lower_nongen (get_level ty) modl.mod_type;
       let pres =
         match modl.mod_type with
-        | Mty_alias _ -> Mp_absent
+        | Mty_alias (_, None) -> Mp_absent
         | _ -> Mp_present
       in
       let scope = create_scope () in

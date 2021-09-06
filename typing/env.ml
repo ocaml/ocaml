@@ -953,7 +953,6 @@ let get_components c =
 let modtype_of_functor_appl fcomp p1 p2 =
   match fcomp.fcomp_res with
   | Mty_alias _ as mty -> mty
-  | Mty_ascribe _ as mty -> mty
   | mty ->
       try
         Hashtbl.find fcomp.fcomp_subst_cache p2
@@ -1229,14 +1228,14 @@ let rec normalize_module_path lax unascribe env = function
 
 and expand_module_path lax unascribe env path =
   try match find_module ~alias:true path env with
-    {md_type=Mty_alias path1} ->
+    {md_type=Mty_alias (path1, None)} ->
       let path' = normalize_module_path lax unascribe env path1 in
       if lax || !Clflags.transparent_modules then path' else
       let id = Path.head path in
       if Ident.global id && not (Ident.same id (Path.head path'))
       then add_required_global id;
       path'
-  | {md_type= Mty_ascribe (path1, _)} when unascribe ->
+  | {md_type= Mty_alias (path1, Some _)} when unascribe ->
       normalize_module_path lax unascribe env path1
   | _ -> path
   with Not_found when lax
@@ -1388,7 +1387,7 @@ let iter_env_cont = ref []
 
 let rec scrape_alias_for_visit env (sub : Subst.t option) mty =
   match mty with
-  | Mty_alias path ->
+  | Mty_alias (path, None) ->
       begin match may_subst Subst.module_path sub path with
       | Pident id
         when Ident.persistent id
@@ -1515,7 +1514,7 @@ let rec scrape_alias env sub ?path mty =
       with Not_found ->
         mty
       end
-  | Mty_alias path, _ ->
+  | Mty_alias (path, None), _ ->
       let path = may_subst Subst.module_path sub path in
       begin try
         scrape_alias env sub (find_module path env).md_type ~path
@@ -1524,7 +1523,7 @@ let rec scrape_alias env sub ?path mty =
           (Warnings.No_cmi_file (Path.name path));*)
         mty
       end
-  | Mty_ascribe (path', mty'), _ ->
+  | Mty_alias (path', Some mty'), _ ->
       (* TODO: This strengthening should push down ascriptions. *)
       scrape_alias env sub ?path
         (!strengthen ~aliasable:Str_ascribe env mty' path')
@@ -1626,7 +1625,7 @@ let module_declaration_address env id presence md =
   match presence with
   | Mp_absent -> begin
       match md.md_type with
-      | Mty_alias path -> Lazy_backtrack.create (ModAlias {env; path})
+      | Mty_alias (path, None) -> Lazy_backtrack.create (ModAlias {env; path})
       | _ -> assert false
     end
   | Mp_present ->
@@ -1741,7 +1740,7 @@ let rec components_of_module_maker
               match pres with
               | Mp_absent -> begin
                   match md.md_type with
-                  | Mty_alias p ->
+                  | Mty_alias (p, None) ->
                       let path = may_subst Subst.module_path freshening_sub p in
                       Lazy_backtrack.create (ModAlias {env = !env; path})
                   | _ -> assert false
@@ -1808,8 +1807,7 @@ let rec components_of_module_maker
           fcomp_cache = Hashtbl.create 17;
           fcomp_subst_cache = Hashtbl.create 17 })
   | Mty_ident _ -> Error No_components_abstract
-  | Mty_alias p -> Error (No_components_alias p)
-  | Mty_ascribe _ -> assert false
+  | Mty_alias (p, _) -> Error (No_components_alias p)
 
 (* Insertion of bindings by identifier + path *)
 
@@ -2339,7 +2337,7 @@ let read_signature modname filename =
   let md = Lazy_backtrack.force subst_modtype_maker mda.mda_declaration in
   match md.md_type with
   | Mty_signature sg -> sg
-  | Mty_ident _ | Mty_functor _ | Mty_alias _ | Mty_ascribe _ -> assert false
+  | Mty_ident _ | Mty_functor _ | Mty_alias _ -> assert false
 
 let is_identchar_latin1 = function
   | 'A'..'Z' | 'a'..'z' | '_' | '\192'..'\214' | '\216'..'\246'

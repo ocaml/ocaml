@@ -228,10 +228,10 @@ let init_shape id modl =
   let rec init_shape_mod subid loc env mty =
     match Mtype.scrape env mty with
       Mty_ident _
-    | Mty_alias _ ->
+    | Mty_alias (_, None) ->
         raise (Initialization_failure
                 (Unsafe {reason=Unsafe_module_binding;loc;subid}))
-    | Mty_ascribe (_, mty) ->
+    | Mty_alias (_, Some mty) ->
         init_shape_mod subid loc env mty
     | Mty_signature sg ->
         Const_block(0, [Const_block(0, init_shape_struct env sg)])
