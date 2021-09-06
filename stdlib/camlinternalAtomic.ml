@@ -1,6 +1,6 @@
 (* CamlinternalAtomic is a dependency of Stdlib, so it is compiled with
    -nopervasives. *)
-type 'a t
+type !'a t
 
 (* Atomic is a dependency of Stdlib, so it is compiled with
    -nopervasives. *)
