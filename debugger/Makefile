@@ -55,7 +55,8 @@ all: ocamldebug$(EXE)
 ocamldebug.cmo: $(debugger_objects)
 	$(CAMLC) -pack $(COMPFLAGS) -o $@ $^
 
-ocamldebug$(EXE): $(libraries) $(compiler_objects) ocamldebug.cmo ocamldebug_entry.cmo
+ocamldebug$(EXE): $(libraries) $(compiler_objects) ocamldebug.cmo \
+    ocamldebug_entry.cmo
 	$(CAMLC) $(LINKFLAGS) -o $@ -linkall $^
 
 install:
