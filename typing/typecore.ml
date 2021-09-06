@@ -2517,37 +2517,65 @@ let generalize_and_check_univars env kind exp ty_expected vars =
   List.iter generalize vars;
   check_univars env kind exp ty_expected vars
 
-let check_partial_application statement exp =
-  let rec f delay =
-    let ty = get_desc (expand_head exp.exp_env exp.exp_type) in
-    let check_statement () =
-      match ty with
-      | Tconstr (p, _, _)  when Path.same p Predef.path_unit ->
-          ()
-      | _ ->
-          if statement then
-            let rec loop {exp_loc; exp_desc; exp_extra; _} =
-              match exp_desc with
-              | Texp_let (_, _, e)
-              | Texp_sequence (_, e)
-              | Texp_letexception (_, e)
-              | Texp_letmodule (_, _, _, _, e) ->
-                  loop e
-              | _ ->
-                  let loc =
-                    match List.find_opt (function
-                        | (Texp_constraint _, _, _) -> true
-                        | _ -> false) exp_extra
-                    with
-                    | Some (_, loc, _) -> loc
-                    | None -> exp_loc
-                  in
-                  Location.prerr_warning loc Warnings.Non_unit_statement
+(* [check_statement] implements the [non-unit-statement] check.
+
+   This check is called in contexts where the value of the expression is known
+   to be discarded (eg. the lhs of a sequence). We check that [exp] has type
+   unit, or has an explicit type annotation; otherwise we raise the
+   [non-unit-statement] warning. *)
+
+let check_statement exp =
+  let ty = get_desc (expand_head exp.exp_env exp.exp_type) in
+  match ty with
+  | Tconstr (p, _, _)  when Path.same p Predef.path_unit -> ()
+  | Tvar _ -> ()
+  | _ ->
+      let rec loop {exp_loc; exp_desc; exp_extra; _} =
+        match exp_desc with
+        | Texp_let (_, _, e)
+        | Texp_sequence (_, e)
+        | Texp_letexception (_, e)
+        | Texp_letmodule (_, _, _, _, e) ->
+            loop e
+        | _ ->
+            let loc =
+              match List.find_opt (function
+                  | (Texp_constraint _, _, _) -> true
+                  | _ -> false) exp_extra
+              with
+              | Some (_, loc, _) -> loc
+              | None -> exp_loc
             in
-            loop exp
-    in
-    match ty, exp.exp_desc with
-    | Tarrow _, _ ->
+            Location.prerr_warning loc Warnings.Non_unit_statement
+      in
+      loop exp
+
+
+(* [check_partial_application] implements the [ignored-partial-application]
+   warning (and if [statement] is [true], also [non-unit-statement]).
+
+   If [exp] has a function type, we check that it is not syntactically the
+   result of a function application, as this is often a bug in certain contexts
+   (eg the rhs of a let-binding or in the argument of [ignore]). For example,
+   [ignore (List.map print_int)] written by mistake instad of [ignore (List.map
+   print_int li)].
+
+   The check can be disabled by explicitly annotating the expression with a type
+   constraint, eg [(e : _ -> _)].
+
+   If [statement] is [true] and the [ignored-partial-application] is {em not}
+   triggered, then the [non-unit-statement] check is performaed (see
+   [check_statement]).
+
+   If the type of [exp] is not known at the time this function is called, the
+   check is retried again after typechecking. *)
+
+let check_partial_application ~statement exp =
+  let check_statement () = if statement then check_statement exp in
+  let doit () =
+    let ty = get_desc (expand_head exp.exp_env exp.exp_type) in
+    match ty with
+    | Tarrow _ ->
         let rec check {exp_desc; exp_loc; exp_extra; _} =
           if List.exists (function
               | (Texp_constraint _, _, _) -> true
@@ -2578,12 +2606,18 @@ let check_partial_application statement exp =
           end
         in
         check exp
-    | Tvar _, _ ->
-        if delay then add_delayed_check (fun () -> f false)
     | _ ->
         check_statement ()
   in
-  f true
+  let ty = get_desc (expand_head exp.exp_env exp.exp_type) in
+  match ty with
+  | Tvar _ ->
+      (* The type of [exp] is not known. Delay the check until after
+         typechecking in order to give a chance for the type to become known
+         through unification. *)
+      add_delayed_check doit
+  | _ ->
+      doit ()
 
 (* Check that a type is generalizable at some level *)
 let generalizable level ty =
@@ -3001,7 +3035,7 @@ and type_expect_
         try rue exp
         with Error (_, _, Expr_type_clash _) as err ->
           Misc.reraise_preserving_backtrace err (fun () ->
-            check_partial_application false exp)
+            check_partial_application ~statement:false exp)
       end
   | Pexp_match(sarg, caselist) ->
       begin_def ();
@@ -4644,7 +4678,7 @@ and type_application env funct sargs =
     [Nolabel, sarg] when is_ignore funct ->
       let ty_arg, ty_res = filter_arrow env (instance funct.exp_type) Nolabel in
       let exp = type_expect env sarg (mk_expected ty_arg) in
-      check_partial_application false exp;
+      check_partial_application ~statement:false exp;
       ([Nolabel, Some exp], ty_res)
   | _ ->
     let ty = funct.exp_type in
@@ -4752,7 +4786,7 @@ and type_statement ?explanation env sexp =
       unify_exp env exp expected_ty);
     exp
   else begin
-    check_partial_application true exp;
+    check_partial_application ~statement:true exp;
     unify_var env tv ty;
     exp
   end
@@ -5286,7 +5320,7 @@ and type_let
       | {vb_pat = {pat_desc = Tpat_any; pat_extra; _}; vb_expr; _} ->
           if not (List.exists (function (Tpat_constraint _, _, _) -> true
                                       | _ -> false) pat_extra) then
-            check_partial_application false vb_expr
+            check_partial_application ~statement:false vb_expr
       | _ -> ()) l;
   (l, new_env, unpacks)
 
