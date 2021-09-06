@@ -826,3 +826,28 @@ module F' :
 module F'_N :
   sig module B = (M.B :> sig type t val create : unit -> t end) end
 |}]
+
+(* Including an ascripted module. *)
+include (M :> S)
+include (List :> sig type _ t end)
+
+[%%expect {|
+module B = (M.B :> sig type t val create : unit -> t end)
+type 'a t = 'a List.t
+|}]
+
+(* Packing an ascripted module. *)
+let m : (module S) = (module (M :> S))
+let m' : (module S with type B.t = M.B.t) = (module (M :> S))
+
+[%%expect {|
+val m : (module S) = <module>
+val m' : (module S with type B.t = M.B.t) = <module>
+|}]
+
+(* Ascripted modules in let module expressions. *)
+let m : (module S with type B.t = M.B.t) = let module N = (M :> S) in (module N)
+
+[%%expect {|
+val m : (module S with type B.t = M.B.t) = <module>
+|}]
