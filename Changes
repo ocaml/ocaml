@@ -156,6 +156,9 @@ Working version
 - #10590: Some typechecker optimisations
   (Stephen Dolan, review by Gabriel Scherer and Leo White)
 
+- #10603, #10611: Fix if condition marked as inconstant in flambda
+  (Vincent Laviron and Pierre Chambart, report by Marcello Seri)
+
 OCaml 4.13.0
 -------------
 
