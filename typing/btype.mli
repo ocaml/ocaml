@@ -87,7 +87,7 @@ val is_fixed: row_desc -> bool
 
 val has_fixed_explanation: row_desc -> bool
 (* Return whether the row should be treated as fixed or not.
-   In particular, [is_fixed row] implies [row_fixed row].
+   In particular, [is_fixed row] implies [has_fixed_explanation row].
 *)
 
 val fixed_explanation: row_desc -> fixed_explanation option
