@@ -48,7 +48,7 @@
 	    span {
 		color:#c88b5f;
 	    }
-	    span.c003{
+	    span.syntax-token{
 		color:#564233;
 	    }
 	}
@@ -293,7 +293,7 @@ blockquote.quote{
 	border-spacing: 6px;
 	border-collapse: separate;
 }
-span.c003{
+span.syntax-token{
     color:#564233;
     font-family: $font-mono;
     border-radius:6px
@@ -306,47 +306,46 @@ div.caml-example.toplevel div.caml-input::before{
 span.number{
     padding-right: 1ex;
 }
-span.c004, span.c005, span.c007 {
+span.syntax-token {
 	font-family: $font-mono;
 }
-span.c003, span.c005 {
+span.syntax-token {
 	color: rgba(91, 33, 6, 0.87);
 }
-span.c002{
+span.ocamlprompt{
     color:#888
 }
-span.c006{
+span.font-bold .machine{
     font-weight:700;
     color:#564233;
-    font-family: $font-mono;
 }
-.c008 {
+.osvariant {
 	font-family: $font-sans;
 }
-span.c010 {
+.font-it {
 	font-style: italic;
+}
+.font-tt {
+	font-family: $font-mono;
 }
 span.authors{
     font-style:italic;
     background-color:inherit
 }
-span.c011 {
-	font-style: italic;
+span.nonterminal {
+	font-style: oblique;
 }
-.c012 {
-	font-style: italic;
-}
-span.c013{
-    font-style: italic;
+.font-sl {
+	font-style: oblique;
 }
 .center table {
 	margin-left: inherit;
 	margin-right: inherit;
 }
-td .c014 {
+td .font-bold {
 	font-weight: bold;
 }
-.c016 {
+.c003 {
 	text-align: center;
 }
 .cellpadding1 tr td {

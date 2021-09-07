@@ -298,6 +298,9 @@ OCaml 4.13.0
 - #10497: Styling changes in the post-processed HTML manual (webman)
   (Wiktor Kuchta, review by Florian Angeletti)
 
+- #10605: manual, name few css classes to ease styling and maintainability.
+  (Florian Angeletti, review by Wiktor Kuchta and Gabriel Scherer)
+
 ### Compiler user-interface and warnings:
 
 - #1737, #2092, #7852, #7859, #10405, #10417: Update locations during
