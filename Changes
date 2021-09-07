@@ -130,6 +130,10 @@ Working version
 - #10555: Do not use ghost locations for type constraints
   (Nicolás Ojeda Bär, report by Anton Bachin, review by Thomas Refis)
 
+- #10598, #10616: fix an exponential blow-up when typechecking nested module
+  types
+  (Florian Angeletti, report and review by Stephen Dolan)
+
 - #10559: Evaluate signature substitutions lazily
   (Stephen Dolan, review by Leo White)
 
