@@ -53,7 +53,6 @@ static atomic_uintnat tick_thread_stop[Max_domains];
 
 static int st_initialize(void)
 {
-  /* caml_sigmask_hook = pthread_sigmask; */
   atomic_store_rel(&Tick_thread_stop, 0);
   return 0;
 }
