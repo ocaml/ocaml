@@ -57,6 +57,7 @@ CAMLextern void (*caml_atfork_hook)(void);
 
 CAMLextern void (*caml_domain_start_hook)(void);
 CAMLextern void (*caml_domain_stop_hook)(void);
+CAMLextern void (*caml_domain_external_interrupt_hook)(void);
 
 void caml_init_domains(uintnat minor_heap_size);
 void caml_init_domain_self(int);

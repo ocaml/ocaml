@@ -94,6 +94,8 @@ DOMAIN_STATE(uintnat, requested_major_slice)
 
 DOMAIN_STATE(uintnat, requested_minor_gc)
 
+DOMAIN_STATE(uintnat, requested_external_interrupt)
+
 DOMAIN_STATE(int, parser_trace)
 /* See parsing.c */
 
