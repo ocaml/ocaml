@@ -160,8 +160,7 @@
 %%% Code examples
 \newcommand{\input@color}{\htmlcolor{006000}}
 \newcommand{\output@color}{\maroon}
-\newcommand{\machine}{\@span{class=machine}}
-\newstyle{.machine}{font-family:monospace}
+\newcommand{\machine}{\@span{class=machine}\tt}
 \newenvironment{machineenv}{\begin{alltt}}{\end{alltt}}
 \newcommand{\var}[1]{\textit{#1}}
 

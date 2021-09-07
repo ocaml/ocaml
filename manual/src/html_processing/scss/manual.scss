@@ -307,7 +307,7 @@ div.caml-example.toplevel div.caml-input::before{
 span.number{
     padding-right: 1ex;
 }
-span.machine, span.syntax-token {
+span.syntax-token {
 	font-family: $font-mono;
 }
 span.syntax-token {
@@ -325,6 +325,9 @@ span.font-bold.machine{
 }
 .font-it {
 	font-style: italic;
+}
+.font-tt {
+	font-family: $font-mono;
 }
 span.authors{
     font-style:italic;
