@@ -355,6 +355,18 @@ static void caml_thread_initialize_domain()
   return;
 }
 
+CAMLprim value caml_thread_yield(value unit);
+
+void caml_thread_interrupt_hook(void)
+{
+  if (Caml_state->requested_external_interrupt == 1) {
+    Caml_state->requested_external_interrupt = 0;
+    caml_thread_yield(Val_unit);
+  }
+
+  return;
+}
+
 // This setup function is called as an entrypoint to the Thread module.
 // This will setup the global variables and hooks for systhreads
 // cooperate with the runtime system, after initializing
@@ -370,11 +382,11 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
   caml_scan_roots_hook = caml_thread_scan_roots;
   caml_enter_blocking_section_hook = caml_thread_enter_blocking_section;
   caml_leave_blocking_section_hook = caml_thread_leave_blocking_section;
+  caml_domain_external_interrupt_hook = caml_thread_interrupt_hook;
   caml_domain_start_hook = caml_thread_domain_start_hook;
   caml_domain_stop_hook = caml_thread_domain_stop_hook;
 
   st_atfork(caml_thread_reinitialize);
-
 
   CAMLreturn(Val_unit);
 }
