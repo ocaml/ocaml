@@ -27,7 +27,8 @@
 \newif\ifspace
 \def\addspace{\ifspace\;\spacefalse\fi}
 \ifhtml
-\newcommand{\token}[1]{\texttt{\blue#1}}
+\newcommand{\token}[1]{\textnormal{\@span{class=syntax-token}#1}}
+\newstyle{.syntax-token}{color:blue;font-family:monospace}
 \else
 \newcommand{\token}[1]{\texttt{#1}}
 \fi
@@ -133,7 +134,8 @@
 \def\@anchor{}
 \fi
 %%%Format non-terminal
-\def\nt#1{\textit{\maroon#1}}
+\def\nt#1{\textnormal{\@span{class=nonterminal}#1}}
+\newstyle{.nonterminal}{color:maroon;font-style:oblique}
 %%%Link for non-terminal and format
 \def\nonterm#1{\addspace\nt{\@anchor{#1}}\spacetrue}
 \def\brepet{\addspace\{}
