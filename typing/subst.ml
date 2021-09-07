@@ -729,10 +729,6 @@ let subst_lazy_signature_item scoping s comp =
   For_copy.with_scope
     (fun copy_scope -> subst_lazy_signature_item' copy_scope scoping s comp)
 
-let module_declaration scoping s decl =
-  decl
-  |> lazy_module_decl |> subst_lazy_module_decl scoping s |> force_module_decl
-
 module Lazy = struct
   include Lazy_types
 
@@ -765,3 +761,6 @@ let signature_item sc s comp =
 
 let modtype_declaration sc s decl =
   Lazy.(decl |> of_modtype_decl |> modtype_decl sc s |> force_modtype_decl)
+
+let module_declaration scoping s decl =
+  Lazy.(decl |> of_module_decl |> module_decl scoping s |> force_module_decl)
