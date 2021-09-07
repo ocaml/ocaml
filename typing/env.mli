@@ -86,6 +86,9 @@ val find_modtype: Path.t -> t -> modtype_declaration
 val find_class: Path.t -> t -> class_declaration
 val find_cltype: Path.t -> t -> class_type_declaration
 
+val find_strengthened_module:
+  aliasable:bool -> Path.t -> t -> module_type
+
 val find_ident_constructor: Ident.t -> t -> constructor_description
 val find_ident_label: Ident.t -> t -> label_description
 
@@ -96,6 +99,7 @@ val find_type_expansion_opt:
 (* Find the manifest type information associated to a type for the sake
    of the compiler's type-based optimisations. *)
 val find_modtype_expansion: Path.t -> t -> module_type
+val find_modtype_expansion_lazy: Path.t -> t -> Subst.Lazy.modtype
 
 val find_hash_type: Path.t -> t -> type_declaration
 (* Find the "#t" type given the path for "t" *)
@@ -211,6 +215,8 @@ val lookup_cltype:
 
 val lookup_module_path:
   ?use:bool -> loc:Location.t -> load:bool -> Longident.t -> t -> Path.t
+val lookup_modtype_path:
+  ?use:bool -> loc:Location.t -> Longident.t -> t -> Path.t
 
 val lookup_constructor:
   ?use:bool -> loc:Location.t -> constructor_usage -> Longident.t -> t ->
@@ -278,7 +284,11 @@ val add_module:
   ?arg:bool -> Ident.t -> module_presence -> module_type -> t -> t
 val add_module_declaration: ?arg:bool -> check:bool -> Ident.t ->
   module_presence -> module_declaration -> t -> t
+val add_module_declaration_lazy: update_summary:bool ->
+  Ident.t -> module_presence -> Subst.Lazy.module_decl -> t -> t
 val add_modtype: Ident.t -> modtype_declaration -> t -> t
+val add_modtype_lazy: update_summary:bool ->
+   Ident.t -> Subst.Lazy.modtype_declaration -> t -> t
 val add_class: Ident.t -> class_declaration -> t -> t
 val add_cltype: Ident.t -> class_type_declaration -> t -> t
 val add_local_type: Path.t -> type_declaration -> t -> t
@@ -438,7 +448,8 @@ val check_well_formed_module:
 val add_delayed_check_forward: ((unit -> unit) -> unit) ref
 (* Forward declaration to break mutual recursion with Mtype. *)
 val strengthen:
-    (aliasable:bool -> t -> module_type -> Path.t -> module_type) ref
+    (aliasable:bool -> t -> Subst.Lazy.modtype ->
+     Path.t -> Subst.Lazy.modtype) ref
 (* Forward declaration to break mutual recursion with Ctype. *)
 val same_constr: (t -> type_expr -> type_expr -> bool) ref
 (* Forward declaration to break mutual recursion with Printtyp. *)

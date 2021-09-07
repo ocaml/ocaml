@@ -1195,6 +1195,7 @@ typing/subst.cmo : \
     utils/misc.cmi \
     parsing/location.cmi \
     utils/local_store.cmi \
+    utils/lazy_backtrack.cmi \
     typing/ident.cmi \
     utils/clflags.cmi \
     typing/btype.cmi \
@@ -1207,6 +1208,7 @@ typing/subst.cmx : \
     utils/misc.cmx \
     parsing/location.cmx \
     utils/local_store.cmx \
+    utils/lazy_backtrack.cmx \
     typing/ident.cmx \
     utils/clflags.cmx \
     typing/btype.cmx \
@@ -1215,6 +1217,7 @@ typing/subst.cmx : \
 typing/subst.cmi : \
     typing/types.cmi \
     typing/path.cmi \
+    parsing/parsetree.cmi \
     parsing/location.cmi \
     typing/ident.cmi
 typing/tast_iterator.cmo : \
