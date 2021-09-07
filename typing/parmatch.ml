@@ -729,7 +729,7 @@ let close_variant env row =
         | Reither (_, _, true, _) -> (nm, false)
         | Rabsent | Rpresent _ -> (nm, static))
       (orig_name, true) fields in
-  if not closed || name != orig_name then
+  if not closed || name != orig_name then begin
     let more' = if static then Btype.newgenty Tnil else Btype.newgenvar () in
     (* this unification cannot fail *)
     Ctype.unify env more
@@ -737,6 +737,7 @@ let close_variant env row =
          (Tvariant
             (create_row ~fields:[] ~more:more'
                ~closed:true ~name ~fixed)))
+  end
 
 (*
   Check whether the first column of env makes up a complete signature or

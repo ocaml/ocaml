@@ -567,22 +567,13 @@ let create_row ~fields ~more ~closed ~fixed ~name =
     { row_fields=fields; row_more=more;
       row_closed=closed; row_fixed=fixed; row_name=name }
 
-let rec rev_concat l ll =
-  match ll with
-    [] -> l
-  | l'::ll -> rev_concat (l'@l) ll
-
 (* [row_fields] subsumes the original [row_repr] *)
-let rec row_fields_aux ll row =
+let rec row_fields row =
   match get_desc row.row_more with
   | Tvariant row' ->
-      let f = row.row_fields in
-      row_fields_aux (if f = [] then ll else f::ll) row'
+      row.row_fields @ row_fields row'
   | _ ->
-      let f = row.row_fields in
-      if ll = [] then f else rev_concat f ll
-
-let row_fields row = row_fields_aux [] row
+      row.row_fields
 
 let rec row_repr_no_fields row =
   match get_desc row.row_more with
