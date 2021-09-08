@@ -28,12 +28,7 @@ let module_type_substitution_missing_rhs loc =
   err loc "Module type substitution with no right hand side"
 
 let simple_longident id =
-  let rec is_simple = function
-    | Longident.Lident _ -> true
-    | Longident.Ldot (id, _) -> is_simple id
-    | Longident.Lapply _ -> false
-  in
-  if not (is_simple id.txt) then complex_id id.loc
+  if Longident.has_apply id.txt then complex_id id.loc
 
 let iterator =
   let super = Ast_iterator.default_iterator in
@@ -111,7 +106,6 @@ let iterator =
     super.module_type self mty;
     match mty.pmty_desc with
     | Pmty_alias id -> simple_longident id
-    | Pmty_ascribe (id, _) -> simple_longident id
     | _ -> ()
   in
   let open_description self opn =

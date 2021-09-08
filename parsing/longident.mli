@@ -36,6 +36,8 @@ val unflatten: string list -> t option
     [unflatten []] is [None].
 *)
 
+val has_apply: t -> bool
+
 val last: t -> string
 val parse: string -> t
 [@@deprecated "this function may misparse its input,\n\

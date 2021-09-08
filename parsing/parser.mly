@@ -1606,9 +1606,12 @@ module_type:
         { Pmty_functor(Named (mknoloc None, $1), $3) }
     | module_type WITH separated_nonempty_llist(AND, with_constraint)
         { Pmty_with($1, $3) }
-/*  | LPAREN MODULE mkrhs(mod_longident) RPAREN
-        { Pmty_alias $3 } */
-/*  | LPAREN MODULE mkrhs(mod_longident) COLONGREATER module_type RPAREN
+/*  | LPAREN MODULE mkrhs(mod_ext_longident) RPAREN
+        { if Longident.has_apply id.txt then
+            not_expecting $loc(id) "functor application"
+          else
+            Pmty_alias $3 } */
+/*  | LPAREN MODULE mkrhs(mod_ext_longident) COLONGREATER module_type RPAREN
         { Pmty_ascribe ($3, $5) } */
     | extension
         { Pmty_extension $1 }
@@ -1720,14 +1723,12 @@ module_declaration_body:
   }
 ;
 %inline module_alias_body:
-    module_expr_alias { $1 }
-  | module_expr_ascribe { $1 }
-%inline module_expr_alias:
-  id = mkrhs(mod_longident)
-    { Mty.alias ~loc:(make_loc $sloc) id }
-;
-%inline module_expr_ascribe:
-  LPAREN id = mkrhs(mod_longident) COLONGREATER mty = module_type RPAREN
+    id = mkrhs(mod_ext_longident)
+    { if Longident.has_apply id.txt then
+        not_expecting $loc(id) "functor application"
+      else
+        Mty.alias ~loc:(make_loc $sloc) id }
+  | LPAREN id = mkrhs(mod_ext_longident) COLONGREATER mty = module_type RPAREN
     { Mty.ascribe ~loc:(make_loc $sloc) id mty }
 ;
 (* A module substitution (in a signature). *)
