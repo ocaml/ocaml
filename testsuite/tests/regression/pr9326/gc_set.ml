@@ -37,4 +37,3 @@ let _ =
   assert (g2.custom_minor_max_size = g1.custom_minor_max_size);
   assert (g2.mark_to_sweep_ratio = g1.mark_to_sweep_ratio);
   ()
-
