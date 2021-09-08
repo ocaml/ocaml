@@ -20,6 +20,10 @@ Working version
   (Stephen Dolan, review by Xavier Leroy, Guillaume Munch-Maccagnoni,
    Jacques-Henri Jourdan and Damien Doligez)
 
+- #10418: Rework the computation of GC slice work, and let the user control
+  the ratio of mark slice size to sweep slice size
+  (Damien Doligez, idea by Stephen Dolan, review by ...)
+
 - #10549: Stack overflow detection and naked pointers checking for ARM64
   (Xavier Leroy, review by Stephen Dolan)
 
