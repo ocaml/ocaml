@@ -86,6 +86,9 @@ Working version
   in case of concurrent modifications.
   (Xavier Leroy, report by whitequark, review by David Allsopp)
 
+- #10605: manual, name few css classes to ease styling and maintainability.
+  (Florian Angeletti, review by Wiktor Kuchta and Gabriel Scherer)
+
 ### Compiler user-interface and warnings:
 
 - #10328: Give more precise error when disambiguation could not possibly work.
@@ -129,6 +132,9 @@ Working version
 
 - #10555: Do not use ghost locations for type constraints
   (Nicolás Ojeda Bär, report by Anton Bachin, review by Thomas Refis)
+
+- #10559: Evaluate signature substitutions lazily
+  (Stephen Dolan, review by Leo White)
 
 ### Build system:
 
@@ -777,6 +783,9 @@ OCaml 4.13.0
 - #10468: Correctly pretty print local type substitution, e.g. type t := ...,
   with -dsource
   (Matt Else, review by Florian Angeletti)
+
+- #10511: Cygwin ports now correctly configure when flexdll is not available.
+  (David Allsopp, review by Florian Angeletti)
 
 - #10550, #10551: fix pretty-print of gadt-pattern-with-type-vars
   (Chet Murthy, review by Gabriel Scherer)

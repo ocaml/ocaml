@@ -14051,7 +14051,7 @@ fi
   *-*-cygwin*) :
     mksharedlib='$(FLEXLINK)'
       mkmaindll='$(FLEXLINK) -maindll'
-      shared_libraries_supported=true ;; #(
+      shared_libraries_supported=$with_sharedlibs ;; #(
   powerpc-ibm-aix*) :
     case $ocaml_cv_cc_vendor in #(
   xlc*) :
@@ -14093,7 +14093,7 @@ fi
 
 natdynlink=false
 
-if test x"$enable_shared" != "xno"; then :
+if test x"$shared_libraries_supported" = 'xtrue'; then :
   case "$host" in #(
   *-*-cygwin*) :
     natdynlink=true ;; #(
@@ -15860,7 +15860,7 @@ esac
 ## shared library support
 if $shared_libraries_supported; then :
   case $host in #(
-  *-*-mingw32|*-pc-windows) :
+  *-*-mingw32|*-pc-windows|*-*-cygwin*) :
     supports_shared_libraries=$shared_libraries_supported; DLLIBS="" ;; #(
   *) :
     ac_fn_c_check_func "$LINENO" "dlopen" "ac_cv_func_dlopen"
