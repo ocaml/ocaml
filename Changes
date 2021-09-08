@@ -486,9 +486,10 @@ OCaml 4.13.0
 - #9407: added warning for missing mli interface file
   (Anukriti Kumar, review by Florian Angeletti)
 
-- #9960: extend ocamlc/ocamlopt's -o option to work when compiling C files
-  (Sébastien Hinderer, reported by Daniel Bünzli, review by Florian
-  Angeletti and Gabriel Scherer)
+- #9960, #10619: extend ocamlc/ocamlopt's -o option to work when
+  compiling C files
+  (Sébastien Hinderer, reported by Daniel Bünzli, review by
+  Florian Angeletti and Gabriel Scherer)
 
 - #10095: simplify the syntax error messages produced by the compiler.
   In many cases, the compiler would produce an error message that looked
