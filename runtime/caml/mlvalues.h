@@ -443,6 +443,14 @@ Caml_inline void caml_read_field(value x, intnat i, value* ret) {
 #define Long_field(x, i) Long_val(Field(x, i))
 #define Bool_field(x, i) Bool_val(Field(x, i))
 
+/* Header for out-of-heap blocks. */
+
+#define Caml_out_of_heap_header(wosize, tag)                                  \
+      (/*CAMLassert ((wosize) <= Max_wosize),*/                               \
+       ((header_t) (((header_t) (wosize) << 10)                               \
+           + (3 << 8) /* matches [NOT_MARKABLE]. See [shared_heap.h]. */      \
+           + (tag_t) (tag)))                                                  \
+      )
 
 #ifdef __cplusplus
 }
