@@ -959,7 +959,7 @@ AS_IF([test x"$enable_shared" != "xno"],
     [*-*-cygwin*],
       [mksharedlib='$(FLEXLINK)'
       mkmaindll='$(FLEXLINK) -maindll'
-      shared_libraries_supported=true],
+      shared_libraries_supported=$with_sharedlibs],
     [powerpc-ibm-aix*],
       [AS_CASE([$ocaml_cv_cc_vendor],
                [xlc*],
@@ -990,7 +990,7 @@ AS_IF([test -z "$mkmaindll"], [mkmaindll=$mksharedlib])
 
 natdynlink=false
 
-AS_IF([test x"$enable_shared" != "xno"],
+AS_IF([test x"$shared_libraries_supported" = 'xtrue'],
   [AS_CASE(["$host"],
     [*-*-cygwin*], [natdynlink=true],
     [*-*-mingw32], [natdynlink=true],
@@ -1605,7 +1605,7 @@ AS_CASE([$host],
 ## shared library support
 AS_IF([$shared_libraries_supported],
   [AS_CASE([$host],
-    [*-*-mingw32|*-pc-windows],
+    [*-*-mingw32|*-pc-windows|*-*-cygwin*],
       [supports_shared_libraries=$shared_libraries_supported; DLLIBS=""],
     [AC_CHECK_FUNC([dlopen],
       [supports_shared_libraries=true DLLIBS=""],
