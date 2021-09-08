@@ -851,3 +851,32 @@ let m : (module S with type B.t = M.B.t) = let module N = (M :> S) in (module N)
 [%%expect {|
 val m : (module S with type B.t = M.B.t) = <module>
 |}]
+
+(* Behaviour of functors is consistent. *)
+module Foo (X : sig val x : int end) = struct
+  module M = X
+end
+module Bar (X : sig val y : int end) = struct let x = X.y + 1 end
+module Baz = struct let y = 43 end
+
+[%%expect {|
+module Foo :
+  functor (X : sig val x : int end) ->
+    sig module M = (X :> sig val x : int end) end
+module Bar : functor (X : sig val y : int end) -> sig val x : int end
+module Baz : sig val y : int end
+|}]
+
+let foo () =
+  let module M = Foo(Bar(Baz)) in
+  M.M.x
+
+[%%expect {|
+val foo : unit -> int = <fun>
+|}]
+
+module M = Foo(Bar(Baz))
+
+[%%expect {|
+module M : sig module M = (Bar(Baz) :> sig val x : int end) end
+|}]

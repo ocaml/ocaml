@@ -407,18 +407,14 @@ let rec modtypes ~loc env ~mark subst mty1 mty2 =
 and try_modtypes ~loc env ~mark subst mty1 mty2 =
   match mty1, mty2 with
   | (Mty_alias (p1, Some res1), Mty_alias (p2, Some res2)) ->
-      if Path.has_apply p2 then
-        Error (Error.Invalid_module_alias p2)
-      else if equal_module_paths ~unascribe:true env p1 subst p2 then
+      if equal_module_paths ~unascribe:true env p1 subst p2 then
         try_modtypes ~loc env ~mark subst
           (Mtype.strengthen ~aliasable:Misc.Str_ascribe env res1 p1)
           (Mtype.strengthen ~aliasable:Misc.Str_ascribe env res2 p2)
       else
         Error Error.(Mt_core Incompatible_aliases)
   | (Mty_alias (p1, None), Mty_alias (p2, Some res2)) ->
-      if Path.has_apply p2 then
-        Error (Error.Invalid_module_alias p2)
-      else if equal_module_paths ~unascribe:true env p1 subst p2 then
+      if equal_module_paths ~unascribe:true env p1 subst p2 then
         try_modtypes ~loc env ~mark subst mty1 res2
       else
         Error Error.(Mt_core Incompatible_aliases)
