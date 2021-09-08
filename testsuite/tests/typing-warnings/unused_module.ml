@@ -14,10 +14,6 @@ module M : sig end = struct
   end
 end
 [%%expect {|
-Line 6, characters 4-22:
-6 |     module M : sig end
-        ^^^^^^^^^^^^^^^^^^
-Warning 60 [unused-module]: unused module M.
 module M : sig end
 |}]
 

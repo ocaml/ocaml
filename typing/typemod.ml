@@ -622,7 +622,7 @@ let merge_constraint initial_env loc sg lid constr =
       when Ident.name id = s ->
         let mty = md'.md_type in
         let mty = Mtype.scrape_for_type_of ~remove_aliases sig_env mty in
-        let md'' = { md' with md_type = mty } in
+        let md'' = { md' with md_type = mty; md_uid = md.md_uid } in
         let newmd = Mtype.strengthen_decl ~aliasable:false sig_env md'' path in
         ignore(Includemod.modtypes  ~mark:Mark_both ~loc sig_env
                  newmd.md_type md.md_type);
