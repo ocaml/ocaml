@@ -784,6 +784,9 @@ OCaml 4.13.0
   with -dsource
   (Matt Else, review by Florian Angeletti)
 
+- #10511: Cygwin ports now correctly configure when flexdll is not available.
+  (David Allsopp, review by Florian Angeletti)
+
 - #10550, #10551: fix pretty-print of gadt-pattern-with-type-vars
   (Chet Murthy, review by Gabriel Scherer)
 
