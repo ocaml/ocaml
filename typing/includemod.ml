@@ -361,6 +361,22 @@ let retrieve_functor_params env mty =
    Return the restriction that transforms a value of the smaller type
    into a value of the bigger type. *)
 
+(**
+   In the group of mutual functions below, the [~in_eq] argument is [true] when
+   we are in fact checking equality of module types.
+
+   The module subtyping relation [A <: B] checks that [A.T = B.T] when [A]
+   and [B] define a module type [T]. The relation [A.T = B.T] is equivalent
+   to [(A.T <: B.T) and (B.T <: A.T)], but checking both recursively would lead
+   to an exponential slowdown (see #10598 and #10616).
+   To avoid this issue, when [~in_eq] is [true], we compute a coarser relation
+   [A << B] which is the same as [A <: B] except that module types [T] are
+   checked only for [A.T << B.T] and not the reverse.
+   Thus, we can implement a cheap module type equality check [A.T = B.T] by
+   computing [(A.T << B.T) and (B.T << A.T)], avoiding the exponential slowdown
+   described above.
+*)
+
 let rec modtypes ~in_eq ~loc env ~mark subst mty1 mty2 =
   match try_modtypes ~in_eq ~loc env ~mark subst mty1 mty2 with
   | Ok _ as ok -> ok
