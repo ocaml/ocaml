@@ -620,6 +620,10 @@ OCaml 4.13.0
   bug was only present in the beta version of OCaml 4.13.0.
   (Ulysse Gérard, review by Florian Angeletti)
 
+- #10603, #10611: Fix if condition marked as inconstant in flambda
+  (Vincent Laviron and Pierre Chambart, report by Marcello Seri)
+
+
 OCaml 4.12, maintenance version
 -------------------------------
 

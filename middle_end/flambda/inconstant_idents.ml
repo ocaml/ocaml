@@ -269,9 +269,9 @@ module Inconstants (P:Param) (Backend:Backend_intf.S) = struct
       mark_curr curr;
       mark_loop ~toplevel [] f1;
       mark_loop ~toplevel:false [] body
-    | If_then_else (f1,f2,f3) ->
+    | If_then_else (cond,f2,f3) ->
       mark_curr curr;
-      mark_curr [Var f1];
+      mark_var cond curr;
       mark_loop ~toplevel [] f2;
       mark_loop ~toplevel [] f3
     | Static_raise (_,l) ->
