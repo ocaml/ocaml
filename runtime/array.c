@@ -127,7 +127,7 @@ CAMLprim value caml_array_set_float(value array, value index, value newval)
 #else
   CAMLassert (Tag_val (array) != Double_array_tag);
   if (idx < 0 || idx >= Wosize_val(array)) caml_array_bound_error();
-  Modify(&Field(array, idx), newval);
+  caml_modify(&Field(array, idx), newval);
 #endif
   return Val_unit;
 }
@@ -216,7 +216,7 @@ CAMLprim value caml_array_unsafe_set_float(value array,value index,value newval)
   double d = Double_val (newval);
   Store_double_flat_field(array, idx, d);
 #else
-  Modify(&Field(array, idx), newval);
+  caml_modify(&Field(array, idx), newval);
 #endif
   return Val_unit;
 }
