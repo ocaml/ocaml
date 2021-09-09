@@ -314,9 +314,10 @@ module Exported_private_extension :
 
 module Pr7438 : sig
 end = struct
-  module type S = sig type t = private [> `Foo] end
+  module type S = sig type t = private [> `Foo] val x : t end
   module type X =
     sig type t = private [> `Foo | `Bar] include S with type t := t end
+  let _foo (module M : X) = ignore M.x
 end;;
 [%%expect {|
 module Pr7438 : sig end
@@ -454,6 +455,10 @@ module M : sig end = struct
   end
 end
 [%%expect {|
+Line 4, characters 4-10:
+4 |     type t
+        ^^^^^^
+Warning 34 [unused-type-declaration]: unused type t.
 module M : sig end
 |}]
 

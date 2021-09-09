@@ -1436,7 +1436,6 @@ let transl_value_decl env loc valdecl =
 *)
 let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
     sdecl =
-  Env.mark_type_used sig_decl.type_uid;
   reset_type_variables();
   Ctype.begin_def();
   (* In the first part of this function, we typecheck the syntactic
@@ -1514,7 +1513,7 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
       type_attributes = sdecl.ptype_attributes;
       type_immediate = Unknown;
       type_unboxed_default;
-      type_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
+      type_uid = sig_decl.type_uid;
     }
   in
   Option.iter (fun p -> set_private_row env sdecl.ptype_loc p new_sig_decl)
