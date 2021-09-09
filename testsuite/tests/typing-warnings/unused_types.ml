@@ -443,3 +443,30 @@ Warning 69 [unused-field]: mutable record field b is never mutated.
 module Unused_mutable_field_exported_private :
   sig type t = private { a : int; mutable b : int; } end
 |}]
+
+module M : sig end = struct
+  type a
+  module type S = sig
+    type t
+  end
+  module _ (Q : S with type t = a) = struct
+    module _ = Q
+  end
+end
+[%%expect {|
+module M : sig end
+|}]
+
+module M : sig end = struct
+  type a
+  module type S = sig
+    type t
+  end
+  module _ (Q : S with type t = a) = struct
+    module _ = Q
+    let _f (x : Q.t) = x
+  end
+end
+[%%expect {|
+module M : sig end
+|}]
