@@ -6,7 +6,7 @@ dot-ext:
    | dot-operator-char { operator-char }
 ;
 dot-operator-char:
-  '!' ||  '?' || core-operator-char || '%' || ':'
+  '!' || '?' || core-operator-char || '%' || ':'
 ;
 expr:
           ...
