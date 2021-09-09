@@ -76,8 +76,6 @@ let win64 = Arch.win64
      stub saves them into the GC regs block).
 *)
 
-let max_arguments_for_tailcalls = 10
-
 let int_reg_name =
   match Config.ccomp_type with
   | "msvc" ->
@@ -157,12 +155,15 @@ let word_addressed = false
 
 (* Calling conventions *)
 
-let calling_conventions first_int last_int first_float last_float make_stack
+let size_domainstate_args = 64 * size_int
+
+let calling_conventions first_int last_int first_float last_float
+                        make_stack first_stack
                         arg =
   let loc = Array.make (Array.length arg) Reg.dummy in
   let int = ref first_int in
   let float = ref first_float in
-  let ofs = ref 0 in
+  let ofs = ref first_stack in
   for i = 0 to Array.length arg - 1 do
     match arg.(i) with
     | Val | Int | Addr as ty ->
@@ -183,21 +184,29 @@ let calling_conventions first_int last_int first_float last_float make_stack
           ofs := !ofs + size_float
         end
   done;
-  (loc, Misc.align !ofs 16)  (* keep stack 16-aligned *)
+  (loc, Misc.align (max 0 !ofs) 16)  (* keep stack 16-aligned *)
 
-let incoming ofs = Incoming ofs
-let outgoing ofs = Outgoing ofs
+let incoming ofs =
+  if ofs >= 0
+  then Incoming ofs
+  else Domainstate (ofs + size_domainstate_args)
+let outgoing ofs =
+  if ofs >= 0
+  then Outgoing ofs
+  else Domainstate (ofs + size_domainstate_args)
 let not_supported _ofs = fatal_error "Proc.loc_results: cannot call"
 
 let loc_arguments arg =
-  calling_conventions 0 9 100 109 outgoing arg
+  calling_conventions 0 9 100 109 outgoing (- size_domainstate_args) arg
 let loc_parameters arg =
   let (loc, _ofs) =
-    calling_conventions 0 9 100 109 incoming arg
-  in
-  loc
+    calling_conventions 0 9 100 109 incoming (- size_domainstate_args) arg
+  in loc
 let loc_results res =
-  let (loc, _ofs) = calling_conventions 0 0 100 100 not_supported res in loc
+  let (loc, _ofs) = calling_conventions 0 0 100 100 not_supported 0 res
+  in loc
+
+let max_arguments_for_tailcalls = 10 (* in regs *) + 64 (* in domain state *)
 
 (* C calling conventions under Unix:
      first integer args in rdi, rsi, rdx, rcx, r8, r9
@@ -213,10 +222,10 @@ let loc_results res =
      Return value in rax or xmm0. *)
 
 let loc_external_results res =
-  let (loc, _ofs) = calling_conventions 0 0 100 100 not_supported res in loc
+  let (loc, _ofs) = calling_conventions 0 0 100 100 not_supported 0 res in loc
 
 let unix_loc_external_arguments arg =
-  calling_conventions 2 7 100 107 outgoing arg
+  calling_conventions 2 7 100 107 outgoing 0 arg
 
 let win64_int_external_arguments =
   [| 5 (*rcx*); 4 (*rdx*); 6 (*r8*); 7 (*r9*) |]

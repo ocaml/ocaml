@@ -437,9 +437,9 @@ G(caml_system__frametable):
         .globl  G(caml_extra_params)
 G(caml_extra_params):
 #ifndef SYS_solaris
-        .space  64
+        .space  256
 #else
-        .zero   64
+        .zero   256
 #endif
 
 #if defined(SYS_linux_elf)
