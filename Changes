@@ -80,7 +80,7 @@ Working version
   (Xavier Leroy, report by @anentropic, review by Gabriel Scherer)
 
 - #9621: Pack the ocamldebug modules to minimize clashes
-  (Raphael Sousa Santos, review by Vincent Laviron)
+  (Raphael Sousa Santos, review by Vincent Laviron and Gabriel Scherer)
 
 ### Manual and documentation:
 
