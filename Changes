@@ -84,6 +84,9 @@ Working version
   until the program creates a thread for the first time, then fail cleanly.
   (Xavier Leroy, report by @anentropic, review by Gabriel Scherer)
 
+- #9621: Pack the ocamldebug modules to minimize clashes
+  (Raphael Sousa Santos, review by Vincent Laviron and Gabriel Scherer)
+
 ### Manual and documentation:
 
 - #7812, #10475: reworded the description of the behaviors of

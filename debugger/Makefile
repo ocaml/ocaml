@@ -43,16 +43,20 @@ debugger_modules := \
   show_source time_travel program_management frames eval \
   show_information loadprinter debugger_parser command_line main
 
-all_modules := $(compiler_modules) $(debugger_modules)
+compiler_objects := $(addsuffix .cmo,$(compiler_modules))
 
-all_objects := $(addsuffix .cmo,$(all_modules))
+debugger_objects := $(addsuffix .cmo,$(debugger_modules))
 
 libraries = $(ROOTDIR)/compilerlibs/ocamlcommon.cma \
   $(UNIXDIR)/unix.cma $(DYNLINKDIR)/dynlink.cma
 
 all: ocamldebug$(EXE)
 
-ocamldebug$(EXE): $(libraries) $(all_objects)
+ocamldebug.cmo: $(debugger_objects)
+	$(CAMLC) -pack $(COMPFLAGS) -o $@ $^
+
+ocamldebug$(EXE): $(libraries) $(compiler_objects) ocamldebug.cmo \
+    ocamldebug_entry.cmo
 	$(CAMLC) $(LINKFLAGS) -o $@ -linkall $^
 
 install:
@@ -62,11 +66,14 @@ clean::
 	rm -f ocamldebug ocamldebug.exe
 	rm -f *.cmo *.cmi
 
-%.cmo: %.ml
+ocamldebug_entry.cmo: ocamldebug_entry.ml ocamldebug.cmo
 	$(CAMLC) -c $(COMPFLAGS) $<
 
+%.cmo: %.ml
+	$(CAMLC) -c $(COMPFLAGS) -for-pack ocamldebug $<
+
 %.cmi: %.mli
-	$(CAMLC) -c $(COMPFLAGS) $<
+	$(CAMLC) -c $(COMPFLAGS) -for-pack ocamldebug $<
 
 depend: beforedepend
 	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mli *.ml \
