@@ -612,6 +612,13 @@ OCaml 4.13.0
   (Jacques Garrigue and Takafumi Saikawa,
    review by Florian Angeletti and Gabriel Radanne)
 
+* #10474: Force normalization on access to row_desc
+  Similar to #10337. Make row_desc an abstract types, with constructor
+  create_row and accessors defined in Types rather than Btype.
+  A normalized view row_desc_repr is provided for convenience.
+  (Jacques Garrigue and Takafumi Saikawa,
+   review by Leo White and Florian Angeletti)
+
 - #10358: Use a hash table for the load path.
   (Leo White, review by Gabriel Scherer)
 

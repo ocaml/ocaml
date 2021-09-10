@@ -394,20 +394,20 @@ let unify_head_only ~refine loc env ty constr =
 let finalize_variant pat tag opat r =
   let row =
     match get_desc (expand_head pat.pat_env pat.pat_type) with
-      Tvariant row -> r := row; row_repr row
+      Tvariant row -> r := row; row
     | _ -> assert false
   in
   begin match row_field tag row with
   | Rabsent -> () (* assert false *)
-  | Reither (true, [], _, e) when not row.row_closed ->
+  | Reither (true, [], _, e) when not (row_closed row) ->
       set_row_field e (Rpresent None)
-  | Reither (false, ty::tl, _, e) when not row.row_closed ->
+  | Reither (false, ty::tl, _, e) when not (row_closed row) ->
       set_row_field e (Rpresent (Some ty));
       begin match opat with None -> assert false
       | Some pat ->
           let env = ref pat.pat_env in List.iter (unify_pat env pat) (ty::tl)
       end
-  | Reither (c, _l, true, e) when not (row_fixed row) ->
+  | Reither (c, _l, true, e) when not (has_fixed_explanation row) ->
       set_row_field e (Reither (c, [], false, ref None))
   | _ -> ()
   end
@@ -563,9 +563,8 @@ and build_as_type_aux env p =
       ty_res
   | Tpat_variant(l, p', _) ->
       let ty = Option.map (build_as_type env) p' in
-      newty (Tvariant{row_fields=[l, Rpresent ty]; row_more=newvar();
-                      row_bound=(); row_name=None;
-                      row_fixed=None; row_closed=false})
+      newty (Tvariant (create_row ~fields:[l, Rpresent ty] ~more:(newvar())
+                         ~name:None ~fixed:None ~closed:false))
   | Tpat_record (lpl,_) ->
       let lbl = snd3 (List.hd lpl) in
       if lbl.lbl_private = Private then p.pat_type else
@@ -594,8 +593,9 @@ and build_as_type_aux env p =
           unify_pat env {p2 with pat_type = ty2} ty1;
           ty1
       | Some row ->
-          let row = row_repr row in
-          newty (Tvariant{row with row_closed=false; row_more=newvar()})
+          let Row {fields; fixed; name} = row_repr row in
+          newty (Tvariant (create_row ~fields ~fixed ~name
+                             ~closed:false ~more:(newvar())))
       end
   | Tpat_any | Tpat_var _ | Tpat_constant _
   | Tpat_array _ | Tpat_lazy _ -> p.pat_type
@@ -778,19 +778,21 @@ let solve_Ppat_constraint ~refine loc env sty expected_ty =
 
 let solve_Ppat_variant ~refine loc env tag constant expected_ty =
   let arg_type = if constant then [] else [newgenvar()] in
-  let row = { row_fields =
-              [tag, Reither(constant, arg_type, true, ref None)];
-              row_bound = ();
-              row_closed = false;
-              row_more = newgenvar ();
-              row_fixed = None;
-              row_name = None } in
+  let make_row more =
+    create_row
+      ~fields: [tag, Reither(constant, arg_type, true, ref None)]
+      ~closed: false
+      ~more
+      ~fixed:  None
+      ~name:   None
+  in
+  let row = make_row (newgenvar ()) in
   let expected_ty = generic_instance expected_ty in
   (* PR#7404: allow some_private_tag blindly, as it would not unify with
      the abstract row variable *)
   if tag <> Parmatch.some_private_tag then
     unify_pat_types ~refine loc env (newgenty(Tvariant row)) expected_ty;
-  (arg_type, row, instance expected_ty)
+  (arg_type, make_row (newvar ()), instance expected_ty)
 
 (* Building the or-pattern corresponding to a polymorphic variant type *)
 let build_or_pat env loc lid =
@@ -815,14 +817,14 @@ let build_or_pat env loc lid =
             :: pats,
             (l, Reither(false, [ty], true, ref None)) :: fields
         | _ -> pats, fields)
-      ([],[]) (row_repr row0).row_fields in
-  let row =
-    { row_fields = List.rev fields; row_more = newvar(); row_bound = ();
-      row_closed = false; row_fixed = None; row_name = Some (path, tyl) }
-  in
-  let ty = newty (Tvariant row) in
+      ([],[]) (row_fields row0) in
+  let fields = List.rev fields in
+  let name = Some (path, tyl) in
+  let make_row more =
+    create_row ~fields ~more ~closed:false ~fixed:None ~name in
+  let ty = newty (Tvariant (make_row (newvar()))) in
   let gloc = {loc with Location.loc_ghost=true} in
-  let row' = ref {row with row_more=newvar()} in
+  let row' = ref (make_row (newvar())) in
   let pats =
     List.map
       (fun (l,p) ->
@@ -1862,7 +1864,7 @@ and type_pat_aux
         solve_Ppat_variant ~refine loc env tag constant expected_ty in
       let k arg =
         rvp k {
-        pat_desc = Tpat_variant(tag, arg, ref {row with row_more = newvar()});
+        pat_desc = Tpat_variant(tag, arg, ref row);
         pat_loc = loc; pat_extra = [];
         pat_type = pat_type;
         pat_attributes = sp.ppat_attributes;
@@ -2639,12 +2641,11 @@ let contains_variant_either ty =
     if try_mark_node ty then
       begin match get_desc ty with
         Tvariant row ->
-          let row = row_repr row in
           if not (is_fixed row) then
             List.iter
               (fun (_,f) ->
                 match row_field_repr f with Reither _ -> raise Exit | _ -> ())
-              row.row_fields;
+              (row_fields row);
           iter_row loop row
       | _ ->
           iter_type_expr loop ty
@@ -2707,16 +2708,16 @@ let check_absent_variant env =
   iter_general_pattern { f = fun (type k) (pat : k general_pattern) ->
     match pat.pat_desc with
     | Tpat_variant (s, arg, row) ->
-      let row = row_repr !row in
+      let row = !row in
       if List.exists (fun (s',fi) -> s = s' && row_field_repr fi <> Rabsent)
-          row.row_fields
+          (row_fields row)
       || not (is_fixed row) && not (static_row row)  (* same as Ctype.poly *)
       then () else
       let ty_arg =
         match arg with None -> [] | Some p -> [correct_levels p.pat_type] in
-      let row' = {row_fields = [s, Reither(arg=None,ty_arg,true,ref None)];
-                  row_more = newvar (); row_bound = ();
-                  row_closed = false; row_fixed = None; row_name = None} in
+      let row' =
+        create_row ~fields:[s, Reither(arg=None,ty_arg,true,ref None)]
+          ~more:(newvar ()) ~closed:false ~fixed:None ~name:None in
       (* Should fail *)
       unify_pat (ref env) {pat with pat_type = newty (Tvariant row')}
                           (correct_levels pat.pat_type)
@@ -3090,9 +3091,7 @@ and type_expect_
         get_desc (expand_head env ty_expected0)
       with
       | Some sarg, Tvariant row, Tvariant row0 ->
-          let row = row_repr row and row0 = row_repr row0 in
-          begin match row_field_repr (List.assoc l row.row_fields),
-          row_field_repr (List.assoc l row0.row_fields) with
+          begin match row_field l row, row_field l row0 with
             Rpresent (Some ty), Rpresent (Some ty0) ->
               let arg = type_argument env sarg ty ty0 in
               re { exp_desc = Texp_variant(l, Some arg);
@@ -3100,21 +3099,24 @@ and type_expect_
                    exp_type = ty_expected0;
                    exp_attributes = sexp.pexp_attributes;
                    exp_env = env }
-          | _ -> raise Not_found
+          | _ -> raise Exit
           end
-      | _ -> raise Not_found
-      with Not_found ->
+      | _ -> raise Exit
+      with Exit ->
         let arg = Option.map (type_exp env) sarg in
         let arg_type = Option.map (fun arg -> arg.exp_type) arg in
+        let row =
+          create_row
+            ~fields: [l, Rpresent arg_type]
+            ~more:   (newvar ())
+            ~closed: false
+            ~fixed:  None
+            ~name:   None
+        in
         rue {
           exp_desc = Texp_variant(l, arg);
           exp_loc = loc; exp_extra = [];
-          exp_type= newty (Tvariant{row_fields = [l, Rpresent arg_type];
-                                    row_more = newvar ();
-                                    row_bound = ();
-                                    row_closed = false;
-                                    row_fixed = None;
-                                    row_name = None});
+          exp_type = newty (Tvariant row);
           exp_attributes = sexp.pexp_attributes;
           exp_env = env }
       end
