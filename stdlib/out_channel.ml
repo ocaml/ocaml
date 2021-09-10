@@ -46,5 +46,4 @@ let output = Stdlib.output
 let output_substring = Stdlib.output_substring
 let set_binary_mode = Stdlib.set_binary_mode_out
 
-external set_buffering_mode : out_channel -> bool -> unit
-    = "caml_ml_set_buffering_mode"
+external set_buffered : out_channel -> bool -> unit = "caml_ml_set_buffered"

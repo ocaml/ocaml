@@ -669,7 +669,7 @@ CAMLprim value caml_ml_flush(value vchannel)
   CAMLreturn (Val_unit);
 }
 
-CAMLprim value caml_ml_set_buffering_mode(value vchannel, value mode)
+CAMLprim value caml_ml_set_buffered(value vchannel, value mode)
 {
   struct channel * channel = Channel(vchannel);
   if (Bool_val(mode)) {
