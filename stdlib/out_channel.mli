@@ -136,8 +136,8 @@ val set_buffered : t -> bool -> unit
     is full or the function {!flush} or {!flush_all} is called, at which point
     it will be sent to the output device.
 
-    [set_buffering_mode oc false] sets the channel [oc] to {e unbuffered}
-    mode. In this mode, data output on [oc] will be sent to the output device
+    [set_buffered oc false] sets the channel [oc] to {e unbuffered} mode. In
+    this mode, data output on [oc] will be sent to the output device
     immediately.
 
     All channels are open in {e buffered} mode by default. *)
