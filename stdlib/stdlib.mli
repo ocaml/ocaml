@@ -842,7 +842,7 @@ val stdout : out_channel
 (** The standard output for the process. *)
 
 val stderr : out_channel
-(** The standard error output for the process. *)
+(** The standard error output for the process. Unbuffered by default. *)
 
 
 (** {2 Output functions on standard output} *)

@@ -36,7 +36,7 @@ val stdout : t
 (** The standard output for the process. *)
 
 val stderr : t
-(** The standard error output for the process. *)
+(** The standard error output for the process. Unbuffered by default. *)
 
 val open_bin : string -> t
 (** Open the named file for writing, and return a new output channel on that
