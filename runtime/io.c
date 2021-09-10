@@ -681,6 +681,12 @@ CAMLprim value caml_ml_set_buffered(value vchannel, value mode)
   return Val_unit;
 }
 
+CAMLprim value caml_ml_is_buffered(value vchannel)
+{
+  struct channel * channel = Channel(vchannel);
+  return Val_bool((channel->flags & CHANNEL_FLAG_UNBUFFERED) == 0);
+}
+
 CAMLprim value caml_ml_output_char(value vchannel, value ch)
 {
   CAMLparam2 (vchannel, ch);
