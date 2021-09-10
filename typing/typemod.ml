@@ -241,7 +241,7 @@ let check_recmod_typedecls env decls =
 (* Merge one "with" constraint in a signature *)
 
 let check_type_decl env loc id row_id newdecl decl rec_group =
-  let env = Env.add_type ~check:true id newdecl env in
+  let env = Env.add_type ~check:false id newdecl env in
   let env =
     match row_id with
     | None -> env
@@ -252,7 +252,7 @@ let check_type_decl env loc id row_id newdecl decl rec_group =
       Env.add_signature Signature_group.(x.src :: x.post_ghosts) env
     in
     List.fold_left add_sigitem env rec_group in
-  Includemod.type_declarations ~mark:Mark_both ~loc env id newdecl decl;
+  Includemod.type_declarations ~mark:Mark_neither ~loc env id newdecl decl;
   Typedecl.check_coherence env loc (Path.Pident id) newdecl
 
 let make_variance p n i =
@@ -599,7 +599,7 @@ let merge_constraint initial_env loc sg lid constr =
         if not destructive_substitution then
           let mtd': modtype_declaration =
             {
-              mtd_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
+              mtd_uid = mtd.mtd_uid;
               mtd_type = Some mty.mty_type;
               mtd_attributes = [];
               mtd_loc = loc;
@@ -622,7 +622,7 @@ let merge_constraint initial_env loc sg lid constr =
       when Ident.name id = s ->
         let mty = md'.md_type in
         let mty = Mtype.scrape_for_type_of ~remove_aliases sig_env mty in
-        let md'' = { md' with md_type = mty } in
+        let md'' = { md' with md_type = mty; md_uid = md.md_uid } in
         let newmd = Mtype.strengthen_decl ~aliasable:false sig_env md'' path in
         ignore(Includemod.modtypes  ~mark:Mark_both ~loc sig_env
                  newmd.md_type md.md_type);

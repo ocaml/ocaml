@@ -314,9 +314,10 @@ module Exported_private_extension :
 
 module Pr7438 : sig
 end = struct
-  module type S = sig type t = private [> `Foo] end
+  module type S = sig type t = private [> `Foo] val x : t end
   module type X =
     sig type t = private [> `Foo | `Bar] include S with type t := t end
+  let _foo (module M : X) = ignore M.x
 end;;
 [%%expect {|
 module Pr7438 : sig end
@@ -442,4 +443,35 @@ Line 4, characters 22-37:
 Warning 69 [unused-field]: mutable record field b is never mutated.
 module Unused_mutable_field_exported_private :
   sig type t = private { a : int; mutable b : int; } end
+|}]
+
+module M : sig end = struct
+  type a
+  module type S = sig
+    type t
+  end
+  module _ (Q : S with type t = a) = struct
+    module _ = Q
+  end
+end
+[%%expect {|
+Line 4, characters 4-10:
+4 |     type t
+        ^^^^^^
+Warning 34 [unused-type-declaration]: unused type t.
+module M : sig end
+|}]
+
+module M : sig end = struct
+  type a
+  module type S = sig
+    type t
+  end
+  module _ (Q : S with type t = a) = struct
+    module _ = Q
+    let _f (x : Q.t) = x
+  end
+end
+[%%expect {|
+module M : sig end
 |}]
