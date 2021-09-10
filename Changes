@@ -153,6 +153,10 @@ Working version
 - #10559: Evaluate signature substitutions lazily
   (Stephen Dolan, review by Leo White)
 
+- #8776, #10624: Fix compilation time regression introduced in 4.08
+  (Nicolás Ojeda Bär, fix by Leo White, report by Alain Frisch, review by Thomas
+  Refis)
+
 ### Build system:
 
 ### Bug fixes:
