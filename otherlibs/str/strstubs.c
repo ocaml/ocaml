@@ -163,6 +163,7 @@ CAMLprim value caml_str_initialize(value unit) /* ML */
 {
   CAMLparam0();
 
+  prev_domain_stop_hook = caml_domain_stop_hook;
   caml_domain_stop_hook = caml_str_domain_stop_hook;
   pthread_key_create(&initial_stack_key,  NULL);
   pthread_key_create(&re_register_key, NULL);
