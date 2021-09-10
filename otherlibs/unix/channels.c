@@ -81,5 +81,5 @@ CAMLprim value unix_outchannel_of_filedescr(value fd)
   err = unix_check_stream_semantics(Int_val(fd));
   caml_leave_blocking_section();
   if (err != 0) unix_error(err, "out_channel_of_descr", Nothing);
-  return caml_ml_open_descriptor_out(fd);
+  return caml_ml_open_descriptor_out(fd, Val_true);
 }

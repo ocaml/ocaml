@@ -519,10 +519,11 @@ CAMLprim value caml_ml_open_descriptor_in(value fd)
   return caml_alloc_channel(chan);
 }
 
-CAMLprim value caml_ml_open_descriptor_out(value fd)
+CAMLprim value caml_ml_open_descriptor_out(value fd, value buffered)
 {
   struct channel * chan = caml_open_descriptor_out(Int_val(fd));
   chan->flags |= CHANNEL_FLAG_MANAGED_BY_GC;
+  if (! Bool_val(buffered)) chan->flags |= CHANNEL_FLAG_UNBUFFERED;
   return caml_alloc_channel(chan);
 }
 

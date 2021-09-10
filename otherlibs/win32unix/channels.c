@@ -103,7 +103,7 @@ CAMLprim value win_outchannel_of_filedescr(value handle)
 
   err = win_check_stream_semantics(handle);
   if (err != 0) { win32_maperr(err); uerror("out_channel_of_descr", Nothing); }
-  chan = caml_open_descriptor_out(win_CRT_fd_of_filedescr(handle));
+  chan = caml_open_descriptor_out(win_CRT_fd_of_filedescr(handle), Val_true);
   chan->flags |= CHANNEL_FLAG_MANAGED_BY_GC;
                  /* as in caml_ml_open_descriptor_out() */
   if (Descr_kind_val(handle) == KIND_SOCKET)

@@ -307,13 +307,13 @@ let rec ( @ ) l1 l2 =
 type in_channel
 type out_channel
 
-external open_descriptor_out : int -> out_channel
+external open_descriptor_out : int -> bool -> out_channel
                              = "caml_ml_open_descriptor_out"
 external open_descriptor_in : int -> in_channel = "caml_ml_open_descriptor_in"
 
 let stdin = open_descriptor_in 0
-let stdout = open_descriptor_out 1
-let stderr = open_descriptor_out 2
+let stdout = open_descriptor_out 1 true
+let stderr = open_descriptor_out 2 false
 
 (* General output functions *)
 
@@ -328,7 +328,7 @@ external set_out_channel_name: out_channel -> string -> unit =
   "caml_ml_set_channel_name"
 
 let open_out_gen mode perm name =
-  let c = open_descriptor_out(open_desc name mode perm) in
+  let c = open_descriptor_out(open_desc name mode perm) true in
   set_out_channel_name c name;
   c
 
