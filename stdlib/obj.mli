@@ -39,6 +39,26 @@ external reachable_words : t -> int = "caml_obj_reachable_words"
      @Since 4.04
   *)
 
+val reachable_words_many :
+  ?without_closures:unit ->
+  ?except:t array ->
+  t array ->
+  int array
+(** Given an array of values [values], returns an array of integers
+    [sizes] where [sizes.(i)] is the total size of all heap blocks
+    accessible from [values.(i)] but not from any [values.(j)] with [j
+    < i] and without crossing any of the values in [except].  If
+    [without_closures] is passed, closure blocks are ignored (their
+    size does not count and their environment is not traversed).
+
+    For instance [(reachable_words_many [|v1;v2|]).(1)] is the number
+    of heap words accessible from [v2] but not from [v1] and
+    [(reachable_words_many ~except:[|v1|] [|v2|]).(0)] is the number
+    of heap words accessible from [v2] without crossing [v1].
+
+     @Since X.YY
+*)
+
 external field : t -> int -> t = "%obj_field"
 
 (** When using flambda:
