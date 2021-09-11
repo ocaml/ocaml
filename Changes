@@ -33,10 +33,16 @@ OCaml 4.12, maintenance version
   ID when a thread starts.
   (David Allsopp, Nicolás Ojeda Bär, review by Xavier Leroy)
 
+- #10626, #10628: Wrong reloading of the x86-64 instruction for
+  integer multiplication by a constant, causing the assembler to
+  reject the ocamlopt-generated code.
+  (Xavier Leroy, report by Dave Aitken, review by Vincent Laviron)
+
 ### Manual and documentation
 
 - #10497: Styling changes in the post-processed HTML manual (webman)
   (Wiktor Kuchta, review by Florian Angeletti)
+
 
 OCaml 4.12.0 (24 February 2021)
 -------------------------------
