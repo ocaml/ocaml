@@ -742,13 +742,27 @@ CAMLexport void caml_stat_create_pool(void)
 
 CAMLexport void caml_stat_destroy_pool(void)
 {
+  /** If the pool pointer is already NULL, don't do anything. The pool pointer
+   *  is explicitly set to NULL after its memory has been free'd as a simple
+   *  method of bookkeeping. This is crucial to prevent inadvertently
+   *  double-freeing heap-allocated memory, which can introduce security
+   *  vulnerabilities or crash the program.
+   * 
+   */
   if (pool != NULL) {
+    /** The previous pool block will have a pointer pointing to this memory
+     *  address that must be set to NULL to prevent a NULL pointer dereference
+     *  somewhere down the line.
+     * 
+     */
     pool->prev->next = NULL;
+
     while (pool != NULL) {
       struct pool_block *next = pool->next;
       free(pool);
       pool = next;
     }
+
     pool = NULL;
   }
 }
