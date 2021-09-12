@@ -1301,9 +1301,9 @@ module_expr:
       (* A module identifier. *)
       x = mkrhs(mod_longident)
         { Pmod_ident x }
-    | LPAREN x = mkrhs(mod_longident) COLONGREATER UNDERSCORE RPAREN
+    | LPAREN x = module_expr COLONGREATER UNDERSCORE RPAREN
         { Pmod_ascribe (x, None) }
-    | LPAREN x = mkrhs(mod_longident) COLONGREATER mty = module_type RPAREN
+    | LPAREN x = module_expr COLONGREATER mty = module_type RPAREN
         { Pmod_ascribe (x, Some mty) }
     | (* In a functor application, the actual argument must be parenthesized. *)
       me1 = module_expr me2 = paren_module_expr

@@ -1852,10 +1852,12 @@ exception Not_a_path
 
 let rec path_of_module mexp =
   match mexp.mod_desc with
-  | Tmod_ident (p,_) | Tmod_ascribe (p, _, _, _, _) -> p
+  | Tmod_ident (p,_) -> p
   | Tmod_apply(funct, arg, _coercion) when !Clflags.applicative_functors ->
       Papply(path_of_module funct, path_of_module arg)
-  | Tmod_constraint (mexp, _, _, _) ->
+  | Tmod_constraint (mexp, _, Tmodtype_implicit, _) ->
+      path_of_module mexp
+  | Tmod_ascribe (mexp, _, _, _) ->
       path_of_module mexp
   | _ -> raise Not_a_path
 
@@ -2107,26 +2109,36 @@ let wrap_constraint env mark arg mty explicit =
     mod_attributes = [];
     mod_loc = arg.mod_loc }
 
-let wrap_ascription env mark path lid mt mt_pre_coercion mty mt_target =
+let wrap_ascription env mark arg mty =
   let mark = if mark then Includemod.Mark_both else Includemod.Mark_neither in
+  let path = path_of_module arg in
+  let expl, mt_target =
+    match mty with
+    | Tmodtype_explicit mty -> true, mty.mty_type
+    | Tmodtype_implicit -> false, arg.mod_type
+  in
   let coercion =
     try
-      Includemod.compose_coercions
-        (Includemod.modtypes ~loc:lid.loc env ~mark mt mt_target)
-        (Option.value ~default:Tcoerce_none mt_pre_coercion)
+      Includemod.modtypes ~loc:arg.mod_loc env ~mark arg.mod_type mt_target
     with Includemod.Error msg ->
-      raise(Error(lid.loc, env, Not_included msg))
+      raise(Error(arg.mod_loc, env, Not_included msg))
   in
-  let expl =
-    match mty with
-    | Tmodtype_explicit _ -> true
-    | Tmodtype_implicit -> false
+  let mod_type =
+    match path with
+    | Some path -> Mty_alias(path, Some (mt_target, expl))
+    | None ->
+        let scope = Ctype.create_scope () in
+        let ident, env =
+          Env.enter_module ~scope "M?" Mp_present arg.mod_type env
+        in
+        let mty = Mty_alias (Pident ident, Some (mt_target, expl)) in
+        Mtype.nondep_supertype env [ident] mty
   in
-  { mod_desc = Tmod_ascribe(path, lid, mt_target, mty, coercion);
-    mod_type = Mty_alias(path, Some (mt_target, expl));
+  { mod_desc = Tmod_ascribe(arg, mt_target, mty, coercion);
+    mod_type;
     mod_env = env;
     mod_attributes = [];
-    mod_loc = lid.loc }
+    mod_loc = arg.mod_loc }
 
 (* Type a module value expression *)
 
@@ -2302,30 +2314,17 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
         mod_env = env;
         mod_attributes = smod.pmod_attributes;
         mod_loc = smod.pmod_loc }
-  | Pmod_ascribe (lid, osmty) ->
-      let sarg =
-        {pmod_desc= Pmod_ident lid; pmod_loc= lid.loc; pmod_attributes= []}
-      in
+  | Pmod_ascribe (sarg, osmty) ->
       let arg = type_module ~alias true funct_body anchor env sarg in
-      let path, coercion =
-        match arg.mod_desc with
-        | Tmod_ident (path, _) -> path, None
-        | Tmod_constraint
-            ({mod_desc=Tmod_ident (path,_)}, _, Tmodtype_implicit, coercion) ->
-            path, Some coercion
-        | _ -> assert false
-      in
-      let mty, mt =
+      let mty =
         match osmty with
         | Some smty ->
             let mty = transl_modtype env smty in
-            Tmodtype_explicit mty, mty.mty_type
+            Tmodtype_explicit mty
         | None ->
-            Tmodtype_implicit, (Env.find_module path env).md_type
+            Tmodtype_implicit
       in
-      let md =
-        wrap_ascription env true path lid arg.mod_type coercion mty mt
-      in
+      let md = wrap_ascription env true arg mty in
       { md with
         mod_loc = smod.pmod_loc;
         mod_attributes = smod.pmod_attributes;

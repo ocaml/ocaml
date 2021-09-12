@@ -362,10 +362,12 @@ let module_expr sub {mod_desc; mod_env; _} =
       sub.module_type sub mtype;
       sub.module_coercion sub c
   | Tmod_unpack (exp, _) -> sub.expr sub exp
-  | Tmod_ascribe (_, _, _, Tmodtype_explicit mtype, c) ->
+  | Tmod_ascribe (mexpr, _, Tmodtype_explicit mtype, c) ->
+      sub.module_expr sub mexpr;
       sub.module_type sub mtype;
       sub.module_coercion sub c
-  | Tmod_ascribe (_, _, _, Tmodtype_implicit, c) ->
+  | Tmod_ascribe (mexpr, _, Tmodtype_implicit, c) ->
+      sub.module_expr sub mexpr;
       sub.module_coercion sub c
 
 let module_binding sub {mb_expr; _} = sub.module_expr sub mb_expr

@@ -214,7 +214,6 @@ let rec nondep_mty_with_presence env va ids pres mty =
       | None -> pres, mty
       end
   | Mty_alias (p, Some (mty, expl)) ->
-      let mty = nondep_mty env va ids mty in
       begin match Path.find_free_opt ids p with
       | Some _id ->
           let expansion =
@@ -231,10 +230,15 @@ let rec nondep_mty_with_presence env va ids pres mty =
               nondep_mty_with_presence env va ids pres
                 (Mty_alias (p, Some (mty, expl)))
           | _ ->
+              let aliasable =
+                if expl then Misc.Str_ascribe else Misc.Str_ascribe_nocoerce
+              in
               nondep_mty_with_presence env va ids Mp_present
-                (strengthen ~aliasable:Str_ascribe env mty p)
+                (strengthen ~aliasable env mty p)
           end
-      | None -> pres, Mty_alias (p, Some (mty, expl))
+      | None ->
+          let mty = nondep_mty env va ids mty in
+          pres, Mty_alias (p, Some (mty, expl))
       end
   | Mty_signature sg ->
       let mty = Mty_signature(nondep_sig env va ids sg) in

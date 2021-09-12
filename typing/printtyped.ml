@@ -830,11 +830,13 @@ and module_expr i ppf x =
   | Tmod_unpack (e, _) ->
       line i ppf "Tmod_unpack\n";
       expression i ppf e;
-  | Tmod_ascribe (li, _, _, Tmodtype_explicit mt, _) ->
-      line i ppf "Tmod_ident %a\n" fmt_path li;
+  | Tmod_ascribe (me, _, Tmodtype_explicit mt, _) ->
+      line i ppf "Tmod_ascribe\n";
+      module_expr i ppf me;
       module_type i ppf mt;
-  | Tmod_ascribe (li, _, _, Tmodtype_implicit, _) ->
-      line i ppf "Tmod_ident %a _\n" fmt_path li
+  | Tmod_ascribe (me, _, Tmodtype_implicit, _) ->
+      line i ppf "Tmod_ascribe\n";
+      module_expr i ppf me;
 
 and structure i ppf x = list i structure_item ppf x.str_items
 

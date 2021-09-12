@@ -882,8 +882,8 @@ and modexp : Typedtree.module_expr -> term_judg =
       coercion coe (fun m -> modexp mexp << m)
     | Tmod_unpack (e, _) ->
       expression e
-    | Tmod_ascribe (pth, _, _, _, coe) ->
-      coercion coe (fun m -> path pth << m)
+    | Tmod_ascribe (mexp, _, _, coe) ->
+      coercion coe (fun m -> modexp mexp << m)
 
 
 (* G |- pth : m *)

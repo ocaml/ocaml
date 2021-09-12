@@ -681,10 +681,11 @@ let module_expr (sub : mapper) mexpr =
           | Tmod_unpack (exp, _pack) ->
               Pmod_unpack (sub.expr sub exp)
               (* TODO , sub.package_type sub pack) *)
-          | Tmod_ascribe (_p, lid, _, Tmodtype_explicit mtype, _) ->
-              Pmod_ascribe (map_loc sub lid, Some (sub.module_type sub mtype))
-          | Tmod_ascribe (_p, lid, _, Tmodtype_implicit, _) ->
-              Pmod_ascribe (map_loc sub lid, None)
+          | Tmod_ascribe (mexpr, _, Tmodtype_explicit mtype, _) ->
+              Pmod_ascribe
+                (sub.module_expr sub mexpr, Some (sub.module_type sub mtype))
+          | Tmod_ascribe (mexpr, _, Tmodtype_implicit, _) ->
+              Pmod_ascribe (sub.module_expr sub mexpr, None)
         in
         Mod.mk ~loc ~attrs desc
 

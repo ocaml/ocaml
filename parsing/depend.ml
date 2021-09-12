@@ -422,7 +422,7 @@ and open_declaration bv od =
 
 and add_module_binding bv modl =
   match modl.pmod_desc with
-    Pmod_ident l | Pmod_ascribe (l, _) -> add_module_alias bv l
+    Pmod_ident l -> add_module_alias bv l
   | Pmod_structure s ->
      make_node (snd @@ add_structure_binding bv s)
   | _ -> add_module_expr bv modl; bound
@@ -448,8 +448,8 @@ and add_module_expr bv modl =
       add_module_expr bv modl; add_modtype bv mty
   | Pmod_unpack(e) ->
       add_expr bv e
-  | Pmod_ascribe (l, mty) ->
-      add_module_path bv l; Option.iter (add_modtype bv) mty
+  | Pmod_ascribe (m, mty) ->
+      add_module_expr bv m; Option.iter (add_modtype bv) mty
   | Pmod_extension e ->
       handle_extension e
 

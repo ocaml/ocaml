@@ -334,7 +334,7 @@ and eq_module_expr_desc :
       (eq_module_expr (a0, b0)) && (eq_module_type (a1, b1))
   | (Pmod_unpack a0, Pmod_unpack b0) -> eq_expression (a0, b0)
   | (Pmod_ascribe (a0, a1), Pmod_ascribe (b0, b1)) ->
-      Asttypes.eq_loc Longident.eq_t (a0, b0) && (eq_module_type (a1, b1))
+      eq_module_expr (a0, b0) && (eq_module_type (a1, b1))
   | (_, _) -> false
 and eq_module_expr : (module_expr * module_expr) -> 'result =
   fun

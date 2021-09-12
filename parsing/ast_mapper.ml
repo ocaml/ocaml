@@ -357,8 +357,8 @@ module M = struct
         constraint_ ~loc ~attrs (sub.module_expr sub m)
                     (sub.module_type sub mty)
     | Pmod_unpack e -> unpack ~loc ~attrs (sub.expr sub e)
-    | Pmod_ascribe (x, mty) ->
-        ascribe ~loc ~attrs (map_loc sub x)
+    | Pmod_ascribe (m, mty) ->
+        ascribe ~loc ~attrs (sub.module_expr sub m)
           (Option.map (sub.module_type sub) mty)
     | Pmod_extension x -> extension ~loc ~attrs (sub.extension sub x)
 
