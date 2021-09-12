@@ -882,3 +882,36 @@ module M : sig type t = int val next : t -> t end
 module type S = sig module M = (M :> _) end
 module M' = (M :> _)
 |}]
+
+(* Ascription of functors. *)
+module M = (Foo(Bar(Baz)) :> _)
+module N = (Foo(Bar(Baz)) :> sig module M : sig val x : int end end)
+
+[%%expect {|
+module M = (Foo(Bar(Baz)) :> _)
+module N = (Foo(Bar(Baz)) :> sig module M : sig val x : int end end)
+|}]
+
+(* Ascription of structures. *)
+module M = (struct
+  type t = int
+  let add_one : t -> t = (+) 1
+end :> _)
+module N = (struct
+  type t = int
+  let add_one : t -> t = (+) 1
+end :> sig
+  type t
+end)
+module O = (struct
+  type t = int
+  let add_one : t -> t = (+) 1
+end :> sig
+  val add_one : int -> int
+end)
+
+[%%expect {|
+module M : sig type t = int val add_one : t -> t end
+module N : sig type t = int end
+module O : sig val add_one : int -> int end
+|}]
