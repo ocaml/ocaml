@@ -34,14 +34,8 @@ end;;
 [%%expect{|
 module Make1 :
   functor
-    (T' : sig
-            module Term0 : Termsig.Term0.S
-            module T = (Term0 :> sig module Id : sig end end)
-          end)
-    ->
-    sig
-      module T : sig module Id = (T'.Term0.Id :> sig end) val u : int end
-    end
+    (T' : sig module Term0 : Termsig.Term0.S module T = (Term0 :> _) end) ->
+    sig module T : sig module Id = (T'.Term0.Id :> _) val u : int end end
 |}]
 
 module Make2 (T' : Termsig.Term.S) = struct
@@ -54,18 +48,10 @@ end;;
 [%%expect{|
 module Make2 :
   functor
-    (T' : sig
-            module Term0 : Termsig.Term0.S
-            module T = (Term0 :> sig module Id : sig end end)
-          end)
-    ->
+    (T' : sig module Term0 : Termsig.Term0.S module T = (Term0 :> _) end) ->
     sig
       module T :
-        sig
-          module Id = (T'.Term0.Id :> sig end)
-          module Id2 = Id
-          val u : int
-        end
+        sig module Id = (T'.Term0.Id :> _) module Id2 = Id val u : int end
     end
 |}]
 
@@ -80,18 +66,10 @@ end;;
 [%%expect{|
 module Make3 :
   functor
-    (T' : sig
-            module Term0 : Termsig.Term0.S
-            module T = (Term0 :> sig module Id : sig end end)
-          end)
-    ->
+    (T' : sig module Term0 : Termsig.Term0.S module T = (Term0 :> _) end) ->
     sig
       module T :
-        sig
-          module Id = (T'.Term0.Id :> sig end)
-          module Id2 = Id
-          val u : int
-        end
+        sig module Id = (T'.Term0.Id :> _) module Id2 = Id val u : int end
     end
 |}]
 
@@ -112,9 +90,9 @@ module Make1 :
   functor
     (T' : sig
             module Term0 : sig module Id : sig end end
-            module T = (Term0 :> sig module Id : sig end end)
+            module T = (Term0 :> _)
           end)
-    -> sig module Id = (T'.Term0.Id :> sig end) module Id2 = Id end
+    -> sig module Id = (T'.Term0.Id :> _) module Id2 = Id end
 |}]
 
 module Make2 (T' : S) : sig module Id : sig end module Id2 = Id end
@@ -130,7 +108,7 @@ Lines 2-5, characters 57-3:
 5 | end..
 Error: Signature mismatch:
        Modules do not match:
-         sig module Id = (T'.Term0.Id :> sig end) module Id2 = Id end
+         sig module Id = (T'.Term0.Id :> _) module Id2 = Id end
        is not included in
          sig module Id2 = T'.Term0.Id end
        In module Id2:
@@ -150,16 +128,12 @@ module Make3 :
   functor
     (T' : sig
             module Term0 : sig module Id : sig end end
-            module T = (Term0 :> sig module Id : sig end end)
+            module T = (Term0 :> _)
           end)
     ->
     sig
       module T :
-        sig
-          module Id = (T'.Term0.Id :> sig end)
-          module Id2 = Id
-          val u : int
-        end
+        sig module Id = (T'.Term0.Id :> _) module Id2 = Id val u : int end
     end
 |}]
 
@@ -209,15 +183,10 @@ module Make1 :
   functor
     (T' : sig
             module Term0 : sig module Id : sig end end
-            module T = (Term0 :> sig module Id : sig end end)
+            module T = (Term0 :> _)
             type t = MkT(T).t
           end)
-    ->
-    sig
-      module Id = (T'.Term0.Id :> sig end)
-      module Id2 = Id
-      type t = T'.t
-    end
+    -> sig module Id = (T'.Term0.Id :> _) module Id2 = Id type t = T'.t end
 module IS :
   sig
     module Term0 : sig module Id : sig val x : string end end
@@ -313,8 +282,7 @@ module F :
   functor
     (X : sig
            module Term0 : sig type t = int val compare : t -> t -> int end
-           module T = (Term0 :>
-             sig type t = int val compare : t -> t -> int end)
+           module T = (Term0 :> _)
            type t = E of (MkT(T).t, MkT(T).t) eq
            type u = t = E of (MkT(Term0).t, MkT(T).t) eq
          end)
@@ -424,16 +392,14 @@ module F :
   functor
     (X : sig
            module Term0 : sig type t = int val compare : t -> t -> int end
-           module T = (Term0 :>
-             sig type t = int val compare : t -> t -> int end)
+           module T = (Term0 :> _)
            type t = E of (MkT(T).t, MkT(T).t) eq
            type u = t = E of (MkT(Term0).t, MkT(T).t) eq
          end)
     ->
     sig
-      module Term0 = (X.Term0 :>
-        sig type t = int val compare : t -> t -> int end)
-      module T = (Term0 :> sig type t = int val compare : t -> t -> int end)
+      module Term0 = (X.Term0 :> _)
+      module T = (Term0 :> _)
       type t = X.t = E of (MkT(T).t, MkT(T).t) eq
       type u = t = E of (MkT(Term0).t, MkT(T).t) eq
     end
@@ -442,7 +408,7 @@ module M' :
   sig
     module Term0 = (M.Term0 :>
       sig type t = int val compare : t -> t -> int end)
-    module T = (Term0 :> sig type t = int val compare : t -> t -> int end)
+    module T = (Term0 :> _)
     type t = M.t = E of (MkT(T).t, MkT(T).t) eq
     type u = t = E of (MkT(Term0).t, MkT(T).t) eq
   end
@@ -450,7 +416,7 @@ module type S' =
   sig
     module Term0 = (M.Term0 :>
       sig type t = int val compare : t -> t -> int end)
-    module T = (Term0 :> sig type t = int val compare : t -> t -> int end)
+    module T = (Term0 :> _)
     type t = M.t = E of (MkT(T).t, MkT(T).t) eq
     type u = t = E of (MkT(Term0).t, MkT(T).t) eq
   end

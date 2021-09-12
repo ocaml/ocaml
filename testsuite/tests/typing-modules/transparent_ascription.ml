@@ -685,8 +685,7 @@ module F (A : sig type t end) = struct
 end
 
 [%%expect {|
-module F :
-  functor (A : sig type t end) -> sig module A = (A :> sig type t end) end
+module F : functor (A : sig type t end) -> sig module A = (A :> _) end
 |}]
 
 (* Aliases within functor arguments are ascribed. *)
@@ -704,11 +703,7 @@ end = F
 [%%expect {|
 module F :
   functor (A : sig module M : sig type t end end) ->
-    sig
-      type t = A.M.t
-      module B = (A.M :> sig type t end)
-      module A = (A :> sig module M : sig type t end end)
-    end
+    sig type t = A.M.t module B = (A.M :> _) module A = (A :> _) end
 module F' :
   functor (A : sig module M : sig type t end end) ->
     sig
@@ -820,9 +815,7 @@ module F'_N = F'((M :> S))
 module F : functor (A : S) -> S
 module F_N :
   sig module B : sig type t = F(M).B.t val create : unit -> t end end
-module F' :
-  functor (A : S) ->
-    sig module B = (A.B :> sig type t val create : unit -> t end) end
+module F' : functor (A : S) -> sig module B = (A.B :> _) end
 module F'_N :
   sig module B = (M.B :> sig type t val create : unit -> t end) end
 |}]
@@ -860,9 +853,7 @@ module Bar (X : sig val y : int end) = struct let x = X.y + 1 end
 module Baz = struct let y = 43 end
 
 [%%expect {|
-module Foo :
-  functor (X : sig val x : int end) ->
-    sig module M = (X :> sig val x : int end) end
+module Foo : functor (X : sig val x : int end) -> sig module M = (X :> _) end
 module Bar : functor (X : sig val y : int end) -> sig val x : int end
 module Baz : sig val y : int end
 |}]
