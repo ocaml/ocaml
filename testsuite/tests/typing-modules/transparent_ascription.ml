@@ -871,3 +871,14 @@ module M = Foo(Bar(Baz))
 [%%expect {|
 module M : sig module M = (Bar(Baz) :> sig val x : int end) end
 |}]
+
+(* Syntax for ascription with an implicit type. *)
+module M = struct type t = int let next : t -> t = (+) 1 end
+module type S = sig module M = (M :> _) end
+module M' = (M :> _)
+
+[%%expect {|
+module M : sig type t = int val next : t -> t end
+module type S = sig module M = (M :> _) end
+module M' = (M :> _)
+|}]
