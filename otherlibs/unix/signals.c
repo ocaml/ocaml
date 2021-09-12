@@ -72,7 +72,7 @@ CAMLprim value unix_sigprocmask(value vaction, value vset)
   retcode = sigprocmask(how, &set, &oldset);
   caml_leave_blocking_section();
   /* Run any handlers for just-unmasked pending signals */
-  /* TODO: caml_process_pending_actions(); */
+  caml_raise_if_exception(caml_process_pending_signals_exn());
   if (retcode != 0) unix_error(retcode, "sigprocmask", Nothing);
   return encode_sigset(&oldset);
 }
