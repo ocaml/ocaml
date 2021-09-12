@@ -634,8 +634,10 @@ let module_type (sub : mapper) mty =
           List.map (sub.with_constraint sub) list)
     | Tmty_typeof mexpr ->
         Pmty_typeof (sub.module_expr sub mexpr)
-    | Tmty_ascribe (_path, lid, mtype) ->
-        Pmty_ascribe (map_loc sub lid, sub.module_type sub mtype)
+    | Tmty_ascribe (_path, lid, _mt, Tmodtype_explicit mtype) ->
+        Pmty_ascribe (map_loc sub lid, Some (sub.module_type sub mtype))
+    | Tmty_ascribe (_path, lid, _mt, Tmodtype_implicit) ->
+        Pmty_ascribe (map_loc sub lid, None)
   in
   Mty.mk ~loc ~attrs desc
 
@@ -679,8 +681,10 @@ let module_expr (sub : mapper) mexpr =
           | Tmod_unpack (exp, _pack) ->
               Pmod_unpack (sub.expr sub exp)
               (* TODO , sub.package_type sub pack) *)
-          | Tmod_ascribe (_p, lid, mtype, _) ->
-              Pmod_ascribe (map_loc sub lid, sub.module_type sub mtype)
+          | Tmod_ascribe (_p, lid, _, Tmodtype_explicit mtype, _) ->
+              Pmod_ascribe (map_loc sub lid, Some (sub.module_type sub mtype))
+          | Tmod_ascribe (_p, lid, _, Tmodtype_implicit, _) ->
+              Pmod_ascribe (map_loc sub lid, None)
         in
         Mod.mk ~loc ~attrs desc
 

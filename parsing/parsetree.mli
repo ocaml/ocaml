@@ -733,7 +733,7 @@ and module_type_desc =
         (* [%id] *)
   | Pmty_alias of Longident.t loc
         (* (module M) *)
-  | Pmty_ascribe of Longident.t loc * module_type
+  | Pmty_ascribe of Longident.t loc * module_type option
         (* (M :> ...) *)
 
 and functor_parameter =
@@ -893,7 +893,7 @@ and module_expr_desc =
         (* (val E) *)
   | Pmod_extension of extension
         (* [%id] *)
-  | Pmod_ascribe of Longident.t loc * module_type
+  | Pmod_ascribe of Longident.t loc * module_type option
         (* (X :> MT) *)
 
 and structure = structure_item list

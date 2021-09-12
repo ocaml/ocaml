@@ -1802,8 +1802,10 @@ let rec tree_of_modtype ?(ellipsis=false) = function
       Omty_functor (param, res)
   | Mty_alias (p, None) ->
       Omty_alias (tree_of_path Module p)
-  | Mty_alias (p, Some ty) ->
-      Omty_ascribe (tree_of_path Module p, tree_of_modtype ~ellipsis ty)
+  | Mty_alias (p, Some (ty, true)) ->
+      Omty_ascribe (tree_of_path Module p, Some (tree_of_modtype ~ellipsis ty))
+  | Mty_alias (p, Some (_ty, false)) ->
+      Omty_ascribe (tree_of_path Module p, None)
 
 and tree_of_functor_parameter = function
   | Unit ->

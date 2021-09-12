@@ -1545,9 +1545,9 @@ let rec scrape_alias env sub ?path mty =
           (Warnings.No_cmi_file (Path.name path));*)
         mty
       end
-  | MtyL_alias (path', Some mty'), _ ->
-      scrape_alias env sub ?path
-        (!strengthen ~aliasable:Str_ascribe env mty' path')
+  | MtyL_alias (path', Some (mty', expl)), _ ->
+      let aliasable = if expl then Str_ascribe else Str_ascribe_nocoerce in
+      scrape_alias env sub ?path (!strengthen ~aliasable env mty' path')
   | mty, Some path ->
       !strengthen ~aliasable:Str_alias env mty path
   | _ -> mty

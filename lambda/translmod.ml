@@ -201,7 +201,7 @@ let init_shape id modl =
     | Mty_alias (_, None) ->
         raise (Initialization_failure
                 (Unsafe {reason=Unsafe_module_binding;loc;subid}))
-    | Mty_alias (_, Some mty) ->
+    | Mty_alias (_, Some (mty, _)) ->
         init_shape_mod subid loc env mty
     | Mty_signature sg ->
         Const_block(0, [Const_block(0, init_shape_struct env sg)])
@@ -500,7 +500,7 @@ and transl_module ~scopes cc rootpath mexp =
            ap_specialised=Default_specialise})
   | Tmod_constraint(arg, _, _, ccarg) ->
       transl_module ~scopes (compose_coercions cc ccarg) rootpath arg
-  | Tmod_ascribe (path, _, _, cc_path) ->
+  | Tmod_ascribe (path, _, _, _, cc_path) ->
       apply_coercion loc Strict (compose_coercions cc cc_path)
         (transl_module_path loc mexp.mod_env path)
   | Tmod_unpack(arg, _) ->

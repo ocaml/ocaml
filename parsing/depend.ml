@@ -321,7 +321,7 @@ and add_modtype bv mty =
   | Pmty_extension e -> handle_extension e
   | Pmty_ascribe (l, mty) ->
       add_module_path bv l;
-      add_modtype bv mty
+      Option.iter (add_modtype bv) mty
 
 and add_module_alias bv l =
   (* If we are in delayed dependencies mode, we delay the dependencies
@@ -343,7 +343,7 @@ and add_modtype_binding bv mty =
   | Pmty_typeof modl ->
       add_module_binding bv modl
   | Pmty_ascribe (l, mty) ->
-      add_modtype bv mty;
+      Option.iter (add_modtype bv) mty;
       add_module_alias bv l
   | _ ->
       add_modtype bv mty; bound
@@ -449,7 +449,7 @@ and add_module_expr bv modl =
   | Pmod_unpack(e) ->
       add_expr bv e
   | Pmod_ascribe (l, mty) ->
-      add_module_path bv l; add_modtype bv mty
+      add_module_path bv l; Option.iter (add_modtype bv) mty
   | Pmod_extension e ->
       handle_extension e
 

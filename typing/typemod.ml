@@ -827,13 +827,18 @@ let rec approx_modtype env smty =
       mty
   | Pmty_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
-  | Pmty_ascribe (lid, mty) ->
+  | Pmty_ascribe (lid, Some mty) ->
       let path =
         Env.lookup_module_path ~use:false ~load:false
           ~loc:smty.pmty_loc lid.txt env
       in
       let mty = approx_modtype env mty in
-      Mty_alias(path, Some mty)
+      Mty_alias(path, Some (mty, true))
+  | Pmty_ascribe (lid, None) ->
+      let path, md =
+        Env.lookup_module ~use:false ~loc:smty.pmty_loc lid.txt env
+      in
+      Mty_alias(path, Some (md.md_type, false))
 
 and approx_module_declaration env pmd =
   {
@@ -1370,10 +1375,10 @@ and transl_modtype_aux env smty =
       mkmty (Tmty_typeof tmty) mty env loc smty.pmty_attributes
   | Pmty_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
-  | Pmty_ascribe (lid, smty_res) ->
+  | Pmty_ascribe (lid, Some smty_res) ->
       let path = transl_module_alias loc env lid.txt in
       let tmty_res = transl_modtype env smty_res in
-      let mty_type = Mty_alias (path, Some tmty_res.mty_type) in
+      let mty_type = Mty_alias (path, Some (tmty_res.mty_type, true)) in
       let _coercion =
         try
           Includemod.modtypes ~loc env ~mark:Mark_both (Mty_alias (path, None))
@@ -1381,8 +1386,15 @@ and transl_modtype_aux env smty =
         with Includemod.Error msg ->
           raise(Error(loc, env, Not_included msg))
       in
-      mkmty (Tmty_ascribe (path, lid, tmty_res)) mty_type env loc
-        smty.pmty_attributes
+      mkmty (Tmty_ascribe (path, lid, mty_type, Tmodtype_explicit tmty_res))
+        mty_type env loc smty.pmty_attributes
+  | Pmty_ascribe (lid, None) ->
+      let path, md =
+        Env.lookup_module ~use:false ~loc:smty.pmty_loc lid.txt env
+      in
+      let mty_type = Mty_alias (path, Some (md.md_type, false)) in
+      mkmty (Tmty_ascribe (path, lid, mty_type, Tmodtype_implicit)) mty_type
+        env loc smty.pmty_attributes
 
 and transl_with ~loc env remove_aliases (rev_tcstrs,sg) constr =
   let lid, with_info = match constr with
@@ -1840,7 +1852,7 @@ exception Not_a_path
 
 let rec path_of_module mexp =
   match mexp.mod_desc with
-  | Tmod_ident (p,_) | Tmod_ascribe (p, _, _, _) -> p
+  | Tmod_ident (p,_) | Tmod_ascribe (p, _, _, _, _) -> p
   | Tmod_apply(funct, arg, _coercion) when !Clflags.applicative_functors ->
       Papply(path_of_module funct, path_of_module arg)
   | Tmod_constraint (mexp, _, _, _) ->
@@ -2095,18 +2107,23 @@ let wrap_constraint env mark arg mty explicit =
     mod_attributes = [];
     mod_loc = arg.mod_loc }
 
-let wrap_ascription env mark path lid mt mt_pre_coercion mty =
+let wrap_ascription env mark path lid mt mt_pre_coercion mty mt_target =
   let mark = if mark then Includemod.Mark_both else Includemod.Mark_neither in
   let coercion =
     try
       Includemod.compose_coercions
-        (Includemod.modtypes ~loc:lid.loc env ~mark mt mty.mty_type)
+        (Includemod.modtypes ~loc:lid.loc env ~mark mt mt_target)
         (Option.value ~default:Tcoerce_none mt_pre_coercion)
     with Includemod.Error msg ->
       raise(Error(lid.loc, env, Not_included msg))
   in
-  { mod_desc = Tmod_ascribe(path, lid, mty, coercion);
-    mod_type = Mty_alias(path, Some mty.mty_type);
+  let expl =
+    match mty with
+    | Tmodtype_explicit _ -> true
+    | Tmodtype_implicit -> false
+  in
+  { mod_desc = Tmod_ascribe(path, lid, mt_target, mty, coercion);
+    mod_type = Mty_alias(path, Some (mt_target, expl));
     mod_env = env;
     mod_attributes = [];
     mod_loc = lid.loc }
@@ -2141,20 +2158,19 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
       let path =
         Env.lookup_module_path ~load:(not alias) ~loc:smod.pmod_loc lid.txt env
       in
-      let has_apply = Path.has_apply path in
-      let is_functor_arg = Env.is_functor_arg path env in
+      let is_functor_arg_or_apply = Env.is_functor_arg_or_apply path env in
       let md = { mod_desc = Tmod_ident (path, lid);
                  mod_type =
-                   (if alias && is_functor_arg && not has_apply then
+                   (if alias && is_functor_arg_or_apply then
                      match (Env.find_module path env).md_type with
                      | Mty_alias _ as mty -> mty
-                     | mty -> Mty_alias (path, Some mty)
+                     | mty -> Mty_alias (path, Some (mty, false))
                    else Mty_alias (path, None));
                  mod_env = env;
                  mod_attributes = smod.pmod_attributes;
                  mod_loc = smod.pmod_loc } in
       let md =
-        if alias && not has_apply then
+        if alias then
           (Env.add_required_global (Path.head path); md)
         else match (Env.find_module path env).md_type with
         | Mty_alias (p1, None) when not alias ->
@@ -2168,10 +2184,13 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
                 if sttn then
                   Mtype.strengthen ~aliasable:Misc.Str_alias env mty p1
                 else mty }
-        | Mty_alias (p1, Some mty1) when not alias ->
+        | Mty_alias (p1, Some (mty1, expl1)) when not alias ->
             let mty =
               if sttn then
-                Mtype.strengthen ~aliasable:Misc.Str_ascribe env mty1 p1
+                let aliasable =
+                  if expl1 then Misc.Str_ascribe else Misc.Str_ascribe_nocoerce
+                in
+                Mtype.strengthen ~aliasable env mty1 p1
               else
                 mty1
             in
@@ -2184,8 +2203,7 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
               mod_type = mty }
         | mty ->
             let aliasable =
-              if has_apply then Misc.Str_none
-              else if is_functor_arg then Misc.Str_ascribe
+              if is_functor_arg_or_apply then Misc.Str_ascribe_nocoerce
               else Misc.Str_alias
             in
             let mty =
@@ -2284,12 +2302,11 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
         mod_env = env;
         mod_attributes = smod.pmod_attributes;
         mod_loc = smod.pmod_loc }
-  | Pmod_ascribe (lid, smty) ->
+  | Pmod_ascribe (lid, osmty) ->
       let sarg =
         {pmod_desc= Pmod_ident lid; pmod_loc= lid.loc; pmod_attributes= []}
       in
       let arg = type_module ~alias true funct_body anchor env sarg in
-      let mty = transl_modtype env smty in
       let path, coercion =
         match arg.mod_desc with
         | Tmod_ident (path, _) -> path, None
@@ -2298,7 +2315,17 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
             path, Some coercion
         | _ -> assert false
       in
-      let md = wrap_ascription env true path lid arg.mod_type coercion mty in
+      let mty, mt =
+        match osmty with
+        | Some smty ->
+            let mty = transl_modtype env smty in
+            Tmodtype_explicit mty, mty.mty_type
+        | None ->
+            Tmodtype_implicit, (Env.find_module path env).md_type
+      in
+      let md =
+        wrap_ascription env true path lid arg.mod_type coercion mty mt
+      in
       { md with
         mod_loc = smod.pmod_loc;
         mod_attributes = smod.pmod_attributes;
@@ -2365,7 +2392,7 @@ and type_one_application ~ctx:(apply_loc,md_f,args) funct_body env funct
             let subst =
               match param with
               | None -> Subst.identity
-              | Some p -> Subst.add_module p path Subst.identity
+              | Some p -> Subst.add_module ~arg:true p path Subst.identity
             in
             Subst.modtype (Rescope scope) subst mty_res
         | None ->
@@ -2787,7 +2814,8 @@ let type_structure = type_structure false None
 
 let rec normalize_modtype = function
     Mty_ident _ -> ()
-  | Mty_alias (_, mty) -> Option.iter normalize_modtype mty
+  | Mty_alias (_, mty) ->
+      Option.iter (fun (mty, _) -> normalize_modtype mty) mty
   | Mty_signature sg -> normalize_signature sg
   | Mty_functor(_param, body) -> normalize_modtype body
 

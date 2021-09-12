@@ -1723,8 +1723,11 @@ module Analyser =
 
       | Parsetree.Pmty_extension _ -> assert false
 
-      | Parsetree.Pmty_ascribe (_longident, module_type) ->
-          (* TODO *)
+      | Parsetree.Pmty_ascribe (_longident, None) ->
+          let k = analyse_module_type_kind env current_module_name module_type sig_module_type in
+          Module_with ( k, "" )
+
+      | Parsetree.Pmty_ascribe (_longident, Some module_type) ->
           analyse_module_kind ~erased env current_module_name module_type sig_module_type
 
 

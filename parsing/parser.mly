@@ -1301,8 +1301,10 @@ module_expr:
       (* A module identifier. *)
       x = mkrhs(mod_longident)
         { Pmod_ident x }
+    | LPAREN x = mkrhs(mod_longident) COLONGREATER UNDERSCORE RPAREN
+        { Pmod_ascribe (x, None) }
     | LPAREN x = mkrhs(mod_longident) COLONGREATER mty = module_type RPAREN
-        { Pmod_ascribe (x, mty) }
+        { Pmod_ascribe (x, Some mty) }
     | (* In a functor application, the actual argument must be parenthesized. *)
       me1 = module_expr me2 = paren_module_expr
         { Pmod_apply(me1, me2) }
@@ -1611,8 +1613,10 @@ module_type:
             not_expecting $loc(id) "functor application"
           else
             Pmty_alias $3 } */
+/*  | LPAREN MODULE mkrhs(mod_ext_longident) COLONGREATER UNDERSCORE RPAREN
+        { Pmty_ascribe ($3, None) } */
 /*  | LPAREN MODULE mkrhs(mod_ext_longident) COLONGREATER module_type RPAREN
-        { Pmty_ascribe ($3, $5) } */
+        { Pmty_ascribe ($3, Some $5) } */
     | extension
         { Pmty_extension $1 }
     )
@@ -1728,8 +1732,10 @@ module_declaration_body:
         not_expecting $loc(id) "functor application"
       else
         Mty.alias ~loc:(make_loc $sloc) id }
+  | LPAREN id = mkrhs(mod_ext_longident) COLONGREATER UNDERSCORE RPAREN
+    { Mty.ascribe ~loc:(make_loc $sloc) id None }
   | LPAREN id = mkrhs(mod_ext_longident) COLONGREATER mty = module_type RPAREN
-    { Mty.ascribe ~loc:(make_loc $sloc) id mty }
+    { Mty.ascribe ~loc:(make_loc $sloc) id (Some mty) }
 ;
 (* A module substitution (in a signature). *)
 module_subst:

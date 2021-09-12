@@ -672,4 +672,4 @@ module Magic_number : sig
   val all_kinds : kind list
 end
 
-type strengthening = Str_alias | Str_ascribe | Str_none
+type strengthening = Str_alias | Str_ascribe | Str_ascribe_nocoerce | Str_none

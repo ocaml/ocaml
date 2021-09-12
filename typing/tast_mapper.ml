@@ -452,8 +452,10 @@ let module_type sub x =
         )
     | Tmty_typeof mexpr ->
         Tmty_typeof (sub.module_expr sub mexpr)
-    | Tmty_ascribe (p, li, mtype) ->
-        Tmty_ascribe (p, li, sub.module_type sub mtype)
+    | Tmty_ascribe (p, li, mt, Tmodtype_explicit mtype) ->
+        Tmty_ascribe (p, li, mt, Tmodtype_explicit (sub.module_type sub mtype))
+    | Tmty_ascribe (p, li, mt, Tmodtype_implicit) ->
+        Tmty_ascribe (p, li, mt, Tmodtype_implicit)
   in
   {x with mty_desc; mty_env}
 
@@ -517,13 +519,16 @@ let module_expr sub x =
             sub.expr sub exp,
             mty
           )
-    | Tmod_ascribe (p, li, mtype, c) ->
+    | Tmod_ascribe (p, li, mt, Tmodtype_explicit mtype, c) ->
         Tmod_ascribe (
           p,
           li,
-          sub.module_type sub mtype,
+          mt,
+          Tmodtype_explicit (sub.module_type sub mtype),
           sub.module_coercion sub c
         )
+    | Tmod_ascribe (p, li, mt, Tmodtype_implicit, c) ->
+        Tmod_ascribe (p, li, mt, Tmodtype_implicit, sub.module_coercion sub c)
   in
   {x with mod_desc; mod_env}
 

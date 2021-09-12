@@ -862,7 +862,7 @@ module Analyser =
        is not an ident of a constraint on an ident. *)
     let rec tt_name_from_module_expr mod_expr =
       match mod_expr.Typedtree.mod_desc with
-        Typedtree.Tmod_ident (p,_) | Typedtree.Tmod_ascribe (p, _, _, _) ->
+        Typedtree.Tmod_ident (p,_) | Typedtree.Tmod_ascribe (p, _, _, _, _) ->
           Name.from_path p
       | Typedtree.Tmod_constraint (m_exp, _, _, _) -> tt_name_from_module_expr m_exp
       | Typedtree.Tmod_structure _
@@ -1706,10 +1706,10 @@ module Analyser =
         | (Parsetree.Pmod_ident _,
            Typedtree.Tmod_constraint
              ({Typedtree.mod_desc = Typedtree.Tmod_ident (path, _)}, _, _, _))
-        | (Parsetree.Pmod_ascribe _, Typedtree.Tmod_ascribe (path, _, _, _))
+        | (Parsetree.Pmod_ascribe _, Typedtree.Tmod_ascribe (path, _, _, _, _))
         | (Parsetree.Pmod_ascribe _,
            Typedtree.Tmod_constraint
-             ({Typedtree.mod_desc = Typedtree.Tmod_ascribe (path, _, _, _)}, _, _, _))
+             ({Typedtree.mod_desc = Typedtree.Tmod_ascribe (path, _, _, _, _)}, _, _, _))
           ->
           let alias_name = Odoc_env.full_module_name env (Name.from_path path) in
           { m_base with m_kind = Module_alias { ma_name = alias_name ;

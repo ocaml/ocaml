@@ -401,7 +401,7 @@ let type_iterators =
       Mty_ident p -> it.it_path p
     | Mty_alias (p, mt) ->
         it.it_path p;
-        Option.iter (it.it_module_type it) mt
+        Option.iter (fun (mt, _) -> it.it_module_type it mt) mt
     | Mty_signature sg -> it.it_signature it sg
     | Mty_functor (p, mt) ->
         it.it_functor_param it p;

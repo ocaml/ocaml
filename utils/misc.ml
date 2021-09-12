@@ -1125,4 +1125,4 @@ module Magic_number = struct
            | Ok () -> Ok info
 end
 
-type strengthening = Str_alias | Str_ascribe | Str_none
+type strengthening = Str_alias | Str_ascribe | Str_ascribe_nocoerce | Str_none

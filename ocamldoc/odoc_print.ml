@@ -66,7 +66,7 @@ let simpl_module_type ?code t =
     | Mty_functor (Named (name, mt1), mt2) ->
       Mty_functor (Named (name, iter mt1), iter mt2)
     | Mty_alias (p, mt) ->
-      Mty_alias (p, Option.map iter mt)
+      Mty_alias (p, Option.map (fun (mt, expl) -> (iter mt, expl)) mt)
   in
   iter t
 

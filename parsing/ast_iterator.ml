@@ -261,7 +261,7 @@ module MT = struct
     | Pmty_extension x -> sub.extension sub x
     | Pmty_ascribe (s, mt) ->
         iter_loc sub s;
-        sub.module_type sub mt
+        Option.iter (sub.module_type sub) mt
 
   let iter_with_constraint sub = function
     | Pwith_type (lid, d) ->
@@ -321,7 +321,7 @@ module M = struct
         sub.module_expr sub m; sub.module_type sub mty
     | Pmod_unpack e -> sub.expr sub e
     | Pmod_ascribe (x, mty) ->
-        iter_loc sub x; sub.module_type sub mty
+        iter_loc sub x; Option.iter (sub.module_type sub) mty
     | Pmod_extension x -> sub.extension sub x
 
   let iter_structure_item sub {pstr_loc = loc; pstr_desc = desc} =
