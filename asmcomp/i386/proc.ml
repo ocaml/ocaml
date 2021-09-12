@@ -101,23 +101,14 @@ let word_addressed = false
 
 (* Calling conventions *)
 
-(* To supplement the processor's meagre supply of registers, we also
-   use some global memory locations to pass arguments beyond the 6th.
-   These globals are denoted by Incoming and Outgoing stack locations
-   with negative offsets, starting at -64.
-   Unlike arguments passed on stack, arguments passed in globals
-   do not prevent tail-call elimination.  The caller stores arguments
-   in these globals immediately before the call, and the first thing the
-   callee does is copy them to registers or stack locations.
-   Neither GC nor thread context switches can occur between these two
-   times. *)
+let size_domainstate_args = 64 * size_int
 
 let calling_conventions first_int last_int first_float last_float make_stack
                         arg =
   let loc = Array.make (Array.length arg) Reg.dummy in
   let int = ref first_int in
   let float = ref first_float in
-  let ofs = ref (-64) in
+  let ofs = ref (- size_domainstate_args) in
   for i = 0 to Array.length arg - 1 do
     match arg.(i) with
       Val | Int | Addr as ty ->
@@ -139,12 +130,15 @@ let calling_conventions first_int last_int first_float last_float make_stack
   done;
   (loc, Misc.align (max 0 !ofs) stack_alignment)
 
-let incoming ofs = Incoming ofs
-let outgoing ofs = Outgoing ofs
+let incoming ofs =
+  if ofs >= 0
+  then Incoming ofs
+  else Domainstate (ofs + size_domainstate_args)
+let outgoing ofs =
+  if ofs >= 0
+  then Outgoing ofs
+  else Domainstate (ofs + size_domainstate_args)
 let not_supported _ofs = fatal_error "Proc.loc_results: cannot call"
-
-(* Six arguments in integer registers plus eight in global memory. *)
-let max_arguments_for_tailcalls = 14
 
 let loc_arguments arg =
   calling_conventions 0 5 100 99 outgoing arg
@@ -152,6 +146,10 @@ let loc_parameters arg =
   let (loc, _ofs) = calling_conventions 0 5 100 99 incoming arg in loc
 let loc_results res =
   let (loc, _ofs) = calling_conventions 0 5 100 100 not_supported res in loc
+
+let max_arguments_for_tailcalls =
+  6 (* in registers *) + 64 (* in domain state *)
+
 let loc_external_arguments _arg =
   fatal_error "Proc.loc_external_arguments"
 let loc_external_results res =

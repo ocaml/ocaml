@@ -1,0 +1,7 @@
+load_printer main.cmo
+install_printer Main.Submodule.pp
+goto 0
+break @ Main 26
+run
+print value
+quit

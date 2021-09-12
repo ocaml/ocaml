@@ -25,6 +25,16 @@ Working version
   parameter passing on PowerPC (16 registers) and on s390x (8 registers).
   (Xavier Leroy, review by Mark Shinwell)
 
+- #10591, #10615: Tune the heuristic for CSE of integer constants
+  so as to avoid excessive CSE on compiler-generated constants
+  and long register allocation times.
+  (Xavier Leroy, report by Edwin Török, review by Nicolás Ojeda Bär)
+
+- #10595: Tail calls with up to 64 arguments are guaranteed to be compiled
+  as tail calls.  To this end, memory locations in the domain state
+  are used for passing arguments that do not fit in registers.
+  (Xavier Leroy, review by Vincent Laviron)
+
 ### Standard library:
 
 * #7812, #10475: `Filename.chop_suffix name suff` now checks that `suff`
@@ -82,6 +92,9 @@ Working version
   until the program creates a thread for the first time, then fail cleanly.
   (Xavier Leroy, report by @anentropic, review by Gabriel Scherer)
 
+- #9621: Pack the ocamldebug modules to minimize clashes
+  (Raphael Sousa Santos, review by Vincent Laviron and Gabriel Scherer)
+
 ### Manual and documentation:
 
 - #7812, #10475: reworded the description of the behaviors of
@@ -136,8 +149,16 @@ Working version
 - #10555: Do not use ghost locations for type constraints
   (Nicolás Ojeda Bär, report by Anton Bachin, review by Thomas Refis)
 
+- #10598, #10616: fix an exponential blow-up when typechecking nested module
+  types
+  (Florian Angeletti, report and review by Stephen Dolan)
+
 - #10559: Evaluate signature substitutions lazily
   (Stephen Dolan, review by Leo White)
+
+- #8776, #10624: Fix compilation time regression introduced in 4.08
+  (Nicolás Ojeda Bär, fix by Leo White, report by Alain Frisch, review by Thomas
+  Refis)
 
 ### Build system:
 
@@ -164,6 +185,9 @@ Working version
 
 - #10590: Some typechecker optimisations
   (Stephen Dolan, review by Gabriel Scherer and Leo White)
+
+- #10603, #10611: Fix if condition marked as inconstant in flambda
+  (Vincent Laviron and Pierre Chambart, report by Marcello Seri)
 
 OCaml 4.13.0
 -------------
@@ -489,9 +513,10 @@ OCaml 4.13.0
 - #9407: added warning for missing mli interface file
   (Anukriti Kumar, review by Florian Angeletti)
 
-- #9960: extend ocamlc/ocamlopt's -o option to work when compiling C files
-  (Sébastien Hinderer, reported by Daniel Bünzli, review by Florian
-  Angeletti and Gabriel Scherer)
+- #9960, #10619: extend ocamlc/ocamlopt's -o option to work when
+  compiling C files
+  (Sébastien Hinderer, reported by Daniel Bünzli, review by
+  Florian Angeletti and Gabriel Scherer)
 
 - #10095: simplify the syntax error messages produced by the compiler.
   In many cases, the compiler would produce an error message that looked
@@ -589,6 +614,13 @@ OCaml 4.13.0
   in Types.Transient_expr).
   (Jacques Garrigue and Takafumi Saikawa,
    review by Florian Angeletti and Gabriel Radanne)
+
+* #10474: Force normalization on access to row_desc
+  Similar to #10337. Make row_desc an abstract types, with constructor
+  create_row and accessors defined in Types rather than Btype.
+  A normalized view row_desc_repr is provided for convenience.
+  (Jacques Garrigue and Takafumi Saikawa,
+   review by Leo White and Florian Angeletti)
 
 - #10358: Use a hash table for the load path.
   (Leo White, review by Gabriel Scherer)
@@ -816,6 +848,11 @@ OCaml 4.12, maintenance version
 - #10478: Fix segfault under Windows due to a mistaken initialization of thread
   ID when a thread starts.
   (David Allsopp, Nicolás Ojeda Bär, review by Xavier Leroy)
+
+- #10626, #10628: Wrong reloading of the x86-64 instruction for
+  integer multiplication by a constant, causing the assembler to
+  reject the ocamlopt-generated code.
+  (Xavier Leroy, report by Dave Aitken, review by Vincent Laviron)
 
 OCaml 4.12.0 (24 February 2021)
 -------------------------------

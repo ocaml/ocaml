@@ -96,6 +96,8 @@ let stack_slot slot ty =
 
 (* Calling conventions *)
 
+let size_domainstate_args = 64 * size_int
+
 let calling_conventions
     first_int last_int first_float last_float make_stack stack_ofs arg =
   let loc = Array.make (Array.length arg) Reg.dummy in
@@ -121,19 +123,26 @@ let calling_conventions
           ofs := !ofs + size_float
         end
   done;
-  (loc, Misc.align !ofs 16)
-  (* Keep stack 16-aligned. *)
+  (loc, Misc.align (max 0 !ofs) 16) (* Keep stack 16-aligned. *)
 
-let incoming ofs = Incoming ofs
-let outgoing ofs = Outgoing ofs
+let incoming ofs =
+  if ofs >= 0
+  then Incoming ofs
+  else Domainstate (ofs + size_domainstate_args)
+let outgoing ofs =
+  if ofs >= 0
+  then Outgoing ofs
+  else Domainstate (ofs + size_domainstate_args)
 let not_supported _ofs = fatal_error "Proc.loc_results: cannot call"
 
-let max_arguments_for_tailcalls = 8
+let max_arguments_for_tailcalls = 8 (* in regs *) + 64 (* in domain state *)
 
 let loc_arguments arg =
-  calling_conventions 0 7 100 103 outgoing 0 arg
+  calling_conventions 0 7 100 103 outgoing (- size_domainstate_args) arg
 let loc_parameters arg =
-  let (loc, _ofs) = calling_conventions 0 7 100 103 incoming 0 arg in loc
+  let (loc, _ofs) =
+    calling_conventions 0 7 100 103 incoming (- size_domainstate_args) arg
+  in loc
 let loc_results res =
   let (loc, _ofs) = calling_conventions 0 7 100 103 not_supported 0 res in loc
 
