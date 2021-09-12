@@ -95,26 +95,6 @@ struct caml__mutex_unwind {
   struct caml__mutex_unwind* next;
 };
 
-#define With_mutex(mutex0, BODY) do {                   \
-  struct caml__mutex_unwind caml__locked_mutex;         \
-  caml_plat_mutex* caml__mutex = (mutex0);              \
-  int caml__mutex_go = 1;                               \
-  Assert(CAML_LOCAL_ROOTS);                             \
-  caml__locked_mutex.mutex = caml__mutex;               \
-  caml__locked_mutex.next = CAML_LOCAL_ROOTS->mutexes;  \
-  CAML_LOCAL_ROOTS->mutexes = &caml__locked_mutex;      \
-  for (caml_plat_try_lock(caml__mutex) ||               \
-         ((caml_enter_blocking_section(),               \
-           caml_plat_lock(caml__mutex),                 \
-           caml_leave_blocking_section()), 0);          \
-       caml__mutex_go;                                  \
-       caml_plat_unlock(caml__mutex),                   \
-         caml__mutex_go = 0,                            \
-         CAML_LOCAL_ROOTS->mutexes =                    \
-         CAML_LOCAL_ROOTS->mutexes->next)               \
-    { BODY }                                            \
-  } while(0)
-
 /* Memory management primitives (mmap) */
 
 uintnat caml_mem_round_up_pages(uintnat size);

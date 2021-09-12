@@ -61,21 +61,23 @@ CAMLno_asan
 void caml_raise(value v)
 {
   char* exception_pointer;
-  if (Caml_state->c_stack == 0)
-    caml_fatal_uncaught_exception(v);
+
+  Unlock_exn();
+
+  CAMLassert(!Is_exception_result(v));
+
+  // avoid calling caml_raise recursively
+  v = caml_process_pending_signals_with_root_exn(v);
+  if (Is_exception_result(v))
+    v = Extract_exception(v);
 
   exception_pointer = (char*)Caml_state->c_stack;
-  while (CAML_LOCAL_ROOTS != NULL &&
-         (char *) CAML_LOCAL_ROOTS < exception_pointer) {
-    struct caml__mutex_unwind* m;
-    Assert(CAML_LOCAL_ROOTS != NULL);
-    m = CAML_LOCAL_ROOTS->mutexes;
-    while (m) {
-      /* unlocked in reverse order of locking */
-      caml_plat_unlock(m->mutex);
-      m = m->next;
-    }
-    CAML_LOCAL_ROOTS = CAML_LOCAL_ROOTS->next;
+
+  if (exception_pointer == NULL) caml_fatal_uncaught_exception(v);
+
+  while (Caml_state->local_roots != NULL &&
+         (char *) Caml_state->local_roots < exception_pointer) {
+    Caml_state->local_roots = Caml_state->local_roots->next;
   }
 
   caml_raise_exception(Caml_state, v);
