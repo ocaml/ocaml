@@ -24,6 +24,9 @@ Working version
 
 ### Standard library:
 
+* #10622: Annotate `Uchar.t` with immediate attribute
+  (Hongbo Zhang, reivew by Gabriel Scherer and Nicolás Ojeda Bär)
+
 * #7812, #10475: `Filename.chop_suffix name suff` now checks that `suff`
   is actually a suffix of `name` and raises Invalid_argument otherwise.
   (Xavier Leroy, report by whitequark, review by David Allsopp)
