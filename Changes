@@ -160,6 +160,9 @@ Working version
   (Nicolás Ojeda Bär, fix by Leo White, report by Alain Frisch, review by Thomas
   Refis)
 
+- #10618: Expose more Pprintast functions
+  (Guillaume Petiot, review by Gabriel Scherer)
+
 ### Build system:
 
 ### Bug fixes:
