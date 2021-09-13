@@ -11,10 +11,10 @@ Welcome to OCaml multicore's Issue tracker!
 
 We would like to thank you for reporting your bug to the Multicore OCaml team.
 
-To make sure that we can help you as best as possible, we advise to go through
+To make sure that we can help you as best as possible, we advise you to go through
 the page at https://github.com/ocaml-multicore/ocaml-multicore/wiki/Report-an-issue-to-the-bugtracker
 
-Use the following template to report your issue and fill it with available the informations.
+Use the following template to report your issue and fill it with the available information.
 
 **Describe the issue**
 
