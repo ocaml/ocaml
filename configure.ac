@@ -1210,6 +1210,14 @@ AS_IF([test -n "$target_alias"],
 default_as="$CC -c"
 default_aspp="$CC -c"
 
+AS_IF([test "$with_pic"],
+  [fpic=true
+  AC_DEFINE([CAML_WITH_FPIC])
+  internal_cflags="$internal_cflags $sharedlib_cflags"
+  default_as="$default_as $sharedlib_cflags"
+  default_aspp="$default_aspp $sharedlib_cflags"],
+  [fpic=false])
+
 AS_CASE([$as_target,$ocaml_cv_cc_vendor],
   [*-*-linux*,gcc-*],
     [AS_CASE([$as_cpu],
@@ -1225,14 +1233,6 @@ AS_CASE([$as_target,$ocaml_cv_cc_vendor],
     [default_as="$default_as -Wno-trigraphs"
     default_aspp="$default_as"],
   [])
-
-AS_IF([test "$with_pic"],
-  [fpic=true
-  AC_DEFINE([CAML_WITH_FPIC])
-  internal_cflags="$internal_cflags $sharedlib_cflags"
-  default_as="$default_as $sharedlib_cflags"
-  default_aspp="$default_aspp $sharedlib_cflags"],
-  [fpic=false])
 
 AS_IF([test -z "$AS"], [AS="$default_as"])
 

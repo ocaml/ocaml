@@ -14536,6 +14536,17 @@ fi
 default_as="$CC -c"
 default_aspp="$CC -c"
 
+if test "$with_pic"; then :
+  fpic=true
+  $as_echo "#define CAML_WITH_FPIC 1" >>confdefs.h
+
+  internal_cflags="$internal_cflags $sharedlib_cflags"
+  default_as="$default_as $sharedlib_cflags"
+  default_aspp="$default_aspp $sharedlib_cflags"
+else
+  fpic=false
+fi
+
 case $as_target,$ocaml_cv_cc_vendor in #(
   *-*-linux*,gcc-*) :
     case $as_cpu in #(
@@ -14556,17 +14567,6 @@ esac ;; #(
   *) :
      ;;
 esac
-
-if test "$with_pic"; then :
-  fpic=true
-  $as_echo "#define CAML_WITH_FPIC 1" >>confdefs.h
-
-  internal_cflags="$internal_cflags $sharedlib_cflags"
-  default_as="$default_as $sharedlib_cflags"
-  default_aspp="$default_aspp $sharedlib_cflags"
-else
-  fpic=false
-fi
 
 if test -z "$AS"; then :
   AS="$default_as"

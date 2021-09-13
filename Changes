@@ -189,6 +189,9 @@ Working version
 - #10603, #10611: Fix if condition marked as inconstant in flambda
   (Vincent Laviron and Pierre Chambart, report by Marcello Seri)
 
+- #10634: Use the same flags for AS and ASPP when AS is the C compiler.
+  (David Allsopp, review by Sébastien Hinderer)
+
 OCaml 4.13.0
 -------------
 
@@ -672,7 +675,7 @@ OCaml 4.13.0
 - #10156: configure script: fix sockets feature detection.
   (Lucas Pluvinage, review by David Allsopp and Damien Doligez)
 
-- #10176: By default, call the assembler through the C compiler driver
+- #10176, #10632: By default, call the assembler through the C compiler driver
   (Sébastien Hinderer, review by Gabriel Scherer, David Allsopp and Xavier
   Leroy)
 
