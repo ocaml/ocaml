@@ -672,7 +672,7 @@ OCaml 4.13.0
 - #10156: configure script: fix sockets feature detection.
   (Lucas Pluvinage, review by David Allsopp and Damien Doligez)
 
-- #10176: By default, call the assembler through the C compiler driver
+- #10176, #10632: By default, call the assembler through the C compiler driver
   (Sébastien Hinderer, review by Gabriel Scherer, David Allsopp and Xavier
   Leroy)
 
