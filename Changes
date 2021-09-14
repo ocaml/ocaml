@@ -189,6 +189,11 @@ Working version
 - #10603, #10611: Fix if condition marked as inconstant in flambda
   (Vincent Laviron and Pierre Chambart, report by Marcello Seri)
 
+- #10633: Stack overflow recovery in ocamlopt for AMD64/Linux and ARM/Linux
+  was not restoring the minor heap pointer correctly
+  (Stephen Dolan, review by Xavier Leroy)
+
+
 OCaml 4.13.0
 -------------
 
