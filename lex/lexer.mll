@@ -140,7 +140,7 @@ rule main = parse
   | '\010'
     { incr_loc lexbuf 0;
       main lexbuf }
-  | "#" [' ' '\t']* (['0'-'9']+ as num) [' ' '\t']*z
+  | "#" [' ' '\t']* (['0'-'9']+ as num) [' ' '\t']*
     ('\"' ([^ '\010' '\013' '\"']* as name) '\"')?
     [^ '\010' '\013']* '\010'
     { update_loc lexbuf name (int_of_string num);
