@@ -163,6 +163,9 @@ Working version
 - #10618: Expose more Pprintast functions
   (Guillaume Petiot, review by Gabriel Scherer)
 
+- #10637: Outcometree: introduce a record type for constructors
+  (Gabriel Scherer, review by Thomas Refis)
+
 ### Build system:
 
 ### Bug fixes:
