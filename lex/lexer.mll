@@ -132,13 +132,15 @@ let ident = identstart identbody*
 let extattrident = ident ('.' ident)*
 let blank = [' ' '\009' '\012']
 
+let digit_code = ['0'-'1'] ['0'-'9'] ['0'-'9'] | '2' ['0'-'4'] ['0'-'9'] | '2' '5' ['0'-'5']
+
 rule main = parse
     [' ' '\013' '\009' '\012' ] +
     { main lexbuf }
   | '\010'
     { incr_loc lexbuf 0;
       main lexbuf }
-  | "#" [' ' '\t']* (['0'-'9']+ as num) [' ' '\t']*
+  | "#" [' ' '\t']* (['0'-'9']+ as num) [' ' '\t']*z
     ('\"' ([^ '\010' '\013' '\"']* as name) '\"')?
     [^ '\010' '\013']* '\010'
     { update_loc lexbuf name (int_of_string num);
@@ -353,7 +355,7 @@ and skip_char = parse
   | [^ '\\' '\'' '\010' '\013'] "'" (* regular character *)
 (* one character and numeric escape sequences *)
   | '\\' _ "'"
-  | '\\' ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
+  | '\\' digit_code "'"
   | '\\' 'o' ['0'-'7'] ['0'-'7'] ['0'-'7'] "'"
   | '\\' 'x' ['0'-'9' 'a'-'f' 'A'-'F'] ['0'-'9' 'a'-'f' 'A'-'F'] "'"
      {()}
