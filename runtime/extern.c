@@ -899,6 +899,7 @@ void caml_output_val(struct channel *chan, value v, value flags)
     caml_stat_free(blk);
     blk = nextblk;
   }
+  Flush_if_unbuffered(chan);
 }
 
 CAMLprim value caml_output_value(value vchan, value v, value flags)

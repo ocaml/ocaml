@@ -669,6 +669,24 @@ CAMLprim value caml_ml_flush(value vchannel)
   CAMLreturn (Val_unit);
 }
 
+CAMLprim value caml_ml_set_buffered(value vchannel, value mode)
+{
+  struct channel * channel = Channel(vchannel);
+  if (Bool_val(mode)) {
+    channel->flags &= ~CHANNEL_FLAG_UNBUFFERED;
+  } else {
+    channel->flags |= CHANNEL_FLAG_UNBUFFERED;
+    caml_ml_flush(vchannel);
+  }
+  return Val_unit;
+}
+
+CAMLprim value caml_ml_is_buffered(value vchannel)
+{
+  struct channel * channel = Channel(vchannel);
+  return Val_bool( ! (channel->flags & CHANNEL_FLAG_UNBUFFERED));
+}
+
 CAMLprim value caml_ml_output_char(value vchannel, value ch)
 {
   CAMLparam2 (vchannel, ch);
@@ -676,6 +694,7 @@ CAMLprim value caml_ml_output_char(value vchannel, value ch)
 
   Lock(channel);
   Putch(channel, Long_val(ch));
+  Flush_if_unbuffered(channel);
   Unlock(channel);
   CAMLreturn (Val_unit);
 }
@@ -687,6 +706,7 @@ CAMLprim value caml_ml_output_int(value vchannel, value w)
 
   Lock(channel);
   caml_putword(channel, (uint32_t) Long_val(w));
+  Flush_if_unbuffered(channel);
   Unlock(channel);
   CAMLreturn (Val_unit);
 }
@@ -707,6 +727,7 @@ CAMLprim value caml_ml_output_bytes(value vchannel, value buff, value start,
       pos += written;
       len -= written;
     }
+    Flush_if_unbuffered(channel);
   Unlock(channel);
   CAMLreturn (Val_unit);
 }

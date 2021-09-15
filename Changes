@@ -58,6 +58,11 @@ Working version
   (Nicolás Ojeda Bär, review by Daniel Bünzli, Simon Cruanes, Gabriel Scherer,
   Guillaume Munch-Maccagnoni, Alain Frisch and Xavier Leroy)
 
+- #10538: add Out_channel.set_buffered and Out_channel.is_buffered to control
+  the buffering mode of output channels.
+  (Nicolás Ojeda Bär, review by John Whitington, Daniel Bünzli, David Allsopp
+  and Xavier Leroy)
+
 ### Other libraries:
 
 - #10192: Add support for Unix domain sockets on Windows and use them
