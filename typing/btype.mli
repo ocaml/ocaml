@@ -44,11 +44,12 @@ module TypeHash : sig
   val iter: (type_expr -> 'a -> unit) -> 'a t -> unit
 end
 module TypePairs : sig
-  include Hashtbl.S with type key = transient_expr * transient_expr
-  val add: 'a t -> type_expr * type_expr -> 'a -> unit
-  val find: 'a t -> type_expr * type_expr -> 'a
-  val mem: 'a t -> type_expr * type_expr -> bool
-  val iter: (type_expr * type_expr -> 'a -> unit) -> 'a t -> unit
+  type t
+  val create: int -> t
+  val clear: t -> unit
+  val add: t -> type_expr * type_expr -> unit
+  val mem: t -> type_expr * type_expr -> bool
+  val iter: (type_expr * type_expr -> unit) -> t -> unit
 end
 
 (**** Levels ****)
