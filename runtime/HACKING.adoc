@@ -1,0 +1,285 @@
+= Hacking the runtime system
+
+This document tries to provides useful information about some aspects of
+the OCaml runtime system. It does not try to be exhaustive, and it will
+evolve over time.
+
+
+== OCaml GC Pacing
+
+The first part of this text gives a  general simplification of the
+computation of how much work the GC should do in a given slice.
+The second part removes some of the simplifying assumptions made
+in the first part.
+
+=== Current OCaml GC logic
+
+I'm going to make the following simplifying assumptions:
+
+* There aren't many custom_alloc_custom_mem blocks (caml_dependent_size
+~= 0)
+* There aren't many caml_alloc_custom blocks with nonzero mem/max
+(caml_extra_heap_resources ~= 0)
+* There are no manually triggered GC slices (howmuch = -1,
+caml_major_work_credit = 0)
+* The smoothing of slice amounts has no effect (filt_p ~= p)
+* There are few or no weak pointers and ephemerons (Phase_clean is
+negligible)
+* The number of roots is much smaller than the size of the heap
+(stat_heap_wsz + caml_incremental_roots_count ~= stat_heap_wsz)
+
+Under these assumptions, the calculations in caml_major_collection_slice
+simplify to the following. (For readability, I've removed `caml_`
+prefixes, casts, comments, logging, etc.)
+
+....
+p = allocated_words * 3 * (100 + percent_free)
+    / stat_heap_wsz / percent_free / 2;
+
+if (gc_phase == Phase_mark) {
+  computed_work = p * stat_heap_wsz * 250 / (100 + percent_free);
+}else{
+  computed_work = p * stat_heap_wsz * 5 / 3;
+}
+....
+
+Expanding `p`, we get:
+
+....
+if (gc_phase == Phase_mark) {
+  computed_work = allocated_words * 3 * 250 / (2 * percent_free);
+}else{
+  computed_work = allocated_words * 5 * (100 + percent_free) / (2 * percent_free);
+}
+....
+
+Note that the uses of stat_heap_wsz in p and in computed_work cancel
+out, so the amount of work done does not depend on the heap size.
+
+The `computed_work` is equal to `allocated_words` times a constant.
+Let's name these constants `m` and `s`. They represent the amount of
+work done per word of allocation during mark and sweep slices
+respectively, and their values are:
+
+....
+m = 3 * 250 / (2 * percent_free)
+s = 5 * (100 + percent_free) / (2 * percent_free)
+....
+
+The default percent_free = 80 gives m = 4.6875, s = 5.625.
+
+This is open-loop control: the parameters m and s are determined only
+from configuration (percent_free), and there is no feedback mechanism.
+The open-loop nature of this controller makes it much simpler to
+analyse.
+
+The interesting question is about the relationship between m, s,
+percent_free and the actual heap size.
+
+=== A major GC cycle
+
+As soon as a major GC cycle starts, the allocated data on the heap is
+snapshotted, dividing it into live data (reachable from the roots at the
+moment the cycle starts) and garbage (unreachable).
+
+Write L for the size of the live data. It is convenient to work in units
+of L, so let's measure the garbage as a proportion g of L, so that the
+allocated data at cycle start has size:
+
+....
+L + Lg
+....
+
+The value of L at any given moment is a property of the program,
+unaffected by GC decisions. However, the value of g at the start of the
+cycle is a function of GC decisions in previous cycles.
+
+The first phase is marking, as the collector determines what's live and
+what's garbage. The total amount of marking work to do is L (only live
+data need be marked), and since we do m marking work per word of
+allocation, we will allocate L/m words during the marking phase.
+
+At the end of marking, the amount of allocated data is maximal: we have
+been allocating during marking, but we have not yet begun to collect any
+garbage. The amount of allocated data here is:
+
+....
+L + Lg + L/m
+....
+
+Next, we begin sweeping. We must sweep the entire heap, and we do s
+sweeping per allocated word. By the end of sweeping, we have collected
+exactly Lg garbage, as none of the data allocated during marking or
+sweeping can be collected this cycle. This leaves the total amount of
+allocated data as the sum of live at the start, allocated during
+marking, and allocated during sweeping:
+
+....
+L + L/m + (L + Lg + L/m)/s
+....
+
+Finally, the next cycle begins, splitting the above into L' + L' g'.
+
+=== Steady-state and stability
+
+An important property is that if the amount of live data is constant,
+then the heap size should also be constant. So, taking L to be constant
+(L = L'), let's see what happens to g.
+
+....
+L + L g' = L + L/m + (L + Lg + L/m)/s
+
+g' = 1/m + (1 + g + 1/m)/s
+
+g' = 1/m + 1/s + g/s + 1/ms
+....
+
+This has the form of a linear recurrence g -> ag + b, where
+
+....
+a = 1/s
+b = 1/m + 1/s + 1/ms
+....
+
+This is stable as long as a < 1, and tends towards its unique fixpoint
+of b/(1-a), or:
+
+....
+(1/m + 1/s + 1/ms) / (1 - 1/s)
+....
+
+The stability condition is that s > 1: we must sweep faster than we're
+allocating, or sweeping won't terminate. There is no such condition on
+marking, as the amount of mark work is fixed at the start of the cycle.
+
+The ``overhead'' is the ratio of non-live heap to live heap. The heap is
+at its largest just at the end of marking, at which time the overhead is
+g + 1/m. In the steady state, that gives an overhead of:
+
+....
+(1/m + 1/s + 1/ms) / (1 - 1/s)  + 1 / m
+=
+(2/m + 1/s) / (1 - 1/s)
+....
+
+=== Choosing m and s
+
+With the current default values of m and s, we end up with an overhead
+of 0.735. We can choose a specific value of o by solving for m and s.
+
+There is one other parameter to pick: the ratio l between mark and sweep
+work. We choose m = ls, and try to pick l so that the amount of overhead
+per allocated word is approximately equal between marking and sweeping.
+That is, we try to ensure that doing l words of marking has about the
+same cost as doing 1 word of sweeping.
+
+I think we could experimentally determine a reasonable hardcoded value
+for l, although it will depend somewhat on the program behaviour (poor
+locality makes marking slower without affecting sweeping much, while a
+larger average object size speeds up sweeping without affecting marking
+much).
+
+Then, we can take:
+
+....
+s = 1 + (1 + 2/l) / o
+m = ls
+....
+
+=== How to deal with "out-of-heap resources" and "dependent memory"
+
+First of all, these are counted independently from the main heap, and
+according to the spec, their only effect should be to speed up the GC
+when these non-heap resources are allocated ``too fast'' with respect to
+heap memory.
+
+So we should compute a work amount for each (as we do for the heap) and
+then take the max of the three numbers.
+
+==== Out-of-heap resources:
+
+For each slice we get a number p between 0 and 1, and we promise to do
+(approximately) one GC cycle whenever the cumulated p values reach 1. If
+we call A the total size of the heap allocations in one GC cycle, and
+take p as equivalent to allocating Ap words in the heap, we will reach
+this target.
+
+We still need to figure out A from Dolan's m and s parameters. Assuming
+steady-state, this is simply
+
+....
+A = L/m + (L + Lg + L/m)s
+....
+
+where L is the amount of live data; assuming steady state, this is equal
+to both 1/(o+1) of the heap size and the amount of data marked in the
+previous GC cycle. Note that H/(o+1) is not a good approximation because
+it is quantized: the heap only grows or shrinks by large blocks so it
+doesn't give a good approximation of the live data. This is especially
+true when the amount of live data is very small because the heap size
+is then pegged to its minimum value. Programs with little live data
+would rightfully expect to have small GC overhead and we don't want
+to break this assumption. Fortunately, the "amount of data marked in
+the previous GC cycle" is available since #10194 so we'll use that.
+
+g is given above:
+
+....
+g = o - 1/m
+....
+
+The ``equivalent allocations'' E is then:
+
+....
+E = L (1/m + (1+o)/s) p
+  = H (1/(o+1)m + 1/s) p
+....
+
+and we will mark at least Em or sweep at least Es words.
+
+==== Dependent Memory
+
+When the GC slice runs, we have two pieces of information: 1. How much
+dependent memory is currently used (live + garbage) [C] 2. How much
+dependent memory was allocated since the previous slice [a]
+
+Let us call H the total heap size.
+
+We can compute R, the ratio of dependent memory to heap size, and note
+that marking w words on the heap will ``mark'' (on average) wR words of
+dependent memory, and similarly for sweeping.
+
+....
+R = C / H
+....
+
+The overhead parameter o is also used for dependent memory, so we can
+use the same m and s parameters that we use for the heap. We should then
+mark m or sweep s words of dependent memory for each word allocated in
+dependent memory, hence mark m/R or sweep s/R words of heap memory for
+each word allocated in dependent memory.
+
+=== Memory held by custom blocks (aka custom memory)
+
+When allocating a custom block the user can declare how much out-of-heap
+memory is held by this block. This is folded into out-of-heap resources
+with a denominator based on caml_custom_major_ratio. This user-provided
+parameter is the overhead in custom memory expressed as a proportion of
+total heap size: custom-garbage / H.
+
+There is a problem: if we have a small heap that commands a large amount
+of custom memory the GC will try hard to reduce the out-of-heap overhead
+to a ridiculously small amount and it will run much too fast.
+
+It would be nice to change it to get the same kind of behavior as
+dependent memory, but there is a difficulty: we don't know the total
+size of custom memory, so we can't compute the R ratio.
+
+A potential solution would be to use the ratio of allocations (between
+custom and heap) maybe averaged over a few GC cycles to smooth out any
+spikes. This is not done in this PR and for the moment we leave
+untouched the translation of custom allocations to out-of-heap
+resources.
+
+sources: Stephen Dolan https://gist.github.com/stedolan/52c13d6b1a30276db31ca98683c8db16
+and Damien Doligez https://github.com/ocaml/ocaml/pull/10418#issue-647624718
