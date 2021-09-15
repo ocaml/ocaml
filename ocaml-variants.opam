@@ -1,6 +1,6 @@
 opam-version: "2.0"
-version: "4.13.0+trunk"
-synopsis: "OCaml development version"
+version: "4.13.0~rc2"
+synopsis: "Second release candidate for OCaml 4.13.0"
 depends: [
   "ocaml" {= "4.13.0" & post}
   "base-unix" {post}
