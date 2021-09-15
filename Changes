@@ -63,7 +63,7 @@ Working version
   (Nicolás Ojeda Bär, review by John Whitington, Daniel Bünzli, David Allsopp
   and Xavier Leroy)
 
-- #10639: make `stderr` unbuffered by default.
+* #10639: make `stderr` unbuffered by default.
   (Nicolás Ojeda Bär)
 
 ### Other libraries:
