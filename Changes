@@ -11,6 +11,11 @@ OCaml 4.13.0
    Anmol Sahoo, Mark Shinwell, review by Damien Doligez, Xavier Leroy,
    and Mark Shinwell)
 
+- #9584, #7074: Allow to name existentials in pattern-matching
+  One can now write '(Cstr (type a) (x, y : int * a))' to give a name to
+  existentials freshly introduced by GADT constructors.
+  (Jacques Garrigue, review by Leo White and Gabriel Scherer)
+
 - #9331: Improve error messages for functor application and functor types.
   (Florian Angeletti and Gabriel Radanne, review by Leo White)
 
@@ -19,24 +24,13 @@ OCaml 4.13.0
     'let* x = x in ...' and 'let%ext x = x in ...' respectively.
   (Stephen Dolan, review by Gabriel Scherer)
 
-### Type system:
-
-- #9584, #7074: Allow to name existentials in pattern-matching
-  One can now write '(Cstr (type a) (x, y : int * a))' to give a name to
-  existentials freshly introduced by GADT constructors.
-  (Jacques Garrigue, review by Leo White and Gabriel Scherer)
-
-- #10174: Make Tsubst more robust by avoiding strange workarounds
-  (Takafumi Saikawa and Jacques Garrigue, review by Gabriel Scherer and
-   Florian Angeletti)
-
 - #10133: module type substitutions
   Allow 'SIG with module type T = F(X).S', 'SIG with module type T := sig end'
   and their local equivalent `module type T := sig type u end`
   (Florian Angeletti, review by Gabriel Radanne and Leo White)
 
-- #10265: Move type_unboxed.unboxed into type_kind
-  (Stephen Dolan, review by Gabriel Scherer)
+* #10081: Typecheck `x |> f` and `f @@ x` as `(f x)`
+  (Alain Frisch, review by Jacques Garrigue, Josh Berdine and Thomas Refis)
 
 ### Runtime system:
 
@@ -146,11 +140,6 @@ OCaml 4.13.0
 - #10419: Add %frame_pointers primitive which is true only in native code with
   frame pointers mode enabled.
   (David Allsopp, review by Vincent Laviron and Mark Shinwell)
-
-### Type system:
-
-* #10081: Typecheck `x |> f` and `f @@ x` as `(f x)`
-  (Alain Frisch, review by Jacques Garrigue, Josh Berdine and Thomas Refis)
 
 ### Standard library:
 
@@ -368,10 +357,6 @@ OCaml 4.13.0
 - #9827: Replace references with functions arguments in Simplif
   (Anukriti Kumar, review by Vincent Laviron and David Allsop)
 
-- #9994: Make Types.type_expr a private type, and abstract marking mechanism
-  (Jacques Garrigue and Takafumi Saikawa,
-   review by Gabriel Scherer and Leo White)
-
 - #10007: Driver.compile_common: when typing a .ml file, return the
   compilation unit signature (inferred or from the .cmi) in addition
   to the implementation and the coercion.
@@ -403,10 +388,6 @@ OCaml 4.13.0
   (Xavier Leroy and Gabriel Scherer, review by Sébastien Hinderer
    and David Allsopp)
 
-- #10311: Separate the constraint-solving part of Typecore.type_pat into
-  specific solver functions.
-  (Jacques Garrigue and Takafumi Saikawa, review by Gabriel Scherer)
-
 - #10327: Add a subdirectories variable and a copy action to ocamltest
   (Sébastien Hinderer, review by David Allsopp)
 
@@ -416,9 +397,15 @@ OCaml 4.13.0
 - #8936: Per-function environment for Emit
   (Greta Yorsh, review by Vincent Laviron and Florian Angeletti)
 
-- #10307: Refactor type_description in the typing env
-  (Nicolas Chataing, review by Takafumi Saikawa, Florian Angeletti and Thomas
-   Refis)
+- #10543: Fix Ast_mapper to apply the mapping function to the constants in
+  "interval" patterns `c1..c2`.
+  (Guillaume Petiot, review by Gabriel Scherer and Nicolás Ojeda Bär)
+
+### Internal typechecker changes:
+
+- #9994: Make Types.type_expr a private type, and abstract marking mechanism
+  (Jacques Garrigue and Takafumi Saikawa,
+   review by Gabriel Scherer and Leo White)
 
 - #10170: Maintain more structural information in type-checking errors
   A mostly-internal change that preserves more information in errors
@@ -427,12 +414,23 @@ OCaml 4.13.0
   (Antal Spector-Zabusky and Mekhrubon Tuarev, review by Leo White,
   Florian Angeletti, and Jacques Garrigue)
 
-- #10307: Make build_other_constrs work with names instead of tags.
-  (Nicolas Chataing, review by Florian Angeletti)
+- #10174: Make Tsubst more robust by avoiding strange workarounds
+  (Takafumi Saikawa and Jacques Garrigue, review by Gabriel Scherer and
+   Florian Angeletti)
 
-- #10543: Fix Ast_mapper to apply the mapping function to the constants in
-  "interval" patterns `c1..c2`.
-  (Guillaume Petiot, review by Gabriel Scherer and Nicolás Ojeda Bär)
+- #10265: Move type_unboxed.unboxed into type_kind
+  (Stephen Dolan, review by Gabriel Scherer)
+
+- #10307: Refactor type_description in the typing env
+  (Nicolas Chataing, review by Takafumi Saikawa, Florian Angeletti and Thomas
+   Refis)
+
+- #10311: Separate the constraint-solving part of Typecore.type_pat into
+  specific solver functions.
+  (Jacques Garrigue and Takafumi Saikawa, review by Gabriel Scherer)
+
+- #10428: Make build_other_constrs work with names instead of tags.
+  (Nicolas Chataing, review by Florian Angeletti)
 
 ### Build system:
 
