@@ -253,7 +253,7 @@ type unification_mode =
 
 type equations_generation =
   | Forbidden
-  | Allowed of { equated_types : unit TypePairs.t }
+  | Allowed of { equated_types : TypePairs.t }
 
 let umode = ref Expression
 let equations_generation = ref Forbidden
@@ -2215,9 +2215,8 @@ let rec mcomp type_pairs env t1 t2 =
       let t2' = expand_head_opt env t2 in
       (* Expansion may have changed the representative of the types... *)
       if eq_type t1' t2' then () else
-      begin try TypePairs.find type_pairs (t1', t2')
-      with Not_found ->
-        TypePairs.add type_pairs (t1', t2') ();
+      if not (TypePairs.mem type_pairs (t1', t2')) then begin
+        TypePairs.add type_pairs (t1', t2');
         match (get_desc t1', get_desc t2') with
         | (Tvar _, _)
         | (_, Tvar _)  ->
@@ -2439,7 +2438,7 @@ let order_type_pair t1 t2 =
   if get_id t1 <= get_id t2 then (t1, t2) else (t2, t1)
 
 let add_type_equality t1 t2 =
-  TypePairs.add unify_eq_set (order_type_pair t1 t2) ()
+  TypePairs.add unify_eq_set (order_type_pair t1 t2)
 
 let eq_package_path env p1 p2 =
   Path.same p1 p2 ||
@@ -2529,8 +2528,7 @@ let unify_eq t1 t2 =
   match !umode with
   | Expression -> false
   | Pattern ->
-      try TypePairs.find unify_eq_set (order_type_pair t1 t2); true
-      with Not_found -> false
+      TypePairs.mem unify_eq_set (order_type_pair t1 t2)
 
 let unify1_var env t1 t2 =
   assert (is_Tvar t1);
@@ -2554,7 +2552,7 @@ let record_equation t1 t2 =
   match !equations_generation with
   | Forbidden -> assert false
   | Allowed { equated_types } ->
-      TypePairs.add equated_types (t1, t2) ()
+      TypePairs.add equated_types (t1, t2)
 
 (* Called from unify3 *)
 let unify3_var env t1' t2 t2' =
@@ -3607,10 +3605,8 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
         let t2' = expand_head env t2 in
         (* Expansion may have changed the representative of the types... *)
         if eq_type t1' t2' then () else
-        begin try
-          TypePairs.find type_pairs (t1', t2')
-        with Not_found ->
-          TypePairs.add type_pairs (t1', t2') ();
+        if not (TypePairs.mem type_pairs (t1', t2')) then begin
+          TypePairs.add type_pairs (t1', t2');
           match (get_desc t1', get_desc t2') with
             (Tvar _, _) when may_instantiate inst_nongen t1' ->
               moregen_occur env (get_level t1') t2;
@@ -3945,7 +3941,7 @@ let eqtype_subst type_pairs subst t1 t2 =
   then ()
   else begin
     subst := (t1, t2) :: !subst;
-    TypePairs.add type_pairs (t1, t2) ()
+    TypePairs.add type_pairs (t1, t2)
   end
 
 let rec eqtype rename type_pairs subst env t1 t2 =
@@ -3962,10 +3958,8 @@ let rec eqtype rename type_pairs subst env t1 t2 =
         let t2' = expand_head_rigid env t2 in
         (* Expansion may have changed the representative of the types... *)
         if eq_type t1' t2' then () else
-        begin try
-          TypePairs.find type_pairs (t1', t2')
-        with Not_found ->
-          TypePairs.add type_pairs (t1', t2') ();
+        if not (TypePairs.mem type_pairs (t1', t2')) then begin
+          TypePairs.add type_pairs (t1', t2');
           match (get_desc t1', get_desc t2') with
             (Tvar _, Tvar _) when rename ->
               eqtype_subst type_pairs subst t1' t2'
@@ -4326,7 +4320,7 @@ let match_class_types ?(trace=true) env pat_sch subj_sch =
       let self2 = sign2.csig_self in
       let row1 = sign1.csig_self_row in
       let row2 = sign2.csig_self_row in
-      TypePairs.add type_pairs (self1, self2) ();
+      TypePairs.add type_pairs (self1, self2);
       (* Always succeeds *)
       moregen true type_pairs env row1 row2;
       let res =
@@ -4407,7 +4401,7 @@ let match_class_declarations env patt_params patt_type subj_params subj_type =
         let self2 = sign2.csig_self in
         let row1 = sign1.csig_self_row in
         let row2 = sign2.csig_self_row in
-        TypePairs.add type_pairs (self1, self2) ();
+        TypePairs.add type_pairs (self1, self2);
         (* Always succeeds *)
         eqtype true type_pairs subst env row1 row2;
         let lp = List.length patt_params in
@@ -4683,11 +4677,10 @@ let subtype_error ~env ~trace ~unification_trace =
 let rec subtype_rec env trace t1 t2 cstrs =
   if eq_type t1 t2 then cstrs else
 
-  begin try
-    TypePairs.find subtypes (t1, t2);
+  if TypePairs.mem subtypes (t1, t2) then
     cstrs
-  with Not_found ->
-    TypePairs.add subtypes (t1, t2) ();
+  else begin
+    TypePairs.add subtypes (t1, t2);
     match (get_desc t1, get_desc t2) with
       (Tvar _, _) | (_, Tvar _) ->
         (trace, t1, t2, !univar_pairs)::cstrs
