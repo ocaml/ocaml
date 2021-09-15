@@ -474,10 +474,10 @@ OCaml 4.13.0
   which runtime to use while building the compilers (Sébastien Hinderer,
   review by David Allsopp)
 
-- #10451: Replace the use of iconv with a C utility to convert $(LIBDIR) to a
-  C string constant on Windows when building the runtime. Hardens the generation
-  of the constant on Unix for paths with backslashes, double-quotes and
-  newlines.
+- #10451, #10635: Replace the use of iconv with a C utility to convert $(LIBDIR)
+  to a C string constant on Windows when building the runtime. Hardens the
+  generation of the constant on Unix for paths with backslashes, double-quotes
+  and newlines.
   (David Allsopp, review by Florian Angeletti and Sébastien Hinderer)
 
 - #10471: Fix detection of arm32 architectures with musl in configure.
