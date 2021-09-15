@@ -13,12 +13,17 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include <string.h>
 #include <ctype.h>
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/memory.h>
 #include <caml/fail.h>
+#include "caml/domain.h"
+
+#include <pthread.h>
 
 /* The backtracking NFA interpreter */
 
@@ -89,10 +94,82 @@ struct re_group {
 /* Record positions reached during matching; used to check progress
    in repeated matching of a regexp. */
 #define NUM_REGISTERS 64
-static unsigned char * re_register[NUM_REGISTERS];
+static pthread_key_t re_register_key;
 
-/* The initial backtracking stack */
-static struct backtrack_stack initial_stack = { NULL, };
+/* The initial backtracking stack key */
+static pthread_key_t initial_stack_key;
+
+static void free_backtrack_stack(struct backtrack_stack *);
+
+static struct backtrack_stack *get_backtrack_stack()
+{
+  struct backtrack_stack *stack = pthread_getspecific(initial_stack_key);
+
+  if (stack == NULL) {
+    stack = caml_stat_alloc(sizeof(struct backtrack_stack));
+    stack->previous = NULL;
+    pthread_setspecific(initial_stack_key, stack);
+    return stack;
+  }
+  else
+    return stack;
+}
+
+static unsigned char **get_re_register()
+{
+  unsigned char **re_register = pthread_getspecific(re_register_key);
+
+  if (re_register == NULL) {
+    re_register =  caml_stat_alloc(sizeof(unsigned char *) * NUM_REGISTERS);
+    pthread_setspecific(re_register_key, re_register);
+    return re_register;
+  }
+  else
+    return re_register;
+}
+
+/* we save the previous domain_stop_hook to setup our own here */
+static void (* prev_domain_stop_hook) (void);
+
+/* used to free up resources on domain shutdown */
+static void caml_str_domain_stop_hook (void)
+{
+  unsigned char **reg;
+  struct backtrack_stack *stack;
+
+  stack = get_backtrack_stack();
+
+  if (stack != NULL) {
+    /* free all stacks in the chaining */
+    free_backtrack_stack(stack);
+    /* free initial backtrack stack as well */
+    caml_stat_free(stack);
+    pthread_setspecific(initial_stack_key, NULL);
+  }
+
+  reg = get_re_register();
+
+  if (reg != NULL) {
+    caml_stat_free(reg);
+    pthread_setspecific(re_register_key, NULL);
+  }
+
+  prev_domain_stop_hook();
+
+  return;
+};
+
+CAMLprim value caml_str_initialize(value unit) /* ML */
+{
+  CAMLparam0();
+
+  prev_domain_stop_hook = caml_domain_stop_hook;
+  caml_domain_stop_hook = caml_str_domain_stop_hook;
+  pthread_key_create(&initial_stack_key,  NULL);
+  pthread_key_create(&re_register_key, NULL);
+
+  CAMLreturn(Val_unit);
+}
 
 /* Free a chained list of backtracking stacks */
 static void free_backtrack_stack(struct backtrack_stack * stack)
@@ -172,6 +249,7 @@ static value re_match(value re,
   struct re_group * groups;
   int numgroups = Numgroups(re);
   value result;
+  unsigned char **re_register = get_re_register();
 
   if (numgroups <= DEFAULT_NUM_GROUPS)
     groups = default_groups;
@@ -188,7 +266,9 @@ static value re_match(value re,
   }
 
   pc = Op_val(Prog(re));
-  stack = &initial_stack;
+
+  stack = get_backtrack_stack();
+
   sp = stack->point;
   cpool = Cpool(re);
   normtable = Normtable(re);
