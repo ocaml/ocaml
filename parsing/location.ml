@@ -783,11 +783,19 @@ let json_mode_printer: json_report_printer = fun json report ->
     | Report_warning w ->
         `Assoc ["kind", `String "warning"; "id", `String w]
     | Report_warning_as_error w ->
-        `Assoc ["kind",`String "error_from_warning"; "id", `String w]
+        `Assoc [
+          "kind",`String "error";
+          "promoted_from", `String "warning";
+          "id", `String w
+        ]
     | Report_alert w ->
         `Assoc ["kind",`String "alert"; "id",`String w]
     | Report_alert_as_error w ->
-        `Assoc ["kind",`String "error_from_alert"; "id", `String w]
+        `Assoc [
+          "kind",`String "error";
+          "promoted_from", `String "alert";
+          "id", `String w
+        ]
   in
   let content txt = `String (Format.asprintf "@[%t@]" txt) in
   let loc_to_json loc =
