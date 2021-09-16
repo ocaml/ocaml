@@ -813,8 +813,8 @@ OCaml 4.13.0
   (David Allsopp, review by Sébastien Hinderer)
 
 - #10449: Fix major GC work accounting (the GC was running too fast).
-  (Damien Doligez, report by Stephen Dolan, review by Nicolás Ojeda Bär
-   and Sadiq Jaffer)
+  (Damien Doligez, report by Stephen Dolan, review by Nicolás Ojeda Bär and
+   Sadiq Jaffer)
 
 - #10450, #10558: keep %apply and %revapply primitives working with abstract
   types. This breach of backward compatibility was only present in the alpha
