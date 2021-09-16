@@ -318,15 +318,18 @@ module Log = struct
   let flush log =
     match log with
     | Direct ppf -> Format.pp_print_flush ppf ()
-    | Json {toplevel_keys;error_msgs;backend} ->
-        let main_log = Stdlib.String.Map.bindings toplevel_keys in
+    | Json log ->
+        let main_log = Stdlib.String.Map.bindings log.toplevel_keys in
         let error_log =
-          match error_msgs with
+          match log.error_msgs with
           | [] ->  []
-          | _ :: _ -> ["error_report", `List error_msgs]
+          | _ :: _ -> ["error_report", `List log.error_msgs]
         in
-        Format.fprintf backend "%a@."
-          Json.print (`Assoc (error_log @ main_log ))
+        Format.fprintf log.backend "%a@."
+          Json.print (`Assoc (error_log @ main_log ));
+        log.toplevel_keys <- Stdlib.String.Map.empty;
+        log.error_msgs <- []
+
 
   let formatter log =
     match log with
