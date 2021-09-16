@@ -55,8 +55,7 @@ let simpl_module_type ?code t =
   let open Types in
   let rec iter t =
     match t with
-      Mty_ident _
-    | Mty_alias _ -> t
+      Mty_ident _ -> t
     | Mty_signature _ ->
         (
          match code with
@@ -66,6 +65,8 @@ let simpl_module_type ?code t =
     | Mty_functor (Unit, mt) -> Mty_functor (Unit, iter mt)
     | Mty_functor (Named (name, mt1), mt2) ->
       Mty_functor (Named (name, iter mt1), iter mt2)
+    | Mty_alias (p, mt) ->
+      Mty_alias (p, Option.map (fun (mt, expl) -> (iter mt, expl)) mt)
   in
   iter t
 

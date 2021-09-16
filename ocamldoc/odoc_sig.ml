@@ -1348,16 +1348,27 @@ module Analyser =
                   f mt.Parsetree.pmty_desc
               | Parsetree.Pmty_typeof mexpr ->
                   let open Parsetree in
-                  begin match mexpr.pmod_desc with
-                    Pmod_ident longident -> Name.from_longident longident.txt
-                  | Pmod_structure [
-                      {pstr_desc=Pstr_include
-                           {pincl_mod={pmod_desc=Pmod_ident longident}}
-                      }] -> (* include module type of struct include M end*)
-                      Name.from_longident longident.txt
-                  | _ -> "??"
-                  end
+                  let rec find_name mexpr =
+                    begin match mexpr.pmod_desc with
+                      Pmod_ident longident
+                    | Pmod_structure [
+                        {pstr_desc=Pstr_include
+                             {pincl_mod= {pmod_desc= Pmod_ident longident }}
+                        }] -> (* include module type of struct include M end*)
+                        Name.from_longident longident.txt
+                    | Pmod_ascribe (mexpr, _)
+                    | Pmod_structure [
+                        {pstr_desc=Pstr_include
+                             {pincl_mod= {pmod_desc= Pmod_ascribe (mexpr, _) }}
+                        }] ->
+                        find_name mexpr
+                    | _ -> "??"
+                    end
+                  in
+                  find_name mexpr
               | Parsetree.Pmty_extension _ -> assert false
+              | Parsetree.Pmty_ascribe (longident, _) ->
+                  Name.from_longident longident.txt
             in
             let name = f incl.Parsetree.pincl_mod.Parsetree.pmty_desc in
             let full_name = Odoc_env.full_module_or_module_type_name env name in
@@ -1533,7 +1544,7 @@ module Analyser =
       | Parsetree.Pmty_alias longident ->
           let name =
             match sig_module_type with
-              Types.Mty_alias path -> Name.from_path path
+              Types.Mty_alias (path, None) -> Name.from_path path
             | _ -> Name.from_longident longident.txt
           in
           (* Wrong naming... *)
@@ -1614,6 +1625,16 @@ module Analyser =
 
       | Parsetree.Pmty_extension _ -> assert false
 
+      | Parsetree.Pmty_ascribe (longident, _module_type) ->
+          let name =
+            match sig_module_type with
+              Types.Mty_alias (path, Some _) -> Name.from_path path
+            | _ -> Name.from_longident longident.txt
+          in
+          Module_type_alias { mta_name = Odoc_env.full_module_name env name ;
+                              mta_module = None }
+
+
     (** analyse of a Parsetree.module_type and a Types.module_type.*)
     and analyse_module_kind
         ?(erased = Name.Map.empty) env current_module_name module_type sig_module_type =
@@ -1624,7 +1645,7 @@ module Analyser =
       | Parsetree.Pmty_alias _longident ->
           begin
             match sig_module_type with
-              Types.Mty_alias path ->
+              Types.Mty_alias (path, None) ->
                 let ln = !Odoc_global.library_namespace in
                 let alias_name = Odoc_env.full_module_name env
                     Name.(alias_unprefix ln @@ from_path path) in
@@ -1706,6 +1727,13 @@ module Analyser =
           Module_typeof s
 
       | Parsetree.Pmty_extension _ -> assert false
+
+      | Parsetree.Pmty_ascribe (_longident, None) ->
+          let k = analyse_module_type_kind env current_module_name module_type sig_module_type in
+          Module_with ( k, "" )
+
+      | Parsetree.Pmty_ascribe (_longident, Some module_type) ->
+          analyse_module_kind ~erased env current_module_name module_type sig_module_type
 
 
     (** Analyse of a Parsetree.class_type and a Types.class_type to return a couple

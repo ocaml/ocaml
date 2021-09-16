@@ -259,6 +259,9 @@ module MT = struct
         List.iter (sub.with_constraint sub) l
     | Pmty_typeof me -> sub.module_expr sub me
     | Pmty_extension x -> sub.extension sub x
+    | Pmty_ascribe (s, mt) ->
+        iter_loc sub s;
+        Option.iter (sub.module_type sub) mt
 
   let iter_with_constraint sub = function
     | Pwith_type (lid, d) ->
@@ -317,6 +320,8 @@ module M = struct
     | Pmod_constraint (m, mty) ->
         sub.module_expr sub m; sub.module_type sub mty
     | Pmod_unpack e -> sub.expr sub e
+    | Pmod_ascribe (m, mty) ->
+        sub.module_expr sub m; Option.iter (sub.module_type sub) mty
     | Pmod_extension x -> sub.extension sub x
 
   let iter_structure_item sub {pstr_loc = loc; pstr_desc = desc} =

@@ -692,6 +692,9 @@ and module_type i ppf x =
   | Pmty_extension (s, arg) ->
       line i ppf "Pmod_extension \"%s\"\n" s.txt;
       payload i ppf arg
+  | Pmty_ascribe (li, mt) ->
+      line i ppf "Pmty_ascribe %a\n" fmt_longident_loc li;
+      option i module_type ppf mt
 
 and signature i ppf x = list i signature_item ppf x
 
@@ -811,6 +814,10 @@ and module_expr i ppf x =
   | Pmod_unpack (e) ->
       line i ppf "Pmod_unpack\n";
       expression i ppf e;
+  | Pmod_ascribe (me, mt) ->
+      line i ppf "Pmod_ascribe\n";
+      module_expr i ppf me;
+      option i module_type ppf mt;
   | Pmod_extension (s, arg) ->
       line i ppf "Pmod_extension \"%s\"\n" s.txt;
       payload i ppf arg

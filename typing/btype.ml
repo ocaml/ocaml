@@ -377,8 +377,10 @@ let type_iterators =
     | Unit -> ()
     | Named (_, mt) -> it.it_module_type it mt
   and it_module_type it = function
-      Mty_ident p
-    | Mty_alias p -> it.it_path p
+      Mty_ident p -> it.it_path p
+    | Mty_alias (p, mt) ->
+        it.it_path p;
+        Option.iter (fun (mt, _) -> it.it_module_type it mt) mt
     | Mty_signature sg -> it.it_signature it sg
     | Mty_functor (p, mt) ->
         it.it_functor_param it p;

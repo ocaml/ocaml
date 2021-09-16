@@ -740,8 +740,8 @@ let check_functor_application =
 let strengthen =
   (* to be filled with Mtype.strengthen *)
   ref ((fun ~aliasable:_ _env _mty _path -> assert false) :
-         aliasable:bool -> t -> Subst.Lazy.modtype ->
-         Path.t -> Subst.Lazy.modtype)
+         aliasable:Misc.strengthening -> t -> Subst.Lazy.modtype ->
+           Path.t -> Subst.Lazy.modtype)
 
 let md md_type =
   {md_type; md_attributes=[]; md_loc=Location.none
@@ -1034,11 +1034,6 @@ let find_module_lazy ~alias path env =
       in
       Subst.Lazy.of_module_decl md
 
-let find_strengthened_module ~aliasable path env =
-  let md = find_module_lazy ~alias:true path env in
-  let mty = !strengthen ~aliasable env md.mdl_type path in
-  Subst.Lazy.force_modtype mty
-
 let find_value_full path env =
   match path with
   | Pident id -> begin
@@ -1229,47 +1224,49 @@ let add_required_global id =
   && not (List.exists (Ident.same id) !required_globals)
   then required_globals := id :: !required_globals
 
-let rec normalize_module_path lax env = function
+let rec normalize_module_path lax unascribe env = function
   | Pident id as path when lax && Ident.persistent id ->
       path (* fast path (avoids lookup) *)
   | Pdot (p, s) as path ->
-      let p' = normalize_module_path lax env p in
-      if p == p' then expand_module_path lax env path
-      else expand_module_path lax env (Pdot(p', s))
+      let p' = normalize_module_path lax unascribe env p in
+      if p == p' then expand_module_path lax unascribe env path
+      else expand_module_path lax unascribe env (Pdot(p', s))
   | Papply (p1, p2) as path ->
-      let p1' = normalize_module_path lax env p1 in
-      let p2' = normalize_module_path true env p2 in
-      if p1 == p1' && p2 == p2' then expand_module_path lax env path
-      else expand_module_path lax env (Papply(p1', p2'))
+      let p1' = normalize_module_path lax unascribe env p1 in
+      let p2' = normalize_module_path true true env p2 in
+      if p1 == p1' && p2 == p2' then expand_module_path lax unascribe env path
+      else expand_module_path lax unascribe env (Papply(p1', p2'))
   | Pident _ as path ->
-      expand_module_path lax env path
+      expand_module_path lax unascribe env path
 
-and expand_module_path lax env path =
+and expand_module_path lax unascribe env path =
   try match find_module_lazy ~alias:true path env with
-    {mdl_type=MtyL_alias path1} ->
-      let path' = normalize_module_path lax env path1 in
+    {mdl_type=MtyL_alias (path1, None)} ->
+      let path' = normalize_module_path lax unascribe env path1 in
       if lax || !Clflags.transparent_modules then path' else
       let id = Path.head path in
       if Ident.global id && not (Ident.same id (Path.head path'))
       then add_required_global id;
       path'
+  | {mdl_type= MtyL_alias (path1, Some _)} when unascribe ->
+      normalize_module_path lax unascribe env path1
   | _ -> path
   with Not_found when lax
   || (match path with Pident id -> not (Ident.persistent id) | _ -> true) ->
       path
 
-let normalize_module_path oloc env path =
-  try normalize_module_path (oloc = None) env path
+let normalize_module_path ?(unascribe = false) oloc env path =
+  try normalize_module_path (oloc = None) unascribe env path
   with Not_found ->
     match oloc with None -> assert false
     | Some loc ->
         error (Missing_module(loc, path,
-                              normalize_module_path true env path))
+                              normalize_module_path true unascribe env path))
 
 let normalize_path_prefix oloc env path =
   match path with
     Pdot(p, s) ->
-      let p2 = normalize_module_path oloc env p in
+      let p2 = normalize_module_path ~unascribe:true oloc env p in
       if p == p2 then path else Pdot(p2, s)
   | Pident _ ->
       path
@@ -1291,7 +1288,7 @@ let normalize_type_path oloc env path =
           normalize_path_prefix oloc env p
         else
           (* Regular M.t, Ext M.C *)
-          normalize_module_path oloc env p
+          normalize_module_path ~unascribe:true oloc env p
       in
       if p == p2 then path else Pdot (p2, s)
   | Papply _ ->
@@ -1349,14 +1346,23 @@ let find_modtype_expansion_lazy path env =
 let find_modtype_expansion path env =
   Subst.Lazy.force_modtype (find_modtype_expansion_lazy path env)
 
-let rec is_functor_arg path env =
+let rec is_functor_arg_or_apply path env =
   match path with
     Pident id ->
       begin try Ident.find_same id env.functor_args; true
       with Not_found -> false
       end
-  | Pdot (p, _s) -> is_functor_arg p env
+  | Pdot (p, _s) -> is_functor_arg_or_apply p env
   | Papply _ -> true
+
+let rec is_functor_arg path env =
+  match path with
+  | Pident id ->
+      begin try Ident.find_same id env.functor_args; true
+      with Not_found -> false
+      end
+  | Pdot (p, _s) -> is_functor_arg p env
+  | Papply (p1, p2) -> is_functor_arg p1 env || is_functor_arg p2 env
 
 (* Copying types associated with values *)
 
@@ -1401,7 +1407,7 @@ let iter_env_cont = ref []
 let rec scrape_alias_for_visit env (sub : Subst.t option) mty =
   let open Subst.Lazy in
   match mty with
-  | MtyL_alias path ->
+  | MtyL_alias (path, None) ->
       begin match may_subst Subst.module_path sub path with
       | Pident id
         when Ident.persistent id
@@ -1530,7 +1536,7 @@ let rec scrape_alias env sub ?path mty =
       with Not_found ->
         mty
       end
-  | MtyL_alias path, _ ->
+  | MtyL_alias (path, None), _ ->
       let path = may_subst Subst.module_path sub path in
       begin try
         scrape_alias env sub ((find_module_lazy path env).mdl_type) ~path
@@ -1539,8 +1545,11 @@ let rec scrape_alias env sub ?path mty =
           (Warnings.No_cmi_file (Path.name path));*)
         mty
       end
+  | MtyL_alias (path', Some (mty', expl)), _ ->
+      let aliasable = if expl then Str_ascribe else Str_ascribe_nocoerce in
+      scrape_alias env sub ?path (!strengthen ~aliasable env mty' path')
   | mty, Some path ->
-      !strengthen ~aliasable:true env mty path
+      !strengthen ~aliasable:Str_alias env mty path
   | _ -> mty
 
 (* Given a signature and a root path, prefix all idents in the signature
@@ -1640,7 +1649,7 @@ let module_declaration_address env id presence md =
   | Mp_absent -> begin
       let open Subst.Lazy in
       match md.mdl_type with
-      | MtyL_alias path -> Lazy_backtrack.create (ModAlias {env; path})
+      | MtyL_alias (path, None) -> Lazy_backtrack.create (ModAlias {env; path})
       | _ -> assert false
     end
   | Mp_present ->
@@ -1755,7 +1764,7 @@ let rec components_of_module_maker
               match pres with
               | Mp_absent -> begin
                   match md.mdl_type with
-                  | MtyL_alias p ->
+                  | MtyL_alias (p, None) ->
                       let path = may_subst Subst.module_path freshening_sub p in
                       Lazy_backtrack.create (ModAlias {env = !env; path})
                   | _ -> assert false
@@ -1824,7 +1833,7 @@ let rec components_of_module_maker
           fcomp_cache = Hashtbl.create 17;
           fcomp_subst_cache = Hashtbl.create 17 })
   | MtyL_ident _ -> Error No_components_abstract
-  | MtyL_alias p -> Error (No_components_alias p)
+  | MtyL_alias (p, _) -> Error (No_components_alias p)
 
 (* Insertion of bindings by identifier + path *)
 

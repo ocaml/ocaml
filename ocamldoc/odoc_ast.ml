@@ -863,7 +863,9 @@ module Analyser =
     let rec tt_name_from_module_expr mod_expr =
       match mod_expr.Typedtree.mod_desc with
         Typedtree.Tmod_ident (p,_) -> Name.from_path p
-      | Typedtree.Tmod_constraint (m_exp, _, _, _) -> tt_name_from_module_expr m_exp
+      | Typedtree.Tmod_ascribe (m_exp, _, _, _)
+      | Typedtree.Tmod_constraint (m_exp, _, _, _) ->
+          tt_name_from_module_expr m_exp
       | Typedtree.Tmod_structure _
       | Typedtree.Tmod_functor _
       | Typedtree.Tmod_apply _
@@ -1704,8 +1706,7 @@ module Analyser =
         (Parsetree.Pmod_ident _, Typedtree.Tmod_ident (path, _))
         | (Parsetree.Pmod_ident _,
            Typedtree.Tmod_constraint
-             ({Typedtree.mod_desc = Typedtree.Tmod_ident (path, _)}, _, _, _))
-          ->
+             ({Typedtree.mod_desc = Typedtree.Tmod_ident (path, _)}, _, _, _)) ->
           let alias_name = Odoc_env.full_module_name env (Name.from_path path) in
           { m_base with m_kind = Module_alias { ma_name = alias_name ;
                                                 ma_module = None ; } }
@@ -1784,8 +1785,26 @@ module Analyser =
           in
           { m_base with m_kind = Module_apply (m1.m_kind, m2.m_kind) }
 
+      | (Parsetree.Pmod_ascribe (p_module_expr, None),
+           Typedtree.Tmod_ascribe (tt_module_expr, _, _, _))
+        | (Parsetree.Pmod_ascribe (p_module_expr, None),
+           Typedtree.Tmod_constraint
+             ({Typedtree.mod_desc =
+                 Typedtree.Tmod_ascribe (tt_module_expr, _, _, _)}
+             , _, Tmodtype_implicit, _)) ->
+            analyse_module env current_module_name module_name comment_opt
+              p_module_expr tt_module_expr
+
       | (Parsetree.Pmod_constraint (p_module_expr2, p_modtype),
-         Typedtree.Tmod_constraint (tt_module_expr2, tt_modtype, _, _)) ->
+         Typedtree.Tmod_constraint (tt_module_expr2, tt_modtype, _, _))
+        | (Parsetree.Pmod_ascribe (p_module_expr2, Some p_modtype),
+           Typedtree.Tmod_ascribe (tt_module_expr2, tt_modtype, _, _))
+        | (Parsetree.Pmod_ascribe (p_module_expr2, Some p_modtype),
+           Typedtree.Tmod_constraint
+             ({Typedtree.mod_desc =
+                 Typedtree.Tmod_ascribe (tt_module_expr2, tt_modtype, _, _)}
+             , _, _, _))
+          ->
           let m_base2 = analyse_module
               env
               current_module_name

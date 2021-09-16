@@ -396,6 +396,8 @@ and module_expr_desc =
         (ME : MT)   (constraint = Tmodtype_explicit MT)
      *)
   | Tmod_unpack of expression * Types.module_type
+  | Tmod_ascribe of
+      module_expr * Types.module_type * module_type_constraint * module_coercion
 
 and structure = {
   str_items : structure_item list;
@@ -466,6 +468,8 @@ and module_type_desc =
   | Tmty_with of module_type * (Path.t * Longident.t loc * with_constraint) list
   | Tmty_typeof of module_expr
   | Tmty_alias of Path.t * Longident.t loc
+  | Tmty_ascribe of
+      Path.t * Longident.t loc * Types.module_type * module_type_constraint
 
 and primitive_coercion =
   {

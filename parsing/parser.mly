@@ -1301,6 +1301,10 @@ module_expr:
       (* A module identifier. *)
       x = mkrhs(mod_longident)
         { Pmod_ident x }
+    | LPAREN x = module_expr COLONGREATER UNDERSCORE RPAREN
+        { Pmod_ascribe (x, None) }
+    | LPAREN x = module_expr COLONGREATER mty = module_type RPAREN
+        { Pmod_ascribe (x, Some mty) }
     | (* In a functor application, the actual argument must be parenthesized. *)
       me1 = module_expr me2 = paren_module_expr
         { Pmod_apply(me1, me2) }
@@ -1604,8 +1608,15 @@ module_type:
         { Pmty_functor(Named (mknoloc None, $1), $3) }
     | module_type WITH separated_nonempty_llist(AND, with_constraint)
         { Pmty_with($1, $3) }
-/*  | LPAREN MODULE mkrhs(mod_longident) RPAREN
-        { Pmty_alias $3 } */
+/*  | LPAREN MODULE mkrhs(mod_ext_longident) RPAREN
+        { if Longident.has_apply id.txt then
+            not_expecting $loc(id) "functor application"
+          else
+            Pmty_alias $3 } */
+/*  | LPAREN MODULE mkrhs(mod_ext_longident) COLONGREATER UNDERSCORE RPAREN
+        { Pmty_ascribe ($3, None) } */
+/*  | LPAREN MODULE mkrhs(mod_ext_longident) COLONGREATER module_type RPAREN
+        { Pmty_ascribe ($3, Some $5) } */
     | extension
         { Pmty_extension $1 }
     )
@@ -1706,7 +1717,7 @@ module_declaration_body:
   ext = ext attrs1 = attributes
   name = mkrhs(module_name)
   EQUAL
-  body = module_expr_alias
+  body = module_alias_body
   attrs2 = post_item_attributes
   {
     let attrs = attrs1 @ attrs2 in
@@ -1715,9 +1726,16 @@ module_declaration_body:
     Md.mk name body ~attrs ~loc ~docs, ext
   }
 ;
-%inline module_expr_alias:
-  id = mkrhs(mod_longident)
-    { Mty.alias ~loc:(make_loc $sloc) id }
+%inline module_alias_body:
+    id = mkrhs(mod_ext_longident)
+    { if Longident.has_apply id.txt then
+        not_expecting $loc(id) "functor application"
+      else
+        Mty.alias ~loc:(make_loc $sloc) id }
+  | LPAREN id = mkrhs(mod_ext_longident) COLONGREATER UNDERSCORE RPAREN
+    { Mty.ascribe ~loc:(make_loc $sloc) id None }
+  | LPAREN id = mkrhs(mod_ext_longident) COLONGREATER mty = module_type RPAREN
+    { Mty.ascribe ~loc:(make_loc $sloc) id (Some mty) }
 ;
 (* A module substitution (in a signature). *)
 module_subst:

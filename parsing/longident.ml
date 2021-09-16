@@ -43,6 +43,11 @@ let unflatten l =
   | [] -> None
   | hd :: tl -> Some (List.fold_left (fun p s -> Ldot(p, s)) (Lident hd) tl)
 
+let rec has_apply = function
+    Lident _ -> false
+  | Ldot (l, _) -> has_apply l
+  | Lapply _ -> true
+
 let parse s =
   match unflatten (split_at_dots s 0) with
   | None -> Lident ""  (* should not happen, but don't put assert false

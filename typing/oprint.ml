@@ -558,6 +558,11 @@ and print_simple_out_module_type ppf =
           fprintf ppf "@[<hv 2>sig@ %a@;<1 -2>end@]" print_out_signature sg
      end
   | Omty_alias id -> fprintf ppf "(module %a)" print_ident id
+  | Omty_ascribe (id, Some mt) ->
+      fprintf ppf "@[<hv 2>(module %a :> %a)@]" print_ident id
+        print_out_module_type mt
+  | Omty_ascribe (id, None) ->
+      fprintf ppf "@[<hv 2>(module %a :> _)@]" print_ident id
   | Omty_functor _ as non_simple ->
      fprintf ppf "(%a)" print_out_module_type non_simple
 and print_out_signature ppf =
@@ -611,6 +616,11 @@ and print_out_sig_item ppf =
       fprintf ppf "@[<2>module type %s =@ %a@]" name !out_module_type mty
   | Osig_module (name, Omty_alias id, _) ->
       fprintf ppf "@[<2>module %s =@ %a@]" name print_ident id
+  | Osig_module (name, Omty_ascribe (id, Some mty), _) ->
+      fprintf ppf "@[<hov2>module %s =@ (%a@ :>@ %a)@]" name print_ident id
+        !out_module_type mty
+  | Osig_module (name, Omty_ascribe (id, None), _) ->
+      fprintf ppf "@[<hov2>module %s =@ (%a@ :>@ _)@]" name print_ident id
   | Osig_module (name, mty, rs) ->
       fprintf ppf "@[<2>%s %s :@ %a@]"
         (match rs with Orec_not -> "module"

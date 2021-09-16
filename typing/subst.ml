@@ -26,9 +26,12 @@ type type_replacement =
   | Path of Path.t
   | Type_function of { params : type_expr list; body : type_expr }
 
+type module_replacement =
+  | Module_path of { path : Path.t; is_arg : bool }
+
 type t =
   { types: type_replacement Path.Map.t;
-    modules: Path.t Path.Map.t;
+    modules: module_replacement Path.Map.t;
     modtypes: module_type Path.Map.t;
     for_saving: bool;
     loc: Location.t option;
@@ -48,8 +51,14 @@ let add_type id p s = add_type_path (Pident id) p s
 let add_type_function id ~params ~body s =
   { s with types = Path.Map.add id (Type_function { params; body }) s.types }
 
-let add_module_path id p s = { s with modules = Path.Map.add id p s.modules }
-let add_module id p s = add_module_path (Pident id) p s
+let add_module_path id p s =
+  { s with
+    modules =
+      Path.Map.add id (Module_path {path= p; is_arg= false}) s.modules }
+let add_module ?(arg = false) id p s =
+  let id = Pident id in
+  { s with
+    modules = Path.Map.add id (Module_path {path= p; is_arg= arg}) s.modules }
 
 let add_modtype_path p ty s = { s with modtypes = Path.Map.add p ty s.modtypes }
 let add_modtype id ty s = add_modtype_path (Pident id) ty s
@@ -86,14 +95,27 @@ let attrs s x =
     else x
 
 let rec module_path s path =
-  try Path.Map.find path s.modules
-  with Not_found ->
+  match Path.Map.find path s.modules with
+  | Module_path {path; _} -> path
+  | exception Not_found ->
     match path with
     | Pident _ -> path
     | Pdot(p, n) ->
        Pdot(module_path s p, n)
     | Papply(p1, p2) ->
        Papply(module_path s p1, module_path s p2)
+
+let rec is_ascribed_functor_arg s path =
+  match Path.Map.find path s.modules with
+  | Module_path {is_arg; _} -> is_arg
+  | exception Not_found ->
+    match path with
+    | Pident _ -> false
+    | Pdot(p, _) -> is_ascribed_functor_arg s p
+    | Papply(p1, _p2) ->
+       (* Note: we don't check p2 because F((X :> MT)) = F(X), and so we can
+          just ignore it. *)
+       is_ascribed_functor_arg s p1
 
 let modtype_path s path =
       match Path.Map.find path s.modtypes with
@@ -437,6 +459,12 @@ let type_replacement s = function
      let body = typexp copy_scope s body in
      Type_function { params; body })
 
+let module_replacement s = function
+  | Module_path {path; is_arg} ->
+    Module_path
+      { path= module_path s path
+      ; is_arg= is_arg || is_ascribed_functor_arg s path }
+
 type scoping =
   | Keep
   | Make_local
@@ -456,7 +484,7 @@ module Lazy_types = struct
     | MtyL_ident of Path.t
     | MtyL_signature of signature
     | MtyL_functor of functor_parameter * modtype
-    | MtyL_alias of Path.t
+    | MtyL_alias of Path.t * (modtype * bool) option
 
   and modtype_declaration =
     {
@@ -570,7 +598,9 @@ and lazy_modtype = function
   | Mty_functor (Unit, mty) -> MtyL_functor (Unit, lazy_modtype mty)
   | Mty_functor (Named (id, arg), res) ->
      MtyL_functor (Named (id, lazy_modtype arg), lazy_modtype res)
-  | Mty_alias p -> MtyL_alias p
+  | Mty_alias (p, omty) ->
+     MtyL_alias
+       (p, Option.map (fun (mt, expl) -> (lazy_modtype mt, expl)) omty)
 
 and subst_lazy_modtype scoping s = function
   | MtyL_ident p ->
@@ -596,8 +626,16 @@ and subst_lazy_modtype scoping s = function
       let id' = Ident.rename id in
       MtyL_functor(Named (Some id', (subst_lazy_modtype scoping s) arg),
                   subst_lazy_modtype scoping (add_module id (Pident id') s) res)
-  | MtyL_alias p ->
-      MtyL_alias (module_path s p)
+  | MtyL_alias (p, omty) ->
+      MtyL_alias
+        ( module_path s p
+        , Option.map
+            (fun (mt, expl) ->
+              (* Make the ascription's target type explicit if the result will
+                 realise a functor argument. *)
+              ( subst_lazy_modtype scoping s mt
+              , expl || is_ascribed_functor_arg s p))
+            omty )
 
 and force_modtype = function
   | MtyL_ident p -> Mty_ident p
@@ -608,7 +646,9 @@ and force_modtype = function
        | Unit -> Unit
        | Named (id, mty) -> Named (id, force_modtype mty) in
      Mty_functor (param, force_modtype res)
-  | MtyL_alias p -> Mty_alias p
+  | MtyL_alias (p, omty) ->
+     Mty_alias
+       (p, Option.map (fun (mt, expl) -> (force_modtype mt, expl)) omty)
 
 and lazy_modtype_decl mtd =
   let mtdl_type = Option.map lazy_modtype mtd.mtd_type in
@@ -718,7 +758,7 @@ and compose s1 s2 =
   if s1 == identity then s2 else
   if s2 == identity then s1 else
   { types = merge_path_maps (type_replacement s2) s1.types s2.types;
-    modules = merge_path_maps (module_path s2) s1.modules s2.modules;
+    modules = merge_path_maps (module_replacement s2) s1.modules s2.modules;
     modtypes = merge_path_maps (modtype Keep s2) s1.modtypes s2.modtypes;
     for_saving = s1.for_saving || s2.for_saving;
     loc = keep_latest_loc s1.loc s2.loc;

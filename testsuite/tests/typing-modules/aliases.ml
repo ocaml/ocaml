@@ -91,7 +91,7 @@ module C4 :
 module G(X:sig end) = struct module M = X end;; (* does not alias X *)
 module M = G(struct end);;
 [%%expect{|
-module G : functor (X : sig end) -> sig module M : sig end end
+module G : functor (X : sig end) -> sig module M = (X :> _) end
 module M : sig module M : sig end end
 |}];;
 

@@ -6,6 +6,9 @@ Working version
 - #10437: Allow explicit binders for type variables.
   (Stephen Dolan, review by Leo White)
 
+- #10612: Transparent ascription of modules.
+  (Matthew Ryan, review by Leo White)
+
 ### Runtime system:
 
 * #9391, #9424: Fix failed assertion in runtime due to ephemerons *set_* and

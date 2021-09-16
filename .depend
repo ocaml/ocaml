@@ -789,6 +789,7 @@ typing/includemod.cmi : \
     typing/types.cmi \
     typing/typedtree.cmi \
     typing/path.cmi \
+    utils/misc.cmi \
     parsing/longident.cmi \
     parsing/location.cmi \
     typing/includecore.cmi \
@@ -834,6 +835,7 @@ typing/mtype.cmo : \
     typing/types.cmi \
     typing/subst.cmi \
     typing/path.cmi \
+    utils/misc.cmi \
     parsing/location.cmi \
     typing/ident.cmi \
     typing/env.cmi \
@@ -846,6 +848,7 @@ typing/mtype.cmx : \
     typing/types.cmx \
     typing/subst.cmx \
     typing/path.cmx \
+    utils/misc.cmx \
     parsing/location.cmx \
     typing/ident.cmx \
     typing/env.cmx \
@@ -857,6 +860,7 @@ typing/mtype.cmx : \
 typing/mtype.cmi : \
     typing/types.cmi \
     typing/path.cmi \
+    utils/misc.cmi \
     typing/ident.cmi \
     typing/env.cmi
 typing/oprint.cmo : \
@@ -3701,6 +3705,7 @@ lambda/translmod.cmo : \
     utils/misc.cmi \
     parsing/location.cmi \
     lambda/lambda.cmi \
+    typing/includemod.cmi \
     typing/ident.cmi \
     typing/env.cmi \
     lambda/debuginfo.cmi \
@@ -3723,6 +3728,7 @@ lambda/translmod.cmx : \
     utils/misc.cmx \
     parsing/location.cmx \
     lambda/lambda.cmx \
+    typing/includemod.cmx \
     typing/ident.cmx \
     typing/env.cmx \
     lambda/debuginfo.cmx \

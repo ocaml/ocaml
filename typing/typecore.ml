@@ -2359,7 +2359,8 @@ and is_nonexpansive_mod mexp =
   | Tmod_ident _
   | Tmod_functor _ -> true
   | Tmod_unpack (e, _) -> is_nonexpansive e
-  | Tmod_constraint (m, _, _, _) -> is_nonexpansive_mod m
+  | Tmod_constraint (m, _, _, _)
+  | Tmod_ascribe (m, _, _, _) -> is_nonexpansive_mod m
   | Tmod_structure str ->
       List.for_all
         (fun item -> match item.str_desc with
@@ -3666,7 +3667,7 @@ and type_expect_
       Mtype.lower_nongen (get_level ty) modl.mod_type;
       let pres =
         match modl.mod_type with
-        | Mty_alias _ -> Mp_absent
+        | Mty_alias (_, None) -> Mp_absent
         | _ -> Mp_present
       in
       let scope = create_scope () in
@@ -4813,7 +4814,7 @@ and type_unpacks ?(in_function : (Location.t * type_expr) option)
       Mtype.lower_nongen (get_level ty) modl.mod_type;
       let pres =
         match modl.mod_type with
-        | Mty_alias _ -> Mp_absent
+        | Mty_alias (_, None) -> Mp_absent
         | _ -> Mp_present
       in
       let scope = create_scope () in

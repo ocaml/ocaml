@@ -86,9 +86,6 @@ val find_modtype: Path.t -> t -> modtype_declaration
 val find_class: Path.t -> t -> class_declaration
 val find_cltype: Path.t -> t -> class_type_declaration
 
-val find_strengthened_module:
-  aliasable:bool -> Path.t -> t -> module_type
-
 val find_ident_constructor: Ident.t -> t -> constructor_description
 val find_ident_label: Ident.t -> t -> label_description
 
@@ -110,9 +107,11 @@ val find_class_address: Path.t -> t -> address
 val find_constructor_address: Path.t -> t -> address
 
 val add_functor_arg: Ident.t -> t -> t
+val is_functor_arg_or_apply: Path.t -> t -> bool
 val is_functor_arg: Path.t -> t -> bool
 
-val normalize_module_path: Location.t option -> t -> Path.t -> Path.t
+val normalize_module_path:
+    ?unascribe:bool -> Location.t option -> t -> Path.t -> Path.t
 (* Normalize the path to a concrete module.
    If the option is None, allow returning dangling paths.
    Otherwise raise a Missing_module error, and may add forgotten
@@ -448,7 +447,7 @@ val check_well_formed_module:
 val add_delayed_check_forward: ((unit -> unit) -> unit) ref
 (* Forward declaration to break mutual recursion with Mtype. *)
 val strengthen:
-    (aliasable:bool -> t -> Subst.Lazy.modtype ->
+    (aliasable:Misc.strengthening -> t -> Subst.Lazy.modtype ->
      Path.t -> Subst.Lazy.modtype) ref
 (* Forward declaration to break mutual recursion with Ctype. *)
 val same_constr: (t -> type_expr -> type_expr -> bool) ref

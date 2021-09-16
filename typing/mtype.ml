@@ -47,12 +47,14 @@ let rec strengthen_lazy ~aliasable env mty p =
   | MtyL_functor(Named (Some param, arg), res)
     when !Clflags.applicative_functors ->
       MtyL_functor(Named (Some param, arg),
-        strengthen_lazy ~aliasable:false env res (Papply(p, Pident param)))
+        strengthen_lazy ~aliasable:Misc.Str_none env res
+          (Papply(p, Pident param)))
   | MtyL_functor(Named (None, arg), res)
     when !Clflags.applicative_functors ->
       let param = Ident.create_scoped ~scope:(Path.scope p) "Arg" in
       MtyL_functor(Named (Some param, arg),
-        strengthen_lazy ~aliasable:false env res (Papply(p, Pident param)))
+        strengthen_lazy ~aliasable:Misc.Str_none env res
+          (Papply(p, Pident param)))
   | mty ->
       mty
 
@@ -94,8 +96,8 @@ and strengthen_lazy_sig' ~aliasable env sg p =
       (* Need to add the module in case it defines manifest module types *)
   | SigL_modtype(id, decl, vis) :: rem ->
       let newdecl =
-        match decl.mtdl_type with
-        | Some _ when not aliasable ->
+        match decl.mtdl_type, aliasable with
+        | Some _, Misc.Str_none ->
             (* [not alisable] condition needed because of recursive modules.
                See [Typemod.check_recmodule_inclusion]. *)
             decl
@@ -118,10 +120,16 @@ and strengthen_lazy_sig ~aliasable env sg p =
 
 and strengthen_lazy_decl ~aliasable env md p =
   let open Subst.Lazy in
-  match md.mdl_type with
-  | MtyL_alias _ -> md
-  | _ when aliasable -> {md with mdl_type = MtyL_alias p}
-  | mty -> {md with mdl_type = strengthen_lazy ~aliasable env mty p}
+  match md.mdl_type, aliasable with
+  | MtyL_alias (_, None), _ -> md
+  | _, Misc.Str_alias -> {md with mdl_type = MtyL_alias (p, None)}
+  | MtyL_alias (_, Some (_, true)), _ -> md
+  | mty, Misc.Str_ascribe ->
+    {md with mdl_type = MtyL_alias (p, Some (mty, true))}
+  | MtyL_alias (_, Some (_, false)), _ -> md
+  | mty, Misc.Str_ascribe_nocoerce ->
+    {md with mdl_type = MtyL_alias (p, Some (mty, false))}
+  | mty, _ -> {md with mdl_type = strengthen_lazy ~aliasable env mty p}
 
 let () = Env.strengthen := strengthen_lazy
 
@@ -136,7 +144,10 @@ let strengthen_decl ~aliasable env md p =
 
 let rec make_aliases_absent pres mty =
   match mty with
-  | Mty_alias _ -> Mp_absent, mty
+  | Mty_alias (_, None) -> Mp_absent, mty
+  | Mty_alias (p, Some (mty, expl)) ->
+      let _, mty = make_aliases_absent Mp_present mty in
+      pres, Mty_alias (p, Some (mty, expl))
   | Mty_signature sg ->
       pres, Mty_signature(make_aliases_absent_sig sg)
   | Mty_functor(arg, res) ->
@@ -158,14 +169,16 @@ and make_aliases_absent_sig sg =
 let scrape_for_type_of env pres mty =
   let rec loop env path mty =
     match mty, path with
-    | Mty_alias path, _ -> begin
+    | Mty_alias (path, None), _ -> begin
         try
           let md = Env.find_module path env in
           loop env (Some path) md.md_type
         with Not_found -> mty
       end
+    | Mty_alias (path, Some (mty, _)), _ ->
+        strengthen ~aliasable:Misc.Str_none env mty path
     | mty, Some path ->
-        strengthen ~aliasable:false env mty path
+        strengthen ~aliasable:Misc.Str_none env mty path
     | _ -> mty
   in
   make_aliases_absent pres (loop env None mty)
@@ -189,7 +202,7 @@ let rec nondep_mty_with_presence env va ids pres mty =
           nondep_mty_with_presence env va ids pres expansion
       | None -> pres, mty
       end
-  | Mty_alias p ->
+  | Mty_alias (p, None) ->
       begin match Path.find_free_opt ids p with
       | Some id ->
           let expansion =
@@ -199,6 +212,33 @@ let rec nondep_mty_with_presence env va ids pres mty =
           in
           nondep_mty_with_presence env va ids Mp_present expansion.md_type
       | None -> pres, mty
+      end
+  | Mty_alias (p, Some (mty, expl)) ->
+      begin match Path.find_free_opt ids p with
+      | Some _id ->
+          let expansion =
+            try Some (Env.find_module p env)
+            with Not_found -> None
+          in
+          begin match expansion with
+          | Some {md_type= Mty_alias (p, Some (_mty', true)); _} ->
+              (* Make the constraint explicit if it wasn't already. *)
+              nondep_mty_with_presence env va ids pres
+                (Mty_alias (p, Some (mty, true)))
+          | Some {md_type= Mty_alias (p, _); _} ->
+              (* Note that ((M :> S) :> S') is the same as (M :> S'). *)
+              nondep_mty_with_presence env va ids pres
+                (Mty_alias (p, Some (mty, expl)))
+          | _ ->
+              let aliasable =
+                if expl then Misc.Str_ascribe else Misc.Str_ascribe_nocoerce
+              in
+              nondep_mty_with_presence env va ids Mp_present
+                (strengthen ~aliasable env mty p)
+          end
+      | None ->
+          let mty = nondep_mty env va ids mty in
+          pres, Mty_alias (p, Some (mty, expl))
       end
   | Mty_signature sg ->
       let mty = Mty_signature(nondep_sig env va ids sg) in
@@ -316,7 +356,8 @@ and enrich_item env p = function
 let rec type_paths env p mty =
   match scrape env mty with
     Mty_ident _ -> []
-  | Mty_alias _ -> []
+  | Mty_alias (_, None) -> []
+  | Mty_alias (_, Some (mty, _)) -> type_paths env p mty
   | Mty_signature sg -> type_paths_sig env p sg
   | Mty_functor _ -> []
 
@@ -453,7 +494,7 @@ let collect_arg_paths mty =
   and it_signature_item it si =
     type_iterators.it_signature_item it si;
     match si with
-    | Sig_module (id, _, {md_type=Mty_alias p}, _, _) ->
+    | Sig_module (id, _, {md_type=Mty_alias (p, _) }, _, _) ->
         bindings := Ident.add id p !bindings
     | Sig_module (id, _, {md_type=Mty_signature sg}, _, _) ->
         List.iter
@@ -473,7 +514,8 @@ let collect_arg_paths mty =
 type remove_alias_args =
     { mutable modified: bool;
       exclude: Ident.t -> Path.t -> bool;
-      scrape: Env.t -> module_type -> module_type }
+      scrape: Env.t -> module_type -> module_type;
+      weaken_aliases: bool }
 
 let rec remove_aliases_mty env args pres mty =
   let args' = {args with modified = false} in
@@ -481,6 +523,24 @@ let rec remove_aliases_mty env args pres mty =
     match args.scrape env mty with
       Mty_signature sg ->
         Mp_present, Mty_signature (remove_aliases_sig env args' sg)
+    | Mty_alias (p, Some (mty, expl)) when args'.weaken_aliases ->
+        let args'' = {args with weaken_aliases = false} in
+        let _, mty = remove_aliases_mty env args'' Mp_present mty in
+        args'.modified <- args''.modified;
+        pres, Mty_alias (p, Some (mty, expl))
+    | Mty_alias (p, None) when args'.weaken_aliases ->
+        let mty' = Env.scrape_alias env mty in
+        if mty' = mty then begin
+          pres, mty
+        end else begin
+          args'.modified <- true;
+          match mty' with
+          | Mty_alias _ ->
+              remove_aliases_mty env args' Mp_present mty'
+          | _ ->
+              remove_aliases_mty env args' Mp_present
+                (Mty_alias (p, Some (mty', false)))
+        end
     | Mty_alias _ ->
         let mty' = Env.scrape_alias env mty in
         if mty' = mty then begin
@@ -505,8 +565,11 @@ and remove_aliases_sig env args sg =
   | Sig_module(id, pres, md, rs, priv) :: rem  ->
       let pres, mty =
         match md.md_type with
-          Mty_alias p when args.exclude id p ->
+          Mty_alias (p, None) when args.exclude id p ->
             pres, md.md_type
+        | Mty_alias (p, Some (mty, expl)) when args.exclude id p ->
+            let _, mty = remove_aliases_mty env args Mp_present mty in
+            pres, Mty_alias (p, Some (mty, expl))
         | mty ->
             remove_aliases_mty env args pres mty
       in
@@ -523,7 +586,9 @@ let scrape_for_functor_arg env mty =
     try ignore (Env.find_module p env); true with Not_found -> false
   in
   let _, mty =
-    remove_aliases_mty env {modified=false; exclude; scrape} Mp_present mty
+    remove_aliases_mty env
+      {modified=false; exclude; scrape; weaken_aliases= true}
+      Mp_present mty
   in
   mty
 
@@ -533,7 +598,9 @@ let scrape_for_type_of ~remove_aliases env mty =
     let exclude id _p = Ident.Set.mem id excl in
     let scrape _ mty = mty in
     let _, mty =
-      remove_aliases_mty env {modified=false; exclude; scrape} Mp_present mty
+      remove_aliases_mty env
+        {modified=false; exclude; scrape; weaken_aliases= false}
+        Mp_present mty
     in
     mty
   end else begin

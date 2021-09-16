@@ -92,6 +92,11 @@ let heads p =
         heads p1 (heads p2 acc)
   in heads p []
 
+let rec has_apply = function
+  | Pident _ -> false
+  | Pdot (p, _) -> has_apply p
+  | Papply _ -> true
+
 let rec last = function
   | Pident id -> Ident.name id
   | Pdot(_, s) -> s

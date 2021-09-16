@@ -70,6 +70,8 @@ module Error: sig
     | Functor of functor_symptom
     | Invalid_module_alias of Path.t
     | After_alias_expansion of module_type_diff
+    | After_ascription_expansion of
+        (module_type, module_type_declaration_symptom) diff
 
 
   and module_type_diff = (Types.module_type, module_type_symptom) diff
@@ -151,7 +153,7 @@ val modtypes:
   module_type -> module_type -> module_coercion
 
 val strengthened_module_decl:
-  loc:Location.t -> aliasable:bool -> Env.t -> mark:mark ->
+  loc:Location.t -> aliasable:Misc.strengthening -> Env.t -> mark:mark ->
   module_declaration -> Path.t -> module_declaration -> module_coercion
 
 val check_modtype_inclusion :
@@ -176,6 +178,18 @@ val type_declarations:
   Ident.t -> type_declaration -> type_declaration -> unit
 
 val print_coercion: Format.formatter -> module_coercion -> unit
+
+val compose_coercions: module_coercion -> module_coercion -> module_coercion
+(** [compose_coercions c1 c2] composes the coercions [c1] and [c2], equivalent
+    to performing [c2] first and then [c1].
+    If [c1] coerces [mty2] to [mty3] and [c2] coerces [mty1] to [mty2],
+    then [compose_coercions c1 c2] coerces [mty1] to [mty3].
+
+    For the purposes of translation,
+    [Translmod.apply_coercion c1 (Translmod.apply_coercion c2 e)]
+    behaves like
+    [Translmod.apply_coercion (compose_coercions c1 c2) e].
+*)
 
 type symptom =
     Missing_field of Ident.t * Location.t * string (* kind *)
@@ -214,7 +228,7 @@ exception Apply_error of {
     args : (Error.functor_arg_descr * Types.module_type)  list ;
   }
 
-val expand_module_alias: strengthen:bool -> Env.t -> Path.t -> Types.module_type
+val expand_module_alias: Env.t -> Path.t -> Types.module_type
 
 module Functor_inclusion_diff: sig
   module Defs: sig

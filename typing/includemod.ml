@@ -82,6 +82,8 @@ module Error = struct
     | Functor of functor_symptom
     | Invalid_module_alias of Path.t
     | After_alias_expansion of module_type_diff
+    | After_ascription_expansion of
+        (module_type, module_type_declaration_symptom) diff
 
 
   and module_type_diff = (module_type, module_type_symptom) diff
@@ -210,11 +212,8 @@ let expand_modtype_path env path =
      | exception Not_found -> None
      | x -> Some x
 
-let expand_module_alias ~strengthen env path =
-  match
-    if strengthen then Env.find_strengthened_module ~aliasable:true path env
-    else (Env.find_module path env).md_type
-  with
+let expand_module_alias env path =
+  match (Env.find_module path env).md_type with
   | x -> Ok x
   | exception Not_found -> Error (Error.Unbound_module_path path)
 
@@ -317,10 +316,10 @@ and print_coercion3 ppf (i, n, c) =
 
 (* Simplify a structure coercion *)
 
-let equal_module_paths env p1 subst p2 =
+let equal_module_paths ~unascribe env p1 subst p2 =
   Path.same p1 p2
-  || Path.same (Env.normalize_module_path None env p1)
-       (Env.normalize_module_path None env
+  || Path.same (Env.normalize_module_path ~unascribe None env p1)
+       (Env.normalize_module_path ~unascribe None env
           (Subst.module_path subst p2))
 
 let equal_modtype_paths env p1 subst p2 =
@@ -347,15 +346,55 @@ let retrieve_functor_params env mty =
         | Some mty -> retrieve_functor_params before env mty
         | None -> List.rev before, res
         end
-    | Mty_alias p as res ->
-        begin match expand_module_alias ~strengthen:false env p with
+    | Mty_alias (p, None) as res ->
+        begin match expand_module_alias env p with
         | Ok mty ->  retrieve_functor_params before env mty
         | Error _ -> List.rev before, res
         end
     | Mty_functor (p, res) -> retrieve_functor_params (p :: before) env res
     | Mty_signature _ as res -> List.rev before, res
+    | Mty_alias (p, Some (mty, expl)) ->
+        let aliasable =
+          if expl then Misc.Str_ascribe else Misc.Str_ascribe_nocoerce
+        in
+        let mty = Mtype.strengthen ~aliasable env mty p in
+        retrieve_functor_params before env mty
   in
   retrieve_functor_params [] env mty
+
+(* Compose two coercions *)
+
+let rec compose_coercions c1 c2 =
+  match (c1, c2) with
+    (Tcoerce_none, c2) -> c2
+  | (c1, Tcoerce_none) -> c1
+  | (Tcoerce_structure (pc1, ids1), Tcoerce_structure (pc2, ids2)) ->
+      let v2 = Array.of_list pc2 in
+      let ids1 =
+        List.map (fun (id,pos1,c1) ->
+          let (pos2,c2) = v2.(pos1) in (id, pos2, compose_coercions c1 c2))
+          ids1
+      in
+      Tcoerce_structure
+        (List.map
+           (fun pc ->
+              match pc with
+              | _, (Tcoerce_primitive _ | Tcoerce_alias _) ->
+                (* These cases do not take an argument (the position is -1),
+                   so they do not need adjusting. *)
+                pc
+              | (p1, c1) ->
+                let (p2, c2) = v2.(p1) in
+                (p2, compose_coercions c1 c2))
+          pc1,
+         ids1 @ ids2)
+  | (Tcoerce_functor(arg1, res1), Tcoerce_functor(arg2, res2)) ->
+      Tcoerce_functor(compose_coercions arg2 arg1,
+                      compose_coercions res1 res2)
+  | (c1, Tcoerce_alias (env, path, c2)) ->
+      Tcoerce_alias (env, path, compose_coercions c1 c2)
+  | (_, _) ->
+      fatal_error "Translmod.compose_coercions"
 
 (* Inclusion between module types.
    Return the restriction that transforms a value of the smaller type
@@ -385,25 +424,140 @@ let rec modtypes ~in_eq ~loc env ~mark subst mty1 mty2 =
     Error Error.(diff mty1 mty2 reason)
 
 and try_modtypes ~in_eq ~loc env ~mark subst mty1 mty2 =
+  let aliasable_ascribe expl =
+    if expl then Misc.Str_ascribe else Misc.Str_ascribe_nocoerce
+  in
   match mty1, mty2 with
-  | (Mty_alias p1, Mty_alias p2) ->
-      if Env.is_functor_arg p2 env then
+  | (Mty_alias (p1, Some (res1, expl1)), Mty_alias (p2, Some (res2, expl2))) ->
+      if equal_module_paths ~unascribe:true env p1 subst p2 then
+        try_modtypes ~in_eq ~loc env ~mark subst
+          (Mtype.strengthen ~aliasable:(aliasable_ascribe expl1) env res1 p1)
+          (Mtype.strengthen ~aliasable:(aliasable_ascribe expl2) env res2 p2)
+      else
+        Error Error.(Mt_core Incompatible_aliases)
+  | (Mty_alias (p1, None), Mty_alias (p2, Some (res2, _expl2))) ->
+      if equal_module_paths ~unascribe:true env p1 subst p2 then
+        try_modtypes ~in_eq ~loc env ~mark subst mty1 res2
+      else
+        Error Error.(Mt_core Incompatible_aliases)
+  | (Mty_alias (p1, Some (res1, expl1)), Mty_alias (p2, None)) ->
+      if Env.is_functor_arg_or_apply p2 env then
         Error (Error.Invalid_module_alias p2)
-      else if not (equal_module_paths env p1 subst p2) then
-          Error Error.(Mt_core Incompatible_aliases)
-      else Ok Tcoerce_none
-  | (Mty_alias p1, _) -> begin
+      else if not (equal_module_paths ~unascribe:true env p1 subst p2) then
+        Error Error.(Mt_core Incompatible_aliases)
+      else begin
+        try
+          let p1 =
+            Env.normalize_module_path ~unascribe:true (Some Location.none) env
+              p1
+          in
+          let p2 =
+            Env.normalize_module_path (Some Location.none) env
+              (Subst.module_path subst p2)
+          in
+          let mty1 =
+            Mtype.strengthen ~aliasable:(aliasable_ascribe expl1) env res1 p1
+          in
+          let mty2 =
+            match expand_module_alias env p2 with
+            | Error e -> Error (Error.Mt_core e)
+            | Ok (Mty_alias (_, None)) -> assert false
+            | Ok (Mty_alias (_, Some (mty2, expl2))) ->
+                let p2' =
+                  Env.normalize_module_path ~unascribe:true
+                    (Some Location.none) env p2
+                in
+                Ok
+                  (Mtype.strengthen ~aliasable:(aliasable_ascribe expl2) env
+                    mty2 p2')
+            | Ok mty2 ->
+                Ok (Mtype.strengthen ~aliasable:Misc.Str_alias env mty2 p2)
+          in
+          begin match mty2 with
+          | Error _ as err -> err
+          | Ok mty2 ->
+              let mty2 = Subst.modtype Keep subst mty2 in
+              match check_modtype_equiv ~in_eq ~loc env ~mark mty1 mty2 with
+              | Ok _ as x -> x
+              | Error reason ->
+                  Error
+                    (Error.After_ascription_expansion
+                      (Error.diff mty1 mty2 reason))
+          end
+        with
+        | Env.Error (Env.Missing_module (_, _, path)) ->
+            Error Error.(Mt_core(Unbound_module_path path))
+      end
+  | (Mty_alias (p1, Some (res1, expl1)), _) -> begin
       match
         Env.normalize_module_path (Some Location.none) env p1
       with
       | exception Env.Error (Env.Missing_module (_, _, path)) ->
           Error Error.(Mt_core(Unbound_module_path path))
       | p1 ->
-          begin match expand_module_alias ~strengthen:false env p1 with
+          begin match
+            strengthened_modtypes ~in_eq ~loc
+              ~aliasable:(aliasable_ascribe expl1) env ~mark subst res1 p1 mty2
+          with
+          | Ok _ as x -> x
+          | Error reason -> Error (Error.After_alias_expansion reason)
+          end
+    end
+  | (Mty_alias (p1, None), Mty_alias (p2, None)) ->
+      if Env.is_functor_arg_or_apply (Subst.module_path subst p2) env then
+        Error (Error.Invalid_module_alias p2)
+      else if equal_module_paths ~unascribe:false env p1 subst p2 then
+        Ok Tcoerce_none
+      else if not (equal_module_paths ~unascribe:true env p1 subst p2) then
+        Error Error.(Mt_core Incompatible_aliases)
+      else
+        let expand p =
+          try
+            let p = Env.normalize_module_path (Some Location.none) env p in
+            match expand_module_alias env p with
+            | Error e -> Error (Error.Mt_core e)
+            | Ok (Mty_alias (_, None)) -> assert false
+            | Ok (Mty_alias (_, Some (mty, expl))) ->
+                let p' =
+                  Env.normalize_module_path ~unascribe:true
+                    (Some Location.none) env p
+                in
+                Ok
+                  (Mtype.strengthen ~aliasable:(aliasable_ascribe expl) env mty
+                    p')
+            | Ok mty ->
+                Ok (Mtype.strengthen ~aliasable:Misc.Str_alias env mty p)
+          with
+          | Env.Error (Env.Missing_module (_, _, path)) ->
+              Error Error.(Mt_core(Unbound_module_path path))
+        in
+        let mty1 = expand p1 in
+        let mty2 = expand (Subst.module_path subst p2) in
+        begin match mty1, mty2 with
+        | ((Error _ as err), _) | (_, (Error _ as err)) -> err
+        | Ok mty1, Ok mty2 ->
+            let mty2 = Subst.modtype Keep subst mty2 in
+            match check_modtype_equiv ~in_eq ~loc env ~mark mty1 mty2 with
+            | Ok _ -> Ok Tcoerce_none
+            | Error reason ->
+                Error
+                  (Error.After_ascription_expansion
+                    (Error.diff mty1 mty2 reason))
+        end
+  | (Mty_alias (p1, None), _) -> begin
+      match
+        Env.normalize_module_path (Some Location.none) env p1
+      with
+      | exception Env.Error (Env.Missing_module (_, _, path)) ->
+          Error Error.(Mt_core(Unbound_module_path path))
+      | p1 ->
+          begin match expand_module_alias env  p1 with
           | Error e -> Error (Error.Mt_core e)
           | Ok mty1 ->
-              match strengthened_modtypes ~in_eq ~loc ~aliasable:true env ~mark
-                      subst mty1 p1 mty2
+              match
+                strengthened_modtypes ~in_eq ~loc ~aliasable:Misc.Str_alias env
+                  ~mark
+                  subst mty1 p1 mty2
               with
               | Ok _ as x -> x
               | Error reason -> Error (Error.After_alias_expansion reason)
@@ -664,7 +818,7 @@ and signature_components  ~in_eq ~loc old_env ~mark env subst paired =
                 match pres1, pres2, mty1.md_type with
                 | Mp_present, Mp_present, _ -> true, item
                 | _, Mp_absent, _ -> false, item
-                | Mp_absent, Mp_present, Mty_alias p1 ->
+                | Mp_absent, Mp_present, Mty_alias (p1, None) ->
                     true, Result.map (fun i -> Tcoerce_alias (env, p1, i)) item
                 | Mp_absent, Mp_present, _ -> assert false
               in
@@ -706,7 +860,7 @@ and module_declarations  ~in_eq ~loc env ~mark  subst id1 md1 md2 =
   let p1 = Path.Pident id1 in
   if mark_positive mark then
     Env.mark_module_used md1.md_uid;
-  strengthened_modtypes  ~in_eq ~loc ~aliasable:true env ~mark subst
+  strengthened_modtypes ~in_eq ~loc ~aliasable:Misc.Str_alias env ~mark subst
     md1.md_type p1 md2.md_type
 
 (* Inclusion between module type specifications *)
@@ -756,13 +910,7 @@ and check_modtype_equiv ~in_eq ~loc env ~mark mty1 mty2 =
 
 (* Simplified inclusion check between module types (for Env) *)
 
-let can_alias env path =
-  let rec no_apply = function
-    | Path.Pident _ -> true
-    | Path.Pdot(p, _) -> no_apply p
-    | Path.Papply _ -> false
-  in
-  no_apply path && not (Env.is_functor_arg path env)
+let can_alias env path = not (Env.is_functor_arg_or_apply path env)
 
 
 
@@ -778,7 +926,9 @@ exception Apply_error of {
   }
 
 let check_modtype_inclusion_raw ~loc env mty1 path1 mty2 =
-  let aliasable = can_alias env path1 in
+  let aliasable =
+    if can_alias env path1 then Misc.Str_alias else Misc.Str_none
+  in
   strengthened_modtypes ~in_eq:false ~loc ~aliasable env ~mark:Mark_both
     Subst.identity mty1 path1 mty2
 
@@ -795,7 +945,9 @@ let check_functor_application_in_path
   | Error _errs ->
       if errors then
         let prepare_arg (arg_path, arg_mty) =
-          let aliasable = can_alias env arg_path in
+          let aliasable =
+            if can_alias env arg_path then Misc.Str_alias else Misc.Str_none
+          in
           let smd = Mtype.strengthen ~aliasable env arg_mty arg_path in
           (Error.Named arg_path, smd)
         in
@@ -1066,8 +1218,8 @@ let strengthened_module_decl ~loc ~aliasable env ~mark md1 path1 md2 =
   | Error mdiff ->
       raise (Error(env,Error.(In_Module_type mdiff)))
 
-let expand_module_alias ~strengthen env path =
-  match expand_module_alias ~strengthen env path with
+let expand_module_alias env path =
+  match expand_module_alias env path with
   | Ok x -> x
   | Result.Error _ ->
       raise (Error(env,In_Expansion(Error.Unbound_module_path path)))

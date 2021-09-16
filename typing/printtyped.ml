@@ -707,6 +707,11 @@ and module_type i ppf x =
   | Tmty_typeof m ->
       line i ppf "Tmty_typeof\n";
       module_expr i ppf m;
+  | Tmty_ascribe (li, _, _, Tmodtype_explicit mt) ->
+      line i ppf "Tmty_ascribe %a\n" fmt_path li;
+      module_type i ppf mt
+  | Tmty_ascribe (li, _, _, Tmodtype_implicit) ->
+      line i ppf "Tmty_ascribe %a _\n" fmt_path li
 
 and signature i ppf x = list i signature_item ppf x.sig_items
 
@@ -825,6 +830,13 @@ and module_expr i ppf x =
   | Tmod_unpack (e, _) ->
       line i ppf "Tmod_unpack\n";
       expression i ppf e;
+  | Tmod_ascribe (me, _, Tmodtype_explicit mt, _) ->
+      line i ppf "Tmod_ascribe\n";
+      module_expr i ppf me;
+      module_type i ppf mt;
+  | Tmod_ascribe (me, _, Tmodtype_implicit, _) ->
+      line i ppf "Tmod_ascribe\n";
+      module_expr i ppf me;
 
 and structure i ppf x = list i structure_item ppf x.str_items
 
