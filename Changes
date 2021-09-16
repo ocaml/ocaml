@@ -1,7 +1,7 @@
 OCaml 4.13.0
 -------------
 
-### Language features:
+### Progress towards Multicore:
 
 - #10039: Safepoints
   Add poll points to native generated code. These are effectively
@@ -11,13 +11,116 @@ OCaml 4.13.0
    Anmol Sahoo, Mark Shinwell, review by Damien Doligez, Xavier Leroy,
    and Mark Shinwell)
 
+- #9876: do not cache the young_limit GC variable in a processor register.
+  This affects the ARM64, PowerPC and RISC-V ports, making signal handling
+  and minor GC triggers more reliable, at the cost of a small slowdown.
+  (Xavier Leroy, review by Nicolás Ojeda Bär)
+
+### Language features (highlights):
+
 - #9584, #7074: Allow to name existentials in pattern-matching
   One can now write '(Cstr (type a) (x, y : int * a))' to give a name to
   existentials freshly introduced by GADT constructors.
   (Jacques Garrigue, review by Leo White and Gabriel Scherer)
 
+### Compiler user-interface and warnings (highlights):
+
 - #9331: Improve error messages for functor application and functor types.
   (Florian Angeletti and Gabriel Radanne, review by Leo White)
+
+* #10118, #10140: enable warning 6 [labels-omitted] by default.
+  The following now warns:
+    let f ~x y = ... in f 3 5
+  the callsite (f 3 5) has to be turned into (f ~x:3 5).
+  This prevents mistakes where two arguments of the same types are swapped.
+  (Note: Dune already enables this warning by default.)
+  (Gabriel Scherer, review by Xavier Leroy and Florian Angeletti,
+   report by ygrek)
+
+### Manual and documentation (highlights):
+
+- #10247: Add initial tranche of examples to reference manual.
+  Adds some eighty examples to the reference manual, principally to the
+  expressions and patterns sections.
+  https://ocaml.org/releases/4.13/manual/patterns.html
+  (John Whitington, review by Xavier Leroy, Gabriel Scherer, @Fourchaux, and
+  Florian Angeletti)
+
+- #9987, #9988, #9996, #9997: add an odoc mode for the documentation
+  of the standard library and compiler library
+  (Florian Angeletti, review by David Allsopp, Sébastien Hinderer,
+   and Gabriel Scherer)
+
+### Standard library (highlights):
+
+- #944: Add some missing C99 float operations.  `Stdlib` now contains
+  the inverse hyperbolic functions
+    `acosh`, `asinh`, and `atanh`.
+  These functions were also added to module `Stdlib.Float` together with
+    `exp2`, `log2`, `cbrt`, `erf`, and `erfc`.
+  Full support on MSVC requires VS2013+ but emulated versions are
+  still available (for now) for older compilers.
+  (Markus Mottl, review by David Allsopp, Olivier Andrieu, Florian Angeletti,
+  Nicolás Ojeda Bär, Daniel Bünzli, Fabian @copy, Pascal Cuoq, Damien
+  Doligez, Sébastien Hinderer, Jacques-Henri Jourdan, Xavier Leroy, Guillaume
+  Melquiond, Perry E. Metzger, Runhang Li, Gabriel Scherer, Mark Shinwell,
+  Bernhard Schommer and Christophe Troestler)
+
+- #9582: Add Array.{find_opt,find_map,split,combine}.
+  (Nicolás Ojeda Bär, review by Daniel Bünzli and Gabriel Scherer)
+
+- #9533: Added String.starts_with and String.ends_with.
+  (Bernhard Schommer, review by Daniel Bünzli, Gabriel Scherer and
+  Alain Frisch)
+
+### Code generation and optimizations (highlights):
+
+- #10404: Add a generic backward dataflow analyzer and use it to speed up
+  liveness analysis
+  (Xavier Leroy, review by Gabriel Scherer, Greta Yorsh, Mark Shinwell)
+
+- #10414: Avoid compilation times exponential in the nesting of loops
+  in the spilling and reloading passes
+  (Xavier Leroy, review by Vincent Laviron)
+
+### Internal typechecker changes (highlights):
+
+- #10170: Maintain more structural information in type-checking errors
+  A mostly-internal change that preserves more information in errors
+  during type checking; most significantly, it split the errors from
+  unification, moregen, and type equality into three different types.
+  (Antal Spector-Zabusky and Mekhrubon Tuarev, review by Leo White,
+  Florian Angeletti, and Jacques Garrigue)
+
+- #9994: Make Types.type_expr a private type, and abstract marking mechanism
+  (Jacques Garrigue and Takafumi Saikawa,
+   review by Gabriel Scherer and Leo White)
+
+### Runtime system (highlights):
+
+- #10188, #10213: Switch the default allocation policy to best-fit and adjust
+  the default overhead parameter accordingly.
+  (Damien Doligez, review by Josh Berdine and Xavier Leroy)
+
+- #10549: Stack overflow detection and naked pointers checking for ARM64
+  (Xavier Leroy, review by Stephen Dolan)
+
+- #9934: Optimise sweeping using prefetching.
+  (Stephen Dolan and Will Hasenplaugh, review by David Allsopp, Xavier
+   Leroy and Damien Doligez, benchmarking by Shubham Kumar and KC
+   Sivaramakrishnan)
+
+- #10194: Change compaction-triggering heuristic: use the overhead measured
+  by the previous GC cycle instead of an indirect (and noisy) computation
+  of the current overhead.
+  (Damien Doligez, review by Stephen Dolan)
+
+- #10449: Fix major GC work accounting (the GC was running too fast).
+  (Damien Doligez, report by Stephen Dolan, review by Nicolás Ojeda Bär and
+   Sadiq Jaffer)
+
+
+### Language features:
 
 - #10013: Let-punning
   Allow 'let* x in ...' and 'let%ext x in ...' as shorthand for
@@ -29,23 +132,25 @@ OCaml 4.13.0
   and their local equivalent `module type T := sig type u end`
   (Florian Angeletti, review by Gabriel Radanne and Leo White)
 
+### Type system:
+
 * #10081: Typecheck `x |> f` and `f @@ x` as `(f x)`
   (Alain Frisch, review by Jacques Garrigue, Josh Berdine and Thomas Refis)
 
 ### Runtime system:
 
+- #10318: Windows Unicode runtime functions are no longer marked as
+  experimental.
+  (Nicolás Ojeda Bär, review by David Allsopp)
+
 - #9284: Add -config option to display the configuration of ocamlrun on stdout,
   including the search path for shared stub libraries.
   (David Allsopp, review by Xavier Leroy)
 
-- #9934: Optimise sweeping using prefetching.
-  (Stephen Dolan and Will Hasenplaugh, review by David Allsopp, Xavier
-   Leroy and Damien Doligez, benchmarking by Shubham Kumar and KC
-   Sivaramakrishnan)
-
 - #9919: Introduce caml_record_backtraces and update Interfacing with C to
   refer to it (previous instruction to use caml_record_backtrace primitive was
   not possible without defining CAML_INTERNALS)
+  (David Allsopp, review by Xavier Leroy)
 
 - #10102: Ignore PROFINFO_WIDTH if WITH_PROFINFO is not defined (technically
   a breaking change if the configuration system was being abused before).
@@ -70,10 +175,6 @@ OCaml 4.13.0
   alarm always exit with non-zero status (i.e. exit(0) becomes exit(70)).
   (David Allsopp, review by Xavier Leroy)
 
-- #10188, #10213: Switch the default allocation policy to best-fit and adjust
-  the default overhead parameter accordingly.
-  (Damien Doligez, review by Josh Berdine and Xavier Leroy)
-
 - #10212: Simplify and improve the Windows-specific code that connects
   to the debugger via a socket.
   (Antonin Décimo, review by Xavier Leroy)
@@ -86,18 +187,6 @@ OCaml 4.13.0
   (Xavier Leroy, reports by Tomasz Kłoczko and R.W.M. Jones, review by Anil
    Madhavapeddy, Stephen Dolan, and Florian Angeletti)
 
-- #10318: Windows Unicode runtime functions are no longer marked as
-  experimental.
-  (Nicolás Ojeda Bär, review by David Allsopp)
-
-- #10194: Change compaction-triggering heuristic: use the overhead measured
-  by the previous GC cycle instead of an indirect (and noisy) computation
-  of the current overhead.
-  (Damien Doligez, review by Stephen Dolan)
-
-- #10549: Stack overflow detection and naked pointers checking for ARM64
-  (Xavier Leroy, review by Stephen Dolan)
-
 ### Code generation and optimizations:
 
 - #1400: Add an optional invariants check on Cmm, which can be activated
@@ -107,11 +196,6 @@ OCaml 4.13.0
 
 - #9562, #367: Allow CSE of immutable loads across stores
   (Stephen Dolan, review by Mark Shinwell)
-
-- #9876: do not cache the young_limit GC variable in a processor register.
-  This affects the ARM64, PowerPC and RISC-V ports, making signal handling
-  and minor GC triggers more reliable, at the cost of a small slowdown.
-  (Xavier Leroy, review by Nicolás Ojeda Bär)
 
 - #9937: improvements in ARM64 code generation (constants, sign extensions)
   (Xavier Leroy, review by Stephen Dolan)
@@ -129,30 +213,11 @@ OCaml 4.13.0
 - #10349: Fix destroyed_at_c_call on RISC-V
   (Mark Shinwell, review by Nicolás Ojeda Bär)
 
-- #10404: Add a generic backward dataflow analyzer and use it to speed up
-  liveness analysis
-  (Xavier Leroy, review by Gabriel Scherer, Greta Yorsh, Mark Shinwell)
-
-- #10414: Avoid compilation times exponential in the nesting of loops
-  in the spilling and reloading passes
-  (Xavier Leroy, review by Vincent Laviron)
-
 - #10419: Add %frame_pointers primitive which is true only in native code with
   frame pointers mode enabled.
   (David Allsopp, review by Vincent Laviron and Mark Shinwell)
 
 ### Standard library:
-
-- #944: Add some missing C99 float operations.  `Stdlib` now contains
-  the inverse hyperbolic functions `acosh`, `asinh`, and `atanh`.  These
-  functions were also added to module `Stdlib.Float` together with `exp2`,
-  `log2`, `cbrt`, `erf`, and `erfc`. Full support on MSVC requires VS2013+ but
-  emulated versions are still available (for now) for older compilers.
-  (Markus Mottl, review by David Allsopp, Olivier Andrieu, Florian Angeletti,
-  Nicolás Ojeda Bär, Daniel Bünzli, Fabian @copy, Pascal Cuoq, Damien
-  Doligez, Sébastien Hinderer, Jacques-Henri Jourdan, Xavier Leroy, Guillaume
-  Melquiond, Perry E. Metzger, @objmagic, Gabriel Scherer, Mark Shinwell,
-  Bernhard Schommer and Christophe Troestler)
 
 - #9448: Add String.{empty,cat} as dual of Bytes.{empty,cat},
   String.{of,to}_bytes as aliases of Bytes.{to,of}_string,
@@ -165,13 +230,6 @@ OCaml 4.13.0
   (David Allsopp, request by Francois Berenger, review by Xavier Leroy and
    Damien Doligez)
 
-- #9533: Added String.starts_with and String.ends_with.
-  (Bernhard Schommer, review by Daniel Bünzli, Gabriel Scherer and
-  Alain Frisch)
-
-- #9582: Add Array.{find_opt,find_map,split,combine}.
-  (Nicolás Ojeda Bär, review by Daniel Bünzli and Gabriel Scherer)
-
 - #9961: Add Array.fold_left_map.
   (Craig Ferguson, review by Damien Doligez)
 
@@ -180,14 +238,6 @@ OCaml 4.13.0
   applies f directly if x is already forced.
   (Gabriel Scherer, review by Nicolás Ojeda Bär, Alain Frisch, Xavier Leroy,
    Daniel Bünzli and Stephen Dolan)
-
-* #10169, #10270, #10301, #10451: Use capitalized module names in the Standard
-  Library prefixing scheme to match Dune, e.g. Stdlib__String instead of
-  Stdlib__string. This is a breaking change only to code which attempted to use
-  the internal names before. The Standard Library generated by the Dune rules is
-  now equivalent to the main build (the Dune rules still do not generate a
-  distributable compiler).
-  (David Allsopp and Mark Shinwell, review by Gabriel Scherer)
 
 - #10242: Added convenience pretty printer for Either.t in the Format module.
   (Oghenevwogaga Ebresafe, review by Nicolás Ojeda Bär,
@@ -212,14 +262,14 @@ OCaml 4.13.0
 
 ### Other libraries:
 
-- #10047: Add `Unix.realpath`
-  (Daniel Bünzli, review by David Allsopp, Josh Berdine and Gabriel Scherer)
-
 * #10084: Unix.open_process_args* functions now look up the program in the PATH.
   This was already the case under Windows, but this is now also done under
   Unix. Note that previously the program was interpreted relative to the current
   directory.
   (Nicolás Ojeda Bär, review by Gabriel Scherer and Xavier Leroy)
+
+- #10047: Add `Unix.realpath`
+  (Daniel Bünzli, review by David Allsopp, Josh Berdine and Gabriel Scherer)
 
 - #10184: Remove expensive debug assertion from dynlink.
   (Leo White, review by David Allsopp and Xavier Leroy)
@@ -237,49 +287,36 @@ OCaml 4.13.0
 
 ### Tools:
 
+- #10139: Adds a -nonavbar option to ocamldoc, to remove confusing
+  'Up', 'Previous' and 'Next' links
+  (John Whitington, review by David Allsopp)
+
 - #8645, #10363: ocamldoc: escape `<`, `>`, and `&` in html backend.
   (Florian Angeletti, report by Wim Lewis, review by Gabriel Scherer)
 
-- #10139: Remove confusing navigation bar from stdlib documentation.
-  Adds a -nonavbar option to ocamldoc, and uses it to improve navigation within
-  the reference manual.
-  (John Whitington, review by David Allsopp)
-
 ### Manual and documentation:
 
-- #9525, #10402: ocamldoc only create paragraphq at the toplevel of
-  documentation comments
+- #9525, #10402: document that ocamldoc only creates paragraphs
+  at the toplevel of documentation comments
   (Florian Angeletti, report by Hendrik Tews, review by Gabriel Scherer)
 
-- #10206: Split labels and polymorphic variants tutorials
-  Splits the labels and polymorphic variants tutorial into two. Moves the GADTs
-  tutorial from the Language Extensions chapter to the tutorials.
+- #10206: Split labels and polymorphic variants tutorials in two.
+  Moves the GADTs tutorial from the Language Extensions chapter
+  to the tutorials.
   (John Whitington, review by Florian Angeletti and Xavier Leroy)
-
-- #10247: Add initial tranche of examples to reference manual.
-  Adds some eighty examples to the reference manual, principally to the
-  expressions and patterns sections.
-  (John Whitington, review by Xavier Leroy, Gabriel Scherer, @Fourchaux, and
-  Florian Angeletti)
 
 - #9786, #10181: improved documentation of Unix.{in,out}_channel_of_descr
   with respect to closing.
   (Xavier Leroy, report by Jacques-Henri Jourdan, review by Guillaume
    Munch-Maccagnoni, Gabriel Scherer, Jacques-Henri Jourdan)
 
-- #10139: Remove confusing navigation bar from stdlib documentation.
-  Removes the 'Up', 'Previous' and 'Next' links from the top of each standard
-  library module's documentation.
+- #10139: Use the new -nonavbar option to improve navigation within
+  the reference manual stdlib documentation.
   (John Whitington, review by David Allsopp)
 
 - #1351: Document `-output-complete-obj` option in the manual.
   (François Bobot, Nicolás Ojeda Bär, review by Daniel Bünzli and Damien
   Doligez)
-
-- #9987, #9988, #9996, #9997: add an odoc mode for the documentation
-  of the standard library and compiler library
-  (Florian Angeletti, review by David Allsopp, Sébastien Hinderer,
-   and Gabriel Scherer)
 
 - #9632: Document incremental build solutions with opam
   (Vincent Laviron, review by Daniel Bünzli and Gabriel Scherer)
@@ -304,7 +341,7 @@ OCaml 4.13.0
   (Florian Angeletti, review by Jacques Garrigue, Thomas Refis,
    and Gabriel Scherer)
 
-- #9407: added warning for missing mli interface file
+- #9407: optional warning for missing mli interface file
   (Anukriti Kumar, review by Florian Angeletti)
 
 - #9960, #10619: extend ocamlc/ocamlopt's -o option to work when
@@ -312,21 +349,8 @@ OCaml 4.13.0
   (Sébastien Hinderer, reported by Daniel Bünzli, review by
   Florian Angeletti and Gabriel Scherer)
 
-- #10095: simplify the syntax error messages produced by the compiler.
-  In many cases, the compiler would produce an error message that looked
-  potentially helpful but was actually misguided and arguably confusing,
-  because the error message implicitly referred to an earlier point in
-  the source code than the point explicitly shown in the error message.
+- #10095: minor simplifications to some syntax error messages.
   (François Pottier, review by Gabriel Scherer and Frédéric Bour.)
-
-* #10118, #10140: enable warning 6 [labels-omitted] by default.
-  The following now warns:
-    let f ~x y = ... in f 3 5
-  the callsite (f 3 5) has to be turned into (f ~x:3 5).
-  This prevents mistakes where two arguments of the same types are swapped.
-  (Note: Dune already enables this warning by default.)
-  (Gabriel Scherer, review by Xavier Leroy and Florian Angeletti,
-   report by ygrek)
 
 - #10196, #10197: better error message on empty character literals ''.
   (Gabriel Scherer, review by David Allsopp and Florian Angeletti
@@ -368,12 +392,14 @@ OCaml 4.13.0
 * #10061, #10078, #10187: remove library `ocamlopttoplevel`, remove modules
   `Opttoploop`, `Opttopstart`, which are replaced by `Toploop` and `Topstart` in
   library `ocamltoplevel`, made available in native code.
+  (Louis Gesbert, review by Jeremie Dimino, Mark Shinwell and Gabriel Radanne)
 
 - #10124: remove duplicated code from the native toplevel, split toplevel
   implementation into the shared part (`Topcommon`, etc.) and specific ones
   (`Topeval`, `Trace`, `Topmain`).
+  (Louis Gesbert, review by Jeremie Dimino and Gabriel Radanne)
 
-* #10086: add the commands `make list-parse-errors` and `make
+- #10086: add the commands `make list-parse-errors` and `make
   generate-parse-errors` to generate a set of syntactically incorrect
   sentences that covers all error states of the LR automaton. Add these
   sentences to the test suite. This can be used to evaluate the quality of the
@@ -387,6 +413,14 @@ OCaml 4.13.0
 - #10113: add a `-timeout` option to ocamltest and use it in the test suite.
   (Xavier Leroy and Gabriel Scherer, review by Sébastien Hinderer
    and David Allsopp)
+
+* #10169, #10270, #10301, #10451: Use capitalized module names in the Standard
+  Library prefixing scheme to match Dune, e.g. Stdlib__String instead of
+  Stdlib__string. This is a breaking change only to code which attempted to use
+  the internal names before. The Standard Library generated by the Dune rules is
+  now equivalent to the main build (the Dune rules still do not generate a
+  distributable compiler).
+  (David Allsopp and Mark Shinwell, review by Gabriel Scherer)
 
 - #10327: Add a subdirectories variable and a copy action to ocamltest
   (Sébastien Hinderer, review by David Allsopp)
@@ -402,17 +436,6 @@ OCaml 4.13.0
   (Guillaume Petiot, review by Gabriel Scherer and Nicolás Ojeda Bär)
 
 ### Internal typechecker changes:
-
-- #9994: Make Types.type_expr a private type, and abstract marking mechanism
-  (Jacques Garrigue and Takafumi Saikawa,
-   review by Gabriel Scherer and Leo White)
-
-- #10170: Maintain more structural information in type-checking errors
-  A mostly-internal change that preserves more information in errors
-  during type checking; most significantly, it split the errors from
-  unification, moregen, and type equality into three different types.
-  (Antal Spector-Zabusky and Mekhrubon Tuarev, review by Leo White,
-  Florian Angeletti, and Jacques Garrigue)
 
 - #10174: Make Tsubst more robust by avoiding strange workarounds
   (Takafumi Saikawa and Jacques Garrigue, review by Gabriel Scherer and
@@ -433,6 +456,11 @@ OCaml 4.13.0
   (Nicolas Chataing, review by Florian Angeletti)
 
 ### Build system:
+
+- #10332, #10333: Generate lambda/runtimedef.ml correctly in Swedish locale.
+  (the letter 'w' is not included in '[a-z]' in sv_SE.UTF-8)
+  (David Allsopp, report by Anders Jackson, review by Florian Angeletti and
+   Gabriel Scherer)
 
 - #10289, #10406: Do not print option documentation in usage messages.
     (Pavlo Khrystenko, review by Gabriel Scherer, fix by Kate Deplaix)
@@ -462,11 +490,6 @@ OCaml 4.13.0
   network functions on systems where they're not in libc. Fix IPv6 and
   socklen_t detection on Windows.
   (Antonin Décimo, review by David Allsopp and Sébastien Hinderer)
-
-- #10332, #10333: Generate lambda/runtimedef.ml correctly in Swedish locale.
-  (the letter 'w' is not included in '[a-z]' in sv_SE.UTF-8)
-  (David Allsopp, report by Anders Jackson, review by Florian Angeletti and
-   Gabriel Scherer)
 
 - #10366: Make it possible to use the OCAMLRUN variable to specify
   which runtime to use while building the compilers (Sébastien Hinderer,
@@ -584,10 +607,6 @@ OCaml 4.13.0
 
 - #10380: Correct handling of UTF-8 paths in configure on Windows
   (David Allsopp, review by Sébastien Hinderer)
-
-- #10449: Fix major GC work accounting (the GC was running too fast).
-  (Damien Doligez, report by Stephen Dolan, review by Nicolás Ojeda Bär and
-   Sadiq Jaffer)
 
 - #10450, #10558: keep %apply and %revapply primitives working with abstract
   types. This breach of backward compatibility was only present in the alpha
