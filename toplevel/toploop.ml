@@ -50,7 +50,9 @@ let use_lexbuf ppf ~wrap_in_module lb name filename =
       List.iter
         (fun ph ->
           let ph = preprocess_phrase_with_log log ph in
-          if not (execute_phrase_with_log !use_print_results log ph) then raise Exit)
+          if not (execute_phrase_with_log !use_print_results log ph) then
+            raise Exit
+        )
         (if wrap_in_module then
            parse_mod_use_file name lb
          else
@@ -60,7 +62,7 @@ let use_lexbuf ppf ~wrap_in_module lb name filename =
     with
     | Exit -> Misc.Log.flush log; false
     | Sys.Break ->
-        Misc.Log.logf "status" log "Interrupted.@.";
+        Misc.Log.logf ~key:"status" log "Interrupted.@.";
         Misc.Log.flush log;
         false
     | x -> Location.report_exception log x; Misc.Log.flush log; false)
@@ -125,11 +127,12 @@ let run_script ppf name args =
   override_sys_argv args;
   let filename = filename_of_input name in
   Compmisc.init_path ~dir:(Filename.dirname filename) ();
-                   (* Note: would use [Filename.abspath] here, if we had it. *)
+  (* Note: would use [Filename.abspath] here, if we had it. *)
   begin
     try toplevel_env := Compmisc.initial_env()
     with Env.Error _ | Typetexp.Error _ as exn ->
-      Location.report_exception (Direct ppf) exn; raise (Compenv.Exit_with_status 2)
+      Location.report_exception (Direct ppf) exn;
+      raise (Compenv.Exit_with_status 2)
   end;
   Sys.interactive := false;
   run_hooks After_setup;
@@ -236,7 +239,7 @@ let loop ppf =
     with
     | End_of_file -> raise (Compenv.Exit_with_status 0)
     | Sys.Break ->
-        Misc.Log.logf "status" log "Interrupted.@.";
+        Misc.Log.logf ~key:"status" log "Interrupted.@.";
         Misc.Log.flush log;
         Btype.backtrack snap
     | PPerror -> Misc.Log.flush log; ()

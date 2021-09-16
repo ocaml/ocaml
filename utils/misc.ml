@@ -295,13 +295,13 @@ module Log = struct
     json_log.toplevel_keys <-
       Stdlib.String.Map.add key value json_log.toplevel_keys
 
-  let logf key log fmt =
+  let logf ~key log fmt =
     match log with
     | Direct ppf -> Format.fprintf ppf fmt
     | Json json_log ->
         Format.kasprintf (fun s -> add_toplevel json_log key (`String s)) fmt
 
-  let log_itemf key log fmt  =
+  let log_itemf ~key log fmt  =
     match log with
     | Direct ppf -> Format.fprintf ppf fmt
     | Json json_log->

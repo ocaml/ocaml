@@ -212,14 +212,14 @@ module Log : sig
       (** Json mode: we are building a json output, and only print to the
           underlying formatter once the logging session ends. *)
 
-  val logf : string ->
+  val logf : key:string ->
     t -> ('a, Format.formatter, unit) format -> 'a
     (** [logf key log fmt] records the output of [fmt] as
         a string at key [key] in [log].
         The key is ignored in the raw text mode.
     *)
 
-  val log_itemf : string ->
+  val log_itemf : key:string ->
     t -> ('a, Format.formatter, unit) format -> 'a
     (** [log_itemf key log fmt] appends the output of [fmt]
         to the list at key [key] in [log].
