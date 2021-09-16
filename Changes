@@ -6,11 +6,19 @@ Working version
 - #10437: Allow explicit binders for type variables.
   (Stephen Dolan, review by Leo White)
 
+- #10441: Remove unnecessary parentheses surrounding immediate objects.
+  Allow 'object ... end # f', 'f object ... end', etc.
+  (Yan Dong, review by Nicolás Ojeda Bär, Florian Angeletti and Gabriel Scherer)
+
 ### Runtime system:
 
 * #9391, #9424: Fix failed assertion in runtime due to ephemerons *set_* and
   *blit_* function during Mark phase
   (François Bobot, reported by Stephen Dolan, reviewed by Damien Doligez)
+
+- #10195: Speed up GC by prefetching during marking
+  (Stephen Dolan, review by Xavier Leroy, Guillaume Munch-Maccagnoni,
+   Jacques-Henri Jourdan and Damien Doligez)
 
 - #10549: Stack overflow detection and naked pointers checking for ARM64
   (Xavier Leroy, review by Stephen Dolan)
@@ -79,6 +87,10 @@ Working version
   (`#use "missing_file";;`) use stderr and exit with an error.
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #10438: add a new toplevel cli argument `-e <script>` to
+  run script passed to the toplevel.
+  (Pavlo Khrystenko, review by Gabriel Scherer)
+
 - #10524: Directive argument type error now shows expected and received type.
   (Wiktor Kuchta, review by Gabriel Scherer)
 
@@ -133,6 +145,23 @@ Working version
   running tests.
   (David Allsopp, review by Damien Doligez and Sébastien Hinderer)
 
+- #8516: Change representation of class signatures
+  (Leo White, review by Thomas Refis)
+
+- #10337: Normalize type_expr nodes on access
+  One should now use accessors such as get_desc and get_level to access fields
+  of type_expr, rather than calling manually Btype.repr (which is now hidden
+  in Types.Transient_expr).
+  (Jacques Garrigue and Takafumi Saikawa,
+   review by Florian Angeletti and Gabriel Radanne)
+
+- #10474: Force normalization on access to row_desc
+  Similar to #10337. Make row_desc an abstract types, with constructor
+  create_row and accessors defined in Types rather than Btype.
+  A normalized view row_desc_repr is provided for convenience.
+  (Jacques Garrigue and Takafumi Saikawa,
+   review by Leo White and Florian Angeletti)
+
 - #10433: Remove the distinction between 32-bit aligned and 64-bit aligned
   64-bit floats in Cmm.memory_chunk.
   (Greta Yorsh, review by Xavier Leroy)
@@ -179,12 +208,6 @@ Working version
   This allows stacktraces to work in gdb through C and OCaml calls.
   (Edwin Török, review by Nicolás Ojeda Bär and Xavier Leroy)
 
-- #10461, #10498: `caml_send*` helper functions take derived pointers
-  as arguments.  Those must be declared with type Addr instead of Val.
-  Moreover, poll point insertion must be disabled for `caml_send*`,
-  otherwise the derived pointer is live across a poll point.
-  (Vincent Laviron and Xavier Leroy, review by Xavier Leroy and Sadiq Jaffer)
-
 - #10539: Field kinds should be kept when copying types
   Losing the sharing meant that one could desynchronize them between several
   occurrences of self, allowing a method to be both public and hidden,
@@ -196,9 +219,6 @@ Working version
 
 - #10590: Some typechecker optimisations
   (Stephen Dolan, review by Gabriel Scherer and Leo White)
-
-- #10603, #10611: Fix if condition marked as inconstant in flambda
-  (Vincent Laviron and Pierre Chambart, report by Marcello Seri)
 
 - #10633: Stack overflow recovery in ocamlopt for AMD64/Linux and ARM/Linux
   was not restoring the minor heap pointer correctly
@@ -218,6 +238,11 @@ OCaml 4.13.0
    Anmol Sahoo, Mark Shinwell, review by Damien Doligez, Xavier Leroy,
    and Mark Shinwell)
 
+- #9584, #7074: Allow to name existentials in pattern-matching
+  One can now write '(Cstr (type a) (x, y : int * a))' to give a name to
+  existentials freshly introduced by GADT constructors.
+  (Jacques Garrigue, review by Leo White and Gabriel Scherer)
+
 - #9331: Improve error messages for functor application and functor types.
   (Florian Angeletti and Gabriel Radanne, review by Leo White)
 
@@ -226,28 +251,10 @@ OCaml 4.13.0
     'let* x = x in ...' and 'let%ext x = x in ...' respectively.
   (Stephen Dolan, review by Gabriel Scherer)
 
-- #10441: Remove unnecessary parentheses surrounding immediate objects.
-  Allow 'object ... end # f', 'f object ... end', etc.
-  (Yan Dong, review by Nicolás Ojeda Bär, Florian Angeletti and Gabriel Scherer)
-
-### Type system:
-
-- #9584, #7074: Allow to name existentials in pattern-matching
-  One can now write '(Cstr (type a) (x, y : int * a))' to give a name to
-  existentials freshly introduced by GADT constructors.
-  (Jacques Garrigue, review by Leo White and Gabriel Scherer)
-
-- #10174: Make Tsubst more robust by avoiding strange workarounds
-  (Takafumi Saikawa and Jacques Garrigue, review by Gabriel Scherer and
-   Florian Angeletti)
-
 - #10133: module type substitutions
   Allow 'SIG with module type T = F(X).S', 'SIG with module type T := sig end'
   and their local equivalent `module type T := sig type u end`
   (Florian Angeletti, review by Gabriel Radanne and Leo White)
-
-- #10265: Move type_unboxed.unboxed into type_kind
-  (Stephen Dolan, review by Gabriel Scherer)
 
 * #10081: Typecheck `x |> f` and `f @@ x` as `(f x)`
   (Alain Frisch, review by Jacques Garrigue, Josh Berdine and Thomas Refis)
@@ -274,10 +281,6 @@ OCaml 4.13.0
 - #10107: Ensure modules compiled with -afl-instrument can still link on
   platforms without AFL support.
   (David Allsopp, review by Xavier Leroy)
-
-- #10195: Speed up GC by prefetching during marking
-  (Stephen Dolan, review by Xavier Leroy, Guillaume Munch-Maccagnoni,
-   Jacques-Henri Jourdan and Damien Doligez)
 
 * #10098: Improve command-line parsing in ocamlrun: strictly recognise options,
   be more informative for `ocamlrun -I` and support `--` for terminating options
@@ -318,6 +321,9 @@ OCaml 4.13.0
   by the previous GC cycle instead of an indirect (and noisy) computation
   of the current overhead.
   (Damien Doligez, review by Stephen Dolan)
+
+- #10549: Stack overflow detection and naked pointers checking for ARM64
+  (Xavier Leroy, review by Stephen Dolan)
 
 ### Code generation and optimizations:
 
@@ -466,10 +472,6 @@ OCaml 4.13.0
   the reference manual.
   (John Whitington, review by David Allsopp)
 
-- #10438: add a new toplevel cli argument `-e <script>` to
-  run script passed to the toplevel.
-  (Pavlo Khrystenko, review by Gabriel Scherer)
-
 ### Manual and documentation:
 
 - #9525, #10402: ocamldoc only create paragraphq at the toplevel of
@@ -511,6 +513,9 @@ OCaml 4.13.0
 
 - #10497: Styling changes in the post-processed HTML manual (webman)
   (Wiktor Kuchta, review by Florian Angeletti)
+
+- #10605: manual, name few css classes to ease styling and maintainability.
+  (Florian Angeletti, review by Wiktor Kuchta and Gabriel Scherer)
 
 ### Compiler user-interface and warnings:
 
@@ -570,9 +575,6 @@ OCaml 4.13.0
 
 ### Internal/compiler-libs changes:
 
-- #8516: Change representation of class signatures
-  (Leo White, review by Thomas Refis)
-
 - #9243, simplify parser rules for array indexing operations
   (Florian Angeletti, review by Damien Doligez and Gabriel Scherer)
 
@@ -581,10 +583,6 @@ OCaml 4.13.0
 
 - #9827: Replace references with functions arguments in Simplif
   (Anukriti Kumar, review by Vincent Laviron and David Allsop)
-
-- #9994: Make Types.type_expr a private type, and abstract marking mechanism
-  (Jacques Garrigue and Takafumi Saikawa,
-   review by Gabriel Scherer and Leo White)
 
 - #10007: Driver.compile_common: when typing a .ml file, return the
   compilation unit signature (inferred or from the .cmi) in addition
@@ -617,26 +615,8 @@ OCaml 4.13.0
   (Xavier Leroy and Gabriel Scherer, review by Sébastien Hinderer
    and David Allsopp)
 
-- #10311: Separate the constraint-solving part of Typecore.type_pat into
-  specific solver functions.
-  (Jacques Garrigue and Takafumi Saikawa, review by Gabriel Scherer)
-
 - #10327: Add a subdirectories variable and a copy action to ocamltest
   (Sébastien Hinderer, review by David Allsopp)
-
-* #10337: Normalize type_expr nodes on access
-  One should now use accessors such as get_desc and get_level to access fields
-  of type_expr, rather than calling manually Btype.repr (which is now hidden
-  in Types.Transient_expr).
-  (Jacques Garrigue and Takafumi Saikawa,
-   review by Florian Angeletti and Gabriel Radanne)
-
-* #10474: Force normalization on access to row_desc
-  Similar to #10337. Make row_desc an abstract types, with constructor
-  create_row and accessors defined in Types rather than Btype.
-  A normalized view row_desc_repr is provided for convenience.
-  (Jacques Garrigue and Takafumi Saikawa,
-   review by Leo White and Florian Angeletti)
 
 - #10358: Use a hash table for the load path.
   (Leo White, review by Gabriel Scherer)
@@ -644,9 +624,15 @@ OCaml 4.13.0
 - #8936: Per-function environment for Emit
   (Greta Yorsh, review by Vincent Laviron and Florian Angeletti)
 
-- #10307: Refactor type_description in the typing env
-  (Nicolas Chataing, review by Takafumi Saikawa, Florian Angeletti and Thomas
-   Refis)
+- #10543: Fix Ast_mapper to apply the mapping function to the constants in
+  "interval" patterns `c1..c2`.
+  (Guillaume Petiot, review by Gabriel Scherer and Nicolás Ojeda Bär)
+
+### Internal typechecker changes:
+
+- #9994: Make Types.type_expr a private type, and abstract marking mechanism
+  (Jacques Garrigue and Takafumi Saikawa,
+   review by Gabriel Scherer and Leo White)
 
 - #10170: Maintain more structural information in type-checking errors
   A mostly-internal change that preserves more information in errors
@@ -655,16 +641,23 @@ OCaml 4.13.0
   (Antal Spector-Zabusky and Mekhrubon Tuarev, review by Leo White,
   Florian Angeletti, and Jacques Garrigue)
 
-- #10307: Make build_other_constrs work with names instead of tags.
+- #10174: Make Tsubst more robust by avoiding strange workarounds
+  (Takafumi Saikawa and Jacques Garrigue, review by Gabriel Scherer and
+   Florian Angeletti)
+
+- #10265: Move type_unboxed.unboxed into type_kind
+  (Stephen Dolan, review by Gabriel Scherer)
+
+- #10307: Refactor type_description in the typing env
+  (Nicolas Chataing, review by Takafumi Saikawa, Florian Angeletti and Thomas
+   Refis)
+
+- #10311: Separate the constraint-solving part of Typecore.type_pat into
+  specific solver functions.
+  (Jacques Garrigue and Takafumi Saikawa, review by Gabriel Scherer)
+
+- #10428: Make build_other_constrs work with names instead of tags.
   (Nicolas Chataing, review by Florian Angeletti)
-
-- #10543: Fix Ast_mapper to apply the mapping function to the constants in
-  "interval" patterns `c1..c2`.
-  (Guillaume Petiot, review by Gabriel Scherer and Nicolás Ojeda Bär)
-
-- #7449 #10458: Change the size heuristics of switch in flambda to avoid
-  inlining too large jump tables. (Pierre Chambart, review by Gabriel Scherer,
-  report by Mark Hayden)
 
 ### Build system:
 
@@ -835,6 +828,12 @@ OCaml 4.13.0
   with -dsource
   (Matt Else, review by Florian Angeletti)
 
+- #10461, #10498: `caml_send*` helper functions take derived pointers
+  as arguments.  Those must be declared with type Addr instead of Val.
+  Moreover, poll point insertion must be disabled for `caml_send*`,
+  otherwise the derived pointer is live across a poll point.
+  (Vincent Laviron and Xavier Leroy, review by Xavier Leroy and Sadiq Jaffer)
+
 - #10511: Cygwin ports now correctly configure when flexdll is not available.
   (David Allsopp, review by Florian Angeletti)
 
@@ -848,6 +847,10 @@ OCaml 4.13.0
 - #10593: Fix untyping of patterns without named existential quantifiers. This
   bug was only present in the beta version of OCaml 4.13.0.
   (Ulysse Gérard, review by Florian Angeletti)
+
+- #10603, #10611: Fix if condition marked as inconstant in flambda
+  (Vincent Laviron and Pierre Chambart, report by Marcello Seri)
+
 
 OCaml 4.12, maintenance version
 -------------------------------
