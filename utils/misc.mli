@@ -199,8 +199,8 @@ module Log : sig
   (** Store json fragments for the json output mode *)
   type json_fragments =
     {
-      toplevel_keys : Json.t Stdlib.String.Map.t ref;
-      error_key : Json.t list ref;
+      mutable toplevel_keys : Json.t Stdlib.String.Map.t;
+      mutable error_msgs : Json.t list;
       backend: Format.formatter
     }
 

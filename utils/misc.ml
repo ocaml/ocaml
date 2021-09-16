@@ -282,8 +282,8 @@ module Log = struct
 
   type json_fragments =
     {
-      toplevel_keys : Json.t Stdlib.String.Map.t ref;
-      error_key : Json.t list ref;
+      mutable toplevel_keys : Json.t Stdlib.String.Map.t;
+      mutable error_msgs : Json.t list;
       backend: Format.formatter
     }
 
@@ -292,8 +292,8 @@ module Log = struct
     | Json of json_fragments
 
   let add_toplevel json_log key value =
-    json_log.toplevel_keys :=
-      Stdlib.String.Map.add key value !(json_log.toplevel_keys)
+    json_log.toplevel_keys <-
+      Stdlib.String.Map.add key value json_log.toplevel_keys
 
   let logf key log fmt =
     match log with
@@ -308,7 +308,7 @@ module Log = struct
         let update prev s =
           add_toplevel json_log key (`List (`String s :: prev))
         in
-        match Stdlib.String.Map.find key !(json_log.toplevel_keys) with
+        match Stdlib.String.Map.find key json_log.toplevel_keys with
         | `List x ->
             Format.kasprintf (update x)  fmt
         | `String _ as x -> Format.kasprintf (update [x]) fmt
@@ -318,12 +318,12 @@ module Log = struct
   let flush log =
     match log with
     | Direct ppf -> Format.pp_print_flush ppf ()
-    | Json {toplevel_keys;error_key;backend} ->
-        let main_log = Stdlib.String.Map.bindings !toplevel_keys in
+    | Json {toplevel_keys;error_msgs;backend} ->
+        let main_log = Stdlib.String.Map.bindings toplevel_keys in
         let error_log =
-          match !error_key with
+          match error_msgs with
           | [] ->  []
-          | _ :: _ -> ["error_report", `List !error_key]
+          | _ :: _ -> ["error_report", `List error_msgs]
         in
         Format.fprintf backend "%a@."
           Json.print (`Assoc (error_log @ main_log ))
@@ -337,8 +337,8 @@ module Log = struct
       if json then
         Json
           {
-            toplevel_keys = ref Stdlib.String.Map.empty ;
-            error_key= ref [];
+            toplevel_keys = Stdlib.String.Map.empty ;
+            error_msgs= [];
             backend=ppf
           }
       else Direct ppf

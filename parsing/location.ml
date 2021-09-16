@@ -820,7 +820,7 @@ let json_mode_printer: json_report_printer = fun json report ->
       "submsgs",`List(submsgs);
     ]
   in
-  json.error_key := err_frag :: !(json.error_key)
+  json.error_msgs <- err_frag :: json.error_msgs
 
 
 let terminfo_toplevel_printer (lb: lexbuf): report_printer =
