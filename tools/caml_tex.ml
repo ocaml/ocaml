@@ -178,9 +178,7 @@ module Toplevel = struct
       self_error_fmt ("@[<hov 2>  Error " ^^ fmt)
 
   let init () =
-    let printer =
-      { (Location.default_report_printer ()) with direct =report_printer } in
-    Location.report_printer := (fun () -> printer);
+    Location.report_printer := (fun () -> report_printer);
     Clflags.color := Some Misc.Color.Never;
     Clflags.no_std_include := true;
     Compenv.last_include_dirs := [Filename.concat !repo_root "stdlib"];

@@ -137,24 +137,24 @@ type report = {
   sub : msg list;
 }
 
-type report_printer = {
+type terminal_report_printer = {
   (* The entry point *)
-  pp : report_printer ->
+  pp : terminal_report_printer ->
     Format.formatter -> report -> unit;
 
-  pp_report_kind : report_printer -> report ->
+  pp_report_kind : terminal_report_printer -> report ->
     Format.formatter -> report_kind -> unit;
-  pp_main_loc : report_printer -> report ->
+  pp_main_loc : terminal_report_printer -> report ->
     Format.formatter -> t -> unit;
-  pp_main_txt : report_printer -> report ->
+  pp_main_txt : terminal_report_printer -> report ->
     Format.formatter -> (Format.formatter -> unit) -> unit;
-  pp_submsgs : report_printer -> report ->
+  pp_submsgs : terminal_report_printer -> report ->
     Format.formatter -> msg list -> unit;
-  pp_submsg : report_printer -> report ->
+  pp_submsg : terminal_report_printer -> report ->
     Format.formatter -> msg -> unit;
-  pp_submsg_loc : report_printer -> report ->
+  pp_submsg_loc : terminal_report_printer -> report ->
     Format.formatter -> t -> unit;
-  pp_submsg_txt : report_printer -> report ->
+  pp_submsg_txt : terminal_report_printer -> report ->
     Format.formatter -> (Format.formatter -> unit) -> unit;
 }
 (** A printer for [report]s, defined using open-recursion.
@@ -165,17 +165,17 @@ type report_printer = {
 type json_report_printer = Misc.Log.json_fragments -> report -> unit
 
 type full_report_printer =
-  { direct: report_printer; json: json_report_printer }
+  { terminal: terminal_report_printer; json: json_report_printer }
 
 (** {2 Report printers used in the compiler} *)
 
 val init_log : Format.formatter -> Misc.Log.t
 
-val batch_mode_printer: report_printer
+val batch_mode_printer: terminal_report_printer
 
-val terminfo_toplevel_printer: Lexing.lexbuf -> report_printer
+val terminfo_toplevel_printer: Lexing.lexbuf -> terminal_report_printer
 
-val best_toplevel_printer: unit -> report_printer
+val best_toplevel_printer: unit -> terminal_report_printer
 (** Detects the terminal capabilities and selects an adequate printer *)
 
 (** {2 Printing a [report]} *)
@@ -183,14 +183,14 @@ val best_toplevel_printer: unit -> report_printer
 val print_report: Misc.Log.t -> report -> unit
 (** Display an error or warning report. *)
 
-val report_printer: (unit -> full_report_printer) ref
-(** Hook for redefining the printer of reports.
+val report_printer: (unit -> terminal_report_printer) ref
+(** Hook for redefining the terminal printer of reports.
 
     The hook is a [unit -> report_printer] and not simply a [report_printer]:
     this is useful so that it can detect the type of the output (a file, a
     terminal, ...) and select a printer accordingly. *)
 
-val default_report_printer: unit -> full_report_printer
+val default_report_printer: unit -> terminal_report_printer
 (** Original report printer for use in hooks. *)
 
 

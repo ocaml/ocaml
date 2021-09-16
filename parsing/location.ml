@@ -642,31 +642,31 @@ type report = {
   sub : msg list;
 }
 
-type report_printer = {
+type terminal_report_printer = {
   (* The entry point *)
-  pp : report_printer ->
+  pp : terminal_report_printer ->
     Format.formatter -> report -> unit;
 
-  pp_report_kind : report_printer -> report ->
+  pp_report_kind : terminal_report_printer -> report ->
     Format.formatter -> report_kind -> unit;
-  pp_main_loc : report_printer -> report ->
+  pp_main_loc : terminal_report_printer -> report ->
     Format.formatter -> t -> unit;
-  pp_main_txt : report_printer -> report ->
+  pp_main_txt : terminal_report_printer -> report ->
     Format.formatter -> (Format.formatter -> unit) -> unit;
-  pp_submsgs : report_printer -> report ->
+  pp_submsgs : terminal_report_printer -> report ->
     Format.formatter -> msg list -> unit;
-  pp_submsg : report_printer -> report ->
+  pp_submsg : terminal_report_printer -> report ->
     Format.formatter -> msg -> unit;
-  pp_submsg_loc : report_printer -> report ->
+  pp_submsg_loc : terminal_report_printer -> report ->
     Format.formatter -> t -> unit;
-  pp_submsg_txt : report_printer -> report ->
+  pp_submsg_txt : terminal_report_printer -> report ->
     Format.formatter -> (Format.formatter -> unit) -> unit;
 }
 
 type json_report_printer = Misc.Log.json_fragments -> report -> unit
 
 type full_report_printer =
-  { direct: report_printer; json: json_report_printer }
+  { terminal: terminal_report_printer; json: json_report_printer }
 
 let is_dummy_loc loc =
   (* Fixme: this should be just [loc.loc_ghost] and the function should be
@@ -702,7 +702,7 @@ let error_style () =
   | Some setting -> setting
   | None -> Misc.Error_style.default_setting
 
-let batch_mode_printer : report_printer =
+let batch_mode_printer : terminal_report_printer =
   let pp_loc _self report ppf loc =
     let tag = match report.kind with
       | Report_warning_as_error _
@@ -823,7 +823,7 @@ let json_mode_printer: json_report_printer = fun json report ->
   json.error_msgs <- err_frag :: json.error_msgs
 
 
-let terminfo_toplevel_printer (lb: lexbuf): report_printer =
+let terminfo_toplevel_printer (lb: lexbuf): terminal_report_printer =
   let pp self ppf err =
     setup_colors ();
     (* Highlight all toplevel locations of the report, instead of displaying
@@ -850,23 +850,23 @@ let best_toplevel_printer () =
       batch_mode_printer
 
 (* Creates a printer for the current input *)
-let default_report_printer () : full_report_printer =
-  let direct =
+
+let default_report_printer () =
     if !input_name = "//toplevel//" then
       best_toplevel_printer ()
     else
-      batch_mode_printer in
-  { direct; json = json_mode_printer }
+      batch_mode_printer
 
 let report_printer = ref default_report_printer
 
+
 let print_report log report =
-  let printer = !report_printer () in
   match log with
   | Misc.Log.Direct ppf ->
-      printer.direct.pp printer.direct ppf report
+    let printer = !report_printer () in
+    printer.pp printer ppf report
   | Misc.Log.Json log ->
-      printer.json log report
+      json_mode_printer log report
 
 (******************************************************************************)
 (* Reporting errors *)
