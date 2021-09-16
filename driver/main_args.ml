@@ -683,7 +683,7 @@ let mk_error_style f =
 
 let mk_json f =
   "-json", Arg.Unit f,
-  " Print the compiler messages in json format"
+  " Print the compiler messages in json format (when supported)"
 ;;
 
 let mk_where f =
