@@ -179,6 +179,8 @@ module Stdlib : sig
 end
 
 module Json : sig
+
+  (** This type is a subtype of the Yojson.Basic.t json type. *)
   type t =
     [
       | `Int of int
