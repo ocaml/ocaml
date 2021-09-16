@@ -100,6 +100,12 @@ Working version
   (Sébastien Hinderer, review by Damien Doligez, Gabriel Scherer, David
   Allsopp, Nicolás Ojeda Bär, Vincent Laviron)
 
+- #10642: On Windows, Sys.remove and Unix.unlink now remove symlinks
+  to directories instead of raising EACCES. Introduce
+  caml/winsupport.h to hold more common code between the runtime,
+  lib-sys, and win32unix. (Antonin Décimo, review by David Allsopp,
+  Xavier Leroy)
+
 ### Other libraries:
 
 - #10192: Add support for Unix domain sockets on Windows and use them

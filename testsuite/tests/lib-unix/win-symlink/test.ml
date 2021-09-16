@@ -35,7 +35,9 @@ let main () =
   did_raise := false;
   if not (directory_exists dir) then
     Unix.mkdir dir 0o644;
-  begin try Unix.unlink dir with Unix.Unix_error((EISDIR (* Linux *) | EPERM (* POSIX *)), _, _) -> did_raise := true end;
+  begin try Unix.unlink dir with
+  | Unix.Unix_error((EISDIR (* Linux *) | EPERM (* POSIX *) | EACCES (* Windows *)), _, _) ->
+    did_raise := true end;
   assert (!did_raise);
   assert (directory_exists dir);
   print_endline "Unix.unlink cannot delete directories";
