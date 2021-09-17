@@ -182,8 +182,10 @@ val best_toplevel_printer: unit -> terminal_report_printer
 
 (** {2 Printing a [report]} *)
 
-val print_report: Misc.Log.t -> report -> unit
+val log_report: Misc.Log.t -> report -> unit
+val print_report: Format.formatter -> report -> unit
 (** Display an error or warning report. *)
+
 
 val report_printer: (unit -> terminal_report_printer) ref
 (** Hook for redefining the terminal printer of reports.
@@ -214,9 +216,10 @@ val default_warning_reporter: t -> Warnings.t -> report option
 
 val formatter_for_warnings : formatter ref
 
-val print_warning: t -> Misc.Log.t -> Warnings.t -> unit
-(** Prints a warning. This is simply the composition of [report_warning] and
-   [print_report]. *)
+val log_warning: t -> Misc.Log.t -> Warnings.t -> unit
+val print_warning: t ->Format.formatter -> Warnings.t -> unit
+ (** Prints a warning. This is simply the composition of [report_warning] and
+   [log_report]. *)
 
 val prerr_warning: t -> Warnings.t -> unit
 (** Same as [print_warning], but uses [!formatter_for_warnings] as output
@@ -238,9 +241,10 @@ val default_alert_reporter: t -> Warnings.alert -> report option
 
 (** {2 Printing alerts} *)
 
-val print_alert: t -> Misc.Log.t -> Warnings.alert -> unit
-(** Prints an alert. This is simply the composition of [report_alert] and
-   [print_report]. *)
+val log_alert: t -> Misc.Log.t -> Warnings.alert -> unit
+val print_alert: t -> Format.formatter -> Warnings.alert -> unit
+ (** Prints an alert. This is simply the composition of [report_alert] and
+   [log_report]. *)
 
 val prerr_alert: t -> Warnings.alert -> unit
 (** Same as [print_alert], but uses [!log_for_warnings] as output

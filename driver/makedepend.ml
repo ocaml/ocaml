@@ -495,7 +495,7 @@ let sort_files_by_dependencies files =
 
   if !worklist <> [] then begin
     Location.error "cycle in dependencies. End of list is not sorted."
-    |> Location.print_report (Direct Format.err_formatter);
+    |> Location.log_report (Direct Format.err_formatter);
     let sorted_deps =
       let li = ref [] in
       Hashtbl.iter (fun _ file_deps -> li := file_deps :: !li) h;
