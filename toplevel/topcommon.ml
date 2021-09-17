@@ -20,7 +20,6 @@ open Format
 open Parsetree
 open Outcometree
 open Ast_helper
-module Log = Misc.Log
 
 (* Hooks for parsing functions *)
 
@@ -200,10 +199,7 @@ let preprocess_phrase_with_log log phr =
   phr
 
 let preprocess_phrase ppf phr =
-  let log = Location.init_log ppf in
-  let ans = preprocess_phrase_with_log log phr in
-  Log.flush log;
-  ans
+  Location.with_log ppf (fun log -> preprocess_phrase_with_log log phr)
 
 (* Phrase buffer that stores the last toplevel phrase (see
    [Location.input_phrase_buffer]). *)

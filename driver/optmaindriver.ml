@@ -138,15 +138,12 @@ let main argv ppf =
   match process_arguments argv ppf with
   | exception (Compenv.Exit_with_status n) -> n
   | () ->
-      let log = Location.init_log ppf in
-      let exit_number = match process_main log with
-        | exception (Compenv.Exit_with_status n) -> n
-        | exception x ->
-            Location.log_exception log x;
-            2
-        | () ->
-            Profile.print Format.std_formatter !Clflags.profile_columns;
-            0
-      in
-      Misc.Log.flush log;
-      exit_number
+      Location.with_log ppf @@ fun log ->
+      match process_main log with
+      | exception (Compenv.Exit_with_status n) -> n
+      | exception x ->
+          Location.log_exception log x;
+          2
+      | () ->
+          Profile.print Format.std_formatter !Clflags.profile_columns;
+          0

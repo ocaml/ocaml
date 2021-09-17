@@ -942,6 +942,10 @@ let init_log ppf =
   log_for_warnings := log;
   log
 
+let with_log ppf f =
+  let log = init_log ppf in
+  Fun.protect (fun () -> f log) ~finally:(fun () -> Misc.Log.flush log)
+
 let select_warning_log () =
   if !formatter_for_warnings == canary_formatter then
     !log_for_warnings

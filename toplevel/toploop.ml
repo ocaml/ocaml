@@ -45,7 +45,7 @@ let use_lexbuf ppf ~wrap_in_module lb name filename =
     [ R (Location.input_name, filename);
       R (Location.input_lexbuf, Some lb); ]
     (fun () ->
-    let log = Location.init_log ppf in
+    Location.with_log ppf @@ fun log ->
     try
       List.iter
         (fun ph ->
@@ -57,15 +57,13 @@ let use_lexbuf ppf ~wrap_in_module lb name filename =
            parse_mod_use_file name lb
          else
            !parse_use_file lb);
-      Misc.Log.flush log;
       true
     with
-    | Exit -> Misc.Log.flush log; false
+    | Exit -> false
     | Sys.Break ->
         Misc.Log.logf ~key:"status" log "Interrupted.@.";
-        Misc.Log.flush log;
         false
-    | x -> Location.log_exception log x; Misc.Log.flush log; false)
+    | x -> Location.log_exception log x; false)
 
 let use_output ppf command =
   let fn = Filename.temp_file "ocaml" "_toploop.ml" in
@@ -209,8 +207,7 @@ let loop ppf =
   begin
     try initialize_toplevel_env ()
     with Env.Error _ | Typetexp.Error _ as exn ->
-    let log = Location.init_log ppf in
-    Location.log_exception log exn; Misc.Log.flush log;
+    Location.with_log ppf (fun log -> Location.log_exception log exn);
     raise (Compenv.Exit_with_status 2)
   end;
   let lb = Lexing.from_function refill_lexbuf in
@@ -243,6 +240,8 @@ let loop ppf =
         Misc.Log.flush log;
         Btype.backtrack snap
     | PPerror -> Misc.Log.flush log; ()
-    | x -> Location.log_exception log x;
-      Misc.Log.flush log; Btype.backtrack snap
+    | x ->
+        Location.log_exception log x;
+        Misc.Log.flush log;
+        Btype.backtrack snap
   done

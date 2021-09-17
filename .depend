@@ -5986,7 +5986,6 @@ driver/main_args.cmi :
 driver/maindriver.cmo : \
     utils/warnings.cmi \
     utils/profile.cmi \
-    utils/misc.cmi \
     driver/makedepend.cmi \
     driver/main_args.cmi \
     parsing/location.cmi \
@@ -6002,7 +6001,6 @@ driver/maindriver.cmo : \
 driver/maindriver.cmx : \
     utils/warnings.cmx \
     utils/profile.cmx \
-    utils/misc.cmx \
     driver/makedepend.cmx \
     driver/main_args.cmx \
     parsing/location.cmx \
@@ -6098,7 +6096,6 @@ driver/optmaindriver.cmo : \
     utils/profile.cmi \
     asmcomp/proc.cmi \
     driver/optcompile.cmi \
-    utils/misc.cmi \
     driver/makedepend.cmi \
     driver/main_args.cmi \
     parsing/location.cmi \
@@ -6119,7 +6116,6 @@ driver/optmaindriver.cmx : \
     utils/profile.cmx \
     asmcomp/proc.cmx \
     driver/optcompile.cmx \
-    utils/misc.cmx \
     driver/makedepend.cmx \
     driver/main_args.cmx \
     parsing/location.cmx \

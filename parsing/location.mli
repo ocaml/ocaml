@@ -170,6 +170,8 @@ type full_report_printer =
 (** {2 Report printers used in the compiler} *)
 
 val init_log : Format.formatter -> Misc.Log.t
+val with_log : Format.formatter -> (Misc.Log.t -> 'a) -> 'a
+
 
 val batch_mode_printer: terminal_report_printer
 
