@@ -291,73 +291,73 @@ let add_spills regset i =
     (fun r i -> instr_cons (Iop Ispill) [|r|] [|spill_reg r|] i)
     regset i
 
-let rec spill i finally =
+let rec spill i finally k =
   match i.desc with
     Iend ->
-      (i, finally)
+      k (i, finally)
   | Ireturn | Iop(Itailcall_ind) | Iop(Itailcall_imm _) ->
-      (i, Reg.Set.empty)
+      k (i, Reg.Set.empty)
   | Iop Ireload ->
-      let (new_next, after) = spill i.next finally in
+      spill i.next finally @@ fun (new_next, after) ->
       let before1 = Reg.diff_set_array after i.res in
-      (instr_cons i.desc i.arg i.res new_next,
-       Reg.add_set_array before1 i.res)
+      k (instr_cons i.desc i.arg i.res new_next,
+         Reg.add_set_array before1 i.res)
   | Iop op ->
-      let (new_next, after) = spill i.next finally in
+      spill i.next finally @@ fun (new_next, after) ->
       let before1 = Reg.diff_set_array after i.res in
       let before =
         if operation_can_raise op
         then Reg.Set.union before1 !spill_at_raise
         else before1 in
-      (instr_cons_debug i.desc i.arg i.res i.dbg
+      k (instr_cons_debug i.desc i.arg i.res i.dbg
                   (add_spills (Reg.inter_set_array after i.res) new_next),
-       before)
+         before)
   | Iifthenelse(test, ifso, ifnot) ->
-      let (new_next, at_join) = spill i.next finally in
-      let (new_ifso, before_ifso) = spill ifso at_join in
-      let (new_ifnot, before_ifnot) = spill ifnot at_join in
+      spill i.next finally @@ fun (new_next, at_join) ->
+      spill ifso at_join @@ fun (new_ifso, before_ifso) ->
+      spill ifnot at_join @@ fun (new_ifnot, before_ifnot) ->
       if
         !inside_loop || !inside_arm || !inside_catch
       then
-        (instr_cons (Iifthenelse(test, new_ifso, new_ifnot))
-                     i.arg i.res new_next,
-         Reg.Set.union before_ifso before_ifnot)
+        k (instr_cons (Iifthenelse(test, new_ifso, new_ifnot))
+                       i.arg i.res new_next,
+           Reg.Set.union before_ifso before_ifnot)
       else begin
         let destroyed = List.assq i !destroyed_at_fork in
         let spill_ifso_branch =
           Reg.Set.diff (Reg.Set.diff before_ifso before_ifnot) destroyed
         and spill_ifnot_branch =
           Reg.Set.diff (Reg.Set.diff before_ifnot before_ifso) destroyed in
-        (instr_cons
-            (Iifthenelse(test, add_spills spill_ifso_branch new_ifso,
-                               add_spills spill_ifnot_branch new_ifnot))
-            i.arg i.res new_next,
-         Reg.Set.diff (Reg.Set.diff (Reg.Set.union before_ifso before_ifnot)
-                                    spill_ifso_branch)
-                       spill_ifnot_branch)
+        k (instr_cons
+              (Iifthenelse(test, add_spills spill_ifso_branch new_ifso,
+                                 add_spills spill_ifnot_branch new_ifnot))
+              i.arg i.res new_next,
+           Reg.Set.diff (Reg.Set.diff (Reg.Set.union before_ifso before_ifnot)
+                                      spill_ifso_branch)
+                         spill_ifnot_branch)
       end
   | Iswitch(index, cases) ->
-      let (new_next, at_join) = spill i.next finally in
+      spill i.next finally @@ fun (new_next, at_join) ->
       let saved_inside_arm = !inside_arm in
       inside_arm := true ;
       let before = ref Reg.Set.empty in
       let new_cases =
         Array.map
           (fun c ->
-            let (new_c, before_c) = spill c at_join in
+            let (new_c, before_c) = spill c at_join Fun.id in
             before := Reg.Set.union !before before_c;
             new_c)
           cases in
       inside_arm := saved_inside_arm ;
-      (instr_cons (Iswitch(index, new_cases)) i.arg i.res new_next,
-       !before)
+      k (instr_cons (Iswitch(index, new_cases)) i.arg i.res new_next,
+         !before)
   | Icatch(rec_flag, handlers, body) ->
-      let (new_next, at_join) = spill i.next finally in
+      spill i.next finally @@ fun (new_next, at_join) ->
       let saved_inside_catch = !inside_catch in
       inside_catch := true ;
       let rec fixpoint () =
         let res =
-          List.map (fun (_, handler) -> spill handler at_join) handlers in
+          List.map (fun (_, handler) -> spill handler at_join Fun.id) handlers in
         let update changed (k, _handler) (_new_handler, before_handler) =
           if Reg.Set.equal before_handler (get_spill_at_exit k)
           then changed
@@ -370,26 +370,26 @@ let rec spill i finally =
       in
       let res = fixpoint () in
       inside_catch := saved_inside_catch ;
-      let (new_body, before) = spill body at_join in
+      spill body at_join @@ fun (new_body, before) ->
       let new_handlers = List.map2
           (fun (nfail, _) (new_handler, _) -> (nfail, new_handler))
           handlers res in
-      (instr_cons (Icatch(rec_flag, new_handlers, new_body))
-         i.arg i.res new_next,
-       before)
+      k (instr_cons (Icatch(rec_flag, new_handlers, new_body))
+           i.arg i.res new_next,
+         before)
   | Iexit nfail ->
-      (i, get_spill_at_exit nfail)
+      k (i, get_spill_at_exit nfail)
   | Itrywith(body, handler) ->
-      let (new_next, at_join) = spill i.next finally in
-      let (new_handler, before_handler) = spill handler at_join in
+      spill i.next finally @@ fun (new_next, at_join) ->
+      spill handler at_join @@ fun (new_handler, before_handler) ->
       let saved_spill_at_raise = !spill_at_raise in
       spill_at_raise := before_handler;
-      let (new_body, before_body) = spill body at_join in
+      spill body at_join @@ fun (new_body, before_body) ->
       spill_at_raise := saved_spill_at_raise;
-      (instr_cons (Itrywith(new_body, new_handler)) i.arg i.res new_next,
-       before_body)
+      k (instr_cons (Itrywith(new_body, new_handler)) i.arg i.res new_next,
+         before_body)
   | Iraise _ ->
-      (i, !spill_at_raise)
+      k (i, !spill_at_raise)
 
 (* Entry point *)
 
@@ -404,7 +404,7 @@ let reset () =
 let fundecl f =
   reset ();
   let (body1, _) = reload f.fun_body Reg.Set.empty in
-  let (body2, tospill_at_entry) = spill body1 Reg.Set.empty in
+  let (body2, tospill_at_entry) = spill body1 Reg.Set.empty Fun.id in
   let new_body =
     add_spills (Reg.inter_set_array tospill_at_entry f.fun_args) body2 in
   reset ();

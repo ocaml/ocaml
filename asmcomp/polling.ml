@@ -192,53 +192,62 @@ let instr_body handler_safe i =
     | Safe -> ube
     | Unsafe -> Int.Set.add k ube
   in
-  let rec instr ube i =
+  let rec instr ube i cont =
     match i.desc with
     | Iifthenelse (test, i0, i1) ->
-      { i with
-        desc = Iifthenelse (test, instr ube i0, instr ube i1);
-        next = instr ube i.next;
-      }
+      instr ube i0 @@ fun i0 ->
+      instr ube i1 @@ fun i1 ->
+      instr ube i.next @@ fun next ->
+      cont { i with
+             desc = Iifthenelse (test, i0, i1);
+             next;
+           }
     | Iswitch (index, cases) ->
-      { i with
-        desc = Iswitch (index, Array.map (instr ube) cases);
-        next = instr ube i.next;
-      }
+      instr ube i.next @@ fun next ->
+      cont { i with
+             desc = Iswitch (index, Array.map (fun i -> instr ube i Fun.id) cases);
+             next;
+           }
     | Icatch (rc, hdl, body) ->
       let ube' =
         match rc with
         | Cmm.Recursive -> List.fold_left add_unsafe_handler ube hdl
         | Cmm.Nonrecursive -> ube in
       let instr_handler (k, i0) =
-        let i1 = instr ube' i0 in
+        let i1 = instr ube' i0 Fun.id in
         (k, i1) in
       (* Since we are only interested in unguarded _back_ edges, we don't
          use [ube'] for instrumenting [body], but just [ube] instead. *)
-      let body = instr ube body in
-      { i with
-        desc = Icatch (rc,
-                       List.map instr_handler hdl,
-                       body);
-        next = instr ube i.next;
-      }
+      instr ube body @@ fun body ->
+      instr ube i.next @@ fun next ->
+      cont { i with
+             desc = Icatch (rc,
+                            List.map instr_handler hdl,
+                            body);
+             next;
+           }
     | Iexit k ->
       if Int.Set.mem k ube
-      then add_poll i
-      else i
+      then cont (add_poll i)
+      else cont i
     | Itrywith (body, hdl) ->
-      { i with
-        desc = Itrywith (instr ube body, instr ube hdl);
-        next = instr ube i.next;
-      }
-    | Iend | Ireturn | Iraise _ -> i
+      instr ube body @@ fun body ->
+      instr ube hdl @@ fun hdl ->
+      instr ube i.next @@ fun next ->
+      cont { i with
+             desc = Itrywith (body, hdl);
+             next;
+           }
+    | Iend | Ireturn | Iraise _ -> cont i
     | Iop op ->
       begin match op with
       | Ipoll _ -> contains_polls := true
       | _ -> ()
       end;
-      { i with next = instr ube i.next }
+      instr ube i.next @@ fun next ->
+      cont { i with next }
   in
-  instr Int.Set.empty i
+  instr Int.Set.empty i Fun.id
 
 let instrument_fundecl ~future_funcnames:_ (f : Mach.fundecl) : Mach.fundecl =
   if function_is_assumed_to_never_poll f.fun_name then f
