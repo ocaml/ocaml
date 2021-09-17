@@ -150,13 +150,16 @@ end
 
 module Scheduler =
 struct
+  open Obj.Effect_handlers
+  open Obj.Effect_handlers.Deep
+
   type 'a cont = ('a, unit) continuation
 
-  effect Suspend : ('a cont -> 'a option) -> 'a
-  effect Resume : ('a cont * 'a) -> unit
-  effect GetTid : int
-  effect Spawn : (unit -> unit) -> unit
-  effect Yield : unit
+  type _ eff += Suspend : ('a cont -> 'a option) -> 'a eff
+              | Resume : ('a cont * 'a) -> unit eff
+              | GetTid : int eff
+              | Spawn : (unit -> unit) -> unit eff
+              | Yield : unit eff
 
   let suspend f = perform (Suspend f)
   let resume t v = perform (Resume (t, v))
@@ -180,24 +183,27 @@ struct
 
   let rec exec f =
     let pid = get_free_pid () in
-      match f () with
-        | () -> dequeue ()
-        | effect (Suspend f) k -> (
-            match f k with
-              | None -> dequeue ()
-              | Some v -> continue k v
-          )
-        | effect (Resume (t, v)) k ->
+      match_with f ()
+      { retc = (fun () -> dequeue ());
+        exnc = (fun e -> raise e);
+        effc = fun (type a) (e : a eff) ->
+          match e with
+          | Suspend f -> Some (fun (k : (a, _) continuation) ->
+              match f k with
+                | None -> dequeue ()
+                | Some v -> continue k v)
+        | Resume (t, v) -> Some (fun (k : (a, _) continuation) ->
             enqueue k;
-            continue t v
-        | effect GetTid k ->
-            continue k pid
-        | effect (Spawn f) k ->
+            continue t v)
+        | GetTid -> Some (fun (k : (a, _) continuation) ->
+            continue k pid)
+        | Spawn f -> Some (fun (k : (a, _) continuation) ->
             enqueue k;
-            exec f
-        | effect Yield k ->
+            exec f)
+        | Yield -> Some (fun (k : (a, _) continuation) ->
             enqueue k;
-            dequeue ()
+            dequeue ())
+        | _ -> None }
 
   let num_threads = 2
 

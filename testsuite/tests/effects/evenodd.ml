@@ -1,11 +1,18 @@
 (* TEST
  *)
 
-effect E : unit
+open Obj.Effect_handlers
+open Obj.Effect_handlers.Deep
+
+type _ eff += E : unit eff
 
 let rec even n =
   if n = 0 then true
-  else try odd (n-1) with effect E _ -> assert false
+  else try_with odd (n-1)
+       { effc = fun (type a) (e : a eff) ->
+           match e with
+           | E -> Some (fun k -> assert false)
+           | _ -> None }
 and odd n =
   if n = 0 then false
   else even (n-1)

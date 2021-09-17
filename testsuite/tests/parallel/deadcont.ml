@@ -11,7 +11,10 @@ include unix
     https://github.com/ocamllabs/ocaml-multicore/issues/175
  *)
 
-effect Poke : unit
+open Obj.Effect_handlers
+open Obj.Effect_handlers.Deep
+
+type _ eff += Poke : unit eff
 
 type result = Done | Poking of (unit -> result)
 
@@ -26,13 +29,22 @@ let rec poke = function
 (* The handler inside the domain, that captures the continuation whenever
     it gets poked. *)
 let domain_handler f =
-  match f () with
-  | effect Poke k -> Poking (fun () -> print "..."; continue k () |> ignore; print "success\n"; Done)
-  | () -> Done
+  match_with f ()
+  { retc = (fun () -> Done);
+    exnc = (fun e -> raise e);
+    effc = fun (type a) (e : a eff) ->
+          match e with
+          | Poke -> Some (fun (k : (a, _) continuation) ->
+              Poking (fun () ->
+                print "...";
+                ignore (continue k ());
+                print "success\n";
+                Done))
+          | _ -> None }
 
 (* Re-runs the poker that happened inside a domain. *)
 let rerunner = function
-  | Poking f ->  f () (*re-runs the function*)
+  | Poking f -> f () (*re-runs the function*)
   | Done -> Done
 
 (* Test. *)

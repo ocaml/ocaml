@@ -1,9 +1,18 @@
-effect E : unit
+(* TEST
+   flags = "-g"
+   ocamlrunparam += ",b=1"
+   exit_status = "2"
+*)
 
-let bar i = 
+open Obj.Effect_handlers
+open Obj.Effect_handlers.Deep
+
+type _ eff += E : unit eff
+
+let bar i =
   if i < 0 then begin
     print_endline "(** raise **)";
-    raise Exit 
+    raise Exit
   end else begin
     print_endline "(** get_callstack **)";
     let bt = Printexc.get_callstack 100 in
@@ -12,17 +21,21 @@ let bar i =
     20
   end
 
-let foo i = 
+let foo i =
   ignore @@ bar i;
   bar (-1)
 
 let baz () =
-  match foo 10 with
-  | x -> ()
-  | effect E k -> 
-      print_endline "(** get_continuation_callstack **)";
-      let bt = Printexc.get_continuation_callstack k 100 in
-      print_string @@ Printexc.raw_backtrace_to_string bt;
-      continue k ()
+  match_with foo 10
+  { retc = (fun x -> ());
+    exnc = (fun e -> raise e);
+    effc = fun (type a) (e : a eff) ->
+      match e with
+      | E -> Some (fun (k : (a, _) continuation) ->
+          print_endline "(** get_continuation_callstack **)";
+          let bt = Printexc.get_kcallstack_deep k 100 in
+          print_string @@ Printexc.raw_backtrace_to_string bt;
+          continue k ())
+      | _ -> None }
 
-let _ = baz () 
+let _ = baz ()

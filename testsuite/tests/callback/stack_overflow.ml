@@ -14,9 +14,18 @@ let rec deep = function
   | n ->
      caml_to_c (fun () -> deep (n-1))
 
-effect E : unit
+open Obj.Effect_handlers
+open Obj.Effect_handlers.Deep
+
+type _ eff += E : unit eff
 
 let () =
   Printf.printf "%d\n%d\n%!"
     (!(deep 1000))
-    (match deep 1000 with x -> !x | effect E k -> assert false)
+    (match_with deep 1000
+     { retc = (fun x -> !x);
+       exnc = (fun e -> raise e);
+       effc = fun (type a) (e : a eff) ->
+         match e with
+         | E -> Some (fun k -> assert false)
+         | _ -> None })

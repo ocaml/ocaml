@@ -442,43 +442,6 @@ void caml_free_stack (struct stack_info* stack)
   }
 }
 
-CAMLprim value caml_clone_continuation (value cont)
-{
-  CAMLparam1(cont);
-  CAMLlocal1(new_cont);
-  intnat stack_used;
-  struct stack_info *source, *orig_source, *target, *ret_stack;
-  struct stack_info **link = &ret_stack;
-
-  new_cont = caml_alloc_1(Cont_tag, Val_ptr(NULL));
-  orig_source = source = Ptr_val(caml_continuation_use(cont));
-  do {
-    CAMLnoalloc;
-    stack_used = Stack_high(source) - (value*)source->sp;
-    target = alloc_stack_noexc(Stack_high(source) - Stack_base(source),
-                               Stack_handle_value(source),
-                               Stack_handle_exception(source),
-                               Stack_handle_effect(source));
-    if (!target) caml_raise_out_of_memory();
-    memcpy(Stack_high(target) - stack_used, Stack_high(source) - stack_used,
-           stack_used * sizeof(value));
-#ifdef NATIVE_CODE
-    {
-      /* rewrite exception pointer in the caml context on the new stack */
-      target->exception_ptr = source->exception_ptr;
-      rewrite_exception_stack(source, (value**)&target->exception_ptr, target);
-    }
-#endif
-    target->sp = Stack_high(target) - stack_used;
-    *link = target;
-    link = &Stack_parent(target);
-    source = Stack_parent(source);
-  } while (source != NULL);
-  caml_continuation_replace(cont, orig_source);
-  caml_continuation_replace(new_cont, ret_stack);
-  CAMLreturn (new_cont);
-}
-
 CAMLprim value caml_continuation_use_noexc (value cont)
 {
   value v;

@@ -1,14 +1,21 @@
 (* TEST
  *)
 
-effect E : unit
+open Obj.Effect_handlers
+open Obj.Effect_handlers.Deep
+
+type _ eff += E : unit eff
 
 let r = ref None
 let () =
-  match perform E; 42 with
-  | n -> assert (n = 42)
-  | effect E k ->
-     continue k ();
-     r := Some (k : (unit, unit) continuation);
-     Gc.full_major ();
-     print_string "ok\n"
+  match_with (fun _ -> perform E; 42) ()
+  { retc = (fun n -> assert (n = 42));
+    exnc = (fun e -> raise e);
+    effc = fun (type a) (e : a eff) ->
+      match e with
+      | E -> Some (fun (k : (a,_) continuation) ->
+          continue k ();
+          r := Some (k : (unit, unit) continuation);
+          Gc.full_major ();
+          print_string "ok\n")
+      | _ -> None }

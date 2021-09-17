@@ -1,14 +1,22 @@
 (* TEST
  *)
 
-effect E : unit
+open Obj.Effect_handlers
+open Obj.Effect_handlers.Deep
+
+type _ eff += E : unit eff
 exception X
 
 let () =
   Printf.printf "%d\n%!" @@
-  try
+  match_with (fun () ->
     Printf.printf "in handler. raising X\n%!";
-    raise X
-  with
-  | X -> 10
-  | effect E k -> 11
+    raise X) ()
+    { retc = (fun v -> v);
+      exnc = (function
+        | X -> 10
+        | e -> raise e);
+      effc = (fun (type a) (e : a eff) ->
+        match e with
+        | E -> Some (fun k -> 11)
+        | e -> None) }

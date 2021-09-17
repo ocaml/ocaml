@@ -4,6 +4,9 @@
 
 (* https://github.com/ocaml-multicore/ocaml-multicore/issues/479 *)
 
+open Obj.Effect_handlers
+open Obj.Effect_handlers.Deep
+
 [@@@warning "-5-26"];;
 
 type ('a, 'container) iterator = ('a -> unit) -> 'container -> unit;;
@@ -14,26 +17,32 @@ type ('a,'container) iter2gen =
   -> 'container
   -> 'a generator;;
 
-effect Hold: unit;;
+type _ eff += Hold: unit eff
+
 let iter2gen : _ iter2gen = fun iter c ->
   let r = ref None in
   let suspending_f x =
     r:=Some x;
-    (perform Hold : unit)
+    perform Hold
   in
   let next =
-    match iter suspending_f c with
-    | () -> fun ()->None
-    | effect Hold k ->
-       fun()->
-         let x = !r in
-         Printf.printf "Hold %s\n%!" (match x with None->"?" | Some x->string_of_int x);
-         continue k ();
-         x
-
+    match_with (iter suspending_f) c
+    { retc = (fun _ -> fun () -> None);
+      exnc = (fun e -> raise e);
+      effc = fun (type a) (e : a eff) ->
+        match e with
+        | Hold -> Some (fun (k : (a,_) continuation) ->
+            fun () ->
+              let x = !r in
+              Printf.printf "Hold %s\n%!" (
+                match x with
+                | None -> "?"
+                | Some x->string_of_int x);
+              continue k ();
+              x)
+        | e -> None }
    in
-   fun()-> next();;
-
+   fun () -> next();;
 
 let f () =
   let gen = iter2gen List.iter in

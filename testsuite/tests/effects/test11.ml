@@ -3,13 +3,18 @@
 
 (* Tests RESUMETERM with extra_args != 0 in bytecode,
    by calling a handler with a tail-continue that returns a function *)
-effect E : int
+
+open Obj.Effect_handlers
+open Obj.Effect_handlers.Deep
+
+type _ eff += E : int eff
 
 let handle comp =
-  match comp () with
-  | f -> f
-  | effect E k ->
-     continue k 10
+  try_with comp ()
+  { effc = fun (type a) (e : a eff) ->
+      match e with
+      | E -> Some (fun (k : (a,_) continuation) -> continue k 10)
+      | _ -> None }
 
 let () =
   handle (fun () ->
