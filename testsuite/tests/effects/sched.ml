@@ -1,10 +1,13 @@
 (* TEST
  *)
 
+open Obj.Effect_handlers
+open Obj.Effect_handlers.Deep
+
 exception E
-effect Yield : unit
-effect Fork : (unit -> string) -> unit
-effect Ping : unit
+type _ eff += Yield : unit eff
+            | Fork : (unit -> string) -> unit eff
+            | Ping : unit eff
 exception Pong
 
 let say = print_string
@@ -17,17 +20,22 @@ let run main =
     else continue (Queue.pop run_q) ()
   in
   let rec spawn f =
-    match f () with
-    | "ok" -> say "."; dequeue ()
-    | s -> failwith ("Unexpected result: " ^ s)
-    | exception E ->
-        say "!"; dequeue ()
-    | effect Yield k ->
-        say ","; enqueue k; dequeue ()
-    | effect (Fork f) k ->
-        say "+"; enqueue k; spawn f
-    | effect Ping k ->
-        say "["; discontinue k Pong
+    match_with f ()
+    { retc = (function
+        | "ok" -> say "."; dequeue ()
+        | s -> failwith ("Unexpected result: " ^ s));
+      exnc = (function
+        | E -> say "!"; dequeue ()
+        | e -> raise e);
+      effc = fun (type a) (e : a eff) ->
+        match e with
+        | Yield -> Some (fun (k : (a, _) continuation) ->
+            say ","; enqueue k; dequeue ())
+        | Fork f -> Some (fun (k : (a, _) continuation) ->
+            say "+"; enqueue k; spawn f)
+        | Ping -> Some (fun (k : (a, _) continuation) ->
+            say "["; discontinue k Pong)
+        | _ -> None }
   in
   spawn main
 
@@ -35,8 +43,16 @@ let test () =
   say "A";
   perform (Fork (fun () ->
      perform Yield; say "C"; perform Yield;
-     (try (perform Ping; failwith "no pong?")
-      with effect Yield k -> failwith "what?" | Pong -> say "]");
+     begin match_with (fun () -> perform Ping; failwith "no pong?") ()
+      { retc = (fun x -> x);
+        exnc = (function
+          | Pong -> say "]"
+          | e -> raise e);
+        effc = fun (type a) (e : a eff) ->
+          match e with
+          | Yield -> Some (fun (k : (a,_) continuation) -> failwith "what?")
+          | _ -> None }
+     end;
      raise E));
   perform (Fork (fun () -> say "B"; "ok"));
   say "D";

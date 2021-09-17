@@ -1,15 +1,21 @@
 (* TEST
  *)
 
-effect Foo : int -> int
+open Obj.Effect_handlers
+open Obj.Effect_handlers.Deep
+
+type _ eff += Foo : int -> int eff
 
 let r =
-  try
-    perform (Foo 3)
-  with effect (Foo i) k ->
-    (* continuation called outside try/with *)
-    try
-    continue k (i + 1)
-    with effect (Foo i) k -> failwith "NO"
+  try_with perform (Foo 3)
+  { effc = fun (type a) (e : a eff) ->
+      match e with
+      | Foo i -> Some (fun (k : (a,_) continuation) ->
+          try_with (continue k) (i+1)
+          { effc = fun (type a) (e : a eff) ->
+              match e with
+              | Foo i -> Some (fun k -> failwith "NO")
+              | e -> None })
+      | e -> None }
 
 let () = Printf.printf "%d\n" r

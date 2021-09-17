@@ -1,6 +1,15 @@
 (* TEST
  *)
 
-effect E : unit
+open Obj.Effect_handlers
+open Obj.Effect_handlers.Deep
+
+type _ eff += E : unit eff
+
 let () =
-  Printf.printf "%d\n%!" @@ try 10 with effect E k -> 11
+  Printf.printf "%d\n%!" @@
+    try_with (fun x -> x) 10
+    { effc = (fun (type a) (e : a eff) ->
+        match e with
+        | E -> Some (fun k -> 11)
+        | e -> None) }

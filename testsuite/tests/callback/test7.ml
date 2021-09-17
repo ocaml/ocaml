@@ -10,7 +10,10 @@
  * OCaml (c_to_caml) to C (printf functions). Effect E is performed in the
  * callback, which does not have a handler. *)
 
-effect E : unit
+open Obj.Effect_handlers
+open Obj.Effect_handlers.Deep
+
+type _ eff += E : unit eff
 
 let printf = Printf.printf
 
@@ -24,7 +27,7 @@ let _ = Callback.register "c_to_caml" c_to_caml
 external caml_to_c : unit -> unit = "caml_to_c"
 
 let _ =
-  try
+  try_with (fun () ->
     printf "[Caml] Call caml_to_c\n%!";
     begin try
       caml_to_c ()
@@ -32,5 +35,8 @@ let _ =
       (printf "[Caml] Caught Unhandled, perform effect\n%!";
        perform E)
     end;
-    printf "[Caml] Return from caml_to_c\n%!"
-  with effect E k -> printf "[Caml] Caught effect\n%!"
+    printf "[Caml] Return from caml_to_c\n%!") ()
+  { effc = fun (type a) (e : a eff) ->
+      match e with
+      | E -> Some (fun k -> printf "[Caml] Caught effect\n%!")
+      | _ -> None }

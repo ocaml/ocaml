@@ -551,7 +551,8 @@ stdlib__printexc.cmx : \
     stdlib__atomic.cmx \
     stdlib__array.cmx \
     stdlib__printexc.cmi
-stdlib__printexc.cmi :
+stdlib__printexc.cmi : \
+    stdlib__obj.cmi
 stdlib__printf.cmo : \
     camlinternalFormatBasics.cmi \
     camlinternalFormat.cmi \
