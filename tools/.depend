@@ -120,7 +120,6 @@ ocamlcmt.cmo : \
     ../typing/untypeast.cmi \
     ../typing/stypes.cmi \
     ../parsing/pprintast.cmi \
-    ../utils/misc.cmi \
     ../parsing/location.cmi \
     ../utils/load_path.cmi \
     ../typing/envaux.cmi \
@@ -133,7 +132,6 @@ ocamlcmt.cmx : \
     ../typing/untypeast.cmx \
     ../typing/stypes.cmx \
     ../parsing/pprintast.cmx \
-    ../utils/misc.cmx \
     ../parsing/location.cmx \
     ../utils/load_path.cmx \
     ../typing/envaux.cmx \

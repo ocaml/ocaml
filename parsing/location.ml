@@ -1011,15 +1011,17 @@ let () =
 
 external reraise : exn -> 'a = "%reraise"
 
-let report_exception ppf exn =
+let log_exception log exn =
   let rec loop n exn =
     match error_of_exn exn with
     | None -> reraise exn
     | Some `Already_displayed -> ()
-    | Some (`Ok err) -> report_error ppf err
+    | Some (`Ok err) -> report_error log err
     | exception exn when n > 0 -> loop (n-1) exn
   in
   loop 5 exn
+
+let report_exception ppf exn = log_exception (Direct ppf) exn
 
 exception Error of error
 

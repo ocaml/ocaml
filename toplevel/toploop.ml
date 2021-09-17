@@ -65,7 +65,7 @@ let use_lexbuf ppf ~wrap_in_module lb name filename =
         Misc.Log.logf ~key:"status" log "Interrupted.@.";
         Misc.Log.flush log;
         false
-    | x -> Location.report_exception log x; Misc.Log.flush log; false)
+    | x -> Location.log_exception log x; Misc.Log.flush log; false)
 
 let use_output ppf command =
   let fn = Filename.temp_file "ocaml" "_toploop.ml" in
@@ -131,7 +131,7 @@ let run_script ppf name args =
   begin
     try toplevel_env := Compmisc.initial_env()
     with Env.Error _ | Typetexp.Error _ as exn ->
-      Location.report_exception (Direct ppf) exn;
+      Location.log_exception (Direct ppf) exn;
       raise (Compenv.Exit_with_status 2)
   end;
   Sys.interactive := false;
@@ -210,7 +210,7 @@ let loop ppf =
     try initialize_toplevel_env ()
     with Env.Error _ | Typetexp.Error _ as exn ->
     let log = Location.init_log ppf in
-    Location.report_exception log exn; Misc.Log.flush log;
+    Location.log_exception log exn; Misc.Log.flush log;
     raise (Compenv.Exit_with_status 2)
   end;
   let lb = Lexing.from_function refill_lexbuf in
@@ -243,6 +243,6 @@ let loop ppf =
         Misc.Log.flush log;
         Btype.backtrack snap
     | PPerror -> Misc.Log.flush log; ()
-    | x -> Location.report_exception log x;
+    | x -> Location.log_exception log x;
       Misc.Log.flush log; Btype.backtrack snap
   done

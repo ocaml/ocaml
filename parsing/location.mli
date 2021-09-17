@@ -290,5 +290,6 @@ exception Already_displayed_error
 val raise_errorf: ?loc:t -> ?sub:msg list ->
   ('a, Format.formatter, unit, 'b) format4 -> 'a
 
-val report_exception: Misc.Log.t -> exn -> unit
+val log_exception: Misc.Log.t -> exn -> unit
+val report_exception: Format.formatter -> exn -> unit
 (** Reraise the exception if it is unknown. *)

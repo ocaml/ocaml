@@ -244,7 +244,7 @@ let print_raw_dependencies source_file deps =
 (* Process one file *)
 
 let print_exception exn =
-  Location.report_exception (Direct Format.err_formatter) exn
+  Location.log_exception (Direct Format.err_formatter) exn
 
 let report_err exn =
   Error_occurred.set ();
@@ -666,7 +666,7 @@ let run_main argv =
   | Compenv.Exit_with_status n ->
       n
   | exn ->
-      Location.report_exception (Direct ppf) exn;
+      Location.log_exception (Direct ppf) exn;
       2
 
 let main () =

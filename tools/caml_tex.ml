@@ -194,7 +194,7 @@ module Toplevel = struct
       ignore @@ Toploop.execute_phrase true ppf p
     with exn ->
       let bt = Printexc.get_raw_backtrace () in
-      begin try Location.report_exception (Misc.Log.Direct(snd error_fmt)) exn
+      begin try Location.report_exception (snd error_fmt) exn
       with _ ->
         eprintf "Uncaught exception: %s\n%s\n"
           (Printexc.to_string exn)

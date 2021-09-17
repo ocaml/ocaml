@@ -5954,11 +5954,9 @@ driver/compmisc.cmi : \
     typing/env.cmi \
     utils/clflags.cmi
 driver/errors.cmo : \
-    utils/misc.cmi \
     parsing/location.cmi \
     driver/errors.cmi
 driver/errors.cmx : \
-    utils/misc.cmx \
     parsing/location.cmx \
     driver/errors.cmi
 driver/errors.cmi :

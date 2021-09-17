@@ -115,7 +115,7 @@ let main argv ppf =
       let exit_number = match process_main log with
         | exception (Compenv.Exit_with_status n) -> n
         | exception x ->
-            Location.report_exception log x;
+            Location.log_exception log x;
             2
         | () ->
             Profile.print Format.std_formatter !Clflags.profile_columns;

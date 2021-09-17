@@ -43,7 +43,7 @@ let prepare ppf =
     Topcommon.run_hooks Topcommon.Startup;
     res
   with x ->
-    try Location.report_exception (Direct ppf) x; false
+    try Location.log_exception (Direct ppf) x; false
     with x ->
       Format.fprintf ppf "Uncaught exception: %s\n" (Printexc.to_string x);
       false

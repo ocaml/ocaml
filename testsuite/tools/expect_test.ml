@@ -237,7 +237,7 @@ let eval_expect_file _fname ~file_contents =
           exec_phrase ppf phrase
         with exn ->
           let bt = Printexc.get_raw_backtrace () in
-          begin try Location.report_exception (Misc.Log.Direct ppf) exn
+          begin try Location.report_exception ppf exn
           with _ ->
             Format.fprintf ppf "Uncaught exception: %s\n%s\n"
               (Printexc.to_string exn)
@@ -369,5 +369,5 @@ let () =
     Printf.eprintf "expect_test: no input file\n";
     exit 2
   with exn ->
-    Location.report_exception (Misc.Log.Direct Format.err_formatter) exn;
+    Location.report_exception Format.err_formatter exn;
     exit 2

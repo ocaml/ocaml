@@ -28,7 +28,7 @@ let pp_ref ppf = Format.pp_print_list ~pp_sep:( fun ppf () ->
     Format.pp_print_string ppf ".") Format.pp_print_int ppf
 
 let print_error error =
-  Location.print_report (Misc.Log.Direct Format.std_formatter)
+  Location.print_report Format.std_formatter
   @@ match error with
   | Tuple_expected loc ->
       Location.errorf ~loc

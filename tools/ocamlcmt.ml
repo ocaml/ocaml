@@ -195,6 +195,6 @@ let () =
     main ()
   with x ->
     Printf.eprintf "Exception in main ()\n%!";
-    Location.report_exception (Misc.Log.Direct Format.err_formatter) x;
+    Location.report_exception Format.err_formatter x;
     Format.fprintf Format.err_formatter "@.";
     exit 2
