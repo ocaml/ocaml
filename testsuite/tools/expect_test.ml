@@ -131,7 +131,7 @@ let split_chunks phrases =
 module Compiler_messages = struct
   let capture ppf ~f =
     Misc.protect_refs
-      [ R (Location.log_for_warnings, Misc.Log.Direct ppf) ]
+      [ R (Location.formatter_for_warnings, ppf) ]
       f
 end
 

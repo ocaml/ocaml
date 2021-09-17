@@ -210,7 +210,7 @@ val default_warning_reporter: t -> Warnings.t -> report option
 
 (** {2 Printing warnings} *)
 
-val log_for_warnings : Misc.Log.t ref
+val formatter_for_warnings : formatter ref
 
 val print_warning: t -> Misc.Log.t -> Warnings.t -> unit
 (** Prints a warning. This is simply the composition of [report_warning] and

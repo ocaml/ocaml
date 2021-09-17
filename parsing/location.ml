@@ -929,20 +929,31 @@ let default_warning_reporter =
 let warning_reporter = ref default_warning_reporter
 let report_warning loc w = !warning_reporter loc w
 
+(** we use a dummy formatter to detect client-defined formatters without
+    changing the interface
+*)
+let canary_formatter = Format.formatter_of_buffer (Buffer.create 0)
+let formatter_for_warnings = ref canary_formatter
 let log_for_warnings = ref (Misc.Log.Direct Format.err_formatter)
+
 
 let init_log ppf =
   let log = Misc.Log.make ~json:!Clflags.json ppf in
   log_for_warnings := log;
   log
 
+let select_warning_log () =
+  if !formatter_for_warnings == canary_formatter then
+    !log_for_warnings
+  else
+    Misc.Log.Direct !formatter_for_warnings
 
 let print_warning loc log w =
   match report_warning loc w with
   | None -> ()
   | Some report -> print_report log report
 
-let prerr_warning loc w = print_warning loc !log_for_warnings w
+let prerr_warning loc w = print_warning loc (select_warning_log ()) w
 
 let default_alert_reporter =
   default_warning_alert_reporter
@@ -960,7 +971,7 @@ let print_alert loc log w =
   | None -> ()
   | Some report -> print_report log report
 
-let prerr_alert loc w = print_alert loc !log_for_warnings w
+let prerr_alert loc w = print_alert loc (select_warning_log ()) w
 
 let alert ?(def = none) ?(use = none) ~kind loc message =
   prerr_alert loc {Warnings.kind; message; def; use}
