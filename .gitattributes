@@ -70,6 +70,8 @@ tools/mantis2gh_stripped.csv typo.missing-header
 # ignore auto-generated .depend files
 .depend                  typo.prune
 /.depend.menhir          typo.prune
+# ignore local opam switch
+/_opam                   typo.prune
 
 # Makefiles may contain tabs
 Makefile*                typo.makefile-whitespace=may
