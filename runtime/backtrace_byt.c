@@ -347,6 +347,48 @@ intnat caml_collect_current_callstack(value** ptrace, intnat* plen,
   return trace_pos;
 }
 
+/* Read the debugging info contained in a marshalled value. Used with
+   executables produced using "--output-complete-exe". */
+
+static void read_main_debug_info_from_block(struct debug_info *di, void *data, int len)
+{
+  CAMLparam0();
+  CAMLlocal5(datav, events, v, l, evl);
+  int i, orig;
+
+  datav = caml_input_value_from_block(data, len);
+  events = caml_alloc(Wosize_val(datav), 0);
+
+  for (i = 0; i < Wosize_val(datav); i++) {
+    v = Field(datav, i);
+    orig = Long_val(Field (v, 0));
+    evl = Field(v, 1);
+    for (l = evl; l != Val_int(0); l = Field(l, 1)) {
+      value ev = Field(l, 0);
+      Field(ev, EV_POS) = Val_long(Long_val(Field(ev, EV_POS)) + orig);
+    }
+    /* Record event list */
+    Store_field(events, i, evl);
+  }
+
+  di->events = process_debug_events(caml_start_code, events, &di->num_events);
+
+  CAMLreturn0;
+}
+
+/* Hook to allow retrieving debugging information from a place other than
+   embedded in the current executable. */
+
+static void *main_debug_data = NULL;
+
+static int32_t main_debug_size = -1;
+
+CAMLexport void caml_set_main_debug_info(void *data, int32_t size)
+{
+  main_debug_data = data;
+  main_debug_size = size;
+}
+
 /* Read the debugging info contained in the current bytecode executable. */
 
 static void read_main_debug_info(struct debug_info *di)
@@ -360,6 +402,13 @@ static void read_main_debug_info(struct debug_info *di)
 
   CAMLassert(di->already_read == 0);
   di->already_read = 1;
+
+  if (main_debug_size != -1) {
+    if (main_debug_size == 0)
+      CAMLreturn0;
+    read_main_debug_info_from_block(di, main_debug_data, main_debug_size);
+    CAMLreturn0;
+  }
 
   /* At the moment, bytecode programs built with --output-complete-exe
      do not contain any debug info.

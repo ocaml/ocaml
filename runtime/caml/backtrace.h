@@ -111,7 +111,10 @@ CAMLextern char_os * caml_cds_file;
 extern void caml_stash_backtrace(value exn, value * sp, int reraise);
 
 CAMLextern void caml_load_main_debug_info(void);
-#endif
+
+CAMLextern void caml_set_main_debug_info(void *, int32_t);
+
+#endif /* NATIVE_CODE */
 
 
 /* Default (C-level) printer for backtraces.  It is called if an
