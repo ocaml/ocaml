@@ -676,22 +676,11 @@ and transl_apply ~scopes
               defs := (id, lam) :: !defs;
               Lvar id
         in
-        (* If all arguments in [args] were optional, delay their application
-           until after this one is received *)
-        let args, args' =
-          if List.for_all (fun (_,opt) -> opt) args then [], args
-          else args, []
-        in
         let lam =
           if args = [] then lam else lapply lam (List.rev_map fst args)
         in
         (* Evaluate the function, applied to the arguments in [args] *)
         let handle = protect "func" lam in
-        (* Evaluate the arguments whose applications was delayed;
-           if we already passed here this is a no-op. *)
-        let args' =
-          List.map (fun (arg, opt) -> protect "arg" arg, opt) args'
-        in
         (* Evaluate the remaining arguments;
            if we already passed here this is a no-op. *)
         let l =
@@ -700,15 +689,10 @@ and transl_apply ~scopes
         let id_arg = Ident.create_local "param" in
         (* Process remaining arguments and build closure *)
         let body =
-          match build_apply handle ((Lvar id_arg, optional)::args') l with
-            Lfunction{kind = Curried; params = ids; return; body; attr; loc}
-            when List.length ids < Lambda.max_arity () ->
-              lfunction ~kind:Curried ~params:((id_arg, Pgenval)::ids)
-                        ~return ~body ~attr ~loc
-          | body ->
-              lfunction ~kind:Curried ~params:[id_arg, Pgenval]
-                        ~return:Pgenval ~body
-                        ~attr:default_stub_attribute ~loc
+          let body = build_apply handle [Lvar id_arg, optional] l in
+          lfunction ~kind:Curried ~params:[id_arg, Pgenval]
+            ~return:Pgenval ~body
+            ~attr:default_stub_attribute ~loc
         in
         (* Wrap "protected" definitions, starting from the left,
            so that evaluation is right-to-left. *)
