@@ -19,13 +19,13 @@ DOMAIN_STATE(volatile uintnat, young_limit)
  * by other domains to signal this domain by causing a spurious allocation
  * failure. */
 
-DOMAIN_STATE(char*, young_ptr)
+DOMAIN_STATE(value*, young_ptr)
 /* Minor heap pointer */
 
-DOMAIN_STATE(char*, young_start)
+DOMAIN_STATE(value*, young_start)
 /* Start of the minor heap */
 
-DOMAIN_STATE(char*, young_end)
+DOMAIN_STATE(value*, young_end)
 /* End of the minor heap. always(young_end <= young_ptr <= young_start) */
 
 DOMAIN_STATE(struct stack_info*, current_stack)
