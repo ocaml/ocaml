@@ -747,6 +747,7 @@ build_os
 build_vendor
 build_cpu
 build
+supports_incbin
 naked_pointers_checker
 naked_pointers
 compute_deps
@@ -2910,6 +2911,7 @@ VERSION=4.14.0+dev0-2021-06-03
 
 
  # TODO: rename this variable
+
 
 
 
@@ -14903,6 +14905,43 @@ if test "x$ac_cv_func_issetugid" = xyes; then :
 fi
 
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether incbin.h works" >&5
+$as_echo_n "checking whether incbin.h works... " >&6; }
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+ #include "$srcdir/tools/incbin.h"
+ #define INCBIN_PREFIX
+ #define INCBIN_STYLE INCBIN_STYLE_SNAKE
+ INCBIN(confdata, __FILE__);
+ void test(void)
+ {
+   (void)confdata_data;
+   (void)confdata_size;
+ }
+
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+  ac_config_commands="$ac_config_commands incbin.h"
+
+  supports_incbin=true
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+  supports_incbin=false
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+if $supports_incbin; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: Debugging info of complete bytecode binaries is supported." >&5
+$as_echo "$as_me: Debugging info of complete bytecode binaries is supported." >&6;}
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: Debugging info of complete bytecode binaries is not supported." >&5
+$as_echo "$as_me: Debugging info of complete bytecode binaries is not supported." >&6;}
+fi
+
 ## Checking for monotonic clock source
 ## On Windows MSVC, QueryPerformanceCounter and QueryPerformanceFrequency
 ## are always available.
@@ -18836,6 +18875,7 @@ do
     "runtime/caml/m.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/m.h" ;;
     "runtime/caml/s.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/s.h" ;;
     "libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool" ;;
+    "incbin.h") CONFIG_COMMANDS="$CONFIG_COMMANDS incbin.h" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
@@ -19933,6 +19973,7 @@ ltmain=$ac_aux_dir/ltmain.sh
   chmod +x "$ofile"
 
  ;;
+    "incbin.h":C) cp $srcdir/tools/incbin.h $srcdir/runtime/caml/ ;;
 
   esac
 done # for ac_tag
