@@ -292,6 +292,11 @@ let output_debug_info oc =
     !debug_info;
   debug_info := []
 
+let debug_info_to_string () =
+  let str = Marshal.to_string (Array.of_list !debug_info) [] in
+  debug_info := [];
+  str
+
 (* Output a list of strings with 0-termination *)
 
 let output_stringlist oc l =
@@ -463,6 +468,11 @@ let output_cds_file outfile =
        Bytesections.write_toc_and_trailer outchan;
     )
 
+let output_debug_file outfile =
+  let oc = open_out_bin outfile in
+  Fun.protect ~finally:(fun () -> close_out_noerr oc)
+    (fun () -> output_string oc (debug_info_to_string ()))
+
 (* Output a bytecode executable as a C file *)
 
 let link_bytecode_as_c tolink outfile with_main =
@@ -482,6 +492,7 @@ let link_bytecode_as_c tolink outfile with_main =
 \n#include <caml/mlvalues.h>\
 \n#include <caml/startup.h>\
 \n#include <caml/sys.h>\
+\n#include <caml/backtrace.h>\
 \n#include <caml/misc.h>\n";
        output_string outchan "static int caml_code[] = {\n";
        Symtable.init();
@@ -510,12 +521,24 @@ let link_bytecode_as_c tolink outfile with_main =
        output_string outchan "\n};\n\n";
        (* The table of primitives *)
        Symtable.output_primitive_table outchan;
+       if !Clflags.debug && Config.supports_incbin then begin
+         let debug_file_name = (Filename.chop_extension outfile) ^ ".debug" in
+         output_debug_file debug_file_name;
+         Printf.fprintf outchan "\
+\n#define INCBIN_PREFIX\
+\n#define INCBIN_STYLE INCBIN_STYLE_SNAKE\
+\n#include <caml/incbin.h>\
+\nINCBIN(caml_debug,\"%s\");\n" debug_file_name
+       end else
+         output_string outchan "\
+\nstatic void *caml_debug_data = NULL;\
+\nstatic int32_t caml_debug_size = 0;\n";
        (* The entry point *)
        if with_main then begin
          output_string outchan "\
 \nint main_os(int argc, char_os **argv)\
 \n{\
-\n  caml_byte_program_mode = COMPLETE_EXE;\
+\n  caml_set_main_debug_info((void *)caml_debug_data, caml_debug_size);\
 \n  caml_startup_code(caml_code, sizeof(caml_code),\
 \n                    caml_data, sizeof(caml_data),\
 \n                    caml_sections, sizeof(caml_sections),\
