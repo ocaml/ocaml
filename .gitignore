@@ -192,6 +192,7 @@ _build
 /runtime/prims.c
 /runtime/caml/opnames.h
 /runtime/caml/version.h
+/runtime/caml/incbin.h
 /runtime/ocamlrun
 /runtime/ocamlrund
 /runtime/ocamlruni

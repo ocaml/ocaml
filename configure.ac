@@ -171,6 +171,7 @@ AC_SUBST([stdlib_manpages])
 AC_SUBST([compute_deps])
 AC_SUBST([naked_pointers])
 AC_SUBST([naked_pointers_checker])
+AC_SUBST([supports_incbin])
 
 ## Generated files
 
@@ -1297,6 +1298,28 @@ CPPFLAGS="$saved_CPPFLAGS"
 ## issetugid
 
 AC_CHECK_FUNC([issetugid], [AC_DEFINE([HAS_ISSETUGID])])
+
+AC_MSG_CHECKING([whether incbin.h works])
+AC_COMPILE_IFELSE([
+ AC_LANG_SOURCE([[
+ #include "$srcdir/tools/incbin.h"
+ #define INCBIN_PREFIX
+ #define INCBIN_STYLE INCBIN_STYLE_SNAKE
+ INCBIN(confdata, __FILE__);
+ void test(void)
+ {
+   (void)confdata_data;
+   (void)confdata_size;
+ }
+ ]])],
+ [AC_MSG_RESULT([yes])
+  AC_CONFIG_COMMANDS([incbin.h], [cp $srcdir/tools/incbin.h $srcdir/runtime/caml/])
+  supports_incbin=true],
+ [AC_MSG_RESULT([no])
+  supports_incbin=false])
+AS_IF([$supports_incbin],
+  [AC_MSG_NOTICE([Debugging info of complete bytecode binaries is supported.])],
+  [AC_MSG_NOTICE([Debugging info of complete bytecode binaries is not supported.])])
 
 ## Checking for monotonic clock source
 ## On Windows MSVC, QueryPerformanceCounter and QueryPerformanceFrequency

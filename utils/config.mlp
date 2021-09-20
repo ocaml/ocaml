@@ -153,6 +153,8 @@ let systhread_supported = %%SYSTHREAD_SUPPORT%%;;
 
 let flexdll_dirs = [%%FLEXDLL_DIR%%];;
 
+let supports_incbin = %%SUPPORTS_INCBIN%%;;
+
 type configuration_value =
   | String of string
   | Int of int
@@ -205,6 +207,7 @@ let configuration_variables =
   p_bool "windows_unicode" windows_unicode;
   p_bool "supports_shared_libraries" supports_shared_libraries;
   p_bool "naked_pointers" naked_pointers;
+  p_bool "supports_incbin" supports_incbin;
 
   p "exec_magic_number" exec_magic_number;
   p "cmi_magic_number" cmi_magic_number;
