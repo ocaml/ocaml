@@ -72,28 +72,35 @@ module type S =
     val ltint : primitive
     val geint : primitive
     val gtint : primitive
-    (* type of actions *)
-    type act
+
     (* type of source locations *)
     type loc
+    (* type of switch scrutinees *)
+    type arg
+    (* type of tests on scrutinees *)
+    type test
+    (* type of actions *)
+    type act
 
     (* Various constructors, for making a binder,
         adding one integer, etc. *)
-    val bind : act -> (act -> act) -> act
-    val make_const : int -> act
-    val make_offset : act -> int -> act
-    val make_prim : primitive -> act list -> act
-    val make_isout : act -> act -> act
-    val make_isin : act -> act -> act
-    val make_if : act -> act -> act -> act
+    val bind : arg -> (arg -> act) -> act
+    val make_const : int -> arg
+    val make_offset : arg -> int -> arg
+    val make_prim : primitive -> arg list -> test
+    val make_isout : arg -> arg -> test
+    val make_isin : arg -> arg -> test
+    val make_is_nonzero : arg -> test
+
+    val make_if : test -> act -> act -> act
    (* construct an actual switch :
       make_switch arg cases acts
       NB:  cases is in the value form *)
-    val make_switch : loc -> act -> int array -> act array -> act
+    val make_switch : loc -> arg -> int array -> act array -> act
+
    (* Build last minute sharing of action stuff *)
    val make_catch : act -> int * (act -> act)
    val make_exit : int -> act
-
   end
 
 
@@ -114,14 +121,14 @@ module Make :
       val zyva :
           Arg.loc ->
           (int * int) ->
-           Arg.act ->
+           Arg.arg ->
            (int * int * int) array ->
            (Arg.act, _) t_store ->
            Arg.act
 
 (* Output test sequence, sharing tracked *)
      val test_sequence :
-           Arg.act ->
+           Arg.arg ->
            (int * int * int) array ->
            (Arg.act, _) t_store ->
            Arg.act

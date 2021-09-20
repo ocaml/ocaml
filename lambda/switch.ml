@@ -113,17 +113,23 @@ sig
   val ltint : primitive
   val geint : primitive
   val gtint : primitive
-  type act
-  type loc
 
-  val bind : act -> (act -> act) -> act
-  val make_const : int -> act
-  val make_offset : act -> int -> act
-  val make_prim : primitive -> act list -> act
-  val make_isout : act -> act -> act
-  val make_isin : act -> act -> act
-  val make_if : act -> act -> act -> act
-  val make_switch : loc -> act -> int array -> act array -> act
+  type loc
+  type arg
+  type test
+  type act
+
+  val bind : arg -> (arg -> act) -> act
+  val make_const : int -> arg
+  val make_offset : arg -> int -> arg
+  val make_prim : primitive -> arg list -> test
+  val make_isout : arg -> arg -> test
+  val make_isin : arg -> arg -> test
+  val make_is_nonzero : arg -> test
+
+  val make_if : test -> act -> act -> act
+  val make_switch : loc -> arg -> int array -> act array -> act
+
   val make_catch : act -> int * (act -> act)
   val make_exit : int -> act
 end
@@ -569,6 +575,9 @@ let rec pkey chan  = function
   and make_if_ne  arg i ifso ifnot =
     make_if_test Arg.neint arg i ifso ifnot
 
+  let make_if_nonzero arg ifso ifnot =
+    Arg.make_if (Arg.make_is_nonzero arg) ifso ifnot
+
   let do_make_if_out h arg ifso ifno =
     Arg.make_if (Arg.make_isout h arg) ifso ifno
 
@@ -658,7 +667,7 @@ let rec pkey chan  = function
           and right = {s with cases=right} in
 
           if i=1 && (lim+ctx.off)=1 && get_low cases 0+ctx.off=0 then
-            Arg.make_if
+            make_if_nonzero
               ctx.arg
               (c_test ctx right) (c_test ctx left)
           else if less_tests cright cleft then
