@@ -104,7 +104,7 @@ let input_all ic =
           let new_buf = Bytes.create new_len in
           Bytes.blit buf 0 new_buf 0 ofs;
           Bytes.set buf ofs c;
-          loop new_buf ofs
+          loop new_buf (ofs + 1)
     end
   in
   let initial_size =
