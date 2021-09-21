@@ -202,6 +202,7 @@ EXIT_CODE=0
       *$f*) is_cmd_line=true;;
       *) is_cmd_line=false;;
     esac
+    if $path_in_index || $is_cmd_line; then :; else continue; fi
     if [ -z "$OCAML_CT_PREFIX" ] ; then
       if [ -x "$f" ] ; then
         check_script "$f"
@@ -211,7 +212,6 @@ EXIT_CODE=0
         check_script "$f"
       fi
     fi
-    if $path_in_index || $is_cmd_line; then :; else continue; fi
     attr_rules=''
     if $path_in_index; then
       # Below is a git plumbing command to detect whether git regards a
