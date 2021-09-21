@@ -73,7 +73,8 @@ Working version
 
 - #10596: Add with_open_bin, with_open_text and with_open_gen to In_channel and
   Out_channel. Also, add In_channel.input_all.
-  (Nicolás Ojeda Bär, review by Daniel Bünzli and Xavier Leroy)
+  (Nicolás Ojeda Bär, review by Daniel Bünzli, Jérémie Dimino, Damien Doligez
+  and Xavier Leroy)
 
 ### Other libraries:
 
