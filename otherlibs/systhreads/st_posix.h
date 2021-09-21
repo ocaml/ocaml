@@ -42,7 +42,6 @@
 
 typedef int st_retcode;
 
-#define SIGPREEMPTION SIGVTALRM
 #define Thread_timeout 50
 
 /* Variables used to stop "tick" threads */
@@ -316,7 +315,7 @@ static int st_event_wait(st_event e)
   return rc;
 }
 
-/* The tick thread: posts a SIGPREEMPTION signal periodically */
+/* The tick thread: interrupt the domain periodically to force preemption  */
 
 static void * caml_thread_tick(void * arg)
 {
