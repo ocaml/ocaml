@@ -64,7 +64,6 @@ void caml_garbage_collection()
   char *sp;
   uintnat retaddr;
   intnat whsize;
-  intnat alloc_bsize;
 
   caml_frame_descrs fds = caml_get_frame_descrs();
   struct stack_info* stack = Caml_state->current_stack;
@@ -105,11 +104,8 @@ void caml_garbage_collection()
 
     whsize = Whsize_wosize(allocsz);
 
-    alloc_bsize = whsize * sizeof(value);
-
     /* Put the young pointer back to what is was before our tiggering allocation */
-    Caml_state->young_ptr = (value *)((uintnat)Caml_state->young_ptr
-				      + alloc_bsize);
+    Caml_state->young_ptr += whsize;
 
     /* When caml_garbage_collection returns, we assume there is enough space in
       the minor heap for the triggering allocation. Due to finalisers in the
@@ -119,12 +115,10 @@ void caml_garbage_collection()
     do {
       caml_handle_gc_interrupt();
       caml_raise_if_exception(caml_process_pending_signals_exn());
-    } while( (uintnat)Caml_state->young_ptr - alloc_bsize
-	     <= (uintnat)Caml_state->young_limit );
+    } while( (uintnat)(Caml_state->young_ptr - whsize) <= Caml_state->young_limit );
 
     /* Re-do the allocation: we now have enough space in the minor heap. */
-    Caml_state->young_ptr = (value *)((uintnat)Caml_state->young_ptr
-				      - alloc_bsize);
+    Caml_state->young_ptr -= whsize;
   }
 }
 

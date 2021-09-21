@@ -205,19 +205,17 @@ extern uintnat caml_use_huge_pages;
 #define DEBUG_clear(result, wosize)
 #endif
 
-#define Move_young_ptr(d, to) d->young_ptr = (value*)((uintnat)d->young_ptr to);
-
 #define Alloc_small_with_profinfo(result, wosize, tag, GC, profinfo) do{    \
   caml_domain_state* dom_st;                                                \
                                                 CAMLassert ((wosize) >= 1); \
                                           CAMLassert ((tag_t) (tag) < 256); \
                                  CAMLassert ((wosize) <= Max_young_wosize); \
   dom_st = Caml_state;                                                      \
-  Move_young_ptr(dom_st, -Bhsize_wosize(wosize));                           \
+  dom_st->young_ptr -=  Whsize_wosize(wosize);                              \
   while (Caml_check_gc_interrupt(dom_st)) {                                 \
-    Move_young_ptr(dom_st, +Bhsize_wosize(wosize));                         \
+    dom_st->young_ptr += Whsize_wosize(wosize);                             \
     { GC }                                                                  \
-    Move_young_ptr(dom_st, -Bhsize_wosize(wosize));                         \
+    dom_st->young_ptr -= Whsize_wosize(wosize);                             \
   }                                                                         \
   Hd_hp (dom_st->young_ptr) =                                               \
     Make_header_with_profinfo ((wosize), (tag), 0, profinfo);               \
