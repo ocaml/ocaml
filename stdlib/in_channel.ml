@@ -99,7 +99,8 @@ let input_all ic =
             else if len < Sys.max_string_length then
               Sys.max_string_length
             else
-              failwith "In_channel.input_all: cannot grow buffer"
+              failwith "In_channel.input_all: channel content \
+                        is larger than maximum string length"
           in
           let new_buf = Bytes.create new_len in
           Bytes.blit buf 0 new_buf 0 ofs;
