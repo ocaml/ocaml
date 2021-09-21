@@ -78,43 +78,83 @@ let really_input_string ic len =
   | s -> Some s
   | exception End_of_file -> None
 
-let input_all ic =
-  let rec loop buf ofs =
-    let len = Bytes.length buf in
-    if ofs < len then
-      let r = Stdlib.input ic buf ofs (len - ofs) in
+(* Read up to [len] bytes into [buf], starting at [ofs]. Return total bytes
+   read. *)
+let read_upto ic buf ofs len =
+  let rec loop ofs len =
+    if len = 0 then ofs
+    else begin
+      let r = Stdlib.input ic buf ofs len in
       if r = 0 then
-        Bytes.sub_string buf 0 ofs
+        ofs
       else
-        loop buf (ofs + r)
-    else begin (* ofs = len *)
-      match Stdlib.input_char ic with
-      | exception End_of_file ->
-          Bytes.unsafe_to_string buf
-      | c ->
-          let new_len = if len = 0 then 65536 else 2 * Bytes.length buf in
-          let new_len =
-            if new_len <= Sys.max_string_length then
-              new_len
-            else if len < Sys.max_string_length then
-              Sys.max_string_length
-            else
-              failwith "In_channel.input_all: channel content \
-                        is larger than maximum string length"
-          in
-          let new_buf = Bytes.create new_len in
-          Bytes.blit buf 0 new_buf 0 ofs;
-          Bytes.set buf ofs c;
-          loop new_buf (ofs + 1)
+        loop (ofs + r) (len - r)
     end
   in
+  loop ofs len - ofs
+
+(* Return a buffer that has >= [ofs + n] bytes of storage, and
+   coincides with [buf] at indices < [ofs]. *)
+let ensure buf ofs n =
+  let len = Bytes.length buf in
+  if len >= ofs + n then buf
+  else begin
+    let new_len = ref len in
+    while !new_len < ofs + n do
+      new_len := 2 * !new_len + 1
+    done;
+    let new_len = !new_len in
+    let new_len =
+      if new_len <= Sys.max_string_length then
+        new_len
+      else if ofs < Sys.max_string_length then
+        Sys.max_string_length
+      else
+        failwith "In_channel.input_all: channel content \
+                  is larger than maximum string length"
+    in
+    let new_buf = Bytes.create new_len in
+    Bytes.blit buf 0 new_buf 0 ofs;
+    buf
+  end
+
+let input_all ic =
+  let chunk_size = 65536 in (* IO_BUFFER_SIZE *)
   let initial_size =
     try
       Stdlib.in_channel_length ic - Stdlib.pos_in ic
     with Sys_error _ ->
-      0
+      -1
   in
-  let initial_size = if initial_size <= 0 then 0 else initial_size in
-  loop (Bytes.create initial_size) 0
+  let initial_size = if initial_size < 0 then chunk_size else initial_size in
+  let initial_size =
+    if initial_size <= Sys.max_string_length then
+      initial_size
+    else
+      Sys.max_string_length
+  in
+  let buf = Bytes.create initial_size in
+  let nread = read_upto ic buf 0 initial_size in
+  if nread < initial_size then (* EOF reached, buffer partially filled *)
+    Bytes.sub_string buf 0 nread
+  else begin (* nread = initial_size, maybe EOF reached *)
+    match Stdlib.input_char ic with
+    | exception End_of_file ->
+        (* EOF reached, buffer is completely filled *)
+        Bytes.unsafe_to_string buf
+    | c ->
+        (* EOF not reached *)
+        let rec loop buf ofs =
+          let buf = ensure buf ofs chunk_size in
+          let r = read_upto ic buf ofs chunk_size in
+          if r < chunk_size then (* EOF reached *)
+            Bytes.sub_string buf 0 (ofs + r)
+          else (* r = chunk_size *)
+            loop buf (ofs + chunk_size)
+        in
+        let buf = ensure buf nread (chunk_size + 1) in
+        Bytes.set buf nread c;
+        loop buf (nread + 1)
+  end
 
 let set_binary_mode = Stdlib.set_binary_mode_in
