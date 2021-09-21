@@ -92,7 +92,7 @@ let input_all ic =
       | exception End_of_file ->
           Bytes.unsafe_to_string buf
       | c ->
-          let new_len = 2 * Bytes.length buf in
+          let new_len = if len = 0 then 65536 else 2 * Bytes.length buf in
           let new_len =
             if new_len <= Sys.max_string_length then
               new_len
@@ -114,7 +114,7 @@ let input_all ic =
     with Sys_error _ ->
       0
   in
-  let initial_size = if initial_size <= 0 then 65536 else initial_size in
+  let initial_size = if initial_size <= 0 then 0 else initial_size in
   loop (Bytes.create initial_size) 0
 
 let set_binary_mode = Stdlib.set_binary_mode_in
