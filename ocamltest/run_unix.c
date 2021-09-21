@@ -115,11 +115,11 @@ static int paths_same_file(
   char realpath1[PATH_MAX], realpath2[PATH_MAX];
   if (realpath(path1, realpath1) == NULL)
     realpath_error(path1);
-    if (realpath(path2, realpath2) == NULL)
-    {
-      if (errno == ENOENT) return 0;
-      else realpath_error(path2);
-    }
+  if (realpath(path2, realpath2) == NULL)
+  {
+    if (errno == ENOENT) return 0;
+    else realpath_error(path2);
+  }
 #endif /* __GLIBC__ */
   if (strcmp(realpath1, realpath2) == 0)
     same_file = 1;
