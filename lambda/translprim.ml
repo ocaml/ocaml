@@ -362,6 +362,8 @@ let primitives_table =
     "%atomic_exchange", Primitive (Patomic_exchange, 2);
     "%atomic_cas", Primitive (Patomic_cas, 3);
     "%atomic_fetch_add", Primitive (Patomic_fetch_add, 2);
+    "%runstack", Primitive (Prunstack, 3);
+    "%reperform", Primitive (Preperform, 3);
     "%perform", Primitive (Pperform, 1);
     "%resume", Primitive (Presume, 3);
     "%nop", Primitive (Pnop, 1);
