@@ -2800,7 +2800,6 @@ ocamlc_cflags=""
 ocamlc_cppflags=""
 oc_ldflags=""
 oc_dll_ldflags=""
-with_sharedlibs=true
 ostype="Unix"
 SO="so"
 toolchain="cc"
@@ -12846,13 +12845,15 @@ esac
 #    [enable_shared=yes])
 
 if test x"$enable_shared" = "xno"; then :
-  with_sharedlibs=false
+  supports_shared_libraries=false
   case $host in #(
   *-pc-windows|*-w64-mingw32) :
     as_fn_error $? "Cannot build native Win32 with --disable-shared" "$LINENO" 5 ;; #(
   *) :
      ;;
 esac
+else
+  supports_shared_libraries=true
 fi
 
 # Define flexlink chain and flags correctly for the different Windows ports
@@ -12881,7 +12882,7 @@ case $host in #(
      ;;
 esac
 
-if test x"$enable_shared" != 'xno'; then :
+if test x"$supports_shared_libraries" != 'xfalse'; then :
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for flexdll sources" >&5
 $as_echo_n "checking for flexdll sources... " >&6; }
@@ -13159,41 +13160,27 @@ fi
 
 fi
 
-if test x"$have_flexdll_h" = 'xno'; then :
-  case $host in #(
-  *-*-cygwin*) :
-    if $with_sharedlibs; then :
-  with_sharedlibs=false
-        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: flexdll.h not found: shared library support disabled." >&5
-$as_echo "$as_me: WARNING: flexdll.h not found: shared library support disabled." >&2;}
-
-fi ;; #(
-  *-w64-mingw32|*-pc-windows) :
+case $have_flexdll_h,$supports_shared_libraries,$host in #(
+  no,true,*-*-cygwin*) :
+    supports_shared_libraries=false
+   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: flexdll.h not found: shared library support disabled." >&5
+$as_echo "$as_me: WARNING: flexdll.h not found: shared library support disabled." >&2;} ;; #(
+  no,*,*-w64-mingw32|no,*,*-pc-windows) :
     as_fn_error $? "flexdll.h is required for native Win32" "$LINENO" 5 ;; #(
   *) :
      ;;
 esac
-fi
 
-if test -z "$flexdir" -o x"$have_flexdll_h" = 'xno'; then :
-  case $host in #(
-  *-*-cygwin*) :
-    if $with_sharedlibs; then :
-  if test -z "$flexlink"; then :
-  with_sharedlibs=false
-          { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: flexlink/flexdll.h not found: shared library support disabled." >&5
-$as_echo "$as_me: WARNING: flexlink/flexdll.h not found: shared library support disabled." >&2;}
-
-fi
-fi ;; #(
-  *-w64-mingw32|*-pc-windows) :
-    if test -z "$flexlink"; then :
-  as_fn_error $? "flexlink is required for native Win32" "$LINENO" 5
-fi ;; #(
+case $flexdir,$supports_shared_libraries,$flexlink,$host in #(
+  ,true,,*-*-cygwin*) :
+    supports_shared_libraries=false
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: flexlink not found: shared library support disabled." >&5
+$as_echo "$as_me: WARNING: flexlink not found: shared library support disabled." >&2;} ;; #(
+  ,*,,*-w64-mingw32|,*,,*-pc-windows) :
+    as_fn_error $? "flexlink is required for native Win32" "$LINENO" 5 ;; #(
   *) :
      ;;
 esac
-fi
 
 case $CC,$host in #(
   *,*-*-darwin*) :
@@ -13204,7 +13191,7 @@ case $CC,$host in #(
     mathlib="" ;; #(
   *,*-*-cygwin*) :
     common_cppflags="$common_cppflags -U_WIN32"
-    if $with_sharedlibs; then :
+    if $supports_shared_libraries; then :
   mkexe='$(FLEXLINK) -exe $(if $(OC_LDFLAGS),-link "$(OC_LDFLAGS)")'
       mkexedebugflag="-link -g"
 else
@@ -14021,7 +14008,6 @@ fi
 
 # Shared library support
 
-shared_libraries_supported=false
 sharedlib_cflags=''
 mksharedlib='shared-libs-not-available'
 rpath=''
@@ -14034,7 +14020,7 @@ if test x"$enable_shared" != "xno"; then :
     mksharedlib="$CC -shared \
                    -flat_namespace -undefined suppress -Wl,-no_compact_unwind \
                    \$(LDFLAGS)"
-      shared_libraries_supported=true ;; #(
+      supports_shared_libraries=true ;; #(
   *-*-mingw32) :
     mksharedlib='$(FLEXLINK)'
       mkmaindll='$(FLEXLINK) -maindll'
@@ -14042,21 +14028,18 @@ if test x"$enable_shared" != "xno"; then :
 
         mksharedlib="$mksharedlib -link \"$oc_dll_ldflags\""
         mkmaindll="$mkmaindll -link \"$oc_dll_ldflags\""
-fi
-      shared_libraries_supported=$with_sharedlibs ;; #(
+fi ;; #(
   *-pc-windows) :
     mksharedlib='$(FLEXLINK)'
-      mkmaindll='$(FLEXLINK) -maindll'
-      shared_libraries_supported=$with_sharedlibs ;; #(
+      mkmaindll='$(FLEXLINK) -maindll' ;; #(
   *-*-cygwin*) :
     mksharedlib='$(FLEXLINK)'
-      mkmaindll='$(FLEXLINK) -maindll'
-      shared_libraries_supported=$with_sharedlibs ;; #(
+      mkmaindll='$(FLEXLINK) -maindll' ;; #(
   powerpc-ibm-aix*) :
     case $ocaml_cv_cc_vendor in #(
   xlc*) :
     mksharedlib="$CC -qmkshrobj -G \$(LDFLAGS)"
-                shared_libraries_supported=true ;; #(
+                supports_shared_libraries=true ;; #(
   *) :
      ;;
 esac ;; #(
@@ -14065,7 +14048,7 @@ esac ;; #(
       mksharedlib="$CC -shared"
       rpath="-Wl,-rpath,"
       mksharedlibrpath="-Wl,-rpath,"
-      shared_libraries_supported=true ;; #(
+      supports_shared_libraries=true ;; #(
   *-*-linux*|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*) :
     sharedlib_cflags="-fPIC"
@@ -14079,7 +14062,7 @@ esac
       rpath="-Wl,-rpath,"
       mksharedlibrpath="-Wl,-rpath,"
       natdynlinkopts="-Wl,-E"
-      shared_libraries_supported=true ;; #(
+      supports_shared_libraries=true ;; #(
   *) :
      ;;
 esac
@@ -14093,7 +14076,7 @@ fi
 
 natdynlink=false
 
-if test x"$shared_libraries_supported" = 'xtrue'; then :
+if test x"$supports_shared_libraries" = 'xtrue'; then :
   case "$host" in #(
   *-*-cygwin*) :
     natdynlink=true ;; #(
@@ -15857,10 +15840,10 @@ fi
 esac
 
 ## shared library support
-if $shared_libraries_supported; then :
+if $supports_shared_libraries; then :
   case $host in #(
   *-*-mingw32|*-pc-windows|*-*-cygwin*) :
-    supports_shared_libraries=$shared_libraries_supported; DLLIBS="" ;; #(
+    DLLIBS="" ;; #(
   *) :
     ac_fn_c_check_func "$LINENO" "dlopen" "ac_cv_func_dlopen"
 if test "x$ac_cv_func_dlopen" = xyes; then :
