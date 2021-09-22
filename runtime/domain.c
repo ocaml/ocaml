@@ -310,8 +310,8 @@ int caml_reallocate_minor_heap(asize_t wsize)
 
   domain_state->minor_heap_wsz = wsize;
 
-  domain_state->young_start = (char*)domain_self->minor_heap_area;
-  domain_state->young_end = (char*)(domain_self->minor_heap_area + Bsize_wsize(wsize));
+  domain_state->young_start = (value*)domain_self->minor_heap_area;
+  domain_state->young_end = (value*)(domain_self->minor_heap_area + Bsize_wsize(wsize));
   domain_state->young_limit = (uintnat) domain_state->young_start;
   domain_state->young_ptr = domain_state->young_end;
   return 0;
