@@ -319,10 +319,12 @@ static int st_event_wait(st_event e)
 
 static void * caml_thread_tick(void * arg)
 {
+  caml_domain_state *domain;
   uintnat *domain_id = (uintnat *) arg;
   struct timeval timeout;
 
   caml_init_domain_self(*domain_id);
+  domain = Caml_state;
 
   while(! atomic_load_acq(&Tick_thread_stop)) {
     /* select() seems to be the most efficient way to suspend the
@@ -331,7 +333,7 @@ static void * caml_thread_tick(void * arg)
     timeout.tv_usec = Thread_timeout * 1000;
     select(0, NULL, NULL, NULL, &timeout);
 
-    Caml_state->requested_external_interrupt = 1;
+    atomic_store_rel((atomic_uintnat*)&domain->requested_external_interrupt, 1);
     caml_interrupt_self();
   }
   return NULL;
