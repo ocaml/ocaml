@@ -359,8 +359,10 @@ CAMLprim value caml_thread_yield(value unit);
 
 void caml_thread_interrupt_hook(void)
 {
-  if (Caml_state->requested_external_interrupt == 1) {
-    Caml_state->requested_external_interrupt = 0;
+  caml_domain_state *domain = Caml_state;
+
+  if (atomic_load_acq((atomic_uintnat*)&domain->requested_external_interrupt) == 1) {
+    atomic_store_rel((atomic_uintnat*)&domain->requested_external_interrupt, 0);
     caml_thread_yield(Val_unit);
   }
 

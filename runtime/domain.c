@@ -1039,7 +1039,7 @@ static void caml_poll_gc_work()
     CAML_EV_END(EV_MAJOR);
   }
 
-  if (Caml_state->requested_external_interrupt) {
+  if (atomic_load_acq((atomic_uintnat*)&Caml_state->requested_external_interrupt)) {
     caml_domain_external_interrupt_hook();
   }
 
