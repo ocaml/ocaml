@@ -12630,6 +12630,7 @@ esac
 
 otherlibraries="dynlink"
 if test x"$enable_unix_lib" != "xno"; then :
+  enable_unix_lib=yes
   if test x"$enable_bigarray_lib" != "xno"; then :
   otherlibraries="$otherlibraries $unixlib bigarray"
 else
@@ -16581,12 +16582,16 @@ esac
 
 ## Determine if the POSIX threads library is supported
 
-if test x"$enable_systhreads" = "xno"; then :
-  systhread_support=false
-  { $as_echo "$as_me:${as_lineno-$LINENO}: the Win32/POSIX threads library is disabled" >&5
-$as_echo "$as_me: the Win32/POSIX threads library is disabled" >&6;}
-else
-  case $host in #(
+case $enable_systhreads,$enable_unix_lib in #(
+  yes,no) :
+    systhread_support=false
+    as_fn_error $? "the Win32/POSIX threads library requires the unix library" "$LINENO" 5 ;; #(
+  no,*|*,no) :
+    systhread_support=false
+    { $as_echo "$as_me:${as_lineno-$LINENO}: the Win32/POSIX threads library is disabled" >&5
+$as_echo "$as_me: the Win32/POSIX threads library is disabled" >&6;} ;; #(
+  *) :
+    case $host in #(
   *-*-mingw32|*-pc-windows) :
     systhread_support=true
       otherlibraries="$otherlibraries systhreads"
@@ -17276,8 +17281,8 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
  ;;
+esac ;;
 esac
-fi
 
 ## Does the assembler support debug prefix map and CFI directives
 as_has_debug_prefix_map=false
