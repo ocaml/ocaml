@@ -318,6 +318,7 @@ static void * caml_thread_tick(void * arg)
   caml_init_domain_self(*domain_id);
   domain = Caml_state;
 
+  caml_domain_set_name(T("Tick"));
   while(! atomic_load_acq(&Tick_thread_stop)) {
     /* select() seems to be the most efficient way to suspend the
        thread for sub-second intervals */
