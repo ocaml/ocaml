@@ -93,8 +93,18 @@ let read_upto ic buf ofs len =
   in
   loop ofs len - ofs
 
-(* Return a buffer that has >= [ofs + n] bytes of storage, and
-   coincides with [buf] at indices < [ofs]. *)
+(* Best effort attempt to return a buffer with >= (ofs + n) bytes of storage,
+   and such that it coincides with [buf] at indices < [ofs].
+
+   The returned buffer is equal to [buf] itself if it already has sufficient
+   free space.
+
+   The returned buffer may have *fewer* than [ofs + n] bytes of storage if this
+   number is > [Sys.max_string_length]. However the returned buffer will
+   *always* have > [ofs] bytes of storage. In the limiting case when [ofs = len
+   = Sys.max_string_lenght] (so that it is not possible to resize the buffer at
+   all), an exception is raised. *)
+
 let ensure buf ofs n =
   let len = Bytes.length buf in
   if len >= ofs + n then buf
@@ -146,11 +156,14 @@ let input_all ic =
         (* EOF not reached *)
         let rec loop buf ofs =
           let buf = ensure buf ofs chunk_size in
-          let r = read_upto ic buf ofs chunk_size in
-          if r < chunk_size then (* EOF reached *)
+          let rem = Bytes.length buf - ofs in
+          (* [rem] can be < [chunk_size] if buffer size close to
+             [Sys.max_string_length] *)
+          let r = read_upto ic buf ofs rem in
+          if r < rem then (* EOF reached *)
             Bytes.sub_string buf 0 (ofs + r)
-          else (* r = chunk_size *)
-            loop buf (ofs + chunk_size)
+          else (* r = rem *)
+            loop buf (ofs + rem)
         in
         let buf = ensure buf nread (chunk_size + 1) in
         Bytes.set buf nread c;
