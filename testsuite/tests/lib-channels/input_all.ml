@@ -42,31 +42,47 @@ let () =
 
 (* text mode *)
 
-(* translates LF into CRLF in-place in [fn] *)
-let unix2dos fn =
-  let s = In_channel.with_open_text fn In_channel.input_all in
-  Out_channel.with_open_text fn
+(* translates into LF *)
+let dos2unix inp out =
+  let s = In_channel.with_open_text inp In_channel.input_all in
+  Out_channel.with_open_bin out
+    (fun oc -> Out_channel.output_string oc s)
+
+(* translates into CRLF *)
+let unix2dos inp out =
+  let s = In_channel.with_open_text inp In_channel.input_all in
+  Out_channel.with_open_text out
     (fun oc -> Out_channel.output_string oc s)
 
 let source_fn =
   "input_all.ml"
 
-let source =
-  In_channel.with_open_bin source_fn In_channel.input_all
+let source_fn_lf =
+  source_fn ^ ".lf"
+
+let source_fn_crlf =
+  source_fn ^ ".crlf"
 
 let () =
-  unix2dos source_fn
+  dos2unix source_fn source_fn_lf
+
+let () =
+  unix2dos source_fn source_fn_crlf
+
+let raw_contents =
+  In_channel.with_open_bin source_fn_lf
+    (fun ic -> Stdlib.really_input_string ic (Stdlib.in_channel_length ic))
 
 let check midpoint =
   let contents =
-    In_channel.with_open_text source_fn
+    In_channel.with_open_text source_fn_crlf
       (fun ic ->
          let s1 = Option.get (In_channel.really_input_string ic midpoint) in
          let s2 = In_channel.input_all ic in
          s1 ^ s2
       )
   in
-  assert (contents = source)
+  assert (contents = raw_contents)
 
 let () =
-  List.iter check [0; 1; String.length source]
+  List.iter check [0; 1; String.length raw_contents]
