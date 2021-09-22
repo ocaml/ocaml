@@ -36,19 +36,30 @@
 
 #include <pthread.h>
 #include <signal.h>
+#ifdef HAS_SYS_SELECT_H
+#include <sys/select.h>
+#endif
 
 typedef int st_retcode;
 
+#define Thread_timeout 50
+
+/* Variables used to stop "tick" threads */
+static atomic_uintnat tick_thread_stop[Max_domains];
+#define Tick_thread_stop tick_thread_stop[Caml_state->id]
+
 /* OS-specific initialization */
 
-/* static int st_initialize(void) */
-/* { */
-/*   return 0; */
-/* } */
+static int st_initialize(void)
+{
+  atomic_store_rel(&Tick_thread_stop, 0);
+  return 0;
+}
 
 /* Thread creation.  Created in detached mode if [res] is NULL. */
 
 typedef pthread_t st_thread_id;
+
 
 static int st_thread_create(st_thread_id * res,
                             void * (*fn)(void *), void * arg)
@@ -71,6 +82,12 @@ static int st_thread_create(st_thread_id * res,
 Caml_inline void st_thread_cleanup(void)
 {
   return;
+}
+
+static void st_thread_join(st_thread_id thr)
+{
+  pthread_join(thr, NULL);
+  /* best effort: ignore errors */
 }
 
 /* Thread termination */
@@ -298,6 +315,29 @@ static int st_event_wait(st_event e)
   return rc;
 }
 
+/* The tick thread: interrupt the domain periodically to force preemption  */
+
+static void * caml_thread_tick(void * arg)
+{
+  caml_domain_state *domain;
+  uintnat *domain_id = (uintnat *) arg;
+  struct timeval timeout;
+
+  caml_init_domain_self(*domain_id);
+  domain = Caml_state;
+
+  while(! atomic_load_acq(&Tick_thread_stop)) {
+    /* select() seems to be the most efficient way to suspend the
+       thread for sub-second intervals */
+    timeout.tv_sec = 0;
+    timeout.tv_usec = Thread_timeout * 1000;
+    select(0, NULL, NULL, NULL, &timeout);
+
+    atomic_store_rel((atomic_uintnat*)&domain->requested_external_interrupt, 1);
+    caml_interrupt_self();
+  }
+  return NULL;
+}
 
 /* "At fork" processing */
 

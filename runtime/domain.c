@@ -673,11 +673,19 @@ static void caml_domain_start_default(void)
   return;
 }
 
+static void caml_domain_external_interrupt_hook_default(void)
+{
+  return;
+}
+
 CAMLexport void (*caml_domain_start_hook)(void) =
    caml_domain_start_default;
 
 CAMLexport void (*caml_domain_stop_hook)(void) =
    caml_domain_stop_default;
+
+CAMLexport void (*caml_domain_external_interrupt_hook)(void) =
+   caml_domain_external_interrupt_hook_default;
 
 static void domain_terminate();
 
@@ -1030,6 +1038,11 @@ static void caml_poll_gc_work()
     caml_major_collection_slice(AUTO_TRIGGERED_MAJOR_SLICE);
     CAML_EV_END(EV_MAJOR);
   }
+
+  if (atomic_load_acq((atomic_uintnat*)&Caml_state->requested_external_interrupt)) {
+    caml_domain_external_interrupt_hook();
+  }
+
 }
 
 static void handle_gc_interrupt() {
