@@ -211,11 +211,11 @@ extern uintnat caml_use_huge_pages;
                                           CAMLassert ((tag_t) (tag) < 256); \
                                  CAMLassert ((wosize) <= Max_young_wosize); \
   dom_st = Caml_state;                                                      \
-  dom_st->young_ptr -= Bhsize_wosize (wosize);                              \
+  dom_st->young_ptr -=  Whsize_wosize(wosize);                              \
   while (Caml_check_gc_interrupt(dom_st)) {                                 \
-    dom_st->young_ptr += Bhsize_wosize (wosize);                            \
+    dom_st->young_ptr += Whsize_wosize(wosize);                             \
     { GC }                                                                  \
-    dom_st->young_ptr -= Bhsize_wosize (wosize);                            \
+    dom_st->young_ptr -= Whsize_wosize(wosize);                             \
   }                                                                         \
   Hd_hp (dom_st->young_ptr) =                                               \
     Make_header_with_profinfo ((wosize), (tag), 0, profinfo);               \

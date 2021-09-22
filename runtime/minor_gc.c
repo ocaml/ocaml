@@ -525,9 +525,9 @@ void caml_empty_minor_heap_promote (caml_domain_state* domain, int participating
 {
   struct caml_minor_tables *self_minor_tables = domain->minor_tables;
   struct caml_custom_elt *elt;
-  char* young_ptr = domain->young_ptr;
-  char* young_end = domain->young_end;
-  uintnat minor_allocated_bytes = young_end - young_ptr;
+  value* young_ptr = domain->young_ptr;
+  value* young_end = domain->young_end;
+  uintnat minor_allocated_bytes = (uintnat)young_end - (uintnat)young_ptr;
   uintnat prev_alloc_words;
   struct oldify_state st = {0};
   value **r;
