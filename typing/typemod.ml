@@ -240,20 +240,30 @@ let check_recmod_typedecls env decls =
 
 (* Merge one "with" constraint in a signature *)
 
-let check_type_decl env loc id row_id newdecl decl rec_group =
-  let env = Env.add_type ~check:true id newdecl env in
-  let env =
+let check_type_decl env sg loc id row_id newdecl decl =
+  let fresh_id = Ident.rename id in
+  let path = Pident fresh_id in
+  let sub = Subst.add_type id path Subst.identity in
+  let fresh_row_id, sub =
     match row_id with
-    | None -> env
-    | Some id -> Env.add_type ~check:false id newdecl env
+    | None -> None, sub
+    | Some id ->
+      let fresh_row_id = Some (Ident.rename id) in
+      let sub = Subst.add_type id (Pident fresh_id) sub in
+      fresh_row_id, sub
   in
+  let newdecl = Subst.type_declaration sub newdecl in
+  let decl = Subst.type_declaration sub decl in
+  let sg = List.map (Subst.signature_item Keep sub) sg in
+  let env = Env.add_type ~check:false fresh_id newdecl env in
   let env =
-    let add_sigitem env x =
-      Env.add_signature Signature_group.(x.src :: x.post_ghosts) env
-    in
-    List.fold_left add_sigitem env rec_group in
-  Includemod.type_declarations ~mark:Mark_both ~loc env id newdecl decl;
-  Typedecl.check_coherence env loc (Path.Pident id) newdecl
+    match fresh_row_id with
+    | None -> env
+    | Some fresh_row_id -> Env.add_type ~check:false fresh_row_id newdecl env
+  in
+  let env = Env.add_signature sg env in
+  Includemod.type_declarations ~mark:Mark_both ~loc env fresh_id newdecl decl;
+  Typedecl.check_coherence env loc path newdecl
 
 let make_variance p n i =
   let open Variance in
@@ -508,7 +518,7 @@ let merge_constraint initial_env loc sg lid constr =
     in
     split [] ghosts
   in
-  let rec patch_item constr namelist sig_env ~rec_group ~ghosts item =
+  let rec patch_item constr namelist outer_sig_env sg_for_env ~ghosts item =
     let return ?(ghosts=ghosts) ~replace_by info =
       Some (info, {Signature_group.ghosts; replace_by})
     in
@@ -551,13 +561,14 @@ let merge_constraint initial_env loc sg lid constr =
         let initial_env =
           Env.add_type ~check:false id_row decl_row initial_env
         in
+        let sig_env = Env.add_signature sg_for_env outer_sig_env in
         let tdecl =
           Typedecl.transl_with_constraint id ~fixed_row_path:(Pident id_row)
             ~sig_env ~sig_decl:decl ~outer_env:initial_env sdecl in
         let newdecl = tdecl.typ_type in
         let before_ghosts, row_id, after_ghosts = split_row_id s ghosts in
-        check_type_decl sig_env sdecl.ptype_loc id row_id newdecl decl
-          rec_group;
+        check_type_decl outer_sig_env sg_for_env sdecl.ptype_loc
+          id row_id newdecl decl;
         let decl_row = {decl_row with type_params = newdecl.type_params} in
         let rs' = if rs = Trec_first then Trec_not else rs in
         let ghosts =
@@ -570,13 +581,15 @@ let merge_constraint initial_env loc sg lid constr =
     | Sig_type(id, sig_decl, rs, priv) , [s],
        (With_type sdecl | With_typesubst sdecl as constr)
       when Ident.name id = s ->
+        let sig_env = Env.add_signature sg_for_env outer_sig_env in
         let tdecl =
           Typedecl.transl_with_constraint id
             ~sig_env ~sig_decl ~outer_env:initial_env sdecl in
         let newdecl = tdecl.typ_type and loc = sdecl.ptype_loc in
         let before_ghosts, row_id, after_ghosts = split_row_id s ghosts in
         let ghosts = List.rev_append before_ghosts after_ghosts in
-        check_type_decl sig_env loc id row_id newdecl sig_decl rec_group;
+        check_type_decl outer_sig_env sg_for_env loc
+          id row_id newdecl sig_decl;
         begin match constr with
           With_type _ ->
             return ~ghosts
@@ -590,6 +603,7 @@ let merge_constraint initial_env loc sg lid constr =
     | Sig_modtype(id, mtd, priv), [s],
       (With_modtype mty | With_modtypesubst mty)
       when Ident.name id = s ->
+        let sig_env = Env.add_signature sg_for_env outer_sig_env in
         let () = match mtd.mtd_type with
           | None -> ()
           | Some previous_mty ->
@@ -620,6 +634,7 @@ let merge_constraint initial_env loc sg lid constr =
     | Sig_module(id, pres, md, rs, priv), [s],
       With_module {lid=lid'; md=md'; path; remove_aliases}
       when Ident.name id = s ->
+        let sig_env = Env.add_signature sg_for_env outer_sig_env in
         let mty = md'.md_type in
         let mty = Mtype.scrape_for_type_of ~remove_aliases sig_env mty in
         let md'' = { md' with md_type = mty } in
@@ -631,6 +646,7 @@ let merge_constraint initial_env loc sg lid constr =
           (Pident id, lid, Twith_module (path, lid'))
     | Sig_module(id, _, md, _rs, _), [s], With_modsubst (lid',path,md')
       when Ident.name id = s ->
+        let sig_env = Env.add_signature sg_for_env outer_sig_env in
         let aliasable = not (Env.is_functor_arg path sig_env) in
         ignore
           (Includemod.strengthened_module_decl ~loc ~mark:Mark_both
@@ -639,6 +655,7 @@ let merge_constraint initial_env loc sg lid constr =
         return ~replace_by:None (Pident id, lid, Twith_modsubst (path, lid'))
     | Sig_module(id, _, md, rs, priv) as item, s :: namelist, constr
       when Ident.name id = s ->
+        let sig_env = Env.add_signature sg_for_env outer_sig_env in
         let sg = extract_sig sig_env loc md.md_type in
         let ((path, _, tcstr), newsg) = merge_signature sig_env sg namelist in
         let path = path_concat id path in
@@ -656,12 +673,11 @@ let merge_constraint initial_env loc sg lid constr =
         return ~replace_by:(Some item) (path, lid, tcstr)
     | _ -> None
   and merge_signature env sg namelist =
-    let sig_env = Env.add_signature sg env in
     match
-      Signature_group.replace_in_place (patch_item constr namelist sig_env) sg
+      Signature_group.replace_in_place (patch_item constr namelist env sg) sg
     with
     | Some (x,sg) -> x, sg
-    | None -> raise(Error(loc, sig_env, With_no_component lid.txt))
+    | None -> raise(Error(loc, env, With_no_component lid.txt))
   in
   try
     let names = Longident.flatten lid.txt in
