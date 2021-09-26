@@ -206,7 +206,7 @@ an explicit polymorphic type can only be unified to an
 equivalent one, where only the order and names of polymorphic
 variables may change.
 
-The type @'<' {method-type ';'} '..'  '>'@ is the
+The type @'<' { method-type ';' } '..'  '>'@ is the
 type of an object whose method names and types are described by
 @method-type_1, \ldots, method-type_n@, and possibly some other
 methods represented by the ellipsis.  This ellipsis actually is
