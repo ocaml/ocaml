@@ -46,6 +46,9 @@ caml_plat_mutex signal_install_mutex = CAML_PLAT_MUTEX_INITIALIZER;
 static int check_for_pending_signals(void)
 {
   int i;
+
+  /* We don't need to check total_signals_pending because it is greater than
+     zero iff one of caml_pending_signals is greater than zero. */
   for (i = 0; i < NSIG; i++) {
     if (atomic_load_explicit(&caml_pending_signals[i], memory_order_seq_cst)) return 1;
   }
@@ -112,7 +115,6 @@ if (!check_for_pending_signals())
      caml_garbage_collection
 */
 
-CAMLno_tsan
 CAMLexport void caml_record_signal(int signal_number)
 {
   atomic_fetch_add_explicit(&caml_pending_signals[signal_number], 1, memory_order_seq_cst);
@@ -147,7 +149,7 @@ CAMLexport void caml_enter_blocking_section(void)
     caml_enter_blocking_section_hook ();
     /* Check again for pending signals.
        If none, done; otherwise, try again */
-    if ( atomic_load_explicit(&total_signals_pending, memory_order_seq_cst) == 0 ) break;
+    if (!check_for_pending_signals()) break;
     caml_leave_blocking_section_hook ();
   }
 }
