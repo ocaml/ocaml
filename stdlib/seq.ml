@@ -641,6 +641,17 @@ let rec diagonals remainders xss () =
          the remaining rows. *)
       transpose remainders ()
 
+(* If [xss] is a matrix (a sequence of rows), then [diagonals xss] is
+   the sequence of its diagonals.
+
+   The first diagonal contains just the first element of the
+   first row. The second diagonal contains the first element of the
+   second row and the second element of the first row; and so on.
+
+   - Every diagonal is a finite sequence.
+   - The rows of the matrix [xss] are not required to have the same length.
+   - The matrix [xss] is not required to be finite (in either direction).
+   - The matrix [xss] must be persistent. *)
 let diagonals xss =
   diagonals empty xss
 
