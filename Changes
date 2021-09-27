@@ -236,8 +236,17 @@ Working version
   (Stephen Dolan, review by Xavier Leroy)
 
 
-OCaml 4.13.0
--------------
+OCaml 4.13 maintenance branch
+-----------------------------
+
+### Bug fixes
+
+- #10661, #10662: fix a bug with classes named "row"
+  (Gabriel Scherer, report by Nicolás Ojeda Bär)
+
+
+OCaml 4.13.0 (24 September 2021)
+--------------------------------
 
 ### Progress towards Multicore:
 

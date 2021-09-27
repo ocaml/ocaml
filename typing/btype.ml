@@ -209,7 +209,9 @@ let has_constr_row t =
 
 let is_row_name s =
   let l = String.length s in
-  if l < 4 then false else String.sub s (l-4) 4 = "#row"
+  (* PR#10661: when l=4 and s is "#row", this is not a row name
+     but the valid #-type name of a class named "row". *)
+  l > 4 && String.sub s (l-4) 4 = "#row"
 
 let is_constr_row ~allow_ident t =
   match get_desc t with
