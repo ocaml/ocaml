@@ -68,7 +68,8 @@ section~\ref{s:ocamlrun-dllpath}).
 Print the magic number of the bytecode executable given as argument
 and exit.
 \item["-M"]
-Print the magic number expected by this version of the runtime and exit.
+Print the magic number expected for bytecode executable by this version
+of the runtime and exit.
 \item["-p"]
 Print the names of the primitives known to this version of
 "ocamlrun" and exit.
@@ -136,7 +137,13 @@ The following environment variables are also consulted:
   section~\ref{Hashtbl}).
 \fi
         This option takes no argument.
+  \item[H] Allocates heap chunks by mmapping huge pages. Huge pages are locked into
+    memory, and are not swapped.
   \item[h] The initial size of the major heap (in words).
+  \item[w] Sets size of window used by major GC for smoothing out variations in
+    its workload. This is an integer between 1 and 50. (Default: 1)
+  \item[W] Activates runtime warnings (such as Channel opened on file dies without
+    being closed, unflushed data, etc.)
   \item[a] ("allocation_policy")
     The policy used for allocating in the OCaml heap. Possible values
     are "0" for the next-fit policy, "1" for the first-fit

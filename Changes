@@ -4403,6 +4403,9 @@ OCaml 4.07.0 (10 July 2018)
 - #1779: integrate the Bigarray documentation into the main manual.
   (Perry E. Metzger, review by Florian Angeletti and Xavier Clerc)
 
+- #9398: updated man page for ocamlrun command line options
+  (Anukriti Kumar, review by David Allsopp, Gabriel Scherer)
+
 ### Type system:
 
 - #7611, #1491: reject the use of generative functors as applicative.

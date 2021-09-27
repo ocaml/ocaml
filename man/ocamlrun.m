@@ -69,15 +69,31 @@ set.  This option is equivalent to setting the
 .B b
 flag in the OCAMLRUNPARAM environment variable (see below).
 .TP
+.B \-c
+(cleanup_on_exit) Shut the runtime down gracefully on exit. The option
+also enables pooling (as in caml_startup_pooled). This mode can be used
+to detect leaks with a third-party memory debugger.
+.TP
 .BI \-I \ dir
 Search the directory
 .I dir
 for dynamically-loaded libraries, in addition to the standard search path.
 .TP
+.B \-m
+Print the magic number of the bytecode executable given as argument and
+exit.
+.TP
+.B \-M
+Print the magic number expected for bytecode executable by this version
+of the runtime and exit.
+.TP
 .B \-p
 Print the names of the primitives known to this version of
 .BR ocamlrun (1)
 and exit.
+.TP
+.B \-t
+Increments the trace level for the debug runtime (ignored otherwise).
 .TP
 .B \-v
 Direct the memory manager to print verbose messages on standard error.
@@ -145,8 +161,20 @@ Turn on randomization of all hash tables by default (see the
 module of the standard library). This option takes no
 argument.
 .TP
+.BR H
+Allocates heap chunks by mmapping huge pages. Huge pages are locked into
+memory, and are not swapped.
+.TP
 .BR h
 The initial size of the major heap (in words).
+.TP
+.BR w
+Sets size of window used by major GC for smoothing out variations in
+its workload. This is an integer between 1 and 50. (Default: 1)
+.TP
+.BR W
+Activates runtime warnings (such as Channel opened on file dies without
+being closed, unflushed data, etc.)
 .TP
 .BR a \ (allocation_policy)
 The policy used for allocating in the OCaml heap.  Possible values
