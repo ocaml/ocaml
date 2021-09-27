@@ -664,7 +664,7 @@ val product : 'a t -> 'b t -> ('a * 'b) t
     @since 4.14 *)
 
 val product_with : ('a -> 'b -> 'c) -> 'a t -> 'b t -> 'c t
-(** The sequence [product xs ys] is the image through [f] of the Cartesian
+(** The sequence [product_with f xs ys] is the image through [f] of the Cartesian
     product of the sequences [xs] and [ys].
 
     For every element [x] of [xs] and for every element [y] of [ys],
@@ -678,19 +678,6 @@ val product_with : ('a -> 'b -> 'c) -> 'a t -> 'b t -> 'c t
 
     [product_with f xs ys] is equivalent to
     [map (fun (x, y) -> f x y) (product xs ys)].
-
-    @since 4.14 *)
-
-val ap : ('a -> 'b) t -> 'a t -> 'b t
-(** [ap] is the application operator of the type constructor [_ t],
-    viewed as an applicative functor.
-
-    For every element [x] of [xs] and for every element [y] of [ys],
-    the element [x y] appears once as an element of [ap xs ys].
-
-    The sequences [xs] and [ys] must be persistent.
-
-    [ap xs ys] is equivalent to [product_with (@@) xs ys].
 
     @since 4.14 *)
 

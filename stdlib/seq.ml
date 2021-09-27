@@ -656,11 +656,6 @@ let product_with f xs ys =
 let product xs ys =
   product_with (fun x y -> (x, y)) xs ys
 
-let ap fs xs =
-  product_with (fun f x -> f x) fs xs
-
-
-
 let of_iterator it =
   let rec c () =
     match it() with
