@@ -4406,6 +4406,9 @@ OCaml 4.07.0 (10 July 2018)
 - #9398: updated man page for ocamlrun command line options
   (Anukriti Kumar, review by David Allsopp, Gabriel Scherer)
 
+- #8697: add M, m, n options of the OCAMLRUNPARAM to manual and man page for ocamlrun command line options
+  (Dong An, review by David Allsopp, Gabriel Scherer)
+
 ### Type system:
 
 - #7611, #1491: reject the use of generative functors as applicative.
