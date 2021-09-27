@@ -218,8 +218,22 @@ Create a branch for the new release
 git checkout -b OCaml_$VERSION
 ```
 
-Create ocaml-variants packages for the new version, copying the particular
-switch configuration choices from the previous version.
+The following opam packages are needed for all releases:
+
+- `ocaml-base-compiler.$VERSION`
+- `ocaml-variants.$VERSION+options`
+
+For production release, the following packages need to be updated:
+
+- `ocaml-system.$VERSION`
+- `ocaml-src.$VERSION`
+- `ocaml-src.$MAJOR.$MINOR.dev`
+- `ocaml-manual.$VERSION`
+- `ocaml.$NEXTVERSION`
+
+Note that the `ocaml` virtual package needs to be updated to the next version.
+
+Similarly, the `ocurrent/ocaml-version` library should be updated.
 
 Do not forget to add/update the checksum field for the tarballs in the
 "url" section of the opam files. Use opam-lint before sending the pull
