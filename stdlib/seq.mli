@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(**
+(** Sequences (functional iterators).
 
    A sequence of type ['a Seq.t] can be thought of as a {b delayed list},
    that is, a list whose elements are computed only when they are demanded
@@ -28,14 +28,15 @@
 
    Because it is opaque, the type ['a Seq.t] does {i not} reveal whether
    a sequence is:
-   - {b ephemeral},
-     which means that the sequence can be used at most once,
-     and that producing an element can have an observable side effect,
-     such as incrementing a mutable counter or reading a file; or
    - {b persistent},
      which means that the sequence can be used as many times as desired,
      producing the same elements every time,
-     just like an immutable list.
+     just like an immutable list; or
+   - {b ephemeral},
+     which means that the sequence is not persistent.
+     It can be used at most once, and producing an element can have an
+     observable side effect, such as incrementing a mutable counter or
+     consuming some resource such as a {!Stream}.
 
    It also does {i not} reveal whether the elements of the sequence are:
 
@@ -123,25 +124,11 @@ and +'a node =
    None of the functions in this section is lazy. These functions
    are consumers: they force some computation to take place. *)
 
-val is_empty:  'a t -> bool
+val is_empty : 'a t -> bool
 (** [is_empty xs] determines whether the sequence [xs] is empty.
 
-    @since 4.14 *)
+    On an ephemeral sequence, it will consume the first element.
 
-val head : 'a t -> 'a
-(** [head xs] is the first element of the sequence [xs].
-
-    The sequence [xs] must be nonempty.
-
-    @raise Invalid_argument if [xs] is empty.
-    @since 4.14 *)
-
-val tail : 'a t -> 'a t
-(** [tail xs] is the sequence [xs], deprived of its first element.
-
-    The sequence [xs] must be nonempty.
-
-    @raise Invalid_argument if [xs] is empty.
     @since 4.14 *)
 
 val uncons : 'a t -> ('a * 'a t) option
@@ -303,7 +290,7 @@ val exists2 : ('a -> 'b -> bool) -> 'a t -> 'b t -> bool
 
     @since 4.14 *)
 
-val equal: ('a -> 'b -> bool) -> 'a t -> 'b t -> bool
+val equal : ('a -> 'b -> bool) -> 'a t -> 'b t -> bool
 (** Provided the function [eq] defines an equality on elements,
     [equal eq xs ys] determines whether the sequences [xs] and [ys]
     are pointwise equal.
@@ -407,8 +394,7 @@ val iterate : ('a -> 'a) -> 'a -> 'a t
 (** [iterate f x] is the infinite sequence whose elements are
     [x], [f x], [f (f x)], and so on.
 
-    In other words, it is the orbit of the function [f] out of
-    the element [x].
+    In other words, it is the sequence of iterates of [f] starting with [x].
 
     @since 4.14 *)
 
@@ -546,7 +532,7 @@ exception Forced_twice
     (or a suffix of it) is queried more than once.
     @since 4.14 *)
 
-val once: 'a t -> 'a t
+val once : 'a t -> 'a t
 (** The sequence [once xs] has the same elements as the sequence [xs].
 
     Regardless of whether [xs] is ephemeral or persistent,
@@ -598,12 +584,15 @@ val append : 'a t -> 'a t -> 'a t
 
     @since 4.11 *)
 
-val concat : 'a t t -> 'a t
+val concat : ?sep:'a t -> 'a t t -> 'a t
 (** If [xss] is a sequence of sequences,
     then [concat xss] is its concatenation.
 
     If [xss] is the sequence [xs0; xs1; ...] then
     [concat xss] is the sequence [xs0 @ xs1 @ ...].
+
+    @param sep a (finite, persistent) sequence of items to insert in between
+    each elements of [xss]. By default it is [empty].
 
     @since 4.13 *)
 
@@ -642,7 +631,7 @@ val map2 : ('a -> 'b -> 'c) -> 'a t -> 'b t -> 'c t
 
     @since 4.14 *)
 
-val interleave: 'a t -> 'a t -> 'a t
+val interleave : 'a t -> 'a t -> 'a t
 (** [interleave xs ys] is the sequence that begins with the first element of
     [xs], continues with the first element of [ys], and so on.
 
@@ -651,7 +640,7 @@ val interleave: 'a t -> 'a t -> 'a t
 
     @since 4.14 *)
 
-val sorted_merge: ('a -> 'a -> int) -> 'a t -> 'a t -> 'a t
+val sorted_merge : ('a -> 'a -> int) -> 'a t -> 'a t -> 'a t
 (** If the sequences [xs] and [ys] are sorted according to the total preorder
     [cmp], then [sorted_merge cmp xs ys] is the sorted sequence obtained by
     merging the sequences [xs] and [ys].
@@ -763,57 +752,20 @@ val partition : ('a -> bool) -> 'a t -> 'a t * 'a t
     is ephemeral: the sequence that it represents can be consumed at most
     once. *)
 
-val of_iterator: (unit -> 'a option) -> 'a t
+val of_iterator : (unit -> 'a option) -> 'a t
 (** [of_iterator it] is the sequence of the elements produced by the iterator
     [it]. It is an ephemeral sequence: it can be consumed at most once. If a
     persistent sequence is needed, use [memoize (of_iterator it)].
     @since 4.14 *)
 
-val to_iterator: 'a t -> (unit -> 'a option)
+val to_iterator : 'a t -> (unit -> 'a option)
 (** [to_iterator xs] is a fresh iterator on the sequence [xs].
     @since 4.14 *)
 
 (** {1 Sequences of integers} *)
 
-val ints: int -> int t
+val ints : int -> int t
 (** [ints i] is the infinite sequence of the integers, beginning at [i] and
     counting up.
     @since 4.14 *)
 
-val up: int -> int -> int t
-(** [up i j] is the finite sequence of the integers comprised between
-    [i] included and [j] excluded, counting up. It is nonempty if and
-    only if [i < j] holds.
-    @since 4.14 *)
-
-val down: int -> int -> int t
-(** [down i j] is the finite sequence of the integers between [i]
-    excluded and [j] included, counting down. It is nonempty if and
-    only if [i > j] holds.
-    @since 4.14 *)
-
-(** {1 Infix operators} *)
-
-(** Infix operators.
-    @since 4.14 *)
-module Infix : sig
-
-  val (@) : 'a t -> 'a t -> 'a t
-  (** [(@)] is an alias for {!append}.
-      @since 4.14 *)
-
-  val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
-  (** [(>>=)] is the monadic [bind] operator.
-      [xs >>= f] is equivalent to [flat_map f xs].
-      @since 4.14 *)
-
-  val (>|=) : 'a t -> ('a -> 'b) -> 'b t
-  (** [(>|=)] is the monadic [map] operator.
-      [xs >|= f] is equivalent to [map f xs].
-      @since 4.14 *)
-
-  val (<*>) : ('a -> 'b) t -> 'a t -> 'b t
-  (** [(<*>)] is an alias for {!ap}.
-      @since 4.14 *)
-
-end

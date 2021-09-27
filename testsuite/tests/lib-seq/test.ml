@@ -5,6 +5,7 @@ let (!?) = List.to_seq
 let (!!) = List.of_seq
 let cmp = compare
 
+let head s = match s() with Seq.Cons(x,_) -> x | _ -> assert false
 let filter1 x = x mod 2 = 0 ;;
 
 let poison : _ Seq.t =
@@ -48,6 +49,10 @@ let () =
   assert (
       List.concat [[1]; []; [2; 3];]
       = !!(Seq.concat !?[!?[1]; !?[]; !?[2; 3]])
+    );
+  assert (
+    List.concat [[1]; [0]; []; [0]; [2; 3];]
+      = !!(Seq.concat ~sep:(Seq.return 0) !?[!?[1]; !?[]; !?[2; 3]])
   )
 
 (* [cycle empty] is expected to fail. *)
@@ -106,16 +111,6 @@ let () =
   assert (Seq.is_empty Seq.empty);
   assert (not @@ Seq.is_empty (List.to_seq [1;2;3]))
 
-(* [head] *)
-let () =
-  assert (Seq.head (List.to_seq [1;2;3]) = 1);
-  assert (try ignore (Seq.head Seq.empty); false with _ -> true)
-
-(* [tail] *)
-let () =
-  assert (List.of_seq @@ Seq.tail (List.to_seq [1;2;3]) = [2;3]);
-  assert (try ignore (Seq.tail Seq.empty : _ -> _); false with _ -> true)
-
 (* [uncons] *)
 let () =
   assert (match Seq.uncons (List.to_seq [1;2;3]) with
@@ -126,8 +121,8 @@ let () =
 let () =
   let seq = Seq.repeat 1 in
   assert (Seq.length (Seq.take 1000 seq) = 1000);
-  assert (Seq.head seq = 1);
-  assert (Seq.head (Seq.drop 100_000 seq) = 1);
+  assert (head seq = 1);
+  assert (head (Seq.drop 100_000 seq) = 1);
   ()
 
 (* [forever] *)
@@ -137,7 +132,7 @@ let () =
       let x = !r in incr r; x)
   in
   assert (List.of_seq (Seq.take 10 seq) = [0;1;2;3;4;5;6;7;8;9]);
-  assert (Seq.head seq = 10);
+  assert (head seq = 10);
   assert (Seq.length (Seq.take 1_000_000 seq) = 1_000_000);
   ()
 
@@ -269,15 +264,15 @@ let rec infinite i () =
 let () =
   let matrix = square 3 (fun i j -> (i, j)) in
   (* Check the first line of our square matrix. *)
-  assert (!!(Seq.head matrix) = [(0, 0); (0, 1); (0, 2)]);
+  assert (!!(head matrix) = [(0, 0); (0, 1); (0, 2)]);
   (* Check the first column of our square matrix. *)
-  assert (!!(Seq.map Seq.head matrix) = [(0, 0); (1, 0); (2, 0)]);
+  assert (!!(Seq.map head matrix) = [(0, 0); (1, 0); (2, 0)]);
   (* Transpose the matrix. *)
   let matrix = Seq.transpose matrix in
   (* Check the first line of the transposed matrix. *)
-  assert (!!(Seq.head matrix) = [(0, 0); (1, 0); (2, 0)]);
+  assert (!!(head matrix) = [(0, 0); (1, 0); (2, 0)]);
   (* Check the first column of the transposed matrix. *)
-  assert (!!(Seq.map Seq.head matrix) = [(0, 0); (0, 1); (0, 2)]);
+  assert (!!(Seq.map head matrix) = [(0, 0); (0, 1); (0, 2)]);
   ()
 
 (* [transpose] of a doubly-infinite matrix. *)

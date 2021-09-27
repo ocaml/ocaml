@@ -50,10 +50,14 @@ let rec filter f seq () = match seq() with
       then Cons (x, filter f next)
       else filter f next ()
 
-let rec concat seq () = match seq () with
+let rec concat_rec sep seq () = match seq () with
   | Nil -> Nil
   | Cons (x, next) ->
-     append x (concat next) ()
+      append sep (append x (concat_rec sep next)) ()
+
+let concat ?(sep=empty) seq () = match seq() with
+  | Cons (x, next) -> append x (concat_rec sep next) ()
+  | Nil -> Nil
 
 let rec flat_map f seq () = match seq () with
   | Nil -> Nil
@@ -87,20 +91,6 @@ let is_empty xs =
       true
   | Cons (_, _) ->
       false
-
-let head xs =
-  match xs() with
-  | Nil ->
-      invalid_arg "Seq.head"
-  | Cons (x, _) ->
-      x
-
-let tail xs =
-  match xs() with
-  | Nil ->
-      invalid_arg "Seq.tail"
-  | Cons (_, xs) ->
-      xs
 
 let uncons xs =
   match xs() with
@@ -696,16 +686,3 @@ let to_iterator xs =
 let rec ints i () =
   Cons (i, ints (i + 1))
 
-let rec up i j () =
-  if i < j then Cons (i, up (i + 1) j) else Nil
-
-let rec down i j () =
-  if i > j then Cons (i - 1, down (i - 1) j) else Nil
-
-
-module Infix = struct
-  let (@) = append
-  let (>>=) xs f = flat_map f xs
-  let (>|=) xs f = map f xs
-  let (<*>) = ap
-end
