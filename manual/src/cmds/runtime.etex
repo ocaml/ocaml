@@ -68,7 +68,7 @@ section~\ref{s:ocamlrun-dllpath}).
 Print the magic number of the bytecode executable given as argument
 and exit.
 \item["-M"]
-Print the magic number expected for bytecode executable by this version
+Print the magic number expected for bytecode executables by this version
 of the runtime and exit.
 \item["-p"]
 Print the names of the primitives known to this version of

@@ -69,11 +69,6 @@ set.  This option is equivalent to setting the
 .B b
 flag in the OCAMLRUNPARAM environment variable (see below).
 .TP
-.B \-c
-(cleanup_on_exit) Shut the runtime down gracefully on exit. The option
-also enables pooling (as in caml_startup_pooled). This mode can be used
-to detect leaks with a third-party memory debugger.
-.TP
 .BI \-I \ dir
 Search the directory
 .I dir
@@ -84,7 +79,7 @@ Print the magic number of the bytecode executable given as argument and
 exit.
 .TP
 .B \-M
-Print the magic number expected for bytecode executable by this version
+Print the magic number expected for bytecode executables by this version
 of the runtime and exit.
 .TP
 .B \-p
@@ -147,6 +142,11 @@ chapter "Standard Library", section "Gc".
 Trigger the printing of a stack backtrace
 when an uncaught exception aborts the program.
 This option takes no argument.
+.TP
+.B c
+(cleanup_on_exit) Shut the runtime down gracefully on exit. The option
+also enables pooling (as in caml_startup_pooled). This mode can be used
+to detect leaks with a third-party memory debugger.
 .TP
 .B p
 Turn on debugging support for
