@@ -45,26 +45,26 @@ CAMLexport value caml_md5_channel(struct channel *chan, intnat toread)
   intnat read;
   char buffer[4096];
 
-  With_mutex(&chan->mutex, {
-    caml_MD5Init(&ctx);
-    if (toread < 0){
-      while (1){
-        read = caml_getblock (chan, buffer, sizeof(buffer));
-        if (read == 0) break;
-        caml_MD5Update (&ctx, (unsigned char *) buffer, read);
-      }
-    }else{
-      while (toread > 0) {
-        read = caml_getblock(chan, buffer,
-                             toread > sizeof(buffer) ? sizeof(buffer) : toread);
-        if (read == 0) caml_raise_end_of_file();
-        caml_MD5Update(&ctx, (unsigned char *) buffer, read);
-        toread -= read;
-      }
+  Lock(chan);
+  caml_MD5Init(&ctx);
+  if (toread < 0){
+    while (1){
+      read = caml_getblock (chan, buffer, sizeof(buffer));
+      if (read == 0) break;
+      caml_MD5Update (&ctx, (unsigned char *) buffer, read);
     }
-    res = caml_alloc_string(16);
-    caml_MD5Final(&Byte_u(res, 0), &ctx);
-  } );
+  }else{
+    while (toread > 0) {
+      read = caml_getblock(chan, buffer,
+                           toread > sizeof(buffer) ? sizeof(buffer) : toread);
+      if (read == 0) caml_raise_end_of_file();
+      caml_MD5Update(&ctx, (unsigned char *) buffer, read);
+      toread -= read;
+    }
+  }
+  res = caml_alloc_string(16);
+  caml_MD5Final(&Byte_u(res, 0), &ctx);
+  Unlock(chan);
   CAMLreturn (res);
 }
 

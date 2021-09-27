@@ -788,9 +788,9 @@ CAMLprim value caml_input_value(value vchan)
   struct channel * chan = Channel(vchan);
   CAMLlocal1 (res);
 
-  With_mutex(&chan->mutex, {
-    res = caml_input_val(chan);
-  } );
+  Lock(chan);
+  res = caml_input_val(chan);
+  Unlock(chan);
   CAMLreturn (res);
 }
 

@@ -33,21 +33,22 @@
 
 CAMLexport void caml_raise(value v)
 {
-  caml_domain_state* domain_state = Caml_state;
-  if (domain_state->external_raise == NULL) caml_fatal_uncaught_exception(v);
-  *domain_state->external_raise->exn_bucket = v;
-  while (domain_state->local_roots != Caml_state->external_raise->local_roots) {
-    struct caml__mutex_unwind* m;
-    Assert(domain_state->local_roots != NULL);
-    m = domain_state->local_roots->mutexes;
-    while (m) {
-      /* unlocked in reverse order of locking */
-      caml_plat_unlock(m->mutex);
-      m = m->next;
-    }
-    domain_state->local_roots = domain_state->local_roots->next;
+  Unlock_exn();
+  CAMLassert(!Is_exception_result(v));
+
+  // avoid calling caml_raise recursively
+  v = caml_process_pending_signals_with_root_exn(v);
+  if (Is_exception_result(v))
+    v = Extract_exception(v);
+
+  if (Caml_state->external_raise == NULL) caml_fatal_uncaught_exception(v);
+  *Caml_state->external_raise->exn_bucket = v;
+
+  while(Caml_state->local_roots != Caml_state->external_raise->local_roots) {
+    Caml_state->local_roots = Caml_state->local_roots->next;
   }
-  siglongjmp(domain_state->external_raise->jmp->buf, 1);
+
+  siglongjmp(Caml_state->external_raise->jmp->buf, 1);
 }
 
 CAMLexport void caml_raise_constant(value tag)
