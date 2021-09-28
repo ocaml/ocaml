@@ -119,12 +119,12 @@ Working version
   in case of concurrent modifications.
   (Xavier Leroy, report by whitequark, review by David Allsopp)
 
-- #10605: manual, name few css classes to ease styling and maintainability.
-  (Florian Angeletti, review by Wiktor Kuchta and Gabriel Scherer)
-
 - #8697, #10666: add M, m, n options of the OCAMLRUNPARAM to manual and man page
   for ocamlrun command line options
   (Dong An and Anukriti Kumar, review by David Allsopp, Gabriel Scherer)
+
+- #10605: manual, name few css classes to ease styling and maintainability.
+  (Florian Angeletti, review by Wiktor Kuchta and Gabriel Scherer)
 
 ### Compiler user-interface and warnings:
 
