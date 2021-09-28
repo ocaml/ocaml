@@ -27,8 +27,8 @@ let interface ~source_file ~output_prefix =
 
 (** Bytecode compilation backend for .ml files. *)
 
-let to_bytecode i (typedtree, coercion) =
-  (typedtree, coercion)
+let to_bytecode i Typedtree.{structure; coercion; _} =
+  (structure, coercion)
   |> Profile.(record transl)
     (Translmod.transl_implementation i.module_name)
   |> Profile.(record ~accumulate:true generate)

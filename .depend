@@ -5769,6 +5769,7 @@ driver/compenv.cmx : \
 driver/compenv.cmi : \
     utils/clflags.cmi
 driver/compile.cmo : \
+    typing/typedtree.cmi \
     lambda/translmod.cmi \
     lambda/simplif.cmi \
     utils/profile.cmi \
@@ -5782,6 +5783,7 @@ driver/compile.cmo : \
     bytecomp/bytegen.cmi \
     driver/compile.cmi
 driver/compile.cmx : \
+    typing/typedtree.cmx \
     lambda/translmod.cmx \
     lambda/simplif.cmx \
     utils/profile.cmx \
@@ -5960,6 +5962,7 @@ driver/makedepend.cmx : \
     driver/makedepend.cmi
 driver/makedepend.cmi :
 driver/optcompile.cmo : \
+    typing/typedtree.cmi \
     lambda/translmod.cmi \
     lambda/simplif.cmi \
     utils/profile.cmi \
@@ -5975,6 +5978,7 @@ driver/optcompile.cmo : \
     asmcomp/asmgen.cmi \
     driver/optcompile.cmi
 driver/optcompile.cmx : \
+    typing/typedtree.cmx \
     lambda/translmod.cmx \
     lambda/simplif.cmx \
     utils/profile.cmx \
