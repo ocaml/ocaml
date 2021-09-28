@@ -136,20 +136,8 @@ let rec import_code_for_pack units pack expr =
 
 and import_function_declarations_for_pack_aux units pack
       (function_decls : Flambda.function_declarations) =
-  let funs =
-    Variable.Map.map
-      (fun (function_decl : Flambda.function_declaration) ->
-        Flambda.create_function_declaration ~params:function_decl.params
-          ~body:(import_code_for_pack units pack function_decl.body)
-          ~stub:function_decl.stub ~dbg:function_decl.dbg
-          ~inline:function_decl.inline
-          ~specialise:function_decl.specialise
-          ~is_a_functor:function_decl.is_a_functor
-          ~closure_origin:function_decl.closure_origin)
-      function_decls.funs
-  in
   Flambda.import_function_declarations_for_pack
-    (Flambda.update_function_declarations function_decls ~funs)
+    function_decls
     (import_set_of_closures_id_for_pack units pack)
     (import_set_of_closures_origin_for_pack units pack)
 

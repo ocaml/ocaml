@@ -25,6 +25,7 @@
 #include "caml/mlvalues.h"
 #include "caml/shared_heap.h"
 #include "caml/signals.h"
+#include "caml/memprof.h"
 
 uintnat caml_custom_major_ratio = Custom_major_ratio_def;
 uintnat caml_custom_minor_ratio = Custom_minor_ratio_def;
