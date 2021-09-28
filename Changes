@@ -19,12 +19,20 @@ Working version
 
 ### Internal/compiler-libs changes:
 
-- #9650: keep refactoring the pattern-matching compiler
-  (Gabriel Scherer, review by Thomas Refis)
+- #9650, #9651: keep refactoring the pattern-matching compiler
+  (Gabriel Scherer, review by Thomas Refis and Florian Angeletti)
+
+- #10007: Driver.compile_common: when typing a .ml file, return the
+  compilation unit signature (inferred or from the .cmi) in addition
+  to the implementation and the coercion.
+  (Leandro Ostera, review by Gabriel Scherer and Thomas Refis)
 
 ### Build system:
 
 ### Bug fixes:
+
+- #9991: Fix reproducibility for `-no-alias-deps`
+  (Leo White, review by Gabriel Scherer and Florian Angeletti)
 
 - #10005: Try expanding aliases in Ctype.nondep_type_rec
   (Stephen Dolan, review by Gabriel Scherer, Leo White and Xavier Leroy)
@@ -635,8 +643,21 @@ OCaml 4.12.0
   (Vincent Laviron, report by Stephen Dolan, review by Xavier Leroy and
   Stephen Dolan)
 
+- #9998: Use Sys.opaque_identity in CamlinternalLazy.force
+  This removes extra warning 59 messages when compiling afl-instrumented
+  code with flambda -O3.
+  (Vincent Laviron, report by Louis Gesbert, review by Gabriel Scherer and
+   Pierre Chambart)
+
 - #9999: fix -dsource printing of the pattern (`A as x | (`B as x)).
   (Gabriel Scherer, report by Anton Bachin, review by Florian Angeletti)
+
+- #9970, #10010: fix the declaration scope of extensible-datatype constructors.
+  A regression that dates back to 4.08 makes extensible-datatype constructors
+  with inline records very fragile, for example:
+    type 'a t += X of {x : 'a}
+  (Gabriel Scherer, review by Thomas Refis and Leo White,
+   report by Nicolás Ojeda Bär)
 
 OCaml 4.11.1
 ------------
