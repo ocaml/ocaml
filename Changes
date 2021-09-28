@@ -5,6 +5,10 @@ Working version
 
 ### Runtime system:
 
+- #10025: Track custom blocks (e.g. Bigarray) with Statmemprof
+  (Stephen Dolan, review by Leo White, Gabriel Scherer and Jacques-Henri
+   Jourdan)
+
 ### Code generation and optimizations:
 
 ### Standard library:
@@ -30,9 +34,6 @@ Working version
 ### Build system:
 
 ### Bug fixes:
-
-- #9991: Fix reproducibility for `-no-alias-deps`
-  (Leo White, review by Gabriel Scherer and Florian Angeletti)
 
 - #10005: Try expanding aliases in Ctype.nondep_type_rec
   (Stephen Dolan, review by Gabriel Scherer, Leo White and Xavier Leroy)
@@ -259,6 +260,9 @@ OCaml 4.12.0
   implementation, to help write code that is compatible with Multicore
   OCaml.
   (Gabriel Scherer, review by Xavier Leroy)
+
+- #10035: Make sure that flambda respects atomicity in the Atomic module.
+  (Guillaume Munch-Maccagnoni, review by Gabriel Scherer)
 
 - #9571: Make at_exit and Printexc.register_printer thread-safe.
   (Guillaume Munch-Maccagnoni, review by Gabriel Scherer and Xavier Leroy)
@@ -561,6 +565,9 @@ OCaml 4.12.0
 - #7538, #9669: Check for misplaced attributes on module aliases
   (Leo White, report by Thomas Leonard, review by Florian Angeletti)
 
+- #7813, #9955: make sure the major GC cycle doesn't get stuck in Idle state
+  (Damien Doligez, report by Anders Fugmann, review by Jacques-Henri Jourdan)
+
 - #7902, #9556: Type-checker infers recursive type, even though -rectypes is
   off.
   (Jacques Garrigue, report by Francois Pottier, review by Leo White)
@@ -642,6 +649,9 @@ OCaml 4.12.0
 - #9940: Fix unboxing of allocated constants from other compilation units
   (Vincent Laviron, report by Stephen Dolan, review by Xavier Leroy and
   Stephen Dolan)
+
+- #9991: Fix reproducibility for `-no-alias-deps`
+  (Leo White, review by Gabriel Scherer and Florian Angeletti)
 
 - #9998: Use Sys.opaque_identity in CamlinternalLazy.force
   This removes extra warning 59 messages when compiling afl-instrumented
