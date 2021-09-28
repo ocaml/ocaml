@@ -448,6 +448,10 @@ CAMLexport value caml_startup_code_exn(
   caml_minor_collection(); /* ensure all globals are in major heap */
   /* Record the sections (for caml_get_section_table in meta.c) */
   caml_init_section_table(section_table, section_table_size);
+  /* Initialize system libraries */
+  caml_sys_init(exe_name, argv);
+  /* Load debugging info, if b>=2 */
+  caml_load_main_debug_info();
   /* Execute the program */
   caml_debugger(PROGRAM_START, Val_unit);
   return caml_interprete(caml_start_code, caml_code_size);

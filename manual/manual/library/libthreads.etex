@@ -26,18 +26,10 @@ Programs that use threads must be linked as follows:
 Compilation units that use the "threads" library must also be compiled with
 the "-I +threads" option (see chapter~\ref{c:camlc}).
 
-\ifouthtml
-\begin{links}
-\item \ahref{libref/Thread.html}{Module \texttt{Thread}: lightweight threads}
-\item \ahref{libref/Mutex.html}{Module \texttt{Mutex}: locks for mutual exclusion}
-\item \ahref{libref/Condition.html}{Module \texttt{Condition}: condition variables to synchronize between threads}
-\item \ahref{libref/Semaphore.html}{Module \texttt{Semaphore}: semaphores, another thread synchronization mechanism}
-\item \ahref{libref/Event.html}{Module \texttt{Event}: first-class synchronous communication}
-\end{links}
-\else
-\input{Thread.tex}
-\input{Mutex.tex}
-\input{Condition.tex}
-\input{Semaphore.tex}
-\input{Event.tex}
-\fi
+\begin{linklist}
+\stddocitem{Thread}{lightweight threads}
+\stddocitem{Mutex}{locks for mutual exclusion}
+\stddocitem{Condition}{condition variables to synchronize between threads}
+\stddocitem{Semaphore}{semaphores, another thread synchronization mechanism}
+\stddocitem{Event}{first-class synchronous communication}
+\end{linklist}
