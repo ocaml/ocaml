@@ -65,6 +65,10 @@ OCaml 4.12.0
 
 ### Runtime system:
 
+- #2195: Improve error message in bytecode stack trace printing and load
+  debug information during bytecode startup if OCAMLRUNPARAM=b=2.
+  (David Allsopp, review by Gabriel Scherer and Xavier Leroy)
+
 - #9756: garbage collector colors change
   removes the gray color from the major gc
   (Sadiq Jaffer and Stephen Dolan reviewed by Xavier Leroy,
@@ -145,9 +149,9 @@ OCaml 4.12.0
   compaction algorithm and remove its dependence on the page table
   (Damien Doligez, review by Jacques-Henri Jourdan and Xavier Leroy)
 
-- #9742: Ephemerons are now compatible with infix pointers occurring
+- #9742, #9989: Ephemerons are now compatible with infix pointers occurring
    when using mutually recursive functions.
-   (Jacques-Henri Jourdan, review François Bobot)
+   (Jacques-Henri Jourdan, review by François Bobot)
 
 * #1128, #7503, #9036, #9722: EINTR-based signal handling.
   When a signal arrives, avoid running its OCaml handler in the middle
@@ -290,6 +294,10 @@ OCaml 4.12.0
 
 ### Other libraries:
 
+- #8796: On Windows, make Unix.utimes use FILE_FLAG_BACKUP_SEMANTICS flag
+  to allow it to work with directories.
+  (Daniil Baturin, review by Damien Doligez)
+
 * #9206, #9419: update documentation of the threads library;
   deprecate Thread.kill, Thread.wait_read, Thread.wait_write,
   and the whole ThreadUnix module.
@@ -426,6 +434,9 @@ OCaml 4.12.0
 
 - #9783: Widen warning 16 to more cases.
   (Leo White, review by Florian Angeletti)
+
+- #10008: Improve error message for aliases to the current compilation unit.
+  (Leo White, review by Gabriel Scherer)
 
 ### Internal/compiler-libs changes:
 
@@ -621,6 +632,8 @@ OCaml 4.12.0
   (Vincent Laviron, report by Stephen Dolan, review by Xavier Leroy and
   Stephen Dolan)
 
+- #9999: fix -dsource printing of the pattern (`A as x | (`B as x)).
+  (Gabriel Scherer, report by Anton Bachin, review by Florian Angeletti)
 
 OCaml 4.11.1
 ------------
@@ -1213,7 +1226,7 @@ OCaml 4.10 maintenance branch
 - #9068, #9437: ocamlopt -output-complete-obj failure on FreeBSD 12
   (Xavier Leroy, report by Hannes Mehnert, review by Sébastien Hinderer)
 
-- #9165: Add missing -function-sections and -O3 flags in Makefiles.
+- #9165, #9840: Add missing -function-sections flag in Makefiles.
   (Greta Yorsh, review by David Allsopp)
 
 - #9495: fix a bug where bytecode binaries compiled with `-output-complete-exe`
