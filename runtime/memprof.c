@@ -72,9 +72,6 @@ static intnat callstack_size;
 
 static value tracker;
 
-/* Gc.Memprof.allocation_source */
-enum { SRC_NORMAL = 0, SRC_MARSHAL = 1, SRC_CUSTOM = 2 };
-
 struct tracked {
   /* Memory block being sampled. This is a weak GC root. */
   value block;
@@ -97,8 +94,8 @@ struct tracked {
   /* Whether this block has been initially allocated in the minor heap. */
   unsigned int alloc_young : 1;
 
-  /* The source of the allocation: normal allocations, marshal or custom_mem. */
-  unsigned int source : 2;
+  /* Whether this block comes from unmarshalling. */
+  unsigned int unmarshalled : 1;
 
   /* Whether this block has been promoted. Implies [alloc_young]. */
   unsigned int promoted : 1;
@@ -423,7 +420,7 @@ static int realloc_entries(struct entry_array* ea, uintnat grow)
 #define Invalid_index (~(uintnat)0)
 
 Caml_inline uintnat new_tracked(uintnat n_samples, uintnat wosize,
-                                int source, int is_young,
+                                int is_unmarshalled, int is_young,
                                 value block, value user_data)
 {
   struct tracked *t;
@@ -437,7 +434,7 @@ Caml_inline uintnat new_tracked(uintnat n_samples, uintnat wosize,
   t->user_data = user_data;
   t->running = NULL;
   t->alloc_young = is_young;
-  t->source = source;
+  t->unmarshalled = is_unmarshalled;
   t->promoted = 0;
   t->deallocated = 0;
   t->cb_promote_called = t->cb_dealloc_called = 0;
@@ -531,7 +528,7 @@ static value run_alloc_callback_exn(uintnat t_idx)
   sample_info = caml_alloc_small(4, 0);
   Field(sample_info, 0) = Val_long(t->n_samples);
   Field(sample_info, 1) = Val_long(t->wosize);
-  Field(sample_info, 2) = Val_long(t->source);
+  Field(sample_info, 2) = Val_long(t->unmarshalled);
   Field(sample_info, 3) = t->user_data;
   return run_callback_exn(&local->entries, t_idx,
      t->alloc_young ? Alloc_minor(tracker) : Alloc_major(tracker), sample_info);
@@ -765,35 +762,22 @@ void caml_memprof_invert_tracked(void)
 
 /**** Sampling procedures ****/
 
-static void maybe_track_block(value block, uintnat n_samples,
-                              uintnat wosize, int src)
+void caml_memprof_track_alloc_shr(value block)
 {
-  value callstack;
+  uintnat n_samples;
+  value callstack = 0;
+  CAMLassert(Is_in_heap(block));
+
+  if (lambda == 0 || local->suspended) return;
+
+  n_samples = rand_binom(Whsize_val(block));
   if (n_samples == 0) return;
 
   callstack = capture_callstack_postponed();
   if (callstack == 0) return;
 
-  new_tracked(n_samples, wosize, src, Is_young(block), block, callstack);
+  new_tracked(n_samples, Wosize_val(block), 0, 0, block, callstack);
   check_action_pending();
-}
-
-void caml_memprof_track_alloc_shr(value block)
-{
-  CAMLassert(Is_in_heap(block));
-  if (lambda == 0 || local->suspended) return;
-
-  maybe_track_block(block, rand_binom(Whsize_val(block)),
-                    Wosize_val(block), SRC_NORMAL);
-}
-
-void caml_memprof_track_custom(value block, mlsize_t bytes)
-{
-  CAMLassert(Is_young(block) || Is_in_heap(block));
-  if (lambda == 0 || local->suspended) return;
-
-  maybe_track_block(block, rand_binom(Wsize_bsize(bytes)),
-                    Wsize_bsize(bytes), SRC_CUSTOM);
 }
 
 /* Shifts the next sample in the minor heap by [n] words. Essentially,
@@ -824,8 +808,7 @@ void caml_memprof_renew_minor_sample(void)
     if (Caml_state->young_ptr - Caml_state->young_alloc_start < geom)
       /* No trigger in the current minor heap. */
       caml_memprof_young_trigger = Caml_state->young_alloc_start;
-    else
-      caml_memprof_young_trigger = Caml_state->young_ptr - (geom - 1);
+    caml_memprof_young_trigger = Caml_state->young_ptr - (geom - 1);
   }
 
   caml_update_young_limit();
@@ -854,8 +837,13 @@ void caml_memprof_track_young(uintnat wosize, int from_caml,
       rand_binom(caml_memprof_young_trigger - 1 - Caml_state->young_ptr);
     CAMLassert(encoded_alloc_lens == NULL);    /* No Comballoc in C! */
     caml_memprof_renew_minor_sample();
-    maybe_track_block(Val_hp(Caml_state->young_ptr), n_samples,
-                      wosize, SRC_NORMAL);
+
+    callstack = capture_callstack_postponed();
+    if (callstack == 0) return;
+
+    new_tracked(n_samples, wosize,
+                0, 1, Val_hp(Caml_state->young_ptr), callstack);
+    check_action_pending();
     return;
   }
 
@@ -893,8 +881,8 @@ void caml_memprof_track_young(uintnat wosize, int from_caml,
       int stopped;
 
       callstack = capture_callstack(alloc_idx);
-      t_idx = new_tracked(n_samples, alloc_wosz, SRC_NORMAL, 1,
-                          Placeholder_offs(alloc_ofs), callstack);
+      t_idx = new_tracked(n_samples, alloc_wosz,
+                          0, 1, Placeholder_offs(alloc_ofs), callstack);
       if (t_idx == Invalid_index) continue;
       res = run_alloc_callback_exn(t_idx);
       /* Has [caml_memprof_stop] been called during the callback? */
@@ -1014,7 +1002,7 @@ void caml_memprof_track_interned(header_t* block, header_t* blockend)
     if (callstack == 0) callstack = capture_callstack_postponed();
     if (callstack == 0) break;  /* OOM */
     new_tracked(rand_binom(next_p - next_sample_p) + 1,
-                Wosize_hp(p), SRC_MARSHAL, is_young, Val_hp(p), callstack);
+                Wosize_hp(p), 1, is_young, Val_hp(p), callstack);
     p = next_p;
   }
   check_action_pending();
@@ -1046,9 +1034,7 @@ CAMLprim value caml_memprof_start(value lv, value szv, value tracker_param)
   if (l > 0) {
     one_log1m_lambda = l == 1 ? 0 : 1/caml_log1p(-l);
     rand_pos = RAND_BLOCK_SIZE;
-    /* next_rand_geom can be zero if the next word is to be sampled,
-       but rand_geom always returns a value >= 1. Subtract 1 to correct. */
-    next_rand_geom = rand_geom() - 1;
+    next_rand_geom = rand_geom();
   }
 
   caml_memprof_renew_minor_sample();
@@ -1150,4 +1136,4 @@ CAMLexport void caml_memprof_enter_thread(struct caml_memprof_th_ctx* ctx)
   caml_memprof_set_suspended(ctx->suspended);
 }
 
-#endif /* 0 */
+#endif

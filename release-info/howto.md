@@ -169,7 +169,7 @@ git branch $BRANCH
 make -B configure
 # Add a "Working version" section" to Changes
 # Add common subsections in Changes, see Changelog.
-git commit -m "first commit after branching $VERSION" -a
+git commit -m "first commit after branching $BRANCH" -a
 git push
 
 # Switch to the new branch
@@ -203,8 +203,7 @@ Remove the oldest branch from this list.
 ## 5.4 new badge in README.adoc (for a new release branch)
 
 Add a badge for the new branch in README.adoc.
-Remove any badge that tracks a version older than Debian stable.
-
+Remove the oldest badge.
 
 ## 6: create OPAM packages
 
