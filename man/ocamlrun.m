@@ -136,7 +136,6 @@ last six correspond to the fields of the
 record documented in
 .IR "The OCaml user's manual",
 chapter "Standard Library", section "Gc".
-\" FIXME missing: c, H, t, w, W see MPR#7870
 .TP
 .B b
 Trigger the printing of a stack backtrace
@@ -160,6 +159,9 @@ Turn on randomization of all hash tables by default (see the
 .B Hashtbl
 module of the standard library). This option takes no
 argument.
+.TP
+.B t
+Sets the trace level for the debug runtime (ignored otherwise).
 .TP
 .BR H
 Allocates heap chunks by mmapping huge pages. Huge pages are locked into

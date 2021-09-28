@@ -144,6 +144,7 @@ The following environment variables are also consulted:
     its workload. This is an integer between 1 and 50. (Default: 1)
   \item[W] Activates runtime warnings (such as Channel opened on file dies without
     being closed, unflushed data, etc.)
+  \item[t] Sets the trace level for the debug runtime (ignored otherwise).
   \item[a] ("allocation_policy")
     The policy used for allocating in the OCaml heap. Possible values
     are "0" for the next-fit policy, "1" for the first-fit
@@ -178,7 +179,6 @@ The following environment variables are also consulted:
   "caml_shutdown" in section~\ref{ss:c-embedded-code}). The option also enables
   pooling (as in "caml_startup_pooled"). This mode can be used to detect
   leaks with a third-party memory debugger.
-  % FIXME missing: H, t, w, W see MPR#7870
   \item[M] ("custom_major_ratio") Target ratio of floating garbage to
   major heap size for out-of-heap memory held by custom values
   (e.g. bigarrays) located in the major heap. The GC speed is adjusted
