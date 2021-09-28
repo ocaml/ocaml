@@ -1,9 +1,13 @@
 |=====
-| Branch `trunk` | Branch `4.11` | Branch `4.10` | Branch `4.09` | Branch  `4.08`  | Branch  `4.07`  | Branch `4.06` | Branch `4.05`
+| Branch `trunk` | Branch `4.12` | Branch `4.11` | Branch `4.10`
 
 | image:https://travis-ci.org/ocaml/ocaml.svg?branch=trunk["TravisCI Build Status (trunk branch)",
      link="https://travis-ci.org/ocaml/ocaml"]
   image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=trunk&svg=true["AppVeyor Build Status (trunk branch)",
+     link="https://ci.appveyor.com/project/avsm/ocaml"]
+| image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.12["TravisCI Build Status (4.12 branch)",
+     link="https://travis-ci.org/ocaml/ocaml"]
+  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.12&svg=true["AppVeyor Build Status (4.12 branch)",
      link="https://ci.appveyor.com/project/avsm/ocaml"]
 | image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.11["TravisCI Build Status (4.11 branch)",
      link="https://travis-ci.org/ocaml/ocaml"]
@@ -12,26 +16,6 @@
 | image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.10["TravisCI Build Status (4.10 branch)",
      link="https://travis-ci.org/ocaml/ocaml"]
   image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.10&svg=true["AppVeyor Build Status (4.10 branch)",
-     link="https://ci.appveyor.com/project/avsm/ocaml"]
-| image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.09["TravisCI Build Status (4.09 branch)",
-     link="https://travis-ci.org/ocaml/ocaml"]
-  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.09&svg=true["AppVeyor Build Status (4.09 branch)",
-     link="https://ci.appveyor.com/project/avsm/ocaml"]
-| image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.08["TravisCI Build Status (4.08 branch)",
-     link="https://travis-ci.org/ocaml/ocaml"]
-  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.08&svg=true["AppVeyor Build Status (4.08 branch)",
-     link="https://ci.appveyor.com/project/avsm/ocaml"]
-| image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.07["TravisCI Build Status (4.07 branch)",
-     link="https://travis-ci.org/ocaml/ocaml"]
-  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.07&svg=true["AppVeyor Build Status (4.07 branch)",
-     link="https://ci.appveyor.com/project/avsm/ocaml"]
-| image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.06["TravisCI Build Status (4.06 branch)",
-     link="https://travis-ci.org/ocaml/ocaml"]
-  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.06&svg=true["AppVeyor Build Status (4.06 branch)",
-     link="https://ci.appveyor.com/project/avsm/ocaml"]
-| image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.05["TravisCI Build Status (4.05 branch)",
-     link="https://travis-ci.org/ocaml/ocaml"]
-  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.05&svg=true["AppVeyor Build Status (4.05 branch)",
      link="https://ci.appveyor.com/project/avsm/ocaml"]
 |=====
 
