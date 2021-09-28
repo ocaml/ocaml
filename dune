@@ -155,6 +155,9 @@
    schedgen scheduling selectgen selection spill split
    strmatch x86_ast x86_dsl x86_gas x86_masm x86_proc
 
+   ;; file_formats/
+   linear_format
+
    ;; asmcomp/debug/
    reg_availability_set compute_ranges_intf available_regs reg_with_debug_info
    compute_ranges

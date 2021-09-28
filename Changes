@@ -19,6 +19,9 @@ Working version
 
 ### Internal/compiler-libs changes:
 
+- #9650: keep refactoring the pattern-matching compiler
+  (Gabriel Scherer, review by Thomas Refis)
+
 ### Build system:
 
 ### Bug fixes:
@@ -501,6 +504,9 @@ OCaml 4.12.0
 
 - #9963: Centralized tracking of frontend's global state
   (Frédéric Bour and Thomas Refis, review by Gabriel Scherer)
+
+- #9631: Named text sections for caml_system__code_begin/end symbols
+  (Greta Yorsh, review by Frédéric Bour)
 
 ### Build system:
 
