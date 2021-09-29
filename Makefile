@@ -903,12 +903,12 @@ parsing/camlinternalMenhirLib.mli: boot/menhir/menhirLib.mli
 
 PARSER_DEPS = boot/menhir/parser.ml parsing/parser.mly
 
-ifneq "$(findstring dev, $(OCAML_VERSION_EXTRA))" ""
+ifeq "$(OCAML_DEVELOPMENT_VERSION)" "true"
 PARSER_DEPS += tools/check-parser-uptodate-or-warn.sh
 endif
 
 parsing/parser.ml: $(PARSER_DEPS)
-ifneq "$(findstring dev, $(OCAML_VERSION_EXTRA))" ""
+ifeq "$(OCAML_DEVELOPMENT_VERSION)" "true"
 	@-tools/check-parser-uptodate-or-warn.sh
 endif
 	sed "s/MenhirLib/CamlinternalMenhirLib/g" $< > $@

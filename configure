@@ -841,6 +841,7 @@ OCAML_VERSION_EXTRA
 OCAML_VERSION_PATCHLEVEL
 OCAML_VERSION_MINOR
 OCAML_VERSION_MAJOR
+OCAML_DEVELOPMENT_VERSION
 VERSION
 native_compiler
 CONFIGURE_ARGS
@@ -2856,6 +2857,8 @@ ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 
 
 VERSION=4.14.0+dev0-2021-06-03
+
+OCAML_DEVELOPMENT_VERSION=true
 
 OCAML_VERSION_MAJOR=4
 
@@ -12766,8 +12769,8 @@ case $ocaml_cv_cc_vendor in #(
   cc_warnings='-Wall -Wdeclaration-after-statement' ;;
 esac
 
-case $enable_warn_error,4.14.0+dev0-2021-06-03 in #(
-  yes,*|,*+dev*) :
+case $enable_warn_error,true in #(
+  yes,*|,true) :
     cc_warnings="$cc_warnings $warn_error_flag" ;; #(
   *) :
      ;;
@@ -17659,8 +17662,8 @@ fi
 
 
 
-case $enable_ocamltest,4.14.0+dev0-2021-06-03 in #(
-  yes,*|,*+dev*) :
+case $enable_ocamltest,true in #(
+  yes,*|,true) :
     ocamltest='ocamltest' ;; #(
   *) :
     ocamltest='' ;;

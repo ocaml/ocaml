@@ -17,10 +17,15 @@
 # OCaml. It first defines the basic components and then computes all
 # the different variants of the version used across the build system.
 
-# For the M4 macros defined below, we use the OCAML__VERSION (with a double
+# For the M4 macros defined below, we use the OCAML__ (with a double
 # underscore) to distinguish them from the C preprocessor macros which
 # use a single underscore, since the two families of macros coexist
 # in configure.ac.
+
+# The following macro, OCAML__DEVELOPMENT_VERSION, should be either
+# [true] of [false].
+
+m4_define([OCAML__DEVELOPMENT_VERSION], [true])
 
 # The three following components (major, minor and patch level) MUST be
 # integers. They MUST NOT be left-padded with zeros and all of them,

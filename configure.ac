@@ -78,6 +78,7 @@ AC_CONFIG_AUX_DIR([build-aux])
 AC_SUBST([CONFIGURE_ARGS])
 AC_SUBST([native_compiler])
 AC_SUBST([VERSION], [AC_PACKAGE_VERSION])
+AC_SUBST([OCAML_DEVELOPMENT_VERSION], [OCAML__DEVELOPMENT_VERSION])
 AC_SUBST([OCAML_VERSION_MAJOR], [OCAML__VERSION_MAJOR])
 AC_SUBST([OCAML_VERSION_MINOR], [OCAML__VERSION_MINOR])
 AC_SUBST([OCAML_VERSION_PATCHLEVEL], [OCAML__VERSION_PATCHLEVEL])
@@ -609,8 +610,8 @@ AS_CASE([$ocaml_cv_cc_vendor],
   warn_error_flag='-Werror'
   cc_warnings='-Wall -Wdeclaration-after-statement'])
 
-AS_CASE([$enable_warn_error,AC_PACKAGE_VERSION],
-  [yes,*|,*+dev*],
+AS_CASE([$enable_warn_error,OCAML__DEVELOPMENT_VERSION],
+  [yes,*|,true],
     [cc_warnings="$cc_warnings $warn_error_flag"])
 
 # We select high optimization levels, provided we can turn off:
@@ -1891,8 +1892,8 @@ AS_IF([test "x$documentation_tool_cmd" = 'x']
 
 
 
-AS_CASE([$enable_ocamltest,AC_PACKAGE_VERSION],
-  [yes,*|,*+dev*],[ocamltest='ocamltest'],
+AS_CASE([$enable_ocamltest,OCAML__DEVELOPMENT_VERSION],
+  [yes,*|,true],[ocamltest='ocamltest'],
   [ocamltest=''])
 
 AS_IF([test x"$enable_flambda" = "xyes"],
