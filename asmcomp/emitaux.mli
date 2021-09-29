@@ -81,3 +81,9 @@ val binary_backend_available: bool ref
 
 val create_asm_file: bool ref
     (** Are we actually generating the textual assembly file? *)
+
+type error =
+  | Stack_frame_too_large of int
+
+exception Error of error
+val report_error: Format.formatter -> error -> unit

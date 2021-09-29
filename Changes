@@ -26,6 +26,12 @@ Working version
 
 ### Other libraries:
 
+* #10084: Unix.open_process_args* functions now look up the program in the PATH.
+  This was already the case under Windows, but this is now also done under
+  Unix. Note that previously the program was interpreted relative to the current
+  directory.
+  (Nicolás Ojeda Bär, review by Gabriel Scherer and Xavier Leroy)
+
 ### Tools:
 
 ### Manual and documentation:
@@ -37,15 +43,33 @@ Working version
 - #9650, #9651: keep refactoring the pattern-matching compiler
   (Gabriel Scherer, review by Thomas Refis and Florian Angeletti)
 
+- #9994: Make Types.type_expr a private type, and abstract marking mechanism
+  (Jacques Garrigue and Takafumi Saikawa,
+   review by Gabriel Scherer and Leo White)
+
 - #10007: Driver.compile_common: when typing a .ml file, return the
   compilation unit signature (inferred or from the .cmi) in addition
   to the implementation and the coercion.
   (Leandro Ostera, review by Gabriel Scherer and Thomas Refis)
 
-* #10061: remove modules `Opttoploop`, `Opttopstart`, which are replaced by
-  `Toploop` and `Topstart`, made available in native code.
+* #10061, #10078: remove library `ocamlopttoplevel`, remove modules
+  `Opttoploop`, `Opttopstart`, which are replaced by `Toploop` and `Topstart` in
+  library `ocamltoplevel`, made available in native code.
+
+* #10086: add the commands `make list-parse-errors` and `make
+  generate-parse-errors` to generate a set of syntactically incorrect
+  sentences that covers all error states of the LR automaton. Add these
+  sentences to the test suite. This can be used to evaluate the quality of the
+  parser's syntax error messages and (in the future) to evaluate the impact of
+  changes in the parser.
+  (François Pottier, review by Gabriel Scherer and Xavier Leroy.)
 
 ### Build system:
+
+- #9191, #10091: take the LDFLAGS variable into account, except on
+  flexlink-using systems.
+  (Gabriel Scherer, review by Sébastien Hinderer and David Allsopp,
+   report by Ralph Seichter)
 
 ### Bug fixes:
 
@@ -55,6 +79,9 @@ Working version
 - #10071: Fix bug in tests/misc/weaklifetime.ml that was reported in #10055
   (Damien Doligez and Gabriel Scherer, report by David Allsopp)
 
+- #10072, #10085: Check that sizes and offsets in stack frame descriptors
+  do not overflow the 16-bit fields where they are stored.
+  (Xavier Leroy, report by Github user pveber, review by Gabriel Scherer)
 
 OCaml 4.12.0
 ------------
@@ -198,6 +225,9 @@ OCaml 4.12.0
   saved/restored when performing a GC. This could potentially lead to a
   segfault.
   (Nicolás Ojeda Bär, report by Xavier Leroy, review by Xavier Leroy)
+
+- #9907: Fix native toplevel on native Windows.
+  (David Allsopp, review by Florian Angeletti)
 
 - #9909: Remove caml_code_area_start and caml_code_area_end globals (no longer
   needed as the pagetable heads towards retirement).
@@ -385,8 +415,8 @@ OCaml 4.12.0
 - #9802: Ensure signals are handled before Unix.kill returns
   (Stephen Dolan, review by Jacques-Henri Jourdan)
 
-- #9869: Add Unix.SO_REUSEPORT
-  (Yishuai Li, review by Xavier Leroy)
+- #9869, #10073: Add Unix.SO_REUSEPORT
+  (Yishuai Li, review by Xavier Leroy, amended by David Allsopp)
 
 - #9906, #9914: Add Unix._exit as a way to exit the process immediately,
   skipping any finalization action
@@ -491,6 +521,11 @@ OCaml 4.12.0
 
 - #10008: Improve error message for aliases to the current compilation unit.
   (Leo White, review by Gabriel Scherer)
+
+- #10046: Link all DLLs with -static-libgcc on mingw32 to prevent dependency
+  on libgcc_s_sjlj-1.dll with mingw-w64 runtime 8.0.0 (previously this was
+  only needed for dllunix.dll).
+  (David Allsopp, report by Andreas Hauptmann, review by Xavier Leroy)
 
 ### Internal/compiler-libs changes:
 
@@ -664,6 +699,11 @@ OCaml 4.12.0
   (Xavier Leroy, Sadiq Jaffer, Gabriel Scherer,
    review by Xavier Leroy and Jacques-Henri Jourdan)
 
+- #9739, #9747: Avoid calling type variables, types that are not variables in
+  recursive occurence error messages
+  (for instance, "Type variable int occurs inside int list")
+  (Florian Angeletti, report by Stephen Dolan, review by Armaël Guéneau)
+
 - #9759, #9767: Spurious GADT ambiguity without -principal
   (Jacques Garrigue, report by Thomas Refis,
    review by Thomas Refis and Gabriel Scherer)
@@ -727,8 +767,17 @@ OCaml 4.12.0
 - #10048: Fix bug with generalized local opens.
   (Leo White, review by Thomas Refis)
 
-OCaml 4.11.1
-------------
+OCaml 4.11 maintenance branch
+-----------------------------
+
+### Bug fixes:
+
+- #9096, #10096: fix a 4.11.0 performance regression in classes/objects
+  declared within a function
+  (Gabriel Scherer, review by Leo White, report by Sacha Ayoun)
+
+OCaml 4.11.1 (31 August 2020)
+-----------------------------
 
 ### Bug fixes:
 
@@ -741,7 +790,7 @@ OCaml 4.11.1
   (Florian Angeletti, review by Thomas Refis)
 
 OCaml 4.11.0 (19 August 2020)
----------------------------
+-----------------------------
 
 (Changes that can break existing programs are marked with a "*")
 

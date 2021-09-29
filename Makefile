@@ -417,6 +417,9 @@ endif
 ifneq "$(WITH_OCAMLDOC)" ""
 	$(MAKE) -C ocamldoc install
 endif
+ifeq "$(WITH_OCAMLDOC)-$(STDLIB_MANPAGES)" "ocamldoc-true"
+	$(MAKE) -C api_docgen install
+endif
 	if test -n "$(WITH_DEBUGGER)"; then \
 	  $(MAKE) -C debugger install; \
 	fi
@@ -878,15 +881,18 @@ partialclean::
 
 .PHONY: html_doc
 html_doc: ocamldoc
-	$(MAKE) -C ocamldoc $@
-	@echo "documentation is in ./ocamldoc/stdlib_html/"
+	$(MAKE) -C api_docgen html
+	@echo "documentation is in ./api_docgen/html/"
 
 .PHONY: manpages
 manpages:
-	$(MAKE) -C ocamldoc $@
+	$(MAKE) -C api_docgen man
 
 partialclean::
 	$(MAKE) -C ocamldoc clean
+
+partialclean::
+	$(MAKE) -C api_docgen clean
 
 # The extra libraries
 
@@ -1007,7 +1013,7 @@ endif
 ocamlnat$(EXE): compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
     compilerlibs/ocamlbytecomp.cmxa \
     otherlibs/dynlink/dynlink.cmxa \
-    compilerlibs/ocamlopttoplevel.cmxa \
+    compilerlibs/ocamltoplevel.cmxa \
     $(TOPLEVELSTART:.cmo=.cmx)
 	$(CAMLOPT_CMD) $(LINKFLAGS) -linkall -I toplevel/native -o $@ $^
 
@@ -1018,7 +1024,7 @@ $(TOPLEVELSTART:.cmo=.cmx): $(TOPLEVELSTART:.cmo=.ml) \
 partialclean::
 	rm -f ocamlnat ocamlnat.exe
 
-toplevel/opttoploop.cmx: otherlibs/dynlink/dynlink.cmxa
+toplevel/native/toploop.cmx: otherlibs/dynlink/dynlink.cmxa
 
 # The numeric opcodes
 

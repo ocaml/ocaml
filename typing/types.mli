@@ -55,7 +55,7 @@ open Asttypes
 
     Note on mutability: TBD.
  *)
-type type_expr =
+type type_expr = private
   { mutable desc: type_desc;
     mutable level: int;
     mutable scope: int;
@@ -232,6 +232,13 @@ and commutable =
     Cok
   | Cunknown
   | Clink of commutable ref
+
+module Private_type_expr : sig
+  val create : type_desc -> level: int -> scope: int -> id: int -> type_expr
+  val set_desc : type_expr -> type_desc -> unit
+  val set_level : type_expr -> int -> unit
+  val set_scope : type_expr -> int -> unit
+end
 
 module TypeOps : sig
   type t = type_expr

@@ -1182,7 +1182,7 @@ let rec tree_of_type_decl id decl =
       let vars = free_variables ty in
       List.iter
         (function {desc = Tvar (Some "_")} as ty ->
-            if List.memq ty vars then ty.desc <- Tvar None
+            if List.memq ty vars then set_type_desc ty (Tvar None)
           | _ -> ())
         params
   | None -> ()

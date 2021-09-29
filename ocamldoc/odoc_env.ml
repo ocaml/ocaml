@@ -175,11 +175,11 @@ let subst_type env t =
       | Types.Tconstr (p, l, a) ->
           let new_p =
             Odoc_name.to_path (full_type_name env (Odoc_name.from_path p)) in
-          t.Types.desc <- Types.Tconstr (new_p, l, a)
+          Btype.set_type_desc t (Types.Tconstr (new_p, l, a))
       | Types.Tpackage (p, n, l) ->
           let new_p =
             Odoc_name.to_path (full_module_type_name env (Odoc_name.from_path p)) in
-          t.Types.desc <- Types.Tpackage (new_p, n, l)
+          Btype.set_type_desc t (Types.Tpackage (new_p, n, l))
       | Types.Tobject (_, ({contents=Some(p,tyl)} as r)) ->
           let new_p =
             Odoc_name.to_path (full_type_name env (Odoc_name.from_path p)) in
@@ -187,8 +187,8 @@ let subst_type env t =
       | Types.Tvariant ({Types.row_name=Some(p, tyl)} as row) ->
           let new_p =
             Odoc_name.to_path (full_type_name env (Odoc_name.from_path p)) in
-          t.Types.desc <-
-            Types.Tvariant {row with Types.row_name=Some(new_p, tyl)}
+          Btype.set_type_desc t
+            (Types.Tvariant {row with Types.row_name=Some(new_p, tyl)})
       | _ ->
           ()
     end

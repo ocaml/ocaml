@@ -144,7 +144,7 @@ result by running
 make html_doc
 ----
 
-and then opening link:./ocamldoc/stdlib_html/index.html[] in a web browser.
+and then opening link:./api_docgen/html/libref/index.html[] in a web browser.
 
 === Tools
 
@@ -388,6 +388,29 @@ The `changes` check can be disabled by including "(no change
 entry needed)" in one of your commit messages -- but in general all
 patches submitted should come with a Changes entry; see the guidelines
 in link:CONTRIBUTING.md[].
+
+The Windows ports take a long time to test - INRIA's precheck service is the
+best to use when all 6 Windows ports need testing for a branch, but the
+AppVeyor scripts also support the other ports. The matrix is controlled by
+the following environment variables, which should be set in appveyor.yml:
+
+- `PORT` - this must be set on each job. Either `mingw`, `msvc` or `cygwin`
+  followed by `32` or `64`.
+- `BOOTSTRAP_FLEXDLL` - must be set on each job. Either `true` or `false`.
+  At present, must be `false` for Cygwin builds. Controls whether flexlink
+  is bootstrapped as part of the test or installed from a binary archive.
+- `FORCE_CYGWIN_UPGRADE`. Default: `0`. Set to `1` to force an upgrade of
+  Cygwin packages as part of the build. Normally a full upgrade is only
+  triggered if the packages installed require it.
+- `BUILD_MODE`. Default: `world.opt`. Either `world.opt`, `steps`, or `C`.
+  Controls whether the build uses the `world.opt` target or the classic
+  `world`, `opt`, `opt.opt` targets. The `C` build is a fast test used to
+  build just enough of the tree to cover the C sources (it's used to test
+  old MSVC compilers).
+- `SDK`. Defaults to Visual Studio 2015. Specifies the exact command to run
+  to set-up the Microsoft build environment.
+- `CYGWIN_DIST`. Default: `64`. Either `64` or `32`, selects 32-bit or 64-bit
+  Cygwin as the build environment.
 
 ==== INRIA's Continuous Integration (CI)
 

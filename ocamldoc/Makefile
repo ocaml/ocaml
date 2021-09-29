@@ -18,7 +18,6 @@ ROOTDIR = ..
 include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 
-OCAMLRUN ?= $(ROOTDIR)/boot/ocamlrun$(EXE)
 OCAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc$(EXE)
 
 STDLIBFLAGS = -nostdlib -I $(ROOTDIR)/stdlib
@@ -32,39 +31,8 @@ OCAMLLEX = $(BEST_OCAMLLEX)
 ##############
 
 CP=cp
-OCAMLDOC=ocamldoc$(EXE)
-OCAMLDOC_OPT=ocamldoc.opt$(EXE)
-
 programs := ocamldoc ocamldoc.opt
-
-# TODO: clarify whether the following really needs to be that complicated
-ifeq "$(UNIX_OR_WIN32)" "unix"
-  ifeq "$(TARGET)" "$(HOST)"
-    ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "true"
-      OCAMLDOC_RUN_BYTE=$(OCAMLRUN) -I $(ROOTDIR)/otherlibs/$(UNIXLIB) -I $(ROOTDIR)/otherlibs/str ./$(OCAMLDOC)
-    else
-# if shared-libraries are not supported, unix.cma and str.cma
-# are compiled with -custom, so ocamldoc also uses -custom,
-# and (ocamlrun ocamldoc) does not work.
-      OCAMLDOC_RUN_BYTE=./$(OCAMLDOC)
-    endif
-  else
-    OCAMLDOC_RUN_BYTE=$(OCAMLRUN) ./$(OCAMLDOC)
-  endif
-else # Windows
-  OCAMLDOC_RUN_BYTE = \
-    CAML_LD_LIBRARY_PATH="$(ROOTDIR)/otherlibs/win32unix;$(ROOTDIR)/otherlibs/str" $(OCAMLRUN) ./$(OCAMLDOC)
-endif
-
-OCAMLDOC_RUN_OPT=./$(OCAMLDOC_OPT)
-
-OCAMLDOC_RUN_PLUGINS=$(OCAMLDOC_RUN_BYTE)
-
-ifeq "$(wildcard $(OCAMLDOC_OPT))" ""
-  OCAMLDOC_RUN=$(OCAMLDOC_RUN_BYTE)
-else
-  OCAMLDOC_RUN=$(OCAMLDOC_RUN_OPT)
-endif
+include Makefile.best_ocamldoc
 
 OCAMLDOC_LIBCMA=odoc_info.cma
 OCAMLDOC_LIBCMI=odoc_info.cmi
@@ -220,18 +188,6 @@ $(OCAMLDOC_LIBCMA): $(LIBCMOFILES)
 $(OCAMLDOC_LIBCMXA): $(LIBCMXFILES)
 	$(OCAMLOPT) -a -o $@ $(LINKFLAGS) $^
 
-.PHONY: manpages
-manpages: stdlib_man/Stdlib.3o
-
-.PHONY: html_doc
-html_doc: stdlib_html/Stdlib.html
-
-.PHONY: pdf_doc
-pdf_doc: stdlib_latex/stdlib.pdf
-
-.PHONY: texi_doc
-texi_doc: stdlib_texi/stdlib.texi
-
 .PHONY: dot
 dot: ocamldoc.dot
 
@@ -287,13 +243,10 @@ odoc_see_lexer.ml: odoc_see_lexer.mll
 # TODO: it may be good to split the following rule in several ones, e.g.
 # install-programs, install-doc, install-libs
 
-INSTALL_MANODIR=$(INSTALL_MANDIR)/man3
-
 .PHONY: install
 install:
 	$(MKDIR) "$(INSTALL_BINDIR)"
 	$(MKDIR) "$(INSTALL_LIBDIR)/ocamldoc"
-	$(MKDIR) "$(INSTALL_MANODIR)"
 	$(INSTALL_PROG) $(OCAMLDOC) "$(INSTALL_BINDIR)"
 	$(INSTALL_DATA) \
 	  ocamldoc.hva *.cmi $(OCAMLDOC_LIBCMA) \
@@ -306,9 +259,6 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	  $(OCAMLDOC_LIBMLIS) $(OCAMLDOC_LIBCMTS) \
 	  "$(INSTALL_LIBDIR)/ocamldoc"
 endif
-	if test -d stdlib_man; then \
-	  $(INSTALL_DATA) stdlib_man/* "$(INSTALL_MANODIR)"; \
-	else : ; fi
 
 # Note: at the moment, $(INSTALL_MANODIR) is created even if the doc has
 # not been built. This is not clean and should be changed.
@@ -394,50 +344,6 @@ test_texi:
 #######################
 SRC=$(ROOTDIR)
 
-# Documented modules: stdlib + otherlib + utils(?) + parsing(for compiler-libs)
-
-include Makefile.docfiles
-
-stdlib_man/Stdlib.3o: $(OCAMLDOC) $(DOC_ALL)
-	$(MKDIR) stdlib_man
-	$(OCAMLDOC_RUN) -man -d stdlib_man -nostdlib \
-	-hide Stdlib -lib Stdlib $(DOC_ALL_INCLUDES) \
-	-pp "$(AWK) -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk" \
-	-t "OCaml library" -man-mini \
-	$(DOC_ALL_TEXT:%=-text %) \
-	$(DOC_ALL_MLIS)
-
-stdlib_html/Stdlib.html: $(OCAMLDOC) $(DOC_ALL)
-	$(MKDIR) stdlib_html
-	$(OCAMLDOC_RUN) -html -d stdlib_html -nostdlib \
-	-hide Stdlib -lib Stdlib $(DOC_ALL_INCLUDES) \
-	-pp "$(AWK) -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk" \
-	-t "OCaml library" \
-	$(DOC_ALL_TEXT:%=-text %) \
-	$(DOC_ALL_MLIS)
-
-stdlib_texi/stdlib.texi: $(OCAMLDOC) $(DOC_ALL)
-	$(MKDIR) stdlib_texi
-	$(OCAMLDOC_RUN) -texi -o stdlib_texi/stdlib.texi -nostdlib \
-	-hide Stdlib -lib Stdlib $(DOC_ALL_INCLUDES) \
-	-pp "$(AWK) -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk" \
-	-t "OCaml library" \
-	$(DOC_ALL_TEXT:%=-text %) \
-	$(DOC_ALL_MLIS)
-
-
-stdlib_latex/stdlib.tex: $(OCAMLDOC) $(DOC_ALL)
-	$(MKDIR) stdlib_latex
-	$(OCAMLDOC_RUN) -latex -o stdlib_latex/stdlib.tex -nostdlib \
-	-hide Stdlib -lib Stdlib $(DOC_ALL_INCLUDES) \
-	-pp "$(AWK) -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk" \
-	-t "OCaml library" \
-	$(DOC_ALL_TEXT:%=-text %) \
-	$(DOC_ALL_MLIS)
-
-stdlib_latex/stdlib.pdf: stdlib_latex/stdlib.tex
-	cd stdlib_latex && pdflatex stdlib && pdflatex stdlib
-
 
 .PHONY: autotest_stdlib
 autotest_stdlib:
@@ -447,7 +353,6 @@ autotest_stdlib:
 	$(ROOTDIR)/stdlib/*.mli \
 	$(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.mli \
 	$(ROOTDIR)/otherlibs/str/str.mli
-
 
 # odoc rules :
 ##############
@@ -497,7 +402,6 @@ clean:
 	rm -f odoc_parser.output odoc_text_parser.output
 	rm -f odoc_lexer.ml odoc_text_lexer.ml odoc_see_lexer.ml odoc_ocamlhtml.ml
 	rm -f odoc_parser.ml odoc_parser.mli odoc_text_parser.ml odoc_text_parser.mli
-	rm -rf stdlib_man stdlib_html stdlib_texi stdlib_latex
 	rm -f generators/*.cm[taiox] generators/*.a generators/*.lib generators/*.o generators/*.obj \
         generators/*.cmx[as]
 

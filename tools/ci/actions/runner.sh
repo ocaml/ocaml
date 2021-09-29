@@ -83,7 +83,7 @@ TestLoop () {
 
 API_Docs () {
   echo Ensuring that all library documentation compiles
-  $MAKE -C ocamldoc html_doc pdf_doc texi_doc
+  $MAKE -C api_docgen html pdf texi
 }
 
 Install () {
