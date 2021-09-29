@@ -539,7 +539,7 @@ module Storer =
 let rec comp_expr env exp sz cont =
   check_stack sz;
   match exp with
-    Lvar id ->
+    Lvar id | Lmutvar id ->
       begin try
         let pos = Ident.find_same id env.ce_stack in
         Kacc(sz - pos) :: cont
@@ -606,7 +606,8 @@ let rec comp_expr env exp sz cont =
       Stack.push to_compile functions_to_compile;
       comp_args env (List.map (fun n -> Lvar n) fv) sz
         (Kclosure(lbl, List.length fv) :: cont)
-  | Llet(_str, _k, id, arg, body) ->
+  | Llet(_, _k, id, arg, body)
+  | Lmutlet(_k, id, arg, body) ->
       comp_expr env arg sz
         (Kpush :: comp_expr (add_var id (sz+1) env) body (sz+1)
           (add_pop 1 cont))

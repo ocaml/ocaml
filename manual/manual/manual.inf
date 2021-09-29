@@ -135,7 +135,7 @@
 % Notations pour les metavariables
 \def\nmth#1#2#3{\({#1}_{#2}^{#3}\)}
 \def\optvar#1{[\var{#1}\/]}
-\def\event{§§}
+\def\event{Â§Â§}
 \def\fromoneto#1#2{$#1 = 1,\ldots{} , #2$}
 
 \newcommand{\vfill}{}

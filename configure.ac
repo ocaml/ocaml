@@ -65,7 +65,7 @@ profinfo_width=0
 extralibs=
 instrumented_runtime=true
 force_instrumented_runtime=false
-instrumented_runtime_ldlibs=""
+instrumented_runtime_libs=""
 
 # Information about the package
 
@@ -130,6 +130,7 @@ AC_SUBST([natdynlinkopts])
 AC_SUBST([cmxs])
 AC_SUBST([debug_runtime])
 AC_SUBST([instrumented_runtime])
+AC_SUBST([instrumented_runtime_libs])
 AC_SUBST([has_monotonic_clock])
 AC_SUBST([otherlibraries])
 AC_SUBST([cc_has_debug_prefix_map])
@@ -138,7 +139,6 @@ AC_SUBST([with_debugger]) # TODO: rename this variable
 AC_SUBST([with_camltex])
 AC_SUBST([ocamldoc])
 AC_SUBST([ocamltest])
-AC_SUBST([pthread_link])
 AC_SUBST([x_includes])
 AC_SUBST([x_libraries])
 AC_SUBST([ASPP])
@@ -1284,8 +1284,8 @@ but no proper monotonic clock source was found.])
           [
             instrumented_runtime=true
             AS_IF([test "x$ac_cv_search_clock_gettime" = "xnone required"],
-              [instrumented_runtime_ldlibs=""],
-              [instrumented_runtime_ldlibs=$ac_cv_search_clock_gettime]
+              [instrumented_runtime_libs=""],
+              [instrumented_runtime_libs=$ac_cv_search_clock_gettime]
             )
           ],
         [yes,false,*],
@@ -1689,16 +1689,12 @@ AS_IF([test x"$enable_systhreads" = "xno"],
     [AX_PTHREAD(
       [systhread_support=true
       otherlibraries="$otherlibraries systhreads"
-      AS_CASE([$host],
-        [*-*-haiku*], [pthread_link=""],
-        [*-*-android*], [pthread_link=""],
-        [pthread_link="-lpthread"])
-      common_cppflags="$common_cppflags -D_REENTRANT"
+      common_cflags="$common_cflags $PTHREAD_CFLAGS"
       AC_MSG_NOTICE([the POSIX threads library is supported])
       saved_CFLAGS="$CFLAGS"
       saved_LIBS="$LIBS"
       CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
-      LIBS="$LIBS $pthread_link"
+      LIBS="$LIBS $PTHREAD_LIBS"
       AC_CHECK_FUNC([sigwait], [AC_DEFINE([HAS_SIGWAIT])])
       LIBS="$saved_LIBS"
       CFLAGS="$saved_CFLAGS"],
@@ -1843,8 +1839,8 @@ AS_CASE([$host],
   [*-pc-windows],
     [bytecclibs="advapi32.lib ws2_32.lib version.lib"
     nativecclibs="advapi32.lib ws2_32.lib version.lib"],
-  [bytecclibs="$cclibs $DLLIBS $pthread_link $instrumented_runtime_ldlibs"
-  nativecclibs="$cclibs $DLLIBS $pthread_link"])
+  [bytecclibs="$cclibs $DLLIBS $PTHREAD_LIBS"
+  nativecclibs="$cclibs $DLLIBS $PTHREAD_LIBS"])
 
 AS_IF([test x"$libdir" = x'${exec_prefix}/lib'],
   [libdir="$libdir"/ocaml])

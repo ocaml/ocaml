@@ -14,8 +14,8 @@ it describes the input syntax for "ocamllex" and "ocamlyacc" and the
 main differences with "lex" and "yacc", it does not explain the basics
 of writing a lexer or parser description in "lex" and "yacc". Readers
 unfamiliar with "lex" and "yacc" are referred to  ``Compilers:
-principles, techniques, and tools'' by Aho, Sethi and Ullman
-(Addison-Wesley, 1986), or ``Lex $\&$ Yacc'', by Levine, Mason and
+principles, techniques, and tools'' by Aho, Lam, Sethi and Ullman
+(Pearson, 2006), or ``Lex $\&$ Yacc'', by Levine, Mason and
 Brown (O'Reilly, 1992).
 
 \section{s:ocamllex-overview}{Overview of \texttt{ocamllex}}

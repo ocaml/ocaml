@@ -63,7 +63,7 @@ class virtual selector_generic : object
   (* The following methods must or can be overridden by the processor
      description *)
   method is_immediate : Mach.integer_operation -> int -> bool
-    (* Must be overriden to indicate whether a constant is a suitable
+    (* Must be overridden to indicate whether a constant is a suitable
        immediate operand to the given integer arithmetic instruction.
        The default implementation handles shifts by immediate amounts,
        but produces no immediate operations otherwise. *)

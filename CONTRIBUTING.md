@@ -66,10 +66,7 @@ contribution.
 You should not leave trailing whitespace; not have line longer than 80
 columns, not use tab characters (spaces only), and not use non-ASCII
 characters. These typographical rules can be checked with the script
-`tools/check-typo`.
-
-If you are working from a Git clone, you can automate this process by
-copying the file `tools/pre-commit-githook` to `.git/hooks/pre-commit`.
+`tools/check-typo`, see [HACKING.adoc: check-typo](HACKING.adoc#check-typo).
 
 Otherwise, there are no strongly enforced guidelines specific to the
 compiler -- and, as a result, the style may differ in the different
@@ -341,51 +338,9 @@ log -u` to make sure the rebase patches make sense), but:
 
 ## Contributing to the standard library
 
-Contributions to the standard library are very welcome.  There is some
-widespread belief in the community than the stdlib is somehow "frozen"
-and that its evolutions are mostly driven by the need of the OCaml
-compiler itself.  Let's be clear: this is just plain wrong. The
-compiler is happy with its own local utility functions, and many
-recent additions to the stdlib are not used by the compiler.
-
-Another common and wrong idea is that core OCaml maintainers don't
-really care about the standard library.  This is not true, and won't
-be unless one of the "alternative standard" libraries really gains
-enough "market share" in the community.
-
-So: please contribute!
-
-Obviously, the proposals to evolve the standard library will be
-evaluated with very high standards, similar to those applied to the
-evolution of the surface langage, and much higher than those for
-internal compiler changes (optimizations, etc).
-
-A key property of the standard library is its stability.  Backward
-compatibility is not an absolute technical requirement (any addition
-to/of a module can break existing code, formally), but breakage should
-be limited as much as possible (and assessed, when relevant).  A
-corollary is that any addition creates a long-term support commitment.
-For instance, once a concrete type or function is made public,
-changing the exposed definition cannot be done easily.
-
-There is no plan to extend dramatically the functional domain covered
-by the standard library.  For instance, proposals to include support
-for XML, JSON, or network protocols are very likely to be rejected.  Such
-domains are better treated by external libraries.  Small additions to
-existing modules are much simpler to get in, even more so (but not
-necessarily) when:
-
-  - they cannot easily be implemented externally, or when
-  - they facilitate communication between independent external
-    libraries, or when
-  - they fill obvious gaps.
-
-Of course, standard guidelines apply as well: proper documentation,
-proper tests, portability (yes, also Windows!), good justification for
-why the change is desirable and why it should go into stdlib.
-
-So: be prepared for some serious review process!  But yes, yes,
-contributions are welcome and appreciated.  Promised.
+Contributions to the standard library are very welcome.
+See the dedicated [stdlib/CONTRIBUTING.md](stdlib/CONTRIBUTING.md)
+for more information.
 
 ## Contributing optimizations
 

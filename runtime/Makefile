@@ -64,7 +64,7 @@ BYTECODE_STATIC_LIBRARIES += libcamlrund.$(A)
 NATIVE_STATIC_LIBRARIES += libasmrund.$(A)
 endif
 
-ifeq "$(RUNTIMEI)" "true"
+ifeq "$(INSTRUMENTED_RUNTIME)" "true"
 PROGRAMS += ocamlruni$(EXE)
 BYTECODE_STATIC_LIBRARIES += libcamlruni.$(A)
 NATIVE_STATIC_LIBRARIES += libasmruni.$(A)
@@ -295,7 +295,7 @@ libcamlrund.$(A): $(libcamlrund_OBJECTS)
 	$(call MKLIB,$@, $^)
 
 ocamlruni$(EXE): prims.$(O) libcamlruni.$(A)
-	$(MKEXE) -o $@ $^ $(LIBS)
+	$(MKEXE) -o $@ $^ $(INSTRUMENTED_RUNTIME_LIBS) $(LIBS)
 
 libcamlruni.$(A): $(libcamlruni_OBJECTS)
 	$(call MKLIB,$@, $^)
@@ -379,6 +379,8 @@ $(foreach object_type, $(object_types), \
   $(eval $(call COMPILE_C_FILE,$(object_type))))
 
 dynlink.%.$(O): OC_CPPFLAGS += $(STDLIB_CPP_FLAG)
+
+startup_byt.%.$(O): OC_CPPFLAGS += $(STDLIB_CPP_FLAG) -DHOST='"$(HOST)"'
 
 $(foreach object_type,$(subst %,,$(object_types)), \
   $(eval dynlink$(object_type).$(O): $(ROOTDIR)/Makefile.config))
