@@ -25,7 +25,7 @@ rm -f /tmp/env-$USER.sh
 cat >/tmp/env-$USER.sh <<EOF
 # Update the data below
 export MAJOR=4
-export MINOR=08
+export MINOR=12
 export BUGFIX=0
 export PLUSEXT=
 
@@ -40,6 +40,7 @@ export WORKTREE=~/o/\$MAJOR.\$MINOR
 
 export BRANCH=\$MAJOR.\$MINOR
 export VERSION=\$MAJOR.\$MINOR.\$BUGFIX\$PLUSEXT
+export TAGVERSION=\`echo \$VERSION | sed s/\~/-/g\`
 
 export REPO=https://github.com/ocaml/ocaml
 
@@ -137,7 +138,7 @@ make -B configure
 make coreboot -j5
 make coreboot -j5 # must say "Fixpoint reached, bootstrap succeeded."
 git commit -m "release $VERSION" -a
-git tag -m "release $VERSION" $VERSION
+git tag -m "release $VERSION" $TAGVERSION
 
 # for production releases, change the VERSION file into (N+1)+dev0; for example,
 #   4.08.0 => 4.08.1+dev0
@@ -254,7 +255,7 @@ The synopsis should be "latest $VERSION development(,...)".
 ```
 cd $WORKTREE
 TMPDIR=/tmp/ocaml-release
-git checkout $VERSION
+git checkout $TAGVERSION
 git checkout-index -a -f --prefix=$TMPDIR/ocaml-$VERSION/
 cd $TMPDIR
 $TAR -c --owner 0 --group 0 -f ocaml-$VERSION.tar ocaml-$VERSION

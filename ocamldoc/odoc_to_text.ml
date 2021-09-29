@@ -153,7 +153,7 @@ class virtual info =
           let t =
             (match info.i_deprecated with
               None -> []
-            | Some t -> ( Italic [Raw (Odoc_messages.deprecated^" ")] ) :: t
+            | Some t -> ( Italic [Raw (Odoc_messages.deprecated^". ")] ) :: t
              ) @
             (match info.i_desc with
               None -> []

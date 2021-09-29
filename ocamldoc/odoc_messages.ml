@@ -52,6 +52,7 @@ let html_short_functors = " Use short form to display functor types "^html_only
 let charset c = Printf.sprintf
   "<s> Add information about character encoding being s\n\t\t(default is %s)"
   c
+let no_navbar = " Do not include the navigation bar "^html_only
 let generate_html = " Generate HTML documentation"
 let generate_latex = " Generate LaTeX documentation"
 let generate_texinfo = " Generate TeXinfo documentation"
@@ -388,7 +389,7 @@ let authors = "Author(s)"
 let version = "Version"
 let since = "Since"
 let before = "Before"
-let deprecated = "Deprecated."
+let deprecated = "Deprecated"
 let raises = "Raises"
 let returns = "Returns"
 let inherits = "Inherits"

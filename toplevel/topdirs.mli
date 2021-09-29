@@ -26,12 +26,26 @@ val dir_use : formatter -> string -> unit
 val dir_use_output : formatter -> string -> unit
 val dir_install_printer : formatter -> Longident.t -> unit
 val dir_remove_printer : formatter -> Longident.t -> unit
+
+(* These are now injected from [Topeval], for the bytecode toplevel only:
 val dir_trace : formatter -> Longident.t -> unit
 val dir_untrace : formatter -> Longident.t -> unit
 val dir_untrace_all : formatter -> unit -> unit
+ *)
+
+val section_general : string
+val section_run : string
+val section_env : string
+
+val section_print : string
+val section_trace : string
+val section_options : string
+
+val section_undocumented : string
+
 
 type 'a printer_type_new = Format.formatter -> 'a -> unit
 type 'a printer_type_old = 'a -> unit
 
-(* For topmain.ml. Maybe shouldn't be there *)
-val load_file : formatter -> string -> bool
+(* Here for backwards compatibility, use [Toploop.load_file]. *)
+val[@deprecated] load_file : formatter -> string -> bool

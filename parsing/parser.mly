@@ -246,107 +246,130 @@ let expecting loc nonterm =
 let not_expecting loc nonterm =
     raise Syntaxerr.(Error(Not_expecting(make_loc loc, nonterm)))
 
-let dotop ~left ~right ~assign ~ext ~multi =
-  let assign = if assign then "<-" else "" in
-  let mid = if multi then ";.." else "" in
-  String.concat "" ["."; ext; left; mid; right; assign]
-let paren = "(",")"
-let brace = "{", "}"
-let bracket = "[", "]"
-let lident x =  Lident x
-let ldot x y = Ldot(x,y)
-let dotop_fun ~loc dotop =
-  ghexp ~loc (Pexp_ident (ghloc ~loc dotop))
+(* Helper functions for desugaring array indexing operators *)
+type paren_kind = Paren | Brace | Bracket
 
-let array_function ~loc str name =
-  ghloc ~loc (Ldot(Lident str,
-                   (if !Clflags.unsafe then "unsafe_" ^ name else name)))
+(* We classify the dimension of indices: Bigarray distinguishes
+   indices of dimension 1,2,3, or more. Similarly, user-defined
+   indexing operator behave differently for indices of dimension 1
+   or more.
+*)
+type index_dim =
+  | One
+  | Two
+  | Three
+  | Many
+type ('dot,'index) array_family = {
 
-let array_get_fun ~loc =
-  ghexp ~loc (Pexp_ident(array_function ~loc "Array" "get"))
-let string_get_fun ~loc =
-  ghexp ~loc (Pexp_ident(array_function ~loc "String" "get"))
+  name:
+    Lexing.position * Lexing.position -> 'dot -> assign:bool -> paren_kind
+  -> index_dim -> Longident.t Location.loc
+  (*
+    This functions computes the name of the explicit indexing operator
+    associated with a sugared array indexing expression.
 
-let array_set_fun ~loc =
-  ghexp ~loc (Pexp_ident(array_function ~loc "Array" "set"))
-let string_set_fun ~loc =
-  ghexp ~loc (Pexp_ident(array_function ~loc "String" "set"))
+    For instance, for builtin arrays, if Clflags.unsafe is set,
+    * [ a.[index] ]     =>  [String.unsafe_get]
+    * [ a.{x,y} <- 1 ]  =>  [ Bigarray.Array2.unsafe_set]
 
-let multi_indices ~loc = function
-  | [a] -> false, a
-  | l -> true, mkexp ~loc (Pexp_array l)
+    User-defined indexing operator follows a more local convention:
+    * [ a .%(index)]     => [ (.%()) ]
+    * [ a.![1;2] <- 0 ]  => [(.![;..]<-)]
+    * [ a.My.Map.?(0) => [My.Map.(.?())]
+  *);
 
-let index_get ~loc get_fun array index =
-  let args = [Nolabel, array; Nolabel, index] in
-   mkexp ~loc (Pexp_apply(get_fun, args))
+  index:
+    Lexing.position * Lexing.position -> paren_kind -> 'index
+    -> index_dim * (arg_label * expression) list
+   (*
+     [index (start,stop) paren index] computes the dimension of the
+     index argument and how it should be desugared when transformed
+     to a list of arguments for the indexing operator.
+     In particular, in both the Bigarray case and the user-defined case,
+     beyond a certain dimension, multiple indices are packed into a single
+     array argument:
+     * [ a.(x) ]       => [ [One, [Nolabel, <<x>>] ]
+     * [ a.{1,2} ]     => [ [Two, [Nolabel, <<1>>; Nolabel, <<2>>] ]
+     * [ a.{1,2,3,4} ] => [ [Many, [Nolabel, <<[|1;2;3;4|]>>] ] ]
+   *);
 
-let index_set ~loc set_fun array index value =
-  let args = [Nolabel, array; Nolabel, index; Nolabel, value] in
-   mkexp ~loc (Pexp_apply(set_fun, args))
-
-let array_get ~loc = index_get ~loc (array_get_fun ~loc)
-let string_get ~loc = index_get ~loc (string_get_fun ~loc)
-let dotop_get ~loc path (left,right) ext array index =
-  let multi, index = multi_indices ~loc index in
-  index_get ~loc
-    (dotop_fun ~loc (path @@ dotop ~left ~right ~ext ~multi ~assign:false))
-    array index
-
-let array_set ~loc = index_set ~loc (array_set_fun ~loc)
-let string_set ~loc = index_set ~loc (string_set_fun ~loc)
-let dotop_set ~loc path (left,right) ext array index value=
-  let multi, index = multi_indices ~loc index in
-  index_set ~loc
-    (dotop_fun ~loc (path @@ dotop ~left ~right ~ext ~multi ~assign:true))
-    array index value
-
-
-let bigarray_function ~loc str name =
-  ghloc ~loc (Ldot(Ldot(Lident "Bigarray", str), name))
+}
 
 let bigarray_untuplify = function
     { pexp_desc = Pexp_tuple explist; pexp_loc = _ } -> explist
   | exp -> [exp]
 
-let bigarray_get ~loc arr arg =
-  let mkexp, ghexp = mkexp ~loc, ghexp ~loc in
-  let bigarray_function = bigarray_function ~loc in
-  let get = if !Clflags.unsafe then "unsafe_get" else "get" in
-  match bigarray_untuplify arg with
-    [c1] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array1" get)),
-                       [Nolabel, arr; Nolabel, c1]))
-  | [c1;c2] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array2" get)),
-                       [Nolabel, arr; Nolabel, c1; Nolabel, c2]))
-  | [c1;c2;c3] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array3" get)),
-                       [Nolabel, arr; Nolabel, c1; Nolabel, c2; Nolabel, c3]))
-  | coords ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Genarray" "get")),
-                       [Nolabel, arr; Nolabel, ghexp(Pexp_array coords)]))
+let builtin_arraylike_name loc _ ~assign paren_kind n =
+  let opname = if assign then "set" else "get" in
+  let opname = if !Clflags.unsafe then "unsafe_" ^ opname else opname in
+  let prefix = match paren_kind with
+    | Paren -> Lident "Array"
+    | Bracket -> Lident "String"
+    | Brace ->
+       let submodule_name = match n with
+         | One -> "Array1"
+         | Two -> "Array2"
+         | Three -> "Array3"
+         | Many -> "Genarray" in
+       Ldot(Lident "Bigarray", submodule_name) in
+   ghloc ~loc (Ldot(prefix,opname))
 
-let bigarray_set ~loc arr arg newval =
-  let mkexp, ghexp = mkexp ~loc, ghexp ~loc in
-  let bigarray_function = bigarray_function ~loc in
-  let set = if !Clflags.unsafe then "unsafe_set" else "set" in
-  match bigarray_untuplify arg with
-    [c1] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array1" set)),
-                       [Nolabel, arr; Nolabel, c1; Nolabel, newval]))
-  | [c1;c2] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array2" set)),
-                       [Nolabel, arr; Nolabel, c1;
-                        Nolabel, c2; Nolabel, newval]))
-  | [c1;c2;c3] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array3" set)),
-                       [Nolabel, arr; Nolabel, c1;
-                        Nolabel, c2; Nolabel, c3; Nolabel, newval]))
-  | coords ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Genarray" "set")),
-                       [Nolabel, arr;
-                        Nolabel, ghexp(Pexp_array coords);
-                        Nolabel, newval]))
+let builtin_arraylike_index loc paren_kind index = match paren_kind with
+    | Paren | Bracket -> One, [Nolabel, index]
+    | Brace ->
+       (* Multi-indices for bigarray are comma-separated ([a.{1,2,3,4}]) *)
+       match bigarray_untuplify index with
+     | [x] -> One, [Nolabel, x]
+     | [x;y] -> Two, [Nolabel, x; Nolabel, y]
+     | [x;y;z] -> Three, [Nolabel, x; Nolabel, y; Nolabel, z]
+     | coords -> Many, [Nolabel, ghexp ~loc (Pexp_array coords)]
+
+let builtin_indexing_operators : (unit, expression) array_family  =
+  { index = builtin_arraylike_index; name = builtin_arraylike_name }
+
+let paren_to_strings = function
+  | Paren -> "(", ")"
+  | Bracket -> "[", "]"
+  | Brace -> "{", "}"
+
+let user_indexing_operator_name loc (prefix,ext) ~assign paren_kind n =
+  let name =
+    let assign = if assign then "<-" else "" in
+    let mid = match n with
+        | Many | Three | Two  -> ";.."
+        | One -> "" in
+    let left, right = paren_to_strings paren_kind in
+    String.concat "" ["."; ext; left; mid; right; assign] in
+  let lid = match prefix with
+    | None -> Lident name
+    | Some p -> Ldot(p,name) in
+  ghloc ~loc lid
+
+let user_index loc _ index =
+  (* Multi-indices for user-defined operators are semicolon-separated
+     ([a.%[1;2;3;4]]) *)
+  match index with
+    | [a] -> One, [Nolabel, a]
+    | l -> Many, [Nolabel, mkexp ~loc (Pexp_array l)]
+
+let user_indexing_operators:
+      (Longident.t option * string, expression list) array_family
+  = { index = user_index; name = user_indexing_operator_name }
+
+let mk_indexop_expr array_indexing_operator ~loc
+      (array,dot,paren,index,set_expr) =
+  let assign = match set_expr with None -> false | Some _ -> true in
+  let n, index = array_indexing_operator.index loc paren index in
+  let fn = array_indexing_operator.name loc dot ~assign paren n in
+  let set_arg = match set_expr with
+    | None -> []
+    | Some expr -> [Nolabel, expr] in
+  let args = (Nolabel,array) :: index @ set_arg in
+  mkexp ~loc (Pexp_apply(ghexp ~loc (Pexp_ident fn), args))
+
+let indexop_unclosed_error loc_s s loc_e =
+  let left, right = paren_to_strings s in
+  unclosed left loc_s right loc_e
 
 let lapply ~loc p1 p2 =
   if !Clflags.applicative_functors
@@ -2186,6 +2209,26 @@ let_pattern:
       { $1 }
 ;
 
+%inline indexop_expr(dot, index, right):
+  | array=simple_expr d=dot LPAREN i=index RPAREN r=right
+    { array, d, Paren,   i, r }
+  | array=simple_expr d=dot LBRACE i=index RBRACE r=right
+    { array, d, Brace,   i, r }
+  | array=simple_expr d=dot LBRACKET i=index RBRACKET r=right
+    { array, d, Bracket, i, r }
+;
+
+%inline indexop_error(dot, index):
+  | simple_expr dot _p=LPAREN index  _e=error
+    { indexop_unclosed_error $loc(_p)  Paren $loc(_e) }
+  | simple_expr dot _p=LBRACE index  _e=error
+    { indexop_unclosed_error $loc(_p) Brace $loc(_e) }
+  | simple_expr dot _p=LBRACKET index  _e=error
+    { indexop_unclosed_error $loc(_p) Bracket $loc(_e) }
+;
+
+%inline qualified_dotop: ioption(DOT mod_longident {$2}) DOTOP { $1, $2 };
+
 expr:
     simple_expr %prec below_HASH
       { $1 }
@@ -2208,27 +2251,10 @@ expr:
       { mkexp ~loc:$sloc (Pexp_setinstvar($1, $3)) }
   | simple_expr DOT mkrhs(label_longident) LESSMINUS expr
       { mkexp ~loc:$sloc (Pexp_setfield($1, $3, $5)) }
-  | simple_expr DOT LPAREN seq_expr RPAREN LESSMINUS expr
-      { array_set ~loc:$sloc $1 $4 $7 }
-  | simple_expr DOT LBRACKET seq_expr RBRACKET LESSMINUS expr
-      { string_set ~loc:$sloc $1 $4 $7 }
-  | simple_expr DOT LBRACE expr RBRACE LESSMINUS expr
-      { bigarray_set ~loc:$sloc $1 $4 $7 }
-  | simple_expr DOTOP LBRACKET expr_semi_list RBRACKET LESSMINUS expr
-      { dotop_set ~loc:$sloc lident bracket $2 $1 $4 $7 }
-  | simple_expr DOTOP LPAREN expr_semi_list RPAREN LESSMINUS expr
-      { dotop_set ~loc:$sloc lident paren $2 $1 $4 $7 }
-  | simple_expr DOTOP LBRACE expr_semi_list RBRACE LESSMINUS expr
-      { dotop_set ~loc:$sloc lident brace $2 $1 $4 $7 }
-  | simple_expr DOT mod_longident DOTOP LBRACKET expr_semi_list RBRACKET
-      LESSMINUS expr
-      { dotop_set ~loc:$sloc (ldot $3) bracket $4 $1 $6 $9 }
-  | simple_expr DOT mod_longident DOTOP LPAREN expr_semi_list RPAREN
-      LESSMINUS expr
-      { dotop_set ~loc:$sloc (ldot $3) paren $4 $1 $6 $9  }
-  | simple_expr DOT mod_longident DOTOP LBRACE expr_semi_list RBRACE
-      LESSMINUS expr
-      { dotop_set ~loc:$sloc (ldot $3) brace $4 $1 $6 $9 }
+  | indexop_expr(DOT, seq_expr, LESSMINUS v=expr {Some v})
+    { mk_indexop_expr builtin_indexing_operators ~loc:$sloc $1 }
+  | indexop_expr(qualified_dotop, expr_semi_list, LESSMINUS v=expr {Some v})
+    { mk_indexop_expr user_indexing_operators ~loc:$sloc $1 }
   | expr attribute
       { Exp.attr $1 $2 }
 /* BEGIN AVOID */
@@ -2300,45 +2326,12 @@ simple_expr:
       { unclosed "(" $loc($1) ")" $loc($3) }
   | LPAREN seq_expr type_constraint RPAREN
       { mkexp_constraint ~loc:$sloc $2 $3 }
-  | simple_expr DOT LPAREN seq_expr RPAREN
-      { array_get ~loc:$sloc $1 $4 }
-  | simple_expr DOT LPAREN seq_expr error
-      { unclosed "(" $loc($3) ")" $loc($5) }
-  | simple_expr DOT LBRACKET seq_expr RBRACKET
-      { string_get ~loc:$sloc $1 $4 }
-  | simple_expr DOT LBRACKET seq_expr error
-      { unclosed "[" $loc($3) "]" $loc($5) }
-  | simple_expr DOTOP LBRACKET expr_semi_list RBRACKET
-      { dotop_get ~loc:$sloc lident bracket $2 $1 $4 }
-  | simple_expr DOTOP LBRACKET expr_semi_list error
-      { unclosed "[" $loc($3) "]" $loc($5) }
-  | simple_expr DOTOP LPAREN expr_semi_list RPAREN
-      { dotop_get ~loc:$sloc lident paren $2 $1 $4  }
-  | simple_expr DOTOP LPAREN expr_semi_list error
-      { unclosed "(" $loc($3) ")" $loc($5) }
-  | simple_expr DOTOP LBRACE expr_semi_list RBRACE
-      { dotop_get ~loc:$sloc lident brace $2 $1 $4 }
-  | simple_expr DOTOP LBRACE expr error
-      { unclosed "{" $loc($3) "}" $loc($5) }
-  | simple_expr DOT mod_longident DOTOP LBRACKET expr_semi_list RBRACKET
-      { dotop_get ~loc:$sloc (ldot $3) bracket $4 $1 $6  }
-  | simple_expr DOT
-    mod_longident DOTOP LBRACKET expr_semi_list error
-      { unclosed "[" $loc($5) "]" $loc($7) }
-  | simple_expr DOT mod_longident DOTOP LPAREN expr_semi_list RPAREN
-      { dotop_get ~loc:$sloc (ldot $3) paren $4 $1 $6 }
-  | simple_expr DOT
-    mod_longident DOTOP LPAREN expr_semi_list error
-      { unclosed "(" $loc($5) ")" $loc($7) }
-  | simple_expr DOT mod_longident DOTOP LBRACE expr_semi_list RBRACE
-      { dotop_get ~loc:$sloc (ldot $3) brace $4 $1 $6  }
-  | simple_expr DOT
-    mod_longident DOTOP LBRACE expr_semi_list error
-      { unclosed "{" $loc($5) "}" $loc($7) }
-  | simple_expr DOT LBRACE expr RBRACE
-      { bigarray_get ~loc:$sloc $1 $4 }
-  | simple_expr DOT LBRACE expr error
-      { unclosed "{" $loc($3) "}" $loc($5) }
+  | indexop_expr(DOT, seq_expr, { None })
+      { mk_indexop_expr builtin_indexing_operators ~loc:$sloc $1 }
+  | indexop_expr(qualified_dotop, expr_semi_list, { None })
+      { mk_indexop_expr user_indexing_operators ~loc:$sloc $1 }
+  | indexop_error (DOT, seq_expr) { $1 }
+  | indexop_error (qualified_dotop, expr_semi_list) { $1 }
   | simple_expr_attrs
     { let desc, attrs = $1 in
       mkexp_attrs ~loc:$sloc desc attrs }

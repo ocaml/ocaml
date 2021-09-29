@@ -409,7 +409,8 @@ type t = {
 }
 
 and module_declaration_lazy =
-  (Subst.t * Subst.scoping * module_declaration, module_declaration) EnvLazy.t
+  (Subst.t * Subst.scoping * module_declaration, module_declaration)
+    Lazy_backtrack.t
 
 and module_components =
   {
@@ -418,7 +419,7 @@ and module_components =
     comps:
       (components_maker,
        (module_components_repr, module_components_failure) result)
-        EnvLazy.t;
+        Lazy_backtrack.t;
   }
 
 and components_maker = {
@@ -461,7 +462,7 @@ and address_unforced =
   | Projection of { parent : address_lazy; pos : int; }
   | ModAlias of { env : t; path : Path.t; }
 
-and address_lazy = (address_unforced, address) EnvLazy.t
+and address_lazy = (address_unforced, address) Lazy_backtrack.t
 
 and value_data =
   { vda_description : value_description;
@@ -740,7 +741,7 @@ let components_of_module ~alerts ~uid env fs ps path addr mty =
   {
     alerts;
     uid;
-    comps = EnvLazy.create {
+    comps = Lazy_backtrack.create {
       cm_env = env;
       cm_freshening_subst = fs;
       cm_prefixing_subst = ps;
@@ -768,9 +769,9 @@ let sign_of_cmi ~freshen { Persistent_env.Persistent_signature.cmi; _ } =
       md_uid = Uid.of_compilation_unit_id id;
     }
   in
-  let mda_address = EnvLazy.create_forced (Aident id) in
+  let mda_address = Lazy_backtrack.create_forced (Aident id) in
   let mda_declaration =
-    EnvLazy.create (Subst.identity, Subst.Make_local, md)
+    Lazy_backtrack.create (Subst.identity, Subst.Make_local, md)
   in
   let mda_components =
     let freshening_subst =
@@ -842,9 +843,9 @@ let reset_cache_toplevel () =
 let get_components_res c =
   match Persistent_env.can_load_cmis !persistent_env with
   | Persistent_env.Can_load_cmis ->
-    EnvLazy.force !components_of_module_maker' c.comps
+    Lazy_backtrack.force !components_of_module_maker' c.comps
   | Persistent_env.Cannot_load_cmis log ->
-    EnvLazy.force_logged log !components_of_module_maker' c.comps
+    Lazy_backtrack.force_logged log !components_of_module_maker' c.comps
 
 let get_components c =
   match get_components_res c with
@@ -910,11 +911,11 @@ let find_module ~alias path env =
   match path with
   | Pident id ->
       let data = find_ident_module id env in
-      EnvLazy.force subst_modtype_maker data.mda_declaration
+      Lazy_backtrack.force subst_modtype_maker data.mda_declaration
   | Pdot(p, s) ->
       let sc = find_structure_components p env in
       let data = NameMap.find s sc.comp_modules in
-      EnvLazy.force subst_modtype_maker data.mda_declaration
+      Lazy_backtrack.force subst_modtype_maker data.mda_declaration
   | Papply(p1, p2) ->
       let fc = find_functor_components p1 env in
       if alias then md (fc.fcomp_res)
@@ -1042,7 +1043,7 @@ and force_address = function
   | ModAlias { env; path } -> find_module_address path env
 
 and get_address a =
-  EnvLazy.force force_address a
+  Lazy_backtrack.force force_address a
 
 let find_value_address path env =
   get_address (find_value_full path env).vda_address
@@ -1277,7 +1278,7 @@ let iter_env wrap proj1 proj2 f env () =
   let rec iter_components path path' mcomps =
     let cont () =
       let visit =
-        match EnvLazy.get_arg mcomps.comps with
+        match Lazy_backtrack.get_arg mcomps.comps with
         | None -> true
         | Some { cm_mty; cm_freshening_subst; _ } ->
             scrape_alias_for_visit env cm_freshening_subst cm_mty
@@ -1481,24 +1482,24 @@ let add_to_tbl id decl tbl =
 
 let value_declaration_address (_ : t) id decl =
   match decl.val_kind with
-  | Val_prim _ -> EnvLazy.create_failed Not_found
-  | _ -> EnvLazy.create_forced (Aident id)
+  | Val_prim _ -> Lazy_backtrack.create_failed Not_found
+  | _ -> Lazy_backtrack.create_forced (Aident id)
 
 let extension_declaration_address (_ : t) id (_ : extension_constructor) =
-  EnvLazy.create_forced (Aident id)
+  Lazy_backtrack.create_forced (Aident id)
 
 let class_declaration_address (_ : t) id (_ : class_declaration) =
-  EnvLazy.create_forced (Aident id)
+  Lazy_backtrack.create_forced (Aident id)
 
 let module_declaration_address env id presence md =
   match presence with
   | Mp_absent -> begin
       match md.md_type with
-      | Mty_alias path -> EnvLazy.create (ModAlias {env; path})
+      | Mty_alias path -> Lazy_backtrack.create (ModAlias {env; path})
       | _ -> assert false
     end
   | Mp_present ->
-      EnvLazy.create_forced (Aident id)
+      Lazy_backtrack.create_forced (Aident id)
 
 let is_identchar c =
   (* This should be kept in sync with the [identchar_latin1] character class
@@ -1532,7 +1533,7 @@ let rec components_of_module_maker
           Projection { parent = cm_addr; pos = !pos }
         in
         incr pos;
-        EnvLazy.create addr
+        Lazy_backtrack.create addr
       in
       let sub = may_subst Subst.compose freshening_sub prefixing_sub in
       List.iter (fun (item, path) ->
@@ -1541,7 +1542,7 @@ let rec components_of_module_maker
             let decl' = Subst.value_description sub decl in
             let addr =
               match decl.val_kind with
-              | Val_prim _ -> EnvLazy.create_failed Not_found
+              | Val_prim _ -> Lazy_backtrack.create_failed Not_found
               | _ -> next_address ()
             in
             let vda = { vda_description = decl'; vda_address = addr } in
@@ -1590,7 +1591,8 @@ let rec components_of_module_maker
             let md' =
               (* The prefixed items get the same scope as [cm_path], which is
                  the prefix. *)
-              EnvLazy.create (sub, Subst.Rescope (Path.scope cm_path), md)
+              Lazy_backtrack.create
+                (sub, Subst.Rescope (Path.scope cm_path), md)
             in
             let addr =
               match pres with
@@ -1598,7 +1600,7 @@ let rec components_of_module_maker
                   match md.md_type with
                   | Mty_alias p ->
                       let path = may_subst Subst.module_path freshening_sub p in
-                      EnvLazy.create (ModAlias {env = !env; path})
+                      Lazy_backtrack.create (ModAlias {env = !env; path})
                   | _ -> assert false
                 end
               | Mp_present -> next_address ()
@@ -1803,8 +1805,8 @@ and store_module ~check ~freshening_sub id addr presence md env =
   let alerts = Builtin_attributes.alerts_of_attrs md.md_attributes in
   let module_decl_lazy =
     match freshening_sub with
-    | None -> EnvLazy.create_forced md
-    | Some s -> EnvLazy.create (s, Subst.Rescope (Ident.scope id), md)
+    | None -> Lazy_backtrack.create_forced md
+    | Some s -> Lazy_backtrack.create (s, Subst.Rescope (Ident.scope id), md)
   in
   let comps =
     components_of_module ~alerts ~uid:md.md_uid
@@ -1853,7 +1855,7 @@ let components_of_functor_appl ~loc f env p1 p2 =
     (* we have to apply eagerly instead of passing sub to [components_of_module]
        because of the call to [check_well_formed_module]. *)
     let mty = Subst.modtype (Rescope (Path.scope p)) sub f.fcomp_res in
-    let addr = EnvLazy.create_failed Not_found in
+    let addr = Lazy_backtrack.create_failed Not_found in
     !check_well_formed_module env loc
       ("the signature of " ^ Path.name p) mty;
     let comps =
@@ -2111,7 +2113,7 @@ let open_signature
 (* Read a signature from a file *)
 let read_signature modname filename =
   let mda = read_pers_mod modname filename in
-  let md = EnvLazy.force subst_modtype_maker mda.mda_declaration in
+  let md = Lazy_backtrack.force subst_modtype_maker mda.mda_declaration in
   match md.md_type with
   | Mty_signature sg -> sg
   | Mty_ident _ | Mty_functor _ | Mty_alias _ -> assert false
@@ -2492,11 +2494,11 @@ and lookup_module ~errors ~use ~loc lid env =
   match lid with
   | Lident s ->
       let path, data = lookup_ident_module Load ~errors ~use ~loc s env in
-      let md = EnvLazy.force subst_modtype_maker data.mda_declaration in
+      let md = Lazy_backtrack.force subst_modtype_maker data.mda_declaration in
       path, md
   | Ldot(l, s) ->
       let path, data = lookup_dot_module ~errors ~use ~loc l s env in
-      let md = EnvLazy.force subst_modtype_maker data.mda_declaration in
+      let md = Lazy_backtrack.force subst_modtype_maker data.mda_declaration in
       path, md
   | Lapply(l1, l2) ->
       let p1, fc, arg = lookup_functor_components ~errors ~use ~loc l1 env in
@@ -2884,7 +2886,7 @@ let fold_modules f lid env acc =
            | Mod_unbound _ -> acc
            | Mod_local mda ->
                let md =
-                 EnvLazy.force subst_modtype_maker mda.mda_declaration
+                 Lazy_backtrack.force subst_modtype_maker mda.mda_declaration
                in
                f name p md acc
            | Mod_persistent ->
@@ -2892,7 +2894,8 @@ let fold_modules f lid env acc =
                | None -> acc
                | Some mda ->
                    let md =
-                     EnvLazy.force subst_modtype_maker mda.mda_declaration
+                     Lazy_backtrack.force subst_modtype_maker
+                       mda.mda_declaration
                    in
                    f name p md acc)
         env.modules
@@ -2907,7 +2910,7 @@ let fold_modules f lid env acc =
           NameMap.fold
             (fun s mda acc ->
                let md =
-                 EnvLazy.force subst_modtype_maker mda.mda_declaration
+                 Lazy_backtrack.force subst_modtype_maker mda.mda_declaration
                in
                f s (Pdot (p, s)) md acc)
             c.comp_modules

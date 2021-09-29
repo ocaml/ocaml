@@ -19,7 +19,8 @@ open Format
 open Misc
 open Longident
 open Types
-open Toploop
+open Topeval
+open Topcommon
 
 type codeptr = Obj.raw_data
 

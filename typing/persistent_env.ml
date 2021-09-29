@@ -45,7 +45,7 @@ end
 
 type can_load_cmis =
   | Can_load_cmis
-  | Cannot_load_cmis of EnvLazy.log
+  | Cannot_load_cmis of Lazy_backtrack.log
 
 type pers_struct = {
   ps_name: string;
@@ -138,13 +138,13 @@ let set_can_load_cmis penv setting =
   penv.can_load_cmis := setting
 
 let without_cmis penv f x =
-  let log = EnvLazy.log () in
+  let log = Lazy_backtrack.log () in
   let res =
     Misc.(protect_refs
             [R (penv.can_load_cmis, Cannot_load_cmis log)]
             (fun () -> f x))
   in
-  EnvLazy.backtrack log;
+  Lazy_backtrack.backtrack log;
   res
 
 let fold {persistent_structures; _} f x =
