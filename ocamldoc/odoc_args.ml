@@ -281,7 +281,8 @@ let default_options = Options.list @
   "-index-only", Arg.Set Odoc_html.index_only, M.index_only ;
   "-colorize-code", Arg.Set Odoc_html.colorize_code, M.colorize_code ;
   "-short-functors", Arg.Set Odoc_html.html_short_functors, M.html_short_functors ;
-  "-charset", Arg.Set_string Odoc_html.charset, (M.charset !Odoc_html.charset)^
+  "-charset", Arg.Set_string Odoc_html.charset, (M.charset !Odoc_html.charset) ;
+  "-nonavbar", Arg.Clear Odoc_html.show_navbar, M.no_navbar ^
   "\n\n *** LaTeX options ***\n";
 
 (* latex only options *)

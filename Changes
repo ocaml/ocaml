@@ -30,6 +30,9 @@ Working version
 - #10101: Add -help/--help option to ocamlrun.
   (David Allsopp, review by Xavier Leroy)
 
+- #10136: Minor clean-ups in runtime/io.c and runtime/caml/io.h
+  (Xavier Leroy, review by David Allsopp and Guillaume Munch-Maccagnoni)
+
 ### Code generation and optimizations:
 
 - #9876: do not cache the young_limit GC variable in a processor register.
@@ -55,7 +58,17 @@ Working version
 
 ### Tools:
 
+- #10139: Remove confusing navigation bar from stdlib documentation.
+  Adds a -nonavbar option to ocamldoc, and uses it to improve navigation within
+  the reference manual.
+  (John Whitington, review by David Allsopp)
+
 ### Manual and documentation:
+
+- #10139: Remove confusing navigation bar from stdlib documentation.
+  Removes the 'Up', 'Previous' and 'Next' links from the top of each standard
+  library module's documentation.
+  (John Whitington, review by David Allsopp)
 
 ### Compiler user-interface and warnings:
 
@@ -72,6 +85,9 @@ Working version
 
 ### Internal/compiler-libs changes:
 
+- #9243, simplify parser rules for array indexing operations
+  (Florian Angeletti, review by Damien Doligez and Gabriel Scherer)
+
 - #9650, #9651: keep refactoring the pattern-matching compiler
   (Gabriel Scherer, review by Thomas Refis and Florian Angeletti)
 
@@ -87,6 +103,10 @@ Working version
 * #10061, #10078: remove library `ocamlopttoplevel`, remove modules
   `Opttoploop`, `Opttopstart`, which are replaced by `Toploop` and `Topstart` in
   library `ocamltoplevel`, made available in native code.
+
+- #10124: remove duplicated code from the native toplevel, split toplevel
+  implementation into the shared part (`Topcommon`, etc.) and specific ones
+  (`Topeval`, `Trace`, `Topmain`).
 
 * #10086: add the commands `make list-parse-errors` and `make
   generate-parse-errors` to generate a set of syntactically incorrect
@@ -136,6 +156,9 @@ Working version
 
 - #10147, #10148: Fix building runtime with GCC on macOS.
   (David Allsopp, report by John Skaller)
+
+- #10166: Fix illegal permutation error reporting in module aliases.
+  (Matthew Ryan, review by Florian Angeletti)
 
 OCaml 4.12.0
 ------------
@@ -460,7 +483,7 @@ OCaml 4.12.0
   information before the first load.
   (Daniel Bünzli, review by Xavier Leroy and Nicolás Ojeda Bär)
 
-* #9757, #9846: check proper ownership when operating over mutexes.
+* #9757, #9846, #10161: check proper ownership when operating over mutexes.
   Now, unlocking a mutex held by another thread or not locked at all
   reliably raises a Sys_error exception.  Before, it was undefined
   behavior, but the documentation did not say so.
@@ -533,6 +556,9 @@ OCaml 4.12.0
    hevea. Improvements on design and navigation, including a mobile
    version, and a quick-search functionality for the API.
    (San Vũ Ngọc, review by David Allsopp and Florian Angeletti)
+
+- #10142, #10154: improved rendering and latex code for toplevel code examples.
+  (Florian Angeletti, report by John Whitington, review by Gabriel Scherer)
 
 ### Compiler user-interface and warnings:
 

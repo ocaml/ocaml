@@ -581,7 +581,9 @@ File "implementation: LBRACE UIDENT DOT LIDENT WHILE", line 1, characters 0-1:
 File "implementation: LBRACE UIDENT DOT WITH", line 1, characters 11-15:
 Error: Syntax error
 File "implementation: LBRACE UIDENT DOTOP LBRACE UIDENT SEMI RPAREN", line 1, characters 23-24:
-Error: Syntax error
+Error: Syntax error: '}' expected
+File "implementation: LBRACE UIDENT DOTOP LBRACE UIDENT SEMI RPAREN", line 1, characters 12-13:
+  This '{' might be unmatched
 File "implementation: LBRACE UIDENT DOTOP LBRACE WITH", line 1, characters 14-18:
 Error: Syntax error
 File "implementation: LBRACE UIDENT DOTOP LBRACKET UIDENT RPAREN", line 1, characters 21-22:
@@ -2231,7 +2233,9 @@ Error: Syntax error
 File "implementation: UIDENT DOTOP LBRACE UIDENT RBRACE WHILE", line 1, characters 21-26:
 Error: Syntax error
 File "implementation: UIDENT DOTOP LBRACE UIDENT SEMI RPAREN", line 1, characters 21-22:
-Error: Syntax error
+Error: Syntax error: '}' expected
+File "implementation: UIDENT DOTOP LBRACE UIDENT SEMI RPAREN", line 1, characters 10-11:
+  This '{' might be unmatched
 File "implementation: UIDENT DOTOP LBRACE UIDENT WITH", line 1, characters 19-23:
 Error: Syntax error: '}' expected
 File "implementation: UIDENT DOTOP LBRACE UIDENT WITH", line 1, characters 10-11:

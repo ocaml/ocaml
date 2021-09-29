@@ -30,6 +30,7 @@ let index_only = ref false
 let colorize_code = ref false
 let html_short_functors = ref false
 let charset = ref "iso-8859-1"
+let show_navbar = ref true
 
 
 (** The functions used for naming files and html marks.*)
@@ -743,7 +744,7 @@ class virtual info =
           | Some d ->
                bs b "<div class=\"info-deprecated\">\n";
                bs b "<span class=\"warning\">";
-               bs b Odoc_messages.deprecated ;
+               bs b (Odoc_messages.deprecated^". ");
                bs b "</span>" ;
                self#html_of_text b d;
                bs b "</div>\n"
@@ -1182,32 +1183,34 @@ class html =
        @param post optional name for optional next module/class
        @param name name of current module/class *)
     method print_navbar b pre post name =
-      bs b "<div class=\"navbar\">";
-      (
-       match pre with
-         None -> ()
-       | Some name ->
-           bp b "<a class=\"pre\" href=\"%s\" title=\"%s\">%s</a>\n"
-             (fst (Naming.html_files name))
-             name
-             Odoc_messages.previous
-      );
-      bs b "&nbsp;";
-      let father = Name.father name in
-      let href = if father = "" then self#index else fst (Naming.html_files father) in
-      let father_name = if father = "" then "Index" else father in
-      bp b "<a class=\"up\" href=\"%s\" title=\"%s\">%s</a>\n" href father_name Odoc_messages.up;
-      bs b "&nbsp;";
-      (
-       match post with
-         None -> ()
-       | Some name ->
-           bp b "<a class=\"post\" href=\"%s\" title=\"%s\">%s</a>\n"
-             (fst (Naming.html_files name))
-             name
-             Odoc_messages.next
-      );
-      bs b "</div>\n"
+      if !show_navbar then begin
+        bs b "<div class=\"navbar\">";
+        (
+         match pre with
+           None -> ()
+         | Some name ->
+             bp b "<a class=\"pre\" href=\"%s\" title=\"%s\">%s</a>\n"
+               (fst (Naming.html_files name))
+               name
+               Odoc_messages.previous
+        );
+        bs b "&nbsp;";
+        let father = Name.father name in
+        let href = if father = "" then self#index else fst (Naming.html_files father) in
+        let father_name = if father = "" then "Index" else father in
+        bp b "<a class=\"up\" href=\"%s\" title=\"%s\">%s</a>\n" href father_name Odoc_messages.up;
+        bs b "&nbsp;";
+        (
+         match post with
+           None -> ()
+         | Some name ->
+             bp b "<a class=\"post\" href=\"%s\" title=\"%s\">%s</a>\n"
+               (fst (Naming.html_files name))
+               name
+               Odoc_messages.next
+        );
+        bs b "</div>\n"
+      end
 
     (** Return html code with the given string in the keyword style.*)
     method keyword s =

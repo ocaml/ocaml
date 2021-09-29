@@ -13,6 +13,112 @@
 (*                                                                        *)
 (**************************************************************************)
 
+
+(* The trace *)
+
+open Trace
+
+external current_environment: unit -> Obj.t = "caml_get_current_environment"
+
+let tracing_function_ptr =
+  get_code_pointer
+    (Obj.repr (fun arg -> Trace.print_trace (current_environment()) arg))
+
+let dir_trace ppf lid =
+  match Env.find_value_by_name lid !Topcommon.toplevel_env with
+  | (path, desc) -> begin
+      (* Check if this is a primitive *)
+      match desc.val_kind with
+      | Val_prim _ ->
+          Format.fprintf ppf
+            "%a is an external function and cannot be traced.@."
+          Printtyp.longident lid
+      | _ ->
+          let clos = Toploop.eval_value_path !Topcommon.toplevel_env path in
+          (* Nothing to do if it's not a closure *)
+          if Obj.is_block clos
+          && (Obj.tag clos = Obj.closure_tag || Obj.tag clos = Obj.infix_tag)
+          && (match
+                Ctype.(repr (expand_head !Topcommon.toplevel_env desc.val_type))
+              with {desc=Tarrow _} -> true | _ -> false)
+          then begin
+          match is_traced clos with
+          | Some opath ->
+              Format.fprintf ppf "%a is already traced (under the name %a).@."
+              Printtyp.path path
+              Printtyp.path opath
+          | None ->
+              (* Instrument the old closure *)
+              traced_functions :=
+                { path = path;
+                  closure = clos;
+                  actual_code = get_code_pointer clos;
+                  instrumented_fun =
+                    instrument_closure
+                      !Topcommon.toplevel_env lid ppf desc.val_type }
+                :: !traced_functions;
+              (* Redirect the code field of the closure to point
+                 to the instrumentation function *)
+              set_code_pointer clos tracing_function_ptr;
+              Format.fprintf ppf "%a is now traced.@." Printtyp.longident lid
+          end else
+            Format.fprintf ppf "%a is not a function.@." Printtyp.longident lid
+    end
+  | exception Not_found ->
+      Format.fprintf ppf "Unbound value %a.@." Printtyp.longident lid
+
+let dir_untrace ppf lid =
+  match Env.find_value_by_name lid !Topcommon.toplevel_env with
+  | (path, _desc) ->
+      let rec remove = function
+      | [] ->
+          Format.fprintf ppf "%a was not traced.@." Printtyp.longident lid;
+          []
+      | f :: rem ->
+          if Path.same f.path path then begin
+            set_code_pointer f.closure f.actual_code;
+            Format.fprintf ppf "%a is no longer traced.@."
+              Printtyp.longident lid;
+            rem
+          end else f :: remove rem in
+      traced_functions := remove !traced_functions
+  | exception Not_found ->
+      Format.fprintf ppf "Unbound value %a.@." Printtyp.longident lid
+
+let dir_untrace_all ppf () =
+  List.iter
+    (fun f ->
+      set_code_pointer f.closure f.actual_code;
+      Format.fprintf ppf "%a is no longer traced.@." Printtyp.path f.path)
+    !traced_functions;
+  traced_functions := []
+
+let _ = Topcommon.add_directive "trace"
+    (Directive_ident (dir_trace Format.std_formatter))
+    {
+      section = Topdirs.section_trace;
+      doc = "All calls to the function \
+          named function-name will be traced.";
+    }
+
+let _ = Topcommon.add_directive "untrace"
+    (Directive_ident (dir_untrace Format.std_formatter))
+    {
+      section = Topdirs.section_trace;
+      doc = "Stop tracing the given function.";
+    }
+
+let _ = Topcommon.add_directive "untrace_all"
+    (Directive_none (dir_untrace_all Format.std_formatter))
+    {
+      section = Topdirs.section_trace;
+      doc = "Stop tracing all functions traced so far.";
+    }
+
+
+(* --- *)
+
+
 let usage = "Usage: ocaml <options> <object-files> [script-file [arguments]]\n\
              options are:"
 
@@ -37,15 +143,15 @@ let expand_position pos len =
     first_nonexpanded_pos := pos + len + 2
 
 let prepare ppf =
-  Toploop.set_paths ();
+  Topcommon.set_paths ();
   try
     let res =
       let objects =
         List.rev (!preload_objects @ !Compenv.first_objfiles)
       in
-      List.for_all (Topdirs.load_file ppf) objects
+      List.for_all (Topeval.load_file false ppf) objects
     in
-    Toploop.run_hooks Toploop.Startup;
+    Topcommon.run_hooks Topcommon.Startup;
     res
   with x ->
     try Location.report_exception ppf x; false
@@ -91,7 +197,7 @@ module Options = Main_args.Make_bytetop_options (struct
     let _args = wrap_expand Arg.read_arg
     let _args0 = wrap_expand Arg.read_arg0
     let anonymous s = file_argument s
-end);;
+end)
 
 let () =
   let extra_paths =

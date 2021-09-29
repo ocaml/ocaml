@@ -206,7 +206,7 @@ class virtual info =
            | Some d ->
                let b = Buffer.create 256 in
                bs b ".B \"";
-               bs b Odoc_messages.deprecated;
+               bs b (Odoc_messages.deprecated^".");
                bs b "\"\n";
                self#man_of_text b d;
                bs b "\n";

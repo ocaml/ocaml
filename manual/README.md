@@ -18,7 +18,7 @@ package manager may not do this for you. Run `kpsewhich hevea.sty` to check.
 Building
 --------
 
-0. Install the OCaml distribution.
+0. Install the OCaml distribution. You must build the native compiler.
 
 1. Run `make` in the manual.
 
