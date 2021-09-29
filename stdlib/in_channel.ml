@@ -102,7 +102,7 @@ let read_upto ic buf ofs len =
    The returned buffer may have *fewer* than [ofs + n] bytes of storage if this
    number is > [Sys.max_string_length]. However the returned buffer will
    *always* have > [ofs] bytes of storage. In the limiting case when [ofs = len
-   = Sys.max_string_lenght] (so that it is not possible to resize the buffer at
+   = Sys.max_string_length] (so that it is not possible to resize the buffer at
    all), an exception is raised. *)
 
 let ensure buf ofs n =

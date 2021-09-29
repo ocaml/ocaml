@@ -57,9 +57,9 @@ val open_gen : open_flag list -> int -> string -> t
     function. *)
 
 val with_open_bin : string -> (t -> 'a) -> 'a
-(** [with_open_bin fn f] opens a channel [oc] on file [fn] and returns
-    [f oc]. After the function returns, either with a value or by raising an
-    exception, [oc] is guaranteed to be closed. *)
+(** [with_open_bin fn f] opens a channel [oc] on file [fn] and returns [f
+    oc]. After [f] returns, either with a value or by raising an exception, [oc]
+    is guaranteed to be closed. *)
 
 val with_open_text : string -> (t -> 'a) -> 'a
 (** Like {!with_open_bin}, but the channel is opened in text mode (see
