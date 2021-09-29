@@ -75,8 +75,8 @@ Search the directory
 for dynamically-loaded libraries, in addition to the standard search path.
 .TP
 .BI \-m \ file
-Print the magic number of the bytecode executable 
-.I file 
+Print the magic number of the bytecode executable
+.I file
 and exit.
 .TP
 .B \-M
@@ -89,7 +89,7 @@ Print the names of the primitives known to this version of
 and exit.
 .TP
 .B \-t
-Increment the trace level for the debug runtime (ignored by the standard 
+Increment the trace level for the debug runtime (ignored by the standard
 runtime).
 .TP
 .B \-v
@@ -231,7 +231,7 @@ argument.
 The size of the minor heap (in words).
 .TP
 .B t
-Set the trace level for the debug runtime (ignored by the standard 
+Set the trace level for the debug runtime (ignored by the standard
 runtime).
 .TP
 .BR v \ (verbose)
