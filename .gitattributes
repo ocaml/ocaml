@@ -46,7 +46,8 @@
 *.md                     typo.missing-header
 README*                  typo.missing-header
 *.adoc                   typo.missing-header
-stdlib/*.mld             typo.missing-header
+api_docgen/*.mld                typo.missing-header
+api_docgen/alldoc.tex           typo.missing-header
 tools/mantis2gh_stripped.csv typo.missing-header
 
 *.adoc                   typo.long-line=may
@@ -110,6 +111,7 @@ testsuite/tests/misc-unsafe/almabench.ml                typo.long-line
 testsuite/tests/tool-toplevel/strings.ml                typo.utf8
 testsuite/tests/win-unicode/*.ml                        typo.utf8
 testsuite/tests/asmgen/immediates.cmm                   typo.very-long-line
+testsuite/tests/generated-parse-errors/errors.*         typo.very-long-line
 testsuite/tools/*.S                                     typo.missing-header
 testsuite/tools/*.asm                                   typo.missing-header
 testsuite/typing                                        typo.missing-header

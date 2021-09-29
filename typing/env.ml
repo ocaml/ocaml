@@ -1551,7 +1551,7 @@ let rec components_of_module_maker
               may_subst Subst.type_declaration freshening_sub decl
             in
             let final_decl = Subst.type_declaration prefixing_sub fresh_decl in
-            Datarepr.set_row_name final_decl
+            Btype.set_row_name final_decl
               (Subst.type_path prefixing_sub (Path.Pident id));
             let constructors =
               List.map snd

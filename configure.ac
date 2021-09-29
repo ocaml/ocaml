@@ -37,11 +37,13 @@ programs_man_section=1
 libraries_man_section=3
 
 # Command to build executalbes
-# In general this command is supposed to use the CFLAGs-related variables
-# ($OC_CFLAGS and $CFLAGS), but at the moment they are not taken into
-# account on Windows, because flexlink, which is used to build
-# executables on this platform, can not handle them.
-mkexe="\$(CC) \$(OC_CFLAGS) \$(CFLAGS) \$(OC_LDFLAGS)"
+# In general this command is supposed to use the CFLAGs- and LDFLAGS-
+# related variables (OC_CFLAGS and OC_LDFLAGS for ocaml-specific
+# flags, CFLAGS and LDFLAGS for generic flags chosen by the user), but
+# at the moment they are not taken into account on Windows, because
+# flexlink, which is used to build executables on this platform, can
+# not handle them.
+mkexe="\$(CC) \$(OC_CFLAGS) \$(CFLAGS) \$(OC_LDFLAGS) \$(LDFLAGS)"
 
 # Flags for building executable files with debugging symbols
 mkexedebugflag="-g"
@@ -841,8 +843,9 @@ natdynlinkopts=""
 AS_IF([test x"$enable_shared" != "xno"],
   [AS_CASE([$host],
     [*-apple-darwin*],
-      [mksharedlib="$CC -shared -flat_namespace -undefined suppress \
-                   -Wl,-no_compact_unwind"
+      [mksharedlib="$CC -shared \
+                   -flat_namespace -undefined suppress -Wl,-no_compact_unwind \
+                   \$(LDFLAGS)"
       shared_libraries_supported=true],
     [*-*-mingw32],
       [mksharedlib='$(FLEXLINK)'
@@ -862,7 +865,7 @@ AS_IF([test x"$enable_shared" != "xno"],
     [powerpc-ibm-aix*],
       [AS_CASE([$ocaml_cv_cc_vendor],
                [xlc*],
-               [mksharedlib="$CC -qmkshrobj -G"
+               [mksharedlib="$CC -qmkshrobj -G \$(LDFLAGS)"
                 shared_libraries_supported=true])],
     [*-*-solaris*],
       [sharedlib_cflags="-fPIC"
@@ -874,8 +877,9 @@ AS_IF([test x"$enable_shared" != "xno"],
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*]],
       [sharedlib_cflags="-fPIC"
        AS_CASE([$CC,$host],
-           [gcc*,powerpc-*-linux*], [mksharedlib="$CC -shared -mbss-plt"],
-           [mksharedlib="$CC -shared"])
+           [gcc*,powerpc-*-linux*],
+           [mksharedlib="$CC -shared -mbss-plt \$(LDFLAGS)"],
+           [mksharedlib="$CC -shared \$(LDFLAGS)"])
       oc_ldflags="$oc_ldflags -Wl,-E"
       rpath="-Wl,-rpath,"
       mksharedlibrpath="-Wl,-rpath,"

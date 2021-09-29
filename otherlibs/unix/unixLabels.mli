@@ -882,28 +882,32 @@ val open_process_full :
    {!open_process_full}. *)
 
 val open_process_args_in : string -> string array -> in_channel
-(** High-level pipe and process management. The first argument specifies the
-   command to run, and the second argument specifies the argument array passed
-   to the command.  This function runs the command in parallel with the program.
-   The standard output of the command is redirected to a pipe, which can be read
-   via the returned input channel.
+(** [open_process_args_in prog args] runs the program [prog] with arguments
+    [args].  The new process executes concurrently with the current process.
+    The standard output of the new process is redirected to a pipe, which can be
+    read via the returned input channel.
+
+    The executable file [prog] is searched in the path. This behaviour changed
+    in 4.12; previously [prog] was looked up only in the current directory.
+
+    The new process has the same environment as the current process.
 
     @since 4.08.0 *)
 
 val open_process_args_out : string -> string array -> out_channel
-(** Same as {!open_process_args_in}, but redirect the standard input of the
-   command to a pipe.  Data written to the returned output channel is sent to
-   the standard input of the command.  Warning: writes on output channels are
-   buffered, hence be careful to call {!Stdlib.flush} at the right times to
-   ensure correct synchronization.
+(** Same as {!open_process_args_in}, but redirect the standard input of the new
+    process to a pipe.  Data written to the returned output channel is sent to
+    the standard input of the program.  Warning: writes on output channels are
+    buffered, hence be careful to call {!Stdlib.flush} at the right times to
+    ensure correct synchronization.
 
     @since 4.08.0 *)
 
 val open_process_args : string -> string array -> in_channel * out_channel
-(** Same as {!open_process_args_out}, but redirects both the standard input
-   and standard output of the command to pipes connected to the two returned
-   channels.  The input channel is connected to the output of the command, and
-   the output channel to the input of the command.
+(** Same as {!open_process_args_out}, but redirects both the standard input and
+    standard output of the new process to pipes connected to the two returned
+    channels.  The input channel is connected to the output of the program, and
+    the output channel to the input of the program.
 
     @since 4.08.0 *)
 
@@ -911,9 +915,9 @@ val open_process_args_full :
   string -> string array -> string array ->
     in_channel * out_channel * in_channel
 (** Similar to {!open_process_args}, but the third argument specifies the
-   environment passed to the command.  The result is a triple of channels
-   connected respectively to the standard output, standard input, and standard
-   error of the command.
+    environment passed to the new process.  The result is a triple of channels
+    connected respectively to the standard output, standard input, and standard
+    error of the program.
 
     @since 4.08.0 *)
 

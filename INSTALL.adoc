@@ -33,7 +33,7 @@ The `configure` script accepts options that can be discovered by running:
 
         ./configure --help
 +
-Some options or variables like (LDFLAGS) may not be taken into account
+Some options or variables like LDLIBS may not be taken into account
 by the OCaml build system at the moment. Please report an issue if you
 discover such a variable or option and this causes troubles to you.
 +
