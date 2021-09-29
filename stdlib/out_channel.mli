@@ -56,6 +56,19 @@ val open_gen : open_flag list -> int -> string -> t
     created.  {!open_text} and {!open_bin} are special cases of this
     function. *)
 
+val with_open_bin : string -> (t -> 'a) -> 'a
+(** [with_open_bin fn f] opens a channel [oc] on file [fn] and returns [f
+    oc]. After [f] returns, either with a value or by raising an exception, [oc]
+    is guaranteed to be closed. *)
+
+val with_open_text : string -> (t -> 'a) -> 'a
+(** Like {!with_open_bin}, but the channel is opened in text mode (see
+    {!open_text}). *)
+
+val with_open_gen : open_flag list -> int -> string -> (t -> 'a) -> 'a
+(** Like {!with_open_bin}, but can specify the opening mode and file permission,
+    in case the file must be created (see {!open_gen}). *)
+
 val seek : t -> int64 -> unit
 (** [seek chan pos] sets the current writing position to [pos] for channel
     [chan]. This works only for regular files. On files of other kinds (such as
