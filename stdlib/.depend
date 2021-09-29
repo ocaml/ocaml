@@ -137,11 +137,9 @@ camlinternalFormatBasics.cmx : \
     camlinternalFormatBasics.cmi
 camlinternalFormatBasics.cmi :
 camlinternalLazy.cmo : \
-    stdlib__sys.cmi \
     stdlib__obj.cmi \
     camlinternalLazy.cmi
 camlinternalLazy.cmx : \
-    stdlib__sys.cmx \
     stdlib__obj.cmx \
     camlinternalLazy.cmi
 camlinternalLazy.cmi :
