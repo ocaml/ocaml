@@ -8,7 +8,7 @@ TEXQUOTE = $(SRC)/runtime/ocamlrun ../tools/texquote2
 
 FILES = allfiles.tex biblio.tex foreword.tex version.tex warnings-help.etex
 
-TEXINPUTS = ".:..:../refman:../library:../cmds:../tutorials:../../styles:"
+TEXINPUTS = ".:..:../refman:../refman/extensions:../library:../cmds:../tutorials:../../styles:"
 RELEASE = $$HOME/release/$${RELEASENAME}
 HEVEA = hevea
 HACHA = hacha
@@ -47,7 +47,8 @@ index:
 html: etex-files html_files
 	cd htmlman \
 	  && $(HEVEA) $(HTML_FLAGS) \
-	    -I .. -I ../cmds -I ../library -I ../refman -I ../tutorials \
+	    -I .. -I ../cmds -I ../library -I ../refman \
+	    -I ../refman/extensions -I ../tutorials \
 	    -I ../../styles -I ../texstuff \
 	    manual.hva -e macros.tex ../manual.tex \
 	  && $(HACHA) -tocter manual.html
@@ -56,7 +57,8 @@ info: files latex_files
 	cd infoman \
 	  && rm -f ocaml.info* \
 	  && $(HEVEA) $(INFO_FLAGS) -o ocaml.info.body \
-	    -I .. -I ../cmds -I ../library -I ../refman -I ../tutorials \
+	    -I .. -I ../cmds -I ../library -I ../refman \
+	    -I ../refman/extensions -I ../tutorials \
 	    -I ../../styles -I ../texstuff \
 	    ../manual.inf -e macros.tex ../manual.tex
 	cat manual.info.header infoman/ocaml.info.body > infoman/ocaml.info
@@ -67,7 +69,8 @@ info: files latex_files
 text: files latex_files
 	cd textman \
 	  && $(HEVEA) $(TEXT_FLAGS) \
-	    -I .. -I ../cmds -I ../library -I ../refman -I ../tutorials \
+	    -I .. -I ../cmds -I ../library -I ../refman \
+	    -I ../refman/extensions -I ../tutorials \
 	    -I ../../styles -I ../texstuff \
 	    ../manual.inf -e macros.tex ../manual.tex
 
@@ -115,7 +118,7 @@ version.tex: $(SRC)/VERSION
 
 warnings-help.etex: $(SRC)/utils/warnings.ml $(SRC)/ocamlc
 	(echo "% This file is generated from (ocamlc -warn-help)";\
-	 echo "% according to a rule in manual/manual/Makefile.";\
+	 echo "% according to a rule in manual/src/Makefile.";\
 	 echo "% In particular, the reference to documentation sections";\
 	 echo "% are inserted through the Makefile, which should be updated";\
 	 echo "% when a new warning is documented.";\

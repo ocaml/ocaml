@@ -34,7 +34,7 @@ and type_desc =
   | Tfield of string * field_kind * type_expr * type_expr
   | Tnil
   | Tlink of type_expr
-  | Tsubst of type_expr         (* for copying *)
+  | Tsubst of type_expr * type_expr option
   | Tvariant of row_desc
   | Tunivar of string option
   | Tpoly of type_expr * type_expr list

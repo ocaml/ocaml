@@ -1,0 +1,119 @@
+(Introduced in OCaml 4.02)
+
+\begin{syntax}
+type-representation:
+          ...
+        | '=' '..'
+;
+specification:
+        ...
+      | 'type' [type-params] typeconstr type-extension-spec
+;
+definition:
+        ...
+      | 'type' [type-params] typeconstr type-extension-def
+;
+type-extension-spec: '+=' ['private'] ['|'] constr-decl { '|' constr-decl }
+;
+type-extension-def: '+=' ['private'] ['|'] constr-def { '|' constr-def }
+;
+constr-def:
+          constr-decl
+        | constr-name '=' constr
+;
+\end{syntax}
+
+Extensible variant types are variant types which can be extended with
+new variant constructors. Extensible variant types are defined using
+"..". New variant constructors are added using "+=".
+\begin{caml_example*}{verbatim}
+module Expr = struct
+  type attr = ..
+
+  type attr += Str of string
+
+  type attr +=
+    | Int of int
+    | Float of float
+end
+\end{caml_example*}
+
+Pattern matching on an extensible variant type requires a default case
+to handle unknown variant constructors:
+\begin{caml_example*}{verbatim}
+let to_string = function
+  | Expr.Str s -> s
+  | Expr.Int i -> Int.to_string i
+  | Expr.Float f -> string_of_float f
+  | _ -> "?"
+\end{caml_example*}
+
+A preexisting example of an extensible variant type is the built-in
+"exn" type used for exceptions. Indeed, exception constructors can be
+declared using the type extension syntax:
+\begin{caml_example*}{verbatim}
+type exn += Exc of int
+\end{caml_example*}
+
+Extensible variant constructors can be rebound to a different name. This
+allows exporting variants from another module.
+\begin{caml_example}{toplevel}[error]
+let not_in_scope = Str "Foo";;
+\end{caml_example}
+\begin{caml_example*}{verbatim}
+type Expr.attr += Str = Expr.Str
+\end{caml_example*}
+\begin{caml_example}{toplevel}
+let now_works = Str "foo";;
+\end{caml_example}
+
+Extensible variant constructors can be declared "private". As with
+regular variants, this prevents them from being constructed directly by
+constructor application while still allowing them to be de-structured in
+pattern-matching.
+\begin{caml_example*}{verbatim}
+module B : sig
+  type Expr.attr += private Bool of int
+  val bool : bool -> Expr.attr
+end = struct
+  type Expr.attr += Bool of int
+  let bool p = if p then Bool 1 else Bool 0
+end
+\end{caml_example*}
+
+\begin{caml_example}{toplevel}
+let inspection_works = function
+  | B.Bool p -> (p = 1)
+  | _ -> true;;
+\end{caml_example}
+\begin{caml_example}{toplevel}[error]
+let construction_is_forbidden = B.Bool 1;;
+\end{caml_example}
+
+\subsection{ss:private-extensible}{Private extensible variant types}
+
+(Introduced in OCaml 4.06)
+
+\begin{syntax}
+type-representation:
+          ...
+        | '=' 'private' '..'
+;
+\end{syntax}
+
+Extensible variant types can be declared "private". This prevents new
+constructors from being declared directly, but allows extension
+constructors to be referred to in interfaces.
+\begin{caml_example*}{verbatim}
+module Msg : sig
+  type t = private ..
+  module MkConstr (X : sig type t end) : sig
+    type t += C of X.t
+  end
+end = struct
+  type t = ..
+  module MkConstr (X : sig type t end) = struct
+    type t += C of X.t
+  end
+end
+\end{caml_example*}

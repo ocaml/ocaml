@@ -37,6 +37,8 @@ let getvalue name =
 let setvalue name v =
   toplevel_value_bindings := String.Map.add name v !toplevel_value_bindings
 
+let implementation_label = ""
+
 (* Return the value referred to by a path *)
 
 let rec eval_address = function
@@ -81,7 +83,7 @@ module EvalPath = struct
   let same_value v1 v2 = (v1 == v2)
 end
 
-include Topcommon.MakePrinter(Obj)(Genprintval.Make(Obj)(EvalPath))
+include Topcommon.MakePrinter(Genprintval.Make(Obj)(EvalPath))
 
 
 (* Load in-core and execute a lambda term *)
