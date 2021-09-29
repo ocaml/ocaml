@@ -183,7 +183,7 @@ The following environment variables are also consulted:
 \fi
         This option takes no argument.
   \item[s] ("minor_heap_size")  Size of the minor heap. (in words)
-  \item[t] Set the trace level for the debug runtime (ignored otherwise).
+  \item[t] Set the trace level for the debug runtime (ignored by the standard runtime).
   \item[v] ("verbose")  What GC messages to print to stderr.  This
   is a sum of values selected from the following:
   \begin{options}
