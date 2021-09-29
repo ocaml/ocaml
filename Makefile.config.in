@@ -17,6 +17,12 @@
 
 # The configuration Makefile
 
+## Variables defining the current version of OCaml
+OCAML_VERSION_MAJOR=@OCAML_VERSION_MAJOR@
+OCAML_VERSION_MINOR=@OCAML_VERSION_MINOR@
+OCAML_VERSION_PATCHLEVEL=@OCAML_VERSION_PATCHLEVEL@
+OCAML_VERSION_EXTRA=@OCAML_VERSION_EXTRA@
+
 ## The EMPTY variable, used in other definitions
 EMPTY=
 

@@ -901,9 +901,16 @@ parsing/camlinternalMenhirLib.mli: boot/menhir/menhirLib.mli
 
 # Copy parsing/parser.ml from boot/
 
-parsing/parser.ml: boot/menhir/parser.ml parsing/parser.mly \
-  tools/check-parser-uptodate-or-warn.sh
+PARSER_DEPS = boot/menhir/parser.ml parsing/parser.mly
+
+ifneq "$(findstring dev, $(OCAML_VERSION_EXTRA))" ""
+PARSER_DEPS += tools/check-parser-uptodate-or-warn.sh
+endif
+
+parsing/parser.ml: $(PARSER_DEPS)
+ifneq "$(findstring dev, $(OCAML_VERSION_EXTRA))" ""
 	@-tools/check-parser-uptodate-or-warn.sh
+endif
 	sed "s/MenhirLib/CamlinternalMenhirLib/g" $< > $@
 parsing/parser.mli: boot/menhir/parser.mli
 	sed "s/MenhirLib/CamlinternalMenhirLib/g" $< > $@
