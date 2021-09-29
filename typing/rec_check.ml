@@ -1192,7 +1192,7 @@ and is_destructuring_pattern : type k . k general_pattern -> bool =
     | Tpat_alias (pat, _, _) -> is_destructuring_pattern pat
     | Tpat_constant _ -> true
     | Tpat_tuple _ -> true
-    | Tpat_construct (_, _, _) -> true
+    | Tpat_construct _ -> true
     | Tpat_variant _ -> true
     | Tpat_record (_, _) -> true
     | Tpat_array _ -> true

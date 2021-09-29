@@ -1746,12 +1746,12 @@ let divide_constant ctx m =
 (* Matching against a constructor *)
 
 let get_key_constr = function
-  | { pat_desc = Tpat_construct (_, cstr, _) } -> cstr
+  | { pat_desc = Tpat_construct (_, cstr, _, _) } -> cstr
   | _ -> assert false
 
 let get_pat_args_constr p rem =
   match p with
-  | { pat_desc = Tpat_construct (_, _, args) } -> args @ rem
+  | { pat_desc = Tpat_construct (_, _, args, _) } -> args @ rem
   | _ -> assert false
 
 let get_expr_args_constr ~scopes head (arg, _mut) rem =

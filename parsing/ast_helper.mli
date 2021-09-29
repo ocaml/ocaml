@@ -109,7 +109,8 @@ module Pat:
     val constant: ?loc:loc -> ?attrs:attrs -> constant -> pattern
     val interval: ?loc:loc -> ?attrs:attrs -> constant -> constant -> pattern
     val tuple: ?loc:loc -> ?attrs:attrs -> pattern list -> pattern
-    val construct: ?loc:loc -> ?attrs:attrs -> lid -> pattern option -> pattern
+    val construct: ?loc:loc -> ?attrs:attrs ->
+      lid -> (str list * pattern) option -> pattern
     val variant: ?loc:loc -> ?attrs:attrs -> label -> pattern option -> pattern
     val record: ?loc:loc -> ?attrs:attrs -> (lid * pattern) list -> closed_flag
                 -> pattern
