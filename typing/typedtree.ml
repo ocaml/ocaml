@@ -59,7 +59,8 @@ and 'k pattern_desc =
   | Tpat_constant : constant -> value pattern_desc
   | Tpat_tuple : value general_pattern list -> value pattern_desc
   | Tpat_construct :
-      Longident.t loc * constructor_description * value general_pattern list ->
+      Longident.t loc * constructor_description * value general_pattern list
+      * (Ident.t loc list * core_type) option ->
       value pattern_desc
   | Tpat_variant :
       label * value general_pattern option * row_desc ref ->
@@ -666,7 +667,7 @@ let shallow_iter_pattern_desc
   = fun f -> function
   | Tpat_alias(p, _, _) -> f.f p
   | Tpat_tuple patl -> List.iter f.f patl
-  | Tpat_construct(_, _, patl) -> List.iter f.f patl
+  | Tpat_construct(_, _, patl, _) -> List.iter f.f patl
   | Tpat_variant(_, pat, _) -> Option.iter f.f pat
   | Tpat_record (lbl_pat_list, _) ->
       List.iter (fun (_, _, pat) -> f.f pat) lbl_pat_list
@@ -690,8 +691,8 @@ let shallow_map_pattern_desc
       Tpat_tuple (List.map f.f pats)
   | Tpat_record (lpats, closed) ->
       Tpat_record (List.map (fun (lid, l,p) -> lid, l, f.f p) lpats, closed)
-  | Tpat_construct (lid, c,pats) ->
-      Tpat_construct (lid, c, List.map f.f pats)
+  | Tpat_construct (lid, c, pats, ty) ->
+      Tpat_construct (lid, c, List.map f.f pats, ty)
   | Tpat_array pats ->
       Tpat_array (List.map f.f pats)
   | Tpat_lazy p1 -> Tpat_lazy (f.f p1)

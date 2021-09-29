@@ -1288,7 +1288,12 @@ let get_new_abstract_name s =
   if index = 0 && s <> "" && s.[String.length s - 1] <> '$' then s else
   Printf.sprintf "%s%d" s index
 
-let new_declaration expansion_scope manifest =
+let new_local_type ?(loc = Location.none) ?manifest_and_scope () =
+  let manifest, expansion_scope =
+    match manifest_and_scope with
+      None -> None, Btype.lowest_level
+    | Some (ty, scope) -> Some ty, scope
+  in
   {
     type_params = [];
     type_arity = 0;
@@ -1299,7 +1304,7 @@ let new_declaration expansion_scope manifest =
     type_separability = [];
     type_is_newtype = true;
     type_expansion_scope = expansion_scope;
-    type_loc = Location.none;
+    type_loc = loc;
     type_attributes = [];
     type_immediate = Unknown;
     type_unboxed = unboxed_false_default_false;
@@ -1314,18 +1319,15 @@ let instance_constructor ?in_pattern cstr =
   For_copy.with_scope (fun scope ->
     begin match in_pattern with
     | None -> ()
-    | Some (env, expansion_scope) ->
+    | Some (env, fresh_constr_scope) ->
         let process existential =
-          let decl = new_declaration expansion_scope None in
+          let decl = new_local_type () in
           let name = existential_name cstr existential in
-          let path =
-            Path.Pident
-              (Ident.create_scoped ~scope:expansion_scope
-                 (get_new_abstract_name name))
-          in
-          let new_env = Env.add_local_type path decl !env in
+          let (id, new_env) =
+            Env.enter_type (get_new_abstract_name name) decl !env
+              ~scope:fresh_constr_scope in
           env := new_env;
-          let to_unify = newty (Tconstr (path,[],ref Mnil)) in
+          let to_unify = newty (Tconstr (Path.Pident id,[],ref Mnil)) in
           let tv = copy scope existential in
           assert (is_Tvar tv);
           link_type tv to_unify
@@ -1334,7 +1336,8 @@ let instance_constructor ?in_pattern cstr =
     end;
     let ty_res = copy scope cstr.cstr_res in
     let ty_args = List.map (copy scope) cstr.cstr_args in
-    (ty_args, ty_res)
+    let ty_ex = List.map (copy scope) cstr.cstr_existentials in
+    (ty_args, ty_res, ty_ex)
   )
 
 let instance_parameterized_type ?keep_names sch_args sch =
@@ -2135,13 +2138,11 @@ let reify env t =
   let fresh_constr_scope = get_gadt_equations_level () in
   let create_fresh_constr lev name =
     let name = match name with Some s -> "$'"^s | _ -> "$" in
-    let path =
-      Path.Pident
-        (Ident.create_scoped ~scope:fresh_constr_scope
-           (get_new_abstract_name name))
-    in
-    let decl = new_declaration fresh_constr_scope None in
-    let new_env = Env.add_local_type path decl !env in
+    let decl = new_local_type () in
+    let (id, new_env) =
+      Env.enter_type (get_new_abstract_name name) decl !env
+        ~scope:fresh_constr_scope in
+    let path = Path.Pident id in
     let t = newty2 lev (Tconstr (path,[],ref Mnil))  in
     env := new_env;
     path, t
@@ -2446,7 +2447,8 @@ let add_gadt_equation env source destination =
     let expansion_scope =
       max (Path.scope source) (get_gadt_equations_level ())
     in
-    let decl = new_declaration expansion_scope (Some destination) in
+    let decl =
+      new_local_type ~manifest_and_scope:(destination, expansion_scope) () in
     env := Env.add_local_type source decl !env;
     cleanup_abbrev ()
   end

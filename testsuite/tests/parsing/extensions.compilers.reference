@@ -187,6 +187,7 @@
     pattern (extensions.ml[19,418+8]..[19,418+14])
       Ppat_construct "Some" (extensions.ml[19,418+8]..[19,418+12])
       Some
+        []
         pattern (extensions.ml[19,418+13]..[19,418+14])
           Ppat_var "y" (extensions.ml[19,418+13]..[19,418+14])
     <when>
@@ -217,11 +218,13 @@
               pattern (extensions.ml[20,445+12]..[20,445+17])
                 Ppat_construct "Bar" (extensions.ml[20,445+12]..[20,445+15])
                 Some
+                  []
                   pattern (extensions.ml[20,445+16]..[20,445+17])
                     Ppat_var "x" (extensions.ml[20,445+16]..[20,445+17])
               pattern (extensions.ml[20,445+20]..[20,445+25])
                 Ppat_construct "Baz" (extensions.ml[20,445+20]..[20,445+23])
                 Some
+                  []
                   pattern (extensions.ml[20,445+24]..[20,445+25])
                     Ppat_var "x" (extensions.ml[20,445+24]..[20,445+25])
           core_type (extensions.ml[20,445+31]..[20,445+44])
