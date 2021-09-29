@@ -14708,51 +14708,31 @@ fi
 
 ## TODO: check whether the different libraries are really useful
 
-sockets=false
+sockets=true
 
 case $host in #(
   *-*-mingw32|*-pc-windows) :
-    cclibs="$cclibs -lws2_32"
-    sockets=true ;; #(
+    cclibs="$cclibs -lws2_32" ;; #(
   *-*-haiku) :
-    cclibs="$cclibs -lnetwork"
-    sockets=true ;; #(
+    cclibs="$cclibs -lnetwork" ;; #(
   *-*-solaris*) :
-    cclibs="$cclibs -lsocket -lnsl"
-    sockets=true ;; #(
+    cclibs="$cclibs -lsocket -lnsl" ;; #(
   *) :
 
-    ac_fn_c_check_func "$LINENO" "socket" "ac_cv_func_socket"
-if test "x$ac_cv_func_socket" = xyes; then :
+    for ac_func in socket socketpair bind listen accept connect
+do :
+  as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
+ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
+if eval test \"x\$"$as_ac_var"\" = x"yes"; then :
+  cat >>confdefs.h <<_ACEOF
+#define `$as_echo "HAVE_$ac_func" | $as_tr_cpp` 1
+_ACEOF
 
+else
+  sockets=false
 fi
+done
 
-    ac_fn_c_check_func "$LINENO" "socketpair" "ac_cv_func_socketpair"
-if test "x$ac_cv_func_socketpair" = xyes; then :
-
-fi
-
-    ac_fn_c_check_func "$LINENO" "bind" "ac_cv_func_bind"
-if test "x$ac_cv_func_bind" = xyes; then :
-
-fi
-
-    ac_fn_c_check_func "$LINENO" "listen" "ac_cv_func_listen"
-if test "x$ac_cv_func_listen" = xyes; then :
-
-fi
-
-    ac_fn_c_check_func "$LINENO" "accept" "ac_cv_func_accept"
-if test "x$ac_cv_func_accept" = xyes; then :
-
-fi
-
-    ac_fn_c_check_func "$LINENO" "connect" "ac_cv_func_connect"
-if test "x$ac_cv_func_connect" = xyes; then :
-
-fi
-
-    sockets=true
 
  ;;
 esac

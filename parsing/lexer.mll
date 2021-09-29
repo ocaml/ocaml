@@ -27,6 +27,7 @@ type error =
   | Unterminated_comment of Location.t
   | Unterminated_string
   | Unterminated_string_in_comment of Location.t * Location.t
+  | Empty_character_literal
   | Keyword_as_label of string
   | Invalid_literal of string
   | Invalid_directive of string * string option
@@ -300,6 +301,12 @@ let prepare_error loc = function
       Location.errorf ~loc
         "This comment contains an unterminated string literal"
         ~sub:[Location.msg ~loc:literal_loc "String literal begins here"]
+  | Empty_character_literal ->
+      let msg = "Illegal empty character literal ''" in
+      let sub =
+        [Location.msg
+           "Hint: Did you mean ' ' or a type variable 'a?"] in
+      Location.error ~loc ~sub msg
   | Keyword_as_label kwd ->
       Location.errorf ~loc
         "`%s' is a keyword, it cannot be used as label name" kwd
@@ -459,6 +466,8 @@ rule token = parse
       { CHAR(char_for_hexadecimal_code lexbuf 3) }
   | "\'" ("\\" _ as esc)
       { error lexbuf (Illegal_escape (esc, None)) }
+  | "\'\'"
+      { error lexbuf Empty_character_literal }
   | "(*"
       { let s, loc = wrap_comment_lexer comment lexbuf in
         COMMENT (s, loc) }

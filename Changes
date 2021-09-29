@@ -91,6 +91,10 @@ Working version
   library module's documentation.
   (John Whitington, review by David Allsopp)
 
+- #1351: Document `-output-complete-obj` option in the manual.
+  (François Bobot, Nicolás Ojeda Bär, review by Daniel Bünzli and Damien
+  Doligez)
+
 ### Compiler user-interface and warnings:
 
 - #9960: extend ocamlc/ocamlopt's -o option to work when compiling C files
@@ -103,6 +107,10 @@ Working version
   because the error message implicitly referred to an earlier point in
   the source code than the point explicitly shown in the error message.
   (François Pottier, review by Gabriel Scherer and Frédéric Bour.)
+
+- #10196, #10197: better error message on empty character literals ''.
+  (Gabriel Scherer, review by David Allsopp and Florian Angeletti
+   and Daniel Bünzli, report by Robin Björklin)
 
 ### Internal/compiler-libs changes:
 
@@ -157,6 +165,9 @@ Working version
   (Tõivo Leedjärv and Konstantin Romanov,
    review by Gabriel Scherer, Sébastien Hinderer and Xavier Leroy)
 
+- #10156: configure script: fix sockets feature detection.
+  (Lucas Pluvinage, review by David Allsopp and Damien Doligez)
+
 ### Bug fixes:
 
 - #10005: Try expanding aliases in Ctype.nondep_type_rec
@@ -180,6 +191,9 @@ Working version
 
 - #10166: Fix illegal permutation error reporting in module aliases.
   (Matthew Ryan, review by Florian Angeletti)
+
+- #10189: Universal variables leaking through GADT equations
+  (Jacques Garrigue, report by Leo White)
 
 OCaml 4.12.0
 ------------
