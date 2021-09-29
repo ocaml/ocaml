@@ -27,9 +27,7 @@ let data =
   )
 ;;
 
-let gccount () =
-  let res = (Gc.quick_stat ()).Gc.major_collections in
-  res
+let gccount () = (Gc.quick_stat ()).Gc.major_collections;;
 
 type change = No_change | Fill | Erase;;
 

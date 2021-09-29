@@ -1314,8 +1314,14 @@ and bindings ctxt f (rf,l) =
         (list ~sep:"@," (binding "and" Nonrecursive)) xs
 
 and binding_op ctxt f x =
-  pp f "@[<2>%s %a@;=@;%a@]"
-    x.pbop_op.txt (pattern ctxt) x.pbop_pat (expression ctxt) x.pbop_exp
+  match x.pbop_pat, x.pbop_exp with
+  | {ppat_desc = Ppat_var { txt=pvar; _ }; ppat_attributes = []; _},
+    {pexp_desc = Pexp_ident { txt=Lident evar; _}; pexp_attributes = []; _}
+       when pvar = evar ->
+     pp f "@[<2>%s %s@]" x.pbop_op.txt evar
+  | pat, exp ->
+     pp f "@[<2>%s %a@;=@;%a@]"
+       x.pbop_op.txt (pattern ctxt) pat (expression ctxt) exp
 
 and structure_item ctxt f x =
   match x.pstr_desc with
