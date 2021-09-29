@@ -1,12 +1,12 @@
 |=====
 | Branch `trunk` | Branch `4.12` | Branch `4.11` | Branch `4.10`
 
-| image:https://travis-ci.org/ocaml/ocaml.svg?branch=trunk["TravisCI Build Status (trunk branch)",
-     link="https://travis-ci.org/ocaml/ocaml"]
+| image:https://github.com/ocaml/ocaml/workflows/main/badge.svg?branch=trunk["Github CI Build Status (trunk branch)",
+     link="https://github.com/ocaml/ocaml/actions?query=workflow%3Amain"]
   image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=trunk&svg=true["AppVeyor Build Status (trunk branch)",
      link="https://ci.appveyor.com/project/avsm/ocaml"]
-| image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.12["TravisCI Build Status (4.12 branch)",
-     link="https://travis-ci.org/ocaml/ocaml"]
+| image:https://github.com/ocaml/ocaml/workflows/main/badge.svg?branch=4.12["Github CI Build Status (4.12 branch)",
+     link="https://github.com/ocaml/ocaml/actions?query=workflow%3Amain"]
   image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.12&svg=true["AppVeyor Build Status (4.12 branch)",
      link="https://ci.appveyor.com/project/avsm/ocaml"]
 | image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.11["TravisCI Build Status (4.11 branch)",
@@ -49,7 +49,7 @@ compiler currently runs on the following platforms:
 | ARM 64 bits    | Linux, macOS                    |  FreeBSD
 | ARM 32 bits    | Linux                           |  FreeBSD, NetBSD, OpenBSD
 | Power 64 bits  | Linux                           |
-| Power 32 bits  |                                 |  Linux
+| Power 32 bits  | Linux                           |
 | RISC-V 64 bits | Linux                           |
 | IBM Z (s390x)  | Linux                           |
 |====
@@ -61,7 +61,7 @@ the compiler may work under other operating systems with little work.
 == Copyright
 
 All files marked "Copyright INRIA" in this distribution are
-Copyright (C) 1996-2020 Institut National de Recherche en Informatique et
+Copyright (C) 1996-2021 Institut National de Recherche en Informatique et
 en Automatique (INRIA) and distributed under the conditions stated in
 file LICENSE.
 

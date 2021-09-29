@@ -155,7 +155,11 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 
 #define Num_tags (1 << 8)
 #ifdef ARCH_SIXTYFOUR
+#ifdef WITH_PROFINFO
 #define Max_wosize (((intnat)1 << (54-PROFINFO_WIDTH)) - 1)
+#else
+#define Max_wosize (((intnat)1 << 54) - 1)
+#endif
 #else
 #define Max_wosize ((1 << 22) - 1)
 #endif /* ARCH_SIXTYFOUR */
