@@ -337,7 +337,8 @@ val ocaml_version : string
       ["major.minor[.patchlevel][(+|~)additional-info]"],
     where [major], [minor], and [patchlevel] are integers, and
     [additional-info] is an arbitrary string.
-    The [[.patchlevel]] part is absent for versions anterior to 3.08.0.
+    The [[.patchlevel]] part was absent before version 3.08.0 and
+    became mandatory from 3.08.0 (included) onwards.
     The [[(+|~)additional-info]] part may be absent. *)
 
 
