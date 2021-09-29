@@ -60,6 +60,10 @@ type directive_fun =
    | Directive_ident of (Longident.t -> unit)
    | Directive_bool of (bool -> unit)
 
+type directive_info = {
+  section: string;
+  doc: string;
+}
 
 let remembered = ref Ident.empty
 
@@ -215,6 +219,14 @@ let run_hooks hook = List.iter (fun f -> f hook) !hooks
 
 (* Load in-core and execute a lambda term *)
 
+let may_trace = ref false (* Global lock on tracing *)
+
+let backtrace = ref None
+
+let record_backtrace () =
+  if Printexc.backtrace_status ()
+  then backtrace := Some (Printexc.get_backtrace ())
+
 let phrase_seqid = ref 0
 let phrase_name = ref "TOP"
 
@@ -271,12 +283,21 @@ let load_lambda ppf ~module_ident ~required_globals lam size =
     if Filename.is_implicit dll
     then Filename.concat (Sys.getcwd ()) dll
     else dll in
-  let res = dll_run dll !phrase_name in
-  (try Sys.remove dll with Sys_error _ -> ());
-  (* note: under windows, cannot remove a loaded dll
-     (should remember the handles, close them in at_exit, and then remove
-     files) *)
-  res
+  match
+    may_trace := true;
+    Fun.protect
+      ~finally:(fun () ->
+          may_trace := false;
+          (try Sys.remove dll with Sys_error _ -> ()))
+            (* note: under windows, cannot remove a loaded dll
+               (should remember the handles, close them in at_exit, and then
+               remove files) *)
+      (fun () -> dll_run dll !phrase_name)
+  with
+  | res -> res
+  | exception x ->
+      record_backtrace ();
+      Exception x
 
 (* Print the outcome of an evaluation *)
 
@@ -300,12 +321,26 @@ let print_out_exception ppf exn outv =
 let print_exception_outcome ppf exn =
   if exn = Out_of_memory then Gc.full_major ();
   let outv = outval_of_value !toplevel_env (Obj.repr exn) Predef.type_exn in
-  print_out_exception ppf exn outv
+  print_out_exception ppf exn outv;
+  if Printexc.backtrace_status ()
+  then
+    match !backtrace with
+      | None -> ()
+      | Some b ->
+          print_string b;
+          backtrace := None
 
 (* The table of toplevel directives.
    Filled by functions from module topdirs. *)
 
-let directive_table = (Hashtbl.create 13 : (string, directive_fun) Hashtbl.t)
+let directive_table = (Hashtbl.create 23 : (string, directive_fun) Hashtbl.t)
+
+let directive_info_table =
+  (Hashtbl.create 23 : (string, directive_info) Hashtbl.t)
+
+let add_directive name dir_fun dir_info =
+  Hashtbl.add directive_table name dir_fun;
+  Hashtbl.add directive_info_table name dir_info
 
 (* Execute a toplevel phrase *)
 
@@ -682,3 +717,8 @@ let run_script ppf name args =
     else name
   in
   use_silently ppf explicit_name
+
+(* API compat *)
+
+let getvalue _ = assert false
+let setvalue _ _ = assert false

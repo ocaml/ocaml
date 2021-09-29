@@ -68,3 +68,8 @@ depend: $(ALL_FILES) $(UNIX_CAML_FILES) unix.ml
 	  unix.ml > .depend
 
 include .depend
+
+# This empty target is here for AppVeyor to allow dependencies to be built
+# without doing anything else.
+.PHONY: setup-depend
+setup-depend:
