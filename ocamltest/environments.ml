@@ -62,6 +62,12 @@ let lookup_as_bool variable env =
   | Some "true" -> Some true
   | Some _ -> Some false
 
+let lookup_as_int variable env =
+  match lookup variable env with
+  | None -> None
+  | Some value ->
+      int_of_string_opt value
+
 let safe_lookup variable env = match lookup variable env with
   | None -> ""
   | Some value -> value

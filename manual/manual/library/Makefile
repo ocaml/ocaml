@@ -5,8 +5,7 @@ CSLDIR = $(SRC)
 TEXQUOTE = $(SRC)/runtime/ocamlrun ../../tools/texquote2
 
 FILES = core.tex builtin.tex stdlib-blurb.tex compilerlibs.tex \
-  libunix.tex libstr.tex libnum.tex libgraph.tex \
-  libthreads.tex libdynlink.tex libbigarray.tex
+  libunix.tex libstr.tex old.tex libthreads.tex libdynlink.tex
 
 etex-files: $(FILES)
 all: etex-files

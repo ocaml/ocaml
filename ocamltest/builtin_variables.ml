@@ -34,6 +34,9 @@ let commandline = Variables.make ("commandline",
 let exit_status = Variables.make ("exit_status",
   "Expected program exit status")
 
+let file = Variables.make ("file",
+  "File whose existence should be tested")
+
 let files = Variables.make ("files",
   "Files used by the tests")
 
@@ -101,7 +104,8 @@ let test_skip = Variables.make ("TEST_SKIP",
 let test_fail = Variables.make ("TEST_FAIL",
   "Exit code to let a script report failure")
 
-
+let timeout = Variables.make ("timeout",
+  "Maximal execution time for every command (in seconds)")
 
 let _ = List.iter Variables.register_variable
   [
@@ -109,6 +113,7 @@ let _ = List.iter Variables.register_variable
     cwd;
     commandline;
     exit_status;
+    file;
     files;
     make;
     ocamltest_response;
@@ -129,4 +134,5 @@ let _ = List.iter Variables.register_variable
     test_pass;
     test_skip;
     test_fail;
+    timeout;
   ]

@@ -79,6 +79,7 @@ MENHIRFLAGS := \
   --ocamlc "$(CAMLC) $(COMPFLAGS)" \
   --fixed-exception \
   --table \
+  --strategy simplified \
 
 ## promote-menhir
 

@@ -21,6 +21,8 @@ val files_to_test : string list
 
 val promote : bool
 
+val default_timeout : int
+
 val usage : string
 
 val find_test_dirs : string list

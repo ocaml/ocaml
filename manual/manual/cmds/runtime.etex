@@ -57,6 +57,9 @@ back trace is printed only if the bytecode executable contains
 debugging information, i.e. was compiled and linked with the "-g"
 option to "ocamlc" set.  This is equivalent to setting the "b" flag
 in the "OCAMLRUNPARAM" environment variable (see below).
+\item["-config"]
+Print the version number of "ocamlrun" and a detailed summary of its
+configuration, then exit.
 \item["-I" \var{dir}]
 Search the directory \var{dir} for dynamically-loaded libraries,
 in addition to the standard search path (see

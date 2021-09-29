@@ -173,7 +173,7 @@ section~\ref{ss:class-spec}.
 \ikwd{class\@\texttt{class}}
 \ikwd{type\@\texttt{type}}
 
-A specification of one or several classe types in a signature is
+A specification of one or several class types in a signature is
 written @'class' 'type' classtype-def@ @{ 'and' classtype-def }@ and
 consists of a sequence of mutually recursive definitions of class type
 names. Class type specifications are described more precisely in
