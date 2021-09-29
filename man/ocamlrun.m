@@ -74,9 +74,10 @@ Search the directory
 .I dir
 for dynamically-loaded libraries, in addition to the standard search path.
 .TP
-.B \-m
-Print the magic number of the bytecode executable given as argument and
-exit.
+.BI \-m \ file
+Print the magic number of the bytecode executable 
+.I file 
+and exit.
 .TP
 .B \-M
 Print the magic number expected for bytecode executables by this version
@@ -88,7 +89,8 @@ Print the names of the primitives known to this version of
 and exit.
 .TP
 .B \-t
-Increments the trace level for the debug runtime (ignored otherwise).
+Increment the trace level for the debug runtime (ignored by the standard 
+runtime).
 .TP
 .B \-v
 Direct the memory manager to print verbose messages on standard error.
@@ -130,8 +132,9 @@ sign, a decimal number (or a hexadecimal number prefixed by
 and an optional multiplier. If the letter is followed by anything
 else, the corresponding option is set to 1. Unknown letters
 are ignored.
-The options are documented below; the
-last six correspond to the fields of the
+The options are documented below; the options
+.B a, i, l, m, M, n, o, O, s, v
+correspond to the fields of the
 .B control
 record documented in
 .IR "The OCaml user's manual",
@@ -159,11 +162,12 @@ to detect leaks with a third-party memory debugger.
 The initial size of the major heap (in words).
 .TP
 .BR H
-Allocates heap chunks by mmapping huge pages. Huge pages are locked into
+Allocate heap chunks by mmapping huge pages. Huge pages are locked into
 memory, and are not swapped.
 .TP
 .BR i \ (major_heap_increment)
-The default size increment for the major heap (in words).
+The default size increment for the major heap (in words if greater than 1000,
+else in percents of the heap size).
 .TP
 .BR l \ (stack_limit)
 The limit (in words) of the stack size.
@@ -227,7 +231,8 @@ argument.
 The size of the minor heap (in words).
 .TP
 .B t
-Sets the trace level for the debug runtime (ignored otherwise).
+Set the trace level for the debug runtime (ignored by the standard 
+runtime).
 .TP
 .BR v \ (verbose)
 What GC messages to print to stderr.  This is a sum of values selected
@@ -268,11 +273,11 @@ Computation of compaction-triggering condition.
 Output GC statistics at program exit, in the same format as Gc.print_stat.
 .TP
 .BR w
-Sets size of window used by major GC for smoothing out variations in
+Set size of the window used by major GC for smoothing out variations in
 its workload. This is an integer between 1 and 50. (Default: 1)
 .TP
 .BR W
-Activates runtime warnings (such as Channel opened on file dies without
+Print runtime warnings to stderr (such as Channel opened on file dies without
 being closed, unflushed data, etc.)
 
 .RS 0
