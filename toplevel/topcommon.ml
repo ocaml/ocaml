@@ -75,7 +75,7 @@ let backtrace = ref None
 
 module type PRINTER = sig
 
-  module Printer: Genprintval.S
+  module Printer: Genprintval.S with type t = Obj.t
 
   val print_value: Env.t -> Printer.t -> formatter -> Types.type_expr -> unit
   val print_untyped_exception: formatter -> Printer.t -> unit
@@ -103,9 +103,8 @@ module type PRINTER = sig
 end
 
 module MakePrinter
-    (O: Genprintval.OBJ)
-    (Printer: Genprintval.S with type t = O.t)
-  : PRINTER with type Printer.t = O.t
+    (Printer: Genprintval.S with type t = Obj.t)
+  : PRINTER
 = struct
 
   module Printer = Printer
@@ -125,7 +124,7 @@ module MakePrinter
 
   let print_exception_outcome ppf exn =
     if exn = Out_of_memory then Gc.full_major ();
-    let outv = outval_of_value !toplevel_env (O.repr exn) Predef.type_exn in
+    let outv = outval_of_value !toplevel_env (Obj.repr exn) Predef.type_exn in
     print_out_exception ppf exn outv;
     if Printexc.backtrace_status ()
     then

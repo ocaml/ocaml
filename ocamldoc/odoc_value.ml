@@ -76,8 +76,6 @@ let parameter_list_from_arrows typ =
       Types.Tarrow (l, t1, t2, _) ->
         (l, t1) :: (iter t2)
     | Types.Tlink texp
-    | Types.Tsubst texp ->
-        iter texp
     | Types.Tpoly (texp, _) -> iter texp
     | Types.Tvar _
     | Types.Ttuple _
@@ -89,6 +87,8 @@ let parameter_list_from_arrows typ =
     | Types.Tpackage _
     | Types.Tvariant _ ->
         []
+    | Types.Tsubst _ ->
+        assert false
   in
   iter typ
 
@@ -114,10 +114,10 @@ let dummy_parameter_list typ =
             { Odoc_parameter.sn_name = normal_name label ;
               Odoc_parameter.sn_type = t ;
               Odoc_parameter.sn_text = None }
-    | Types.Tlink t2
-    | Types.Tsubst t2 ->
+    | Types.Tlink t2 ->
         (iter (label, t2))
-
+    | Types.Tsubst _ ->
+        assert false
     | _ ->
         Odoc_parameter.Simple_name
           { Odoc_parameter.sn_name = normal_name label ;

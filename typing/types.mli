@@ -108,10 +108,13 @@ and type_desc =
   | Tlink of type_expr
   (** Indirection used by unification engine. *)
 
-  | Tsubst of type_expr         (* for copying *)
+  | Tsubst of type_expr * type_expr option
   (** [Tsubst] is used temporarily to store information in low-level
       functions manipulating representation of types, such as
       instantiation or copy.
+      The first argument contains a copy of the original node.
+      The second is available only when the first is the row variable of
+      a polymorphic variant.  It then contains a copy of the whole variant.
       This constructor should not appear outside of these cases. *)
 
   | Tvariant of row_desc

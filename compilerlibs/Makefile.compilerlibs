@@ -280,11 +280,13 @@ OPTTOPLEVEL_CMI=toplevel/topcommon.cmi toplevel/native/topeval.cmi \
 
 TOPLEVEL_SHARED_MLIS = topeval.mli trace.mli topmain.mli
 
-toplevel/byte/%.mli toplevel/byte/%.cmi: toplevel/%.mli toplevel/%.cmi
-	cp  toplevel/$*.mli toplevel/$*.cmi $(@D)
+$(TOPLEVEL_SHARED_MLIS:%.mli=toplevel/byte/%.cmi):\
+toplevel/byte/%.cmi: toplevel/%.cmi
+	cp $< toplevel/$*.mli $(@D)
 
-toplevel/native/%.mli toplevel/native/%.cmi: toplevel/%.mli toplevel/%.cmi
-	cp  toplevel/$*.mli toplevel/$*.cmi $(@D)
+$(TOPLEVEL_SHARED_MLIS:%.mli=toplevel/native/%.cmi):\
+toplevel/native/%.cmi: toplevel/%.cmi
+	cp $< toplevel/$*.mli $(@D)
 
 beforedepend::
 	cp $(TOPLEVEL_SHARED_MLIS:%=toplevel/%) toplevel/byte

@@ -52,7 +52,7 @@ let order_of_sections =
     section_undocumented;
   ])
 (* Do not forget to keep the directives synchronized with the manual in
-   manual/manual/cmds/top.etex *)
+   manual/src/cmds/top.etex *)
 
 (* To quit *)
 

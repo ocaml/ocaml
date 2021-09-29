@@ -518,7 +518,9 @@ and raw_type_desc ppf = function
         raw_type t1 raw_type t2
   | Tnil -> fprintf ppf "Tnil"
   | Tlink t -> fprintf ppf "@[<1>Tlink@,%a@]" raw_type t
-  | Tsubst t -> fprintf ppf "@[<1>Tsubst@,%a@]" raw_type t
+  | Tsubst (t, None) -> fprintf ppf "@[<1>Tsubst@,(%a,None)@]" raw_type t
+  | Tsubst (t, Some t') ->
+      fprintf ppf "@[<1>Tsubst@,(%a,@ Some%a)@]" raw_type t raw_type t'
   | Tunivar name -> fprintf ppf "Tunivar %a" print_name name
   | Tpoly (t, tl) ->
       fprintf ppf "@[<hov1>Tpoly(@,%a,@,%a)@]"
@@ -915,7 +917,7 @@ let rec mark_loops_rec visited ty =
     | Tfield(_, _, _, ty2) ->
         mark_loops_rec visited ty2
     | Tnil -> ()
-    | Tsubst ty -> mark_loops_rec visited ty
+    | Tsubst _ -> ()  (* we do not print arguments *)
     | Tlink _ -> fatal_error "Printtyp.mark_loops_rec (2)"
     | Tpoly (ty, tyl) ->
         List.iter (fun t -> add_alias t) tyl;
@@ -1022,8 +1024,9 @@ let rec tree_of_typexp sch ty =
         tree_of_typobject sch fi !nm
     | Tnil | Tfield _ ->
         tree_of_typobject sch ty None
-    | Tsubst ty ->
-        tree_of_typexp sch ty
+    | Tsubst _ ->
+        (* This case should only happen when debugging the compiler *)
+        Otyp_stuff "<Tsubst>"
     | Tlink _ ->
         fatal_error "Printtyp.tree_of_typexp"
     | Tpoly (ty, []) ->
@@ -1162,8 +1165,12 @@ let filter_params tyl =
     List.fold_left
       (fun tyl ty ->
         let ty = repr ty in
-        if List.memq ty tyl then Btype.newgenty (Tsubst ty) :: tyl
+        if List.memq ty tyl then Btype.newgenty (Ttuple [ty]) :: tyl
         else ty :: tyl)
+      (* Two parameters might be identical due to a constraint but we need to
+         print them differently in order to make the output syntactically valid.
+         We use [Ttuple [ty]] because it is printed as [ty]. *)
+      (* Replacing fold_left by fold_right does not work! *)
       [] tyl
   in List.rev params
 
