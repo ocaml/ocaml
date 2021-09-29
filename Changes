@@ -20,6 +20,11 @@ Working version
   including the search path for shared stub libraries.
   (David Allsopp, review by Xavier Leroy)
 
+- #9934: Optimise sweeping using prefetching.
+  (Stephen Dolan and Will Hasenplaugh, review by David Allsopp, Xavier
+   Leroy and Damien Doligez, benchmarking by Shubham Kumar and KC
+   Sivaramakrishnan)
+
 - #10025: Track custom blocks (e.g. Bigarray) with Statmemprof
   (Stephen Dolan, review by Leo White, Gabriel Scherer and Jacques-Henri
    Jourdan)

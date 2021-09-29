@@ -777,8 +777,6 @@ asm_cfi_supported
 AS
 endianness
 ASPP
-x_libraries
-x_includes
 ocamltest
 ocamldoc
 with_camltex
@@ -2897,8 +2895,6 @@ VERSION=4.13.0+domains+dev
 
 
  # TODO: rename this variable
-
-
 
 
 

@@ -166,7 +166,7 @@ val truncate : t -> int -> unit
   @raise Invalid_argument if [len < 0] or [len > length b].
   @since 4.05.0 *)
 
-(** {1 Iterators} *)
+(** {1 Buffers and Sequences} *)
 
 val to_seq : t -> char Seq.t
 (** Iterate on the buffer, in increasing order.
