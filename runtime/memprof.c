@@ -824,7 +824,8 @@ void caml_memprof_renew_minor_sample(void)
     if (Caml_state->young_ptr - Caml_state->young_alloc_start < geom)
       /* No trigger in the current minor heap. */
       caml_memprof_young_trigger = Caml_state->young_alloc_start;
-    caml_memprof_young_trigger = Caml_state->young_ptr - (geom - 1);
+    else
+      caml_memprof_young_trigger = Caml_state->young_ptr - (geom - 1);
   }
 
   caml_update_young_limit();
@@ -1045,7 +1046,9 @@ CAMLprim value caml_memprof_start(value lv, value szv, value tracker_param)
   if (l > 0) {
     one_log1m_lambda = l == 1 ? 0 : 1/caml_log1p(-l);
     rand_pos = RAND_BLOCK_SIZE;
-    next_rand_geom = rand_geom();
+    /* next_rand_geom can be zero if the next word is to be sampled,
+       but rand_geom always returns a value >= 1. Subtract 1 to correct. */
+    next_rand_geom = rand_geom() - 1;
   }
 
   caml_memprof_renew_minor_sample();

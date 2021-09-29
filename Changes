@@ -38,10 +38,6 @@ Working version
   (Leandro Ostera, review by Gabriel Scherer and Thomas Refis)
 
 ### Build system:
-- #10044: Always report the detected ARCH, MODEL and SYSTEM, even for bytecode-
-  only builds (fixes a "configuration regression" from 4.08 for the Windows
-  builds)
-  (David Allsopp, review by ??)
 
 ### Bug fixes:
 
@@ -177,7 +173,7 @@ OCaml 4.12.0
    when using mutually recursive functions.
    (Jacques-Henri Jourdan, review by François Bobot)
 
-* #1128, #7503, #9036, #9722: EINTR-based signal handling.
+* #1128, #7503, #9036, #9722, #10069: EINTR-based signal handling.
   When a signal arrives, avoid running its OCaml handler in the middle
   of a blocking section. Instead, allow control to return quickly to
   a polling point where the signal handler can safely run, ensuring that
@@ -218,6 +214,14 @@ OCaml 4.12.0
 - #10050: update {PUSH,}OFFSETCLOSURE* bytecode instructions to match new
   representation for closures
   (Nathanaël Courant, review by Xavier Leroy)
+
+- #10056: Memprof: ensure young_trigger is within the bounds of the minor
+  heap in caml_memprof_renew_minor_sample (regression from #8684)
+  (David Allsopp, review by Guillaume Munch-Maccagnoni and
+  Jacques-Henri Jourdan)
+
+- #10062: set ARCH_INT64_PRINTF_FORMAT correctly for both modes of mingw-w64
+  (David Allsopp, review by Xavier Leroy)
 
 ### Code generation and optimizations:
 
@@ -418,6 +422,11 @@ OCaml 4.12.0
   (John Whitington, review by Nicolás Ojeda Bär, David Allsopp,
    Thomas Refis, and Florian Angeletti)
 
+- #9877: manual, warn that multi-index indexing operators should be defined in
+  conjunction of single-index ones.
+  (Florian Angeletti, review by Hezekiah M. Carty, Gabriel Scherer,
+   and Marcello Seri)
+
 ### Compiler user-interface and warnings:
 
 - #1931: rely on levels to enforce principality in patterns
@@ -574,11 +583,16 @@ OCaml 4.12.0
 
 - #9938, #9939: Define __USE_MINGW_ANSI_STDIO=0 for the mingw-w64 ports to
   prevent their C99-compliant snprintf conflicting with ours.
-  (David Allsopp, report by Michael Soegtrop, review by ???)
+  (David Allsopp, report by Michael Soegtrop, review by Xavier Leroy)
 
 - #9895, #9523: Avoid conflict with C++20 by not installing VERSION to the OCaml
   Standard Library directory.
   (Bernhard Schommer, review by David Allsopp)
+
+- #10044: Always report the detected ARCH, MODEL and SYSTEM, even for bytecode-
+  only builds (fixes a "configuration regression" from 4.08 for the Windows
+  builds)
+  (David Allsopp, review by Xavier Leroy)
 
 ### Bug fixes:
 
@@ -597,6 +611,9 @@ OCaml 4.12.0
 
 - #8747, #9709: incorrect principality warning on functional updates of records
   (Jacques Garrigue, report and review by Thomas Refis)
+
+* #8907, #9878: `Typemod.normalize_signature` uses wrong environment
+  (Jacques Garrigue, report and review by Leo White)
 
 - #9421, #9427: fix printing of (::) in ocamldoc
   (Florian Angeletti, report by Yawar Amin, review by Damien Doligez)
@@ -688,6 +705,9 @@ OCaml 4.12.0
     type 'a t += X of {x : 'a}
   (Gabriel Scherer, review by Thomas Refis and Leo White,
    report by Nicolás Ojeda Bär)
+
+- #10048: Fix bug with generalized local opens.
+  (Leo White, review by Thomas Refis)
 
 OCaml 4.11.1
 ------------
