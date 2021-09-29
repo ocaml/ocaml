@@ -136,6 +136,8 @@ last six correspond to the fields of the
 record documented in
 .IR "The OCaml user's manual",
 chapter "Standard Library", section "Gc".
+
+.RS 7
 .TP
 .BR a \ (allocation_policy)
 The policy used for allocating in the OCaml heap.  Possible values
@@ -273,6 +275,7 @@ its workload. This is an integer between 1 and 50. (Default: 1)
 Activates runtime warnings (such as Channel opened on file dies without
 being closed, unflushed data, etc.)
 
+.RS 0
 The multiplier is
 .BR k ,
 .BR M ,\ or
