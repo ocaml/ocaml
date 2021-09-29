@@ -114,7 +114,7 @@ These ".cmt" and ".cmti" files are typically useful for code inspection tools.
 \section{s:comp-options}{Options}
 
 The following command-line options are recognized by "ocamlc".
-The options "-pack", "-a", "-c" and "-output-obj" are mutually exclusive.
+The options "-pack", "-a", "-c", "-output-obj" and "-output-complete-obj" are mutually exclusive.
 % Define boolean variables used by the macros in unified-options.etex
 \newif\ifcomp \comptrue
 \newif\ifnat \natfalse

@@ -116,8 +116,8 @@ To continue compilation, the compiler can be invoked with (a possibly modified)
 \section{s:native-options}{Options}
 
 The following command-line options are recognized by "ocamlopt".
-The options "-pack", "-a", "-shared", "-c" and "-output-obj" are mutually
-exclusive.
+The options "-pack", "-a", "-shared", "-c", "-output-obj" and
+"-output-complete-obj" are mutually exclusive.
 
 % Configure boolean variables used by the macros in unified-options.etex
 \compfalse

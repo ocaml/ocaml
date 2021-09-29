@@ -43,18 +43,13 @@ all: html pdf man
 .PHONY:all
 .SUFFIXES:
 
-.PHONY: setup
-setup:
-	$(MKDIR) build build/libref build/compilerlibref
-	$(MKDIR) html html/libref html/compilerlibref
-	$(MKDIR) man
-	$(MKDIR) latex
-	$(MKDIR) texi
+DIRS = build/libref build/compilerlibref man/ latex/ texi/ \
+	html/ html/libref html/compilerlibref
 
-pdf: latex/alldoc.pdf | setup
-latex: | setup
-man: | setup
-html: | setup
+$(DIRS):
+	$(MKDIR) $@
+
+pdf: latex/alldoc.pdf
 latex/alldoc.pdf: latex/stdlib_input.tex latex/compilerlibs_input.tex
 
 Compiler_libs.mld: Compiler_libs.pre.mld
@@ -65,59 +60,57 @@ vpath %.mli $(ROOTDIR)/stdlib $(DOC_COMPILERLIBS_DIRS)  $(DOC_STDLIB_DIRS)
 man: man/Stdlib.3o
 html: html/libref/Stdlib.html html/compilerlibref/Compiler_libs.html
 latex: latex/Stdlib.tex
+texi: texi/stdlib.texi
 
-LD_PATH := "$(SRC)/otherlibs/unix/:$(SRC)/otherlibs/str/"
+LD_PATH := "$(ROOTDIR)/otherlibs/unix/:$(ROOTDIR)/otherlibs/str/"
 SET_LD_PATH = CAML_LD_LIBRARY_PATH=$(LD_PATH)
 
 
-$(libref:%=build/libref/%.odoc):build/libref/%.odoc:%.mli
+$(libref:%=build/libref/%.odoc): build/libref/%.odoc: %.mli | build/libref
 	$(OCAMLDOC_RUN) -nostdlib -hide Stdlib -lib Stdlib \
 	-pp \
 "$(AWK) -v ocamldoc=true -f $(ROOTDIR)/stdlib/expand_module_aliases.awk" \
 	$(DOC_STDLIB_INCLUDES) $< -dump  $@
 
 $(compilerlibref:%=build/compilerlibref/%.odoc):\
-build/compilerlibref/%.odoc:%.mli
+build/compilerlibref/%.odoc: %.mli | build/compilerlibref
 	$(OCAMLDOC_RUN) -nostdlib -hide Stdlib -lib Stdlib \
 	$(DOC_ALL_INCLUDES) $< -dump  $@
 
 $(compilerlibref_TEXT:%=build/compilerlibref/%.odoc):\
-build/compilerlibref/%.odoc:%.mld
+build/compilerlibref/%.odoc: %.mld | build/compilerlibref
 	$(OCAMLDOC_RUN) $(DOC_ALL_INCLUDES) -text $< -dump  $@
 
-$(libref_TEXT:%=build/libref/%.odoc):build/libref/%.odoc:%.mld
+$(libref_TEXT:%=build/libref/%.odoc): build/libref/%.odoc: %.mld | build/libref
 	$(OCAMLDOC_RUN) $(DOC_STDLIB_INCLUDES) -text $< -dump  $@
 
 ALL_COMPILED_DOC=$(ALL_DOC:%=build/%.odoc)
-man/Stdlib.3o: $(ALL_COMPILED_DOC)
+man/Stdlib.3o: $(ALL_COMPILED_DOC) | man/
 	$(MKDIR) man
 	$(OCAMLDOC_RUN) -man -d man -man-mini \
 	-nostdlib -hide Stdlib -lib Stdlib -t "OCaml library" \
 	$(addprefix -load , $(ALL_COMPILED_DOC))
 
-html/libref/Stdlib.html: $(ALL_LIBREF:%=build/%.odoc)
-	$(MKDIR) -p html/libref
+html/libref/Stdlib.html: $(ALL_LIBREF:%=build/%.odoc) | html/libref
 	$(OCAMLDOC_RUN) -html -d html/libref \
 	-charset="utf8" \
 	-nonavbar -nostdlib -hide Stdlib -lib Stdlib -t "OCaml library" \
 	$(addprefix -load , $(ALL_LIBREF:%=build/%.odoc))
 
-html/compilerlibref/Compiler_libs.html: $(ALL_COMPILERLIBREF:%=build/%.odoc)
-	$(MKDIR) -p html/compilerlibref
+html/compilerlibref/Compiler_libs.html: $(ALL_COMPILERLIBREF:%=build/%.odoc) \
+| html/compilerlibref
 	$(OCAMLDOC_RUN) -html -d html/compilerlibref \
 	-nonavbar -nostdlib -hide Stdlib -t "OCaml compiler library" \
 	-charset="utf8" \
 	-intro Compiler_libs.mld \
 	$(addprefix -load , $(ALL_COMPILERLIBREF:%=build/%.odoc))
 
-texi/stdlib.texi: $(ALL_COMPILED_DOC)
-	$(MKDIR) texi
+texi/stdlib.texi: $(ALL_COMPILED_DOC) | texi/
 	$(OCAMLDOC_RUN) -texi -o $@ \
 	-nostdlib -hide Stdlib -lib Stdlib -t "OCaml library" \
 	$(addprefix -load , $(ALL_COMPILED_DOC))
 
-latex/Stdlib.tex: $(ALL_COMPILED_DOC)
-	$(MKDIR) latex
+latex/Stdlib.tex: $(ALL_COMPILED_DOC) | latex/
 	$(OCAMLDOC_RUN) -latex -o latex/all.tex \
 	-hide Stdlib -lib Stdlib $(DOC_ALL_INCLUDES) \
 	-sepfiles \
@@ -130,24 +123,24 @@ latex/Stdlib.tex: $(ALL_COMPILED_DOC)
 	-nostdlib -hide Stdlib -lib Stdlib -t "OCaml library" \
 	$(addprefix -load , $(ALL_COMPILED_DOC))
 
-latex/alldoc.pdf: latex/Stdlib.tex latex/alldoc.tex
+latex/alldoc.pdf: latex/Stdlib.tex latex/alldoc.tex | latex/
 	cd latex && TEXINPUTS=$${TEXINPUTS}:$(ROOTDIR)/ocamldoc pdflatex alldoc
 	cd latex && TEXINPUTS=$${TEXINPUTS}:$(ROOTDIR)/ocamldoc pdflatex alldoc
-latex/alldoc.tex:alldoc.tex
+latex/alldoc.tex:alldoc.tex | latex/
 	cp $< $@
 
 stdlib_INPUT=$(foreach module,\
 $(filter-out stdlib.mli camlinternal%,$(stdlib_UNPREFIXED)),\
 \\input{$(call capitalize,$(module)).tex}\
 )
-latex/stdlib_input.tex:
-	echo $(stdlib_INPUT)> $@
+latex/stdlib_input.tex: | latex/
+	echo $(stdlib_INPUT) > $@
 
 compilerlibs_INPUT=$(foreach module,\
 $(filter-out camlinternal%,$(compilerlibref)),\
 \\input{$(call capitalize,$(module)).tex})
-latex/compilerlibs_input.tex:
-	echo $(compilerlibs_INPUT)> $@
+latex/compilerlibs_input.tex: | latex/
+	echo $(compilerlibs_INPUT) > $@
 
 INSTALL_MANODIR=$(INSTALL_MANDIR)/man3
 .PHONY:install
@@ -158,4 +151,4 @@ install:
 	else : ; fi
 
 clean:
-	rm -rf build man html latex texi Compiler_libs.mld
+	rm -rf build/ man/ html/ latex/ texi/ Compiler_libs.mld
