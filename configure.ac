@@ -1971,7 +1971,7 @@ AS_IF([test x"$mandir" = x'${datarootdir}/man'],
   [mandir='${prefix}/man'])
 
 AS_IF([test x"$docdir" = x'${datarootdir}/doc/${PACKAGE_TARNAME}'],
-  [docdir='${prefix}/doc'])
+  [docdir='${prefix}/doc/ocaml'])
 
 AS_CASE([$host],
   [*-*-mingw32|*-pc-windows],

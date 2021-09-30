@@ -17769,7 +17769,7 @@ if test x"$mandir" = x'${datarootdir}/man'; then :
 fi
 
 if test x"$docdir" = x'${datarootdir}/doc/${PACKAGE_TARNAME}'; then :
-  docdir='${prefix}/doc'
+  docdir='${prefix}/doc/ocaml'
 fi
 
 case $host in #(
