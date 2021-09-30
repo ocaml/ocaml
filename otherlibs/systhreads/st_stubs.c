@@ -107,7 +107,7 @@ static struct caml_thread_table thread_table[Max_domains];
 #define Tick_thread_id thread_table[Caml_state->id].tick_thread_id
 
 /* Identifier for next thread creation */
-static atomic_uintnat thread_next_id;
+static atomic_uintnat thread_next_id = 0;
 
 /* Forward declarations */
 
