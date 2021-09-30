@@ -248,7 +248,7 @@ val expand_head_opt: Env.t -> type_expr -> type_expr
 (** The compiler's own version of [expand_head] necessary for type-based
     optimisations. *)
 
-val full_expand: Env.t -> type_expr -> type_expr
+val full_expand: may_forget_scope:bool -> Env.t -> type_expr -> type_expr
 val extract_concrete_typedecl:
         Env.t -> type_expr -> Path.t * Path.t * type_declaration
         (* Return the original path of the types, and the first concrete
@@ -353,7 +353,6 @@ val nondep_cltype_declaration:
   Env.t -> Ident.t list -> class_type_declaration -> class_type_declaration
         (* Same for class type declarations. *)
 (*val correct_abbrev: Env.t -> Path.t -> type_expr list -> type_expr -> unit*)
-val cyclic_abbrev: Env.t -> Ident.t -> type_expr -> bool
 val is_contractive: Env.t -> Path.t -> bool
 val normalize_type: type_expr -> unit
 

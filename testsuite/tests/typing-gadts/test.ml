@@ -1088,7 +1088,8 @@ Line 3, characters 2-26:
       ^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This expression has type < bar : int; foo : int; .. >
        but an expression was expected of type 'a
-       The type constructor $1 would escape its scope
+       This instance of $1 is ambiguous:
+       it would escape the scope of its equation
 |}];;
 
 let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) : t =
@@ -1104,7 +1105,12 @@ let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) =
   x, x#foo, x#bar
 ;;
 [%%expect{|
-val g : 't -> 't int_foo -> 't int_bar -> 't * int * int = <fun>
+Line 3, characters 5-10:
+3 |   x, x#foo, x#bar
+         ^^^^^
+Error: This expression has type int but an expression was expected of type 'a
+       This instance of int is ambiguous:
+       it would escape the scope of its equation
 |}];;
 
 (* PR#5554 *)

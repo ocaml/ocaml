@@ -56,7 +56,6 @@ val empty: t
 val initial_safe_string: t
 val initial_unsafe_string: t
 val diff: t -> t -> Ident.t list
-val copy_local: from:t -> t -> t
 
 type type_descriptions =
     constructor_description list * label_description list
@@ -315,6 +314,8 @@ val open_signature:
     t -> (t, [`Not_found | `Functor]) result
 
 val open_pers_signature: string -> t -> (t, [`Not_found]) result
+
+val remove_last_open: Path.t -> t -> t option
 
 (* Insertion by name *)
 

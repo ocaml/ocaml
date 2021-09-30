@@ -894,6 +894,7 @@ enable_ocamltest
 enable_frame_pointers
 enable_naked_pointers
 enable_naked_pointers_checker
+enable_spacetime
 enable_cfi
 enable_installing_source_artifacts
 enable_installing_bytecode_programs
@@ -3200,6 +3201,12 @@ fi
 # Check whether --enable-naked-pointers-checker was given.
 if test "${enable_naked_pointers_checker+set}" = set; then :
   enableval=$enable_naked_pointers_checker;
+fi
+
+
+# Check whether --enable-spacetime was given.
+if test "${enable_spacetime+set}" = set; then :
+  enableval=$enable_spacetime; as_fn_error $? "spacetime profiling was deleted in OCaml 4.12." "$LINENO" 5
 fi
 
 
