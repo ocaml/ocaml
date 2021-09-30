@@ -40,18 +40,12 @@ val execute_phrase : bool -> formatter -> Parsetree.toplevel_phrase -> bool
            [use_file] prints the types and values of the results.
            [use_silently] does not print them.
            [mod_use_file] wrap the file contents into a module. *)
-val eval_module_path: Env.t -> Path.t -> Obj.t
-val eval_value_path: Env.t -> Path.t -> Obj.t
-val eval_extension_path: Env.t -> Path.t -> Obj.t
-val eval_class_path: Env.t -> Path.t -> Obj.t
-        (* Return the toplevel object referred to by the given path *)
-
-val eval_address: Env.address -> Obj.t
-        (* Used for printers *)
 
 val may_trace : bool ref
 
-include Topcommon.PRINTER with type Printer.t = Obj.t
+module EvalBase: Topcommon.EVAL_BASE
+
+include module type of Topcommon.MakeEvalPrinter(EvalBase)
 
 (* For topmain.ml. Maybe shouldn't be there *)
 val load_file : bool -> formatter -> string -> bool
