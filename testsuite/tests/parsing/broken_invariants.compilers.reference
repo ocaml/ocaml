@@ -22,4 +22,8 @@ Line 1, characters 3-13:
 1 | [%%empty_type];;
        ^^^^^^^^^^
 Error: broken invariant in parsetree: Type declarations cannot be empty.
+Line 2, characters 4-15:
+2 |  [%%missing_rhs]
+        ^^^^^^^^^^^
+Error: broken invariant in parsetree: Module type substitution with no right hand side
 

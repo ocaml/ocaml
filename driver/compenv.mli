@@ -37,6 +37,7 @@ val last_objfiles : string list ref
 val first_objfiles : string list ref
 
 val stop_early : bool ref
+val has_linker_inputs : bool ref
 
 type filename = string
 

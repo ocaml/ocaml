@@ -46,6 +46,9 @@ val check_modtype_inclusion :
     functor application F(M) is well typed, where mty2 is the type of
     the argument of F and path1/mty1 is the path/unstrenghened type of M. *)
 
+val check_modtype_equiv:
+  loc:Location.t -> Env.t -> module_type -> module_type -> unit
+
 val signatures: Env.t -> mark:mark ->
   signature -> signature -> module_coercion
 

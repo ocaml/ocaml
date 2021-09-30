@@ -26,6 +26,11 @@ Working version
   (Takafumi Saikawa and Jacques Garrigue, review by Gabriel Scherer and
    Florian Angeletti)
 
+- #10133: module type substitutions
+  Allow 'SIG with module type T = F(X).S', 'SIG with module type T := sig end'
+  and their local equivalent `module type T := sig type u end`
+  (Florian Angeletti, review by Gabriel Radanne and Leo White)
+
 ### Runtime system:
 
 - #9284: Add -config option to display the configuration of ocamlrun on stdout,
@@ -60,6 +65,10 @@ Working version
   default overhead parameter accordingly.
   (Damien Doligez, review by Josh Berdine and Xavier Leroy)
 
+- #10212: Simplify and improve the Windows-specific code that connects
+  to the debugger via a socket.
+  (Antonin Décimo, review by Xavier Leroy)
+
 ### Code generation and optimizations:
 
 - #9876: do not cache the young_limit GC variable in a processor register.
@@ -69,6 +78,9 @@ Working version
 
 - #9937: improvements in ARM64 code generation (constants, sign extensions)
   (Xavier Leroy, review by Stephen Dolan)
+
+- #10228: Better code-generation for inlined comparisons
+  (Stephen Dolan, review by Alain Frisch and Xavier Leroy)
 
 ### Standard library:
 
@@ -140,6 +152,9 @@ Working version
   (Gabriel Scherer, review by David Allsopp and Florian Angeletti
    and Daniel Bünzli, report by Robin Björklin)
 
+- #8877: Call the linker when ocamlopt is invoked with .o and .a files only.
+  (Greta Yorsh, review by Leo White)
+
 ### Internal/compiler-libs changes:
 
 - #9243, simplify parser rules for array indexing operations
@@ -190,12 +205,20 @@ Working version
 - #10156: configure script: fix sockets feature detection.
   (Lucas Pluvinage, review by David Allsopp and Damien Doligez)
 
+- #10176: By default, call the assembler through the C compiler driver
+  (Sébastien Hinderer, review by Gabriel Scherer, David Allsopp and Xavier
+  Leroy)
+
 - #10186: configure wasn't using library link flags when searching for
   network functions on systems where they're not in libc. Fix IPv6 and
   socklen_t detection on Windows.
   (Antonin Décimo, review by David Allsopp and Sébastien Hinderer)
 
 ### Bug fixes:
+
+* #8857, #10220: Don't clobber GetLastError() in caml_leave_blocking_section
+  when the systhreads library is loaded.
+  (David Allsopp, report by Anton Bachin, review by Xavier Leroy)
 
 - #10005: Try expanding aliases in Ctype.nondep_type_rec
   (Stephen Dolan, review by Gabriel Scherer, Leo White and Xavier Leroy)
@@ -657,6 +680,9 @@ OCaml 4.12.0
   conjunction of single-index ones.
   (Florian Angeletti, review by Hezekiah M. Carty, Gabriel Scherer,
    and Marcello Seri)
+
+- #10233: Document `-save-ir-after scheduling` and update `-stop-after` options.
+  (Greta Yorsh, review by Gabriel Scherer and Florian Angeletti)
 
 ### Compiler user-interface and warnings:
 

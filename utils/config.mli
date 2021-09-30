@@ -23,6 +23,9 @@
 val version: string
 (** The current version number of the system *)
 
+val bindir: string
+(** The directory containing the binary programs *)
+
 val standard_library: string
 (** The directory containing the standard libraries *)
 
@@ -81,6 +84,14 @@ val mkmaindll: string
 
 val ranlib: string
 (** Command to randomize a library, or "" if not needed *)
+
+val default_rpath: string
+(** Option to add a directory to be searched for libraries at runtime
+    (used by ocamlmklib) *)
+
+val mksharedlibrpath: string
+(** Option to add a directory to be searched for shared libraries at runtime
+    (used by ocamlmklib) *)
 
 val ar: string
 (** Name of the ar command, or "" if not needed  (MSVC) *)

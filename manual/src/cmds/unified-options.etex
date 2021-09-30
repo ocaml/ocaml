@@ -599,7 +599,7 @@ use it once before publishing source code.
 \item["-rectypes"]
 Allow arbitrary recursive types during type-checking.  By default,
 only recursive types where the recursion goes through an object type
-are supported.\notop{Note that once you have created an interface using this
+are supported. \notop{Note that once you have created an interface using this
 flag, you must use it again for all dependencies.}
 
 \notop{%

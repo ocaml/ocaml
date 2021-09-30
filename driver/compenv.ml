@@ -600,6 +600,7 @@ let get_objfiles ~with_ocamlparam =
   else
     List.rev !objfiles
 
+let has_linker_inputs = ref false
 
 
 
@@ -653,8 +654,10 @@ let process_action
       else if Filename.check_suffix name ".cmi" && !make_package then
         objfiles := name :: !objfiles
       else if Filename.check_suffix name Config.ext_obj
-           || Filename.check_suffix name Config.ext_lib then
+           || Filename.check_suffix name Config.ext_lib then begin
+        has_linker_inputs := true;
         ccobjs := name :: !ccobjs
+      end
       else if not !native_code && Filename.check_suffix name Config.ext_dll then
         dllibs := name :: !dllibs
       else

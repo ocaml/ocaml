@@ -355,6 +355,7 @@ and signature_item_desc =
   | Tsig_modsubst of module_substitution
   | Tsig_recmodule of module_declaration list
   | Tsig_modtype of module_type_declaration
+  | Tsig_modtypesubst of module_type_declaration
   | Tsig_open of open_description
   | Tsig_include of include_description
   | Tsig_class of class_description list
@@ -419,8 +420,11 @@ and include_declaration = module_expr include_infos
 and with_constraint =
     Twith_type of type_declaration
   | Twith_module of Path.t * Longident.t loc
+  | Twith_modtype of module_type
   | Twith_typesubst of type_declaration
   | Twith_modsubst of Path.t * Longident.t loc
+  | Twith_modtypesubst of module_type
+
 
 and core_type =
 (* mutable because of [Typeclass.declare_method] *)

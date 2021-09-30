@@ -63,6 +63,8 @@ specification:
           ...
         | 'type' type-subst { 'and' type-subst }
         | 'module' module-name ':=' extended-module-path
+        | 'module' 'type' module-name ':=' module-type
+
 ;
 
 type-subst:
@@ -97,3 +99,67 @@ module type S = sig
   type 'a poly_list := [ `Cons of 'a * 'a poly_list | `Nil ]
 end [@@expect error];;
 \end{caml_example}
+
+\subsection{ss:module-type-substitution}{Module type substitutions}
+
+(Introduced in OCaml 4.13)
+
+\begin{syntax}
+mod-constraint:
+          ...
+        | 'module ' 'type' modtype-path  '=' module-type
+        | 'module ' 'type' modtype-path  ':=' module-type
+\end{syntax}
+
+Module type substitution essentially behaves like type substitutions.
+They are useful to refine an abstract module type in a signature into
+a concrete module type,
+
+\begin{caml_example}{toplevel}
+module type ENDO = sig
+  module type T
+  module F: T -> T
+end
+module Endo(X: sig module type T end): ENDO with module type T = X.T =
+struct
+    module type T = X.T
+    module F(X:T) = X
+ end;;
+\end{caml_example}
+
+It is also possible to substitute a concrete module type with an
+equivalent module types.
+
+\begin{caml_example*}{verbatim}
+module type A = sig
+  type x
+  module type R = sig
+    type a = A of x
+    type b
+  end
+end
+module type S = sig
+  type a = A of int
+  type b
+end
+module type B = A with type x = int and module type R = S
+\end{caml_example*}
+However, such substitutions are never necessary.
+
+Destructive module type substitution removes the module type substitution
+from the signature
+\begin{caml_example}{toplevel}
+module type ENDO' = ENDO with module type T := ENDO;;
+\end{caml_example}
+If the right hand side of the substitution is not a path, then the destructive
+substitution is only valid if the left-hand side of the substitution is never
+used as the type of a first-class module in the original module type.
+
+\begin{caml_example}{verbatim}[error]
+module type T = sig module type S val x: (module S) end
+module type Error = T with module type S := sig end
+\end{caml_example}
+
+\section{s:module-alias}{Type-level module aliases}
+\ikwd{module\@\texttt{module}}
+%HEVEA\cutname{modulealias.html}
