@@ -82,6 +82,9 @@ Working version
 - #10228: Better code-generation for inlined comparisons
   (Stephen Dolan, review by Alain Frisch and Xavier Leroy)
 
+- #10244: Optimise Int32.unsigned_to_int
+  (Fabian Hemmer, review by Stephen Dolan and Xavier Leroy)
+
 ### Standard library:
 
 - #9533: Added String.starts_with and String.ends_with.

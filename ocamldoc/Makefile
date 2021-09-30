@@ -18,14 +18,14 @@ ROOTDIR = ..
 include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 
-OCAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc$(EXE)
+OCAMLYACCFLAGS = --strict -v
 
 STDLIBFLAGS = -nostdlib -I $(ROOTDIR)/stdlib
 OCAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
 OCAMLOPT = $(BEST_OCAMLOPT) $(STDLIBFLAGS) -I $(ROOTDIR)/runtime
 OCAMLDEP = $(BEST_OCAMLDEP)
 DEPFLAGS = -slash
-OCAMLLEX = $(BEST_OCAMLLEX)
+OCAMLLEX ?= $(BEST_OCAMLLEX)
 
 # For installation
 ##############
@@ -194,27 +194,20 @@ dot: ocamldoc.dot
 ocamldoc.dot: $(EXECMOFILES)
 	$(OCAMLDOC_RUN) -dot -dot-reduce -o $@ $(INCLUDES) odoc*.ml
 
-# Parsers and lexers dependencies :
-###################################
-odoc_text_parser.ml: odoc_text_parser.mly
-odoc_text_parser.mli: odoc_text_parser.mly
+# Lexers and parsers
 
-odoc_parser.ml:	odoc_parser.mly
-odoc_parser.mli:odoc_parser.mly
+LEXERS = $(addsuffix .mll,\
+  odoc_text_lexer odoc_lexer odoc_ocamlhtml odoc_see_lexer)
 
-odoc_text_lexer.ml: odoc_text_lexer.mll
+PARSERS = $(addsuffix .mly,odoc_parser  odoc_text_parser)
 
-odoc_lexer.ml:odoc_lexer.mll
-
-odoc_ocamlhtml.ml: odoc_ocamlhtml.mll
-
-odoc_see_lexer.ml: odoc_see_lexer.mll
-
+DEPEND_PREREQS = $(LEXERS:.mll=.ml) \
+  $(PARSERS:.mly=.mli) $(PARSERS:.mly=.ml)
 
 # generic rules :
 #################
 
-.SUFFIXES: .mll .mly .ml .mli .cmo .cmi .cmx .cmxs
+.SUFFIXES: .ml .mli .cmo .cmi .cmx .cmxs
 
 .ml.cmo:
 	$(OCAMLC) $(COMPFLAGS) -c $<
@@ -227,15 +220,6 @@ odoc_see_lexer.ml: odoc_see_lexer.mll
 
 .ml.cmxs:
 	$(OCAMLOPT_CMD) -shared -o $@ $(COMPFLAGS) $<
-
-.mll.ml:
-	$(OCAMLLEX) $(OCAMLLEX_FLAGS) $<
-
-.mly.ml:
-	$(OCAMLYACC) --strict -v $<
-
-.mly.mli:
-	$(OCAMLYACC) --strict -v $<
 
 # Installation targets
 ######################
@@ -406,13 +390,7 @@ clean:
         generators/*.cmx[as]
 
 .PHONY: depend
-depend:
-	$(OCAMLYACC) odoc_text_parser.mly
-	$(OCAMLYACC) odoc_parser.mly
-	$(OCAMLLEX) $(OCAMLLEX_FLAGS) odoc_text_lexer.mll
-	$(OCAMLLEX) $(OCAMLLEX_FLAGS) odoc_lexer.mll
-	$(OCAMLLEX) $(OCAMLLEX_FLAGS) odoc_ocamlhtml.mll
-	$(OCAMLLEX) $(OCAMLLEX_FLAGS) odoc_see_lexer.mll
+depend: $(DEPEND_PREREQS)
 	$(OCAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mll *.mly *.ml *.mli > .depend
 	$(OCAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -shared generators/*.ml >> .depend
 
