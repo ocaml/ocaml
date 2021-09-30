@@ -293,23 +293,17 @@ let fullname ?title first second =
 let name = fullname "Jane" "Fisher";;
 \end{caml_example}
 
-As a special case, if the function has a known arity, all the
-arguments are unlabeled, and their number matches the number of
-non-optional parameters, then labels are ignored and non-optional
-parameters are matched in their definition order. Optional arguments
-are defaulted.
-
-\begin{caml_example}{toplevel}
-let f ~a ?b c = 
-  match b with Some n -> a + n + c | None -> a + c
-
-let r = f 2 3;;
-\end{caml_example}
-
 In all cases but exact match of order and labels, without optional
 parameters, the function type should be known at the application
 point.  This can be ensured by adding a type constraint.  Principality
 of the derivation can be checked in the "-principal" mode.
+
+As a special case, OCaml supports "labels-omitted" full applications:
+if the function has a known arity, all the arguments are unlabeled,
+and their number matches the number of non-optional parameters, then
+labels are ignored and non-optional parameters are matched in their
+definition order. Optional arguments are defaulted. This omission of
+labels is discouraged and results in a warning, see \ref{ss:warn6}.
 
 \subsubsection*{sss:expr-function-definition}{Function definition}
 
