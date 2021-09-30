@@ -24,6 +24,7 @@ jobs:
       - name: Changes updated
         run: >-
           tools/ci/actions/check-changes-modified.sh
+          '${{ github.ref }}'
           'pull_request'
           '${{ github.event.pull_request.base.ref }}'
           '${{ github.event.pull_request.base.sha }}'
@@ -36,6 +37,7 @@ jobs:
       - name: configure correctly generated
         run: >-
           tools/ci/actions/check-configure.sh
+          '${{ github.ref }}'
           '${{ github.event_name }}'
           '${{ github.event.pull_request.base.ref }}'
           '${{ github.event.pull_request.base.sha }}'
@@ -50,6 +52,7 @@ jobs:
       - name: check-typo revered
         run: >-
           tools/ci/actions/check-typo.sh
+          '${{ github.ref }}'
           '${{ github.event_name }}'
           '${{ github.event.pull_request.base.ref }}'
           '${{ github.event.pull_request.base.sha }}'

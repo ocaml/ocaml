@@ -76,6 +76,9 @@ Working version
   to the debugger via a socket.
   (Antonin Décimo, review by Xavier Leroy)
 
+- #10217: Fix a segfault in a corner case of compaction (reported in #9853)
+  (Damien Doligez, report by Sadiq Jaffer, review by Stephen Dolan)
+
 - #10250, #10266: Dynamically allocate alternate signal stacks to
    accommodate changes in Glibc 2.34.
   (Xavier Leroy, reports by Tomasz Kłoczko and R.W.M. Jones, review by Anil
@@ -100,6 +103,9 @@ Working version
 
 - #10244: Optimise Int32.unsigned_to_int
   (Fabian Hemmer, review by Stephen Dolan and Xavier Leroy)
+
+- #10349: Fix destroyed_at_c_call on RISC-V
+  (Mark Shinwell, review by Nicolás Ojeda Bär)
 
 ### Type system:
 
@@ -153,6 +159,11 @@ Working version
 
 - #10306: Map WSA error code to Unix errno for sockopt and getsockname
   functions (Antonin Décimo, review by David Allsopp)
+
+- #10309: Properly return EBADF on error in Unix.descr_of_{in,out}_channel on
+  Win32 and map Windows error correctly in Unix.truncate and Unix.ftruncate on
+  Win32.
+  (David Allsopp, review by Nicolás Ojeda Bär)
 
 ### Tools:
 
@@ -225,10 +236,12 @@ Working version
 - #8877: Call the linker when ocamlopt is invoked with .o and .a files only.
   (Greta Yorsh, review by Leo White)
 
-- #10207: deprecate single uppercase or lowercase letter in warning
+- #10207, #10312: deprecate consecutive letters in warning
   specifications.
   The form `-w aBcD` was equivalent to `-w -a+b-c+d`.
   It is now deprecated to improve the coexistence with warning mnemonics.
+  However, using isolated single letter is not deprecated to allow the form
+  `-w "A-32..50-45"`.
   (Florian Angeletti, review by Damien Doligez and Gabriel Scherer)
 
 - #10232: Warning for unused record fields.
@@ -311,6 +324,10 @@ Working version
   when the systhreads library is loaded.
   (David Allsopp, report by Anton Bachin, review by Xavier Leroy)
 
+- #9936: Make sure that `List.([1;2;3])` is printed `[1;2;3]` in the toplevel
+  by identifying lists by their types.
+  (Florian Angeletti, review by Gabriel Scherer)
+
 - #10005: Try expanding aliases in Ctype.nondep_type_rec
   (Stephen Dolan, review by Gabriel Scherer, Leo White and Xavier Leroy)
 
@@ -334,8 +351,11 @@ Working version
 - #10166: Fix illegal permutation error reporting in module aliases.
   (Matthew Ryan, review by Florian Angeletti)
 
-- #10189: Universal variables leaking through GADT equations
-  (Jacques Garrigue, report by Leo White)
+- #10189, #10190, #10347: Universal variables leaking through GADT equations
+  (Jacques Garrigue, report and review by Leo White)
+
+- #10277: Need to detect ambiguity recursively inside types
+  (Jacques Garrigue, review by Thomas Refis and Leo White)
 
 - #10283, #10284: Enforce right-to-left evaluation order for Lstaticraise
   (Vincent Laviron, report by Github user Ngoguey42, review by Gabriel Scherer)
@@ -347,6 +367,9 @@ Working version
 - #10324, #10325: Prevent generation of Lsend(Cached, _) in bytecode
   (Vincent Laviron, report by Yawar Amin and Nicolás Ojeda Bär, review by
    Jacques Garrigue)
+
+- #10351: Fix DLL loading with binutils 2.36+ on mingw-w64
+  (David Allsopp, review by Nicolás Ojeda Bär)
 
 OCaml 4.12.0 (24 February 2021)
 -------------------------------
