@@ -1,5 +1,6 @@
 TOPDIR=$(abspath ../..)
 SRC=$(TOPDIR)
+include $(TOPDIR)/stdlib/StdlibModules
 include $(TOPDIR)/api_docgen/Makefile.docfiles
 include $(TOPDIR)/Makefile.tools
 MANUAL=$(TOPDIR)/manual/src
@@ -42,6 +43,7 @@ INTER = $(filter $(LOWER_ETEX), $(LOWER_MLIS))
 .PHONY: check-case-collision
 check-case-collision:
 ifeq ($(INTER),)
+	@echo "No collisions detected between OCaml modules and LaTeX sources."
 else
 	@echo "The following names"
 	@echo "  $(INTER)"
