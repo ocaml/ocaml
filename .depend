@@ -5904,6 +5904,7 @@ driver/main_args.cmo : \
     utils/warnings.cmi \
     utils/profile.cmi \
     utils/misc.cmi \
+    parsing/location.cmi \
     utils/config.cmi \
     driver/compenv.cmi \
     utils/clflags.cmi \
@@ -5912,6 +5913,7 @@ driver/main_args.cmx : \
     utils/warnings.cmx \
     utils/profile.cmx \
     utils/misc.cmx \
+    parsing/location.cmx \
     utils/config.cmx \
     driver/compenv.cmx \
     utils/clflags.cmx \

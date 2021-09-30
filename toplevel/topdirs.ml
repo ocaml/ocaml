@@ -318,7 +318,7 @@ let _ = add_directive "remove_printer"
     }
 
 let parse_warnings ppf iserr s =
-  try Warnings.parse_options iserr s
+  try Option.iter Location.(prerr_alert none) @@ Warnings.parse_options iserr s
   with Arg.Bad err -> fprintf ppf "%s.@." err
 
 (* Typing information *)

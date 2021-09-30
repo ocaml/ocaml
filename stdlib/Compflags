@@ -27,10 +27,10 @@ case $1 in
     # never instrument camlinternalOO or camlinternalLazy (PR#7725)
   stdlib__Buffer.cmx) echo ' -inline 3';;
                            # make sure add_char is inlined (PR#5872)
-  stdlib__Buffer.cm[io]) echo ' -w A';;
-  camlinternalFormat.cm[io]) echo ' -w Ae';;
+  stdlib__Buffer.cm[io]) echo ' -w +A';;
+  camlinternalFormat.cm[io]) echo ' -w +A -w -fragile-match';;
   stdlib__Printf.cm[io]|stdlib__Format.cm[io]|stdlib__Scanf.cm[io])
-      echo ' -w Ae';;
+      echo ' -w +A -w -fragile-match';;
   stdlib__Scanf.cmx) echo ' -inline 9';;
   *Labels.cmi) echo ' -pp "$AWK -f ./expand_module_aliases.awk"';;
   *Labels.cm[ox]) echo ' -nolabels -no-alias-deps';;

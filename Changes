@@ -61,6 +61,10 @@ Working version
 - #10136: Minor clean-ups in runtime/io.c and runtime/caml/io.h
   (Xavier Leroy, review by David Allsopp and Guillaume Munch-Maccagnoni)
 
+- #10171: Tweak the naked pointers checker so that processes which trigger the
+  alarm always exit with non-zero status (i.e. exit(0) becomes exit(70)).
+  (David Allsopp, review by Xavier Leroy)
+
 - #10188, #10213: Switch the default allocation policy to best-fit and adjust
   the default overhead parameter accordingly.
   (Damien Doligez, review by Josh Berdine and Xavier Leroy)
@@ -97,6 +101,12 @@ Working version
 
 ### Standard library:
 
+- #9448: Add String.{empty,cat} as dual of Bytes.{empty,cat},
+  String.{of,to}_bytes as aliases of Bytes.{to,of}_string,
+  Bytes.split_on_char as dual of String.split_on_char, and binary decoding
+  functions in String to match those in Bytes.
+  (David Allsopp, review by Damien Doligez, Gabriel Scherer and others)
+
 - #9533: Added String.starts_with and String.ends_with.
   (Bernhard Schommer, review by Daniel Bünzli, Gabriel Scherer and
   Alain Frisch)
@@ -124,6 +134,9 @@ Working version
 
 - #10185: Consider that IPv6 is always enabled on Windows.
   (Antonin Décimo, review by David Allsopp and Xavier Leroy)
+
+- #10306: Map WSA error code to Unix errno for sockopt and getsockname
+  functions (Antonin Décimo, review by David Allsopp)
 
 ### Tools:
 
@@ -173,6 +186,12 @@ Working version
 
 - #8877: Call the linker when ocamlopt is invoked with .o and .a files only.
   (Greta Yorsh, review by Leo White)
+
+- #10207: deprecate single uppercase or lowercase letter in warning
+  specifications.
+  The form `-w aBcD` was equivalent to `-w -a+b-c+d`.
+  It is now deprecated to improve the coexistence with warning mnemonics.
+  (Florian Angeletti, review by Damien Doligez and Gabriel Scherer)
 
 ### Internal/compiler-libs changes:
 
@@ -252,6 +271,10 @@ Working version
   (Xavier Leroy, report by Github user quakerquickoats, review by
    Jeremie Dimino)
 
+- #10294, #10295: fix an assert-failure in pattern-matching compilation
+  (Gabriel Scherer, review by Thomas Refis and Luc Maranget,
+   report by Nicolás Ojeda Bär)
+
 - #10147, #10148: Fix building runtime with GCC on macOS.
   (David Allsopp, report by John Skaller)
 
@@ -261,8 +284,15 @@ Working version
 - #10189: Universal variables leaking through GADT equations
   (Jacques Garrigue, report by Leo White)
 
-OCaml 4.12.0
-------------
+- #10283, #10284: Enforce right-to-left evaluation order for Lstaticraise
+  (Vincent Laviron, report by Github user Ngoguey42, review by Gabriel Scherer)
+
+- #10298, #10305: Incorrect propagation of type equalities in functor
+  application
+  (Jacques Garrigue, report and review by Didier Remy)
+
+OCaml 4.12.0 (24 February 2021)
+-------------------------------
 
 ### Supported platforms (highlights):
 
@@ -499,7 +529,7 @@ OCaml 4.12.0
   (David Allsopp, review by Guillaume Munch-Maccagnoni and
   Jacques-Henri Jourdan)
 
-- #9508: Remove support for FreeBSD prior to 4.0R, that required explicit
+- #9506: Remove support for FreeBSD prior to 4.0R, that required explicit
   floating-point initialization to behave like IEEE standard
   (Hannes Mehnert, review by David Allsopp)
 

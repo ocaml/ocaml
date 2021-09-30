@@ -1,6 +1,6 @@
 (* TEST
 
-flags = "-w A"
+flags = "-w +A"
 
 * setup-ocamlopt.byte-build-env
 ** ocamlopt.byte

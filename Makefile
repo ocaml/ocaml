@@ -44,7 +44,7 @@ INCLUDES=-I utils -I parsing -I typing -I bytecomp -I file_formats \
         -I driver -I toplevel -I runtime
 
 COMPFLAGS=-strict-sequence -principal -absname -w +a-4-9-40-41-42-44-45-48-66 \
-	  -warn-error A \
+	  -warn-error +a \
           -bin-annot -safe-string -strict-formats $(INCLUDES)
 LINKFLAGS=
 
@@ -145,6 +145,7 @@ coldstart:
 	cp runtime/ocamlrun$(EXE) boot/ocamlrun$(EXE)
 	$(MAKE) -C stdlib $(BOOT_FLEXLINK_CMD) \
 	  CAMLC='$$(BOOT_OCAMLC) -use-prims ../runtime/primitives' all
+	cd boot; rm -f $(LIBFILES)
 	cd stdlib; cp $(LIBFILES) ../boot
 	cd boot; $(LN) ../runtime/libcamlrun.$(A) .
 
