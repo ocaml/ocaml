@@ -1970,6 +1970,9 @@ AS_IF([test x"$libdir" = x'${exec_prefix}/lib'],
 AS_IF([test x"$mandir" = x'${datarootdir}/man'],
   [mandir='${prefix}/man'])
 
+AS_IF([test x"$docdir" = x'${datarootdir}/doc/${PACKAGE_TARNAME}'],
+  [docdir='${prefix}/doc'])
+
 AS_CASE([$host],
   [*-*-mingw32|*-pc-windows],
     [AS_CASE([$WINDOWS_UNICODE_MODE],
