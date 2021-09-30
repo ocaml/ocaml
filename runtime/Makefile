@@ -27,7 +27,7 @@ BYTECODE_C_SOURCES := $(addsuffix .c, \
   lexing callback debugger weak finalise custom dynlink \
   platform fiber shared_heap addrmap \
   afl $(UNIX_OR_WIN32) bigarray main memprof domain sync \
-  skiplist codefrag)
+  skiplist lf_skiplist codefrag)
 
 NATIVE_C_SOURCES := $(addsuffix .c, \
   startup_aux startup_nat main fail_nat roots signals \
@@ -37,7 +37,7 @@ NATIVE_C_SOURCES := $(addsuffix .c, \
   globroots backtrace_nat backtrace dynlink_nat debugger meta \
   platform fiber shared_heap addrmap frame_descriptors \
   dynlink clambda_checks afl bigarray \
-  memprof domain sync skiplist codefrag)
+  memprof domain sync skiplist lf_skiplist codefrag)
 
 GENERATED_HEADERS := caml/opnames.h caml/version.h caml/jumptbl.h build_config.h
 CONFIG_HEADERS := caml/m.h caml/s.h

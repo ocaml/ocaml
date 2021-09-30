@@ -20,6 +20,7 @@
 #include <math.h>
 
 #include "caml/config.h"
+#include "caml/codefrag.h"
 #include "caml/domain.h"
 #include "caml/eventlog.h"
 #include "caml/fail.h"
@@ -1075,6 +1076,10 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
       atomic_store_rel(&num_domains_to_final_update_last, num_domains_in_stw);
 
       atomic_store(&domain_global_roots_started, WORK_UNSTARTED);
+
+      /* Cleanups for various data structures that must be done in a STW by
+        only a single domain */
+      caml_code_fragment_cleanup();
     }
     // should interrupts be processed here or not?
     // depends on whether marking above may need interrupts

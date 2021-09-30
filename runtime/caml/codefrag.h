@@ -36,6 +36,10 @@ struct code_fragment {
   enum digest_status digest_status;
 };
 
+/* Initialise codefrag. This must be done before any of the other
+   operations in codefrag. */
+void caml_init_codefrag();
+
 /* Register a code fragment for addresses [start] (included)
    to [end] (excluded).  This range of addresses is assumed
    disjoint from all currently-registered code fragments.
@@ -74,6 +78,9 @@ extern struct code_fragment *
    the bytes between [code_start] and [code_end].
    Returns NULL if the code fragment was registered with [DIGEST_IGNORE]. */
 extern unsigned char * caml_digest_of_code_fragment(struct code_fragment *);
+
+/* FIXME: Document this */
+extern void caml_code_fragment_cleanup();
 
 #endif
 
