@@ -1417,7 +1417,6 @@ typing/typedecl_separability.cmo : \
     typing/ctype.cmi \
     utils/config.cmi \
     typing/btype.cmi \
-    parsing/asttypes.cmi \
     typing/typedecl_separability.cmi
 typing/typedecl_separability.cmx : \
     typing/types.cmx \
@@ -1427,7 +1426,6 @@ typing/typedecl_separability.cmx : \
     typing/ctype.cmx \
     utils/config.cmx \
     typing/btype.cmx \
-    parsing/asttypes.cmi \
     typing/typedecl_separability.cmi
 typing/typedecl_separability.cmi : \
     typing/types.cmi \

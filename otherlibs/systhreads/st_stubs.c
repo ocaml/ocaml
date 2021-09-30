@@ -199,9 +199,18 @@ static void caml_thread_enter_blocking_section(void)
 
 static void caml_thread_leave_blocking_section(void)
 {
+#ifdef _WIN32
+  /* TlsGetValue calls SetLastError which will mask any error which occurred
+     prior to the caml_thread_leave_blocking_section call. EnterCriticalSection
+     does not do this. */
+  DWORD error = GetLastError();
+#endif
   st_masterlock_acquire(&Thread_main_lock);
   Current_thread = st_tls_get(Thread_key);
   caml_thread_restore_runtime_state();
+#ifdef _WIN32
+  SetLastError(error);
+#endif
 }
 
 /* Create and setup a new thread info block.

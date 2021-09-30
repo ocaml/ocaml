@@ -151,15 +151,11 @@ ocamldep.cmo : \
 ocamldep.cmx : \
     ../driver/makedepend.cmx
 ocamlmklib.cmo : \
-    ocamlmklibconfig.cmo \
     ../utils/misc.cmi \
     ../utils/config.cmi
 ocamlmklib.cmx : \
-    ocamlmklibconfig.cmx \
     ../utils/misc.cmx \
     ../utils/config.cmx
-ocamlmklibconfig.cmo :
-ocamlmklibconfig.cmx :
 ocamlmktop.cmo : \
     ../utils/config.cmi \
     ../utils/ccomp.cmi
