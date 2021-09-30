@@ -6385,6 +6385,15 @@ toplevel/byte/topeval.cmx : \
 toplevel/byte/topeval.cmi : \
     toplevel/topcommon.cmi \
     parsing/parsetree.cmi
+toplevel/byte/toploop.cmi : \
+    utils/warnings.cmi \
+    typing/types.cmi \
+    typing/path.cmi \
+    parsing/parsetree.cmi \
+    typing/outcometree.cmi \
+    parsing/longident.cmi \
+    parsing/location.cmi \
+    typing/env.cmi
 toplevel/byte/topmain.cmo : \
     toplevel/byte/trace.cmi \
     toplevel/byte/toploop.cmi \
