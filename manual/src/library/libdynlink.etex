@@ -23,5 +23,5 @@ to the parts of those libraries that are actually used in the main program),
 programs using the "dynlink" library should be linked with "-linkall".
 
 \begin{linklist}
-\stddocitem{Dynlink}{dynamic loading of bytecode object files}
+\libdocitem{Dynlink}{dynamic loading of bytecode object files}
 \end{linklist}

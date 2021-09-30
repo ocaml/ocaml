@@ -127,10 +127,12 @@ endef # PROGRAM_SYNONYM
 # Lexer generation
 
 BOOT_OCAMLLEX ?= $(CAMLRUN) $(ROOTDIR)/boot/ocamllex
-# The OCAMLLEX command used in the recipe below is defined in the individual
-# makefiles, because its default value is directory-specific.
-# By default, some directories use BOOT_OCAMLLEX while others use the
-# freshly compiled lexer generator.
+
+# Default value for OCAMLLEX
+# In those directories where this needs to be overriden, the overriding
+# should take place *before* Makefile.common is included.
+
+OCAMLLEX ?= $(BEST_OCAMLLEX)
 
 OCAMLLEXFLAGS ?= -q
 

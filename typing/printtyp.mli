@@ -145,6 +145,22 @@ val signature: formatter -> signature -> unit
 val tree_of_modtype: module_type -> out_module_type
 val tree_of_modtype_declaration:
     Ident.t -> modtype_declaration -> out_sig_item
+
+(** Print a list of functor parameters while adjusting the printing environment
+    for each functor argument.
+
+    Currently, we are disabling disambiguation for functor argument name to
+    avoid the need to track the moving association between identifiers and
+    syntactic names in situation like:
+
+    got: (X: sig module type T end) (Y:X.T) (X:sig module type T end) (Z:X.T)
+    expect: (_: sig end) (Y:X.T) (_:sig end) (Z:X.T)
+*)
+val functor_parameters:
+  sep:(Format.formatter -> unit -> unit) ->
+  ('b -> Format.formatter -> unit) ->
+  (Ident.t option * 'b) list -> Format.formatter -> unit
+
 val tree_of_signature: Types.signature -> out_sig_item list
 val tree_of_typexp: bool -> type_expr -> out_type
 val modtype_declaration: Ident.t -> formatter -> modtype_declaration -> unit

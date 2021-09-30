@@ -270,7 +270,6 @@ endif # ifeq "$(TOOLCHAIN)" "msvc"
 # the compiler's build system
 ifeq "$(UNIX_OR_WIN32)" "win32"
   OTOPDIR=$(WINTOPDIR)
-  CTOPDIR=$(WINTOPDIR)
   CYGPATH=cygpath -m
   DIFF=/usr/bin/diff -q --strip-trailing-cr
   FIND=/usr/bin/find
@@ -284,6 +283,9 @@ ifeq "$(UNIX_OR_WIN32)" "win32"
 else # ifeq "$(UNIX_OR_WIN32)" "win32"
   # On Unix, make sure FLEXLINK is defined but empty
   FLEXLINK =
+  SORT=sort
+  CYGPATH=echo
+  SET_LD_PATH=CAML_LD_LIBRARY_PATH="$(LD_PATH)"
 endif # ifeq "$(UNIX_OR_WIN32)" "win32"
 
 # Deprecated variables
