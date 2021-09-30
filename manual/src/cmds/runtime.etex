@@ -109,8 +109,8 @@ The following environment variables are also consulted:
   A parameter specification is an option letter followed by an "="
   sign, a decimal number (or an hexadecimal number prefixed by "0x"),
   and an optional multiplier.  The options are documented below;
-  the last six correspond to the fields of the
-  "control" record documented in
+  the options "a, i, l, m, M, n, o, O, s, v" correspond to the fields
+  of the "control" record documented in
 \ifouthtml
  \ahref{libref/Gc.html}{Module \texttt{Gc}}.
 \else
