@@ -221,6 +221,9 @@ let set_compiler_pass ppf ~name v flag ~filter =
    because they are not understood by some versions of OCaml. *)
 let can_discard = ref []
 
+let parse_warnings error v =
+  Option.iter Location.(prerr_alert none) @@ Warnings.parse_options error v
+
 let read_one_param ppf position name v =
   let set name options s =  setter ppf (fun b -> b) name options s in
   let clear name options s = setter ppf (fun b -> not b) name options s in
@@ -277,11 +280,11 @@ let read_one_param ppf position name v =
   |  "dstartup" -> set "dstartup" [ Clflags.keep_startup_file ] v
 
   (* warn-errors *)
-  | "we" | "warn-error" -> Warnings.parse_options true v
+  | "we" | "warn-error" -> parse_warnings true v
   (* warnings *)
-  |  "w"  ->               Warnings.parse_options false v
+  |  "w"  ->               parse_warnings false v
   (* warn-errors *)
-  | "wwe" ->               Warnings.parse_options false v
+  | "wwe" ->               parse_warnings false v
   (* alerts *)
   | "alert" ->             Warnings.parse_alert_option v
 

@@ -2105,7 +2105,7 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
           in
           Named (id, param, mty), Types.Named (id, mty.mty_type), newenv, true
       in
-      let body = type_module sttn funct_body None newenv sbody in
+      let body = type_module true funct_body None newenv sbody in
       { mod_desc = Tmod_functor(t_arg, body);
         mod_type = Mty_functor(ty_arg, body.mod_type);
         mod_env = env;
@@ -2773,7 +2773,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
       Typecore.reset_delayed_checks ();
       Env.reset_required_globals ();
       if !Clflags.print_types then (* #7656 *)
-        Warnings.parse_options false "-32-34-37-38-60";
+        ignore @@ Warnings.parse_options false "-32-34-37-38-60";
       let (str, sg, names, finalenv) =
         type_structure initial_env ast in
       let simple_sg = Signature_names.simplify finalenv names sg in

@@ -41,8 +41,11 @@ let make n c =
   B.make n c |> bts
 let init n f =
   B.init n f |> bts
+let empty = ""
 let copy s =
   B.copy (bos s) |> bts
+let of_bytes = B.to_string
+let to_bytes = B.of_string
 let sub s ofs len =
   B.sub (bos s) ofs len |> bts
 let fill =
@@ -72,6 +75,8 @@ let concat sep = function
           unsafe_blits
             (B.create (sum_lengths 0 seplen l))
             0 sep seplen l
+
+let cat = ( ^ )
 
 (* duplicated in bytes.ml *)
 let iter f s =
@@ -253,3 +258,21 @@ let to_seq s = bos s |> B.to_seq
 let to_seqi s = bos s |> B.to_seqi
 
 let of_seq g = B.of_seq g |> bts
+
+(** {6 Binary encoding/decoding of integers} *)
+
+external get_uint8 : string -> int -> int = "%string_safe_get"
+external get_uint16_ne : string -> int -> int = "%caml_string_get16"
+external get_int32_ne : string -> int -> int32 = "%caml_string_get32"
+external get_int64_ne : string -> int -> int64 = "%caml_string_get64"
+
+let get_int8 s i = B.get_int8 (bos s) i
+let get_uint16_le s i = B.get_uint16_le (bos s) i
+let get_uint16_be s i = B.get_uint16_be (bos s) i
+let get_int16_ne s i = B.get_int16_ne (bos s) i
+let get_int16_le s i = B.get_int16_le (bos s) i
+let get_int16_be s i = B.get_int16_be (bos s) i
+let get_int32_le s i = B.get_int32_le (bos s) i
+let get_int32_be s i = B.get_int32_be (bos s) i
+let get_int64_le s i = B.get_int64_le (bos s) i
+let get_int64_be s i = B.get_int64_be (bos s) i
