@@ -127,6 +127,25 @@ CAMLextern int win_wide_char_to_multi_byte(const wchar_t* s,
                                        char *out,
                                        int outlen);
 
+CAMLextern int caml_win32_isatty(int fd);
+
+CAMLextern void caml_expand_command_line (int *, wchar_t ***);
+
+#endif /* _WIN32 */
+
+/* Returns the current value of a counter that increments once per nanosecond.
+   On systems that support it, this uses a monotonic timesource which ignores
+   changes in the system time (so that this counter increases by 1000000 each
+   millisecond, even if the system clock was set back by an hour during that
+   millisecond). This makes it useful for benchmarking and timeouts, but not
+   for telling the time. The units are always nanoseconds, but the achieved
+   resolution may be less. The starting point is unspecified. */
+extern int64_t caml_time_counter(void);
+
+#endif /* CAML_INTERNALS */
+
+#ifdef _WIN32
+
 /* [caml_stat_strdup_to_utf16(s)] returns a NULL-terminated copy of [s],
    re-encoded in UTF-16.  The encoding of [s] is assumed to be UTF-8 if
    [caml_windows_unicode_runtime_enabled] is non-zero **and** [s] is valid
@@ -152,21 +171,6 @@ CAMLextern char* caml_stat_strdup_of_utf16(const wchar_t *s);
 */
 CAMLextern value caml_copy_string_of_utf16(const wchar_t *s);
 
-CAMLextern int caml_win32_isatty(int fd);
-
-CAMLextern void caml_expand_command_line (int *, wchar_t ***);
-
 #endif /* _WIN32 */
-
-/* Returns the current value of a counter that increments once per nanosecond.
-   On systems that support it, this uses a monotonic timesource which ignores
-   changes in the system time (so that this counter increases by 1000000 each
-   millisecond, even if the system clock was set back by an hour during that
-   millisecond). This makes it useful for benchmarking and timeouts, but not
-   for telling the time. The units are always nanoseconds, but the achieved
-   resolution may be less. The starting point is unspecified. */
-extern int64_t caml_time_counter(void);
-
-#endif /* CAML_INTERNALS */
 
 #endif /* CAML_OSDEPS_H */

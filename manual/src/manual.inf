@@ -6,12 +6,14 @@
 \newenvironment{camlunder}{\@style{U}}{}
 \newcommand{\?}{\black\#\blue }
 
+\newcommand{\ocamltag}[2]{\begin{ocaml#1}#2\end{ocaml#1}}
 \newcommand{\ocamlkeyword}{\bfseries}
 \newcommand{\ocamlhighlight}{\bfseries\underline}
 \newcommand{\ocamlerror}{\bfseries}
 \newcommand{\ocamlwarning}{\bfseries}
 \newcommand{\ocamlcomment}{\normalfont\small}
 \newcommand{\ocamlstring}{\bfseries}
+\newenvironment{ocamllongtable}[2][]{\begin{tabular}{#2}}{\end{tabular}}
 
 \newenvironment{caml}{\begin{alltt}}{\\\end{alltt}}
 \newenvironment{camlexample}[1]{}{}
@@ -154,6 +156,11 @@
 % Linking to modules
 \newenvironment{linklist}{\begingroup\ocamldocinputstart}{\endgroup}
 
-\newcommand{\docitem}[3]{\input{#2.tex}}
-\newcommand{\stddocitem}[2]{\input{#1.tex}}
 \newcommand{\compilerdocitem}[2]{\input{#1.tex}}
+\newcommand{\libdocitem}[2]{\input{#1.tex}}
+\ifocamldoc
+\newcommand{\stddocitem}[2]{\libdocitem{#1}{#2}}
+\else
+\newcommand{\stddocitem}[2]{\libdocitem{Stdlib.#1}{#2}}
+\fi
+\newenvironment{maintitle}{\begin{center}}{\end{center}}

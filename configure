@@ -777,6 +777,8 @@ AS
 endianness
 ASPP
 ocamltest
+documentation_tool_cmd
+documentation_tool
 ocamldoc
 with_camltex
 with_debugger
@@ -887,6 +889,7 @@ enable_str_lib
 enable_unix_lib
 enable_bigarray_lib
 enable_ocamldoc
+with_odoc
 enable_ocamltest
 enable_frame_pointers
 enable_naked_pointers
@@ -1594,6 +1597,7 @@ Optional Features:
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-odoc             build documentation with odoc
   --with-target-bindir    location of binary programs on target system
   --with-afl              use the AFL fuzzer
   --with-pic[=PKGS]       try to use only PIC/non-PIC objects [default=use
@@ -1604,6 +1608,7 @@ Optional Packages:
   --with-gnu-ld           assume the C compiler uses GNU ld [default=no]
   --with-sysroot[=DIR]    Search for dependent libraries within DIR (or the
                           compiler's sysroot if not specified).
+  --with-odoc
 
 Some influential environment variables:
   AS          which assembler to use
@@ -2928,6 +2933,8 @@ VERSION=4.13.0+domains+dev
 
 
 
+
+
 ## Generated files
 
 ac_config_files="$ac_config_files Makefile.build_config"
@@ -3159,6 +3166,14 @@ if test "${enable_ocamldoc+set}" = set; then :
 else
   ocamldoc=auto
 fi
+
+
+
+# Check whether --with-odoc was given.
+if test "${with_odoc+set}" = set; then :
+  withval=$with_odoc;
+fi
+
 
 
 # Check whether --enable-ocamltest was given.
@@ -17062,6 +17077,29 @@ if test x"$enable_ocamldoc" = "xno"; then :
 else
   ocamldoc=ocamldoc
 fi
+
+documentation_tool_cmd=''
+
+# Check whether --with-odoc was given.
+if test "${with_odoc+set}" = set; then :
+  withval=$with_odoc; case $withval in #(
+  yes) :
+    documentation_tool='odoc' ;; #(
+  no) :
+    documentation_tool='ocamldoc' ;; #(
+  *) :
+    documentation_tool_cmd="$withval"
+    documentation_tool='odoc' ;;
+esac
+else
+  documentation_tool='ocamldoc'
+fi
+
+if test "x$documentation_tool_cmd" = 'x'
+ documentation_tool_cmd="$documentation_tool"; then :
+
+fi
+
 
 ## always enable ocamltest with multicore
 case $enable_ocamltest,4.13.0+domains+dev in #(

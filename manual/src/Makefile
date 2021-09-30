@@ -1,4 +1,5 @@
 SRC = $(abspath ../..)
+-include $(SRC)/Makefile.config
 
 export LD_LIBRARY_PATH   ?= "$(SRC)/otherlibs/unix/:$(SRC)/otherlibs/str/"
 export DYLD_LIBRARY_PATH ?= "$(SRC)/otherlibs/unix/:$(SRC)/otherlibs/str/"
@@ -6,7 +7,7 @@ SET_LD_PATH = CAML_LD_LIBRARY_PATH=$(LD_LIBRARY_PATH)
 
 TEXQUOTE = $(SRC)/runtime/ocamlrun ../tools/texquote2
 
-FILES = allfiles.tex biblio.tex foreword.tex version.tex warnings-help.etex
+FILES = allfiles.tex biblio.tex foreword.tex version.tex warnings-help.etex ifocamldoc.tex
 
 TEXINPUTS = ".:..:../refman:../refman/extensions:../library:../cmds:../tutorials:../../styles:"
 RELEASE = $$HOME/release/$${RELEASENAME}
@@ -18,19 +19,29 @@ INFO_FLAGS = -fix -exec xxdate.exe -info -w 79 -s
 HTML_FLAGS = -fix -exec xxdate.exe -O
 TEXT_FLAGS = -fix -exec xxdate.exe -text -w 79 -s
 
-# Copy the documentation files from SRC/doc
+# Copy the documentation files from SRC/api_docgen
+APIDOC=$(SRC)/api_docgen
 .PHONY: html_files
 .PHONY: latex_files
+ifeq ($(DOCUMENTATION_TOOL),odoc)
 latex_files:
-	$(MAKE) -C $(SRC)/api_docgen latex
-	cp $(SRC)/api_docgen/latex/*.tex library
+	make -C $(APIDOC) latex
+	cp $(APIDOC)/build/latex/*/*.tex library
 html_files:
-	$(MAKE) -C $(SRC)/api_docgen html
+	make -C $(APIDOC) html
+	cp -r $(APIDOC)/build/html/*  htmlman
+else
+latex_files:
+	$(MAKE) -C $(APIDOC) latex
+	cp $(APIDOC)/build/latex/*.tex library
+html_files:
+	$(MAKE) -C $(APIDOC) html
 	mkdir -p htmlman/libref
-	cp -r $(SRC)/api_docgen/html/libref $(SRC)/api_docgen/html/compilerlibref htmlman
+	cp -r $(APIDOC)/build/html/libref htmlman
+	cp -r $(APIDOC)/build/html/compilerlibref htmlman
 	cp style.css htmlman/libref
 	cp style.css htmlman/compilerlibref
-
+endif
 
 manual: files latex_files
 	cd texstuff \
@@ -124,7 +135,7 @@ warnings-help.etex: $(SRC)/utils/warnings.ml $(SRC)/ocamlc
 	 echo "% when a new warning is documented.";\
 	 echo "%";\
 	 $(SET_LD_PATH) $(SRC)/boot/ocamlrun $(SRC)/ocamlc -warn-help \
-	 | sed -e 's/^ *\([0-9][0-9]*\) *\[\([a-z][a-z-]*\)\]\(.*\)/\\item[\1 "\2"] \3/' \
+	 | LC_ALL=C sed -e 's/^ *\([0-9][0-9]*\) *\[\([a-z][a-z-]*\)\]\(.*\)/\\item[\1 "\2"] \3/' \
                -e 's/^ *\([0-9A-Z][0-9]*\) *\([^]].*\)/\\item[\1] \2/'\
 	) >$@
 #	sed --inplace is not portable, emulate
@@ -135,6 +146,9 @@ warnings-help.etex: $(SRC)/utils/warnings.ml $(SRC)/ocamlc
 	  mv $@.tmp $@;\
 	done
 
+ifocamldoc.tex: $(SRC)/Makefile.config
+	$(MAKE) -C $(APIDOC) build/latex/ifocamldoc.tex
+	cp $(APIDOC)/build/latex/ifocamldoc.tex $@
 
 .PHONY: clean
 clean:

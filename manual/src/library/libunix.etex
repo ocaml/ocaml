@@ -10,8 +10,8 @@ details on the behavior of these functions.
 
 \ifouthtml
 \begin{linklist}
-\stddocitem{Unix}{Unix system calls}
-\stddocitem{UnixLabels}{Labeled Unix system calls}
+\libdocitem{Unix}{Unix system calls}
+\libdocitem{UnixLabels}{Labeled Unix system calls}
 \end{linklist}
 \fi
 
@@ -39,7 +39,7 @@ more information on the functions that are not supported under Windows.
 \end{windows}
 
 \begin{linklist}
-\stddocitem{Unix}{Unix system calls}
+\libdocitem{Unix}{Unix system calls}
 \end{linklist}
 
 \section{UnixLabels}{Module \texttt{UnixLabels}: labelized version of the interface}

@@ -21,6 +21,8 @@ open Parsetree
 open Types
 open Format
 
+let () = Includemod_errorprinter.register ()
+
 module String = Misc.Stdlib.String
 
 module Sig_component_kind = struct
@@ -75,14 +77,14 @@ type hiding_error =
 
 type error =
     Cannot_apply of module_type
-  | Not_included of Includemod.error list
+  | Not_included of Includemod.explanation
   | Cannot_eliminate_dependency of module_type
   | Signature_expected
   | Structure_expected of module_type
   | With_no_component of Longident.t
-  | With_mismatch of Longident.t * Includemod.error list
+  | With_mismatch of Longident.t * Includemod.explanation
   | With_makes_applicative_functor_ill_typed of
-      Longident.t * Path.t * Includemod.error list
+      Longident.t * Path.t * Includemod.explanation
   | With_changes_module_alias of Longident.t * Ident.t * Path.t
   | With_cannot_remove_constrained_type
   | Repeated_name of Sig_component_kind.t * string
@@ -365,10 +367,11 @@ let check_usage_of_path_of_substituted_item paths ~loc ~lid env super =
                paths
           then
             let env = Lazy.force !env in
-            try retype_applicative_functor_type ~loc env funct arg
-            with Includemod.Error explanation ->
-              raise(Error(loc, env,
-                          With_makes_applicative_functor_ill_typed
+            match retype_applicative_functor_type ~loc env funct arg with
+            | None -> ()
+            | Some explanation ->
+                raise(Error(loc, env,
+                            With_makes_applicative_functor_ill_typed
                             (lid.txt, referenced_path, explanation)))
         )
       );
@@ -586,7 +589,7 @@ let merge_constraint initial_env loc sg lid constr =
           | None -> ()
           | Some previous_mty ->
               Includemod.check_modtype_equiv ~loc sig_env
-                previous_mty mty.mty_type
+                id previous_mty mty.mty_type
         in
         if not destructive_substitution then
           let mtd': modtype_declaration =
@@ -2028,6 +2031,24 @@ let wrap_constraint env mark arg mty explicit =
 
 (* Type a module value expression *)
 
+
+(* Summary for F(X) *)
+type application_summary = {
+  loc: Location.t;
+  attributes: attributes;
+  f_loc: Location.t; (* loc for F *)
+  arg_is_syntactic_unit: bool;
+  arg: Typedtree.module_expr;
+  arg_path:Path.t option
+}
+
+let simplify_app_summary app_view =
+  let mty = app_view.arg.mod_type in
+  match app_view.arg_is_syntactic_unit , app_view.arg_path with
+  | true,   _ -> Includemod.Error.Unit, mty
+  | false, Some p -> Includemod.Error.Named p, mty
+  | false, None -> Includemod.Error.Anonymous, mty
+
 let rec type_module ?(alias=false) sttn funct_body anchor env smod =
   Builtin_attributes.warning_scope smod.pmod_attributes
     (fun () -> type_module_aux ~alias sttn funct_body anchor env smod)
@@ -2050,7 +2071,7 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
         else match (Env.find_module path env).md_type with
         | Mty_alias p1 when not alias ->
             let p1 = Env.normalize_module_path (Some smod.pmod_loc) env p1 in
-            let mty = Includemod.expand_module_alias env [] p1 in
+            let mty = Includemod.expand_module_alias env p1 in
             { md with
               mod_desc =
                 Tmod_constraint (md, mty, Tmodtype_implicit,
@@ -2111,82 +2132,8 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
         mod_env = env;
         mod_attributes = smod.pmod_attributes;
         mod_loc = smod.pmod_loc }
-  | Pmod_apply(sfunct, sarg) ->
-      let arg = type_module true funct_body None env sarg in
-      let path = path_of_module arg in
-      let funct =
-        type_module (sttn && path <> None) funct_body None env sfunct in
-      begin match Env.scrape_alias env funct.mod_type with
-      | Mty_functor (Unit, mty_res) ->
-          if sarg.pmod_desc <> Pmod_structure [] then
-            raise (Error (sfunct.pmod_loc, env, Apply_generative));
-          if funct_body && Mtype.contains_type env funct.mod_type then
-            raise (Error (smod.pmod_loc, env, Not_allowed_in_functor_body));
-          { mod_desc = Tmod_apply(funct, arg, Tcoerce_none);
-            mod_type = mty_res;
-            mod_env = env;
-            mod_attributes = smod.pmod_attributes;
-            mod_loc = smod.pmod_loc }
-      | Mty_functor (Named (param, mty_param), mty_res) as mty_functor ->
-          let coercion =
-            try
-              Includemod.modtypes ~loc:sarg.pmod_loc ~mark:Mark_both env
-                arg.mod_type mty_param
-            with Includemod.Error msg ->
-              raise(Error(sarg.pmod_loc, env, Not_included msg)) in
-          let mty_appl =
-            match path with
-            | Some path ->
-                let scope = Ctype.create_scope () in
-                let subst =
-                  match param with
-                  | None -> Subst.identity
-                  | Some p -> Subst.add_module p path Subst.identity
-                in
-                Subst.modtype (Rescope scope) subst mty_res
-            | None ->
-                let env, nondep_mty =
-                  match param with
-                  | None -> env, mty_res
-                  | Some param ->
-                      let env =
-                        Env.add_module ~arg:true param Mp_present arg.mod_type
-                          env
-                      in
-                      check_well_formed_module env smod.pmod_loc
-                        "the signature of this functor application" mty_res;
-                      try env, Mtype.nondep_supertype env [param] mty_res
-                      with Ctype.Nondep_cannot_erase _ ->
-                        raise(Error(smod.pmod_loc, env,
-                                    Cannot_eliminate_dependency mty_functor))
-                in
-                begin match
-                  Includemod.modtypes ~mark:Mark_neither
-                    ~loc:smod.pmod_loc env mty_res nondep_mty
-                with
-                | Tcoerce_none -> ()
-                | _ ->
-                  fatal_error
-                    "unexpected coercion from original module type to \
-                     nondep_supertype one"
-                | exception Includemod.Error _ ->
-                  fatal_error
-                    "nondep_supertype not included in original module type"
-                end;
-                nondep_mty
-          in
-          check_well_formed_module env smod.pmod_loc
-            "the signature of this functor application" mty_appl;
-          { mod_desc = Tmod_apply(funct, arg, coercion);
-            mod_type = mty_appl;
-            mod_env = env;
-            mod_attributes = smod.pmod_attributes;
-            mod_loc = smod.pmod_loc }
-      | Mty_alias path ->
-          raise(Error(sfunct.pmod_loc, env, Cannot_scrape_alias path))
-      | _ ->
-          raise(Error(sfunct.pmod_loc, env, Cannot_apply funct.mod_type))
-      end
+  | Pmod_apply _ ->
+      type_application smod.pmod_loc sttn funct_body env smod
   | Pmod_constraint(sarg, smty) ->
       let arg = type_module ~alias true funct_body anchor env sarg in
       let mty = transl_modtype env smty in
@@ -2197,7 +2144,6 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
         mod_loc = smod.pmod_loc;
         mod_attributes = smod.pmod_attributes;
       }
-
   | Pmod_unpack sexp ->
       if !Clflags.principal then Ctype.begin_def ();
       let exp = Typecore.type_exp env sexp in
@@ -2232,6 +2178,114 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
         mod_loc = smod.pmod_loc }
   | Pmod_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
+
+and type_application loc strengthen funct_body env smod =
+  let rec extract_application funct_body env sargs smod =
+    match smod.pmod_desc with
+    | Pmod_apply(f, sarg) ->
+        let arg = type_module true funct_body None env sarg in
+        let summary =
+          { loc=smod.pmod_loc;
+            attributes=smod.pmod_attributes;
+            f_loc = f.pmod_loc;
+            arg_is_syntactic_unit = sarg.pmod_desc = Pmod_structure [];
+            arg;
+            arg_path = path_of_module arg
+          }
+        in
+        extract_application funct_body env (summary::sargs) f
+    | _ -> smod, sargs
+  in
+  let sfunct, args = extract_application funct_body env [] smod in
+  let funct =
+    let strengthen =
+      strengthen && List.for_all (fun {arg_path;_} -> arg_path <> None) args
+    in
+    type_module strengthen funct_body None env sfunct
+  in
+  List.fold_left (type_one_application ~ctx:(loc, funct, args) funct_body env)
+    funct args
+
+and type_one_application ~ctx:(apply_loc,md_f,args) funct_body env funct
+    app_view =
+  match Env.scrape_alias env funct.mod_type with
+  | Mty_functor (Unit, mty_res) ->
+      if not app_view.arg_is_syntactic_unit then
+        raise (Error (app_view.f_loc, env, Apply_generative));
+      if funct_body && Mtype.contains_type env funct.mod_type then
+        raise (Error (apply_loc, env, Not_allowed_in_functor_body));
+      { mod_desc = Tmod_apply(funct, app_view.arg, Tcoerce_none);
+        mod_type = mty_res;
+        mod_env = env;
+        mod_attributes = app_view.attributes;
+        mod_loc = funct.mod_loc }
+  | Mty_functor (Named (param, mty_param), mty_res) as mty_functor ->
+      let coercion =
+        try
+          Includemod.modtypes
+            ~loc:app_view.arg.mod_loc ~mark:Mark_both env
+            app_view.arg.mod_type mty_param
+        with Includemod.Error _ ->
+          let args = List.map simplify_app_summary args in
+          let mty_f = md_f.mod_type in
+          let lid_app = None in
+          raise(Includemod.Apply_error {loc=apply_loc;env;lid_app;mty_f;args})
+      in
+      let mty_appl =
+        match app_view.arg_path with
+        | Some path ->
+            let scope = Ctype.create_scope () in
+            let subst =
+              match param with
+              | None -> Subst.identity
+              | Some p -> Subst.add_module p path Subst.identity
+            in
+            Subst.modtype (Rescope scope) subst mty_res
+        | None ->
+            let env, nondep_mty =
+              match param with
+              | None -> env, mty_res
+              | Some param ->
+                  let env =
+                    Env.add_module ~arg:true param Mp_present
+                      app_view.arg.mod_type env
+                  in
+                  check_well_formed_module env app_view.loc
+                    "the signature of this functor application" mty_res;
+                  try env, Mtype.nondep_supertype env [param] mty_res
+                  with Ctype.Nondep_cannot_erase _ ->
+                    let error = Cannot_eliminate_dependency mty_functor in
+                    raise (Error(app_view.loc, env, error))
+            in
+            begin match
+              Includemod.modtypes
+                ~loc:app_view.loc ~mark:Mark_neither env mty_res nondep_mty
+            with
+            | Tcoerce_none -> ()
+            | _ ->
+                fatal_error
+                  "unexpected coercion from original module type to \
+                   nondep_supertype one"
+            | exception Includemod.Error _ ->
+                fatal_error
+                  "nondep_supertype not included in original module type"
+            end;
+            nondep_mty
+      in
+      check_well_formed_module env apply_loc
+        "the signature of this functor application" mty_appl;
+      { mod_desc = Tmod_apply(funct, app_view.arg, coercion);
+        mod_type = mty_appl;
+        mod_env = env;
+        mod_attributes = app_view.attributes;
+        mod_loc = app_view.loc }
+  | Mty_alias path ->
+      raise(Error(app_view.f_loc, env, Cannot_scrape_alias path))
+  | _ ->
+      let args = List.map simplify_app_summary args in
+      let mty_f = md_f.mod_type in
+      let lid_app = None in
+      raise(Includemod.Apply_error {loc=apply_loc;env;lid_app;mty_f;args})
 
 and type_open_decl ?used_slot ?toplevel funct_body names env sod =
   Builtin_attributes.warning_scope sod.popen_attributes
@@ -2948,123 +3002,128 @@ let package_units initial_env objfiles cmifile modulename =
     Tcoerce_none
   end
 
+
 (* Error report *)
+
 
 open Printtyp
 
-let report_error ppf = function
+let report_error ~loc _env = function
     Cannot_apply mty ->
-      fprintf ppf
+      Location.errorf ~loc
         "@[This module is not a functor; it has type@ %a@]" modtype mty
   | Not_included errs ->
-      fprintf ppf
-        "@[<v>Signature mismatch:@ %a@]" Includemod.report_error errs
+      let main = Includemod_errorprinter.err_msgs errs in
+      Location.errorf ~loc "@[<v>Signature mismatch:@ %t@]" main
   | Cannot_eliminate_dependency mty ->
-      fprintf ppf
+      Location.errorf ~loc
         "@[This functor has type@ %a@ \
            The parameter cannot be eliminated in the result type.@ \
            Please bind the argument to a module identifier.@]" modtype mty
-  | Signature_expected -> fprintf ppf "This module type is not a signature"
+  | Signature_expected ->
+      Location.errorf ~loc "This module type is not a signature"
   | Structure_expected mty ->
-      fprintf ppf
+      Location.errorf ~loc
         "@[This module is not a structure; it has type@ %a" modtype mty
   | With_no_component lid ->
-      fprintf ppf
+      Location.errorf ~loc
         "@[The signature constrained by `with' has no component named %a@]"
         longident lid
   | With_mismatch(lid, explanation) ->
-      fprintf ppf
+      let main = Includemod_errorprinter.err_msgs explanation in
+      Location.errorf ~loc
         "@[<v>\
            @[In this `with' constraint, the new definition of %a@ \
              does not match its original definition@ \
              in the constrained signature:@]@ \
-           %a@]"
-        longident lid Includemod.report_error explanation
+           %t@]"
+        longident lid main
   | With_makes_applicative_functor_ill_typed(lid, path, explanation) ->
-      fprintf ppf
+      let main = Includemod_errorprinter.err_msgs explanation in
+      Location.errorf ~loc
         "@[<v>\
            @[This `with' constraint on %a makes the applicative functor @ \
              type %s ill-typed in the constrained signature:@]@ \
-           %a@]"
-        longident lid (Path.name path) Includemod.report_error explanation
+           %t@]"
+        longident lid (Path.name path) main
   | With_changes_module_alias(lid, id, path) ->
-      fprintf ppf
+      Location.errorf ~loc
         "@[<v>\
            @[This `with' constraint on %a changes %s, which is aliased @ \
              in the constrained signature (as %s)@].@]"
         longident lid (Path.name path) (Ident.name id)
   | With_cannot_remove_constrained_type ->
-      fprintf ppf
+      Location.errorf ~loc
         "@[<v>Destructive substitutions are not supported for constrained @ \
               types (other than when replacing a type constructor with @ \
               a type constructor with the same arguments).@]"
   | With_cannot_remove_packed_modtype (p,mty) ->
-      fprintf ppf
+      Location.errorf ~loc
         "This `with' constraint@ %s := %a@ makes a packed module ill-formed."
         (Path.name p) Printtyp.modtype mty
   | Repeated_name(kind, name) ->
-      fprintf ppf
+      Location.errorf ~loc
         "@[Multiple definition of the %s name %s.@ \
          Names must be unique in a given structure or signature.@]"
         (Sig_component_kind.to_string kind) name
   | Non_generalizable typ ->
-      fprintf ppf
+      Location.errorf ~loc
         "@[The type of this expression,@ %a,@ \
            contains type variables that cannot be generalized@]" type_scheme typ
   | Non_generalizable_class (id, desc) ->
-      fprintf ppf
+      Location.errorf ~loc
         "@[The type of this class,@ %a,@ \
            contains type variables that cannot be generalized@]"
         (class_declaration id) desc
   | Non_generalizable_module mty ->
-      fprintf ppf
+      Location.errorf ~loc
         "@[The type of this module,@ %a,@ \
            contains type variables that cannot be generalized@]" modtype mty
   | Implementation_is_required intf_name ->
-      fprintf ppf
+      Location.errorf ~loc
         "@[The interface %a@ declares values, not just types.@ \
            An implementation must be provided.@]"
         Location.print_filename intf_name
   | Interface_not_compiled intf_name ->
-      fprintf ppf
+      Location.errorf ~loc
         "@[Could not find the .cmi file for interface@ %a.@]"
         Location.print_filename intf_name
   | Not_allowed_in_functor_body ->
-      fprintf ppf
+      Location.errorf ~loc
         "@[This expression creates fresh types.@ %s@]"
         "It is not allowed inside applicative functors."
   | Not_a_packed_module ty ->
-      fprintf ppf
+      Location.errorf ~loc
         "This expression is not a packed module. It has type@ %a"
         type_expr ty
   | Incomplete_packed_module ty ->
-      fprintf ppf
+      Location.errorf ~loc
         "The type of this packed module contains variables:@ %a"
         type_expr ty
   | Scoping_pack (lid, ty) ->
-      fprintf ppf
-        "The type %a in this module cannot be exported.@ " longident lid;
-      fprintf ppf
-        "Its type contains local dependencies:@ %a" type_expr ty
+      Location.errorf ~loc
+        "The type %a in this module cannot be exported.@ \
+        Its type contains local dependencies:@ %a" longident lid type_expr ty
   | Recursive_module_require_explicit_type ->
-      fprintf ppf "Recursive modules require an explicit module type."
+      Location.errorf ~loc "Recursive modules require an explicit module type."
   | Apply_generative ->
-      fprintf ppf "This is a generative functor. It can only be applied to ()"
+      Location.errorf ~loc
+        "This is a generative functor. It can only be applied to ()"
   | Cannot_scrape_alias p ->
-      fprintf ppf
+      Location.errorf ~loc
         "This is an alias for module %a, which is missing"
         path p
   | Cannot_scrape_package_type p ->
-      fprintf ppf
+      Location.errorf ~loc
         "The type of this packed module refers to %a, which is missing"
         path p
   | Badly_formed_signature (context, err) ->
-      fprintf ppf "@[In %s:@ %a@]" context Typedecl.report_error err
+      Location.errorf ~loc "@[In %s:@ %a@]" context Typedecl.report_error err
   | Cannot_hide_id Illegal_shadowing
       { shadowed_item_kind; shadowed_item_id; shadowed_item_loc;
         shadower_id; user_id; user_kind; user_loc } ->
       let shadowed_item_kind= Sig_component_kind.to_string shadowed_item_kind in
-      fprintf ppf
+      Location.errorf ~loc
         "@[<v>Illegal shadowing of included %s %a by %a@ \
          %a:@;<1 2>%s %a came from this include@ \
          %a:@;<1 2>The %s %s has no valid type if %a is shadowed@]"
@@ -3078,7 +3137,7 @@ let report_error ppf = function
   | Cannot_hide_id Appears_in_signature
       { opened_item_kind; opened_item_id; user_id; user_kind; user_loc } ->
       let opened_item_kind= Sig_component_kind.to_string opened_item_kind in
-      fprintf ppf
+      Location.errorf ~loc
         "@[<v>The %s %a introduced by this open appears in the signature@ \
          %a:@;<1 2>The %s %s has no valid type if %a is hidden@]"
         opened_item_kind Ident.print opened_item_id
@@ -3086,22 +3145,22 @@ let report_error ppf = function
         (Sig_component_kind.to_string user_kind) (Ident.name user_id)
         Ident.print opened_item_id
   | Invalid_type_subst_rhs ->
-      fprintf ppf "Only type synonyms are allowed on the right of :="
+      Location.errorf ~loc "Only type synonyms are allowed on the right of :="
   | Unpackable_local_modtype_subst p ->
-      fprintf ppf
+      Location.errorf ~loc
         "The module type@ %s@ is not a valid type for a packed module:@ \
          it is defined as a local substitution for a non-path module type."
         (Path.name p)
 
-
-let report_error env ppf err =
-  Printtyp.wrap_printing_env ~error:true env (fun () -> report_error ppf err)
+let report_error env ~loc err =
+  Printtyp.wrap_printing_env ~error:true env
+    (fun () -> report_error env ~loc err)
 
 let () =
   Location.register_error_of_exn
     (function
       | Error (loc, env, err) ->
-        Some (Location.error_of_printer ~loc (report_error env) err)
+        Some (report_error ~loc env err)
       | Error_forward err ->
         Some err
       | _ ->

@@ -36,7 +36,6 @@ type symptom =
   | Class_declarations of
       Ident.t * class_declaration * class_declaration *
       Ctype.class_match_failure list
-  | Unbound_modtype_path of Path.t
   | Unbound_module_path of Path.t
   | Invalid_module_alias of Path.t
 
@@ -45,10 +44,90 @@ type pos =
   | Modtype of Ident.t
   | Arg of functor_parameter
   | Body of functor_parameter
-type error = pos list * Env.t * symptom
 
-exception Error of error list
-exception Apply_error of Location.t * Path.t * Path.t * error list
+
+module Error = struct
+
+  type functor_arg_descr =
+    | Anonymous
+    | Named of Path.t
+    | Unit
+
+  type ('a,'b) diff = {got:'a; expected:'a; symptom:'b}
+  type 'a core_diff =('a,unit) diff
+  let diff x y s = {got=x;expected=y; symptom=s}
+  let sdiff x y = {got=x; expected=y; symptom=()}
+
+  type core_sigitem_symptom =
+    | Value_descriptions of value_description core_diff
+    | Type_declarations of (type_declaration, Includecore.type_mismatch) diff
+    | Extension_constructors of
+        (extension_constructor, Includecore.extension_constructor_mismatch) diff
+    | Class_type_declarations of
+        (class_type_declaration, Ctype.class_match_failure list) diff
+    | Class_declarations of
+        (class_declaration, Ctype.class_match_failure list) diff
+
+  type core_module_type_symptom =
+    | Not_an_alias
+    | Not_an_identifier
+    | Incompatible_aliases
+    | Abstract_module_type
+    | Unbound_module_path of Path.t
+
+  type module_type_symptom =
+    | Mt_core of core_module_type_symptom
+    | Signature of signature_symptom
+    | Functor of functor_symptom
+    | Invalid_module_alias of Path.t
+    | After_alias_expansion of module_type_diff
+
+
+  and module_type_diff = (module_type, module_type_symptom) diff
+
+  and functor_symptom =
+    | Params of functor_params_diff
+    | Result of module_type_diff
+
+  and ('arg,'path) functor_param_symptom =
+    | Incompatible_params of 'arg * functor_parameter
+    | Mismatch of module_type_diff
+
+  and arg_functor_param_symptom =
+    (functor_parameter, Ident.t) functor_param_symptom
+
+  and functor_params_diff = (functor_parameter list * module_type) core_diff
+
+  and signature_symptom = {
+    env: Env.t;
+    missings: signature_item list;
+    incompatibles: (Ident.t * sigitem_symptom) list;
+    oks: (int * module_coercion) list;
+  }
+  and sigitem_symptom =
+    | Core of core_sigitem_symptom
+    | Module_type_declaration of
+        (modtype_declaration, module_type_declaration_symptom) diff
+    | Module_type of module_type_diff
+
+  and module_type_declaration_symptom =
+    | Illegal_permutation of Typedtree.module_coercion
+    | Not_greater_than of module_type_diff
+    | Not_less_than of module_type_diff
+    | Incomparable of
+        {less_than:module_type_diff; greater_than: module_type_diff}
+
+
+  type all =
+    | In_Compilation_unit of (string, signature_symptom) diff
+    | In_Signature of signature_symptom
+    | In_Module_type of module_type_diff
+    | In_Module_type_substitution of
+        Ident.t * (Types.module_type,module_type_declaration_symptom) diff
+    | In_Type_declaration of Ident.t * core_sigitem_symptom
+    | In_Expansion of core_module_type_symptom
+
+end
 
 type mark =
   | Mark_both
@@ -72,19 +151,19 @@ let mark_positive = function
 
 (* Inclusion between value descriptions *)
 
-let value_descriptions ~loc env ~mark cxt subst id vd1 vd2 =
+let value_descriptions ~loc env ~mark subst id vd1 vd2 =
   Cmt_format.record_value_dependency vd1 vd2;
   if mark_positive mark then
     Env.mark_value_used vd1.val_uid;
   let vd2 = Subst.value_description subst vd2 in
   try
-    Includecore.value_descriptions ~loc env (Ident.name id) vd1 vd2
+    Ok (Includecore.value_descriptions ~loc env (Ident.name id) vd1 vd2)
   with Includecore.Dont_match ->
-    raise(Error[cxt, env, Value_descriptions(id, vd1, vd2)])
+    Error Error.(Core (Value_descriptions (sdiff vd1 vd2)))
 
 (* Inclusion between type declarations *)
 
-let type_declarations ~loc env ~mark ?old_env:_ cxt subst id decl1 decl2 =
+let type_declarations ~loc env ~mark ?old_env:_ subst id decl1 decl2 =
   let mark = mark_positive mark in
   if mark then
     Env.mark_type_used decl1.type_uid;
@@ -93,72 +172,75 @@ let type_declarations ~loc env ~mark ?old_env:_ cxt subst id decl1 decl2 =
     Includecore.type_declarations ~loc env ~mark
       (Ident.name id) decl1 (Path.Pident id) decl2
   with
-  | None -> ()
+  | None -> Ok Tcoerce_none
   | Some err ->
-      raise(Error[cxt, env, Type_declarations(id, decl1, decl2, err)])
+      Error Error.(Core(Type_declarations (diff decl1 decl2 err)))
 
 (* Inclusion between extension constructors *)
 
-let extension_constructors ~loc env ~mark cxt subst id ext1 ext2 =
+let extension_constructors ~loc env ~mark  subst id ext1 ext2 =
   let mark = mark_positive mark in
   let ext2 = Subst.extension_constructor subst ext2 in
   match Includecore.extension_constructors ~loc env ~mark id ext1 ext2 with
-  | None -> ()
+  | None -> Ok Tcoerce_none
   | Some err ->
-      raise(Error[cxt, env, Extension_constructors(id, ext1, ext2, err)])
+      Error Error.(Core(Extension_constructors(diff ext1 ext2 err)))
 
 (* Inclusion between class declarations *)
 
-let class_type_declarations ~loc ~old_env:_ env cxt subst id decl1 decl2 =
+let class_type_declarations ~loc ~old_env:_ env  subst decl1 decl2 =
   let decl2 = Subst.cltype_declaration subst decl2 in
   match Includeclass.class_type_declarations ~loc env decl1 decl2 with
-    []     -> ()
+    []     -> Ok Tcoerce_none
   | reason ->
-      raise(Error[cxt, env,
-                  Class_type_declarations(id, decl1, decl2, reason)])
+      Error Error.(Core(Class_type_declarations(diff decl1 decl2 reason)))
 
-let class_declarations ~old_env:_ env cxt subst id decl1 decl2 =
+let class_declarations ~old_env:_ env  subst decl1 decl2 =
   let decl2 = Subst.class_declaration subst decl2 in
   match Includeclass.class_declarations env decl1 decl2 with
-    []     -> ()
+    []     -> Ok Tcoerce_none
   | reason ->
-      raise(Error[cxt, env, Class_declarations(id, decl1, decl2, reason)])
+     Error Error.(Core(Class_declarations(diff decl1 decl2 reason)))
 
 (* Expand a module type identifier when possible *)
 
-exception Dont_match
+let expand_modtype_path env path =
+   match Env.find_modtype_expansion path env with
+     | exception Not_found -> None
+     | x -> Some x
 
-let try_expand_modtype_path env path =
-  try
-    Env.find_modtype_expansion path env
-  with Not_found -> raise Dont_match
-
-let expand_module_alias env cxt path =
-  try (Env.find_module path env).md_type
-  with Not_found ->
-    raise(Error[cxt, env, Unbound_module_path path])
+let expand_module_alias env path =
+  match (Env.find_module path env).md_type with
+  | x -> Ok x
+  | exception Not_found -> Error (Error.Unbound_module_path path)
 
 (* Extract name, kind and ident from a signature item *)
 
-type field_desc =
-    Field_value of string
-  | Field_type of string
-  | Field_exception of string
-  | Field_typext of string
-  | Field_module of string
-  | Field_modtype of string
-  | Field_class of string
-  | Field_classtype of string
+type field_kind =
+  | Field_value
+  | Field_type
+  | Field_exception
+  | Field_typext
+  | Field_module
+  | Field_modtype
+  | Field_class
+  | Field_classtype
 
-let kind_of_field_desc = function
-  | Field_value _ -> "value"
-  | Field_type _ -> "type"
-  | Field_exception _ -> "exception"
-  | Field_typext _ -> "extension constructor"
-  | Field_module _ -> "module"
-  | Field_modtype _ -> "module type"
-  | Field_class _ -> "class"
-  | Field_classtype _ -> "class type"
+
+
+type field_desc = { name: string; kind: field_kind }
+
+let kind_of_field_desc fd = match fd.kind with
+  | Field_value -> "value"
+  | Field_type -> "type"
+  | Field_exception -> "exception"
+  | Field_typext -> "extension constructor"
+  | Field_module -> "module"
+  | Field_modtype -> "module type"
+  | Field_class -> "class"
+  | Field_classtype -> "class type"
+
+let field_desc kind id = { kind; name = Ident.name id }
 
 (** Map indexed by both field types and names.
     This avoids name clashes between different sorts of fields
@@ -169,20 +251,20 @@ module FieldMap = Map.Make(struct
   end)
 
 let item_ident_name = function
-    Sig_value(id, d, _) -> (id, d.val_loc, Field_value(Ident.name id))
-  | Sig_type(id, d, _, _) -> (id, d.type_loc, Field_type(Ident.name id))
+    Sig_value(id, d, _) -> (id, d.val_loc, field_desc Field_value id)
+  | Sig_type(id, d, _, _) -> (id, d.type_loc, field_desc Field_type  id )
   | Sig_typext(id, d, _, _) ->
-     let kind =
-       if Path.same d.ext_type_path Predef.path_exn
-       then Field_exception(Ident.name id)
-       else Field_typext(Ident.name id)
-     in
-     (id, d.ext_loc, kind)
-  | Sig_module(id, _, d, _, _) -> (id, d.md_loc, Field_module(Ident.name id))
-  | Sig_modtype(id, d, _) -> (id, d.mtd_loc, Field_modtype(Ident.name id))
-  | Sig_class(id, d, _, _) -> (id, d.cty_loc, Field_class(Ident.name id))
+      let kind =
+        if Path.same d.ext_type_path Predef.path_exn
+        then Field_exception
+        else Field_typext
+      in
+      (id, d.ext_loc, field_desc kind id)
+  | Sig_module(id, _, d, _, _) -> (id, d.md_loc, field_desc Field_module id)
+  | Sig_modtype(id, d, _) -> (id, d.mtd_loc, field_desc Field_modtype id)
+  | Sig_class(id, d, _, _) -> (id, d.cty_loc, field_desc Field_class id)
   | Sig_class_type(id, d, _, _) ->
-      (id, d.clty_loc, Field_classtype(Ident.name id))
+      (id, d.clty_loc, field_desc Field_classtype id)
 
 let is_runtime_component = function
   | Sig_value(_,{val_kind = Val_prim _}, _)
@@ -253,113 +335,174 @@ let simplify_structure_coercion cc id_pos_list =
   then Tcoerce_none
   else Tcoerce_structure (cc, id_pos_list)
 
+let retrieve_functor_params env mty =
+  let rec retrieve_functor_params before env =
+    function
+    | Mty_ident p as res ->
+        begin match expand_modtype_path env p with
+        | Some mty -> retrieve_functor_params before env mty
+        | None -> List.rev before, res
+        end
+    | Mty_alias p as res ->
+        begin match expand_module_alias env p with
+        | Ok mty ->  retrieve_functor_params before env mty
+        | Error _ -> List.rev before, res
+        end
+    | Mty_functor (p, res) -> retrieve_functor_params (p :: before) env res
+    | Mty_signature _ as res -> List.rev before, res
+  in
+  retrieve_functor_params [] env mty
+
 (* Inclusion between module types.
    Return the restriction that transforms a value of the smaller type
    into a value of the bigger type. *)
 
-let rec modtypes ~loc env ~mark cxt subst mty1 mty2 =
-  try
-    try_modtypes ~loc env ~mark cxt subst mty1 mty2
-  with
-    Dont_match ->
-      raise(Error[cxt, env,
-                  Module_types(mty1, Subst.modtype Make_local subst mty2)])
-  | Error reasons as err ->
-      match mty1, mty2 with
-        Mty_alias _, _
-      | _, Mty_alias _ -> raise err
-      | _ ->
-          raise(Error((cxt, env,
-                       Module_types(mty1, Subst.modtype Make_local subst mty2))
-                      :: reasons))
+let rec modtypes ~loc env ~mark subst mty1 mty2 =
+  match try_modtypes ~loc env ~mark subst mty1 mty2 with
+  | Ok _ as ok -> ok
+  | Error reason ->
+    let mty2 = Subst.modtype Make_local subst mty2 in
+    Error Error.(diff mty1 mty2 reason)
 
-and try_modtypes ~loc env ~mark cxt subst mty1 mty2 =
+and try_modtypes ~loc env ~mark subst mty1 mty2 =
   match mty1, mty2 with
   | (Mty_alias p1, Mty_alias p2) ->
       if Env.is_functor_arg p2 env then
-        raise (Error[cxt, env, Invalid_module_alias p2]);
-      if not (equal_module_paths env p1 subst p2) then
-        raise Dont_match;
-      Tcoerce_none
-  | (Mty_alias p1, _) ->
-      let p1 = try
+        Error (Error.Invalid_module_alias p2)
+      else if not (equal_module_paths env p1 subst p2) then
+          Error Error.(Mt_core Incompatible_aliases)
+      else Ok Tcoerce_none
+  | (Mty_alias p1, _) -> begin
+      match
         Env.normalize_module_path (Some Location.none) env p1
-      with Env.Error (Env.Missing_module (_, _, path)) ->
-        raise (Error[cxt, env, Unbound_module_path path])
-      in
-      let mty1 = expand_module_alias env cxt p1 in
-      strengthened_modtypes ~loc ~aliasable:true env ~mark cxt
-        subst mty1 p1 mty2
+      with
+      | exception Env.Error (Env.Missing_module (_, _, path)) ->
+          Error Error.(Mt_core(Unbound_module_path path))
+      | p1 ->
+          begin match expand_module_alias env  p1 with
+          | Error e -> Error (Error.Mt_core e)
+          | Ok mty1 ->
+              match strengthened_modtypes ~loc ~aliasable:true env ~mark
+                      subst mty1 p1 mty2
+              with
+              | Ok _ as x -> x
+              | Error reason -> Error (Error.After_alias_expansion reason)
+          end
+    end
   | (Mty_ident p1, Mty_ident p2) ->
       let p1 = Env.normalize_modtype_path env p1 in
       let p2 = Env.normalize_modtype_path env (Subst.modtype_path subst p2) in
-      if Path.same p1 p2 then Tcoerce_none
+      if Path.same p1 p2 then Ok Tcoerce_none
       else
-        try_modtypes ~loc env ~mark cxt subst
-          (try_expand_modtype_path env p1)
-          (try_expand_modtype_path env p2)
+        begin match expand_modtype_path env p1, expand_modtype_path env p2 with
+        | Some mty1, Some mty2 ->
+            try_modtypes ~loc env ~mark subst mty1 mty2
+        | None, _  | _, None -> Error (Error.Mt_core Abstract_module_type)
+        end
   | (Mty_ident p1, _) ->
       let p1 = Env.normalize_modtype_path env p1 in
-      try_modtypes ~loc env ~mark cxt subst
-        (try_expand_modtype_path env p1) mty2
+      begin match expand_modtype_path env p1 with
+      | Some p1 ->
+          try_modtypes ~loc env ~mark subst p1 mty2
+      | None -> Error (Error.Mt_core Abstract_module_type)
+      end
   | (_, Mty_ident p2) ->
       let p2 = Env.normalize_modtype_path env (Subst.modtype_path subst p2) in
-      try_modtypes ~loc env ~mark cxt subst mty1
-        (try_expand_modtype_path env p2)
+      begin match expand_modtype_path env p2 with
+      | Some p2 -> try_modtypes ~loc env ~mark subst mty1 p2
+      | None ->
+          begin match mty1 with
+          | Mty_functor _ ->
+              let params1 = retrieve_functor_params env mty1 in
+              let d = Error.sdiff params1 ([],mty2) in
+              Error Error.(Functor (Params d))
+          | _ -> Error Error.(Mt_core Not_an_identifier)
+          end
+      end
   | (Mty_signature sig1, Mty_signature sig2) ->
-      signatures ~loc env ~mark cxt subst sig1 sig2
-  | (Mty_functor(Unit, res1), Mty_functor(Unit, res2)) ->
-    begin
-      match modtypes ~loc env ~mark (Body Unit::cxt) subst res1 res2 with
-      | Tcoerce_none -> Tcoerce_none
-      | cc -> Tcoerce_functor (Tcoerce_none, cc)
-    end
-  | (Mty_functor(Named (param1, arg1) as arg, res1),
-     Mty_functor(Named (param2, arg2), res2)) ->
+      begin match signatures ~loc env ~mark subst sig1 sig2 with
+      | Ok _ as ok -> ok
+      | Error e -> Error (Error.Signature e)
+      end
+  | Mty_functor (param1, res1), Mty_functor (param2, res2) ->
+      let cc_arg, env, subst =
+        functor_param ~loc env ~mark:(negate_mark mark) subst param1 param2
+      in
+      let cc_res = modtypes ~loc env ~mark subst res1 res2 in
+      begin match cc_arg, cc_res with
+      | Ok Tcoerce_none, Ok Tcoerce_none -> Ok Tcoerce_none
+      | Ok cc_arg, Ok cc_res -> Ok (Tcoerce_functor(cc_arg, cc_res))
+      | _, Error {Error.symptom = Error.Functor Error.Params res; _} ->
+          let got_params, got_res = res.got in
+          let expected_params, expected_res = res.expected in
+          let d = Error.sdiff
+              (param1::got_params, got_res)
+              (param2::expected_params, expected_res) in
+          Error Error.(Functor (Params d))
+      | Error _, _ ->
+          let params1, res1 = retrieve_functor_params env res1 in
+          let params2, res2 = retrieve_functor_params env res2 in
+          let d = Error.sdiff (param1::params1, res1) (param2::params2, res2) in
+          Error Error.(Functor (Params d))
+      | Ok _, Error res ->
+          Error Error.(Functor (Result res))
+      end
+  | Mty_functor _, _
+  | _, Mty_functor _ ->
+      let params1 = retrieve_functor_params env mty1 in
+      let params2 = retrieve_functor_params env mty2 in
+      let d = Error.sdiff params1 params2 in
+      Error Error.(Functor (Params d))
+  | _, Mty_alias _ ->
+      Error (Error.Mt_core Error.Not_an_alias)
+
+(* Functor parameters *)
+
+and functor_param ~loc env ~mark subst param1 param2 = match param1, param2 with
+  | Unit, Unit ->
+      Ok Tcoerce_none, env, subst
+  | Named (name1, arg1), Named (name2, arg2) ->
       let arg2' = Subst.modtype Keep subst arg2 in
       let cc_arg =
-        modtypes ~loc env ~mark:(negate_mark mark)
-          (Arg arg::cxt) Subst.identity arg2' arg1
+        match modtypes ~loc env ~mark Subst.identity arg2' arg1 with
+        | Ok cc -> Ok cc
+        | Error err -> Error (Error.Mismatch err)
       in
       let env, subst =
-        match param1, param2 with
-        | Some p1, Some p2 ->
-            Env.add_module p1 Mp_present arg2' env,
-            Subst.add_module p2 (Path.Pident p1) subst
-        | None, Some p2 ->
-            Env.add_module p2 Mp_present arg2' env, subst
-        | Some p1, None ->
-            Env.add_module p1 Mp_present arg2' env, subst
+        match name1, name2 with
+        | Some id1, Some id2 ->
+            Env.add_module id1 Mp_present arg2' env,
+            Subst.add_module id2 (Path.Pident id1) subst
+        | None, Some id2 ->
+            Env.add_module id2 Mp_present arg2' env, subst
+        | Some id1, None ->
+            Env.add_module id1 Mp_present arg2' env, subst
         | None, None ->
             env, subst
       in
-      let cc_res = modtypes ~loc env ~mark (Body arg::cxt) subst res1 res2 in
-      begin match (cc_arg, cc_res) with
-          (Tcoerce_none, Tcoerce_none) -> Tcoerce_none
-        | _ -> Tcoerce_functor(cc_arg, cc_res)
-      end
-  | (_, _) ->
-      raise Dont_match
+      cc_arg, env, subst
+  | _, _ ->
+      Error (Error.Incompatible_params (param1, param2)), env, subst
 
-and strengthened_modtypes ~loc ~aliasable env ~mark cxt subst mty1 path1 mty2 =
+and strengthened_modtypes ~loc ~aliasable env ~mark subst mty1 path1 mty2 =
   match mty1, mty2 with
   | Mty_ident p1, Mty_ident p2 when equal_modtype_paths env p1 subst p2 ->
-      Tcoerce_none
+      Ok Tcoerce_none
   | _, _ ->
       let mty1 = Mtype.strengthen ~aliasable env mty1 path1 in
-      modtypes ~loc env ~mark cxt subst mty1 mty2
+      modtypes ~loc env ~mark subst mty1 mty2
 
-and strengthened_module_decl ~loc ~aliasable env ~mark cxt subst md1 path1 md2 =
+and strengthened_module_decl ~loc ~aliasable env ~mark subst md1 path1 md2 =
   match md1.md_type, md2.md_type with
   | Mty_ident p1, Mty_ident p2 when equal_modtype_paths env p1 subst p2 ->
-      Tcoerce_none
+      Ok Tcoerce_none
   | _, _ ->
       let md1 = Mtype.strengthen_decl ~aliasable env md1 path1 in
-      modtypes ~loc env ~mark cxt subst md1.md_type md2.md_type
+      modtypes ~loc env ~mark subst md1.md_type md2.md_type
 
 (* Inclusion between signatures *)
 
-and signatures ~loc env ~mark cxt subst sig1 sig2 =
+and signatures ~loc env ~mark subst sig1 sig2 =
   (* Environment used to check inclusion of components *)
   let new_env =
     Env.add_signature sig1 (Env.in_signature true env) in
@@ -408,27 +551,27 @@ and signatures ~loc env ~mark cxt subst sig1 sig2 =
      and the coercion to be applied to it. *)
   let rec pair_components subst paired unpaired = function
       [] ->
-        begin match unpaired with
-            [] ->
-              let cc =
-                signature_components ~loc env ~mark new_env cxt subst
-                  (List.rev paired)
-              in
-              if len1 = len2 then (* see PR#5098 *)
-                simplify_structure_coercion cc id_pos_list
-              else
-                Tcoerce_structure (cc, id_pos_list)
-          | _  -> raise(Error unpaired)
+        let oks, errors =
+          signature_components ~loc env ~mark new_env subst (List.rev paired) in
+        begin match unpaired, errors, oks with
+            | [], [], cc ->
+                if len1 = len2 then (* see PR#5098 *)
+                  Ok (simplify_structure_coercion cc id_pos_list)
+                else
+                  Ok (Tcoerce_structure (cc, id_pos_list))
+            | missings, incompatibles, cc ->
+                Error { env=new_env; Error.missings; incompatibles; oks=cc }
         end
     | item2 :: rem ->
-        let (id2, loc, name2) = item_ident_name item2 in
+        let (id2, _loc, name2) = item_ident_name item2 in
         let name2, report =
           match item2, name2 with
-            Sig_type (_, {type_manifest=None}, _, _), Field_type s
+            Sig_type (_, {type_manifest=None}, _, _), {name=s; kind=Field_type}
             when Btype.is_row_name s ->
               (* Do not report in case of failure,
                  as the main type will generate an error *)
-              Field_type (String.sub s 0 (String.length s - 4)), false
+              { kind=Field_type; name=String.sub s 0 (String.length s - 4) },
+              false
           | _ -> name2, true
         in
         begin try
@@ -450,8 +593,7 @@ and signatures ~loc env ~mark cxt subst sig1 sig2 =
         with Not_found ->
           let unpaired =
             if report then
-              (cxt, env, Missing_field (id2, loc, kind_of_field_desc name2)) ::
-              unpaired
+              item2 :: unpaired
             else unpaired in
           pair_components subst paired unpaired rem
         end in
@@ -460,53 +602,76 @@ and signatures ~loc env ~mark cxt subst sig1 sig2 =
 
 (* Inclusion between signature components *)
 
-and signature_components ~loc old_env ~mark env cxt subst paired =
-  let comps_rec rem =
-    signature_components ~loc old_env ~mark env cxt subst rem
-  in
+and signature_components ~loc old_env ~mark env subst paired =
   match paired with
-    [] -> []
-  | (Sig_value(id1, valdecl1, _), Sig_value(_id2, valdecl2, _), pos) :: rem ->
-      let cc =
-        value_descriptions ~loc env ~mark cxt subst id1 valdecl1 valdecl2
+  | [] -> [], []
+  | (sigi1, sigi2, pos) :: rem ->
+      let id, item, present_at_runtime =
+        match sigi1, sigi2 with
+        | Sig_value(id1, valdecl1, _) ,Sig_value(_id2, valdecl2, _) ->
+            let item =
+              value_descriptions ~loc env ~mark subst id1 valdecl1 valdecl2
+            in
+            let present_at_runtime = match valdecl2.val_kind with
+              | Val_prim _ -> false
+              | _ -> true
+            in
+            id1, item, present_at_runtime
+        | Sig_type(id1, tydec1, _, _), Sig_type(_id2, tydec2, _, _) ->
+            let item =
+              type_declarations ~loc ~old_env env ~mark subst id1 tydec1 tydec2
+            in
+            id1, item, false
+        | Sig_typext(id1, ext1, _, _), Sig_typext(_id2, ext2, _, _) ->
+            let item =
+              extension_constructors ~loc env ~mark  subst id1 ext1 ext2
+            in
+            id1, item, true
+        | Sig_module(id1, pres1, mty1, _, _), Sig_module(_, pres2, mty2, _, _)
+          -> begin
+              let item =
+                module_declarations ~loc env ~mark subst id1 mty1 mty2
+              in
+              let item =
+                Result.map_error (fun diff -> Error.Module_type diff) item
+              in
+              let present_at_runtime, item =
+                match pres1, pres2, mty1.md_type with
+                | Mp_present, Mp_present, _ -> true, item
+                | _, Mp_absent, _ -> false, item
+                | Mp_absent, Mp_present, Mty_alias p1 ->
+                    true, Result.map (fun i -> Tcoerce_alias (env, p1, i)) item
+                | Mp_absent, Mp_present, _ -> assert false
+              in
+              id1, item, present_at_runtime
+            end
+        | Sig_modtype(id1, info1, _), Sig_modtype(_id2, info2, _) ->
+            let item =
+              modtype_infos ~loc env ~mark  subst id1 info1 info2
+            in
+            id1, item, false
+        | Sig_class(id1, decl1, _, _), Sig_class(_id2, decl2, _, _) ->
+            let item =
+              class_declarations ~old_env env subst decl1 decl2
+            in
+            id1, item, true
+        | Sig_class_type(id1, info1, _, _), Sig_class_type(_id2, info2, _, _) ->
+            let item =
+              class_type_declarations ~loc ~old_env env subst info1 info2
+            in
+            id1, item, false
+        | _ ->
+            assert false
       in
-      begin match valdecl2.val_kind with
-        Val_prim _ -> comps_rec rem
-      | _ -> (pos, cc) :: comps_rec rem
-      end
-  | (Sig_type(id1, tydecl1, _, _), Sig_type(_id2, tydecl2, _, _), _pos) :: rem
-    ->
-      type_declarations ~loc ~old_env env ~mark cxt subst id1 tydecl1 tydecl2;
-      comps_rec rem
-  | (Sig_typext(id1, ext1, _, _), Sig_typext(_id2, ext2, _, _), pos)
-    :: rem ->
-      extension_constructors ~loc env ~mark cxt subst id1 ext1 ext2;
-      (pos, Tcoerce_none) :: comps_rec rem
-  | (Sig_module(id1, pres1, mty1, _, _),
-     Sig_module(_id2, pres2, mty2, _, _), pos) :: rem -> begin
-      let cc = module_declarations ~loc env ~mark cxt subst id1 mty1 mty2 in
-      let rem = comps_rec rem in
-      match pres1, pres2, mty1.md_type with
-      | Mp_present, Mp_present, _ -> (pos, cc) :: rem
-      | _, Mp_absent, _ -> rem
-      | Mp_absent, Mp_present, Mty_alias p1 ->
-          (pos, Tcoerce_alias (env, p1, cc)) :: rem
-      | Mp_absent, Mp_present, _ -> assert false
-    end
-  | (Sig_modtype(id1, info1, _), Sig_modtype(_id2, info2, _), _pos) :: rem ->
-      modtype_infos ~loc env ~mark cxt subst id1 info1 info2;
-      comps_rec rem
-  | (Sig_class(id1, decl1, _, _), Sig_class(_id2, decl2, _, _), pos) :: rem ->
-      class_declarations ~old_env env cxt subst id1 decl1 decl2;
-      (pos, Tcoerce_none) :: comps_rec rem
-  | (Sig_class_type(id1, info1, _, _),
-     Sig_class_type(_id2, info2, _, _), _pos) :: rem ->
-      class_type_declarations ~loc ~old_env env cxt subst id1 info1 info2;
-      comps_rec rem
-  | _ ->
-      assert false
+      let oks, errors =
+        signature_components ~loc old_env ~mark env subst rem
+      in
+      match item with
+      | Ok x when present_at_runtime -> (pos,x) :: oks, errors
+      | Ok _ -> oks, errors
+      | Error y -> oks , (id,y) :: errors
 
-and module_declarations ~loc env ~mark cxt subst id1 md1 md2 =
+and module_declarations ~loc env ~mark  subst id1 md1 md2 =
   Builtin_attributes.check_alerts_inclusion
     ~def:md1.md_loc
     ~use:md2.md_loc
@@ -516,12 +681,12 @@ and module_declarations ~loc env ~mark cxt subst id1 md1 md2 =
   let p1 = Path.Pident id1 in
   if mark_positive mark then
     Env.mark_module_used md1.md_uid;
-  strengthened_modtypes ~loc ~aliasable:true env ~mark (Module id1::cxt) subst
+  strengthened_modtypes ~loc ~aliasable:true env ~mark subst
     md1.md_type p1 md2.md_type
 
 (* Inclusion between module type specifications *)
 
-and modtype_infos ~loc env ~mark cxt subst id info1 info2 =
+and modtype_infos ~loc env ~mark subst id info1 info2 =
   Builtin_attributes.check_alerts_inclusion
     ~def:info1.mtd_loc
     ~use:info2.mtd_loc
@@ -529,28 +694,33 @@ and modtype_infos ~loc env ~mark cxt subst id info1 info2 =
     info1.mtd_attributes info2.mtd_attributes
     (Ident.name id);
   let info2 = Subst.modtype_declaration Keep subst info2 in
-  let cxt' = Modtype id :: cxt in
-  try
+  let r =
     match (info1.mtd_type, info2.mtd_type) with
-      (None, None) -> ()
-    | (Some _, None) -> ()
+      (None, None) -> Ok Tcoerce_none
+    | (Some _, None) -> Ok Tcoerce_none
     | (Some mty1, Some mty2) ->
-        check_modtype_equiv ~loc env ~mark cxt' mty1 mty2
+        check_modtype_equiv ~loc env ~mark mty1 mty2
     | (None, Some mty2) ->
-        check_modtype_equiv ~loc env ~mark cxt' (Mty_ident(Path.Pident id)) mty2
-  with Error reasons ->
-    raise(Error((cxt, env, Modtype_infos(id, info1, info2)) :: reasons))
+        check_modtype_equiv ~loc env ~mark (Mty_ident(Path.Pident id)) mty2 in
+  match r with
+  | Ok _ as ok -> ok
+  | Error e -> Error Error.(Module_type_declaration (diff info1 info2 e))
 
-and check_modtype_equiv ~loc env ~mark cxt mty1 mty2 =
+and check_modtype_equiv ~loc env ~mark mty1 mty2 =
   match
-    (modtypes ~loc env ~mark cxt Subst.identity mty1 mty2,
-     modtypes ~loc env ~mark:(negate_mark mark) cxt Subst.identity mty2 mty1)
+    (modtypes ~loc env ~mark Subst.identity mty1 mty2,
+     modtypes ~loc env ~mark:(negate_mark mark) Subst.identity mty2 mty1)
   with
-    (Tcoerce_none, Tcoerce_none) -> ()
-  | (c1, _c2) ->
+    (Ok Tcoerce_none, Ok Tcoerce_none) -> Ok Tcoerce_none
+  | (Ok c1, Ok _c2) ->
       (* Format.eprintf "@[c1 = %a@ c2 = %a@]@."
         print_coercion _c1 print_coercion _c2; *)
-      raise(Error [cxt, env, Modtype_permutation (mty1, c1)])
+      Error Error.(Illegal_permutation c1)
+  | Ok _, Error e -> Error Error.(Not_greater_than e)
+  | Error e, Ok _ -> Error Error.(Not_less_than e)
+  | Error less_than, Error greater_than ->
+      Error Error.(Incomparable {less_than; greater_than})
+
 
 (* Simplified inclusion check between module types (for Env) *)
 
@@ -562,339 +732,293 @@ let can_alias env path =
   in
   no_apply path && not (Env.is_functor_arg path env)
 
-let check_modtype_inclusion ~loc env mty1 path1 mty2 =
-  let aliasable = can_alias env path1 in
-  ignore
-    (strengthened_modtypes ~loc ~aliasable env ~mark:Mark_both []
-       Subst.identity mty1 path1 mty2)
 
-let check_modtype_equiv ~loc env mty1 mty2 =
-  check_modtype_equiv ~loc env ~mark:Mark_both [] mty1 mty2
+
+type explanation = Env.t * Error.all
+exception Error of explanation
+
+exception Apply_error of {
+    loc : Location.t ;
+    env : Env.t ;
+    lid_app : Longident.t option ;
+    mty_f : module_type ;
+    args : (Error.functor_arg_descr * module_type) list ;
+  }
+
+let check_modtype_inclusion_raw ~loc env mty1 path1 mty2 =
+  let aliasable = can_alias env path1 in
+  strengthened_modtypes ~loc ~aliasable env ~mark:Mark_both
+    Subst.identity mty1 path1 mty2
+
+let check_modtype_inclusion ~loc env mty1 path1 mty2 =
+  match check_modtype_inclusion_raw ~loc env mty1 path1 mty2 with
+  | Ok _ -> None
+  | Error e -> Some (env, Error.In_Module_type e)
+
+let check_functor_application_in_path
+    ~errors ~loc ~lid_whole_app ~f0_path ~args
+    ~arg_path ~arg_mty ~param_mty env =
+  match check_modtype_inclusion_raw ~loc env arg_mty arg_path param_mty with
+  | Ok _ -> ()
+  | Error _errs ->
+      if errors then
+        let prepare_arg (arg_path, arg_mty) =
+          let aliasable = can_alias env arg_path in
+          let smd = Mtype.strengthen ~aliasable env arg_mty arg_path in
+          (Error.Named arg_path, smd)
+        in
+        let mty_f = (Env.find_module f0_path env).md_type in
+        let args = List.map prepare_arg args in
+        let lid_app = Some lid_whole_app in
+        raise (Apply_error {loc; env; lid_app; mty_f; args})
+      else
+        raise Not_found
 
 let () =
-  Env.check_functor_application :=
-    (fun ~errors ~loc env mty1 path1 mty2 path2 ->
-       try
-         check_modtype_inclusion ~loc env mty1 path1 mty2
-       with Error errs ->
-         if errors then
-           raise (Apply_error(loc, path1, path2, errs))
-         else
-           raise Not_found)
+  Env.check_functor_application := check_functor_application_in_path
+
 
 (* Check that an implementation of a compilation unit meets its
    interface. *)
 
 let compunit env ~mark impl_name impl_sig intf_name intf_sig =
-  try
-    signatures ~loc:(Location.in_file impl_name) env ~mark []
-      Subst.identity impl_sig intf_sig
-  with Error reasons ->
-    raise(Error(([], Env.empty,Interface_mismatch(impl_name, intf_name))
-                :: reasons))
+  match
+    signatures ~loc:(Location.in_file impl_name) env ~mark Subst.identity
+      impl_sig intf_sig
+  with Result.Error reasons ->
+    let cdiff =
+      Error.In_Compilation_unit(Error.diff impl_name intf_name reasons) in
+    raise(Error(env, cdiff))
+  | Ok x -> x
+
+(* Functor diffing computation:
+   The diffing computation uses the internal typing function
+ *)
+
+module Functor_inclusion_diff = struct
+  open Diffing
+
+  let param_name = function
+      | Named(x,_) -> x
+      | Unit -> None
+
+  let weight = function
+    | Insert _ -> 10
+    | Delete _ -> 10
+    | Change _ -> 10
+    | Keep (param1, param2, _) -> begin
+        match param_name param1, param_name param2 with
+        | None, None
+          -> 0
+        | Some n1, Some n2
+          when String.equal (Ident.name n1) (Ident.name n2)
+          -> 0
+        | Some _, Some _ -> 1
+        | Some _,  None | None, Some _ -> 1
+      end
+
+  type state = {
+    res: module_type option;
+    env: Env.t;
+    subst: Subst.t;
+  }
+
+  let keep_expansible_param = function
+    | Mty_ident _ | Mty_alias _ as mty -> Some mty
+    | Mty_signature _ | Mty_functor _ -> None
+
+  let lookup_expansion { env ; res ; _ } = match res with
+    | None -> None
+    | Some res ->
+        match retrieve_functor_params env res with
+        | [], _ -> None
+        | params, res ->
+            let more = Array.of_list params  in
+            Some (keep_expansible_param res, more)
+
+  let expand_params state  =
+    match lookup_expansion state with
+    | None -> state, [||]
+    | Some (res, expansion) -> { state with res }, expansion
+
+  let update d st = match d with
+    | Insert (Unit | Named (None,_))
+    | Delete (Unit | Named (None,_))
+    | Keep (Unit,_,_)
+    | Keep (_,Unit,_)
+    | Change (_,(Unit | Named (None,_)), _) ->
+        st, [||]
+    | Insert (Named (Some id, arg))
+    | Delete (Named (Some id, arg))
+    | Change (Unit, Named (Some id, arg), _) ->
+        let arg' = Subst.modtype Keep st.subst arg in
+        let env = Env.add_module id Mp_present arg' st.env in
+        expand_params { st with env }
+    | Keep (Named (name1, _), Named (name2, arg2), _)
+    | Change (Named (name1, _), Named (name2, arg2), _) -> begin
+        let arg' = Subst.modtype Keep st.subst arg2 in
+        match name1, name2 with
+        | Some id1, Some id2 ->
+            let env = Env.add_module id1 Mp_present arg' st.env in
+            let subst = Subst.add_module id2 (Path.Pident id1) st.subst in
+            expand_params { st with env; subst }
+        | None, Some id2 ->
+            let env = Env.add_module id2 Mp_present arg' st.env in
+            { st with env }, [||]
+        | Some id1, None ->
+            let env = Env.add_module id1 Mp_present arg' st.env in
+            expand_params { st with env }
+        | None, None ->
+            st, [||]
+      end
+
+  let diff env (l1,res1) (l2,_) =
+    let update = Diffing.With_left_extensions update in
+    let test st mty1 mty2 =
+      let loc = Location.none in
+      let res, _, _ =
+        functor_param ~loc st.env ~mark:Mark_neither st.subst mty1 mty2
+      in
+      res
+    in
+    let param1 = Array.of_list l1 in
+    let param2 = Array.of_list l2 in
+    let state =
+      { env; subst = Subst.identity; res = keep_expansible_param res1}
+    in
+    Diffing.variadic_diff ~weight ~test ~update state param1 param2
+
+end
+
+module Functor_app_diff = struct
+  module I = Functor_inclusion_diff
+  open Diffing
+
+  let weight = function
+    | Insert _ -> 10
+    | Delete _ -> 10
+    | Change _ -> 10
+    | Keep (param1, param2, _) ->
+        (* We assign a small penalty to named arguments with
+           non-matching names *)
+        begin
+          let desc1 : Error.functor_arg_descr = fst param1 in
+          match desc1, I.param_name param2 with
+          | (Unit | Anonymous) , None
+            -> 0
+          | Named (Path.Pident n1), Some n2
+            when String.equal (Ident.name n1) (Ident.name n2)
+            -> 0
+          | Named _, Some _ -> 1
+          | Named _,  None | (Unit | Anonymous), Some _ -> 1
+        end
+
+  let update (d: (_,Types.functor_parameter,_,_) change) (st:I.state) =
+    let open Error in
+    match d with
+    | Insert _
+    | Delete _
+    | Keep ((Unit,_),_,_)
+    | Keep (_,Unit,_)
+    | Change (_,(Unit | Named (None,_)), _ )
+    | Change ((Unit,_), Named (Some _, _), _) ->
+        st, [||]
+    | Keep ((Named arg,  _mty) , Named (param_name, _param), _)
+    | Change ((Named arg, _mty), Named (param_name, _param), _) ->
+        begin match param_name with
+        | Some param ->
+            let res =
+              Option.map (fun res ->
+                  let scope = Ctype.create_scope () in
+                  let subst = Subst.add_module param arg Subst.identity in
+                  Subst.modtype (Rescope scope) subst res
+                )
+                st.res
+            in
+            let subst = Subst.add_module param arg st.subst in
+            I.expand_params { st with subst; res }
+        | None ->
+            st, [||]
+        end
+    | Keep ((Anonymous, mty) , Named (param_name, _param), _)
+    | Change ((Anonymous, mty), Named (param_name, _param), _) -> begin
+        begin match param_name with
+        | Some param ->
+            let mty' = Subst.modtype Keep st.subst mty in
+            let env =
+              Env.add_module ~arg:true param Mp_present mty' st.env in
+            let res =
+              Option.map (Mtype.nondep_supertype env [param]) st.res in
+            I.expand_params { st with env; res}
+        | None ->
+            st, [||]
+        end
+      end
+
+  let diff env ~f ~args =
+    let params, res = retrieve_functor_params env f in
+    let update = Diffing.With_right_extensions update in
+    let test (state:I.state) (arg,arg_mty) param =
+      let loc = Location.none in
+      let res = match (arg:Error.functor_arg_descr), param with
+        | Unit, Unit -> Ok Tcoerce_none
+        | Unit, Named _ | (Anonymous | Named _), Unit ->
+            Result.Error (Error.Incompatible_params(arg,param))
+        | ( Anonymous | Named _ ) , Named (_, param) ->
+            match
+              modtypes ~loc state.env ~mark:Mark_neither state.subst
+                arg_mty param
+            with
+            | Error mty -> Result.Error (Error.Mismatch mty)
+            | Ok _ as x -> x
+      in
+      res
+    in
+    let args = Array.of_list args in
+    let params = Array.of_list params in
+    let state : I.state =
+      { env; subst = Subst.identity; res = I.keep_expansible_param res }
+    in
+    Diffing.variadic_diff ~weight ~test ~update state args params
+
+end
+
 
 (* Hide the context and substitution parameters to the outside world *)
 
 let modtypes ~loc env ~mark mty1 mty2 =
-  modtypes ~loc env ~mark [] Subst.identity mty1 mty2
+  match modtypes ~loc env ~mark Subst.identity mty1 mty2 with
+  | Ok x -> x
+  | Error reason -> raise (Error (env, Error.(In_Module_type reason)))
 let signatures env ~mark sig1 sig2 =
-  signatures ~loc:Location.none env ~mark [] Subst.identity sig1 sig2
+  match signatures ~loc:Location.none env ~mark Subst.identity sig1 sig2 with
+  | Ok x -> x
+  | Error reason -> raise (Error(env,Error.(In_Signature reason)))
+
 let type_declarations ~loc env ~mark id decl1 decl2 =
-  type_declarations ~loc env ~mark [] Subst.identity id decl1 decl2
-let strengthened_module_decl ~loc ~aliasable env ~mark
-      md1 path1 md2 =
-  strengthened_module_decl ~loc ~aliasable env ~mark [] Subst.identity
-    md1 path1 md2
+  match type_declarations ~loc env ~mark Subst.identity id decl1 decl2 with
+  | Ok _ -> ()
+  | Error (Error.Core reason) ->
+      raise (Error(env,Error.(In_Type_declaration(id,reason))))
+  | Error _ -> assert false
 
-(*
-let modtypes env m1 m2 =
-  let c = modtypes env m1 m2 in
-  Format.eprintf "@[<2>modtypes@ %a@ %a =@ %a@]@."
-    Printtyp.modtype m1 Printtyp.modtype m2
-    print_coercion c;
-  c
-*)
+let strengthened_module_decl ~loc ~aliasable env ~mark md1 path1 md2 =
+  match strengthened_module_decl ~loc ~aliasable env ~mark Subst.identity
+    md1 path1 md2 with
+  | Ok x -> x
+  | Error mdiff ->
+      raise (Error(env,Error.(In_Module_type mdiff)))
 
-(* Error report *)
+let expand_module_alias env path =
+  match expand_module_alias env path with
+  | Ok x -> x
+  | Result.Error _ ->
+      raise (Error(env,In_Expansion(Error.Unbound_module_path path)))
 
-module Illegal_permutation = struct
-  (** Extraction of information in case of illegal permutation
-      in a module type *)
-
-  (** When examining coercions, we only have runtime component indices,
-      we use thus a limited version of {!pos}. *)
-  type coerce_pos =
-    | Item of int
-    | InArg
-    | InBody
-
-  let either f x g y = match f x with
-    | None -> g y
-    | Some _ as v -> v
-
-  (** We extract a lone transposition from a full tree of permutations. *)
-  let rec transposition_under path = function
-    | Tcoerce_structure(c,_) ->
-        either
-          (not_fixpoint path 0) c
-          (first_non_id path 0) c
-    | Tcoerce_functor(arg,res) ->
-        either
-          (transposition_under (InArg::path)) arg
-          (transposition_under (InBody::path)) res
-    | Tcoerce_none -> None
-    | Tcoerce_alias _ | Tcoerce_primitive _ ->
-        (* these coercions are not inversible, and raise an error earlier when
-           checking for module type equivalence *)
-        assert false
-  (* we search the first point which is not invariant at the current level *)
-  and not_fixpoint path pos = function
-    | [] -> None
-    | (n, _) :: q ->
-        if n = pos then
-          not_fixpoint path (pos+1) q
-        else
-          Some(List.rev path, pos, n)
-  (* we search the first item with a non-identity inner coercion *)
-  and first_non_id path pos = function
-    | [] -> None
-    | (_,Tcoerce_none) :: q -> first_non_id path (pos + 1) q
-    | (_,c) :: q ->
-        either
-          (transposition_under (Item pos :: path)) c
-          (first_non_id path (pos + 1)) q
-
-  let transposition c =
-    match transposition_under [] c with
-    | None -> raise Not_found
-    | Some x -> x
-
-  let rec runtime_item k = function
-    | [] -> raise Not_found
-    | item :: q ->
-        if not(is_runtime_component item) then
-          runtime_item k q
-        else if k = 0 then
-          item
-        else
-          runtime_item (k-1) q
-
-  (* Find module type at position [path] and convert the [coerce_pos] path to
-     a [pos] path *)
-  let rec find env ctx path mt = match mt, path with
-    | Mty_ident p, _ ->
-        begin match (Env.find_modtype p env).mtd_type with
-        | None -> raise Not_found
-        | Some mt -> find env ctx path mt
-        end
-    | Mty_alias _, _ -> assert false
-    | Mty_signature s , [] -> List.rev ctx, s
-    | Mty_signature s, Item k :: q ->
-        begin match runtime_item k s with
-        | Sig_module (id, _, md,_,_) -> find env (Module id :: ctx) q md.md_type
-        | _ -> raise Not_found
-        end
-    | Mty_functor(Named (_,mt) as arg,_), InArg :: q ->
-        find env (Arg arg :: ctx) q mt
-    | Mty_functor(arg, mt), InBody :: q ->
-        find env (Body arg :: ctx) q mt
-    | _ -> raise Not_found
-
-  let find env path mt = find env [] path mt
-  let item mt k = item_ident_name (runtime_item k mt)
-
-  let pp_item ppf (id,_,kind) =
-    Format.fprintf ppf "%s %S" (kind_of_field_desc kind) (Ident.name id)
-
-  let pp ctx_printer env ppf (mty,c) =
-    try
-      let p, k, l = transposition c in
-      let ctx, mt = find env p mty in
-      Format.fprintf ppf
-        "@[<hv 2>Illegal permutation of runtime components in a module type.@ \
-         @[For example,@ %a@[the %a@ and the %a are not in the same order@ \
-         in the expected and actual module types.@]@]"
-        ctx_printer ctx pp_item (item mt k) pp_item (item mt l)
-    with Not_found -> (* this should not happen *)
-      Format.fprintf ppf
-        "Illegal permutation of runtime components in a module type."
-
-end
-
-open Format
-
-let show_loc msg ppf loc =
-  let pos = loc.Location.loc_start in
-  if List.mem pos.Lexing.pos_fname [""; "_none_"; "//toplevel//"] then ()
-  else fprintf ppf "@\n@[<2>%a:@ %s@]" Location.print_loc loc msg
-
-let show_locs ppf (loc1, loc2) =
-  show_loc "Expected declaration" ppf loc2;
-  show_loc "Actual declaration" ppf loc1
-
-let path_of_context = function
-    Module id :: rem ->
-      let rec subm path = function
-        | [] -> path
-        | Module id :: rem -> subm (Path.Pdot (path, Ident.name id)) rem
-        | _ -> assert false
-      in subm (Path.Pident id) rem
-  | _ -> assert false
-
-
-let rec context ppf = function
-    Module id :: rem ->
-      fprintf ppf "@[<2>module %a%a@]" Printtyp.ident id args rem
-  | Modtype id :: rem ->
-      fprintf ppf "@[<2>module type %a =@ %a@]"
-        Printtyp.ident id context_mty rem
-  | Body x :: rem ->
-      fprintf ppf "functor (%s) ->@ %a" (argname x) context_mty rem
-  | Arg x :: rem ->
-      fprintf ppf "functor (%s : %a) -> ..." (argname x) context_mty rem
-  | [] ->
-      fprintf ppf "<here>"
-and context_mty ppf = function
-    (Module _ | Modtype _) :: _ as rem ->
-      fprintf ppf "@[<2>sig@ %a@;<1 -2>end@]" context rem
-  | cxt -> context ppf cxt
-and args ppf = function
-    Body x :: rem ->
-      fprintf ppf "(%s)%a" (argname x) args rem
-  | Arg x :: rem ->
-      fprintf ppf "(%s :@ %a) : ..." (argname  x) context_mty rem
-  | cxt ->
-      fprintf ppf " :@ %a" context_mty cxt
-and argname = function
-  | Unit -> ""
-  | Named (None, _) -> "_"
-  | Named (Some id, _) -> Ident.name id
-
-let alt_context ppf cxt =
-  if cxt = [] then () else
-  if List.for_all (function Module _ -> true | _ -> false) cxt then
-    fprintf ppf "in module %a,@ " Printtyp.path (path_of_context cxt)
-  else
-    fprintf ppf "@[<hv 2>at position@ %a,@]@ " context cxt
-
-let context ppf cxt =
-  if cxt = [] then () else
-  if List.for_all (function Module _ -> true | _ -> false) cxt then
-    fprintf ppf "In module %a:@ " Printtyp.path (path_of_context cxt)
-  else
-    fprintf ppf "@[<hv 2>At position@ %a@]@ " context cxt
-
-let include_err env ppf = function
-  | Missing_field (id, loc, kind) ->
-      fprintf ppf "The %s `%a' is required but not provided"
-        kind Printtyp.ident id;
-      show_loc "Expected declaration" ppf loc
-  | Value_descriptions(id, d1, d2) ->
-      fprintf ppf
-        "@[<hv 2>Values do not match:@ %a@;<1 -2>is not included in@ %a@]"
-        !Oprint.out_sig_item (Printtyp.tree_of_value_description id d1)
-        !Oprint.out_sig_item (Printtyp.tree_of_value_description id d2);
-      show_locs ppf (d1.val_loc, d2.val_loc)
-  | Type_declarations(id, d1, d2, err) ->
-      fprintf ppf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]%a%a@]"
-        "Type declarations do not match"
-        !Oprint.out_sig_item
-        (Printtyp.tree_of_type_declaration id d1 Trec_first)
-        "is not included in"
-        !Oprint.out_sig_item
-        (Printtyp.tree_of_type_declaration id d2 Trec_first)
-        (Includecore.report_type_mismatch
-           "the first" "the second" "declaration") err
-        show_locs (d1.type_loc, d2.type_loc)
-  | Extension_constructors(id, x1, x2, err) ->
-      fprintf ppf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]@ %a%a@]"
-        "Extension declarations do not match"
-        !Oprint.out_sig_item
-        (Printtyp.tree_of_extension_constructor id x1 Text_first)
-        "is not included in"
-        !Oprint.out_sig_item
-        (Printtyp.tree_of_extension_constructor id x2 Text_first)
-        (Includecore.report_extension_constructor_mismatch
-           "the first" "the second" "declaration") err
-        show_locs (x1.ext_loc, x2.ext_loc)
-  | Module_types(mty1, mty2)->
-      fprintf ppf
-       "@[<hv 2>Modules do not match:@ \
-        %a@;<1 -2>is not included in@ %a@]"
-      !Oprint.out_module_type (Printtyp.tree_of_modtype mty1)
-      !Oprint.out_module_type (Printtyp.tree_of_modtype mty2)
-  | Modtype_infos(id, d1, d2) ->
-      fprintf ppf
-       "@[<hv 2>Module type declarations do not match:@ \
-        %a@;<1 -2>does not match@ %a@]"
-      !Oprint.out_sig_item (Printtyp.tree_of_modtype_declaration id d1)
-      !Oprint.out_sig_item (Printtyp.tree_of_modtype_declaration id d2)
-  | Modtype_permutation (mty,c) ->
-      Illegal_permutation.pp alt_context env ppf (mty,c)
-  | Interface_mismatch(impl_name, intf_name) ->
-      fprintf ppf "@[The implementation %s@ does not match the interface %s:"
-       impl_name intf_name
-  | Class_type_declarations(id, d1, d2, reason) ->
-      fprintf ppf
-       "@[<hv 2>Class type declarations do not match:@ \
-        %a@;<1 -2>does not match@ %a@]@ %a"
-       !Oprint.out_sig_item
-       (Printtyp.tree_of_cltype_declaration id d1 Trec_first)
-       !Oprint.out_sig_item
-       (Printtyp.tree_of_cltype_declaration id d2 Trec_first)
-      Includeclass.report_error reason
-  | Class_declarations(id, d1, d2, reason) ->
-      fprintf ppf
-       "@[<hv 2>Class declarations do not match:@ \
-        %a@;<1 -2>does not match@ %a@]@ %a"
-      !Oprint.out_sig_item (Printtyp.tree_of_class_declaration id d1 Trec_first)
-      !Oprint.out_sig_item (Printtyp.tree_of_class_declaration id d2 Trec_first)
-      Includeclass.report_error reason
-  | Unbound_modtype_path path ->
-      fprintf ppf "Unbound module type %a" Printtyp.path path
-  | Unbound_module_path path ->
-      fprintf ppf "Unbound module %a" Printtyp.path path
-  | Invalid_module_alias path ->
-      fprintf ppf "Module %a cannot be aliased" Printtyp.path path
-
-let include_err ppf (cxt, env, err) =
-  Printtyp.wrap_printing_env ~error:true env (fun () ->
-    fprintf ppf "@[<v>%a%a@]" context (List.rev cxt) (include_err env) err)
-
-let buffer = ref Bytes.empty
-let is_big obj =
-  let size = !Clflags.error_size in
-  size > 0 &&
-  begin
-    if Bytes.length !buffer < size then buffer := Bytes.create size;
-    try ignore (Marshal.to_buffer !buffer 0 size obj []); false
-    with _ -> true
-  end
-
-let report_error ppf errs =
-  if errs = [] then () else
-  let (errs , err) = split_last errs in
-  let pe = ref true in
-  let include_err' ppf (_,_,obj as err) =
-    if not (is_big obj) then fprintf ppf "%a@ " include_err err
-    else if !pe then (fprintf ppf "...@ "; pe := false)
-  in
-  let print_errs ppf = List.iter (include_err' ppf) in
-  Printtyp.Conflicts.reset();
-  fprintf ppf "@[<v>%a%a%t@]" print_errs errs include_err err
-    Printtyp.Conflicts.print_explanations
-
-let report_apply_error p1 p2 ppf errs =
-  fprintf ppf "@[The type of %a does not match %a's parameter@ %a@]"
-    Printtyp.path p1 Printtyp.path p2 report_error errs
-
-(* We could do a better job to split the individual error items
-   as sub-messages of the main interface mismatch on the whole unit. *)
-let () =
-  Location.register_error_of_exn
-    (function
-      | Error err -> Some (Location.error_of_printer_file report_error err)
-      | Apply_error(loc, p1, p2, err) ->
-          Some (Location.error_of_printer ~loc (report_apply_error p1 p2) err)
-      | _ -> None
-    )
+let check_modtype_equiv ~loc env id mty1 mty2 =
+  match check_modtype_equiv ~loc env ~mark:Mark_both mty1 mty2 with
+  | Ok _ -> ()
+  | Error e ->
+      raise (Error(env,
+                   Error.(In_Module_type_substitution (id,diff mty1 mty2 e)))
+            )
