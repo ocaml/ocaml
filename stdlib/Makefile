@@ -40,9 +40,6 @@ OBJS=$(addsuffix .cmo,$(STDLIB_MODULES))
 NOSTDLIB= camlinternalFormatBasics.cmo camlinternalAtomic.cmo stdlib.cmo
 OTHERS=$(filter-out $(NOSTDLIB),$(OBJS))
 
-PREFIXED_OBJS=$(filter stdlib__%.cmo,$(OBJS))
-UNPREFIXED_OBJS=$(PREFIXED_OBJS:stdlib__%.cmo=%)
-
 .PHONY: all
 all: stdlib.cma std_exit.cmo camlheader target_camlheader camlheader_ur
 
@@ -200,21 +197,29 @@ export AWK
 %.cmi: %.mli
 	$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) -c $<
 
-stdlib__%.cmi: %.mli
-	$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) -o $@ -c $<
+# The dependency on the .mli file is in .depend (since stdlib__Foo.cmi
+# depends on stdlib__foo.mli)
+stdlib__%.cmi:
+	$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) \
+	         -o $@ -c $(filter %.mli, $^)
 
 %.cmo: %.ml
 	$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) -c $<
 
-stdlib__%.cmo: %.ml
-	$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) -o $@ -c $<
+# The dependency on the .ml file is in .depend (since stdlib__Foo.cmo
+# depends on stdlib__foo.ml)
+stdlib__%.cmo:
+	$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) \
+	         -o $@ -c $(filter %.ml, $^)
 
 %.cmx: %.ml
 	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) $(shell ./Compflags $@) -c $<
 
-stdlib__%.cmx: %.ml
+# The dependency on the .ml file is in .depend (since stdlib__Foo.cmx
+# depends on stdlib__foo.ml)
+stdlib__%.cmx:
 	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) $(shell ./Compflags $@) \
-	           -o $@ -c $<
+	           -o $@ -c $(filter %.ml, $^)
 
 # Dependencies on the compiler
 COMPILER_DEPS=$(filter-out -use-prims $(CAMLRUN), $(CAMLC))
@@ -237,13 +242,16 @@ include .depend
 EMPTY :=
 SPACE := $(EMPTY) $(EMPTY)
 
+STDLIB_NAMESPACE_MODULES = $(subst $(SPACE),|,$(STDLIB_PREFIXED_MODULES))
+
 .PHONY: depend
 depend:
 	$(CAMLDEP) $(DEPFLAGS) $(filter-out stdlib.%,$(wildcard *.mli *.ml)) \
 	  > .depend.tmp
 	$(CAMLDEP) $(DEPFLAGS) -pp "$(AWK) -f ./remove_module_aliases.awk" \
 	  stdlib.ml stdlib.mli >> .depend.tmp
-	sed -Ee \
-	  's#(^| )(${subst ${SPACE},|,${UNPREFIXED_OBJS}})[.]#\1stdlib__\2.#g' \
+	sed -E \
+	-e 's/^(${STDLIB_NAMESPACE_MODULES})(\.[^i]*)(i?) :/\1\2\3 : \1.ml\3/' \
+	-e 's#(^| )(${STDLIB_NAMESPACE_MODULES})[.]#\1stdlib__\u\2.#' \
 	  .depend.tmp > .depend
 	rm -f .depend.tmp
