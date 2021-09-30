@@ -24,7 +24,7 @@ and idag = int
 external int_of_idag : idag -> int = "%identity";;
 external idag_of_int : int -> idag = "%identity";;
 
-type 'a table = { mutable table : 'a data array array }
+type 'a table = { table : 'a data array array }
 and 'a data = { mutable elem : 'a elem; mutable span : span_id }
 and 'a elem = Elem of 'a | Ghost of ghost_id | Nothing
 and span_id

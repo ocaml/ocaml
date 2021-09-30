@@ -60,7 +60,6 @@ type 'a full_class = {
   arity: int;
   pub_meths: string list;
   coe: Warnings.loc list;
-  expr: 'a;
   req: 'a Typedtree.class_infos;
 }
 
@@ -1660,7 +1659,7 @@ let final_decl env define_class
       raise(Error(cl.pci_loc, env, Unbound_type_var(printer, reason)))
   end;
   { id; clty; ty_id; cltydef; obj_id; obj_abbr; cl_id; cl_abbr; arity;
-    pub_meths; coe; expr;
+    pub_meths; coe;
     id_loc = cl.pci_name;
     req = { ci_loc = cl.pci_loc;
             ci_virt = cl.pci_virt;

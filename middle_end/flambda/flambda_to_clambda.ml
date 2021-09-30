@@ -140,7 +140,6 @@ end = struct
     { subst : Clambda.ulambda Variable.Map.t;
       var : V.t Variable.Map.t;
       mutable_var : V.t Mutable_variable.Map.t;
-      toplevel : bool;
       allocated_constant_for_symbol : Allocated_const.t Symbol.Map.t;
     }
 
@@ -148,7 +147,6 @@ end = struct
     { subst = Variable.Map.empty;
       var = Variable.Map.empty;
       mutable_var = Mutable_variable.Map.empty;
-      toplevel = false;
       allocated_constant_for_symbol = Symbol.Map.empty;
     }
 

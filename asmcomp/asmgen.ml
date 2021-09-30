@@ -248,7 +248,6 @@ let end_gen_implementation ?toplevel ~ppf_dump
 
 type middle_end =
      backend:(module Backend_intf.S)
-  -> filename:string
   -> prefixname:string
   -> ppf_dump:Format.formatter
   -> Lambda.program
@@ -259,7 +258,7 @@ let asm_filename output_prefix =
     then output_prefix ^ ext_asm
     else Filename.temp_file "camlasm" ext_asm
 
-let compile_implementation ?toplevel ~backend ~filename ~prefixname ~middle_end
+let compile_implementation ?toplevel ~backend ~prefixname ~middle_end
       ~ppf_dump (program : Lambda.program) =
   compile_unit ~output_prefix:prefixname
     ~asm_filename:(asm_filename prefixname) ~keep_asm:!keep_asm_file
@@ -267,7 +266,7 @@ let compile_implementation ?toplevel ~backend ~filename ~prefixname ~middle_end
     (fun () ->
       Ident.Set.iter Compilenv.require_global program.required_globals;
       let clambda_with_constants =
-        middle_end ~backend ~filename ~prefixname ~ppf_dump program
+        middle_end ~backend ~prefixname ~ppf_dump program
       in
       end_gen_implementation ?toplevel ~ppf_dump clambda_with_constants)
 

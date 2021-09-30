@@ -156,7 +156,7 @@ module Scanning : SCANNING = struct
     mutable ic_char_count : int;
     mutable ic_line_count : int;
     mutable ic_token_count : int;
-    mutable ic_get_next_char : unit -> char;
+    ic_get_next_char : unit -> char;
     ic_token_buffer : Buffer.t;
     ic_input_name : in_channel_name;
   }

@@ -9,7 +9,7 @@ module = "deprecated_module.mli"
 *** ocamlc.byte
 module = "deprecated_module.ml"
 **** ocamlc.byte
-flags = "-w +A"
+flags = "-w +A-70"
 module = "deprecated_module_use.ml"
 ***** check-ocamlc.byte-output
 

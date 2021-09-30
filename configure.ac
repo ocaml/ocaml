@@ -1391,6 +1391,8 @@ AC_CHECK_FUNC([symlink],
   [AC_CHECK_FUNC([readlink],
     [AC_CHECK_FUNC([lstat], [AC_DEFINE([HAS_SYMLINK])])])])
 
+AC_CHECK_FUNC([realpath], [AC_DEFINE([HAS_REALPATH])])
+
 # wait
 AC_CHECK_FUNC(
   [waitpid],

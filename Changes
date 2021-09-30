@@ -123,6 +123,9 @@ Working version
 
 ### Other libraries:
 
+- #10047: Add `Unix.realpath`
+  (Daniel Bünzli, review by David Allsopp, Josh Berdine and Gabriel Scherer)
+
 * #10084: Unix.open_process_args* functions now look up the program in the PATH.
   This was already the case under Windows, but this is now also done under
   Unix. Note that previously the program was interpreted relative to the current
@@ -169,6 +172,9 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- #9407: added warning for missing mli interface file
+  (Anukriti Kumar, review by Florian Angeletti)
+
 - #9960: extend ocamlc/ocamlopt's -o option to work when compiling C files
   (Sébastien Hinderer, reported by Daniel Bünzli, review by Florian
   Angeletti and Gabriel Scherer)
@@ -192,6 +198,9 @@ Working version
   The form `-w aBcD` was equivalent to `-w -a+b-c+d`.
   It is now deprecated to improve the coexistence with warning mnemonics.
   (Florian Angeletti, review by Damien Doligez and Gabriel Scherer)
+
+- #10232: Warning for unused record fields.
+  (Leo White, review by Florian Angeletti)
 
 ### Internal/compiler-libs changes:
 
@@ -232,6 +241,10 @@ Working version
 - #10113: add a `-timeout` option to ocamltest and use it in the test suite.
   (Xavier Leroy and Gabriel Scherer, review by Sébastien Hinderer
    and David Allsopp)
+
+- #10311: Separate the constraint-solving part of Typecore.type_pat into
+  specific solver functions.
+  (Jacques Garrigue and Takafumi Saikawa, review by Gabriel Scherer)
 
 ### Build system:
 
