@@ -17768,10 +17768,6 @@ if test x"$mandir" = x'${datarootdir}/man'; then :
   mandir='${prefix}/man'
 fi
 
-if test x"$docdir" = x'${datarootdir}/doc/${PACKAGE_TARNAME}'; then :
-  docdir='${prefix}/doc/ocaml'
-fi
-
 case $host in #(
   *-*-mingw32|*-pc-windows) :
     case $WINDOWS_UNICODE_MODE in #(
