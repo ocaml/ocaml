@@ -52,9 +52,6 @@ MANDIR=@mandir@
 PROGRAMS_MAN_SECTION=@programs_man_section@
 LIBRARIES_MAN_SECTION=@libraries_man_section@
 
-### Where to install documentation
-DOCDIR=@docdir@
-
 ### Do #! scripts work on your system?
 ### Beware: on some systems (e.g. SunOS 4), this will work only if
 ### the string "#!$(BINDIR)/ocamlrun" is less than 32 characters long.
