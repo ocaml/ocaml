@@ -24,8 +24,7 @@
  (preprocess
    (per_module
      ((action
-          (run awk -v dune_wrapped=true
-                 -f %{dep:expand_module_aliases.awk} %{input-file}))
+          (run awk -f %{dep:expand_module_aliases.awk} %{input-file}))
       stdlib)
      )))
 

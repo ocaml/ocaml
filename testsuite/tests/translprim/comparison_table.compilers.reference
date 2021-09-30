@@ -153,7 +153,7 @@
                 (apply f (field_imm 0 param) (field_imm 1 param)))
             map =
               (function f l
-                (apply (field_imm 18 (global Stdlib__list!))
+                (apply (field_imm 18 (global Stdlib__List!))
                   (apply uncurry f) l)))
            (makeblock 0
              (makeblock 0 (apply map gen_cmp vec) (apply map cmp vec))
@@ -192,7 +192,7 @@
                     (apply f (field_imm 0 param) (field_imm 1 param)))
                 map =
                   (function f l
-                    (apply (field_imm 18 (global Stdlib__list!))
+                    (apply (field_imm 18 (global Stdlib__List!))
                       (apply uncurry f) l)))
                (makeblock 0
                  (makeblock 0 (apply map eta_gen_cmp vec)

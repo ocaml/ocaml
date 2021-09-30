@@ -122,7 +122,7 @@ let array_pattern_kind pat = array_type_kind pat.pat_env pat.pat_type
 let bigarray_decode_type env ty tbl dfl =
   match scrape env ty with
   | Tconstr(Pdot(Pident mod_id, type_name), [], _)
-    when Ident.name mod_id = "Stdlib__bigarray" ->
+    when Ident.name mod_id = "Stdlib__Bigarray" ->
       begin try List.assoc type_name tbl with Not_found -> dfl end
   | _ ->
       dfl

@@ -34,11 +34,8 @@ thread_MLIS := \
 	thread.mli event.mli \
 	threadUnix.mli
 
-STDLIB=$(filter-out stdlib__pervasives, $(STDLIB_MODULES))
-
-stdlib_UNPREFIXED=$(STDLIB:stdlib__%=%)
 libref= \
-	$(stdlib_UNPREFIXED) \
+	$(filter-out pervasives,$(STDLIB_MODULE_BASENAMES)) \
 	$(str_MLIS:%.mli=%) \
 	$(unix_MLIS:%.mli=%) \
 	$(dynlink_MLIS:%.mli=%) \
