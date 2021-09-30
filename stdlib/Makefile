@@ -239,9 +239,6 @@ clean::
 
 include .depend
 
-EMPTY :=
-SPACE := $(EMPTY) $(EMPTY)
-
 STDLIB_NAMESPACE_MODULES = $(subst $(SPACE),|,$(STDLIB_PREFIXED_MODULES))
 
 .PHONY: depend
