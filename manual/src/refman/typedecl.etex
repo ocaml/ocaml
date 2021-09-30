@@ -84,6 +84,17 @@ optional type equation, then an optional type representation, and then
 a constraint clause. The identifier is the name of the type
 constructor being defined.
 
+\begin{verbatim}
+type colour =
+  | Red | Green | Blue | Yellow | Black | White
+  | RGB of {r : int; g : int; b : int}
+
+type 'a tree = Lf | Br of 'a * 'a tree * 'a;;
+
+type t = {decoration : string; substance : t'}
+and t' = Int of int | List of t list
+\end{verbatim}
+
 In the right-hand side of type definitions, references to one of the
 type constructor name being defined are considered as recursive,
 unless "type" is followed by "nonrec". The "nonrec" keyword was
@@ -241,7 +252,20 @@ Exception definitions add new constructors to the built-in variant
 type \verb"exn" of exception values. The constructors are declared as
 for a definition of a variant type.
 
+\begin{caml_example}{toplevel}
+exception E of int * string;;
+\end{caml_example}
+
 The form @'exception' constr-decl@
 generates a new exception, distinct from all other exceptions in the system.
 The form @'exception' constr-name '=' constr@
 gives an alternate name to an existing exception.
+
+\begin{caml_example}{toplevel}
+exception E of int * string
+
+exception F = E
+
+let eq =
+   E (1, "one") = F (1, "one");;
+\end{caml_example}
