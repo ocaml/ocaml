@@ -156,6 +156,8 @@ ocamlmklib.cmo : \
 ocamlmklib.cmx : \
     ../utils/misc.cmx \
     ../utils/config.cmx
+ocamlmklibconfig.cmo :
+ocamlmklibconfig.cmx :
 ocamlmktop.cmo : \
     ../utils/config.cmi \
     ../utils/ccomp.cmi
