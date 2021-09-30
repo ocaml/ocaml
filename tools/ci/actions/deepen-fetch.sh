@@ -41,7 +41,10 @@ else
   shift 5
 fi
 
-FETCH_HEAD=$(git rev-parse FETCH_HEAD)
+# Record FETCH_HEAD (if it hasn't been by a previous step)
+git branch fetch_head FETCH_HEAD &> /dev/null || true
+
+FETCH_HEAD=$(git rev-parse fetch_head)
 UPSTREAM_BRANCH="$1"
 UPSTREAM_HEAD="$2"
 PR_BRANCH="$3"
