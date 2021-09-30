@@ -45,4 +45,6 @@ FLEXDLL_SOURCES=@flexdir@
 BOOTSTRAPPING_FLEXDLL=@bootstrapping_flexdll@
 
 ### Where to install documentation
+PACKAGE_TARNAME = @PACKAGE_TARNAME@
+datarootdir = @datarootdir@
 DOCDIR=@docdir@
