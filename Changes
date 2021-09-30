@@ -190,6 +190,11 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- #8732, improved error messages for invalid private row type definitions.
+  For instance, [ type t = private [< `A > `A ] ] .
+  (Florian Angeletti, review by Jacques Garrigue, Thomas Refis,
+   and Gabriel Scherer)
+
 - #9407: added warning for missing mli interface file
   (Anukriti Kumar, review by Florian Angeletti)
 
@@ -203,6 +208,15 @@ Working version
   because the error message implicitly referred to an earlier point in
   the source code than the point explicitly shown in the error message.
   (François Pottier, review by Gabriel Scherer and Frédéric Bour.)
+
+* #10118, #10140: enable warning 6 [labels-omitted] by default.
+  The following now warns:
+    let f ~x y = ... in f 3 5
+  the callsite (f 3 5) has to be turned into (f ~x:3 5).
+  This prevents mistakes where two arguments of the same types are swapped.
+  (Note: Dune already enables this warning by default.)
+  (Gabriel Scherer, review by Xavier Leroy and Florian Angeletti,
+   report by ygrek)
 
 - #10196, #10197: better error message on empty character literals ''.
   (Gabriel Scherer, review by David Allsopp and Florian Angeletti
@@ -329,6 +343,10 @@ Working version
 - #10298, #10305: Incorrect propagation of type equalities in functor
   application
   (Jacques Garrigue, report and review by Didier Remy)
+
+- #10324, #10325: Prevent generation of Lsend(Cached, _) in bytecode
+  (Vincent Laviron, report by Yawar Amin and Nicolás Ojeda Bär, review by
+   Jacques Garrigue)
 
 OCaml 4.12.0 (24 February 2021)
 -------------------------------
@@ -1180,6 +1198,9 @@ OCaml 4.11.0 (19 August 2020)
 
 - #9392: Visit registers at most once in Coloring.iter_preferred.
   (Stephen Dolan, review by Pierre Chambart and Xavier Leroy)
+
+- #9412: Keep Sys.opaque_identity in Cmm and Mach
+  (Stephen Dolan, review by Mark Shinwell and Gabriel Scherer)
 
 - #9549, #9557: Make -flarge-toc the default for PowerPC and introduce
   -fsmall-toc to enable the previous behaviour.

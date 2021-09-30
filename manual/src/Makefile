@@ -87,7 +87,9 @@ text: files latex_files
 
 
 all:
-	$(MAKE) html text info manual
+	$(MAKE) html
+	$(MAKE) text
+	$(MAKE) info
 	$(MAKE) manual
 	$(MAKE) index
 	$(MAKE) manual
@@ -159,7 +161,11 @@ clean:
 	$(MAKE) -C tutorials clean
 	$(MAKE) -C html_processing clean
 	-rm -f texstuff/*
-	cd htmlman; rm -rf libref compilerlibref index.html \
-	manual*.html *.haux *.hind *.svg
-	cd textman; rm -f manual.txt *.haux *.hind
-	cd infoman; rm -f ocaml.info ocaml.info-*  *.haux *.hind
+	cd htmlman; rm -rf libref compilerlibref *.htoc *.html *.haux *.hind *.svg \
+	                   manual.hmanual manual.hmanual.kwd manual.css
+	cd textman; rm -f manual.txt *.haux *.hind *.htoc
+	cd infoman; rm -f ocaml.info ocaml.info-*  *.haux *.hind *.info*.gz
+
+.PHONY: distclean
+distclean: clean
+	$(MAKE) -C html_processing distclean

@@ -496,6 +496,7 @@ module BR = Branch_relaxation.Make (struct
     | Lop(Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf) -> 1
     | Lop(Ifloatofint) -> 9
     | Lop(Iintoffloat) -> 4
+    | Lop(Iopaque) -> 0
     | Lop(Ispecific _) -> 1
     | Lop (Iname_for_debugger _) -> 0
     | Lreloadretaddr -> 2
@@ -855,6 +856,8 @@ let emit_instr i =
           `	lwz	{emit_reg i.res.(0)}, 4(1)\n`;
           `	addi	1, 1, 16\n`
         end
+    | Lop(Iopaque) ->
+        assert (i.arg.(0).loc = i.res.(0).loc)
     | Lop(Ispecific sop) ->
         let instr = name_for_specific sop in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(2)}\n`
