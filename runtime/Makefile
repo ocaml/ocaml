@@ -249,11 +249,11 @@ prims.c : primitives
 	 echo '#include "caml/prims.h"'; \
 	 sed -e 's/.*/extern value &();/' primitives; \
 	 echo 'c_primitive caml_builtin_cprim[] = {'; \
-	 sed -e 's/.*/	&,/' primitives; \
-	 echo '	 0 };'; \
+	 sed -e 's/.*/  &,/' primitives; \
+	 echo '  0 };'; \
 	 echo 'char * caml_names_of_builtin_cprim[] = {'; \
-	 sed -e 's/.*/	"&",/' primitives; \
-	 echo '	 0 };') > prims.c
+	 sed -e 's/.*/  "&",/' primitives; \
+	 echo '  0 };') > prims.c
 
 caml/opnames.h : caml/instruct.h
 	tr -d '\r' < $< | \

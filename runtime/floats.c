@@ -742,12 +742,13 @@ CAMLprim value caml_fmod_float(value f1, value f2)
 
 CAMLprim value caml_frexp_float(value f)
 {
-  CAMLparam1 (f);
-  CAMLlocal2 (res, mantissa);
+  CAMLparam0 ();
+  CAMLlocal1 (mantissa);
+  value res;
   int exponent;
 
   mantissa = caml_copy_double(frexp (Double_val(f), &exponent));
-  res = caml_alloc_tuple(2);
+  res = caml_alloc_small(2, 0);
   Field(res, 0) = mantissa;
   Field(res, 1) = Val_int(exponent);
   CAMLreturn (res);
@@ -777,14 +778,14 @@ CAMLprim value caml_log10_float(value f)
 
 CAMLprim value caml_modf_float(value f)
 {
+  CAMLparam0 ();
+  CAMLlocal2 (quo, rem);
+  value res;
   double frem;
-
-  CAMLparam1 (f);
-  CAMLlocal3 (res, quo, rem);
 
   quo = caml_copy_double(modf (Double_val(f), &frem));
   rem = caml_copy_double(frem);
-  res = caml_alloc_tuple(2);
+  res = caml_alloc_small(2, 0);
   Field(res, 0) = quo;
   Field(res, 1) = rem;
   CAMLreturn (res);

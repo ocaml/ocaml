@@ -309,7 +309,7 @@ Error: Signature mismatch:
        does not match
          class type c = object method m : t/1 end
        The method m has type t/2 but is expected to have type t/1
-       Type t/2 is not compatible with type t/1 = K.t
+       Type t/2 is not equal to type t/1 = K.t
        Line 12, characters 4-10:
          Definition of type t/1
        Line 9, characters 2-8:

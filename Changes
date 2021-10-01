@@ -111,6 +111,11 @@ Working version
 - #10349: Fix destroyed_at_c_call on RISC-V
   (Mark Shinwell, review by Nicolás Ojeda Bär)
 
+- #1400: Add an optional invariants check on Cmm, which can be activated
+  with the -dcmm-invariants flag
+  (Vincent Laviron, with help from Sebastien Hinderer, review by Stephen Dolan
+   and David Allsopp)
+
 ### Type system:
 
 * #10081: Typecheck `x |> f` and `f @@ x` as `(f x)`
@@ -156,6 +161,9 @@ Working version
 
 - #882: Add fold_left, fold_right, exists and for_all to String/Bytes
   (Yotam Barnoy, review by Alain Frisch and Jeremy Yallop)
+
+- #4070, #10398: small optimization of Stdlib.{frexp,modf}.
+  (Markus Mottl, Nicolás Ojeda Bär, review by Gabriel Scherer)
 
 ### Other libraries:
 
@@ -329,7 +337,17 @@ Working version
 - #8936: Per-function environment for Emit
   (Greta Yorsh, review by Vincent Laviron and Florian Angeletti)
 
+- #10170: Maintain more structural information in type-checking errors
+  A mostly-internal change that preserves more information in errors
+  during type checking; most significantly, it split the errors from
+  unification, moregen, and type equality into three different types.
+  (Antal Spector-Zabusky and Mekhrubon Tuarev, review by Leo White,
+  Florian Angeletti, and Jacques Garrigue)
+
 ### Build system:
+
+- #10289: Do not print option documentation in usage messages.
+    (Pavlo Khrystenko, review by Gabriel Scherer)
 
 - #9191, #10091, #10182: take the LDFLAGS variable into account, except on
   flexlink-using systems.
@@ -359,6 +377,9 @@ Working version
 
 ### Bug fixes:
 
+- #6985, #10385: remove all ghost row types from included modules
+  (Florian Angeletti, review by Gabriel Scherer)
+
 * #8857, #10220: Don't clobber GetLastError() in caml_leave_blocking_section
   when the systhreads library is loaded.
   (David Allsopp, report by Anton Bachin, review by Xavier Leroy)
@@ -370,10 +391,6 @@ Working version
 - #8917, #8929, #9889, #10219: fix printing of nested recursive definitions
   in presence of a name collision.
   (Florian Angeletti, report by Thomas Refis, review by Gabriel Scherer)
-
-- #9936: Make sure that `List.([1;2;3])` is printed `[1;2;3]` in the toplevel
-  by identifying lists by their types.
-  (Florian Angeletti, review by Gabriel Scherer)
 
 - #10005: Try expanding aliases in Ctype.nondep_type_rec
   (Stephen Dolan, review by Gabriel Scherer, Leo White and Xavier Leroy)
@@ -405,8 +422,9 @@ Working version
   or record fields in type-directed disambiguation
   (Florian Angeletti, report by Hongbo Zhang, review by Gabriel Scherer)
 
-- #10277: Need to detect ambiguity recursively inside types
-  (Jacques Garrigue, review by Thomas Refis and Leo White)
+* #10277, #10383: Need to detect ambiguity recursively inside types to
+  guarantee principality (affects only principal mode)
+  (Jacques Garrigue, review by Thomas Refis, Leo White and Kate Deplaix)
 
 - #10283, #10284: Enforce right-to-left evaluation order for Lstaticraise
   (Vincent Laviron, report by Github user Ngoguey42, review by Gabriel Scherer)
@@ -425,10 +443,12 @@ Working version
 - #10351: Fix DLL loading with binutils 2.36+ on mingw-w64
   (David Allsopp, review by Nicolás Ojeda Bär)
 
-- #10339, #10354: Fix handling of exception-raising specific
-   operations during spilling.  (This bug affects ARM and ARM64.)
-   In passing, refactor Proc.op_is_pure and Mach.operation_can_raise.
-  (Xavier Leroy, report by Richard Bornat, review by Stephen Dolan)
+- #10339, #10354, #10387: Fix handling of exception-raising specific
+  operations during spilling and liveness analysis.
+  (This bug affects ARM and ARM64.)
+  In passing, refactor Proc.op_is_pure and Mach.operation_can_raise.
+  (Xavier Leroy, report by Richard Bornat, review by Stephen Dolan
+   and Mark Shinwell)
 
 - #10371: no longer generatd useless `.cds` file when using
   `-output-complete-exe`.

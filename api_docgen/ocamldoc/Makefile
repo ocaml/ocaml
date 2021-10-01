@@ -27,8 +27,8 @@ texi: build/texi/stdlib.texi
 DOC_STDLIB_INCLUDES= $(addprefix -I , $(DOC_STDLIB_DIRS))
 
 DOC_ALL_INCLUDES = \
-	$(DOC_STDLIB_INCLUDES) \
-	$(addprefix -I ,$(DOC_COMPILERLIBS_DIRS))
+  $(DOC_STDLIB_INCLUDES) \
+  $(addprefix -I ,$(DOC_COMPILERLIBS_DIRS))
 
 libref=$(stdlib_UNPREFIXED) $(otherlibref)
 

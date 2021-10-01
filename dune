@@ -26,7 +26,6 @@
 (copy_files# bytecomp/*.ml{,i})
 (copy_files# driver/*.ml{,i})
 (copy_files# asmcomp/*.ml{,i})
-(copy_files# asmcomp/debug/*.ml{,i})
 (copy_files# file_formats/*.ml{,i})
 (copy_files# lambda/*.ml{,i})
 (copy_files# middle_end/*.ml{,i})
@@ -146,13 +145,15 @@
  (wrapped false)
  (flags (:standard -principal -nostdlib))
  (libraries stdlib ocamlcommon ocamlmiddleend)
- (modules_without_implementation x86_ast)
+ (modules_without_implementation x86_ast emitenv)
  (modules
    ;; asmcomp/
    afl_instrument arch asmgen asmlibrarian asmlink asmpackager branch_relaxation
    branch_relaxation_intf cmm_helpers cmm cmmgen cmmgen_state coloring comballoc
+   cmm_invariants
    CSE CSEgen
    deadcode domainstate emit emitaux interf interval linear linearize linscan
+   emitenv
    liveness mach printcmm printlinear printmach proc reg reload reloadgen
    schedgen scheduling selectgen selection spill split
    strmatch x86_ast x86_dsl x86_gas x86_masm x86_proc

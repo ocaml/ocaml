@@ -72,7 +72,7 @@ tools/mantis2gh_stripped.csv typo.missing-header
 /.depend.menhir          typo.prune
 
 # Makefiles may contain tabs
-Makefile*                typo.tab=may
+Makefile*                typo.makefile-whitespace=may
 
 asmcomp/*/emit.mlp       typo.tab=may typo.long-line=may
 

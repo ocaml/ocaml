@@ -80,3 +80,8 @@ val process_deferred_actions :
   string * (* ocaml module extension *)
   string -> (* ocaml library extension *)
   unit
+(* [parse_arguments ?current argv anon_arg program] will parse the arguments,
+ using the arguments provided in [Clflags.arg_spec].
+*)
+val parse_arguments : ?current:(int ref)
+      -> string array ref -> Arg.anon_fun -> string -> unit

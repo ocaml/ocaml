@@ -43,16 +43,16 @@ STDLIB=$(filter-out stdlib__Pervasives, $(STDLIB_MODULES))
 stdlib_UNPREFIXED=$(filter-out pervasives, $(STDLIB_MODULE_BASENAMES))
 
 otherlibref= \
-	$(str_MLIS:%.mli=%) \
-	$(unix_MLIS:%.mli=%) \
-	$(dynlink_MLIS:%.mli=%) \
-	$(thread_MLIS:%.mli=%)
+  $(str_MLIS:%.mli=%) \
+  $(unix_MLIS:%.mli=%) \
+  $(dynlink_MLIS:%.mli=%) \
+  $(thread_MLIS:%.mli=%)
 libref_EXTRA=stdlib__pervasives
 libref_TEXT=Ocaml_operators Format_tutorial
 libref_C=$(call capitalize,$(libref) $(libref_EXTRA))
 
 PARSING_MLIS := $(call sort, \
-	$(notdir $(wildcard $(ROOTDIR)/parsing/*.mli))\
+  $(notdir $(wildcard $(ROOTDIR)/parsing/*.mli))\
 )
 UTILS_MLIS := $(call sort,$(notdir $(wildcard $(ROOTDIR)/utils/*.mli)))
 DRIVER_MLIS := pparse.mli

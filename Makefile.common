@@ -50,10 +50,12 @@ endif
 OCAMLRUN ?= $(ROOTDIR)/boot/ocamlrun$(EXE)
 NEW_OCAMLRUN ?= $(ROOTDIR)/runtime/ocamlrun$(EXE)
 
-# Use boot/ocamlc.opt if available
-ifeq (0,$(shell \
+TEST_BOOT_OCAMLC_OPT = $(shell \
   test $(ROOTDIR)/boot/ocamlc.opt -nt $(ROOTDIR)/boot/ocamlc; \
-  echo $$?))
+  echo $$?)
+
+# Use boot/ocamlc.opt if available
+ifeq "$(TEST_BOOT_OCAMLC_OPT)" "0"
   BOOT_OCAMLC = $(ROOTDIR)/boot/ocamlc.opt
 else
   BOOT_OCAMLC = $(OCAMLRUN) $(ROOTDIR)/boot/ocamlc

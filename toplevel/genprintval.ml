@@ -253,9 +253,6 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
 
       let nest f = nest_gen (Oval_stuff "<cycle>") f in
 
-      let is_list ty =
-        Ctype.matches env ty (Predef.type_list (Ctype.newvar ())) in
-
       let rec tree_of_val depth obj ty =
         decr printer_steps;
         if !printer_steps < 0 || depth < 0 then Oval_ellipsis
@@ -270,7 +267,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
               Oval_stuff "<fun>"
           | Ttuple(ty_list) ->
               Oval_tuple (tree_of_val_list 0 depth obj ty_list)
-          | Tconstr(_, [ty_arg], _) when is_list ty ->
+          | Tconstr(path, [ty_arg], _)
+            when Path.same path Predef.path_list ->
               if O.is_block obj then
                 match check_depth depth obj ty with
                   Some x -> x
@@ -590,7 +588,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
       let rec find = function
       | [] -> raise Not_found
       | (_name, Simple (sch, printer)) :: remainder ->
-          if Ctype.moregeneral env false sch ty
+          if Ctype.is_moregeneral env false sch ty
           then printer
           else find remainder
       | (_name, Generic (path, fn)) :: remainder ->
