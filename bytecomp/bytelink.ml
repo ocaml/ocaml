@@ -562,7 +562,7 @@ let link_bytecode_as_c tolink outfile with_main =
 \n}\
 \n#endif\n";
     );
-  if !Clflags.debug then
+  if not with_main && !Clflags.debug then
     output_cds_file ((Filename.chop_extension outfile) ^ ".cds")
 
 (* Build a custom runtime *)

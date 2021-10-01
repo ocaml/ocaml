@@ -400,6 +400,9 @@ Working version
   (Vincent Laviron, report by Yawar Amin and Nicolás Ojeda Bär, review by
    Jacques Garrigue)
 
+- #10338, #10340: Translcore.push_defaults does not respect scoping
+  (Jacques Garrigue, report and review by Stephen Dolan)
+
 - #10351: Fix DLL loading with binutils 2.36+ on mingw-w64
   (David Allsopp, review by Nicolás Ojeda Bär)
 
@@ -408,6 +411,13 @@ Working version
    In passing, refactor Proc.op_is_pure and Mach.operation_can_raise.
   (Xavier Leroy, report by Richard Bornat, review by Stephen Dolan)
 
+- #10371: no longer generatd useless `.cds` file when using
+  `-output-complete-exe`.
+  (Nicolás Ojeda Bär, review by David Allsopp)
+
+- #????, tweak error message for unknown variant constructors
+  or record fields in type-directed disambiguation
+  (Florian Angeletti, report by Hongbo Zhang , review by ???)
 
 OCaml 4.12.0 (24 February 2021)
 -------------------------------

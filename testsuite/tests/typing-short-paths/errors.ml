@@ -15,7 +15,7 @@ Line 5, characters 14-15:
 5 | let x : M.t = S
                   ^
 Error: This variant expression is expected to have type t
-       The constructor S does not belong to type t
+       There is no constructor S within type t
 |}]
 
 module M = struct

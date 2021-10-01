@@ -778,10 +778,12 @@ let rec generalize_spine ty =
   | Tpoly (ty', _) ->
       set_level ty generic_level;
       generalize_spine ty'
-  | Ttuple tyl
-  | Tpackage (_, _, tyl) ->
+  | Ttuple tyl ->
       set_level ty generic_level;
       List.iter generalize_spine tyl
+  | Tpackage (_, fl) ->
+      set_level ty generic_level;
+      List.iter (fun (_n, ty) -> generalize_spine ty) fl
   | Tconstr (p, tyl, memo) when not (is_object_type p) ->
       set_level ty generic_level;
       memo := Mnil;
@@ -826,11 +828,11 @@ let rec check_scope_escape env level ty =
         | exception Cannot_expand ->
             raise Trace.(Unify [escape (Constructor p)])
         end
-    | Tpackage (p, nl, tl) when level < Path.scope p ->
+    | Tpackage (p, fl) when level < Path.scope p ->
         let p' = normalize_package_path env p in
         if Path.same p p' then raise Trace.(Unify [escape (Module_type p)]);
         check_scope_escape env level
-          (Btype.newty2 orig_level (Tpackage (p', nl, tl)))
+          (Btype.newty2 orig_level (Tpackage (p', fl)))
     | _ ->
       iter_type_expr (check_scope_escape env level) ty
     end;
@@ -890,10 +892,10 @@ let rec update_level env level expand ty =
           set_level ty level;
           iter_type_expr (update_level env level expand) ty
         end
-    | Tpackage (p, nl, tl) when level < Path.scope p ->
+    | Tpackage (p, fl) when level < Path.scope p ->
         let p' = normalize_package_path env p in
         if Path.same p p' then raise Trace.(Unify [escape (Module_type p)]);
-        set_type_desc ty (Tpackage (p', nl, tl));
+        set_type_desc ty (Tpackage (p', fl));
         update_level env level expand ty
     | Tobject(_, ({contents=Some(p, _tl)} as nm))
       when level < Path.scope p ->
@@ -971,8 +973,8 @@ let rec lower_contravariant env var_level visited contra ty =
             | ty -> lower_rec contra ty
             | exception Cannot_expand -> not_expanded ()
           else not_expanded ()
-    | Tpackage (_, _, tyl) ->
-        List.iter (lower_rec true) tyl
+    | Tpackage (_, fl) ->
+        List.iter (fun (_n, ty) -> lower_rec true ty) fl
     | Tarrow (_, t1, t2, _) ->
         lower_rec true t1;
         lower_rec contra t2
@@ -2475,7 +2477,7 @@ let eq_package_path env p1 p2 =
   Path.same (normalize_package_path env p1) (normalize_package_path env p2)
 
 let nondep_type' = ref (fun _ _ _ -> assert false)
-let package_subtype = ref (fun _ _ _ _ _ _ _ -> assert false)
+let package_subtype = ref (fun _ _ _ _ _ -> assert false)
 
 exception Nondep_cannot_erase of Ident.t
 
@@ -2497,7 +2499,7 @@ let nondep_instance env level id ty =
 
 (* Find the type paths nl1 in the module type mty2, and add them to the
    list (nl2, tl2). raise Not_found if impossible *)
-let complete_type_list ?(allow_absent=false) env nl1 lv2 mty2 nl2 tl2 =
+let complete_type_list ?(allow_absent=false) env fl1 lv2 mty2 fl2 =
   (* This is morally WRONG: we're adding a (dummy) module without a scope in the
      environment. However no operation which cares about levels/scopes is going
      to happen while this module exists.
@@ -2510,44 +2512,44 @@ let complete_type_list ?(allow_absent=false) env nl1 lv2 mty2 nl2 tl2 =
      environments though. *)
   let id2 = Ident.create_local "Pkg" in
   let env' = Env.add_module id2 Mp_present mty2 env in
-  let rec complete nl1 ntl2 =
-    match nl1, ntl2 with
-      [], _ -> ntl2
-    | n :: nl, (n2, _ as nt2) :: ntl' when n >= n2 ->
-        nt2 :: complete (if n = n2 then nl else nl1) ntl'
-    | n :: nl, _ ->
+  let rec complete fl1 fl2 =
+    match fl1, fl2 with
+      [], _ -> fl2
+    | (n, _) :: nl, (n2, _ as nt2) :: ntl' when n >= n2 ->
+        nt2 :: complete (if n = n2 then nl else fl1) ntl'
+    | (n, _) :: nl, _ ->
         let lid = concat_longident (Longident.Lident "Pkg") n in
         match Env.find_type_by_name lid env' with
         | (_, {type_arity = 0; type_kind = Type_abstract;
                type_private = Public; type_manifest = Some t2}) ->
             begin match nondep_instance env' lv2 id2 t2 with
-            | t -> (n, t) :: complete nl ntl2
+            | t -> (n, t) :: complete nl fl2
             | exception Nondep_cannot_erase _ ->
                 if allow_absent then
-                  complete nl ntl2
+                  complete nl fl2
                 else
                   raise Exit
             end
         | (_, {type_arity = 0; type_kind = Type_abstract;
                type_private = Public; type_manifest = None})
           when allow_absent ->
-            complete nl ntl2
+            complete nl fl2
         | _ -> raise Exit
         | exception Not_found when allow_absent->
-            complete nl ntl2
+            complete nl fl2
   in
-  match complete nl1 (List.combine nl2 tl2) with
+  match complete fl1 fl2 with
   | res -> res
   | exception Exit -> raise Not_found
 
 (* raise Not_found rather than Unify if the module types are incompatible *)
-let unify_package env unify_list lv1 p1 n1 tl1 lv2 p2 n2 tl2 =
-  let ntl2 = complete_type_list env n1 lv2 (Mty_ident p2) n2 tl2
-  and ntl1 = complete_type_list env n2 lv1 (Mty_ident p1) n1 tl1 in
+let unify_package env unify_list lv1 p1 fl1 lv2 p2 fl2 =
+  let ntl2 = complete_type_list env fl1 lv2 (Mty_ident p2) fl2
+  and ntl1 = complete_type_list env fl2 lv1 (Mty_ident p1) fl1 in
   unify_list (List.map snd ntl1) (List.map snd ntl2);
   if eq_package_path env p1 p2
-  || !package_subtype env p1 n1 tl1 p2 n2 tl2
-  && !package_subtype env p2 n2 tl2 p1 n1 tl1 then () else raise Not_found
+  || !package_subtype env p1 fl1 p2 fl2
+  && !package_subtype env p2 fl2 p1 fl1 then () else raise Not_found
 
 
 (* force unification in Reither when one side has a non-conjunctive type *)
@@ -2842,13 +2844,13 @@ and unify3 env t1 t1' t2 t2' =
           unify env t1 t2
       | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
           enter_poly !env univar_pairs t1 tl1 t2 tl2 (unify env)
-      | (Tpackage (p1, n1, tl1), Tpackage (p2, n2, tl2)) ->
+      | (Tpackage (p1, fl1), Tpackage (p2, fl2)) ->
           begin try
             unify_package !env (unify_list env)
-              t1.level p1 n1 tl1 t2.level p2 n2 tl2
+              t1.level p1 fl1 t2.level p2 fl2
           with Not_found ->
             if !umode = Expression then raise (Unify []);
-            List.iter (reify env) (tl1 @ tl2);
+            List.iter (fun (_n, ty) -> reify env ty) (fl1 @ fl2);
             (* if !generate_equations then List.iter2 (mcomp !env) tl1 tl2 *)
           end
       | (Tnil,  Tconstr _ ) -> raise (Unify Trace.[Obj(Abstract_row Second)])
@@ -3343,10 +3345,10 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
           | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _))
                 when Path.same p1 p2 ->
               moregen_list inst_nongen type_pairs env tl1 tl2
-          | (Tpackage (p1, n1, tl1), Tpackage (p2, n2, tl2)) ->
+          | (Tpackage (p1, fl1), Tpackage (p2, fl2)) ->
               begin try
                 unify_package env (moregen_list inst_nongen type_pairs env)
-                  t1'.level p1 n1 tl1 t2'.level p2 n2 tl2
+                  t1'.level p1 fl1 t2'.level p2 fl2
               with Not_found -> raise (Unify [])
               end
           | (Tvariant row1, Tvariant row2) ->
@@ -3614,10 +3616,10 @@ let rec eqtype rename type_pairs subst env t1 t2 =
           | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _))
                 when Path.same p1 p2 ->
               eqtype_list rename type_pairs subst env tl1 tl2
-          | (Tpackage (p1, n1, tl1), Tpackage (p2, n2, tl2)) ->
+          | (Tpackage (p1, fl1), Tpackage (p2, fl2)) ->
               begin try
                 unify_package env (eqtype_list rename type_pairs subst env)
-                  t1'.level p1 n1 tl1 t2'.level p2 n2 tl2
+                  t1'.level p1 fl1 t2'.level p2 fl2
               with Not_found -> raise (Unify [])
               end
           | (Tvariant row1, Tvariant row2) ->
@@ -4341,10 +4343,10 @@ let rec subtype_rec env trace t1 t2 cstrs =
         with Unify _ ->
           (trace, t1, t2, !univar_pairs)::cstrs
         end
-    | (Tpackage (p1, nl1, tl1), Tpackage (p2, nl2, tl2)) ->
+    | (Tpackage (p1, fl1), Tpackage (p2, fl2)) ->
         begin try
-          let ntl1 = complete_type_list env nl2 t1.level (Mty_ident p1) nl1 tl1
-          and ntl2 = complete_type_list env nl1 t2.level (Mty_ident p2) nl2 tl2
+          let ntl1 = complete_type_list env fl2 t1.level (Mty_ident p1) fl1
+          and ntl2 = complete_type_list env fl1 t2.level (Mty_ident p2) fl2
               ~allow_absent:true in
           let cstrs' =
             List.map
@@ -4357,7 +4359,7 @@ let rec subtype_rec env trace t1 t2 cstrs =
             let snap = Btype.snapshot () in
             try
               List.iter (fun (_, t1, t2, _) -> unify env t1 t2) cstrs';
-              if !package_subtype env p1 nl1 tl1 p2 nl2 tl2
+              if !package_subtype env p1 fl1 p2 fl2
               then (Btype.backtrack snap; cstrs' @ cstrs)
               else raise (Unify [])
             with Unify _ ->
@@ -4662,11 +4664,13 @@ let rec nondep_type_rec ?(expand_private=false) env ids ty =
                *)
             with Cannot_expand | Unify _ -> raise exn
           end
-      | Tpackage(p, nl, tl) when Path.exists_free ids p ->
+      | Tpackage(p, fl) when Path.exists_free ids p ->
           let p' = normalize_package_path env p in
           begin match Path.find_free_opt ids p' with
           | Some id -> raise (Nondep_cannot_erase id)
-          | None -> Tpackage (p', nl, List.map (nondep_type_rec env ids) tl)
+          | None ->
+            let nondep_field_rec (n, ty) = (n, nondep_type_rec env ids ty) in
+            Tpackage (p', List.map nondep_field_rec fl)
           end
       | Tobject (t1, name) ->
           Tobject (nondep_type_rec env ids t1,
