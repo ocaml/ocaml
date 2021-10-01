@@ -34,6 +34,9 @@ Working version
   and their local equivalent `module type T := sig type u end`
   (Florian Angeletti, review by Gabriel Radanne and Leo White)
 
+- #10265: Move type_unboxed.unboxed into type_kind
+  (Stephen Dolan, review by Gabriel Scherer)
+
 ### Runtime system:
 
 - #9284: Add -config option to display the configuration of ocamlrun on stdout,
@@ -88,6 +91,11 @@ Working version
   experimental.
   (Nicolás Ojeda Bär, review by David Allsopp)
 
+- #10194: Change compaction-triggering heuristic: use the overhead measured
+  by the previous GC cycle instead of an indirect (and noisy) computation
+  of the current overhead.
+  (Damien Doligez, review by Stephen Dolan)
+
 ### Code generation and optimizations:
 
 - #1400: Add an optional invariants check on Cmm, which can be activated
@@ -119,6 +127,14 @@ Working version
 - #10404: Add a generic backward dataflow analyzer and use it to speed up
   liveness analysis
   (Xavier Leroy, review by Gabriel Scherer, Greta Yorsh, Mark Shinwell)
+
+- #10414: Avoid compilation times exponential in the nesting of loops
+  in the spilling and reloading passes
+  (Xavier Leroy, review by Vincent Laviron)
+
+- #10419: Add %frame_pointers primitive which is true only in native code with
+  frame pointers mode enabled.
+  (David Allsopp, review by Vincent Laviron and Mark Shinwell)
 
 ### Type system:
 
@@ -242,6 +258,9 @@ Working version
 - #1737, #2092, #7852, #7859, #10405, #10417: Update locations during
   destructive substitutions
   (Thomas Refis, review by Gabriel Radanne, report by Hugo Heuzard)
+
+- #2245: Improve error message for link order error in bytecode
+  (Pierre Chambart, review by Jérémie Dimino and Gabriel Scherer)
 
 - #8732, improved error messages for invalid private row type definitions.
   For instance, [ type t = private [< `A > `A ] ] .
@@ -411,6 +430,9 @@ Working version
   (Florian Angeletti, report by Eduardo Rafael, review by Gabriel Scherer)
 
 - #6985, #10385: remove all ghost row types from included modules
+  (Florian Angeletti, review by Gabriel Scherer)
+
+- #7453, #9828, #10416: fix #show for recursive types and modules
   (Florian Angeletti, review by Gabriel Scherer)
 
 * #8857, #10220: Don't clobber GetLastError() in caml_leave_blocking_section
