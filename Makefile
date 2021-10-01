@@ -368,6 +368,12 @@ INSTALL_COMPLIBDIR = $(DESTDIR)$(COMPLIBDIR)
 INSTALL_FLEXDLLDIR = $(INSTALL_LIBDIR)/flexdll
 FLEXDLL_MANIFEST = default$(filter-out _i386,_$(ARCH)).manifest
 
+DOCS_TO_INSTALL=\
+  Changes \
+  README.adoc \
+  README.win32.adoc \
+  LICENSE
+
 # Installation
 .PHONY: install
 install:
@@ -462,7 +468,7 @@ endif # ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
     "$(INSTALL_FLEXDLLDIR)"
 endif # ifeq "$(BOOTSTRAPPING_FLEXDLL)" "true"
 	$(INSTALL_DATA) Makefile.config "$(INSTALL_LIBDIR)"
-	$(INSTALL_DATA) Changes "$(INSTALL_DOCDIR)"
+	$(INSTALL_DATA) $(DOCS_TO_INSTALL) "$(INSTALL_DOCDIR)"
 ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	if test -f ocamlopt$(EXE); then $(MAKE) installopt; else \
 	   cd "$(INSTALL_BINDIR)"; \
