@@ -38,9 +38,6 @@ runtime-naked-pointers
 # TODO: not clear compatibility is sensible for multicore
 compatibility
 
-# TODO: signal handling and tick thread missing from systhreads
-lib-systhreads-todo
-
 # TODO: signals and kill (#9802)
 tests/lib-unix/kill/'unix_kill.ml' with 1.1 (bytecode)
 tests/lib-unix/kill/'unix_kill.ml' with 1.2 (native)
