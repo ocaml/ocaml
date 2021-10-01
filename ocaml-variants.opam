@@ -11,7 +11,7 @@ depends: [
 conflict-class: "ocaml-core-compiler"
 flags: compiler
 build: [
-  ["./configure" "--prefix=%{prefix}%" "--docdir=%{_:doc}%"]
+  ["./configure" "--prefix=%{prefix}%" "--docdir=%{doc}%/ocaml"]
   [make "-j%{jobs}%"]
 ]
 install: [make "install"]
