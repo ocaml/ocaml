@@ -34,7 +34,7 @@ LIBS = -nostdlib -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/$(UNIXLIB)
 CAMLC=$(BEST_OCAMLC) $(LIBS)
 CAMLOPT=$(BEST_OCAMLOPT) $(LIBS)
 
-MKLIB=$(CAMLRUN) $(ROOTDIR)/tools/ocamlmklib$(EXE)
+MKLIB=$(OCAMLRUN) $(ROOTDIR)/tools/ocamlmklib$(EXE)
 COMPFLAGS=-w +33..39 -warn-error +A -g -bin-annot -safe-string
 ifeq "$(FLAMBDA)" "true"
 OPTCOMPFLAGS += -O3
@@ -140,15 +140,13 @@ installopt:
 	  "$(INSTALL_THREADSLIBDIR)"
 	cd "$(INSTALL_THREADSLIBDIR)" && $(RANLIB) threads.$(A)
 
-.SUFFIXES: .ml .mli .cmo .cmi .cmx
-
-.mli.cmi:
+%.cmi: %.mli
 	$(CAMLC) -c $(COMPFLAGS) $<
 
-.ml.cmo:
+%.cmo: %.ml
 	$(CAMLC) -c $(COMPFLAGS) $<
 
-.ml.cmx:
+%.cmx: %.ml
 	$(CAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
 
 DEP_FILES := st_stubs.b.$(D)
@@ -172,6 +170,6 @@ $(foreach object_type, b n, $(eval $(call GEN_RULE,$(object_type))))
 
 .PHONY: depend
 depend:
-	$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash *.mli *.ml > .depend
+	$(OCAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash *.mli *.ml > .depend
 
 include .depend

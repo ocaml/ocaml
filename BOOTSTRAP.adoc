@@ -96,3 +96,14 @@ There are five steps to renaming a primitive:
 
 It is desirable for bootstraps to be easily repeatable, so you should commit
 changes after step 4.
+
+= Bootstrap test script
+
+A script is provided (and used on Inria's continuous
+integration infrastructure) to make sure the bootstrap works. This
+script implements the bootstrap procedure described above and performs
+two changes to the compiler: it updates the magic numbers and removes
+a primitive from the runtime. It then makes sure the bootstrap still
+works after these changes. This script can be run locally as follows:
+
+        OCAML_ARCH=linux ./tools/ci/inria/bootstrap

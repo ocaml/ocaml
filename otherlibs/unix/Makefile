@@ -51,6 +51,6 @@ include ../Makefile.otherlibs.common
 
 .PHONY: depend
 depend:
-	$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash *.mli *.ml > .depend
+	$(OCAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash *.mli *.ml > .depend
 
 include .depend

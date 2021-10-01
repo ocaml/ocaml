@@ -223,6 +223,25 @@ val mapi : (int -> char -> char) -> string -> string
 
     @since 4.02.0 *)
 
+val fold_left : ('a -> char -> 'a) -> 'a -> string -> 'a
+(** [fold_left f x s] computes [f (... (f (f x s.[0]) s.[1]) ...) s.[n-1]],
+    where [n] is the length of the string [s].
+    @since 4.13.0 *)
+
+val fold_right : (char -> 'a -> 'a) -> string -> 'a -> 'a
+(** [fold_right f s x] computes [f s.[0] (f s.[1] ( ... (f s.[n-1] x) ...))],
+    where [n] is the length of the string [s].
+    @since 4.13.0 *)
+
+val for_all : (char -> bool) -> string -> bool
+(** [for_all p s] checks if all characters in [s] satisfy the predicate [p].
+    @since 4.13.0 *)
+
+val exists : (char -> bool) -> string -> bool
+(** [exists p s] checks if at least one character of [s] satisfies the predicate
+    [p].
+    @since 4.13.0 *)
+
 val trim : string -> string
 (** [trim s] is [s] without leading and trailing whitespace. Whitespace
     characters are: [' '], ['\x0C'] (form feed), ['\n'], ['\r'], and ['\t'].

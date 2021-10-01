@@ -73,7 +73,8 @@ endef
 
 CAMLC = $(BOOT_OCAMLC) -g -nostdlib -I $(ROOTDIR)/boot \
         -use-prims $(ROOTDIR)/runtime/primitives -I $(ROOTDIR)
-CAMLOPT = $(CAMLRUN) $(ROOTDIR)/ocamlopt$(EXE) -g -nostdlib -I $(ROOTDIR)/stdlib
+CAMLOPT = $(OCAMLRUN) $(ROOTDIR)/ocamlopt$(EXE) \
+  -g -nostdlib -I $(ROOTDIR)/stdlib
 INCLUDES = $(addprefix -I $(ROOTDIR)/,utils parsing typing bytecomp \
                        middle_end middle_end/closure middle_end/flambda \
                        middle_end/flambda/base_types driver toplevel \
@@ -236,7 +237,7 @@ $(make_opcodes): make_opcodes.ml
 	$(CAMLC) $< -o $@
 
 opnames.ml: $(ROOTDIR)/runtime/caml/instruct.h $(make_opcodes)
-	$(ROOTDIR)/runtime/ocamlrun$(EXE) $(make_opcodes) -opnames < $< > $@
+	$(NEW_OCAMLRUN) $(make_opcodes) -opnames < $< > $@
 
 clean::
 	rm -f opnames.ml make_opcodes make_opcodes.exe make_opcodes.ml
@@ -317,11 +318,14 @@ caml_tex_files := \
 
 caml_tex := caml-tex$(EXE)
 
+# caml-tex uses str.cma and unix.cma and so must be compiled with
+# $(ROOTDIR)/ocamlc not $(ROOTDIR)/boot/ocamlc since the boot
+# compiler does not necessarily have the correct shared library
+# configuration.
 $(caml_tex): INCLUDES += $(addprefix -I $(ROOTDIR)/otherlibs/,str $(UNIXLIB))
 $(caml_tex): $(caml_tex_files)
-	$(ROOTDIR)/runtime/ocamlrun$(EXE) $(ROOTDIR)/ocamlc$(EXE) -nostdlib \
-	                            -I $(ROOTDIR)/stdlib $(LINKFLAGS) -linkall \
-	                            -o $@ -no-alias-deps $^
+	$(OCAMLRUN) $(ROOTDIR)/ocamlc$(EXE) -nostdlib -I $(ROOTDIR)/stdlib \
+	  $(LINKFLAGS) -linkall -o $@ -no-alias-deps $^
 
 # we need str and unix which depend on the bytecode version of other tools
 # thus we delay building caml-tex to the opt.opt stage

@@ -68,10 +68,8 @@ include depend.mk
 clean:
 	rm -f *.cm* lib.ml
 
-.SUFFIXES: .ml .cmo .cmx
-
-.ml.cmo:
+%.cmo: %.ml
 	$(OCAMLC) -c $<
 
-.ml.cmx:
+%.cmx: %.ml
 	$(OCAMLOPT) -c $<
