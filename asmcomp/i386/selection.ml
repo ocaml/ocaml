@@ -133,7 +133,7 @@ let pseudoregs_for_operation op arg res =
   (* For floating-point operations and floating-point loads,
      the result is always left at the top of the floating-point stack *)
   | Iconst_float _ | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
-  | Ifloatofint | Iload((Single | Double | Double_u), _)
+  | Ifloatofint | Iload((Single | Double | Double_u), _, _)
   | Ispecific(Isubfrev | Idivfrev | Ifloatarithmem _ | Ifloatspecial _) ->
       (arg, [| tos |], false)           (* don't move it immediately *)
   (* For storing a byte, the argument must be in eax...edx.

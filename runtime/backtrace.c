@@ -30,15 +30,19 @@
 #include "caml/startup.h"
 
 /* Start or stop the backtrace machinery */
-CAMLprim value caml_record_backtrace(value vflag)
+CAMLexport void caml_record_backtraces(int flag)
 {
-  int flag = Int_val(vflag);
-
   if (flag != Caml_state->backtrace_active) {
     Caml_state->backtrace_active = flag;
     Caml_state->backtrace_pos = 0;
     caml_modify_generational_global_root(&Caml_state->backtrace_last_exn, Val_unit);
   }
+  return;
+}
+
+CAMLprim value caml_record_backtrace(value flag)
+{
+  caml_record_backtraces(Int_val(flag));
   return Val_unit;
 }
 

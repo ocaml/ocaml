@@ -26,7 +26,7 @@ inherit Schedgen.scheduler_generic
 
 method oper_latency = function
     Ireload -> 2
-  | Iload(_, _) -> 2
+  | Iload(_, _, _) -> 2
   | Iconst_float _ -> 2 (* turned into a load *)
   | Iconst_symbol _ -> 1
   | Iintop(Imul | Imulh) -> 9
@@ -46,7 +46,7 @@ method! reload_retaddr_latency = 12
 
 method oper_issue_cycles = function
     Iconst_float _ | Iconst_symbol _ -> 2
-  | Iload(_, Ibased(_, _)) -> 2
+  | Iload(_, Ibased(_, _), _) -> 2
   | Istore(_, Ibased(_, _), _) -> 2
   | Ialloc _ -> 4
   | Iintop(Imod) -> 40 (* assuming full stall *)

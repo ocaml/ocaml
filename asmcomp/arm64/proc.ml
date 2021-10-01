@@ -262,8 +262,9 @@ let destroyed_at_oper = function
       if alloc || stack_ofs > 0 then all_phys_regs
       else destroyed_at_c_call
   | Iop(Ialloc _) ->
-      [| reg_x15 |]
-  | Iop(Iintoffloat | Ifloatofint | Iload(Single, _) | Istore(Single, _, _)) ->
+      [| reg_x8 |]
+  | Iop( Iintoffloat | Ifloatofint
+       | Iload(Single, _, _) | Istore(Single, _, _)) ->
       [| reg_d7 |]            (* d7 / s7 destroyed *)
   | _ -> [||]
 
@@ -282,7 +283,7 @@ let max_register_pressure = function
   | Iextcall _ -> [| 7; 8 |]  (* 7 integer callee-saves, 8 FP callee-saves *)
   | Ialloc _ -> [| 22; 32 |]
   | Iintoffloat | Ifloatofint
-  | Iload(Single, _) | Istore(Single, _, _) -> [| 23; 31 |]
+  | Iload(Single, _, _) | Istore(Single, _, _) -> [| 23; 31 |]
   | _ -> [| 23; 32 |]
 
 (* Layout of the stack *)

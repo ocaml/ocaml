@@ -19,6 +19,8 @@
 #define CAML_OSDEPS_H
 
 #ifdef _WIN32
+#include <time.h>
+
 extern unsigned short caml_win32_major;
 extern unsigned short caml_win32_minor;
 extern unsigned short caml_win32_build;
@@ -130,6 +132,8 @@ CAMLextern int win_wide_char_to_multi_byte(const wchar_t* s,
 CAMLextern int caml_win32_isatty(int fd);
 
 CAMLextern void caml_expand_command_line (int *, wchar_t ***);
+
+CAMLextern clock_t caml_win32_clock(void);
 
 #endif /* _WIN32 */
 

@@ -407,7 +407,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
         (If_then_else (cond, arg2, Var const_false)))
   | Lprim ((Psequand | Psequor), _, _) ->
     Misc.fatal_error "Psequand / Psequor must have exactly two arguments"
-  | Lprim ((Pidentity | Pbytes_to_string | Pbytes_of_string), [arg], _) ->
+  | Lprim ((Pbytes_to_string | Pbytes_of_string), [arg], _) ->
     close t env arg
   | Lprim (Pignore, [arg], _) ->
     let var = Variable.create Names.ignore in
@@ -416,21 +416,6 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     in
     Flambda.create_let var defining_expr
       (name_expr (Const (Int 0)) ~name:Names.unit)
-  | Lprim (Pdirapply, [funct; arg], loc)
-  | Lprim (Prevapply, [arg; funct], loc) ->
-    let apply : Lambda.lambda_apply =
-      { ap_func = funct;
-        ap_args = [arg];
-        ap_loc = loc;
-        (* CR-someday lwhite: it would be nice to be able to give
-           application attributes to functions applied with the application
-           operators. *)
-        ap_tailcall = Default_tailcall;
-        ap_inlined = Default_inline;
-        ap_specialised = Default_specialise;
-      }
-    in
-    close t env (Lambda.Lapply apply)
   | Lprim (Praise kind, [arg], loc) ->
     let arg_var = Variable.create Names.raise_arg in
     let dbg = Debuginfo.from_location loc in
