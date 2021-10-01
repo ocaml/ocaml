@@ -17,12 +17,18 @@ open Format
 include Topcommon
 include Topeval
 
-(* Read and execute commands from a file, or from stdin if [name] is "". *)
+type input =
+  | Stdin
+  | File of string
+  | String of string
 
 let use_print_results = ref true
 
-let use_channel ppf ~wrap_in_module ic name filename =
-  let lb = Lexing.from_channel ic in
+let filename_of_input = function
+  | File name -> name
+  | Stdin | String _ -> ""
+
+let use_lexbuf ppf ~wrap_in_module lb name filename =
   Warnings.reset_fatal ();
   Location.init lb filename;
   (* Skip initial #! line if any *)
@@ -60,34 +66,41 @@ let use_output ppf command =
          let ic = open_in_bin fn in
          Misc.try_finally ~always:(fun () -> close_in ic)
            (fun () ->
-              use_channel ppf ~wrap_in_module:false ic "" "(command-output)")
+            let lexbuf = (Lexing.from_channel ic) in
+            use_lexbuf ppf ~wrap_in_module:false lexbuf "" "(command-output)")
        | n ->
          fprintf ppf "Command exited with code %d.@." n;
          false)
 
-let use_file ppf ~wrap_in_module name =
-  match name with
-  | "" ->
-    use_channel ppf ~wrap_in_module stdin name "(stdin)"
-  | _ ->
+let use_input ppf ~wrap_in_module input =
+  match input with
+  | Stdin ->
+    let lexbuf = Lexing.from_channel stdin in
+    use_lexbuf ppf ~wrap_in_module lexbuf "" "(stdin)"
+  | String value ->
+    let lexbuf = Lexing.from_string value in
+    use_lexbuf ppf ~wrap_in_module lexbuf "" "(command-line input)"
+  | File name ->
     match Load_path.find name with
     | filename ->
       let ic = open_in_bin filename in
       Misc.try_finally ~always:(fun () -> close_in ic)
-        (fun () -> use_channel ppf ~wrap_in_module ic name filename)
+        (fun () ->
+          let lexbuf = Lexing.from_channel ic in
+          use_lexbuf ppf ~wrap_in_module lexbuf name filename)
     | exception Not_found ->
       fprintf ppf "Cannot find file %s.@." name;
       false
 
-let mod_use_file ppf name =
-  use_file ppf ~wrap_in_module:true name
-let use_file ppf name =
-  use_file ppf ~wrap_in_module:false name
+let mod_use_input ppf name =
+  use_input ppf ~wrap_in_module:true name
+let use_input ppf name =
+  use_input ppf ~wrap_in_module:false name
 
 let use_silently ppf name =
   Misc.protect_refs
     [ R (use_print_results, false) ]
-    (fun () -> use_file ppf name)
+    (fun () -> use_input ppf name)
 
 let load_file = load_file false
 
@@ -95,7 +108,8 @@ let load_file = load_file false
 
 let run_script ppf name args =
   override_sys_argv args;
-  Compmisc.init_path ~dir:(Filename.dirname name) ();
+  let filename = filename_of_input name in
+  Compmisc.init_path ~dir:(Filename.dirname filename) ();
                    (* Note: would use [Filename.abspath] here, if we had it. *)
   begin
     try toplevel_env := Compmisc.initial_env()
@@ -105,10 +119,13 @@ let run_script ppf name args =
   Sys.interactive := false;
   run_hooks After_setup;
   let explicit_name =
+    match name with
+    | File name as filename  -> (
     (* Prevent use_silently from searching in the path. *)
     if name <> "" && Filename.is_implicit name
-    then Filename.concat Filename.current_dir_name name
-    else name
+    then File (Filename.concat Filename.current_dir_name name)
+    else filename)
+    | (Stdin | String _) as x -> x
   in
   use_silently ppf explicit_name
 
@@ -152,12 +169,13 @@ let find_ocamlinit () =
 let load_ocamlinit ppf =
   if !Clflags.noinit then ()
   else match !Clflags.init_file with
-  | Some f -> if Sys.file_exists f then ignore (use_silently ppf f)
-              else fprintf ppf "Init file not found: \"%s\".@." f
+  | Some f ->
+    if Sys.file_exists f then ignore (use_silently ppf (File f) )
+    else fprintf ppf "Init file not found: \"%s\".@." f
   | None ->
       match find_ocamlinit () with
       | None -> ()
-      | Some file -> ignore (use_silently ppf file)
+      | Some file -> ignore (use_silently ppf (File file))
 
 (* The interactive loop *)
 

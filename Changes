@@ -36,6 +36,10 @@ OCaml 4.13.0
     'let* x = x in ...' and 'let%ext x = x in ...' respectively.
   (Stephen Dolan, review by Gabriel Scherer)
 
+- #10441: Remove unnecessary parentheses surrounding immediate objects.
+  Allow 'object ... end # f', 'f object ... end', etc.
+  (Yan Dong, review by Nicolás Ojeda Bär, Florian Angeletti and Gabriel Scherer)
+
 ### Type system:
 
 - #9584, #7074: Allow to name existentials in pattern-matching
@@ -276,6 +280,10 @@ OCaml 4.13.0
   Adds a -nonavbar option to ocamldoc, and uses it to improve navigation within
   the reference manual.
   (John Whitington, review by David Allsopp)
+
+- #10438: add a new toplevel cli argument `-e <script>` to
+  run script passed to the toplevel.
+  (Pavlo Khrystenko, review by Gabriel Scherer)
 
 ### Manual and documentation:
 
