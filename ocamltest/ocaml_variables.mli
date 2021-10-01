@@ -76,6 +76,7 @@ val nativecc_libs : Variables.t
 (** Libraries to link with for native code *)
 
 val objext : Variables.t
+val libext : Variables.t
 val asmext : Variables.t
 
 val ocamlc_byte : Variables.t

@@ -1743,21 +1743,6 @@ let expand_head_opt env ty =
     Btype.backtrack snap;
     repr ty
 
-(* Make sure that the type parameters of the type constructor [ty]
-   respect the type constraints *)
-let enforce_constraints env ty =
-  match ty with
-    {desc = Tconstr (path, args, _abbrev); level = level} ->
-      begin try
-        let decl = Env.find_type path env in
-        ignore
-          (subst env level Public (ref Mnil) None decl.type_params args
-             (newvar2 level))
-      with Not_found -> ()
-      end
-  | _ ->
-      assert false
-
 (* Recursively expand the head of a type.
    Also expand #-types. *)
 let full_expand ~may_forget_scope env ty =

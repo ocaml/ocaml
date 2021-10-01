@@ -4,7 +4,7 @@ include dynlink
 
 ld_library_path += "${test_build_directory}"
 
-files = "plug1.ml plug2.ml registry.ml stub1.c stub2.c"
+readonly_files = "plug1.ml plug2.ml registry.ml stub1.c stub2.c"
 
 * shared-libraries
 ** setup-ocamlc.byte-build-env

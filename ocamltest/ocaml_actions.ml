@@ -1109,6 +1109,7 @@ let config_variables _log env =
     Ocaml_variables.shared_library_cflags,
       Ocamltest_config.shared_library_cflags;
     Ocaml_variables.objext, Ocamltest_config.objext;
+    Ocaml_variables.libext, Ocamltest_config.libext;
     Ocaml_variables.asmext, Ocamltest_config.asmext;
     Ocaml_variables.sharedobjext, Ocamltest_config.sharedobjext;
     Ocaml_variables.ocamlc_default_flags,

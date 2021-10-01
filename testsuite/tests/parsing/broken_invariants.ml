@@ -1,5 +1,5 @@
 (* TEST
-   files="illegal_ppx.ml"
+   readonly_files = "illegal_ppx.ml"
   * setup-ocamlc.byte-build-env
   ** ocamlc.byte with ocamlcommon
   all_modules="illegal_ppx.ml"

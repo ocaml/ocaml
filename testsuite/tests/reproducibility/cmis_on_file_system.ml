@@ -1,5 +1,5 @@
 (* TEST
-  files = "cmis_on_file_system.ml cmis_on_file_system_companion.mli"
+  readonly_files = "cmis_on_file_system.ml cmis_on_file_system_companion.mli"
   * setup-ocamlc.byte-build-env
   ** ocamlc.byte
   compile_only = "true"

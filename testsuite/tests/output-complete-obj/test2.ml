@@ -1,6 +1,6 @@
 (* TEST
 
-files = "puts.c"
+readonly_files = "puts.c"
 use_runtime = "false"
 
 * hasunix

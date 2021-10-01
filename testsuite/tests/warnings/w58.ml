@@ -1,7 +1,7 @@
 (* TEST
 
 flags = "-w +A-70"
-files = "module_without_cmx.mli"
+readonly_files = "module_without_cmx.mli"
 
 * setup-ocamlc.byte-build-env
 ** ocamlc.byte

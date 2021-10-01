@@ -1,6 +1,6 @@
 (* TEST
 
-files = "test.ml_stub.c"
+readonly_files = "test.ml_stub.c"
 
 * libunix
 ** setup-ocamlc.byte-build-env

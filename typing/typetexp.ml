@@ -241,11 +241,6 @@ and transl_type_aux env policy styp =
         (List.combine stl args) params;
       let constr =
         newconstr path (List.map (fun ctyp -> ctyp.ctyp_type) args) in
-      begin try
-        Ctype.enforce_constraints env constr
-      with Unify trace ->
-        raise (Error(styp.ptyp_loc, env, Type_mismatch trace))
-      end;
       ctyp (Ttyp_constr (path, lid, args)) constr
   | Ptyp_object (fields, o) ->
       let ty, fields = transl_fields env policy o fields in

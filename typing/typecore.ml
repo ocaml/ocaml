@@ -343,14 +343,13 @@ let unify_pat ?refine env pat expected_ty =
 
 (* unification of a type with a Tconstr with freshly created arguments *)
 let unify_head_only ~refine loc env ty constr =
-  let ty_res = instance constr.cstr_res in
-  let ty_res = repr ty_res in
-  match ty_res.desc with
-  | Tconstr(p,args,m) ->
-      set_type_desc ty_res (Tconstr(p,List.map (fun _ -> newvar ()) args,m));
-      enforce_constraints !env ty_res;
-      unify_pat_types ~refine loc env ty_res ty
-  | _ -> assert false
+  let path =
+    match (repr constr.cstr_res).desc with
+    | Tconstr(p, _, _) -> p
+    | _ -> assert false in
+  let decl = Env.find_type path !env in
+  let ty' = Ctype.newconstr path (Ctype.instance_list decl.type_params) in
+  unify_pat_types ~refine loc env ty' ty
 
 (* Creating new conjunctive types is not allowed when typing patterns *)
 (* make all Reither present in open variants *)
@@ -2574,17 +2573,6 @@ let generalizable level ty =
 (* Hack to allow coercion of self. Will clean-up later. *)
 let self_coercion = ref ([] : (Path.t * Location.t list ref) list)
 
-(* Helpers for packaged modules. *)
-let create_package_type loc env (p, l) =
-  let s = !Typetexp.transl_modtype_longident loc env p in
-  let fields = List.map (fun (name, ct) ->
-                           name, Typetexp.transl_simple_type env false ct) l in
-  let ty = newty (Tpackage (s,
-                    List.map fst l,
-                   List.map (fun (_, cty) -> cty.ctyp_type) fields))
-  in
-   (s, fields, ty)
-
 (* Helpers for type_cases *)
 
 let contains_variant_either ty =
@@ -3012,7 +3000,7 @@ and type_expect_
       begin try match
         sarg, expand_head env ty_expected, expand_head env ty_expected0 with
       | Some sarg, {desc = Tvariant row}, {desc = Tvariant row0} ->
-          let row = row_repr row in
+          let row = row_repr row and row0 = row_repr row0 in
           begin match row_field_repr (List.assoc l row.row_fields),
           row_field_repr (List.assoc l row0.row_fields) with
             Rpresent (Some ty), Rpresent (Some ty0) ->
