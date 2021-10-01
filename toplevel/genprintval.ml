@@ -385,8 +385,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                 | {type_kind = Type_abstract; type_manifest = Some body} ->
                     tree_of_val depth obj
                       (instantiate_type env decl.type_params ty_list body)
-                | {type_kind = Type_variant constr_list; type_unboxed} ->
-                    let unbx = type_unboxed.unboxed in
+                | {type_kind = Type_variant (constr_list,rep)} ->
+                    let unbx = (rep = Variant_unboxed) in
                     let tag =
                       if unbx then Cstr_unboxed
                       else if O.is_block obj

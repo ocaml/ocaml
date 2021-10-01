@@ -35,6 +35,7 @@ type error =
   | Cannot_open_dll of filepath
   | Required_module_unavailable of modname * modname
   | Camlheader of string * filepath
+  | Wrong_link_order of (modname * modname) list
 
 exception Error of error
 

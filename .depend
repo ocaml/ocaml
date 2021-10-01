@@ -3017,7 +3017,6 @@ asmcomp/selection.cmi : \
 asmcomp/spill.cmo : \
     asmcomp/reg.cmi \
     asmcomp/proc.cmi \
-    utils/misc.cmi \
     asmcomp/mach.cmi \
     asmcomp/cmm.cmi \
     utils/clflags.cmi \
@@ -3025,7 +3024,6 @@ asmcomp/spill.cmo : \
 asmcomp/spill.cmx : \
     asmcomp/reg.cmx \
     asmcomp/proc.cmx \
-    utils/misc.cmx \
     asmcomp/mach.cmx \
     asmcomp/cmm.cmx \
     utils/clflags.cmx \
