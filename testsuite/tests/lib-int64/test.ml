@@ -56,6 +56,10 @@ let test_string_conv () =
   assert (Int64.of_string "" = None); *)
   ()
 
+let test_min_max () =
+  assert (Int64.max 2L 3L = 3L);
+  assert (Int64.min 2L 3L = 2L)
+
 let tests () =
   test_consts ();
   test_arith ();
@@ -64,6 +68,7 @@ let tests () =
   test_compare ();
   test_float_conv ();
   test_string_conv ();
+  test_min_max ();
   ()
 
 let () =

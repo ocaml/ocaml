@@ -57,8 +57,11 @@ val initial_safe_string: t
 val initial_unsafe_string: t
 val diff: t -> t -> Ident.t list
 
-type type_descriptions =
-    constructor_description list * label_description list
+type type_descr_kind =
+  (label_description, constructor_description) type_kind
+
+  (* alias for compatibility *)
+type type_descriptions = type_descr_kind
 
 (* For short-paths *)
 type iter_cont

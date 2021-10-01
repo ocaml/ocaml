@@ -77,7 +77,7 @@ let allocate_registers() =
       if not (Reg.is_visited r) then begin
         Reg.mark_visited r;
         f r w;
-        List.iter (fun (r1, w1) -> walk r1 (min w w1)) r.prefer
+        List.iter (fun (r1, w1) -> walk r1 (Int.min w w1)) r.prefer
       end in
     List.iter (fun (r, w) -> walk r w) reg.prefer;
     Reg.clear_visited_marks () in

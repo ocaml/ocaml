@@ -225,6 +225,17 @@ val equal: t -> t -> bool
 (** The equal function for native ints.
     @since 4.03.0 *)
 
+val min: t -> t -> t
+(** Return the smaller of the two arguments.
+    @since 4.13.0
+*)
+
+val max: t -> t -> t
+(** Return the greater of the two arguments.
+    @since 4.13.0
+ *)
+
+
 (**/**)
 
 (** {1 Deprecated functions} *)

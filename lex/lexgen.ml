@@ -494,7 +494,7 @@ let encode_casedef casedef =
         Alt(reg, Seq(r, Action count)),
         (count, m ,act) :: actions,
         (succ count),
-        max loc_ntags ntags)
+        Int.max loc_ntags ntags)
       (Empty, [], 0, 0)
       casedef in
   r

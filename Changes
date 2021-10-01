@@ -90,6 +90,11 @@ Working version
 
 ### Code generation and optimizations:
 
+- #1400: Add an optional invariants check on Cmm, which can be activated
+  with the -dcmm-invariants flag
+  (Vincent Laviron, with help from Sebastien Hinderer, review by Stephen Dolan
+   and David Allsopp)
+
 - #9876: do not cache the young_limit GC variable in a processor register.
   This affects the ARM64, PowerPC and RISC-V ports, making signal handling
   and minor GC triggers more reliable, at the cost of a small slowdown.
@@ -111,10 +116,9 @@ Working version
 - #10349: Fix destroyed_at_c_call on RISC-V
   (Mark Shinwell, review by Nicolás Ojeda Bär)
 
-- #1400: Add an optional invariants check on Cmm, which can be activated
-  with the -dcmm-invariants flag
-  (Vincent Laviron, with help from Sebastien Hinderer, review by Stephen Dolan
-   and David Allsopp)
+- #10404: Add a generic backward dataflow analyzer and use it to speed up
+  liveness analysis
+  (Xavier Leroy, review by Gabriel Scherer, Greta Yorsh, Mark Shinwell)
 
 ### Type system:
 
@@ -164,6 +168,9 @@ Working version
 
 - #4070, #10398: small optimization of Stdlib.{frexp,modf}.
   (Markus Mottl, Nicolás Ojeda Bär, review by Gabriel Scherer)
+
+- #10389, #10391, #10392: Add {Int,Int32,Int64,Nativeint}.{min,max}.
+  (Nicolás Ojeda Bär and Alain Frisch, review by Xavier Leroy)
 
 ### Other libraries:
 
@@ -231,6 +238,10 @@ Working version
   (Vincent Laviron, review by Daniel Bünzli and Gabriel Scherer)
 
 ### Compiler user-interface and warnings:
+
+- #1737, #2092, #7852, #7859, #10405: Update locations during destructive
+  substitutions
+  (Thomas Refis, review by Gabriel Radanne, report by Hugo Heuzard)
 
 - #8732, improved error messages for invalid private row type definitions.
   For instance, [ type t = private [< `A > `A ] ] .
@@ -337,6 +348,10 @@ Working version
 - #8936: Per-function environment for Emit
   (Greta Yorsh, review by Vincent Laviron and Florian Angeletti)
 
+- #10307: Refactor type_description in the typing env
+  (Nicolas Chataing, review by Takafumi Saikawa, Florian Angeletti and Thomas
+   Refis)
+
 - #10170: Maintain more structural information in type-checking errors
   A mostly-internal change that preserves more information in errors
   during type checking; most significantly, it split the errors from
@@ -346,13 +361,22 @@ Working version
 
 ### Build system:
 
-- #10289: Do not print option documentation in usage messages.
-    (Pavlo Khrystenko, review by Gabriel Scherer)
+- #10289, #10406: Do not print option documentation in usage messages.
+    (Pavlo Khrystenko, review by Gabriel Scherer, fix by Kate Deplaix)
 
 - #9191, #10091, #10182: take the LDFLAGS variable into account, except on
   flexlink-using systems.
   (Gabriel Scherer, review by Sébastien Hinderer and David Allsopp,
    report by Ralph Seichter)
+
+- #10135: Overhaul the FlexDLL bootstrap process. It's now fully integrated
+  with the default build target and controlled by --with-flexdll which allows
+  externally downloaded sources for FlexDLL to be specified. A separate
+  non-shared version of the runtime is built, and shared artefacts are no longer
+  built twice. When bootstrapping, any flexlink in PATH is now ignored and the
+  Cygwin port also supports bootstrapping FlexDLL. flexlink.opt is automatically
+  built and installed as part of opt.opt/world.opt.
+  (David Allsopp, review by Sébastien Hinderer)
 
 - #10156: configure script: fix sockets feature detection.
   (Lucas Pluvinage, review by David Allsopp and Damien Doligez)
@@ -376,6 +400,15 @@ Working version
   review by David Allsopp)
 
 ### Bug fixes:
+
+- #6654, #9974, #10401: make `include` and with `constraints` handle correctly
+  the ghost components of signatures. For instance, in
+
+    include struct class c = object end end type c
+
+   the type `c` shadows the `class c` to avoid shadowing only the ghost type
+   c introduced by the class.
+  (Florian Angeletti, report by Eduardo Rafael, review by Gabriel Scherer)
 
 - #6985, #10385: remove all ghost row types from included modules
   (Florian Angeletti, review by Gabriel Scherer)

@@ -319,7 +319,7 @@ let copy_file_chunk ic oc len =
   let buff = Bytes.create 0x1000 in
   let rec copy n =
     if n <= 0 then () else begin
-      let r = input ic buff 0 (min n 0x1000) in
+      let r = input ic buff 0 (Int.min n 0x1000) in
       if r = 0 then raise End_of_file else (output oc buff 0 r; copy(n-r))
     end
   in copy len
@@ -502,7 +502,7 @@ module LongString = struct
   let input_bytes_into tbl ic len =
     let count = ref len in
     Array.iter (fun str ->
-      let chunk = min !count (Bytes.length str) in
+      let chunk = Int.min !count (Bytes.length str) in
       really_input ic str 0 chunk;
       count := !count - chunk) tbl
 
@@ -518,7 +518,7 @@ let edit_distance a b cutoff =
   let cutoff =
     (* using max_int for cutoff would cause overflows in (i + cutoff + 1);
        we bring it back to the (max la lb) worstcase *)
-    min (max la lb) cutoff in
+    Int.min (Int.max la lb) cutoff in
   if abs (la - lb) > cutoff then None
   else begin
     (* initialize with 'cutoff + 1' so that not-yet-written-to cases have
@@ -533,11 +533,11 @@ let edit_distance a b cutoff =
       m.(0).(j) <- j;
     done;
     for i = 1 to la do
-      for j = max 1 (i - cutoff - 1) to min lb (i + cutoff + 1) do
+      for j = Int.max 1 (i - cutoff - 1) to Int.min lb (i + cutoff + 1) do
         let cost = if a.[i-1] = b.[j-1] then 0 else 1 in
         let best =
           (* insert, delete or substitute *)
-          min (1 + min m.(i-1).(j) m.(i).(j-1)) (m.(i-1).(j-1) + cost)
+          Int.min (1 + Int.min m.(i-1).(j) m.(i).(j-1)) (m.(i-1).(j-1) + cost)
         in
         let best =
           (* swap two adjacent letters; we use "cost" again in case of
@@ -547,7 +547,7 @@ let edit_distance a b cutoff =
              imitation has its virtues *)
           if not (i > 1 && j > 1 && a.[i-1] = b.[j-2] && a.[i-2] = b.[j-1])
           then best
-          else min best (m.(i-2).(j-2) + cost)
+          else Int.min best (m.(i-2).(j-2) + cost)
         in
         m.(i).(j) <- best
       done;
@@ -779,7 +779,7 @@ let delete_eol_spaces src =
 
 let pp_two_columns ?(sep = "|") ?max_lines ppf (lines: (string * string) list) =
   let left_column_size =
-    List.fold_left (fun acc (s, _) -> max acc (String.length s)) 0 lines in
+    List.fold_left (fun acc (s, _) -> Int.max acc (String.length s)) 0 lines in
   let lines_nb = List.length lines in
   let ellipsed_first, ellipsed_last =
     match max_lines with
@@ -1017,7 +1017,7 @@ module Magic_number = struct
       (* a header is "truncated" if it starts like a valid magic number,
          that is if its longest segment of length at most [kind_length]
          is a prefix of [raw_kind kind] for some kind [kind] *)
-      let sub_length = min kind_length (String.length s) in
+      let sub_length = Int.min kind_length (String.length s) in
       let starts_as kind =
         String.sub s 0 sub_length = String.sub (raw_kind kind) 0 sub_length
       in

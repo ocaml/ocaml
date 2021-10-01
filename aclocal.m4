@@ -130,6 +130,7 @@ AC_DEFUN([OCAML_CC_SAVE_VARIABLES], [
   saved_CC="$CC"
   saved_CFLAGS="$CFLAGS"
   saved_CPPFLAGS="$CPPFLAGS"
+  saved_LIBS="$LIBS"
   saved_ac_ext="$ac_ext"
   saved_ac_compile="$ac_compile"
   # Move the content of confdefs.h to another file so it does not
@@ -147,6 +148,7 @@ AC_DEFUN([OCAML_CC_RESTORE_VARIABLES], [
   CPPFLAGS="$saved_CPPFLAGS"
   CFLAGS="$saved_CFLAGS"
   CC="$saved_CC"
+  LIBS="$saved_LIBS"
 ])
 
 AC_DEFUN([OCAML_AS_HAS_DEBUG_PREFIX_MAP], [
@@ -289,4 +291,68 @@ AC_DEFUN([OCAML_CHECK_LIBUNWIND], [
     [libunwind_available=false])
   LDFLAGS="$SAVED_LDFLAGS"
   CFLAGS="$SAVED_CFLAGS"
+])
+
+AC_DEFUN([OCAML_TEST_FLEXLINK], [
+  OCAML_CC_SAVE_VARIABLES
+
+  AC_MSG_CHECKING([whether $1 works])
+
+  AC_COMPILE_IFELSE(
+    [AC_LANG_SOURCE([int answer = 42;])],
+    [# Create conftest1.$ac_objext as a symlink on Cygwin to ensure that native
+    # flexlink can cope. The reverse test is unnecessary (a Cygwin-compiled
+    # flexlink can read anything).
+    mv conftest.$ac_objext conftest1.$ac_objext
+    AS_CASE([$4],[*-pc-cygwin],
+      [ln -s conftest1.$ac_objext conftest2.$ac_objext],
+      [cp conftest1.$ac_objext conftest2.$ac_objext])
+
+    CC="$1 -chain $2 -exe"
+    LIBS="conftest2.$ac_objext"
+    CPPFLAGS="$3 $CPPFLAGS"
+    AC_LINK_IFELSE(
+      [AC_LANG_SOURCE([int main() { return 0; }])],
+      [AC_MSG_RESULT([yes])],
+      [AC_MSG_RESULT([no])
+      AC_MSG_ERROR([$1 does not work])])],
+    [AC_MSG_RESULT([unexpected compile error])
+    AC_MSG_ERROR([error calling the C compiler])])
+
+  OCAML_CC_RESTORE_VARIABLES
+])
+
+AC_DEFUN([OCAML_TEST_FLEXDLL_H], [
+  OCAML_CC_SAVE_VARIABLES
+
+  AS_IF([test -n "$1"],[CPPFLAGS="-I $1 $CPPFLAGS"])
+  have_flexdll_h=no
+  AC_CHECK_HEADER([flexdll.h],[have_flexdll_h=yes],[have_flexdll_h=no])
+  AS_IF([test x"$have_flexdll_h" = 'xno'],
+    [AS_IF([test -n "$1"],
+      [AC_MSG_ERROR([$1/flexdll.h appears unusable])])])
+
+  OCAML_CC_RESTORE_VARIABLES
+])
+
+AC_DEFUN([OCAML_TEST_FLEXLINK_WHERE], [
+  OCAML_CC_SAVE_VARIABLES
+
+  AC_MSG_CHECKING([if "$1 -where" includes flexdll.h])
+  flexlink_where="$($1 -where | tr -d '\r')"
+  CPPFLAGS="$CPPFLAGS -I \"$flexlink_where\""
+  cat > conftest.c <<"EOF"
+#include <flexdll.h>
+int main (void) {return 0;}
+EOF
+  cat > conftest.Makefile <<EOF
+all:
+	$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.c $LIBS
+EOF
+  AS_IF([make -f conftest.Makefile >/dev/null 2>/dev/null],
+    [have_flexdll_h=yes
+    AC_MSG_RESULT([yes])],
+    [AC_MSG_RESULT([no])])
+
+  OCAML_CC_RESTORE_VARIABLES
 ])

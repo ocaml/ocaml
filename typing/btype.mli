@@ -127,7 +127,7 @@ type type_iterators =
     it_functor_param: type_iterators -> functor_parameter -> unit;
     it_module_type: type_iterators -> module_type -> unit;
     it_class_type: type_iterators -> class_type -> unit;
-    it_type_kind: type_iterators -> type_kind -> unit;
+    it_type_kind: type_iterators -> type_decl_kind -> unit;
     it_do_type_expr: type_iterators -> type_expr -> unit;
     it_type_expr: type_iterators -> type_expr -> unit;
     it_path: Path.t -> unit; }
@@ -268,7 +268,7 @@ val set_commu: commutable ref -> commutable -> unit
 (**** Forward declarations ****)
 val print_raw: (Format.formatter -> type_expr -> unit) ref
 
-val iter_type_expr_kind: (type_expr -> unit) -> (type_kind -> unit)
+val iter_type_expr_kind: (type_expr -> unit) -> (type_decl_kind -> unit)
 
 val iter_type_expr_cstr_args: (type_expr -> unit) ->
   (constructor_arguments -> unit)

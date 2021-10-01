@@ -1598,7 +1598,7 @@ let expand_abbrev_gen kind find_type_expansion env ty =
             (* For gadts, remember type as non exportable *)
             (* The ambiguous level registered for ty' should be the highest *)
             (* if !trace_gadt_instances then begin *)
-            let scope = max lv ty.scope in
+            let scope = Int.max lv ty.scope in
             update_scope scope ty;
             update_scope scope ty';
             ty'
@@ -2469,7 +2469,7 @@ let add_gadt_equation env source destination =
   else if local_non_recursive_abbrev !env source destination then begin
     let destination = duplicate_type destination in
     let expansion_scope =
-      max (Path.scope source) (get_gadt_equations_level ())
+      Int.max (Path.scope source) (get_gadt_equations_level ())
     in
     let decl =
       new_local_type ~manifest_and_scope:(destination, expansion_scope) () in
@@ -2697,8 +2697,8 @@ and unify2 env t1 t2 =
   ignore (expand_head_unif !env t2);
   let t1' = expand_head_unif !env t1 in
   let t2' = expand_head_unif !env t2 in
-  let lv = min t1'.level t2'.level in
-  let scope = max t1'.scope t2'.scope in
+  let lv = Int.min t1'.level t2'.level in
+  let scope = Int.max t1'.scope t2'.scope in
   update_level_for Unify !env lv t2;
   update_level_for Unify !env lv t1;
   update_scope_for Unify scope t2;
@@ -2925,7 +2925,7 @@ and unify_fields env ty1 ty2 =          (* Optimization *)
   and (fields2, rest2) = flatten_fields ty2 in
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
   let l1 = (repr ty1).level and l2 = (repr ty2).level in
-  let va = make_rowvar (min l1 l2) (miss2=[]) rest1 (miss1=[]) rest2 in
+  let va = make_rowvar (Int.min l1 l2) (miss2=[]) rest1 (miss1=[]) rest2 in
   let d1 = rest1.desc and d2 = rest2.desc in
   try
     unify env (build_fields l1 miss1 va) rest2;
@@ -2977,7 +2977,7 @@ and unify_row env row1 row2 =
     | Some _, Some _ -> if rm2.level < rm1.level then rm2 else rm1
     | Some _, None -> rm1
     | None, Some _ -> rm2
-    | None, None -> newty2 (min rm1.level rm2.level) (Tvar None)
+    | None, None -> newty2 (Int.min rm1.level rm2.level) (Tvar None)
   in
   let fixed = merge_fixed_explanation fixed1 fixed2
   and closed = row1.row_closed || row2.row_closed in
@@ -4143,7 +4143,13 @@ let pred_expand n = if n mod 2 = 0 && n > 0 then pred n else n
 let pred_enlarge n = if n mod 2 = 1 then pred n else n
 
 type change = Unchanged | Equiv | Changed
-let collect l = List.fold_left (fun c1 (_, c2) -> max c1 c2) Unchanged l
+let max_change c1 c2 =
+  match c1, c2 with
+  | _, Changed | Changed, _ -> Changed
+  | Equiv, _ | _, Equiv -> Equiv
+  | _ -> Unchanged
+
+let collect l = List.fold_left (fun c1 (_, c2) -> max_change c1 c2) Unchanged l
 
 let rec filter_visited = function
     [] -> []
@@ -4184,7 +4190,7 @@ let rec build_subtype env visited loops posi level t =
       let visited = t :: visited in
       let (t1', c1) = build_subtype env visited loops (not posi) level t1 in
       let (t2', c2) = build_subtype env visited loops posi level t2 in
-      let c = max c1 c2 in
+      let c = max_change c1 c2 in
       if c > Unchanged then (newty (Tarrow(l, t1', t2', Cok)), c)
       else (t, Unchanged)
   | Ttuple tlist ->
@@ -4309,7 +4315,7 @@ let rec build_subtype env visited loops posi level t =
   | Tfield(s, _, t1, t2) (* Always present *) ->
       let (t1', c1) = build_subtype env visited loops posi level t1 in
       let (t2', c2) = build_subtype env visited loops posi level t2 in
-      let c = max c1 c2 in
+      let c = max_change c1 c2 in
       if c > Unchanged then (newty (Tfield(s, Fpresent, t1', t2')), c)
       else (t, Unchanged)
   | Tnil ->

@@ -238,7 +238,7 @@ let rec bucket_length accu = function
 
 let stats h =
   let mbl =
-    Array.fold_left (fun m b -> max m (bucket_length 0 b)) 0 h.data in
+    Array.fold_left (fun m b -> Int.max m (bucket_length 0 b)) 0 h.data in
   let histo = Array.make (mbl + 1) 0 in
   Array.iter
     (fun b ->

@@ -1035,6 +1035,7 @@ typing/printtyp.cmo : \
     utils/warnings.cmi \
     typing/types.cmi \
     typing/type_immediacy.cmi \
+    typing/signature_group.cmi \
     typing/primitive.cmi \
     typing/predef.cmi \
     typing/path.cmi \
@@ -1056,6 +1057,7 @@ typing/printtyp.cmx : \
     utils/warnings.cmx \
     typing/types.cmx \
     typing/type_immediacy.cmx \
+    typing/signature_group.cmx \
     typing/primitive.cmx \
     typing/predef.cmx \
     typing/path.cmx \
@@ -1132,6 +1134,18 @@ typing/rec_check.cmx : \
 typing/rec_check.cmi : \
     typing/typedtree.cmi \
     typing/ident.cmi
+typing/signature_group.cmo : \
+    typing/types.cmi \
+    typing/ident.cmi \
+    typing/btype.cmi \
+    typing/signature_group.cmi
+typing/signature_group.cmx : \
+    typing/types.cmx \
+    typing/ident.cmx \
+    typing/btype.cmx \
+    typing/signature_group.cmi
+typing/signature_group.cmi : \
+    typing/types.cmi
 typing/stypes.cmo : \
     typing/typedtree.cmi \
     typing/printtyp.cmi \
@@ -1179,6 +1193,7 @@ typing/subst.cmx : \
 typing/subst.cmi : \
     typing/types.cmi \
     typing/path.cmi \
+    parsing/location.cmi \
     typing/ident.cmi
 typing/tast_iterator.cmo : \
     typing/typedtree.cmi \
@@ -1593,6 +1608,7 @@ typing/typemod.cmo : \
     typing/typecore.cmi \
     typing/typeclass.cmi \
     typing/subst.cmi \
+    typing/signature_group.cmi \
     typing/printtyp.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
@@ -1626,6 +1642,7 @@ typing/typemod.cmx : \
     typing/typecore.cmx \
     typing/typeclass.cmx \
     typing/subst.cmx \
+    typing/signature_group.cmx \
     typing/printtyp.cmx \
     typing/path.cmx \
     parsing/parsetree.cmi \
@@ -2732,7 +2749,7 @@ asmcomp/liveness.cmo : \
     asmcomp/printmach.cmi \
     utils/misc.cmi \
     asmcomp/mach.cmi \
-    asmcomp/cmm.cmi \
+    asmcomp/dataflow.cmi \
     asmcomp/liveness.cmi
 asmcomp/liveness.cmx : \
     asmcomp/reg.cmx \
@@ -2740,7 +2757,7 @@ asmcomp/liveness.cmx : \
     asmcomp/printmach.cmx \
     utils/misc.cmx \
     asmcomp/mach.cmx \
-    asmcomp/cmm.cmx \
+    asmcomp/dataflow.cmx \
     asmcomp/liveness.cmi
 asmcomp/liveness.cmi : \
     asmcomp/mach.cmi

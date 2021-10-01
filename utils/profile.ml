@@ -255,7 +255,7 @@ let rows_of_hierarchy hierarchy measure_diff initial_measure columns =
 let max_by_column ~n_columns rows =
   let a = Array.make n_columns 0. in
   let rec loop (R (_, values, rows)) =
-    List.iteri (fun i (v, _) -> a.(i) <- max a.(i) v) values;
+    List.iteri (fun i (v, _) -> a.(i) <- Float.max a.(i) v) values;
     List.iter loop rows
   in
   List.iter loop rows;
@@ -266,7 +266,7 @@ let width_by_column ~n_columns ~display_cell rows =
   let rec loop (R (_, values, rows)) =
     List.iteri (fun i cell ->
       let _, str = display_cell i cell ~width:0 in
-      a.(i) <- max a.(i) (String.length str)
+      a.(i) <- Int.max a.(i) (String.length str)
     ) values;
     List.iter loop rows;
   in

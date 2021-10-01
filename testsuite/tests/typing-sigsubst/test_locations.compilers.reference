@@ -45,7 +45,8 @@ Error: Signature mismatch:
          val create : elt -> t
        is not included in
          val create : unit -> t
-       File "test_functor.ml", line 5, characters 2-23: Expected declaration
+       File "test_loc_type_subst.ml", line 1, characters 11-47:
+         Expected declaration
        File "test_functor.ml", line 5, characters 2-23: Actual declaration
 File "test_loc_modtype_type_subst.ml", line 3, characters 15-42:
 3 | module M : S = Test_functor.Apply (String)
@@ -63,5 +64,6 @@ Error: Signature mismatch:
          val create : elt -> t
        is not included in
          val create : unit -> t
-       File "test_functor.ml", line 5, characters 2-23: Expected declaration
+       File "test_loc_modtype_type_subst.ml", line 1, characters 16-52:
+         Expected declaration
        File "test_functor.ml", line 5, characters 2-23: Actual declaration

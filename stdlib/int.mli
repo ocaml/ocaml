@@ -108,6 +108,16 @@ val equal : int -> int -> bool
 val compare : int -> int -> int
 (** [compare x y] is {!Stdlib.compare}[ x y] but more efficient. *)
 
+val min : int -> int -> int
+(** Return the smaller of the two arguments.
+    @since 4.13.0
+*)
+
+val max : int -> int -> int
+(** Return the greater of the two arguments.
+    @since 4.13.0
+ *)
+
 (** {1:convert Converting} *)
 
 external to_float : int -> float = "%floatofint"
