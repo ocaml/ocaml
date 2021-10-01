@@ -85,7 +85,6 @@ let chunk = function
   | Word_val -> "val"
   | Single -> "float32"
   | Double -> "float64"
-  | Double_u -> "float64u"
 
 let phantom_defining_expr ppf defining_expr =
   match defining_expr with

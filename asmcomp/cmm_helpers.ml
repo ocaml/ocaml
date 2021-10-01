@@ -569,11 +569,11 @@ let unbox_float dbg =
           | Some (Uconst_float x) ->
               Cconst_float (x, dbg) (* or keep _dbg? *)
           | _ ->
-              Cop(Cload {memory_chunk=Double_u; mutability=Immutable;
+              Cop(Cload {memory_chunk=Double; mutability=Immutable;
                          is_atomic=false},
                   [cmm], dbg)
           end
-      | cmm -> Cop(Cload {memory_chunk=Double_u; mutability=Immutable;
+      | cmm -> Cop(Cload {memory_chunk=Double; mutability=Immutable;
                          is_atomic=false},
                    [cmm], dbg)
     )
@@ -584,10 +584,10 @@ let box_complex dbg c_re c_im =
   Cop(Calloc, [alloc_floatarray_header 2 dbg; c_re; c_im], dbg)
 
 let complex_re c dbg =
-  Cop(Cload {memory_chunk=Double_u; mutability=Immutable; is_atomic=false},
+  Cop(Cload {memory_chunk=Double; mutability=Immutable; is_atomic=false},
       [c], dbg)
 let complex_im c dbg =
-  Cop(Cload {memory_chunk=Double_u; mutability=Immutable; is_atomic=false},
+  Cop(Cload {memory_chunk=Double; mutability=Immutable; is_atomic=false},
       [Cop(Cadda, [c; Cconst_int (size_float, dbg)], dbg)], dbg)
 
 (* Unit *)
@@ -738,7 +738,7 @@ let int_array_ref arr ofs dbg =
   Cop(mk_load_mut Word_int,
     [array_indexing log2_size_addr arr ofs dbg], dbg)
 let unboxed_float_array_ref arr ofs dbg =
-  Cop(mk_load_mut Double_u,
+  Cop(mk_load_mut Double,
     [array_indexing log2_size_float arr ofs dbg], dbg)
 let float_array_ref arr ofs dbg =
   box_float dbg (unboxed_float_array_ref arr ofs dbg)
@@ -753,7 +753,7 @@ let int_array_set arr ofs newval dbg =
   Cop(Cstore (Word_int, Lambda.Assignment),
     [array_indexing log2_size_addr arr ofs dbg; newval], dbg)
 let float_array_set arr ofs newval dbg =
-  Cop(Cstore (Double_u, Lambda.Assignment),
+  Cop(Cstore (Double, Lambda.Assignment),
     [array_indexing log2_size_float arr ofs dbg; newval], dbg)
 
 (* String length *)
@@ -2108,7 +2108,7 @@ let generic_functions shared units =
 type unary_primitive = expression -> Debuginfo.t -> expression
 
 let floatfield n ptr dbg =
-  Cop(mk_load_mut Double_u,
+  Cop(mk_load_mut Double,
       [if n = 0 then ptr
        else Cop(Cadda, [ptr; Cconst_int(n * size_float, dbg)], dbg)],
       dbg)
@@ -2213,7 +2213,7 @@ let setfield n ptr init arg1 arg2 dbg =
 
 let setfloatfield n init arg1 arg2 dbg =
   return_unit dbg (
-    Cop(Cstore (Double_u, init),
+    Cop(Cstore (Double, init),
         [if n = 0 then arg1
          else Cop(Cadda, [arg1; Cconst_int(n * size_float, dbg)], dbg);
          arg2], dbg))

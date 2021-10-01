@@ -555,7 +555,7 @@ let emit_instr env fallthrough i =
           I.movsx (addressing addr WORD i 0) (reg dest)
       | Single ->
           I.fld (addressing addr REAL4 i 0)
-      | Double | Double_u ->
+      | Double ->
           I.fld (addressing addr REAL8 i 0)
       end
   | Lop(Istore(chunk, addr, _)) ->
@@ -573,7 +573,7 @@ let emit_instr env fallthrough i =
             I.fld (reg i.arg.(0));
             I.fstp (addressing addr REAL4 i 1)
           end
-      | Double | Double_u ->
+      | Double ->
           if is_tos i.arg.(0) then
             I.fstp (addressing addr REAL8 i 1)
           else begin

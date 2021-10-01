@@ -775,7 +775,7 @@ let emit_instr i =
         | Single ->
             `	ldr	s7, {emit_addressing addr base}\n`;
             `	fcvt	{emit_reg dst}, s7\n`
-        | Word_int | Word_val | Double | Double_u ->
+        | Word_int | Word_val | Double ->
             `	ldr	{emit_reg dst}, {emit_addressing addr base}\n`
         end
     | Lop(Istore(size, addr, _)) ->
@@ -797,7 +797,7 @@ let emit_instr i =
         | Single ->
             `	fcvt	s7, {emit_reg src}\n`;
             `	str	s7, {emit_addressing addr base}\n`;
-        | Word_int | Word_val | Double | Double_u ->
+        | Word_int | Word_val | Double ->
             `	str	{emit_reg src}, {emit_addressing addr base}\n`
         end
     | Lop(Ialloc { bytes = n; dbginfo }) ->

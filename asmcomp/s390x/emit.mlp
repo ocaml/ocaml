@@ -370,7 +370,7 @@ let emit_instr env i =
           | Thirtytwo_signed -> "lgf"
           | Word_int | Word_val -> "lg"
           | Single -> "ley"
-          | Double | Double_u -> "ldy" in
+          | Double -> "ldy" in
         emit_load_store loadinstr addr i.arg 0 i.res.(0);
         if chunk = Single then
           `	ldebr	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
@@ -386,7 +386,7 @@ let emit_instr env i =
           | Thirtytwo_unsigned | Thirtytwo_signed -> "sty"
           | Word_int | Word_val -> "stg"
           | Single -> assert false
-          | Double | Double_u -> "stdy" in
+          | Double -> "stdy" in
         emit_load_store storeinstr addr i.arg 1 i.arg.(0)
 
     | Lop(Ialloc { bytes = n; dbginfo }) ->
