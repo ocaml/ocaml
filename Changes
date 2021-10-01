@@ -122,6 +122,12 @@ Working version
 - #10605: manual, name few css classes to ease styling and maintainability.
   (Florian Angeletti, review by Wiktor Kuchta and Gabriel Scherer)
 
+- #10668, #10669: the changelog (this file), LICENSE and README files are now
+  installed as well as part of the distribution. The destination directory can
+  be customized using the `--docdir` argument to `./configure`.
+  (Nicolás Ojeda Bär, report by Daniel Bünzli, review by David Allsopp and
+  Sébastien Hinderer)
+
 ### Compiler user-interface and warnings:
 
 - #10328: Give more precise error when disambiguation could not possibly work.
