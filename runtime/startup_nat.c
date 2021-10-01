@@ -124,6 +124,7 @@ value caml_startup_common(char_os **argv, int pooling)
   if (!caml_startup_aux(pooling))
     return Val_unit;
 
+  caml_increase_native_stack_size();
   caml_init_frame_descriptors();
   caml_init_locale();
 #if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
