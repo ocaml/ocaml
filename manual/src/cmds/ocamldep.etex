@@ -174,15 +174,14 @@ prog2: $(PROG2_OBJS)
         $(OCAMLOPT) -o prog2 $(OCAMLFLAGS) $(PROG2_OBJS)
 
 # Common rules
-.SUFFIXES: .ml .mli .cmo .cmi .cmx
 
-.ml.cmo:
+%.cmo: %.ml
         $(OCAMLC) $(OCAMLFLAGS) -c $<
 
-.mli.cmi:
+%.cmi: %.mli
         $(OCAMLC) $(OCAMLFLAGS) -c $<
 
-.ml.cmx:
+%.cmx: %.ml
         $(OCAMLOPT) $(OCAMLOPTFLAGS) -c $<
 
 # Clean up

@@ -20,15 +20,15 @@ include $(ROOTDIR)/Makefile.common
 TARGET_BINDIR ?= $(BINDIR)
 
 COMPILER=$(ROOTDIR)/ocamlc$(EXE)
-CAMLC=$(CAMLRUN) $(COMPILER)
+CAMLC=$(OCAMLRUN) $(COMPILER)
 COMPFLAGS=-strict-sequence -absname -w +a-4-9-41-42-44-45-48-70 \
           -g -warn-error +A -bin-annot -nostdlib -principal \
           -safe-string -strict-formats
 ifeq "$(FLAMBDA)" "true"
 OPTCOMPFLAGS += -O3
 endif
-OPTCOMPILER=$(ROOTDIR)/ocamlopt$(EXE)
-CAMLOPT=$(CAMLRUN) $(OPTCOMPILER)
+OPTCOMPILER=$(ROOTDIR)/ocamlopt
+CAMLOPT=$(OCAMLRUN) $(OPTCOMPILER)
 CAMLDEP=$(BOOT_OCAMLC) -depend
 DEPFLAGS=-slash
 
@@ -210,8 +210,6 @@ clean::
 clean::
 	rm -f $(CAMLHEADERS)
 
-.SUFFIXES: .mli .ml .cmi .cmo .cmx
-
 export AWK
 
 %.cmi: %.mli
@@ -242,7 +240,7 @@ stdlib__%.cmx:
 	           -o $@ -c $(filter %.ml, $^)
 
 # Dependencies on the compiler
-COMPILER_DEPS=$(filter-out -use-prims $(CAMLRUN), $(CAMLC))
+COMPILER_DEPS=$(filter-out -use-prims $(OCAMLRUN), $(CAMLC))
 $(OBJS) std_exit.cmo: $(COMPILER_DEPS)
 $(OBJS:.cmo=.cmi) std_exit.cmi: $(COMPILER_DEPS)
 $(OBJS:.cmo=.cmx) std_exit.cmx: $(OPTCOMPILER)
