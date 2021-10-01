@@ -2,27 +2,10 @@
 
 include dynlink
 libraries = ""
-set host = "${test_source_directory}/host"
-set plugin1 = "${test_source_directory}/plugin1"
-set plugin2 = "${test_source_directory}/plugin2"
-set plugin3 = "${test_source_directory}/plugin3"
-set plugin4 = "${test_source_directory}/plugin4"
+subdirectories = "host plugin1 plugin2 plugin3 plugin4"
 
 * shared-libraries
 ** setup-ocamlc.byte-build-env
-*** script
-script = "mkdir host plugin1 plugin2 plugin3 plugin4"
-*** script
-script = "cp ${host}/host.ml ${host}/api.mli ${host}/api.ml host"
-*** script
-script = "cp ${plugin1}/plugin.ml ${plugin1}/api.mli ${plugin1}/api.ml plugin1"
-*** script
-script = "cp ${plugin2}/plugin.ml ${plugin2}/api.mli ${plugin2}/api.ml plugin2"
-*** script
-script = "cp ${plugin3}/plugin.ml ${plugin3}/api.mli ${plugin3}/api.ml plugin3"
-*** script
-script = "cp ${plugin4}/plugin.ml ${plugin4}/api.mli ${plugin4}/api.ml plugin4"
-
 *** cd
 cwd = "plugin1"
 *** ocamlc.byte
@@ -135,19 +118,6 @@ cwd = ".."
 
 ** native-dynlink
 *** setup-ocamlopt.byte-build-env
-
-**** script
-script = "mkdir host plugin1 plugin2 plugin3 plugin4"
-**** script
-script = "cp ${host}/host.ml ${host}/api.mli ${host}/api.ml host"
-**** script
-script = "cp ${plugin1}/plugin.ml ${plugin1}/api.mli ${plugin1}/api.ml plugin1"
-**** script
-script = "cp ${plugin2}/plugin.ml ${plugin2}/api.mli ${plugin2}/api.ml plugin2"
-**** script
-script = "cp ${plugin3}/plugin.ml ${plugin3}/api.mli ${plugin3}/api.ml plugin3"
-**** script
-script = "cp ${plugin4}/plugin.ml ${plugin4}/api.mli ${plugin4}/api.ml plugin4"
 
 **** cd
 cwd = "plugin1"

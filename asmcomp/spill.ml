@@ -301,16 +301,13 @@ let rec spill i finally =
       let before1 = Reg.diff_set_array after i.res in
       (instr_cons i.desc i.arg i.res new_next,
        Reg.add_set_array before1 i.res)
-  | Iop _ ->
+  | Iop op ->
       let (new_next, after) = spill i.next finally in
       let before1 = Reg.diff_set_array after i.res in
       let before =
-        match i.desc with
-          Iop(Icall_ind) | Iop(Icall_imm _) | Iop(Iextcall _) | Iop(Ialloc _)
-        | Iop(Iintop (Icheckbound)) | Iop(Iintop_imm(Icheckbound, _)) ->
-            Reg.Set.union before1 !spill_at_raise
-        | _ ->
-            before1 in
+        if operation_can_raise op
+        then Reg.Set.union before1 !spill_at_raise
+        else before1 in
       (instr_cons_debug i.desc i.arg i.res i.dbg
                   (add_spills (Reg.inter_set_array after i.res) new_next),
        before)

@@ -1,7 +1,8 @@
 (* TEST
-files = "main.c"
+readonly_files = "main.c"
 arguments = "-ccopt -DUNIT_INT -ccopt -DFUN=takmain main.c"
-* asmgen*)
+* asmgen
+*)
 
 (**************************************************************************)
 (*                                                                        *)

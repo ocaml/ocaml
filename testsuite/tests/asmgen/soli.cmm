@@ -1,5 +1,5 @@
 (* TEST
-files = "main.c"
+readonly_files = "main.c"
 arguments = "-ccopt -DUNIT_INT -ccopt -DFUN=solitaire main.c"
 * asmgen
 *)

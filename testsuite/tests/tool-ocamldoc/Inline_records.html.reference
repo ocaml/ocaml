@@ -299,7 +299,7 @@
 <td align="left" valign="top" >
 <code>&nbsp;&nbsp;</code></td>
 <td align="left" valign="top" >
-<code><span id="TYPEELTInline_records.F.even_more">even_more</span>&nbsp;: <code class="type">int -> int</code>;</code></td>
+<code><span id="TYPEELTInline_records.F.even_more">even_more</span>&nbsp;: <code class="type">int -&gt; int</code>;</code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
 <div class="info-desc">
 <p>Some field documentations for <code class="code"><span class="constructor">F</span></code></p>
@@ -325,7 +325,7 @@
 <td align="left" valign="top" >
 <code>&nbsp;&nbsp;</code></td>
 <td align="left" valign="top" >
-<code><span id="TYPEELTInline_records.G.last">last</span>&nbsp;: <code class="type">int -> int</code>;</code></td>
+<code><span id="TYPEELTInline_records.G.last">last</span>&nbsp;: <code class="type">int -&gt; int</code>;</code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
 <div class="info-desc">
 <p>The last and least field documentation</p>

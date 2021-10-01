@@ -185,6 +185,20 @@ module Sys = struct
     with_output_file ~bin:true dest @@ fun oc ->
     copy_chan ic oc
 
+  let rec copy_directory src dst =
+    let full_src_path name = Filename.concat src name in
+    let full_dst_path name = Filename.concat dst name in
+    make_directory dst;
+    let content = Array.to_list (readdir src) in
+    let is_directory d = is_directory (full_src_path d) in
+    let (subdirs, files) = List.partition is_directory content in
+    let cp_file name = copy_file (full_src_path name) (full_dst_path name) in
+    List.iter cp_file files;
+    let cp_dir name =
+      copy_directory (full_src_path name) (full_dst_path name)
+    in
+    List.iter cp_dir subdirs
+
   let force_remove file =
     if file_exists file then remove file
 

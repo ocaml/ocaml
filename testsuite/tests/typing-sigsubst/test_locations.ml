@@ -1,5 +1,5 @@
 (* TEST
-files = "test_functor.ml test_loc_modtype_type_eq.ml \
+readonly_files = "test_functor.ml test_loc_modtype_type_eq.ml \
          test_loc_modtype_type_subst.ml test_loc_type_eq.ml \
          test_loc_type_subst.ml mpr7852.mli"
 * setup-ocamlc.byte-build-env

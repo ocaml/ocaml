@@ -119,3 +119,15 @@ let print_specific_operation printreg op ppf arg =
         printreg arg.(0) printreg arg.(1) printreg arg.(2)
   | Ialloc_far { bytes; _ } ->
       fprintf ppf "alloc_far %d" bytes
+
+(* Specific operations that are pure *)
+
+let operation_is_pure = function
+  | Ialloc_far _ -> false
+  | _ -> true
+
+(* Specific operations that can raise *)
+
+let operation_can_raise = function
+  | Ialloc_far _ -> true
+  | _ -> false

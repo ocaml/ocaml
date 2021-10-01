@@ -475,12 +475,11 @@ let rec check_constraints_rec env loc visited ty =
   visited := TypeSet.add ty !visited;
   match ty.desc with
   | Tconstr (path, args, _) ->
-      let args' = List.map (fun _ -> Ctype.newvar ()) args in
-      let ty' = Ctype.newconstr path args' in
-      begin try Ctype.enforce_constraints env ty'
-      with Ctype.Unify _ -> assert false
-      | Not_found -> raise (Error(loc, Unavailable_type_constructor path))
-      end;
+      let decl =
+        try Env.find_type path env
+        with Not_found ->
+          raise (Error(loc, Unavailable_type_constructor path)) in
+      let ty' = Ctype.newconstr path (Ctype.instance_list decl.type_params) in
       if not (Ctype.matches env ty ty') then
         raise (Error(loc, Constraint_failed (ty, ty')));
       List.iter (check_constraints_rec env loc visited) args

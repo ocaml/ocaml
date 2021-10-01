@@ -378,7 +378,9 @@ runs much faster than a full `./tools/check-typo`, typically instantly.
 
 You can also setup a git commit-hook to automatically run `check-typo`
 on the changes you commit, by copying the file
-`tools/pre-commit-githook` to `.git/hooks/pre-commit`.
+`tools/pre-commit-githook` to `.git/hooks/pre-commit`. If changes in a commit
+alter the `configure` script, the hook also checks that committed `configure`
+script is up-to-date.
 
 Some files need special rules to opt out of `check-typo` checks; this
 is specified in the `.gitattributes` file at the root of the
