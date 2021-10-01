@@ -150,11 +150,27 @@ Working version
 
 ### Standard library:
 
+- #944: Add some missing C99 float operations.  `Stdlib` now contains
+  the inverse hyperbolic functions `acosh`, `asinh`, and `atanh`.  These
+  functions were also added to module `Stdlib.Float` together with `exp2`,
+  `log2`, `cbrt`, `erf`, and `erfc`. Full support on MSVC requires VS2013+ but
+  emulated versions are still available (for now) for older compilers.
+  (Markus Mottl, review by David Allsopp, Olivier Andrieu, Florian Angeletti,
+  Nicolás Ojeda Bär, Daniel Bünzli, Fabian @copy, Pascal Cuoq, Damien
+  Doligez, Sébastien Hinderer, Jacques-Henri Jourdan, Xavier Leroy, Guillaume
+  Melquiond, Perry E. Metzger, @objmagic, Gabriel Scherer, Mark Shinwell,
+  Bernhard Schommer and Christophe Troestler)
+
 - #9448: Add String.{empty,cat} as dual of Bytes.{empty,cat},
   String.{of,to}_bytes as aliases of Bytes.{to,of}_string,
   Bytes.split_on_char as dual of String.split_on_char, and binary decoding
   functions in String to match those in Bytes.
   (David Allsopp, review by Damien Doligez, Gabriel Scherer and others)
+
+- #9487, #9489: Add Random.full_int which allows 62-bit bounds on 64-bit
+  systems.
+  (David Allsopp, request by Francois Berenger, review by Xavier Leroy and
+   Damien Doligez)
 
 - #9533: Added String.starts_with and String.ends_with.
   (Bernhard Schommer, review by Daniel Bünzli, Gabriel Scherer and
@@ -162,6 +178,9 @@ Working version
 
 - #9582: Add Array.{find_opt,find_map,split,combine}.
   (Nicolás Ojeda Bär, review by Daniel Bünzli and Gabriel Scherer)
+
+- #9961: Add Array.fold_left_map.
+  (Craig Ferguson, review by Damien Doligez)
 
 - #10097: Lazy.map, Lazy.map_val: ('a -> 'b) -> 'a Lazy.t -> 'b Lazy.t
   (map f x) is always (lazy (f (force x))), whereas (map_val f x)
@@ -194,6 +213,9 @@ Working version
 
 - #10389, #10391, #10392: Add {Int,Int32,Int64,Nativeint}.{min,max}.
   (Nicolás Ojeda Bär and Alain Frisch, review by Xavier Leroy)
+
+- #10430: Add Format.print_bytes and Format.pp_print_bytes.
+  (Gabriel Radanne, review by Gabriel Scherer and David Allsopp)
 
 ### Other libraries:
 
@@ -385,6 +407,9 @@ Working version
   (Antal Spector-Zabusky and Mekhrubon Tuarev, review by Leo White,
   Florian Angeletti, and Jacques Garrigue)
 
+- #10307: Make build_other_constrs work with names instead of tags.
+  (Nicolas Chataing, review by Florian Angeletti)
+
 ### Build system:
 
 - #10289, #10406: Do not print option documentation in usage messages.
@@ -427,7 +452,7 @@ Working version
 
 ### Bug fixes:
 
-- #6654, #9974, #10401: make `include` and with `constraints` handle correctly
+- #6654, #9774, #10401: make `include` and with `constraints` handle correctly
   the ghost components of signatures. For instance, in
 
     include struct class c = object end end type c
@@ -483,6 +508,9 @@ Working version
 
 - #10189, #10190, #10347: Universal variables leaking through GADT equations
   (Jacques Garrigue, report and review by Leo White)
+
+- #10205: Avoid overwriting closures while initialising recursive modules
+  (Stephen Dolan, review by Xavier Leroy, Hugo Heuzard and Vincent Laviron)
 
 - #10253, #10373: tweak error message for unknown variant constructors
   or record fields in type-directed disambiguation
