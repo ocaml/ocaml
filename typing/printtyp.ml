@@ -254,7 +254,7 @@ let set namespace x = map.(Namespace.id namespace) <- x
 let protected = ref S.empty
 
 (* When dealing with functor arguments, identity becomes fuzzy because the same
-   syntactic argument may be represented by different identifers during the
+   syntactic argument may be represented by different identifiers during the
    error processing, we are thus disabling disambiguation on the argument name
 *)
 let fuzzy = ref S.empty

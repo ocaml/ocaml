@@ -322,9 +322,9 @@ get inconsistent assumptions errors later.
 opam custom-install --no-recompilations ocaml-variants -- make install
 -----
 
-Note aout the first installation:
+Note about the first installation:
 When you start from an empty switch, and install a compiler (in our case,
-tha `ocaml-variants` package provided by the compiler's `opam` file), then
+the `ocaml-variants` package provided by the compiler's `opam` file), then
 a number of additional packages are installed to ensure that the switch
 will work correctly. Mainly, the `ocaml` package needs to be installed,
 and while it's done automatically when using regular `opam` commands, the

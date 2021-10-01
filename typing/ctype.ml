@@ -1431,7 +1431,7 @@ let rec copy_sep cleanup_scope fixed free bound visited ty =
   end
 
 let instance_poly' cleanup_scope ~keep_names fixed univars sch =
-  (* In order to compute univars below, [sch] schould not contain [Tsubst] *)
+  (* In order to compute univars below, [sch] should not contain [Tsubst] *)
   let univars = List.map repr univars in
   let copy_var ty =
     match ty.desc with
@@ -1670,18 +1670,31 @@ let _ = forward_try_expand_safe := try_expand_safe
    called on recursive types
  *)
 
+type typedecl_extraction_result =
+  | Typedecl of Path.t * Path.t * type_declaration
+  | Has_no_typedecl
+  | May_have_typedecl
+
 let rec extract_concrete_typedecl env ty =
   let ty = repr ty in
   match ty.desc with
-    Tconstr (p, _, _) ->
+  | Tconstr (p, _, _) ->
       let decl = Env.find_type p env in
-      if decl.type_kind <> Type_abstract then (p, p, decl) else
-      let ty =
-        try try_expand_safe env ty with Cannot_expand -> raise Not_found
-      in
-      let (_, p', decl) = extract_concrete_typedecl env ty in
-        (p, p', decl)
-  | _ -> raise Not_found
+      if decl.type_kind <> Type_abstract then Typedecl(p, p, decl)
+      else begin
+        match try_expand_safe env ty with
+        | exception Cannot_expand -> May_have_typedecl
+        | ty ->
+            match extract_concrete_typedecl env ty with
+            | Typedecl(_, p', decl) -> Typedecl(p, p', decl)
+            | Has_no_typedecl -> Has_no_typedecl
+            | May_have_typedecl -> May_have_typedecl
+      end
+  | Tpoly(ty, _) -> extract_concrete_typedecl env ty
+  | Tarrow _ | Ttuple _ | Tobject _ | Tfield _ | Tnil
+  | Tvariant _ | Tpackage _ -> Has_no_typedecl
+  | Tvar _ | Tunivar _ -> May_have_typedecl
+  | Tlink _ | Tsubst _ -> assert false
 
 (* Implementing function [expand_head_opt], the compiler's own version of
    [expand_head] used for type-based optimisations.
@@ -4789,7 +4802,9 @@ let rec nondep_type_rec ?(expand_private=false) env ids ty =
             (* Register new type first for recursion *)
             TypeHash.add nondep_variants more ty';
             let static = static_row row in
-            let more' = if static then newgenty Tnil else more in
+            let more' =
+              if static then newgenty Tnil else nondep_type_rec env ids more
+            in
             (* Return a new copy *)
             let row =
               copy_row (nondep_type_rec env ids) true row true more' in
