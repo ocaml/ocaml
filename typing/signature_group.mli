@@ -49,7 +49,7 @@ val rec_items: core_rec_group -> sig_item list
 
 (** Private #row types are manifested as a sequence of definitions
     preceding a recursive group, we collect them and separate them from the
-    syntatic recursive group. *)
+    syntactic recursive group. *)
 type rec_group =
   { pre_ghosts: Types.signature_item list; group:core_rec_group }
 

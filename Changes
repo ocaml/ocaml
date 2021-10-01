@@ -16,12 +16,14 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- #10328: Give more precise error when disambiguation could not possibly work.
+  (Leo White, review by Gabriel Scherer and Florian Angeletti)
+
 ### Internal/compiler-libs changes:
 
 ### Build system:
 
 ### Bug fixes:
-
 
 OCaml 4.13.0
 -------------
@@ -65,6 +67,9 @@ OCaml 4.13.0
 
 - #10265: Move type_unboxed.unboxed into type_kind
   (Stephen Dolan, review by Gabriel Scherer)
+
+* #10081: Typecheck `x |> f` and `f @@ x` as `(f x)`
+  (Alain Frisch, review by Jacques Garrigue, Josh Berdine and Thomas Refis)
 
 ### Runtime system:
 
@@ -171,11 +176,6 @@ OCaml 4.13.0
 - #10419: Add %frame_pointers primitive which is true only in native code with
   frame pointers mode enabled.
   (David Allsopp, review by Vincent Laviron and Mark Shinwell)
-
-### Type system:
-
-* #10081: Typecheck `x |> f` and `f @@ x` as `(f x)`
-  (Alain Frisch, review by Jacques Garrigue, Josh Berdine and Thomas Refis)
 
 ### Standard library:
 
@@ -286,6 +286,10 @@ OCaml 4.13.0
   (Pavlo Khrystenko, review by Gabriel Scherer)
 
 ### Manual and documentation:
+
+- #9525, #10402: ocamldoc only create paragraphq at the toplevel of
+  documentation comments
+  (Florian Angeletti, report by Hendrik Tews, review by Gabriel Scherer)
 
 - #10247: Add initial tranche of examples to reference manual.
   Adds some eighty examples to the reference manual, principally to the
@@ -583,6 +587,13 @@ OCaml 4.13.0
 
 - #10376: Link runtime libraries correctly on msvc64 in -output-complete-obj
   (David Allsopp, review by Gabriel Scherer)
+
+- #10449: Fix major GC work accounting (the GC was running too fast).
+  (Damien Doligez, report by Stephen Dolan, review by Nicolás Ojeda Bär
+   and Sadiq Jaffer)
+
+- #10454: Check row_more in nondep_type_rec.
+  (Leo White, review by Thomas Refis)
 
 OCaml 4.12.0 (24 February 2021)
 -------------------------------

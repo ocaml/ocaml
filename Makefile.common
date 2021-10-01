@@ -142,7 +142,7 @@ endef # PROGRAM_SYNONYM
 BOOT_OCAMLLEX ?= $(OCAMLRUN) $(ROOTDIR)/boot/ocamllex
 
 # Default value for OCAMLLEX
-# In those directories where this needs to be overriden, the overriding
+# In those directories where this needs to be overridden, the overriding
 # should take place *before* Makefile.common is included.
 
 OCAMLLEX ?= $(BEST_OCAMLLEX)

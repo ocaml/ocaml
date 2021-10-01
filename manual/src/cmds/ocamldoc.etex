@@ -731,27 +731,44 @@ text: {{text-element}}
 ;
 \end{syntax}
 
+
+\begin{syntax}
+inline-text: {{inline-text-element}}
+;
+\end{syntax}
+
+
 \noindent
 \begin{syntaxleft}
 \nonterm{text-element}\is{}
 \end{syntaxleft}
 
 \begin{tabular}{rlp{10cm}}
-@||@&@ '{' {{ "0" \ldots "9" }} text '}' @ & format @text@ as a section header;
+@||@& @inline-text-element@ & \\
+@||@& \nt{blank-line} & force a new line. \\
+\end{tabular}\\
+
+\noindent
+\begin{syntaxleft}
+\nonterm{inline-text-element}\is{}
+\end{syntaxleft}
+
+\begin{tabular}{rlp{10cm}}
+@||@&@ '{' {{ "0" \ldots "9" }} inline-text '}' @ & format @text@ as a section header;
   the integer following "{" indicates the sectioning level. \\
-@||@&@ '{' {{ "0" \ldots "9" }} ':' @ \nt{label} @ text '}' @ &
+@||@&@ '{' {{ "0" \ldots "9" }} ':' @ \nt{label} @ inline-text '}' @ &
   same, but also associate the name \nt{label} to the current point.
   This point can be referenced by its fully-qualified label in a
   "{!" command, just like any other element. \\
-@||@&@ '{b' text '}' @ & set @text@ in bold. \\
-@||@&@ '{i' text '}' @ & set @text@ in italic. \\
-@||@&@ '{e' text '}' @ & emphasize @text@. \\
-@||@&@ '{C' text '}' @ & center @text@. \\
-@||@&@ '{L' text '}' @ & left align @text@. \\
-@||@&@ '{R' text '}' @ & right align @text@. \\
+@||@&@ '{b' inline-text '}' @ & set @text@ in bold. \\
+@||@&@ '{i' inline-text '}' @ & set @text@ in italic. \\
+@||@&@ '{e' inline-text '}' @ & emphasize @text@. \\
+@||@&@ '{C' inline-text '}' @ & center @text@. \\
+@||@&@ '{L' inline-text '}' @ & left align @text@. \\
+@||@&@ '{R' inline-text '}' @ & right align @text@. \\
 @||@&@ '{ul' list '}' @ & build a list. \\
 @||@&@ '{ol' list '}' @ & build an enumerated list. \\
-@||@&@ '{{:' string '}' text '}' @ & put a link to the given address
+@||@&@ '{{:' string '}' inline-text '}' @ & put a link to the given address
 (given as @string@) on the given @text@. \\
 @||@&@ '[' string ']' @ & set the given @string@ in source code style. \\
 @||@&@ '{[' string ']}' @ & set the given @string@ in preformatted
@@ -766,20 +783,19 @@ text: {{text-element}}
 for the given module names. Used in HTML only.\\
 @||@&@ '{!indexlist}' @ & insert a table of links to the various indexes
 (types, values, modules, ...). Used in HTML only.\\
-@||@&@ '{^' text '}' @ & set text in superscript.\\
-@||@&@ '{_' text '}' @ & set text in subscript.\\
+@||@&@ '{^' inline-text '}' @ & set text in superscript.\\
+@||@&@ '{_' inline-text '}' @ & set text in subscript.\\
 @||@& \nt{escaped-string} & typeset the given string as is;
 special characters ('"{"', '"}"', '"["', '"]"' and '"\@"')
 must be	escaped by a '"\\"'\\
-@||@& \nt{blank-line} & force a new line.
 \end{tabular} \\
 
 \subsubsection{sss:ocamldoc-list}{List formatting}
 
 \begin{syntax}
 list:
-| {{ '{-' text '}' }}
-| {{ '{li' text '}' }}
+| {{ '{-' inline-text '}' }}
+| {{ '{li' inline-text '}' }}
 \end{syntax}
 
 A shortcut syntax exists for lists and enumerated lists:
