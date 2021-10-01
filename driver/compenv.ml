@@ -371,6 +371,8 @@ let read_one_param ppf position name v =
       set "flambda-verbose" [ dump_flambda_verbose ] v
   | "flambda-invariants" ->
       set "flambda-invariants" [ flambda_invariant_checks ] v
+  | "cmm-invariants" ->
+      set "cmm-invariants" [ cmm_invariants ] v
   | "linscan" ->
       set "linscan" [ use_linscan ] v
   | "insn-sched" -> set "insn-sched" [ insn_sched ] v
@@ -719,4 +721,33 @@ let process_deferred_actions env =
     !print_types ||
     match !stop_after with
     | None -> false
-    | Some p -> Clflags.Compiler_pass.is_compilation_pass p;
+    | Some p -> Clflags.Compiler_pass.is_compilation_pass p
+
+(* This function is almost the same as [Arg.parse_expand], except
+   that [Arg.parse_expand] could not be used because it does not take a
+   reference for [arg_spec].
+   We use a marker \000 for Arg.parse_and_expand_argv_dynamic
+   so we can split out error message from usage options, because
+   it always concatenates
+   error message with usage options *)
+let parse_arguments ?(current=ref 0) argv f program =
+    try
+      Arg.parse_and_expand_argv_dynamic current argv Clflags.arg_spec f "\000"
+    with
+    | Arg.Bad err_msg ->
+      let usage_msg = create_usage_msg program in
+      let err_msg = err_msg
+      |> String.split_on_char '\000'
+      |> List.hd
+      |> String.trim in
+      Printf.eprintf "%s\n%s\n" err_msg usage_msg;
+      raise (Exit_with_status 2)
+    | Arg.Help msg ->
+      let err_msg =
+        msg
+        |> String.split_on_char '\000'
+        |> String.concat "" in
+      let help_msg =
+        Printf.sprintf "Usage: %s <options> <files>\nOptions are:" program in
+      Printf.printf "%s\n%s" help_msg err_msg;
+      raise (Exit_with_status 0)

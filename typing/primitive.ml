@@ -200,6 +200,30 @@ let native_name p =
 let byte_name p =
   p.prim_name
 
+let equal_boxed_integer bi1 bi2 =
+  match bi1, bi2 with
+  | Pnativeint, Pnativeint
+  | Pint32, Pint32
+  | Pint64, Pint64 ->
+    true
+  | (Pnativeint | Pint32 | Pint64), _ ->
+    false
+
+let equal_native_repr nr1 nr2 =
+  match nr1, nr2 with
+  | Same_as_ocaml_repr, Same_as_ocaml_repr -> true
+  | Same_as_ocaml_repr,
+    (Unboxed_float | Unboxed_integer _ | Untagged_int) -> false
+  | Unboxed_float, Unboxed_float -> true
+  | Unboxed_float,
+    (Same_as_ocaml_repr | Unboxed_integer _ | Untagged_int) -> false
+  | Unboxed_integer bi1, Unboxed_integer bi2 -> equal_boxed_integer bi1 bi2
+  | Unboxed_integer _,
+    (Same_as_ocaml_repr | Unboxed_float | Untagged_int) -> false
+  | Untagged_int, Untagged_int -> true
+  | Untagged_int,
+    (Same_as_ocaml_repr | Unboxed_float | Unboxed_integer _) -> false
+
 let native_name_is_external p =
   let nat_name = native_name p in
   nat_name <> "" && nat_name.[0] <> '%'

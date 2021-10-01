@@ -30,6 +30,16 @@ type error =
 
 exception Error of error
 
+let cmm_invariants ppf fd_cmm =
+  let print_fundecl =
+    if !Clflags.dump_cmm then Printcmm.fundecl
+    else fun ppf fdecl -> Format.fprintf ppf "%s" fdecl.fun_name
+  in
+  if !Clflags.cmm_invariants && Cmm_invariants.run ppf fd_cmm then
+    Misc.fatal_errorf "Cmm invariants failed on following fundecl:@.%a@."
+      print_fundecl fd_cmm;
+  fd_cmm
+
 let liveness phrase = Liveness.fundecl phrase; phrase
 
 let dump_if ppf flag message phrase =
@@ -127,8 +137,8 @@ let compile_fundecl ~ppf_dump ~funcnames fd_cmm =
   Proc.init ();
   Reg.reset();
   fd_cmm
-  ++ Profile.record ~accumulate:true "selection"
-                                (Selection.fundecl ~future_funcnames:funcnames)
+  ++ Profile.record ~accumulate:true "cmm_invariants" (cmm_invariants ppf_dump)
+  ++ Profile.record ~accumulate:true "selection" (Selection.fundecl ~future_funcnames:funcnames)
   ++ pass_dump_if ppf_dump dump_selection "After instruction selection"
   ++ Profile.record ~accumulate:true "comballoc" Comballoc.fundecl
   ++ pass_dump_if ppf_dump dump_combine "After allocation combining"

@@ -760,6 +760,7 @@ afl
 function_sections
 flat_float_array
 windows_unicode
+cmm_invariants
 flambda_invariants
 flambda
 frame_pointers
@@ -902,6 +903,7 @@ enable_native_compiler
 enable_flambda
 enable_flambda_invariants
 enable_force_instrumented_runtime
+enable_cmm_invariants
 with_target_bindir
 enable_reserved_header_bits
 enable_stdlib_manpages
@@ -1577,6 +1579,7 @@ Optional Features:
                           enable invariants checks in flambda
   --force-instrumented-runtime
                           force the usage of the instrumented runtime
+  --enable-cmm-invariants enable invariants checks in Cmm
   --enable-reserved-header-bits=BITS
                           reserve BITS (between 0 and 31) bits in block
                           headers for profiling info
@@ -2936,6 +2939,7 @@ VERSION=4.13.0+domains+dev
 
 
 
+
 ## Generated files
 
 ac_config_files="$ac_config_files Makefile.build_config"
@@ -3248,6 +3252,12 @@ fi
 # Check whether --enable-force-instrumented-runtime was given.
 if test "${enable_force_instrumented_runtime+set}" = set; then :
   enableval=$enable_force_instrumented_runtime;
+fi
+
+
+# Check whether --enable-cmm-invariants was given.
+if test "${enable_cmm_invariants+set}" = set; then :
+  enableval=$enable_cmm_invariants;
 fi
 
 
@@ -17126,6 +17136,12 @@ fi
 else
   flambda=false
   flambda_invariants=false
+fi
+
+if test x"$enable_cmm_invariants" = "xyes"; then :
+  cmm_invariants=true
+else
+  cmm_invariants=false
 fi
 
 if test x"$enable_flat_float_array" = "xno"; then :

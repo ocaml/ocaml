@@ -779,6 +779,10 @@ let mk_dcamlprimc f =
   "-dcamlprimc", Arg.Unit f, " (undocumented)"
 ;;
 
+let mk_dcmm_invariants f =
+  "-dcmm-invariants", Arg.Unit f, " Extra sanity checks on Cmm"
+;;
+
 let mk_dcmm f =
   "-dcmm", Arg.Unit f, " (undocumented)"
 ;;
@@ -1077,6 +1081,7 @@ module type Optcommon_options = sig
   val _dflambda_verbose : unit -> unit
   val _drawclambda : unit -> unit
   val _dclambda : unit -> unit
+  val _dcmm_invariants : unit -> unit
   val _dcmm : unit -> unit
   val _dsel : unit -> unit
   val _dcombine : unit -> unit
@@ -1433,6 +1438,7 @@ struct
     mk_dlambda F._dlambda;
     mk_drawclambda F._drawclambda;
     mk_dclambda F._dclambda;
+    mk_dcmm_invariants F._dcmm_invariants;
     mk_dflambda F._dflambda;
     mk_drawflambda F._drawflambda;
     mk_dflambda_invariants F._dflambda_invariants;
@@ -1541,6 +1547,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_drawlambda F._drawlambda;
     mk_drawclambda F._drawclambda;
     mk_dclambda F._dclambda;
+    mk_dcmm_invariants F._dcmm_invariants;
     mk_drawflambda F._drawflambda;
     mk_dflambda F._dflambda;
     mk_dcmm F._dcmm;
@@ -1722,6 +1729,7 @@ module Default = struct
     let _dalloc = set dump_regalloc
     let _dclambda = set dump_clambda
     let _dcmm = set dump_cmm
+    let _dcmm_invariants = set cmm_invariants
     let _dcombine = set dump_combine
     let _dcse = set dump_cse
     let _dflambda = set dump_flambda

@@ -143,7 +143,7 @@ installopt::
 # To help building mixed-mode libraries (OCaml + C)
 
 $(call byte_and_opt,ocamlmklib,config.cmo \
-	         build_path_prefix_map.cmo misc.cmo ocamlmklib.cmo,)
+                    build_path_prefix_map.cmo misc.cmo ocamlmklib.cmo,)
 
 # To make custom toplevels
 
@@ -273,8 +273,8 @@ $(call byte_and_opt,primreq,$(primreq),)
 LINTAPIDIFF=$(ROOTDIR)/compilerlibs/ocamlcommon.cmxa \
         $(ROOTDIR)/compilerlibs/ocamlbytecomp.cmxa \
         $(ROOTDIR)/compilerlibs/ocamlmiddleend.cmxa \
-	$(ROOTDIR)/otherlibs/str/str.cmxa \
-	lintapidiff.cmx
+        $(ROOTDIR)/otherlibs/str/str.cmxa \
+        lintapidiff.cmx
 
 lintapidiff.opt$(EXE): INCLUDES+= -I $(ROOTDIR)/otherlibs/str
 lintapidiff.opt$(EXE): $(LINTAPIDIFF)

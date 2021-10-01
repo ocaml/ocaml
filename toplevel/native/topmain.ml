@@ -13,9 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-let usage = "Usage: ocamlnat <options> <object-files> [script-file]\n\
-             options are:"
-
 let preload_objects = ref []
 
 (* Position of the first non expanded argument *)
@@ -99,17 +96,12 @@ let () =
   Clflags.include_dirs := List.rev_append extra_paths !Clflags.include_dirs
 
 let main () =
+  let ppf = Format.err_formatter in
   Clflags.native_code := true;
-  let list = ref Options.list in
-  begin
-    try
-      Arg.parse_and_expand_argv_dynamic current argv list file_argument usage;
-    with
-    | Arg.Bad msg -> Format.fprintf Format.err_formatter "%s%!" msg;
-                     raise (Compenv.Exit_with_status 2)
-    | Arg.Help msg -> Format.fprintf Format.std_formatter "%s%!" msg;
-                      raise (Compenv.Exit_with_status 0)
-  end;
+  let program = "ocamlnat" in
+  Compenv.readenv ppf Before_args;
+  Clflags.add_arguments __LOC__ Options.list;
+  Compenv.parse_arguments ~current argv file_argument program;
   Compmisc.read_clflags_from_env ();
   if not (prepare Format.err_formatter) then raise (Compenv.Exit_with_status 2);
   Compmisc.init_path ();
