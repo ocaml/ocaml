@@ -636,6 +636,8 @@ let pp_print_as state isize s =
 let pp_print_string state s =
   pp_print_as state (String.length s) s
 
+let pp_print_bytes state s =
+  pp_print_as state (Bytes.length s) (Bytes.to_string s)
 
 (* To format an integer. *)
 let pp_print_int state i = pp_print_string state (Int.to_string i)
@@ -1179,6 +1181,7 @@ and open_stag v = pp_open_stag (DLS.get std_formatter_key) v
 and close_stag v = pp_close_stag (DLS.get std_formatter_key) v
 and print_as v w = pp_print_as (DLS.get std_formatter_key) v w
 and print_string v = pp_print_string (DLS.get std_formatter_key) v
+and print_bytes v = pp_print_bytes (DLS.get std_formatter_key) v
 and print_int v = pp_print_int (DLS.get std_formatter_key) v
 and print_float v = pp_print_float (DLS.get std_formatter_key) v
 and print_char v = pp_print_char (DLS.get std_formatter_key) v

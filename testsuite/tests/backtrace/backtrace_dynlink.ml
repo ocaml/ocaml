@@ -2,7 +2,7 @@
 
 include dynlink
 
-files = "backtrace_dynlink_plugin.ml"
+readonly_files = "backtrace_dynlink_plugin.ml"
 
 libraries = ""
 

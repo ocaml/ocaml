@@ -56,9 +56,15 @@ external pow : float -> float -> float = "caml_power_float" "pow"
   [@@unboxed] [@@noalloc]
 external sqrt : float -> float = "caml_sqrt_float" "sqrt"
   [@@unboxed] [@@noalloc]
+external cbrt : float -> float = "caml_cbrt_float" "caml_cbrt"
+  [@@unboxed] [@@noalloc]
 external exp : float -> float = "caml_exp_float" "exp" [@@unboxed] [@@noalloc]
+external exp2 : float -> float = "caml_exp2_float" "caml_exp2"
+  [@@unboxed] [@@noalloc]
 external log : float -> float = "caml_log_float" "log" [@@unboxed] [@@noalloc]
 external log10 : float -> float = "caml_log10_float" "log10"
+  [@@unboxed] [@@noalloc]
+external log2 : float -> float = "caml_log2_float" "caml_log2"
   [@@unboxed] [@@noalloc]
 external expm1 : float -> float = "caml_expm1_float" "caml_expm1"
   [@@unboxed] [@@noalloc]
@@ -82,6 +88,16 @@ external cosh : float -> float = "caml_cosh_float" "cosh"
 external sinh : float -> float = "caml_sinh_float" "sinh"
   [@@unboxed] [@@noalloc]
 external tanh : float -> float = "caml_tanh_float" "tanh"
+  [@@unboxed] [@@noalloc]
+external acosh : float -> float = "caml_acosh_float" "caml_acosh"
+  [@@unboxed] [@@noalloc]
+external asinh : float -> float = "caml_asinh_float" "caml_asinh"
+  [@@unboxed] [@@noalloc]
+external atanh : float -> float = "caml_atanh_float" "caml_atanh"
+  [@@unboxed] [@@noalloc]
+external erf : float -> float = "caml_erf_float" "caml_erf"
+  [@@unboxed] [@@noalloc]
+external erfc : float -> float = "caml_erfc_float" "caml_erfc"
   [@@unboxed] [@@noalloc]
 external trunc : float -> float = "caml_trunc_float" "caml_trunc"
   [@@unboxed] [@@noalloc]

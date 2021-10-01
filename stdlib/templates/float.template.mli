@@ -70,9 +70,14 @@ external fma : float -> float -> float -> float =
 (** [fma x y z] returns [x * y + z], with a best effort for computing
    this expression with a single rounding, using either hardware
    instructions (providing full IEEE compliance) or a software
-   emulation.  Note: since software emulation of the fma is costly,
-   make sure that you are using hardware fma support if performance
-   matters.  @since 4.08.0 *)
+   emulation.
+
+   On 64-bit Cygwin, 64-bit mingw-w64 and MSVC 2017 and earlier, this function
+   may be emulated owing to known bugs on limitations on these platforms.
+   Note: since software emulation of the fma is costly, make sure that you are
+   using hardware fma support if performance matters.
+
+   @since 4.08.0 *)
 
 external rem : float -> float -> float = "caml_fmod_float" "fmod"
 [@@unboxed] [@@noalloc]
@@ -197,8 +202,22 @@ external sqrt : float -> float = "caml_sqrt_float" "sqrt"
 [@@unboxed] [@@noalloc]
 (** Square root. *)
 
+external cbrt : float -> float = "caml_cbrt_float" "caml_cbrt"
+  [@@unboxed] [@@noalloc]
+(** Cube root.
+
+    @since 4.13.0
+*)
+
 external exp : float -> float = "caml_exp_float" "exp" [@@unboxed] [@@noalloc]
 (** Exponential. *)
+
+external exp2 : float -> float = "caml_exp2_float" "caml_exp2"
+  [@@unboxed] [@@noalloc]
+(** Base 2 exponential function.
+
+    @since 4.13.0
+*)
 
 external log : float -> float = "caml_log_float" "log" [@@unboxed] [@@noalloc]
 (** Natural logarithm. *)
@@ -206,6 +225,13 @@ external log : float -> float = "caml_log_float" "log" [@@unboxed] [@@noalloc]
 external log10 : float -> float = "caml_log10_float" "log10"
 [@@unboxed] [@@noalloc]
 (** Base 10 logarithm. *)
+
+external log2 : float -> float = "caml_log2_float" "caml_log2"
+  [@@unboxed] [@@noalloc]
+(** Base 2 logarithm.
+
+    @since 4.13.0
+*)
 
 external expm1 : float -> float = "caml_expm1_float" "caml_expm1"
 [@@unboxed] [@@noalloc]
@@ -267,6 +293,50 @@ external tanh : float -> float = "caml_tanh_float" "tanh"
 [@@unboxed] [@@noalloc]
 (** Hyperbolic tangent.  Argument is in radians. *)
 
+external acosh : float -> float = "caml_acosh_float" "caml_acosh"
+  [@@unboxed] [@@noalloc]
+(** Hyperbolic arc cosine.  The argument must fall within the range
+    [[1.0, inf]].
+    Result is in radians and is between [0.0] and [inf].
+
+    @since 4.13.0
+*)
+
+external asinh : float -> float = "caml_asinh_float" "caml_asinh"
+  [@@unboxed] [@@noalloc]
+(** Hyperbolic arc sine.  The argument and result range over the entire
+    real line.
+    Result is in radians.
+
+    @since 4.13.0
+*)
+
+external atanh : float -> float = "caml_atanh_float" "caml_atanh"
+  [@@unboxed] [@@noalloc]
+(** Hyperbolic arc tangent.  The argument must fall within the range
+    [[-1.0, 1.0]].
+    Result is in radians and ranges over the entire real line.
+
+    @since 4.13.0
+*)
+
+external erf : float -> float = "caml_erf_float" "caml_erf"
+  [@@unboxed] [@@noalloc]
+(** Error function.  The argument ranges over the entire real line.
+    The result is always within [[-1.0, 1.0]].
+
+    @since 4.13.0
+*)
+
+external erfc : float -> float = "caml_erfc_float" "caml_erfc"
+  [@@unboxed] [@@noalloc]
+(** Complementary error function ([erfc x = 1 - erf x]).
+    The argument ranges over the entire real line.
+    The result is always within [[-1.0, 1.0]].
+
+    @since 4.13.0
+*)
+
 external trunc : float -> float = "caml_trunc_float" "caml_trunc"
                                     [@@unboxed] [@@noalloc]
 (** [trunc x] rounds [x] to the nearest integer whose absolute value is
@@ -280,6 +350,9 @@ external round : float -> float = "caml_round_float" "caml_round"
    values of 0.5) rounded away from zero, regardless of the current
    rounding direction.  If [x] is an integer, [+0.], [-0.], [nan], or
    infinite, [x] itself is returned.
+
+   On 64-bit mingw-w64, this function may be emulated owing to a bug in the
+   C runtime library (CRT) on this platform.
 
    @since 4.08.0 *)
 

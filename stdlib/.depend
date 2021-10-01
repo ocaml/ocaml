@@ -148,17 +148,15 @@ camlinternalLazy.cmx : \
     camlinternalLazy.cmi
 camlinternalLazy.cmi :
 camlinternalMod.cmo : \
-    stdlib__Sys.cmi \
     stdlib__Obj.cmi \
-    stdlib__Nativeint.cmi \
+    stdlib__Lazy.cmi \
     camlinternalOO.cmi \
     camlinternalLazy.cmi \
     stdlib__Array.cmi \
     camlinternalMod.cmi
 camlinternalMod.cmx : \
-    stdlib__Sys.cmx \
     stdlib__Obj.cmx \
-    stdlib__Nativeint.cmx \
+    stdlib__Lazy.cmx \
     camlinternalOO.cmx \
     camlinternalLazy.cmx \
     stdlib__Array.cmx \
@@ -304,6 +302,7 @@ stdlib__Format.cmo : format.ml \
     stdlib__Either.cmi \
     camlinternalFormatBasics.cmi \
     camlinternalFormat.cmi \
+    stdlib__Bytes.cmi \
     stdlib__Buffer.cmi \
     stdlib__Format.cmi
 stdlib__Format.cmx : format.ml \
@@ -318,6 +317,7 @@ stdlib__Format.cmx : format.ml \
     stdlib__Either.cmx \
     camlinternalFormatBasics.cmx \
     camlinternalFormat.cmx \
+    stdlib__Bytes.cmx \
     stdlib__Buffer.cmx \
     stdlib__Format.cmi
 stdlib__Format.cmi : format.mli \
