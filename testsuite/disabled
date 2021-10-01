@@ -5,10 +5,6 @@
 # Either an entire directory or a specific file can be disabled here.
 # If an entire directory is listed, those tests won't even be run.
 
-# TODO: dynlink isn't 100% working in multicore
-# (this test below fails on Linux with travis but we can not recreate locally)
-tests/lib-dynlink-private/'test.ml' with 1.2.1.2.8.19.1 (run)
-
 # Obj.truncate is incompatible with multicore (ocaml/ocaml#1725)
 tests/weak-ephe-final/'weaktest.ml' with 1 (native)
 tests/weak-ephe-final/'weaktest.ml' with 2 (bytecode)
