@@ -77,7 +77,6 @@ void caml_final_do_young_roots (scanning_action f, void* fdata,
                                 caml_domain_state* d, int do_last_val);
 void caml_final_empty_young (caml_domain_state* d);
 void caml_final_update_last_minor (caml_domain_state* d);
-value caml_final_register (value f, value v);
 struct caml_final_info* caml_alloc_final_info(void);
 
 #endif /* CAML_INTERNALS */

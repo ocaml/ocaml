@@ -215,8 +215,6 @@
 #define page_table caml_page_table
 
 /* **** md5.c */
-#define md5_string caml_md5_string
-#define md5_chan caml_md5_chan
 #define MD5Init caml_MD5Init
 #define MD5Update caml_MD5Update
 #define MD5Final caml_MD5Final
@@ -262,7 +260,6 @@
 
 /* **** sys.c */
 #define sys_error caml_sys_error
-#define sys_exit caml_sys_exit
 
 /* **** terminfo.c */
 

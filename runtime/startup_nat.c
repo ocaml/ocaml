@@ -111,7 +111,7 @@ value caml_startup_common(char_os **argv, int pooling)
   caml_init_gc ();
 
   if (caml_params->backtrace_enabled)
-    caml_record_backtrace(Val_int(1));
+    caml_record_backtraces(1);
 
   init_segments();
   caml_init_signals();

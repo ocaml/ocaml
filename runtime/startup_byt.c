@@ -338,7 +338,7 @@ CAMLexport void caml_main(char_os **argv)
   /* Initialize the abstract machine */
   caml_init_gc ();
   Caml_state->external_raise = NULL;
-  if (caml_params->backtrace_enabled) caml_record_backtrace(Val_int(1));
+  if (caml_params->backtrace_enabled) caml_record_backtraces(1);
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
   /* Initialize the debugger, if needed */

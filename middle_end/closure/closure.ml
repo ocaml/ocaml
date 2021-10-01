@@ -1071,19 +1071,8 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
   | Lprim(Pignore, [arg], _loc) ->
       let expr, approx = make_const_int 0 in
       Usequence(fst (close env arg), expr), approx
-  | Lprim((Pidentity | Pbytes_to_string | Pbytes_of_string), [arg], _loc) ->
+  | Lprim((Pbytes_to_string | Pbytes_of_string), [arg], _loc) ->
       close env arg
-  | Lprim(Pdirapply,[funct;arg], loc)
-  | Lprim(Prevapply,[arg;funct], loc) ->
-      close env
-        (Lapply{
-           ap_loc=loc;
-           ap_func=funct;
-           ap_args=[arg];
-           ap_tailcall=Default_tailcall;
-           ap_inlined=Default_inline;
-           ap_specialised=Default_specialise;
-         })
   | Lprim(Pgetglobal id, [], loc) ->
       let dbg = Debuginfo.from_location loc in
       check_constant_result (getglobal dbg id)

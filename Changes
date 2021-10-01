@@ -48,6 +48,10 @@ Working version
    Leroy and Damien Doligez, benchmarking by Shubham Kumar and KC
    Sivaramakrishnan)
 
+- #9919: Introduce caml_record_backtraces and update Interfacing with C to
+  refer to it (previous instruction to use caml_record_backtrace primitive was
+  not possible without defining CAML_INTERNALS)
+
 - #10102: Ignore PROFINFO_WIDTH if WITH_PROFINFO is not defined (technically
   a breaking change if the configuration system was being abused before).
   (David Allsopp, review by Xavier Leroy)
@@ -102,6 +106,9 @@ Working version
   with the -dcmm-invariants flag
   (Vincent Laviron, with help from Sebastien Hinderer, review by Stephen Dolan
    and David Allsopp)
+
+- #9562, #367: Allow CSE of immutable loads across stores
+  (Stephen Dolan, review by Mark Shinwell)
 
 - #9876: do not cache the young_limit GC variable in a processor register.
   This affects the ARM64, PowerPC and RISC-V ports, making signal handling
@@ -434,6 +441,10 @@ Working version
 
 - #7453, #9828, #10416: fix #show for recursive types and modules
   (Florian Angeletti, review by Gabriel Scherer)
+
+* #7469, #10408: Sys.time now returns processor time on Windows (previously
+  returned wall-clock time)
+  (David Allsopp, review by Nicolás Ojeda Bär)
 
 * #8857, #10220: Don't clobber GetLastError() in caml_leave_blocking_section
   when the systhreads library is loaded.

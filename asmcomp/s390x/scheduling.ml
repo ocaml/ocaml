@@ -35,7 +35,7 @@ inherit Schedgen.scheduler_generic
 
 method oper_latency = function
     Ireload -> 4
-  | Iload(_, _) -> 4
+  | Iload(_, _, _) -> 4
   | Iconst_float _ -> 4 (* turned into a load *)
   | Iintop(Imul) -> 10
   | Iintop_imm(Imul, _) -> 10
