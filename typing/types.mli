@@ -129,7 +129,7 @@ and type_desc =
       where 'a1 ... 'an are names given to types in tyl
       and occurrences of those types in ty. *)
 
-  | Tpackage of Path.t * Longident.t list * type_expr list
+  | Tpackage of Path.t * (Longident.t * type_expr) list
   (** Type of a first-class module (a.k.a package). *)
 
 (** [  `X | `Y ]       (row_closed = true)

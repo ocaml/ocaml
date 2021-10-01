@@ -388,7 +388,7 @@ val maybe_pointer_type : Env.t -> type_expr -> bool
 
 (* Stubs *)
 val package_subtype :
-    (Env.t -> Path.t -> Longident.t list -> type_expr list ->
-      Path.t -> Longident.t list -> type_expr list -> bool) ref
+    (Env.t -> Path.t -> (Longident.t * type_expr) list ->
+      Path.t -> (Longident.t * type_expr) list -> bool) ref
 
 val mcomp : Env.t -> type_expr -> type_expr -> unit

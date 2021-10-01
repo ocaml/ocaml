@@ -383,7 +383,7 @@ let check_usage_of_path_of_substituted_item paths ~loc ~lid env super =
 *)
 let check_usage_of_module_types ~error ~paths ~loc env super =
   let it_do_type_expr it ty = match ty.desc with
-    | Tpackage (p, _, _) ->
+    | Tpackage (p, _) ->
        begin match List.find_opt (Path.same p) paths with
        | Some p -> raise (Error(loc,Lazy.force !env,error p))
        | _ -> super.Btype.it_do_type_expr it ty
@@ -1994,19 +1994,17 @@ and package_constraints env loc mty constrs =
     | Mty_ident p -> raise(Error(loc, env, Cannot_scrape_package_type p))
   end
 
-let modtype_of_package env loc p nl tl =
+let modtype_of_package env loc p fl =
   package_constraints env loc (Mty_ident p)
-    (List.combine (List.map Longident.flatten nl) tl)
+    (List.map (fun (n, t) -> (Longident.flatten n, t)) fl)
 
-let package_subtype env p1 nl1 tl1 p2 nl2 tl2 =
-  let mkmty p nl tl =
-    let ntl =
-      List.filter (fun (_n,t) -> Ctype.free_variables t = [])
-        (List.combine nl tl) in
-    let (nl, tl) = List.split ntl in
-    modtype_of_package env Location.none p nl tl
+let package_subtype env p1 fl1 p2 fl2 =
+  let mkmty p fl =
+    let fl =
+      List.filter (fun (_n,t) -> Ctype.free_variables t = []) fl in
+    modtype_of_package env Location.none p fl
   in
-  match mkmty p1 nl1 tl1, mkmty p2 nl2 tl2 with
+  match mkmty p1 fl1, mkmty p2 fl2 with
   | exception Error(_, _, Cannot_scrape_package_type _) -> false
   | mty1, mty2 ->
     let loc = Location.none in
@@ -2153,8 +2151,8 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
       end;
       let mty =
         match Ctype.expand_head env exp.exp_type with
-          {desc = Tpackage (p, nl, tl)} ->
-            if List.exists (fun t -> Ctype.free_variables t <> []) tl then
+          {desc = Tpackage (p, fl)} ->
+            if List.exists (fun (_n, t) -> Ctype.free_variables t <> []) fl then
               raise (Error (smod.pmod_loc, env,
                             Incomplete_packed_module exp.exp_type));
             if !Clflags.principal &&
@@ -2162,7 +2160,7 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
             then
               Location.prerr_warning smod.pmod_loc
                 (Warnings.Not_principal "this module unpacking");
-            modtype_of_package env smod.pmod_loc p nl tl
+            modtype_of_package env smod.pmod_loc p fl
         | {desc = Tvar _} ->
             raise (Typecore.Error
                      (smod.pmod_loc, env, Typecore.Cannot_infer_signature))
@@ -2730,7 +2728,7 @@ let lookup_type_in_sig sg =
     | Ldot(m, name) -> Pdot(module_path m, name)
     | Lapply _ -> assert false
 
-let type_package env m p nl =
+let type_package env m p fl =
   (* Same as Pexp_letmodule *)
   (* remember original level *)
   Ctype.begin_def ();
@@ -2738,10 +2736,10 @@ let type_package env m p nl =
   let modl = type_module env m in
   let scope = Ctype.create_scope () in
   Typetexp.widen context;
-  let nl', tl', env =
-    match nl with
-    | [] -> [], [], env
-    | nl ->
+  let fl', env =
+    match fl with
+    | [] -> [], env
+    | fl ->
       let type_path, env =
         match modl.mod_desc with
         | Tmod_ident (mp,_)
@@ -2758,42 +2756,40 @@ let type_package env m p nl =
           let sg, env = Env.enter_signature ~scope sg env in
           lookup_type_in_sig sg, env
       in
-      let nl', tl' =
+      let fl' =
         List.fold_right
-          (fun lid (nl, tl) ->
+          (fun (lid, _t) fl ->
              match type_path lid with
-             | exception Not_found -> (nl, tl)
+             | exception Not_found -> fl
              | path -> begin
                  match Env.find_type path env with
-                 | exception Not_found -> (nl, tl)
+                 | exception Not_found -> fl
                  | decl ->
                      if decl.type_arity > 0 then begin
-                       (nl, tl)
+                       fl
                      end else begin
                        let t = Btype.newgenty (Tconstr (path,[],ref Mnil)) in
-                       (lid :: nl, t :: tl)
+                       (lid, t) :: fl
                      end
                end)
-          nl ([], [])
+          fl []
       in
-      nl', tl', env
+      fl', env
   in
   (* go back to original level *)
   Ctype.end_def ();
   let mty =
-    if nl = [] then (Mty_ident p)
-    else modtype_of_package env modl.mod_loc p nl' tl'
+    if fl = [] then (Mty_ident p)
+    else modtype_of_package env modl.mod_loc p fl'
   in
-  List.iter2
-    (fun n ty ->
+  List.iter
+    (fun (n, ty) ->
       try Ctype.unify env ty (Ctype.newvar ())
       with Ctype.Unify _ ->
         raise (Error(modl.mod_loc, env, Scoping_pack (n,ty))))
-    nl' tl';
+    fl';
   let modl = wrap_constraint env true modl mty Tmodtype_implicit in
-  (* Dropped exports should have produced an error above *)
-  assert (List.length nl = List.length tl');
-  modl, tl'
+  modl, fl'
 
 (* Fill in the forward declarations *)
 

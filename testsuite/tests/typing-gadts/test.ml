@@ -384,7 +384,7 @@ Line 5, characters 28-29:
 5 |   let f = function A -> 1 | B -> 2
                                 ^
 Error: This variant pattern is expected to have type a
-       The constructor B does not belong to type a
+       There is no constructor B within type a
 |}];;
 
 module PR6849 = struct
