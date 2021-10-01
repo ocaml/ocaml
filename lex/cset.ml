@@ -55,9 +55,9 @@ let rec inter l l' =  match l, l' with
       else if c2' < c1 then
         inter l r'
       else if c2 < c2' then
-        (max c1 c1', c2)::inter r l'
+        (Int.max c1 c1', c2)::inter r l'
       else
-        (max c1 c1', c2')::inter l r'
+        (Int.max c1 c1', c2')::inter l r'
 
 let rec diff l l' =  match l, l' with
     _, [] -> l

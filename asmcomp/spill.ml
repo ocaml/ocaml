@@ -169,7 +169,7 @@ let rec reload i before =
       let date_ifso = !current_date in
       current_date := date_fork;
       let (new_ifnot, after_ifnot) = reload ifnot at_fork in
-      current_date := max date_ifso !current_date;
+      current_date := Int.max date_ifso !current_date;
       let (new_next, finally) =
         reload i.next (Reg.Set.union after_ifso after_ifnot) in
       let new_i =
@@ -189,7 +189,7 @@ let rec reload i before =
             current_date := date_fork;
             let (new_c, after_c) = reload c at_fork in
             after_cases := Reg.Set.union !after_cases after_c;
-            date_join := max !date_join !current_date;
+            date_join := Int.max !date_join !current_date;
             new_c)
           cases in
       current_date := !date_join;

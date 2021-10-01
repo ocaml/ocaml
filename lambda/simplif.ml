@@ -113,7 +113,7 @@ let simplify_exits lam =
     match Hashtbl.find_opt exits i with
     | Some r ->
         r.count <- r.count + nb;
-        r.max_depth <- max r.max_depth d
+        r.max_depth <- Int.max r.max_depth d
     | None ->
         let r = {count = nb; max_depth = d} in
         Hashtbl.add exits i r
@@ -155,7 +155,7 @@ let simplify_exits lam =
          increases j's ref count *)
       count ~try_depth l1 ;
       let ic = get_exit i in
-      incr_exit j ic.count (max try_depth ic.max_depth)
+      incr_exit j ic.count (Int.max try_depth ic.max_depth)
   | Lstaticcatch(l1, (i,_), l2) ->
       count ~try_depth l1;
       (* If l1 does not contain (exit i),

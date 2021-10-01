@@ -46,7 +46,7 @@ let name_at ?max_len buf start =
   let max_pos =
     match max_len with
     | None -> Bytes.length buf
-    | Some n -> min (Bytes.length buf) (start + n)
+    | Some n -> Int.min (Bytes.length buf) (start + n)
   in
   let rec loop pos =
     if pos >= max_pos || Bytes.get buf pos = '\000'

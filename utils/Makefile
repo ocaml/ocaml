@@ -19,14 +19,10 @@ ROOTDIR = ..
 
 include $(ROOTDIR)/Makefile.common
 
-ifeq "$(UNIX_OR_WIN32)" "win32"
-ifeq "$(wildcard $(ROOTDIR)/flexdll/Makefile)" ""
+ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
   FLEXDLL_DIR =
 else
-  FLEXDLL_DIR = $(if $(wildcard $(ROOTDIR)/flexdll/flexdll_*.$(O)),+flexdll)
-endif
-else
-  FLEXDLL_DIR =
+  FLEXDLL_DIR = +flexdll
 endif
 
 FLEXLINK_FLAGS ?=

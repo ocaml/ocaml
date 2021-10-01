@@ -44,6 +44,7 @@ val add_modtype_path: Path.t -> module_type -> t -> t
 
 val for_saving: t -> t
 val reset_for_saving: unit -> unit
+val change_locs: t -> Location.t -> t
 
 val module_path: t -> Path.t -> Path.t
 val type_path: t -> Path.t -> Path.t

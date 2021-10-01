@@ -556,7 +556,7 @@ let letter_alert tokens =
       let nowhere = { loc_start=pos; loc_end=pos; loc_ghost=true } in
       let spelling_hint ppf =
         let max_seq_len =
-          List.fold_left (fun l x -> max l (List.length x))
+          List.fold_left (fun l x -> Int.max l (List.length x))
             0 consecutive_letters
         in
         if max_seq_len >= 5 then
@@ -651,7 +651,7 @@ let parse_opt error active errflag s =
         in
         List.iter (action modifier) (letter lc)
     | Num(n1,n2,modifier) ->
-        for n = n1 to min n2 last_warning_number do action modifier n done
+        for n = n1 to Int.min n2 last_warning_number do action modifier n done
   in
   let parse_and_eval s =
     let tokens = parse_warnings s in
