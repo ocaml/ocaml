@@ -316,7 +316,7 @@ let emit_instr env i =
         | Thirtytwo_signed -> "lw"
         | Word_int | Word_val -> "ld"
         | Single -> assert false
-        | Double | Double_u -> "fld"
+        | Double -> "fld"
       in
       `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_int ofs}({emit_reg i.arg.(0)})\n`
   | Lop(Istore(Single, Iindexed ofs, _)) ->
@@ -331,7 +331,7 @@ let emit_instr env i =
         | Thirtytwo_unsigned | Thirtytwo_signed -> "sw"
         | Word_int | Word_val -> "sd"
         | Single -> assert false
-        | Double | Double_u -> "fsd"
+        | Double -> "fsd"
       in
       `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_int ofs}({emit_reg i.arg.(1)})\n`
   | Lop(Ialloc {bytes; dbginfo}) ->

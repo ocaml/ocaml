@@ -267,8 +267,7 @@ expr:
           Debuginfo.none) }
   | LPAREN FLOATAREF expr expr RPAREN
       { let open Asttypes in
-        Cop(Cload {memory_chunk=Double_u; mutability=Mutable; is_atomic=false}, [access_array $3 $4 Arch.size_float],
-
+        Cop(Cload {memory_chunk=Double; mutability=Mutable; is_atomic=false}, [access_array $3 $4 Arch.size_float],
           Debuginfo.none) }
   | LPAREN ADDRASET expr expr expr RPAREN
       { let open Lambda in
@@ -280,7 +279,7 @@ expr:
             [access_array $3 $4 Arch.size_int; $5], Debuginfo.none) }
   | LPAREN FLOATASET expr expr expr RPAREN
       { let open Lambda in
-        Cop(Cstore (Double_u, Assignment),
+        Cop(Cstore (Double, Assignment),
             [access_array $3 $4 Arch.size_float; $5], Debuginfo.none) }
 ;
 exprlist:
@@ -320,7 +319,7 @@ chunk:
   | ADDR                        { Word_val }
   | FLOAT32                     { Single }
   | FLOAT64                     { Double }
-  | FLOAT                       { Double_u }
+  | FLOAT                       { Double }
   | VAL                         { Word_val }
 ;
 unaryop:

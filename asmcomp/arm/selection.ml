@@ -24,7 +24,7 @@ open Mach
 let is_offset chunk n =
   match chunk with
   (* VFPv{2,3} load/store have -1020 to 1020.  Offset must be multiple of 4 *)
-  | Single | Double | Double_u
+  | Single | Double
     when !fpu >= VFPv2 ->
       n >= -1020 && n <= 1020 && n mod 4 = 0
   (* ARM load/store byte/word have -4095 to 4095 *)
