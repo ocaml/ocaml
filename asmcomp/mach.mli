@@ -72,9 +72,7 @@ type instruction =
     arg: Reg.t array;
     res: Reg.t array;
     dbg: Debuginfo.t;
-    mutable live: Reg.Set.t;
-    mutable available_before: Reg_availability_set.t;
-    mutable available_across: Reg_availability_set.t option;
+    mutable live: Reg.Set.t
   }
 
 and instruction_desc =
