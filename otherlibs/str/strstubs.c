@@ -37,7 +37,7 @@ union backtrack_point {
 #define Clear_tag(p) ((value *) ((intnat)(p) & ~1))
 #define Tag_is_set(p) ((intnat)(p) & 1)
 
-#define BACKTRACK_STACK_BLOCK_SIZE 500
+#define BACKTRACK_STACK_BLOCK_SIZE 200
 
 struct backtrack_stack {
   struct backtrack_stack * previous;
@@ -89,10 +89,7 @@ struct re_group {
 /* Record positions reached during matching; used to check progress
    in repeated matching of a regexp. */
 #define NUM_REGISTERS 64
-static unsigned char * re_register[NUM_REGISTERS];
-
-/* The initial backtracking stack */
-static struct backtrack_stack initial_stack = { NULL, };
+typedef unsigned char * progress_registers[NUM_REGISTERS];
 
 /* Free a chained list of backtracking stacks */
 static void free_backtrack_stack(struct backtrack_stack * stack)
@@ -110,7 +107,7 @@ static void free_backtrack_stack(struct backtrack_stack * stack)
 /* Determine if a character is a word constituent */
 /* PR#4874: word constituent = letter, digit, underscore. */
 
-static unsigned char re_word_letters[32] = {
+static const unsigned char re_word_letters[32] = {
   0x00, 0x00, 0x00, 0x00,       /* 0x00-0x1F: none */
   0x00, 0x00, 0xFF, 0x03,       /* 0x20-0x3F: digits 0-9 */
   0xFE, 0xFF, 0xFF, 0x87,       /* 0x40-0x5F: A to Z, _ */
@@ -158,19 +155,28 @@ static value re_match(value re,
                       register unsigned char * endtxt,
                       int accept_partial_match)
 {
-  register value * pc;
-  intnat instr;
-  struct backtrack_stack * stack;
-  union backtrack_point * sp;
+  /* Fields of [re] */
   value cpool;
   value normtable;
+  int numgroups;
+  /* Currently-executing instruction */
+  register value * pc;
+  intnat instr;
   unsigned char c;
+  /* Backtracking */
+  struct backtrack_stack initial_stack;
+  struct backtrack_stack * stack;
+  union backtrack_point * sp;
   union backtrack_point back;
+  /* Checking for progress */
+  progress_registers re_register;
+  /* Recording matched groups */
   struct re_group default_groups[DEFAULT_NUM_GROUPS];
   struct re_group * groups;
-  int numgroups = Numgroups(re);
+  /* Final matching info */
   value result;
 
+  numgroups = Numgroups(re);
   if (numgroups <= DEFAULT_NUM_GROUPS)
     groups = default_groups;
   else
@@ -186,6 +192,7 @@ static value re_match(value re,
   }
 
   pc = &Field(Prog(re), 0);
+  initial_stack.previous = NULL;
   stack = &initial_stack;
   sp = stack->point;
   cpool = Cpool(re);
