@@ -134,28 +134,28 @@ let strengthen_decl ~aliasable env md p =
              (Subst.Lazy.of_module_decl md) p in
   Subst.Lazy.force_module_decl md
 
-let rec make_aliases_absent pres mty =
+let rec make_aliases_present pres mty =
   match mty with
-  | Mty_alias _ -> Mp_absent, mty
+  | Mty_alias _ -> Mp_present, mty
   | Mty_signature sg ->
-      pres, Mty_signature(make_aliases_absent_sig sg)
+      pres, Mty_signature(make_aliases_present_sig sg)
   | Mty_functor(arg, res) ->
-      let _, res = make_aliases_absent Mp_present res in
+      let _, res = make_aliases_present Mp_present res in
       pres, Mty_functor(arg, res)
   | mty ->
       pres, mty
 
-and make_aliases_absent_sig sg =
+and make_aliases_present_sig sg =
   match sg with
     [] -> []
   | Sig_module(id, pres, md, rs, priv) :: rem ->
-      let pres, md_type = make_aliases_absent pres md.md_type in
+      let pres, md_type = make_aliases_present pres md.md_type in
       let md = { md with md_type } in
-      Sig_module(id, pres, md, rs, priv) :: make_aliases_absent_sig rem
+      Sig_module(id, pres, md, rs, priv) :: make_aliases_present_sig rem
   | sigelt :: rem ->
-      sigelt :: make_aliases_absent_sig rem
+      sigelt :: make_aliases_present_sig rem
 
-let scrape_for_type_of env pres mty =
+let scrape_for_type_of ~present_aliases env pres mty =
   let rec loop env path mty =
     match mty, path with
     | Mty_alias path, _ -> begin
@@ -168,7 +168,8 @@ let scrape_for_type_of env pres mty =
         strengthen ~aliasable:false env mty path
     | _ -> mty
   in
-  make_aliases_absent pres (loop env None mty)
+  let mty = loop env None mty in
+  if present_aliases then make_aliases_present pres mty else pres, mty
 
 (* In nondep_supertype, env is only used for the type it assigns to id.
    Hence there is no need to keep env up-to-date by adding the bindings
@@ -527,7 +528,7 @@ let scrape_for_functor_arg env mty =
   in
   mty
 
-let scrape_for_type_of ~remove_aliases env mty =
+let scrape_for_type_of ~present_aliases ~remove_aliases env mty =
   if remove_aliases then begin
     let excl = collect_arg_paths mty in
     let exclude id _p = Ident.Set.mem id excl in
@@ -537,7 +538,7 @@ let scrape_for_type_of ~remove_aliases env mty =
     in
     mty
   end else begin
-    let _, mty = scrape_for_type_of env Mp_present mty in
+    let _, mty = scrape_for_type_of ~present_aliases env Mp_present mty in
     mty
   end
 

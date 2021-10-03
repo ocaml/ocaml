@@ -4811,11 +4811,7 @@ and type_unpacks ?(in_function : (Location.t * type_expr) option)
                     unpack.tu_name.loc)))
       in
       Mtype.lower_nongen (get_level ty) modl.mod_type;
-      let pres =
-        match modl.mod_type with
-        | Mty_alias _ -> Mp_absent
-        | _ -> Mp_present
-      in
+      let pres = Mp_present in
       let scope = create_scope () in
       let md =
         { md_type = modl.mod_type; md_attributes = [];

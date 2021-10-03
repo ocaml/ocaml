@@ -31,7 +31,8 @@ end
 val type_module:
         Env.t -> Parsetree.module_expr -> Typedtree.module_expr
 val type_structure:
-  Env.t -> Parsetree.structure ->
+  ?absent_globals:bool (* Clflags.transparent_modules *) -> Env.t ->
+  Parsetree.structure ->
   Typedtree.structure * Types.signature * Signature_names.t * Env.t
 val type_toplevel_phrase:
   Env.t -> Parsetree.structure ->
@@ -40,9 +41,11 @@ val type_implementation:
   string -> string -> string -> Env.t ->
   Parsetree.structure -> Typedtree.implementation
 val type_interface:
-        Env.t -> Parsetree.signature -> Typedtree.signature
+  ?absent_globals:bool (* Clflags.transparent_modules *) -> Env.t ->
+  Parsetree.signature -> Typedtree.signature
 val transl_signature:
-        Env.t -> Parsetree.signature -> Typedtree.signature
+  absent_globals:bool (* Clflags.transparent_modules *) -> Env.t ->
+  Parsetree.signature -> Typedtree.signature
 val check_nongen_signature:
         Env.t -> Types.signature -> unit
         (*
