@@ -196,6 +196,66 @@ module M2 : sig module C' : sig val chr : int -> char end end
 - : char = 'B'
 |}];;
 
+module M = struct
+  module A = struct
+    module B = struct
+      let run_me f = f ()
+      let incr i = i + 1
+    end
+  end
+  module A' = A
+end;;
+module M1 : sig
+    module A : sig
+      module B : sig
+        val incr : int -> int
+      end
+    end
+    module A' = A
+  end =
+M;; (* sound, but should probably fail *)
+M1.A'.B.incr 0;;
+module M2 : sig
+    module A : sig
+      module B : sig
+        val incr : int -> int
+      end
+    end
+    module A' = A
+  end =
+(M : sig
+  module A : sig
+    module B : sig
+      val incr : int -> int
+    end
+  end
+  module A' = A
+end);;
+M2.A'.B.incr 0;;
+[%%expect{|
+module M :
+  sig
+    module A :
+      sig
+        module B :
+          sig val run_me : (unit -> 'a) -> 'a val incr : int -> int end
+      end
+    module A' = A
+  end
+module M1 :
+  sig
+    module A : sig module B : sig val incr : int -> int end end
+    module A' = A
+  end
+- : int = 1
+module M2 :
+  sig
+    module A : sig module B : sig val incr : int -> int end end
+    module A' = A
+  end
+- : int = 1
+|}];;
+
 StdLabels.List.map;;
 [%%expect{|
 - : f:('a -> 'b) -> 'a list -> 'b list = <fun>
