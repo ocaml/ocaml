@@ -56,6 +56,7 @@ and stack_location =
     Local of int
   | Incoming of int
   | Outgoing of int
+  | Domainstate of int
 
 type reg = t
 
@@ -147,6 +148,7 @@ let to_string r =
       | Local i -> "S_L("^(string_of_int i)^")"
       | Incoming i-> "S_I("^(string_of_int i)^")"
       | Outgoing i -> "S_O("^(string_of_int i)^")"
+      | Domainstate i -> "S_D("^(string_of_int i)^")"
   in
   let typ_str = match r.typ with
     | Addr -> "A"

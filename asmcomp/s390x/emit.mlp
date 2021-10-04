@@ -43,6 +43,7 @@ let slot_offset env loc cls =
       else env.stack_offset + n * size_float
   | Incoming n -> frame_size env + n
   | Outgoing n -> n
+  | Domainstate _ -> assert false  (* not a stack slot *)
 
 (* Output a symbol *)
 
@@ -93,8 +94,12 @@ let reg_r7 = check_phys_reg 5 "%r7"
 
 let emit_stack env r =
   match r.loc with
-    Stack s ->
-      let ofs = slot_offset env s (register_class r) in `{emit_int ofs}(%r15)`
+  | Stack (Domainstate n) ->
+      let ofs = n + Domainstate.(idx_of_field Domain_extra_params) * 8 in
+      `{emit_int ofs}(%r10)`
+  | Stack s ->
+      let ofs = slot_offset env s (register_class r) in
+      `{emit_int ofs}(%r15)`
   | _ -> fatal_error "Emit.emit_stack"
 
 

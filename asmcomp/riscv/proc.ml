@@ -122,12 +122,14 @@ let stack_slot slot ty =
 
 (* Calling conventions *)
 
+let size_domainstate_args = 64 * size_int
+
 let calling_conventions
-    first_int last_int first_float last_float make_stack arg =
+    first_int last_int first_float last_float make_stack first_stack arg =
   let loc = Array.make (Array.length arg) Reg.dummy in
   let int = ref first_int in
   let float = ref first_float in
-  let ofs = ref 0 in
+  let ofs = ref first_stack in
   for i = 0 to Array.length arg - 1 do
     match arg.(i) with
     | Val | Int | Addr as ty ->
@@ -147,32 +149,38 @@ let calling_conventions
           ofs := !ofs + size_float
         end
   done;
-  (loc, Misc.align !ofs 16) (* Keep stack 16-aligned. *)
+  (loc, Misc.align (max 0 !ofs) 16) (* Keep stack 16-aligned. *)
 
-let incoming ofs = Incoming ofs
-let outgoing ofs = Outgoing ofs
+let incoming ofs =
+  if ofs >= 0
+  then Incoming ofs
+  else Domainstate (ofs + size_domainstate_args)
+let outgoing ofs =
+  if ofs >= 0
+  then Outgoing ofs
+  else Domainstate (ofs + size_domainstate_args)
 let not_supported _ = fatal_error "Proc.loc_results: cannot call"
 
-let max_arguments_for_tailcalls = 16
+let max_arguments_for_tailcalls = 16 (* in regs *) + 64 (* in domain state *)
 
 (* OCaml calling convention:
      first integer args in a0 .. a7, s2 .. s9
      first float args in fa0 .. fa7, fs2 .. fs9
-     remaining args on stack.
+     remaining args in domain state area, then on stack.
    Return values in a0 .. a7, s2 .. s9 or fa0 .. fa7, fs2 .. fs9. *)
 
 let loc_arguments arg =
-  calling_conventions 0 15 110 125 outgoing arg
+  calling_conventions 0 15 110 125 outgoing (- size_domainstate_args) arg
 
 let loc_parameters arg =
   let (loc, _ofs) =
-    calling_conventions 0 15 110 125 incoming arg
+    calling_conventions 0 15 110 125 incoming (- size_domainstate_args) arg
   in
   loc
 
 let loc_results res =
   let (loc, _ofs) =
-    calling_conventions 0 15 110 125 not_supported res
+    calling_conventions 0 15 110 125 not_supported 0 res
   in
   loc
 
@@ -219,7 +227,7 @@ let loc_external_arguments ty_args =
   external_calling_conventions 0 7 110 117 outgoing arg
 
 let loc_external_results res =
-  let (loc, _ofs) = calling_conventions 0 1 110 111 not_supported res
+  let (loc, _ofs) = calling_conventions 0 1 110 111 not_supported 0 res
   in loc
 
 (* Exceptions are in a0 *)

@@ -22,6 +22,16 @@ Working version
   parameter passing on PowerPC (16 registers) and on s390x (8 registers).
   (Xavier Leroy, review by Mark Shinwell)
 
+- #10591, #10615: Tune the heuristic for CSE of integer constants
+  so as to avoid excessive CSE on compiler-generated constants
+  and long register allocation times.
+  (Xavier Leroy, report by Edwin Török, review by Nicolás Ojeda Bär)
+
+- #10595: Tail calls with up to 64 arguments are guaranteed to be compiled
+  as tail calls.  To this end, memory locations in the domain state
+  are used for passing arguments that do not fit in registers.
+  (Xavier Leroy, review by Vincent Laviron)
+
 ### Standard library:
 
 * #7812, #10475: `Filename.chop_suffix name suff` now checks that `suff`
@@ -79,12 +89,18 @@ Working version
   until the program creates a thread for the first time, then fail cleanly.
   (Xavier Leroy, report by @anentropic, review by Gabriel Scherer)
 
+- #9621: Pack the ocamldebug modules to minimize clashes
+  (Raphael Sousa Santos, review by Vincent Laviron and Gabriel Scherer)
+
 ### Manual and documentation:
 
 - #7812, #10475: reworded the description of the behaviors of
   float->int conversions in case of overflow, and of iterators
   in case of concurrent modifications.
   (Xavier Leroy, report by whitequark, review by David Allsopp)
+
+- #10605: manual, name few css classes to ease styling and maintainability.
+  (Florian Angeletti, review by Wiktor Kuchta and Gabriel Scherer)
 
 ### Compiler user-interface and warnings:
 
@@ -158,6 +174,9 @@ Working version
 
 - #10590: Some typechecker optimisations
   (Stephen Dolan, review by Gabriel Scherer and Leo White)
+
+- #10603, #10611: Fix if condition marked as inconstant in flambda
+  (Vincent Laviron and Pierre Chambart, report by Marcello Seri)
 
 OCaml 4.13.0
 -------------
@@ -780,6 +799,9 @@ OCaml 4.13.0
 - #10468: Correctly pretty print local type substitution, e.g. type t := ...,
   with -dsource
   (Matt Else, review by Florian Angeletti)
+
+- #10511: Cygwin ports now correctly configure when flexdll is not available.
+  (David Allsopp, review by Florian Angeletti)
 
 - #10550, #10551: fix pretty-print of gadt-pattern-with-type-vars
   (Chet Murthy, review by Gabriel Scherer)

@@ -69,6 +69,7 @@ let slot_offset env loc cl =
   | Outgoing n ->
       assert (n >= 0);
       n
+  | Domainstate _ -> assert false  (* not a stack slot *)
 
 (* Record symbols used and defined - at the end generate extern for those
    used but not defined *)
@@ -138,16 +139,24 @@ let domain_field f r =
 let load_domain_state r =
   I.mov (sym32 "Caml_state") r
 
+let x86_data_type_for_stack_slot = function
+  | Float -> REAL8
+  | _ -> DWORD
+
+(* The Domainstate locations are mapped to a global array "caml_extra_params"
+   defined in runtime/i386*.  We cannot access the domain state here
+   because in the i386 port there is no register that always point to the
+   domain state.  A global array works because i386 does not
+   support multiple domains. *)
+
 let reg env = function
   | { loc = Reg r } -> register_name r
-  | { loc = Stack(Incoming n | Outgoing n) } when n < 0 ->
-      sym32 "caml_extra_params" ~ofs:(n + 64)
-  | { loc = Stack s; typ = Float } as r ->
+  | { loc = Stack(Domainstate n); typ = ty } ->
+      mem_sym (x86_data_type_for_stack_slot ty)
+              (emit_symbol "caml_extra_params") ~ofs:n
+  | { loc = Stack s; typ = ty } as r ->
       let ofs = slot_offset env s (register_class r) in
-      mem32 REAL8 ofs RSP
-  | { loc = Stack s } as r ->
-      let ofs = slot_offset env s (register_class r) in
-      mem32 DWORD ofs RSP
+      mem32 (x86_data_type_for_stack_slot ty) ofs RSP
   | { loc = Unknown } ->
       fatal_error "Emit_i386.reg"
 
