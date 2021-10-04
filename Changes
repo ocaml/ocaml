@@ -1,5 +1,6 @@
 Working version
 ----------------
+
 ### Language features:
 
 - #10437: Allow explicit binders for type variables.
@@ -17,6 +18,10 @@ Working version
 
 ### Code generation and optimizations:
 
+- #10578: Increase the number of integer registers used for
+  parameter passing on PowerPC (16 registers) and on s390x (8 registers).
+  (Xavier Leroy, review by Mark Shinwell)
+
 ### Standard library:
 
 * #7812, #10475: `Filename.chop_suffix name suff` now checks that `suff`
@@ -30,6 +35,15 @@ Working version
 
 - #10526: add Random.bits32, Random.bits64, Random.nativebits
   (Xavier Leroy, review by Gabriel Scherer and François Bobot)
+
+* #10568: remove Obj.marshal and Obj.unmarshal
+  (these functions have been deprecated for a while and are superseded
+   by the functions from module Marshal)
+  (François Pottier, review by Gabriel Scherer and Kate Deplaix)
+
+- #10545: Add In_channel and Out_channel modules.
+  (Nicolás Ojeda Bär, review by Daniel Bünzli, Simon Cruanes, Gabriel Scherer,
+  Guillaume Munch-Maccagnoni, Alain Frisch and Xavier Leroy)
 
 ### Other libraries:
 
@@ -54,6 +68,16 @@ Working version
   `OCAML_COLOR` is set, its setting takes precedence over `NO_COLOR`.
   (Nicolás Ojeda Bär, report by Gabriel Scherer, review by Daniel Bünzli,
   Gabriel Scherer and David Allsopp)
+
+- #10565: Toplevel value printing: truncate strings only after 8 bytes.
+  (Wiktor Kuchta, review by Xavier Leroy)
+
+### Debugging:
+
+- #10517, #10594: when running ocamldebug on a program linked with the
+  threads library, don't fail immediately; instead, allow debugging
+  until the program creates a thread for the first time, then fail cleanly.
+  (Xavier Leroy, report by @anentropic, review by Gabriel Scherer)
 
 ### Manual and documentation:
 
@@ -126,7 +150,7 @@ Working version
 
 - #10539: Field kinds should be kept when copying types
   Losing the sharing meant that one could desynchronize them between several
-  occurences of self, allowing a method to be both public and hidden,
+  occurrences of self, allowing a method to be both public and hidden,
   which broke type soundness.
   (Jacques Garrigue, review by Leo White)
 
@@ -582,6 +606,10 @@ OCaml 4.13.0
   "interval" patterns `c1..c2`.
   (Guillaume Petiot, review by Gabriel Scherer and Nicolás Ojeda Bär)
 
+- #7449 #10458: Change the size heuristics of switch in flambda to avoid
+  inlining too large jump tables. (Pierre Chambart, review by Gabriel Scherer,
+  report by Mark Hayden)
+
 ### Build system:
 
 - #10289, #10406: Do not print option documentation in usage messages.
@@ -744,6 +772,10 @@ OCaml 4.13.0
 
 - #10550, #10551: fix pretty-print of gadt-pattern-with-type-vars
   (Chet Murthy, review by Gabriel Scherer)
+
+- #10584, #10856: Standard Library documentation build no longer fails if
+  optional libraries have been disabled.
+  (David Allsopp, report by Yuri Victorovich review by Florian Angeletti)
 
 OCaml 4.12, maintenance version
 -------------------------------

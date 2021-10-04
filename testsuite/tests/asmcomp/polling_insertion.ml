@@ -142,7 +142,7 @@ let polls_not_added_unconditionally_allocating_functions () =
   allocating_func_match minors_before
 
 (* This function tests that polls are not added to the back edge of
-   where loop bodies allocat unconditionally *)
+   where loop bodies allocate unconditionally *)
 let polls_not_added_to_allocating_loops () =
   let current_minors = ref (minor_gcs ()) in
   request_minor_gc ();

@@ -188,6 +188,7 @@ let print_out_value ppf tree =
     | Oval_string (s, maxlen, kind) ->
        begin try
          let len = String.length s in
+         let maxlen = max maxlen 8 in (* always show a little prefix *)
          let s = if len > maxlen then String.sub s 0 maxlen else s in
          begin match kind with
          | Ostr_bytes -> fprintf ppf "Bytes.of_string %S" s
