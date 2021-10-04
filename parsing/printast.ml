@@ -147,6 +147,9 @@ let arg_label i ppf = function
   | Labelled s -> line i ppf "Labelled \"%s\"\n" s
 ;;
 
+let typevars ppf vs =
+  List.iter (fun x -> fprintf ppf " %a" Pprintast.tyvar x.txt) vs
+
 let rec core_type i ppf x =
   line i ppf "core_type %a\n" fmt_location x.ptyp_loc;
   attributes i ppf x.ptyp_attributes;
@@ -189,11 +192,7 @@ let rec core_type i ppf x =
       line i ppf "Ptyp_alias \"%s\"\n" s;
       core_type i ppf ct;
   | Ptyp_poly (sl, ct) ->
-      line i ppf "Ptyp_poly%a\n"
-        (fun ppf ->
-           List.iter (fun x -> fprintf ppf " %a" Pprintast.tyvar x.txt)
-        )
-        sl;
+      line i ppf "Ptyp_poly%a\n" typevars sl;
       core_type i ppf ct;
   | Ptyp_package (s, l) ->
       line i ppf "Ptyp_package %a\n" fmt_longident_loc s;
@@ -489,8 +488,9 @@ and extension_constructor i ppf x =
 
 and extension_constructor_kind i ppf x =
   match x with
-      Pext_decl(a, r) ->
+      Pext_decl(v, a, r) ->
         line i ppf "Pext_decl\n";
+        if v <> [] then line (i+1) ppf "vars%a\n" typevars v;
         constructor_arguments (i+1) ppf a;
         option (i+1) core_type ppf r;
     | Pext_rebind li ->
@@ -887,9 +887,10 @@ and core_type_x_core_type_x_location i ppf (ct1, ct2, l) =
   core_type (i+1) ppf ct2;
 
 and constructor_decl i ppf
-                     {pcd_name; pcd_args; pcd_res; pcd_loc; pcd_attributes} =
+     {pcd_name; pcd_vars; pcd_args; pcd_res; pcd_loc; pcd_attributes} =
   line i ppf "%a\n" fmt_location pcd_loc;
   line (i+1) ppf "%a\n" fmt_string_loc pcd_name;
+  if pcd_vars <> [] then line (i+1) ppf "pcd_vars =%a\n" typevars pcd_vars;
   attributes i ppf pcd_attributes;
   constructor_arguments (i+1) ppf pcd_args;
   option (i+1) core_type ppf pcd_res

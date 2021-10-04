@@ -518,6 +518,7 @@ and constructor_declaration =
     {
      cd_id: Ident.t;
      cd_name: string loc;
+     cd_vars: string loc list;
      cd_args: constructor_arguments;
      cd_res: core_type option;
      cd_loc: Location.t;
@@ -557,7 +558,7 @@ and extension_constructor =
   }
 
 and extension_constructor_kind =
-    Text_decl of constructor_arguments * core_type option
+    Text_decl of string loc list * constructor_arguments * core_type option
   | Text_rebind of Path.t * Longident.t loc
 
 and class_type =

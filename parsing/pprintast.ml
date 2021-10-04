@@ -1544,7 +1544,8 @@ and type_declaration ctxt f x =
   let constructor_declaration f pcd =
     pp f "|@;";
     constructor_declaration ctxt f
-      (pcd.pcd_name.txt, pcd.pcd_args, pcd.pcd_res, pcd.pcd_attributes)
+      (pcd.pcd_name.txt, pcd.pcd_vars,
+       pcd.pcd_args, pcd.pcd_res, pcd.pcd_attributes)
   in
   let repr f =
     let intro f =
@@ -1587,11 +1588,15 @@ and type_extension ctxt f x =
     x.ptyext_constructors
     (item_attributes ctxt) x.ptyext_attributes
 
-and constructor_declaration ctxt f (name, args, res, attrs) =
+and constructor_declaration ctxt f (name, vars, args, res, attrs) =
   let name =
     match name with
     | "::" -> "(::)"
     | s -> s in
+  let pp_vars f vs =
+    match vs with
+    | [] -> ()
+    | vs -> pp f "%a@;.@;" (list tyvar_loc ~sep:"@;") vs in
   match res with
   | None ->
       pp f "%s%a@;%a" name
@@ -1603,7 +1608,8 @@ and constructor_declaration ctxt f (name, args, res, attrs) =
         ) args
         (attributes ctxt) attrs
   | Some r ->
-      pp f "%s:@;%a@;%a" name
+      pp f "%s:@;%a%a@;%a" name
+        pp_vars vars
         (fun f -> function
            | Pcstr_tuple [] -> core_type1 ctxt f r
            | Pcstr_tuple l -> pp f "%a@;->@;%a"
@@ -1618,8 +1624,9 @@ and constructor_declaration ctxt f (name, args, res, attrs) =
 and extension_constructor ctxt f x =
   (* Cf: #7200 *)
   match x.pext_kind with
-  | Pext_decl(l, r) ->
-      constructor_declaration ctxt f (x.pext_name.txt, l, r, x.pext_attributes)
+  | Pext_decl(v, l, r) ->
+      constructor_declaration ctxt f
+        (x.pext_name.txt, v, l, r, x.pext_attributes)
   | Pext_rebind li ->
       pp f "%s@;=@;%a%a" x.pext_name.txt
         longident_loc li

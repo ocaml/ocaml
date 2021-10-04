@@ -232,7 +232,7 @@ Line 1, characters 0-28:
 1 | type missing = d = { x:int }
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type d
-       The field y is only present in the original definition.
+       An extra field, y, is provided in the original definition.
 |}]
 
 type wrong_type = d = {x:float}
@@ -241,11 +241,12 @@ Line 1, characters 0-31:
 1 | type wrong_type = d = {x:float}
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type d
-       Fields do not match:
+       1. Fields do not match:
          x : int;
        is not the same as:
          x : float;
        The type int is not equal to the type float
+       2. An extra field, y, is provided in the original definition.
 |}]
 
 type mono = {foo:int}
@@ -266,5 +267,5 @@ Line 1, characters 0-30:
 1 | type perm = d = {y:int; x:int}
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type d
-       Fields number 1 have different names, x and y.
+       Fields x and y have been swapped.
 |}]

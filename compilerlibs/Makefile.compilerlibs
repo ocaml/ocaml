@@ -45,7 +45,8 @@ UTILS = \
   utils/domainstate.cmo \
   utils/binutils.cmo \
   utils/lazy_backtrack.cmo \
-  utils/diffing.cmo
+  utils/diffing.cmo \
+  utils/diffing_with_keys.cmo
 UTILS_CMI =
 
 PARSING = \
