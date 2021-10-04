@@ -86,6 +86,9 @@ Working version
   Types
   (Nicolas Chataing, review by Jacques Garrigue)
 
+- #10555: Do not use ghost locations for type constraints
+  (Nicolás Ojeda Bär, report by Anton Bachin, review by Thomas Refis)
+
 ### Build system:
 
 - #10471: Fix detection of arm32 architectures with musl in the configure
@@ -103,6 +106,12 @@ Working version
   Moreover, poll point insertion must be disabled for `caml_send*`,
   otherwise the derived pointer is live across a poll point.
   (Vincent Laviron and Xavier Leroy, review by Xavier Leroy and Sadiq Jaffer)
+
+- #10539: Field kinds should be kept when copying types
+  Losing the sharing meant that one could desynchronize them between several
+  occurences of self, allowing a method to be both public and hidden,
+  which broke type soundness.
+  (Jacques Garrigue, review by Leo White)
 
 - #10542: Fix detection of immediate64 types through unboxed types.
   (Leo White, review by Stephen Dolan and Gabriel Scherer)
@@ -700,6 +709,9 @@ OCaml 4.13.0
 - #10468: Correctly pretty print local type substitution, e.g. type t := ...,
   with -dsource
   (Matt Else, review by Florian Angeletti)
+
+- #10550, #10551: fix pretty-print of gadt-pattern-with-type-vars
+  (Chet Murthy, review by Gabriel Scherer)
 
 OCaml 4.12, maintenance version
 -------------------------------
