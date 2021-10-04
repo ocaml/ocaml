@@ -17,15 +17,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include <caml/mlvalues.h>
-
-/* This stub isn't needed for msvc32, since it's already in asmgen_i386nt.asm */
-#if !defined(_MSC_VER) || !defined(_M_IX86)
-void caml_call_gc()
-{
-
-}
-#endif
 
 /* This stub isn't needed for msvc32, since it's already in asmgen_i386nt.asm */
 #if !defined(_MSC_VER) || !defined(_M_IX86)
@@ -74,28 +65,28 @@ int cmpint(const void * i, const void * j)
 
 #endif
 
-CAMLprim value run_prog(value varg1, value varg2, value varg3)
+int main(int argc, char **argv)
 {
-  long arg1 = Long_val(varg1);
-  long arg2 = Long_val(varg2);
-  long arg3 = Long_val(varg3);
-  if (arg1+arg2+arg3) {}; /* squash unused var warnings */
 #ifdef UNIT_INT
   { extern long FUN(void);
     extern long call_gen_code(long (*)(void));
     printf("%ld\n", call_gen_code(FUN));
   }
 #else
+  if (argc < 2) {
+    fprintf(stderr, "Usage: %s [int arg]\n", argv[0]);
+    exit(2);
+  }
 #ifdef INT_INT
   { extern long FUN(long);
     extern long call_gen_code(long (*)(long), long);
-    printf("%ld\n", call_gen_code(FUN, arg1));
+    printf("%ld\n", call_gen_code(FUN, atoi(argv[1])));
   }
 #endif
 #ifdef INT_FLOAT
   { extern double FUN(long);
     extern double call_gen_code(double (*)(long), long);
-    printf("%f\n", call_gen_code(FUN, arg1));
+    printf("%f\n", call_gen_code(FUN, atoi(argv[1])));
   }
 #endif
 #ifdef FLOAT_CATCH
@@ -113,8 +104,8 @@ CAMLprim value run_prog(value varg1, value varg2, value varg3)
     long * a, * b;
     long i;
 
-    srand(arg2 ? arg2 : time(0));
-    n = arg1;
+    srand(argc >= 3 ? atoi(argv[2]) : time((time_t *) 0));
+    n = atoi(argv[1]);
     a = (long *) malloc(n * sizeof(long));
     for (i = 0 ; i < n; i++) a[i] = rand() & 0xFFF;
 #ifdef DEBUG
@@ -138,9 +129,9 @@ CAMLprim value run_prog(value varg1, value varg2, value varg3)
   { extern void checkbound1(long), checkbound2(long, long);
     extern void call_gen_code(void *, ...);
     long x, y;
-    x = arg1;
-    if (arg2) {
-      y = arg2;
+    x = atoi(argv[1]);
+    if (argc >= 3) {
+      y = atoi(argv[2]);
       if ((unsigned long) x < (unsigned long) y)
         printf("Should not trap\n");
       else
@@ -156,5 +147,5 @@ CAMLprim value run_prog(value varg1, value varg2, value varg3)
     printf("OK\n");
   }
 #endif
-  return Val_unit;
+  return 0;
 }

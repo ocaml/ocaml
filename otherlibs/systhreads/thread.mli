@@ -145,3 +145,16 @@ val wait_signal : int list -> int
    Signal handlers attached to the signals in [sigs] will not
    be invoked.  The signals [sigs] are expected to be blocked before
    calling [wait_signal]. *)
+
+(** {1 Uncaught exceptions} *)
+
+val default_uncaught_exception_handler : exn -> unit
+(** [Thread.default_uncaught_exception_handler] will print the thread's id,
+    exception and backtrace (if available). *)
+
+val set_uncaught_exception_handler : (exn -> unit) -> unit
+(** [Thread.set_uncaught_exception_handler fn] registers [fn] as the handler
+    for uncaught exceptions.
+
+    If the newly set uncaught exception handler raise an exception,
+    {!default_uncaught_exception_handler} will be called. *)

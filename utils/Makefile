@@ -79,6 +79,7 @@ config.ml: config.mlp $(ROOTDIR)/Makefile.config Makefile
 	    $(call SUBST,FORCE_SAFE_STRING) \
 	    $(call SUBST,DEFAULT_SAFE_STRING) \
 	    $(call SUBST,WINDOWS_UNICODE) \
+	    $(call SUBST,NAKED_POINTERS) \
 	    $(call SUBST,SUPPORTS_SHARED_LIBRARIES) \
 	    $(call SUBST,SYSTEM) \
 	    $(call SUBST,SYSTHREAD_SUPPORT) \

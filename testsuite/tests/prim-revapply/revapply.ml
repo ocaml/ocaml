@@ -30,3 +30,20 @@ let _f x = x |> bump (* no warning 48 *)
 type t = A | B
 type s = A | B
 let _f (x : t) = x |> function A -> 0 | B -> 1
+
+(* Abstract functions *)
+let _ =
+  let module A:sig
+    type f
+    type x
+    val succ: f
+    val zero:x
+    external (|>): x -> f -> int = "%revapply"
+  end = struct
+    type f = int -> int
+    type x = int
+    let succ = succ
+    let zero = 0
+    external (|>): x -> f -> int = "%revapply"
+  end in
+  A.(zero |> succ)

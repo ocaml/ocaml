@@ -201,7 +201,7 @@ Now run:
 
 for 32-bit, or:
 
-        ./configure --build=x86_64-unknown-cygwin --host=x86_64-pc-windows
+        ./configure --build=x86_64-pc-cygwin --host=x86_64-pc-windows
 
 for 64-bit.
 
@@ -266,7 +266,7 @@ Now run:
 
 for 32-bit, or:
 
-        ./configure --build=x86_64-unknown-cygwin --host=x86_64-w64-mingw32
+        ./configure --build=x86_64-pc-cygwin --host=x86_64-w64-mingw32
 
 for 64-bit.
 
