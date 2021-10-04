@@ -48,6 +48,10 @@ let _ =
        (fun () -> int_of_float (Random.float 1.0 *. 256.0));
   test "Random.float 1.0 (next 8 bits)"
        (fun () -> int_of_float (Random.float 1.0 *. 65536.0));
+  test "Random.bits32 (bits 0-7)"
+       (fun () -> Int32.to_int (Random.bits32()));
+  test "Random.bits32 (bits 20-27)"
+       (fun () -> Int32.(to_int (shift_right (Random.bits32()) 20)));
   test "Random.int32 2^30 (bits 0-7)"
        (fun () -> Int32.to_int (Random.int32 0x40000000l));
   test "Random.int32 2^30 (bits 20-27)"
@@ -55,6 +59,12 @@ let _ =
   test "Random.int32 (256 * p) / p"
        (let p = 7048673l in
         fun () -> Int32.(to_int (div (Random.int32 (mul 256l p)) p)));
+  test "Random.bits64 (bits 0-7)"
+       (fun () -> Int64.to_int (Random.bits64()));
+  test "Random.bits64 (bits 30-37)"
+       (fun () -> Int64.(to_int (shift_right (Random.bits64()) 30)));
+  test "Random.bits64 (bits 52-59)"
+       (fun () -> Int64.(to_int (shift_right (Random.bits64()) 52)));
   test "Random.int64 2^60 (bits 0-7)"
        (fun () -> Int64.to_int (Random.int64 0x1000000000000000L));
   test "Random.int64 2^60 (bits 30-37)"

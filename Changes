@@ -7,6 +7,10 @@ Working version
 
 ### Runtime system:
 
+* #9391, #9424: Fix failed assertion in runtime due to ephemerons *set_* and
+  *blit_* function during Mark phase
+  (François Bobot, reported by Stephen Dolan, reviewed by Damien Doligez)
+
 ### Code generation and optimizations:
 
 ### Standard library:
@@ -20,6 +24,9 @@ Working version
   are now provided by the camlp-streams library.
   (Xavier Leroy, review by Nicolás Ojeda Bär)
 
+- #10526: add Random.bits32, Random.bits64, Random.nativebits
+  (Xavier Leroy, review by Gabriel Scherer and François Bobot)
+
 ### Other libraries:
 
 - #10192: Add support for Unix domain sockets on Windows and use them
@@ -31,6 +38,9 @@ Working version
 - #3959, #7202, #10476: ocaml, in script mode, directive errors
   (`#use "missing_file";;`) use stderr and exit with an error.
   (Florian Angeletti, review by Gabriel Scherer)
+
+- #10524: Directive argument type error now shows expected and received type.
+  (Wiktor Kuchta, review by Gabriel Scherer)
 
 ### Manual and documentation:
 
