@@ -257,11 +257,9 @@ let destroyed_at_c_call =
 let destroyed_at_oper = function
   | Iop(Icall_ind | Icall_imm _) | Iop(Iextcall { alloc = true; }) ->
       all_phys_regs
-  | Iop(Iextcall { alloc ; stack_ofs; }) ->
-      assert (stack_ofs >= 0);
-      if alloc || stack_ofs > 0 then all_phys_regs
-      else destroyed_at_c_call
-  | Iop(Ialloc _) ->
+  | Iop(Iextcall { alloc = false; }) ->
+      destroyed_at_c_call
+  | Iop(Ialloc _) | Iop(Ipoll _) ->
       [| reg_x8 |]
   | Iop( Iintoffloat | Ifloatofint
        | Iload(Single, _, _) | Istore(Single, _, _)) ->
@@ -276,12 +274,12 @@ let destroyed_at_reloadretaddr = [| |]
 
 let safe_register_pressure = function
   | Iextcall _ -> 7
-  | Ialloc _ -> 22
+  | Ialloc _ | Ipoll _ -> 22
   | _ -> 23
 
 let max_register_pressure = function
   | Iextcall _ -> [| 7; 8 |]  (* 7 integer callee-saves, 8 FP callee-saves *)
-  | Ialloc _ -> [| 22; 32 |]
+  | Ialloc _ | Ipoll _ -> [| 22; 32 |]
   | Iintoffloat | Ifloatofint
   | Iload(Single, _, _) | Istore(Single, _, _) -> [| 23; 31 |]
   | _ -> [| 23; 32 |]
