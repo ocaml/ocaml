@@ -146,7 +146,8 @@ Lines 2-5, characters 4-7:
 3 |         method foo = "foo"
 4 |         method private virtual cast: int
 5 |     end
-Error: The class type object method foo : string end
+Error: The class type
+         object method private virtual cast : int method foo : string end
        is not matched by the class type foo_t
        The virtual method cast cannot be hidden
 |}]

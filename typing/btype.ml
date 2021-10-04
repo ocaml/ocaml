@@ -411,10 +411,9 @@ let type_iterators =
         it.it_class_type it cty
     | Cty_signature cs ->
         it.it_type_expr it cs.csig_self;
+        it.it_type_expr it cs.csig_self_row;
         Vars.iter (fun _ (_,_,ty) -> it.it_type_expr it ty) cs.csig_vars;
-        List.iter
-          (fun (p, tl) -> it.it_path p; List.iter (it.it_type_expr it) tl)
-          cs.csig_inher
+        Meths.iter (fun _ (_,_,ty) -> it.it_type_expr it ty) cs.csig_meths
     | Cty_arrow  (_, ty, cty) ->
         it.it_type_expr it ty;
         it.it_class_type it cty
@@ -639,6 +638,117 @@ let rec extract_label_aux hd l = function
 
 let extract_label l ls = extract_label_aux [] l ls
 
+                              (*******************************)
+                              (*  Operations on class types  *)
+                              (*******************************)
+
+let rec signature_of_class_type =
+  function
+    Cty_constr (_, _, cty) -> signature_of_class_type cty
+  | Cty_signature sign     -> sign
+  | Cty_arrow (_, _, cty)   -> signature_of_class_type cty
+
+let rec class_body cty =
+  match cty with
+    Cty_constr _ ->
+      cty (* Only class bodies can be abbreviated *)
+  | Cty_signature _ ->
+      cty
+  | Cty_arrow (_, _, cty) ->
+      class_body cty
+
+(* Fully expand the head of a class type *)
+let rec scrape_class_type =
+  function
+    Cty_constr (_, _, cty) -> scrape_class_type cty
+  | cty                     -> cty
+
+let rec class_type_arity =
+  function
+    Cty_constr (_, _, cty) ->  class_type_arity cty
+  | Cty_signature _        ->  0
+  | Cty_arrow (_, _, cty)    ->  1 + class_type_arity cty
+
+let rec abbreviate_class_type path params cty =
+  match cty with
+    Cty_constr (_, _, _) | Cty_signature _ ->
+      Cty_constr (path, params, cty)
+  | Cty_arrow (l, ty, cty) ->
+      Cty_arrow (l, ty, abbreviate_class_type path params cty)
+
+let self_type cty =
+  (signature_of_class_type cty).csig_self
+
+let self_type_row cty =
+  (signature_of_class_type cty).csig_self_row
+
+(* Return the methods of a class signature *)
+let methods sign =
+  Meths.fold
+    (fun name _ l -> name :: l)
+    sign.csig_meths []
+
+(* Return the virtual methods of a class signature *)
+let virtual_methods sign =
+  Meths.fold
+    (fun name (_priv, vr, _ty) l ->
+       match vr with
+       | Virtual -> name :: l
+       | Concrete -> l)
+    sign.csig_meths []
+
+(* Return the concrete methods of a class signature *)
+let concrete_methods sign =
+  Meths.fold
+    (fun name (_priv, vr, _ty) s ->
+       match vr with
+       | Virtual -> s
+       | Concrete -> MethSet.add name s)
+    sign.csig_meths MethSet.empty
+
+(* Return the public methods of a class signature *)
+let public_methods sign =
+  Meths.fold
+    (fun name (priv, _vr, _ty) l ->
+       match priv with
+       | Private -> l
+       | Public -> name :: l)
+    sign.csig_meths []
+
+(* Return the instance variables of a class signature *)
+let instance_vars sign =
+  Vars.fold
+    (fun name _ l -> name :: l)
+    sign.csig_vars []
+
+(* Return the virtual instance variables of a class signature *)
+let virtual_instance_vars sign =
+  Vars.fold
+    (fun name (_mut, vr, _ty) l ->
+       match vr with
+       | Virtual -> name :: l
+       | Concrete -> l)
+    sign.csig_vars []
+
+(* Return the concrete instance variables of a class signature *)
+let concrete_instance_vars sign =
+  Vars.fold
+    (fun name (_mut, vr, _ty) s ->
+       match vr with
+       | Virtual -> s
+       | Concrete -> VarSet.add name s)
+    sign.csig_vars VarSet.empty
+
+let method_type label sign =
+  match Meths.find label sign.csig_meths with
+  | (_, _, ty) -> ty
+  | exception Not_found -> assert false
+
+let instance_variable_type label sign =
+  match Vars.find label sign.csig_vars with
+  | (_, _, ty) -> ty
+  | exception Not_found -> assert false
+
                   (**********************************)
                   (*  Utilities for level-marking   *)
                   (**********************************)
@@ -693,7 +803,9 @@ let unmark_extension_constructor ext =
 
 let unmark_class_signature sign =
   unmark_type sign.csig_self;
-  Vars.iter (fun _l (_m, _v, t) -> unmark_type t) sign.csig_vars
+  unmark_type sign.csig_self_row;
+  Vars.iter (fun _l (_m, _v, t) -> unmark_type t) sign.csig_vars;
+  Meths.iter (fun _l (_m, _v, t) -> unmark_type t) sign.csig_meths
 
 let unmark_class_type cty =
   unmark_iterators.it_class_type unmark_iterators cty

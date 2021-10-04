@@ -470,10 +470,11 @@ let expression sub exp =
         Pexp_for (name,
           sub.expr sub exp1, sub.expr sub exp2,
           dir, sub.expr sub exp3)
-    | Texp_send (exp, meth, _) ->
+    | Texp_send (exp, meth) ->
         Pexp_send (sub.expr sub exp, match meth with
             Tmeth_name name -> mkloc name loc
-          | Tmeth_val id -> mkloc (Ident.name id) loc)
+          | Tmeth_val id -> mkloc (Ident.name id) loc
+          | Tmeth_ancestor(id, _) -> mkloc (Ident.name id) loc)
     | Texp_new (_path, lid, _) -> Pexp_new (map_loc sub lid)
     | Texp_instvar (_, path, name) ->
       Pexp_ident ({loc = sub.location sub name.loc ; txt = lident_of_path path})

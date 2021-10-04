@@ -15,6 +15,11 @@ Working version
   is actually a suffix of `name` and raises Invalid_argument otherwise.
   (Xavier Leroy, report by whitequark, review by David Allsopp)
 
+* #10482: mark the Stream and Genlex modules as deprecated, in preparation
+  for a future removal.  These modules (without deprecation alert)
+  are now provided by the camlp-streams library.
+  (Xavier Leroy, review by Nicolás Ojeda Bär)
+
 ### Other libraries:
 
 - #10192: Add support for Unix domain sockets on Windows and use them
@@ -75,9 +80,11 @@ Working version
   This allows stacktraces to work in gdb through C and OCaml calls.
   (Edwin Török, review by Nicolás Ojeda Bär and Xavier Leroy)
 
-- #10461: `caml_send*` helper functions take derived pointers as arguments.
-  Those must be declared with type Addr instead of Val.
-  (Vincent Laviron, review by Xavier Leroy)
+- #10461, #10498: `caml_send*` helper functions take derived pointers
+  as arguments.  Those must be declared with type Addr instead of Val.
+  Moreover, poll point insertion must be disabled for `caml_send*`,
+  otherwise the derived pointer is live across a poll point.
+  (Vincent Laviron and Xavier Leroy, review by Xavier Leroy and Sadiq Jaffer)
 
 
 OCaml 4.13.0
@@ -89,8 +96,9 @@ OCaml 4.13.0
   Add poll points to native generated code. These are effectively
   zero-sized allocations and fix some signal and remembered set
   issues. Also multicore prerequisite.
-  (Sadiq Jaffer, Damien Doligez, Mark Shinwell, Anmol Sahoo, Stephen Dolan,
-  Xavier Leroy reviewed by ??)
+  (Sadiq Jaffer, Stephen Dolan, Damien Doligez, Xavier Leroy,
+   Anmol Sahoo, Mark Shinwell, review by Damien Doligez, Xavier Leroy,
+   and Mark Shinwell)
 
 - #9331: Improve error messages for functor application and functor types.
   (Florian Angeletti and Gabriel Radanne, review by Leo White)
@@ -110,13 +118,6 @@ OCaml 4.13.0
   One can now write '(Cstr (type a) (x, y : int * a))' to give a name to
   existentials freshly introduced by GADT constructors.
   (Jacques Garrigue, review by Leo White and Gabriel Scherer)
-
-* #9811: remove propagation from previous branches
-  Type information inferred from previous branches was propagated in
-  non-principal mode. Revert this for better compatibility with
-  -principal mode.
-  For the time being, infringing code should result in a principality warning.
-  (Jacques Garrigue, review by Thomas Refis and Gabriel Scherer)
 
 - #10174: Make Tsubst more robust by avoiding strange workarounds
   (Takafumi Saikawa and Jacques Garrigue, review by Gabriel Scherer and
@@ -442,6 +443,9 @@ OCaml 4.13.0
   (Leo White, review by Florian Angeletti)
 
 ### Internal/compiler-libs changes:
+
+- #8516: Change representation of class signatures
+  (Leo White, review by Thomas Refis)
 
 - #9243, simplify parser rules for array indexing operations
   (Florian Angeletti, review by Damien Doligez and Gabriel Scherer)

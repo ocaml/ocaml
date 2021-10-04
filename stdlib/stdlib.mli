@@ -1401,6 +1401,7 @@ module Format       = Format
 module Fun          = Fun
 module Gc           = Gc
 module Genlex       = Genlex
+[@@deprecated "Use the camlp-streams library instead."]
 module Hashtbl      = Hashtbl
 module Int          = Int
 module Int32        = Int32
@@ -1435,6 +1436,7 @@ module Set          = Set
 module Stack        = Stack
 module StdLabels    = StdLabels
 module Stream       = Stream
+[@@deprecated "Use the camlp-streams library instead."]
 module String       = String
 module StringLabels = StringLabels
 module Sys          = Sys

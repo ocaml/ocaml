@@ -628,15 +628,6 @@ let f (type a) (x : a t) y =
     in M.z
 ;; (* fails because of aliasing... *)
 [%%expect{|
-Lines 2-4, characters 2-10:
-2 | ..match x with Int ->
-3 |     let module M = struct type b = a let z = (y : b) end
-4 |     in M.z
-Warning 18 [not-principal]:
-  The return type of this pattern-matching is ambiguous.
-  Please add a type annotation, as the choice of `a' is not principal.
-val f : 'a t -> 'a -> 'a = <fun>
-|}, Principal{|
 Line 3, characters 46-47:
 3 |     let module M = struct type b = a let z = (y : b) end
                                                   ^
