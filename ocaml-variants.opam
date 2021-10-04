@@ -44,6 +44,7 @@ build: [
   [
     "./configure"
     "--prefix=%{prefix}%"
+    "--docdir=%{doc}%/ocaml"
     "--with-afl" {ocaml-option-afl:installed}
     "--disable-native-compiler" {ocaml-option-bytecode-only:installed}
     "--disable-force-safe-string" {ocaml-option-default-unsafe-string:installed}

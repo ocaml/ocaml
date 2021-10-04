@@ -17,8 +17,6 @@
    that use deprecated functions to preserve legacy behavior.
    It overrides -w @3 given on the command line. *)
 
-external str_initialize : unit -> unit = "caml_str_initialize"
-
 (** String utilities *)
 
 let string_before s n = String.sub s 0 n
@@ -28,8 +26,6 @@ let string_after s n = String.sub s n (String.length s - n)
 let first_chars s n = String.sub s 0 n
 
 let last_chars s n = String.sub s (String.length s - n) n
-
-let () = str_initialize ()
 
 (** Representation of character sets **)
 
@@ -98,10 +94,10 @@ module Charset =
       r
 
     let fold_case s =
-      let r = make_empty() in
-      iter (fun c -> add r (Char.lowercase_ascii c);
-                     add r (Char.uppercase_ascii c)) s;
-      r
+      (let r = make_empty() in
+       iter (fun c -> add r (Char.lowercase c); add r (Char.uppercase c)) s;
+       r)[@ocaml.warning "-3"]
+
   end
 
 (** Abstract syntax tree for regular expressions *)
@@ -222,9 +218,9 @@ let charclass_of_regexp fold_case re =
 (* The case fold table: maps characters to their lowercase equivalent *)
 
 let fold_case_table =
-  let t = Bytes.create 256 in
-  for i = 0 to 255 do Bytes.set t i (Char.lowercase_ascii(Char.chr i)) done;
-  Bytes.to_string t
+  (let t = Bytes.create 256 in
+   for i = 0 to 255 do Bytes.set t i (Char.lowercase(Char.chr i)) done;
+   Bytes.to_string t)[@ocaml.warning "-3"]
 
 module StringMap =
   Map.Make(struct type t = string let compare (x:t) y = compare x y end)
@@ -280,7 +276,8 @@ let compile fold_case re =
   let rec emit_code = function
     Char c ->
       if fold_case then
-        emit_instr op_CHARNORM (Char.code (Char.lowercase_ascii c))
+        emit_instr op_CHARNORM (Char.code (Char.lowercase c))
+          [@ocaml.warning "-3"]
       else
         emit_instr op_CHAR (Char.code c)
   | String s ->
@@ -288,7 +285,8 @@ let compile fold_case re =
         0 -> ()
       | 1 ->
         if fold_case then
-          emit_instr op_CHARNORM (Char.code (Char.lowercase_ascii s.[0]))
+          emit_instr op_CHARNORM (Char.code (Char.lowercase s.[0]))
+            [@ocaml.warning "-3"]
         else
           emit_instr op_CHAR (Char.code s.[0])
       | _ ->
@@ -301,7 +299,8 @@ let compile fold_case re =
           emit_code (String (string_after s (i+1)))
         with Not_found ->
           if fold_case then
-            emit_instr op_STRINGNORM (cpool_index (String.lowercase_ascii s))
+            emit_instr op_STRINGNORM (cpool_index (String.lowercase s))
+              [@ocaml.warning "-3"]
           else
             emit_instr op_STRING (cpool_index s)
       end

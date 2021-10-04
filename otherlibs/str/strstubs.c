@@ -13,17 +13,12 @@
 /*                                                                        */
 /**************************************************************************/
 
-#define CAML_INTERNALS
-
 #include <string.h>
 #include <ctype.h>
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/memory.h>
 #include <caml/fail.h>
-#include "caml/domain.h"
-
-#include <pthread.h>
 
 /* The backtracking NFA interpreter */
 
@@ -42,7 +37,7 @@ union backtrack_point {
 #define Clear_tag(p) ((value *) ((intnat)(p) & ~1))
 #define Tag_is_set(p) ((intnat)(p) & 1)
 
-#define BACKTRACK_STACK_BLOCK_SIZE 500
+#define BACKTRACK_STACK_BLOCK_SIZE 200
 
 struct backtrack_stack {
   struct backtrack_stack * previous;
@@ -94,82 +89,7 @@ struct re_group {
 /* Record positions reached during matching; used to check progress
    in repeated matching of a regexp. */
 #define NUM_REGISTERS 64
-static pthread_key_t re_register_key;
-
-/* The initial backtracking stack key */
-static pthread_key_t initial_stack_key;
-
-static void free_backtrack_stack(struct backtrack_stack *);
-
-static struct backtrack_stack *get_backtrack_stack()
-{
-  struct backtrack_stack *stack = pthread_getspecific(initial_stack_key);
-
-  if (stack == NULL) {
-    stack = caml_stat_alloc(sizeof(struct backtrack_stack));
-    stack->previous = NULL;
-    pthread_setspecific(initial_stack_key, stack);
-    return stack;
-  }
-  else
-    return stack;
-}
-
-static unsigned char **get_re_register()
-{
-  unsigned char **re_register = pthread_getspecific(re_register_key);
-
-  if (re_register == NULL) {
-    re_register =  caml_stat_alloc(sizeof(unsigned char *) * NUM_REGISTERS);
-    pthread_setspecific(re_register_key, re_register);
-    return re_register;
-  }
-  else
-    return re_register;
-}
-
-/* we save the previous domain_stop_hook to setup our own here */
-static void (* prev_domain_stop_hook) (void);
-
-/* used to free up resources on domain shutdown */
-static void caml_str_domain_stop_hook (void)
-{
-  unsigned char **reg;
-  struct backtrack_stack *stack;
-
-  stack = get_backtrack_stack();
-
-  if (stack != NULL) {
-    /* free all stacks in the chaining */
-    free_backtrack_stack(stack);
-    /* free initial backtrack stack as well */
-    caml_stat_free(stack);
-    pthread_setspecific(initial_stack_key, NULL);
-  }
-
-  reg = get_re_register();
-
-  if (reg != NULL) {
-    caml_stat_free(reg);
-    pthread_setspecific(re_register_key, NULL);
-  }
-
-  prev_domain_stop_hook();
-
-  return;
-};
-
-CAMLprim value caml_str_initialize(value unit) /* ML */
-{
-  CAMLparam0();
-
-  prev_domain_stop_hook = caml_domain_stop_hook;
-  caml_domain_stop_hook = caml_str_domain_stop_hook;
-  pthread_key_create(&initial_stack_key,  NULL);
-  pthread_key_create(&re_register_key, NULL);
-
-  CAMLreturn(Val_unit);
-}
+typedef unsigned char * progress_registers[NUM_REGISTERS];
 
 /* Free a chained list of backtracking stacks */
 static void free_backtrack_stack(struct backtrack_stack * stack)
@@ -187,7 +107,7 @@ static void free_backtrack_stack(struct backtrack_stack * stack)
 /* Determine if a character is a word constituent */
 /* PR#4874: word constituent = letter, digit, underscore. */
 
-static unsigned char re_word_letters[32] = {
+static const unsigned char re_word_letters[32] = {
   0x00, 0x00, 0x00, 0x00,       /* 0x00-0x1F: none */
   0x00, 0x00, 0xFF, 0x03,       /* 0x20-0x3F: digits 0-9 */
   0xFE, 0xFF, 0xFF, 0x87,       /* 0x40-0x5F: A to Z, _ */
@@ -207,8 +127,7 @@ static unsigned char re_word_letters[32] = {
 static value re_alloc_groups(value re, unsigned char * starttxt,
                              struct re_group * groups)
 {
-  CAMLparam1(re);
-  CAMLlocal1(res);
+  value res;
   int n = Numgroups(re);
   int i;
   struct re_group * group;
@@ -224,9 +143,8 @@ static value re_alloc_groups(value re, unsigned char * starttxt,
       Field(res, i * 2 + 1) = Val_long(group->end - starttxt);
     }
   }
-  CAMLreturn(res);
+  return res;
 }
-
 
 /* The bytecode interpreter for the NFA.
    Return Caml array of matched groups on success, 0 on failure. */
@@ -237,20 +155,28 @@ static value re_match(value re,
                       register unsigned char * endtxt,
                       int accept_partial_match)
 {
-  register value * pc;
-  intnat instr;
-  struct backtrack_stack * stack;
-  union backtrack_point * sp;
+  /* Fields of [re] */
   value cpool;
   value normtable;
+  int numgroups;
+  /* Currently-executing instruction */
+  register value * pc;
+  intnat instr;
   unsigned char c;
+  /* Backtracking */
+  struct backtrack_stack initial_stack;
+  struct backtrack_stack * stack;
+  union backtrack_point * sp;
   union backtrack_point back;
+  /* Checking for progress */
+  progress_registers re_register;
+  /* Recording matched groups */
   struct re_group default_groups[DEFAULT_NUM_GROUPS];
   struct re_group * groups;
-  int numgroups = Numgroups(re);
+  /* Final matching info */
   value result;
-  unsigned char **re_register = get_re_register();
 
+  numgroups = Numgroups(re);
   if (numgroups <= DEFAULT_NUM_GROUPS)
     groups = default_groups;
   else
@@ -265,10 +191,9 @@ static value re_match(value re,
       *q = NULL;
   }
 
-  pc = Op_val(Prog(re));
-
-  stack = get_backtrack_stack();
-
+  pc = &Field(Prog(re), 0);
+  initial_stack.previous = NULL;
+  stack = &initial_stack;
   sp = stack->point;
   cpool = Cpool(re);
   normtable = Normtable(re);
@@ -614,8 +539,8 @@ CAMLprim value re_replacement_text(value repl, value groups, value orig)
       case '0': case '1': case '2': case '3': case '4':
       case '5': case '6': case '7': case '8': case '9':
         c -= '0';
-        start = Long_field(groups, c*2);
-        end = Long_field(groups, c*2 + 1);
+        start = Long_val(Field(groups, c*2));
+        end = Long_val(Field(groups, c*2 + 1));
         len = end - start;
         memmove (q, &Byte(orig, start), len);
         q += len;

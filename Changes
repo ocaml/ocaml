@@ -71,6 +71,11 @@ Working version
   (Nicolás Ojeda Bär, review by John Whitington, Daniel Bünzli, David Allsopp
   and Xavier Leroy)
 
+- #10596: Add with_open_bin, with_open_text and with_open_gen to In_channel and
+  Out_channel. Also, add In_channel.input_all.
+  (Nicolás Ojeda Bär, review by Daniel Bünzli, Jérémie Dimino, Damien Doligez
+  and Xavier Leroy)
+
 ### Other libraries:
 
 - #10192: Add support for Unix domain sockets on Windows and use them
@@ -121,6 +126,12 @@ Working version
 
 - #10605: manual, name few css classes to ease styling and maintainability.
   (Florian Angeletti, review by Wiktor Kuchta and Gabriel Scherer)
+
+- #10668, #10669: the changelog (this file), LICENSE and README files are now
+  installed as part of the distribution. The destination directory can be
+  customized using the `--docdir` argument to `./configure`.
+  (Nicolás Ojeda Bär, report by Daniel Bünzli, review by David Allsopp,
+  Sébastien Hinderer, and Daniel Bünzli)
 
 ### Compiler user-interface and warnings:
 
@@ -211,6 +222,9 @@ Working version
 - #10516: refactor the compilation of the 'switch' construct
   (Gabriel Scherer, review by Wiktor Kuchta and Luc Maranget)
 
+- #10670: avoid global C state in the RE engine for the "str" library
+  (Xavier Leroy, review by Gabriel Scherer)
+
 ### Build system:
 
 ### Bug fixes:
@@ -236,8 +250,17 @@ Working version
   (Stephen Dolan, review by Xavier Leroy)
 
 
-OCaml 4.13.0
--------------
+OCaml 4.13 maintenance branch
+-----------------------------
+
+### Bug fixes
+
+- #10661, #10662: fix a bug with classes named "row"
+  (Gabriel Scherer, report by Nicolás Ojeda Bär)
+
+
+OCaml 4.13.0 (24 September 2021)
+--------------------------------
 
 ### Progress towards Multicore:
 
