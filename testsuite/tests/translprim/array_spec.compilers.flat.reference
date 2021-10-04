@@ -11,10 +11,11 @@
       (array.unsafe_get[addr] addr_a 0)
       (function a (array.unsafe_get[gen] a 0)) (array.set[int] int_a 0 1)
       (array.set[float] float_a 0 1.) (array.set[addr] addr_a 0 "a")
-      (function a x (array.set[gen] a 0 x)) (array.unsafe_set[int] int_a 0 1)
+      (function a x : int (array.set[gen] a 0 x))
+      (array.unsafe_set[int] int_a 0 1)
       (array.unsafe_set[float] float_a 0 1.)
       (array.unsafe_set[addr] addr_a 0 "a")
-      (function a x (array.unsafe_set[gen] a 0 x))
+      (function a x : int (array.unsafe_set[gen] a 0 x))
       (let
         (eta_gen_len = (function prim stub (array.length[gen] prim))
          eta_gen_safe_get =

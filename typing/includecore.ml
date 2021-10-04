@@ -759,8 +759,8 @@ let private_variant env row1 params1 row2 params2 =
               | Some _, None | None, Some _ ->
                   Some (Incompatible_types_for s)
             end
-          | Rpresent to1, Reither(const2, tl2, _, _) -> begin
-              match to1, const2, tl2 with
+          | Rpresent to1, Reither(const2, ts2, _, _) -> begin
+              match to1, const2, ts2 with
               | Some t1, false, [t2] -> loop (t1 :: tl1) (t2 :: tl2) pairs
               | None, true, [] -> loop tl1 tl2 pairs
               | _, _, _ -> Some (Incompatible_types_for s)

@@ -134,14 +134,9 @@ let update_type temp_env env id loc =
       with Ctype.Unify err ->
         raise (Error(loc, Type_clash (env, err)))
 
-let get_unboxed_type_representation env ty =
-  match Typedecl_unboxed.get_unboxed_type_representation env ty with
-  | Typedecl_unboxed.This x -> Some x
-  | _ -> None
-
 (* Determine if a type's values are represented by floats at run-time. *)
 let is_float env ty =
-  match get_unboxed_type_representation env ty with
+  match Typedecl_unboxed.get_unboxed_type_representation env ty with
     Some ty' ->
       begin match get_desc ty' with
         Tconstr(p, _, _) -> Path.same p Predef.path_float

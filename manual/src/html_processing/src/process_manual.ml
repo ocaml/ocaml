@@ -136,7 +136,7 @@ let load_html file =
                  (regexp (">[0-9]+\\.\\([0-9]+\\)" ^ preg_anyspace)))
       {|><span class="number">\1</span>|}
     |> Re.Str.(global_replace
-                 (regexp ("[0-9]+\\.\\([0-9]+\\.[0-9]+\\)" ^ preg_anyspace)))
+                 (regexp ("[0-9]+\\.\\([0-9]+\\(\\.[0-9]+\\)+\\)" ^ preg_anyspace)))
       {|<span class="number">\1</span>|}
 
     (* The API (libref and compilerlibref directories) should be separate
