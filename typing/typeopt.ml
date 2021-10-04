@@ -23,7 +23,7 @@ open Lambda
 
 let scrape_ty env ty =
   let ty = Ctype.expand_head_opt env (Ctype.correct_levels ty) in
-  match ty.desc with
+  match get_desc ty with
   | Tconstr (p, _, _) ->
       begin match Env.find_type p env with
       | {type_kind = ( Type_variant (_, Variant_unboxed)
@@ -38,7 +38,13 @@ let scrape_ty env ty =
   | _ -> ty
 
 let scrape env ty =
-  (scrape_ty env ty).desc
+  get_desc (scrape_ty env ty)
+
+let scrape_poly env ty =
+  let ty = scrape_ty env ty in
+  match get_desc ty with
+  | Tpoly (ty, _) -> get_desc ty
+  | d -> d
 
 let is_function_type env ty =
   match scrape env ty with
@@ -69,7 +75,7 @@ type classification =
 let classify env ty =
   let ty = scrape_ty env ty in
   if maybe_pointer_type env ty = Immediate then Int
-  else match ty.desc with
+  else match get_desc ty with
   | Tvar _ | Tunivar _ ->
       Any
   | Tconstr (p, _args, _abbrev) ->
@@ -100,17 +106,15 @@ let classify env ty =
       assert false
 
 let array_type_kind env ty =
-  match scrape env ty with
-  | Tconstr(p, [elt_ty], _) | Tpoly({desc = Tconstr(p, [elt_ty], _)}, _)
-    when Path.same p Predef.path_array ->
+  match scrape_poly env ty with
+  | Tconstr(p, [elt_ty], _) when Path.same p Predef.path_array ->
       begin match classify env elt_ty with
       | Any -> if Config.flat_float_array then Pgenarray else Paddrarray
       | Float -> if Config.flat_float_array then Pfloatarray else Paddrarray
       | Addr | Lazy -> Paddrarray
       | Int -> Pintarray
       end
-  | Tconstr(p, [], _) | Tpoly({desc = Tconstr(p, [], _)}, _)
-    when Path.same p Predef.path_floatarray ->
+  | Tconstr(p, [], _) when Path.same p Predef.path_floatarray ->
       Pfloatarray
   | _ ->
       (* This can happen with e.g. Obj.field *)

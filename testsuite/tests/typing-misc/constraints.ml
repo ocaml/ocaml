@@ -7,8 +7,7 @@ type 'a t = [`A of 'a t t] as 'a;; (* fails *)
 Line 1, characters 0-32:
 1 | type 'a t = [`A of 'a t t] as 'a;; (* fails *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The definition of t contains a cycle:
-       'a t t as 'a
+Error: The type abbreviation t is cyclic
 |}, Principal{|
 Line 1, characters 0-32:
 1 | type 'a t = [`A of 'a t t] as 'a;; (* fails *)

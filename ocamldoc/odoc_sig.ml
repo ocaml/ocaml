@@ -341,7 +341,7 @@ module Analyser =
 
 
     let manifest_structure env name_comment_list type_expr =
-      match type_expr.desc with
+      match get_desc type_expr with
       | Tobject (fields, _) ->
         let f (field_name, _, type_expr) =
           let comment_opt =

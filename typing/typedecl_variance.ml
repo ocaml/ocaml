@@ -43,13 +43,12 @@ let get_variance ty visited =
 let compute_variance env visited vari ty =
   let rec compute_variance_rec vari ty =
     (* Format.eprintf "%a: %x@." Printtyp.type_expr ty (Obj.magic vari); *)
-    let ty = Ctype.repr ty in
     let vari' = get_variance ty visited in
     if Variance.subset vari vari' then () else
     let vari = Variance.union vari vari' in
     visited := TypeMap.add ty vari !visited;
     let compute_same = compute_variance_rec vari in
-    match ty.desc with
+    match get_desc ty with
       Tarrow (_, ty1, ty2, _) ->
         let open Variance in
         let v = conjugate vari in
@@ -144,7 +143,7 @@ let compute_variance_type env ~check (required, loc) decl tyl =
       required
   in
   (* Prepare *)
-  let params = List.map Btype.repr decl.type_params in
+  let params = decl.type_params in
   let tvl = ref TypeMap.empty in
   (* Compute occurrences in the body *)
   let open Variance in
@@ -159,11 +158,10 @@ let compute_variance_type env ~check (required, loc) decl tyl =
         if Btype.is_Tvar ty || mem Inj (get_variance ty tvl) then () else
         let visited = ref TypeSet.empty in
         let rec check ty =
-          let ty = Ctype.repr ty in
           if TypeSet.mem ty !visited then () else begin
             visited := TypeSet.add ty !visited;
             if mem Inj (get_variance ty tvl) then () else
-            match ty.desc with
+            match get_desc ty with
             | Tvar _ -> raise Exit
             | Tconstr _ ->
                 let old = !visited in
@@ -172,7 +170,7 @@ let compute_variance_type env ~check (required, loc) decl tyl =
                 with Exit ->
                   visited := old;
                   let ty' = Ctype.expand_head_opt env ty in
-                  if ty == ty' then raise Exit else check ty'
+                  if eq_type ty ty' then raise Exit else check ty'
                 end
             | _ -> Btype.iter_type_expr check ty
           end
@@ -197,7 +195,8 @@ let compute_variance_type env ~check (required, loc) decl tyl =
     (* Check propagation from constrained parameters *)
     let args = Btype.newgenty (Ttuple params) in
     let fvl = Ctype.free_variables args in
-    let fvl = List.filter (fun v -> not (List.memq v params)) fvl in
+    let fvl =
+      List.filter (fun v -> not (List.exists (eq_type v) params)) fvl in
     (* If there are no extra variables there is nothing to do *)
     if fvl = [] then () else
     let tvl2 = ref TypeMap.empty in
@@ -210,7 +209,6 @@ let compute_variance_type env ~check (required, loc) decl tyl =
       params required;
     let visited = ref TypeSet.empty in
     let rec check ty =
-      let ty = Ctype.repr ty in
       if TypeSet.mem ty !visited then () else
       let visited' = TypeSet.add ty !visited in
       visited := visited';
@@ -224,7 +222,7 @@ let compute_variance_type env ~check (required, loc) decl tyl =
       Btype.backtrack snap;
       let (c1,n1) = get_upper v1 and (c2,n2,_,i2) = get_lower v2 in
       if c1 && not c2 || n1 && not n2 then
-        if List.memq ty fvl then
+        if List.exists (eq_type ty) fvl then
           let code = if not i2 then No_variable
                      else if c2 || n2 then Variance_not_reflected
                      else Variance_not_deducible in
@@ -261,8 +259,8 @@ let add_false = List.map (fun ty -> false, ty)
 (* A parameter is constrained if it is either instantiated,
    or it is a variable appearing in another parameter *)
 let constrained vars ty =
-  match ty.desc with
-  | Tvar _ -> List.exists (fun tl -> List.memq ty tl) vars
+  match get_desc ty with
+  | Tvar _ -> List.exists (List.exists (eq_type ty)) vars
   | _ -> true
 
 let for_constr = function
@@ -279,10 +277,9 @@ let compute_variance_gadt env ~check (required, loc as rloc) decl
       compute_variance_type env ~check rloc {decl with type_private = Private}
         (for_constr tl)
   | Some ret_type ->
-      match Ctype.repr ret_type with
-      | {desc=Tconstr (_, tyl, _)} ->
+      match get_desc ret_type with
+      | Tconstr (_, tyl, _) ->
           (* let tyl = List.map (Ctype.expand_head env) tyl in *)
-          let tyl = List.map Ctype.repr tyl in
           let fvl = List.map (Ctype.free_variables ?env:None) tyl in
           let _ =
             List.fold_left2

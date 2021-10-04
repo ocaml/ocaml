@@ -17,27 +17,16 @@
 #include "unixsupport.h"
 #include <windows.h>
 
-int win_set_inherit(value fd, BOOL inherit)
-{
-  /* According to the MSDN, SetHandleInformation may not work
-     for console handles on WinNT4 and earlier versions. */
-  if (! SetHandleInformation(Handle_val(fd),
-                             HANDLE_FLAG_INHERIT,
-                             inherit ? HANDLE_FLAG_INHERIT : 0)) {
-    win32_maperr(GetLastError());
-    return -1;
-  }
-  return 0;
-}
-
 CAMLprim value win_set_close_on_exec(value fd)
 {
-  if (win_set_inherit(fd, FALSE) == -1) uerror("set_close_on_exec", Nothing);
+  if (win_set_inherit(Handle_val(fd), FALSE) == -1)
+    uerror("set_close_on_exec", Nothing);
   return Val_unit;
 }
 
 CAMLprim value win_clear_close_on_exec(value fd)
 {
-  if (win_set_inherit(fd, TRUE) == -1) uerror("clear_close_on_exec", Nothing);
+  if (win_set_inherit(Handle_val(fd), TRUE) == -1)
+    uerror("clear_close_on_exec", Nothing);
   return Val_unit;
 }
