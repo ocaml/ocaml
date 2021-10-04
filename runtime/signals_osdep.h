@@ -137,8 +137,8 @@
   typedef unsigned long context_reg;
   #define CONTEXT_PC (context->uc_mcontext.arm_pc)
   #define CONTEXT_SP (context->uc_mcontext.arm_sp)
-  #define CONTEXT_EXCEPTION_POINTER (context->uc_mcontext.arm_fp)
-  #define CONTEXT_YOUNG_PTR (context->uc_mcontext.arm_r8)
+  #define CONTEXT_EXCEPTION_PTR (context->uc_mcontext.arm_r8)
+  #define CONTEXT_YOUNG_PTR (context->uc_mcontext.arm_r10)
   #define CONTEXT_FAULTING_ADDRESS ((char *) context->uc_mcontext.fault_address)
 
 /****************** ARM64, Linux */
@@ -158,6 +158,7 @@
   #define CONTEXT_PC (context->uc_mcontext.pc)
   #define CONTEXT_SP (context->uc_mcontext.sp)
   #define CONTEXT_C_ARG_1 (context->uc_mcontext.regs[0])
+  #define CONTEXT_EXCEPTION_POINTER (context->uc_mcontext.regs[26])
   #define CONTEXT_YOUNG_PTR (context->uc_mcontext.regs[27])
   #define CONTEXT_FAULTING_ADDRESS ((char *) context->uc_mcontext.fault_address)
 
@@ -181,6 +182,7 @@
   #define CONTEXT_PC (CONTEXT_STATE.__pc)
   #define CONTEXT_SP (CONTEXT_STATE.__sp)
   #define CONTEXT_C_ARG_1 (CONTEXT_STATE.__x[0])
+  #define CONTEXT_EXCEPTION_POINTER (CONTEXT_STATE.__x[26])
   #define CONTEXT_YOUNG_PTR (CONTEXT_STATE.__x[27])
   #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
 

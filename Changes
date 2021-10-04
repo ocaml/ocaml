@@ -34,6 +34,9 @@ Working version
 
 ### Standard library:
 
+* #10622: Annotate `Uchar.t` with immediate attribute
+  (Hongbo Zhang, reivew by Gabriel Scherer and Nicolás Ojeda Bär)
+
 * #7812, #10475: `Filename.chop_suffix name suff` now checks that `suff`
   is actually a suffix of `name` and raises Invalid_argument otherwise.
   (Xavier Leroy, report by whitequark, review by David Allsopp)
@@ -54,6 +57,11 @@ Working version
 - #10545: Add In_channel and Out_channel modules.
   (Nicolás Ojeda Bär, review by Daniel Bünzli, Simon Cruanes, Gabriel Scherer,
   Guillaume Munch-Maccagnoni, Alain Frisch and Xavier Leroy)
+
+- #10538: add Out_channel.set_buffered and Out_channel.is_buffered to control
+  the buffering mode of output channels.
+  (Nicolás Ojeda Bär, review by John Whitington, Daniel Bünzli, David Allsopp
+  and Xavier Leroy)
 
 ### Other libraries:
 
@@ -157,6 +165,12 @@ Working version
   (Nicolás Ojeda Bär, fix by Leo White, report by Alain Frisch, review by Thomas
   Refis)
 
+- #10618: Expose more Pprintast functions
+  (Guillaume Petiot, review by Gabriel Scherer)
+
+- #10637: Outcometree: introduce a record type for constructors
+  (Gabriel Scherer, review by Thomas Refis)
+
 ### Build system:
 
 ### Bug fixes:
@@ -185,6 +199,11 @@ Working version
 
 - #10603, #10611: Fix if condition marked as inconstant in flambda
   (Vincent Laviron and Pierre Chambart, report by Marcello Seri)
+
+- #10633: Stack overflow recovery in ocamlopt for AMD64/Linux and ARM/Linux
+  was not restoring the minor heap pointer correctly
+  (Stephen Dolan, review by Xavier Leroy)
+
 
 OCaml 4.13.0
 -------------
@@ -669,7 +688,7 @@ OCaml 4.13.0
 - #10156: configure script: fix sockets feature detection.
   (Lucas Pluvinage, review by David Allsopp and Damien Doligez)
 
-- #10176: By default, call the assembler through the C compiler driver
+- #10176, #10632: By default, call the assembler through the C compiler driver
   (Sébastien Hinderer, review by Gabriel Scherer, David Allsopp and Xavier
   Leroy)
 
@@ -687,10 +706,10 @@ OCaml 4.13.0
   which runtime to use while building the compilers (Sébastien Hinderer,
   review by David Allsopp)
 
-- #10451: Replace the use of iconv with a C utility to convert $(LIBDIR) to a
-  C string constant on Windows when building the runtime. Hardens the generation
-  of the constant on Unix for paths with backslashes, double-quotes and
-  newlines.
+- #10451, #10635: Replace the use of iconv with a C utility to convert $(LIBDIR)
+  to a C string constant on Windows when building the runtime. Hardens the
+  generation of the constant on Unix for paths with backslashes, double-quotes
+  and newlines.
   (David Allsopp, review by Florian Angeletti and Sébastien Hinderer)
 
 - #10471: Fix detection of arm32 architectures with musl in configure.
@@ -845,6 +864,11 @@ OCaml 4.12, maintenance version
 - #10478: Fix segfault under Windows due to a mistaken initialization of thread
   ID when a thread starts.
   (David Allsopp, Nicolás Ojeda Bär, review by Xavier Leroy)
+
+- #10626, #10628: Wrong reloading of the x86-64 instruction for
+  integer multiplication by a constant, causing the assembler to
+  reject the ocamlopt-generated code.
+  (Xavier Leroy, report by Dave Aitken, review by Vincent Laviron)
 
 OCaml 4.12.0 (24 February 2021)
 -------------------------------

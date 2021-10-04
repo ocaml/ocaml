@@ -18,6 +18,7 @@
     @since 4.03 *)
 
 type t
+[@@immediate]
 (** The type for Unicode characters.
 
     A value of this type represents a Unicode
