@@ -304,7 +304,7 @@ module NN :
     val unit : unit
     external e : unit -> unit = "%identity"
     module M = N.M
-    module type T = sig end
+    module type T = N.T
     exception E
     type ext = N.ext = ..
     type ext += C
@@ -329,7 +329,7 @@ module Type :
     val unit : unit
     external e : unit -> unit = "%identity"
     module M = N.M
-    module type T = sig end
+    module type T = N.T
     exception E
     type ext = N.ext = ..
     type ext += C
@@ -352,7 +352,7 @@ module Module :
     val unit : unit
     external e : unit -> unit = "%identity"
     module M = N.M
-    module type T = sig end
+    module type T = N.T
     exception E
     type ext = N.ext = ..
     type ext += C
@@ -370,12 +370,12 @@ end
 [%%expect{|
 module Module_type :
   sig
-    module type U = sig end
+    module type U = N.T
     type t = N.t
     val unit : unit
     external e : unit -> unit = "%identity"
     module M = N.M
-    module type T = sig end
+    module type T = N.T
     exception E
     type ext = N.ext = ..
     type ext += C
@@ -398,7 +398,7 @@ module Exception :
     val unit : unit
     external e : unit -> unit = "%identity"
     module M = N.M
-    module type T = sig end
+    module type T = N.T
     exception E
     type ext = N.ext = ..
     type ext += C
@@ -421,7 +421,7 @@ module Extension :
     val unit : unit
     external e : unit -> unit = "%identity"
     module M = N.M
-    module type T = sig end
+    module type T = N.T
     exception E
     type ext = N.ext = ..
     type ext += C
@@ -444,7 +444,7 @@ module Class :
     val unit : unit
     external e : unit -> unit = "%identity"
     module M = N.M
-    module type T = sig end
+    module type T = N.T
     exception E
     type ext = N.ext = ..
     type ext += C
@@ -467,7 +467,7 @@ module Class_type :
     val unit : unit
     external e : unit -> unit = "%identity"
     module M = N.M
-    module type T = sig end
+    module type T = N.T
     exception E
     type ext = N.ext = ..
     type ext += C

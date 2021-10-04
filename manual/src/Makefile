@@ -1,10 +1,7 @@
-SRC = $(abspath ../..)
--include $(SRC)/Makefile.config
+ROOTDIR = ../..
+-include $(ROOTDIR)/Makefile.build_config
 
-export LD_LIBRARY_PATH   ?= "$(SRC)/otherlibs/unix/:$(SRC)/otherlibs/str/"
-export DYLD_LIBRARY_PATH ?= "$(SRC)/otherlibs/unix/:$(SRC)/otherlibs/str/"
-
-TEXQUOTE = $(SRC)/runtime/ocamlrun ../tools/texquote2
+TEXQUOTE = $(ROOTDIR)/runtime/ocamlrun ../tools/texquote2
 
 FILES = allfiles.tex biblio.tex foreword.tex version.tex cmds/warnings-help.etex ifocamldoc.tex
 
@@ -18,8 +15,8 @@ INFO_FLAGS = -fix -exec xxdate.exe -info -w 79 -s
 HTML_FLAGS = -fix -exec xxdate.exe -O
 TEXT_FLAGS = -fix -exec xxdate.exe -text -w 79 -s
 
-# Copy the documentation files from SRC/api_docgen
-APIDOC=$(SRC)/api_docgen
+# Copy the documentation files from ROOTDIR/api_docgen
+APIDOC=$(ROOTDIR)/api_docgen
 .PHONY: html_files
 .PHONY: latex_files
 ifeq ($(DOCUMENTATION_TOOL),odoc)
@@ -125,17 +122,17 @@ etex-files: $(FILES)
 	$(TEXQUOTE) < $< > $*.texquote_error.tex
 	mv $*.texquote_error.tex $@
 
-version.tex: $(SRC)/VERSION
+version.tex: $(ROOTDIR)/VERSION
 	sed -n -e '1s/^\([0-9]*\.[0-9]*\).*$$/\\def\\ocamlversion{\1}/p' $< > $@
 
-cmds/warnings-help.etex: $(SRC)/utils/warnings.ml $(SRC)/ocamlc
+cmds/warnings-help.etex: $(ROOTDIR)/utils/warnings.ml $(ROOTDIR)/ocamlc
 	(echo "% This file is generated from (ocamlc -warn-help)";\
 	 echo "% according to a rule in manual/src/Makefile.";\
 	 echo "% In particular, the reference to documentation sections";\
 	 echo "% are inserted through the Makefile, which should be updated";\
 	 echo "% when a new warning is documented.";\
 	 echo "%";\
-	 $(SRC)/boot/ocamlrun $(SRC)/ocamlc -warn-help \
+	 $(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/ocamlc -warn-help \
 	 | LC_ALL=C sed -e 's/^ *\([0-9][0-9]*\) *\[\([a-z][a-z-]*\)\]\(.*\)/\\item[\1 "\2"] \3/' \
 	                -e 's/^ *\([0-9A-Z][0-9]*\) *\([^]].*\)/\\item[\1] \2/'\
 	 | sed -e 's/@/\\@/g' \
@@ -148,7 +145,7 @@ cmds/warnings-help.etex: $(SRC)/utils/warnings.ml $(SRC)/ocamlc
 	  mv $@.tmp $@;\
 	done
 
-ifocamldoc.tex: $(SRC)/Makefile.config
+ifocamldoc.tex: $(ROOTDIR)/Makefile.build_config
 	$(MAKE) -C $(APIDOC) build/latex/ifocamldoc.tex
 	cp $(APIDOC)/build/latex/ifocamldoc.tex $@
 
