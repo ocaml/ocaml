@@ -42,3 +42,4 @@ ${main} -with-bootstrap -conf --disable-flat-float-array
 ${main} -conf --enable-flambda -conf --disable-naked-pointers
 ${main} -conf --enable-reserved-header-bits=27
 OCAMLRUNPARAM="c=1" ${main}
+${main} -conf --with-pic
