@@ -87,23 +87,21 @@ let simpl_class_type t =
     | Cty_signature cs ->
         (* we delete vals and methods in order to not print them when
            displaying the type *)
+      let self_row =
+        Transient_expr.create Tnil
+          ~level:0 ~scope:Btype.lowest_level ~id:0
+      in
       let tself =
         let t = cs.csig_self in
-        let t' = Transient_expr.create Tnil
-            ~level:0 ~scope:Btype.lowest_level ~id:0 in
-        let desc =
-          Tobject (Transient_expr.type_expr t', ref None) in
+        let desc = Tobject (Transient_expr.type_expr self_row, ref None) in
         Transient_expr.create desc
-          ~level:(get_level t)
-          ~scope:(get_scope t)
-          ~id:(get_id t)
+          ~level:(get_level t) ~scope:(get_scope t) ~id:(get_id t)
       in
-        Cty_signature { csig_self = Transient_expr.type_expr tself;
+        Types.Cty_signature { csig_self = Transient_expr.type_expr tself;
+                              csig_self_row = Transient_expr.type_expr self_row;
                               csig_vars = Vars.empty ;
-                              csig_concr = Concr.empty ;
-                              csig_inher = []
-                             }
-    | Cty_arrow (l, texp, ct) ->
+                              csig_meths = Meths.empty ; }
+    | Types.Cty_arrow (l, texp, ct) ->
         let new_ct = iter ct in
         Cty_arrow (l, texp, new_ct)
   in

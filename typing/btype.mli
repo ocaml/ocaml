@@ -269,6 +269,59 @@ val extract_label :
    whether (label, value) was at the head of the list,
    list without the extracted (label, value) *)
 
+(**** Utilities for class types ****)
+
+(* Get the class signature within a class type *)
+val signature_of_class_type : class_type -> class_signature
+
+(* Get the body of a class type (i.e. without parameters) *)
+val class_body : class_type -> class_type
+
+(* Fully expand the head of a class type *)
+val scrape_class_type : class_type -> class_type
+
+(* Return the number of parameters of a class type *)
+val class_type_arity : class_type -> int
+
+(* Given a path and type parameters, add an abbreviation to a class type *)
+val abbreviate_class_type :
+  Path.t -> type_expr list -> class_type -> class_type
+
+(* Get the self type of a class *)
+val self_type : class_type -> type_expr
+
+(* Get the row variable of the self type of a class *)
+val self_type_row : class_type -> type_expr
+
+(* Return the methods of a class signature *)
+val methods : class_signature -> string list
+
+(* Return the virtual methods of a class signature *)
+val virtual_methods : class_signature -> string list
+
+(* Return the concrete methods of a class signature *)
+val concrete_methods : class_signature -> MethSet.t
+
+(* Return the public methods of a class signature *)
+val public_methods : class_signature -> string list
+
+(* Return the instance variables of a class signature *)
+val instance_vars : class_signature -> string list
+
+(* Return the virtual instance variables of a class signature *)
+val virtual_instance_vars : class_signature -> string list
+
+(* Return the concrete instance variables of a class signature *)
+val concrete_instance_vars : class_signature -> VarSet.t
+
+(* Return the type of a method.
+   @raises [Assert_failure] if the class has no such method. *)
+val method_type : label -> class_signature -> type_expr
+
+(* Return the type of an instance variable.
+   @raises [Assert_failure] if the class has no such method. *)
+val instance_variable_type : label -> class_signature -> type_expr
+
 (**** Forward declarations ****)
 val print_raw: (Format.formatter -> type_expr -> unit) ref
 

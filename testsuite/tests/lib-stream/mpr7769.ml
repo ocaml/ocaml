@@ -1,4 +1,5 @@
 (* TEST
+   flags = "-w -3"
    readonly_files = "mpr7769.txt"
 *)
 

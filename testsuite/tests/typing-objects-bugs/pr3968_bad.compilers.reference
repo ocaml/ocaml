@@ -12,27 +12,19 @@ File "pr3968_bad.ml", lines 20-29, characters 0-3:
 Error: The class type
          object
            val l :
-             [ `Abs of
-                 string *
-                 ([> `App of
-                       [ `Abs of string * 'a | `App of expr * expr ] * exp ]
-                  as 'a)
-             | `App of expr * expr ]
+             [ `Abs of string * ([> `App of 'a * exp ] as 'b)
+             | `App of expr * expr ] as 'a
            val r : exp
-           method eval : (string, exp) Hashtbl.t -> 'a
+           method eval : (string, exp) Hashtbl.t -> 'b
          end
        is not matched by the class type exp
        The class type
          object
            val l :
-             [ `Abs of
-                 string *
-                 ([> `App of
-                       [ `Abs of string * 'a | `App of expr * expr ] * exp ]
-                  as 'a)
-             | `App of expr * expr ]
+             [ `Abs of string * ([> `App of 'a * exp ] as 'b)
+             | `App of expr * expr ] as 'a
            val r : exp
-           method eval : (string, exp) Hashtbl.t -> 'a
+           method eval : (string, exp) Hashtbl.t -> 'b
          end
        is not matched by the class type
          object method eval : (string, exp) Hashtbl.t -> expr end

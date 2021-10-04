@@ -1106,12 +1106,11 @@ Line 4, characters 11-60:
 Warning 15 [implicit-public-methods]: the following private methods were made public implicitly:
  n.
 val f : unit -> < m : int; n : int > = <fun>
-Line 5, characters 11-56:
+Line 5, characters 27-39:
 5 | let f () = object (self:c) method n = 1 method m = 2 end;;
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This object is expected to have type c but actually has type
-         < m : int; n : 'a >
-       The first object type has no method n
+                               ^^^^^^^^^^^^
+Error: This object is expected to have type : c
+       This type does not have a method n.
 |}];;
 
 

@@ -335,14 +335,15 @@ let type_declaration s decl =
 
 let class_signature copy_scope s sign =
   { csig_self = typexp copy_scope s sign.csig_self;
+    csig_self_row = typexp copy_scope s sign.csig_self_row;
     csig_vars =
       Vars.map
-        (function (m, v, t) -> (m, v, typexp copy_scope s t)) sign.csig_vars;
-    csig_concr = sign.csig_concr;
-    csig_inher =
-      List.map
-        (fun (p, tl) -> (type_path s p, List.map (typexp copy_scope s) tl))
-        sign.csig_inher;
+        (function (m, v, t) -> (m, v, typexp copy_scope s t))
+        sign.csig_vars;
+    csig_meths =
+      Meths.map
+        (function (p, v, t) -> (p, v, typexp copy_scope s t))
+        sign.csig_meths;
   }
 
 let rec class_type copy_scope s = function
