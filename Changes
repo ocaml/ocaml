@@ -23,6 +23,10 @@ Working version
 
 ### Tools:
 
+- #3959, #7202, #10476: ocaml, in script mode, directive errors
+  (`#use "missing_file";;`) use stderr and exit with an error.
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Manual and documentation:
 
 - #7812, #10475: reworded the description of the behaviors of
@@ -59,6 +63,10 @@ Working version
 - #10472: refactor caml_sys_random_seed to ease future Multicore changes
   (Gabriel Scherer, review by Xavier Leroy)
 
+- #10487: Move logic to get the type path from a constructor return type in
+  Types
+  (Nicolas Chataing, review by Jacques Garrigue)
+
 ### Build system:
 
 ### Bug fixes:
@@ -67,10 +75,22 @@ Working version
   This allows stacktraces to work in gdb through C and OCaml calls.
   (Edwin Török, review by Nicolás Ojeda Bär and Xavier Leroy)
 
+- #10461: `caml_send*` helper functions take derived pointers as arguments.
+  Those must be declared with type Addr instead of Val.
+  (Vincent Laviron, review by Xavier Leroy)
+
+
 OCaml 4.13.0
 -------------
 
 ### Language features:
+
+- #10039: Safepoints
+  Add poll points to native generated code. These are effectively
+  zero-sized allocations and fix some signal and remembered set
+  issues. Also multicore prerequisite.
+  (Sadiq Jaffer, Damien Doligez, Mark Shinwell, Anmol Sahoo, Stephen Dolan,
+  Xavier Leroy reviewed by ??)
 
 - #9331: Improve error messages for functor application and functor types.
   (Florian Angeletti and Gabriel Radanne, review by Leo White)

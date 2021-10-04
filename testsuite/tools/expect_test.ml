@@ -336,7 +336,8 @@ let main fname =
   end;
   Compmisc.init_path ();
   Toploop.initialize_toplevel_env ();
-  Sys.interactive := false;
+  (* We are in interactive mode and should record directive error on stdout *)
+  Sys.interactive := true;
   process_expect_file fname;
   exit 0
 

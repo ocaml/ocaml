@@ -138,7 +138,10 @@ let compile_fundecl ~ppf_dump ~funcnames fd_cmm =
   Reg.reset();
   fd_cmm
   ++ Profile.record ~accumulate:true "cmm_invariants" (cmm_invariants ppf_dump)
-  ++ Profile.record ~accumulate:true "selection" (Selection.fundecl ~future_funcnames:funcnames)
+  ++ Profile.record ~accumulate:true "selection"
+                    (Selection.fundecl ~future_funcnames:funcnames)
+  ++ Profile.record ~accumulate:true "polling"
+                    (Polling.instrument_fundecl ~future_funcnames:funcnames)
   ++ pass_dump_if ppf_dump dump_selection "After instruction selection"
   ++ Profile.record ~accumulate:true "comballoc" Comballoc.fundecl
   ++ pass_dump_if ppf_dump dump_combine "After allocation combining"
@@ -146,8 +149,6 @@ let compile_fundecl ~ppf_dump ~funcnames fd_cmm =
   ++ pass_dump_if ppf_dump dump_cse "After CSE"
   ++ Profile.record ~accumulate:true "liveness" liveness
   ++ Profile.record ~accumulate:true "deadcode" Deadcode.fundecl
-  ++ Profile.record ~accumulate:true "polling"
-          (Polling.instrument_fundecl ~future_funcnames:funcnames)
   ++ pass_dump_if ppf_dump dump_live "Liveness analysis"
   ++ Profile.record ~accumulate:true "spill" Spill.fundecl
   ++ Profile.record ~accumulate:true "liveness" liveness
