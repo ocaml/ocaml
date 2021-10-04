@@ -211,6 +211,9 @@ Working version
 - #10516: refactor the compilation of the 'switch' construct
   (Gabriel Scherer, review by Wiktor Kuchta and Luc Maranget)
 
+- #10670: avoid global C state in the RE engine for the "str" library
+  (Xavier Leroy, review by Gabriel Scherer)
+
 ### Build system:
 
 ### Bug fixes:
