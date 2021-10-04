@@ -43,10 +43,14 @@
   #define CAMLdeprecated_typedef(name, type) typedef type name
 #endif
 
-#if defined(__GNUC__) && __STDC_VERSION__ >= 199901L
+#if defined(__GNUC__) && __STDC_VERSION__ >= 199901L || _MSC_VER >= 1925
 
 #define CAML_STRINGIFY(x) #x
+#ifdef _MSC_VER
+#define CAML_MAKEWARNING1(x) CAML_STRINGIFY(message(x))
+#else
 #define CAML_MAKEWARNING1(x) CAML_STRINGIFY(GCC warning x)
+#endif
 #define CAML_MAKEWARNING2(y) CAML_MAKEWARNING1(#y)
 #define CAML_PREPROWARNING(x) _Pragma(CAML_MAKEWARNING2(x))
 #define CAML_DEPRECATED(name1,name2) \
