@@ -20,16 +20,17 @@ open Types
 
 module TypePairs : Hashtbl.S with type key = type_expr * type_expr
 
-exception Unify of Errortrace.unification Errortrace.t
-exception Equality of Errortrace.comparison Errortrace.t
-exception Moregen of Errortrace.comparison Errortrace.t
-exception Subtype of Errortrace.Subtype.t * Errortrace.unification Errortrace.t
-exception Escape of Errortrace.desc Errortrace.escape
+exception Unify    of Errortrace.unification_error
+exception Equality of Errortrace.equality_error
+exception Moregen  of Errortrace.moregen_error
+exception Subtype  of Errortrace.Subtype.error
+
+exception Escape of type_expr Errortrace.escape
 
 exception Tags of label * label
 exception Cannot_expand
 exception Cannot_apply
-exception Matches_failure of Env.t * Errortrace.unification Errortrace.t
+exception Matches_failure of Env.t * Errortrace.unification_error
   (* Raised from [matches], hence the odd name *)
 exception Incompatible
   (* Raised from [mcomp] *)
@@ -123,6 +124,9 @@ val lower_contravariant: Env.t -> type_expr -> unit
 val generalize_structure: type_expr -> unit
         (* Generalize the structure of a type, lowering variables
            to !current_level *)
+val generalize_class_type :
+  bool -> class_type -> unit
+        (* Generalize the components of a class type *)
 val generalize_spine: type_expr -> unit
         (* Special function to generalize a method during inference *)
 val correct_levels: type_expr -> type_expr
@@ -189,6 +193,22 @@ val expand_head_opt: Env.t -> type_expr -> type_expr
 (** The compiler's own version of [expand_head] necessary for type-based
     optimisations. *)
 
+(** Expansion of types for error traces; lives here instead of in [Errortrace]
+    because the expansion machinery lives here. *)
+
+(** Create an [Errortrace.Diff] by expanding the two types *)
+val expanded_diff :
+  Env.t ->
+  got:type_expr -> expected:type_expr ->
+  (Errortrace.expanded_type, 'variant) Errortrace.elt
+
+(** Create an [Errortrace.Diff] by *duplicating* the two types, so that each
+    one's expansion is identical to itself.  Despite the name, does create
+    [Errortrace.expanded_type]s. *)
+val unexpanded_diff :
+  got:type_expr -> expected:type_expr ->
+  (Errortrace.expanded_type, 'variant) Errortrace.elt
+
 val full_expand: may_forget_scope:bool -> Env.t -> type_expr -> type_expr
 
 type typedecl_extraction_result =
@@ -213,16 +233,21 @@ val unify_var: Env.t -> type_expr -> type_expr -> unit
         (* Same as [unify], but allow free univars when first type
            is a variable. *)
 val filter_arrow: Env.t -> type_expr -> arg_label -> type_expr * type_expr
-        (* A special case of unification (with l:'a -> 'b). *)
+        (* A special case of unification with [l:'a -> 'b].  Raises
+           [Filter_arrow_failed] instead of [Unify]. *)
 val filter_method: Env.t -> string -> private_flag -> type_expr -> type_expr
-        (* A special case of unification (with {m : 'a; 'b}). *)
+        (* A special case of unification (with {m : 'a; 'b}).  Raises
+           [Filter_method_failed] instead of [Unify]. *)
 val check_filter_method: Env.t -> string -> private_flag -> type_expr -> unit
-        (* A special case of unification (with {m : 'a; 'b}), returning unit. *)
+        (* A special case of unification (with {m : 'a; 'b}), returning unit.
+           Raises [Filter_method_failed] instead of [Unify]. *)
 val occur_in: Env.t -> type_expr -> type_expr -> bool
 val deep_occur: type_expr -> type_expr -> bool
 val filter_self_method:
         Env.t -> string -> private_flag -> (Ident.t * type_expr) Meths.t ref ->
         type_expr -> Ident.t * type_expr
+        (* Raises [Filter_method_failed] instead of [Unify], and only if the
+           self type is closed at this point. *)
 val moregeneral: Env.t -> bool -> type_expr -> type_expr -> unit
         (* Check if the first type scheme is more general than the second. *)
 val is_moregeneral: Env.t -> bool -> type_expr -> type_expr -> bool
@@ -230,31 +255,45 @@ val rigidify: type_expr -> type_expr list
         (* "Rigidify" a type and return its type variable *)
 val all_distinct_vars: Env.t -> type_expr list -> bool
         (* Check those types are all distinct type variables *)
-val matches: Env.t -> type_expr -> type_expr -> unit
+val matches: expand_error_trace:bool -> Env.t -> type_expr -> type_expr -> unit
         (* Same as [moregeneral false], implemented using the two above
-           functions and backtracking. Ignore levels *)
+           functions and backtracking. Ignore levels. The [expand_error_trace]
+           flag controls whether the error raised performs expansion; this
+           should almost always be [true]. *)
 val does_match: Env.t -> type_expr -> type_expr -> bool
         (* Same as [matches], but returns a [bool] *)
 
 val reify_univars : Env.t -> Types.type_expr -> Types.type_expr
         (* Replaces all the variables of a type by a univar. *)
 
-type class_match_failure_trace_type =
-  | CM_Equality
-  | CM_Moregen
+(* Exceptions for special cases of unify *)
+
+type filter_arrow_failure =
+  | Unification_error of Errortrace.unification_error
+  | Label_mismatch of
+      { got           : arg_label
+      ; expected      : arg_label
+      ; expected_type : type_expr
+      }
+  | Not_a_function
+
+exception Filter_arrow_failed of filter_arrow_failure
+
+type filter_method_failure =
+  | Unification_error of Errortrace.unification_error
+  | Not_a_method
+  | Not_an_object of type_expr
+
+exception Filter_method_failed of filter_method_failure
 
 type class_match_failure =
     CM_Virtual_class
   | CM_Parameter_arity_mismatch of int * int
-  | CM_Type_parameter_mismatch of Env.t * Errortrace.comparison Errortrace.t
+  | CM_Type_parameter_mismatch of Env.t * Errortrace.equality_error
   | CM_Class_type_mismatch of Env.t * class_type * class_type
-  | CM_Parameter_mismatch of Env.t * Errortrace.comparison Errortrace.t
-  | CM_Val_type_mismatch of
-      class_match_failure_trace_type *
-      string * Env.t * Errortrace.comparison Errortrace.t
-  | CM_Meth_type_mismatch of
-      class_match_failure_trace_type *
-      string * Env.t * Errortrace.comparison Errortrace.t
+  | CM_Parameter_mismatch of Env.t * Errortrace.moregen_error
+  | CM_Val_type_mismatch of string * Env.t * Errortrace.comparison_error
+  | CM_Meth_type_mismatch of string * Env.t * Errortrace.comparison_error
   | CM_Non_mutable_value of string
   | CM_Non_concrete_value of string
   | CM_Missing_value of string
@@ -264,6 +303,7 @@ type class_match_failure =
   | CM_Public_method of string
   | CM_Private_method of string
   | CM_Virtual_method of string
+
 val match_class_types:
     ?trace:bool -> Env.t -> class_type -> class_type -> class_match_failure list
         (* Check if the first class type is more general than the second. *)

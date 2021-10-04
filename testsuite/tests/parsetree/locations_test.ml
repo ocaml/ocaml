@@ -122,3 +122,9 @@ f object method f = 1 end
   object method f = 1 end # f
   object end
 ;;
+
+(* Punning of labelled function argument with type constraint *)
+let g y =
+  let f ~y = y + 1 in
+  f ~(y:int)
+;;

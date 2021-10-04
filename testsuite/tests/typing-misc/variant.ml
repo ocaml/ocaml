@@ -25,6 +25,7 @@ Error: Signature mismatch:
          type t = X.t = A | B
        is not included in
          type t = int * bool
+       The type X.t is not equal to the type int * bool
 |}];;
 
 
@@ -65,7 +66,8 @@ Line 1, characters 0-41:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type
          (int, [> `A ]) def
-       Their constraints differ.
+       Their parameters differ
+       The type int is not equal to the type 'a
 |}]
 
 type ('a,'b) kind = ('a, 'b) def = {a:int} constraint 'b = [> `A];;
@@ -98,9 +100,9 @@ Line 1, characters 0-32:
 Error: This variant or record definition does not match that of type d
        Constructors do not match:
          X of int
-       is not compatible with:
+       is not the same as:
          X of float
-       The types are not equal.
+       The type int is not equal to the type float
 |}]
 
 type mono = Foo of float
@@ -145,7 +147,7 @@ Error: Signature mismatch:
          type t = Foo of int
        Constructors do not match:
          Foo : int -> t
-       is not compatible with:
+       is not the same as:
          Foo of int
        The first has explicit return type and the second doesn't.
 |}]

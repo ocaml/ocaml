@@ -57,6 +57,10 @@ module N2 = struct type u = v and v = M1.v end;;
 module type PR6566 = sig type t = string end;;
 module PR6566 = struct type t = int end;;
 module PR6566' : PR6566 = PR6566;;
+(* Short-paths is currently a bit overzealous with this error message: we print
+   "The type t is not equal to the type string" instead of "The type int is not
+   equal to the type string".  This is correct, but less clear than it could
+   be. *)
 
 module A = struct module B = struct type t = T end end;;
 module M2 = struct type u = A.B.t type foo = int type v = A.B.t end;;
