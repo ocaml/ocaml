@@ -42,7 +42,7 @@ let preg_anyspace =
 let preg_emspace = "\\(\u{2003}\\| \\)"
 (* What hevea inserts between "Chapter" and the chapter number: *)
 let preg_chapter_space = "\\(\u{2004}\u{200d}\\|" ^ preg_anyspace ^ "\\)"
-let writtenby_css = "span.c010" (* "span.c009" for hevea 2.32 *)
+let writtenby_css = "span.font-it" (* "span.c009" for hevea 2.32 *)
 
 (* Remove number: "Chapter 1  The core language" ==> "The core language" *)
 let remove_number s =

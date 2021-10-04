@@ -142,12 +142,22 @@ DOMAIN_STATE(FILE*, eventlog_out)
 DOMAIN_STATE(struct event_buffer *, eventlog_buffer)
 /* See eventlog.c */
 
-// whether or not a domain is inside of a stop-the-world handler
-// this is used for several debug assertions inside of methods that
-// can only be called from either in or outside this state.
 DOMAIN_STATE(int, inside_stw_handler)
+/* whether or not a domain is inside of a stop-the-world handler
+   this is used for several debug assertions inside of methods
+   that can only be called from either in or outside this state. */
 
 #if defined(NAKED_POINTERS_CHECKER) && !defined(_WIN32)
 DOMAIN_STATE(void*, checking_pointer_pc)
 /* See major_gc.c */
 #endif
+
+#ifndef NATIVE_CODE
+DOMAIN_STATE(intnat, trap_sp_off)
+DOMAIN_STATE(intnat, trap_barrier_off)
+DOMAIN_STATE(struct caml_exception_context*, external_raise)
+/* Bytecode TLS vars, not used for native code */
+#endif
+
+DOMAIN_STATE(extra_params_area, extra_params)
+/* This member must occur last, because it is an array, not a scalar */
