@@ -16,24 +16,15 @@
 
 open Types
 
-type t =
-  | Unavailable
-  | This of type_expr
-  | Only_on_64_bits of type_expr
-
 (* We use the Ctype.expand_head_opt version of expand_head to get access
    to the manifest type of private abbreviations. *)
 let rec get_unboxed_type_representation env ty fuel =
-  if fuel < 0 then Unavailable else
+  if fuel < 0 then None else
   let ty = Ctype.expand_head_opt env ty in
   match get_desc ty with
   | Tconstr (p, args, _) ->
     begin match Env.find_type p env with
-    | exception Not_found -> This ty
-    | {type_immediate = Always; _} ->
-        This Predef.type_int
-    | {type_immediate = Always_on_64bits; _} ->
-        Only_on_64_bits Predef.type_int
+    | exception Not_found -> Some ty
     | {type_params; type_kind =
          Type_record ([{ld_type = ty2; _}], Record_unboxed _)
        | Type_variant ([{cd_args = Cstr_tuple [ty2]; _}], Variant_unboxed)
@@ -43,9 +34,9 @@ let rec get_unboxed_type_representation env ty fuel =
         let ty2 = match get_desc ty2 with Tpoly (t, _) -> t | _ -> ty2 in
         get_unboxed_type_representation env
           (Ctype.apply env type_params ty2 args) (fuel - 1)
-    | _ -> This ty
+    | _ -> Some ty
     end
-  | _ -> This ty
+  | _ -> Some ty
 
 let get_unboxed_type_representation env ty =
   (* Do not give too much fuel: PR#7424 *)

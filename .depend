@@ -1543,13 +1543,11 @@ typing/typedecl_separability.cmi : \
     typing/env.cmi
 typing/typedecl_unboxed.cmo : \
     typing/types.cmi \
-    typing/predef.cmi \
     typing/env.cmi \
     typing/ctype.cmi \
     typing/typedecl_unboxed.cmi
 typing/typedecl_unboxed.cmx : \
     typing/types.cmx \
-    typing/predef.cmx \
     typing/env.cmx \
     typing/ctype.cmx \
     typing/typedecl_unboxed.cmi
@@ -1704,7 +1702,8 @@ typing/typemod.cmi : \
 typing/typeopt.cmo : \
     typing/types.cmi \
     typing/typedtree.cmi \
-    typing/typedecl.cmi \
+    typing/typedecl_unboxed.cmi \
+    typing/type_immediacy.cmi \
     typing/predef.cmi \
     typing/path.cmi \
     lambda/lambda.cmi \
@@ -1712,12 +1711,14 @@ typing/typeopt.cmo : \
     typing/env.cmi \
     typing/ctype.cmi \
     utils/config.cmi \
+    utils/clflags.cmi \
     parsing/asttypes.cmi \
     typing/typeopt.cmi
 typing/typeopt.cmx : \
     typing/types.cmx \
     typing/typedtree.cmx \
-    typing/typedecl.cmx \
+    typing/typedecl_unboxed.cmx \
+    typing/type_immediacy.cmx \
     typing/predef.cmx \
     typing/path.cmx \
     lambda/lambda.cmx \
@@ -1725,6 +1726,7 @@ typing/typeopt.cmx : \
     typing/env.cmx \
     typing/ctype.cmx \
     utils/config.cmx \
+    utils/clflags.cmx \
     parsing/asttypes.cmi \
     typing/typeopt.cmi
 typing/typeopt.cmi : \

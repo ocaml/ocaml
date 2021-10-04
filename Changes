@@ -64,6 +64,10 @@ Working version
 
 ### Internal/compiler-libs changes:
 
+- #1599: add unset directive to ocamltest to clear environment variables before
+  running tests.
+  (David Allsopp, review by Damien Doligez and Sébastien Hinderer)
+
 - #10433: Remove the distinction between 32-bit aligned and 64-bit aligned
   64-bit floats in Cmm.memory_chunk.
   (Greta Yorsh, review by Xavier Leroy)
@@ -84,6 +88,10 @@ Working version
 
 ### Build system:
 
+- #10471: Fix detection of arm32 architectures with musl in the configure
+  script.
+  (Louis Gesbert)
+
 ### Bug fixes:
 
 - #10473: Add CFI directives to RISC-V runtime and asmcomp.
@@ -96,6 +104,8 @@ Working version
   otherwise the derived pointer is live across a poll point.
   (Vincent Laviron and Xavier Leroy, review by Xavier Leroy and Sadiq Jaffer)
 
+- #10542: Fix detection of immediate64 types through unboxed types.
+  (Leo White, review by Stephen Dolan and Gabriel Scherer)
 
 OCaml 4.13.0
 -------------
@@ -534,6 +544,10 @@ OCaml 4.13.0
 
 - #10307: Make build_other_constrs work with names instead of tags.
   (Nicolas Chataing, review by Florian Angeletti)
+
+- #10543: Fix Ast_mapper to apply the mapping function to the constants in
+  "interval" patterns `c1..c2`.
+  (Guillaume Petiot, review by Gabriel Scherer and Nicolás Ojeda Bär)
 
 ### Build system:
 

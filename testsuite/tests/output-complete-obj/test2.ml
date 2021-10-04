@@ -2,6 +2,7 @@
 
 readonly_files = "puts.c"
 use_runtime = "false"
+unset FOO
 
 * hasunix
 include unix
