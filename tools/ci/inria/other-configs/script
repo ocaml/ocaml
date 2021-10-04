@@ -36,9 +36,7 @@ ${main} -conf --disable-native-compiler \
         -conf --disable-unix-lib \
         -conf --disable-bigarray-lib \
         -conf --disable-ocamldoc \
-        -conf --disable-native-compiler \
-        -conf --disable-dependency-generation \
-        -no-native
+        -conf --disable-dependency-generation
 ${main} -conf --disable-naked-pointers
 ${main} -with-bootstrap -conf --disable-flat-float-array
 ${main} -conf --enable-flambda -conf --disable-naked-pointers
