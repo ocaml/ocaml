@@ -80,6 +80,6 @@ type in_place_patch = {
    [component]
 *)
 val replace_in_place:
-  ( rec_group:sig_item list -> ghosts:Types.signature -> Types.signature_item
+  ( ghosts:Types.signature -> Types.signature_item
     -> ('a * in_place_patch) option )
   -> Types.signature -> ('a * Types.signature) option

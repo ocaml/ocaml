@@ -57,14 +57,38 @@ module TransientTypePairs =
     let hash (t, t') = t.id + 93 * t'.id
  end)
 module TypePairs = struct
-  include TransientTypePairs
+  module H = TransientTypePairs
   open Transient_expr
-  let wrap_repr f (t1, t2) = f (repr t1, repr t2)
-  let wrap_type_expr f (tt1, tt2) = f (type_expr tt1, type_expr tt2)
-  let add hash = wrap_repr (add hash)
-  let find hash = wrap_repr (find hash)
-  let mem hash = wrap_repr (mem hash)
-  let iter f = TransientTypePairs.iter (wrap_type_expr f)
+
+  type t = {
+    set : unit H.t;
+    mutable elems : (transient_expr * transient_expr) list;
+    (* elems preserves the (reversed) insertion order of elements *)
+  }
+
+  let create n =
+    { elems = []; set = H.create n }
+
+  let clear t =
+    t.elems <- [];
+    H.clear t.set
+
+  let repr2 (t1, t2) = (repr t1, repr t2)
+
+  let add t p =
+    let p = repr2 p in
+    if H.mem t.set p then () else begin
+      H.add t.set p ();
+      t.elems <- p :: t.elems
+    end
+
+  let mem t p = H.mem t.set (repr2 p)
+
+  let iter f t =
+    (* iterate in insertion order, not Hashtbl.iter order *)
+    List.rev t.elems
+    |> List.iter (fun (t1,t2) ->
+        f (type_expr t1, type_expr t2))
 end
 
 (**** Forward declarations ****)
