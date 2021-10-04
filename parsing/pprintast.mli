@@ -40,6 +40,15 @@ val module_expr: Format.formatter -> Parsetree.module_expr -> unit
 val toplevel_phrase : Format.formatter -> Parsetree.toplevel_phrase -> unit
 val top_phrase: Format.formatter -> Parsetree.toplevel_phrase -> unit
 
+val class_field: Format.formatter -> Parsetree.class_field -> unit
+val class_type_field: Format.formatter -> Parsetree.class_type_field -> unit
+val class_expr: Format.formatter -> Parsetree.class_expr -> unit
+val class_type: Format.formatter -> Parsetree.class_type -> unit
+val module_type: Format.formatter -> Parsetree.module_type -> unit
+val structure_item: Format.formatter -> Parsetree.structure_item -> unit
+val signature_item: Format.formatter -> Parsetree.signature_item -> unit
+val binding: Format.formatter -> Parsetree.value_binding -> unit
+val payload: Format.formatter -> Parsetree.payload -> unit
 
 val tyvar: Format.formatter -> string -> unit
   (** Print a type variable name, taking care of the special treatment

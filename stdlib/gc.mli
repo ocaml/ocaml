@@ -45,10 +45,24 @@ type stat =
 
     live_words : int;
     (** Number of words of live data in the major heap, including the header
-       words. *)
+       words.
+
+       Note that "live" words refers to every word in the major heap that isn't
+       currently known to be collectable, which includes words that have become
+       unreachable by the program after the start of the previous gc cycle.
+       It is typically much simpler and more predictable to call
+       {!Gc.full_major} (or {!Gc.compact}) then computing gc stats, as then
+       "live" words has the simple meaning of "reachable by the program". One
+       caveat is that a single call to {!Gc.full_major} will not reclaim values
+       that have a finaliser from {!Gc.finalise} (this does not apply to
+       {!Gc.finalise_last}). If this caveat matters, simply call
+       {!Gc.full_major} twice instead of once.
+     *)
 
     live_blocks : int;
-    (** Number of live blocks in the major heap. *)
+    (** Number of live blocks in the major heap.
+
+        See [live_words] for a caveat about what "live" means. *)
 
     free_words : int;
     (** Number of words in the free list. *)

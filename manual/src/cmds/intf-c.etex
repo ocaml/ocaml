@@ -2190,6 +2190,9 @@ The kind of array elements is one of the following constants:
 \entree{"CAML_BA_INT64"}{64-bit signed integers}
 \entree{"CAML_BA_CAML_INT"}{31- or 63-bit signed integers}
 \entree{"CAML_BA_NATIVE_INT"}{32- or 64-bit (platform-native) integers}
+\entree{"CAML_BA_COMPLEX32"}{32-bit single-precision complex numbers}
+\entree{"CAML_BA_COMPLEX64"}{64-bit double-precision complex numbers}
+\entree{"CAML_BA_CHAR"}{8-bit characters}
 \end{tableau}
 %
 \paragraph{Warning:}

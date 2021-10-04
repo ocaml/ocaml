@@ -254,8 +254,17 @@ caml/version.h : $(ROOTDIR)/tools/make-version-header.sh $(ROOTDIR)/VERSION GIT_
 	echo "#define OCAML_RUNTIME_BUILD_GIT_BRANCH \"`(git symbolic-ref -q --short HEAD || echo "<branch unavailable>")`\"" >> $@
 	echo "#define OCAML_RUNTIME_BUILD_GIT_TAG \"`(git describe --tags --exact-match || echo "<tag unavailable>")`\"" >> $@
 
+# These are provided as a temporary shim to allow cross-compilation systems
+# to supply a host C compiler and different flags and a linking macro.
+SAK_CC ?= $(CC)
+SAK_CFLAGS ?= $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS)
+SAK_LINK ?= $(MKEXE_USING_COMPILER)
+
 sak$(EXE): sak.$(O)
-	$(call MKEXE_USING_COMPILER,$@,$^)
+	$(call SAK_LINK,$@,$^)
+
+sak.$(O): sak.c caml/misc.h caml/config.h
+	$(SAK_CC) -c $(SAK_CFLAGS) $(OUTPUTOBJ)$@ $<
 
 C_LITERAL = $(shell ./sak$(EXE) encode-C-literal '$(1)')
 
