@@ -47,25 +47,19 @@ type label_mismatch =
   | Type of Errortrace.equality_error
   | Mutability of position
 
+type record_change =
+  (Types.label_declaration as 'ld, 'ld, label_mismatch) Diffing_with_keys.change
+
 type record_mismatch =
-  | Label_mismatch of label_declaration * label_declaration * label_mismatch
-  | Label_names of int * Ident.t * Ident.t
-  | Label_missing of position * Ident.t
+  | Label_mismatch of record_change list
   | Unboxed_float_representation of position
 
 type constructor_mismatch =
   | Type of Errortrace.equality_error
   | Arity
-  | Inline_record of record_mismatch
+  | Inline_record of record_change list
   | Kind of position
   | Explicit_return_type of position
-
-type variant_mismatch =
-  | Constructor_mismatch of constructor_declaration
-                            * constructor_declaration
-                            * constructor_mismatch
-  | Constructor_names of int * Ident.t * Ident.t
-  | Constructor_missing of position * Ident.t
 
 type extension_constructor_mismatch =
   | Constructor_privacy
@@ -73,6 +67,9 @@ type extension_constructor_mismatch =
                             * extension_constructor
                             * extension_constructor
                             * constructor_mismatch
+type variant_change =
+  (Types.constructor_declaration as 'cd, 'cd, constructor_mismatch)
+    Diffing_with_keys.change
 
 type private_variant_mismatch =
   | Only_outer_closed
@@ -95,7 +92,7 @@ type type_mismatch =
   | Private_object of type_expr * type_expr * private_object_mismatch
   | Variance
   | Record_mismatch of record_mismatch
-  | Variant_mismatch of variant_mismatch
+  | Variant_mismatch of variant_change list
   | Unboxed_representation of position
   | Immediate of Type_immediacy.Violation.t
 

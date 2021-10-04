@@ -133,7 +133,7 @@ val iter : ('a -> 'b -> unit) -> ('a, 'b) t -> unit
    of OCaml.  For randomized hash tables, the order of enumeration
    is entirely random.
 
-   The behavior is not defined if the hash table is modified
+   The behavior is not specified if the hash table is modified
    by [f] during the iteration.
 *)
 
@@ -166,7 +166,7 @@ val fold : ('a -> 'b -> 'c -> 'c) -> ('a, 'b) t -> 'c -> 'c
    of OCaml.  For randomized hash tables, the order of enumeration
    is entirely random.
 
-   The behavior is not defined if the hash table is modified
+   The behavior is not specified if the hash table is modified
    by [f] during the iteration.
 *)
 
@@ -246,7 +246,7 @@ val to_seq : ('a,'b) t -> ('a * 'b) Seq.t
     several bindings for the same key, they appear in reversed order of
     introduction, that is, the most recent binding appears first.
 
-    The behavior is not defined if the hash table is modified
+    The behavior is not specified if the hash table is modified
     during the iteration.
 
     @since 4.07 *)

@@ -151,7 +151,7 @@ let add_type_declaration bv td =
 
 let add_extension_constructor bv ext =
   match ext.pext_kind with
-    Pext_decl(args, rty) ->
+    Pext_decl(_, args, rty) ->
       add_constructor_arguments bv args;
       Option.iter (add_type bv) rty
   | Pext_rebind lid -> add bv lid

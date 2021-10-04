@@ -146,8 +146,9 @@ external of_float : float -> int64
   [@@unboxed] [@@noalloc]
 (** Convert the given floating-point number to a 64-bit integer,
    discarding the fractional part (truncate towards 0).
-   The result of the conversion is undefined if, after truncation,
-   the number is outside the range \[{!Int64.min_int}, {!Int64.max_int}\]. *)
+   If the truncated floating-point number is outside the range
+   \[{!Int64.min_int}, {!Int64.max_int}\], no exception is raised, and
+   an unspecified, platform-dependent integer is returned. *)
 
 external to_float : int64 -> float
   = "caml_int64_to_float" "caml_int64_to_float_unboxed"

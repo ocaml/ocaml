@@ -28,28 +28,65 @@
 
 *)
 
+(** Shared types *)
+type change_kind =
+  | Deletion
+  | Insertion
+  | Modification
+  | Preservation
+
+let style = function
+  | Preservation -> Misc.Color.[ FG Green ]
+  | Deletion -> Misc.Color.[ FG Red; Bold]
+  | Insertion -> Misc.Color.[ FG Red; Bold]
+  | Modification -> Misc.Color.[ FG Magenta; Bold]
+
+let prefix ppf (pos, p) =
+  let sty = style p in
+  Format.pp_open_stag ppf (Misc.Color.Style sty);
+  Format.fprintf ppf "%i. " pos;
+  Format.pp_close_stag ppf ()
+
+
 let (let*) = Option.bind
 let (let+) x f = Option.map f x
 let (let*!) x f = Option.iter f x
 
-type ('left, 'right, 'eq, 'diff) change =
+module type Defs = sig
+  type left
+  type right
+  type eq
+  type diff
+  type state
+end
+
+type ('left,'right,'eq,'diff) change =
   | Delete of 'left
   | Insert of 'right
-  | Keep of 'left * 'right * 'eq
+  | Keep of 'left * 'right *' eq
   | Change of 'left * 'right * 'diff
 
-type ('l, 'r, 'eq, 'diff) patch = ('l, 'r, 'eq, 'diff) change list
+let classify = function
+    | Delete _ -> Deletion
+    | Insert _ -> Insertion
+    | Change _ -> Modification
+    | Keep _ -> Preservation
 
-let map f g = function
-  | Delete x -> Delete (f x)
-  | Insert x -> Insert (g x)
-  | Keep (x,y,k) -> Keep (f x, g y, k)
-  | Change (x,y,k) -> Change (f x, g y, k)
+module Define(D:Defs) = struct
+  open D
 
-type ('st,'left,'right) full_state = {
-  line: 'left array;
-  column: 'right array;
-  state: 'st
+type nonrec change = (left,right,eq,diff) change
+
+type patch = change list
+module type S = sig
+  val diff: state -> left array -> right array -> patch
+end
+
+
+type full_state = {
+  line: left array;
+  column: right array;
+  state: state
 }
 
 (* The matrix supporting our dynamic programming implementation.
@@ -65,49 +102,48 @@ module Matrix : sig
 
   type shape = { l : int ; c : int }
 
-  type ('state,'left,'right,'eq,'diff) t
+  type  t
 
-  val make : shape -> ('st,'l,'r,'e,'d) t
-  val reshape : shape -> ('st,'l,'r,'e,'d) t -> ('st,'l,'r,'e,'d) t
+  val make : shape ->  t
+  val reshape : shape ->  t ->  t
 
   (** accessor functions *)
-  val diff : (_,'l,'r,'e,'d) t -> int -> int -> ('l,'r,'e,'d) change option
-  val state :
-    ('st,'l,'r,'e,'d) t -> int -> int -> ('st, 'l, 'r) full_state option
-  val weight : _ t -> int -> int -> int
+  val diff : t -> int -> int ->  change option
+  val state : t -> int -> int -> full_state option
+  val weight : t -> int -> int -> int
 
-  val line : (_,'l,_,_,_) t -> int -> int -> 'l option
-  val column : (_,_,'r,_,_) t -> int -> int -> 'r option
+  val line : t -> int -> int -> left option
+  val column : t -> int -> int -> right option
 
   val set :
-    ('st,'l,'r,'e,'d) t -> int -> int ->
-    diff:('l,'r,'e,'d) change option ->
+    t -> int -> int ->
+    diff:change option ->
     weight:int ->
-    state:('st, 'l, 'r) full_state ->
+    state:full_state ->
     unit
 
   (** the shape when starting filling the matrix *)
-  val shape : _ t -> shape
+  val shape : t -> shape
 
   (** [shape m i j] is the shape as seen from the state at position (i,j)
       after some possible extensions
   *)
-  val shape_at : _ t -> int -> int -> shape option
+  val shape_at : t -> int -> int -> shape option
 
   (** the maximal shape on the whole matrix *)
-  val real_shape : _ t -> shape
+  val real_shape : t -> shape
 
   (** debugging printer *)
-  val[@warning "-32"] pp : Format.formatter -> _ t -> unit
+  val[@warning "-32"] pp : Format.formatter -> t -> unit
 
 end = struct
 
   type shape = { l : int ; c : int }
 
-  type ('state,'left,'right,'eq,'diff) t =
-    { states: ('state,'left,'right) full_state option array array;
+  type  t =
+    { states: full_state option array array;
       weight: int array array;
-      diff: ('left,'right,'eq,'diff) change option array array;
+      diff:  change option array array;
       columns: int;
       lines: int;
     }
@@ -189,100 +225,6 @@ end = struct
 
 end
 
-(* Computation of new cells *)
-
-let select_best_proposition l =
-  let compare_proposition curr prop =
-    match curr, prop with
-    | None, o | o, None -> o
-    | Some (curr_m, curr_res), Some (m, res) ->
-        Some (if curr_m <= m then curr_m, curr_res else m,res)
-  in
-  List.fold_left compare_proposition None l
-
-(* Boundary cell update *)
-let compute_column0 ~weight ~update tbl i =
-  let*! st = Matrix.state tbl (i-1) 0 in
-  let*! line = Matrix.line tbl (i-1) 0 in
-  let diff = Delete line in
-  Matrix.set tbl i 0
-    ~weight:(weight diff + Matrix.weight tbl (i-1) 0)
-    ~state:(update diff st)
-    ~diff:(Some diff)
-
-let compute_line0 ~weight ~update tbl j =
-  let*! st = Matrix.state tbl 0 (j-1) in
-  let*! column = Matrix.column tbl 0 (j-1) in
-  let diff = Insert column in
-  Matrix.set tbl 0 j
-    ~weight:(weight diff + Matrix.weight tbl 0 (j-1))
-    ~state:(update diff st)
-    ~diff:(Some diff)
-
-let compute_inner_cell ~weight ~test ~update tbl i j =
-  let compute_proposition i j diff =
-    let* diff = diff in
-    let+ localstate = Matrix.state tbl i j in
-    weight diff + Matrix.weight tbl i j, (diff, localstate)
-  in
-  let del =
-    let diff = let+ x = Matrix.line tbl (i-1) j in Delete x in
-    compute_proposition (i-1) j diff
-  in
-  let insert =
-    let diff = let+ x = Matrix.column tbl i (j-1) in Insert x in
-    compute_proposition i (j-1) diff
-  in
-  let diag =
-    let diff =
-      let* state = Matrix.state tbl (i-1) (j-1) in
-      let* line = Matrix.line tbl (i-1) (j-1) in
-      let* column = Matrix.column tbl (i-1) (j-1) in
-      match test state.state line column with
-      | Ok ok -> Some (Keep (line, column, ok))
-      | Error err -> Some (Change (line, column, err))
-    in
-    compute_proposition (i-1) (j-1) diff
-  in
-  let*! newweight, (diff, localstate) =
-    select_best_proposition [diag;del;insert]
-  in
-  let state = update diff localstate in
-  Matrix.set tbl i j ~weight:newweight ~state ~diff:(Some diff)
-
-let compute_cell ~weight ~test ~update m i j =
-  match i, j with
-  | _ when Matrix.diff m i j <> None -> ()
-  | 0,0 -> ()
-  | 0,j -> compute_line0 ~update ~weight m j
-  | i,0 -> compute_column0 ~update ~weight m i;
-  | _ -> compute_inner_cell ~weight ~test ~update m i j
-
-(* Filling the matrix
-
-   We fill the whole matrix, as in vanilla Wagner-Fischer.
-   At this point, the lists in some states might have been extended.
-   If any list have been extended, we need to reshape the matrix
-   and repeat the process
-*)
-let compute_matrix ~weight ~test ~update state0 =
-  let m0 = Matrix.make { l = 0 ; c = 0 } in
-  Matrix.set m0 0 0 ~weight:0 ~state:state0 ~diff:None;
-  let rec loop m =
-    let shape = Matrix.shape m in
-    let new_shape = Matrix.real_shape m in
-    if new_shape.l > shape.l || new_shape.c > shape.c then
-      let m = Matrix.reshape new_shape m in
-      for i = 0 to new_shape.l do
-        for j = 0 to new_shape.c do
-          compute_cell ~update ~test ~weight m i j
-        done
-      done;
-      loop m
-    else
-      m
-  in
-  loop m0
 
 (* Building the patch.
 
@@ -334,37 +276,172 @@ let construct_patch m0 =
   in
   aux [] (select_final_state m0)
 
-let diff ~weight ~test ~update state line column =
-  let update d fs = { fs with state = update d fs.state } in
-  let fullstate = { line; column; state } in
-  compute_matrix ~weight ~test ~update fullstate
-  |> construct_patch
+(* Computation of new cells *)
 
-type ('l, 'r, 'e, 'd, 'state) update =
-  | Without_extensions of (('l,'r,'e,'d) change -> 'state -> 'state)
-  | With_left_extensions of
-      (('l,'r,'e,'d) change -> 'state -> 'state * 'l array)
-  | With_right_extensions of
-      (('l,'r,'e,'d) change -> 'state -> 'state * 'r array)
+let select_best_proposition l =
+  let compare_proposition curr prop =
+    match curr, prop with
+    | None, o | o, None -> o
+    | Some (curr_m, curr_res), Some (m, res) ->
+        Some (if curr_m <= m then curr_m, curr_res else m,res)
+  in
+  List.fold_left compare_proposition None l
 
-let variadic_diff ~weight ~test ~(update:_ update) state line column =
+  module type Full_core = sig
+    type update_result
+    type update_state
+    val weight: change -> int
+    val test: state -> left -> right -> (eq, diff) result
+    val update: change -> update_state -> update_result
+  end
+
+module Generic
+    (X: Full_core
+     with type update_result := full_state
+      and type update_state := full_state) = struct
+  open X
+
+  (* Boundary cell update *)
+  let compute_column0  tbl i =
+    let*! st = Matrix.state tbl (i-1) 0 in
+    let*! line = Matrix.line tbl (i-1) 0 in
+    let diff = Delete line in
+    Matrix.set tbl i 0
+      ~weight:(weight diff + Matrix.weight tbl (i-1) 0)
+      ~state:(update diff st)
+      ~diff:(Some diff)
+
+  let compute_line0 tbl j =
+    let*! st = Matrix.state tbl 0 (j-1) in
+    let*! column = Matrix.column tbl 0 (j-1) in
+    let diff = Insert column in
+    Matrix.set tbl 0 j
+      ~weight:(weight diff + Matrix.weight tbl 0 (j-1))
+      ~state:(update diff st)
+      ~diff:(Some diff)
+
+let compute_inner_cell tbl i j =
+  let compute_proposition i j diff =
+    let* diff = diff in
+    let+ localstate = Matrix.state tbl i j in
+    weight diff + Matrix.weight tbl i j, (diff, localstate)
+  in
+  let del =
+    let diff = let+ x = Matrix.line tbl (i-1) j in Delete x in
+    compute_proposition (i-1) j diff
+  in
+  let insert =
+    let diff = let+ x = Matrix.column tbl i (j-1) in Insert x in
+    compute_proposition i (j-1) diff
+  in
+  let diag =
+    let diff =
+      let* state = Matrix.state tbl (i-1) (j-1) in
+      let* line = Matrix.line tbl (i-1) (j-1) in
+      let* column = Matrix.column tbl (i-1) (j-1) in
+      match test state.state line column with
+      | Ok ok -> Some (Keep (line, column, ok))
+      | Error err -> Some (Change (line, column, err))
+    in
+    compute_proposition (i-1) (j-1) diff
+  in
+  let*! newweight, (diff, localstate) =
+    select_best_proposition [diag;del;insert]
+  in
+  let state = update diff localstate in
+  Matrix.set tbl i j ~weight:newweight ~state ~diff:(Some diff)
+
+let compute_cell  m i j =
+  match i, j with
+  | _ when Matrix.diff m i j <> None -> ()
+  | 0,0 -> ()
+  | 0,j -> compute_line0 m j
+  | i,0 -> compute_column0  m i;
+  | _ -> compute_inner_cell m i j
+
+(* Filling the matrix
+
+   We fill the whole matrix, as in vanilla Wagner-Fischer.
+   At this point, the lists in some states might have been extended.
+   If any list have been extended, we need to reshape the matrix
+   and repeat the process
+*)
+let compute_matrix state0 =
+  let m0 = Matrix.make { l = 0 ; c = 0 } in
+  Matrix.set m0 0 0 ~weight:0 ~state:state0 ~diff:None;
+  let rec loop m =
+    let shape = Matrix.shape m in
+    let new_shape = Matrix.real_shape m in
+    if new_shape.l > shape.l || new_shape.c > shape.c then
+      let m = Matrix.reshape new_shape m in
+      for i = 0 to new_shape.l do
+        for j = 0 to new_shape.c do
+          compute_cell m i j
+        done
+      done;
+      loop m
+    else
+      m
+  in
+  loop m0
+ end
+
+
+  module type Parameters = Full_core with type update_state := state
+
+  module Simple(X:Parameters with type update_result := state) = struct
+    module Internal = Generic(struct
+        let test = X.test
+        let weight = X.weight
+        let update d fs = { fs with state = X.update d fs.state }
+      end)
+
+    let diff state line column =
+      let fullstate = { line; column; state } in
+      Internal.compute_matrix fullstate
+      |> construct_patch
+  end
+
+
   let may_append x = function
     | [||] -> x
-    | y -> Array.append x y in
-  let update = match update with
-    | Without_extensions up ->
-        fun d fs ->
-          let state = up d fs.state in
-          { fs with state }
-    | With_left_extensions up ->
-        fun d fs ->
-          let state, a = up d fs.state in
+    | y -> Array.append x y
+
+
+  module Left_variadic
+      (X:Parameters with type update_result := state * left array) = struct
+    open X
+
+    module Internal = Generic(struct
+        let test = X.test
+        let weight = X.weight
+        let update d fs =
+          let state, a = update d fs.state in
           { fs with state ; line = may_append fs.line a }
-    | With_right_extensions up ->
-        fun d fs ->
-          let state, a = up d fs.state in
+      end)
+
+    let diff state line column =
+      let fullstate = { line; column; state } in
+      Internal.compute_matrix fullstate
+      |> construct_patch
+  end
+
+  module Right_variadic
+      (X:Parameters with type update_result := state * right array) = struct
+    open X
+
+    module Internal = Generic(struct
+        let test = X.test
+        let weight = X.weight
+        let update d fs =
+          let state, a = update d fs.state in
           { fs with state ; column = may_append fs.column a }
-  in
-  let fullstate = { line; column; state } in
-  compute_matrix ~weight ~test ~update fullstate
-  |> construct_patch
+      end)
+
+    let diff state line column =
+      let fullstate = { line; column; state } in
+      Internal.compute_matrix fullstate
+      |> construct_patch
+  end
+
+end

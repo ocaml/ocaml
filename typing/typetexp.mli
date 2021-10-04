@@ -19,8 +19,22 @@ open Types
 
 val valid_tyvar_name : string -> bool
 
+type poly_univars
+val make_poly_univars : string list -> poly_univars
+  (* Create a set of univars with given names *)
+val check_poly_univars :
+   Env.t -> Location.t -> poly_univars -> type_expr list
+  (* Verify that the given univars are universally quantified,
+     and return the list of variables. The type in which the
+     univars are used must be generalised *)
+val instance_poly_univars :
+   Env.t -> Location.t -> poly_univars -> type_expr list
+  (* Same as [check_poly_univars], but instantiates the resulting
+     type scheme (i.e. variables become Tvar rather than Tunivar) *)
+
 val transl_simple_type:
-        Env.t -> bool -> Parsetree.core_type -> Typedtree.core_type
+        Env.t -> ?univars:poly_univars -> bool -> Parsetree.core_type
+        -> Typedtree.core_type
 val transl_simple_type_univars:
         Env.t -> Parsetree.core_type -> Typedtree.core_type
 val transl_simple_type_delayed

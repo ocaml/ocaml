@@ -159,6 +159,32 @@ let transl_type_param env styp =
 let new_pre_univar ?name () =
   let v = newvar ?name () in pre_univars := v :: !pre_univars; v
 
+type poly_univars = (string * type_expr) list
+let make_poly_univars vars =
+  List.map (fun name -> name, newvar ~name ()) vars
+
+let check_poly_univars env loc vars =
+  vars |> List.iter (fun (_, v) -> generalize v);
+  vars |> List.map (fun (name, ty1) ->
+    let v = Btype.proxy ty1 in
+    begin match get_desc v with
+    | Tvar name when get_level v = Btype.generic_level ->
+       set_type_desc v (Tunivar name)
+    | _ ->
+       raise (Error (loc, env, Cannot_quantify(name, v)))
+    end;
+    v)
+
+let instance_poly_univars env loc vars =
+  let vs = check_poly_univars env loc vars in
+  vs |> List.iter (fun v ->
+    match get_desc v with
+    | Tunivar name ->
+       set_type_desc v (Tvar name)
+    | _ -> assert false);
+  vs
+
+
 type policy = Fixed | Extensible | Univars
 
 let rec transl_type env policy styp =
@@ -468,7 +494,7 @@ and transl_type_aux env policy styp =
   | Ptyp_poly(vars, st) ->
       let vars = List.map (fun v -> v.txt) vars in
       begin_def();
-      let new_univars = List.map (fun name -> name, newvar ~name ()) vars in
+      let new_univars = make_poly_univars vars in
       let old_univars = !univars in
       univars := new_univars @ !univars;
       let cty = transl_type env policy st in
@@ -476,22 +502,9 @@ and transl_type_aux env policy styp =
       univars := old_univars;
       end_def();
       generalize ty;
-      let ty_list =
-        List.fold_left
-          (fun tyl (name, ty1) ->
-            let v = Btype.proxy ty1 in
-            if deep_occur v ty then begin
-              match get_desc v with
-                Tvar name when get_level v = Btype.generic_level ->
-                  set_type_desc v (Tunivar name);
-                  v :: tyl
-              | _ ->
-                raise (Error (styp.ptyp_loc, env,
-                              Cannot_quantify (name, v)))
-            end else tyl)
-          [] new_univars
-      in
-      let ty' = Btype.newgenty (Tpoly(ty, List.rev ty_list)) in
+      let ty_list = check_poly_univars env styp.ptyp_loc new_univars in
+      let ty_list = List.filter (fun v -> deep_occur v ty) ty_list in
+      let ty' = Btype.newgenty (Tpoly(ty, ty_list)) in
       unify_var env (newvar()) ty';
       ctyp (Ttyp_poly (vars, cty)) ty'
   | Ptyp_package (p, l) ->
@@ -515,9 +528,6 @@ and transl_type_aux env policy styp =
   | Ptyp_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
 
-and transl_poly_type env policy t =
-  transl_type env policy (Ast_helper.Typ.force_poly t)
-
 and transl_fields env policy o fields =
   let hfields = Hashtbl.create 17 in
   let add_typed_field loc l ty =
@@ -536,7 +546,7 @@ and transl_fields env policy o fields =
     | Otag (s, ty1) -> begin
         let ty1 =
           Builtin_attributes.warning_scope of_attributes
-            (fun () -> transl_poly_type env policy ty1)
+            (fun () -> transl_type env policy (Ast_helper.Typ.force_poly ty1))
         in
         let field = OTtag (s, ty1) in
         add_typed_field ty1.ctyp_loc s.txt ty1.ctyp_type;
@@ -635,8 +645,8 @@ let globalize_used_variables env fixed =
           raise (Error(loc, env, Type_mismatch err)))
       !r
 
-let transl_simple_type env fixed styp =
-  univars := []; used_variables := TyVarMap.empty;
+let transl_simple_type env ?univars:(uvs=[]) fixed styp =
+  univars := uvs; used_variables := TyVarMap.empty;
   let typ = transl_type env (if fixed then Fixed else Extensible) styp in
   globalize_used_variables env fixed ();
   make_fixed_univars typ.ctyp_type;
@@ -686,11 +696,26 @@ let transl_simple_type_delayed env styp =
 
 let transl_type_scheme env styp =
   reset_type_variables();
-  begin_def();
-  let typ = transl_simple_type env false styp in
-  end_def();
-  generalize typ.ctyp_type;
-  typ
+  match styp.ptyp_desc with
+  | Ptyp_poly (vars, st) ->
+     begin_def();
+     let vars = List.map (fun v -> v.txt) vars in
+     let univars = make_poly_univars vars in
+     let typ = transl_simple_type env ~univars true st in
+     end_def();
+     generalize typ.ctyp_type;
+     let _ = instance_poly_univars env styp.ptyp_loc univars in
+     { ctyp_desc = Ttyp_poly (vars, typ);
+       ctyp_type = typ.ctyp_type;
+       ctyp_env = env;
+       ctyp_loc = styp.ptyp_loc;
+       ctyp_attributes = styp.ptyp_attributes }
+  | _ ->
+     begin_def();
+     let typ = transl_simple_type env false styp in
+     end_def();
+     generalize typ.ctyp_type;
+     typ
 
 
 (* Error report *)

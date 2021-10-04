@@ -137,27 +137,20 @@ type label_mismatch =
   | Type of Errortrace.equality_error
   | Mutability of position
 
+type record_change =
+  (Types.label_declaration, Types.label_declaration, label_mismatch)
+    Diffing_with_keys.change
+
 type record_mismatch =
-  | Label_mismatch of Types.label_declaration
-                      * Types.label_declaration
-                      * label_mismatch
-  | Label_names of int * Ident.t * Ident.t
-  | Label_missing of position * Ident.t
+  | Label_mismatch of record_change list
   | Unboxed_float_representation of position
 
 type constructor_mismatch =
   | Type of Errortrace.equality_error
   | Arity
-  | Inline_record of record_mismatch
+  | Inline_record of record_change list
   | Kind of position
   | Explicit_return_type of position
-
-type variant_mismatch =
-  | Constructor_mismatch of Types.constructor_declaration
-                            * Types.constructor_declaration
-                            * constructor_mismatch
-  | Constructor_names of int * Ident.t * Ident.t
-  | Constructor_missing of position * Ident.t
 
 type extension_constructor_mismatch =
   | Constructor_privacy
@@ -177,6 +170,10 @@ type private_object_mismatch =
   | Missing of string
   | Types of Errortrace.equality_error
 
+type variant_change =
+  (Types.constructor_declaration as 'l, 'l, constructor_mismatch)
+    Diffing_with_keys.change
+
 type type_mismatch =
   | Arity
   | Privacy of privacy_mismatch
@@ -187,7 +184,7 @@ type type_mismatch =
   | Private_object of type_expr * type_expr * private_object_mismatch
   | Variance
   | Record_mismatch of record_mismatch
-  | Variant_mismatch of variant_mismatch
+  | Variant_mismatch of variant_change list
   | Unboxed_representation of position
   | Immediate of Type_immediacy.Violation.t
 
@@ -250,22 +247,51 @@ let report_label_mismatch first second env ppf err =
         (String.capitalize_ascii (choose ord first second))
         (choose_other ord first second)
 
+let pp_record_diff first second prefix decl env ppf (x : record_change) =
+  match x with
+  | Delete cd ->
+      Format.fprintf ppf "%aAn extra field, %s, is provided in %s %s."
+        prefix x (Ident.name cd.delete.ld_id) first decl
+  | Insert cd ->
+      Format.fprintf  ppf "%aA field, %s, is missing in %s %s."
+        prefix x (Ident.name cd.insert.ld_id) first decl
+  | Change Type {got=lbl1; expected=lbl2; reason} ->
+      Format.fprintf ppf
+        "@[<hv>%aFields do not match:@;<1 2>\
+         %a@ is not the same as:\
+         @;<1 2>%a@ %a@]"
+        prefix x
+        Printtyp.label lbl1
+        Printtyp.label lbl2
+        (report_label_mismatch first second env) reason
+  | Change Name n ->
+      Format.fprintf ppf "%aFields have different names, %s and %s."
+        prefix x n.got n.expected
+  | Swap sw ->
+      Format.fprintf ppf "%aFields %s and %s have been swapped."
+        prefix x sw.first sw.last
+  | Move {name; got; expected } ->
+      Format.fprintf ppf
+        "@[<2>%aField %s has been moved@ from@ position %d@ to %d.@]"
+        prefix x name expected got
+
+let report_patch pr_diff first second decl env ppf patch =
+  let nl ppf () = Format.fprintf ppf "@," in
+  let no_prefix _ppf _ = () in
+  match patch with
+  | [ elt ] ->
+      Format.fprintf ppf "@[<hv>%a@]"
+        (pr_diff first second no_prefix decl env) elt
+  | _ ->
+      let pp_diff = pr_diff first second Diffing_with_keys.prefix decl env in
+      Format.fprintf ppf "@[<hv>%a@]"
+        (Format.pp_print_list ~pp_sep:nl pp_diff) patch
+
 let report_record_mismatch first second decl env ppf err =
   let pr fmt = Format.fprintf ppf fmt in
   match err with
-  | Label_mismatch (l1, l2, err) ->
-      pr
-        "@[<hv>Fields do not match:@;<1 2>%a@ is not the same as:\
-         @;<1 2>%a@ %a@]"
-        Printtyp.label l1
-        Printtyp.label l2
-        (report_label_mismatch first second env) err
-  | Label_names (n, name1, name2) ->
-      pr "@[<hv>Fields number %i have different names, %s and %s.@]"
-        n (Ident.name name1) (Ident.name name2)
-  | Label_missing (ord, s) ->
-      pr "@[<hv>The field %s is only present in %s %s.@]"
-        (Ident.name s) (choose ord first second) decl
+  | Label_mismatch patch ->
+      report_patch pp_record_diff first second decl env ppf patch
   | Unboxed_float_representation ord ->
       pr "@[<hv>Their internal representations differ:@ %s %s %s.@]"
         (choose ord first second) decl
@@ -276,7 +302,8 @@ let report_constructor_mismatch first second decl env ppf err =
   match (err : constructor_mismatch) with
   | Type err -> report_type_inequality env ppf err
   | Arity -> pr "They have different arities."
-  | Inline_record err -> report_record_mismatch first second decl env ppf err
+  | Inline_record err ->
+      report_patch pp_record_diff first second decl env ppf err
   | Kind ord ->
       pr "%s uses inline records and %s doesn't."
         (String.capitalize_ascii (choose ord first second))
@@ -286,22 +313,35 @@ let report_constructor_mismatch first second decl env ppf err =
         (String.capitalize_ascii (choose ord first second))
         (choose_other ord first second)
 
-let report_variant_mismatch first second decl env ppf err =
-  let pr fmt = Format.fprintf ppf fmt in
-  match (err : variant_mismatch) with
-  | Constructor_mismatch (c1, c2, err) ->
-      pr
-        "@[<hv>Constructors do not match:@;<1 2>%a@ is not the same as:\
+let pp_variant_diff first second prefix decl env ppf (x : variant_change) =
+  match x with
+  | Delete cd ->
+      Format.fprintf ppf  "%aAn extra constructor, %s, is provided in %s %s."
+        prefix x (Ident.name cd.delete.cd_id) first decl
+  | Insert cd ->
+      Format.fprintf ppf "%aA constructor, %s, is missing in %s %s."
+        prefix x (Ident.name cd.insert.cd_id) first decl
+  | Change Type {got; expected; reason} ->
+      Format.fprintf ppf
+        "@[<hv>%aConstructors do not match:@;<1 2>\
+         %a@ is not the same as:\
          @;<1 2>%a@ %a@]"
-        Printtyp.constructor c1
-        Printtyp.constructor c2
-        (report_constructor_mismatch first second decl env) err
-  | Constructor_names (n, name1, name2) ->
-      pr "Constructors number %i have different names, %s and %s."
-        n (Ident.name name1) (Ident.name name2)
-  | Constructor_missing (ord, s) ->
-      pr "The constructor %s is only present in %s %s."
-        (Ident.name s) (choose ord first second) decl
+        prefix x
+        Printtyp.constructor got
+        Printtyp.constructor expected
+        (report_constructor_mismatch first second decl env) reason
+  | Change Name n ->
+      Format.fprintf ppf
+        "%aConstructors have different names, %s and %s."
+        prefix x n.got n.expected
+  | Swap sw ->
+      Format.fprintf ppf
+        "%aConstructors %s and %s have been swapped."
+        prefix x sw.first sw.last
+  | Move {name; got; expected} ->
+      Format.fprintf ppf
+        "@[<2>%aConstructor %s has been moved@ from@ position %d@ to %d.@]"
+        prefix x name expected got
 
 let report_extension_constructor_mismatch first second decl env ppf err =
   let pr fmt = Format.fprintf ppf fmt in
@@ -365,7 +405,7 @@ let report_type_mismatch first second decl env ppf err =
   | Record_mismatch err ->
       report_record_mismatch first second decl env ppf err
   | Variant_mismatch err ->
-      report_variant_mismatch first second decl env ppf err
+      report_patch pp_variant_diff first second decl env ppf err
   | Unboxed_representation ord ->
       pr "Their internal representations differ:@ %s %s %s."
          (choose ord first second) decl
@@ -379,120 +419,119 @@ let report_type_mismatch first second decl env ppf err =
           pr "%s is not a type that is always immediate on 64 bit platforms."
             first
 
-let rec compare_constructor_arguments ~loc env params1 params2 arg1 arg2 =
-  match arg1, arg2 with
-  | Types.Cstr_tuple arg1, Types.Cstr_tuple arg2 ->
-      if List.length arg1 <> List.length arg2 then
-        Some (Arity : constructor_mismatch)
-      else begin
-        (* Ctype.equal must be called on all arguments at once, cf. PR#7378 *)
-        match Ctype.equal env true (params1 @ arg1) (params2 @ arg2) with
-        | exception Ctype.Equality err -> Some (Type err)
-        | () -> None
-      end
-  | Types.Cstr_record l1, Types.Cstr_record l2 ->
-      Option.map
-        (fun rec_err -> Inline_record rec_err)
-        (compare_records env ~loc params1 params2 0 l1 l2)
-  | Types.Cstr_record _, _ -> Some (Kind First : constructor_mismatch)
-  | _, Types.Cstr_record _ -> Some (Kind Second : constructor_mismatch)
+module Record_diffing = struct
 
-and compare_constructors ~loc env params1 params2 res1 res2 args1 args2 =
-  match res1, res2 with
-  | Some r1, Some r2 -> begin
-      match Ctype.equal env true [r1] [r2] with
-      | exception Ctype.Equality err -> Some (Type err)
-      | () -> compare_constructor_arguments ~loc env [r1] [r2] args1 args2
-    end
-  | Some _, None -> Some (Explicit_return_type First)
-  | None, Some _ -> Some (Explicit_return_type Second)
-  | None, None ->
-      compare_constructor_arguments ~loc env params1 params2 args1 args2
-
-and compare_variants ~loc env params1 params2 n
-    (cstrs1 : Types.constructor_declaration list)
-    (cstrs2 : Types.constructor_declaration list) =
-  match cstrs1, cstrs2 with
-  | [], []   -> None
-  | [], c::_ -> Some (Constructor_missing (Second, c.Types.cd_id))
-  | c::_, [] -> Some (Constructor_missing (First, c.Types.cd_id))
-  | cd1::rem1, cd2::rem2 ->
-      if Ident.name cd1.cd_id <> Ident.name cd2.cd_id then
-        Some (Constructor_names (n, cd1.cd_id, cd2.cd_id))
-      else begin
-        Builtin_attributes.check_alerts_inclusion
-          ~def:cd1.cd_loc
-          ~use:cd2.cd_loc
-          loc
-          cd1.cd_attributes cd2.cd_attributes
-          (Ident.name cd1.cd_id);
-        match compare_constructors ~loc env params1 params2
-                cd1.cd_res cd2.cd_res cd1.cd_args cd2.cd_args with
-        | Some r ->
-            Some ((Constructor_mismatch (cd1, cd2, r)) : variant_mismatch)
-        | None -> compare_variants ~loc env params1 params2 (n+1) rem1 rem2
-      end
-
-and compare_variants_with_representation ~loc env params1 params2 n
-      cstrs1 cstrs2 rep1 rep2
-  =
-  let err = compare_variants ~loc env params1 params2 n cstrs1 cstrs2 in
-  match err, rep1, rep2 with
-  | None, Variant_regular, Variant_regular
-  | None, Variant_unboxed, Variant_unboxed ->
-     None
-  | Some err, _, _ ->
-     Some (Variant_mismatch err)
-  | None, Variant_unboxed, Variant_regular ->
-     Some (Unboxed_representation First)
-  | None, Variant_regular, Variant_unboxed ->
-     Some (Unboxed_representation Second)
-
-and compare_labels env params1 params2
-      (ld1 : Types.label_declaration) (ld2 : Types.label_declaration) =
-  if ld1.ld_mutable <> ld2.ld_mutable then begin
-    let ord = if ld1.ld_mutable = Asttypes.Mutable then First else Second in
-    Some (Mutability  ord)
-  end else begin
+  let compare_labels env params1 params2
+      (ld1 : Types.label_declaration)
+      (ld2 : Types.label_declaration) =
+    if ld1.ld_mutable <> ld2.ld_mutable
+    then
+      let ord = if ld1.ld_mutable = Asttypes.Mutable then First else Second in
+      Some (Mutability  ord)
+    else
     let tl1 = params1 @ [ld1.ld_type] in
     let tl2 = params2 @ [ld2.ld_type] in
     match Ctype.equal env true tl1 tl2 with
-    | exception Ctype.Equality err -> Some (Type err : label_mismatch)
+    | exception Ctype.Equality err ->
+        Some (Type err : label_mismatch)
     | () -> None
+
+  let rec equal ~loc env params1 params2
+      (labels1 : Types.label_declaration list)
+      (labels2 : Types.label_declaration list) =
+    match labels1, labels2 with
+    | [], [] -> true
+    | _ :: _ , [] | [], _ :: _ -> false
+    | ld1 :: rem1, ld2 :: rem2 ->
+        if Ident.name ld1.ld_id <> Ident.name ld2.ld_id
+        then false
+        else begin
+          Builtin_attributes.check_deprecated_mutable_inclusion
+            ~def:ld1.ld_loc
+            ~use:ld2.ld_loc
+            loc
+            ld1.ld_attributes ld2.ld_attributes
+            (Ident.name ld1.ld_id);
+          match compare_labels env params1 params2 ld1 ld2 with
+          | Some _ -> false
+          (* add arguments to the parameters, cf. PR#7378 *)
+          | None ->
+              equal ~loc env
+                (ld1.ld_type::params1) (ld2.ld_type::params2)
+                rem1 rem2
+        end
+
+  module Defs = struct
+    type left = Types.label_declaration
+    type right = left
+    type diff = label_mismatch
+    type state = type_expr list * type_expr list
   end
+  module Diff = Diffing_with_keys.Define(Defs)
 
-and compare_records ~loc env params1 params2 n
-    (labels1 : Types.label_declaration list)
-    (labels2 : Types.label_declaration list) =
-  match labels1, labels2 with
-  | [], []           -> None
-  | [], l::_ -> Some (Label_missing (Second, l.Types.ld_id))
-  | l::_, [] -> Some (Label_missing (First, l.Types.ld_id))
-  | ld1::rem1, ld2::rem2 ->
-      if Ident.name ld1.ld_id <> Ident.name ld2.ld_id
-      then Some (Label_names (n, ld1.ld_id, ld2.ld_id))
-      else begin
-        Builtin_attributes.check_deprecated_mutable_inclusion
-          ~def:ld1.ld_loc
-          ~use:ld2.ld_loc
-          loc
-          ld1.ld_attributes ld2.ld_attributes
-          (Ident.name ld1.ld_id);
-        match compare_labels env params1 params2 ld1 ld2 with
-        | Some r -> Some (Label_mismatch (ld1, ld2, r))
-        (* add arguments to the parameters, cf. PR#7378 *)
-        | None -> compare_records ~loc env
-                    (ld1.ld_type::params1) (ld2.ld_type::params2)
-                    (n+1)
-                    rem1 rem2
-      end
+  let update (d:Diff.change) (params1,params2 as st) =
+    match d with
+    | Insert _ | Change _ | Delete _ -> st
+    | Keep (x,y,_) ->
+        (* We need to add equality between existential type parameters
+           (in inline records) *)
+        x.data.ld_type::params1, y.data.ld_type::params2
 
-let compare_records_with_representation ~loc env params1 params2 n
-      labels1 labels2 rep1 rep2
-  =
-  match compare_records ~loc env params1 params2 n labels1 labels2 with
-  | Some err -> Some (Record_mismatch err)
-  | None ->
+  let test _loc env (params1,params2)
+      ({pos; data=lbl1}: Diff.left)
+      ({data=lbl2; _ }: Diff.right)
+    =
+    let name1, name2 = Ident.name lbl1.ld_id, Ident.name lbl2.ld_id in
+    if  name1 <> name2 then
+      let types_match =
+        match compare_labels env params1 params2 lbl1 lbl2 with
+        | Some _ -> false
+        | None -> true
+      in
+      Error
+        (Diffing_with_keys.Name {types_match; pos; got=name1; expected=name2})
+    else
+      match compare_labels env params1 params2 lbl1 lbl2 with
+      | Some reason ->
+          Error (
+            Diffing_with_keys.Type {pos; got=lbl1; expected=lbl2; reason}
+          )
+      | None -> Ok ()
+
+  let weight: Diff.change -> _ = function
+    | Insert _ -> 10
+    | Delete _ -> 10
+    | Keep _ -> 0
+    | Change (_,_,Diffing_with_keys.Name t ) ->
+        if t.types_match then 10 else 15
+    | Change _ -> 10
+
+
+
+  let key (x: Defs.left) = Ident.name x.ld_id
+  let diffing loc env params1 params2 cstrs_1 cstrs_2 =
+    let module Compute = Diff.Simple(struct
+        let key_left = key
+        let key_right = key
+        let update = update
+        let test = test loc env
+        let weight = weight
+      end)
+    in
+    Compute.diff (params1,params2) cstrs_1 cstrs_2
+
+  let compare ~loc env params1 params2 l r =
+    if equal ~loc env params1 params2 l r then
+      None
+    else
+      Some (diffing loc env params1 params2 l r)
+
+
+  let compare_with_representation ~loc env params1 params2 l r rep1 rep2 =
+    if not (equal ~loc env params1 params2 l r) then
+      let patch = diffing loc env params1 params2 l r in
+      Some (Record_mismatch (Label_mismatch patch))
+    else
      match rep1, rep2 with
      | Record_unboxed _, Record_unboxed _ -> None
      | Record_unboxed _, _ -> Some (Unboxed_representation First)
@@ -510,6 +549,136 @@ let compare_records_with_representation ~loc env params1 params2 n
      | (Record_regular|Record_inlined _|Record_extension _),
        (Record_regular|Record_inlined _|Record_extension _) ->
         assert false
+
+end
+
+
+module Variant_diffing = struct
+
+  let compare_constructor_arguments ~loc env params1 params2 arg1 arg2 =
+    match arg1, arg2 with
+    | Types.Cstr_tuple arg1, Types.Cstr_tuple arg2 ->
+        if List.length arg1 <> List.length arg2 then
+          Some (Arity : constructor_mismatch)
+        else begin
+        (* Ctype.equal must be called on all arguments at once, cf. PR#7378 *)
+        match Ctype.equal env true (params1 @ arg1) (params2 @ arg2) with
+        | exception Ctype.Equality err -> Some (Type err)
+        | () -> None
+      end
+    | Types.Cstr_record l1, Types.Cstr_record l2 ->
+        Option.map
+          (fun rec_err -> Inline_record rec_err)
+          (Record_diffing.compare env ~loc params1 params2 l1 l2)
+    | Types.Cstr_record _, _ -> Some (Kind First : constructor_mismatch)
+    | _, Types.Cstr_record _ -> Some (Kind Second : constructor_mismatch)
+
+  let compare_constructors ~loc env params1 params2 res1 res2 args1 args2 =
+    match res1, res2 with
+    | Some r1, Some r2 ->
+        begin match Ctype.equal env true [r1] [r2] with
+        | exception Ctype.Equality err -> Some (Type err)
+        | () -> compare_constructor_arguments ~loc env [r1] [r2] args1 args2
+        end
+    | Some _, None -> Some (Explicit_return_type First)
+    | None, Some _ -> Some (Explicit_return_type Second)
+    | None, None ->
+        compare_constructor_arguments ~loc env params1 params2 args1 args2
+
+  let equal ~loc env params1 params2
+      (cstrs1 : Types.constructor_declaration list)
+      (cstrs2 : Types.constructor_declaration list) =
+    List.length cstrs1 = List.length cstrs2 &&
+    List.for_all2 (fun (cd1:Types.constructor_declaration)
+                    (cd2:Types.constructor_declaration) ->
+        Ident.name cd1.cd_id = Ident.name cd2.cd_id
+        &&
+        begin
+          Builtin_attributes.check_alerts_inclusion
+            ~def:cd1.cd_loc
+            ~use:cd2.cd_loc
+            loc
+            cd1.cd_attributes cd2.cd_attributes
+            (Ident.name cd1.cd_id)
+          ;
+        match compare_constructors ~loc env params1 params2
+                cd1.cd_res cd2.cd_res cd1.cd_args cd2.cd_args with
+        | Some _ -> false
+        | None -> true
+      end) cstrs1 cstrs2
+
+  module Defs = struct
+    type left = Types.constructor_declaration
+    type right = left
+    type diff = constructor_mismatch
+    type state = type_expr list * type_expr list
+  end
+  module D = Diffing_with_keys.Define(Defs)
+
+  let update _ st = st
+
+  let weight: D.change -> _ = function
+    | Insert _ -> 10
+    | Delete _ -> 10
+    | Keep _ -> 0
+    | Change (_,_,Diffing_with_keys.Name t) ->
+        if t.types_match then 10 else 15
+    | Change _ -> 10
+
+
+  let test loc env (params1,params2)
+      ({pos; data=cd1}: D.left)
+      ({data=cd2; _}: D.right) =
+    let name1, name2 = Ident.name cd1.cd_id, Ident.name cd2.cd_id in
+    if  name1 <> name2 then
+      let types_match =
+        match compare_constructors ~loc env params1 params2
+                cd1.cd_res cd2.cd_res cd1.cd_args cd2.cd_args with
+        | Some _ -> false
+        | None -> true
+      in
+      Error
+        (Diffing_with_keys.Name {types_match; pos; got=name1; expected=name2})
+    else
+      match compare_constructors ~loc env params1 params2
+              cd1.cd_res cd2.cd_res cd1.cd_args cd2.cd_args with
+      | Some reason ->
+          Error (Diffing_with_keys.Type {pos; got=cd1; expected=cd2; reason})
+      | None -> Ok ()
+
+  let diffing loc env params1 params2 cstrs_1 cstrs_2 =
+    let key (x:Defs.left) = Ident.name x.cd_id in
+    let module Compute = D.Simple(struct
+        let key_left = key
+        let key_right = key
+        let test = test loc env
+        let update = update
+        let weight = weight
+      end)
+    in
+    Compute.diff (params1,params2) cstrs_1 cstrs_2
+
+  let compare ~loc env params1 params2 l r =
+    if equal ~loc env params1 params2 l r then
+      None
+    else
+      Some (diffing loc env params1 params2 l r)
+
+  let compare_with_representation ~loc env params1 params2
+      cstrs1 cstrs2 rep1 rep2
+    =
+    let err = compare ~loc env params1 params2 cstrs1 cstrs2 in
+    match err, rep1, rep2 with
+    | None, Variant_regular, Variant_regular
+    | None, Variant_unboxed, Variant_unboxed ->
+        None
+    | Some err, _, _ ->
+        Some (Variant_mismatch err)
+    | None, Variant_unboxed, Variant_regular ->
+        Some (Unboxed_representation First)
+    | None, Variant_regular, Variant_unboxed ->
+        Some (Unboxed_representation Second)
+end
 
 (* Inclusion between "private" annotations *)
 let privacy_mismatch env decl1 decl2 =
@@ -727,10 +896,13 @@ let type_declarations ?(equality = false) ~loc env ~mark name
           mark usage cstrs1;
           if equality then mark Env.Exported cstrs2
         end;
-        compare_variants_with_representation ~loc env
-          decl1.type_params decl2.type_params 1
-          cstrs1 cstrs2
-          rep1 rep2
+        Variant_diffing.compare_with_representation ~loc env
+          decl1.type_params
+          decl2.type_params
+          cstrs1
+          cstrs2
+          rep1
+          rep2
     | (Type_record(labels1,rep1), Type_record(labels2,rep2)) ->
         if mark then begin
           let mark usage lbls =
@@ -743,8 +915,8 @@ let type_declarations ?(equality = false) ~loc env ~mark name
           mark usage labels1;
           if equality then mark Env.Exported labels2
         end;
-        compare_records_with_representation ~loc env
-          decl1.type_params decl2.type_params 1
+        Record_diffing.compare_with_representation ~loc env
+          decl1.type_params decl2.type_params
           labels1 labels2
           rep1 rep2
     | (Type_open, Type_open) -> None
@@ -807,7 +979,7 @@ let extension_constructors ~loc env ~mark id ext1 ext2 =
       Some (Constructor_mismatch (id, ext1, ext2, Type err))
   | () ->
     let r =
-      compare_constructors ~loc env
+      Variant_diffing.compare_constructors ~loc env
         ext1.ext_type_params ext2.ext_type_params
         ext1.ext_ret_type ext2.ext_ret_type
         ext1.ext_args ext2.ext_args

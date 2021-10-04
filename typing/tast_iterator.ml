@@ -143,7 +143,7 @@ let type_exception sub {tyexn_constructor; _} =
 
 let extension_constructor sub {ext_kind; _} =
   match ext_kind with
-  | Text_decl (ctl, cto) ->
+  | Text_decl (_, ctl, cto) ->
       constructor_args sub ctl;
       Option.iter (sub.typ sub) cto
   | Text_rebind _ -> ()

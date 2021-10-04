@@ -150,7 +150,7 @@ module Hashtbl : sig
      of OCaml.  For randomized hash tables, the order of enumeration
      is entirely random.
 
-     The behavior is not defined if the hash table is modified
+     The behavior is not specified if the hash table is modified
      by [f] during the iteration.
   *)
 
@@ -183,7 +183,7 @@ module Hashtbl : sig
      of OCaml.  For randomized hash tables, the order of enumeration
      is entirely random.
 
-     The behavior is not defined if the hash table is modified
+     The behavior is not specified if the hash table is modified
      by [f] during the iteration.
   *)
 
@@ -263,7 +263,7 @@ module Hashtbl : sig
       several bindings for the same key, they appear in reversed order of
       introduction, that is, the most recent binding appears first.
 
-      The behavior is not defined if the hash table is modified
+      The behavior is not specified if the hash table is modified
       during the iteration.
 
       @since 4.07 *)
