@@ -331,12 +331,14 @@ let pattern : type k . _ -> k T.general_pattern -> _ = fun sub pat ->
     | Tpat_tuple list ->
         Ppat_tuple (List.map (sub.pat sub) list)
     | Tpat_construct (lid, _, args, vto) ->
-        let vl, tyo =
+        let tyo =
           match vto with
-            None -> [], None
+            None -> None
           | Some (vl, ty) ->
-              List.map (fun x -> {x with txt = Ident.name x.txt}) vl,
-              Some (sub.typ sub ty)
+              let vl =
+                List.map (fun x -> {x with txt = Ident.name x.txt}) vl
+              in
+              Some (vl, sub.typ sub ty)
         in
         let arg =
           match args with
@@ -346,9 +348,10 @@ let pattern : type k . _ -> k T.general_pattern -> _ = fun sub pat ->
         in
         Ppat_construct (map_loc sub lid,
           match tyo, arg with
-          | Some ty, Some arg ->
+          | Some (vl, ty), Some arg ->
               Some (vl, Pat.mk ~loc (Ppat_constraint (arg, ty)))
-          | _ -> None)
+          | None, Some arg -> Some ([], arg)
+          | _, None -> None)
     | Tpat_variant (label, pato, _) ->
         Ppat_variant (label, Option.map (sub.pat sub) pato)
     | Tpat_record (list, closed) ->

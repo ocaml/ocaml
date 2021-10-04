@@ -101,6 +101,8 @@ otherlibs/win32unix/readlink.c    typo.long-line
 otherlibs/win32unix/stat.c        typo.long-line
 otherlibs/win32unix/symlink.c     typo.long-line
 
+runtime/sak.c            typo.non-ascii
+
 stdlib/hashbang     typo.white-at-eol typo.missing-lf
 
 testsuite/tests/**                                      typo.missing-header typo.long-line=may

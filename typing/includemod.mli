@@ -214,7 +214,7 @@ exception Apply_error of {
     args : (Error.functor_arg_descr * Types.module_type)  list ;
   }
 
-val expand_module_alias: Env.t -> Path.t -> Types.module_type
+val expand_module_alias: strengthen:bool -> Env.t -> Path.t -> Types.module_type
 
 module Functor_inclusion_diff: sig
   module Defs: sig

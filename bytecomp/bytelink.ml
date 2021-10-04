@@ -481,7 +481,8 @@ let link_bytecode_as_c tolink outfile with_main =
 \n#endif\
 \n#include <caml/mlvalues.h>\
 \n#include <caml/startup.h>\
-\n#include <caml/sys.h>\n";
+\n#include <caml/sys.h>\
+\n#include <caml/misc.h>\n";
        output_string outchan "static int caml_code[] = {\n";
        Symtable.init();
        clear_crc_interfaces ();
@@ -512,11 +513,7 @@ let link_bytecode_as_c tolink outfile with_main =
        (* The entry point *)
        if with_main then begin
          output_string outchan "\
-\n#ifdef _WIN32\
-\nint wmain(int argc, wchar_t **argv)\
-\n#else\
-\nint main(int argc, char **argv)\
-\n#endif\
+\nint main_os(int argc, char_os **argv)\
 \n{\
 \n  caml_byte_program_mode = COMPLETE_EXE;\
 \n  caml_startup_code(caml_code, sizeof(caml_code),\

@@ -323,8 +323,6 @@ test_texi:
 
 # stdlib non-prefixed :
 #######################
-SRC=$(ROOTDIR)
-
 
 .PHONY: autotest_stdlib
 autotest_stdlib:

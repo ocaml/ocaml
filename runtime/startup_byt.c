@@ -59,6 +59,8 @@
 #include "caml/sys.h"
 #include "caml/startup.h"
 
+#include "build_config.h"
+
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif

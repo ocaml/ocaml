@@ -25,10 +25,6 @@ the one from the source tree.
 
 1. Run `make` in the manual directory.
 
-NB: If you already set `LD_LIBRARY_PATH` (OS X: `DYLD_LIBRARY_PATH`)
- in your environment don't forget to append the absolute paths to
- `otherlibs/unix` and `otherlibs/str` to it.
-
 Outputs
 -------
 
