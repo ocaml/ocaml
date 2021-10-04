@@ -27,11 +27,3 @@
           (run awk -f %{dep:expand_module_aliases.awk} %{input-file}))
       stdlib)
      )))
-
-(rule
- (targets sys.ml)
- (deps (:version ../VERSION) (:p sys.mlp))
- (action
-   (with-stdout-to %{targets}
-     (bash
-       "sed -e \"s|%%VERSION%%|`sed -e 1q %{version} | tr -d '\r'`|\" %{p}"))))

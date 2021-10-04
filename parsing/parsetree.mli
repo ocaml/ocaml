@@ -381,7 +381,7 @@ and expression_desc =
   | Pexp_open of open_declaration * expression
         (* M.(E)
            let open M in E
-           let! open M in E *)
+           let open! M in E *)
   | Pexp_letop of letop
         (* let* P = E in E
            let* P = E and* P = E in E *)

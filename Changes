@@ -11,6 +11,10 @@ Working version
   *blit_* function during Mark phase
   (François Bobot, reported by Stephen Dolan, reviewed by Damien Doligez)
 
+- #10549: Stack overflow detection and naked pointers checking for ARM64
+  (Xavier Leroy, review by Stephen Dolan)
+
+
 ### Code generation and optimizations:
 
 ### Standard library:
@@ -33,6 +37,10 @@ Working version
   to emulate Unix.socketpair (only available on Windows 1803+)
   (Antonin Décimo, review by David Allsopp)
 
+- #10469: Add Thread.set_uncaught_exception_handler and
+  Thread.default_uncaught_exception_handler.
+  (Enguerrand Decorne, review by David Allsopp)
+
 ### Tools:
 
 - #3959, #7202, #10476: ocaml, in script mode, directive errors
@@ -41,6 +49,11 @@ Working version
 
 - #10524: Directive argument type error now shows expected and received type.
   (Wiktor Kuchta, review by Gabriel Scherer)
+
+- #10560: Disable colors if the env variable `NO_COLOR` is set.  If
+  `OCAML_COLOR` is set, its setting takes precedence over `NO_COLOR`.
+  (Nicolás Ojeda Bär, report by Gabriel Scherer, review by Daniel Bünzli,
+  Gabriel Scherer and David Allsopp)
 
 ### Manual and documentation:
 
@@ -61,6 +74,10 @@ Working version
 - #10407: Produce more detailed error messages that contain full error traces
   when module inclusion fails.
   (Antal Spector-Zabusky, review by Florian Angeletti)
+
+- #10531: add naked_pointers to ocamlc -config exporting NAKED_POINTERS from
+  Makefile.config.
+  (Damien Doligez, review by Mark Shinwell and Gabriel Scherer)
 
 ### Internal/compiler-libs changes:
 
@@ -185,6 +202,10 @@ OCaml 4.13.0
 - #10107: Ensure modules compiled with -afl-instrument can still link on
   platforms without AFL support.
   (David Allsopp, review by Xavier Leroy)
+
+- #10195: Speed up GC by prefetching during marking
+  (Stephen Dolan, review by Xavier Leroy, Guillaume Munch-Maccagnoni,
+   Jacques-Henri Jourdan and Damien Doligez)
 
 * #10098: Improve command-line parsing in ocamlrun: strictly recognise options,
   be more informative for `ocamlrun -I` and support `--` for terminating options
@@ -415,6 +436,9 @@ OCaml 4.13.0
 
 - #9632: Document incremental build solutions with opam
   (Vincent Laviron, review by Daniel Bünzli and Gabriel Scherer)
+
+- #10497: Styling changes in the post-processed HTML manual (webman)
+  (Wiktor Kuchta, review by Florian Angeletti)
 
 ### Compiler user-interface and warnings:
 
@@ -699,9 +723,17 @@ OCaml 4.13.0
 - #10376: Link runtime libraries correctly on msvc64 in -output-complete-obj
   (David Allsopp, review by Gabriel Scherer)
 
+- #10380: Correct handling of UTF-8 paths in configure on Windows
+  (David Allsopp, review by Sébastien Hinderer)
+
 - #10449: Fix major GC work accounting (the GC was running too fast).
   (Damien Doligez, report by Stephen Dolan, review by Nicolás Ojeda Bär
    and Sadiq Jaffer)
+
+- #10450, #10558: keep %apply and %revapply primitives working with abstract
+  types. This breach of backward compatibility was only present in the alpha
+  releases of OCaml 4.13.0 .
+  (Florian Angeletti, review by Thomas Refis and Leo White)
 
 - #10454: Check row_more in nondep_type_rec.
   (Leo White, review by Thomas Refis)
@@ -717,6 +749,13 @@ OCaml 4.12, maintenance version
 -------------------------------
 
 ### Bug fixes:
+
+- #10442, #10446: Fix regression in the toplevel to #directory caused by
+  corrections and improvements to the Load_path in #9611. #directory now
+  adds the path to the start of the load path again (so files in the newly
+  added directory take priority).
+  (David Allsopp, report by Vasile Rotaru, review by Florian Angeletti
+   and Nicolás Ojeda Bär)
 
 - #10478: Fix segfault under Windows due to a mistaken initialization of thread
   ID when a thread starts.
