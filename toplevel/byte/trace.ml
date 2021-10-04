@@ -66,7 +66,7 @@ let print_label ppf l =
 (* If a function returns a functional value, wrap it into a trace code *)
 
 let rec instrument_result env name ppf clos_typ =
-  match (Ctype.repr(Ctype.expand_head env clos_typ)).desc with
+  match get_desc (Ctype.expand_head env clos_typ) with
   | Tarrow(l, t1, t2, _) ->
       let starred_name =
         match name with
@@ -109,7 +109,7 @@ exception Dummy
 let _ = Dummy
 
 let instrument_closure env name ppf clos_typ =
-  match (Ctype.repr(Ctype.expand_head env clos_typ)).desc with
+  match get_desc (Ctype.expand_head env clos_typ) with
   | Tarrow(l, t1, t2, _) ->
       let trace_res = instrument_result env name ppf t2 in
       (fun actual_code closure arg ->

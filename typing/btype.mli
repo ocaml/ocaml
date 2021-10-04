@@ -20,20 +20,48 @@ open Types
 
 (**** Sets, maps and hashtables of types ****)
 
-module TypeSet  : Set.S with type elt = type_expr
-module TypeMap  : Map.S with type key = type_expr
-module TypeHash : Hashtbl.S with type key = type_expr
+module TypeSet : sig
+  include Set.S with type elt = transient_expr
+  val add: type_expr -> t -> t
+  val mem: type_expr -> t -> bool
+  val singleton: type_expr -> t
+  val exists: (type_expr -> bool) -> t -> bool
+  val elements: t -> type_expr list
+end
+module TransientTypeMap : Map.S with type key = transient_expr
+module TypeMap : sig
+  include Map.S with type key = transient_expr
+                     and type 'a t = 'a TransientTypeMap.t
+  val add: type_expr -> 'a -> 'a t -> 'a t
+  val find: type_expr -> 'a t -> 'a
+  val singleton: type_expr -> 'a -> 'a t
+  val fold: (type_expr -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+end
+module TypeHash : sig
+  include Hashtbl.S with type key = transient_expr
+  val add: 'a t -> type_expr -> 'a -> unit
+  val find: 'a t -> type_expr -> 'a
+  val iter: (type_expr -> 'a -> unit) -> 'a t -> unit
+end
+module TypePairs : sig
+  include Hashtbl.S with type key = transient_expr * transient_expr
+  val add: 'a t -> type_expr * type_expr -> 'a -> unit
+  val find: 'a t -> type_expr * type_expr -> 'a
+  val mem: 'a t -> type_expr * type_expr -> bool
+  val iter: (type_expr * type_expr -> 'a -> unit) -> 'a t -> unit
+end
 
 (**** Levels ****)
 
 val generic_level: int
 
-val newty2: int -> type_desc -> type_expr
-        (* Create a type *)
 val newgenty: type_desc -> type_expr
         (* Create a generic type *)
 val newgenvar: ?name:string -> unit -> type_expr
         (* Return a fresh generic variable *)
+val newgenstub: scope:int -> type_expr
+        (* Return a fresh generic node, to be instantiated
+           by [Transient_expr.set_stub_desc] *)
 
 (* Use Tsubst instead
 val newmarkedvar: int -> type_expr
@@ -48,13 +76,6 @@ val is_Tvar: type_expr -> bool
 val is_Tunivar: type_expr -> bool
 val is_Tconstr: type_expr -> bool
 val dummy_method: label
-
-val repr: type_expr -> type_expr
-        (* Return the canonical representative of a type. *)
-
-val field_kind_repr: field_kind -> field_kind
-        (* Return the canonical representative of an object field
-           kind. *)
 
 val commu_repr: commutable -> commutable
         (* Return the canonical representative of a commutation lock *)
@@ -113,6 +134,13 @@ val iter_row: (type_expr -> unit) -> row_desc -> unit
 val fold_row: ('a -> type_expr -> 'a) -> 'a -> row_desc -> 'a
 val iter_abbrev: (type_expr -> unit) -> abbrev_memo -> unit
         (* Iteration on types in an abbreviation list *)
+val iter_type_expr_kind: (type_expr -> unit) -> (type_decl_kind -> unit)
+
+val iter_type_expr_cstr_args: (type_expr -> unit) ->
+  (constructor_arguments -> unit)
+val map_type_expr_cstr_args: (type_expr -> type_expr) ->
+  (constructor_arguments -> constructor_arguments)
+
 
 type type_iterators =
   { it_signature: type_iterators -> signature -> unit;
@@ -154,8 +182,8 @@ module For_copy : sig
            While it is possible to circumvent that discipline in various
            ways, you should NOT do that. *)
 
-  val save_desc: copy_scope -> type_expr -> type_desc -> unit
-        (* Save a type description *)
+  val redirect_desc: copy_scope -> type_expr -> type_desc -> unit
+        (* Temporarily change a type description *)
 
   val dup_kind: copy_scope -> field_kind option ref -> unit
         (* Save a None field_kind, and make it point to a fresh Fvar *)
@@ -217,6 +245,14 @@ val forget_abbrev:
         abbrev_memo ref -> Path.t -> unit
         (* Remove an abbreviation from the cache *)
 
+(**** Backtracking ****)
+
+val snapshot: unit -> snapshot
+val backtrack: snapshot -> unit
+        (* Backtrack to a given snapshot. Only possible if you have
+           not already backtracked to a previous snapshot.
+           Calls [cleanup_abbrev] internally *)
+
 (**** Utilities for labels ****)
 
 val is_optional : arg_label -> bool
@@ -233,44 +269,5 @@ val extract_label :
    whether (label, value) was at the head of the list,
    list without the extracted (label, value) *)
 
-(**** Utilities for backtracking ****)
-
-type snapshot
-        (* A snapshot for backtracking *)
-val snapshot: unit -> snapshot
-        (* Make a snapshot for later backtracking. Costs nothing *)
-val backtrack: snapshot -> unit
-        (* Backtrack to a given snapshot. Only possible if you have
-           not already backtracked to a previous snapshot.
-           Calls [cleanup_abbrev] internally *)
-val undo_compress: snapshot -> unit
-        (* Backtrack only path compression. Only meaningful if you have
-           not already backtracked to a previous snapshot.
-           Does not call [cleanup_abbrev] *)
-
-(* Functions to use when modifying a type (only Ctype?) *)
-val link_type: type_expr -> type_expr -> unit
-        (* Set the desc field of [t1] to [Tlink t2], logging the old
-           value if there is an active snapshot *)
-val set_type_desc: type_expr -> type_desc -> unit
-        (* Set directly the desc field, without sharing *)
-val set_level: type_expr -> int -> unit
-val set_scope: type_expr -> int -> unit
-val set_name:
-    (Path.t * type_expr list) option ref ->
-    (Path.t * type_expr list) option -> unit
-val set_row_field: row_field option ref -> row_field -> unit
-val set_univar: type_expr option ref -> type_expr -> unit
-val set_kind: field_kind option ref -> field_kind -> unit
-val set_commu: commutable ref -> commutable -> unit
-        (* Set references, logging the old value *)
-
 (**** Forward declarations ****)
 val print_raw: (Format.formatter -> type_expr -> unit) ref
-
-val iter_type_expr_kind: (type_expr -> unit) -> (type_decl_kind -> unit)
-
-val iter_type_expr_cstr_args: (type_expr -> unit) ->
-  (constructor_arguments -> unit)
-val map_type_expr_cstr_args: (type_expr -> type_expr) ->
-  (constructor_arguments -> constructor_arguments)

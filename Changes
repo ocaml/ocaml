@@ -10,6 +10,10 @@ Working version
 
 ### Other libraries:
 
+- #10192: Add support for Unix domain sockets on Windows and use them
+  to emulate Unix.socketpair (only available on Windows 1803+)
+  (Antonin Décimo, review by David Allsopp)
+
 ### Tools:
 
 ### Manual and documentation:
@@ -31,6 +35,10 @@ Working version
 
 - #10434: Pun labelled arguments with type constraint in function applications.
   (Greta Yorsh, review by Nicolas Chataing and Nicolás Ojeda Bär)
+
+- #10470: Remove unused `cstr_normal` field from the `constructor_description`
+  type
+  (Nicolas Chataing, review by Gabriel Scherer)
 
 ### Build system:
 
@@ -302,6 +310,11 @@ OCaml 4.13.0
   documentation comments
   (Florian Angeletti, report by Hendrik Tews, review by Gabriel Scherer)
 
+- #10206: Split labels and polymorphic variants tutorials
+  Splits the labels and polymorphic variants tutorial into two. Moves the GADTs
+  tutorial from the Language Extensions chapter to the tutorials.
+  (John Whitington, review by Florian Angeletti and Xavier Leroy)
+
 - #10247: Add initial tranche of examples to reference manual.
   Adds some eighty examples to the reference manual, principally to the
   expressions and patterns sections.
@@ -437,6 +450,13 @@ OCaml 4.13.0
 
 - #10327: Add a subdirectories variable and a copy action to ocamltest
   (Sébastien Hinderer, review by David Allsopp)
+
+* #10337: Normalize type_expr nodes on access
+  One should now use accessors such as get_desc and get_level to access fields
+  of type_expr, rather than calling manually Btype.repr (which is now hidden
+  in Types.Transient_expr).
+  (Jacques Garrigue and Takafumi Saikawa,
+   review by Florian Angeletti and Gabriel Radanne)
 
 - #10358: Use a hash table for the load path.
   (Leo White, review by Gabriel Scherer)
