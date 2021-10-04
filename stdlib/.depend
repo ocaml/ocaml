@@ -389,6 +389,14 @@ stdlib__Hashtbl.cmx : hashtbl.ml \
     stdlib__Hashtbl.cmi
 stdlib__Hashtbl.cmi : hashtbl.mli \
     stdlib__Seq.cmi
+stdlib__In_channel.cmo : in_channel.ml \
+    stdlib.cmi \
+    stdlib__In_channel.cmi
+stdlib__In_channel.cmx : in_channel.ml \
+    stdlib.cmx \
+    stdlib__In_channel.cmi
+stdlib__In_channel.cmi : in_channel.mli \
+    stdlib.cmi
 stdlib__Int.cmo : int.ml \
     stdlib.cmi \
     stdlib__Int.cmi
@@ -506,13 +514,11 @@ stdlib__Nativeint.cmi : nativeint.mli
 stdlib__Obj.cmo : obj.ml \
     stdlib__Sys.cmi \
     stdlib__Nativeint.cmi \
-    stdlib__Marshal.cmi \
     stdlib__Int32.cmi \
     stdlib__Obj.cmi
 stdlib__Obj.cmx : obj.ml \
     stdlib__Sys.cmx \
     stdlib__Nativeint.cmx \
-    stdlib__Marshal.cmx \
     stdlib__Int32.cmx \
     stdlib__Obj.cmi
 stdlib__Obj.cmi : obj.mli \
@@ -533,6 +539,14 @@ stdlib__Option.cmx : option.ml \
     stdlib__Option.cmi
 stdlib__Option.cmi : option.mli \
     stdlib__Seq.cmi
+stdlib__Out_channel.cmo : out_channel.ml \
+    stdlib.cmi \
+    stdlib__Out_channel.cmi
+stdlib__Out_channel.cmx : out_channel.ml \
+    stdlib.cmx \
+    stdlib__Out_channel.cmi
+stdlib__Out_channel.cmi : out_channel.mli \
+    stdlib.cmi
 stdlib__Parsing.cmo : parsing.ml \
     stdlib__Obj.cmi \
     stdlib__Lexing.cmi \

@@ -20,21 +20,22 @@
 #include <stdio.h>
 
 #include "caml/alloc.h"
-#include "caml/domain_state.h"
-#include "caml/platform.h"
-#include "caml/custom.h"
-#include "caml/memory.h"
-#include "caml/io.h"
-#include "caml/fail.h"
-#include "caml/startup.h"
-#include "caml/fiber.h"
-#include "caml/callback.h"
-#include "caml/weak.h"
-#include "caml/finalise.h"
-#include "caml/domain.h"
-#include "caml/printexc.h"
 #include "caml/backtrace.h"
+#include "caml/callback.h"
+#include "caml/custom.h"
+#include "caml/debugger.h"
+#include "caml/domain.h"
+#include "caml/domain_state.h"
+#include "caml/fail.h"
+#include "caml/fiber.h"
+#include "caml/finalise.h"
+#include "caml/io.h"
+#include "caml/platform.h"
+#include "caml/printexc.h"
+#include "caml/memory.h"
 #include "caml/signals.h"
+#include "caml/startup.h"
+#include "caml/weak.h"
 
 #include "caml/sync.h"
 #include "st_posix.h"
@@ -528,6 +529,11 @@ CAMLprim value caml_thread_new(value clos)          /* ML */
   caml_thread_t th;
   st_retcode err;
 
+#ifndef NATIVE_CODE
+  if (caml_debugger_in_use)
+    caml_fatal_error("ocamldebug does not support multithreaded programs");
+#endif
+  /* Create a thread info block */
   th = caml_thread_new_info();
   th->descr = caml_thread_new_descriptor(clos);
 
