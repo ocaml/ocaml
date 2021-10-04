@@ -1119,14 +1119,6 @@ let rec copy ?partial ?keep_names scope ty =
               (* Return a new copy *)
               Tvariant (copy_row copy true row keep more')
           end
-      | Tfield (_p, k, _ty1, ty2) ->
-          begin match field_kind_repr k with
-            Fabsent  -> Tlink (copy ty2)
-          | Fpresent -> copy_type_desc copy desc
-          | Fvar r ->
-              For_copy.dup_kind scope r;
-              copy_type_desc copy desc
-          end
       | Tobject (ty1, _) when partial <> None ->
           Tobject (copy ty1, ref None)
       | _ -> copy_type_desc ?keep_names copy desc

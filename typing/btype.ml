@@ -494,19 +494,11 @@ module For_copy : sig
 
   val redirect_desc: copy_scope -> type_expr -> type_desc -> unit
 
-  val dup_kind: copy_scope -> field_kind option ref -> unit
-
   val with_scope: (copy_scope -> 'a) -> 'a
 end = struct
   type copy_scope = {
     mutable saved_desc : (transient_expr * type_desc) list;
     (* Save association of generic nodes with their description. *)
-
-    mutable saved_kinds: field_kind option ref list;
-    (* duplicated kind variables *)
-
-    mutable new_kinds  : field_kind option ref list;
-    (* new kind variables *)
   }
 
   let redirect_desc copy_scope ty desc =
@@ -514,22 +506,12 @@ end = struct
     copy_scope.saved_desc <- (ty, ty.desc) :: copy_scope.saved_desc;
     Transient_expr.set_desc ty desc
 
-  let dup_kind copy_scope r =
-    assert (Option.is_none !r);
-    if not (List.memq r copy_scope.new_kinds) then begin
-      copy_scope.saved_kinds <- r :: copy_scope.saved_kinds;
-      let r' = ref None in
-      copy_scope.new_kinds <- r' :: copy_scope.new_kinds;
-      r := Some (Fvar r')
-    end
-
   (* Restore type descriptions. *)
-  let cleanup { saved_desc; saved_kinds; _ } =
-    List.iter (fun (ty, desc) -> Transient_expr.set_desc ty desc) saved_desc;
-    List.iter (fun r -> r := None) saved_kinds
+  let cleanup { saved_desc; _ } =
+    List.iter (fun (ty, desc) -> Transient_expr.set_desc ty desc) saved_desc
 
   let with_scope f =
-    let scope = { saved_desc = []; saved_kinds = []; new_kinds = [] } in
+    let scope = { saved_desc = [] } in
     let res = f scope in
     cleanup scope;
     res

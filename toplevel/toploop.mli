@@ -95,6 +95,7 @@ val use_input : formatter -> input -> bool
 val use_output : formatter -> string -> bool
 val use_silently : formatter -> input -> bool
 val mod_use_input : formatter -> input -> bool
+val use_file : formatter -> string -> bool
         (* Read and execute commands from a file.
            [use_input] prints the types and values of the results.
            [use_silently] does not print them.
