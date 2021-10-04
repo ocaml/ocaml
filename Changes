@@ -19,11 +19,18 @@ Working version
 - #10328: Give more precise error when disambiguation could not possibly work.
   (Leo White, review by Gabriel Scherer and Florian Angeletti)
 
+- #10407: Produce more detailed error messages that contain full error traces
+  when module inclusion fails.
+  (Antal Spector-Zabusky, review by Florian Angeletti)
+
 ### Internal/compiler-libs changes:
 
 - #10433: Remove the distinction between 32-bit aligned and 64-bit aligned
   64-bit floats in Cmm.memory_chunk.
   (Greta Yorsh, review by Xavier Leroy)
+
+- #10434: Pun labelled arguments with type constraint in function applications.
+  (Greta Yorsh, review by Nicolas Chataing and Nicolás Ojeda Bär)
 
 ### Build system:
 
@@ -598,6 +605,10 @@ OCaml 4.13.0
 
 - #10454: Check row_more in nondep_type_rec.
   (Leo White, review by Thomas Refis)
+
+- #10468: Correctly pretty print local type substitution, e.g. type t := ...,
+  with -dsource
+  (Matt Else, review by Florian Angeletti)
 
 OCaml 4.12.0 (24 February 2021)
 -------------------------------

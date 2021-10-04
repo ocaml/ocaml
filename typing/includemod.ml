@@ -60,7 +60,7 @@ module Error = struct
   let sdiff x y = {got=x; expected=y; symptom=()}
 
   type core_sigitem_symptom =
-    | Value_descriptions of value_description core_diff
+    | Value_descriptions of (value_description, Includecore.value_mismatch) diff
     | Type_declarations of (type_declaration, Includecore.type_mismatch) diff
     | Extension_constructors of
         (extension_constructor, Includecore.extension_constructor_mismatch) diff
@@ -159,8 +159,8 @@ let value_descriptions ~loc env ~mark subst id vd1 vd2 =
   let vd2 = Subst.value_description subst vd2 in
   try
     Ok (Includecore.value_descriptions ~loc env (Ident.name id) vd1 vd2)
-  with Includecore.Dont_match _err ->
-    Error Error.(Core (Value_descriptions (sdiff vd1 vd2)))
+  with Includecore.Dont_match err ->
+    Error Error.(Core (Value_descriptions (diff vd1 vd2 err)))
 
 (* Inclusion between type declarations *)
 

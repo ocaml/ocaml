@@ -48,6 +48,7 @@ Error: Modules do not match:
        val equal : 'a -> 'a -> bool
      is not included in
        val equal : unit
+     The type 'a -> 'a -> bool is not compatible with the type unit
 |} ]
 
 

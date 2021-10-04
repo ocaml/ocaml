@@ -149,9 +149,9 @@ Error: In this `with' constraint, the new definition of t
          type t = X of int | Y of float
        Constructors do not match:
          X of x
-       is not compatible with:
+       is not the same as:
          X of int
-       The types are not equal.
+       The type x is not equal to the type int
 |}]
 
 (** First class module types require an identity *)

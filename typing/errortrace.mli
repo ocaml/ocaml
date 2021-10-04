@@ -22,8 +22,16 @@ type position = First | Second
 val swap_position : position -> position
 val print_pos : Format.formatter -> position -> unit
 
-type desc = { t: type_expr; expanded: type_expr option }
-type 'a diff = { got: 'a; expected: 'a}
+type expanded_type = { ty: type_expr; expanded: type_expr }
+
+(** [trivial_expansion ty] creates an [expanded_type] whose expansion is also
+    [ty].  Usually, you want [Ctype.expand_type] instead, since the expansion
+    carries useful information; however, in certain circumstances, the error is
+    about the expansion of the type, meaning that actually performing the
+    expansion produces more confusing or inaccurate output. *)
+val trivial_expansion : type_expr -> expanded_type
+
+type 'a diff = { got: 'a; expected: 'a }
 
 (** [map_diff f {expected;got}] is [{expected=f expected; got=f got}] *)
 val map_diff: ('a -> 'b) -> 'a diff -> 'b diff
@@ -43,13 +51,13 @@ type 'a escape =
   { kind : 'a escape_kind;
     context : type_expr option }
 
-val short : type_expr -> desc
+val map_escape : ('a -> 'b) -> 'a escape -> 'b escape
 
 val explain: 'a list ->
   (prev:'a option -> 'a -> 'b option) ->
   'b option
 
-(* Type indices *)
+(** Type indices *)
 type unification = private Unification
 type comparison  = private Comparison
 
@@ -66,6 +74,7 @@ type 'variety variant =
   | Fixed_row :
       position * fixed_row_case * fixed_explanation -> unification variant
   (* Equality & Moregen *)
+  | Presence_not_guaranteed_for : position * string -> comparison variant
   | Openness : position (* Always [Second] for Moregen *) -> comparison variant
 
 type 'variety obj =
@@ -85,32 +94,75 @@ type ('a, 'variety) elt =
   (* Unification & Moregen; included in Equality for simplicity *)
   | Rec_occur : type_expr * type_expr -> ('a, _) elt
 
-type 'variety t =
-  (desc, 'variety) elt list
+type ('a, 'variety) t = ('a, 'variety) elt list
 
-val diff : type_expr -> type_expr -> (desc, _) elt
+type 'variety trace = (type_expr,     'variety) t
+type 'variety error = (expanded_type, 'variety) t
 
-(** [flatten f trace] flattens all elements of type {!desc} in
-    [trace] to either [f x.t expanded] if [x.expanded=Some expanded]
-    or [f x.t x.t] otherwise *)
-val flatten :
-  (type_expr -> type_expr -> 'a) -> 'variety t -> ('a, 'variety) elt list
+val map : ('a -> 'b) -> ('a, 'variety) t -> ('b, 'variety) t
 
-val map : ('a -> 'b) -> ('a, 'variety) elt list -> ('b, 'variety) elt list
+val incompatible_fields :
+  name:string -> got:type_expr -> expected:type_expr -> (type_expr, _) elt
 
-val incompatible_fields : string -> type_expr -> type_expr -> (desc, _) elt
+val swap_trace : ('a, 'variety) t -> ('a, 'variety) t
 
-val swap_trace : 'variety t -> 'variety t
+(** The traces (['variety t]) are the core error types.  However, we bundle them
+    up into three "top-level" error types, which are used elsewhere:
+    [unification_error], [equality_error], and [moregen_error].  In the case of
+    [equality_error], this has to bundle in extra information; in general, it
+    distinguishes the three types of errors and allows us to distinguish traces
+    that are being built (or processed) from those that are complete and have
+    become the final error.  These error types have the invariants that their
+    traces are nonempty; we ensure that through three smart constructors with
+    matching names. *)
+
+type unification_error = private { trace : unification error } [@@unboxed]
+
+type equality_error = private
+  { trace : comparison error;
+    subst : (type_expr * type_expr) list }
+
+type moregen_error = private { trace : comparison error } [@@unboxed]
+
+val unification_error : trace:unification error -> unification_error
+
+val equality_error :
+  trace:comparison error -> subst:(type_expr * type_expr) list -> equality_error
+
+val moregen_error : trace:comparison error -> moregen_error
+
+(** Wraps up the two different kinds of [comparison] errors in one type *)
+type comparison_error =
+  | Equality_error of equality_error
+  | Moregen_error  of moregen_error
+
+(** Lift [swap_trace] to [unification_error] *)
+val swap_unification_error : unification_error -> unification_error
 
 module Subtype : sig
   type 'a elt =
     | Diff of 'a diff
 
-  type t = desc elt list
+  type 'a t = 'a elt list
 
-  val diff: type_expr -> type_expr -> desc elt
+  (** Just as outside [Subtype], we split traces, completed traces, and complete
+      errors.  However, in a minor asymmetry, the name [Subtype.error_trace]
+      corresponds to the outside [error] type, and [Subtype.error] corresponds
+      to the outside [*_error] types (e.g., [unification_error]).  This [error]
+      type has the invariant that the subtype trace is nonempty; note that no
+      such invariant is imposed on the unification trace. *)
 
-  val flatten : (type_expr -> type_expr -> 'a) -> t -> 'a elt list
+  type trace       = type_expr t
+  type error_trace = expanded_type t
 
-  val map : (desc -> desc) -> desc elt list -> desc elt list
+  type unification_error_trace = unification error (** To avoid shadowing *)
+
+  type nonrec error = private
+    { trace             : error_trace
+    ; unification_trace : unification error }
+
+  val error :
+    trace:error_trace -> unification_trace:unification_error_trace -> error
+
+  val map : ('a -> 'b) -> 'a t -> 'b t
 end

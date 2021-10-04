@@ -119,9 +119,33 @@ Error: Signature mismatch:
          external f : int -> (int [@untagged]) = "f" "f_nat"
        is not included in
          external f : int -> int = "f" "f_nat"
+       The two primitives' results have different representations
 |}]
 
 module Bad2 : sig
+  external f : int -> int = "f" "f_nat"
+end = struct
+  external f : (int [@untagged]) -> int = "f" "f_nat"
+end;;
+
+[%%expect{|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   external f : (int [@untagged]) -> int = "f" "f_nat"
+5 | end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig external f : (int [@untagged]) -> int = "f" "f_nat" end
+       is not included in
+         sig external f : int -> int = "f" "f_nat" end
+       Values do not match:
+         external f : (int [@untagged]) -> int = "f" "f_nat"
+       is not included in
+         external f : int -> int = "f" "f_nat"
+       The two primitives' 1st arguments have different representations
+|}]
+
+module Bad3 : sig
   external f : int -> int = "a" "a_nat"
 end = struct
   external f : (int [@untagged]) -> int = "f" "f_nat"
@@ -141,9 +165,10 @@ Error: Signature mismatch:
          external f : (int [@untagged]) -> int = "f" "f_nat"
        is not included in
          external f : int -> int = "a" "a_nat"
+       The names of the primitives are not the same
 |}]
 
-module Bad3 : sig
+module Bad4 : sig
   external f : float -> float = "f" "f_nat"
 end = struct
   external f : float -> (float [@unboxed]) = "f" "f_nat"
@@ -163,9 +188,33 @@ Error: Signature mismatch:
          external f : float -> (float [@unboxed]) = "f" "f_nat"
        is not included in
          external f : float -> float = "f" "f_nat"
+       The two primitives' results have different representations
 |}]
 
-module Bad4 : sig
+module Bad5 : sig
+  external f : float -> float = "f" "f_nat"
+end = struct
+  external f : (float [@unboxed]) -> float = "f" "f_nat"
+end;;
+
+[%%expect{|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   external f : (float [@unboxed]) -> float = "f" "f_nat"
+5 | end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig external f : (float [@unboxed]) -> float = "f" "f_nat" end
+       is not included in
+         sig external f : float -> float = "f" "f_nat" end
+       Values do not match:
+         external f : (float [@unboxed]) -> float = "f" "f_nat"
+       is not included in
+         external f : float -> float = "f" "f_nat"
+       The two primitives' 1st arguments have different representations
+|}]
+
+module Bad6 : sig
   external f : float -> float = "a" "a_nat"
 end = struct
   external f : (float [@unboxed]) -> float = "f" "f_nat"
@@ -185,11 +234,35 @@ Error: Signature mismatch:
          external f : (float [@unboxed]) -> float = "f" "f_nat"
        is not included in
          external f : float -> float = "a" "a_nat"
+       The names of the primitives are not the same
+|}]
+
+module Bad7 : sig
+  external f : int -> int = "f" "f_nat"
+end = struct
+  external f : int -> int = "f" "f_nat" [@@noalloc]
+end;;
+
+[%%expect{|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   external f : int -> int = "f" "f_nat" [@@noalloc]
+5 | end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig external f : int -> int = "f" "f_nat" [@@noalloc] end
+       is not included in
+         sig external f : int -> int = "f" "f_nat" end
+       Values do not match:
+         external f : int -> int = "f" "f_nat" [@@noalloc]
+       is not included in
+         external f : int -> int = "f" "f_nat"
+       The first primitive is [@@noalloc] but the second is not
 |}]
 
 (* Bad: attributes in the interface but not in the implementation *)
 
-module Bad5 : sig
+module Bad8 : sig
   external f : int -> (int [@untagged]) = "f" "f_nat"
 end = struct
   external f : int -> int = "f" "f_nat"
@@ -209,9 +282,33 @@ Error: Signature mismatch:
          external f : int -> int = "f" "f_nat"
        is not included in
          external f : int -> (int [@untagged]) = "f" "f_nat"
+       The two primitives' results have different representations
 |}]
 
-module Bad6 : sig
+module Bad9 : sig
+  external f : (int [@untagged]) -> int = "f" "f_nat"
+end = struct
+  external f : int -> int = "f" "f_nat"
+end;;
+
+[%%expect{|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   external f : int -> int = "f" "f_nat"
+5 | end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig external f : int -> int = "f" "f_nat" end
+       is not included in
+         sig external f : (int [@untagged]) -> int = "f" "f_nat" end
+       Values do not match:
+         external f : int -> int = "f" "f_nat"
+       is not included in
+         external f : (int [@untagged]) -> int = "f" "f_nat"
+       The two primitives' 1st arguments have different representations
+|}]
+
+module Bad10 : sig
   external f : (int [@untagged]) -> int = "f" "f_nat"
 end = struct
   external f : int -> int = "a" "a_nat"
@@ -231,9 +328,10 @@ Error: Signature mismatch:
          external f : int -> int = "a" "a_nat"
        is not included in
          external f : (int [@untagged]) -> int = "f" "f_nat"
+       The names of the primitives are not the same
 |}]
 
-module Bad7 : sig
+module Bad11 : sig
   external f : float -> (float [@unboxed]) = "f" "f_nat"
 end = struct
   external f : float -> float = "f" "f_nat"
@@ -253,9 +351,33 @@ Error: Signature mismatch:
          external f : float -> float = "f" "f_nat"
        is not included in
          external f : float -> (float [@unboxed]) = "f" "f_nat"
+       The two primitives' results have different representations
 |}]
 
-module Bad8 : sig
+module Bad12 : sig
+  external f : (float [@unboxed]) -> float = "f" "f_nat"
+end = struct
+  external f : float -> float = "f" "f_nat"
+end;;
+
+[%%expect{|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   external f : float -> float = "f" "f_nat"
+5 | end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig external f : float -> float = "f" "f_nat" end
+       is not included in
+         sig external f : (float [@unboxed]) -> float = "f" "f_nat" end
+       Values do not match:
+         external f : float -> float = "f" "f_nat"
+       is not included in
+         external f : (float [@unboxed]) -> float = "f" "f_nat"
+       The two primitives' 1st arguments have different representations
+|}]
+
+module Bad13 : sig
   external f : (float [@unboxed]) -> float = "f" "f_nat"
 end = struct
   external f : float -> float = "a" "a_nat"
@@ -275,6 +397,227 @@ Error: Signature mismatch:
          external f : float -> float = "a" "a_nat"
        is not included in
          external f : (float [@unboxed]) -> float = "f" "f_nat"
+       The names of the primitives are not the same
+|}]
+
+module Bad14 : sig
+  external f : int -> int = "f" "f_nat" [@@noalloc]
+end = struct
+  external f : int -> int = "f" "f_nat"
+end;;
+
+[%%expect{|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   external f : int -> int = "f" "f_nat"
+5 | end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig external f : int -> int = "f" "f_nat" end
+       is not included in
+         sig external f : int -> int = "f" "f_nat" [@@noalloc] end
+       Values do not match:
+         external f : int -> int = "f" "f_nat"
+       is not included in
+         external f : int -> int = "f" "f_nat" [@@noalloc]
+       The second primitive is [@@noalloc] but the first is not
+|}]
+
+(* Bad: claiming something is a primitive when it isn't *)
+
+module Bad15 : sig
+  external f : int -> int = "f" "f_nat"
+end = struct
+  let f x = x + 1
+end
+
+[%%expect{|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   let f x = x + 1
+5 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig val f : int -> int end
+       is not included in
+         sig external f : int -> int = "f" "f_nat" end
+       Values do not match:
+         val f : int -> int
+       is not included in
+         external f : int -> int = "f" "f_nat"
+       The implementation is not a primitive.
+|}]
+
+(* Good: not claiming something is a primitive when it is *)
+
+module Good16 : sig
+  val f : int -> int
+end = struct
+  external f : int -> int = "f" "f_nat"
+end
+(* The expected error here is that "f" isn't defined -- that means typechecking
+   succeeded *)
+
+[%%expect{|
+Line 1:
+Error: The external function `f' is not available
+|}]
+
+(* Bad: mismatched names and native names *)
+
+module Bad17 : sig
+  external f : int -> int = "f" "f_nat"
+end = struct
+  external f : int -> int = "gg" "f_nat"
+end
+
+[%%expect{|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   external f : int -> int = "gg" "f_nat"
+5 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig external f : int -> int = "gg" "f_nat" end
+       is not included in
+         sig external f : int -> int = "f" "f_nat" end
+       Values do not match:
+         external f : int -> int = "gg" "f_nat"
+       is not included in
+         external f : int -> int = "f" "f_nat"
+       The names of the primitives are not the same
+|}]
+
+module Bad18 : sig
+  external f : int -> int = "f" "f_nat"
+end = struct
+  external f : int -> int = "f" "gg_nat"
+end
+
+[%%expect{|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   external f : int -> int = "f" "gg_nat"
+5 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig external f : int -> int = "f" "gg_nat" end
+       is not included in
+         sig external f : int -> int = "f" "f_nat" end
+       Values do not match:
+         external f : int -> int = "f" "gg_nat"
+       is not included in
+         external f : int -> int = "f" "f_nat"
+       The native names of the primitives are not the same
+|}]
+
+module Bad19 : sig
+  external f : int -> int = "f" "f_nat"
+end = struct
+  external f : int -> int = "gg" "gg_nat"
+end
+
+[%%expect{|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   external f : int -> int = "gg" "gg_nat"
+5 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig external f : int -> int = "gg" "gg_nat" end
+       is not included in
+         sig external f : int -> int = "f" "f_nat" end
+       Values do not match:
+         external f : int -> int = "gg" "gg_nat"
+       is not included in
+         external f : int -> int = "f" "f_nat"
+       The names of the primitives are not the same
+|}]
+
+(* Bad: mismatched arities *)
+
+(* NB: The compiler checks primitive arities *syntactically*, based on the
+   number of arrows it sees.  Thus, hiding function types behind type synonyms
+   will produce an error about the primitive arities not matching, even when the
+   types agree. *)
+
+module Bad20 : sig
+  type int_int := int -> int
+  external f : int -> int_int = "f" "f_nat"
+end = struct
+  external f : int -> int -> int = "f" "f_nat"
+end
+
+[%%expect{|
+Lines 4-6, characters 6-3:
+4 | ......struct
+5 |   external f : int -> int -> int = "f" "f_nat"
+6 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig external f : int -> int -> int = "f" "f_nat" end
+       is not included in
+         sig external f : int -> int -> int = "f" "f_nat" end
+       Values do not match:
+         external f : int -> int -> int = "f" "f_nat"
+       is not included in
+         external f : int -> int -> int = "f" "f_nat"
+       The syntactic arities of these primitives were not the same.
+       (They must have the same number of arrows present in the source.)
+|}]
+
+module Bad21 : sig
+  external f : int -> int -> int = "f" "f_nat"
+end = struct
+  type int_int = int -> int
+  external f : int -> int_int = "f" "f_nat"
+end
+
+[%%expect{|
+Lines 3-6, characters 6-3:
+3 | ......struct
+4 |   type int_int = int -> int
+5 |   external f : int -> int_int = "f" "f_nat"
+6 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig
+           type int_int = int -> int
+           external f : int -> int_int = "f" "f_nat"
+         end
+       is not included in
+         sig external f : int -> int -> int = "f" "f_nat" end
+       Values do not match:
+         external f : int -> int_int = "f" "f_nat"
+       is not included in
+         external f : int -> int -> int = "f" "f_nat"
+       The syntactic arities of these primitives were not the same.
+       (They must have the same number of arrows present in the source.)
+|}]
+
+(* This will fail with a *type* error, instead of an arity mismatch *)
+module Bad22 : sig
+  external f : int -> int = "f" "f_nat"
+end = struct
+  external f : int -> int -> int = "f" "f_nat"
+end
+
+[%%expect{|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   external f : int -> int -> int = "f" "f_nat"
+5 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig external f : int -> int -> int = "f" "f_nat" end
+       is not included in
+         sig external f : int -> int = "f" "f_nat" end
+       Values do not match:
+         external f : int -> int -> int = "f" "f_nat"
+       is not included in
+         external f : int -> int = "f" "f_nat"
+       The type int -> int -> int is not compatible with the type int -> int
+       Type int -> int is not compatible with type int
 |}]
 
 (* Bad: unboxed or untagged with the wrong type *)

@@ -70,10 +70,10 @@ type error =
   | Duplicate_label of string
   | Recursive_abbrev of string
   | Cycle_in_def of string * type_expr
-  | Definition_mismatch of type_expr * Includecore.type_mismatch option
-  | Constraint_failed of Env.t * Errortrace.unification Errortrace.t
-  | Inconsistent_constraint of Env.t * Errortrace.unification Errortrace.t
-  | Type_clash of Env.t * Errortrace.unification Errortrace.t
+  | Definition_mismatch of type_expr * Env.t * Includecore.type_mismatch option
+  | Constraint_failed of Env.t * Errortrace.unification_error
+  | Inconsistent_constraint of Env.t * Errortrace.unification_error
+  | Type_clash of Env.t * Errortrace.unification_error
   | Non_regular of {
       definition: Path.t;
       used_as: type_expr;
@@ -85,9 +85,9 @@ type error =
   | Unbound_type_var of type_expr * type_declaration
   | Cannot_extend_private_type of Path.t
   | Not_extensible_type of Path.t
-  | Extension_mismatch of Path.t * Includecore.type_mismatch
+  | Extension_mismatch of Path.t * Env.t * Includecore.type_mismatch
   | Rebind_wrong_type of
-      Longident.t * Env.t * Errortrace.unification Errortrace.t
+      Longident.t * Env.t * Errortrace.unification_error
   | Rebind_mismatch of Longident.t * Path.t * Path.t
   | Rebind_private of Longident.t
   | Variance of Typedecl_variance.error
