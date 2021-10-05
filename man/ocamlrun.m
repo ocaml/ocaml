@@ -133,7 +133,7 @@ and an optional multiplier. If the letter is followed by anything
 else, the corresponding option is set to 1. Unknown letters
 are ignored.
 The options are documented below; the options
-.B a, i, l, m, M, n, o, O, s, v
+.B a, i, l, m, M, n, o, O, s, v, w
 correspond to the fields of the
 .B control
 record documented in
@@ -272,7 +272,7 @@ Computation of compaction-triggering condition.
 .BR 0x400
 Output GC statistics at program exit, in the same format as Gc.print_stat.
 .TP
-.BR w
+.BR w \ (window_size)
 Set size of the window used by major GC for smoothing out variations in
 its workload. This is an integer between 1 and 50. (Default: 1)
 .TP

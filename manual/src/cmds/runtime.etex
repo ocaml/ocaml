@@ -109,7 +109,7 @@ The following environment variables are also consulted:
   A parameter specification is an option letter followed by an "="
   sign, a decimal number (or an hexadecimal number prefixed by "0x"),
   and an optional multiplier.  The options are documented below;
-  the options "a, i, l, m, M, n, o, O, s, v" correspond to
+  the options "a, i, l, m, M, n, o, O, s, v, w" correspond to
   the fields of the "control" record documented in
 \ifouthtml
  \ahref{libref/Gc.html}{Module \texttt{Gc}}.
@@ -200,7 +200,7 @@ The following environment variables are also consulted:
         \item[512 (= 0x200)] Computation of compaction-triggering condition.
         \item[1024 (= 0x400)] Output GC statistics at program exit.
   \end{options}
-  \item[w] Set the size of the window used by major GC for smoothing out 
+  \item[w] ("window_size") Set the size of the window used by major GC for smoothing out 
     variations in its workload. This is an integer between 1 and 50. 
     (Default: 1)
   \item[W] Print runtime warnings to stderr (such as Channel opened on file 
