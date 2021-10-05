@@ -41,14 +41,10 @@ enum {
 #define DOMAIN_STATE(type, name) + 1
 #include "domain_state.tbl"
 #undef DOMAIN_STATE
-
 };
 
-#ifdef CAML_NAME_SPACE
+/* TODO: CAML_NAME_SPACE working? */
 #define LAST_DOMAIN_STATE_MEMBER extra_params
-#else
-#define LAST_DOMAIN_STATE_MEMBER _extra_params
-#endif
 
  /* Check that the structure was laid out without padding,
     since the runtime assumes this in computing offsets */
