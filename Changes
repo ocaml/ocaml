@@ -252,6 +252,8 @@ Working version
   was not restoring the minor heap pointer correctly
   (Stephen Dolan, review by Xavier Leroy)
 
+- #10659: Fix freshening substitutions on imported modules
+  (Leo White and Stephen Dolan, review by Matthew Ryan)
 
 OCaml 4.13 maintenance branch
 -----------------------------
