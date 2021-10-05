@@ -123,9 +123,12 @@ extern void (*caml_termination_hook)(void);
 
 /* Hook for scanning the stacks of the other threads */
 
-static void (*prev_scan_roots_hook) (scanning_action, void *, caml_domain_state *);
+static void (*prev_scan_roots_hook) (scanning_action, void *,
+                                     caml_domain_state *);
 
-static void caml_thread_scan_roots(scanning_action action, void *fdata, caml_domain_state *domain_state)
+static void caml_thread_scan_roots(scanning_action action,
+                                   void *fdata,
+                                   caml_domain_state *domain_state)
 {
   caml_thread_t th;
 
@@ -138,14 +141,16 @@ static void caml_thread_scan_roots(scanning_action action, void *fdata, caml_dom
 
       if (th != Current_thread) {
         if (th->current_stack != NULL)
-	        caml_do_local_roots(action, fdata, th->local_roots, th->current_stack, th->gc_regs);
+	        caml_do_local_roots(action, fdata, th->local_roots,
+                              th->current_stack, th->gc_regs);
       }
       th = th->next;
     } while (th != Current_thread);
 
   };
 
-  if (prev_scan_roots_hook != NULL) (*prev_scan_roots_hook)(action, fdata, domain_state);
+  if (prev_scan_roots_hook != NULL)
+    (*prev_scan_roots_hook)(action, fdata, domain_state);
 
   return;
 }
@@ -161,7 +166,8 @@ void caml_thread_save_runtime_state(void)
   Current_thread->local_roots = Caml_state->local_roots;
   Current_thread->backtrace_pos = Caml_state->backtrace_pos;
   Current_thread->backtrace_buffer = Caml_state->backtrace_buffer;
-  caml_modify_generational_global_root(&Current_thread->backtrace_last_exn, Caml_state->backtrace_last_exn);
+  caml_modify_generational_global_root(
+    &Current_thread->backtrace_last_exn, Caml_state->backtrace_last_exn);
   #ifndef NATIVE_CODE
   Current_thread->trap_sp_off = Caml_state->trap_sp_off;
   Current_thread->trap_barrier_off = Caml_state->trap_barrier_off;
@@ -180,7 +186,8 @@ void caml_thread_restore_runtime_state(void)
   Caml_state->local_roots = Current_thread->local_roots;
   Caml_state->backtrace_pos = Current_thread->backtrace_pos;
   Caml_state->backtrace_buffer = Current_thread->backtrace_buffer;
-  caml_modify_generational_global_root(&Caml_state->backtrace_last_exn, Current_thread->backtrace_last_exn);
+  caml_modify_generational_global_root(
+    &Caml_state->backtrace_last_exn, Current_thread->backtrace_last_exn);
   #ifndef NATIVE_CODE
   Caml_state->trap_sp_off = Current_thread->trap_sp_off;
   Caml_state->trap_barrier_off = Current_thread->trap_barrier_off;
@@ -225,7 +232,7 @@ static caml_thread_t caml_thread_new_info(void)
 
   domain_state = Caml_state;
   th = NULL;
-  th = (caml_thread_t) caml_stat_alloc_noexc(sizeof(struct caml_thread_struct));
+  th = (caml_thread_t)caml_stat_alloc_noexc(sizeof(struct caml_thread_struct));
   if (th == NULL) return NULL;
 
   th->descr = Val_unit;
@@ -374,9 +381,11 @@ CAMLprim value caml_thread_yield(value unit);
 void caml_thread_interrupt_hook(void)
 {
   caml_domain_state *domain = Caml_state;
+  atomic_uintnat* req_external_interrupt =
+    (atomic_uintnat*)&domain->requested_external_interrupt;
 
-  if (atomic_load_acq((atomic_uintnat*)&domain->requested_external_interrupt) == 1) {
-    atomic_store_rel((atomic_uintnat*)&domain->requested_external_interrupt, 0);
+  if (atomic_load_acq(req_external_interrupt) == 1) {
+    atomic_store_rel(req_external_interrupt, 0);
     caml_thread_yield(Val_unit);
   }
 
@@ -551,7 +560,9 @@ CAMLprim value caml_thread_new(value clos)          /* ML */
   }
 
   if (! Tick_thread_running) {
-    err = st_thread_create(&Tick_thread_id, caml_thread_tick, (void *) &Caml_state->id);
+    err = st_thread_create(&Tick_thread_id,
+                           caml_thread_tick,
+                           (void *) &Caml_state->id);
     sync_check_error(err, "Thread.create");
     Tick_thread_running = 1;
   }
@@ -597,7 +608,9 @@ CAMLexport int caml_c_thread_register(void)
   st_thread_set_id(Ident(th->descr));
 
   if (! Tick_thread_running) {
-    err = st_thread_create(&Tick_thread_id, caml_thread_tick, (void *) &Caml_state->id);
+    err = st_thread_create(&Tick_thread_id,
+                           caml_thread_tick,
+                           (void *) &Caml_state->id);
     sync_check_error(err, "caml_register_c_thread");
     Tick_thread_running = 1;
   }
@@ -752,7 +765,8 @@ static value caml_threadstatus_new (value unit)
 
   st_event ts = NULL;           /* suppress warning */
   st_event_create(&ts);
-  wrapper = caml_alloc_custom(&caml_threadstatus_ops, sizeof(st_event *),
+  wrapper = caml_alloc_custom(&caml_threadstatus_ops,
+                              sizeof(st_event *),
                               0, 1);
   Threadstatus_val(wrapper) = ts;
 
