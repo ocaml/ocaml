@@ -964,7 +964,7 @@ AS_IF([test x"$enable_shared" != "xno"],
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*]],
       [sharedlib_cflags="-fPIC"
        AS_CASE([$CC,$host],
-           [gcc*,powerpc-*-linux*],
+           [*gcc*,powerpc-*-linux*],
            [mksharedlib="$CC -shared -mbss-plt \$(LDFLAGS)"],
            [mksharedlib="$CC -shared \$(LDFLAGS)"])
       oc_ldflags="$oc_ldflags -Wl,-E"
@@ -1133,10 +1133,10 @@ AC_DEFINE_UNQUOTED([OCAML_OS_TYPE], ["$ostype"])
 AC_CHECK_TOOL([DIRECT_LD],[ld])
 AS_IF([test -z "$PARTIALLD"],
   [AS_CASE(["$arch,$CC,$system,$model"],
-    [amd64,gcc*,macosx,*], [PACKLD_FLAGS=' -arch x86_64'],
-    [power,gcc*,elf,ppc], [PACKLD_FLAGS=' -m elf32ppclinux'],
-    [power,gcc*,elf,ppc64], [PACKLD_FLAGS=' -m elf64ppc'],
-    [power,gcc*,elf,ppc64le], [PACKLD_FLAGS=' -m elf64lppc'],
+    [amd64,*gcc*,macosx,*], [PACKLD_FLAGS=' -arch x86_64'],
+    [power,*gcc*,elf,ppc], [PACKLD_FLAGS=' -m elf32ppclinux'],
+    [power,*gcc*,elf,ppc64], [PACKLD_FLAGS=' -m elf64ppc'],
+    [power,*gcc*,elf,ppc64le], [PACKLD_FLAGS=' -m elf64lppc'],
     [PACKLD_FLAGS=''])
   # The string for PACKLD must be capable of being concatenated with the
   # output filename. Don't assume that all C compilers understand GNU -ofoo

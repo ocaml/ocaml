@@ -14054,7 +14054,7 @@ esac ;; #(
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*) :
     sharedlib_cflags="-fPIC"
        case $CC,$host in #(
-  gcc*,powerpc-*-linux*) :
+  *gcc*,powerpc-*-linux*) :
     mksharedlib="$CC -shared -mbss-plt \$(LDFLAGS)" ;; #(
   *) :
     mksharedlib="$CC -shared \$(LDFLAGS)" ;;
@@ -14437,13 +14437,13 @@ fi
 
 if test -z "$PARTIALLD"; then :
   case "$arch,$CC,$system,$model" in #(
-  amd64,gcc*,macosx,*) :
+  amd64,*gcc*,macosx,*) :
     PACKLD_FLAGS=' -arch x86_64' ;; #(
-  power,gcc*,elf,ppc) :
+  power,*gcc*,elf,ppc) :
     PACKLD_FLAGS=' -m elf32ppclinux' ;; #(
-  power,gcc*,elf,ppc64) :
+  power,*gcc*,elf,ppc64) :
     PACKLD_FLAGS=' -m elf64ppc' ;; #(
-  power,gcc*,elf,ppc64le) :
+  power,*gcc*,elf,ppc64le) :
     PACKLD_FLAGS=' -m elf64lppc' ;; #(
   *) :
     PACKLD_FLAGS='' ;;
