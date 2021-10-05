@@ -13183,7 +13183,7 @@ $as_echo "$as_me: WARNING: flexlink not found: shared library support disabled."
      ;;
 esac
 
-case $CC,$host in #(
+case $cc_basename,$host in #(
   *,*-*-darwin*) :
     mkexe="$mkexe -Wl,-no_compact_unwind";
     $as_echo "#define HAS_ARCH_CODE32 1" >>confdefs.h
@@ -14053,7 +14053,7 @@ esac ;; #(
   *-*-linux*|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*) :
     sharedlib_cflags="-fPIC"
-       case $CC,$host in #(
+       case $cc_basename,$host in #(
   *gcc*,powerpc-*-linux*) :
     mksharedlib="$CC -shared -mbss-plt \$(LDFLAGS)" ;; #(
   *) :
@@ -14143,7 +14143,7 @@ esac
 fi
 
 # Try to work around the Skylake/Kaby Lake processor bug.
-case "$CC,$host" in #(
+case "$cc_basename,$host" in #(
   *gcc*,x86_64-*|*gcc*,i686-*) :
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the C compiler supports -fno-tree-vrp" >&5
@@ -14436,7 +14436,7 @@ else
 fi
 
 if test -z "$PARTIALLD"; then :
-  case "$arch,$CC,$system,$model" in #(
+  case "$arch,$cc_basename,$system,$model" in #(
   amd64,*gcc*,macosx,*) :
     PACKLD_FLAGS=' -arch x86_64' ;; #(
   power,*gcc*,elf,ppc) :
@@ -14452,7 +14452,7 @@ esac
   # output filename. Don't assume that all C compilers understand GNU -ofoo
   # form, so ensure that the definition includes a space at the end (which is
   # achieved using the $(EMPTY) expansion trick).
-   if test x"$CC" = "xcl"; then :
+   if test x"$cc_basename" = "xcl"; then :
   # For the Microsoft C compiler there must be no space at the end of the
     # string.
     PACKLD="link -lib -nologo $machine -out:"
@@ -17453,7 +17453,7 @@ fi
 ## Frame pointers
 
 if test x"$enable_frame_pointers" = "xyes"; then :
-  case "$host,$CC" in #(
+  case "$host,$cc_basename" in #(
   x86_64-*-linux*,gcc*|x86_64-*-linux*,clang*) :
     common_cflags="$common_cflags -g  -fno-omit-frame-pointer"
       frame_pointers=true
