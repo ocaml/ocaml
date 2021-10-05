@@ -141,7 +141,7 @@ static void caml_thread_scan_roots(scanning_action action,
 
       if (th != Current_thread) {
         if (th->current_stack != NULL)
-	        caml_do_local_roots(action, fdata, th->local_roots,
+          caml_do_local_roots(action, fdata, th->local_roots,
                               th->current_stack, th->gc_regs);
       }
       th = th->next;
