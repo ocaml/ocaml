@@ -91,6 +91,7 @@ module type S =
     val make_isout : arg -> arg -> test
     val make_isin : arg -> arg -> test
     val make_is_nonzero : arg -> test
+    val arg_as_test : arg -> test
 
     val make_if : test -> act -> act -> act
    (* construct an actual switch :

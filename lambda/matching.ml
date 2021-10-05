@@ -2357,7 +2357,15 @@ module SArg = struct
 
   let make_isin h arg = Lprim (Pnot, [ make_isout h arg ], Loc_unknown)
 
-  let make_is_nonzero arg = arg
+  let make_is_nonzero arg =
+    if !Clflags.native_code then
+      Lprim (Pintcomp Cne,
+             [arg; Lconst (Const_base (Const_int 0))],
+             Loc_unknown)
+    else
+      arg
+
+  let arg_as_test arg = arg
 
   let make_if cond ifso ifnot = Lifthenelse (cond, ifso, ifnot)
 
@@ -2828,9 +2836,14 @@ let combine_constructor loc arg pat_env cstr partial ctx def
               (cstr.cstr_consts, cstr.cstr_nonconsts, consts, nonconsts)
             with
             | 1, 1, [ (0, act1) ], [ (0, act2) ] ->
-                (* Typically, match on lists, will avoid isint primitive in that
-              case *)
-                Lifthenelse (arg, act2, act1)
+                if !Clflags.native_code then
+                  Lifthenelse(Lprim (Pisint, [ arg ], loc), act1, act2)
+                else
+                  (* PR#10681: we use [arg] directly as the test here;
+                     it generates better bytecode for this common case
+                     (typically options and lists), but would prevent
+                     some optimizations with the native compiler. *)
+                  Lifthenelse (arg, act2, act1)
             | n, 0, _, [] ->
                 (* The type defines constant constructors only *)
                 call_switcher loc fail_opt arg 0 (n - 1) consts

@@ -712,7 +712,9 @@ and list_emit_tail_infos is_tail =
 
 let split_default_wrapper ~id:fun_id ~kind ~params ~return ~body ~attr ~loc =
   let rec aux map = function
-    | Llet(Strict, k, id, (Lifthenelse(Lvar optparam, _, _) as def), rest) when
+    | Llet(Strict, k, id,
+           (Lifthenelse(Lprim (Pisint, [Lvar optparam], _), _, _) as def),
+           rest) when
         Ident.name optparam = "*opt*" && List.mem_assoc optparam params
           && not (List.mem_assoc optparam map)
       ->

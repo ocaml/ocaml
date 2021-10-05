@@ -1517,6 +1517,7 @@ struct
   let make_isout h arg = Cop (Ccmpa Clt, [h ; arg], Debuginfo.none)
   let make_isin h arg = Cop (Ccmpa Cge, [h ; arg], Debuginfo.none)
   let make_is_nonzero arg = arg
+  let arg_as_test arg = arg
   let make_if cond ifso ifnot =
     Cifthenelse (cond, Debuginfo.none, ifso, Debuginfo.none, ifnot,
       Debuginfo.none)
