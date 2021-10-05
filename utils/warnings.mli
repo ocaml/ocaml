@@ -152,3 +152,10 @@ val with_state : state -> (unit -> 'a) -> 'a
 val mk_lazy: (unit -> 'a) -> 'a Lazy.t
     (** Like [Lazy.of_fun], but the function is applied with
         the warning/alert settings at the time [mk_lazy] is called. *)
+
+type description =
+  { number : int;
+    names : string list;
+    description : string; }
+
+val descriptions : description list
