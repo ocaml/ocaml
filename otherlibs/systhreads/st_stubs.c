@@ -666,7 +666,7 @@ CAMLprim value caml_thread_self(value unit)         /* ML */
 
 CAMLprim value caml_thread_id(value th)          /* ML */
 {
-  return Val_long(Ident(th));
+  return Ident(th);
 }
 
 /* Print uncaught exception and backtrace */
