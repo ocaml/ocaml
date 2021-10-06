@@ -110,6 +110,10 @@ Working version
   Thread.default_uncaught_exception_handler.
   (Enguerrand Decorne, review by David Allsopp)
 
+- #10697: Bindings of dup and dup2 in win32unix now correctly call
+  WSADuplicateSocket on sockets instead of DuplicateHandle.
+  (Antonin Décimo, review by Xavier Leroy and Nicolás Ojeda Bär)
+
 ### Tools:
 
 - #3959, #7202, #10476: ocaml, in script mode, directive errors
