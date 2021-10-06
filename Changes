@@ -255,6 +255,11 @@ Working version
 - #10659: Fix freshening substitutions on imported modules
   (Leo White and Stephen Dolan, review by Matthew Ryan)
 
+- #10677, #10679: Fix detection of CC as gcc in configure (allow for
+  triplet-prefixed GCC) and fix all C compiler detection when CC is a path
+  rather than a basename.
+  (David Allsopp, report by Fabian @copy, review by Gabriel Scherer)
+
 OCaml 4.13 maintenance branch
 -----------------------------
 

@@ -794,7 +794,7 @@ AS_CASE([$flexdir,$supports_shared_libraries,$flexlink,$host],
   [,*,,*-w64-mingw32|,*,,*-pc-windows],
     [AC_MSG_ERROR([flexlink is required for native Win32])])
 
-AS_CASE([$CC,$host],
+AS_CASE([$cc_basename,$host],
   [*,*-*-darwin*],
     [mkexe="$mkexe -Wl,-no_compact_unwind";
     AC_DEFINE([HAS_ARCH_CODE32], [1])],
@@ -963,8 +963,8 @@ AS_IF([test x"$enable_shared" != "xno"],
     [[*-*-linux*|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*]],
       [sharedlib_cflags="-fPIC"
-       AS_CASE([$CC,$host],
-           [gcc*,powerpc-*-linux*],
+       AS_CASE([$cc_basename,$host],
+           [*gcc*,powerpc-*-linux*],
            [mksharedlib="$CC -shared -mbss-plt \$(LDFLAGS)"],
            [mksharedlib="$CC -shared \$(LDFLAGS)"])
       oc_ldflags="$oc_ldflags -Wl,-E"
@@ -1012,7 +1012,7 @@ AS_IF([test x"$supports_shared_libraries" = 'xtrue'],
     [riscv*-*-linux*], [natdynlink=true])])
 
 # Try to work around the Skylake/Kaby Lake processor bug.
-AS_CASE(["$CC,$host"],
+AS_CASE(["$cc_basename,$host"],
   [*gcc*,x86_64-*|*gcc*,i686-*],
     [OCAML_CC_HAS_FNO_TREE_VRP
     AS_IF([$cc_has_fno_tree_vrp],
@@ -1132,17 +1132,17 @@ AC_DEFINE_UNQUOTED([OCAML_OS_TYPE], ["$ostype"])
 
 AC_CHECK_TOOL([DIRECT_LD],[ld])
 AS_IF([test -z "$PARTIALLD"],
-  [AS_CASE(["$arch,$CC,$system,$model"],
-    [amd64,gcc*,macosx,*], [PACKLD_FLAGS=' -arch x86_64'],
-    [power,gcc*,elf,ppc], [PACKLD_FLAGS=' -m elf32ppclinux'],
-    [power,gcc*,elf,ppc64], [PACKLD_FLAGS=' -m elf64ppc'],
-    [power,gcc*,elf,ppc64le], [PACKLD_FLAGS=' -m elf64lppc'],
+  [AS_CASE(["$arch,$cc_basename,$system,$model"],
+    [amd64,*gcc*,macosx,*], [PACKLD_FLAGS=' -arch x86_64'],
+    [power,*gcc*,elf,ppc], [PACKLD_FLAGS=' -m elf32ppclinux'],
+    [power,*gcc*,elf,ppc64], [PACKLD_FLAGS=' -m elf64ppc'],
+    [power,*gcc*,elf,ppc64le], [PACKLD_FLAGS=' -m elf64lppc'],
     [PACKLD_FLAGS=''])
   # The string for PACKLD must be capable of being concatenated with the
   # output filename. Don't assume that all C compilers understand GNU -ofoo
   # form, so ensure that the definition includes a space at the end (which is
   # achieved using the $(EMPTY) expansion trick).
-   AS_IF([test x"$CC" = "xcl"],
+   AS_IF([test x"$cc_basename" = "xcl"],
     # For the Microsoft C compiler there must be no space at the end of the
     # string.
     [PACKLD="link -lib -nologo $machine -out:"],
@@ -1806,7 +1806,7 @@ AS_IF([$native_compiler],
 ## Frame pointers
 
 AS_IF([test x"$enable_frame_pointers" = "xyes"],
-  [AS_CASE(["$host,$CC"],
+  [AS_CASE(["$host,$cc_basename"],
     [x86_64-*-linux*,gcc*|x86_64-*-linux*,clang*],
       [common_cflags="$common_cflags -g  -fno-omit-frame-pointer"
       frame_pointers=true
