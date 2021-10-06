@@ -16,9 +16,9 @@ Working version
   *blit_* function during Mark phase
   (François Bobot, reported by Stephen Dolan, reviewed by Damien Doligez)
 
-- #10195: Speed up GC by prefetching during marking
+- #10195, #10680: Speed up GC by prefetching during marking
   (Stephen Dolan, review by Xavier Leroy, Guillaume Munch-Maccagnoni,
-   Jacques-Henri Jourdan and Damien Doligez)
+   Jacques-Henri Jourdan, Damien Doligez and Leo White)
 
 - #10549: Stack overflow detection and naked pointers checking for ARM64
   (Xavier Leroy, review by Stephen Dolan)
