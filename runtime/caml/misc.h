@@ -404,9 +404,15 @@ CAMLextern int caml_read_directory(char_os * dirname,
                                    struct ext_table * contents);
 
 /* Deprecated aliases */
-#define caml_aligned_malloc caml_stat_alloc_aligned_noexc
-#define caml_strdup caml_stat_strdup
-#define caml_strconcat caml_stat_strconcat
+#define caml_aligned_malloc \
+   CAML_DEPRECATED("caml_aligned_malloc", "caml_stat_alloc_aligned_noexc") \
+   caml_stat_alloc_aligned_noexc
+#define caml_strdup \
+   CAML_DEPRECATED("caml_strdup", "caml_stat_strdup") \
+   caml_stat_strdup
+#define caml_strconcat \
+   CAML_DEPRECATED("caml_strconcat", "caml_stat_strconcat") \
+   caml_stat_strconcat
 
 #ifdef CAML_INTERNALS
 
