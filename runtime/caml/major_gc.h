@@ -49,7 +49,6 @@ extern int caml_gc_subphase;
 extern uintnat caml_allocated_words;
 extern double caml_extra_heap_resources;
 extern uintnat caml_dependent_size, caml_dependent_allocated;
-extern uintnat caml_fl_wsz_at_phase_change;
 extern int caml_ephe_list_pure;
 
 #define Phase_mark 0
@@ -80,6 +79,7 @@ extern double caml_major_ring[Max_major_window];
 extern int caml_major_ring_index;
 extern double caml_major_work_credit;
 extern double caml_gc_clock;
+extern uintnat caml_mark_to_sweep_ratio;
 
 /* [caml_major_gc_hook] is called just between the end of the mark
    phase and the beginning of the sweep phase of the major GC.
@@ -96,6 +96,7 @@ void caml_shrink_mark_stack ();
 void major_collection (void);
 void caml_finish_major_cycle (void);
 void caml_set_major_window (int);
+void caml_set_percent_free (uintnat);
 
 /* Forces finalisation of all heap-allocated values,
    disregarding both local and global roots.

@@ -123,6 +123,7 @@ void caml_parse_ocamlrunparam(void)
       case 'o': scanmult (opt, &caml_init_percent_free); break;
       case 'O': scanmult (opt, &caml_init_max_percent_free); break;
       case 'p': scanmult (opt, &p); caml_parser_trace = (p != 0); break;
+      case 'r': scanmult (opt, &caml_mark_to_sweep_ratio); break;
       case 'R': break; /*  see stdlib/hashtbl.mli */
       case 's': scanmult (opt, &caml_init_minor_heap_wsz); break;
       case 't': scanmult (opt, &caml_trace_level); break;

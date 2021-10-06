@@ -205,6 +205,11 @@ Note: this only applies to values allocated with
 (e.g. bigarrays).
 Default: 8192 bytes.
 .TP
+.BR r \ (mark_to_sweep_ratio)
+How much marking work each mark slice will do when sweep slices
+do 1000 units of sweeping work.
+Default: 333.
+.TP
 .BR v \ (verbose)
 What GC messages to print to stderr.  This is a sum of values selected
 from the following:
