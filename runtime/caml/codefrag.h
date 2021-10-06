@@ -52,32 +52,32 @@ void caml_init_codefrag();
 
    The returned integer is the fragment number (fragnum) associated
    with the new code fragment. */
-extern int caml_register_code_fragment(char * start, char * end,
+extern int caml_register_code_fragment(char *start, char *end,
                                        enum digest_status digest_kind,
-                                       unsigned char * opt_digest);
+                                       unsigned char *opt_digest);
 
 /* Un-register a code fragment. */
-extern void caml_remove_code_fragment(struct code_fragment * cf);
+extern void caml_remove_code_fragment(struct code_fragment *cf);
 
 /* Find the code fragment whose range of addresses contains [pc].
    Returns NULL if none exists. */
-extern struct code_fragment * caml_find_code_fragment_by_pc(char *pc);
+extern struct code_fragment *caml_find_code_fragment_by_pc(char *pc);
 
 /* Find the code fragment whose fragment number is [fragnum].
    Returns NULL if none exists. */
-extern struct code_fragment * caml_find_code_fragment_by_num(int fragnum);
+extern struct code_fragment *caml_find_code_fragment_by_num(int fragnum);
 
 /* Find the code fragment whose digest is equal to the given digest.
    Returns NULL if none exists. */
 extern struct code_fragment *
-   caml_find_code_fragment_by_digest(unsigned char digest[16]);
+caml_find_code_fragment_by_digest(unsigned char digest[16]);
 
 /* Return the digest of the given code fragment.
    If the code fragment was registered in [DIGEST_LATER] mode
    and if the digest was not computed yet, it is obtained by hashing
    the bytes between [code_start] and [code_end].
    Returns NULL if the code fragment was registered with [DIGEST_IGNORE]. */
-extern unsigned char * caml_digest_of_code_fragment(struct code_fragment *);
+extern unsigned char *caml_digest_of_code_fragment(struct code_fragment *);
 
 /* FIXME: Document this */
 extern void caml_code_fragment_cleanup();
