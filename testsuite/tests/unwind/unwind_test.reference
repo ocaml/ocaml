@@ -1,9 +1,6 @@
 ml_perform_stack_walk
 caml_c_call
 Mylib.baz
-caml_apply10
-Mylib.foo2
-caml_apply11
 Driver.entry
 caml_program
 caml_start_program
@@ -13,9 +10,6 @@ main
 ml_perform_stack_walk
 ml_do_no_alloc
 Mylib.bob
-caml_apply10
-Mylib.foo1
-caml_apply11
 Driver.entry
 caml_program
 caml_start_program
