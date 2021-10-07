@@ -1041,6 +1041,7 @@ CAMLexport clock_t caml_win32_clock(void)
   /* total in 100-nanosecond intervals (1e7 / CLOCKS_PER_SEC) */
   clocks_per_sec = INT64_LITERAL(10000000U) / (ULONGLONG)CLOCKS_PER_SEC;
   return (clock_t)(total / clocks_per_sec);
+}
 
 int caml_thread_setname(wchar_t *name)
 {
