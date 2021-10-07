@@ -922,7 +922,6 @@ let error_of_exn exn =
      in
      loop !error_of_exn
 
-
 let () =
   register_error_of_exn
     (function
