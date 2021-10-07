@@ -23,8 +23,8 @@
 (** {1 Creators} *)
 
 val s_ref : 'a -> 'a ref
-(** Similar to {!ref}, except the allocated reference is registered into the
-    store. *)
+(** Similar to {!val-ref}, except the allocated reference is registered into
+    the store. *)
 
 val s_table : ('a -> 'b) -> 'a -> 'b ref
 (** Used to register hash tables. Those also need to be placed into refs to be
@@ -52,7 +52,7 @@ val fresh : unit -> store
     initialized to those values. *)
 
 val with_store : store -> (unit -> 'a) -> 'a
-(** [with_scope s f] resets all the registered references to the value they have
+(** [with_store s f] resets all the registered references to the value they have
     in [s] for the run of [f].
     If [f] updates any of the registered refs, [s] is updated to remember those
     changes. *)
@@ -63,4 +63,4 @@ val reset : unit -> unit
 
 val is_bound : unit -> bool
 (** Returns [true] when a scope is active (i.e. when called from the callback
-    passed to {!with_scope}), [false] otherwise. *)
+    passed to {!with_store}), [false] otherwise. *)

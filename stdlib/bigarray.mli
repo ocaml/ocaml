@@ -210,7 +210,7 @@ val kind_size_in_bytes : ('a, 'b) kind -> int
 (** {1 Array layouts} *)
 
 type c_layout = C_layout_typ (**)
-(** See {!Bigarray.fortran_layout}.*)
+(** See {!Bigarray.type-fortran_layout}.*)
 
 type fortran_layout = Fortran_layout_typ (**)
 (** To facilitate interoperability with existing C and Fortran code,
@@ -233,7 +233,7 @@ type fortran_layout = Fortran_layout_typ (**)
    and [(x+1, y)] are adjacent in memory.
 
    Each layout style is identified at the type level by the
-   phantom types {!Bigarray.c_layout} and {!Bigarray.fortran_layout}
+   phantom types {!Bigarray.type-c_layout} and {!Bigarray.type-fortran_layout}
    respectively. *)
 
 (** {2 Supported layouts}

@@ -157,7 +157,7 @@ module Stdlib : sig
        different lengths. *)
 
     val for_alli : (int -> 'a -> bool) -> 'a array -> bool
-    (** Same as {!Array.for_all}, but the
+    (** Same as {!Stdlib.Array.for_all}, but the
         function is applied with the index of the element as first argument,
         and the element itself as second argument. *)
 
