@@ -46,15 +46,14 @@ tests/lib-unix/kill/'unix_kill.ml' with 1.2 (native)
 tests/lib-threads/'beat.ml' with 1.2 (native)
 tests/lib-threads/'beat.ml' with 1.1 (bytecode)
 
-# TODO: pr9971 broken in our systhread implmentation with debug build (#9971/#9973)
+# TODO: pr9971 broken in our systhread implmentation
+# with debug build (#9971/#9973)
 tests/lib-threads/'pr9971.ml' with 1.1 (bytecode)
 tests/lib-threads/'pr9971.ml' with 1.2 (native)
 
 # ocamldebug is broken (#34)
 tool-debugger
 
-# since promotion is based on minor heap size now, this test can no longer be correct
-tests/promotion/bigrecmod.ml
-
-# instrumented runtime test is not very useful (and broken on multicore.) (#9413)
+# instrumented runtime test is not very useful
+# (and broken on multicore.) (#9413)
 tests/instrumented-runtime/'main.ml' with 1.1 (native)
