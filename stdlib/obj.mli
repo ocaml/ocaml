@@ -36,7 +36,7 @@ external reachable_words : t -> int = "caml_obj_reachable_words"
      allocated blocks are excluded, unless the runtime system
      was configured with [--disable-naked-pointers].
 
-     @Since 4.04
+     @since 4.04
   *)
 
 external field : t -> int -> t = "%obj_field"

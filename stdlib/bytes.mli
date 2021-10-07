@@ -562,13 +562,14 @@ val is_valid_utf_16le : t -> bool
 
     8-bit and 16-bit integers are represented by the [int] type,
     which has more bits than the binary encoding.  These extra bits
-    are handled as follows: {ul
+    are handled as follows:
+    {ul
     {- Functions that decode signed (resp. unsigned) 8-bit or 16-bit
-    integers represented by [int] values sign-extend
-    (resp. zero-extend) their result.}
+       integers represented by [int] values sign-extend
+       (resp. zero-extend) their result.}
     {- Functions that encode 8-bit or 16-bit integers represented by
-    [int] values truncate their input to their least significant
-    bytes.}}
+       [int] values truncate their input to their least significant
+       bytes.}}
 *)
 
 val get_uint8 : bytes -> int -> int

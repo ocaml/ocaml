@@ -236,7 +236,7 @@ type fortran_layout = Fortran_layout_typ (**)
    phantom types {!Bigarray.c_layout} and {!Bigarray.fortran_layout}
    respectively. *)
 
-(** {7 Supported layouts}
+(** {2 Supported layouts}
 
    The GADT type ['a layout] represents one of the two supported
    memory layouts: C-style or Fortran-style. Its constructors are

@@ -14,7 +14,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** {0 Parametric diffing}
+(** {1 Parametric diffing}
 
     This module implements diffing over lists of arbitrary content.
     It is parameterized by
