@@ -2259,9 +2259,7 @@ expr:
   | pbop_op = mkrhs(LETOP) bindings = letop_bindings IN body = seq_expr
       { let (pbop_pat, pbop_exp, rev_ands) = bindings in
         let ands = List.rev rev_ands in
-        let pbop_loc =
-          make_loc ($startpos(pbop_op), pbop_exp.pexp_loc.loc_end)
-        in
+        let pbop_loc = make_loc $sloc in
         let let_ = {pbop_op; pbop_pat; pbop_exp; pbop_loc} in
         mkexp ~loc:$sloc (Pexp_letop{ let_; ands; body}) }
   | expr COLONCOLON expr
@@ -2576,7 +2574,7 @@ letop_bindings:
   | bindings = letop_bindings pbop_op = mkrhs(ANDOP) body = letop_binding_body
       { let let_pat, let_exp, rev_ands = bindings in
         let pbop_pat, pbop_exp = body in
-        let pbop_loc = make_loc ($startpos(pbop_op), $endpos(body)) in
+        let pbop_loc = make_loc $sloc in
         let and_ = {pbop_op; pbop_pat; pbop_exp; pbop_loc} in
         let_pat, let_exp, and_ :: rev_ands }
 ;
