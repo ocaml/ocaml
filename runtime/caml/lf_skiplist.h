@@ -15,7 +15,7 @@
 /*                                                                        */
 /**************************************************************************/
 
-/* A concurrent dictionary data structure implemented as skip lists. See 
+/* A concurrent dictionary data structure implemented as skip lists. See
    implementation for much more detail. */
 
 /* Keys and associated data are natural-width integers (type [uintnat]).
