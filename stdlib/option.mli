@@ -34,7 +34,9 @@ val value : 'a option -> default:'a -> 'a
 (** [value o ~default] is [v] if [o] is [Some v] and [default] otherwise. *)
 
 val get : 'a option -> 'a
-(** [get o] is [v] if [o] is [Some v] and @raise Invalid_argument otherwise. *)
+(** [get o] is [v] if [o] is [Some v] and raise otherwise.
+
+    @raise Invalid_argument if [o] is [None]. *)
 
 val bind : 'a option -> ('a -> 'b option) -> 'b option
 (** [bind o f] is [f v] if [o] is [Some v] and [None] if [o] is [None]. *)

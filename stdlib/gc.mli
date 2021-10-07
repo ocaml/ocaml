@@ -85,11 +85,13 @@ type stat =
     (** Maximum size reached by the major heap, in words. *)
 
     stack_size: int;
-    (** Current size of the stack, in words. @since 3.12.0 *)
+    (** Current size of the stack, in words.
+        @since 3.12.0 *)
 
     forced_major_collections: int;
     (** Number of forced full major collections completed since the program
-        was started. @since 4.12.0 *)
+        was started.
+        @since 4.12.0 *)
 }
 (** The memory management counters are returned in a [stat] record. These
    counters give values for the whole program.
@@ -195,7 +197,8 @@ type control =
     (** The size of the window used by the major GC for smoothing
         out variations in its workload. This is an integer between
         1 and 50.
-        Default: 1. @since 4.03.0 *)
+        Default: 1.
+        @since 4.03.0 *)
 
     custom_major_ratio : int;
     (** Target ratio of floating garbage to major heap size for
