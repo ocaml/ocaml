@@ -23,6 +23,11 @@ Working version
 - #10549: Stack overflow detection and naked pointers checking for ARM64
   (Xavier Leroy, review by Stephen Dolan)
 
+* #10675: Emit deprecation warnings when old C runtime function names
+  are used.  This will break C stub code that uses these old names and
+  treats warnings as errors.  The workaround is to use the new names.
+  (Xavier Leroy and David Allsopp, review by Sébastien Hinderer and
+   Damien Doligez)
 
 ### Code generation and optimizations:
 

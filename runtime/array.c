@@ -94,7 +94,7 @@ CAMLprim value caml_array_set_addr(value array, value index, value newval)
 {
   intnat idx = Long_val(index);
   if (idx < 0 || idx >= Wosize_val(array)) caml_array_bound_error();
-  Modify(&Field(array, idx), newval);
+  caml_modify(&Field(array, idx), newval);
   return Val_unit;
 }
 
@@ -156,7 +156,7 @@ CAMLprim value caml_array_unsafe_get(value array, value index)
 static value caml_array_unsafe_set_addr(value array, value index,value newval)
 {
   intnat idx = Long_val(index);
-  Modify(&Field(array, idx), newval);
+  caml_modify(&Field(array, idx), newval);
   return Val_unit;
 }
 

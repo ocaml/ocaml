@@ -102,6 +102,7 @@ otherlibs/win32unix/stat.c        typo.long-line
 otherlibs/win32unix/symlink.c     typo.long-line
 
 runtime/sak.c            typo.non-ascii
+runtime/caml/compatibility.h    typo.very-long-line
 
 stdlib/hashbang     typo.white-at-eol typo.missing-lf
 

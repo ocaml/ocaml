@@ -29,9 +29,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-/* Basic types and constants */
-
-typedef size_t asize_t;
+/* Deprecation warnings */
 
 #if defined(__GNUC__) || defined(__clang__)
   /* Supported since at least GCC 3.1 */
@@ -43,6 +41,34 @@ typedef size_t asize_t;
     typedef __declspec(deprecated) type name
 #else
   #define CAMLdeprecated_typedef(name, type) typedef type name
+#endif
+
+#if defined(__GNUC__) && __STDC_VERSION__ >= 199901L || _MSC_VER >= 1925
+
+#define CAML_STRINGIFY(x) #x
+#ifdef _MSC_VER
+#define CAML_MAKEWARNING1(x) CAML_STRINGIFY(message(x))
+#else
+#define CAML_MAKEWARNING1(x) CAML_STRINGIFY(GCC warning x)
+#endif
+#define CAML_MAKEWARNING2(y) CAML_MAKEWARNING1(#y)
+#define CAML_PREPROWARNING(x) _Pragma(CAML_MAKEWARNING2(x))
+#define CAML_DEPRECATED(name1,name2) \
+  CAML_PREPROWARNING(name1 is deprecated: use name2 instead)
+
+#else
+
+#define CAML_PREPROWARNING(msg)
+#define CAML_DEPRECATED(name1,name2)
+
+#endif
+
+/* Basic types and constants */
+
+typedef size_t asize_t;
+
+#ifndef NULL
+#define NULL 0
 #endif
 
 #ifdef CAML_INTERNALS
@@ -378,9 +404,15 @@ CAMLextern int caml_read_directory(char_os * dirname,
                                    struct ext_table * contents);
 
 /* Deprecated aliases */
-#define caml_aligned_malloc caml_stat_alloc_aligned_noexc
-#define caml_strdup caml_stat_strdup
-#define caml_strconcat caml_stat_strconcat
+#define caml_aligned_malloc \
+   CAML_DEPRECATED("caml_aligned_malloc", "caml_stat_alloc_aligned_noexc") \
+   caml_stat_alloc_aligned_noexc
+#define caml_strdup \
+   CAML_DEPRECATED("caml_strdup", "caml_stat_strdup") \
+   caml_stat_strdup
+#define caml_strconcat \
+   CAML_DEPRECATED("caml_strconcat", "caml_stat_strconcat") \
+   caml_stat_strconcat
 
 #ifdef CAML_INTERNALS
 
