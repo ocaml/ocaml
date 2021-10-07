@@ -237,7 +237,6 @@ module Te:
       extension_constructor
     val rebind: ?loc:loc -> ?attrs:attrs -> ?docs:docs -> ?info:info ->
       str -> lid -> extension_constructor
-
   end
 
 (** {1 Module language} *)

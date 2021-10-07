@@ -1634,7 +1634,6 @@ and extension_constructor ctxt f x =
         longident_loc li
         (attributes ctxt) x.pext_attributes
 
-
 and case_list ctxt f l : unit =
   let aux f {pc_lhs; pc_guard; pc_rhs} =
     pp f "@;| @[<2>%a%a@;->@;%a@]"
