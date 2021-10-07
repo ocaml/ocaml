@@ -262,10 +262,10 @@ let expr sub x =
           List.map (sub.case sub) cases,
           p
         )
-    | Texp_try (exp, exn_cases) ->
+    | Texp_try (exp, cases) ->
         Texp_try (
           sub.expr sub exp,
-          List.map (sub.case sub) exn_cases
+          List.map (sub.case sub) cases
         )
     | Texp_tuple list ->
         Texp_tuple (List.map (sub.expr sub) list)
@@ -692,7 +692,7 @@ let case
   {
     c_lhs = sub.pat sub c_lhs;
     c_guard = Option.map (sub.expr sub) c_guard;
-    c_rhs = sub.expr sub c_rhs
+    c_rhs = sub.expr sub c_rhs;
   }
 
 let value_binding sub x =

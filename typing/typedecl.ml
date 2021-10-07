@@ -985,6 +985,7 @@ let transl_type_decl env rec_flag sdecl_list =
   (* Done *)
   (final_decls, final_env)
 
+(* Translating type extensions *)
 
 let transl_extension_constructor ~scope env type_path type_params
                                  typext_params priv sext =
@@ -1220,7 +1221,6 @@ let transl_type_extension extend env loc styext =
   Builtin_attributes.warning_scope styext.ptyext_attributes
     (fun () -> transl_type_extension extend env loc styext)
 
-(* Translate an exception declaration *)
 let transl_exception env sext =
   let scope = Ctype.create_scope () in
   reset_type_variables();
@@ -1256,7 +1256,6 @@ let transl_type_exception env t =
   {tyexn_constructor = contructor;
    tyexn_loc = t.ptyexn_loc;
    tyexn_attributes = t.ptyexn_attributes}, newenv
-
 
 
 type native_repr_attribute =

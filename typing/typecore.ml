@@ -235,7 +235,6 @@ let mk_expected ?explanation ty = { ty; explanation; }
 let case lhs rhs =
   {c_lhs = lhs; c_guard = None; c_rhs = rhs}
 
-
 (* Typing of constants *)
 
 let type_constant = function
@@ -2068,14 +2067,14 @@ and type_pat_aux
       )
   | Ppat_exception p ->
       type_pat Value p Predef.type_exn (fun p_exn ->
-        rcp k {
-          pat_desc = Tpat_exception p_exn;
-          pat_loc = sp.ppat_loc;
-          pat_extra = [];
-          pat_type = expected_ty;
-          pat_env = !env;
-          pat_attributes = sp.ppat_attributes;
-        })
+      rcp k {
+        pat_desc = Tpat_exception p_exn;
+        pat_loc = sp.ppat_loc;
+        pat_extra = [];
+        pat_type = expected_ty;
+        pat_env = !env;
+        pat_attributes = sp.ppat_attributes;
+      })
   | Ppat_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
 
@@ -2599,8 +2598,7 @@ let check_partial_application ~statement exp =
             | Texp_match (_, cases, _) ->
                 List.iter (fun {c_rhs; _} -> check c_rhs) cases
             | Texp_try (e, cases) ->
-                check e;
-                List.iter (fun {c_rhs; _} -> check c_rhs) cases
+                check e; List.iter (fun {c_rhs; _} -> check c_rhs) cases
             | Texp_ifthenelse (_, e1, Some e2) ->
                 check e1; check e2
             | Texp_let (_, _, e) | Texp_sequence (_, e) | Texp_open (_, e)
@@ -4857,10 +4855,10 @@ and type_unpacks ?(in_function : (Location.t * type_expr) option)
 (* Typing of match cases *)
 and type_cases
     : type k . k pattern_category ->
-           ?in_function:_ -> _ -> _ -> _ -> ?conts:_ -> _ -> _ -> Parsetree.case list ->
+           ?in_function:_ -> _ -> _ -> _ -> _ -> _ -> Parsetree.case list ->
            k case list * partial
   = fun category ?in_function env
-        ty_arg ty_res_explained ?conts partial_flag loc caselist ->
+        ty_arg ty_res_explained partial_flag loc caselist ->
   (* ty_arg is _fully_ generalized *)
   let { ty = ty_res; explanation } = ty_res_explained in
   let patterns = List.map (fun {pc_lhs=p} -> p) caselist in
@@ -4962,17 +4960,11 @@ and type_cases
   ) half_typed_cases;
   (* type bodies *)
   let in_function = if List.length caselist = 1 then in_function else None in
-  let half_typed_cases_cont_list =
-    match conts with
-    | None -> List.map (fun x -> (x, None)) half_typed_cases
-    | Some conts ->
-        List.map2 (fun x cont -> (x, cont)) half_typed_cases conts
-  in
   let cases =
     List.map
-      (fun ({ typed_pat = pat; branch_env = ext_env; pat_vars = pvs; unpacks;
+      (fun { typed_pat = pat; branch_env = ext_env; pat_vars = pvs; unpacks;
              untyped_case = {pc_lhs = _; pc_guard; pc_rhs};
-             contains_gadt; _ }, cont)  ->
+             contains_gadt; _ }  ->
         let ext_env =
           if contains_gadt then
             do_copy_types ext_env
@@ -4983,16 +4975,6 @@ and type_cases
           add_pattern_variables ext_env pvs
             ~check:(fun s -> Warnings.Unused_var_strict s)
             ~check_as:(fun s -> Warnings.Unused_var s)
-        in
-        let _cont, ext_env' =
-          match cont with
-          | Some (id, desc) ->
-              let ext_env =
-                Env.add_value ~check:(fun s -> Warnings.Unused_var_strict s)
-                  id desc ext_env
-              in
-                Some id, ext_env
-          | None -> None, ext_env
         in
         let unpacks =
           List.map (fun (name, loc) ->
@@ -5015,18 +4997,12 @@ and type_cases
           match pc_guard with
           | None -> None
           | Some scond ->
-             (* It is crucial that the continuation is not used in the
-                `when' expression as the extent of the continuation is
-                yet to be determined. We make the continuation
-                inaccessible by typing the `when' expression using the
-                environment `ext_env' which does not bind the
-                continuation variable. *)
               Some
                 (type_unpacks ext_env unpacks scond
                    (mk_expected ~explanation:When_guard Predef.type_bool))
         in
         let exp =
-          type_unpacks ?in_function ext_env'
+          type_unpacks ?in_function ext_env
             unpacks pc_rhs (mk_expected ?explanation ty_res')
         in
         {
@@ -5035,7 +5011,7 @@ and type_cases
          c_rhs = {exp with exp_type = instance ty_res'}
         }
       )
-      half_typed_cases_cont_list
+      half_typed_cases
   in
   if !Clflags.principal || does_contain_gadt then begin
     let ty_res' = instance ty_res in
@@ -5082,7 +5058,6 @@ and type_cases
     unify_exp_types loc env (instance ty_res) (newvar ()) ;
   end;
   cases, partial
-
 
 (* Typing of let bindings *)
 

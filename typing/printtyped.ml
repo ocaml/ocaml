@@ -340,14 +340,14 @@ and expression i ppf x =
       line i ppf "Texp_apply\n";
       expression i ppf e;
       list i label_x_expression ppf l;
-  | Texp_match (e, l1, _partial) ->
+  | Texp_match (e, l, _partial) ->
       line i ppf "Texp_match\n";
       expression i ppf e;
-      list i case ppf l1;
-  | Texp_try (e, l1) ->
+      list i case ppf l;
+  | Texp_try (e, l) ->
       line i ppf "Texp_try\n";
       expression i ppf e;
-      list i case ppf l1;
+      list i case ppf l;
   | Texp_tuple (l) ->
       line i ppf "Texp_tuple\n";
       list i expression ppf l;
