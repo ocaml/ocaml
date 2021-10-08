@@ -143,6 +143,9 @@ Working version
   (Nicolás Ojeda Bär, report by Daniel Bünzli, review by David Allsopp,
   Sébastien Hinderer, and Daniel Bünzli)
 
+- #10281: Add description of C compiler on macOS and Windows platforms.
+  (Dong An)
+
 ### Compiler user-interface and warnings:
 
 - #10328: Give more precise error when disambiguation could not possibly work.
