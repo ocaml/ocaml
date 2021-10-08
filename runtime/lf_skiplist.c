@@ -28,6 +28,8 @@
     [search_level] to the data structure and to keep a list of removed cells
     in order to do a deferred free.
 
+    You _must_ call [caml_lf_skiplist_free_garbage] "every so often" in order for the data structure to free removed cells. This must be done by only one thread at a time when no other thread can be accessing the structure.
+
     It is roughly half the speed of the sequential skip list so only use
     where concurrent access is necessary. For use-cases where there is
     only infrequent contention and where acquiring a lock during find is
