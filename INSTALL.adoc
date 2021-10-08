@@ -14,6 +14,9 @@
   ** For MacOS +
     `Clang` is the default C compiler under MacOS. If MacOS complains no C compiler was installed while OCaml installing, please run command `xcode-select --install` to install command-line tools and required libraries and header files.
 
+  ** For Windows +
+    Install https://docs.microsoft.com/en-us/windows/wsl/compare-versions[WSL2] or http://www.cygwin.com/[Cygwin].
+
 * GNU `make`, as well as POSIX-compatible `awk` and `sed` are required.
 
 * A POSIX-compatible `diff` is necessary to run the test suite.
