@@ -12,7 +12,7 @@
     `Clang` is the default C compiler under BSDs - also works fine.
 
   ** For MacOS +
-    `Clang` is the default C compiler under MacOS. If MacOS complains no C compiler was installed while OCaml installing, 
+    `Clang` is the default C compiler under MacOS. If MacOS complains no C compiler was installed while OCaml installing,
     please run command `xcode-select --install` to install command-line tools and required libraries and header files.
 
   ** For Windows +
