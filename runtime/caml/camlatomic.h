@@ -17,10 +17,9 @@
 
 extern "C++" {
 #include <atomic>
-using namespace std;
 #define ATOMIC_UINTNAT_INIT(x) (x)
-typedef atomic<uintnat> atomic_uintnat;
-typedef atomic<intnat> atomic_intnat;
+typedef std::atomic<uintnat> atomic_uintnat;
+typedef std::atomic<intnat> atomic_intnat;
 }
 
 #elif defined(HAS_STDATOMIC_H)
