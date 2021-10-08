@@ -195,7 +195,6 @@ module Variance = struct
   let unknown = 7
   let full = 127
   let covariant = single May_pos lor single Pos lor single Inj
-  let contravariant = single May_neg lor single Neg lor single Inj
   let swap f1 f2 v =
     let v' = set f1 (mem f2 v) v in set f2 (mem f1 v) v'
   let conjugate v = swap May_pos May_neg (swap Pos Neg v)
@@ -395,6 +394,7 @@ and ext_status =
     Text_first                     (* first constructor of an extension *)
   | Text_next                      (* not first constructor of an extension *)
   | Text_exception                 (* an exception *)
+
 
 (* Constructor and record label descriptions inserted held in typing
    environments *)

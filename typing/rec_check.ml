@@ -756,7 +756,7 @@ let rec expression : Typedtree.expression -> term_judg =
       let case_env c m = fst (case c m) in
       join [
         expression e;
-        list case_env cases
+        list case_env cases;
       ]
     | Texp_override (pth, fields) ->
       (*
