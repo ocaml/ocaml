@@ -569,7 +569,7 @@ void caml_debugger(enum event_kind event, value param)
     case REQ_INITIAL_FRAME:
       frame_block = Caml_state->current_stack;
       frame = frame_block->sp + 1;
-      /* Fall through */
+      fallthrough;
     case REQ_GET_FRAME:
       caml_putword(dbg_out, frame_block_number (frame_block));
       caml_putword(dbg_out, Stack_high(frame_block) - frame);

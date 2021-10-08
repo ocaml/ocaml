@@ -92,7 +92,7 @@ void caml_disasm_instr(code_t pc)
     /* Instructions with a C primitive as operand */
   case C_CALLN:
     snprintf(buf, sizeof(buf), "%s %d,", opbuf, pc[0]); pc++;
-    /* fallthrough */
+    fallthrough;
   case C_CALL1: case C_CALL2: case C_CALL3: case C_CALL4: case C_CALL5:
     if (pc[0] < 0 || pc[0] >= caml_prim_name_table.size)
       snprintf(buf, sizeof(buf), "%s unknown primitive %d\n", opbuf, pc[0]);

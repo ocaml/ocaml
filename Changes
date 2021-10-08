@@ -58,6 +58,13 @@ _______________
   Now these tables will go in the readonly segment, where they belong.
   (Antonin Décimo, review by David Allsopp)
 
+- #10696: Introduce __has_attribute and __has_c_attributes in
+  <caml/misc.h> to test the support of specific atributes in C
+  code. Introduce fallthrough as a wrapper around the fallthrough
+  attribute.
+  (Antonin Décimo, review by Nicolás Ojeda Bär, Xavier Leroy, and
+   Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 - #13014: Enable compile-time option -function-sections on all previously

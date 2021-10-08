@@ -163,10 +163,10 @@ CAMLexport uint32_t caml_hash_mix_string(uint32_t h, value s)
   /* Finish with up to 3 bytes */
   w = 0;
   switch (len & 3) {
-  case 3: w  = Byte_u(s, i+2) << 16;   /* fallthrough */
-  case 2: w |= Byte_u(s, i+1) << 8;    /* fallthrough */
+  case 3: w  = Byte_u(s, i+2) << 16; fallthrough;
+  case 2: w |= Byte_u(s, i+1) << 8;  fallthrough;
   case 1: w |= Byte_u(s, i);
-          MIX(h, w);
+          MIX(h, w);                 fallthrough;
   default: /*skip*/;     /* len & 3 == 0, no extra bytes, do nothing */
   }
   /* Finally, mix in the length.  Ignore the upper 32 bits, generally 0. */

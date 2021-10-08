@@ -64,9 +64,11 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
 #  else
 #    define Next goto *(void *)(jumptbl_base + *pc++)
 #  endif
+#  define Fallthrough ((void) 0)
 #else
 #  define Instruct(name) case name
 #  define Next break
+#  define Fallthrough fallthrough
 #endif
 
 /* GC interface */
@@ -418,7 +420,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
     Instruct(PUSHACC):
       *--sp = accu;
-      /* Fallthrough */
+      Fallthrough;
     Instruct(ACC):
       accu = sp[*pc++];
       Next;
@@ -453,7 +455,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
     Instruct(PUSHENVACC):
       *--sp = accu;
-      /* Fallthrough */
+      Fallthrough;
     Instruct(ENVACC):
       accu = Field(env, *pc++);
       Next;
@@ -698,20 +700,20 @@ value caml_interprete(code_t prog, asize_t prog_size)
     }
 
     Instruct(PUSHOFFSETCLOSURE):
-      *--sp = accu; /* fallthrough */
+      *--sp = accu; Fallthrough;
     Instruct(OFFSETCLOSURE):
       accu = env + *pc++ * sizeof(value); Next;
 
     Instruct(PUSHOFFSETCLOSUREM3):
-      *--sp = accu; /* fallthrough */
+      *--sp = accu; Fallthrough;
     Instruct(OFFSETCLOSUREM3):
       accu = env - 3 * sizeof(value); Next;
     Instruct(PUSHOFFSETCLOSURE0):
-      *--sp = accu; /* fallthrough */
+      *--sp = accu; Fallthrough;
     Instruct(OFFSETCLOSURE0):
       accu = env; Next;
     Instruct(PUSHOFFSETCLOSURE3):
-      *--sp = accu; /* fallthrough */
+      *--sp = accu; Fallthrough;
     Instruct(OFFSETCLOSURE3):
       accu = env + 3 * sizeof(value); Next;
 
@@ -720,7 +722,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
     Instruct(PUSHGETGLOBAL):
       *--sp = accu;
-      /* Fallthrough */
+      Fallthrough;
     Instruct(GETGLOBAL):
       accu = Field(caml_global_data, *pc);
       pc++;
@@ -728,7 +730,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
     Instruct(PUSHGETGLOBALFIELD):
       *--sp = accu;
-      /* Fallthrough */
+      Fallthrough;
     Instruct(GETGLOBALFIELD): {
       accu = Field(caml_global_data, *pc);
       pc++;
@@ -748,13 +750,13 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
     Instruct(PUSHATOM0):
       *--sp = accu;
-      /* Fallthrough */
+      Fallthrough;
     Instruct(ATOM0):
       accu = Atom(0); Next;
 
     Instruct(PUSHATOM):
       *--sp = accu;
-      /* Fallthrough */
+      Fallthrough;
     Instruct(ATOM):
       accu = Atom(*pc++); Next;
 
@@ -1021,7 +1023,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
         }
         sp = domain_state->current_stack->sp;
       }
-      /* Fall through CHECK_SIGNALS */
+      Fallthrough; /* CHECK_SIGNALS */
 
 /* Signal handling */
 
@@ -1105,7 +1107,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
     Instruct(PUSHCONSTINT):
       *--sp = accu;
-      /* Fallthrough */
+      Fallthrough;
     Instruct(CONSTINT):
       accu = Val_int(*pc);
       pc++;
@@ -1242,7 +1244,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       *--sp = accu;
       accu = Val_int(*pc);
       pc += 2;
-      /* Fallthrough */
+      Fallthrough;
 #endif
     Instruct(GETDYNMET): {
       /* accu == tag, sp[0] == object, *pc == cache */
