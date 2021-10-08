@@ -1,0 +1,60 @@
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*            Sebastien Hinderer, projet Cambium, INRIA Paris             *
+#*                                                                        *
+#*   Copyright 2021 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
+# This file contains all the macros used to describe the current version of
+# OCaml. It first defines the basic components and then computes all
+# the different variants of the version used across the build system.
+
+# For the M4 macros defined below, we use the OCAML__VERSION (with a double
+# underscore) to distinguish them from the C preprocessor macros which
+# use a single underscore, since the two families of macros coexist
+# in configure.ac.
+
+# The three following components (major, minor and patch level) MUST be
+# integers. They MUST NOT be left-padded with zeros and all of them,
+# including the patchlevel, are mandatory.
+
+m4_define([OCAML__VERSION_MAJOR], [4])
+m4_define([OCAML__VERSION_MINOR], [14])
+m4_define([OCAML__VERSION_PATCHLEVEL], [0])
+m4_define([OCAML__VERSION_EXTRA], [dev0-2021-06-03])
+
+# The OCAML__VERSION_EXTRA_PREFIX macro defined below should be a
+# single character:
+# Either [~] to mean that we are approaching the OCaml public release
+# OCAML__VERSION_MAJOR.OCAML__VERSION_MINOR.OCAML__VERSION_PATCHLEVEL
+# and with an empty OCAML__VERSION_EXTRA string;
+# Or [+] to give more info about this specific version.
+# Development releases, for instance, should use a [+] prefix.
+m4_define([OCAML__VERSION_EXTRA_PREFIX], [+])
+m4_define([OCAML__VERSION_SHORT], [OCAML__VERSION_MAJOR.OCAML__VERSION_MINOR])
+m4_define([OCAML__VERSION],
+  [m4_do(
+    OCAML__VERSION_SHORT.OCAML__VERSION_PATCHLEVEL,
+    m4_if(OCAML__VERSION_EXTRA,[],[],
+      OCAML__VERSION_EXTRA_PREFIX[]OCAML__VERSION_EXTRA))])
+
+# Generate the VERSION file
+# The following command is invoked when autoconf is run to generate configure
+# from configure.ac, not while configure itself is run.
+# In other words, both VERSION and configure are produced by invoking
+# autoconf (usually done by calling tools/autogen for this project)
+m4_syscmd([cat > VERSION << END_OF_VERSION_FILE
+]OCAML__VERSION[
+
+# The version string is the first line of this file.
+# It must be in the format described in stdlib/sys.mli
+END_OF_VERSION_FILE
+])

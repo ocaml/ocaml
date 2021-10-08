@@ -18,7 +18,7 @@
 # Require Autoconf 2.69 for repeatability in CI
 AC_PREREQ([2.69])
 AC_INIT([OCaml],
-        m4_esyscmd([head -n1 VERSION | tr -d '\r\n']),
+        [OCAML__VERSION],
         [caml-list@inria.fr],
         [ocaml],
         [http://www.ocaml.org])
