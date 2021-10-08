@@ -107,9 +107,9 @@
    write, so we delay the acquire fence until one of those operations
    occurs.
 
-   So, our non-atomic reads (Field/caml_read_field in mlvalues.h) are
-   implemented as relaxed loads, but non-atomic writes and atomic
-   operations (in this file, below) contain an odd-looking line:
+   So, our non-atomic reads are implemented as standard relaxed loads,
+   but non-atomic writes and atomic operations (in this file, below)
+   contain an odd-looking line:
 
       atomic_thread_fence(memory_order_acquire)
 
@@ -126,7 +126,8 @@
 
 /* The write barrier does not read or write the heap, it just
    modifies domain-local data structures. */
-Caml_inline void write_barrier(value obj, intnat field, value old_val, value new_val)
+Caml_inline void write_barrier(
+  value obj, intnat field, value old_val, value new_val)
 {
   /* HACK: can't assert when get old C-api style pointers
     Assert (Is_block(obj)); */
@@ -134,7 +135,8 @@ Caml_inline void write_barrier(value obj, intnat field, value old_val, value new
   if (!Is_young(obj)) {
 
     if (Is_block(old_val)) {
-       /* if old is in the minor heap, then this is in a remembered set already */
+       /* if old is in the minor heap,
+          then this is in a remembered set already */
        if (Is_young(old_val)) return;
        /* old is a block and in the major heap */
        caml_darken(0, old_val, 0);
@@ -213,7 +215,8 @@ CAMLexport CAMLweakdef void caml_initialize (value *fp, value val)
   *fp = val;
 }
 
-CAMLexport int caml_atomic_cas_field (value obj, intnat field, value oldval, value newval)
+CAMLexport int caml_atomic_cas_field (
+  value obj, intnat field, value oldval, value newval)
 {
   if (caml_domain_alone()) {
     /* non-atomic CAS since only this thread can access the object */
@@ -315,10 +318,10 @@ CAMLexport void caml_set_fields (value obj, value v)
   }
 }
 
-CAMLexport void caml_blit_fields (value src, int srcoff, value dst, int dstoff, int n)
+CAMLexport void caml_blit_fields (
+  value src, int srcoff, value dst, int dstoff, int n)
 {
   CAMLparam2(src, dst);
-  CAMLlocal1(x);
   int i;
   Assert(Is_block(src));
   Assert(Is_block(dst));
@@ -332,14 +335,16 @@ CAMLexport void caml_blit_fields (value src, int srcoff, value dst, int dstoff, 
   if (src == dst && srcoff < dstoff) {
     /* copy descending */
     for (i = n; i > 0; i--) {
-      caml_read_field(src, srcoff + i - 1, &x);
-      caml_modify(&Field(dst, dstoff + i - 1), x);
+      caml_modify(
+        &Field(dst, dstoff + i - 1),
+        Field(src, srcoff + i - 1));
     }
   } else {
     /* copy ascending */
     for (i = 0; i < n; i++) {
-      caml_read_field(src, srcoff + i, &x);
-      caml_modify(&Field(dst, dstoff + i), x);
+      caml_modify(
+        &Field(dst, dstoff + i),
+        Field(src, srcoff + i));
     }
   }
   CAMLreturn0;

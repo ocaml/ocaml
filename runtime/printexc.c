@@ -28,6 +28,7 @@
 #include "caml/mlvalues.h"
 #include "caml/printexc.h"
 #include "caml/memory.h"
+#include "caml/memprof.h"
 
 struct stringbuf {
   char * ptr;
@@ -51,34 +52,21 @@ static void add_string(struct stringbuf *buf, const char *s)
 CAMLexport char * caml_format_exception(value exn)
 {
   mlsize_t start, i;
+  value bucket, v;
   struct stringbuf buf;
   char intbuf[64];
   char * res;
-  CAMLparam1(exn);
-  CAMLlocal4(bucket, v, exnclass, field1);
 
   buf.ptr = buf.data;
   buf.end = buf.data + sizeof(buf.data) - 1;
-  /* An exception class is a value with tag Object_tag, whose first
-     field is a string naming the exception.
-     Exceptions that take parameters (e.g. Invalid_argument) are blocks
-     with tag 0, where the first field is the exception class.
-     Exceptions without parameters (e.g. Not_found) are just the exception
-     class. */
   if (Tag_val(exn) == 0) {
-    /* Field 0 of exn is the exception class, which is immutable */
-    exnclass = Field(exn, 0);
-    add_string(&buf, String_val(Field(exnclass, 0)));
+    add_string(&buf, String_val(Field(Field(exn, 0), 0)));
     /* Check for exceptions in the style of Match_failure and Assert_failure */
-    if (Wosize_val(exn) == 2) {
-      caml_read_field(exn, 1, &field1);
-    } else {
-      field1 = Val_unit;
-    }
-    if (Is_block(field1) &&
-        Tag_val(field1) == 0 &&
-        caml_is_special_exception(exnclass)) {
-      bucket = field1;
+    if (Wosize_val(exn) == 2 &&
+        Is_block(Field(exn, 1)) &&
+        Tag_val(Field(exn, 1)) == 0 &&
+        caml_is_special_exception(Field(exn, 0))) {
+      bucket = Field(exn, 1);
       start = 0;
     } else {
       bucket = exn;
@@ -87,7 +75,7 @@ CAMLexport char * caml_format_exception(value exn)
     add_char(&buf, '(');
     for (i = start; i < Wosize_val(bucket); i++) {
       if (i > start) add_string(&buf, ", ");
-      caml_read_field(bucket, i, &v);
+      v = Field(bucket, i);
       if (Is_long(v)) {
         snprintf(intbuf, sizeof(intbuf),
                  "%" ARCH_INTNAT_PRINTF_FORMAT "d", Long_val(v));
@@ -101,18 +89,15 @@ CAMLexport char * caml_format_exception(value exn)
       }
     }
     add_char(&buf, ')');
-  } else {
-    /* Exception without parameters */
-    exnclass = exn;
-    add_string(&buf, String_val(Field(exnclass, 0)));
-  }
+  } else
+    add_string(&buf, String_val(Field(exn, 0)));
 
   *buf.ptr = 0;              /* Terminate string */
   i = buf.ptr - buf.data + 1;
   res = caml_stat_alloc_noexc(i);
-  if (res == NULL) CAMLreturnT (char*, NULL);
+  if (res == NULL) return NULL;
   memmove(res, buf.data, i);
-  CAMLreturnT (char*, res);
+  return res;
 }
 
 
@@ -127,8 +112,7 @@ static void default_fatal_uncaught_exception(value exn)
 {
   char * msg;
   const value * at_exit;
-  int saved_backtrace_active;
-  intnat saved_backtrace_pos;
+  int saved_backtrace_active, saved_backtrace_pos;
 
   /* Build a string representation of the exception */
   msg = caml_format_exception(exn);
@@ -157,6 +141,7 @@ void caml_fatal_uncaught_exception(value exn)
 
   handle_uncaught_exception =
     caml_named_value("Printexc.handle_uncaught_exception");
+
   if (handle_uncaught_exception != NULL)
     /* [Printexc.handle_uncaught_exception] does not raise exception. */
     caml_callback2(*handle_uncaught_exception, exn, Val_bool(DEBUGGER_IN_USE));

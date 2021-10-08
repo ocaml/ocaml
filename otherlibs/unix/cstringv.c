@@ -23,8 +23,6 @@
 
 char_os ** cstringvect(value arg, char * cmdname)
 {
-  CAMLparam1 (arg);
-  CAMLlocal1 (x);
   char_os ** res;
   mlsize_t size, i;
 
@@ -33,12 +31,10 @@ char_os ** cstringvect(value arg, char * cmdname)
     if (! caml_string_is_c_safe(Field(arg, i)))
       unix_error(EINVAL, cmdname, Field(arg, i));
   res = (char_os **) caml_stat_alloc((size + 1) * sizeof(char_os *));
-  for (i = 0; i < size; i++) {
-    caml_read_field(arg, i, &x);
-    res[i] = caml_stat_strdup_to_os(String_val(x));
-  }
+  for (i = 0; i < size; i++)
+    res[i] = caml_stat_strdup_to_os(String_val(Field(arg, i)));
   res[size] = NULL;
-  CAMLreturnT (char**, res);
+  return res;
 }
 
 void cstringvect_free(char_os ** v)
