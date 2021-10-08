@@ -236,9 +236,6 @@ method class_of_operation op =
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat -> Op_pure
   | Ispecific _ -> Op_other
-  | Inop ->
-      (* not correct, but enough to force CSE from leaving nops alone *)
-      Op_store true
   | Idls_get -> Op_load Mutable (* conservative *)
 
 (* Operations that are so cheap that it isn't worth factoring them. *)

@@ -120,7 +120,8 @@ let operation d = function
   | Cload {memory_chunk; mutability} -> (
     match mutability with
     | Asttypes.Immutable -> Printf.sprintf "load %s" (chunk memory_chunk)
-    | Asttypes.Mutable   -> Printf.sprintf "load_mut_imm %s" (chunk memory_chunk) )
+    | Asttypes.Mutable   ->
+      Printf.sprintf "load_mut_imm %s" (chunk memory_chunk) )
   | Calloc -> "alloc" ^ location d
   | Cstore (c, init) ->
     let init =
@@ -158,7 +159,6 @@ let operation d = function
   | Craise k -> Lambda.raise_kind k ^ location d
   | Ccheckbound -> "checkbound" ^ location d
   | Copaque -> "opaque"
-  | Cnop -> "nop"
   | Cdls_get -> "dls_get"
 
 let rec expr ppf = function

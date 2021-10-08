@@ -63,7 +63,6 @@ type operation =
   | Iopaque
   | Ispecific of Arch.specific_operation
   | Ipoll of { return_label: Cmm.label option }
-  | Inop
   | Idls_get
 
 type instruction =

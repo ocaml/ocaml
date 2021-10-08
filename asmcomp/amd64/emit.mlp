@@ -507,11 +507,11 @@ let emit_instr env fallthrough i =
         I.mov (nat n) (res i 0)
   | Lop(Iconst_float f) ->
       begin match f with
-        | 0x0000_0000_0000_0000L ->       (* +0.0 *)
-            I.xorpd (res i 0) (res i 0)
-        | _ ->
-            let lbl = add_float_constant f in
-            I.movsd (mem64_rip NONE (emit_label lbl)) (res i 0)
+      | 0x0000_0000_0000_0000L ->       (* +0.0 *)
+          I.xorpd (res i 0) (res i 0)
+      | _ ->
+          let lbl = add_float_constant f in
+          I.movsd (mem64_rip NONE (emit_label lbl)) (res i 0)
       end
   | Lop(Iconst_symbol s) ->
       add_used_symbol s;
@@ -536,7 +536,7 @@ let emit_instr env fallthrough i =
           end
         end
       end
-  | Lop(Iextcall {func; alloc; stack_ofs}) ->
+  | Lop(Iextcall { func; alloc; stack_ofs }) ->
       add_used_symbol func;
       if stack_ofs > 0 then begin
         I.lea (mem64 QWORD 0 RSP) r13;
@@ -630,8 +630,8 @@ let emit_instr env fallthrough i =
         | 24 -> emit_call "caml_alloc2"
         | 32 -> emit_call "caml_alloc3"
         | _  ->
-          I.sub (int n) r15;
-          emit_call "caml_allocN"
+            I.sub (int n) r15;
+            emit_call "caml_allocN"
         end;
         let label = record_frame_label env i.live (Dbg_alloc dbginfo) in
         def_label label;
@@ -735,7 +735,6 @@ let emit_instr env fallthrough i =
       I.movsxd (arg32 i 0) (res i 0)
   | Lop(Ispecific(Izextend32)) ->
       I.mov (arg32 i 0) (res32 i 0)
-  | Lop (Inop) -> I.nop ()
   | Lop (Idls_get) ->
       I.mov (domain_field Domainstate.Domain_dls_root) (res i 0)
   | Lreloadretaddr ->
@@ -870,9 +869,7 @@ let rec emit_all env fallthrough i =
       emit_instr env fallthrough i;
       emit_all env (Linear.has_fallthrough i.desc) i.next
 
-
 let all_functions = ref []
-
 
 type preproc_fun_result =
   {max_stack_size : int;

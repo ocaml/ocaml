@@ -129,8 +129,6 @@ type primitive =
   | Patomic_fetch_add
   (* Inhibition of optimisation *)
   | Popaque
-  (* nop instruction for debugging *)
-  | Pnop
   (* Fetch domain-local state *)
   | Pdls_get
 

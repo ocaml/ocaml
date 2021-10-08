@@ -168,7 +168,6 @@ and operation =
   | Craise of Lambda.raise_kind
   | Ccheckbound
   | Copaque
-  | Cnop
   | Cdls_get
 
 type expression =

@@ -177,7 +177,6 @@ let prunstack = "Prunstack"
 let pperform = "Pperform"
 let presume = "Presume"
 let preperform = "Preperform"
-let pnop = "Pnop"
 let pdls_get = "Pdls_get"
 
 let pabsfloat_arg = "Pabsfloat_arg"
@@ -290,7 +289,6 @@ let prunstack_arg = "Prunstack_arg"
 let pperform_arg = "Pperform_arg"
 let presume_arg = "Presume_arg"
 let preperform_arg = "Preperform_arg"
-let pnop_arg = "Pnop_arg"
 let pdls_get_arg = "Pdls_get_arg"
 
 let raise = "raise"
@@ -435,7 +433,6 @@ let of_primitive : Lambda.primitive -> string = function
   | Pperform -> pperform
   | Presume -> presume
   | Preperform -> preperform
-  | Pnop -> pnop
   | Pdls_get -> pdls_get
 
 let of_primitive_arg : Lambda.primitive -> string = function
@@ -548,5 +545,4 @@ let of_primitive_arg : Lambda.primitive -> string = function
   | Pperform -> pperform_arg
   | Presume -> presume_arg
   | Preperform -> preperform_arg
-  | Pnop -> pnop_arg
   | Pdls_get -> pdls_get_arg
