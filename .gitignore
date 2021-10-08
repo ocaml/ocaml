@@ -203,6 +203,7 @@ _build
 /runtime/sak
 /runtime/domain_state32.inc
 /runtime/domain_state64.inc
+/runtime/caml/NUL
 
 /stdlib/camlheader
 /stdlib/target_camlheader
