@@ -196,6 +196,16 @@ CAMLdeprecated_typedef(addr, char *);
   #define CAMLunused
 #endif
 
+#if defined(__cplusplus) && __cplusplus >= 201703L
+  #define CAMLfallthrough [[fallthrough]]
+#elif __has_c_attribute (fallthrough)
+  #define CAMLfallthrough [[fallthrough]]
+#elif __has_attribute (fallthrough)
+  #define CAMLfallthrough __attribute__ ((fallthrough))
+#else
+  #define CAMLfallthrough ((void) 0)
+#endif
+
 /* GC timing hooks. These can be assigned by the user. These hooks
    must not allocate, change any heap value, nor call OCaml code. They
    can obtain the domain id with Caml_state->id. These functions must
