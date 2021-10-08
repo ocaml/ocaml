@@ -28,7 +28,9 @@
     [search_level] to the data structure and to keep a list of removed nodes
     in order to do a deferred free.
 
-    You _must_ call [caml_lf_skiplist_free_garbage] "every so often" in order for the data structure to free removed nodes. This must be done by only one thread at a time when no other thread can be accessing the structure.
+    You _must_ call [caml_lf_skiplist_free_garbage] "every so often" in order
+    for the data structure to free removed nodes. This must be done by only
+    one thread at a time when no other thread can be accessing the structure.
 
     It is roughly half the speed of the sequential skip list so only use
     where concurrent access is necessary. For use-cases where there is
@@ -475,7 +477,9 @@ int caml_lf_skiplist_remove(struct lf_skiplist *sk, uintnat key) {
   }
 }
 
-/* Collects freed nodes from the skiplist. This must be called periodically from a single thread at a time when there can be no concurrent access to this skiplist */
+/* Collects freed nodes from the skiplist. This must be called periodically from
+   a single thread at a time when there can be no concurrent access to this
+   skiplist */
 
 void caml_lf_skiplist_free_garbage(struct lf_skiplist *sk) {
   struct lf_skipcell *curr =
