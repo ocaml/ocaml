@@ -370,7 +370,7 @@ FLEXDLL_MANIFEST = default$(filter-out _i386,_$(ARCH)).manifest
 
 DOC_FILES=\
   Changes \
-  README.adoc \
+  README.stock.adoc \
   README.win32.adoc \
   LICENSE
 

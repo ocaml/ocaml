@@ -164,7 +164,7 @@ ifneq "$(BYTECODE_SHARED_LIBRARIES)" ""
 	$(INSTALL_PROG) $(BYTECODE_SHARED_LIBRARIES) "$(INSTALL_LIBDIR)"
 endif
 	mkdir -p "$(INSTALL_INCDIR)"
-	$(INSTALL_DATA) caml/domain_state.tbl caml/byte_domain_state.tbl caml/*.h "$(INSTALL_INCDIR)"
+	$(INSTALL_DATA) caml/domain_state.tbl caml/*.h "$(INSTALL_INCDIR)"
 
 .PHONY: installopt
 installopt:
@@ -244,15 +244,21 @@ caml/jumptbl.h : caml/instruct.h
 	       -e '/^}/q' > $@
 
 # Avoid building due to GIT_HASH when it hasn't changed
-GIT_HASH: $(shell (git rev-parse --short HEAD || echo "<hash unavailable>") > GIT_HASH.new; \
-        cmp -s GIT_HASH GIT_HASH.new || echo GIT_HASH.new)
+GIT_HASH: $(shell (git rev-parse --short HEAD || \
+                   echo "<hash unavailable>") > GIT_HASH.new; \
+                  cmp -s GIT_HASH GIT_HASH.new || echo GIT_HASH.new)
 	cp $^ $@
 
-caml/version.h : $(ROOTDIR)/tools/make-version-header.sh $(ROOTDIR)/VERSION GIT_HASH
+caml/version.h : $(ROOTDIR)/tools/make-version-header.sh \
+    $(ROOTDIR)/VERSION GIT_HASH
 	$(ROOTDIR)/tools/make-version-header.sh $(ROOTDIR)/VERSION > $@
 	echo "#define OCAML_RUNTIME_BUILD_GIT_HASH \"`cat GIT_HASH`\"" >> $@
-	echo "#define OCAML_RUNTIME_BUILD_GIT_BRANCH \"`(git symbolic-ref -q --short HEAD || echo "<branch unavailable>")`\"" >> $@
-	echo "#define OCAML_RUNTIME_BUILD_GIT_TAG \"`(git describe --tags --exact-match || echo "<tag unavailable>")`\"" >> $@
+	echo "#define OCAML_RUNTIME_BUILD_GIT_BRANCH \"\
+	   `(git symbolic-ref -q --short HEAD || echo "<branch unavailable>")`\
+	   \"" >> $@
+	echo "#define OCAML_RUNTIME_BUILD_GIT_TAG \"\
+	   `(git describe --tags --exact-match || echo "<tag unavailable>")`\
+	   \"" >> $@
 
 # These are provided as a temporary shim to allow cross-compilation systems
 # to supply a host C compiler and different flags and a linking macro.
