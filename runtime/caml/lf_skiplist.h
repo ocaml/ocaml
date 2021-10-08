@@ -19,6 +19,7 @@
    implementation for much more detail. */
 
 /* Keys and associated data are natural-width integers (type [uintnat]).
+   Key values 0 and uintnat_max are reserved for internal use. Do not use.
    Pointers can be used too, modulo conversion to [uintnat]. */
 
 #ifndef CAML_SKIPLIST_H
