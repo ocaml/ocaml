@@ -101,7 +101,7 @@ void caml_lf_skiplist_init(struct lf_skiplist *sk) {
   sk->tail->top_level = NUM_LEVELS - 1;
 
   /* We do this so we can disambiguate between garbage_next being NULL and being
-   * set during cleanup */
+     set during cleanup */
   sk->garbage_head = sk->head;
 
   /* each level in the skip list starts of being just head pointing to tail */
@@ -112,11 +112,11 @@ void caml_lf_skiplist_init(struct lf_skiplist *sk) {
 }
 
 /* [skiplist_find] is used for insert/remove and attempts to find a node in the
- * skiplist. It populates the [preds] and [succs] arrays at each level. These
- * arrays are later used for inserting or removing the node (by either CASing
- * the new link or marking it). Additional [skiplist_find] will snip out nodes
- * that have been marked for deletion if it finds during the search. The
- * function is lock-free. */
+   skiplist. It populates the [preds] and [succs] arrays at each level. These
+   arrays are later used for inserting or removing the node (by either CASing
+   the new link or marking it). Additional [skiplist_find] will snip out nodes
+   that have been marked for deletion if it finds during the search. The
+   function is lock-free. */
 static int skiplist_find(struct lf_skiplist *sk, uintnat key,
                          struct lf_skipcell **preds,
                          struct lf_skipcell **succs) {
@@ -131,7 +131,7 @@ static int skiplist_find(struct lf_skiplist *sk, uintnat key,
 retry:
   while (1) {
     /* start at the the head of the skiplist. This node has a key less than any
-     * key we could be searching for */
+       key we could be searching for */
     pred = sk->head;
     /*
     The algorithm itself is fairly simple, we start at the highest level (i.the
@@ -183,9 +183,9 @@ retry:
           if (atomic_compare_exchange_strong(&curr->garbage_next, &null_cell,
                                              (struct lf_skipcell *)1)) {
             /* Despite now having exclusivity of the current node's
-             * garbage_next, having won the CAS, we might be racing another
-             * thread to add a different node to the skiplist's garbage_head.
-             * This is why we need to a retry loop and yet another CAS. */
+               garbage_next, having won the CAS, we might be racing another
+               thread to add a different node to the skiplist's garbage_head.
+               This is why we need to a retry loop and yet another CAS. */
             while (1) {
               current_garbage_head =
                   atomic_load_explicit(&sk->garbage_head, memory_order_acquire);
@@ -202,7 +202,7 @@ retry:
           }
 
           /* Now try to load the current node again. We need to check it too
-           * hasn't been marked. If it has we repeat the process */
+             hasn't been marked. If it has we repeat the process */
           curr = LF_SK_UNMARK(atomic_load_explicit(&pred->forward[level],
                                                    memory_order_acquire));
           LF_SK_EXTRACT(curr->forward[level], is_marked, succ);
@@ -229,9 +229,9 @@ retry:
 }
 
 /* [lf_skiplist_lookup] will return a skipcell or node that is greater than or
- * equal to the key provided, along with the node that directly proceeds it. It
- * is a much simplified version of [lf_skiplist_find] as it simply ignores
- * marked nodes and does not snip them out. As a consequence, it is wait-free.
+   equal to the key provided, along with the node that directly proceeds it. It
+   is a much simplified version of [lf_skiplist_find] as it simply ignores
+   marked nodes and does not snip them out. As a consequence, it is wait-free.
  */
 static struct lf_skipcell *lf_skiplist_lookup(struct lf_skiplist *sk,
                                               uintnat key,
@@ -242,12 +242,12 @@ static struct lf_skipcell *lf_skiplist_lookup(struct lf_skiplist *sk,
   int marked = 0;
 
   /* We start our search from the search_level of the skiplist - this is in
-   * contrast to the find function above where we start at NUM_LEVELS. This is
-   * intentional. Since every search has to eventually end up at the bottom-most
-   * level (even those of an empty list), if we accidentally start at the wrong
-   * level then our only cost is an increased number of nodes searched. If we
-   * did the same thing in the find function above then we'd also fail to snip
-   * out marked nodes. If we did that for long enough we might leak memory. */
+     contrast to the find function above where we start at NUM_LEVELS. This is
+     intentional. Since every search has to eventually end up at the bottom-most
+     level (even those of an empty list), if we accidentally start at the wrong
+     level then our only cost is an increased number of nodes searched. If we
+     did the same thing in the find function above then we'd also fail to snip
+     out marked nodes. If we did that for long enough we might leak memory. */
   for (int level =
            atomic_load_explicit(&sk->search_level, memory_order_relaxed);
        level >= 0; level--) {
@@ -326,7 +326,7 @@ int caml_lf_skiplist_insert(struct lf_skiplist *sk, uintnat key, uintnat data) {
     /* We first try to find a node with [key] in the skip list. If it exists
      * then we don't need to add it. The skiplist_find method will also populate
      * the predecessors and successors arrays, which gives us the nodes between
-     * which we could add the new node. */
+       which we could add the new node. */
     int found = skiplist_find(sk, key, preds, succs);
     struct lf_skipcell *pred;
     struct lf_skipcell *succ;
@@ -339,8 +339,12 @@ int caml_lf_skiplist_insert(struct lf_skiplist *sk, uintnat key, uintnat data) {
        * construct a new cell. The new cell's forward array (which contains the
        * next cell in increasing order of key, at each level) starts at
        * [top_level] and goes to 0. Each entry will point to the successors in
-       * the [succ] array for that level. */
+         the [succ] array for that level. */
       int top_level = random_level();
+      /* attentive readers will have noticed that we assume memory is aligned to
+       * atleast even addresses. This is certainly the case on glibc amd64 and
+       * Visual C++ on Windows though I can find no guarantees for other
+         platorms. */
       struct lf_skipcell *new_cell = caml_stat_alloc(
           SIZEOF_LF_SKIPCELL + (top_level + 1) * sizeof(struct lf_skipcell *));
       new_cell->top_level = top_level;
@@ -358,7 +362,7 @@ int caml_lf_skiplist_insert(struct lf_skiplist *sk, uintnat key, uintnat data) {
        * will be found - regardless of whether it has been added to the level
        * above. Consider the staircasing referred to in [skiplist_find] earlier,
        * the final step in finding a cell is following the reference from it's
-       * predecessor at the bottom level. */
+         predecessor at the bottom level. */
       pred = preds[0];
       succ = succs[0];
 
@@ -368,7 +372,7 @@ int caml_lf_skiplist_insert(struct lf_skiplist *sk, uintnat key, uintnat data) {
        * a possibility that the predecessor's forward pointer could have been
        * marked and we would fail the CAS for that reason too. In that case the
        * [skiplist_find] earlier on will take care of snipping the node before
-       * we get back to this point. */
+         we get back to this point. */
       if (!atomic_compare_exchange_strong(&pred->forward[0], &succ, new_cell)) {
         caml_stat_free(new_cell);
         continue;
@@ -380,7 +384,7 @@ int caml_lf_skiplist_insert(struct lf_skiplist *sk, uintnat key, uintnat data) {
           succ = succs[level];
 
           /* If we were able to insert the cell then we proceed to the next
-           * level */
+             level */
           if (atomic_compare_exchange_strong(&pred->forward[level], &succ,
                                              new_cell)) {
             break;
@@ -389,14 +393,14 @@ int caml_lf_skiplist_insert(struct lf_skiplist *sk, uintnat key, uintnat data) {
           /* On the other hand if we failed it might be because the pointer was
            * marked or because a new cell was added between pred and succ cells
            * at level. In both cases we can fix things by calling
-           * [skiplist_find] and repopulating preds and succs */
+             [skiplist_find] and repopulating preds and succs */
           skiplist_find(sk, key, preds, succs);
         }
       }
 
       /* If we put the new cell at a higher level than the current
        * `search_level` then to speed up searches we need to bump it. We don't
-       * care _too_ much if this fails though. */
+         care _too_ much if this fails though. */
       if (top_level >
           atomic_load_explicit(&sk->search_level, memory_order_relaxed)) {
         atomic_store_explicit(&sk->search_level, top_level,
@@ -419,21 +423,21 @@ int caml_lf_skiplist_remove(struct lf_skiplist *sk, uintnat key) {
   while (1) {
     /* As with insert. If the cell doesn't exist, we don't need to do anything.
      * While we're checking for it we populate the predecessor cells and
-     * successor cells at each level. */
+       successor cells at each level. */
     int found = skiplist_find(sk, key, preds, succs);
 
     if (!found) {
       return 0;
     } else {
       /* When the cell exists in the skiplist, then succs[0] must point to it.
-       * Note: this isn't the case for levels > 0. */
+         Note: this isn't the case for levels > 0. */
       struct lf_skipcell *to_remove = succs[0];
       for (int level = to_remove->top_level; level >= 1; level--) {
         /* We mark each of the forward pointers at every level the cell is
          * present at. We may be raced by another thread deleting the same cell
          * and by threads inserting new cells directly after the cell we are
          * removing, so we need to retry the CAS in a loop to deal with the
-         * latter. */
+           latter. */
         LF_SK_EXTRACT(to_remove->forward[level], marked, succ);
 
         while (!marked) {
@@ -446,7 +450,7 @@ int caml_lf_skiplist_remove(struct lf_skiplist *sk, uintnat key) {
       /* The bottom layer is what ultimately determines whether the cell is
        * present in the skiplist or not. We try to remove it and if we succeed
        * then indicate so to the caller. If not then another thread raced us an
-       * won. */
+         won. */
       LF_SK_EXTRACT(to_remove->forward[0], marked, succ);
       while (1) {
         int mark_success = atomic_compare_exchange_strong(
