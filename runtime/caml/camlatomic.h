@@ -1,3 +1,18 @@
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*      KC Sivaramakrishnan, Indian Institute of Technology, Madras       */
+/*                Stephen Dolan, University of Cambridge                  */
+/*                                                                        */
+/*   Copyright 2018 Indian Institute of Technology, Madras                */
+/*   Copyright 2018 University of Cambridge                               */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 #ifndef CAML_ATOMIC_H
 #define CAML_ATOMIC_H
 
@@ -50,7 +65,10 @@ typedef struct { intnat repr; } atomic_intnat;
 #define atomic_store_explicit(x, v, m) __atomic_store_n(&(x)->repr, (v), (m))
 #define atomic_store(x, v) atomic_store_explicit((x), (v), memory_order_seq_cst)
 #define atomic_compare_exchange_strong(x, oldv, newv) \
-  __atomic_compare_exchange_n(&(x)->repr, (oldv), (newv), 0, memory_order_seq_cst, memory_order_seq_cst)
+  __atomic_compare_exchange_n( \
+    &(x)->repr, \
+    (oldv), (newv), 0, \
+    memory_order_seq_cst, memory_order_seq_cst)
 #define atomic_exchange(x, newv) \
   __atomic_exchange_n(&(x)->repr, (newv), memory_order_seq_cst)
 #define atomic_fetch_add(x, n) \
