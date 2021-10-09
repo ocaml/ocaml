@@ -33,7 +33,8 @@ COMMON_C_SOURCES := $(addsuffix .c, \
   debugger \
   domain \
   dynlink \
-  eventlog \
+  eventring \
+  eventring_consumer \
   extern \
   fiber \
   finalise \

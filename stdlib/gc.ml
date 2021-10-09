@@ -61,8 +61,8 @@ external major : unit -> unit = "caml_gc_major"
 external full_major : unit -> unit = "caml_gc_full_major"
 external compact : unit -> unit = "caml_gc_compaction"
 external get_minor_free : unit -> int = "caml_get_minor_free"
-external eventlog_pause : unit -> unit = "caml_eventlog_pause"
-external eventlog_resume : unit -> unit = "caml_eventlog_resume"
+external eventring_pause : unit -> unit = "caml_eventring_pause"
+external eventring_resume : unit -> unit = "caml_eventring_resume"
 
 open Printf
 

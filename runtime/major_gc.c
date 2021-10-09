@@ -22,7 +22,7 @@
 #include "caml/config.h"
 #include "caml/codefrag.h"
 #include "caml/domain.h"
-#include "caml/eventlog.h"
+#include "caml/eventring.h"
 #include "caml/fail.h"
 #include "caml/fiber.h"
 #include "caml/finalise.h"
@@ -1079,6 +1079,11 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
      they should not run while global roots are being marked.*/
   caml_global_barrier();
 
+  /* Someone should flush the allocation stats we gathered during the cycle */
+  if( participating[0] == Caml_state ) {
+    CAML_EV_ALLOC_FLUSH();
+  }
+
   CAML_EV_END(EV_MAJOR_GC_STW);
   CAML_EV_END(EV_MAJOR_GC_CYCLE_DOMAINS);
 }
@@ -1196,6 +1201,11 @@ static intnat major_collection_slice(intnat howmuch,
       !caml_opportunistic_major_work_available()) {
     return budget;
   }
+
+  /* TODO: The logging in this function will need to be sorted out before
+      we can merge eventring_multicore. Right now the spinning in
+      [finish_major_cycle_callback] causes this to emit hundreds of thousands
+      of spans */
 
   if (log_events) CAML_EV_BEGIN(EV_MAJOR_SLICE);
   call_timing_hook(&caml_major_slice_begin_hook);

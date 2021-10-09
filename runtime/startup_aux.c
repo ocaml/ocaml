@@ -52,6 +52,7 @@ static void init_startup_params(void)
   params.init_custom_minor_ratio = Custom_minor_ratio_def;
   params.init_custom_minor_max_bsz = Custom_minor_max_bsz_def;
   params.init_max_stack_wsz = Max_stack_def;
+  params.eventring_size = 16; /* words, in powers of two */
 #ifdef DEBUG
   params.verb_gc = 0x3F;
 #endif
@@ -94,11 +95,11 @@ void caml_parse_ocamlrunparam(void)
       switch (*opt++){
       case 'b': scanmult (opt, &params.backtrace_enabled); break;
       case 'c': scanmult (opt, &params.cleanup_on_exit); break;
+      case 'e': scanmult (opt, &params.eventring_enabled); break;
       case 'l': scanmult (opt, &params.init_max_stack_wsz); break;
       case 'M': scanmult (opt, &params.init_custom_major_ratio); break;
       case 'm': scanmult (opt, &params.init_custom_minor_ratio); break;
       case 'n': scanmult (opt, &params.init_custom_minor_max_bsz); break;
-      case 'o': scanmult (opt, &params.init_percent_free); break;
       case 'p': scanmult (opt, &params.parser_trace); break;
       case 'R': break; /*  see stdlib/hashtbl.mli */
       case 's': scanmult (opt, &params.init_minor_heap_wsz); break;
