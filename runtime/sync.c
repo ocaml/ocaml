@@ -24,7 +24,7 @@
 #include "caml/signals.h"
 #include "caml/sync.h"
 #include "caml/sys.h"
-#include "caml/eventlog.h"
+#include "caml/runtime_events.h"
 
 /* System-dependent part */
 #include "sync_posix.h"

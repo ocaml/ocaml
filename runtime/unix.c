@@ -27,8 +27,10 @@
 #include <errno.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
+#include <sys/time.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <errno.h>
 #include "caml/config.h"
 #if defined(SUPPORT_DYNAMIC_LINKING) && !defined(BUILDING_LIBCAMLRUNS)
 #define WITH_DYNAMIC_LINKING
@@ -40,6 +42,11 @@
 #endif
 #ifdef HAS_UNISTD
 #include <unistd.h>
+#endif
+#ifdef HAS_POSIX_MONOTONIC_CLOCK
+#include <time.h>
+#elif HAS_MACH_ABSOLUTE_TIME
+#include <mach/mach_time.h>
 #endif
 #ifdef HAS_DIRENT
 #include <dirent.h>
@@ -425,6 +432,38 @@ char *caml_secure_getenv (char const *var)
     return NULL;
 #endif
 }
+
+int64_t caml_time_counter(void)
+{
+#if defined(HAS_MACH_ABSOLUTE_TIME)
+  static mach_timebase_info_data_t time_base = {0};
+  uint64_t now;
+
+  if (time_base.denom == 0) {
+    if (mach_timebase_info(&time_base) != KERN_SUCCESS)
+      return 0;
+  }
+
+  now = mach_absolute_time();
+  return (int64_t)((now * time_base.numer) / time_base.denom);
+#elif defined(HAS_POSIX_MONOTONIC_CLOCK)
+  struct timespec t;
+  clock_gettime(CLOCK_MONOTONIC, &t);
+  return
+    (int64_t)t.tv_sec  * (int64_t)1000000000 +
+    (int64_t)t.tv_nsec;
+#elif defined(HAS_GETTIMEOFDAY)
+  struct timeval t;
+  gettimeofday(&t, 0);
+  return
+    (int64_t)t.tv_sec  * (int64_t)1000000000 +
+    (int64_t)t.tv_usec * (int64_t)1000;
+#else
+# error "No timesource available"
+#endif
+}
+
+
 
 int caml_num_rows_fd(int fd)
 {

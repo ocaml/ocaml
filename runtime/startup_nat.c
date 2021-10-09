@@ -23,7 +23,7 @@
 #include "caml/custom.h"
 #include "caml/codefrag.h"
 #include "caml/debugger.h"
-#include "caml/eventlog.h"
+#include "caml/runtime_events.h"
 #include "caml/fiber.h"
 #include "caml/fail.h"
 #include "caml/gc.h"
@@ -91,6 +91,7 @@ value caml_startup_common(char_os **argv, int pooling)
 
   /* Determine options */
   caml_parse_ocamlrunparam();
+
 #ifdef DEBUG
   caml_gc_message (-1, "### OCaml runtime: debug mode ###\n");
 #endif
@@ -107,6 +108,10 @@ value caml_startup_common(char_os **argv, int pooling)
   caml_init_custom_operations();
   caml_init_os_params();
   caml_init_gc ();
+
+  /* runtime_events's init can cause a stop-the-world pause, so it must be done
+     after we've initialised the garbage collector */
+  CAML_RUNTIME_EVENTS_INIT();
 
   init_segments();
 #ifdef _WIN32

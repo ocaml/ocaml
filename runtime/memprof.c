@@ -44,7 +44,7 @@ CAMLprim value caml_memprof_stop(value unit)
 #include "caml/misc.h"
 #include "caml/compact.h"
 #include "caml/printexc.h"
-#include "caml/eventlog.h"
+#include "caml/runtime_events.h"
 
 #define RAND_BLOCK_SIZE 64
 

@@ -134,12 +134,6 @@ DOMAIN_STATE(intnat, stat_minor_collections)
 DOMAIN_STATE(intnat, stat_forced_major_collections)
 DOMAIN_STATE(uintnat, stat_blocks_marked)
 
-DOMAIN_STATE(uintnat, eventlog_paused)
-DOMAIN_STATE(uintnat, eventlog_enabled)
-DOMAIN_STATE(FILE*, eventlog_out)
-DOMAIN_STATE(struct event_buffer *, eventlog_buffer)
-/* See eventlog.c */
-
 DOMAIN_STATE(int, inside_stw_handler)
 /* whether or not a domain is inside of a stop-the-world handler
    this is used for several debug assertions inside of methods

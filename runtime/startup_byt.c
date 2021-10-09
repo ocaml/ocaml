@@ -37,7 +37,7 @@
 #include "caml/debugger.h"
 #include "caml/domain_state.h"
 #include "caml/dynlink.h"
-#include "caml/eventlog.h"
+#include "caml/runtime_events.h"
 #include "caml/exec.h"
 #include "caml/fail.h"
 #include "caml/fiber.h"
@@ -465,7 +465,7 @@ CAMLexport void caml_main(char_os **argv)
 
   /* Determine options */
   caml_parse_ocamlrunparam();
-  CAML_EVENTLOG_INIT();
+
 #ifdef DEBUG
   caml_gc_message (-1, "### OCaml runtime: debug mode ###\n");
 #endif
@@ -535,6 +535,10 @@ CAMLexport void caml_main(char_os **argv)
   caml_read_section_descriptors(fd, &trail);
   /* Initialize the abstract machine */
   caml_init_gc ();
+
+  /* bring up runtime_events after we've initialised the gc */
+  CAML_RUNTIME_EVENTS_INIT();
+
   Caml_state->external_raise = NULL;
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
@@ -603,7 +607,7 @@ CAMLexport value caml_startup_code_exn(
 
   /* Determine options */
   caml_parse_ocamlrunparam();
-  CAML_EVENTLOG_INIT();
+
 #ifdef DEBUG
   caml_gc_message (-1, "### OCaml runtime: debug mode ###\n");
 #endif
@@ -623,6 +627,10 @@ CAMLexport value caml_startup_code_exn(
 
   /* Initialize the abstract machine */
   caml_init_gc ();
+
+  /* runtime_events has to be brought up after the gc */
+  CAML_RUNTIME_EVENTS_INIT();
+
   exe_name = caml_executable_name();
   if (exe_name == NULL) exe_name = caml_search_exe_in_path(argv[0]);
   Caml_state->external_raise = NULL;

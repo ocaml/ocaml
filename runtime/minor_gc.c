@@ -21,7 +21,7 @@
 #include "caml/config.h"
 #include "caml/custom.h"
 #include "caml/domain.h"
-#include "caml/eventlog.h"
+#include "caml/runtime_events.h"
 #include "caml/fail.h"
 #include "caml/fiber.h"
 #include "caml/finalise.h"
@@ -587,7 +587,6 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
 
   CAML_EV_BEGIN(EV_MINOR_FINALIZERS_ADMIN);
   caml_gc_log("running finalizer data structure book-keeping");
-  /* do the finalizer data structure book-keeping */
   caml_final_update_last_minor(domain);
   CAML_EV_END(EV_MINOR_FINALIZERS_ADMIN);
 
@@ -636,6 +635,11 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
   domain->stat_promoted_words += domain->allocated_words - prev_alloc_words;
 
   call_timing_hook(&caml_minor_gc_end_hook);
+  CAML_EV_COUNTER(EV_C_MINOR_PROMOTED,
+                  Bsize_wsize(domain->allocated_words - prev_alloc_words));
+
+  CAML_EV_COUNTER(EV_C_MINOR_ALLOCATED, minor_allocated_bytes);
+
   CAML_EV_END(EV_MINOR);
   caml_gc_log ("Minor collection of domain %d completed: %2.0f%% of %u KB live",
                domain->id,
@@ -799,7 +803,7 @@ CAMLexport value caml_check_urgent_gc (value extra_root)
 
 static void realloc_generic_table
 (struct generic_table *tbl, asize_t element_size,
- ev_gc_counter ev_counter_name,
+ ev_runtime_counter ev_counter_name,
  char *msg_threshold, char *msg_growing, char *msg_error)
 {
   CAMLassert (tbl->ptr == tbl->limit);

@@ -544,7 +544,7 @@ extern int caml_snprintf(char * buf, size_t size, const char * format, ...);
 #define snprintf caml_snprintf
 #endif
 
-extern int caml_snwprintf(wchar_t * buf,
+CAMLextern int caml_snwprintf(wchar_t * buf,
                           size_t size,
                           const wchar_t * format, ...);
 #define snprintf_os caml_snwprintf

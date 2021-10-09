@@ -20,6 +20,7 @@
 
 #include "caml/addrmap.h"
 #include "caml/custom.h"
+#include "caml/runtime_events.h"
 #include "caml/fail.h"
 #include "caml/fiber.h" /* for verification */
 #include "caml/gc.h"
@@ -361,7 +362,6 @@ static void* pool_allocate(struct caml_heap_state* local, sizeclass sz) {
 
   if (!r) return 0;
 
-
   p = r->next_obj;
   next = (value*)p[1];
   r->next_obj = next;
@@ -398,6 +398,9 @@ value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize,
 
   CAMLassert (wosize > 0);
   CAMLassert (tag != Infix_tag);
+
+  CAML_EV_ALLOC(wosize);
+
   if (whsize <= SIZECLASS_MAX) {
     struct heap_stats* s;
     sizeclass sz = sizeclass_wsize[whsize];

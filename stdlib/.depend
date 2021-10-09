@@ -266,6 +266,14 @@ stdlib__Ephemeron.cmx : ephemeron.ml \
 stdlib__Ephemeron.cmi : ephemeron.mli \
     stdlib__Seq.cmi \
     stdlib__Hashtbl.cmi
+stdlib__Eventring.cmo : eventring.ml \
+    stdlib__Domain.cmi \
+    stdlib__Eventring.cmi
+stdlib__Eventring.cmx : eventring.ml \
+    stdlib__Domain.cmx \
+    stdlib__Eventring.cmi
+stdlib__Eventring.cmi : eventring.mli \
+    stdlib__Domain.cmi
 stdlib__Filename.cmo : filename.ml \
     stdlib__Sys.cmi \
     stdlib__String.cmi \

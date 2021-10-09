@@ -591,7 +591,6 @@ runtime_COMMON_C_SOURCES = \
   debugger \
   domain \
   dynlink \
-  eventlog \
   extern \
   fiber \
   finalise \
@@ -619,6 +618,7 @@ runtime_COMMON_C_SOURCES = \
   printexc \
   prng \
   roots \
+  runtime_events \
   shared_heap \
   signals \
   skiplist \
