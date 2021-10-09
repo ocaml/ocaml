@@ -16,7 +16,7 @@
     please run command `xcode-select --install` to install command-line tools and required libraries and header files.
 
   ** For Windows +
-    Install https://docs.microsoft.com/en-us/windows/wsl/compare-versions[WSL2] or http://www.cygwin.com/[Cygwin].
+    See https://raw.githubusercontent.com/ocaml/ocaml/trunk/README.win32.adoc[README.win32.adoc]
 
 * GNU `make`, as well as POSIX-compatible `awk` and `sed` are required.
 

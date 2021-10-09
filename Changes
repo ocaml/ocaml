@@ -144,7 +144,7 @@ Working version
   Sébastien Hinderer, and Daniel Bünzli)
 
 - #10281: Add description of C compiler on macOS and Windows platforms.
-  (Dong An)
+  (Dong An, review by Xavier Leroy and David Allsopp)
 
 ### Compiler user-interface and warnings:
 
