@@ -7,7 +7,7 @@
     The GNU C Compiler (`gcc`) is recommended as the bytecode interpreter takes
   advantage of GCC-specific features to enhance performance. gcc is the standard
   compiler under Linux and many other systems.
-
+g
   ** For BSDs +
     `Clang` is the default C compiler under BSDs - also works fine.
 
@@ -16,7 +16,7 @@
     please run command `xcode-select --install` to install command-line tools and required libraries and header files.
 
   ** For Windows +
-    See https://raw.githubusercontent.com/ocaml/ocaml/trunk/README.win32.adoc[README.win32.adoc]
+    See https://github.com/ocaml/ocaml/blob/trunk/INSTALL.adoc[README.win32.adoc]
 
 * GNU `make`, as well as POSIX-compatible `awk` and `sed` are required.
 
