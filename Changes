@@ -45,6 +45,9 @@ Working version
   are used for passing arguments that do not fit in registers.
   (Xavier Leroy, review by Vincent Laviron)
 
+- #10681: Enforce boolean conditions for the native backend
+  (Vincent Laviron, review by Gabriel Scherer)
+
 ### Standard library:
 
 * #10622: Annotate `Uchar.t` with immediate attribute
