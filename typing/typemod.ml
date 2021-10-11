@@ -2687,7 +2687,8 @@ and type_structure ?(toplevel = false) ~absent_globals funct_body anchor env
         let smodl = sincl.pincl_mod in
         let modl =
           Builtin_attributes.warning_scope sincl.pincl_attributes
-            (fun () -> type_module ~absent_globals true funct_body None env smodl)
+            (fun () ->
+              type_module ~absent_globals true funct_body None env smodl)
         in
         let scope = Ctype.create_scope () in
         (* Rename all identifiers bound by this signature to avoid clashes *)
