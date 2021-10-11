@@ -7,12 +7,12 @@ include unix
 
 (*
   Test handling of continuations created by a domain that has since terminated.
-  Bug report and testcase by Žiga Lukšič, see:
+  Bug report and testcase by Ziga Luksic, see:
     https://github.com/ocamllabs/ocaml-multicore/issues/175
  *)
 
-open Obj.Effect_handlers
-open Obj.Effect_handlers.Deep
+open EffectHandlers
+open EffectHandlers.Deep
 
 type _ eff += Poke : unit eff
 

@@ -109,6 +109,7 @@ be called from C \\
 "Mutex" & p.~\stdpageref{Mutex} & mutual exclusion locks \\
 "Condition" & p.~\stdpageref{Condition} & condition variables \\
 "Semaphore" & p.~\stdpageref{Semaphore} & semaphores \\
+"EffectHandlers" & p.~\stdpageref{EffectHandlers} & deep and shallow effect handlers \\
 \end{tabular}
 \subsubsection*{sss:stdlib-misc}{Misc:}
 \begin{tabular}{lll}
@@ -132,6 +133,7 @@ be called from C \\
 \stddocitem{Condition}{condition variables to synchronize between threads}
 \stddocitem{Domain}{Domain spawn/join and domain local variables}
 \stddocitem{Digest}{MD5 message digest}
+\stddocitem{EffectHandlers}{deep and shallow effect handlers}
 \stddocitem{Either}{either values}
 \stddocitem{Ephemeron}{Ephemerons and weak hash table}
 \stddocitem{Filename}{operations on file names}

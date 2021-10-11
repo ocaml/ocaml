@@ -1,8 +1,8 @@
 (* TEST
  *)
 
-open Obj.Effect_handlers
-open Obj.Effect_handlers.Deep
+open EffectHandlers
+open EffectHandlers.Deep
 
 type _ eff += Peek : int eff
 type _ eff += Poke : unit eff
@@ -25,7 +25,7 @@ let rec e i =
   { effc = fun (type a) (e : a eff) ->
       match e with
       | Peek -> Some (fun (k : (a,_) continuation) ->
-          ignore (Printexc.get_kcallstack_deep k 100);
+          ignore (Deep.get_callstack k 100);
           continue k 42)
       | _ -> None }
 

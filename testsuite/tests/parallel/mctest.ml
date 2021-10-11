@@ -6,7 +6,7 @@ include unix
 *)
 
 (*
- * Copyright (c) 2015, Théo Laurent <theo.laurent@ens.fr>
+ * Copyright (c) 2015, Theo Laurent <theo.laurent@ens.fr>
  * Copyright (c) 2015, KC Sivaramakrishnan <sk826@cl.cam.ac.uk>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
@@ -150,8 +150,8 @@ end
 
 module Scheduler =
 struct
-  open Obj.Effect_handlers
-  open Obj.Effect_handlers.Deep
+  open EffectHandlers
+  open EffectHandlers.Deep
 
   type 'a cont = ('a, unit) continuation
 
