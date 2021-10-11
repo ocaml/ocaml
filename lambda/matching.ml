@@ -1766,7 +1766,8 @@ let get_expr_args_constr ~scopes head (arg, _mut) rem =
       if pos > last_pos then
         argl
       else
-        (Lprim (Pfield (pos, Pointer, Immutable), [ arg ], loc), binding_kind) :: make_args (pos + 1)
+        (Lprim (Pfield (pos, Pointer, Immutable), [ arg ], loc),
+               binding_kind) :: make_args (pos + 1)
     in
     make_args first_pos
   in
@@ -2022,7 +2023,8 @@ let get_expr_args_tuple ~scopes head (arg, _mut) rem =
     if pos >= arity then
       rem
     else
-      (Lprim (Pfield (pos, Pointer, Immutable), [ arg ], loc), Alias) :: make_args (pos + 1)
+      (Lprim (Pfield (pos, Pointer, Immutable), [ arg ], loc),
+             Alias) :: make_args (pos + 1)
   in
   make_args 0
 
@@ -3429,12 +3431,9 @@ let check_partial pat_act_list =
 type failer_kind =
   | Raise_match_failure
   | Reraise_noloc of lambda
-  | Reperform_noloc of lambda list
 
 let failure_handler ~scopes loc ~failer () =
   match failer with
-  | Reperform_noloc reperform_lst ->
-    Lprim (Preperform, reperform_lst, Loc_unknown)
   | Reraise_noloc exn_lam ->
     Lprim (Praise Raise_reraise, [ exn_lam ], Scoped_location.Loc_unknown)
   | Raise_match_failure ->
@@ -3510,11 +3509,6 @@ let for_trywith ~scopes loc param pat_act_list =
      the reraise (hence the [_noloc]) to avoid seeing this
      silent reraise in exception backtraces. *)
   compile_matching ~scopes loc ~failer:(Reraise_noloc param)
-    None param pat_act_list Partial
-
-let for_handler ~scopes loc param cont cont_tail pat_act_list =
-  compile_matching ~scopes loc
-    ~failer:(Reperform_noloc [param; cont; cont_tail])
     None param pat_act_list Partial
 
 let simple_for_let ~scopes loc param pat body =
