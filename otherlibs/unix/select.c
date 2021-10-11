@@ -36,7 +36,7 @@ static int fdlist_to_fdset(value fdlist, fd_set *fdset, int *maxfd)
   value l;
   FD_ZERO(fdset);
   for (l = fdlist; l != Val_int(0); l = Field(l, 1)) {
-    long fd = Long_field(l, 0);
+    long fd = Long_val(Field(l, 0));
     /* PR#5563: harden against bad fds */
     if (fd < 0 || fd >= FD_SETSIZE) return -1;
     FD_SET((int) fd, fdset);
@@ -54,9 +54,9 @@ static value fdset_to_fdlist(value fdlist, fd_set *fdset)
     for (l = fdlist; l != Val_int(0); l = Field(l, 1)) {
       int fd = Int_val(Field(l, 0));
       if (FD_ISSET(fd, fdset)) {
-        value newres = caml_alloc_2(0,
-          Val_int(fd),
-          res);
+        value newres = caml_alloc_small(2, 0);
+        Field(newres, 0) = Val_int(fd);
+        Field(newres, 1) = res;
         res = newres;
       }
     }
@@ -97,10 +97,10 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
     readfds = fdset_to_fdlist(readfds, &read);
     writefds = fdset_to_fdlist(writefds, &write);
     exceptfds = fdset_to_fdlist(exceptfds, &except);
-    res = caml_alloc_3(0,
-      readfds,
-      writefds,
-      exceptfds);
+    res = caml_alloc_small(3, 0);
+    Field(res, 0) = readfds;
+    Field(res, 1) = writefds;
+    Field(res, 2) = exceptfds;
   End_roots();
   return res;
 }

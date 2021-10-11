@@ -33,8 +33,11 @@ static value alloc_group_entry(struct group *entry)
        hence this workaround */
     pass = caml_copy_string(entry->gr_passwd ? entry->gr_passwd : "");
     mem = caml_copy_string_array((const char**)entry->gr_mem);
-    res = caml_alloc_4(0, name, pass,
-                       Val_int(entry->gr_gid), mem);
+    res = caml_alloc_small(4, 0);
+    Field(res,0) = name;
+    Field(res,1) = pass;
+    Field(res,2) = Val_int(entry->gr_gid);
+    Field(res,3) = mem;
   End_roots();
   return res;
 }

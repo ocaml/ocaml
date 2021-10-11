@@ -41,7 +41,7 @@ extern void caml_unix_check_path(value path, const char * cmdname);
 
 #define UNIX_BUFFER_SIZE 65536
 
-#define DIR_Val(v) *((DIR **) Data_abstract_val(v))
+#define DIR_Val(v) *((DIR **) &Field(v, 0))
 
 extern char ** cstringvect(value arg, char * cmdname);
 extern void cstringvect_free(char **);

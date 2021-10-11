@@ -145,9 +145,9 @@ value alloc_sockaddr(union sock_addr_union * adr /*in*/,
   case AF_INET:
     { value a = alloc_inet_addr(&adr->s_inet.sin_addr);
       Begin_root (a);
-        res = caml_alloc_2(1,
-          a,
-          Val_int(ntohs(adr->s_inet.sin_port)));
+        res = caml_alloc_small(2, 1);
+        Field(res,0) = a;
+        Field(res,1) = Val_int(ntohs(adr->s_inet.sin_port));
       End_roots();
       break;
     }
@@ -155,9 +155,9 @@ value alloc_sockaddr(union sock_addr_union * adr /*in*/,
   case AF_INET6:
     { value a = alloc_inet6_addr(&adr->s_inet6.sin6_addr);
       Begin_root (a);
-        res = caml_alloc_2(1,
-          a,
-          Val_int(ntohs(adr->s_inet6.sin6_port)));
+        res = caml_alloc_small(2, 1);
+        Field(res,0) = a;
+        Field(res,1) = Val_int(ntohs(adr->s_inet6.sin6_port));
       End_roots();
       break;
     }

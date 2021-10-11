@@ -54,7 +54,9 @@ CAMLprim value unix_getnameinfo(value vaddr, value vopts)
   if (retcode != 0) caml_raise_not_found();
   vhost = caml_copy_string(host);
   vserv = caml_copy_string(serv);
-  vres = caml_alloc_2(0, vhost, vserv);
+  vres = caml_alloc_small(2, 0);
+  Field(vres, 0) = vhost;
+  Field(vres, 1) = vserv;
   CAMLreturn(vres);
 }
 
