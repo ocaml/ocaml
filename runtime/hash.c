@@ -241,7 +241,8 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
         h = 42;
         break;
       case Cont_tag:
-        /* All continuations hash to the same value, since we have no idea how to distinguish them. */
+        /* All continuations hash to the same value,
+           since we have no idea how to distinguish them. */
         h = 42;
         break;
       case Forward_tag:
@@ -273,7 +274,7 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
         /* Copy fields into queue, not exceeding the total size [sz] */
         for (i = 0, len = Wosize_val(v); i < len; i++) {
           if (wr >= sz) break;
-          caml_read_field(v, i, &queue[wr++]);
+          queue[wr++] = Field(v, i);
         }
         break;
       }

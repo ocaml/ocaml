@@ -68,7 +68,8 @@ CAMLprim value caml_floatarray_get(value array, value index)
   if (idx < 0 || idx >= Wosize_val(array) / Double_wosize)
     caml_array_bound_error();
   d = Double_flat_field(array, idx);
-  Alloc_small(res, Double_wosize, Double_tag, { caml_handle_gc_interrupt_no_async_exceptions(); });
+  Alloc_small(res, Double_wosize, Double_tag,
+    { caml_handle_gc_interrupt_no_async_exceptions(); });
   Store_double_val(res, d);
   return res;
 }
@@ -121,13 +122,14 @@ CAMLprim value caml_array_set(value array, value index, value newval)
 /* [ floatarray -> int -> float ] */
 CAMLprim value caml_floatarray_unsafe_get(value array, value index)
 {
-  intnat idx = Long_val (index);
+  intnat idx = Long_val(index);
   double d;
   value res;
 
   CAMLassert (Tag_val(array) == Double_array_tag);
   d = Double_flat_field(array, idx);
-  Alloc_small(res, Double_wosize, Double_tag, { caml_handle_gc_interrupt_no_async_exceptions(); });
+  Alloc_small(res, Double_wosize, Double_tag,
+    { caml_handle_gc_interrupt_no_async_exceptions(); });
   Store_double_val(res, d);
   return res;
 }
@@ -183,7 +185,8 @@ CAMLprim value caml_floatarray_create(value len)
     if (wosize == 0)
       return Atom(0);
     else
-      Alloc_small (result, wosize, Double_array_tag, { caml_handle_gc_interrupt_no_async_exceptions(); });
+      Alloc_small (result, wosize, Double_array_tag,
+        { caml_handle_gc_interrupt_no_async_exceptions(); });
   }else if (wosize > Max_wosize)
     caml_invalid_argument("Float.Array.create");
   else {
@@ -266,13 +269,13 @@ CAMLprim value caml_make_array(value init)
 #ifdef FLAT_FLOAT_ARRAY
   CAMLparam1 (init);
   mlsize_t wsize, size, i;
-  CAMLlocal3 (v, res, x);
+  CAMLlocal2 (v, res);
 
   size = Wosize_val(init);
   if (size == 0) {
     CAMLreturn (init);
   } else {
-    caml_read_field(init, 0, &v);
+    v = Field(init, 0);
     if (Is_long(v)
         || Tag_val(v) != Double_tag) {
       CAMLreturn (init);
@@ -280,8 +283,8 @@ CAMLprim value caml_make_array(value init)
       wsize = size * Double_wosize;
       res = caml_alloc(wsize, Double_array_tag);
       for (i = 0; i < size; i++) {
-        caml_read_field(init, i, &x);
-        Store_double_flat_field(res, i, Double_val(x));
+        double d = Double_val(Field(init, i));
+        Store_double_flat_field(res, i, d);
       }
       CAMLreturn (res);
     }

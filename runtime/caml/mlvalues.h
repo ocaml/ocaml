@@ -215,7 +215,7 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 /* Is_young(val) is true iff val is in the reserved area for minor heaps */
 
 #define Is_young(val) \
-  (CAMLassert (Is_block (val)),		   \
+  (CAMLassert (Is_block (val)), \
    (char *)(val) < (char *)caml_minor_heaps_end && \
    (char *)(val) > (char *)caml_minor_heaps_base)
 
@@ -231,7 +231,8 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 /* Forward_tag: forwarding pointer that the GC may silently shortcut.
    See stdlib/lazy.ml. */
 #define Forward_tag 250
-#define Forward_val(v) Field(v, 0) /* FIXME: not immutable once shortcutting is implemented */
+#define Forward_val(v) Field(v, 0)
+/* FIXME: not immutable once shortcutting is implemented */
 
 /* If tag == Infix_tag : an infix header inside a closure */
 /* Infix_tag must be odd so that the infix header is scanned as an integer */
@@ -438,14 +439,6 @@ CAMLextern value caml_atom(tag_t);
 #define Is_some(v) Is_block(v)
 
 CAMLextern value caml_set_oo_id(value obj);
-
-Caml_inline void caml_read_field(value x, intnat i, value* ret) {
-  value v;
-  Assert (Hd_val(x));
-  /* See Note [MM] in memory.c */
-  v = atomic_load_explicit(&Op_atomic_val(x)[i], memory_order_relaxed);
-  *ret = v;
-}
 
 #define Int_field(x, i) Int_val(Field(x, i))
 #define Long_field(x, i) Long_val(Field(x, i))

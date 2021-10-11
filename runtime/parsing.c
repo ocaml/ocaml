@@ -116,8 +116,7 @@ static char * token_name(char * names, int number)
 
 static void print_token(struct parser_tables *tables, int state, value tok)
 {
-  CAMLparam1 (tok);
-  CAMLlocal1 (v);
+  value v;
 
   if (Is_long(tok)) {
     fprintf(stderr, "State %d: read token %s\n",
@@ -125,7 +124,7 @@ static void print_token(struct parser_tables *tables, int state, value tok)
   } else {
     fprintf(stderr, "State %d: read token %s(",
             state, token_name(tables->names_block, Tag_val(tok)));
-    caml_read_field(tok, 0, &v);
+    v = Field(tok, 0);
     if (Is_long(v))
       fprintf(stderr, "%" ARCH_INTNAT_PRINTF_FORMAT "d", Long_val(v));
     else if (Tag_val(v) == String_tag)
@@ -136,7 +135,6 @@ static void print_token(struct parser_tables *tables, int state, value tok)
       fprintf(stderr, "_");
     fprintf(stderr, ")\n");
   }
-  CAMLreturn0;
 }
 
 static int trace()
