@@ -388,39 +388,39 @@ and try_modtypes ~in_eq ~loc env target_env ~mark subst mty1 mty2 =
   | (Mty_alias p1, Mty_alias p2) ->
       if Env.is_functor_arg p2 env then
         Error (Error.Invalid_module_alias p2)
-      else
+      else begin
         let p2' = Subst.module_path subst p2 in
-        if not (equal_module_paths env p1 p2') then
-          Error Error.(Mt_core Incompatible_aliases)
-        else if Path.same p2 p2' then
-          Ok Tcoerce_none
-        else
-          (* This path contains local references, we may need to build a
-             coercion.
-             Consider for example
-             {|
-                module Foo = struct let run_me f = f () incr x = x + 1 end;;
-                module M = struct module N = Foo module O = N end;;
-                module M' : sig
-                    module N : sig val incr : int -> int end
-                    module O = N
-                  end =
-                  M;;
-                M'.O.incr 1;;
-             |}
-             If the module [O] is present in [M'], we have to ensure that the
-             contents of [O] have [incr] at position 0; otherwise, emitting a
-             [Tcoerce_none] will leave [run_me] at position 0, and we will
-             attempt to 'call' the [int] 1.
-          *)
-          begin match
-            ( expand_module_alias ~strengthen:true env p1
-            , expand_module_alias ~strengthen:true target_env p2 )
-          with
-          | (Error e, _) | (_, Error e) -> Error (Error.Mt_core e)
-          | (Ok mty1, Ok mty2) ->
-              try_modtypes ~in_eq ~loc env target_env ~mark subst mty1 mty2
+        if equal_module_paths env p1 p2' then begin
+          if Path.same p2 p2' then Ok Tcoerce_none
+          else begin
+            (* This path contains local references, we may need to build a
+               coercion.
+               Consider for example
+               {|
+                  module Foo = struct let run_me f = f () incr x = x + 1 end;;
+                  module M = struct module N = Foo module O = N end;;
+                  module M' : sig
+                      module N : sig val incr : int -> int end
+                      module O = N
+                    end =
+                    M;;
+                  M'.O.incr 1;;
+               |}
+               If the module [O] is present in [M'], we have to ensure that the
+               contents of [O] have [incr] at position 0; otherwise, emitting a
+               [Tcoerce_none] will leave [run_me] at position 0, and we will
+               attempt to 'call' the [int] 1.
+            *)
+            match expand_module_alias ~strengthen:true target_env p2 with
+            | Error e -> Error (Error.Mt_core e)
+            | Ok mty2 ->
+                try_modtypes ~in_eq ~loc env target_env ~mark subst mty1 mty2
           end
+        end
+        else begin
+          Error Error.(Mt_core Incompatible_aliases)
+        end
+      end
   | (Mty_alias p1, _) -> begin
       match
         Env.normalize_module_path (Some Location.none) env p1
