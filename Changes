@@ -243,6 +243,9 @@ Working version
 - #10678: Expose descriptions in Warnings module
   (Leo White, review by Gabriel Scherer and Alain Frisch)
 
+- #10690: Always build ocamltoplevel.cmxa
+  (David Allsopp, review by Gabriel Scherer)
+
 - #10692: Expose Parse.module_type and Parse.module_expr
   (Guillaume Petiot, review by Gabriel Scherer)
 
