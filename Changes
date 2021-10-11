@@ -12,6 +12,9 @@ Working version
 
 ### Runtime system:
 
+* #10673: Always use 'present' modules for aliases in module types
+  (Matthew Ryan, review by Leo White)
+
 * #9391, #9424: Fix failed assertion in runtime due to ephemerons *set_* and
   *blit_* function during Mark phase
   (François Bobot, reported by Stephen Dolan, reviewed by Damien Doligez)
