@@ -2207,7 +2207,7 @@ and type_module_aux ~alias ~absent_globals sttn funct_body anchor env smod =
         mod_attributes = smod.pmod_attributes;
         mod_loc = smod.pmod_loc }
   | Pmod_apply _ ->
-      type_application smod.pmod_loc sttn funct_body env smod
+      type_application ~absent_globals smod.pmod_loc sttn funct_body env smod
   | Pmod_constraint(sarg, smty) ->
       let arg =
         type_module ~alias ~absent_globals true funct_body anchor env sarg
@@ -2255,12 +2255,12 @@ and type_module_aux ~alias ~absent_globals sttn funct_body anchor env smod =
   | Pmod_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
 
-and type_application loc strengthen funct_body env smod =
+and type_application ~absent_globals loc strengthen funct_body env smod =
   let rec extract_application funct_body env sargs smod =
     match smod.pmod_desc with
     | Pmod_apply(f, sarg) ->
         let arg =
-          type_module ~absent_globals:false true funct_body None env sarg
+          type_module ~absent_globals true funct_body None env sarg
         in
         let summary =
           { loc=smod.pmod_loc;
@@ -2279,7 +2279,7 @@ and type_application loc strengthen funct_body env smod =
     let strengthen =
       strengthen && List.for_all (fun {arg_path;_} -> arg_path <> None) args
     in
-    type_module ~absent_globals:false strengthen funct_body None env sfunct
+    type_module ~absent_globals strengthen funct_body None env sfunct
   in
   List.fold_left (type_one_application ~ctx:(loc, funct, args) funct_body env)
     funct args
@@ -2739,7 +2739,8 @@ let type_toplevel_phrase env s =
   (str, sg, to_remove_from_sg, env)
 
 let type_module_alias =
-  type_module ~alias:true ~absent_globals:false true false None
+  type_module ~alias:true ~absent_globals:!Clflags.transparent_modules true
+    false None
 let type_module ~absent_globals = type_module ~absent_globals true false None
 let type_structure ?(absent_globals = !Clflags.transparent_modules) env sstr =
   type_structure ~absent_globals false None env sstr
@@ -2890,7 +2891,8 @@ let type_package env m p fl =
 (* Fill in the forward declarations *)
 
 let type_open_decl ?used_slot env od =
-  type_open_decl ?used_slot ?toplevel:None ~absent_globals:false false
+  type_open_decl ?used_slot ?toplevel:None
+    ~absent_globals:!Clflags.transparent_modules false
     (Signature_names.create ()) env od
 
 let type_open_descr ?used_slot env od =
