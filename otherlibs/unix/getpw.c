@@ -37,14 +37,14 @@ static value alloc_passwd_entry(struct passwd *entry)
 #endif
     dir = caml_copy_string(entry->pw_dir);
     shell = caml_copy_string(entry->pw_shell);
-    res = caml_alloc_7(0,
-      name,
-      passwd,
-      Val_int(entry->pw_uid),
-      Val_int(entry->pw_gid),
-      gecos,
-      dir,
-      shell);
+    res = caml_alloc_small(7, 0);
+    Field(res,0) = name;
+    Field(res,1) = passwd;
+    Field(res,2) = Val_int(entry->pw_uid);
+    Field(res,3) = Val_int(entry->pw_gid);
+    Field(res,4) = gecos;
+    Field(res,5) = dir;
+    Field(res,6) = shell;
   End_roots();
   return res;
 }
