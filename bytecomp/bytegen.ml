@@ -109,8 +109,8 @@ let rec is_tailcall = function
    from the tail call optimization? *)
 
 let preserve_tailcall_for_prim = function
-    Prunstack | Pperform | Presume | Preperform |
-    Popaque | Psequor | Psequand ->
+  | Popaque | Psequor | Psequand
+  | Prunstack | Pperform | Presume | Preperform ->
       true
   | Pbytes_to_string | Pbytes_of_string | Pignore | Pgetglobal _ | Psetglobal _
   | Pmakeblock _ | Pfield _ | Pfield_computed | Psetfield _
@@ -131,8 +131,8 @@ let preserve_tailcall_for_prim = function
   | Pbytes_load_32 _ | Pbytes_load_64 _ | Pbytes_set_16 _ | Pbytes_set_32 _
   | Pbytes_set_64 _ | Pbigstring_load_16 _ | Pbigstring_load_32 _
   | Pbigstring_load_64 _ | Pbigstring_set_16 _ | Pbigstring_set_32 _
-  | Patomic_exchange | Patomic_cas | Patomic_fetch_add | Patomic_load _ | Pnop
   | Pbigstring_set_64 _ | Pctconst _ | Pbswap16 | Pbbswap _ | Pint_as_pointer
+  | Patomic_exchange | Patomic_cas | Patomic_fetch_add | Patomic_load _
   | Pdls_get ->
       false
 
@@ -526,7 +526,7 @@ let comp_primitive p sz args =
   (* The cases below are handled in [comp_expr] before the [comp_primitive] call
      (in the order in which they appear below),
      so they should never be reached in this function. *)
-  | Pnop | Prunstack | Presume | Preperform
+  | Prunstack | Presume | Preperform
   | Pignore | Popaque
   | Pnot | Psequand | Psequor
   | Praise _
@@ -702,7 +702,7 @@ let rec comp_expr env exp sz cont =
         in
         comp_init env sz decl_size
       end
-  | Lprim((Pnop | Popaque), [arg], _) ->
+  | Lprim(Popaque, [arg], _) ->
       comp_expr env arg sz cont
   | Lprim(Pignore, [arg], _) ->
       comp_expr env arg sz (add_const_unit cont)
@@ -805,7 +805,7 @@ let rec comp_expr env exp sz cont =
       and args = [k ; arg] in
       let nargs = List.length args - 1 in
       comp_args env args sz (comp_primitive p (sz + nargs - 1) args :: cont)
- | Lprim (Pfloatcomp cmp, args, _) ->
+  | Lprim (Pfloatcomp cmp, args, _) ->
       let cont =
         match cmp with
         | CFeq -> Kccall("caml_eq_float", 2) :: cont

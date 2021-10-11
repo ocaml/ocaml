@@ -1371,8 +1371,6 @@ val unsafe_really_input : in_channel -> bytes -> int -> int -> unit
 
 val do_at_exit : unit -> unit
 
-external nop : unit -> unit = "%nop"
-
 (**/**)
 
 (** {1:modules Standard library modules } *)
