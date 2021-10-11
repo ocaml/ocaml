@@ -35,7 +35,8 @@ DOMAIN_STATE(void*, exn_handler)
 /* Pointer into into the current stack */
 
 DOMAIN_STATE(struct c_stack_link*, c_stack)
-/* The C stack associated with this domain. Used by this domain to perform external calls. */
+/* The C stack associated with this domain.
+ * Used by this domain to perform external calls. */
 
 DOMAIN_STATE(struct stack_info**, stack_cache)
 /* This is a list of freelist buckets of stacks */
@@ -152,12 +153,10 @@ DOMAIN_STATE(void*, checking_pointer_pc)
 /* See major_gc.c */
 #endif
 
-#ifndef NATIVE_CODE
 DOMAIN_STATE(intnat, trap_sp_off)
 DOMAIN_STATE(intnat, trap_barrier_off)
 DOMAIN_STATE(struct caml_exception_context*, external_raise)
 /* Bytecode TLS vars, not used for native code */
-#endif
 
 DOMAIN_STATE(extra_params_area, extra_params)
 /* This member must occur last, because it is an array, not a scalar */
