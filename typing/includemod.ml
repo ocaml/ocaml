@@ -164,7 +164,7 @@ let value_descriptions ~loc env ~mark subst id vd1 vd2 =
 
 (* Inclusion between type declarations *)
 
-let type_declarations ~loc env ~mark ?old_env:_ subst id decl1 decl2 =
+let type_declarations ~loc env ~mark subst id decl1 decl2 =
   let mark = mark_positive mark in
   if mark then
     Env.mark_type_used decl1.type_uid;
@@ -179,7 +179,7 @@ let type_declarations ~loc env ~mark ?old_env:_ subst id decl1 decl2 =
 
 (* Inclusion between extension constructors *)
 
-let extension_constructors ~loc env ~mark  subst id ext1 ext2 =
+let extension_constructors ~loc env ~mark subst id ext1 ext2 =
   let mark = mark_positive mark in
   let ext2 = Subst.extension_constructor subst ext2 in
   match Includecore.extension_constructors ~loc env ~mark id ext1 ext2 with
@@ -189,14 +189,14 @@ let extension_constructors ~loc env ~mark  subst id ext1 ext2 =
 
 (* Inclusion between class declarations *)
 
-let class_type_declarations ~loc ~old_env:_ env  subst decl1 decl2 =
+let class_type_declarations ~loc env subst decl1 decl2 =
   let decl2 = Subst.cltype_declaration subst decl2 in
   match Includeclass.class_type_declarations ~loc env decl1 decl2 with
     []     -> Ok Tcoerce_none
   | reason ->
       Error Error.(Core(Class_type_declarations(diff decl1 decl2 reason)))
 
-let class_declarations ~old_env:_ env  subst decl1 decl2 =
+let class_declarations env subst decl1 decl2 =
   let decl2 = Subst.class_declaration subst decl2 in
   match Includeclass.class_declarations env decl1 decl2 with
     []     -> Ok Tcoerce_none
@@ -376,14 +376,14 @@ let retrieve_functor_params env mty =
    described above.
 *)
 
-let rec modtypes ~in_eq ~loc env ~mark subst mty1 mty2 =
-  match try_modtypes ~in_eq ~loc env ~mark subst mty1 mty2 with
+let rec modtypes ~in_eq ~loc env target_env ~mark subst mty1 mty2 =
+  match try_modtypes ~in_eq ~loc env target_env ~mark subst mty1 mty2 with
   | Ok _ as ok -> ok
   | Error reason ->
     let mty2 = Subst.modtype Make_local subst mty2 in
     Error Error.(diff mty1 mty2 reason)
 
-and try_modtypes ~in_eq ~loc env ~mark subst mty1 mty2 =
+and try_modtypes ~in_eq ~loc env target_env ~mark subst mty1 mty2 =
   match mty1, mty2 with
   | (Mty_alias p1, Mty_alias p2) ->
       if Env.is_functor_arg p2 env then
@@ -415,11 +415,11 @@ and try_modtypes ~in_eq ~loc env ~mark subst mty1 mty2 =
           *)
           begin match
             ( expand_module_alias ~strengthen:true env p1
-            , expand_module_alias ~strengthen:true env p2 )
+            , expand_module_alias ~strengthen:true target_env p2 )
           with
           | (Error e, _) | (_, Error e) -> Error (Error.Mt_core e)
           | (Ok mty1, Ok mty2) ->
-              try_modtypes ~in_eq ~loc env ~mark subst mty1 mty2
+              try_modtypes ~in_eq ~loc env target_env ~mark subst mty1 mty2
           end
   | (Mty_alias p1, _) -> begin
       match
@@ -431,8 +431,9 @@ and try_modtypes ~in_eq ~loc env ~mark subst mty1 mty2 =
           begin match expand_module_alias ~strengthen:false env p1 with
           | Error e -> Error (Error.Mt_core e)
           | Ok mty1 ->
-              match strengthened_modtypes ~in_eq ~loc ~aliasable:true env ~mark
-                      subst mty1 p1 mty2
+              match
+                strengthened_modtypes ~in_eq ~loc ~aliasable:true env
+                  target_env ~mark subst mty1 p1 mty2
               with
               | Ok _ as x -> x
               | Error reason -> Error (Error.After_alias_expansion reason)
@@ -445,20 +446,20 @@ and try_modtypes ~in_eq ~loc env ~mark subst mty1 mty2 =
       else
         begin match expand_modtype_path env p1, expand_modtype_path env p2 with
         | Some mty1, Some mty2 ->
-            try_modtypes ~in_eq ~loc env ~mark subst mty1 mty2
+            try_modtypes ~in_eq ~loc env target_env ~mark subst mty1 mty2
         | None, _  | _, None -> Error (Error.Mt_core Abstract_module_type)
         end
   | (Mty_ident p1, _) ->
       let p1 = Env.normalize_modtype_path env p1 in
       begin match expand_modtype_path env p1 with
       | Some p1 ->
-          try_modtypes ~in_eq ~loc env ~mark subst p1 mty2
+          try_modtypes ~in_eq ~loc env target_env ~mark subst p1 mty2
       | None -> Error (Error.Mt_core Abstract_module_type)
       end
   | (_, Mty_ident p2) ->
       let p2 = Env.normalize_modtype_path env (Subst.modtype_path subst p2) in
       begin match expand_modtype_path env p2 with
-      | Some p2 -> try_modtypes ~in_eq ~loc env ~mark subst mty1 p2
+      | Some p2 -> try_modtypes ~in_eq ~loc env target_env ~mark subst mty1 p2
       | None ->
           begin match mty1 with
           | Mty_functor _ ->
@@ -469,16 +470,18 @@ and try_modtypes ~in_eq ~loc env ~mark subst mty1 mty2 =
           end
       end
   | (Mty_signature sig1, Mty_signature sig2) ->
-      begin match signatures ~in_eq ~loc env ~mark subst sig1 sig2 with
+      begin match
+        signatures ~in_eq ~loc env target_env ~mark subst sig1 sig2
+      with
       | Ok _ as ok -> ok
       | Error e -> Error (Error.Signature e)
       end
   | Mty_functor (param1, res1), Mty_functor (param2, res2) ->
       let cc_arg, env, subst =
-        functor_param ~in_eq ~loc env ~mark:(negate_mark mark)
+        functor_param ~in_eq ~loc env target_env ~mark:(negate_mark mark)
           subst param1 param2
       in
-      let cc_res = modtypes ~in_eq ~loc env ~mark subst res1 res2 in
+      let cc_res = modtypes ~in_eq ~loc env target_env ~mark subst res1 res2 in
       begin match cc_arg, cc_res with
       | Ok Tcoerce_none, Ok Tcoerce_none -> Ok Tcoerce_none
       | Ok cc_arg, Ok cc_res -> Ok (Tcoerce_functor(cc_arg, cc_res))
@@ -508,14 +511,16 @@ and try_modtypes ~in_eq ~loc env ~mark subst mty1 mty2 =
 
 (* Functor parameters *)
 
-and functor_param ~in_eq ~loc env ~mark subst param1 param2 =
+and functor_param ~in_eq ~loc env target_env ~mark subst param1 param2 =
   match param1, param2 with
   | Unit, Unit ->
       Ok Tcoerce_none, env, subst
   | Named (name1, arg1), Named (name2, arg2) ->
       let arg2' = Subst.modtype Keep subst arg2 in
       let cc_arg =
-        match modtypes ~in_eq ~loc env ~mark Subst.identity arg2' arg1 with
+        match
+          modtypes ~in_eq ~loc env target_env ~mark Subst.identity arg2' arg1
+        with
         | Ok cc -> Ok cc
         | Error err -> Error (Error.Mismatch err)
       in
@@ -535,14 +540,14 @@ and functor_param ~in_eq ~loc env ~mark subst param1 param2 =
   | _, _ ->
       Error (Error.Incompatible_params (param1, param2)), env, subst
 
-and strengthened_modtypes ~in_eq ~loc ~aliasable env ~mark
+and strengthened_modtypes ~in_eq ~loc ~aliasable env target_env ~mark
     subst mty1 path1 mty2 =
   match mty1, mty2 with
   | Mty_ident p1, Mty_ident p2 when equal_modtype_paths env p1 subst p2 ->
       Ok Tcoerce_none
   | _, _ ->
       let mty1 = Mtype.strengthen ~aliasable env mty1 path1 in
-      modtypes ~in_eq ~loc env ~mark subst mty1 mty2
+      modtypes ~in_eq ~loc env target_env ~mark subst mty1 mty2
 
 and strengthened_module_decl ~loc ~aliasable env ~mark subst md1 path1 md2 =
   match md1.md_type, md2.md_type with
@@ -550,16 +555,15 @@ and strengthened_module_decl ~loc ~aliasable env ~mark subst md1 path1 md2 =
       Ok Tcoerce_none
   | _, _ ->
       let md1 = Mtype.strengthen_decl ~aliasable env md1 path1 in
-      modtypes ~in_eq:false ~loc env ~mark subst md1.md_type md2.md_type
+      modtypes ~in_eq:false ~loc env env ~mark subst md1.md_type md2.md_type
 
 (* Inclusion between signatures *)
 
-and signatures  ~in_eq ~loc env ~mark subst sig1 sig2 =
+and signatures  ~in_eq ~loc env target_env ~mark subst sig1 sig2 =
   (* Environment used to check inclusion of components *)
-  let new_env =
-    Env.in_signature true env
-    |> Env.add_signature sig2 (* We use this to expand aliases, see Mty_alias *)
-    |> Env.add_signature sig1
+  let new_env = Env.add_signature sig1 (Env.in_signature true env) in
+  let new_target_env =
+    Env.add_signature sig2 (Env.in_signature true target_env)
   in
   (* Keep ids for module aliases *)
   let (id_pos_list,_) =
@@ -607,7 +611,7 @@ and signatures  ~in_eq ~loc env ~mark subst sig1 sig2 =
   let rec pair_components subst paired unpaired = function
       [] ->
         let oks, errors =
-          signature_components ~in_eq ~loc env ~mark new_env subst
+          signature_components ~in_eq ~loc ~mark new_env new_target_env subst
             (List.rev paired)
         in
         begin match unpaired, errors, oks with
@@ -659,7 +663,7 @@ and signatures  ~in_eq ~loc env ~mark subst sig1 sig2 =
 
 (* Inclusion between signature components *)
 
-and signature_components  ~in_eq ~loc old_env ~mark env subst paired =
+and signature_components ~in_eq ~loc ~mark env target_env subst paired =
   match paired with
   | [] -> [], []
   | (sigi1, sigi2, pos) :: rem ->
@@ -676,7 +680,7 @@ and signature_components  ~in_eq ~loc old_env ~mark env subst paired =
             id1, item, present_at_runtime
         | Sig_type(id1, tydec1, _, _), Sig_type(_id2, tydec2, _, _) ->
             let item =
-              type_declarations ~loc ~old_env env ~mark subst id1 tydec1 tydec2
+              type_declarations ~loc env ~mark subst id1 tydec1 tydec2
             in
             id1, item, false
         | Sig_typext(id1, ext1, _, _), Sig_typext(_id2, ext2, _, _) ->
@@ -687,7 +691,8 @@ and signature_components  ~in_eq ~loc old_env ~mark env subst paired =
         | Sig_module(id1, pres1, mty1, _, _), Sig_module(_, pres2, mty2, _, _)
           -> begin
               let item =
-                module_declarations ~in_eq ~loc env ~mark subst id1 mty1 mty2
+                module_declarations ~in_eq ~loc env target_env ~mark subst id1
+                  mty1 mty2
               in
               let item =
                 Result.map_error (fun diff -> Error.Module_type diff) item
@@ -704,31 +709,32 @@ and signature_components  ~in_eq ~loc old_env ~mark env subst paired =
             end
         | Sig_modtype(id1, info1, _), Sig_modtype(_id2, info2, _) ->
             let item =
-              modtype_infos ~in_eq ~loc env ~mark  subst id1 info1 info2
+              modtype_infos ~in_eq ~loc env target_env ~mark  subst id1 info1
+                info2
             in
             id1, item, false
         | Sig_class(id1, decl1, _, _), Sig_class(_id2, decl2, _, _) ->
             let item =
-              class_declarations ~old_env env subst decl1 decl2
+              class_declarations env subst decl1 decl2
             in
             id1, item, true
         | Sig_class_type(id1, info1, _, _), Sig_class_type(_id2, info2, _, _) ->
             let item =
-              class_type_declarations ~loc ~old_env env subst info1 info2
+              class_type_declarations ~loc env subst info1 info2
             in
             id1, item, false
         | _ ->
             assert false
       in
       let oks, errors =
-        signature_components ~in_eq ~loc old_env ~mark env subst rem
+        signature_components ~in_eq ~loc ~mark env target_env subst rem
       in
       match item with
       | Ok x when present_at_runtime -> (pos,x) :: oks, errors
       | Ok _ -> oks, errors
       | Error y -> oks , (id,y) :: errors
 
-and module_declarations  ~in_eq ~loc env ~mark  subst id1 md1 md2 =
+and module_declarations  ~in_eq ~loc env target_env ~mark  subst id1 md1 md2 =
   Builtin_attributes.check_alerts_inclusion
     ~def:md1.md_loc
     ~use:md2.md_loc
@@ -738,12 +744,12 @@ and module_declarations  ~in_eq ~loc env ~mark  subst id1 md1 md2 =
   let p1 = Path.Pident id1 in
   if mark_positive mark then
     Env.mark_module_used md1.md_uid;
-  strengthened_modtypes  ~in_eq ~loc ~aliasable:true env ~mark subst
+  strengthened_modtypes  ~in_eq ~loc ~aliasable:true env target_env ~mark subst
     md1.md_type p1 md2.md_type
 
 (* Inclusion between module type specifications *)
 
-and modtype_infos ~in_eq ~loc env ~mark subst id info1 info2 =
+and modtype_infos ~in_eq ~loc env target_env ~mark subst id info1 info2 =
   Builtin_attributes.check_alerts_inclusion
     ~def:info1.mtd_loc
     ~use:info2.mtd_loc
@@ -756,23 +762,28 @@ and modtype_infos ~in_eq ~loc env ~mark subst id info1 info2 =
       (None, None) -> Ok Tcoerce_none
     | (Some _, None) -> Ok Tcoerce_none
     | (Some mty1, Some mty2) ->
-        check_modtype_equiv ~in_eq ~loc env ~mark mty1 mty2
+        check_modtype_equiv ~in_eq ~loc env target_env ~mark mty1 mty2
     | (None, Some mty2) ->
         let mty1 = Mty_ident(Path.Pident id) in
-        check_modtype_equiv ~in_eq ~loc env ~mark mty1 mty2 in
+        check_modtype_equiv ~in_eq ~loc env target_env ~mark mty1 mty2 in
   match r with
   | Ok _ as ok -> ok
   | Error e -> Error Error.(Module_type_declaration (diff info1 info2 e))
 
-and check_modtype_equiv ~in_eq ~loc env ~mark mty1 mty2 =
-  let c1 = modtypes ~in_eq:true ~loc env ~mark Subst.identity mty1 mty2 in
+and check_modtype_equiv ~in_eq ~loc env target_env ~mark mty1 mty2 =
+  let c1 =
+    modtypes ~in_eq:true ~loc env target_env ~mark Subst.identity mty1 mty2
+  in
   let c2 =
     (* For nested module type paths, we check only one side of the equivalence:
        the outer module type is the one responsible for checking the other side
        of the equivalence.
      *)
     if in_eq then None
-    else Some (modtypes ~in_eq:true ~loc env ~mark Subst.identity mty2 mty1)
+    else
+      Some
+        (modtypes ~in_eq:true ~loc env target_env ~mark Subst.identity mty2
+          mty1)
   in
   match c1, c2 with
   | Ok Tcoerce_none, (Some Ok Tcoerce_none|None) -> Ok Tcoerce_none
@@ -811,7 +822,7 @@ exception Apply_error of {
 
 let check_modtype_inclusion_raw ~loc env mty1 path1 mty2 =
   let aliasable = can_alias env path1 in
-  strengthened_modtypes ~in_eq:false ~loc ~aliasable env ~mark:Mark_both
+  strengthened_modtypes ~in_eq:false ~loc ~aliasable env env ~mark:Mark_both
     Subst.identity mty1 path1 mty2
 
 let check_modtype_inclusion ~loc env mty1 path1 mty2 =
@@ -847,7 +858,7 @@ let () =
 
 let compunit env ~mark impl_name impl_sig intf_name intf_sig =
   match
-    signatures ~in_eq:false ~loc:(Location.in_file impl_name) env ~mark
+    signatures ~in_eq:false ~loc:(Location.in_file impl_name) env env ~mark
       Subst.identity impl_sig intf_sig
   with Result.Error reasons ->
     let cdiff =
@@ -951,7 +962,7 @@ module Functor_inclusion_diff = struct
         let test st mty1 mty2 =
           let loc = Location.none in
           let res, _, _ =
-            functor_param ~in_eq:false ~loc st.env ~mark:Mark_neither
+            functor_param ~in_eq:false ~loc st.env st.env ~mark:Mark_neither
               st.subst mty1 mty2
           in
           res
@@ -1052,8 +1063,8 @@ module Functor_app_diff = struct
                 Result.Error (Error.Incompatible_params(arg,param))
             | ( Anonymous | Named _ ) , Named (_, param) ->
                 match
-                  modtypes ~in_eq:false ~loc state.env ~mark:Mark_neither
-                    state.subst arg_mty param
+                  modtypes ~in_eq:false ~loc state.env state.env
+                    ~mark:Mark_neither state.subst arg_mty param
                 with
                 | Error mty -> Result.Error (Error.Mismatch mty)
                 | Ok _ as x -> x
@@ -1074,11 +1085,11 @@ end
 (* Hide the context and substitution parameters to the outside world *)
 
 let modtypes ~loc env ~mark mty1 mty2 =
-  match modtypes ~in_eq:false ~loc env ~mark Subst.identity mty1 mty2 with
+  match modtypes ~in_eq:false ~loc env env ~mark Subst.identity mty1 mty2 with
   | Ok x -> x
   | Error reason -> raise (Error (env, Error.(In_Module_type reason)))
 let signatures env ~mark sig1 sig2 =
-  match signatures ~in_eq:false ~loc:Location.none env ~mark
+  match signatures ~in_eq:false ~loc:Location.none env env ~mark
           Subst.identity sig1 sig2
   with
   | Ok x -> x
@@ -1105,7 +1116,9 @@ let expand_module_alias ~strengthen env path =
       raise (Error(env,In_Expansion(Error.Unbound_module_path path)))
 
 let check_modtype_equiv ~loc env id mty1 mty2 =
-  match check_modtype_equiv ~in_eq:false ~loc env ~mark:Mark_both mty1 mty2 with
+  match
+    check_modtype_equiv ~in_eq:false ~loc env env ~mark:Mark_both mty1 mty2
+  with
   | Ok _ -> ()
   | Error e ->
       raise (Error(env,
