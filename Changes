@@ -281,6 +281,10 @@ Working version
   rather than a basename.
   (David Allsopp, report by Fabian @copy, review by Gabriel Scherer)
 
+- #10690: Add --enable-native-toplevel to configure to enable building and
+  installing ocamlnat as part of the main build (default is not to)
+  (David Allsopp, review by Gabriel Scherer)
+
 - #10693: Fix ident collision in includemod
   (Leo White, review by Matthew Ryan)
 

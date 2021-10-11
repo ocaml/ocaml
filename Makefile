@@ -257,6 +257,9 @@ endif
 	$(MAKE) otherlibrariesopt
 	$(MAKE) ocamllex.opt ocamltoolsopt ocamltoolsopt.opt $(OCAMLDOC_OPT) \
 	  $(OCAMLTEST_OPT) $(ocamlnat_dependencies)
+ifeq "$(INSTALL_OCAMLNAT)" "true"
+	$(MAKE) ocamlnat
+endif
 ifeq "$(WITH_OCAMLDOC)-$(STDLIB_MANPAGES)" "ocamldoc-true"
 	$(MAKE) manpages
 endif
@@ -582,9 +585,9 @@ endif
 	   $(OPTSTART:.cmo=.cmx) $(OPTSTART:.cmo=.$(O)) \
 	   $(TOPLEVELSTART:.cmo=.$(O)) \
 	   "$(INSTALL_COMPLIBDIR)"
-	if test -f ocamlnat$(EXE) ; then \
-	  $(INSTALL_PROG) ocamlnat$(EXE) "$(INSTALL_BINDIR)"; \
-	fi
+ifeq "$(INSTALL_OCAMLNAT)" "true"
+	  $(INSTALL_PROG) ocamlnat$(EXE) "$(INSTALL_BINDIR)"
+endif
 	cd "$(INSTALL_COMPLIBDIR)" && \
 	   $(RANLIB) ocamlcommon.$(A) ocamlbytecomp.$(A) ocamloptcomp.$(A)
 

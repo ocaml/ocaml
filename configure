@@ -766,6 +766,7 @@ flambda
 frame_pointers
 profinfo_width
 profinfo
+install_ocamlnat
 install_source_artifacts
 install_bytecode_programs
 mksharedlibrpath
@@ -900,6 +901,7 @@ enable_bigarray_lib
 enable_ocamldoc
 with_odoc
 enable_ocamltest
+enable_native_toplevel
 enable_frame_pointers
 enable_naked_pointers
 enable_naked_pointers_checker
@@ -1573,6 +1575,8 @@ Optional Features:
   --disable-bigarray-lib  do not build the legacy separate bigarray library
   --disable-ocamldoc      do not build the ocamldoc documentation system
   --disable-ocamltest     do not build the ocamltest driver
+  --enable-native-toplevel
+                          build the native toplevel
   --enable-frame-pointers use frame pointers in runtime and generated code
   --disable-naked-pointers
                           do not allow naked pointers
@@ -2966,6 +2970,7 @@ OCAML_VERSION_SHORT=4.14
 
 
 
+
 ## Generated files
 
 ac_config_files="$ac_config_files Makefile.build_config"
@@ -3234,6 +3239,12 @@ fi
 # Check whether --enable-ocamltest was given.
 if test "${enable_ocamltest+set}" = set; then :
   enableval=$enable_ocamltest;
+fi
+
+
+# Check whether --enable-native-toplevel was given.
+if test "${enable_native_toplevel+set}" = set; then :
+  enableval=$enable_native_toplevel;
 fi
 
 
@@ -14184,6 +14195,15 @@ if test x"$supports_shared_libraries" = 'xtrue'; then :
      ;;
 esac
 fi
+
+case $enable_native_toplevel,$natdynlink in #(
+  yes,false) :
+    as_fn_error $? "The native toplevel requires native dynlink support" "$LINENO" 5 ;; #(
+  yes,*) :
+    install_ocamlnat=true ;; #(
+  *) :
+    install_ocamlnat=false ;;
+esac
 
 # Try to work around the Skylake/Kaby Lake processor bug.
 case "$cc_basename,$host" in #(
