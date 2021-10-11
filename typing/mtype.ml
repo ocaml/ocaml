@@ -134,28 +134,26 @@ let strengthen_decl ~aliasable env md p =
              (Subst.Lazy.of_module_decl md) p in
   Subst.Lazy.force_module_decl md
 
-let rec make_aliases_present pres mty =
+let rec make_aliases_present mty =
   match mty with
-  | Mty_alias _ -> Mp_present, mty
   | Mty_signature sg ->
-      pres, Mty_signature(make_aliases_present_sig sg)
+      Mty_signature(make_aliases_present_sig sg)
   | Mty_functor(arg, res) ->
-      let _, res = make_aliases_present Mp_present res in
-      pres, Mty_functor(arg, res)
+      Mty_functor(arg, make_aliases_present res)
   | mty ->
-      pres, mty
+      mty
 
 and make_aliases_present_sig sg =
   match sg with
     [] -> []
-  | Sig_module(id, pres, md, rs, priv) :: rem ->
-      let pres, md_type = make_aliases_present pres md.md_type in
+  | Sig_module(id, _pres, md, rs, priv) :: rem ->
+      let md_type = make_aliases_present md.md_type in
       let md = { md with md_type } in
-      Sig_module(id, pres, md, rs, priv) :: make_aliases_present_sig rem
+      Sig_module(id, Mp_present, md, rs, priv) :: make_aliases_present_sig rem
   | sigelt :: rem ->
       sigelt :: make_aliases_present_sig rem
 
-let scrape_for_type_of ~present_aliases env pres mty =
+let scrape_for_type_of ~present_aliases env mty =
   let rec loop env path mty =
     match mty, path with
     | Mty_alias path, _ -> begin
@@ -169,7 +167,7 @@ let scrape_for_type_of ~present_aliases env pres mty =
     | _ -> mty
   in
   let mty = loop env None mty in
-  if present_aliases then make_aliases_present pres mty else pres, mty
+  if present_aliases then make_aliases_present mty else mty
 
 (* In nondep_supertype, env is only used for the type it assigns to id.
    Hence there is no need to keep env up-to-date by adding the bindings
@@ -538,8 +536,7 @@ let scrape_for_type_of ~present_aliases ~remove_aliases env mty =
     in
     mty
   end else begin
-    let _, mty = scrape_for_type_of ~present_aliases env Mp_present mty in
-    mty
+    scrape_for_type_of ~present_aliases env mty
   end
 
 (* Lower non-generalizable type variables *)
