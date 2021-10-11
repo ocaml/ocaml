@@ -86,7 +86,8 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
    first backtrace slot points to the event following the C call
    instruction. */
 #define Setup_for_c_call \
-  { sp -= 2; sp[0] = env; sp[1] = (value)(pc + 1); domain_state->current_stack->sp = sp; }
+  { sp -= 2; sp[0] = env; sp[1] = (value)(pc + 1); \
+    domain_state->current_stack->sp = sp; }
 #define Restore_after_c_call \
   { sp = domain_state->current_stack->sp; env = *sp; sp += 2; }
 
@@ -129,7 +130,6 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
   curr_instr = caml_debugger_saved_instruction(pc - 1); \
   goto dispatch_instr
 #endif
-
 
 /* Initialising fields of objects just allocated with Alloc_small */
 #define Init_field(o, i, x) Field(o, i) = (x)
@@ -266,9 +266,10 @@ value caml_interprete(code_t prog, asize_t prog_size)
     static opcode_t raise_unhandled_code[] = { ACC, 0, RAISE };
     value raise_unhandled_closure;
 
-    caml_register_code_fragment((char *) raise_unhandled_code,
-                                (char *) raise_unhandled_code + sizeof(raise_unhandled_code),
-                                DIGEST_IGNORE, NULL);
+    caml_register_code_fragment(
+      (char *) raise_unhandled_code,
+      (char *) raise_unhandled_code + sizeof(raise_unhandled_code),
+      DIGEST_IGNORE, NULL);
 #ifdef THREADED_CODE
     caml_instr_table = (char **) jumptable;
     caml_instr_base = Jumptbl_base;
@@ -290,7 +291,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
   jumptbl_base = Jumptbl_base;
 #endif
   initial_trap_sp_off = domain_state->trap_sp_off;
-  initial_stack_words = Stack_high(domain_state->current_stack) - domain_state->current_stack->sp;
+  initial_stack_words =
+    Stack_high(domain_state->current_stack) - domain_state->current_stack->sp;
   initial_external_raise = domain_state->external_raise;
   caml_incr_callback_depth ();
 
@@ -982,7 +984,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
           goto check_stacks;
         }
       } else {
-        sp = Stack_high(domain_state->current_stack) + domain_state->trap_sp_off;
+        sp =
+           Stack_high(domain_state->current_stack) + domain_state->trap_sp_off;
         pc = Trap_pc(sp);
         domain_state->trap_sp_off = Long_val(Trap_link(sp));
         env = sp[2];
