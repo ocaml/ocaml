@@ -836,6 +836,7 @@ exeext
 ac_tool_prefix
 DIRECT_CPP
 CC
+OCAML_VERSION_SHORT
 VERSION
 native_compiler
 CONFIGURE_ARGS
@@ -2852,6 +2853,8 @@ ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 
 VERSION=4.14.0+dev0-2021-06-03
 
+OCAML_VERSION_SHORT=4.14
+
 
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
@@ -2952,6 +2955,8 @@ ac_config_files="$ac_config_files Makefile.build_config"
 ac_config_files="$ac_config_files Makefile.config"
 
 ac_config_files="$ac_config_files stdlib/sys.ml"
+
+ac_config_files="$ac_config_files manual/src/version.tex"
 
 ac_config_files="$ac_config_files tools/eventlog_metadata"
 
@@ -18838,6 +18843,7 @@ do
     "Makefile.build_config") CONFIG_FILES="$CONFIG_FILES Makefile.build_config" ;;
     "Makefile.config") CONFIG_FILES="$CONFIG_FILES Makefile.config" ;;
     "stdlib/sys.ml") CONFIG_FILES="$CONFIG_FILES stdlib/sys.ml" ;;
+    "manual/src/version.tex") CONFIG_FILES="$CONFIG_FILES manual/src/version.tex" ;;
     "tools/eventlog_metadata") CONFIG_FILES="$CONFIG_FILES tools/eventlog_metadata" ;;
     "runtime/caml/m.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/m.h" ;;
     "runtime/caml/s.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/s.h" ;;

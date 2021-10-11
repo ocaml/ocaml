@@ -625,6 +625,9 @@ clean::
 manual-pregen: opt.opt
 	cd manual; $(MAKE) clean && $(MAKE) pregen-etex
 
+clean::
+	$(MAKE) -C manual clean
+
 # The clean target
 clean:: partialclean
 	rm -f $(programs) $(programs:=.exe)
@@ -1144,6 +1147,9 @@ depend: beforedepend
 
 .PHONY: distclean
 distclean: clean
+	$(MAKE) -C manual distclean
+	$(MAKE) -C runtime distclean
+	$(MAKE) -C stdlib distclean
 	rm -f boot/ocamlrun boot/ocamlrun.exe boot/camlheader \
 	      boot/ocamlruns boot/ocamlruns.exe \
 	      boot/flexlink.byte boot/flexlink.byte.exe \
@@ -1155,8 +1161,6 @@ distclean: clean
 	rm -f tools/eventlog_metadata
 	rm -f tools/*.bak
 	rm -f testsuite/_log*
-	$(MAKE) -C runtime distclean
-	$(MAKE) -C stdlib distclean
 
 include .depend
 
