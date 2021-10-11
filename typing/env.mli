@@ -128,6 +128,9 @@ val normalize_path_prefix: Location.t option -> t -> Path.t -> Path.t
 val normalize_modtype_path: t -> Path.t -> Path.t
 (* Normalize a module type path *)
 
+val may_alias_absent: t -> Path.t -> bool
+(* Detect whether a module path may be aliased with Mp_absent. *)
+
 val reset_required_globals: unit -> unit
 val get_required_globals: unit -> Ident.t list
 val add_required_global: Ident.t -> unit

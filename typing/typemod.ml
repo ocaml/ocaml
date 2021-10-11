@@ -867,7 +867,7 @@ and approx_sig ~absent_globals env ssg =
           let md = approx_module_declaration ~absent_globals env pmd in
           let pres =
             match md.Types.md_type with
-            | Mty_alias (Pident id) when absent_globals && Ident.global id ->
+            | Mty_alias p when absent_globals && Env.may_alias_absent env p ->
                 Mp_absent
             | _ -> Mp_present
           in
@@ -885,7 +885,7 @@ and approx_sig ~absent_globals env ssg =
           in
           let pres =
             match md.Types.md_type with
-            | Mty_alias (Pident id) when absent_globals && Ident.global id ->
+            | Mty_alias p when absent_globals && Env.may_alias_absent env p ->
                 Mp_absent
             | _ -> Mp_present
           in
@@ -1501,7 +1501,7 @@ and transl_signature ~absent_globals env sg =
             in
             let pres =
               match tmty.mty_type with
-              | Mty_alias (Pident id) when absent_globals && Ident.global id ->
+              | Mty_alias p when absent_globals && Env.may_alias_absent env p ->
                   Mp_absent
               | _ -> Mp_present
             in
@@ -1551,7 +1551,7 @@ and transl_signature ~absent_globals env sg =
             in
             let pres =
               match md.md_type with
-              | Mty_alias (Pident id) when absent_globals && Ident.global id ->
+              | Mty_alias p when absent_globals && Env.may_alias_absent env p ->
                   Mp_absent
               | _ -> Mp_present
             in
@@ -2514,7 +2514,7 @@ and type_structure ?(toplevel = false) ~absent_globals funct_body anchor env
         in
         let pres =
           match modl.mod_type with
-          | Mty_alias (Pident id) when absent_globals && Ident.global id ->
+          | Mty_alias p when absent_globals && Env.may_alias_absent env p ->
               Mp_absent
           | _ -> Mp_present
         in

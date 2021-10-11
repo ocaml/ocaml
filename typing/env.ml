@@ -1308,6 +1308,10 @@ and expand_modtype_path env path =
   | Some (MtyL_ident path) -> normalize_modtype_path env path
   | _ | exception Not_found -> path
 
+let may_alias_absent env path =
+  Path.simple_global path
+  || Path.simple_global (normalize_module_path None env path)
+
 let find_module path env =
   find_module ~alias:false path env
 
