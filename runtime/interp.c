@@ -131,9 +131,6 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
   goto dispatch_instr
 #endif
 
-/* Initialising fields of objects just allocated with Alloc_small */
-#define Init_field(o, i, x) Field(o, i) = (x)
-
 #define Check_trap_barrier \
   if (domain_state->trap_sp_off >= domain_state->trap_barrier_off) \
       caml_debugger(TRAP_BARRIER, Val_unit)
@@ -738,8 +735,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
       value block;
       if (wosize <= Max_young_wosize) {
         Alloc_small(block, wosize, tag, Enter_gc);
-        Init_field(block, 0, accu);
-        for (i = 1; i < wosize; i++) Init_field(block, i, *sp++);
+        Field(block, 0) = accu;
+        for (i = 1; i < wosize; i++) Field(block, i) = *sp++;
       } else {
         block = caml_alloc_shr(wosize, tag);
         Setup_for_c_call;
@@ -759,7 +756,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       tag_t tag = *pc++;
       value block;
       Alloc_small(block, 1, tag, Enter_gc);
-      Init_field(block, 0, accu);
+      Field(block, 0) = accu;
       accu = block;
       Next;
     }
@@ -767,8 +764,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
       tag_t tag = *pc++;
       value block;
       Alloc_small(block, 2, tag, Enter_gc);
-      Init_field(block, 0, accu);
-      Init_field(block, 1, sp[0]);
+      Field(block, 0) = accu;
+      Field(block, 1) = sp[0];
       sp += 1;
       accu = block;
       Next;
@@ -777,9 +774,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
       tag_t tag = *pc++;
       value block;
       Alloc_small(block, 3, tag, Enter_gc);
-      Init_field(block, 0, accu);
-      Init_field(block, 1, sp[0]);
-      Init_field(block, 2, sp[1]);
+      Field(block, 0) = accu;
+      Field(block, 1) = sp[0];
+      Field(block, 2) = sp[1];
       sp += 2;
       accu = block;
       Next;
@@ -1328,7 +1325,7 @@ do_resume: {
       domain_state->current_stack = parent_stack;
       sp = parent_stack->sp;
       Stack_parent(old_stack) = NULL;
-      Init_field(cont, 0, Val_ptr(old_stack));
+      Field(cont, 0) = Val_ptr(old_stack);
 
       domain_state->trap_sp_off = Long_val(sp[0]);
       extra_args = Long_val(sp[1]);
