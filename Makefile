@@ -118,7 +118,7 @@ utils/domainstate.ml: utils/domainstate.ml.c runtime/caml/domain_state.tbl
 utils/domainstate.mli: utils/domainstate.mli.c runtime/caml/domain_state.tbl
 	$(CPP) -I runtime/caml $< > $@
 
-configure: configure.ac aclocal.m4 VERSION tools/autogen
+configure: configure.ac aclocal.m4 build-aux/ocaml_version.m4 tools/autogen
 	tools/autogen
 
 .PHONY: partialclean
@@ -625,6 +625,9 @@ clean::
 manual-pregen: opt.opt
 	cd manual; $(MAKE) clean && $(MAKE) pregen-etex
 
+clean::
+	$(MAKE) -C manual clean
+
 # The clean target
 clean:: partialclean
 	rm -f $(programs) $(programs:=.exe)
@@ -898,9 +901,16 @@ parsing/camlinternalMenhirLib.mli: boot/menhir/menhirLib.mli
 
 # Copy parsing/parser.ml from boot/
 
-parsing/parser.ml: boot/menhir/parser.ml parsing/parser.mly \
-  tools/check-parser-uptodate-or-warn.sh
+PARSER_DEPS = boot/menhir/parser.ml parsing/parser.mly
+
+ifeq "$(OCAML_DEVELOPMENT_VERSION)" "true"
+PARSER_DEPS += tools/check-parser-uptodate-or-warn.sh
+endif
+
+parsing/parser.ml: $(PARSER_DEPS)
+ifeq "$(OCAML_DEVELOPMENT_VERSION)" "true"
 	@-tools/check-parser-uptodate-or-warn.sh
+endif
 	sed "s/MenhirLib/CamlinternalMenhirLib/g" $< > $@
 parsing/parser.mli: boot/menhir/parser.mli
 	sed "s/MenhirLib/CamlinternalMenhirLib/g" $< > $@
@@ -1144,19 +1154,20 @@ depend: beforedepend
 
 .PHONY: distclean
 distclean: clean
+	$(MAKE) -C manual distclean
+	$(MAKE) -C runtime distclean
+	$(MAKE) -C stdlib distclean
 	rm -f boot/ocamlrun boot/ocamlrun.exe boot/camlheader \
 	      boot/ocamlruns boot/ocamlruns.exe \
 	      boot/flexlink.byte boot/flexlink.byte.exe \
 	      boot/flexdll_*.o boot/flexdll_*.obj \
 	      boot/*.cm* boot/libcamlrun.a boot/libcamlrun.lib boot/ocamlc.opt
 	rm -f Makefile.config Makefile.build_config
-	rm -f runtime/caml/m.h runtime/caml/s.h
 	rm -rf autom4te.cache flexdll-sources
 	rm -f config.log config.status libtool
 	rm -f tools/eventlog_metadata
 	rm -f tools/*.bak
 	rm -f testsuite/_log*
-	$(MAKE) -C stdlib distclean
 
 include .depend
 

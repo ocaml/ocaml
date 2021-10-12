@@ -127,6 +127,26 @@ external runtime_warnings_enabled: unit -> bool =
 
 let ocaml_version = "@VERSION@"
 
+let development_version = @OCAML_DEVELOPMENT_VERSION@
+
+type extra_prefix = Plus | Tilde
+
+type extra_info = extra_prefix * string
+
+type ocaml_release_info = {
+  major : int;
+  minor : int;
+  patchlevel : int;
+  extra : extra_info option
+}
+
+let ocaml_release = {
+  major = @OCAML_VERSION_MAJOR@;
+  minor = @OCAML_VERSION_MINOR@;
+  patchlevel = @OCAML_VERSION_PATCHLEVEL@;
+  extra = @OCAML_RELEASE_EXTRA@
+}
+
 (* Optimization *)
 
 external opaque_identity : 'a -> 'a = "%opaque"

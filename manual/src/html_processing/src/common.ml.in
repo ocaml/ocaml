@@ -1,4 +1,6 @@
-(* ------------ Ocaml Web-manual -------------- *)
+(* @configure_input@ *)
+#2 "manual/src/html_processing/src/common.ml.in"
+(* ------------ OCaml Web-manual -------------- *)
 
 (* Copyright San Vu Ngoc, 2020
 
@@ -120,12 +122,7 @@ let add_sidebar_button body =
   |> prepend_child btn;
   prepend_child body btn
 
-(* Detect OCaml version from VERSION file *)
-let find_version () =
-  let pp = Filename.parent_dir_name in
-  let version_file = pp // pp // pp // "VERSION" in
-  let major, minor = Scanf.bscanf (Scanf.Scanning.from_file version_file) "%u.%u" (fun x y -> x,y) in
-  sprintf "%u.%u" major minor
+let find_version () = "@OCAML_VERSION_SHORT@"
 
 (*
    Local Variables:

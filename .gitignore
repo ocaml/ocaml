@@ -97,6 +97,7 @@ _build
 /lex/parser.output
 
 /manual/src/cmds/warnings-help.etex
+/manual/src/html_processing/src/common.ml
 /manual/src/warnings-help.etex
 
 /api_docgen/build

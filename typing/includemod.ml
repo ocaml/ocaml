@@ -531,9 +531,10 @@ and functor_param ~in_eq ~loc env target_env ~mark subst param1 param2 =
             Env.add_module id2 Mp_present arg2 env,
             Subst.add_module id2 (Path.Pident id1) subst
         | None, Some id2 ->
-            Env.add_module id2 Mp_present arg2' env,
+            let id1 = Ident.rename id2 in
+            Env.add_module id1 Mp_present arg2' env,
             Env.add_module id2 Mp_present arg2 env,
-            subst
+            Subst.add_module id2 (Path.Pident id1) subst
         | Some id1, None ->
             Env.add_module id1 Mp_present arg2' env, target_env, subst
         | None, None ->

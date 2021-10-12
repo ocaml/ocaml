@@ -836,6 +836,13 @@ exeext
 ac_tool_prefix
 DIRECT_CPP
 CC
+OCAML_VERSION_SHORT
+OCAML_VERSION_EXTRA
+OCAML_VERSION_PATCHLEVEL
+OCAML_VERSION_MINOR
+OCAML_VERSION_MAJOR
+OCAML_RELEASE_EXTRA
+OCAML_DEVELOPMENT_VERSION
 VERSION
 native_compiler
 CONFIGURE_ARGS
@@ -2852,6 +2859,20 @@ ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 
 VERSION=4.14.0+dev0-2021-06-03
 
+OCAML_DEVELOPMENT_VERSION=true
+
+OCAML_RELEASE_EXTRA='Some (Plus, "dev0-2021-06-03")'
+
+OCAML_VERSION_MAJOR=4
+
+OCAML_VERSION_MINOR=14
+
+OCAML_VERSION_PATCHLEVEL=0
+
+OCAML_VERSION_EXTRA=dev0-2021-06-03
+
+OCAML_VERSION_SHORT=4.14
+
 
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
@@ -2953,11 +2974,33 @@ ac_config_files="$ac_config_files Makefile.config"
 
 ac_config_files="$ac_config_files stdlib/sys.ml"
 
+ac_config_files="$ac_config_files manual/src/version.tex"
+
+ac_config_files="$ac_config_files manual/src/html_processing/src/common.ml"
+
 ac_config_files="$ac_config_files tools/eventlog_metadata"
 
 ac_config_headers="$ac_config_headers runtime/caml/m.h"
 
 ac_config_headers="$ac_config_headers runtime/caml/s.h"
+
+ac_config_headers="$ac_config_headers runtime/caml/version.h"
+
+
+# Definitions related to the version of OCaml
+$as_echo "#define OCAML_VERSION_MAJOR 4" >>confdefs.h
+
+$as_echo "#define OCAML_VERSION_MINOR 14" >>confdefs.h
+
+$as_echo "#define OCAML_VERSION_PATCHLEVEL 0" >>confdefs.h
+
+$as_echo "#define OCAML_VERSION_ADDITIONAL \"dev0-2021-06-03\"" >>confdefs.h
+
+  $as_echo "#define OCAML_VERSION_EXTRA \"dev0-2021-06-03\"" >>confdefs.h
+
+$as_echo "#define OCAML_VERSION 41400" >>confdefs.h
+
+$as_echo "#define OCAML_VERSION_STRING \"4.14.0+dev0-2021-06-03\"" >>confdefs.h
 
 
 # Checks for system types
@@ -12729,8 +12772,8 @@ case $ocaml_cv_cc_vendor in #(
   cc_warnings='-Wall -Wdeclaration-after-statement' ;;
 esac
 
-case $enable_warn_error,4.14.0+dev0-2021-06-03 in #(
-  yes,*|,*+dev*) :
+case $enable_warn_error,true in #(
+  yes,*|,true) :
     cc_warnings="$cc_warnings $warn_error_flag" ;; #(
   *) :
      ;;
@@ -17622,8 +17665,8 @@ fi
 
 
 
-case $enable_ocamltest,4.14.0+dev0-2021-06-03 in #(
-  yes,*|,*+dev*) :
+case $enable_ocamltest,true in #(
+  yes,*|,true) :
     ocamltest='ocamltest' ;; #(
   *) :
     ocamltest='' ;;
@@ -18820,9 +18863,12 @@ do
     "Makefile.build_config") CONFIG_FILES="$CONFIG_FILES Makefile.build_config" ;;
     "Makefile.config") CONFIG_FILES="$CONFIG_FILES Makefile.config" ;;
     "stdlib/sys.ml") CONFIG_FILES="$CONFIG_FILES stdlib/sys.ml" ;;
+    "manual/src/version.tex") CONFIG_FILES="$CONFIG_FILES manual/src/version.tex" ;;
+    "manual/src/html_processing/src/common.ml") CONFIG_FILES="$CONFIG_FILES manual/src/html_processing/src/common.ml" ;;
     "tools/eventlog_metadata") CONFIG_FILES="$CONFIG_FILES tools/eventlog_metadata" ;;
     "runtime/caml/m.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/m.h" ;;
     "runtime/caml/s.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/s.h" ;;
+    "runtime/caml/version.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/version.h" ;;
     "libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
