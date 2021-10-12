@@ -57,7 +57,7 @@ toc::[]
 
 All the Windows ports require a Unix-like build environment.  Although other
 methods are available, the officially supported environment for doing this is
-32-bit (x86) Cygwin.
+64-bit (x86_64) Cygwin.
 
 Only the `make` Cygwin package is required. `diffutils` is required if you wish
 to be able to run the test suite.
