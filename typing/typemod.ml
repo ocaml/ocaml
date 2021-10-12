@@ -2118,13 +2118,11 @@ let simplify_app_summary app_view =
   | false, Some p -> Includemod.Error.Named p, mty
   | false, None -> Includemod.Error.Anonymous, mty
 
-let rec type_module ?(alias=false) ~absent_globals sttn funct_body anchor env
-    smod =
+let rec type_module ?(alias=false) sttn funct_body anchor env smod =
   Builtin_attributes.warning_scope smod.pmod_attributes
-    (fun () ->
-      type_module_aux ~alias ~absent_globals sttn funct_body anchor env smod)
+    (fun () -> type_module_aux ~alias sttn funct_body anchor env smod)
 
-and type_module_aux ~alias ~absent_globals sttn funct_body anchor env smod =
+and type_module_aux ~alias sttn funct_body anchor env smod =
   match smod.pmod_desc with
     Pmod_ident lid ->
       let path =
@@ -2160,7 +2158,7 @@ and type_module_aux ~alias ~absent_globals sttn funct_body anchor env smod =
       end
   | Pmod_structure sstr ->
       let (str, sg, names, _finalenv) =
-        type_structure ~absent_globals funct_body anchor env sstr in
+        type_structure funct_body anchor env sstr in
       let md =
         { mod_desc = Tmod_structure str;
           mod_type = Mty_signature sg;
@@ -2177,7 +2175,10 @@ and type_module_aux ~alias ~absent_globals sttn funct_body anchor env smod =
         match arg_opt with
         | Unit -> Unit, Types.Unit, env, false
         | Named (param, smty) ->
-          let mty = transl_modtype_functor_arg ~absent_globals env smty in
+          let mty =
+            transl_modtype_functor_arg
+              ~absent_globals:!Clflags.transparent_modules env smty
+          in
           let scope = Ctype.create_scope () in
           let (id, newenv) =
             match param.txt with
@@ -2198,21 +2199,19 @@ and type_module_aux ~alias ~absent_globals sttn funct_body anchor env smod =
           in
           Named (id, param, mty), Types.Named (id, mty.mty_type), newenv, true
       in
-      let body =
-        type_module ~absent_globals true funct_body None newenv sbody
-      in
+      let body = type_module true funct_body None newenv sbody in
       { mod_desc = Tmod_functor(t_arg, body);
         mod_type = Mty_functor(ty_arg, body.mod_type);
         mod_env = env;
         mod_attributes = smod.pmod_attributes;
         mod_loc = smod.pmod_loc }
   | Pmod_apply _ ->
-      type_application ~absent_globals smod.pmod_loc sttn funct_body env smod
+      type_application smod.pmod_loc sttn funct_body env smod
   | Pmod_constraint(sarg, smty) ->
-      let arg =
-        type_module ~alias ~absent_globals true funct_body anchor env sarg
+      let arg = type_module ~alias true funct_body anchor env sarg in
+      let mty =
+        transl_modtype ~absent_globals:!Clflags.transparent_modules env smty
       in
-      let mty = transl_modtype ~absent_globals env smty in
       let md =
         wrap_constraint env true arg mty.mty_type (Tmodtype_explicit mty)
       in
@@ -2255,13 +2254,11 @@ and type_module_aux ~alias ~absent_globals sttn funct_body anchor env smod =
   | Pmod_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
 
-and type_application ~absent_globals loc strengthen funct_body env smod =
+and type_application loc strengthen funct_body env smod =
   let rec extract_application funct_body env sargs smod =
     match smod.pmod_desc with
     | Pmod_apply(f, sarg) ->
-        let arg =
-          type_module ~absent_globals true funct_body None env sarg
-        in
+        let arg = type_module true funct_body None env sarg in
         let summary =
           { loc=smod.pmod_loc;
             attributes=smod.pmod_attributes;
@@ -2279,7 +2276,7 @@ and type_application ~absent_globals loc strengthen funct_body env smod =
     let strengthen =
       strengthen && List.for_all (fun {arg_path;_} -> arg_path <> None) args
     in
-    type_module ~absent_globals strengthen funct_body None env sfunct
+    type_module strengthen funct_body None env sfunct
   in
   List.fold_left (type_one_application ~ctx:(loc, funct, args) funct_body env)
     funct args
@@ -2365,16 +2362,13 @@ and type_one_application ~ctx:(apply_loc,md_f,args) funct_body env funct
       let lid_app = None in
       raise(Includemod.Apply_error {loc=apply_loc;env;lid_app;mty_f;args})
 
-and type_open_decl ?used_slot ?toplevel ~absent_globals funct_body names env
-    sod =
+and type_open_decl ?used_slot ?toplevel funct_body names env sod =
   Builtin_attributes.warning_scope sod.popen_attributes
     (fun () ->
-       type_open_decl_aux ?used_slot ?toplevel ~absent_globals funct_body names
-         env sod
+       type_open_decl_aux ?used_slot ?toplevel funct_body names env sod
     )
 
-and type_open_decl_aux ?used_slot ?toplevel ~absent_globals funct_body names
-    env od =
+and type_open_decl_aux ?used_slot ?toplevel funct_body names env od =
   let loc = od.popen_loc in
   match od.popen_expr.pmod_desc with
   | Pmod_ident lid ->
@@ -2397,9 +2391,7 @@ and type_open_decl_aux ?used_slot ?toplevel ~absent_globals funct_body names
     } in
     open_descr, [], newenv
   | _ ->
-    let md =
-      type_module ~absent_globals true funct_body None env od.popen_expr
-    in
+    let md = type_module true funct_body None env od.popen_expr in
     let scope = Ctype.create_scope () in
     let sg, newenv =
       Env.enter_signature ~scope (extract_sig_open env md.mod_loc md.mod_type)
@@ -2434,8 +2426,7 @@ and type_open_decl_aux ?used_slot ?toplevel ~absent_globals funct_body names
     } in
     open_descr, sg, newenv
 
-and type_structure ?(toplevel = false) ~absent_globals funct_body anchor env
-    sstr =
+and type_structure ?(toplevel = false) funct_body anchor env sstr =
   let names = Signature_names.create () in
 
   let type_str_item env {pstr_loc = loc; pstr_desc = desc} =
@@ -2508,13 +2499,14 @@ and type_structure ?(toplevel = false) ~absent_globals funct_body anchor env
         let modl =
           Builtin_attributes.warning_scope attrs
             (fun () ->
-               type_module ~alias:true ~absent_globals true funct_body
+               type_module ~alias:true true funct_body
                  (anchor_submodule name.txt anchor) env smodl
             )
         in
         let pres =
           match modl.mod_type with
-          | Mty_alias p when absent_globals && Env.may_alias_absent env p ->
+          | Mty_alias p
+            when !Clflags.transparent_modules && Env.may_alias_absent env p ->
               Mp_absent
           | _ -> Mp_present
         in
@@ -2563,7 +2555,8 @@ and type_structure ?(toplevel = false) ~absent_globals funct_body anchor env
             sbind
         in
         let (decls, newenv) =
-          transl_recmodule_modtypes ~absent_globals env
+          transl_recmodule_modtypes
+            ~absent_globals:!Clflags.transparent_modules env
             (List.map (fun (name, smty, _smodl, attrs, loc) ->
                  {pmd_name=name; pmd_type=smty;
                   pmd_attributes=attrs; pmd_loc=loc}) sbind
@@ -2578,8 +2571,8 @@ and type_structure ?(toplevel = false) ~absent_globals funct_body anchor env
                let modl =
                  Builtin_attributes.warning_scope attrs
                    (fun () ->
-                      type_module ~absent_globals true funct_body
-                        (anchor_recmodule id) newenv smodl
+                      type_module true funct_body (anchor_recmodule id)
+                        newenv smodl
                    )
                in
                let mty' =
@@ -2630,7 +2623,7 @@ and type_structure ?(toplevel = false) ~absent_globals funct_body anchor env
         Tstr_modtype mtd, [sg], newenv
     | Pstr_open sod ->
         let (od, sg, newenv) =
-          type_open_decl ~toplevel ~absent_globals funct_body names env sod
+          type_open_decl ~toplevel funct_body names env sod
         in
         Tstr_open od, sg, newenv
     | Pstr_class cl ->
@@ -2687,8 +2680,7 @@ and type_structure ?(toplevel = false) ~absent_globals funct_body anchor env
         let smodl = sincl.pincl_mod in
         let modl =
           Builtin_attributes.warning_scope sincl.pincl_attributes
-            (fun () ->
-              type_module ~absent_globals true funct_body None env smodl)
+            (fun () -> type_module true funct_body None env smodl)
         in
         let scope = Ctype.create_scope () in
         (* Rename all identifiers bound by this signature to avoid clashes *)
@@ -2735,16 +2727,12 @@ and type_structure ?(toplevel = false) ~absent_globals funct_body anchor env
 let type_toplevel_phrase env s =
   Env.reset_required_globals ();
   let (str, sg, to_remove_from_sg, env) =
-    type_structure ~toplevel:true ~absent_globals:!Clflags.transparent_modules
-      false None env s in
+    type_structure ~toplevel:true false None env s in
   (str, sg, to_remove_from_sg, env)
 
-let type_module_alias =
-  type_module ~alias:true ~absent_globals:!Clflags.transparent_modules true
-    false None
-let type_module ~absent_globals = type_module ~absent_globals true false None
-let type_structure ?(absent_globals = !Clflags.transparent_modules) env sstr =
-  type_structure ~absent_globals false None env sstr
+let type_module_alias = type_module ~alias:true true false None
+let type_module = type_module true false None
+let type_structure env sstr = type_structure false None env sstr
 
 (* Normalize types in a signature *)
 
@@ -2774,7 +2762,7 @@ let type_module_type_of ~absent_globals env smod =
             mod_env = env;
             mod_attributes = smod.pmod_attributes;
             mod_loc = smod.pmod_loc }
-    | _ -> type_module ~absent_globals env smod
+    | _ -> type_module env smod
   in
   let mty =
     Mtype.scrape_for_type_of ~present_aliases:(not absent_globals)
@@ -2785,7 +2773,6 @@ let type_module_type_of ~absent_globals env smod =
     raise(Error(smod.pmod_loc, env, Non_generalizable_module mty));
   tmty, mty
 
-let type_module = type_module ~absent_globals:false
 let transl_modtype = transl_modtype ~absent_globals:false
 
 (* For Typecore *)
@@ -2892,9 +2879,8 @@ let type_package env m p fl =
 (* Fill in the forward declarations *)
 
 let type_open_decl ?used_slot env od =
-  type_open_decl ?used_slot ?toplevel:None
-    ~absent_globals:!Clflags.transparent_modules false
-    (Signature_names.create ()) env od
+  type_open_decl ?used_slot ?toplevel:None false (Signature_names.create ()) env
+    od
 
 let type_open_descr ?used_slot env od =
   type_open_descr ?used_slot ?toplevel:None env od
