@@ -275,6 +275,9 @@ Working version
   rather than a basename.
   (David Allsopp, report by Fabian @copy, review by Gabriel Scherer)
 
+- #10693: Fix ident collision in includemod
+  (Leo White, review by Matthew Ryan)
+
 OCaml 4.13 maintenance branch
 -----------------------------
 
