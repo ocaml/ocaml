@@ -227,6 +227,16 @@ stdlib__Domain.cmx : domain.ml \
     stdlib__Array.cmx \
     stdlib__Domain.cmi
 stdlib__Domain.cmi : domain.mli
+stdlib__EffectHandlers.cmo : effectHandlers.ml \
+    stdlib__Printexc.cmi \
+    stdlib__Obj.cmi \
+    stdlib__EffectHandlers.cmi
+stdlib__EffectHandlers.cmx : effectHandlers.ml \
+    stdlib__Printexc.cmx \
+    stdlib__Obj.cmx \
+    stdlib__EffectHandlers.cmi
+stdlib__EffectHandlers.cmi : effectHandlers.mli \
+    stdlib__Printexc.cmi
 stdlib__Either.cmo : either.ml \
     stdlib__Either.cmi
 stdlib__Either.cmx : either.ml \
@@ -584,8 +594,7 @@ stdlib__Printexc.cmx : printexc.ml \
     stdlib__Atomic.cmx \
     stdlib__Array.cmx \
     stdlib__Printexc.cmi
-stdlib__Printexc.cmi : printexc.mli \
-    stdlib__Obj.cmi
+stdlib__Printexc.cmi : printexc.mli
 stdlib__Printf.cmo : printf.ml \
     camlinternalFormatBasics.cmi \
     camlinternalFormat.cmi \

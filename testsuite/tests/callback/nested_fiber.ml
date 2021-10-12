@@ -8,8 +8,8 @@
 
 external caml_to_c : (unit -> 'a) -> 'a = "caml_to_c"
 
-open Obj.Effect_handlers
-open Obj.Effect_handlers.Deep
+open EffectHandlers
+open EffectHandlers.Deep
 
 type _ eff += E : unit eff
 

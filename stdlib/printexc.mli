@@ -190,22 +190,6 @@ external get_callstack: int -> raw_backtrace = "caml_get_current_callstack"
     @since 4.01.0
 *)
 
-external get_kcallstack_deep :
-  ('a,'b) Obj.Effect_handlers.Deep.continuation -> int -> raw_backtrace =
-    "caml_get_continuation_callstack"
-(** [Printexc.get_kcallstack_deep c n] returns a description of the top of the
-    call stack on the continuation [c] captured in a deep handler, with at most
-    [n] entries. (Note: this function is not related to exceptions at all,
-    despite being part of the [Printexc] module.)
-*)
-
-external get_kcallstack_shallow :
-  ('a,'b) Obj.Effect_handlers.Shallow.continuation -> int -> raw_backtrace =
-    "caml_get_continuation_callstack"
-(** Same as {!Printexc.get_kcallstack_deep} except for continuations captured
-    in a shallow handler.
-*)
-
 (** {1 Uncaught exceptions} *)
 
 val default_uncaught_exception_handler: exn -> raw_backtrace -> unit

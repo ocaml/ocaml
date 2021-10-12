@@ -1,8 +1,8 @@
 (* TEST
  *)
 
-open Obj.Effect_handlers
-open Obj.Effect_handlers.Shallow
+open EffectHandlers
+open EffectHandlers.Shallow
 
 (*
 let handle_state init f x =

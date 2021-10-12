@@ -4,8 +4,8 @@
    exit_status = "2"
 *)
 
-open Obj.Effect_handlers
-open Obj.Effect_handlers.Deep
+open EffectHandlers
+open EffectHandlers.Deep
 
 type _ eff += E : unit eff
 
@@ -33,7 +33,7 @@ let baz () =
       match e with
       | E -> Some (fun (k : (a, _) continuation) ->
           print_endline "(** get_continuation_callstack **)";
-          let bt = Printexc.get_kcallstack_deep k 100 in
+          let bt = Deep.get_callstack k 100 in
           print_string @@ Printexc.raw_backtrace_to_string bt;
           continue k ())
       | _ -> None }

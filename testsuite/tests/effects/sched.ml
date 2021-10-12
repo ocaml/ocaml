@@ -1,8 +1,8 @@
 (* TEST
  *)
 
-open Obj.Effect_handlers
-open Obj.Effect_handlers.Deep
+open EffectHandlers
+open EffectHandlers.Deep
 
 exception E
 type _ eff += Yield : unit eff

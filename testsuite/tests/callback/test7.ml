@@ -10,8 +10,8 @@
  * OCaml (c_to_caml) to C (printf functions). Effect E is performed in the
  * callback, which does not have a handler. *)
 
-open Obj.Effect_handlers
-open Obj.Effect_handlers.Deep
+open EffectHandlers
+open EffectHandlers.Deep
 
 type _ eff += E : unit eff
 

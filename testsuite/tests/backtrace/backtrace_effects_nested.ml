@@ -2,8 +2,8 @@
    flags = "-g"
 *)
 
-open Obj.Effect_handlers
-open Obj.Effect_handlers.Deep
+open EffectHandlers
+open EffectHandlers.Deep
 
 type _ eff += E : unit eff
             | Inc : unit eff
@@ -28,9 +28,9 @@ let f () =
     effc = fun (type a) (e : a eff) ->
           match e with
           | E -> Some (fun (k : (a, _) continuation) ->
-              Printexc.(get_kcallstack_deep k 100 |>
-                        raw_backtrace_to_string |>
-                        print_string);
+              Deep.get_callstack k 100 |>
+              Printexc.raw_backtrace_to_string |>
+              print_string;
               continue k ())
           | _ -> None }
 
