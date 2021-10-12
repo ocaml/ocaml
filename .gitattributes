@@ -45,6 +45,7 @@
 # No header for text files (would be too obtrusive).
 *.md                     typo.missing-header
 README*                  typo.missing-header
+VERSION                  typo.missing-header
 *.adoc                   typo.missing-header
 api_docgen/*.mld                typo.missing-header
 api_docgen/alldoc.tex           typo.missing-header

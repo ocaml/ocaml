@@ -82,6 +82,9 @@ clean:
 distclean:: clean
 
 distclean::
+	rm -f src/common.ml
+
+distclean::
 	rm -rf .sass-cache
 
 # We need Dune and Lambda Soup; Markup.ml and Uutf are dependencies

@@ -122,9 +122,6 @@ etex-files: $(FILES)
 	$(TEXQUOTE) < $< > $*.texquote_error.tex
 	mv $*.texquote_error.tex $@
 
-version.tex: $(ROOTDIR)/VERSION
-	sed -n -e '1s/^\([0-9]*\.[0-9]*\).*$$/\\def\\ocamlversion{\1}/p' $< > $@
-
 cmds/warnings-help.etex: $(ROOTDIR)/utils/warnings.ml $(ROOTDIR)/ocamlc
 	(echo "% This file is generated from (ocamlc -warn-help)";\
 	 echo "% according to a rule in manual/src/Makefile.";\
@@ -151,7 +148,7 @@ ifocamldoc.tex: $(ROOTDIR)/Makefile.build_config
 
 .PHONY: clean
 clean:
-	rm -f $(FILES) *.texquote_error
+	rm -f $(filter-out version.tex,$(FILES)) *.texquote_error
 	$(MAKE) -C cmds      clean
 	$(MAKE) -C library   clean
 	$(MAKE) -C refman    clean
@@ -165,4 +162,5 @@ clean:
 
 .PHONY: distclean
 distclean: clean
+	rm -f version.tex
 	$(MAKE) -C html_processing distclean

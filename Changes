@@ -81,6 +81,11 @@ Working version
   (Nicolás Ojeda Bär, review by Daniel Bünzli, Jérémie Dimino, Damien Doligez
   and Xavier Leroy)
 
+- #10658: add detailed information about the current version of OCaml
+  to the Sys module of the standard library.
+  (Sébastien Hinderer, review by Damien Doligez, Gabriel Scherer, David
+  Allsopp, Nicolás Ojeda Bär, Vincent Laviron)
+
 ### Other libraries:
 
 - #10192: Add support for Unix domain sockets on Windows and use them
