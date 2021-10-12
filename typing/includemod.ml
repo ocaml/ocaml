@@ -477,7 +477,7 @@ and try_modtypes ~in_eq ~loc env target_env ~mark subst mty1 mty2 =
       | Error e -> Error (Error.Signature e)
       end
   | Mty_functor (param1, res1), Mty_functor (param2, res2) ->
-      let cc_arg, env, subst =
+      let cc_arg, env, target_env, subst =
         functor_param ~in_eq ~loc env target_env ~mark:(negate_mark mark)
           subst param1 param2
       in
@@ -514,7 +514,7 @@ and try_modtypes ~in_eq ~loc env target_env ~mark subst mty1 mty2 =
 and functor_param ~in_eq ~loc env target_env ~mark subst param1 param2 =
   match param1, param2 with
   | Unit, Unit ->
-      Ok Tcoerce_none, env, subst
+      Ok Tcoerce_none, env, target_env, subst
   | Named (name1, arg1), Named (name2, arg2) ->
       let arg2' = Subst.modtype Keep subst arg2 in
       let cc_arg =
@@ -524,21 +524,24 @@ and functor_param ~in_eq ~loc env target_env ~mark subst param1 param2 =
         | Ok cc -> Ok cc
         | Error err -> Error (Error.Mismatch err)
       in
-      let env, subst =
+      let env, target_env, subst =
         match name1, name2 with
         | Some id1, Some id2 ->
             Env.add_module id1 Mp_present arg2' env,
+            Env.add_module id2 Mp_present arg2 env,
             Subst.add_module id2 (Path.Pident id1) subst
         | None, Some id2 ->
-            Env.add_module id2 Mp_present arg2' env, subst
+            Env.add_module id2 Mp_present arg2' env,
+            Env.add_module id2 Mp_present arg2 env,
+            subst
         | Some id1, None ->
-            Env.add_module id1 Mp_present arg2' env, subst
+            Env.add_module id1 Mp_present arg2' env, target_env, subst
         | None, None ->
-            env, subst
+            env, target_env, subst
       in
-      cc_arg, env, subst
+      cc_arg, env, target_env, subst
   | _, _ ->
-      Error (Error.Incompatible_params (param1, param2)), env, subst
+      Error (Error.Incompatible_params (param1, param2)), env, target_env, subst
 
 and strengthened_modtypes ~in_eq ~loc ~aliasable env target_env ~mark
     subst mty1 path1 mty2 =
@@ -961,7 +964,7 @@ module Functor_inclusion_diff = struct
     let module Compute = Diff.Left_variadic(struct
         let test st mty1 mty2 =
           let loc = Location.none in
-          let res, _, _ =
+          let res, _, _, _ =
             functor_param ~in_eq:false ~loc st.env st.env ~mark:Mark_neither
               st.subst mty1 mty2
           in
