@@ -40,6 +40,7 @@ type iterator = {
   class_type_declaration: iterator -> class_type_declaration -> unit;
   class_type_field: iterator -> class_type_field -> unit;
   constructor_declaration: iterator -> constructor_declaration -> unit;
+  directive_argument: iterator -> directive_argument -> unit;
   expr: iterator -> expression -> unit;
   extension: iterator -> extension -> unit;
   extension_constructor: iterator -> extension_constructor -> unit;
@@ -61,6 +62,8 @@ type iterator = {
   signature_item: iterator -> signature_item -> unit;
   structure: iterator -> structure -> unit;
   structure_item: iterator -> structure_item -> unit;
+  toplevel_directive: iterator -> toplevel_directive -> unit;
+  toplevel_phrase: iterator -> toplevel_phrase -> unit;
   typ: iterator -> core_type -> unit;
   row_field: iterator -> row_field -> unit;
   object_field: iterator -> object_field -> unit;
@@ -721,5 +724,23 @@ let default_iterator =
          | PSig x -> this.signature this x
          | PTyp x -> this.typ this x
          | PPat (x, g) -> this.pat this x; iter_opt (this.expr this) g
+      );
+
+    directive_argument =
+      (fun this a ->
+         this.location this a.pdira_loc
+      );
+
+    toplevel_directive =
+      (fun this d ->
+         iter_loc this d.pdir_name;
+         iter_opt (this.directive_argument this) d.pdir_arg;
+         this.location this d.pdir_loc
+      );
+
+    toplevel_phrase =
+      (fun this -> function
+         | Ptop_def s -> this.structure this s
+         | Ptop_dir d -> this.toplevel_directive this d
       );
   }

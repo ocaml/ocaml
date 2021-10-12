@@ -535,6 +535,10 @@ Working version
 - #12786 : Clean up the algorithm of Ctype.limited_generalize
   (Takafumi Saikawa and Jacques Garrigue, review by Gabriel Scherer)
 
+- #10691: Ast_mapper, Ast_iterator: add functions directive_argument,
+  toplevel_directive and toplevel_phrase.
+  (Guillaume Petiot, review by Gabriel Scherer and Kate Deplaix)
+
 ### Build system:
 
 - #12198, #12321, #12586, #12616, #12706: continue the merge of the
