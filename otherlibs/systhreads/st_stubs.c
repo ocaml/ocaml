@@ -713,10 +713,12 @@ CAMLprim value caml_thread_yield(value unit)        /* ML */
 {
   if (atomic_load_acq(&Thread_main_lock.waiters) == 0) return Val_unit;
 
+  caml_raise_if_exception(caml_process_pending_signals_exn());
   caml_thread_save_runtime_state();
   st_thread_yield(&Thread_main_lock);
   Current_thread = st_tls_get(Thread_key);
   caml_thread_restore_runtime_state();
+  caml_raise_if_exception(caml_process_pending_signals_exn());
 
   return Val_unit;
 }
