@@ -814,7 +814,7 @@ let rec approx_modtype ~absent_globals env smty =
             in
             Types.Named (Some id, arg), newenv
       in
-      let res = approx_modtype ~absent_globals:false newenv sres in
+      let res = approx_modtype ~absent_globals newenv sres in
       Mty_functor(param, res)
   | Pmty_with(sbody, constraints) ->
       let body = approx_modtype ~absent_globals env sbody in
@@ -1315,8 +1315,8 @@ let rec transl_modtype ~absent_globals env smty =
   Builtin_attributes.warning_scope smty.pmty_attributes
     (fun () -> transl_modtype_aux ~absent_globals env smty)
 
-and transl_modtype_functor_arg env sarg =
-  let mty = transl_modtype ~absent_globals:false env sarg in
+and transl_modtype_functor_arg ~absent_globals env sarg =
+  let mty = transl_modtype ~absent_globals env sarg in
   {mty with mty_type = Mtype.scrape_for_functor_arg env mty.mty_type}
 
 and transl_modtype_aux ~absent_globals env smty =
@@ -1339,7 +1339,7 @@ and transl_modtype_aux ~absent_globals env smty =
         match sarg_opt with
         | Unit -> Unit, Types.Unit, env
         | Named (param, sarg) ->
-          let arg = transl_modtype_functor_arg env sarg in
+          let arg = transl_modtype_functor_arg ~absent_globals env sarg in
           let (id, newenv) =
             match param.txt with
             | None -> None, env
@@ -1360,7 +1360,7 @@ and transl_modtype_aux ~absent_globals env smty =
           in
           Named (id, param, arg), Types.Named (id, arg.mty_type), newenv
       in
-      let res = transl_modtype ~absent_globals:false newenv sres in
+      let res = transl_modtype ~absent_globals newenv sres in
       mkmty (Tmty_functor (t_arg, res))
         (Mty_functor(ty_arg, res.mty_type)) env loc
         smty.pmty_attributes
@@ -2177,7 +2177,7 @@ and type_module_aux ~alias ~absent_globals sttn funct_body anchor env smod =
         match arg_opt with
         | Unit -> Unit, Types.Unit, env, false
         | Named (param, smty) ->
-          let mty = transl_modtype_functor_arg env smty in
+          let mty = transl_modtype_functor_arg ~absent_globals env smty in
           let scope = Ctype.create_scope () in
           let (id, newenv) =
             match param.txt with
@@ -2199,7 +2199,7 @@ and type_module_aux ~alias ~absent_globals sttn funct_body anchor env smod =
           Named (id, param, mty), Types.Named (id, mty.mty_type), newenv, true
       in
       let body =
-        type_module ~absent_globals:false true funct_body None newenv sbody
+        type_module ~absent_globals true funct_body None newenv sbody
       in
       { mod_desc = Tmod_functor(t_arg, body);
         mod_type = Mty_functor(ty_arg, body.mod_type);
