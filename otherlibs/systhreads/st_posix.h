@@ -388,7 +388,7 @@ static value st_encode_sigset(sigset_t * set)
       if (sigismember(set, i) > 0) {
         value newcons = caml_alloc_small(2, 0);
         caml_modify(&Field(newcons, 0),
-		    Val_int(caml_rev_convert_signal_number(i)));
+                    Val_int(caml_rev_convert_signal_number(i)));
         caml_modify(&Field(newcons, 1), res);
         res = newcons;
       }
