@@ -305,8 +305,6 @@ module Native = struct
   let not_implemented () =
     failwith "Not implemented for bytecode toplevel"
 
-  type evaluation_outcome = Result of Obj.t | Exception of exn
-
   module Jit = struct
     type t =
       {

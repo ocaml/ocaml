@@ -54,13 +54,10 @@ val init: unit -> unit
 
 module Native : sig
   (* JIT *)
-
-  type evaluation_outcome = Result of Obj.t | Exception of exn
-
   module Jit : sig
     type t =
       {
-        load : Format.formatter -> Lambda.program -> evaluation_outcome;
+        load : Format.formatter -> Lambda.program -> Topcommon.evaluation_outcome;
         lookup_symbol : string -> Obj.t option;
       }
   end

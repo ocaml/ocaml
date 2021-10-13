@@ -15,6 +15,8 @@
 
 open Format
 
+type evaluation_outcome = Result of Obj.t | Exception of exn
+
 (* type of toplevel inputs *)
 type input =
   | Stdin
@@ -198,9 +200,6 @@ val override_sys_argv : string array -> unit
 
 module Native : sig
   (** JIT Hooks *)
-
-  type evaluation_outcome = Result of Obj.t | Exception of exn
-
   module Jit : sig
     type t =
       {

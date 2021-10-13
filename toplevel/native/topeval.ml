@@ -25,7 +25,6 @@ open Outcometree
 open Topcommon
 
 type res = Ok of Obj.t | Err of string
-type evaluation_outcome = Result of Obj.t | Exception of exn
 
 let _dummy = (Ok (Obj.magic 0), Err "")
 
@@ -352,8 +351,6 @@ let init () =
   ()
 
 module Native = struct
-  type nonrec evaluation_outcome = evaluation_outcome = Result of Obj.t | Exception of exn
-
   module Jit = Jit
 
   let register_jit j = jit := Some j
