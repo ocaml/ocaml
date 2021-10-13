@@ -24,6 +24,9 @@ INSTALL ?= @INSTALL@
 INSTALL_DATA ?= @INSTALL_DATA@
 INSTALL_PROG ?= @INSTALL_PROGRAM@
 
+# Whether to install the native toplevel (ocamlnat)
+INSTALL_OCAMLNAT = @install_ocamlnat@
+
 # The command to generate C dependency information
 DEP_CC=@DEP_CC@ -MM
 COMPUTE_DEPS=@compute_deps@

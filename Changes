@@ -243,6 +243,9 @@ Working version
 - #10678: Expose descriptions in Warnings module
   (Leo White, review by Gabriel Scherer and Alain Frisch)
 
+- #10690: Always build ocamltoplevel.cmxa
+  (David Allsopp, review by Gabriel Scherer)
+
 - #10692: Expose Parse.module_type and Parse.module_expr
   (Guillaume Petiot, review by Gabriel Scherer)
 
@@ -277,6 +280,10 @@ Working version
   triplet-prefixed GCC) and fix all C compiler detection when CC is a path
   rather than a basename.
   (David Allsopp, report by Fabian @copy, review by Gabriel Scherer)
+
+- #10690: Add --enable-native-toplevel to configure to enable installing
+  ocamlnat as part of the main build (default is not to install it)
+  (David Allsopp, review by Gabriel Scherer)
 
 - #10693: Fix ident collision in includemod
   (Leo White, review by Matthew Ryan)

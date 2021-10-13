@@ -158,6 +158,7 @@ AC_SUBST([mkmaindll])
 AC_SUBST([mksharedlibrpath])
 AC_SUBST([install_bytecode_programs])
 AC_SUBST([install_source_artifacts])
+AC_SUBST([install_ocamlnat])
 AC_SUBST([profinfo])
 AC_SUBST([profinfo_width])
 AC_SUBST([frame_pointers])
@@ -298,6 +299,10 @@ AC_ARG_WITH([odoc],
 AC_ARG_ENABLE([ocamltest],
   [AS_HELP_STRING([--disable-ocamltest],
     [do not build the ocamltest driver])])
+
+AC_ARG_ENABLE([native-toplevel],
+  [AS_HELP_STRING([--enable-native-toplevel],
+    [build the native toplevel])])
 
 AC_ARG_ENABLE([frame-pointers],
   [AS_HELP_STRING([--enable-frame-pointers],
@@ -1030,6 +1035,14 @@ AS_IF([test x"$supports_shared_libraries" = 'xtrue'],
     [aarch64-*-linux*], [natdynlink=true],
     [aarch64-*-freebsd*], [natdynlink=true],
     [riscv*-*-linux*], [natdynlink=true])])
+
+AS_CASE([$enable_native_toplevel,$natdynlink],
+  [yes,false],
+    [AC_MSG_ERROR(m4_normalize([
+      The native toplevel requires native dynlink support]))],
+  [yes,*],
+    [install_ocamlnat=true],
+    [install_ocamlnat=false])
 
 # Try to work around the Skylake/Kaby Lake processor bug.
 AS_CASE(["$cc_basename,$host"],
