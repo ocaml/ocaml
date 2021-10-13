@@ -223,3 +223,5 @@ let loop ppf =
     | PPerror -> ()
     | x -> Location.report_exception ppf x; Btype.backtrack snap
   done
+
+module Native = Topeval.Native

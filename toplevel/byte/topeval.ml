@@ -300,3 +300,26 @@ let init () =
   Compmisc.init_path ();
   Env.import_crcs ~source:Sys.executable_name crc_intfs;
   ()
+
+module Native = struct
+  let not_implemented () =
+    failwith "Not implemented for bytecode toplevel"
+
+  type evaluation_outcome = Result of Obj.t | Exception of exn
+
+  module Jit = struct
+    type t =
+      {
+        load : Format.formatter -> Lambda.program -> evaluation_outcome;
+        lookup_symbol : string -> Obj.t option;
+      }
+  end
+
+  let register_jit _ = not_implemented ()
+
+  let default_lookup _ = not_implemented ()
+
+  let need_symbol _ = not_implemented ()
+
+  let phrase_name _ = not_implemented ()
+end

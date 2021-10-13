@@ -51,3 +51,27 @@ include module type of Topcommon.MakeEvalPrinter(EvalBase)
 val load_file : bool -> formatter -> string -> bool
 
 val init: unit -> unit
+
+module Native : sig
+  (* JIT *)
+
+  type evaluation_outcome = Result of Obj.t | Exception of exn
+
+  module Jit : sig
+    type t =
+      {
+        load : Format.formatter -> Lambda.program -> evaluation_outcome;
+        lookup_symbol : string -> Obj.t option;
+      }
+  end
+
+  val register_jit : Jit.t -> unit
+
+  val default_lookup : string -> Obj.t option
+
+  (* Internals required by the JIT *)
+
+  val need_symbol : string -> bool
+
+  val phrase_name : unit -> string
+end

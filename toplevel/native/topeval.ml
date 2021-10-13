@@ -29,14 +29,32 @@ type evaluation_outcome = Result of Obj.t | Exception of exn
 
 let _dummy = (Ok (Obj.magic 0), Err "")
 
+module Jit = struct
+  type t =
+    {
+      load : Format.formatter -> Lambda.program -> evaluation_outcome;
+      lookup_symbol : string -> Obj.t option;
+    }
+end
+
+let jit = ref None
+
 external ndl_run_toplevel: string -> string -> res
   = "caml_natdynlink_run_toplevel"
+
+let default_lookup sym =
+  Dynlink.unsafe_get_global_value ~bytecode_or_asm_symbol:sym
 
 let implementation_label = "native toplevel"
 
 let global_symbol id =
   let sym = Compilenv.symbol_for_global id in
-  match Dynlink.unsafe_get_global_value ~bytecode_or_asm_symbol:sym with
+  let lookup =
+    match !jit with
+    | None -> default_lookup
+    | Some {Jit.lookup_symbol; _} -> lookup_symbol
+  in
+  match lookup sym with
   | None ->
     fatal_error ("Toploop.global_symbol " ^ (Ident.unique_name id))
   | Some obj -> obj
@@ -133,24 +151,12 @@ module Backend = struct
 end
 let backend = (module Backend : Backend_intf.S)
 
-let load_lambda ppf ~module_ident ~required_globals lam size =
-  if !Clflags.dump_rawlambda then fprintf ppf "%a@." Printlambda.lambda lam;
-  let slam = Simplif.simplify_lambda lam in
-  if !Clflags.dump_lambda then fprintf ppf "%a@." Printlambda.lambda slam;
-
+let default_load ppf (program : Lambda.program) =
   let dll =
     if !Clflags.keep_asm_file then !phrase_name ^ ext_dll
     else Filename.temp_file ("caml" ^ !phrase_name) ext_dll
   in
   let filename = Filename.chop_extension dll in
-  let program =
-    { Lambda.
-      code = slam;
-      main_module_block_size = size;
-      module_ident;
-      required_globals;
-    }
-  in
   let middle_end =
     if Config.flambda then Flambda_middle_end.lambda_to_clambda
     else Closure_middle_end.lambda_to_clambda
@@ -160,7 +166,6 @@ let load_lambda ppf ~module_ident ~required_globals lam size =
     ~middle_end ~ppf_dump:ppf program;
   Asmlink.call_linker_shared [filename ^ ext_obj] dll;
   Sys.remove (filename ^ ext_obj);
-
   let dll =
     if Filename.is_implicit dll
     then Filename.concat (Sys.getcwd ()) dll
@@ -178,6 +183,22 @@ let load_lambda ppf ~module_ident ~required_globals lam size =
   | exception x ->
       record_backtrace ();
       Exception x
+
+let load_lambda ppf ~module_ident ~required_globals lam size =
+  if !Clflags.dump_rawlambda then fprintf ppf "%a@." Printlambda.lambda lam;
+  let slam = Simplif.simplify_lambda lam in
+  if !Clflags.dump_lambda then fprintf ppf "%a@." Printlambda.lambda slam;
+  let program =
+    { Lambda.
+      code = slam;
+      main_module_block_size = size;
+      module_ident;
+      required_globals;
+    }
+  in
+  match !jit with
+  | None -> default_load ppf program
+  | Some {Jit.load; _} -> load ppf program
 
 (* Print the outcome of an evaluation *)
 
@@ -329,3 +350,17 @@ let init () =
   Compmisc.init_path ();
   Clflags.dlcode := true;
   ()
+
+module Native = struct
+  type nonrec evaluation_outcome = evaluation_outcome = Result of Obj.t | Exception of exn
+
+  module Jit = Jit
+
+  let register_jit j = jit := Some j
+
+  let default_lookup = default_lookup
+
+  let need_symbol = need_symbol
+
+  let phrase_name () = !phrase_name
+end
