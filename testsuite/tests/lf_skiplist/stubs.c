@@ -46,6 +46,36 @@ CAMLextern value init_skiplist(value val) {
   CAMLreturn(Val_unit);
 }
 
+
+static int get_len(struct  lf_skipcell *p, struct lf_skipcell *end) {
+  int len = 0 ;
+  for ( ; p != end; p = atomic_load(&p->garbage_next)) len++ ;
+  return len ;
+}
+
+CAMLextern value cardinal_skiplist(value val) {
+  CAMLparam0();
+  uintnat r = 0;
+  FOREACH_LF_SKIPLIST_ELEMENT(p,&the_list,r++);
+  CAMLreturn(Val_long(r));
+}
+
+CAMLextern value clean_skiplist(value val) {
+  CAMLparam1(val);
+  uintnat v = Long_val(val) ;
+  {
+    int len = get_len(atomic_load(&the_list.garbage_head),the_list.head) ;
+    if (v > 0) {
+      if (len != v) {
+	fprintf(stderr,"len=%d, and v=%lu differ, space leak detected\n",len,v);
+      }
+    }
+  }
+  caml_lf_skiplist_free_garbage(&the_list);
+  assert(get_len(atomic_load(&the_list.garbage_head),the_list.head) == 0) ;
+  CAMLreturn(Val_unit);
+}
+
 CAMLextern value hammer_skiplist(value domain_id_val) {
   CAMLparam1(domain_id_val);
 
@@ -76,4 +106,40 @@ CAMLextern value hammer_skiplist(value domain_id_val) {
   }
 
   CAMLreturn(Val_unit);
+}
+
+inline static uintnat calc_value(uintnat id) { return id; }
+inline static uintnat calc_key(uintnat id,uintnat turn) { return 1024*id+turn+1; }
+inline static uintnat calc_right(uintnat id,uintnat turn,uintnat ndoms) { return (id+turn) % ndoms; }
+
+CAMLextern value insert_skiplist(value turn_val,value ndoms_val,value domain_id_val) {
+  CAMLparam3(turn_val,ndoms_val,domain_id_val);
+  uintnat domain_id = Long_val(domain_id_val);
+  uintnat ndoms = Long_val(ndoms_val);
+  uintnat turn = Long_val(turn_val);
+  uintnat right = calc_right(domain_id,turn,ndoms) ; // some neighbour on the right
+  uintnat k = calc_key(domain_id,turn) ;
+  uintnat v =  calc_value(domain_id) ;
+  int r = caml_lf_skiplist_insert(&the_list, k, v) ;
+  assert(r);
+  //  fprintf(stderr,"I: %lu -> %lu\n",k,v);
+  CAMLreturn(Val_unit);
+}
+
+CAMLextern value find_skiplist(value turn_val,value ndoms_val,value domain_id_val) {
+  CAMLparam3(turn_val,ndoms_val,domain_id_val);
+  uintnat domain_id = Long_val(domain_id_val);
+  uintnat ndoms = Long_val(ndoms_val);
+  uintnat turn = Long_val(turn_val);
+  uintnat right = calc_right(domain_id,turn,ndoms) ; // neighbour on the right
+  uintnat k = calc_key(right,turn);
+  uintnat w = 0 ;
+  int r = caml_lf_skiplist_find(&the_list, k, &w);
+  if (r) {
+    assert(w == calc_value(right));
+    assert(caml_lf_skiplist_remove(&the_list, k));
+    assert(!caml_lf_skiplist_remove(&the_list, k));
+    //    fprintf(stderr,"R: %lu -> %lu\n",k,w);
+  }
+  CAMLreturn(Val_bool(r));
 }
