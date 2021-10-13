@@ -354,6 +354,7 @@ int caml_lf_skiplist_insert(struct lf_skiplist *sk, uintnat key, uintnat data) {
       new_cell->top_level = top_level;
       new_cell->key = key;
       new_cell->data = data;
+      new_cell->garbage_next = NULL;
 
       for (int level = 0; level <= top_level; level++) {
         atomic_store_explicit(&new_cell->forward[level], succs[level],
