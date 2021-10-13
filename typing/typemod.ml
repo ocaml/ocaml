@@ -803,7 +803,7 @@ let rec approx_modtype ~absent_globals env smty =
         match param with
         | Unit -> Types.Unit, env
         | Named (param, sarg) ->
-          let arg = approx_modtype ~absent_globals:false env sarg in
+          let arg = approx_modtype ~absent_globals env sarg in
           match param.txt with
           | None -> Types.Named (None, arg), env
           | Some name ->
