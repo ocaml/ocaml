@@ -448,16 +448,16 @@ module Functor_suberror = struct
             Format.dprintf
               "The functor was expected to be generative at this position"
 
-      let patch env got expected =
-        Includemod.Functor_inclusion_diff.diff env got expected
+      let patch env target_env got expected =
+        Includemod.Functor_inclusion_diff.diff env target_env got expected
         |> prepare_patch ~drop:false ~ctx:Inclusion
 
     end
 
   module App = struct
 
-    let patch env ~f ~args =
-      Includemod.Functor_app_diff.diff env ~f ~args
+    let patch env target_env ~f ~args =
+      Includemod.Functor_app_diff.diff env target_env ~f ~args
       |> prepare_patch ~drop:true ~ctx:App
 
     let got d =
@@ -521,38 +521,38 @@ module Functor_suberror = struct
 
   end
 
-  let subcase sub ~expansion_token env (pos, diff) =
+  let subcase sub ~expansion_token env target_env (pos, diff) =
     Location.msg "%a%a%a%a@[<hv 2>%t@]%a"
       Format.pp_print_tab ()
       Format.pp_open_tbox ()
       Diffing.prefix (pos, Diffing.classify diff)
       Format.pp_set_tab ()
       (Printtyp.wrap_printing_env env ~error:true
-         (fun () -> sub ~expansion_token env diff)
+         (fun () -> sub ~expansion_token env target_env diff)
       )
      Format.pp_close_tbox ()
 
-  let onlycase sub ~expansion_token env (_, diff) =
+  let onlycase sub ~expansion_token env target_env (_, diff) =
     Location.msg "%a@[<hv 2>%t@]"
       Format.pp_print_tab ()
       (Printtyp.wrap_printing_env env ~error:true
-         (fun () -> sub ~expansion_token env diff)
+         (fun () -> sub ~expansion_token env target_env diff)
       )
 
-  let params sub ~expansion_token env l =
+  let params sub ~expansion_token env target_env l =
     let rec aux subcases = function
       | [] -> subcases
       | (_, Diffing.Keep _) as a :: q ->
-          aux (subcase sub ~expansion_token env a :: subcases) q
+          aux (subcase sub ~expansion_token env target_env a :: subcases) q
       | a :: q ->
           List.fold_left (fun acc x ->
-            (subcase sub ~expansion_token:false env x) :: acc
+            (subcase sub ~expansion_token:false env target_env x) :: acc
             )
-            (subcase sub ~expansion_token env a :: subcases)
+            (subcase sub ~expansion_token env target_env a :: subcases)
             q
     in
     match l with
-    | [a] -> [onlycase sub ~expansion_token env a]
+    | [a] -> [onlycase sub ~expansion_token env target_env a]
     | l -> aux [] l
 end
 
@@ -714,24 +714,27 @@ let rec module_type ~expansion_token ~eqmode ~env ~before ~ctx diff =
       module_type_symptom ~eqmode ~expansion_token ~env ~before ~ctx
         diff.symptom
 
-and module_type_symptom ~eqmode ~expansion_token ~env ~before ~ctx = function
+and module_type_symptom ~eqmode ~expansion_token ~env ~target_env ~before ~ctx =
+  function
   | Mt_core core ->
       begin match core_module_type_symptom core with
       | None -> before
       | Some msg -> Location.msg "%t" msg :: before
       end
   | Signature s -> signature ~expansion_token ~env ~before ~ctx s
-  | Functor f -> functor_symptom ~expansion_token ~env ~before ~ctx f
+  | Functor f ->
+      functor_symptom ~expansion_token ~env ~target_env ~before ~ctx f
   | After_alias_expansion diff ->
-      module_type ~eqmode ~expansion_token ~env ~before ~ctx diff
+      module_type ~eqmode ~expansion_token ~env ~target_env ~before ~ctx diff
   | Invalid_module_alias path ->
       let printer =
         Format.dprintf "Module %a cannot be aliased" Printtyp.path path
       in
       dwith_context ctx printer :: before
 
-and functor_params ~expansion_token ~env ~before ~ctx {got;expected;_} =
-  let d = Functor_suberror.Inclusion.patch env got expected in
+and functor_params ~expansion_token ~env ~target_env ~before ~ctx
+    {got;expected;_} =
+  let d = Functor_suberror.Inclusion.patch env target_env got expected in
   let actual = Functor_suberror.Inclusion.got d in
   let expected = Functor_suberror.expected d in
   let main =
@@ -744,15 +747,16 @@ and functor_params ~expansion_token ~env ~before ~ctx {got;expected;_} =
   let msgs = dwith_context ctx main :: before in
   let functor_suberrors =
     if expansion_token then
-      Functor_suberror.params functor_arg_diff ~expansion_token env d
+      Functor_suberror.params functor_arg_diff ~expansion_token env target_env d
     else []
   in
   functor_suberrors @ msgs
 
-and functor_symptom ~expansion_token ~env ~before ~ctx = function
+and functor_symptom ~expansion_token ~env ~target_env ~before ~ctx = function
   | Result res ->
-      module_type ~expansion_token ~eqmode:false ~env ~before ~ctx res
-  | Params d -> functor_params ~expansion_token ~env ~before ~ctx d
+      module_type ~expansion_token ~eqmode:false ~env ~target_env ~before ~ctx
+        res
+  | Params d -> functor_params ~expansion_token ~env ~target_env ~before ~ctx d
 
 and signature ~expansion_token ~env:_ ~before ~ctx sgs =
   Printtyp.wrap_printing_env ~error:true sgs.env (fun () ->
@@ -764,18 +768,21 @@ and signature ~expansion_token ~env:_ ~before ~ctx sgs =
             @ before
           else
             before
-      | [], a :: _ -> sigitem ~expansion_token ~env:sgs.env ~before ~ctx a
+      | [], a :: _ ->
+          sigitem ~expansion_token ~env:sgs.env ~target_env:sgs.target_env
+            ~before ~ctx a
       | [], [] -> assert false
     )
-and sigitem ~expansion_token ~env ~before ~ctx (name,s) = match s with
+and sigitem ~expansion_token ~env ~target_env ~before ~ctx (name,s) =
+  match s with
   | Core c ->
       dwith_context ctx (core env name c) :: before
   | Module_type diff ->
-      module_type ~expansion_token ~eqmode:false ~env ~before
+      module_type ~expansion_token ~eqmode:false ~env ~target_env ~before
         ~ctx:(Context.Module name :: ctx) diff
   | Module_type_declaration diff ->
-      module_type_decl ~expansion_token ~env ~before ~ctx name diff
-and module_type_decl ~expansion_token ~env ~before ~ctx id diff =
+      module_type_decl ~expansion_token ~env  ~target_env~before ~ctx name diff
+and module_type_decl ~expansion_token ~env ~target_env ~before ~ctx id diff =
   let next =
     dwith_context_and_elision ctx (module_type_declarations id) diff in
   let before = next :: before in
@@ -785,16 +792,16 @@ and module_type_decl ~expansion_token ~env ~before ~ctx id diff =
         Location.msg "The first module type is not included in the second"
         :: before
       in
-      module_type ~expansion_token ~eqmode:true ~before ~env
+      module_type ~expansion_token ~eqmode:true ~before ~env ~target_env
         ~ctx:(Context.Modtype id :: ctx) mts
   | Not_greater_than mts ->
       let before =
         Location.msg "The second module type is not included in the first"
         :: before in
-      module_type ~expansion_token ~eqmode:true ~before ~env
+      module_type ~expansion_token ~eqmode:true ~before ~env ~target_env
         ~ctx:(Context.Modtype id :: ctx) mts
   | Incomparable mts ->
-      module_type ~expansion_token ~eqmode:true ~env ~before
+      module_type ~expansion_token ~eqmode:true ~env ~target_env ~before
         ~ctx:(Context.Modtype id :: ctx) mts.less_than
   | Illegal_permutation c ->
       begin match diff.got.Types.mtd_type with
@@ -805,7 +812,7 @@ and module_type_decl ~expansion_token ~env ~before ~ctx id diff =
           :: before
       end
 
-and functor_arg_diff ~expansion_token env (patch: _ Diffing.change) =
+and functor_arg_diff ~expansion_token env target_env (patch: _ Diffing.change) =
   match patch with
   | Insert mty -> Functor_suberror.Inclusion.insert mty
   | Delete mty -> Functor_suberror.Inclusion.delete mty
@@ -815,12 +822,12 @@ and functor_arg_diff ~expansion_token env (patch: _ Diffing.change) =
   | Change (g, e,  Err.Mismatch mty_diff) ->
       let more () =
         subcase_list @@
-        module_type_symptom ~eqmode:false ~expansion_token ~env ~before:[]
-          ~ctx:[] mty_diff.symptom
+        module_type_symptom ~eqmode:false ~expansion_token ~env ~target_env
+          ~before:[] ~ctx:[] mty_diff.symptom
       in
       Functor_suberror.Inclusion.diff g e more
 
-let functor_app_diff ~expansion_token env  (patch: _ Diffing.change) =
+let functor_app_diff ~expansion_token env target_env (patch: _ Diffing.change) =
   match patch with
   | Insert mty ->  Functor_suberror.App.insert mty
   | Delete mty ->  Functor_suberror.App.delete mty
@@ -830,22 +837,22 @@ let functor_app_diff ~expansion_token env  (patch: _ Diffing.change) =
   | Change (g, e,  Err.Mismatch mty_diff) ->
       let more () =
         subcase_list @@
-        module_type_symptom ~eqmode:false ~expansion_token ~env ~before:[]
-          ~ctx:[] mty_diff.symptom
+        module_type_symptom ~eqmode:false ~expansion_token ~env ~target_env
+          ~before:[] ~ctx:[] mty_diff.symptom
       in
       Functor_suberror.App.diff g e more
 
-let module_type_subst ~env id diff =
+let module_type_subst ~env ~target_env id diff =
   match diff.symptom with
   | Not_less_than mts ->
       module_type ~expansion_token:true ~eqmode:true ~before:[] ~env
-        ~ctx:[Modtype id] mts
+        ~target_env ~ctx:[Modtype id] mts
   | Not_greater_than mts ->
       module_type ~expansion_token:true ~eqmode:true ~before:[] ~env
-        ~ctx:[Modtype id] mts
+        ~target_env ~ctx:[Modtype id] mts
   | Incomparable mts ->
       module_type ~expansion_token:true ~eqmode:true ~env ~before:[]
-        ~ctx:[Modtype id] mts.less_than
+        ~target_env ~ctx:[Modtype id] mts.less_than
   | Illegal_permutation c ->
       let mty = diff.got in
       let main =
@@ -853,17 +860,17 @@ let module_type_subst ~env id diff =
           (Illegal_permutation.pp Context.alt_pp env) (mty,c) in
       [main]
 
-let all env = function
+let all env target_env = function
   | In_Compilation_unit diff ->
       let first = Location.msg "%a" interface_mismatch diff in
       signature ~expansion_token:true ~env ~before:[first] ~ctx:[] diff.symptom
   | In_Type_declaration (id,reason) ->
       [Location.msg "%t" (core env id reason)]
   | In_Module_type diff ->
-      module_type ~expansion_token:true ~eqmode:false ~before:[] ~env ~ctx:[]
-        diff
+      module_type ~expansion_token:true ~eqmode:false ~before:[] ~env
+        ~target_env ~ctx:[] diff
   | In_Module_type_substitution (id,diff) ->
-      module_type_subst ~env id diff
+      module_type_subst ~env ~target_env id diff
   | In_Signature diff ->
       signature ~expansion_token:true ~before:[] ~env ~ctx:[] diff
   | In_Expansion cmts ->
@@ -876,18 +883,18 @@ let all env = function
 let err_msgs (env, err) =
   Printtyp.Conflicts.reset();
   Printtyp.wrap_printing_env ~error:true env
-    (fun () -> coalesce @@ all env err)
+    (fun () -> coalesce @@ all env env err)
 
 let report_error err =
   let main = err_msgs err in
   Location.errorf ~loc:Location.(in_file !input_name) "%t" main
 
-let report_apply_error ~loc env (lid_app, mty_f, args) =
+let report_apply_error ~loc env target_env (lid_app, mty_f, args) =
   let may_print_app ppf = match lid_app with
     | None -> ()
     | Some lid -> Format.fprintf ppf "%a " Printtyp.longident lid
   in
-  let d = Functor_suberror.App.patch env ~f:mty_f ~args in
+  let d = Functor_suberror.App.patch env target_env ~f:mty_f ~args in
   match d with
   (* We specialize the one change and one argument case to remove the
      presentation of the functor arguments *)
@@ -896,8 +903,8 @@ let report_apply_error ~loc env (lid_app, mty_f, args) =
   | [ _, Change (g, e,  Err.Mismatch mty_diff) ] ->
       let more () =
         subcase_list @@
-        module_type_symptom ~eqmode:false ~expansion_token:true ~env ~before:[]
-          ~ctx:[] mty_diff.symptom
+        module_type_symptom ~eqmode:false ~expansion_token:true ~env
+          ~target_env ~before:[] ~ctx:[] mty_diff.symptom
       in
       Location.errorf ~loc "%t" (Functor_suberror.App.single_diff g e more)
   | _ ->
@@ -905,7 +912,8 @@ let report_apply_error ~loc env (lid_app, mty_f, args) =
       let expected = Functor_suberror.expected d in
       let sub =
         List.rev @@
-        Functor_suberror.params functor_app_diff env ~expansion_token:true d
+        Functor_suberror.params functor_app_diff env target_env
+          ~expansion_token:true d
       in
       Location.errorf ~loc ~sub
         "@[<hv>The functor application %tis ill-typed.@ \
@@ -920,7 +928,7 @@ let register () =
       | Includemod.Error err -> Some (report_error err)
       | Includemod.Apply_error {loc; env; lid_app; mty_f; args} ->
           Some (Printtyp.wrap_printing_env env ~error:true (fun () ->
-              report_apply_error ~loc env (lid_app, mty_f, args))
+              report_apply_error ~loc env env (lid_app, mty_f, args))
             )
       | _ -> None
     )

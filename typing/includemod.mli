@@ -90,6 +90,7 @@ module Error: sig
 
   and signature_symptom = {
     env: Env.t;
+    target_env: Env.t;
     missings: Types.signature_item list;
     incompatibles: (Ident.t * sigitem_symptom) list;
     oks: (int * Typedtree.module_coercion) list;
@@ -224,7 +225,7 @@ module Functor_inclusion_diff: sig
     type diff = (Types.functor_parameter, unit) Error.functor_param_symptom
     type state
   end
-  val diff: Env.t ->
+  val diff: Env.t -> Env.t ->
     Types.functor_parameter list * Types.module_type ->
     Types.functor_parameter list * Types.module_type ->
     Diffing.Define(Defs).patch
@@ -239,7 +240,7 @@ module Functor_app_diff: sig
     type state
   end
   val diff:
-    Env.t ->
+    Env.t -> Env.t ->
     f:Types.module_type ->
     args:(Error.functor_arg_descr * Types.module_type) list ->
     Diffing.Define(Defs).patch

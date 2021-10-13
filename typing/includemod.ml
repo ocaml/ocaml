@@ -101,6 +101,7 @@ module Error = struct
 
   and signature_symptom = {
     env: Env.t;
+    target_env: Env.t;
     missings: signature_item list;
     incompatibles: (Ident.t * sigitem_symptom) list;
     oks: (int * module_coercion) list;
@@ -625,7 +626,12 @@ and signatures  ~in_eq ~loc env target_env ~mark subst sig1 sig2 =
                 else
                   Ok (Tcoerce_structure (cc, id_pos_list))
             | missings, incompatibles, cc ->
-                Error { env=new_env; Error.missings; incompatibles; oks=cc }
+                Error
+                  { env= new_env
+                  ; target_env= new_target_env
+                  ; Error.missings
+                  ; incompatibles
+                  ; oks=cc }
         end
     | item2 :: rem ->
         let (id2, _loc, name2) = item_ident_name item2 in
@@ -884,6 +890,7 @@ module Functor_inclusion_diff = struct
     type state = {
       res: module_type option;
       env: Env.t;
+      target_env: Env.t;
       subst: Subst.t;
     }
   end
@@ -961,13 +968,13 @@ module Functor_inclusion_diff = struct
             st, [||]
       end
 
-  let diff env (l1,res1) (l2,_) =
+  let diff env target_env (l1,res1) (l2,_) =
     let module Compute = Diff.Left_variadic(struct
         let test st mty1 mty2 =
           let loc = Location.none in
           let res, _, _, _ =
-            functor_param ~in_eq:false ~loc st.env st.env ~mark:Mark_neither
-              st.subst mty1 mty2
+            functor_param ~in_eq:false ~loc st.env st.target_env
+              ~mark:Mark_neither st.subst mty1 mty2
           in
           res
         let update = update
@@ -977,7 +984,10 @@ module Functor_inclusion_diff = struct
     let param1 = Array.of_list l1 in
     let param2 = Array.of_list l2 in
     let state =
-      { env; subst = Subst.identity; res = keep_expansible_param res1}
+      { env
+      ; target_env
+      ; subst = Subst.identity
+      ; res = keep_expansible_param res1 }
     in
     Compute.diff state param1 param2
 
@@ -1055,7 +1065,7 @@ module Functor_app_diff = struct
         end
       end
 
-  let diff env ~f ~args =
+  let diff env target_env ~f ~args =
     let params, res = retrieve_functor_params env f in
     let module Compute = Diff.Right_variadic(struct
         let update = update
@@ -1080,7 +1090,10 @@ module Functor_app_diff = struct
     let args = Array.of_list args in
     let params = Array.of_list params in
     let state : Defs.state =
-      { env; subst = Subst.identity; res = I.keep_expansible_param res }
+      { env
+      ; target_env
+      ; subst = Subst.identity
+      ; res = I.keep_expansible_param res }
     in
     Compute.diff state args params
 
