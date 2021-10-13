@@ -322,6 +322,11 @@ static void * caml_thread_tick(void * arg)
   caml_domain_state *domain;
   uintnat *domain_id = (uintnat *) arg;
   struct timeval timeout;
+  sigset_t mask;
+
+  /* Block all signals so that we don't try to execute an OCaml signal handler*/
+  sigfillset(&mask);
+  pthread_sigmask(SIG_BLOCK, &mask, NULL);
 
   caml_init_domain_self(*domain_id);
   domain = Caml_state;
@@ -382,7 +387,8 @@ static value st_encode_sigset(sigset_t * set)
     for (i = 1; i < NSIG; i++)
       if (sigismember(set, i) > 0) {
         value newcons = caml_alloc_small(2, 0);
-        caml_modify(&Field(newcons, 0), Val_int(caml_rev_convert_signal_number(i)));
+        caml_modify(&Field(newcons, 0),
+                    Val_int(caml_rev_convert_signal_number(i)));
         caml_modify(&Field(newcons, 1), res);
         res = newcons;
       }
