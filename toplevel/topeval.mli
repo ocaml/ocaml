@@ -53,20 +53,15 @@ val load_file : bool -> formatter -> string -> bool
 val init: unit -> unit
 
 module Native : sig
-  (* JIT *)
-  module Jit : sig
-    type t =
-      {
-        load : Format.formatter -> Lambda.program -> Topcommon.evaluation_outcome;
-        lookup_symbol : string -> Obj.t option;
-      }
-  end
+  (** Module for native toplevel only features *)
 
-  val register_jit : Jit.t -> unit
+  (** JIT Hooks *)
+
+  val register_jit : Topcommon.Jit.t -> unit
 
   val default_lookup : string -> Obj.t option
 
-  (* Internals required by the JIT *)
+  (** Internals required by the JIT *)
 
   val need_symbol : string -> bool
 

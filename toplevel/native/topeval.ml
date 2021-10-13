@@ -28,15 +28,7 @@ type res = Ok of Obj.t | Err of string
 
 let _dummy = (Ok (Obj.magic 0), Err "")
 
-module Jit = struct
-  type t =
-    {
-      load : Format.formatter -> Lambda.program -> evaluation_outcome;
-      lookup_symbol : string -> Obj.t option;
-    }
-end
-
-let jit = ref None
+let jit : Jit.t option ref = ref None
 
 external ndl_run_toplevel: string -> string -> res
   = "caml_natdynlink_run_toplevel"
@@ -351,8 +343,6 @@ let init () =
   ()
 
 module Native = struct
-  module Jit = Jit
-
   let register_jit j = jit := Some j
 
   let default_lookup = default_lookup

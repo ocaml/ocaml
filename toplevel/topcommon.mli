@@ -217,3 +217,11 @@ val parse_mod_use_file:
   string -> Lexing.lexbuf -> Parsetree.toplevel_phrase list
 
 val refill_lexbuf: bytes -> int -> int
+
+module Jit : sig
+  type t =
+    {
+      load : Format.formatter -> Lambda.program -> evaluation_outcome;
+      lookup_symbol : string -> Obj.t option;
+    }
+end

@@ -356,3 +356,11 @@ let try_run_directive ppf dir_name pdir_arg =
             dir_name dir_type arg_type;
           false
   end
+
+module Jit = struct
+  type t =
+    {
+      load : Format.formatter -> Lambda.program -> evaluation_outcome;
+      lookup_symbol : string -> Obj.t option;
+    }
+end

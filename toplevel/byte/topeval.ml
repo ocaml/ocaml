@@ -305,14 +305,6 @@ module Native = struct
   let not_implemented () =
     failwith "Not implemented for bytecode toplevel"
 
-  module Jit = struct
-    type t =
-      {
-        load : Format.formatter -> Lambda.program -> evaluation_outcome;
-        lookup_symbol : string -> Obj.t option;
-      }
-  end
-
   let register_jit _ = not_implemented ()
 
   let default_lookup _ = not_implemented ()

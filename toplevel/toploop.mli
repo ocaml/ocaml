@@ -198,21 +198,26 @@ val override_sys_argv : string array -> unit
    "script.ml args..." instead of the full command line:
    "ocamlrun unix.cma ... script.ml args...". *)
 
+module Jit : sig
+
+  (** Type for in-process native code assembler/loader *)
+  type t =
+    {
+      load : Format.formatter -> Lambda.program -> evaluation_outcome;
+      lookup_symbol : string -> Obj.t option;
+    }
+end
+
 module Native : sig
+  (** Module for native toplevel only features *)
+
   (** JIT Hooks *)
-  module Jit : sig
-    type t =
-      {
-        load : Format.formatter -> Lambda.program -> evaluation_outcome;
-        lookup_symbol : string -> Obj.t option;
-      }
-  end
 
   val register_jit : Jit.t -> unit
 
   val default_lookup : string -> Obj.t option
 
-  (* Internals required by the JIT *)
+  (** Internals required by the JIT *)
 
   val need_symbol : string -> bool
 
