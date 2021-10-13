@@ -138,13 +138,13 @@ retry:
        key we could be searching for */
     pred = sk->head;
     /*
-    The algorithm itself is fairly simple, we start at the highest level (i.the
-    top, the level with the fewest nodes) of the skiplist and keep walking nodes
-    along the level until [curr] is greater than the key we are looking for.
-    When that happens we drop down to the next level and start the whole thing
-    again from [pred]. If we could visualise searching for an element near the
-    end of the list it would look something like a staircase with wide steps at
-    the beginning and shorter ones as we descend down.
+    The algorithm itself is fairly simple, we start at the highest level (i.e
+    the top, the level with the fewest nodes) of the skiplist and keep walking
+    nodes along the level until [curr] is greater than the key we are looking
+    for. When that happens we drop down to the next level and start the whole
+    thing again from [pred]. If we could visualise searching for an element near
+    the end of the list it would look something like a staircase with wide steps
+    at the beginning and shorter ones as we descend down.
 
     The only complexity is that we need to make sure that we don't examine any
     nodes that are 'marked', that is the lowest bit of their forward pointer to
