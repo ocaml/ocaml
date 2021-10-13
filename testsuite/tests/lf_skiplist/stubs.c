@@ -67,7 +67,7 @@ CAMLextern value clean_skiplist(value val) {
     int len = get_len(atomic_load(&the_list.garbage_head),the_list.head) ;
     if (v > 0) {
       if (len != v) {
-	fprintf(stderr,"len=%d, and v=%lu differ, space leak detected\n",len,v);
+        fprintf(stderr,"len=%d, and v=%lu differ, space leak detected\n",len,v);
       }
     }
   }

@@ -246,12 +246,12 @@ caml/jumptbl.h : caml/instruct.h
 
 # Avoid building due to GIT_HASH when it hasn't changed
 GIT_HASH: $(shell \
-	(git rev-parse --short HEAD || echo "<hash unavailable>") > GIT_HASH.new; \
+    (git rev-parse --short HEAD || echo "<hash unavailable>") > GIT_HASH.new; \
         cmp -s GIT_HASH GIT_HASH.new || echo GIT_HASH.new)
 	cp $^ $@
 
 caml/version.h : $(ROOTDIR)/tools/make-version-header.sh \
-	$(ROOTDIR)/VERSION GIT_HASH
+    $(ROOTDIR)/VERSION GIT_HASH
 	$(ROOTDIR)/tools/make-version-header.sh $(ROOTDIR)/VERSION > $@
 	echo "#define OCAML_RUNTIME_BUILD_GIT_HASH \"`cat GIT_HASH`\"" >> $@
 	echo "#define OCAML_RUNTIME_BUILD_GIT_BRANCH \"`(git symbolic-ref -q --short HEAD || echo "<branch unavailable>")`\"" >> $@
