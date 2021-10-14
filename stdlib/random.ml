@@ -28,7 +28,7 @@ module Xoshiro = struct
     Array1.create Int64 C_layout 4
   let assign (dst: state) (src: state) =
     Array1.blit src dst
-  let copy st = 
+  let copy st =
     let st' = create() in Array1.blit st st'; st'
 
 end
@@ -63,7 +63,7 @@ module State = struct
   let bits s =
     Int64.to_int (Xoshiro.next s.current) land 0x3FFF_FFFF
 
-  (* Return an integer between 0 (included) and [bound] (excluded) *) 
+  (* Return an integer between 0 (included) and [bound] (excluded) *)
   let rec intaux s n =
     let r = bits s in
     let v = r mod n in
@@ -151,7 +151,7 @@ module State = struct
   let split s =
     Xoshiro.jump s.origin;
     { current = Xoshiro.copy s.origin; origin = s.origin }
-  
+
 end
 
 let default =

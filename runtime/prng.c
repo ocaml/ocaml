@@ -64,7 +64,7 @@ static inline void jump(xoshiro_state s)
         s2 ^= s[2];
         s3 ^= s[3];
       }
-      next(s);	
+      next(s);
     }
   s[0] = s0;
   s[1] = s1;
@@ -94,7 +94,7 @@ static inline void long_jump(xoshiro_state s)
         s2 ^= s[2];
         s3 ^= s[3];
       }
-      next(s);	
+      next(s);
     }
   s[0] = s0;
   s[1] = s1;

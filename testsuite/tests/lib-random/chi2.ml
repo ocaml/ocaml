@@ -105,5 +105,3 @@ let _ =
        (fun () -> Random.State.bits r1 - Random.State.bits r2);
   test "Random.split (r2-r3)"
        (fun () -> Random.State.bits r2 - Random.State.bits r3)
-
-
