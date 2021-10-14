@@ -37,6 +37,9 @@ module Deep = struct
 
   let discontinue k e = resume (take_cont_noexc k) (fun e -> raise e) e
 
+  let discontinue_with_backtrace k e bt = resume (take_cont_noexc k) (fun e ->
+    Printexc.raise_with_backtrace e bt) e
+
   type ('a,'b) handler =
     { retc: 'a -> 'b;
       exnc: exn -> 'b;
@@ -128,6 +131,15 @@ module Shallow = struct
     in
     let stack = update_handler k handler.retc handler.exnc effc in
     resume stack (fun e -> raise e) x
+
+  let discontinue_with_backtrace k x bt handler =
+    let effc eff k last_fiber =
+      match handler.effc eff with
+      | Some f -> f k
+      | None -> reperform eff k last_fiber
+    in
+    let stack = update_handler k handler.retc handler.exnc effc in
+    resume stack (fun e -> Printexc.raise_with_backtrace e bt) x
 
   external get_callstack :
     ('a,'b) continuation -> int -> Printexc.raw_backtrace =
