@@ -79,6 +79,9 @@ void (*caml_termination_hook)(void *) = NULL;
 
 extern value caml_start_program (caml_domain_state*);
 extern void caml_init_signals (void);
+#ifdef _WIN32
+extern void caml_win32_overflow_detection (void);
+#endif
 
 #if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
 
@@ -91,6 +94,7 @@ value caml_startup_common(char_os **argv, int pooling)
 {
   char_os * exe_name, * proc_self_exe;
 
+  /* Initialize the domain */
   CAML_INIT_DOMAIN_STATE;
 
   /* Determine options */
@@ -115,6 +119,9 @@ value caml_startup_common(char_os **argv, int pooling)
 
   init_segments();
   caml_init_signals();
+#ifdef _WIN32
+  caml_win32_overflow_detection();
+#endif
   caml_debugger_init (); /* force debugger.o stub to be linked */
   exe_name = argv[0];
   if (exe_name == NULL) exe_name = T("");
@@ -137,7 +144,7 @@ value caml_startup_exn(char_os **argv)
   return caml_startup_common(argv, /* pooling */ 0);
 }
 
-void caml_main(char_os **argv)
+void caml_startup(char_os **argv)
 {
   value res = caml_startup_exn(argv);
   caml_maybe_print_stats(Val_unit);
@@ -145,9 +152,9 @@ void caml_main(char_os **argv)
     caml_fatal_uncaught_exception(Extract_exception(res));
 }
 
-void caml_startup(char_os **argv)
+void caml_main(char_os **argv)
 {
-  caml_main(argv);
+  caml_startup(argv);
 }
 
 value caml_startup_pooled_exn(char_os **argv)
