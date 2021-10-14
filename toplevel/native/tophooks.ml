@@ -94,3 +94,18 @@ let load ppf phrase_name program =
   | exception x ->
       record_backtrace ();
       Exception x
+
+type lookup_fn = string -> Obj.t option
+type load_fn =
+  Format.formatter -> string -> Lambda.program -> Topcommon.evaluation_outcome
+type assembler = {mutable lookup: lookup_fn; mutable load: load_fn}
+
+let fns = {lookup; load}
+
+let load ppf = fns.load ppf
+
+let lookup sym = fns.lookup sym
+
+let register_loader ~lookup ~load =
+  fns.lookup <- lookup;
+  fns.load <- load

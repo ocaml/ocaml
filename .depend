@@ -6584,6 +6584,7 @@ toplevel/native/tophooks.cmo : \
     toplevel/topcommon.cmi \
     asmcomp/proc.cmi \
     utils/misc.cmi \
+    lambda/lambda.cmi \
     middle_end/flambda/import_approx.cmi \
     middle_end/flambda/flambda_middle_end.cmi \
     utils/config.cmi \
@@ -6599,6 +6600,7 @@ toplevel/native/tophooks.cmx : \
     toplevel/topcommon.cmx \
     asmcomp/proc.cmx \
     utils/misc.cmx \
+    lambda/lambda.cmx \
     middle_end/flambda/import_approx.cmx \
     middle_end/flambda/flambda_middle_end.cmx \
     utils/config.cmx \
