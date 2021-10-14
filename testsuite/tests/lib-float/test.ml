@@ -119,6 +119,16 @@ let cases = [
                         (1. /. x, 1. /. y)), (neg_infinity, infinity)));
   (93, Pair ((fun () -> let x, y = Float.min_max_num (+0.) (-0.) in
                         (1. /. x, 1. /. y)), (neg_infinity, infinity)));
+
+  (94, True (fun () -> Float.is_normal_or_zero 1.));
+  (95, True (fun () -> Float.is_normal_or_zero 0.));
+  (96, True (fun () -> Float.is_normal_or_zero (-0.)));
+  (97, True (fun () -> Float.is_normal_or_zero (+0.)));
+  (98, False (fun () -> Float.is_normal_or_zero nan));
+  (99, False (fun () -> Float.is_normal_or_zero infinity));
+  (100, False (fun () -> Float.is_normal_or_zero neg_infinity));
+  (101, False (fun () -> Float.is_normal_or_zero (Int64.float_of_bits 0x7FFFFFL)));
+  (102, False (fun () -> Float.is_normal_or_zero (Int64.float_of_bits 0x1L)));
 ]
 
 let () =

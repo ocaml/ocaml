@@ -86,6 +86,9 @@ Working version
   (Sébastien Hinderer, review by Damien Doligez, Gabriel Scherer, David
   Allsopp, Nicolás Ojeda Bär, Vincent Laviron)
 
+- #9836: Add `Float.is_normal_or_zero` to Float library with C implementation.
+  (Simon Cooksey, suggested by Stefan Kral)
+
 ### Other libraries:
 
 - #10192: Add support for Unix domain sockets on Windows and use them

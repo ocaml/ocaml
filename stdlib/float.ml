@@ -50,6 +50,8 @@ type fpclass = Stdlib.fpclass =
   | FP_zero
   | FP_infinite
   | FP_nan
+external is_normal_or_zero : (float [@unboxed]) -> bool =
+  "caml_normal_or_zero_float" "caml_normal_or_zero_float_unboxed" [@@noalloc]
 external classify_float : (float [@unboxed]) -> fpclass =
   "caml_classify_float" "caml_classify_float_unboxed" [@@noalloc]
 external pow : float -> float -> float = "caml_power_float" "pow"

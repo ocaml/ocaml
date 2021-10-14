@@ -194,6 +194,13 @@ external classify_float : (float [@unboxed]) -> fpclass =
 (** Return the class of the given floating-point number:
     normal, subnormal, zero, infinite, or not a number. *)
 
+external is_normal_or_zero : (float [@unboxed]) -> bool =
+  "caml_normal_or_zero_float" "caml_normal_or_zero_float_unboxed" [@@noalloc]
+(** [is_normal_or_zero x] is [true] if and only if [x] is positive zero,
+    negative zero, or a normal number (see {!classify_float}).
+
+    @since 4.14.0 *)
+
 external pow : float -> float -> float = "caml_power_float" "pow"
 [@@unboxed] [@@noalloc]
 (** Exponentiation. *)

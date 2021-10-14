@@ -1138,9 +1138,15 @@ CAMLprim value caml_float_compare(value vf, value vg)
   return Val_int(caml_float_compare_unboxed(Double_val(vf),Double_val(vg)));
 }
 
-enum { FP_normal, FP_subnormal, FP_zero, FP_infinite, FP_nan };
+typedef enum {
+  FP_normal,
+  FP_subnormal,
+  FP_zero,
+  FP_infinite,
+  FP_nan
+} FP_classification_t;
 
-value caml_classify_float_unboxed(double vd)
+FP_classification_t classify_float(double vd)
 {
 #ifdef ARCH_SIXTYFOUR
   union { double d; uint64_t i; } u;
@@ -1149,16 +1155,16 @@ value caml_classify_float_unboxed(double vd)
 
   u.d = vd;
   n = u.i << 1;                 /* shift sign bit off */
-  if (n == 0) return Val_int(FP_zero);
+  if (n == 0) return FP_zero;
   e = n >> 53;                  /* extract exponent */
-  if (e == 0) return Val_int(FP_subnormal);
+  if (e == 0) return FP_subnormal;
   if (e == 0x7FF) {
     if (n << 11 == 0)           /* shift exponent off */
-      return Val_int(FP_infinite);
+      return FP_infinite;
     else
-      return Val_int(FP_nan);
+      return FP_nan;
   }
-  return Val_int(FP_normal);
+  return FP_normal;
 #else
   union double_as_two_int32 u;
   uint32_t h, l;
@@ -1168,20 +1174,37 @@ value caml_classify_float_unboxed(double vd)
   l = l | (h & 0xFFFFF);
   h = h & 0x7FF00000;
   if ((h | l) == 0)
-    return Val_int(FP_zero);
+    return FP_zero;
   if (h == 0)
-    return Val_int(FP_subnormal);
+    return FP_subnormal;
   if (h == 0x7FF00000) {
     if (l == 0)
-      return Val_int(FP_infinite);
+      return FP_infinite;
     else
-      return Val_int(FP_nan);
+      return FP_nan;
   }
-  return Val_int(FP_normal);
+  return FP_normal;
 #endif
+}
+
+CAMLprim value caml_classify_float_unboxed(double d)
+{
+  return Val_int(classify_float(d));
 }
 
 CAMLprim value caml_classify_float(value vd)
 {
-  return caml_classify_float_unboxed(Double_val(vd));
+  return Val_int(classify_float(Double_val(vd)));
+}
+
+CAMLprim value caml_normal_or_zero_float(value vd)
+{
+  FP_classification_t c = classify_float(Double_val(vd));
+  return Val_bool(c == FP_zero || c == FP_normal);
+}
+
+CAMLprim value caml_normal_or_zero_float_unboxed(double d)
+{
+  FP_classification_t c = classify_float(d);
+  return Val_bool(c == FP_zero || c == FP_normal);
 }
