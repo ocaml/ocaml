@@ -255,6 +255,10 @@ Working version
 - #10692: Expose Parse.module_type and Parse.module_expr
   (Guillaume Petiot, review by Gabriel Scherer)
 
+- #10714: Add X86_proc.with_internal_assembler for temporarily changing the
+  assembler used by the backend.
+  (David Allsopp, review by Gabriel Scherer)
+
 ### Build system:
 
 ### Bug fixes:
