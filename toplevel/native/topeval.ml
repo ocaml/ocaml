@@ -33,9 +33,12 @@ external ndl_run_toplevel: string -> string -> res
 
 let implementation_label = "native toplevel"
 
+let lookup sym =
+  Dynlink.unsafe_get_global_value ~bytecode_or_asm_symbol:sym
+
 let global_symbol id =
   let sym = Compilenv.symbol_for_global id in
-  match Dynlink.unsafe_get_global_value ~bytecode_or_asm_symbol:sym with
+  match lookup sym with
   | None ->
     fatal_error ("Toploop.global_symbol " ^ (Ident.unique_name id))
   | Some obj -> obj
@@ -132,24 +135,12 @@ module Backend = struct
 end
 let backend = (module Backend : Backend_intf.S)
 
-let load_lambda ppf ~module_ident ~required_globals lam size =
-  if !Clflags.dump_rawlambda then fprintf ppf "%a@." Printlambda.lambda lam;
-  let slam = Simplif.simplify_lambda lam in
-  if !Clflags.dump_lambda then fprintf ppf "%a@." Printlambda.lambda slam;
-
+let load ppf program =
   let dll =
     if !Clflags.keep_asm_file then !phrase_name ^ ext_dll
     else Filename.temp_file ("caml" ^ !phrase_name) ext_dll
   in
   let filename = Filename.chop_extension dll in
-  let program =
-    { Lambda.
-      code = slam;
-      main_module_block_size = size;
-      module_ident;
-      required_globals;
-    }
-  in
   let middle_end =
     if Config.flambda then Flambda_middle_end.lambda_to_clambda
     else Closure_middle_end.lambda_to_clambda
@@ -177,6 +168,21 @@ let load_lambda ppf ~module_ident ~required_globals lam size =
   | exception x ->
       record_backtrace ();
       Exception x
+
+let load_lambda ppf ~module_ident ~required_globals lam size =
+  if !Clflags.dump_rawlambda then fprintf ppf "%a@." Printlambda.lambda lam;
+  let slam = Simplif.simplify_lambda lam in
+  if !Clflags.dump_lambda then fprintf ppf "%a@." Printlambda.lambda slam;
+
+  let program =
+    { Lambda.
+      code = slam;
+      main_module_block_size = size;
+      module_ident;
+      required_globals;
+    }
+  in
+  load ppf program
 
 (* Print the outcome of an evaluation *)
 
