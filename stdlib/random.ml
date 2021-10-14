@@ -26,9 +26,7 @@ module Xoshiro = struct
   external init: state -> int array -> unit = "caml_xoshiro_init"
   let create () : state =
     Array1.create Int64 C_layout 4
-(*  let make () : state =
-    Array1.init Int64 C_layout 4 (fun _ -> 0L) *)
-  let assign dst src =
+  let assign (dst: state) (src: state) =
     Array1.blit src dst
   let copy st = 
     let st' = create() in Array1.blit st st'; st'

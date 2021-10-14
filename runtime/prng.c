@@ -132,10 +132,12 @@ CAMLprim value caml_xoshiro_init(value vs, value vinit)
 {
   uint64_t * s = Xoshiro_val(vs);
   mlsize_t len = Wosize_val(vinit);
+  const uint64_t mix = 6364136223846793005;
+  /* Multiplier taken from the MMIX LCG, Knoth TAOCP vol 2, 1998 edition */
 
   s[0] = s[1] = s[2] = s[3] = 0;
   for (mlsize_t i = 0; i < len; i++) {
-    s[i % 4] = rotl(s[i % 4], 31) ^ Long_val(Field(vinit, i));
+    s[i % 4] = s[i % 4] * mix + Long_val(Field(vinit, i));
   }
   for (int i = 0; i < 4; i++) {
     if (s[i] == 0) s[i] = 1 << i;
