@@ -111,9 +111,6 @@ include Topcommon.MakeEvalPrinter(EvalBase)
 
 let may_trace = ref false (* Global lock on tracing *)
 
-let phrase_seqid = ref 0
-let phrase_name = ref "TOP"
-
 (* CR-soon trefis for mshinwell: copy/pasted from Optmain. Should it be shared
    or?
    mshinwell: It should be shared, but after 4.03. *)
@@ -135,10 +132,10 @@ module Backend = struct
 end
 let backend = (module Backend : Backend_intf.S)
 
-let load ppf program =
+let load ppf phrase_name program =
   let dll =
-    if !Clflags.keep_asm_file then !phrase_name ^ ext_dll
-    else Filename.temp_file ("caml" ^ !phrase_name) ext_dll
+    if !Clflags.keep_asm_file then phrase_name ^ ext_dll
+    else Filename.temp_file ("caml" ^ phrase_name) ext_dll
   in
   let filename = Filename.chop_extension dll in
   let middle_end =
@@ -162,14 +159,14 @@ let load ppf program =
             (* note: under windows, cannot remove a loaded dll
                (should remember the handles, close them in at_exit, and then
                remove files) *)
-      (fun () -> dll_run dll !phrase_name)
+      (fun () -> dll_run dll phrase_name)
   with
   | res -> res
   | exception x ->
       record_backtrace ();
       Exception x
 
-let load_lambda ppf ~module_ident ~required_globals lam size =
+let load_lambda ppf ~module_ident ~required_globals phrase_name lam size =
   if !Clflags.dump_rawlambda then fprintf ppf "%a@." Printlambda.lambda lam;
   let slam = Simplif.simplify_lambda lam in
   if !Clflags.dump_lambda then fprintf ppf "%a@." Printlambda.lambda slam;
@@ -182,7 +179,7 @@ let load_lambda ppf ~module_ident ~required_globals lam size =
       required_globals;
     }
   in
-  load ppf program
+  load ppf phrase_name program
 
 (* Print the outcome of an evaluation *)
 
@@ -195,6 +192,9 @@ let pr_item =
     )
 
 (* Execute a toplevel phrase *)
+
+let phrase_seqid = ref 0
+let phrase_name = ref "TOP"
 
 let execute_phrase print_outcome ppf phr =
   match phr with
@@ -240,7 +240,9 @@ let execute_phrase print_outcome ppf phr =
       Warnings.check_fatal ();
       begin try
         toplevel_env := newenv;
-        let res = load_lambda ppf ~required_globals ~module_ident res size in
+        let res =
+          load_lambda ppf ~required_globals ~module_ident !phrase_name res size
+        in
         let out_phr =
           match res with
           | Result _ ->
