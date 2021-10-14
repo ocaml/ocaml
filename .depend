@@ -6305,6 +6305,7 @@ toplevel/genprintval.cmi : \
     typing/env.cmi
 toplevel/topcommon.cmo : \
     typing/typedtree.cmi \
+    bytecomp/symtable.cmi \
     parsing/printast.cmi \
     typing/predef.cmi \
     parsing/pprintast.cmi \
@@ -6332,6 +6333,7 @@ toplevel/topcommon.cmo : \
     toplevel/topcommon.cmi
 toplevel/topcommon.cmx : \
     typing/typedtree.cmx \
+    bytecomp/symtable.cmx \
     parsing/printast.cmx \
     typing/predef.cmx \
     parsing/pprintast.cmx \
