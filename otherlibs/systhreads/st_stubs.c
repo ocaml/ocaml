@@ -797,7 +797,8 @@ static struct custom_operations caml_threadstatus_ops = {
 static value caml_threadstatus_new (void)
 {
   st_event ts = NULL;           /* suppress warning */
-  st_check_error(st_event_create(&ts), "Thread.create");
+  value wrapper;
+  sync_check_error(st_event_create(&ts), "Thread.create");
   wrapper = caml_alloc_custom(&caml_threadstatus_ops,
                               sizeof(st_event *),
                               0, 1);
