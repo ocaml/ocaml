@@ -753,7 +753,7 @@ and functor_params ~expansion_token ~env ~target_env ~before ~ctx
   functor_suberrors @ msgs
 
 and functor_symptom ~expansion_token ~env ~target_env ~before ~ctx = function
-  | Result res ->
+  | Result (res, target_env) ->
       module_type ~expansion_token ~eqmode:false ~env ~target_env ~before ~ctx
         res
   | Params d -> functor_params ~expansion_token ~env ~target_env ~before ~ctx d

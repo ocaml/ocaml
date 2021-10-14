@@ -76,7 +76,7 @@ module Error: sig
 
   and functor_symptom =
     | Params of functor_params_diff
-    | Result of module_type_diff
+    | Result of module_type_diff * Env.t (* target environment *)
 
   and ('arg,'path) functor_param_symptom =
     | Incompatible_params of 'arg * Types.functor_parameter

@@ -88,7 +88,7 @@ module Error = struct
 
   and functor_symptom =
     | Params of functor_params_diff
-    | Result of module_type_diff
+    | Result of module_type_diff * Env.t (* target environment *)
 
   and ('arg,'path) functor_param_symptom =
     | Incompatible_params of 'arg * functor_parameter
@@ -499,7 +499,7 @@ and try_modtypes ~in_eq ~loc env target_env ~mark subst mty1 mty2 =
           let d = Error.sdiff (param1::params1, res1) (param2::params2, res2) in
           Error Error.(Functor (Params d))
       | Ok _, Error res ->
-          Error Error.(Functor (Result res))
+          Error Error.(Functor (Result (res, target_env)))
       end
   | Mty_functor _, _
   | _, Mty_functor _ ->
