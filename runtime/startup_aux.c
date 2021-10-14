@@ -19,19 +19,16 @@
    and native code. */
 
 #include <stdio.h>
-#include <string.h>
 #include "caml/backtrace.h"
-#include "caml/dynlink.h"
 #include "caml/memory.h"
 #include "caml/callback.h"
 #include "caml/major_gc.h"
-#include "caml/misc.h"
 #ifndef NATIVE_CODE
 #include "caml/dynlink.h"
 #endif
 #include "caml/osdeps.h"
-#include "caml/prims.h"
 #include "caml/startup_aux.h"
+#include "caml/prims.h"
 #include "caml/version.h"
 
 #ifdef _WIN32
@@ -77,7 +74,10 @@ static void init_startup_params()
     params.cds_file = caml_stat_strdup_os(cds_file);
   }
 #endif
+  params.trace_level = 0;
   params.cleanup_on_exit = 0;
+  params.print_magic = 0;
+  params.print_config = 0;
 }
 
 static void scanmult (char_os *opt, uintnat *var)
@@ -137,6 +137,8 @@ void caml_parse_ocamlrunparam(void)
     }
   }
 }
+
+
 /* The number of outstanding calls to caml_startup */
 static int startup_count = 0;
 
@@ -147,7 +149,7 @@ static int shutdown_happened = 0;
 int caml_startup_aux(int pooling)
 {
   if (shutdown_happened == 1)
-    caml_fatal_error("Fatal error: caml_startup was called after the runtime "
+    caml_fatal_error("caml_startup was called after the runtime "
                      "was shut down with caml_shutdown");
 
   /* Second and subsequent calls are ignored,
@@ -172,7 +174,7 @@ static void call_registered_value(char* name)
 CAMLexport void caml_shutdown(void)
 {
   if (startup_count <= 0)
-    caml_fatal_error("Fatal error: a call to caml_shutdown has no "
+    caml_fatal_error("a call to caml_shutdown has no "
                      "corresponding call to caml_startup");
 
   /* Do nothing unless it's the last call remaining */
@@ -217,53 +219,113 @@ CAMLprim value caml_maybe_print_stats (value v)
 
 #ifndef NATIVE_CODE
 
+static void do_print_help(void)
+{
+  printf("%s\n",
+    "Usage: ocamlrun [<options>] [--] <executable> [<command-line>]\n"
+    "Options are:\n"
+    "  -b  Set runtime parameter b (detailed exception backtraces)\n"
+    "  -config  Print configuration values and exit\n"
+    "  -I <dir>  Add <dir> to the list of DLL search directories\n"
+    "  -m  Print the magic number of <executable> and exit\n"
+    "  -M  Print the magic number expected by this runtime and exit\n"
+    "  -p  Print the names of the primitives known to this runtime\n"
+    "  -t  Trace the execution of the bytecode interpreter (specify multiple\n"
+    "      times to increase verbosity)\n"
+    "  -v  Set runtime parameter v=61 (GC event information)\n"
+    "  -version  Print version string and exit\n"
+    "  -vnum  Print short version number and exit\n"
+    "  -help  Display this list of options\n"
+    "  --help  Display this list of options");
+}
+
+/* Print the specified error message followed by an end-of-line and exit */
+extern void caml_command_error(char *msg, ...)
+{
+  va_list ap;
+  va_start(ap, msg);
+  vfprintf (stderr, msg, ap);
+  va_end(ap);
+  fprintf(stderr, "\n");
+  exit(127);
+}
+
 /* Parse options on the command line */
 
-int caml_parse_command_line(char_os **argv)
+extern int caml_parse_command_line(char_os **argv)
 {
-  int i, j;
+  int i, j, len, parsed;
 
   for(i = 1; argv[i] != NULL && argv[i][0] == '-'; i++) {
-    switch(argv[i][1]) {
-    case 't':
-      params.trace_level++; /* ignored unless DEBUG mode */
-      break;
-    case 'v':
-      if (!strcmp_os (argv[i], T("-version"))){
+    len = strlen_os(argv[i]);
+    parsed = 1;
+    if (len == 2) {
+      /* Single-letter options, e.g. -v */
+      switch(argv[i][1]) {
+      case '-':
+        return i + 1;
+        break;
+      case 't':
+        params.trace_level += 1; /* ignored unless DEBUG mode */
+        break;
+      case 'v':
+        params.verb_gc = 0x001+0x004+0x008+0x010+0x020;
+        break;
+      case 'p':
+        for (j = 0; caml_names_of_builtin_cprim[j] != NULL; j++)
+          printf("%s\n", caml_names_of_builtin_cprim[j]);
+        exit(0);
+        break;
+      case 'b':
+        caml_record_backtraces(1);
+        break;
+      case 'I':
+        if (argv[i + 1] != NULL) {
+          caml_ext_table_add(&caml_shared_libs_path, argv[i + 1]);
+          i++;
+        } else {
+          caml_command_error("option '-I' needs an argument.");
+        }
+        break;
+      case 'm':
+        params.print_magic = 1;
+        break;
+      case 'M':
+        printf("%s\n", EXEC_MAGIC);
+        exit(0);
+        break;
+      default:
+        parsed = 0;
+      }
+    } else {
+      /* Named options, e.g. -version */
+      if (!strcmp_os(argv[i], T("-version"))) {
+        printf("%s\n", "The OCaml runtime, version " OCAML_VERSION_STRING);
         printf ("The OCaml runtime, version " OCAML_VERSION_STRING "\n");
         printf ("Built with git hash '" OCAML_RUNTIME_BUILD_GIT_HASH
                 "' on branch '" OCAML_RUNTIME_BUILD_GIT_BRANCH
                 "' with tag '" OCAML_RUNTIME_BUILD_GIT_TAG
                 "'\n");
-        exit (0);
-      }else if (!strcmp_os (argv[i], T("-vnum"))){
-        printf (OCAML_VERSION_STRING "\n");
-        exit (0);
-      }else{
-        params.verb_gc = 0x001+0x004+0x008+0x010+0x020;
+        exit(0);
+      } else if (!strcmp_os(argv[i], T("-vnum"))) {
+        printf("%s\n", OCAML_VERSION_STRING);
+        exit(0);
+      } else if (!strcmp_os(argv[i], T("-help")) ||
+                 !strcmp_os(argv[i], T("--help"))) {
+        do_print_help();
+        exit(0);
+      } else if (!strcmp_os(argv[i], T("-config"))) {
+        params.print_config = 1;
+      } else {
+        parsed = 0;
       }
-      break;
-    case 'p':
-      for (j = 0; caml_names_of_builtin_cprim[j] != NULL; j++)
-        printf("%s\n", caml_names_of_builtin_cprim[j]);
-      exit(0);
-      break;
-    case 'b':
-      params.backtrace_enabled = 1;
-      break;
-    case 'I':
-      if (argv[i + 1] != NULL) {
-        caml_ext_table_add(&caml_shared_libs_path, argv[i + 1]);
-        i++;
-      }
-      break;
-    default:
-      caml_fatal_error_arg("Unknown option %s.\n", caml_stat_strdup_of_os(argv[i]));
     }
+
+    if (!parsed)
+      caml_command_error("unknown option %s", caml_stat_strdup_of_os(argv[i]));
   }
+
   return i;
 }
 
 #endif /* not NATIVE_CODE */
-
-
