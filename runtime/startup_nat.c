@@ -19,7 +19,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "caml/backtrace.h"
 #include "caml/callback.h"
 #include "caml/custom.h"
 #include "caml/codefrag.h"
@@ -113,9 +112,6 @@ value caml_startup_common(char_os **argv, int pooling)
 #endif
   caml_init_custom_operations();
   caml_init_gc ();
-
-  if (caml_params->backtrace_enabled)
-    caml_record_backtraces(1);
 
   init_segments();
   caml_init_signals();
