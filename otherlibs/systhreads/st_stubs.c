@@ -30,11 +30,6 @@
 #include "caml/printexc.h"
 #include "caml/roots.h"
 #include "caml/signals.h"
-#ifdef NATIVE_CODE
-#include "caml/stack.h"
-#else
-#include "caml/stacks.h"
-#endif
 #include "caml/sys.h"
 #include "caml/memprof.h"
 
