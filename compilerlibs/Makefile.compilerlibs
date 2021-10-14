@@ -366,6 +366,7 @@ TOPLEVEL_CMI = \
 OPTTOPLEVEL = \
   toplevel/genprintval.cmo \
   toplevel/topcommon.cmo \
+  toplevel/native/tophooks.cmo \
   toplevel/native/topeval.cmo \
   toplevel/native/trace.cmo \
   toplevel/toploop.cmo \
@@ -373,6 +374,7 @@ OPTTOPLEVEL = \
   toplevel/native/topmain.cmo
 OPTTOPLEVEL_CMI = \
   toplevel/topcommon.cmi \
+  toplevel/native/tophooks.cmi \
   toplevel/native/topeval.cmi \
   toplevel/native/trace.cmi \
   toplevel/toploop.cmi \

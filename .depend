@@ -6522,9 +6522,9 @@ toplevel/native/topeval.cmo : \
     typing/typedtree.cmi \
     typing/typecore.cmi \
     lambda/translmod.cmi \
+    toplevel/native/tophooks.cmi \
     toplevel/topcommon.cmi \
     lambda/simplif.cmi \
-    asmcomp/proc.cmi \
     typing/printtyped.cmi \
     typing/printtyp.cmi \
     lambda/printlambda.cmi \
@@ -6536,21 +6536,15 @@ toplevel/native/topeval.cmo : \
     utils/load_path.cmi \
     lambda/lambda.cmi \
     typing/includemod.cmi \
-    middle_end/flambda/import_approx.cmi \
     typing/ident.cmi \
-    middle_end/flambda/flambda_middle_end.cmi \
     typing/env.cmi \
     utils/config.cmi \
     driver/compmisc.cmi \
     middle_end/compilenv.cmi \
-    middle_end/closure/closure_middle_end.cmi \
     utils/clflags.cmi \
-    middle_end/backend_intf.cmi \
     parsing/asttypes.cmi \
     parsing/ast_helper.cmi \
     asmcomp/asmlink.cmi \
-    asmcomp/asmgen.cmi \
-    asmcomp/arch.cmo \
     toplevel/native/topeval.cmi
 toplevel/native/topeval.cmx : \
     utils/warnings.cmx \
@@ -6559,9 +6553,9 @@ toplevel/native/topeval.cmx : \
     typing/typedtree.cmx \
     typing/typecore.cmx \
     lambda/translmod.cmx \
+    toplevel/native/tophooks.cmx \
     toplevel/topcommon.cmx \
     lambda/simplif.cmx \
-    asmcomp/proc.cmx \
     typing/printtyped.cmx \
     typing/printtyp.cmx \
     lambda/printlambda.cmx \
@@ -6573,25 +6567,52 @@ toplevel/native/topeval.cmx : \
     utils/load_path.cmx \
     lambda/lambda.cmx \
     typing/includemod.cmx \
-    middle_end/flambda/import_approx.cmx \
     typing/ident.cmx \
-    middle_end/flambda/flambda_middle_end.cmx \
     typing/env.cmx \
     utils/config.cmx \
     driver/compmisc.cmx \
     middle_end/compilenv.cmx \
-    middle_end/closure/closure_middle_end.cmx \
     utils/clflags.cmx \
-    middle_end/backend_intf.cmi \
     parsing/asttypes.cmi \
     parsing/ast_helper.cmx \
     asmcomp/asmlink.cmx \
-    asmcomp/asmgen.cmx \
-    asmcomp/arch.cmx \
     toplevel/native/topeval.cmi
 toplevel/native/topeval.cmi : \
     toplevel/topcommon.cmi \
     parsing/parsetree.cmi
+toplevel/native/tophooks.cmo : \
+    toplevel/topcommon.cmi \
+    asmcomp/proc.cmi \
+    utils/misc.cmi \
+    middle_end/flambda/import_approx.cmi \
+    middle_end/flambda/flambda_middle_end.cmi \
+    utils/config.cmi \
+    middle_end/compilenv.cmi \
+    middle_end/closure/closure_middle_end.cmi \
+    utils/clflags.cmi \
+    middle_end/backend_intf.cmi \
+    asmcomp/asmlink.cmi \
+    asmcomp/asmgen.cmi \
+    asmcomp/arch.cmo \
+    toplevel/native/tophooks.cmi
+toplevel/native/tophooks.cmx : \
+    toplevel/topcommon.cmx \
+    asmcomp/proc.cmx \
+    utils/misc.cmx \
+    middle_end/flambda/import_approx.cmx \
+    middle_end/flambda/flambda_middle_end.cmx \
+    utils/config.cmx \
+    middle_end/compilenv.cmx \
+    middle_end/closure/closure_middle_end.cmx \
+    utils/clflags.cmx \
+    middle_end/backend_intf.cmi \
+    asmcomp/asmlink.cmx \
+    asmcomp/asmgen.cmx \
+    asmcomp/arch.cmx \
+    toplevel/native/tophooks.cmi
+toplevel/native/tophooks.cmi : \
+    toplevel/topcommon.cmi \
+    lambda/lambda.cmi
 toplevel/native/topmain.cmo : \
     toplevel/toploop.cmi \
     toplevel/native/topeval.cmi \

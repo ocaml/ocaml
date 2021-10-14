@@ -566,6 +566,7 @@ endif
 	$(INSTALL_DATA) \
 	   utils/*.cmx parsing/*.cmx typing/*.cmx bytecomp/*.cmx \
 	   toplevel/*.cmx toplevel/native/*.cmx \
+	   toplevel/native/tophooks.cmi \
 	   file_formats/*.cmx \
 	   lambda/*.cmx \
 	   driver/*.cmx asmcomp/*.cmx middle_end/*.cmx \
