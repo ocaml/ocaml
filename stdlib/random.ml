@@ -16,52 +16,40 @@
 
 (* Pseudo-random number generator *)
 
-module Xoshiro = struct
-  open Bigarray
-  type state = (int64, int64_elt, c_layout) Array1.t
-  external next: state -> (int64[@unboxed])
-      = "caml_xoshiro_next" "caml_xoshiro_next_unboxed"
-  external jump: state -> unit = "caml_xoshiro_jump"
-(*  external long_jump: state -> unit = "caml_xoshiro_long_jump" *)
-  external init: state -> int array -> unit = "caml_xoshiro_init"
-  let create () : state =
-    Array1.create Int64 C_layout 4
-  let assign (dst: state) (src: state) =
-    Array1.blit src dst
-  let copy st =
-    let st' = create() in Array1.blit st st'; st'
-
-end
-
 external random_seed: unit -> int array = "caml_sys_random_seed"
 
 module State = struct
 
-  type t = { current: Xoshiro.state; origin: Xoshiro.state }
+  open Bigarray
+
+  type t = (int64, int64_elt, c_layout) Array1.t
+
+  external next: t -> (int64[@unboxed])
+      = "caml_xoshiro_next" "caml_xoshiro_next_unboxed"
+  external jump: t -> unit = "caml_xoshiro_jump"
+(*  external long_jump: t -> unit = "caml_xoshiro_long_jump" *)
+  external init: t -> int array -> unit = "caml_xoshiro_init"
+
+  let create () : t =
+    Array1.create Int64 C_layout 4
 
   let make seed =
-    let st = Xoshiro.create() in
-    Xoshiro.init st seed;
-    { current = st; origin = st }
+    let s = create() in init s seed; s
 
   let make_self_init () =
     make (random_seed ())
 
+  let assign (dst: t) (src: t) =
+    Array1.blit src dst
+
   let copy s =
-    { current = Xoshiro.copy s.current;
-      origin  = Xoshiro.copy s.origin }
+    let s' = create() in assign s' s; s
 
-  let assign dst src =
-    Xoshiro.assign dst.current src.current;
-    Xoshiro.assign dst.origin src.origin
-
-  let reinit s seed =
-    Xoshiro.init s.origin seed;
-    Xoshiro.assign s.current s.origin
+  let reinit = init
 
   (* Return 30 random bits as an integer 0 <= x < 1073741824 *)
   let bits s =
-    Int64.to_int (Xoshiro.next s.current) land 0x3FFF_FFFF
+    Int64.to_int (next s) land 0x3FFF_FFFF
 
   (* Return an integer between 0 (included) and [bound] (excluded) *)
   let rec intaux s n =
@@ -77,7 +65,7 @@ module State = struct
   (* Return an integer between 0 (included) and [bound] (excluded).
      [bound] may be any positive [int]. *)
   let rec int63aux s n =
-    let r = Int64.to_int (Xoshiro.next s.current) land max_int in
+    let r = Int64.to_int (next s) land max_int in
     let v = r mod n in
     if r - v > max_int - n + 1 then int63aux s n else v
 
@@ -91,7 +79,7 @@ module State = struct
 
   (* Return 32 random bits as an [int32] *)
   let bits32 s =
-    Int64.to_int32 (Xoshiro.next s.current)
+    Int64.to_int32 (next s)
 
   (* Return an [int32] between 0 (included) and [bound] (excluded). *)
   let rec int32aux s n =
@@ -108,7 +96,7 @@ module State = struct
 
   (* Return 64 random bits as an [int64] *)
   let bits64 s =
-    Xoshiro.next s.current
+    next s
 
   (* Return an [int64] between 0 (included) and [bound] (excluded). *)
   let rec int64aux s n =
@@ -137,7 +125,7 @@ module State = struct
 
   (* Return a float 0 < x < 1 with at most 53 bits of precision. *)
   let rec rawfloat s =
-    let b = Xoshiro.next s.current in
+    let b = next s in
     let n = Int64.shift_right_logical b 11 in
     if n <> 0L then Int64.to_float n *. 0x1.p-53 else rawfloat s
 
@@ -145,16 +133,11 @@ module State = struct
   let float s bound = rawfloat s *. bound
 
   (* Return a random Boolean *)
-  let bool s = Xoshiro.next s.current < 0L
-
-  (* Return a new PRNG that is "split off" the given PRNG *)
-  let split s =
-    Xoshiro.jump s.origin;
-    { current = Xoshiro.copy s.origin; origin = s.origin }
+  let bool s = next s < 0L
 
 end
 
-let default =
+let default_origin =
   State.make
     [| 0b001001000011111101101010100010;
        0b001000010110100011000010001101;
@@ -166,6 +149,7 @@ let default =
        0b111010100110001110110001001110 |]
 (* These are the first 240 binary digits of the fractional part of pi,
    as eight 30-bit integers. *)
+let default = State.copy default_origin
 
 let bits () = State.bits default
 let int bound = State.int default bound
@@ -179,12 +163,21 @@ let bits32 () = State.bits32 default
 let bits64 () = State.bits64 default
 let nativebits () = State.nativebits default
 
-let full_init seed = State.reinit default seed
+(* Seeding *)
+
+let full_init seed =
+  State.reinit default_origin seed;
+  State.assign default default_origin
+
 let init seed = full_init [| seed |]
 let self_init () = full_init (random_seed())
-let split () = State.split default
+
+(* Generating a new independent state by jumping *)
+
+let jump () = State.jump default_origin; State.copy default_origin
 
 (* Manipulating the current state. *)
 
 let get_state () = State.copy default
 let set_state s = State.assign default s
+

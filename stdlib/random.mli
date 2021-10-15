@@ -128,13 +128,7 @@ module State : sig
       use (and update) the given PRNG state instead of the default one.
   *)
 
-  val split : t -> t
-  (** Return a fresh PRNG state that is "split off" the given PRNG state.
-      The fresh state and the original state are statistically independent.
-      Data can be drawn from both states, in any order, without risk of
-      correlation. *)
 end
-
 
 val get_state : unit -> State.t
 (** Return the current state of the generator used by the basic functions. *)
@@ -142,6 +136,12 @@ val get_state : unit -> State.t
 val set_state : State.t -> unit
 (** Set the state of the generator used by the basic functions. *)
 
-val split : unit -> State.t
-(** Return a fresh PRNG state that is "split off" the generator used
-    by the basic functions.  Equivalent to [State.split (get_state())]. *)
+val jump : unit -> State.t
+(** Return a fresh PRNG state that is obtained by "jumping" from the
+    initial state of the generator used by the default functions.
+    "Jumping", here, means advancing the state as if a great many numbers
+    (here, 2{^128} numbers) were drawn from this state.
+    The state returned by {!Random.jump} is statistically independent
+    from the state used by the default functions.
+    Data can be drawn from both states, in any order, without risk of
+    correlation. *)
