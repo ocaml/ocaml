@@ -243,8 +243,6 @@ let insert_xfile_content soup (title, header) toc xfile =
   Option.iter delete (xternal $? "hr");
   let xbody = xternal $ "body" in
   insert_after title xbody;
-  create_element ~id:"start-section" "a"
-  |> insert_after title;
   insert_after title header;
   next_siblings xbody
   |> iter delete;
@@ -431,10 +429,8 @@ let get_xfiles = function
           if not (String.contains rf '#') &&
              not (starts_with ".." rf) &&
              not (starts_with "http" rf)
-          then begin
-            li $ "a" |> set_attribute "href" (rf ^ "#start-section");
-            rf::list
-          end else list) []
+          then rf::list
+          else list) []
 
 (* This is the main script for processing a specified file. [convert] has to be
    run for each "entry" [file] of the manual, making a "Chapter". (The list of
