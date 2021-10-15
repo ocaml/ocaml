@@ -44,12 +44,12 @@ module Deep : sig
     { retc: 'a -> 'b;
       exnc: exn -> 'b;
       effc: 'c.'c eff -> (('c,'b) continuation -> 'b) option }
-  (** [('a,'b) handler] is a handler record with three field -- [retc]
+  (** [('a,'b) handler] is a handler record with three fields -- [retc]
       is the value handler, [exnc] handles exceptions, and [effc] handles the
       effects performed by the computation enclosed by the handler. *)
 
   val match_with: ('a -> 'b) -> 'a -> ('b,'c) handler -> 'c
-  (** [matchwith f v h] runs the computation [f v] in the handler [h]. *)
+  (** [match_with f v h] runs the computation [f v] in the handler [h]. *)
 
   type 'a effect_handler =
     { effc: 'b. 'b eff -> (('b, 'a) continuation -> 'a) option }
@@ -81,7 +81,7 @@ module Shallow : sig
     { retc: 'a -> 'b;
       exnc: exn -> 'b;
       effc: 'c.'c eff -> (('c,'a) continuation -> 'b) option }
-  (** [('a,'b) handler] is a handler record with three field -- [retc]
+  (** [('a,'b) handler] is a handler record with three fields -- [retc]
       is the value handler, [exnc] handles exceptions, and [effc] handles the
       effects performed by the computation enclosed by the handler. *)
 
