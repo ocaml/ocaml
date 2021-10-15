@@ -123,7 +123,9 @@ void caml_set_minor_heap_size (asize_t wsize)
 {
   caml_domain_state* domain_state = Caml_state;
   struct caml_minor_tables *r = domain_state->minor_tables;
-  if (domain_state->young_ptr != domain_state->young_end) caml_minor_collection ();
+
+  if (domain_state->young_ptr != domain_state->young_end)
+    caml_minor_collection();
 
   if(caml_reallocate_minor_heap(wsize) < 0) {
     caml_fatal_error("Fatal error: No memory for minor heap");
@@ -151,25 +153,11 @@ static value alloc_shared(caml_domain_state* d, mlsize_t wosize, tag_t tag)
   return Val_hp(mem);
 }
 
-#if 0
-Caml_inline void log_gc_value(const char* prefix, value v)
-{
-  if (Is_block(v)) {
-    header_t hd = Hd_val(v);
-    int sz = Wosize_hd (hd);
-    caml_gc_log("%s 0x%lx hd=0x%lx tag=%d sz=%d", prefix, v, hd, Tag_val(v), sz);
-  } else {
-    caml_gc_log("%s not block 0x%lx", prefix, v);
-  }
-}
-#endif
-
 /* in progress updates are zeros except for the lowest color bit set to 1
    that is a header with: wosize == 0 && color == 1 && tag == 0 */
 #define In_progress_update_val ((header_t)0x100)
 #define Is_update_in_progress(hd) ((hd) == In_progress_update_val)
 
-/* TODO: Probably a better spinlock needed here though doesn't happen often */
 static void spin_on_header(value v) {
   SPIN_WAIT {
     if (atomic_load(Hp_atomic_val(v)) == 0)
@@ -190,7 +178,9 @@ header_t caml_get_header_val(value v) {
   return get_header_val(v);
 }
 
-static int try_update_object_header(value v, value *p, value result, mlsize_t infix_offset) {
+
+static int try_update_object_header(value v, value *p, value result,
+                                      mlsize_t infix_offset) {
   int success = 0;
 
   if( caml_domain_alone() ) {
@@ -200,12 +190,12 @@ static int try_update_object_header(value v, value *p, value result, mlsize_t in
   } else {
     header_t hd = atomic_load(Hp_atomic_val(v));
     if( hd == 0 ) {
-      // in this case this has been updated by another domain, throw away result
-      // and return the one in the object
+      /* in this case this has been updated by another domain, throw away result
+         and return the one in the object */
       result = Field(v, 0);
     } else if( Is_update_in_progress(hd) ) {
-      // here we've caught a domain in the process of moving a minor heap object
-      // we need to wait for it to finish
+      /* here we've caught a domain in the process of moving a minor heap object
+         we need to wait for it to finish */
       spin_on_header(v);
       // Also throw away result and use the one from the other domain
       result = Field(v, 0);
@@ -382,32 +372,6 @@ static void oldify_one (void* st_v, value v, value *p)
   }
 }
 
-#if 0
-/* Test if the ephemeron is alive */
-/* Care needed with this test. It will only make sense if
-   all minor heaps have been promoted
-   as the liveness of the keys can only be known at that point */
-Caml_inline int ephe_check_alive_data (struct caml_ephe_ref_elt *re)
-{
-  mlsize_t i;
-  value child;
-
-  for (i = CAML_EPHE_FIRST_KEY; i < Wosize_val(re->ephe); i++) {
-    child = Op_val(re->ephe)[i];
-    if (child != caml_ephe_none
-        && Is_block (child) && Is_young(child)) {
-      resolve_infix_val(&child);
-      if (get_header_val(child) != 0) {
-        /* value not copied to major heap */
-        return 0;
-      }
-    }
-  }
-
-  return 1;
-}
-#endif
-
 /* Finish the work that was put off by [oldify_one].
    Note that [oldify_one] itself is called by oldify_mopup, so we
    have to be careful to remove the first entry from the list before
@@ -417,15 +381,16 @@ static void oldify_mopup (struct oldify_state* st, int do_ephemerons)
   value v, new_v, f;
   mlsize_t i;
   caml_domain_state* domain_state = st->domain;
-  struct caml_ephe_ref_table ephe_ref_table = domain_state->minor_tables->ephe_ref;
+  struct caml_ephe_ref_table ephe_ref_table =
+                                    domain_state->minor_tables->ephe_ref;
   struct caml_ephe_ref_elt *re;
   int redo = 0;
 
   while (st->todo_list != 0) {
     v = st->todo_list;                 /* Get the head. */
-    /* I'm not convinced we can ever have something in todo_list that was updated
-    by another domain, so this assert using get_header_val is probably not
-    neccessary */
+    /* I'm not convinced we can ever have something in todo_list that was
+    updated by another domain, so this assert using get_header_val is probably
+    not neccessary */
     CAMLassert (get_header_val(v) == 0);       /* It must be forwarded. */
     new_v = Field(v, 0);                /* Follow forward pointer. */
     st->todo_list = Field (new_v, 1); /* Remove from list. */
@@ -448,10 +413,8 @@ static void oldify_mopup (struct oldify_state* st, int do_ephemerons)
   }
 
   /* Oldify the key and data in the minor heap of all ephemerons touched in this
-     cycle
-    We are doing this to allow concurrent minor collections to resume
-    executing mutating code while others are still collecting.
-   */
+     cycle. We are doing this to allow concurrent minor collections to resume
+    executing mutating code while others are still collecting. */
   if( do_ephemerons ) {
     for (re = ephe_ref_table.base;
          re < ephe_ref_table.ptr; re++) {
@@ -473,34 +436,7 @@ static void oldify_mopup (struct oldify_state* st, int do_ephemerons)
   if (redo) oldify_mopup (st, 1);
 }
 
-//*****************************************************************************
-
-
-
-void caml_minor_heap_domain_finalizers_admin (caml_domain_state* domain, void* unused)
-{
-  /* need to do the finalizer data structure book-keeping */
-  caml_final_update_last_minor(domain);
-
-  /*caml_domain_state* domain_state = domain->state;
-  struct caml_minor_tables *minor_tables = domain_state->minor_tables;
-  struct caml_custom_elt *elt; */
-
-  /* There will be no dead minor values as we can not tell the state of
-     a minor heap aliveness until all domains complete */
-  /*for (elt = minor_tables->custom.base; elt < minor_tables->custom.ptr; elt++) {
-    value v = elt->block;
-    if (get_header_val(v) == 0) {*/
-      /* !!caml_adjust_gc_speed(elt->mem, elt->max); */
-  /*} else {*/
-      /* Block will be freed: call finalisation function, if any */
-  /*    void (*final_fun)(value) = Custom_ops_val(v)->finalize;
-      if (final_fun != NULL) final_fun(v);
-    }
-  }*/
-}
-
-void caml_empty_minor_heap_domain_clear (caml_domain_state* domain, void* unused)
+void caml_empty_minor_heap_domain_clear(caml_domain_state* domain, void* unused)
 {
   struct caml_minor_tables *minor_tables = domain->minor_tables;
 
@@ -521,7 +457,9 @@ void caml_empty_minor_heap_domain_clear (caml_domain_state* domain, void* unused
 #endif
 }
 
-void caml_empty_minor_heap_promote (caml_domain_state* domain, int participating_count, caml_domain_state** participating)
+void caml_empty_minor_heap_promote(caml_domain_state* domain,
+                                    int participating_count,
+                                    caml_domain_state** participating)
 {
   struct caml_minor_tables *self_minor_tables = domain->minor_tables;
   struct caml_custom_elt *elt;
@@ -536,14 +474,12 @@ void caml_empty_minor_heap_promote (caml_domain_state* domain, int participating
 
   st.domain = domain;
 
-  /* TODO: are there any optimizations we can make where we don't need to scan
-     when minor heaps can reference each other? */
   prev_alloc_words = domain->allocated_words;
 
   caml_gc_log ("Minor collection of domain %d starting", domain->id);
   CAML_EV_BEGIN(EV_MINOR);
 
-  if( participating[0] == Caml_state ) { // TODO: We should distribute this work
+  if( participating[0] == Caml_state ) {
     CAML_EV_BEGIN(EV_MINOR_GLOBAL_ROOTS);
     caml_scan_global_young_roots(oldify_one, &st);
     CAML_EV_END(EV_MINOR_GLOBAL_ROOTS);
@@ -564,27 +500,43 @@ void caml_empty_minor_heap_promote (caml_domain_state* domain, int participating
 
     CAMLassert(participating_idx != -1);
 
-    // We use this rather odd scheme because it better smoothes the remainder
-    for( curr_idx = 0, c = participating_idx; curr_idx < participating_count; curr_idx++) {
+    /* We use this rather odd scheme because it better smoothes the remainder */
+    for( curr_idx = 0, c = participating_idx;
+         curr_idx < participating_count; curr_idx++) {
       caml_domain_state* foreign_domain = participating[c];
-      struct caml_minor_tables* foreign_minor_tables = foreign_domain->minor_tables;
-      struct caml_ref_table* foreign_major_ref = &foreign_minor_tables->major_ref;
+
+      struct caml_minor_tables* foreign_minor_tables =
+                                                 foreign_domain->minor_tables;
+
+      struct caml_ref_table* foreign_major_ref =
+                                              &foreign_minor_tables->major_ref;
+
       // calculate the size of the remembered set
       intnat major_ref_size = foreign_major_ref->ptr - foreign_major_ref->base;
+
       // number of remembered set entries each domain takes here
       intnat refs_per_domain = (major_ref_size / participating_count);
+
       // where to start in the remembered set
-      value** ref_start = foreign_major_ref->base + (curr_idx * refs_per_domain);
+      value** ref_start = foreign_major_ref->base
+                          + (curr_idx * refs_per_domain);
+
       // where to end in the remembered set
-      value** ref_end = foreign_major_ref->base + ((curr_idx+1) * refs_per_domain);
+      value** ref_end = foreign_major_ref->base
+                        + ((curr_idx+1) * refs_per_domain);
+
       // if we're the last domain this time, cover all the remaining refs
       if( curr_idx == participating_count-1 ) {
         caml_gc_log("taking remainder");
         ref_end = foreign_major_ref->ptr;
       }
 
-      caml_gc_log("idx: %d, foreign_domain: %d, ref_size: %"ARCH_INTNAT_PRINTF_FORMAT"d, refs_per_domain: %"ARCH_INTNAT_PRINTF_FORMAT"d, ref_base: %p, ref_ptr: %p, ref_start: %p, ref_end: %p",
-        participating_idx, foreign_domain->id, major_ref_size, refs_per_domain, foreign_major_ref->base, foreign_major_ref->ptr, ref_start, ref_end);
+      caml_gc_log("idx: %d, foreign_domain: %d, ref_size: %"
+        ARCH_INTNAT_PRINTF_FORMAT"d, refs_per_domain: %"
+        ARCH_INTNAT_PRINTF_FORMAT"d, ref_base: %p, ref_ptr: %p, ref_start: %p"
+        ", ref_end: %p",
+        participating_idx, foreign_domain->id, major_ref_size, refs_per_domain,
+        foreign_major_ref->base, foreign_major_ref->ptr, ref_start, ref_end);
 
       for( r = ref_start ; r < foreign_major_ref->ptr && r < ref_end ; r++ )
       {
@@ -598,7 +550,8 @@ void caml_empty_minor_heap_promote (caml_domain_state* domain, int participating
   else
   {
     // If we're alone, we just do our own remembered set
-    for( r = self_minor_tables->major_ref.base ; r < self_minor_tables->major_ref.ptr ; r++ )
+    for( r = self_minor_tables->major_ref.base ;
+      r < self_minor_tables->major_ref.ptr ; r++ )
     {
       oldify_one (&st, **r, *r);
       remembered_roots++;
@@ -607,17 +560,19 @@ void caml_empty_minor_heap_promote (caml_domain_state* domain, int participating
 
   #ifdef DEBUG
     caml_global_barrier();
-    // At this point all domains should have gone through all remembered set entries
-    // We need to verify that all our remembered set entries are now in the major heap or promoted
-    for( r = self_minor_tables->major_ref.base ; r < self_minor_tables->major_ref.ptr ; r++ ) {
+    // At this point all domains should have gone through all remembered set
+    // entries. We need to verify that all our remembered set entries are now in
+    // the major heap or promoted
+    for( r = self_minor_tables->major_ref.base ;
+         r < self_minor_tables->major_ref.ptr ; r++ ) {
       // Everything should be promoted
       CAMLassert(!(Is_block(**r)) || !(Is_young(**r)));
     }
   #endif
 
-  /* promote the finalizers unconditionally as we want to allow early release */
-  CAML_EV_BEGIN(EV_MINOR_FINALIZERS_OLDIFY);
-  for (elt = self_minor_tables->custom.base; elt < self_minor_tables->custom.ptr; elt++) {
+  /* unconditionally promote custom blocks so accounting is correct */
+  for (elt = self_minor_tables->custom.base;
+       elt < self_minor_tables->custom.ptr; elt++) {
     value *v = &elt->block;
     if (Is_block(*v) && Is_young(*v)) {
       caml_adjust_gc_speed(elt->mem, elt->max);
@@ -628,6 +583,9 @@ void caml_empty_minor_heap_promote (caml_domain_state* domain, int participating
       }
     }
   }
+
+  CAML_EV_BEGIN(EV_MINOR_FINALIZERS_OLDIFY);
+  /* promote the finalizers unconditionally as we want to allow early release */
   caml_final_do_young_roots (&oldify_one, &st, domain, 0);
   CAML_EV_END(EV_MINOR_FINALIZERS_OLDIFY);
 
@@ -638,8 +596,9 @@ void caml_empty_minor_heap_promote (caml_domain_state* domain, int participating
   caml_gc_log("promoted %d roots, %lu bytes", remembered_roots, st.live_bytes);
 
   CAML_EV_BEGIN(EV_MINOR_FINALIZERS_ADMIN);
-  caml_gc_log("running stw minor_heap_domain_finalizers_admin");
-  caml_minor_heap_domain_finalizers_admin(domain, 0);
+  caml_gc_log("running finalizer data structure book-keeping");
+  /* do the finalizer data structure book-keeping */
+  caml_final_update_last_minor(domain);
   CAML_EV_END(EV_MINOR_FINALIZERS_ADMIN);
 
 #ifdef DEBUG
@@ -649,18 +608,25 @@ void caml_empty_minor_heap_promote (caml_domain_state* domain, int participating
   for (r = self_minor_tables->major_ref.base;
        r < self_minor_tables->major_ref.ptr; r++) {
     value vnew = **r;
-    CAMLassert (!Is_block(vnew) || (get_header_val(vnew) != 0 && !Is_young(vnew)));
+    CAMLassert (!Is_block(vnew)
+            || (get_header_val(vnew) != 0 && !Is_young(vnew)));
   }
 
-  for (elt = self_minor_tables->custom.base; elt < self_minor_tables->custom.ptr; elt++) {
+  for (elt = self_minor_tables->custom.base;
+       elt < self_minor_tables->custom.ptr; elt++) {
     value vnew = elt->block;
-    CAMLassert (!Is_block(vnew) || (get_header_val(vnew) != 0 && !Is_young(vnew)));
+    CAMLassert (!Is_block(vnew)
+            || (get_header_val(vnew) != 0 && !Is_young(vnew)));
   }
 #endif
 
   CAML_EV_BEGIN(EV_MINOR_LOCAL_ROOTS);
-  caml_do_local_roots(&oldify_one, &st, domain->local_roots, domain->current_stack, domain->gc_regs);
-  if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(&oldify_one, &st, domain);
+  caml_do_local_roots(&oldify_one, &st, domain->local_roots,
+                      domain->current_stack, domain->gc_regs);
+
+  if (caml_scan_roots_hook != NULL)
+    (*caml_scan_roots_hook)(&oldify_one, &st, domain);
+
   CAML_EV_BEGIN(EV_MINOR_LOCAL_ROOTS_PROMOTE);
   oldify_mopup (&st, 0);
   CAML_EV_END(EV_MINOR_LOCAL_ROOTS_PROMOTE);
@@ -668,12 +634,16 @@ void caml_empty_minor_heap_promote (caml_domain_state* domain, int participating
 
   /* we reset these pointers before allowing any mutators to be
      released to avoid races where another domain signals an interrupt
-     and we clobber it */
-  atomic_store_rel((atomic_uintnat*)&domain->young_limit, (uintnat)domain->young_start);
-  atomic_store_rel((atomic_uintnat*)&domain->young_ptr, (uintnat)domain->young_end);
+     and we clobbe                   r it */
+  atomic_store_rel
+    ((atomic_uintnat*)&domain->young_limit, (uintnat)domain->young_start);
+
+  atomic_store_rel
+    ((atomic_uintnat*)&domain->young_ptr, (uintnat)domain->young_end);
 
   if( participating_count > 1 ) {
-    atomic_fetch_add_explicit(&domains_finished_minor_gc, 1, memory_order_release);
+    atomic_fetch_add_explicit
+      (&domains_finished_minor_gc, 1, memory_order_release);
   }
 
   domain->stat_minor_words += Wsize_bsize (minor_allocated_bytes);
@@ -687,7 +657,8 @@ void caml_empty_minor_heap_promote (caml_domain_state* domain, int participating
                (unsigned)(minor_allocated_bytes + 512)/1024);
 }
 
-void caml_do_opportunistic_major_slice(caml_domain_state* domain_unused, void* unused)
+void caml_do_opportunistic_major_slice
+  (caml_domain_state* domain_unused, void* unused)
 {
   /* NB: need to put guard around the ev logs to prevent
     spam when we poll */
@@ -707,7 +678,10 @@ void caml_empty_minor_heap_setup(caml_domain_state* domain_unused) {
 }
 
 /* must be called within a STW section */
-static void caml_stw_empty_minor_heap_no_major_slice (caml_domain_state* domain, void* unused, int participating_count, caml_domain_state** participating)
+static void caml_stw_empty_minor_heap_no_major_slice(caml_domain_state* domain,
+                                            void* unused,
+                                            int participating_count,
+                                            caml_domain_state** participating)
 {
   #ifdef DEBUG
   CAMLassert(caml_domain_is_in_stw());
@@ -727,7 +701,10 @@ static void caml_stw_empty_minor_heap_no_major_slice (caml_domain_state* domain,
     CAML_EV_BEGIN(EV_MINOR_LEAVE_BARRIER);
     {
       SPIN_WAIT {
-        if( atomic_load_explicit(&domains_finished_minor_gc, memory_order_acquire) == participating_count ) {
+        if( atomic_load_explicit
+          (&domains_finished_minor_gc, memory_order_acquire)
+          ==
+          participating_count ) {
           break;
         }
 
@@ -744,9 +721,12 @@ static void caml_stw_empty_minor_heap_no_major_slice (caml_domain_state* domain,
   caml_gc_log("finished stw empty_minor_heap");
 }
 
-static void caml_stw_empty_minor_heap (caml_domain_state* domain, void* unused, int participating_count, caml_domain_state** participating)
+static void caml_stw_empty_minor_heap (caml_domain_state* domain, void* unused,
+                                       int participating_count,
+                                       caml_domain_state** participating)
 {
-  caml_stw_empty_minor_heap_no_major_slice(domain, unused, participating_count, participating);
+  caml_stw_empty_minor_heap_no_major_slice(domain, unused,
+                                            participating_count, participating);
 
   /* schedule a major collection slice for this domain */
   caml_request_major_slice();
@@ -756,7 +736,10 @@ static void caml_stw_empty_minor_heap (caml_domain_state* domain, void* unused, 
 }
 
 /* must be called within a STW section  */
-void caml_empty_minor_heap_no_major_slice_from_stw (caml_domain_state* domain, void* unused, int participating_count, caml_domain_state** participating)
+void caml_empty_minor_heap_no_major_slice_from_stw(caml_domain_state* domain,
+                                            void* unused,
+                                             int participating_count,
+                                             caml_domain_state** participating)
 {
   barrier_status b = caml_global_barrier_begin();
   if( caml_global_barrier_is_final(b) ) {
@@ -766,7 +749,8 @@ void caml_empty_minor_heap_no_major_slice_from_stw (caml_domain_state* domain, v
 
   /* if we are entering from within a major GC STW section then
      we do not schedule another major collection slice */
-  caml_stw_empty_minor_heap_no_major_slice(domain, (void*)0, participating_count, participating);
+  caml_stw_empty_minor_heap_no_major_slice(domain, (void*)0,
+                                           participating_count, participating);
 }
 
 /* must be called outside a STW section */
@@ -784,7 +768,8 @@ int caml_try_stw_empty_minor_heap_on_all_domains ()
     /* leaves when done by default*/
 }
 
-/* must be called outside a STW section, will retry until we have emptied our minor heap */
+/* must be called outside a STW section, will retry until we have emptied our
+   minor heap */
 void caml_empty_minor_heaps_once ()
 {
   uintnat saved_minor_cycle = atomic_load(&caml_minor_cycles_started);
@@ -793,7 +778,8 @@ void caml_empty_minor_heaps_once ()
   CAMLassert(!caml_domain_is_in_stw());
   #endif
 
-  /* To handle the case where multiple domains try to execute a minor gc STW section */
+  /* To handle the case where multiple domains try to execute a minor gc
+     STW section */
   do {
     caml_try_stw_empty_minor_heap_on_all_domains();
   } while (saved_minor_cycle == atomic_load(&caml_minor_cycles_started));
