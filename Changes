@@ -288,6 +288,10 @@ Working version
 - #10693: Fix ident collision in includemod
   (Leo White, review by Matthew Ryan)
 
+- #10702: Fix cast of more strictly aligned pointer in win32unix
+  implementation of stat
+  (Antonin Décimo, review by David Allsopp)
+
 OCaml 4.13 maintenance branch
 -----------------------------
 
