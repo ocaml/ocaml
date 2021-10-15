@@ -280,7 +280,6 @@ odoc_dot.cmx : \
     odoc_info.cmx
 odoc_env.cmo : \
     ../typing/types.cmi \
-    ../typing/printtyp.cmi \
     ../typing/predef.cmi \
     ../typing/path.cmi \
     odoc_name.cmi \
@@ -288,7 +287,6 @@ odoc_env.cmo : \
     odoc_env.cmi
 odoc_env.cmx : \
     ../typing/types.cmx \
-    ../typing/printtyp.cmx \
     ../typing/predef.cmx \
     ../typing/path.cmx \
     odoc_name.cmx \
@@ -816,7 +814,6 @@ odoc_types.cmi : \
     ../parsing/location.cmi
 odoc_value.cmo : \
     ../typing/types.cmi \
-    ../typing/printtyp.cmi \
     odoc_types.cmi \
     odoc_parameter.cmo \
     odoc_name.cmi \
@@ -824,7 +821,6 @@ odoc_value.cmo : \
     ../parsing/asttypes.cmi
 odoc_value.cmx : \
     ../typing/types.cmx \
-    ../typing/printtyp.cmx \
     odoc_types.cmx \
     odoc_parameter.cmx \
     odoc_name.cmx \

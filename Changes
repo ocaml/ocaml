@@ -170,6 +170,12 @@ Working version
   (Armaël Guéneau, review by Gabriel Scherer,
    split off from #9118 by Kate Deplaix, report by Ricardo M. Correia)
 
+- #10488: Improve type variable name generation and recursive type detection
+  when printing type errors; this ensures that the names given to type variables
+  are always reused in the following portion of the trace and also removes
+  spurious `as 'a`s in types.
+  (Antal Spector-Zabusky, review by Florian Angeletti)
+
 ### Internal/compiler-libs changes:
 
 - #1599: add unset directive to ocamltest to clear environment variables before
