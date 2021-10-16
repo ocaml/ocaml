@@ -15,7 +15,7 @@
 
 .NOTPARALLEL:
 
-BASEDIR := $(shell pwd)
+BASEDIR := '$(shell pwd)'
 
 ROOTDIR = ..
 include $(ROOTDIR)/Makefile.common
@@ -30,7 +30,7 @@ else
   SORT=sort
 endif
 
-BASEDIR_HOST := $(shell $(CYGPATH) "$(BASEDIR)")
+BASEDIR_HOST := $(shell $(CYGPATH) $(BASEDIR))
 ROOTDIR_HOST := $(BASEDIR_HOST)/$(ROOTDIR)
 
 OCAMLTESTDIR = $(BASEDIR_HOST)/$(DIR)/_ocamltest
