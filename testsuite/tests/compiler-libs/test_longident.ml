@@ -8,7 +8,7 @@
 module L = Longident
 
 [%%expect {|
-module L = Longident
+module L == Longident
 |}]
 
 let flatten_ident = L.flatten (L.Lident "foo")

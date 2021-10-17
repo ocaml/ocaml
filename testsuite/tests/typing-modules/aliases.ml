@@ -11,7 +11,7 @@ C'.chr 66;;
 module C3 = struct include Char end;;
 C3.chr 66;;
 [%%expect{|
-module C = Char
+module C == Char
 - : char = 'B'
 module C' :
   sig
@@ -188,7 +188,7 @@ module M2 : sig module C' : sig val chr : int -> char end end =
   (M : sig module C : sig val chr : int -> char end module C' = C end);;
 M2.C'.chr 66;;
 [%%expect{|
-module M : sig module C = Char module C' = C end
+module M : sig module C == Char module C' == C end
 module M1 :
   sig module C : sig val escaped : char -> string end module C' = C end
 - : string = "A"
@@ -265,7 +265,7 @@ module Q = Queue;;
 exception QE = Q.Empty;;
 try Q.pop (Q.create ()) with QE -> "Ok";;
 [%%expect{|
-module Q = Queue
+module Q == Queue
 exception QE
 - : string = "Ok"
 |}];;
@@ -300,7 +300,7 @@ module type Complex =
     val pow : t -> t -> t
   end
 module M : sig module C : Complex end
-module C = Complex
+module C == Complex
 - : float = 1.
 type t = Complex.t = { re : float; im : float; }
 val zero : t = {re = 0.; im = 0.}
@@ -334,7 +334,7 @@ module StringSet = Set.Make(String)
 module SSet = Set.Make(S);;
 let f (x : StringSet.t) = (x : SSet.t);;
 [%%expect{|
-module S = String
+module S == String
 module StringSet :
   sig
     type elt = String.t
@@ -657,7 +657,12 @@ Line 15, characters 10-30:
                ^^^^^^^^^^^^^^^^^^^^
 Error: In this `with' constraint, the new definition of I
        does not match its original definition in the constrained signature:
-       Modules do not match: (module Int2) is not included in (module Int)
+       Modules do not match: (module I/2) is not included in (module Int)
+
+       Line 7, characters 2-16:
+         Definition of module I/1
+       Line 14, characters 2-17:
+         Definition of module I/2
 |}];;
 
 (* (* if the above succeeded, one could break invariants *)

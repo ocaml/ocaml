@@ -7,7 +7,7 @@ module A = Bigarray.Genarray
 [%%expect {|
 
 module A = Bigarray.Genarray;;
-module A = Bigarray.Genarray
+module A == Bigarray.Genarray
 |}]
 
 let (.%{;..}<-) = A.set
