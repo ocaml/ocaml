@@ -1461,11 +1461,11 @@ structure_item:
 module_binding_body:
     EQUAL me = module_expr
       { me }
+  | EQUALEQUAL x = mkrhs(mod_longident) attrs = attributes
+      { mkmod ~loc:$loc(x) ~attrs (Pmod_ident (x, Mp_absent)) }
   | mkmod(
       COLON mty = module_type EQUAL me = module_expr
         { Pmod_constraint(me, mty) }
-    | EQUALEQUAL x = mkrhs(mod_longident)
-        { Pmod_ident (x, Mp_absent) }
     | arg_and_pos = functor_arg body = module_binding_body
         { let (_, arg) = arg_and_pos in
           Pmod_functor(arg, body) }
@@ -1584,7 +1584,7 @@ open_description:
 
 %inline open_dot_declaration: mkrhs(mod_longident)
   { let loc = make_loc $loc($1) in
-    let me = Mod.ident ~loc $1 Mp_absent in
+    let me = Mod.ident ~loc $1 Mp_present in
     Opn.mk ~loc me }
 ;
 
