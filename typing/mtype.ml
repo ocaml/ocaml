@@ -139,6 +139,7 @@ let rec make_aliases_present mty =
       Mty_signature(make_aliases_present_sig sg)
   | Mty_functor(arg, res) ->
       Mty_functor(arg, make_aliases_present res)
+  | Mty_alias(path, Mp_absent) -> Mty_alias(path, Mp_present)
   | mty ->
       mty
 

@@ -105,6 +105,7 @@ type error =
   | Invalid_type_subst_rhs
   | Unpackable_local_modtype_subst of Path.t
   | With_cannot_remove_packed_modtype of Path.t * module_type
+  | Cannot_make_absent_alias of Path.t
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -792,14 +793,17 @@ let rec approx_modtype ~absent_globals env smty =
         Env.lookup_modtype_path ~use:false ~loc:smty.pmty_loc lid.txt env
       in
       Mty_ident path
-  | Pmty_alias lid ->
+  | Pmty_alias (lid, pres) ->
       let path =
         Env.lookup_module_path ~use:false ~load:false
           ~loc:smty.pmty_loc lid.txt env
       in
       let pres =
-        if absent_globals && Env.may_alias_absent env path then Mp_absent
-        else Mp_present
+        match pres with
+        | Mp_absent -> Mp_absent
+        | Mp_present when absent_globals && Env.may_alias_absent env path ->
+            Mp_absent
+        | Mp_present -> Mp_present
       in
       Mty_alias(path, pres)
   | Pmty_signature ssg ->
@@ -1330,13 +1334,16 @@ and transl_modtype_aux ~absent_globals env smty =
       let path = transl_modtype_longident loc env lid.txt in
       mkmty (Tmty_ident (path, lid)) (Mty_ident path) env loc
         smty.pmty_attributes
-  | Pmty_alias lid ->
+  | Pmty_alias (lid, pres) ->
       let path = transl_module_alias loc env lid.txt in
-      let pres =
-        if absent_globals && Env.may_alias_absent env path then Mp_absent
-        else Mp_present
+      let pres' =
+        match pres with
+        | Mp_absent -> Mp_absent
+        | Mp_present when absent_globals && Env.may_alias_absent env path ->
+            Mp_absent
+        | Mp_present -> Mp_present
       in
-      mkmty (Tmty_alias (path, lid)) (Mty_alias (path, pres)) env loc
+      mkmty (Tmty_alias (path, lid, pres)) (Mty_alias (path, pres')) env loc
         smty.pmty_attributes
   | Pmty_signature ssg ->
       let sg = transl_signature ~absent_globals env ssg in
@@ -1854,7 +1861,7 @@ exception Not_a_path
 
 let rec path_of_module mexp =
   match mexp.mod_desc with
-  | Tmod_ident (p,_) -> p
+  | Tmod_ident (p,_,_) -> p
   | Tmod_apply(funct, arg, _coercion) when !Clflags.applicative_functors ->
       Papply(path_of_module funct, path_of_module arg)
   | Tmod_constraint (mexp, _, _, _) ->
@@ -2134,19 +2141,27 @@ let rec type_module ?(alias=false) sttn funct_body anchor env smod =
 
 and type_module_aux ~alias sttn funct_body anchor env smod =
   match smod.pmod_desc with
-    Pmod_ident lid ->
+    Pmod_ident (lid, pres) ->
       let path =
         Env.lookup_module_path ~load:(not alias) ~loc:smod.pmod_loc lid.txt env
       in
-      let pres =
-        if Env.may_alias_absent env path then Mp_absent else Mp_present
+      let pres' =
+        match pres with
+        | Mp_absent -> Mp_absent
+        | Mp_present when Env.may_alias_absent env path -> Mp_absent
+        | Mp_present -> Mp_present
       in
-      let md = { mod_desc = Tmod_ident (path, lid);
-                 mod_type = Mty_alias (path, pres);
+      let md = { mod_desc = Tmod_ident (path, lid, pres);
+                 mod_type = Mty_alias (path, pres');
                  mod_env = env;
                  mod_attributes = smod.pmod_attributes;
                  mod_loc = smod.pmod_loc } in
       let aliasable = not (Env.is_functor_arg path env) in
+      begin match pres with
+        | Mp_absent when not aliasable ->
+            raise (Error (lid.loc, env, Cannot_make_absent_alias path))
+        | _ -> ()
+      end;
       if alias && aliasable then
         (Env.add_required_global (Path.head path); md)
       else begin
@@ -2385,15 +2400,18 @@ and type_open_decl ?used_slot ?toplevel funct_body names env sod =
 and type_open_decl_aux ?used_slot ?toplevel funct_body names env od =
   let loc = od.popen_loc in
   match od.popen_expr.pmod_desc with
-  | Pmod_ident lid ->
+  | Pmod_ident (lid, pres) ->
     let path, newenv =
       type_open_ ?used_slot ?toplevel od.popen_override env loc lid
     in
-    let pres =
-      if Env.may_alias_absent env path then Mp_absent else Mp_present
+    let pres' =
+      match pres with
+      | Mp_absent -> Mp_absent
+      | Mp_present when Env.may_alias_absent env path -> Mp_absent
+      | Mp_present -> Mp_present
     in
-    let md = { mod_desc = Tmod_ident (path, lid);
-               mod_type = Mty_alias (path, pres);
+    let md = { mod_desc = Tmod_ident (path, lid, pres);
+               mod_type = Mty_alias (path, pres');
                mod_env = env;
                mod_attributes = od.popen_expr.pmod_attributes;
                mod_loc = od.popen_expr.pmod_loc }
@@ -2770,9 +2788,9 @@ let type_module_type_of ~absent_globals env smod =
   let remove_aliases = has_remove_aliases_attribute smod.pmod_attributes in
   let tmty =
     match smod.pmod_desc with
-    | Pmod_ident lid -> (* turn off strengthening in this case *)
+    | Pmod_ident (lid, pres) -> (* turn off strengthening in this case *)
         let path, md = Env.lookup_module ~loc:smod.pmod_loc lid.txt env in
-          { mod_desc = Tmod_ident (path, lid);
+          { mod_desc = Tmod_ident (path, lid, pres);
             mod_type = md.md_type;
             mod_env = env;
             mod_attributes = smod.pmod_attributes;
@@ -2842,9 +2860,9 @@ let type_package env m p fl =
     | fl ->
       let type_path, env =
         match modl.mod_desc with
-        | Tmod_ident (mp,_)
+        | Tmod_ident (mp,_,_)
         | Tmod_constraint
-            ({mod_desc=Tmod_ident (mp,_)}, _, Tmodtype_implicit, _) ->
+            ({mod_desc=Tmod_ident (mp,_,_)}, _, Tmodtype_implicit, _) ->
           (* We special case these because interactions between
              strengthening of module types and packages can cause
              spurious escape errors. See examples from PR#6982 in the
@@ -3241,6 +3259,11 @@ let report_error ~loc _env = function
       Location.errorf ~loc
         "The module type@ %s@ is not a valid type for a packed module:@ \
          it is defined as a local substitution for a non-path module type."
+        (Path.name p)
+  | Cannot_make_absent_alias p ->
+      Location.errorf ~loc
+        "The module path@ %s@ cannot be made absent:@ \
+         it does not refer to a module with a known location."
         (Path.name p)
 
 let report_error env ~loc err =

@@ -248,7 +248,7 @@ module Mty:
     val attr: module_type -> attribute -> module_type
 
     val ident: ?loc:loc -> ?attrs:attrs -> lid -> module_type
-    val alias: ?loc:loc -> ?attrs:attrs -> lid -> module_type
+    val alias: ?loc:loc -> ?attrs:attrs -> lid -> module_presence -> module_type
     val signature: ?loc:loc -> ?attrs:attrs -> signature -> module_type
     val functor_: ?loc:loc -> ?attrs:attrs ->
       functor_parameter -> module_type -> module_type
@@ -264,7 +264,7 @@ module Mod:
     val mk: ?loc:loc -> ?attrs:attrs -> module_expr_desc -> module_expr
     val attr: module_expr -> attribute -> module_expr
 
-    val ident: ?loc:loc -> ?attrs:attrs -> lid -> module_expr
+    val ident: ?loc:loc -> ?attrs:attrs -> lid -> module_presence -> module_expr
     val structure: ?loc:loc -> ?attrs:attrs -> structure -> module_expr
     val functor_: ?loc:loc -> ?attrs:attrs ->
       functor_parameter -> module_expr -> module_expr

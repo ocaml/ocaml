@@ -115,6 +115,12 @@ let fmt_private_flag f x =
   | Private -> fprintf f "Private";
 ;;
 
+let fmt_module_presence f x =
+  match x with
+  | Mp_present -> fprintf f "Mp_present";
+  | Mp_absent -> fprintf f "Mp_absent";
+;;
+
 let line i f s (*...*) =
   fprintf f "%s" (String.make ((2*i) mod 72) ' ');
   fprintf f s (*...*)
@@ -671,7 +677,9 @@ and module_type i ppf x =
   let i = i+1 in
   match x.pmty_desc with
   | Pmty_ident li -> line i ppf "Pmty_ident %a\n" fmt_longident_loc li;
-  | Pmty_alias li -> line i ppf "Pmty_alias %a\n" fmt_longident_loc li;
+  | Pmty_alias (li, mp) ->
+      line i ppf "Pmty_alias %a %a\n" fmt_longident_loc li
+        fmt_module_presence mp;
   | Pmty_signature (s) ->
       line i ppf "Pmty_signature\n";
       signature i ppf s;
@@ -789,7 +797,9 @@ and module_expr i ppf x =
   attributes i ppf x.pmod_attributes;
   let i = i+1 in
   match x.pmod_desc with
-  | Pmod_ident (li) -> line i ppf "Pmod_ident %a\n" fmt_longident_loc li;
+  | Pmod_ident (li, mp) ->
+      line i ppf "Pmod_ident %a %a\n" fmt_longident_loc li
+        fmt_module_presence mp;
   | Pmod_structure (s) ->
       line i ppf "Pmod_structure\n";
       structure i ppf s;

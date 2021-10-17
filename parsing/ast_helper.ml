@@ -236,7 +236,7 @@ module Mty = struct
   let attr d a = {d with pmty_attributes = d.pmty_attributes @ [a]}
 
   let ident ?loc ?attrs a = mk ?loc ?attrs (Pmty_ident a)
-  let alias ?loc ?attrs a = mk ?loc ?attrs (Pmty_alias a)
+  let alias ?loc ?attrs a b = mk ?loc ?attrs (Pmty_alias (a, b))
   let signature ?loc ?attrs a = mk ?loc ?attrs (Pmty_signature a)
   let functor_ ?loc ?attrs a b = mk ?loc ?attrs (Pmty_functor (a, b))
   let with_ ?loc ?attrs a b = mk ?loc ?attrs (Pmty_with (a, b))
@@ -249,7 +249,7 @@ let mk ?(loc = !default_loc) ?(attrs = []) d =
   {pmod_desc = d; pmod_loc = loc; pmod_attributes = attrs}
   let attr d a = {d with pmod_attributes = d.pmod_attributes @ [a]}
 
-  let ident ?loc ?attrs x = mk ?loc ?attrs (Pmod_ident x)
+  let ident ?loc ?attrs x y = mk ?loc ?attrs (Pmod_ident (x, y))
   let structure ?loc ?attrs x = mk ?loc ?attrs (Pmod_structure x)
   let functor_ ?loc ?attrs arg body =
     mk ?loc ?attrs (Pmod_functor (arg, body))

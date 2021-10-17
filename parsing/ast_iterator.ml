@@ -249,7 +249,7 @@ module MT = struct
     sub.attributes sub attrs;
     match desc with
     | Pmty_ident s -> iter_loc sub s
-    | Pmty_alias s -> iter_loc sub s
+    | Pmty_alias (s, _mp) -> iter_loc sub s
     | Pmty_signature sg -> sub.signature sub sg
     | Pmty_functor (param, mt2) ->
         iter_functor_param sub param;
@@ -307,7 +307,7 @@ module M = struct
     sub.location sub loc;
     sub.attributes sub attrs;
     match desc with
-    | Pmod_ident x -> iter_loc sub x
+    | Pmod_ident (x, _mp) -> iter_loc sub x
     | Pmod_structure str -> sub.structure sub str
     | Pmod_functor (param, body) ->
         iter_functor_param sub param;

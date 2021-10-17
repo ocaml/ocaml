@@ -248,7 +248,7 @@ and functor_parameter =
   | Named of Ident.t option * string option loc * module_type
 
 and module_expr_desc =
-    Tmod_ident of Path.t * Longident.t loc
+    Tmod_ident of Path.t * Longident.t loc * module_presence
   | Tmod_structure of structure
   | Tmod_functor of functor_parameter * module_expr
   | Tmod_apply of module_expr * module_expr * module_coercion
@@ -324,7 +324,7 @@ and module_type_desc =
   | Tmty_functor of functor_parameter * module_type
   | Tmty_with of module_type * (Path.t * Longident.t loc * with_constraint) list
   | Tmty_typeof of module_expr
-  | Tmty_alias of Path.t * Longident.t loc
+  | Tmty_alias of Path.t * Longident.t loc * module_presence
 
 (* Keep primitive type information for type-based lambda-code specialization *)
 and primitive_coercion =

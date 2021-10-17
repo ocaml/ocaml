@@ -664,6 +664,7 @@ let mk_directive ~loc name arg =
 %token END                    "end"
 %token EOF                    ""
 %token EQUAL                  "="
+%token EQUALEQUAL             "=="
 %token EXCEPTION              "exception"
 %token EXTERNAL               "external"
 %token FALSE                  "false"
@@ -807,7 +808,7 @@ The precedences must be listed from low to high.
 %right    OR BARBAR                     /* expr (e || e || e) */
 %right    AMPERSAND AMPERAMPER          /* expr (e && e && e) */
 %nonassoc below_EQUAL
-%left     INFIXOP0 EQUAL LESS GREATER   /* expr (e OP e OP e) */
+%left     INFIXOP0 EQUAL EQUALEQUAL LESS GREATER /* expr (e OP e OP e) */
 %right    INFIXOP1                      /* expr (e OP e OP e) */
 %nonassoc below_LBRACKETAT
 %nonassoc LBRACKETAT
@@ -1314,7 +1315,7 @@ module_expr:
   | mkmod(
       (* A module identifier. *)
       x = mkrhs(mod_longident)
-        { Pmod_ident x }
+        { Pmod_ident (x, Mp_present) }
     | (* In a functor application, the actual argument must be parenthesized. *)
       me1 = module_expr me2 = paren_module_expr
         { Pmod_apply(me1, me2) }
@@ -1463,6 +1464,8 @@ module_binding_body:
   | mkmod(
       COLON mty = module_type EQUAL me = module_expr
         { Pmod_constraint(me, mty) }
+    | EQUALEQUAL x = mkrhs(mod_longident)
+        { Pmod_ident (x, Mp_absent) }
     | arg_and_pos = functor_arg body = module_binding_body
         { let (_, arg) = arg_and_pos in
           Pmod_functor(arg, body) }
@@ -1581,7 +1584,7 @@ open_description:
 
 %inline open_dot_declaration: mkrhs(mod_longident)
   { let loc = make_loc $loc($1) in
-    let me = Mod.ident ~loc $1 in
+    let me = Mod.ident ~loc $1 Mp_absent in
     Opn.mk ~loc me }
 ;
 
@@ -1719,19 +1722,20 @@ module_declaration_body:
   MODULE
   ext = ext attrs1 = attributes
   name = mkrhs(module_name)
-  EQUAL
-  body = module_expr_alias
+  mp = module_presence
+  id = mkrhs(mod_longident)
   attrs2 = post_item_attributes
   {
     let attrs = attrs1 @ attrs2 in
     let loc = make_loc $sloc in
     let docs = symbol_docs $sloc in
+    let body = Mty.alias ~loc:(make_loc $loc(id)) id mp in
     Md.mk name body ~attrs ~loc ~docs, ext
   }
 ;
-%inline module_expr_alias:
-  id = mkrhs(mod_longident)
-    { Mty.alias ~loc:(make_loc $sloc) id }
+%inline module_presence:
+    EQUAL { Mp_present }
+  | EQUALEQUAL { Mp_absent }
 ;
 (* A module substitution (in a signature). *)
 module_subst:
@@ -3571,6 +3575,7 @@ operator:
   | STAR           {"*"}
   | PERCENT        {"%"}
   | EQUAL          {"="}
+  | EQUALEQUAL     {"=="}
   | LESS           {"<"}
   | GREATER        {">"}
   | OR            {"or"}

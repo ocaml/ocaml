@@ -558,7 +558,7 @@ and functor_parameter =
   | Unit
   | Named of Ident.t option * module_type
 
-and module_presence =
+and module_presence = Asttypes.module_presence =
   | Mp_present
   | Mp_absent
 

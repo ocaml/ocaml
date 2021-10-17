@@ -533,6 +533,7 @@ rule token = parse
   | "<"  { LESS }
   | "<-" { LESSMINUS }
   | "="  { EQUAL }
+  | "=="  { EQUALEQUAL }
   | "["  { LBRACKET }
   | "[|" { LBRACKETBAR }
   | "[<" { LBRACKETLESS }
