@@ -30,11 +30,13 @@ val scrape_for_type_of:
 val freshen: scope:int -> module_type -> module_type
         (* Return an alpha-equivalent copy of the given module type
            where bound identifiers are fresh. *)
-val strengthen: aliasable:bool -> Env.t -> module_type -> Path.t -> module_type
+val strengthen:
+  pres:module_presence option -> Env.t -> module_type -> Path.t -> module_type
         (* Strengthen abstract type components relative to the
            given path. *)
 val strengthen_decl:
-  aliasable:bool -> Env.t -> module_declaration -> Path.t -> module_declaration
+  pres:module_presence option -> Env.t -> module_declaration -> Path.t ->
+    module_declaration
 val nondep_supertype: Env.t -> Ident.t list -> module_type -> module_type
         (* Return the smallest supertype of the given type
            in which none of the given idents appears.

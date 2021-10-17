@@ -738,8 +738,8 @@ let check_functor_application =
        t -> unit)
 let strengthen =
   (* to be filled with Mtype.strengthen *)
-  ref ((fun ~aliasable:_ _env _mty _path -> assert false) :
-         aliasable:bool -> t -> Subst.Lazy.modtype ->
+  ref ((fun ~pres:_ _env _mty _path -> assert false) :
+         pres:module_presence option -> t -> Subst.Lazy.modtype ->
          Path.t -> Subst.Lazy.modtype)
 
 let md md_type =
@@ -1036,9 +1036,9 @@ let find_module_lazy ~alias path env =
       in
       Subst.Lazy.of_module_decl md
 
-let find_strengthened_module ~aliasable path env =
+let find_strengthened_module ~pres path env =
   let md = find_module_lazy ~alias:true path env in
-  let mty = !strengthen ~aliasable env md.mdl_type path in
+  let mty = !strengthen ~pres env md.mdl_type path in
   Subst.Lazy.force_modtype mty
 
 let find_value_full path env =
@@ -1248,7 +1248,7 @@ let rec normalize_module_path lax env = function
 
 and expand_module_path lax env path =
   try match find_module_lazy ~alias:true path env with
-    {mdl_type=MtyL_alias path1} ->
+    {mdl_type=MtyL_alias (path1, _pres)} ->
       let path' = normalize_module_path lax env path1 in
       if lax || !Clflags.transparent_modules then path' else
       let id = Path.head path in
@@ -1400,7 +1400,7 @@ let iter_env_cont = ref []
 let rec scrape_alias_for_visit env mty =
   let open Subst.Lazy in
   match mty with
-  | MtyL_alias path -> begin
+  | MtyL_alias (path, _pres) -> begin
       match path with
       | Pident id
         when Ident.persistent id
@@ -1524,16 +1524,17 @@ let rec scrape_alias env ?path mty =
       with Not_found ->
         mty
       end
-  | MtyL_alias path, _ ->
+  | MtyL_alias (path, pres), _ ->
       begin try
-        scrape_alias env ((find_module_lazy path env).mdl_type) ~path
+        scrape_alias env ((find_module_lazy path env).mdl_type)
+          ~path:(path, pres)
       with Not_found ->
         (*Location.prerr_warning Location.none
           (Warnings.No_cmi_file (Path.name path));*)
         mty
       end
-  | mty, Some path ->
-      !strengthen ~aliasable:true env mty path
+  | mty, Some (path, pres) ->
+      !strengthen ~pres:(Some pres) env mty path
   | _ -> mty
 
 (* Given a signature and a root path, prefix all idents in the signature
@@ -1612,7 +1613,8 @@ let module_declaration_address env id presence md =
   | Mp_absent -> begin
       let open Subst.Lazy in
       match md.mdl_type with
-      | MtyL_alias path -> Lazy_backtrack.create (ModAlias {env; path})
+      | MtyL_alias (path, Mp_absent) ->
+          Lazy_backtrack.create (ModAlias {env; path})
       | _ -> assert false
     end
   | Mp_present ->
@@ -1723,7 +1725,7 @@ let rec components_of_module_maker
               match pres with
               | Mp_absent -> begin
                   match md.mdl_type with
-                  | MtyL_alias path ->
+                  | MtyL_alias (path, Mp_absent) ->
                       Lazy_backtrack.create (ModAlias {env = !env; path})
                   | _ -> assert false
                 end
@@ -1783,7 +1785,7 @@ let rec components_of_module_maker
           fcomp_cache = Hashtbl.create 17;
           fcomp_subst_cache = Hashtbl.create 17 })
   | MtyL_ident _ -> Error No_components_abstract
-  | MtyL_alias p -> Error (No_components_alias p)
+  | MtyL_alias (p, _pres) -> Error (No_components_alias p)
 
 (* Insertion of bindings by identifier + path *)
 

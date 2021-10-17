@@ -456,7 +456,7 @@ module Lazy_types = struct
     | MtyL_ident of Path.t
     | MtyL_signature of signature
     | MtyL_functor of functor_parameter * modtype
-    | MtyL_alias of Path.t
+    | MtyL_alias of Path.t * module_presence
 
   and modtype_declaration =
     {
@@ -570,7 +570,7 @@ and lazy_modtype = function
   | Mty_functor (Unit, mty) -> MtyL_functor (Unit, lazy_modtype mty)
   | Mty_functor (Named (id, arg), res) ->
      MtyL_functor (Named (id, lazy_modtype arg), lazy_modtype res)
-  | Mty_alias p -> MtyL_alias p
+  | Mty_alias (p, pres) -> MtyL_alias (p, pres)
 
 and subst_lazy_modtype scoping s = function
   | MtyL_ident p ->
@@ -596,8 +596,8 @@ and subst_lazy_modtype scoping s = function
       let id' = Ident.rename id in
       MtyL_functor(Named (Some id', (subst_lazy_modtype scoping s) arg),
                   subst_lazy_modtype scoping (add_module id (Pident id') s) res)
-  | MtyL_alias p ->
-      MtyL_alias (module_path s p)
+  | MtyL_alias (p, pres) ->
+      MtyL_alias (module_path s p, pres)
 
 and force_modtype = function
   | MtyL_ident p -> Mty_ident p
@@ -608,7 +608,7 @@ and force_modtype = function
        | Unit -> Unit
        | Named (id, mty) -> Named (id, force_modtype mty) in
      Mty_functor (param, force_modtype res)
-  | MtyL_alias p -> Mty_alias p
+  | MtyL_alias (p, pres) -> Mty_alias (p, pres)
 
 and lazy_modtype_decl mtd =
   let mtdl_type = Option.map lazy_modtype mtd.mtd_type in

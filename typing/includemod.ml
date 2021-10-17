@@ -211,10 +211,12 @@ let expand_modtype_path env path =
      | exception Not_found -> None
      | x -> Some x
 
-let expand_module_alias ~strengthen env path =
+let expand_module_alias ~pres env path =
   match
-    if strengthen then Env.find_strengthened_module ~aliasable:true path env
-    else (Env.find_module path env).md_type
+    begin match pres with
+    | Some _ -> Env.find_strengthened_module ~pres path env
+    | None -> (Env.find_module path env).md_type
+    end
   with
   | x -> Ok x
   | exception Not_found -> Error (Error.Unbound_module_path path)
@@ -347,8 +349,8 @@ let retrieve_functor_params env mty =
         | Some mty -> retrieve_functor_params before env mty
         | None -> List.rev before, res
         end
-    | Mty_alias p as res ->
-        begin match expand_module_alias ~strengthen:false env p with
+    | Mty_alias (p, _pres) as res ->
+        begin match expand_module_alias ~pres:None env p with
         | Ok mty ->  retrieve_functor_params before env mty
         | Error _ -> List.rev before, res
         end
@@ -386,13 +388,13 @@ let rec modtypes ~in_eq ~loc env target_env ~mark subst mty1 mty2 =
 
 and try_modtypes ~in_eq ~loc env target_env ~mark subst mty1 mty2 =
   match mty1, mty2 with
-  | (Mty_alias p1, Mty_alias p2) ->
+  | (Mty_alias (p1, _pres1), Mty_alias (p2, pres2)) ->
       if Env.is_functor_arg p2 env then
         Error (Error.Invalid_module_alias p2)
       else begin
         let p2' = Subst.module_path subst p2 in
         if equal_module_paths env p1 p2' then begin
-          if Path.same p2 p2' then Ok Tcoerce_none
+          if pres2 = Mp_absent || Path.same p2 p2' then Ok Tcoerce_none
           else begin
             (* This path contains local references, we may need to build a
                coercion.
@@ -412,7 +414,7 @@ and try_modtypes ~in_eq ~loc env target_env ~mark subst mty1 mty2 =
                [Tcoerce_none] will leave [run_me] at position 0, and we will
                attempt to 'call' the [int] 1.
             *)
-            match expand_module_alias ~strengthen:true target_env p2 with
+            match expand_module_alias ~pres:(Some pres2) target_env p2 with
             | Error e -> Error (Error.Mt_core e)
             | Ok mty2 ->
                 try_modtypes ~in_eq ~loc env target_env ~mark subst mty1 mty2
@@ -422,18 +424,18 @@ and try_modtypes ~in_eq ~loc env target_env ~mark subst mty1 mty2 =
           Error Error.(Mt_core Incompatible_aliases)
         end
       end
-  | (Mty_alias p1, _) -> begin
+  | (Mty_alias (p1, pres1), _) -> begin
       match
         Env.normalize_module_path (Some Location.none) env p1
       with
       | exception Env.Error (Env.Missing_module (_, _, path)) ->
           Error Error.(Mt_core(Unbound_module_path path))
       | p1 ->
-          begin match expand_module_alias ~strengthen:false env p1 with
+          begin match expand_module_alias ~pres:None env p1 with
           | Error e -> Error (Error.Mt_core e)
           | Ok mty1 ->
               match
-                strengthened_modtypes ~in_eq ~loc ~aliasable:true env
+                strengthened_modtypes ~in_eq ~loc ~pres:(Some pres1) env
                   target_env ~mark subst mty1 p1 mty2
               with
               | Ok _ as x -> x
@@ -545,21 +547,21 @@ and functor_param ~in_eq ~loc env target_env ~mark subst param1 param2 =
   | _, _ ->
       Error (Error.Incompatible_params (param1, param2)), env, target_env, subst
 
-and strengthened_modtypes ~in_eq ~loc ~aliasable env target_env ~mark
+and strengthened_modtypes ~in_eq ~loc ~pres env target_env ~mark
     subst mty1 path1 mty2 =
   match mty1, mty2 with
   | Mty_ident p1, Mty_ident p2 when equal_modtype_paths env p1 subst p2 ->
       Ok Tcoerce_none
   | _, _ ->
-      let mty1 = Mtype.strengthen ~aliasable env mty1 path1 in
+      let mty1 = Mtype.strengthen ~pres env mty1 path1 in
       modtypes ~in_eq ~loc env target_env ~mark subst mty1 mty2
 
-and strengthened_module_decl ~loc ~aliasable env ~mark subst md1 path1 md2 =
+and strengthened_module_decl ~loc ~pres env ~mark subst md1 path1 md2 =
   match md1.md_type, md2.md_type with
   | Mty_ident p1, Mty_ident p2 when equal_modtype_paths env p1 subst p2 ->
       Ok Tcoerce_none
   | _, _ ->
-      let md1 = Mtype.strengthen_decl ~aliasable env md1 path1 in
+      let md1 = Mtype.strengthen_decl ~pres env md1 path1 in
       modtypes ~in_eq:false ~loc env env ~mark subst md1.md_type md2.md_type
 
 (* Inclusion between signatures *)
@@ -708,12 +710,13 @@ and signature_components ~in_eq ~loc ~mark env target_env subst paired =
                 Result.map_error (fun diff -> Error.Module_type diff) item
               in
               let present_at_runtime, item =
-                match pres1, pres2, mty1.md_type with
-                | Mp_present, Mp_present, _ -> true, item
-                | _, Mp_absent, _ -> false, item
-                | Mp_absent, Mp_present, Mty_alias p1 ->
+                match pres1, pres2, mty1.md_type, mty2.md_type with
+                | Mp_present, Mp_present, _, _ -> true, item
+                | _, Mp_absent, _, Mty_alias (_, Mp_absent) -> false, item
+                | _, Mp_absent, _, _ -> assert false
+                | Mp_absent, Mp_present, Mty_alias (p1, Mp_absent), _ ->
                     true, Result.map (fun i -> Tcoerce_alias (env, p1, i)) item
-                | Mp_absent, Mp_present, _ -> assert false
+                | Mp_absent, Mp_present, _, _ -> assert false
               in
               id1, item, present_at_runtime
             end
@@ -754,8 +757,8 @@ and module_declarations  ~in_eq ~loc env target_env ~mark  subst id1 md1 md2 =
   let p1 = Path.Pident id1 in
   if mark_positive mark then
     Env.mark_module_used md1.md_uid;
-  strengthened_modtypes  ~in_eq ~loc ~aliasable:true env target_env ~mark subst
-    md1.md_type p1 md2.md_type
+  strengthened_modtypes  ~in_eq ~loc ~pres:(Some Mp_present) env target_env
+    ~mark subst md1.md_type p1 md2.md_type
 
 (* Inclusion between module type specifications *)
 
@@ -831,8 +834,8 @@ exception Apply_error of {
   }
 
 let check_modtype_inclusion_raw ~loc env mty1 path1 mty2 =
-  let aliasable = can_alias env path1 in
-  strengthened_modtypes ~in_eq:false ~loc ~aliasable env env ~mark:Mark_both
+  let pres = if can_alias env path1 then Some Mp_present else None in
+  strengthened_modtypes ~in_eq:false ~loc ~pres env env ~mark:Mark_both
     Subst.identity mty1 path1 mty2
 
 let check_modtype_inclusion ~loc env mty1 path1 mty2 =
@@ -848,8 +851,8 @@ let check_functor_application_in_path
   | Error _errs ->
       if errors then
         let prepare_arg (arg_path, arg_mty) =
-          let aliasable = can_alias env arg_path in
-          let smd = Mtype.strengthen ~aliasable env arg_mty arg_path in
+          let pres = if can_alias env arg_path then Some Mp_present else None in
+          let smd = Mtype.strengthen ~pres env arg_mty arg_path in
           (Error.Named arg_path, smd)
         in
         let mty_f = (Env.find_module f0_path env).md_type in
@@ -1119,15 +1122,15 @@ let type_declarations ~loc env ~mark id decl1 decl2 =
       raise (Error(env,Error.(In_Type_declaration(id,reason))))
   | Error _ -> assert false
 
-let strengthened_module_decl ~loc ~aliasable env ~mark md1 path1 md2 =
-  match strengthened_module_decl ~loc ~aliasable env ~mark Subst.identity
+let strengthened_module_decl ~loc ~pres env ~mark md1 path1 md2 =
+  match strengthened_module_decl ~loc ~pres env ~mark Subst.identity
     md1 path1 md2 with
   | Ok x -> x
   | Error mdiff ->
       raise (Error(env,Error.(In_Module_type mdiff)))
 
-let expand_module_alias ~strengthen env path =
-  match expand_module_alias ~strengthen env path with
+let expand_module_alias ~pres env path =
+  match expand_module_alias ~pres env path with
   | Ok x -> x
   | Result.Error _ ->
       raise (Error(env,In_Expansion(Error.Unbound_module_path path)))

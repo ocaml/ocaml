@@ -3666,7 +3666,7 @@ and type_expect_
       Mtype.lower_nongen (get_level ty) modl.mod_type;
       let pres =
         match modl.mod_type with
-        | Mty_alias p
+        | Mty_alias (p, Mp_absent)
           when !Clflags.transparent_modules && Env.may_alias_absent env p ->
             Mp_absent
         | _ -> Mp_present

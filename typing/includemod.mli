@@ -152,7 +152,7 @@ val modtypes:
   module_type -> module_type -> module_coercion
 
 val strengthened_module_decl:
-  loc:Location.t -> aliasable:bool -> Env.t -> mark:mark ->
+  loc:Location.t -> pres:module_presence option -> Env.t -> mark:mark ->
   module_declaration -> Path.t -> module_declaration -> module_coercion
 
 val check_modtype_inclusion :
@@ -215,7 +215,8 @@ exception Apply_error of {
     args : (Error.functor_arg_descr * Types.module_type)  list ;
   }
 
-val expand_module_alias: strengthen:bool -> Env.t -> Path.t -> Types.module_type
+val expand_module_alias:
+  pres:Types.module_presence option -> Env.t -> Path.t -> Types.module_type
 
 module Functor_inclusion_diff: sig
   module Defs: sig

@@ -87,7 +87,7 @@ val find_class: Path.t -> t -> class_declaration
 val find_cltype: Path.t -> t -> class_type_declaration
 
 val find_strengthened_module:
-  aliasable:bool -> Path.t -> t -> module_type
+  pres:module_presence option -> Path.t -> t -> module_type
 
 val find_ident_constructor: Ident.t -> t -> constructor_description
 val find_ident_label: Ident.t -> t -> label_description
@@ -451,7 +451,7 @@ val check_well_formed_module:
 val add_delayed_check_forward: ((unit -> unit) -> unit) ref
 (* Forward declaration to break mutual recursion with Mtype. *)
 val strengthen:
-    (aliasable:bool -> t -> Subst.Lazy.modtype ->
+    (pres:module_presence option -> t -> Subst.Lazy.modtype ->
      Path.t -> Subst.Lazy.modtype) ref
 (* Forward declaration to break mutual recursion with Ctype. *)
 val same_constr: (t -> type_expr -> type_expr -> bool) ref
