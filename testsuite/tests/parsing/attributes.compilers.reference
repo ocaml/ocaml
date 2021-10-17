@@ -177,7 +177,7 @@
                 module_expr (attributes.ml[39,498+27]..[39,498+28])
                   attribute "foo"
                     []
-                  Pmod_ident "M" (attributes.ml[39,498+27]..[39,498+28])
+                  Pmod_ident "M" (attributes.ml[39,498+27]..[39,498+28]) Mp_present
               [
                 Pwith_typesubst "t" (attributes.ml[39,498+53]..[39,498+54])
                   type_declaration "t" (attributes.ml[39,498+53]..[39,498+54]) (attributes.ml[39,498+48]..[39,498+61])
@@ -229,7 +229,7 @@
       module_expr (attributes.ml[51,652+11]..[51,652+27])
         Pmod_constraint
         module_expr (attributes.ml[51,652+12]..[51,652+15])
-          Pmod_ident "Int" (attributes.ml[51,652+12]..[51,652+15])
+          Pmod_ident "Int" (attributes.ml[51,652+12]..[51,652+15]) Mp_present
         module_type (attributes.ml[51,652+18]..[51,652+19])
           attribute "foo"
             []
@@ -240,7 +240,7 @@
       module_expr (attributes.ml[53,681+11]..[53,681+45])
         Pmod_constraint
         module_expr (attributes.ml[53,681+12]..[53,681+15])
-          Pmod_ident "Int" (attributes.ml[53,681+12]..[53,681+15])
+          Pmod_ident "Int" (attributes.ml[53,681+12]..[53,681+15]) Mp_present
         module_type (attributes.ml[53,681+18]..[53,681+37])
           attribute "foo"
             []
@@ -274,7 +274,7 @@
           expression (attributes.ml[55,728+8]..[55,728+31]) ghost
             Pexp_pack
             module_expr (attributes.ml[55,728+16]..[55,728+19])
-              Pmod_ident "Int" (attributes.ml[55,728+16]..[55,728+19])
+              Pmod_ident "Int" (attributes.ml[55,728+16]..[55,728+19]) Mp_present
           core_type (attributes.ml[55,728+22]..[55,728+30])
             attribute "foo"
               []
@@ -292,7 +292,7 @@
           expression (attributes.ml[57,761+8]..[57,761+49]) ghost
             Pexp_pack
             module_expr (attributes.ml[57,761+16]..[57,761+19])
-              Pmod_ident "Int" (attributes.ml[57,761+16]..[57,761+19])
+              Pmod_ident "Int" (attributes.ml[57,761+16]..[57,761+19]) Mp_present
           core_type (attributes.ml[57,761+22]..[57,761+48])
             attribute "foo"
               []

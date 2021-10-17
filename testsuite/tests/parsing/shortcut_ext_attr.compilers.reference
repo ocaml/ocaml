@@ -41,7 +41,7 @@
                             []
                           Pexp_letmodule "M" (shortcut_ext_attr.ml[12,222+24]..[12,222+25])
                           module_expr (shortcut_ext_attr.ml[12,222+28]..[12,222+29])
-                            Pmod_ident "M" (shortcut_ext_attr.ml[12,222+28]..[12,222+29])
+                            Pmod_ident "M" (shortcut_ext_attr.ml[12,222+28]..[12,222+29]) Mp_present
                           expression (shortcut_ext_attr.ml[12,222+33]..[12,222+35])
                             Pexp_construct "()" (shortcut_ext_attr.ml[12,222+33]..[12,222+35])
                             None
@@ -58,7 +58,7 @@
                               []
                             Pexp_open Fresh
                             module_expr (shortcut_ext_attr.ml[13,261+22]..[13,261+23])
-                              Pmod_ident "M" (shortcut_ext_attr.ml[13,261+22]..[13,261+23])
+                              Pmod_ident "M" (shortcut_ext_attr.ml[13,261+22]..[13,261+23]) Mp_present
                             expression (shortcut_ext_attr.ml[13,261+27]..[13,261+29])
                               Pexp_construct "()" (shortcut_ext_attr.ml[13,261+27]..[13,261+29])
                               None
@@ -544,7 +544,7 @@
               []
             Pmty_typeof
             module_expr (shortcut_ext_attr.ml[72,1503+26]..[72,1503+27])
-              Pmod_ident "M" (shortcut_ext_attr.ml[72,1503+26]..[72,1503+27])
+              Pmod_ident "M" (shortcut_ext_attr.ml[72,1503+26]..[72,1503+27]) Mp_present
           module_type (shortcut_ext_attr.ml[73,1535+5]..[73,1535+18])
             attribute "foo"
               []
@@ -709,7 +709,7 @@
           attribute "foo"
             []
           module_expr (shortcut_ext_attr.ml[88,1782+21]..[88,1782+22])
-            Pmod_ident "M" (shortcut_ext_attr.ml[88,1782+21]..[88,1782+22])
+            Pmod_ident "M" (shortcut_ext_attr.ml[88,1782+21]..[88,1782+22]) Mp_present
     ]
   structure_item (shortcut_ext_attr.ml[89,1805+0]..[90,1836+19]) ghost
     Pstr_extension "foo"
@@ -723,7 +723,7 @@
             module_expr (shortcut_ext_attr.ml[89,1805+23]..[89,1805+30])
               Pmod_constraint
               module_expr (shortcut_ext_attr.ml[89,1805+29]..[89,1805+30])
-                Pmod_ident "M" (shortcut_ext_attr.ml[89,1805+29]..[89,1805+30])
+                Pmod_ident "M" (shortcut_ext_attr.ml[89,1805+29]..[89,1805+30]) Mp_present
               module_type (shortcut_ext_attr.ml[89,1805+25]..[89,1805+26])
                 Pmty_ident "S" (shortcut_ext_attr.ml[89,1805+25]..[89,1805+26])
           "M" (shortcut_ext_attr.ml[90,1836+10]..[90,1836+11])
@@ -732,7 +732,7 @@
             module_expr (shortcut_ext_attr.ml[90,1836+12]..[90,1836+19])
               Pmod_constraint
               module_expr (shortcut_ext_attr.ml[90,1836+18]..[90,1836+19])
-                Pmod_ident "M" (shortcut_ext_attr.ml[90,1836+18]..[90,1836+19])
+                Pmod_ident "M" (shortcut_ext_attr.ml[90,1836+18]..[90,1836+19]) Mp_present
               module_type (shortcut_ext_attr.ml[90,1836+14]..[90,1836+15])
                 Pmty_ident "S" (shortcut_ext_attr.ml[90,1836+14]..[90,1836+15])
         ]
@@ -754,7 +754,7 @@
         Pstr_include          attribute "foo"
             []
         module_expr (shortcut_ext_attr.ml[93,1885+18]..[93,1885+19])
-          Pmod_ident "M" (shortcut_ext_attr.ml[93,1885+18]..[93,1885+19])
+          Pmod_ident "M" (shortcut_ext_attr.ml[93,1885+18]..[93,1885+19]) Mp_present
     ]
   structure_item (shortcut_ext_attr.ml[94,1905+0]..[94,1905+16]) ghost
     Pstr_extension "foo"
@@ -762,7 +762,7 @@
       structure_item (shortcut_ext_attr.ml[94,1905+0]..[94,1905+16])
         Pstr_open Fresh
         module_expr (shortcut_ext_attr.ml[94,1905+15]..[94,1905+16])
-          Pmod_ident "M" (shortcut_ext_attr.ml[94,1905+15]..[94,1905+16])
+          Pmod_ident "M" (shortcut_ext_attr.ml[94,1905+15]..[94,1905+16]) Mp_present
           attribute "foo"
             []
     ]
@@ -911,7 +911,7 @@
                   attribute "foo"
                     []
                 module_type (shortcut_ext_attr.ml[110,2188+23]..[110,2188+24])
-                  Pmty_alias "M" (shortcut_ext_attr.ml[110,2188+23]..[110,2188+24])
+                  Pmty_alias "M" (shortcut_ext_attr.ml[110,2188+23]..[110,2188+24]) Mp_present
             ]
           signature_item (shortcut_ext_attr.ml[112,2214+2]..[112,2214+29]) ghost
             Psig_extension "foo"

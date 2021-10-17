@@ -47,3 +47,9 @@ module I' = Set.Make [@ocaml.inlined]
 
 module J = Set.Make [@@inlined]
 module J' = Set.Make [@@ocaml.inlined]
+
+module K == Set.Make [@inlined]
+module K' == Set.Make [@ocaml.inlined]
+
+module L == Set.Make [@@inlined]
+module L' == Set.Make [@@ocaml.inlined]
