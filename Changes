@@ -12,8 +12,11 @@ Working version
 
 ### Runtime system:
 
-* #10673: Always use 'present' modules for aliases in module types
-  (Matthew Ryan, review by Leo White)
+* #10673: Add `module M == Foo` syntax for 'absent' aliases, make other aliases
+  'present'. This breaks some uses of .mli-only modules, and changes linking
+  behaviour in some situations; the new == syntax can be used where necessary to
+  preserve the old behaviour.
+  (Matthew Ryan, review by Leo White and Florian Angeletti)
 
 * #9391, #9424: Fix failed assertion in runtime due to ephemerons *set_* and
   *blit_* function during Mark phase
