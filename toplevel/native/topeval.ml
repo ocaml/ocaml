@@ -115,6 +115,44 @@ let pr_item =
 
 let phrase_seqid = ref 0
 
+let name_expression ~loc ~attrs exp =
+  let name = "_$" in
+  let id = Ident.create_local name in
+  let vd =
+    { val_type = exp.exp_type;
+      val_kind = Val_reg;
+      val_loc = loc;
+      val_attributes = attrs;
+      val_uid = Uid.internal_not_actually_unique; }
+   in
+   let sg = [Sig_value(id, vd, Exported)] in
+   let pat =
+     { pat_desc = Tpat_var(id, mknoloc name);
+       pat_loc = loc;
+       pat_extra = [];
+       pat_type = exp.exp_type;
+       pat_env = exp.exp_env;
+       pat_attributes = []; }
+   in
+   let vb =
+     { vb_pat = pat;
+       vb_expr = exp;
+       vb_attributes = attrs;
+       vb_loc = loc; }
+   in
+   let item =
+     { str_desc = Tstr_value(Nonrecursive, [vb]);
+       str_loc = loc;
+       str_env = exp.exp_env; }
+   in
+   let final_env = Env.add_value id vd exp.exp_env in
+   let str =
+     { str_items = [item];
+       str_type = sg;
+       str_final_env = final_env }
+   in
+   str, sg
+
 let execute_phrase print_outcome ppf phr =
   match phr with
   | Ptop_def sstr ->
@@ -123,21 +161,6 @@ let execute_phrase print_outcome ppf phr =
       let phrase_name = "TOP" ^ string_of_int !phrase_seqid in
       Compilenv.reset ?packname:None phrase_name;
       Typecore.reset_delayed_checks ();
-      let sstr, rewritten =
-        match sstr with
-        | [ { pstr_desc = Pstr_eval (e, attrs) ; pstr_loc = loc } ]
-        | [ { pstr_desc = Pstr_value (Asttypes.Nonrecursive,
-                                      [{ pvb_expr = e
-                                       ; pvb_pat = { ppat_desc = Ppat_any ; _ }
-                                       ; pvb_attributes = attrs
-                                       ; _ }])
-            ; pstr_loc = loc }
-          ] ->
-            let pat = Ast_helper.Pat.var (Location.mknoloc "_$") in
-            let vb = Ast_helper.Vb.mk ~loc ~attrs pat e in
-            [ Ast_helper.Str.value ~loc Asttypes.Nonrecursive [vb] ], true
-        | _ -> sstr, false
-      in
       let (str, sg, names, shape, newenv) =
         Typemod.type_toplevel_phrase oldenv sstr
       in
@@ -146,6 +169,21 @@ let execute_phrase print_outcome ppf phr =
       let sg' = Typemod.Signature_names.simplify newenv names sg in
       ignore (Includemod.signatures oldenv ~mark:Mark_positive sg sg');
       Typecore.force_delayed_checks ();
+      let str, sg', rewritten =
+         match str.str_items with
+         | [ { str_desc = Tstr_eval (e, attrs) ; str_loc = loc } ]
+         | [ { str_desc = Tstr_value (Asttypes.Nonrecursive,
+                                       [{ vb_expr = e
+                                        ; vb_pat =
+                                            { pat_desc = Tpat_any;
+                                              pat_extra = []; _ }
+                                        ; vb_attributes = attrs }])
+             ; str_loc = loc }
+           ] ->
+             let str, sg' = name_expression ~loc ~attrs e in
+             str, sg', true
+         | _ -> str, sg', false
+      in
       let module_ident, res, required_globals, size =
         if Config.flambda then
           let { Lambda.module_ident; main_module_block_size = size;

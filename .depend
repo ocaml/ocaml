@@ -6606,7 +6606,6 @@ toplevel/native/topeval.cmo : \
     middle_end/compilenv.cmi \
     utils/clflags.cmi \
     parsing/asttypes.cmi \
-    parsing/ast_helper.cmi \
     asmcomp/asmlink.cmi \
     toplevel/native/topeval.cmi
 toplevel/native/topeval.cmx : \
@@ -6638,7 +6637,6 @@ toplevel/native/topeval.cmx : \
     middle_end/compilenv.cmx \
     utils/clflags.cmx \
     parsing/asttypes.cmi \
-    parsing/ast_helper.cmx \
     asmcomp/asmlink.cmx \
     toplevel/native/topeval.cmi
 toplevel/native/topeval.cmi : \

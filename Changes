@@ -435,6 +435,11 @@ OCaml 4.14.0
   implementation of stat
   (Antonin Décimo, review by David Allsopp)
 
+- #10712: Type-check toplevel terms in the native toplevel in the same way as
+  the bytecode toplevel. In particular, this fixes the loss of type variable
+  names in the native toplevel.
+  (Leo White, review by David Allsopp and Gabriel Scherer)
+
 - #10735: Uncaught unify exception from `build_as_type`
   (Jacques Garrigue, report and review by Leo White)
 
