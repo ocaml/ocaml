@@ -1,3 +1,21 @@
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*      KC Sivaramakrishnan, Indian Institute of Technology, Madras       */
+/*                   Tom Kelly, OCaml Labs Consultancy                    */
+/*                Stephen Dolan, University of Cambridge                  */
+/*                                                                        */
+/*   Copyright 2021 Indian Institute of Technology, Madras                */
+/*   Copyright 2021 OCaml Labs Consultancy                                */
+/*   Copyright 2019 University of Cambridge                               */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
 #define CAML_INTERNALS
 
 #include <string.h>
@@ -42,7 +60,8 @@ struct stack_info** caml_alloc_stack_cache () {
   int i;
 
   struct stack_info** stack_cache =
-    (struct stack_info**)caml_stat_alloc_noexc(sizeof(struct stack_info*)*NUM_STACK_SIZE_CLASSES);
+    (struct stack_info**)caml_stat_alloc_noexc(sizeof(struct stack_info*) *
+                                               NUM_STACK_SIZE_CLASSES);
   if (stack_cache == NULL)
     return NULL;
 
@@ -76,7 +95,9 @@ Caml_inline struct stack_info** stack_cache_bucket (mlsize_t wosize) {
   return NULL;
 }
 
-static struct stack_info* alloc_size_class_stack_noexc(mlsize_t wosize, struct stack_info** size_bucket, value hval, value hexn, value heff)
+static struct stack_info*
+alloc_size_class_stack_noexc(mlsize_t wosize, struct stack_info** size_bucket,
+                             value hval, value hexn, value heff)
 {
   struct stack_info* stack;
   struct stack_handler* hand;
@@ -100,8 +121,8 @@ static struct stack_info* alloc_size_class_stack_noexc(mlsize_t wosize, struct s
 
     /* Ensure 16-byte alignment because some architectures require it */
     hand = (struct stack_handler*)
-      (((uintnat)stack + sizeof(struct stack_info) + sizeof(value) * wosize + 8)
-       & ((uintnat)-1 << 4));
+     (((uintnat)stack + sizeof(struct stack_info) + sizeof(value) * wosize + 8)
+      & ((uintnat)-1 << 4));
     stack->handler = hand;
   }
 
@@ -119,7 +140,8 @@ static struct stack_info* alloc_size_class_stack_noexc(mlsize_t wosize, struct s
 }
 
 /* allocate a stack with at least "wosize" usable words of stack */
-static struct stack_info* alloc_stack_noexc(mlsize_t wosize, value hval, value hexn, value heff)
+static struct stack_info* alloc_stack_noexc(mlsize_t wosize, value hval,
+                                            value hexn, value heff)
 {
   struct stack_info** size_bucket = stack_cache_bucket (wosize);
   return alloc_size_class_stack_noexc(wosize, size_bucket, hval, hexn, heff);
@@ -128,7 +150,9 @@ static struct stack_info* alloc_stack_noexc(mlsize_t wosize, value hval, value h
 #ifdef NATIVE_CODE
 
 value caml_alloc_stack (value hval, value hexn, value heff) {
-  struct stack_info* stack = alloc_size_class_stack_noexc(caml_fiber_wsz, Caml_state->stack_cache, hval, hexn, heff);
+  struct stack_info* stack =
+    alloc_size_class_stack_noexc(caml_fiber_wsz, Caml_state->stack_cache,
+                                 hval, hexn, heff);
 
   if (!stack) caml_raise_out_of_memory();
 
@@ -137,7 +161,8 @@ value caml_alloc_stack (value hval, value hexn, value heff) {
   return Val_ptr(stack);
 }
 
-void caml_get_stack_sp_pc (struct stack_info* stack, char** sp /* out */, uintnat* pc /* out */)
+void caml_get_stack_sp_pc (struct stack_info* stack,
+                           char** sp /* out */, uintnat* pc /* out */)
 {
   char* p = (char*)stack->sp;
 
@@ -146,7 +171,8 @@ void caml_get_stack_sp_pc (struct stack_info* stack, char** sp /* out */, uintna
   *pc = Saved_return_address(*sp);
 }
 
-Caml_inline void scan_stack_frames(scanning_action f, void* fdata, struct stack_info* stack, value* gc_regs)
+Caml_inline void scan_stack_frames(scanning_action f, void* fdata,
+                                   struct stack_info* stack, value* gc_regs)
 {
   char * sp;
   uintnat retaddr;
@@ -201,7 +227,8 @@ next_chunk:
   }
 }
 
-void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack, value* gc_regs)
+void caml_scan_stack(scanning_action f, void* fdata,
+                     struct stack_info* stack, value* gc_regs)
 {
   while (stack != NULL) {
     scan_stack_frames(f, fdata, stack, gc_regs);
@@ -242,8 +269,10 @@ value caml_global_data;
 
 CAMLprim value caml_alloc_stack(value hval, value hexn, value heff)
 {
-  struct stack_info* stack = alloc_size_class_stack_noexc(caml_fiber_wsz, Caml_state->stack_cache, hval, hexn, heff);
   value* sp;
+  struct stack_info* stack =
+    alloc_size_class_stack_noexc(caml_fiber_wsz, Caml_state->stack_cache,
+                                 hval, hexn, heff);
 
   if (!stack) caml_raise_out_of_memory();
 
@@ -260,7 +289,8 @@ CAMLprim value caml_alloc_stack(value hval, value hexn, value heff)
 CAMLprim value caml_ensure_stack_capacity(value required_space)
 {
   asize_t req = Long_val(required_space);
-  if (Caml_state->current_stack->sp - req < Stack_base(Caml_state->current_stack))
+  if (Caml_state->current_stack->sp - req <
+      Stack_base(Caml_state->current_stack))
     if (!caml_try_realloc_stack(req))
       caml_raise_stack_overflow();
   return Val_unit;
@@ -276,7 +306,8 @@ Caml_inline int is_block_and_not_code_frag(value v) {
   return Is_block(v) && caml_find_code_fragment_by_pc((char *) v) == NULL;
 }
 
-void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack, value* v_gc_regs)
+void caml_scan_stack(scanning_action f, void* fdata,
+                     struct stack_info* stack, value* v_gc_regs)
 {
   value *low, *high, *sp;
 
@@ -315,14 +346,17 @@ void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack, v
 
 #ifdef NATIVE_CODE
 /* Update absolute exception pointers for new stack*/
-static void rewrite_exception_stack(struct stack_info *old_stack, value** exn_ptr, struct stack_info *new_stack)
+static void
+rewrite_exception_stack(struct stack_info *old_stack,
+                        value** exn_ptr, struct stack_info *new_stack)
 {
-  fiber_debug_log ("Old [%p, %p]", Stack_base(old_stack), Stack_high(old_stack));
-  fiber_debug_log ("New [%p, %p]", Stack_base(new_stack), Stack_high(new_stack));
+  fiber_debug_log("Old [%p, %p]", Stack_base(old_stack), Stack_high(old_stack));
+  fiber_debug_log("New [%p, %p]", Stack_base(new_stack), Stack_high(new_stack));
   if(exn_ptr) {
     fiber_debug_log ("*exn_ptr=%p", *exn_ptr);
 
-    while (Stack_base(old_stack) < *exn_ptr && *exn_ptr <= Stack_high(old_stack)) {
+    while (Stack_base(old_stack) < *exn_ptr &&
+           *exn_ptr <= Stack_high(old_stack)) {
 #ifdef DEBUG
       value* old_val = *exn_ptr;
 #endif
@@ -382,7 +416,8 @@ int caml_try_realloc_stack(asize_t required_space)
   new_stack->sp = Stack_high(new_stack) - stack_used;
   Stack_parent(new_stack) = Stack_parent(old_stack);
 #ifdef NATIVE_CODE
-  rewrite_exception_stack(old_stack, (value**)&Caml_state->exn_handler, new_stack);
+  rewrite_exception_stack(old_stack, (value**)&Caml_state->exn_handler,
+                          new_stack);
 #endif
 
   /* Update stack pointers in Caml_state->c_stack */
@@ -394,9 +429,9 @@ int caml_try_realloc_stack(asize_t required_space)
       /* Verify that all callback frames on this C stack belong to the
        same fiber */
       if (link->stack == NULL) {
-        /* only possible for the first link, if it has not done any C calls yet */
-        /* FIXME: at the moment, this is possible due to a couple of odd ways of entering C code
-           (via GC, etc.) */
+        /* only possible for the first link, if it has not done any C calls yet
+           FIXME: at the moment, this is possible due to a couple of odd ways
+           of entering C code (via GC, etc.) */
         //CAMLassert(link == Caml_state->c_stack);
       } else if (cb == NULL) {
         /* first non-NULL stack */
@@ -407,7 +442,8 @@ int caml_try_realloc_stack(asize_t required_space)
 #endif
       if (link->stack == old_stack) {
         link->stack = new_stack;
-        link->sp = (void*)((char*)Stack_high(new_stack) - ((char*)Stack_high(old_stack) - (char*)link->sp));
+        link->sp = (void*)((char*)Stack_high(new_stack) -
+                           ((char*)Stack_high(old_stack) - (char*)link->sp));
       }
     }
   }
@@ -432,7 +468,8 @@ void caml_free_stack (struct stack_info* stack)
     stack->exception_ptr = (void*)(*stack->size_bucket);
     *stack->size_bucket = stack;
 #ifdef DEBUG
-    memset(Stack_base(stack), 0x42, (Stack_high(stack)-Stack_base(stack))*sizeof(value));
+    memset(Stack_base(stack), 0x42,
+           (Stack_high(stack)-Stack_base(stack))*sizeof(value));
 #endif
   } else {
 #ifdef DEBUG
@@ -448,7 +485,8 @@ CAMLprim value caml_continuation_use_noexc (value cont)
   value null_stk = Val_ptr(NULL);
   CAMLnoalloc;
 
-  fiber_debug_log("cont: is_block(%d) tag_val(%ul) is_young(%d)", Is_block(cont), Tag_val(cont), Is_young(cont));
+  fiber_debug_log("cont: is_block(%d) tag_val(%ul) is_young(%d)",
+                  Is_block(cont), Tag_val(cont), Is_young(cont));
   CAMLassert(Is_block(cont) && Tag_val(cont) == Cont_tag);
 
   /* this forms a barrier between execution and any other domains

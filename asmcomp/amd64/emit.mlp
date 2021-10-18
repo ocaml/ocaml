@@ -872,37 +872,27 @@ let rec emit_all env fallthrough i =
 let all_functions = ref []
 
 type preproc_fun_result =
-  {max_stack_size : int;
-   contains_nontail_calls : bool;
-   contains_external_calls : bool}
+  { max_stack_size : int;
+    contains_nontail_calls : bool }
 
 let preproc_fun env fun_body _fun_name =
-  let rec proc_instr r a i =
+  let rec proc_instr r s i =
     if i.desc = Lend then r else
         let upd_size r delta =
-          {r with max_stack_size = max r.max_stack_size (a+delta)}
+          {r with max_stack_size = max r.max_stack_size (s+delta)}
         in
-        let (r',a') = match i.desc with
-          | Lop (Istackoffset n) -> (upd_size r n, a+n)
-          | Lpushtrap _ -> (upd_size r 16, a+16)
-          | Lpoptrap -> (r, a-16)
-          | Lop (Iextcall _ | Ialloc _ | Ipoll _ | Iintop (Icheckbound)
-                 | Iintop_imm (Icheckbound, _)) ->
-              ({r with contains_external_calls = true;
-                       (* +24 bytes for caml_context *)
-                       max_stack_size = max r.max_stack_size (a+24)}, a)
+        let (r',s') = match i.desc with
+          | Lop (Istackoffset n) -> (upd_size r n, s+n)
+          | Lpushtrap _ -> (upd_size r 16, s+16)
+          | Lpoptrap -> (r, s-16)
           | Lop (Icall_ind | Icall_imm _ ) ->
-              ({r with contains_nontail_calls = true}, a)
-          | _ -> (r, a)
+              ({r with contains_nontail_calls = true}, s)
+          | _ -> (r, s)
         in
-        proc_instr r' a' i.next
+        proc_instr r' s' i.next
   in
   let fs = frame_size env in
-  let r =
-    {max_stack_size = fs;
-     contains_nontail_calls = false;
-     contains_external_calls = false}
-  in
+  let r = {max_stack_size = fs; contains_nontail_calls = false} in
   proc_instr r fs fun_body
 
 (* Emission of a function declaration *)
@@ -925,8 +915,9 @@ let fundecl fundecl =
   cfi_startproc ();
   if !Clflags.runtime_variant = "d" then
     emit_call "caml_assert_stack_invariants";
-  let { max_stack_size; contains_nontail_calls; contains_external_calls = _ } =
-    preproc_fun env fundecl.fun_body fundecl.fun_name in
+  let { max_stack_size; contains_nontail_calls} =
+    preproc_fun env fundecl.fun_body fundecl.fun_name
+  in
   let handle_overflow = ref None in
   if contains_nontail_calls || max_stack_size >= stack_threshold_size then begin
     let (overflow,ret) = new_label(), new_label() in
