@@ -42,7 +42,7 @@ let directories env =
   Actions_helpers.words_of_variable env Ocaml_variables.directories
 
 let directory_flags env =
-  let f dir = ("-I " ^ dir) in
+  let f dir = ("-I " ^ Filename.quote dir) in
   let l = List.map f (directories env) in
   String.concat " " l
 
@@ -617,7 +617,7 @@ let mklib log env =
   let commandline =
   [
     Ocaml_commands.ocamlrun_ocamlmklib;
-    "-ocamlc '" ^ ocamlc_command ^ "'";
+    "-ocamlc \"" ^ ocamlc_command ^ "\"";
     "-o " ^ program
   ] @ modules env in
   let expected_exit_status = 0 in
@@ -777,7 +777,7 @@ let cc = Actions.make "cc" run_cc
 
 let run_expect_once input_file principal log env =
   let expect_flags = Sys.safe_getenv "EXPECT_FLAGS" in
-  let repo_root = "-repo-root " ^ Ocaml_directories.srcdir in
+  let repo_root = "-repo-root " ^ Filename.quote Ocaml_directories.srcdir in
   let principal_flag = if principal then "-principal" else "" in
   let commandline =
   [

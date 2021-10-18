@@ -17,10 +17,10 @@
 
 let stdlib =
   let stdlib_path = Ocaml_directories.stdlib in
-  "-nostdlib -I " ^ stdlib_path
+  "-nostdlib -I " ^ Filename.quote stdlib_path
 
 let include_toplevel_directory =
-  "-I " ^ Ocaml_directories.toplevel
+  "-I " ^ Filename.quote Ocaml_directories.toplevel
 
 let c_includes =
   let dir = Ocaml_directories.runtime in
@@ -33,7 +33,7 @@ let runtime_variant_flags () = match Ocaml_files.runtime_variant() with
 
 let runtime_flags env backend c_files =
   let runtime_library_flags = "-I " ^
-    Ocaml_directories.runtime in
+    Filename.quote Ocaml_directories.runtime in
   let rt_flags = match backend with
     | Ocaml_backends.Native -> runtime_variant_flags ()
     | Ocaml_backends.Bytecode ->
