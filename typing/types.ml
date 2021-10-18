@@ -67,9 +67,9 @@ and any = [`some | `none | `var]
 and field_kind = [`some|`var] field_kind_gen
 and _ field_kind_gen =
     FKvar : {mutable field_kind: any field_kind_gen} -> [> `var] field_kind_gen
-  | FKprivate : [> `none] field_kind_gen (* was None as parameter to Fvar *)
-  | FKpublic  : [> `some] field_kind_gen (* was Fpresent *)
-  | FKabsent  : [> `some] field_kind_gen
+  | FKprivate : [> `none] field_kind_gen  (* private method; only under FKvar *)
+  | FKpublic  : [> `some] field_kind_gen  (* public method *)
+  | FKabsent  : [> `some] field_kind_gen  (* hidden private method *)
 
 and commutable = [`some|`var] commutable_gen
 and _ commutable_gen =
