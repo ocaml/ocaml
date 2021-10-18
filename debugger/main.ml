@@ -197,7 +197,7 @@ let speclist = [
    ]
 
 let function_placeholder () =
-  raise Not_found
+  failwith "custom printer tried to invoke a function from the debuggee"
 
 let report report_error error =
   eprintf "Debugger [version %s] environment error:@ @[@;%a@]@.;"
