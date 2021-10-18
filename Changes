@@ -50,6 +50,11 @@ Working version
 
 ### Standard library:
 
+* #10710: Add UTF tools, codecs and validations to the Uchar, Bytes and
+  String modules.
+  (Daniel Bünzli, review by Florian Angeletti, Nicolás Ojeda Bär, Alain
+   Frisch and Gabriel Scherer)
+
 * #10622: Annotate `Uchar.t` with immediate attribute
   (Hongbo Zhang, reivew by Gabriel Scherer and Nicolás Ojeda Bär)
 
