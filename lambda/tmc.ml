@@ -520,6 +520,7 @@ type context = {
 and specialized = {
   arity: int;
   dps_id: Ident.t;
+  direct_kind: function_kind;
 }
 
 let find_candidate = function
@@ -532,7 +533,8 @@ let declare_binding ctx (var, def) =
   | Some lfun ->
   let arity = List.length lfun.params in
   let dps_id = Ident.create_local (Ident.name var ^ "_dps") in
-  let cand = { arity; dps_id } in
+  let direct_kind = lfun.kind in
+  let cand = { arity; dps_id; direct_kind; } in
   { specialized = Ident.Map.add var cand ctx.specialized }
 
 let rec choice ctx t =
@@ -648,11 +650,24 @@ let rec choice ctx t =
                   Warnings.Tmc_breaks_tailcall;
               raise No_tmc
           in
+          let args =
+            (* Support of tupled functions: the [function_kind] of the
+               direct-style function is identical to the one of the
+               input function, which may be Tupled, but the dps
+               function is always Curried.
+
+               [find_exact_application] is in charge of recovering the
+               "real" argument list of a possibly-tupled call. *)
+            let kind, arity = specialized.direct_kind, specialized.arity in
+            match Lambda.find_exact_application kind ~arity apply.ap_args with
+            | None -> raise No_tmc
+            | Some args -> args
+          in
           {
             Choice.dps = Dps.make (fun ~tail ~dst ->
               Lapply { apply with
                        ap_func = Lvar specialized.dps_id;
-                       ap_args = add_dst_args dst apply.ap_args;
+                       ap_args = add_dst_args dst args;
                        ap_tailcall =
                          if tail
                          then Tailcall_expectation true
@@ -823,7 +838,10 @@ and traverse_binding ctx (var, def) =
       loc = lfun.loc;
     } in
     let dst_lam = { dst with offset = Lvar dst.offset } in
-    Lambda.duplicate @@ Lfunction { lfun with (* TODO check function_kind *)
+    Lambda.duplicate @@ Lfunction { lfun with
+      kind =
+        (* Support of Tupled function: see [choice_apply]. *)
+        Curried;
       params = add_dst_params dst lfun.params;
       body = Choice.dps ~tail:true ~dst:dst_lam fun_choice;
     } in
