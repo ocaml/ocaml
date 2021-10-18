@@ -1354,7 +1354,8 @@ let rec copy_sep ~cleanup_scope ~fixed ~free ~bound ~may_share
             copy_sep ~cleanup_scope ~fixed ~free ~bound ~may_share:true
               visited t1 in
           Tpoly (body, tl')
-      | Tfield (p, k, ty1, ty2) -> (* see Btype.copy_type_desc *)
+      | Tfield (p, k, ty1, ty2) ->
+          (* the kind is kept shared, see Btype.copy_type_desc *)
           Tfield (p, field_kind_internal_repr k, copy_rec ~may_share:true ty1,
                   copy_rec ~may_share:false ty2)
       | _ -> copy_type_desc (copy_rec ~may_share:true) desc
