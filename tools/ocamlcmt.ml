@@ -100,7 +100,7 @@ let print_info cmt =
 let generate_ml target_filename filename cmt =
   let (printer, ext) =
     match cmt.Cmt_format.cmt_annots with
-      | Cmt_format.Implementation typedtree ->
+      | Cmt_format.Implementation (typedtree, _coercion) ->
           (fun ppf -> Pprintast.structure ppf
                                         (Untypeast.untype_structure typedtree)),
           ".ml"
