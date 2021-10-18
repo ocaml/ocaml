@@ -702,6 +702,7 @@ stdlib__String.cmx : string.ml \
     stdlib__Bytes.cmx \
     stdlib__String.cmi
 stdlib__String.cmi : string.mli \
+    stdlib__Uchar.cmi \
     stdlib__Seq.cmi
 stdlib__StringLabels.cmo : stringLabels.ml \
     stdlib__String.cmi \
@@ -710,6 +711,7 @@ stdlib__StringLabels.cmx : stringLabels.ml \
     stdlib__String.cmx \
     stdlib__StringLabels.cmi
 stdlib__StringLabels.cmi : stringLabels.mli \
+    stdlib__Uchar.cmi \
     stdlib__Seq.cmi
 stdlib__Sys.cmo : sys.ml \
     stdlib__Sys.cmi

@@ -364,6 +364,40 @@ val of_seq : char Seq.t -> t
 
     @since 4.07 *)
 
+(** {1:utf UTF decoding and validations}
+
+    @since 4.14 *)
+
+(** {2:utf_8 UTF-8} *)
+
+val get_utf_8_uchar : t -> int -> Uchar.utf_decode
+(** [get_utf_8_uchar b i] decodes an UTF-8 character at index [i] in
+    [b]. *)
+
+val is_valid_utf_8 : t -> bool
+(** [is_valid_utf_8 b] is [true] if and only if [b] contains valid
+    UTF-8 data. *)
+
+(** {2:utf_16be UTF-16BE} *)
+
+val get_utf_16be_uchar : t -> int -> Uchar.utf_decode
+(** [get_utf_16be_uchar b i] decodes an UTF-16BE character at index
+    [i] in [b]. *)
+
+val is_valid_utf_16be : t -> bool
+(** [is_valid_utf_16be b] is [true] if and only if [b] contains valid
+    UTF-16BE data. *)
+
+(** {2:utf_16le UTF-16LE} *)
+
+val get_utf_16le_uchar : t -> int -> Uchar.utf_decode
+(** [get_utf_16le_uchar b i] decodes an UTF-16LE character at index
+    [i] in [b]. *)
+
+val is_valid_utf_16le : t -> bool
+(** [is_valid_utf_16le b] is [true] if and only if [b] contains valid
+    UTF-16LE data. *)
+
 (** {1:deprecated Deprecated functions} *)
 
 external create : int -> bytes = "caml_create_string"
