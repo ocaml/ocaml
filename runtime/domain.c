@@ -4,7 +4,9 @@
 /*                                                                        */
 /*      KC Sivaramakrishnan, Indian Institute of Technology, Madras       */
 /*                 Stephen Dolan, University of Cambridge                 */
+/*                   Tom Kelly, OCaml Labs Consultancy                    */
 /*                                                                        */
+/*   Copyright 2021 OCaml Labs Consultancy Ltd                            */
 /*   Copyright 2019 Indian Institute of Technology, Madras                */
 /*   Copyright 2019 University of Cambridge                               */
 /*                                                                        */
@@ -91,7 +93,10 @@ typedef struct dom_internal dom_internal;
 static struct {
   atomic_uintnat domains_still_running;
   atomic_uintnat num_domains_still_processing;
-  void (*callback)(caml_domain_state*, void*, int participating_count, caml_domain_state** others_participating);
+  void (*callback)(caml_domain_state*,
+                   void*,
+                   int participating_count,
+                   caml_domain_state** others_participating);
   void* data;
   void (*enter_spin_callback)(caml_domain_state*, void*);
   void* enter_spin_data;
@@ -114,7 +119,8 @@ static struct {
 };
 
 static caml_plat_mutex all_domains_lock = CAML_PLAT_MUTEX_INITIALIZER;
-static caml_plat_cond all_domains_cond = CAML_PLAT_COND_INITIALIZER(&all_domains_lock);
+static caml_plat_cond all_domains_cond =
+    CAML_PLAT_COND_INITIALIZER(&all_domains_lock);
 static atomic_uintnat /* dom_internal* */ stw_leader = 0;
 static struct dom_internal all_domains[Max_domains];
 
@@ -149,7 +155,8 @@ static void add_to_stw_domains(dom_internal* dom) {
 
   /* swap passed domain with domain at stw_domains.participating_domains */
   dom = stw_domains.domains[stw_domains.participating_domains];
-  stw_domains.domains[stw_domains.participating_domains] = stw_domains.domains[i];
+  stw_domains.domains[stw_domains.participating_domains] =
+      stw_domains.domains[i];
   stw_domains.domains[i] = dom;
   stw_domains.participating_domains++;
 }
@@ -163,7 +170,8 @@ static void remove_from_stw_domains(dom_internal* dom) {
 
   /* swap passed domain to first free domain */
   stw_domains.participating_domains--;
-  stw_domains.domains[i] = stw_domains.domains[stw_domains.participating_domains];
+  stw_domains.domains[i] =
+      stw_domains.domains[stw_domains.participating_domains];
   stw_domains.domains[stw_domains.participating_domains] = dom;
 }
 
@@ -291,19 +299,23 @@ int caml_reallocate_minor_heap(asize_t wsize)
   /* free old minor heap.
      instead of unmapping the heap, we decommit it, so there's
      no race whereby other code could attempt to reuse the memory. */
-  caml_mem_decommit((void*)domain_self->minor_heap_area,
-                    domain_self->minor_heap_area_end - domain_self->minor_heap_area);
+  caml_mem_decommit(
+      (void*)domain_self->minor_heap_area,
+      domain_self->minor_heap_area_end - domain_self->minor_heap_area);
 
   wsize = caml_norm_minor_heap_size(wsize);
 
-  if (!caml_mem_commit((void*)domain_self->minor_heap_area, Bsize_wsize(wsize))) {
+  if (!caml_mem_commit(
+          (void*)domain_self->minor_heap_area, Bsize_wsize(wsize))) {
     return -1;
   }
 
 #ifdef DEBUG
   {
     uintnat* p = (uintnat*)domain_self->minor_heap_area;
-    for (; p < (uintnat*)(domain_self->minor_heap_area + Bsize_wsize(wsize)); p++)
+    for (;
+         p < (uintnat*)(domain_self->minor_heap_area + Bsize_wsize(wsize));
+         p++)
       *p = Debug_uninit_align;
   }
 #endif
@@ -311,7 +323,8 @@ int caml_reallocate_minor_heap(asize_t wsize)
   domain_state->minor_heap_wsz = wsize;
 
   domain_state->young_start = (value*)domain_self->minor_heap_area;
-  domain_state->young_end = (value*)(domain_self->minor_heap_area + Bsize_wsize(wsize));
+  domain_state->young_end =
+      (value*)(domain_self->minor_heap_area + Bsize_wsize(wsize));
   domain_state->young_limit = (uintnat) domain_state->young_start;
   domain_state->young_ptr = domain_state->young_end;
   return 0;
@@ -336,7 +349,8 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
       caml_domain_state* domain_state;
       atomic_uintnat* young_limit;
       /* never been started before, so set up minor heap */
-      if (!caml_mem_commit((void*)d->tls_area, (d->tls_area_end - d->tls_area))) {
+      if (!caml_mem_commit(
+              (void*)d->tls_area, (d->tls_area_end - d->tls_area))) {
         /* give up now */
         d = 0;
         goto domain_init_complete;
@@ -395,7 +409,8 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
     domain_state->dls_root = Val_unit;
     caml_register_generational_global_root(&domain_state->dls_root);
 
-    domain_state->unique_token_root = caml_alloc_shr_noexc(Abstract_tag, Val_unit);
+    domain_state->unique_token_root =
+        caml_alloc_shr_noexc(Abstract_tag, Val_unit);
     if(domain_state->unique_token_root == (value)NULL) {
       goto create_unique_token_failure;
     }
@@ -484,7 +499,8 @@ void caml_init_domains(uintnat minor_heap_wsz) {
   void* tls_base;
 
   /* sanity check configuration */
-  if (caml_mem_round_up_pages(Bsize_wsize(Minor_heap_max)) != Bsize_wsize(Minor_heap_max))
+  if (caml_mem_round_up_pages(Bsize_wsize(Minor_heap_max))
+          != Bsize_wsize(Minor_heap_max))
     caml_fatal_error("Minor_heap_max misconfigured for this platform");
 
   /* reserve memory space for minor heaps and tls_areas */
@@ -493,7 +509,8 @@ void caml_init_domains(uintnat minor_heap_wsz) {
   tls_areas_size = tls_size * Max_domains;
 
   heaps_base = caml_mem_map(size, size, 1 /* reserve_only */);
-  tls_base = caml_mem_map(tls_areas_size, tls_areas_size, 1 /* reserve_only */);
+  tls_base =
+      caml_mem_map(tls_areas_size, tls_areas_size, 1 /* reserve_only */);
   if (!heaps_base || !tls_base) caml_raise_out_of_memory();
 
   caml_minor_heaps_base = (uintnat) heaps_base;
@@ -529,7 +546,8 @@ void caml_init_domains(uintnat minor_heap_wsz) {
     dom->tls_area = domain_tls_base;
     dom->tls_area_end = domain_tls_base + tls_size;
     dom->minor_heap_area = domain_minor_heap_base;
-    dom->minor_heap_area_end = domain_minor_heap_base + Bsize_wsize(Minor_heap_max);
+    dom->minor_heap_area_end =
+         domain_minor_heap_base + Bsize_wsize(Minor_heap_max);
   }
 
   create_domain(minor_heap_wsz);
@@ -554,7 +572,11 @@ struct domain_ml_values {
   value mutex;
 };
 
-static void init_domain_ml_values(struct domain_ml_values* ml_values, value callback, value mutex) {
+static void init_domain_ml_values(
+  struct domain_ml_values* ml_values,
+  value callback,
+  value mutex)
+{
   ml_values->callback = callback;
   ml_values->mutex = mutex;
   caml_register_generational_global_root(&ml_values->callback);
@@ -655,7 +677,7 @@ static void install_backup_thread (dom_internal* di)
     }
 
     atomic_store_rel(&di->backup_thread_msg, BT_ENTERING_OCAML);
-    err = pthread_create (&di->backup_thread, 0, backup_thread_func, (void*)di);
+    err = pthread_create(&di->backup_thread, 0, backup_thread_func, (void*)di);
     if (err)
       caml_failwith("failed to create domain backup thread");
     di->backup_thread_running = 1;
@@ -740,7 +762,9 @@ CAMLprim value caml_domain_spawn(value callback, value mutex)
   p.parent = &domain_self->interruptor;
   p.status = Dom_starting;
 
-  p.ml_values = (struct domain_ml_values*) caml_stat_alloc_noexc(sizeof(struct domain_ml_values));
+  p.ml_values =
+      (struct domain_ml_values*) caml_stat_alloc_noexc(
+                                    sizeof(struct domain_ml_values));
   if (!p.ml_values) {
     caml_failwith("failed to create ml values for domain thread");
   }
@@ -838,7 +862,8 @@ static void decrement_stw_domains_still_processing()
   /* we check if we are the last to leave a stw section
      if so, clear the stw_leader to allow the new stw sections to start.
    */
-  intnat am_last = atomic_fetch_add(&stw_request.num_domains_still_processing, -1) == 1;
+  intnat am_last =
+      atomic_fetch_add(&stw_request.num_domains_still_processing, -1) == 1;
 
   if( am_last ) {
     /* release the STW lock to allow new STW sections */
@@ -869,7 +894,11 @@ static void stw_handler(caml_domain_state* domain)
   #ifdef DEBUG
   Caml_state->inside_stw_handler = 1;
   #endif
-  stw_request.callback(domain, stw_request.data, stw_request.num_domains, stw_request.participating);
+  stw_request.callback(
+      domain,
+      stw_request.data,
+      stw_request.num_domains,
+      stw_request.participating);
   #ifdef DEBUG
   Caml_state->inside_stw_handler = 0;
   #endif
@@ -892,9 +921,11 @@ int caml_domain_is_in_stw() {
 #endif
 
 int caml_try_run_on_all_domains_with_spin_work(
-  void (*handler)(caml_domain_state*, void*, int, caml_domain_state**), void* data,
+  void (*handler)(caml_domain_state*, void*, int, caml_domain_state**),
+  void* data,
   void (*leader_setup)(caml_domain_state*),
-  void (*enter_spin_callback)(caml_domain_state*, void*), void* enter_spin_data)
+  void (*enter_spin_callback)(caml_domain_state*, void*),
+  void* enter_spin_data)
 {
   int i;
   caml_domain_state* domain_state = domain_self->state;
@@ -975,7 +1006,8 @@ int caml_try_run_on_all_domains_with_spin_work(
   #ifdef DEBUG
   domain_state->inside_stw_handler = 1;
   #endif
-  handler(domain_state, data, stw_request.num_domains, stw_request.participating);
+  handler(domain_state, data,
+          stw_request.num_domains, stw_request.participating);
   #ifdef DEBUG
   domain_state->inside_stw_handler = 0;
   #endif
@@ -987,9 +1019,15 @@ int caml_try_run_on_all_domains_with_spin_work(
   return 1;
 }
 
-int caml_try_run_on_all_domains(void (*handler)(caml_domain_state*, void*, int, caml_domain_state**), void* data, void (*leader_setup)(caml_domain_state*))
+int caml_try_run_on_all_domains(
+  void (*handler)(caml_domain_state*, void*, int, caml_domain_state**),
+  void* data,
+  void (*leader_setup)(caml_domain_state*))
 {
-  return caml_try_run_on_all_domains_with_spin_work(handler, data, leader_setup, 0, 0);
+  return
+      caml_try_run_on_all_domains_with_spin_work(handler,
+                                                 data,
+                                                 leader_setup, 0, 0);
 }
 
 int caml_check_pending_actions() {
@@ -1032,7 +1070,8 @@ static void caml_poll_gc_work()
     CAML_EV_END(EV_MAJOR);
   }
 
-  if (atomic_load_acq((atomic_uintnat*)&Caml_state->requested_external_interrupt)) {
+  if (atomic_load_acq(
+          (atomic_uintnat*)&Caml_state->requested_external_interrupt)) {
     caml_domain_external_interrupt_hook();
   }
 
@@ -1048,7 +1087,8 @@ static void handle_gc_interrupt() {
     CAML_EV_BEGIN(EV_INTERRUPT_REMOTE);
     while (atomic_load_acq(young_limit) == INTERRUPT_MAGIC) {
       uintnat i = INTERRUPT_MAGIC;
-      atomic_compare_exchange_strong(young_limit, &i, (uintnat)Caml_state->young_start);
+      atomic_compare_exchange_strong(
+          young_limit, &i, (uintnat)Caml_state->young_start);
     }
     caml_handle_incoming_interrupts();
     CAML_EV_END(EV_INTERRUPT_REMOTE);
