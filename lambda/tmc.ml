@@ -102,21 +102,26 @@ module Constr = struct
     loc : Debuginfo.Scoped_location.t;
   }
 
-  let apply ?flag con t =
-    let flag = match flag with None -> con.flag | Some flag -> flag in
-    let block_args = List.append con.before @@ t :: con.after in
-    Lprim (Pmakeblock (con.tag, flag, con.shape), block_args, con.loc)
+  let apply ?flag constr t =
+    let flag = match flag with None -> constr.flag | Some flag -> flag in
+    let block_args = List.append constr.before @@ t :: constr.after in
+    Lprim (Pmakeblock (constr.tag, flag, constr.shape), block_args, constr.loc)
 
   let tmc_placeholder = Lconst (Const_base (Const_int 0))
   (* TODO consider using a more magical constant like 42, for debugging? *)
 
-  let with_placeholder con (body : lambda destination -> lambda -> lambda) : lambda =
-    let k_with_placeholder = apply ~flag:Mutable con tmc_placeholder in
-    let placeholder_pos = List.length con.before in
+  let with_placeholder constr (body : lambda destination -> lambda -> lambda) =
+    let k_with_placeholder = apply ~flag:Mutable constr tmc_placeholder in
+    let placeholder_pos = List.length constr.before in
     let placeholder_pos_lam = Lconst (Const_base (Const_int placeholder_pos)) in
     let block_var = Ident.create_local "block" in
     Llet (Strict, Pgenval, block_var, k_with_placeholder,
-          body { var = block_var; offset = placeholder_pos_lam ; loc = con.loc } (Lvar block_var))
+          body
+            {
+              var = block_var;
+              offset = placeholder_pos_lam ;
+              loc = constr.loc;
+            } (Lvar block_var))
 
   (** We want to delay the application of the constructor to a later time.
       This may move the constructor application below some effectful
@@ -150,11 +155,11 @@ module Constr = struct
           | None -> body
           | Some (v, lam) -> Llet(Strict, Pgenval, v, lam, body)
         ) bindings body in
-    fun ~block_id con body ->
-    bind_list ~block_id ~arg_offset:0 con.before @@ fun vbefore ->
-    let arg_offset = List.length con.before + 1 in
-    bind_list ~block_id ~arg_offset con.after @@ fun vafter ->
-    body { con with before = vbefore; after = vafter }
+    fun ~block_id constr body ->
+    bind_list ~block_id ~arg_offset:0 constr.before @@ fun vbefore ->
+    let arg_offset = List.length constr.before + 1 in
+    bind_list ~block_id ~arg_offset constr.after @@ fun vafter ->
+    body { constr with before = vbefore; after = vafter }
 end
 
 (** The type ['a Dps.t] (destination-passing-style) represents a
@@ -262,7 +267,7 @@ end = struct
 
   let write_to_dst dst delayed t =
     assign_to_dst dst @@
-    List.fold_left (fun t con -> Constr.apply con t) t delayed
+    List.fold_left (fun t constr -> Constr.apply constr t) t delayed
 
   let return (v : lambda) : lambda t = {
     code = (fun ~delayed ~tail:_ ~dst ->
@@ -324,12 +329,12 @@ end = struct
   let make (dps : 'a dps) : 'a t =
     reify_delay dps
 
-  let delay_constructor con d =
+  let delay_constructor constr d =
     let d = ensures_affine d in {
       code = (fun ~delayed ~tail ~dst ->
         let block_id = List.length delayed in
-        Constr.delay_impure ~block_id con @@ fun con ->
-        d.code ~tail ~dst ~delayed:(con :: delayed));
+        Constr.delay_impure ~block_id constr @@ fun constr ->
+        d.code ~tail ~dst ~delayed:(constr :: delayed));
       delayed_use_count = d.delayed_use_count;
     }
 end
@@ -691,7 +696,7 @@ let rec choice ctx t =
     | Choice.No_tmc_call args ->
         Choice.return @@ Lprim (Pmakeblock (tag, flag, shape), args, loc)
     | Choice.Nonambiguous { Choice.rev_before; choice; after } ->
-        let con = Constr.{
+        let constr = Constr.{
             tag;
             flag;
             shape;
@@ -703,9 +708,9 @@ let rec choice ctx t =
         {
           Choice.direct = (fun () ->
             if not choice.benefits_from_dps then
-              Constr.apply con (Choice.direct choice)
+              Constr.apply constr (Choice.direct choice)
             else
-              Constr.with_placeholder con @@ fun block_dst block ->
+              Constr.with_placeholder constr @@ fun block_dst block ->
               Lsequence(Choice.dps choice ~tail:false ~dst:block_dst,
                         block));
           benefits_from_dps =
@@ -714,7 +719,7 @@ let rec choice ctx t =
                subterm, so the number of TMC sub-calls is identical
                in the [direct] and [dps] versions. *)
             false;
-          dps = Dps.delay_constructor con choice.dps;
+          dps = Dps.delay_constructor constr choice.dps;
           has_tmc_calls =
             (* [choice] must have TMC calls, because that is what the
                [find_nonambiguous_tmc_call] function looks for. *)
