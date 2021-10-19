@@ -63,8 +63,6 @@ CAMLextern void (*caml_domain_external_interrupt_hook)(void);
 void caml_init_domains(uintnat minor_heap_size);
 void caml_init_domain_self(int);
 
-caml_domain_state* caml_owner_of_young_block(value);
-
 CAMLextern atomic_uintnat caml_num_domains_running;
 CAMLextern uintnat caml_minor_heaps_base;
 CAMLextern uintnat caml_minor_heaps_end;
@@ -79,10 +77,15 @@ int caml_domain_is_in_stw();
 #endif
 
 int caml_try_run_on_all_domains_with_spin_work(
-  void (*handler)(caml_domain_state*, void*, int, caml_domain_state**), void* data,
+  void (*handler)(caml_domain_state*, void*, int, caml_domain_state**),
+  void* data,
   void (*leader_setup)(caml_domain_state*),
-  void (*enter_spin_callback)(caml_domain_state*, void*), void* enter_spin_data);
-int caml_try_run_on_all_domains(void (*handler)(caml_domain_state*, void*, int, caml_domain_state**), void*, void (*leader_setup)(caml_domain_state*));
+  void (*enter_spin_callback)(caml_domain_state*, void*),
+  void* enter_spin_data);
+int caml_try_run_on_all_domains(
+  void (*handler)(caml_domain_state*, void*, int, caml_domain_state**),
+  void*,
+  void (*leader_setup)(caml_domain_state*));
 
 /* barriers */
 typedef uintnat barrier_status;
