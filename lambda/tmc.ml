@@ -559,6 +559,11 @@ and specialized = {
   direct_kind: function_kind;
 }
 
+let llets lk vk bindings body =
+  List.fold_right (fun (var, def) body ->
+    Llet (lk, vk, var, def, body)
+  ) bindings body
+
 let find_candidate = function
   | Lfunction lfun when lfun.attr.tmc_candidate -> Some lfun
   | _ -> None
@@ -602,15 +607,14 @@ let rec choice ctx t =
         let+ (l2, l3) = choice_pair ctx ~tail (l2, l3) in
         Lifthenelse (l1, l2, l3)
     | Lmutlet (vk, var, def, body) ->
-        (* non-recursive bindings are not specialized *)
+        (* mutable bindings are not TRMC-specialized *)
         let def = traverse ctx def in
         let+ body = choice ctx ~tail body in
         Lmutlet (vk, var, def, body)
     | Llet (lk, vk, var, def, body) ->
-        (* non-recursive bindings are not specialized *)
-        let def = traverse ctx def in
+        let ctx, bindings = traverse_let ctx var def in
         let+ body = choice ctx ~tail body in
-        Llet (lk, vk, var, def, body)
+        llets lk vk bindings body
     | Lletrec (bindings, body) ->
         let ctx, bindings = traverse_letrec ctx bindings in
         let+ body = choice ctx ~tail body in
@@ -844,23 +848,32 @@ let rec choice ctx t =
   in choice ctx t
 
 and traverse ctx = function
+  | Llet (lk, vk, var, def, body) ->
+      let ctx, bindings = traverse_let ctx var def in
+      let body = traverse ctx body in
+      llets lk vk bindings body
   | Lletrec (bindings, body) ->
       let ctx, bindings = traverse_letrec ctx bindings in
       Lletrec (bindings, traverse ctx body)
   | lam ->
       shallow_map (traverse ctx) lam
 
+and traverse_let outer_ctx var def =
+  let inner_ctx = declare_binding outer_ctx (var, def) in
+  let bindings = traverse_binding outer_ctx inner_ctx (var, def) in
+  inner_ctx, bindings
+
 and traverse_letrec ctx bindings =
   let ctx = List.fold_left declare_binding ctx bindings in
-  let bindings = List.concat_map (traverse_binding ctx) bindings in
+  let bindings = List.concat_map (traverse_binding ctx ctx) bindings in
   ctx, bindings
 
-and traverse_binding ctx (var, def) =
+and traverse_binding outer_ctx inner_ctx (var, def) =
   match find_candidate def with
-  | None -> [(var, traverse ctx def)]
+  | None -> [(var, traverse outer_ctx def)]
   | Some lfun ->
-  let special = Ident.Map.find var ctx.specialized in
-  let fun_choice = choice ctx ~tail:true lfun.body in
+  let special = Ident.Map.find var inner_ctx.specialized in
+  let fun_choice = choice outer_ctx ~tail:true lfun.body in
   if not fun_choice.Choice.has_tmc_calls then
     Location.prerr_warning
       (Debuginfo.Scoped_location.to_location lfun.loc)
