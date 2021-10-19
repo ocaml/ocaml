@@ -138,8 +138,10 @@ end = struct
     let block_args = List.append constr.before @@ t :: constr.after in
     Lprim (Pmakeblock (constr.tag, constr.flag, constr.shape), block_args, constr.loc)
 
-  let tmc_placeholder = Lconst (Const_base (Const_int 0))
-  (* TODO consider using a more magical constant like 42, for debugging? *)
+  let tmc_placeholder =
+    (* we choose a placeholder whose tagged representation will be
+       reconizable. *)
+    Lconst (Const_base (Const_int (0xBBBB / 2)))
 
   let with_placeholder constr (body : lambda destination -> lambda) =
     let k_with_placeholder = apply { constr with flag = Mutable } tmc_placeholder in
