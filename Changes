@@ -259,6 +259,11 @@ Working version
 
 ### Bug fixes:
 
+- #9214, #10709: Wrong unmarshaling of function pointers in debugger mode.
+  This was causing ocamldebug to crash when running some user-defined printers.
+  (Xavier Leroy, report by Rehan Malak, review by Gabriel Scherer and
+   Vincent Laviron)
+
 - #10473: Add CFI directives to RISC-V runtime and asmcomp.
   This allows stacktraces to work in gdb through C and OCaml calls.
   (Edwin Török, review by Nicolás Ojeda Bär and Xavier Leroy)
@@ -297,6 +302,8 @@ Working version
 - #10702: Fix cast of more strictly aligned pointer in win32unix
   implementation of stat
   (Antonin Décimo, review by David Allsopp)
+
+
 
 OCaml 4.13 maintenance branch
 -----------------------------
