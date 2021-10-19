@@ -180,7 +180,7 @@ module Dps : sig
   val run : lambda t -> lambda dps
   val delay_constructor : Constr.t -> lambda t -> lambda t
 
-  val return : lambda -> lambda t
+  val lambda : lambda -> lambda t
   val map : ('a -> 'b) -> 'a t -> 'b t
   val pair : 'a t -> 'b t -> ('a * 'b) t
   val unit : unit t
@@ -269,7 +269,7 @@ end = struct
     assign_to_dst dst @@
     List.fold_left (fun t constr -> Constr.apply constr t) t delayed
 
-  let return (v : lambda) : lambda t = {
+  let lambda (v : lambda) : lambda t = {
     code = (fun ~delayed ~tail:_ ~dst ->
       write_to_dst dst delayed v
     );
@@ -408,8 +408,8 @@ module Choice = struct
        because the situation is ambiguous.
    *)
 
-  let return (v : lambda) : lambda t = {
-    dps = Dps.return v;
+  let lambda (v : lambda) : lambda t = {
+    dps = Dps.lambda v;
     direct = (fun () -> v);
     has_tmc_calls = false;
     benefits_from_dps = false;
@@ -449,6 +449,9 @@ module Choice = struct
     benefits_from_dps = false;
     explicit_tailcall_request = false;
   }
+  (* Remark: we could define [pure v] as [map (fun () -> v) unit],
+     but we prefer to have the code explicit about using [unit],
+     in particular as it ignores the destination argument. *)
 
   module Syntax = struct
     let (let+) a f = map f a
@@ -548,7 +551,7 @@ let rec choice ctx t =
     | (Lvar _ | Lmutvar _ | Lconst _ | Lfunction _ | Lsend _
       | Lassign _ | Lfor _ | Lwhile _) ->
         let t = traverse ctx t in
-        Choice.return t
+        Choice.lambda t
 
     (* [choice_prim] handles most primitives, but the important case of construction
        [Lprim(Pmakeblock(...), ...)] is handled by [choice_makeblock] *)
@@ -610,7 +613,7 @@ let rec choice ctx t =
         Lstringswitch (l1, cases, fail, loc)
     | Lstaticraise (id, ls) ->
         let ls = traverse_list ctx ls in
-        Choice.return (Lstaticraise (id, ls))
+        Choice.lambda (Lstaticraise (id, ls))
     | Ltrywith (l1, id, l2) ->
         (* in [try l1 with id -> l2], the term [l1] is
            not in tail-call position (after it returns
@@ -684,7 +687,7 @@ let rec choice ctx t =
             benefits_from_dps = true;
           }
       | _nontail -> raise No_tmc
-    with No_tmc -> Choice.return (Lapply apply)
+    with No_tmc -> Choice.lambda (Lapply apply)
 
   and choice_makeblock ctx ~tail:_ (tag, flag, shape) blockargs loc =
     let choices = List.map (choice ctx ~tail:false) blockargs in
@@ -694,7 +697,7 @@ let rec choice ctx t =
         raise (Error (Debuginfo.Scoped_location.to_location loc,
                       Ambiguous_constructor_arguments subterms))
     | Choice.No_tmc_call args ->
-        Choice.return @@ Lprim (Pmakeblock (tag, flag, shape), args, loc)
+        Choice.lambda @@ Lprim (Pmakeblock (tag, flag, shape), args, loc)
     | Choice.Nonambiguous { Choice.rev_before; choice; after } ->
         let constr = Constr.{
             tag;
@@ -801,7 +804,7 @@ let rec choice ctx t =
     | Pint_as_pointer
       ->
         let primargs = traverse_list ctx primargs in
-        Choice.return (Lprim (prim, primargs, loc))
+        Choice.lambda (Lprim (prim, primargs, loc))
 
   and choice_list ctx ~tail terms =
     Choice.list (List.map (choice ctx ~tail) terms)
