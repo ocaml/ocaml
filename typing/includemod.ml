@@ -221,6 +221,17 @@ let expand_module_alias ~pres env path =
   | x -> Ok x
   | exception Not_found -> Error (Error.Unbound_module_path path)
 
+let concrete_normalize_module_path oloc env path =
+  match
+    Env.normalize_module_path_spine oloc env path
+  with
+  | (Some p, _) -> p (* Expand to a concrete path if possible. *)
+  | (None, Some p_constructor) ->
+      (* There is no concrete path, normalize the constructor path and
+         expand it. *)
+      Env.normalize_module_path oloc env p_constructor
+  | (None, None) -> assert false
+
 (* Extract name, kind and ident from a signature item *)
 
 type field_kind =
@@ -320,10 +331,40 @@ and print_coercion3 ppf (i, n, c) =
 
 (* Simplify a structure coercion *)
 
-let equal_module_paths env p1 p2 =
+let rec compatible_module_paths env p1 p2 =
   Path.same p1 p2
-  || Path.same (Env.normalize_module_path None env p1)
-       (Env.normalize_module_path None env p2)
+  || begin match
+       ( Env.normalize_module_path_spine None env p1
+       , Env.normalize_module_path_spine None env p2 )
+     with
+     | ((Some p1, _), (Some p2, _)) ->
+         (* Concrete paths, check whether they are the same. *)
+         Path.same p1 p2
+     | ((None, _), (Some _p2, _)) ->
+         (* There is no concrete path for the p1, so it isn't compatible. *)
+         false
+     | ((_, Some p1_constructor), (None, Some p2_constructor)) ->
+         (* Both p1 and p2 are constructed, walk along their spines and check
+            that they use the same constructors. *)
+         compatible_constructor_paths env p1_constructor p2_constructor
+     | ((_, None), (None, Some _p2_constructor)) ->
+         (* p2 is constructed, but there is no constructor for p1, so it isn't
+            compatible. *)
+         false
+     | (_, (None, None)) -> assert false
+  end
+
+and compatible_constructor_paths env p1 p2 =
+  p1 == p2
+  || begin match p1, p2 with
+     | (Path.Pident id1, Path.Pident id2) -> Ident.same id1 id2
+     | (Path.Pdot (p1, s1), Path.Pdot (p2, s2)) ->
+         s1 = s2 && compatible_constructor_paths env p1 p2
+     | (Path.Papply (fun1, arg1), Path.Papply (fun2, arg2)) ->
+         compatible_constructor_paths env fun1 fun2
+         && compatible_module_paths env arg1 arg2
+     | _ -> false
+     end
 
 let equal_modtype_paths env p1 subst p2 =
   Path.same p1 p2
@@ -393,7 +434,7 @@ and try_modtypes ~in_eq ~loc env target_env ~mark subst mty1 mty2 =
         Error (Error.Invalid_module_alias p2)
       else begin
         let p2' = Subst.module_path subst p2 in
-        if equal_module_paths env p1 p2' then begin
+        if compatible_module_paths env p1 p2' then begin
           if pres2 = Mp_absent || Path.same p2 p2' then Ok Tcoerce_none
           else begin
             (* This path contains local references, we may need to build a
@@ -426,7 +467,7 @@ and try_modtypes ~in_eq ~loc env target_env ~mark subst mty1 mty2 =
       end
   | (Mty_alias (p1, pres1), _) -> begin
       match
-        Env.normalize_module_path (Some Location.none) env p1
+        concrete_normalize_module_path (Some Location.none) env p1
       with
       | exception Env.Error (Env.Missing_module (_, _, path)) ->
           Error Error.(Mt_core(Unbound_module_path path))

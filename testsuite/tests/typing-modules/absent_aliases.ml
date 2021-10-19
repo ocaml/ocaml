@@ -342,7 +342,7 @@ module X : sig module N : sig end end
 Lines 4-6, characters 6-3:
 4 | ......struct
 5 |   module type S = module type of struct include X end
-6 | end..
+6 | end........................................
 Error: Signature mismatch:
        Modules do not match:
          sig module type S = sig module N = X.N end end

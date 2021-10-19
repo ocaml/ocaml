@@ -118,6 +118,19 @@ val normalize_module_path: Location.t option -> t -> Path.t -> Path.t
    Otherwise raise a Missing_module error, and may add forgotten
    head as required global. *)
 
+val normalize_module_path_spine:
+    Location.t option -> t -> Path.t -> Path.t option * Path.t option
+(* Normalize the path along its 'spine', i.e. normalizing any functors or
+   submodules, but not walking into any functor arguments.
+   Returns [(concrete_path, functor_instance)], where [concrete_path] is the
+   path to the concrete source of the module -- if available -- and
+   [functor_instance] is the normalized path of functor applications that
+   generated this module.
+   At least one of the returned values is always [Some _].
+   If the optional location is None, allow returning dangling paths.
+   Otherwise raise a Missing_module error, and may add forgotten
+   head as required global. *)
+
 val normalize_type_path: Location.t option -> t -> Path.t -> Path.t
 (* Normalize the prefix part of the type path *)
 

@@ -2162,7 +2162,10 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
         in
         match mty with
         | Mty_alias (p1, pres) when not alias ->
-            let p1 = Env.normalize_module_path (Some smod.pmod_loc) env p1 in
+            let p1 =
+              Includemod.concrete_normalize_module_path (Some smod.pmod_loc)
+                env p1
+            in
             let pres = if sttn then Some pres else None in
             let mty = Includemod.expand_module_alias ~pres env p1 in
             { md with

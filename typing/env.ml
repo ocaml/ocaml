@@ -1231,6 +1231,121 @@ let add_required_global id =
   && not (List.exists (Ident.same id) !required_globals)
   then required_globals := id :: !required_globals
 
+let rec is_functor_arg path env =
+  match path with
+    Pident id ->
+      begin try Ident.find_same id env.functor_args; true
+      with Not_found -> false
+      end
+  | Pdot (p, _s) -> is_functor_arg p env
+  | Papply _ -> true
+
+let rec normalize_module_path_spine lax env = function
+  | Pident id as path when lax && Ident.persistent id ->
+      Some path, None (* fast path (avoids lookup) *)
+  | Pdot (p, s) as path ->
+      let p', p_f' = normalize_module_path_spine lax env p in
+      begin match p_f' with
+      | Some p_f' ->
+          (* There is a functor application, try to expand more.
+             Note that we only need to expand the [Pdot (p_f', s)]: we know
+             that p' is constructed by p_f', so any subpath of p' was
+             constructed by the corresponding subpath of p_f'. *)
+          let p_f = Pdot (p_f', s) in
+          let p'', p_f'' = expand_module_path_spine lax env p_f None in
+          let dot = Option.map (fun x -> (Pdot (x, s))) in
+          begin match p'' with
+          | Some p'' when p'' == p_f ->
+              (* No progress was made. *)
+              (dot p', Some p_f)
+          | Some p'' ->
+              (* Found a better equality expansion. *)
+              let p_f =
+                match p_f'' with
+                | Some p_f -> Some p_f
+                | None -> Some p_f
+              in
+              (Some p'', p_f)
+          | None ->
+              (* Found a better functor expansion. *)
+              (dot p', p_f'')
+          end
+      | None ->
+          (* This path is canonical and has no construction path. Expand it. *)
+          let p' = match p' with | Some p' -> p' | None -> assert false in
+          if p == p' then expand_module_path_spine lax env path None
+          else expand_module_path_spine lax env (Pdot(p', s)) None
+      end
+  | Papply (p1, p2) as path ->
+      let p1', p1_f' = normalize_module_path_spine lax env p1 in
+      let p1' =
+        match p1', p1_f' with
+        | _, Some p1 | Some p1, _ -> p1
+        | None, None -> assert false
+      in
+      let p' = if p1 == p1' then path else Papply(p1', p2) in
+      let p'', p_f'' = expand_module_path_spine lax env p' None in
+      begin match p_f'' with
+      | Some p_f'' ->
+          (* Found a better functor expansion. *)
+          (p'', Some p_f'')
+      | None ->
+          let p'' =
+            match p'' with
+            | Some p'' when p'' == p' ->
+                (* This isn't a concrete path, do not treat it as one. *)
+                None
+            | _ -> p''
+          in
+          (* Use this as the functor expansion. *)
+          (p'', Some p')
+      end
+  | Pident _ as path ->
+      begin match expand_module_path_spine lax env path None with
+      | (Some p', _) when p' == path && is_functor_arg path env ->
+          (* Functor argument paths aren't concrete, they may be erased. *)
+          (None, Some path)
+      | res -> res
+      end
+
+and expand_module_path_spine lax env path p_f =
+  try match find_module_lazy ~alias:true path env with
+    {mdl_type=MtyL_alias (path1, _pres)} ->
+      let path', p_f' = normalize_module_path_spine lax env path1 in
+      let res =
+        match p_f', path' with
+        | Some _, Some _ -> (path', p_f')
+        | Some _, None ->
+            if is_functor_arg path env then (path', p_f') else (Some path, p_f')
+        | None, _ -> (path', p_f)
+      in
+      if lax || !Clflags.transparent_modules then res else
+      let id = Path.head path in
+      let hd_path =
+        match path', p_f' with
+        | (Some p, _) | (_, Some p) -> p
+        | (None, None) -> assert false
+      in
+      if Ident.global id && not (Ident.same id (Path.head hd_path))
+      then add_required_global id;
+      res
+  | _ -> (Some path, p_f)
+  with Not_found when lax
+  || (match path with Pident id -> not (Ident.persistent id) | _ -> true) ->
+      (Some path, p_f)
+
+let normalize_module_path_spine oloc env path =
+  try normalize_module_path_spine (oloc = None) env path
+  with Not_found ->
+    match oloc with None -> assert false
+    | Some loc ->
+        let res_path =
+          match normalize_module_path_spine true env path with
+          | (Some p, _) | (_, Some p) -> p
+          | (None, None) -> assert false
+        in
+        error (Missing_module(loc, path, res_path))
+
 let rec normalize_module_path lax env = function
   | Pident id as path when lax && Ident.persistent id ->
       path (* fast path (avoids lookup) *)
@@ -1310,7 +1425,10 @@ and expand_modtype_path env path =
 
 let may_alias_absent env path =
   Path.simple_global path
-  || Path.simple_global (normalize_module_path None env path)
+  || begin match normalize_module_path_spine None env path with
+     | (Some path, _) -> Path.simple_global path
+     | (None, _) -> false (* No such concrete path. *)
+     end
 
 let find_module path env =
   find_module ~alias:false path env
@@ -1354,15 +1472,6 @@ let find_modtype_expansion_lazy path env =
 
 let find_modtype_expansion path env =
   Subst.Lazy.force_modtype (find_modtype_expansion_lazy path env)
-
-let rec is_functor_arg path env =
-  match path with
-    Pident id ->
-      begin try Ident.find_same id env.functor_args; true
-      with Not_found -> false
-      end
-  | Pdot (p, _s) -> is_functor_arg p env
-  | Papply _ -> true
 
 (* Copying types associated with values *)
 

@@ -218,6 +218,11 @@ exception Apply_error of {
 val expand_module_alias:
   pres:Types.module_presence option -> Env.t -> Path.t -> Types.module_type
 
+val concrete_normalize_module_path:
+  Location.t option -> Env.t -> Path.t -> Path.t
+(** Returns a normalized concrete module path whenever possible, or a concrete
+    path containing functors if none such exist. *)
+
 module Functor_inclusion_diff: sig
   module Defs: sig
     type left = Types.functor_parameter
