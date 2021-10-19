@@ -1,3 +1,21 @@
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*      KC Sivaramakrishnan, Indian Institute of Technology, Madras       */
+/*                   Tom Kelly, OCaml Labs Consultancy                    */
+/*                Stephen Dolan, University of Cambridge                  */
+/*                                                                        */
+/*   Copyright 2021 Indian Institute of Technology, Madras                */
+/*   Copyright 2021 OCaml Labs Consultancy                                */
+/*   Copyright 2019 University of Cambridge                               */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
 #ifndef CAML_FIBER_H
 #define CAML_FIBER_H
 
@@ -36,9 +54,11 @@ struct stack_info {
   uintnat magic;
 };
 
-CAML_STATIC_ASSERT(sizeof(struct stack_info) == Stack_ctx_words * sizeof(value));
+CAML_STATIC_ASSERT(sizeof(struct stack_info) ==
+                   Stack_ctx_words * sizeof(value));
 #define Stack_base(stk) ((value*)(stk + 1))
-#define Stack_threshold_ptr(stk) (Stack_base(stk) + Stack_threshold / sizeof(value))
+#define Stack_threshold_ptr(stk) \
+  (Stack_base(stk) + Stack_threshold / sizeof(value))
 #define Stack_high(stk) (value*)stk->handler
 
 #define Stack_handle_value(stk) (stk)->handler->handle_value
@@ -58,7 +78,7 @@ CAML_STATIC_ASSERT(sizeof(struct stack_info) == Stack_ctx_words * sizeof(value))
  * |                        |
  * +------------------------+ <--- Stack_threshold
  * |                        |
- * .      Slop space        .
+ * .        Red Zone        .
  * |                        |
  * +------------------------+ <--- Stack_base
  * |   struct stack_info    |
@@ -67,8 +87,14 @@ CAML_STATIC_ASSERT(sizeof(struct stack_info) == Stack_ctx_words * sizeof(value))
  * +------------------------+
  */
 
+/* This structure is used for storing the OCaml return pointer when
+ * transitioning from an OCaml stack to a C stack at a C call. When an OCaml
+ * stack is reallocated, this linked list is walked to update the OCaml stack
+ * pointers. It is also used for DWARF backtraces. */
 struct c_stack_link {
+  /* The reference to the OCaml stack */
   struct stack_info* stack;
+  /* OCaml return address */
   void* sp;
   struct c_stack_link* prev;
 };
@@ -83,7 +109,8 @@ extern value caml_global_data;
 
 struct stack_info** caml_alloc_stack_cache (void);
 struct stack_info* caml_alloc_main_stack (uintnat init_size);
-void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack, value* v_gc_regs);
+void caml_scan_stack(scanning_action f, void* fdata,
+                     struct stack_info* stack, value* v_gc_regs);
 /* try to grow the stack until at least required_size words are available.
    returns nonzero on success */
 int caml_try_realloc_stack (asize_t required_size);
@@ -92,7 +119,8 @@ void caml_maybe_expand_stack();
 void caml_free_stack(struct stack_info* stk);
 
 #ifdef NATIVE_CODE
-void caml_get_stack_sp_pc (struct stack_info* stack, char** sp /* out */, uintnat* pc /* out */);
+void caml_get_stack_sp_pc (struct stack_info* stack,
+                           char** sp /* out */, uintnat* pc /* out */);
 #endif
 
 value caml_continuation_use (value cont);
