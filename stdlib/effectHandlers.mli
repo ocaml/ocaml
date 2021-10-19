@@ -30,14 +30,23 @@ module Deep : sig
   val continue: ('a, 'b) continuation -> 'a -> 'b
   (** [continue k x] resumes the continuation [k] by passing [x] to [k].
 
-      @raise Invalid_argument if the continuation has already been
+      @raise Continuation_alread_taken if the continuation has already been
       resumed. *)
 
   val discontinue: ('a, 'b) continuation -> exn -> 'b
   (** [discontinue k e] resumes the continuation [k] by raising the
       exception [e] in [k].
 
-      @raise Invalid_argument if the continuation has already been
+      @raise Continuation_already_taken if the continuation has already been
+      resumed. *)
+
+  val discontinue_with_backtrace:
+    ('a, 'b) continuation -> exn -> Printexc.raw_backtrace -> 'b
+  (** [discontinue_with_backtrace k e bt] resumes the continuation [k] by
+      raising the exception [e] in [k] using [bt] as the origin for the
+      exception.
+
+      @raise Continuation_already_taken if the continuation has already been
       resumed. *)
 
   type ('a,'b) handler =
@@ -89,15 +98,29 @@ module Shallow : sig
   (** [continue_with k v h] resumes the continuation [k] with value [v] with
       the handler [h].
 
-      @raise Invalid_argument if the continuation has already been resumed.
+      @raise Continuation_already_taken if the continuation has already been
+      resumed.
    *)
 
   val discontinue_with : ('a,'b) continuation -> exn -> ('b,'c) handler -> 'c
   (** [discontinue_with k e h] resumes the continuation [k] by raising the
       exception [e] with the handler [h].
 
-      @raise Invalid_argument if the continuation has already been resumed.
+      @raise Continuation_already_taken if the continuation has already been
+      resumed.
    *)
+
+  val discontinue_with_backtrace :
+    ('a,'b) continuation -> exn -> Printexc.raw_backtrace ->
+    ('b,'c) handler -> 'c
+  (** [discontinue_with k e bt h] resumes the continuation [k] by raising the
+      exception [e] with the handler [h] using the raw backtrace [bt] as the
+      origin of the exception.
+
+      @raise Continuation_already_taken if the continuation has already been
+      resumed.
+   *)
+
 
   external get_callstack :
     ('a,'b) continuation -> int -> Printexc.raw_backtrace =
