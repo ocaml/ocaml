@@ -15,34 +15,21 @@
 
 /* POSIX thread implementation of the "st" interface */
 
-#define CAML_INTERNALS
-
-#include "caml/alloc.h"
-#include "caml/domain_state.h"
-#include "caml/platform.h"
-#include "caml/custom.h"
-#include "caml/memory.h"
-#include "caml/fail.h"
-#include "caml/alloc.h"
-#include "caml/startup.h"
-#include "caml/fiber.h"
-#include "caml/callback.h"
-#include "caml/weak.h"
-#include "caml/finalise.h"
-#include "caml/domain.h"
-#include "caml/printexc.h"
-#include "caml/backtrace.h"
-#include "caml/signals.h"
-
+#include <assert.h>
+#include <errno.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <pthread.h>
 #include <signal.h>
-#ifdef HAS_SYS_SELECT_H
-#include <sys/select.h>
+#include <time.h>
+#include <caml/sync.h>
+#include <sys/time.h>
+#ifdef __linux__
+#include <unistd.h>
 #endif
 
 typedef int st_retcode;
-
-#define Thread_timeout 50
 
 /* Variables used to stop "tick" threads */
 static atomic_uintnat tick_thread_stop[Max_domains];
@@ -84,12 +71,6 @@ Caml_inline void st_thread_cleanup(void)
   return;
 }
 
-static void st_thread_join(st_thread_id thr)
-{
-  pthread_join(thr, NULL);
-  /* best effort: ignore errors */
-}
-
 /* Thread termination */
 
 CAMLnoreturn_start
@@ -99,6 +80,12 @@ CAMLnoreturn_end;
 static void st_thread_exit(void)
 {
   pthread_exit(NULL);
+}
+
+static void st_thread_join(st_thread_id thr)
+{
+  pthread_join(thr, NULL);
+  /* best effort: ignore errors */
 }
 
 /* Thread-specific state */
@@ -135,13 +122,14 @@ typedef struct {
   pthread_mutex_t lock;           /* to protect contents */
   atomic_uintnat busy;            /* 0 = free, 1 = taken */
   atomic_uintnat waiters;         /* number of threads waiting on master lock */
-  pthread_cond_t free;            /* signaled when free */
+  pthread_cond_t is_free;         /* signaled when free */
 } st_masterlock;
 
-static void st_masterlock_init(st_masterlock *m) {
+static void st_masterlock_init(st_masterlock * m)
+{
 
   pthread_mutex_init(&m->lock, NULL);
-  pthread_cond_init(&m->free, NULL);
+  pthread_cond_init(&m->is_free, NULL);
   atomic_store_rel(&m->busy, 1);
   atomic_store_rel(&m->waiters, 0);
 
@@ -182,7 +170,7 @@ static void st_masterlock_acquire(st_masterlock *m)
   pthread_mutex_lock(&m->lock);
   while (atomic_load_acq(&m->busy)) {
     atomic_fetch_add(&m->waiters, +1);
-    pthread_cond_wait(&m->free, &m->lock);
+    pthread_cond_wait(&m->is_free, &m->lock);
     atomic_fetch_add(&m->waiters, -1);
   }
   atomic_store_rel(&m->busy, 1);
@@ -197,7 +185,7 @@ static void st_masterlock_release(st_masterlock * m)
   pthread_mutex_lock(&m->lock);
   atomic_store_rel(&m->busy, 0);
   st_bt_lock_release(m);
-  pthread_cond_signal(&m->free);
+  pthread_cond_signal(&m->is_free);
   pthread_mutex_unlock(&m->lock);
 
   return;
@@ -212,7 +200,6 @@ static void st_masterlock_release(st_masterlock * m)
    off the lock to a waiter we know exists, it's safe, as they'll certainly
    re-wake us later.
 */
-
 Caml_inline void st_thread_yield(st_masterlock * m)
 {
   uintnat waiters;
@@ -231,20 +218,20 @@ Caml_inline void st_thread_yield(st_masterlock * m)
   }
 
   atomic_store_rel(&m->busy, 0);
-
-  pthread_cond_signal(&m->free);
+  atomic_fetch_add(&m->waiters, +1);
+  pthread_cond_signal(&m->is_free);
   // releasing the domain lock but not triggering bt messaging
   // messaging the bt should not be required because yield assumes
   // that a thread will resume execution (be it the yielding thread
   // or a waiting thread
   caml_release_domain_lock();
-  atomic_fetch_add(&m->waiters, +1);
+
   do {
     /* Note: the POSIX spec prevents the above signal from pairing with this
        wait, which is good: we'll reliably continue waiting until the next
        yield() or enter_blocking_section() call (or we see a spurious condvar
        wakeup, which are rare at best.) */
-       pthread_cond_wait(&m->free, &m->lock);
+       pthread_cond_wait(&m->is_free, &m->lock);
   } while (atomic_load_acq(&m->busy));
 
   atomic_store_rel(&m->busy, 1);
@@ -368,7 +355,7 @@ static void st_decode_sigset(value vset, sigset_t * set)
 {
   sigemptyset(set);
   while (vset != Val_int(0)) {
-    int sig = caml_convert_signal_number(Int_field(vset, 0));
+    int sig = caml_convert_signal_number(Int_val(Field(vset, 0)));
     sigaddset(set, sig);
     vset = Field(vset, 1);
   }
@@ -387,9 +374,8 @@ static value st_encode_sigset(sigset_t * set)
     for (i = 1; i < NSIG; i++)
       if (sigismember(set, i) > 0) {
         value newcons = caml_alloc_small(2, 0);
-        caml_modify(&Field(newcons, 0),
-                    Val_int(caml_rev_convert_signal_number(i)));
-        caml_modify(&Field(newcons, 1), res);
+        Field(newcons, 0) = Val_int(caml_rev_convert_signal_number(i));
+        Field(newcons, 1) = res;
         res = newcons;
       }
   End_roots();
