@@ -51,13 +51,13 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/osdeps.h"
-#include "caml/startup_aux.h"
 #include "caml/prims.h"
 #include "caml/printexc.h"
 #include "caml/reverse.h"
 #include "caml/signals.h"
 #include "caml/sys.h"
 #include "caml/startup.h"
+#include "caml/startup_aux.h"
 
 #include "build_config.h"
 
@@ -70,18 +70,6 @@
 #endif
 
 static char magicstr[EXEC_MAGIC_LENGTH+1];
-static int print_magic = 0;
-
-/* Print the specified error message followed by an end-of-line and exit */
-static void error(char *msg, ...)
-{
-  va_list ap;
-  va_start(ap, msg);
-  vfprintf (stderr, msg, ap);
-  va_end(ap);
-  fprintf(stderr, "\n");
-  exit(127);
-}
 
 /* Read the trailer of a bytecode file */
 
@@ -102,7 +90,7 @@ static int read_trailer(int fd, struct exec_trailer *trail)
   memcpy(magicstr, trail->magic, EXEC_MAGIC_LENGTH);
   magicstr[EXEC_MAGIC_LENGTH] = 0;
 
-  if (print_magic) {
+  if (caml_params->print_magic) {
     printf("%s\n", magicstr);
     exit(0);
   }
@@ -248,6 +236,31 @@ static char_os * read_section_to_os(int fd, struct exec_trailer *trail,
 
 #endif
 
+/* Invocation of ocamlrun: 4 cases.
+
+   1.  runtime + bytecode
+       user types:  ocamlrun [options] bytecode args...
+       arguments:  ocamlrun [options] bytecode args...
+
+   2.  bytecode script
+       user types:  bytecode args...
+   2a  (kernel 1) arguments:  ocamlrun ./bytecode args...
+   2b  (kernel 2) arguments:  bytecode bytecode args...
+
+   3.  concatenated runtime and bytecode
+       user types:  composite args...
+       arguments:  composite args...
+
+Algorithm:
+  1-  If argument 0 is a valid byte-code file that does not start with #!,
+      then we are in case 3 and we pass the same command line to the
+      OCaml program.
+  2-  In all other cases, we parse the command line as:
+        (whatever) [options] bytecode args...
+      and we strip "(whatever) [options]" from the command line.
+
+*/
+
 #ifdef _WIN32
 extern void caml_signal_thread(void * lpParam);
 #endif
@@ -271,6 +284,7 @@ CAMLexport void caml_main(char_os **argv)
   char_os * shared_lib_path, * shared_libs;
   char_os * exe_name, * proc_self_exe;
 
+  /* Initialize the domain */
   CAML_INIT_DOMAIN_STATE;
 
   /* Determine options */
@@ -310,22 +324,22 @@ CAMLexport void caml_main(char_os **argv)
   if (fd < 0) {
     pos = caml_parse_command_line(argv);
     if (argv[pos] == 0) {
-      error("no bytecode file specified");
+      caml_command_error("no bytecode file specified");
     }
     exe_name = argv[pos];
     fd = caml_attempt_open(&exe_name, &trail, 1);
     switch(fd) {
     case FILE_NOT_FOUND:
-      error("cannot find file '%s'",
+      caml_command_error("cannot find file '%s'",
                        caml_stat_strdup_of_os(argv[pos]));
       break;
     case BAD_BYTECODE:
-      error(
+      caml_command_error(
         "the file '%s' is not a bytecode executable file",
         caml_stat_strdup_of_os(exe_name));
       break;
     case WRONG_MAGIC:
-      error(
+      caml_command_error(
         "the file '%s' has not the right magic number: "\
         "expected %s, got %s",
         caml_stat_strdup_of_os(exe_name),
@@ -340,7 +354,6 @@ CAMLexport void caml_main(char_os **argv)
   /* Initialize the abstract machine */
   caml_init_gc ();
   Caml_state->external_raise = NULL;
-  if (caml_params->backtrace_enabled) caml_record_backtraces(1);
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
   /* Initialize the debugger, if needed */
@@ -403,6 +416,7 @@ CAMLexport value caml_startup_code_exn(
 {
   char_os * exe_name;
 
+  /* Initialize the domain */
   CAML_INIT_DOMAIN_STATE;
 
   /* Determine options */
@@ -446,7 +460,8 @@ CAMLexport value caml_startup_code_exn(
   /* Use the builtin table of primitives */
   caml_build_primitive_table_builtin();
   /* Load the globals */
-  caml_modify_generational_global_root(&caml_global_data, caml_input_value_from_block(data, data_size));
+  caml_modify_generational_global_root
+    (&caml_global_data, caml_input_value_from_block(data, data_size));
   caml_minor_collection(); /* ensure all globals are in major heap */
   /* Record the sections (for caml_get_section_table in meta.c) */
   caml_init_section_table(section_table, section_table_size);

@@ -39,6 +39,8 @@ struct caml_params {
   uintnat eventlog_enabled;
   uintnat verify_heap;
   uintnat print_stats;
+  uintnat print_magic;
+  uintnat print_config;
 
   uintnat init_percent_free;
   uintnat init_max_percent_free;
@@ -61,6 +63,7 @@ extern const struct caml_params* const caml_params;
 
 extern void caml_parse_ocamlrunparam (void);
 extern int caml_parse_command_line (char_os **argv);
+extern void caml_command_error(char *msg, ...);
 
 /* Common entry point to caml_startup.
    Returns 0 if the runtime is already initialized.

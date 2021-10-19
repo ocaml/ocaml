@@ -23,6 +23,7 @@
 #include <pthread.h>
 #include <string.h>
 #include "caml/alloc.h"
+#include "caml/backtrace.h"
 #include "caml/callback.h"
 #include "caml/domain.h"
 #include "caml/domain_state.h"
@@ -441,6 +442,11 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
     domain_state->backtrace_buffer = NULL;
     domain_state->backtrace_last_exn = Val_unit;
     caml_register_generational_global_root(&domain_state->backtrace_last_exn);
+
+    if (caml_params->backtrace_enabled) {
+      caml_record_backtraces(1);
+    }
+
 #ifndef NATIVE_CODE
     domain_state->external_raise = NULL;
     domain_state->trap_sp_off = 1;
