@@ -200,7 +200,8 @@ Working version
    review by Leo White and Florian Angeletti)
 
 - #10541: Make field_kind and commutable abstract, enforcing correct access
-  (Jacques Garrigue and Takafumi Saikawa, review by Thomas Refis)
+  (Jacques Garrigue and Takafumi Saikawa,
+   review by Thomas Refis and Florian Angeletti)
 
 - #10433: Remove the distinction between 32-bit aligned and 64-bit aligned
   64-bit floats in Cmm.memory_chunk.
