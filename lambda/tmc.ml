@@ -88,11 +88,11 @@ let assign_to_dst {var; offset; loc} lam =
   Lprim(Psetfield_computed(Pointer, Heap_initialization),
         [Lvar var; offset; lam], loc)
 
-(** The type [Constr.t] represents a reified constructor with a single hole, which can
-    be either directly applied to a [lambda] term, or be used to create
-    a fresh [lambda destination] with a placeholder.
- *)
-module Constr = struct
+module Constr : sig
+  (** The type [Constr.t] represents a reified constructor with a single hole, which can
+      be either directly applied to a [lambda] term, or be used to create
+      a fresh [lambda destination] with a placeholder.
+  *)
   type t = {
     tag : int;
     flag: Asttypes.mutable_flag;
@@ -102,33 +102,57 @@ module Constr = struct
     loc : Debuginfo.Scoped_location.t;
   }
 
-  let apply ?flag constr t =
-    let flag = match flag with None -> constr.flag | Some flag -> flag in
+  (** [apply constr e] plugs the expression [e] in the hole of the constructor [const]. *)
+  val apply : t -> lambda -> lambda
+
+  (** [with_placeholder constr body] binds a placeholder
+      for the constructor [constr] within the scope of [body]. *)
+  val with_placeholder : t -> (lambda destination -> lambda) -> lambda
+
+  (** We may want to delay the application of a constructor to a later
+      time. This may move the constructor application below some
+      effectful expressions (for example if we move into a context of
+      the form [foo; bar_with_tmc_inside]), and we want to preserve
+      the evaluation order of the other arguments of the
+      constructor. So we bind them before proceeding, unless they are
+      obviously side-effect free.
+
+      [delay_impure ~block_id constr body] binds all inpure arguments
+      of the constructor [constr] within the scope of [body], which is
+      passed a pure constructor.
+
+      [block_id] is a counter that is used as a suffix in the generated
+      variable names, for readability purposes. *)
+  val delay_impure : block_id:int -> t -> (t -> lambda) -> lambda
+end = struct
+  type t = {
+    tag : int;
+    flag: Asttypes.mutable_flag;
+    shape : block_shape;
+    before: lambda list;
+    after: lambda list;
+    loc : Debuginfo.Scoped_location.t;
+  }
+
+  let apply constr t =
     let block_args = List.append constr.before @@ t :: constr.after in
-    Lprim (Pmakeblock (constr.tag, flag, constr.shape), block_args, constr.loc)
+    Lprim (Pmakeblock (constr.tag, constr.flag, constr.shape), block_args, constr.loc)
 
   let tmc_placeholder = Lconst (Const_base (Const_int 0))
   (* TODO consider using a more magical constant like 42, for debugging? *)
 
-  let with_placeholder constr (body : lambda destination -> lambda -> lambda) =
-    let k_with_placeholder = apply ~flag:Mutable constr tmc_placeholder in
+  let with_placeholder constr (body : lambda destination -> lambda) =
+    let k_with_placeholder = apply { constr with flag = Mutable } tmc_placeholder in
     let placeholder_pos = List.length constr.before in
     let placeholder_pos_lam = Lconst (Const_base (Const_int placeholder_pos)) in
     let block_var = Ident.create_local "block" in
     Llet (Strict, Pgenval, block_var, k_with_placeholder,
-          body
-            {
-              var = block_var;
-              offset = placeholder_pos_lam ;
-              loc = constr.loc;
-            } (Lvar block_var))
+          body {
+            var = block_var;
+            offset = placeholder_pos_lam ;
+            loc = constr.loc;
+          })
 
-  (** We want to delay the application of the constructor to a later time.
-      This may move the constructor application below some effectful
-      expressions (if we move into a context of the form [foo;
-      bar_with_tmc_inside] for example), and we want to preserve the
-      evaluation order of the other arguments of the constructor.  So we bind
-      them before proceeding, unless they are obviously side-effect free. *)
   let delay_impure : block_id:int -> t -> (t -> lambda) -> lambda =
     let bind_list ~block_id ~arg_offset lambdas k =
       let can_be_delayed =
@@ -309,10 +333,10 @@ end = struct
       match delayed with
       | [] -> dps ~tail ~dst
       | x :: xs ->
-          Constr.with_placeholder x @@ fun block_dst block ->
+          Constr.with_placeholder x @@ fun new_dst ->
           Lsequence (
-            write_to_dst dst xs block,
-            dps ~tail ~dst:block_dst)
+            write_to_dst dst xs (Lvar new_dst.var),
+            dps ~tail ~dst:new_dst)
     );
     delayed_use_count = 1;
   }
@@ -713,9 +737,9 @@ let rec choice ctx t =
             if not choice.benefits_from_dps then
               Constr.apply constr (Choice.direct choice)
             else
-              Constr.with_placeholder constr @@ fun block_dst block ->
-              Lsequence(Choice.dps choice ~tail:false ~dst:block_dst,
-                        block));
+              Constr.with_placeholder constr @@ fun new_dst ->
+              Lsequence(Choice.dps choice ~tail:false ~dst:new_dst,
+                        Lvar new_dst.var));
           benefits_from_dps =
             (* Whether or not the caller provides a destination,
                we can always provide a destination to our settable
