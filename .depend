@@ -1707,6 +1707,7 @@ typing/typeopt.cmo : \
     typing/type_immediacy.cmi \
     typing/predef.cmi \
     typing/path.cmi \
+    utils/numbers.cmi \
     lambda/lambda.cmi \
     typing/ident.cmi \
     typing/env.cmi \
@@ -1722,6 +1723,7 @@ typing/typeopt.cmx : \
     typing/type_immediacy.cmx \
     typing/predef.cmx \
     typing/path.cmx \
+    utils/numbers.cmx \
     lambda/lambda.cmx \
     typing/ident.cmx \
     typing/env.cmx \
