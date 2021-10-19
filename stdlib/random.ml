@@ -137,7 +137,7 @@ module State = struct
 
 end
 
-let default_origin =
+let default =
   State.make
     [| 0b001001000011111101101010100010;
        0b001000010110100011000010001101;
@@ -149,7 +149,6 @@ let default_origin =
        0b111010100110001110110001001110 |]
 (* These are the first 240 binary digits of the fractional part of pi,
    as eight 30-bit integers. *)
-let default = State.copy default_origin
 
 let bits () = State.bits default
 let int bound = State.int default bound
@@ -165,16 +164,14 @@ let nativebits () = State.nativebits default
 
 (* Seeding *)
 
-let full_init seed =
-  State.reinit default_origin seed;
-  State.assign default default_origin
-
+let full_init seed = State.reinit default seed
 let init seed = full_init [| seed |]
 let self_init () = full_init (random_seed())
 
 (* Generating a new independent state by jumping *)
 
-let jump () = State.jump default_origin; State.copy default_origin
+let jump () =
+  let st = State.copy default in State.jump default; st
 
 (* Manipulating the current state. *)
 

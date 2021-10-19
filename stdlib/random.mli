@@ -137,11 +137,15 @@ val set_state : State.t -> unit
 (** Set the state of the generator used by the basic functions. *)
 
 val jump : unit -> State.t
-(** Return a fresh PRNG state that is obtained by "jumping" from the
-    initial state of the generator used by the default functions.
-    "Jumping", here, means advancing the state as if a great many numbers
-    (here, 2{^128} numbers) were drawn from this state.
-    The state returned by {!Random.jump} is statistically independent
-    from the state used by the default functions.
+(** Return a fresh PRNG state that is statistically independent
+    from the state of the generator used by the basic functions.
     Data can be drawn from both states, in any order, without risk of
-    correlation. *)
+    correlation.
+    Multiple calls to {!Random.jump} will return PRNG states that
+    are pairwise statistically independent.
+    This is implemented by returning a copy of the current state of the
+    generator used by the basic functions, then jumping this generator,
+    i.e. advancing it as if a great many numbers (here, 2{^128} numbers)
+    were drawn from this generator.
+*)
+
