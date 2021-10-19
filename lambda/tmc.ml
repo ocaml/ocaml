@@ -65,7 +65,7 @@ type 'offset destination = {
   offset: 'offset;
   loc : Debuginfo.Scoped_location.t;
 }
-and offset = lambda
+and offset = Offset of lambda
 (** In the OCaml value model, interior pointers are not allowed.  To
     represent the "placeholder to mutate" in DPS code, we thus use a pair
     of the block containing the placeholder, and the offset of the
@@ -78,15 +78,17 @@ and offset = lambda
     offsets (where the offset is an integer).
 *)
 
+let offset_code (Offset t) = t
+
 let add_dst_params ({var; offset} : Ident.t destination) params =
   (var, Pgenval) :: (offset, Pintval) :: params
 
 let add_dst_args ({var; offset} : offset destination) args =
-  Lvar var :: offset :: args
+  Lvar var :: offset_code offset :: args
 
 let assign_to_dst {var; offset; loc} lam =
   Lprim(Psetfield_computed(Pointer, Heap_initialization),
-        [Lvar var; offset; lam], loc)
+        [Lvar var; offset_code offset; lam], loc)
 
 module Constr : sig
   (** The type [Constr.t] represents a reified constructor with a single hole, which can
@@ -107,7 +109,7 @@ module Constr : sig
 
   (** [with_placeholder constr body] binds a placeholder
       for the constructor [constr] within the scope of [body]. *)
-  val with_placeholder : t -> (lambda destination -> lambda) -> lambda
+  val with_placeholder : t -> (offset destination -> lambda) -> lambda
 
   (** We may want to delay the application of a constructor to a later
       time. This may move the constructor application below some
@@ -143,7 +145,7 @@ end = struct
        reconizable. *)
     Lconst (Const_base (Const_int (0xBBBB / 2)))
 
-  let with_placeholder constr (body : lambda destination -> lambda) =
+  let with_placeholder constr (body : offset destination -> lambda) =
     let k_with_placeholder = apply { constr with flag = Mutable } tmc_placeholder in
     let placeholder_pos = List.length constr.before in
     let placeholder_pos_lam = Lconst (Const_base (Const_int placeholder_pos)) in
@@ -151,7 +153,7 @@ end = struct
     Llet (Strict, Pgenval, block_var, k_with_placeholder,
           body {
             var = block_var;
-            offset = placeholder_pos_lam ;
+            offset = Offset placeholder_pos_lam ;
             loc = constr.loc;
           })
 
@@ -194,7 +196,7 @@ end
     a [(lambda * lambda) Dps.t] represents two subterms parametrized
     over the same destination. *)
 module Dps : sig
-  type 'a dps = tail:bool -> dst:lambda destination -> 'a
+  type 'a dps = tail:bool -> dst:offset destination -> 'a
   (** A term parameterized over a destination.  The [tail] argument
       is passed by the caller to indicate whether the term will be placed
       in tail-position -- this allows to generate correct @tailcall
@@ -211,7 +213,7 @@ module Dps : sig
   val pair : 'a t -> 'b t -> ('a * 'b) t
   val unit : unit t
 end = struct
-  type 'a dps = tail:bool -> dst:lambda destination -> 'a
+  type 'a dps = tail:bool -> dst:offset destination -> 'a
 
   type 'a t = {
     code : delayed:Constr.t list -> 'a dps;
@@ -866,18 +868,18 @@ and traverse_binding ctx (var, def) =
   let direct =
     Lfunction { lfun with body = Choice.direct fun_choice } in
   let dps =
-    let dst = {
+    let dst_param = {
       var = Ident.create_local "dst";
       offset = Ident.create_local "offset";
       loc = lfun.loc;
     } in
-    let dst_lam = { dst with offset = Lvar dst.offset } in
+    let dst = { dst_param with offset = Offset (Lvar dst_param.offset) } in
     Lambda.duplicate @@ Lfunction { lfun with
       kind =
         (* Support of Tupled function: see [choice_apply]. *)
         Curried;
-      params = add_dst_params dst lfun.params;
-      body = Choice.dps ~tail:true ~dst:dst_lam fun_choice;
+      params = add_dst_params dst_param lfun.params;
+      body = Choice.dps ~tail:true ~dst:dst fun_choice;
     } in
   let dps_var = special.dps_id in
   [(var, direct); (dps_var, dps)]
