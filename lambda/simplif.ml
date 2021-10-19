@@ -333,23 +333,8 @@ let simplify_exits lam =
 *)
 
 let exact_application {kind; params; _} args =
-  match kind with
-  | Curried ->
-      if List.length params <> List.length args
-      then None
-      else Some args
-  | Tupled ->
-      begin match args with
-      | [Lprim(Pmakeblock _, tupled_args, _)] ->
-          if List.length params <> List.length tupled_args
-          then None
-          else Some tupled_args
-      | [Lconst(Const_block (_, const_args))] ->
-          if List.length params <> List.length const_args
-          then None
-          else Some (List.map (fun cst -> Lconst cst) const_args)
-      | _ -> None
-      end
+  let arity = List.length params in
+  Lambda.find_exact_application kind ~arity args
 
 let beta_reduce params body args =
   List.fold_left2 (fun l (param, kind) arg -> Llet(Strict, kind, param, arg, l))
