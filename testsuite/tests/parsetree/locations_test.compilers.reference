@@ -568,7 +568,7 @@ Ptop_def
           expression (//toplevel//[4,19+8]..[4,19+26])
             Pexp_open Fresh
             module_expr (//toplevel//[4,19+8]..[4,19+9])
-              Pmod_ident "M" (//toplevel//[4,19+8]..[4,19+9]) Mp_present
+              Pmod_ident "M" (//toplevel//[4,19+8]..[4,19+9])
             expression (//toplevel//[4,19+10]..[4,19+26])
               Pexp_record
               [
@@ -592,7 +592,7 @@ Ptop_def
           expression (//toplevel//[2,1+8]..[2,1+18])
             Pexp_open Fresh
             module_expr (//toplevel//[2,1+8]..[2,1+9])
-              Pmod_ident "M" (//toplevel//[2,1+8]..[2,1+9]) Mp_present
+              Pmod_ident "M" (//toplevel//[2,1+8]..[2,1+9])
             expression (//toplevel//[2,1+10]..[2,1+18])
               Pexp_construct "::" (//toplevel//[2,1+12]..[2,1+18]) ghost
               Some
@@ -629,7 +629,7 @@ Ptop_def
           expression (//toplevel//[2,1+8]..[2,1+18])
             Pexp_open Fresh
             module_expr (//toplevel//[2,1+8]..[2,1+9])
-              Pmod_ident "M" (//toplevel//[2,1+8]..[2,1+9]) Mp_present
+              Pmod_ident "M" (//toplevel//[2,1+8]..[2,1+9])
             expression (//toplevel//[2,1+12]..[2,1+16])
               Pexp_sequence
               expression (//toplevel//[2,1+12]..[2,1+13])
