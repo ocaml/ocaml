@@ -505,7 +505,7 @@ and transl_module ~scopes cc rootpath mexp =
     mexp.mod_attributes;
   let loc = of_location ~scopes mexp.mod_loc in
   match mexp.mod_desc with
-  | Tmod_ident (path,_,_) ->
+  | Tmod_ident (path,_) ->
       apply_coercion loc Strict cc
         (transl_module_path loc mexp.mod_env path)
   | Tmod_structure str ->

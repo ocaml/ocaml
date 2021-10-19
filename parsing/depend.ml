@@ -416,14 +416,14 @@ and open_declaration bv od =
 
 and add_module_binding bv modl =
   match modl.pmod_desc with
-    Pmod_ident (l, _) -> add_module_alias bv l
+    Pmod_ident l -> add_module_alias bv l
   | Pmod_structure s ->
      make_node (snd @@ add_structure_binding bv s)
   | _ -> add_module_expr bv modl; bound
 
 and add_module_expr bv modl =
   match modl.pmod_desc with
-    Pmod_ident (l, _) -> add_module_path bv l
+    Pmod_ident l -> add_module_path bv l
   | Pmod_structure s -> ignore (add_structure bv s)
   | Pmod_functor(param, modl) ->
       let bv =

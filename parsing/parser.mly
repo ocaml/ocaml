@@ -1315,7 +1315,7 @@ module_expr:
   | mkmod(
       (* A module identifier. *)
       x = mkrhs(mod_longident)
-        { Pmod_ident (x, Mp_present) }
+        { Pmod_ident x }
     | (* In a functor application, the actual argument must be parenthesized. *)
       me1 = module_expr me2 = paren_module_expr
         { Pmod_apply(me1, me2) }
@@ -1461,8 +1461,6 @@ structure_item:
 module_binding_body:
     EQUAL me = module_expr
       { me }
-  | EQUALEQUAL x = mkrhs(mod_longident) attrs = attributes
-      { mkmod ~loc:$loc(x) ~attrs (Pmod_ident (x, Mp_absent)) }
   | mkmod(
       COLON mty = module_type EQUAL me = module_expr
         { Pmod_constraint(me, mty) }
@@ -1584,7 +1582,7 @@ open_description:
 
 %inline open_dot_declaration: mkrhs(mod_longident)
   { let loc = make_loc $loc($1) in
-    let me = Mod.ident ~loc $1 Mp_present in
+    let me = Mod.ident ~loc $1 in
     Opn.mk ~loc me }
 ;
 

@@ -307,7 +307,7 @@ module M = struct
     sub.location sub loc;
     sub.attributes sub attrs;
     match desc with
-    | Pmod_ident (x, _mp) -> iter_loc sub x
+    | Pmod_ident x -> iter_loc sub x
     | Pmod_structure str -> sub.structure sub str
     | Pmod_functor (param, body) ->
         iter_functor_param sub param;

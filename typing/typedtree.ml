@@ -248,7 +248,7 @@ and functor_parameter =
   | Named of Ident.t option * string option loc * module_type
 
 and module_expr_desc =
-    Tmod_ident of Path.t * Longident.t loc * module_presence
+    Tmod_ident of Path.t * Longident.t loc
   | Tmod_structure of structure
   | Tmod_functor of functor_parameter * module_expr
   | Tmod_apply of module_expr * module_expr * module_coercion

@@ -797,9 +797,7 @@ and module_expr i ppf x =
   attributes i ppf x.pmod_attributes;
   let i = i+1 in
   match x.pmod_desc with
-  | Pmod_ident (li, mp) ->
-      line i ppf "Pmod_ident %a %a\n" fmt_longident_loc li
-        fmt_module_presence mp;
+  | Pmod_ident (li) -> line i ppf "Pmod_ident %a\n" fmt_longident_loc li;
   | Pmod_structure (s) ->
       line i ppf "Pmod_structure\n";
       structure i ppf s;

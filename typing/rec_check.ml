@@ -849,7 +849,7 @@ and class_field_kind : Typedtree.class_field_kind -> term_judg =
 
 and modexp : Typedtree.module_expr -> term_judg =
   fun mexp -> match mexp.mod_desc with
-    | Tmod_ident (pth, _, _) ->
+    | Tmod_ident (pth, _) ->
       path pth
     | Tmod_structure s ->
       structure s

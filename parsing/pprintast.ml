@@ -1223,7 +1223,7 @@ and module_expr ctxt f x =
         pp f "@[<hov2>(%a@ :@ %a)@]"
           (module_expr ctxt) me
           (module_type ctxt) mt
-    | Pmod_ident (li, _mp) ->
+    | Pmod_ident (li) ->
         pp f "%a" longident_loc li;
     | Pmod_functor (Unit, me) ->
         pp f "functor ()@;->@;%a" (module_expr ctxt) me
@@ -1393,8 +1393,6 @@ and structure_item ctxt f x =
               pmod_attributes = []} ->
                pp f " :@;%a@;=@;%a@;"
                  (module_type ctxt) mt (module_expr ctxt) me'
-           | {pmod_desc= Pmod_ident (_, Mp_absent); _} ->
-               pp f " ==@ %a" (module_expr ctxt) me
            | _ -> pp f " =@ %a" (module_expr ctxt) me
         ) x.pmb_expr
         (item_attributes ctxt) x.pmb_attributes
