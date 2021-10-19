@@ -712,6 +712,21 @@ and list_emit_tail_infos is_tail =
 
 let split_default_wrapper ~id:fun_id ~kind ~params ~return ~body ~attr ~loc =
   let rec aux map = function
+    (* When compiling [fun ?(x=expr) -> body], this is first translated
+       to:
+       [fun *opt* ->
+          let x =
+            match *opt* with
+            | None -> expr
+            | Some *sth* -> *sth*
+          in
+          body]
+       We want to detect the let binding to put it into the wrapper instead of
+       the inner function.
+       We need to find which optional parameter the binding corresponds to,
+       which is why we need a deep pattern matching on the expected result of
+       the pattern-matching compiler for options.
+    *)
     | Llet(Strict, k, id,
            (Lifthenelse(Lprim (Pisint, [Lvar optparam], _), _, _) as def),
            rest) when
