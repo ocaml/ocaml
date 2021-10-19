@@ -1040,6 +1040,7 @@ let buffered_out_flush oc key () =
   let len = Buffer.length buf in
   let str = Buffer.contents buf in
   output_substring oc str 0 len ;
+  Stdlib.flush oc;
   Buffer.clear buf
 
 let std_buf_key = Domain.DLS.new_key (fun () -> Buffer.create pp_buffer_size)
