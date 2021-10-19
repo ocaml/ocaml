@@ -511,11 +511,12 @@ static void * caml_thread_start(void * v)
   caml_init_domain_self(th->domain_id);
 
   st_tls_set(Thread_key, th);
-  st_thread_set_id(Ident(th->descr));
 
   st_masterlock_acquire(&Thread_main_lock);
   Current_thread = st_tls_get(Thread_key);
   caml_thread_restore_runtime_state();
+
+  st_thread_set_id(Ident(th->descr));
 
 #ifdef NATIVE_CODE
   /* Setup termination handler (for caml_thread_exit) */
