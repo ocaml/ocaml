@@ -185,10 +185,11 @@ let value_kind env ty =
     | Tconstr(p, _, _) when Path.same p Predef.path_nativeint ->
       Pboxedintval Pnativeint
     | Tconstr(p, _, _) ->
-      if Numbers.Int.Set.mem ty.id visited || fuel <= 0 then
+      let id = (Transient_expr.repr ty).id in
+      if Numbers.Int.Set.mem id visited || fuel <= 0 then
         Pgenval
       else begin
-        let visited = Numbers.Int.Set.add ty.id visited in
+        let visited = Numbers.Int.Set.add id visited in
         let fuel = fuel - 1 in
         match (Env.find_type p env).type_kind with
         | exception Not_found ->
@@ -255,10 +256,11 @@ let value_kind env ty =
         | Type_abstract | Type_open -> Pgenval
       end
     | Ttuple fields ->
-      if Numbers.Int.Set.mem ty.id visited || fuel <= 0 then
+      let id = (Transient_expr.repr ty).id in
+      if Numbers.Int.Set.mem id visited || fuel <= 0 then
         Pgenval
       else begin
-        let visited = Numbers.Int.Set.add ty.id visited in
+        let visited = Numbers.Int.Set.add id visited in
         let fuel = fuel - 1 in
         let fields = List.map (loop env ~visited ~fuel) fields in
         Pblock { tag = 0; fields }
