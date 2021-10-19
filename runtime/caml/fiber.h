@@ -87,8 +87,14 @@ CAML_STATIC_ASSERT(sizeof(struct stack_info) ==
  * +------------------------+
  */
 
+/* This structure is used for storing the OCaml return pointer when
+ * transitioning from an OCaml stack to a C stack at a C call. When an OCaml
+ * stack is reallocated, this linked list is walked to update the OCaml stack
+ * pointers. It is also used for DWARF backtraces. */
 struct c_stack_link {
+  /* The reference to the OCaml stack */
   struct stack_info* stack;
+  /* OCaml return address */
   void* sp;
   struct c_stack_link* prev;
 };

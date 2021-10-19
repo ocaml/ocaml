@@ -420,26 +420,12 @@ int caml_try_realloc_stack(asize_t required_space)
                           new_stack);
 #endif
 
-  /* Update stack pointers in Caml_state->c_stack */
+  /* Update stack pointers in Caml_state->c_stack. It is possible to have
+   * multiple c_stack_links to point to the same stack since callbacks are run
+   * on existing stacks. */
   {
     struct c_stack_link* link;
     for (link = Caml_state->c_stack; link; link = link->prev) {
-#ifdef DEBUG
-      struct stack_info* cb = NULL;
-      /* Verify that all callback frames on this C stack belong to the
-       same fiber */
-      if (link->stack == NULL) {
-        /* only possible for the first link, if it has not done any C calls yet
-           FIXME: at the moment, this is possible due to a couple of odd ways
-           of entering C code (via GC, etc.) */
-        //CAMLassert(link == Caml_state->c_stack);
-      } else if (cb == NULL) {
-        /* first non-NULL stack */
-        cb = link->stack;
-      } else {
-        CAMLassert(link->stack == cb);
-      }
-#endif
       if (link->stack == old_stack) {
         link->stack = new_stack;
         link->sp = (void*)((char*)Stack_high(new_stack) -

@@ -155,6 +155,16 @@
 /******************************************************************************/
 
 /* Switch from OCaml to C stack. Clobbers %r10, %r11. */
+#ifdef ASM_CFI_SUPPORTED
+#define SWITCH_OCAML_TO_C_CFI                                   \
+        CFI_REMEMBER_STATE;                                     \
+          /* %rsp points to the c_stack_link. */                \
+        .cfi_escape DW_CFA_def_cfa_expression, 5,               \
+           DW_OP_breg + DW_REG_rsp, Cstack_sp, DW_OP_deref,     \
+           DW_OP_plus_uconst, 8 /* retaddr */
+#else
+#define SWITCH_OCAML_TO_C_CFI
+#endif
 #define SWITCH_OCAML_TO_C                                  \
     /* Fill in Caml_state->current_stack->sp */            \
         movq    Caml_state(current_stack), %r10;           \
@@ -165,20 +175,17 @@
         movq    %r10, Cstack_stack(%r11);                  \
     /* Switch to C stack */                                \
         movq    %r11, %rsp;                                \
-        CFI_REMEMBER_STATE;                                \
-        .cfi_escape DW_CFA_def_cfa_expression, 5,          \
-          DW_OP_breg + DW_REG_rsp, Cstack_sp, DW_OP_deref, \
-          DW_OP_plus_uconst, 8 /* retaddr */
+        SWITCH_OCAML_TO_C_CFI
 
 /* Switch from C to OCaml stack.  Clobbers %r11. */
-#define SWITCH_C_TO_OCAML \
+#define SWITCH_C_TO_OCAML                                           \
     /* Assert that %rsp == Caml_state->c_stack &&
         Caml_state->c_stack->sp == Caml_state->current_stack->sp */ \
-        IF_DEBUG(cmpq %rsp, Caml_state(c_stack); je 8f; int3; 8:\
-                 movq Caml_state(current_stack), %r11; \
-                 movq Stack_sp(%r11), %r11; \
-                 cmpq %r11, Cstack_sp(%rsp); je 8f; int3; 8:) \
-        movq    Cstack_sp(%rsp), %rsp; \
+        IF_DEBUG(cmpq %rsp, Caml_state(c_stack); je 8f; int3; 8:    \
+                 movq Caml_state(current_stack), %r11;              \
+                 movq Stack_sp(%r11), %r11;                         \
+                 cmpq %r11, Cstack_sp(%rsp); je 8f; int3; 8:)       \
+        movq    Cstack_sp(%rsp), %rsp;                              \
         CFI_RESTORE_STATE
 
 /* Load Caml_state->exn_handler into %rsp and restores prior exn_handler.
@@ -568,9 +575,10 @@ CFI_STARTPROC
     /* we use %rbp (otherwise unused) to enable backtraces */
         movq    %rsp, %rbp
 #ifdef ASM_CFI_SUPPORTED
-        .cfi_escape DW_CFA_def_cfa_expression, 5, \
-          DW_OP_breg + DW_REG_rbp, Cstack_sp, DW_OP_deref, \
-          DW_OP_plus_uconst,  8 /* ret addr */
+        .cfi_escape DW_CFA_def_cfa_expression, 5,           \
+          /* %rbp points to the c_stack_link structure */   \
+          DW_OP_breg + DW_REG_rbp, Cstack_sp, DW_OP_deref,  \
+          DW_OP_plus_uconst, 8 /* ret addr */
 #endif
     /* Make the alloc ptr available to the C code */
         movq    %r15, Caml_state(young_ptr)
@@ -627,10 +635,10 @@ LBL(caml_start_program):
     /* Load the OCaml stack. */
         movq    Caml_state(current_stack), %r11
         movq    Stack_sp(%r11), %r10
-    /* Store the stack pointer to allow DWARF unwind and
-       gc_regs for callbacks during a GC */
+    /* Store the stack pointer to allow DWARF unwind */
         subq    $16, %r10
-        movq    %rsp, 0(%r10)
+        movq    %rsp, 0(%r10) /* C_STACK_SP */
+    /* Store the gc_regs for callbacks during a GC */
         movq    Caml_state(gc_regs), %r11
         movq    %r11, 8(%r10)
     /* Build a handler for exceptions raised in OCaml on the OCaml stack. */
@@ -645,12 +653,14 @@ LBL(caml_start_program):
         movq    %r10, %rsp
 #ifdef ASM_CFI_SUPPORTED
         CFI_REMEMBER_STATE
-        .cfi_escape DW_CFA_def_cfa_expression, 3 + 2, \
-          DW_OP_breg + DW_REG_rsp, 16, DW_OP_deref,\
-          DW_OP_plus_uconst, \
-             24 /* struct c_stack_link */ + \
-             6*8 /* callee save regs */ + \
-             8 /* ret addr */
+        .cfi_escape DW_CFA_def_cfa_expression, 3 + 2,                 \
+            /* %rsp points to the exn handler on the OCaml stack */   \
+            /* %rsp + 16 contains the C_STACK_SP */                   \
+          DW_OP_breg + DW_REG_rsp, 16 /* exn handler */, DW_OP_deref, \
+          DW_OP_plus_uconst,                                          \
+             24  /* struct c_stack_link */ +                          \
+             6*8 /* callee save regs */ +                             \
+             8   /* ret addr */
 #endif
         call    *%r12
 LBL(108):
@@ -901,8 +911,12 @@ CFI_STARTPROC
 #ifdef ASM_CFI_SUPPORTED
         CFI_REMEMBER_STATE
         .cfi_escape DW_CFA_def_cfa_expression, 3+3+2, \
-          DW_OP_breg + DW_REG_rsp, 32 /* exn */ + Handler_parent, DW_OP_deref,\
-          DW_OP_plus_uconst, Stack_sp, DW_OP_deref,\
+          DW_OP_breg + DW_REG_rsp,                    \
+            16 /* exn */ +                            \
+            8 /* gc_regs slot (unused) */ +           \
+            8 /* C_STACK_SP for DWARF (unused) */     \
+            + Handler_parent, DW_OP_deref,            \
+          DW_OP_plus_uconst, Stack_sp, DW_OP_deref,   \
           DW_OP_plus_uconst, 8 /* ret addr */
 #endif
         movq    %rdi, %rax /* first argument */
