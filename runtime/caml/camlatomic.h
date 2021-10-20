@@ -35,6 +35,11 @@ extern "C++" {
 #define ATOMIC_UINTNAT_INIT(x) (x)
 typedef std::atomic<uintnat> atomic_uintnat;
 typedef std::atomic<intnat> atomic_intnat;
+using std::memory_order_relaxed;
+using std::memory_order_acquire;
+using std::memory_order_release;
+using std::memory_order_acq_rel;
+using std::memory_order_seq_cst;
 }
 
 #elif defined(HAS_STDATOMIC_H)
