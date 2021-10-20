@@ -71,6 +71,8 @@ CAMLextern int caml_ephemeron_get_key_copy(value eph, mlsize_t offset,
 
     The value [eph] must be an ephemeron and [offset] a valid key
     offset.
+
+    Deprecated in favor of [caml_ephemeron_get_key]
 */
 
 CAMLextern void caml_ephemeron_blit_key(value eph1, mlsize_t off1,
@@ -116,6 +118,8 @@ CAMLextern int caml_ephemeron_get_data_copy(value eph, value *data);
 
     The value [eph] must be an ephemeron and [offset] a valid key
     offset.
+
+    Deprecated in favor of [caml_ephemeron_get_data]
 */
 
 CAMLextern void caml_ephemeron_blit_data(value eph1, value eph2);

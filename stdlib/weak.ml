@@ -278,7 +278,7 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
     let rec loop i =
       if i >= sz then ifnotfound h index
       else if h = hashes.(i) then begin
-        match get_copy bucket i with
+        match get bucket i with
         | Some v when H.equal v d
            -> begin match get bucket i with
               | Some v -> v
@@ -305,7 +305,7 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
     let rec loop i =
       if i >= sz then None
       else if h = hashes.(i) then begin
-        match get_copy bucket i with
+        match get bucket i with
         | Some v when H.equal v d
            -> begin match get bucket i with
               | Some _ as v -> v
@@ -326,7 +326,7 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
     let rec loop i =
       if i >= sz then ifnotfound
       else if h = hashes.(i) then begin
-        match get_copy bucket i with
+        match get bucket i with
         | Some v when H.equal v d -> iffound bucket i
         | _ -> loop (i + 1)
       end else loop (i + 1)
@@ -349,7 +349,7 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
     let rec loop i accu =
       if i >= sz then accu
       else if h = hashes.(i) then begin
-        match get_copy bucket i with
+        match get bucket i with
         | Some v when H.equal v d
            -> begin match get bucket i with
               | Some v -> loop (i + 1) (v :: accu)

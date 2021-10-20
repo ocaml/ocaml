@@ -1,0 +1,5 @@
+File "ephe_infix.ml", line 11, characters 8-21:
+11 |   match Weak.get_copy w 0 with Some h -> ignore (h ()) | _ -> ()
+             ^^^^^^^^^^^^^
+Alert deprecated: Stdlib.Weak.get_copy
+Use Weak.get instead.
