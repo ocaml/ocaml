@@ -548,7 +548,6 @@ let ( ^^ ) (Format (fmt1, str1)) (Format (fmt2, str2)) =
 (* Miscellaneous *)
 
 external sys_exit : int -> 'a = "caml_sys_exit"
-external maybe_print_stats : unit -> unit = "caml_maybe_print_stats"
 
 let exit_function = CamlinternalAtomic.make flush_all
 
@@ -568,7 +567,6 @@ let do_at_exit () = (CamlinternalAtomic.get exit_function) ()
 
 let exit retcode =
   do_at_exit ();
-  maybe_print_stats ();
   sys_exit retcode
 
 let _ = register_named_value "Pervasives.do_at_exit" do_at_exit

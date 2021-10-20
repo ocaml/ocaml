@@ -143,7 +143,6 @@ value caml_startup_exn(char_os **argv)
 void caml_startup(char_os **argv)
 {
   value res = caml_startup_exn(argv);
-  caml_maybe_print_stats(Val_unit);
   if (Is_exception_result(res))
     caml_fatal_uncaught_exception(Extract_exception(res));
 }
