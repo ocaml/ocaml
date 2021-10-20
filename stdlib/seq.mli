@@ -111,13 +111,13 @@ and +'a node =
    - [is_empty] and [uncons] consume the sequence down to depth 1.
      That is, they demand the first argument of the sequence, if there is one.
    - [iter], [fold_left], [length], etc., consume the sequence all the way to
-     its end. The sequence must be finite; otherwise, they do not terminate.
+     its end. They terminate only if the sequence is finite.
    - [for_all], [exists], [find], etc. consume the sequence down to a certain
      depth, which is a priori unpredictable.
 
    The functions that consume two sequences can be organized in two subgroups:
    - [iter2], [fold_left2], [for_all2], etc., consume both sequences all the
-     way to the end, provided they have the same length. Otherwise, they fully
+     way to the end, provided the sequences have the same length. Otherwise, they fully
      consume the shorter sequence, and ignore the remainder of the longer
      sequence.
    - [exists2], [equal], [compare] consume the sequences down to a certain
@@ -161,7 +161,7 @@ val iter : ('a -> unit) -> 'a t -> unit
     for every element [x] of the sequence [xs],
     from left to right.
 
-    The sequence [xs] must be finite. *)
+    It terminates only if the sequence [xs] is finite. *)
 
 val fold_left : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a
 (** [fold_left f _ xs] invokes [f _ x] successively
@@ -170,13 +170,13 @@ val fold_left : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a
 
     An accumulator of type ['a] is threaded through the calls to [f].
 
-    The sequence [xs] must be finite. *)
+    It terminates only if the sequence [xs] is finite. *)
 
 val iteri : (int -> 'a -> unit) -> 'a t -> unit
 (** [iteri f xs] invokes [f i x] successively
     for every element [x] located at index [i] in the sequence [xs].
 
-    The sequence [xs] must be finite.
+    It terminates only if the sequence [xs] is finite.
 
     [iteri f xs] is equivalent to
     [iter (fun (i, x) -> f i x) (zip (ints 0) xs)].
@@ -189,7 +189,7 @@ val fold_lefti : (int -> 'b -> 'a -> 'b) -> 'b -> 'a t -> 'b
 
     An accumulator of type ['a] is threaded through the calls to [f].
 
-    The sequence [xs] must be finite.
+    It terminates only if the sequence [xs] is finite.
 
     [fold_lefti f accu xs] is equivalent to
     [fold_left (fun accu (i, x) -> f accu i x) accu (zip (ints 0) xs)].
@@ -216,8 +216,9 @@ val find : ('a -> bool) -> 'a t -> 'a option
 (** [find p xs] returns [Some x], where [x] is the first element of the
     sequence [xs] that satisfies [p x], if there is such an element.
 
-    It returns [None] if there is no such element,
-    provided the sequence [xs] is finite.
+    It returns [None] if there is no such element.node
+
+    The sequence [xs] must be finite.
 
     @since 4.14 *)
 
@@ -226,8 +227,9 @@ val find_map : ('a -> 'b option) -> 'a t -> 'b option
     sequence [xs] such that [f x = Some _], if there is such an element,
     and where [y] is defined by [f x = Some y].
 
-    It returns [None] if there is no such element,
-    provided the sequence [xs] is finite.
+    It returns [None] if there is no such element.
+
+    The sequence [xs] must be finite.
 
     @since 4.14 *)
 
@@ -239,7 +241,8 @@ val iter2 : ('a -> 'b -> unit) -> 'a t -> 'b t -> unit
     iteration stops as soon as one sequence is exhausted;
     the excess elements in the other sequence are ignored.
 
-    At least one of the sequences [xs] and [ys] must be finite.
+    Iteration terminates only if at least one of the sequences
+    [xs] and [ys] is finite.
 
     [iter2 f xs ys] is equivalent to
     [iter (fun (x, y) -> f x y) (zip xs ys)].
@@ -257,7 +260,8 @@ val fold_left2 : ('a -> 'b -> 'c -> 'a) -> 'a -> 'b t -> 'c t -> 'a
     iteration stops as soon as one sequence is exhausted;
     the excess elements in the other sequence are ignored.
 
-    At least one of the sequences [xs] and [ys] must be finite.
+    Iteration terminates only if at least one of the sequences
+    [xs] and [ys] is finite.
 
     [fold_left2 f accu xs ys] is equivalent to
     [fold_left (fun accu (x, y) -> f accu x y) (zip xs ys)].
