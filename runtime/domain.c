@@ -132,8 +132,6 @@ CAMLexport uintnat caml_minor_heaps_end;
 CAMLexport uintnat caml_tls_areas_base;
 static __thread dom_internal* domain_self;
 
-static int64_t startup_timestamp;
-
 /*
  * This structure is protected by all_domains_lock
  * [0, participating_domains) are all the domains taking part in STW sections
@@ -560,7 +558,6 @@ void caml_init_domains(uintnat minor_heap_wsz) {
   if (!domain_self) caml_fatal_error("Failed to create main domain");
 
   caml_init_signal_handling();
-  startup_timestamp = caml_time_counter();
 
   CAML_EVENTLOG_INIT();
 }
