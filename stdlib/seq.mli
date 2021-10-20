@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Sequences (functional iterators).
+(** Sequences.
 
    A sequence of type ['a Seq.t] can be thought of as a {b delayed list},
    that is, a list whose elements are computed only when they are demanded
