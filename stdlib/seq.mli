@@ -149,8 +149,6 @@ val uncons : 'a t -> ('a * 'a t) option
 
     @since 4.14 *)
 
-
-
 val length : 'a t -> int
 (** [length xs] is the length of the sequence [xs].
 
