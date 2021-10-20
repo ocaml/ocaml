@@ -639,10 +639,12 @@ stdlib__Scanf.cmi : scanf.mli \
 stdlib__Seq.cmo : seq.ml \
     stdlib__Lazy.cmi \
     stdlib__Either.cmi \
+    camlinternalAtomic.cmi \
     stdlib__Seq.cmi
 stdlib__Seq.cmx : seq.ml \
     stdlib__Lazy.cmx \
     stdlib__Either.cmx \
+    camlinternalAtomic.cmx \
     stdlib__Seq.cmi
 stdlib__Seq.cmi : seq.mli \
     stdlib__Either.cmi
