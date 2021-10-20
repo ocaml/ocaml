@@ -50,14 +50,10 @@ let rec filter f seq () = match seq() with
       then Cons (x, filter f next)
       else filter f next ()
 
-let rec concat_rec sep seq () = match seq () with
+let rec concat seq () = match seq () with
   | Nil -> Nil
   | Cons (x, next) ->
-      append sep (append x (concat_rec sep next)) ()
-
-let concat ?(sep=empty) seq () = match seq() with
-  | Cons (x, next) -> append x (concat_rec sep next) ()
-  | Nil -> Nil
+     append x (concat next) ()
 
 let rec flat_map f seq () = match seq () with
   | Nil -> Nil

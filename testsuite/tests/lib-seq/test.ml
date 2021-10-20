@@ -48,11 +48,7 @@ let () =
   assert (
       List.concat [[1]; []; [2; 3];]
       = !!(Seq.concat !?[!?[1]; !?[]; !?[2; 3]])
-    );
-  assert (
-    List.concat [[1]; [0]; []; [0]; [2; 3];]
-      = !!(Seq.concat ~sep:(Seq.return 0) !?[!?[1]; !?[]; !?[2; 3]])
-  )
+    )
 
 (* [cycle empty] is expected to fail. *)
 let () =

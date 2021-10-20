@@ -577,15 +577,12 @@ val append : 'a t -> 'a t -> 'a t
 
     @since 4.11 *)
 
-val concat : ?sep:'a t -> 'a t t -> 'a t
+val concat : 'a t t -> 'a t
 (** If [xss] is a sequence of sequences,
     then [concat xss] is its concatenation.
 
     If [xss] is the sequence [xs0; xs1; ...] then
     [concat xss] is the sequence [xs0 @ xs1 @ ...].
-
-    @param sep a (finite, persistent) sequence of items to insert in between
-    each elements of [xss]. By default it is [empty].
 
     @since 4.13 *)
 
