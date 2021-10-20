@@ -34,9 +34,11 @@
      just like an immutable list; or
    - {b ephemeral},
      which means that the sequence is not persistent.
-     It can be used at most once, and producing an element can have an
-     observable side effect, such as incrementing a mutable counter or
-     consuming some resource such as a {!Stream}.
+     Querying an ephemeral sequence can have an observable side effect,
+     such as incrementing a mutable counter or reading data from some
+     external source.
+     As a common special case, an ephemeral sequence can be {b affine},
+     which means that it must be queried at most once.
 
    It also does {i not} reveal whether the elements of the sequence are:
 
