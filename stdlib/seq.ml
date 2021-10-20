@@ -566,27 +566,34 @@ let rec map_snd xys () =
 let unzip xys =
   map_fst xys, map_snd xys
 
-let rec filter_map_find_left xs () =
+(* [filter_map_find_left_map f xs] is equivalent to
+   [filter_map Either.find_left (map f xs)]. *)
+
+let rec filter_map_find_left_map f xs () =
   match xs() with
   | Nil ->
       Nil
-  | Cons (Either.Left x, xs) ->
-      Cons (x, filter_map_find_left xs)
-  | Cons (Either.Right _, xs) ->
-      filter_map_find_left xs ()
+  | Cons (x, xs) ->
+      match f x with
+      | Either.Left y ->
+          Cons (y, filter_map_find_left_map f xs)
+      | Either.Right _ ->
+          filter_map_find_left_map f xs ()
 
-let rec filter_map_find_right xs () =
+let rec filter_map_find_right_map f xs () =
   match xs() with
   | Nil ->
       Nil
-  | Cons (Either.Left _, xs) ->
-      filter_map_find_right xs ()
-  | Cons (Either.Right x, xs) ->
-      Cons (x, filter_map_find_right xs)
+  | Cons (x, xs) ->
+      match f x with
+      | Either.Left _ ->
+          filter_map_find_right_map f xs ()
+      | Either.Right z ->
+          Cons (z, filter_map_find_right_map f xs)
 
-let partition_either xs =
-  filter_map_find_left xs,
-  filter_map_find_right xs
+let partition_map f xs =
+  filter_map_find_left_map f xs,
+  filter_map_find_right_map f xs
 
 let partition p xs =
   filter p xs, filter (fun x -> not (p x)) xs
@@ -691,4 +698,3 @@ let to_iterator xs =
 
 let rec ints i () =
   Cons (i, ints (i + 1))
-

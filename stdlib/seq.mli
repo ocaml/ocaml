@@ -689,19 +689,24 @@ val unzip : ('a * 'b) t -> 'a t * 'b t
 
     @since 4.14 *)
 
-val partition_either : ('a, 'b) Either.t t -> 'a t * 'b t
-(** [partition_either] transforms a sequence of fruit (either apples or oranges)
-    into a pair of a sequence of apples and a sequence of oranges.
+val partition_map : ('a -> ('b, 'c) Either.t) -> 'a t -> 'b t * 'c t
+(** [partition_map f xs] returns a pair of sequences [(ys, zs)], where:
 
-    [partition_either xs] is equivalent to
-    [(filter_map Either.find_left xs, filter_map Either.find_right xs)].
+    - [ys] is the sequence of the elements [y] such that
+      [f x = Left y], where [x] ranges over [xs];
 
-    Querying either of the sequences returned by [partition_either xs]
+    - [zs] is the sequence of the elements [z] such that
+      [f x = Right z], where [x] ranges over [xs].
+
+    [partition_map f xs] is equivalent to
+    [(filter_map Either.find_left (map f xs), filter_map Either.find_right (map f xs))].
+
+    Querying either of the sequences returned by [partition_map f xs]
     causes [xs] to be queried.
     Therefore, querying both of them
     causes [xs] to be queried twice.
     Thus, [xs] must be persistent and cheap.
-    If that is not the case, use [partition_either (memoize xs)].
+    If that is not the case, use [partition_map f (memoize xs)].
 
     @since 4.14 *)
 
