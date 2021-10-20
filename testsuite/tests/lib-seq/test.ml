@@ -6,7 +6,6 @@ let (!!) = List.of_seq
 let cmp = compare
 
 let head s = match s() with Seq.Cons(x,_) -> x | _ -> assert false
-let filter1 x = x mod 2 = 0 ;;
 
 let poison : _ Seq.t =
   fun () ->
