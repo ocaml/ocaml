@@ -660,7 +660,7 @@ let rec diagonals remainders xss () =
 let diagonals xss =
   diagonals empty xss
 
-let product_with f xs ys =
+let map_product f xs ys =
   concat (diagonals (
     map (fun x ->
       map (fun y ->
@@ -670,7 +670,7 @@ let product_with f xs ys =
   ))
 
 let product xs ys =
-  product_with (fun x y -> (x, y)) xs ys
+  map_product (fun x y -> (x, y)) xs ys
 
 let of_iterator it =
   let rec c () =

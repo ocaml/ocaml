@@ -653,12 +653,12 @@ val product : 'a t -> 'b t -> ('a * 'b) t
 
     @since 4.14 *)
 
-val product_with : ('a -> 'b -> 'c) -> 'a t -> 'b t -> 'c t
-(** The sequence [product_with f xs ys] is the image through [f] of the Cartesian
+val map_product : ('a -> 'b -> 'c) -> 'a t -> 'b t -> 'c t
+(** The sequence [map_product f xs ys] is the image through [f] of the Cartesian
     product of the sequences [xs] and [ys].
 
     For every element [x] of [xs] and for every element [y] of [ys],
-    the element [f x y] appears once as an element of [product_with f xs ys].
+    the element [f x y] appears once as an element of [map_product f xs ys].
 
     The order in which these elements appear is unspecified.
 
@@ -666,7 +666,7 @@ val product_with : ('a -> 'b -> 'c) -> 'a t -> 'b t -> 'c t
 
     The sequences [xs] and [ys] must be persistent.
 
-    [product_with f xs ys] is equivalent to
+    [map_product f xs ys] is equivalent to
     [map (fun (x, y) -> f x y) (product xs ys)].
 
     @since 4.14 *)
