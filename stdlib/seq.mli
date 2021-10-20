@@ -76,7 +76,7 @@
    As a general rule, the functions that build sequences, such as [map],
    [filter], [scan], [take], etc., produce sequences whose elements are
    computed only on demand. The functions that eagerly consume sequences,
-   such as [is_empty], [head], [tail], [find], [length], [iter], [fold_left],
+   such as [is_empty], [find], [length], [iter], [fold_left],
    etc., are the functions that force computation to take place.
 
    When possible, we recommend using sequences rather than iterators
@@ -108,7 +108,7 @@ and +'a node =
 
    The functions in this section consume their argument, a sequence, either
    partially or completely:
-   - [is_empty], [head], [tail], [uncons] consume the sequence down to depth 1.
+   - [is_empty] and [uncons] consume the sequence down to depth 1.
      That is, they demand the first argument of the sequence, if there is one.
    - [iter], [fold_left], [length], etc., consume the sequence all the way to
      its end. The sequence must be finite; otherwise, they do not terminate.
