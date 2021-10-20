@@ -403,7 +403,8 @@ val iterate : ('a -> 'a) -> 'a -> 'a t
 (** [iterate f x] is the infinite sequence whose elements are
     [x], [f x], [f (f x)], and so on.
 
-    In other words, it is the sequence of iterates of [f] starting with [x].
+    In other words, it is the orbit of the function [f],
+    starting at [x].
 
     @since 4.14 *)
 
