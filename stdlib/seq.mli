@@ -391,13 +391,13 @@ val cycle : 'a t -> 'a t
 (** [cycle xs] is the infinite sequence which consists of an infinite
     number of repetitions of the sequence [xs].
 
-    The sequence [xs] must be nonempty.
+    If [xs] is an empty sequence,
+    then [cycle xs] is empty as well.
 
     Consuming (a prefix of) the sequence [cycle xs] once
     can cause the sequence [xs] to be consumed more than once.
     Therefore, [xs] must be persistent.
 
-    @raise Invalid_argument if [xs] is empty.
     @since 4.14 *)
 
 val iterate : ('a -> 'a) -> 'a -> 'a t

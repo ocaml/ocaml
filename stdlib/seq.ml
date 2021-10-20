@@ -260,21 +260,6 @@ let rec repeat x () =
 let rec forever f () =
   Cons (f(), forever f)
 
-(* [assert_length_is_at_least msg k xs] produces a sequence that is equivalent
-   to [xs], but whose evaluation fails if it turns out that the sequence has
-   fewer than [k] elements. *)
-
-let rec assert_length_is_at_least msg k xs =
-  if k <= 0 then
-    xs
-  else
-    fun () ->
-      match xs() with
-      | Nil ->
-          invalid_arg msg
-      | Cons (x, xs) ->
-          Cons (x, assert_length_is_at_least msg (k-1) xs)
-
 (* This version of [cycle] requires the sequence [xs] to be nonempty. Applying
    it to an empty sequence would produce a sequence that diverges when it is
    forced. *)
@@ -282,12 +267,15 @@ let rec assert_length_is_at_least msg k xs =
 let rec cycle xs () =
   append xs (cycle xs) ()
 
-(* [cycle] is redefined to check (at runtime) that [xs] is nonempty. Thus,
-   [cycle empty] produces a sequence that fails when it is forced. Note that
-   this is *not* a recursive definition. *)
+(* [cycle] is redefined to check whether [xs] is empty and, if so, return
+   an empty sequence. Note that this is *not* a recursive definition. *)
 
-let cycle xs =
-  append (assert_length_is_at_least "Seq.cycle" 1 xs) (cycle xs)
+let cycle xs () =
+  match xs() with
+  | Nil ->
+      Nil
+  | Cons (x, xs') ->
+      Cons (x, append xs' (cycle xs))
 
 (* [iterate1 f x] is the sequence [f x, f (f x), ...].
    It is equivalent to [tail (iterate f x)].

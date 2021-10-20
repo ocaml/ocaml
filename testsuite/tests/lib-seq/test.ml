@@ -50,16 +50,17 @@ let () =
       = !!(Seq.concat !?[!?[1]; !?[]; !?[2; 3]])
     )
 
-(* [cycle empty] is expected to fail. *)
+(* [cycle empty] is empty. *)
 let () =
-  try
-    let xs = Seq.(cycle empty) in
-    let _ = xs() in
-    print_endline "Oops"
-  with Invalid_argument _ ->
-    () (* OK *)
+  let xs = Seq.(cycle empty) in
+  assert (Seq.length xs = 0)
 
-(* [cycle] *)
+(* [cycle] of a singleton. *)
+let () =
+  let xs = Seq.(take 7 (cycle !?[1])) in
+  assert (!!xs = [1;1;1;1;1;1;1])
+
+(* [cycle] of a longer sequence. *)
 let () =
   let xs = Seq.(take 7 (cycle !?[1;2;3])) in
   assert (!!xs = [1;2;3;1;2;3;1])
