@@ -734,7 +734,8 @@ and transl_apply ~scopes
         let body =
           match build_apply handle ((Lvar id_arg, optional)::args') l with
             Lfunction{kind = Curried; params = ids; return;
-                      body = lam; attr; loc} ->
+                      body = lam; attr; loc}
+               when List.length ids < Lambda.max_arity () ->
               lfunction ~kind:Curried
                         ~params:((id_arg, Pgenval)::ids)
                         ~return
