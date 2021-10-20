@@ -116,9 +116,9 @@ and +'a node =
 
    Similarly, among the functions that consume two sequences,
    one can distinguish two groups:
-   - [iter2], [fold_left2], [for_all2] consumes both sequences all the way
+   - [iter2] and [fold_left2] consume both sequences all the way
      to the end, provided the sequences have the same length.
-   - [exists2], [equal], [compare] consume the sequences down to a certain
+   - [for_all2], [exists2], [equal], [compare] consume the sequences down to a certain
      depth, which is a priori unpredictable.
 
    The functions that consume two sequences can be applied to two sequences
