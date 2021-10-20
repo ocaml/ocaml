@@ -27,9 +27,7 @@ module Raw = struct
     = "caml_ml_domain_cpu_relax"
 end
 
-module Sync = struct
-  let cpu_relax () = Raw.cpu_relax ()
-end
+let cpu_relax () = Raw.cpu_relax ()
 
 type id = Raw.t
 
@@ -144,7 +142,7 @@ let do_at_exit () = (Atomic.get exit_function) ()
 exception Retry
 let rec spin f =
   try f () with Retry ->
-      Sync.cpu_relax ();
+      cpu_relax ();
       spin f
 
 let cas r vold vnew =

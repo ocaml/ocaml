@@ -56,13 +56,9 @@ val at_exit : (unit -> unit) -> unit
     function is also registered with {!Stdlib.at_exit}. If the registered
     function raises an exception, the exceptions are ignored. *)
 
-module Sync : sig
-  (** Low-level Domain related primitives. **)
-
-  val cpu_relax : unit -> unit
-  (** If busy-waiting, calling cpu_relax () between iterations
-      will improve performance on some CPU architectures *)
-end
+val cpu_relax : unit -> unit
+(** If busy-waiting, calling cpu_relax () between iterations
+    will improve performance on some CPU architectures *)
 
 module DLS : sig
 (** Domain-local Storage *)
