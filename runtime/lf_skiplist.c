@@ -164,7 +164,6 @@ retry:
 
         LF_SK_EXTRACT(curr->forward[level], is_marked, succ);
         while (is_marked) {
-          struct lf_skipcell *_Atomic current_garbage_head = NULL;
           struct lf_skipcell *null_cell = NULL;
           int snip = atomic_compare_exchange_strong(&pred->forward[level],
                                                     &curr, succ);
@@ -194,7 +193,7 @@ retry:
                thread to add a different node to the skiplist's garbage_head.
                This is why we need to a retry loop and yet another CAS. */
             while (1) {
-              current_garbage_head =
+              struct lf_skipcell *_Atomic current_garbage_head =
                   atomic_load_explicit(&sk->garbage_head, memory_order_acquire);
 
               atomic_store_explicit(&curr->garbage_next, current_garbage_head,
