@@ -114,13 +114,17 @@ and +'a node =
    - [for_all], [exists], [find], etc. consume the sequence down to a certain
      depth, which is a priori unpredictable.
 
-   The functions that consume two sequences can be organized in two subgroups:
-   - [iter2], [fold_left2], [for_all2], etc., consume both sequences all the
-     way to the end, provided the sequences have the same length. Otherwise, they fully
-     consume the shorter sequence, and ignore the remainder of the longer
-     sequence.
+   Similarly, among the functions that consume two sequences,
+   one can distinguish two groups:
+   - [iter2], [fold_left2], [for_all2] consumes both sequences all the way
+     to the end, provided the sequences have the same length.
    - [exists2], [equal], [compare] consume the sequences down to a certain
      depth, which is a priori unpredictable.
+
+   The functions that consume two sequences can be applied to two sequences
+   of distinct lengths: in that case, the excess elements in the longer
+   sequence are ignored. (It may be the case that one excess element is
+   demanded, even though this element is not used.)
 
    None of the functions in this section is lazy. These functions
    are consumers: they force some computation to take place. *)
