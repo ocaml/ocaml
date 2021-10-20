@@ -731,7 +731,7 @@ and module_type_desc =
         (* module type of ME *)
   | Pmty_extension of extension
         (* [%id] *)
-  | Pmty_alias of Longident.t loc
+  | Pmty_alias of Longident.t loc * module_presence
         (* (module M) *)
 
 and functor_parameter =

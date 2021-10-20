@@ -664,6 +664,7 @@ let mk_directive ~loc name arg =
 %token END                    "end"
 %token EOF                    ""
 %token EQUAL                  "="
+%token EQUALEQUAL             "=="
 %token EXCEPTION              "exception"
 %token EXTERNAL               "external"
 %token FALSE                  "false"
@@ -807,7 +808,7 @@ The precedences must be listed from low to high.
 %right    OR BARBAR                     /* expr (e || e || e) */
 %right    AMPERSAND AMPERAMPER          /* expr (e && e && e) */
 %nonassoc below_EQUAL
-%left     INFIXOP0 EQUAL LESS GREATER   /* expr (e OP e OP e) */
+%left     INFIXOP0 EQUAL EQUALEQUAL LESS GREATER /* expr (e OP e OP e) */
 %right    INFIXOP1                      /* expr (e OP e OP e) */
 %nonassoc below_LBRACKETAT
 %nonassoc LBRACKETAT
@@ -1719,19 +1720,20 @@ module_declaration_body:
   MODULE
   ext = ext attrs1 = attributes
   name = mkrhs(module_name)
-  EQUAL
-  body = module_expr_alias
+  mp = module_presence
+  id = mkrhs(mod_longident)
   attrs2 = post_item_attributes
   {
     let attrs = attrs1 @ attrs2 in
     let loc = make_loc $sloc in
     let docs = symbol_docs $sloc in
+    let body = Mty.alias ~loc:(make_loc $loc(id)) id mp in
     Md.mk name body ~attrs ~loc ~docs, ext
   }
 ;
-%inline module_expr_alias:
-  id = mkrhs(mod_longident)
-    { Mty.alias ~loc:(make_loc $sloc) id }
+%inline module_presence:
+    EQUAL { Mp_present }
+  | EQUALEQUAL { Mp_absent }
 ;
 (* A module substitution (in a signature). *)
 module_subst:
@@ -3571,6 +3573,7 @@ operator:
   | STAR           {"*"}
   | PERCENT        {"%"}
   | EQUAL          {"="}
+  | EQUALEQUAL     {"=="}
   | LESS           {"<"}
   | GREATER        {">"}
   | OR            {"or"}

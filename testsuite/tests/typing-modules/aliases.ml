@@ -11,7 +11,7 @@ C'.chr 66;;
 module C3 = struct include Char end;;
 C3.chr 66;;
 [%%expect{|
-module C = Char
+module C == Char
 - : char = 'B'
 module C' :
   sig
@@ -101,7 +101,7 @@ module M' = struct
 end;;
 M'.N'.x;;
 [%%expect{|
-module M' : sig module N : sig val x : int end module N' = N end
+module M' : sig module N : sig val x : int end module N' == N end
 - : int = 1
 |}];;
 
@@ -115,7 +115,7 @@ M3'.N'.x;;
 [%%expect{|
 module M'' : sig module N' : sig val x : int end end
 - : int = 1
-module M2 : sig module N = M'.N module N' = N end
+module M2 : sig module N == M'.N module N' == N end
 module M3 : sig module N' : sig val x : int end end
 - : int = 1
 module M3' : sig module N' : sig val x : int end end
@@ -142,7 +142,7 @@ M5.N'.x;;
 [%%expect{|
 module F :
   functor (X : sig end) ->
-    sig module N : sig val x : int end module N' = N end
+    sig module N : sig val x : int end module N' == N end
 module G : functor (X : sig end) -> sig module N' : sig val x : int end end
 module M5 : sig module N' : sig val x : int end end
 - : int = 1
@@ -167,7 +167,7 @@ module M :
   sig
     module D : sig val y : int end
     module N : sig val x : int end
-    module N' = N
+    module N' == N
   end
 module M1 : sig module N : sig val x : int end module N' = N end
 - : int = 1
@@ -188,12 +188,72 @@ module M2 : sig module C' : sig val chr : int -> char end end =
   (M : sig module C : sig val chr : int -> char end module C' = C end);;
 M2.C'.chr 66;;
 [%%expect{|
-module M : sig module C = Char module C' = C end
+module M : sig module C == Char module C' == C end
 module M1 :
   sig module C : sig val escaped : char -> string end module C' = C end
 - : string = "A"
 module M2 : sig module C' : sig val chr : int -> char end end
 - : char = 'B'
+|}];;
+
+module M = struct
+  module A = struct
+    module B = struct
+      let run_me f = f ()
+      let incr i = i + 1
+    end
+  end
+  module A' = A
+end;;
+module M1 : sig
+    module A : sig
+      module B : sig
+        val incr : int -> int
+      end
+    end
+    module A' = A
+  end =
+M;; (* sound, but should probably fail *)
+M1.A'.B.incr 0;;
+module M2 : sig
+    module A : sig
+      module B : sig
+        val incr : int -> int
+      end
+    end
+    module A' = A
+  end =
+(M : sig
+  module A : sig
+    module B : sig
+      val incr : int -> int
+    end
+  end
+  module A' = A
+end);;
+M2.A'.B.incr 0;;
+[%%expect{|
+module M :
+  sig
+    module A :
+      sig
+        module B :
+          sig val run_me : (unit -> 'a) -> 'a val incr : int -> int end
+      end
+    module A' == A
+  end
+module M1 :
+  sig
+    module A : sig module B : sig val incr : int -> int end end
+    module A' = A
+  end
+- : int = 1
+module M2 :
+  sig
+    module A : sig module B : sig val incr : int -> int end end
+    module A' = A
+  end
+- : int = 1
 |}];;
 
 StdLabels.List.map;;
@@ -205,7 +265,7 @@ module Q = Queue;;
 exception QE = Q.Empty;;
 try Q.pop (Q.create ()) with QE -> "Ok";;
 [%%expect{|
-module Q = Queue
+module Q == Queue
 exception QE
 - : string = "Ok"
 |}];;
@@ -240,7 +300,7 @@ module type Complex =
     val pow : t -> t -> t
   end
 module M : sig module C : Complex end
-module C = Complex
+module C == Complex
 - : float = 1.
 type t = Complex.t = { re : float; im : float; }
 val zero : t = {re = 0.; im = 0.}
@@ -274,7 +334,7 @@ module StringSet = Set.Make(String)
 module SSet = Set.Make(S);;
 let f (x : StringSet.t) = (x : SSet.t);;
 [%%expect{|
-module S = String
+module S == String
 module StringSet :
   sig
     type elt = String.t
@@ -383,7 +443,7 @@ let f (x : t) : T.t = x ;;
 [%%expect{|
 module F : functor (M : sig end) -> sig type t end
 module T : sig module M : sig end type t = F(M).t end
-module M = T.M
+module M == T.M
 type t = F(M).t
 val f : t -> T.t = <fun>
 |}];;
@@ -450,7 +510,7 @@ module A :
       end
     val empty : S.t
   end
-module A1 = A
+module A1 == A
 - : bool = true
 |}];;
 
@@ -487,7 +547,7 @@ let f (x : t) : T.t = x
 [%%expect {|
 module F : functor (M : sig end) -> sig type t end
 module T : sig module M : sig end type t = F(M).t end
-module M = T.M
+module M == T.M
 type t = F(M).t
 val f : t -> T.t = <fun>
 |}]
@@ -506,8 +566,8 @@ module F2 = F(L2);; (* should succeed too *)
 [%%expect{|
 module A1 : sig end
 module A2 : sig end
-module L1 : sig module X = A1 end
-module L2 : sig module X = A2 end
+module L1 : sig module X == A1 end
+module L2 : sig module X == A2 end
 module F : functor (L : sig module X : sig end end) -> sig end
 module F1 : sig end
 module F2 : sig end
@@ -583,12 +643,12 @@ type (_, _) eq = Eq : ('a, 'a) eq
 type wrap = W of (SInt.t, SInt.t) eq
 module M :
   sig
-    module I = Int
+    module I == Int
     type wrap' = wrap = W of (Set.Make(Int).t, Set.Make(I).t) eq
   end
 module type S =
   sig
-    module I = Int
+    module I == Int
     type wrap' = wrap = W of (Set.Make(Int).t, Set.Make(I).t) eq
   end
 module Int2 : sig type t = int val compare : 'a -> 'a -> int end
@@ -597,7 +657,12 @@ Line 15, characters 10-30:
                ^^^^^^^^^^^^^^^^^^^^
 Error: In this `with' constraint, the new definition of I
        does not match its original definition in the constrained signature:
-       Modules do not match: (module Int2) is not included in (module Int)
+       Modules do not match: (module I/2) is not included in (module Int)
+
+       Line 7, characters 2-16:
+         Definition of module I/1
+       Line 14, characters 2-17:
+         Definition of module I/2
 |}];;
 
 (* (* if the above succeeded, one could break invariants *)
@@ -625,15 +690,15 @@ module type S = module type of M [@remove_aliases];;
 [%%expect{|
 module M :
   sig
-    module N : sig module I = Int end
-    module P : sig module I = N.I end
+    module N : sig module I == Int end
+    module P : sig module I == N.I end
     module Q :
       sig type wrap' = wrap = W of (Set.Make(Int).t, Set.Make(P.I).t) eq end
   end
 module type S =
   sig
-    module N : sig module I = Int end
-    module P : sig module I = N.I end
+    module N : sig module I == Int end
+    module P : sig module I == N.I end
     module Q :
       sig type wrap' = wrap = W of (Set.Make(Int).t, Set.Make(P.I).t) eq end
   end
@@ -650,14 +715,14 @@ module type S = module type of M [@remove_aliases];;
 [%%expect{|
 module M :
   sig
-    module N : sig module I = Int end
-    module P : sig module I = N.I end
+    module N : sig module I == Int end
+    module P : sig module I == N.I end
     module Q :
       sig type wrap' = wrap = W of (Set.Make(Int).t, Set.Make(N.I).t) eq end
   end
 module type S =
   sig
-    module N : sig module I = Int end
+    module N : sig module I == Int end
     module P :
       sig module I : sig type t = int val compare : 'a -> 'a -> int end end
     module Q :
@@ -673,7 +738,7 @@ module type S' = S with module M = H';; (* shouldn't introduce an alias *)
 [%%expect{|
 module type S = sig module M : sig type t val x : t end end
 module H : sig type t = A val x : t end
-module H' = H
+module H' == H
 module type S' = sig module M : sig type t = H.t = A val x : t end end
 |}];;
 
@@ -715,8 +780,8 @@ end;;
 
 let x : K.N.t = "foo";;
 [%%expect{|
-module B : sig module R : sig type t = string end module O = R end
-module K : sig module E = B module N = E.O end
+module B : sig module R : sig type t = string end module O == R end
+module K : sig module E == B module N == E.O end
 val x : K.N.t = "foo"
 |}];;
 
@@ -756,7 +821,7 @@ module type S =
 module R :
   sig
     module M : sig module N : sig end module P : sig end end
-    module Q = M
+    module Q == M
   end
 module R' : S
 |}];;

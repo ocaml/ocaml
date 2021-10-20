@@ -1093,7 +1093,7 @@ and module_type1 ctxt f x =
   else match x.pmty_desc with
     | Pmty_ident li ->
         pp f "%a" longident_loc li;
-    | Pmty_alias li ->
+    | Pmty_alias (li, _mp) ->
         pp f "(module %a)" longident_loc li;
     | Pmty_signature (s) ->
         pp f "@[<hv0>@[<hv2>sig@ %a@]@ end@]" (* "@[<hov>sig@ %a@ end@]" *)
@@ -1140,9 +1140,15 @@ and signature_item ctxt f x : unit =
               (class_description "class") x
               (list ~sep:"@," (class_description "and")) xs
       end
-  | Psig_module ({pmd_type={pmty_desc=Pmty_alias alias;
+  | Psig_module ({pmd_type={pmty_desc=Pmty_alias (alias, Mp_present);
                             pmty_attributes=[]; _};_} as pmd) ->
       pp f "@[<hov>module@ %s@ =@ %a@]%a"
+        (Option.value pmd.pmd_name.txt ~default:"_")
+        longident_loc alias
+        (item_attributes ctxt) pmd.pmd_attributes
+  | Psig_module ({pmd_type={pmty_desc=Pmty_alias (alias, Mp_absent);
+                            pmty_attributes=[]; _};_} as pmd) ->
+      pp f "@[<hov>module@ %s@ ==@ %a@]%a"
         (Option.value pmd.pmd_name.txt ~default:"_")
         longident_loc alias
         (item_attributes ctxt) pmd.pmd_attributes

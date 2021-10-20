@@ -911,7 +911,7 @@
                   attribute "foo"
                     []
                 module_type (shortcut_ext_attr.ml[110,2188+23]..[110,2188+24])
-                  Pmty_alias "M" (shortcut_ext_attr.ml[110,2188+23]..[110,2188+24])
+                  Pmty_alias "M" (shortcut_ext_attr.ml[110,2188+23]..[110,2188+24]) Mp_present
             ]
           signature_item (shortcut_ext_attr.ml[112,2214+2]..[112,2214+29]) ghost
             Psig_extension "foo"

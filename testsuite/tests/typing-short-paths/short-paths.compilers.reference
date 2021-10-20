@@ -60,7 +60,7 @@ module Core :
             val of_seq : (key * 'a) Seq.t -> 'a t
           end
       end
-    module Std : sig module Int = Int end
+    module Std : sig module Int == Int end
   end
 val x : 'a Int.Map.t = <abstr>
 Line 1, characters 8-9:

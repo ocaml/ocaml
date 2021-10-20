@@ -57,7 +57,7 @@ module Make2 :
           end)
     ->
     sig
-      module T : sig module Id : sig end module Id2 = Id val u : int end
+      module T : sig module Id : sig end module Id2 == Id val u : int end
     end
 |}]
 
@@ -78,7 +78,7 @@ module Make3 :
           end)
     ->
     sig
-      module T : sig module Id : sig end module Id2 = Id val u : int end
+      module T : sig module Id : sig end module Id2 == Id val u : int end
     end
 |}]
 
@@ -101,7 +101,7 @@ module Make1 :
             module Term0 : sig module Id : sig end end
             module T : sig module Id : sig end end
           end)
-    -> sig module Id : sig end module Id2 = Id end
+    -> sig module Id : sig end module Id2 == Id end
 |}]
 
 module Make2 (T' : S) : sig module Id : sig end module Id2 = Id end
@@ -117,7 +117,7 @@ Lines 2-5, characters 57-3:
 5 | end..
 Error: Signature mismatch:
        Modules do not match:
-         sig module Id : sig end module Id2 = Id end
+         sig module Id : sig end module Id2 == Id end
        is not included in
          sig module Id2 = T'.Term0.Id end
        In module Id2:
@@ -141,7 +141,7 @@ module Make3 :
           end)
     ->
     sig
-      module T : sig module Id : sig end module Id2 = Id val u : int end
+      module T : sig module Id : sig end module Id2 == Id val u : int end
     end
 |}]
 
@@ -150,7 +150,7 @@ module M = Make1 (struct module Term0 =
   struct module Id = struct let x = "a" end end module T = Term0 end);;
 M.Id.x;;
 [%%expect{|
-module M : sig module Id : sig end module Id2 = Id end
+module M : sig module Id : sig end module Id2 == Id end
 Line 3, characters 0-6:
 3 | M.Id.x;;
     ^^^^^^
@@ -194,14 +194,14 @@ module Make1 :
             module T : sig module Id : sig end end
             type t = MkT(T).t
           end)
-    -> sig module Id : sig end module Id2 = Id type t = T'.t end
+    -> sig module Id : sig end module Id2 == Id type t = T'.t end
 module IS :
   sig
     module Term0 : sig module Id : sig val x : string end end
-    module T = Term0
+    module T == Term0
     type t = MkT(T).t
   end
-module M : sig module Id : sig end module Id2 = Id type t = IS.t end
+module M : sig module Id : sig end module Id2 == Id type t = IS.t end
 |}]
 
 
@@ -220,7 +220,12 @@ module type S = sig
   type u = t = E of (MkT(Term0).t,MkT(T).t) eq
 end;;
 module F(X:S) = X;;
-module rec M : S = M;;
+module rec M : S = struct
+  module Term0 = Int
+  module T = Term0
+  type t = E of (MkT(T).t,MkT(T).t) eq
+  type u = t = E of (MkT(Term0).t,MkT(T).t) eq
+end;;
 module M' = F(M);;
 module type S' = module type of M';;
 module Asc = struct type t = int let compare x y = x - y end;;
@@ -317,8 +322,8 @@ module type S' =
   end
 module Asc : sig type t = int val compare : int -> int -> int end
 module Desc : sig type t = int val compare : int -> int -> int end
-Line 15, characters 0-69:
-15 | module rec M1 : S' with module Term0 := Asc and module T := Desc = M1;;
+Line 20, characters 0-69:
+20 | module rec M1 : S' with module Term0 := Asc and module T := Desc = M1;;
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type M.t
        Constructors do not match:

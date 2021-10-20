@@ -625,7 +625,7 @@ let module_type (sub : mapper) mty =
   let attrs = sub.attributes sub mty.mty_attributes in
   let desc = match mty.mty_desc with
       Tmty_ident (_path, lid) -> Pmty_ident (map_loc sub lid)
-    | Tmty_alias (_path, lid) -> Pmty_alias (map_loc sub lid)
+    | Tmty_alias (_path, lid, mp) -> Pmty_alias (map_loc sub lid, mp)
     | Tmty_signature sg -> Pmty_signature (sub.signature sub sg)
     | Tmty_functor (arg, mtype2) ->
         Pmty_functor (functor_parameter sub arg, sub.module_type sub mtype2)

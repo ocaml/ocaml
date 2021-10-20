@@ -97,6 +97,11 @@ let rec last = function
   | Pdot(_, s) -> s
   | Papply(_, p) -> last p
 
+let rec simple_global = function
+  | Pident id -> Ident.persistent id
+  | Pdot (p, _) -> simple_global p
+  | Papply _ -> false
+
 let is_uident s =
   assert (s <> "");
   match s.[0] with

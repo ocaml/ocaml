@@ -347,13 +347,13 @@ type module_type =
     Mty_ident of Path.t
   | Mty_signature of signature
   | Mty_functor of functor_parameter * module_type
-  | Mty_alias of Path.t
+  | Mty_alias of Path.t * module_presence
 
 and functor_parameter =
   | Unit
   | Named of Ident.t option * module_type
 
-and module_presence =
+and module_presence = Asttypes.module_presence =
   | Mp_present
   | Mp_absent
 

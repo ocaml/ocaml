@@ -76,7 +76,7 @@ module Error: sig
 
   and functor_symptom =
     | Params of functor_params_diff
-    | Result of module_type_diff
+    | Result of module_type_diff * Env.t (* target environment *)
 
   and ('arg,'path) functor_param_symptom =
     | Incompatible_params of 'arg * Types.functor_parameter
@@ -90,6 +90,7 @@ module Error: sig
 
   and signature_symptom = {
     env: Env.t;
+    target_env: Env.t;
     missings: Types.signature_item list;
     incompatibles: (Ident.t * sigitem_symptom) list;
     oks: (int * Typedtree.module_coercion) list;
@@ -151,7 +152,7 @@ val modtypes:
   module_type -> module_type -> module_coercion
 
 val strengthened_module_decl:
-  loc:Location.t -> aliasable:bool -> Env.t -> mark:mark ->
+  loc:Location.t -> pres:module_presence option -> Env.t -> mark:mark ->
   module_declaration -> Path.t -> module_declaration -> module_coercion
 
 val check_modtype_inclusion :
@@ -214,7 +215,13 @@ exception Apply_error of {
     args : (Error.functor_arg_descr * Types.module_type)  list ;
   }
 
-val expand_module_alias: strengthen:bool -> Env.t -> Path.t -> Types.module_type
+val expand_module_alias:
+  pres:Types.module_presence option -> Env.t -> Path.t -> Types.module_type
+
+val concrete_normalize_module_path:
+  Location.t option -> Env.t -> Path.t -> Path.t
+(** Returns a normalized concrete module path whenever possible, or a concrete
+    path containing functors if none such exist. *)
 
 module Functor_inclusion_diff: sig
   module Defs: sig
@@ -224,7 +231,7 @@ module Functor_inclusion_diff: sig
     type diff = (Types.functor_parameter, unit) Error.functor_param_symptom
     type state
   end
-  val diff: Env.t ->
+  val diff: Env.t -> Env.t ->
     Types.functor_parameter list * Types.module_type ->
     Types.functor_parameter list * Types.module_type ->
     Diffing.Define(Defs).patch
@@ -239,7 +246,7 @@ module Functor_app_diff: sig
     type state
   end
   val diff:
-    Env.t ->
+    Env.t -> Env.t ->
     f:Types.module_type ->
     args:(Error.functor_arg_descr * Types.module_type) list ->
     Diffing.Define(Defs).patch

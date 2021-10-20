@@ -550,7 +550,7 @@ let () =
                        {md with md_type = trim_signature md.md_type},
                        rs, Exported) :: acc in
          match md.md_type with
-         | Mty_alias path ->
+         | Mty_alias (path, _pres) ->
              let md = Env.find_module path env in
              accum_aliases md (acc Trec_not)
          | Mty_ident _ | Mty_signature _ | Mty_functor _ ->

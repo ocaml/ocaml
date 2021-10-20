@@ -40,7 +40,7 @@ val f : [< M.N.t ] -> M.N.t = <fun>
 module G = M.N;;
 let f x = (x :> G.t);;
 [%%expect{|
-module G = M.N
+module G == M.N
 val f : [< G.t ] -> G.t = <fun>
 |}]
 

@@ -1146,7 +1146,7 @@ module N = M;;
 [%%expect{|
 module M : sig type _ t = int end
 module M : sig type _ t = T : int t end
-module N = M
+module N == M
 |}];;
 
 (* Principality *)

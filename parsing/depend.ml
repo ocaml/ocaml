@@ -292,7 +292,7 @@ and add_binding_op bv bv' pbop =
 and add_modtype bv mty =
   match mty.pmty_desc with
     Pmty_ident l -> add bv l
-  | Pmty_alias l -> add_module_path bv l
+  | Pmty_alias (l, _) -> add_module_path bv l
   | Pmty_signature s -> add_signature bv s
   | Pmty_functor(param, mty2) ->
       let bv =
@@ -333,7 +333,7 @@ and add_module_alias bv l =
 
 and add_modtype_binding bv mty =
   match mty.pmty_desc with
-    Pmty_alias l ->
+    Pmty_alias (l, _) ->
       add_module_alias bv l
   | Pmty_signature s ->
       make_node (add_signature_binding bv s)

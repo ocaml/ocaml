@@ -1338,7 +1338,7 @@ module Analyser =
             let rec f = function
                 Parsetree.Pmty_ident longident ->
                   Name.from_longident longident.txt
-              | Parsetree.Pmty_alias longident ->
+              | Parsetree.Pmty_alias (longident, _) ->
                   Name.from_longident longident.txt
               | Parsetree.Pmty_signature _ ->
                   "??"
@@ -1530,10 +1530,10 @@ module Analyser =
           Module_type_alias { mta_name = Odoc_env.full_module_type_name env name ;
                               mta_module = None }
 
-      | Parsetree.Pmty_alias longident ->
+      | Parsetree.Pmty_alias (longident, _) ->
           let name =
             match sig_module_type with
-              Types.Mty_alias path -> Name.from_path path
+              Types.Mty_alias (path, _pres) -> Name.from_path path
             | _ -> Name.from_longident longident.txt
           in
           (* Wrong naming... *)
@@ -1621,10 +1621,10 @@ module Analyser =
       | Parsetree.Pmty_ident _longident ->
           let k = analyse_module_type_kind env current_module_name module_type sig_module_type in
           Module_with ( k, "" )
-      | Parsetree.Pmty_alias _longident ->
+      | Parsetree.Pmty_alias (_longident, _pres) ->
           begin
             match sig_module_type with
-              Types.Mty_alias path ->
+              Types.Mty_alias (path, _pres) ->
                 let ln = !Odoc_global.library_namespace in
                 let alias_name = Odoc_env.full_module_name env
                     Name.(alias_unprefix ln @@ from_path path) in

@@ -87,7 +87,7 @@ val find_class: Path.t -> t -> class_declaration
 val find_cltype: Path.t -> t -> class_type_declaration
 
 val find_strengthened_module:
-  aliasable:bool -> Path.t -> t -> module_type
+  pres:module_presence option -> Path.t -> t -> module_type
 
 val find_ident_constructor: Ident.t -> t -> constructor_description
 val find_ident_label: Ident.t -> t -> label_description
@@ -118,6 +118,19 @@ val normalize_module_path: Location.t option -> t -> Path.t -> Path.t
    Otherwise raise a Missing_module error, and may add forgotten
    head as required global. *)
 
+val normalize_module_path_spine:
+    Location.t option -> t -> Path.t -> Path.t option * Path.t option
+(* Normalize the path along its 'spine', i.e. normalizing any functors or
+   submodules, but not walking into any functor arguments.
+   Returns [(concrete_path, functor_instance)], where [concrete_path] is the
+   path to the concrete source of the module -- if available -- and
+   [functor_instance] is the normalized path of functor applications that
+   generated this module.
+   At least one of the returned values is always [Some _].
+   If the optional location is None, allow returning dangling paths.
+   Otherwise raise a Missing_module error, and may add forgotten
+   head as required global. *)
+
 val normalize_type_path: Location.t option -> t -> Path.t -> Path.t
 (* Normalize the prefix part of the type path *)
 
@@ -127,6 +140,9 @@ val normalize_path_prefix: Location.t option -> t -> Path.t -> Path.t
 
 val normalize_modtype_path: t -> Path.t -> Path.t
 (* Normalize a module type path *)
+
+val may_alias_absent: t -> Path.t -> bool
+(* Detect whether a module path may be aliased with Mp_absent. *)
 
 val reset_required_globals: unit -> unit
 val get_required_globals: unit -> Ident.t list
@@ -448,7 +464,7 @@ val check_well_formed_module:
 val add_delayed_check_forward: ((unit -> unit) -> unit) ref
 (* Forward declaration to break mutual recursion with Mtype. *)
 val strengthen:
-    (aliasable:bool -> t -> Subst.Lazy.modtype ->
+    (pres:module_presence option -> t -> Subst.Lazy.modtype ->
      Path.t -> Subst.Lazy.modtype) ref
 (* Forward declaration to break mutual recursion with Ctype. *)
 val same_constr: (t -> type_expr -> type_expr -> bool) ref

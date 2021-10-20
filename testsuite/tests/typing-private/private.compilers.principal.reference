@@ -5,7 +5,7 @@ Line 2, characters 20-21:
                         ^
 Error: This expression has type F0.t but an expression was expected of type
          Foobar.t
-module F = Foobar
+module F == Foobar
 val f : F.t -> Foobar.t = <fun>
 module M : sig type t = < m : int > end
 module M1 : sig type t = private < m : int; .. > end

@@ -465,7 +465,7 @@ and module_type_desc =
   | Tmty_functor of functor_parameter * module_type
   | Tmty_with of module_type * (Path.t * Longident.t loc * with_constraint) list
   | Tmty_typeof of module_expr
-  | Tmty_alias of Path.t * Longident.t loc
+  | Tmty_alias of Path.t * Longident.t loc * module_presence
 
 and primitive_coercion =
   {

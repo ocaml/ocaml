@@ -24,16 +24,19 @@ val scrape: Env.t -> module_type -> module_type
 val scrape_for_functor_arg: Env.t -> module_type -> module_type
         (* Remove aliases in a functor argument type *)
 val scrape_for_type_of:
-  remove_aliases:bool -> Env.t -> module_type -> module_type
+  present_aliases:bool -> remove_aliases:bool -> Env.t -> module_type ->
+    module_type
         (* Process type for module type of *)
 val freshen: scope:int -> module_type -> module_type
         (* Return an alpha-equivalent copy of the given module type
            where bound identifiers are fresh. *)
-val strengthen: aliasable:bool -> Env.t -> module_type -> Path.t -> module_type
+val strengthen:
+  pres:module_presence option -> Env.t -> module_type -> Path.t -> module_type
         (* Strengthen abstract type components relative to the
            given path. *)
 val strengthen_decl:
-  aliasable:bool -> Env.t -> module_declaration -> Path.t -> module_declaration
+  pres:module_presence option -> Env.t -> module_declaration -> Path.t ->
+    module_declaration
 val nondep_supertype: Env.t -> Ident.t list -> module_type -> module_type
         (* Return the smallest supertype of the given type
            in which none of the given idents appears.

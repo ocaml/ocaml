@@ -115,6 +115,12 @@ let fmt_private_flag f x =
   | Private -> fprintf f "Private";
 ;;
 
+let fmt_module_presence f x =
+  match x with
+  | Mp_present -> fprintf f "Mp_present";
+  | Mp_absent -> fprintf f "Mp_absent";
+;;
+
 let line i f s (*...*) =
   fprintf f "%s" (String.make (2*i) ' ');
   fprintf f s (*...*)
@@ -689,7 +695,8 @@ and module_type i ppf x =
   let i = i+1 in
   match x.mty_desc with
   | Tmty_ident (li,_) -> line i ppf "Tmty_ident %a\n" fmt_path li;
-  | Tmty_alias (li,_) -> line i ppf "Tmty_alias %a\n" fmt_path li;
+  | Tmty_alias (li,_,mp) ->
+      line i ppf "Tmty_alias %a %a\n" fmt_path li fmt_module_presence mp;
   | Tmty_signature (s) ->
       line i ppf "Tmty_signature\n";
       signature i ppf s;

@@ -37,6 +37,10 @@ val heads: t -> Ident.t list
 
 val last: t -> string
 
+val simple_global : t -> bool
+(** [simple_global] returns true if the path is simple (no [Papply]s) and the
+    root identifier is a global. *)
+
 val is_uident: string -> bool
 
 type typath =
