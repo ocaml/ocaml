@@ -100,7 +100,7 @@ void caml_lf_skiplist_init(struct lf_skiplist *sk) {
 
   sk->tail = caml_stat_alloc(SIZEOF_LF_SKIPCELL +
                              NUM_LEVELS * sizeof(struct lf_skipcell *));
-  sk->tail->key = -1; // Would be better to have a UINTNAT_MAX
+  sk->tail->key = UINTNAX_MAX;
   sk->tail->data = 0;
   sk->tail->garbage_next = NULL;
   sk->tail->top_level = NUM_LEVELS - 1;
@@ -327,7 +327,7 @@ int caml_lf_skiplist_insert(struct lf_skiplist *sk, uintnat key, uintnat data) {
   struct lf_skipcell *preds[NUM_LEVELS];
   struct lf_skipcell *succs[NUM_LEVELS];
 
-  CAMLassert(key > 0 && key < -1);
+  CAMLassert(key > 0 && key < UINTNAX_MAX);
 
   while (1) {
     /* We first try to find a node with [key] in the skip list. If it exists
