@@ -227,11 +227,7 @@ retry:
       succs[level] = curr;
     }
 
-    if (curr->key == key) {
-      return 1;
-    } else {
-      return 0;
-    }
+    return curr->key == key;
   }
 }
 
