@@ -2421,7 +2421,7 @@ let rec approx_type env sty =
   match sty.ptyp_desc with
     Ptyp_arrow (p, _, sty) ->
       let ty1 = if is_optional p then type_option (newvar ()) else newvar () in
-      newty (Tarrow (p, ty1, approx_type env sty, Cok))
+      newty (Tarrow (p, ty1, approx_type env sty, commu_ok))
   | Ptyp_tuple args ->
       newty (Ttuple (List.map (approx_type env) args))
   | Ptyp_constr (lid, ctl) ->
@@ -2440,9 +2440,9 @@ let rec type_approx env sexp =
     Pexp_let (_, _, e) -> type_approx env e
   | Pexp_fun (p, _, _, e) ->
       let ty = if is_optional p then type_option (newvar ()) else newvar () in
-      newty (Tarrow(p, ty, type_approx env e, Cok))
+      newty (Tarrow(p, ty, type_approx env e, commu_ok))
   | Pexp_function ({pc_rhs=e}::_) ->
-      newty (Tarrow(Nolabel, newvar (), type_approx env e, Cok))
+      newty (Tarrow(Nolabel, newvar (), type_approx env e, commu_ok))
   | Pexp_match (_, {pc_rhs=e}::_) -> type_approx env e
   | Pexp_try (e, _) -> type_approx env e
   | Pexp_tuple l -> newty (Ttuple(List.map (type_approx env) l))
@@ -3543,7 +3543,8 @@ and type_expect_
                         | Tobject (fields, _) ->
                             let (fields, _) = Ctype.flatten_fields fields in
                             let collect_fields li (meth, meth_kind, _meth_ty) =
-                              if meth_kind = Fpresent then meth::li else li
+                              if field_kind_repr meth_kind = Fpublic
+                              then meth::li else li
                             in
                             Some (List.fold_left collect_fields [] fields)
                         | _ -> None
@@ -3882,12 +3883,13 @@ and type_expect_
       let op_type = instance op_desc.val_type in
       let spat_params, ty_params = loop slet.pbop_pat (newvar ()) sands in
       let ty_func_result = newvar () in
-      let ty_func = newty (Tarrow(Nolabel, ty_params, ty_func_result, Cok)) in
+      let ty_func =
+        newty (Tarrow(Nolabel, ty_params, ty_func_result, commu_ok)) in
       let ty_result = newvar () in
       let ty_andops = newvar () in
       let ty_op =
         newty (Tarrow(Nolabel, ty_andops,
-          newty (Tarrow(Nolabel, ty_func, ty_result, Cok)), Cok))
+          newty (Tarrow(Nolabel, ty_func, ty_result, commu_ok)), commu_ok))
       in
       begin try
         unify env op_type ty_op
@@ -4054,7 +4056,8 @@ and type_function ?(in_function : (Location.t * type_expr) option)
   re {
     exp_desc = Texp_function { arg_label; param; cases; partial; };
     exp_loc = loc; exp_extra = [];
-    exp_type = instance (newgenty (Tarrow(arg_label, ty_arg, ty_res, Cok)));
+    exp_type =
+      instance (newgenty (Tarrow(arg_label, ty_arg, ty_res, commu_ok)));
     exp_attributes = attrs;
     exp_env = env }
 
@@ -4502,7 +4505,7 @@ and type_application env funct sargs =
   (* funct.exp_type may be generic *)
   let result_type omitted ty_fun =
     List.fold_left
-      (fun ty_fun (l,ty,lv) -> newty2 ~level:lv (Tarrow(l,ty,ty_fun,Cok)))
+      (fun ty_fun (l,ty,lv) -> newty2 ~level:lv (Tarrow(l,ty,ty_fun,commu_ok)))
       ty_fun omitted
   in
   let has_label l ty_fun =
@@ -4522,7 +4525,7 @@ and type_application env funct sargs =
           then
             Location.prerr_warning sarg.pexp_loc
               Warnings.Ignored_extra_argument;
-          unify env ty_fun (newty (Tarrow(lbl,t1,t2,Clink(ref Cunknown))));
+          unify env ty_fun (newty (Tarrow(lbl,t1,t2,commu_var ())));
           (t1, t2)
       | Tarrow (l,t1,t2,_) when l = lbl
         || !Clflags.classic && lbl = Nolabel && not (is_optional l) ->
@@ -4574,7 +4577,7 @@ and type_application env funct sargs =
     let ty_fun' = expand_head env ty_fun in
     match get_desc ty_fun', get_desc (expand_head env ty_fun0) with
     | Tarrow (l, ty, ty_fun, com), Tarrow (_, ty0, ty_fun0, _)
-      when sargs <> [] && commu_repr com = Cok ->
+      when sargs <> [] && is_commu_ok com ->
         let lv = get_level ty_fun' in
         let may_warn loc w =
           if not !warned && !Clflags.principal && lv <> generic_level
@@ -5337,8 +5340,9 @@ and type_andops env sarg sands expected_ty =
         let ty_arg = newvar () in
         let ty_rest = newvar () in
         let ty_result = newvar() in
-        let ty_rest_fun = newty (Tarrow(Nolabel, ty_arg, ty_result, Cok)) in
-        let ty_op = newty (Tarrow(Nolabel, ty_rest, ty_rest_fun, Cok)) in
+        let ty_rest_fun =
+          newty (Tarrow(Nolabel, ty_arg, ty_result, commu_ok)) in
+        let ty_op = newty (Tarrow(Nolabel, ty_rest, ty_rest_fun, commu_ok)) in
         begin try
           unify env op_type ty_op
         with Unify err ->
