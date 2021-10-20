@@ -220,7 +220,7 @@ let simplify_exits lam =
       Lapply{ap with ap_func = simplif ~try_depth ap.ap_func;
                      ap_args = List.map (simplif ~try_depth) ap.ap_args}
   | Lfunction{kind; params; return; body = l; attr; loc} ->
-     Lfunction{kind; params; return; body = simplif ~try_depth l; attr; loc}
+     lfunction ~kind ~params ~return ~body:(simplif ~try_depth l) ~attr ~loc
   | Llet(str, kind, v, l1, l2) ->
       Llet(str, kind, v, simplif ~try_depth l1, simplif ~try_depth l2)
   | Lmutlet(kind, v, l1, l2) ->
@@ -520,9 +520,9 @@ let simplify_lets lam =
              type of the merged function taking [params @ params'] as
              parameters is the type returned after applying [params']. *)
           let return = return2 in
-          Lfunction{kind; params = params @ params'; return; body; attr; loc}
+          lfunction ~kind ~params:(params @ params') ~return ~body ~attr ~loc
       | body ->
-          Lfunction{kind; params; return = return1; body; attr; loc}
+          lfunction ~kind ~params ~return:return1 ~body ~attr ~loc
       end
   | Llet(_str, _k, v, Lvar w, l2) when optimize ->
       Hashtbl.add subst v (simplif (Lvar w));
@@ -749,18 +749,18 @@ let split_default_wrapper ~id:fun_id ~kind ~params ~return ~body ~attr ~loc =
         in
         let body = Lambda.rename subst body in
         let inner_fun =
-          Lfunction { kind = Curried;
-            params = List.map (fun id -> id, Pgenval) new_ids;
-            return; body; attr; loc; }
+          lfunction ~kind:Curried
+            ~params:(List.map (fun id -> id, Pgenval) new_ids)
+            ~return ~body ~attr ~loc
         in
         (wrapper_body, (inner_id, inner_fun))
   in
   try
     let body, inner = aux [] body in
     let attr = default_stub_attribute in
-    [(fun_id, Lfunction{kind; params; return; body; attr; loc}); inner]
+    [(fun_id, lfunction ~kind ~params ~return ~body ~attr ~loc); inner]
   with Exit ->
-    [(fun_id, Lfunction{kind; params; return; body; attr; loc})]
+    [(fun_id, lfunction ~kind ~params ~return ~body ~attr ~loc)]
 
 (* Simplify local let-bound functions: if all occurrences are
    fully-applied function calls in the same "tail scope", replace the
