@@ -264,8 +264,7 @@ static struct lf_skipcell *lf_skiplist_lookup(struct lf_skiplist *sk,
     while (1) {
       LF_SK_EXTRACT(curr->forward[level], marked, succ);
       while (marked) {
-        curr = LF_SK_UNMARK(
-            atomic_load_explicit(&curr->forward[level], memory_order_acquire));
+        curr = succ;
         LF_SK_EXTRACT(curr->forward[level], marked, succ);
       }
       if (curr->key < key) {
