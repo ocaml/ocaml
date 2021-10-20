@@ -30,12 +30,6 @@ AC_MSG_NOTICE([Configuring OCaml version AC_PACKAGE_VERSION])
 ## Command-line arguments passed to configure
 CONFIGURE_ARGS="$*"
 
-# Command-line tools section of the Unix manual
-programs_man_section=1
-
-# Library section of the Unix manual
-libraries_man_section=3
-
 # Command to build executalbes
 # In general this command is supposed to use the CFLAGs- and LDFLAGS-
 # related variables (OC_CFLAGS and OC_LDFLAGS for ocaml-specific
@@ -107,8 +101,6 @@ AC_SUBST([outputexe])
 AC_SUBST([outputobj])
 AC_SUBST([syslib])
 AC_SUBST([extralibs])
-AC_SUBST([programs_man_section])
-AC_SUBST([libraries_man_section])
 AC_SUBST([fpic])
 AC_SUBST([mkexe])
 AC_SUBST([mkexedebugflag])
