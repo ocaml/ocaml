@@ -118,8 +118,8 @@ and +'a node =
    one can distinguish two groups:
    - [iter2] and [fold_left2] consume both sequences all the way
      to the end, provided the sequences have the same length.
-   - [for_all2], [exists2], [equal], [compare] consume the sequences down to a certain
-     depth, which is a priori unpredictable.
+   - [for_all2], [exists2], [equal], [compare] consume the sequences down
+     to a certain depth, which is a priori unpredictable.
 
    The functions that consume two sequences can be applied to two sequences
    of distinct lengths: in that case, the excess elements in the longer
@@ -654,8 +654,8 @@ val product : 'a t -> 'b t -> ('a * 'b) t
     @since 4.14 *)
 
 val map_product : ('a -> 'b -> 'c) -> 'a t -> 'b t -> 'c t
-(** The sequence [map_product f xs ys] is the image through [f] of the Cartesian
-    product of the sequences [xs] and [ys].
+(** The sequence [map_product f xs ys] is the image through [f]
+    of the Cartesian product of the sequences [xs] and [ys].
 
     For every element [x] of [xs] and for every element [y] of [ys],
     the element [f x y] appears once as an element of [map_product f xs ys].
@@ -696,8 +696,9 @@ val partition_map : ('a -> ('b, 'c) Either.t) -> 'a t -> 'b t * 'c t
     - [zs] is the sequence of the elements [z] such that
       [f x = Right z], where [x] ranges over [xs].
 
-    [partition_map f xs] is equivalent to
-    [(filter_map Either.find_left (map f xs), filter_map Either.find_right (map f xs))].
+    [partition_map f xs] is equivalent to a pair of
+    [filter_map Either.find_left (map f xs)] and
+    [filter_map Either.find_right (map f xs)].
 
     Querying either of the sequences returned by [partition_map f xs]
     causes [xs] to be queried.
