@@ -271,7 +271,8 @@ value unix_error_of_code (int errcode)
   errconstr =
       cst_to_constr(errcode, error_table, sizeof(error_table)/sizeof(int), -1);
   if (errconstr == Val_int(-1)) {
-    err = caml_alloc_1(0, Val_int(errcode));
+    err = caml_alloc_small(1, 0);
+    Field(err, 0) = Val_int(errcode);
   } else {
     err = errconstr;
   }
@@ -299,15 +300,15 @@ void unix_error(int errcode, const char *cmdname, value cmdarg)
     err = unix_error_of_code (errcode);
     if (unix_error_exn == NULL) {
       unix_error_exn = caml_named_value("Unix.Unix_error");
-      if (!unix_error_exn)
+      if (unix_error_exn == NULL)
         caml_invalid_argument("Exception Unix.Unix_error not initialized,"
-                              " please link unix.cma");
+                         " please link unix.cma");
     }
-    res = caml_alloc_4(0,
-      *unix_error_exn,
-      err,
-      name,
-      arg);
+    res = caml_alloc_small(4, 0);
+    Field(res, 0) = *unix_error_exn;
+    Field(res, 1) = err;
+    Field(res, 2) = name;
+    Field(res, 3) = arg;
   End_roots();
   caml_raise(res);
 }
