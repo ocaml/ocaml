@@ -122,7 +122,6 @@ void caml_parse_ocamlrunparam(void)
       case 'p': scanmult (opt, &params.parser_trace); break;
       case 'R': break; /*  see stdlib/hashtbl.mli */
       case 's': scanmult (opt, &params.init_minor_heap_wsz); break;
-      case 'S': scanmult (opt, &params.print_stats); break;
       case 't': scanmult (opt, &params.trace_level); break;
       case 'v': scanmult (opt, &params.verb_gc); break;
       case 'V': scanmult (opt, &params.verify_heap); break;
@@ -207,14 +206,6 @@ void caml_init_section_table(const char* section_table,
 {
   params.section_table = section_table;
   params.section_table_size = section_table_size;
-}
-
-CAMLprim value caml_maybe_print_stats (value v)
-{
-  Assert (v == Val_unit);
-  if (caml_params->print_stats)
-    caml_print_stats ();
-  return Val_unit;
 }
 
 #ifndef NATIVE_CODE

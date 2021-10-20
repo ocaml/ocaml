@@ -38,7 +38,6 @@ struct caml_params {
   uintnat trace_level;
   uintnat eventlog_enabled;
   uintnat verify_heap;
-  uintnat print_stats;
   uintnat print_magic;
   uintnat print_config;
 
@@ -73,7 +72,6 @@ extern int caml_startup_aux (int pooling);
 void caml_init_exe_name(const char* exe_name);
 void caml_init_section_table(const char* section_table,
                              asize_t section_table_size);
-value caml_maybe_print_stats (value v);
 
 #endif /* CAML_INTERNALS */
 
