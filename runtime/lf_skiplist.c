@@ -104,8 +104,11 @@ void caml_lf_skiplist_init(struct lf_skiplist *sk) {
   sk->tail->garbage_next = NULL;
   sk->tail->top_level = NUM_LEVELS - 1;
 
-  /* We do this so we can disambiguate between garbage_next being NULL and being
-     set during cleanup */
+  /* We do this so that later in find when we try to CAS a cell's
+     `garbage_next` in `skiplist_find` we can disambiguate between a cell with
+     an uninitialised `garbage_next` (that we may take ownership of) and one
+     that is already in the garbage list. If we instead used NULL then this
+     would not be possible.  */
   sk->garbage_head = sk->head;
 
   /* each level in the skip list starts of being just head pointing to tail */
