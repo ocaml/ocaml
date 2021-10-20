@@ -24,9 +24,10 @@
     contains is further wait-free. It is literally a textbook implementation
     and can be found in Herlihy et al's "The Art of Multiprocessor
     Programming" 2nd Edition, section 14.4. It only differs from the
-    textbook implementation to fix errors in the pseudocode, to add a racy
-    [search_level] to the data structure and to keep a list of removed nodes
-    in order to do a deferred free.
+    textbook implementation to fix errors in the pseudocode in [contains],
+    to add a [search_level] optimisation to the data structure, replacing Java's
+    volatile with atomics and to keep a list of removed nodes in order to do a
+    deferred free.
 
     You _must_ call [caml_lf_skiplist_free_garbage] "every so often" in order
     for the data structure to free removed nodes. This must be done by only
@@ -234,6 +235,11 @@ retry:
    equal to the key provided, along with the node that directly proceeds it. It
    is a much simplified version of [lf_skiplist_find] as it simply ignores
    marked nodes and does not snip them out. As a consequence, it is wait-free.
+
+   This implementation differs from of the 'contains' in "The Art of
+   Multiprocessor Programming" to fix the erronous swap of pred and curr inside
+   the while(marked) loop. It also uses [search_level] to avoid scanning the
+   sentinels unnecessarily.
  */
 static struct lf_skipcell *lf_skiplist_lookup(struct lf_skiplist *sk,
                                               uintnat key,
