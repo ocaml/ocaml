@@ -7,7 +7,7 @@ let flag2 = Atomic.make false
 
 let rec wait_for_flag f =
   if Atomic.get f then ()
-  else (Domain.Sync.cpu_relax (); wait_for_flag f)
+  else (Domain.cpu_relax (); wait_for_flag f)
 
 let l1 = Lazy.from_fun (fun () ->
   Atomic.set flag1 true;
@@ -23,7 +23,7 @@ let second_domain () =
     try Lazy.force l2 with
     | Lazy.RacyLazy ->
         (Atomic.set flag2 true;
-         Domain.Sync.cpu_relax ();
+         Domain.cpu_relax ();
          loop ())
   in
   loop ()

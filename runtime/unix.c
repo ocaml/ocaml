@@ -26,12 +26,9 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/time.h>
 #include <errno.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
-#include <time.h>
-#include <errno.h>
 #include "caml/config.h"
 #if defined(SUPPORT_DYNAMIC_LINKING) && !defined(BUILDING_LIBCAMLRUNS)
 #define WITH_DYNAMIC_LINKING
@@ -421,25 +418,6 @@ char *caml_secure_getenv (char const *var)
     return getenv(var);
   else
     return NULL;
-#endif
-}
-
-int64_t caml_time_counter(void)
-{
-#if defined(_POSIX_TIMERS) && defined(_POSIX_MONOTONIC_CLOCK) && _POSIX_MONOTONIC_CLOCK != (-1)
-  struct timespec t;
-  clock_gettime(CLOCK_MONOTONIC, &t);
-  return
-    (int64_t)t.tv_sec  * (int64_t)1000000000 +
-    (int64_t)t.tv_nsec;
-#elif defined(HAS_GETTIMEOFDAY)
-  struct timeval t;
-  gettimeofday(&t, 0);
-  return
-    (int64_t)t.tv_sec  * (int64_t)1000000000 +
-    (int64_t)t.tv_usec * (int64_t)1000;
-#else
-# error "No timesource available"
 #endif
 }
 

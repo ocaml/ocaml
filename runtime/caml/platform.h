@@ -1,3 +1,19 @@
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*      KC Sivaramakrishnan, Indian Institute of Technology, Madras       */
+/*                   Stephen Dolan, University of Cambridge               */
+/*                                                                        */
+/*   Copyright 2016 Indian Institute of Technology, Madras                */
+/*   Copyright 2016 University of Cambridge                               */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
 #ifndef CAML_PLAT_THREADS_H
 #define CAML_PLAT_THREADS_H
 /* Platform-specific concurrency and memory primitives */
@@ -83,7 +99,7 @@ typedef struct { pthread_cond_t cond; caml_plat_mutex* mutex; } caml_plat_cond;
 #define CAML_PLAT_COND_INITIALIZER(m) { PTHREAD_COND_INITIALIZER, m }
 void caml_plat_cond_init(caml_plat_cond*, caml_plat_mutex*);
 void caml_plat_wait(caml_plat_cond*);
-/* like caml_plat_wait, but if caml_time_counter() surpasses the second parameter
+/* like caml_plat_wait, but if nanoseconds surpasses the second parameter
    without a signal, then this function returns 1. */
 int caml_plat_timedwait(caml_plat_cond*, int64_t);
 void caml_plat_broadcast(caml_plat_cond*);
@@ -107,7 +123,8 @@ void caml_mem_unmap(void* mem, uintnat size);
 Caml_inline void check_err(char* action, int err)
 {
   if (err) {
-    caml_fatal_error_arg2("Fatal error during %s", action, ": %s\n", strerror(err));
+    caml_fatal_error_arg2(
+      "Fatal error during %s", action, ": %s\n", strerror(err));
   }
 }
 
