@@ -742,6 +742,10 @@ val of_iterator : (unit -> 'a option) -> 'a t
 
 val to_iterator : 'a t -> (unit -> 'a option)
 (** [to_iterator xs] is a fresh iterator on the sequence [xs].
+
+    This iterator has mutable internal state,
+    which is not protected by a lock;
+    so, it must not be used by several threads concurrently.
     @since 4.14 *)
 
 (** {1 Sequences of integers} *)
