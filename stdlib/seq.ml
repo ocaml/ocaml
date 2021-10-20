@@ -446,10 +446,12 @@ module Suspension = struct
      raised. *)
 
   let once (f : 'a suspension) : 'a suspension =
-    let action = ref f in
+    let action = CamlinternalAtomic.make f in
     fun () ->
-      let f = !action in
-      action := failure;
+      (* Get the function currently stored in [action], and write the
+         function [failure] in its place, so the next access will result
+         in a call to [failure()]. *)
+      let f = CamlinternalAtomic.exchange action failure in
       f()
 
 end (* Suspension *)
