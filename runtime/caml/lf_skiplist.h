@@ -98,7 +98,7 @@ extern void caml_lf_skiplist_free_garbage(struct lf_skiplist *sk);
     uintptr_t tmp =                                                            \
         (uintptr_t)atomic_load_explicit(&from, memory_order_acquire);          \
     mark_to = LF_SK_IS_MARKED(tmp);                                            \
-    ptr_to = (struct lf_skipcell *)LF_SK_UNMARK(tmp);                          \
+    ptr_to = LF_SK_UNMARK(tmp);                          \
   }
 
 /* Iterate over a skip list, in increasing order of keys.
