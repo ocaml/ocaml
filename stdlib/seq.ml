@@ -654,11 +654,13 @@ let rec diagonals remainders xss () =
    The first diagonal contains just the first element of the
    first row. The second diagonal contains the first element of the
    second row and the second element of the first row; and so on.
+   This kind of diagonal is in fact sometimes known as an antidiagonal.
 
    - Every diagonal is a finite sequence.
    - The rows of the matrix [xss] are not required to have the same length.
    - The matrix [xss] is not required to be finite (in either direction).
    - The matrix [xss] must be persistent. *)
+
 let diagonals xss =
   diagonals empty xss
 
