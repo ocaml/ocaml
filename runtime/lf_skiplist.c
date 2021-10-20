@@ -492,7 +492,8 @@ void caml_lf_skiplist_free_garbage(struct lf_skiplist *sk) {
 
   struct lf_skipcell *head = sk->head;
   while (curr != head) {
-    struct lf_skipcell *next = atomic_load_explicit(&curr->garbage_next,memory_order_relaxed);
+    struct lf_skipcell *next = atomic_load_explicit
+                                  (&curr->garbage_next, memory_order_relaxed);
     // acquire not useful, if executed in STW
     caml_stat_free(curr);
     curr = next;
