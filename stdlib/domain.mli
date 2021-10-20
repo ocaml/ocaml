@@ -1,3 +1,21 @@
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*      KC Sivaramakrishnan, Indian Institute of Technology, Madras       *)
+(*                 Stephen Dolan, University of Cambridge                 *)
+(*                   Tom Kelly, OCaml Labs Consultancy                    *)
+(*                                                                        *)
+(*   Copyright 2019 Indian Institute of Technology, Madras                *)
+(*   Copyright 2014 University of Cambridge                               *)
+(*   Copyright 2021 OCaml Labs Consultancy Ltd                            *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
+
 type 'a t
 (** A domain of type ['a t] runs independently, eventually producing a
     result of type 'a, or an exception *)
@@ -17,9 +35,15 @@ type id = private int
 (** Domains have unique integer identifiers *)
 
 val get_id : 'a t -> id
+(** [get_id d] returns the identifier of the domain [d] *)
 
 val self : unit -> id
 (** [self ()] is the identifier of the currently running domain *)
+
+type nanoseconds = int64
+val timer_ticks : unit -> nanoseconds
+(** Returns the number of nanoseconds elapsed since the OCaml
+    runtime started. *)
 
 val at_first_spawn : (unit -> unit) -> unit
 (** Register the given function to be called before the first domain is
@@ -31,11 +55,6 @@ val at_exit : (unit -> unit) -> unit
 (** Register the given function to be called at when a domain exits. This
     function is also registered with {!Stdlib.at_exit}. If the registered
     function raises an exception, the exceptions are ignored. *)
-
-type nanoseconds = int64
-val timer_ticks : unit -> nanoseconds
-(** Returns the number of nanoseconds elapsed since the OCaml
-    runtime started. *)
 
 module Sync : sig
   (** Low-level Domain related primitives. **)

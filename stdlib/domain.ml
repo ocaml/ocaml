@@ -1,3 +1,21 @@
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*      KC Sivaramakrishnan, Indian Institute of Technology, Madras       *)
+(*                 Stephen Dolan, University of Cambridge                 *)
+(*                   Tom Kelly, OCaml Labs Consultancy                    *)
+(*                                                                        *)
+(*   Copyright 2019 Indian Institute of Technology, Madras                *)
+(*   Copyright 2014 University of Cambridge                               *)
+(*   Copyright 2021 OCaml Labs Consultancy Ltd                            *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
+
 module Raw = struct
   (* Low-level primitives provided by the runtime *)
   type t = private int
@@ -8,6 +26,25 @@ module Raw = struct
   external cpu_relax : unit -> unit
     = "caml_ml_domain_cpu_relax"
 end
+
+module Sync = struct
+  let cpu_relax () = Raw.cpu_relax ()
+  let poll () = ()
+end
+
+type id = Raw.t
+
+type 'a state =
+| Running
+| Joining of ('a, exn) result option ref
+| Finished of ('a, exn) result
+| Joined
+
+type 'a t = {
+  domain : Raw.t;
+  termination_mutex: Mutex.t;
+  state: 'a state Atomic.t }
+
 
 module DLS = struct
 
@@ -68,37 +105,8 @@ module DLS = struct
     else Obj.magic v
 
 end
-type nanoseconds = int64
-external timer_ticks : unit -> (int64 [@unboxed]) =
-  "caml_ml_domain_ticks" "caml_ml_domain_ticks_unboxed" [@@noalloc]
 
-module Sync = struct
-  let cpu_relax () = Raw.cpu_relax ()
-  let poll () = ()
-end
-
-type id = Raw.t
-
-type 'a state =
-| Running
-| Joining of ('a, exn) result option ref
-| Finished of ('a, exn) result
-| Joined
-
-type 'a t = {
-  domain : Raw.t;
-  termination_mutex: Mutex.t;
-  state: 'a state Atomic.t }
-
-exception Retry
-let rec spin f =
-  try f () with Retry ->
-      Sync.cpu_relax ();
-      spin f
-
-let cas r vold vnew =
-  if not (Atomic.compare_and_set r vold vnew) then raise Retry
-
+(* first spawn and at exit functionality *)
 let first_domain_spawned = Atomic.make false
 
 let first_spawn_function = ref (fun () -> ())
@@ -132,6 +140,16 @@ let rec at_exit f =
   else at_exit f
 
 let do_at_exit () = (Atomic.get exit_function) ()
+
+(* Spawn and join functionality *)
+exception Retry
+let rec spin f =
+  try f () with Retry ->
+      Sync.cpu_relax ();
+      spin f
+
+let cas r vold vnew =
+  if not (Atomic.compare_and_set r vold vnew) then raise Retry
 
 let spawn f =
   do_at_first_spawn ();
@@ -169,7 +187,8 @@ let join { termination_mutex; state; _ } =
       cas state Running (Joining x);
       termination_wait termination_mutex;
       match !x with
-      | None -> failwith "internal error: termination signaled but result not passed"
+      | None ->
+          failwith "internal error: termination signaled but result not passed"
       | Some r -> r
     end
     | Finished x as old ->
@@ -188,4 +207,6 @@ let get_id { domain; _ } = domain
 
 let self () = Raw.self ()
 
-
+type nanoseconds = int64
+external timer_ticks : unit -> (int64 [@unboxed]) =
+  "caml_ml_domain_ticks" "caml_ml_domain_ticks_unboxed" [@@noalloc]
