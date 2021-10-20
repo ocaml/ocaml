@@ -58,7 +58,7 @@ let () =
               else
                 for k = 1 to nturns do
                   while not (find_skiplist k npar j) do
-                    Domain.Sync.cpu_relax ()
+                    Domain.cpu_relax ()
                   done
                 done)) in
     ignore (List.iter Domain.join d_list) ;
