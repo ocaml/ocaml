@@ -221,16 +221,26 @@ let expand_module_alias ~pres env path =
   | x -> Ok x
   | exception Not_found -> Error (Error.Unbound_module_path path)
 
-let concrete_normalize_module_path oloc env path =
+let rec concrete_normalize_module_path oloc env path =
   match
     Env.normalize_module_path_spine oloc env path
   with
   | (Some p, _) -> p (* Expand to a concrete path if possible. *)
-  | (None, Some p_constructor) ->
-      (* There is no concrete path, normalize the constructor path and
-         expand it. *)
-      Env.normalize_module_path oloc env p_constructor
+  | (_, Some p) ->
+      (* There is no concrete path, concrete normalize the functor arguments. *)
+      concrete_normalize_functor_arguments oloc env p
   | (None, None) -> assert false
+
+and concrete_normalize_functor_arguments oloc env p =
+  match p with
+  | Path.Pident _ -> p
+  | Path.Pdot (p', s) ->
+      let p'' = concrete_normalize_functor_arguments oloc env p' in
+      if p' == p'' then p else Path.Pdot (p'', s)
+  | Path.Papply (p1, p2) ->
+      let p1' = concrete_normalize_functor_arguments oloc env p1 in
+      let p2' = concrete_normalize_module_path oloc env p2 in
+      if p1 == p1' && p2 == p2' then p else Path.Papply (p1', p2')
 
 (* Extract name, kind and ident from a signature item *)
 
