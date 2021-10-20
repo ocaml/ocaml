@@ -203,7 +203,3 @@ let join { termination_mutex; state; _ } =
 let get_id { domain; _ } = domain
 
 let self () = Raw.self ()
-
-type nanoseconds = int64
-external timer_ticks : unit -> (int64 [@unboxed]) =
-  "caml_ml_domain_ticks" "caml_ml_domain_ticks_unboxed" [@@noalloc]
