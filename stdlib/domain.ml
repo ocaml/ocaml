@@ -29,7 +29,6 @@ end
 
 module Sync = struct
   let cpu_relax () = Raw.cpu_relax ()
-  let poll () = ()
 end
 
 type id = Raw.t
