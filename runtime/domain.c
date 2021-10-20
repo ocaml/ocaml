@@ -1322,16 +1322,6 @@ static void domain_terminate()
   atomic_fetch_add(&caml_num_domains_running, -1);
 }
 
-CAMLprim int64_t caml_ml_domain_ticks_unboxed(value unused)
-{
-  return caml_time_counter() - startup_timestamp;
-}
-
-CAMLprim value caml_ml_domain_ticks(value unused)
-{
-  return caml_copy_int64(caml_ml_domain_ticks_unboxed(unused));
-}
-
 CAMLprim value caml_ml_domain_cpu_relax(value t)
 {
   struct interruptor* self = &domain_self->interruptor;
