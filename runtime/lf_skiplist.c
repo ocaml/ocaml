@@ -202,7 +202,7 @@ retry:
 
               if (atomic_compare_exchange_strong(
                       &sk->garbage_head,
-                      &current_garbage_head, curr)) {
+                      (struct lf_skipcell **)&current_garbage_head, curr)) {
                 break;
               }
             }
