@@ -114,8 +114,11 @@ void caml_lf_skiplist_init(struct lf_skiplist *sk) {
 
   /* each level in the skip list starts of being just head pointing to tail */
   for (int j = 0; j < NUM_LEVELS; j++) {
-    sk->head->forward[j] = sk->tail;
-    sk->tail->forward[j] = NULL;
+    atomic_store_explicit
+      (&sk->head->forward[j], sk->tail, memory_order_release);
+
+    atomic_store_explicit
+      (&sk->tail->forward[j], NULL, memory_order_release);
   }
 }
 
