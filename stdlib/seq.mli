@@ -129,7 +129,10 @@ and +'a node =
 val is_empty : 'a t -> bool
 (** [is_empty xs] determines whether the sequence [xs] is empty.
 
-    On an ephemeral sequence, it will consume the first element.
+    It is recommended that the sequence [xs] be persistent.
+    Indeed, if [xs] is ephemeral, then [is_empty xs] counts as
+    one use of the sequence [xs], and may prevent further uses
+    of [xs].
 
     @since 4.14 *)
 
