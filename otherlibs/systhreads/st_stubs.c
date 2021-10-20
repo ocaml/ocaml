@@ -94,7 +94,6 @@ struct caml_thread_table {
   caml_thread_t all_threads;
   caml_thread_t current_thread;
   st_tlskey thread_key;
-  st_tlskey last_locked_key;
   st_masterlock thread_lock;
   int tick_thread_running;
   st_thread_id tick_thread_id;
