@@ -349,7 +349,8 @@ val init : int -> (int -> 'a) -> 'a t
 
     [n] must be nonnegative.
 
-    [init n f] is equivalent to [map f (up 0 n)].
+    If desired, the infinite sequence [f 0; f 1; ...]
+    can be defined as [map f (ints 0)].
 
     @raise Invalid_argument if [n] is negative.
     @since 4.14 *)
