@@ -646,6 +646,7 @@ let finalise_codegen_cc test_basename _log env =
     Filename.make_filename test_basename "s"
   in
   let archmod = Ocaml_files.asmgen_archmod in
+  let archmod = Filename.quote archmod in
   let modules = test_module ^ " " ^ archmod in
   let program = Filename.make_filename test_basename "out" in
   let env = Environments.add_bindings
@@ -745,6 +746,7 @@ let codegen = Actions.make "codegen" run_codegen
 
 let run_cc log env =
   let program = Environments.safe_lookup Builtin_variables.program env in
+  let program = Filename.quote program in
   let what = Printf.sprintf "Running C compiler to build %s" program in
   Printf.fprintf log "%s\n%!" what;
   let output_exe =
@@ -754,10 +756,10 @@ let run_cc log env =
   [
     Ocamltest_config.cc;
     Ocamltest_config.cflags;
-    "-I" ^ Ocaml_directories.runtime;
+    "-I" ^ Filename.quote Ocaml_directories.runtime;
     output_exe ^ program;
     Environments.safe_lookup Builtin_variables.arguments env;
-  ] @ modules env in
+  ] @ List.map Filename.quote (modules env) in
   let expected_exit_status = 0 in
   let exit_status =
     Actions_helpers.run_cmd
