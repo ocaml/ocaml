@@ -249,14 +249,9 @@ html {
     margin-left:-1em
 }
 
-@mixin disc {
-    content:"●";
-    color:$logocolor;
-    margin-right:4px;
-    margin-left:-1em;
-    font-family: $font-sans;
-    font-size:13px;
-    vertical-align:1px;
+@mixin colored-disc-marker {
+    list-style-type: disc;
+    li::marker { color:$logocolor; }
 }
 
 @mixin diamond {
