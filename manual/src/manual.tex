@@ -185,6 +185,9 @@
 % Make _ a normal character in text mode
 % it must be the last package included
 \usepackage[strings,nohyphen]{underscore}
+% Babel enables a finer control of the catcode of '_'
+% and ensures that '_' is allowed in labels and references.
+\usepackage[english]{babel}
 
 %\makeatletter \def\@wrindex#1#2{\xdef \@indexfile{\csname #1@idxfile\endcsname}\@@wrindex#2||\\}\makeatother
 
