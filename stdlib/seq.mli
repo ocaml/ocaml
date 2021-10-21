@@ -537,6 +537,12 @@ val memoize : 'a t -> 'a t
     Regardless of whether [xs] is ephemeral or persistent,
     [memoize xs] is persistent: even if it is queried several times,
     [xs] is queried at most once.
+
+    The construction of the sequence [memoize xs] internally relies on
+    suspensions provided by the module {!Lazy}. These suspensions are
+    {i not} thread-safe. Therefore, the sequence [memoize xs]
+    must {i not} be queried by multiple threads concurrently.
+
     @since 4.14 *)
 
 exception Forced_twice
