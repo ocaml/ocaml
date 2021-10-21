@@ -474,6 +474,9 @@ let rec zip xs ys () =
       | Cons (y, ys) ->
           Cons ((x, y), zip xs ys)
 
+let combine =
+  zip
+
 let rec map2 f xs ys () =
   match xs() with
   | Nil ->
@@ -551,6 +554,9 @@ let rec map_snd xys () =
 
 let unzip xys =
   map_fst xys, map_snd xys
+
+let split =
+  unzip
 
 (* [filter_map_find_left_map f xs] is equivalent to
    [filter_map Either.find_left (map f xs)]. *)

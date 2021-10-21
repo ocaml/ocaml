@@ -609,6 +609,11 @@ val zip : 'a t -> 'b t -> ('a * 'b) t
 
     @since 4.14 *)
 
+val combine : 'a t -> 'b t -> ('a * 'b) t
+(** [combine] is an alias for [zip].
+
+    @since 4.14 *)
+
 val map2 : ('a -> 'b -> 'c) -> 'a t -> 'b t -> 'c t
 (** [map2 f xs ys] is the sequence of the elements [f x y],
     where the pairs [(x, y)] are drawn synchronously from the
@@ -685,6 +690,11 @@ val unzip : ('a * 'b) t -> 'a t * 'b t
     causes [xs] to be queried twice.
     Thus, [xs] must be persistent and cheap.
     If that is not the case, use [unzip (memoize xs)].
+
+    @since 4.14 *)
+
+val split : ('a * 'b) t -> 'a t * 'b t
+(** [split] is an alias for [unzip].
 
     @since 4.14 *)
 
