@@ -120,6 +120,9 @@ Working version
 - #10565: Toplevel value printing: truncate strings only after 8 bytes.
   (Wiktor Kuchta, review by Xavier Leroy)
 
+- #10527: Show "#help;; for help" at toplevel startup
+  (Wiktor Kuchta, review by David Allsopp and Florian Angeletti)
+
 ### Debugging:
 
 - #10517, #10594: when running ocamldebug on a program linked with the
