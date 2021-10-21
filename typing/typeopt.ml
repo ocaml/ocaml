@@ -249,7 +249,12 @@ let value_kind env ty =
             | Record_inlined tag ->
               Pblock { tag; fields }
             | Record_unboxed _ ->
-              assert false
+              begin match fields with
+              | [field] -> field
+              | [] | _::_ ->
+                Misc.fatal_error "Records that are [Record_unboxed] should \
+                  have exactly one field"
+              end
             | Record_extension _ ->
               Pgenval
           end
