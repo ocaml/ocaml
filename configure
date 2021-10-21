@@ -19165,9 +19165,9 @@ cat >>$CONFIG_STATUS <<_ACEOF || ac_write_fail=1
   for (key in D) D_is_set[key] = 1
   FS = ""
 }
-/^[\t ]*#[\t ]*(define|undef)[\t ]+$ac_word_re([\t (]|\$)/ {
+/^[\t ]*#[\t ]*(define|undef)[\t ]+$ac_word_re([\t (]|\r?\$)/ {
   line = \$ 0
-  split(line, arg, " ")
+  split(line, arg, /[ \r\t]/)
   if (arg[1] == "#") {
     defundef = arg[2]
     mac1 = arg[3]
