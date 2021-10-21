@@ -44,8 +44,6 @@ void caml_handle_incoming_interrupts(void);
 
 void caml_interrupt_self(void);
 
-void caml_print_stats(void);
-
 CAMLexport void caml_reset_domain_lock(void);
 CAMLexport int caml_bt_is_in_blocking_section(void);
 CAMLexport intnat caml_domain_is_multicore (void);

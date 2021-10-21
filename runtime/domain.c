@@ -1174,24 +1174,6 @@ static void caml_atfork_default(void) {
 
 CAMLexport void (*caml_atfork_hook)(void) = caml_atfork_default;
 
-void caml_print_stats () {
-  struct gc_stats s;
-
-  caml_gc_stat(Val_unit);
-  caml_sample_gc_stats(&s);
-  fprintf(stderr,"**** GC stats ****\n");
-  fprintf(stderr, "Minor words:\t\t%"ARCH_INTNAT_PRINTF_FORMAT"u\n",
-    (uintnat)s.minor_words);
-  fprintf(stderr, "Promoted words:\t\t%"ARCH_INTNAT_PRINTF_FORMAT"u\n",
-    (uintnat)s.promoted_words);
-  fprintf(stderr, "Major words:\t\t%"ARCH_INTNAT_PRINTF_FORMAT"u\n",
-    (uintnat)s.major_words);
-  fprintf(stderr, "Minor collections:\t%"ARCH_INTNAT_PRINTF_FORMAT"u\n",
-    (uintnat)s.minor_collections);
-  fprintf(stderr, "Major collections:\t%"ARCH_INTNAT_PRINTF_FORMAT"u\n",
-    Caml_state->stat_major_collections);
-}
-
 static void handover_ephemerons(caml_domain_state* domain_state)
 {
   if (domain_state->ephe_info->todo == 0 &&
