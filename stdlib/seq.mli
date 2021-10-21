@@ -353,6 +353,7 @@ val init : int -> (int -> 'a) -> 'a t
     can be defined as [map f (ints 0)].
 
     @raise Invalid_argument if [n] is negative.
+
     @since 4.14 *)
 
 val unfold : ('b -> ('a * 'b) option) -> 'b -> 'a t
@@ -472,6 +473,7 @@ val take : int -> 'a t -> 'a t
     [n] must be nonnegative.
 
     @raise Invalid_argument if [n] is negative.
+
     @since 4.14 *)
 
 val drop : int -> 'a t -> 'a t
@@ -488,6 +490,7 @@ val drop : int -> 'a t -> 'a t
     to [tail xs], which queries [xs] immediately.
 
     @raise Invalid_argument if [n] is negative.
+
     @since 4.14 *)
 
 val take_while : ('a -> bool) -> 'a t -> 'a t
@@ -548,6 +551,7 @@ val memoize : 'a t -> 'a t
 exception Forced_twice
 (** This exception is raised when a sequence returned by [once]
     (or a suffix of it) is queried more than once.
+
     @since 4.14 *)
 
 val once : 'a t -> 'a t
@@ -561,6 +565,7 @@ val once : 'a t -> 'a t
 
     @raise Forced_twice if [once xs], or a suffix of it,
            is queried more than once.
+
     @since 4.14 *)
 
 val transpose : 'a t t -> 'a t t
@@ -756,6 +761,7 @@ val of_iterator : (unit -> 'a option) -> 'a t
 (** [of_iterator it] is the sequence of the elements produced by the iterator
     [it]. It is an ephemeral sequence: it can be consumed at most once. If a
     persistent sequence is needed, use [memoize (of_iterator it)].
+
     @since 4.14 *)
 
 val to_iterator : 'a t -> (unit -> 'a option)
@@ -764,6 +770,7 @@ val to_iterator : 'a t -> (unit -> 'a option)
     This iterator has mutable internal state,
     which is not protected by a lock;
     so, it must not be used by several threads concurrently.
+
     @since 4.14 *)
 
 (** {1 Sequences of integers} *)
@@ -771,4 +778,5 @@ val to_iterator : 'a t -> (unit -> 'a option)
 val ints : int -> int t
 (** [ints i] is the infinite sequence of the integers, beginning at [i] and
     counting up.
+
     @since 4.14 *)
