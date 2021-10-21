@@ -483,6 +483,8 @@ let simplif_prim_pure ~backend fpc p (args, approxs) dbg =
       make_const (List.nth l n)
   | Pfield n, [ Uprim(P.Pmakeblock _, ul, _) ], [approx]
     when n < List.length ul ->
+      (* This case is particularly useful for removing allocations
+         for optional parameters *)
       (List.nth ul n, field_approx n approx)
   (* Strings *)
   | (Pstringlength | Pbyteslength),
@@ -490,6 +492,10 @@ let simplif_prim_pure ~backend fpc p (args, approxs) dbg =
      [ Value_const(Uconst_ref(_, Some (Uconst_string s))) ] ->
       make_const_int (String.length s)
   (* Kind test *)
+  | Pisint, [ Uprim(P.Pmakeblock _, _, _) ], _ ->
+      (* This case is particularly useful for removing allocations
+         for optional parameters *)
+      make_const_bool false
   | Pisint, _, [a1] ->
       begin match a1 with
       | Value_const(Uconst_int _) -> make_const_bool true
@@ -667,8 +673,6 @@ let rec substitute loc ((backend, fpc) as st) sb rn ulam =
             substitute loc st sb rn u2
           else
             substitute loc st sb rn u3
-      | Uprim(P.Pmakeblock _, _, _) ->
-          substitute loc st sb rn u2
       | su1 ->
           Uifthenelse(su1, substitute loc st sb rn u2,
                            substitute loc st sb rn u3)
@@ -748,6 +752,11 @@ let bind_params { backend; mutable_vars; _ } loc fpc params args body =
           let u1, u2 =
             match VP.name p1, a1 with
             | "*opt*", Uprim(P.Pmakeblock(0, Immutable, kind), [a], dbg) ->
+                (* This parameter corresponds to an optional parameter,
+                   and although it is used twice pushing the expression down
+                   actually allows us to remove the allocation as it will
+                   appear once under a Pisint primitive and once under a Pfield
+                   primitive (see [simplif_prim_pure]) *)
                 a, Uprim(P.Pmakeblock(0, Immutable, kind),
                          [Uvar (VP.var p1')], dbg)
             | _ ->
@@ -764,9 +773,6 @@ let bind_params { backend; mutable_vars; _ } loc fpc params args body =
   (* Reverse parameters and arguments to preserve right-to-left
      evaluation order (PR#2910). *)
   aux V.Map.empty (List.rev params) (List.rev args) body
-
-(* Check if a lambda term is ``pure'',
-   that is without side-effects *and* not containing function definitions *)
 
 let warning_if_forced_inline ~loc ~attribute warning =
   if attribute = Always_inline then

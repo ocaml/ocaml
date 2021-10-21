@@ -126,6 +126,7 @@ sig
   val make_isout : arg -> arg -> test
   val make_isin : arg -> arg -> test
   val make_is_nonzero : arg -> test
+  val arg_as_test : arg -> test
 
   val make_if : test -> act -> act -> act
   val make_switch : loc -> arg -> int array -> act array -> act
@@ -190,6 +191,9 @@ let prerr_inter i = Printf.fprintf stderr
     r
   and get_low cases i =
     let r,_,_ = cases.(i) in
+    r
+  and get_high cases i =
+    let _,r,_ = cases.(i) in
     r
 
   type ctests = {
@@ -578,6 +582,9 @@ let rec pkey chan  = function
   let make_if_nonzero arg ifso ifnot =
     Arg.make_if (Arg.make_is_nonzero arg) ifso ifnot
 
+  let make_if_bool arg ifso ifnot =
+    Arg.make_if (Arg.arg_as_test arg) ifso ifnot
+
   let do_make_if_out h arg ifso ifno =
     Arg.make_if (Arg.make_isout h arg) ifso ifno
 
@@ -667,9 +674,14 @@ let rec pkey chan  = function
           and right = {s with cases=right} in
 
           if i=1 && (lim+ctx.off)=1 && get_low cases 0+ctx.off=0 then
-            make_if_nonzero
-              ctx.arg
-              (c_test ctx right) (c_test ctx left)
+            if lcases = 2 && get_high cases 1+ctx.off = 1 then
+              make_if_bool
+                ctx.arg
+                (c_test ctx right) (c_test ctx left)
+            else
+              make_if_nonzero
+                ctx.arg
+                (c_test ctx right) (c_test ctx left)
           else if less_tests cright cleft then
             make_if_lt
               ctx.arg (lim+ctx.off)
