@@ -277,7 +277,7 @@ Working version
 
 ### Build system:
 
-- #10717 Simplify the installation of man mages
+- #10717: Simplify the installation of man pages
   (Sébastien Hinderer, review by ???)
 
 ### Bug fixes:
