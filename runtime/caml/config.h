@@ -153,7 +153,7 @@ typedef uint64_t uintnat;
 #error "No integer type available to represent pointers"
 #endif
 
-#define UINTNAX_MAX -1
+#define UINTNAT_MAX -1
 
 #endif /* CAML_CONFIG_H_NO_TYPEDEFS */
 
