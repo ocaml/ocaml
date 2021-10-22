@@ -477,7 +477,7 @@ int caml_lf_skiplist_remove(struct lf_skiplist *sk, uintnat key) {
         int mark_success = atomic_compare_exchange_strong(
             &to_remove->forward[0], &succ, LF_SK_MARKED(succ));
 
-        LF_SK_EXTRACT(succs[0]->forward[0], marked, succ);
+        LF_SK_EXTRACT(to_remove->forward[0], marked, succ);
 
         if (mark_success) {
           skiplist_find(sk, key, preds, succs); /* This will fix up the mark */
