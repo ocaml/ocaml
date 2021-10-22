@@ -75,6 +75,7 @@ module Positive_and_negative_disambiguation :
 
 module Long_before_and_after = struct
   type 'a tree = Leaf of 'a | Node of 'a tree * 'a tree * 'a tree * 'a tree * 'a tree
+
   let[@tail_mod_cons] rec map f = function
     | Leaf v -> Leaf (f v)
     | Node (t1, t2, t3, t4, t5) ->
@@ -95,3 +96,48 @@ module Long_before_and_after :
   end
 |}]
 
+
+module Deep_nesting_nonambiguous = struct
+  type 'a tree = Leaf of 'a | Node of 'a tree * ('a tree * ('a tree * ('a tree * 'a tree)))
+
+  let[@tail_mod_cons] rec map f = function
+    | Leaf v -> Leaf (f v)
+    | Node (t1, (t2, (t3, (t4, t5)))) ->
+        Node (map f t1, (map f t2, ((map[@tailcall]) f t3, (map f t4, map f t5))))
+
+  let () =
+    assert (map succ (Node (Leaf 0, (Leaf 1, (Leaf 2, (Leaf 3, Leaf 4)))))
+                      = Node (Leaf 1, (Leaf 2, (Leaf 3, (Leaf 4, Leaf 5)))))
+end
+[%%expect {|
+module Deep_nesting_nonambiguous :
+  sig
+    type 'a tree =
+        Leaf of 'a
+      | Node of 'a tree * ('a tree * ('a tree * ('a tree * 'a tree)))
+    val map : ('a -> 'b) -> 'a tree -> 'b tree
+  end
+|}]
+
+module Deep_nesting_ambiguous = struct
+  type 'a tree = Leaf of 'a | Node of 'a tree * ('a tree * ('a tree * ('a tree * 'a tree)))
+
+    let[@tail_mod_cons] rec map f = function
+      | Leaf v -> Leaf (f v)
+      | Node (t1, (t2, (t3, (t4, t5)))) ->
+          Node (map f t1, (map f t2, (map f t3, (map f t4, map f t5))))
+
+    let () =
+      assert (map succ (Node (Leaf 0, (Leaf 1, (Leaf 2, (Leaf 3, Leaf 4)))))
+                      = Node (Leaf 1, (Leaf 2, (Leaf 3, (Leaf 4, Leaf 5)))))
+end
+[%%expect {|
+Line 7, characters 10-71:
+7 |           Node (map f t1, (map f t2, (map f t3, (map f t4, map f t5))))
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: [@tail_mod_cons]: this constructor application may be TMC-transformed
+       in several different ways. Please disambiguate by adding an explicit
+       [@tailcall] attribute to the call that should be made tail-recursive,
+       or a [@tailcall false] attribute on calls that should not be
+       transformed.
+|}]

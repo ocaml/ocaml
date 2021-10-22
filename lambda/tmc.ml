@@ -724,12 +724,53 @@ let rec choice ctx t =
   and choice_makeblock ctx ~tail:_ (tag, flag, shape) blockargs loc =
     let choices = List.map (choice ctx ~tail:false) blockargs in
     match Choice.find_nonambiguous_tmc_call choices with
-    | Choice.Ambiguous subterms ->
-        let subterms = List.map Choice.direct subterms in
-        raise (Error (Debuginfo.Scoped_location.to_location loc,
-                      Ambiguous_constructor_arguments subterms))
     | Choice.No_tmc_call args ->
         Choice.lambda @@ Lprim (Pmakeblock (tag, flag, shape), args, loc)
+    | Choice.Ambiguous ambiguous_subterms ->
+        (* An ambiguous term should not lead to an error if it not
+           used in TMC position. Consider for example:
+
+           {[
+             type t = ... | K of t * (t * t)
+             let[@tail_mod_cons] rec map f = function
+             | [...]
+             | K (t, (u, v)) -> K ((map[@tailcall]) f t, (map f u, map f v))
+           ]}
+
+           Calling [choice_makeblock] on the K constructor, we need to
+           determine whether its two arguments are ambiguous, which is
+           done by calling [choice] on each argument to see if they
+           would be TMC-able and if they are explicitly annotated.
+
+           These calls give the following results:
+           - there is an explicitly-requested tailcall in the first
+             argument
+           - the second argument is a nested pair whose arguments
+             themselves are ambiguous -- with no explicit annotation.
+
+           This determines that the arguments of K are not ambiguous,
+           as only one of them is annotated. But note that the nested
+           pair, in isolation, is ambiguous. This inner ambiguity is
+           innocuous and should not result in an error, as we never
+           use this inner pair in TMC position, only in direct style.
+
+           This example shows that it would be incorrect to fail with
+           an error whenever [choice] finds an ambiguity. Instead we
+           only error when generating the [dps] version of the
+           corresponding code; requesting the [direct] version is
+           accepted and produces the expected direct code.
+        *)
+        let term_choice =
+          let+ args = Choice.list choices in
+          Lprim (Pmakeblock(tag, flag, shape), args, loc)
+        in
+        { term_choice with
+          Choice.dps = Dps.make (fun ~tail:_ ~dst:_ ->
+            raise (Error (Debuginfo.Scoped_location.to_location loc,
+                          Ambiguous_constructor_arguments
+                            (List.map Choice.direct ambiguous_subterms)))
+          );
+        }
     | Choice.Nonambiguous { Choice.rev_before; choice; after } ->
         let constr = Constr.{
             tag;
