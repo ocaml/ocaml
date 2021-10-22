@@ -37,7 +37,7 @@ static struct lf_skiplist code_fragments_by_pc;
 
 static struct lf_skiplist code_fragments_by_num;
 
-static int code_fragments_counter = 1;
+static int _Atomic code_fragments_counter = 1;
 
 void caml_init_codefrag() {
   caml_lf_skiplist_init(&code_fragments_by_pc);
@@ -65,7 +65,8 @@ int caml_register_code_fragment(char *start, char *end,
     break;
   }
   cf->digest_status = digest_kind;
-  cf->fragnum = code_fragments_counter++;
+  cf->fragnum = atomic_fetch_add_explicit
+                  (&code_fragments_counter, 1, memory_order_relaxed);
   caml_lf_skiplist_insert(&code_fragments_by_pc, (uintnat)start, (uintnat)cf);
   caml_lf_skiplist_insert(&code_fragments_by_num, (uintnat)cf->fragnum,
                           (uintnat)cf);
