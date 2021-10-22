@@ -38,10 +38,6 @@ runtime-naked-pointers
 # TODO: not clear compatibility is sensible for multicore
 compatibility
 
-# TODO: signals and kill (#9802)
-tests/lib-unix/kill/'unix_kill.ml' with 1.1 (bytecode)
-tests/lib-unix/kill/'unix_kill.ml' with 1.2 (native)
-
 # TODO: off-by-one error on MacOS+Clang (#408)
 tests/lib-threads/'beat.ml' with 1.2 (native)
 tests/lib-threads/'beat.ml' with 1.1 (bytecode)
