@@ -231,7 +231,7 @@ let first_column simplified_matrix =
 *)
 
 
-let is_absent tag row = row_field tag !row = Rabsent
+let is_absent tag row = row_field_repr (get_row_field tag !row) = Rabsent
 
 let is_absent_pat d =
   match d.pat_desc with
@@ -722,11 +722,11 @@ let close_variant env row =
     List.fold_left
       (fun (nm, static) (_tag,f) ->
         match row_field_repr f with
-        | Reither(_, _, false, e) ->
-            (* m=false means that this tag is not explicitly matched *)
-            set_row_field e Rabsent;
+        | Reither(_, _, false) ->
+            (* fixed=false means that this tag is not explicitly matched *)
+            link_row_field_ext ~inside:f rf_absent;
             (None, static)
-        | Reither (_, _, true, _) -> (nm, false)
+        | Reither (_, _, true) -> (nm, false)
         | Rabsent | Rpresent _ -> (nm, static))
       (orig_name, true) fields in
   if not closed || name != orig_name then begin
@@ -767,8 +767,8 @@ let full_match closing env =  match env with
         List.for_all
           (fun (tag,f) ->
             match row_field_repr f with
-              Rabsent | Reither(_, _, false, _) -> true
-            | Reither (_, _, true, _)
+              Rabsent | Reither(_, _, false) -> true
+            | Reither (_, _, true)
                 (* m=true, do not discard matched tags, rather warn *)
             | Rpresent _ -> List.mem tag fields)
           (row_fields row)
@@ -955,7 +955,7 @@ let build_other ext env =
                   match row_field_repr f with
                     Rabsent (* | Reither _ *) -> others
                   (* This one is called after erasing pattern info *)
-                  | Reither (c, _, _, _) -> make_other_pat tag c :: others
+                  | Reither (c, _, _) -> make_other_pat tag c :: others
                   | Rpresent arg -> make_other_pat tag (arg = None) :: others)
                 [] (row_fields row)
             with

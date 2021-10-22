@@ -175,16 +175,13 @@ and immediate_subtypes_variant_row acc desc =
   in
   add_row (add_subtypes acc)
 
-and immediate_subtypes_variant_row_field acc = function
+and immediate_subtypes_variant_row_field acc f =
+  match row_field_repr f with
   | Rpresent(None)
   | Rabsent            -> acc
   | Rpresent(Some(ty)) -> ty :: acc
-  | Reither(_,field_types,_,r) ->
-      let acc = List.rev_append field_types acc in
-      begin match !r with
-      | None -> acc
-      | Some rf -> immediate_subtypes_variant_row_field acc rf
-      end
+  | Reither(_,field_types,_) ->
+      List.rev_append field_types acc
 
 let free_variables ty =
   Ctype.free_variables ty

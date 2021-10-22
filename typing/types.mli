@@ -57,6 +57,7 @@ open Asttypes
  *)
 type type_expr
 type row_desc
+type row_field
 type field_kind
 type commutable
 
@@ -136,13 +137,6 @@ and fixed_explanation =
   | Fixed_private (** The row type is private *)
   | Reified of Path.t (** The row was reified *)
   | Rigid (** The row type was made rigid during constraint verification *)
-and row_field =
-    Rpresent of type_expr option
-  | Reither of bool * type_expr list * bool * row_field option ref
-        (* 1st true denotes a constant constructor *)
-        (* 2nd true denotes a tag in a pattern matching, and
-           is erased later *)
-  | Rabsent
 
 (** [abbrev_memo] allows one to keep track of different expansions of a type
     alias. This is done for performance purposes.
@@ -320,19 +314,41 @@ val row_name: row_desc -> (Path.t * type_expr list) option
 
 val set_row_name: row_desc -> (Path.t * type_expr list) option -> row_desc
 
+val get_row_field: label -> row_desc -> row_field
+
 (** get all fields at once; different from the old [row_repr] *)
 type row_desc_repr =
     Row of { fields: (label * row_field) list;
-             more:type_expr;
-             closed:bool;
-             fixed:fixed_explanation option;
-             name:(Path.t * type_expr list) option }
+             more:   type_expr;
+             closed: bool;
+             fixed:  fixed_explanation option;
+             name:   (Path.t * type_expr list) option }
 
 val row_repr: row_desc -> row_desc_repr
 
-(** Return the canonical representative of a row field *)
-val row_field_repr: row_field -> row_field
-val row_field: label -> row_desc -> row_field
+(** Current contents of a row field *)
+type row_field_view =
+    Rpresent of type_expr option
+  | Reither of bool * type_expr list * bool
+        (* 1st true denotes a constant constructor *)
+        (* 2nd true denotes a tag in a pattern matching, and
+           is erased later *)
+  | Rabsent
+
+val row_field_repr: row_field -> row_field_view
+val rf_present: type_expr option -> row_field
+val rf_absent: row_field
+val rf_either:
+    ?use_ext_of:row_field ->
+    no_arg:bool -> type_expr list -> matched:bool -> row_field
+val rf_either_of: type_expr option -> row_field
+
+val eq_row_field_ext: row_field -> row_field -> bool
+val match_row_field:
+    present:(type_expr option -> 'a) ->
+    absent:(unit -> 'a) ->
+    either:(bool -> type_expr list -> bool -> row_field option ->'a) ->
+    row_field -> 'a
 
 (* *)
 
@@ -683,6 +699,9 @@ val backtrack: cleanup_abbrev:(unit -> unit) -> snapshot -> unit
         (* Backtrack to a given snapshot. Only possible if you have
            not already backtracked to a previous snapshot.
            Calls [cleanup_abbrev] internally *)
+val undo_first_change_after: snapshot -> unit
+        (* Backtrack only the first change after a snapshot.
+           Does not update the list of changes *)
 val undo_compress: snapshot -> unit
         (* Backtrack only path compression. Only meaningful if you have
            not already backtracked to a previous snapshot.
@@ -702,7 +721,9 @@ val set_scope: type_expr -> int -> unit
 val set_name:
     (Path.t * type_expr list) option ref ->
     (Path.t * type_expr list) option -> unit
-val set_row_field: row_field option ref -> row_field -> unit
+val link_row_field_ext: inside:row_field -> row_field -> unit
+        (* Extract the extension variable of [inside] and set it to the
+           second argument *)
 val set_univar: type_expr option ref -> type_expr -> unit
 val link_kind: inside:field_kind -> field_kind -> unit
 val link_commu: inside:commutable -> commutable -> unit
