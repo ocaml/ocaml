@@ -72,3 +72,26 @@ module Positive_and_negative_disambiguation :
     val map2 : 'a -> 'b t -> 'c t
   end
 |}]
+
+module Long_before_and_after = struct
+  type 'a tree = Leaf of 'a | Node of 'a tree * 'a tree * 'a tree * 'a tree * 'a tree
+  let[@tail_mod_cons] rec map f = function
+    | Leaf v -> Leaf (f v)
+    | Node (t1, t2, t3, t4, t5) ->
+        (* manual unfolding *)
+        Node (map f t1, map f t2, (map[@tailcall]) f t3, map f t4, map f t5)
+
+  let () =
+    assert (map succ (Node (Leaf 0, Leaf 1, Leaf 2, Leaf 3, Leaf 4))
+                    = Node (Leaf 1, Leaf 2, Leaf 3, Leaf 4, Leaf 5))
+end
+[%%expect {|
+module Long_before_and_after :
+  sig
+    type 'a tree =
+        Leaf of 'a
+      | Node of 'a tree * 'a tree * 'a tree * 'a tree * 'a tree
+    val map : ('a -> 'b) -> 'a tree -> 'b tree
+  end
+|}]
+
