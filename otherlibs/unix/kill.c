@@ -27,5 +27,6 @@ CAMLprim value unix_kill(value pid, value signal)
   sig = caml_convert_signal_number(Int_val(signal));
   if (kill(Int_val(pid), sig) == -1)
     uerror("kill", Nothing);
+  caml_raise_if_exception(caml_process_pending_signals_exn());
   return Val_unit;
 }
