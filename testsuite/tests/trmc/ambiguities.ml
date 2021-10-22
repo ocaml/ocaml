@@ -45,3 +45,30 @@ end
 module Negative_disambiguation :
   sig val map : ('a -> 'b) -> 'a tree -> 'b tree end
 |}]
+
+module Positive_and_negative_disambiguation = struct
+  (* in-depth disambiguations *)
+  type 'a t =
+    | N
+    | C of 'a t * ('a t * 'a t)
+
+  let[@tail_mod_cons] rec map1 f l =
+    match l with
+    | N -> N
+    | C (a, (b, c)) ->
+        C ((map1 [@tailcall]) f a, ((map1 [@tailcall false]) f b, map1 f c))
+
+  let[@tail_mod_cons] rec map2 f l =
+    match l with
+    | N -> N
+    | C (a, (b, c)) ->
+        C ((map2 [@tailcall false]) f a, ((map2 [@tailcall]) f b, map2 f c))
+end
+[%%expect {|
+module Positive_and_negative_disambiguation :
+  sig
+    type 'a t = N | C of 'a t * ('a t * 'a t)
+    val map1 : 'a -> 'b t -> 'c t
+    val map2 : 'a -> 'b t -> 'c t
+  end
+|}]
