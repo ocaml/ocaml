@@ -816,8 +816,6 @@ ccomptype
 mkexedebugflag
 mkexe
 fpic
-libraries_man_section
-programs_man_section
 extralibs
 syslib
 outputobj
@@ -2786,12 +2784,6 @@ $as_echo "$as_me: Configuring OCaml version 4.14.0+dev0-2021-06-03" >&6;}
 ## Command-line arguments passed to configure
 CONFIGURE_ARGS="$*"
 
-# Command-line tools section of the Unix manual
-programs_man_section=1
-
-# Library section of the Unix manual
-libraries_man_section=3
-
 # Command to build executalbes
 # In general this command is supposed to use the CFLAGs- and LDFLAGS-
 # related variables (OC_CFLAGS and OC_LDFLAGS for ocaml-specific
@@ -2881,8 +2873,6 @@ OCAML_VERSION_SHORT=4.14
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
-
-
 
 
 

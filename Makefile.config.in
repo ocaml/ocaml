@@ -53,11 +53,11 @@ LIBDIR=@libdir@
 STUBLIBDIR=@libdir@/stublibs
 
 ### Where to install the man pages
-# Man pages for commands go in $(MANDIR)/man$(PROGRAMS_MAN_SECTION)
-# Man pages for the library go in $(MANDIR)/man/man$(LIBRARIES_MAN_SECTION)
+# Man pages for commands go in $(MANDIR)/man1
+# Man pages for the library go in $(MANDIR)/man3
 MANDIR=@mandir@
-PROGRAMS_MAN_SECTION=@programs_man_section@
-LIBRARIES_MAN_SECTION=@libraries_man_section@
+PROGRAMS_MAN_DIR=$(MANDIR)/man1
+LIBRARIES_MAN_DIR=$(MANDIR)/man3
 
 ### Do #! scripts work on your system?
 ### Beware: on some systems (e.g. SunOS 4), this will work only if

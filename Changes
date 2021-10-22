@@ -277,6 +277,9 @@ Working version
 
 ### Build system:
 
+- #10717 Simplify the installation of man mages
+  (Sébastien Hinderer, review by ???)
+
 ### Bug fixes:
 
 - #9214, #10709: Wrong unmarshaling of function pointers in debugger mode.

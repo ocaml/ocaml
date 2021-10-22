@@ -14,17 +14,13 @@
 #**************************************************************************
 
 ROOTDIR = ..
-include $(ROOTDIR)/Makefile.config
+include $(ROOTDIR)/Makefile.common
 
-DESTDIR ?=
-INSTALL_DIR=$(DESTDIR)$(MANDIR)/man$(PROGRAMS_MAN_SECTION)
+MANPAGES = $(addsuffix .1,\
+  ocaml ocamlc ocamlc.opt ocamlcp ocamldebug ocamldep ocamldoc ocamllex \
+  ocamlmktop ocamlopt ocamlopt.opt ocamloptp ocamlprof ocamlrun ocamlyacc)
 
+.PHONY: install
 install:
-	for i in *.m; do cp \
-	  $$i $(INSTALL_DIR)/`basename $$i .m`.$(PROGRAMS_MAN_SECTION); done
-	echo '.so man$(PROGRAMS_MAN_SECTION)/ocamlc.$(PROGRAMS_MAN_SECTION)' \
-	     > $(INSTALL_DIR)/ocamlc.opt.$(PROGRAMS_MAN_SECTION)
-	echo '.so man$(PROGRAMS_MAN_SECTION)/ocamlopt.$(PROGRAMS_MAN_SECTION)' \
-	     > $(INSTALL_DIR)/ocamlopt.opt.$(PROGRAMS_MAN_SECTION)
-	echo '.so man$(PROGRAMS_MAN_SECTION)/ocamlcp.$(PROGRAMS_MAN_SECTION)' \
-	     > $(INSTALL_DIR)/ocamloptp.$(PROGRAMS_MAN_SECTION)
+	$(MKDIR) $(INSTALL_PROGRAMS_MAN_DIR)
+	$(INSTALL_DATA) $(MANPAGES) $(INSTALL_PROGRAMS_MAN_DIR)
