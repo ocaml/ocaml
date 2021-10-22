@@ -626,7 +626,7 @@ module Make (T : S) = struct
           ~specialise:function_decl.specialise
           ~is_a_functor:function_decl.is_a_functor
           ~closure_origin
-          ~poll_error:false (* don't propogate attribute to wrappers *)
+          ~poll_error:function_decl.poll_error
       in
       let funs, direct_call_surrogates =
         if for_one_function.make_direct_call_surrogates then
