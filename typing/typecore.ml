@@ -4601,10 +4601,30 @@ and type_application env funct sargs =
   in
   let warned = ref false in
   let rec type_args args ty_fun ty_fun0 sargs =
+    let type_unknown_args () =
+      (* We're not looking at a *known* function type anymore, or there are no
+         arguments left. *)
+      let ty_fun, typed_args =
+        List.fold_left type_unknown_arg (ty_fun0, args) sargs
+      in
+      let args =
+        (* Force typing of arguments.
+           Careful: the order matters here. Using [List.rev_map] would be
+           incorrect. *)
+        List.map
+          (function
+            | l, None -> l, None
+            | l, Some f -> l, Some (f ()))
+          (List.rev typed_args)
+      in
+      let result_ty = instance (result_type !omitted_parameters ty_fun) in
+      args, result_ty
+    in
+    if sargs = [] then type_unknown_args () else
     let ty_fun' = expand_head env ty_fun in
     match get_desc ty_fun', get_desc (expand_head env ty_fun0) with
     | Tarrow (l, ty, ty_fun, com), Tarrow (_, ty0, ty_fun0, _)
-      when sargs <> [] && is_commu_ok com ->
+      when is_commu_ok com ->
         let lv = get_level ty_fun' in
         let may_warn loc w =
           if not !warned && !Clflags.principal && lv <> generic_level
@@ -4682,23 +4702,7 @@ and type_application env funct sargs =
         in
         type_args ((l,arg)::args) ty_fun ty_fun0 remaining_sargs
     | _ ->
-        (* We're not looking at a *known* function type anymore, or there are no
-           arguments left. *)
-        let ty_fun, typed_args =
-          List.fold_left type_unknown_arg (ty_fun0, args) sargs
-        in
-        let args =
-          (* Force typing of arguments.
-             Careful: the order matters here. Using [List.rev_map] would be
-             incorrect. *)
-          List.map
-            (function
-              | l, None -> l, None
-              | l, Some f -> l, Some (f ()))
-            (List.rev typed_args)
-        in
-        let result_ty = instance (result_type !omitted_parameters ty_fun) in
-        args, result_ty
+        type_unknown_args ()
   in
   let is_ignore funct =
     is_prim ~name:"%ignore" funct &&

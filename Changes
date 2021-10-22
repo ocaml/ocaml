@@ -807,6 +807,9 @@ OCaml 4.14.0
   (Xavier Leroy, report by Rehan Malak, review by Gabriel Scherer and
    Vincent Laviron)
 
+- #10364: Improve detection of ambiguity in case bodies.
+  (Jacques Garrigue, review by Thomas Refis)
+
 - #10473: Add CFI directives to RISC-V runtime and asmcomp.
   This allows stacktraces to work in gdb through C and OCaml calls.
   (Edwin Török, review by Nicolás Ojeda Bär and Xavier Leroy)
@@ -1443,7 +1446,7 @@ OCaml 4.13.0 (24 September 2021)
   when the systhreads library is loaded.
   (David Allsopp, report by Anton Bachin, review by Xavier Leroy)
 
-- #8575, #10362, #10364: Surprising interaction between polymorphic variants
+- #8575, #10362: Surprising interaction between polymorphic variants
   and constructor disambiguation.
   (Jacques Garrigue, report and review by Thomas Refis)
 
