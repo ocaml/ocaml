@@ -63,7 +63,7 @@
    (i.e. 2 * (NUM_LEVELS - 1)).  Moreover, the congruential PRNG
    is faster and guaranteed to be deterministic (to reproduce bugs). */
 
-static uint32_t random_seed = 0;
+static uint32_t _Atomic random_seed = 0;
 
 static int random_level(void) {
   uint32_t r;
@@ -71,7 +71,17 @@ static int random_level(void) {
 
   /* Linear congruence with modulus = 2^32, multiplier = 69069
    (Knuth vol 2 p. 106, line 15 of table 1), additive = 25173. */
-  r = random_seed = random_seed * 69069 + 25173;
+
+  while( 1 ) {
+    uint32_t curr =
+      atomic_load_explicit(&random_seed, memory_order_relaxed);
+
+    r = curr * 69069 + 25173;
+
+    if( atomic_compare_exchange_strong(&random_seed, &curr, r) ) {
+        break;
+    }
+  }
   /* Knuth (vol 2 p. 13) shows that the least significant bits are
    "less random" than the most significant bits with a modulus of 2^m,
    so consume most significant bits first */
