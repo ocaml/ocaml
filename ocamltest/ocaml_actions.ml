@@ -282,6 +282,12 @@ let compile_program (compiler : Ocaml_compilers.compiler) log env =
         (Result.fail_with_reason reason, env)
       end
 
+let compile_program (compiler : Ocaml_compilers.compiler) log env =
+  try
+    compile_program compiler log env
+  with
+    Invalid_argument error -> (Result.fail_with_reason error, env)
+
 let compile_module compiler module_ log env =
   let expected_exit_status =
     Ocaml_tools.expected_exit_status env (compiler :> Ocaml_tools.tool) in

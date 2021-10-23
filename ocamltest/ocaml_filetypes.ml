@@ -85,7 +85,8 @@ let filetype_of_extension = function
   | "cma" -> Backend_specific (Ocaml_backends.Bytecode, Library)
   | "byte" -> Backend_specific (Ocaml_backends.Bytecode, Program)
   | "txt" -> Text
-  | _ as e -> Printf.eprintf "Unknown file extension %s\n%!" e; exit 2
+  | _ as e ->
+    raise (Invalid_argument (Printf.sprintf "Unknown file extension '%s'%!" e))
 
 let split_filename name =
   let l = String.length name in
