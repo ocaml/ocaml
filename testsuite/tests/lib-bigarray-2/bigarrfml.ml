@@ -4,11 +4,11 @@ readonly_files = "bigarrf.f bigarrfstub.c"
 last_flags = "-cclib -lgfortran"
 
 * script
-script = "sh ${test_source_directory}/has-gfortran.sh"
+script = "sh '${test_source_directory}'/has-gfortran.sh"
 
 ** setup-ocamlc.byte-build-env
 *** script
-script = "sh ${test_source_directory}/call-gfortran.sh ${cc} -c bigarrf.f"
+script = "sh '${test_source_directory}'/call-gfortran.sh ${cc} -c bigarrf.f"
 **** ocamlc.byte
 all_modules = "bigarrf.o bigarrfstub.c bigarrfml.ml"
 ***** run
@@ -18,7 +18,7 @@ stdout = "${output}"
 
 ** setup-ocamlopt.byte-build-env
 *** script
-script = "sh ${test_source_directory}/call-gfortran.sh ${cc} -c bigarrf.f"
+script = "sh '${test_source_directory}'/call-gfortran.sh ${cc} -c bigarrf.f"
 **** ocamlopt.byte
 all_modules = "bigarrf.o bigarrfstub.c bigarrfml.ml"
 ***** run

@@ -1,6 +1,6 @@
 (* TEST
-   flags = "-I ${ocamlsrcdir}/typing \
-    -I ${ocamlsrcdir}/parsing"
+   flags = "-I '${ocamlsrcdir}'/typing \
+    -I '${ocamlsrcdir}'/parsing"
    include ocamlcommon
    * expect
 *)

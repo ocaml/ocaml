@@ -2,8 +2,8 @@
    reference="${test_source_directory}/ellipses.reference"
    output="ellipses.output"
    readonly_files = "${test_source_directory}/ellipses.input"
-   script = "${ocamlrun} ${ocamlsrcdir}/tools/caml-tex \
-   -repo-root ${ocamlsrcdir} ${readonly_files} -o ${output}"
+   script = "'${ocamlrun}' '${ocamlsrcdir}'/tools/caml-tex \
+   -repo-root '${ocamlsrcdir}' '${readonly_files}' -o '${output}'"
   * hasstr
   ** native-compiler
   *** shared-libraries

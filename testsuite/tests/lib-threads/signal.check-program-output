@@ -1,4 +1,4 @@
-if sed -e 1q ${output} | grep -q '^[ab]*Got ctrl-C, exiting$';
+if sed -e 1q "${output}" | grep -q '^[ab]*Got ctrl-C, exiting$';
 then
   exit ${TEST_PASS}
 else

@@ -1,6 +1,6 @@
 (* TEST
 
-script = "sh ${test_source_directory}/check-linker-version.sh"
+script = "sh '${test_source_directory}'/check-linker-version.sh"
 readonly_files = "mylib.mli mylib.ml stack_walker.c"
 
 * macos

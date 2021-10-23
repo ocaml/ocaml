@@ -12,7 +12,7 @@
    ocamlopt_byte_exit_status = "0"
  ****** check-ocamlopt.byte-output
  ******* script
-   script = "sh ${test_source_directory}/start_from_emit.sh"
+   script = "sh '${test_source_directory}'/start_from_emit.sh"
  ******** ocamlopt.byte
    flags = "-S start_from_emit.cmir-linear -save-ir-after scheduling"
    module = "empty.ml"

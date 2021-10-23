@@ -2,7 +2,7 @@
    include ocamlcommon
    * hasunix
    include unix
-   arguments = "${ocamlsrcdir}"
+   arguments = "'${ocamlsrcdir}'"
    ** native
 *)
 

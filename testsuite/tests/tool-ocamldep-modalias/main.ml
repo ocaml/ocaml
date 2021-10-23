@@ -5,9 +5,9 @@ readonly_files = "A.ml B.ml C.ml D.ml lib_impl.ml lib.mli \
 
 set sources = "A.ml B.ml C.ml D.ml"
 set links = "LibA.ml LibB.ml LibC.ml LibD.ml"
-set stdlib = "-nostdlib -I ${ocamlsrcdir}/stdlib"
-set OCAMLC = "${ocamlrun} ${ocamlc_byte} ${stdlib}"
-set OCAMLOPT = "${ocamlrun} ${ocamlopt_byte} ${stdlib}"
+set stdlib = "-nostdlib -I '${ocamlsrcdir}'/stdlib"
+set OCAMLC = "'${ocamlrun}' '${ocamlc_byte}' ${stdlib}"
+set OCAMLOPT = "'${ocamlrun}' '${ocamlopt_byte}' ${stdlib}"
 
 * setup-ocamlc.byte-build-env
 compiler_directory_suffix = ".depend.mk"

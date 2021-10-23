@@ -4,7 +4,7 @@ readonly_files = "common.mli common.ml test_common.c test_common.h"
 
 * setup-ocamlopt.byte-build-env
 ** ocaml
-test_file = "${test_source_directory}/gen_test.ml"
+test_file = "'${test_source_directory}'/gen_test.ml"
 ocaml_script_as_argument = "true"
 arguments = "c"
 compiler_output = "stubs.c"
