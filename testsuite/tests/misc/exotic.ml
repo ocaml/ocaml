@@ -1,5 +1,5 @@
 (* TEST
-   flags = "-I ${ocamlsrcdir}/utils"
+   flags = "-I '${ocamlsrcdir}'/utils"
    * expect
 *)
 

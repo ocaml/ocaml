@@ -1,7 +1,7 @@
 (* TEST
 
 * libwin32unix
-   script = "sh ${test_source_directory}/has-afunix.sh"
+   script = "sh '${test_source_directory}'/has-afunix.sh"
 ** hassysthreads
     include systhreads
 *** script

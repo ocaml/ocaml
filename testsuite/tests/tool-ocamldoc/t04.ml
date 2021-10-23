@@ -1,7 +1,7 @@
 (* TEST
    plugins="odoc_test.ml"
    * ocamldoc
-    flags="-I ${ocamlsrcdir}/ocamldoc"
+    flags="-I '${ocamlsrcdir}'/ocamldoc"
 *)
 
 (** Testing display of inline record.

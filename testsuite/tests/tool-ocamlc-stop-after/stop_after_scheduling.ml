@@ -5,7 +5,7 @@ compiler_output = "compiler-output.raw"
    flags = "-stop-after scheduling"
    ocamlc_byte_exit_status = "2"
 *** script
-   script = "sh ${test_source_directory}/stop_after_scheduling.sh"
+   script = "sh '${test_source_directory}'/stop_after_scheduling.sh"
    output = "compiler-output"
 **** check-ocamlc.byte-output
 compiler_output = "compiler-output"
