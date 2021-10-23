@@ -255,8 +255,9 @@ one: lib tools
       2>&1 | tee $(TESTLOG).one ; \
    fi
 	@if [ -n '$(TEST)' ] ; then \
-    TERM=dumb $(OCAMLTESTENV) $(ocamltest) $(OCAMLTESTFLAGS) $(TEST) \
-     2>&1 | tee $(TESTLOG).one; fi
+    { TERM=dumb $(OCAMLTESTENV) $(ocamltest) $(OCAMLTESTFLAGS) $(TEST) \
+     2>&1 || \
+	   echo " ... testing '$(TEST)' => unexpected error"; } | tee $(TESTLOG).one; fi
 	@if [ -n '$(LIST)' ] ; then \
      while IFS='' read -r LINE; do \
        $(MAKE) --no-print-directory exec-one DIR=$$LINE ; \
