@@ -40,14 +40,16 @@ type 'a t = 'a CamlinternalLazy.t
    [lazy] keyword.  You should not use it directly.  Always use [Lazy.t]
    instead.
 
-   Note: [Lazy.force] (and therefore the [lazy] pattern-matching) are
-   thread-safe, but will raise the [RacyLazy] exception if forced
-   concurrently from multiple domains and will raise the [Undefined]
-   exception if forced concurrently from multiple systhreads or fibers
-   within a domain.
-   If you need to share a lazy between threads, then you need to use
-   [Lazy.try_force] and implement your own synchronisation.
-   (@since XXX)
+   Note: {!Lazy.force} (and therefore the [lazy] pattern-matching)
+   raises the {!RacyLazy} exception if forced concurrently from
+   multiple domains and the {!Undefined} exception if forced
+   concurrently from multiple systhreads or fibers within a domain.
+   If you need to share a lazy between threads, then you need to
+   implement your own synchronisation (see in particular
+   {!Lazy.try_force}).
+   Before 5.0, forcing a value concurrently from multiple systhreads
+   without synchronisation was unsafe.
+   (@since 5.0)
 
    Note: if the program is compiled with the [-rectypes] option,
    ill-founded recursive definitions of the form [let rec x = lazy x]
@@ -60,23 +62,37 @@ type 'a t = 'a CamlinternalLazy.t
 
 
 exception Undefined
+(** Raised when forcing a suspension concurrently from multiple
+    systhreads or fibers within a domain, or when the suspension
+    tries to force itself recursively.
+*)
 
 exception RacyLazy
+(** Raised when forcing a suspension in parallel from multiple
+    domains.
+
+    @since 5.0
+*)
 
 external force : 'a t -> 'a = "%lazy_force"
 (** [force x] forces the suspension [x] and returns its result.
-   If [x] has already been forced, [Lazy.force x] returns the
-   same value again without recomputing it.  If it raised an exception,
-   the same exception is raised again.
-   @raise Undefined if the forcing of [x] tries to force [x] itself
-   recursively.
-   @raise RacyLazy if [x] is forced in parallel by another domain.
+    If [x] has already been forced, [Lazy.force x] returns the
+    same value again without recomputing it.  If it raised an exception,
+    the same exception is raised again.
+
+    @raise Undefined (see {!Undefined}).
+    @raise RacyLazy (see {!RacyLazy}).
 *)
 
 val try_force : 'a t -> 'a option
 (** [try_force x] behaves similarly to [Some (force x)], except that
     it returns immediately with [None] if [x] is already being forced
-    concurrently by another domain. *)
+    concurrently by another domain.
+
+    @raise Undefined (see {!Undefined}).
+
+    @since 5.0
+*)
 
 (** {1 Iterators} *)
 
@@ -138,17 +154,20 @@ val force_val : 'a t -> 'a
 (** [force_val x] forces the suspension [x] and returns its
     result.  If [x] has already been forced, [force_val x] returns the same
     value again without recomputing it.
-    @raise Undefined if the forcing of [x] tries to force [x] itself
-    recursively.
-    @raise RacyLazy if [x] is forced in parallel by another domain. If the
-    computation of [x] raises an exception, then performing [force_val x] again
-    raises {!Undefined} if forced from the same domain, and {!RacyLazy} if
-    forced from a different domain. *)
+
+    @raise Undefined (see {!Undefined}).
+    @raise RacyLazy (see {!RacyLazy}).
+*)
 
 val try_force_val : 'a t -> 'a option
 (** [try_force_val x] behaves similarly to [Some (force_val x)],
     except that it returns immediately with [None] if [x] is already
-    being forced concurrently by another domain. *)
+    being forced concurrently by another domain.
+
+    @raise Undefined (see {!Undefined}).
+
+    @since 5.0
+*)
 
 (** {1 Deprecated} *)
 
