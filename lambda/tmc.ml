@@ -17,11 +17,6 @@
 
 open Lambda
 
-type error =
-  |  Ambiguous_constructor_arguments of lambda list
-
-exception Error of Location.t * error
-
 (** TMC (Tail Modulo Cons) is a code transformation that
     rewrites transformed functions in destination-passing-style, in
     such a way that certain calls that were not in tail position in the
@@ -76,6 +71,30 @@ exception Error of Location.t * error
     opt-in, we only transform functions that the user has annotated
     with an attribute to request the transformation.
 *)
+
+
+(* Error-reporting information for ambiguous TMC calls *)
+type tmc_call_information = {
+  loc: scoped_location;
+  explicit: bool;
+}
+type subterm_information = {
+  tmc_calls: tmc_call_information list;
+}
+type ambiguous_arguments = {
+  explicit: bool;
+  (** When [explicit = true], we have an ambiguity between
+      arguments containing calls that have been explicitly
+      marked [@tailcall]. Otherwise we have an ambiguity
+      between un-annotated calls. *)
+  arguments: subterm_information list;
+}
+
+type error =
+  | Ambiguous_constructor_arguments of ambiguous_arguments
+
+exception Error of Location.t * error
+
 
 type 'offset destination = {
   var: Ident.t;
@@ -417,7 +436,7 @@ module Choice = struct
   type 'a t = {
     dps : 'a Dps.t;
     direct : unit -> 'a;
-    has_tmc_calls : bool;
+    tmc_calls : tmc_call_information list;
     benefits_from_dps: bool;
     explicit_tailcall_request: bool;
   }
@@ -438,9 +457,9 @@ module Choice = struct
       effects performed during code production will only happen once we
       do know that we want to produce the direct-style code.)
 
-     - [has_tmc_calls] is true when there are TMC opportunities
-       in the subterm -- if some calls are in tail-modulo-cons
-       position and are rewritten into tailcalls in the [dps] version.
+     - [tmc_calls] tracks the function calls in the subterms that are
+       in tail-modulo-cons position and get rewritten into tailcalls
+       in the [dps] version.
 
      - [benefits_from_dps] is true when the [dps] calls strictly more
        TMC functions than the [direct] version. See the
@@ -456,7 +475,7 @@ module Choice = struct
   let lambda (v : lambda) : lambda t = {
     dps = Dps.lambda v;
     direct = (fun () -> v);
-    has_tmc_calls = false;
+    tmc_calls = [];
     benefits_from_dps = false;
     explicit_tailcall_request = false;
   }
@@ -464,7 +483,7 @@ module Choice = struct
   let map f s = {
     dps = Dps.map f s.dps;
     direct = (fun () -> f (s.direct ()));
-    has_tmc_calls = s.has_tmc_calls;
+    tmc_calls = s.tmc_calls;
     benefits_from_dps = s.benefits_from_dps;
     explicit_tailcall_request = s.explicit_tailcall_request;
   }
@@ -479,8 +498,8 @@ module Choice = struct
   let pair ((c1, c2) : 'a t * 'b t) : ('a * 'b) t = {
     dps = Dps.pair c1.dps c2.dps;
     direct = (fun () -> (c1.direct (), c2.direct ()));
-    has_tmc_calls =
-      c1.has_tmc_calls || c2.has_tmc_calls;
+    tmc_calls =
+      c1.tmc_calls @ c2.tmc_calls;
     benefits_from_dps =
       c1.benefits_from_dps || c2.benefits_from_dps;
     explicit_tailcall_request =
@@ -490,7 +509,7 @@ module Choice = struct
   let unit = {
     dps = Dps.unit;
     direct = (fun () -> ());
-    has_tmc_calls = false;
+    tmc_calls = [];
     benefits_from_dps = false;
     explicit_tailcall_request = false;
   }
@@ -524,7 +543,7 @@ module Choice = struct
   type 'a tmc_call_search =
     | No_tmc_call of 'a list
     | Nonambiguous of 'a zipper
-    | Ambiguous of 'a t list
+    | Ambiguous of { explicit: bool; subterms: 'a t list; }
 
   and 'a zipper = {
     rev_before : 'a list;
@@ -533,6 +552,7 @@ module Choice = struct
   }
 
   let find_nonambiguous_tmc_call choices =
+    let has_tmc_calls c = c.tmc_calls <> [] in
     let is_explicit s = s.explicit_tailcall_request in
     let nonambiguous ~explicit choices =
       (* here is how we will compute the result once we know that there
@@ -541,14 +561,14 @@ module Choice = struct
       let rec split rev_before : 'a t list -> 'a zipper = function
         | [] -> assert false (* we know there is at least one choice *)
         | c :: rest ->
-          if c.has_tmc_calls && (not explicit || is_explicit c) then
+          if has_tmc_calls c && (not explicit || is_explicit c) then
             { rev_before; choice = c; after = List.map direct rest }
           else
             split (direct c :: rev_before) rest
       in split [] choices
     in
     let tmc_call_subterms =
-      List.filter (fun c -> c.has_tmc_calls) choices
+      List.filter (fun c -> has_tmc_calls c) choices
     in
     match tmc_call_subterms with
     | [] ->
@@ -558,10 +578,18 @@ module Choice = struct
     | several_subterms ->
         let explicit_subterms = List.filter is_explicit several_subterms in
         begin match explicit_subterms with
-        | [] -> Ambiguous several_subterms
+        | [] ->
+            Ambiguous {
+              explicit = false;
+              subterms = several_subterms;
+            }
         | [ _one ] ->
             Nonambiguous (nonambiguous ~explicit:true choices)
-        | several_explicit_subterms -> Ambiguous several_explicit_subterms
+        | several_explicit_subterms ->
+            Ambiguous {
+              explicit = true;
+              subterms = several_explicit_subterms;
+            }
         end
 end
 
@@ -732,7 +760,10 @@ let rec choice ctx t =
                      });
             direct = (fun () -> Lapply apply);
             explicit_tailcall_request;
-            has_tmc_calls = true;
+            tmc_calls = [{
+              loc = apply.ap_loc;
+              explicit = explicit_tailcall_request;
+            }];
             benefits_from_dps = true;
           }
       | _nontail -> raise No_tmc
@@ -743,7 +774,7 @@ let rec choice ctx t =
     match Choice.find_nonambiguous_tmc_call choices with
     | Choice.No_tmc_call args ->
         Choice.lambda @@ Lprim (Pmakeblock (tag, flag, shape), args, loc)
-    | Choice.Ambiguous ambiguous_subterms ->
+    | Choice.Ambiguous { explicit; subterms = ambiguous_subterms } ->
         (* An ambiguous term should not lead to an error if it not
            used in TMC position. Consider for example:
 
@@ -783,9 +814,17 @@ let rec choice ctx t =
         in
         { term_choice with
           Choice.dps = Dps.make (fun ~tail:_ ~dst:_ ->
+            let arguments =
+              let info (t : lambda Choice.t) : subterm_information = {
+                tmc_calls = t.tmc_calls;
+              } in
+              {
+                explicit;
+                arguments = List.map info ambiguous_subterms;
+              }
+            in
             raise (Error (Debuginfo.Scoped_location.to_location loc,
-                          Ambiguous_constructor_arguments
-                            (List.map Choice.direct ambiguous_subterms)))
+                          Ambiguous_constructor_arguments arguments))
           );
         }
     | Choice.Nonambiguous { Choice.rev_before; choice; after } ->
@@ -797,7 +836,7 @@ let rec choice ctx t =
             after;
             loc;
         } in
-        assert choice.has_tmc_calls;
+        assert (choice.tmc_calls <> []);
         {
           Choice.direct = (fun () ->
             if not choice.benefits_from_dps then
@@ -813,10 +852,8 @@ let rec choice ctx t =
                in the [direct] and [dps] versions. *)
             false;
           dps = Dps.delay_constructor constr choice.dps;
-          has_tmc_calls =
-            (* [choice] must have TMC calls, because that is what the
-               [find_nonambiguous_tmc_call] function looks for. *)
-            true;
+          tmc_calls =
+            choice.tmc_calls;
           explicit_tailcall_request =
             choice.explicit_tailcall_request;
         }
@@ -932,7 +969,7 @@ and traverse_binding outer_ctx inner_ctx (var, def) =
   | Some lfun ->
   let special = Ident.Map.find var inner_ctx.specialized in
   let fun_choice = choice outer_ctx ~tail:true lfun.body in
-  if not fun_choice.Choice.has_tmc_calls then
+  if fun_choice.Choice.tmc_calls = [] then
     Location.prerr_warning
       (Debuginfo.Scoped_location.to_location lfun.loc)
       Warnings.Unused_tmc_attribute;
@@ -962,20 +999,49 @@ let rewrite t =
   let ctx = { specialized = Ident.Map.empty } in
   traverse ctx t
 
-let report_error ppf = function
-  | Ambiguous_constructor_arguments subterms ->
-      ignore subterms; (* TODO: find locations for each subterm *)
-      Format.pp_print_text ppf
-        "[@tail_mod_cons]: this constructor application may be \
-         TMC-transformed in several different ways. Please disambiguate \
-         by adding an explicit [@tailcall] attribute to the call that \
-         should be made tail-recursive, or a [@tailcall false] attribute \
-         on calls that should not be transformed."
 let () =
   Location.register_error_of_exn
     (function
-      | Error (loc, err) ->
-          Some (Location.error_of_printer ~loc report_error err)
+      | Error (loc, Ambiguous_constructor_arguments { explicit = false; arguments }) ->
+          let print_msg ppf =
+            Format.pp_print_text ppf
+              "[@tail_mod_cons]: this constructor application may be \
+               TMC-transformed in several different ways. Please disambiguate \
+               by adding an explicit [@tailcall] attribute to the call that \
+               should be made tail-recursive, or a [@tailcall false] attribute \
+               on calls that should not be transformed."
+          in
+          let submgs =
+            let sub (info : tmc_call_information) =
+              let loc = Debuginfo.Scoped_location.to_location info.loc in
+              Location.msg ~loc "This call could be annotated." in
+            arguments
+            |> List.map (fun t -> t.tmc_calls)
+            |> List.flatten
+            |> List.map sub
+          in
+          Some (Location.errorf ~loc ~sub:submgs "%t" print_msg)
+      | Error (loc, Ambiguous_constructor_arguments { explicit = true; arguments }) ->
+          let print_msg ppf =
+            Format.pp_print_text ppf
+              "[@tail_mod_cons]: this constructor application may be \
+               TMC-transformed in several different ways. Only one of the arguments \
+               may become a TMC call, but several arguments contain calls \
+               that are explicitly marked as tail-recursive. \
+               Please fix the conflict by reviewing and fixing the conflicting \
+               annotations."
+          in
+          let submgs =
+            let sub (info : tmc_call_information) =
+              let loc = Debuginfo.Scoped_location.to_location info.loc in
+              Location.msg ~loc "This call is explicitly annotated." in
+            arguments
+            |> List.map (fun t -> t.tmc_calls)
+            |> List.flatten
+            |> List.filter (fun (info: tmc_call_information) -> info.explicit)
+            |> List.map sub
+          in
+          Some (Location.errorf ~loc ~sub:submgs "%t" print_msg)
       | _ ->
         None
     )
