@@ -10,6 +10,12 @@ Working version
   Allow 'object ... end # f', 'f object ... end', etc.
   (Yan Dong, review by Nicolás Ojeda Bär, Florian Angeletti and Gabriel Scherer)
 
+- #181, #9760: opt-in tail-modulo-cons (TMC) transformation
+    let[@tail_mod_cons] rec map f li = ...
+  (Frédéric Bour, Gabriel Scherer, Basile Clément,
+   review by Basile Clément and Pierre Chambart,
+   tested by Konstantin Romanov)
+
 ### Runtime system:
 
 * #9391, #9424: Fix failed assertion in runtime due to ephemerons *set_* and
