@@ -344,9 +344,9 @@ int caml_lf_skiplist_insert(struct lf_skiplist *sk, uintnat key, uintnat data) {
 
   while (1) {
     /* We first try to find a node with [key] in the skip list. If it exists
-     * then we don't need to add it. The skiplist_find method will also populate
-     * the predecessors and successors arrays, which gives us the nodes between
-       which we could add the new node. */
+       then we don't need to add it. The [skiplist_find] method will also
+       populate the predecessors and successors arrays, which gives us the nodes
+       between which we could add the new node. */
     int found = skiplist_find(sk, key, preds, succs);
     struct lf_skipcell *pred;
     struct lf_skipcell *succ;
@@ -378,21 +378,21 @@ int caml_lf_skiplist_insert(struct lf_skiplist *sk, uintnat key, uintnat data) {
       }
 
       /* Now we need to actually slip the node in. We start at the bottom-most
-       * level (i.e the linked list of all nodes). This is because all searches
-       * must end up at this level and so as long as the node is present, it
-       * will be found - regardless of whether it has been added to the level
-       * above. Consider the staircasing referred to in [skiplist_find] earlier,
-       * the final step in finding a node is following the reference from it's
+         level (i.e the linked list of all nodes). This is because all searches
+         must end up at this level and so as long as the node is present, it
+         will be found - regardless of whether it has been added to the level
+         above. Consider the staircasing referred to in [skiplist_find] earlier,
+         the final step in finding a node is following the reference from it's
          predecessor at the bottom level. */
       pred = preds[0];
       succ = succs[0];
 
       /* We could be racing another insertion here and if we are then restart
-       * the whole insertion process. We can't just retry the CAS because the
-       * new node's predecessor and successors could have changed. There's also
-       * a possibility that the predecessor's forward pointer could have been
-       * marked and we would fail the CAS for that reason too. In that case the
-       * [skiplist_find] earlier on will take care of snipping the node before
+         the whole insertion process. We can't just retry the CAS because the
+         new node's predecessor and successors could have changed. There's also
+         a possibility that the predecessor's forward pointer could have been
+         marked and we would fail the CAS for that reason too. In that case the
+         [skiplist_find] earlier on will take care of snipping the node before
          we get back to this point. */
       if (!atomic_compare_exchange_strong(&pred->forward[0], &succ, new_cell)) {
         caml_stat_free(new_cell);
@@ -412,16 +412,16 @@ int caml_lf_skiplist_insert(struct lf_skiplist *sk, uintnat key, uintnat data) {
           }
 
           /* On the other hand if we failed it might be because the pointer was
-           * marked or because a new node was added between pred and succ nodes
-           * at level. In both cases we can fix things by calling
+             marked or because a new node was added between pred and succ nodes
+             at level. In both cases we can fix things by calling
              [skiplist_find] and repopulating preds and succs */
           skiplist_find(sk, key, preds, succs);
         }
       }
 
       /* If we put the new node at a higher level than the current
-       * `search_level` then to speed up searches we need to bump it. We don't
-         care _too_ much if this fails though. */
+         [search_level] then to speed up searches we need to bump it. We don't
+         care too much if this fails though. */
       if (top_level >
           atomic_load_explicit(&sk->search_level, memory_order_relaxed)) {
         atomic_store_explicit(&sk->search_level, top_level,
@@ -443,7 +443,7 @@ int caml_lf_skiplist_remove(struct lf_skiplist *sk, uintnat key) {
 
   while (1) {
     /* As with insert. If the node doesn't exist, we don't need to do anything.
-     * While we're checking for it we populate the predecessor nodes and
+       While we're checking for it we populate the predecessor nodes and
        successor nodes at each level. */
     int found = skiplist_find(sk, key, preds, succs);
 
@@ -455,9 +455,9 @@ int caml_lf_skiplist_remove(struct lf_skiplist *sk, uintnat key) {
       struct lf_skipcell *to_remove = succs[0];
       for (int level = to_remove->top_level; level >= 1; level--) {
         /* We mark each of the forward pointers at every level the node is
-         * present at. We may be raced by another thread deleting the same node
-         * and by threads inserting new nodes directly after the node we are
-         * removing, so we need to retry the CAS in a loop to deal with the
+           present at. We may be raced by another thread deleting the same node
+           and by threads inserting new nodes directly after the node we are
+           removing, so we need to retry the CAS in a loop to deal with the
            latter. */
         LF_SK_EXTRACT(to_remove->forward[level], marked, succ);
 
@@ -469,8 +469,8 @@ int caml_lf_skiplist_remove(struct lf_skiplist *sk, uintnat key) {
       }
 
       /* The bottom layer is what ultimately determines whether the node is
-       * present in the skiplist or not. We try to remove it and if we succeed
-       * then indicate so to the caller. If not then another thread raced us an
+         present in the skiplist or not. We try to remove it and if we succeed
+         then indicate so to the caller. If not then another thread raced us an
          won. */
       LF_SK_EXTRACT(to_remove->forward[0], marked, succ);
       while (1) {
@@ -487,7 +487,7 @@ int caml_lf_skiplist_remove(struct lf_skiplist *sk, uintnat key) {
         }
 
         /* If we end up here then we lost to a thread inserting a node directly
-         * after the node we were removing. That's why we move on one sucessor.
+           after the node we were removing. That's why we move on one sucessor.
          */
       }
     }
