@@ -270,7 +270,7 @@ exec-one:
 	@if $(ocamltest) -list-tests $(DIR) >/dev/null 2>&1; then \
 	  echo "Running tests from '$$DIR' ..."; \
 	  $(MAKE) exec-ocamltest DIR=$(DIR) \
-	    OCAMLTESTENV="OCAMLTESTDIR=$(OCAMLTESTDIR)"; \
+	    OCAMLTESTENV="OCAMLTESTDIR='$(OCAMLTESTDIR)'"; \
 	else \
 	  for dir in $(DIR)/*; do \
 	    if [ -d $$dir ]; then \
