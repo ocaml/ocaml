@@ -25,7 +25,7 @@ let () =
   assert (cardinal_skiplist() = 0) ;
   let nturns = 128 and npar = 4 and nseq = 4 in
   assert (nturns < 1024); (* See calc_key in stubs.c *)
-(* Fill skip list and then empty it *)
+  (* Fill skip list and then empty it *)
   for k = 1 to nseq do
     let d_list =
       List.init npar
@@ -45,7 +45,7 @@ let () =
     assert (cardinal_skiplist() = 0) ;
     clean_skiplist (npar*nturns) ;
   done ;
-  (* Fill and empty skiplist cncurrently *)
+  (* Fill and empty skiplist concurrently *)
   for k = 1 to nseq do
     let d_list =
       List.init (npar*2)
@@ -63,6 +63,40 @@ let () =
                 done)) in
     ignore (List.iter Domain.join d_list) ;
     assert (cardinal_skiplist() = 0) ;
-    clean_skiplist (npar*nturns)
+    clean_skiplist (npar*nturns) ;
+  done ;
+  (* Fill and empty skiplist concurrently, checking list consistency *)
+  for k = 1 to nseq do
+    let d_list =
+      List.init (npar*2)
+        (fun i ->
+          Domain.spawn
+            (fun () ->
+              let j = i/2 in
+              if i mod 2 = 0 then
+                for k = 1 to nturns do insert_skiplist k npar j done
+              else if j mod 2 = 0 then
+                for k = 1 to nturns do
+                  while not (find_skiplist k npar j) do
+                    Domain.cpu_relax ()
+                  done
+                done)) in
+    ignore (List.iter Domain.join d_list) ;
+    assert (cardinal_skiplist() = nturns*(npar-(npar+1)/2)) ;
+    clean_skiplist (nturns*((npar+1)/2)) ;
+    let d_list =
+      List.init npar
+        (fun i ->
+          Domain.spawn
+            (fun () ->
+              if i mod 2 = 1 then
+                for k = 1 to nturns do
+                  while not (find_skiplist k npar i) do
+                    Domain.cpu_relax ()
+                  done
+                done)) in
+    ignore (List.iter Domain.join d_list) ;
+    assert (cardinal_skiplist() = 0);
+    clean_skiplist (nturns*(npar/2)) ;
   done ;
   ()

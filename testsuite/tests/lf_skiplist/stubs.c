@@ -47,13 +47,6 @@ CAMLextern value init_skiplist(value val) {
   CAMLreturn(Val_unit);
 }
 
-
-static int get_len(struct  lf_skipcell *p, struct lf_skipcell *end) {
-  int len = 0 ;
-  for ( ; p != end; p = atomic_load(&p->garbage_next)) len++ ;
-  return len ;
-}
-
 CAMLextern value cardinal_skiplist(value val) {
   CAMLparam0();
   uintnat r = 0;
@@ -61,9 +54,34 @@ CAMLextern value cardinal_skiplist(value val) {
   CAMLreturn(Val_long(r));
 }
 
+static int get_len(struct  lf_skipcell *p, struct lf_skipcell *end) {
+  int len = 0 ;
+  for ( ; p != end; p = atomic_load(&p->garbage_next)) len++ ;
+  return len ;
+}
+
+
+static uintnat count_marks(struct lf_skiplist *sk) {
+  uintnat r = 0;
+  struct lf_skipcell *p = sk->head;
+  uintptr_t succ;
+
+  while (p) {
+    for (int k = p->top_level; k >= 0; k--) {
+      succ =
+        (uintptr_t)atomic_load_explicit(&p->forward[k],memory_order_relaxed);
+      if (LF_SK_IS_MARKED(succ)) r++ ;
+    }
+    p = LF_SK_UNMARK(succ);
+  }
+  return r;
+}
+
 CAMLextern value clean_skiplist(value val) {
   CAMLparam1(val);
   intnat v = Long_val(val) ;
+
+  assert (count_marks(&the_list) == 0) ;
   {
     int len = get_len(atomic_load(&the_list.garbage_head),the_list.head) ;
     if (v >= 0) {
