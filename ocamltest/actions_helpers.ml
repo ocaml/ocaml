@@ -200,6 +200,7 @@ let run
     (redirect_output : bool)
     (can_skip : bool)
     (prog_variable : Variables.t)
+    (quote : bool)
     (args_variable : Variables.t option)
     (log : out_channel)
     (env : Environments.t)
@@ -213,6 +214,7 @@ let run
     let arguments = match args_variable with
       | None -> ""
       | Some variable -> Environments.safe_lookup variable env in
+    let program = if quote then Filename.quote program else program in
     let commandline = [program; arguments] in
     let what = log_message ^ " " ^ program ^ " " ^
     begin if arguments="" then "without any argument"
@@ -247,6 +249,7 @@ let run_program =
     true
     false
     Builtin_variables.program
+    true
     (Some Builtin_variables.arguments)
 
 let run_script log env =
@@ -260,6 +263,7 @@ let run_script log env =
     true
     true
     Builtin_variables.script
+    false
     None
     log scriptenv in
   let final_value =
@@ -299,7 +303,7 @@ let run_hook hook_name log input_env =
   let open Run_command in
   let settings = {
     progname = "sh";
-    argv = [|"sh"; Filename.maybe_quote hook_name|];
+    argv = [|"sh"; hook_name|];
     envp = systemenv;
     stdin_filename = "";
     stdout_filename = "";

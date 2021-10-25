@@ -344,7 +344,11 @@ let link_bytecode ?final_name tolink exec_name standalone =
          let runtime = make_absolute !Clflags.use_runtime in
          let runtime =
            (* shebang mustn't exceed 128 including the #! and \0 *)
-           if String.length runtime > 125 then
+           if String.length runtime > 125 ||
+             String.contains runtime ' ' ||
+             String.contains runtime '\t' ||
+             String.contains runtime '\n'
+             then
              "/bin/sh\n\
               exec \"" ^ runtime ^ "\" \"$0\" \"$@\""
            else

@@ -201,8 +201,8 @@ let compare_files ?(tool = default_comparison_tool) files =
       [
         tool_name;
         tool_flags;
-        files.reference_filename;
-        files.output_filename
+        Filename.quote files.reference_filename;
+        Filename.quote files.output_filename
       ] in
       let settings = Run_command.settings_of_commandline
         ~stdout_fname:Filename.null ~stderr_fname:Filename.null commandline in

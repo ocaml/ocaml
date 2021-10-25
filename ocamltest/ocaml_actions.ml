@@ -210,6 +210,7 @@ let cmas_need_dynamic_loading directories libraries =
 let compile_program (compiler : Ocaml_compilers.compiler) log env =
   let program_variable = compiler#program_variable in
   let program_file = Environments.safe_lookup program_variable env in
+  let program_file = Filename.quote program_file in
   let all_modules =
     Actions_helpers.words_of_variable env Ocaml_variables.all_modules in
   let output_variable = compiler#output_variable in
@@ -521,6 +522,7 @@ let ocamlopt_opt =
 
 let env_with_lib_unix env =
   let libunixdir = Ocaml_directories.libunix in
+  let libunixdir = Filename.quote libunixdir in
   let newlibs =
     match Environments.lookup Ocaml_variables.caml_ld_library_path env with
     | None -> libunixdir
@@ -536,7 +538,7 @@ let debug log env =
   [
     Ocaml_commands.ocamlrun_ocamldebug;
     Ocaml_flags.ocamldebug_default_flags;
-    program
+    Filename.quote program
   ] in
   let systemenv =
     Environments.append_to_system_env
@@ -878,8 +880,8 @@ let compare_programs backend comparison_tool log env =
   end else really_compare_programs backend comparison_tool log env
 
 let make_bytecode_programs_comparison_tool =
-  let ocamlrun = Ocaml_files.ocamlrun in
-  let cmpbyt = Ocaml_files.cmpbyt in
+  let ocamlrun = Filename.quote Ocaml_files.ocamlrun in
+  let cmpbyt = Filename.quote Ocaml_files.cmpbyt in
   let tool_name = ocamlrun ^ " " ^ cmpbyt in
   Filecompare.make_comparison_tool tool_name ""
 

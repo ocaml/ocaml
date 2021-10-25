@@ -71,7 +71,7 @@ let ocamlc_byte = new compiler
   ~target: Ocaml_backends.Bytecode
 
 let ocamlc_opt = new compiler
-  ~name: Ocaml_files.ocamlc_dot_opt
+  ~name: (Filename.quote Ocaml_files.ocamlc_dot_opt)
   ~flags: ""
   ~directory: "ocamlc.opt"
   ~exit_status_variable: Ocaml_variables.ocamlc_opt_exit_status
@@ -91,7 +91,7 @@ let ocamlopt_byte = new compiler
   ~target: Ocaml_backends.Native
 
 let ocamlopt_opt = new compiler
-  ~name: Ocaml_files.ocamlopt_dot_opt
+  ~name: (Filename.quote Ocaml_files.ocamlopt_dot_opt)
   ~flags: ""
   ~directory: "ocamlopt.opt"
   ~exit_status_variable: Ocaml_variables.ocamlopt_opt_exit_status
