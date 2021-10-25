@@ -715,17 +715,14 @@ let rec choice ctx t =
   and choice_apply ctx ~tail apply =
     let exception No_tmc in
     try
+      let explicit_tailcall_request =
+        match apply.ap_tailcall with
+        | Default_tailcall -> false
+        | Tailcall_expectation true -> true
+        | Tailcall_expectation false -> raise No_tmc
+      in
       match apply.ap_func with
       | Lvar f ->
-          let explicit_tailcall_request =
-            match apply.ap_tailcall with
-            | Default_tailcall -> false
-            | Tailcall_expectation true -> true
-            | Tailcall_expectation false ->
-                (* [@tailcall false] disables TMC optimization
-                   on this tailcall *)
-                raise No_tmc
-          in
           let specialized =
             try Ident.Map.find f ctx.specialized
             with Not_found ->
@@ -733,7 +730,7 @@ let rec choice ctx t =
                 Location.prerr_warning
                   (Debuginfo.Scoped_location.to_location apply.ap_loc)
                   Warnings.Tmc_breaks_tailcall;
-              raise No_tmc
+              raise No_tmc;
           in
           let args =
             (* Support of tupled functions: the [function_kind] of the
@@ -748,17 +745,22 @@ let rec choice ctx t =
             | None -> raise No_tmc
             | Some args -> args
           in
+          let tailcall tail =
+            (* If we are calling a tmc-specializable function in tail context,
+               then both the direct-style and dps-style calls must be tailcalls. *)
+            if tail
+            then Tailcall_expectation true
+            else Default_tailcall
+          in
           {
             Choice.dps = Dps.make (fun ~tail ~dst ->
               Lapply { apply with
                        ap_func = Lvar specialized.dps_id;
                        ap_args = add_dst_args dst args;
-                       ap_tailcall =
-                         if tail
-                         then Tailcall_expectation true
-                         else Default_tailcall;
+                       ap_tailcall = tailcall tail;
                      });
-            direct = (fun () -> Lapply apply);
+            direct = (fun () ->
+              Lapply { apply with ap_tailcall = tailcall tail });
             explicit_tailcall_request;
             tmc_calls = [{
               loc = apply.ap_loc;
@@ -767,7 +769,21 @@ let rec choice ctx t =
             benefits_from_dps = true;
           }
       | _nontail -> raise No_tmc
-    with No_tmc -> Choice.lambda (Lapply apply)
+    with No_tmc ->
+      let apply_no_bailout =
+        (* [@tailcall false] is interpreted as a bailout annotation: "we
+           are (knowingly) leaving the dps calling convention". It only
+           has sense in the DPS version of the generated code, not in
+           direct style. *)
+        let ap_tailcall =
+          match apply.ap_tailcall with
+          | Tailcall_expectation false when tail -> Default_tailcall
+          | other -> other
+        in
+        { apply with ap_tailcall } in
+      { (Choice.lambda (Lapply apply)) with
+        direct = (fun () -> Lapply apply_no_bailout);
+      }
 
   and choice_makeblock ctx ~tail:_ (tag, flag, shape) blockargs loc =
     let choices = List.map (choice ctx ~tail:false) blockargs in
