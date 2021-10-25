@@ -403,7 +403,8 @@ static void grow_extern_output(struct caml_extern_state *s, intnat required)
   s->extern_output_block = blk;
   s->extern_output_block->next = NULL;
   s->extern_ptr = s->extern_output_block->data;
-  s->extern_limit = s->extern_output_block->data + SIZE_EXTERN_OUTPUT_BLOCK + extra;
+  s->extern_limit =
+    s->extern_output_block->data + SIZE_EXTERN_OUTPUT_BLOCK + extra;
 }
 
 static intnat extern_output_length(struct caml_extern_state* s)
@@ -699,7 +700,7 @@ static void extern_code_pointer(struct caml_extern_state* s, char * codeptr)
     digest = (const char *) caml_digest_of_code_fragment(cf);
     if (digest == NULL)
       extern_invalid_argument(s, "output_value: private function");
-    CAMLassert (cf == caml_find_code_fragment_by_digest((unsigned char*)digest));
+    CAMLassert(cf == caml_find_code_fragment_by_digest((unsigned char*)digest));
     writecode32(s, CODE_CODEPOINTER, codeptr - cf->code_start);
     writeblock(s, digest, 16);
   } else {
