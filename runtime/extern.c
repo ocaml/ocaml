@@ -232,6 +232,7 @@ static void extern_init_position_table(struct caml_extern_state* s)
 
 static void extern_free_position_table(struct caml_extern_state* s)
 {
+  if (s->extern_flags & NO_SHARING) return;
   if (s->pos_table.present != s->pos_table_present_init) {
     caml_stat_free(s->pos_table.present);
     caml_stat_free(s->pos_table.entries);
