@@ -7,12 +7,12 @@ ocamldebug_script = "${test_source_directory}/input_script"
 script = "mkdir out"
 ***** ocamlc.byte
 flags = "-g -c"
-all_modules = "${test_source_directory}/in/blah.ml"
+all_modules = "'${test_source_directory}'/in/blah.ml"
 program = "out/blah.cmo"
 ****** ocamlc.byte
 program = "out/foo.cmo"
 flags = "-I out -g -c"
-all_modules = "${test_source_directory}/in/foo.ml"
+all_modules = "'${test_source_directory}'/in/foo.ml"
 ******* ocamlc.byte
 all_modules = "out/blah.cmo out/foo.cmo"
 flags = " -g "
