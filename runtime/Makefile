@@ -27,7 +27,7 @@ BYTECODE_C_SOURCES := $(addsuffix .c, \
   lexing callback debugger weak finalise custom dynlink \
   platform fiber shared_heap addrmap \
   afl $(UNIX_OR_WIN32) bigarray main memprof domain sync \
-  skiplist codefrag)
+  skiplist lf_skiplist codefrag)
 
 NATIVE_C_SOURCES := $(addsuffix .c, \
   startup_aux startup_nat main fail_nat roots signals \
@@ -37,7 +37,7 @@ NATIVE_C_SOURCES := $(addsuffix .c, \
   globroots backtrace_nat backtrace dynlink_nat debugger meta \
   platform fiber shared_heap addrmap frame_descriptors \
   dynlink clambda_checks afl bigarray \
-  memprof domain sync skiplist codefrag)
+  memprof domain sync skiplist lf_skiplist codefrag)
 
 GENERATED_HEADERS := caml/opnames.h caml/version.h caml/jumptbl.h build_config.h
 CONFIG_HEADERS := caml/m.h caml/s.h
@@ -164,7 +164,8 @@ ifneq "$(BYTECODE_SHARED_LIBRARIES)" ""
 	$(INSTALL_PROG) $(BYTECODE_SHARED_LIBRARIES) "$(INSTALL_LIBDIR)"
 endif
 	mkdir -p "$(INSTALL_INCDIR)"
-	$(INSTALL_DATA) caml/domain_state.tbl caml/*.h "$(INSTALL_INCDIR)"
+	$(INSTALL_DATA) caml/domain_state.tbl caml/byte_domain_state.tbl caml/*.h \
+	"$(INSTALL_INCDIR)"
 
 .PHONY: installopt
 installopt:
@@ -244,21 +245,17 @@ caml/jumptbl.h : caml/instruct.h
 	       -e '/^}/q' > $@
 
 # Avoid building due to GIT_HASH when it hasn't changed
-GIT_HASH: $(shell (git rev-parse --short HEAD || \
-                   echo "<hash unavailable>") > GIT_HASH.new; \
-                  cmp -s GIT_HASH GIT_HASH.new || echo GIT_HASH.new)
+GIT_HASH: $(shell \
+    (git rev-parse --short HEAD || echo "<hash unavailable>") > GIT_HASH.new; \
+        cmp -s GIT_HASH GIT_HASH.new || echo GIT_HASH.new)
 	cp $^ $@
 
 caml/version.h : $(ROOTDIR)/tools/make-version-header.sh \
     $(ROOTDIR)/VERSION GIT_HASH
 	$(ROOTDIR)/tools/make-version-header.sh $(ROOTDIR)/VERSION > $@
 	echo "#define OCAML_RUNTIME_BUILD_GIT_HASH \"`cat GIT_HASH`\"" >> $@
-	echo "#define OCAML_RUNTIME_BUILD_GIT_BRANCH \"\
-	   `(git symbolic-ref -q --short HEAD || echo "<branch unavailable>")`\
-	   \"" >> $@
-	echo "#define OCAML_RUNTIME_BUILD_GIT_TAG \"\
-	   `(git describe --tags --exact-match || echo "<tag unavailable>")`\
-	   \"" >> $@
+	echo "#define OCAML_RUNTIME_BUILD_GIT_BRANCH \"`(git symbolic-ref -q --short HEAD || echo "<branch unavailable>")`\"" >> $@
+	echo "#define OCAML_RUNTIME_BUILD_GIT_TAG \"`(git describe --tags --exact-match || echo "<tag unavailable>")`\"" >> $@
 
 # These are provided as a temporary shim to allow cross-compilation systems
 # to supply a host C compiler and different flags and a linking macro.

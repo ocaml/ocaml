@@ -32,6 +32,7 @@
 #include "caml/alloc.h"
 #include "caml/backtrace.h"
 #include "caml/callback.h"
+#include "caml/codefrag.h"
 #include "caml/custom.h"
 #include "caml/debugger.h"
 #include "caml/domain_state.h"
@@ -296,6 +297,8 @@ CAMLexport void caml_main(char_os **argv)
   if (!caml_startup_aux(/* pooling */ caml_params->cleanup_on_exit))
     return;
 
+  caml_init_codefrag();
+
   caml_init_locale();
 #if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
   caml_install_invalid_parameter_handler();
@@ -428,6 +431,8 @@ CAMLexport value caml_startup_code_exn(
     pooling = 1;
   if (!caml_startup_aux(pooling))
     return Val_unit;
+
+  caml_init_codefrag();
 
   caml_init_locale();
 #if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L

@@ -20,6 +20,7 @@
 #include <math.h>
 
 #include "caml/config.h"
+#include "caml/codefrag.h"
 #include "caml/domain.h"
 #include "caml/eventlog.h"
 #include "caml/fail.h"
@@ -434,8 +435,8 @@ static void update_major_slice_work() {
                          ARCH_INTNAT_PRINTF_FORMAT "uu\n",
                    (uintnat) (p * 1000000));
   caml_gc_message (0x40, "extra_heap_resources = %"
-       ARCH_INTNAT_PRINTF_FORMAT "uu\n",
-       (uintnat) (dom_st->extra_heap_resources * 1000000));
+                         ARCH_INTNAT_PRINTF_FORMAT "uu\n",
+                   (uintnat) (dom_st->extra_heap_resources * 1000000));
   caml_gc_message (0x40, "computed work = %"
                          ARCH_INTNAT_PRINTF_FORMAT "d words\n",
                    computed_work);
@@ -1075,6 +1076,10 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
       atomic_store_rel(&num_domains_to_final_update_last, num_domains_in_stw);
 
       atomic_store(&domain_global_roots_started, WORK_UNSTARTED);
+
+      /* Cleanups for various data structures that must be done in a STW by
+        only a single domain */
+      caml_code_fragment_cleanup();
     }
     // should interrupts be processed here or not?
     // depends on whether marking above may need interrupts
@@ -1541,7 +1546,6 @@ static void mark_stack_prune (struct mark_stack* stk)
   /* Traverse through entire skiplist and put it into pools to rescan */
   FOREACH_SKIPLIST_ELEMENT(e, &chunk_sklist, {
     if(Caml_state->pools_to_rescan_len == Caml_state->pools_to_rescan_count){
-
       Caml_state->pools_to_rescan_len =
         Caml_state->pools_to_rescan_len * 2 + 128;
 
