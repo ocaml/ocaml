@@ -554,14 +554,14 @@ module Choice = struct
   let find_nonambiguous_tmc_call choices =
     let has_tmc_calls c = c.tmc_calls <> [] in
     let is_explicit s = s.explicit_tailcall_request in
-    let nonambiguous ~explicit choices =
+    let nonambiguous ~only_explicit_calls choices =
       (* here is how we will compute the result once we know that there
          is an unambiguously-determined tmc call, and whether
          an explicit request was necessary to disambiguate *)
       let rec split rev_before : 'a t list -> 'a zipper = function
         | [] -> assert false (* we know there is at least one choice *)
         | c :: rest ->
-          if has_tmc_calls c && (not explicit || is_explicit c) then
+          if has_tmc_calls c && (not only_explicit_calls || is_explicit c) then
             { rev_before; choice = c; after = List.map direct rest }
           else
             split (direct c :: rev_before) rest
@@ -574,7 +574,7 @@ module Choice = struct
     | [] ->
         No_tmc_call (List.map direct choices)
     | [ _one ] ->
-        Nonambiguous (nonambiguous ~explicit:false choices)
+        Nonambiguous (nonambiguous ~only_explicit_calls:false choices)
     | several_subterms ->
         let explicit_subterms = List.filter is_explicit several_subterms in
         begin match explicit_subterms with
@@ -584,7 +584,7 @@ module Choice = struct
               subterms = several_subterms;
             }
         | [ _one ] ->
-            Nonambiguous (nonambiguous ~explicit:true choices)
+            Nonambiguous (nonambiguous ~only_explicit_calls:true choices)
         | several_explicit_subterms ->
             Ambiguous {
               explicit = true;
