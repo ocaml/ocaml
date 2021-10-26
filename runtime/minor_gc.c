@@ -134,7 +134,7 @@ void caml_set_minor_heap_size (asize_t wsize)
   reset_minor_tables(r);
 }
 
-//*****************************************************************************
+/*****************************************************************************/
 
 struct oldify_state {
   value todo_list;
@@ -197,22 +197,22 @@ static int try_update_object_header(value v, value *p, value result,
       /* here we've caught a domain in the process of moving a minor heap object
          we need to wait for it to finish */
       spin_on_header(v);
-      // Also throw away result and use the one from the other domain
+      /* Also throw away result and use the one from the other domain */
       result = Field(v, 0);
     } else {
-      // Here the header is neither zero nor an in-progress update
+      /* Here the header is neither zero nor an in-progress update */
       header_t desired_hd = In_progress_update_val;
       if( atomic_compare_exchange_strong(Hp_atomic_val(v), &hd, desired_hd) ) {
-        // Success
-        // Now we can write the forwarding pointer
+        /* Success
+           Now we can write the forwarding pointer */
         atomic_store_explicit(Op_atomic_val(v), result, memory_order_relaxed);
-        // And update header ('release' to ensure after update of fwd pointer)
+        /* And update header ('release' ensures after update of fwd pointer) */
         atomic_store_explicit(Hp_atomic_val(v), 0, memory_order_release);
-        // Let the caller know we were responsible for the update
+        /* Let the caller know we were responsible for the update */
         success = 1;
       } else {
-        // We were sniped by another domain, spin for that to complete then
-        // throw away result and use the one from the other domain
+        /* We were sniped by another domain, spin for that to complete then
+           throw away result and use the one from the other domain */
         spin_on_header(v);
         result = Field(v, 0);
       }
@@ -284,7 +284,7 @@ static void oldify_one (void* st_v, value v, value *p)
     }
     else
     {
-      // Conflict - fix up what we allocated on the major heap
+      /* Conflict - fix up what we allocated on the major heap */
       *Hp_val(result) = Make_header(1, No_scan_tag, global.MARKED);
       #ifdef DEBUG
       Field(result, 0) = Val_long(1);
@@ -308,7 +308,7 @@ static void oldify_one (void* st_v, value v, value *p)
         goto tail_call;
       }
     } else {
-      // Conflict - fix up what we allocated on the major heap
+      /* Conflict - fix up what we allocated on the major heap */
       *Hp_val(result) = Make_header(sz, No_scan_tag, global.MARKED);
       #ifdef DEBUG
       {
@@ -329,7 +329,7 @@ static void oldify_one (void* st_v, value v, value *p)
     }
     CAMLassert (infix_offset == 0);
     if( !try_update_object_header(v, p, result, 0) ) {
-      // Conflict
+      /* Conflict */
       *Hp_val(result) = Make_header(sz, No_scan_tag, global.MARKED);
       #ifdef DEBUG
       for( i = 0; i < sz ; i++ ) {
@@ -387,13 +387,10 @@ static void oldify_mopup (struct oldify_state* st, int do_ephemerons)
   int redo = 0;
 
   while (st->todo_list != 0) {
-    v = st->todo_list;                 /* Get the head. */
-    /* I'm not convinced we can ever have something in todo_list that was
-    updated by another domain, so this assert using get_header_val is probably
-    not neccessary */
-    CAMLassert (get_header_val(v) == 0);       /* It must be forwarded. */
-    new_v = Field(v, 0);                /* Follow forward pointer. */
-    st->todo_list = Field (new_v, 1); /* Remove from list. */
+    v = st->todo_list;                   /* Get the head. */
+    CAMLassert (get_header_val(v) == 0); /* It must be forwarded. */
+    new_v = Field(v, 0);                 /* Follow forward pointer. */
+    st->todo_list = Field (new_v, 1);    /* Remove from list. */
 
     f = Field(new_v, 0);
     CAMLassert (!Is_debug_tag(f));
@@ -413,8 +410,9 @@ static void oldify_mopup (struct oldify_state* st, int do_ephemerons)
   }
 
   /* Oldify the key and data in the minor heap of all ephemerons touched in this
-     cycle. We are doing this to allow concurrent minor collections to resume
-    executing mutating code while others are still collecting. */
+     cycle. We are doing this to avoid introducing a barrier for the end of all
+     domains promoting reachable objects and having to handle the complexity
+     of determining which ephemerons are dead when they link across domains */
   if( do_ephemerons ) {
     for (re = ephe_ref_table.base;
          re < ephe_ref_table.ptr; re++) {
@@ -511,21 +509,21 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
       struct caml_ref_table* foreign_major_ref =
                                               &foreign_minor_tables->major_ref;
 
-      // calculate the size of the remembered set
+      /* calculate the size of the remembered set */
       intnat major_ref_size = foreign_major_ref->ptr - foreign_major_ref->base;
 
-      // number of remembered set entries each domain takes here
+      /* number of remembered set entries each domain takes here */
       intnat refs_per_domain = (major_ref_size / participating_count);
 
-      // where to start in the remembered set
+      /* where to start in the remembered set */
       value** ref_start = foreign_major_ref->base
                           + (curr_idx * refs_per_domain);
 
-      // where to end in the remembered set
+      /* where to end in the remembered set */
       value** ref_end = foreign_major_ref->base
                         + ((curr_idx+1) * refs_per_domain);
 
-      // if we're the last domain this time, cover all the remaining refs
+      /* if we're the last domain this time, cover all the remaining refs */
       if( curr_idx == participating_count-1 ) {
         caml_gc_log("taking remainder");
         ref_end = foreign_major_ref->ptr;
@@ -549,7 +547,7 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
   }
   else
   {
-    // If we're alone, we just do our own remembered set
+    /* If we're alone, we just do our own remembered set */
     for( r = self_minor_tables->major_ref.base ;
       r < self_minor_tables->major_ref.ptr ; r++ )
     {
@@ -560,12 +558,12 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
 
   #ifdef DEBUG
     caml_global_barrier();
-    // At this point all domains should have gone through all remembered set
-    // entries. We need to verify that all our remembered set entries are now in
-    // the major heap or promoted
+    /* At this point all domains should have gone through all remembered set
+       entries. We need to verify that all our remembered set entries are now in
+       the major heap or promoted */
     for( r = self_minor_tables->major_ref.base ;
          r < self_minor_tables->major_ref.ptr ; r++ ) {
-      // Everything should be promoted
+      /* Everything should be promoted */
       CAMLassert(!(Is_block(**r)) || !(Is_young(**r)));
     }
   #endif
@@ -585,7 +583,7 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
   }
 
   CAML_EV_BEGIN(EV_MINOR_FINALIZERS_OLDIFY);
-  /* promote the finalizers unconditionally as we want to allow early release */
+  /* promote the finalizers unconditionally as we want to avoid barriers */
   caml_final_do_young_roots (&oldify_one, &st, domain, 0);
   CAML_EV_END(EV_MINOR_FINALIZERS_OLDIFY);
 
@@ -634,7 +632,7 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
 
   /* we reset these pointers before allowing any mutators to be
      released to avoid races where another domain signals an interrupt
-     and we clobbe                   r it */
+     and we clobber it */
   atomic_store_rel
     ((atomic_uintnat*)&domain->young_limit, (uintnat)domain->young_start);
 
