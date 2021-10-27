@@ -1010,8 +1010,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
     Instruct(CHECK_SIGNALS):    /* accu not preserved */
       if (Caml_check_gc_interrupt(domain_state) ||
-	  caml_check_for_pending_signals())
-	goto process_signal;
+          caml_check_for_pending_signals())
+        goto process_signal;
       Next;
 
     process_signal:
