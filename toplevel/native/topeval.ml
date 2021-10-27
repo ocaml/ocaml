@@ -114,15 +114,14 @@ let pr_item =
 (* Execute a toplevel phrase *)
 
 let phrase_seqid = ref 0
-let phrase_name = ref "TOP"
 
 let execute_phrase print_outcome ppf phr =
   match phr with
   | Ptop_def sstr ->
       let oldenv = !toplevel_env in
       incr phrase_seqid;
-      phrase_name := Printf.sprintf "TOP%i" !phrase_seqid;
-      Compilenv.reset ?packname:None !phrase_name;
+      let phrase_name = "TOP" ^ string_of_int !phrase_seqid in
+      Compilenv.reset ?packname:None phrase_name;
       Typecore.reset_delayed_checks ();
       let sstr, rewritten =
         match sstr with
@@ -148,20 +147,20 @@ let execute_phrase print_outcome ppf phr =
         if Config.flambda then
           let { Lambda.module_ident; main_module_block_size = size;
                 required_globals; code = res } =
-            Translmod.transl_implementation_flambda !phrase_name
+            Translmod.transl_implementation_flambda phrase_name
               (str, Tcoerce_none)
           in
           remember module_ident 0 sg';
           module_ident, close_phrase res, required_globals, size
         else
-          let size, res = Translmod.transl_store_phrases !phrase_name str in
-          Ident.create_persistent !phrase_name, res, Ident.Set.empty, size
+          let size, res = Translmod.transl_store_phrases phrase_name str in
+          Ident.create_persistent phrase_name, res, Ident.Set.empty, size
       in
       Warnings.check_fatal ();
       begin try
         toplevel_env := newenv;
         let res =
-          load_lambda ppf ~required_globals ~module_ident !phrase_name res size
+          load_lambda ppf ~required_globals ~module_ident phrase_name res size
         in
         let out_phr =
           match res with
