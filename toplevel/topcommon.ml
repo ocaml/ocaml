@@ -26,6 +26,8 @@ open Ast_helper
 let parse_toplevel_phrase = ref Parse.toplevel_phrase
 let parse_use_file = ref Parse.use_file
 let print_location = Location.print_loc
+let log_error = Location.log_report
+let log_warning = Location.log_warning
 let print_error = Location.print_report
 let print_warning = Location.print_warning
 let input_name = Location.input_name
@@ -183,7 +185,8 @@ let record_backtrace () =
   if Printexc.backtrace_status ()
   then backtrace := Some (Printexc.get_backtrace ())
 
-let preprocess_phrase ppf phr =
+let preprocess_phrase_with_log log phr =
+  let ppf = Misc.Log.formatter log in
   let phr =
     match phr with
     | Ptop_def str ->
@@ -196,6 +199,9 @@ let preprocess_phrase ppf phr =
   if !Clflags.dump_parsetree then Printast.top_phrase ppf phr;
   if !Clflags.dump_source then Pprintast.top_phrase ppf phr;
   phr
+
+let preprocess_phrase ppf phr =
+  Location.with_log ppf (fun log -> preprocess_phrase_with_log log phr)
 
 (* Phrase buffer that stores the last toplevel phrase (see
    [Location.input_phrase_buffer]). *)

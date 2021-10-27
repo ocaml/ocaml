@@ -411,6 +411,8 @@ let error_style_reader = {
   env_var = "OCAML_ERROR_STYLE";
 }
 
+let json = ref false
+
 let unboxed_types = ref false
 
 (* This is used by the -save-ir-after option. *)

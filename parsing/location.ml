@@ -173,19 +173,9 @@ let print_filename ppf file =
    Some of the information (filename, line number or characters numbers) in the
    location might be invalid; in which case we do not print it.
  *)
-let print_loc ppf loc =
-  setup_colors ();
-  let file_valid = function
-    | "_none_" ->
-        (* This is a dummy placeholder, but we print it anyway to please editors
-           that parse locations in error messages (e.g. Emacs). *)
-        true
-    | "" | "//toplevel//" -> false
-    | _ -> true
-  in
-  let line_valid line = line > 0 in
-  let chars_valid ~startchar ~endchar = startchar <> -1 && endchar <> -1 in
-
+type interval =
+  { file:string; startline: int; endline:int; startchar:int; endchar:int }
+let interval loc =
   let file =
     (* According to the comment in location.mli, if [pos_fname] is "", we must
        use [!input_name]. *)
@@ -196,6 +186,23 @@ let print_loc ppf loc =
   let endline = loc.loc_end.pos_lnum in
   let startchar = loc.loc_start.pos_cnum - loc.loc_start.pos_bol in
   let endchar = loc.loc_end.pos_cnum - loc.loc_end.pos_bol in
+  { file; startline; endline; startchar; endchar }
+
+let print_loc ppf loc =
+  setup_colors ();
+  let file_valid = function
+    | "_none_" ->
+        (* This is a dummy placeholder, but we print it anyway to please editors
+           that parse locations in error messages (e.g. Emacs). *)
+        true
+    | "" | "//toplevel//" -> false
+    | _ -> true
+  in
+  let chars_valid ~startchar ~endchar = startchar <> -1 && endchar <> -1 in
+  let {file; startline; endline; startchar; endchar} = interval loc in
+  let line_valid line = line > 0 in
+  let startline = if line_valid startline then startline else 1 in
+  let endline = if line_valid endline then endline else startline in
 
   let first = ref true in
   let capitalize s =
@@ -213,8 +220,6 @@ let print_loc ppf loc =
      existing setup of editors that parse locations in error messages (e.g.
      Emacs). *)
   comma ();
-  let startline = if line_valid startline then startline else 1 in
-  let endline = if line_valid endline then endline else startline in
   begin if startline = endline then
     Format.fprintf ppf "%s %i" (capitalize "line") startline
   else
@@ -648,26 +653,31 @@ type report = {
   sub : msg list;
 }
 
-type report_printer = {
+type terminal_report_printer = {
   (* The entry point *)
-  pp : report_printer ->
+  pp : terminal_report_printer ->
     Format.formatter -> report -> unit;
 
-  pp_report_kind : report_printer -> report ->
+  pp_report_kind : terminal_report_printer -> report ->
     Format.formatter -> report_kind -> unit;
-  pp_main_loc : report_printer -> report ->
+  pp_main_loc : terminal_report_printer -> report ->
     Format.formatter -> t -> unit;
-  pp_main_txt : report_printer -> report ->
+  pp_main_txt : terminal_report_printer -> report ->
     Format.formatter -> (Format.formatter -> unit) -> unit;
-  pp_submsgs : report_printer -> report ->
+  pp_submsgs : terminal_report_printer -> report ->
     Format.formatter -> msg list -> unit;
-  pp_submsg : report_printer -> report ->
+  pp_submsg : terminal_report_printer -> report ->
     Format.formatter -> msg -> unit;
-  pp_submsg_loc : report_printer -> report ->
+  pp_submsg_loc : terminal_report_printer -> report ->
     Format.formatter -> t -> unit;
-  pp_submsg_txt : report_printer -> report ->
+  pp_submsg_txt : terminal_report_printer -> report ->
     Format.formatter -> (Format.formatter -> unit) -> unit;
 }
+
+type json_report_printer = Misc.Log.json_fragments -> report -> unit
+
+type full_report_printer =
+  { terminal: terminal_report_printer; json: json_report_printer }
 
 let is_dummy_loc loc =
   (* Fixme: this should be just [loc.loc_ghost] and the function should be
@@ -703,7 +713,7 @@ let error_style () =
   | Some setting -> setting
   | None -> Misc.Error_style.default_setting
 
-let batch_mode_printer : report_printer =
+let batch_mode_printer : terminal_report_printer =
   let pp_loc _self report ppf loc =
     let tag = match report.kind with
       | Report_warning_as_error _
@@ -777,7 +787,59 @@ let batch_mode_printer : report_printer =
   { pp; pp_report_kind; pp_main_loc; pp_main_txt;
     pp_submsgs; pp_submsg; pp_submsg_loc; pp_submsg_txt }
 
-let terminfo_toplevel_printer (lb: lexbuf): report_printer =
+
+let json_mode_printer: json_report_printer = fun json report ->
+  let kind = match report.kind with
+    | Report_error -> `Assoc["kind", `String "error" ]
+    | Report_warning w ->
+        `Assoc ["kind", `String "warning"; "id", `String w]
+    | Report_warning_as_error w ->
+        `Assoc [
+          "kind",`String "error";
+          "promoted_from", `String "warning";
+          "id", `String w
+        ]
+    | Report_alert w ->
+        `Assoc ["kind",`String "alert"; "id",`String w]
+    | Report_alert_as_error w ->
+        `Assoc [
+          "kind",`String "error";
+          "promoted_from", `String "alert";
+          "id", `String w
+        ]
+  in
+  let content txt = `String (Format.asprintf "@[%t@]" txt) in
+  let loc_to_json loc =
+    let file =
+      if loc.loc_start.pos_fname = "" then !input_name
+      else loc.loc_start.pos_fname
+    in
+    let { startchar; endchar; startline; endline; _ } = interval loc in
+    let start_end s e = `List [`Int s; `Int e] in
+    `Assoc[
+      "file", `String file;
+      "lines", start_end startline endline;
+      "characters", start_end startchar endchar;
+    ]
+  in
+  let msg_to_json {loc;txt} =
+    `Assoc[
+      "location", loc_to_json loc;
+      "content", content txt;
+    ]
+  in
+  let submsgs = List.map msg_to_json report.sub in
+  let main = msg_to_json report.main in
+  let err_frag = `Assoc[
+      "info", kind;
+      "msg", main;
+      "submsgs",`List(submsgs);
+    ]
+  in
+  json.error_msgs <- err_frag :: json.error_msgs
+
+
+let terminfo_toplevel_printer (lb: lexbuf): terminal_report_printer =
   let pp self ppf err =
     setup_colors ();
     (* Highlight all toplevel locations of the report, instead of displaying
@@ -804,17 +866,24 @@ let best_toplevel_printer () =
       batch_mode_printer
 
 (* Creates a printer for the current input *)
-let default_report_printer () : report_printer =
-  if !input_name = "//toplevel//" then
-    best_toplevel_printer ()
-  else
-    batch_mode_printer
+
+let default_report_printer () =
+    if !input_name = "//toplevel//" then
+      best_toplevel_printer ()
+    else
+      batch_mode_printer
 
 let report_printer = ref default_report_printer
 
-let print_report ppf report =
-  let printer = !report_printer () in
-  printer.pp printer ppf report
+
+let log_report log report =
+  match log with
+  | Misc.Log.Direct ppf ->
+    let printer = !report_printer () in
+    printer.pp printer ppf report
+  | Misc.Log.Json log ->
+      json_mode_printer log report
+let print_report ppf report = log_report (Misc.Log.Direct ppf) report
 
 (******************************************************************************)
 (* Reporting errors *)
@@ -822,7 +891,7 @@ let print_report ppf report =
 type error = report
 
 let report_error ppf err =
-  print_report ppf err
+  log_report ppf err
 
 let mkerror loc sub txt =
   { kind = Report_error; main = { loc; txt }; sub }
@@ -867,14 +936,36 @@ let default_warning_reporter =
 let warning_reporter = ref default_warning_reporter
 let report_warning loc w = !warning_reporter loc w
 
-let formatter_for_warnings = ref Format.err_formatter
+(** we use a dummy formatter to detect client-defined formatters without
+    changing the interface
+*)
+let canary_formatter = Format.formatter_of_buffer (Buffer.create 0)
+let formatter_for_warnings = ref canary_formatter
+let log_for_warnings = ref (Misc.Log.Direct Format.err_formatter)
 
-let print_warning loc ppf w =
+
+let init_log ppf =
+  let log = Misc.Log.make ~json:!Clflags.json ppf in
+  log_for_warnings := log;
+  log
+
+let with_log ppf f =
+  let log = init_log ppf in
+  Fun.protect (fun () -> f log) ~finally:(fun () -> Misc.Log.flush log)
+
+let select_warning_log () =
+  if !formatter_for_warnings == canary_formatter then
+    !log_for_warnings
+  else
+    Misc.Log.Direct !formatter_for_warnings
+
+let log_warning loc log w =
   match report_warning loc w with
   | None -> ()
-  | Some report -> print_report ppf report
+  | Some report -> log_report log report
+let print_warning loc ppf w = log_warning loc (Misc.Log.Direct ppf) w
 
-let prerr_warning loc w = print_warning loc !formatter_for_warnings w
+let prerr_warning loc w = log_warning loc (select_warning_log ()) w
 
 let default_alert_reporter =
   default_warning_alert_reporter
@@ -887,12 +978,13 @@ let default_alert_reporter =
 let alert_reporter = ref default_alert_reporter
 let report_alert loc w = !alert_reporter loc w
 
-let print_alert loc ppf w =
+let log_alert loc log w =
   match report_alert loc w with
   | None -> ()
-  | Some report -> print_report ppf report
+  | Some report -> log_report log report
+let print_alert loc ppf w = log_alert loc (Misc.Log.Direct ppf) w
 
-let prerr_alert loc w = print_alert loc !formatter_for_warnings w
+let prerr_alert loc w = log_alert loc (select_warning_log ()) w
 
 let alert ?(def = none) ?(use = none) ~kind loc message =
   prerr_alert loc {Warnings.kind; message; def; use}
@@ -932,15 +1024,17 @@ let () =
 
 external reraise : exn -> 'a = "%reraise"
 
-let report_exception ppf exn =
+let log_exception log exn =
   let rec loop n exn =
     match error_of_exn exn with
     | None -> reraise exn
     | Some `Already_displayed -> ()
-    | Some (`Ok err) -> report_error ppf err
+    | Some (`Ok err) -> report_error log err
     | exception exn when n > 0 -> loop (n-1) exn
   in
   loop 5 exn
+
+let report_exception ppf exn = log_exception (Direct ppf) exn
 
 exception Error of error
 

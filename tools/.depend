@@ -172,11 +172,13 @@ ocamlprof.cmo : \
     ../utils/warnings.cmi \
     ../parsing/parsetree.cmi \
     ../parsing/parse.cmi \
+    ../utils/misc.cmi \
     ../parsing/location.cmi
 ocamlprof.cmx : \
     ../utils/warnings.cmx \
     ../parsing/parsetree.cmi \
     ../parsing/parse.cmx \
+    ../utils/misc.cmx \
     ../parsing/location.cmx
 opnames.cmo :
 opnames.cmx :

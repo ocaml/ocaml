@@ -1,0 +1,19 @@
+{"error_report":
+    [{"info": {"kind": "error"},
+      "msg":
+         {"location":
+             {"file": "//toplevel//", "lines": [6, 6], "characters": [18, 19]
+             },
+          "content":
+             "This expression has type int but an expression was expected of type int64"
+         },
+      "submsgs":
+         [{"location":
+              {"file": "_none_", "lines": [0, 0], "characters": [-1, -1]},
+           "content": "Hint: Did you mean `1L'?"
+          }
+         ]
+     }
+    ]
+}
+
