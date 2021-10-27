@@ -49,7 +49,7 @@ Working version
   (Vincent Laviron, review by Gabriel Scherer)
 
 - #10728: Ensure that functions are evaluated after their arguments
-  (Stephen Dolan, review by ??)
+  (Stephen Dolan, review by Mark Shinwell)
 
 ### Standard library:
 

@@ -795,8 +795,6 @@ let warning_if_forced_inline ~loc ~attribute warning =
 
 let direct_apply env fundesc ufunct uargs ~loc ~attribute =
   match fundesc.fun_inline, attribute with
-  | Some(params, body), _  ->
-     bind_params env loc fundesc params uargs ufunct body
   | _, Never_inline
   | None, _ ->
      let dbg = Debuginfo.from_location loc in
@@ -827,6 +825,8 @@ let direct_apply env fundesc ufunct uargs ~loc ~attribute =
                  Udirect_apply(fundesc.fun_label, app_args @ [Uvar clos], dbg)))
          args
        end
+  | Some(params, body), _  ->
+     bind_params env loc fundesc params uargs ufunct body
 
 (* Add [Value_integer] info to the approximation of an application *)
 
