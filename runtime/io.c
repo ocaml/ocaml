@@ -90,13 +90,18 @@ static void channel_mutex_unlock_default(struct channel *chan)
 static void channel_mutex_unlock_exn_default(void)
 {
   struct channel * chan = last_channel_locked;
-  if (chan != NULL && caml_channel_mutex_unlock != NULL) caml_channel_mutex_unlock(chan);
+  if (chan != NULL && caml_channel_mutex_unlock != NULL)
+    caml_channel_mutex_unlock(chan);
 }
 
-CAMLexport void (*caml_channel_mutex_free) (struct channel *) = channel_mutex_free_default;
-CAMLexport void (*caml_channel_mutex_lock) (struct channel *) = channel_mutex_lock_default;
-CAMLexport void (*caml_channel_mutex_unlock) (struct channel *) = channel_mutex_unlock_default;
-CAMLexport void (*caml_channel_mutex_unlock_exn) (void) = channel_mutex_unlock_exn_default;
+CAMLexport void (*caml_channel_mutex_free) (struct channel *)
+  = channel_mutex_free_default;
+CAMLexport void (*caml_channel_mutex_lock) (struct channel *)
+  = channel_mutex_lock_default;
+CAMLexport void (*caml_channel_mutex_unlock) (struct channel *)
+  = channel_mutex_unlock_default;
+CAMLexport void (*caml_channel_mutex_unlock_exn) (void)
+  = channel_mutex_unlock_exn_default;
 
 /* List of opened channels */
 CAMLexport struct channel * caml_all_opened_channels = NULL;
@@ -525,7 +530,7 @@ void caml_finalize_channel(value vchan)
               "[ocaml] (moreover, it has unflushed data)\n"
               );
   }
-  else 
+  else
   {
     caml_stat_free(chan->name);
     caml_stat_free(chan);
