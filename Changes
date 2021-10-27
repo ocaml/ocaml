@@ -29,6 +29,9 @@ Working version
   (Xavier Leroy and David Allsopp, review by Sébastien Hinderer and
    Damien Doligez)
 
+- #10730, 10731: Fix bug in `Obj.reachable_words` causing a slowdown when called
+  multiple time (Alain Frisch, report by ygrek, review by Xavier Leroy)
+
 ### Code generation and optimizations:
 
 - #10578: Increase the number of integer registers used for
