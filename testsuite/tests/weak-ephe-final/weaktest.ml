@@ -60,6 +60,17 @@ for j = 0 to 99 do
   r := [];
   incr added;
 
+  (* Ephemeron / Weak array implementation in multicore OCaml differs
+     significantly from stock OCaml. In particular, ephemerons keys and data in
+     the minor heap are considered roots for the minor collection. Moreover,
+     When blit'ing ephemerons, the source keys and data are marked as live to
+     play nicely with the concurrent major GC. As a result, this test keeps the
+     previous bunches of strings alive longer than on stock. Hence, the test as
+     is fails on multicore. We add a [full_major] call that forces old bunches
+     to be collected and to confirm that ephemeron implementation on multicore
+     does work as intended. *)
+  Gc.full_major ();
+
   for i = 1 to bunch do
     let c = random_string 7 in
     r := c :: !r;

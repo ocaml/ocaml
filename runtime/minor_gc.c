@@ -223,18 +223,6 @@ static int try_update_object_header(value v, value *p, value result,
   return success;
 }
 
-/* If [*v] is an [Infix_tag] object, [v] is updated to point to the first
- * object in the block. */
-Caml_inline void resolve_infix_val (value* v)
-{
-  int offset = 0;
-  if (get_header_val(*v) == Infix_tag) {
-    offset = Infix_offset_val(*v);
-    CAMLassert (offset > 0);
-    *v -= offset;
-  }
-}
-
 /* Note that the tests on the tag depend on the fact that Infix_tag,
    Forward_tag, and No_scan_tag are contiguous. */
 static void oldify_one (void* st_v, value v, value *p)
@@ -384,7 +372,10 @@ static void oldify_mopup (struct oldify_state* st, int do_ephemerons)
   struct caml_ephe_ref_table ephe_ref_table =
                                     domain_state->minor_tables->ephe_ref;
   struct caml_ephe_ref_elt *re;
-  int redo = 0;
+  int redo;
+
+again:
+  redo = 0;
 
   while (st->todo_list != 0) {
     v = st->todo_list;                 /* Get the head. */
@@ -421,10 +412,12 @@ static void oldify_mopup (struct oldify_state* st, int do_ephemerons)
       value *data = re->offset == CAML_EPHE_DATA_OFFSET
               ? &Ephe_data(re->ephe)
               :  &Field(re->ephe, re->offset);
-      if (*data != caml_ephe_none && Is_block(*data) && Is_young(*data) ) {
-        resolve_infix_val(data);
-        if (get_header_val(*data) == 0) { /* Value copied to major heap */
-          *data = Field(*data, 0);
+      value v = *data;
+      if (v != caml_ephe_none && Is_block(v) && Is_young(v) ) {
+        mlsize_t offs = Tag_val(v) == Infix_tag ? Infix_offset_val(v) : 0;
+        v -= offs;
+        if (get_header_val(v) == 0) { /* Value copied to major heap */
+          *data = Field(v, 0) + offs;
         } else {
           oldify_one(st, *data, data);
           redo = 1; /* oldify_todo_list can still be 0 */
@@ -433,7 +426,7 @@ static void oldify_mopup (struct oldify_state* st, int do_ephemerons)
     }
   }
 
-  if (redo) oldify_mopup (st, 1);
+  if (redo) goto again;
 }
 
 void caml_empty_minor_heap_domain_clear(caml_domain_state* domain, void* unused)

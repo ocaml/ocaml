@@ -842,14 +842,17 @@ intnat ephe_mark (intnat budget, uintnat for_cycle,
             }
           }
         }
-        else if (is_unmarked (key))
-          alive_data = 0;
+        else {
+          if (Tag_val (key) == Infix_tag) key -= Infix_offset_val (key);
+          if (is_unmarked (key))
+            alive_data = 0;
+        }
       }
     }
     budget -= Whsize_wosize(i);
 
     if (force_alive || alive_data) {
-      if (data != caml_ephe_none && Is_block(data) && is_unmarked(data)) {
+      if (data != caml_ephe_none && Is_block(data)) {
         caml_darken (0, data, 0);
       }
       Ephe_link(v) = domain_state->ephe_info->live;
