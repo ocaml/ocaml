@@ -1,7 +1,7 @@
 (* TEST *)
 
 (* closed, inlined *)
-let f () () = print_endline "4"
+let[@inline always] f () () = print_endline "4"
 let () = (let () = print_string "3" in f) (print_string "2") (print_string "1")
 
 (* closed, not inlined *)

@@ -779,8 +779,8 @@ let bind_params { backend; mutable_vars; _ } loc fdesc params args funct body =
   let params, args, body =
     (* Ensure funct is evaluated after args *)
     match params with
-    | pfn :: params when not fdesc.fun_closed ->
-       (params @ [pfn]), (args @ [funct]), body
+    | my_closure :: params when not fdesc.fun_closed ->
+       (params @ [my_closure]), (args @ [funct]), body
     | _ ->
        params, args, (if is_pure funct then body else Usequence (funct, body))
   in
@@ -795,6 +795,8 @@ let warning_if_forced_inline ~loc ~attribute warning =
 
 let direct_apply env fundesc ufunct uargs ~loc ~attribute =
   match fundesc.fun_inline, attribute with
+  | Some(params, body), _  ->
+     bind_params env loc fundesc params uargs ufunct body
   | _, Never_inline
   | None, _ ->
      let dbg = Debuginfo.from_location loc in
@@ -813,20 +815,18 @@ let direct_apply env fundesc ufunct uargs ~loc ~attribute =
            let id = V.create_local "arg" in
            Some (VP.create id, arg), Uvar id) uargs in
        let app_args = List.map snd args in
-       List.fold_right (fun (binding,_) app ->
-         match binding with
-         | None -> app
-         | Some (v, e) -> Ulet(Immutable, Pgenval, v, e, app))
-         (List.rev args)
+       List.fold_left (fun app (binding,_) ->
+           match binding with
+           | None -> app
+           | Some (v, e) -> Ulet(Immutable, Pgenval, v, e, app))
          (if fundesc.fun_closed then
             Usequence (ufunct, Udirect_apply (fundesc.fun_label, app_args, dbg))
           else
             let clos = V.create_local "clos" in
             Ulet(Immutable, Pgenval, VP.create clos, ufunct,
                  Udirect_apply(fundesc.fun_label, app_args @ [Uvar clos], dbg)))
+         args
        end
-  | Some(params, body), _  ->
-     bind_params env loc fundesc params uargs ufunct body
 
 (* Add [Value_integer] info to the approximation of an application *)
 
