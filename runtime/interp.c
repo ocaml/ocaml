@@ -80,7 +80,9 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
 #define Restore_after_gc \
   { sp = domain_state->current_stack->sp; accu = sp[0]; env = sp[1]; sp += 3; }
 #define Enter_gc \
-  { Setup_for_gc; caml_handle_gc_interrupt(); Restore_after_gc; }
+  { Setup_for_gc; caml_handle_gc_interrupt(); \
+    caml_raise_if_exception(caml_process_pending_signals_exn()); \
+    Restore_after_gc; }
 
 /* We store [pc+1] in the stack so that, in case of an exception, the
    first backtrace slot points to the event following the C call
@@ -922,13 +924,14 @@ value caml_interprete(code_t prog, asize_t prog_size)
       Next;
 
     Instruct(POPTRAP):
-      if (Caml_check_gc_interrupt(domain_state)) {
+      if (Caml_check_gc_interrupt(domain_state) ||
+          caml_check_for_pending_signals()) {
         /* We must check here so that if a signal is pending and its
            handler triggers an exception, the exception is trapped
            by the current try...with, not the enclosing one. */
         pc--; /* restart the POPTRAP after processing the signal */
         goto process_signal;
-      }
+       }
       domain_state->trap_sp_off = Long_val(Trap_link(sp));
       sp += 4;
       Next;
@@ -1006,7 +1009,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
 /* Signal handling */
 
     Instruct(CHECK_SIGNALS):    /* accu not preserved */
-      if (Caml_check_gc_interrupt(domain_state)) goto process_signal;
+      if (Caml_check_gc_interrupt(domain_state) ||
+	  caml_check_for_pending_signals())
+	goto process_signal;
       Next;
 
     process_signal:
