@@ -203,16 +203,15 @@ static int try_update_object_header(value v, value *p, value result,
       /* Here the header is neither zero nor an in-progress update */
       header_t desired_hd = In_progress_update_val;
       if( atomic_compare_exchange_strong(Hp_atomic_val(v), &hd, desired_hd) ) {
-        /* Success
-           Now we can write the forwarding pointer */
+        /* Success. Now we can write the forwarding pointer. */
         atomic_store_explicit(Op_atomic_val(v), result, memory_order_relaxed);
         /* And update header ('release' ensures after update of fwd pointer) */
         atomic_store_explicit(Hp_atomic_val(v), 0, memory_order_release);
         /* Let the caller know we were responsible for the update */
         success = 1;
       } else {
-        /* We were sniped by another domain, spin for that to complete then
-           throw away result and use the one from the other domain */
+        /* Updated by another domain. Spin for that update to complete and
+           then throw away the result and use the one from the other domain. */
         spin_on_header(v);
         result = Field(v, 0);
       }
