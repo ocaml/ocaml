@@ -72,6 +72,34 @@ let test_compare () =
   assert (Uchar.(compare max min) = 1);
   ()
 
+let test_utf_decode () =
+  let d0 = Uchar.utf_decode 1 Uchar.min in
+  let d1 = Uchar.utf_decode 4 Uchar.max in
+  let invalid = Uchar.utf_decode_invalid 3 in
+  assert (Uchar.utf_decode_is_valid d0);
+  assert (Uchar.utf_decode_length d0 = 1);
+  assert (Uchar.equal (Uchar.utf_decode_uchar d0) Uchar.min);
+  assert (Uchar.utf_decode_is_valid d1);
+  assert (Uchar.utf_decode_length d1 = 4);
+  assert (Uchar.equal (Uchar.utf_decode_uchar d1) Uchar.max);
+  assert (not (Uchar.utf_decode_is_valid invalid));
+  assert (Uchar.utf_decode_length invalid = 3);
+  assert (Uchar.equal (Uchar.utf_decode_uchar invalid) Uchar.rep);
+  ()
+
+let test_utf_x_byte_length () =
+  assert (Uchar.utf_8_byte_length Uchar.min = 1);
+  assert (Uchar.utf_16_byte_length Uchar.min = 2);
+  assert (Uchar.utf_8_byte_length Uchar.max = 4);
+  assert (Uchar.utf_16_byte_length Uchar.max = 4);
+  let c = Uchar.of_int 0x1F42B in
+  assert (Uchar.utf_8_byte_length c = 4);
+  assert (Uchar.utf_16_byte_length c = 4);
+  let c = Uchar.of_int 0x9A7C in
+  assert (Uchar.utf_8_byte_length c = 3);
+  assert (Uchar.utf_16_byte_length c = 2);
+  ()
+
 let tests () =
   test_constants ();
   test_succ ();
@@ -82,6 +110,8 @@ let tests () =
   test_to_char ();
   test_equal ();
   test_compare ();
+  test_utf_decode ();
+  test_utf_x_byte_length ();
   ()
 
 let () =

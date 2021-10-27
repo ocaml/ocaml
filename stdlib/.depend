@@ -79,6 +79,7 @@ stdlib__Buffer.cmi : buffer.mli \
     stdlib__Uchar.cmi \
     stdlib__Seq.cmi
 stdlib__Bytes.cmo : bytes.ml \
+    stdlib__Uchar.cmi \
     stdlib__Sys.cmi \
     stdlib.cmi \
     stdlib__Seq.cmi \
@@ -86,6 +87,7 @@ stdlib__Bytes.cmo : bytes.ml \
     stdlib__Char.cmi \
     stdlib__Bytes.cmi
 stdlib__Bytes.cmx : bytes.ml \
+    stdlib__Uchar.cmx \
     stdlib__Sys.cmx \
     stdlib.cmx \
     stdlib__Seq.cmx \
@@ -93,6 +95,7 @@ stdlib__Bytes.cmx : bytes.ml \
     stdlib__Char.cmx \
     stdlib__Bytes.cmi
 stdlib__Bytes.cmi : bytes.mli \
+    stdlib__Uchar.cmi \
     stdlib__Seq.cmi
 stdlib__BytesLabels.cmo : bytesLabels.ml \
     stdlib__Bytes.cmi \
@@ -101,6 +104,7 @@ stdlib__BytesLabels.cmx : bytesLabels.ml \
     stdlib__Bytes.cmx \
     stdlib__BytesLabels.cmi
 stdlib__BytesLabels.cmi : bytesLabels.mli \
+    stdlib__Uchar.cmi \
     stdlib__Seq.cmi
 stdlib__Callback.cmo : callback.ml \
     stdlib__Obj.cmi \
@@ -698,6 +702,7 @@ stdlib__String.cmx : string.ml \
     stdlib__Bytes.cmx \
     stdlib__String.cmi
 stdlib__String.cmi : string.mli \
+    stdlib__Uchar.cmi \
     stdlib__Seq.cmi
 stdlib__StringLabels.cmo : stringLabels.ml \
     stdlib__String.cmi \
@@ -706,6 +711,7 @@ stdlib__StringLabels.cmx : stringLabels.ml \
     stdlib__String.cmx \
     stdlib__StringLabels.cmi
 stdlib__StringLabels.cmi : stringLabels.mli \
+    stdlib__Uchar.cmi \
     stdlib__Seq.cmi
 stdlib__Sys.cmo : sys.ml \
     stdlib__Sys.cmi
