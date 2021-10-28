@@ -515,7 +515,7 @@ void caml_init_domains(uintnat minor_heap_wsz) {
   heaps_base = caml_mem_map(size, size, 1 /* reserve_only */);
   tls_base =
       caml_mem_map(tls_areas_size, tls_areas_size, 1 /* reserve_only */);
-  if (!heaps_base || !tls_base) caml_raise_out_of_memory();
+  if (!heaps_base || !tls_base) caml_fatal_error("Not enough heap memory to start up");
 
   caml_minor_heaps_base = (uintnat) heaps_base;
   caml_minor_heaps_end = (uintnat) heaps_base + size;
