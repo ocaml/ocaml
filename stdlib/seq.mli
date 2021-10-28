@@ -505,20 +505,6 @@ val drop_while : ('a -> bool) -> 'a t -> 'a t
 
     @since 4.14 *)
 
-val uniq : ('a -> 'a -> bool) -> 'a t -> 'a t
-(** Provided the function [eq] defines an equality on elements,
-    [uniq eq xs] is the sequence [xs],
-    deprived of its adjacent duplicate elements.
-
-    Thus, [uniq eq xs] has no adjacent duplicate elements.
-    Furthermore, if [xs] is sorted according to an ordering
-    that is compatible with [eq],
-    then [uniq eq xs] has no duplicate elements at all.
-
-    [uniq eq xs] is equivalent to [map head (group eq xs)].
-
-    @since 4.14 *)
-
 val group : ('a -> 'a -> bool) -> 'a t -> 'a t t
 (** Provided the function [eq] defines an equality on elements,
     [group eq xs] is the sequence of the maximal runs

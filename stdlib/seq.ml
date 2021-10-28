@@ -376,26 +376,6 @@ let rec drop_while p xs () =
   | Cons (x, xs) as node ->
       if p x then drop_while p xs () else node
 
-(* [uniq1 eq x ys] is equivalent to [uniq eq (cons x ys)].
-   [uniq1] is used as a building block in the definition of [uniq]. *)
-
-let rec uniq1 eq x ys () =
-  match ys() with
-  | Nil ->
-      Nil
-  | Cons (y, ys) ->
-      if eq x y then
-        uniq1 eq x ys ()
-      else
-        Cons (y, uniq1 eq y ys)
-
-let uniq eq xs () =
-  match xs() with
-  | Nil ->
-      Nil
-  | Cons (x, ys) ->
-      Cons (x, uniq1 eq x ys)
-
 let rec group eq xs () =
   match xs() with
   | Nil ->
