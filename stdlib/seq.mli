@@ -133,9 +133,9 @@ val is_empty : 'a t -> bool
 (** [is_empty xs] determines whether the sequence [xs] is empty.
 
     It is recommended that the sequence [xs] be persistent.
-    Indeed, if [xs] is ephemeral, then [is_empty xs] counts as
-    one use of the sequence [xs], and may prevent further uses
-    of [xs].
+    Indeed, [is_empty xs] demands the head of the sequence [xs],
+    so, if [xs] is ephemeral, it may be the case that [xs] cannot
+    be used any more after this call has taken place.
 
     @since 4.14 *)
 
