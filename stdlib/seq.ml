@@ -126,7 +126,7 @@ let rec fold_lefti_aux f i accu xs =
       let accu = f i accu x in
       fold_lefti_aux f (i+1) accu xs
 
-let fold_lefti f accu xs =
+let[@inline] fold_lefti f accu xs =
   fold_lefti_aux f 0 accu xs
 
 let rec for_all p xs =
