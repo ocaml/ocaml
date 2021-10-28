@@ -2,7 +2,7 @@
    flags = "-dlambda -dno-unique-ids"
    * expect *)
 
-(* Check that the code produced by TRMC reads reasonably well. *)
+(* Check that the code produced by TMC reads reasonably well. *)
 let[@tail_mod_cons] rec map f = function
   | [] -> []
   | x :: xs -> f x :: map f xs
@@ -28,7 +28,7 @@ let[@tail_mod_cons] rec map f = function
 val map : ('a -> 'b) -> 'a list -> 'b list = <fun>
 |}]
 
-(* check that TRMC works for records as well *)
+(* check that TMC works for records as well *)
 type 'a cell = { hd : 'a; tl : 'a rec_list }
 and 'a rec_list = 'a cell option
 [%%expect{|

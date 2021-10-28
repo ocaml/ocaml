@@ -17,12 +17,12 @@
         tl `n`                          \ printed in evaluation
         <prints from recursive calls>   / of tl
 
-   With TRMC, only the second version can happen, and this test ensures
+   With TMC, only the second version can happen, and this test ensures
    that the effects of [Format.printf "hd %d@." n; f x] are not moved
    inside the effectful [Format.printf "tl %d@." n; .] context.
 
-   (Note that due to the left-to-right evaluation order, a non-TRMC version
-   would use the first version, and TRMC is changing the evaluation order
+   (Note that due to the left-to-right evaluation order, a non-TMC version
+   would use the first version, and TMC is changing the evaluation order
    here -- this is allowed by the language specification, as long as
    each argument is fully evaluated before starting to evaluate another
    argument, which is what we are testing here)
@@ -35,7 +35,7 @@ let [@tail_mod_cons] rec verbose_map n f xs =
 let _ =
   assert (verbose_map 0 (fun x -> x + 1) [1; 2; 3] = [2; 3; 4])
 
-(* Test that delayed constructors are properly restored inside non-TRMC contexts *)
+(* Test that delayed constructors are properly restored inside non-TMC contexts *)
 let[@tail_mod_cons] rec weird xs =
   () :: match xs with [] -> [] | x :: xs -> x :: weird xs
 

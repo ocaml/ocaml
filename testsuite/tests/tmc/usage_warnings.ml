@@ -115,13 +115,13 @@ val flatten : 'a list list -> 'a list = <fun>
 
 module Tail_calls_to_non_specialized_functions = struct
 (* This module contains regression tests for some delicate warning behavior:
-   if the filter_not_trmc call below goes to a non-specialized function,
+   if the list_id call below goes to a non-specialized function,
    it gets the "use [@tailcall false]" warning, but it is in tailcall
    position in the direct-style version, so it could also get the
    "invalid [@tailcall false] assumption" warning. *)
 
   (* *not* TMC-specialized *)
-  let rec list_id = function
+  let list_id = function
     | [] -> []
     | x :: xs -> x :: xs
 
@@ -134,7 +134,7 @@ module Tail_calls_to_non_specialized_functions = struct
         else
           list_id
             (* no [@tailcall false]: this should warn that
-               the call becomes non-tailcall in the TRMC version. *)
+               the call becomes non-tailcall in the TMC version. *)
             (filter_1 f xs)
 
   let[@tail_mod_cons] rec filter_2 f li =
@@ -153,7 +153,7 @@ end
 Lines 20-23, characters 10-27:
 20 | ..........list_id
 21 |             (* no [@tailcall false]: this should warn that
-22 |                the call becomes non-tailcall in the TRMC version. *)
+22 |                the call becomes non-tailcall in the TMC version. *)
 23 |             (filter_1 f xs)
 Warning 72 [tmc-breaks-tailcall]: This call is in tail-modulo-cons position in a TMC function,
 but the function called is not itself specialized for TMC,

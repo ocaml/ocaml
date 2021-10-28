@@ -596,7 +596,7 @@ let rec choice ctx t =
         let+ (l2, l3) = choice_pair ctx ~tail (l2, l3) in
         Lifthenelse (l1, l2, l3)
     | Lmutlet (vk, var, def, body) ->
-        (* mutable bindings are not TRMC-specialized *)
+        (* mutable bindings are not TMC-specialized *)
         let def = traverse ctx def in
         let+ body = choice ctx ~tail body in
         Lmutlet (vk, var, def, body)

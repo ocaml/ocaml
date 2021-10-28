@@ -16,7 +16,7 @@ module ListMap = struct
   let[@tail_mod_cons] rec map f = function
     | [] -> []
     | x :: xs ->
-        (* Note: trmc guarantees that 'map f xs' is evaluated last *)
+        (* Note: tail-mod-cons guarantees that 'map f xs' is evaluated last *)
         f x :: map f xs
 
   let _ =
