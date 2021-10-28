@@ -238,8 +238,7 @@ let rec compare cmp xs ys =
 
 
 
-(* [init_aux f i j] is the sequence [f i, ..., f (j-1)].
-   It is equivalent to [map f (up i j)]. *)
+(* [init_aux f i j] is the sequence [f i, ..., f (j-1)]. *)
 
 let rec init_aux f i j () =
   if i < j then begin
