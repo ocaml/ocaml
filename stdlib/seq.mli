@@ -279,6 +279,10 @@ val for_all2 : ('a -> 'b -> bool) -> 'a t -> 'b t -> bool
     If the sequences [xs] and [ys] have different lengths, then
     iteration stops as soon as one sequence is exhausted;
     the excess elements in the other sequence are ignored.
+    In particular, if [xs] or [ys] is empty, then
+    [for_all2 p xs ys] is true. This is where
+    [for_all2] and [equal] differ: [equal eq xs ys] can
+    be true only if [xs] and [ys] have the same length.
 
     At least one of the sequences [xs] and [ys] must be finite.
 
