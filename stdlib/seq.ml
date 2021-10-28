@@ -260,22 +260,24 @@ let rec repeat x () =
 let rec forever f () =
   Cons (f(), forever f)
 
-(* This version of [cycle] requires the sequence [xs] to be nonempty. Applying
-   it to an empty sequence would produce a sequence that diverges when it is
-   forced. *)
+(* This preliminary definition of [cycle] requires the sequence [xs]
+   to be nonempty. Applying it to an empty sequence would produce a
+   sequence that diverges when it is forced. *)
 
-let rec cycle xs () =
-  append xs (cycle xs) ()
+let rec cycle_nonempty xs () =
+  append xs (cycle_nonempty xs) ()
 
-(* [cycle] is redefined to check whether [xs] is empty and, if so, return
-   an empty sequence. Note that this is *not* a recursive definition. *)
+(* [cycle xs] checks whether [xs] is empty and, if so, returns an empty
+   sequence. Otherwise, [cycle xs] produces one copy of [xs] followed
+   with the infinite sequence [cycle_nonempty xs]. Thus, the nonemptiness
+   check is performed just once. *)
 
 let cycle xs () =
   match xs() with
   | Nil ->
       Nil
   | Cons (x, xs') ->
-      Cons (x, append xs' (cycle xs))
+      Cons (x, append xs' (cycle_nonempty xs))
 
 (* [iterate1 f x] is the sequence [f x, f (f x), ...].
    It is equivalent to [tail (iterate f x)].
