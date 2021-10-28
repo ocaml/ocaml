@@ -288,6 +288,13 @@ let rec iterate1 f x () =
 
 (* [iterate f x] is the sequence [x, f x, ...]. *)
 
+(* The reason why we give this slightly indirect definition of [iterate],
+   as opposed to the more naive definition that may come to mind, is that
+   we are careful to avoid evaluating [f x] until this function call is
+   actually necessary. The naive definition (not shown here) computes the
+   second argument of the sequence, [f x], when the first argument is
+   requested by the user. *)
+
 let iterate f x =
   cons x (iterate1 f x)
 
@@ -305,6 +312,9 @@ let[@inline] mapi f xs =
 
 (* [tail_scan f s xs] is equivalent to [tail (scan f s xs)].
    [tail_scan] is used as a building block in the definition of [scan]. *)
+
+(* This slightly indirect definition of [scan] is meant to avoid computing
+   elements too early; see the above comment about [iterate1] and [iterate]. *)
 
 let rec tail_scan f s xs () =
   match xs() with
