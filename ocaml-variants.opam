@@ -7,7 +7,7 @@
 
    Initial build:
 
-      opam pin add -k path --inplace-build ocaml-variants.4.12.0+domains .
+      opam pin add -k path --inplace-build ocaml-variants.4.14.0+domains .
 
    This installs the compiler for the new opam switch. Subsequent builds can be
    done locally with:
