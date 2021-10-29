@@ -218,6 +218,11 @@ val override_sys_argv : string array -> unit
    "script.ml args..." instead of the full command line:
    "ocamlrun unix.cma ... script.ml args...". *)
 
+(** [is_command_like_name s] is [true] if [s] is an implicit basename with no
+    file extension and which doesn't begin with a hyphen. Basically, if it looks
+    like a sub-command name (e.g. ocaml help). *)
+val is_command_like_name : string -> bool
+
 (**/**)
 
 (* internal functions used by [Topeval] *)
