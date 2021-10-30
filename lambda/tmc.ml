@@ -71,10 +71,10 @@ let assign_to_dst {var; offset; loc} lam =
         [Lvar var; offset_code offset; lam], loc)
 
 module Constr : sig
-  (** The type [Constr.t] represents a reified constructor with a single hole, which can
-      be either directly applied to a [lambda] term, or be used to create
-      a fresh [lambda destination] with a placeholder.
-  *)
+  (** The type [Constr.t] represents a reified constructor with
+     a single hole, which can be either directly applied to a [lambda]
+     term, or be used to create a fresh [lambda destination] with
+     a placeholder. *)
   type t = {
     tag : int;
     flag: Asttypes.mutable_flag;
@@ -84,7 +84,8 @@ module Constr : sig
     loc : Debuginfo.Scoped_location.t;
   }
 
-  (** [apply constr e] plugs the expression [e] in the hole of the constructor [const]. *)
+  (** [apply constr e] plugs the expression [e] in the hole of the
+     constructor [const]. *)
   val apply : t -> lambda -> lambda
 
   (** [with_placeholder constr body] binds a placeholder
@@ -118,7 +119,8 @@ end = struct
 
   let apply constr t =
     let block_args = List.append constr.before @@ t :: constr.after in
-    Lprim (Pmakeblock (constr.tag, constr.flag, constr.shape), block_args, constr.loc)
+    Lprim (Pmakeblock (constr.tag, constr.flag, constr.shape),
+           block_args, constr.loc)
 
   let tmc_placeholder =
     (* we choose a placeholder whose tagged representation will be
@@ -126,7 +128,8 @@ end = struct
     Lconst (Const_base (Const_int (0xBBBB / 2)))
 
   let with_placeholder constr (body : offset destination -> lambda) =
-    let k_with_placeholder = apply { constr with flag = Mutable } tmc_placeholder in
+    let k_with_placeholder =
+      apply { constr with flag = Mutable } tmc_placeholder in
     let placeholder_pos = List.length constr.before in
     let placeholder_pos_lam = Lconst (Const_base (Const_int placeholder_pos)) in
     let block_var = Ident.create_local "block" in
@@ -480,10 +483,10 @@ module Choice = struct
         and+ vs = list cs
         in v :: vs
 
-  (** The [find_*] machinery is used to locate a single subterm
-      to optimize among a list of subterms. If there are several possible choices,
-      we require that exactly one of them be annotated with [@tailcall], or
-      we report an ambiguity. *)
+  (** The [find_*] machinery is used to locate a single subterm to
+      optimize among a list of subterms. If there are several possible
+      choices, we require that exactly one of them be annotated with
+      [@tailcall], or we report an ambiguity. *)
   type 'a tmc_call_search =
     | No_tmc_call of 'a list
     | Nonambiguous of 'a zipper
@@ -575,8 +578,9 @@ let rec choice ctx t =
         let t = traverse ctx t in
         Choice.lambda t
 
-    (* [choice_prim] handles most primitives, but the important case of construction
-       [Lprim(Pmakeblock(...), ...)] is handled by [choice_makeblock] *)
+    (* [choice_prim] handles most primitives, but the important case
+       of construction [Lprim(Pmakeblock(...), ...)] is handled by
+       [choice_makeblock] *)
     | Lprim (prim, primargs, loc) ->
         choice_prim ctx ~tail prim primargs loc
 
@@ -690,8 +694,9 @@ let rec choice ctx t =
             | Some args -> args
           in
           let tailcall tail =
-            (* If we are calling a tmc-specializable function in tail context,
-               then both the direct-style and dps-style calls must be tailcalls. *)
+            (* If we are calling a tmc-specializable function in tail
+               context, then both the direct-style and dps-style calls
+               must be tailcalls. *)
             if tail
             then Tailcall_expectation true
             else Default_tailcall
@@ -870,7 +875,8 @@ let rec choice ctx t =
     (* we don't handle { foo with x = ...; y = recursive-call } *)
     | Pduprecord _
 
-    (* operations returning boxed values could be considered constructions someday *)
+    (* operations returning boxed values could be considered
+       constructions someday *)
     | Pbintofint _ | Pintofbint _
     | Pcvtbint _
     | Pnegbint _
@@ -885,7 +891,8 @@ let rec choice ctx t =
     | Pbytes_load_16 _ | Pbytes_load_32 _ | Pbytes_load_64 _
     | Pbytes_set_16 _ | Pbytes_set_32 _ | Pbytes_set_64 _
     | Pbigstring_load_16 _ | Pbigstring_load_32 _ | Pbigstring_load_64 _
-    | Pbigstring_set_16 _ | Pbigstring_set_32 _ | Pbigstring_set_64 _ | Pctconst _
+    | Pbigstring_set_16 _ | Pbigstring_set_32 _ | Pbigstring_set_64 _
+    | Pctconst _
     | Pbswap16
     | Pbbswap _
     | Pint_as_pointer
@@ -962,14 +969,17 @@ let rewrite t =
 let () =
   Location.register_error_of_exn
     (function
-      | Error (loc, Ambiguous_constructor_arguments { explicit = false; arguments }) ->
+      | Error (loc,
+               Ambiguous_constructor_arguments
+                 { explicit = false; arguments }) ->
           let print_msg ppf =
             Format.pp_print_text ppf
               "[@tail_mod_cons]: this constructor application may be \
-               TMC-transformed in several different ways. Please disambiguate \
-               by adding an explicit [@tailcall] attribute to the call that \
-               should be made tail-recursive, or a [@tailcall false] attribute \
-               on calls that should not be transformed."
+               TMC-transformed in several different ways. Please \
+               disambiguate by adding an explicit [@tailcall] \
+               attribute to the call that should be made \
+               tail-recursive, or a [@tailcall false] attribute on \
+               calls that should not be transformed."
           in
           let submgs =
             let sub (info : tmc_call_information) =
@@ -981,15 +991,17 @@ let () =
             |> List.map sub
           in
           Some (Location.errorf ~loc ~sub:submgs "%t" print_msg)
-      | Error (loc, Ambiguous_constructor_arguments { explicit = true; arguments }) ->
+      | Error (loc,
+               Ambiguous_constructor_arguments
+                 { explicit = true; arguments }) ->
           let print_msg ppf =
             Format.pp_print_text ppf
               "[@tail_mod_cons]: this constructor application may be \
-               TMC-transformed in several different ways. Only one of the arguments \
-               may become a TMC call, but several arguments contain calls \
-               that are explicitly marked as tail-recursive. \
-               Please fix the conflict by reviewing and fixing the conflicting \
-               annotations."
+               TMC-transformed in several different ways. Only one of \
+               the arguments may become a TMC call, but several \
+               arguments contain calls that are explicitly marked as \
+               tail-recursive. Please fix the conflict by reviewing \
+               and fixing the conflicting annotations."
           in
           let submgs =
             let sub (info : tmc_call_information) =

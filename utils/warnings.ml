@@ -1028,14 +1028,16 @@ let message = function
   | Missing_mli ->
     "Cannot find interface file."
   | Unused_tmc_attribute ->
-      "This function is marked @tail_mod_cons but is never applied in TMC position."
+      "This function is marked @tail_mod_cons but is never applied in \
+       TMC position."
   | Tmc_breaks_tailcall ->
       "This call is in tail-modulo-cons position in a TMC function,\n\
        but the function called is not itself specialized for TMC,\n\
-       so the call will not be in tail position in the transformed version.\n\
-       Please either mark the called function with the [@tail_mod_cons] attribute,\n\
-       or mark this call with the [@tailcall false] attribute to make its\n\
-       non-tailness explicit."
+       so the call will not be transformed into a tail call.\n\
+       Please either mark the called function with\n\
+       the [@tail_mod_cons] attribute, or mark this call with\n\
+       the [@tailcall false] attribute to make its non-tailness \
+       explicit."
 ;;
 
 let nerrors = ref 0;;
