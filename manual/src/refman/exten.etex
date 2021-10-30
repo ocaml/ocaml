@@ -119,4 +119,8 @@ that are implemented in OCaml, but not described in chapter \ref{c:refman}.
 %HEVEA\cutname{bindingops.html}
 \input{bindingops.tex}
 
+\section{s:tail-mod-cons}{Tail Modulo Cons}
+%HEVEA\cutname{tailmodcons.html}
+\input{tail_mod_cons.tex}
+
 %HEVEA\cutend

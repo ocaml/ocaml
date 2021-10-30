@@ -15,7 +15,8 @@ EXTENSION_FILES = letrecvalues.tex recursivemodules.tex locallyabstract.tex \
   attributes.tex extensionnodes.etex extensiblevariants.tex \
   generativefunctors.tex extensionsyntax.tex inlinerecords.tex \
   doccomments.tex indexops.tex emptyvariants.tex alerts.tex \
-  generalizedopens.tex bindingops.tex extensionnodes.tex privatetypes.tex
+  generalizedopens.tex bindingops.tex extensionnodes.tex privatetypes.tex \
+  tail_mod_cons.tex
 
 FILES =  $(addprefix extensions/,$(EXTENSION_FILES)) \
   refman.tex lex.tex names.tex values.tex const.tex types.tex \
