@@ -21,6 +21,9 @@ Working version
 
 ### Build system:
 
+- #10727: Handle space in path
+  (Élie Brami, review by Sébastien Hinderer)
+
 ### Bug fixes:
 
 OCaml 4.14.0
