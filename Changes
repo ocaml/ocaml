@@ -290,6 +290,11 @@ Working version
   assembler used by the backend.
   (David Allsopp, review by Gabriel Scherer)
 
+- #10715: Allow the assembler and loader to be substituted in ocamlnat, for
+  example to be replaced with a binary emitter.
+  (David Allsopp and Nathan Rebours, review by Louis Gesbert,
+  Nicolás Ojeda Bär and Gabriel Scherer)
+
 ### Build system:
 
 - #10717: Simplify the installation of man pages
