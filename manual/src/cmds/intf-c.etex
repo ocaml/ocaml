@@ -1778,6 +1778,12 @@ Once a runtime is unloaded, it cannot be started up again without reloading the
 shared library and reinitializing its static data. Therefore, at the moment, the
 facility is only useful for building reloadable shared libraries.
 
+\paragraph{Unix signal handling.}  Depending on the target platform and
+operating system, the native-code runtime system may install signal
+handlers for one or several of the "SIGSEGV", "SIGTRAP" and "SIGFPE"
+signals when "caml_startup" is called, and reset these signals to
+their default behaviors when "caml_shutdown" is called.  The main
+program written in~C should not try to handle these signals itself.
 
 \section{s:c-advexample}{Advanced example with callbacks}
 
