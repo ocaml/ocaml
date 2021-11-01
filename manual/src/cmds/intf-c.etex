@@ -1727,8 +1727,8 @@ compilation of OCaml, as the variable "OC_LDFLAGS".
 OCaml have been compiled with the "/MD" flag, and therefore
 all other object files linked with it should also be compiled with
 "/MD".
-\item other systems: you may have to add one or more of "-lcurses",
-"-lm", "-ldl", depending on your OS and C compiler.
+\item other systems: you may have to add one or both of
+"-lm" and "-ldl", depending on your OS and C compiler.
 \end{itemize}
 
 \paragraph{Stack backtraces.}  When OCaml bytecode produced by
