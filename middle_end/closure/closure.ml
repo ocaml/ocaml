@@ -1268,7 +1268,7 @@ and close_functions { backend; fenv; cenv; mutable_vars } fun_defs =
             let arity = List.length params in
             let poll_error = match attr.poll with
               | Error_poll -> true
-              | _ -> false in
+              | Default_poll -> false in
             let fundesc =
               {fun_label = label;
                fun_arity = (if kind = Tupled then -arity else arity);

@@ -537,7 +537,7 @@ module Make (T : S) = struct
         ~specialise:Default_specialise
         ~is_a_functor:false
         ~closure_origin:function_decl.closure_origin
-        ~poll_error:false (* don't propogate attribute to wrappers *)
+        ~poll_error:false (* don't propagate attribute to wrappers *)
     in
     new_fun_var, new_function_decl, rewritten_existing_specialised_args,
       benefit
