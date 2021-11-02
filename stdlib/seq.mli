@@ -220,7 +220,7 @@ val find : ('a -> bool) -> 'a t -> 'a option
 (** [find p xs] returns [Some x], where [x] is the first element of the
     sequence [xs] that satisfies [p x], if there is such an element.
 
-    It returns [None] if there is no such element.node
+    It returns [None] if there is no such element.
 
     The sequence [xs] must be finite.
 
