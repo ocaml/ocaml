@@ -539,7 +539,7 @@ val memoize : 'a t -> 'a t
     @since 4.14 *)
 
 exception Forced_twice
-(** This exception is raised when a sequence returned by [once]
+(** This exception is raised when a sequence returned by {!once}
     (or a suffix of it) is queried more than once.
 
     @since 4.14 *)
