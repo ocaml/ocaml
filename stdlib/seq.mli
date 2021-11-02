@@ -610,11 +610,6 @@ val zip : 'a t -> 'b t -> ('a * 'b) t
 
     @since 4.14 *)
 
-val combine : 'a t -> 'b t -> ('a * 'b) t
-(** [combine] is an alias for {!zip}.
-
-    @since 4.14 *)
-
 val map2 : ('a -> 'b -> 'c) -> 'a t -> 'b t -> 'c t
 (** [map2 f xs ys] is the sequence of the elements [f x y],
     where the pairs [(x, y)] are drawn synchronously from the

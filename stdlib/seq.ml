@@ -465,9 +465,6 @@ let rec zip xs ys () =
       | Cons (y, ys) ->
           Cons ((x, y), zip xs ys)
 
-let combine =
-  zip
-
 let rec map2 f xs ys () =
   match xs() with
   | Nil ->
