@@ -211,20 +211,20 @@ let () =
   assert (Seq.fold_left (+) 0 xs = 6);
   ()
 
-(* [of_distributor] *)
+(* [of_dispenser] *)
 let () =
   let c = ref 0 in
   let it () = let x = !c in c := x + 1; Some x in
-  let xs = Seq.of_distributor it in
+  let xs = Seq.of_dispenser it in
   assert (!!(Seq.take 5 xs) = [0;1;2;3;4]);
   assert (!!(Seq.take 5 xs) = [5;6;7;8;9]);
   ()
 
-(* [memoize] and [of_distributor] *)
+(* [memoize] and [of_dispenser] *)
 let () =
   let c = ref 0 in
   let it () = let x = !c in c := x + 1; Some x in
-  let xs = Seq.(memoize (of_distributor it)) in
+  let xs = Seq.(memoize (of_dispenser it)) in
   assert (!!(Seq.take 5 xs) = [0;1;2;3;4]);
   assert (!!(Seq.take 5 xs) = [0;1;2;3;4]);
   ()
