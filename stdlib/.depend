@@ -60,19 +60,15 @@ stdlib__Bool.cmx : bool.ml \
     stdlib__Bool.cmi
 stdlib__Bool.cmi : bool.mli
 stdlib__Buffer.cmo : buffer.ml \
-    stdlib__Uchar.cmi \
     stdlib__Sys.cmi \
     stdlib__String.cmi \
     stdlib__Seq.cmi \
-    stdlib__Char.cmi \
     stdlib__Bytes.cmi \
     stdlib__Buffer.cmi
 stdlib__Buffer.cmx : buffer.ml \
-    stdlib__Uchar.cmx \
     stdlib__Sys.cmx \
     stdlib__String.cmx \
     stdlib__Seq.cmx \
-    stdlib__Char.cmx \
     stdlib__Bytes.cmx \
     stdlib__Buffer.cmi
 stdlib__Buffer.cmi : buffer.mli \
