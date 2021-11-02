@@ -444,28 +444,30 @@ let name_of_primitive = function
   | Pint_as_pointer -> "Pint_as_pointer"
   | Popaque -> "Popaque"
 
-let function_attribute ppf { inline; specialise; local; is_a_functor; stub } =
-  if is_a_functor then
+let function_attribute ppf t =
+  if t.is_a_functor then
     fprintf ppf "is_a_functor@ ";
-  if stub then
+  if t.stub then
     fprintf ppf "stub@ ";
-  begin match inline with
+  begin match t.inline with
   | Default_inline -> ()
   | Always_inline -> fprintf ppf "always_inline@ "
   | Hint_inline -> fprintf ppf "hint_inline@ "
   | Never_inline -> fprintf ppf "never_inline@ "
   | Unroll i -> fprintf ppf "unroll(%i)@ " i
   end;
-  begin match specialise with
+  begin match t.specialise with
   | Default_specialise -> ()
   | Always_specialise -> fprintf ppf "always_specialise@ "
   | Never_specialise -> fprintf ppf "never_specialise@ "
   end;
-  begin match local with
+  begin match t.local with
   | Default_local -> ()
   | Always_local -> fprintf ppf "always_local@ "
   | Never_local -> fprintf ppf "never_local@ "
-  end
+  end;
+  if t.tmc_candidate then
+    fprintf ppf "tail_mod_cons@ "
 
 let apply_tailcall_attribute ppf = function
   | Default_tailcall -> ()
