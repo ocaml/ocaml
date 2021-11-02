@@ -78,12 +78,12 @@
    such as [is_empty], [find], [length], [iter], [fold_left],
    etc., are the functions that force computation to take place.
 
-   When possible, we recommend using sequences rather than iterators
+   When possible, we recommend using sequences rather than distributors
    (functions of type [unit -> 'a option] that produce elements upon
-   demand). Whereas sequences can be persistent or ephemeral, iterators
+   demand). Whereas sequences can be persistent or ephemeral, distributors
    are always ephemeral, and are typically more difficult to work with
-   than sequences. Two conversion functions, {!to_iterator} and
-   {!of_iterator}, are provided.
+   than sequences. Two conversion functions, {!to_distributor} and
+   {!of_distributor}, are provided.
 
     @since 4.07 *)
 
@@ -733,26 +733,27 @@ val partition : ('a -> bool) -> 'a t -> 'a t * 'a t
 
     @since 4.14 *)
 
-(** {1 Converting between sequences and iterators} *)
+(** {1 Converting between sequences and distributors} *)
 
-(** An iterator is a representation of a sequence as a function of type
+(** A distributor is a representation of a sequence as a function of type
     [unit -> 'a option]. Every time this function is invoked, it returns
     the next element of the sequence. When there are no more elements,
-    it returns [None]. An iterator has mutable internal state, therefore
+    it returns [None]. A distributor has mutable internal state, therefore
     is ephemeral: the sequence that it represents can be consumed at most
     once. *)
 
-val of_iterator : (unit -> 'a option) -> 'a t
-(** [of_iterator it] is the sequence of the elements produced by the iterator
-    [it]. It is an ephemeral sequence: it can be consumed at most once. If a
-    persistent sequence is needed, use [memoize (of_iterator it)].
+val of_distributor : (unit -> 'a option) -> 'a t
+(** [of_distributor it] is the sequence of the elements produced by the
+    distributor [it]. It is an ephemeral sequence: it can be consumed at most
+    once. If a persistent sequence is needed, use
+    [memoize (of_distributor it)].
 
     @since 4.14 *)
 
-val to_iterator : 'a t -> (unit -> 'a option)
-(** [to_iterator xs] is a fresh iterator on the sequence [xs].
+val to_distributor : 'a t -> (unit -> 'a option)
+(** [to_distributor xs] is a fresh distributor on the sequence [xs].
 
-    This iterator has mutable internal state,
+    This distributor has mutable internal state,
     which is not protected by a lock;
     so, it must not be used by several threads concurrently.
 

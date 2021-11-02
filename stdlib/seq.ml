@@ -656,7 +656,7 @@ let map_product f xs ys =
 let product xs ys =
   map_product (fun x y -> (x, y)) xs ys
 
-let of_iterator it =
+let of_distributor it =
   let rec c () =
     match it() with
     | None ->
@@ -666,7 +666,7 @@ let of_iterator it =
   in
   c
 
-let to_iterator xs =
+let to_distributor xs =
   let s = ref xs in
   fun () ->
     match (!s)() with
