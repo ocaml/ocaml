@@ -766,7 +766,7 @@ val to_iterator : 'a t -> (unit -> 'a option)
 (** {1 Sequences of integers} *)
 
 val ints : int -> int t
-(** [ints i] is the infinite sequence of the integers, beginning at [i] and
+(** [ints i] is the infinite sequence of the integers beginning at [i] and
     counting up.
 
     @since 4.14 *)
