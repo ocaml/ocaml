@@ -35,9 +35,11 @@
 # with lowercase first letters). These must be listed in dependency order.
 STDLIB_MODULE_BASENAMES = \
   camlinternalFormatBasics camlinternalAtomic \
-  stdlib pervasives seq option either result bool char uchar \
-  sys list int bytes string unit marshal obj array float int32 int64 nativeint \
-  lexing parsing set map stack queue camlinternalLazy lazy stream buffer \
+  stdlib pervasives either \
+  sys obj camlinternalLazy lazy \
+  seq option result bool char uchar \
+  list int bytes string unit marshal array float int32 int64 nativeint \
+  lexing parsing set map stack queue stream buffer \
   camlinternalFormat printf arg atomic \
   printexc fun gc digest random hashtbl weak \
   format scanf callback camlinternalOO oo camlinternalMod genlex ephemeron \
