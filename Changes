@@ -350,6 +350,9 @@ Working version
   implementation of stat
   (Antonin Décimo, review by David Allsopp)
 
+- #10735: Uncaught unify exception from `build_as_type`
+  (Jacques Garrigue, report and review by Leo White)
+
 
 
 OCaml 4.13 maintenance branch
