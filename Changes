@@ -324,7 +324,7 @@ Working version
   (Antonin Décimo, review by David Allsopp)
 
 - #10735: Uncaught unify exception from `build_as_type`
-  (Jacques Garrigue, report by Leo White)
+  (Jacques Garrigue, report and review by Leo White)
 
 
 
