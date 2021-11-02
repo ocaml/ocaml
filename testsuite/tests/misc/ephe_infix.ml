@@ -2,6 +2,9 @@
 
 (* Testing handling of infix_tag by ephemeron *)
 
+(* This test will have to be ported to the new ephemeron API *)
+[@@@alert "-old_ephemeron_api"]
+
 let infix n = let rec f () = n and g () = f () in g
 
 (* Issue #9485 *)

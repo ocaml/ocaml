@@ -1,6 +1,9 @@
 (* TEST
 *)
 
+(* This test is only relevant to the old ephemeron API *)
+[@@@alert "-old_ephemeron_api"]
+
 let debug = false
 
 open Printf
