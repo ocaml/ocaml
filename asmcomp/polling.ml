@@ -263,11 +263,13 @@ let instrument_fundecl ~future_funcnames:_ (f : Mach.fundecl) : Mach.fundecl =
     let handler_needs_poll = polled_loops_analysis f.fun_body in
     contains_polls := false;
     let new_body = instr_body handler_needs_poll f.fun_body in
-    if f.fun_poll_error then begin
-      match find_poll_alloc_or_calls new_body with
-      | [] -> ()
-      | poll_error_instrs -> raise (Error(Poll_error poll_error_instrs))
-    end;
+    begin match f.fun_poll with
+    | Error_poll -> begin
+        match find_poll_alloc_or_calls new_body with
+        | [] -> ()
+        | poll_error_instrs -> raise (Error(Poll_error poll_error_instrs))
+      end
+    | _ -> () end;
     let new_contains_calls = f.fun_contains_calls || !contains_polls in
     { f with fun_body = new_body; fun_contains_calls = new_contains_calls }
   end

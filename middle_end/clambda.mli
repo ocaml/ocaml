@@ -93,7 +93,7 @@ and ufunction = {
   body   : ulambda;
   dbg    : Debuginfo.t;
   env    : Backend_var.t option;
-  poll_error: bool;
+  poll   : poll_attribute;
 }
 
 and ulambda_switch =
@@ -110,7 +110,7 @@ type function_description =
     mutable fun_closed: bool;           (* True if environment not used *)
     mutable fun_inline: (Backend_var.With_provenance.t list * ulambda) option;
     mutable fun_float_const_prop: bool; (* Can propagate FP consts *)
-    fun_poll_error: bool;               (* Error on poll/alloc/call *)
+    fun_poll: poll_attribute;           (* Behaviour for polls *)
   }
 
 (* Approximation of values *)

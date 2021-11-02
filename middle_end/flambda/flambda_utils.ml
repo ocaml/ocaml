@@ -350,10 +350,10 @@ let make_closure_declaration
       ~body ~stub ~dbg:Debuginfo.none ~inline:Default_inline
       ~specialise:Default_specialise ~is_a_functor:false
       ~closure_origin:(Closure_origin.create (Closure_id.wrap id))
-      ~poll_error:false
+      ~poll:Default_poll
   in
   begin
-    (* this is required because of poll_error *)
+    (* this is required because we hardcode poll behaviour above *)
     assert( stub );
     assert (Variable.Set.equal (Variable.Set.map subst free_variables)
     function_declaration.free_variables);

@@ -615,7 +615,7 @@ and simplify_set_of_closures original_env r
         ~inline:function_decl.inline ~specialise:function_decl.specialise
         ~is_a_functor:function_decl.is_a_functor
         ~closure_origin:function_decl.closure_origin
-        ~poll_error:function_decl.poll_error
+        ~poll:function_decl.poll
     in
     let used_params' = Flambda.used_params function_decl in
     Variable.Map.add fun_var function_decl funs,
@@ -1429,7 +1429,7 @@ and duplicate_function ~env ~(set_of_closures : Flambda.set_of_closures)
       ~inline:function_decl.inline ~specialise:function_decl.specialise
       ~is_a_functor:function_decl.is_a_functor
       ~closure_origin:(Closure_origin.create (Closure_id.wrap new_fun_var))
-      ~poll_error:function_decl.poll_error
+      ~poll:function_decl.poll
   in
   function_decl, specialised_args
 

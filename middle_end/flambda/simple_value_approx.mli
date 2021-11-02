@@ -158,7 +158,7 @@ and function_body = private {
   specialise : Lambda.specialise_attribute;
   is_a_functor : bool;
   body : Flambda.t;
-  poll_error: bool;
+  poll: Lambda.poll_attribute;
 }
 
 and function_declaration = private {
