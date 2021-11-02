@@ -575,7 +575,7 @@ val transpose : 'a t t -> 'a t t
 val append : 'a t -> 'a t -> 'a t
 (** [append xs ys] is the concatenation of the sequences [xs] and [ys].
 
-    Its elements are the elements of [xs], followed with the elements of [ys].
+    Its elements are the elements of [xs], followed by the elements of [ys].
 
     @since 4.11 *)
 
