@@ -394,7 +394,7 @@ val forever : (unit -> 'a) -> 'a t
     @since 4.14 *)
 
 val cycle : 'a t -> 'a t
-(** [cycle xs] is the infinite sequence which consists of an infinite
+(** [cycle xs] is the infinite sequence that consists of an infinite
     number of repetitions of the sequence [xs].
 
     If [xs] is an empty sequence,
