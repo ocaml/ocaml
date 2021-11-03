@@ -355,13 +355,42 @@ static void caml_thread_domain_start_hook(void) {
   caml_thread_initialize_domain();
 }
 
+CAMLprim value caml_thread_join(value th);
+
+/* This hook is run when a domain shut downs. (see domains.c) */
+/* When a domain shut downs, the state must be cleared */
+/* to allow proper reuse of the domain slot the next time a domain */
+/* is started on this slot */
+/* If a program is single-domain, we mimic trunk's behavior and do not */
+/* care about ongoing thread: the program will exit. */
 static void caml_thread_domain_stop_hook(void) {
-  // This hook will clean up the initial domain's thread descriptor.
-  // The assumption is that it is the only remaining link in the threading chain
-  // (as every other threads either go through caml_thread_stop or
-  // caml_c_thread_unregister.)
-  caml_stat_free(Current_thread);
-  Current_thread = NULL;
+  caml_thread_t th, next;
+
+  /* If the program runs multiple domains, we should not let */
+  /* systhreads to hang around when a domain exit. */
+  /* If the domain is not the last one (and the last one will always */
+  /* be domain 0) we force the domain to join on every threads */
+  /* in the chaining before wrapping up, */
+  if (!caml_domain_alone()) {
+
+    th = Current_thread->next;
+
+    while (th != Current_thread) {
+      next = th->next;
+      caml_thread_join(th->descr);
+      th = next;
+    }
+
+    /* We should have joined on all threads */
+    Assert(Current_thread->next = NULL);
+
+    /* another domain thread may be joining on this domain's descriptor */
+    caml_threadstatus_terminate(Terminated(Current_thread->descr));
+
+    caml_stat_free(Current_thread);
+    Current_thread = NULL;
+    All_threads = NULL;
+  };
 }
 
 static void caml_thread_initialize_domain()

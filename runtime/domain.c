@@ -1205,6 +1205,9 @@ static void domain_terminate()
   caml_gc_log("Domain terminating");
   s->terminating = 1;
 
+  // run the domain termination hook
+  caml_domain_stop_hook();
+
   while (!finished) {
     caml_orphan_allocated_words();
     caml_finish_sweeping();
@@ -1258,8 +1261,6 @@ static void domain_terminate()
   caml_remove_generational_global_root(&domain_state->backtrace_last_exn);
 
   caml_stat_free(domain_state->final_info);
-  // run the domain termination hook
-  caml_domain_stop_hook();
   caml_stat_free(domain_state->ephe_info);
   caml_free_extern_state(domain_state->extern_state);
   caml_free_intern_state(domain_state->intern_state);
