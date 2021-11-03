@@ -264,6 +264,7 @@ depend:
 	  > .depend.tmp
 	$(CAMLDEP) $(DEPFLAGS) -pp "$(AWK) -f ./remove_module_aliases.awk" \
 	  stdlib.ml stdlib.mli >> .depend.tmp
+	$(strings $(which sed) | grep -q 'GNU') || (echo "the sed in PATH is not GNU sed" && exit 1)
 	sed -E \
 	-e 's/^(${STDLIB_NAMESPACE_MODULES})(\.[^i]*)(i?) :/\1\2\3 : \1.ml\3/' \
 	-e 's#(^| )(${STDLIB_NAMESPACE_MODULES})[.]#\1stdlib__\u\2.#' \
