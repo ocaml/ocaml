@@ -266,6 +266,6 @@ depend:
 	  stdlib.ml stdlib.mli >> .depend.tmp
 	sed -E \
 	-e 's/^(${STDLIB_NAMESPACE_MODULES})(\.[^i]*)(i?) :/\1\2\3 : \1.ml\3/' \
-	-e 's#(^| )(${STDLIB_NAMESPACE_MODULES})[.]#\1stdlib__\u\2.#' \
-	  .depend.tmp > .depend
-	rm -f .depend.tmp
+	  .depend.tmp > .depend.tmp2
+	awk -v STDLIB_NAMESPACE_MODULES="(^| )($(STDLIB_NAMESPACE_MODULES))[.]" -f add_stdlib.awk .depend.tmp2 > .depend
+	rm -f .depend.tmp .depend.tmp2
