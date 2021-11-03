@@ -135,7 +135,8 @@ type t =
   | No
   | Ephe of (int ref, t ref) K1.t
 
-let rc = ref (ref No)
+let make_rc () = ref (ref No) [@@inline never]
+let rc = make_rc ()
 
 let test7 () =
   let test = "test7" in
