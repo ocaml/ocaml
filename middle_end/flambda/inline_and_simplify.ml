@@ -835,7 +835,6 @@ and simplify_partial_application env r ~lhs_of_application
       ~is_classic_mode:false
       ~body
       ~params:remaining_args
-      ~stub:true
   in
   let with_known_args =
     Flambda_utils.bind
