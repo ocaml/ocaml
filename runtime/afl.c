@@ -23,6 +23,7 @@ uintnat caml_afl_prev_loc;
 #if !defined(HAS_SYS_SHM_H) || !defined(HAS_SHMAT)
 
 #include "caml/mlvalues.h"
+#include "caml/domain.h"
 
 CAMLprim value caml_reset_afl_instrumentation(value full)
 {
@@ -117,6 +118,7 @@ CAMLexport value caml_setup_afl(value unit)
     int child_pid = fork();
     if (child_pid < 0) caml_fatal_error("afl-fuzz: could not fork");
     else if (child_pid == 0) {
+      caml_atfork_hook();
       /* Run the program */
       close(FORKSRV_FD_READ);
       close(FORKSRV_FD_WRITE);
