@@ -64,3 +64,6 @@ let f17 (x:unit) = x
 (* Recursive so that 'scrape' returns a Record_unboxed representation *)
 type trec = { t : trec } [@@unboxed]
 let f18 { t } = t
+
+type trec2 = A of trec2 [@@unboxed]
+let f19 (A t) = t
