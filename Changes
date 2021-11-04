@@ -102,7 +102,7 @@ Working version
 
 - #10737: add new ephemeron API for forward compatibility with Multicore
   OCaml.
-  (Damien Doligez, review by ...)
+  (Damien Doligez, review by Stephen Dolan)
 
 ### Other libraries:
 

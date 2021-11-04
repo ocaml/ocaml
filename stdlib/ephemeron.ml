@@ -514,8 +514,8 @@ module K1 = struct
 
   let make key data =
     let eph = create () in
-    set_key eph key;
     set_data eph data;
+    set_key eph key;
     eph
 
   let query eph key =
@@ -637,9 +637,10 @@ module K2 = struct
 
   let make key1 key2 data =
     let eph = create () in
+    set_data eph data;
     set_key1 eph key1;
     set_key2 eph key2;
-    set_data eph data;
+    ignore (Sys.opaque_identity key1);
     eph
 
   let query eph key1 key2 =
@@ -765,8 +766,8 @@ module Kn = struct
   let make keys data =
     let l = Array.length keys in
     let eph = create l in
-    for i = 0 to l - 1 do set_key eph i keys.(i) done;
     set_data eph data;
+    for i = 0 to l - 1 do set_key eph i keys.(i) done;
     eph
 
   let query eph keys =
