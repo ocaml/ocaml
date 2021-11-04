@@ -194,7 +194,7 @@ let value_kind env ty =
         match (Env.find_type p env).type_kind with
         | exception Not_found ->
           Pgenval
-        | Type_variant (constructors, _repr) ->
+        | Type_variant (constructors, variant_representation) ->
           let is_constant (constructor : Types.constructor_declaration) =
             match constructor.cd_args with
             | Cstr_tuple [] -> true
@@ -221,8 +221,14 @@ let value_kind env ty =
               in
               if is_mutable then
                 Pgenval
-              else
-                Pblock { tag = 0; fields }
+              else begin match variant_representation with
+                | Variant_regular ->
+                  Pblock { tag = 0; fields }
+                | Variant_unboxed ->
+                  (* Reachable only when get_unboxed_type_representation
+                     fails to expand the type: useless or unavailable info *)
+                  Pgenval
+              end
             | _ ->
               Pgenval
           end
@@ -249,12 +255,9 @@ let value_kind env ty =
             | Record_inlined tag ->
               Pblock { tag; fields }
             | Record_unboxed _ ->
-              begin match fields with
-              | [field] -> field
-              | [] | _::_ ->
-                Misc.fatal_error "Records that are [Record_unboxed] should \
-                  have exactly one field"
-              end
+              (* Reachable only when get_unboxed_type_representation
+                 fails to expand the type: useless or unavailable info *)
+              Pgenval
             | Record_extension _ ->
               Pgenval
           end
