@@ -63,6 +63,9 @@ OCaml 4.14.0
 - #10730, 10731: Fix bug in `Obj.reachable_words` causing a slowdown when called
   multiple time (Alain Frisch, report by ygrek, review by Xavier Leroy)
 
+- #10736: Try to increase the maximal stack size for native-code applications
+  (Xavier Leroy, review by Damien Doligez)
+
 ### Code generation and optimizations:
 
 - #10578: Increase the number of integer registers used for
