@@ -172,6 +172,7 @@ let bigarray_type_kind_and_layout env typ =
 
 let value_kind env ty =
   let rec loop env ~visited ~fuel ty : Lambda.value_kind =
+    let id = (Transient_expr.repr ty).id in
     let ty = scrape_ty env ty in
     if is_immediate (Ctype.immediacy env ty) then Pintval
     else
@@ -185,7 +186,6 @@ let value_kind env ty =
     | Tconstr(p, _, _) when Path.same p Predef.path_nativeint ->
       Pboxedintval Pnativeint
     | Tconstr(p, _, _) ->
-      let id = (Transient_expr.repr ty).id in
       if Numbers.Int.Set.mem id visited || fuel <= 0 then
         Pgenval
       else begin
@@ -264,7 +264,6 @@ let value_kind env ty =
         | Type_abstract | Type_open -> Pgenval
       end
     | Ttuple fields ->
-      let id = (Transient_expr.repr ty).id in
       if Numbers.Int.Set.mem id visited || fuel <= 0 then
         Pgenval
       else begin
