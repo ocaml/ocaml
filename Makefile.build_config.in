@@ -38,6 +38,9 @@ OC_DLL_LDFLAGS=@oc_dll_ldflags@
 # The rlwrap command (for the *runtop targets)
 RLWRAP=@rlwrap@
 
+# The best sed which is available (GNU sed if available)
+SED=@SED@
+
 # Which document generator: odoc or ocamldoc?
 DOCUMENTATION_TOOL=@documentation_tool@
 DOCUMENTATION_TOOL_CMD=@documentation_tool_cmd@
