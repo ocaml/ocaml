@@ -295,7 +295,7 @@ let instr_type i =
 let report_error ppf = function
 | Poll_error instrs ->
    fprintf ppf
-     "Polling instructions in function annotated with [@poll error]\n";
+     "Function with poll-error attribute contains polling points::\n";
    List.iter (fun i ->
     fprintf ppf "\t%s" (instr_type i);
     begin match i.desc with
