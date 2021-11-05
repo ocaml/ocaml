@@ -269,7 +269,7 @@ let instrument_fundecl ~future_funcnames:_ (f : Mach.fundecl) : Mach.fundecl =
         | [] -> ()
         | poll_error_instrs -> raise (Error(Poll_error poll_error_instrs))
       end
-    | _ -> () end;
+    | Default_poll -> () end;
     let new_contains_calls = f.fun_contains_calls || !contains_polls in
     { f with fun_body = new_body; fun_contains_calls = new_contains_calls }
   end
