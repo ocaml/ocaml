@@ -577,6 +577,7 @@ typing/env.cmo : \
     utils/warnings.cmi \
     typing/types.cmi \
     typing/subst.cmi \
+    typing/shape.cmi \
     typing/predef.cmi \
     typing/persistent_env.cmi \
     typing/path.cmi \
@@ -598,6 +599,7 @@ typing/env.cmx : \
     utils/warnings.cmx \
     typing/types.cmx \
     typing/subst.cmx \
+    typing/shape.cmx \
     typing/predef.cmx \
     typing/persistent_env.cmx \
     typing/path.cmx \
@@ -619,6 +621,7 @@ typing/env.cmi : \
     utils/warnings.cmi \
     typing/types.cmi \
     typing/subst.cmi \
+    typing/shape.cmi \
     typing/path.cmi \
     utils/misc.cmi \
     parsing/longident.cmi \
