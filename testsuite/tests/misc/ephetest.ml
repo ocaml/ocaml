@@ -1,6 +1,9 @@
 (* TEST
 *)
 
+(* These tests will have to be ported to the new API *)
+[@@@alert "-old_ephemeron_api"]
+
 let debug = false
 
 open Printf

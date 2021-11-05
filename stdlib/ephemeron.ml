@@ -13,15 +13,77 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "-32"]
+
 module type SeededS = sig
-  include Hashtbl.SeededS
+
+  type key
+  type !'a t
+  val create : ?random (*thwart tools/sync_stdlib_docs*) : bool -> int -> 'a t
+  val clear : 'a t -> unit
+  val reset : 'a t -> unit
+  val copy : 'a t -> 'a t
+  val add : 'a t -> key -> 'a -> unit
+  val remove : 'a t -> key -> unit
+  val find : 'a t -> key -> 'a
+  val find_opt : 'a t -> key -> 'a option
+  val find_all : 'a t -> key -> 'a list
+  val replace : 'a t -> key -> 'a -> unit
+  val mem : 'a t -> key -> bool
+  val iter : (key -> 'a -> unit) -> 'a t -> unit
+    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
+  val filter_map_inplace : (key -> 'a -> 'a option) -> 'a t -> unit
+    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
+  val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
+  val length : 'a t -> int
+  val stats : 'a t -> Hashtbl.statistics
+  val to_seq : 'a t -> (key * 'a) Seq.t
+    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
+  val to_seq_keys : _ t -> key Seq.t
+    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
+  val to_seq_values : 'a t -> 'a Seq.t
+    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
+  val add_seq : 'a t -> (key * 'a) Seq.t -> unit
+  val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
+  val of_seq : (key * 'a) Seq.t -> 'a t
   val clean: 'a t -> unit
   val stats_alive: 'a t -> Hashtbl.statistics
     (** same as {!stats} but only count the alive bindings *)
 end
 
 module type S = sig
-  include Hashtbl.S
+
+  type key
+  type !'a t
+  val create : int -> 'a t
+  val clear : 'a t -> unit
+  val reset : 'a t -> unit
+  val copy : 'a t -> 'a t
+  val add : 'a t -> key -> 'a -> unit
+  val remove : 'a t -> key -> unit
+  val find : 'a t -> key -> 'a
+  val find_opt : 'a t -> key -> 'a option
+  val find_all : 'a t -> key -> 'a list
+  val replace : 'a t -> key -> 'a -> unit
+  val mem : 'a t -> key -> bool
+  val iter : (key -> 'a -> unit) -> 'a t -> unit
+    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
+  val filter_map_inplace : (key -> 'a -> 'a option) -> 'a t -> unit
+    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
+  val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
+  val length : 'a t -> int
+  val stats : 'a t -> Hashtbl.statistics
+  val to_seq : 'a t -> (key * 'a) Seq.t
+    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
+  val to_seq_keys : _ t -> key Seq.t
+    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
+  val to_seq_values : 'a t -> 'a Seq.t
+    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
+  val add_seq : 'a t -> (key * 'a) Seq.t -> unit
+  val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
+  val of_seq : (key * 'a) Seq.t -> 'a t
   val clean: 'a t -> unit
   val stats_alive: 'a t -> Hashtbl.statistics
     (** same as {!stats} but only count the alive bindings *)
@@ -450,6 +512,18 @@ module K1 = struct
   let check_data (t:('k,'d) t) : bool = ObjEph.check_data t
   let blit_data (t1:(_,'d) t) (t2:(_,'d) t) : unit = ObjEph.blit_data t1 t2
 
+  let make key data =
+    let eph = create () in
+    set_data eph data;
+    set_key eph key;
+    eph
+
+  let query eph key =
+    match get_key eph with
+    | None -> None
+    | Some k when k == key -> get_data eph
+    | Some _ -> None
+
   module MakeSeeded (H:Hashtbl.SeededHashedType) =
     GenHashTable.MakeSeeded(struct
       type 'a container = (H.t,'a) t
@@ -488,6 +562,37 @@ module K1 = struct
       let tbl = create 16 in
       replace_seq tbl i;
       tbl
+  end
+
+  module Bucket = struct
+
+    type nonrec ('k, 'd) t = ('k, 'd) t list ref
+    let k1_make = make
+    let make () = ref []
+    let add b k d = b := k1_make k d :: !b
+
+    let test_key k e =
+      match get_key e with
+      | Some x when x == k -> true
+      | _ -> false
+
+    let remove b k =
+      let rec loop l acc =
+        match l with
+        | [] -> ()
+        | h :: t when test_key k h -> b := List.rev_append acc t
+        | h :: t -> loop t (h :: acc)
+      in
+      loop !b []
+
+    let find b k =
+      match List.find_opt (test_key k) !b with
+      | Some e -> get_data e
+      | None -> None
+
+    let length b = List.length !b
+    let clear b = b := []
+
   end
 
 end
@@ -529,6 +634,25 @@ module K2 = struct
   let unset_data (t:('k1,'k2,'d) t) : unit = ObjEph.unset_data t
   let check_data (t:('k1,'k2,'d) t) : bool = ObjEph.check_data t
   let blit_data (t1:(_,_,'d) t) (t2:(_,_,'d) t) : unit = ObjEph.blit_data t1 t2
+
+  let make key1 key2 data =
+    let eph = create () in
+    set_data eph data;
+    set_key1 eph key1;
+    set_key2 eph key2;
+    ignore (Sys.opaque_identity key1);
+    eph
+
+  let query eph key1 key2 =
+    match get_key1 eph with
+    | None -> None
+    | Some k when k == key1 ->
+        begin match get_key2 eph with
+        | None -> None
+        | Some k when k == key2 -> get_data eph
+        | Some _ -> None
+        end
+    | Some _ -> None
 
   module MakeSeeded
       (H1:Hashtbl.SeededHashedType)
@@ -582,6 +706,37 @@ module K2 = struct
       tbl
   end
 
+  module Bucket = struct
+
+    type nonrec ('k1, 'k2, 'd) t = ('k1, 'k2, 'd) t list ref
+    let k2_make = make
+    let make () = ref []
+    let add b k1 k2 d = b := k2_make k1 k2 d :: !b
+
+    let test_keys k1 k2 e =
+      match get_key1 e, get_key2 e with
+      | Some x1, Some x2 when x1 == k1 && x2 == k2 -> true
+      | _ -> false
+
+    let remove b k1 k2 =
+      let rec loop l acc =
+        match l with
+        | [] -> ()
+        | h :: t when test_keys k1 k2 h -> b := List.rev_append acc t
+        | h :: t -> loop t (h :: acc)
+      in
+      loop !b []
+
+    let find b k1 k2 =
+      match List.find_opt (test_keys k1 k2) !b with
+      | Some e -> get_data e
+      | None -> None
+
+    let length b = List.length !b
+    let clear b = b := []
+
+  end
+
 end
 
 module Kn = struct
@@ -607,6 +762,26 @@ module Kn = struct
   let unset_data (t:('k,'d) t) : unit = ObjEph.unset_data t
   let check_data (t:('k,'d) t) : bool = ObjEph.check_data t
   let blit_data (t1:(_,'d) t) (t2:(_,'d) t) : unit = ObjEph.blit_data t1 t2
+
+  let make keys data =
+    let l = Array.length keys in
+    let eph = create l in
+    set_data eph data;
+    for i = 0 to l - 1 do set_key eph i keys.(i) done;
+    eph
+
+  let query eph keys =
+    let l = length eph in
+    try
+      if l <> Array.length keys then raise Exit;
+      for i = 0 to l - 1 do
+        match get_key eph i with
+        | None -> raise Exit
+        | Some k when k == keys.(i) -> ()
+        | Some _ -> raise Exit
+      done;
+      get_data eph
+    with Exit -> None
 
   module MakeSeeded (H:Hashtbl.SeededHashedType) =
     GenHashTable.MakeSeeded(struct
@@ -685,4 +860,42 @@ module Kn = struct
       replace_seq tbl i;
       tbl
   end
+
+  module Bucket = struct
+
+    type nonrec ('k, 'd) t = ('k, 'd) t list ref
+    let kn_make = make
+    let make () = ref []
+    let add b k d = b := kn_make k d :: !b
+
+    let test_keys k e =
+      try
+        if length e <> Array.length k then raise Exit;
+        for i = 0 to Array.length k - 1 do
+          match get_key e i with
+          | Some x when x == k.(i) -> ()
+          | _ -> raise Exit
+        done;
+        true
+      with Exit -> false
+
+    let remove b k =
+      let rec loop l acc =
+        match l with
+        | [] -> ()
+        | h :: t when test_keys k h -> b := List.rev_append acc t
+        | h :: t -> loop t (h :: acc)
+      in
+      loop !b []
+
+    let find b k =
+      match List.find_opt (test_keys k) !b with
+      | Some e -> get_data e
+      | None -> None
+
+    let length b = List.length !b
+    let clear b = b := []
+
+  end
+
 end

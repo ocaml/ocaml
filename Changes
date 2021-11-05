@@ -10,6 +10,12 @@ Working version
   Allow 'object ... end # f', 'f object ... end', etc.
   (Yan Dong, review by Nicolás Ojeda Bär, Florian Angeletti and Gabriel Scherer)
 
+- #181, #9760: opt-in tail-modulo-cons (TMC) transformation
+    let[@tail_mod_cons] rec map f li = ...
+  (Frédéric Bour, Gabriel Scherer, Basile Clément,
+   review by Basile Clément and Pierre Chambart,
+   tested by Konstantin Romanov)
+
 ### Runtime system:
 
 * #9391, #9424: Fix failed assertion in runtime due to ephemerons *set_* and
@@ -90,6 +96,11 @@ Working version
   (Nicolás Ojeda Bär, review by John Whitington, Daniel Bünzli, David Allsopp
   and Xavier Leroy)
 
+* #10583: Add over 40 new functions in Seq.
+  (François Pottier and Simon Cruanes, review by Nicolás Ojeda Bär,
+   Daniel Bünzli, Naëla Courant, Craig Ferguson, Wiktor Kuchta, Xavier
+   Leroy, Guillaume Munch-Maccagnoni, Raphaël Proust, and Gabriel Scherer)
+
 - #10596: Add with_open_bin, with_open_text and with_open_gen to In_channel and
   Out_channel. Also, add In_channel.input_all.
   (Nicolás Ojeda Bär, review by Daniel Bünzli, Jérémie Dimino, Damien Doligez
@@ -105,6 +116,10 @@ Working version
   caml/winsupport.h to hold more common code between the runtime,
   lib-sys, and win32unix.
   (Antonin Décimo, review by David Allsopp and Xavier Leroy)
+  
+- #10737: add new ephemeron API for forward compatibility with Multicore
+  OCaml.
+  (Damien Doligez, review by Stephen Dolan)
 
 ### Other libraries:
 
@@ -115,6 +130,10 @@ Working version
 - #10469: Add Thread.set_uncaught_exception_handler and
   Thread.default_uncaught_exception_handler.
   (Enguerrand Decorne, review by David Allsopp)
+
+- #10697: Bindings of dup and dup2 in win32unix now correctly call
+  WSADuplicateSocket on sockets instead of DuplicateHandle.
+  (Antonin Décimo, review by Xavier Leroy and Nicolás Ojeda Bär)
 
 ### Tools:
 
@@ -296,10 +315,15 @@ Working version
   assembler used by the backend.
   (David Allsopp, review by Gabriel Scherer)
 
+- #10715: Allow the assembler and loader to be substituted in ocamlnat, for
+  example to be replaced with a binary emitter.
+  (David Allsopp and Nathan Rebours, review by Louis Gesbert,
+  Nicolás Ojeda Bär and Gabriel Scherer)
+
 ### Build system:
 
 - #10717: Simplify the installation of man pages
-  (Sébastien Hinderer, review by ???)
+  (Sébastien Hinderer, review by David Allsopp)
 
 ### Bug fixes:
 
@@ -346,6 +370,9 @@ Working version
 - #10702: Fix cast of more strictly aligned pointer in win32unix
   implementation of stat
   (Antonin Décimo, review by David Allsopp)
+
+- #10735: Uncaught unify exception from `build_as_type`
+  (Jacques Garrigue, report and review by Leo White)
 
 
 
