@@ -111,6 +111,10 @@ Working version
   (Sébastien Hinderer, review by Damien Doligez, Gabriel Scherer, David
   Allsopp, Nicolás Ojeda Bär, Vincent Laviron)
 
+- #10737: add new ephemeron API for forward compatibility with Multicore
+  OCaml.
+  (Damien Doligez, review by Stephen Dolan)
+
 ### Other libraries:
 
 - #10192: Add support for Unix domain sockets on Windows and use them

@@ -2,9 +2,6 @@
 
 (* Testing handling of infix_tag by ephemeron *)
 
-(* This test will have to be ported to the new ephemeron API *)
-[@@@alert "-old_ephemeron_api"]
-
 let infix n = let rec f () = n and g () = f () in g
 
 (* Issue #9485 *)
@@ -16,11 +13,9 @@ let () =
 (* Issue #7810 *)
 let ephe x =
   let open Ephemeron.K1 in
-  let e = create () in
-  set_key e x;
-  set_data e 42;
+  let e = make x 42 in
   Gc.full_major ();
-  (x, get_data e)
+  (x, query e x)
 
 let () =
   assert (ephe (ref 1000) = (ref 1000, Some 42));

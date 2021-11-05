@@ -174,6 +174,9 @@ module TI1 = Test(HI1)(MI)
 module TI2 = Test(HI2)(MI)
 module TSP = Test(HSP)(MSP)
 module TSL = Test(HSL)(MSL)
+
+(* These work with the old ephemeron API *)
+[@@@alert "-old_ephemeron_api"]
 module TWS  = Test(WS)(MS)
 module TWSP1 = Test(WSP1)(MSP)
 module TWSP2 = Test(WSP2)(MSP)

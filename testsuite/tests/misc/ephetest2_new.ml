@@ -9,9 +9,6 @@
 
 *)
 
-(* This will have to be ported to the new ephemeron API *)
-[@@@alert "-old_ephemeron_api"]
-
 let nb_test = 4
 let max_level = 10
  (** probability that a branch is not linked to a previous one *)
@@ -109,18 +106,12 @@ let rec create env rem_level (** remaining level *) =
       then begin (** Or *)
         Array.iter (fun v ->
             let r = get_ephe v in
-            let e = Kn.create 1 in
-            Kn.set_key e 0 r;
-            Kn.set_data e varephe;
+            let e = Kn.make [| r |] varephe in
             Stack.push e env.ephes
           ) args; Or args
       end
       else begin (** And *)
-        let e = Kn.create (Array.length args) in
-        for i=0 to Array.length args - 1 do
-          Kn.set_key e i (get_ephe args.(i));
-        done;
-        Kn.set_data e varephe;
+        let e = Kn.make (Array.map get_ephe args) varephe in
         Stack.push e env.ephes;
         And args
       end
