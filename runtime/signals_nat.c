@@ -90,7 +90,7 @@ void caml_garbage_collection()
     if (nallocs == 0) {
       /* This is a poll */
       caml_handle_gc_interrupt(); // process pending actions?
-      caml_raise_if_exception(caml_process_pending_signals_exn());
+      caml_process_pending_signals();
       return;
     }
     else
@@ -98,13 +98,15 @@ void caml_garbage_collection()
       for (i = 0; i < nallocs; i++) {
         allocsz += Whsize_wosize(Wosize_encoded_alloc_len(alloc_len[i]));
       }
-      /* We have computed whsize (including header), but need wosize (without) */
+      /* We have computed whsize (including header)
+         but need wosize (without) */
       allocsz -= 1;
     }
 
     whsize = Whsize_wosize(allocsz);
 
-    /* Put the young pointer back to what is was before our tiggering allocation */
+    /* Put the young pointer back to what is was before our tiggering
+       allocation */
     Caml_state->young_ptr += whsize;
 
     /* When caml_garbage_collection returns, we assume there is enough space in
@@ -114,8 +116,9 @@ void caml_garbage_collection()
       in a loop to ensure it. */
     do {
       caml_handle_gc_interrupt();
-      caml_raise_if_exception(caml_process_pending_signals_exn());
-    } while( (uintnat)(Caml_state->young_ptr - whsize) <= Caml_state->young_limit );
+      caml_process_pending_signals();
+    } while
+       ( (uintnat)(Caml_state->young_ptr - whsize) <= Caml_state->young_limit );
 
     /* Re-do the allocation: we now have enough space in the minor heap. */
     Caml_state->young_ptr -= whsize;

@@ -50,7 +50,8 @@ static int check_for_pending_signals(void)
   /* We don't need to check total_signals_pending because it is greater than
      zero iff one of caml_pending_signals is greater than zero. */
   for (i = 0; i < NSIG; i++) {
-    if (atomic_load_explicit(&caml_pending_signals[i], memory_order_seq_cst)) return 1;
+    if (atomic_load_explicit(&caml_pending_signals[i], memory_order_seq_cst))
+      return 1;
   }
   return 0;
 }
@@ -80,14 +81,16 @@ if (!check_for_pending_signals())
   pthread_sigmask(/* dummy */ SIG_BLOCK, NULL, &set);
 #endif
   for (i = 0; i < NSIG; i++) {
-    if ( atomic_load_explicit(&caml_pending_signals[i], memory_order_seq_cst) == 0 )
+    if ( atomic_load_explicit
+          (&caml_pending_signals[i], memory_order_seq_cst) == 0 )
       continue;
 #ifdef POSIX_SIGNALS
     if(sigismember(&set, i))
       continue;
 #endif
   again:
-    specific_signal_pending = atomic_load_explicit(&caml_pending_signals[i], memory_order_seq_cst);
+    specific_signal_pending = atomic_load_explicit
+                               (&caml_pending_signals[i], memory_order_seq_cst);
     if( specific_signal_pending > 0 ) {
       if( !atomic_compare_exchange_strong(
             &caml_pending_signals[i],
@@ -98,13 +101,19 @@ if (!check_for_pending_signals())
         goto again;
       }
 
-      atomic_fetch_sub_explicit(&total_signals_pending, 1, memory_order_seq_cst);
+      atomic_fetch_sub_explicit
+        (&total_signals_pending, 1, memory_order_seq_cst);
 
       exn = caml_execute_signal_exn(i, 0);
       if (Is_exception_result(exn)) return exn;
     }
   }
   return Val_unit;
+}
+
+CAMLexport void caml_process_pending_signals(void) {
+  value exn = caml_process_pending_signals_exn();
+  caml_raise_if_exception(exn);
 }
 
 /* Record the delivery of a signal, and arrange for it to be processed
@@ -117,8 +126,12 @@ if (!check_for_pending_signals())
 
 CAMLexport void caml_record_signal(int signal_number)
 {
-  atomic_fetch_add_explicit(&caml_pending_signals[signal_number], 1, memory_order_seq_cst);
-  atomic_fetch_add_explicit(&total_signals_pending, 1, memory_order_seq_cst);
+  atomic_fetch_add_explicit
+    (&caml_pending_signals[signal_number], 1, memory_order_seq_cst);
+
+  atomic_fetch_add_explicit
+    (&total_signals_pending, 1, memory_order_seq_cst);
+
   caml_interrupt_self();
 }
 
@@ -145,7 +158,7 @@ CAMLexport void caml_enter_blocking_section(void)
 {
   while (1){
     /* Process all pending signals now */
-    caml_raise_if_exception(caml_process_pending_signals_exn());
+    caml_process_pending_signals();
     caml_enter_blocking_section_hook ();
     /* Check again for pending signals.
        If none, done; otherwise, try again */
@@ -445,6 +458,6 @@ CAMLprim value caml_install_signal_handler(value signal_number, value action)
     caml_modify(&Field(caml_signal_handlers, sig), Field(action, 0));
     caml_plat_unlock(&signal_install_mutex);
   }
-  caml_raise_if_exception(caml_process_pending_signals_exn());
+  caml_process_pending_signals();
   CAMLreturn (res);
 }
