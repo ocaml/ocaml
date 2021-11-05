@@ -323,8 +323,8 @@ let report_error ppf = function
       end
     ) instrs;
     if num_inserted_polls > 0 then
-      fprintf ppf "\t(plus compiler-inserted polling point(s) in prologue and/or \
-      loop back edges)\n"
+      fprintf ppf "\t(plus compiler-inserted polling point(s) in prologue \
+      and/or loop back edges)\n"
   end
 
 let () =
