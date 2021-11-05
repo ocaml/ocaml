@@ -250,7 +250,14 @@ let find_poll_alloc_or_calls instr =
       | Iop(Ipoll _ | Ialloc _ | Icall_ind | Icall_imm _ |
             Itailcall_ind | Itailcall_imm _ |
             Iextcall { alloc = true }) -> true
-      | _ -> false in
+      | Iop(Imove | Ispill | Ireload | Iconst_int _ | Iconst_float _ |
+            Iconst_symbol _ | Iextcall { alloc = false } | Istackoffset _ |
+            Iload _ | Istore _ | Iintop _ | Iintop_imm _ | Ifloatofint |
+            Iintoffloat | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf |
+            Iopaque | Ispecific _)-> false
+      | Iend | Ireturn | Iifthenelse _ | Iswitch _ | Icatch _ | Iexit _ |
+        Itrywith _ | Iraise _ -> false
+    in
   let matches = ref [] in
     Mach.instr_iter
       (fun i -> if f_match i then matches := i :: !matches else ())
