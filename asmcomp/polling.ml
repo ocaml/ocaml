@@ -296,7 +296,7 @@ let instr_type i =
   | Iop(Ialloc _) -> "allocation"
   | Iop(Icall_ind | Icall_imm _ |
         Itailcall_ind | Itailcall_imm _) -> "function call"
-  | Iop(Iextcall { alloc = true }) -> "alloc external call"
+  | Iop(Iextcall { alloc = true }) -> "external call that allocates"
   | _ -> assert(false) (* This should never happen *)
 
 let report_error ppf = function
