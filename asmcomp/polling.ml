@@ -301,19 +301,31 @@ let instr_type i =
 
 let report_error ppf = function
 | Poll_error instrs ->
-   fprintf ppf
-     "Function with poll-error attribute contains polling points::\n";
-   List.iter (fun i ->
-    fprintf ppf "\t%s" (instr_type i);
-    begin match i.desc with
-    | Iop(Ipoll _) -> ()
-    | _ -> begin
-            fprintf ppf " at ";
-            Location.print_loc ppf (Debuginfo.to_location i.dbg)
-          end
-    end;
-    fprintf ppf "\n"
-   ) instrs
+   let num_inserted_polls =
+    List.fold_left (fun s i -> s + match i.desc with Iop(Ipoll _) -> 1 | _ -> 0)
+      0 instrs in
+   let num_user_polls = (List.length instrs) - num_inserted_polls in
+   if num_user_polls == 0 then
+    fprintf ppf "Function with poll-error attribute contains polling \
+    points (inserted by the compiler)\n"
+   else begin
+    fprintf ppf
+      "Function with poll-error attribute contains polling points:\n";
+    List.iter (fun i ->
+      begin match i.desc with
+      | Iop(Ipoll _) -> ()
+      | _ ->
+        begin
+          fprintf ppf "\t%s at " (instr_type i);
+          Location.print_loc ppf (Debuginfo.to_location i.dbg);
+          fprintf ppf "\n"
+        end
+      end
+    ) instrs;
+    if num_inserted_polls > 0 then
+      fprintf ppf "\t(plus compiler-inserted polling point(s) in prologue and/or \
+      loop back edges)\n"
+  end
 
 let () =
   Location.register_error_of_exn
