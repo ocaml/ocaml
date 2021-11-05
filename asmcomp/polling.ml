@@ -262,7 +262,7 @@ let find_poll_alloc_or_calls instr =
     Mach.instr_iter
       (fun i -> if f_match i then matches := i :: !matches else ())
       instr;
-  !matches
+  List.rev !matches
 
 let instrument_fundecl ~future_funcnames:_ (f : Mach.fundecl) : Mach.fundecl =
   if function_is_assumed_to_never_poll f.fun_name then f
