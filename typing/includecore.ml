@@ -761,7 +761,7 @@ let private_variant env row1 params1 row2 params2 =
               | Some _, None | None, Some _ ->
                   Some (Incompatible_types_for s)
             end
-          | Rpresent to1, Reither(const2, ts2, _, _) -> begin
+          | Rpresent to1, Reither(const2, ts2, _) -> begin
               match to1, const2, ts2 with
               | Some t1, false, [t2] -> loop (t1 :: tl1) (t2 :: tl2) pairs
               | None, true, [] -> loop tl1 tl2 pairs
@@ -769,7 +769,7 @@ let private_variant env row1 params1 row2 params2 =
             end
           | Rpresent _, Rabsent ->
               Some (Missing (Second, s) : private_variant_mismatch)
-          | Reither(const1, ts1, _, _), Reither(const2, ts2, _, _) ->
+          | Reither(const1, ts1, _), Reither(const2, ts2, _) ->
               if const1 = const2 && List.length ts1 = List.length ts2 then
                 loop (ts1 @ tl1) (ts2 @ tl2) pairs
               else

@@ -60,25 +60,22 @@ stdlib__Bool.cmx : bool.ml \
     stdlib__Bool.cmi
 stdlib__Bool.cmi : bool.mli
 stdlib__Buffer.cmo : buffer.ml \
-    stdlib__Uchar.cmi \
     stdlib__Sys.cmi \
     stdlib__String.cmi \
     stdlib__Seq.cmi \
-    stdlib__Char.cmi \
     stdlib__Bytes.cmi \
     stdlib__Buffer.cmi
 stdlib__Buffer.cmx : buffer.ml \
-    stdlib__Uchar.cmx \
     stdlib__Sys.cmx \
     stdlib__String.cmx \
     stdlib__Seq.cmx \
-    stdlib__Char.cmx \
     stdlib__Bytes.cmx \
     stdlib__Buffer.cmi
 stdlib__Buffer.cmi : buffer.mli \
     stdlib__Uchar.cmi \
     stdlib__Seq.cmi
 stdlib__Bytes.cmo : bytes.ml \
+    stdlib__Uchar.cmi \
     stdlib__Sys.cmi \
     stdlib.cmi \
     stdlib__Seq.cmi \
@@ -86,6 +83,7 @@ stdlib__Bytes.cmo : bytes.ml \
     stdlib__Char.cmi \
     stdlib__Bytes.cmi
 stdlib__Bytes.cmx : bytes.ml \
+    stdlib__Uchar.cmx \
     stdlib__Sys.cmx \
     stdlib.cmx \
     stdlib__Seq.cmx \
@@ -93,6 +91,7 @@ stdlib__Bytes.cmx : bytes.ml \
     stdlib__Char.cmx \
     stdlib__Bytes.cmi
 stdlib__Bytes.cmi : bytes.mli \
+    stdlib__Uchar.cmi \
     stdlib__Seq.cmi
 stdlib__BytesLabels.cmo : bytesLabels.ml \
     stdlib__Bytes.cmi \
@@ -101,6 +100,7 @@ stdlib__BytesLabels.cmx : bytesLabels.ml \
     stdlib__Bytes.cmx \
     stdlib__BytesLabels.cmi
 stdlib__BytesLabels.cmi : bytesLabels.mli \
+    stdlib__Uchar.cmi \
     stdlib__Seq.cmi
 stdlib__Callback.cmo : callback.ml \
     stdlib__Obj.cmi \
@@ -214,6 +214,7 @@ stdlib__Ephemeron.cmo : ephemeron.ml \
     stdlib__Seq.cmi \
     stdlib__Random.cmi \
     stdlib__Obj.cmi \
+    stdlib__List.cmi \
     stdlib__Lazy.cmi \
     stdlib__Int.cmi \
     stdlib__Hashtbl.cmi \
@@ -224,12 +225,14 @@ stdlib__Ephemeron.cmx : ephemeron.ml \
     stdlib__Seq.cmx \
     stdlib__Random.cmx \
     stdlib__Obj.cmx \
+    stdlib__List.cmx \
     stdlib__Lazy.cmx \
     stdlib__Int.cmx \
     stdlib__Hashtbl.cmx \
     stdlib__Array.cmx \
     stdlib__Ephemeron.cmi
 stdlib__Ephemeron.cmi : ephemeron.mli \
+    stdlib__Seq.cmi \
     stdlib__Hashtbl.cmi
 stdlib__Filename.cmo : filename.ml \
     stdlib__Sys.cmi \
@@ -633,10 +636,17 @@ stdlib__Scanf.cmx : scanf.ml \
 stdlib__Scanf.cmi : scanf.mli \
     stdlib.cmi
 stdlib__Seq.cmo : seq.ml \
+    stdlib__Lazy.cmi \
+    stdlib__Either.cmi \
+    camlinternalAtomic.cmi \
     stdlib__Seq.cmi
 stdlib__Seq.cmx : seq.ml \
+    stdlib__Lazy.cmx \
+    stdlib__Either.cmx \
+    camlinternalAtomic.cmx \
     stdlib__Seq.cmi
-stdlib__Seq.cmi : seq.mli
+stdlib__Seq.cmi : seq.mli \
+    stdlib__Either.cmi
 stdlib__Set.cmo : set.ml \
     stdlib__Seq.cmi \
     stdlib__List.cmi \
@@ -698,6 +708,7 @@ stdlib__String.cmx : string.ml \
     stdlib__Bytes.cmx \
     stdlib__String.cmi
 stdlib__String.cmi : string.mli \
+    stdlib__Uchar.cmi \
     stdlib__Seq.cmi
 stdlib__StringLabels.cmo : stringLabels.ml \
     stdlib__String.cmi \
@@ -706,6 +717,7 @@ stdlib__StringLabels.cmx : stringLabels.ml \
     stdlib__String.cmx \
     stdlib__StringLabels.cmi
 stdlib__StringLabels.cmi : stringLabels.mli \
+    stdlib__Uchar.cmi \
     stdlib__Seq.cmi
 stdlib__Sys.cmo : sys.ml \
     stdlib__Sys.cmi

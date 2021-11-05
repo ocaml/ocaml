@@ -118,7 +118,7 @@ utils/domainstate.ml: utils/domainstate.ml.c runtime/caml/domain_state.tbl
 utils/domainstate.mli: utils/domainstate.mli.c runtime/caml/domain_state.tbl
 	$(CPP) -I runtime/caml $< > $@
 
-configure: configure.ac aclocal.m4 VERSION tools/autogen
+configure: configure.ac aclocal.m4 build-aux/ocaml_version.m4 tools/autogen
 	tools/autogen
 
 .PHONY: partialclean
@@ -256,7 +256,7 @@ endif
 	$(MAKE) ocamlopt.opt
 	$(MAKE) otherlibrariesopt
 	$(MAKE) ocamllex.opt ocamltoolsopt ocamltoolsopt.opt $(OCAMLDOC_OPT) \
-	  $(OCAMLTEST_OPT)
+	  $(OCAMLTEST_OPT) ocamlnat
 ifeq "$(WITH_OCAMLDOC)-$(STDLIB_MANPAGES)" "ocamldoc-true"
 	$(MAKE) manpages
 endif
@@ -439,8 +439,7 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 endif
 	$(MAKE) -C tools install
 ifeq "$(UNIX_OR_WIN32)" "unix" # Install manual pages only on Unix
-	$(MKDIR) "$(INSTALL_MANDIR)/man$(PROGRAMS_MAN_SECTION)"
-	-$(MAKE) -C man install
+	$(MAKE) -C man install
 endif
 	for i in $(OTHERLIBRARIES); do \
 	  $(MAKE) -C otherlibs/$$i install || exit $$?; \
@@ -566,6 +565,8 @@ ifeq "$(BOOTSTRAPPING_FLEXDLL)" "true"
 endif
 	$(INSTALL_DATA) \
 	   utils/*.cmx parsing/*.cmx typing/*.cmx bytecomp/*.cmx \
+	   toplevel/*.cmx toplevel/native/*.cmx \
+	   toplevel/native/tophooks.cmi \
 	   file_formats/*.cmx \
 	   lambda/*.cmx \
 	   driver/*.cmx asmcomp/*.cmx middle_end/*.cmx \
@@ -579,15 +580,11 @@ endif
 	$(INSTALL_DATA) \
 	   $(BYTESTART:.cmo=.cmx) $(BYTESTART:.cmo=.$(O)) \
 	   $(OPTSTART:.cmo=.cmx) $(OPTSTART:.cmo=.$(O)) \
+	   $(TOPLEVELSTART:.cmo=.$(O)) \
 	   "$(INSTALL_COMPLIBDIR)"
-	if test -f ocamlnat$(EXE) ; then \
-	  $(INSTALL_PROG) ocamlnat$(EXE) "$(INSTALL_BINDIR)"; \
-	  $(INSTALL_DATA) \
-	     toplevel/*.cmx \
-	     toplevel/native/*.cmx \
-	     $(TOPLEVELSTART:.cmo=.$(O)) \
-	     "$(INSTALL_COMPLIBDIR)"; \
-	fi
+ifeq "$(INSTALL_OCAMLNAT)" "true"
+	  $(INSTALL_PROG) ocamlnat$(EXE) "$(INSTALL_BINDIR)"
+endif
 	cd "$(INSTALL_COMPLIBDIR)" && \
 	   $(RANLIB) ocamlcommon.$(A) ocamlbytecomp.$(A) ocamloptcomp.$(A)
 
@@ -624,6 +621,9 @@ clean::
 .PHONY: manual-pregen
 manual-pregen: opt.opt
 	cd manual; $(MAKE) clean && $(MAKE) pregen-etex
+
+clean::
+	$(MAKE) -C manual clean
 
 # The clean target
 clean:: partialclean
@@ -898,9 +898,16 @@ parsing/camlinternalMenhirLib.mli: boot/menhir/menhirLib.mli
 
 # Copy parsing/parser.ml from boot/
 
-parsing/parser.ml: boot/menhir/parser.ml parsing/parser.mly \
-  tools/check-parser-uptodate-or-warn.sh
+PARSER_DEPS = boot/menhir/parser.ml parsing/parser.mly
+
+ifeq "$(OCAML_DEVELOPMENT_VERSION)" "true"
+PARSER_DEPS += tools/check-parser-uptodate-or-warn.sh
+endif
+
+parsing/parser.ml: $(PARSER_DEPS)
+ifeq "$(OCAML_DEVELOPMENT_VERSION)" "true"
 	@-tools/check-parser-uptodate-or-warn.sh
+endif
 	sed "s/MenhirLib/CamlinternalMenhirLib/g" $< > $@
 parsing/parser.mli: boot/menhir/parser.mli
 	sed "s/MenhirLib/CamlinternalMenhirLib/g" $< > $@
@@ -1064,13 +1071,16 @@ endif
 
 # The native toplevel
 
-ocamlnat$(EXE): compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
-    compilerlibs/ocamlbytecomp.cmxa \
-    otherlibs/dynlink/dynlink.cmxa \
-    compilerlibs/ocamltoplevel.cmxa \
-    $(TOPLEVELSTART:.cmo=.cmx)
-	$(CAMLOPT_CMD) $(LINKFLAGS) -linkall -I toplevel/native -o $@ $^
+ocamlnat_dependencies := \
+  compilerlibs/ocamlcommon.cmxa \
+  compilerlibs/ocamloptcomp.cmxa \
+  compilerlibs/ocamlbytecomp.cmxa \
+  otherlibs/dynlink/dynlink.cmxa \
+  compilerlibs/ocamltoplevel.cmxa \
+  $(TOPLEVELSTART:.cmo=.cmx)
 
+ocamlnat$(EXE): $(ocamlnat_dependencies)
+	$(CAMLOPT_CMD) $(LINKFLAGS) -linkall -I toplevel/native -o $@ $^
 
 toplevel/topdirs.cmx: toplevel/topdirs.ml
 	$(CAMLOPT_CMD) $(COMPFLAGS) $(OPTCOMPFLAGS) -I toplevel/native -c $<
@@ -1144,19 +1154,20 @@ depend: beforedepend
 
 .PHONY: distclean
 distclean: clean
+	$(MAKE) -C manual distclean
+	$(MAKE) -C runtime distclean
+	$(MAKE) -C stdlib distclean
 	rm -f boot/ocamlrun boot/ocamlrun.exe boot/camlheader \
 	      boot/ocamlruns boot/ocamlruns.exe \
 	      boot/flexlink.byte boot/flexlink.byte.exe \
 	      boot/flexdll_*.o boot/flexdll_*.obj \
 	      boot/*.cm* boot/libcamlrun.a boot/libcamlrun.lib boot/ocamlc.opt
 	rm -f Makefile.config Makefile.build_config
-	rm -f runtime/caml/m.h runtime/caml/s.h
 	rm -rf autom4te.cache flexdll-sources
 	rm -f config.log config.status libtool
 	rm -f tools/eventlog_metadata
 	rm -f tools/*.bak
 	rm -f testsuite/_log*
-	$(MAKE) -C stdlib distclean
 
 include .depend
 

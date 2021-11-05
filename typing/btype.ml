@@ -129,10 +129,6 @@ let dummy_method = "*dummy method*"
 
 (**** Representative of a type ****)
 
-let rec commu_repr = function
-    Clink r when !r <> Cunknown -> commu_repr !r
-  | c -> c
-
 let merge_fixed_explanation fixed1 fixed2 =
   match fixed1, fixed2 with
   | Some Univar _ as x, _ | _, (Some Univar _ as x) -> x
@@ -244,7 +240,7 @@ let fold_row f init row =
       (fun init (_, fi) ->
          match row_field_repr fi with
          | Rpresent(Some ty) -> f init ty
-         | Reither(_, tl, _, _) -> List.fold_left f init tl
+         | Reither(_, tl, _) -> List.fold_left f init tl
          | _ -> init)
       init
       (row_fields row)
@@ -424,13 +420,13 @@ let copy_row f fixed row keep more =
   let fields = List.map
       (fun (l, fi) -> l,
         match row_field_repr fi with
-        | Rpresent(Some ty) -> Rpresent(Some(f ty))
-        | Reither(c, tl, m, e) ->
-            let e = if keep then e else ref None in
+        | Rpresent oty -> rf_present (Option.map f oty)
+        | Reither(c, tl, m) ->
+            let use_ext_of = if keep then Some fi else None in
             let m = if is_fixed row then fixed else m in
             let tl = List.map f tl in
-            Reither(c, tl, m, e)
-        | _ -> fi)
+            rf_either tl ?use_ext_of ~no_arg:c ~matched:m
+        | Rabsent -> rf_absent)
       orig_fields in
   let name =
     match orig_name with
@@ -439,14 +435,7 @@ let copy_row f fixed row keep more =
   let fixed = if fixed then orig_fixed else None in
   create_row ~fields ~more ~fixed ~closed ~name
 
-let rec copy_kind = function
-    Fvar{contents = Some k} -> copy_kind k
-  | Fvar _   -> Fvar (ref None)
-  | Fpresent -> Fpresent
-  | Fabsent  -> assert false
-
-let copy_commu c =
-  if commu_repr c = Cok then Cok else Clink (ref Cunknown)
+let copy_commu c = if is_commu_ok c then commu_ok else commu_var ()
 
 let rec copy_type_desc ?(keep_names=false) f = function
     Tvar _ as ty        -> if keep_names then ty else Tvar None
@@ -457,8 +446,9 @@ let rec copy_type_desc ?(keep_names=false) f = function
                         -> Tobject (f ty, ref (Some(p, List.map f tl)))
   | Tobject (ty, _)     -> Tobject (f ty, ref None)
   | Tvariant _          -> assert false (* too ambiguous *)
-  | Tfield (p, k, ty1, ty2) -> (* the kind is kept shared *)
-      Tfield (p, field_kind_repr k, f ty1, f ty2)
+  | Tfield (p, k, ty1, ty2) ->
+      Tfield (p, field_kind_internal_repr k, f ty1, f ty2)
+      (* the kind is kept shared, with indirections removed for performance *)
   | Tnil                -> Tnil
   | Tlink ty            -> copy_type_desc f (get_desc ty)
   | Tsubst _            -> assert false

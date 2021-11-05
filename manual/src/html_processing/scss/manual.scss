@@ -23,7 +23,7 @@
 	}
     }
     ul{list-style:none;}
-    ul.itemize li::before{@include disc;}
+    ul.itemize {@include colored-disc-marker;}
 
     /* When the TOC is repeated in the main content */
     ul.ul-content {
@@ -44,7 +44,6 @@
     ul{
 	list-style: none;
 	li {
-	    margin-left: 0.5ex;
 	    span {
 		color:#c88b5f;
 	    }
@@ -54,9 +53,8 @@
 	}
     }
     /* only for Contents/Foreword in index.html: */
-    ul.ul-content li::before{
-	@include disc;
-	margin-left: 0;
+    ul.ul-content {
+	@include colored-disc-marker;
     }
     /* table of contents: (manual.001.html): */
     ul.toc ul.toc ul.toc{

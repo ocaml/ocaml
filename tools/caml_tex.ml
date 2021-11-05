@@ -442,36 +442,42 @@ module Text_transform = struct
           | Underline ->
               t.start, Some t.stop, camlbunderline :: out
 
-  (** Check that all ellipsis are strictly nested inside underline transform
-      and that otherwise no transform starts before the end of the previous
-      transform in a list of transforms *)
-  type partition = U of t * t list | E of t
-  let check_partition line file l =
-    let init = ellipsis 0 0 in
-    let rec partition = function
-      | [] -> []
-      | {kind=Underline; _ } as t :: q -> underline t [] q
-      | {kind=Ellipsis; _ } as t :: q -> E t :: partition q
-    and underline u n = function
-      | [] -> end_underline u n []
-      | {kind=Underline; _ } :: _ as q -> end_underline u n q
-      | {kind=Ellipsis; _ } as t :: q ->
-          if t.stop < u.stop then underline u (t::n) q
-          else end_underline u n (t::q)
-    and end_underline u n l = U(u,List.rev n) :: partition l in
-    let check_elt last t =
-      if t.start < last.stop then
-        raise (Intersection {line;file; left = last; right = t})
-      else
-        t in
-    let check acc = function
-      | E t -> check_elt acc t
-      | U(u,n) ->
-          let _ = check_elt acc u in
-          let _ = List.fold_left ~f:check_elt ~init n in
-          u in
-    List.fold_left ~f:check ~init (partition l)
-    |> ignore
+  (** Merge consecutive transforms:
+       - drop nested underline transform
+       - raise an error with transforms nested under an ellipsis
+       - raise an error when consecutive transforms partially overlap
+  *)
+  let merge_transforms file line ts =
+    let rec merge (active, active_stack, acc) t =
+      if active.stop <= t.start then
+         (* no overlap, the next transform starts after the end of the current
+            active transform *)
+        match active_stack with
+        | [] ->
+            (* there were no other active transforms, the new transform becomes
+               the active one *)
+            t, [], t :: acc
+        | last :: active_stack ->
+            (* we check that [t] is still conflict-free with our parent
+               transforms *)
+            merge (last, active_stack,acc) t
+      else if active.stop < t.stop (* not nested *) then
+        raise (Intersection {line; file; left = active; right=t})
+      else (* nested transforms *)
+        match active.kind, t.kind  with
+        | Ellipsis, _ -> (* no nesting allowed under an ellipsis *)
+            raise (Intersection {line; file; left = active; right=t})
+        | Underline, Ellipsis -> (* underlined ellipsis are allowed *)
+            (t , active :: active_stack, t :: acc)
+        | Underline, Underline ->
+            (* multiple underlining are flattened to one *)
+            (t, active :: active_stack, acc)
+    in
+    match ts with
+    | [] -> []
+    | a :: q ->
+        let _, _, ts = List.fold_left ~f:merge ~init:(a,[],[a]) q in
+        List.rev ts
 
   let apply ts file line s =
     (* remove duplicated transforms that can appear due to
@@ -481,7 +487,7 @@ module Text_transform = struct
         for the two ellipses. *)
     let ts = List.sort_uniq compare ts in
     let ts = List.sort (fun x y -> compare x.start y.start) ts in
-    check_partition line file ts;
+    let ts = merge_transforms file line ts in
     let last, underline, ls =
       List.fold_left ~f:(apply_transform s) ~init:(0,None,[]) ts in
     let last, ls = match underline with

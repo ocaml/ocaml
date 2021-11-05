@@ -17,6 +17,13 @@
 
 # The configuration Makefile
 
+## Variables defining the current version of OCaml
+OCAML_DEVELOPMENT_VERSION=@OCAML_DEVELOPMENT_VERSION@
+OCAML_VERSION_MAJOR=@OCAML_VERSION_MAJOR@
+OCAML_VERSION_MINOR=@OCAML_VERSION_MINOR@
+OCAML_VERSION_PATCHLEVEL=@OCAML_VERSION_PATCHLEVEL@
+OCAML_VERSION_EXTRA=@OCAML_VERSION_EXTRA@
+
 ## The EMPTY variable, used in other definitions
 EMPTY=
 
@@ -46,11 +53,11 @@ LIBDIR=@libdir@
 STUBLIBDIR=@libdir@/stublibs
 
 ### Where to install the man pages
-# Man pages for commands go in $(MANDIR)/man$(PROGRAMS_MAN_SECTION)
-# Man pages for the library go in $(MANDIR)/man/man$(LIBRARIES_MAN_SECTION)
+# Man pages for commands go in $(MANDIR)/man1
+# Man pages for the library go in $(MANDIR)/man3
 MANDIR=@mandir@
-PROGRAMS_MAN_SECTION=@programs_man_section@
-LIBRARIES_MAN_SECTION=@libraries_man_section@
+PROGRAMS_MAN_DIR=$(MANDIR)/man1
+LIBRARIES_MAN_DIR=$(MANDIR)/man3
 
 ### Do #! scripts work on your system?
 ### Beware: on some systems (e.g. SunOS 4), this will work only if

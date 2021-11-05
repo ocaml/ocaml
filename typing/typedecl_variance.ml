@@ -101,7 +101,7 @@ let compute_variance env visited vari ty =
             match row_field_repr f with
               Rpresent (Some ty) ->
                 compute_same ty
-            | Reither (_, tyl, _, _) ->
+            | Reither (_, tyl, _) ->
                 let open Variance in
                 let upper =
                   List.fold_left (fun s f -> set f true s)

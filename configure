@@ -766,6 +766,7 @@ flambda
 frame_pointers
 profinfo_width
 profinfo
+install_ocamlnat
 install_source_artifacts
 install_bytecode_programs
 mksharedlibrpath
@@ -815,8 +816,6 @@ ccomptype
 mkexedebugflag
 mkexe
 fpic
-libraries_man_section
-programs_man_section
 extralibs
 syslib
 outputobj
@@ -836,6 +835,13 @@ exeext
 ac_tool_prefix
 DIRECT_CPP
 CC
+OCAML_VERSION_SHORT
+OCAML_VERSION_EXTRA
+OCAML_VERSION_PATCHLEVEL
+OCAML_VERSION_MINOR
+OCAML_VERSION_MAJOR
+OCAML_RELEASE_EXTRA
+OCAML_DEVELOPMENT_VERSION
 VERSION
 native_compiler
 CONFIGURE_ARGS
@@ -893,6 +899,7 @@ enable_bigarray_lib
 enable_ocamldoc
 with_odoc
 enable_ocamltest
+enable_native_toplevel
 enable_frame_pointers
 enable_naked_pointers
 enable_naked_pointers_checker
@@ -1566,6 +1573,8 @@ Optional Features:
   --disable-bigarray-lib  do not build the legacy separate bigarray library
   --disable-ocamldoc      do not build the ocamldoc documentation system
   --disable-ocamltest     do not build the ocamltest driver
+  --enable-native-toplevel
+                          build the native toplevel
   --enable-frame-pointers use frame pointers in runtime and generated code
   --disable-naked-pointers
                           do not allow naked pointers
@@ -2775,12 +2784,6 @@ $as_echo "$as_me: Configuring OCaml version 4.14.0+dev0-2021-06-03" >&6;}
 ## Command-line arguments passed to configure
 CONFIGURE_ARGS="$*"
 
-# Command-line tools section of the Unix manual
-programs_man_section=1
-
-# Library section of the Unix manual
-libraries_man_section=3
-
 # Command to build executalbes
 # In general this command is supposed to use the CFLAGs- and LDFLAGS-
 # related variables (OC_CFLAGS and OC_LDFLAGS for ocaml-specific
@@ -2852,12 +2855,24 @@ ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 
 VERSION=4.14.0+dev0-2021-06-03
 
+OCAML_DEVELOPMENT_VERSION=true
+
+OCAML_RELEASE_EXTRA='Some (Plus, "dev0-2021-06-03")'
+
+OCAML_VERSION_MAJOR=4
+
+OCAML_VERSION_MINOR=14
+
+OCAML_VERSION_PATCHLEVEL=0
+
+OCAML_VERSION_EXTRA=dev0-2021-06-03
+
+OCAML_VERSION_SHORT=4.14
+
 
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
-
-
 
 
 
@@ -2945,6 +2960,7 @@ VERSION=4.14.0+dev0-2021-06-03
 
 
 
+
 ## Generated files
 
 ac_config_files="$ac_config_files Makefile.build_config"
@@ -2953,11 +2969,33 @@ ac_config_files="$ac_config_files Makefile.config"
 
 ac_config_files="$ac_config_files stdlib/sys.ml"
 
+ac_config_files="$ac_config_files manual/src/version.tex"
+
+ac_config_files="$ac_config_files manual/src/html_processing/src/common.ml"
+
 ac_config_files="$ac_config_files tools/eventlog_metadata"
 
 ac_config_headers="$ac_config_headers runtime/caml/m.h"
 
 ac_config_headers="$ac_config_headers runtime/caml/s.h"
+
+ac_config_headers="$ac_config_headers runtime/caml/version.h"
+
+
+# Definitions related to the version of OCaml
+$as_echo "#define OCAML_VERSION_MAJOR 4" >>confdefs.h
+
+$as_echo "#define OCAML_VERSION_MINOR 14" >>confdefs.h
+
+$as_echo "#define OCAML_VERSION_PATCHLEVEL 0" >>confdefs.h
+
+$as_echo "#define OCAML_VERSION_ADDITIONAL \"dev0-2021-06-03\"" >>confdefs.h
+
+  $as_echo "#define OCAML_VERSION_EXTRA \"dev0-2021-06-03\"" >>confdefs.h
+
+$as_echo "#define OCAML_VERSION 41400" >>confdefs.h
+
+$as_echo "#define OCAML_VERSION_STRING \"4.14.0+dev0-2021-06-03\"" >>confdefs.h
 
 
 # Checks for system types
@@ -3191,6 +3229,12 @@ fi
 # Check whether --enable-ocamltest was given.
 if test "${enable_ocamltest+set}" = set; then :
   enableval=$enable_ocamltest;
+fi
+
+
+# Check whether --enable-native-toplevel was given.
+if test "${enable_native_toplevel+set}" = set; then :
+  enableval=$enable_native_toplevel;
 fi
 
 
@@ -12729,8 +12773,8 @@ case $ocaml_cv_cc_vendor in #(
   cc_warnings='-Wall -Wdeclaration-after-statement' ;;
 esac
 
-case $enable_warn_error,4.14.0+dev0-2021-06-03 in #(
-  yes,*|,*+dev*) :
+case $enable_warn_error,true in #(
+  yes,*|,true) :
     cc_warnings="$cc_warnings $warn_error_flag" ;; #(
   *) :
      ;;
@@ -14141,6 +14185,15 @@ if test x"$supports_shared_libraries" = 'xtrue'; then :
      ;;
 esac
 fi
+
+case $enable_native_toplevel,$natdynlink in #(
+  yes,false) :
+    as_fn_error $? "The native toplevel requires native dynlink support" "$LINENO" 5 ;; #(
+  yes,*) :
+    install_ocamlnat=true ;; #(
+  *) :
+    install_ocamlnat=false ;;
+esac
 
 # Try to work around the Skylake/Kaby Lake processor bug.
 case "$cc_basename,$host" in #(
@@ -17622,8 +17675,8 @@ fi
 
 
 
-case $enable_ocamltest,4.14.0+dev0-2021-06-03 in #(
-  yes,*|,*+dev*) :
+case $enable_ocamltest,true in #(
+  yes,*|,true) :
     ocamltest='ocamltest' ;; #(
   *) :
     ocamltest='' ;;
@@ -18820,9 +18873,12 @@ do
     "Makefile.build_config") CONFIG_FILES="$CONFIG_FILES Makefile.build_config" ;;
     "Makefile.config") CONFIG_FILES="$CONFIG_FILES Makefile.config" ;;
     "stdlib/sys.ml") CONFIG_FILES="$CONFIG_FILES stdlib/sys.ml" ;;
+    "manual/src/version.tex") CONFIG_FILES="$CONFIG_FILES manual/src/version.tex" ;;
+    "manual/src/html_processing/src/common.ml") CONFIG_FILES="$CONFIG_FILES manual/src/html_processing/src/common.ml" ;;
     "tools/eventlog_metadata") CONFIG_FILES="$CONFIG_FILES tools/eventlog_metadata" ;;
     "runtime/caml/m.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/m.h" ;;
     "runtime/caml/s.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/s.h" ;;
+    "runtime/caml/version.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/version.h" ;;
     "libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
@@ -19099,9 +19155,9 @@ cat >>$CONFIG_STATUS <<_ACEOF || ac_write_fail=1
   for (key in D) D_is_set[key] = 1
   FS = ""
 }
-/^[\t ]*#[\t ]*(define|undef)[\t ]+$ac_word_re([\t (]|\$)/ {
+/^[\t ]*#[\t ]*(define|undef)[\t ]+$ac_word_re([\t (]|\r?\$)/ {
   line = \$ 0
-  split(line, arg, " ")
+  split(line, arg, /[ \r\t]/)
   if (arg[1] == "#") {
     defundef = arg[2]
     mac1 = arg[3]

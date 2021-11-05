@@ -452,7 +452,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                   | (l, f) :: fields ->
                       if Btype.hash_variant l = tag then
                         match row_field_repr f with
-                        | Rpresent(Some ty) | Reither(_,[ty],_,_) ->
+                        | Rpresent(Some ty) | Reither(_,[ty],_) ->
                             let args =
                               nest tree_of_val (depth - 1) (O.field obj 1) ty
                             in

@@ -231,7 +231,7 @@ and transl_type_aux env policy styp =
       if Btype.is_optional l
       then newty (Tconstr(Predef.path_option,[ty1], ref Mnil))
       else ty1 in
-    let ty = newty (Tarrow(l, ty1, cty2.ctyp_type, Cok)) in
+    let ty = newty (Tarrow(l, ty1, cty2.ctyp_type, commu_ok)) in
     ctyp (Ttyp_arrow (l, cty1, cty2)) ty
   | Ptyp_tuple stl ->
     assert (List.length stl >= 2);
@@ -323,10 +323,7 @@ and transl_type_aux env policy styp =
             List.map
               (fun (l,f) -> l,
                 match row_field_repr f with
-                | Rpresent (Some ty) ->
-                    Reither(false, [ty], false, ref None)
-                | Rpresent None ->
-                    Reither (true, [], false, ref None)
+                | Rpresent oty -> rf_either_of oty
                 | _ -> f)
               (row_fields row)
           in
@@ -416,14 +413,13 @@ and transl_type_aux env policy styp =
             let f = match present with
               Some present when not (List.mem l.txt present) ->
                 let ty_tl = List.map (fun cty -> cty.ctyp_type) tl in
-                Reither(c, ty_tl, false, ref None)
+                rf_either ty_tl ~no_arg:c ~matched:false
             | _ ->
                 if List.length stl > 1 || c && stl <> [] then
                   raise(Error(styp.ptyp_loc, env,
                               Present_has_conjunction l.txt));
-                match tl with [] -> Rpresent None
-                | st :: _ ->
-                      Rpresent (Some st.ctyp_type)
+                match tl with [] -> rf_present None
+                | st :: _ -> rf_present (Some st.ctyp_type)
             in
             add_typed_field styp.ptyp_loc l.txt f;
               Ttag (l,c,tl)
@@ -448,13 +444,9 @@ and transl_type_aux env policy styp =
               (fun (l, f) ->
                 let f = match present with
                   Some present when not (List.mem l present) ->
-                    begin match f with
-                      Rpresent(Some ty) ->
-                        Reither(false, [ty], false, ref None)
-                    | Rpresent None ->
-                        Reither(true, [], false, ref None)
-                    | _ ->
-                        assert false
+                    begin match row_field_repr f with
+                      Rpresent oty -> rf_either_of oty
+                    | _ -> assert false
                     end
                 | _ -> f
                 in
@@ -582,7 +574,7 @@ and transl_fields env policy o fields =
      | Open, Univars -> new_pre_univar ()
      | Open, _ -> newvar () in
   let ty = List.fold_left (fun ty (s, ty') ->
-      newty (Tfield (s, Fpresent, ty', ty))) ty_init fields in
+      newty (Tfield (s, field_public, ty', ty))) ty_init fields in
   ty, object_fields
 
 
@@ -596,7 +588,8 @@ let rec make_fixed_univars ty =
           let fields =
             List.map
               (fun (s,f as p) -> match row_field_repr f with
-                Reither (c, tl, _m, r) -> s, Reither (c, tl, true, r)
+                Reither (no_arg, tl, _m) ->
+                  s, rf_either tl ~use_ext_of:f ~no_arg ~matched:true
               | _ -> p)
               fields
           in
@@ -764,7 +757,7 @@ let report_error env ppf = function
          l l
   | Constructor_mismatch (ty, ty') ->
       wrap_printing_env ~error:true env (fun ()  ->
-        Printtyp.reset_and_mark_loops_list [ty; ty'];
+        Printtyp.prepare_for_printing [ty; ty'];
         fprintf ppf "@[<hov>%s %a@ %s@ %a@]"
           "This variant type contains a constructor"
           !Oprint.out_type (tree_of_typexp Type ty)

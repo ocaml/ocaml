@@ -219,7 +219,8 @@ let is_pure_prim p =
   | Arbitrary_effects, _ -> false
 
 (* Check if a clambda term is ``pure'',
-   that is without side-effects *and* not containing function definitions *)
+   that is without side-effects *and* not containing function definitions
+   (Pure terms may still read mutable state) *)
 
 let rec is_pure = function
     Uvar _ -> true
@@ -483,6 +484,8 @@ let simplif_prim_pure ~backend fpc p (args, approxs) dbg =
       make_const (List.nth l n)
   | Pfield n, [ Uprim(P.Pmakeblock _, ul, _) ], [approx]
     when n < List.length ul ->
+      (* This case is particularly useful for removing allocations
+         for optional parameters *)
       (List.nth ul n, field_approx n approx)
   (* Strings *)
   | (Pstringlength | Pbyteslength),
@@ -490,6 +493,10 @@ let simplif_prim_pure ~backend fpc p (args, approxs) dbg =
      [ Value_const(Uconst_ref(_, Some (Uconst_string s))) ] ->
       make_const_int (String.length s)
   (* Kind test *)
+  | Pisint, [ Uprim(P.Pmakeblock _, _, _) ], _ ->
+      (* This case is particularly useful for removing allocations
+         for optional parameters *)
+      make_const_bool false
   | Pisint, _, [a1] ->
       begin match a1 with
       | Value_const(Uconst_int _) -> make_const_bool true
@@ -667,8 +674,6 @@ let rec substitute loc ((backend, fpc) as st) sb rn ulam =
             substitute loc st sb rn u2
           else
             substitute loc st sb rn u3
-      | Uprim(P.Pmakeblock _, _, _) ->
-          substitute loc st sb rn u2
       | su1 ->
           Uifthenelse(su1, substitute loc st sb rn u2,
                            substitute loc st sb rn u3)
@@ -725,9 +730,10 @@ type env = {
 *)
 
 (* Approximates "no effects and no coeffects" *)
-let is_substituable ~mutable_vars = function
+let rec is_substituable ~mutable_vars = function
   | Uvar v -> not (V.Set.mem v mutable_vars)
   | Uconst _ -> true
+  | Uoffset(arg, _) -> is_substituable ~mutable_vars arg
   | _ -> false
 
 (* Approximates "only generative effects" *)
@@ -735,7 +741,8 @@ let is_erasable = function
   | Uclosure _ -> true
   | u -> is_pure u
 
-let bind_params { backend; mutable_vars; _ } loc fpc params args body =
+let bind_params { backend; mutable_vars; _ } loc fdesc params args funct body =
+  let fpc = fdesc.fun_float_const_prop in
   let rec aux subst pl al body =
     match (pl, al) with
       ([], []) -> substitute (Debuginfo.from_location loc) (backend, fpc)
@@ -748,6 +755,11 @@ let bind_params { backend; mutable_vars; _ } loc fpc params args body =
           let u1, u2 =
             match VP.name p1, a1 with
             | "*opt*", Uprim(P.Pmakeblock(0, Immutable, kind), [a], dbg) ->
+                (* This parameter corresponds to an optional parameter,
+                   and although it is used twice pushing the expression down
+                   actually allows us to remove the allocation as it will
+                   appear once under a Pisint primitive and once under a Pfield
+                   primitive (see [simplif_prim_pure]) *)
                 a, Uprim(P.Pmakeblock(0, Immutable, kind),
                          [Uvar (VP.var p1')], dbg)
             | _ ->
@@ -763,10 +775,16 @@ let bind_params { backend; mutable_vars; _ } loc fpc params args body =
   in
   (* Reverse parameters and arguments to preserve right-to-left
      evaluation order (PR#2910). *)
-  aux V.Map.empty (List.rev params) (List.rev args) body
-
-(* Check if a lambda term is ``pure'',
-   that is without side-effects *and* not containing function definitions *)
+  let params, args = List.rev params, List.rev args in
+  let params, args, body =
+    (* Ensure funct is evaluated after args *)
+    match params with
+    | my_closure :: params when not fdesc.fun_closed ->
+       (params @ [my_closure]), (args @ [funct]), body
+    | _ ->
+       params, args, (if is_pure funct then body else Usequence (funct, body))
+  in
+  aux V.Map.empty params args body
 
 let warning_if_forced_inline ~loc ~attribute warning =
   if attribute = Always_inline then
@@ -776,27 +794,39 @@ let warning_if_forced_inline ~loc ~attribute warning =
 (* Generate a direct application *)
 
 let direct_apply env fundesc ufunct uargs ~loc ~attribute =
-  let app_args =
-    if fundesc.fun_closed then uargs else uargs @ [ufunct] in
-  let app =
-    match fundesc.fun_inline, attribute with
-    | _, Never_inline | None, _ ->
-      let dbg = Debuginfo.from_location loc in
-        warning_if_forced_inline ~loc ~attribute
-          "Function information unavailable";
-        Udirect_apply(fundesc.fun_label, app_args, dbg)
-    | Some(params, body), _  ->
-        bind_params env loc fundesc.fun_float_const_prop params app_args
-          body
-  in
-  (* If ufunct can contain side-effects or function definitions,
-     we must make sure that it is evaluated exactly once.
-     If the function is not closed, we evaluate ufunct as part of the
-     arguments.
-     If the function is closed, we force the evaluation of ufunct first. *)
-  if not fundesc.fun_closed || is_pure ufunct
-  then app
-  else Usequence(ufunct, app)
+  match fundesc.fun_inline, attribute with
+  | _, Never_inline
+  | None, _ ->
+     let dbg = Debuginfo.from_location loc in
+     warning_if_forced_inline ~loc ~attribute
+       "Function information unavailable";
+     if fundesc.fun_closed && is_pure ufunct then
+       Udirect_apply(fundesc.fun_label, uargs, dbg)
+     else if not fundesc.fun_closed &&
+               is_substituable ~mutable_vars:env.mutable_vars ufunct then
+       Udirect_apply(fundesc.fun_label, uargs @ [ufunct], dbg)
+     else begin
+       let args = List.map (fun arg ->
+         if is_substituable ~mutable_vars:env.mutable_vars arg then
+           None, arg
+         else
+           let id = V.create_local "arg" in
+           Some (VP.create id, arg), Uvar id) uargs in
+       let app_args = List.map snd args in
+       List.fold_left (fun app (binding,_) ->
+           match binding with
+           | None -> app
+           | Some (v, e) -> Ulet(Immutable, Pgenval, v, e, app))
+         (if fundesc.fun_closed then
+            Usequence (ufunct, Udirect_apply (fundesc.fun_label, app_args, dbg))
+          else
+            let clos = V.create_local "clos" in
+            Ulet(Immutable, Pgenval, VP.create clos, ufunct,
+                 Udirect_apply(fundesc.fun_label, app_args @ [Uvar clos], dbg)))
+         args
+       end
+  | Some(params, body), _  ->
+     bind_params env loc fundesc params uargs ufunct body
 
 (* Add [Value_integer] info to the approximation of an application *)
 

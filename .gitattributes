@@ -45,6 +45,7 @@
 # No header for text files (would be too obtrusive).
 *.md                     typo.missing-header
 README*                  typo.missing-header
+VERSION                  typo.missing-header
 *.adoc                   typo.missing-header
 api_docgen/*.mld                typo.missing-header
 api_docgen/alldoc.tex           typo.missing-header
@@ -181,8 +182,6 @@ tools/ocaml-objcopy-macosx text eol=lf
 tools/ocamlsize text eol=lf
 tools/pre-commit-githook text eol=lf
 tools/markdown-add-pr-links.sh text eol=lf
-runtime/caml/m.h.in text eol=lf
-runtime/caml/s.h.in text eol=lf
 runtime/caml/compatibility.h typo.long-line=may
 
 # These are all Perl scripts, so may not actually require this

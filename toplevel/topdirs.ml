@@ -247,7 +247,7 @@ let match_generic_printer_type desc path args printer_type =
   let ty_expected =
     List.fold_right
       (fun ty_arg ty -> Ctype.newty (Tarrow (Asttypes.Nolabel, ty_arg, ty,
-                                             Cunknown)))
+                                             commu_var ())))
       ty_args (Ctype.newconstr printer_type [ty_target]) in
   begin try
     Ctype.unify !toplevel_env

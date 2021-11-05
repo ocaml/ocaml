@@ -187,7 +187,7 @@ let loop ppf =
   Clflags.debug := true;
   Location.formatter_for_warnings := ppf;
   if not !Clflags.noversion then
-    fprintf ppf "        OCaml version %s%s%s@.@."
+    fprintf ppf "OCaml version %s%s%s@.Enter #help;; for help.@.@."
       Config.version
       (if Topeval.implementation_label = "" then "" else " - ")
       Topeval.implementation_label;

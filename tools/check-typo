@@ -113,7 +113,6 @@ case "$1" in
           exit 0;;
     esac
     if git check-ignore -q "$2"; then
-        echo "INFO: pruned path $2 (.gitignore)" >&2
         exit 0
     fi
     if test -n "$(check_prune "$2")"; then

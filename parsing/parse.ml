@@ -95,6 +95,8 @@ and use_file = wrap Parser.use_file
 and core_type = wrap Parser.parse_core_type
 and expression = wrap Parser.parse_expression
 and pattern = wrap Parser.parse_pattern
+let module_type = wrap Parser.parse_module_type
+let module_expr = wrap Parser.parse_module_expr
 
 let longident = wrap Parser.parse_any_longident
 let val_ident = wrap Parser.parse_val_longident

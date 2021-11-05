@@ -105,6 +105,8 @@ type t =
   | Match_on_mutable_state_prevent_uncurry  (* 68 *)
   | Unused_field of string * field_usage_warning (* 69 *)
   | Missing_mli                             (* 70 *)
+  | Unused_tmc_attribute                    (* 71 *)
+  | Tmc_breaks_tailcall                     (* 72 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -185,9 +187,11 @@ let number = function
   | Match_on_mutable_state_prevent_uncurry -> 68
   | Unused_field _ -> 69
   | Missing_mli -> 70
+  | Unused_tmc_attribute -> 71
+  | Tmc_breaks_tailcall -> 72
 ;;
 
-let last_warning_number = 70
+let last_warning_number = 72
 ;;
 
 type description =
@@ -435,6 +439,13 @@ let descriptions = [
   { number = 70;
     names = ["missing-mli"];
     description = "Missing interface file." };
+  { number = 71;
+    names = ["unused-tmc-attribute"];
+    description = "Unused @tail_mod_cons attribute" };
+  { number = 72;
+    names = ["tmc-breaks-tailcall"];
+    description = "A tail call is turned into a non-tail call \
+                   by the @tail_mod_cons transformation." };
 ]
 ;;
 
@@ -1016,6 +1027,17 @@ let message = function
       " is never mutated."
   | Missing_mli ->
     "Cannot find interface file."
+  | Unused_tmc_attribute ->
+      "This function is marked @tail_mod_cons but is never applied in \
+       TMC position."
+  | Tmc_breaks_tailcall ->
+      "This call is in tail-modulo-cons position in a TMC function,\n\
+       but the function called is not itself specialized for TMC,\n\
+       so the call will not be transformed into a tail call.\n\
+       Please either mark the called function with\n\
+       the [@tail_mod_cons] attribute, or mark this call with\n\
+       the [@tailcall false] attribute to make its non-tailness \
+       explicit."
 ;;
 
 let nerrors = ref 0;;
