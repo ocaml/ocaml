@@ -2,24 +2,34 @@
 
 == Prerequisites
 
-* A C Compiler is required.
+* A C compiler is required.
+
   ** For GNU/Linux +
-    The GNU C Compiler (`gcc`) is recommended as the bytecode interpreter takes
-  advantage of GCC-specific features to enhance performance. GCC is the standard
-  compiler under Linux and many other systems.
+   The GNU C Compiler (`gcc`) is recommended as the bytecode interpreter takes
+   advantage of GCC-specific features to enhance performance. GCC is the standard
+   compiler under Linux and many other systems.
 
   ** For BSDs +
-    `clang` is the default C compiler on BSDs - also works fine.
+   `clang` is the default C compiler on BSDs - also works fine.
 
   ** For macOS +
-    `clang` is the default C compiler under macOS. If macOS complains no C compiler was installed while OCaml is building,
-    please run command `xcode-select --install` to install command-line tools and required libraries and header files.
+   `clang` is the default C compiler under macOS. If macOS complains
+   no C compiler was installed while OCaml is building, please run
+   command `xcode-select --install` to install command-line tools and
+   required libraries and header files.
+
+  ** For other Unix-like systems +
+   It is recommended to use `gcc` or `clang` instead of the C compiler
+   provided by the vendor of the system.
 
   ** For Windows +
-    To produce native Windows executables from OCaml sources, you need to use the MSVC or Mingw-w64 ports of
-     OCaml, described in file https://github.com/ocaml/ocaml/blob/trunk/README.win32.adoc[README.win32.adoc]. +
-    For a more Unix-like experience, you can use WSL, the https://aka.ms/wsl[Windows Subsystem for Linux],
-    or the https://www.cygwin.com/[Cygwin environment]. You will need the GCC compiler (package `gcc-core` or `gcc`).
+   To produce native Windows executables from OCaml sources, you need to use
+   the MSVC or Mingw-w64 ports of OCaml, described in file
+   https://github.com/ocaml/ocaml/blob/trunk/README.win32.adoc[README.win32.adoc]. +
+   For a more Unix-like experience, you can use WSL, the
+   https://aka.ms/wsl[Windows Subsystem for Linux], or the
+   https://www.cygwin.com/[Cygwin environment]. You will need the
+   GCC compiler (package `gcc-core` or `gcc`).
 
 * GNU `make`, as well as POSIX-compatible `awk` and `sed` are required.
 
