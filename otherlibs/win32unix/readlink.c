@@ -23,6 +23,7 @@
 #include "unixsupport.h"
 #include <errno.h>
 #include <winioctl.h>
+#include <caml/winsupport.h>
 
 CAMLprim value unix_readlink(value opath)
 {

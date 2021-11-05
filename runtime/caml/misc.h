@@ -382,6 +382,13 @@ extern double caml_log1p(double);
 
 #endif /* _WIN32 */
 
+/* Wrapper for Windows unlink */
+#ifdef _WIN32
+#define caml_unlink caml_win32_unlink
+#else
+#define caml_unlink unlink_os
+#endif
+
 
 /* Data structures */
 
