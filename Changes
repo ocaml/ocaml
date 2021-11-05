@@ -116,7 +116,7 @@ Working version
   caml/winsupport.h to hold more common code between the runtime,
   lib-sys, and win32unix.
   (Antonin Décimo, review by David Allsopp and Xavier Leroy)
-  
+
 - #10737: add new ephemeron API for forward compatibility with Multicore
   OCaml.
   (Damien Doligez, review by Stephen Dolan)
