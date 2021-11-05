@@ -1181,7 +1181,8 @@ method emit_fundecl ~future_funcnames f =
     if Polling.requires_prologue_poll ~future_funcnames
          ~fun_name:f.Cmm.fun_name body
       then
-      instr_cons (Iop(Ipoll { return_label = None })) [||] [||] body
+        instr_cons_debug
+          (Iop(Ipoll { return_label = None })) [||] [||] f.Cmm.fun_dbg body
     else
       body
     in
