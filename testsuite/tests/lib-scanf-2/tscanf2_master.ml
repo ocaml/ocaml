@@ -73,7 +73,7 @@ arguments = "'${test_build_directory}'/worker.opt"
 open Tscanf2_io;;
 
 let worker = Sys.argv.(1);;
-let ic, oc = Unix.open_process worker;;
+let ic, oc = Unix.open_process_args worker [| worker |];;
 let ib = Scanf.Scanning.from_channel ic;;
 let ob = Buffer.create 1024;;
 

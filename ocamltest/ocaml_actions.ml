@@ -111,7 +111,7 @@ let ocamllex =
 let ocamlyacc =
 {
   description = "parser";
-  command = Ocaml_files.ocamlyacc;
+  command = Filename.quote Ocaml_files.ocamlyacc;
   flags = ocamlyacc_flags;
   generated_compilation_units =
     fun parser_name ->
@@ -222,9 +222,12 @@ let compile_program (compiler : Ocaml_compilers.compiler) log env =
     if has_c_file then Ocaml_flags.c_includes else "" in
   let expected_exit_status =
     Ocaml_tools.expected_exit_status env (compiler :> Ocaml_tools.tool) in
+  let make_filename_quoted filename =
+    Ocaml_filetypes.make_filename filename |> Filename.quote
+  in
   let module_names =
     (binary_modules compiler#target env) ^ " " ^
-    (String.concat " " (List.map Ocaml_filetypes.make_filename modules)) in
+    (String.concat " " (List.map make_filename_quoted modules)) in
   let what = Printf.sprintf "Compiling program %s from modules %s"
     program_file module_names in
   Printf.fprintf log "%s\n%!" what;
