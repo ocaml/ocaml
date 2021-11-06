@@ -55,7 +55,8 @@ CAMLprim value caml_ephe_create (value len)
   size = Long_val (len)
        + 1 /* weak_list */
        + 1 /* the value */;
-  if (size < CAML_EPHE_FIRST_KEY || size > Max_wosize) caml_invalid_argument ("Weak.create");
+  if (size < CAML_EPHE_FIRST_KEY || size > Max_wosize)
+    caml_invalid_argument ("Weak.create");
   res = caml_alloc_shr (size, Abstract_tag);
 
   Ephe_link(res) = domain_state->ephe_info->live;
@@ -111,10 +112,12 @@ static void do_check_key_clean(value e, mlsize_t offset)
   if (caml_gc_phase != Phase_sweep_ephe) return;
 
   elt = Field(e, offset);
-  if (elt != caml_ephe_none && Is_block (elt) &&
-      !Is_young (elt) && is_unmarked(elt)) {
-    Field(e, offset) = caml_ephe_none;
-    Field(e,CAML_EPHE_DATA_OFFSET) = caml_ephe_none;
+  if (elt != caml_ephe_none && Is_block (elt) && !Is_young (elt)) {
+    if (Tag_val(elt) == Infix_tag) elt -= Infix_offset_val(elt);
+    if (is_unmarked(elt)) {
+      Field(e, offset) = caml_ephe_none;
+      Field(e,CAML_EPHE_DATA_OFFSET) = caml_ephe_none;
+    }
   }
 }
 
@@ -146,8 +149,7 @@ void caml_ephe_clean (value v) {
           }
         }
       }
-
-      // FIXME: Is_young -> Is_young here is probably not what we want, fix this.
+      if (Tag_val (child) == Infix_tag) child -= Infix_offset_val (child);
       if (!Is_young (child) && is_unmarked(child)) {
         release_data = 1;
         Field(v, i) = caml_ephe_none;
@@ -271,7 +273,7 @@ static value ephe_get_field_copy (value e, mlsize_t offset)
 {
   CAMLparam1 (e);
   CAMLlocal2 (res, elt);
-  mlsize_t i;
+  mlsize_t i, infix_offs = 0;
   value v; /* Caution: this is NOT a local root. */
   value f;
 
@@ -280,15 +282,31 @@ static value ephe_get_field_copy (value e, mlsize_t offset)
   if (v == caml_ephe_none) CAMLreturn (None_val);
 
   /** Don't copy custom_block #7279 */
-  if (Is_block(v) && //XXX KC: trunk includes Is_in_heap_or_young(v) &&
-      Tag_val(v) != Custom_tag) {
+  if (Is_block(v) && Tag_val(v) != Custom_tag) {
+    if (Tag_val(v) == Infix_tag) {
+      infix_offs = Infix_offset_val(v);
+      v -= infix_offs;
+    }
     elt = caml_alloc_shr (Wosize_val(v), Tag_val(v));
+
     clean_field(e, offset);
     v = Field(e, offset);
     if (v == caml_ephe_none) CAMLreturn (None_val);
 
+    if (Tag_val(v) == Infix_tag) {
+      infix_offs = Infix_offset_val(v);
+      v -= infix_offs;
+    }
+
     if (Tag_val(v) < No_scan_tag) {
-      for (i = 0; i < Wosize_val(v); i++) {
+      i = 0;
+      if (Tag_val (v) == Closure_tag) {
+        /* Direct copy of the code pointers and closure info fields */
+        i = Start_env_closinfo(Closinfo_val(v));
+        memcpy (Bp_val (elt), Bp_val (v), Bsize_wsize (i));
+      }
+      /* Field-by-field copy and darkening of the remaining fields */
+      for (/*nothing*/; i < Wosize_val(v); i++) {
         f = Field(v, i);
         caml_darken (0, f, 0);
         Store_field(elt, i, f);
@@ -300,7 +318,7 @@ static value ephe_get_field_copy (value e, mlsize_t offset)
     Field(e, offset) = elt = v;
   }
   res = caml_alloc_shr (1, Some_tag);
-  caml_initialize(&Field(res, 0), elt);
+  caml_initialize(&Field(res, 0), elt + infix_offs);
   CAMLreturn(res);
 }
 

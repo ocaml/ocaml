@@ -1,15 +1,17 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Damien Doligez, projet Para, INRIA Rocquencourt          */
-/*                                                                     */
-/*  Copyright 1997 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*              Damien Doligez, projet Para, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 /* Operations on weak arrays */
 
@@ -29,11 +31,11 @@ extern value caml_ephe_none;
 struct caml_ephe_info {
   value todo; /* These are ephemerons which need to be marked and swept in the
                  current cycle. If the ephemeron is alive, after marking, they
-                 go into the live list. */
-  value live; /* These are ephemerons which are alive in the current cycle.
-                 They still need to be swept to get rid of dead keys and
-                 values. Invariant: No keys are unreachable for these
-                 ephemerons. */
+                 go into the live list after cleaning them off the unreachable
+                 keys and releasing values if any of the keys are unreachable.
+                 */
+  value live; /* These are ephemerons which are alive in the current cycle,
+                 whose keys and data are live (or not set). */
   uintnat cycle;
   struct {
     value* todop;
