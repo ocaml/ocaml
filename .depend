@@ -3885,6 +3885,7 @@ file_formats/cmt_format.cmo : \
     typing/types.cmi \
     typing/typedtree.cmi \
     typing/tast_mapper.cmi \
+    typing/shape.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
     utils/load_path.cmi \
@@ -3898,6 +3899,7 @@ file_formats/cmt_format.cmx : \
     typing/types.cmx \
     typing/typedtree.cmx \
     typing/tast_mapper.cmx \
+    typing/shape.cmx \
     utils/misc.cmx \
     parsing/location.cmx \
     utils/load_path.cmx \
@@ -3910,6 +3912,7 @@ file_formats/cmt_format.cmx : \
 file_formats/cmt_format.cmi : \
     typing/types.cmi \
     typing/typedtree.cmi \
+    typing/shape.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
     typing/env.cmi \

@@ -3029,7 +3029,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
              exported are not reported as being unused. *)
           let annots = Cmt_format.Implementation str in
           Cmt_format.save_cmt (outputprefix ^ ".cmt") modulename
-            annots (Some sourcefile) initial_env None;
+            annots (Some sourcefile) initial_env None (Some shape);
           gen_annot outputprefix sourcefile annots;
           { structure = str;
             coercion;
@@ -3058,7 +3058,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
             in
             let annots = Cmt_format.Implementation str in
             Cmt_format.save_cmt  (outputprefix ^ ".cmt") modulename
-              annots (Some sourcefile) initial_env (Some cmi);
+              annots (Some sourcefile) initial_env (Some cmi) (Some shape);
             gen_annot outputprefix sourcefile annots
           end;
           { structure = str;
@@ -3075,13 +3075,13 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
             (Array.of_list (Cmt_format.get_saved_types ()))
         in
         Cmt_format.save_cmt  (outputprefix ^ ".cmt") modulename
-          annots (Some sourcefile) initial_env None;
+          annots (Some sourcefile) initial_env None None;
         gen_annot outputprefix sourcefile annots
       )
 
 let save_signature modname tsg outputprefix source_file initial_env cmi =
   Cmt_format.save_cmt  (outputprefix ^ ".cmti") modname
-    (Cmt_format.Interface tsg) (Some source_file) initial_env (Some cmi)
+    (Cmt_format.Interface tsg) (Some source_file) initial_env (Some cmi) None
 
 let type_interface env ast =
   transl_signature env ast
@@ -3159,7 +3159,7 @@ let package_units initial_env objfiles cmifile modulename =
         "(obtained by packing)" sg mlifile dclsig shape
     in
     Cmt_format.save_cmt  (prefix ^ ".cmt") modulename
-      (Cmt_format.Packed (sg, objfiles)) None initial_env  None ;
+      (Cmt_format.Packed (sg, objfiles)) None initial_env  None (Some shape);
     cc
   end else begin
     (* Determine imports *)
@@ -3177,7 +3177,7 @@ let package_units initial_env objfiles cmifile modulename =
       in
       Cmt_format.save_cmt (prefix ^ ".cmt")  modulename
         (Cmt_format.Packed (cmi.Cmi_format.cmi_sign, objfiles)) None initial_env
-        (Some cmi)
+        (Some cmi) (Some shape);
     end;
     Tcoerce_none
   end
