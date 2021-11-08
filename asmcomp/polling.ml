@@ -305,7 +305,7 @@ let report_error ppf = function
     List.fold_left (fun s i -> s + match i.desc with Iop(Ipoll _) -> 1 | _ -> 0)
       0 instrs in
    let num_user_polls = (List.length instrs) - num_inserted_polls in
-   if num_user_polls == 0 then
+   if num_user_polls = 0 then
     fprintf ppf "Function with poll-error attribute contains polling \
     points (inserted by the compiler)\n"
    else begin
