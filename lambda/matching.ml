@@ -1877,7 +1877,7 @@ let get_mod_field modname field =
 
 let code_force_lazy_block = get_mod_field "CamlinternalLazy" "force_lazy_block"
 
-let code_force_lazy = get_mod_field "CamlinternalLazy" "force"
+let code_force_lazy = get_mod_field "CamlinternalLazy" "force_gen"
 
 (* inline_lazy_force inlines the beginning of the code of Lazy.force. When
    the value argument is tagged as:
@@ -1986,7 +1986,7 @@ let inline_lazy_force arg loc =
       { ap_tailcall = Default_tailcall;
         ap_loc = loc;
         ap_func = Lazy.force code_force_lazy;
-        ap_args = [ arg ];
+        ap_args = [ Lconst (Const_base (Const_int 0)); arg ];
         ap_inlined = Default_inline;
         ap_specialised = Default_specialise
       }
