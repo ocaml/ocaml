@@ -26,7 +26,10 @@ module String = Misc.Stdlib.String
 let function_is_assumed_to_never_poll func =
   String.starts_with ~prefix:"caml_apply" func
   || String.starts_with ~prefix:"caml_send" func
-type error = Poll_error of Mach.instruction list
+
+(* These are used for the poll error annotation later on*)
+type polling_point = Alloc | Poll | Function_call | External_call
+type error = Poll_error of (polling_point * Debuginfo.t) list
 
 exception Error of error
 
@@ -247,20 +250,25 @@ let instr_body handler_safe i =
 let find_poll_alloc_or_calls instr =
   let f_match i =
       match i.desc with
-      | Iop(Ipoll _ | Ialloc _ | Icall_ind | Icall_imm _ |
-            Itailcall_ind | Itailcall_imm _ |
-            Iextcall { alloc = true }) -> true
+      | Iop(Ipoll _) -> Some (Poll, i.dbg)
+      | Iop(Ialloc _) -> Some (Alloc, i.dbg)
+      | Iop(Icall_ind | Icall_imm _ |
+            Itailcall_ind | Itailcall_imm _ ) -> Some (Function_call, i.dbg)
+      | Iop(Iextcall { alloc = true }) -> Some (External_call, i.dbg)
       | Iop(Imove | Ispill | Ireload | Iconst_int _ | Iconst_float _ |
             Iconst_symbol _ | Iextcall { alloc = false } | Istackoffset _ |
             Iload _ | Istore _ | Iintop _ | Iintop_imm _ | Ifloatofint |
             Iintoffloat | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf |
-            Iopaque | Ispecific _)-> false
+            Iopaque | Ispecific _)-> None
       | Iend | Ireturn | Iifthenelse _ | Iswitch _ | Icatch _ | Iexit _ |
-        Itrywith _ | Iraise _ -> false
+        Itrywith _ | Iraise _ -> None
     in
   let matches = ref [] in
     Mach.instr_iter
-      (fun i -> if f_match i then matches := i :: !matches else ())
+      (fun i ->
+        match f_match i with
+        | Some(x) -> matches := x :: !matches
+        | None -> ())
       instr;
   List.rev !matches
 
@@ -290,21 +298,21 @@ let requires_prologue_poll ~future_funcnames ~fun_name i =
 
 (* Error report *)
 
-let instr_type i =
-  match i.desc with
-  | Iop(Ipoll _) -> "inserted poll"
-  | Iop(Ialloc _) -> "allocation"
-  | Iop(Icall_ind | Icall_imm _ |
-        Itailcall_ind | Itailcall_imm _) -> "function call"
-  | Iop(Iextcall { alloc = true }) -> "external call that allocates"
-  | _ -> assert(false) (* This should never happen *)
+let instr_type p =
+  match p with
+  | Poll -> "inserted poll"
+  | Alloc -> "allocation"
+  | Function_call -> "function call"
+  | External_call -> "external call that allocates"
 
 let report_error ppf = function
 | Poll_error instrs ->
   begin
     let num_inserted_polls =
       List.fold_left
-      (fun s i -> s + match i.desc with Iop(Ipoll _) -> 1 | _ -> 0) 0 instrs in
+      (fun s (p,_) -> s + match p with Poll -> 1
+                      | Alloc | Function_call | External_call -> 0
+      ) 0 instrs in
       let num_user_polls = (List.length instrs) - num_inserted_polls in
       if num_user_polls = 0 then
         fprintf ppf "Function with poll-error attribute contains polling \
@@ -312,13 +320,13 @@ let report_error ppf = function
       else begin
         fprintf ppf
         "Function with poll-error attribute contains polling points:\n";
-        List.iter (fun i ->
-          begin match i.desc with
-          | Iop(Ipoll _) -> ()
-          | _ ->
+        List.iter (fun (p,dbg) ->
+          begin match p with
+          | Poll -> ()
+          | Alloc | Function_call | External_call ->
             begin
-            fprintf ppf "\t%s at " (instr_type i);
-            Location.print_loc ppf (Debuginfo.to_location i.dbg);
+            fprintf ppf "\t%s at " (instr_type p);
+            Location.print_loc ppf (Debuginfo.to_location dbg);
             fprintf ppf "\n"
             end
           end
