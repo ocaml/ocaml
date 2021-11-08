@@ -324,11 +324,9 @@ let report_error ppf = function
           begin match p with
           | Poll -> ()
           | Alloc | Function_call | External_call ->
-            begin
             fprintf ppf "\t%s at " (instr_type p);
             Location.print_loc ppf (Debuginfo.to_location dbg);
             fprintf ppf "\n"
-            end
           end
         ) instrs;
         if num_inserted_polls > 0 then
