@@ -89,55 +89,7 @@ end
 
 (* *)
 
-module Uid = struct
-  type t =
-    | Compilation_unit of string
-    | Item of { comp_unit: string; id: int }
-    | Internal
-    | Predef of string
-
-  include Identifiable.Make(struct
-    type nonrec t = t
-
-    let equal (x : t) y = x = y
-    let compare (x : t) y = compare x y
-    let hash (x : t) = Hashtbl.hash x
-
-    let print fmt = function
-      | Internal -> Format.pp_print_string fmt "<internal>"
-      | Predef name -> Format.fprintf fmt "<predef:%s>" name
-      | Compilation_unit s -> Format.pp_print_string fmt s
-      | Item { comp_unit; id } -> Format.fprintf fmt "%s.%d" comp_unit id
-
-    let output oc t =
-      let fmt = Format.formatter_of_out_channel oc in
-      print fmt t
-  end)
-
-  let id = ref (-1)
-
-  let reinit () = id := (-1)
-
-  let mk  ~current_unit =
-      incr id;
-      Item { comp_unit = current_unit; id = !id }
-
-  let of_compilation_unit_id id =
-    if not (Ident.persistent id) then
-      Misc.fatal_errorf "Types.Uid.of_compilation_unit_id %S" (Ident.name id);
-    Compilation_unit (Ident.name id)
-
-  let of_predef_id id =
-    if not (Ident.is_predef id) then
-      Misc.fatal_errorf "Types.Uid.of_predef_id %S" (Ident.name id);
-    Predef (Ident.name id)
-
-  let internal_not_actually_unique = Internal
-
-  let for_actual_declaration = function
-    | Item _ -> true
-    | _ -> false
-end
+module Uid = Shape.Uid
 
 (* Maps of methods and instance variables *)
 

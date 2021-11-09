@@ -1154,6 +1154,22 @@ typing/rec_check.cmx : \
 typing/rec_check.cmi : \
     typing/typedtree.cmi \
     typing/ident.cmi
+typing/shape.cmo : \
+    typing/path.cmi \
+    utils/misc.cmi \
+    utils/identifiable.cmi \
+    typing/ident.cmi \
+    typing/shape.cmi
+typing/shape.cmx : \
+    typing/path.cmx \
+    utils/misc.cmx \
+    utils/identifiable.cmx \
+    typing/ident.cmx \
+    typing/shape.cmi
+typing/shape.cmi : \
+    typing/path.cmi \
+    utils/identifiable.cmi \
+    typing/ident.cmi
 typing/signature_group.cmo : \
     typing/types.cmi \
     typing/ident.cmi \
@@ -1630,6 +1646,7 @@ typing/typemod.cmo : \
     typing/typeclass.cmi \
     typing/subst.cmi \
     typing/signature_group.cmi \
+    typing/shape.cmi \
     typing/printtyp.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
@@ -1664,6 +1681,7 @@ typing/typemod.cmx : \
     typing/typeclass.cmx \
     typing/subst.cmx \
     typing/signature_group.cmx \
+    typing/shape.cmx \
     typing/printtyp.cmx \
     typing/path.cmx \
     parsing/parsetree.cmi \
@@ -1692,6 +1710,7 @@ typing/typemod.cmi : \
     typing/types.cmi \
     typing/typedtree.cmi \
     typing/typedecl.cmi \
+    typing/shape.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
     parsing/longident.cmi \
@@ -1738,6 +1757,7 @@ typing/typeopt.cmi : \
     typing/env.cmi
 typing/types.cmo : \
     typing/type_immediacy.cmi \
+    typing/shape.cmi \
     typing/primitive.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
@@ -1745,13 +1765,13 @@ typing/types.cmo : \
     parsing/longident.cmi \
     parsing/location.cmi \
     utils/local_store.cmi \
-    utils/identifiable.cmi \
     typing/ident.cmi \
     utils/config.cmi \
     parsing/asttypes.cmi \
     typing/types.cmi
 typing/types.cmx : \
     typing/type_immediacy.cmx \
+    typing/shape.cmx \
     typing/primitive.cmx \
     typing/path.cmx \
     parsing/parsetree.cmi \
@@ -1759,19 +1779,18 @@ typing/types.cmx : \
     parsing/longident.cmx \
     parsing/location.cmx \
     utils/local_store.cmx \
-    utils/identifiable.cmx \
     typing/ident.cmx \
     utils/config.cmx \
     parsing/asttypes.cmi \
     typing/types.cmi
 typing/types.cmi : \
     typing/type_immediacy.cmi \
+    typing/shape.cmi \
     typing/primitive.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
     parsing/longident.cmi \
     parsing/location.cmi \
-    utils/identifiable.cmi \
     typing/ident.cmi \
     parsing/asttypes.cmi
 typing/typetexp.cmo : \

@@ -23,39 +23,8 @@ open Format
 
 let () = Includemod_errorprinter.register ()
 
+module Sig_component_kind = Shape.Sig_component_kind
 module String = Misc.Stdlib.String
-
-module Sig_component_kind = struct
-  type t =
-    | Value
-    | Type
-    | Module
-    | Module_type
-    | Extension_constructor
-    | Class
-    | Class_type
-
-  let to_string = function
-    | Value -> "value"
-    | Type -> "type"
-    | Module -> "module"
-    | Module_type -> "module type"
-    | Extension_constructor -> "extension constructor"
-    | Class -> "class"
-    | Class_type -> "class type"
-
-  (** Whether the name of a component of that kind can appear in a type. *)
-  let can_appear_in_types = function
-    | Value
-    | Extension_constructor ->
-        false
-    | Type
-    | Module
-    | Module_type
-    | Class
-    | Class_type ->
-        true
-end
 
 type hiding_error =
   | Illegal_shadowing of {
