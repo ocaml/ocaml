@@ -87,6 +87,7 @@ make_opcodes.cmx :
 objinfo.cmo : \
     ../bytecomp/symtable.cmi \
     ../middle_end/symbol.cmi \
+    ../typing/shape.cmi \
     ../middle_end/printclambda.cmi \
     ../utils/misc.cmi \
     ../middle_end/linkage_name.cmi \
@@ -103,6 +104,7 @@ objinfo.cmo : \
 objinfo.cmx : \
     ../bytecomp/symtable.cmx \
     ../middle_end/symbol.cmx \
+    ../typing/shape.cmx \
     ../middle_end/printclambda.cmx \
     ../utils/misc.cmx \
     ../middle_end/linkage_name.cmx \

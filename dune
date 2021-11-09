@@ -55,7 +55,7 @@
    asttypes parsetree
 
    ;; TYPING
-   ident path primitive types btype oprint subst predef datarepr
+   ident path primitive shape types btype oprint subst predef datarepr
    cmi_format persistent_env env type_immediacy errortrace
    typedtree printtyped ctype printtyp includeclass mtype envaux includecore
    tast_iterator tast_mapper signature_group cmt_format untypeast
