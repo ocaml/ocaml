@@ -121,6 +121,7 @@ module Function_decls = struct
     let specialise t = t.attr.specialise
     let is_a_functor t = t.attr.is_a_functor
     let stub t = t.attr.stub
+    let poll_attribute t = t.attr.poll
     let loc t = t.loc
 
   end

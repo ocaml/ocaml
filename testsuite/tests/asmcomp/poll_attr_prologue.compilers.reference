@@ -1,0 +1,5 @@
+File "poll_attr_prologue.ml", line 1:
+Error: Function with poll-error attribute contains polling points:
+	function call at File "poll_attr_prologue.ml", line 16, characters 15-38
+	(plus compiler-inserted polling point(s) in prologue and/or loop back edges)
+

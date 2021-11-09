@@ -1,0 +1,3 @@
+File "poll_attr_inserted.ml", line 1:
+Error: Function with poll-error attribute contains polling points (inserted by the compiler)
+

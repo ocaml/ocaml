@@ -127,6 +127,7 @@ and function_declaration = {
   inline : Lambda.inline_attribute;
   specialise : Lambda.specialise_attribute;
   is_a_functor : bool;
+  poll: Lambda.poll_attribute;
 }
 
 and switch = {
@@ -999,6 +1000,7 @@ let update_body_of_function_declaration (func_decl: function_declaration)
     inline = func_decl.inline;
     specialise = func_decl.specialise;
     is_a_functor = func_decl.is_a_functor;
+    poll = func_decl.poll;
   }
 
 let update_function_decl's_params_and_body
@@ -1013,13 +1015,14 @@ let update_function_decl's_params_and_body
     inline = func_decl.inline;
     specialise = func_decl.specialise;
     is_a_functor = func_decl.is_a_functor;
+    poll = func_decl.poll;
   }
 
 
 let create_function_declaration ~params ~body ~stub ~dbg
       ~(inline : Lambda.inline_attribute)
       ~(specialise : Lambda.specialise_attribute) ~is_a_functor
-      ~closure_origin
+      ~closure_origin ~poll
       : function_declaration =
   begin match stub, inline with
   | true, (Never_inline | Default_inline)
@@ -1049,6 +1052,7 @@ let create_function_declaration ~params ~body ~stub ~dbg
     inline;
     specialise;
     is_a_functor;
+    poll;
   }
 
 let update_function_declaration fun_decl ~params ~body =
