@@ -748,6 +748,7 @@ typing/includemod.cmo : \
     typing/types.cmi \
     typing/typedtree.cmi \
     typing/subst.cmi \
+    typing/shape.cmi \
     typing/printtyp.cmi \
     typing/primitive.cmi \
     typing/predef.cmi \
@@ -770,6 +771,7 @@ typing/includemod.cmx : \
     typing/types.cmx \
     typing/typedtree.cmx \
     typing/subst.cmx \
+    typing/shape.cmx \
     typing/printtyp.cmx \
     typing/primitive.cmx \
     typing/predef.cmx \
@@ -791,6 +793,7 @@ typing/includemod.cmx : \
 typing/includemod.cmi : \
     typing/types.cmi \
     typing/typedtree.cmi \
+    typing/shape.cmi \
     typing/path.cmi \
     parsing/longident.cmi \
     parsing/location.cmi \
@@ -1347,6 +1350,7 @@ typing/typecore.cmo : \
     typing/typedtree.cmi \
     typing/typedecl.cmi \
     typing/subst.cmi \
+    typing/shape.cmi \
     typing/rec_check.cmi \
     typing/printtyp.cmi \
     typing/printpat.cmi \
@@ -1378,6 +1382,7 @@ typing/typecore.cmx : \
     typing/typedtree.cmx \
     typing/typedecl.cmx \
     typing/subst.cmx \
+    typing/shape.cmx \
     typing/rec_check.cmx \
     typing/printtyp.cmx \
     typing/printpat.cmx \
@@ -1405,6 +1410,7 @@ typing/typecore.cmx : \
 typing/typecore.cmi : \
     typing/types.cmi \
     typing/typedtree.cmi \
+    typing/shape.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
     parsing/longident.cmi \
@@ -1609,6 +1615,7 @@ typing/typedecl_variance.cmi : \
     parsing/asttypes.cmi
 typing/typedtree.cmo : \
     typing/types.cmi \
+    typing/shape.cmi \
     typing/primitive.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
@@ -1620,6 +1627,7 @@ typing/typedtree.cmo : \
     typing/typedtree.cmi
 typing/typedtree.cmx : \
     typing/types.cmx \
+    typing/shape.cmx \
     typing/primitive.cmx \
     typing/path.cmx \
     parsing/parsetree.cmi \
@@ -1631,6 +1639,7 @@ typing/typedtree.cmx : \
     typing/typedtree.cmi
 typing/typedtree.cmi : \
     typing/types.cmi \
+    typing/shape.cmi \
     typing/primitive.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
