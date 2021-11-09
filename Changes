@@ -130,6 +130,8 @@ Working version
   (Gabriel Scherer, review by Luc Maranget and Vincent Laviron)
 
 ### Build system:
+- #11590: Allow installing in folder with space in nameh
+   (Élie Brami, review by Sébastien Hinderer)
 
 ### Bug fixes:
 
