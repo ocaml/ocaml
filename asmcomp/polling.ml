@@ -18,6 +18,7 @@
 (**************************************************************************)
 
 open Mach
+open Format
 
 module Int = Numbers.Int
 module String = Misc.Stdlib.String
@@ -25,6 +26,12 @@ module String = Misc.Stdlib.String
 let function_is_assumed_to_never_poll func =
   String.starts_with ~prefix:"caml_apply" func
   || String.starts_with ~prefix:"caml_send" func
+
+(* These are used for the poll error annotation later on*)
+type polling_point = Alloc | Poll | Function_call | External_call
+type error = Poll_error of (polling_point * Debuginfo.t) list
+
+exception Error of error
 
 (* Detection of recursive handlers that are not guaranteed to poll
    at every loop iteration. *)
@@ -184,7 +191,7 @@ let contains_polls = ref false
 
 let add_poll i =
   contains_polls := true;
-  Mach.instr_cons (Iop (Ipoll { return_label = None })) [||] [||] i
+  Mach.instr_cons_debug (Iop (Ipoll { return_label = None })) [||] [||] i.dbg i
 
 let instr_body handler_safe i =
   let add_unsafe_handler ube (k, _) =
@@ -240,12 +247,44 @@ let instr_body handler_safe i =
   in
   instr Int.Set.empty i
 
+let find_poll_alloc_or_calls instr =
+  let f_match i =
+      match i.desc with
+      | Iop(Ipoll _) -> Some (Poll, i.dbg)
+      | Iop(Ialloc _) -> Some (Alloc, i.dbg)
+      | Iop(Icall_ind | Icall_imm _ |
+            Itailcall_ind | Itailcall_imm _ ) -> Some (Function_call, i.dbg)
+      | Iop(Iextcall { alloc = true }) -> Some (External_call, i.dbg)
+      | Iop(Imove | Ispill | Ireload | Iconst_int _ | Iconst_float _ |
+            Iconst_symbol _ | Iextcall { alloc = false } | Istackoffset _ |
+            Iload _ | Istore _ | Iintop _ | Iintop_imm _ | Ifloatofint |
+            Iintoffloat | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf |
+            Iopaque | Ispecific _)-> None
+      | Iend | Ireturn | Iifthenelse _ | Iswitch _ | Icatch _ | Iexit _ |
+        Itrywith _ | Iraise _ -> None
+    in
+  let matches = ref [] in
+    Mach.instr_iter
+      (fun i ->
+        match f_match i with
+        | Some(x) -> matches := x :: !matches
+        | None -> ())
+      instr;
+  List.rev !matches
+
 let instrument_fundecl ~future_funcnames:_ (f : Mach.fundecl) : Mach.fundecl =
   if function_is_assumed_to_never_poll f.fun_name then f
   else begin
     let handler_needs_poll = polled_loops_analysis f.fun_body in
     contains_polls := false;
     let new_body = instr_body handler_needs_poll f.fun_body in
+    begin match f.fun_poll with
+    | Error_poll -> begin
+        match find_poll_alloc_or_calls new_body with
+        | [] -> ()
+        | poll_error_instrs -> raise (Error(Poll_error poll_error_instrs))
+      end
+    | Default_poll -> () end;
     let new_contains_calls = f.fun_contains_calls || !contains_polls in
     { f with fun_body = new_body; fun_contains_calls = new_contains_calls }
   end
@@ -256,3 +295,49 @@ let requires_prologue_poll ~future_funcnames ~fun_name i =
     match potentially_recursive_tailcall ~future_funcnames i with
     | Might_not_poll -> true
     | Always_polls -> false
+
+(* Error report *)
+
+let instr_type p =
+  match p with
+  | Poll -> "inserted poll"
+  | Alloc -> "allocation"
+  | Function_call -> "function call"
+  | External_call -> "external call that allocates"
+
+let report_error ppf = function
+| Poll_error instrs ->
+  begin
+    let num_inserted_polls =
+      List.fold_left
+      (fun s (p,_) -> s + match p with Poll -> 1
+                      | Alloc | Function_call | External_call -> 0
+      ) 0 instrs in
+      let num_user_polls = (List.length instrs) - num_inserted_polls in
+      if num_user_polls = 0 then
+        fprintf ppf "Function with poll-error attribute contains polling \
+        points (inserted by the compiler)\n"
+      else begin
+        fprintf ppf
+        "Function with poll-error attribute contains polling points:\n";
+        List.iter (fun (p,dbg) ->
+          begin match p with
+          | Poll -> ()
+          | Alloc | Function_call | External_call ->
+            fprintf ppf "\t%s at " (instr_type p);
+            Location.print_loc ppf (Debuginfo.to_location dbg);
+            fprintf ppf "\n"
+          end
+        ) instrs;
+        if num_inserted_polls > 0 then
+          fprintf ppf "\t(plus compiler-inserted polling point(s) in prologue \
+          and/or loop back edges)\n"
+      end
+  end
+
+let () =
+  Location.register_error_of_exn
+    (function
+      | Error err -> Some (Location.error_of_printer_file report_error err)
+      | _ -> None
+    )

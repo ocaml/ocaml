@@ -537,6 +537,7 @@ let rewrite_function ~lhs_of_application ~closure_id_being_applied
       ~specialise:function_body.specialise
       ~is_a_functor:function_body.is_a_functor
       ~closure_origin:(Closure_origin.create (Closure_id.wrap new_fun_var))
+      ~poll:function_body.poll
   in
   let new_funs =
     Variable.Map.add new_fun_var new_function_decl state.new_funs

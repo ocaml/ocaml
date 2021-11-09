@@ -467,7 +467,11 @@ let function_attribute ppf t =
   | Never_local -> fprintf ppf "never_local@ "
   end;
   if t.tmc_candidate then
-    fprintf ppf "tail_mod_cons@ "
+    fprintf ppf "tail_mod_cons@ ";
+  begin match t.poll with
+  | Default_poll -> ()
+  | Error_poll -> fprintf ppf "error_poll@ "
+  end
 
 let apply_tailcall_attribute ppf = function
   | Default_tailcall -> ()
