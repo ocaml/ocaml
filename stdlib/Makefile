@@ -55,16 +55,28 @@ endif
 allopt: stdlib.cmxa std_exit.cmx
 opt.opt: allopt
 
+.PHONY: check-stale
+check-stale:
+# On cygwin globasciiranges is unset so this glob also match A-Z. We disable
+# it only on this shell command.
+	2>/dev/null shopt -s globasciiranges || true; \
+  for files in '$(INSTALL_LIBDIR)'/stdlib__[a-z]*.cm*; do \
+    case $$files in \
+    '$(INSTALL_LIBDIR)/stdlib__[a-z]*.cm*') \
+    ;; \
+    *) \
+      echo "'"'$(INSTALL_LIBDIR)'"'"' contains stale stdlib artefacts \
+please execute:'; \
+      echo '    rm '"'"'$(INSTALL_LIBDIR)'"'"'/stdlib__[a-z]*.cm*'; \
+      echo 'and re-run make install'; \
+      exit 1; \
+    ;; \
+    esac \
+  done
+
 .PHONY: install
 # Ensure any pre-4.13 lowercased artefacts are removed on macOS and Windows
-install::
-	stale="$(filter-out $(notdir $(wildcard stdlib__*.cmi)), \
-         $(notdir $(wildcard $(INSTALL_LIBDIR)/stdlib__*.cmi)))"; \
-  if test -n "$$stale" ; then \
-    echo "$(INSTALL_LIBDIR) contains stale stdlib artefacts"; \
-    echo "Please rm $(INSTALL_LIBDIR)/stdlib__*.cm* and re-run make install"; \
-    exit 1; \
-  fi
+install:: check-stale
 
 install::
 	$(INSTALL_DATA) \
@@ -92,14 +104,7 @@ installopt: installopt-default
 
 .PHONY: installopt-default
 # Ensure any pre-4.13 lowercased artefacts are removed on macOS and Windows
-installopt-default::
-	stale="$(filter-out $(notdir $(wildcard stdlib__*.cmx)), \
-         $(notdir $(wildcard $(INSTALL_LIBDIR)/stdlib__*.cmx)))"; \
-  if test -n "$$stale" ; then \
-    echo "$(INSTALL_LIBDIR) contains stale stdlib artefacts"; \
-    echo "Please rm $(INSTALL_LIBDIR)/stdlib__*.cmx and re-run make install"; \
-    exit 1; \
-  fi
+installopt-default:: check-stale
 
 installopt-default::
 	$(INSTALL_DATA) \
