@@ -5938,6 +5938,7 @@ driver/compile_common.cmo : \
     typing/typemod.cmi \
     typing/typedtree.cmi \
     typing/typecore.cmi \
+    typing/shape.cmi \
     utils/profile.cmi \
     typing/printtyped.cmi \
     typing/printtyp.cmi \
@@ -5958,6 +5959,7 @@ driver/compile_common.cmx : \
     typing/typemod.cmx \
     typing/typedtree.cmx \
     typing/typecore.cmx \
+    typing/shape.cmx \
     utils/profile.cmx \
     typing/printtyped.cmx \
     typing/printtyp.cmx \
@@ -6439,6 +6441,7 @@ toplevel/byte/topeval.cmo : \
     toplevel/topcommon.cmi \
     bytecomp/symtable.cmi \
     lambda/simplif.cmi \
+    typing/shape.cmi \
     typing/printtyped.cmi \
     typing/printtyp.cmi \
     lambda/printlambda.cmi \
@@ -6474,6 +6477,7 @@ toplevel/byte/topeval.cmx : \
     toplevel/topcommon.cmx \
     bytecomp/symtable.cmx \
     lambda/simplif.cmx \
+    typing/shape.cmx \
     typing/printtyped.cmx \
     typing/printtyp.cmx \
     lambda/printlambda.cmx \
@@ -6580,6 +6584,7 @@ toplevel/native/topeval.cmo : \
     toplevel/native/tophooks.cmi \
     toplevel/topcommon.cmi \
     lambda/simplif.cmi \
+    typing/shape.cmi \
     typing/printtyped.cmi \
     typing/printtyp.cmi \
     lambda/printlambda.cmi \
@@ -6611,6 +6616,7 @@ toplevel/native/topeval.cmx : \
     toplevel/native/tophooks.cmx \
     toplevel/topcommon.cmx \
     lambda/simplif.cmx \
+    typing/shape.cmx \
     typing/printtyped.cmx \
     typing/printtyp.cmx \
     lambda/printlambda.cmx \
