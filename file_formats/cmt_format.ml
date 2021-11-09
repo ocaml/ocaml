@@ -60,6 +60,8 @@ type cmt_infos = {
   cmt_imports : (string * Digest.t option) list;
   cmt_interface_digest : Digest.t option;
   cmt_use_summaries : bool;
+  cmt_uid_to_loc : Location.t Shape.Uid.Tbl.t;
+  cmt_impl_shape : Shape.t option; (* None for mli *)
 }
 
 type error =
@@ -162,7 +164,7 @@ let record_value_dependency vd1 vd2 =
   if vd1.Types.val_loc <> vd2.Types.val_loc then
     value_deps := (vd1, vd2) :: !value_deps
 
-let save_cmt filename modname binary_annots sourcefile initial_env cmi =
+let save_cmt filename modname binary_annots sourcefile initial_env cmi shape =
   if !Clflags.binary_annotations && not !Clflags.print_types then begin
     Misc.output_to_file_via_temporary
        ~mode:[Open_binary] filename
@@ -188,6 +190,8 @@ let save_cmt filename modname binary_annots sourcefile initial_env cmi =
            cmt_imports = List.sort compare (Env.imports ());
            cmt_interface_digest = this_crc;
            cmt_use_summaries = need_to_clear_env;
+           cmt_uid_to_loc = Env.get_uid_to_loc_tbl ();
+           cmt_impl_shape = shape;
          } in
          output_cmt oc cmt)
   end;

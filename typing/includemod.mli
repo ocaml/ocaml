@@ -150,6 +150,10 @@ val modtypes:
   loc:Location.t -> Env.t -> mark:mark ->
   module_type -> module_type -> module_coercion
 
+val modtypes_with_shape:
+  shape:Shape.t -> loc:Location.t -> Env.t -> mark:mark ->
+  module_type -> module_type -> module_coercion * Shape.t
+
 val strengthened_module_decl:
   loc:Location.t -> aliasable:bool -> Env.t -> mark:mark ->
   module_declaration -> Path.t -> module_declaration -> module_coercion
@@ -169,7 +173,7 @@ val signatures: Env.t -> mark:mark ->
 
 val compunit:
       Env.t -> mark:mark -> string -> signature ->
-      string -> signature -> module_coercion
+      string -> signature -> Shape.t -> module_coercion * Shape.t
 
 val type_declarations:
   loc:Location.t -> Env.t -> mark:mark ->
