@@ -171,21 +171,109 @@ let bigarray_type_kind_and_layout env typ =
       (Pbigarray_unknown, Pbigarray_unknown_layout)
 
 let value_kind env ty =
-  let ty = scrape_ty env ty in
-  if is_immediate (Ctype.immediacy env ty) then Pintval
-  else begin
+  let rec loop env ~fuel ty : Lambda.value_kind =
+    let ty = scrape_ty env ty in
+    if is_immediate (Ctype.immediacy env ty) then Pintval
+    else
     match get_desc ty with
     | Tconstr(p, _, _) when Path.same p Predef.path_float ->
-        Pfloatval
+      Pfloatval
     | Tconstr(p, _, _) when Path.same p Predef.path_int32 ->
-        Pboxedintval Pint32
+      Pboxedintval Pint32
     | Tconstr(p, _, _) when Path.same p Predef.path_int64 ->
-        Pboxedintval Pint64
+      Pboxedintval Pint64
     | Tconstr(p, _, _) when Path.same p Predef.path_nativeint ->
-        Pboxedintval Pnativeint
-    | _ ->
+      Pboxedintval Pnativeint
+    | Tconstr(p, _, _) ->
+      if fuel <= 0 then
         Pgenval
-  end
+      else begin
+        let fuel = fuel - 1 in
+        match (Env.find_type p env).type_kind with
+        | exception Not_found ->
+          Pgenval
+        | Type_variant (constructors, variant_representation) ->
+          let is_constant (constructor : Types.constructor_declaration) =
+            match constructor.cd_args with
+            | Cstr_tuple [] -> true
+            | _ -> false
+          in
+          if List.for_all is_constant constructors then
+            Pintval
+          else begin match constructors with
+            | [ constructor ] ->
+              let is_mutable, fields =
+                match constructor.cd_args with
+                | Cstr_tuple fields ->
+                  false, List.map (loop env ~fuel) fields
+                | Cstr_record labels ->
+                  List.fold_left_map
+                    (fun is_mutable (label:Types.label_declaration) ->
+                       let is_mutable =
+                         match label.ld_mutable with
+                         | Mutable -> true
+                         | Immutable -> is_mutable
+                       in
+                       is_mutable, loop env ~fuel label.ld_type)
+                    false labels
+              in
+              if is_mutable then
+                Pgenval
+              else begin match variant_representation with
+                | Variant_regular ->
+                  Pblock { tag = 0; fields }
+                | Variant_unboxed ->
+                  (* Reachable only when get_unboxed_type_representation
+                     fails to expand the type: useless or unavailable info *)
+                  Pgenval
+              end
+            | _ ->
+              Pgenval
+          end
+        | Type_record (labels, record_representation) ->
+          let is_mutable, fields =
+            List.fold_left_map
+              (fun is_mutable (label:Types.label_declaration) ->
+                 let is_mutable =
+                   match label.ld_mutable with
+                   | Mutable -> true
+                   | Immutable -> is_mutable
+                 in
+                 is_mutable, loop env ~fuel label.ld_type)
+              false labels
+          in
+          if is_mutable then
+            Pgenval
+          else begin match record_representation with
+            | Record_regular ->
+              Pblock { tag = 0; fields }
+            | Record_float ->
+              Pblock { tag = Obj.double_array_tag;
+                       fields = List.map (fun _ -> Pfloatval) fields }
+            | Record_inlined tag ->
+              Pblock { tag; fields }
+            | Record_unboxed _ ->
+              (* Reachable only when get_unboxed_type_representation
+                 fails to expand the type: useless or unavailable info *)
+              Pgenval
+            | Record_extension _ ->
+              Pgenval
+          end
+        | Type_abstract | Type_open -> Pgenval
+      end
+    | Ttuple fields ->
+      if fuel <= 0 then
+        Pgenval
+      else begin
+        let fuel = fuel - 1 in
+        let fields = List.map (loop env ~fuel) fields in
+        Pblock { tag = 0; fields }
+      end
+    | _ ->
+      Pgenval
+  in
+  let max_depth = 2 in
+  loop env ~fuel:max_depth ty
 
 let function_return_value_kind env ty =
   match is_function_type env ty with
@@ -226,6 +314,12 @@ let classify_lazy_argument : Typedtree.expression ->
     | _ ->
        `Other
 
-let value_kind_union k1 k2 =
-  if k1 = k2 then k1
-  else Pgenval
+let rec value_kind_union (k1 : Lambda.value_kind) (k2 : Lambda.value_kind) =
+  match k1, k2 with
+  | Pblock { tag = tag1; fields = fields1 },
+    Pblock { tag = tag2; fields = fields2 }
+    when tag1 = tag2 && List.length fields1 = List.length fields2 ->
+    Pblock { tag = tag1; fields = List.map2 value_kind_union fields1 fields2 }
+  | _, _ ->
+    if k1 = k2 then k1
+    else Pgenval

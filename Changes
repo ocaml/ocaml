@@ -355,6 +355,9 @@ OCaml 4.14.0
   (David Allsopp and Nathan Rebours, review by Louis Gesbert,
   Nicolás Ojeda Bär and Gabriel Scherer)
 
+- #10716: More precise type annotations on Lambda
+  (Pierre Chambart, review by Vincent Laviron and ...)
+
 ### Build system:
 
 - #10717: Simplify the installation of man pages

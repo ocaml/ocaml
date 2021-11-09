@@ -47,7 +47,7 @@ let[@tail_mod_cons] rec rec_map f = function
      (function f param tail_mod_cons
        (if param
          (let (*match* =a (field 0 param))
-           (makeblock 0
+           (makeblock 0 ([0: *, *])
              (let (block = (makemutable 0 (apply f (field 0 *match*)) 24029))
                (seq (apply rec_map_dps block 1 f (field 1 *match*)) block))))
          0))
@@ -60,7 +60,7 @@ let[@tail_mod_cons] rec rec_map f = function
              block = (makemutable 0 block1_arg0 24029))
             (seq
               (setfield_ptr(heap-init)_computed dst offset
-                (makeblock 0 block))
+                (makeblock 0 ([0: *, *]) block))
               (apply rec_map_dps block 1 f (field 1 *match*) tailcall)))
           (setfield_ptr(heap-init)_computed dst offset 0))))
   (apply (field 1 (global Toploop!)) "rec_map" rec_map))
@@ -80,9 +80,12 @@ let[@tail_mod_cons] rec trip = function
      (function param tail_mod_cons
        (if param
          (let (x =a (field 0 param))
-           (makeblock 0 (makeblock 0 (*,int) x 0)
-             (makeblock 0 (makeblock 0 (*,int) x 1)
-               (let (block = (makemutable 0 (makeblock 0 (*,int) x 2) 24029))
+           (makeblock 0 ([0: *, int],*) (makeblock 0 (*,int) x 0)
+             (makeblock 0 ([0: *, int],*) (makeblock 0 (*,int) x 1)
+               (let
+                 (block =
+                    (makemutable 0 ([0: *, int],*) (makeblock 0 (*,int) x 2)
+                      24029))
                  (seq (apply trip_dps block 1 (field 1 param)) block)))))
          0))
     trip_dps
@@ -93,10 +96,11 @@ let[@tail_mod_cons] rec trip = function
              block0_arg0 = (makeblock 0 (*,int) x 0)
              block1_arg0 = (makeblock 0 (*,int) x 1)
              block2_arg0 = (makeblock 0 (*,int) x 2)
-             block = (makemutable 0 block2_arg0 24029))
+             block = (makemutable 0 ([0: *, int],*) block2_arg0 24029))
             (seq
               (setfield_ptr(heap-init)_computed dst offset
-                (makeblock 0 block0_arg0 (makeblock 0 block1_arg0 block)))
+                (makeblock 0 ([0: *, int],*) block0_arg0
+                  (makeblock 0 ([0: *, int],*) block1_arg0 block)))
               (apply trip_dps block 1 (field 1 param) tailcall)))
           (setfield_ptr(heap-init)_computed dst offset 0))))
   (apply (field 1 (global Toploop!)) "trip" trip))
@@ -193,7 +197,7 @@ let[@tail_mod_cons] rec smap_stutter f xs n =
 type 'a stream = { hd : 'a; tl : unit -> 'a stream; }
 (letrec
   (smap_stutter
-     (function f xs n[int] tail_mod_cons
+     (function f xs[0: *, *] n[int] tail_mod_cons
        (if (== n 0) 0
          (makeblock 0 (apply f 0)
            (let
@@ -204,7 +208,7 @@ type 'a stream = { hd : 'a; tl : unit -> 'a stream; }
                  (- n 1))
                block)))))
     smap_stutter_dps
-      (function dst offset[int] f xs n[int] tail_mod_cons
+      (function dst offset[int] f xs[0: *, *] n[int] tail_mod_cons
         (if (== n 0) (setfield_ptr(heap-init)_computed dst offset 0)
           (let
             (block0_arg0 = (apply f 0)

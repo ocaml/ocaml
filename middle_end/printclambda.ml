@@ -25,16 +25,6 @@ let mutable_flag = function
   | Mutable-> "[mut]"
   | Immutable -> ""
 
-let value_kind =
-  let open Lambda in
-  function
-  | Pgenval -> ""
-  | Pintval -> ":int"
-  | Pfloatval -> ":float"
-  | Pboxedintval Pnativeint -> ":nativeint"
-  | Pboxedintval Pint32 -> ":int32"
-  | Pboxedintval Pint64 -> ":int64"
-
 let rec structured_constant ppf = function
   | Uconst_float x -> fprintf ppf "%F" x
   | Uconst_int32 x -> fprintf ppf "%ldl" x
@@ -64,11 +54,11 @@ and one_fun ppf f =
       (fun (x, k) ->
          fprintf ppf "@ %a%a"
            VP.print x
-           Printlambda.value_kind k
+           Printlambda.argument_kind k
       )
   in
-  fprintf ppf "(fun@ %s%s@ %d@ @[<2>%a@]@ @[<2>%a@])"
-    f.label (value_kind f.return) f.arity idents f.params lam f.body
+  fprintf ppf "(fun@ %s%a@ %d@ @[<2>%a@]@ @[<2>%a@])"
+    f.label Printlambda.return_kind f.return f.arity idents f.params lam f.body
 
 and phantom_defining_expr ppf = function
   | Uphantom_const const -> uconstant ppf const
@@ -118,14 +108,14 @@ and lam ppf = function
   | Ulet(mut, kind, id, arg, body) ->
       let rec letbody ul = match ul with
         | Ulet(mut, kind, id, arg, body) ->
-            fprintf ppf "@ @[<2>%a%s%s@ %a@]"
+            fprintf ppf "@ @[<2>%a%s%a@ %a@]"
               VP.print id
-              (mutable_flag mut) (value_kind kind) lam arg;
+              (mutable_flag mut) Printlambda.return_kind kind lam arg;
             letbody body
         | _ -> ul in
-      fprintf ppf "@[<2>(let@ @[<hv 1>(@[<2>%a%s%s@ %a@]"
+      fprintf ppf "@[<2>(let@ @[<hv 1>(@[<2>%a%s%a@ %a@]"
         VP.print id (mutable_flag mut)
-          (value_kind kind) lam arg;
+          Printlambda.return_kind kind lam arg;
       let expr = letbody body in
       fprintf ppf ")@]@ %a)@]" lam expr
   | Uphantom_let (id, defining_expr, body) ->
@@ -203,7 +193,7 @@ and lam ppf = function
              (fun (x, k) ->
                 fprintf ppf " %a%a"
                  VP.print x
-                 Printlambda.value_kind k
+                 Printlambda.argument_kind k
              )
              vars
         )
