@@ -120,8 +120,8 @@ let try_force_gen_lazy_block ~only_val (blk : 'arg lazy_t) =
 
 (* [force_gen ~only_val:false] is not used, since [Lazy.force] is
    declared as a primitive whose code inlines the tag tests of its
-   argument. This function is here for the sake of completeness, and
-   for debugging purpose. *)
+   argument, except when afl instrumentation is turned on. *)
+
 let force_gen ~only_val (lzv : 'arg lazy_t) =
   let x = Obj.repr lzv in
   (* XXX No safe points start *)
