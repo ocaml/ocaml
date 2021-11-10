@@ -1159,6 +1159,7 @@ distclean: clean
 	$(MAKE) -C manual distclean
 	$(MAKE) -C ocamldoc distclean
 	$(MAKE) -C ocamltest distclean
+	$(MAKE) -C otherlibs distclean
 	$(MAKE) -C runtime distclean
 	$(MAKE) -C stdlib distclean
 	$(MAKE) -C tools distclean

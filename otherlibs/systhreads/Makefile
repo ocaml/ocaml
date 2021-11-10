@@ -105,12 +105,17 @@ endif
 	$(CC) -c $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
 	  $(OUTPUTOBJ)$@ $<
 
+.PHONY: partialclean
 partialclean:
 	rm -f *.cm*
 
+.PHONY: clean
 clean: partialclean
 	rm -f dllthreads*.so dllthreads*.dll *.a *.lib *.o *.obj
 	rm -rf $(DEPDIR)
+
+.PHONY: distclean
+distclean: clean
 
 INSTALL_THREADSLIBDIR=$(INSTALL_LIBDIR)/$(LIBNAME)
 
