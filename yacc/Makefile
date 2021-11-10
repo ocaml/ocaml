@@ -45,6 +45,10 @@ clean:
 	rm -f ocamlyacc ocamlyacc.exe wstr.o wstr.obj \
         $(ocamlyacc_SOURCES:.c=.o) $(ocamlyacc_SOURCES:.c=.obj)
 
+.PHONY: distclean
+distclean: clean
+
+.PHONY: depend
 depend:
 
 closure.$(O): defs.h

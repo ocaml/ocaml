@@ -1159,6 +1159,7 @@ distclean: clean
 	$(MAKE) -C runtime distclean
 	$(MAKE) -C stdlib distclean
 	$(MAKE) -C tools distclean
+	$(MAKE) -C yacc distclean
 	rm -f boot/ocamlrun boot/ocamlrun.exe boot/camlheader \
 	      boot/ocamlruns boot/ocamlruns.exe \
 	      boot/flexlink.byte boot/flexlink.byte.exe \
