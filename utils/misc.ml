@@ -857,7 +857,7 @@ let debug_prefix_map_flags () =
            match map_elem with
            | None -> acc
            | Some { Build_path_prefix_map.target; source; } ->
-             (Printf.sprintf "--debug-prefix-map %s=%s"
+             (Printf.sprintf "--debug-prefix-map=%s=%s"
                 (Filename.quote source)
                 (Filename.quote target)) :: acc)
         map

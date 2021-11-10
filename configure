@@ -17304,8 +17304,6 @@ fi
 
 ## -fdebug-prefix-map support by the C compiler
 case $ocaml_cv_cc_vendor,$host in #(
-  *,*-*-mingw32) :
-    cc_has_debug_prefix_map=false ;; #(
   *,*-pc-windows) :
     cc_has_debug_prefix_map=false ;; #(
   xlc*,powerpc-ibm-aix*) :
@@ -18813,13 +18811,12 @@ printf "%s\n" "$as_me: the threads library is disabled" >&6;} ;; #(
 printf "%s\n" "$as_me: the threads library is supported" >&6;} ;;
 esac
 
-## Does the assembler support debug prefix map and CFI directives
+## Does the assembler support debug prefix map
 as_has_debug_prefix_map=false
-asm_cfi_supported=false
 if $native_compiler
 then :
   case $host in #(
-  *-*-mingw32|*-pc-windows) :
+  *-pc-windows) :
      ;; #(
   *) :
 
@@ -18841,7 +18838,7 @@ printf %s "checking whether the assembler supports --debug-prefix-map... " >&6; 
 
   # Modify C-compiler variables to use the assembler
   CC="$AS"
-  CFLAGS="--debug-prefix-map old=new -o conftest.$ac_objext"
+  CFLAGS="--debug-prefix-map=old=new -o conftest.$ac_objext"
   CPPFLAGS=""
   ac_ext="S"
   ac_compile='$CC $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -18876,7 +18873,18 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
   CC="$saved_CC"
   LIBS="$saved_LIBS"
 
+ ;;
+esac
+fi
 
+## Does the assembler support CFI directives
+asm_cfi_supported=false
+if $native_compiler
+then :
+  case $host in #(
+  *-*-mingw32|*-pc-windows) :
+     ;; #(
+  *) :
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the assembler supports CFI directives" >&5
 printf %s "checking whether the assembler supports CFI directives... " >&6; }

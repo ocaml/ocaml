@@ -175,7 +175,7 @@ AC_DEFUN([OCAML_AS_HAS_DEBUG_PREFIX_MAP], [
 
   # Modify C-compiler variables to use the assembler
   CC="$AS"
-  CFLAGS="--debug-prefix-map old=new -o conftest.$ac_objext"
+  CFLAGS="--debug-prefix-map=old=new -o conftest.$ac_objext"
   CPPFLAGS=""
   ac_ext="S"
   ac_compile='$CC $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'

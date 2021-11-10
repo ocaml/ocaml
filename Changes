@@ -285,6 +285,10 @@ Working version
 
 ### Build system:
 
+- #10769: Enable debug-prefix-map with mingw32 and clang compiler and
+  assembler.
+  (Antonin Décimo, review by David Allsopp)
+
 - #11590: Allow installing to a destination path containing spaces.
    (Élie Brami, review by Sébastien Hinderer and David Allsopp)
 

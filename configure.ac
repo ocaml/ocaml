@@ -1804,7 +1804,6 @@ AC_CHECK_FUNC([pwrite], [AC_DEFINE([HAS_PWRITE])])
 
 ## -fdebug-prefix-map support by the C compiler
 AS_CASE([$ocaml_cv_cc_vendor,$host],
-  [*,*-*-mingw32], [cc_has_debug_prefix_map=false],
   [*,*-pc-windows], [cc_has_debug_prefix_map=false],
   [xlc*,powerpc-ibm-aix*], [cc_has_debug_prefix_map=false],
   [sunc*,sparc-sun-*], [cc_has_debug_prefix_map=false],
@@ -1987,14 +1986,19 @@ AS_CASE([$enable_systhreads,$enable_unix_lib],
   lib_systhreads=true
   AC_MSG_NOTICE([the threads library is supported])])
 
-## Does the assembler support debug prefix map and CFI directives
+## Does the assembler support debug prefix map
 as_has_debug_prefix_map=false
+AS_IF([$native_compiler],
+  [AS_CASE([$host],
+    [*-pc-windows], [],
+    [OCAML_AS_HAS_DEBUG_PREFIX_MAP])])
+
+## Does the assembler support CFI directives
 asm_cfi_supported=false
 AS_IF([$native_compiler],
   [AS_CASE([$host],
     [*-*-mingw32|*-pc-windows], [],
-    [OCAML_AS_HAS_DEBUG_PREFIX_MAP
-    OCAML_AS_HAS_CFI_DIRECTIVES])])
+    [OCAML_AS_HAS_CFI_DIRECTIVES])])
 
 ## Frame pointers
 
