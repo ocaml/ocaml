@@ -27,5 +27,9 @@ odoc-%:
 ocamldoc-%:
 	$(MAKE) -C ocamldoc $* ROOTDIR=../..
 
+.PHONY: clean
 clean:
 	rm -rf build odoc/build ocamldoc/build
+
+.PHONY: distclean
+distclean: clean
