@@ -1156,6 +1156,7 @@ depend: beforedepend
 distclean: clean
 	$(MAKE) -C debugger distclean
 	$(MAKE) -C manual distclean
+	$(MAKE) -C ocamldoc distclean
 	$(MAKE) -C ocamltest distclean
 	$(MAKE) -C runtime distclean
 	$(MAKE) -C stdlib distclean
