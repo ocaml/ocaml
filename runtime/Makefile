@@ -203,9 +203,9 @@ ld.conf: $(ROOTDIR)/Makefile.config
 # CAMLprim value caml_foo() ...
 # #else
 # CAMLprim value caml_foo() ...
-# end), horrible things will happen (duplicated entries in Runtimedef ->
+# #endif), horrible things will happen: duplicated entries in Runtimedef ->
 # double registration in Symtable -> empty entry in the PRIM table ->
-# the bytecode interpreter is confused).
+# the bytecode interpreter is confused.
 # We sort the primitive file and remove duplicates to avoid this problem.
 
 # Warning: we use "sort | uniq" instead of "sort -u" because in the MSVC
