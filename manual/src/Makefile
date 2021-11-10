@@ -149,12 +149,12 @@ ifocamldoc.tex: $(ROOTDIR)/Makefile.build_config
 .PHONY: clean
 clean:
 	rm -f $(filter-out version.tex,$(FILES)) *.texquote_error
-	$(MAKE) -C cmds      clean
-	$(MAKE) -C library   clean
-	$(MAKE) -C refman    clean
-	$(MAKE) -C tutorials clean
+	$(MAKE) -C cmds clean
 	$(MAKE) -C html_processing clean
-	-rm -f texstuff/*
+	$(MAKE) -C library clean
+	$(MAKE) -C refman clean
+	$(MAKE) -C tutorials clean
+	rm -f texstuff/*
 	cd htmlman; rm -rf libref compilerlibref *.htoc *.html *.haux *.hind *.svg \
 	                   manual.hmanual manual.hmanual.kwd manual.css
 	cd textman; rm -f manual.txt *.haux *.hind *.htoc
@@ -163,4 +163,8 @@ clean:
 .PHONY: distclean
 distclean: clean
 	rm -f version.tex
+	$(MAKE) -C cmds distclean
 	$(MAKE) -C html_processing distclean
+	$(MAKE) -C library distclean
+	$(MAKE) -C refman distclean
+	$(MAKE) -C tutorials distclean
