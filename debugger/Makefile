@@ -62,9 +62,13 @@ ocamldebug$(EXE): $(libraries) $(compiler_objects) ocamldebug.cmo \
 install:
 	$(INSTALL_PROG) ocamldebug$(EXE) "$(INSTALL_BINDIR)"
 
+.PHONY: clean
 clean::
 	rm -f ocamldebug ocamldebug.exe
 	rm -f *.cmo *.cmi
+
+.PHONY: distclean
+distclean: clean
 
 ocamldebug_entry.cmo: ocamldebug_entry.ml ocamldebug.cmo
 	$(CAMLC) -c $(COMPFLAGS) $<
