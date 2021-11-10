@@ -1155,6 +1155,7 @@ depend: beforedepend
 .PHONY: distclean
 distclean: clean
 	$(MAKE) -C debugger distclean
+	$(MAKE) -C lex distclean
 	$(MAKE) -C manual distclean
 	$(MAKE) -C ocamldoc distclean
 	$(MAKE) -C ocamltest distclean
