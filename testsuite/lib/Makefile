@@ -55,3 +55,6 @@ testing.cmo : testing.cmi
 .PHONY: clean
 clean:
 	rm -f *.cm* *.o *.obj *.a *.lib
+
+.PHONY: distclean
+distclean: clean

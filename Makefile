@@ -1162,6 +1162,7 @@ distclean: clean
 	$(MAKE) -C otherlibs distclean
 	$(MAKE) -C runtime distclean
 	$(MAKE) -C stdlib distclean
+	$(MAKE) -C testsuite distclean
 	$(MAKE) -C tools distclean
 	$(MAKE) -C yacc distclean
 	rm -f boot/ocamlrun boot/ocamlrun.exe boot/camlheader \
@@ -1172,7 +1173,6 @@ distclean: clean
 	rm -f Makefile.config Makefile.build_config
 	rm -rf autom4te.cache flexdll-sources
 	rm -f config.log config.status libtool
-	rm -f testsuite/_log*
 
 include .depend
 
