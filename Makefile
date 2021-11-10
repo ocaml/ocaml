@@ -1155,6 +1155,7 @@ depend: beforedepend
 .PHONY: distclean
 distclean: clean
 	$(MAKE) -C manual distclean
+	$(MAKE) -C ocamltest distclean
 	$(MAKE) -C runtime distclean
 	$(MAKE) -C stdlib distclean
 	rm -f boot/ocamlrun boot/ocamlrun.exe boot/camlheader \
