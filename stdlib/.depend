@@ -247,6 +247,7 @@ stdlib__Ephemeron.cmo : ephemeron.ml \
     stdlib__Seq.cmi \
     stdlib__Random.cmi \
     stdlib__Obj.cmi \
+    stdlib__List.cmi \
     stdlib__Lazy.cmi \
     stdlib__Int.cmi \
     stdlib__Hashtbl.cmi \
@@ -257,12 +258,14 @@ stdlib__Ephemeron.cmx : ephemeron.ml \
     stdlib__Seq.cmx \
     stdlib__Random.cmx \
     stdlib__Obj.cmx \
+    stdlib__List.cmx \
     stdlib__Lazy.cmx \
     stdlib__Int.cmx \
     stdlib__Hashtbl.cmx \
     stdlib__Array.cmx \
     stdlib__Ephemeron.cmi
 stdlib__Ephemeron.cmi : ephemeron.mli \
+    stdlib__Seq.cmi \
     stdlib__Hashtbl.cmi
 stdlib__Filename.cmo : filename.ml \
     stdlib__Sys.cmi \
