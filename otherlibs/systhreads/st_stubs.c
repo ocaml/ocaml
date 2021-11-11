@@ -513,6 +513,29 @@ static void * caml_thread_start(void * v)
   return 0;
 }
 
+static int create_tick_thread()
+{
+  int err;
+  #ifdef POSIX_SIGNALS
+  sigset_t mask, old_mask;
+
+  /* Block all signals so that we don't try to execute an OCaml signal
+     handler in the new tick thread */
+  sigfillset(&mask);
+  pthread_sigmask(SIG_BLOCK, &mask, &old_mask);
+  #endif
+
+  err = st_thread_create(&Tick_thread_id,
+                           caml_thread_tick,
+                           (void *) &Caml_state->id);
+
+  #ifdef POSIX_SIGNALS
+  pthread_sigmask(SIG_SETMASK, &old_mask, NULL);
+  #endif
+
+  return err;
+}
+
 CAMLprim value caml_thread_new(value clos)          /* ML */
 {
   CAMLparam1(clos);
@@ -545,9 +568,7 @@ CAMLprim value caml_thread_new(value clos)          /* ML */
   }
 
   if (! Tick_thread_running) {
-    err = st_thread_create(&Tick_thread_id,
-                           caml_thread_tick,
-                           (void *) &Caml_state->id);
+    err = create_tick_thread();
     sync_check_error(err, "Thread.create");
     Tick_thread_running = 1;
   }
@@ -593,9 +614,7 @@ CAMLexport int caml_c_thread_register(void)
   st_thread_set_id(Ident(th->descr));
 
   if (! Tick_thread_running) {
-    err = st_thread_create(&Tick_thread_id,
-                           caml_thread_tick,
-                           (void *) &Caml_state->id);
+    err = create_tick_thread();
     sync_check_error(err, "caml_register_c_thread");
     Tick_thread_running = 1;
   }
