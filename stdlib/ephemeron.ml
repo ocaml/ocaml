@@ -451,38 +451,6 @@ module K1 = struct
       replace_seq tbl i;
       tbl
   end
-
-  module Bucket = struct
-
-    type nonrec ('k, 'd) t = ('k, 'd) t list ref
-    let k1_make = make
-    let make () = ref []
-    let add b k d = b := k1_make k d :: !b
-
-    let test_key k e =
-      match get_key e with
-      | Some x when x == k -> true
-      | _ -> false
-
-    let remove b k =
-      let rec loop l acc =
-        match l with
-        | [] -> ()
-        | h :: t when test_key k h -> b := List.rev_append acc t
-        | h :: t -> loop t (h :: acc)
-      in
-      loop !b []
-
-    let find b k =
-      match List.find_opt (test_key k) !b with
-      | Some e -> get_data e
-      | None -> None
-
-    let length b = List.length !b
-    let clear b = b := []
-
-  end
-
 end
 
 module K2 = struct
@@ -571,38 +539,6 @@ module K2 = struct
       replace_seq tbl i;
       tbl
   end
-
-  module Bucket = struct
-
-    type nonrec ('k1, 'k2, 'd) t = ('k1, 'k2, 'd) t list ref
-    let k2_make = make
-    let make () = ref []
-    let add b k1 k2 d = b := k2_make k1 k2 d :: !b
-
-    let test_keys k1 k2 e =
-      match get_key1 e, get_key2 e with
-      | Some x1, Some x2 when x1 == k1 && x2 == k2 -> true
-      | _ -> false
-
-    let remove b k1 k2 =
-      let rec loop l acc =
-        match l with
-        | [] -> ()
-        | h :: t when test_keys k1 k2 h -> b := List.rev_append acc t
-        | h :: t -> loop t (h :: acc)
-      in
-      loop !b []
-
-    let find b k1 k2 =
-      match List.find_opt (test_keys k1 k2) !b with
-      | Some e -> get_data e
-      | None -> None
-
-    let length b = List.length !b
-    let clear b = b := []
-
-  end
-
 end
 
 module Kn = struct
@@ -699,42 +635,4 @@ module Kn = struct
       replace_seq tbl i;
       tbl
   end
-
-  module Bucket = struct
-
-    type nonrec ('k, 'd) t = ('k, 'd) t list ref
-    let kn_make = make
-    let make () = ref []
-    let add b k d = b := kn_make k d :: !b
-
-    let test_keys k e =
-      try
-        if length e <> Array.length k then raise Exit;
-        for i = 0 to Array.length k - 1 do
-          match get_key e i with
-          | Some x when x == k.(i) -> ()
-          | _ -> raise Exit
-        done;
-        true
-      with Exit -> false
-
-    let remove b k =
-      let rec loop l acc =
-        match l with
-        | [] -> ()
-        | h :: t when test_keys k h -> b := List.rev_append acc t
-        | h :: t -> loop t (h :: acc)
-      in
-      loop !b []
-
-    let find b k =
-      match List.find_opt (test_keys k) !b with
-      | Some e -> get_data e
-      | None -> None
-
-    let length b = List.length !b
-    let clear b = b := []
-
-  end
-
 end
