@@ -281,7 +281,8 @@ static void caml_wait_interrupt_serviced(struct interruptor* target)
 void caml_domain_set_name(char_os *name)
 {
   char thread_name[MAX_DOMAIN_NAME_LENGTH];
-  snprintf_os(thread_name, MAX_DOMAIN_NAME_LENGTH, T("%s%d"), name, Caml_state->id);
+  snprintf_os(thread_name, MAX_DOMAIN_NAME_LENGTH,
+              T("%s%d"), name, Caml_state->id);
   caml_thread_setname_os(thread_name);
 }
 
