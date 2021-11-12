@@ -951,18 +951,49 @@ let type_declarations ?(equality = false) ~loc env ~mark name
   let abstr = abstr || decl2.type_private = Private in
   let opn = decl2.type_kind = Type_open && decl2.type_manifest = None in
   let constrained ty = not (Btype.is_Tvar ty) in
-  (* TODO *)
+  let variance_pairs =
+    match oargs with
+    | None ->
+        List.map2 (fun v1 v2 -> ([v1], v2))
+          decl1.type_variance decl2.type_variance
+    | Some _ ->
+        let initial =
+          List.map2 (fun ty v -> (ty, v, []))
+            decl2.type_params decl2.type_variance
+        in
+        (* For each parameter in [decl1], mark it and check whether each
+           parameter to [decl2] was marked as a result.
+           We accumulate the variances of parameters in [decl1] against each
+           parameter variance in [decl2], so that we can ensure that the input
+           variances are consistent. *)
+        let res =
+          List.fold_left2 (fun acc ty1 v1 ->
+              Btype.mark_type ty1;
+              let acc =
+                List.map (fun (ty2, v2, v1s) ->
+                    if Btype.not_marked_node ty2 then (ty2, v2, v1s)
+                    else (ty2, v2, v1 :: v1s))
+                  acc
+              in
+              Btype.unmark_type ty1;
+              acc)
+            initial decl1.type_params decl1.type_variance
+        in
+        List.map (fun (_ty, v2, v1s) -> (v1s, v2)) res
+  in
   if List.for_all2
-      (fun ty (v1,v2) ->
-        let open Variance in
-        let imp a b = not a || b in
-        let (co1,cn1) = get_upper v1 and (co2,cn2) = get_upper v2 in
-        (if abstr then (imp co1 co2 && imp cn1 cn2)
-         else if opn || constrained ty then (co1 = co2 && cn1 = cn2)
-         else true) &&
-        let (p1,n1,i1,j1) = get_lower v1 and (p2,n2,i2,j2) = get_lower v2 in
-        imp abstr (imp p2 p1 && imp n2 n1 && imp i2 i1 && imp j2 j1))
-      decl2.type_params (List.combine decl1.type_variance decl2.type_variance)
+      (fun ty (v1s,v2) ->
+        List.for_all (fun v1 ->
+            let open Variance in
+            let imp a b = not a || b in
+            let (co1,cn1) = get_upper v1 and (co2,cn2) = get_upper v2 in
+            (if abstr then (imp co1 co2 && imp cn1 cn2)
+             else if opn || constrained ty then (co1 = co2 && cn1 = cn2)
+             else true) &&
+            let (p1,n1,i1,j1) = get_lower v1 and (p2,n2,i2,j2) = get_lower v2 in
+            imp abstr (imp p2 p1 && imp n2 n1 && imp i2 i1 && imp j2 j1))
+          v1s)
+      decl2.type_params variance_pairs
   then None else Some Variance
 
 (* Inclusion between extension constructors *)
