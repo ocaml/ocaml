@@ -393,6 +393,12 @@ static void caml_thread_domain_stop_hook(void) {
   };
 }
 
+#ifdef NATIVE_CODE
+static void caml_thread_termination_hook(void) {
+  st_thread_exit();
+}
+#endif /* NATIVE_CODE */
+
 static void caml_thread_initialize_domain()
 {
   caml_thread_t new_thread;
@@ -455,6 +461,9 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
   caml_scan_roots_hook = caml_thread_scan_roots;
   caml_enter_blocking_section_hook = caml_thread_enter_blocking_section;
   caml_leave_blocking_section_hook = caml_thread_leave_blocking_section;
+#ifdef NATIVE_CODE
+  caml_termination_hook = caml_thread_termination_hook;
+#endif
   caml_domain_external_interrupt_hook = caml_thread_interrupt_hook;
   caml_domain_start_hook = caml_thread_domain_start_hook;
   caml_domain_stop_hook = caml_thread_domain_stop_hook;
@@ -703,6 +712,10 @@ CAMLprim value caml_thread_uncaught_exception(value exn)  /* ML */
 CAMLprim value caml_thread_exit(value unit)   /* ML */
 {
   struct longjmp_buffer * exit_buf = NULL;
+
+  /* we check if another domain was ever started */
+  if (caml_domain_is_multicore())
+    caml_fatal_error("Thread.exit: unsupported call under multiple domains");
 
   if (Current_thread == NULL)
     caml_invalid_argument("Thread.exit: not initialized");
