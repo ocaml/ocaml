@@ -1007,18 +1007,18 @@ let build_other ext env =
             0 succ d env
       | Constant Const_int32 _ ->
           build_other_constant
-            (function Constant(Const_int32 i) -> i | _ -> assert false)
-            (function i -> Tpat_constant(Const_int32 i))
+            (function Constant(Const_int32 (i, _)) -> i | _ -> assert false)
+            (function i -> Tpat_constant(Const_int32 (i, Int32.to_string i)))
             0l Int32.succ d env
       | Constant Const_int64 _ ->
           build_other_constant
-            (function Constant(Const_int64 i) -> i | _ -> assert false)
-            (function i -> Tpat_constant(Const_int64 i))
+            (function Constant(Const_int64 (i, _)) -> i | _ -> assert false)
+            (function i -> Tpat_constant(Const_int64 (i, Int64.to_string i)))
             0L Int64.succ d env
       | Constant Const_nativeint _ ->
           build_other_constant
-            (function Constant(Const_nativeint i) -> i | _ -> assert false)
-            (function i -> Tpat_constant(Const_nativeint i))
+            (function Constant(Const_nativeint (i, _)) -> i | _ -> assert false)
+            (function i -> Tpat_constant(Const_nativeint (i, Nativeint.to_string i)))
             0n Nativeint.succ d env
       | Constant Const_string _ ->
           build_other_constant

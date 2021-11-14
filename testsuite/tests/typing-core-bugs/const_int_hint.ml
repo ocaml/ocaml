@@ -144,3 +144,126 @@ Line 1, characters 14-16:
 Error: This expression has type int64 but an expression was expected of type
          int
 |}]
+
+(* Check that the hint preserves formatting for int32 literals *)
+let _ = Int64.(add 1_000l 2L);;
+[%%expect{|
+Line 1, characters 19-25:
+1 | let _ = Int64.(add 1_000l 2L);;
+                       ^^^^^^
+Error: This expression has type int32 but an expression was expected of type
+         int64
+  Hint: Did you mean `1_000L'?
+|}]
+
+let _ = Int64.(add 0xAA_BBl 2L);;
+[%%expect{|
+Line 1, characters 19-27:
+1 | let _ = Int64.(add 0xAA_BBl 2L);;
+                       ^^^^^^^^
+Error: This expression has type int32 but an expression was expected of type
+         int64
+  Hint: Did you mean `0xAA_BBL'?
+|}]
+
+let _ = Int64.(add 0o2_345l 2L);;
+[%%expect{|
+Line 1, characters 19-27:
+1 | let _ = Int64.(add 0o2_345l 2L);;
+                       ^^^^^^^^
+Error: This expression has type int32 but an expression was expected of type
+         int64
+  Hint: Did you mean `0o2_345L'?
+|}]
+
+let _ = Int64.(add 0b1000_1101l 2L);;
+[%%expect{|
+Line 1, characters 19-31:
+1 | let _ = Int64.(add 0b1000_1101l 2L);;
+                       ^^^^^^^^^^^^
+Error: This expression has type int32 but an expression was expected of type
+         int64
+  Hint: Did you mean `0b1000_1101L'?
+|}]
+
+(* Check that the hint preserves formatting for int64 literals *)
+let _ = Int32.(add 1_000L 2l);;
+[%%expect{|
+Line 1, characters 19-25:
+1 | let _ = Int32.(add 1_000L 2l);;
+                       ^^^^^^
+Error: This expression has type int64 but an expression was expected of type
+         int32
+  Hint: Did you mean `1_000l'?
+|}]
+
+let _ = Int32.(add 0xAA_BBL 2l);;
+[%%expect{|
+Line 1, characters 19-27:
+1 | let _ = Int32.(add 0xAA_BBL 2l);;
+                       ^^^^^^^^
+Error: This expression has type int64 but an expression was expected of type
+         int32
+  Hint: Did you mean `0xAA_BBl'?
+|}]
+
+let _ = Int32.(add 0o2_345L 2l);;
+[%%expect{|
+Line 1, characters 19-27:
+1 | let _ = Int32.(add 0o2_345L 2l);;
+                       ^^^^^^^^
+Error: This expression has type int64 but an expression was expected of type
+         int32
+  Hint: Did you mean `0o2_345l'?
+|}]
+
+let _ = Int32.(add 0b1000_1101L 2l);;
+[%%expect{|
+Line 1, characters 19-31:
+1 | let _ = Int32.(add 0b1000_1101L 2l);;
+                       ^^^^^^^^^^^^
+Error: This expression has type int64 but an expression was expected of type
+         int32
+  Hint: Did you mean `0b1000_1101l'?
+|}]
+
+(* Check that the hint preserves formatting for nativeint literals *)
+let _ = Int64.(add 1_000n 2L);;
+[%%expect{|
+Line 1, characters 19-25:
+1 | let _ = Int64.(add 1_000n 2L);;
+                       ^^^^^^
+Error: This expression has type nativeint
+       but an expression was expected of type int64
+  Hint: Did you mean `1_000L'?
+|}]
+
+let _ = Int64.(add 0xAA_BBn 2L);;
+[%%expect{|
+Line 1, characters 19-27:
+1 | let _ = Int64.(add 0xAA_BBn 2L);;
+                       ^^^^^^^^
+Error: This expression has type nativeint
+       but an expression was expected of type int64
+  Hint: Did you mean `0xAA_BBL'?
+|}]
+
+let _ = Int64.(add 0o2_345n 2L);;
+[%%expect{|
+Line 1, characters 19-27:
+1 | let _ = Int64.(add 0o2_345n 2L);;
+                       ^^^^^^^^
+Error: This expression has type nativeint
+       but an expression was expected of type int64
+  Hint: Did you mean `0o2_345L'?
+|}]
+
+let _ = Int64.(add 0b1000_1101n 2L);;
+[%%expect{|
+Line 1, characters 19-31:
+1 | let _ = Int64.(add 0b1000_1101n 2L);;
+                       ^^^^^^^^^^^^
+Error: This expression has type nativeint
+       but an expression was expected of type int64
+  Hint: Did you mean `0b1000_1101L'?
+|}]

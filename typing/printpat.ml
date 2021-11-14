@@ -29,9 +29,9 @@ let pretty_const c = match c with
 | Const_char c -> Printf.sprintf "%C" c
 | Const_string (s, _, _) -> Printf.sprintf "%S" s
 | Const_float f -> Printf.sprintf "%s" f
-| Const_int32 i -> Printf.sprintf "%ldl" i
-| Const_int64 i -> Printf.sprintf "%LdL" i
-| Const_nativeint i -> Printf.sprintf "%ndn" i
+| Const_int32 (_, s) -> Printf.sprintf "%sl" s
+| Const_int64 (_, s) -> Printf.sprintf "%sL" s
+| Const_nativeint (_, s) -> Printf.sprintf "%sn" s
 
 let pretty_extra ppf (cstr, _loc, _attrs) pretty_rest rest =
   match cstr with

@@ -134,9 +134,9 @@ let constant = function
   | Const_char c -> Pconst_char c
   | Const_string (s,loc,d) -> Pconst_string (s,loc,d)
   | Const_int i -> Pconst_integer (Int.to_string i, None)
-  | Const_int32 i -> Pconst_integer (Int32.to_string i, Some 'l')
-  | Const_int64 i -> Pconst_integer (Int64.to_string i, Some 'L')
-  | Const_nativeint i -> Pconst_integer (Nativeint.to_string i, Some 'n')
+  | Const_int32 (_, s) -> Pconst_integer (s, Some 'l')
+  | Const_int64 (_, s) -> Pconst_integer (s, Some 'L')
+  | Const_nativeint (_, s) -> Pconst_integer (s, Some 'n')
   | Const_float f -> Pconst_float (f,None)
 
 let attribute sub a = {

@@ -221,9 +221,9 @@ let rec transl_const = function
   | Const_base(Const_char c) -> Obj.repr c
   | Const_base(Const_string (s, _, _)) -> Obj.repr s
   | Const_base(Const_float f) -> Obj.repr (float_of_string f)
-  | Const_base(Const_int32 i) -> Obj.repr i
-  | Const_base(Const_int64 i) -> Obj.repr i
-  | Const_base(Const_nativeint i) -> Obj.repr i
+  | Const_base(Const_int32 (i, _)) -> Obj.repr i
+  | Const_base(Const_int64 (i, _)) -> Obj.repr i
+  | Const_base(Const_nativeint (i, _)) -> Obj.repr i
   | Const_immstring s -> Obj.repr s
   | Const_block(tag, fields) ->
       let block = Obj.new_block tag (List.length fields) in

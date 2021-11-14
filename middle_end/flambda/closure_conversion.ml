@@ -129,13 +129,13 @@ let rec declare_const t (const : Lambda.structured_constant)
     register_const t
       (Allocated_const (Float (float_of_string c)))
       Names.const_float
-  | Const_base (Const_int32 c) ->
+  | Const_base (Const_int32 (c, _)) ->
     register_const t (Allocated_const (Int32 c))
       Names.const_int32
-  | Const_base (Const_int64 c) ->
+  | Const_base (Const_int64 (c, _)) ->
     register_const t (Allocated_const (Int64 c))
       Names.const_int64
-  | Const_base (Const_nativeint c) ->
+  | Const_base (Const_nativeint (c, _)) ->
     register_const t (Allocated_const (Nativeint c)) Names.const_nativeint
   | Const_immstring c ->
     register_const t (Allocated_const (Immutable_string c))

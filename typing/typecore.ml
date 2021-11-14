@@ -253,17 +253,17 @@ let constant : Parsetree.constant -> (Asttypes.constant, error) result =
      end
   | Pconst_integer (i,Some 'l') ->
      begin
-       try Ok (Const_int32 (Misc.Int_literal_converter.int32 i))
+       try Ok (Const_int32 (Misc.Int_literal_converter.int32 i, i))
        with Failure _ -> Error (Literal_overflow "int32")
      end
   | Pconst_integer (i,Some 'L') ->
      begin
-       try Ok (Const_int64 (Misc.Int_literal_converter.int64 i))
+       try Ok (Const_int64 (Misc.Int_literal_converter.int64 i, i))
        with Failure _ -> Error (Literal_overflow "int64")
      end
   | Pconst_integer (i,Some 'n') ->
      begin
-       try Ok (Const_nativeint (Misc.Int_literal_converter.nativeint i))
+       try Ok (Const_nativeint (Misc.Int_literal_converter.nativeint i, i))
        with Failure _ -> Error (Literal_overflow "nativeint")
      end
   | Pconst_integer (i,Some c) -> Error (Unknown_literal (i, c))
@@ -5445,9 +5445,9 @@ let type_clash_of_trace trace =
 let report_literal_type_constraint expected_type const =
   let const_str = match const with
     | Const_int n -> Some (Int.to_string n)
-    | Const_int32 n -> Some (Int32.to_string n)
-    | Const_int64 n -> Some (Int64.to_string n)
-    | Const_nativeint n -> Some (Nativeint.to_string n)
+    | Const_int32 (_, s) -> Some s
+    | Const_int64 (_, s) -> Some s
+    | Const_nativeint (_, s) -> Some s
     | _ -> None
   in
   let suffix =

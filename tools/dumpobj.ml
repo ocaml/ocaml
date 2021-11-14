@@ -89,9 +89,9 @@ let rec print_struct_const = function
   | Const_base(Const_string (s, _, _)) -> printf "%S" s
   | Const_immstring s -> printf "%S" s
   | Const_base(Const_char c) -> printf "%C" c
-  | Const_base(Const_int32 i) -> printf "%ldl" i
-  | Const_base(Const_nativeint i) -> printf "%ndn" i
-  | Const_base(Const_int64 i) -> printf "%LdL" i
+  | Const_base(Const_int32 (i, _)) -> printf "%ldl" i
+  | Const_base(Const_nativeint (i, _)) -> printf "%ndn" i
+  | Const_base(Const_int64 (i, _)) -> printf "%LdL" i
   | Const_block(tag, args) ->
       printf "<%d>" tag;
       begin match args with

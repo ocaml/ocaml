@@ -920,9 +920,9 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
                  that one could modify our string literal.  *)
             str ~shared:Config.safe_string (Uconst_string s)
         | Const_base(Const_float x) -> str (Uconst_float (float_of_string x))
-        | Const_base(Const_int32 x) -> str (Uconst_int32 x)
-        | Const_base(Const_int64 x) -> str (Uconst_int64 x)
-        | Const_base(Const_nativeint x) -> str (Uconst_nativeint x)
+        | Const_base(Const_int32 (x, _)) -> str (Uconst_int32 x)
+        | Const_base(Const_int64 (x, _)) -> str (Uconst_int64 x)
+        | Const_base(Const_nativeint (x, _)) -> str (Uconst_nativeint x)
       in
       make_const (transl cst)
   | Lfunction _ as funct ->
