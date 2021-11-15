@@ -23,6 +23,9 @@ Working version
 
 ### Bug fixes:
 
+- #10763, #10764: fix miscompilation of method delegation
+  (Alain Frisch, review by Vincent Laviron and Jacques Garrigue)
+
 OCaml 4.14.0
 ----------------
 
