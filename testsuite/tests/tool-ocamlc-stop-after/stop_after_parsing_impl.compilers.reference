@@ -2,7 +2,7 @@
   structure_item (stop_after_parsing_impl.ml[12,306+0]..[12,306+24])
     Pstr_value Nonrec
     [
-      <def>
+      <def> (stop_after_parsing_impl.ml[12,306+0]..[12,306+24])
         pattern (stop_after_parsing_impl.ml[12,306+4]..[12,306+5])
           Ppat_any
         expression (stop_after_parsing_impl.ml[12,306+8]..[12,306+24])
