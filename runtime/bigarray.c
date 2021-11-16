@@ -297,10 +297,10 @@ CAMLexport int caml_ba_compare(value v1, value v2)
     } \
     return 0; \
   }
-#define DO_FLOAT_COMPARISON(type) \
-  { type * p1 = b1->data; type * p2 = b2->data; \
+#define DO_GENERIC_UNORDERED_COMPARISON(ptype, etype, conv) \
+  { ptype * p1 = b1->data; ptype * p2 = b2->data; \
     for (n = 0; n < num_elts; n++) { \
-      type e1 = *p1++; type e2 = *p2++; \
+      etype e1 = conv(*p1++); etype e2 = conv(*p2++); \
       if (e1 < e2) return -1; \
       if (e1 > e2) return 1; \
       if (e1 != e2) { \
@@ -311,8 +311,12 @@ CAMLexport int caml_ba_compare(value v1, value v2)
     } \
     return 0; \
   }
+#define DO_FLOAT_COMPARISON(type) \
+  DO_GENERIC_UNORDERED_COMPARISON(type, type, )
 
   switch (b1->flags & CAML_BA_KIND_MASK) {
+  case CAML_BA_FLOAT16:
+    DO_GENERIC_UNORDERED_COMPARISON(uint16, float, caml_float16_to_float);
   case CAML_BA_COMPLEX32:
     num_elts *= 2; /*fallthrough*/
   case CAML_BA_FLOAT32:
