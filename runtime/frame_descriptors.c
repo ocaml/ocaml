@@ -57,7 +57,7 @@ static frame_descr * next_frame_descr(frame_descr * d) {
   return ((frame_descr*) p);
 }
 
-caml_frame_descrs build_frame_descriptors(link* frametables)
+static caml_frame_descrs build_frame_descriptors(link* frametables)
 {
   intnat num_descr, tblsize, i, j, len;
   intnat * tbl;
