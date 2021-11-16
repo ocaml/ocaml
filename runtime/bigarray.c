@@ -142,7 +142,7 @@ CAMLexport uintnat caml_ba_num_elts(struct caml_ba_array * b)
 /* Size in bytes of a bigarray element, indexed by bigarray kind */
 
 CAMLexport int caml_ba_element_size[] =
-{ 4 /*FLOAT32*/, 8 /*FLOAT64*/,
+{ 2 /*FLOAT16*/, 4 /*FLOAT32*/, 8 /*FLOAT64*/,
   1 /*SINT8*/, 1 /*UINT8*/,
   2 /*SINT16*/, 2 /*UINT16*/,
   4 /*INT32*/, 8 /*INT64*/,
