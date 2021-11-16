@@ -489,6 +489,7 @@ CAMLexport void caml_ba_serialize(value v,
     caml_serialize_block_1(b->data, num_elts); break;
   case CAML_BA_SINT16:
   case CAML_BA_UINT16:
+  case CAML_BA_FLOAT16:
     caml_serialize_block_2(b->data, num_elts); break;
   case CAML_BA_FLOAT32:
   case CAML_BA_INT32:
@@ -575,6 +576,7 @@ CAMLexport uintnat caml_ba_deserialize(void * dst)
     caml_deserialize_block_1(b->data, num_elts); break;
   case CAML_BA_SINT16:
   case CAML_BA_UINT16:
+  case CAML_BA_FLOAT16:
     caml_deserialize_block_2(b->data, num_elts); break;
   case CAML_BA_FLOAT32:
   case CAML_BA_INT32:
