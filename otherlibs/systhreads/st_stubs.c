@@ -77,12 +77,12 @@ struct caml_thread_struct {
   value ** gc_regs_slot;     /* saved value of Caml_state->gc_regs_slot */
   void * exn_handler;        /* saved value of Caml_state->exn_handler */
 
-  #ifndef NATIVE_CODE
+#ifndef NATIVE_CODE
   intnat trap_sp_off;      /* saved value of Caml_state->trap_sp_off */
   intnat trap_barrier_off; /* saved value of Caml_state->trap_barrier_off */
   /* saved value of Caml_state->external_raise */
   struct caml_exception_context* external_raise;
-  #endif
+#endif
 
 };
 
@@ -180,11 +180,11 @@ void caml_thread_save_runtime_state(void)
   Current_thread->backtrace_pos = Caml_state->backtrace_pos;
   Current_thread->backtrace_buffer = Caml_state->backtrace_buffer;
   Current_thread->backtrace_last_exn = Caml_state->backtrace_last_exn;
-  #ifndef NATIVE_CODE
+#ifndef NATIVE_CODE
   Current_thread->trap_sp_off = Caml_state->trap_sp_off;
   Current_thread->trap_barrier_off = Caml_state->trap_barrier_off;
   Current_thread->external_raise = Caml_state->external_raise;
-  #endif
+#endif
 }
 
 void caml_thread_restore_runtime_state(void)
@@ -199,11 +199,11 @@ void caml_thread_restore_runtime_state(void)
   Caml_state->backtrace_pos = Current_thread->backtrace_pos;
   Caml_state->backtrace_buffer = Current_thread->backtrace_buffer;
   Caml_state->backtrace_last_exn = Current_thread->backtrace_last_exn;
-  #ifndef NATIVE_CODE
+#ifndef NATIVE_CODE
   Caml_state->trap_sp_off = Current_thread->trap_sp_off;
   Caml_state->trap_barrier_off = Current_thread->trap_barrier_off;
   Caml_state->external_raise = Current_thread->external_raise;
-  #endif
+#endif
 }
 
 /* Hooks for caml_enter_blocking_section and caml_leave_blocking_section */
@@ -267,11 +267,11 @@ static caml_thread_t caml_thread_new_info(void)
   th->gc_regs_slot = NULL;
   th->exn_handler = NULL;
 
-  #ifndef NATIVE_CODE
+#ifndef NATIVE_CODE
   th->trap_sp_off = 1;
   th->trap_barrier_off = 2;
   th->external_raise = NULL;
-  #endif
+#endif
 
   return th;
 }
@@ -377,9 +377,9 @@ static void caml_thread_initialize_domain()
   new_thread->next = new_thread;
   new_thread->prev = new_thread;
   new_thread->backtrace_last_exn = Val_unit;
-  #ifdef NATIVE_CODE
+#ifdef NATIVE_CODE
   new_thread->exit_buf = &caml_termination_jmpbuf;
-  #endif
+#endif
 
   st_tls_newkey(&Thread_key);
   st_tls_set(Thread_key, (void *) new_thread);
