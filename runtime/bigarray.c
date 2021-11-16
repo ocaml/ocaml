@@ -36,6 +36,15 @@
 
 /* Half-precision floating point numbers */
 
+#if defined(__GNUC__) && defined(__F16C__)
+
+#include <immintrin.h>
+
+#define caml_float16_to_float(d) _cvtsh_ss(d)
+#define caml_float_to_float16(d) _cvtss_sh(d, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC))
+
+#else  /* defined(__GNUC__) && defined(__F16C__) */
+
 union float_bits {
   uint32_t i;
   float f;
@@ -114,6 +123,8 @@ static uint16 caml_float_to_float16(float d)
   o |= sign >> 16;
   return o;
 }
+
+#endif  /* defined(__GNUC__) && defined(__F16C__) */
 
 Caml_inline uint32_t caml_hash_mix_float16(uint32_t hash, uint16 d)
 {
