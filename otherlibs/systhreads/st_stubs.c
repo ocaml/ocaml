@@ -370,6 +370,9 @@ static void caml_thread_initialize_domain()
   new_thread =
     (caml_thread_t) caml_stat_alloc_noexc(sizeof(struct caml_thread_struct));
 
+  if (new_thread == NULL)
+    caml_raise_out_of_memory();
+
   new_thread->descr = caml_thread_new_descriptor(Val_unit);
   new_thread->next = new_thread;
   new_thread->prev = new_thread;
@@ -527,6 +530,10 @@ CAMLprim value caml_thread_new(value clos)          /* ML */
 #endif
   /* Create a thread info block */
   th = caml_thread_new_info();
+
+  if (th == NULL)
+    caml_raise_out_of_memory();
+
   th->descr = caml_thread_new_descriptor(clos);
 
   th->next = Current_thread->next;
