@@ -266,6 +266,9 @@ OCaml 4.14.0
 - #8516: Change representation of class signatures
   (Leo White, review by Thomas Refis)
 
+- #9444: -dtypedtree, print more explictly extra nodes in pattern ast.
+  (Frédéric Bour, review by Gabriel Scherer)
+
 - #10337: Normalize type_expr nodes on access
   One should now use accessors such as get_desc and get_level to access fields
   of type_expr, rather than calling manually Btype.repr (which is now hidden
