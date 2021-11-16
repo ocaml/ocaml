@@ -32,9 +32,7 @@
 #include "caml/signals.h"
 #include "caml/sys.h"
 #include "caml/memprof.h"
-
-/* threads.h is *not* included since it contains the _external_ declarations for
-   the caml_c_thread_register and caml_c_thread_unregister functions. */
+#include "threads.h"
 
 /* Max computation time before rescheduling, in milliseconds */
 #define Thread_timeout 50
