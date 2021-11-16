@@ -120,7 +120,7 @@ Caml_inline void st_thread_set_id(intnat id)
 
 typedef struct {
   pthread_mutex_t lock;           /* to protect contents */
-  atomic_uintnat busy;            /* 0 = free, 1 = taken */
+  uintnat busy;                   /* 0 = free, 1 = taken */
   atomic_uintnat waiters;         /* number of threads waiting on master lock */
   pthread_cond_t is_free;         /* signaled when free */
 } st_masterlock;
@@ -130,7 +130,7 @@ static void st_masterlock_init(st_masterlock * m)
 
   pthread_mutex_init(&m->lock, NULL);
   pthread_cond_init(&m->is_free, NULL);
-  atomic_store_rel(&m->busy, 1);
+  m->busy = 1;
   atomic_store_rel(&m->waiters, 0);
 
   return;
@@ -168,12 +168,12 @@ static void st_bt_lock_release(st_masterlock *m) {
 static void st_masterlock_acquire(st_masterlock *m)
 {
   pthread_mutex_lock(&m->lock);
-  while (atomic_load_acq(&m->busy)) {
+  while (m->busy) {
     atomic_fetch_add(&m->waiters, +1);
     pthread_cond_wait(&m->is_free, &m->lock);
     atomic_fetch_add(&m->waiters, -1);
   }
-  atomic_store_rel(&m->busy, 1);
+  m->busy = 1;
   st_bt_lock_acquire(m);
   pthread_mutex_unlock(&m->lock);
 
@@ -183,7 +183,7 @@ static void st_masterlock_acquire(st_masterlock *m)
 static void st_masterlock_release(st_masterlock * m)
 {
   pthread_mutex_lock(&m->lock);
-  atomic_store_rel(&m->busy, 0);
+  m->busy = 0;
   st_bt_lock_release(m);
   pthread_cond_signal(&m->is_free);
   pthread_mutex_unlock(&m->lock);
@@ -217,7 +217,7 @@ Caml_inline void st_thread_yield(st_masterlock * m)
     return;
   }
 
-  atomic_store_rel(&m->busy, 0);
+  m->busy = 0;
   atomic_fetch_add(&m->waiters, +1);
   pthread_cond_signal(&m->is_free);
   // releasing the domain lock but not triggering bt messaging
@@ -232,9 +232,9 @@ Caml_inline void st_thread_yield(st_masterlock * m)
        yield() or enter_blocking_section() call (or we see a spurious condvar
        wakeup, which are rare at best.) */
        pthread_cond_wait(&m->is_free, &m->lock);
-  } while (atomic_load_acq(&m->busy));
+  } while (m->busy);
 
-  atomic_store_rel(&m->busy, 1);
+  m->busy = 1;
   atomic_fetch_add(&m->waiters, -1);
 
   caml_acquire_domain_lock();
