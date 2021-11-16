@@ -95,7 +95,7 @@ install::
 	fi
 ifneq "$(STUBSLIB)" ""
 	$(INSTALL_DATA) $(STUBSLIB) "$(INSTALL_LIBDIR)/"
-	cd "$(INSTALL_LIBDIR)"; $(RANLIB) lib$(CLIBNAME).$(A)
+	$(RANLIB) "$(INSTALL_LIBDIR)/lib$(CLIBNAME).$(A)"
 endif
 
 	$(INSTALL_DATA) \
@@ -104,7 +104,7 @@ endif
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
 	  $(CMIFILES:.cmi=.mli) \
-          $(CMIFILES:.cmi=.cmti) \
+	        $(CMIFILES:.cmi=.cmti) \
 	  "$(INSTALL_LIBDIR)/"
 endif
 	if test -n "$(HEADERS)"; then \
@@ -115,7 +115,7 @@ installopt:
 	$(INSTALL_DATA) \
 	   $(CAMLOBJS_NAT) $(LIBNAME).cmxa $(LIBNAME).$(A) \
 	   "$(INSTALL_LIBDIR)/"
-	cd "$(INSTALL_LIBDIR)"; $(RANLIB) $(LIBNAME).a
+	$(RANLIB) "$(INSTALL_LIBDIR)/$(LIBNAME).$(A)"
 	if test -f $(LIBNAME).cmxs; then \
 	  $(INSTALL_PROG) $(LIBNAME).cmxs "$(INSTALL_LIBDIR)"; \
 	fi

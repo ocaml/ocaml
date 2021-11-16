@@ -549,6 +549,8 @@ else
 endif
 	$(MAKE) -C tools installopt
 
+LIBRARIES = $(addsuffix .$(A), ocamlcommon ocamlbytecomp ocamloptcomp)
+
 .PHONY: installoptopt
 installoptopt:
 	$(INSTALL_PROG) ocamlc.opt$(EXE) "$(INSTALL_BINDIR)"
@@ -585,8 +587,11 @@ endif
 ifeq "$(INSTALL_OCAMLNAT)" "true"
 	  $(INSTALL_PROG) ocamlnat$(EXE) "$(INSTALL_BINDIR)"
 endif
-	cd "$(INSTALL_COMPLIBDIR)" && \
-	   $(RANLIB) ocamlcommon.$(A) ocamlbytecomp.$(A) ocamloptcomp.$(A)
+# Some versions of ranlib do not support multiple archives
+	for library in $(LIBRARIES); \
+	do \
+	  $(RANLIB) "$(INSTALL_COMPLIBDIR)/$$library"; \
+	done
 
 # Installation of the *.ml sources of compiler-libs
 .PHONY: install-compiler-sources
