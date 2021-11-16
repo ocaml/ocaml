@@ -1231,6 +1231,12 @@ CAMLprim value caml_ba_fill(value vb, value vinit)
   switch (b->flags & CAML_BA_KIND_MASK) {
   default:
     CAMLassert(0);
+  case CAML_BA_FLOAT16: {
+    uint16 init = caml_float_to_float16(Double_val(vinit));
+    uint16 * p;
+    FILL_SCALAR_LOOP;
+    break;
+  }
   case CAML_BA_FLOAT32: {
     float init = Double_val(vinit);
     float * p;
