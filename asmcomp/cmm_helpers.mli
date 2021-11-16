@@ -176,6 +176,10 @@ val test_bool : Debuginfo.t -> expression -> expression
 val box_float : Debuginfo.t -> expression -> expression
 val unbox_float : Debuginfo.t -> expression -> expression
 
+(** Conversions for 16-bit floats *)
+val float_of_float16 : Debuginfo.t -> expression -> expression
+val float16_of_float : Debuginfo.t -> expression -> expression
+
 (** Complex number creation and access *)
 val box_complex : Debuginfo.t -> expression -> expression -> expression
 val complex_re : expression -> Debuginfo.t -> expression
