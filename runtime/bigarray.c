@@ -675,6 +675,8 @@ value caml_ba_get_N(value vb, volatile value * vind, int nind)
   switch ((b->flags) & CAML_BA_KIND_MASK) {
   default:
     CAMLassert(0);
+  case CAML_BA_FLOAT16:
+    return caml_copy_double((double) caml_float16_to_float(((uint16 *) b->data)[offset]));
   case CAML_BA_FLOAT32:
     return caml_copy_double((double) ((float *) b->data)[offset]);
   case CAML_BA_FLOAT64:
@@ -817,6 +819,8 @@ static value caml_ba_set_aux(value vb, volatile value * vind,
   switch (b->flags & CAML_BA_KIND_MASK) {
   default:
     CAMLassert(0);
+  case CAML_BA_FLOAT16:
+    ((uint16 *) b->data)[offset] = caml_float_to_float16(Double_val(newval)); break;
   case CAML_BA_FLOAT32:
     ((float *) b->data)[offset] = Double_val(newval); break;
   case CAML_BA_FLOAT64:
