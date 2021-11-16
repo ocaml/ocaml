@@ -416,6 +416,13 @@ CAMLexport intnat caml_ba_hash(value v)
     for (n = 0; n < num_elts; n++, p++) h = caml_hash_mix_int64(h, *p);
     break;
   }
+  case CAML_BA_FLOAT16:
+  {
+    uint16 * p = b->data;
+    if (num_elts > 128) num_elts = 128;
+    for (n = 0; n < num_elts; n++, p++) h = caml_hash_mix_float16(h, *p);
+    break;
+  }
   case CAML_BA_COMPLEX32:
     num_elts *= 2;              /* fallthrough */
   case CAML_BA_FLOAT32:
