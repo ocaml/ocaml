@@ -168,7 +168,8 @@ caml_frame_descrs caml_get_frame_descrs()
   struct frametable_version *ft =
     (struct frametable_version*)atomic_load_acq(&current_frametable);
   CAMLassert(ft);
-  if (atomic_load_acq(&ft->free_prev_after_cycle) < caml_major_cycles_completed) {
+  if (atomic_load_acq(&ft->free_prev_after_cycle) < caml_major_cycles_completed)
+  {
     /* it's now safe to free the old table */
     caml_plat_lock(&descr_mutex);
     if (ft->prev != NULL) {
