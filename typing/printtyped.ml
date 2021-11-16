@@ -234,11 +234,12 @@ and pattern : type k . _ -> _ -> k general_pattern -> unit = fun i ppf x ->
   line i ppf "pattern %a\n" fmt_location x.pat_loc;
   attributes i ppf x.pat_attributes;
   let i = i+1 in
-  match x.pat_extra with
-    | extra :: rem ->
-        pattern_extra i ppf extra;
-        pattern i ppf { x with pat_extra = rem }
-    | [] ->
+  begin match x.pat_extra with
+  | [] -> ()
+  | extra ->
+    line i ppf "extra\n";
+    List.iter (pattern_extra (i+1) ppf) extra;
+  end;
   match x.pat_desc with
   | Tpat_any -> line i ppf "Tpat_any\n";
   | Tpat_var (s,_) -> line i ppf "Tpat_var \"%a\"\n" fmt_ident s;
@@ -294,10 +295,10 @@ and pattern_extra i ppf (extra_pat, _, attrs) =
      line i ppf "Tpat_extra_type %a\n" fmt_path id;
      attributes i ppf attrs;
   | Tpat_open (id,_,_) ->
-     line i ppf "Tpat_extra_open \"%a\"\n" fmt_path id;
+     line i ppf "Tpat_extra_open %a\n" fmt_path id;
      attributes i ppf attrs;
 
-and expression_extra i ppf x attrs =
+and expression_extra i ppf (x,_,attrs) =
   match x with
   | Texp_constraint ct ->
       line i ppf "Texp_constraint\n";
@@ -319,11 +320,13 @@ and expression_extra i ppf x attrs =
 and expression i ppf x =
   line i ppf "expression %a\n" fmt_location x.exp_loc;
   attributes i ppf x.exp_attributes;
-  let i =
-    List.fold_left (fun i (extra,_,attrs) ->
-                      expression_extra i ppf extra attrs; i+1)
-      (i+1) x.exp_extra
-  in
+  let i = i+1 in
+  begin match x.exp_extra with
+  | [] -> ()
+  | extra ->
+    line i ppf "extra\n";
+    List.iter (expression_extra (i+1) ppf) extra;
+  end;
   match x.exp_desc with
   | Texp_ident (li,_,_) -> line i ppf "Texp_ident %a\n" fmt_path li;
   | Texp_instvar (_, li,_) -> line i ppf "Texp_instvar %a\n" fmt_path li;
@@ -407,7 +410,7 @@ and expression i ppf x =
       expression i ppf e
   | Texp_new (li, _, _) -> line i ppf "Texp_new %a\n" fmt_path li;
   | Texp_setinstvar (_, s, _, e) ->
-      line i ppf "Texp_setinstvar \"%a\"\n" fmt_path s;
+      line i ppf "Texp_setinstvar %a\n" fmt_path s;
       expression i ppf e;
   | Texp_override (_, l) ->
       line i ppf "Texp_override\n";
