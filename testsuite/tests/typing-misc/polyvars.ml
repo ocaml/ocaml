@@ -197,3 +197,15 @@ Error: This recursive type is not regular.
          ('e, 'c, 'b, 'd, 'a) c = [ `C of ('e, 'c, 'b, 'd, 'a) a ]
        All uses need to match the definition for the recursive type to be regular.
 |}]
+
+(* PR 10762 *)
+type a = int
+type t = [ `A of a ]
+let inspect: [< t ] -> unit = function
+  | `A 0 -> ()
+  | `A _ -> ()
+[%%expect {|
+type a = int
+type t = [ `A of a ]
+val inspect : [< `A of a & int ] -> unit = <fun>
+|}]

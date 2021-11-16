@@ -653,6 +653,11 @@ let rf_either_of = function
 let eq_row_field_ext rf1 rf2 =
   row_field_ext rf1 == row_field_ext rf2
 
+let changed_row_field_exts l f =
+  let exts = List.map row_field_ext l in
+  f ();
+  List.exists (fun r -> !r <> RFnone) exts
+
 let match_row_field ~present ~absent ~either (f : row_field) =
   match f with
   | RFabsent -> absent ()

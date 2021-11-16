@@ -344,6 +344,8 @@ val rf_either:
 val rf_either_of: type_expr option -> row_field
 
 val eq_row_field_ext: row_field -> row_field -> bool
+val changed_row_field_exts: row_field list -> (unit -> unit) -> bool
+
 val match_row_field:
     present:(type_expr option -> 'a) ->
     absent:(unit -> 'a) ->

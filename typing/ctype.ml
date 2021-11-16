@@ -3048,8 +3048,9 @@ and unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 =
         begin match tl1 @ tl2 with [] -> false
         | t1 :: tl ->
             if no_arg then raise_unexplained_for Unify;
-            if List.for_all (unify_eq t1) tl then false else
-            (List.iter (unify env t1) tl; true)
+            Types.changed_row_field_exts [f1;f2] (fun () ->
+                List.iter (unify env t1) tl
+              )
         end in
       if redo then unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 else
       let remq tl =
