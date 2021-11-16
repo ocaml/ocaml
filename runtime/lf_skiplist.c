@@ -39,7 +39,8 @@
     allowed then a sequential skip list guarded by a mutex may perform
     better.
 
-    (see also William Pugh, "Skip lists: a probabilistic alternative to
+    A sequential implementation of skip lists is in file skiplist.c and is based
+    on the paper by William Pugh, "Skip lists: a probabilistic alternative to
     balanced binary trees", Comm. ACM 33(6), 1990). */
 
 #include "caml/lf_skiplist.h"
