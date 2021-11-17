@@ -51,23 +51,12 @@ type ('a,'b) def = X of int constraint 'b = [> `A]
 type arity = (int, [`A]) def = X of int;;
 [%%expect{|
 type ('a, 'b) def = X of int constraint 'b = [> `A ]
-Line 3, characters 0-39:
-3 | type arity = (int, [`A]) def = X of int;;
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type
-         (int, [ `A ]) def
-       They have different arities.
+type arity = (int, [ `A ]) def = X of int
 |}]
 
 type ('a,'b) ct = (int,'b) def = X of int;;
 [%%expect{|
-Line 1, characters 0-41:
-1 | type ('a,'b) ct = (int,'b) def = X of int;;
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type
-         (int, [> `A ]) def
-       Their parameters differ
-       The type int is not equal to the type 'a
+type ('a, 'b) ct = (int, 'b) def = X of int constraint 'b = [ `A ]
 |}]
 
 type ('a,'b) kind = ('a, 'b) def = {a:int} constraint 'b = [> `A];;
@@ -76,7 +65,7 @@ Line 1, characters 0-65:
 1 | type ('a,'b) kind = ('a, 'b) def = {a:int} constraint 'b = [> `A];;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type
-         ('a, [> `A ]) def
+         ('a, [ `A ]) def
        Their kinds differ.
 |}]
 
