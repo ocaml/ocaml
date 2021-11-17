@@ -1,3 +1,21 @@
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*      KC Sivaramakrishnan, Indian Institute of Technology, Madras       */
+/*                   Tom Kelly, OCaml Labs Consultancy                    */
+/*                 Stephen Dolan, University of Cambridge                 */
+/*                                                                        */
+/*   Copyright 2019 Indian Institute of Technology, Madras                */
+/*   Copyright 2021 OCaml Labs Consultancy Ltd                            */
+/*   Copyright 2019 University of Cambridge                               */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
 #define CAML_INTERNALS
 
 #include "frame_descriptors.h"
@@ -39,7 +57,7 @@ static frame_descr * next_frame_descr(frame_descr * d) {
   return ((frame_descr*) p);
 }
 
-caml_frame_descrs build_frame_descriptors(link* frametables)
+static caml_frame_descrs build_frame_descriptors(link* frametables)
 {
   intnat num_descr, tblsize, i, j, len;
   intnat * tbl;
@@ -150,7 +168,8 @@ caml_frame_descrs caml_get_frame_descrs()
   struct frametable_version *ft =
     (struct frametable_version*)atomic_load_acq(&current_frametable);
   CAMLassert(ft);
-  if (atomic_load_acq(&ft->free_prev_after_cycle) < caml_major_cycles_completed) {
+  if (atomic_load_acq(&ft->free_prev_after_cycle) < caml_major_cycles_completed)
+  {
     /* it's now safe to free the old table */
     caml_plat_lock(&descr_mutex);
     if (ft->prev != NULL) {
