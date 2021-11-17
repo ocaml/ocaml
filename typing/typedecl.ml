@@ -612,6 +612,10 @@ let check_coherence ?(arity = true) env loc dpath decl =
               let inconsistent_arity =
                 List.length args <> List.length decl.type_params
               in
+              let arity =
+                (* Always check arity and parameter equality for open types. *)
+                match decl.type_kind with Type_open -> true | _ -> arity
+              in
               if arity && inconsistent_arity then Some Includecore.Arity
               else begin
                 let err, oargs =
