@@ -927,7 +927,7 @@ let type_declarations ?(equality = false) ~loc env ~mark name
           labels1 labels2
           rep1 rep2
     | (Type_open, Type_open) ->
-        if arity_mismatch then Some Arity else None
+        if has_oargs then Some Arity else None
     | (_, _) -> Some Kind
   in
   if err <> None then err else
