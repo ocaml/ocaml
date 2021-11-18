@@ -20,7 +20,7 @@ open Types
 val valid_tyvar_name : string -> bool
 
 type poly_univars
-val make_poly_univars : string list -> poly_univars
+val make_poly_univars : ?lscope:int -> string list -> poly_univars
   (* Create a set of univars with given names *)
 val check_poly_univars :
    Env.t -> Location.t -> poly_univars -> type_expr list
