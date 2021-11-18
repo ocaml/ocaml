@@ -231,17 +231,23 @@ let proper_abbrevs path tl abbrev =
 
 (* Re-export generic type creators *)
 
-let newty desc              = newty2 ~level:!current_level desc
-let new_scoped_ty scope desc = newty3 ~level:!current_level ~scope desc
+let newty ?lscope desc =
+  newty2 ~level:!current_level ?lscope desc
+let new_scoped_ty ?lscope scope desc =
+  newty3 ~level:!current_level ~scope ?lscope desc
 
-let newvar ?name ()         = newty2 ~level:!current_level (Tvar name)
-let newvar2 ?name level     = newty2 ~level:level (Tvar name)
-let new_global_var ?name () = newty2 ~level:!global_level (Tvar name)
-let newstub ~scope          = newty3 ~level:!current_level ~scope (Tvar None)
+let newvar ?name ?lscope () =
+  newty2 ~level:!current_level ?lscope (Tvar name)
+let newvar2 ?name ?lscope level =
+  newty2 ~level:level ?lscope (Tvar name)
+let new_global_var ?name ?lscope () =
+  newty2 ~level:!global_level ?lscope (Tvar name)
+let newstub ~scope ?lscope () =
+  newty3 ~level:!current_level ~scope ?lscope (Tvar None)
 
-let newobj fields      = newty (Tobject (fields, ref None))
+let newobj ?lscope fields = newty ?lscope (Tobject (fields, ref None))
 
-let newconstr path tyl = newty (Tconstr (path, tyl, ref Mnil))
+let newconstr ?lscope path tyl = newty ?lscope (Tconstr (path, tyl, ref Mnil))
 
 let none = newty (Ttuple [])                (* Clearly ill-formed type *)
 
@@ -1078,7 +1084,7 @@ let rec copy ?partial ?keep_names scope ty =
           else generic_level
     in
     if forget <> generic_level then newty2 ~level:forget (Tvar None) else
-    let t = newstub ~scope:(get_scope ty) in
+    let t = newstub ~scope:(get_scope ty) ~lscope:(get_lscope ty) () in
     For_copy.redirect_desc scope ty (Tsubst (t, None));
     let desc' =
       match desc with
@@ -1359,7 +1365,7 @@ let rec copy_sep ~cleanup_scope ~fixed ~free ~bound ~may_share
   let univars = free ty in
   if is_Tvar ty || may_share && TypeSet.is_empty univars then
     if get_level ty <> generic_level then ty else
-    let t = newstub ~scope:(get_scope ty) in
+    let t = newstub ~scope:(get_scope ty) ~lscope:(get_lscope ty) () in
     delayed_copy :=
       lazy (Transient_expr.set_stub_desc t (Tlink (copy cleanup_scope ty)))
       :: !delayed_copy;
@@ -1370,7 +1376,7 @@ let rec copy_sep ~cleanup_scope ~fixed ~free ~bound ~may_share
     if dl <> [] && conflicts univars dl then raise Not_found;
     t
   with Not_found -> begin
-    let t = newstub ~scope:(get_scope ty) in
+    let t = newstub ~scope:(get_scope ty) ~lscope:(get_lscope ty) () in
     let desc = get_desc ty in
     let visited =
       match desc with
@@ -5172,7 +5178,7 @@ let rec nondep_type_rec ?(expand_private=false) env ids ty =
     Tvar _ | Tunivar _ -> ty
   | _ -> try TypeHash.find nondep_hash ty
   with Not_found ->
-    let ty' = newgenstub ~scope:(get_scope ty) in
+    let ty' = newgenstub ~scope:(get_scope ty) ~lscope:(get_lscope ty) () in
     TypeHash.add nondep_hash ty ty';
     let desc =
       match get_desc ty with

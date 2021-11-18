@@ -88,13 +88,14 @@ let simpl_class_type t =
            displaying the type *)
       let self_row =
         Transient_expr.create Tnil
-          ~level:0 ~scope:Btype.lowest_level ~id:0
+          ~level:0 ~scope:Btype.lowest_level ~lscope:0 ~id:0
       in
       let tself =
         let t = cs.csig_self in
         let desc = Tobject (Transient_expr.type_expr self_row, ref None) in
         Transient_expr.create desc
-          ~level:(get_level t) ~scope:(get_scope t) ~id:(get_id t)
+          ~level:(get_level t) ~scope:(get_scope t) ~lscope:(get_lscope t)
+          ~id:(get_id t)
       in
         Types.Cty_signature { csig_self = Transient_expr.type_expr tself;
                               csig_self_row = Transient_expr.type_expr self_row;

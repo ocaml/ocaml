@@ -499,4 +499,5 @@ let remove_option typ =
     (Transient_expr.create (trim (get_desc typ))
        ~level:(get_level typ)
        ~scope:(get_scope typ)
+       ~lscope:(get_lscope typ)
        ~id:(get_id typ))

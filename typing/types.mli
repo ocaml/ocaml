@@ -234,7 +234,9 @@ type transient_expr = private
 module Transient_expr : sig
   (** Operations on [transient_expr] *)
 
-  val create: type_desc -> level: int -> scope: int -> id: int -> transient_expr
+  val create:
+    type_desc -> level: int -> scope: int -> lscope: int -> id: int ->
+      transient_expr
   val set_desc: transient_expr -> type_desc -> unit
   val set_level: transient_expr -> int -> unit
   val set_scope: transient_expr -> int -> unit
@@ -249,14 +251,15 @@ module Transient_expr : sig
           Fail if already instantiated. *)
 end
 
-val create_expr: type_desc -> level: int -> scope: int -> id: int -> type_expr
+val create_expr:
+  type_desc -> level: int -> scope: int -> lscope: int -> id: int -> type_expr
 
 (** Functions and definitions moved from Btype *)
 
-val newty3: level:int -> scope:int -> type_desc -> type_expr
+val newty3: level:int -> scope:int -> ?lscope: int -> type_desc -> type_expr
         (** Create a type with a fresh id *)
 
-val newty2: level:int -> type_desc -> type_expr
+val newty2: level:int -> ?lscope: int -> type_desc -> type_expr
         (** Create a type with a fresh id and no scope *)
 
 module TransientTypeOps : sig

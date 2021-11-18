@@ -54,16 +54,16 @@ val set_levels: levels -> unit
 
 val create_scope : unit -> int
 
-val newty: type_desc -> type_expr
-val new_scoped_ty: int -> type_desc -> type_expr
-val newvar: ?name:string -> unit -> type_expr
-val newvar2: ?name:string -> int -> type_expr
+val newty: ?lscope:int -> type_desc -> type_expr
+val new_scoped_ty: ?lscope:int -> int -> type_desc -> type_expr
+val newvar: ?name:string -> ?lscope:int -> unit -> type_expr
+val newvar2: ?name:string -> ?lscope:int -> int -> type_expr
         (* Return a fresh variable *)
-val new_global_var: ?name:string -> unit -> type_expr
+val new_global_var: ?name:string -> ?lscope:int -> unit -> type_expr
         (* Return a fresh variable, bound at toplevel
            (as type variables ['a] in type constraints). *)
-val newobj: type_expr -> type_expr
-val newconstr: Path.t -> type_expr list -> type_expr
+val newobj: ?lscope:int -> type_expr -> type_expr
+val newconstr: ?lscope:int -> Path.t -> type_expr list -> type_expr
 val none: type_expr
         (* A dummy type expression *)
 

@@ -535,7 +535,7 @@ let get_id t = (repr t).id
 (* transient type_expr *)
 
 module Transient_expr = struct
-  let create desc ~level ~scope ~id = {desc; level; scope; lscope= 0; id}
+  let create desc ~level ~scope ~lscope ~id = {desc; level; scope; lscope; id}
   let set_desc ty d = ty.desc <- d
   let set_stub_desc ty d = assert (ty.desc = Tvar None); ty.desc <- d
   let set_level ty lv = ty.level <- lv
@@ -676,12 +676,12 @@ let new_id = Local_store.s_ref (-1)
 
 let create_expr = Transient_expr.create
 
-let newty3 ~level ~scope desc  =
+let newty3 ~level ~scope ?(lscope = 0) desc  =
   incr new_id;
-  create_expr desc ~level ~scope ~id:!new_id
+  create_expr desc ~level ~scope ~lscope ~id:!new_id
 
-let newty2 ~level desc =
-  newty3 ~level ~scope:Ident.lowest_scope desc
+let newty2 ~level ?lscope desc =
+  newty3 ~level ~scope:Ident.lowest_scope ?lscope desc
 
                   (**********************************)
                   (*  Utilities for backtracking    *)

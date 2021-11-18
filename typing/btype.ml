@@ -107,9 +107,10 @@ let pivot_level = 2 * lowest_level - 1
 
 (**** Some type creators ****)
 
-let newgenty desc      = newty2 ~level:generic_level desc
-let newgenvar ?name () = newgenty (Tvar name)
-let newgenstub ~scope  = newty3 ~level:generic_level ~scope (Tvar None)
+let newgenty ?lscope desc      = newty2 ~level:generic_level ?lscope desc
+let newgenvar ?name ?lscope () = newgenty ?lscope (Tvar name)
+let newgenstub ~scope ?lscope () =
+  newty3 ~level:generic_level ~scope ?lscope (Tvar None)
 
 (*
 let newmarkedvar level =
