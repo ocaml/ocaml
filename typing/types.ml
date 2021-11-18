@@ -23,6 +23,7 @@ type transient_expr =
   { mutable desc: type_desc;
     mutable level: int;
     mutable scope: int;
+    mutable lscope: int;
     id: int }
 
 and type_expr = transient_expr
@@ -441,6 +442,7 @@ type change =
   | Ccompress of type_expr * type_desc * type_desc
   | Clevel of type_expr * int
   | Cscope of type_expr * int
+  | Clscope of type_expr * int
   | Cname of
       (Path.t * type_expr list) option ref * (Path.t * type_expr list) option
   | Crow of [`none|`some] row_field_gen ref
@@ -527,16 +529,18 @@ let repr t =
 let get_desc t = (repr t).desc
 let get_level t = (repr t).level
 let get_scope t = (repr t).scope
+let get_lscope t = (repr t).lscope
 let get_id t = (repr t).id
 
 (* transient type_expr *)
 
 module Transient_expr = struct
-  let create desc ~level ~scope ~id = {desc; level; scope; id}
+  let create desc ~level ~scope ~id = {desc; level; scope; lscope= 0; id}
   let set_desc ty d = ty.desc <- d
   let set_stub_desc ty d = assert (ty.desc = Tvar None); ty.desc <- d
   let set_level ty lv = ty.level <- lv
   let set_scope ty sc = ty.scope <- sc
+  let set_lscope ty sc = ty.lscope <- sc
   let coerce ty = ty
   let repr = repr
   let type_expr ty = ty
@@ -688,6 +692,7 @@ let undo_change = function
   | Ccompress (ty, desc, _) -> Transient_expr.set_desc ty desc
   | Clevel (ty, level) -> Transient_expr.set_level ty level
   | Cscope (ty, scope) -> Transient_expr.set_scope ty scope
+  | Clscope (ty, lscope) -> Transient_expr.set_lscope ty lscope
   | Cname  (r, v)    -> r := v
   | Crow   r         -> r := RFnone
   | Ckind  (FKvar r) -> r.field_kind <- FKprivate
@@ -741,6 +746,12 @@ let set_scope ty scope =
   if scope <> ty.scope then begin
     if ty.id <= !last_snapshot then log_change (Cscope (ty, ty.scope));
     Transient_expr.set_scope ty scope
+  end
+let set_lscope ty lscope =
+  let ty = repr ty in
+  if lscope <> ty.lscope then begin
+    if ty.id <= !last_snapshot then log_change (Clscope (ty, ty.lscope));
+    Transient_expr.set_lscope ty lscope
   end
 let set_univar rty ty =
   log_change (Cuniv (rty, !rty)); rty := Some ty
