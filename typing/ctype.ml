@@ -1090,20 +1090,20 @@ let setup_copy_local_scope_reduce lscope ty =
     Some
       { initial_scope= lscope'
       ; target_scope= lscope
-      ; base_scope= Int.min lscope lscope' }
+      ; base_scope= Int.min lscope (lscope'-1) }
 
 (* partial: we may not wish to copy the non generic types
    before we call type_pat *)
 let rec copy ?partial ?keep_names scope local_scope_reduce ty =
-  let lscope, adjust_lscope, local_scope_reduce =
-    copy_local_scope_reduce (get_lscope ty) local_scope_reduce
-  in
-  let copy = copy ?partial ?keep_names scope local_scope_reduce in
   match get_desc ty with
     Tsubst (ty, _) -> ty
   | desc ->
     let level = get_level ty in
     if level <> generic_level && partial = None then ty else
+    let lscope, adjust_lscope, local_scope_reduce =
+      copy_local_scope_reduce (get_lscope ty) local_scope_reduce
+    in
+    let copy = copy ?partial ?keep_names scope local_scope_reduce in
     (* We only forget types that are non generic and do not contain
        free univars *)
     let forget =
