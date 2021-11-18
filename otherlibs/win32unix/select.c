@@ -890,7 +890,7 @@ static DWORD caml_list_length (value lst)
   CAMLparam1 (lst);
   CAMLlocal1 (l);
 
-  for (res = 0, l = lst; l != Val_int(0); l = Field(l, 1), res++)
+  for (res = 0, l = lst; l != Val_emptylist; l = Field(l, 1), res++)
   { }
 
   CAMLreturnT(DWORD, res);
@@ -942,7 +942,7 @@ static int fdlist_to_fdset(value fdlist, fd_set *fdset)
   value l, c;
   int n = 0;
   FD_ZERO(fdset);
-  for (l = fdlist; l != Val_int(0); l = Field(l, 1)) {
+  for (l = fdlist; l != Val_emptylist; l = Field(l, 1)) {
     if (++n > FD_SETSIZE) {
       DEBUG_PRINT("More than FD_SETSIZE sockets");
       return 0;
@@ -962,11 +962,11 @@ static value fdset_to_fdlist(value fdlist, fd_set *fdset)
 {
   CAMLparam1(fdlist);
   CAMLlocal2(res, s);
-  res = Val_int(0);
-  for (/*nothing*/; fdlist != Val_int(0); fdlist = Field(fdlist, 1)) {
+  res = Val_emptylist;
+  for (/*nothing*/; fdlist != Val_emptylist; fdlist = Field(fdlist, 1)) {
     s = Field(fdlist, 0);
     if (FD_ISSET(Socket_val(s), fdset)) {
-      value newres = caml_alloc_small(2, 0);
+      value newres = caml_alloc_small(2, Tag_cons);
       Field(newres, 0) = s;
       Field(newres, 1) = res;
       res = newres;
@@ -1028,16 +1028,16 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
 
   err = 0;
   tm = Double_val(timeout);
-  if (readfds == Val_int(0)
-      && writefds == Val_int(0)
-      && exceptfds == Val_int(0)) {
+  if (readfds == Val_emptylist
+      && writefds == Val_emptylist
+      && exceptfds == Val_emptylist) {
     DEBUG_PRINT("nothing to do");
     if ( tm > 0.0 ) {
       caml_enter_blocking_section();
       Sleep( (int)(tm * 1000));
       caml_leave_blocking_section();
     }
-    read_list = write_list = except_list = Val_int(0);
+    read_list = write_list = except_list = Val_emptylist;
   } else {
     if (fdlist_to_fdset(readfds, &read)
         && fdlist_to_fdset(writefds, &write)
@@ -1096,7 +1096,7 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
       DEBUG_PRINT("Dispatch read fd");
       handle_set_init(&hds, hdsData, hdsMax);
       i=0;
-      for (l = readfds; l != Val_int(0); l = Field(l, 1))
+      for (l = readfds; l != Val_emptylist; l = Field(l, 1))
         {
           fd = Field(l, 0);
           if (!handle_set_mem(&hds, Handle_val(fd)))
@@ -1116,7 +1116,7 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
       DEBUG_PRINT("Dispatch write fd");
       handle_set_init(&hds, hdsData, hdsMax);
       i=0;
-      for (l = writefds; l != Val_int(0); l = Field(l, 1))
+      for (l = writefds; l != Val_emptylist; l = Field(l, 1))
         {
           fd = Field(l, 0);
           if (!handle_set_mem(&hds, Handle_val(fd)))
@@ -1136,7 +1136,7 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
       DEBUG_PRINT("Dispatch exceptional fd");
       handle_set_init(&hds, hdsData, hdsMax);
       i=0;
-      for (l = exceptfds; l != Val_int(0); l = Field(l, 1))
+      for (l = exceptfds; l != Val_emptylist; l = Field(l, 1))
         {
           fd = Field(l, 0);
           if (!handle_set_mem(&hds, Handle_val(fd)))
@@ -1253,9 +1253,9 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
       if (err == 0)
         {
           DEBUG_PRINT("Building result");
-          read_list = Val_unit;
-          write_list = Val_unit;
-          except_list = Val_unit;
+          read_list = Val_emptylist;
+          write_list = Val_emptylist;
+          except_list = Val_emptylist;
 
           iterSelectData = lpSelectData;
           while (iterSelectData != NULL)
@@ -1263,7 +1263,7 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
               for (i = 0; i < iterSelectData->nResultsCount; i++)
                 {
                   iterResult = &(iterSelectData->aResults[i]);
-                  l = caml_alloc_small(2, 0);
+                  l = caml_alloc_small(2, Tag_cons);
                   Field(l, 0) = find_handle(iterResult, readfds, writefds,
                                             exceptfds);
                   switch (iterResult->EMode)

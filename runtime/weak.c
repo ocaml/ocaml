@@ -34,9 +34,6 @@ value caml_dummy[] =
    Val_unit};
 value caml_ephe_none = (value)&caml_dummy[1];
 
-#define None_val (Val_int(0))
-#define Some_tag 0
-
 struct caml_ephe_info* caml_alloc_ephe_info (void)
 {
   struct caml_ephe_info* e =
@@ -216,8 +213,8 @@ CAMLprim value caml_ephe_unset_key (value e, value n)
 
 value caml_ephe_set_key_option (value e, value n, value el)
 {
-  if (el != None_val && Is_block (el)) {
-    return caml_ephe_set_key (e, n, Field(el, 0));
+  if (Is_some (el)) {
+    return caml_ephe_set_key (e, n, Some_val(el));
   } else {
     return caml_ephe_unset_key (e, n);
   }
@@ -247,11 +244,11 @@ static value ephe_get_field (value e, mlsize_t offset)
   elt = Field(e, offset);
 
   if (elt == caml_ephe_none) {
-    res = None_val;
+    res = Val_none;
   } else {
     elt = Field(e, offset);
     caml_darken (0, elt, 0);
-    res = caml_alloc_shr (1, Some_tag);
+    res = caml_alloc_shr (1, Tag_some);
     caml_initialize(&Field(res, 0), elt);
   }
   /* run GC and memprof callbacks */
@@ -284,7 +281,7 @@ static value ephe_get_field_copy (value e, mlsize_t offset)
   clean_field(e, offset);
   v = Field(e, offset);
   if (v == caml_ephe_none) {
-    res = None_val;
+    res = Val_none;
     goto out;
   }
 
@@ -298,7 +295,7 @@ static value ephe_get_field_copy (value e, mlsize_t offset)
 
     clean_field(e, offset);
     v = Field(e, offset);
-    if (v == caml_ephe_none) CAMLreturn (None_val);
+    if (v == caml_ephe_none) CAMLreturn (Val_none);
 
     if (Tag_val(v) == Infix_tag) {
       infix_offs = Infix_offset_val(v);
@@ -324,7 +321,7 @@ static value ephe_get_field_copy (value e, mlsize_t offset)
   } else {
     Field(e, offset) = elt = v;
   }
-  res = caml_alloc_shr (1, Some_tag);
+  res = caml_alloc_shr (1, Tag_some);
   caml_initialize(&Field(res, 0), elt + infix_offs);
  out:
   /* run GC and memprof callbacks */

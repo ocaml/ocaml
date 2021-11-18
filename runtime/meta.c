@@ -100,12 +100,10 @@ CAMLprim value caml_reify_bytecode(value ls_prog,
   prog = (code_t)buffer_of_bytes_array(ls_prog, &len);
   caml_add_debug_info(prog, Val_long(len), debuginfo);
   /* match (digest_opt : string option) with */
-  if (Is_block(digest_opt)) {
-    /* | Some digest -> */
+  if (Is_some(digest_opt)) {
     digest_kind = DIGEST_PROVIDED;
-    digest = (unsigned char *) String_val(Field(digest_opt, 0));
+    digest = (unsigned char *) String_val(Some_val(digest_opt));
   } else {
-    /* | None -> */
     digest_kind = DIGEST_LATER;
     digest = NULL;
   }

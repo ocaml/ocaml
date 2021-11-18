@@ -99,8 +99,8 @@ value win_create_process_native(value cmd, value cmdline, value env,
   caml_stat_free(wcmd);
   wcmdline = caml_stat_strdup_to_utf16(String_val(cmdline));
 
-  if (env != Val_int(0)) {
-    env = Field(env, 0);
+  if (Is_some(env)) {
+    env = Some_val(env);
     size =
       win_multi_byte_to_wide_char(String_val(env),
                                   caml_string_length(env), NULL, 0);

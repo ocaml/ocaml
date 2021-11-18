@@ -276,12 +276,9 @@ CAMLexport value caml_copy_string_array(char const * const * arr)
 
 CAMLexport int caml_convert_flag_list(value list, const int *flags)
 {
-  int res;
-  res = 0;
-  while (list != Val_int(0)) {
+  int res = 0;
+  for (/*nothing*/; list != Val_emptylist; list = Field(list, 1))
     res |= flags[Int_val(Field(list, 0))];
-    list = Field(list, 1);
-  }
   return res;
 }
 
@@ -373,7 +370,7 @@ CAMLprim value caml_update_dummy(value dummy, value newval)
 CAMLexport value caml_alloc_some(value v)
 {
   CAMLparam1(v);
-  value some = caml_alloc_small(1, 0);
+  value some = caml_alloc_small(1, Tag_some);
   Field(some, 0) = v;
   CAMLreturn(some);
 }
