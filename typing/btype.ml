@@ -664,8 +664,8 @@ let public_methods sign =
   Meths.fold
     (fun name (priv, _vr, _ty) l ->
        match priv with
-       | Private -> l
-       | Public -> name :: l)
+       | Mprivate _ -> l
+       | Mpublic -> name :: l)
     sign.csig_meths []
 
 (* Return the instance variables of a class signature *)

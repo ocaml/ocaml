@@ -1285,11 +1285,6 @@ end
 let () = (new c)#test
 [%%expect {|
 class c : object method test : unit end
-Line 6, characters 9-16:
-6 | let () = (new c)#test
-             ^^^^^^^
-Error: This expression has type c
-       It has no method test
 |}];;
 
 class virtual d = object
@@ -1320,9 +1315,4 @@ end
 let () = (new c)#test
 [%%expect {|
 class c : object method test : unit end
-Line 6, characters 9-16:
-6 | let () = (new c)#test
-             ^^^^^^^
-Error: This expression has type c
-       It has no method test
 |}];;
