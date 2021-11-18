@@ -721,6 +721,9 @@ let update_scope_for tr_exn scope ty =
     update_scope scope ty
   with Escape e -> raise_for tr_exn (Escape e)
 
+type local_scope_reduce =
+  { initial_scope: int; base_scope: int; target_scope: int }
+
 (* Note: the level of a type constructor must be greater than its binding
     time. That way, a type constructor cannot escape the scope of its
     definition, as would be the case in
@@ -729,8 +732,37 @@ let update_scope_for tr_exn scope ty =
     (without this constraint, the type system would actually be unsound.)
 *)
 
-let rec update_level env level expand ty =
-  if get_level ty > level then begin
+let rec update_level env level local_scope_reduce expand ty =
+  let should_lscope, unsafe_lscope, local_scope_reduce, lscope =
+    let local_scope = get_lscope ty in
+    match local_scope_reduce with
+    | None -> false, false, None, local_scope
+    | Some {initial_scope; base_scope; target_scope} ->
+        if target_scope > local_scope || local_scope = 0 then
+          (* NB: We don't accept [target_scope = local_scope] for this branch,
+             because the base scope may have been unsafely reduced to equality,
+             which would otherwise be a leak.
+             For example, reducing the poly at local scope [3] to [2] should not
+             allow the variable ['b] to escape below:
+               <a: 'a.[1] <b: 'b.[2] <c: 'c.[3] 'b * 'c> > >
+          *)
+          false, false, None, local_scope
+        else
+          let base_scope', local_scope_reduce =
+            if local_scope >= base_scope then base_scope, local_scope_reduce
+            else
+              (* This scope is lower than the initial scope, we want to lower it
+                 to the target scope to ensure that our whole type ends up at
+                 this scope. *)
+              ( local_scope
+              , Some { initial_scope; base_scope= local_scope; target_scope } )
+          in
+          ( true
+          , local_scope = base_scope' (* type isn't shielded by any binders *)
+          , local_scope_reduce
+          , (local_scope - base_scope' + target_scope) )
+  in
+  if should_lscope || get_level ty > level then begin
     if level < get_scope ty then raise_scope_escape_exn ty;
     match get_desc ty with
       Tconstr(p, _tl, _abbrev) when level < Path.scope p ->
@@ -738,7 +770,7 @@ let rec update_level env level expand ty =
         begin try
           let ty' = !forward_try_expand_safe env ty in
           link_type ty ty';
-          update_level env level expand ty'
+          update_level env level local_scope_reduce expand ty'
         with Cannot_expand ->
           raise_escape_exn (Constructor p)
         end
@@ -756,20 +788,21 @@ let rec update_level env level expand ty =
           if not needs_expand then raise Cannot_expand;
           let ty' = !forward_try_expand_safe env ty in
           link_type ty ty';
-          update_level env level expand ty'
+          update_level env level local_scope_reduce expand ty'
         with Cannot_expand ->
           set_level ty level;
-          iter_type_expr (update_level env level expand) ty
+          set_lscope ty lscope;
+          iter_type_expr (update_level env level local_scope_reduce expand) ty
         end
     | Tpackage (p, fl) when level < Path.scope p ->
         let p' = normalize_package_path env p in
         if Path.same p p' then raise_escape_exn (Module_type p);
         set_type_desc ty (Tpackage (p', fl));
-        update_level env level expand ty
+        update_level env level local_scope_reduce expand ty
     | Tobject (_, ({contents=Some(p, _tl)} as nm))
       when level < Path.scope p ->
         set_name nm None;
-        update_level env level expand ty
+        update_level env level local_scope_reduce expand ty
     | Tvariant row ->
         begin match row_name row with
         | Some (p, _tl) when level < Path.scope p ->
@@ -777,31 +810,45 @@ let rec update_level env level expand ty =
         | _ -> ()
         end;
         set_level ty level;
-        iter_type_expr (update_level env level expand) ty
+        set_lscope ty lscope;
+        iter_type_expr (update_level env level local_scope_reduce expand) ty
     | Tfield(lab, _, ty1, _)
       when lab = dummy_method && level < get_scope ty1 ->
         raise_escape_exn Self
+    | Tunivar _ when unsafe_lscope ->
+        raise_escape_exn (Univ ty)
     | _ ->
         set_level ty level;
+        set_lscope ty lscope;
         (* XXX what about abbreviations in Tconstr ? *)
-        iter_type_expr (update_level env level expand) ty
+        iter_type_expr (update_level env level local_scope_reduce expand) ty
   end
 
 (* First try without expanding, then expand everything,
    to avoid combinatorial blow-up *)
-let update_level env level ty =
-  if get_level ty > level then begin
+let update_level env level lscope ty =
+  let local_scope_reduce =
+    let lscope_ty = get_lscope ty in
+    if lscope_ty > lscope then
+      Some
+        { initial_scope= lscope_ty
+        ; base_scope= lscope_ty
+        ; target_scope= lscope}
+    else
+      None
+  in
+  if Option.is_some local_scope_reduce || get_level ty > level then begin
     let snap = snapshot () in
     try
-      update_level env level false ty
+      update_level env level local_scope_reduce false ty
     with Escape _ ->
       backtrack snap;
-      update_level env level true ty
+      update_level env level local_scope_reduce true ty
   end
 
-let update_level_for tr_exn env level ty =
+let update_level_for tr_exn env level lscope ty =
   try
-    update_level env level ty
+    update_level env level lscope ty
   with Escape e -> raise_for tr_exn (Escape e)
 
 (* Lower level of type variables inside contravariant branches *)
@@ -1494,14 +1541,15 @@ let expand_abbrev_gen kind find_type_expansion env ty =
     Tconstr (path, args, abbrev) ->
       let level = get_level ty in
       let scope = get_scope ty in
+      let lscope = get_lscope ty in
       let lookup_abbrev = proper_abbrevs path args abbrev in
       begin match find_expans kind path !lookup_abbrev with
         Some ty' ->
           (* prerr_endline
             ("found a "^string_of_kind kind^" expansion for "^Path.name path);*)
-          if level <> generic_level then
+          if level <> generic_level || lscope <> 0 then
             begin try
-              update_level env level ty'
+              update_level env level lscope ty'
             with Escape _ ->
               (* XXX This should not happen.
                  However, levels are not correctly restored after a
@@ -2539,7 +2587,7 @@ let unify1_var env t1 t2 =
   | () ->
       begin
         try
-          update_level env (get_level t1) t2;
+          update_level env (get_level t1) (get_lscope t1) t2;
           update_scope (get_scope t1) t2;
         with Escape e ->
           raise_for Unify (Escape e)
@@ -2611,7 +2659,7 @@ let rec unify (env:Env.t ref) t1 t2 =
         if unify1_var !env t2 t1 then () else unify2 env t1 t2
     | (Tunivar _, Tunivar _) ->
         unify_univar_for Unify t1 t2 !univar_pairs;
-        update_level_for Unify !env (get_level t1) t2;
+        update_level_for Unify !env (get_level t1) (get_lscope t1) t2;
         update_scope_for Unify (get_scope t1) t2;
         link_type t1 t2
     | (Tconstr (p1, [], a1), Tconstr (p2, [], a2))
@@ -2621,7 +2669,7 @@ let rec unify (env:Env.t ref) t1 t2 =
                when any of the types has a cached expansion. *)
             && not (has_cached_expansion p1 !a1
                  || has_cached_expansion p2 !a2) ->
-        update_level_for Unify !env (get_level t1) t2;
+        update_level_for Unify !env (get_level t1) (get_lscope t1) t2;
         update_scope_for Unify (get_scope t1) t2;
         link_type t1 t2
     | (Tconstr (p1, [], _), Tconstr (p2, [], _))
@@ -2652,9 +2700,10 @@ and unify2 env t1 t2 =
   let t1' = expand_head_unif !env t1 in
   let t2' = expand_head_unif !env t2 in
   let lv = Int.min (get_level t1') (get_level t2') in
+  let lsc = Int.min (get_lscope t1') (get_lscope t2') in
   let scope = Int.max (get_scope t1') (get_scope t2') in
-  update_level_for Unify !env lv t2;
-  update_level_for Unify !env lv t1;
+  update_level_for Unify !env lv lsc t2;
+  update_level_for Unify !env lv lsc t1;
   update_scope_for Unify scope t2;
   update_scope_for Unify scope t1;
   if unify_eq t1' t2' then () else
@@ -2890,7 +2939,7 @@ and unify_fields env ty1 ty2 =          (* Optimization *)
         unify_kind k1 k2;
         try
           if !trace_gadt_instances then begin
-            update_level_for Unify !env (get_level va) t1;
+            update_level_for Unify !env (get_level va) (get_lscope va) t1;
             update_scope_for Unify (get_scope va) t1
           end;
           unify env t1 t2
@@ -2982,7 +3031,8 @@ and unify_row env row1 row2 =
     let rm = row_more row in
     (*if !trace_gadt_instances && rm.desc = Tnil then () else*)
     if !trace_gadt_instances then
-      update_level_for Unify !env (get_level rm) (newgenty (Tvariant row));
+      update_level_for Unify !env (get_level rm) (get_lscope rm)
+        (newgenty (Tvariant row));
     if has_fixed_explanation row then
       if eq_type more rm then () else
       if is_Tvar rm then link_type rm more else unify env rm more
@@ -2991,7 +3041,7 @@ and unify_row env row1 row2 =
         newgenty (Tvariant
                     (create_row ~fields:rest ~more ~closed ~fixed ~name))
       in
-      update_level_for Unify !env (get_level rm) ty;
+      update_level_for Unify !env (get_level rm) (get_lscope rm) ty;
       update_scope_for Unify (get_scope rm) ty;
       link_type rm ty
   in
@@ -3070,7 +3120,7 @@ and unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 =
       let update_levels rm =
         List.iter
           (fun ty ->
-            update_level_for Unify !env (get_level rm) ty;
+            update_level_for Unify !env (get_level rm) (get_lscope rm) ty;
             update_scope_for Unify (get_scope rm) ty)
       in
       update_levels rm2 tl1';
@@ -3087,7 +3137,7 @@ and unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 =
       if_not_fixed first (fun () ->
           let s = snapshot () in
           link_row_field_ext ~inside:f1 f2;
-          update_level_for Unify !env (get_level rm1) t2;
+          update_level_for Unify !env (get_level rm1) (get_lscope rm1) t2;
           update_scope_for Unify (get_scope rm1) t2;
           (try List.iter (fun t1 -> unify env t1 t2) tl
            with exn -> undo_first_change_after s; raise exn)
@@ -3096,7 +3146,7 @@ and unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 =
       if_not_fixed second (fun () ->
           let s = snapshot () in
           link_row_field_ext ~inside:f2 f1;
-          update_level_for Unify !env (get_level rm2) t1;
+          update_level_for Unify !env (get_level rm2) (get_lscope rm2) t1;
           update_scope_for Unify (get_scope rm2) t1;
           (try List.iter (unify env t1) tl
            with exn -> undo_first_change_after s; raise exn)
@@ -3143,7 +3193,7 @@ let unify_var env t1 t2 =
       let reset_tracing = check_trace_gadt_instances env in
       begin try
         occur_for Unify env t1 t2;
-        update_level_for Unify env (get_level t1) t2;
+        update_level_for Unify env (get_level t1) (get_lscope t1) t2;
         update_scope_for Unify (get_scope t1) t2;
         link_type t1 t2;
         reset_trace_gadt_instances reset_tracing;
@@ -3566,7 +3616,7 @@ let generalize_class_signature_spine env sign =
    Update the level of [ty]. First check that the levels of generic
    variables from the subject are not lowered.
 *)
-let moregen_occur env level ty =
+let moregen_occur env level lscope ty =
   let rec occur ty =
     let lv = get_level ty in
     if lv <= level then () else
@@ -3580,7 +3630,7 @@ let moregen_occur env level ty =
   end;
   (* also check for free univars *)
   occur_univar_for Moregen env ty;
-  update_level_for Moregen env level ty
+  update_level_for Moregen env level lscope ty
 
 let may_instantiate inst_nongen t1 =
   let level = get_level t1 in
@@ -3593,7 +3643,7 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
   try
     match (get_desc t1, get_desc t2) with
       (Tvar _, _) when may_instantiate inst_nongen t1 ->
-        moregen_occur env (get_level t1) t2;
+        moregen_occur env (get_level t1) (get_lscope t1) t2;
         update_scope_for Moregen (get_scope t1) t2;
         occur_for Moregen env t1 t2;
         link_type t1 t2
@@ -3608,7 +3658,7 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
           TypePairs.add type_pairs (t1', t2');
           match (get_desc t1', get_desc t2') with
             (Tvar _, _) when may_instantiate inst_nongen t1' ->
-              moregen_occur env (get_level t1') t2;
+              moregen_occur env (get_level t1') (get_lscope t1') t2;
               update_scope_for Moregen (get_scope t1') t2;
               link_type t1' t2
           | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) when l1 = l2
@@ -3720,7 +3770,7 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
                     (create_row ~fields:r2 ~more:rm2 ~name:None
                        ~fixed:row2_fixed ~closed:row2_closed))
       in
-      moregen_occur env (get_level rm1) ext;
+      moregen_occur env (get_level rm1) (get_lscope rm1) ext;
       update_scope_for Moregen (get_scope rm1) ext;
       (* This [link_type] has to be undone if the rest of the function fails *)
       link_type rm1 ext
