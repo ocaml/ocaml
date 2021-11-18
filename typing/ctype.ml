@@ -1975,7 +1975,13 @@ let local_non_recursive_abbrev env p ty =
 (* Since we cannot duplicate universal variables, unification must
    be done at meta-level, using bindings in univar_pairs *)
 (* TODO: use find_opt *)
-let rec unify_univar t1 t2 = function
+let rec unify_univar t1 t2 cl =
+  begin
+    let ls1 = get_lscope t1 and ls2 = get_lscope t2 in
+    if ls1 < ls2 then raise_escape_exn (Univ t2)
+    else if ls2 < ls1 then raise_escape_exn (Univ t1)
+  end;
+  match cl with
     (cl1, cl2) :: rem ->
       let find_univ t cl =
         try
@@ -1999,7 +2005,9 @@ let rec unify_univar t1 t2 = function
    [Cannot_unify_universal_variables] *)
 let unify_univar_for tr_exn t1 t2 univar_pairs =
   try unify_univar t1 t2 univar_pairs
-  with Cannot_unify_universal_variables -> raise_unexplained_for tr_exn
+  with
+    Cannot_unify_universal_variables -> raise_unexplained_for tr_exn
+  | Escape e -> raise_for tr_exn (Escape e)
 
 (* Test the occurrence of free univars in a type *)
 (* That's way too expensive. Must do some kind of caching *)
@@ -2404,7 +2412,8 @@ let rec mcomp type_pairs env t1 t2 =
              with Escape _ -> raise Incompatible)
         | (Tunivar _, Tunivar _) ->
             (try unify_univar t1' t2' !univar_pairs
-             with Cannot_unify_universal_variables -> raise Incompatible)
+             with Cannot_unify_universal_variables | Escape _ ->
+               raise Incompatible)
         | (_, _) ->
             raise Incompatible
       end
