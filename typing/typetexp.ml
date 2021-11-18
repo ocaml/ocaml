@@ -577,10 +577,10 @@ and transl_fields env policy ~lscope o fields =
   let ty_init =
      match o, policy with
      | Closed, _ -> newty Tnil
-     | Open, Univars -> new_pre_univar ()
+     | Open, Univars -> new_pre_univar ~lscope ()
      | Open, _ -> newvar () in
   let ty = List.fold_left (fun ty (s, ty') ->
-      newty (Tfield (s, field_public, ty', ty))) ty_init fields in
+      newty ~lscope (Tfield (s, field_public, ty', ty))) ty_init fields in
   ty, object_fields
 
 
