@@ -738,7 +738,10 @@ type local_scope_reduce =
     (without this constraint, the type system would actually be unsound.)
 *)
 
-let rec update_level env level local_scope_reduce expand ty =
+let rec update_level visited env level local_scope_reduce expand ty =
+  if not (TypeHash.mem visited ty) then begin
+  TypeHash.add visited ty ();
+  let update_level = update_level visited in
   let should_lscope, unsafe_lscope, local_scope_reduce, lscope =
     let local_scope = get_lscope ty in
     match local_scope_reduce with
@@ -804,10 +807,12 @@ let rec update_level env level local_scope_reduce expand ty =
         let p' = normalize_package_path env p in
         if Path.same p p' then raise_escape_exn (Module_type p);
         set_type_desc ty (Tpackage (p', fl));
+        TypeHash.remove visited ty;
         update_level env level local_scope_reduce expand ty
     | Tobject (_, ({contents=Some(p, _tl)} as nm))
       when level < Path.scope p ->
         set_name nm None;
+        TypeHash.remove visited ty;
         update_level env level local_scope_reduce expand ty
     | Tvariant row ->
         begin match row_name row with
@@ -828,7 +833,7 @@ let rec update_level env level local_scope_reduce expand ty =
         set_lscope ty lscope;
         (* XXX what about abbreviations in Tconstr ? *)
         iter_type_expr (update_level env level local_scope_reduce expand) ty
-  end
+  end end
 
 (* First try without expanding, then expand everything,
    to avoid combinatorial blow-up *)
@@ -846,10 +851,10 @@ let update_level env level lscope ty =
   if Option.is_some local_scope_reduce || get_level ty > level then begin
     let snap = snapshot () in
     try
-      update_level env level local_scope_reduce false ty
+      update_level (TypeHash.create 17) env level local_scope_reduce false ty
     with Escape _ ->
       backtrack snap;
-      update_level env level local_scope_reduce true ty
+      update_level (TypeHash.create 17) env level local_scope_reduce true ty
   end
 
 let update_level_for tr_exn env level lscope ty =

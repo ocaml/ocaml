@@ -42,6 +42,8 @@ module TypeHash : sig
   val add: 'a t -> type_expr -> 'a -> unit
   val find: 'a t -> type_expr -> 'a
   val iter: (type_expr -> 'a -> unit) -> 'a t -> unit
+  val mem: 'a t -> type_expr -> bool
+  val remove: 'a t -> type_expr -> unit
 end
 module TypePairs : sig
   type t
