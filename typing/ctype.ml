@@ -324,9 +324,9 @@ let flatten_fields ty =
     let (l, r) = flatten [] ty in
     (List.sort (fun (n, _, _) (n', _, _) -> compare n n') l, r)
 
-let build_fields level =
+let build_fields level lscope =
   List.fold_right
-    (fun (s, k, ty1) ty2 -> newty2 ~level (Tfield(s, k, ty1, ty2)))
+    (fun (s, k, ty1) ty2 -> newty2 ~level ~lscope (Tfield(s, k, ty1, ty2)))
 
 let associate_fields fields1 fields2 =
   let rec associate p s s' =
@@ -3034,8 +3034,9 @@ and unify_fields env ty1 ty2 =          (* Optimization *)
   let tr1 = Transient_expr.repr rest1 and tr2 = Transient_expr.repr rest2 in
   let d1 = tr1.desc and d2 = tr2.desc in
   try
-    unify env (build_fields l1 miss1 va) rest2;
-    unify env rest1 (build_fields l2 miss2 va);
+    let ls1 = get_lscope ty1 and ls2 = get_lscope ty2 in
+    unify env (build_fields l1 ls1 miss1 va) rest2;
+    unify env rest1 (build_fields l2 ls2 miss2 va);
     List.iter
       (fun (name, k1, t1, k2, t2) ->
         unify_kind k1 k2;
@@ -3819,7 +3820,7 @@ and moregen_fields inst_nongen type_pairs env ty1 ty2 =
     | [] -> ()
   end;
   moregen inst_nongen type_pairs env rest1
-    (build_fields (get_level ty2) miss2 rest2);
+    (build_fields (get_level ty2) (get_lscope ty2) miss2 rest2);
   List.iter
     (fun (name, k1, t1, k2, t2) ->
        (* The below call should never throw [Public_method_to_private_method] *)
@@ -4977,12 +4978,13 @@ and subtype_fields env trace ty1 ty2 cstrs =
         rest1 rest2
         cstrs
     else
-      (trace, build_fields (get_level ty1) miss1 rest1, rest2,
+      (trace, build_fields (get_level ty1) (get_lscope ty1) miss1 rest1, rest2,
        !univar_pairs) :: cstrs
   in
   let cstrs =
     if miss2 = [] then cstrs else
-    (trace, rest1, build_fields (get_level ty2) miss2 (newvar ()),
+    (trace, rest1,
+     build_fields (get_level ty2) (get_lscope ty2) miss2 (newvar ()),
      !univar_pairs) :: cstrs
   in
   List.fold_left
@@ -5240,9 +5242,10 @@ let rec normalize_type_rec visited ty =
             fatal_error "Ctype.normalize_type_rec"
         end;
         let level = get_level fi in
+        let lscope = get_lscope fi in
         if level < lowest_level then () else
         let fields, row = flatten_fields fi in
-        let fi' = build_fields level fields row in
+        let fi' = build_fields level lscope fields row in
         set_type_desc fi (get_desc fi')
     | _ -> ()
     end;
