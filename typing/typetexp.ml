@@ -92,6 +92,7 @@ let type_variables = ref (TyVarMap.empty : type_expr TyVarMap.t)
 let univars        = ref ([] : (string * type_expr) list)
 let pre_univars    = ref ([] : type_expr list)
 let used_variables = ref (TyVarMap.empty : (type_expr * Location.t) TyVarMap.t)
+let more_variables = ref ([] : (int * type_expr list) list)
 
 let reset_type_variables () =
   reset_global_level ();
@@ -116,6 +117,45 @@ let new_global_var ?name () =
   new_global_var ?name:(validate_name name) ()
 let newvar ?name ?lscope () =
   newvar ?name:(validate_name name) ?lscope ()
+let newmorevar ?name ~lscope () =
+  let res = newvar ?name ~lscope () in
+  let rec insert_var rev_head used_variables =
+    match used_variables with
+    | (lscope', vars) :: tl when lscope = lscope' ->
+      List.rev_append rev_head ((lscope', res :: vars) :: tl)
+    | hd :: tl -> insert_var (hd :: rev_head) tl
+    | [] -> assert false
+  in
+  if lscope > 0 then more_variables := insert_var [] !more_variables;
+  res
+
+(* Lower any row more variables which weren't expanded or otherwise captured
+   (e.g. by univars). *)
+let lower_morevars lscope =
+  match !more_variables with
+  | (lscope', lscope_more_variables) :: more_variables_tl
+    when lscope' = lscope + 1 ->
+      let lscope_more_variables =
+        List.filter (fun ty ->
+            match get_desc ty with
+            | Tvar _ ->
+                (* Reduce the local scope, if needed. *)
+                let ty_lscope = get_lscope ty in
+                if ty_lscope = 0 then false
+                else if ty_lscope <= lscope then true
+                else (set_lscope ty lscope; true)
+            | _ -> false)
+          lscope_more_variables
+      in
+      more_variables :=
+        begin match more_variables_tl with
+        | (lscope'', lscope_more_variables') :: more_variables_tl ->
+          (* Shift the variables down to the next level. *)
+          (lscope'', lscope_more_variables @ lscope_more_variables')
+            :: more_variables_tl
+        | [] -> []
+        end
+  | _ -> assert false
 
 let type_variable loc name =
   try
@@ -332,7 +372,8 @@ and transl_type_aux env policy ~lscope styp =
           in
           (* NB: row is always non-static here; more is thus never Tnil *)
           let more =
-            if policy = Univars then new_pre_univar ~lscope () else newvar () in
+            if policy = Univars then new_pre_univar ~lscope ()
+            else newmorevar ~lscope () in
           let row =
             create_row ~fields ~more
               ~closed:true ~fixed:None ~name:(Some (path, ty_args)) in
@@ -474,7 +515,8 @@ and transl_type_aux env policy ~lscope styp =
       in
       let more =
         if Btype.static_row (make_row (newvar ())) then newty ~lscope Tnil else
-        if policy = Univars then new_pre_univar ~lscope () else newvar ()
+        if policy = Univars then new_pre_univar ~lscope ()
+        else newmorevar ~lscope ()
       in
       let ty = newty ~lscope (Tvariant (make_row more)) in
       ctyp (Ttyp_variant (tfields, closed, present)) ty
@@ -484,6 +526,7 @@ and transl_type_aux env policy ~lscope styp =
       let new_univars = make_poly_univars ~lscope:(lscope+1) vars in
       let old_univars = !univars in
       univars := new_univars @ !univars;
+      more_variables := (lscope + 1, []) :: !more_variables;
       let cty = transl_type env policy ~lscope:(lscope+1) st in
       let ty = cty.ctyp_type in
       univars := old_univars;
@@ -493,6 +536,7 @@ and transl_type_aux env policy ~lscope styp =
       let ty_list = List.filter (fun v -> deep_occur v ty) ty_list in
       let ty' = Btype.newgenty ~lscope (Tpoly(ty, ty_list)) in
       unify_var env (newvar ~lscope ()) ty';
+      lower_morevars lscope;
       ctyp (Ttyp_poly (vars, cty)) ty'
   | Ptyp_package (p, l) ->
       let l, mty = create_package_mty true styp.ptyp_loc env (p, l) in
@@ -578,7 +622,7 @@ and transl_fields env policy ~lscope o fields =
      match o, policy with
      | Closed, _ -> newty ~lscope Tnil
      | Open, Univars -> new_pre_univar ~lscope ()
-     | Open, _ -> newvar () in
+     | Open, _ -> newmorevar ~lscope () in
   let ty = List.fold_left (fun ty (s, ty') ->
       newty ~lscope (Tfield (s, field_public, ty', ty))) ty_init fields in
   ty, object_fields
@@ -639,7 +683,7 @@ let globalize_used_variables env fixed =
       !r
 
 let transl_simple_type env ?univars:(uvs=[]) fixed styp =
-  univars := uvs; used_variables := TyVarMap.empty;
+  univars := uvs; used_variables := TyVarMap.empty; more_variables := [];
   let typ =
     transl_type env (if fixed then Fixed else Extensible) ~lscope:0 styp
   in
@@ -649,6 +693,7 @@ let transl_simple_type env ?univars:(uvs=[]) fixed styp =
 
 let transl_simple_type_univars env styp =
   univars := []; used_variables := TyVarMap.empty; pre_univars := [];
+  more_variables := [];
   begin_def ();
   let typ = transl_type env Univars ~lscope:1 styp in
   (* Only keep already global variables in used_variables *)
@@ -676,7 +721,7 @@ let transl_simple_type_univars env styp =
         instance (Btype.newgenty (Tpoly (typ.ctyp_type, univs))) }
 
 let transl_simple_type_delayed env styp =
-  univars := []; used_variables := TyVarMap.empty;
+  univars := []; used_variables := TyVarMap.empty; more_variables := [];
   begin_def ();
   let typ = transl_type env Extensible ~lscope:0 styp in
   end_def ();
