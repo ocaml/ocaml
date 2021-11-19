@@ -3105,7 +3105,7 @@ and unify_row env lscope row1 row2 =
     set_more First row1 r2;
     List.iter
       (fun (l,f1,f2) ->
-        try unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2
+        try unify_row_field env lscope fixed1 fixed2 rm1 rm2 l f1 f2
         with Unify_trace trace ->
           raise_trace_for Unify (Variant (Incompatible_types_for l) :: trace)
       )
@@ -3121,7 +3121,7 @@ and unify_row env lscope row1 row2 =
     raise exn
   end
 
-and unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 =
+and unify_row_field env lscope fixed1 fixed2 rm1 rm2 l f1 f2 =
   let if_not_fixed (pos,fixed) f =
     match fixed with
     | None -> f ()
@@ -3155,7 +3155,7 @@ and unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 =
             if List.for_all (unify_eq t1) tl then false else
             (List.iter (unify env t1) tl; true)
         end in
-      if redo then unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 else
+      if redo then unify_row_field env lscope fixed1 fixed2 rm1 rm2 l f1 f2 else
       let remq tl =
         List.filter (fun ty -> not (List.exists (eq_type ty) tl)) in
       let tl1' = remq tl2 tl1 and tl2' = remq tl1 tl2 in
@@ -3174,7 +3174,7 @@ and unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 =
       let update_levels rm =
         List.iter
           (fun ty ->
-            update_level_for Unify !env (get_level rm) (get_lscope rm) ty;
+            update_level_for Unify !env (get_level rm) lscope ty;
             update_scope_for Unify (get_scope rm) ty)
       in
       update_levels rm2 tl1';
@@ -3191,7 +3191,7 @@ and unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 =
       if_not_fixed first (fun () ->
           let s = snapshot () in
           link_row_field_ext ~inside:f1 f2;
-          update_level_for Unify !env (get_level rm1) (get_lscope rm1) t2;
+          update_level_for Unify !env (get_level rm1) lscope t2;
           update_scope_for Unify (get_scope rm1) t2;
           (try List.iter (fun t1 -> unify env t1 t2) tl
            with exn -> undo_first_change_after s; raise exn)
@@ -3200,7 +3200,7 @@ and unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 =
       if_not_fixed second (fun () ->
           let s = snapshot () in
           link_row_field_ext ~inside:f2 f1;
-          update_level_for Unify !env (get_level rm2) (get_lscope rm2) t1;
+          update_level_for Unify !env (get_level rm2) lscope t1;
           update_scope_for Unify (get_scope rm2) t1;
           (try List.iter (unify env t1) tl
            with exn -> undo_first_change_after s; raise exn)
