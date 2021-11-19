@@ -24,6 +24,7 @@ module TypeSet : sig
   include Set.S with type elt = transient_expr
   val add: type_expr -> t -> t
   val mem: type_expr -> t -> bool
+  val remove: type_expr -> t -> t
   val singleton: type_expr -> t
   val exists: (type_expr -> bool) -> t -> bool
   val elements: t -> type_expr list
@@ -42,8 +43,6 @@ module TypeHash : sig
   val add: 'a t -> type_expr -> 'a -> unit
   val find: 'a t -> type_expr -> 'a
   val iter: (type_expr -> 'a -> unit) -> 'a t -> unit
-  val mem: 'a t -> type_expr -> bool
-  val remove: 'a t -> type_expr -> unit
 end
 module TypePairs : sig
   type t

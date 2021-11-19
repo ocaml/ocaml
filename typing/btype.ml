@@ -30,6 +30,7 @@ module TypeSet = struct
   include TransientTypeSet
   let add = wrap_repr add
   let mem = wrap_repr mem
+  let remove = wrap_repr remove
   let singleton = wrap_repr singleton
   let exists p = TransientTypeSet.exists (wrap_type_expr p)
   let elements set =
@@ -49,8 +50,6 @@ module TypeHash = struct
   let add hash = wrap_repr (add hash)
   let find hash = wrap_repr (find hash)
   let iter f = TransientTypeHash.iter (wrap_type_expr f)
-  let mem hash = wrap_repr (mem hash)
-  let remove hash = wrap_repr (remove hash)
 end
 module TransientTypePairs =
   Hashtbl.Make (struct
