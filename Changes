@@ -368,6 +368,10 @@ OCaml 4.14.0
 - #10717: Simplify the installation of man pages
   (Sébastien Hinderer, review by David Allsopp)
 
+- #10739: Stop installing extract_crc
+  (Sébastien Hinderer, review by David Allsopp, Daniel Bünzli, Xavier Leroy
+  and Gabriel Scherer)
+
 ### Bug fixes:
 
 - #9214, #10709: Wrong unmarshaling of function pointers in debugger mode.
