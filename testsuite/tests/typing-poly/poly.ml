@@ -648,7 +648,7 @@ val f :
 - : (< m : 'a. 'a * < p : 'b. 'b * 'd * 'c > as 'd > as 'c) ->
     ('f * < p : 'b. 'b * 'e * 'c > as 'e)
 = <fun>
-- : < m : 'a. < p : 'a; .. > as 'b > -> 'b = <fun>
+- : < m : 'a. < p : 'a; .. > > -> < p : 'b; .. > = <fun>
 |}, Principal{|
 - : (< m : 'a. 'a * 'b > as 'b) -> 'c * (< m : 'a. 'a * 'd > as 'd) = <fun>
 - : (< m : 'a. 'b * 'a list > as 'b) ->
@@ -668,7 +668,7 @@ val f :
              (< m : 'a. 'a * < p : 'b0. 'b0 * 'h * 'g > as 'h > as 'g) >
      as 'e)
 = <fun>
-- : < m : 'a. < p : 'a; .. > as 'b > -> 'b = <fun>
+- : < m : 'a. < p : 'a; .. > > -> < p : 'b; .. > = <fun>
 |}];;
 
 type sum = T of < id: 'a. 'a -> 'a > ;;

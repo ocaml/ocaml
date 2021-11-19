@@ -185,7 +185,9 @@ let proxy ty =
         | Tvar _ | Tunivar _ | Tconstr _ -> ty
         | Tnil -> ty
         | _ -> assert false
-      in proxy_obj ty
+      in
+      let proxy = proxy_obj ty in
+      if get_lscope ty = get_lscope proxy then proxy else ty
   | _ -> ty
 
 (**** Utilities for fixed row private types ****)
