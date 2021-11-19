@@ -2286,11 +2286,18 @@ and type_application loc strengthen funct_body env smod =
     in
     type_module strengthen funct_body None env sfunct
   in
-  List.fold_left (type_one_application ~ctx:(loc, funct, args) funct_body env)
-    (funct, funct_shape) args
+  let me =
+    List.fold_left (type_one_application ~ctx:(loc, funct, args) funct_body env)
+      funct args
+  in
+  let shape =
+    let arg_shapes = List.map (fun arg -> arg.shape) args in
+    Shape.app_n funct_shape arg_shapes
+  in
+  me, shape
 
 and type_one_application ~ctx:(apply_loc,md_f,args)
-    funct_body env (funct, funct_shape)  app_view =
+    funct_body env funct app_view =
   match Env.scrape_alias env funct.mod_type with
   | Mty_functor (Unit, mty_res) ->
       if not app_view.arg_is_syntactic_unit then
@@ -2301,8 +2308,7 @@ and type_one_application ~ctx:(apply_loc,md_f,args)
         mod_type = mty_res;
         mod_env = env;
         mod_attributes = app_view.attributes;
-        mod_loc = funct.mod_loc },
-      Shape.app funct_shape ~arg:app_view.shape
+        mod_loc = funct.mod_loc }
   | Mty_functor (Named (param, mty_param), mty_res) as mty_functor ->
       let coercion =
         try
@@ -2362,8 +2368,7 @@ and type_one_application ~ctx:(apply_loc,md_f,args)
         mod_type = mty_appl;
         mod_env = env;
         mod_attributes = app_view.attributes;
-        mod_loc = app_view.loc },
-      Shape.app ~arg:app_view.shape funct_shape
+        mod_loc = app_view.loc }
   | Mty_alias path ->
       raise(Error(app_view.f_loc, env, Cannot_scrape_alias path))
   | _ ->

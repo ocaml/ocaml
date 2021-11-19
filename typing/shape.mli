@@ -85,6 +85,7 @@ val fresh_var : ?name:string -> Uid.t -> var * t
 val var : Uid.t -> Ident.t -> t
 val abs : ?uid:Uid.t -> var -> t -> t
 val app : ?uid:Uid.t -> t -> arg:t -> t
+val app_n : t -> t list -> t
 val str : ?uid:Uid.t -> t Item.Map.t -> t
 val proj : ?uid:Uid.t -> t -> Item.t -> t
 val leaf : Uid.t -> t

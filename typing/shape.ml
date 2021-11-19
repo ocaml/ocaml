@@ -212,25 +212,40 @@ let proj ?uid t item =
 let rec app ?uid f ~arg =
   match f.desc with
   | Abs (var, body) ->
-      let res = subst var ~arg body in
+      let res = subst_n ~args:[var, arg] body in
       overwrite_uid uid res
   | _ ->
       { uid; desc = App (f, arg) }
 
-and subst var ~arg t =
+and subst_n ~args t =
   match t.desc with
-  | Var id when var = id -> arg
+  | Comp_unit _ | Leaf -> t
+  | Var id ->
+      begin try List.assoc id args
+      with Not_found -> t
+      end
   | Abs (v, e) ->
-      abs ?uid:t.uid v (subst var ~arg e)
+      abs ?uid:t.uid v (subst_n ~args e)
   | App (f, e) ->
-      app ?uid:t.uid (subst var ~arg f) ~arg:(subst var ~arg e)
+      app ?uid:t.uid (subst_n ~args f) ~arg:(subst_n ~args e)
   | Struct m ->
-      { t with desc = Struct (Item.Map.map (fun s -> subst var ~arg s) m) }
-  | Proj (t, item) ->
-      proj ?uid:t.uid (subst var ~arg t) item
-  | Comp_unit _ | Leaf | Var _ ->
-      t
+      { t with desc = Struct (Item.Map.map (subst_n ~args) m) }
+  | Proj (s, item) ->
+      proj ?uid:t.uid (subst_n ~args s) item
 
+and app_n f args =
+  let rec aux pairs f = function
+    | [] -> subst_n f ~args:pairs
+    | arg :: args ->
+        match f.desc with
+        | Abs (var, body) ->
+            aux ((var, arg) :: pairs) body args
+        | _ ->
+            let acc = subst_n f ~args:pairs in
+              List.fold_left (fun f arg -> { uid = None; desc = App (f, arg) })
+                acc (arg :: args)
+  in
+  aux [] f args
 
 module Make_reduce(Params : sig
   type env
