@@ -95,7 +95,7 @@ Line 3, characters 22-23:
 3 | let f (x : t1) : t2 = x;;
                           ^
 Error: This expression has type t1 but an expression was expected of type t2
-       The method m has type 'c. 'c * ('a * < m : 'c. 'b >) as 'b,
+       The method m has type 'a. 'a * ('a * < m : 'c. 'c * 'b > as 'b),
        but the expected method type was 'a. 'a * ('a * < m : 'a. 'd >) as 'd
        The universal variable 'a would escape its scope
 |}]

@@ -817,6 +817,24 @@ class node : node_type
 class node : object method as_variant : [> `Node of node_type ] end
 |}];;
 
+class type node_type =  object
+  method as_variant : ([> `Node of node_type] as 'a) * 'a
+end;;
+class node : node_type = object (self)
+  method as_variant : 'a. ([> `Node of node_type] as 'b) * ('b as 'a)
+                    = `Node (self :>  node_type), `Node (self :> node_type)
+end;;
+class node = object (self : #node_type)
+  method as_variant = `Node (self :> node_type), `Node (self :> node_type)
+end;;
+[%%expect {|
+class type node_type =
+  object method as_variant : ([> `Node of node_type ] as 'a) * 'a end
+class node : node_type
+class node :
+  object method as_variant : ([> `Node of node_type ] as 'a) * 'a end
+|}];;
+
 type bad = {bad : 'a. 'a option ref};;
 let bad = {bad = ref None};;
 type bad2 = {mutable bad2 : 'a. 'a option ref option};;
@@ -1128,10 +1146,9 @@ Line 2, characters 3-4:
 Error: This expression has type < m : 'a. 'a * < m : 'a * 'b > > as 'b
        but an expression was expected of type
          < m : 'a. 'a * (< m : 'a * < m : 'c. 'c * 'd > > as 'd) >
-       The method m has type
-       'a. 'a * (< m : 'a * < m : 'c. 'c * 'd > > as 'd),
+       The method m has type 'a * < m : 'a. 'a * < m : 'e > > as 'e,
        but the expected method type was
-       'c. 'c * < m : 'a * < m : 'c. 'e > > as 'e
+       'a * < m : 'c. 'c * < m : 'f > > as 'f
        The universal variable 'a would escape its scope
 |}];;
 
@@ -1152,7 +1169,10 @@ Error: This expression has type
          < m : 'b. 'b * ('b * < m : 'c. 'c * 'a > as 'a) >
        but an expression was expected of type
          < m : 'b. 'b * ('b * < m : 'c. 'c * ('c * 'd) >) > as 'd
-       Types for method m are incompatible
+       The method m has type 'c. 'c * ('b * < m : 'c. 'e >) as 'e,
+       but the expected method type was
+       'c. 'c * ('c * < m : 'b. 'b * ('b * < m : 'c. 'f >) >) as 'f
+       The universal variable 'c would escape its scope
 |}];;
 
 module M
@@ -1539,6 +1559,8 @@ Line 2, characters 2-72:
 Error: This expression has type < m : 'x. [< `Foo of 'x ] -> 'x >
        but an expression was expected of type
          < m : 'a. [< `Foo of int ] -> 'a >
+       The method m has type 'x. [< `Foo of 'x ] -> 'x,
+       but the expected method type was 'a. [< `Foo of int ] -> 'a
        The universal variable 'x would escape its scope
 |}];;
 (* ok *)
@@ -1884,7 +1906,7 @@ Line 1, characters 17-18:
 1 | let f (x : u) = (x : v)
                      ^
 Error: This expression has type u but an expression was expected of type v
-       The method m has type 'a s list * < m : 'b > as 'b,
+       The method m has type 'a. 'a s list * (< m : 'a s list * 'b > as 'b),
        but the expected method type was 'a. 'a s list * < m : 'a. 'c > as 'c
        The universal variable 'a would escape its scope
 |}]
