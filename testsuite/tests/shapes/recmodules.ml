@@ -43,12 +43,8 @@ and B : sig
 end = B
 [%%expect{|
 {
- ("A", module) -> {<.11>
-                   ("t", type) -> A/302<.11> . "t"[type];
-                   };
- ("B", module) -> {<.12>
-                   ("t", type) -> B/303<.12> . "t"[type];
-                   };
+ ("A", module) -> A/302<.11>;
+ ("B", module) -> B/303<.12>;
  }
 module rec A : sig type t = Leaf of B.t end
 and B : sig type t = int end
