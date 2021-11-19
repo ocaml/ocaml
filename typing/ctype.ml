@@ -738,7 +738,7 @@ type local_scope_reduce =
     (without this constraint, the type system would actually be unsound.)
 *)
 
-let rec update_level visited env level local_scope_reduce expand ty =
+let rec update_level visited lax env level local_scope_reduce expand ty =
   if not (TypeHash.mem visited ty) then begin
   TypeHash.add visited ty ();
   let update_level = update_level visited in
@@ -779,7 +779,7 @@ let rec update_level visited env level local_scope_reduce expand ty =
         begin try
           let ty' = !forward_try_expand_safe env ty in
           link_type ty ty';
-          update_level env level local_scope_reduce expand ty'
+          update_level lax env level local_scope_reduce expand ty'
         with Cannot_expand ->
           raise_escape_exn (Constructor p)
         end
@@ -797,23 +797,25 @@ let rec update_level visited env level local_scope_reduce expand ty =
           if not needs_expand then raise Cannot_expand;
           let ty' = !forward_try_expand_safe env ty in
           link_type ty ty';
-          update_level env level local_scope_reduce expand ty'
+          update_level lax env level local_scope_reduce expand ty'
         with Cannot_expand ->
           set_level ty level;
           set_lscope ty lscope;
-          iter_type_expr (update_level env level local_scope_reduce expand) ty
+          let lax = !umode = Pattern in
+          iter_type_expr (update_level lax env level local_scope_reduce expand)
+            ty
         end
     | Tpackage (p, fl) when level < Path.scope p ->
         let p' = normalize_package_path env p in
         if Path.same p p' then raise_escape_exn (Module_type p);
         set_type_desc ty (Tpackage (p', fl));
         TypeHash.remove visited ty;
-        update_level env level local_scope_reduce expand ty
+        update_level lax env level local_scope_reduce expand ty
     | Tobject (_, ({contents=Some(p, _tl)} as nm))
       when level < Path.scope p ->
         set_name nm None;
         TypeHash.remove visited ty;
-        update_level env level local_scope_reduce expand ty
+        update_level lax env level local_scope_reduce expand ty
     | Tvariant row ->
         begin match row_name row with
         | Some (p, _tl) when level < Path.scope p ->
@@ -822,17 +824,17 @@ let rec update_level visited env level local_scope_reduce expand ty =
         end;
         set_level ty level;
         set_lscope ty lscope;
-        iter_type_expr (update_level env level local_scope_reduce expand) ty
+        iter_type_expr (update_level lax env level local_scope_reduce expand) ty
     | Tfield(lab, _, ty1, _)
       when lab = dummy_method && level < get_scope ty1 ->
         raise_escape_exn Self
     | Tunivar _ when unsafe_lscope ->
-        raise_escape_exn (Univ ty)
+        if not lax then raise_escape_exn (Univ ty)
     | _ ->
         set_level ty level;
         set_lscope ty lscope;
         (* XXX what about abbreviations in Tconstr ? *)
-        iter_type_expr (update_level env level local_scope_reduce expand) ty
+        iter_type_expr (update_level lax env level local_scope_reduce expand) ty
   end end
 
 (* First try without expanding, then expand everything,
@@ -851,10 +853,12 @@ let update_level env level lscope ty =
   if Option.is_some local_scope_reduce || get_level ty > level then begin
     let snap = snapshot () in
     try
-      update_level (TypeHash.create 17) env level local_scope_reduce false ty
+      update_level (TypeHash.create 17) false env level local_scope_reduce
+        false ty
     with Escape _ ->
       backtrack snap;
-      update_level (TypeHash.create 17) env level local_scope_reduce true ty
+      update_level (TypeHash.create 17) false env level local_scope_reduce
+        true ty
   end
 
 let update_level_for tr_exn env level lscope ty =
