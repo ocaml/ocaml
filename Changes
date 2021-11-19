@@ -417,6 +417,8 @@ OCaml 4.14.0
 - #10735: Uncaught unify exception from `build_as_type`
   (Jacques Garrigue, report and review by Leo White)
 
+- #10763, #10764: fix miscompilation of method delegation
+  (Alain Frisch, review by Vincent Laviron and Jacques Garrigue)
 
 
 OCaml 4.13 maintenance branch
