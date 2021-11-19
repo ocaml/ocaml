@@ -451,13 +451,21 @@ and try_modtypes ~in_eq ~loc env ~mark subst mty1 mty2 orig_shape =
         functor_param ~in_eq ~loc env ~mark:(negate_mark mark)
           subst param1 param2
       in
-      (* Using a fresh variable with a placeholder uid here is fine: users will
-         never try to jump to the definition of that variable.
-         If they try to jump to the parameter from inside the functor, they will
-         use the variable shape that is stored in the local environment.  *)
-      let var, shape_var = Shape.fresh_var Uid.internal_not_actually_unique in
+      let var, res_shape =
+        match orig_shape.Shape.desc with
+        | Abs (var, res_shape) -> var, res_shape
+        | _ ->
+            (* Using a fresh variable with a placeholder uid here is fine: users
+               will never try to jump to the definition of that variable.
+               If they try to jump to the parameter from inside the functor,
+               they will use the variable shape that is stored in the local
+               environment.  *)
+            let var, shape_var =
+              Shape.fresh_var Uid.internal_not_actually_unique
+            in
+            var, Shape.app orig_shape ~arg:shape_var
+      in
       let cc_res =
-        let res_shape = Shape.app orig_shape ~arg:shape_var in
         modtypes ~in_eq ~loc env ~mark subst res1 res2 res_shape
       in
       begin match cc_arg, cc_res with
