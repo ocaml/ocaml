@@ -3741,7 +3741,8 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
           | (Tnil,  Tconstr _ ) -> raise_for Moregen (Obj (Abstract_row Second))
           | (Tconstr _,  Tnil ) -> raise_for Moregen (Obj (Abstract_row First))
           | (Tvariant row1, Tvariant row2) ->
-              moregen_row inst_nongen type_pairs env (get_lscope t2') row1 row2
+              moregen_row inst_nongen type_pairs env (get_lscope t1') row1
+                (get_lscope t2') row2
           | (Tobject (fi1, _nm1), Tobject (fi2, _nm2)) ->
               moregen_fields inst_nongen type_pairs env fi1 fi2
           | (Tfield _, Tfield _) ->           (* Actually unused *)
@@ -3796,7 +3797,7 @@ and moregen_kind k1 k2 =
   | (Fpublic, Fprivate)              -> raise Public_method_to_private_method
   | (Fabsent, _) | (_, Fabsent)      -> assert false
 
-and moregen_row inst_nongen type_pairs env lscope2 row1 row2 =
+and moregen_row inst_nongen type_pairs env lscope1 row1 lscope2 row2 =
   let Row {fields = row1_fields; more = rm1; closed = row1_closed} =
     row_repr row1 in
   let Row {fields = row2_fields; more = rm2; closed = row2_closed;
@@ -3833,7 +3834,7 @@ and moregen_row inst_nongen type_pairs env lscope2 row1 row2 =
             (create_row ~fields:r2 ~more:rm2 ~name:None
               ~fixed:row2_fixed ~closed:row2_closed))
       in
-      moregen_occur env (get_level rm1) (get_lscope rm1) ext;
+      moregen_occur env (get_level rm1) lscope1 ext;
       update_scope_for Moregen (get_scope rm1) ext;
       (* This [link_type] has to be undone if the rest of the function fails *)
       link_type rm1 ext

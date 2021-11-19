@@ -811,9 +811,10 @@ Lines 1-2, characters 4-15:
 1 | ....f : type a b. (a,b) eq -> [< `A of a | `B] -> [< `A of b | `B] =
 2 |   fun Eq o -> o..............
 Error: This definition has type
-         'c. ('d, 'c) eq -> ([< `A of 'c & 'f & 'd | `B ] as 'e) -> 'e
+         'c. ('c, 'd) eq -> ([< `A of 'd & 'f | `B ] as 'e) -> 'e
        which is less general than
-         'a 'b. ('a, 'b) eq -> ([< `A of 'b & 'h | `B ] as 'g) -> 'g
+         'a 'b.
+           ('a, 'b) eq -> [< `A of 'a & 'g | `B ] -> [< `A of 'b & 'h | `B ]
 |}];;
 
 let f : type a b. (a,b) eq -> [`A of a | `B] -> [`A of b | `B] =
