@@ -844,7 +844,7 @@ val create_process :
    concurrently with the current process.
    The standard input and outputs of the new process are connected
    to the descriptors [stdin], [stdout] and [stderr].
-   Passing e.g. [Stdlib.stdout] for [stdout] prevents the redirection
+   Passing e.g. {!Unix.stdout} for [stdout] prevents the redirection
    and causes the new process to have the same standard output
    as the current process.
    The executable file [prog] is searched in the path.
