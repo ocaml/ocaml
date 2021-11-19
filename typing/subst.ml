@@ -224,7 +224,7 @@ let rec typexp copy_scope s ty =
           (* We must substitute in a subtle way *)
           (* Tsubst takes a tuple containing the row var and the variant *)
           begin match mored with
-            Tsubst (_, Some ty2) ->
+            Tsubst (_, Some ty2) when get_lscope ty = get_lscope more ->
               (* This variant type has been already copied *)
               (* Change the stub to avoid Tlink in the new type *)
               For_copy.redirect_desc copy_scope ty (Tsubst (ty2, None));
@@ -236,7 +236,7 @@ let rec typexp copy_scope s ty =
               (* Various cases for the row variable *)
               let more' =
                 match mored with
-                  Tsubst (ty, None) -> ty
+                  Tsubst (ty, _) -> ty
                 | Tconstr _ | Tnil -> typexp copy_scope s more
                 | Tunivar _ | Tvar _ ->
                     let lscope = get_lscope more in

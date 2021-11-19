@@ -1584,22 +1584,13 @@ Error: This expression has type
          < m : 'b 'd. [< `Bar | `Foo of int & 'b ] as 'd >
        Types for tag `Foo are incompatible
 |}]
-(* fail? *)
+
 let f (n : < m : 'a. [< `Foo of 'a & int | `Bar] >) =
   (n : < m : 'b. [< `Foo of 'b & int | `Bar] >)
 [%%expect{|
-Line 1:
-Error: Values do not match:
-         val f :
-           < m : 'a. [< `Bar | `Foo of 'a & int ] as 'c > -> < m : 'b. 'c >
-       is not included in
-         val f :
-           < m : 'a. [< `Bar | `Foo of 'b & int ] as 'c > -> < m : 'b. 'c >
-       The type
-         < m : 'a. [< `Bar | `Foo of 'b & int ] as 'c > -> < m : 'b. 'c >
-       is not compatible with the type
-         < m : 'a. [< `Bar | `Foo of 'b & int ] as 'd > -> < m : 'b. 'd >
-       Types for tag `Foo are incompatible
+val f :
+  < m : 'a. [< `Bar | `Foo of 'a & int ] > ->
+  < m : 'b. [< `Bar | `Foo of 'b & int ] > = <fun>
 |}]
 
 (* PR#6171 *)
@@ -1952,4 +1943,13 @@ Line 2, characters 16-24:
                     ^^^^^^^^
 Error: This field value has type 'b option ref which is less general than
          'a. 'a option ref
+|}]
+
+(* Ensure that copying respects separation of univars. *)
+let f (x : < m : 'a. [> `A of 'a] >) (y : < m : 'b. [> `A of 'b] >) b =
+  if b then x else y;;
+[%%expect{|
+val f :
+  < m : 'a. [> `A of 'a ] > ->
+  < m : 'b. [> `A of 'b ] > -> bool -> < m : 'a. [> `A of 'a ] > = <fun>
 |}]

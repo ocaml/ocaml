@@ -176,7 +176,8 @@ let hash_variant s =
 let proxy ty =
   match get_desc ty with
   | Tvariant row when not (static_row row) ->
-      row_more row
+      let more = row_more row in
+      if get_lscope ty = get_lscope more then more else ty
   | Tobject (ty, _) ->
       let rec proxy_obj ty =
         match get_desc ty with

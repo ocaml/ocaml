@@ -1152,7 +1152,7 @@ let rec copy ?partial ?keep_names scope local_scope_reduce ty =
           (* We must substitute in a subtle way *)
           (* Tsubst takes a tuple containing the row var and the variant *)
           begin match mored with
-            Tsubst (_, Some ty2) ->
+            Tsubst (_, Some ty2) when get_lscope ty = get_lscope more ->
               (* This variant type has been already copied *)
               (* Change the stub to avoid Tlink in the new type *)
               For_copy.redirect_desc scope ty (Tsubst (ty2, None));
@@ -1162,9 +1162,7 @@ let rec copy ?partial ?keep_names scope local_scope_reduce ty =
               let keep = get_level more <> generic_level && partial = None in
               let more' =
                 match mored with
-                  Tsubst (ty, None) -> ty
-                  (* TODO: is this case possible?
-                     possibly an interaction with (copy more) below? *)
+                  Tsubst (ty, _) -> ty
                 | Tconstr _ | Tnil ->
                     copy more
                 | Tvar _ | Tunivar _ ->
