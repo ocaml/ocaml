@@ -400,6 +400,15 @@ let may_equal_constr c1 c2 =
      | tag1, tag2 ->
          equal_tag tag1 tag2)
 
+let item_visibility = function
+  | Sig_value (_, _, vis)
+  | Sig_type (_, _, _, vis)
+  | Sig_typext (_, _, _, vis)
+  | Sig_module (_, _, _, _, vis)
+  | Sig_modtype (_, _, vis)
+  | Sig_class (_, _, _, vis)
+  | Sig_class_type (_, _, _, vis) -> vis
+
 type label_description =
   { lbl_name: string;                   (* Short name *)
     lbl_res: type_expr;                 (* Type of the result *)
