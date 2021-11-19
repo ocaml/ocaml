@@ -160,8 +160,8 @@ let new_pre_univar ?name ?lscope () =
   let v = newvar ?name ?lscope () in pre_univars := v :: !pre_univars; v
 
 type poly_univars = (string * type_expr) list
-let make_poly_univars ?(lscope = 0) vars =
-  List.map (fun name -> name, newvar ~name ~lscope ()) vars
+let make_poly_univars ?lscope vars =
+  List.map (fun name -> name, newvar ~name ?lscope ()) vars
 
 let check_poly_univars env loc vars =
   vars |> List.iter (fun (_, v) -> generalize v);
@@ -473,7 +473,7 @@ and transl_type_aux env policy ~lscope styp =
         create_row ~fields ~more ~closed:(closed = Closed) ~fixed:None ~name
       in
       let more =
-        if Btype.static_row (make_row (newvar ())) then newty Tnil else
+        if Btype.static_row (make_row (newvar ())) then newty ~lscope Tnil else
         if policy = Univars then new_pre_univar ~lscope () else newvar ()
       in
       let ty = newty ~lscope (Tvariant (make_row more)) in
@@ -576,7 +576,7 @@ and transl_fields env policy ~lscope o fields =
   let fields = Hashtbl.fold (fun s ty l -> (s, ty) :: l) hfields [] in
   let ty_init =
      match o, policy with
-     | Closed, _ -> newty Tnil
+     | Closed, _ -> newty ~lscope Tnil
      | Open, Univars -> new_pre_univar ~lscope ()
      | Open, _ -> newvar () in
   let ty = List.fold_left (fun ty (s, ty') ->
@@ -673,7 +673,7 @@ let transl_simple_type_univars env styp =
   in
   make_fixed_univars typ.ctyp_type;
     { typ with ctyp_type =
-        instance (Btype.newgenty ~lscope:0 (Tpoly (typ.ctyp_type, univs))) }
+        instance (Btype.newgenty (Tpoly (typ.ctyp_type, univs))) }
 
 let transl_simple_type_delayed env styp =
   univars := []; used_variables := TyVarMap.empty;
