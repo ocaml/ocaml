@@ -261,6 +261,7 @@ endif
 
 # Core bootstrapping cycle
 .PHONY: coreboot
+ifeq "$(FLAT_FLOAT_ARRAY)" "true"
 coreboot:
 # Promote the new compiler but keep the old runtime
 # This compiler runs on boot/ocamlrun and produces bytecode for
@@ -278,6 +279,11 @@ coreboot:
 	$(MAKE) core
 # Check if fixpoint reached
 	$(MAKE) compare
+else
+coreboot:
+	$(error Cannot bootstrap when configured with \
+--disable-flat-float-array)
+endif
 
 # Recompile the system using the bootstrap compiler
 
