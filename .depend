@@ -45,11 +45,25 @@ utils/clflags.cmx : \
 utils/clflags.cmi : \
     utils/profile.cmi \
     utils/misc.cmi
+utils/config.common.cmo :
+utils/config.common.cmx :
+utils/config.fixed.cmo :
+utils/config.fixed.cmx :
 utils/config.cmo : \
     utils/config.cmi
 utils/config.cmx : \
     utils/config.cmi
 utils/config.cmi :
+utils/config_boot.cmo : \
+    utils/config_boot.cmi
+utils/config_boot.cmx : \
+    utils/config_boot.cmi
+utils/config_boot.cmi :
+utils/config_main.cmo : \
+    utils/config_main.cmi
+utils/config_main.cmx : \
+    utils/config_main.cmi
+utils/config_main.cmi :
 utils/consistbl.cmo : \
     utils/misc.cmi \
     utils/consistbl.cmi
