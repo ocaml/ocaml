@@ -96,6 +96,9 @@ val ar: string
 val interface_suffix: string ref
 (** Suffix for interface file names *)
 
+val in_boot_compiler : bool
+(** True if this compiler is boot/ocamlc (i.e. the bootstrapped image) *)
+
 val exec_magic_number: string
 (** Magic number for bytecode executable files *)
 

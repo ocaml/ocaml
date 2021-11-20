@@ -84,7 +84,9 @@ let main argv ppf =
     end
     else if not !Compenv.stop_early && !objfiles <> [] then begin
       let target =
-        if !output_c_object && not !output_complete_executable then
+        if !output_c_object && not !output_complete_executable then begin
+          Compenv.fatal_in_boot_compiler
+            "Cannot process objects with the boot compiler";
           let s = Compenv.extract_output !output_name in
           if (Filename.check_suffix s Config.ext_obj
             || Filename.check_suffix s Config.ext_dll
@@ -96,7 +98,7 @@ let main argv ppf =
                  "The extension of the output file must be .c, %s or %s"
                  Config.ext_obj Config.ext_dll
               )
-        else
+        end else
           Compenv.default_output !output_name
       in
       Compmisc.init_path ();

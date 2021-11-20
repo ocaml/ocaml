@@ -66,6 +66,8 @@ let extract_dll_name file =
    Raise [Failure msg] in case of error. *)
 
 let open_dll mode name =
+  (* This should be unreachable, anyway. *)
+  Misc.fatal_in_boot_compiler "Cannot load DLLs with the boot compiler";
   let name = name ^ Config.ext_dll in
   let fullname =
     try

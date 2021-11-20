@@ -25,6 +25,12 @@ let fatal_errorf fmt =
 
 let fatal_error msg = fatal_errorf "%s" msg
 
+let fatal_in_boot_compiler =
+  if Config.in_boot_compiler then
+    fatal_error
+  else
+    ignore
+
 (* Exceptions *)
 
 let try_finally ?(always=(fun () -> ())) ?(exceptionally=(fun () -> ())) work =

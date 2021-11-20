@@ -37,6 +37,8 @@ SUBST_QUOTE=$(call SUBST_QUOTE2,$1,$($1))
 FLEXLINK_LDFLAGS=$(if $(OC_LDFLAGS), -link "$(OC_LDFLAGS)")
 FLEXLINK_DLL_LDFLAGS=$(if $(OC_DLL_LDFLAGS), -link "$(OC_DLL_LDFLAGS)")
 
+IN_COREBOOT_CYCLE?=false
+
 config.ml: config.mlp $(ROOTDIR)/Makefile.config Makefile
 	sed $(call SUBST,AFL_INSTRUMENT) \
 	    $(call SUBST,ARCH) \
@@ -87,6 +89,7 @@ config.ml: config.mlp $(ROOTDIR)/Makefile.config Makefile
 	    $(call SUBST,CC_HAS_DEBUG_PREFIX_MAP) \
 	    $(call SUBST,AS_HAS_DEBUG_PREFIX_MAP) \
 	    $(call SUBST,FORCE_INSTRUMENTED_RUNTIME) \
+	    $(call SUBST,IN_COREBOOT_CYCLE) \
 	    $< > $@
 
 # Test for the substitution functions above

@@ -30,6 +30,8 @@ let standard_library =
   with Not_found ->
     standard_library_default
 
+let in_boot_compiler = %%IN_COREBOOT_CYCLE%%
+
 let ccomp_type = "%%CCOMPTYPE%%"
 let c_compiler = "%%CC%%"
 let c_output_obj = "%%OUTPUTOBJ%%"

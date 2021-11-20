@@ -644,6 +644,8 @@ let link objfiles output_name =
   Clflags.dllibs := !lib_dllibs @ !Clflags.dllibs; (* put user's DLLs first *)
   if not !Clflags.custom_runtime then
     link_bytecode tolink output_name true
+  else if Config.in_boot_compiler then
+    Misc.fatal_error "Only bytecode linking is available with the boot compiler"
   else if not !Clflags.output_c_object then begin
     let bytecode_name = Filename.temp_file "camlcode" "" in
     let prim_name =

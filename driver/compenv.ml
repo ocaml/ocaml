@@ -43,6 +43,12 @@ let fatal err =
   prerr_endline err;
   raise (Exit_with_status 2)
 
+let fatal_in_boot_compiler =
+  if Config.in_boot_compiler then
+    fatal
+  else
+    ignore
+
 let extract_output = function
   | Some s -> s
   | None ->
@@ -672,12 +678,17 @@ let process_action
         objfiles := name :: !objfiles
       else if Filename.check_suffix name Config.ext_obj
            || Filename.check_suffix name Config.ext_lib then begin
+        fatal_in_boot_compiler
+          "Cannot process C objects with the boot compiler";
         has_linker_inputs := true;
         ccobjs := name :: !ccobjs
       end
-      else if not !native_code && Filename.check_suffix name Config.ext_dll then
+      else if not !native_code
+           && Filename.check_suffix name Config.ext_dll then begin
+        fatal_in_boot_compiler
+          "Cannot process shared objects with the boot compiler";
         dllibs := name :: !dllibs
-      else
+      end else
         match Compiler_pass.of_input_filename name with
         | Some start_from ->
           Location.input_name := name;
