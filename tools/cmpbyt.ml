@@ -31,7 +31,7 @@ let rec cmpbytes ic1 ic2 len ofs =
   end
 
 let skip_section name =
-  name = "DBUG"
+  name = "DBUG" || name = "CRCS"
 
 let cmpbyt file1 file2 =
   let ic1 = open_in_bin file1 in
