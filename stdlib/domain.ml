@@ -46,6 +46,10 @@ type 'a t = {
 module DLS = struct
 
   type dls_state = Obj.t array
+  (* The DLS state, of type [Obj.t array], is in fact manipulated as
+     an heterogeneous array of ['a slot] values. This is an
+     "unboxed-option" (uoption) array, with [unique_value] used to
+     represent [None]. *)
 
   let unique_value = Obj.repr (ref 0)
 
@@ -54,53 +58,131 @@ module DLS = struct
   external set_dls_state : dls_state -> unit =
     "caml_domain_dls_set" [@@noalloc]
 
+  let initial_dynarray_size = 8
+
   let create_dls () =
-    let st = Array.make 8 unique_value in
+    let st = Array.make initial_dynarray_size unique_value in
     set_dls_state st
 
   let _ = create_dls ()
 
-  type 'a key = int * (unit -> 'a)
+  type 'a key_protocol = {
+    init_orphan: unit -> 'a;
+    split_from_parent: ('a -> 'a Lazy.t) option;
+  }
+
+  type 'a key = int * 'a key_protocol
+
+  type 'a slot = {
+    mutable value: 'a;
+    protocol: 'a key_protocol;
+  }
 
   let key_counter = Atomic.make 0
 
-  let new_key f =
+  let new_key ?split_from_parent init_orphan =
     let k = Atomic.fetch_and_add key_counter 1 in
-    (k, f)
+    (k, { init_orphan; split_from_parent })
 
-  (* If necessary, grow the current domain's local state array such that [idx]
-   * is a valid index in the array. *)
-  let maybe_grow idx =
-    let st = get_dls_state () in
-    let sz = Array.length st in
-    if idx < sz then st
+  let maybe_grow arr idx =
+    let sz = Array.length arr in
+    if idx < sz then arr
     else begin
       let rec compute_new_size s =
         if idx < s then s else compute_new_size (2 * s)
       in
       let new_sz = compute_new_size sz in
-      let new_st = Array.make new_sz unique_value in
-      Array.blit st 0 new_st 0 sz;
-      set_dls_state new_st;
-      new_st
+      let new_arr = Array.make new_sz unique_value in
+      Array.blit arr 0 new_arr 0 sz;
+      new_arr
     end
 
-  let set (idx, _init) x =
-    let st = maybe_grow idx in
-    (* [Sys.opaque_identity] ensures that flambda does not look at the type of
-     * [x], which may be a [float] and conclude that the [st] is a float array.
-     * We do not want OCaml's float array optimisation kicking in here. *)
-    st.(idx) <- Obj.repr (Sys.opaque_identity x)
+  (* If necessary, grow the current domain's local state array such that [idx]
+   * is a valid index in the array. *)
+  let maybe_grow_dls idx =
+    let st = get_dls_state () in
+    let st = maybe_grow st idx in
+    set_dls_state st;
+    st
 
-  let get (idx, init) =
-    let st = maybe_grow idx in
-    let v = st.(idx) in
-    if v == unique_value then
-      let v' = Obj.repr (init ()) in
-      st.(idx) <- (Sys.opaque_identity v');
-      Obj.magic v'
-    else Obj.magic v
+  let get (type a) ((idx, protocol) : a key) =
+    let st = maybe_grow_dls idx in
+    let slot = st.(idx) in
+    if slot == unique_value then begin
+      let value = protocol.init_orphan () in
+      let slot : a slot = { value; protocol } in
+      st.(idx) <- Obj.repr slot;
+      slot.value
+    end else
+      (Obj.obj slot : a slot).value
 
+  let init key = ignore (get key)
+
+  let set (type a) ((idx, protocol) : a key) (x : a) =
+    let st = maybe_grow_dls idx in
+    let slot = st.(idx) in
+    if slot == unique_value then begin
+      let slot : a slot = { value = x; protocol } in
+      st.(idx) <- Obj.repr slot;
+    end else
+      (Obj.obj slot : a slot).value <- x
+
+  type 'a inherited_slot = {
+    child_data: 'a Lazy.t;
+    child_protocol: 'a key_protocol;
+  }
+
+  (* Keys with a [split_from_parent] function are "inherited keys".
+     When a new domain is spawned, their values in the new domain are
+     computed according to their protocol.
+
+     This requires first some computation on the parent side,
+     performed by [dls_inheritance_data] below, which maps the
+     heterogeneous ['a slot] uoption array into a ['a inherited_slot]
+     uoption array.
+
+     The the new child computes actual slot values from the
+     inheritance data using [become_dls]. This step is performed as an
+     in-place rewriting on the underlying [Obj.t] array, which becomes
+     the DLS state for the new thread. *)
+  let dls_inheritance_data dls =
+    let inh : Obj.t array ref =
+      (* Note: we could use the size of the [dls] array, but this
+         would waste memory in the possibly-common case where most
+         keys are Local *)
+      ref (Array.make initial_dynarray_size unique_value) in
+    for idx = 0 to Array.length dls - 1 do
+      let slot : Obj.t = dls.(idx) in
+      if slot == unique_value then ()
+      else begin fun (type a) ->
+        let slot = (Obj.obj slot : a slot) in
+        match slot.protocol.split_from_parent with
+        | None -> ()
+        | Some inheritance ->
+            let child_data = inheritance slot.value in
+            let inherited_slot = { child_data; child_protocol = slot.protocol } in
+            inh := maybe_grow !inh idx;
+            !inh.(idx) <- Obj.repr (inherited_slot : a inherited_slot)
+      end
+    done;
+    !inh
+
+  let become_dls inh =
+    (* this function mutates [inh] in place, turning it from a heterogeneous
+       ['a inheritance_data] array into a heterogeneous ['a slot] array, both
+       represented as [Obj.t] arrays. *)
+    let st : Obj.t array = inh in
+    for idx = 0 to Array.length inh - 1 do
+      let data : Obj.t = inh.(idx) in
+      if data == unique_value then ()
+      else begin fun (type a) ->
+        let data = (Obj.obj data : a inherited_slot) in
+        let value = Lazy.force data.child_data in
+        let slot : a slot = { value; protocol = data.child_protocol } in
+        st.(idx) <- Obj.repr slot
+      end
+    done;
+    set_dls_state st
 end
 
 (* first spawn, domain startup and at exit functionality *)
@@ -167,8 +249,10 @@ let spawn f =
   let termination_mutex = Mutex.create () in
   let state = Atomic.make Running in
   let at_startup = Atomic.get startup_function in
+  let parent_dls = DLS.get_dls_state () in
+  let dls_inheritance = DLS.dls_inheritance_data parent_dls in
   let body () =
-    let result = match DLS.create_dls (); at_startup (); f () with
+    let result = match DLS.become_dls dls_inheritance; at_startup (); f () with
       | x -> Ok x
       | exception ex -> Error ex
     in

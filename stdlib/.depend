@@ -213,22 +213,23 @@ stdlib__Digest.cmx : digest.ml \
     stdlib__Digest.cmi
 stdlib__Digest.cmi : digest.mli
 stdlib__Domain.cmo : domain.ml \
-    stdlib__Sys.cmi \
     stdlib.cmi \
     stdlib__Obj.cmi \
     stdlib__Mutex.cmi \
+    stdlib__Lazy.cmi \
     stdlib__Atomic.cmi \
     stdlib__Array.cmi \
     stdlib__Domain.cmi
 stdlib__Domain.cmx : domain.ml \
-    stdlib__Sys.cmx \
     stdlib.cmx \
     stdlib__Obj.cmx \
     stdlib__Mutex.cmx \
+    stdlib__Lazy.cmx \
     stdlib__Atomic.cmx \
     stdlib__Array.cmx \
     stdlib__Domain.cmi
-stdlib__Domain.cmi : domain.mli
+stdlib__Domain.cmi : domain.mli \
+    stdlib__Lazy.cmi
 stdlib__EffectHandlers.cmo : effectHandlers.ml \
     stdlib__Printexc.cmi \
     stdlib__Obj.cmi \

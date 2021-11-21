@@ -74,18 +74,29 @@ module DLS : sig
     type 'a key
     (** Type of a DLS key *)
 
-    val new_key : (unit -> 'a) -> 'a key
+    val new_key : ?split_from_parent:('a -> 'a Lazy.t) -> (unit -> 'a) -> 'a key
     (** [new_key f] returns a new key bound to initialiser [f] for accessing
-        domain-local variable. *)
+        domain-local variables.
 
-    val set : 'a key -> 'a -> unit
-    (** [set k v] updates the calling domain's domain-local state to associate
-        the key [k] with value [v]. It overwrites any previous values associated
-        to [k], which cannot be restored later. *)
+        If [split_from_parent] is provided, spawning a domain will derive the
+        child value (for this key) from the parent value. The parent calls
+        [split_from_parent], the child forces the resulting lazy thunk.
+    *)
+
+    val init : 'a key -> unit
+    (** [init k] ensures that the value corresponding to the key [k]
+        in the domain's domain-local state is initialized: it is
+        a no-op if [k] already has a value in the domain, and calls the
+        initialiser of [k] otherwise. *)
 
     val get : 'a key -> 'a
     (** [get k] returns [v] if a value [v] is associated to the key [k] on
         the calling domain's domain-local state. Sets [k]'s value with its
         initialiser and returns it otherwise. *)
+
+    val set : 'a key -> 'a -> unit
+    (** [set k v] updates the calling domain's domain-local state to associate
+        the key [k] with value [v]. It overwrites any previous values associated
+        to [k], which cannot be restored later. *)
 
   end
