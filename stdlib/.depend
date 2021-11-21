@@ -189,8 +189,10 @@ stdlib__Char.cmx : char.ml \
     stdlib__Char.cmi
 stdlib__Char.cmi : char.mli
 stdlib__Complex.cmo : complex.ml \
+    stdlib__Float.cmi \
     stdlib__Complex.cmi
 stdlib__Complex.cmx : complex.ml \
+    stdlib__Float.cmx \
     stdlib__Complex.cmi
 stdlib__Complex.cmi : complex.mli
 stdlib__Digest.cmo : digest.ml \
