@@ -86,7 +86,7 @@ CAMLexport struct custom_operations caml_ba_ops = {
    [dim] may point into an object in the OCaml heap.
 
    When calling with a custom data pointer, the function may raise
-   an exception ff passed length is inconsistent with the bigarray's
+   an exception if passed length is inconsistent with the bigarray's
    parameters.
 */
 CAMLexport value
