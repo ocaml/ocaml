@@ -424,6 +424,9 @@ OCaml 4.14.0
 - #10763, #10764: fix miscompilation of method delegation
   (Alain Frisch, review by Vincent Laviron and Jacques Garrigue)
 
+- #10788: fix minor GC memory associated with allocated
+  bigarrays when passing cutom data pointers
+  (Romain Beauxis)
 
 OCaml 4.13 maintenance branch
 -----------------------------

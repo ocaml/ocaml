@@ -84,6 +84,10 @@ CAMLexport struct custom_operations caml_ba_ops = {
    (with [malloc]) by [caml_ba_alloc].
    [data] cannot point into the OCaml heap.
    [dim] may point into an object in the OCaml heap.
+
+   When calling with a custom data pointer, the function may raise
+   an exception ff passed length is inconsistent with the bigarray's
+   parameters.
 */
 CAMLexport value
 caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
@@ -98,16 +102,16 @@ caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
   CAMLassert((flags & CAML_BA_KIND_MASK) <= CAML_BA_CHAR);
   for (i = 0; i < num_dims; i++) dimcopy[i] = dim[i];
   size = 0;
-  if (data == NULL) {
-    num_elts = 1;
-    for (i = 0; i < num_dims; i++) {
-      if (caml_umul_overflow(num_elts, dimcopy[i], &num_elts))
-        caml_raise_out_of_memory();
-    }
-    if (caml_umul_overflow(num_elts,
-                           caml_ba_element_size[flags & CAML_BA_KIND_MASK],
-                           &size))
+  num_elts = 1;
+  for (i = 0; i < num_dims; i++) {
+    if (caml_umul_overflow(num_elts, dimcopy[i], &num_elts))
       caml_raise_out_of_memory();
+  }
+  if (caml_umul_overflow(num_elts,
+                         caml_ba_element_size[flags & CAML_BA_KIND_MASK],
+                         &size))
+    caml_raise_out_of_memory();
+  if (data == NULL) {
     data = malloc(size);
     if (data == NULL && size != 0) caml_raise_out_of_memory();
     flags |= CAML_BA_MANAGED;
