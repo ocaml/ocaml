@@ -192,6 +192,9 @@ module State = struct
     then fun s -> Nativeint.of_int32 (bits32 s)
     else fun s -> Int64.to_nativeint (bits64 s)
 
+  let split st =
+    let seed = Array.init 4 (fun _i -> bits st) in
+    lazy (make seed)
 end
 
 (* This is the state you get with [init 27182818] and then applying
