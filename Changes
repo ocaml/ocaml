@@ -15,6 +15,9 @@ Working version
 - #11128: Add In_channel.isatty, Out_channel.isatty.
   (Nicolás Ojeda Bär, review by Gabriel Scherer and Florian Angeletti)
 
+- #10789: Add `Stack.drop`
+  (Léo Andrès, review by Gabriel Scherer)
+
 ### Other libraries:
 
 ### Tools:

@@ -118,4 +118,24 @@ let () =
   assert (S.length s2 = 4); assert (S.to_list s2 = [1; 2; 3; 4]);
 ;;
 
+let () =
+  let s = S.create () in
+  S.push 0 s;
+  S.push 1 s;
+  S.push 2 s;
+  assert (S.to_list s = [0; 1; 2]);
+  S.drop s;
+  assert (S.to_list s = [0; 1]);
+  S.drop s;
+  assert (S.to_list s = [0]);
+  S.drop s;
+  assert (S.to_list s = []);
+  begin
+    try
+      S.drop s;
+      assert false
+    with S.Empty -> ()
+  end;
+;;
+
 let () = print_endline "OK"
