@@ -1,0 +1,12 @@
+44 85 82
+44 85 82
+44 85 82
+44 85 82
+44 85 82
+44 85 82
+44 85 82
+44 85 82
+44 85 82
+44 85 82
+Note: the result of this test is currently BROKEN,
+the random numbers produced by child domain are highly correlated.
