@@ -225,13 +225,33 @@ and subst_n ~args t =
       with Not_found -> t
       end
   | Abs (v, e) ->
-      abs ?uid:t.uid v (subst_n ~args e)
+      let e' = subst_n ~args e in
+      if e == e'
+      then t
+      else abs ?uid:t.uid v e'
   | App (f, e) ->
-      app ?uid:t.uid (subst_n ~args f) ~arg:(subst_n ~args e)
+      let f' = subst_n ~args f in
+      let e' = subst_n ~args e in
+      if f == f' && e == e'
+      then t
+      else app ?uid:t.uid f' ~arg:e'
   | Struct m ->
-      { t with desc = Struct (Item.Map.map (subst_n ~args) m) }
+      let unchanged = ref true in
+      let m' =
+        Item.Map.map (fun s ->
+          let s'= subst_n ~args s in
+          unchanged := !unchanged && s == s';
+          s'
+        ) m
+      in
+      if !unchanged
+      then t
+      else { t with desc = Struct m' }
   | Proj (s, item) ->
-      proj ?uid:t.uid (subst_n ~args s) item
+      let s' = subst_n ~args s in
+      if s == s'
+      then t
+      else proj ?uid:t.uid s' item
 
 and app_n f args =
   let rec aux pairs f = function
