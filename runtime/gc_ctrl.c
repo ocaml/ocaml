@@ -75,7 +75,8 @@ CAMLprim value caml_gc_quick_stat(value v)
   Store_field (res, 8, Val_long (
     s.major_heap.pool_live_blocks + s.major_heap.large_blocks));
   Store_field (res, 9, Val_long (
-    s.major_heap.pool_words - s.major_heap.pool_live_words - s.major_heap.pool_frag_words));
+    s.major_heap.pool_words - s.major_heap.pool_live_words
+    - s.major_heap.pool_frag_words));
   Store_field (res, 10, Val_long (0));
   Store_field (res, 11, Val_long (0));
   Store_field (res, 12, Val_long (s.major_heap.pool_frag_words));
@@ -90,7 +91,8 @@ CAMLprim value caml_gc_quick_stat(value v)
 double caml_gc_minor_words_unboxed()
 {
   return (Caml_state->stat_minor_words
-          + ((double) ((uintnat)Caml_state->young_end - (uintnat)Caml_state->young_ptr)) / sizeof(value));
+          + ((double) ((uintnat)Caml_state->young_end -
+              (uintnat)Caml_state->young_ptr)) / sizeof(value));
 }
 
 CAMLprim value caml_gc_minor_words(value v)
@@ -107,9 +109,10 @@ CAMLprim value caml_gc_counters(value v)
   /* get a copy of these before allocating anything... */
   double minwords = Caml_state->stat_minor_words
     + ((double) Wsize_bsize ((uintnat)Caml_state->young_end -
-			     (uintnat) Caml_state->young_ptr)) / sizeof(value);
+        (uintnat) Caml_state->young_ptr)) / sizeof(value);
   double prowords = Caml_state->stat_promoted_words;
-  double majwords = Caml_state->stat_major_words + (double) Caml_state->allocated_words;
+  double majwords = Caml_state->stat_major_words +
+                    (double) Caml_state->allocated_words;
 
   res = caml_alloc_3(0,
     caml_copy_double (minwords),
@@ -281,7 +284,8 @@ CAMLprim value caml_gc_stat(value v)
 
 CAMLprim value caml_get_minor_free (value v)
 {
-  return Val_int ((uintnat)Caml_state->young_ptr - (uintnat)Caml_state->young_start);
+  return Val_int
+    ((uintnat)Caml_state->young_ptr - (uintnat)Caml_state->young_start);
 }
 
 void caml_init_gc ()

@@ -254,8 +254,10 @@ caml/version.h : $(ROOTDIR)/tools/make-version-header.sh \
     $(ROOTDIR)/VERSION GIT_HASH
 	$(ROOTDIR)/tools/make-version-header.sh $(ROOTDIR)/VERSION > $@
 	echo "#define OCAML_RUNTIME_BUILD_GIT_HASH \"`cat GIT_HASH`\"" >> $@
-	echo "#define OCAML_RUNTIME_BUILD_GIT_BRANCH \"`(git symbolic-ref -q --short HEAD || echo "<branch unavailable>")`\"" >> $@
-	echo "#define OCAML_RUNTIME_BUILD_GIT_TAG \"`(git describe --tags --exact-match || echo "<tag unavailable>")`\"" >> $@
+	echo "#define OCAML_RUNTIME_BUILD_GIT_BRANCH \"`(git symbolic-ref -q\
+        --short HEAD || echo "<branch unavailable>")`\"" >> $@
+	echo "#define OCAML_RUNTIME_BUILD_GIT_TAG \"`(git describe --tags\
+        --exact-match || echo "<tag unavailable>")`\"" >> $@
 
 # These are provided as a temporary shim to allow cross-compilation systems
 # to supply a host C compiler and different flags and a linking macro.
