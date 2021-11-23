@@ -215,7 +215,8 @@ let mk_default () = {
   State.idx = 0;
 }
 
-let random_key = Domain.DLS.new_key mk_default
+let random_key =
+  Domain.DLS.new_key ~split_from_parent:State.split mk_default
 
 let bits () = State.bits (Domain.DLS.get random_key)
 let int bound = State.int (Domain.DLS.get random_key) bound

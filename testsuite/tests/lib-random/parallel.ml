@@ -38,5 +38,5 @@ let () =
 
 let () =
   print_endline
-    "Note: the result of this test is currently BROKEN,\n\
-     the random numbers produced by child domain are highly correlated."
+    "Note: we observe in this output that the random numbers of each child domain\n\
+     appear uncorrelated, yet are produced deterministically."
