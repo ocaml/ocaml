@@ -26,7 +26,8 @@ CAMLprim value unix_fork(value unit)
 {
   int ret;
   if (caml_domain_is_multicore()) {
-    caml_failwith("Unix.fork may not be called while other domains were created");
+    caml_failwith
+      ("Unix.fork may not be called while other domains were created");
   }
 
   CAML_EV_FLUSH();

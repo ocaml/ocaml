@@ -49,7 +49,8 @@ static void alloc_todo (caml_domain_state* d, int size)
 
 /* Find white finalisable values, move them to the finalising set, and
    darken them (if darken_value is true). */
-static void generic_final_update (caml_domain_state* d, struct finalisable *final, int darken_value)
+static void generic_final_update
+  (caml_domain_state* d, struct finalisable *final, int darken_value)
 {
   uintnat i, j, k;
   uintnat todo_count = 0;
@@ -170,7 +171,8 @@ void caml_final_do_calls ()
 #define Call_action(f,d,x) (*(f)) ((d), (x), &(x))
 
 /* Called my major_gc for marking roots */
-void caml_final_do_roots (scanning_action act, void* fdata, caml_domain_state* d, int do_val)
+void caml_final_do_roots
+  (scanning_action act, void* fdata, caml_domain_state* d, int do_val)
 {
   uintnat i;
   struct final_todo *todo;
@@ -199,7 +201,8 @@ void caml_final_do_roots (scanning_action act, void* fdata, caml_domain_state* d
 }
 
 /* Called by minor gc for marking roots */
-void caml_final_do_young_roots (scanning_action act, void* fdata, caml_domain_state* d, int do_last_val)
+void caml_final_do_young_roots
+  (scanning_action act, void* fdata, caml_domain_state* d, int do_last_val)
 {
   uintnat i;
   struct caml_final_info *f = d->final_info;
@@ -218,7 +221,8 @@ void caml_final_do_young_roots (scanning_action act, void* fdata, caml_domain_st
   }
 }
 
-static void generic_final_minor_update (caml_domain_state* d, struct finalisable * final)
+static void generic_final_minor_update
+  (caml_domain_state* d, struct finalisable * final)
 {
   uintnat i, j, k;
   uintnat todo_count = 0;
@@ -227,7 +231,8 @@ static void generic_final_minor_update (caml_domain_state* d, struct finalisable
   CAMLassert (final->old <= final->young);
   for (i = final->old; i < final->young; i++){
     CAMLassert (Is_block (final->table[i].val));
-    if (Is_young(final->table[i].val) && caml_get_header_val(final->table[i].val) != 0){
+    if (Is_young(final->table[i].val) &&
+        caml_get_header_val(final->table[i].val) != 0){
       ++ todo_count;
     }
   }
@@ -247,7 +252,8 @@ static void generic_final_minor_update (caml_domain_state* d, struct finalisable
     for (i = final->old; i < final->young; i++) {
       CAMLassert (Is_block (final->table[i].val));
       CAMLassert (Tag_val (final->table[i].val) != Forward_tag);
-      if (Is_young(final->table[j].val) && caml_get_header_val(final->table[i].val) != 0) {
+      if (Is_young(final->table[j].val) &&
+          caml_get_header_val(final->table[i].val) != 0) {
         /** dead */
         fi->todo_tail->item[k] = final->table[i];
         /* The finalisation function is called with unit not with the value */
@@ -287,7 +293,8 @@ void caml_final_empty_young (caml_domain_state* d)
   f->last.old = f->last.young;
 }
 
-void caml_final_merge_finalisable (struct finalisable *source, struct finalisable *target)
+void caml_final_merge_finalisable
+  (struct finalisable *source, struct finalisable *target)
 {
   uintnat new_size;
 
