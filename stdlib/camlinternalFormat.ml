@@ -99,6 +99,8 @@ fun ign fmt -> match ign with
               pad_of_pad_opt pad_opt, prec_of_prec_opt prec_opt, fmt))
   | Ignored_bool pad_opt ->
     Param_format_EBB (Bool (pad_of_pad_opt pad_opt, fmt))
+  | Ignored_binary pad_opt ->
+    Param_format_EBB (Binary (pad_of_pad_opt pad_opt, fmt))
   | Ignored_format_arg (pad_opt, fmtty) ->
     Param_format_EBB (Format_arg (pad_opt, fmtty, fmt))
   | Ignored_format_subst (pad_opt, fmtty) ->
@@ -502,6 +504,7 @@ fun buf fmtty -> match fmtty with
   | Int64_ty rest     -> buffer_add_string buf "%Li"; bprint_fmtty buf rest;
   | Float_ty rest     -> buffer_add_string buf "%f";  bprint_fmtty buf rest;
   | Bool_ty rest      -> buffer_add_string buf "%B";  bprint_fmtty buf rest;
+  | Binary_ty rest    -> buffer_add_string buf "%Y";  bprint_fmtty buf rest;
   | Alpha_ty rest     -> buffer_add_string buf "%a";  bprint_fmtty buf rest;
   | Theta_ty rest     -> buffer_add_string buf "%t";  bprint_fmtty buf rest;
   | Any_ty rest       -> buffer_add_string buf "%?";  bprint_fmtty buf rest;
@@ -567,6 +570,10 @@ let bprint_fmt buf fmt =
     | Bool (pad, rest) ->
       buffer_add_char buf '%'; bprint_ignored_flag buf ign_flag;
       bprint_padding buf pad; buffer_add_char buf 'B';
+      fmtiter rest false;
+    | Binary (pad, rest) ->
+      buffer_add_char buf '%'; bprint_ignored_flag buf ign_flag;
+      bprint_padding buf pad; buffer_add_char buf 'Y';
       fmtiter rest false;
     | Alpha rest ->
       buffer_add_char buf '%'; bprint_ignored_flag buf ign_flag;
@@ -668,6 +675,7 @@ let rec symm : type a1 b1 c1 d1 e1 f1 a2 b2 c2 d2 e2 f2 .
   | Float_ty rest -> Float_ty (symm rest)
   | Bool_ty rest -> Bool_ty (symm rest)
   | String_ty rest -> String_ty (symm rest)
+  | Binary_ty rest -> Binary_ty (symm rest)
   | Theta_ty rest -> Theta_ty (symm rest)
   | Alpha_ty rest -> Alpha_ty (symm rest)
   | Any_ty rest -> Any_ty (symm rest)
@@ -728,6 +736,11 @@ let rec fmtty_rel_det : type a1 b c d1 e1 f1 a2 d2 e2 f2 .
     (fun Refl -> let Refl = af Refl in Refl),
     ed, de
   | Bool_ty rest ->
+    let fa, af, ed, de = fmtty_rel_det rest in
+    (fun Refl -> let Refl = fa Refl in Refl),
+    (fun Refl -> let Refl = af Refl in Refl),
+    ed, de
+  | Binary_ty rest ->
     let fa, af, ed, de = fmtty_rel_det rest in
     (fun Refl -> let Refl = fa Refl in Refl),
     (fun Refl -> let Refl = af Refl in Refl),
@@ -809,6 +822,9 @@ and trans : type
   | Int64_ty rest1, Int64_ty rest2 -> Int64_ty (trans rest1 rest2)
   | Nativeint_ty rest1, Nativeint_ty rest2 -> Nativeint_ty (trans rest1 rest2)
   | Float_ty rest1, Float_ty rest2 -> Float_ty (trans rest1 rest2)
+  | Binary_ty rest1, Binary_ty rest2 -> Binary_ty (trans rest1 rest2)
+  | String_ty _, Binary_ty _ -> assert false
+  | Binary_ty _, String_ty _ -> assert false
 
   | Alpha_ty rest1, Alpha_ty rest2 -> Alpha_ty (trans rest1 rest2)
   | Alpha_ty _, _ -> assert false
@@ -891,6 +907,8 @@ fun fmtty -> match fmtty with
   | Caml_char rest             -> Char_ty (fmtty_of_fmt rest)
   | Bool (pad, rest)           ->
       fmtty_of_padding_fmtty pad (Bool_ty (fmtty_of_fmt rest))
+  | Binary (pad, rest) ->
+    fmtty_of_padding_fmtty pad (Binary_ty (fmtty_of_fmt rest))
   | Alpha rest                 -> Alpha_ty (fmtty_of_fmt rest)
   | Theta rest                 -> Theta_ty (fmtty_of_fmt rest)
   | Custom (arity, _, rest)    -> fmtty_of_custom arity (fmtty_of_fmt rest)
@@ -939,6 +957,7 @@ fun ign fmt -> match ign with
   | Ignored_int64 (_, _)            -> fmtty_of_fmt fmt
   | Ignored_float (_, _)            -> fmtty_of_fmt fmt
   | Ignored_bool _                  -> fmtty_of_fmt fmt
+  | Ignored_binary _                -> fmtty_of_fmt fmt
   | Ignored_format_arg _            -> fmtty_of_fmt fmt
   | Ignored_format_subst (_, fmtty) -> concat_fmtty fmtty (fmtty_of_fmt fmt)
   | Ignored_reader                  -> Ignored_reader_ty (fmtty_of_fmt fmt)
@@ -1078,6 +1097,13 @@ and type_format_gen :
       Fmt_fmtty_EBB (Bool (pad, fmt'), fmtty')
     | Padding_fmtty_EBB (_, _) -> raise Type_mismatch
   )
+  | Binary (pad, fmt_rest), _ -> (
+    match type_padding pad fmtty with
+    | Padding_fmtty_EBB (pad, Binary_ty fmtty_rest) ->
+      let Fmt_fmtty_EBB (fmt', fmtty') = type_format_gen fmt_rest fmtty_rest in
+      Fmt_fmtty_EBB (Binary (pad, fmt'), fmtty')
+    | Padding_fmtty_EBB (_, _) -> raise Type_mismatch
+  )
   | Flush fmt_rest, fmtty_rest ->
     let Fmt_fmtty_EBB (fmt', fmtty') = type_format_gen fmt_rest fmtty_rest in
     Fmt_fmtty_EBB (Flush fmt', fmtty')
@@ -1166,6 +1192,7 @@ fun ign fmt fmtty -> match ign with
   | Ignored_int64 _            as ign' -> type_ignored_param_one ign' fmt fmtty
   | Ignored_float _            as ign' -> type_ignored_param_one ign' fmt fmtty
   | Ignored_bool _             as ign' -> type_ignored_param_one ign' fmt fmtty
+  | Ignored_binary _           as ign' -> type_ignored_param_one ign' fmt fmtty
   | Ignored_scan_char_set _    as ign' -> type_ignored_param_one ign' fmt fmtty
   | Ignored_scan_get_counter _ as ign' -> type_ignored_param_one ign' fmt fmtty
   | Ignored_scan_next_char     as ign' -> type_ignored_param_one ign' fmt fmtty
@@ -1232,6 +1259,10 @@ fun sub_fmtty fmt fmtty -> match sub_fmtty, fmtty with
     let Fmtty_fmt_EBB (sub_fmtty_rest', fmt') =
       type_ignored_format_substitution sub_fmtty_rest fmt fmtty_rest in
     Fmtty_fmt_EBB (Bool_ty sub_fmtty_rest', fmt')
+  | Binary_ty sub_fmtty_rest, Binary_ty fmtty_rest ->
+    let Fmtty_fmt_EBB (sub_fmtty_rest', fmt') =
+      type_ignored_format_substitution sub_fmtty_rest fmt fmtty_rest in
+    Fmtty_fmt_EBB (Binary_ty sub_fmtty_rest', fmt')
   | Alpha_ty sub_fmtty_rest, Alpha_ty fmtty_rest ->
     let Fmtty_fmt_EBB (sub_fmtty_rest', fmt') =
       type_ignored_format_substitution sub_fmtty_rest fmt fmtty_rest in
@@ -1540,6 +1571,8 @@ fun k acc fmt -> match fmt with
     make_float_padding_precision k acc rest pad prec fconv
   | Bool (pad, rest) ->
     make_padding k acc rest pad string_of_bool
+  | Binary (pad, rest) ->
+    make_padding k acc rest pad Bytes.to_string
   | Alpha rest ->
     fun f x -> make_printf k (Acc_delay (acc, fun o -> f o x)) rest
   | Theta rest ->
@@ -1621,6 +1654,7 @@ fun k acc ign fmt -> match ign with
   | Ignored_int64 (_, _)            -> make_invalid_arg k acc fmt
   | Ignored_float (_, _)            -> make_invalid_arg k acc fmt
   | Ignored_bool _                  -> make_invalid_arg k acc fmt
+  | Ignored_binary _                -> make_invalid_arg k acc fmt
   | Ignored_format_arg _            -> make_invalid_arg k acc fmt
   | Ignored_format_subst (_, fmtty) -> make_from_fmtty k acc fmtty fmt
   | Ignored_reader                  -> assert false
@@ -1643,6 +1677,7 @@ fun k acc fmtty fmt -> match fmtty with
   | Int64_ty rest           -> fun _ -> make_from_fmtty k acc rest fmt
   | Float_ty rest           -> fun _ -> make_from_fmtty k acc rest fmt
   | Bool_ty rest            -> fun _ -> make_from_fmtty k acc rest fmt
+  | Binary_ty rest          -> fun _ -> make_from_fmtty k acc rest fmt
   | Alpha_ty rest           -> fun _ _ -> make_from_fmtty k acc rest fmt
   | Theta_ty rest           -> fun _ -> make_from_fmtty k acc rest fmt
   | Any_ty rest             -> fun _ -> make_from_fmtty k acc rest fmt
@@ -1817,6 +1852,12 @@ let rec make_iprintf : type a b c d e f state.
     | Bool (Lit_padding _, rest) ->
         const (make_iprintf k o rest)
     | Bool (Arg_padding _, rest) ->
+        const (const (make_iprintf k o rest))
+    | Binary (No_padding, rest) ->
+        const (make_iprintf k o rest)
+    | Binary (Lit_padding _, rest) ->
+        const (make_iprintf k o rest)
+    | Binary (Arg_padding _, rest) ->
         const (const (make_iprintf k o rest))
     | Alpha rest ->
         const (const (make_iprintf k o rest))
@@ -2501,6 +2542,16 @@ let fmt_ebb_of_string ?legacy_behavior str =
         let Padding_fmt_EBB (pad', fmt_rest') =
           make_padding_fmt_ebb pad fmt_rest in
         Fmt_EBB (Bool (pad', fmt_rest'))
+    | 'Y' ->
+      let pad = check_no_0 symb (get_padprec ()) in
+      let Fmt_EBB fmt_rest = parse str_ind end_ind in
+      if get_ign () then
+        let ignored = Ignored_binary (get_padprec_opt '_') in
+        Fmt_EBB (Ignored_param (ignored, fmt_rest))
+      else
+        let Padding_fmt_EBB (pad', fmt_rest') =
+          make_padding_fmt_ebb pad fmt_rest in
+        Fmt_EBB (Binary (pad', fmt_rest'))
     | 'a' ->
       let Fmt_EBB fmt_rest = parse str_ind end_ind in
       Fmt_EBB (Alpha fmt_rest)
