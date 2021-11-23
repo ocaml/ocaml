@@ -74,7 +74,7 @@ module DLS = struct
   type 'a key = int * 'a key_protocol
 
   type 'a slot = {
-    mutable value: 'a;
+    mutable value: 'a Lazy.t;
     protocol: 'a key_protocol;
   }
 
@@ -105,47 +105,33 @@ module DLS = struct
     set_dls_state st;
     st
 
-  let get (type a) ((idx, protocol) : a key) =
+  let get (type a) ((idx, protocol) : a key) : a =
     let st = maybe_grow_dls idx in
     let slot = st.(idx) in
     if slot == unique_value then begin
-      let value = protocol.init_orphan () in
-      let slot : a slot = { value; protocol } in
+      let v = protocol.init_orphan () in
+      let slot : a slot = { value = Lazy.from_val v; protocol } in
       st.(idx) <- Obj.repr slot;
-      slot.value
+      v
     end else
-      (Obj.obj slot : a slot).value
+      Lazy.force (Obj.obj slot : a slot).value
 
   let init key = ignore (get key)
 
   let set (type a) ((idx, protocol) : a key) (x : a) =
     let st = maybe_grow_dls idx in
     let slot = st.(idx) in
+    let x = Lazy.from_val x in
     if slot == unique_value then begin
       let slot : a slot = { value = x; protocol } in
       st.(idx) <- Obj.repr slot;
     end else
       (Obj.obj slot : a slot).value <- x
 
-  type 'a inherited_slot = {
-    child_data: 'a Lazy.t;
-    child_protocol: 'a key_protocol;
-  }
-
   (* Keys with a [split_from_parent] function are "inherited keys".
      When a new domain is spawned, their values in the new domain are
-     computed according to their protocol.
-
-     This requires first some computation on the parent side,
-     performed by [dls_inheritance_data] below, which maps the
-     heterogeneous ['a slot] uoption array into a ['a inherited_slot]
-     uoption array.
-
-     The the new child computes actual slot values from the
-     inheritance data using [become_dls]. This step is performed as an
-     in-place rewriting on the underlying [Obj.t] array, which becomes
-     the DLS state for the new thread. *)
-  let dls_inheritance_data dls =
+     computed according to their protocol. *)
+  let inherit_dls dls =
     let inh : Obj.t array ref =
       (* Note: we could use the size of the [dls] array, but this
          would waste memory in the possibly-common case where most
@@ -159,30 +145,13 @@ module DLS = struct
         match slot.protocol.split_from_parent with
         | None -> ()
         | Some inheritance ->
-            let child_data = inheritance slot.value in
-            let inherited_slot = { child_data; child_protocol = slot.protocol } in
+            let v = Lazy.force slot.value in
+            let inherited_slot = { slot with value = inheritance v } in
             inh := maybe_grow !inh idx;
-            !inh.(idx) <- Obj.repr (inherited_slot : a inherited_slot)
+            !inh.(idx) <- Obj.repr (inherited_slot : a slot)
       end
     done;
     !inh
-
-  let become_dls inh =
-    (* this function mutates [inh] in place, turning it from a heterogeneous
-       ['a inheritance_data] array into a heterogeneous ['a slot] array, both
-       represented as [Obj.t] arrays. *)
-    let st : Obj.t array = inh in
-    for idx = 0 to Array.length inh - 1 do
-      let data : Obj.t = inh.(idx) in
-      if data == unique_value then ()
-      else begin fun (type a) ->
-        let data = (Obj.obj data : a inherited_slot) in
-        let value = Lazy.force data.child_data in
-        let slot : a slot = { value; protocol = data.child_protocol } in
-        st.(idx) <- Obj.repr slot
-      end
-    done;
-    set_dls_state st
 end
 
 (* first spawn, domain startup and at exit functionality *)
@@ -250,9 +219,9 @@ let spawn f =
   let state = Atomic.make Running in
   let at_startup = Atomic.get startup_function in
   let parent_dls = DLS.get_dls_state () in
-  let dls_inheritance = DLS.dls_inheritance_data parent_dls in
+  let child_dls = DLS.inherit_dls parent_dls in
   let body () =
-    let result = match DLS.become_dls dls_inheritance; at_startup (); f () with
+    let result = match DLS.set_dls_state child_dls; at_startup (); f () with
       | x -> Ok x
       | exception ex -> Error ex
     in
