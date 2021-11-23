@@ -29,6 +29,16 @@
 
 #include "camlatomic.h"
 
+/* Detection of available C attributes */
+
+#ifndef __has_c_attribute
+#define __has_c_attribute(x) 0
+#endif
+
+#ifndef __has_attribute
+#define __has_attribute(x) 0
+#endif
+
 /* Deprecation warnings */
 
 #if defined(__GNUC__) || defined(__clang__)
