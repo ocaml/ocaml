@@ -50,11 +50,11 @@ build/compilerlibref/%.odoc: %.mli | build/compilerlibref
 	$(DOC_ALL_INCLUDES) $< -dump  $@
 
 $(compilerlibref_TEXT:%=build/compilerlibref/%.odoc):\
-build/compilerlibref/%.odoc: $(DOCGEN)/build/%.mld | build/compilerlibref
+build/compilerlibref/%.odoc: build/%.mld | build/compilerlibref
 	$(OCAMLDOC_RUN) $(DOC_ALL_INCLUDES) -text $< -dump  $@
 
 $(libref_TEXT:%=build/libref/%.odoc):\
-build/libref/%.odoc: $(DOCGEN)/%.mld | build/libref
+build/libref/%.odoc: build/%.mld | build/libref
 	$(OCAMLDOC_RUN) $(DOC_STDLIB_INCLUDES) -text $< -dump  $@
 
 ALL_COMPILED_DOC=$(ALL_DOC:%=build/%.odoc)
@@ -76,7 +76,7 @@ build/html/compilerlibref/Compiler_libs.html: \
 	$(OCAMLDOC_RUN) -html -d build/html/compilerlibref \
 	-nostdlib -hide Stdlib -t "OCaml compiler library" \
 	$(HTML_OPTIONS) \
-	-intro $(DOCGEN)/build/Compiler_libs.mld \
+	-intro build/Compiler_libs.mld \
 	$(addprefix -load , $(ALL_COMPILERLIBREF:%=build/%.odoc))
 
 build/texi/stdlib.texi: $(ALL_COMPILED_DOC) | build/texi

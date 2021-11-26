@@ -60,11 +60,11 @@ build/latex/compilerlibs_input.tex: | build/latex
 
 # rules for the mld files
 $(libref_TEXT:%=build/libref/page-%.odoc):
-build/libref/page-%.odoc:$(DOCGEN)/%.mld | build/libref
+build/libref/page-%.odoc: build/%.mld | build/libref
 	$(odoc) compile -I build/libref --package libref $< -o $@
 
 $(compilerlibref_TEXT:%=build/compilerlibref/page-%.odoc):\
-build/compilerlibref/page-%.odoc:$(DOCGEN)/build/%.mld | build/compilerlibref
+build/compilerlibref/page-%.odoc: build/%.mld | build/compilerlibref
 	$(odoc) compile -I build/libref --package compilerlibref $< -o $@
 
 # rules for the stdlib and otherlibs .doc files
@@ -137,9 +137,11 @@ stdlib_INDEX=\
   $(foreach m,$(stdlib_UNPREFIXED),$(call stdlib_prefix,$m))\
   $(call capitalize, $(otherlibref))
 build/libref.mld:
-	echo {0 OCaml standard library} {!modules:$(stdlib_INDEX)} > $@
+	( echo "{0 OCaml standard library}"; \
+	  echo "{!modules:$(stdlib_INDEX)}" ) > $@
 
-build/libref/index.html.stamp: $(ALL_HTML) build/libref.mld | build/libref
+build/libref/index.html.stamp: $(ALL_HTML) build/libref.mld \
+| build/libref build/html/libref
 	$(odoc) compile --package libref build/libref.mld
 	$(odoc) link -I build/libref build/page-libref.odoc
 	$(odoc) html-generate build/page-libref.odocl --output-dir build/html
@@ -147,7 +149,7 @@ build/libref/index.html.stamp: $(ALL_HTML) build/libref.mld | build/libref
 	touch $@
 
 build/compilerlibref/index.html.stamp: $(ALL_HTML) \
-  build/compilerlibref/page-Compiler_libs.html.stamp | build/compilerlibref
+  build/compilerlibref/page-Compiler_libs.html.stamp | build/html/compilerlibref
 	cp build/html/compilerlibref/Compiler_libs.html \
            build/html/compilerlibref/index.html
 	touch $@
