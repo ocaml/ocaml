@@ -1,3 +1,6 @@
+\chapter{The ``Tail Modulo Constructor'' program transformation} \label{c:tail_mod_cons}
+%HEVEA\cutname{tail_mod_cons.html}
+
 (Introduced in OCaml 4.14)
 
 Note: this feature is considered experimental, and its interface may
@@ -147,7 +150,7 @@ tail-mod-cons are as follows:
   using a convenient monadic notation.
 \end{itemize}
 
-\subsection{ss:disambiguation}{Disambiguation}
+\section{sec:disambiguation}{Disambiguation}
 
 It may happen that several arguments of a constructor are recursive
 calls to a tail-modulo-cons function. The transformation can only turn
@@ -204,10 +207,10 @@ let[@tail_mod_cons] rec map_vars f exp =
     Let ((f v, (map_vars[@tailcall]) f def), (map_vars[@tailcall]) f body)
 \end{caml_example*}
 
-\subsection{ss:out-of-tmc}{Danger: getting out of tail-mod-cons}
+\section{sec:out-of-tmc}{Danger: getting out of tail-mod-cons}
 
 Due to the nature of the tail-mod-cons transformation
-(see Section~\ref{ss:details} for a presentation of transformation):
+(see Section~\ref{sec:details} for a presentation of transformation):
 \begin{itemize}
 \item Calls from a tail-mod-cons function to another tail-mod-cons
   function declared in the same recursive-binding group are
@@ -333,7 +336,7 @@ let[@tail_mod_cons] rec bind (f : 'a -> 'a tree) (t : 'a tree) : 'a tree =
     Node (bind f left, (bind[@tailcall]) f right)
 \end{caml_example*}
 
-\subsection{ss:details}{Details on the transformation}
+\section{sec:details}{Details on the transformation}
 
 To use this advanced feature, it helps to be aware that the function transformation produces a specialized function in destination-passing-style.
 
@@ -427,7 +430,7 @@ and rec flatten_dps l dst i =
 If "append_flatten" does not have a destination-passing-style version,
 the call gets transformed to a non-tail call.
 
-\subsection{ss:limitations}{Current limitations}
+\section{sec:limitations}{Current limitations}
 
 \paragraph{Purely syntactic criterion} Just like tail calls in
 general, the notion of tail-modulo-constructor position is purely
