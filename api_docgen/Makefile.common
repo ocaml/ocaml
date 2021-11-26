@@ -30,7 +30,7 @@ DOC_STDLIB_DIRS = $(addprefix $(ROOTDIR)/, stdlib \
 .PHONY: all
 all: html pdf man
 
-DIRS = $(addprefix build/,libref compilerlibref man latex texi \
+DIRS = build/ $(addprefix build/,libref compilerlibref man latex texi \
   html html/libref html/compilerlibref)
 
 $(DIRS):

@@ -190,3 +190,24 @@ install:
 	if test -d build/man/compilerlibref ; then \
 	  $(INSTALL_DATA) build/man/libref/* "$(INSTALL_LIBRARIES_MAN_DIR)"; \
 	fi
+
+# Dependencies for stdlib modules.
+# Use the same dependencies used for compiling .cmx files.
+# The existing rules look like this:
+#   stdlib__X.cmx: x.ml \
+#       stdlib__Y.cmx \
+#       stdlib__X.cmi
+# We want:
+#   build/libref/stdlib__X.odoc: \
+#       build/libref/stdlib__Y.odoc \
+#       stdlib__X.cmti
+build/.depend: ../../stdlib/.depend | build/
+	sed \
+    -e ':l; /\\ *$$/ { N; bl }; # Read lines separated by \\' \
+    -e '/^\S*\.cmx *:/! d; # Keep only rules to .cmx' \
+    -e 's#\<\(\w*\)\.cmx\>#build/libref/\1.odoc#g; # .cmx -> .odoc' \
+    -e 's/\.cmi\>/.cmti/g; # .cmi -> .cmti' \
+    -e 's/\<\S*\.ml\>//g; # .ml -> removed' \
+    $< > $@
+
+include build/.depend

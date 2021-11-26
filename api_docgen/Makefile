@@ -16,7 +16,6 @@ ROOTDIR = ..
 -include $(ROOTDIR)/Makefile.build_config
 
 ifeq ($(DOCUMENTATION_TOOL),odoc)
-  include odoc/Makefile
 else
   include ocamldoc/Makefile
 endif
