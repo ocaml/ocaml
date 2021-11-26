@@ -13,6 +13,7 @@ script = "rm -f original.cmi"
 
 
 #directory "ocamlc.byte";;
+#load "original.cmo"
 #load "middle.cmo"
 
 let x:'a. 'a Middle.t =
@@ -86,4 +87,15 @@ Line 2, characters 12-45:
                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Type Middle.pack2 = (module Middle.T with type M.t = int)
        is not a subtype of (module T2)
+|}]
+
+(* Check the detection of type kind in type-directed disambiguation . *)
+let t = Middle.r.Middle.x
+[%%expect {|
+val t : unit = ()
+|}]
+
+let k = match Middle.s with Middle.S -> ()
+[%%expect {|
+val k : unit = ()
 |}]
