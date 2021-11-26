@@ -194,7 +194,7 @@ module State = struct
 
   let split st =
     let seed = Array.init 4 (fun _i -> bits st) in
-    lazy (make seed)
+    make seed
 end
 
 (* This is the state you get with [init 27182818] and then applying

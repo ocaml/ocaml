@@ -121,7 +121,7 @@ module State : sig
   val copy : t -> t
   (** Return a copy of the given state. *)
 
-  val split : t -> t Lazy.t
+  val split : t -> t
   (** Splits the PRNG state, returning a supposedly-independent state.
       (The current state advances immediately,
        but effect-free initialization of the split state is performed lazily.)

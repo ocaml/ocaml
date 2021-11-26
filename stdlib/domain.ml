@@ -46,10 +46,6 @@ type 'a t = {
 module DLS = struct
 
   type dls_state = Obj.t array
-  (* The DLS state, of type [Obj.t array], is in fact manipulated as
-     an heterogeneous array of ['a slot] values. This is an
-     "unboxed-option" (uoption) array, with [unique_value] used to
-     represent [None]. *)
 
   let unique_value = Obj.repr (ref 0)
 
@@ -58,100 +54,80 @@ module DLS = struct
   external set_dls_state : dls_state -> unit =
     "caml_domain_dls_set" [@@noalloc]
 
-  let initial_dynarray_size = 8
-
   let create_dls () =
-    let st = Array.make initial_dynarray_size unique_value in
+    let st = Array.make 8 unique_value in
     set_dls_state st
 
   let _ = create_dls ()
 
-  type 'a key_protocol = {
-    init_orphan: unit -> 'a;
-    split_from_parent: ('a -> 'a Lazy.t) option;
-  }
-
-  type 'a key = int * 'a key_protocol
-
-  type 'a slot = {
-    mutable value: 'a Lazy.t;
-    protocol: 'a key_protocol;
-  }
+  type 'a key = int * (unit -> 'a)
 
   let key_counter = Atomic.make 0
 
-  let new_key ?split_from_parent init_orphan =
-    let k = Atomic.fetch_and_add key_counter 1 in
-    (k, { init_orphan; split_from_parent })
+  type key_initializer =
+    KI: 'a key * ('a -> 'a) -> key_initializer
 
-  let maybe_grow arr idx =
-    let sz = Array.length arr in
-    if idx < sz then arr
+  let parent_keys = Atomic.make ([] : key_initializer list)
+
+  let rec add_parent_key ki =
+    let l = Atomic.get parent_keys in
+    if not (Atomic.compare_and_set parent_keys l (ki :: l))
+    then add_parent_key ki
+
+  let new_key ?split_from_parent init_orphan =
+    let idx = Atomic.fetch_and_add key_counter 1 in
+    let k = (idx, init_orphan) in
+    begin match split_from_parent with
+    | None -> ()
+    | Some split -> add_parent_key (KI(k, split))
+    end;
+    k
+
+  (* If necessary, grow the current domain's local state array such that [idx]
+   * is a valid index in the array. *)
+  let maybe_grow idx =
+    let st = get_dls_state () in
+    let sz = Array.length st in
+    if idx < sz then st
     else begin
       let rec compute_new_size s =
         if idx < s then s else compute_new_size (2 * s)
       in
       let new_sz = compute_new_size sz in
-      let new_arr = Array.make new_sz unique_value in
-      Array.blit arr 0 new_arr 0 sz;
-      new_arr
+      let new_st = Array.make new_sz unique_value in
+      Array.blit st 0 new_st 0 sz;
+      set_dls_state new_st;
+      new_st
     end
 
-  (* If necessary, grow the current domain's local state array such that [idx]
-   * is a valid index in the array. *)
-  let maybe_grow_dls idx =
-    let st = get_dls_state () in
-    let st = maybe_grow st idx in
-    set_dls_state st;
-    st
+  let set (idx, _init) x =
+    let st = maybe_grow idx in
+    (* [Sys.opaque_identity] ensures that flambda does not look at the type of
+     * [x], which may be a [float] and conclude that the [st] is a float array.
+     * We do not want OCaml's float array optimisation kicking in here. *)
+    st.(idx) <- Obj.repr (Sys.opaque_identity x)
 
-  let get (type a) ((idx, protocol) : a key) : a =
-    let st = maybe_grow_dls idx in
-    let slot = st.(idx) in
-    if slot == unique_value then begin
-      let v = protocol.init_orphan () in
-      let slot : a slot = { value = Lazy.from_val v; protocol } in
-      st.(idx) <- Obj.repr slot;
-      v
-    end else
-      Lazy.force (Obj.obj slot : a slot).value
+  let get (idx, init) =
+    let st = maybe_grow idx in
+    let v = st.(idx) in
+    if v == unique_value then
+      let v' = Obj.repr (init ()) in
+      st.(idx) <- (Sys.opaque_identity v');
+      Obj.magic v'
+    else Obj.magic v
 
-  let init key = ignore (get key)
+  let get_initial_keys () : (int * Obj.t) list =
+    List.map
+      (fun (KI ((idx, _) as k, split)) ->
+           (idx, Obj.repr (split (get k))))
+      (Atomic.get parent_keys)
 
-  let set (type a) ((idx, protocol) : a key) (x : a) =
-    let st = maybe_grow_dls idx in
-    let slot = st.(idx) in
-    let x = Lazy.from_val x in
-    if slot == unique_value then begin
-      let slot : a slot = { value = x; protocol } in
-      st.(idx) <- Obj.repr slot;
-    end else
-      (Obj.obj slot : a slot).value <- x
+  let set_initial_keys (l: (int * Obj.t) list) =
+    List.iter
+      (fun (idx, v) ->
+        let st = maybe_grow idx in st.(idx) <- v)
+      l
 
-  (* Keys with a [split_from_parent] function are "inherited keys".
-     When a new domain is spawned, their values in the new domain are
-     computed according to their protocol. *)
-  let inherit_dls dls =
-    let inh : Obj.t array ref =
-      (* Note: we could use the size of the [dls] array, but this
-         would waste memory in the possibly-common case where most
-         keys are Local *)
-      ref (Array.make initial_dynarray_size unique_value) in
-    for idx = 0 to Array.length dls - 1 do
-      let slot : Obj.t = dls.(idx) in
-      if slot == unique_value then ()
-      else begin fun (type a) ->
-        let slot = (Obj.obj slot : a slot) in
-        match slot.protocol.split_from_parent with
-        | None -> ()
-        | Some inheritance ->
-            let v = Lazy.force slot.value in
-            let inherited_slot = { slot with value = inheritance v } in
-            inh := maybe_grow !inh idx;
-            !inh.(idx) <- Obj.repr (inherited_slot : a slot)
-      end
-    done;
-    !inh
 end
 
 (* first spawn, domain startup and at exit functionality *)
@@ -214,14 +190,19 @@ let cas r vold vnew =
 
 let spawn f =
   do_at_first_spawn ();
+  let pk = DLS.get_initial_keys () in
   (* the termination_mutex is used to block a joining thread *)
   let termination_mutex = Mutex.create () in
   let state = Atomic.make Running in
   let at_startup = Atomic.get startup_function in
-  let parent_dls = DLS.get_dls_state () in
-  let child_dls = DLS.inherit_dls parent_dls in
   let body () =
-    let result = match DLS.set_dls_state child_dls; at_startup (); f () with
+    let result =
+      match
+        DLS.create_dls ();
+        DLS.set_initial_keys pk;
+        at_startup ();
+        f ()
+      with
       | x -> Ok x
       | exception ex -> Error ex
     in
