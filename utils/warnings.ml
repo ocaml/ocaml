@@ -1032,8 +1032,8 @@ let message = function
   | Missing_mli ->
     "Cannot find interface file."
   | Unused_tmc_attribute ->
-      "This function is marked @tail_mod_cons but is never applied in \
-       TMC position."
+      "This function is marked @tail_mod_cons\n\
+       but is never applied in TMC position."
   | Tmc_breaks_tailcall ->
       "This call is in tail-modulo-cons position in a TMC function,\n\
        but the function called is not itself specialized for TMC,\n\

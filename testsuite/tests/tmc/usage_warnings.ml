@@ -28,7 +28,8 @@ Lines 1-3, characters 34-40:
 1 | ..................................function
 2 |   | [] -> []
 3 |   | xs :: xss -> append xs (flatten xss)
-Warning 71 [unused-tmc-attribute]: This function is marked @tail_mod_cons but is never applied in TMC position.
+Warning 71 [unused-tmc-attribute]: This function is marked @tail_mod_cons
+but is never applied in TMC position.
 val flatten : 'a list list -> 'a list = <fun>
 |}]
 
@@ -77,7 +78,8 @@ Lines 1-10, characters 34-30:
  8 |             (* incorrect: this call to append_flatten is not transformed *)
  9 |             x :: append_flatten xs xss
 10 |       in append_flatten xs xss
-Warning 71 [unused-tmc-attribute]: This function is marked @tail_mod_cons but is never applied in TMC position.
+Warning 71 [unused-tmc-attribute]: This function is marked @tail_mod_cons
+but is never applied in TMC position.
 val flatten : 'a list list -> 'a list = <fun>
 |}]
 
