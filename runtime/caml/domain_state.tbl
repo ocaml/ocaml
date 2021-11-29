@@ -148,11 +148,6 @@ DOMAIN_STATE(int, inside_stw_handler)
    this is used for several debug assertions inside of methods
    that can only be called from either in or outside this state. */
 
-#if defined(NAKED_POINTERS_CHECKER) && !defined(_WIN32)
-DOMAIN_STATE(void*, checking_pointer_pc)
-/* See major_gc.c */
-#endif
-
 DOMAIN_STATE(intnat, trap_sp_off)
 DOMAIN_STATE(intnat, trap_barrier_off)
 DOMAIN_STATE(struct caml_exception_context*, external_raise)

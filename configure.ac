@@ -1826,23 +1826,6 @@ AS_IF([test x"$enable_frame_pointers" = "xyes"],
   [AC_MSG_NOTICE([not using frame pointers])
   frame_pointers=false])
 
-AS_IF([test x"$enable_naked_pointers_checker" = "xyes" ],
-  [AS_IF([test x"$enable_naked_pointers" = "xno" ],
-         [AC_MSG_ERROR(m4_normalize([
-               --enable-naked-pointers-checker and --disable-naked-pointers
-               are incompatible]))])
-   AS_CASE(["$arch","$system"],
-    [amd64,linux|amd64,macosx \
-    |amd64,openbsd|amd64,win64 \
-    |amd64,freebsd|amd64,solaris \
-    |arm64,linux|arm64,macosx],
-      [naked_pointers_checker=true
-      AC_DEFINE([NAKED_POINTERS_CHECKER])],
-    [*],
-      [AC_MSG_ERROR([naked pointers checker not supported on this platform])]
-  )],
-  [naked_pointers_checker=false])
-
 ## Check for mmap support for huge pages and contiguous heap
 OCAML_MMAP_SUPPORTS_HUGE_PAGES
 
