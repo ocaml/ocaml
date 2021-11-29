@@ -28,3 +28,5 @@ val compare_and_set : 'a t -> 'a -> 'a -> bool
 val fetch_and_add : int t -> int -> int
 val incr : int t -> unit
 val decr : int t -> unit
+val modify : ('a -> 'a) -> 'a t -> unit
+val modify_get : ('a -> 'b * 'a) -> 'a t -> 'b

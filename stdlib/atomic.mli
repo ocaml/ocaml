@@ -57,3 +57,37 @@ val incr : int t -> unit
 
 (** [decr r] atomically decrements the value of [r] by [1]. *)
 val decr : int t -> unit
+
+(** [modify f r] computes a new value for [r] by applying [f] to its
+    current value, sets this new value or retries (calling [f] again)
+    if [r] was concurrently changed to a physically different value.
+
+    Example:
+{[
+let global_list = Atomic.make []
+let global_push elem = Atomic.modify (List.cons elem) global_list
+]}
+
+    @since 5.00
+*)
+val modify : ('a -> 'a) -> 'a t -> unit
+
+(** [modify_get f r] computes a pair [(v, new_r)] by calling [f]
+    to the value of [r]. It tries to set this new value in [r]
+    and returns [v], or retries (calling [f] again) if [r] was
+    concurrently changed to a physically different value.
+
+    Example:
+{[
+let global_list = Atomic.make []
+let global_pop () =
+  let pop = function
+  | [] -> raise Not_found
+  | x::xs -> x, xs
+  in
+  Atomic.modify_get pop global_lit
+]}
+
+    @since 5.00
+*)
+val modify_get : ('a -> 'b * 'a) -> 'a t -> 'b

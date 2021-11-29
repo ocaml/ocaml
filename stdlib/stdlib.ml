@@ -551,17 +551,15 @@ external sys_exit : int -> 'a = "caml_sys_exit"
 
 let exit_function = CamlinternalAtomic.make flush_all
 
-let rec at_exit f =
+let at_exit f =
   let module Atomic = CamlinternalAtomic in
-  (* MPR#7253, MPR#7796: make sure "f" is executed only once *)
-  let f_yet_to_run = Atomic.make true in
-  let old_exit = Atomic.get exit_function in
-  let new_exit () =
-    if Atomic.compare_and_set f_yet_to_run true false then f () ;
-    old_exit ()
-  in
-  let success = Atomic.compare_and_set exit_function old_exit new_exit in
-  if not success then at_exit f
+  Atomic.modify (fun old_exit ->
+    (* MPR#7253, MPR#7796: make sure "f" is executed only once *)
+    let f_yet_to_run = Atomic.make true in
+    fun () ->
+      if Atomic.compare_and_set f_yet_to_run true false then f () ;
+      old_exit ()
+  ) exit_function
 
 let do_at_exit () = (CamlinternalAtomic.get exit_function) ()
 

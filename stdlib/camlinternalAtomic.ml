@@ -58,3 +58,17 @@ let[@inline never] fetch_and_add r n =
 
 let incr r = ignore (fetch_and_add r 1)
 let decr r = ignore (fetch_and_add r (-1))
+
+let rec modify f r =
+  let v_old = get r in
+  let v_new = f v_old in
+  if compare_and_set r v_old v_new
+  then ()
+  else modify f r
+
+let rec modify_get f r =
+  let v_old = get r in
+  let res, v_new = f v_old in
+  if compare_and_set r v_old v_new
+  then res
+  else modify_get f r
