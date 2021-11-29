@@ -44,9 +44,10 @@ Caml_inline value save_and_clear_stack_parent(caml_domain_state* domain_state) {
   return cont;
 }
 
-Caml_inline void restore_stack_parent(caml_domain_state* domain_state, value cont) {
+Caml_inline void restore_stack_parent(caml_domain_state* domain_state,
+                                      value cont) {
   struct stack_info* parent_stack = Ptr_val(Op_val(cont)[0]);
-  Assert(Stack_parent(domain_state->current_stack) == NULL);
+  CAMLassert(Stack_parent(domain_state->current_stack) == NULL);
   Stack_parent(domain_state->current_stack) = parent_stack;
 }
 
@@ -88,14 +89,16 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
 
   CAMLassert(narg + 4 <= 256);
   domain_state->current_stack->sp -= narg + 4;
-  for (i = 0; i < narg; i++) domain_state->current_stack->sp[i] = args[i]; /* arguments */
+  for (i = 0; i < narg; i++)
+    domain_state->current_stack->sp[i] = args[i]; /* arguments */
 
   if (!callback_code_inited) init_callback_code();
 
   callback_code[1] = narg + 3;
   callback_code[3] = narg;
 
-  domain_state->current_stack->sp[narg] = (value)(callback_code + 4); /* return address */
+  domain_state->current_stack->sp[narg] =
+                     (value)(callback_code + 4); /* return address */
   domain_state->current_stack->sp[narg + 1] = Val_unit;    /* environment */
   domain_state->current_stack->sp[narg + 2] = Val_long(0); /* extra args */
   domain_state->current_stack->sp[narg + 3] = closure;
@@ -103,7 +106,8 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   cont = save_and_clear_stack_parent(domain_state);
 
   res = caml_interprete(callback_code, sizeof(callback_code));
-  if (Is_exception_result(res)) domain_state->current_stack->sp += narg + 4; /* PR#3419 */
+  if (Is_exception_result(res))
+    domain_state->current_stack->sp += narg + 4; /* PR#3419 */
 
   restore_stack_parent(domain_state, cont);
 
@@ -141,7 +145,9 @@ static void init_callback_code(void)
 {
 }
 
-typedef value (callback_stub)(caml_domain_state* state, value closure, value* args);
+typedef value (callback_stub)(caml_domain_state* state,
+                              value closure,
+                              value* args);
 
 callback_stub caml_callback_asm, caml_callback2_asm, caml_callback3_asm;
 

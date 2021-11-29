@@ -130,7 +130,7 @@ Caml_inline void write_barrier(
   value obj, intnat field, value old_val, value new_val)
 {
   /* HACK: can't assert when get old C-api style pointers
-    Assert (Is_block(obj)); */
+    CAMLassert (Is_block(obj)); */
 
   if (!Is_young(obj)) {
 
@@ -205,10 +205,10 @@ CAMLexport CAMLweakdef void caml_initialize (value *fp, value val)
 {
 #ifdef DEBUG
   if (Is_young((value)fp))
-    Assert(*fp == Debug_uninit_minor ||
+    CAMLassert(*fp == Debug_uninit_minor ||
            *fp == Val_unit);
   else
-    Assert(*fp == Debug_uninit_major ||
+    CAMLassert(*fp == Debug_uninit_major ||
            *fp == Val_unit);
 #endif
   write_barrier((value)fp, 0, *fp, val);
@@ -311,7 +311,7 @@ CAMLprim value caml_atomic_fetch_add (value ref, value incr)
 CAMLexport void caml_set_fields (value obj, value v)
 {
   int i;
-  Assert (Is_block(obj));
+  CAMLassert (Is_block(obj));
 
   for (i = 0; i < Wosize_val(obj); i++) {
     caml_modify(&Field(obj, i), v);
@@ -323,12 +323,12 @@ CAMLexport void caml_blit_fields (
 {
   CAMLparam2(src, dst);
   int i;
-  Assert(Is_block(src));
-  Assert(Is_block(dst));
-  Assert(srcoff + n <= Wosize_val(src));
-  Assert(dstoff + n <= Wosize_val(dst));
-  Assert(Tag_val(src) != Infix_tag);
-  Assert(Tag_val(dst) != Infix_tag);
+  CAMLassert(Is_block(src));
+  CAMLassert(Is_block(dst));
+  CAMLassert(srcoff + n <= Wosize_val(src));
+  CAMLassert(dstoff + n <= Wosize_val(dst));
+  CAMLassert(Tag_val(src) != Infix_tag);
+  CAMLassert(Tag_val(dst) != Infix_tag);
 
   /* we can't use memcpy/memmove since they may not do atomic word writes.
      for instance, they may copy a byte at a time */

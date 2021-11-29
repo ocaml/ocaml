@@ -1,3 +1,17 @@
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*                 Stephen Dolan, University of Cambridge                 */
+/*                                                                        */
+/*   Copyright 2015 University of Cambridge                               */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
 #include "caml/config.h"
 #include "caml/memory.h"
 #include "caml/addrmap.h"
@@ -10,7 +24,7 @@ static uintnat pos_initial(struct addrmap* t, value key)
   pos *= 0xcc9e2d51;
   pos ^= (pos >> 17);
 
-  Assert(Is_power_of_2(t->size));
+  CAMLassert(Is_power_of_2(t->size));
   return pos & (t->size - 1);
 }
 
@@ -23,7 +37,7 @@ int caml_addrmap_contains(struct addrmap* t, value key)
 {
   uintnat pos, i;
 
-  Assert(Is_block(key));
+  CAMLassert(Is_block(key));
   if (!t->entries) return 0;
 
   for (i = 0, pos = pos_initial(t, key);
@@ -39,11 +53,11 @@ value caml_addrmap_lookup(struct addrmap* t, value key)
 {
   uintnat pos;
 
-  Assert(Is_block(key));
-  Assert(t->entries);
+  CAMLassert(Is_block(key));
+  CAMLassert(t->entries);
 
   for (pos = pos_initial(t, key); ; pos = pos_next(t, pos)) {
-    Assert(t->entries[pos].key != ADDRMAP_INVALID_KEY);
+    CAMLassert(t->entries[pos].key != ADDRMAP_INVALID_KEY);
     if (t->entries[pos].key == key)
       return t->entries[pos].value;
   }
@@ -52,7 +66,7 @@ value caml_addrmap_lookup(struct addrmap* t, value key)
 static void addrmap_alloc(struct addrmap* t, uintnat sz)
 {
   uintnat i;
-  Assert(sz > 0 && (sz & (sz - 1)) == 0); /* sz must be a power of 2 */
+  CAMLassert(sz > 0 && (sz & (sz - 1)) == 0); /* sz must be a power of 2 */
   t->entries = caml_stat_alloc(sizeof(struct addrmap_entry) * sz);
   t->size = sz;
   for (i = 0; i < sz; i++) {
@@ -71,7 +85,7 @@ void caml_addrmap_clear(struct addrmap* t) {
 
 value* caml_addrmap_insert_pos(struct addrmap* t, value key) {
   uintnat i, pos;
-  Assert(Is_block(key));
+  CAMLassert(Is_block(key));
   if (!t->entries) {
     /* first call, initialise table with a small initial size */
     addrmap_alloc(t, 256);
@@ -94,7 +108,7 @@ value* caml_addrmap_insert_pos(struct addrmap* t, value key) {
     for (i = 0; i < old_size; i++) {
       if (old_table[i].key != ADDRMAP_INVALID_KEY) {
         value* p = caml_addrmap_insert_pos(t, old_table[i].key);
-        Assert(*p == ADDRMAP_NOT_PRESENT);
+        CAMLassert(*p == ADDRMAP_NOT_PRESENT);
         *p = old_table[i].value;
       }
     }
@@ -105,7 +119,7 @@ value* caml_addrmap_insert_pos(struct addrmap* t, value key) {
 
 void caml_addrmap_insert(struct addrmap* t, value k, value v) {
   value* p = caml_addrmap_insert_pos(t, k);
-  Assert(*p == ADDRMAP_NOT_PRESENT);
+  CAMLassert(*p == ADDRMAP_NOT_PRESENT);
   *p = v;
 }
 

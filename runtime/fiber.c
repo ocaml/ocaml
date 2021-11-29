@@ -312,7 +312,7 @@ void caml_scan_stack(scanning_action f, void* fdata,
   value *low, *high, *sp;
 
   while (stack != NULL) {
-    Assert(stack->magic == 42);
+    CAMLassert(stack->magic == 42);
 
     high = Stack_high(stack);
     low = stack->sp;
