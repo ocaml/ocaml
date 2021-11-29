@@ -5,12 +5,10 @@
 let num_domains = 4
 
 let rec safe_force l =
-  match Lazy.try_force l with
-  | Some x -> x
-  | None -> (
-      Domain.cpu_relax () ;
+  try Lazy.force l with
+  | Lazy.Undefined ->
+      Domain.cpu_relax ();
       safe_force l
-    )
 
 let f count =
   let _n = (Domain.self ():> int) in
@@ -22,7 +20,7 @@ let f count =
 
 let go = Atomic.make false
 
-let l = lazy (f 1_000_000_000)
+let l = lazy (f 100_000_000)
 let d1 = Array.init (num_domains - 1) (fun _->
   Domain.spawn (fun () ->
       let rec wait () =

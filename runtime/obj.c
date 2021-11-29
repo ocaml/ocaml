@@ -187,7 +187,8 @@ CAMLprim value caml_obj_add_offset (value v, value offset)
   return v + (unsigned long) Int32_val (offset);
 }
 
-CAMLprim value caml_obj_compare_and_swap (value v, value f, value oldv, value newv)
+CAMLprim value caml_obj_compare_and_swap (value v, value f,
+                                          value oldv, value newv)
 {
   int res = caml_atomic_cas_field(v, Int_val(f), oldv, newv);
   caml_check_urgent_gc(Val_unit);
@@ -259,13 +260,12 @@ CAMLprim value caml_lazy_read_result (value v)
 CAMLprim value caml_lazy_update_to_forcing (value v)
 {
   tag_t tag;
-  value field0;
 
   tag = obj_tag(v);
   if (tag != Lazy_tag && tag != Forcing_tag && tag != Forward_tag) {
     /* v is not a lazy block. It must have been forced by another domain and
      * short-circuited by the GC at a safepoint. */
-    return Val_int(4);
+    return Val_int(3);
   }
 
   /* v is a lazy block with Lazy_tag, Forcing_tag or Forward_tag. */
@@ -273,25 +273,12 @@ CAMLprim value caml_lazy_update_to_forcing (value v)
     /* Successfully update the tag to Forcing_tag */
     return Val_int(0);
   } else {
-    field0 = Field(v,0);
-    /* The tag has to be read again after the field field. We use [atomic_load]
-     * in order to enforce ordering between the two reads. */
-    tag = Tag_hd (atomic_load (Hp_atomic_val(v)));
+    tag = obj_tag(v);
 
     if (tag == Forcing_tag) {
-      if (field0 == caml_ml_domain_unique_token(Val_unit))
         return Val_int(1);
-      else
-        return Val_int(2);
-    } else if (tag == Forward_tag) {
-      return Val_int(3);
     } else {
-      CAMLassert (tag == Lazy_tag);
-      /* We may reach here if the tag of [v] has been reset to [Lazy_tag] using
-       * [caml_lazy_reset_to_lazy] since our own attempt at updating the tag of
-       * [v] in [obj_update_tag] failed. The compare and swap in
-       * [obj_update_tag] failed since it must have observed [Forcing_tag].
-       * This represents a racy update of the tag of [v] by another mutator. */
+      CAMLassert (tag == Forward_tag);
       return Val_int(2);
     }
   }

@@ -94,7 +94,6 @@ void caml_global_barrier_end(barrier_status);
 int caml_global_barrier_num_domains();
 
 int caml_domain_is_terminating(void);
-value caml_ml_domain_unique_token(value);
 
 #endif /* CAML_INTERNALS */
 

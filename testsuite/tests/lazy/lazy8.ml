@@ -17,7 +17,7 @@ let main () =
 
   let d = Domain.spawn (fun () ->
     begin try Lazy.force_val l with
-    | Lazy.RacyLazy -> ()
+    | Lazy.Undefined -> ()
     end)
   in
   Domain.join d;

@@ -148,18 +148,21 @@ CAMLexport void caml_do_exit(int retcode)
                       (intnat) s.promoted_words);
       caml_gc_message(0x400, "major_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
                       (intnat) majwords);
-      caml_gc_message(0x400, "minor_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+      caml_gc_message(0x400,
+                      "minor_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
                       (intnat) s.minor_collections);
-      caml_gc_message(0x400, "major_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+      caml_gc_message(0x400,
+                      "major_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
                       domain_state->stat_major_collections);
       caml_gc_message(0x400,
-                      "forced_major_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                      (intnat)s.forced_major_collections);
+        "forced_major_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+        (intnat)s.forced_major_collections);
       caml_gc_message(0x400, "heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
                       heap_words);
       caml_gc_message(0x400, "top_heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
                       top_heap_words);
-      caml_gc_message(0x400, "mean_space_overhead: %lf\n", caml_mean_space_overhead());
+      caml_gc_message(0x400, "mean_space_overhead: %lf\n",
+                      caml_mean_space_overhead());
     }
   }
 
@@ -602,7 +605,6 @@ int caml_unix_random_seed(intnat data[16])
 #else
     if (n < 16) data[n++] = time(NULL);
 #endif
-    if (n < 16) data[n++] = (intnat)Caml_state->unique_token_root;
 #ifdef HAS_UNISTD
     if (n < 16) data[n++] = getpid();
     if (n < 16) data[n++] = getppid();

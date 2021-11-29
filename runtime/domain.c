@@ -408,14 +408,6 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
     domain_state->dls_root = Val_unit;
     caml_register_generational_global_root(&domain_state->dls_root);
 
-    domain_state->unique_token_root =
-        caml_alloc_shr_noexc(Abstract_tag, Val_unit);
-    if(domain_state->unique_token_root == (value)NULL) {
-      goto create_unique_token_failure;
-    }
-
-    caml_register_generational_global_root(&domain_state->unique_token_root);
-
     domain_state->stack_cache = caml_alloc_stack_cache();
     if(domain_state->stack_cache == NULL) {
       goto create_stack_cache_failure;
@@ -464,9 +456,7 @@ create_intern_state_failure:
   caml_free_extern_state(domain_state->extern_state);
 create_extern_state_failure:
 create_stack_cache_failure:
-  caml_remove_generational_global_root(&domain_state->unique_token_root);
   caml_remove_generational_global_root(&domain_state->dls_root);
-create_unique_token_failure:
 reallocate_minor_heap_failure:
   caml_teardown_major_gc();
 init_major_gc_failure:
@@ -817,8 +807,7 @@ CAMLprim value caml_ml_domain_id(value unit)
 
 CAMLprim value caml_ml_domain_unique_token (value unit)
 {
-  CAMLnoalloc;
-  return Caml_state->unique_token_root;
+  return Val_unit;
 }
 
 /* sense-reversing barrier */
@@ -1269,7 +1258,6 @@ static void domain_terminate()
   /* We can not touch domain_self->interruptor after here
      because it may be reused */
   caml_sample_gc_collect(domain_state);
-  caml_remove_generational_global_root(&domain_state->unique_token_root);
   caml_remove_generational_global_root(&domain_state->dls_root);
   caml_remove_generational_global_root(&domain_state->backtrace_last_exn);
 
