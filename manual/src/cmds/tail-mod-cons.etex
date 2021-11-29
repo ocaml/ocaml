@@ -6,7 +6,7 @@
 Note: this feature is considered experimental, and its interface may
 evolve, with user feedback, in the next few releases of the language.
 
-Consider the simple way of implementing the "List.map" function:
+Consider this natural implementation of the "List.map" function:
 \begin{caml_example*}{verbatim}
 let rec map f l =
   match l with
