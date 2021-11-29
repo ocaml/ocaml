@@ -95,13 +95,15 @@ ALL_PAGED_DOC = $(TARGET_UNITS) $(ALL_PAGE_TEXT)
 # rules for odocl generation
 # Note that we are using a dependency on the whole phase 1 rather than tracking
 # the individual file dependencies
-$(ALL_UNITS:%=build/%.odocl):%.odocl:%.odoc \
+%.odocl:%.odoc \
   | $(ALL_PAGED_DOC:%=build/%.odoc)
-	$(odoc) link -I build/libref -I build/compilerlibref $<
+	$(odoc) link -I build/libref -I build/compilerlibref $(ODOC_LINK_ARGS) $<
 
-$(ALL_PAGE_TEXT:%=build/%.odocl):%.odocl:%.odoc \
+%.odocl:%.odoc \
   | $(ALL_PAGED_DOC:%=build/%.odoc)
-	$(odoc) link -I build/libref -I build/compilerlibref $<
+	$(odoc) link -I build/libref -I build/compilerlibref $(ODOC_LINK_ARGS) $<
+
+build/libref/stdlib.odocl: ODOC_LINK_ARGS+=--open=""
 
 # Rules for all three backends:
 
