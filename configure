@@ -748,7 +748,6 @@ build_vendor
 build_cpu
 build
 force_instrumented_runtime
-naked_pointers_checker
 naked_pointers
 compute_deps
 stdlib_manpages
@@ -896,7 +895,6 @@ with_odoc
 enable_ocamltest
 enable_frame_pointers
 enable_naked_pointers
-enable_naked_pointers_checker
 enable_spacetime
 enable_cfi
 enable_imprecise_c99_float_ops
@@ -1569,8 +1567,6 @@ Optional Features:
   --disable-ocamldoc      do not build the ocamldoc documentation system
   --disable-ocamltest     do not build the ocamltest driver
   --enable-frame-pointers use frame pointers in runtime and generated code
-  --enable-naked-pointers-checker
-                          enable the naked pointers checker
   --disable-cfi           disable the CFI directives in assembly files
   --enable-imprecise-c99-float-ops
                           enables potentially imprecise replacement
@@ -2948,7 +2944,6 @@ VERSION=4.14.0+domains+dev0
 
 
 
-
 ## Generated files
 
 ac_config_files="$ac_config_files Makefile.build_config"
@@ -3210,12 +3205,6 @@ if test "${enable_naked_pointers+set}" = set; then :
 else
   $as_echo "#define NO_NAKED_POINTERS 1" >>confdefs.h
 
-fi
-
-
-# Check whether --enable-naked-pointers-checker was given.
-if test "${enable_naked_pointers_checker+set}" = set; then :
-  enableval=$enable_naked_pointers_checker;
 fi
 
 

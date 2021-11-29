@@ -170,7 +170,6 @@ AC_SUBST([PACKLD])
 AC_SUBST([stdlib_manpages])
 AC_SUBST([compute_deps])
 AC_SUBST([naked_pointers])
-AC_SUBST([naked_pointers_checker])
 AC_SUBST([force_instrumented_runtime])
 
 ## Generated files
@@ -288,10 +287,6 @@ AC_ARG_ENABLE([frame-pointers],
 AC_ARG_ENABLE([naked-pointers], [],
   [AC_MSG_ERROR([Naked pointers are not allowed in OCaml Multicore.])],
   [AC_DEFINE([NO_NAKED_POINTERS])])
-
-AC_ARG_ENABLE([naked-pointers-checker],
-  [AS_HELP_STRING([--enable-naked-pointers-checker],
-    [enable the naked pointers checker])])
 
 AC_ARG_ENABLE([spacetime], [],
   [AC_MSG_ERROR([spacetime profiling was deleted in OCaml 4.12.])],
