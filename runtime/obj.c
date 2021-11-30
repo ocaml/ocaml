@@ -35,11 +35,14 @@ static int obj_tag (value arg)
 {
   header_t hd;
 
-  if (Is_long (arg)){
+  if (Is_long (arg)) {
     return 1000;   /* int_tag */
-  }else if ((long) arg & (sizeof (value) - 1)){
+  } else if ((long) arg & (sizeof (value) - 1)) {
     return 1002;   /* unaligned_tag */
-  }else{
+  } else {
+    /* The acquire load ensures that reading the field of a Forward_tag
+       block in stdlib/camlinternalLazy.ml:force_gen has the necessary
+       synchronization. */
     hd = (header_t)atomic_load_acq(Hp_atomic_val(arg));
     return Tag_hd(hd);
   }
