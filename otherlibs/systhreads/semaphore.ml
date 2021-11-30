@@ -40,11 +40,36 @@ let release s =
     raise (Sys_error "Semaphore.Counting.release: overflow")
   end
 
+let release_multi s n =
+  if n < 1 then invalid_arg "release_multi"
+  else if n = 1 then release s
+  else (
+    Mutex.lock s.mut;
+    if s.v + n < max_int then begin
+      s.v <- s.v + n;
+      Condition.broadcast s.nonzero;
+      Mutex.unlock s.mut
+    end else begin
+      Mutex.unlock s.mut;
+      raise (Sys_error "Semaphore.Counting.release_multi: overflow")
+    end
+  )
+
 let acquire s =
   Mutex.lock s.mut;
   while s.v = 0 do Condition.wait s.nonzero s.mut done;
   s.v <- s.v - 1;
   Mutex.unlock s.mut
+
+let acquire_multi s n =
+  if n < 1 then invalid_arg "Semaphore.Counting.acquire_multi"
+  else if n = 1 then acquire s
+  else (
+    Mutex.lock s.mut;
+    while s.v < n do Condition.wait s.nonzero s.mut done;
+    s.v <- s.v - n;
+    Mutex.unlock s.mut
+  )
 
 let try_acquire s =
   Mutex.lock s.mut;
@@ -58,6 +83,11 @@ let with_acquire s f =
   acquire s;
   Fun.protect f
     ~finally:(fun () -> release s)
+
+let with_acquire_multi s n f =
+  acquire_multi s n;
+  Fun.protect f
+    ~finally:(fun () -> release_multi s n)
 end
 
 module Binary = struct

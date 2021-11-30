@@ -63,15 +63,41 @@ val release : t -> unit
     @raise Sys_error if the value of the semaphore would overflow [max_int]
 *)
 
+val release_multi : t -> int -> unit
+(** [release_multi s n] releases [n] units to the semaphore.
+
+    @raise Sys_error if the value would overflow.
+    @raise Invalid_arg if [n] is less than 1
+    @see {!release} for more details.
+    @since 4.14
+*)
+
 val acquire : t -> unit
 (** [acquire s] blocks the calling thread until the value of semaphore [s]
     is not zero, then atomically decrements the value of [s] and returns.
+*)
+
+val acquire_multi : t -> int -> unit
+(** [acquire_multi s n] acquires [n] "units" from the semaphore [s].
+    It will block until [n] units are available.
+
+    @raise Invalid_arg if [n] is less than 1.
+    @since 4.14
 *)
 
 val with_acquire : t -> (unit -> 'a) -> 'a
 (** [with_acquire s f] runs [f()] in a context where [s] is acquired,
     and makes sure to release [s] before returning.
 
+    @since 4.14
+*)
+
+val with_acquire_multi : t -> int -> (unit -> 'a) -> 'a
+(** [with_acquire_multi s n f] runs [f()] in a context where [n]
+    units of [s] are acquired,
+    and makes sure to release them before returning.
+
+    @see {!with_acquire} and {!acquire_multi} for more details.
     @since 4.14
 *)
 
