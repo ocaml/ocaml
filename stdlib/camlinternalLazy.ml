@@ -112,6 +112,7 @@ let force_lazy_block blk = force_gen_lazy_block ~only_val:false blk
    declared as a primitive whose code inlines the tag tests of its
    argument, except when afl instrumentation is turned on. *)
 let force_gen ~only_val (lzv : 'arg lazy_t) =
+  let lzv = Sys.opaque_identity lzv in
   let x = Obj.repr lzv in
   let t = Obj.tag x in
   (* START no safe points. If a GC occurs here, then the object [x] may be
