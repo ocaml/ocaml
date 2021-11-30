@@ -30,7 +30,7 @@ module Deep : sig
   val continue: ('a, 'b) continuation -> 'a -> 'b
   (** [continue k x] resumes the continuation [k] by passing [x] to [k].
 
-      @raise Continuation_alread_taken if the continuation has already been
+      @raise Continuation_already_taken if the continuation has already been
       resumed. *)
 
   val discontinue: ('a, 'b) continuation -> exn -> 'b
@@ -57,7 +57,7 @@ module Deep : sig
       is the value handler, [exnc] handles exceptions, and [effc] handles the
       effects performed by the computation enclosed by the handler. *)
 
-  val match_with: ('a -> 'b) -> 'a -> ('b,'c) handler -> 'c
+  val match_with: ('c -> 'a) -> 'c -> ('a,'b) handler -> 'b
   (** [match_with f v h] runs the computation [f v] in the handler [h]. *)
 
   type 'a effect_handler =
@@ -66,7 +66,7 @@ module Deep : sig
       [fun x -> x] and an exception handler that raises any exception
       [fun e -> raise e]. *)
 
-  val try_with: ('a -> 'b) -> 'a -> 'b effect_handler -> 'b
+  val try_with: ('b -> 'a) -> 'b -> 'a effect_handler -> 'a
   (** [try_with f v h] runs the computation [f v] under the handler [h]. *)
 
   external get_callstack :
@@ -94,7 +94,7 @@ module Shallow : sig
       is the value handler, [exnc] handles exceptions, and [effc] handles the
       effects performed by the computation enclosed by the handler. *)
 
-  val continue_with : ('a,'b) continuation -> 'a -> ('b,'c) handler -> 'c
+  val continue_with : ('c,'a) continuation -> 'c -> ('a,'b) handler -> 'b
   (** [continue_with k v h] resumes the continuation [k] with value [v] with
       the handler [h].
 
@@ -102,7 +102,7 @@ module Shallow : sig
       resumed.
    *)
 
-  val discontinue_with : ('a,'b) continuation -> exn -> ('b,'c) handler -> 'c
+  val discontinue_with : ('c,'a) continuation -> exn -> ('a,'b) handler -> 'b
   (** [discontinue_with k e h] resumes the continuation [k] by raising the
       exception [e] with the handler [h].
 
@@ -120,7 +120,6 @@ module Shallow : sig
       @raise Continuation_already_taken if the continuation has already been
       resumed.
    *)
-
 
   external get_callstack :
     ('a,'b) continuation -> int -> Printexc.raw_backtrace =
