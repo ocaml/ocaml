@@ -17,8 +17,8 @@
 
 type 'a t = 'a CamlinternalLazy.t
 (** A value of type ['a Lazy.t] is a deferred computation, called a suspension,
-    that has a result of type ['a].  The special expression syntax [lazy
-    (expr)] makes a suspension of the computation of [expr], without computing
+    that has a result of type ['a]. The special expression syntax [lazy (expr)]
+    makes a suspension of the computation of [expr], without computing
     [expr] itself yet. "Forcing" the suspension will then compute [expr] and
     return its result. Matching a suspension with the special pattern syntax
     [lazy(pattern)] also computes the underlying expression and tries to bind

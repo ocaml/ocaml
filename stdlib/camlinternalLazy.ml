@@ -19,37 +19,23 @@ type 'a t = 'a lazy_t
 
 exception Undefined
 
-(* [update_to_forcing blk] expects [blk] to be a lazy value with one of the
- * tags -- [Obj.lazy_tag], [Obj.forward_tag], [Obj.forcing_tag] -- or a
- * short-circuited lazy object. This function is implemented in C due to the
- * atomicity requirements wrt the GC.
- *
- * If [blk] happens to be a lazy value with [Obj.lazy_tag], the tag is changed
- * to [Obj.forcing_tag] using compare-and-swap taking care to handle concurrent
- * marking of the header word by a concurrent GC thread. Returns [0] in this
- * case.
- *
- * If [blk] happens to be [Obj.forcing_tag], then either this domain is
- * recursively forcing this lazy value, or the lazy value is concurrently
- * forced by another domain. In both of these cases, return [1].
- *
- * If [blk] happens to be [Obj.forward_tag], then returns [2].
- *
- * If [blk] happens to have any other tag or is a primitive value, then returns
- * [3].
- *)
-external update_to_forcing : Obj.t -> int =
+(* [update_to_forcing blk] tries to update a [blk] with [lazy_tag] to
+   [forcing_tag] using compare-and-swap (CAS), taking care to handle concurrent
+   marking of the header word by a concurrent GC thread. Returns [true] if the
+   CAS is successful. If the CAS fails, then the tag was observed to be
+   something other than [lazy_tag] due to a concurrent mutator. In this case,
+   the function returns [false]. *)
+external update_to_forcing : Obj.t -> bool =
   "caml_lazy_update_to_forcing" [@@noalloc]
 
 (* [reset_to_lazy blk] expects [blk] to be a lazy object with [Obj.forcing_tag]
- * and updates the tag to [Obj.lazy_tag], taking care to handle concurrent
- * marking of this object's header by a concurrent GC thread.
- *)
+   and updates the tag to [Obj.lazy_tag], taking care to handle concurrent
+   marking of this object's header by a concurrent GC thread. *)
 external reset_to_lazy : Obj.t -> unit = "caml_lazy_reset_to_lazy" [@@noalloc]
 
 (* [update_to_forward blk] expects [blk] to be a lazy object with
- * [Obj.forcing_tag] and updates the tag to [Obj.forward_tag], taking care to
- * handle concurrent marking of this object's header by a concurrent GC thread.
+   [Obj.forcing_tag] and updates the tag to [Obj.forward_tag], taking care to
+   handle concurrent marking of this object's header by a concurrent GC thread.
  *)
 external update_to_forward : Obj.t -> unit =
   "caml_lazy_update_to_forward" [@@noalloc]
@@ -81,29 +67,12 @@ let do_force_val_block blk =
 
 (* Called by [force_gen] *)
 let force_gen_lazy_block ~only_val (blk : 'arg lazy_t) =
-  (* In the common case, expect the tag to be [lazy_tag], but may be other tags
-     due to concurrent forcing of lazy values. *)
-  match update_to_forcing (Obj.repr blk) with
-  | 0 when only_val -> do_force_val_block blk
-  | 0 -> do_force_block blk
-  | _ ->
-      (* If the return value is 1, then the tag is [forcing_tag]. We are either
-         recursively forcing on the same domain, or concurrently forcing from
-         multiple domains. Raise [Undefined].
-
-         If the return value is 2, then the tag is [forward_tag]. In
-         [force_gen], we checked whether the tag was [forward_tag]. It has
-         changed since the last read. Hence, there is another domain which is
-         concurrently forcing this lazy. Raise [Undefined].
-
-         If the return value is 3, then the tag is not [forcing_tag] or
-         [forward_tag], which we checked in [force_gen]. The tag is not
-         [lazy_tag] or otherwise [update_to_forcing] would have succeeded and
-         returned [0]. The tag has changed from the expected [lazy_tag] due to
-         another domain concurrently, and the GC short circuiting the result.
-         Raise [Undefined].
-         *)
-      raise Undefined
+  (* We expect the tag to be [lazy_tag], but may be other tags due to
+     concurrent forcing of lazy values. *)
+  if update_to_forcing (Obj.repr blk) then begin
+    if only_val then do_force_val_block blk
+    else do_force_block blk
+  end else raise Undefined
 
 (* used in the %lazy_force primitive *)
 let force_lazy_block blk = force_gen_lazy_block ~only_val:false blk
@@ -113,11 +82,11 @@ let force_lazy_block blk = force_gen_lazy_block ~only_val:false blk
    argument, except when afl instrumentation is turned on. *)
 let force_gen ~only_val (lzv : 'arg lazy_t) =
   let x = Obj.repr lzv in
-  let t = Obj.tag x in
   (* START no safe points. If a GC occurs here, then the object [x] may be
      short-circuited, and getting the first field of [x] would get us the wrong
      value. Luckily, the compiler does not insert GC safe points at this place,
      so it is ok. *)
+  let t = Obj.tag x in
   if t = Obj.forward_tag then
     (Obj.obj (Obj.field x 0) : 'arg)
   (* END no safe points *)

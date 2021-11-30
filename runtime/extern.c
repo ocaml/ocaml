@@ -760,6 +760,7 @@ static void extern_rec(struct caml_extern_state* s, value v)
       if (Is_block (f)
           && (   Tag_val (f) == Forward_tag
               || Tag_val (f) == Lazy_tag
+              || Tag_val (f) == Forcing_tag
 #ifdef FLAT_FLOAT_ARRAY
               || Tag_val (f) == Double_tag
 #endif

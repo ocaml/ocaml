@@ -33,12 +33,15 @@
 
 static int obj_tag (value arg)
 {
+  header_t hd;
+
   if (Is_long (arg)){
     return 1000;   /* int_tag */
   }else if ((long) arg & (sizeof (value) - 1)){
     return 1002;   /* unaligned_tag */
   }else{
-    return Tag_val(arg);
+    hd = (header_t)atomic_load_acq(Hp_atomic_val(arg));
+    return Tag_hd(hd);
   }
 }
 
@@ -259,28 +262,10 @@ CAMLprim value caml_lazy_read_result (value v)
 
 CAMLprim value caml_lazy_update_to_forcing (value v)
 {
-  tag_t tag;
-
-  tag = obj_tag(v);
-  if (tag != Lazy_tag && tag != Forcing_tag && tag != Forward_tag) {
-    /* v is not a lazy block. It must have been forced by another domain and
-     * short-circuited by the GC at a safepoint. */
-    return Val_int(3);
-  }
-
-  /* v is a lazy block with Lazy_tag, Forcing_tag or Forward_tag. */
   if (obj_update_tag (v, Lazy_tag, Forcing_tag)) {
-    /* Successfully update the tag to Forcing_tag */
-    return Val_int(0);
+    return Val_true;
   } else {
-    tag = obj_tag(v);
-
-    if (tag == Forcing_tag) {
-        return Val_int(1);
-    } else {
-      CAMLassert (tag == Forward_tag);
-      return Val_int(2);
-    }
+    return Val_false;
   }
 }
 
