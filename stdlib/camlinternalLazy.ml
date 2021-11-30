@@ -21,11 +21,11 @@ exception Undefined
 
 (* [update_to_forcing blk] tries to update a [blk] with [lazy_tag] to
    [forcing_tag] using compare-and-swap (CAS), taking care to handle concurrent
-   marking of the header word by a concurrent GC thread. Returns [true] if the
+   marking of the header word by a concurrent GC thread. Returns [0] if the
    CAS is successful. If the CAS fails, then the tag was observed to be
    something other than [lazy_tag] due to a concurrent mutator. In this case,
-   the function returns [false]. *)
-external update_to_forcing : Obj.t -> bool =
+   the function returns [1]. *)
+external update_to_forcing : Obj.t -> int =
   "caml_lazy_update_to_forcing" [@@noalloc]
 
 (* [reset_to_lazy blk] expects [blk] to be a lazy object with [Obj.forcing_tag]
@@ -69,10 +69,10 @@ let do_force_val_block blk =
 let force_gen_lazy_block ~only_val (blk : 'arg lazy_t) =
   (* We expect the tag to be [lazy_tag], but may be other tags due to
      concurrent forcing of lazy values. *)
-  if update_to_forcing (Obj.repr blk) then begin
-    if only_val then do_force_val_block blk
-    else do_force_block blk
-  end else raise Undefined
+  match update_to_forcing (Obj.repr blk) with
+  | 0 when only_val -> do_force_val_block blk
+  | 0 -> do_force_block blk
+  | _ -> raise Undefined
 
 (* used in the %lazy_force primitive *)
 let force_lazy_block blk = force_gen_lazy_block ~only_val:false blk

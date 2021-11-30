@@ -263,9 +263,9 @@ CAMLprim value caml_lazy_read_result (value v)
 CAMLprim value caml_lazy_update_to_forcing (value v)
 {
   if (obj_update_tag (v, Lazy_tag, Forcing_tag)) {
-    return Val_true;
+    return Val_int(0);
   } else {
-    return Val_false;
+    return Val_int(1);
   }
 }
 
