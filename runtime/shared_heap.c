@@ -481,6 +481,15 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
         p[0] = 0;
         p[1] = (value)a->next_obj;
         CAMLassert(Is_block((value)p));
+#ifdef DEBUG
+        {
+          int i;
+          mlsize_t wo = Wosize_whsize(wh);
+          for (i = 2; i < wo; i++) {
+            Field(Val_hp(p), i) = Debug_free_major;
+          }
+        }
+#endif
         a->next_obj = p;
         all_used = 0;
         /* update stats */
