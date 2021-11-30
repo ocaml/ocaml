@@ -450,10 +450,6 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
     domain_state->trap_sp_off = 1;
 #endif
 
-#if defined(NAKED_POINTERS_CHECKER) && !defined(_WIN32)
-    domain_state->checking_pointer_pc = NULL;
-#endif
-
     add_to_stw_domains(domain_self);
     goto domain_init_complete;
 

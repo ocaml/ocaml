@@ -148,18 +148,21 @@ CAMLexport void caml_do_exit(int retcode)
                       (intnat) s.promoted_words);
       caml_gc_message(0x400, "major_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
                       (intnat) majwords);
-      caml_gc_message(0x400, "minor_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                      (intnat) s.minor_collections);
-      caml_gc_message(0x400, "major_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                      domain_state->stat_major_collections);
       caml_gc_message(0x400,
-                      "forced_major_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                      (intnat)s.forced_major_collections);
+          "minor_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+          (intnat) s.minor_collections);
+      caml_gc_message(0x400,
+          "major_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+          domain_state->stat_major_collections);
+      caml_gc_message(0x400,
+          "forced_major_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+          (intnat)s.forced_major_collections);
       caml_gc_message(0x400, "heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
                       heap_words);
       caml_gc_message(0x400, "top_heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
                       top_heap_words);
-      caml_gc_message(0x400, "mean_space_overhead: %lf\n", caml_mean_space_overhead());
+      caml_gc_message(0x400, "mean_space_overhead: %lf\n",
+                      caml_mean_space_overhead());
     }
   }
 
@@ -170,13 +173,6 @@ CAMLexport void caml_do_exit(int retcode)
     caml_shutdown();
 #ifdef _WIN32
   caml_restore_win32_terminal();
-#endif
-#ifdef NAKED_POINTERS_CHECKER
-  if (retcode == 0 && caml_naked_pointers_detected) {
-    fprintf (stderr, "\nOut-of-heap pointers were detected by the runtime.\n"
-                     "The process would otherwise have terminated normally.\n");
-    retcode = 70; /* EX_SOFTWARE; see sysexits.h */
-  }
 #endif
   exit(retcode);
 }
@@ -731,13 +727,4 @@ CAMLprim value caml_sys_isatty(value chan)
 #endif
 
   return ret;
-}
-
-CAMLprim value caml_sys_const_naked_pointers_checked(value unit)
-{
-#ifdef NAKED_POINTERS_CHECKER
-  return Val_true;
-#else
-  return Val_false;
-#endif
 }
