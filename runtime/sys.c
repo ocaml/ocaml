@@ -598,7 +598,6 @@ int caml_unix_random_seed(intnat data[16])
 #else
     if (n < 16) data[n++] = time(NULL);
 #endif
-    if (n < 16) data[n++] = (intnat)Caml_state->unique_token_root;
 #ifdef HAS_UNISTD
     if (n < 16) data[n++] = getpid();
     if (n < 16) data[n++] = getppid();

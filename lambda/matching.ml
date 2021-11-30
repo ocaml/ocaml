@@ -1943,12 +1943,12 @@ let inline_lazy_force_switch arg loc =
         ( Lprim (Pisint, [ varg ], loc),
           varg,
           Lswitch
-            ( varg,
-              { sw_numconsts = 0;
-                sw_consts = [];
-                sw_numblocks = 256;
+            ( Lprim (Pccall prim_obj_tag, [ varg ], loc),
+              { sw_numblocks = 0;
+                sw_blocks = [];
+                sw_numconsts = 256;
                 (* PR#6033 - tag ranges from 0 to 255 *)
-                sw_blocks =
+                sw_consts =
                   [ (Obj.forward_tag, Lprim (Pfield(0, Pointer, Mutable),
                                              [ varg ], loc));
 

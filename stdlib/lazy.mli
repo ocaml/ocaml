@@ -16,82 +16,59 @@
 (** Deferred computations. *)
 
 type 'a t = 'a CamlinternalLazy.t
-(** A value of type ['a Lazy.t] is a deferred computation, called
-   a suspension, that has a result of type ['a].  The special expression syntax
-   [lazy (expr)] makes a suspension of the computation of [expr], without
-   computing [expr] itself yet. "Forcing" the suspension will then compute
-   [expr] and return its result. Matching a suspension with the special pattern
-   syntax [lazy(pattern)] also computes the underlying expression and tries to
-   bind it to [pattern]:
+(** A value of type ['a Lazy.t] is a deferred computation, called a suspension,
+    that has a result of type ['a]. The special expression syntax [lazy (expr)]
+    makes a suspension of the computation of [expr], without computing
+    [expr] itself yet. "Forcing" the suspension will then compute [expr] and
+    return its result. Matching a suspension with the special pattern syntax
+    [lazy(pattern)] also computes the underlying expression and tries to bind
+    it to [pattern]:
 
-  {[
-    let lazy_option_map f x =
-    match x with
-    | lazy (Some x) -> Some (Lazy.force f x)
-    | _ -> None
-  ]}
+    {[
+      let lazy_option_map f x =
+      match x with
+      | lazy (Some x) -> Some (Lazy.force f x)
+      | _ -> None
+    ]}
 
-   Note: If lazy patterns appear in multiple cases in a pattern-matching, lazy
-   expressions may be forced even outside of the case ultimately selected by
-   the pattern matching. In the example above, the suspension [x] is always
-   computed.
+    Note: If lazy patterns appear in multiple cases in a pattern-matching, lazy
+    expressions may be forced even outside of the case ultimately selected by
+    the pattern matching. In the example above, the suspension [x] is always
+    computed.
 
-   Note: [lazy_t] is the built-in type constructor used by the compiler for the
-   [lazy] keyword.  You should not use it directly.  Always use [Lazy.t]
-   instead.
+    Note: [lazy_t] is the built-in type constructor used by the compiler for the
+    [lazy] keyword.  You should not use it directly.  Always use [Lazy.t]
+    instead.
 
-   Note: {!Lazy.force} (and therefore the [lazy] pattern-matching)
-   raises the {!RacyLazy} exception if forced concurrently from
-   multiple domains and the {!Undefined} exception if forced
-   concurrently from multiple systhreads or fibers within a domain.
-   If you need to share a lazy between threads, then you need to
-   implement your own synchronisation (see in particular
-   {!Lazy.try_force}).
-   Before 5.0, forcing a value concurrently from multiple systhreads
-   without synchronisation was unsafe.
-   (@since 5.0)
+    Note: [Lazy.force] is not concurrency-safe. If you use this module with
+    multiple fibers, systhreads or domains, then you will need to add some
+    locks. The module however ensures memory-safety, and hence, concurrently
+    accessing this module will not lead to a crash but the behaviour is
+    unspecified.
 
-   Note: if the program is compiled with the [-rectypes] option,
-   ill-founded recursive definitions of the form [let rec x = lazy x]
-   or [let rec x = lazy(lazy(...(lazy x)))] are accepted by the type-checker
-   and lead, when forced, to ill-formed values that trigger infinite
-   loops in the garbage collector and other parts of the run-time system.
-   Without the [-rectypes] option, such ill-founded recursive definitions
-   are rejected by the type-checker.
+    Note: if the program is compiled with the [-rectypes] option,
+    ill-founded recursive definitions of the form [let rec x = lazy x]
+    or [let rec x = lazy(lazy(...(lazy x)))] are accepted by the type-checker
+    and lead, when forced, to ill-formed values that trigger infinite
+    loops in the garbage collector and other parts of the run-time system.
+    Without the [-rectypes] option, such ill-founded recursive definitions
+    are rejected by the type-checker.
 *)
 
 
 exception Undefined
-(** Raised when forcing a suspension concurrently from multiple
-    systhreads or fibers within a domain, or when the suspension
-    tries to force itself recursively.
-*)
-
-exception RacyLazy
-(** Raised when forcing a suspension in parallel from multiple
-    domains.
-
-    @since 5.0
+(** Raised when forcing a suspension concurrently from multiple fibers,
+    systhreads or domains, or when the suspension tries to force itself
+    recursively.
 *)
 
 external force : 'a t -> 'a = "%lazy_force"
-(** [force x] forces the suspension [x] and returns its result.
-    If [x] has already been forced, [Lazy.force x] returns the
-    same value again without recomputing it.  If it raised an exception,
-    the same exception is raised again.
+(** [force x] forces the suspension [x] and returns its result. If [x] has
+    already been forced, [Lazy.force x] returns the same value again without
+    recomputing it.  If it raised an exception, the same exception is raised
+    again.
 
     @raise Undefined (see {!Undefined}).
-    @raise RacyLazy (see {!RacyLazy}).
-*)
-
-val try_force : 'a t -> 'a option
-(** [try_force x] behaves similarly to [Some (force x)], except that
-    it returns immediately with [None] if [x] is already being forced
-    concurrently by another domain.
-
-    @raise Undefined (see {!Undefined}).
-
-    @since 5.0
 *)
 
 (** {1 Iterators} *)
@@ -151,22 +128,16 @@ val from_fun : (unit -> 'a) -> 'a t
     @since 4.00.0 *)
 
 val force_val : 'a t -> 'a
-(** [force_val x] forces the suspension [x] and returns its
-    result.  If [x] has already been forced, [force_val x] returns the same
-    value again without recomputing it.
+(** [force_val x] forces the suspension [x] and returns its result.  If [x]
+    has already been forced, [force_val x] returns the same value again
+    without recomputing it.
+
+    If the computation of [x] raises an exception, it is unspecified
+    whether [force_val x] raises the same exception or {!Undefined}.
+    @raise Undefined if the forcing of [x] tries to force [x] itself
+    recursively.
 
     @raise Undefined (see {!Undefined}).
-    @raise RacyLazy (see {!RacyLazy}).
-*)
-
-val try_force_val : 'a t -> 'a option
-(** [try_force_val x] behaves similarly to [Some (force_val x)],
-    except that it returns immediately with [None] if [x] is already
-    being forced concurrently by another domain.
-
-    @raise Undefined (see {!Undefined}).
-
-    @since 5.0
 *)
 
 (** {1 Deprecated} *)

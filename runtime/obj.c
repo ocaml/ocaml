@@ -33,12 +33,18 @@
 
 static int obj_tag (value arg)
 {
-  if (Is_long (arg)){
+  header_t hd;
+
+  if (Is_long (arg)) {
     return 1000;   /* int_tag */
-  }else if ((long) arg & (sizeof (value) - 1)){
+  } else if ((long) arg & (sizeof (value) - 1)) {
     return 1002;   /* unaligned_tag */
-  }else{
-    return Tag_val(arg);
+  } else {
+    /* The acquire load ensures that reading the field of a Forward_tag
+       block in stdlib/camlinternalLazy.ml:force_gen has the necessary
+       synchronization. */
+    hd = (header_t)atomic_load_acq(Hp_atomic_val(arg));
+    return Tag_hd(hd);
   }
 }
 
@@ -187,7 +193,8 @@ CAMLprim value caml_obj_add_offset (value v, value offset)
   return v + (unsigned long) Int32_val (offset);
 }
 
-CAMLprim value caml_obj_compare_and_swap (value v, value f, value oldv, value newv)
+CAMLprim value caml_obj_compare_and_swap (value v, value f,
+                                          value oldv, value newv)
 {
   int res = caml_atomic_cas_field(v, Int_val(f), oldv, newv);
   caml_check_urgent_gc(Val_unit);
@@ -258,42 +265,12 @@ CAMLprim value caml_lazy_read_result (value v)
 
 CAMLprim value caml_lazy_update_to_forcing (value v)
 {
-  tag_t tag;
-  value field0;
-
-  tag = obj_tag(v);
-  if (tag != Lazy_tag && tag != Forcing_tag && tag != Forward_tag) {
-    /* v is not a lazy block. It must have been forced by another domain and
-     * short-circuited by the GC at a safepoint. */
-    return Val_int(4);
-  }
-
-  /* v is a lazy block with Lazy_tag, Forcing_tag or Forward_tag. */
-  if (obj_update_tag (v, Lazy_tag, Forcing_tag)) {
-    /* Successfully update the tag to Forcing_tag */
+  if (Is_block(v) && /* Needed to ensure that we don't attempt to update the
+                        header of a integer value */
+      obj_update_tag (v, Lazy_tag, Forcing_tag)) {
     return Val_int(0);
   } else {
-    field0 = Field(v,0);
-    /* The tag has to be read again after the field field. We use [atomic_load]
-     * in order to enforce ordering between the two reads. */
-    tag = Tag_hd (atomic_load (Hp_atomic_val(v)));
-
-    if (tag == Forcing_tag) {
-      if (field0 == caml_ml_domain_unique_token(Val_unit))
-        return Val_int(1);
-      else
-        return Val_int(2);
-    } else if (tag == Forward_tag) {
-      return Val_int(3);
-    } else {
-      CAMLassert (tag == Lazy_tag);
-      /* We may reach here if the tag of [v] has been reset to [Lazy_tag] using
-       * [caml_lazy_reset_to_lazy] since our own attempt at updating the tag of
-       * [v] in [obj_update_tag] failed. The compare and swap in
-       * [obj_update_tag] failed since it must have observed [Forcing_tag].
-       * This represents a racy update of the tag of [v] by another mutator. */
-      return Val_int(2);
-    }
+    return Val_int(1);
   }
 }
 

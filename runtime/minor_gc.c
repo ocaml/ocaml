@@ -337,7 +337,8 @@ static void oldify_one (void* st_v, value v, value *p)
       ft = Tag_val (get_header_val(f) == 0 ? Field(f, 0) : f);
     }
 
-    if (ft == Forward_tag || ft == Lazy_tag || ft == Double_tag) {
+    if (ft == Forward_tag || ft == Lazy_tag ||
+        ft == Forcing_tag || ft == Double_tag) {
       /* Do not short-circuit the pointer.  Copy as a normal block. */
       CAMLassert (Wosize_hd (hd) == 1);
       st->live_bytes += Bhsize_hd(hd);

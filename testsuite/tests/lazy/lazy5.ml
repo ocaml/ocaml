@@ -2,12 +2,10 @@
    ocamlopt_flags += " -O3 "
 *)
 let rec safe_force l =
-  match Lazy.try_force l with
-  | Some x -> x
-  | None -> (
-      Domain.cpu_relax () ;
+  try Lazy.force l with
+  | Lazy.Undefined ->
+      Domain.cpu_relax ();
       safe_force l
-    )
 
 let f count =
   let _n = (Domain.self ():> int) in

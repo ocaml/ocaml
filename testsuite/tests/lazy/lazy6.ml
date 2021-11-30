@@ -21,10 +21,7 @@ let second_domain () =
   let l2 = Lazy.from_fun (fun () -> Lazy.force l1) in
   let rec loop () =
     try Lazy.force l2 with
-    | Lazy.RacyLazy ->
-        (Atomic.set flag2 true;
-         Domain.cpu_relax ();
-         loop ())
+    | Lazy.Undefined -> Atomic.set flag2 true
   in
   loop ()
 

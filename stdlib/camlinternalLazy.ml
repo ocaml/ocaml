@@ -18,65 +18,40 @@
 type 'a t = 'a lazy_t
 
 exception Undefined
-exception RacyLazy
 
-(* [update_to_forcing blk] expects [blk] to be a lazy value with one of the
- * tags -- [Obj.lazy_tag], [Obj.forward_tag], [Obj.forcing_tag] -- or a
- * short-circuited lazy object. This function is implemented in C due to the
- * atomicity requirements wrt the GC.
- *
- * If [blk] happens to be a lazy value with [Obj.lazy_tag], the tag is changed
- * to [Obj.forcing_tag] using compare-and-swap taking care to handle concurrent
- * marking of the header word by a concurrent GC thread. Returns [0] in this
- * case.
- *
- * If [blk] happens to be [Obj.forcing_tag] and the domain that earlier forced
- * this lazy is the current domain, then returns [1]. This condition indicates
- * recursive forcing of this lazy value.
- *
- * If [blk] happens to be [Obj.forcing_tag] and the domain that earlier forced
- * this lazy is a different domain, then returns [2]. This condition indicates
- * a race on forcing this lazy value.
- *
- * If [blk] happens to be [Obj.forward_tag], then returns [3].
- *
- * If [blk] happens to have any other tag or is a primitive value, then returns
- * [4].
- *)
+(* [update_to_forcing blk] tries to update a [blk] with [lazy_tag] to
+   [forcing_tag] using compare-and-swap (CAS), taking care to handle concurrent
+   marking of the header word by a concurrent GC thread. Returns [0] if the
+   CAS is successful. If the CAS fails, then the tag was observed to be
+   something other than [lazy_tag] due to a concurrent mutator. In this case,
+   the function returns [1]. *)
 external update_to_forcing : Obj.t -> int =
   "caml_lazy_update_to_forcing" [@@noalloc]
 
 (* [reset_to_lazy blk] expects [blk] to be a lazy object with [Obj.forcing_tag]
- * and updates the tag to [Obj.lazy_tag], taking care to handle concurrent
- * marking of this object's header by a concurrent GC thread.
- *)
+   and updates the tag to [Obj.lazy_tag], taking care to handle concurrent
+   marking of this object's header by a concurrent GC thread. *)
 external reset_to_lazy : Obj.t -> unit = "caml_lazy_reset_to_lazy" [@@noalloc]
 
 (* [update_to_forward blk] expects [blk] to be a lazy object with
- * [Obj.forcing_tag] and updates the tag to [Obj.forward_tag], taking care to
- * handle concurrent marking of this object's header by a concurrent GC thread.
+   [Obj.forcing_tag] and updates the tag to [Obj.forward_tag], taking care to
+   handle concurrent marking of this object's header by a concurrent GC thread.
  *)
 external update_to_forward : Obj.t -> unit =
   "caml_lazy_update_to_forward" [@@noalloc]
-
-external domain_unique_token : unit -> Obj.t =
-  "caml_ml_domain_unique_token" [@@noalloc]
 
 (* Assumes [blk] is a block with tag forcing *)
 let do_force_block blk =
   let b = Obj.repr blk in
   let closure = (Obj.obj (Obj.field b 0) : unit -> 'arg) in
-  Obj.set_field b 0 (domain_unique_token ());
+  Obj.set_field b 0 (Obj.repr ()); (* Release the closure *)
   try
     let result = closure () in
     Obj.set_field b 0 (Obj.repr result);
     update_to_forward b;
     result
   with e ->
-    begin match e with
-    | RacyLazy -> Obj.set_field b 0 (Obj.repr closure)
-    | _ -> Obj.set_field b 0 (Obj.repr (fun () -> raise e))
-    end;
+    Obj.set_field b 0 (Obj.repr (fun () -> raise e));
     reset_to_lazy b;
     raise e
 
@@ -84,58 +59,38 @@ let do_force_block blk =
 let do_force_val_block blk =
   let b = Obj.repr blk in
   let closure = (Obj.obj (Obj.field b 0) : unit -> 'arg) in
-  Obj.set_field b 0 (domain_unique_token ());
+  Obj.set_field b 0 (Obj.repr ()); (* Release the closure *)
   let result = closure () in
   Obj.set_field b 0 (Obj.repr result);
   update_to_forward b;
   result
 
+(* Called by [force_gen] *)
 let force_gen_lazy_block ~only_val (blk : 'arg lazy_t) =
+  (* We expect the tag to be [lazy_tag], but may be other tags due to
+     concurrent forcing of lazy values. *)
   match update_to_forcing (Obj.repr blk) with
   | 0 when only_val -> do_force_val_block blk
   | 0 -> do_force_block blk
-  | 1 -> raise Undefined
-  | _ ->
-      (* We raise [RacyLazy] for all the other cases.
-       *
-       * If the return value was 2, we should raise RacyLazy. We had observed
-       * earlier in [force_gen] that the [blk] was not [Obj.forward_tag] and
-       * not short-circuited. But now we observe that the value has either been
-       * forwarded (return value 3) or forwarded and short-circuited (4). Both
-       * of these indicate a race. *)
-      raise RacyLazy
+  | _ -> raise Undefined
 
 (* used in the %lazy_force primitive *)
 let force_lazy_block blk = force_gen_lazy_block ~only_val:false blk
 
-let try_force_gen_lazy_block ~only_val (blk : 'arg lazy_t) =
-  match update_to_forcing (Obj.repr blk) with
-  | 0 when only_val -> Some (do_force_val_block blk)
-  | 0 -> Some (do_force_block blk)
-  | 1 -> raise Undefined
-  | _ ->
-      (* Other cases indicate racy access to lazy for the same reasons outlined
-       * in [force_gen_lazy_block]. *)
-      None
-
 (* [force_gen ~only_val:false] is not used, since [Lazy.force] is
    declared as a primitive whose code inlines the tag tests of its
    argument, except when afl instrumentation is turned on. *)
-
 let force_gen ~only_val (lzv : 'arg lazy_t) =
+  let lzv = Sys.opaque_identity lzv in
   let x = Obj.repr lzv in
-  (* XXX No safe points start *)
+  (* START no safe points. If a GC occurs here, then the object [x] may be
+     short-circuited, and getting the first field of [x] would get us the wrong
+     value. Luckily, the compiler does not insert GC safe points at this place,
+     so it is ok. *)
   let t = Obj.tag x in
-  if t = Obj.forward_tag then (Obj.obj (Obj.field x 0) : 'arg)
-  (* XXX No safe points end *)
-  else if t <> Obj.lazy_tag && t <> Obj.forcing_tag then (Obj.obj x : 'arg)
+  if t = Obj.forward_tag then
+    (Obj.obj (Obj.field x 0) : 'arg)
+  (* END no safe points *)
+  else if t = Obj.forcing_tag then raise Undefined
+  else if t <> Obj.lazy_tag then (Obj.obj x : 'arg)
   else force_gen_lazy_block ~only_val lzv
-
-let try_force_gen ~only_val (lzv : 'arg lazy_t) =
-  let x = Obj.repr lzv in
-  (* XXX No safe points start *)
-  let t = Obj.tag x in
-  if t = Obj.forward_tag then Some (Obj.obj (Obj.field x 0) : 'arg)
-  (* XXX No safe points end *)
-  else if t <> Obj.lazy_tag && t <> Obj.forcing_tag then Some (Obj.obj x : 'arg)
-  else try_force_gen_lazy_block ~only_val lzv
