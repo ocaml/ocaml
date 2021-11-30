@@ -80,6 +80,11 @@ module DLS : sig
 
         If [split_from_parent] is provided, spawning a domain will derive the
         child value (for this key) from the parent value.
+
+        Note that the [split_from_parent] call is computed in the parent
+        domain, and is always computed regardless of whether the child domain
+        will use it. If the splitting function is expensive or requires
+        client-side computation, consider using ['a Lazy.t key].
     *)
 
     val get : 'a key -> 'a
