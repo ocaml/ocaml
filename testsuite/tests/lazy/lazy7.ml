@@ -20,7 +20,7 @@ let f count =
 
 let go = Atomic.make false
 
-let l = lazy (f 100_000_000)
+let l = lazy (f 1_000_000_000)
 let d1 = Array.init (num_domains - 1) (fun _->
   Domain.spawn (fun () ->
       let rec wait () =

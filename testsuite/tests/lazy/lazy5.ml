@@ -15,7 +15,7 @@ let f count =
   done;
   !r
 
-let l = lazy (f 100_000_000)
+let l = lazy (f 1_000_000_000)
 let d1 =
   Domain.spawn (fun () ->
       let _n = (Domain.self ():> int) in
