@@ -54,6 +54,10 @@ let try_acquire s =
 
 let get_value s = s.v
 
+let with_acquire s f =
+  acquire s;
+  Fun.protect f
+    ~finally:(fun () -> release s)
 end
 
 module Binary = struct
@@ -82,5 +86,11 @@ let try_acquire s =
   let ret = if s.v = 0 then false else (s.v <- 0; true) in
   Mutex.unlock s.mut;
   ret
+
+let with_acquire s f =
+  acquire s;
+  Fun.protect
+    ~finally:(fun () -> release s)
+    f
 
 end

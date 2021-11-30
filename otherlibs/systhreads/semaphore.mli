@@ -68,6 +68,13 @@ val acquire : t -> unit
     is not zero, then atomically decrements the value of [s] and returns.
 *)
 
+val with_acquire : t -> (unit -> 'a) -> 'a
+(** [with_acquire s f] runs [f()] in a context where [s] is acquired,
+    and makes sure to release [s] before returning.
+
+    @since 4.14
+*)
+
 val try_acquire : t -> bool
 (** [try_acquire s] immediately returns [false] if the value of semaphore [s]
     is zero.  Otherwise, the value of [s] is atomically decremented
@@ -136,5 +143,11 @@ val try_acquire : t -> bool
     has value 0.  If [s] has value 1, its value is atomically set to 0
     and [try_acquire s] returns [true].
 *)
+
+val with_acquire : t -> (unit -> 'a) -> 'a
+(** [with_acquire s f] runs [f()] in a context where [s] is acquired,
+    and makes sure to release [s] before returning.
+
+    @since 4.14 *)
 
 end
