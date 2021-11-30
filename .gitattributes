@@ -45,6 +45,7 @@
 # No header for text files (would be too obtrusive).
 *.md                     typo.missing-header
 README*                  typo.missing-header
+VERSION                  typo.missing-header
 *.adoc                   typo.missing-header
 api_docgen/*.mld                typo.missing-header
 api_docgen/alldoc.tex           typo.missing-header
@@ -101,6 +102,9 @@ otherlibs/win32unix/readlink.c    typo.long-line
 otherlibs/win32unix/stat.c        typo.long-line
 otherlibs/win32unix/symlink.c     typo.long-line
 
+runtime/sak.c            typo.non-ascii
+runtime/caml/compatibility.h    typo.very-long-line
+
 stdlib/hashbang     typo.white-at-eol typo.missing-lf
 
 testsuite/tests/**                                      typo.missing-header typo.long-line=may
@@ -114,6 +118,7 @@ testsuite/tests/generated-parse-errors/errors.*         typo.very-long-line
 testsuite/tools/*.S                                     typo.missing-header
 testsuite/tools/*.asm                                   typo.missing-header
 testsuite/typing                                        typo.missing-header
+testsuite/tests/messages/highlight_tabs.ml              typo.tab
 
 # prune testsuite reference files
 testsuite/tests/**/*.reference               typo.prune
@@ -177,8 +182,6 @@ tools/ocaml-objcopy-macosx text eol=lf
 tools/ocamlsize text eol=lf
 tools/pre-commit-githook text eol=lf
 tools/markdown-add-pr-links.sh text eol=lf
-runtime/caml/m.h.in text eol=lf
-runtime/caml/s.h.in text eol=lf
 runtime/caml/compatibility.h typo.long-line=may
 
 # These are all Perl scripts, so may not actually require this

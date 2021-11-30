@@ -15,9 +15,6 @@
 #*                                                                        *
 #**************************************************************************
 
-# stop early if we are not on a development version
-grep -Fq '+dev' VERSION || exit 0
-
 # We try to warn if the user edits parsing/parser.mly but forgets to
 # rebuild the generated parser. Our heuristic is to use the file
 # modification timestamp, but just testing

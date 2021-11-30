@@ -196,9 +196,9 @@ Line 3, characters 36-41:
 Error: This expression has type
          < redrawWidget : parameter_contains_self -> unit; .. >
        but an expression was expected of type
-         < redrawWidget : (< invalidate : unit; .. > as 'a) -> unit; .. >
+         < redrawWidget : < invalidate : unit; .. > -> unit; .. >
        Type parameter_contains_self = < invalidate : unit >
-       is not compatible with type < invalidate : unit; .. > as 'a
+       is not compatible with type < invalidate : unit; .. >
        Self type cannot be unified with a closed object type
 |}]
 
@@ -212,9 +212,9 @@ Line 3, characters 26-31:
 Error: This expression has type
          < redrawWidget : parameter_contains_self -> unit; .. >
        but an expression was expected of type
-         < redrawWidget : (< invalidate : unit; .. > as 'a) -> unit; .. >
+         < redrawWidget : < invalidate : unit; .. > -> unit; .. >
        Type parameter_contains_self = < invalidate : unit >
-       is not compatible with type < invalidate : unit; .. > as 'a
+       is not compatible with type < invalidate : unit; .. >
        Self type cannot be unified with a closed object type
 |}]
 
@@ -259,9 +259,9 @@ Line 3, characters 36-41:
 Error: This expression has type
          < redrawWidget : parameter_contains_self -> unit; .. >
        but an expression was expected of type
-         < redrawWidget : (< invalidate : unit; .. > as 'a) -> unit; .. >
+         < redrawWidget : < invalidate : unit; .. > -> unit; .. >
        Type parameter_contains_self = < invalidate : unit >
-       is not compatible with type < invalidate : unit; .. > as 'a
+       is not compatible with type < invalidate : unit; .. >
        Self type cannot be unified with a closed object type
 |}]
 

@@ -107,6 +107,8 @@ type t =
   | Match_on_mutable_state_prevent_uncurry  (* 68 *)
   | Unused_field of string * field_usage_warning (* 69 *)
   | Missing_mli                             (* 70 *)
+  | Unused_tmc_attribute                    (* 71 *)
+  | Tmc_breaks_tailcall                     (* 72 *)
 ;;
 
 type alert = {kind:string; message:string; def:loc; use:loc}
@@ -152,3 +154,10 @@ val with_state : state -> (unit -> 'a) -> 'a
 val mk_lazy: (unit -> 'a) -> 'a Lazy.t
     (** Like [Lazy.of_fun], but the function is applied with
         the warning/alert settings at the time [mk_lazy] is called. *)
+
+type description =
+  { number : int;
+    names : string list;
+    description : string; }
+
+val descriptions : description list

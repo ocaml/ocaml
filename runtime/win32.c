@@ -26,6 +26,8 @@
 #include <wtypes.h>
 #include <winbase.h>
 #include <winsock2.h>
+#include <winioctl.h>
+#include <direct.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -46,6 +48,7 @@
 #include "caml/osdeps.h"
 #include "caml/signals.h"
 #include "caml/sys.h"
+#include "caml/winsupport.h"
 
 #include "caml/config.h"
 
@@ -795,6 +798,48 @@ int caml_win32_rename(const wchar_t * oldpath, const wchar_t * newpath)
     errno = EINVAL;
   }
   return -1;
+}
+
+int caml_win32_unlink(const wchar_t * path) {
+  int ret;
+
+  ret = _wunlink(path);
+  /* On Windows, trying to unlink a symlink to a directory will return
+   * EACCES, but the symlink can be deleted with rmdir. */
+  if (ret == -1 && errno == EACCES) {
+    HANDLE h;
+    DWORD attrs, dummy;
+    union {
+      char raw[16384];
+      REPARSE_DATA_BUFFER point;
+    } buffer;
+
+    attrs = GetFileAttributes(path);
+    if (attrs == INVALID_FILE_ATTRIBUTES ||
+        !(attrs & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT)))
+      return -1;
+
+    h = CreateFile(path,
+                   FILE_READ_ATTRIBUTES,
+                   FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
+                   NULL,
+                   OPEN_EXISTING,
+                   FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
+                   NULL);
+    if (h == INVALID_HANDLE_VALUE)
+      return -1;
+
+    ret = DeviceIoControl(h, FSCTL_GET_REPARSE_POINT, NULL, 0, &buffer.point,
+                          sizeof(buffer.raw), &dummy, NULL);
+    CloseHandle(h);
+    if (!ret || buffer.point.ReparseTag != IO_REPARSE_TAG_SYMLINK)
+      return -1;
+
+    ret = _wrmdir(path);
+    if (ret == -1)
+      errno = EACCES;
+  }
+  return ret;
 }
 
 /* Windows Unicode support */

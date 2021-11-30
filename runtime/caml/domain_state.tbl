@@ -89,3 +89,6 @@ DOMAIN_STATE(FILE*, eventlog_out)
 DOMAIN_STATE(void*, checking_pointer_pc)
 /* See major_gc.c */
 #endif
+
+DOMAIN_STATE(extra_params_area, extra_params)
+/* This member must occur last, because it is an array, not a scalar */

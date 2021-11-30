@@ -56,6 +56,10 @@ open Asttypes
     Note on mutability: TBD.
  *)
 type type_expr
+type row_desc
+type row_field
+type field_kind
+type commutable
 
 type type_desc =
   | Tvar of string option
@@ -96,7 +100,7 @@ type type_desc =
   *)
 
   | Tfield of string * field_kind * type_expr * type_expr
-  (** [Tfield ("foo", Fpresent, t, ts)] ==> [<...; foo : t; ts>] *)
+  (** [Tfield ("foo", field_public, t, ts)] ==> [<...; foo : t; ts>] *)
 
   | Tnil
   (** [Tnil] ==> [<...; >] *)
@@ -128,51 +132,11 @@ type type_desc =
   | Tpackage of Path.t * (Longident.t * type_expr) list
   (** Type of a first-class module (a.k.a package). *)
 
-(** [  `X | `Y ]       (row_closed = true)
-    [< `X | `Y ]       (row_closed = true)
-    [> `X | `Y ]       (row_closed = false)
-    [< `X | `Y > `X ]  (row_closed = true)
-
-    type t = [> `X ] as 'a      (row_more = Tvar a)
-    type t = private [> `X ]    (row_more = Tconstr (t#row, [], ref Mnil))
-
-    And for:
-
-        let f = function `X -> `X -> | `Y -> `X
-
-    the type of "f" will be a [Tarrow] whose lhs will (basically) be:
-
-        Tvariant { row_fields = [("X", _)];
-                   row_more   =
-                     Tvariant { row_fields = [("Y", _)];
-                                row_more   =
-                                  Tvariant { row_fields = [];
-                                             row_more   = _;
-                                             _ };
-                                _ };
-                   _
-                 }
-
-*)
-and row_desc =
-    { row_fields: (label * row_field) list;
-      row_more: type_expr;
-      row_bound: unit; (* kept for compatibility *)
-      row_closed: bool;
-      row_fixed: fixed_explanation option;
-      row_name: (Path.t * type_expr list) option }
 and fixed_explanation =
   | Univar of type_expr (** The row type was bound to an univar *)
   | Fixed_private (** The row type is private *)
   | Reified of Path.t (** The row was reified *)
   | Rigid (** The row type was made rigid during constraint verification *)
-and row_field =
-    Rpresent of type_expr option
-  | Reither of bool * type_expr list * bool * row_field option ref
-        (* 1st true denotes a constant constructor *)
-        (* 2nd true denotes a tag in a pattern matching, and
-           is erased later *)
-  | Rabsent
 
 (** [abbrev_memo] allows one to keep track of different expansions of a type
     alias. This is done for performance purposes.
@@ -201,23 +165,18 @@ and abbrev_memo =
   | Mlink of abbrev_memo ref
   (** Abbreviations can be found after this indirection *)
 
-and field_kind =
-    Fvar of field_kind option ref
-  | Fpresent
-  | Fabsent
-
 (** [commutable] is a flag appended to every arrow type.
 
     When typing an application, if the type of the functional is
-    known, its type is instantiated with [Cok] arrows, otherwise as
-    [Clink (ref Cunknown)].
+    known, its type is instantiated with [commu_ok] arrows, otherwise as
+    [commu_var ()].
 
     When the type is not known, the application will be used to infer
     the actual type.  This is fragile in presence of labels where
     there is no principal type.
 
-    Two incompatible applications relying on [Cunknown] arrows will
-    trigger an error.
+    Two incompatible applications must rely on [is_commu_ok] arrows,
+    otherwise they will trigger an error.
 
     let f g =
       g ~a:() ~b:();
@@ -227,10 +186,33 @@ and field_kind =
     in an order different from other calls.
     This is only allowed when the real type is known.
 *)
-and commutable =
-    Cok
-  | Cunknown
-  | Clink of commutable ref
+
+val is_commu_ok: commutable -> bool
+val commu_ok: commutable
+val commu_var: unit -> commutable
+
+(** [field_kind] indicates the accessibility of a method.
+
+    An [Fprivate] field may become [Fpublic] or [Fabsent] during unification,
+    but not the other way round.
+
+    The same [field_kind] is kept shared when copying [Tfield] nodes
+    so that the copies of the self-type of a class share the same accessibility
+    (see also PR#10539).
+ *)
+
+type field_kind_view =
+    Fprivate
+  | Fpublic
+  | Fabsent
+
+val field_kind_repr: field_kind -> field_kind_view
+val field_public: field_kind
+val field_absent: field_kind
+val field_private: unit -> field_kind
+val field_kind_internal_repr: field_kind -> field_kind
+        (* Removes indirections in [field_kind].
+           Only needed for performance. *)
 
 (** Getters for type_expr; calls repr before answering a value *)
 
@@ -274,9 +256,6 @@ val newty3: level:int -> scope:int -> type_desc -> type_expr
 val newty2: level:int -> type_desc -> type_expr
         (** Create a type with a fresh id and no scope *)
 
-val field_kind_repr: field_kind -> field_kind
-        (** Return the canonical representative of an object field kind. *)
-
 module TransientTypeOps : sig
   (** Comparisons for functors *)
 
@@ -291,22 +270,91 @@ end
 val eq_type: type_expr -> type_expr -> bool
 val compare_type: type_expr -> type_expr -> int
 
+(** Constructor and accessors for [row_desc] *)
+
+(** [  `X | `Y ]       (row_closed = true)
+    [< `X | `Y ]       (row_closed = true)
+    [> `X | `Y ]       (row_closed = false)
+    [< `X | `Y > `X ]  (row_closed = true)
+
+    type t = [> `X ] as 'a      (row_more = Tvar a)
+    type t = private [> `X ]    (row_more = Tconstr ("t#row", [], ref Mnil))
+
+    And for:
+
+        let f = function `X -> `X -> | `Y -> `X
+
+    the type of "f" will be a [Tarrow] whose lhs will (basically) be:
+
+        Tvariant { row_fields = [("X", _)];
+                   row_more   =
+                     Tvariant { row_fields = [("Y", _)];
+                                row_more   =
+                                  Tvariant { row_fields = [];
+                                             row_more   = _;
+                                             _ };
+                                _ };
+                   _
+                 }
+
+*)
+
+val create_row:
+  fields:(label * row_field) list ->
+  more:type_expr ->
+  closed:bool ->
+  fixed:fixed_explanation option ->
+  name:(Path.t * type_expr list) option -> row_desc
+
+val row_fields: row_desc -> (label * row_field) list
+val row_more: row_desc -> type_expr
+val row_closed: row_desc -> bool
+val row_fixed: row_desc -> fixed_explanation option
+val row_name: row_desc -> (Path.t * type_expr list) option
+
+val set_row_name: row_desc -> (Path.t * type_expr list) option -> row_desc
+
+val get_row_field: label -> row_desc -> row_field
+
+(** get all fields at once; different from the old [row_repr] *)
+type row_desc_repr =
+    Row of { fields: (label * row_field) list;
+             more:   type_expr;
+             closed: bool;
+             fixed:  fixed_explanation option;
+             name:   (Path.t * type_expr list) option }
+
+val row_repr: row_desc -> row_desc_repr
+
+(** Current contents of a row field *)
+type row_field_view =
+    Rpresent of type_expr option
+  | Reither of bool * type_expr list * bool
+        (* 1st true denotes a constant constructor *)
+        (* 2nd true denotes a tag in a pattern matching, and
+           is erased later *)
+  | Rabsent
+
+val row_field_repr: row_field -> row_field_view
+val rf_present: type_expr option -> row_field
+val rf_absent: row_field
+val rf_either:
+    ?use_ext_of:row_field ->
+    no_arg:bool -> type_expr list -> matched:bool -> row_field
+val rf_either_of: type_expr option -> row_field
+
+val eq_row_field_ext: row_field -> row_field -> bool
+val changed_row_field_exts: row_field list -> (unit -> unit) -> bool
+
+val match_row_field:
+    present:(type_expr option -> 'a) ->
+    absent:(unit -> 'a) ->
+    either:(bool -> type_expr list -> bool -> row_field option ->'a) ->
+    row_field -> 'a
+
 (* *)
 
-module Uid : sig
-  type t
-
-  val reinit : unit -> unit
-
-  val mk : current_unit:string -> t
-  val of_compilation_unit_id : Ident.t -> t
-  val of_predef_id : Ident.t -> t
-  val internal_not_actually_unique : t
-
-  val for_actual_declaration : t -> bool
-
-  include Identifiable.S with type t := t
-end
+module Uid = Shape.Uid
 
 (* Sets and maps of methods and instance variables *)
 
@@ -640,12 +688,18 @@ val backtrack: cleanup_abbrev:(unit -> unit) -> snapshot -> unit
         (* Backtrack to a given snapshot. Only possible if you have
            not already backtracked to a previous snapshot.
            Calls [cleanup_abbrev] internally *)
+val undo_first_change_after: snapshot -> unit
+        (* Backtrack only the first change after a snapshot.
+           Does not update the list of changes *)
 val undo_compress: snapshot -> unit
         (* Backtrack only path compression. Only meaningful if you have
            not already backtracked to a previous snapshot.
            Does not call [cleanup_abbrev] *)
 
-(* Functions to use when modifying a type (only Ctype?) *)
+(** Functions to use when modifying a type (only Ctype?).
+    The old values are logged and reverted on backtracking.
+ *)
+
 val link_type: type_expr -> type_expr -> unit
         (* Set the desc field of [t1] to [Tlink t2], logging the old
            value if there is an active snapshot *)
@@ -656,8 +710,10 @@ val set_scope: type_expr -> int -> unit
 val set_name:
     (Path.t * type_expr list) option ref ->
     (Path.t * type_expr list) option -> unit
-val set_row_field: row_field option ref -> row_field -> unit
+val link_row_field_ext: inside:row_field -> row_field -> unit
+        (* Extract the extension variable of [inside] and set it to the
+           second argument *)
 val set_univar: type_expr option ref -> type_expr -> unit
-val set_kind: field_kind option ref -> field_kind -> unit
-val set_commu: commutable ref -> commutable -> unit
-        (* Set references, logging the old value *)
+val link_kind: inside:field_kind -> field_kind -> unit
+val link_commu: inside:commutable -> commutable -> unit
+val set_commu_ok: commutable -> unit

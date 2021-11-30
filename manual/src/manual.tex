@@ -127,7 +127,6 @@
 \fi
 }{}
 
-\newcommand{\?}{\color{black}\normalsize\tt\#{}}
 
 \ifocamldoc\else
 \lstnewenvironment{ocamlcodeblock}{
@@ -157,6 +156,7 @@
 \newcommand{\ocamlcodefragment}[1]{{\ttfamily\setlength{\parindent}{0cm}%
 \raggedright#1}}
 \newcommand{\ocamlinlinecode}[1]{{\ttfamily#1}}
+\newenvironment{ocamlarrow}{}{}
 \newenvironment{ocamlexception}{\bfseries}{}
 \newenvironment{ocamlextension}{\bfseries}{}
 \newenvironment{ocamlconstructor}{\bfseries}{}
@@ -185,9 +185,11 @@
 % Make _ a normal character in text mode
 % it must be the last package included
 \usepackage[strings,nohyphen]{underscore}
+% Babel enables a finer control of the catcode of '_'
+% and ensures that '_' is allowed in labels and references.
+\usepackage[english]{babel}
 
 %\makeatletter \def\@wrindex#1#2{\xdef \@indexfile{\csname #1@idxfile\endcsname}\@@wrindex#2||\\}\makeatother
-\def\th{^{\hbox{\scriptsize th}}}
 
 
 \raggedbottom

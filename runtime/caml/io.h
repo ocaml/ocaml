@@ -52,6 +52,7 @@ enum {
   CHANNEL_FLAG_FROM_SOCKET = 1,  /* For Windows */
   CHANNEL_FLAG_MANAGED_BY_GC = 4,  /* Free and close using GC finalization */
   CHANNEL_TEXT_MODE = 8,           /* "Text mode" for Windows and Cygwin */
+  CHANNEL_FLAG_UNBUFFERED = 16     /* Unbuffered (for output channels only) */
 };
 
 /* For an output channel:
@@ -109,6 +110,8 @@ CAMLextern struct channel * caml_all_opened_channels;
   if (caml_channel_mutex_unlock != NULL) (*caml_channel_mutex_unlock)(channel)
 #define Unlock_exn() \
   if (caml_channel_mutex_unlock_exn != NULL) (*caml_channel_mutex_unlock_exn)()
+#define Flush_if_unbuffered(channel) \
+  if (channel->flags & CHANNEL_FLAG_UNBUFFERED) caml_flush(channel)
 
 /* Conversion between file_offset and int64_t */
 

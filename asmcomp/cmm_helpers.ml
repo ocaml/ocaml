@@ -1504,8 +1504,10 @@ struct
   let geint = Ccmpi Cge
   let gtint = Ccmpi Cgt
 
-  type act = expression
   type loc = Debuginfo.t
+  type arg = expression
+  type test = expression
+  type act = expression
 
   (* CR mshinwell: GPR#2294 will fix the Debuginfo here *)
 
@@ -1514,6 +1516,8 @@ struct
   let make_offset arg n = add_const arg n Debuginfo.none
   let make_isout h arg = Cop (Ccmpa Clt, [h ; arg], Debuginfo.none)
   let make_isin h arg = Cop (Ccmpa Cge, [h ; arg], Debuginfo.none)
+  let make_is_nonzero arg = arg
+  let arg_as_test arg = arg
   let make_if cond ifso ifnot =
     Cifthenelse (cond, Debuginfo.none, ifso, Debuginfo.none, ifnot,
       Debuginfo.none)
@@ -1873,6 +1877,7 @@ let send_function arity =
     fun_args = List.map (fun (arg, ty) -> VP.create arg, ty) fun_args;
     fun_body = body;
     fun_codegen_options = [];
+    fun_poll = Default_poll;
     fun_dbg;
    }
 
@@ -1886,6 +1891,7 @@ let apply_function arity =
     fun_args = List.map (fun arg -> (VP.create arg, typ_val)) all_args;
     fun_body = body;
     fun_codegen_options = [];
+    fun_poll = Default_poll;
     fun_dbg;
    }
 
@@ -1914,6 +1920,7 @@ let tuplify_function arity =
           :: access_components 0 @ [Cvar clos],
           (dbg ()));
     fun_codegen_options = [];
+    fun_poll = Default_poll;
     fun_dbg;
    }
 
@@ -1983,6 +1990,7 @@ let final_curry_function arity =
     fun_args = [VP.create last_arg, typ_val; VP.create last_clos, typ_val];
     fun_body = curry_fun [] last_clos (arity-1);
     fun_codegen_options = [];
+    fun_poll = Default_poll;
     fun_dbg;
    }
 
@@ -2017,6 +2025,7 @@ let rec intermediate_curry_functions arity num =
                  Cvar arg; Cvar clos],
                 dbg ());
       fun_codegen_options = [];
+      fun_poll = Default_poll;
       fun_dbg;
      }
     ::
@@ -2056,6 +2065,7 @@ let rec intermediate_curry_functions arity num =
                fun_body = iter (num+1)
                   (List.map (fun (arg,_) -> Cvar arg) direct_args) clos;
                fun_codegen_options = [];
+               fun_poll = Default_poll;
                fun_dbg;
               }
           in
@@ -2592,6 +2602,7 @@ let entry_point namelist =
              fun_args = [];
              fun_body = body;
              fun_codegen_options = [Reduce_code_size];
+             fun_poll = Default_poll;
              fun_dbg;
             }
 

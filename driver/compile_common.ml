@@ -106,6 +106,8 @@ let typecheck_impl i parsetree =
        i.source_file i.output_prefix i.module_name i.env)
   |> print_if i.ppf_dump Clflags.dump_typedtree
     Printtyped.implementation_with_coercion
+  |> print_if i.ppf_dump Clflags.dump_shape
+    (fun fmt {Typedtree.shape; _} -> Shape.print fmt shape)
 
 let implementation info ~backend =
   Profile.record_call info.source_file @@ fun () ->

@@ -202,14 +202,14 @@ checking the validity of @":>"@ coercions
 
 For instance, "type +'a t" declares "t" as an abstract type that is
 covariant in its parameter; this means that if the type $\tau$ is a
-subtype of the type $\sigma$, then $\tau " t"$ is a subtype of $\sigma
-" t"$.  Similarly, "type -'a t" declares that the abstract type "t" is
+subtype of the type $\sigma$, then $\tau$" t" is a subtype of $\sigma$" t".
+Similarly, "type -'a t" declares that the abstract type "t" is
 contravariant in its parameter: if $\tau$ is a subtype of $\sigma$, then
-$\sigma " t"$ is a subtype of $\tau " t"$.  If no "+" or "-" variance
+$\sigma$" t" is a subtype of $\tau$" t".  If no "+" or "-" variance
 annotation is given, the type constructor is assumed non-variant in the
 corresponding parameter.  For instance, the abstract type declaration
-"type 'a t" means that $\tau " t"$ is neither a subtype nor a
-supertype of $\sigma " t"$ if $\tau$ is subtype of $\sigma$.
+"type 'a t" means that $\tau$" t" is neither a subtype nor a
+supertype of $\sigma$" t" if $\tau$ is subtype of $\sigma$.
 
 The variance indicated by the "+" and "-" annotations on parameters
 is enforced only for abstract and private types, or when there are

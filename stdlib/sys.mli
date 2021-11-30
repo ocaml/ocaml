@@ -337,9 +337,27 @@ val ocaml_version : string
       ["major.minor[.patchlevel][(+|~)additional-info]"],
     where [major], [minor], and [patchlevel] are integers, and
     [additional-info] is an arbitrary string.
-    The [[.patchlevel]] part is absent for versions anterior to 3.08.0.
+    The [[.patchlevel]] part was absent before version 3.08.0 and
+    became mandatory from 3.08.0 onwards.
     The [[(+|~)additional-info]] part may be absent. *)
 
+val development_version : bool
+(** [true] if this is a development version, [false] otherwise.
+    @since 4.14.0
+*)
+
+type extra_prefix = Plus | Tilde
+
+type extra_info = extra_prefix * string
+
+type ocaml_release_info = {
+  major : int;
+  minor : int;
+  patchlevel : int;
+  extra : extra_info option
+}
+
+val ocaml_release : ocaml_release_info
 
 val enable_runtime_warnings: bool -> unit
 (** Control whether the OCaml runtime system can emit warnings

@@ -114,7 +114,11 @@ let print_cmt_infos cmt =
   printf "cmt interface digest: %s\n"
     (match cmt.cmt_interface_digest with
      | None -> ""
-     | Some crc -> string_of_crc crc)
+     | Some crc -> string_of_crc crc);
+  printf "Implementation shape: ";
+    (match cmt.cmt_impl_shape with
+    | None -> printf "(none)\n"
+    | Some shape -> Format.printf "\n%a" Shape.print shape)
 
 let print_general_infos name crc defines cmi cmx =
   printf "Name: %s\n" name;

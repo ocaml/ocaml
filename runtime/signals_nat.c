@@ -224,9 +224,11 @@ DECLARE_SIGNAL_HANDLER(segv_handler)
 #endif
 #else
     /* Raise a Stack_overflow exception straight from this signal handler */
-#if defined(CONTEXT_YOUNG_PTR) && defined(CONTEXT_EXCEPTION_POINTER)
-    Caml_state->exception_pointer == (char *) CONTEXT_EXCEPTION_POINTER;
+#if defined(CONTEXT_YOUNG_PTR)
     Caml_state->young_ptr = (value *) CONTEXT_YOUNG_PTR;
+#endif
+#if defined(CONTEXT_EXCEPTION_POINTER)
+    Caml_state->exception_pointer = (char *) CONTEXT_EXCEPTION_POINTER;
 #endif
     caml_raise_stack_overflow();
 #endif

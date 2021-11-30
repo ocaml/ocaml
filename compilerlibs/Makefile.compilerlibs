@@ -76,6 +76,7 @@ TYPING = \
   typing/path.cmo \
   typing/primitive.cmo \
   typing/type_immediacy.cmo \
+  typing/shape.cmo \
   typing/types.cmo \
   typing/btype.cmo \
   typing/oprint.cmo \
@@ -134,6 +135,7 @@ LAMBDA = \
   lambda/translcore.cmo \
   lambda/translclass.cmo \
   lambda/translmod.cmo \
+  lambda/tmc.cmo \
   lambda/simplif.cmo \
   lambda/runtimedef.cmo
 LAMBDA_CMI =
@@ -366,6 +368,7 @@ TOPLEVEL_CMI = \
 OPTTOPLEVEL = \
   toplevel/genprintval.cmo \
   toplevel/topcommon.cmo \
+  toplevel/native/tophooks.cmo \
   toplevel/native/topeval.cmo \
   toplevel/native/trace.cmo \
   toplevel/toploop.cmo \
@@ -373,6 +376,7 @@ OPTTOPLEVEL = \
   toplevel/native/topmain.cmo
 OPTTOPLEVEL_CMI = \
   toplevel/topcommon.cmi \
+  toplevel/native/tophooks.cmi \
   toplevel/native/topeval.cmi \
   toplevel/native/trace.cmi \
   toplevel/toploop.cmi \

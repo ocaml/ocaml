@@ -2,11 +2,34 @@
 
 == Prerequisites
 
-* A C Compiler is required.
-  The GNU C Compiler (`gcc`) is recommended as the bytecode interpreter takes
-  advantage of GCC-specific features to enhance performance. gcc is the standard
-  compiler under Linux and many other systems.
-  However `clang` - used in Mac OS, BSDs and others - also works fine.
+* A C compiler is required.
+
+  ** For GNU/Linux +
+   The GNU C Compiler (`gcc`) is recommended as the bytecode interpreter takes
+   advantage of GCC-specific features to enhance performance. GCC is the standard
+   compiler under Linux and many other systems.
+
+  ** For BSDs +
+   `clang` is the default C compiler on BSDs - also works fine.
+
+  ** For macOS +
+   `clang` is the default C compiler under macOS. If macOS complains
+   no C compiler was installed while OCaml is building, please run
+   command `xcode-select --install` to install command-line tools and
+   required libraries and header files.
+
+  ** For other Unix-like systems +
+   It is recommended to use `gcc` or `clang` instead of the C compiler
+   provided by the vendor of the system.
+
+  ** For Windows +
+   To produce native Windows executables from OCaml sources, you need to use
+   the MSVC or Mingw-w64 ports of OCaml, described in file
+   https://github.com/ocaml/ocaml/blob/trunk/README.win32.adoc[README.win32.adoc]. +
+   For a more Unix-like experience, you can use WSL, the
+   https://aka.ms/wsl[Windows Subsystem for Linux], or the
+   https://www.cygwin.com/[Cygwin environment]. You will need the
+   GCC compiler (package `gcc-core` or `gcc`).
 
 * GNU `make`, as well as POSIX-compatible `awk` and `sed` are required.
 
@@ -28,18 +51,18 @@
 From the top directory, do:
 
         ./configure
-+
+
 This generates the three configuration files `Makefile.config`,
 `runtime/caml/m.h` and `runtime/caml/s.h`.
-+
+
 The `configure` script accepts options that can be discovered by running:
 
         ./configure --help
-+
+
 Some options or variables like LDLIBS may not be taken into account
 by the OCaml build system at the moment. Please report an issue if you
 discover such a variable or option and this causes troubles to you.
-+
+
 Examples:
 
 * Standard installation in `/usr/{bin,lib,man}` instead of `/usr/local`:
@@ -97,7 +120,7 @@ To be sure everything works well, you can run the test suite
 
 You can now install the OCaml system. This will create the following commands
    (in the binary directory selected during autoconfiguration):
-+
+
 [width="70%",frame="topbot",cols="25%,75%"]
 |===============================================================================
 | `ocamlc`     | the batch bytecode compiler
@@ -114,7 +137,7 @@ You can now install the OCaml system. This will create the following commands
 | `ocamlprof`  | the execution count profiler
 | `ocamlcp`    | the bytecode compiler in profiling mode
 |===============================================================================
-+
+
 From the top directory, become superuser and do:
 
         make install

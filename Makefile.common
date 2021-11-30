@@ -33,6 +33,9 @@ INSTALL_BINDIR := $(DESTDIR)$(BINDIR)
 INSTALL_LIBDIR := $(DESTDIR)$(LIBDIR)
 INSTALL_STUBLIBDIR := $(DESTDIR)$(STUBLIBDIR)
 INSTALL_MANDIR := $(DESTDIR)$(MANDIR)
+INSTALL_PROGRAMS_MAN_DIR := $(DESTDIR)$(PROGRAMS_MAN_DIR)
+INSTALL_LIBRARIES_MAN_DIR := $(DESTDIR)$(LIBRARIES_MAN_DIR)
+INSTALL_DOCDIR := $(DESTDIR)$(DOCDIR)
 
 FLEXDLL_SUBMODULE_PRESENT := $(wildcard $(ROOTDIR)/flexdll/Makefile)
 
@@ -160,3 +163,15 @@ OCAMLYACCFLAGS ?=
 
 %.ml %.mli: %.mly
 	$(OCAMLYACC) $(OCAMLYACCFLAGS) $<
+
+SAK = $(ROOTDIR)/runtime/sak$(EXE)
+
+# stdlib/StdlibModules cannot be include'd unless $(SAK) has been built. These
+# two rules add that dependency. They have to be pattern rules since
+# Makefile.common is included before default targets.
+$(ROOTDIR)/%/sak$(EXE):
+	$(MAKE) -C $(ROOTDIR)/$* sak$(EXE)
+
+ifneq "$(REQUIRES_CONFIGURATION)" ""
+$(ROOTDIR)/%/StdlibModules: $(SAK) ;
+endif

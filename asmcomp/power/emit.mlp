@@ -49,15 +49,16 @@ let frame_size env =
 
 let slot_offset env loc cls =
   match loc with
-    Local n ->
+  | Local n ->
       reserved_stack_space + env.stack_offset +
       (if cls = 0 then env.f.fun_num_stack_slots.(1) * size_float + n * size_int
                   else n * size_float)
   | Incoming n ->
     (* Callee's [reserved_stack_space] is included in [frame_size].
        To access incoming arguments, add caller's [reserverd_stack_space]. *)
-    frame_size env + reserved_stack_space + n
+      frame_size env + reserved_stack_space + n
   | Outgoing n -> reserved_stack_space + n
+  | Domainstate _ -> assert false  (* not a stack slot *)
 
 let retaddr_offset env =
   match abi with
@@ -133,8 +134,12 @@ let emit_reg r =
 
 let emit_stack env r =
   match r.loc with
+  | Stack (Domainstate n) ->
+      let ofs = n + Domainstate.(idx_of_field Domain_extra_params) * 8 in
+      `{emit_int ofs}(30)`
   | Stack s ->
-      let ofs = slot_offset env s (register_class r) in `{emit_int ofs}(1)`
+      let ofs = slot_offset env s (register_class r) in
+      `{emit_int ofs}(1)`
   | _ -> Misc.fatal_error "Emit.emit_stack"
 
 (* Output the name of a symbol plus an optional offset *)

@@ -38,6 +38,14 @@ let is_local_attribute = function
   | {txt=("local"|"ocaml.local")} -> true
   | _ -> false
 
+let is_tmc_attribute = function
+  | {txt=("tail_mod_cons"|"ocaml.tail_mod_cons")} -> true
+  | _ -> false
+
+let is_poll_attribute = function
+  | {txt=("poll")} -> true
+  | _ -> false
+
 let find_attribute p attributes =
   let inline_attribute, other_attributes =
     List.partition (fun a -> p a.Parsetree.attr_name) attributes
@@ -172,6 +180,18 @@ let parse_local_attribute attr =
         ]
         payload
 
+let parse_poll_attribute attr =
+  match attr with
+  | None -> Default_poll
+  | Some {Parsetree.attr_name = {txt; loc}; attr_payload = payload} ->
+      parse_id_payload txt loc
+        ~default:Default_poll
+        ~empty:Default_poll
+        [
+          "error", Error_poll;
+        ]
+        payload
+
 let get_inline_attribute l =
   let attr, _ = find_attribute is_inline_attribute l in
   parse_inline_attribute attr
@@ -184,11 +204,33 @@ let get_local_attribute l =
   let attr, _ = find_attribute is_local_attribute l in
   parse_local_attribute attr
 
+let get_poll_attribute l =
+  let attr, _ = find_attribute is_poll_attribute l in
+  parse_poll_attribute attr
+
 let check_local_inline loc attr =
   match attr.local, attr.inline with
   | Always_local, (Always_inline | Hint_inline | Unroll _) ->
       Location.prerr_warning loc
         (Warnings.Duplicated_attribute "local/inline")
+  | _ ->
+      ()
+
+let check_poll_inline loc attr =
+  match attr.poll, attr.inline with
+  | Error_poll, (Always_inline | Hint_inline | Unroll _) ->
+      Location.prerr_warning loc
+        (Warnings.Inlining_impossible
+          "[@poll error] is incompatible with inlining")
+  | _ ->
+      ()
+
+let check_poll_local loc attr =
+  match attr.poll, attr.local with
+  | Error_poll, Always_local ->
+      Location.prerr_warning loc
+        (Warnings.Inlining_impossible
+          "[@poll error] is incompatible with local function optimization")
   | _ ->
       ()
 
@@ -203,7 +245,7 @@ let add_inline_attribute expr loc attributes =
             (Warnings.Duplicated_attribute "inline")
       end;
       let attr = { attr with inline } in
-      check_local_inline loc attr;
+      check_poll_inline loc attr;
       Lfunction { funct with attr = attr }
   | expr, (Always_inline | Hint_inline | Never_inline | Unroll _) ->
       Location.prerr_warning loc
@@ -239,10 +281,48 @@ let add_local_attribute expr loc attributes =
       end;
       let attr = { attr with local } in
       check_local_inline loc attr;
+      check_poll_local loc attr;
       Lfunction { funct with attr }
   | expr, (Always_local | Never_local) ->
       Location.prerr_warning loc
         (Warnings.Misplaced_attribute "local");
+      expr
+
+let add_tmc_attribute expr loc attributes =
+  let is_tmc_attribute a = is_tmc_attribute a.Parsetree.attr_name in
+  if List.exists is_tmc_attribute attributes then
+    match expr with
+    | Lfunction funct ->
+        if funct.attr.tmc_candidate then
+            Location.prerr_warning loc
+              (Warnings.Duplicated_attribute "tail_mod_cons");
+        let attr = { funct.attr with tmc_candidate = true } in
+        Lfunction { funct with attr }
+    | expr ->
+        Location.prerr_warning loc
+          (Warnings.Misplaced_attribute "tail_mod_cons");
+        expr
+  else
+    expr
+
+let add_poll_attribute expr loc attributes =
+  match expr, get_poll_attribute attributes with
+  | expr, Default_poll -> expr
+  | Lfunction({ attr = { stub = false } as attr } as funct), poll ->
+      begin match attr.poll with
+      | Default_poll -> ()
+      | Error_poll ->
+          Location.prerr_warning loc
+            (Warnings.Duplicated_attribute "error_poll")
+      end;
+      let attr = { attr with poll } in
+      check_poll_inline loc attr;
+      check_poll_local loc attr;
+      let attr = { attr with inline = Never_inline; local = Never_local } in
+      Lfunction { funct with attr }
+  | expr, Error_poll ->
+      Location.prerr_warning loc
+        (Warnings.Misplaced_attribute "error_poll");
       expr
 
 (* Get the [@inlined] attribute payload (or default if not present).
@@ -317,7 +397,8 @@ let get_tailcall_attribute e =
 let check_attribute e {Parsetree.attr_name = { txt; loc }; _} =
   match txt with
   | "inline" | "ocaml.inline"
-  | "specialise" | "ocaml.specialise" -> begin
+  | "specialise" | "ocaml.specialise"
+  | "poll" -> begin
       match e.exp_desc with
       | Texp_function _ -> ()
       | _ ->
@@ -356,5 +437,12 @@ let add_function_attributes lam loc attr =
   in
   let lam =
     add_local_attribute lam loc attr
+  in
+  let lam =
+    add_tmc_attribute lam loc attr
+  in
+  let lam =
+    (* last because poll overrides inline and local *)
+    add_poll_attribute lam loc attr
   in
   lam

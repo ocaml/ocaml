@@ -899,6 +899,7 @@ void caml_output_val(struct channel *chan, value v, value flags)
     caml_stat_free(blk);
     blk = nextblk;
   }
+  Flush_if_unbuffered(chan);
 }
 
 CAMLprim value caml_output_value(value vchan, value v, value flags)
@@ -1134,6 +1135,7 @@ CAMLprim value caml_obj_reachable_words(value v)
   uintnat h = 0;
   uintnat pos;
 
+  obj_counter = 0;
   extern_init_position_table();
   sp = extern_stack;
   size = 0;

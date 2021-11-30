@@ -66,7 +66,6 @@ EOF
 
 Build () {
   script --return --command "$MAKE_WARN world.opt" build.log
-  script --return --append --command "$MAKE_WARN ocamlnat" build.log
   echo Ensuring that all names are prefixed in the runtime
   ./tools/check-symbol-names runtime/*.a
 }

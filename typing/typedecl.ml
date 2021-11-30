@@ -175,15 +175,16 @@ let set_private_row env loc p decl =
   let rv =
     match get_desc tm with
       Tvariant row ->
-        let row = Btype.row_repr row in
+        let Row {fields; more; closed; name} = row_repr row in
         set_type_desc tm
-          (Tvariant {row with row_fixed = Some Fixed_private});
+          (Tvariant (create_row ~fields ~more ~closed ~name
+                       ~fixed:(Some Fixed_private)));
         if Btype.static_row row then
           (* the syntax hinted at the existence of a row variable,
              but there is in fact no row variable to make private, e.g.
              [ type t = private [< `A > `A] ] *)
           raise (Error(loc, Invalid_private_row_declaration tm))
-        else row.row_more
+        else more
     | Tobject (ty, _) ->
         let r = snd (Ctype.flatten_fields ty) in
         if not (Btype.is_Tvar r) then
@@ -1631,16 +1632,16 @@ let explain_unbound_gen ppf tv tl typ kwd pr =
     let ti = List.find (fun ti -> Ctype.deep_occur tv (typ ti)) tl in
     let ty0 = (* Hack to force aliasing when needed *)
       Btype.newgenty (Tobject(tv, ref None)) in
-    Printtyp.reset_and_mark_loops_list [typ ti; ty0];
+    Printtyp.prepare_for_printing [typ ti; ty0];
     fprintf ppf
       ".@ @[<hov2>In %s@ %a@;<1 -2>the variable %a is unbound@]"
-      kwd pr ti Printtyp.marked_type_expr tv
+      kwd pr ti Printtyp.prepared_type_expr tv
   with Not_found -> ()
 
 let explain_unbound ppf tv tl typ kwd lab =
   explain_unbound_gen ppf tv tl typ kwd
     (fun ppf ti ->
-       fprintf ppf "%s%a" (lab ti) Printtyp.marked_type_expr (typ ti)
+       fprintf ppf "%s%a" (lab ti) Printtyp.prepared_type_expr (typ ti)
     )
 
 let explain_unbound_single ppf tv ty =
@@ -1653,13 +1654,12 @@ let explain_unbound_single ppf tv ty =
       explain_unbound ppf tv tl (fun (_,_,t) -> t)
         "method" (fun (lab,_,_) -> lab ^ ": ")
   | Tvariant row ->
-      let row = Btype.row_repr row in
-      if eq_type row.row_more tv then trivial ty else
-      explain_unbound ppf tv row.row_fields
-        (fun (_l,f) -> match Btype.row_field_repr f with
+      if eq_type (row_more row) tv then trivial ty else
+      explain_unbound ppf tv (row_fields row)
+        (fun (_l,f) -> match row_field_repr f with
           Rpresent (Some t) -> t
-        | Reither (_,[t],_,_) -> t
-        | Reither (_,tl,_,_) -> Btype.newgenty (Ttuple tl)
+        | Reither (_,[t],_) -> t
+        | Reither (_,tl,_) -> Btype.newgenty (Ttuple tl)
         | _ -> Btype.newgenty (Ttuple[]))
         "case" (fun (lab,_) -> "`" ^ lab ^ " of ")
   | _ -> trivial ty
@@ -1710,8 +1710,7 @@ let report_error ppf = function
       let comma ppf () = Format.fprintf ppf ",@;<1 2>" in
       let pp_expansions ppf expansions =
         Format.(pp_print_list ~pp_sep:comma pp_expansion) ppf expansions in
-      Printtyp.reset_and_mark_loops used_as;
-      Printtyp.mark_loops defined_as;
+      Printtyp.prepare_for_printing [used_as; defined_as];
       Printtyp.Naming_context.reset ();
       begin match expansions with
       | [] ->

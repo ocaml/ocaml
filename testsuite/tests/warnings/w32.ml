@@ -65,3 +65,7 @@ module F (X : sig val x : int end) = struct end
 module G (X : sig val x : int end) = X
 
 module H (X : sig val x : int end) = X
+
+module type S = sig
+  module F:  sig val x : int end -> sig end
+end

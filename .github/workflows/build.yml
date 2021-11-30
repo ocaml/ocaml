@@ -55,7 +55,7 @@ jobs:
         MAKE_ARG=-j make distclean
     - name: configure tree
       run: |
-        MAKE_ARG=-j XARCH=x64 CONFIG_ARG='--enable-flambda --enable-cmm-invariants --enable-dependency-generation' OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh configure
+        MAKE_ARG=-j XARCH=x64 CONFIG_ARG='--enable-flambda --enable-cmm-invariants --enable-dependency-generation --enable-native-toplevel' OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh configure
     - name: Build
       run: |
         MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh build

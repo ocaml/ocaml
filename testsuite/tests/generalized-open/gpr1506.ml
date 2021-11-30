@@ -103,9 +103,9 @@ include struct open struct type t = T end let x = T end
 Line 1, characters 15-41:
 1 | include struct open struct type t = T end let x = T end
                    ^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The type t/150 introduced by this open appears in the signature
+Error: The type t/337 introduced by this open appears in the signature
        Line 1, characters 46-47:
-         The value x has no valid type if t/150 is hidden
+         The value x has no valid type if t/337 is hidden
 |}];;
 
 module A = struct
@@ -123,9 +123,9 @@ Lines 3-6, characters 4-7:
 4 |       type t = T
 5 |       let x = T
 6 |     end
-Error: The type t/155 introduced by this open appears in the signature
+Error: The type t/342 introduced by this open appears in the signature
        Line 7, characters 8-9:
-         The value y has no valid type if t/155 is hidden
+         The value y has no valid type if t/342 is hidden
 |}];;
 
 module A = struct
@@ -142,9 +142,9 @@ Lines 3-5, characters 4-7:
 3 | ....open struct
 4 |       type t = T
 5 |     end
-Error: The type t/160 introduced by this open appears in the signature
+Error: The type t/347 introduced by this open appears in the signature
        Line 6, characters 8-9:
-         The value y has no valid type if t/160 is hidden
+         The value y has no valid type if t/347 is hidden
 |}]
 
 (* It was decided to not allow this anymore. *)

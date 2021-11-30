@@ -45,34 +45,40 @@ and type_desc =
 and row_desc =
     { row_fields: (label * row_field) list;
       row_more: type_expr;
-      row_bound: unit;
       row_closed: bool;
       row_fixed: fixed_explanation option;
       row_name: (Path.t * type_expr list) option }
 and fixed_explanation =
   | Univar of type_expr | Fixed_private | Reified of Path.t | Rigid
-and row_field =
-    Rpresent of type_expr option
-  | Reither of bool * type_expr list * bool * row_field option ref
-        (* 1st true denotes a constant constructor *)
-        (* 2nd true denotes a tag in a pattern matching, and
-           is erased later *)
-  | Rabsent
+and row_field = [`some] row_field_gen
+and _ row_field_gen =
+    RFpresent : type_expr option -> [> `some] row_field_gen
+  | RFeither :
+      { no_arg: bool;
+        arg_type: type_expr list;
+        matched: bool;
+        ext: [`some | `none] row_field_gen ref} -> [> `some] row_field_gen
+  | RFabsent : [> `some] row_field_gen
+  | RFnone : [> `none] row_field_gen
 
 and abbrev_memo =
     Mnil
   | Mcons of private_flag * Path.t * type_expr * type_expr * abbrev_memo
   | Mlink of abbrev_memo ref
 
-and field_kind =
-    Fvar of field_kind option ref
-  | Fpresent
-  | Fabsent
+and any = [`some | `none | `var]
+and field_kind = [`some|`var] field_kind_gen
+and _ field_kind_gen =
+    FKvar : {mutable field_kind: any field_kind_gen} -> [> `var] field_kind_gen
+  | FKprivate : [> `none] field_kind_gen  (* private method; only under FKvar *)
+  | FKpublic  : [> `some] field_kind_gen  (* public method *)
+  | FKabsent  : [> `some] field_kind_gen  (* hidden private method *)
 
-and commutable =
-    Cok
-  | Cunknown
-  | Clink of commutable ref
+and commutable = [`some|`var] commutable_gen
+and _ commutable_gen =
+    Cok      : [> `some] commutable_gen
+  | Cunknown : [> `none] commutable_gen
+  | Cvar : {mutable commu: any commutable_gen} -> [> `var] commutable_gen
 
 module TransientTypeOps = struct
   type t = type_expr
@@ -83,55 +89,7 @@ end
 
 (* *)
 
-module Uid = struct
-  type t =
-    | Compilation_unit of string
-    | Item of { comp_unit: string; id: int }
-    | Internal
-    | Predef of string
-
-  include Identifiable.Make(struct
-    type nonrec t = t
-
-    let equal (x : t) y = x = y
-    let compare (x : t) y = compare x y
-    let hash (x : t) = Hashtbl.hash x
-
-    let print fmt = function
-      | Internal -> Format.pp_print_string fmt "<internal>"
-      | Predef name -> Format.fprintf fmt "<predef:%s>" name
-      | Compilation_unit s -> Format.pp_print_string fmt s
-      | Item { comp_unit; id } -> Format.fprintf fmt "%s.%d" comp_unit id
-
-    let output oc t =
-      let fmt = Format.formatter_of_out_channel oc in
-      print fmt t
-  end)
-
-  let id = ref (-1)
-
-  let reinit () = id := (-1)
-
-  let mk  ~current_unit =
-      incr id;
-      Item { comp_unit = current_unit; id = !id }
-
-  let of_compilation_unit_id id =
-    if not (Ident.persistent id) then
-      Misc.fatal_errorf "Types.Uid.of_compilation_unit_id %S" (Ident.name id);
-    Compilation_unit (Ident.name id)
-
-  let of_predef_id id =
-    if not (Ident.is_predef id) then
-      Misc.fatal_errorf "Types.Uid.of_predef_id %S" (Ident.name id);
-    Predef (Ident.name id)
-
-  let internal_not_actually_unique = Internal
-
-  let for_actual_declaration = function
-    | Item _ -> true
-    | _ -> false
-end
+module Uid = Shape.Uid
 
 (* Maps of methods and instance variables *)
 
@@ -476,8 +434,6 @@ let signature_item_id = function
   | Sig_class_type (id, _, _, _)
     -> id
 
-(* migrating repr from Btype.. *)
-
 (**** Definitions for backtracking ****)
 
 type change =
@@ -487,9 +443,9 @@ type change =
   | Cscope of type_expr * int
   | Cname of
       (Path.t * type_expr list) option ref * (Path.t * type_expr list) option
-  | Crow of row_field option ref * row_field option
-  | Ckind of field_kind option ref * field_kind option
-  | Ccommu of commutable ref * commutable
+  | Crow of [`none|`some] row_field_gen ref
+  | Ckind of [`var] field_kind_gen
+  | Ccommu of [`var] commutable_gen
   | Cuniv of type_expr option ref * type_expr option
 
 type changes =
@@ -504,18 +460,46 @@ let log_change ch =
   !trail := Change (ch, r');
   trail := r'
 
-(**** Representative of a type ****)
+(* constructor and accessors for [field_kind] *)
 
-let rec field_kind_repr =
-  function
-    Fvar {contents = Some kind} -> field_kind_repr kind
-  | kind                        -> kind
+type field_kind_view =
+    Fprivate
+  | Fpublic
+  | Fabsent
+
+let rec field_kind_internal_repr : field_kind -> field_kind = function
+  | FKvar {field_kind = FKvar _ | FKpublic | FKabsent as fk} ->
+      field_kind_internal_repr fk
+  | kind -> kind
+
+let field_kind_repr fk =
+  match field_kind_internal_repr fk with
+  | FKvar _ -> Fprivate
+  | FKpublic -> Fpublic
+  | FKabsent -> Fabsent
+
+let field_public = FKpublic
+let field_absent = FKabsent
+let field_private () = FKvar {field_kind=FKprivate}
+
+(* Constructor and accessors for [commutable] *)
+
+let rec is_commu_ok : type a. a commutable_gen -> bool = function
+  | Cvar {commu} -> is_commu_ok commu
+  | Cunknown -> false
+  | Cok -> true
+
+let commu_ok = Cok
+let commu_var () = Cvar {commu=Cunknown}
+
+(**** Representative of a type ****)
 
 let rec repr_link (t : type_expr) d : type_expr -> type_expr =
  function
    {desc = Tlink t' as d'} ->
      repr_link t d' t'
- | {desc = Tfield (_, k, _, t') as d'} when field_kind_repr k = Fabsent ->
+ | {desc = Tfield (_, k, _, t') as d'}
+   when field_kind_internal_repr k = FKabsent ->
      repr_link t d' t'
  | t' ->
      log_change (Ccompress (t, t.desc, d));
@@ -525,7 +509,8 @@ let rec repr_link (t : type_expr) d : type_expr -> type_expr =
 let repr_link1 t = function
    {desc = Tlink t' as d'} ->
      repr_link t d' t'
- | {desc = Tfield (_, k, _, t') as d'} when field_kind_repr k = Fabsent ->
+ | {desc = Tfield (_, k, _, t') as d'}
+   when field_kind_internal_repr k = FKabsent ->
      repr_link t d' t'
  | t' -> t'
 
@@ -533,7 +518,7 @@ let repr t =
   match t.desc with
    Tlink t' ->
      repr_link1 t t'
- | Tfield (_, k, _, t') when field_kind_repr k = Fabsent ->
+ | Tfield (_, k, _, t') when field_kind_internal_repr k = FKabsent ->
      repr_link1 t t'
  | _ -> t
 
@@ -562,6 +547,130 @@ end
 let eq_type t1 t2 = t1 == t2 || repr t1 == repr t2
 let compare_type t1 t2 = compare (get_id t1) (get_id t2)
 
+(* Constructor and accessors for [row_desc] *)
+
+let create_row ~fields ~more ~closed ~fixed ~name =
+    { row_fields=fields; row_more=more;
+      row_closed=closed; row_fixed=fixed; row_name=name }
+
+(* [row_fields] subsumes the original [row_repr] *)
+let rec row_fields row =
+  match get_desc row.row_more with
+  | Tvariant row' ->
+      row.row_fields @ row_fields row'
+  | _ ->
+      row.row_fields
+
+let rec row_repr_no_fields row =
+  match get_desc row.row_more with
+  | Tvariant row' -> row_repr_no_fields row'
+  | _ -> row
+
+let row_more row = (row_repr_no_fields row).row_more
+let row_closed row = (row_repr_no_fields row).row_closed
+let row_fixed row = (row_repr_no_fields row).row_fixed
+let row_name row = (row_repr_no_fields row).row_name
+
+let rec get_row_field tag row =
+  let rec find = function
+    | (tag',f) :: fields ->
+        if tag = tag' then f else find fields
+    | [] ->
+        match get_desc row.row_more with
+        | Tvariant row' -> get_row_field tag row'
+        | _ -> RFabsent
+  in find row.row_fields
+
+let set_row_name row row_name =
+  let row_fields = row_fields row in
+  let row = row_repr_no_fields row in
+  {row with row_fields; row_name}
+
+type row_desc_repr =
+    Row of { fields: (label * row_field) list;
+             more:type_expr;
+             closed:bool;
+             fixed:fixed_explanation option;
+             name:(Path.t * type_expr list) option }
+
+let row_repr row =
+  let fields = row_fields row in
+  let row = row_repr_no_fields row in
+  Row { fields;
+        more = row.row_more;
+        closed = row.row_closed;
+        fixed = row.row_fixed;
+        name = row.row_name }
+
+type row_field_view =
+    Rpresent of type_expr option
+  | Reither of bool * type_expr list * bool
+        (* 1st true denotes a constant constructor *)
+        (* 2nd true denotes a tag in a pattern matching, and
+           is erased later *)
+  | Rabsent
+
+let rec row_field_repr_aux tl : row_field -> row_field = function
+  | RFeither ({ext = {contents = RFnone}} as r) ->
+      RFeither {r with arg_type = tl@r.arg_type}
+  | RFeither {arg_type;
+              ext = {contents = RFeither _ | RFpresent _ | RFabsent as rf}} ->
+      row_field_repr_aux (tl@arg_type) rf
+  | RFpresent (Some _) when tl <> [] ->
+      RFpresent (Some (List.hd tl))
+  | RFpresent _ as rf -> rf
+  | RFabsent -> RFabsent
+
+let row_field_repr fi =
+  match row_field_repr_aux [] fi with
+  | RFeither {no_arg; arg_type; matched} -> Reither (no_arg, arg_type, matched)
+  | RFpresent t -> Rpresent t
+  | RFabsent -> Rabsent
+
+let rec row_field_ext (fi : row_field) =
+  match fi with
+  | RFeither {ext = {contents = RFnone} as ext} -> ext
+  | RFeither {ext = {contents = RFeither _ | RFpresent _ | RFabsent as rf}} ->
+      row_field_ext rf
+  | _ -> Misc.fatal_error "Types.row_field_ext "
+
+let rf_present oty = RFpresent oty
+let rf_absent = RFabsent
+let rf_either ?use_ext_of ~no_arg arg_type ~matched =
+  let ext =
+    match use_ext_of with
+      Some rf -> row_field_ext rf
+    | None -> ref RFnone
+  in
+  RFeither {no_arg; arg_type; matched; ext}
+
+let rf_either_of = function
+  | None ->
+      RFeither {no_arg=true; arg_type=[]; matched=false; ext=ref RFnone}
+  | Some ty ->
+      RFeither {no_arg=false; arg_type=[ty]; matched=false; ext=ref RFnone}
+
+let eq_row_field_ext rf1 rf2 =
+  row_field_ext rf1 == row_field_ext rf2
+
+let changed_row_field_exts l f =
+  let exts = List.map row_field_ext l in
+  f ();
+  List.exists (fun r -> !r <> RFnone) exts
+
+let match_row_field ~present ~absent ~either (f : row_field) =
+  match f with
+  | RFabsent -> absent ()
+  | RFpresent t -> present t
+  | RFeither {no_arg; arg_type; matched; ext} ->
+      let e : row_field option =
+        match !ext with
+        | RFnone -> None
+        | RFeither _ | RFpresent _ | RFabsent as e -> Some e
+      in
+      either no_arg arg_type matched e
+
+
 (**** Some type creators ****)
 
 let new_id = Local_store.s_ref (-1)
@@ -581,14 +690,14 @@ let newty2 ~level desc =
 
 let undo_change = function
     Ctype  (ty, desc) -> Transient_expr.set_desc ty desc
-  | Ccompress  (ty, desc, _) -> Transient_expr.set_desc ty desc
+  | Ccompress (ty, desc, _) -> Transient_expr.set_desc ty desc
   | Clevel (ty, level) -> Transient_expr.set_level ty level
   | Cscope (ty, scope) -> Transient_expr.set_scope ty scope
-  | Cname  (r, v) -> r := v
-  | Crow   (r, v) -> r := v
-  | Ckind  (r, v) -> r := v
-  | Ccommu (r, v) -> r := v
-  | Cuniv  (r, v) -> r := v
+  | Cname  (r, v)    -> r := v
+  | Crow   r         -> r := RFnone
+  | Ckind  (FKvar r) -> r.field_kind <- FKprivate
+  | Ccommu (Cvar r)  -> r.commu <- Cunknown
+  | Cuniv  (r, v)    -> r := v
 
 type snapshot = changes ref * int
 let last_snapshot = Local_store.s_ref 0
@@ -642,12 +751,47 @@ let set_univar rty ty =
   log_change (Cuniv (rty, !rty)); rty := Some ty
 let set_name nm v =
   log_change (Cname (nm, !nm)); nm := v
-let set_row_field e v =
-  log_change (Crow (e, !e)); e := Some v
-let set_kind rk k =
-  log_change (Ckind (rk, !rk)); rk := Some k
-let set_commu rc c =
-  log_change (Ccommu (rc, !rc)); rc := c
+
+let rec link_row_field_ext ~(inside : row_field) (v : row_field) =
+  match inside with
+  | RFeither {ext = {contents = RFnone} as e} ->
+      let RFeither _ | RFpresent _ | RFabsent as v = v in
+      log_change (Crow e); e := v
+  | RFeither {ext = {contents = RFeither _ | RFpresent _ | RFabsent as rf}} ->
+      link_row_field_ext ~inside:rf v
+  | _ -> invalid_arg "Types.link_row_field_ext"
+
+let rec link_kind ~(inside : field_kind) (k : field_kind) =
+  match inside with
+  | FKvar ({field_kind = FKprivate} as rk) as inside ->
+      (* prevent a loop by normalizing k and comparing it with inside *)
+      let FKvar _ | FKpublic | FKabsent as k = field_kind_internal_repr k in
+      if k != inside then begin
+        log_change (Ckind inside);
+        rk.field_kind <- k
+      end
+  | FKvar {field_kind = FKvar _ | FKpublic | FKabsent as inside} ->
+      link_kind ~inside k
+  | _ -> invalid_arg "Types.link_kind"
+
+let rec commu_repr : commutable -> commutable = function
+  | Cvar {commu = Cvar _ | Cok as commu} -> commu_repr commu
+  | c -> c
+
+let rec link_commu ~(inside : commutable) (c : commutable) =
+  match inside with
+  | Cvar ({commu = Cunknown} as rc) as inside ->
+      (* prevent a loop by normalizing c and comparing it with inside *)
+      let Cvar _ | Cok as c = commu_repr c in
+      if c != inside then begin
+        log_change (Ccommu inside);
+        rc.commu <- c
+      end
+  | Cvar {commu = Cvar _ | Cok as inside} ->
+      link_commu ~inside c
+  | _ -> invalid_arg "Types.link_commu"
+
+let set_commu_ok c = link_commu ~inside:c Cok
 
 let snapshot () =
   let old = !last_snapshot in
@@ -665,7 +809,7 @@ let rec rev_log accu = function
 let backtrack ~cleanup_abbrev (changes, old) =
   match !changes with
     Unchanged -> last_snapshot := old
-  | Invalid -> failwith "Btype.backtrack"
+  | Invalid -> failwith "Types.backtrack"
   | Change _ as change ->
       cleanup_abbrev ();
       let backlog = rev_log [] change in
@@ -673,6 +817,12 @@ let backtrack ~cleanup_abbrev (changes, old) =
       changes := Unchanged;
       last_snapshot := old;
       trail := changes
+
+let undo_first_change_after (changes, _) =
+  match !changes with
+  | Change (ch, _) ->
+      undo_change ch
+  | _ -> ()
 
 let rec rev_compress_log log r =
   match !r with

@@ -185,7 +185,7 @@ let rec constructor_type constr cty =
   | Cty_signature _ ->
       constr
   | Cty_arrow (l, ty, cty) ->
-      Ctype.newty (Tarrow (l, ty, constructor_type constr cty, Cok))
+      Ctype.newty (Tarrow (l, ty, constructor_type constr cty, commu_ok))
 
                 (***********************************)
                 (*  Primitives for typing classes  *)
@@ -916,7 +916,7 @@ and class_field_second_pass cl_num sign met_env field =
            let self_type = sign.Types.csig_self in
            let meth_type =
              mk_expected
-               (Btype.newgenty (Tarrow(Nolabel, self_type, ty, Cok)))
+               (Btype.newgenty (Tarrow(Nolabel, self_type, ty, commu_ok)))
            in
            Ctype.raise_nongen_level ();
            let texp = type_expect met_env sdefinition meth_type in
@@ -935,7 +935,7 @@ and class_field_second_pass cl_num sign met_env field =
            let self_type = sign.Types.csig_self in
            let meth_type =
              mk_expected
-               (Ctype.newty (Tarrow (Nolabel, self_type, unit_type, Cok)))
+               (Ctype.newty (Tarrow (Nolabel, self_type, unit_type, commu_ok)))
            in
            let texp = type_expect met_env sexpr meth_type in
            Ctype.end_def ();
@@ -1407,7 +1407,7 @@ let rec approx_declaration cl =
       let arg =
         if Btype.is_optional l then Ctype.instance var_option
         else Ctype.newvar () in
-      Ctype.newty (Tarrow (l, arg, approx_declaration cl, Cok))
+      Ctype.newty (Tarrow (l, arg, approx_declaration cl, commu_ok))
   | Pcl_let (_, _, cl) ->
       approx_declaration cl
   | Pcl_constraint (cl, _) ->
@@ -1420,7 +1420,7 @@ let rec approx_description ct =
       let arg =
         if Btype.is_optional l then Ctype.instance var_option
         else Ctype.newvar () in
-      Ctype.newty (Tarrow (l, arg, approx_description ct, Cok))
+      Ctype.newty (Tarrow (l, arg, approx_description ct, commu_ok))
   | _ -> Ctype.newvar ()
 
 (*******************************)
@@ -1972,7 +1972,7 @@ let report_error env ppf = function
         (function ppf ->
            fprintf ppf "but is expected to have type")
   | Unexpected_field (ty, lab) ->
-      Printtyp.reset_and_mark_loops ty;
+      Printtyp.prepare_for_printing [ty];
       fprintf ppf
         "@[@[<2>This object is expected to have type :@ %a@]\
          @ This type does not have a method %s."
@@ -2003,7 +2003,7 @@ let report_error env ppf = function
       Printtyp.longident cl
   | Abbrev_type_clash (abbrev, actual, expected) ->
       (* XXX Afficher une trace ? | Print a trace? *)
-      Printtyp.reset_and_mark_loops_list [abbrev; actual; expected];
+      Printtyp.prepare_for_printing [abbrev; actual; expected];
       fprintf ppf "@[The abbreviation@ %a@ expands to type@ %a@ \
        but is used with type@ %a@]"
         !Oprint.out_type (Printtyp.tree_of_typexp Type abbrev)
@@ -2046,7 +2046,7 @@ let report_error env ppf = function
         (function ppf ->
            fprintf ppf "does not meet its constraint: it should be")
   | Bad_parameters (id, params, cstrs) ->
-      Printtyp.reset_and_mark_loops_list [params; cstrs];
+      Printtyp.prepare_for_printing [params; cstrs];
       fprintf ppf
         "@[The abbreviation %a@ is used with parameters@ %a@ \
            which are incompatible with constraints@ %a@]"
@@ -2061,14 +2061,13 @@ let report_error env ppf = function
       let print_reason ppf (ty0, real, lab, ty) =
         let ty1 =
           if real then ty0 else Btype.newgenty(Tobject(ty0, ref None)) in
-        List.iter Printtyp.mark_loops [ty; ty1];
+        Printtyp.prepare_for_printing [ty; ty1];
         fprintf ppf
           "The method %s@ has type@;<1 2>%a@ where@ %a@ is unbound"
           lab
           !Oprint.out_type (Printtyp.tree_of_typexp Type ty)
           !Oprint.out_type (Printtyp.tree_of_typexp Type ty0)
       in
-      Printtyp.reset ();
       fprintf ppf
         "@[<v>@[Some type variables are unbound in this type:@;<1 2>%t@]@ \
               @[%a@]@]"

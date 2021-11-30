@@ -30,7 +30,7 @@ method! class_of_operation op =
 
 method! is_cheap_operation op =
   match op with
-  | Iconst_int n -> n <= 0x7FFn && n >= -0x800n
+  | Iconst_int n -> n <= 0x7FFF_FFFFn && n >= -0x8000_0000n
   | _ -> false
 
 end

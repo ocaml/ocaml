@@ -1797,7 +1797,6 @@ let get_expr_args_variant_nonconst ~scopes head (arg, _mut) rem =
   (Lprim (Pfield 1, [ arg ], loc), Alias) :: rem
 
 let divide_variant ~scopes row ctx { cases = cl; args; default = def } =
-  let row = Btype.row_repr row in
   let rec divide = function
     | [] -> { args; cells = [] }
     | ((p, patl), action) :: rem
@@ -1808,10 +1807,7 @@ let divide_variant ~scopes row ctx { cases = cl; args; default = def } =
         in
         let head = Simple.head p in
         let variants = divide rem in
-        if
-          try Btype.row_field_repr (List.assoc lab row.row_fields) = Rabsent
-          with Not_found -> true
-        then
+        if row_field_repr (get_row_field lab row) = Rabsent then
           variants
         else
           let tag = Btype.hash_variant lab in
@@ -2333,9 +2329,10 @@ module SArg = struct
 
   let gtint = Pintcomp Cgt
 
-  type act = Lambda.lambda
-
   type loc = Lambda.scoped_location
+  type arg = Lambda.lambda
+  type test = Lambda.lambda
+  type act = Lambda.lambda
 
   let make_prim p args = Lprim (p, args, Loc_unknown)
 
@@ -2359,6 +2356,16 @@ module SArg = struct
   let make_isout h arg = Lprim (Pisout, [ h; arg ], Loc_unknown)
 
   let make_isin h arg = Lprim (Pnot, [ make_isout h arg ], Loc_unknown)
+
+  let make_is_nonzero arg =
+    if !Clflags.native_code then
+      Lprim (Pintcomp Cne,
+             [arg; Lconst (Const_base (Const_int 0))],
+             Loc_unknown)
+    else
+      arg
+
+  let arg_as_test arg = arg
 
   let make_if cond ifso ifnot = Lifthenelse (cond, ifso, ifnot)
 
@@ -2829,9 +2836,14 @@ let combine_constructor loc arg pat_env cstr partial ctx def
               (cstr.cstr_consts, cstr.cstr_nonconsts, consts, nonconsts)
             with
             | 1, 1, [ (0, act1) ], [ (0, act2) ] ->
-                (* Typically, match on lists, will avoid isint primitive in that
-              case *)
-                Lifthenelse (arg, act2, act1)
+                if !Clflags.native_code then
+                  Lifthenelse(Lprim (Pisint, [ arg ], loc), act1, act2)
+                else
+                  (* PR#10681: we use [arg] directly as the test here;
+                     it generates better bytecode for this common case
+                     (typically options and lists), but would prevent
+                     some optimizations with the native compiler. *)
+                  Lifthenelse (arg, act2, act1)
             | n, 0, _, [] ->
                 (* The type defines constant constructors only *)
                 call_switcher loc fail_opt arg 0 (n - 1) consts
@@ -2890,17 +2902,16 @@ let call_switcher_variant_constr loc fail arg int_lambda_list =
 
 let combine_variant loc row arg partial ctx def (tag_lambda_list, total1, _pats)
     =
-  let row = Btype.row_repr row in
   let num_constr = ref 0 in
-  if row.row_closed then
+  if row_closed row then
     List.iter
       (fun (_, f) ->
-        match Btype.row_field_repr f with
+        match row_field_repr f with
         | Rabsent
-        | Reither (true, _ :: _, _, _) ->
+        | Reither (true, _ :: _, _) ->
             ()
         | _ -> incr num_constr)
-      row.row_fields
+      (row_fields row)
   else
     num_constr := max_int;
   let test_int_or_block arg if_int if_block =

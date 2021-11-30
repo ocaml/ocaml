@@ -465,12 +465,17 @@ let comp_primitive p args =
   | Pisout -> Kisout
   | Pbintofint bi -> comp_bint_primitive bi "of_int" args
   | Pintofbint bi -> comp_bint_primitive bi "to_int" args
-  | Pcvtbint(Pint32, Pnativeint) -> Kccall("caml_nativeint_of_int32", 1)
-  | Pcvtbint(Pnativeint, Pint32) -> Kccall("caml_nativeint_to_int32", 1)
-  | Pcvtbint(Pint32, Pint64) -> Kccall("caml_int64_of_int32", 1)
-  | Pcvtbint(Pint64, Pint32) -> Kccall("caml_int64_to_int32", 1)
-  | Pcvtbint(Pnativeint, Pint64) -> Kccall("caml_int64_of_nativeint", 1)
-  | Pcvtbint(Pint64, Pnativeint) -> Kccall("caml_int64_to_nativeint", 1)
+  | Pcvtbint(src, dst) ->
+      begin match (src, dst) with
+      | (Pint32, Pnativeint) -> Kccall("caml_nativeint_of_int32", 1)
+      | (Pnativeint, Pint32) -> Kccall("caml_nativeint_to_int32", 1)
+      | (Pint32, Pint64) -> Kccall("caml_int64_of_int32", 1)
+      | (Pint64, Pint32) -> Kccall("caml_int64_to_int32", 1)
+      | (Pnativeint, Pint64) -> Kccall("caml_int64_of_nativeint", 1)
+      | (Pint64, Pnativeint) -> Kccall("caml_int64_to_nativeint", 1)
+      | ((Pint32 | Pint64 | Pnativeint), _) ->
+          fatal_error "Bytegen.comp_primitive: invalid Pcvtbint cast"
+      end
   | Pnegbint bi -> comp_bint_primitive bi "neg" args
   | Paddbint bi -> comp_bint_primitive bi "add" args
   | Psubbint bi -> comp_bint_primitive bi "sub" args
@@ -503,7 +508,18 @@ let comp_primitive p args =
   | Pint_as_pointer -> Kccall("caml_int_as_pointer", 1)
   | Pbytes_to_string -> Kccall("caml_string_of_bytes", 1)
   | Pbytes_of_string -> Kccall("caml_bytes_of_string", 1)
-  | _ -> fatal_error "Bytegen.comp_primitive"
+  (* The cases below are handled in [comp_expr] before the [comp_primitive] call
+     (in the order in which they appear below),
+     so they should never be reached in this function. *)
+  | Pignore | Popaque
+  | Pnot | Psequand | Psequor
+  | Praise _
+  | Pmakearray _ | Pduparray _
+  | Pfloatcomp _
+  | Pmakeblock _
+  | Pfloatfield _
+    ->
+      fatal_error "Bytegen.comp_primitive"
 
 let is_immed n = immed_min <= n && n <= immed_max
 

@@ -2056,7 +2056,7 @@ memory that are held by your custom block. This function works like
 "caml_alloc_custom" except that the "max" parameter is under the
 control of the user (via the "custom_major_ratio",
 "custom_minor_ratio", and "custom_minor_max_size" parameters) and
-proportional to the heap sizes.
+proportional to the heap sizes. It has been available since OCaml 4.08.0.
 
 \subsection{ss:c-custom-access}{Accessing custom blocks}
 
@@ -2190,6 +2190,9 @@ The kind of array elements is one of the following constants:
 \entree{"CAML_BA_INT64"}{64-bit signed integers}
 \entree{"CAML_BA_CAML_INT"}{31- or 63-bit signed integers}
 \entree{"CAML_BA_NATIVE_INT"}{32- or 64-bit (platform-native) integers}
+\entree{"CAML_BA_COMPLEX32"}{32-bit single-precision complex numbers}
+\entree{"CAML_BA_COMPLEX64"}{64-bit double-precision complex numbers}
+\entree{"CAML_BA_CHAR"}{8-bit characters}
 \end{tableau}
 %
 \paragraph{Warning:}

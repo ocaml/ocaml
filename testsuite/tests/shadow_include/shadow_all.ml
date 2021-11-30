@@ -100,11 +100,11 @@ end
 Line 4, characters 2-11:
 4 |   include S
       ^^^^^^^^^
-Error: Illegal shadowing of included type t/146 by t/163
+Error: Illegal shadowing of included type t/147 by t/164
        Line 2, characters 2-11:
-         Type t/146 came from this include
+         Type t/147 came from this include
        Line 3, characters 2-24:
-         The value ignore has no valid type if t/146 is shadowed
+         The value ignore has no valid type if t/147 is shadowed
 |}]
 
 module type Module = sig
@@ -140,11 +140,11 @@ end
 Line 4, characters 2-11:
 4 |   include S
       ^^^^^^^^^
-Error: Illegal shadowing of included module M/236 by M/253
+Error: Illegal shadowing of included module M/237 by M/254
        Line 2, characters 2-11:
-         Module M/236 came from this include
+         Module M/237 came from this include
        Line 3, characters 2-26:
-         The value ignore has no valid type if M/236 is shadowed
+         The value ignore has no valid type if M/237 is shadowed
 |}]
 
 
@@ -181,11 +181,11 @@ end
 Line 4, characters 2-11:
 4 |   include S
       ^^^^^^^^^
-Error: Illegal shadowing of included module type T/322 by T/339
+Error: Illegal shadowing of included module type T/323 by T/340
        Line 2, characters 2-11:
-         Module type T/322 came from this include
+         Module type T/323 came from this include
        Line 3, characters 2-39:
-         The module F has no valid type if T/322 is shadowed
+         The module F has no valid type if T/323 is shadowed
 |}]
 
 module type Extension = sig
@@ -198,11 +198,11 @@ end
 Line 4, characters 2-11:
 4 |   include S
       ^^^^^^^^^
-Error: Illegal shadowing of included type ext/357 by ext/374
+Error: Illegal shadowing of included type ext/358 by ext/375
        Line 2, characters 2-11:
-         Type ext/357 came from this include
+         Type ext/358 came from this include
        Line 3, characters 14-16:
-         The extension constructor C2 has no valid type if ext/357 is shadowed
+         The extension constructor C2 has no valid type if ext/358 is shadowed
 |}]
 
 module type Class = sig
@@ -304,7 +304,7 @@ module NN :
     val unit : unit
     external e : unit -> unit = "%identity"
     module M = N.M
-    module type T = sig end
+    module type T = N.T
     exception E
     type ext = N.ext = ..
     type ext += C
@@ -329,7 +329,7 @@ module Type :
     val unit : unit
     external e : unit -> unit = "%identity"
     module M = N.M
-    module type T = sig end
+    module type T = N.T
     exception E
     type ext = N.ext = ..
     type ext += C
@@ -352,7 +352,7 @@ module Module :
     val unit : unit
     external e : unit -> unit = "%identity"
     module M = N.M
-    module type T = sig end
+    module type T = N.T
     exception E
     type ext = N.ext = ..
     type ext += C
@@ -370,12 +370,12 @@ end
 [%%expect{|
 module Module_type :
   sig
-    module type U = sig end
+    module type U = N.T
     type t = N.t
     val unit : unit
     external e : unit -> unit = "%identity"
     module M = N.M
-    module type T = sig end
+    module type T = N.T
     exception E
     type ext = N.ext = ..
     type ext += C
@@ -398,7 +398,7 @@ module Exception :
     val unit : unit
     external e : unit -> unit = "%identity"
     module M = N.M
-    module type T = sig end
+    module type T = N.T
     exception E
     type ext = N.ext = ..
     type ext += C
@@ -421,7 +421,7 @@ module Extension :
     val unit : unit
     external e : unit -> unit = "%identity"
     module M = N.M
-    module type T = sig end
+    module type T = N.T
     exception E
     type ext = N.ext = ..
     type ext += C
@@ -444,7 +444,7 @@ module Class :
     val unit : unit
     external e : unit -> unit = "%identity"
     module M = N.M
-    module type T = sig end
+    module type T = N.T
     exception E
     type ext = N.ext = ..
     type ext += C
@@ -467,7 +467,7 @@ module Class_type :
     val unit : unit
     external e : unit -> unit = "%identity"
     module M = N.M
-    module type T = sig end
+    module type T = N.T
     exception E
     type ext = N.ext = ..
     type ext += C

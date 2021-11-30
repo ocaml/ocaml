@@ -81,12 +81,13 @@ let frame_size env =                     (* includes return address *)
 
 let slot_offset env loc cl =
   match loc with
-  | Incoming n -> (frame_size env) + n
+  | Incoming n -> frame_size env + n
   | Local n ->
       if cl = 0
       then env.stack_offset + n * 8
       else env.stack_offset + (env.f.fun_num_stack_slots.(0) + n) * 8
   | Outgoing n -> n
+  | Domainstate _ -> assert false  (* not a stack slot *)
 
 (* Symbols *)
 
@@ -171,14 +172,18 @@ let emit_Llabel env fallthrough lbl =
 
 (* Output a pseudo-register *)
 
+let x86_data_type_for_stack_slot = function
+  | Float -> REAL8
+  | _ -> QWORD
+
 let reg env = function
   | { loc = Reg.Reg r } -> register_name r
-  | { loc = Stack s; typ = Float } as r ->
+  | { loc = Stack(Domainstate n); typ = ty } ->
+      let ofs = n + Domainstate.(idx_of_field Domain_extra_params) * 8 in
+      mem64 (x86_data_type_for_stack_slot ty) ofs R14
+  | { loc = Stack s; typ = ty } as r ->
       let ofs = slot_offset env s (register_class r) in
-      mem64 REAL8 ofs RSP
-  | { loc = Stack s } as r ->
-      let ofs = slot_offset env s (register_class r) in
-      mem64 QWORD ofs RSP
+      mem64 (x86_data_type_for_stack_slot ty) ofs RSP
   | { loc = Unknown } ->
       assert false
 
@@ -188,6 +193,7 @@ let reg64 = function
 
 let arg env i n = reg env i.arg.(n)
 let res env i n = reg env i.res.(n)
+
 (* Output a reference to the lower 8, 16 or 32 bits of a register *)
 
 let reg_low_8_name  = Array.map (fun r -> Reg8L r) int_reg_name

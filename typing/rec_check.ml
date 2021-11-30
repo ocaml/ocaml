@@ -1202,17 +1202,20 @@ and is_destructuring_pattern : type k . k general_pattern -> bool =
         is_destructuring_pattern l || is_destructuring_pattern r
 
 let is_valid_recursive_expression idlist expr =
-  let ty = expression expr Return in
-  match Env.unguarded ty idlist, Env.dependent ty idlist,
-        classify_expression expr with
-  | _ :: _, _, _ (* The expression inspects rec-bound variables *)
-  | [], _ :: _, Dynamic -> (* The expression depends on rec-bound variables
-                              and its size is unknown *)
-      false
-  | [], _, Static (* The expression has known size *)
-  | [], [], Dynamic -> (* The expression has unknown size,
-                          but does not depend on rec-bound variables *)
-      true
+  match expr.exp_desc with
+  | Texp_function _ ->
+     (* Fast path: functions can never have invalid recursive references *)
+     true
+  | _ ->
+     match classify_expression expr with
+     | Static ->
+        (* The expression has known size *)
+        let ty = expression expr Return in
+        Env.unguarded ty idlist = []
+     | Dynamic ->
+        (* The expression has unknown size *)
+        let ty = expression expr Return in
+        Env.unguarded ty idlist = [] && Env.dependent ty idlist = []
 
 (* A class declaration may contain let-bindings. If they are recursive,
    their validity will already be checked by [is_valid_recursive_expression]

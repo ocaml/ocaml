@@ -231,7 +231,7 @@ and transl_type_aux env policy styp =
       if Btype.is_optional l
       then newty (Tconstr(Predef.path_option,[ty1], ref Mnil))
       else ty1 in
-    let ty = newty (Tarrow(l, ty1, cty2.ctyp_type, Cok)) in
+    let ty = newty (Tarrow(l, ty1, cty2.ctyp_type, commu_ok)) in
     ctyp (Ttyp_arrow (l, cty1, cty2)) ty
   | Ptyp_tuple stl ->
     assert (List.length stl >= 2);
@@ -319,27 +319,20 @@ and transl_type_aux env policy styp =
       let ty = Ctype.expand_head env (newconstr path ty_args) in
       let ty = match get_desc ty with
         Tvariant row ->
-          let row = Btype.row_repr row in
           let fields =
             List.map
               (fun (l,f) -> l,
-                match Btype.row_field_repr f with
-                | Rpresent (Some ty) ->
-                    Reither(false, [ty], false, ref None)
-                | Rpresent None ->
-                    Reither (true, [], false, ref None)
+                match row_field_repr f with
+                | Rpresent oty -> rf_either_of oty
                 | _ -> f)
-              row.row_fields
+              (row_fields row)
           in
-          let row = { row_closed = true; row_fields = fields;
-                      row_bound = (); row_name = Some (path, ty_args);
-                      row_fixed = None; row_more = newvar () } in
-          let static = Btype.static_row row in
+          (* NB: row is always non-static here; more is thus never Tnil *)
+          let more =
+            if policy = Univars then new_pre_univar () else newvar () in
           let row =
-            if static then { row with row_more = newty Tnil }
-            else if policy <> Univars then row
-            else { row with row_more = new_pre_univar () }
-          in
+            create_row ~fields ~more
+              ~closed:true ~fixed:None ~name:(Some (path, ty_args)) in
           newty (Tvariant row)
       | Tobject (fi, _) ->
           let _, tv = flatten_fields fi in
@@ -390,9 +383,8 @@ and transl_type_aux env policy styp =
   | Ptyp_variant(fields, closed, present) ->
       let name = ref None in
       let mkfield l f =
-        newty (Tvariant {row_fields=[l,f]; row_more=newvar();
-                         row_bound=(); row_closed=true;
-                         row_fixed=None; row_name=None}) in
+        newty (Tvariant (create_row ~fields:[l,f] ~more:(newvar())
+                           ~closed:true ~fixed:None ~name:None)) in
       let hfields = Hashtbl.create 17 in
       let add_typed_field loc l f =
         let h = Btype.hash_variant l in
@@ -421,14 +413,13 @@ and transl_type_aux env policy styp =
             let f = match present with
               Some present when not (List.mem l.txt present) ->
                 let ty_tl = List.map (fun cty -> cty.ctyp_type) tl in
-                Reither(c, ty_tl, false, ref None)
+                rf_either ty_tl ~no_arg:c ~matched:false
             | _ ->
                 if List.length stl > 1 || c && stl <> [] then
                   raise(Error(styp.ptyp_loc, env,
                               Present_has_conjunction l.txt));
-                match tl with [] -> Rpresent None
-                | st :: _ ->
-                      Rpresent (Some st.ctyp_type)
+                match tl with [] -> rf_present None
+                | st :: _ -> rf_present (Some st.ctyp_type)
             in
             add_typed_field styp.ptyp_loc l.txt f;
               Ttag (l,c,tl)
@@ -443,8 +434,7 @@ and transl_type_aux env policy styp =
             name := if Hashtbl.length hfields <> 0 then None else nm;
             let fl = match get_desc (expand_head env cty.ctyp_type), nm with
               Tvariant row, _ when Btype.static_row row ->
-                let row = Btype.row_repr row in
-                row.row_fields
+                row_fields row
             | Tvar _, Some(p, _) ->
                 raise(Error(sty.ptyp_loc, env, Undefined_type_constructor p))
             | _ ->
@@ -454,13 +444,9 @@ and transl_type_aux env policy styp =
               (fun (l, f) ->
                 let f = match present with
                   Some present when not (List.mem l present) ->
-                    begin match f with
-                      Rpresent(Some ty) ->
-                        Reither(false, [ty], false, ref None)
-                    | Rpresent None ->
-                        Reither(true, [], false, ref None)
-                    | _ ->
-                        assert false
+                    begin match row_field_repr f with
+                      Rpresent oty -> rf_either_of oty
+                    | _ -> assert false
                     end
                 | _ -> f
                 in
@@ -471,7 +457,7 @@ and transl_type_aux env policy styp =
         { rf_desc; rf_loc; rf_attributes; }
       in
       let tfields = List.map add_field fields in
-      let fields = Hashtbl.fold (fun _ p l -> p :: l) hfields [] in
+      let fields = List.rev (Hashtbl.fold (fun _ p l -> p :: l) hfields []) in
       begin match present with None -> ()
       | Some present ->
           List.iter
@@ -479,17 +465,15 @@ and transl_type_aux env policy styp =
               raise(Error(styp.ptyp_loc, env, Present_has_no_type l)))
             present
       end;
-      let row =
-        { row_fields = List.rev fields; row_more = newvar ();
-          row_bound = (); row_closed = (closed = Closed);
-          row_fixed = None; row_name = !name } in
-      let static = Btype.static_row row in
-      let row =
-        if static then { row with row_more = newty Tnil }
-        else if policy <> Univars then row
-        else { row with row_more = new_pre_univar () }
+      let name = !name in
+      let make_row more =
+        create_row ~fields ~more ~closed:(closed = Closed) ~fixed:None ~name
       in
-      let ty = newty (Tvariant row) in
+      let more =
+        if Btype.static_row (make_row (newvar ())) then newty Tnil else
+        if policy = Univars then new_pre_univar () else newvar ()
+      in
+      let ty = newty (Tvariant (make_row more)) in
       ctyp (Ttyp_variant (tfields, closed, present)) ty
   | Ptyp_poly(vars, st) ->
       let vars = List.map (fun v -> v.txt) vars in
@@ -590,7 +574,7 @@ and transl_fields env policy o fields =
      | Open, Univars -> new_pre_univar ()
      | Open, _ -> newvar () in
   let ty = List.fold_left (fun ty (s, ty') ->
-      newty (Tfield (s, Fpresent, ty', ty))) ty_init fields in
+      newty (Tfield (s, field_public, ty', ty))) ty_init fields in
   ty, object_fields
 
 
@@ -599,17 +583,20 @@ let rec make_fixed_univars ty =
   if Btype.try_mark_node ty then
     begin match get_desc ty with
     | Tvariant row ->
-        let row = Btype.row_repr row in
-        let more = Btype.row_more row in
+        let Row {fields; more; name; closed} = row_repr row in
         if Btype.is_Tunivar more then
+          let fields =
+            List.map
+              (fun (s,f as p) -> match row_field_repr f with
+                Reither (no_arg, tl, _m) ->
+                  s, rf_either tl ~use_ext_of:f ~no_arg ~matched:true
+              | _ -> p)
+              fields
+          in
           set_type_desc ty
             (Tvariant
-               {row with row_fixed = Some (Univar more);
-                row_fields = List.map
-                 (fun (s,f as p) -> match Btype.row_field_repr f with
-                   Reither (c, tl, _m, r) -> s, Reither (c, tl, true, r)
-                 | _ -> p)
-                 row.row_fields});
+               (create_row ~fields ~more ~name ~closed
+                  ~fixed:(Some (Univar more))));
         Btype.iter_row make_fixed_univars row
     | _ ->
         Btype.iter_type_expr make_fixed_univars ty
@@ -770,7 +757,7 @@ let report_error env ppf = function
          l l
   | Constructor_mismatch (ty, ty') ->
       wrap_printing_env ~error:true env (fun ()  ->
-        Printtyp.reset_and_mark_loops_list [ty; ty'];
+        Printtyp.prepare_for_printing [ty; ty'];
         fprintf ppf "@[<hov>%s %a@ %s@ %a@]"
           "This variant type contains a constructor"
           !Oprint.out_type (tree_of_typexp Type ty)

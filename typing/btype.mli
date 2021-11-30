@@ -44,11 +44,12 @@ module TypeHash : sig
   val iter: (type_expr -> 'a -> unit) -> 'a t -> unit
 end
 module TypePairs : sig
-  include Hashtbl.S with type key = transient_expr * transient_expr
-  val add: 'a t -> type_expr * type_expr -> 'a -> unit
-  val find: 'a t -> type_expr * type_expr -> 'a
-  val mem: 'a t -> type_expr * type_expr -> bool
-  val iter: (type_expr * type_expr -> 'a -> unit) -> 'a t -> unit
+  type t
+  val create: int -> t
+  val clear: t -> unit
+  val add: t -> type_expr * type_expr -> unit
+  val mem: t -> type_expr * type_expr -> bool
+  val iter: (type_expr * type_expr -> unit) -> t -> unit
 end
 
 (**** Levels ****)
@@ -77,25 +78,14 @@ val is_Tunivar: type_expr -> bool
 val is_Tconstr: type_expr -> bool
 val dummy_method: label
 
-val commu_repr: commutable -> commutable
-        (* Return the canonical representative of a commutation lock *)
-
 (**** polymorphic variants ****)
-
-val row_repr: row_desc -> row_desc
-        (* Return the canonical representative of a row description *)
-val row_field_repr: row_field -> row_field
-val row_field: label -> row_desc -> row_field
-        (* Return the canonical representative of a row field *)
-val row_more: row_desc -> type_expr
-        (* Return the extension variable of the row *)
 
 val is_fixed: row_desc -> bool
 (* Return whether the row is directly marked as fixed or not *)
 
-val row_fixed: row_desc -> bool
+val has_fixed_explanation: row_desc -> bool
 (* Return whether the row should be treated as fixed or not.
-   In particular, [is_fixed row] implies [row_fixed row].
+   In particular, [is_fixed row] implies [has_fixed_explanation row].
 *)
 
 val fixed_explanation: row_desc -> fixed_explanation option
@@ -122,7 +112,7 @@ val is_row_name: string -> bool
 val is_constr_row: allow_ident:bool -> type_expr -> bool
 
 (* Set the polymorphic variant row_name field *)
-val set_row_name : type_declaration -> Path.t -> unit
+val set_static_row_name: type_declaration -> Path.t -> unit
 
 (**** Utilities for type traversal ****)
 
@@ -171,7 +161,6 @@ val copy_type_desc:
 val copy_row:
     (type_expr -> type_expr) ->
     bool -> row_desc -> bool -> type_expr -> row_desc
-val copy_kind: field_kind -> field_kind
 
 module For_copy : sig
 
@@ -197,15 +186,14 @@ val not_marked_node: type_expr -> bool
         (* Return true if a type node is not yet marked *)
 
 val logged_mark_node: type_expr -> unit
-        (* Mark a type node, logging the marking so it can be backtracked.
-           No [repr]'ing *)
+        (* Mark a type node, logging the marking so it can be backtracked *)
 val try_logged_mark_node: type_expr -> bool
         (* Mark a type node if it is not yet marked, logging the marking so it
            can be backtracked.
            Return false if it was already marked *)
 
 val flip_mark_node: type_expr -> unit
-        (* Mark a type node. No [repr]'ing.
+        (* Mark a type node.
            The marking is not logged and will have to be manually undone using
            one of the various [unmark]'ing functions below. *)
 val try_mark_node: type_expr -> bool

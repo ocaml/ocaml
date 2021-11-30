@@ -13,8 +13,8 @@
 ;**************************************************************************
 
 (env
- (dev     (flags (:standard -w +a-4-9-40-41-42-44-45-48)))
- (release (flags (:standard -w +a-4-9-40-41-42-44-45-48))))
+ (dev     (flags (:standard -w +a-4-9-40-41-42-44-45-48-66-67-70)))
+ (release (flags (:standard -w +a-4-9-40-41-42-44-45-48-66-67-70))))
 
 ;; Too annoying to get to work. Use (copy_files# ...) instead
 ; (include_subdirs unqualified)
@@ -36,7 +36,7 @@
 (library
  (name ocamlcommon)
  (wrapped false)
- (flags (:standard -principal -nostdlib))
+ (flags (:standard -principal -nostdlib \ -short-paths))
  (libraries stdlib)
  (modules_without_implementation
    annot asttypes cmo_format outcometree parsetree)
@@ -55,7 +55,7 @@
    asttypes parsetree
 
    ;; TYPING
-   ident path primitive types btype oprint subst predef datarepr
+   ident path primitive shape types btype oprint subst predef datarepr
    cmi_format persistent_env env type_immediacy errortrace
    typedtree printtyped ctype printtyp includeclass mtype envaux includecore
    tast_iterator tast_mapper signature_group cmt_format untypeast
@@ -68,7 +68,7 @@
    annot outcometree
 
    ;; lambda/
-   debuginfo lambda matching printlambda runtimedef simplif switch
+   debuginfo lambda matching printlambda runtimedef tmc simplif switch
    translattribute translclass translcore translmod translobj translprim
 
    ;; bytecomp/

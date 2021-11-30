@@ -57,14 +57,38 @@ module TransientTypePairs =
     let hash (t, t') = t.id + 93 * t'.id
  end)
 module TypePairs = struct
-  include TransientTypePairs
+  module H = TransientTypePairs
   open Transient_expr
-  let wrap_repr f (t1, t2) = f (repr t1, repr t2)
-  let wrap_type_expr f (tt1, tt2) = f (type_expr tt1, type_expr tt2)
-  let add hash = wrap_repr (add hash)
-  let find hash = wrap_repr (find hash)
-  let mem hash = wrap_repr (mem hash)
-  let iter f = TransientTypePairs.iter (wrap_type_expr f)
+
+  type t = {
+    set : unit H.t;
+    mutable elems : (transient_expr * transient_expr) list;
+    (* elems preserves the (reversed) insertion order of elements *)
+  }
+
+  let create n =
+    { elems = []; set = H.create n }
+
+  let clear t =
+    t.elems <- [];
+    H.clear t.set
+
+  let repr2 (t1, t2) = (repr t1, repr t2)
+
+  let add t p =
+    let p = repr2 p in
+    if H.mem t.set p then () else begin
+      H.add t.set p ();
+      t.elems <- p :: t.elems
+    end
+
+  let mem t p = H.mem t.set (repr2 p)
+
+  let iter f t =
+    (* iterate in insertion order, not Hashtbl.iter order *)
+    List.rev t.elems
+    |> List.iter (fun (t1,t2) ->
+        f (type_expr t1, type_expr t2))
 end
 
 (**** Forward declarations ****)
@@ -105,52 +129,6 @@ let dummy_method = "*dummy method*"
 
 (**** Representative of a type ****)
 
-let rec commu_repr = function
-    Clink r when !r <> Cunknown -> commu_repr !r
-  | c -> c
-
-let rec row_field_repr_aux tl = function
-    Reither(_, tl', _, {contents = Some fi}) ->
-      row_field_repr_aux (tl@tl') fi
-  | Reither(c, tl', m, r) ->
-      Reither(c, tl@tl', m, r)
-  | Rpresent (Some _) when tl <> [] ->
-      Rpresent (Some (List.hd tl))
-  | fi -> fi
-
-let row_field_repr fi = row_field_repr_aux [] fi
-
-let rec rev_concat l ll =
-  match ll with
-    [] -> l
-  | l'::ll -> rev_concat (l'@l) ll
-
-let rec row_repr_aux ll row =
-  match get_desc row.row_more with
-  | Tvariant row' ->
-      let f = row.row_fields in
-      row_repr_aux (if f = [] then ll else f::ll) row'
-  | _ ->
-      if ll = [] then row else
-      {row with row_fields = rev_concat row.row_fields ll}
-
-let row_repr row = row_repr_aux [] row
-
-let rec row_field tag row =
-  let rec find = function
-    | (tag',f) :: fields ->
-        if tag = tag' then row_field_repr f else find fields
-    | [] ->
-        match get_desc row.row_more with
-        | Tvariant row' -> row_field tag row'
-        | _ -> Rabsent
-  in find row.row_fields
-
-let rec row_more row =
-  match get_desc row.row_more with
-  | Tvariant row' -> row_more row'
-  | _ -> row.row_more
-
 let merge_fixed_explanation fixed1 fixed2 =
   match fixed1, fixed2 with
   | Some Univar _ as x, _ | _, (Some Univar _ as x) -> x
@@ -161,29 +139,27 @@ let merge_fixed_explanation fixed1 fixed2 =
 
 
 let fixed_explanation row =
-  let row = row_repr row in
-  match row.row_fixed with
+  match row_fixed row with
   | Some _ as x -> x
   | None ->
-      match get_desc row.row_more with
+      let ty = row_more row in
+      match get_desc ty with
       | Tvar _ | Tnil -> None
-      | Tunivar _ -> Some (Univar row.row_more)
+      | Tunivar _ -> Some (Univar ty)
       | Tconstr (p,_,_) -> Some (Reified p)
       | _ -> assert false
 
-let is_fixed row = match row.row_fixed with
+let is_fixed row = match row_fixed row with
   | None -> false
   | Some _ -> true
 
-let row_fixed row = fixed_explanation row <> None
-
+let has_fixed_explanation row = fixed_explanation row <> None
 
 let static_row row =
-  let row = row_repr row in
-  row.row_closed &&
+  row_closed row &&
   List.for_all
     (fun (_,f) -> match row_field_repr f with Reither _ -> false | _ -> true)
-    row.row_fields
+    (row_fields row)
 
 let hash_variant s =
   let accu = ref 0 in
@@ -229,7 +205,9 @@ let has_constr_row t =
 
 let is_row_name s =
   let l = String.length s in
-  if l < 4 then false else String.sub s (l-4) 4 = "#row"
+  (* PR#10661: when l=4 and s is "#row", this is not a row name
+     but the valid #-type name of a class named "row". *)
+  l > 4 && String.sub s (l-4) 4 = "#row"
 
 let is_constr_row ~allow_ident t =
   match get_desc t with
@@ -240,14 +218,14 @@ let is_constr_row ~allow_ident t =
 
 (* TODO: where should this really be *)
 (* Set row_name in Env, cf. GPR#1204/1329 *)
-let set_row_name decl path =
+let set_static_row_name decl path =
   match decl.type_manifest with
     None -> ()
   | Some ty ->
       match get_desc ty with
         Tvariant row when static_row row ->
-          let row = {(row_repr row) with
-                     row_name = Some (path, decl.type_params)} in
+          let row =
+            set_row_name row (Some (path, decl.type_params)) in
           set_type_desc ty (Tvariant row)
       | _ -> ()
 
@@ -256,22 +234,21 @@ let set_row_name decl path =
                   (*  Utilities for type traversal  *)
                   (**********************************)
 
-let rec fold_row f init row =
+let fold_row f init row =
   let result =
     List.fold_left
       (fun init (_, fi) ->
          match row_field_repr fi with
          | Rpresent(Some ty) -> f init ty
-         | Reither(_, tl, _, _) -> List.fold_left f init tl
+         | Reither(_, tl, _) -> List.fold_left f init tl
          | _ -> init)
       init
-      row.row_fields
+      (row_fields row)
   in
-  match get_desc row.row_more with
-    Tvariant row -> fold_row f result row
+  match get_desc (row_more row) with
   | Tvar _ | Tunivar _ | Tsubst _ | Tconstr _ | Tnil ->
     begin match
-      Option.map (fun (_,l) -> List.fold_left f result l) row.row_name
+      Option.map (fun (_,l) -> List.fold_left f result l) (row_name row)
     with
     | None -> result
     | Some result -> result
@@ -427,7 +404,7 @@ let type_iterators =
     | Tpackage (p, _) ->
         it.it_path p
     | Tvariant row ->
-        Option.iter (fun (p,_) -> it.it_path p) (row_repr row).row_name
+        Option.iter (fun (p,_) -> it.it_path p) (row_name row)
     | _ -> ()
   and it_path _p = ()
   in
@@ -438,34 +415,27 @@ let type_iterators =
     it_type_declaration; it_value_description; it_signature_item; }
 
 let copy_row f fixed row keep more =
+  let Row {fields = orig_fields; fixed = orig_fixed; closed; name = orig_name} =
+    row_repr row in
   let fields = List.map
       (fun (l, fi) -> l,
         match row_field_repr fi with
-        | Rpresent(Some ty) -> Rpresent(Some(f ty))
-        | Reither(c, tl, m, e) ->
-            let e = if keep then e else ref None in
+        | Rpresent oty -> rf_present (Option.map f oty)
+        | Reither(c, tl, m) ->
+            let use_ext_of = if keep then Some fi else None in
             let m = if is_fixed row then fixed else m in
             let tl = List.map f tl in
-            Reither(c, tl, m, e)
-        | _ -> fi)
-      row.row_fields in
+            rf_either tl ?use_ext_of ~no_arg:c ~matched:m
+        | Rabsent -> rf_absent)
+      orig_fields in
   let name =
-    match row.row_name with
+    match orig_name with
     | None -> None
     | Some (path, tl) -> Some (path, List.map f tl) in
-  let row_fixed = if fixed then row.row_fixed else None in
-  { row_fields = fields; row_more = more;
-    row_bound = (); row_fixed;
-    row_closed = row.row_closed; row_name = name; }
+  let fixed = if fixed then orig_fixed else None in
+  create_row ~fields ~more ~fixed ~closed ~name
 
-let rec copy_kind = function
-    Fvar{contents = Some k} -> copy_kind k
-  | Fvar _   -> Fvar (ref None)
-  | Fpresent -> Fpresent
-  | Fabsent  -> assert false
-
-let copy_commu c =
-  if commu_repr c = Cok then Cok else Clink (ref Cunknown)
+let copy_commu c = if is_commu_ok c then commu_ok else commu_var ()
 
 let rec copy_type_desc ?(keep_names=false) f = function
     Tvar _ as ty        -> if keep_names then ty else Tvar None
@@ -476,8 +446,9 @@ let rec copy_type_desc ?(keep_names=false) f = function
                         -> Tobject (f ty, ref (Some(p, List.map f tl)))
   | Tobject (ty, _)     -> Tobject (f ty, ref None)
   | Tvariant _          -> assert false (* too ambiguous *)
-  | Tfield (p, k, ty1, ty2) -> (* the kind is kept shared *)
-      Tfield (p, field_kind_repr k, f ty1, f ty2)
+  | Tfield (p, k, ty1, ty2) ->
+      Tfield (p, field_kind_internal_repr k, f ty1, f ty2)
+      (* the kind is kept shared, with indirections removed for performance *)
   | Tnil                -> Tnil
   | Tlink ty            -> copy_type_desc f (get_desc ty)
   | Tsubst _            -> assert false

@@ -18,6 +18,10 @@
 open Types
 open Misc
 
+val register_uid : Uid.t -> Location.t -> unit
+
+val get_uid_to_loc_tbl : unit -> Location.t Types.Uid.Tbl.t
+
 type value_unbound_reason =
   | Val_unbound_instance_variable
   | Val_unbound_self
@@ -86,6 +90,9 @@ val find_modtype: Path.t -> t -> modtype_declaration
 val find_class: Path.t -> t -> class_declaration
 val find_cltype: Path.t -> t -> class_type_declaration
 
+val find_strengthened_module:
+  aliasable:bool -> Path.t -> t -> module_type
+
 val find_ident_constructor: Ident.t -> t -> constructor_description
 val find_ident_label: Ident.t -> t -> label_description
 
@@ -96,6 +103,7 @@ val find_type_expansion_opt:
 (* Find the manifest type information associated to a type for the sake
    of the compiler's type-based optimisations. *)
 val find_modtype_expansion: Path.t -> t -> module_type
+val find_modtype_expansion_lazy: Path.t -> t -> Subst.Lazy.modtype
 
 val find_hash_type: Path.t -> t -> type_declaration
 (* Find the "#t" type given the path for "t" *)
@@ -104,6 +112,9 @@ val find_value_address: Path.t -> t -> address
 val find_module_address: Path.t -> t -> address
 val find_class_address: Path.t -> t -> address
 val find_constructor_address: Path.t -> t -> address
+
+val shape_of_path:
+  namespace:Shape.Sig_component_kind.t -> t -> Path.t -> Shape.t
 
 val add_functor_arg: Ident.t -> t -> t
 val is_functor_arg: Path.t -> t -> bool
@@ -211,6 +222,8 @@ val lookup_cltype:
 
 val lookup_module_path:
   ?use:bool -> loc:Location.t -> load:bool -> Longident.t -> t -> Path.t
+val lookup_modtype_path:
+  ?use:bool -> loc:Location.t -> Longident.t -> t -> Path.t
 
 val lookup_constructor:
   ?use:bool -> loc:Location.t -> constructor_usage -> Longident.t -> t ->
@@ -274,11 +287,15 @@ val add_value:
 val add_type: check:bool -> Ident.t -> type_declaration -> t -> t
 val add_extension:
   check:bool -> rebind:bool -> Ident.t -> extension_constructor -> t -> t
-val add_module:
-  ?arg:bool -> Ident.t -> module_presence -> module_type -> t -> t
-val add_module_declaration: ?arg:bool -> check:bool -> Ident.t ->
-  module_presence -> module_declaration -> t -> t
+val add_module: ?arg:bool -> ?shape:Shape.t ->
+  Ident.t -> module_presence -> module_type -> t -> t
+val add_module_declaration: ?arg:bool -> ?shape:Shape.t -> check:bool ->
+  Ident.t -> module_presence -> module_declaration -> t -> t
+val add_module_declaration_lazy: update_summary:bool ->
+  Ident.t -> module_presence -> Subst.Lazy.module_decl -> t -> t
 val add_modtype: Ident.t -> modtype_declaration -> t -> t
+val add_modtype_lazy: update_summary:bool ->
+   Ident.t -> Subst.Lazy.modtype_declaration -> t -> t
 val add_class: Ident.t -> class_declaration -> t -> t
 val add_cltype: Ident.t -> class_type_declaration -> t -> t
 val add_local_type: Path.t -> type_declaration -> t -> t
@@ -304,7 +321,6 @@ val filter_non_loaded_persistent : (Ident.t -> bool) -> t -> t
 
 (* Insertion of all fields of a signature. *)
 
-val add_item: signature_item -> t -> t
 val add_signature: signature -> t -> t
 
 (* Insertion of all fields of a signature, relative to the given path.
@@ -333,7 +349,7 @@ val enter_module:
   scope:int -> ?arg:bool -> string -> module_presence ->
   module_type -> t -> Ident.t * t
 val enter_module_declaration:
-  scope:int -> ?arg:bool -> string -> module_presence ->
+  scope:int -> ?arg:bool -> ?shape:Shape.t -> string -> module_presence ->
   module_declaration -> t -> Ident.t * t
 val enter_modtype:
   scope:int -> string -> modtype_declaration -> t -> Ident.t * t
@@ -343,7 +359,14 @@ val enter_cltype:
 
 (* Same as [add_signature] but refreshes (new stamp) and rescopes bound idents
    in the process. *)
-val enter_signature: scope:int -> signature -> t -> signature * t
+val enter_signature: ?mod_shape:Shape.t -> scope:int -> signature -> t ->
+  signature * t
+
+(* Same as [enter_signature] but also extends the shape map ([parent_shape])
+   with all the the items from the signature, their shape being a projection
+   from the given shape. *)
+val enter_signature_and_shape: scope:int -> parent_shape:Shape.Map.t ->
+  Shape.t -> signature -> t -> signature * Shape.Map.t * t
 
 val enter_unbound_value : string -> value_unbound_reason -> t -> t
 
@@ -438,7 +461,8 @@ val check_well_formed_module:
 val add_delayed_check_forward: ((unit -> unit) -> unit) ref
 (* Forward declaration to break mutual recursion with Mtype. *)
 val strengthen:
-    (aliasable:bool -> t -> module_type -> Path.t -> module_type) ref
+    (aliasable:bool -> t -> Subst.Lazy.modtype ->
+     Path.t -> Subst.Lazy.modtype) ref
 (* Forward declaration to break mutual recursion with Ctype. *)
 val same_constr: (t -> type_expr -> type_expr -> bool) ref
 (* Forward declaration to break mutual recursion with Printtyp. *)

@@ -56,6 +56,7 @@ _build
 /ocamlopt
 /ocamlopt.opt
 /ocamlnat
+/_opam
 
 # specific files and patterns in sub-directories
 
@@ -96,6 +97,7 @@ _build
 /lex/parser.output
 
 /manual/src/cmds/warnings-help.etex
+/manual/src/html_processing/src/common.ml
 /manual/src/warnings-help.etex
 
 /api_docgen/build
@@ -198,6 +200,8 @@ _build
 /runtime/ld.conf
 /runtime/.gdb_history
 /runtime/.dep
+/runtime/build_config.h
+/runtime/sak
 /runtime/domain_state32.inc
 /runtime/domain_state64.inc
 

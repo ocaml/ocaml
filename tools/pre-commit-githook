@@ -15,7 +15,7 @@
 
 # Bump this on any changes. It's vital that HOOK_VERSION followed by equals
 # appears nowhere else in these sources!
-HOOK_VERSION=5
+HOOK_VERSION=6
 
 # For what it's worth, allow for empty trees!
 if git rev-parse --verify HEAD >/dev/null 2>&1
@@ -89,7 +89,7 @@ done < <(git diff --diff-filter=d --staged --name-only)
 # See also tools/ci/actions/check-configure.sh
 
 AUTOCONF_FILES=\
-'configure configure.ac VERSION aclocal.m4 build-aux/* '\
+'configure configure.ac aclocal.m4 build-aux/* '\
 'tools/autogen tools/git-dev-options.sh'
 
 # Convert $AUTOCONF_FILES to a BRE

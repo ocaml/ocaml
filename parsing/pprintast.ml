@@ -865,34 +865,34 @@ and exception_declaration ctxt f x =
     (extension_constructor ctxt) x.ptyexn_constructor
     (item_attributes ctxt) x.ptyexn_attributes
 
+and class_type_field ctxt f x =
+  match x.pctf_desc with
+  | Pctf_inherit (ct) ->
+      pp f "@[<2>inherit@ %a@]%a" (class_type ctxt) ct
+        (item_attributes ctxt) x.pctf_attributes
+  | Pctf_val (s, mf, vf, ct) ->
+      pp f "@[<2>val @ %a%a%s@ :@ %a@]%a"
+        mutable_flag mf virtual_flag vf s.txt (core_type ctxt) ct
+        (item_attributes ctxt) x.pctf_attributes
+  | Pctf_method (s, pf, vf, ct) ->
+      pp f "@[<2>method %a %a%s :@;%a@]%a"
+        private_flag pf virtual_flag vf s.txt (core_type ctxt) ct
+        (item_attributes ctxt) x.pctf_attributes
+  | Pctf_constraint (ct1, ct2) ->
+      pp f "@[<2>constraint@ %a@ =@ %a@]%a"
+        (core_type ctxt) ct1 (core_type ctxt) ct2
+        (item_attributes ctxt) x.pctf_attributes
+  | Pctf_attribute a -> floating_attribute ctxt f a
+  | Pctf_extension e ->
+      item_extension ctxt f e;
+      item_attributes ctxt f x.pctf_attributes
+
 and class_signature ctxt f { pcsig_self = ct; pcsig_fields = l ;_} =
-  let class_type_field f x =
-    match x.pctf_desc with
-    | Pctf_inherit (ct) ->
-        pp f "@[<2>inherit@ %a@]%a" (class_type ctxt) ct
-          (item_attributes ctxt) x.pctf_attributes
-    | Pctf_val (s, mf, vf, ct) ->
-        pp f "@[<2>val @ %a%a%s@ :@ %a@]%a"
-          mutable_flag mf virtual_flag vf s.txt (core_type ctxt) ct
-          (item_attributes ctxt) x.pctf_attributes
-    | Pctf_method (s, pf, vf, ct) ->
-        pp f "@[<2>method %a %a%s :@;%a@]%a"
-          private_flag pf virtual_flag vf s.txt (core_type ctxt) ct
-          (item_attributes ctxt) x.pctf_attributes
-    | Pctf_constraint (ct1, ct2) ->
-        pp f "@[<2>constraint@ %a@ =@ %a@]%a"
-          (core_type ctxt) ct1 (core_type ctxt) ct2
-          (item_attributes ctxt) x.pctf_attributes
-    | Pctf_attribute a -> floating_attribute ctxt f a
-    | Pctf_extension e ->
-        item_extension ctxt f e;
-        item_attributes ctxt f x.pctf_attributes
-  in
   pp f "@[<hv0>@[<hv2>object@[<1>%a@]@ %a@]@ end@]"
     (fun f -> function
          {ptyp_desc=Ptyp_any; ptyp_attributes=[]; _} -> ()
        | ct -> pp f " (%a)" (core_type ctxt) ct) ct
-    (list class_type_field ~sep:"@;") l
+    (list (class_type_field ctxt) ~sep:"@;") l
 
 (* call [class_signature] called by [class_signature] *)
 and class_type ctxt f x =
@@ -1705,3 +1705,12 @@ let pattern = pattern reset_ctxt
 let signature = signature reset_ctxt
 let structure = structure reset_ctxt
 let module_expr = module_expr reset_ctxt
+let module_type = module_type reset_ctxt
+let class_field = class_field reset_ctxt
+let class_type_field = class_type_field reset_ctxt
+let class_expr = class_expr reset_ctxt
+let class_type = class_type reset_ctxt
+let structure_item = structure_item reset_ctxt
+let signature_item = signature_item reset_ctxt
+let binding = binding reset_ctxt
+let payload = payload reset_ctxt

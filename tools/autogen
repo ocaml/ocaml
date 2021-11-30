@@ -33,6 +33,8 @@ sed -e '/^runstatedir/d' \
     -e '/-runstatedir /{N;N;N;N;N;N;N;N;d;}' \
     -e '/--runstatedir=DIR/d' \
     -e 's/ runstatedir//' \
+    -e '/split(line, arg/s|" "|/[ \\r\\t]/|' \
+    -e '/define|undef/s/|\\\$/|\\r?\\$/' \
     -e '1d' \
     configure >> configure.tmp
 

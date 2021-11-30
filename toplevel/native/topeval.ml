@@ -16,7 +16,6 @@
 (* The interactive toplevel loop *)
 
 open Format
-open Config
 open Misc
 open Parsetree
 open Types
@@ -24,36 +23,14 @@ open Typedtree
 open Outcometree
 open Topcommon
 
-type res = Ok of Obj.t | Err of string
-type evaluation_outcome = Result of Obj.t | Exception of exn
-
-let _dummy = (Ok (Obj.magic 0), Err "")
-
-external ndl_run_toplevel: string -> string -> res
-  = "caml_natdynlink_run_toplevel"
-
 let implementation_label = "native toplevel"
 
 let global_symbol id =
   let sym = Compilenv.symbol_for_global id in
-  match Dynlink.unsafe_get_global_value ~bytecode_or_asm_symbol:sym with
+  match Tophooks.lookup sym with
   | None ->
     fatal_error ("Toploop.global_symbol " ^ (Ident.unique_name id))
   | Some obj -> obj
-
-let need_symbol sym =
-  Option.is_none (Dynlink.unsafe_get_global_value ~bytecode_or_asm_symbol:sym)
-
-let dll_run dll entry =
-  match (try Result (Obj.magic (ndl_run_toplevel dll entry))
-         with exn -> Exception exn)
-  with
-    | Exception _ as r -> r
-    | Result r ->
-        match Obj.magic r with
-          | Ok x -> Result x
-          | Err s -> fatal_error ("Toploop.dll_run " ^ s)
-
 
 let remembered = ref Ident.empty
 
@@ -109,40 +86,11 @@ include Topcommon.MakeEvalPrinter(EvalBase)
 
 let may_trace = ref false (* Global lock on tracing *)
 
-let phrase_seqid = ref 0
-let phrase_name = ref "TOP"
-
-(* CR-soon trefis for mshinwell: copy/pasted from Optmain. Should it be shared
-   or?
-   mshinwell: It should be shared, but after 4.03. *)
-module Backend = struct
-  (* See backend_intf.mli. *)
-
-  let symbol_for_global' = Compilenv.symbol_for_global'
-  let closure_symbol = Compilenv.closure_symbol
-
-  let really_import_approx = Import_approx.really_import_approx
-  let import_symbol = Import_approx.import_symbol
-
-  let size_int = Arch.size_int
-  let big_endian = Arch.big_endian
-
-  let max_sensible_number_of_arguments =
-    (* The "-1" is to allow for a potential closure environment parameter. *)
-    Proc.max_arguments_for_tailcalls - 1
-end
-let backend = (module Backend : Backend_intf.S)
-
-let load_lambda ppf ~module_ident ~required_globals lam size =
+let load_lambda ppf ~module_ident ~required_globals phrase_name lam size =
   if !Clflags.dump_rawlambda then fprintf ppf "%a@." Printlambda.lambda lam;
   let slam = Simplif.simplify_lambda lam in
   if !Clflags.dump_lambda then fprintf ppf "%a@." Printlambda.lambda slam;
 
-  let dll =
-    if !Clflags.keep_asm_file then !phrase_name ^ ext_dll
-    else Filename.temp_file ("caml" ^ !phrase_name) ext_dll
-  in
-  let filename = Filename.chop_extension dll in
   let program =
     { Lambda.
       code = slam;
@@ -151,33 +99,7 @@ let load_lambda ppf ~module_ident ~required_globals lam size =
       required_globals;
     }
   in
-  let middle_end =
-    if Config.flambda then Flambda_middle_end.lambda_to_clambda
-    else Closure_middle_end.lambda_to_clambda
-  in
-  Asmgen.compile_implementation ~toplevel:need_symbol
-    ~backend ~prefixname:filename
-    ~middle_end ~ppf_dump:ppf program;
-  Asmlink.call_linker_shared [filename ^ ext_obj] dll;
-  Sys.remove (filename ^ ext_obj);
-
-  let dll =
-    if Filename.is_implicit dll
-    then Filename.concat (Sys.getcwd ()) dll
-    else dll in
-  match
-    Fun.protect
-      ~finally:(fun () ->
-          (try Sys.remove dll with Sys_error _ -> ()))
-            (* note: under windows, cannot remove a loaded dll
-               (should remember the handles, close them in at_exit, and then
-               remove files) *)
-      (fun () -> dll_run dll !phrase_name)
-  with
-  | res -> res
-  | exception x ->
-      record_backtrace ();
-      Exception x
+  Tophooks.load ppf phrase_name program
 
 (* Print the outcome of an evaluation *)
 
@@ -191,13 +113,15 @@ let pr_item =
 
 (* Execute a toplevel phrase *)
 
+let phrase_seqid = ref 0
+
 let execute_phrase print_outcome ppf phr =
   match phr with
   | Ptop_def sstr ->
       let oldenv = !toplevel_env in
       incr phrase_seqid;
-      phrase_name := Printf.sprintf "TOP%i" !phrase_seqid;
-      Compilenv.reset ?packname:None !phrase_name;
+      let phrase_name = "TOP" ^ string_of_int !phrase_seqid in
+      Compilenv.reset ?packname:None phrase_name;
       Typecore.reset_delayed_checks ();
       let sstr, rewritten =
         match sstr with
@@ -214,8 +138,11 @@ let execute_phrase print_outcome ppf phr =
             [ Ast_helper.Str.value ~loc Asttypes.Nonrecursive [vb] ], true
         | _ -> sstr, false
       in
-      let (str, sg, names, newenv) = Typemod.type_toplevel_phrase oldenv sstr in
+      let (str, sg, names, shape, newenv) =
+        Typemod.type_toplevel_phrase oldenv sstr
+      in
       if !Clflags.dump_typedtree then Printtyped.implementation ppf str;
+      if !Clflags.dump_shape then Shape.print ppf shape;
       let sg' = Typemod.Signature_names.simplify newenv names sg in
       ignore (Includemod.signatures oldenv ~mark:Mark_positive sg sg');
       Typecore.force_delayed_checks ();
@@ -223,19 +150,21 @@ let execute_phrase print_outcome ppf phr =
         if Config.flambda then
           let { Lambda.module_ident; main_module_block_size = size;
                 required_globals; code = res } =
-            Translmod.transl_implementation_flambda !phrase_name
+            Translmod.transl_implementation_flambda phrase_name
               (str, Tcoerce_none)
           in
           remember module_ident 0 sg';
           module_ident, close_phrase res, required_globals, size
         else
-          let size, res = Translmod.transl_store_phrases !phrase_name str in
-          Ident.create_persistent !phrase_name, res, Ident.Set.empty, size
+          let size, res = Translmod.transl_store_phrases phrase_name str in
+          Ident.create_persistent phrase_name, res, Ident.Set.empty, size
       in
       Warnings.check_fatal ();
       begin try
         toplevel_env := newenv;
-        let res = load_lambda ppf ~required_globals ~module_ident res size in
+        let res =
+          load_lambda ppf ~required_globals ~module_ident phrase_name res size
+        in
         let out_phr =
           match res with
           | Result _ ->

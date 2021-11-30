@@ -129,6 +129,7 @@ val locations : bool ref
 val dump_source : bool ref
 val dump_parsetree : bool ref
 val dump_typedtree : bool ref
+val dump_shape : bool ref
 val dump_rawlambda : bool ref
 val dump_lambda : bool ref
 val dump_rawclambda : bool ref
@@ -188,6 +189,7 @@ val dlcode : bool ref
 val pic_code : bool ref
 val runtime_variant : string ref
 val with_runtime : bool ref
+val force_tmc : bool ref
 val force_slash : bool ref
 val keep_docs : bool ref
 val keep_locs : bool ref

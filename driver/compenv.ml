@@ -645,7 +645,7 @@ let process_action
         | None -> c_object_of_filename name
         | Some n -> n
       in
-      if Ccomp.compile_file ~output:obj_name name <> 0
+      if Ccomp.compile_file ?output:!output_name name <> 0
       then raise (Exit_with_status 2);
       ccobjs := obj_name :: !ccobjs
   | ProcessObjects names ->

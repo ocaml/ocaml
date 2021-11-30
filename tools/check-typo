@@ -112,6 +112,9 @@ case "$1" in
           echo "INFO: pruned path $2 (.git)" >&2
           exit 0;;
     esac
+    if git check-ignore -q "$2"; then
+        exit 0
+    fi
     if test -n "$(check_prune "$2")"; then
         echo "INFO: pruned path $2 (typo.prune)" >&2
         exit 0
@@ -198,6 +201,7 @@ EXIT_CODE=0
       *$f*) is_cmd_line=true;;
       *) is_cmd_line=false;;
     esac
+    if $path_in_index || $is_cmd_line; then :; else continue; fi
     if [ -z "$OCAML_CT_PREFIX" ] ; then
       if [ -x "$f" ] ; then
         check_script "$f"
@@ -207,7 +211,6 @@ EXIT_CODE=0
         check_script "$f"
       fi
     fi
-    if $path_in_index || $is_cmd_line; then :; else continue; fi
     attr_rules=''
     if $path_in_index; then
       # Below is a git plumbing command to detect whether git regards a

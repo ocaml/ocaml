@@ -647,6 +647,7 @@ Caml_noinline static intnat do_some_marking
 
   while (1) {
     value *scan, *obj_end, *scan_end;
+    intnat scan_len;
 
     if (pb_enqueued > pb_dequeued + min_pb) {
       /* Dequeue from prefetch buffer */
@@ -700,11 +701,13 @@ Caml_noinline static intnat do_some_marking
       obj_end = m.end;
     }
 
-    scan_end = obj_end;
-    work -= obj_end - scan;
-    if (work < 0) {
-      scan_end += work;
+    scan_len = obj_end - scan;
+    if (work < scan_len) {
+      scan_len = work;
+      if (scan_len < 0) scan_len = 0;
     }
+    work -= scan_len;
+    scan_end = scan + scan_len;
 
     for (; scan < scan_end; scan++) {
       value v = *scan;
@@ -716,7 +719,9 @@ Caml_noinline static intnat do_some_marking
         slice_pointers ++;
 #endif
         if (pb_enqueued == pb_dequeued + Pb_size) {
-          break; /* Prefetch buffer is full */
+          /* Prefetch buffer is full */
+          work += scan_end - scan; /* scanning work not done */
+          break;
         }
         prefetch_block(v);
         pb[(pb_enqueued++) & Pb_mask] = v;
@@ -732,7 +737,6 @@ Caml_noinline static intnat do_some_marking
       /* Didn't finish scanning this object, either because work <= 0,
          or the prefetch buffer filled up. Leave the rest on the stack. */
       mark_entry m = { scan, obj_end };
-      work += obj_end - scan;
       caml_prefetch(scan+1);
       if (stk.count == stk.size) {
         *Caml_state->mark_stack = stk;
