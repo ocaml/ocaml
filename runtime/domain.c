@@ -147,9 +147,9 @@ static struct {
 
 static void add_to_stw_domains(dom_internal* dom) {
   int i;
-  Assert(stw_domains.participating_domains < Max_domains);
+  CAMLassert(stw_domains.participating_domains < Max_domains);
   for(i=stw_domains.participating_domains; stw_domains.domains[i]!=dom; ++i) {
-    Assert(i<Max_domains);
+    CAMLassert(i<Max_domains);
   }
 
   /* swap passed domain with domain at stw_domains.participating_domains */
@@ -163,9 +163,9 @@ static void add_to_stw_domains(dom_internal* dom) {
 static void remove_from_stw_domains(dom_internal* dom) {
   int i;
   for(i=0; stw_domains.domains[i]!=dom; ++i) {
-    Assert(i<Max_domains);
+    CAMLassert(i<Max_domains);
   }
-  Assert(i < stw_domains.participating_domains);
+  CAMLassert(i < stw_domains.participating_domains);
 
   /* swap passed domain to first free domain */
   stw_domains.participating_domains--;
@@ -178,7 +178,7 @@ static dom_internal* next_free_domain() {
   if (stw_domains.participating_domains == Max_domains)
     return NULL;
 
-  Assert(stw_domains.participating_domains < Max_domains);
+  CAMLassert(stw_domains.participating_domains < Max_domains);
   return stw_domains.domains[stw_domains.participating_domains];
 }
 
@@ -219,7 +219,7 @@ static void stw_handler(caml_domain_state* domain);
 static uintnat handle_incoming(struct interruptor* s)
 {
   uintnat handled = atomic_load_acq(&s->interrupt_pending);
-  Assert (s->running);
+  CAMLassert (s->running);
   if (handled) {
     atomic_store_rel(&s->interrupt_pending, 0);
 
@@ -242,7 +242,7 @@ void caml_handle_incoming_interrupts()
 int caml_send_interrupt(struct interruptor* target)
 {
   /* signal that there is an interrupt pending */
-  Assert(!atomic_load_acq(&target->interrupt_pending));
+  CAMLassert(!atomic_load_acq(&target->interrupt_pending));
   atomic_store_rel(&target->interrupt_pending, 1);
 
   /* Signal the condition variable, in case the target is
@@ -293,7 +293,7 @@ asize_t caml_norm_minor_heap_size (intnat wsize)
 int caml_reallocate_minor_heap(asize_t wsize)
 {
   caml_domain_state* domain_state = Caml_state;
-  Assert(domain_state->young_ptr == domain_state->young_end);
+  CAMLassert(domain_state->young_ptr == domain_state->young_end);
 
   /* free old minor heap.
      instead of unmapping the heap, we decommit it, so there's
@@ -332,7 +332,7 @@ int caml_reallocate_minor_heap(asize_t wsize)
 /* must be run on the domain's thread */
 static void create_domain(uintnat initial_minor_heap_wsize) {
   dom_internal* d = 0;
-  Assert (domain_self == 0);
+  CAMLassert (domain_self == 0);
 
   caml_plat_lock(&all_domains_lock);
 
@@ -342,8 +342,8 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
   d = next_free_domain();
   if (d) {
     struct interruptor* s = &d->interruptor;
-    Assert(!s->running);
-    Assert(!s->interrupt_pending);
+    CAMLassert(!s->running);
+    CAMLassert(!s->interrupt_pending);
     if (!s->interrupt_word) {
       caml_domain_state* domain_state;
       atomic_uintnat* young_limit;
@@ -373,7 +373,7 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
     domain_state->id = d->id;
     domain_state->unique_id = d->interruptor.unique_id;
     d->state = domain_state;
-    Assert(!d->interruptor.interrupt_pending);
+    CAMLassert(!d->interruptor.interrupt_pending);
 
     domain_state->extra_heap_resources = 0.0;
     domain_state->extra_heap_resources_minor = 0.0;
@@ -440,10 +440,6 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
 #ifndef NATIVE_CODE
     domain_state->external_raise = NULL;
     domain_state->trap_sp_off = 1;
-#endif
-
-#if defined(NAKED_POINTERS_CHECKER) && !defined(_WIN32)
-    domain_state->checking_pointer_pc = NULL;
 #endif
 
     add_to_stw_domains(domain_self);
@@ -554,7 +550,7 @@ void caml_init_domains(uintnat minor_heap_wsz) {
 }
 
 void caml_init_domain_self(int domain_id) {
-  Assert (domain_id >= 0 && domain_id < Max_domains);
+  CAMLassert (domain_id >= 0 && domain_id < Max_domains);
   domain_self = &all_domains[domain_id];
   SET_Caml_state(domain_self->state);
 }
@@ -607,7 +603,7 @@ static void* backup_thread_func(void* v)
 
   msg = atomic_load_acq (&di->backup_thread_msg);
   while (msg != BT_TERMINATE) {
-    Assert (msg <= BT_TERMINATE);
+    CAMLassert (msg <= BT_TERMINATE);
     switch (msg) {
       case BT_IN_BLOCKING_SECTION:
         /* Handle interrupts on behalf of the main thread:
@@ -660,7 +656,7 @@ static void install_backup_thread (dom_internal* di)
   int err;
 
   if (di->backup_thread_running == 0) {
-    Assert (di->backup_thread_msg == BT_INIT ||     /* Using fresh domain */
+    CAMLassert (di->backup_thread_msg == BT_INIT || /* Using fresh domain */
             di->backup_thread_msg == BT_TERMINATE); /* Reusing domain */
 
     while (atomic_load_acq(&di->backup_thread_msg) != BT_INIT) {
@@ -788,7 +784,7 @@ CAMLprim value caml_domain_spawn(value callback, value mutex)
        p.ml_values is now owned by that domain */
     pthread_detach(th);
   } else {
-    Assert (p.status == Dom_failed);
+    CAMLassert (p.status == Dom_failed);
     /* failed */
     pthread_join(th, 0);
     free_domain_ml_values(p.ml_values);
@@ -969,8 +965,8 @@ int caml_try_run_on_all_domains_with_spin_work(
       if(all_domains[i].interruptor.running)
         domains_participating++;
     }
-    Assert(domains_participating == stw_domains.participating_domains);
-    Assert(domains_participating > 0);
+    CAMLassert(domains_participating == stw_domains.participating_domains);
+    CAMLassert(domains_participating > 0);
   }
 #endif
 
@@ -981,7 +977,7 @@ int caml_try_run_on_all_domains_with_spin_work(
     if (d != domain_state) {
       caml_send_interrupt(&stw_domains.domains[i]->interruptor);
     } else {
-      Assert(!domain_self->interruptor.interrupt_pending);
+      CAMLassert(!domain_self->interruptor.interrupt_pending);
     }
   }
 
@@ -1130,7 +1126,7 @@ CAMLexport void caml_bt_enter_ocaml(void)
 {
   dom_internal* self = domain_self;
 
-  Assert(caml_domain_alone() || self->backup_thread_running);
+  CAMLassert(caml_domain_alone() || self->backup_thread_running);
 
   if (self->backup_thread_running) {
     atomic_store_rel(&self->backup_thread_msg, BT_ENTERING_OCAML);
@@ -1147,7 +1143,7 @@ CAMLexport void caml_bt_exit_ocaml(void)
 {
   dom_internal* self = domain_self;
 
-  Assert(caml_domain_alone() || self->backup_thread_running);
+  CAMLassert(caml_domain_alone() || self->backup_thread_running);
 
   if (self->backup_thread_running) {
     atomic_store_rel(&self->backup_thread_msg, BT_IN_BLOCKING_SECTION);
@@ -1171,8 +1167,8 @@ static void handover_ephemerons(caml_domain_state* domain_state)
     return;
 
   caml_add_to_orphaned_ephe_list(domain_state->ephe_info);
-  Assert (domain_state->ephe_info->live == 0);
-  Assert (domain_state->ephe_info->todo == 0);
+  CAMLassert (domain_state->ephe_info->live == 0);
+  CAMLassert (domain_state->ephe_info->todo == 0);
 }
 
 static void handover_finalisers(caml_domain_state* domain_state)
@@ -1185,7 +1181,7 @@ static void handover_finalisers(caml_domain_state* domain_state)
       /* Force a major GC cycle to simplify constraints for
        * handing over finalisers. */
       caml_finish_major_cycle();
-      Assert(caml_gc_phase == Phase_sweep_and_mark_main);
+      CAMLassert(caml_gc_phase == Phase_sweep_and_mark_main);
     }
     caml_add_orphaned_finalisers (f);
     /* Create a dummy final info */
@@ -1250,7 +1246,7 @@ static void domain_terminate()
       caml_plat_broadcast(&s->cond);
       caml_plat_unlock(&s->lock);
 
-      Assert (domain_self->backup_thread_running);
+      CAMLassert (domain_self->backup_thread_running);
       domain_self->backup_thread_running = 0;
     }
     caml_plat_unlock(&all_domains_lock);

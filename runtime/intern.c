@@ -337,7 +337,7 @@ static void stack_realloc(struct intern_stack* s, value save) {
 static void stack_push(struct intern_stack* s, value v,
                        int field, int op, intnat arg) {
   if (Is_block(v)) {
-    Assert(field < Wosize_hd(Hd_val(v)));
+    CAMLassert(field < Wosize_hd(Hd_val(v)));
   }
   if (s->sp == s->len - 1) {
     stack_realloc(s, v);
@@ -350,34 +350,34 @@ static void stack_push(struct intern_stack* s, value v,
 }
 
 static void stack_pop(struct intern_stack* s) {
-  Assert(!stack_is_empty(s));
+  CAMLassert(!stack_is_empty(s));
   s->sp--;
 }
 
 static value stack_curr_val(struct intern_stack* s) {
-  Assert(!stack_is_empty(s));
+  CAMLassert(!stack_is_empty(s));
   return STACK_VAL(s->curr_vals, s->sp - 1);
 }
 
 static int stack_curr_op(struct intern_stack* s) {
-  Assert(!stack_is_empty(s));
+  CAMLassert(!stack_is_empty(s));
   return Int_val(STACK_OP(s->curr_vals, s->sp - 1));
 }
 
 static int stack_curr_field(struct intern_stack* s) {
-  Assert(!stack_is_empty(s));
+  CAMLassert(!stack_is_empty(s));
   return Int_val(STACK_FIELD(s->curr_vals, s->sp - 1));
 }
 
 static intnat stack_curr_arg(struct intern_stack* s) {
-  Assert(!stack_is_empty(s));
+  CAMLassert(!stack_is_empty(s));
   return Int_val(STACK_ARG(s->curr_vals, s->sp - 1));
 }
 
 static void stack_advance_field(struct intern_stack* s) {
   intnat field, length;
 
-  Assert(!stack_is_empty(s));
+  CAMLassert(!stack_is_empty(s));
 
   length = Int_val(STACK_ARG(s->curr_vals, s->sp - 1));
   length--;
@@ -455,7 +455,7 @@ static value intern_rec(struct caml_intern_state* s,
     dest = stack_curr_val(&S);
     curr_field = stack_curr_field(&S);
     if (!first) {
-      Assert (0 <= curr_field && curr_field < Wosize_hd(Hd_val(dest)));
+      CAMLassert (0 <= curr_field && curr_field < Wosize_hd(Hd_val(dest)));
     }
 
     switch (stack_curr_op(&S)) {
@@ -494,12 +494,13 @@ static value intern_rec(struct caml_intern_state* s,
             }
             /* For objects, we need to freshen the oid */
             if (tag == Object_tag) {
-              Assert(size >= 2);
+              CAMLassert(size >= 2);
               /* Request to read rest of the elements of the block */
               if (size > 2) stack_push(&S, v, 2, OReadItems, size - 2);
               /* Request freshing OID */
               stack_push(&S, v, 1, OFreshOID, 1);
-              /* Finally read first two block elements: method table and old OID */
+              /* Finally read first two block elements:
+                 method table and old OID */
               stack_push(&S, v, 0, OReadItems, 2);
             } else {
               /* If it's not an object then read the contents of the block */
@@ -541,9 +542,9 @@ static value intern_rec(struct caml_intern_state* s,
           case CODE_SHARED8:
             ofs = read8u(s);
           read_shared:
-            Assert (ofs > 0);
-            Assert (ofs <= obj_counter);
-            Assert (use_intern_table);
+            CAMLassert (ofs > 0);
+            CAMLassert (ofs <= obj_counter);
+            CAMLassert (use_intern_table);
             v = Field(intern_obj_table, obj_counter - ofs);
             break;
           case CODE_SHARED16:
@@ -577,7 +578,8 @@ static value intern_rec(struct caml_intern_state* s,
           case CODE_DOUBLE_LITTLE:
           case CODE_DOUBLE_BIG:
             v = caml_alloc(Double_wosize, Double_tag);
-            if (use_intern_table) Store_field(intern_obj_table, obj_counter++, v);
+            if (use_intern_table)
+              Store_field(intern_obj_table, obj_counter++, v);
             readfloat(s, (double *) v, code);
             break;
           case CODE_DOUBLE_ARRAY8_LITTLE:
@@ -585,7 +587,8 @@ static value intern_rec(struct caml_intern_state* s,
             len = read8u(s);
           read_double_array:
             v = caml_alloc(len * Double_wosize, Double_array_tag);
-            if (use_intern_table) Store_field(intern_obj_table, obj_counter++, v);
+            if (use_intern_table)
+              Store_field(intern_obj_table, obj_counter++, v);
             readfloats(s, (double *) v, len, code);
             break;
           case CODE_DOUBLE_ARRAY32_LITTLE:
@@ -614,7 +617,7 @@ static value intern_rec(struct caml_intern_state* s,
             /* Read a value to dest[curr_field], then offset it by ofs */
             stack_push(&S, dest, curr_field, OShift, ofs);
             stack_push(&S, dest, curr_field, OReadItems, 1);
-            continue;  /* with next iteration of main loop, skipping *dest = v */
+            continue; /* with next iteration of main loop, skipping *dest = v */
           case CODE_CUSTOM:
           case CODE_CUSTOM_LEN:
           case CODE_CUSTOM_FIXED: {
@@ -651,7 +654,8 @@ static value intern_rec(struct caml_intern_state* s,
               caml_failwith(
                 "input_value: incorrect length of serialized custom block");
             }
-            if (use_intern_table) Store_field (intern_obj_table, obj_counter++, v);
+            if (use_intern_table)
+              Store_field (intern_obj_table, obj_counter++, v);
             break;
           }
           default:
@@ -669,7 +673,7 @@ static value intern_rec(struct caml_intern_state* s,
       }
       break;
     default:
-      Assert(0);
+      CAMLassert(0);
     }
   }
   stack_free(&S);

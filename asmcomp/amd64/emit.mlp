@@ -835,10 +835,10 @@ let emit_instr env fallthrough i =
           I.mov (sym (emit_label s)) arg
       in
       load_label_addr lbl_handler r11;
-      cfi_adjust_cfa_offset 8;
       I.push r11;
       cfi_adjust_cfa_offset 8;
       I.push (domain_field Domainstate.Domain_exn_handler);
+      cfi_adjust_cfa_offset 8;
       I.mov rsp (domain_field Domainstate.Domain_exn_handler);
       env.stack_offset <- env.stack_offset + 16;
   | Lpoptrap ->
@@ -920,7 +920,7 @@ let fundecl fundecl =
   in
   let handle_overflow = ref None in
   if contains_nontail_calls || max_stack_size >= stack_threshold_size then begin
-    let (overflow,ret) = new_label(), new_label() in
+    let overflow = new_label () and ret = new_label () in
     let threshold_offset = Domainstate.stack_ctx_words * 8 + stack_threshold_size in
     I.lea (mem64 NONE (-(max_stack_size + threshold_offset)) RSP) r10;
     I.cmp (domain_field Domainstate.Domain_current_stack) r10;
@@ -931,16 +931,20 @@ let fundecl fundecl =
   emit_all env true fundecl.fun_body;
   List.iter emit_call_gc env.call_gc_sites;
   emit_call_bound_errors env;
-  (match !handle_overflow with None -> () | Some (overflow,ret) -> begin
-    def_label overflow;
-    (* Pass the desired stack size on the stack, since all of the
-       argument-passing registers may be in use.
-       Also serves to align the stack properly before the call *)
-    I.push (int (Config.stack_threshold + max_stack_size / 8)); (* measured in words *)
-    emit_call "caml_call_realloc_stack";
-    I.pop r10; (* ignored *)
-    I.jmp (label ret)
-   end);
+  begin match !handle_overflow with
+  | None -> ()
+  | Some (overflow,ret) -> begin
+      def_label overflow;
+      (* Pass the desired stack size on the stack, since all of the
+        argument-passing registers may be in use.
+        Also serves to align the stack properly before the call *)
+      I.push (int (Config.stack_threshold + max_stack_size / 8));
+        (* measured in words *)
+      emit_call "caml_call_realloc_stack";
+      I.pop r10; (* ignored *)
+      I.jmp (label ret)
+    end
+  end;
   if fundecl.fun_frame_required then begin
     let n = (frame_size env) - 8 - (if fp then 8 else 0) in
     if n <> 0
