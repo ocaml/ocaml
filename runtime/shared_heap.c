@@ -168,11 +168,11 @@ static pool* pool_acquire(struct caml_heap_state* local) {
                               Bsize_wsize(POOL_WSIZE), 0 /* allocate */);
     int i;
     if (mem) {
-      pool_freelist.free = mem;
-      for (i=1; i<POOLS_PER_ALLOCATION; i++) {
+      CAMLassert(pool_freelist.free == NULL);
+      for (i=0; i<POOLS_PER_ALLOCATION; i++) {
         r = (pool*)(((uintnat)mem) + ((uintnat)i) * Bsize_wsize(POOL_WSIZE));
         r->next = pool_freelist.free;
-        r->owner = 0;
+        r->owner = NULL;
         pool_freelist.free = r;
       }
     }
@@ -182,14 +182,14 @@ static pool* pool_acquire(struct caml_heap_state* local) {
     pool_freelist.free = r->next;
   caml_plat_unlock(&pool_freelist.lock);
 
-  if (r) CAMLassert (r->owner == 0);
+  if (r) CAMLassert (r->owner == NULL);
   return r;
 }
 
 static void pool_release(struct caml_heap_state* local,
                          pool* pool,
                          sizeclass sz) {
-  pool->owner = 0;
+  pool->owner = NULL;
   CAMLassert(pool->sz == sz);
   local->stats.pool_words -= POOL_WSIZE;
   local->stats.pool_frag_words -= POOL_HEADER_WSIZE + wastage_sizeclass[sz];
