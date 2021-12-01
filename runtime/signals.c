@@ -86,7 +86,7 @@ if (!check_for_pending_signals())
     if( specific_signal_pending > 0 ) {
       if( !atomic_compare_exchange_strong(
             &caml_pending_signals[i],
-             &specific_signal_pending, specific_signal_pending - 1) ) {
+             &specific_signal_pending, 0) ) {
         /* We failed our CAS because another thread beat us to processing
            this signal. Try again to see if there are more of this signal
            to process. */
