@@ -625,8 +625,7 @@ static void mark_stack_push_act(void* state, value v, value* ignored) {
 }
 
 /* This function shrinks the mark stack back to the MARK_STACK_INIT_SIZE size
-   and is called at the end of a GC compaction to avoid a mark stack greater
-   than 1/32th of the heap. */
+   and is called at domain termination via caml_finish_marking. */
 void caml_shrink_mark_stack () {
   struct mark_stack* stk = Caml_state->mark_stack;
   intnat init_stack_bsize = MARK_STACK_INIT_SIZE * sizeof(mark_entry);
