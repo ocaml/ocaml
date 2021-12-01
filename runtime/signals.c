@@ -39,7 +39,6 @@
 
 /* The set of pending signals (received but not yet processed) */
 
-static atomic_intnat total_signals_pending = 0;
 CAMLexport atomic_intnat caml_pending_signals[NSIG];
 caml_plat_mutex signal_install_mutex = CAML_PLAT_MUTEX_INITIALIZER;
 
@@ -47,8 +46,6 @@ static int check_for_pending_signals(void)
 {
   int i;
 
-  /* We don't need to check total_signals_pending because it is greater than
-     zero iff one of caml_pending_signals is greater than zero. */
   for (i = 0; i < NSIG; i++) {
     if (atomic_load_explicit(&caml_pending_signals[i], memory_order_seq_cst))
       return 1;
@@ -67,13 +64,8 @@ CAMLexport value caml_process_pending_signals_exn(void)
   sigset_t set;
 #endif
 
-if( atomic_load_explicit(&total_signals_pending, memory_order_seq_cst) == 0 )
-  return Val_unit;
-
 /* Check that there is indeed a pending signal before issuing the
-    syscall in [pthread_sigmask]. It is possible for there to be a
-    race between checking [total_signals_pending] and checking the
-    actual pending signals so there may not be a signal to handle. */
+    syscall in [pthread_sigmask]. */
 if (!check_for_pending_signals())
   return Val_unit;
 
@@ -101,9 +93,6 @@ if (!check_for_pending_signals())
         goto again;
       }
 
-      atomic_fetch_sub_explicit
-        (&total_signals_pending, 1, memory_order_seq_cst);
-
       exn = caml_execute_signal_exn(i, 0);
       if (Is_exception_result(exn)) return exn;
     }
@@ -118,7 +107,7 @@ CAMLexport void caml_process_pending_signals(void) {
 
 /* Record the delivery of a signal, and arrange for it to be processed
    as soon as possible:
-   - via total_signals_are_pending, processed in
+   - via the pending signal counters, processed in
      caml_process_pending_signals_exn.
    - by playing with the allocation limit, processed in
      caml_garbage_collection
@@ -128,9 +117,6 @@ CAMLexport void caml_record_signal(int signal_number)
 {
   atomic_fetch_add_explicit
     (&caml_pending_signals[signal_number], 1, memory_order_seq_cst);
-
-  atomic_fetch_add_explicit
-    (&total_signals_pending, 1, memory_order_seq_cst);
 
   caml_interrupt_self();
 }
@@ -236,13 +222,11 @@ void caml_request_minor_gc (void)
 
 CAMLextern value caml_process_pending_signals_with_root_exn(value extra_root)
 {
-  if (atomic_load_explicit(&total_signals_pending, memory_order_seq_cst) > 0) {
-    CAMLparam1(extra_root);
-    value exn = caml_process_pending_signals_exn();
-    if (Is_exception_result(exn))
-      CAMLreturn(exn);
-    CAMLdrop;
-  }
+  CAMLparam1(extra_root);
+  value exn = caml_process_pending_signals_exn();
+  if (Is_exception_result(exn))
+    CAMLreturn(exn);
+  CAMLdrop;
   return extra_root;
 }
 
