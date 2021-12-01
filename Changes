@@ -781,6 +781,10 @@ OCaml 4.14.0
   (Gabriel Scherer and Nathanaëlle Courant,
    review by Florian Angeletti, Ulysse Gérard and Thomas Refis)
 
+- #10790: don't drop variance and injectivity annotations when pretty printing
+  `with` constraints (for example, `with type +!'a t = ...`).
+  (Florian Angeletti, report by Luke Maurer, review by ???)
+
 ### Build system:
 
 - #10835 Disable DT_TEXTREL warnings on x86 32 bit architecture by passing
