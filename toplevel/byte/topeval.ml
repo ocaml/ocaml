@@ -119,6 +119,7 @@ let execute_phrase print_outcome ppf phr =
       let (str, sg, sn, shape, newenv) =
         Typemod.type_toplevel_phrase oldenv sstr
       in
+      let shape = Shape.local_reduce shape in
       if !Clflags.dump_typedtree then Printtyped.implementation ppf str;
       if !Clflags.dump_shape then Shape.print ppf shape;
       let sg' = Typemod.Signature_names.simplify newenv sn sg in

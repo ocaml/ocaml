@@ -225,31 +225,47 @@ end) = struct
           | None -> t
           end
       | App(f, arg) ->
-          app ?uid:t.uid (reduce env f) ~arg:(reduce env arg)
+          let f = reduce env f in
+          let arg = reduce env arg in
+          (* Note: we should perform a beta-reduction here to actually
+             reduce the term. This is not implemented yet. *)
+          { t with desc = App(f, arg) }
       | Proj(str, item) ->
           let r = proj ?uid:t.uid (reduce env str) item in
           if r = t
           then t
           else reduce env r
       | Abs(var, body) ->
-          { t with desc = Abs(var, reduce env body) }
+          { t with desc = Abs(var, body) }
       | Var id ->
           begin try
             let res = Params.find_shape env id in
-            if res = t then
-              raise Not_found
-            else
+            if res = t then t
+            else begin
               decr fuel;
               reduce env res
+            end
           with Not_found -> { t with desc = Leaf } (* avoid loops. *)
           end
-      | _ ->
-          t
+      | Leaf -> t
+      | Struct m ->
+          { t with desc = Struct (Item.Map.map (reduce env) m) }
 
   let reduce env t =
     fuel := Params.fuel;
     reduce env t
 end
+
+module Local_reduce =
+  Make_reduce(struct
+    type env = unit
+    let fuel = 10
+    let read_unit_shape ~unit_name:_ = None
+    let find_shape _env _id = raise Not_found
+  end)
+
+let local_reduce shape =
+  Local_reduce.reduce () shape
 
 let dummy_mod = { uid = None; desc = Struct Item.Map.empty }
 

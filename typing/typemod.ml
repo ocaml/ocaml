@@ -2997,6 +2997,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
       in
       let simple_sg = Signature_names.simplify finalenv names sg in
       if !Clflags.print_types then begin
+        let shape = Shape.local_reduce shape in
         Typecore.force_delayed_checks ();
         Printtyp.wrap_printing_env ~error:false initial_env
           (fun () -> fprintf std_formatter "%a@."
@@ -3023,6 +3024,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
             Includemod.compunit initial_env ~mark:Mark_positive
               sourcefile sg intf_file dclsig shape
           in
+          let shape = Shape.local_reduce shape in
           Typecore.force_delayed_checks ();
           (* It is important to run these checks after the inclusion test above,
              so that value declarations which are not used internally but
@@ -3045,6 +3047,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
           in
           check_nongen_signature finalenv simple_sg;
           normalize_signature simple_sg;
+          let shape = Shape.local_reduce shape in
           Typecore.force_delayed_checks ();
           (* See comment above. Here the target signature contains all
              the value being exported. We can still capture unused
