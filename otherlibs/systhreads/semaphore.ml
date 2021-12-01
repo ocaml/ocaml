@@ -45,7 +45,7 @@ let release_multi s n =
   else if n = 1 then release s
   else (
     Mutex.lock s.mut;
-    if s.v + n < max_int then begin
+    if s.v < max_int - n then begin
       s.v <- s.v + n;
       Condition.broadcast s.nonzero;
       Mutex.unlock s.mut
