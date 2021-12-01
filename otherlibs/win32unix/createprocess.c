@@ -24,6 +24,29 @@
 
 static int win_has_console(void);
 
+/* Ensures the handle [h] is inheritable. Returns the handle for the
+   child process in [hStd] and in [to_close] if it needs to be closed
+   after CreateProcess. */
+static int ensure_inheritable(HANDLE h /* in */,
+                              HANDLE * hStd /* out */,
+                              HANDLE * to_close /* out */)
+{
+  DWORD flags;
+  HANDLE hp;
+
+  if (! GetHandleInformation(h, &flags))
+    return 0;
+  hp = GetCurrentProcess();
+  if (! (flags & HANDLE_FLAG_INHERIT)) {
+    if (! DuplicateHandle(hp, h, hp, hStd, 0, TRUE, DUPLICATE_SAME_ACCESS))
+      return 0;
+    *to_close = *hStd;
+  } else {
+    *hStd = h;
+  }
+  return 1;
+}
+
 static DWORD do_create_process_native(wchar_t * exefile, wchar_t * cmdline,
                                       wchar_t * env, HANDLE fd1, HANDLE fd2,
                                       HANDLE fd3, HANDLE * hProcess)
@@ -31,27 +54,23 @@ static DWORD do_create_process_native(wchar_t * exefile, wchar_t * cmdline,
   PROCESS_INFORMATION pi;
   STARTUPINFO si;
   DWORD flags, err;
-  HANDLE hp;
+  HANDLE to_close1 = INVALID_HANDLE_VALUE, to_close2 = INVALID_HANDLE_VALUE,
+      to_close3 = INVALID_HANDLE_VALUE;
 
   err = ERROR_SUCCESS;
   /* Prepare stdin/stdout/stderr redirection */
   ZeroMemory(&si, sizeof(STARTUPINFO));
   si.cb = sizeof(STARTUPINFO);
   si.dwFlags = STARTF_USESTDHANDLES;
-  /* Duplicate the handles fd1, fd2, fd3 to make sure they are inheritable */
-  hp = GetCurrentProcess();
-  if (! DuplicateHandle(hp, fd1, hp, &(si.hStdInput),
-                        0, TRUE, DUPLICATE_SAME_ACCESS)) {
-    err = GetLastError(); goto ret1;
+
+  /* If needed, duplicate the handles fd1, fd2, fd3 to make sure they
+     are inheritable. */
+  if (! ensure_inheritable(fd1, &si.hStdInput, &to_close1) ||
+      ! ensure_inheritable(fd2, &si.hStdOutput, &to_close2) ||
+      ! ensure_inheritable(fd3, &si.hStdError, &to_close3)) {
+    err = GetLastError(); goto ret;
   }
-  if (! DuplicateHandle(hp, fd2, hp, &(si.hStdOutput),
-                        0, TRUE, DUPLICATE_SAME_ACCESS)) {
-    err = GetLastError(); goto ret2;
-  }
-  if (! DuplicateHandle(hp, fd3, hp, &(si.hStdError),
-                        0, TRUE, DUPLICATE_SAME_ACCESS)) {
-    err = GetLastError(); goto ret3;
-  }
+
   /* If we do not have a console window, then we must create one
      before running the process (keep it hidden for appearance).
      If we are starting a GUI application, the newly created
@@ -67,22 +86,21 @@ static DWORD do_create_process_native(wchar_t * exefile, wchar_t * cmdline,
   /* Create the process */
   if (! CreateProcess(exefile, cmdline, NULL, NULL,
                       TRUE, flags, env, NULL, &si, &pi)) {
-    err = GetLastError(); goto ret4;
+    err = GetLastError(); goto ret;
   }
   CloseHandle(pi.hThread);
- ret4:
-  CloseHandle(si.hStdError);
- ret3:
-  CloseHandle(si.hStdOutput);
- ret2:
-  CloseHandle(si.hStdInput);
- ret1:
+
+ ret:
+  /* Close the handles if we duplicated them above. */
+  if (to_close1 != INVALID_HANDLE_VALUE) CloseHandle(to_close1);
+  if (to_close2 != INVALID_HANDLE_VALUE) CloseHandle(to_close2);
+  if (to_close3 != INVALID_HANDLE_VALUE) CloseHandle(to_close3);
   *hProcess = (err == ERROR_SUCCESS) ? pi.hProcess : NULL;
   return err;
 }
 
 value win_create_process_native(value cmd, value cmdline, value env,
-                               value fd1, value fd2, value fd3)
+                                value fd1, value fd2, value fd3)
 {
   wchar_t * exefile, * wcmdline, * wenv, * wcmd;
   HANDLE hProcess;
