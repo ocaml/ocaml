@@ -528,7 +528,9 @@ static struct pool* find_pool_to_rescan();
 
 
 #ifdef DEBUG
-#define Is_markable(v) (Is_block(v) && !Is_young(v) && v != Debug_free_major)
+#define Is_markable(v) \
+    (CAMLassert (v != Debug_free_major), \
+     Is_block(v) && !Is_young(v))
 #else
 #define Is_markable(v) (Is_block(v) && !Is_young(v))
 #endif
