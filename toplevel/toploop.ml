@@ -109,6 +109,7 @@ let load_file = load_file false
 (* Execute a script.  If [name] is "", read the script from stdin. *)
 
 let run_script ppf name args =
+  Clflags.debug := true;
   override_sys_argv args;
   let filename = filename_of_input name in
   Compmisc.init_path ~dir:(Filename.dirname filename) ();

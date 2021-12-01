@@ -87,13 +87,16 @@ let load_lambda ppf lam =
   match
     may_trace := true;
     Fun.protect
-      ~finally:(fun () -> may_trace := false;
-                          if can_free then Meta.release_bytecode bytecode)
+      ~finally:(fun () -> may_trace := false)
       closure
   with
-  | retval -> Result retval
+  | retval ->
+    if can_free then Meta.release_bytecode bytecode;
+    Result retval
   | exception x ->
     record_backtrace ();
+    if can_free then Meta.release_bytecode bytecode;
+
     toplevel_value_bindings := initial_bindings; (* PR#6211 *)
     Symtable.restore_state initial_symtable;
     Exception x
