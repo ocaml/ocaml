@@ -321,7 +321,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #ifdef DEBUG
  next_instr:
   if (caml_icount-- == 0) caml_stop_here ();
-  Assert(Stack_base(domain_state->current_stack) <= sp &&
+  CAMLassert(Stack_base(domain_state->current_stack) <= sp &&
          sp <= Stack_high(domain_state->current_stack));
 #endif
   goto *(void *)(jumptbl_base + *pc++); /* Jump to the first instruction */
@@ -339,7 +339,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       caml_trace_accu_sp_file(accu,sp,prog,prog_size,stdout);
       fflush(stdout);
     };
-    Assert(Stack_base(domain_state->current_stack) <= sp &&
+    CAMLassert(Stack_base(domain_state->current_stack) <= sp &&
            sp <= Stack_high(domain_state->current_stack));
 
 #endif
@@ -552,7 +552,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
         struct stack_info* old_stack = domain_state->current_stack;
         struct stack_info* parent_stack = Stack_parent(old_stack);
         value hval = Stack_handle_value(old_stack);
-        Assert(parent_stack != NULL);
+        CAMLassert(parent_stack != NULL);
 
         old_stack->sp = sp;
         domain_state->current_stack = parent_stack;

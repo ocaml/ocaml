@@ -1,3 +1,18 @@
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*      KC Sivaramakrishnan, Indian Institute of Technology, Madras       */
+/*                   Stephen Dolan, University of Cambridge               */
+/*                                                                        */
+/*   Copyright 2016 Indian Institute of Technology, Madras                */
+/*   Copyright 2016 University of Cambridge                               */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 #define CAML_INTERNALS
 
 #include <sys/mman.h>
@@ -57,7 +72,9 @@ static void caml_plat_cond_init_aux(caml_plat_cond *cond)
 {
   pthread_condattr_t attr;
   pthread_condattr_init(&attr);
-#if defined(_POSIX_TIMERS) && defined(_POSIX_MONOTONIC_CLOCK) && _POSIX_MONOTONIC_CLOCK != (-1)
+#if defined(_POSIX_TIMERS) && \
+    defined(_POSIX_MONOTONIC_CLOCK) && \
+    _POSIX_MONOTONIC_CLOCK != (-1)
   pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
 #endif
   pthread_cond_init(&cond->cond, &attr);
@@ -121,7 +138,7 @@ void caml_plat_cond_free(caml_plat_cond* cond)
   ((align) != 0 && ((align) & ((align) - 1)) == 0)
 
 static uintnat round_up(uintnat size, uintnat align) {
-  Assert(Is_power_2(align));
+  CAMLassert(Is_power_2(align));
   return (size + align - 1) & ~(align - 1);
 }
 
@@ -137,10 +154,10 @@ void* caml_mem_map(uintnat size, uintnat alignment, int reserve_only)
   void* mem;
   uintnat base, aligned_start, aligned_end;
 
-  Assert(Is_power_2(alignment));
+  CAMLassert(Is_power_2(alignment));
   alignment = caml_mem_round_up_pages(alignment);
 
-  Assert (alloc_sz > size);
+  CAMLassert (alloc_sz > size);
   mem = mmap(0, alloc_sz, reserve_only ? PROT_NONE : (PROT_READ | PROT_WRITE),
              MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
   if (mem == MAP_FAILED) {

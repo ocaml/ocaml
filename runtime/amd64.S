@@ -586,7 +586,7 @@ CFI_STARTPROC
 LBL(105):
         subq    $8, %r12
         cmpq    %r13,%r12
-        jl      LBL(106)
+        jb      LBL(106)
         push    (%r12); CFI_ADJUST(8)
         jmp     LBL(105)
 LBL(106):

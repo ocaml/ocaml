@@ -43,7 +43,7 @@ let _ =
             try
               let d = Domain.spawn(fun () -> Lazy.force l3) in
               Domain.join d
-            with CamlinternalLazy.RacyLazy -> Printf.printf "RacyLazy\n"; 0)
+            with CamlinternalLazy.Undefined -> Printf.printf "Undefined\n"; 0)
         | _ -> None }
   in
   ()

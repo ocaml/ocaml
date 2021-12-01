@@ -462,7 +462,7 @@ static void caml_thread_stop(void)
 
   // The main domain thread does not go through caml_thread_stop.
   // There is always one more thread in the chaining at this point in time.
-  Assert(next != Current_thread);
+  CAMLassert(next != Current_thread);
 
   caml_threadstatus_terminate(Terminated(Current_thread->descr));
   caml_thread_remove_info(Current_thread);
