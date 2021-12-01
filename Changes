@@ -228,7 +228,8 @@ OCaml 4.14.0
 
 ### Compiler user-interface and warnings:
 
-- #10328: Give more precise error when disambiguation could not possibly work.
+- #10328, #10780: Give more precise error when disambiguation could not
+  possibly work.
   (Leo White, review by Gabriel Scherer and Florian Angeletti)
 
 - #10361: Improve error messages for mismatched record and variant
