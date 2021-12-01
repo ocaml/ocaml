@@ -1616,16 +1616,19 @@ type typedecl_extraction_result =
 let rec extract_concrete_typedecl env ty =
   match get_desc ty with
     Tconstr (p, _, _) ->
-      let decl = Env.find_type p env in
-      if decl.type_kind <> Type_abstract then Typedecl(p, p, decl)
-      else begin
-        match try_expand_safe env ty with
-        | exception Cannot_expand -> May_have_typedecl
-        | ty ->
-            match extract_concrete_typedecl env ty with
-            | Typedecl(_, p', decl) -> Typedecl(p, p', decl)
-            | Has_no_typedecl -> Has_no_typedecl
-            | May_have_typedecl -> May_have_typedecl
+      begin match Env.find_type p env with
+      | exception Not_found -> May_have_typedecl
+      | decl ->
+          if decl.type_kind <> Type_abstract then Typedecl(p, p, decl)
+          else begin
+            match try_expand_safe env ty with
+            | exception Cannot_expand -> May_have_typedecl
+            | ty ->
+                match extract_concrete_typedecl env ty with
+                | Typedecl(_, p', decl) -> Typedecl(p, p', decl)
+                | Has_no_typedecl -> Has_no_typedecl
+                | May_have_typedecl -> May_have_typedecl
+          end
       end
   | Tpoly(ty, _) -> extract_concrete_typedecl env ty
   | Tarrow _ | Ttuple _ | Tobject _ | Tfield _ | Tnil
