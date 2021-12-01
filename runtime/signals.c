@@ -64,10 +64,10 @@ CAMLexport value caml_process_pending_signals_exn(void)
   sigset_t set;
 #endif
 
-/* Check that there is indeed a pending signal before issuing the
-    syscall in [pthread_sigmask]. */
-if (!check_for_pending_signals())
-  return Val_unit;
+  /* Check that there is indeed a pending signal before issuing the
+      syscall in [pthread_sigmask]. */
+  if (!check_for_pending_signals())
+    return Val_unit;
 
 #ifdef POSIX_SIGNALS
   pthread_sigmask(/* dummy */ SIG_BLOCK, NULL, &set);
