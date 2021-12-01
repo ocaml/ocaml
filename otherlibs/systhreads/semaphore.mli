@@ -170,10 +170,4 @@ val try_acquire : t -> bool
     and [try_acquire s] returns [true].
 *)
 
-val with_acquire : t -> (unit -> 'a) -> 'a
-(** [with_acquire s f] runs [f()] in a context where [s] is acquired,
-    and makes sure to release [s] before returning.
-
-    @since 4.14 *)
-
 end

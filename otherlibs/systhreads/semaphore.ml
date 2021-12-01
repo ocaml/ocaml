@@ -66,7 +66,10 @@ let acquire_multi s n =
   else if n = 1 then acquire s
   else (
     Mutex.lock s.mut;
-    while s.v < n do Condition.wait s.nonzero s.mut done;
+    while s.v < n do
+      (* wake up someone else if needed *)
+      if s.v > 0 then Condition.signal s.nonzero;
+      Condition.wait s.nonzero s.mut done;
     s.v <- s.v - n;
     Mutex.unlock s.mut
   )
@@ -116,11 +119,5 @@ let try_acquire s =
   let ret = if s.v = 0 then false else (s.v <- 0; true) in
   Mutex.unlock s.mut;
   ret
-
-let with_acquire s f =
-  acquire s;
-  Fun.protect
-    ~finally:(fun () -> release s)
-    f
 
 end
