@@ -173,11 +173,6 @@ let print fmt =
   in
   Format.fprintf fmt"@[%a@]@;" aux
 
-let overwrite_uid uid t =
-  match uid with
-  | None -> t
-  | Some _ -> { t with uid }
-
 let fresh_var ?(name="shape-var") uid =
   let var = Ident.create_local name in
   var, { uid = Some uid; desc = Var var }
@@ -209,28 +204,8 @@ let proj ?uid t item =
   | _ ->
       { uid; desc = Proj (t, item) }
 
-let rec app ?uid f ~arg =
-  match f.desc with
-  | Abs (var, body) ->
-      let res = subst var ~arg body in
-      overwrite_uid uid res
-  | _ ->
+let app ?uid f ~arg =
       { uid; desc = App (f, arg) }
-
-and subst var ~arg t =
-  match t.desc with
-  | Var id when var = id -> arg
-  | Abs (v, e) ->
-      abs ?uid:t.uid v (subst var ~arg e)
-  | App (f, e) ->
-      app ?uid:t.uid (subst var ~arg f) ~arg:(subst var ~arg e)
-  | Struct m ->
-      { t with desc = Struct (Item.Map.map (fun s -> subst var ~arg s) m) }
-  | Proj (t, item) ->
-      proj ?uid:t.uid (subst var ~arg t) item
-  | Comp_unit _ | Leaf | Var _ ->
-      t
-
 
 module Make_reduce(Params : sig
   type env
