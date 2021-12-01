@@ -151,3 +151,5 @@ module Make_reduce(Context : sig
   end) : sig
   val reduce : Context.env -> t -> t
 end
+
+val local_reduce : t -> t
