@@ -277,6 +277,15 @@ static void caml_wait_interrupt_serviced(struct interruptor* target)
   }
 }
 
+#define MAX_DOMAIN_NAME_LENGTH 16
+void caml_domain_set_name(char_os *name)
+{
+  char thread_name[MAX_DOMAIN_NAME_LENGTH];
+  snprintf_os(thread_name, MAX_DOMAIN_NAME_LENGTH,
+              T("%s%d"), name, Caml_state->id);
+  caml_thread_setname_os(thread_name);
+}
+
 asize_t caml_norm_minor_heap_size (intnat wsize)
 {
   asize_t bs, max;
@@ -547,6 +556,7 @@ void caml_init_domains(uintnat minor_heap_wsz) {
   caml_init_signal_handling();
 
   CAML_EVENTLOG_INIT();
+  caml_domain_set_name(T("Domain"));
 }
 
 void caml_init_domain_self(int domain_id) {
@@ -595,6 +605,8 @@ static void* backup_thread_func(void* v)
 
   domain_self = di;
   SET_Caml_state((void*)(di->tls_area));
+
+  caml_domain_set_name(T("BackupThread"));
 
   CAML_EVENTLOG_IS_BACKUP_THREAD();
 
@@ -728,6 +740,7 @@ static void* domain_thread_func(void* v)
     install_backup_thread(domain_self);
     caml_gc_log("Domain starting (unique_id = %"ARCH_INTNAT_PRINTF_FORMAT"u)",
                 domain_self->interruptor.unique_id);
+    caml_domain_set_name(T("Domain"));
     caml_domain_start_hook();
     caml_callback(ml_values->callback, Val_unit);
     domain_terminate();
@@ -1304,4 +1317,17 @@ CAMLprim value caml_domain_dls_get(value unused)
 {
   CAMLnoalloc;
   return Caml_state->dls_root;
+}
+
+CAMLprim value caml_ml_domain_set_name(value name)
+{
+  CAMLparam1(name);
+  char_os* name_os;
+
+  if (caml_string_length(name) >= MAX_DOMAIN_NAME_LENGTH)
+    caml_invalid_argument("caml_ml_domain_set_name");
+  name_os = caml_stat_strdup_to_os(String_val(name));
+  caml_thread_setname_os(name_os);
+  caml_stat_free(name_os);
+  CAMLreturn(Val_unit);
 }

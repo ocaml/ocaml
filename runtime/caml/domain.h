@@ -95,6 +95,8 @@ int caml_global_barrier_num_domains();
 
 int caml_domain_is_terminating(void);
 
+void caml_domain_set_name(char_os*);
+
 #endif /* CAML_INTERNALS */
 
 #ifdef __cplusplus

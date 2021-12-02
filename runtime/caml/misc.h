@@ -498,6 +498,16 @@ extern int caml_snwprintf(wchar_t * buf,
 #define snprintf_os snprintf
 #endif
 
+/* platform dependent thread naming */
+#ifdef _WIN32
+extern int caml_thread_setname(const what_t* name);
+#else
+extern int caml_thread_setname(const char* name);
+#define caml_thread_setname_os caml_thread_setname
+#endif
+
+#define caml_thread_setname_os caml_thread_setname
+
 /* Macro used to deactivate thread and address sanitizers on some
    functions. */
 #define CAMLno_tsan

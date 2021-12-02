@@ -498,6 +498,8 @@ static void * caml_thread_start(void * v)
 
   st_tls_set(Thread_key, th);
 
+  caml_domain_set_name(T("Domain"));
+
   st_masterlock_acquire(&Thread_main_lock);
   Current_thread = st_tls_get(Thread_key);
   caml_thread_restore_runtime_state();
