@@ -213,8 +213,12 @@ module Make_reduce(Params : sig
   val read_unit_shape : unit_name:string -> t option
   val find_shape : env -> Ident.t -> t
 end) = struct
-  let fuel = ref (-1)
-  let rec reduce env t =
+  type env = {
+    fuel: int ref;
+    global_env: Params.env;
+  }
+
+  let rec reduce ({fuel; global_env} as env) t =
     if !fuel < 0 then
       t
     else
@@ -251,9 +255,9 @@ end) = struct
       | Struct m ->
           { t with desc = Struct (Item.Map.map (reduce env) m) }
 
-  let reduce env t =
-    fuel := Params.fuel;
-    reduce env t
+  let reduce global_env t =
+    let fuel = ref Params.fuel in
+    reduce { fuel; global_env } t
 end
 
 module Local_reduce =
