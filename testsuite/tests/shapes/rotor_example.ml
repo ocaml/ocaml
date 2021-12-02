@@ -70,31 +70,10 @@ module String : sig type t = string val to_string : 'a -> 'a end
 module P = Pair(Int)(Pair(String)(Int))
 [%%expect{|
 {
- ("P", module) ->
-     Abs<.9>
-        (X/279,
-         Abs(Y/280, {
-                     ("t", type) -> <.5>;
-                     ("to_string", value) -> <.6>;
-                     }))(
-     {<.13>
-      ("t", type) -> <.10>;
-      ("to_string", value) -> <.11>;
-      })(
-     Abs<.9>
-        (X/279,
-         Abs(Y/280, {
-                     ("t", type) -> <.5>;
-                     ("to_string", value) -> <.6>;
-                     }))(
-     {<.17>
-      ("t", type) -> <.14>;
-      ("to_string", value) -> <.15>;
-      })(
-     {<.13>
-      ("t", type) -> <.10>;
-      ("to_string", value) -> <.11>;
-      }))<.18>;
+ ("P", module) -> {
+                   ("t", type) -> <.5>;
+                   ("to_string", value) -> <.6>;
+                   };
  }
 module P :
   sig
