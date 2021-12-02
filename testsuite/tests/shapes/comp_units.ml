@@ -33,7 +33,7 @@ module F : functor (X : sig type t end) -> sig type t = X.t end
 module App_direct = F (Stdlib__Unit)
 [%%expect{|
 {
- ("App_direct", module) -> Abs<.4>(X/277, X/277<.3>)(CU Stdlib__Unit)<.5>;
+ ("App_direct", module) -> CU Stdlib__Unit;
  }
 module App_direct : sig type t = Unit.t end
 |}]
@@ -41,8 +41,7 @@ module App_direct : sig type t = Unit.t end
 module App_proj = F (Stdlib.Unit)
 [%%expect{|
 {
- ("App_proj", module) ->
-     Abs<.4>(X/277, X/277<.3>)(CU Stdlib . "Unit"[module])<.6>;
+ ("App_proj", module) -> CU Stdlib . "Unit"[module];
  }
 module App_proj : sig type t = Unit.t end
 |}]
@@ -50,8 +49,7 @@ module App_proj : sig type t = Unit.t end
 module App_direct_indir = F (Mdirect)
 [%%expect{|
 {
- ("App_direct_indir", module) ->
-     Abs<.4>(X/277, X/277<.3>)(CU Stdlib__Unit)<.7>;
+ ("App_direct_indir", module) -> CU Stdlib__Unit;
  }
 module App_direct_indir : sig type t = Mdirect.t end
 |}]
@@ -59,8 +57,7 @@ module App_direct_indir : sig type t = Mdirect.t end
 module App_proj_indir = F (Mproj)
 [%%expect{|
 {
- ("App_proj_indir", module) ->
-     Abs<.4>(X/277, X/277<.3>)((CU Stdlib . "Unit"[module])<.1>)<.8>;
+ ("App_proj_indir", module) -> (CU Stdlib . "Unit"[module])<.1>;
  }
 module App_proj_indir : sig type t = Mproj.t end
 |}]

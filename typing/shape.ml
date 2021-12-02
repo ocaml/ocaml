@@ -216,9 +216,13 @@ end) = struct
   type env = {
     fuel: int ref;
     global_env: Params.env;
+    local_env: t Ident.tbl;
   }
 
-  let rec reduce ({fuel; global_env} as env) t =
+  let bind env var shape =
+    { env with local_env = Ident.add var shape env.local_env }
+
+  let rec reduce ({fuel; global_env; local_env} as env) t =
     if !fuel < 0 then
       t
     else
@@ -231,9 +235,12 @@ end) = struct
       | App(f, arg) ->
           let f = reduce env f in
           let arg = reduce env arg in
-          (* Note: we should perform a beta-reduction here to actually
-             reduce the term. This is not implemented yet. *)
-          { t with desc = App(f, arg) }
+          begin match f.desc with
+          | Abs(var, body) ->
+              reduce (bind env var arg) body
+          | _ ->
+              { t with desc = App(f, arg) }
+          end
       | Proj(str, item) ->
           let r = proj ?uid:t.uid (reduce env str) item in
           if r = t
@@ -242,14 +249,15 @@ end) = struct
       | Abs(var, body) ->
           { t with desc = Abs(var, body) }
       | Var id ->
-          begin try
-            let res = Params.find_shape env id in
-            if res = t then t
-            else begin
+          begin match Ident.find_same id local_env with
+          | def -> def
+          | exception Not_found ->
+          match Params.find_shape global_env id with
+          | res when res <> t ->
               decr fuel;
               reduce env res
-            end
-          with Not_found -> { t with desc = Leaf } (* avoid loops. *)
+          | _ (* res = t *) | exception Not_found ->
+          { t with desc = Leaf } (* avoid loops. *)
           end
       | Leaf -> t
       | Struct m ->
@@ -257,7 +265,8 @@ end) = struct
 
   let reduce global_env t =
     let fuel = ref Params.fuel in
-    reduce { fuel; global_env } t
+    let local_env = Ident.empty in
+    reduce { fuel; global_env; local_env } t
 end
 
 module Local_reduce =
