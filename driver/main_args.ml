@@ -1455,6 +1455,7 @@ struct
     mk_dsource F._dsource;
     mk_dparsetree F._dparsetree;
     mk_dtypedtree F._dtypedtree;
+    mk_dshape F._dshape;
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
     mk_drawclambda F._drawclambda;
@@ -1565,6 +1566,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_dsource F._dsource;
     mk_dparsetree F._dparsetree;
     mk_dtypedtree F._dtypedtree;
+    mk_dshape F._dshape;
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
     mk_drawclambda F._drawclambda;
