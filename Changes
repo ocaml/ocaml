@@ -188,6 +188,11 @@ OCaml 4.14.0
 - #10527: Show "#help;; for help" at toplevel startup
   (Wiktor Kuchta, review by David Allsopp and Florian Angeletti)
 
+- #9701: Release bytecode only after collecting backtrace information
+  for exceptions, same for dynamic loaded code compiled from toplevel on
+  ocamlnat.
+  (Renato Alencar, reported by Krzysztof Leśniak, reviewed by Gabriel Scherer)
+
 ### Debugging:
 
 - #10517, #10594: when running ocamldebug on a program linked with the
