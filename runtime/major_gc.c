@@ -686,7 +686,7 @@ static void mark_slice_darken(struct mark_stack* stk, value v, mlsize_t i,
         if(Tag_hd(chd) < No_scan_tag){
           mark_stack_push(stk, child, 0, work);
         } else {
-          *work -= Wosize_hd(chd); /* account for header */
+          *work -= Wosize_hd(chd);
         }
       }
     }
