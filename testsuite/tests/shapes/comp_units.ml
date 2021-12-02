@@ -41,7 +41,7 @@ module App_direct : sig type t = Unit.t end
 module App_proj = F (Stdlib.Unit)
 [%%expect{|
 {
- ("App_proj", module) -> CU Stdlib . "Unit"[module];
+ ("App_proj", module) -> (CU Stdlib . "Unit"[module])<.6>;
  }
 module App_proj : sig type t = Unit.t end
 |}]

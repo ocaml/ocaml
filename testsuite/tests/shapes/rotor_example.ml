@@ -70,7 +70,7 @@ module String : sig type t = string val to_string : 'a -> 'a end
 module P = Pair(Int)(Pair(String)(Int))
 [%%expect{|
 {
- ("P", module) -> {
+ ("P", module) -> {<.18>
                    ("t", type) -> <.5>;
                    ("to_string", value) -> <.6>;
                    };
