@@ -18,8 +18,8 @@
 
 #define CAML_INTERNALS
 
-#include "frame_descriptors.h"
 #include "caml/platform.h"
+#include "caml/frame_descriptors.h"
 #include "caml/major_gc.h" /* for caml_major_cycles_completed */
 #include "caml/memory.h"
 #include <stddef.h>

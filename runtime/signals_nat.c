@@ -30,7 +30,7 @@
 #include "caml/domain.h"
 #include "caml/fail.h"
 #include "caml/fiber.h"
-#include "frame_descriptors.h"
+#include "caml/frame_descriptors.h"
 #include "caml/memory.h"
 #include "caml/osdeps.h"
 #include "caml/signals.h"
