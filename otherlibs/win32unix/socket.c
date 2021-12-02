@@ -28,9 +28,11 @@ CAMLprim value unix_socket(value cloexec, value domain, value type, value proto)
 {
   SOCKET s;
 
-  s = socket(socket_domain_table[Int_val(domain)],
-                   socket_type_table[Int_val(type)],
-                   Int_val(proto));
+  s = WSASocket(socket_domain_table[Int_val(domain)],
+                socket_type_table[Int_val(type)],
+                Int_val(proto),
+                NULL, 0,
+                WSA_FLAG_OVERLAPPED);
   if (s == INVALID_SOCKET) {
     win32_maperr(WSAGetLastError());
     uerror("socket", Nothing);

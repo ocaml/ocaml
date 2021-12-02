@@ -74,7 +74,7 @@ static int socketpair(int domain, int type, int protocol,
     goto fail_path;
   }
 
-  listener = socket(domain, type, protocol);
+  listener = WSASocket(domain, type, protocol, NULL, 0, WSA_FLAG_OVERLAPPED);
   if (listener == INVALID_SOCKET)
     goto fail_wsa;
 
@@ -95,7 +95,7 @@ static int socketpair(int domain, int type, int protocol,
   if (rc == SOCKET_ERROR)
     goto fail_wsa;
 
-  client = socket(domain, type, protocol);
+  client = WSASocket(domain, type, protocol, NULL, 0, WSA_FLAG_OVERLAPPED);
   if (client == INVALID_SOCKET)
     goto fail_wsa;
 
