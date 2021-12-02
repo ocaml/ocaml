@@ -230,6 +230,7 @@ end) = struct
     fuel: int ref;
     global_env: Params.env;
     local_env: local_env;
+    memo_table: (strategy * local_env * t, local_env * t) Hashtbl.t;
   }
 
   let bind env var shape =
@@ -362,9 +363,19 @@ end) = struct
     let (_result_env, normal_form) = reduce_strat Strong env t in
     normal_form
 
-  and reduce_strat strategy ({fuel; global_env; local_env; _} as env) t =
+  and reduce_strat strategy env t =
+    let {fuel = _; global_env = _; local_env; memo_table} = env in
+    let memo_key = (strategy, local_env, t) in
+    match Hashtbl.find memo_table memo_key with
+    | result -> result
+    | exception Not_found ->
+        let result = reduce_ strategy env t in
+        Hashtbl.replace memo_table memo_key result;
+        result
+
+  and reduce_ strategy ({fuel; global_env; local_env; _} as env) t =
     let reduce env t = reduce_strat strategy env t in
-    let return t = local_env, t in
+    let return nf = local_env, nf in
     if !fuel < 0 then
       return t
     else
@@ -441,8 +452,9 @@ end) = struct
 
   let reduce global_env t =
     let fuel = ref Params.fuel in
+    let memo_table = Hashtbl.create 42 in
     let local_env = Ident.empty in
-    let env = { fuel; global_env; local_env} in
+    let env = { fuel; global_env; memo_table; local_env} in
     reduce_strong env t
 end
 
