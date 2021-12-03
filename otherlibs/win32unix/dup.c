@@ -37,7 +37,7 @@ static HANDLE duplicate_handle(BOOL inherit, HANDLE oldh)
 static SOCKET duplicate_socket(BOOL inherit, SOCKET oldsock)
 {
   WSAPROTOCOL_INFO info;
-  SOCKET newsock;
+
   if (SOCKET_ERROR == WSADuplicateSocket(oldsock,
                                          GetCurrentProcessId(),
                                          &info)) {
@@ -45,13 +45,8 @@ static SOCKET duplicate_socket(BOOL inherit, SOCKET oldsock)
     return INVALID_SOCKET;
   }
 
-  newsock = WSASocket(info.iAddressFamily, info.iSocketType, info.iProtocol,
-                      &info, 0, WSA_FLAG_OVERLAPPED);
-  if (INVALID_SOCKET == newsock)
-    win32_maperr(WSAGetLastError());
-  else
-    win_set_inherit((HANDLE) newsock, inherit);
-  return newsock;
+  return win32_socket(info.iAddressFamily, info.iSocketType, info.iProtocol,
+                      &info, inherit);
 }
 
 CAMLprim value unix_dup(value cloexec, value fd)
