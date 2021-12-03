@@ -76,16 +76,31 @@ let read_clflags_from_env () =
   set_from_env Clflags.error_style Clflags.error_style_reader;
   ()
 
+let rec make_directory dir =
+  if Sys.file_exists dir then () else
+    begin
+      make_directory (Filename.dirname dir);
+      Sys.mkdir dir 0o777
+    end
+
 let with_ppf_dump ~file_prefix f =
+  let with_ch ch =
+    let ppf = Format.formatter_of_out_channel ch in
+    ppf,
+    (fun () ->
+       Format.pp_print_flush ppf ();
+       close_out ch)
+  in
   let ppf_dump, finally =
-    if not !Clflags.dump_into_file
-    then Format.err_formatter, ignore
-    else
-       let ch = open_out (file_prefix ^ ".dump") in
-       let ppf = Format.formatter_of_out_channel ch in
-       ppf,
-       (fun () ->
-         Format.pp_print_flush ppf ();
-         close_out ch)
+    match !Clflags.dump_dir, !Clflags.dump_into_file with
+    | None, false -> Format.err_formatter, ignore
+    | None, true -> with_ch (open_out (file_prefix ^ ".dump"))
+    | Some d, _ ->
+        let () = make_directory Filename.(dirname @@ concat d @@ file_prefix) in
+        let _, ch =
+          Filename.open_temp_file ~temp_dir:d (file_prefix ^ ".")  ".dump"
+        in
+        with_ch ch
+
   in
   Misc.try_finally (fun () -> f ppf_dump) ~always:finally

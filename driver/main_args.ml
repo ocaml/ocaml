@@ -708,6 +708,11 @@ let mk_dump_into_file f =
   "-dump-into-file", Arg.Unit f, " dump output like -dlambda into <target>.dump"
 ;;
 
+let mk_dump_dir f =
+  "-dump-dir", Arg.String f,
+  "<dir> dump output like -dlambda into <dir>/<target>.dump"
+;;
+
 let mk_dparsetree f =
   "-dparsetree", Arg.Unit f, " (undocumented)"
 ;;
@@ -1012,6 +1017,7 @@ module type Compiler_options = sig
   val _dtimings : unit -> unit
   val _dprofile : unit -> unit
   val _dump_into_file : unit -> unit
+  val _dump_dir : string -> unit
 
   val _args: string -> string array
   val _args0: string -> string array
@@ -1262,6 +1268,7 @@ struct
     mk_dtimings F._dtimings;
     mk_dprofile F._dprofile;
     mk_dump_into_file F._dump_into_file;
+    mk_dump_dir F._dump_dir;
 
     mk_args F._args;
     mk_args0 F._args0;
@@ -1485,6 +1492,7 @@ struct
     mk_dtimings F._dtimings;
     mk_dprofile F._dprofile;
     mk_dump_into_file F._dump_into_file;
+    mk_dump_dir F._dump_dir;
     mk_dump_pass F._dump_pass;
 
     mk_args F._args;
@@ -1866,6 +1874,7 @@ module Default = struct
     let _dprofile () = profile_columns := Profile.all_columns
     let _dtimings () = profile_columns := [`Time]
     let _dump_into_file = set dump_into_file
+    let _dump_dir s = dump_dir := Some s
     let _for_pack s = for_package := (Some s)
     let _g = set debug
     let _i = set print_types
