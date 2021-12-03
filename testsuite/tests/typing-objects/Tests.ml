@@ -1316,3 +1316,16 @@ let () = (new c)#test
 [%%expect {|
 class c : object method test : unit end
 |}];;
+
+class foo =
+  object
+    method private f (b : bool) = b
+    inherit object
+      method f (b : bool) = b
+    end
+  end
+let _ = (new foo)#f true
+[%%expect {|
+class foo : object method f : bool -> bool end
+- : bool = true
+|}];;
