@@ -73,9 +73,16 @@ struct caml_intern_state {
   /* The pointers to objects already seen */
 
   struct intern_item intern_stack_init[INTERN_STACK_INIT_SIZE];
+  /* The initial intern stack */
 
   struct intern_item * intern_stack;
+  /* Initially points to [intern_stack_init] */
+
   struct intern_item * intern_stack_limit;
+
+  header_t * intern_dest;
+  /* Writing pointer in destination block. Only used when the object fits in
+     the minor heap. */
 };
 
 /* Allocates the domain local intern state if needed */
@@ -97,6 +104,7 @@ struct caml_intern_state* get_intern_state ()
   s->intern_obj_table = NULL;
   s->intern_stack = s->intern_stack_init;
   s->intern_stack_limit = s->intern_stack + INTERN_STACK_INIT_SIZE;
+  s->intern_dest = NULL;
 
   Caml_state->intern_state = s;
   return s;
@@ -208,6 +216,7 @@ static void intern_cleanup(struct caml_intern_state* s)
     caml_stat_free(s->intern_obj_table);
     s->intern_obj_table = NULL;
   }
+  s->intern_dest = NULL;
   /* free the recursion stack */
   intern_free_stack(s);
 }
@@ -328,16 +337,22 @@ static struct intern_item * intern_resize_stack(struct caml_intern_state* s,
 static void intern_alloc(struct caml_intern_state* s,
                          mlsize_t whsize, mlsize_t num_objects)
 {
-  //mlsize_t wosize;
+  mlsize_t wosize;
+  value v;
 
   if (whsize == 0) {
     CAMLassert (s->intern_obj_table == NULL);
     return;
   }
-  //wosize = Wosize_whsize(whsize);
+  wosize = Wosize_whsize(whsize);
 
-  //TODO KC: Alloc in minor heap
-
+  if (wosize <= Max_young_wosize && wosize != 0) {
+    Alloc_small(v, wosize, String_tag,
+                { caml_handle_gc_interrupt_no_async_exceptions(); } );
+    s->intern_dest = (header_t *) Hp_val(v);
+  } else {
+    CAMLassert (s->intern_dest == NULL);
+  }
   s->obj_counter = 0;
   if (num_objects > 0) {
     s->intern_obj_table =
@@ -353,16 +368,23 @@ static void intern_alloc(struct caml_intern_state* s,
   return;
 }
 
-static value intern_alloc_obj(caml_domain_state* d, mlsize_t wosize,
-                              tag_t tag)
+static value intern_alloc_obj(struct caml_intern_state* s, caml_domain_state* d,
+                              mlsize_t wosize, tag_t tag)
 {
-  void* p = caml_shared_try_alloc(d->shared_heap, wosize, tag,
-                                  0 /* not pinned */);
-  d->allocated_words += Whsize_wosize(wosize);
-  if (p == NULL) {
-    caml_raise_out_of_memory();
+  void* p;
+
+  if (s->intern_dest) {
+    p = s->intern_dest;
+    *s->intern_dest = Make_header (wosize, tag, 0);
+    s->intern_dest += 1 + wosize;
+  } else {
+    p = caml_shared_try_alloc(d->shared_heap, wosize, tag, 0 /* not pinned */);
+    d->allocated_words += Whsize_wosize(wosize);
+    if (p == NULL) {
+      caml_raise_out_of_memory();
+    }
+    Hd_hp(p) = Make_header (wosize, tag, global.MARKED);
   }
-  Hd_hp(p) = Make_header (wosize, tag, global.MARKED);
   return Val_hp(p);
 }
 
@@ -421,7 +443,7 @@ static void intern_rec(struct caml_intern_state* s,
       if (size == 0) {
         v = Atom(tag);
       } else {
-        v = intern_alloc_obj (d, size, tag);
+        v = intern_alloc_obj (s, d, size, tag);
         if (s->intern_obj_table != NULL)
           s->intern_obj_table[s->obj_counter++] = v;
         /* For objects, we need to freshen the oid */
@@ -450,7 +472,7 @@ static void intern_rec(struct caml_intern_state* s,
       len = (code & 0x1F);
     read_string:
       size = (len + sizeof(value)) / sizeof(value);
-      v = intern_alloc_obj (d, size, String_tag);
+      v = intern_alloc_obj (s, d, size, String_tag);
       if (s->intern_obj_table != NULL)
         s->intern_obj_table[s->obj_counter++] = v;
       Field(v, size - 1) = 0;
@@ -521,7 +543,7 @@ static void intern_rec(struct caml_intern_state* s,
 #endif
       case CODE_DOUBLE_LITTLE:
       case CODE_DOUBLE_BIG:
-        v = intern_alloc_obj (d, Double_wosize, Double_tag);
+        v = intern_alloc_obj (s, d, Double_wosize, Double_tag);
         if (s->intern_obj_table != NULL)
           s->intern_obj_table[s->obj_counter++] = v;
         readfloat(s, (double *) v, code);
@@ -531,7 +553,7 @@ static void intern_rec(struct caml_intern_state* s,
         len = read8u(s);
       read_double_array:
         size = len * Double_wosize;
-        v = intern_alloc_obj (d, size, Double_array_tag);
+        v = intern_alloc_obj (s, d, size, Double_array_tag);
         if (s->intern_obj_table != NULL)
           s->intern_obj_table[s->obj_counter++] = v;
         readfloats(s, (double *) v, len, code);
@@ -602,7 +624,7 @@ static void intern_rec(struct caml_intern_state* s,
           s->intern_src += 8;
         }
 #endif
-        v = intern_alloc_obj(d, expected_size, Custom_tag);
+        v = intern_alloc_obj(s, d, expected_size, Custom_tag);
         Custom_ops_val(v) = ops;
         size = ops->deserialize(Data_custom_val(v));
         if (size != expected_size) {
@@ -760,9 +782,9 @@ CAMLprim value caml_input_value(value vchan)
 
 /* Reading from memory-resident blocks */
 
+/* XXX KC: Unused primitive. Remove with boostrap. */
 CAMLprim value caml_input_value_to_outside_heap(value vchan)
 {
-  /* XXX KC: outside_heap is ignored */
   return caml_input_value(vchan);
 }
 
