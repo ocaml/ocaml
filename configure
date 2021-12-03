@@ -14170,6 +14170,8 @@ if test x"$supports_shared_libraries" = 'xtrue'; then :
     natdynlink=true ;; #(
   i[3456]86-*-haiku*) :
     natdynlink=true ;; #(
+  x86_64-*-haiku*) :
+    natdynlink=true ;; #(
   arm*-*-linux*) :
     natdynlink=true ;; #(
   arm*-*-freebsd*) :
