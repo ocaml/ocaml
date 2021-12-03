@@ -371,7 +371,7 @@ static void caml_thread_initialize_domain()
     (caml_thread_t) caml_stat_alloc_noexc(sizeof(struct caml_thread_struct));
 
   if (new_thread == NULL)
-    caml_raise_out_of_memory();
+    caml_fatal_error("could not allocate initial thread descriptor");
 
   new_thread->descr = caml_thread_new_descriptor(Val_unit);
   new_thread->next = new_thread;
