@@ -418,10 +418,7 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
       goto create_extern_state_failure;
     }
 
-    domain_state->intern_state = caml_alloc_intern_state ();
-    if (domain_state->intern_state == NULL) {
-      goto create_intern_state_failure;
-    }
+    domain_state->intern_state = NULL;
 
     domain_state->current_stack =
         caml_alloc_main_stack(Stack_size / sizeof(value));
@@ -445,10 +442,7 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
     add_to_stw_domains(domain_self);
     goto domain_init_complete;
 
-  caml_free_stack(domain_state->current_stack);
 alloc_main_stack_failure:
-  caml_free_intern_state(domain_state->intern_state);
-create_intern_state_failure:
   caml_free_extern_state(domain_state->extern_state);
 create_extern_state_failure:
 create_stack_cache_failure:

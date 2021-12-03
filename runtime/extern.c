@@ -174,12 +174,11 @@ static void extern_free_stack(struct caml_extern_state* s)
 
 
 static struct extern_item * extern_resize_stack(struct caml_extern_state* s,
-                                                     struct extern_item * sp)
+                                                struct extern_item * sp)
 {
   asize_t newsize = 2 * (s->extern_stack_limit - s->extern_stack);
   asize_t sp_offset = sp - s->extern_stack;
   struct extern_item * newstack;
-  int i;
 
   if (newsize >= EXTERN_STACK_MAX_SIZE) extern_stack_overflow(s);
   newstack = caml_stat_calloc_noexc(newsize, sizeof(struct extern_item));
@@ -188,8 +187,6 @@ static struct extern_item * extern_resize_stack(struct caml_extern_state* s,
   /* Copy item from the old stack to the new stack */
   memcpy (newstack, s->extern_stack,
           sizeof(struct extern_item) * sp_offset);
-  for (i = 0; i < sp_offset; i++)
-    newstack[i] = s->extern_stack[i];
 
   /* Free to old stack if it is not the initial stack */
   if (s->extern_stack != s->extern_stack_init)
