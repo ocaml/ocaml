@@ -374,6 +374,8 @@ static value intern_alloc_obj(struct caml_intern_state* s, caml_domain_state* d,
   void* p;
 
   if (s->intern_dest) {
+    CAMLassert ((value*)s->intern_dest >= d->young_start &&
+                (value*)s->intern_dest < d->young_end);
     p = s->intern_dest;
     *s->intern_dest = Make_header (wosize, tag, 0);
     s->intern_dest += 1 + wosize;
@@ -598,7 +600,7 @@ static void intern_rec(struct caml_intern_state* s,
       case CODE_CUSTOM:
       case CODE_CUSTOM_LEN:
       case CODE_CUSTOM_FIXED: {
-        uintnat expected_size;
+        uintnat expected_size, temp_size;
         ops = caml_find_custom_operations((char *) s->intern_src);
         if (ops == NULL) {
           intern_cleanup(s);
@@ -624,7 +626,8 @@ static void intern_rec(struct caml_intern_state* s,
           s->intern_src += 8;
         }
 #endif
-        v = intern_alloc_obj(s, d, expected_size, Custom_tag);
+        temp_size = 1 + (expected_size + sizeof(value) - 1) / sizeof(value);
+        v = intern_alloc_obj(s, d, temp_size, Custom_tag);
         Custom_ops_val(v) = ops;
         size = ops->deserialize(Data_custom_val(v));
         if (size != expected_size) {
