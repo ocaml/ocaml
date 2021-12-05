@@ -111,6 +111,11 @@ module Item = struct
       Ident.name id, Sig_component_kind.Class
     let class_type id =
       Ident.name id, Sig_component_kind.Class_type
+
+    let print fmt (name, ns) =
+      Format.fprintf fmt "%S[%s]"
+        name
+        (Sig_component_kind.to_string ns)
   end
 
   include T
@@ -145,27 +150,24 @@ let print fmt =
           print_uid_opt uid
     | Leaf ->
         Format.fprintf fmt "<%a>" (Format.pp_print_option Uid.print) uid
-    | Proj (t, (name, ns)) ->
+    | Proj (t, item) ->
         begin match uid with
         | None ->
-            Format.fprintf fmt "@[%a@ .@ %S[%s]@]"
+            Format.fprintf fmt "@[%a@ .@ %a@]"
               aux t
-              name
-              (Sig_component_kind.to_string ns)
+              Item.print item
         | Some uid ->
-            Format.fprintf fmt "@[(%a@ .@ %S[%s])<%a>@]"
+            Format.fprintf fmt "@[(%a@ .@ %a)<%a>@]"
               aux t
-              name
-              (Sig_component_kind.to_string ns)
+              Item.print item
               Uid.print uid
         end
     | Comp_unit name -> Format.fprintf fmt "CU %s" name
     | Struct map ->
         let print_map fmt =
-          Item.Map.iter (fun (name, ns) t ->
-              Format.fprintf fmt "@[<hv 4>(%S, %s) ->@ %a;@]@,"
-                name
-                (Sig_component_kind.to_string ns)
+          Item.Map.iter (fun item t ->
+              Format.fprintf fmt "@[<hv 4>%a ->@ %a;@]@,"
+                Item.print item
                 aux t
             )
         in
