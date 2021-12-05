@@ -301,8 +301,16 @@ div.caml-example.toplevel div.caml-input::before{
     /* content:"#"; */ /* pre-4.11 */
     color:#888
 }
-span.number{
-    padding-right: 1ex;
+span.number, span.chapter-number {
+    padding-right: 0.5ex;
+}
+ul li .number {
+    width: 3.5ch;
+    display: inline-block;
+    text-align: right;
+}
+#sidebar .number {
+    width: 2.5ch;
 }
 span.syntax-token {
 	font-family: $font-mono;

@@ -121,8 +121,8 @@ let load_html file =
     (* Normalize non-break spaces to the utf8 \u00A0: *)
     |> Re.Str.(global_replace (regexp_string "&#XA0;") " ")
     |> Re.Str.(global_replace reg_chapter)
-      (if file = "index.html" then {|<span class="number">\3.</span>|}
-       else {|<span class="number">Chapter \3</span>|})
+      (if file = "index.html" then {|<span class="number">\3.</span> |}
+       else {|<span class="chapter-number">Chapter \3</span> |})
 
     (* I think it would be good to replace "chapter" by "tutorial" for part
        I. The problem of course is how we number chapters in the other parts. *)
@@ -134,10 +134,10 @@ let load_html file =
        unfriendly. *)
     |> Re.Str.(global_replace
                  (regexp (">[0-9]+\\.\\([0-9]+\\)" ^ preg_anyspace)))
-      {|><span class="number">\1</span>|}
+      {|><span class="number">\1</span> |}
     |> Re.Str.(global_replace
                  (regexp ("[0-9]+\\.\\([0-9]+\\(\\.[0-9]+\\)+\\)" ^ preg_anyspace)))
-      {|<span class="number">\1</span>|}
+      {|<span class="number">\1</span> |}
 
     (* The API (libref and compilerlibref directories) should be separate
        entities, to better distinguish them from the manual. *)
@@ -151,7 +151,7 @@ let load_html file =
   let html = if file = "index.html"
     then Re.Str.(global_replace
                    (regexp ("Part" ^ preg_chapter_space ^ "\\([I|V]+\\)<br>\n"))
-                   {|<span class="number">\3.</span>|} html)
+                   {|<span class="number">\3.</span> |} html)
     else html in
 
   (* Set utf8 encoding directly in the html string *)
