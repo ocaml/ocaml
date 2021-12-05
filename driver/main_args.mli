@@ -166,7 +166,7 @@ end;;
 module type Bytetop_options = sig
   include Toplevel_options
   val _dinstr : unit -> unit
-
+  val _verbose : unit -> unit
 end;;
 
 module type Optcommon_options = sig

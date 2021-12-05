@@ -344,6 +344,7 @@ let main fname =
 module Options = Main_args.Make_bytetop_options (struct
   include Main_args.Default.Topmain
   let _stdin () = (* disabled *) ()
+  let _verbose () = (* disabled *) ()
   let _args = Arg.read_arg
   let _args0 = Arg.read_arg0
   let anonymous s = main s
