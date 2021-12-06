@@ -382,7 +382,7 @@ static void caml_thread_domain_stop_hook(void) {
     }
 
     /* We should have joined on all threads */
-    Assert(Current_thread->next = NULL);
+    CAMLassert(Current_thread->next = NULL);
 
     /* another domain thread may be joining on this domain's descriptor */
     caml_threadstatus_terminate(Terminated(Current_thread->descr));
