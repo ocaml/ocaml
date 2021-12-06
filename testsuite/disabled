@@ -7,32 +7,38 @@
 
 # TODO: port the new Ephemeron C-api to multicore
 #  https://github.com/ocaml/ocaml/pull/676
-ephe-c-api
+#ephe-c-api
 
 # TODO: port stat-mem-prof
 #  https://github.com/ocaml/ocaml/pull/8634
-statmemprof
+#statmemprof
 
 # TODO: alloc async changes
 #  https://github.com/ocaml/ocaml/pull/8897
-tests/c-api/'alloc_async.ml' with 2 (bytecode)
-tests/c-api/'alloc_async.ml' with 1 (native)
+#tests/c-api/'alloc_async.ml' with 2 (bytecode)
+#tests/c-api/'alloc_async.ml' with 1 (native)
 
 # TODO: signal alloc changes
 #  https://github.com/ocaml/ocaml/pull/9027
-tests/callback/'signals_alloc.ml' with 1.1 (bytecode)
-tests/callback/'signals_alloc.ml' with 1.2 (native)
+#tests/callback/'signals_alloc.ml' with 1.1 (bytecode)
+#tests/callback/'signals_alloc.ml' with 1.2 (native)
 
+<<<<<<< HEAD
+# TODO: do we want to support the runtime naked pointer checker? (#9956)
+#runtime-naked-pointers
+
+=======
+>>>>>>> 5.00
 # TODO: not clear compatibility is sensible for multicore
-compatibility
+#compatibility
 
 # TODO: off-by-one error on MacOS+Clang (#408)
-tests/lib-threads/'beat.ml' with 1.2 (native)
-tests/lib-threads/'beat.ml' with 1.1 (bytecode)
+#tests/lib-threads/'beat.ml' with 1.2 (native)
+#tests/lib-threads/'beat.ml' with 1.1 (bytecode)
 
 # ocamldebug is broken (#34)
-tool-debugger
+#tool-debugger
 
 # instrumented runtime test is not very useful
 # (and broken on multicore.) (#9413)
-tests/instrumented-runtime/'main.ml' with 1.1 (native)
+#tests/instrumented-runtime/'main.ml' with 1.1 (native)
