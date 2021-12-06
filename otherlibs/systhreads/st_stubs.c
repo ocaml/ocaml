@@ -550,6 +550,7 @@ static ST_THREAD_FUNCTION caml_thread_start(void * arg)
 #ifdef NATIVE_CODE
   }
 #endif
+  caml_stop_stack_overflow_detection();
   /* The thread now stops running */
   return 0;
 }
