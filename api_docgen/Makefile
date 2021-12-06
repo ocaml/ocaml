@@ -15,20 +15,33 @@
 ROOTDIR = ..
 -include $(ROOTDIR)/Makefile.build_config
 
-ifeq ($(DOCUMENTATION_TOOL),odoc)
-else
-  include ocamldoc/Makefile
-endif
-
 odoc-%:
 	$(MAKE) -C odoc $* ROOTDIR=../..
 
 ocamldoc-%:
 	$(MAKE) -C ocamldoc $* ROOTDIR=../..
 
-.PHONY: clean
+ifeq ($(DOCUMENTATION_TOOL),odoc)
+man: odoc-man
+latex: odoc-latex
+html: odoc-html
+	@echo "documentation is in ./api_docgen/odoc/build/html/"
+all: html latex man
+install: odoc-install
+else
+man: ocamldoc-man
+latex: ocamldoc-latex
+html: ocamldoc-html
+	@echo "documentation is in ./api_docgen/ocamldoc/build/html/"
+texi: ocamldoc-texi
+pdf: ocamldoc-pdf
+all: html pdf man latex texi
+install: ocamldoc-install
+endif
+
 clean:
 	rm -rf build odoc/build ocamldoc/build
 
-.PHONY: distclean
 distclean: clean
+
+.PHONY: html latex man clean distclean install texi pdf

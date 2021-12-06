@@ -144,7 +144,10 @@ result by running
 make html_doc
 ----
 
-and then opening link:./api_docgen/build/html/libref/index.html[] in a web browser.
+and then opening link:./api_docgen/ocamldoc/build/html/libref/index.html[] in a web browser.
+The documentation is located in
+link:./api_docgen/odoc/build/html/libref/index.html[] when `--with-odoc` is
+passed to the configure script.
 
 === Tools
 
