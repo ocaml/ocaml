@@ -714,7 +714,8 @@ CAMLprim value caml_thread_exit(value unit)   /* ML */
 
   /* we check if another domain was ever started */
   if (caml_domain_is_multicore())
-    caml_fatal_error("Thread.exit: unsupported call under multiple domains");
+    caml_invalid_argument
+      ("Thread.exit: unsupported call under multiple domains");
 
   if (Current_thread == NULL)
     caml_invalid_argument("Thread.exit: not initialized");
