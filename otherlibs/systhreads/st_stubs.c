@@ -72,7 +72,8 @@ struct caml_thread_struct {
   struct longjmp_buffer *exit_buf;       /* For thread exit */
   int backtrace_pos;           /* saved value of Caml_state->backtrace_pos */
   code_t * backtrace_buffer;   /* saved value of Caml_state->backtrace_buffer */
-  value backtrace_last_exn;  /* saved value of Caml_state->backtrace_last_exn */
+  value backtrace_last_exn;
+    /* saved value of Caml_state->backtrace_last_exn (root) */
   value * gc_regs;           /* saved value of Caml_state->gc_regs */
   value * gc_regs_buckets;   /* saved value of Caml_state->gc_regs_buckets */
   value ** gc_regs_slot;     /* saved value of Caml_state->gc_regs_slot */
@@ -152,7 +153,7 @@ static void caml_thread_scan_roots(scanning_action action,
   if (th != NULL) {
     do {
       (*action)(fdata, th->descr, &th->descr);
-
+      (*action)(fdata, th->backtrace_last_exn, &th->backtrace_last_exn);
       if (th != Current_thread) {
         if (th->current_stack != NULL)
           caml_do_local_roots(action, fdata, th->local_roots,
@@ -180,8 +181,7 @@ void caml_thread_save_runtime_state(void)
   Current_thread->local_roots = Caml_state->local_roots;
   Current_thread->backtrace_pos = Caml_state->backtrace_pos;
   Current_thread->backtrace_buffer = Caml_state->backtrace_buffer;
-  caml_modify_generational_global_root(
-    &Current_thread->backtrace_last_exn, Caml_state->backtrace_last_exn);
+  Current_thread->backtrace_last_exn = Caml_state->backtrace_last_exn;
   #ifndef NATIVE_CODE
   Current_thread->trap_sp_off = Caml_state->trap_sp_off;
   Current_thread->trap_barrier_off = Caml_state->trap_barrier_off;
@@ -200,8 +200,7 @@ void caml_thread_restore_runtime_state(void)
   Caml_state->local_roots = Current_thread->local_roots;
   Caml_state->backtrace_pos = Current_thread->backtrace_pos;
   Caml_state->backtrace_buffer = Current_thread->backtrace_buffer;
-  caml_modify_generational_global_root(
-    &Caml_state->backtrace_last_exn, Current_thread->backtrace_last_exn);
+  Caml_state->backtrace_last_exn = Current_thread->backtrace_last_exn;
   #ifndef NATIVE_CODE
   Caml_state->trap_sp_off = Current_thread->trap_sp_off;
   Caml_state->trap_barrier_off = Current_thread->trap_barrier_off;
@@ -269,7 +268,6 @@ static caml_thread_t caml_thread_new_info(void)
   th->gc_regs_buckets = NULL;
   th->gc_regs_slot = NULL;
   th->exn_handler = NULL;
-  caml_register_generational_global_root(&th->backtrace_last_exn);
 
   #ifndef NATIVE_CODE
   th->trap_sp_off = 1;
@@ -311,7 +309,6 @@ static void caml_thread_remove_info(caml_thread_t th)
   th->next->prev = th->prev;
   th->prev->next = th->next;
   caml_free_stack(th->current_stack);
-  caml_remove_generational_global_root(&th->backtrace_last_exn);
   caml_stat_free(th);
   return;
 }
@@ -327,7 +324,6 @@ static void caml_thread_reinitialize(void)
   while (th != Current_thread) {
     next = th->next;
     caml_free_stack(th->current_stack);
-    caml_remove_generational_global_root(&th->backtrace_last_exn);
     caml_stat_free(th);
     th = next;
   }
@@ -379,7 +375,7 @@ static void caml_thread_initialize_domain()
   new_thread->descr = caml_thread_new_descriptor(Val_unit);
   new_thread->next = new_thread;
   new_thread->prev = new_thread;
-
+  new_thread->backtrace_last_exn = Val_unit;
   #ifdef NATIVE_CODE
   new_thread->exit_buf = &caml_termination_jmpbuf;
   #endif
