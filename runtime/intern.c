@@ -110,9 +110,11 @@ struct caml_intern_state* get_intern_state ()
   return s;
 }
 
-void caml_free_intern_state (struct caml_intern_state* s)
+void caml_free_intern_state ()
 {
-  caml_stat_free(s);
+  if (Caml_state->intern_state != NULL)
+    caml_stat_free(Caml_state->intern_state);
+  Caml_state->intern_state = NULL;
 }
 
 static char * intern_resolve_code_pointer(unsigned char digest[16],

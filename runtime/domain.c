@@ -1256,7 +1256,7 @@ static void domain_terminate()
   caml_domain_stop_hook();
   caml_stat_free(domain_state->ephe_info);
   caml_free_extern_state(domain_state->extern_state);
-  caml_free_intern_state(domain_state->intern_state);
+  caml_free_intern_state();
   caml_teardown_major_gc();
   CAML_EVENTLOG_TEARDOWN();
   caml_teardown_shared_heap(domain_state->shared_heap);
