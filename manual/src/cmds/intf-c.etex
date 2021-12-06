@@ -1727,8 +1727,8 @@ compilation of OCaml, as the variable "OC_LDFLAGS".
 OCaml have been compiled with the "/MD" flag, and therefore
 all other object files linked with it should also be compiled with
 "/MD".
-\item other systems: you may have to add one or more of "-lcurses",
-"-lm", "-ldl", depending on your OS and C compiler.
+\item other systems: you may have to add one or both of
+"-lm" and "-ldl", depending on your OS and C compiler.
 \end{itemize}
 
 \paragraph{Stack backtraces.}  When OCaml bytecode produced by
@@ -1778,6 +1778,12 @@ Once a runtime is unloaded, it cannot be started up again without reloading the
 shared library and reinitializing its static data. Therefore, at the moment, the
 facility is only useful for building reloadable shared libraries.
 
+\paragraph{Unix signal handling.}  Depending on the target platform and
+operating system, the native-code runtime system may install signal
+handlers for one or several of the "SIGSEGV", "SIGTRAP" and "SIGFPE"
+signals when "caml_startup" is called, and reset these signals to
+their default behaviors when "caml_shutdown" is called.  The main
+program written in~C should not try to handle these signals itself.
 
 \section{s:c-advexample}{Advanced example with callbacks}
 
