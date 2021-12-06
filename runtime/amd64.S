@@ -485,6 +485,7 @@ ENDFUNCTION(G(caml_call_realloc_stack))
 
 FUNCTION(G(caml_call_gc))
 CFI_STARTPROC
+        CFI_SIGNAL_FRAME
 LBL(caml_call_gc):
         SAVE_ALL_REGS
         movq    %r15, Caml_state(gc_regs)
@@ -499,7 +500,6 @@ ENDFUNCTION(G(caml_call_gc))
 
 FUNCTION(G(caml_alloc1))
 CFI_STARTPROC
-LBL(caml_alloc1):
         subq    $16, %r15
         cmpq    Caml_state(young_limit), %r15
         jb      LBL(caml_call_gc)
@@ -509,7 +509,6 @@ ENDFUNCTION(G(caml_alloc1))
 
 FUNCTION(G(caml_alloc2))
 CFI_STARTPROC
-LBL(caml_alloc2):
         subq    $24, %r15
         cmpq    Caml_state(young_limit), %r15
         jb      LBL(caml_call_gc)
@@ -519,7 +518,6 @@ ENDFUNCTION(G(caml_alloc2))
 
 FUNCTION(G(caml_alloc3))
 CFI_STARTPROC
-LBL(caml_alloc3):
         subq    $32, %r15
         cmpq    Caml_state(young_limit), %r15
         jb      LBL(caml_call_gc)
@@ -529,8 +527,6 @@ ENDFUNCTION(G(caml_alloc3))
 
 FUNCTION(G(caml_allocN))
 CFI_STARTPROC
-        CFI_SIGNAL_FRAME
-LBL(caml_allocN):
         cmpq    Caml_state(young_limit), %r15
         jb      LBL(caml_call_gc)
         ret
@@ -616,10 +612,12 @@ CFI_STARTPROC
         movq    C_ARG_1, %r14
     /* Initial entry point is G(caml_program) */
         LEA_VAR(caml_program, %r12)
+#ifdef DEBUG
         movq    $0, %rax  /* dummy */
         movq    $0, %rbx  /* dummy */
         movq    $0, %rdi  /* dummy */
         movq    $0, %rsi  /* dummy */
+#endif
     /* Common code for caml_start_program and caml_callback* */
 LBL(caml_start_program):
     /* Load young_ptr into %r15 */
@@ -981,7 +979,7 @@ G(caml_system__code_end):
         .globl  G(caml_system__frametable)
         .align  EIGHT_ALIGN
 G(caml_system__frametable):
-        .quad   2           /* three descriptors */
+        .quad   2           /* two descriptors */
         .quad   LBL(108)    /* return address into callback */
         .value  -1          /* negative frame size => use callback link */
         .value  0           /* no roots here */
