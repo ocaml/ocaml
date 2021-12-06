@@ -115,6 +115,48 @@
 #define IF_DEBUG(...)
 #endif
 
+/* struct stack_info */
+#define Stack_sp                 0
+#define Stack_exception          8
+#define Stack_handler            16
+
+/* struct stack_handler */
+#define Handler_value(REG)       0(REG)
+#define Handler_exception(REG)   8(REG)
+#define Handler_effect(REG)     16(REG)
+#define Handler_parent          24
+
+/* struct c_stack_link */
+#define Cstack_stack             0
+#define Cstack_sp                8
+#define Cstack_prev             16
+
+/******************************************************************************/
+/* DWARF */
+/******************************************************************************/
+
+/* These constants are taken from:
+
+     DWARF Debugging Information Format, Version 3
+     http://dwarfstd.org/doc/Dwarf3.pdf
+
+   with the amd64-specific register numbers coming from
+   Fig. 3.36 ("DWARF Register Number Mapping") of:
+
+     System V Application Binary Interface
+     AMD64 Architecture Processor Supplement
+     Version 1.0
+     https://github.com/hjl-tools/x86-psABI/wiki/x86-64-psABI-1.0.pdf */
+
+#define DW_CFA_def_cfa_expression 0x0f
+#define DW_CFA_val_offset         0x14
+#define DW_REG_rbp                6
+#define DW_REG_rsp                7
+#define DW_REG_r13                13
+#define DW_OP_breg                0x70
+#define DW_OP_deref               0x06
+#define DW_OP_plus_uconst         0x23
+
 /******************************************************************************/
 /* Access to the current domain state block. */
 /******************************************************************************/
@@ -328,22 +370,6 @@ G(caml_hot__code_begin):
 G(caml_hot__code_end):
 #endif
 
-/* struct stack_info */
-#define Stack_sp                 0
-#define Stack_exception          8
-#define Stack_handler            16
-
-/* struct stack_handler */
-#define Handler_value(REG)       0(REG)
-#define Handler_exception(REG)   8(REG)
-#define Handler_effect(REG)     16(REG)
-#define Handler_parent          24
-
-/* struct c_stack_link */
-#define Cstack_stack             0
-#define Cstack_sp                8
-#define Cstack_prev             16
-
 /******************************************************************************/
 /* text section */
 /******************************************************************************/
@@ -353,33 +379,6 @@ G(caml_hot__code_end):
 G(caml_system__code_begin):
         ret  /* just one instruction, so that debuggers don't display
         caml_system__code_begin instead of caml_call_gc */
-
-
-/******************************************************************************/
-/* DWARF */
-/******************************************************************************/
-
-/* These constants are taken from:
-
-     DWARF Debugging Information Format, Version 3
-     http://dwarfstd.org/doc/Dwarf3.pdf
-
-   with the amd64-specific register numbers coming from
-   Fig. 3.36 ("DWARF Register Number Mapping") of:
-
-     System V Application Binary Interface
-     AMD64 Architecture Processor Supplement
-     Version 1.0
-     https://github.com/hjl-tools/x86-psABI/wiki/x86-64-psABI-1.0.pdf */
-
-#define DW_CFA_def_cfa_expression 0x0f
-#define DW_CFA_val_offset         0x14
-#define DW_REG_rbp                6
-#define DW_REG_rsp                7
-#define DW_REG_r13                13
-#define DW_OP_breg                0x70
-#define DW_OP_deref               0x06
-#define DW_OP_plus_uconst         0x23
 
 /******************************************************************************/
 /* Allocation */
