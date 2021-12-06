@@ -19,7 +19,9 @@
 #ifndef CAML_FRAME_DESCRIPTORS_H
 #define CAML_FRAME_DESCRIPTORS_H
 
-#include "caml/config.h"
+#ifdef CAML_INTERNALS
+
+#include "config.h"
 
 #define Hash_retaddr(addr, mask)                          \
   (((uintnat)(addr) >> 3) & (mask))
@@ -59,5 +61,11 @@ caml_frame_descrs caml_get_frame_descrs(void);
 /* Find the current table of frame descriptors.
    The resulting structure is only valid until the next GC */
 frame_descr* caml_find_frame_descr(caml_frame_descrs fds, uintnat pc);
+
+
+frame_descr * caml_next_frame_descriptor
+    (caml_frame_descrs fds, uintnat * pc, char ** sp, struct stack_info* stack);
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_FRAME_DESCRIPTORS_H */

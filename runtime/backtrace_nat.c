@@ -24,7 +24,7 @@
 #include "caml/alloc.h"
 #include "caml/backtrace.h"
 #include "caml/backtrace_prim.h"
-#include "frame_descriptors.h"
+#include "caml/frame_descriptors.h"
 #include "caml/stack.h"
 #include "caml/memory.h"
 #include "caml/misc.h"
@@ -34,12 +34,18 @@
 
 /* Returns the next frame descriptor (or NULL if none is available),
    and updates *pc and *sp to point to the following one.  */
-static frame_descr * caml_next_frame_descriptor(caml_frame_descrs fds, uintnat * pc, char ** sp, struct stack_info* stack)
+frame_descr * caml_next_frame_descriptor
+    (caml_frame_descrs fds, uintnat * pc, char ** sp, struct stack_info* stack)
 {
   frame_descr * d;
 
   while (1) {
     d = caml_find_frame_descr(fds, *pc);
+
+    if( d == NULL ) {
+      return NULL;
+    }
+
     /* Skip to next frame */
     if (d->frame_size != 0xFFFF) {
       /* Regular frame, update sp/pc and return the frame descriptor */
@@ -48,7 +54,8 @@ static frame_descr * caml_next_frame_descriptor(caml_frame_descrs fds, uintnat *
       return d;
     } else {
       /* This marks the top of an ML stack chunk. Move sp to the previous stack
-       * chunk. This includes skipping over the DWARF link & trap frame (4 words). */
+       chunk. This includes skipping over the DWARF link & trap frame
+       (4 words). */
       *sp += 4 * sizeof(value);
       if (*sp == (char*)Stack_high(stack)) {
         /* We've reached the top of stack. No more frames. */
@@ -82,7 +89,8 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char* trapsp)
 
   if (exn != domain_state->backtrace_last_exn) {
     domain_state->backtrace_pos = 0;
-    caml_modify_generational_global_root(&domain_state->backtrace_last_exn, exn);
+    caml_modify_generational_global_root
+      (&domain_state->backtrace_last_exn, exn);
   }
 
   if (Caml_state->backtrace_buffer == NULL &&
@@ -92,7 +100,8 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char* trapsp)
   fds = caml_get_frame_descrs();
   /* iterate on each frame  */
   while (1) {
-    frame_descr * descr = caml_next_frame_descriptor(fds, &pc, &sp, domain_state->current_stack);
+    frame_descr * descr = caml_next_frame_descriptor
+                                (fds, &pc, &sp, domain_state->current_stack);
     if (descr == NULL) return;
     /* store its descriptor in the backtrace buffer */
     if (domain_state->backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;

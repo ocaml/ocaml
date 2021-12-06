@@ -33,7 +33,7 @@
 #include "caml/startup_aux.h"
 #ifdef NATIVE_CODE
 #include "caml/stack.h"
-#include "frame_descriptors.h"
+#include "caml/frame_descriptors.h"
 #endif
 
 #ifdef DEBUG
