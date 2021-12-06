@@ -23,12 +23,6 @@
 #tests/callback/'signals_alloc.ml' with 1.1 (bytecode)
 #tests/callback/'signals_alloc.ml' with 1.2 (native)
 
-<<<<<<< HEAD
-# TODO: do we want to support the runtime naked pointer checker? (#9956)
-#runtime-naked-pointers
-
-=======
->>>>>>> 5.00
 # TODO: not clear compatibility is sensible for multicore
 #compatibility
 
