@@ -367,10 +367,7 @@ value caml_thread_initialize_domain(value v)
   st_masterlock_init(&Thread_main_lock);
 
   new_thread =
-    (caml_thread_t) caml_stat_alloc_noexc(sizeof(struct caml_thread_struct));
-
-  if (new_thread == NULL)
-    caml_raise_out_of_memory();
+    (caml_thread_t) caml_stat_alloc(sizeof(struct caml_thread_struct));
 
   new_thread->descr = caml_thread_new_descriptor(Val_unit);
   new_thread->next = new_thread;
