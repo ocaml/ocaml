@@ -103,7 +103,7 @@ module DLS = struct
 
 end
 
-(* first spawn and at exit functionality *)
+(* first spawn, domain startup and at exit functionality *)
 let first_domain_spawned = Atomic.make false
 
 let first_spawn_function = ref (fun () -> ())
@@ -138,6 +138,17 @@ let rec at_exit f =
 
 let do_at_exit () = (Atomic.get exit_function) ()
 
+let startup_function = Atomic.make (fun () -> ())
+
+let rec at_startup f =
+  let old_startup = Atomic.get startup_function in
+  let new_startup () = f (); old_startup () in
+  let success = Atomic.compare_and_set startup_function old_startup new_startup in
+  if success then
+    ()
+  else
+    at_startup f
+
 (* Spawn and join functionality *)
 exception Retry
 let rec spin f =
@@ -152,8 +163,9 @@ let spawn f =
   do_at_first_spawn ();
   let termination_mutex = Mutex.create () in
   let state = Atomic.make Running in
+  let at_startup = Atomic.get startup_function in
   let body () =
-    let result = match DLS.create_dls (); f () with
+    let result = match DLS.create_dls (); at_startup (); f () with
       | x -> Ok x
       | exception ex -> Error ex
     in

@@ -51,6 +51,11 @@ val at_exit : (unit -> unit) -> unit
     function is also registered with {!Stdlib.at_exit}. If the registered
     function raises an exception, the exceptions are ignored. *)
 
+val at_startup : (unit -> unit) -> unit
+(** Register the given function to be called when a domain starts. This
+    function is called before the callback specified to [spawn f] is
+    executed. *)
+
 val cpu_relax : unit -> unit
 (** If busy-waiting, calling cpu_relax () between iterations
     will improve performance on some CPU architectures *)
