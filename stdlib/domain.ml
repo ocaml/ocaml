@@ -205,3 +205,5 @@ let get_id { domain; _ } = domain
 let self () = Raw.self ()
 
 external set_name : string -> unit = "caml_ml_domain_set_name"
+
+external is_main_domain : unit -> bool = "caml_ml_domain_is_main_domain"

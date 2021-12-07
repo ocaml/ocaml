@@ -1331,3 +1331,9 @@ CAMLprim value caml_ml_domain_set_name(value name)
   caml_stat_free(name_os);
   CAMLreturn(Val_unit);
 }
+
+CAMLprim value caml_ml_domain_is_main_domain(value unused)
+{
+  CAMLnoalloc;
+  return Caml_state->id == 0 ? Val_true : Val_false;
+}

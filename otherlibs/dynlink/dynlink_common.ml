@@ -20,6 +20,14 @@
 
 open! Dynlink_compilerlibs
 
+(* Dynlink is only allowed on the main domain.
+   Entrypoints to public functions should check for this. *)
+let is_dynlink_allowed () =
+  if not (Domain.is_main_domain ()) then
+    failwith "Dynlink can only be called from the main domain."
+  else
+    ()
+
 module String = struct
   include Misc.Stdlib.String
 
@@ -79,6 +87,7 @@ module Make (P : Dynlink_platform_intf.S) = struct
   let unsafe_allowed = ref false
 
   let allow_unsafe_modules b =
+    is_dynlink_allowed();
     unsafe_allowed := b
 
   let check_symbols_disjoint ~descr syms1 syms2 =
@@ -137,6 +146,7 @@ module Make (P : Dynlink_platform_intf.S) = struct
     global_state := state
 
   let init () =
+    is_dynlink_allowed();
     if not !inited then begin
       P.init ();
       default_available_units ();
@@ -270,6 +280,7 @@ module Make (P : Dynlink_platform_intf.S) = struct
     end
 
   let set_allowed_units allowed_units =
+    is_dynlink_allowed();
     let allowed_units = String.Set.of_list allowed_units in
     let state =
       let state = !global_state in
@@ -280,6 +291,7 @@ module Make (P : Dynlink_platform_intf.S) = struct
     global_state := state
 
   let allow_only units =
+    is_dynlink_allowed();
     let allowed_units =
       String.Set.inter (!global_state).allowed_units
         (String.Set.of_list units)
@@ -293,6 +305,7 @@ module Make (P : Dynlink_platform_intf.S) = struct
     global_state := state
 
   let prohibit units =
+    is_dynlink_allowed();
     let allowed_units =
       String.Set.diff (!global_state).allowed_units
         (String.Set.of_list units)
