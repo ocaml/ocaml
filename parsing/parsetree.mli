@@ -804,6 +804,7 @@ and module_substitution =
      pms_attributes: attributes; (* ... [@@id1] [@@id2] *)
      pms_loc: Location.t;
     }
+(* S := M *)
 
 and module_type_declaration =
     {
