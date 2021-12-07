@@ -12,14 +12,15 @@
 #*   special exception on linking described in the file LICENSE.          *
 #*                                                                        *
 #**************************************************************************
+# Used by included Makefiles
 ROOTDIR = ..
--include $(ROOTDIR)/Makefile.build_config
+-include ../Makefile.build_config
 
 odoc-%:
-	$(MAKE) -C odoc $* ROOTDIR=../..
+	$(MAKE) -C odoc $*
 
 ocamldoc-%:
-	$(MAKE) -C ocamldoc $* ROOTDIR=../..
+	$(MAKE) -C ocamldoc $*
 
 ifeq ($(DOCUMENTATION_TOOL),odoc)
 man: odoc-man

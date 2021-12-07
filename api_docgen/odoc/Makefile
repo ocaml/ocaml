@@ -12,10 +12,14 @@
 #*   special exception on linking described in the file LICENSE.          *
 #*                                                                        *
 #**************************************************************************
-include $(ROOTDIR)/api_docgen/Makefile.common
 
-vpath %.cmti $(ROOTDIR)/stdlib $(DOC_COMPILERLIBS_DIRS) $(DOC_STDLIB_DIRS)
-vpath %.cmt $(ROOTDIR)/stdlib
+# Used by included Makefiles
+ROOTDIR = ../..
+
+include ../Makefile.common
+
+vpath %.cmti ../../stdlib $(DOC_COMPILERLIBS_DIRS) $(DOC_STDLIB_DIRS)
+vpath %.cmt ../../stdlib
 
 ifeq ($(DOCUMENTATION_TOOL),odoc)
   odoc ?= $(DOCUMENTATION_TOOL_CMD)
