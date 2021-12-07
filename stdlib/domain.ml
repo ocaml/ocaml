@@ -143,7 +143,9 @@ let startup_function = Atomic.make (fun () -> ())
 let rec at_startup f =
   let old_startup = Atomic.get startup_function in
   let new_startup () = f (); old_startup () in
-  let success = Atomic.compare_and_set startup_function old_startup new_startup in
+  let success =
+    Atomic.compare_and_set startup_function old_startup new_startup
+  in
   if success then
     ()
   else
