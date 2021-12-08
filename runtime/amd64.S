@@ -115,6 +115,48 @@
 #define IF_DEBUG(...)
 #endif
 
+/* struct stack_info */
+#define Stack_sp                 0
+#define Stack_exception          8
+#define Stack_handler            16
+
+/* struct stack_handler */
+#define Handler_value(REG)       0(REG)
+#define Handler_exception(REG)   8(REG)
+#define Handler_effect(REG)     16(REG)
+#define Handler_parent          24
+
+/* struct c_stack_link */
+#define Cstack_stack             0
+#define Cstack_sp                8
+#define Cstack_prev             16
+
+/******************************************************************************/
+/* DWARF */
+/******************************************************************************/
+
+/* These constants are taken from:
+
+     DWARF Debugging Information Format, Version 3
+     http://dwarfstd.org/doc/Dwarf3.pdf
+
+   with the amd64-specific register numbers coming from
+   Fig. 3.36 ("DWARF Register Number Mapping") of:
+
+     System V Application Binary Interface
+     AMD64 Architecture Processor Supplement
+     Version 1.0
+     https://github.com/hjl-tools/x86-psABI/wiki/x86-64-psABI-1.0.pdf */
+
+#define DW_CFA_def_cfa_expression 0x0f
+#define DW_CFA_val_offset         0x14
+#define DW_REG_rbp                6
+#define DW_REG_rsp                7
+#define DW_REG_r13                13
+#define DW_OP_breg                0x70
+#define DW_OP_deref               0x06
+#define DW_OP_plus_uconst         0x23
+
 /******************************************************************************/
 /* Access to the current domain state block. */
 /******************************************************************************/
@@ -328,22 +370,6 @@ G(caml_hot__code_begin):
 G(caml_hot__code_end):
 #endif
 
-/* struct stack_info */
-#define Stack_sp                 0
-#define Stack_exception          8
-#define Stack_handler            16
-
-/* struct stack_handler */
-#define Handler_value(REG)       0(REG)
-#define Handler_exception(REG)   8(REG)
-#define Handler_effect(REG)     16(REG)
-#define Handler_parent          24
-
-/* struct c_stack_link */
-#define Cstack_stack             0
-#define Cstack_sp                8
-#define Cstack_prev             16
-
 /******************************************************************************/
 /* text section */
 /******************************************************************************/
@@ -353,33 +379,6 @@ G(caml_hot__code_end):
 G(caml_system__code_begin):
         ret  /* just one instruction, so that debuggers don't display
         caml_system__code_begin instead of caml_call_gc */
-
-
-/******************************************************************************/
-/* DWARF */
-/******************************************************************************/
-
-/* These constants are taken from:
-
-     DWARF Debugging Information Format, Version 3
-     http://dwarfstd.org/doc/Dwarf3.pdf
-
-   with the amd64-specific register numbers coming from
-   Fig. 3.36 ("DWARF Register Number Mapping") of:
-
-     System V Application Binary Interface
-     AMD64 Architecture Processor Supplement
-     Version 1.0
-     https://github.com/hjl-tools/x86-psABI/wiki/x86-64-psABI-1.0.pdf */
-
-#define DW_CFA_def_cfa_expression 0x0f
-#define DW_CFA_val_offset         0x14
-#define DW_REG_rbp                6
-#define DW_REG_rsp                7
-#define DW_REG_r13                13
-#define DW_OP_breg                0x70
-#define DW_OP_deref               0x06
-#define DW_OP_plus_uconst         0x23
 
 /******************************************************************************/
 /* Allocation */
@@ -485,6 +484,7 @@ ENDFUNCTION(G(caml_call_realloc_stack))
 
 FUNCTION(G(caml_call_gc))
 CFI_STARTPROC
+        CFI_SIGNAL_FRAME
 LBL(caml_call_gc):
         SAVE_ALL_REGS
         movq    %r15, Caml_state(gc_regs)
@@ -499,7 +499,6 @@ ENDFUNCTION(G(caml_call_gc))
 
 FUNCTION(G(caml_alloc1))
 CFI_STARTPROC
-LBL(caml_alloc1):
         subq    $16, %r15
         cmpq    Caml_state(young_limit), %r15
         jb      LBL(caml_call_gc)
@@ -509,7 +508,6 @@ ENDFUNCTION(G(caml_alloc1))
 
 FUNCTION(G(caml_alloc2))
 CFI_STARTPROC
-LBL(caml_alloc2):
         subq    $24, %r15
         cmpq    Caml_state(young_limit), %r15
         jb      LBL(caml_call_gc)
@@ -519,7 +517,6 @@ ENDFUNCTION(G(caml_alloc2))
 
 FUNCTION(G(caml_alloc3))
 CFI_STARTPROC
-LBL(caml_alloc3):
         subq    $32, %r15
         cmpq    Caml_state(young_limit), %r15
         jb      LBL(caml_call_gc)
@@ -529,8 +526,6 @@ ENDFUNCTION(G(caml_alloc3))
 
 FUNCTION(G(caml_allocN))
 CFI_STARTPROC
-        CFI_SIGNAL_FRAME
-LBL(caml_allocN):
         cmpq    Caml_state(young_limit), %r15
         jb      LBL(caml_call_gc)
         ret
@@ -616,10 +611,12 @@ CFI_STARTPROC
         movq    C_ARG_1, %r14
     /* Initial entry point is G(caml_program) */
         LEA_VAR(caml_program, %r12)
+#ifdef DEBUG
         movq    $0, %rax  /* dummy */
         movq    $0, %rbx  /* dummy */
         movq    $0, %rdi  /* dummy */
         movq    $0, %rsi  /* dummy */
+#endif
     /* Common code for caml_start_program and caml_callback* */
 LBL(caml_start_program):
     /* Load young_ptr into %r15 */
@@ -981,7 +978,7 @@ G(caml_system__code_end):
         .globl  G(caml_system__frametable)
         .align  EIGHT_ALIGN
 G(caml_system__frametable):
-        .quad   2           /* three descriptors */
+        .quad   2           /* two descriptors */
         .quad   LBL(108)    /* return address into callback */
         .value  -1          /* negative frame size => use callback link */
         .value  0           /* no roots here */
