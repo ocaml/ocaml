@@ -364,8 +364,6 @@ CAMLprim value caml_thread_join(value th);
 /* If a program is single-domain, we mimic trunk's behavior and do not */
 /* care about ongoing thread: the program will exit. */
 static void caml_thread_domain_stop_hook(void) {
-  caml_thread_t th, next;
-
   /* If the program runs multiple domains, we should not let */
   /* systhreads to hang around when a domain exit. */
   /* If the domain is not the last one (and the last one will always */
@@ -373,16 +371,9 @@ static void caml_thread_domain_stop_hook(void) {
   /* in the chaining before wrapping up, */
   if (!caml_domain_alone()) {
 
-    th = Current_thread->next;
-
-    while (th != Current_thread) {
-      next = th->next;
-      caml_thread_join(th->descr);
-      th = next;
+    while (Current_thread->next != Current_thread) {
+      caml_thread_join(Current_thread->next->descr);
     }
-
-    /* We should have joined on all threads */
-    CAMLassert(Current_thread->next = NULL);
 
     /* another domain thread may be joining on this domain's descriptor */
     caml_threadstatus_terminate(Terminated(Current_thread->descr));
