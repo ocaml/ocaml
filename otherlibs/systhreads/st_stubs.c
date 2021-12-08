@@ -84,6 +84,9 @@ struct caml_thread_struct {
   struct caml_exception_context* external_raise;
 #endif
 
+#ifdef POSIX_SIGNALS
+  sigset_t init_mask;
+#endif
 };
 
 typedef struct caml_thread_struct* caml_thread_t;
@@ -498,6 +501,12 @@ static void * caml_thread_start(void * v)
 
   st_thread_set_id(Ident(th->descr));
 
+#ifdef POSIX_SIGNALS
+  /* restore the signal mask from the spawning thread, now it is safe for the
+     signal handler to run (as Caml_state is initialised) */
+  pthread_sigmask(SIG_SETMASK, &th->init_mask, NULL);
+#endif
+
 #ifdef NATIVE_CODE
   /* Setup termination handler (for caml_thread_exit) */
   if (sigsetjmp(termination_buf.buf, 0) == 0) {
@@ -510,28 +519,29 @@ static void * caml_thread_start(void * v)
 #ifdef NATIVE_CODE
   }
 #endif
+
   return 0;
 }
 
 static int create_tick_thread()
 {
   int err;
-  #ifdef POSIX_SIGNALS
+#ifdef POSIX_SIGNALS
   sigset_t mask, old_mask;
 
   /* Block all signals so that we don't try to execute an OCaml signal
      handler in the new tick thread */
   sigfillset(&mask);
   pthread_sigmask(SIG_BLOCK, &mask, &old_mask);
-  #endif
+#endif
 
   err = st_thread_create(&Tick_thread_id,
                            caml_thread_tick,
                            (void *) &Caml_state->id);
 
-  #ifdef POSIX_SIGNALS
+#ifdef POSIX_SIGNALS
   pthread_sigmask(SIG_SETMASK, &old_mask, NULL);
-  #endif
+#endif
 
   return err;
 }
@@ -541,6 +551,12 @@ CAMLprim value caml_thread_new(value clos)          /* ML */
   CAMLparam1(clos);
   caml_thread_t th;
   st_retcode err;
+#ifdef POSIX_SIGNALS
+  sigset_t mask, old_mask;
+
+  sigfillset(&mask);
+  pthread_sigmask(SIG_BLOCK, &mask, &old_mask);
+#endif
 
 #ifndef NATIVE_CODE
   if (caml_debugger_in_use)
@@ -554,6 +570,10 @@ CAMLprim value caml_thread_new(value clos)          /* ML */
 
   th->descr = caml_thread_new_descriptor(clos);
 
+#ifdef POSIX_SIGNALS
+  th->init_mask = mask;
+#endif
+
   th->next = Current_thread->next;
   th->prev = Current_thread;
 
@@ -561,6 +581,12 @@ CAMLprim value caml_thread_new(value clos)          /* ML */
   Current_thread->next = th;
 
   err = st_thread_create(NULL, caml_thread_start, (void *) th);
+
+#ifdef POSIX_SIGNALS
+  /* regardless of error, return our sigmask to the original state */
+  pthread_sigmask(SIG_SETMASK, &old_mask, NULL);
+#endif
+
   if (err != 0) {
     /* Creation failed, remove thread info block from list of threads */
     caml_thread_remove_info(th);
