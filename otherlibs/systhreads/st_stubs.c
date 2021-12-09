@@ -32,9 +32,7 @@
 #include "caml/signals.h"
 #include "caml/sys.h"
 #include "caml/memprof.h"
-
-/* threads.h is *not* included since it contains the _external_ declarations for
-   the caml_c_thread_register and caml_c_thread_unregister functions. */
+#include "threads.h"
 
 /* Max computation time before rescheduling, in milliseconds */
 #define Thread_timeout 50
@@ -79,12 +77,12 @@ struct caml_thread_struct {
   value ** gc_regs_slot;     /* saved value of Caml_state->gc_regs_slot */
   void * exn_handler;        /* saved value of Caml_state->exn_handler */
 
-  #ifndef NATIVE_CODE
+#ifndef NATIVE_CODE
   intnat trap_sp_off;      /* saved value of Caml_state->trap_sp_off */
   intnat trap_barrier_off; /* saved value of Caml_state->trap_barrier_off */
   /* saved value of Caml_state->external_raise */
   struct caml_exception_context* external_raise;
-  #endif
+#endif
 
 };
 
@@ -182,11 +180,11 @@ void caml_thread_save_runtime_state(void)
   Current_thread->backtrace_pos = Caml_state->backtrace_pos;
   Current_thread->backtrace_buffer = Caml_state->backtrace_buffer;
   Current_thread->backtrace_last_exn = Caml_state->backtrace_last_exn;
-  #ifndef NATIVE_CODE
+#ifndef NATIVE_CODE
   Current_thread->trap_sp_off = Caml_state->trap_sp_off;
   Current_thread->trap_barrier_off = Caml_state->trap_barrier_off;
   Current_thread->external_raise = Caml_state->external_raise;
-  #endif
+#endif
 }
 
 void caml_thread_restore_runtime_state(void)
@@ -201,11 +199,11 @@ void caml_thread_restore_runtime_state(void)
   Caml_state->backtrace_pos = Current_thread->backtrace_pos;
   Caml_state->backtrace_buffer = Current_thread->backtrace_buffer;
   Caml_state->backtrace_last_exn = Current_thread->backtrace_last_exn;
-  #ifndef NATIVE_CODE
+#ifndef NATIVE_CODE
   Caml_state->trap_sp_off = Current_thread->trap_sp_off;
   Caml_state->trap_barrier_off = Current_thread->trap_barrier_off;
   Caml_state->external_raise = Current_thread->external_raise;
-  #endif
+#endif
 }
 
 /* Hooks for caml_enter_blocking_section and caml_leave_blocking_section */
@@ -258,6 +256,10 @@ static caml_thread_t caml_thread_new_info(void)
   th->prev = NULL;
   th->domain_id = domain_state->id;
   th->current_stack = caml_alloc_main_stack(Stack_size / sizeof(value));;
+  if (th->current_stack == NULL) {
+    caml_stat_free(th);
+    return NULL;
+  }
   th->c_stack = NULL;
   th->local_roots = NULL;
   th->exit_buf = NULL;
@@ -269,11 +271,11 @@ static caml_thread_t caml_thread_new_info(void)
   th->gc_regs_slot = NULL;
   th->exn_handler = NULL;
 
-  #ifndef NATIVE_CODE
+#ifndef NATIVE_CODE
   th->trap_sp_off = 1;
   th->trap_barrier_off = 2;
   th->external_raise = NULL;
-  #endif
+#endif
 
   return th;
 }
@@ -342,14 +344,7 @@ static void caml_thread_reinitialize(void)
 }
 
 CAMLprim value caml_thread_initialize(value unit);
-static void caml_thread_initialize_domain();
-
-/* To initialize the thread machinery on a newly created domain. */
-/* FIXME(engil): it may be better to just initialize the machinery for every */
-/* domain at startup */
-static void caml_thread_domain_start_hook(void) {
-  caml_thread_initialize_domain();
-}
+CAMLprim value caml_thread_initialize_domain(value unit);
 
 static void caml_thread_domain_stop_hook(void) {
   // This hook will clean up the initial domain's thread descriptor.
@@ -360,8 +355,10 @@ static void caml_thread_domain_stop_hook(void) {
   Current_thread = NULL;
 }
 
-static void caml_thread_initialize_domain()
+value caml_thread_initialize_domain(value v)
 {
+  CAMLparam0();
+
   caml_thread_t new_thread;
 
   /* OS-specific initialization */
@@ -370,15 +367,15 @@ static void caml_thread_initialize_domain()
   st_masterlock_init(&Thread_main_lock);
 
   new_thread =
-    (caml_thread_t) caml_stat_alloc_noexc(sizeof(struct caml_thread_struct));
+    (caml_thread_t) caml_stat_alloc(sizeof(struct caml_thread_struct));
 
   new_thread->descr = caml_thread_new_descriptor(Val_unit);
   new_thread->next = new_thread;
   new_thread->prev = new_thread;
   new_thread->backtrace_last_exn = Val_unit;
-  #ifdef NATIVE_CODE
+#ifdef NATIVE_CODE
   new_thread->exit_buf = &caml_termination_jmpbuf;
-  #endif
+#endif
 
   st_tls_newkey(&Thread_key);
   st_tls_set(Thread_key, (void *) new_thread);
@@ -388,19 +385,19 @@ static void caml_thread_initialize_domain()
   Current_thread = new_thread;
   Tick_thread_running = 0;
 
-  return;
+  CAMLreturn(Val_unit);
 }
 
 CAMLprim value caml_thread_yield(value unit);
 
 void caml_thread_interrupt_hook(void)
 {
+  uintnat is_on = 1;
   caml_domain_state *domain = Caml_state;
   atomic_uintnat* req_external_interrupt =
     (atomic_uintnat*)&domain->requested_external_interrupt;
 
-  if (atomic_load_acq(req_external_interrupt) == 1) {
-    atomic_store_rel(req_external_interrupt, 0);
+  if (atomic_compare_exchange_strong(req_external_interrupt, &is_on, 0)) {
     caml_thread_yield(Val_unit);
   }
 
@@ -416,14 +413,13 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
   CAMLparam0();
 
   // We first initialize the thread chaining.
-  caml_thread_initialize_domain();
+  caml_thread_initialize_domain(Val_unit);
 
   prev_scan_roots_hook = caml_scan_roots_hook;
   caml_scan_roots_hook = caml_thread_scan_roots;
   caml_enter_blocking_section_hook = caml_thread_enter_blocking_section;
   caml_leave_blocking_section_hook = caml_thread_leave_blocking_section;
   caml_domain_external_interrupt_hook = caml_thread_interrupt_hook;
-  caml_domain_start_hook = caml_thread_domain_start_hook;
   caml_domain_stop_hook = caml_thread_domain_stop_hook;
 
   st_atfork(caml_thread_reinitialize);
@@ -529,6 +525,10 @@ CAMLprim value caml_thread_new(value clos)          /* ML */
 #endif
   /* Create a thread info block */
   th = caml_thread_new_info();
+
+  if (th == NULL)
+    caml_raise_out_of_memory();
+
   th->descr = caml_thread_new_descriptor(clos);
 
   th->next = Current_thread->next;
