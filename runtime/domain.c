@@ -798,6 +798,9 @@ CAMLprim value caml_domain_spawn(value callback, value mutex)
     free_domain_ml_values(p.ml_values);
     caml_failwith("failed to allocate domain");
   }
+  /* When domain 0 first spawn a domain,
+     the backup thread is not active, we ensure
+     it is started here. */
   install_backup_thread(domain_self);
   CAML_EV_END(EV_DOMAIN_SPAWN);
   CAMLreturn (Val_long(p.unique_id));
