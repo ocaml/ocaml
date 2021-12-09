@@ -47,7 +47,7 @@ typedef uintnat status;
 struct global_heap_state {
   status MARKED, UNMARKED, GARBAGE;
 };
-extern struct global_heap_state global;
+extern struct global_heap_state caml_global_heap_state;
 
 /* CR mshinwell: ensure this matches [Emitaux] */
 enum {NOT_MARKABLE = 3 << 8};
@@ -61,15 +61,15 @@ Caml_inline header_t With_status_hd(header_t hd, status s) {
 }
 
 Caml_inline int is_garbage(value v) {
-  return Has_status_hd(Hd_val(v), global.GARBAGE);
+  return Has_status_hd(Hd_val(v), caml_global_heap_state.GARBAGE);
 }
 
 Caml_inline int is_unmarked(value v) {
-  return Has_status_hd(Hd_val(v), global.UNMARKED);
+  return Has_status_hd(Hd_val(v), caml_global_heap_state.UNMARKED);
 }
 
 Caml_inline int is_marked(value v) {
-  return Has_status_hd(Hd_val(v), global.MARKED);
+  return Has_status_hd(Hd_val(v), caml_global_heap_state.MARKED);
 }
 
 void caml_redarken_pool(struct pool*, scanning_action, void*);
