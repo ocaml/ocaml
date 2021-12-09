@@ -65,7 +65,7 @@ Build () {
 
 Test () {
   echo Running the testsuite
-  $MAKE -C testsuite all-enabled
+  $MAKE -C testsuite all
   cd ..
 }
 

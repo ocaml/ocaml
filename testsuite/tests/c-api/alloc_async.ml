@@ -1,5 +1,7 @@
 (* TEST
    modules = "alloc_async_stubs.c"
+   * skip
+   reason = "alloc async changes: https://github.com/ocaml/ocaml/pull/8897"
 *)
 
 external test : int ref -> unit = "stub"

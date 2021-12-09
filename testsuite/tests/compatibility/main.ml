@@ -1,9 +1,13 @@
 (* TEST
 modules = "stub.c"
 * pass
+* skip
+reason = "not clear compatibility is sensible for multicore"
 ** bytecode
 ** native
 * pass
+* skip
+reason = "not clear compatibility is sensible for multicore"
 flags = "-ccopt -DCAML_NAME_SPACE"
 ** bytecode
 ** native
