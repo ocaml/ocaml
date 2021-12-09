@@ -51,7 +51,7 @@ typedef struct large_alloc {
 CAML_STATIC_ASSERT(sizeof(large_alloc) % sizeof(value) == 0);
 #define LARGE_ALLOC_HEADER_SZ sizeof(large_alloc)
 
-struct {
+static struct {
   caml_plat_mutex lock;
   pool* free;
 
