@@ -25,7 +25,7 @@
 #include "caml/intext.h"
 #include "caml/osdeps.h"
 #include "caml/fail.h"
-#include "frame_descriptors.h"
+#include "caml/frame_descriptors.h"
 #include "caml/globroots.h"
 #include "caml/signals.h"
 

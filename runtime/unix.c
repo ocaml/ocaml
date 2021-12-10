@@ -49,6 +49,7 @@
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
 #endif
+#include <pthread.h>
 #include "caml/fail.h"
 #include "caml/memory.h"
 #include "caml/misc.h"
@@ -432,5 +433,25 @@ int caml_num_rows_fd(int fd)
     return -1;
 #else
   return -1;
+#endif
+}
+
+int caml_thread_setname(const char* name)
+{
+#ifdef __APPLE__
+  pthread_setname_np(name);
+  return 0;
+#else
+#ifdef _GNU_SOURCE
+  int ret;
+  pthread_t self = pthread_self();
+
+  ret = pthread_setname_np(self, name);
+  if (ret == ERANGE)
+    return -1;
+  return 0;
+#else /* not glibc, not apple */
+  return 0;
+#endif
 #endif
 }

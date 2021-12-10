@@ -166,7 +166,7 @@ static void spin_on_header(value v) {
 }
 
 Caml_inline header_t get_header_val(value v) {
-  header_t hd = atomic_load_explicit(Hp_atomic_val(v), memory_order_relaxed);
+  header_t hd = atomic_load_explicit(Hp_atomic_val(v), memory_order_acquire);
   if (!Is_update_in_progress(hd))
     return hd;
 

@@ -97,8 +97,8 @@ struct caml_heap_state* caml_init_shared_heap() {
         heap->unswept_avail_pools[i] = heap->unswept_full_pools[i] = 0;
     }
     heap->next_to_sweep = 0;
-    heap->swept_large = 0;
-    heap->unswept_large = 0;
+    heap->swept_large = NULL;
+    heap->unswept_large = NULL;
     heap->owner = Caml_state;
     memset(&heap->stats, 0, sizeof(heap->stats));
   }
@@ -168,11 +168,11 @@ static pool* pool_acquire(struct caml_heap_state* local) {
                               Bsize_wsize(POOL_WSIZE), 0 /* allocate */);
     int i;
     if (mem) {
-      pool_freelist.free = mem;
-      for (i=1; i<POOLS_PER_ALLOCATION; i++) {
+      CAMLassert(pool_freelist.free == NULL);
+      for (i=0; i<POOLS_PER_ALLOCATION; i++) {
         r = (pool*)(((uintnat)mem) + ((uintnat)i) * Bsize_wsize(POOL_WSIZE));
         r->next = pool_freelist.free;
-        r->owner = 0;
+        r->owner = NULL;
         pool_freelist.free = r;
       }
     }
@@ -182,14 +182,14 @@ static pool* pool_acquire(struct caml_heap_state* local) {
     pool_freelist.free = r->next;
   caml_plat_unlock(&pool_freelist.lock);
 
-  if (r) CAMLassert (r->owner == 0);
+  if (r) CAMLassert (r->owner == NULL);
   return r;
 }
 
 static void pool_release(struct caml_heap_state* local,
                          pool* pool,
                          sizeclass sz) {
-  pool->owner = 0;
+  pool->owner = NULL;
   CAMLassert(pool->sz == sz);
   local->stats.pool_words -= POOL_WSIZE;
   local->stats.pool_frag_words -= POOL_HEADER_WSIZE + wastage_sizeclass[sz];
@@ -391,7 +391,7 @@ static void* pool_allocate(struct caml_heap_state* local, sizeclass sz) {
 
 static void* large_allocate(struct caml_heap_state* local, mlsize_t sz) {
   large_alloc* a = malloc(sz + LARGE_ALLOC_HEADER_SZ);
-  if (!a) caml_raise_out_of_memory();
+  if (!a) return NULL;
   local->stats.large_words += Wsize_bsize(sz + LARGE_ALLOC_HEADER_SZ);
   if (local->stats.large_words > local->stats.large_max_words)
     local->stats.large_max_words = local->stats.large_words;
@@ -481,6 +481,15 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
         p[0] = 0;
         p[1] = (value)a->next_obj;
         CAMLassert(Is_block((value)p));
+#ifdef DEBUG
+        {
+          int i;
+          mlsize_t wo = Wosize_whsize(wh);
+          for (i = 2; i < wo; i++) {
+            Field(Val_hp(p), i) = Debug_free_major;
+          }
+        }
+#endif
         a->next_obj = p;
         all_used = 0;
         /* update stats */
@@ -786,12 +795,12 @@ static void verify_swept (struct caml_heap_state* local) {
   CAMLassert(local->next_to_sweep == NUM_SIZECLASSES);
   for (i = 0; i < NUM_SIZECLASSES; i++) {
     pool* p;
-    CAMLassert(local->unswept_avail_pools[i] == 0 &&
-           local->unswept_full_pools[i] == 0);
+    CAMLassert(local->unswept_avail_pools[i] == NULL &&
+               local->unswept_full_pools[i] == NULL);
     for (p = local->avail_pools[i]; p; p = p->next)
       verify_pool(p, i, &pool_stats);
     for (p = local->full_pools[i]; p; p = p->next) {
-      CAMLassert(p->next_obj == 0);
+      CAMLassert(p->next_obj == NULL);
       verify_pool(p, i, &pool_stats);
     }
   }
@@ -799,7 +808,7 @@ static void verify_swept (struct caml_heap_state* local) {
               pool_stats.alloced, pool_stats.free, pool_stats.overhead);
 
   verify_large(local->swept_large, &large_stats);
-  CAMLassert(local->unswept_large == 0);
+  CAMLassert(local->unswept_large == NULL);
   caml_gc_log("Large memory: %lu alloced, %lu free, %lu fragmentation",
               large_stats.alloced, large_stats.free, large_stats.overhead);
 
@@ -830,16 +839,16 @@ void caml_cycle_heap(struct caml_heap_state* local) {
 
   caml_gc_log("Cycling heap [%02d]", local->owner->id);
   for (i = 0; i < NUM_SIZECLASSES; i++) {
-    CAMLassert(local->unswept_avail_pools[i] == 0);
+    CAMLassert(local->unswept_avail_pools[i] == NULL);
     local->unswept_avail_pools[i] = local->avail_pools[i];
-    local->avail_pools[i] = 0;
-    CAMLassert(local->unswept_full_pools[i] == 0);
+    local->avail_pools[i] = NULL;
+    CAMLassert(local->unswept_full_pools[i] == NULL);
     local->unswept_full_pools[i] = local->full_pools[i];
-    local->full_pools[i] = 0;
+    local->full_pools[i] = NULL;
   }
-  CAMLassert(local->unswept_large == 0);
+  CAMLassert(local->unswept_large == NULL);
   local->unswept_large = local->swept_large;
-  local->swept_large = 0;
+  local->swept_large = NULL;
 
   caml_plat_lock(&pool_freelist.lock);
   for (i = 0; i < NUM_SIZECLASSES; i++) {

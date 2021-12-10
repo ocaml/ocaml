@@ -101,8 +101,7 @@
 #define SIZE_EXTERN_OUTPUT_BLOCK 8100
 
 struct caml_extern_state;
-struct caml_extern_state* caml_alloc_extern_state (void);
-void caml_free_extern_state (struct caml_extern_state*);
+void caml_free_extern_state (void);
 
 /* The entry points */
 

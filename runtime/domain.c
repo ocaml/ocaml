@@ -277,6 +277,15 @@ static void caml_wait_interrupt_serviced(struct interruptor* target)
   }
 }
 
+#define MAX_DOMAIN_NAME_LENGTH 16
+void caml_domain_set_name(char_os *name)
+{
+  char thread_name[MAX_DOMAIN_NAME_LENGTH];
+  snprintf_os(thread_name, MAX_DOMAIN_NAME_LENGTH,
+              T("%s%d"), name, Caml_state->id);
+  caml_thread_setname_os(thread_name);
+}
+
 asize_t caml_norm_minor_heap_size (intnat wsize)
 {
   asize_t bs, max;
@@ -413,10 +422,7 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
       goto create_stack_cache_failure;
     }
 
-    domain_state->extern_state = caml_alloc_extern_state ();
-    if (domain_state->extern_state == NULL) {
-      goto create_extern_state_failure;
-    }
+    domain_state->extern_state = NULL;
 
     domain_state->intern_state = NULL;
 
@@ -443,8 +449,6 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
     goto domain_init_complete;
 
 alloc_main_stack_failure:
-  caml_free_extern_state(domain_state->extern_state);
-create_extern_state_failure:
 create_stack_cache_failure:
   caml_remove_generational_global_root(&domain_state->dls_root);
 reallocate_minor_heap_failure:
@@ -541,6 +545,7 @@ void caml_init_domains(uintnat minor_heap_wsz) {
   caml_init_signal_handling();
 
   CAML_EVENTLOG_INIT();
+  caml_domain_set_name(T("Domain"));
 }
 
 void caml_init_domain_self(int domain_id) {
@@ -589,6 +594,8 @@ static void* backup_thread_func(void* v)
 
   domain_self = di;
   SET_Caml_state((void*)(di->tls_area));
+
+  caml_domain_set_name(T("BackupThread"));
 
   CAML_EVENTLOG_IS_BACKUP_THREAD();
 
@@ -722,6 +729,7 @@ static void* domain_thread_func(void* v)
     install_backup_thread(domain_self);
     caml_gc_log("Domain starting (unique_id = %"ARCH_INTNAT_PRINTF_FORMAT"u)",
                 domain_self->interruptor.unique_id);
+    caml_domain_set_name(T("Domain"));
     caml_domain_start_hook();
     caml_callback(ml_values->callback, Val_unit);
     domain_terminate();
@@ -784,6 +792,9 @@ CAMLprim value caml_domain_spawn(value callback, value mutex)
     free_domain_ml_values(p.ml_values);
     caml_failwith("failed to allocate domain");
   }
+  /* When domain 0 first spawn a domain,
+     the backup thread is not active, we ensure
+     it is started here. */
   install_backup_thread(domain_self);
   CAML_EV_END(EV_DOMAIN_SPAWN);
   CAMLreturn (Val_long(p.unique_id));
@@ -1255,8 +1266,9 @@ static void domain_terminate()
   // run the domain termination hook
   caml_domain_stop_hook();
   caml_stat_free(domain_state->ephe_info);
-  caml_free_extern_state(domain_state->extern_state);
   caml_free_intern_state();
+  caml_free_extern_state();
+  caml_free_intern_state(domain_state->intern_state);
   caml_teardown_major_gc();
   CAML_EVENTLOG_TEARDOWN();
   caml_teardown_shared_heap(domain_state->shared_heap);
@@ -1298,4 +1310,23 @@ CAMLprim value caml_domain_dls_get(value unused)
 {
   CAMLnoalloc;
   return Caml_state->dls_root;
+}
+
+CAMLprim value caml_ml_domain_set_name(value name)
+{
+  CAMLparam1(name);
+  char_os* name_os;
+
+  if (caml_string_length(name) >= MAX_DOMAIN_NAME_LENGTH)
+    caml_invalid_argument("caml_ml_domain_set_name");
+  name_os = caml_stat_strdup_to_os(String_val(name));
+  caml_thread_setname_os(name_os);
+  caml_stat_free(name_os);
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value caml_ml_domain_is_main_domain(value unused)
+{
+  CAMLnoalloc;
+  return Caml_state->id == 0 ? Val_true : Val_false;
 }

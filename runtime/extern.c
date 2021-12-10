@@ -116,9 +116,12 @@ struct caml_extern_state {
   struct output_block * extern_output_block;
 };
 
-struct caml_extern_state* caml_alloc_extern_state ()
+static struct caml_extern_state* get_extern_state ()
 {
   struct caml_extern_state* extern_state;
+
+  if (Caml_state->extern_state != NULL)
+    return Caml_state->extern_state;
 
   extern_state =
     caml_stat_alloc_noexc(sizeof(struct caml_extern_state));
@@ -133,12 +136,16 @@ struct caml_extern_state* caml_alloc_extern_state ()
   extern_state->extern_stack_limit =
     extern_state->extern_stack + EXTERN_STACK_INIT_SIZE;
 
+  Caml_state->extern_state = extern_state;
   return extern_state;
 }
 
-void caml_free_extern_state (struct caml_extern_state* extern_state)
+void caml_free_extern_state ()
 {
-  caml_stat_free(extern_state);
+  if (Caml_state->extern_state != NULL) {
+    caml_stat_free(Caml_state->extern_state);
+    Caml_state->extern_state = NULL;
+  }
 }
 
 /* Forward declarations */
@@ -930,7 +937,7 @@ void caml_output_val(struct channel *chan, value v, value flags)
   char header[32];
   int header_len;
   struct output_block * blk, * nextblk;
-  struct caml_extern_state* s = Caml_state->extern_state;
+  struct caml_extern_state* s = get_extern_state ();
 
   if (! caml_channel_binary_mode(chan))
     caml_failwith("output_value: not a binary channel");
@@ -968,7 +975,7 @@ CAMLprim value caml_output_value_to_bytes(value v, value flags)
   intnat data_len, ofs;
   value res;
   struct output_block * blk, * nextblk;
-  struct caml_extern_state* s = Caml_state->extern_state;
+  struct caml_extern_state* s = get_extern_state ();
 
   init_extern_output(s);
   data_len = extern_value(s, v, flags, header, &header_len);
@@ -1001,7 +1008,7 @@ CAMLexport intnat caml_output_value_to_block(value v, value flags,
   char header[32];
   int header_len;
   intnat data_len;
-  struct caml_extern_state* s = Caml_state->extern_state;
+  struct caml_extern_state* s = get_extern_state ();
 
   /* At this point we don't know the size of the header.
      Guess that it is small, and fix up later if not. */
@@ -1038,7 +1045,7 @@ CAMLexport void caml_output_value_to_malloc(value v, value flags,
   intnat data_len;
   char * res;
   struct output_block * blk, * nextblk;
-  struct caml_extern_state* s = Caml_state->extern_state;
+  struct caml_extern_state* s = get_extern_state ();
 
   init_extern_output(s);
   data_len = extern_value(s, v, flags, header, &header_len);
@@ -1061,7 +1068,7 @@ CAMLexport void caml_output_value_to_malloc(value v, value flags,
 
 CAMLexport void caml_serialize_int_1(int i)
 {
-  struct caml_extern_state* s = Caml_state->extern_state;
+  struct caml_extern_state* s = get_extern_state ();
   if (s->extern_ptr + 1 > s->extern_limit) grow_extern_output(s, 1);
   s->extern_ptr[0] = i;
   s->extern_ptr += 1;
@@ -1069,7 +1076,7 @@ CAMLexport void caml_serialize_int_1(int i)
 
 CAMLexport void caml_serialize_int_2(int i)
 {
-  struct caml_extern_state* s = Caml_state->extern_state;
+  struct caml_extern_state* s = get_extern_state ();
   if (s->extern_ptr + 2 > s->extern_limit) grow_extern_output(s, 2);
   store16(s->extern_ptr, i);
   s->extern_ptr += 2;
@@ -1077,7 +1084,7 @@ CAMLexport void caml_serialize_int_2(int i)
 
 CAMLexport void caml_serialize_int_4(int32_t i)
 {
-  struct caml_extern_state* s = Caml_state->extern_state;
+  struct caml_extern_state* s = get_extern_state ();
   if (s->extern_ptr + 4 > s->extern_limit) grow_extern_output(s, 4);
   store32(s->extern_ptr, i);
   s->extern_ptr += 4;
@@ -1085,7 +1092,7 @@ CAMLexport void caml_serialize_int_4(int32_t i)
 
 CAMLexport void caml_serialize_int_8(int64_t i)
 {
-  struct caml_extern_state* s = Caml_state->extern_state;
+  struct caml_extern_state* s = get_extern_state ();
   if (s->extern_ptr + 8 > s->extern_limit) grow_extern_output(s, 8);
   store64(s->extern_ptr, i);
   s->extern_ptr += 8;
@@ -1103,7 +1110,7 @@ CAMLexport void caml_serialize_float_8(double f)
 
 CAMLexport void caml_serialize_block_1(void * data, intnat len)
 {
-  struct caml_extern_state* s = Caml_state->extern_state;
+  struct caml_extern_state* s = get_extern_state ();
   if (s->extern_ptr + len > s->extern_limit) grow_extern_output(s, len);
   memcpy(s->extern_ptr, data, len);
   s->extern_ptr += len;
@@ -1111,7 +1118,7 @@ CAMLexport void caml_serialize_block_1(void * data, intnat len)
 
 CAMLexport void caml_serialize_block_2(void * data, intnat len)
 {
-  struct caml_extern_state* s = Caml_state->extern_state;
+  struct caml_extern_state* s = get_extern_state ();
   if (s->extern_ptr + 2 * len > s->extern_limit)
     grow_extern_output(s, 2 * len);
 #ifndef ARCH_BIG_ENDIAN
@@ -1130,7 +1137,7 @@ CAMLexport void caml_serialize_block_2(void * data, intnat len)
 
 CAMLexport void caml_serialize_block_4(void * data, intnat len)
 {
-  struct caml_extern_state* s = Caml_state->extern_state;
+  struct caml_extern_state* s = get_extern_state ();
   if (s->extern_ptr + 4 * len > s->extern_limit)
     grow_extern_output(s, 4 * len);
 #ifndef ARCH_BIG_ENDIAN
@@ -1149,7 +1156,7 @@ CAMLexport void caml_serialize_block_4(void * data, intnat len)
 
 CAMLexport void caml_serialize_block_8(void * data, intnat len)
 {
-  struct caml_extern_state* s = Caml_state->extern_state;
+  struct caml_extern_state* s = get_extern_state ();
   if (s->extern_ptr + 8 * len > s->extern_limit)
     grow_extern_output(s, 8 * len);
 #ifndef ARCH_BIG_ENDIAN
@@ -1168,7 +1175,7 @@ CAMLexport void caml_serialize_block_8(void * data, intnat len)
 
 CAMLexport void caml_serialize_block_float_8(void * data, intnat len)
 {
-  struct caml_extern_state* s = Caml_state->extern_state;
+  struct caml_extern_state* s = get_extern_state ();
   if (s->extern_ptr + 8 * len > s->extern_limit) grow_extern_output(s, 8 * len);
 #if ARCH_FLOAT_ENDIANNESS == 0x01234567
   memcpy(s->extern_ptr, data, len * 8);
@@ -1198,7 +1205,7 @@ CAMLprim value caml_obj_reachable_words(value v)
   struct extern_item * sp;
   uintnat h = 0;
   uintnat pos = 0;
-  struct caml_extern_state *s = Caml_state->extern_state;
+  struct caml_extern_state *s = get_extern_state ();
 
   extern_init_position_table(s);
   sp = s->extern_stack;

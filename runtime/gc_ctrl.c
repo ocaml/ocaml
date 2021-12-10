@@ -28,7 +28,7 @@
 #include "caml/mlvalues.h"
 #ifdef NATIVE_CODE
 #include "caml/stack.h"
-#include "frame_descriptors.h"
+#include "caml/frame_descriptors.h"
 #endif
 #include "caml/domain.h"
 #include "caml/fiber.h"

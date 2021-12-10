@@ -135,7 +135,6 @@ default:
 	@echo "Available targets:"
 	@echo "  all             launch all tests"
 	@echo "  all-foo         launch all tests beginning with foo"
-	@echo "  all-enabled     launch all enabled tests"
 	@echo "  parallel        launch all tests using GNU parallel"
 	@echo "  parallel-foo    launch all tests beginning with foo using \
 	GNU parallel"
@@ -176,16 +175,6 @@ check-failstamp:
 	  rm $(failstamp); \
 	  exit 1; \
 	fi
-
-.PHONY: all-enabled
-all-enabled: lib tools
-	@sed -n 's/#.*//; /\//d; /./p' disabled > disabled-dirs
-	@ls tests | fgrep -v -f disabled-dirs | \
-	  while read LINE; do \
-	    $(MAKE) $(NO_PRINT) exec-one DIR=tests/$$LINE; \
-	  done 2>&1 | tee _log
-	@rm disabled-dirs
-	@$(MAKE) report
 
 .PHONY: all-%
 all-%: lib tools
@@ -343,7 +332,6 @@ tools:
 clean:
 	@$(MAKE) -C lib clean
 	@cd tools && $(MAKE) BASEDIR=$(BASEDIR) clean
-	@rm -f disabled-dirs
 	find . -name '*_ocamltest*' | xargs rm -rf
 	rm -f $(failstamp)
 
