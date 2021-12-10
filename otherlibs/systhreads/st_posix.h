@@ -309,11 +309,6 @@ static void * caml_thread_tick(void * arg)
   caml_domain_state *domain;
   uintnat *domain_id = (uintnat *) arg;
   struct timeval timeout;
-  sigset_t mask;
-
-  /* Block all signals so that we don't try to execute an OCaml signal handler*/
-  sigfillset(&mask);
-  pthread_sigmask(SIG_BLOCK, &mask, NULL);
 
   caml_init_domain_self(*domain_id);
   domain = Caml_state;
