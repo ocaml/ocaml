@@ -2402,14 +2402,13 @@ let bytesset_unsafe arg1 arg2 arg3 dbg =
 
 let bytesset_safe arg1 arg2 arg3 dbg =
   return_unit dbg
-    (bind "newval" (untag_int arg3 dbg) (fun newval ->
+    (bind "newval" (ignore_high_bit_int (untag_int arg3 dbg)) (fun newval ->
       bind "index" (untag_int arg2 dbg) (fun idx ->
        bind "str" arg1 (fun str ->
         Csequence(
           make_checkbound dbg [string_length str dbg; idx],
           Cop(Cstore (Byte_unsigned, Assignment),
-              [add_int str idx dbg;
-               ignore_high_bit_int newval],
+              [add_int str idx dbg; newval],
               dbg))))))
 
 let arrayset_unsafe kind arg1 arg2 arg3 dbg =
