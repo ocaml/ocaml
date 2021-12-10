@@ -288,6 +288,36 @@ void caml_init_signals(void)
 #endif
 }
 
+/* Termination of signal stuff */
+
+#if defined(TARGET_power) || defined(TARGET_s390x) \
+    || defined(HAS_STACK_OVERFLOW_DETECTION)
+static void set_signal_default(int signum)
+{
+  struct sigaction act;
+  sigemptyset(&act.sa_mask);
+  act.sa_handler = SIG_DFL;
+  act.sa_flags = 0;
+  sigaction(signum, &act, NULL);
+}
+#endif
+
+void caml_terminate_signals(void)
+{
+#if defined(TARGET_power)
+  set_signal_default(SIGTRAP);
+#endif
+
+#if defined(TARGET_s390x)
+  set_signal_default(SIGFPE);
+#endif
+
+#ifdef HAS_STACK_OVERFLOW_DETECTION
+  set_signal_default(SIGSEGV);
+  caml_stop_stack_overflow_detection();
+#endif
+}
+
 /* Allocate and select an alternate stack for handling signals,
    especially SIGSEGV signals.
    Each thread needs its own alternate stack.
@@ -304,6 +334,22 @@ CAMLexport int caml_setup_stack_overflow_detection(void)
   stk.ss_size = SIGSTKSZ;
   stk.ss_flags = 0;
   return sigaltstack(&stk, NULL);
+#else
+  return 0;
+#endif
+}
+
+CAMLexport int caml_stop_stack_overflow_detection(void)
+{
+#ifdef HAS_STACK_OVERFLOW_DETECTION
+  stack_t oldstk, stk;
+  stk.ss_flags = SS_DISABLE;
+  if (sigaltstack(&stk, &oldstk) == -1) return -1;
+  /* If caml_setup_stack_overflow_detection failed, we are not using
+     an alternate signal stack.  SS_DISABLE will be set in oldstk,
+     and there is nothing to free in this case. */
+  if (! (oldstk.ss_flags & SS_DISABLE)) free(oldstk.ss_sp);
+  return 0;
 #else
   return 0;
 #endif

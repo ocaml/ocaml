@@ -64,6 +64,10 @@ OCaml 4.14.0
   (Xavier Leroy and David Allsopp, review by Sébastien Hinderer and
    Damien Doligez)
 
+- #10698, #10726: Free the alternate signal stack when the main OCaml
+   code or an OCaml thread stops
+  (Xavier Leroy, review by David Allsopp and Damien Doligez)
+
 - #10730, 10731: Fix bug in `Obj.reachable_words` causing a slowdown when called
   multiple time (Alain Frisch, report by ygrek, review by Xavier Leroy)
 
@@ -284,6 +288,10 @@ OCaml 4.14.0
 - #10541: Make field_kind and commutable abstract, enforcing correct access
   (Jacques Garrigue and Takafumi Saikawa,
    review by Thomas Refis and Florian Angeletti)
+
+- #10575: add a -dump-dir flag, which redirects all debugging printer
+   (`-dprofile`, `-dlambda`, ...) to the target directory
+  (Florian Angeletti, review by Thomas Refis and Gabriel Scherer)
 
 * #10627: Make row_field abstract
   Completes #10474 by making row_field abstract too.

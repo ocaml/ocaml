@@ -31,6 +31,7 @@
 #include "caml/stack.h"
 #include "caml/roots.h"
 #include "caml/callback.h"
+#include "caml/signals.h"
 
 /* The globals holding predefined exceptions */
 
@@ -70,7 +71,10 @@ void caml_raise(value v)
   if (Is_exception_result(v))
     v = Extract_exception(v);
 
-  if (Caml_state->exception_pointer == NULL) caml_fatal_uncaught_exception(v);
+  if (Caml_state->exception_pointer == NULL) {
+    caml_terminate_signals();
+    caml_fatal_uncaught_exception(v);
+  }
 
   while (Caml_state->local_roots != NULL &&
          (char *) Caml_state->local_roots < Caml_state->exception_pointer) {
