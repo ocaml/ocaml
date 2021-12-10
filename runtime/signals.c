@@ -115,7 +115,7 @@ CAMLexport void caml_process_pending_signals(void) {
 
 CAMLexport void caml_record_signal(int signal_number)
 {
-  atomic_fetch_add_explicit
+  atomic_store_explicit
     (&caml_pending_signals[signal_number], 1, memory_order_seq_cst);
 
   caml_interrupt_self();
