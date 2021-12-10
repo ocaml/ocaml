@@ -15,6 +15,9 @@ Working version
 
 ### Manual and documentation:
 
+- #10589: Fix many typos (excess/inconsistent spaces) in the HTML manual.
+  (Wiktor Kuchta, review by Florian Angeletti)
+
 ### Compiler user-interface and warnings:
 
 ### Internal/compiler-libs changes:
