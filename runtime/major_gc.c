@@ -875,7 +875,7 @@ intnat ephe_mark (intnat budget, uintnat for_cycle,
   return budget;
 }
 
-intnat ephe_sweep (caml_domain_state* domain_state, intnat budget)
+static intnat ephe_sweep (caml_domain_state* domain_state, intnat budget)
 {
   value v;
   CAMLassert (caml_gc_phase == Phase_sweep_ephe);
