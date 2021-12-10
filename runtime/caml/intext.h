@@ -109,7 +109,7 @@ void caml_output_val (struct channel * chan, value v, value flags);
   /* Output [v] with flags [flags] on the channel [chan]. */
 
 struct caml_intern_state;
-void caml_free_intern_state ();
+void caml_free_intern_state (void);
 
 #endif /* CAML_INTERNALS */
 
@@ -143,7 +143,7 @@ CAMLextern value caml_input_value_from_malloc(char * data, intnat ofs);
      to the beginning of the buffer, and [ofs] is the offset of the
      beginning of the externed data in this buffer.  The buffer is
      deallocated with [free] on return, or if an exception is raised. */
-CAMLextern value caml_input_value_from_block(char * data, intnat len);
+CAMLextern value caml_input_value_from_block(const char * data, intnat len);
   /* Read a structured value from a user-provided buffer.  [data] points
      to the beginning of the externed data in this buffer,
      and [len] is the length in bytes of valid data in this buffer.

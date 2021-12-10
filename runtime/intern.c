@@ -59,7 +59,7 @@ struct intern_item {
 
 struct caml_intern_state {
 
-  unsigned char * intern_src;
+  const unsigned char * intern_src;
   /* Reading pointer in block holding input data. */
 
   unsigned char * intern_input;
@@ -186,7 +186,8 @@ Caml_inline void readblock(struct caml_intern_state* s,
   s->intern_src += len;
 }
 
-static void intern_init(struct caml_intern_state* s, void * src, void * input)
+static void intern_init(struct caml_intern_state* s, const void * src,
+                        void * input)
 {
   CAMLassert (s);
   /* This is asserted at the beginning of demarshaling primitives.
@@ -842,7 +843,7 @@ CAMLexport value caml_input_value_from_malloc(char * data, intnat ofs)
 }
 
 /* [len] is a number of bytes */
-CAMLexport value caml_input_value_from_block(char * data, intnat len)
+CAMLexport value caml_input_value_from_block(const char * data, intnat len)
 {
   struct marshal_header h;
   struct caml_intern_state* s = get_intern_state ();
@@ -995,7 +996,7 @@ CAMLexport void caml_deserialize_block_2(void * data, intnat len)
 {
   struct caml_intern_state* s = get_intern_state ();
 #ifndef ARCH_BIG_ENDIAN
-  unsigned char * p, * q;
+  const unsigned char * p, * q;
   for (p = s->intern_src, q = data; len > 0; len--, p += 2, q += 2)
     Reverse_16(q, p);
   s->intern_src = p;
@@ -1009,7 +1010,7 @@ CAMLexport void caml_deserialize_block_4(void * data, intnat len)
 {
   struct caml_intern_state* s = get_intern_state ();
 #ifndef ARCH_BIG_ENDIAN
-  unsigned char * p, * q;
+  const unsigned char * p, * q;
   for (p = s->intern_src, q = data; len > 0; len--, p += 4, q += 4)
     Reverse_32(q, p);
   s->intern_src = p;
@@ -1023,7 +1024,7 @@ CAMLexport void caml_deserialize_block_8(void * data, intnat len)
 {
   struct caml_intern_state* s = get_intern_state ();
 #ifndef ARCH_BIG_ENDIAN
-  unsigned char * p, * q;
+  const unsigned char * p, * q;
   for (p = s->intern_src, q = data; len > 0; len--, p += 8, q += 8)
     Reverse_64(q, p);
   s->intern_src = p;
@@ -1040,12 +1041,12 @@ CAMLexport void caml_deserialize_block_float_8(void * data, intnat len)
   memcpy(data, s->intern_src, len * 8);
   s->intern_src += len * 8;
 #elif ARCH_FLOAT_ENDIANNESS == 0x76543210
-  unsigned char * p, * q;
+  const unsigned char * p, * q;
   for (p = s->intern_src, q = data; len > 0; len--, p += 8, q += 8)
     Reverse_64(q, p);
   s->intern_src = p;
 #else
-  unsigned char * p, * q;
+  const unsigned char * p, * q;
   for (p = s->intern_src, q = data; len > 0; len--, p += 8, q += 8)
     Permute_64(q, ARCH_FLOAT_ENDIANNESS, p, 0x01234567);
   s->intern_src = p;
