@@ -224,7 +224,7 @@ void orph_ephe_list_verify_status (int status)
 #define EPHE_MARK_DEFAULT 0
 #define EPHE_MARK_FORCE_ALIVE 1
 
-intnat ephe_mark (intnat budget, uintnat for_cycle, int force_alive);
+static intnat ephe_mark (intnat budget, uintnat for_cycle, int force_alive);
 
 void caml_add_to_orphaned_ephe_list(struct caml_ephe_info* ephe_info)
 {
@@ -787,9 +787,9 @@ void caml_darken(void* state, value v, value* ignored) {
   }
 }
 
-intnat ephe_mark (intnat budget, uintnat for_cycle,
-                  /* Forces ephemerons and their data to be alive */
-                  int force_alive)
+static intnat ephe_mark (intnat budget, uintnat for_cycle,
+                         /* Forces ephemerons and their data to be alive */
+                         int force_alive)
 {
   value v, data, key, f, todo;
   value* prev_linkp;
