@@ -81,7 +81,7 @@ uintnat caml_get_num_domains_to_mark () {
 
 extern value caml_ephe_none; /* See weak.c */
 
-struct ephe_cycle_info_t {
+static struct ephe_cycle_info_t {
   atomic_uintnat num_domains_todo;
   /* Number of domains that need to scan their ephemerons in the current major
    * GC cycle. This field is decremented when ephe_info->todo list at a domain
