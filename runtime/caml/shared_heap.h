@@ -1,3 +1,18 @@
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*      KC Sivaramakrishnan, Indian Institute of Technology, Madras       */
+/*                 Stephen Dolan, University of Cambridge                 */
+/*                                                                        */
+/*   Copyright 2015 Indian Institute of Technology, Madras                */
+/*   Copyright 2015 University of Cambridge                               */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 #ifndef CAML_SHARED_HEAP_H
 #define CAML_SHARED_HEAP_H
 
@@ -14,7 +29,7 @@ struct pool;
 struct caml_heap_state* caml_init_shared_heap();
 void caml_teardown_shared_heap(struct caml_heap_state* heap);
 
-value* caml_shared_try_alloc(struct caml_heap_state*, mlsize_t wosize, tag_t tag, int is_pinned);
+value* caml_shared_try_alloc(struct caml_heap_state*, mlsize_t, tag_t, int);
 
 void caml_sample_heap_stats(struct caml_heap_state*, struct heap_stats*);
 
