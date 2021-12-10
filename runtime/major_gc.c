@@ -662,8 +662,8 @@ static void mark_slice_darken(struct mark_stack* stk, value v, mlsize_t i,
       child -= Infix_offset_hd(chd);
       chd = Hd_val(child);
     }
-    CAMLassert(!Has_status_hd(chd, global.GARBAGE));
-    if (Has_status_hd(chd, global.UNMARKED)){
+    CAMLassert(!Has_status_hd(chd, caml_global_heap_state.GARBAGE));
+    if (Has_status_hd(chd, caml_global_heap_state.UNMARKED)){
       Caml_state->stat_blocks_marked++;
       if (Tag_hd(chd) == Cont_tag){
         caml_darken_cont(child);
@@ -672,14 +672,14 @@ static void mark_slice_darken(struct mark_stack* stk, value v, mlsize_t i,
     again:
         if (Tag_hd(chd) == Lazy_tag || Tag_hd(chd) == Forcing_tag){
           if(!atomic_compare_exchange_strong(Hp_atomic_val(child), &chd,
-                With_status_hd(chd, global.MARKED))){
+                With_status_hd(chd, caml_global_heap_state.MARKED))){
                   chd = Hd_val(child);
                   goto again;
           }
         } else {
           atomic_store_explicit(
             Hp_atomic_val(child),
-            With_status_hd(chd, global.MARKED),
+            With_status_hd(chd, caml_global_heap_state.MARKED),
             memory_order_relaxed);
         }
         if(Tag_hd(chd) < No_scan_tag){
@@ -704,7 +704,8 @@ static intnat do_some_marking(intnat budget) {
       }
       budget--;
       CAMLassert(Is_markable(me.block) &&
-                 Has_status_hd(Hd_val(me.block), global.MARKED) &&
+                 Has_status_hd(Hd_val(me.block),
+                               caml_global_heap_state.MARKED) &&
                  Tag_val(me.block) < No_scan_tag &&
                  Tag_val(me.block) != Cont_tag);
       mark_slice_darken(stk, me.block, me.offset++, &budget);
@@ -739,10 +740,10 @@ void caml_darken_cont(value cont)
     SPIN_WAIT {
       header_t hd
             = atomic_load_explicit(Hp_atomic_val(cont), memory_order_relaxed);
-      CAMLassert(!Has_status_hd(hd, global.GARBAGE));
-      if (Has_status_hd(hd, global.MARKED))
+      CAMLassert(!Has_status_hd(hd, caml_global_heap_state.GARBAGE));
+      if (Has_status_hd(hd, caml_global_heap_state.MARKED))
         break;
-      if (Has_status_hd(hd, global.UNMARKED) &&
+      if (Has_status_hd(hd, caml_global_heap_state.UNMARKED) &&
           atomic_compare_exchange_strong(
               Hp_atomic_val(cont), &hd,
               With_status_hd(hd, NOT_MARKABLE))) {
@@ -751,7 +752,7 @@ void caml_darken_cont(value cont)
           caml_scan_stack(&caml_darken, 0, Ptr_val(stk), 0);
         atomic_store_explicit(
           Hp_atomic_val(cont),
-          With_status_hd(hd, global.MARKED),
+          With_status_hd(hd, caml_global_heap_state.MARKED),
           memory_order_release);
       }
     }
@@ -767,7 +768,7 @@ void caml_darken(void* state, value v, value* ignored) {
     v -= Infix_offset_hd(hd);
     hd = Hd_val(v);
   }
-  if (Has_status_hd(hd, global.UNMARKED)) {
+  if (Has_status_hd(hd, caml_global_heap_state.UNMARKED)) {
     if (Caml_state->marking_done) {
       atomic_fetch_add(&num_domains_to_mark, 1);
       Caml_state->marking_done = 0;
@@ -777,7 +778,7 @@ void caml_darken(void* state, value v, value* ignored) {
     } else {
       atomic_store_explicit(
          Hp_atomic_val(v),
-         With_status_hd(hd, global.MARKED),
+         With_status_hd(hd, caml_global_heap_state.MARKED),
          memory_order_relaxed);
       if (Tag_hd(hd) < No_scan_tag) {
         mark_stack_push(Caml_state->mark_stack, v, 0, NULL);
@@ -1126,7 +1127,7 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
   // Adopt orphaned work from domains that were spawned and terminated in
   // the previous cycle.
 #ifdef DEBUG
-  orph_ephe_list_verify_status (global.UNMARKED);
+  orph_ephe_list_verify_status (caml_global_heap_state.UNMARKED);
 #endif
   caml_adopt_orphaned_work ();
   CAMLassert(domain->ephe_info->todo == (value) NULL);
@@ -1334,7 +1335,7 @@ mark_again:
     }
 
 #ifdef DEBUG
-    orph_ephe_list_verify_status (global.MARKED);
+    orph_ephe_list_verify_status (caml_global_heap_state.MARKED);
 #endif
     caml_adopt_orphaned_work();
 

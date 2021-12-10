@@ -33,7 +33,7 @@
 #include "caml/startup_aux.h"
 
 typedef unsigned int sizeclass;
-struct global_heap_state global = {0 << 8, 1 << 8, 2 << 8};
+struct global_heap_state caml_global_heap_state = {0 << 8, 1 << 8, 2 << 8};
 
 typedef struct pool {
   struct pool* next;
@@ -51,7 +51,7 @@ typedef struct large_alloc {
 CAML_STATIC_ASSERT(sizeof(large_alloc) % sizeof(value) == 0);
 #define LARGE_ALLOC_HEADER_SZ sizeof(large_alloc)
 
-struct {
+static struct {
   caml_plat_mutex lock;
   pool* free;
 
@@ -425,7 +425,7 @@ value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize,
     p = large_allocate(local, Bsize_wsize(whsize));
     if (!p) return 0;
   }
-  colour = pinned ? NOT_MARKABLE : global.MARKED;
+  colour = pinned ? NOT_MARKABLE : caml_global_heap_state.MARKED;
   Hd_hp (p) = Make_header(wosize, tag, colour);
 #ifdef DEBUG
   {
@@ -471,7 +471,7 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
       if (hd == 0) {
         /* already on freelist */
         all_used = 0;
-      } else if (Has_status_hd(hd, global.GARBAGE)) {
+      } else if (Has_status_hd(hd, caml_global_heap_state.GARBAGE)) {
         CAMLassert(Whsize_hd(hd) <= wh);
         if (Tag_hd (hd) == Custom_tag) {
           void (*final_fun)(value) = Custom_ops_val(Val_hp(p))->finalize;
@@ -526,7 +526,7 @@ static intnat large_alloc_sweep(struct caml_heap_state* local) {
 
   p = (value*)((char*)a + LARGE_ALLOC_HEADER_SZ);
   hd = (header_t)*p;
-  if (Has_status_hd(hd, global.GARBAGE)) {
+  if (Has_status_hd(hd, caml_global_heap_state.GARBAGE)) {
     if (Tag_hd (hd) == Custom_tag) {
       void (*final_fun)(value) = Custom_ops_val(Val_hp(p))->finalize;
       if (final_fun != NULL) final_fun(Val_hp(p));
@@ -602,7 +602,7 @@ void caml_redarken_pool(struct pool* r, scanning_action f, void* fdata) {
 
   while (p + wh <= end) {
     header_t hd = p[0];
-    if (hd != 0 && Has_status_hd(hd, global.MARKED)) {
+    if (hd != 0 && Has_status_hd(hd, caml_global_heap_state.MARKED)) {
       f(fdata, Val_hp(p), 0);
     }
     p += wh;
@@ -610,7 +610,7 @@ void caml_redarken_pool(struct pool* r, scanning_action f, void* fdata) {
 }
 
 
-const header_t atoms[256] = {
+static const header_t atoms[256] = {
 #define A(i) Make_header(0, i, NOT_MARKABLE)
 A(0),A(1),A(2),A(3),A(4),A(5),A(6),A(7),A(8),A(9),A(10),
 A(11),A(12),A(13),A(14),A(15),A(16),A(17),A(18),A(19),A(20),
@@ -710,7 +710,7 @@ static void verify_object(struct heap_verify_state* st, value v) {
   if (Has_status_hd(Hd_val(v), NOT_MARKABLE)) return;
   st->objs++;
 
-  CAMLassert(Has_status_hd(Hd_val(v), global.UNMARKED));
+  CAMLassert(Has_status_hd(Hd_val(v), caml_global_heap_state.UNMARKED));
 
   if (Tag_val(v) == Cont_tag) {
     struct stack_info* stk = Ptr_val(Field(v, 0));
@@ -761,7 +761,7 @@ static void verify_pool(pool* a, sizeclass sz, struct mem_stats* s) {
 
     while (p + wh <= end) {
       header_t hd = (header_t)*p;
-      CAMLassert(hd == 0 || !Has_status_hd(hd, global.GARBAGE));
+      CAMLassert(hd == 0 || !Has_status_hd(hd, caml_global_heap_state.GARBAGE));
       if (hd) {
         s->live += Whsize_hd(hd);
         s->overhead += wh - Whsize_hd(hd);
@@ -780,7 +780,7 @@ static void verify_pool(pool* a, sizeclass sz, struct mem_stats* s) {
 static void verify_large(large_alloc* a, struct mem_stats* s) {
   for (; a; a = a->next) {
     header_t hd = *(header_t*)((char*)a + LARGE_ALLOC_HEADER_SZ);
-    CAMLassert (!Has_status_hd(hd, global.GARBAGE));
+    CAMLassert (!Has_status_hd(hd, caml_global_heap_state.GARBAGE));
     s->alloced += Wsize_bsize(LARGE_ALLOC_HEADER_SZ) + Whsize_hd(hd);
     s->overhead += Wsize_bsize(LARGE_ALLOC_HEADER_SZ);
     s->live_blocks++;
@@ -825,13 +825,13 @@ static void verify_swept (struct caml_heap_state* local) {
 }
 
 void caml_cycle_heap_stw() {
-  struct global_heap_state oldg = global;
+  struct global_heap_state oldg = caml_global_heap_state;
   struct global_heap_state newg;
   newg.UNMARKED     = oldg.MARKED;
   newg.GARBAGE      = oldg.UNMARKED;
   newg.MARKED       = oldg.GARBAGE; /* should be empty because
                                         garbage was swept */
-  global = newg;
+  caml_global_heap_state = newg;
 }
 
 void caml_cycle_heap(struct caml_heap_state* local) {
