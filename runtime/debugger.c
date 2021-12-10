@@ -35,8 +35,6 @@
 int caml_debugger_in_use = 0;
 uintnat caml_event_count;
 int caml_debugger_fork_mode = 1; /* parent by default */
-value marshal_flags;
-
 #if !defined(HAS_SOCKETS) || defined(NATIVE_CODE)
 
 void caml_debugger_init(void)
@@ -91,6 +89,8 @@ struct sockaddr_un {
 #include "caml/mlvalues.h"
 #include "caml/fiber.h"
 #include "caml/sys.h"
+
+static value marshal_flags;
 
 static int sock_domain;         /* Socket domain for the debugger */
 static union {                  /* Socket address for the debugger */
