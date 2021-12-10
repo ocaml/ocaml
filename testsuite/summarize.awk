@@ -13,15 +13,6 @@
 #*                                                                        *
 #**************************************************************************
 
-BEGIN {
-    while ((getline line < "disabled") > 0) {
-        gsub(/#.*/, "", line);
-        if (line) {
-            is_disabled[line] = 1;
-        }
-    }
-}
-
 function check() {
     if (!in_test){
         printf("error at line %d: found test result without test start\n", NR);
@@ -64,13 +55,7 @@ function record_fail() {
     check();
     if (!(key in RESULTS) || RESULTS[key] == "s"){
         if (!(key in RESULTS)) ++nresults;
-    		testcase = sprintf ("%s/%s", curdir, curfile);
-			gsub(/[ \t]+$/, "", testcase);
-			if (is_disabled[testcase]) {
-				RESULTS[key] = "d";
-			} else {
-				RESULTS[key] = "f";
-			}
+        RESULTS[key] = "f";
     }
     delete SKIPPED[curdir];
     clear();
@@ -79,13 +64,7 @@ function record_fail() {
 function record_unexp() {
     if (!(key in RESULTS) || RESULTS[key] == "s"){
         if (!(key in RESULTS)) ++nresults;
-        testcase = sprintf ("%s/%s", curdir, curfile);
-        gsub(/[ \t]+$/, "", testcase);
-        if (is_disabled[testcase]) {
-            RESULTS[key] = "d";
-        } else {
-            RESULTS[key] = "e";
-        }
+        RESULTS[key] = "e";
     }
     delete SKIPPED[curdir];
     clear();
@@ -182,8 +161,6 @@ END {
             }else if (r == "e"){
                 ++ unexped;
                 unexp[unexpidx++] = key;
-							}else if (r == "d"){
-									++ ndisabled;
             }else if (r == "s"){
                 ++ skipped;
                 curdir = DIRS[key];
@@ -199,7 +176,6 @@ END {
                 ++ ignored;
             }
         }
-
         printf("\n");
         if (skipped != 0){
             printf("\nList of skipped tests:\n");
@@ -222,12 +198,11 @@ END {
         printf("  %3d tests passed\n", passed);
         printf("  %3d tests skipped\n", skipped);
         printf("  %3d tests failed\n", failed);
-        printf("  %3d tests disabled\n", ndisabled);
         printf("  %3d tests not started (parent test skipped or failed)\n",
                ignored);
         printf("  %3d unexpected errors\n", unexped);
         printf("  %3d tests considered", nresults);
-        if (nresults != passed + skipped + ignored + failed + ndisabled + unexped){
+        if (nresults != passed + skipped + ignored + failed + unexped){
             printf (" (totals don't add up??)");
         }
         printf ("\n");
