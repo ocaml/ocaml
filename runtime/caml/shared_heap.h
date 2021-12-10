@@ -1,3 +1,18 @@
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*      KC Sivaramakrishnan, Indian Institute of Technology, Madras       */
+/*                 Stephen Dolan, University of Cambridge                 */
+/*                                                                        */
+/*   Copyright 2015 Indian Institute of Technology, Madras                */
+/*   Copyright 2015 University of Cambridge                               */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 #ifndef CAML_SHARED_HEAP_H
 #define CAML_SHARED_HEAP_H
 
@@ -14,7 +29,7 @@ struct pool;
 struct caml_heap_state* caml_init_shared_heap();
 void caml_teardown_shared_heap(struct caml_heap_state* heap);
 
-value* caml_shared_try_alloc(struct caml_heap_state*, mlsize_t wosize, tag_t tag, int is_pinned);
+value* caml_shared_try_alloc(struct caml_heap_state*, mlsize_t, tag_t, int);
 
 void caml_sample_heap_stats(struct caml_heap_state*, struct heap_stats*);
 
@@ -32,7 +47,7 @@ typedef uintnat status;
 struct global_heap_state {
   status MARKED, UNMARKED, GARBAGE;
 };
-extern struct global_heap_state global;
+extern struct global_heap_state caml_global_heap_state;
 
 /* CR mshinwell: ensure this matches [Emitaux] */
 enum {NOT_MARKABLE = 3 << 8};
@@ -46,15 +61,15 @@ Caml_inline header_t With_status_hd(header_t hd, status s) {
 }
 
 Caml_inline int is_garbage(value v) {
-  return Has_status_hd(Hd_val(v), global.GARBAGE);
+  return Has_status_hd(Hd_val(v), caml_global_heap_state.GARBAGE);
 }
 
 Caml_inline int is_unmarked(value v) {
-  return Has_status_hd(Hd_val(v), global.UNMARKED);
+  return Has_status_hd(Hd_val(v), caml_global_heap_state.UNMARKED);
 }
 
 Caml_inline int is_marked(value v) {
-  return Has_status_hd(Hd_val(v), global.MARKED);
+  return Has_status_hd(Hd_val(v), caml_global_heap_state.MARKED);
 }
 
 void caml_redarken_pool(struct pool*, scanning_action, void*);
