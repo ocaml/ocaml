@@ -284,7 +284,6 @@ static void readfloats(struct caml_intern_state* s,
 #endif
 }
 
-/* Same, then raise Out_of_memory */
 CAMLnoreturn_start
 static void intern_stack_overflow(struct caml_intern_state*)
 CAMLnoreturn_end;
@@ -292,7 +291,7 @@ CAMLnoreturn_end;
 static void intern_stack_overflow(struct caml_intern_state* s)
 {
   caml_gc_message (0x04, "Stack overflow in un-marshaling value\n");
-  intern_free_stack(s);
+  intern_cleanup(s);
   caml_raise_out_of_memory();
 }
 
@@ -307,7 +306,7 @@ static struct intern_item * intern_resize_stack(struct caml_intern_state* s,
   newstack = caml_stat_calloc_noexc(newsize, sizeof(struct intern_item));
   if (newstack == NULL) intern_stack_overflow(s);
 
-  /* Copy item from the old stack to the new stack */
+  /* Copy items from the old stack to the new stack */
   memcpy(newstack, s->intern_stack,
          sizeof(struct intern_item) * sp_offset);
 
@@ -337,8 +336,8 @@ static struct intern_item * intern_resize_stack(struct caml_intern_state* s,
     }                                                                   \
   } while(0)
 
-static void intern_alloc(struct caml_intern_state* s,
-                         mlsize_t whsize, mlsize_t num_objects)
+static void intern_alloc_storage(struct caml_intern_state* s, mlsize_t whsize,
+                                 mlsize_t num_objects)
 {
   mlsize_t wosize;
   value v;
@@ -350,8 +349,7 @@ static void intern_alloc(struct caml_intern_state* s,
   wosize = Wosize_whsize(whsize);
 
   if (wosize <= Max_young_wosize && wosize != 0) {
-    Alloc_small(v, wosize, String_tag,
-                { caml_handle_gc_interrupt_no_async_exceptions(); } );
+    v = caml_alloc_small (wosize, String_tag);
     s->intern_dest = (header_t *) Hp_val(v);
   } else {
     CAMLassert (s->intern_dest == NULL);
@@ -386,6 +384,7 @@ static value intern_alloc_obj(struct caml_intern_state* s, caml_domain_state* d,
     p = caml_shared_try_alloc(d->shared_heap, wosize, tag, 0 /* not pinned */);
     d->allocated_words += Whsize_wosize(wosize);
     if (p == NULL) {
+      intern_cleanup (s);
       caml_raise_out_of_memory();
     }
     Hd_hp(p) = Make_header (wosize, tag, caml_global_heap_state.MARKED);
@@ -600,7 +599,6 @@ static void intern_rec(struct caml_intern_state* s,
         sp->arg = ofs;
         ReadItems(s, dest, 1);
         continue;  /* with next iteration of main loop, skipping *dest = v */
-      case CODE_CUSTOM:
       case CODE_CUSTOM_LEN:
       case CODE_CUSTOM_FIXED: {
         uintnat expected_size, temp_size;
@@ -653,6 +651,17 @@ static void intern_rec(struct caml_intern_state* s,
     }
   }
   /* end of case OReadItems */
+  /* The following direct-assignment to [*dest] rather than [caml_modify] is
+     safe since either it is the case that
+
+       1. [dest] points within the minor heap of the current domain or
+       2. [dest] is a freshly-allocated major heap block, but not yet visible
+          to the GC, and if [v] is a block, then it is also in the major heap.
+          So no major to minor heap references are created.
+
+     Moreover, since [*dest] is uninitialised, using `caml_modify` is
+     incorrect; the deletion barrier will mark the old uninitialised value and
+     may crash. */
   *dest = v;
   break;
   default:
@@ -768,7 +777,7 @@ value caml_input_val(struct channel *chan)
   }
   /* Initialize global state */
   intern_init(s, block, block);
-  intern_alloc(s, h.whsize, h.num_objects);
+  intern_alloc_storage(s, h.whsize, h.num_objects);
   /* Fill it in */
   intern_rec(s, &res);
   return intern_end(s, res);
@@ -807,7 +816,7 @@ CAMLexport value caml_input_val_from_bytes(value str, intnat ofs)
   if (ofs + h.header_len + h.data_len > caml_string_length(str))
     caml_failwith("input_val_from_string: bad length");
   /* Allocate result */
-  intern_alloc(s, h.whsize, h.num_objects);
+  intern_alloc_storage(s, h.whsize, h.num_objects);
   s->intern_src = &Byte_u(str, ofs + h.header_len); /* If a GC occurred */
   /* Fill it in */
   intern_rec(s, &obj);
@@ -824,7 +833,7 @@ static value input_val_from_block(struct caml_intern_state* s,
 {
   value obj;
   /* Allocate result */
-  intern_alloc(s, h->whsize, h->num_objects);
+  intern_alloc_storage(s, h->whsize, h->num_objects);
   /* Fill it in */
   intern_rec(s, &obj);
   return (intern_end(s, obj));

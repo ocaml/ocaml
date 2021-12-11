@@ -191,7 +191,7 @@ static struct extern_item * extern_resize_stack(struct caml_extern_state* s,
   newstack = caml_stat_calloc_noexc(newsize, sizeof(struct extern_item));
   if (newstack == NULL) extern_stack_overflow(s);
 
-  /* Copy item from the old stack to the new stack */
+  /* Copy items from the old stack to the new stack */
   memcpy (newstack, s->extern_stack,
           sizeof(struct extern_item) * sp_offset);
 
