@@ -92,6 +92,7 @@ let type_variables = ref (TyVarMap.empty : type_expr TyVarMap.t)
 let univars        = ref ([] : (string * type_expr) list)
 let pre_univars    = ref ([] : type_expr list)
 let used_variables = ref (TyVarMap.empty : (type_expr * Location.t) TyVarMap.t)
+let more_variables = ref ([] : (int * type_expr list) list)
 
 let reset_type_variables () =
   reset_global_level ();
@@ -114,8 +115,47 @@ let validate_name = function
 
 let new_global_var ?name () =
   new_global_var ?name:(validate_name name) ()
-let newvar ?name () =
-  newvar ?name:(validate_name name) ()
+let newvar ?name ?lscope () =
+  newvar ?name:(validate_name name) ?lscope ()
+let newmorevar ?name ~lscope () =
+  let res = newvar ?name ~lscope () in
+  let rec insert_var rev_head used_variables =
+    match used_variables with
+    | (lscope', vars) :: tl when lscope = lscope' ->
+      List.rev_append rev_head ((lscope', res :: vars) :: tl)
+    | hd :: tl -> insert_var (hd :: rev_head) tl
+    | [] -> assert false
+  in
+  if lscope > 0 then more_variables := insert_var [] !more_variables;
+  res
+
+(* Lower any row more variables which weren't expanded or otherwise captured
+   (e.g. by univars). *)
+let lower_morevars lscope =
+  match !more_variables with
+  | (lscope', lscope_more_variables) :: more_variables_tl
+    when lscope' = lscope + 1 ->
+      let lscope_more_variables =
+        List.filter (fun ty ->
+            match get_desc ty with
+            | Tvar _ ->
+                (* Reduce the local scope, if needed. *)
+                let ty_lscope = get_lscope ty in
+                if ty_lscope = 0 then false
+                else if ty_lscope <= lscope then true
+                else (set_lscope ty lscope; true)
+            | _ -> false)
+          lscope_more_variables
+      in
+      more_variables :=
+        begin match more_variables_tl with
+        | (lscope'', lscope_more_variables') :: more_variables_tl ->
+          (* Shift the variables down to the next level. *)
+          (lscope'', lscope_more_variables @ lscope_more_variables')
+            :: more_variables_tl
+        | [] -> []
+        end
+  | _ -> assert false
 
 let type_variable loc name =
   try
@@ -156,12 +196,12 @@ let transl_type_param env styp =
     (fun () -> transl_type_param env styp)
 
 
-let new_pre_univar ?name () =
-  let v = newvar ?name () in pre_univars := v :: !pre_univars; v
+let new_pre_univar ?name ?lscope () =
+  let v = newvar ?name ?lscope () in pre_univars := v :: !pre_univars; v
 
 type poly_univars = (string * type_expr) list
-let make_poly_univars vars =
-  List.map (fun name -> name, newvar ~name ()) vars
+let make_poly_univars ?lscope vars =
+  List.map (fun name -> name, newvar ~name ?lscope ()) vars
 
 let check_poly_univars env loc vars =
   vars |> List.iter (fun (_, v) -> generalize v);
@@ -187,11 +227,11 @@ let instance_poly_univars env loc vars =
 
 type policy = Fixed | Extensible | Univars
 
-let rec transl_type env policy styp =
+let rec transl_type env policy ~lscope styp =
   Builtin_attributes.warning_scope styp.ptyp_attributes
-    (fun () -> transl_type_aux env policy styp)
+    (fun () -> transl_type_aux env policy ~lscope styp)
 
-and transl_type_aux env policy styp =
+and transl_type_aux env policy ~lscope styp =
   let loc = styp.ptyp_loc in
   let ctyp ctyp_desc ctyp_type =
     { ctyp_desc; ctyp_type; ctyp_env = env;
@@ -200,7 +240,7 @@ and transl_type_aux env policy styp =
   match styp.ptyp_desc with
     Ptyp_any ->
       let ty =
-        if policy = Univars then new_pre_univar () else
+        if policy = Univars then new_pre_univar ~lscope () else
           if policy = Fixed then
             raise (Error (styp.ptyp_loc, env, Unbound_type_variable "_"))
           else newvar ()
@@ -216,7 +256,8 @@ and transl_type_aux env policy styp =
         instance (fst (TyVarMap.find name !used_variables))
       with Not_found ->
         let v =
-          if policy = Univars then new_pre_univar ~name () else newvar ~name ()
+          if policy = Univars then new_pre_univar ~name ~lscope ()
+          else newvar ~name ()
         in
         used_variables := TyVarMap.add name (v, styp.ptyp_loc) !used_variables;
         v
@@ -224,19 +265,21 @@ and transl_type_aux env policy styp =
     in
     ctyp (Ttyp_var name) ty
   | Ptyp_arrow(l, st1, st2) ->
-    let cty1 = transl_type env policy st1 in
-    let cty2 = transl_type env policy st2 in
+    let cty1 = transl_type env policy ~lscope st1 in
+    let cty2 = transl_type env policy ~lscope st2 in
     let ty1 = cty1.ctyp_type in
     let ty1 =
       if Btype.is_optional l
-      then newty (Tconstr(Predef.path_option,[ty1], ref Mnil))
+      then newty ~lscope (Tconstr(Predef.path_option,[ty1], ref Mnil))
       else ty1 in
-    let ty = newty (Tarrow(l, ty1, cty2.ctyp_type, commu_ok)) in
+    let ty = newty ~lscope (Tarrow(l, ty1, cty2.ctyp_type, commu_ok)) in
     ctyp (Ttyp_arrow (l, cty1, cty2)) ty
   | Ptyp_tuple stl ->
     assert (List.length stl >= 2);
-    let ctys = List.map (transl_type env policy) stl in
-    let ty = newty (Ttuple (List.map (fun ctyp -> ctyp.ctyp_type) ctys)) in
+    let ctys = List.map (transl_type env policy ~lscope) stl in
+    let ty =
+      newty ~lscope (Ttuple (List.map (fun ctyp -> ctyp.ctyp_type) ctys))
+    in
     ctyp (Ttyp_tuple ctys) ty
   | Ptyp_constr(lid, stl) ->
       let (path, decl) = Env.lookup_type ~loc:lid.loc lid.txt env in
@@ -250,8 +293,8 @@ and transl_type_aux env policy styp =
         raise(Error(styp.ptyp_loc, env,
                     Type_arity_mismatch(lid.txt, decl.type_arity,
                                         List.length stl)));
-      let args = List.map (transl_type env policy) stl in
-      let params = instance_list decl.type_params in
+      let args = List.map (transl_type env policy ~lscope) stl in
+      let params = instance_list ~lscope decl.type_params in
       let unify_param =
         match decl.type_manifest with
           None -> unify_var
@@ -266,11 +309,11 @@ and transl_type_aux env policy styp =
         )
         (List.combine stl args) params;
       let constr =
-        newconstr path (List.map (fun ctyp -> ctyp.ctyp_type) args) in
+        newconstr ~lscope path (List.map (fun ctyp -> ctyp.ctyp_type) args) in
       ctyp (Ttyp_constr (path, lid, args)) constr
   | Ptyp_object (fields, o) ->
-      let ty, fields = transl_fields env policy o fields in
-      ctyp (Ttyp_object (fields, o)) (newobj ty)
+      let ty, fields = transl_fields env policy ~lscope o fields in
+      ctyp (Ttyp_object (fields, o)) (newobj ~lscope ty)
   | Ptyp_class(lid, stl) ->
       let (path, decl, _is_variant) =
         try
@@ -306,8 +349,8 @@ and transl_type_aux env policy styp =
         raise(Error(styp.ptyp_loc, env,
                     Type_arity_mismatch(lid.txt, decl.type_arity,
                                         List.length stl)));
-      let args = List.map (transl_type env policy) stl in
-      let params = instance_list decl.type_params in
+      let args = List.map (transl_type env policy ~lscope) stl in
+      let params = instance_list ~lscope decl.type_params in
       List.iter2
         (fun (sty, cty) ty' ->
            try unify_var env ty' cty.ctyp_type with Unify err ->
@@ -316,7 +359,7 @@ and transl_type_aux env policy styp =
         )
         (List.combine stl args) params;
         let ty_args = List.map (fun ctyp -> ctyp.ctyp_type) args in
-      let ty = Ctype.expand_head env (newconstr path ty_args) in
+      let ty = Ctype.expand_head env (newconstr ~lscope path ty_args) in
       let ty = match get_desc ty with
         Tvariant row ->
           let fields =
@@ -329,11 +372,12 @@ and transl_type_aux env policy styp =
           in
           (* NB: row is always non-static here; more is thus never Tnil *)
           let more =
-            if policy = Univars then new_pre_univar () else newvar () in
+            if policy = Univars then new_pre_univar ~lscope ()
+            else newmorevar ~lscope () in
           let row =
             create_row ~fields ~more
               ~closed:true ~fixed:None ~name:(Some (path, ty_args)) in
-          newty (Tvariant row)
+          newty ~lscope (Tvariant row)
       | Tobject (fi, _) ->
           let _, tv = flatten_fields fi in
           if policy = Univars then pre_univars := tv :: !pre_univars;
@@ -350,7 +394,7 @@ and transl_type_aux env policy styp =
             with Not_found ->
               instance (fst(TyVarMap.find alias !used_variables))
           in
-          let ty = transl_type env policy st in
+          let ty = transl_type env policy ~lscope st in
           begin try unify_var env t ty.ctyp_type with Unify err ->
             let err = Errortrace.swap_unification_error err in
             raise(Error(styp.ptyp_loc, env, Alias_type_mismatch err))
@@ -358,10 +402,10 @@ and transl_type_aux env policy styp =
           ty
         with Not_found ->
           if !Clflags.principal then begin_def ();
-          let t = newvar () in
+          let t = newvar ~lscope () in
           used_variables :=
             TyVarMap.add alias (t, styp.ptyp_loc) !used_variables;
-          let ty = transl_type env policy st in
+          let ty = transl_type env policy ~lscope st in
           begin try unify_var env t ty.ctyp_type with Unify err ->
              let err = Errortrace.swap_unification_error err in
             raise(Error(styp.ptyp_loc, env, Alias_type_mismatch err))
@@ -370,7 +414,7 @@ and transl_type_aux env policy styp =
             end_def ();
             generalize_structure t;
           end;
-          let t = instance t in
+          let t = instance ~lscope t in
           let px = Btype.proxy t in
           begin match get_desc px with
           | Tvar None -> set_type_desc px (Tvar (Some alias))
@@ -383,7 +427,7 @@ and transl_type_aux env policy styp =
   | Ptyp_variant(fields, closed, present) ->
       let name = ref None in
       let mkfield l f =
-        newty (Tvariant (create_row ~fields:[l,f] ~more:(newvar())
+        newty ~lscope (Tvariant (create_row ~fields:[l,f] ~more:(newvar())
                            ~closed:true ~fixed:None ~name:None)) in
       let hfields = Hashtbl.create 17 in
       let add_typed_field loc l f =
@@ -408,7 +452,7 @@ and transl_type_aux env policy styp =
             name := None;
             let tl =
               Builtin_attributes.warning_scope rf_attributes
-                (fun () -> List.map (transl_type env policy) stl)
+                (fun () -> List.map (transl_type env policy ~lscope) stl)
             in
             let f = match present with
               Some present when not (List.mem l.txt present) ->
@@ -424,7 +468,7 @@ and transl_type_aux env policy styp =
             add_typed_field styp.ptyp_loc l.txt f;
               Ttag (l,c,tl)
         | Rinherit sty ->
-            let cty = transl_type env policy sty in
+            let cty = transl_type env policy ~lscope sty in
             let ty = cty.ctyp_type in
             let nm =
               match get_desc cty.ctyp_type with
@@ -470,26 +514,29 @@ and transl_type_aux env policy styp =
         create_row ~fields ~more ~closed:(closed = Closed) ~fixed:None ~name
       in
       let more =
-        if Btype.static_row (make_row (newvar ())) then newty Tnil else
-        if policy = Univars then new_pre_univar () else newvar ()
+        if Btype.static_row (make_row (newvar ())) then newty ~lscope Tnil else
+        if policy = Univars then new_pre_univar ~lscope ()
+        else newmorevar ~lscope ()
       in
-      let ty = newty (Tvariant (make_row more)) in
+      let ty = newty ~lscope (Tvariant (make_row more)) in
       ctyp (Ttyp_variant (tfields, closed, present)) ty
   | Ptyp_poly(vars, st) ->
       let vars = List.map (fun v -> v.txt) vars in
       begin_def();
-      let new_univars = make_poly_univars vars in
+      let new_univars = make_poly_univars ~lscope:(lscope+1) vars in
       let old_univars = !univars in
       univars := new_univars @ !univars;
-      let cty = transl_type env policy st in
+      more_variables := (lscope + 1, []) :: !more_variables;
+      let cty = transl_type env policy ~lscope:(lscope+1) st in
       let ty = cty.ctyp_type in
       univars := old_univars;
       end_def();
       generalize ty;
       let ty_list = check_poly_univars env styp.ptyp_loc new_univars in
       let ty_list = List.filter (fun v -> deep_occur v ty) ty_list in
-      let ty' = Btype.newgenty (Tpoly(ty, ty_list)) in
-      unify_var env (newvar()) ty';
+      let ty' = Btype.newgenty ~lscope (Tpoly(ty, ty_list)) in
+      unify_var env (newvar ~lscope ()) ty';
+      lower_morevars lscope;
       ctyp (Ttyp_poly (vars, cty)) ty'
   | Ptyp_package (p, l) ->
       let l, mty = create_package_mty true styp.ptyp_loc env (p, l) in
@@ -497,11 +544,12 @@ and transl_type_aux env policy styp =
       let mty = !transl_modtype env mty in
       widen z;
       let ptys = List.map (fun (s, pty) ->
-                             s, transl_type env policy pty
+                             s, transl_type env policy ~lscope pty
                           ) l in
       let path = !transl_modtype_longident styp.ptyp_loc env p.txt in
-      let ty = newty (Tpackage (path,
-                       List.map (fun (s, cty) -> (s.txt, cty.ctyp_type)) ptys))
+      let ty = newty ~lscope
+        (Tpackage (path,
+                   List.map (fun (s, cty) -> (s.txt, cty.ctyp_type)) ptys))
       in
       ctyp (Ttyp_package {
             pack_path = path;
@@ -512,7 +560,7 @@ and transl_type_aux env policy styp =
   | Ptyp_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
 
-and transl_fields env policy o fields =
+and transl_fields env policy ~lscope o fields =
   let hfields = Hashtbl.create 17 in
   let add_typed_field loc l ty =
     try
@@ -530,14 +578,16 @@ and transl_fields env policy o fields =
     | Otag (s, ty1) -> begin
         let ty1 =
           Builtin_attributes.warning_scope of_attributes
-            (fun () -> transl_type env policy (Ast_helper.Typ.force_poly ty1))
+            (fun () ->
+              transl_type env policy ~lscope
+                (Ast_helper.Typ.force_poly ty1))
         in
         let field = OTtag (s, ty1) in
         add_typed_field ty1.ctyp_loc s.txt ty1.ctyp_type;
         field
       end
     | Oinherit sty -> begin
-        let cty = transl_type env policy sty in
+        let cty = transl_type env policy ~lscope sty in
         let nm =
           match get_desc cty.ctyp_type with
             Tconstr(p, _, _) -> Some p
@@ -570,11 +620,11 @@ and transl_fields env policy o fields =
   let fields = Hashtbl.fold (fun s ty l -> (s, ty) :: l) hfields [] in
   let ty_init =
      match o, policy with
-     | Closed, _ -> newty Tnil
-     | Open, Univars -> new_pre_univar ()
-     | Open, _ -> newvar () in
+     | Closed, _ -> newty ~lscope Tnil
+     | Open, Univars -> new_pre_univar ~lscope ()
+     | Open, _ -> newmorevar ~lscope () in
   let ty = List.fold_left (fun ty (s, ty') ->
-      newty (Tfield (s, field_public, ty', ty))) ty_init fields in
+      newty ~lscope (Tfield (s, field_public, ty', ty))) ty_init fields in
   ty, object_fields
 
 
@@ -633,16 +683,19 @@ let globalize_used_variables env fixed =
       !r
 
 let transl_simple_type env ?univars:(uvs=[]) fixed styp =
-  univars := uvs; used_variables := TyVarMap.empty;
-  let typ = transl_type env (if fixed then Fixed else Extensible) styp in
+  univars := uvs; used_variables := TyVarMap.empty; more_variables := [];
+  let typ =
+    transl_type env (if fixed then Fixed else Extensible) ~lscope:0 styp
+  in
   globalize_used_variables env fixed ();
   make_fixed_univars typ.ctyp_type;
   typ
 
 let transl_simple_type_univars env styp =
   univars := []; used_variables := TyVarMap.empty; pre_univars := [];
+  more_variables := [];
   begin_def ();
-  let typ = transl_type env Univars styp in
+  let typ = transl_type env Univars ~lscope:1 styp in
   (* Only keep already global variables in used_variables *)
   let new_variables = !used_variables in
   used_variables := TyVarMap.empty;
@@ -668,9 +721,9 @@ let transl_simple_type_univars env styp =
         instance (Btype.newgenty (Tpoly (typ.ctyp_type, univs))) }
 
 let transl_simple_type_delayed env styp =
-  univars := []; used_variables := TyVarMap.empty;
+  univars := []; used_variables := TyVarMap.empty; more_variables := [];
   begin_def ();
-  let typ = transl_type env Extensible styp in
+  let typ = transl_type env Extensible ~lscope:0 styp in
   end_def ();
   make_fixed_univars typ.ctyp_type;
   (* This brings the used variables to the global level, but doesn't link them
@@ -687,7 +740,7 @@ let transl_type_scheme env styp =
   | Ptyp_poly (vars, st) ->
      begin_def();
      let vars = List.map (fun v -> v.txt) vars in
-     let univars = make_poly_univars vars in
+     let univars = make_poly_univars ~lscope:0 vars in
      let typ = transl_simple_type env ~univars true st in
      end_def();
      generalize typ.ctyp_type;

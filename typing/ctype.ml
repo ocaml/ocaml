@@ -231,17 +231,23 @@ let proper_abbrevs path tl abbrev =
 
 (* Re-export generic type creators *)
 
-let newty desc              = newty2 ~level:!current_level desc
-let new_scoped_ty scope desc = newty3 ~level:!current_level ~scope desc
+let newty ?lscope desc =
+  newty2 ~level:!current_level ?lscope desc
+let new_scoped_ty ?lscope scope desc =
+  newty3 ~level:!current_level ~scope ?lscope desc
 
-let newvar ?name ()         = newty2 ~level:!current_level (Tvar name)
-let newvar2 ?name level     = newty2 ~level:level (Tvar name)
-let new_global_var ?name () = newty2 ~level:!global_level (Tvar name)
-let newstub ~scope          = newty3 ~level:!current_level ~scope (Tvar None)
+let newvar ?name ?lscope () =
+  newty2 ~level:!current_level ?lscope (Tvar name)
+let newvar2 ?name ?lscope level =
+  newty2 ~level:level ?lscope (Tvar name)
+let new_global_var ?name ?lscope () =
+  newty2 ~level:!global_level ?lscope (Tvar name)
+let newstub ~scope ?lscope () =
+  newty3 ~level:!current_level ~scope ?lscope (Tvar None)
 
-let newobj fields      = newty (Tobject (fields, ref None))
+let newobj ?lscope fields = newty ?lscope (Tobject (fields, ref None))
 
-let newconstr path tyl = newty (Tconstr (path, tyl, ref Mnil))
+let newconstr ?lscope path tyl = newty ?lscope (Tconstr (path, tyl, ref Mnil))
 
 let none = newty (Ttuple [])                (* Clearly ill-formed type *)
 
@@ -318,9 +324,9 @@ let flatten_fields ty =
     let (l, r) = flatten [] ty in
     (List.sort (fun (n, _, _) (n', _, _) -> compare n n') l, r)
 
-let build_fields level =
+let build_fields level lscope =
   List.fold_right
-    (fun (s, k, ty1) ty2 -> newty2 ~level (Tfield(s, k, ty1, ty2)))
+    (fun (s, k, ty1) ty2 -> newty2 ~level ~lscope (Tfield(s, k, ty1, ty2)))
 
 let associate_fields fields1 fields2 =
   let rec associate p s s' =
@@ -721,6 +727,9 @@ let update_scope_for tr_exn scope ty =
     update_scope scope ty
   with Escape e -> raise_for tr_exn (Escape e)
 
+type local_scope_reduce =
+  { initial_scope: int; base_scope: int; target_scope: int }
+
 (* Note: the level of a type constructor must be greater than its binding
     time. That way, a type constructor cannot escape the scope of its
     definition, as would be the case in
@@ -729,8 +738,40 @@ let update_scope_for tr_exn scope ty =
     (without this constraint, the type system would actually be unsound.)
 *)
 
-let rec update_level env level expand ty =
-  if get_level ty > level then begin
+let rec update_level visited env level local_scope_reduce expand ty =
+  if not (TypeSet.mem ty !visited) then begin
+  visited := TypeSet.add ty !visited;
+  let update_level = update_level visited in
+  let should_lscope, unsafe_lscope, local_scope_reduce, lscope =
+    let local_scope = get_lscope ty in
+    match local_scope_reduce with
+    | None -> false, false, None, local_scope
+    | Some {initial_scope; base_scope; target_scope} ->
+        if target_scope > local_scope || local_scope = 0 then
+          (* NB: We don't accept [target_scope = local_scope] for this branch,
+             because the base scope may have been unsafely reduced to equality,
+             which would otherwise be a leak.
+             For example, reducing the poly at local scope [3] to [2] should not
+             allow the variable ['b] to escape below:
+               <a: 'a.[1] <b: 'b.[2] <c: 'c.[3] 'b * 'c> > >
+          *)
+          false, false, None, local_scope
+        else
+          let base_scope', local_scope_reduce =
+            if local_scope >= base_scope then base_scope, local_scope_reduce
+            else
+              (* This scope is lower than the initial scope, we want to lower it
+                 to the target scope to ensure that our whole type ends up at
+                 this scope. *)
+              ( local_scope
+              , Some { initial_scope; base_scope= local_scope; target_scope } )
+          in
+          ( true
+          , local_scope = base_scope' (* type isn't shielded by any binders *)
+          , local_scope_reduce
+          , (local_scope - base_scope' + target_scope) )
+  in
+  if should_lscope || get_level ty > level then begin
     if level < get_scope ty then raise_scope_escape_exn ty;
     match get_desc ty with
       Tconstr(p, _tl, _abbrev) when level < Path.scope p ->
@@ -738,7 +779,7 @@ let rec update_level env level expand ty =
         begin try
           let ty' = !forward_try_expand_safe env ty in
           link_type ty ty';
-          update_level env level expand ty'
+          update_level env level local_scope_reduce expand ty'
         with Cannot_expand ->
           raise_escape_exn (Constructor p)
         end
@@ -756,20 +797,23 @@ let rec update_level env level expand ty =
           if not needs_expand then raise Cannot_expand;
           let ty' = !forward_try_expand_safe env ty in
           link_type ty ty';
-          update_level env level expand ty'
+          update_level env level local_scope_reduce expand ty'
         with Cannot_expand ->
           set_level ty level;
-          iter_type_expr (update_level env level expand) ty
+          set_lscope ty lscope;
+          iter_type_expr (update_level env level local_scope_reduce expand) ty
         end
     | Tpackage (p, fl) when level < Path.scope p ->
         let p' = normalize_package_path env p in
         if Path.same p p' then raise_escape_exn (Module_type p);
         set_type_desc ty (Tpackage (p', fl));
-        update_level env level expand ty
+        visited := TypeSet.remove ty !visited;
+        update_level env level local_scope_reduce expand ty
     | Tobject (_, ({contents=Some(p, _tl)} as nm))
       when level < Path.scope p ->
         set_name nm None;
-        update_level env level expand ty
+        visited := TypeSet.remove ty !visited;
+        update_level env level local_scope_reduce expand ty
     | Tvariant row ->
         begin match row_name row with
         | Some (p, _tl) when level < Path.scope p ->
@@ -777,31 +821,45 @@ let rec update_level env level expand ty =
         | _ -> ()
         end;
         set_level ty level;
-        iter_type_expr (update_level env level expand) ty
+        set_lscope ty lscope;
+        iter_type_expr (update_level env level local_scope_reduce expand) ty
     | Tfield(lab, _, ty1, _)
       when lab = dummy_method && level < get_scope ty1 ->
         raise_escape_exn Self
+    | Tunivar _ when unsafe_lscope ->
+        raise_escape_exn (Univ ty)
     | _ ->
         set_level ty level;
+        set_lscope ty lscope;
         (* XXX what about abbreviations in Tconstr ? *)
-        iter_type_expr (update_level env level expand) ty
-  end
+        iter_type_expr (update_level env level local_scope_reduce expand) ty
+  end end
 
 (* First try without expanding, then expand everything,
    to avoid combinatorial blow-up *)
-let update_level env level ty =
-  if get_level ty > level then begin
+let update_level env level lscope ty =
+  let local_scope_reduce =
+    let lscope_ty = get_lscope ty in
+    if lscope_ty > lscope then
+      Some
+        { initial_scope= lscope_ty
+        ; base_scope= lscope_ty
+        ; target_scope= lscope}
+    else
+      None
+  in
+  if Option.is_some local_scope_reduce || get_level ty > level then begin
     let snap = snapshot () in
     try
-      update_level env level false ty
+      update_level (ref TypeSet.empty) env level local_scope_reduce false ty
     with Escape _ ->
       backtrack snap;
-      update_level env level true ty
+      update_level (ref TypeSet.empty) env level local_scope_reduce true ty
   end
 
-let update_level_for tr_exn env level ty =
+let update_level_for tr_exn env level lscope ty =
   try
-    update_level env level ty
+    update_level env level lscope ty
   with Escape e -> raise_for tr_exn (Escape e)
 
 (* Lower level of type variables inside contravariant branches *)
@@ -1010,15 +1068,47 @@ let rec find_repr p1 =
 let abbreviations = ref (ref Mnil)
   (* Abbreviation memorized. *)
 
+let copy_local_scope_reduce lscope local_scope_reduce =
+  match local_scope_reduce with
+  | Some {initial_scope; base_scope; target_scope} ->
+      if lscope > base_scope then
+        let adjustment = target_scope - initial_scope in
+        let adjust_lscope lscope =
+          if lscope > base_scope then lscope + adjustment else lscope
+        in
+        (lscope + adjustment, adjust_lscope, local_scope_reduce)
+      else if lscope <= target_scope then
+        (* This type is outside of the binder that the target scope refers
+           to. *)
+        (lscope, (fun x -> x), None)
+      else
+        (* This type appears within the binder that the target scope refers
+           to, but outside the scope of the initial type. This represents an
+           escape, something has gone wrong somewhere. *)
+        assert false
+  | None -> (lscope, (fun x -> x), None)
+
+let setup_copy_local_scope_reduce lscope ty =
+  let lscope' = get_lscope ty in
+  if lscope = lscope' then None
+  else
+    Some
+      { initial_scope= lscope'
+      ; target_scope= lscope
+      ; base_scope= Int.min lscope (lscope'-1) }
+
 (* partial: we may not wish to copy the non generic types
    before we call type_pat *)
-let rec copy ?partial ?keep_names scope ty =
-  let copy = copy ?partial ?keep_names scope in
+let rec copy ?partial ?keep_names scope local_scope_reduce ty =
   match get_desc ty with
     Tsubst (ty, _) -> ty
   | desc ->
     let level = get_level ty in
     if level <> generic_level && partial = None then ty else
+    let lscope, adjust_lscope, local_scope_reduce =
+      copy_local_scope_reduce (get_lscope ty) local_scope_reduce
+    in
+    let copy = copy ?partial ?keep_names scope local_scope_reduce in
     (* We only forget types that are non generic and do not contain
        free univars *)
     let forget =
@@ -1030,8 +1120,9 @@ let rec copy ?partial ?keep_names scope ty =
             if keep then level else !current_level
           else generic_level
     in
-    if forget <> generic_level then newty2 ~level:forget (Tvar None) else
-    let t = newstub ~scope:(get_scope ty) in
+    if forget <> generic_level then
+      newty2 ~level:forget ~lscope (Tvar None) else
+    let t = newstub ~scope:(get_scope ty) ~lscope () in
     For_copy.redirect_desc scope ty (Tsubst (t, None));
     let desc' =
       match desc with
@@ -1061,7 +1152,7 @@ let rec copy ?partial ?keep_names scope ty =
           (* We must substitute in a subtle way *)
           (* Tsubst takes a tuple containing the row var and the variant *)
           begin match mored with
-            Tsubst (_, Some ty2) ->
+            Tsubst (_, Some ty2) when get_lscope ty = get_lscope more ->
               (* This variant type has been already copied *)
               (* Change the stub to avoid Tlink in the new type *)
               For_copy.redirect_desc scope ty (Tsubst (ty2, None));
@@ -1071,13 +1162,13 @@ let rec copy ?partial ?keep_names scope ty =
               let keep = get_level more <> generic_level && partial = None in
               let more' =
                 match mored with
-                  Tsubst (ty, None) -> ty
-                  (* TODO: is this case possible?
-                     possibly an interaction with (copy more) below? *)
+                  Tsubst (ty, _) -> ty
                 | Tconstr _ | Tnil ->
                     copy more
                 | Tvar _ | Tunivar _ ->
-                    if keep then more else newty mored
+                    if keep then more
+                    else
+                      newty ~lscope:(adjust_lscope (get_lscope more)) mored
                 |  _ -> assert false
               in
               let row =
@@ -1096,7 +1187,7 @@ let rec copy ?partial ?keep_names scope ty =
                       if not (eq_type more more') then
                         more' (* we've already made a copy *)
                       else
-                        newvar ()
+                        newvar ~lscope:(adjust_lscope (get_lscope more)) ()
                     in
                     let not_reither (_, f) =
                       match row_field_repr f with
@@ -1126,25 +1217,37 @@ let rec copy ?partial ?keep_names scope ty =
     Transient_expr.set_stub_desc t desc';
     t
 
+let copy' = copy
+
+let copy ?partial ?keep_names scope ~lscope ty =
+  let local_scope_reduce = setup_copy_local_scope_reduce lscope ty in
+  copy ?partial ?keep_names scope local_scope_reduce ty
+
 (**** Variants of instantiations ****)
 
-let instance ?partial sch =
+let instance ?partial ?lscope sch =
   let partial =
     match partial with
       None -> None
     | Some keep -> Some (compute_univars sch, keep)
   in
-  For_copy.with_scope (fun scope -> copy ?partial scope sch)
+  let lscope =
+    match lscope with
+    | None -> get_lscope sch
+    | Some lscope -> lscope
+  in
+  For_copy.with_scope (fun scope -> copy ?partial scope ~lscope sch)
 
 let generic_instance sch =
   let old = !current_level in
   current_level := generic_level;
-  let ty = instance sch in
+  let ty = instance ~lscope:0 sch in
   current_level := old;
   ty
 
-let instance_list schl =
-  For_copy.with_scope (fun scope -> List.map (fun t -> copy scope t) schl)
+let instance_list ?(lscope = 0) schl =
+  For_copy.with_scope (fun scope ->
+    List.map (fun t -> copy scope ~lscope t) schl)
 
 let reified_var_counter = ref Vars.empty
 let reset_reified_var_counter () =
@@ -1202,30 +1305,39 @@ let instance_constructor ?in_pattern cstr =
               ~scope:fresh_constr_scope in
           env := new_env;
           let to_unify = newty (Tconstr (Path.Pident id,[],ref Mnil)) in
-          let tv = copy scope existential in
+          let tv = copy scope ~lscope:0 existential in
           assert (is_Tvar tv);
           link_type tv to_unify
         in
         List.iter process cstr.cstr_existentials
     end;
-    let ty_res = copy scope cstr.cstr_res in
-    let ty_args = List.map (copy scope) cstr.cstr_args in
-    let ty_ex = List.map (copy scope) cstr.cstr_existentials in
+    let ty_res = copy scope ~lscope:0 cstr.cstr_res in
+    let ty_args = List.map (copy scope ~lscope:0) cstr.cstr_args in
+    let ty_ex = List.map (copy scope ~lscope:0) cstr.cstr_existentials in
     (ty_args, ty_res, ty_ex)
   )
 
-let instance_parameterized_type ?keep_names sch_args sch =
+let instance_parameterized_type ?keep_names ?lscope_args sch_args ?(lscope = 0)
+    sch =
+  let lscope_args =
+    match lscope_args with
+    | Some lscope_args -> lscope_args
+    | None -> List.map (fun _ -> lscope) sch_args
+  in
   For_copy.with_scope (fun scope ->
-    let ty_args = List.map (fun t -> copy ?keep_names scope t) sch_args in
-    let ty = copy scope sch in
+    let ty_args =
+      List.map2 (fun t lscope -> copy ?keep_names scope ~lscope t)
+        sch_args lscope_args
+    in
+    let ty = copy scope ~lscope sch in
     (ty_args, ty)
   )
 
-let instance_parameterized_type_2 sch_args sch_lst sch =
+let instance_parameterized_type_2 ~lscope sch_args sch_lst sch =
   For_copy.with_scope (fun scope ->
-    let ty_args = List.map (copy scope) sch_args in
-    let ty_lst = List.map (copy scope) sch_lst in
-    let ty = copy scope sch in
+    let ty_args = List.map (copy ~lscope scope) sch_args in
+    let ty_lst = List.map (copy ~lscope scope) sch_lst in
+    let ty = copy ~lscope scope sch in
     (ty_args, ty_lst, ty)
   )
 
@@ -1251,9 +1363,9 @@ let map_kind f = function
 
 let instance_declaration decl =
   For_copy.with_scope (fun scope ->
-    {decl with type_params = List.map (copy scope) decl.type_params;
-     type_manifest = Option.map (copy scope) decl.type_manifest;
-     type_kind = map_kind (copy scope) decl.type_kind;
+    {decl with type_params = List.map (copy scope ~lscope:0) decl.type_params;
+     type_manifest = Option.map (copy scope ~lscope:0) decl.type_manifest;
+     type_kind = map_kind (copy scope ~lscope:0) decl.type_kind;
     }
   )
 
@@ -1265,6 +1377,7 @@ let generic_instance_declaration decl =
   decl
 
 let instance_class params cty =
+  let copy scope = copy scope ~lscope:0 in
   let rec copy_class_type scope = function
     | Cty_constr (path, tyl, cty) ->
         let tyl' = List.map (copy scope) tyl in
@@ -1308,13 +1421,19 @@ let delayed_copy = ref []
 (* Copy without sharing until there are no free univars left *)
 (* all free univars must be included in [visited]            *)
 let rec copy_sep ~cleanup_scope ~fixed ~free ~bound ~may_share
-    (visited : (int * (type_expr * type_expr list)) list) (ty : type_expr) =
+    ~local_scope_reduce (visited : (int * (type_expr * type_expr list)) list)
+    (ty : type_expr) =
   let univars = free ty in
   if is_Tvar ty || may_share && TypeSet.is_empty univars then
+    let lscope, _adjust_lscope, local_scope_reduce =
+      copy_local_scope_reduce (get_lscope ty) local_scope_reduce
+    in
     if get_level ty <> generic_level then ty else
-    let t = newstub ~scope:(get_scope ty) in
+    let t = newstub ~scope:(get_scope ty) ~lscope () in
     delayed_copy :=
-      lazy (Transient_expr.set_stub_desc t (Tlink (copy cleanup_scope ty)))
+      lazy
+        (Transient_expr.set_stub_desc t
+          (Tlink (copy' cleanup_scope local_scope_reduce ty)))
       :: !delayed_copy;
     t
   else try
@@ -1323,7 +1442,10 @@ let rec copy_sep ~cleanup_scope ~fixed ~free ~bound ~may_share
     if dl <> [] && conflicts univars dl then raise Not_found;
     t
   with Not_found -> begin
-    let t = newstub ~scope:(get_scope ty) in
+    let lscope, adjust_lscope, local_scope_reduce =
+      copy_local_scope_reduce (get_lscope ty) local_scope_reduce
+    in
+    let t = newstub ~scope:(get_scope ty) ~lscope () in
     let desc = get_desc ty in
     let visited =
       match desc with
@@ -1334,7 +1456,9 @@ let rec copy_sep ~cleanup_scope ~fixed ~free ~bound ~may_share
       | Tlink _ | Tsubst _ ->
           assert false
     in
-    let copy_rec = copy_sep ~cleanup_scope ~fixed ~free ~bound visited in
+    let copy_rec =
+      copy_sep ~cleanup_scope ~fixed ~free ~bound ~local_scope_reduce visited
+    in
     let desc' =
       match desc with
       | Tvariant row ->
@@ -1347,13 +1471,17 @@ let rec copy_sep ~cleanup_scope ~fixed ~free ~bound ~may_share
             copy_row (copy_rec ~may_share:true) fixed' row keep more' in
           Tvariant row
       | Tpoly (t1, tl) ->
-          let tl' = List.map (fun t -> newty (get_desc t)) tl in
+          let tl' =
+            List.map (fun t ->
+                newty ~lscope:(adjust_lscope (get_lscope t)) (get_desc t))
+              tl
+          in
           let bound = tl @ bound in
           let visited =
             List.map2 (fun ty t -> get_id ty, (t, bound)) tl tl' @ visited in
           let body =
             copy_sep ~cleanup_scope ~fixed ~free ~bound ~may_share:true
-              visited t1 in
+              ~local_scope_reduce visited t1 in
           Tpoly (body, tl')
       | Tfield (p, k, ty1, ty2) ->
           (* the kind is kept shared, see Btype.copy_type_desc *)
@@ -1365,26 +1493,28 @@ let rec copy_sep ~cleanup_scope ~fixed ~free ~bound ~may_share
     t
   end
 
-let instance_poly' cleanup_scope ~keep_names fixed univars sch =
+let instance_poly' cleanup_scope ~keep_names ?(lscope = 0) fixed univars sch =
   (* In order to compute univars below, [sch] should not contain [Tsubst] *)
   let copy_var ty =
     match get_desc ty with
-      Tunivar name -> if keep_names then newty (Tvar name) else newvar ()
+      Tunivar name ->
+        if keep_names then newty ~lscope (Tvar name) else newvar ~lscope ()
     | _ -> assert false
   in
   let vars = List.map copy_var univars in
   let pairs = List.map2 (fun u v -> get_id u, (v, [])) univars vars in
   delayed_copy := [];
+  let local_scope_reduce = setup_copy_local_scope_reduce lscope sch in
   let ty =
     copy_sep ~cleanup_scope ~fixed ~free:(compute_univars sch) ~bound:[]
-      ~may_share:true pairs sch in
+      ~local_scope_reduce ~may_share:true pairs sch in
   List.iter Lazy.force !delayed_copy;
   delayed_copy := [];
   vars, ty
 
-let instance_poly ?(keep_names=false) fixed univars sch =
+let instance_poly ?(keep_names=false) ?lscope fixed univars sch =
   For_copy.with_scope (fun cleanup_scope ->
-    instance_poly' cleanup_scope ~keep_names fixed univars sch
+    instance_poly' cleanup_scope ~keep_names ?lscope fixed univars sch
   )
 
 let instance_label fixed lbl =
@@ -1394,10 +1524,10 @@ let instance_label fixed lbl =
         Tpoly (ty, tl) ->
           instance_poly' scope ~keep_names:false fixed tl ty
       | _ ->
-          [], copy scope lbl.lbl_arg
+          [], copy scope ~lscope:0 lbl.lbl_arg
     in
     (* call [copy] after [instance_poly] to avoid introducing [Tsubst] *)
-    let ty_res = copy scope lbl.lbl_res in
+    let ty_res = copy scope ~lscope:0 lbl.lbl_res in
     (vars, ty_arg, ty_res)
   )
 
@@ -1407,11 +1537,11 @@ let instance_label fixed lbl =
 let unify_var' = (* Forward declaration *)
   ref (fun _env _ty1 _ty2 -> assert false)
 
-let subst env level priv abbrev oty params args body =
+let subst env level lscope priv abbrev oty params args body =
   if List.length params <> List.length args then raise Cannot_subst;
   let old_level = !current_level in
   current_level := level;
-  let body0 = newvar () in          (* Stub *)
+  let body0 = newvar ~lscope () in          (* Stub *)
   let undo_abbrev =
     match oty with
     | None -> fun () -> () (* No abbreviation added *)
@@ -1423,8 +1553,11 @@ let subst env level priv abbrev oty params args body =
             fun () -> forget_abbrev abbrev path
         | _ -> assert false
   in
+  let lscope_args = List.map get_lscope args in
   abbreviations := abbrev;
-  let (params', body') = instance_parameterized_type params body in
+  let (params', body') =
+    instance_parameterized_type ~lscope ~lscope_args params body
+  in
   abbreviations := ref Mnil;
   try
     !unify_var' env body0 body';
@@ -1441,10 +1574,15 @@ let subst env level priv abbrev oty params args body =
    not. [generic_level] might be somewhat slower, but it ensures
    invariants on types are enforced (decreasing levels), and we don't
    care about efficiency here.
+   We do, however, care that the local scope remains well-formed, so we choose
+   the lowest local scope from among the arguments to be applied.
 *)
 let apply env params body args =
   try
-    subst env generic_level Public (ref Mnil) None params args body
+    let lscope =
+      List.fold_left (fun acc ty -> Int.max acc (get_lscope ty)) 0 args
+    in
+    subst env generic_level lscope Public (ref Mnil) None params args body
   with
     Cannot_subst -> raise Cannot_apply
 
@@ -1494,14 +1632,15 @@ let expand_abbrev_gen kind find_type_expansion env ty =
     Tconstr (path, args, abbrev) ->
       let level = get_level ty in
       let scope = get_scope ty in
+      let lscope = get_lscope ty in
       let lookup_abbrev = proper_abbrevs path args abbrev in
       begin match find_expans kind path !lookup_abbrev with
         Some ty' ->
           (* prerr_endline
             ("found a "^string_of_kind kind^" expansion for "^Path.name path);*)
-          if level <> generic_level then
+          if level <> generic_level || lscope <> 0 then
             begin try
-              update_level env level ty'
+              update_level env level lscope ty'
             with Escape _ ->
               (* XXX This should not happen.
                  However, levels are not correctly restored after a
@@ -1523,13 +1662,13 @@ let expand_abbrev_gen kind find_type_expansion env ty =
             (* another way to expand is to normalize the path itself *)
             let path' = Env.normalize_type_path None env path in
             if Path.same path path' then raise Cannot_expand
-            else newty2 ~level (Tconstr (path', args, abbrev))
+            else newty2 ~level ~lscope (Tconstr (path', args, abbrev))
           | (params, body, lv) ->
             (* prerr_endline
               ("add a "^string_of_kind kind^" expansion for "^Path.name path);*)
             let ty' =
               try
-                subst env level kind abbrev (Some ty) params args body
+                subst env level lscope kind abbrev (Some ty) params args body
               with Cannot_subst -> raise_escape_exn Constraint
             in
             (* For gadts, remember type as non exportable *)
@@ -1691,7 +1830,8 @@ let full_expand ~may_forget_scope env ty =
   in
   match get_desc ty with
     Tobject (fi, {contents = Some (_, v::_)}) when is_Tvar v ->
-      newty2 ~level:(get_level ty) (Tobject (fi, ref None))
+      newty2 ~level:(get_level ty) ~lscope:(get_lscope ty)
+        (Tobject (fi, ref None))
   | _ ->
       ty
 
@@ -1838,7 +1978,13 @@ let local_non_recursive_abbrev env p ty =
 (* Since we cannot duplicate universal variables, unification must
    be done at meta-level, using bindings in univar_pairs *)
 (* TODO: use find_opt *)
-let rec unify_univar t1 t2 = function
+let rec unify_univar t1 t2 cl =
+  begin
+    let ls1 = get_lscope t1 and ls2 = get_lscope t2 in
+    if ls1 < ls2 then raise_escape_exn (Univ t2)
+    else if ls2 < ls1 then raise_escape_exn (Univ t1)
+  end;
+  match cl with
     (cl1, cl2) :: rem ->
       let find_univ t cl =
         try
@@ -1862,7 +2008,9 @@ let rec unify_univar t1 t2 = function
    [Cannot_unify_universal_variables] *)
 let unify_univar_for tr_exn t1 t2 univar_pairs =
   try unify_univar t1 t2 univar_pairs
-  with Cannot_unify_universal_variables -> raise_unexplained_for tr_exn
+  with
+    Cannot_unify_universal_variables -> raise_unexplained_for tr_exn
+  | Escape e -> raise_for tr_exn (Escape e)
 
 (* Test the occurrence of free univars in a type *)
 (* That's way too expensive. Must do some kind of caching *)
@@ -1926,82 +2074,29 @@ let occur_univar_for tr_exn env ty =
     occur_univar env ty
   with Escape e -> raise_for tr_exn (Escape e)
 
-(* Grouping univars by families according to their binders *)
-let add_univars =
-  List.fold_left (fun s (t,_) -> TypeSet.add t s)
-
-let get_univar_family univar_pairs univars =
-  if univars = [] then TypeSet.empty else
-  let insert s = function
-      cl1, (_::_ as cl2) ->
-        if List.exists (fun (t1,_) -> TypeSet.mem t1 s) cl1 then
-          add_univars s cl2
-        else s
-    | _ -> s
-  in
-  let s = List.fold_right TypeSet.add univars TypeSet.empty in
-  List.fold_left insert s univar_pairs
-
-(* Whether a family of univars escapes from a type *)
-let univars_escape env univar_pairs vl ty =
-  let family = get_univar_family univar_pairs vl in
-  let visited = ref TypeSet.empty in
-  let rec occur t =
-    if TypeSet.mem t !visited then () else begin
-      visited := TypeSet.add t !visited;
-      match get_desc t with
-        Tpoly (t, tl) ->
-          if List.exists (fun t -> TypeSet.mem t family) tl then ()
-          else occur t
-      | Tunivar _ -> if TypeSet.mem t family then raise_escape_exn (Univ t)
-      | Tconstr (_, [], _) -> ()
-      | Tconstr (p, tl, _) ->
-          begin try
-            let td = Env.find_type p env in
-            List.iter2
-              (* see occur_univar *)
-              (fun t v -> if not Variance.(eq v null) then occur t)
-              tl td.type_variance
-          with Not_found ->
-            List.iter occur tl
-          end
-      | _ ->
-          iter_type_expr occur t
-    end
-  in
-  occur ty
-
 (* Wrapper checking that no variable escapes and updating univar_pairs *)
-let enter_poly env univar_pairs t1 tl1 t2 tl2 f =
+let enter_poly univar_pairs t1 tl1 t2 tl2 f =
   let old_univars = !univar_pairs in
-  let known_univars =
-    List.fold_left (fun s (cl,_) -> add_univars s cl)
-      TypeSet.empty old_univars
-  in
-  if List.exists (fun t -> TypeSet.mem t known_univars) tl1 then
-     univars_escape env old_univars tl1 (newty(Tpoly(t2,tl2)));
-  if List.exists (fun t -> TypeSet.mem t known_univars) tl2 then
-    univars_escape env old_univars tl2 (newty(Tpoly(t1,tl1)));
   let cl1 = List.map (fun t -> t, ref None) tl1
   and cl2 = List.map (fun t -> t, ref None) tl2 in
   univar_pairs := (cl1,cl2) :: (cl2,cl1) :: old_univars;
   Misc.try_finally (fun () -> f t1 t2)
     ~always:(fun () -> univar_pairs := old_univars)
 
-let enter_poly_for tr_exn env univar_pairs t1 tl1 t2 tl2 f =
+let enter_poly_for tr_exn univar_pairs t1 tl1 t2 tl2 f =
   try
-    enter_poly env univar_pairs t1 tl1 t2 tl2 f
+    enter_poly univar_pairs t1 tl1 t2 tl2 f
   with Escape e -> raise_for tr_exn (Escape e)
 
 let univar_pairs = ref []
 
 (**** Instantiate a generic type into a poly type ***)
 
-let polyfy env ty vars =
+let polyfy env ?(lscope = 0) ty vars =
   let subst_univar scope ty =
     match get_desc ty with
     | Tvar name when get_level ty = generic_level ->
-        let t = newty (Tunivar name) in
+        let t = newty ~lscope:(lscope + 1) (Tunivar name) in
         For_copy.redirect_desc scope ty (Tsubst (t, None));
         Some t
     | _ -> None
@@ -2011,16 +2106,16 @@ let polyfy env ty vars =
   let vars = List.map (expand_head env) vars in
   For_copy.with_scope (fun scope ->
     let vars' = List.filter_map (subst_univar scope) vars in
-    let ty = copy scope ty in
-    let ty = newty2 ~level:(get_level ty) (Tpoly(ty, vars')) in
+    let ty = copy ~lscope:(lscope + 1) scope ty in
+    let ty = newty2 ~level:(get_level ty) ~lscope (Tpoly(ty, vars')) in
     let complete = List.length vars = List.length vars' in
     ty, complete
   )
 
 (* assumption: [ty] is fully generalized. *)
-let reify_univars env ty =
+let reify_univars env ?lscope ty =
   let vars = free_variables ty in
-  let ty, _ = polyfy env ty vars in
+  let ty, _ = polyfy env ?lscope ty vars in
   ty
 
                               (*****************)
@@ -2105,14 +2200,14 @@ let get_gadt_equations_level () =
    They need to be removed using this function *)
 let reify env t =
   let fresh_constr_scope = get_gadt_equations_level () in
-  let create_fresh_constr lev name =
+  let create_fresh_constr lev lscope name =
     let name = match name with Some s -> "$'"^s | _ -> "$" in
     let decl = new_local_type () in
     let (id, new_env) =
       Env.enter_type (get_new_abstract_name name) decl !env
         ~scope:fresh_constr_scope in
     let path = Path.Pident id in
-    let t = newty2 ~level:lev (Tconstr (path,[],ref Mnil))  in
+    let t = newty2 ~level:lev ~lscope (Tconstr (path,[],ref Mnil))  in
     env := new_env;
     path, t
   in
@@ -2123,7 +2218,8 @@ let reify env t =
       match get_desc ty with
         Tvar o ->
           let level = get_level ty in
-          let path, t = create_fresh_constr level o in
+          let lscope = get_lscope ty in
+          let path, t = create_fresh_constr level lscope o in
           link_type ty t;
           if level < fresh_constr_scope then
             raise_for Unify (Escape (escape (Constructor path)))
@@ -2134,12 +2230,13 @@ let reify env t =
             match get_desc m with
               Tvar o ->
                 let level = get_level m in
-                let path, t = create_fresh_constr level o in
+                let lscope = get_lscope m in
+                let path, t = create_fresh_constr level lscope o in
                 let row =
                   let fixed = Some (Reified path) in
                   create_row ~fields:[] ~more:t ~fixed
                     ~name:(row_name r) ~closed:(row_closed r) in
-                link_type m (newty2 ~level (Tvariant row));
+                link_type m (newty2 ~level ~lscope (Tvariant row));
                 if level < fresh_constr_scope then
                   raise_for Unify (Escape (escape (Constructor path)))
             | _ -> assert false
@@ -2262,12 +2359,13 @@ let rec mcomp type_pairs env t1 t2 =
             mcomp type_pairs env t1 t2
         | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
             (try
-               enter_poly env univar_pairs
+               enter_poly univar_pairs
                  t1 tl1 t2 tl2 (mcomp type_pairs env)
              with Escape _ -> raise Incompatible)
         | (Tunivar _, Tunivar _) ->
             (try unify_univar t1' t2' !univar_pairs
-             with Cannot_unify_universal_variables -> raise Incompatible)
+             with Cannot_unify_universal_variables | Escape _ ->
+               raise Incompatible)
         | (_, _) ->
             raise Incompatible
       end
@@ -2461,18 +2559,18 @@ let rec concat_longident lid1 =
   | Ldot (lid2, s) -> Ldot (concat_longident lid1 lid2, s)
   | Lapply (lid2, lid) -> Lapply (concat_longident lid1 lid2, lid)
 
-let nondep_instance env level id ty =
+let nondep_instance env level lscope id ty =
   let ty = !nondep_type' env [id] ty in
   if level = generic_level then duplicate_type ty else
   let old = !current_level in
   current_level := level;
-  let ty = instance ty in
+  let ty = instance ~lscope ty in
   current_level := old;
   ty
 
 (* Find the type paths nl1 in the module type mty2, and add them to the
    list (nl2, tl2). raise Not_found if impossible *)
-let complete_type_list ?(allow_absent=false) env fl1 lv2 mty2 fl2 =
+let complete_type_list ?(allow_absent=false) env fl1 lv2 ls2 mty2 fl2 =
   (* This is morally WRONG: we're adding a (dummy) module without a scope in the
      environment. However no operation which cares about levels/scopes is going
      to happen while this module exists.
@@ -2495,7 +2593,7 @@ let complete_type_list ?(allow_absent=false) env fl1 lv2 mty2 fl2 =
         match Env.find_type_by_name lid env' with
         | (_, {type_arity = 0; type_kind = Type_abstract;
                type_private = Public; type_manifest = Some t2}) ->
-            begin match nondep_instance env' lv2 id2 t2 with
+            begin match nondep_instance env' lv2 ls2 id2 t2 with
             | t -> (n, t) :: complete nl fl2
             | exception Nondep_cannot_erase _ ->
                 if allow_absent then
@@ -2516,9 +2614,9 @@ let complete_type_list ?(allow_absent=false) env fl1 lv2 mty2 fl2 =
   | exception Exit -> raise Not_found
 
 (* raise Not_found rather than Unify if the module types are incompatible *)
-let unify_package env unify_list lv1 p1 fl1 lv2 p2 fl2 =
-  let ntl2 = complete_type_list env fl1 lv2 (Mty_ident p2) fl2
-  and ntl1 = complete_type_list env fl2 lv1 (Mty_ident p1) fl1 in
+let unify_package env unify_list lv1 ls1 p1 fl1 lv2 ls2 p2 fl2 =
+  let ntl2 = complete_type_list env fl1 lv2 ls2 (Mty_ident p2) fl2
+  and ntl1 = complete_type_list env fl2 lv1 ls1 (Mty_ident p1) fl1 in
   unify_list (List.map snd ntl1) (List.map snd ntl2);
   if eq_package_path env p1 p2
   || !package_subtype env p1 fl1 p2 fl2
@@ -2538,19 +2636,14 @@ let unify_eq t1 t2 =
 let unify1_var env t1 t2 =
   assert (is_Tvar t1);
   occur_for Unify env t1 t2;
-  match occur_univar_for Unify env t2 with
-  | () ->
-      begin
-        try
-          update_level env (get_level t1) t2;
-          update_scope (get_scope t1) t2;
-        with Escape e ->
-          raise_for Unify (Escape e)
-      end;
-      link_type t1 t2;
-      true
-  | exception Unify_trace _ when !umode = Pattern ->
-      false
+  try
+    update_level env (get_level t1) (get_lscope t1) t2;
+    update_scope (get_scope t1) t2;
+    link_type t1 t2;
+    true
+  with
+  | Escape {kind= Univ _; _} when !umode = Pattern -> false
+  | Escape e -> raise_for Unify (Escape e)
 
 (* Can only be called when generate_equations is true *)
 let record_equation t1 t2 =
@@ -2614,7 +2707,7 @@ let rec unify (env:Env.t ref) t1 t2 =
         if unify1_var !env t2 t1 then () else unify2 env t1 t2
     | (Tunivar _, Tunivar _) ->
         unify_univar_for Unify t1 t2 !univar_pairs;
-        update_level_for Unify !env (get_level t1) t2;
+        update_level_for Unify !env (get_level t1) (get_lscope t1) t2;
         update_scope_for Unify (get_scope t1) t2;
         link_type t1 t2
     | (Tconstr (p1, [], a1), Tconstr (p2, [], a2))
@@ -2624,7 +2717,7 @@ let rec unify (env:Env.t ref) t1 t2 =
                when any of the types has a cached expansion. *)
             && not (has_cached_expansion p1 !a1
                  || has_cached_expansion p2 !a2) ->
-        update_level_for Unify !env (get_level t1) t2;
+        update_level_for Unify !env (get_level t1) (get_lscope t1) t2;
         update_scope_for Unify (get_scope t1) t2;
         link_type t1 t2
     | (Tconstr (p1, [], _), Tconstr (p2, [], _))
@@ -2655,9 +2748,10 @@ and unify2 env t1 t2 =
   let t1' = expand_head_unif !env t1 in
   let t2' = expand_head_unif !env t2 in
   let lv = Int.min (get_level t1') (get_level t2') in
+  let lsc = Int.min (get_lscope t1') (get_lscope t2') in
   let scope = Int.max (get_scope t1') (get_scope t2') in
-  update_level_for Unify !env lv t2;
-  update_level_for Unify !env lv t1;
+  update_level_for Unify !env lv lsc t2;
+  update_level_for Unify !env lv lsc t1;
   update_scope_for Unify scope t2;
   update_scope_for Unify scope t1;
   if unify_eq t1' t2' then () else
@@ -2788,10 +2882,10 @@ and unify3 env t1 t1' t2 t2' =
           end
       | (Tvariant row1, Tvariant row2) ->
           if !umode = Expression then
-            unify_row env row1 row2
+            unify_row env (get_lscope t2') row1 row2
           else begin
             let snap = snapshot () in
-            try unify_row env row1 row2
+            try unify_row env (get_lscope t2') row1 row2
             with Unify_trace _ ->
               backtrack snap;
               reify env t1';
@@ -2806,7 +2900,7 @@ and unify3 env t1 t1' t2 t2' =
             Fprivate when f <> dummy_method ->
               link_kind ~inside:kind field_absent;
               if d2 = Tnil then unify env rem t2'
-              else unify env (newgenty Tnil) rem
+              else unify env (newgenty ~lscope:(get_lscope t2') Tnil) rem
           | _      ->
               if f = dummy_method then
                 raise_for Unify (Obj Self_cannot_be_closed)
@@ -2820,11 +2914,12 @@ and unify3 env t1 t1' t2 t2' =
       | (Tpoly (t1, []), Tpoly (t2, [])) ->
           unify env t1 t2
       | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
-          enter_poly_for Unify !env univar_pairs t1 tl1 t2 tl2 (unify env)
+          enter_poly_for Unify univar_pairs t1 tl1 t2 tl2 (unify env)
       | (Tpackage (p1, fl1), Tpackage (p2, fl2)) ->
           begin try
             unify_package !env (unify_list env)
-              (get_level t1) p1 fl1 (get_level t2) p2 fl2
+              (get_level t1) (get_lscope t1) p1 fl1
+              (get_level t2) (get_lscope t2) p2 fl2
           with Not_found ->
             if !umode = Expression then raise_unexplained_for Unify;
             List.iter (fun (_n, ty) -> reify env ty) (fl1 @ fl2);
@@ -2858,7 +2953,7 @@ and unify_list env tl1 tl2 =
   List.iter2 (unify env) tl1 tl2
 
 (* Build a fresh row variable for unification *)
-and make_rowvar level use1 rest1 use2 rest2  =
+and make_rowvar level lscope use1 rest1 use2 rest2  =
   let set_name ty name =
     match get_desc ty with
       Tvar None -> set_type_desc ty (Tvar name)
@@ -2875,25 +2970,27 @@ and make_rowvar level use1 rest1 use2 rest2  =
     | _ -> None
   in
   if use1 then rest1 else
-  if use2 then rest2 else newty2 ~level (Tvar name)
+  if use2 then rest2 else newty2 ~level ~lscope (Tvar name)
 
 and unify_fields env ty1 ty2 =          (* Optimization *)
   let (fields1, rest1) = flatten_fields ty1
   and (fields2, rest2) = flatten_fields ty2 in
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
   let l1 = get_level ty1 and l2 = get_level ty2 in
-  let va = make_rowvar (Int.min l1 l2) (miss2=[]) rest1 (miss1=[]) rest2 in
+  let ls = Int.min (get_lscope rest1) (get_lscope rest2) in
+  let va = make_rowvar (Int.min l1 l2) ls (miss2=[]) rest1 (miss1=[]) rest2 in
   let tr1 = Transient_expr.repr rest1 and tr2 = Transient_expr.repr rest2 in
   let d1 = tr1.desc and d2 = tr2.desc in
   try
-    unify env (build_fields l1 miss1 va) rest2;
-    unify env rest1 (build_fields l2 miss2 va);
+    let ls1 = get_lscope ty1 and ls2 = get_lscope ty2 in
+    unify env (build_fields l1 ls1 miss1 va) rest2;
+    unify env rest1 (build_fields l2 ls2 miss2 va);
     List.iter
       (fun (name, k1, t1, k2, t2) ->
         unify_kind k1 k2;
         try
           if !trace_gadt_instances then begin
-            update_level_for Unify !env (get_level va) t1;
+            update_level_for Unify !env (get_level va) (get_lscope va) t1;
             update_scope_for Unify (get_scope va) t1
           end;
           unify env t1 t2
@@ -2914,7 +3011,7 @@ and unify_kind k1 k2 =
   | (Fpublic, Fpublic)               -> ()
   | _                                -> assert false
 
-and unify_row env row1 row2 =
+and unify_row env lscope row1 row2 =
   let Row {fields = row1_fields; more = rm1;
            closed = row1_closed; name = row1_name} = row_repr row1 in
   let Row {fields = row2_fields; more = rm2;
@@ -2936,7 +3033,10 @@ and unify_row env row1 row2 =
     | Some _, None -> rm1
     | None, Some _ -> rm2
     | None, None ->
-        newty2 ~level:(Int.min (get_level rm1) (get_level rm2)) (Tvar None)
+        newty2
+          ~level:(Int.min (get_level rm1) (get_level rm2))
+          ~lscope:(Int.min (get_lscope rm1) (get_lscope rm2))
+          (Tvar None)
   in
   let fixed = merge_fixed_explanation fixed1 fixed2
   and closed = row1_closed || row2_closed in
@@ -2985,16 +3085,17 @@ and unify_row env row1 row2 =
     let rm = row_more row in
     (*if !trace_gadt_instances && rm.desc = Tnil then () else*)
     if !trace_gadt_instances then
-      update_level_for Unify !env (get_level rm) (newgenty (Tvariant row));
+      update_level_for Unify !env (get_level rm) (get_lscope rm)
+        (newgenty ~lscope (Tvariant row));
     if has_fixed_explanation row then
       if eq_type more rm then () else
       if is_Tvar rm then link_type rm more else unify env rm more
     else
       let ty =
-        newgenty (Tvariant
-                    (create_row ~fields:rest ~more ~closed ~fixed ~name))
+        newgenty ~lscope
+          (Tvariant (create_row ~fields:rest ~more ~closed ~fixed ~name))
       in
-      update_level_for Unify !env (get_level rm) ty;
+      update_level_for Unify !env (get_level rm) (get_lscope rm) ty;
       update_scope_for Unify (get_scope rm) ty;
       link_type rm ty
   in
@@ -3005,14 +3106,15 @@ and unify_row env row1 row2 =
     set_more First row1 r2;
     List.iter
       (fun (l,f1,f2) ->
-        try unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2
+        try unify_row_field env lscope fixed1 fixed2 rm1 rm2 l f1 f2
         with Unify_trace trace ->
           raise_trace_for Unify (Variant (Incompatible_types_for l) :: trace)
       )
       pairs;
     if static_row row1 then begin
       let rm = row_more row1 in
-      if is_Tvar rm then link_type rm (newty2 ~level:(get_level rm) Tnil)
+      if is_Tvar rm then
+        link_type rm (newty2 ~level:(get_level rm) ~lscope:(get_lscope rm) Tnil)
     end
   with exn ->
     Transient_expr.set_desc tm1 md1;
@@ -3020,7 +3122,7 @@ and unify_row env row1 row2 =
     raise exn
   end
 
-and unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 =
+and unify_row_field env lscope fixed1 fixed2 rm1 rm2 l f1 f2 =
   let if_not_fixed (pos,fixed) f =
     match fixed with
     | None -> f ()
@@ -3055,7 +3157,7 @@ and unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 =
                 List.iter (unify env t1) tl
               )
         end in
-      if redo then unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 else
+      if redo then unify_row_field env lscope fixed1 fixed2 rm1 rm2 l f1 f2 else
       let remq tl =
         List.filter (fun ty -> not (List.exists (eq_type ty) tl)) in
       let tl1' = remq tl2 tl1 and tl2' = remq tl1 tl2 in
@@ -3074,7 +3176,7 @@ and unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 =
       let update_levels rm =
         List.iter
           (fun ty ->
-            update_level_for Unify !env (get_level rm) ty;
+            update_level_for Unify !env (get_level rm) lscope ty;
             update_scope_for Unify (get_scope rm) ty)
       in
       update_levels rm2 tl1';
@@ -3091,7 +3193,7 @@ and unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 =
       if_not_fixed first (fun () ->
           let s = snapshot () in
           link_row_field_ext ~inside:f1 f2;
-          update_level_for Unify !env (get_level rm1) t2;
+          update_level_for Unify !env (get_level rm1) lscope t2;
           update_scope_for Unify (get_scope rm1) t2;
           (try List.iter (fun t1 -> unify env t1 t2) tl
            with exn -> undo_first_change_after s; raise exn)
@@ -3100,7 +3202,7 @@ and unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 =
       if_not_fixed second (fun () ->
           let s = snapshot () in
           link_row_field_ext ~inside:f2 f1;
-          update_level_for Unify !env (get_level rm2) t1;
+          update_level_for Unify !env (get_level rm2) lscope t1;
           update_scope_for Unify (get_scope rm2) t1;
           (try List.iter (unify env t1) tl
            with exn -> undo_first_change_after s; raise exn)
@@ -3147,7 +3249,7 @@ let unify_var env t1 t2 =
       let reset_tracing = check_trace_gadt_instances env in
       begin try
         occur_for Unify env t1 t2;
-        update_level_for Unify env (get_level t1) t2;
+        update_level_for Unify env (get_level t1) (get_lscope t1) t2;
         update_scope_for Unify (get_scope t1) t2;
         link_type t1 t2;
         reset_trace_gadt_instances reset_tracing;
@@ -3198,15 +3300,15 @@ type filter_arrow_failure =
 exception Filter_arrow_failed of filter_arrow_failure
 
 let filter_arrow env t l =
-  let function_type level =
-    let t1 = newvar2 level and t2 = newvar2 level in
-    let t' = newty2 ~level (Tarrow (l, t1, t2, commu_ok)) in
+  let function_type level lscope =
+    let t1 = newvar2 level ~lscope and t2 = newvar2 level ~lscope in
+    let t' = newty2 ~level ~lscope (Tarrow (l, t1, t2, commu_ok)) in
     t', t1, t2
   in
   let t =
     try expand_head_trace env t
     with Unify_trace trace ->
-      let t', _, _ = function_type (get_level t) in
+      let t', _, _ = function_type (get_level t) (get_lscope t) in
       raise (Filter_arrow_failed
                (Unification_error
                   (expand_to_unification_error
@@ -3215,7 +3317,7 @@ let filter_arrow env t l =
   in
   match get_desc t with
   | Tvar _ ->
-      let t', t1, t2 = function_type (get_level t) in
+      let t', t1, t2 = function_type (get_level t) (get_lscope t) in
       link_type t t';
       (t1, t2)
   | Tarrow(l', t1, t2, _) ->
@@ -3236,16 +3338,17 @@ exception Filter_method_failed of filter_method_failure
 
 (* Used by [filter_method]. *)
 let rec filter_method_field env name ty =
-  let method_type ~level =
-      let ty1 = newvar2 level and ty2 = newvar2 level in
-      let ty' = newty2 ~level (Tfield (name, field_public, ty1, ty2)) in
+  let method_type ~level ~lscope =
+      let ty1 = newvar2 ~lscope level and ty2 = newvar2 ~lscope level in
+      let ty' = newty2 ~level ~lscope (Tfield (name, field_public, ty1, ty2)) in
       ty', ty1
   in
   let ty =
     try expand_head_trace env ty
     with Unify_trace trace ->
       let level = get_level ty in
-      let ty', _ = method_type ~level in
+      let lscope = get_lscope ty in
+      let ty', _ = method_type ~level ~lscope in
       raise (Filter_method_failed
                (Unification_error
                   (expand_to_unification_error
@@ -3255,7 +3358,8 @@ let rec filter_method_field env name ty =
   match get_desc ty with
   | Tvar _ ->
       let level = get_level ty in
-      let ty', ty1 = method_type ~level in
+      let lscope = get_lscope ty in
+      let ty', ty1 = method_type ~level ~lscope in
       link_type ty ty';
       ty1
   | Tfield(n, kind, ty1, ty2) ->
@@ -3269,9 +3373,9 @@ let rec filter_method_field env name ty =
 
 (* Unify [ty] and [< name : 'a; .. >]. Return ['a]. *)
 let filter_method env name ty =
-  let object_type ~level ~scope =
-      let ty1 = newvar2 level in
-      let ty' = newty3 ~level ~scope (Tobject (ty1, ref None)) in
+  let object_type ~level ~lscope ~scope =
+      let ty1 = newvar2 ~lscope level in
+      let ty' = newty3 ~level ~scope ~lscope (Tobject (ty1, ref None)) in
       let ty_meth = filter_method_field env name ty1 in
       (ty', ty_meth)
   in
@@ -3280,7 +3384,8 @@ let filter_method env name ty =
     with Unify_trace trace ->
       let level = get_level ty in
       let scope = get_scope ty in
-      let ty', _ = object_type ~level ~scope in
+      let lscope = get_lscope ty in
+      let ty', _ = object_type ~level ~scope ~lscope in
       raise (Filter_method_failed
                (Unification_error
                   (expand_to_unification_error
@@ -3291,7 +3396,8 @@ let filter_method env name ty =
   | Tvar _ ->
       let level = get_level ty in
       let scope = get_scope ty in
-      let ty', ty_meth = object_type ~level ~scope in
+      let lscope = get_lscope ty in
+      let ty', ty_meth = object_type ~level ~scope ~lscope in
       link_type ty ty';
       ty_meth
   | Tobject(f, _) ->
@@ -3306,14 +3412,15 @@ let rec filter_method_row env name priv ty =
   match get_desc ty with
   | Tvar _ ->
       let level = get_level ty in
-      let field = newvar2 level in
-      let row = newvar2 level in
+      let lscope = get_lscope ty in
+      let field = newvar2 ~lscope level in
+      let row = newvar2 ~lscope level in
       let kind =
         match priv with
         | Private -> field_private ()
         | Public  -> field_public
       in
-      let ty' = newty2 ~level (Tfield (name, kind, field, row)) in
+      let ty' = newty2 ~level ~lscope (Tfield (name, kind, field, row)) in
       link_type ty ty';
       field, row
   | Tfield(n, kind, ty1, ty2) ->
@@ -3323,8 +3430,9 @@ let rec filter_method_row env name priv ty =
         ty1, ty2
       end else begin
         let level = get_level ty in
+        let lscope = get_lscope ty in
         let field, row = filter_method_row env name priv ty2 in
-        let row = newty2 ~level (Tfield (n, kind, ty1, row)) in
+        let row = newty2 ~level ~lscope (Tfield (n, kind, ty1, row)) in
         field, row
       end
   | Tnil ->
@@ -3334,7 +3442,8 @@ let rec filter_method_row env name priv ty =
         | Public -> raise Filter_method_row_failed
         | Private ->
           let level = get_level ty in
-          newvar2 level, ty
+          let lscope = get_lscope ty in
+          newvar2 ~lscope level, ty
       end
   | _ ->
       raise Filter_method_row_failed
@@ -3570,7 +3679,7 @@ let generalize_class_signature_spine env sign =
    Update the level of [ty]. First check that the levels of generic
    variables from the subject are not lowered.
 *)
-let moregen_occur env level ty =
+let moregen_occur env level lscope ty =
   let rec occur ty =
     let lv = get_level ty in
     if lv <= level then () else
@@ -3584,7 +3693,7 @@ let moregen_occur env level ty =
   end;
   (* also check for free univars *)
   occur_univar_for Moregen env ty;
-  update_level_for Moregen env level ty
+  update_level_for Moregen env level lscope ty
 
 let may_instantiate inst_nongen t1 =
   let level = get_level t1 in
@@ -3597,7 +3706,7 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
   try
     match (get_desc t1, get_desc t2) with
       (Tvar _, _) when may_instantiate inst_nongen t1 ->
-        moregen_occur env (get_level t1) t2;
+        moregen_occur env (get_level t1) (get_lscope t1) t2;
         update_scope_for Moregen (get_scope t1) t2;
         occur_for Moregen env t1 t2;
         link_type t1 t2
@@ -3612,7 +3721,7 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
           TypePairs.add type_pairs (t1', t2');
           match (get_desc t1', get_desc t2') with
             (Tvar _, _) when may_instantiate inst_nongen t1' ->
-              moregen_occur env (get_level t1') t2;
+              moregen_occur env (get_level t1') (get_lscope t1') t2;
               update_scope_for Moregen (get_scope t1') t2;
               link_type t1' t2
           | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) when l1 = l2
@@ -3627,13 +3736,15 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
           | (Tpackage (p1, fl1), Tpackage (p2, fl2)) ->
               begin try
                 unify_package env (moregen_list inst_nongen type_pairs env)
-                  (get_level t1') p1 fl1 (get_level t2') p2 fl2
+                  (get_level t1') (get_lscope t1') p1 fl1
+                  (get_level t2') (get_lscope t2') p2 fl2
               with Not_found -> raise_unexplained_for Moregen
               end
           | (Tnil,  Tconstr _ ) -> raise_for Moregen (Obj (Abstract_row Second))
           | (Tconstr _,  Tnil ) -> raise_for Moregen (Obj (Abstract_row First))
           | (Tvariant row1, Tvariant row2) ->
-              moregen_row inst_nongen type_pairs env row1 row2
+              moregen_row inst_nongen type_pairs env (get_lscope t1') row1
+                (get_lscope t2') row2
           | (Tobject (fi1, _nm1), Tobject (fi2, _nm2)) ->
               moregen_fields inst_nongen type_pairs env fi1 fi2
           | (Tfield _, Tfield _) ->           (* Actually unused *)
@@ -3644,7 +3755,7 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
           | (Tpoly (t1, []), Tpoly (t2, [])) ->
               moregen inst_nongen type_pairs env t1 t2
           | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
-              enter_poly_for Moregen env univar_pairs t1 tl1 t2 tl2
+              enter_poly_for Moregen univar_pairs t1 tl1 t2 tl2
                 (moregen inst_nongen type_pairs env)
           | (Tunivar _, Tunivar _) ->
               unify_univar_for Moregen t1' t2' !univar_pairs
@@ -3670,7 +3781,7 @@ and moregen_fields inst_nongen type_pairs env ty1 ty2 =
     | [] -> ()
   end;
   moregen inst_nongen type_pairs env rest1
-    (build_fields (get_level ty2) miss2 rest2);
+    (build_fields (get_level ty2) (get_lscope ty2) miss2 rest2);
   List.iter
     (fun (name, k1, t1, k2, t2) ->
        (* The below call should never throw [Public_method_to_private_method] *)
@@ -3688,7 +3799,7 @@ and moregen_kind k1 k2 =
   | (Fpublic, Fprivate)              -> raise Public_method_to_private_method
   | (Fabsent, _) | (_, Fabsent)      -> assert false
 
-and moregen_row inst_nongen type_pairs env row1 row2 =
+and moregen_row inst_nongen type_pairs env lscope1 row1 lscope2 row2 =
   let Row {fields = row1_fields; more = rm1; closed = row1_closed} =
     row_repr row1 in
   let Row {fields = row2_fields; more = rm2; closed = row2_closed;
@@ -3720,11 +3831,12 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
   | _ when static_row row1 -> ()
   | _ when may_inst ->
       let ext =
-        newgenty (Tvariant
-                    (create_row ~fields:r2 ~more:rm2 ~name:None
-                       ~fixed:row2_fixed ~closed:row2_closed))
+        newgenty ~lscope:lscope2
+          (Tvariant
+            (create_row ~fields:r2 ~more:rm2 ~name:None
+              ~fixed:row2_fixed ~closed:row2_closed))
       in
-      moregen_occur env (get_level rm1) ext;
+      moregen_occur env (get_level rm1) lscope1 ext;
       update_scope_for Moregen (get_scope rm1) ext;
       (* This [link_type] has to be undone if the rest of the function fails *)
       link_type rm1 ext
@@ -3827,11 +3939,11 @@ let moregeneral env inst_nongen pat_sch subj_sch =
      then copied with [duplicate_type].  That way, its levels won't be
      changed.
   *)
-  let subj_inst = instance subj_sch in
+  let subj_inst = instance ~lscope:0 subj_sch in
   let subj = duplicate_type subj_inst in
   current_level := generic_level;
   (* Duplicate generic variables *)
-  let patt = instance pat_sch in
+  let patt = instance ~lscope:0 pat_sch in
 
   Misc.try_finally
     (fun () ->
@@ -3868,11 +3980,17 @@ let rec rigidify_rec vars ty =
     | Tvariant row ->
         let Row {more; name; closed} = row_repr row in
         if is_Tvar more && not (has_fixed_explanation row) then begin
-          let more' = newty2 ~level:(get_level more) (get_desc more) in
+          let more' =
+            newty2 ~level:(get_level more) ~lscope:(get_lscope more)
+              (get_desc more)
+          in
           let row' =
             create_row ~fixed:(Some Rigid) ~fields:[] ~more:more'
               ~name ~closed
-          in link_type more (newty2 ~level:(get_level ty) (Tvariant row'))
+          in
+          link_type more
+            (newty2 ~level:(get_level ty) ~lscope:(get_lscope ty)
+              (Tvariant row'))
         end;
         iter_row (rigidify_rec vars) row;
         (* only consider the row variable if the variant is not static *)
@@ -3977,7 +4095,8 @@ let rec eqtype rename type_pairs subst env t1 t2 =
           | (Tpackage (p1, fl1), Tpackage (p2, fl2)) ->
               begin try
                 unify_package env (eqtype_list rename type_pairs subst env)
-                  (get_level t1') p1 fl1 (get_level t2') p2 fl2
+                  (get_level t1') (get_lscope t1') p1 fl1
+                  (get_level t2') (get_lscope t2') p2 fl2
               with Not_found -> raise_unexplained_for Equality
               end
           | (Tnil,  Tconstr _ ) ->
@@ -3996,7 +4115,7 @@ let rec eqtype rename type_pairs subst env t1 t2 =
           | (Tpoly (t1, []), Tpoly (t2, [])) ->
               eqtype rename type_pairs subst env t1 t2
           | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
-              enter_poly_for Equality env univar_pairs t1 tl1 t2 tl2
+              enter_poly_for Equality univar_pairs t1 tl1 t2 tl2
                 (eqtype rename type_pairs subst env)
           | (Tunivar _, Tunivar _) ->
               unify_univar_for Equality t1' t2' !univar_pairs
@@ -4480,6 +4599,7 @@ let has_constr_row' env t =
 
 let rec build_subtype env (visited : transient_expr list)
     (loops : (int * type_expr) list) posi level t =
+  let lscope = get_lscope t in
   match get_desc t with
     Tvar _ ->
       if posi then
@@ -4499,7 +4619,7 @@ let rec build_subtype env (visited : transient_expr list)
       let (t2', c2) = build_subtype env visited loops posi level t2 in
       let c = max_change c1 c2 in
       if c > Unchanged
-      then (newty (Tarrow(l, t1', t2', commu_ok)), c)
+      then (newty ~lscope (Tarrow(l, t1', t2', commu_ok)), c)
       else (t, Unchanged)
   | Ttuple tlist ->
       let tt = Transient_expr.repr t in
@@ -4509,7 +4629,7 @@ let rec build_subtype env (visited : transient_expr list)
         List.map (build_subtype env visited loops posi level) tlist
       in
       let c = collect tlist' in
-      if c > Unchanged then (newty (Ttuple (List.map fst tlist')), c)
+      if c > Unchanged then (newty ~lscope (Ttuple (List.map fst tlist')), c)
       else (t, Unchanged)
   | Tconstr(p, tl, abbrev)
     when level > 0 && generic_abbrev env p && safe_abbrev env t
@@ -4521,7 +4641,7 @@ let rec build_subtype env (visited : transient_expr list)
           let cl_abbr, body = find_cltype_for_path env p in
           let ty =
             try
-              subst env !current_level Public abbrev None
+              subst env !current_level lscope Public abbrev None
                 cl_abbr.type_params tl body
             with Cannot_subst -> assert false in
           let ty1, tl1 =
@@ -4535,7 +4655,7 @@ let rec build_subtype env (visited : transient_expr list)
              XXX not clear whether this correct anyway... *)
           if List.exists (deep_occur ty) tl1 then raise Not_found;
           set_type_desc ty (Tvar None);
-          let t'' = newvar () in
+          let t'' = newvar ~lscope () in
           let loops = (get_id ty, t'') :: loops in
           (* May discard [visited] as level is going down *)
           let (ty1', c) =
@@ -4574,11 +4694,11 @@ let rec build_subtype env (visited : transient_expr list)
                 else build_subtype env visited loops (not posi) level t
               else
                 if co then build_subtype env visited loops posi level t
-                else (newvar(), Changed))
+                else (newvar ~lscope:(get_lscope t) (), Changed))
             decl.type_variance tl
         in
         let c = collect tl' in
-        if c > Unchanged then (newconstr p (List.map fst tl'), c)
+        if c > Unchanged then (newconstr ~lscope p (List.map fst tl'), c)
         else (t, Unchanged)
       with Not_found ->
         (t, Unchanged)
@@ -4610,11 +4730,14 @@ let rec build_subtype env (visited : transient_expr list)
       in
       let c = collect fields in
       let row =
-        create_row ~fields:(List.map fst fields) ~more:(newvar ())
-          ~closed:posi ~fixed:None
+        let more =
+          let lscope = get_lscope (row_more row) in
+          newvar ~lscope ()
+        in
+        create_row ~fields:(List.map fst fields) ~more ~closed:posi ~fixed:None
           ~name:(if c > Unchanged then None else row_name row)
       in
-      (newty (Tvariant row), Changed)
+      (newty ~lscope (Tvariant row), Changed)
   | Tobject (t1, _) ->
       let tt = Transient_expr.repr t in
       if memq_warn tt visited || opened_object t1 then (t, Unchanged) else
@@ -4622,17 +4745,18 @@ let rec build_subtype env (visited : transient_expr list)
       let visited =
         tt :: if level' < level then [] else filter_visited visited in
       let (t1', c) = build_subtype env visited loops posi level' t1 in
-      if c > Unchanged then (newty (Tobject (t1', ref None)), c)
+      if c > Unchanged then (newty ~lscope (Tobject (t1', ref None)), c)
       else (t, Unchanged)
   | Tfield(s, _, t1, t2) (* Always present *) ->
       let (t1', c1) = build_subtype env visited loops posi level t1 in
       let (t2', c2) = build_subtype env visited loops posi level t2 in
       let c = max_change c1 c2 in
-      if c > Unchanged then (newty (Tfield(s, field_public, t1', t2')), c)
+      if c > Unchanged then
+        (newty ~lscope (Tfield(s, field_public, t1', t2')), c)
       else (t, Unchanged)
   | Tnil ->
       if posi then
-        let v = newvar () in
+        let v = newvar ~lscope () in
         (v, Changed)
       else begin
         warn := true;
@@ -4642,7 +4766,7 @@ let rec build_subtype env (visited : transient_expr list)
       assert false
   | Tpoly(t1, tl) ->
       let (t1', c) = build_subtype env visited loops posi level t1 in
-      if c > Unchanged then (newty (Tpoly(t1', tl)), c)
+      if c > Unchanged then (newty ~lscope (Tpoly(t1', tl)), c)
       else (t, Unchanged)
   | Tunivar _ | Tpackage _ ->
       (t, Unchanged)
@@ -4760,11 +4884,11 @@ let rec subtype_rec env trace t1 t2 cstrs =
     | (Tpoly (u1, []), Tpoly (u2, [])) ->
         subtype_rec env trace u1 u2 cstrs
     | (Tpoly (u1, tl1), Tpoly (u2, [])) ->
-        let _, u1' = instance_poly false tl1 u1 in
+        let _, u1' = instance_poly ~lscope:(get_scope t1) false tl1 u1 in
         subtype_rec env trace u1' u2 cstrs
     | (Tpoly (u1, tl1), Tpoly (u2,tl2)) ->
         begin try
-          enter_poly env univar_pairs u1 tl1 u2 tl2
+          enter_poly univar_pairs u1 tl1 u2 tl2
             (fun t1 t2 -> subtype_rec env trace t1 t2 cstrs)
         with Escape _ ->
           (trace, t1, t2, !univar_pairs)::cstrs
@@ -4772,10 +4896,11 @@ let rec subtype_rec env trace t1 t2 cstrs =
     | (Tpackage (p1, fl1), Tpackage (p2, fl2)) ->
         begin try
           let ntl1 =
-            complete_type_list env fl2 (get_level t1) (Mty_ident p1) fl1
+            complete_type_list env fl2 (get_level t1) (get_lscope t1)
+              (Mty_ident p1) fl1
           and ntl2 =
-            complete_type_list env fl1 (get_level t2) (Mty_ident p2) fl2
-              ~allow_absent:true in
+            complete_type_list env fl1 (get_level t2) (get_lscope t2)
+              (Mty_ident p2) fl2 ~allow_absent:true in
           let cstrs' =
             List.map
               (fun (n2,t2) -> (trace, List.assoc n2 ntl1, t2, !univar_pairs))
@@ -4824,12 +4949,14 @@ and subtype_fields env trace ty1 ty2 cstrs =
         rest1 rest2
         cstrs
     else
-      (trace, build_fields (get_level ty1) miss1 rest1, rest2,
+      (trace, build_fields (get_level ty1) (get_lscope ty1) miss1 rest1, rest2,
        !univar_pairs) :: cstrs
   in
   let cstrs =
     if miss2 = [] then cstrs else
-    (trace, rest1, build_fields (get_level ty2) miss2 (newvar ()),
+    let lscope = Int.min (get_lscope rest1) (get_lscope rest2) in
+    (trace, rest1,
+     build_fields (get_level ty2) (get_lscope ty2) miss2 (newvar ~lscope ()),
      !univar_pairs) :: cstrs
   in
   List.fold_left
@@ -4931,33 +5058,36 @@ let subtype env ty1 ty2 =
 (* Utility for printing. The resulting type is not used in computation. *)
 let rec unalias_object ty =
   let level = get_level ty in
+  let lscope = get_lscope ty in
   match get_desc ty with
     Tfield (s, k, t1, t2) ->
-      newty2 ~level (Tfield (s, k, t1, unalias_object t2))
+      newty2 ~level ~lscope (Tfield (s, k, t1, unalias_object t2))
   | Tvar _ | Tnil as desc ->
-      newty2 ~level desc
+      newty2 ~level ~lscope desc
   | Tunivar _ ->
       ty
   | Tconstr _ ->
-      newvar2 level
+      newvar2 ~lscope level
   | _ ->
       assert false
 
 let unalias ty =
   let level = get_level ty in
+  let lscope = get_lscope ty in
   match get_desc ty with
     Tvar _ | Tunivar _ ->
       ty
   | Tvariant row ->
       let Row {fields; more; name; fixed; closed} = row_repr row in
-      newty2 ~level
+      newty2 ~level ~lscope
         (Tvariant
            (create_row ~fields ~name ~fixed ~closed ~more:
-              (newty2 ~level:(get_level more) (get_desc more))))
+              (newty2 ~level:(get_level more) ~lscope:(get_lscope more)
+                (get_desc more))))
   | Tobject (ty, nm) ->
-      newty2 ~level (Tobject (unalias_object ty, nm))
+      newty2 ~level ~lscope (Tobject (unalias_object ty, nm))
   | desc ->
-      newty2 ~level desc
+      newty2 ~level ~lscope desc
 
 (* Return the arity (as for curried functions) of the given type. *)
 let rec arity ty =
@@ -5087,9 +5217,10 @@ let rec normalize_type_rec visited ty =
             fatal_error "Ctype.normalize_type_rec"
         end;
         let level = get_level fi in
+        let lscope = get_lscope fi in
         if level < lowest_level then () else
         let fields, row = flatten_fields fi in
-        let fi' = build_fields level fields row in
+        let fi' = build_fields level lscope fields row in
         set_type_desc fi (get_desc fi')
     | _ -> ()
     end;
@@ -5126,7 +5257,8 @@ let rec nondep_type_rec ?(expand_private=false) env ids ty =
     Tvar _ | Tunivar _ -> ty
   | _ -> try TypeHash.find nondep_hash ty
   with Not_found ->
-    let ty' = newgenstub ~scope:(get_scope ty) in
+    let lscope = get_lscope ty in
+    let ty' = newgenstub ~scope:(get_scope ty) ~lscope () in
     TypeHash.add nondep_hash ty ty';
     let desc =
       match get_desc ty with
@@ -5141,7 +5273,8 @@ let rec nondep_type_rec ?(expand_private=false) env ids ty =
           with (Nondep_cannot_erase _) as exn ->
             (* If that doesn't work, try expanding abbrevs *)
             try Tlink (nondep_type_rec ~expand_private env ids
-                         (try_expand env (newty2 ~level:(get_level ty) desc)))
+                         (try_expand env
+                           (newty2 ~level:(get_level ty) ~lscope desc)))
               (*
                  The [Tlink] is important. The expanded type may be a
                  variable, or may not be completely copied yet
@@ -5178,7 +5311,8 @@ let rec nondep_type_rec ?(expand_private=false) env ids ty =
             TypeHash.add nondep_variants more ty';
             let static = static_row row in
             let more' =
-              if static then newgenty Tnil else nondep_type_rec env ids more
+              if static then newgenty ~lscope Tnil
+              else nondep_type_rec env ids more
             in
             (* Return a new copy *)
             let row =

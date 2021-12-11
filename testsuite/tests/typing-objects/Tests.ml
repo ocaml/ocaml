@@ -1042,6 +1042,34 @@ Error: The class type
        Type 'c is not compatible with type <  >
 |}];;
 
+class c :
+  object
+    method foo : (< foo : int; .. > as 'a) * 'a -> < foo : int> -> unit
+  end =
+  object
+    method foo : 'a. (< foo : int; .. > as 'b) * ('b as 'a) -> 'a -> unit =
+      assert false
+  end;;
+[%%expect {|
+Lines 5-8, characters 2-5:
+5 | ..object
+6 |     method foo : 'a. (< foo : int; .. > as 'b) * ('b as 'a) -> 'a -> unit =
+7 |       assert false
+8 |   end..
+Error: The class type
+         object method foo : (< foo : int; .. > as 'b) * 'b -> 'b -> unit end
+       is not matched by the class type
+         object
+           method foo :
+             (< foo : int; .. > as 'a) * 'a -> < foo : int > -> unit
+         end
+       The method foo has type
+         'b. (< foo : int; .. > as 'b) * 'b -> 'b -> unit
+       but is expected to have type
+         'a. (< foo : int; .. > as 'a) * 'a -> < foo : int > -> unit
+       Type 'b is not compatible with type <  >
+|}];;
+
 
 class c = (fun x -> object(_:'foo) end) 3;;
 [%%expect {|

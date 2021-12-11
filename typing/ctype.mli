@@ -54,16 +54,16 @@ val set_levels: levels -> unit
 
 val create_scope : unit -> int
 
-val newty: type_desc -> type_expr
-val new_scoped_ty: int -> type_desc -> type_expr
-val newvar: ?name:string -> unit -> type_expr
-val newvar2: ?name:string -> int -> type_expr
+val newty: ?lscope:int -> type_desc -> type_expr
+val new_scoped_ty: ?lscope:int -> int -> type_desc -> type_expr
+val newvar: ?name:string -> ?lscope:int -> unit -> type_expr
+val newvar2: ?name:string -> ?lscope:int -> int -> type_expr
         (* Return a fresh variable *)
-val new_global_var: ?name:string -> unit -> type_expr
+val new_global_var: ?name:string -> ?lscope:int -> unit -> type_expr
         (* Return a fresh variable, bound at toplevel
            (as type variables ['a] in type constraints). *)
-val newobj: type_expr -> type_expr
-val newconstr: Path.t -> type_expr list -> type_expr
+val newobj: ?lscope:int -> type_expr -> type_expr
+val newconstr: ?lscope:int -> Path.t -> type_expr list -> type_expr
 val none: type_expr
         (* A dummy type expression *)
 
@@ -137,14 +137,14 @@ val check_scope_escape : Env.t -> int -> type_expr -> unit
            to the level [lvl] without any scope escape.
            Raises [Escape] otherwise *)
 
-val instance: ?partial:bool -> type_expr -> type_expr
+val instance: ?partial:bool -> ?lscope:int -> type_expr -> type_expr
         (* Take an instance of a type scheme *)
         (* partial=None  -> normal
            partial=false -> newvar() for non generic subterms
            partial=true  -> newty2 ty.level Tvar for non generic subterms *)
 val generic_instance: type_expr -> type_expr
         (* Same as instance, but new nodes at generic_level *)
-val instance_list: type_expr list -> type_expr list
+val instance_list: ?lscope:int -> type_expr list -> type_expr list
         (* Take an instance of a list of type schemes *)
 val new_local_type:
         ?loc:Location.t ->
@@ -155,10 +155,10 @@ val instance_constructor:
         constructor_description -> type_expr list * type_expr * type_expr list
         (* Same, for a constructor. Also returns existentials. *)
 val instance_parameterized_type:
-        ?keep_names:bool ->
-        type_expr list -> type_expr -> type_expr list * type_expr
+        ?keep_names:bool -> ?lscope_args:int list -> type_expr list ->
+        ?lscope:int -> type_expr -> type_expr list * type_expr
 val instance_parameterized_type_2:
-        type_expr list -> type_expr list -> type_expr ->
+        lscope:int -> type_expr list -> type_expr list -> type_expr ->
         type_expr list * type_expr list * type_expr
 val instance_declaration: type_declaration -> type_declaration
 val generic_instance_declaration: type_declaration -> type_declaration
@@ -167,10 +167,11 @@ val instance_class:
         type_expr list -> class_type -> type_expr list * class_type
 
 val instance_poly:
-        ?keep_names:bool ->
+        ?keep_names:bool -> ?lscope:int ->
         bool -> type_expr list -> type_expr -> type_expr list * type_expr
         (* Take an instance of a type scheme containing free univars *)
-val polyfy: Env.t -> type_expr -> type_expr list -> type_expr * bool
+val polyfy:
+        Env.t -> ?lscope:int -> type_expr -> type_expr list -> type_expr * bool
 val instance_label:
         bool -> label_description -> type_expr list * type_expr * type_expr
         (* Same, for a label *)
@@ -251,7 +252,7 @@ val matches: expand_error_trace:bool -> Env.t -> type_expr -> type_expr -> unit
 val does_match: Env.t -> type_expr -> type_expr -> bool
         (* Same as [matches], but returns a [bool] *)
 
-val reify_univars : Env.t -> Types.type_expr -> Types.type_expr
+val reify_univars : Env.t -> ?lscope:int -> Types.type_expr -> Types.type_expr
         (* Replaces all the variables of a type by a univar. *)
 
 (* Exceptions for special cases of unify *)

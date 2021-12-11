@@ -22,12 +22,7 @@ let foo :
 = fun x -> x
 
 [%%expect{|
-Line 4, characters 11-12:
-4 | = fun x -> x
-               ^
-Error: This expression has type
-         < m : 'left 'right. < left : 'left; right : 'right > pair >
-       but an expression was expected of type
-         < m : 'left 'right. < left : 'left; right : 'right > pair >
-       Types for method m are incompatible
+val foo :
+  < m : 'left 'right. < left : 'left; right : 'right > pair > ->
+  < m : 'left 'right. < left : 'left; right : 'right > pair > = <fun>
 |}]

@@ -24,6 +24,7 @@ module TypeSet : sig
   include Set.S with type elt = transient_expr
   val add: type_expr -> t -> t
   val mem: type_expr -> t -> bool
+  val remove: type_expr -> t -> t
   val singleton: type_expr -> t
   val exists: (type_expr -> bool) -> t -> bool
   val elements: t -> type_expr list
@@ -56,11 +57,11 @@ end
 
 val generic_level: int
 
-val newgenty: type_desc -> type_expr
+val newgenty: ?lscope: int -> type_desc -> type_expr
         (* Create a generic type *)
-val newgenvar: ?name:string -> unit -> type_expr
+val newgenvar: ?name:string -> ?lscope: int -> unit -> type_expr
         (* Return a fresh generic variable *)
-val newgenstub: scope:int -> type_expr
+val newgenstub: scope:int -> ?lscope: int -> unit -> type_expr
         (* Return a fresh generic node, to be instantiated
            by [Transient_expr.set_stub_desc] *)
 

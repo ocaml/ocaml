@@ -138,10 +138,10 @@ let to_subst_by_type_function s p =
 let new_id = s_ref (-1)
 let reset_for_saving () = new_id := -1
 
-let newpersty desc =
+let newpersty ~lscope desc =
   decr new_id;
   create_expr
-    desc ~level:generic_level ~scope:Btype.lowest_level ~id:!new_id
+    desc ~level:generic_level ~scope:Btype.lowest_level ~lscope ~id:!new_id
 
 (* ensure that all occurrences of 'Tvar None' are physically shared *)
 let tvar_none = Tvar None
@@ -160,8 +160,9 @@ let rec typexp copy_scope s ty =
     Tvar _ | Tunivar _ ->
       if s.for_saving || get_id ty < 0 then
         let ty' =
-          if s.for_saving then newpersty (norm desc)
-          else newty2 ~level:(get_level ty) desc
+          let lscope = get_lscope ty in
+          if s.for_saving then newpersty ~lscope (norm desc)
+          else newty2 ~level:(get_level ty) ~lscope desc
         in
         For_copy.redirect_desc copy_scope ty (Tsubst (ty', None));
         ty'
@@ -182,8 +183,9 @@ let rec typexp copy_scope s ty =
       not (is_Tconstr ty) && is_constr_row ~allow_ident:false tm in
     (* Make a stub *)
     let ty' =
-      if s.for_saving then newpersty (Tvar None)
-      else newgenstub ~scope:(get_scope ty)
+      let lscope = get_lscope ty in
+      if s.for_saving then newpersty ~lscope (Tvar None)
+      else newgenstub ~scope:(get_scope ty) ~lscope ()
     in
     For_copy.redirect_desc copy_scope ty (Tsubst (ty', None));
     let desc =
@@ -222,7 +224,7 @@ let rec typexp copy_scope s ty =
           (* We must substitute in a subtle way *)
           (* Tsubst takes a tuple containing the row var and the variant *)
           begin match mored with
-            Tsubst (_, Some ty2) ->
+            Tsubst (_, Some ty2) when get_lscope ty = get_lscope more ->
               (* This variant type has been already copied *)
               (* Change the stub to avoid Tlink in the new type *)
               For_copy.redirect_desc copy_scope ty (Tsubst (ty2, None));
@@ -234,11 +236,12 @@ let rec typexp copy_scope s ty =
               (* Various cases for the row variable *)
               let more' =
                 match mored with
-                  Tsubst (ty, None) -> ty
+                  Tsubst (ty, _) -> ty
                 | Tconstr _ | Tnil -> typexp copy_scope s more
                 | Tunivar _ | Tvar _ ->
-                    if s.for_saving then newpersty (norm mored)
-                    else if dup && is_Tvar more then newgenty mored
+                    let lscope = get_lscope more in
+                    if s.for_saving then newpersty ~lscope (norm mored)
+                    else if dup && is_Tvar more then newgenty ~lscope mored
                     else more
                 | _ -> assert false
               in

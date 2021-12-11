@@ -30,6 +30,7 @@ module TypeSet = struct
   include TransientTypeSet
   let add = wrap_repr add
   let mem = wrap_repr mem
+  let remove = wrap_repr remove
   let singleton = wrap_repr singleton
   let exists p = TransientTypeSet.exists (wrap_type_expr p)
   let elements set =
@@ -107,9 +108,10 @@ let pivot_level = 2 * lowest_level - 1
 
 (**** Some type creators ****)
 
-let newgenty desc      = newty2 ~level:generic_level desc
-let newgenvar ?name () = newgenty (Tvar name)
-let newgenstub ~scope  = newty3 ~level:generic_level ~scope (Tvar None)
+let newgenty ?lscope desc      = newty2 ~level:generic_level ?lscope desc
+let newgenvar ?name ?lscope () = newgenty ?lscope (Tvar name)
+let newgenstub ~scope ?lscope () =
+  newty3 ~level:generic_level ~scope ?lscope (Tvar None)
 
 (*
 let newmarkedvar level =
@@ -174,7 +176,8 @@ let hash_variant s =
 let proxy ty =
   match get_desc ty with
   | Tvariant row when not (static_row row) ->
-      row_more row
+      let more = row_more row in
+      if get_lscope ty = get_lscope more then more else ty
   | Tobject (ty, _) ->
       let rec proxy_obj ty =
         match get_desc ty with
@@ -182,7 +185,9 @@ let proxy ty =
         | Tvar _ | Tunivar _ | Tconstr _ -> ty
         | Tnil -> ty
         | _ -> assert false
-      in proxy_obj ty
+      in
+      let proxy = proxy_obj ty in
+      if get_lscope ty = get_lscope proxy then proxy else ty
   | _ -> ty
 
 (**** Utilities for fixed row private types ****)

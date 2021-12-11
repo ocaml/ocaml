@@ -219,6 +219,7 @@ val field_kind_internal_repr: field_kind -> field_kind
 val get_desc: type_expr -> type_desc
 val get_level: type_expr -> int
 val get_scope: type_expr -> int
+val get_lscope: type_expr -> int
 val get_id: type_expr -> int
 
 (** Transient [type_expr].
@@ -227,15 +228,19 @@ type transient_expr = private
       { mutable desc: type_desc;
         mutable level: int;
         mutable scope: int;
+        mutable lscope: int;
         id: int }
 
 module Transient_expr : sig
   (** Operations on [transient_expr] *)
 
-  val create: type_desc -> level: int -> scope: int -> id: int -> transient_expr
+  val create:
+    type_desc -> level: int -> scope: int -> lscope: int -> id: int ->
+      transient_expr
   val set_desc: transient_expr -> type_desc -> unit
   val set_level: transient_expr -> int -> unit
   val set_scope: transient_expr -> int -> unit
+  val set_lscope: transient_expr -> int -> unit
   val repr: type_expr -> transient_expr
   val type_expr: transient_expr -> type_expr
   val coerce: type_expr -> transient_expr
@@ -246,14 +251,15 @@ module Transient_expr : sig
           Fail if already instantiated. *)
 end
 
-val create_expr: type_desc -> level: int -> scope: int -> id: int -> type_expr
+val create_expr:
+  type_desc -> level: int -> scope: int -> lscope: int -> id: int -> type_expr
 
 (** Functions and definitions moved from Btype *)
 
-val newty3: level:int -> scope:int -> type_desc -> type_expr
+val newty3: level:int -> scope:int -> ?lscope: int -> type_desc -> type_expr
         (** Create a type with a fresh id *)
 
-val newty2: level:int -> type_desc -> type_expr
+val newty2: level:int -> ?lscope: int -> type_desc -> type_expr
         (** Create a type with a fresh id and no scope *)
 
 module TransientTypeOps : sig
@@ -707,6 +713,7 @@ val set_type_desc: type_expr -> type_desc -> unit
         (* Set directly the desc field, without sharing *)
 val set_level: type_expr -> int -> unit
 val set_scope: type_expr -> int -> unit
+val set_lscope: type_expr -> int -> unit
 val set_name:
     (Path.t * type_expr list) option ref ->
     (Path.t * type_expr list) option -> unit

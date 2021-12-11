@@ -648,7 +648,7 @@ val f :
 - : (< m : 'a. 'a * < p : 'b. 'b * 'd * 'c > as 'd > as 'c) ->
     ('f * < p : 'b. 'b * 'e * 'c > as 'e)
 = <fun>
-- : < m : 'a. < p : 'a; .. > as 'b > -> 'b = <fun>
+- : < m : 'a. < p : 'a; .. > > -> < p : 'b; .. > = <fun>
 |}, Principal{|
 - : (< m : 'a. 'a * 'b > as 'b) -> 'c * (< m : 'a. 'a * 'd > as 'd) = <fun>
 - : (< m : 'a. 'b * 'a list > as 'b) ->
@@ -668,7 +668,7 @@ val f :
              (< m : 'a. 'a * < p : 'b0. 'b0 * 'h * 'g > as 'h > as 'g) >
      as 'e)
 = <fun>
-- : < m : 'a. < p : 'a; .. > as 'b > -> 'b = <fun>
+- : < m : 'a. < p : 'a; .. > > -> < p : 'b; .. > = <fun>
 |}];;
 
 type sum = T of < id: 'a. 'a -> 'a > ;;
@@ -815,6 +815,24 @@ end;;
 class type node_type = object method as_variant : [> `Node of node_type ] end
 class node : node_type
 class node : object method as_variant : [> `Node of node_type ] end
+|}];;
+
+class type node_type =  object
+  method as_variant : ([> `Node of node_type] as 'a) * 'a
+end;;
+class node : node_type = object (self)
+  method as_variant : 'a. ([> `Node of node_type] as 'b) * ('b as 'a)
+                    = `Node (self :>  node_type), `Node (self :> node_type)
+end;;
+class node = object (self : #node_type)
+  method as_variant = `Node (self :> node_type), `Node (self :> node_type)
+end;;
+[%%expect {|
+class type node_type =
+  object method as_variant : ([> `Node of node_type ] as 'a) * 'a end
+class node : node_type
+class node :
+  object method as_variant : ([> `Node of node_type ] as 'a) * 'a end
 |}];;
 
 type bad = {bad : 'a. 'a option ref};;
@@ -1128,10 +1146,9 @@ Line 2, characters 3-4:
 Error: This expression has type < m : 'a. 'a * < m : 'a * 'b > > as 'b
        but an expression was expected of type
          < m : 'a. 'a * (< m : 'a * < m : 'c. 'c * 'd > > as 'd) >
-       The method m has type
-       'a. 'a * (< m : 'a * < m : 'c. 'c * 'd > > as 'd),
+       The method m has type 'a * < m : 'a. 'a * < m : 'e > > as 'e,
        but the expected method type was
-       'c. 'c * < m : 'a * < m : 'c. 'e > > as 'e
+       'a * < m : 'c. 'c * < m : 'f > > as 'f
        The universal variable 'a would escape its scope
 |}];;
 
@@ -1152,7 +1169,10 @@ Error: This expression has type
          < m : 'b. 'b * ('b * < m : 'c. 'c * 'a > as 'a) >
        but an expression was expected of type
          < m : 'b. 'b * ('b * < m : 'c. 'c * ('c * 'd) >) > as 'd
-       Types for method m are incompatible
+       The method m has type 'c. 'c * ('b * < m : 'c. 'e >) as 'e,
+       but the expected method type was
+       'c. 'c * ('c * < m : 'b. 'b * ('b * < m : 'c. 'f >) >) as 'f
+       The universal variable 'c would escape its scope
 |}];;
 
 module M
@@ -1181,7 +1201,7 @@ Error: Signature mismatch:
          < m : 'b. 'b * ('b * < m : 'c. 'c * 'e > as 'e) > -> unit
        The method m has type 'a. 'a * ('a * < m : 'a. 'f >) as 'f,
        but the expected method type was 'c. 'c * ('b * < m : 'c. 'g >) as 'g
-       The universal variable 'b would escape its scope
+       The universal variable 'c would escape its scope
 |}];;
 
 module M : sig type 'a t type u = <m: 'a. 'a t> end
@@ -1539,6 +1559,8 @@ Line 2, characters 2-72:
 Error: This expression has type < m : 'x. [< `Foo of 'x ] -> 'x >
        but an expression was expected of type
          < m : 'a. [< `Foo of int ] -> 'a >
+       The method m has type 'x. [< `Foo of 'x ] -> 'x,
+       but the expected method type was 'a. [< `Foo of int ] -> 'a
        The universal variable 'x would escape its scope
 |}];;
 (* ok *)
@@ -1562,22 +1584,13 @@ Error: This expression has type
          < m : 'b 'd. [< `Bar | `Foo of int & 'b ] as 'd >
        Types for tag `Foo are incompatible
 |}]
-(* fail? *)
+
 let f (n : < m : 'a. [< `Foo of 'a & int | `Bar] >) =
   (n : < m : 'b. [< `Foo of 'b & int | `Bar] >)
 [%%expect{|
-Line 1:
-Error: Values do not match:
-         val f :
-           < m : 'a. [< `Bar | `Foo of 'a & int ] as 'c > -> < m : 'b. 'c >
-       is not included in
-         val f :
-           < m : 'a. [< `Bar | `Foo of 'b & int ] as 'c > -> < m : 'b. 'c >
-       The type
-         < m : 'a. [< `Bar | `Foo of 'b & int ] as 'c > -> < m : 'b. 'c >
-       is not compatible with the type
-         < m : 'a. [< `Bar | `Foo of 'b & int ] as 'd > -> < m : 'b. 'd >
-       Types for tag `Foo are incompatible
+val f :
+  < m : 'a. [< `Bar | `Foo of 'a & int ] > ->
+  < m : 'b. [< `Bar | `Foo of 'b & int ] > = <fun>
 |}]
 
 (* PR#6171 *)
@@ -1884,7 +1897,7 @@ Line 1, characters 17-18:
 1 | let f (x : u) = (x : v)
                      ^
 Error: This expression has type u but an expression was expected of type v
-       The method m has type 'a s list * < m : 'b > as 'b,
+       The method m has type 'a. 'a s list * (< m : 'a s list * 'b > as 'b),
        but the expected method type was 'a. 'a s list * < m : 'a. 'c > as 'c
        The universal variable 'a would escape its scope
 |}]
@@ -1930,4 +1943,13 @@ Line 2, characters 16-24:
                     ^^^^^^^^
 Error: This field value has type 'b option ref which is less general than
          'a. 'a option ref
+|}]
+
+(* Ensure that copying respects separation of univars. *)
+let f (x : < m : 'a. [> `A of 'a] >) (y : < m : 'b. [> `A of 'b] >) b =
+  if b then x else y;;
+[%%expect{|
+val f :
+  < m : 'a. [> `A of 'a ] > ->
+  < m : 'b. [> `A of 'b ] > -> bool -> < m : 'a. [> `A of 'a ] > = <fun>
 |}]

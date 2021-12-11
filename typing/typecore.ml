@@ -2505,7 +2505,7 @@ let check_univars env kind exp ty_expected vars =
   end_def ();
   generalize exp_ty;
   List.iter generalize vars;
-  let ty, complete = polyfy env exp_ty vars in
+  let ty, complete = polyfy ~lscope:1 env exp_ty vars in
   if not complete then
     let ty_expected = instance ty_expected in
     raise (Error(exp.exp_loc,
