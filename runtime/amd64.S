@@ -58,7 +58,7 @@
 #define GREL(r) r@GOTPCREL
 #define GCALL(r) r@PLT
 #if defined(FUNCTION_SECTIONS)
-#define TEXT_SECTION(name) .section .text.##name,"ax",%progbits
+#define TEXT_SECTION(name) .section .text.caml.##name,"ax",%progbits
 #else
 #define TEXT_SECTION(name)
 #endif
