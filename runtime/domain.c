@@ -424,10 +424,7 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
 
     domain_state->extern_state = NULL;
 
-    domain_state->intern_state = caml_alloc_intern_state ();
-    if (domain_state->intern_state == NULL) {
-      goto create_intern_state_failure;
-    }
+    domain_state->intern_state = NULL;
 
     domain_state->current_stack =
         caml_alloc_main_stack(Stack_size / sizeof(value));
@@ -451,10 +448,7 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
     add_to_stw_domains(domain_self);
     goto domain_init_complete;
 
-  caml_free_stack(domain_state->current_stack);
 alloc_main_stack_failure:
-  caml_free_intern_state(domain_state->intern_state);
-create_intern_state_failure:
 create_stack_cache_failure:
   caml_remove_generational_global_root(&domain_state->dls_root);
 reallocate_minor_heap_failure:
@@ -1297,8 +1291,8 @@ static void domain_terminate()
   // run the domain termination hook
   caml_domain_stop_hook();
   caml_stat_free(domain_state->ephe_info);
+  caml_free_intern_state();
   caml_free_extern_state();
-  caml_free_intern_state(domain_state->intern_state);
   caml_teardown_major_gc();
   CAML_EVENTLOG_TEARDOWN();
   caml_teardown_shared_heap(domain_state->shared_heap);
