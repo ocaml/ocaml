@@ -213,7 +213,7 @@ module GenHashTable = struct
 
     (** {!find} don't remove dead keys because it would be surprising for
         the user that a read-only function mutates the state (eg. concurrent
-        access). Same for {!iter}, {!fold}, {!mem}.
+        access). Same for {!mem}.
     *)
     let rec find_rec key hkey = function
       | Empty ->

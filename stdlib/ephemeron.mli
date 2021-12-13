@@ -70,9 +70,6 @@ module type S = sig
       the bindings are weak, even if [mem h k] is true, a subsequent
       [find h k] may raise [Not_found] because the garbage collector
       can run between the two.
-
-      Moreover, the table shouldn't be modified during a call to [iter].
-      Use [filter_map_inplace] in this case.
   *)
 
   type key
