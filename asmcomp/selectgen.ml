@@ -366,11 +366,11 @@ method effects_of exp =
     let from_op =
       match op with
       | Capply _ | Cextcall _ | Copaque -> EC.arbitrary
-      | Calloc | Cdls_get -> EC.none
+      | Calloc -> EC.none
       | Cstore _ -> EC.effect_only Effect.Arbitrary
       | Craise _ | Ccheckbound -> EC.effect_only Effect.Raise
       | Cload {mutability = Asttypes.Immutable} -> EC.none
-      | Cload {mutability = Asttypes.Mutable} ->
+      | Cload {mutability = Asttypes.Mutable} | Cdls_get ->
           EC.coeffect_only Coeffect.Read_mutable
       | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi | Cand | Cor | Cxor
       | Clsl | Clsr | Casr | Ccmpi _ | Caddv | Cadda | Ccmpa _ | Cnegf | Cabsf
