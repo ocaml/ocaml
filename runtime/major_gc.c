@@ -348,7 +348,7 @@ double caml_mean_space_overhead ()
 
 static void update_major_slice_work() {
   double p, dp, heap_words;
-  intnat computed_work, limit;
+  intnat computed_work;
   caml_domain_state *dom_st = Caml_state;
   uintnat heap_size, heap_sweep_words, saved_terminated_words;
   /*
@@ -408,22 +408,12 @@ static void update_major_slice_work() {
 
   if (p < dom_st->extra_heap_resources) p = dom_st->extra_heap_resources;
 
-  if (p > 0.3) p = 0.3;
-
   computed_work = (intnat) (p * (heap_sweep_words
                             + (heap_words * 100 / (100 + caml_percent_free))));
 
   /* accumulate work */
   dom_st->major_work_computed += computed_work;
   dom_st->major_work_todo += computed_work;
-
-  /* cap accumulated work todo to p = 0.3 */
-  limit = (intnat)(0.3 * (heap_sweep_words
-                            + (heap_words * 100 / (100 + caml_percent_free))));
-  if (dom_st->major_work_todo > limit)
-  {
-    dom_st->major_work_todo = limit;
-  }
 
   caml_gc_message (0x40, "heap_words = %"
                          ARCH_INTNAT_PRINTF_FORMAT "u\n",
@@ -468,6 +458,18 @@ static intnat get_major_slice_work(intnat howmuch) {
   /* calculate how much work to do now */
   if (howmuch == AUTO_TRIGGERED_MAJOR_SLICE ||
       howmuch == GC_CALCULATE_MAJOR_SLICE) {
+    uintnat heap_size = caml_heap_size(dom_st->shared_heap);
+    uintnat heap_words = (double)Wsize_bsize(heap_size);
+    uintnat heap_sweep_words = heap_words;
+
+    /* cap accumulated work todo to 0.3 */
+    intnat limit = (intnat)(0.3 * (heap_sweep_words
+                            + (heap_words * 100 / (100 + caml_percent_free))));
+    if (dom_st->major_work_todo > limit)
+    {
+      dom_st->major_work_todo = limit;
+    }
+
     computed_work = (dom_st->major_work_todo > 0)
       ? dom_st->major_work_todo
       : 0;
