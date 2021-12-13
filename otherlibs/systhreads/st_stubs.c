@@ -349,14 +349,40 @@ static void caml_thread_reinitialize(void)
 CAMLprim value caml_thread_initialize(value unit);
 CAMLprim value caml_thread_initialize_domain(value unit);
 
+CAMLprim value caml_thread_join(value th);
+
+/* This hook is run when a domain shut downs. (see domains.c) */
+/* When a domain shut downs, the state must be cleared */
+/* to allow proper reuse of the domain slot the next time a domain */
+/* is started on this slot */
+/* If a program is single-domain, we mimic trunk's behavior and do not */
+/* care about ongoing thread: the program will exit. */
 static void caml_thread_domain_stop_hook(void) {
-  // This hook will clean up the initial domain's thread descriptor.
-  // The assumption is that it is the only remaining link in the threading chain
-  // (as every other threads either go through caml_thread_stop or
-  // caml_c_thread_unregister.)
-  caml_stat_free(Current_thread);
-  Current_thread = NULL;
+  /* If the program runs multiple domains, we should not let */
+  /* systhreads to hang around when a domain exit. */
+  /* If the domain is not the last one (and the last one will always */
+  /* be domain 0) we force the domain to join on every threads */
+  /* in the chaining before wrapping up, */
+  if (!caml_domain_alone()) {
+
+    while (Current_thread->next != Current_thread) {
+      caml_thread_join(Current_thread->next->descr);
+    }
+
+    /* another domain thread may be joining on this domain's descriptor */
+    caml_threadstatus_terminate(Terminated(Current_thread->descr));
+
+    caml_stat_free(Current_thread);
+    Current_thread = NULL;
+    All_threads = NULL;
+  };
 }
+
+#ifdef NATIVE_CODE
+static void caml_thread_termination_hook(void) {
+  st_thread_exit();
+}
+#endif /* NATIVE_CODE */
 
 value caml_thread_initialize_domain(value v)
 {
@@ -422,6 +448,9 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
   caml_scan_roots_hook = caml_thread_scan_roots;
   caml_enter_blocking_section_hook = caml_thread_enter_blocking_section;
   caml_leave_blocking_section_hook = caml_thread_leave_blocking_section;
+#ifdef NATIVE_CODE
+  caml_termination_hook = caml_thread_termination_hook;
+#endif
   caml_domain_external_interrupt_hook = caml_thread_interrupt_hook;
   caml_domain_stop_hook = caml_thread_domain_stop_hook;
 
@@ -669,16 +698,15 @@ CAMLexport int caml_c_thread_unregister(void)
   st_tls_set(Thread_key, NULL);
   /* Remove thread info block from list of threads, and free it */
   caml_thread_remove_info(th);
-  /* If no other OCaml thread remains, ask the tick thread to stop
-     so that it does not prevent the whole process from exiting (#9971) */
-  // TODO: when we have the tick thread, careful with 9971
-  //if (all_threads == NULL) caml_thread_cleanup(Val_unit);
+
   Current_thread = All_threads;
-  caml_thread_restore_runtime_state();
 
   /* If no other OCaml thread remains, ask the tick thread to stop
      so that it does not prevent the whole process from exiting (#9971) */
-  if (All_threads == NULL) caml_thread_cleanup(Val_unit);
+  if (All_threads == NULL)
+    caml_thread_cleanup(Val_unit);
+  else
+    caml_thread_restore_runtime_state();
 
   /* Release the runtime */
   st_masterlock_release(&Thread_main_lock);
@@ -717,6 +745,11 @@ CAMLprim value caml_thread_uncaught_exception(value exn)  /* ML */
 CAMLprim value caml_thread_exit(value unit)   /* ML */
 {
   struct longjmp_buffer * exit_buf = NULL;
+
+  /* we check if another domain was ever started */
+  if (caml_domain_is_multicore())
+    caml_invalid_argument
+      ("Thread.exit: unsupported call under multiple domains");
 
   if (Current_thread == NULL)
     caml_invalid_argument("Thread.exit: not initialized");
