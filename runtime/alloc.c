@@ -159,7 +159,15 @@ CAMLexport value caml_alloc_N (mlsize_t wosize, tag_t tag, ...)
 
 CAMLexport value caml_alloc_small (mlsize_t wosize, tag_t tag)
 {
-  return caml_alloc(wosize, tag);
+  value result;
+
+  CAMLassert (wosize > 0);
+  CAMLassert (wosize <= Max_young_wosize);
+  CAMLassert (tag < 256);
+  CAMLassert (tag != Infix_tag);
+  Alloc_small (result, wosize, tag,
+               { caml_handle_gc_interrupt_no_async_exceptions(); });
+  return result;
 }
 
 /* [n] is a number of words (fields) */
