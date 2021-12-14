@@ -107,8 +107,8 @@ end [@@expect error];;
 \begin{syntax}
 mod-constraint:
           ...
-        | 'module ' 'type' modtype-path  '=' module-type
-        | 'module ' 'type' modtype-path  ':=' module-type
+        | 'module' 'type' modtype-path '=' module-type
+        | 'module' 'type' modtype-path ':=' module-type
 \end{syntax}
 
 Module type substitution essentially behaves like type substitutions.

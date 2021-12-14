@@ -32,7 +32,7 @@ expr:
   | '(' expr ')'
   | 'begin' expr 'end'
   | '(' expr ':' typexpr ')'
-  | expr {{',' expr}}
+  | expr {{ ',' expr }}
   | constr expr
   | "`"tag-name expr
   | expr '::' expr

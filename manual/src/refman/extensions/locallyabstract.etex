@@ -3,7 +3,7 @@
 \begin{syntax}
 parameter:
        ...
-     | '(' "type" {{typeconstr-name}} ')'
+     | '(' "type" {{ typeconstr-name }} ')'
 \end{syntax}
 
 The expression @"fun" '(' "type" typeconstr-name ')' "->" expr@ introduces a
