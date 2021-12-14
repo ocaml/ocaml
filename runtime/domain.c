@@ -1121,11 +1121,7 @@ static void handle_gc_interrupt() {
 
 CAMLexport void caml_process_pending_actions(void)
 {
-  CAMLparam0();
-
   handle_gc_interrupt();
-
-  CAMLreturn0;
 }
 
 void caml_handle_gc_interrupt_no_async_exceptions()
