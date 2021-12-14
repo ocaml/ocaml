@@ -15,9 +15,6 @@ Working version
 
 ### Manual and documentation:
 
-- #10589: Fix many typos (excess/inconsistent spaces) in the HTML manual.
-  (Wiktor Kuchta, review by Florian Angeletti)
-
 ### Compiler user-interface and warnings:
 
 ### Internal/compiler-libs changes:
@@ -219,6 +216,9 @@ OCaml 4.14.0
 
 - #10281, #10685: Add description of C compiler on macOS and Windows platforms.
   (Dong An, review by Xavier Leroy and David Allsopp)
+
+- #10589: Fix many typos (excess/inconsistent spaces) in the HTML manual.
+  (Wiktor Kuchta, review by Florian Angeletti)
 
 - #10605: manual, name few css classes to ease styling and maintainability.
   (Florian Angeletti, review by Wiktor Kuchta and Gabriel Scherer)
