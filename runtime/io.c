@@ -118,7 +118,7 @@ static void check_pending(struct channel *channel)
     /* Temporarily unlock the channel, to ensure locks are not held
        while any signal handlers (or finalisers, etc) are running */
     Unlock(channel);
-    caml_handle_gc_interrupt();
+    caml_process_pending_actions();
     Lock(channel);
   }
 }
