@@ -1261,3 +1261,71 @@ end;;
 [%%expect {|
 class type c = object val x : float end
 |}];;
+
+class c = object
+  method virtual private test : unit
+  method private test = ()
+end
+
+let () = (new c)#test
+[%%expect {|
+class c : object method private test : unit end
+Line 6, characters 9-16:
+6 | let () = (new c)#test
+             ^^^^^^^
+Error: This expression has type c
+       It has no method test
+|}];;
+
+class c = object
+  method virtual private test : unit
+  method test = ()
+end
+
+let () = (new c)#test
+[%%expect {|
+class c : object method test : unit end
+|}];;
+
+class virtual d = object
+  method virtual private test : unit
+end
+
+class c = object
+  inherit d
+  method private test = ()
+end
+
+let () = (new c)#test
+[%%expect {|
+class virtual d : object method private virtual test : unit end
+class c : object method private test : unit end
+Line 10, characters 9-16:
+10 | let () = (new c)#test
+              ^^^^^^^
+Error: This expression has type c
+       It has no method test
+|}];;
+
+class c = object
+  inherit d
+  method test = ()
+end
+
+let () = (new c)#test
+[%%expect {|
+class c : object method test : unit end
+|}];;
+
+class foo =
+  object
+    method private f (b : bool) = b
+    inherit object
+      method f (b : bool) = b
+    end
+  end
+let _ = (new foo)#f true
+[%%expect {|
+class foo : object method f : bool -> bool end
+- : bool = true
+|}];;
