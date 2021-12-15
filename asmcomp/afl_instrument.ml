@@ -107,10 +107,8 @@ let instrument_initialiser c dbg =
   (* Each instrumented module calls caml_setup_afl at
      initialisation, which is a no-op on the second and subsequent
      calls *)
-  with_afl_logging
-    (Csequence
-       (Cop (Cextcall ("caml_setup_afl", typ_int, [], false),
-             [Cconst_int (0, dbg ())],
-             dbg ()),
-        c))
-    (dbg ())
+  Csequence
+   (Cop (Cextcall ("caml_setup_afl", typ_int, [], false),
+         [Cconst_int (0, dbg ())],
+         dbg ()),
+    with_afl_logging c (dbg ()))

@@ -17,23 +17,30 @@
 #define CAML_INTERNALS
 
 #include "caml/config.h"
+#include "caml/memory.h"
 #include "caml/mlvalues.h"
 
 /* Values used by the instrumentation logic (see cmmgen.ml) */
-static unsigned char afl_area_initial[1 << 16];
-unsigned char* caml_afl_area_ptr = afl_area_initial;
+
+#define INITIAL_AFL_AREA_SIZE (1 << 16)
+unsigned char * caml_afl_area_ptr = NULL;
 uintnat caml_afl_prev_loc;
 
 #if !defined(HAS_SYS_SHM_H) || !defined(HAS_SHMAT)
 
-CAMLprim value caml_reset_afl_instrumentation(value full)
+CAMLexport value caml_setup_afl(value unit)
 {
+  /* AFL is not supported, but we still need to allocate space for the bitmap
+       (the instrumented OCaml code will write into it). */
+  if (caml_afl_area_ptr == NULL) {
+    caml_afl_area_ptr = caml_stat_alloc(INITIAL_AFL_AREA_SIZE);
+    memset(caml_afl_area_ptr, 0, INITIAL_AFL_AREA_SIZE);
+  }
   return Val_unit;
 }
 
-CAMLexport value caml_setup_afl(value unit)
+CAMLprim value caml_reset_afl_instrumentation(value full)
 {
-  /* AFL is not supported */
   return Val_unit;
 }
 
@@ -48,7 +55,6 @@ CAMLexport value caml_setup_afl(value unit)
 #include <string.h>
 
 #include "caml/domain.h"
-#include "caml/memory.h"
 #include "caml/misc.h"
 #include "caml/osdeps.h"
 
@@ -88,7 +94,11 @@ CAMLexport value caml_setup_afl(value unit)
 
   shm_id_str = caml_secure_getenv("__AFL_SHM_ID");
   if (shm_id_str == NULL) {
-    /* Not running under afl-fuzz, continue as normal */
+    /* Not running under afl-fuzz.  Allocate space for the bitmap
+       (the instrumented OCaml code will write into it),
+       and continue as normal. */
+    caml_afl_area_ptr = caml_stat_alloc(INITIAL_AFL_AREA_SIZE);
+    memset(caml_afl_area_ptr, 0, INITIAL_AFL_AREA_SIZE);
     return Val_unit;
   }
 
@@ -165,8 +175,8 @@ CAMLexport value caml_setup_afl(value unit)
 
 CAMLprim value caml_reset_afl_instrumentation(value full)
 {
-  if (full == Val_true) {
-    memset(caml_afl_area_ptr, 0, sizeof(afl_area_initial));
+  if (full == Val_true && caml_afl_area_ptr != NULL) {
+    memset(caml_afl_area_ptr, 0, INITIAL_AFL_AREA_SIZE);
   }
   caml_afl_prev_loc = 0;
   return Val_unit;
