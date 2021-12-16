@@ -394,11 +394,16 @@ static void update_major_slice_work() {
     while(!atomic_compare_exchange_strong
             (&terminated_domains_allocated_words, &saved_terminated_words, 0));
   }
-  p = (double) (saved_terminated_words
+
+  if (heap_words > 0) {
+    p = (double) (saved_terminated_words
                 + dom_st->allocated_words) * 3.0 * (100 + caml_percent_free)
                 / heap_words / caml_percent_free / 2.0;
+  } else {
+    p = 0.0;
+  }
 
-  if (dom_st->dependent_size > 0){
+  if (dom_st->dependent_size > 0) {
     dp = (double) dom_st->dependent_allocated * (100 + caml_percent_free)
          / dom_st->dependent_size / caml_percent_free;
   }else{
