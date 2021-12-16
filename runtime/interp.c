@@ -554,7 +554,6 @@ value caml_interprete(code_t prog, asize_t prog_size)
         value hval = Stack_handle_value(old_stack);
         CAMLassert(parent_stack != NULL);
 
-        old_stack->sp = sp;
         domain_state->current_stack = parent_stack;
         sp = domain_state->current_stack->sp;
         caml_free_stack(old_stack);
