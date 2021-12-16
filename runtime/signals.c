@@ -42,7 +42,7 @@
 CAMLexport atomic_intnat caml_pending_signals[NSIG];
 caml_plat_mutex signal_install_mutex = CAML_PLAT_MUTEX_INITIALIZER;
 
-static int check_for_pending_signals(void)
+int caml_check_for_pending_signals(void)
 {
   int i;
 
@@ -66,7 +66,7 @@ CAMLexport value caml_process_pending_signals_exn(void)
 
   /* Check that there is indeed a pending signal before issuing the
       syscall in [pthread_sigmask]. */
-  if (!check_for_pending_signals())
+  if (!caml_check_for_pending_signals())
     return Val_unit;
 
 #ifdef POSIX_SIGNALS
@@ -148,7 +148,7 @@ CAMLexport void caml_enter_blocking_section(void)
     caml_enter_blocking_section_hook ();
     /* Check again for pending signals.
        If none, done; otherwise, try again */
-    if (!check_for_pending_signals()) break;
+    if (!caml_check_for_pending_signals()) break;
     caml_leave_blocking_section_hook ();
   }
 }
