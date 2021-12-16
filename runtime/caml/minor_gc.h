@@ -23,6 +23,8 @@
 #define caml_young_ptr Caml_state->young_ptr
 #define caml_young_start Caml_state->young_start
 #define caml_young_limit Caml_state->young_limit
+#define caml_young_alloc_start Caml_state->young_start
+#define caml_young_alloc_end Caml_state->young_end
 #define caml_minor_heap_wsz Caml_state->minor_heap_wsz
 
 
@@ -61,7 +63,9 @@ CAMLextern void caml_minor_collection (void);
 
 #ifdef CAML_INTERNALS
 extern void caml_set_minor_heap_size (asize_t); /* size in bytes */
-extern void caml_empty_minor_heap_no_major_slice_from_stw (caml_domain_state* domain, void* unused, int participating_count, caml_domain_state** participating); /* in STW */
+extern void caml_empty_minor_heap_no_major_slice_from_stw
+  (caml_domain_state* domain, void* unused, int participating_count,
+    caml_domain_state** participating); /* in STW */
 extern int caml_try_stw_empty_minor_heap_on_all_domains(); /* out STW */
 extern void caml_empty_minor_heaps_once(); /* out STW */
 CAMLextern void garbage_collection (void); /* def in asmrun/signals.c */
