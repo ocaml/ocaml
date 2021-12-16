@@ -89,8 +89,7 @@ void caml_garbage_collection()
 
     if (nallocs == 0) {
       /* This is a poll */
-      caml_handle_gc_interrupt(); // process pending actions?
-      caml_process_pending_signals();
+      caml_process_pending_actions();
       return;
     }
     else
@@ -115,8 +114,7 @@ void caml_garbage_collection()
       single call to caml_handle_gc_interrupt does not lead to that. We do it
       in a loop to ensure it. */
     do {
-      caml_handle_gc_interrupt();
-      caml_process_pending_signals();
+      caml_process_pending_actions();
     } while
        ( (uintnat)(Caml_state->young_ptr - whsize) <= Caml_state->young_limit );
 
