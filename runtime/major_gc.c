@@ -458,21 +458,23 @@ static intnat get_major_slice_work(intnat howmuch) {
   /* calculate how much work to do now */
   if (howmuch == AUTO_TRIGGERED_MAJOR_SLICE ||
       howmuch == GC_CALCULATE_MAJOR_SLICE) {
-    uintnat heap_size = caml_heap_size(dom_st->shared_heap);
-    uintnat heap_words = (double)Wsize_bsize(heap_size);
-    uintnat heap_sweep_words = heap_words;
-
-    /* cap accumulated work todo to 0.3 */
-    intnat limit = (intnat)(0.3 * (heap_sweep_words
-                            + (heap_words * 100 / (100 + caml_percent_free))));
-    if (dom_st->major_work_todo > limit)
-    {
-      dom_st->major_work_todo = limit;
-    }
-
     computed_work = (dom_st->major_work_todo > 0)
       ? dom_st->major_work_todo
       : 0;
+
+    /* cap computed_work to 0.3 */
+    {
+      uintnat heap_size = caml_heap_size(dom_st->shared_heap);
+      uintnat heap_words = (double)Wsize_bsize(heap_size);
+      uintnat heap_sweep_words = heap_words;
+      intnat limit = (intnat)(0.3 * (heap_sweep_words
+                            + (heap_words * 100 / (100 + caml_percent_free))));
+
+      if (computed_work > limit)
+      {
+        computed_work = limit;
+      }
+    }
   } else {
     /* forced or opportunistic GC slice with explicit quantity */
     computed_work = howmuch;
