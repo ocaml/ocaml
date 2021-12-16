@@ -1,6 +1,6 @@
 (* TEST
 readonly_files = "main.c"
-arguments = "-ccopt -DCHECKBOUND main.c"
+arguments = "-DCHECKBOUND main.c"
 * asmgen
 *)
 

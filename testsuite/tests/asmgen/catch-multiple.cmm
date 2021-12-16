@@ -1,6 +1,6 @@
 (* TEST
 readonly_files = "main.c"
-arguments = "-ccopt -DINT_INT -ccopt -DFUN=catch_multiple main.c"
+arguments = "-DINT_INT -DFUN=catch_multiple main.c"
 * asmgen
 *)
 
