@@ -132,7 +132,9 @@ alloc_size_class_stack_noexc(mlsize_t wosize, struct stack_info** size_bucket,
   hand->parent = NULL;
   stack->sp = (value*)hand;
   stack->exception_ptr = NULL;
+#ifdef DEBUG
   stack->magic = 42;
+#endif
   CAMLassert(Stack_high(stack) - Stack_base(stack) == wosize ||
              Stack_high(stack) - Stack_base(stack) == wosize + 1);
   return stack;
@@ -277,9 +279,8 @@ CAMLprim value caml_alloc_stack(value hval, value hexn, value heff)
   if (!stack) caml_raise_out_of_memory();
 
   sp = Stack_high(stack);
-  // ?
   sp -= 1;
-  sp[0] = Val_long(1); /* trapsp ?? */
+  sp[0] = Val_long(1);
 
   stack->sp = sp;
 
@@ -320,7 +321,7 @@ void caml_scan_stack(scanning_action f, void* fdata,
       /* Code pointers inside the stack are naked pointers.
          We must avoid passing them to function [f]. */
       value v = *sp;
-      if (Is_block(v) && caml_find_code_fragment_by_pc((char *) v) == NULL) {
+      if (is_block_and_not_code_frag(v)) {
         f(fdata, v, sp);
       }
     }
