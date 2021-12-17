@@ -398,6 +398,8 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
   dom_internal* d = 0;
   CAMLassert (domain_self == 0);
 
+  /* take the all_domains_lock so that we can alter the STW participant
+     set atomically */
   caml_plat_lock(&all_domains_lock);
 
   /* wait until any in-progress STW sections end */
@@ -774,8 +776,10 @@ static void* domain_thread_func(void* v)
   struct domain_ml_values *ml_values = p->ml_values;
 
   create_domain(caml_params->init_minor_heap_wsz);
+  /* this domain is now part of the STW participant set */
   p->newdom = domain_self;
 
+  /* handshake with the parent domain */
   caml_plat_lock(&p->parent->lock);
   if (domain_self) {
     /* this domain is part of STW sections, so can read ml_values */
@@ -1303,6 +1307,8 @@ static void domain_terminate()
     handover_ephemerons(domain_state);
     handover_finalisers(domain_state);
 
+    /* take the all_domains_lock to try and exit the STW participant set
+       without racing with a STW section being triggered */
     caml_plat_lock(&all_domains_lock);
 
     /* The interaction of termination and major GC is quite subtle.
@@ -1361,7 +1367,9 @@ static void domain_terminate()
     caml_free_stack(domain_state->current_stack);
   }
 
-  /* signal the domain termination to the backup thread */
+  /* signal the domain termination to the backup thread
+     NB: for a program with no additional domains, the backup thread
+     will not have been started */
   atomic_store_rel(&domain_self->backup_thread_msg, BT_TERMINATE);
   caml_plat_signal(&domain_self->domain_cond);
   caml_plat_unlock(&domain_self->domain_lock);
