@@ -91,7 +91,8 @@ type stat =
     (** Number of forced full major collections completed since the program
         was started. @since 4.12.0 *)
 }
-(** The memory management counters are returned in a [stat] record.
+(** The memory management counters are returned in a [stat] record. These
+   counters give values for the whole program.
 
    The total amount of memory allocated by the program since it was started
    is (in words) [minor_words + major_words - promoted_words].  Multiply by
