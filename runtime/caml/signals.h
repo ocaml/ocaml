@@ -34,6 +34,15 @@ CAMLextern void caml_enter_blocking_section (void);
 CAMLextern void caml_enter_blocking_section_no_pending (void);
 CAMLextern void caml_leave_blocking_section (void);
 
+CAMLextern void caml_process_pending_actions (void);
+/* Checks for pending actions and executes them. This includes pending
+   minor and major collections, signal handlers, finalisers, and
+   Memprof callbacks. Assumes that the runtime lock is held. Can raise
+   exceptions asynchronously into OCaml code. */
+
+CAMLextern int caml_check_pending_actions (void);
+/* Returns 1 if there are pending actions, 0 otherwise. */
+
 #ifdef CAML_INTERNALS
 CAMLextern atomic_intnat caml_pending_signals[];
 
