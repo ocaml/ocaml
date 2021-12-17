@@ -1252,8 +1252,7 @@ static char collection_slice_mode_char(collection_slice_mode mode)
 static intnat major_collection_slice(intnat howmuch,
                                      int participant_count,
                                      caml_domain_state** barrier_participants,
-                                     collection_slice_mode mode,
-                                     intnat* interrupted_budget_out)
+                                     collection_slice_mode mode)
 {
   caml_domain_state* domain_state = Caml_state;
   intnat sweep_work = 0, mark_work = 0;
@@ -1420,31 +1419,24 @@ mark_again:
     }
   }
 
-  if (mode == Slice_interruptible) {
-    *interrupted_budget_out = interrupted_budget;
-  }
-
-  return budget;
+  return interrupted_budget;
 }
 
-intnat caml_opportunistic_major_collection_slice(intnat howmuch)
+void caml_opportunistic_major_collection_slice(intnat howmuch)
 {
-  return major_collection_slice(howmuch, 0, 0, Slice_opportunistic, NULL);
+  major_collection_slice(howmuch, 0, 0, Slice_opportunistic);
 }
 
-intnat caml_major_collection_slice(intnat howmuch)
+void caml_major_collection_slice(intnat howmuch)
 {
-  intnat work_left;
 
   /* if this is an auto-triggered GC slice, make it interruptible */
   if (howmuch == AUTO_TRIGGERED_MAJOR_SLICE) {
-    intnat interrupted_work = 0;
-    work_left = major_collection_slice(
+    intnat interrupted_work = major_collection_slice(
         AUTO_TRIGGERED_MAJOR_SLICE,
         0,
         0,
-        Slice_interruptible,
-        &interrupted_work
+        Slice_interruptible
         );
     if (interrupted_work > 0) {
       caml_gc_log("Major slice interrupted, rescheduling major slice");
@@ -1453,11 +1445,8 @@ intnat caml_major_collection_slice(intnat howmuch)
   } else {
     /* TODO: could make forced API slices interruptible, but would need to do
        accounting or pass up interrupt */
-    work_left = major_collection_slice(howmuch, 0, 0,
-                                       Slice_uninterruptible, NULL);
+    major_collection_slice(howmuch, 0, 0, Slice_uninterruptible);
   }
-
-  return work_left;
 }
 
 static void finish_major_cycle_callback (caml_domain_state* domain, void* arg,
@@ -1472,7 +1461,7 @@ static void finish_major_cycle_callback (caml_domain_state* domain, void* arg,
 
   while (saved_major_cycles == caml_major_cycles_completed) {
     major_collection_slice(10000000, participating_count, participating,
-                           Slice_uninterruptible, NULL);
+                           Slice_uninterruptible);
   }
 }
 
