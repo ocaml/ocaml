@@ -616,6 +616,9 @@ enum domain_status { Dom_starting, Dom_started, Dom_failed };
 struct domain_ml_values {
   value callback;
   value mutex;
+  /* this mutex is taken when a domain starts and released when it terminates
+    which provides a simple way to block domains attempting to join this domain
+   */
 };
 
 static void init_domain_ml_values(
@@ -784,6 +787,8 @@ static void* domain_thread_func(void* v)
   if (domain_self) {
     /* this domain is part of STW sections, so can read ml_values */
     terminate_mutex = Mutex_val(ml_values->mutex);
+    /* we lock terminate_mutex here and unlock when the domain is torn down
+      this provides a simple block for domains attempting to join */
     sync_mutex_lock(terminate_mutex);
     p->status = Dom_started;
     p->unique_id = domain_self->interruptor.unique_id;
@@ -807,7 +812,7 @@ static void* domain_thread_func(void* v)
     caml_callback(ml_values->callback, Val_unit);
     domain_terminate();
     /* joining domains will lock/unlock the terminate_mutex
-      so this unlock will release them */
+      so this unlock will release them if any are waiting */
     sync_mutex_unlock(terminate_mutex);
     free_domain_ml_values(ml_values);
   } else {

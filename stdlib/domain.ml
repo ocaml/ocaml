@@ -163,6 +163,7 @@ let cas r vold vnew =
 
 let spawn f =
   do_at_first_spawn ();
+  (* the termination_mutex is used to block a joining thread *)
   let termination_mutex = Mutex.create () in
   let state = Atomic.make Running in
   let at_startup = Atomic.get startup_function in
