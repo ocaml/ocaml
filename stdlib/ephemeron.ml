@@ -14,14 +14,50 @@
 (**************************************************************************)
 
 module type SeededS = sig
-  include Hashtbl.SeededS
+
+  type key
+  type !'a t
+  val create : ?random (*thwart tools/sync_stdlib_docs*) : bool -> int -> 'a t
+  val clear : 'a t -> unit
+  val reset : 'a t -> unit
+  val copy : 'a t -> 'a t
+  val add : 'a t -> key -> 'a -> unit
+  val remove : 'a t -> key -> unit
+  val find : 'a t -> key -> 'a
+  val find_opt : 'a t -> key -> 'a option
+  val find_all : 'a t -> key -> 'a list
+  val replace : 'a t -> key -> 'a -> unit
+  val mem : 'a t -> key -> bool
+  val length : 'a t -> int
+  val stats : 'a t -> Hashtbl.statistics
+  val add_seq : 'a t -> (key * 'a) Seq.t -> unit
+  val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
+  val of_seq : (key * 'a) Seq.t -> 'a t
   val clean: 'a t -> unit
   val stats_alive: 'a t -> Hashtbl.statistics
     (** same as {!stats} but only count the alive bindings *)
 end
 
 module type S = sig
-  include Hashtbl.S
+
+  type key
+  type !'a t
+  val create : int -> 'a t
+  val clear : 'a t -> unit
+  val reset : 'a t -> unit
+  val copy : 'a t -> 'a t
+  val add : 'a t -> key -> 'a -> unit
+  val remove : 'a t -> key -> unit
+  val find : 'a t -> key -> 'a
+  val find_opt : 'a t -> key -> 'a option
+  val find_all : 'a t -> key -> 'a list
+  val replace : 'a t -> key -> 'a -> unit
+  val mem : 'a t -> key -> bool
+  val length : 'a t -> int
+  val stats : 'a t -> Hashtbl.statistics
+  val add_seq : 'a t -> (key * 'a) Seq.t -> unit
+  val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
+  val of_seq : (key * 'a) Seq.t -> 'a t
   val clean: 'a t -> unit
   val stats_alive: 'a t -> Hashtbl.statistics
     (** same as {!stats} but only count the alive bindings *)
@@ -40,7 +76,6 @@ module GenHashTable = struct
     val hash: int -> t -> int
     val equal: 'a container -> t -> equal
     val get_data: 'a container -> 'a option
-    val get_key: 'a container -> t option
     val set_key_data: 'a container -> t -> 'a -> unit
     val check_key: 'a container -> bool
   end) : SeededS with type key = H.t
@@ -178,7 +213,7 @@ module GenHashTable = struct
 
     (** {!find} don't remove dead keys because it would be surprising for
         the user that a read-only function mutates the state (eg. concurrent
-        access). Same for {!iter}, {!fold}, {!mem}.
+        access). Same for {!mem}.
     *)
     let rec find_rec key hkey = function
       | Empty ->
@@ -284,59 +319,6 @@ module GenHashTable = struct
       | Cons(_hk, _c, rest) -> mem_in_bucket rest in
       mem_in_bucket h.data.(key_index h hkey)
 
-    let iter f h =
-      let rec do_bucket = function
-        | Empty ->
-            ()
-        | Cons(_, c, rest) ->
-            begin match H.get_key c, H.get_data c with
-            | None, _ | _, None -> ()
-            | Some k, Some d -> f k d
-            end; do_bucket rest in
-      let d = h.data in
-      for i = 0 to Array.length d - 1 do
-        do_bucket d.(i)
-      done
-
-    let fold f h init =
-      let rec do_bucket b accu =
-        match b with
-          Empty ->
-            accu
-        | Cons(_, c, rest) ->
-            let accu = begin match H.get_key c, H.get_data c with
-              | None, _ | _, None -> accu
-              | Some k, Some d -> f k d accu
-            end in
-            do_bucket rest accu  in
-      let d = h.data in
-      let accu = ref init in
-      for i = 0 to Array.length d - 1 do
-        accu := do_bucket d.(i) !accu
-      done;
-      !accu
-
-    let filter_map_inplace f h =
-      let rec do_bucket = function
-        | Empty ->
-            Empty
-        | Cons(hk, c, rest) ->
-            match H.get_key c, H.get_data c with
-            | None, _ | _, None ->
-                do_bucket rest
-            | Some k, Some d ->
-                match f k d with
-                | None ->
-                    do_bucket rest
-                | Some new_d ->
-                    H.set_key_data c k new_d;
-                    Cons(hk, c, do_bucket rest)
-      in
-      let d = h.data in
-      for i = 0 to Array.length d - 1 do
-        d.(i) <- do_bucket d.(i)
-      done
-
     let length h = h.size
 
     let rec bucket_length accu = function
@@ -381,29 +363,6 @@ module GenHashTable = struct
         max_bucket_length = mbl;
         bucket_histogram = histo }
 
-    let to_seq tbl =
-      (* capture current array, so that even if the table is resized we
-         keep iterating on the same array *)
-      let tbl_data = tbl.data in
-      (* state: index * next bucket to traverse *)
-      let rec aux i buck () = match buck with
-        | Empty ->
-            if i = Array.length tbl_data
-            then Seq.Nil
-            else aux(i+1) tbl_data.(i) ()
-        | Cons (_, c, next) ->
-            begin match H.get_key c, H.get_data c with
-              | None, _ | _, None -> aux i next ()
-              | Some key, Some data ->
-                  Seq.Cons ((key, data), aux i next)
-            end
-      in
-      aux 0 Empty
-
-    let to_seq_keys m = Seq.map fst (to_seq m)
-
-    let to_seq_values m = Seq.map snd (to_seq m)
-
     let add_seq tbl i =
       Seq.iter (fun (k,v) -> add tbl k v) i
 
@@ -435,20 +394,24 @@ module K1 = struct
   let create () : ('k,'d) t = ObjEph.create 1
 
   let get_key (t:('k,'d) t) : 'k option = obj_opt (ObjEph.get_key t 0)
-  let get_key_copy (t:('k,'d) t) : 'k option = obj_opt (ObjEph.get_key_copy t 0)
   let set_key (t:('k,'d) t) (k:'k) : unit = ObjEph.set_key t 0 (Obj.repr k)
-  let unset_key (t:('k,'d) t) : unit = ObjEph.unset_key t 0
   let check_key (t:('k,'d) t) : bool = ObjEph.check_key t 0
 
-  let blit_key (t1:('k,'d) t) (t2:('k,'d) t): unit =
-    ObjEph.blit_key t1 0 t2 0 1
-
   let get_data (t:('k,'d) t) : 'd option = obj_opt (ObjEph.get_data t)
-  let get_data_copy (t:('k,'d) t) : 'd option = obj_opt (ObjEph.get_data_copy t)
   let set_data (t:('k,'d) t) (d:'d) : unit = ObjEph.set_data t (Obj.repr d)
   let unset_data (t:('k,'d) t) : unit = ObjEph.unset_data t
-  let check_data (t:('k,'d) t) : bool = ObjEph.check_data t
-  let blit_data (t1:(_,'d) t) (t2:(_,'d) t) : unit = ObjEph.blit_data t1 t2
+
+  let make key data =
+    let eph = create () in
+    set_data eph data;
+    set_key eph key;
+    eph
+
+  let query eph key =
+    match get_key eph with
+    | None -> None
+    | Some k when k == key -> get_data eph
+    | Some _ -> None
 
   module MakeSeeded (H:Hashtbl.SeededHashedType) =
     GenHashTable.MakeSeeded(struct
@@ -468,7 +431,6 @@ module K1 = struct
         | Some k' ->
             if H.equal k k' then GenHashTable.ETrue else GenHashTable.EFalse
       let get_data = get_data
-      let get_key = get_key
       let set_key_data c k d =
         unset_data c;
         set_key c k;
@@ -490,6 +452,37 @@ module K1 = struct
       tbl
   end
 
+  module Bucket = struct
+
+    type nonrec ('k, 'd) t = ('k, 'd) t list ref
+    let k1_make = make
+    let make () = ref []
+    let add b k d = b := k1_make k d :: !b
+
+    let test_key k e =
+      match get_key e with
+      | Some x when x == k -> true
+      | _ -> false
+
+    let remove b k =
+      let rec loop l acc =
+        match l with
+        | [] -> ()
+        | h :: t when test_key k h -> b := List.rev_append acc t
+        | h :: t -> loop t (h :: acc)
+      in
+      loop !b []
+
+    let find b k =
+      match List.find_opt (test_key k) !b with
+      | Some e -> get_data e
+      | None -> None
+
+    let length b = List.length !b
+    let clear b = b := []
+
+  end
+
 end
 
 module K2 = struct
@@ -498,37 +491,38 @@ module K2 = struct
   let create () : ('k1,'k2,'d) t = ObjEph.create 2
 
   let get_key1 (t:('k1,'k2,'d) t) : 'k1 option = obj_opt (ObjEph.get_key t 0)
-  let get_key1_copy (t:('k1,'k2,'d) t) : 'k1 option =
-    obj_opt (ObjEph.get_key_copy t 0)
   let set_key1 (t:('k1,'k2,'d) t) (k:'k1) : unit =
     ObjEph.set_key t 0 (Obj.repr k)
-  let unset_key1 (t:('k1,'k2,'d) t) : unit = ObjEph.unset_key t 0
   let check_key1 (t:('k1,'k2,'d) t) : bool = ObjEph.check_key t 0
 
   let get_key2 (t:('k1,'k2,'d) t) : 'k2 option = obj_opt (ObjEph.get_key t 1)
-  let get_key2_copy (t:('k1,'k2,'d) t) : 'k2 option =
-    obj_opt (ObjEph.get_key_copy t 1)
   let set_key2 (t:('k1,'k2,'d) t) (k:'k2) : unit =
     ObjEph.set_key t 1 (Obj.repr k)
-  let unset_key2 (t:('k1,'k2,'d) t) : unit = ObjEph.unset_key t 1
   let check_key2 (t:('k1,'k2,'d) t) : bool = ObjEph.check_key t 1
 
-
-  let blit_key1 (t1:('k1,_,_) t) (t2:('k1,_,_) t) : unit =
-    ObjEph.blit_key t1 0 t2 0 1
-  let blit_key2 (t1:(_,'k2,_) t) (t2:(_,'k2,_) t) : unit =
-    ObjEph.blit_key t1 1 t2 1 1
-  let blit_key12 (t1:('k1,'k2,_) t) (t2:('k1,'k2,_) t) : unit =
-    ObjEph.blit_key t1 0 t2 0 2
-
   let get_data (t:('k1,'k2,'d) t) : 'd option = obj_opt (ObjEph.get_data t)
-  let get_data_copy (t:('k1,'k2,'d) t) : 'd option =
-    obj_opt (ObjEph.get_data_copy t)
   let set_data (t:('k1,'k2,'d) t) (d:'d) : unit =
     ObjEph.set_data t (Obj.repr d)
   let unset_data (t:('k1,'k2,'d) t) : unit = ObjEph.unset_data t
-  let check_data (t:('k1,'k2,'d) t) : bool = ObjEph.check_data t
-  let blit_data (t1:(_,_,'d) t) (t2:(_,_,'d) t) : unit = ObjEph.blit_data t1 t2
+
+  let make key1 key2 data =
+    let eph = create () in
+    set_data eph data;
+    set_key1 eph key1;
+    set_key2 eph key2;
+    ignore (Sys.opaque_identity key1);
+    eph
+
+  let query eph key1 key2 =
+    match get_key1 eph with
+    | None -> None
+    | Some k when k == key1 ->
+        begin match get_key2 eph with
+        | None -> None
+        | Some k when k == key2 -> get_data eph
+        | Some _ -> None
+        end
+    | Some _ -> None
 
   module MakeSeeded
       (H1:Hashtbl.SeededHashedType)
@@ -550,10 +544,6 @@ module K2 = struct
             if H1.equal k1 k1' && H2.equal k2 k2'
             then GenHashTable.ETrue else GenHashTable.EFalse
       let get_data = get_data
-      let get_key c =
-        match get_key1 c, get_key2 c with
-        | None, _ | _ , None -> None
-        | Some k1', Some k2' -> Some (k1', k2')
       let set_key_data c (k1,k2) d =
         unset_data c;
         set_key1 c k1; set_key2 c k2;
@@ -582,6 +572,37 @@ module K2 = struct
       tbl
   end
 
+  module Bucket = struct
+
+    type nonrec ('k1, 'k2, 'd) t = ('k1, 'k2, 'd) t list ref
+    let k2_make = make
+    let make () = ref []
+    let add b k1 k2 d = b := k2_make k1 k2 d :: !b
+
+    let test_keys k1 k2 e =
+      match get_key1 e, get_key2 e with
+      | Some x1, Some x2 when x1 == k1 && x2 == k2 -> true
+      | _ -> false
+
+    let remove b k1 k2 =
+      let rec loop l acc =
+        match l with
+        | [] -> ()
+        | h :: t when test_keys k1 k2 h -> b := List.rev_append acc t
+        | h :: t -> loop t (h :: acc)
+      in
+      loop !b []
+
+    let find b k1 k2 =
+      match List.find_opt (test_keys k1 k2) !b with
+      | Some e -> get_data e
+      | None -> None
+
+    let length b = List.length !b
+    let clear b = b := []
+
+  end
+
 end
 
 module Kn = struct
@@ -591,22 +612,33 @@ module Kn = struct
   let length (k:('k,'d) t) : int = ObjEph.length k
 
   let get_key (t:('k,'d) t) (n:int) : 'k option = obj_opt (ObjEph.get_key t n)
-  let get_key_copy (t:('k,'d) t) (n:int) : 'k option =
-    obj_opt (ObjEph.get_key_copy t n)
   let set_key (t:('k,'d) t) (n:int) (k:'k) : unit =
     ObjEph.set_key t n (Obj.repr k)
-  let unset_key (t:('k,'d) t) (n:int) : unit = ObjEph.unset_key t n
   let check_key (t:('k,'d) t) (n:int) : bool = ObjEph.check_key t n
 
-  let blit_key (t1:('k,'d) t) (o1:int) (t2:('k,'d) t) (o2:int) (l:int) : unit =
-    ObjEph.blit_key t1 o1 t2 o2 l
-
   let get_data (t:('k,'d) t) : 'd option = obj_opt (ObjEph.get_data t)
-  let get_data_copy (t:('k,'d) t) : 'd option = obj_opt (ObjEph.get_data_copy t)
   let set_data (t:('k,'d) t) (d:'d) : unit = ObjEph.set_data t (Obj.repr d)
   let unset_data (t:('k,'d) t) : unit = ObjEph.unset_data t
-  let check_data (t:('k,'d) t) : bool = ObjEph.check_data t
-  let blit_data (t1:(_,'d) t) (t2:(_,'d) t) : unit = ObjEph.blit_data t1 t2
+
+  let make keys data =
+    let l = Array.length keys in
+    let eph = create l in
+    set_data eph data;
+    for i = 0 to l - 1 do set_key eph i keys.(i) done;
+    eph
+
+  let query eph keys =
+    let l = length eph in
+    try
+      if l <> Array.length keys then raise Exit;
+      for i = 0 to l - 1 do
+        match get_key eph i with
+        | None -> raise Exit
+        | Some k when k == keys.(i) -> ()
+        | Some _ -> raise Exit
+      done;
+      get_data eph
+    with Exit -> None
 
   module MakeSeeded (H:Hashtbl.SeededHashedType) =
     GenHashTable.MakeSeeded(struct
@@ -642,24 +674,6 @@ module Kn = struct
           in
           equal_array k c (len-1)
       let get_data = get_data
-      let get_key c =
-        let len = length c in
-        if len = 0 then Some [||]
-        else
-          match get_key c 0 with
-          | None -> None
-          | Some k0 ->
-              let rec fill a i =
-                if i < 1 then Some a
-                else
-                  match get_key c i with
-                  | None -> None
-                  | Some ki ->
-                      a.(i) <- ki;
-                      fill a (i-1)
-              in
-              let a = Array.make len k0 in
-              fill a (len-1)
       let set_key_data c k d =
         unset_data c;
         for i=0 to Array.length k -1 do
@@ -685,4 +699,42 @@ module Kn = struct
       replace_seq tbl i;
       tbl
   end
+
+  module Bucket = struct
+
+    type nonrec ('k, 'd) t = ('k, 'd) t list ref
+    let kn_make = make
+    let make () = ref []
+    let add b k d = b := kn_make k d :: !b
+
+    let test_keys k e =
+      try
+        if length e <> Array.length k then raise Exit;
+        for i = 0 to Array.length k - 1 do
+          match get_key e i with
+          | Some x when x == k.(i) -> ()
+          | _ -> raise Exit
+        done;
+        true
+      with Exit -> false
+
+    let remove b k =
+      let rec loop l acc =
+        match l with
+        | [] -> ()
+        | h :: t when test_keys k h -> b := List.rev_append acc t
+        | h :: t -> loop t (h :: acc)
+      in
+      loop !b []
+
+    let find b k =
+      match List.find_opt (test_keys k) !b with
+      | Some e -> get_data e
+      | None -> None
+
+    let length b = List.length !b
+    let clear b = b := []
+
+  end
+
 end

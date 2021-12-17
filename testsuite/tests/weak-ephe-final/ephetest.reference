@@ -13,7 +13,7 @@ test2 data unset: OK
 test3 key set: OK
 test3 data set: OK
 test3 key unset: OK
-test3 data unset: OK
+test3 data set: OK
 test4 key set: OK
 test4 data set: OK
 test4 key set: OK
