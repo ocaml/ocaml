@@ -1202,11 +1202,7 @@ let rec find_record_qual = function
   | ({ txt = Longident.Ldot (modname, _) }, _) :: _ -> Some modname
   | _ :: rest -> find_record_qual rest
 
-let map_fold_cont f xs k =
-  List.fold_right (fun x k ys -> f x (fun y -> k (y :: ys)))
-    xs (fun ys -> k (List.rev ys)) []
-
-let type_label_a_list ?labels loc closed env usage expected_type lid_a_list =
+let disambiguate_record ?labels loc closed env usage expected_type lid_a_list =
   let lbl_a_list =
     match lid_a_list, labels with
       ({txt=Longident.Lident s}, _)::_, Some labels when Hashtbl.mem labels s ->
@@ -1234,6 +1230,10 @@ let type_label_a_list ?labels loc closed env usage expected_type lid_a_list =
   List.sort
     (fun (_,lbl1,_) (_,lbl2,_) -> compare lbl1.lbl_pos lbl2.lbl_pos)
     lbl_a_list
+
+let map_fold_cont f xs k =
+  List.fold_right (fun x k ys -> f x (fun y -> k (y :: ys)))
+    xs (fun ys -> k (List.rev ys)) []
 
 (* Checks over the labels mentioned in a record pattern:
    no duplicate definitions (error); properly closed (warning) *)
@@ -1907,10 +1907,10 @@ and type_pat_aux
             wrap_disambiguate
               "This record pattern is expected to have"
               (mk_expected expected_ty)
-              (type_label_a_list loc false !env Env.Projection expected_type)
+              (disambiguate_record loc false !env Env.Projection expected_type)
               lid_sp_list
         | Counter_example {labels; _} ->
-            type_label_a_list ~labels loc false !env Env.Projection
+            disambiguate_record ~labels loc false !env Env.Projection
               expected_type lid_sp_list
       in
       k' (map_fold_cont type_label_pat lbl_a_list make_record_pat)
@@ -3174,7 +3174,7 @@ and type_expect_
       let lbl_sexp_list =
         wrap_disambiguate "This record expression is expected to have"
           (mk_expected ty_record)
-          (type_label_a_list loc closed env Env.Construct expected_type)
+          (disambiguate_record loc closed env Env.Construct expected_type)
           lid_sexp_list
       in
       let lbl_exp_list =
@@ -3183,9 +3183,9 @@ and type_expect_
       with_explanation (fun () ->
         unify_exp_types loc env (instance ty_record) (instance ty_expected));
 
-      (* type_label_a_list returns a list of labels sorted by lbl_pos *)
+      (* disambiguate_record returns a list of labels sorted by lbl_pos *)
       (* note: check_duplicates would better be implemented in
-         type_label_a_list directly *)
+         disambiguate_record directly *)
       let rec check_duplicates = function
         | (_, lbl1, _) :: (_, lbl2, _) :: _ when lbl1.lbl_pos = lbl2.lbl_pos ->
           raise(Error(loc, env, Label_multiply_defined lbl1.lbl_name))
