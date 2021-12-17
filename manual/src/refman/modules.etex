@@ -28,7 +28,7 @@ module-expr:
         | '(' module-expr ':' module-type ')'
 ;
 module-items:
-        {';;'} ( definition || expr ) { {';;'} ( definition || ';;' expr) } {';;'}
+        { ';;' } ( definition || expr ) { { ';;' } ( definition || ';;' expr) } { ';;' }
 ;
 %\end{syntax} \begin{syntax}
 definition:

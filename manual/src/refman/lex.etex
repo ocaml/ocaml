@@ -30,11 +30,11 @@ let f = function
 \subsubsection*{sss:lex:identifiers}{Identifiers}
 
 \begin{syntax}
-ident: ( letter || "_" ) { letter || "0" \ldots "9" || "_" || "'" } ;
-capitalized-ident: ("A" \ldots "Z") { letter || "0" \ldots "9" || "_" || "'" } ;
+ident: (letter || "_") { letter || "0"\ldots"9" || "_" || "'" } ;
+capitalized-ident: ("A"\ldots"Z") { letter || "0"\ldots"9" || "_" || "'" } ;
 lowercase-ident:
-   ("a" \ldots "z" || "_") { letter || "0" \ldots "9" || "_" || "'" } ;
-letter: "A" \ldots "Z" || "a" \ldots "z"
+   ("a"\ldots"z" || "_") { letter || "0"\ldots"9" || "_" || "'" } ;
+letter: "A"\ldots"Z" || "a"\ldots"z"
 \end{syntax}
 
 Identifiers are sequences of letters, digits, "_" (the underscore
@@ -61,10 +61,10 @@ purpose.
 \begin{syntax}
 integer-literal:
           ["-"] ("0"\ldots"9") { "0"\ldots"9" || "_" }
-        | ["-"] ("0x"||"0X") ("0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f")
-                            { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }
-        | ["-"] ("0o"||"0O") ("0"\ldots"7") { "0"\ldots"7"||"_" }
-        | ["-"] ("0b"||"0B") ("0"\ldots"1") { "0"\ldots"1"||"_" }
+        | ["-"] ("0x" || "0X") ("0"\ldots"9" || "A"\ldots"F" || "a"\ldots"f")
+                            { "0"\ldots"9" || "A"\ldots"F" || "a"\ldots"f" || "_" }
+        | ["-"] ("0o" || "0O") ("0"\ldots"7") { "0"\ldots"7" || "_" }
+        | ["-"] ("0b" || "0B") ("0"\ldots"1") { "0"\ldots"1" || "_" }
 ;
 int32-literal: integer-literal 'l'
 ;
@@ -102,13 +102,13 @@ let counter64bit = ref 0L;;
 
 \begin{syntax}
 float-literal:
-          ["-"] ("0"\ldots"9") { "0"\ldots"9"||"_" } ["." { "0"\ldots"9"||"_" }]
-          [("e"||"E") ["+"||"-"] ("0"\ldots"9") { "0"\ldots"9"||"_" }]
-        | ["-"] ("0x"||"0X")
-          ("0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f")
-          { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" } \\
-          ["." { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }]
-          [("p"||"P") ["+"||"-"] ("0"\ldots"9") { "0"\ldots"9"||"_" }]
+          ["-"] ("0"\ldots"9") { "0"\ldots"9" || "_" } ["." { "0"\ldots"9" || "_" }]
+          [("e" || "E") ["+" || "-"] ("0"\ldots"9") { "0"\ldots"9" || "_" }]
+        | ["-"] ("0x" || "0X")
+          ("0"\ldots"9" || "A"\ldots"F" || "a"\ldots"f")
+          { "0"\ldots"9" || "A"\ldots"F" || "a"\ldots"f" || "_" } \\
+          ["." { "0"\ldots"9" || "A"\ldots"F" || "a"\ldots"f" || "_" }]
+          [("p" || "P") ["+" || "-"] ("0"\ldots"9") { "0"\ldots"9" || "_" }]
 \end{syntax}
 
 Floating-point decimal literals consist in an integer part, a
@@ -149,10 +149,10 @@ char-literal:
         | "'" escape-sequence "'"
 ;
 escape-sequence:
-          "\" ( "\" || '"' || "'" || "n" || "t" || "b" || "r" || space )
+          "\" ("\" || '"' || "'" || "n" || "t" || "b" || "r" || space)
         | "\" ("0"\ldots"9") ("0"\ldots"9") ("0"\ldots"9")
-        | "\x" ("0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f")
-               ("0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f")
+        | "\x" ("0"\ldots"9" || "A"\ldots"F" || "a"\ldots"f")
+               ("0"\ldots"9" || "A"\ldots"F" || "a"\ldots"f")
         | "\o" ("0"\ldots"3") ("0"\ldots"7") ("0"\ldots"7")
 \end{syntax}
 
@@ -183,7 +183,7 @@ let copyright = '\xA9';;
 \begin{syntax}
 string-literal:
           '"' { string-character } '"'
-       |  '{' quoted-string-id '|'  { any-char } '|' quoted-string-id '}'
+       |  '{' quoted-string-id '|' { any-char } '|' quoted-string-id '}'
 ;
 quoted-string-id:
      { 'a'...'z' || '_' }
@@ -191,7 +191,7 @@ quoted-string-id:
 string-character:
           regular-string-char
         | escape-sequence
-        | "\u{" {{ "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f" }} "}"
+        | "\u{" {{ "0"\ldots"9" || "A"\ldots"F" || "a"\ldots"f" }} "}"
         | '\' newline { space || tab }
 \end{syntax}
 
@@ -274,7 +274,7 @@ there are really 3 tokens, with optional blanks between them.
 
 \begin{syntax}
 infix-symbol:
-        ( core-operator-char || '%' || '<' ) { operator-char }
+        (core-operator-char || '%' || '<') { operator-char }
       | "#" {{ operator-char }}
 ;
 prefix-symbol:
@@ -348,7 +348,7 @@ longest first token.
 
 \begin{syntax}
 linenum-directive:
-     '#' {{"0" \ldots "9"}} '"' { string-character } '"'
+     '#' {{ "0"\ldots"9" }} '"' { string-character } '"'
 \end{syntax}
 
 Preprocessors that generate OCaml source code can insert line number

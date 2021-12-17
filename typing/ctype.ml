@@ -550,7 +550,7 @@ let closed_class params sign =
   try
     Meths.iter
       (fun lab (priv, _, ty) ->
-        if priv = Public then begin
+        if priv = Mpublic then begin
           try closed_type ty with Non_closed (ty0, real) ->
             raise (CCFailure (ty0, real, lab, ty))
         end)
@@ -3308,24 +3308,32 @@ let rec filter_method_row env name priv ty =
       let level = get_level ty in
       let field = newvar2 level in
       let row = newvar2 level in
-      let kind =
+      let kind, priv =
         match priv with
-        | Private -> field_private ()
-        | Public  -> field_public
+        | Private ->
+            let kind = field_private () in
+            kind, Mprivate kind
+        | Public ->
+            field_public, Mpublic
       in
       let ty' = newty2 ~level (Tfield (name, kind, field, row)) in
       link_type ty ty';
-      field, row
+      priv, field, row
   | Tfield(n, kind, ty1, ty2) ->
       if n = name then begin
-        if priv = Public then
-          unify_kind kind field_public;
-        ty1, ty2
+        let priv =
+          match priv with
+          | Public ->
+              unify_kind kind field_public;
+              Mpublic
+          | Private -> Mprivate kind
+        in
+        priv, ty1, ty2
       end else begin
         let level = get_level ty in
-        let field, row = filter_method_row env name priv ty2 in
+        let priv, field, row = filter_method_row env name priv ty2 in
         let row = newty2 ~level (Tfield (n, kind, ty1, row)) in
-        field, row
+        priv, field, row
       end
   | Tnil ->
       if name = Btype.dummy_method then raise Filter_method_row_failed
@@ -3334,7 +3342,8 @@ let rec filter_method_row env name priv ty =
         | Public -> raise Filter_method_row_failed
         | Private ->
           let level = get_level ty in
-          newvar2 level, ty
+          let kind = field_absent in
+          Mprivate kind, newvar2 level, ty
       end
   | _ ->
       raise Filter_method_row_failed
@@ -3350,7 +3359,7 @@ let new_class_signature () =
     csig_meths = Meths.empty; }
 
 let add_dummy_method env ~scope sign =
-  let ty, row =
+  let _, ty, row =
     filter_method_row env dummy_method Private sign.csig_self_row
   in
   unify env ty (new_scoped_ty scope (Ttuple []));
@@ -3369,8 +3378,17 @@ let add_method env label priv virt ty sign =
     | (priv', virt', ty') -> begin
         let priv =
           match priv' with
-          | Public -> Public
-          | Private -> priv
+          | Mpublic -> Mpublic
+          | Mprivate k ->
+            match priv with
+            | Public ->
+                begin match field_kind_repr k with
+                | Fpublic -> ()
+                | Fprivate -> link_kind ~inside:k field_public
+                | Fabsent -> assert false
+                end;
+                Mpublic
+            | Private -> priv'
         in
         let virt =
           match virt' with
@@ -3383,10 +3401,10 @@ let add_method env label priv virt ty sign =
             raise (Add_method_failed (Type_mismatch trace))
       end
     | exception Not_found -> begin
-        let ty', row =
+        let priv, ty', row =
           match filter_method_row env label priv sign.csig_self_row with
-          | ty', row ->
-              ty', row
+          | priv, ty', row ->
+              priv, ty', row
           | exception Filter_method_row_failed ->
               raise (Add_method_failed Unexpected_method)
         in
@@ -3464,6 +3482,13 @@ let inherit_class_signature ~strict env sign1 sign2 =
   unify_self_types env sign1 sign2;
   Meths.iter
     (fun label (priv, virt, ty) ->
+       let priv =
+         match priv with
+         | Mpublic -> Public
+         | Mprivate kind ->
+             assert (field_kind_repr kind = Fabsent);
+             Private
+       in
        match add_method env label priv virt ty sign1 with
        | () -> ()
        | exception Add_method_failed failure ->
@@ -3492,23 +3517,25 @@ let update_class_signature env sign =
            | priv, virt, ty' ->
                let meths, implicitly_public =
                  match priv, field_kind_repr k with
-                 | Public, _ -> meths, implicitly_public
-                 | Private, Fpublic ->
-                     let meths = Meths.add lab (Public, virt, ty') meths in
+                 | Mpublic, _ -> meths, implicitly_public
+                 | Mprivate _, Fpublic ->
+                     let meths = Meths.add lab (Mpublic, virt, ty') meths in
                      let implicitly_public = lab :: implicitly_public in
                      meths, implicitly_public
-                 | Private, _ -> meths, implicitly_public
+                 | Mprivate _, _ -> meths, implicitly_public
                in
                meths, implicitly_public, implicitly_declared
            | exception Not_found ->
                let meths, implicitly_declared =
                  match field_kind_repr k with
                  | Fpublic ->
-                     let meths = Meths.add lab (Public, Virtual, ty) meths in
+                     let meths = Meths.add lab (Mpublic, Virtual, ty) meths in
                      let implicitly_declared = lab :: implicitly_declared in
                      meths, implicitly_declared
                  | Fprivate ->
-                     let meths = Meths.add lab (Private, Virtual, ty) meths in
+                     let meths =
+                       Meths.add lab (Mprivate k, Virtual, ty) meths
+                     in
                      let implicitly_declared = lab :: implicitly_declared in
                      meths, implicitly_declared
                  | Fabsent -> meths, implicitly_declared
@@ -4193,8 +4220,8 @@ let match_class_sig_shape ~strict sign1 sign2 =
          | exception Not_found -> CM_Missing_method lab::err
          | (priv', vr', _) ->
              match priv', priv with
-             | Public, Private -> CM_Public_method lab::err
-             | Private, Public when strict -> CM_Private_method lab::err
+             | Mpublic, Mprivate _ -> CM_Public_method lab::err
+             | Mprivate _, Mpublic when strict -> CM_Private_method lab::err
              | _, _ ->
                match vr', vr with
                | Virtual, Concrete -> CM_Virtual_method lab::err
@@ -4208,8 +4235,8 @@ let match_class_sig_shape ~strict sign1 sign2 =
          else begin
            let err =
              match priv with
-             | Public -> CM_Hide_public lab :: err
-             | Private -> err
+             | Mpublic -> CM_Hide_public lab :: err
+             | Mprivate _ -> err
            in
            match vr with
            | Virtual -> CM_Hide_virtual ("method", lab) :: err
