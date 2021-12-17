@@ -51,7 +51,7 @@
 
    From a runtime perspective, domains must handle stop-the-world (STW)
    sections, during which:
-    - within a section no mutator code is running
+    - they are within a section no mutator code is running
     - all domains will execute the section in parallel
     - barriers are provided to know all domains have reached the
       same stage within a section
