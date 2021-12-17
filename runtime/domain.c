@@ -45,11 +45,7 @@
 #include "caml/sync.h"
 #include "caml/weak.h"
 
-/* Since we support both heavyweight OS threads and lightweight
-   userspace threads, the word "thread" is ambiguous. This file deals
-   with OS-level threads, called "domains".
-
-   From a runtime perspective, domains must handle stop-the-world (STW)
+/* From a runtime perspective, domains must handle stop-the-world (STW)
    sections, during which:
     - they are within a section no mutator code is running
     - all domains will execute the section in parallel
