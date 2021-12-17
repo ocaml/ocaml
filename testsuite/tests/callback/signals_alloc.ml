@@ -2,8 +2,6 @@
    include unix
    modules = "callbackprim.c"
    * libunix
-   * skip
-   reason = "singals alloc changes: https://github.com/ocaml/ocaml/pull/9027"
    ** bytecode
    ** native
 *)
