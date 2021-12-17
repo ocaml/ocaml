@@ -117,9 +117,9 @@ let asmgen_actions =
   if not Ocamltest_config.native_compiler then [asmgen_skip_on_bytecode_only]
   else if msvc64 then [asmgen_skip_on_msvc64]
   else [
-    setup_ocamlc_opt_build_env;
+    setup_simple_build_env;
     codegen;
-    ocamlc_opt;
+    cc;
   ]
 
 let asmgen =
