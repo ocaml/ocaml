@@ -48,8 +48,7 @@ struct stack_info {
    * size is pooled. If unpooled, it is NULL.
    *
    * Stacks may be unpooled if either the stack size is not 2**N multiple of
-   * [caml_fiber_wsz] (may be the case in debug mode) or the stack is bigger
-   * than pooled sizes. */
+   * [caml_fiber_wsz] or the stack is bigger than pooled sizes. */
   struct stack_info** size_bucket;
   uintnat magic;
 };
