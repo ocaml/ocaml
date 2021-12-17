@@ -1206,8 +1206,7 @@ let map_fold_cont f xs k =
   List.fold_right (fun x k ys -> f x (fun y -> k (y :: ys)))
     xs (fun ys -> k (List.rev ys)) []
 
-let type_label_a_list
-      ?labels loc closed env usage type_lbl_a expected_type lid_a_list k =
+let type_label_a_list ?labels loc closed env usage expected_type lid_a_list =
   let lbl_a_list =
     match lid_a_list, labels with
       ({txt=Longident.Lident s}, _)::_, Some labels when Hashtbl.mem labels s ->
@@ -1232,13 +1231,9 @@ let type_label_a_list
         disambiguate_lid_a_list loc closed env usage expected_type lid_a_list
   in
   (* Invariant: records are sorted in the typed tree *)
-  let lbl_a_list =
-    List.sort
-      (fun (_,lbl1,_) (_,lbl2,_) -> compare lbl1.lbl_pos lbl2.lbl_pos)
-      lbl_a_list
-  in
-  map_fold_cont type_lbl_a lbl_a_list k
-;;
+  List.sort
+    (fun (_,lbl1,_) (_,lbl2,_) -> compare lbl1.lbl_pos lbl2.lbl_pos)
+    lbl_a_list
 
 (* Checks over the labels mentioned in a record pattern:
    no duplicate definitions (error); properly closed (warning) *)
@@ -1906,18 +1901,19 @@ and type_pat_aux
         }
       in
       let k' pat = rvp k @@ solve_expected pat in
-      begin match mode with
-      | Normal ->
-          k' (wrap_disambiguate "This record pattern is expected to have"
-               (mk_expected expected_ty)
-               (type_label_a_list loc false !env Env.Projection
-                  type_label_pat expected_type lid_sp_list)
-               make_record_pat)
-      | Counter_example {labels; _} ->
-          type_label_a_list ~labels loc false !env Env.Projection
-            type_label_pat expected_type lid_sp_list
-            (fun lbl_pat_list -> k' (make_record_pat lbl_pat_list))
-      end
+      let lbl_a_list =
+        match mode with
+        | Normal ->
+            wrap_disambiguate
+              "This record pattern is expected to have"
+              (mk_expected expected_ty)
+              (type_label_a_list loc false !env Env.Projection expected_type)
+              lid_sp_list
+        | Counter_example {labels; _} ->
+            type_label_a_list ~labels loc false !env Env.Projection
+              expected_type lid_sp_list
+      in
+      k' (map_fold_cont type_label_pat lbl_a_list make_record_pat)
   | Ppat_array spl ->
       let ty_elt = solve_Ppat_array ~refine loc env expected_ty in
       map_fold_cont (fun p -> type_pat Value p ty_elt) spl (fun pl ->
@@ -3175,13 +3171,14 @@ and type_expect_
             ty, opt_exp_opath
       in
       let closed = (opt_sexp = None) in
-      let lbl_exp_list =
+      let lbl_sexp_list =
         wrap_disambiguate "This record expression is expected to have"
           (mk_expected ty_record)
-          (type_label_a_list loc closed env Env.Construct
-             (fun e k -> k (type_label_exp true env loc ty_record e))
-             expected_type lid_sexp_list)
-          (fun x -> x)
+          (type_label_a_list loc closed env Env.Construct expected_type)
+          lid_sexp_list
+      in
+      let lbl_exp_list =
+        List.map (type_label_exp true env loc ty_record) lbl_sexp_list
       in
       with_explanation (fun () ->
         unify_exp_types loc env (instance ty_record) (instance ty_expected));
