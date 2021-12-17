@@ -45,15 +45,70 @@
 #include "caml/sync.h"
 #include "caml/weak.h"
 
+/* Since we support both heavyweight OS threads and lightweight
+   userspace threads, the word "thread" is ambiguous. This file deals
+   with OS-level threads, called "domains".
+
+   From a runtime perspective, domains must handle stop-the-world (STW)
+   sections, during which:
+    - within a section no mutator code is running
+    - all domains will execute the section in parallel
+    - barriers are provided to know all domains have reached the
+      same stage within a section
+
+   Stop-the-world sections are used to handle duties such as:
+    - minor GC
+    - major GC to trigger major state machine phase changes
+
+   Two invariants for STW sections:
+    - domains only execute mutator code if in the stop-the-world set
+    - domains in the stop-the-world set guarantee to service the sections
+*/
+
+/* The main C-stack for a domain can enter a blocking call.
+   In this scenario a 'backup thread' will become responsible for
+   servicing the STW sections on behalf of the domain. Care is needed
+   to hand off duties for servicing STW sections between the main
+   pthread and the backup pthread when caml_enter_blocking_section
+   and caml_leave_blocking_section are called.
+
+   When the state for the backup thread is BT_IN_BLOCKING_SECTION
+   the backup thread will service the STW section.
+
+   The state machine for the backup thread (and its transitions)
+   are:
+
+           BT_INIT  <---------------------------------------+
+              |                                             |
+   (install_backup_thread)                                  |
+       [main pthread]                                       |
+              |                                             |
+              v                                             |
+       BT_ENTERING_OCAML  <-----------------+               |
+              |                             |               |
+(caml_enter_blocking_section)               |               |
+       [main pthread]                       |               |
+              |                             |               |
+              |                             |               |
+              |               (caml_leave_blocking_section) |
+              |                      [main pthread]         |
+              v                             |               |
+    BT_IN_BLOCKING_SECTION  ----------------+               |
+              |                                             |
+     (domain_terminate)                                     |
+       [main pthread]                                       |
+              |                                             |
+              v                                             |
+        BT_TERMINATE                               (backup_thread_func)
+              |                                      [backup pthread]
+              |                                             |
+              +---------------------------------------------+
+
+ */
 #define BT_IN_BLOCKING_SECTION 0
 #define BT_ENTERING_OCAML 1
 #define BT_TERMINATE 2
 #define BT_INIT 3
-
-/* Since we support both heavyweight OS threads and lightweight
-   userspace threads, the word "thread" is ambiguous. This file deals
-   with OS-level threads, called "domains".
-*/
 
 /* control of STW interrupts */
 struct interruptor {
@@ -1306,6 +1361,7 @@ static void domain_terminate()
     caml_free_stack(domain_state->current_stack);
   }
 
+  /* signal the domain termination to the backup thread */
   atomic_store_rel(&domain_self->backup_thread_msg, BT_TERMINATE);
   caml_plat_signal(&domain_self->domain_cond);
   caml_plat_unlock(&domain_self->domain_lock);
