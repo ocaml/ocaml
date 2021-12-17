@@ -632,7 +632,7 @@ static void* backup_thread_func(void* v)
         break;
       case BT_ENTERING_OCAML:
         /* Main thread wants to enter OCaml
-         * Will be woken from caml_enter_blocking_section
+         * Will be woken from caml_bt_exit_ocaml
          * or domain_terminate
          */
         caml_plat_lock(&di->domain_lock);
