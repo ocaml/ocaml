@@ -45,15 +45,66 @@
 #include "caml/sync.h"
 #include "caml/weak.h"
 
+/* From a runtime perspective, domains must handle stop-the-world (STW)
+   sections, during which:
+    - they are within a section no mutator code is running
+    - all domains will execute the section in parallel
+    - barriers are provided to know all domains have reached the
+      same stage within a section
+
+   Stop-the-world sections are used to handle duties such as:
+    - minor GC
+    - major GC to trigger major state machine phase changes
+
+   Two invariants for STW sections:
+    - domains only execute mutator code if in the stop-the-world set
+    - domains in the stop-the-world set guarantee to service the sections
+*/
+
+/* The main C-stack for a domain can enter a blocking call.
+   In this scenario a 'backup thread' will become responsible for
+   servicing the STW sections on behalf of the domain. Care is needed
+   to hand off duties for servicing STW sections between the main
+   pthread and the backup pthread when caml_enter_blocking_section
+   and caml_leave_blocking_section are called.
+
+   When the state for the backup thread is BT_IN_BLOCKING_SECTION
+   the backup thread will service the STW section.
+
+   The state machine for the backup thread (and its transitions)
+   are:
+
+           BT_INIT  <---------------------------------------+
+              |                                             |
+   (install_backup_thread)                                  |
+       [main pthread]                                       |
+              |                                             |
+              v                                             |
+       BT_ENTERING_OCAML  <-----------------+               |
+              |                             |               |
+(caml_enter_blocking_section)               |               |
+       [main pthread]                       |               |
+              |                             |               |
+              |                             |               |
+              |               (caml_leave_blocking_section) |
+              |                      [main pthread]         |
+              v                             |               |
+    BT_IN_BLOCKING_SECTION  ----------------+               |
+              |                                             |
+     (domain_terminate)                                     |
+       [main pthread]                                       |
+              |                                             |
+              v                                             |
+        BT_TERMINATE                               (backup_thread_func)
+              |                                      [backup pthread]
+              |                                             |
+              +---------------------------------------------+
+
+ */
 #define BT_IN_BLOCKING_SECTION 0
 #define BT_ENTERING_OCAML 1
 #define BT_TERMINATE 2
 #define BT_INIT 3
-
-/* Since we support both heavyweight OS threads and lightweight
-   userspace threads, the word "thread" is ambiguous. This file deals
-   with OS-level threads, called "domains".
-*/
 
 /* control of STW interrupts */
 struct interruptor {
@@ -343,6 +394,8 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
   dom_internal* d = 0;
   CAMLassert (domain_self == 0);
 
+  /* take the all_domains_lock so that we can alter the STW participant
+     set atomically */
   caml_plat_lock(&all_domains_lock);
 
   /* wait until any in-progress STW sections end */
@@ -559,6 +612,9 @@ enum domain_status { Dom_starting, Dom_started, Dom_failed };
 struct domain_ml_values {
   value callback;
   value mutex;
+  /* this mutex is taken when a domain starts and released when it terminates
+    which provides a simple way to block domains attempting to join this domain
+   */
 };
 
 static void init_domain_ml_values(
@@ -632,7 +688,7 @@ static void* backup_thread_func(void* v)
         break;
       case BT_ENTERING_OCAML:
         /* Main thread wants to enter OCaml
-         * Will be woken from caml_enter_blocking_section
+         * Will be woken from caml_bt_exit_ocaml
          * or domain_terminate
          */
         caml_plat_lock(&di->domain_lock);
@@ -719,12 +775,16 @@ static void* domain_thread_func(void* v)
   struct domain_ml_values *ml_values = p->ml_values;
 
   create_domain(caml_params->init_minor_heap_wsz);
+  /* this domain is now part of the STW participant set */
   p->newdom = domain_self;
 
+  /* handshake with the parent domain */
   caml_plat_lock(&p->parent->lock);
   if (domain_self) {
     /* this domain is part of STW sections, so can read ml_values */
     terminate_mutex = Mutex_val(ml_values->mutex);
+    /* we lock terminate_mutex here and unlock when the domain is torn down
+      this provides a simple block for domains attempting to join */
     sync_mutex_lock(terminate_mutex);
     p->status = Dom_started;
     p->unique_id = domain_self->interruptor.unique_id;
@@ -748,7 +808,7 @@ static void* domain_thread_func(void* v)
     caml_callback(ml_values->callback, Val_unit);
     domain_terminate();
     /* joining domains will lock/unlock the terminate_mutex
-      so this unlock will release them */
+      so this unlock will release them if any are waiting */
     sync_mutex_unlock(terminate_mutex);
     free_domain_ml_values(ml_values);
   } else {
@@ -1248,6 +1308,8 @@ static void domain_terminate()
     handover_ephemerons(domain_state);
     handover_finalisers(domain_state);
 
+    /* take the all_domains_lock to try and exit the STW participant set
+       without racing with a STW section being triggered */
     caml_plat_lock(&all_domains_lock);
 
     /* The interaction of termination and major GC is quite subtle.
@@ -1306,6 +1368,9 @@ static void domain_terminate()
     caml_free_stack(domain_state->current_stack);
   }
 
+  /* signal the domain termination to the backup thread
+     NB: for a program with no additional domains, the backup thread
+     will not have been started */
   atomic_store_rel(&domain_self->backup_thread_msg, BT_TERMINATE);
   caml_plat_signal(&domain_self->domain_cond);
   caml_plat_unlock(&domain_self->domain_lock);
