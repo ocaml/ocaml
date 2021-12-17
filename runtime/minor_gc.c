@@ -94,7 +94,7 @@ struct caml_minor_tables* caml_alloc_minor_tables()
   return r;
 }
 
-void reset_minor_tables(struct caml_minor_tables* r)
+static void reset_minor_tables(struct caml_minor_tables* r)
 {
   reset_table((struct generic_table *)&r->major_ref);
   reset_table((struct generic_table *)&r->ephe_ref);

@@ -40,7 +40,7 @@
 /* The set of pending signals (received but not yet processed) */
 
 CAMLexport atomic_intnat caml_pending_signals[NSIG];
-caml_plat_mutex signal_install_mutex = CAML_PLAT_MUTEX_INITIALIZER;
+static caml_plat_mutex signal_install_mutex = CAML_PLAT_MUTEX_INITIALIZER;
 
 int caml_check_for_pending_signals(void)
 {

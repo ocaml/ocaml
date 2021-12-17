@@ -673,7 +673,7 @@ struct heap_verify_state* caml_verify_begin()
   return st;
 }
 
-void verify_push(void* st_v, value v, value* p)
+static void verify_push(void* st_v, value v, value* p)
 {
   struct heap_verify_state* st = st_v;
   if (!Is_block(v)) return;

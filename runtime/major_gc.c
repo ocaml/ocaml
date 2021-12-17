@@ -81,7 +81,7 @@ uintnat caml_get_num_domains_to_mark () {
 
 extern value caml_ephe_none; /* See weak.c */
 
-struct ephe_cycle_info_t {
+static struct ephe_cycle_info_t {
   atomic_uintnat num_domains_todo;
   /* Number of domains that need to scan their ephemerons in the current major
    * GC cycle. This field is decremented when ephe_info->todo list at a domain
@@ -224,7 +224,7 @@ void orph_ephe_list_verify_status (int status)
 #define EPHE_MARK_DEFAULT 0
 #define EPHE_MARK_FORCE_ALIVE 1
 
-intnat ephe_mark (intnat budget, uintnat for_cycle, int force_alive);
+static intnat ephe_mark (intnat budget, uintnat for_cycle, int force_alive);
 
 void caml_add_to_orphaned_ephe_list(struct caml_ephe_info* ephe_info)
 {
@@ -787,9 +787,9 @@ void caml_darken(void* state, value v, value* ignored) {
   }
 }
 
-intnat ephe_mark (intnat budget, uintnat for_cycle,
-                  /* Forces ephemerons and their data to be alive */
-                  int force_alive)
+static intnat ephe_mark (intnat budget, uintnat for_cycle,
+                         /* Forces ephemerons and their data to be alive */
+                         int force_alive)
 {
   value v, data, key, f, todo;
   value* prev_linkp;
@@ -875,7 +875,7 @@ intnat ephe_mark (intnat budget, uintnat for_cycle,
   return budget;
 }
 
-intnat ephe_sweep (caml_domain_state* domain_state, intnat budget)
+static intnat ephe_sweep (caml_domain_state* domain_state, intnat budget)
 {
   value v;
   CAMLassert (caml_gc_phase == Phase_sweep_ephe);
