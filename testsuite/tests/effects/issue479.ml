@@ -9,6 +9,8 @@ open EffectHandlers.Deep
 
 [@@@warning "-5-26"];;
 
+Printexc.record_backtrace false;;
+
 type ('a, 'container) iterator = ('a -> unit) -> 'container -> unit;;
 type 'a generator = unit -> 'a option;;
 
