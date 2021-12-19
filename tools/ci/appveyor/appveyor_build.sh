@@ -99,6 +99,15 @@ if [[ $BOOTSTRAP_FLEXDLL = 'false' ]] ; then
   esac
 fi
 
+# This is needed at all stages while winpthreads is in use for 5.00
+# This step can be moved back to the test phase (or removed entirely?) when
+# winpthreads stops being used.
+if [[ $PORT = 'mingw64' ]] ; then
+  export PATH="$PATH:/usr/x86_64-w64-mingw32/sys-root/mingw/bin"
+elif [[ $PORT = 'mingw32' ]] ; then
+  export PATH="$PATH:/usr/i686-w64-mingw32/sys-root/mingw/bin"
+fi
+
 case "$1" in
   install)
     if [[ $BOOTSTRAP_FLEXDLL = 'false' ]] ; then
@@ -123,11 +132,6 @@ case "$1" in
       run "Check runtime symbols" \
           "$FULL_BUILD_PREFIX-$PORT/tools/check-symbol-names" \
           $FULL_BUILD_PREFIX-$PORT/runtime/*.a
-    fi
-    if [[ $PORT = 'mingw64' ]] ; then
-      export PATH="$PATH:/usr/x86_64-w64-mingw32/sys-root/mingw/bin"
-    elif [[ $PORT = 'mingw32' ]] ; then
-      export PATH="$PATH:/usr/i686-w64-mingw32/sys-root/mingw/bin"
     fi
     run "test $PORT" $MAKE -C "$FULL_BUILD_PREFIX-$PORT" tests
     run "install $PORT" $MAKE -C "$FULL_BUILD_PREFIX-$PORT" install
