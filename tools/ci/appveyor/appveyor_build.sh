@@ -53,36 +53,41 @@ function set_configuration {
     case "$1" in
         cygwin*)
             dep='--disable-dependency-generation'
+            man=''
         ;;
         mingw32)
             build='--build=i686-pc-cygwin'
             host='--host=i686-w64-mingw32'
             dep='--disable-dependency-generation'
+            man=''
         ;;
         mingw64)
             build='--build=i686-pc-cygwin'
             host='--host=x86_64-w64-mingw32'
             dep='--disable-dependency-generation'
+            man='--disable-stdlib-manpages'
         ;;
         msvc32)
             build='--build=i686-pc-cygwin'
             host='--host=i686-pc-windows'
             dep='--disable-dependency-generation'
+            man=''
         ;;
         msvc64)
             build='--build=x86_64-pc-cygwin'
             host='--host=x86_64-pc-windows'
             # Explicitly test dependency generation on msvc64
             dep='--enable-dependency-generation'
+            man=''
         ;;
     esac
 
     mkdir -p "$CACHE_DIRECTORY"
     ./configure --cache-file="$CACHE_DIRECTORY/config.cache-$1" \
-                $dep $build $host --prefix="$2" --enable-ocamltest || ( \
+                $dep $build $man $host --prefix="$2" --enable-ocamltest || ( \
       rm -f "$CACHE_DIRECTORY/config.cache-$1" ; \
       ./configure --cache-file="$CACHE_DIRECTORY/config.cache-$1" \
-                  $dep $build $host --prefix="$2" --enable-ocamltest )
+                  $dep $build $man $host --prefix="$2" --enable-ocamltest )
 
 #    FILE=$(pwd | cygpath -f - -m)/Makefile.config
 #    run "Content of $FILE" cat Makefile.config
