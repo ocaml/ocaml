@@ -31,7 +31,7 @@ environment:
     FORCE_CYGWIN_UPGRADE: 0
     BUILD_MODE: world.opt
   matrix:
-    - PORT: mingw32
+    - PORT: mingw64
       BOOTSTRAP_FLEXDLL: true
 # OCaml 5.00 does not yet support MSVC
 #    - PORT: msvc64
