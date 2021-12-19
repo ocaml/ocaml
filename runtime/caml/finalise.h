@@ -63,7 +63,8 @@ struct caml_final_info {
   struct final_todo *todo_head;
   struct final_todo *todo_tail;
   uintnat running_finalisation_function;
-  struct caml_final_info* next; /* used for orphaned finalisers. See major_gc.c */
+  struct caml_final_info* next; /* used for orphaned finalisers.
+                                   See major_gc.c */
 };
 
 void caml_final_merge_finalisable (struct finalisable *source,

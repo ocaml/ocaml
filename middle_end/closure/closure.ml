@@ -54,7 +54,8 @@ let rec build_closure_env env_param pos = function
     [] -> V.Map.empty
   | id :: rem ->
       V.Map.add id
-        (Uprim(P.Pfield(pos, Pointer, Immutable), [Uvar env_param], Debuginfo.none))
+        (Uprim(P.Pfield(pos, Pointer, Immutable),
+              [Uvar env_param], Debuginfo.none))
           (build_closure_env env_param (pos+1) rem)
 
 (* Auxiliary for accessing globals.  We change the name of the global
@@ -483,7 +484,8 @@ let simplif_prim_pure ~backend fpc p (args, approxs) dbg =
         (Uprim(p, args, dbg), Value_tuple (Array.of_list approxs))
       end
   (* Field access *)
-  | Pfield (n, _, _), _, [ Value_const(Uconst_ref(_, Some (Uconst_block(_, l)))) ]
+  | Pfield (n, _, _), _,
+            [ Value_const(Uconst_ref(_, Some (Uconst_block(_, l)))) ]
     when n < List.length l ->
       make_const (List.nth l n)
   | Pfield(n, _, _), [ Uprim(P.Pmakeblock _, ul, _) ], [approx]

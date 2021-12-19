@@ -9,7 +9,7 @@ let num_domains = 8
 let n = 125
 
 let _ =
-  let domains = Array.init (num_domains - 1) (fun _ -> 
+  let domains = Array.init (num_domains - 1) (fun _ ->
     Domain.spawn(fun () ->
       let module TestClassic = Test(Classic) () in
       let module TestGenerational = Test(Generational) () in

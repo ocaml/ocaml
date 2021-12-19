@@ -270,7 +270,9 @@ method private select_operation_softfp op args dbg =
   (* Add coercions around loads and stores of 32-bit floats *)
   | (Cload {memory_chunk=Single; mutability; is_atomic=false}, args) ->
       (self#iextcall "__aeabi_f2d" typ_float [XInt],
-        [Cop(Cload {memory_chunk=Word_int; mutability; is_atomic=false}, args, dbg)])
+        [Cop(Cload {memory_chunk=Word_int;
+                    mutability;
+                    is_atomic=false}, args, dbg)])
   | (Cstore (Single, init), [arg1; arg2]) ->
       let arg2' =
         Cop(Cextcall("__aeabi_d2f", typ_int, [XFloat], false),

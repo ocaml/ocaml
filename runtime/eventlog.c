@@ -167,13 +167,14 @@ static void thread_setup_eventlog_file(int unique_id)
   eventlog_filename = caml_secure_getenv(T("OCAML_EVENTLOG_PREFIX"));
 
   if (eventlog_filename) {
-    int ret = snprintf_os(output_file, OUTPUT_FILE_LEN, T("%s-caml-%ld-%d.eventlog"),
-			  eventlog_filename, pid, unique_id);
+    int ret = snprintf_os(output_file, OUTPUT_FILE_LEN,
+                          T("%s-caml-%ld-%d.eventlog"),
+                          eventlog_filename, pid, unique_id);
     if (ret > OUTPUT_FILE_LEN)
       caml_fatal_error("eventlog: specified OCAML_EVENTLOG_PREFIX is too long");
   } else {
     snprintf_os(output_file, OUTPUT_FILE_LEN, T("caml-%ld-%d.eventlog"),
-		pid, unique_id);
+                pid, unique_id);
   }
 
   Caml_state->eventlog_out = fopen_os(output_file, T("wb"));

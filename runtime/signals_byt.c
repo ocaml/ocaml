@@ -80,4 +80,3 @@ int caml_set_signal_action(int signo, int action)
   else
     return 0;
 }
-

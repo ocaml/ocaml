@@ -78,7 +78,8 @@ void caml_disasm_instr(code_t pc)
     if (pc[0] < 0 || pc[0] >= caml_prim_name_table.size)
       snprintf(buf, sizeof(buf), "%s unknown primitive %d\n", opbuf, pc[0]);
     else
-      snprintf(buf, sizeof(buf), "%s %s\n", opbuf, (char *) caml_prim_name_table.contents[pc[0]]);
+      snprintf(buf, sizeof(buf), "%s %s\n", opbuf,
+               (char *) caml_prim_name_table.contents[pc[0]]);
     break;
   case SWITCH:
     snprintf(buf, sizeof(buf), "%s ntag=%lu nint=%lu\n",

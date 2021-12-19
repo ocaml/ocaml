@@ -42,9 +42,11 @@
 intnat caml_globals_inited = 0;
 #endif
 
-CAMLexport void (*caml_scan_roots_hook)(scanning_action, void* fdata, caml_domain_state *) = NULL;
+CAMLexport void (*caml_scan_roots_hook)
+  (scanning_action, void* fdata, caml_domain_state *) = NULL;
 
-void caml_do_roots (scanning_action f, void* fdata, caml_domain_state* d, int do_final_val)
+void caml_do_roots (scanning_action f, void* fdata, caml_domain_state* d,
+                    int do_final_val)
 {
   caml_do_local_roots(f, fdata, d->local_roots, d->current_stack, d->gc_regs);
   if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(f, fdata, d);

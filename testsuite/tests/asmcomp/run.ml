@@ -7,4 +7,3 @@ let arg n =
     0
 
 let () = run_prog (arg 1) (arg 2) (arg 3)
-

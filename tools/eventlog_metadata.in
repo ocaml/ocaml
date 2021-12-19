@@ -55,7 +55,7 @@ stream {
     };
     event.context := struct {
         uint32_t tid;
-	uint8_t is_backup_thread;
+        uint8_t is_backup_thread;
     };
 };
 
