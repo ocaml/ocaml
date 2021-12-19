@@ -51,6 +51,7 @@ api_docgen/alldoc.tex           typo.missing-header
 tools/mantis2gh_stripped.csv typo.missing-header
 testsuite/disabled       typo.missing-header
 
+/README.md               typo.long-line=may typo.very-long-line=may
 *.adoc                   typo.long-line=may
 
 # Github templates and scripts lack headers, have long lines
