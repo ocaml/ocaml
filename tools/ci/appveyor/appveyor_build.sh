@@ -88,6 +88,7 @@ function set_configuration {
 #    run "Content of $FILE" cat Makefile.config
 }
 
+PARALLEL_URL='https://ftpmirror.gnu.org/parallel/parallel-latest.tar.bz2'
 APPVEYOR_BUILD_FOLDER=$(echo "$APPVEYOR_BUILD_FOLDER" | cygpath -f -)
 FLEXDLLROOT="$PROGRAMFILES/flexdll"
 OCAMLROOT=$(echo "$OCAMLROOT" | cygpath -f - -m)
@@ -110,6 +111,13 @@ fi
 
 case "$1" in
   install)
+    pushd /tmp &>/dev/null
+    curl -Ls $PARALLEL_URL | bunzip2 - | tar x
+    cd parallel-*
+    ./configure
+    make
+    make install
+    popd &/dev/null
     if [[ $BOOTSTRAP_FLEXDLL = 'false' ]] ; then
       mkdir -p "$FLEXDLLROOT"
       cd "$APPVEYOR_BUILD_FOLDER/../flexdll"
@@ -133,7 +141,7 @@ case "$1" in
           "$FULL_BUILD_PREFIX-$PORT/tools/check-symbol-names" \
           $FULL_BUILD_PREFIX-$PORT/runtime/*.a
     fi
-    run "test $PORT" $MAKE -C "$FULL_BUILD_PREFIX-$PORT" tests
+    run "test $PORT" $MAKE -C "$FULL_BUILD_PREFIX-$PORT/testsuite" parallel
     run "install $PORT" $MAKE -C "$FULL_BUILD_PREFIX-$PORT" install
     if [[ $PORT = 'msvc64' ]] ; then
       run "$MAKE check_all_arches" \
