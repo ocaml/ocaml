@@ -80,7 +80,7 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
 #define Restore_after_gc \
   { sp = domain_state->current_stack->sp; accu = sp[0]; env = sp[1]; sp += 3; }
 #define Enter_gc \
-  { Setup_for_gc; caml_handle_gc_interrupt(); \
+  { Setup_for_gc; \
     caml_process_pending_actions();         \
     Restore_after_gc; }
 
