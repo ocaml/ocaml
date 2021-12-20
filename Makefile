@@ -439,8 +439,7 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 endif
 	$(MAKE) -C tools install
 ifeq "$(UNIX_OR_WIN32)" "unix" # Install manual pages only on Unix
-	$(MKDIR) "$(INSTALL_MANDIR)/man$(PROGRAMS_MAN_SECTION)"
-	-$(MAKE) -C man install
+	$(MAKE) -C man install
 endif
 	for i in $(OTHERLIBRARIES); do \
 	  $(MAKE) -C otherlibs/$$i install || exit $$?; \
