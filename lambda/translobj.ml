@@ -125,7 +125,7 @@ let transl_label_init_flambda f =
 let transl_store_label_init glob size f arg =
   assert(not Config.flambda);
   assert(!Clflags.native_code);
-  method_cache := Lprim(Pfield size,
+  method_cache := Lprim(Pfield (size, None),
                         [Lprim(Pgetglobal glob, [], Loc_unknown)],
                         Loc_unknown);
   let expr = f arg in
@@ -178,7 +178,7 @@ let oo_wrap env req f x =
            List.fold_left
              (fun lambda id ->
                 Llet(StrictOpt, Pgenval, id,
-                     Lprim(Pmakeblock(0, Mutable, None),
+                     Lprim(Pmakeblock(0, Mutable, None, None),
                            [lambda_unit; lambda_unit; lambda_unit],
                            Loc_unknown),
                      lambda))

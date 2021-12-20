@@ -391,7 +391,7 @@ let comp_primitive p args =
   | Pcompare_ints -> Kccall("caml_int_compare", 2)
   | Pcompare_floats -> Kccall("caml_float_compare", 2)
   | Pcompare_bints bi -> comp_bint_primitive bi "compare" args
-  | Pfield n -> Kgetfield n
+  | Pfield (n, _meta) -> Kgetfield n
   | Pfield_computed -> Kgetvectitem
   | Psetfield(n, _ptr, _init) -> Ksetfield n
   | Psetfield_computed(_ptr, _init) -> Ksetvectitem
@@ -769,7 +769,7 @@ let rec comp_expr env exp sz cont =
         | CFnge -> Kccall("caml_ge_float", 2) :: Kboolnot :: cont
       in
       comp_args env args sz cont
-  | Lprim(Pmakeblock(tag, _mut, _), args, loc) ->
+  | Lprim(Pmakeblock(tag, _mut, _, _meta), args, loc) ->
       let cont = add_pseudo_event loc !compunit_name cont in
       comp_args env args sz (Kmakeblock(List.length args, tag) :: cont)
   | Lprim(Pfloatfield n, args, loc) ->

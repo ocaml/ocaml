@@ -45,6 +45,20 @@ type is_safe =
   | Safe
   | Unsafe
 
+type block_metadata =
+  | Block_construct
+  | Block_extension_constructor
+  | Block_lazy
+  | Block_record of {
+      fields: Types.label_description array;
+      representation: Types.record_representation
+    }
+  | Block_tuple
+  | Block_variant
+  | Block_module
+
+type field_metadata = unit
+
 type primitive =
   | Pbytes_to_string
   | Pbytes_of_string
@@ -53,8 +67,8 @@ type primitive =
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t
   (* Operations on heap blocks *)
-  | Pmakeblock of int * mutable_flag * block_shape
-  | Pfield of int
+  | Pmakeblock of int * mutable_flag * block_shape * block_metadata option
+  | Pfield of int * field_metadata option
   | Pfield_computed
   | Psetfield of int * immediate_or_pointer * initialization_or_assignment
   | Psetfield_computed of immediate_or_pointer * initialization_or_assignment

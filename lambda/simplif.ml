@@ -42,7 +42,7 @@ let rec eliminate_ref id = function
   | Lletrec(idel, e2) ->
       Lletrec(List.map (fun (v, e) -> (v, eliminate_ref id e)) idel,
               eliminate_ref id e2)
-  | Lprim(Pfield 0, [Lvar v], _) when Ident.same v id ->
+  | Lprim(Pfield (0, _metadata), [Lvar v], _) when Ident.same v id ->
       Lmutvar id
   | Lprim(Psetfield(0, _, _), [Lvar v; e], _) when Ident.same v id ->
       Lassign(id, eliminate_ref id e)
@@ -234,8 +234,8 @@ let simplify_exits lam =
         (* Simplify Obj.with_tag *)
       | Pccall { Primitive.prim_name = "caml_obj_with_tag"; _ },
         [Lconst (Const_base (Const_int tag));
-         Lprim (Pmakeblock (_, mut, shape), fields, loc)] ->
-         Lprim (Pmakeblock(tag, mut, shape), fields, loc)
+         Lprim (Pmakeblock (_, mut, shape, metadata), fields, loc)] ->
+         Lprim (Pmakeblock(tag, mut, shape, metadata), fields, loc)
       | Pccall { Primitive.prim_name = "caml_obj_with_tag"; _ },
         [Lconst (Const_base (Const_int tag));
          Lconst (Const_block (_, fields))] ->
@@ -543,7 +543,7 @@ let simplify_lets lam =
       Hashtbl.add subst v (simplif (Lvar w));
       simplif l2
   | Llet(Strict, kind, v,
-         Lprim(Pmakeblock(0, Mutable, kind_ref) as prim, [linit], loc), lbody)
+         Lprim(Pmakeblock(0, Mutable, kind_ref, _metadata) as prim, [linit], loc), lbody)
     when optimize ->
       let slinit = simplif linit in
       let slbody = simplif lbody in
