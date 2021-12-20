@@ -98,6 +98,7 @@ _build
 /lex/parser.output
 
 /manual/src/cmds/warnings-help.etex
+/manual/src/html_processing/src/common.ml
 /manual/src/warnings-help.etex
 
 /api_docgen/build
@@ -204,8 +205,6 @@ _build
 /runtime/sak
 /runtime/domain_state32.inc
 /runtime/domain_state64.inc
-/runtime/GIT_HASH
-/runtime/GIT_HASH.new
 
 /stdlib/camlheader
 /stdlib/target_camlheader

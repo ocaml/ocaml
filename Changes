@@ -16,13 +16,18 @@ Working version
   *blit_* function during Mark phase
   (François Bobot, reported by Stephen Dolan, reviewed by Damien Doligez)
 
-- #10195: Speed up GC by prefetching during marking
+- #10195, #10680: Speed up GC by prefetching during marking
   (Stephen Dolan, review by Xavier Leroy, Guillaume Munch-Maccagnoni,
-   Jacques-Henri Jourdan and Damien Doligez)
+   Jacques-Henri Jourdan, Damien Doligez and Leo White)
 
 - #10549: Stack overflow detection and naked pointers checking for ARM64
   (Xavier Leroy, review by Stephen Dolan)
 
+* #10675: Emit deprecation warnings when old C runtime function names
+  are used.  This will break C stub code that uses these old names and
+  treats warnings as errors.  The workaround is to use the new names.
+  (Xavier Leroy and David Allsopp, review by Sébastien Hinderer and
+   Damien Doligez)
 
 ### Code generation and optimizations:
 
@@ -76,6 +81,11 @@ Working version
   (Nicolás Ojeda Bär, review by Daniel Bünzli, Jérémie Dimino, Damien Doligez
   and Xavier Leroy)
 
+- #10658: add detailed information about the current version of OCaml
+  to the Sys module of the standard library.
+  (Sébastien Hinderer, review by Damien Doligez, Gabriel Scherer, David
+  Allsopp, Nicolás Ojeda Bär, Vincent Laviron)
+
 ### Other libraries:
 
 - #10192: Add support for Unix domain sockets on Windows and use them
@@ -123,6 +133,11 @@ Working version
   float->int conversions in case of overflow, and of iterators
   in case of concurrent modifications.
   (Xavier Leroy, report by whitequark, review by David Allsopp)
+
+- #8697, #10666: add M, m, n options of the OCAMLRUNPARAM to manual and man page
+  for ocamlrun command line options
+  (Dong An and Anukriti Kumar, review by David Allsopp, Gabriel Scherer
+   and Damien Doligez)
 
 - #10605: manual, name few css classes to ease styling and maintainability.
   (Florian Angeletti, review by Wiktor Kuchta and Gabriel Scherer)
@@ -254,6 +269,11 @@ Working version
 
 - #10659: Fix freshening substitutions on imported modules
   (Leo White and Stephen Dolan, review by Matthew Ryan)
+
+- #10677, #10679: Fix detection of CC as gcc in configure (allow for
+  triplet-prefixed GCC) and fix all C compiler detection when CC is a path
+  rather than a basename.
+  (David Allsopp, report by Fabian @copy, review by Gabriel Scherer)
 
 OCaml 4.13 maintenance branch
 -----------------------------

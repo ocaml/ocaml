@@ -24,10 +24,6 @@ Tell us what problem you observed.
 
 Please provide here the build instructions for your issue, and a code sample if available.
 
-**Multicore OCaml build version**
-
-Please provide the output of `ocamlc -version` or `strings your_binary.exe | grep OCAML_RUNTIME_BUILD_GIT_HASH_IS`.
-
 **Did you try running it with the debug runtime and heap verification ON?**
 
 See https://github.com/ocaml-multicore/ocaml-multicore/wiki/Report-an-issue-to-the-bugtracker

@@ -18,7 +18,7 @@
 # Require Autoconf 2.69 for repeatability in CI
 AC_PREREQ([2.69])
 AC_INIT([OCaml],
-        m4_esyscmd([head -n1 VERSION | tr -d '\r\n']),
+        [OCAML__VERSION],
         [caml-list@inria.fr],
         [ocaml],
         [http://www.ocaml.org])
@@ -79,6 +79,13 @@ AC_CONFIG_AUX_DIR([build-aux])
 AC_SUBST([CONFIGURE_ARGS])
 AC_SUBST([native_compiler])
 AC_SUBST([VERSION], [AC_PACKAGE_VERSION])
+AC_SUBST([OCAML_DEVELOPMENT_VERSION], [OCAML__DEVELOPMENT_VERSION])
+AC_SUBST([OCAML_RELEASE_EXTRA], [OCAML__RELEASE_EXTRA])
+AC_SUBST([OCAML_VERSION_MAJOR], [OCAML__VERSION_MAJOR])
+AC_SUBST([OCAML_VERSION_MINOR], [OCAML__VERSION_MINOR])
+AC_SUBST([OCAML_VERSION_PATCHLEVEL], [OCAML__VERSION_PATCHLEVEL])
+AC_SUBST([OCAML_VERSION_EXTRA], [OCAML__VERSION_EXTRA])
+AC_SUBST([OCAML_VERSION_SHORT], [OCAML__VERSION_SHORT])
 AC_SUBST([CC])
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
@@ -177,9 +184,22 @@ AC_SUBST([force_instrumented_runtime])
 AC_CONFIG_FILES([Makefile.build_config])
 AC_CONFIG_FILES([Makefile.config])
 AC_CONFIG_FILES([stdlib/sys.ml])
+AC_CONFIG_FILES([manual/src/version.tex])
+AC_CONFIG_FILES([manual/src/html_processing/src/common.ml])
 AC_CONFIG_FILES([tools/eventlog_metadata])
 AC_CONFIG_HEADERS([runtime/caml/m.h])
 AC_CONFIG_HEADERS([runtime/caml/s.h])
+AC_CONFIG_HEADERS([runtime/caml/version.h])
+
+# Definitions related to the version of OCaml
+AC_DEFINE([OCAML_VERSION_MAJOR], [OCAML__VERSION_MAJOR])
+AC_DEFINE([OCAML_VERSION_MINOR], [OCAML__VERSION_MINOR])
+AC_DEFINE([OCAML_VERSION_PATCHLEVEL], [OCAML__VERSION_PATCHLEVEL])
+m4_if([OCAML__VERSION_EXTRA],[], [],
+  [AC_DEFINE([OCAML_VERSION_ADDITIONAL], ["][OCAML__VERSION_EXTRA]["])
+  AC_DEFINE([OCAML_VERSION_EXTRA], ["][OCAML__VERSION_EXTRA]["])])
+AC_DEFINE([OCAML_VERSION], [OCAML__VERSION_NUMBER])
+AC_DEFINE([OCAML_VERSION_STRING], ["][OCAML__VERSION]["])
 
 # Checks for system types
 
@@ -594,8 +614,8 @@ AS_CASE([$ocaml_cv_cc_vendor],
   warn_error_flag='-Werror'
   cc_warnings='-Wall -Wdeclaration-after-statement'])
 
-AS_CASE([$enable_warn_error,AC_PACKAGE_VERSION],
-  [yes,*|,*+dev*|,*+domains*],
+AS_CASE([$enable_warn_error,OCAML__DEVELOPMENT_VERSION],
+  [yes,*|,true],
     [cc_warnings="$cc_warnings $warn_error_flag"])
 
 # We select high optimization levels, provided we can turn off:
@@ -797,7 +817,7 @@ AS_CASE([$flexdir,$supports_shared_libraries,$flexlink,$host],
   [,*,,*-w64-mingw32|,*,,*-pc-windows],
     [AC_MSG_ERROR([flexlink is required for native Win32])])
 
-AS_CASE([$CC,$host],
+AS_CASE([$cc_basename,$host],
   [*,*-*-darwin*],
     [mkexe="$mkexe -Wl,-no_compact_unwind";
     AC_DEFINE([HAS_ARCH_CODE32], [1])],
@@ -968,8 +988,8 @@ AS_IF([test x"$enable_shared" != "xno"],
     [[*-*-linux*|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*]],
       [sharedlib_cflags="-fPIC"
-       AS_CASE([$CC,$host],
-           [gcc*,powerpc-*-linux*],
+       AS_CASE([$cc_basename,$host],
+           [*gcc*,powerpc-*-linux*],
            [mksharedlib="$CC -shared -mbss-plt \$(LDFLAGS)"],
            [mksharedlib="$CC -shared \$(LDFLAGS)"])
       oc_ldflags="$oc_ldflags -Wl,-E"
@@ -1017,7 +1037,7 @@ AS_IF([test x"$supports_shared_libraries" = 'xtrue'],
     [riscv*-*-linux*], [natdynlink=true])])
 
 # Try to work around the Skylake/Kaby Lake processor bug.
-AS_CASE(["$CC,$host"],
+AS_CASE(["$cc_basename,$host"],
   [*gcc*,x86_64-*|*gcc*,i686-*],
     [OCAML_CC_HAS_FNO_TREE_VRP
     AS_IF([$cc_has_fno_tree_vrp],
@@ -1137,17 +1157,17 @@ AC_DEFINE_UNQUOTED([OCAML_OS_TYPE], ["$ostype"])
 
 AC_CHECK_TOOL([DIRECT_LD],[ld])
 AS_IF([test -z "$PARTIALLD"],
-  [AS_CASE(["$arch,$CC,$system,$model"],
-    [amd64,gcc*,macosx,*], [PACKLD_FLAGS=' -arch x86_64'],
-    [power,gcc*,elf,ppc], [PACKLD_FLAGS=' -m elf32ppclinux'],
-    [power,gcc*,elf,ppc64], [PACKLD_FLAGS=' -m elf64ppc'],
-    [power,gcc*,elf,ppc64le], [PACKLD_FLAGS=' -m elf64lppc'],
+  [AS_CASE(["$arch,$cc_basename,$system,$model"],
+    [amd64,*gcc*,macosx,*], [PACKLD_FLAGS=' -arch x86_64'],
+    [power,*gcc*,elf,ppc], [PACKLD_FLAGS=' -m elf32ppclinux'],
+    [power,*gcc*,elf,ppc64], [PACKLD_FLAGS=' -m elf64ppc'],
+    [power,*gcc*,elf,ppc64le], [PACKLD_FLAGS=' -m elf64lppc'],
     [PACKLD_FLAGS=''])
   # The string for PACKLD must be capable of being concatenated with the
   # output filename. Don't assume that all C compilers understand GNU -ofoo
   # form, so ensure that the definition includes a space at the end (which is
   # achieved using the $(EMPTY) expansion trick).
-   AS_IF([test x"$CC" = "xcl"],
+   AS_IF([test x"$cc_basename" = "xcl"],
     # For the Microsoft C compiler there must be no space at the end of the
     # string.
     [PACKLD="link -lib -nologo $machine -out:"],
@@ -1815,7 +1835,7 @@ AS_IF([$native_compiler],
 ## Frame pointers
 
 AS_IF([test x"$enable_frame_pointers" = "xyes"],
-  [AS_CASE(["$host,$CC"],
+  [AS_CASE(["$host,$cc_basename"],
     [x86_64-*-linux*,gcc*|x86_64-*-linux*,clang*],
       [common_cflags="$common_cflags -g  -fno-omit-frame-pointer"
       frame_pointers=true
@@ -1857,10 +1877,10 @@ AS_IF([test "x$documentation_tool_cmd" = 'x']
  [documentation_tool_cmd="$documentation_tool"])
 
 
-## always enable ocamltest with multicore
-AS_CASE([$enable_ocamltest,AC_PACKAGE_VERSION],
-  [yes,*|,*+dev*],[ocamltest='ocamltest'],
-  [ocamltest='ocamltest'])
+
+AS_CASE([$enable_ocamltest,OCAML__DEVELOPMENT_VERSION],
+  [yes,*|,true],[ocamltest='ocamltest'],
+  [ocamltest=''])
 
 AS_IF([test x"$enable_flambda" = "xyes"],
   [flambda=true

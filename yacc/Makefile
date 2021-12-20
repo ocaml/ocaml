@@ -33,18 +33,16 @@ ocamlyacc_SOURCES := $(addsuffix .c,\
 
 ocamlyacc_OBJECTS := $(ocamlyacc_SOURCES:.c=.$(O))
 
-generated_files := ocamlyacc$(EXE) $(ocamlyacc_OBJECTS)  version.h
+generated_files := ocamlyacc$(EXE) $(ocamlyacc_OBJECTS)
 
 all: ocamlyacc$(EXE)
 
 ocamlyacc$(EXE): $(ocamlyacc_OBJECTS)
 	$(MKEXE) -o $@ $^ $(EXTRALIBS)
 
-version.h : $(ROOTDIR)/VERSION
-	echo "#define OCAML_VERSION \"`sed -e 1q $< | tr -d '\r'`\"" > $@
-
+.PHONY: clean
 clean:
-	rm -f ocamlyacc ocamlyacc.exe wstr.o wstr.obj version.h \
+	rm -f ocamlyacc ocamlyacc.exe wstr.o wstr.obj \
         $(ocamlyacc_SOURCES:.c=.o) $(ocamlyacc_SOURCES:.c=.obj)
 
 depend:
@@ -53,7 +51,7 @@ closure.$(O): defs.h
 error.$(O): defs.h
 lalr.$(O): defs.h
 lr0.$(O): defs.h
-main.$(O): defs.h version.h
+main.$(O): defs.h
 mkpar.$(O): defs.h
 output.$(O): defs.h
 reader.$(O): defs.h
