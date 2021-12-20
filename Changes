@@ -45,6 +45,9 @@ Working version
   are used for passing arguments that do not fit in registers.
   (Xavier Leroy, review by Vincent Laviron)
 
+- #10681: Enforce boolean conditions for the native backend
+  (Vincent Laviron, review by Gabriel Scherer)
+
 ### Standard library:
 
 * #10622: Annotate `Uchar.t` with immediate attribute
@@ -117,6 +120,9 @@ Working version
 - #10565: Toplevel value printing: truncate strings only after 8 bytes.
   (Wiktor Kuchta, review by Xavier Leroy)
 
+- #10527: Show "#help;; for help" at toplevel startup
+  (Wiktor Kuchta, review by David Allsopp and Florian Angeletti)
+
 ### Debugging:
 
 - #10517, #10594: when running ocamldebug on a program linked with the
@@ -147,6 +153,10 @@ Working version
   customized using the `--docdir` argument to `./configure`.
   (Nicolás Ojeda Bär, report by Daniel Bünzli, review by David Allsopp,
   Sébastien Hinderer, and Daniel Bünzli)
+
+- #10671, #10672: webman: Fix misalignments in unordered lists by changing the
+  CSS for coloring bullets
+  (Wiktor Kuchta, review by Florian Angeletti)
 
 ### Compiler user-interface and warnings:
 
@@ -202,6 +212,12 @@ Working version
 - #10541: Make field_kind and commutable abstract, enforcing correct access
   (Jacques Garrigue and Takafumi Saikawa,
    review by Thomas Refis and Florian Angeletti)
+
+* #10627: Make row_field abstract
+  Completes #10474 by making row_field abstract too.
+  An immutable view row_field_view is provided, and one converts between it
+  and row_field via inj_row_field and row_field_repr.
+  (Jacques Garrigue and Takafumi Saikawa, review by Florian Angeletti)
 
 - #10433: Remove the distinction between 32-bit aligned and 64-bit aligned
   64-bit floats in Cmm.memory_chunk.
@@ -744,6 +760,13 @@ OCaml 4.13.0 (24 September 2021)
 
 - #10327: Add a subdirectories variable and a copy action to ocamltest
   (Sébastien Hinderer, review by David Allsopp)
+
+* #10337: Normalize type_expr nodes on access
+  One should now use accessors such as get_desc and get_level to access fields
+  of type_expr, rather than calling manually Btype.repr (which is now hidden
+  in Types.Transient_expr).
+  (Jacques Garrigue and Takafumi Saikawa,
+   review by Florian Angeletti and Gabriel Radanne)
 
 - #10358: Use a hash table for the load path.
   (Leo White, review by Gabriel Scherer)

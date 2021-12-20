@@ -1,10 +1,8 @@
 \documentclass{book}
-
 \usepackage[colorlinks=true,breaklinks=true]{hyperref}
 \usepackage{color}
 \usepackage{lmodern}
 \usepackage[T1]{fontenc}
-\usepackage[strings,nohyphen]{underscore}
 \input{ifocamldoc}
 \ifocamldoc
 \usepackage{ocamldoc}
@@ -67,6 +65,8 @@
 \else
 \newcommand{\docitem}[2]{\input{#1/#2}}
 \fi
+\usepackage[english]{babel}
+\usepackage[strings,nohyphen]{underscore}
 
 \begin{document}
 \chapter{Stdlib}

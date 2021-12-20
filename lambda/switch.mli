@@ -84,14 +84,32 @@ module type S =
 
     (* Various constructors, for making a binder,
         adding one integer, etc. *)
-    val bind : arg -> (arg -> act) -> act
-    val make_const : int -> arg
-    val make_offset : arg -> int -> arg
-    val make_prim : primitive -> arg list -> test
-    val make_isout : arg -> arg -> test
-    val make_isin : arg -> arg -> test
-    val make_is_nonzero : arg -> test
 
+    (* [bind arg cont] should bind the expression arg to a variable,
+       then call [cont] on that variable, and return the term made of
+       the binding and the result of the call. *)
+    val bind : arg -> (arg -> act) -> act
+    (* [make_const n] generates a term for the integer constant [n] *)
+    val make_const : int -> arg
+    (* [make_offset arg n] generates a term for adding the constant
+       integer [n] to the term [arg] *)
+    val make_offset : arg -> int -> arg
+    (* [make_prim p args] generates a test using the primitive operation [p]
+       applied to arguments [args] *)
+    val make_prim : primitive -> arg list -> test
+    (* [make_isout h arg] generates a test that holds when [arg] is out of
+       the interval [0, h] *)
+    val make_isout : arg -> arg -> test
+    (* [make_isin h arg] generates a test that holds when [arg] is in
+       the interval [0, h] *)
+    val make_isin : arg -> arg -> test
+    (* [make_is_nonzero arg] generates a test that holds when [arg] is any
+       value except 0 *)
+    val make_is_nonzero : arg -> test
+    (* [arg_as_test arg] casts [arg], known to be either 0 or 1,
+       to a boolean test *)
+    val arg_as_test : arg -> test
+    (* [make_if cond ifso ifnot] generates a conditional branch *)
     val make_if : test -> act -> act -> act
    (* construct an actual switch :
       make_switch arg cases acts

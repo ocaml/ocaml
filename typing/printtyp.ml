@@ -554,16 +554,21 @@ and raw_row_fixed ppf = function
 | Some Types.Univar t -> fprintf ppf "Some(Univar(%a))" raw_type t
 | Some Types.Reified p -> fprintf ppf "Some(Reified(%a))" path p
 
-and raw_field ppf = function
-    Rpresent None -> fprintf ppf "Rpresent None"
-  | Rpresent (Some t) -> fprintf ppf "@[<1>Rpresent(Some@,%a)@]" raw_type t
-  | Reither (c,tl,m,e) ->
-      fprintf ppf "@[<hov1>Reither(%B,@,%a,@,%B,@,@[<1>ref%t@])@]" c
+and raw_field ppf rf =
+  match_row_field
+    ~absent:(fun _ -> fprintf ppf "RFabsent")
+    ~present:(function
+      | None ->
+          fprintf ppf "RFpresent None"
+      | Some t ->
+          fprintf ppf  "@[<1>RFpresent(Some@,%a)@]" raw_type t)
+    ~either:(fun c tl m e ->
+      fprintf ppf "@[<hov1>RFeither(%B,@,%a,@,%B,@,@[<1>ref%t@])@]" c
         raw_type_list tl m
         (fun ppf ->
-          match !e with None -> fprintf ppf " None"
-          | Some f -> fprintf ppf "@,@[<1>(%a)@]" raw_field f)
-  | Rabsent -> fprintf ppf "Rabsent"
+          match e with None -> fprintf ppf " RFnone"
+          | Some f -> fprintf ppf "@,@[<1>(%a)@]" raw_field f))
+    rf
 
 let raw_type_expr ppf t =
   visited := []; kind_vars := []; kind_count := 0;
@@ -779,7 +784,7 @@ let nameable_row row =
   List.for_all
     (fun (_, f) ->
        match row_field_repr f with
-       | Reither(c, l, _, _) ->
+       | Reither(c, l, _) ->
            row_closed row && if c then l = [] else List.length l = 1
        | _ -> true)
     (row_fields row)
@@ -1182,9 +1187,9 @@ let rec tree_of_typexp mode ty =
 
 and tree_of_row_field mode (l, f) =
   match row_field_repr f with
-  | Rpresent None | Reither(true, [], _, _) -> (l, false, [])
+  | Rpresent None | Reither(true, [], _) -> (l, false, [])
   | Rpresent(Some ty) -> (l, false, [tree_of_typexp mode ty])
-  | Reither(c, tyl, _, _) ->
+  | Reither(c, tyl, _) ->
       if c (* contradiction: constant constructor with an argument *)
       then (l, true, tree_of_typlist mode tyl)
       else (l, false, tree_of_typlist mode tyl)

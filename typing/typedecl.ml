@@ -1658,8 +1658,8 @@ let explain_unbound_single ppf tv ty =
       explain_unbound ppf tv (row_fields row)
         (fun (_l,f) -> match row_field_repr f with
           Rpresent (Some t) -> t
-        | Reither (_,[t],_,_) -> t
-        | Reither (_,tl,_,_) -> Btype.newgenty (Ttuple tl)
+        | Reither (_,[t],_) -> t
+        | Reither (_,tl,_) -> Btype.newgenty (Ttuple tl)
         | _ -> Btype.newgenty (Ttuple[]))
         "case" (fun (lab,_) -> "`" ^ lab ^ " of ")
   | _ -> trivial ty
