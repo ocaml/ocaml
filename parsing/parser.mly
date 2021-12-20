@@ -849,6 +849,10 @@ The precedences must be listed from low to high.
 %start use_file                         /* for the #use directive */
 %type <Parsetree.toplevel_phrase list> use_file
 /* BEGIN AVOID */
+%start parse_module_type
+%type <Parsetree.module_type> parse_module_type
+%start parse_module_expr
+%type <Parsetree.module_expr> parse_module_expr
 %start parse_core_type
 %type <Parsetree.core_type> parse_core_type
 %start parse_expression
@@ -1198,6 +1202,16 @@ use_file:
 ;
 
 /* BEGIN AVOID */
+parse_module_type:
+  module_type EOF
+    { $1 }
+;
+
+parse_module_expr:
+  module_expr EOF
+    { $1 }
+;
+
 parse_core_type:
   core_type EOF
     { $1 }
