@@ -72,7 +72,6 @@
 /* **** compact.c */
 
 /* **** compare.c */
-#define compare_unordered CAML_DEPRECATED("compare_unordered", "caml_compare_unordered") caml_compare_unordered
 
 /* **** custom.c */
 #define alloc_custom CAML_DEPRECATED("alloc_custom", "caml_alloc_custom") caml_alloc_custom
@@ -99,7 +98,6 @@
 #define serialize_block_float_8 CAML_DEPRECATED("serialize_block_float_8", "caml_serialize_block_float_8") caml_serialize_block_float_8
 
 /* **** fail.c */
-#define external_raise CAML_DEPRECATED("external_raise", "caml_external_raise") caml_external_raise
 #define mlraise CAML_DEPRECATED("mlraise", "caml_raise") caml_raise /*SP*/
 #define raise_constant CAML_DEPRECATED("raise_constant", "caml_raise_constant") caml_raise_constant
 #define raise_with_arg CAML_DEPRECATED("raise_with_arg", "caml_raise_with_arg") caml_raise_with_arg
@@ -250,7 +248,6 @@
 #define convert_signal_number CAML_DEPRECATED("convert_signal_number", "caml_convert_signal_number") caml_convert_signal_number
 
 /* **** runtime/signals.c */
-#define garbage_collection CAML_DEPRECATED("garbage_collection", "caml_garbage_collection") caml_garbage_collection
 
 /* **** stacks.c */
 
