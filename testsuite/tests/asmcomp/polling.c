@@ -8,7 +8,7 @@
 CAMLprim value request_minor_gc(value v) {
   Caml_state->requested_minor_gc = 1;
   Caml_state->requested_major_slice = 1;
-  /* 
+  /*
     This is massively unsafe in multicore but the polling
     tests are only run in a single domain, so we're probably
     good.

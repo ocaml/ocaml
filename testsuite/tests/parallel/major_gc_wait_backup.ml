@@ -30,7 +30,7 @@ let _ =
 (* test to force domain to do a full GC while another is blocking *)
 let _ =
   let _ = Domain.spawn (fun _ ->
-  	Unix.sleep 10000
+    Unix.sleep 10000
   ) in
   Gc.full_major ();
   let n = major_collections () in

@@ -24,23 +24,15 @@
 
 #ifdef TARGET_i386
 #define Saved_return_address(sp) *((intnat *)((sp) - 4))
-#ifndef SYS_win32
-#define Callback_link(sp) ((struct caml_context *)((sp) + 16)) //FIXME KC
-#else
-#define Callback_link(sp) ((struct caml_context *)((sp) + 8)) //FIXME KC
-#endif
 #endif
 
 #ifdef TARGET_power
 #if defined(MODEL_ppc)
 #define Saved_return_address(sp) *((intnat *)((sp) - 4))
-#define Callback_link(sp) ((struct caml_context *)((sp) + 16))
 #elif defined(MODEL_ppc64)
 #define Saved_return_address(sp) *((intnat *)((sp) + 16))
-#define Callback_link(sp) ((struct caml_context *)((sp) + (48 + 32)))
 #elif defined(MODEL_ppc64le)
 #define Saved_return_address(sp) *((intnat *)((sp) + 16))
-#define Callback_link(sp) ((struct caml_context *)((sp) + (32 + 32)))
 #else
 #error "TARGET_power: wrong MODEL"
 #endif
@@ -52,16 +44,15 @@
 #ifdef TARGET_s390x
 #define Saved_return_address(sp) *((intnat *)((sp) - SIZEOF_PTR))
 #define Trap_frame_size 16
-#define Callback_link(sp) ((struct caml_context *)((sp) + Trap_frame_size)) //FIXME KC
 #endif
 
 #ifdef TARGET_arm
 #define Saved_return_address(sp) *((intnat *)((sp) - 4))
-#define Callback_link(sp) ((struct caml_context *)((sp) + 8)) //FIXME KC
 #endif
 
 #ifdef TARGET_amd64
-/* Size of the gc_regs structure, in words. See amd64.S and amd64/proc.ml for the indices */
+/* Size of the gc_regs structure, in words.
+   See amd64.S and amd64/proc.ml for the indices */
 #define Wosize_gc_regs (13 /* int regs */ + 16 /* float regs */)
 #define Saved_return_address(sp) *((intnat *)((sp) - 8))
 #endif
@@ -73,7 +64,6 @@
 
 #ifdef TARGET_riscv
 #define Saved_return_address(sp) *((intnat *)((sp) - 8))
-#define Callback_link(sp) ((struct caml_context *)((sp) + 16))
 #endif
 
 /* Structure of OCaml callback contexts */

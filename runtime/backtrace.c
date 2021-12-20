@@ -35,7 +35,8 @@ CAMLexport void caml_record_backtraces(int flag)
   if (flag != Caml_state->backtrace_active) {
     Caml_state->backtrace_active = flag;
     Caml_state->backtrace_pos = 0;
-    caml_modify_generational_global_root(&Caml_state->backtrace_last_exn, Val_unit);
+    caml_modify_generational_global_root(&Caml_state->backtrace_last_exn,
+                                         Val_unit);
   }
   return;
 }
@@ -182,7 +183,8 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
 
     res = caml_alloc(saved_caml_backtrace_pos, 0);
     for (i = 0; i < saved_caml_backtrace_pos; i++) {
-      caml_initialize(&Field(res, i), Val_backtrace_slot(saved_caml_backtrace_buffer[i]));
+      caml_initialize(&Field(res, i),
+                      Val_backtrace_slot(saved_caml_backtrace_buffer[i]));
     }
   }
 
@@ -214,7 +216,8 @@ CAMLprim value caml_restore_raw_backtrace(value exn, value backtrace)
   }
 
   /* Allocate if needed and copy the backtrace buffer */
-  if (domain_state->backtrace_buffer == NULL && caml_alloc_backtrace_buffer() == -1){
+  if (domain_state->backtrace_buffer == NULL
+      && caml_alloc_backtrace_buffer() == -1){
     return Val_unit;
   }
 

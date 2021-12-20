@@ -64,7 +64,8 @@ CAMLextern value caml_alloc_custom_mem(const struct custom_operations * ops,
                                        uintnat size, /*size in bytes*/
                                        mlsize_t mem  /*memory consumed*/);
 
-CAMLextern void caml_register_custom_operations(const struct custom_operations * ops);
+CAMLextern void
+          caml_register_custom_operations(const struct custom_operations * ops);
 
 /* Global variable moved to Caml_state in 4.10 */
 #define caml_compare_unordered (Caml_state_field(compare_unordered))

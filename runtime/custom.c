@@ -56,7 +56,8 @@ static value alloc_custom_gen (const struct custom_operations * ops,
       }
       /* The remaining [mem_minor] will be counted if the block survives a
          minor GC */
-      add_to_custom_table (&Caml_state->minor_tables->custom, result, mem, max_major);
+      add_to_custom_table (&Caml_state->minor_tables->custom, result,
+                           mem, max_major);
       /* Keep track of extra resources held by custom block in
          minor heap. */
       if (mem_minor != 0) {
@@ -116,7 +117,8 @@ struct custom_operations_list {
 
 static struct custom_operations_list * custom_ops_table = NULL;
 
-CAMLexport void caml_register_custom_operations(const struct custom_operations * ops)
+CAMLexport void
+caml_register_custom_operations(const struct custom_operations * ops)
 {
   struct custom_operations_list * l =
     caml_stat_alloc(sizeof(struct custom_operations_list));
@@ -131,7 +133,8 @@ struct custom_operations * caml_find_custom_operations(char * ident)
 {
   struct custom_operations_list * l;
   for (l = custom_ops_table; l != NULL; l = l->next)
-    if (strcmp(l->ops->identifier, ident) == 0) return (struct custom_operations*)l->ops;
+    if (strcmp(l->ops->identifier, ident) == 0)
+      return (struct custom_operations*)l->ops;
   return NULL;
 }
 

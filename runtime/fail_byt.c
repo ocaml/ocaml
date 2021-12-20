@@ -104,7 +104,8 @@ CAMLexport void caml_raise_with_string(value tag, char const *msg)
 static void check_global_data(char const *exception_name)
 {
   if (caml_global_data == 0 || !Is_block(caml_global_data)) {
-    fprintf(stderr, "Fatal error: exception %s during initialisation\n", exception_name);
+    fprintf(stderr, "Fatal error: exception %s during initialisation\n",
+            exception_name);
     exit(2);
   }
 }

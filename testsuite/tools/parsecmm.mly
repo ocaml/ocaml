@@ -255,19 +255,27 @@ expr:
                 { unbind_ident $5; Ctrywith($3, $5, $6, debuginfo ()) }
   | LPAREN VAL expr expr RPAREN
       { let open Asttypes in
-        Cop(Cload {memory_chunk=Word_val; mutability=Mutable; is_atomic=false}, [access_array $3 $4 Arch.size_addr],
+        Cop(Cload {memory_chunk=Word_val;
+                   mutability=Mutable;
+                   is_atomic=false}, [access_array $3 $4 Arch.size_addr],
           debuginfo ()) }
   | LPAREN ADDRAREF expr expr RPAREN
       { let open Asttypes in
-        Cop(Cload {memory_chunk=Word_val; mutability=Mutable; is_atomic=false}, [access_array $3 $4 Arch.size_addr],
+        Cop(Cload {memory_chunk=Word_val;
+                   mutability=Mutable;
+                   is_atomic=false}, [access_array $3 $4 Arch.size_addr],
           Debuginfo.none) }
   | LPAREN INTAREF expr expr RPAREN
       { let open Asttypes in
-        Cop(Cload {memory_chunk=Word_int; mutability=Mutable; is_atomic=false}, [access_array $3 $4 Arch.size_int],
+        Cop(Cload {memory_chunk=Word_int;
+                   mutability=Mutable;
+                   is_atomic=false}, [access_array $3 $4 Arch.size_int],
           Debuginfo.none) }
   | LPAREN FLOATAREF expr expr RPAREN
       { let open Asttypes in
-        Cop(Cload {memory_chunk=Double; mutability=Mutable; is_atomic=false}, [access_array $3 $4 Arch.size_float],
+        Cop(Cload {memory_chunk=Double;
+                   mutability=Mutable;
+                   is_atomic=false}, [access_array $3 $4 Arch.size_float],
           Debuginfo.none) }
   | LPAREN ADDRASET expr expr expr RPAREN
       { let open Lambda in
@@ -323,7 +331,9 @@ chunk:
   | VAL                         { Word_val }
 ;
 unaryop:
-    LOAD chunk                  { Cload {memory_chunk=$2; mutability=Asttypes.Mutable; is_atomic=false} }
+    LOAD chunk                  { Cload {memory_chunk=$2;
+                                         mutability=Asttypes.Mutable;
+                                         is_atomic=false} }
   | FLOATOFINT                  { Cfloatofint }
   | INTOFFLOAT                  { Cintoffloat }
   | RAISE                       { Craise $1 }

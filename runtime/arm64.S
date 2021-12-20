@@ -175,18 +175,21 @@ name:
  * from the bottom of the OCaml stack. Clobbers REG. */
 #define SWITCH_C_TO_OCAML(REG) \
         SWITCH_C_TO_OCAML_NO_CTXT(REG); \
-    /* Pop the caml_context from the bottom of stack updating TRAP_OFF and return address. */ \
+    /* Pop the caml_context from the bottom of stack updating TRAP_OFF and
+       return address. */ \
         ldr     x30, [sp, 24]; \
         ldr     TRAP_OFF, [sp], 32
 
-/* Restore exception handler for OCaml code. Cuts stack, and loads target address in TMP. */
+/* Restore exception handler for OCaml code. Cuts stack, and loads target
+   address in TMP. */
 #define RESTORE_EXN_HANDLER_OCAML \
         LOAD_TL_VAR(caml_stack_high, TMP); \
         sub     sp, TMP, TRAP_OFF; \
         ldr     TMP, [sp, 8]; \
         ldr     TRAP_OFF, [sp], 16
 
-/* Load [caml_system_stack_high - TRAP_OFF] into sp. Cuts the stack, and loads the target address in TMP. */
+/* Load [caml_system_stack_high - TRAP_OFF] into sp. Cuts the stack, and loads
+   the target address in TMP. */
 #define RESTORE_EXN_HANDLER_SYS \
         LOAD_TL_VAR(caml_system_stack_high, TMP); \
         sub     sp, TMP, TRAP_OFF; \
@@ -220,11 +223,13 @@ caml_system__code_begin:
 
 #define SAVE_ALL_REGS_AND_CALL(TARGET_FUN)  \
     /* Set up stack space, saving return address and frame pointer */ \
-    /* (2 regs RA/GP, 24 allocatable int regs, 24 caller-save float regs) * 8 */ \
+    /* (2 regs RA/GP, 24 allocatable int regs, 24 caller-save float regs) * 8 \
+     */ \
         stp     x29, x30, [sp, -400]!; \
         CFI_ADJUST(400); \
         add     x29, sp, 0 ; \
-    /* Save allocatable integer registers on the stack, in the order given in proc.ml */ \
+    /* Save allocatable integer registers on the stack, in the order given in \
+       proc.ml */ \
         stp     x0, x1, [sp, 16]; \
         stp     x2, x3, [sp, 32]; \
         stp     x4, x5, [sp, 48]; \
@@ -312,7 +317,8 @@ CFI_ENDPROC
         .size   caml_call_realloc_stack, .-caml_call_realloc_stack
 
 
-/* TODO KC: define MK_CAML_ALLOC(SZ) macro for generating caml_allocX functions. */
+/* TODO KC: define MK_CAML_ALLOC(SZ) macro for generating caml_allocX
+            functions. */
 
 FUNCTION(caml_alloc1)
 CFI_STARTPROC
@@ -690,7 +696,8 @@ CFI_STARTPROC
         LOAD_TL_VAR(caml_current_stack, x1)
         str     xzr, Stack_sp(x1)               /* zero SP */
         ldr     x20, Stack_handle_exception(x1) /* exception handler */
-        ldr     x0, Stack_parent(x1)            /* parent stack. Never NULL here. */
+        ldr     x0, Stack_parent(x1)            /* parent stack. Never NULL
+                                                   here. */
     /* Reset stack */
         mov     TMP, 1
         str     TMP, Stack_handle_value(x1)
@@ -715,7 +722,8 @@ CFI_STARTPROC
         LOAD_TL_VAR(caml_current_stack, x1)
         str     xzr, Stack_sp(x1)             /* zero SP */
         ldr     x20, Stack_handle_value(x1)   /* value handler */
-        ldr     x0, Stack_parent(x1)          /* parent stack. Never NULL here. */
+        ldr     x0, Stack_parent(x1)          /* parent stack. Never NULL
+                                                 here. */
     /* Reset stack. First pop off fiber exn handler. */
         add     sp, sp, 16
         CFI_ADJUST(-16)
@@ -744,7 +752,8 @@ CFI_STARTPROC
         b.eq    1f
         ldr     x21, Stack_handle_effect(x20)   /* effect handler */
         mov     TMP, 1
-        str     TMP, Stack_parent(x20)          /* Set parent stack of performer to NULL */
+        str     TMP, Stack_parent(x20)          /* Set parent stack of performer
+                                                   to NULL */
     /* Switch stacks */
         SWITCH_OCAML_STACKS
     /* Invoke effect handler */
@@ -769,8 +778,10 @@ CFI_STARTPROC
         cmp     x0, 1                           /* Parent is NULL? */
         b.eq    1f
         str     x1, Stack_parent(x2)            /* Set performer as parent */
-        mov     x20, x2                         /* Save current stack in callee-saved x20 */
-        ldr     x21, Stack_handle_effect(x2)    /* Save effect handler in callee-saved x21 */
+        mov     x20, x2                         /* Save current stack in
+                                                   callee-saved x20 */
+        ldr     x21, Stack_handle_effect(x2)    /* Save effect handler in
+                                                   callee-saved x21 */
     /* Switch stacks */
         SWITCH_OCAML_STACKS
     /* Invoke effect handler */
@@ -837,11 +848,13 @@ caml_system__code_end:
 caml_system__frametable:
         .quad   2                   /* two descriptors */
         .quad   .Lcaml_retaddr      /* return address into callback */
-        .short  -1                  /* negative frame size => use callback link */
+        .short  -1                  /* negative frame size => use callback
+                                       link */
         .short  0                   /* no roots */
         .align  3
         .quad   .Lfiber_val_handler /* return address into fiber_val_handler */
-        .short  -1                  /* negative frame size => use callback link */
+        .short  -1                  /* negative frame size => use callback
+                                       link */
         .short  0                   /* no roots */
         .align  3
         .type   caml_system__frametable, %object

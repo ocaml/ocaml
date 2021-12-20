@@ -25,5 +25,3 @@ let () =
     let _ = Array.make (Random.int 30) 'a' in ()
   done;
   print_string "ok\n"
-
-
