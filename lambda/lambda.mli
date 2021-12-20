@@ -266,6 +266,7 @@ type function_attribute = {
   local: local_attribute;
   is_a_functor: bool;
   stub: bool;
+  tmc_candidate: bool;
 }
 
 type scoped_location = Debuginfo.Scoped_location.t
@@ -436,6 +437,8 @@ val default_function_attribute : function_attribute
 val default_stub_attribute : function_attribute
 
 val function_is_curried : lfunction -> bool
+val find_exact_application :
+  function_kind -> arity:int -> lambda list -> lambda list option
 
 val max_arity : unit -> int
   (** Maximal number of parameters for a function, or in other words,

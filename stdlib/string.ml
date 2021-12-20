@@ -267,6 +267,17 @@ let to_seqi s = bos s |> B.to_seqi
 
 let of_seq g = B.of_seq g |> bts
 
+(* UTF decoders and validators *)
+
+let get_utf_8_uchar s i = B.get_utf_8_uchar (bos s) i
+let is_valid_utf_8 s = B.is_valid_utf_8 (bos s)
+
+let get_utf_16be_uchar s i = B.get_utf_16be_uchar (bos s) i
+let is_valid_utf_16be s = B.is_valid_utf_16be (bos s)
+
+let get_utf_16le_uchar s i = B.get_utf_16le_uchar (bos s) i
+let is_valid_utf_16le s = B.is_valid_utf_16le (bos s)
+
 (** {6 Binary encoding/decoding of integers} *)
 
 external get_uint8 : string -> int -> int = "%string_safe_get"
