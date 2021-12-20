@@ -73,6 +73,9 @@ testsuite/disabled       typo.missing-header
 .depend                  typo.prune
 /.depend.menhir          typo.prune
 
+# These can be fixed at some point
+/tools/*.py              typo.long-line
+
 # Makefiles may contain tabs
 Makefile*                typo.makefile-whitespace=may
 
