@@ -485,9 +485,31 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
       goto alloc_main_stack_failure;
     }
 
+    domain_state->c_stack = NULL;
+    domain_state->exn_handler = NULL;
+
+    domain_state->gc_regs_buckets = NULL;
+    domain_state->gc_regs = NULL;
+    domain_state->gc_regs_slot = NULL;
+
+    domain_state->allocated_words = 0;
+    domain_state->swept_words = 0;
+
+    domain_state->local_roots = NULL;
+
     domain_state->backtrace_buffer = NULL;
     domain_state->backtrace_last_exn = Val_unit;
+    domain_state->backtrace_active = 0;
     caml_register_generational_global_root(&domain_state->backtrace_last_exn);
+
+    domain_state->compare_unordered = 0;
+    domain_state->oo_next_id_local = 0;
+
+    domain_state->requested_major_slice = 0;
+    domain_state->requested_minor_gc = 0;
+    domain_state->requested_external_interrupt = 0;
+
+    domain_state->parser_trace = 0;
 
     if (caml_params->backtrace_enabled) {
       caml_record_backtraces(1);
@@ -496,6 +518,7 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
 #ifndef NATIVE_CODE
     domain_state->external_raise = NULL;
     domain_state->trap_sp_off = 1;
+    domain_state->trap_barrier_off = 0;
 #endif
 
     add_to_stw_domains(domain_self);
