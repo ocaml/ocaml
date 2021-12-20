@@ -765,7 +765,8 @@ and 'a class_infos =
 type implementation = {
   structure: structure;
   coercion: module_coercion;
-  signature: Types.signature
+  signature: Types.signature;
+  shape: Shape.t;
 }
 (** A typechecked implementation including its module structure, its exported
     signature, and a coercion of the module against that signature.
