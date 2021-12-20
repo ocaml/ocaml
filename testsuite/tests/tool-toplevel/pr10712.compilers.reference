@@ -1,0 +1,5 @@
+module A :
+  sig type ('foo, 'bar) t val get_foo : ('foo, 'a) t -> 'foo option end
+- : ('foo, 'a) A.t -> 'foo option = <fun>
+val _bar : ('a, 'b) A.t -> 'a option = <fun>
+
