@@ -23,15 +23,15 @@
 *)
 
 opam-version: "2.0"
-version: "4.14.0+domains"
+version: "5.0.0+trunk"
 license: "LGPL-2.1-or-later WITH OCaml-LGPL-linking-exception"
-synopsis: "OCaml 4.14.0, with support for multicore domains (dev branch)"
+synopsis: "OCaml 5.0.0, with support for multicore domains (dev branch)"
 maintainer: "kc@kcsrk.info"
 authors: "Xavier Leroy and many contributors"
 homepage: "https://github.com/ocaml-multicore/ocaml-multicore"
 bug-reports: "https://github.com/ocaml-multicore/ocaml-multicore/issues"
 depends: [
-  "ocaml" {= "4.14.0" & post}
+  "ocaml" {= "5.0.0" & post}
   "base-unix" {post}
   "base-bigarray" {post}
   "base-threads" {post}
