@@ -1559,6 +1559,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_dparsetree F._dparsetree;
     mk_dtypedtree F._dtypedtree;
     mk_drawlambda F._drawlambda;
+    mk_dlambda F._dlambda;
     mk_drawclambda F._drawclambda;
     mk_dclambda F._dclambda;
     mk_dcmm_invariants F._dcmm_invariants;

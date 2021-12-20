@@ -9,6 +9,9 @@
 
 *)
 
+(* This will have to be ported to the new ephemeron API *)
+[@@@alert "-old_ephemeron_api"]
+
 let nb_test = 4
 let max_level = 10
  (** probability that a branch is not linked to a previous one *)
