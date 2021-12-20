@@ -111,6 +111,12 @@ Working version
   (Sébastien Hinderer, review by Damien Doligez, Gabriel Scherer, David
   Allsopp, Nicolás Ojeda Bär, Vincent Laviron)
 
+- #10642: On Windows, Sys.remove and Unix.unlink now remove symlinks
+  to directories instead of raising EACCES. Introduce
+  caml/winsupport.h to hold more common code between the runtime,
+  lib-sys, and win32unix.
+  (Antonin Décimo, review by David Allsopp and Xavier Leroy)
+  
 - #10737: add new ephemeron API for forward compatibility with Multicore
   OCaml.
   (Damien Doligez, review by Stephen Dolan)
@@ -174,6 +180,9 @@ Working version
   for ocamlrun command line options
   (Dong An and Anukriti Kumar, review by David Allsopp, Gabriel Scherer
    and Damien Doligez)
+
+- #10281, #10685: Add description of C compiler on macOS and Windows platforms.
+  (Dong An, review by Xavier Leroy and David Allsopp)
 
 - #10605: manual, name few css classes to ease styling and maintainability.
   (Florian Angeletti, review by Wiktor Kuchta and Gabriel Scherer)

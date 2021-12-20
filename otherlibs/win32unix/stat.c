@@ -34,6 +34,7 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <winioctl.h>
+#include "caml/winsupport.h"
 
 #ifndef S_IFLNK
 /*

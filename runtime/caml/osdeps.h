@@ -111,6 +111,7 @@ extern int caml_num_rows_fd(int fd);
 #ifdef _WIN32
 
 extern int caml_win32_rename(const wchar_t *, const wchar_t *);
+CAMLextern int caml_win32_unlink(const wchar_t *);
 
 extern void caml_probe_win32_version(void);
 extern void caml_setup_win32_terminal(void);

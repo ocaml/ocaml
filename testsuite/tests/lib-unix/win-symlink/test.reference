@@ -1,2 +1,8 @@
 Unix.symlink works with backwards slashes
 Unix.symlink works with forward slashes
+Unix.unlink cannot delete directories
+Sys.remove cannot delete directories
+Unix.unlink can delete symlinks to directories
+Unix.unlink can delete symlinks to files
+Sys.remove can delete symlinks to directories
+Sys.remove can delete symlinks to files
