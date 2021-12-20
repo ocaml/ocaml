@@ -291,16 +291,16 @@ let mk_compare_ints dbg a1 a2 =
   | Cconst_natint (c1, _), Cconst_int (c2, _) ->
      int_const dbg Nativeint.(compare c1 (of_int c2))
   | a1, a2 -> begin
-      bind "int_cmp" a1 (fun a1 ->
-        bind "int_cmp" a2 (fun a2 ->
+      bind "int_cmp" a2 (fun a2 ->
+        bind "int_cmp" a1 (fun a1 ->
           let op1 = Cop(Ccmpi(Cgt), [a1; a2], dbg) in
           let op2 = Cop(Ccmpi(Clt), [a1; a2], dbg) in
           tag_int(sub_int op1 op2 dbg) dbg))
     end
 
 let mk_compare_floats dbg a1 a2 =
-  bind "float_cmp" a1 (fun a1 ->
-    bind "float_cmp" a2 (fun a2 ->
+  bind "float_cmp" a2 (fun a2 ->
+    bind "float_cmp" a1 (fun a1 ->
       let op1 = Cop(Ccmpf(CFgt), [a1; a2], dbg) in
       let op2 = Cop(Ccmpf(CFlt), [a1; a2], dbg) in
       let op3 = Cop(Ccmpf(CFeq), [a1; a1], dbg) in
@@ -520,8 +520,8 @@ let is_different_from x = function
   | _ -> false
 
 let safe_divmod_bi mkop is_safe mkm1 c1 c2 bi dbg =
-  bind "dividend" c1 (fun c1 ->
   bind "divisor" c2 (fun c2 ->
+  bind "dividend" c1 (fun c1 ->
     let c = mkop c1 c2 is_safe dbg in
     if Arch.division_crashes_on_overflow
     && (size_int = 4 || bi <> Primitive.Pint32)
@@ -2284,8 +2284,8 @@ let stringref_unsafe arg1 arg2 dbg =
 
 let stringref_safe arg1 arg2 dbg =
   tag_int
-    (bind "str" arg1 (fun str ->
-      bind "index" (untag_int arg2 dbg) (fun idx ->
+    (bind "index" (untag_int arg2 dbg) (fun idx ->
+      bind "str" arg1 (fun str ->
         Csequence(
           make_checkbound dbg [string_length str dbg; idx],
           Cop(Cload (Byte_unsigned, Mutable),
@@ -2293,17 +2293,17 @@ let stringref_safe arg1 arg2 dbg =
 
 let string_load size unsafe arg1 arg2 dbg =
   box_sized size dbg
-    (bind "str" arg1 (fun str ->
-     bind "index" (untag_int arg2 dbg) (fun idx ->
+    (bind "index" (untag_int arg2 dbg) (fun idx ->
+     bind "str" arg1 (fun str ->
        check_bound unsafe size dbg
           (string_length str dbg)
           idx (unaligned_load size str idx dbg))))
 
 let bigstring_load size unsafe arg1 arg2 dbg =
   box_sized size dbg
-   (bind "ba" arg1 (fun ba ->
-    bind "index" (untag_int arg2 dbg) (fun idx ->
-    bind "ba_data"
+    (bind "index" (untag_int arg2 dbg) (fun idx ->
+     bind "ba" arg1 (fun ba ->
+     bind "ba_data"
      (Cop(Cload (Word_int, Mutable), [field_address ba 1 dbg], dbg))
      (fun ba_data ->
         check_bound unsafe size dbg
@@ -2314,8 +2314,8 @@ let bigstring_load size unsafe arg1 arg2 dbg =
 let arrayref_unsafe kind arg1 arg2 dbg =
   match (kind : Lambda.array_kind) with
   | Pgenarray ->
-      bind "arr" arg1 (fun arr ->
-        bind "index" arg2 (fun idx ->
+      bind "index" arg2 (fun idx ->
+        bind "arr" arg1 (fun arr ->
           Cifthenelse(is_addr_array_ptr arr dbg,
                       dbg,
                       addr_array_ref arr idx dbg,
@@ -2402,14 +2402,14 @@ let bytesset_unsafe arg1 arg2 arg3 dbg =
 
 let bytesset_safe arg1 arg2 arg3 dbg =
   return_unit dbg
-    (bind "str" arg1 (fun str ->
+    (bind "newval" (ignore_high_bit_int (untag_int arg3 dbg)) (fun newval ->
       bind "index" (untag_int arg2 dbg) (fun idx ->
+       bind "str" arg1 (fun str ->
         Csequence(
           make_checkbound dbg [string_length str dbg; idx],
           Cop(Cstore (Byte_unsigned, Assignment),
-              [add_int str idx dbg;
-               ignore_high_bit_int (untag_int arg3 dbg)],
-              dbg)))))
+              [add_int str idx dbg; newval],
+              dbg))))))
 
 let arrayset_unsafe kind arg1 arg2 arg3 dbg =
   return_unit dbg (match (kind: Lambda.array_kind) with
@@ -2497,17 +2497,17 @@ let arrayset_safe kind arg1 arg2 arg3 dbg =
 
 let bytes_set size unsafe arg1 arg2 arg3 dbg =
   return_unit dbg
-   (bind "str" arg1 (fun str ->
+   (bind "newval" arg3 (fun newval ->
     bind "index" (untag_int arg2 dbg) (fun idx ->
-    bind "newval" arg3 (fun newval ->
+    bind "str" arg1 (fun str ->
       check_bound unsafe size dbg (string_length str dbg)
                   idx (unaligned_set size str idx newval dbg)))))
 
 let bigstring_set size unsafe arg1 arg2 arg3 dbg =
   return_unit dbg
-   (bind "ba" arg1 (fun ba ->
+   (bind "newval" arg3 (fun newval ->
     bind "index" (untag_int arg2 dbg) (fun idx ->
-    bind "newval" arg3 (fun newval ->
+    bind "ba" arg1 (fun ba ->
     bind "ba_data"
          (Cop(Cload (Word_int, Mutable), [field_address ba 1 dbg], dbg))
          (fun ba_data ->
