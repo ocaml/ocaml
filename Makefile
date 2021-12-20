@@ -607,7 +607,7 @@ endif
 # Run all tests
 
 .PHONY: tests
-tests:
+tests: ocamltest
 	$(MAKE) -C testsuite all
 
 # Make clean in the test suite
