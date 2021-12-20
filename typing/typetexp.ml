@@ -764,7 +764,7 @@ let report_error env ppf = function
          l l
   | Constructor_mismatch (ty, ty') ->
       wrap_printing_env ~error:true env (fun ()  ->
-        Printtyp.reset_and_mark_loops_list [ty; ty'];
+        Printtyp.prepare_for_printing [ty; ty'];
         fprintf ppf "@[<hov>%s %a@ %s@ %a@]"
           "This variant type contains a constructor"
           !Oprint.out_type (tree_of_typexp Type ty)

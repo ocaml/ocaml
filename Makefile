@@ -256,7 +256,7 @@ endif
 	$(MAKE) ocamlopt.opt
 	$(MAKE) otherlibrariesopt
 	$(MAKE) ocamllex.opt ocamltoolsopt ocamltoolsopt.opt $(OCAMLDOC_OPT) \
-	  $(OCAMLTEST_OPT)
+	  $(OCAMLTEST_OPT) ocamlnat
 ifeq "$(WITH_OCAMLDOC)-$(STDLIB_MANPAGES)" "ocamldoc-true"
 	$(MAKE) manpages
 endif
@@ -566,6 +566,7 @@ ifeq "$(BOOTSTRAPPING_FLEXDLL)" "true"
 endif
 	$(INSTALL_DATA) \
 	   utils/*.cmx parsing/*.cmx typing/*.cmx bytecomp/*.cmx \
+	   toplevel/*.cmx toplevel/native/*.cmx \
 	   file_formats/*.cmx \
 	   lambda/*.cmx \
 	   driver/*.cmx asmcomp/*.cmx middle_end/*.cmx \
@@ -579,15 +580,11 @@ endif
 	$(INSTALL_DATA) \
 	   $(BYTESTART:.cmo=.cmx) $(BYTESTART:.cmo=.$(O)) \
 	   $(OPTSTART:.cmo=.cmx) $(OPTSTART:.cmo=.$(O)) \
+	   $(TOPLEVELSTART:.cmo=.$(O)) \
 	   "$(INSTALL_COMPLIBDIR)"
-	if test -f ocamlnat$(EXE) ; then \
-	  $(INSTALL_PROG) ocamlnat$(EXE) "$(INSTALL_BINDIR)"; \
-	  $(INSTALL_DATA) \
-	     toplevel/*.cmx \
-	     toplevel/native/*.cmx \
-	     $(TOPLEVELSTART:.cmo=.$(O)) \
-	     "$(INSTALL_COMPLIBDIR)"; \
-	fi
+ifeq "$(INSTALL_OCAMLNAT)" "true"
+	  $(INSTALL_PROG) ocamlnat$(EXE) "$(INSTALL_BINDIR)"
+endif
 	cd "$(INSTALL_COMPLIBDIR)" && \
 	   $(RANLIB) ocamlcommon.$(A) ocamlbytecomp.$(A) ocamloptcomp.$(A)
 
@@ -1074,13 +1071,16 @@ endif
 
 # The native toplevel
 
-ocamlnat$(EXE): compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
-    compilerlibs/ocamlbytecomp.cmxa \
-    otherlibs/dynlink/dynlink.cmxa \
-    compilerlibs/ocamltoplevel.cmxa \
-    $(TOPLEVELSTART:.cmo=.cmx)
-	$(CAMLOPT_CMD) $(LINKFLAGS) -linkall -I toplevel/native -o $@ $^
+ocamlnat_dependencies := \
+  compilerlibs/ocamlcommon.cmxa \
+  compilerlibs/ocamloptcomp.cmxa \
+  compilerlibs/ocamlbytecomp.cmxa \
+  otherlibs/dynlink/dynlink.cmxa \
+  compilerlibs/ocamltoplevel.cmxa \
+  $(TOPLEVELSTART:.cmo=.cmx)
 
+ocamlnat$(EXE): $(ocamlnat_dependencies)
+	$(CAMLOPT_CMD) $(LINKFLAGS) -linkall -I toplevel/native -o $@ $^
 
 toplevel/topdirs.cmx: toplevel/topdirs.ml
 	$(CAMLOPT_CMD) $(COMPFLAGS) $(OPTCOMPFLAGS) -I toplevel/native -c $<

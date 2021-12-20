@@ -699,10 +699,9 @@ Error: Signature mismatch:
          val f : (#c as 'a) -> 'a
        is not included in
          val f : #c -> #c
-       The type (#c as 'a) -> 'a is not compatible with the type
-         'a -> (#c as 'b)
-       Type 'a = < m : 'a; .. > is not compatible with type
-         'b = < m : 'b; .. >
+       The type (#c as 'a) -> 'a is not compatible with the type #c -> #c
+       Type #c as 'a = < m : 'a; .. > is not compatible with type
+         #c as 'b = < m : 'b; .. >
        Type 'a is not compatible with type 'b
 |}];;
 
@@ -1013,12 +1012,12 @@ Lines 3-5, characters 8-3:
 3 | ........object (self)
 4 |   method m = self
 5 | end..
-Error: The class type object ('a) method m : 'a end
+Error: The class type object ('a) method m : < m : 'a; .. > as 'a end
        is not matched by the class type
          object method m : < m : 'a > as 'a end
        The method m has type < m : 'a; .. > as 'a
        but is expected to have type < m : 'b > as 'b
-       Type 'a is not compatible with type <  > as 'b
+       Type 'a is not compatible with type <  >
 |}];;
 
 class c :
@@ -1071,7 +1070,8 @@ class c : object('self) method m : < m : 'a; x : int; ..> -> unit as 'a end =
 Line 2, characters 4-52:
 2 |     object (_ : 'self) method m (_ : 'self) = () end;;
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The class type object ('a) method m : 'a -> unit end
+Error: The class type
+         object ('a) method m : (< m : 'a -> unit; .. > as 'a) -> unit end
        is not matched by the class type
          object method m : < m : 'a; x : int; .. > -> unit as 'a end
        The method m has type (< m : 'a -> unit; .. > as 'a) -> unit
