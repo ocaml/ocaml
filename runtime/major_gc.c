@@ -348,7 +348,7 @@ double caml_mean_space_overhead ()
 
 static void update_major_slice_work() {
   double p, dp, heap_words;
-  intnat computed_work, limit;
+  intnat computed_work;
   caml_domain_state *dom_st = Caml_state;
   uintnat heap_size, heap_sweep_words, saved_terminated_words;
   /*
@@ -394,11 +394,16 @@ static void update_major_slice_work() {
     while(!atomic_compare_exchange_strong
             (&terminated_domains_allocated_words, &saved_terminated_words, 0));
   }
-  p = (double) (saved_terminated_words
+
+  if (heap_words > 0) {
+    p = (double) (saved_terminated_words
                 + dom_st->allocated_words) * 3.0 * (100 + caml_percent_free)
                 / heap_words / caml_percent_free / 2.0;
+  } else {
+    p = 0.0;
+  }
 
-  if (dom_st->dependent_size > 0){
+  if (dom_st->dependent_size > 0) {
     dp = (double) dom_st->dependent_allocated * (100 + caml_percent_free)
          / dom_st->dependent_size / caml_percent_free;
   }else{
@@ -408,22 +413,12 @@ static void update_major_slice_work() {
 
   if (p < dom_st->extra_heap_resources) p = dom_st->extra_heap_resources;
 
-  if (p > 0.3) p = 0.3;
-
   computed_work = (intnat) (p * (heap_sweep_words
                             + (heap_words * 100 / (100 + caml_percent_free))));
 
   /* accumulate work */
   dom_st->major_work_computed += computed_work;
   dom_st->major_work_todo += computed_work;
-
-  /* cap accumulated work todo to p = 0.3 */
-  limit = (intnat)(0.3 * (heap_sweep_words
-                            + (heap_words * 100 / (100 + caml_percent_free))));
-  if (dom_st->major_work_todo > limit)
-  {
-    dom_st->major_work_todo = limit;
-  }
 
   caml_gc_message (0x40, "heap_words = %"
                          ARCH_INTNAT_PRINTF_FORMAT "u\n",
@@ -471,6 +466,20 @@ static intnat get_major_slice_work(intnat howmuch) {
     computed_work = (dom_st->major_work_todo > 0)
       ? dom_st->major_work_todo
       : 0;
+
+    /* cap computed_work to 0.3 */
+    {
+      uintnat heap_size = caml_heap_size(dom_st->shared_heap);
+      uintnat heap_words = (double)Wsize_bsize(heap_size);
+      uintnat heap_sweep_words = heap_words;
+      intnat limit = (intnat)(0.3 * (heap_sweep_words
+                            + (heap_words * 100 / (100 + caml_percent_free))));
+
+      if (computed_work > limit)
+      {
+        computed_work = limit;
+      }
+    }
   } else {
     /* forced or opportunistic GC slice with explicit quantity */
     computed_work = howmuch;
@@ -528,7 +537,9 @@ static struct pool* find_pool_to_rescan();
 
 
 #ifdef DEBUG
-#define Is_markable(v) (Is_block(v) && !Is_young(v) && v != Debug_free_major)
+#define Is_markable(v) \
+    (CAMLassert (v != Debug_free_major), \
+     Is_block(v) && !Is_young(v))
 #else
 #define Is_markable(v) (Is_block(v) && !Is_young(v))
 #endif
@@ -625,8 +636,7 @@ static void mark_stack_push_act(void* state, value v, value* ignored) {
 }
 
 /* This function shrinks the mark stack back to the MARK_STACK_INIT_SIZE size
-   and is called at the end of a GC compaction to avoid a mark stack greater
-   than 1/32th of the heap. */
+   and is called at domain termination via caml_finish_marking. */
 void caml_shrink_mark_stack () {
   struct mark_stack* stk = Caml_state->mark_stack;
   intnat init_stack_bsize = MARK_STACK_INIT_SIZE * sizeof(mark_entry);
@@ -685,7 +695,7 @@ static void mark_slice_darken(struct mark_stack* stk, value v, mlsize_t i,
         if(Tag_hd(chd) < No_scan_tag){
           mark_stack_push(stk, child, 0, work);
         } else {
-          *work -= Wosize_hd(chd); /* account for header */
+          *work -= Wosize_hd(chd);
         }
       }
     }
@@ -1410,36 +1420,34 @@ mark_again:
     }
   }
 
-  return budget;
+  return interrupted_budget;
 }
 
-intnat caml_opportunistic_major_collection_slice(intnat howmuch)
+void caml_opportunistic_major_collection_slice(intnat howmuch)
 {
-  return major_collection_slice(howmuch, 0, 0, Slice_opportunistic);
+  major_collection_slice(howmuch, 0, 0, Slice_opportunistic);
 }
 
-intnat caml_major_collection_slice(intnat howmuch)
+void caml_major_collection_slice(intnat howmuch)
 {
-  intnat work_left;
 
   /* if this is an auto-triggered GC slice, make it interruptible */
   if (howmuch == AUTO_TRIGGERED_MAJOR_SLICE) {
-    work_left = major_collection_slice(
+    intnat interrupted_work = major_collection_slice(
         AUTO_TRIGGERED_MAJOR_SLICE,
         0,
         0,
-        Slice_interruptible);
-    if (get_major_slice_work(AUTO_TRIGGERED_MAJOR_SLICE) > 0) {
+        Slice_interruptible
+        );
+    if (interrupted_work > 0) {
       caml_gc_log("Major slice interrupted, rescheduling major slice");
       caml_request_major_slice();
     }
   } else {
     /* TODO: could make forced API slices interruptible, but would need to do
        accounting or pass up interrupt */
-    work_left = major_collection_slice(howmuch, 0, 0, Slice_uninterruptible);
+    major_collection_slice(howmuch, 0, 0, Slice_uninterruptible);
   }
-
-  return work_left;
 }
 
 static void finish_major_cycle_callback (caml_domain_state* domain, void* arg,
@@ -1453,7 +1461,8 @@ static void finish_major_cycle_callback (caml_domain_state* domain, void* arg,
     (domain, (void*)0, participating_count, participating);
 
   while (saved_major_cycles == caml_major_cycles_completed) {
-    major_collection_slice(10000000, participating_count, participating, 0);
+    major_collection_slice(10000000, participating_count, participating,
+                           Slice_uninterruptible);
   }
 }
 

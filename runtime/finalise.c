@@ -299,6 +299,7 @@ void caml_final_merge_finalisable
   uintnat new_size;
 
   CAMLassert (target->old <= target->young);
+  /* to merge the source structure, all its values are in the major heap */
   CAMLassert (source->old == source->young);
   if (target->young + source->young >= target->size) {
     new_size = 2 * (target->young + source->young);
@@ -313,10 +314,13 @@ void caml_final_merge_finalisable
       target->size = new_size;
     }
   }
+  /* all values from the source are old, we will prepend them
+     into the old area of the target */
   memmove(target->table + source->young, target->table,
           target->young * sizeof (struct final));
   memcpy(target->table, source->table,
          source->young * sizeof (struct final));
+  /* adjust indices for the prepended values from the source */
   target->old += source->young;
   target->young += source->young;
 
