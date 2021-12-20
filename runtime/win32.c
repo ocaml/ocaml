@@ -1092,3 +1092,7 @@ int caml_thread_setname(wchar_t *name)
 {
   return -1;
 }
+
+void caml_increase_native_stack_size(void)
+{
+}

@@ -1889,6 +1889,7 @@ let send_function arity =
     fun_args = List.map (fun (arg, ty) -> VP.create arg, ty) fun_args;
     fun_body = body;
     fun_codegen_options = [];
+    fun_poll = Default_poll;
     fun_dbg;
    }
 
@@ -1902,6 +1903,7 @@ let apply_function arity =
     fun_args = List.map (fun arg -> (VP.create arg, typ_val)) all_args;
     fun_body = body;
     fun_codegen_options = [];
+    fun_poll = Default_poll;
     fun_dbg;
    }
 
@@ -1930,6 +1932,7 @@ let tuplify_function arity =
           :: access_components 0 @ [Cvar clos],
           (dbg ()));
     fun_codegen_options = [];
+    fun_poll = Default_poll;
     fun_dbg;
    }
 
@@ -1999,6 +2002,7 @@ let final_curry_function arity =
     fun_args = [VP.create last_arg, typ_val; VP.create last_clos, typ_val];
     fun_body = curry_fun [] last_clos (arity-1);
     fun_codegen_options = [];
+    fun_poll = Default_poll;
     fun_dbg;
    }
 
@@ -2033,6 +2037,7 @@ let rec intermediate_curry_functions arity num =
                  Cvar arg; Cvar clos],
                 dbg ());
       fun_codegen_options = [];
+      fun_poll = Default_poll;
       fun_dbg;
      }
     ::
@@ -2072,6 +2077,7 @@ let rec intermediate_curry_functions arity num =
                fun_body = iter (num+1)
                   (List.map (fun (arg,_) -> Cvar arg) direct_args) clos;
                fun_codegen_options = [];
+               fun_poll = Default_poll;
                fun_dbg;
               }
           in
@@ -2609,6 +2615,7 @@ let entry_point namelist =
              fun_args = [];
              fun_body = body;
              fun_codegen_options = [Reduce_code_size];
+             fun_poll = Default_poll;
              fun_dbg;
             }
 
