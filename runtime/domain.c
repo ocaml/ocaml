@@ -456,7 +456,7 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
     domain_state->requested_minor_gc = 0;
     domain_state->requested_external_interrupt = 0;
 
-    domain_state->parser_trace = Val_bool(0);
+    domain_state->parser_trace = 0;
 
     if (caml_params->backtrace_enabled) {
       caml_record_backtraces(1);
