@@ -185,7 +185,7 @@ let rec constructor_type constr cty =
   | Cty_signature _ ->
       constr
   | Cty_arrow (l, ty, cty) ->
-      Ctype.newty (Tarrow (l, ty, constructor_type constr cty, Cok))
+      Ctype.newty (Tarrow (l, ty, constructor_type constr cty, commu_ok))
 
                 (***********************************)
                 (*  Primitives for typing classes  *)
@@ -916,7 +916,7 @@ and class_field_second_pass cl_num sign met_env field =
            let self_type = sign.Types.csig_self in
            let meth_type =
              mk_expected
-               (Btype.newgenty (Tarrow(Nolabel, self_type, ty, Cok)))
+               (Btype.newgenty (Tarrow(Nolabel, self_type, ty, commu_ok)))
            in
            Ctype.raise_nongen_level ();
            let texp = type_expect met_env sdefinition meth_type in
@@ -935,7 +935,7 @@ and class_field_second_pass cl_num sign met_env field =
            let self_type = sign.Types.csig_self in
            let meth_type =
              mk_expected
-               (Ctype.newty (Tarrow (Nolabel, self_type, unit_type, Cok)))
+               (Ctype.newty (Tarrow (Nolabel, self_type, unit_type, commu_ok)))
            in
            let texp = type_expect met_env sexpr meth_type in
            Ctype.end_def ();
@@ -1407,7 +1407,7 @@ let rec approx_declaration cl =
       let arg =
         if Btype.is_optional l then Ctype.instance var_option
         else Ctype.newvar () in
-      Ctype.newty (Tarrow (l, arg, approx_declaration cl, Cok))
+      Ctype.newty (Tarrow (l, arg, approx_declaration cl, commu_ok))
   | Pcl_let (_, _, cl) ->
       approx_declaration cl
   | Pcl_constraint (cl, _) ->
@@ -1420,7 +1420,7 @@ let rec approx_description ct =
       let arg =
         if Btype.is_optional l then Ctype.instance var_option
         else Ctype.newvar () in
-      Ctype.newty (Tarrow (l, arg, approx_description ct, Cok))
+      Ctype.newty (Tarrow (l, arg, approx_description ct, commu_ok))
   | _ -> Ctype.newvar ()
 
 (*******************************)
