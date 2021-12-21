@@ -369,7 +369,10 @@ and transl_exp0 ~in_new_scope ~scopes e =
             Lconst(Const_block(0, [const_int tag;
                                    extract_constant lam]))
           with Not_constant ->
-            Lprim(Pmakeblock(0, Immutable, None, None),
+            let metadata = Block_variant {
+              label = l;
+            } in
+            Lprim(Pmakeblock(0, Immutable, None, Some metadata),
                   [Lconst(const_int tag); lam],
                   of_location ~scopes e.exp_loc)
       end

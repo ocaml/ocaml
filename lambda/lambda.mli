@@ -68,7 +68,9 @@ type block_metadata =
       representation: Types.record_representation
     }
   | Block_tuple
-  | Block_variant
+  | Block_variant of {
+      label: label
+    }
   | Block_module
 
 type field_metadata = unit
