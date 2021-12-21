@@ -382,9 +382,15 @@ and transl_exp0 ~in_new_scope ~scopes e =
         fields representation extended_expression
   | Texp_field(arg, _, lbl) ->
       let targ = transl_exp ~scopes arg in
+      let metadata = Lambda.{
+        fm_attributes = lbl.lbl_attributes;
+        fm_loc = lbl.lbl_loc;
+        fm_name = lbl.lbl_name;
+        fm_pos = lbl.lbl_pos;
+      } in
       begin match lbl.lbl_repres with
           Record_regular | Record_inlined _ ->
-          Lprim (Pfield (lbl.lbl_pos, None), [targ],
+          Lprim (Pfield (lbl.lbl_pos, Some metadata), [targ],
                  of_location ~scopes e.exp_loc)
         | Record_unboxed _ -> targ
         | Record_float ->

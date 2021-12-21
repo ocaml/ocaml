@@ -73,7 +73,12 @@ type block_metadata =
       label: label
     }
 
-type field_metadata = unit
+type field_metadata = {
+  fm_attributes: Parsetree.attributes;
+  fm_loc: Location.t;
+  fm_name : string;
+  fm_pos : int;
+}
 
 type primitive =
   | Pbytes_to_string
