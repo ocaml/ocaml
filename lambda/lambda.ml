@@ -47,6 +47,9 @@ type block_record_field = {
   brf_attributes: Parsetree.attributes;
 }
 
+type const_metadata =
+  | Const_variant of { label: label }
+
 type block_metadata =
   | Block_construct of {
       arity: int;
@@ -55,8 +58,6 @@ type block_metadata =
       name: string;
       tag: Types.constructor_tag;
     }
-  | Block_extension_constructor
-  | Block_lazy
   | Block_record of {
       fields: block_record_field array;
       representation: Types.record_representation
@@ -65,7 +66,6 @@ type block_metadata =
   | Block_variant of {
       label: label
     }
-  | Block_module
 
 type field_metadata = unit
 
@@ -226,7 +226,7 @@ let equal_value_kind x y =
 
 
 type structured_constant =
-    Const_base of constant
+    Const_base of constant * const_metadata option
   | Const_block of int * structured_constant list * block_metadata option
   | Const_float_array of string list
   | Const_immstring of string
@@ -369,7 +369,7 @@ type program =
     required_globals : Ident.Set.t;
     code : lambda }
 
-let const_int n = Const_base (Const_int n)
+let const_int ?(meta=None) n = Const_base (Const_int n, meta)
 
 let const_unit = const_int 0
 
@@ -410,7 +410,7 @@ let make_key e =
         try Ident.find_same id env
         with Not_found -> e
       end
-    | Lconst  (Const_base (Const_string _)) ->
+    | Lconst  (Const_base ((Const_string _), _meta)) ->
         (* Mutable constants are not shared *)
         raise Not_simple
     | Lconst _ -> e

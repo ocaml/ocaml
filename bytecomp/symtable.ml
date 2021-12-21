@@ -158,8 +158,8 @@ let init () =
       let c = slot_for_setglobal id in
       let cst = Const_block
           (Obj.object_tag,
-           [Const_base(Const_string (name, Location.none,None));
-            Const_base(Const_int (-i-1))
+           [Const_base(Const_string (name, Location.none,None), None);
+            Const_base(Const_int (-i-1), None)
            ],
            None)
       in
@@ -218,13 +218,13 @@ let patch_object buff patchlist =
 (* Translate structured constants *)
 
 let rec transl_const = function
-    Const_base(Const_int i) -> Obj.repr i
-  | Const_base(Const_char c) -> Obj.repr c
-  | Const_base(Const_string (s, _, _)) -> Obj.repr s
-  | Const_base(Const_float f) -> Obj.repr (float_of_string f)
-  | Const_base(Const_int32 i) -> Obj.repr i
-  | Const_base(Const_int64 i) -> Obj.repr i
-  | Const_base(Const_nativeint i) -> Obj.repr i
+    Const_base(Const_int i, _metadata) -> Obj.repr i
+  | Const_base(Const_char c, _metadata) -> Obj.repr c
+  | Const_base(Const_string (s, _, _), _metadata) -> Obj.repr s
+  | Const_base(Const_float f, _metadata) -> Obj.repr (float_of_string f)
+  | Const_base(Const_int32 i, _metadata) -> Obj.repr i
+  | Const_base(Const_int64 i, _metadata) -> Obj.repr i
+  | Const_base(Const_nativeint i, _metadata) -> Obj.repr i
   | Const_immstring s -> Obj.repr s
   | Const_block(tag, fields, _metadata) ->
       let block = Obj.new_block tag (List.length fields) in

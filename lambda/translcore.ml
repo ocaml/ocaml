@@ -63,7 +63,7 @@ let transl_extension_constructor ~scopes env path ext =
   match ext.ext_kind with
     Text_decl _ ->
       Lprim (Pmakeblock (Obj.object_tag, Immutable, None, None),
-        [Lconst (Const_base (Const_string (name, ext.ext_loc, None)));
+        [Lconst (Const_base (Const_string (name, ext.ext_loc, None), None));
          Lprim (prim_fresh_oo_id, [Lconst (const_int 0)], loc)],
         loc)
   | Text_rebind(path, _lid) ->
@@ -78,7 +78,7 @@ let extract_constant = function
   | _ -> raise Not_constant
 
 let extract_float = function
-    Const_base(Const_float f) -> f
+    Const_base(Const_float f, _metadata) -> f
   | _ -> fatal_error "Translcore.extract_float"
 
 (* Push the default values under the functional abstractions *)
@@ -200,9 +200,9 @@ let assert_failed ~scopes exp =
     (Lprim(Pmakeblock(0, Immutable, None, None),
           [slot;
            Lconst(Const_block(0,
-              [Const_base(Const_string (fname, exp.exp_loc, None));
-               Const_base(Const_int line);
-               Const_base(Const_int char)],
+              [Const_base(Const_string (fname, exp.exp_loc, None), None);
+               Const_base(Const_int line, None);
+               Const_base(Const_int char, None)],
                None))], loc))], loc)
 ;;
 
@@ -256,7 +256,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
       transl_ident (of_location ~scopes e.exp_loc)
         e.exp_env e.exp_type path desc
   | Texp_constant cst ->
-      Lconst(Const_base cst)
+      Lconst(Const_base (cst, None))
   | Texp_let(rec_flag, pat_expr_list, body) ->
       transl_let ~scopes rec_flag pat_expr_list
         (event_before ~scopes body (transl_exp ~scopes body))
@@ -363,7 +363,9 @@ and transl_exp0 ~in_new_scope ~scopes e =
   | Texp_variant(l, arg) ->
       let tag = Btype.hash_variant l in
       begin match arg with
-        None -> Lconst(const_int tag)
+        None ->
+          let metadata = Const_variant { label = l } in
+          Lconst(const_int ~meta:(Some metadata) tag)
       | Some arg ->
           let metadata = Block_variant { label = l } in
           let lam = transl_exp ~scopes arg in

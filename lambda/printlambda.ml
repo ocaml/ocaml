@@ -21,14 +21,14 @@ open Lambda
 
 
 let rec struct_const ppf = function
-  | Const_base(Const_int n) -> fprintf ppf "%i" n
-  | Const_base(Const_char c) -> fprintf ppf "%C" c
-  | Const_base(Const_string (s, _, _)) -> fprintf ppf "%S" s
+  | Const_base(Const_int n, _metadata) -> fprintf ppf "%i" n
+  | Const_base(Const_char c, _metadata) -> fprintf ppf "%C" c
+  | Const_base(Const_string (s, _, _), _metadata) -> fprintf ppf "%S" s
   | Const_immstring s -> fprintf ppf "#%S" s
-  | Const_base(Const_float f) -> fprintf ppf "%s" f
-  | Const_base(Const_int32 n) -> fprintf ppf "%lil" n
-  | Const_base(Const_int64 n) -> fprintf ppf "%LiL" n
-  | Const_base(Const_nativeint n) -> fprintf ppf "%nin" n
+  | Const_base(Const_float f, _metadata) -> fprintf ppf "%s" f
+  | Const_base(Const_int32 n, _metadata) -> fprintf ppf "%lil" n
+  | Const_base(Const_int64 n, _metadata) -> fprintf ppf "%LiL" n
+  | Const_base(Const_nativeint n, _metadata) -> fprintf ppf "%nin" n
   | Const_block(tag, [], _metadata) ->
       fprintf ppf "[%i]" tag
   | Const_block(tag, sc1::scl, _metadata) ->

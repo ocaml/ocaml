@@ -872,8 +872,8 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
         Uconst_ref (name, Some cst)
       in
       let rec transl = function
-        | Const_base(Const_int n) -> Uconst_int n
-        | Const_base(Const_char c) -> Uconst_int (Char.code c)
+        | Const_base(Const_int n, _metadata) -> Uconst_int n
+        | Const_base(Const_char c, _metadata) -> Uconst_int (Char.code c)
         | Const_block (tag, fields, _metadata) ->
             str (Uconst_block (tag, List.map transl fields))
         | Const_float_array sl ->
@@ -881,7 +881,7 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
             str (Uconst_float_array (List.map float_of_string sl))
         | Const_immstring s ->
             str (Uconst_string s)
-        | Const_base (Const_string (s, _, _)) ->
+        | Const_base (Const_string (s, _, _), _metadata) ->
               (* Strings (even literal ones) must be assumed to be mutable...
                  except when OCaml has been configured with
                  -safe-string.  Passing -safe-string at compilation
@@ -889,10 +889,10 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
                  with another one compiled without -safe-string, and
                  that one could modify our string literal.  *)
             str ~shared:Config.safe_string (Uconst_string s)
-        | Const_base(Const_float x) -> str (Uconst_float (float_of_string x))
-        | Const_base(Const_int32 x) -> str (Uconst_int32 x)
-        | Const_base(Const_int64 x) -> str (Uconst_int64 x)
-        | Const_base(Const_nativeint x) -> str (Uconst_nativeint x)
+        | Const_base(Const_float x, _metadata) -> str (Uconst_float (float_of_string x))
+        | Const_base(Const_int32 x, _metadata) -> str (Uconst_int32 x)
+        | Const_base(Const_int64 x, _metadata) -> str (Uconst_int64 x)
+        | Const_base(Const_nativeint x, _metadata) -> str (Uconst_nativeint x)
       in
       make_const (transl cst)
   | Lfunction _ as funct ->

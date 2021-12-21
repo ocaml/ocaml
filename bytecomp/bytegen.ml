@@ -565,7 +565,7 @@ let rec comp_expr env exp sz cont =
       let getmethod, args' =
         if kind = Self then (Kgetmethod, met::obj::args) else
         match met with
-          Lconst(Const_base(Const_int n)) -> (Kgetpubmet n, obj::args)
+          Lconst(Const_base(Const_int n, _metadata)) -> (Kgetpubmet n, obj::args)
         | _ -> (Kgetdynmet, met::obj::args)
       in
       if is_tailcall cont then
@@ -627,27 +627,27 @@ let rec comp_expr env exp sz cont =
         let rec comp_init new_env sz = function
           | [] -> comp_nonrec new_env sz ndecl decl_size
           | (id, _exp, RHS_floatblock blocksize) :: rem ->
-              Kconst(Const_base(Const_int blocksize)) ::
+              Kconst(Const_base(Const_int blocksize, None)) ::
               Kccall("caml_alloc_dummy_float", 1) :: Kpush ::
               comp_init (add_var id (sz+1) new_env) (sz+1) rem
           | (id, _exp, RHS_block blocksize) :: rem ->
-              Kconst(Const_base(Const_int blocksize)) ::
+              Kconst(Const_base(Const_int blocksize, None)) ::
               Kccall("caml_alloc_dummy", 1) :: Kpush ::
               comp_init (add_var id (sz+1) new_env) (sz+1) rem
           | (id, _exp, RHS_infix { blocksize; offset }) :: rem ->
-              Kconst(Const_base(Const_int offset)) ::
+              Kconst(Const_base(Const_int offset, None)) ::
               Kpush ::
-              Kconst(Const_base(Const_int blocksize)) ::
+              Kconst(Const_base(Const_int blocksize, None)) ::
               Kccall("caml_alloc_dummy_infix", 2) :: Kpush ::
               comp_init (add_var id (sz+1) new_env) (sz+1) rem
           | (id, _exp, RHS_function (blocksize,arity)) :: rem ->
-              Kconst(Const_base(Const_int arity)) ::
+              Kconst(Const_base(Const_int arity, None)) ::
               Kpush ::
-              Kconst(Const_base(Const_int blocksize)) ::
+              Kconst(Const_base(Const_int blocksize, None)) ::
               Kccall("caml_alloc_dummy_function", 2) :: Kpush ::
               comp_init (add_var id (sz+1) new_env) (sz+1) rem
           | (id, _exp, RHS_nonrec) :: rem ->
-              Kconst(Const_base(Const_int 0)) :: Kpush ::
+              Kconst(Const_base(Const_int 0, None)) :: Kpush ::
               comp_init (add_var id (sz+1) new_env) (sz+1) rem
         and comp_nonrec new_env sz i = function
           | [] -> comp_rec new_env sz ndecl decl_size
@@ -712,17 +712,17 @@ let rec comp_expr env exp sz cont =
       end
   | Lprim(Praise k, [arg], _) ->
       comp_expr env arg sz (Kraise k :: discard_dead_code cont)
-  | Lprim(Paddint, [arg; Lconst(Const_base(Const_int n))], _)
+  | Lprim(Paddint, [arg; Lconst(Const_base(Const_int n, _metadata))], _)
     when is_immed n ->
       comp_expr env arg sz (Koffsetint n :: cont)
-  | Lprim(Psubint, [arg; Lconst(Const_base(Const_int n))], _)
+  | Lprim(Psubint, [arg; Lconst(Const_base(Const_int n, _metadata))], _)
     when is_immed (-n) ->
       comp_expr env arg sz (Koffsetint (-n) :: cont)
   | Lprim (Poffsetint n, [arg], _)
     when not (is_immed n) ->
       comp_expr env arg sz
         (Kpush::
-         Kconst (Const_base (Const_int n))::
+         Kconst (Const_base (Const_int n, None))::
          Kaddint::cont)
   | Lprim(Pmakearray (kind, _), args, loc) ->
       let cont = add_pseudo_event loc !compunit_name cont in
@@ -1034,7 +1034,7 @@ let comp_block env exp sz cont =
   let code = comp_expr env exp sz cont in
   let used_safe = !max_stack_used + Config.stack_safety_margin in
   if used_safe > Config.stack_threshold then
-    Kconst(Const_base(Const_int used_safe)) ::
+    Kconst(Const_base(Const_int used_safe, None)) ::
     Kccall("caml_ensure_stack_capacity", 1) ::
     code
   else

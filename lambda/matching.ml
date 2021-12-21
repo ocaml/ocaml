@@ -1913,14 +1913,14 @@ let inline_lazy_force_cond arg loc =
             (* if (tag == Obj.forward_tag) then varg.(0) else ... *)
             ( Lprim
                 ( Pintcomp Ceq,
-                  [ tag_var; Lconst (Const_base (Const_int Obj.forward_tag)) ],
+                  [ tag_var; Lconst (Const_base ((Const_int Obj.forward_tag), None)) ],
                   loc ),
               Lprim (Pfield (0, None), [ varg ], loc),
               Lifthenelse
                 (* if (tag == Obj.lazy_tag) then Lazy.force varg else ... *)
                 ( Lprim
                     ( Pintcomp Ceq,
-                      [ tag_var; Lconst (Const_base (Const_int Obj.lazy_tag)) ],
+                      [ tag_var; Lconst (Const_base (Const_int Obj.lazy_tag, None)) ],
                       loc ),
                   Lapply
                     { ap_tailcall = Default_tailcall;
@@ -2108,7 +2108,7 @@ let get_expr_args_array ~scopes kind head (arg, _mut) rem =
       rem
     else
       ( Lprim
-          (Parrayrefu kind, [ arg; Lconst (Const_base (Const_int pos)) ], loc),
+          (Parrayrefu kind, [ arg; Lconst (Const_base (Const_int pos, None)) ], loc),
         StrictOpt )
       :: make_args (pos + 1)
   in
@@ -2184,7 +2184,7 @@ let rec split k xs =
         let xs, y0, ys = split (k - 2) xs in
         (x0 :: xs, y0, ys)
 
-let zero_lam = Lconst (Const_base (Const_int 0))
+let zero_lam = Lconst (Const_base (Const_int 0, None))
 
 let tree_way_test loc arg lt eq gt =
   Lifthenelse
@@ -2283,7 +2283,7 @@ let rec do_tests_fail loc fail tst arg = function
   | [] -> fail
   | (c, act) :: rem ->
       Lifthenelse
-        ( Lprim (tst, [ arg; Lconst (Const_base c) ], loc),
+        ( Lprim (tst, [ arg; Lconst (Const_base (c, None)) ], loc),
           do_tests_fail loc fail tst arg rem,
           act )
 
@@ -2292,7 +2292,7 @@ let rec do_tests_nofail loc tst arg = function
   | [ (_, act) ] -> act
   | (c, act) :: rem ->
       Lifthenelse
-        ( Lprim (tst, [ arg; Lconst (Const_base c) ], loc),
+        ( Lprim (tst, [ arg; Lconst (Const_base (c, None)) ], loc),
           do_tests_nofail loc tst arg rem,
           act )
 
@@ -2313,7 +2313,7 @@ let make_test_sequence loc fail tst lt_tst arg const_lambda_list =
       rev_split_at (List.length const_lambda_list / 2) const_lambda_list
     in
     Lifthenelse
-      ( Lprim (lt_tst, [ arg; Lconst (Const_base (fst (List.hd list2))) ], loc),
+      ( Lprim (lt_tst, [ arg; Lconst (Const_base (fst (List.hd list2), None)) ], loc),
         make_test_sequence list1,
         make_test_sequence list2 )
   in
@@ -2355,7 +2355,7 @@ module SArg = struct
     in
     bind Alias newvar arg (body newarg)
 
-  let make_const i = Lconst (Const_base (Const_int i))
+  let make_const i = Lconst (Const_base (Const_int i, None))
 
   let make_isout h arg = Lprim (Pisout, [ h; arg ], Loc_unknown)
 
@@ -3437,9 +3437,9 @@ let failure_handler ~scopes loc ~failer () =
                 Lconst
                   (Const_block
                      ( 0,
-                       [ Const_base (Const_string (fname, loc, None));
-                         Const_base (Const_int line);
-                         Const_base (Const_int char)
+                       [ Const_base (Const_string (fname, loc, None), None);
+                         Const_base (Const_int line, None);
+                         Const_base (Const_int char, None)
                        ],
                        None ))
               ],

@@ -218,7 +218,7 @@ let mod_prim = Lambda.transl_prim "CamlinternalMod"
 let undefined_location loc =
   let (fname, line, char) = Location.get_pos_info loc.Location.loc_start in
   Lconst(Const_block(0,
-                     [Const_base(Const_string (fname, loc, None));
+                     [Const_base(Const_string (fname, loc, None), None);
                       const_int line;
                       const_int char],
                      None))
@@ -1427,7 +1427,7 @@ let toploop_getvalue id =
                   [Lprim(Pgetglobal toploop_ident, [], Loc_unknown)],
                   Loc_unknown);
     ap_args=[Lconst(Const_base(
-      Const_string (toplevel_name id, Location.none, None)))];
+      Const_string (toplevel_name id, Location.none, None), None))];
     ap_tailcall=Default_tailcall;
     ap_inlined=Default_inline;
     ap_specialised=Default_specialise;
@@ -1441,7 +1441,7 @@ let toploop_setvalue id lam =
                   Loc_unknown);
     ap_args=
       [Lconst(Const_base(
-         Const_string(toplevel_name id, Location.none, None)));
+         Const_string(toplevel_name id, Location.none, None), None));
        lam];
     ap_tailcall=Default_tailcall;
     ap_inlined=Default_inline;

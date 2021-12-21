@@ -53,6 +53,9 @@ type block_record_field = {
   brf_attributes: Parsetree.attributes;
 }
 
+type const_metadata =
+  | Const_variant of { label: label }
+
 type block_metadata =
   | Block_construct of {
       arity: int;
@@ -61,8 +64,6 @@ type block_metadata =
       name: string;
       tag: Types.constructor_tag;
     }
-  | Block_extension_constructor
-  | Block_lazy
   | Block_record of {
       fields: block_record_field array;
       representation: Types.record_representation
@@ -71,7 +72,6 @@ type block_metadata =
   | Block_variant of {
       label: label
     }
-  | Block_module
 
 type field_metadata = unit
 
@@ -224,7 +224,7 @@ val equal_value_kind : value_kind -> value_kind -> bool
 val equal_boxed_integer : boxed_integer -> boxed_integer -> bool
 
 type structured_constant =
-    Const_base of constant
+    Const_base of constant * const_metadata option
   | Const_block of int * structured_constant list * block_metadata option
   | Const_float_array of string list
   | Const_immstring of string
@@ -374,7 +374,7 @@ type program =
 val make_key: lambda -> lambda option
 
 val const_unit: structured_constant
-val const_int : int -> structured_constant
+val const_int : ?meta:const_metadata option -> int -> structured_constant
 val lambda_unit: lambda
 val name_lambda: let_kind -> lambda -> (Ident.t -> lambda) -> lambda
 val name_lambda_list: lambda list -> (lambda list -> lambda) -> lambda
