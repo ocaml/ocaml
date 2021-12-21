@@ -340,7 +340,14 @@ and transl_exp0 ~in_new_scope ~scopes e =
         | _ -> assert false
       end else begin match cstr.cstr_tag with
         Cstr_constant n ->
-          Lconst(const_int n)
+          let metadata = Const_construct {
+            name = cstr.cstr_name;
+            arity = cstr.cstr_arity;
+            loc = cstr.cstr_loc;
+            attributes = cstr.cstr_attributes;
+            tag = cstr.cstr_tag;
+          } in
+          Lconst(const_int ~meta:(Some metadata) n)
       | Cstr_unboxed ->
           (match ll with [v] -> v | _ -> assert false)
       | Cstr_block n ->

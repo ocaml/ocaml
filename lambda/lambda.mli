@@ -55,6 +55,13 @@ type block_record_field = {
 
 type const_metadata =
   | Const_variant of { label: label }
+  | Const_construct of {
+      arity: int;
+      attributes: Parsetree.attributes;
+      loc: Location.t;
+      name: string;
+      tag: Types.constructor_tag;
+    }
 
 type block_metadata =
   | Block_construct of {
