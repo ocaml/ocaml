@@ -1,7 +1,5 @@
 ROOTDIR = ../../..
 
-CSLDIR = $(ROOTDIR)
-
 TEXQUOTE = $(ROOTDIR)/runtime/ocamlrun ../../tools/texquote2
 
 FILES = core.tex builtin.tex stdlib-blurb.tex compilerlibs.tex \

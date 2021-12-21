@@ -128,7 +128,11 @@ and class_signature =
   { csig_self: type_expr;
     mutable csig_self_row: type_expr;
     mutable csig_vars: (mutable_flag * virtual_flag * type_expr) Vars.t;
-    mutable csig_meths: (private_flag * virtual_flag * type_expr) Meths.t; }
+    mutable csig_meths: (method_privacy * virtual_flag * type_expr) Meths.t; }
+
+and method_privacy =
+  | Mpublic
+  | Mprivate of field_kind
 
 (* Variance *)
 
