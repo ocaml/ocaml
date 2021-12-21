@@ -933,7 +933,6 @@ and transl_record ~scopes loc env fields repres opt_init_expr =
   let size = Array.length fields in
   let metadata = Block_record {
     fields = Array.map (fun (f,_) -> f) fields;
-    representation = repres
   } in
   (* Determine if there are "enough" fields (only relevant if this is a
      functional-style record update *)

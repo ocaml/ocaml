@@ -45,7 +45,6 @@ type block_metadata =
   | Block_lazy
   | Block_record of {
       fields: Types.label_description array;
-      representation: Types.record_representation
     }
   | Block_tuple
   | Block_variant
