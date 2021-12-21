@@ -44,10 +44,10 @@ end = B
 [%%expect{|
 {
  ("A", module) -> {<.11>
-                   ("t", type) -> A/302<.11> . "t"[type];
+                   ("t", type) -> A/307<.11> . "t"[type];
                    };
  ("B", module) -> {<.12>
-                   ("t", type) -> B/303<.12> . "t"[type];
+                   ("t", type) -> B/308<.12> . "t"[type];
                    };
  }
 module rec A : sig type t = Leaf of B.t end
@@ -86,13 +86,13 @@ end = Set.Make(A)
  ("ASet", module) ->
      {
       ("compare", value) ->
-          CU Stdlib . "Set"[module] . "Make"[module](A/324<.19>) .
+          CU Stdlib . "Set"[module] . "Make"[module](A/329<.19>) .
           "compare"[value];
       ("elt", type) ->
-          CU Stdlib . "Set"[module] . "Make"[module](A/324<.19>) .
+          CU Stdlib . "Set"[module] . "Make"[module](A/329<.19>) .
           "elt"[type];
       ("t", type) ->
-          CU Stdlib . "Set"[module] . "Make"[module](A/324<.19>) . "t"[type];
+          CU Stdlib . "Set"[module] . "Make"[module](A/329<.19>) . "t"[type];
       };
  }
 module rec A :
