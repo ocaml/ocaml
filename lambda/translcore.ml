@@ -322,10 +322,17 @@ and transl_exp0 ~in_new_scope ~scopes e =
       begin try
         Lconst(Const_block(0, List.map extract_constant ll))
       with Not_constant ->
-        Lprim(Pmakeblock(0, Immutable, Some shape, None), ll,
+        Lprim(Pmakeblock(0, Immutable, Some shape, Some Block_tuple), ll,
               (of_location ~scopes e.exp_loc))
       end
   | Texp_construct(_, cstr, args) ->
+      let metadata = Block_construct {
+        name = cstr_name;
+        arity = cstr_arity;
+        loc = cstr_loc;
+        attributes = cstr_attributes;
+        tag = cstr_tag;
+      }
       let ll, shape = transl_list_with_shape ~scopes args in
       if cstr.cstr_inlined <> None then begin match ll with
         | [x] -> x

@@ -54,7 +54,13 @@ type block_record_field = {
 }
 
 type block_metadata =
-  | Block_construct
+  | Block_construct of {
+      arity: int;
+      attributes: Parsetree.attributes;
+      loc: Location.t;
+      name: string;
+      tag: Types.constructor_tag;
+    }
   | Block_extension_constructor
   | Block_lazy
   | Block_record of {
