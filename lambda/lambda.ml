@@ -41,7 +41,7 @@ type is_safe =
 
 type block_record_field = {
   brf_name: string;
-  brf_mut: Types.mutable_flag;
+  brf_mut: mutable_flag;
   brf_pos: int;
   brf_loc: Location.t;
   brf_attributes: Parsetree.attributes;
