@@ -992,13 +992,13 @@ and transl_record ~scopes loc env fields repres opt_init_expr =
           Record_regular ->
             Lprim(Pmakeblock(0, mut, Some shape, Some metadata), ll, loc)
         | Record_inlined tag ->
-            Lprim(Pmakeblock(tag, mut, Some shape, None), ll, loc)
+            Lprim(Pmakeblock(tag, mut, Some shape, Some metadata), ll, loc)
         | Record_unboxed _ -> (match ll with [v] -> v | _ -> assert false)
         | Record_float ->
             Lprim(Pmakearray (Pfloatarray, mut), ll, loc)
         | Record_extension path ->
             let slot = transl_extension_path loc env path in
-            Lprim(Pmakeblock(0, mut, Some (Pgenval :: shape), None), slot :: ll, loc)
+            Lprim(Pmakeblock(0, mut, Some (Pgenval :: shape), Some metadata), slot :: ll, loc)
     in
     begin match opt_init_expr with
       None -> lam
