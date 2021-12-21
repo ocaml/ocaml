@@ -11,11 +11,11 @@ vanilla constructions.
 \begin{syntax}
 infix-symbol:
           ...
-        | "#" {operator-char} "#" {operator-char || "#"}
+        | "#" { operator-char } "#" { operator-char || "#" }
 ;
 prefix-symbol:
           ...
-        | ('?'||'~'||'!') { operator-char } "#" { operator-char || "#"}
+        | ('?' || '~' || '!') { operator-char } "#" { operator-char || "#" }
 ;
 \end{syntax}
 
@@ -37,26 +37,26 @@ this example valid.
 \begin{syntax}
 float-literal:
        ...
-     | ["-"] ("0"\ldots"9") { "0"\ldots"9"||"_" } ["." { "0"\ldots"9"||"_" }]
-       [("e"||"E") ["+"||"-"] ("0"\ldots"9") { "0"\ldots"9"||"_" }]
-       ["g"\ldots"z"||"G"\ldots"Z"]
-     | ["-"] ("0x"||"0X")
-       ("0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f")
-       { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }\\
-       ["." { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }]
-       [("p"||"P") ["+"||"-"] ("0"\ldots"9") { "0"\ldots"9"||"_" }]
-       ["g"\ldots"z"||"G"\ldots"Z"]
+     | ["-"] ("0"\ldots"9") { "0"\ldots"9" || "_" } ["." { "0"\ldots"9" || "_" }]
+       [("e" || "E") ["+" || "-"] ("0"\ldots"9") { "0"\ldots"9" || "_" }]
+       ["g"\ldots"z" || "G"\ldots"Z"]
+     | ["-"] ("0x" || "0X")
+       ("0"\ldots"9" || "A"\ldots"F" || "a"\ldots"f")
+       { "0"\ldots"9" || "A"\ldots"F" || "a"\ldots"f" || "_" }\\
+       ["." { "0"\ldots"9" || "A"\ldots"F" || "a"\ldots"f" || "_" }]
+       [("p" || "P") ["+" || "-"] ("0"\ldots"9") { "0"\ldots"9" || "_" }]
+       ["g"\ldots"z" || "G"\ldots"Z"]
 ;
 int-literal:
            ...
-        | ["-"] ("0"\ldots"9") { "0"\ldots"9" || "_" }["g"\ldots"z"||"G"\ldots"Z"]
-        | ["-"] ("0x"||"0X") ("0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f")
-          { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }
-          ["g"\ldots"z"||"G"\ldots"Z"]
-        | ["-"] ("0o"||"0O") ("0"\ldots"7") { "0"\ldots"7"||"_" }
-          ["g"\ldots"z"||"G"\ldots"Z"]
-        | ["-"] ("0b"||"0B") ("0"\ldots"1") { "0"\ldots"1"||"_" }
-          ["g"\ldots"z"||"G"\ldots"Z"]
+        | ["-"] ("0"\ldots"9") { "0"\ldots"9" || "_" }["g"\ldots"z" || "G"\ldots"Z"]
+        | ["-"] ("0x" || "0X") ("0"\ldots"9" || "A"\ldots"F" || "a"\ldots"f")
+          { "0"\ldots"9" || "A"\ldots"F" || "a"\ldots"f" || "_" }
+          ["g"\ldots"z" || "G"\ldots"Z"]
+        | ["-"] ("0o" || "0O") ("0"\ldots"7") { "0"\ldots"7" || "_" }
+          ["g"\ldots"z" || "G"\ldots"Z"]
+        | ["-"] ("0b" || "0B") ("0"\ldots"1") { "0"\ldots"1" || "_" }
+          ["g"\ldots"z" || "G"\ldots"Z"]
 ;
 \end{syntax}
 Int and float literals followed by an one-letter identifier in the

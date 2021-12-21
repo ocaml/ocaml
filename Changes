@@ -93,6 +93,9 @@ OCaml 4.14.0
 - #10728: Ensure that functions are evaluated after their arguments
   (Stephen Dolan, review by Mark Shinwell)
 
+- #10732: Ensure right-to-left evaluation of arguments in cmm_helpers
+  (Greta Yorsh, review by Xavier Leroy)
+
 ### Standard library:
 
 * #10710: Add UTF tools, codecs and validations to the Uchar, Bytes and
@@ -216,6 +219,9 @@ OCaml 4.14.0
 
 - #10281, #10685: Add description of C compiler on macOS and Windows platforms.
   (Dong An, review by Xavier Leroy and David Allsopp)
+
+- #10589: Fix many typos (excess/inconsistent spaces) in the HTML manual.
+  (Wiktor Kuchta, review by Florian Angeletti)
 
 - #10605: manual, name few css classes to ease styling and maintainability.
   (Florian Angeletti, review by Wiktor Kuchta and Gabriel Scherer)

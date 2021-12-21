@@ -28,6 +28,6 @@ Explicit naming of existentials. (Introduced in OCaml 4.13.0)
 \begin{syntax}
 pattern:
      ...
-   | constr '(' "type" {{typeconstr-name}} ')' '(' pattern ')'
+   | constr '(' "type" {{ typeconstr-name }} ')' '(' pattern ')'
 ;
 \end{syntax}

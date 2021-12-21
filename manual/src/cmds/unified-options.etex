@@ -110,10 +110,10 @@ This causes the given C library to be linked with the program.
 \notop{%
 \item["-ccopt" \var{option}]
 Pass the given option to the C compiler and linker.
-\comp{When linking in ``custom runtime'' mode, for instance}%
-\nat{For instance,}%
+\comp{When linking in ``custom runtime'' mode, for instance }%
+\nat{For instance, }%
 "-ccopt -L"\var{dir} causes the C linker to search for C libraries in
-directory \var{dir}.\comp{(See the "-custom" option.)}
+directory \var{dir}. \comp{(See the "-custom" option.)}
 }%notop
 
 \notop{%
