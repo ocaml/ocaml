@@ -30,6 +30,7 @@
 #include "caml/stack.h"
 #include "caml/roots.h"
 #include "caml/callback.h"
+#include "caml/signals.h"
 
 /* The globals holding predefined exceptions */
 

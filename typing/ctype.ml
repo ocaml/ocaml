@@ -1616,16 +1616,19 @@ type typedecl_extraction_result =
 let rec extract_concrete_typedecl env ty =
   match get_desc ty with
     Tconstr (p, _, _) ->
-      let decl = Env.find_type p env in
-      if decl.type_kind <> Type_abstract then Typedecl(p, p, decl)
-      else begin
-        match try_expand_safe env ty with
-        | exception Cannot_expand -> May_have_typedecl
-        | ty ->
-            match extract_concrete_typedecl env ty with
-            | Typedecl(_, p', decl) -> Typedecl(p, p', decl)
-            | Has_no_typedecl -> Has_no_typedecl
-            | May_have_typedecl -> May_have_typedecl
+      begin match Env.find_type p env with
+      | exception Not_found -> May_have_typedecl
+      | decl ->
+          if decl.type_kind <> Type_abstract then Typedecl(p, p, decl)
+          else begin
+            match try_expand_safe env ty with
+            | exception Cannot_expand -> May_have_typedecl
+            | ty ->
+                match extract_concrete_typedecl env ty with
+                | Typedecl(_, p', decl) -> Typedecl(p, p', decl)
+                | Has_no_typedecl -> Has_no_typedecl
+                | May_have_typedecl -> May_have_typedecl
+          end
       end
   | Tpoly(ty, _) -> extract_concrete_typedecl env ty
   | Tarrow _ | Ttuple _ | Tobject _ | Tfield _ | Tnil
@@ -3048,8 +3051,9 @@ and unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 =
         begin match tl1 @ tl2 with [] -> false
         | t1 :: tl ->
             if no_arg then raise_unexplained_for Unify;
-            if List.for_all (unify_eq t1) tl then false else
-            (List.iter (unify env t1) tl; true)
+            Types.changed_row_field_exts [f1;f2] (fun () ->
+                List.iter (unify env t1) tl
+              )
         end in
       if redo then unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 else
       let remq tl =

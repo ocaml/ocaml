@@ -34,6 +34,7 @@
 #include "caml/mlvalues.h"
 #include "caml/osdeps.h"
 #include "caml/printexc.h"
+#include "caml/signals.h"
 #include "caml/stack.h"
 #include "caml/startup_aux.h"
 #include "caml/sys.h"
@@ -77,7 +78,6 @@ struct longjmp_buffer caml_termination_jmpbuf;
 void (*caml_termination_hook)(void *) = NULL;
 
 extern value caml_start_program (caml_domain_state*);
-extern void caml_init_signals (void);
 #ifdef _WIN32
 extern void caml_win32_overflow_detection (void);
 #endif
@@ -106,7 +106,6 @@ value caml_startup_common(char_os **argv, int pooling)
   if (!caml_startup_aux(pooling))
     return Val_unit;
 
-  caml_increase_native_stack_size();
   caml_init_codefrag();
   caml_init_locale();
 #if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
@@ -116,7 +115,6 @@ value caml_startup_common(char_os **argv, int pooling)
   caml_init_gc ();
 
   init_segments();
-  caml_init_signals();
 #ifdef _WIN32
   caml_win32_overflow_detection();
 #endif
@@ -133,6 +131,7 @@ value caml_startup_common(char_os **argv, int pooling)
     if (caml_termination_hook != NULL) caml_termination_hook(NULL);
     return Val_unit;
   }
+
   caml_maybe_expand_stack();
   return caml_start_program(Caml_state);
 }
