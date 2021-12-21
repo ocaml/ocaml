@@ -389,24 +389,6 @@ CAMLexport value caml_alloc_shr_noexc(mlsize_t wosize, tag_t tag) {
   return alloc_shr(wosize, tag, 1);
 }
 
-#ifdef DEBUG
-header_t hd_val (value v) {
-  return (header_t)Hd_val(v);
-}
-
-int is_young(value v) {
-  return Is_young(v);
-}
-
-int has_status(value v, status s) {
-  return Has_status_hd(Hd_val(v),s);
-}
-
-int tag_val(value v) {
-  return (int)Tag_val(v);
-}
-#endif
-
 /* Global memory pool.
 
    The pool is structured as a ring of blocks, where each block's header

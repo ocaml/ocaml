@@ -49,7 +49,7 @@ caml_timing_hook caml_finalise_end_hook = NULL;
 
 #if defined(DEBUG) || defined(NATIVE_CODE)
 
-void print_trace (void)
+static void print_trace (void)
 {
   void *array[10];
   size_t size;

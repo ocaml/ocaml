@@ -204,7 +204,7 @@ Caml_inline value ephe_list_tail(value e)
 }
 
 #ifdef DEBUG
-void orph_ephe_list_verify_status (int status)
+static void orph_ephe_list_verify_status (int status)
 {
   value v;
 
