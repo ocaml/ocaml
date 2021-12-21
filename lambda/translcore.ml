@@ -938,7 +938,6 @@ and transl_record ~scopes loc env fields repres opt_init_expr =
      brf_pos = f.lbl_pos;
      brf_loc = f.lbl_loc;
      brf_attributes = f.lbl_attributes;
-     brf_uid = f.lbl_uid
     }) fields;
     representation = repres
   } in

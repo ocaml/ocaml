@@ -45,7 +45,6 @@ type block_record_field = {
   brf_pos: int;
   brf_loc: Location.t;
   brf_attributes: Parsetree.attributes;
-  brf_uid: Uid.t;
 }
 
 type block_metadata =
