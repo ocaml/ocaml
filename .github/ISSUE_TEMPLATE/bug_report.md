@@ -7,29 +7,22 @@ assignees: ''
 
 ---
 <!--
-Welcome to OCaml multicore's Issue tracker!
+Welcome to OCaml's Issue tracker!
 
-We would like to thank you for reporting your bug to the Multicore OCaml team.
+OCaml's developers use this tracker for bugs and feature requests only, rather
+than user support.
 
-To make sure that we can help you as best as possible, we advise you to go through
-the page at https://github.com/ocaml-multicore/ocaml-multicore/wiki/Report-an-issue-to-the-bugtracker
+If you have questions about *using* OCaml, please ask at
+https://discuss.ocaml.org (more people read Discuss than this tracker, and
+you'll get confirmation of whether you've really found a bug or need a new
+feature).
 
-Use the following template to report your issue and fill it with the available information.
+If your error came from the OCaml package manager, opam, (messages beginning
+`[ERROR] The compilation of ...`), please start at
+https://github.com/ocaml/opam-repository/issues/new.
 
-**Describe the issue**
-
-Tell us what problem you observed.
-
-**To reproduce**
-
-Please provide here the build instructions for your issue, and a code sample if available.
-
-**Did you try running it with the debug runtime and heap verification ON?**
-
-See https://github.com/ocaml-multicore/ocaml-multicore/wiki/Report-an-issue-to-the-bugtracker
-
-**Backtrace**
-
-See link above.
-
+Some libraries and tools which used to be part of OCaml are now maintained
+separately. Please post questions about Graphics, Num, camlp4, LablTk, CamlDBM
+or OCamlTopWin on Discuss or on their respective issue trackers (see [README.adoc](https://github.com/ocaml/ocaml/blob/trunk/README.adoc#separately-maintained-components)
+for a full list).
 -->
