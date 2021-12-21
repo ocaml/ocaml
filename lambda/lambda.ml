@@ -49,10 +49,10 @@ type block_record_field = {
 
 type block_metadata =
   | Block_construct of {
-      name: string;
       arity: int;
-      loc: Location.t;
       attributes: Parsetree.attributes;
+      loc: Location.t;
+      name: string;
       tag: Types.constructor_tag;
     }
   | Block_extension_constructor

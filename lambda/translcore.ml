@@ -327,12 +327,12 @@ and transl_exp0 ~in_new_scope ~scopes e =
       end
   | Texp_construct(_, cstr, args) ->
       let metadata = Block_construct {
-        name = cstr_name;
-        arity = cstr_arity;
-        loc = cstr_loc;
-        attributes = cstr_attributes;
-        tag = cstr_tag;
-      }
+        name = cstr.cstr_name;
+        arity = cstr.cstr_arity;
+        loc = cstr.cstr_loc;
+        attributes = cstr.cstr_attributes;
+        tag = cstr.cstr_tag;
+      } in
       let ll, shape = transl_list_with_shape ~scopes args in
       if cstr.cstr_inlined <> None then begin match ll with
         | [x] -> x
@@ -346,7 +346,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
           begin try
             Lconst(Const_block(n, List.map extract_constant ll))
           with Not_constant ->
-            Lprim(Pmakeblock(n, Immutable, Some shape, None), ll,
+            Lprim(Pmakeblock(n, Immutable, Some shape, Some metadata), ll,
                   of_location ~scopes e.exp_loc)
           end
       | Cstr_extension(path, is_const) ->
@@ -354,7 +354,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
                       (of_location ~scopes e.exp_loc) e.exp_env path in
           if is_const then lam
           else
-            Lprim(Pmakeblock(0, Immutable, Some (Pgenval :: shape), None),
+            Lprim(Pmakeblock(0, Immutable, Some (Pgenval :: shape), Some metadata),
                   lam :: ll, of_location ~scopes e.exp_loc)
       end
   | Texp_extension_constructor (_, path) ->
