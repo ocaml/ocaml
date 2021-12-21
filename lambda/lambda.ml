@@ -39,12 +39,22 @@ type is_safe =
   | Safe
   | Unsafe
 
+type block_record_field = {
+  brf_name: string;
+  brf_mut: Types.mutable_flag;
+  brf_pos: int;
+  brf_loc: Location.t;
+  brf_attributes: Parsetree.attributes;
+  brf_uid: Uid.t;
+}
+
 type block_metadata =
   | Block_construct
   | Block_extension_constructor
   | Block_lazy
   | Block_record of {
-      fields: Types.label_description array;
+      fields: block_record_field array;
+      representation: Types.record_representation
     }
   | Block_tuple
   | Block_variant
