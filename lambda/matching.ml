@@ -3440,7 +3440,8 @@ let failure_handler ~scopes loc ~failer () =
                        [ Const_base (Const_string (fname, loc, None));
                          Const_base (Const_int line);
                          Const_base (Const_int char)
-                       ] ))
+                       ],
+                       None ))
               ],
               sloc )
         ],
@@ -3603,7 +3604,7 @@ let assign_pat ~scopes opt nraise catch_ids loc pat lam =
     | Tpat_tuple patl, Lprim (Pmakeblock _, lams, _) ->
         opt := true;
         List.fold_left2 collect acc patl lams
-    | Tpat_tuple patl, Lconst (Const_block (_, scl)) ->
+    | Tpat_tuple patl, Lconst (Const_block (_, scl, _metadata)) ->
         opt := true;
         let collect_const acc pat sc = collect acc pat (Lconst sc) in
         List.fold_left2 collect_const acc patl scl

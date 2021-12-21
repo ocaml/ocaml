@@ -220,7 +220,8 @@ let undefined_location loc =
   Lconst(Const_block(0,
                      [Const_base(Const_string (fname, loc, None));
                       const_int line;
-                      const_int char]))
+                      const_int char],
+                     None))
 
 exception Initialization_failure of unsafe_info
 
@@ -232,7 +233,7 @@ let init_shape id modl =
         raise (Initialization_failure
                 (Unsafe {reason=Unsafe_module_binding;loc;subid}))
     | Mty_signature sg ->
-        Const_block(0, [Const_block(0, init_shape_struct env sg)])
+        Const_block(0, [Const_block(0, init_shape_struct env sg, None)], None)
     | Mty_functor _ ->
         (* can we do better? *)
         raise (Initialization_failure

@@ -202,7 +202,8 @@ let assert_failed ~scopes exp =
            Lconst(Const_block(0,
               [Const_base(Const_string (fname, exp.exp_loc, None));
                Const_base(Const_int line);
-               Const_base(Const_int char)]))], loc))], loc)
+               Const_base(Const_int char)],
+               None))], loc))], loc)
 ;;
 
 let rec cut n l =
@@ -320,7 +321,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
   | Texp_tuple el ->
       let ll, shape = transl_list_with_shape ~scopes el in
       begin try
-        Lconst(Const_block(0, List.map extract_constant ll))
+        Lconst(Const_block(0, List.map extract_constant ll, Some Block_tuple))
       with Not_constant ->
         Lprim(Pmakeblock(0, Immutable, Some shape, Some Block_tuple), ll,
               (of_location ~scopes e.exp_loc))
@@ -344,7 +345,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
           (match ll with [v] -> v | _ -> assert false)
       | Cstr_block n ->
           begin try
-            Lconst(Const_block(n, List.map extract_constant ll))
+            Lconst(Const_block(n, List.map extract_constant ll, Some metadata))
           with Not_constant ->
             Lprim(Pmakeblock(n, Immutable, Some shape, Some metadata), ll,
                   of_location ~scopes e.exp_loc)
@@ -364,14 +365,12 @@ and transl_exp0 ~in_new_scope ~scopes e =
       begin match arg with
         None -> Lconst(const_int tag)
       | Some arg ->
+          let metadata = Block_variant { label = l } in
           let lam = transl_exp ~scopes arg in
           try
             Lconst(Const_block(0, [const_int tag;
-                                   extract_constant lam]))
+                                   extract_constant lam], Some metadata))
           with Not_constant ->
-            let metadata = Block_variant {
-              label = l;
-            } in
             Lprim(Pmakeblock(0, Immutable, None, Some metadata),
                   [Lconst(const_int tag); lam],
                   of_location ~scopes e.exp_loc)
@@ -442,7 +441,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
             let imm_array =
               match kind with
               | Paddrarray | Pintarray ->
-                  Lconst(Const_block(0, cl))
+                  Lconst(Const_block(0, cl, None))
               | Pfloatarray ->
                   Lconst(Const_float_array(List.map extract_float cl))
               | Pgenarray ->
@@ -989,8 +988,8 @@ and transl_record ~scopes loc env fields repres opt_init_expr =
         if mut = Mutable then raise Not_constant;
         let cl = List.map extract_constant ll in
         match repres with
-        | Record_regular -> Lconst(Const_block(0, cl))
-        | Record_inlined tag -> Lconst(Const_block(tag, cl))
+        | Record_regular -> Lconst(Const_block(0, cl, Some metadata))
+        | Record_inlined tag -> Lconst(Const_block(tag, cl, Some metadata))
         | Record_unboxed _ -> Lconst(match cl with [v] -> v | _ -> assert false)
         | Record_float ->
             Lconst(Const_float_array(List.map extract_float cl))

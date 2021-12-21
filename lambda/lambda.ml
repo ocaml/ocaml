@@ -227,7 +227,7 @@ let equal_value_kind x y =
 
 type structured_constant =
     Const_base of constant
-  | Const_block of int * structured_constant list
+  | Const_block of int * structured_constant list * block_metadata option
   | Const_float_array of string list
   | Const_immstring of string
 
