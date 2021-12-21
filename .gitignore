@@ -33,7 +33,6 @@
 *.out.dSYM
 *.swp
 _ocamltest
-.vscode
 _ocamltestd
 *.odoc
 .merlin
@@ -225,7 +224,6 @@ _build
 /testsuite/failure.stamp
 
 /testsuite/_retries
-/testsuite/disabled-dirs
 
 
 /testsuite/tools/codegen
