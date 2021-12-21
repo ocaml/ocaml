@@ -93,6 +93,9 @@ OCaml 4.14.0
 - #10728: Ensure that functions are evaluated after their arguments
   (Stephen Dolan, review by Mark Shinwell)
 
+- #10732: Ensure right-to-left evaluation of arguments in cmm_helpers
+  (Greta Yorsh, review by Xavier Leroy)
+
 ### Standard library:
 
 * #10710: Add UTF tools, codecs and validations to the Uchar, Bytes and
