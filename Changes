@@ -4,6 +4,8 @@ Working version
 ### Language features:
 
 ### Runtime system:
+- #10831: Multicore OCaml
+  (The multicore team, caml-devel and more)
 
 ### Code generation and optimizations:
 
