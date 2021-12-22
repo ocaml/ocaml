@@ -436,6 +436,9 @@ OCaml 4.14.0
 - #10763, #10764: fix miscompilation of method delegation
   (Alain Frisch, review by Vincent Laviron and Jacques Garrigue)
 
+- #10822, #10823: Bad interaction between ambivalent types and subtyping
+  coercions (Jacques Garrigue, report and review by Frédéric Bour)
+
 
 OCaml 4.13 maintenance branch
 -----------------------------
