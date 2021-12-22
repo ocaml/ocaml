@@ -3270,6 +3270,31 @@ and do_compile_matching ~scopes repr partial ctx pmh =
       in
       let ph = what_is_cases pm.cases in
       let pomega = Patterns.Head.to_omega_pattern ph in
+
+
+      (* NOTE: we need to dereference the type in case its a link *)
+      let metadata = match (Btype.repr ph.pat_type).desc with
+      | Tconstr (path, _, _) ->
+          (match (Env.find_type path ph.pat_env) with
+          | { type_kind = Type_variant (cstrs, _repr); _ } ->
+              let meta = List.map (fun (cstr: Types.constructor_declaration) ->
+                Lambda.{
+                  cm_name = cstr.cd_id;
+                  cm_kind =
+                    (match cstr.cd_args with
+                    | Cstr_tuple [] -> `const
+                    | _ -> `block);
+                  cm_arity =
+                    (match cstr.cd_args with
+                    | Cstr_tuple parts -> List.length parts
+                    | Cstr_record fields -> List.length fields);
+                }
+              ) cstrs in
+              Some (Switch_construct meta)
+          | _ -> None)
+      | _ -> None
+      in
+
       let ploc = head_loc ~scopes ph in
       let open Patterns.Head in
       match ph.pat_desc with
@@ -3293,14 +3318,10 @@ and do_compile_matching ~scopes repr partial ctx pmh =
             (combine_constant ploc None arg cst partial)
             ctx pm
       | Construct cstr ->
-          let sw_metadata = Some (Switch_construct {
-            name = cstr.cstr_name;
-            arity = cstr.cstr_arity;
-          }) in
           compile_test
             (compile_match ~scopes repr partial)
             partial (divide_constructor ~scopes)
-            (combine_constructor ploc sw_metadata arg ph.pat_env cstr partial)
+            (combine_constructor ploc metadata arg ph.pat_env cstr partial)
             ctx pm
       | Array _ ->
           let kind = Typeopt.array_pattern_kind pomega in

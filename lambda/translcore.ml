@@ -404,7 +404,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
           Lprim (Pfloatfield lbl.lbl_pos, [targ],
                  of_location ~scopes e.exp_loc)
         | Record_extension _ ->
-          Lprim (Pfield (lbl.lbl_pos + 1, None), [targ],
+          Lprim (Pfield (lbl.lbl_pos + 1, Some metadata), [targ],
                  of_location ~scopes e.exp_loc)
       end
   | Texp_setfield(arg, _, lbl, newval) ->

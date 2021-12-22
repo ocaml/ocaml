@@ -87,10 +87,16 @@ type field_metadata = {
   fm_pos : int;
 }
 
-type switch_metadata =
-  | Switch_construct of { name : string; arity : int }
+type constructor_metadata = {
+  cm_kind: [ `block | `const ];
+  cm_name: Ident.t;
+  cm_arity: int;
+}
 
-type ifthenelse_metadata = | List 
+type switch_metadata =
+  | Switch_construct of constructor_metadata list
+
+type ifthenelse_metadata = | List
 
 type primitive =
   | Pbytes_to_string
