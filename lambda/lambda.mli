@@ -87,6 +87,9 @@ type field_metadata = {
   fm_pos : int;
 }
 
+type switch_metadata =
+  | Switch_construct of { name : string; arity : int }
+
 type primitive =
   | Pbytes_to_string
   | Pbytes_of_string
@@ -350,6 +353,7 @@ and lambda_switch =
     sw_consts: (int * lambda) list;     (* Integer cases *)
     sw_numblocks: int;                  (* Number of tag block cases *)
     sw_blocks: (int * lambda) list;     (* Tag block cases *)
+    sw_metadata: switch_metadata option;(* Metadata about the switch *)
     sw_failaction : lambda option}      (* Action to take if failure *)
 and lambda_event =
   { lev_loc: scoped_location;

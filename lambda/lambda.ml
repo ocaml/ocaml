@@ -81,6 +81,9 @@ type field_metadata = {
   fm_pos : int;
 }
 
+type switch_metadata =
+  | Switch_construct of { name : string; arity : int }
+
 type primitive =
   | Pbytes_to_string
   | Pbytes_of_string
@@ -360,6 +363,7 @@ and lambda_switch =
     sw_consts: (int * lambda) list;
     sw_numblocks: int;
     sw_blocks: (int * lambda) list;
+    sw_metadata: switch_metadata option;
     sw_failaction : lambda option}
 
 and lambda_event =
@@ -899,6 +903,7 @@ let shallow_map f = function
                  sw_numblocks = sw.sw_numblocks;
                  sw_blocks = List.map (fun (n, e) -> (n, f e)) sw.sw_blocks;
                  sw_failaction = Option.map f sw.sw_failaction;
+                 sw_metadata = sw.sw_metadata;
                },
                loc)
   | Lstringswitch (e, sw, default, loc) ->
