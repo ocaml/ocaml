@@ -3459,15 +3459,15 @@ and type_expect_
             and (cty', ty', force') =
               Typetexp.transl_simple_type_delayed env sty'
             in
+            end_def ();
+            generalize_structure ty;
+            generalize_structure ty';
             begin try
-              let force'' = subtype env ty ty' in
+              let force'' = subtype env (instance ty) (instance ty') in
               force (); force' (); force'' ()
             with Subtype err ->
               raise (Error(loc, env, Not_subtype err))
             end;
-            end_def ();
-            generalize_structure ty;
-            generalize_structure ty';
             (type_argument env sarg ty (instance ty),
              instance ty', Some cty, cty')
       in
