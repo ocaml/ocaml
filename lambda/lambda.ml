@@ -74,12 +74,19 @@ type block_metadata =
       label: label
     }
 
-type field_metadata = {
-  fm_attributes: Parsetree.attributes;
-  fm_loc: Location.t;
-  fm_name : string;
-  fm_pos : int;
-}
+type field_metadata =
+  | Field_constructor of {
+      attributes: Parsetree.attributes;
+      loc: Location.t;
+      name : string;
+      arity : int;
+    }
+  | Field_record of {
+      attributes: Parsetree.attributes;
+      loc: Location.t;
+      name : string;
+      pos : int;
+    }
 
 type constructor_metadata = {
   cm_kind: [ `block | `const ];

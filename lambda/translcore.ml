@@ -389,11 +389,11 @@ and transl_exp0 ~in_new_scope ~scopes e =
         fields representation extended_expression
   | Texp_field(arg, _, lbl) ->
       let targ = transl_exp ~scopes arg in
-      let metadata = Lambda.{
-        fm_attributes = lbl.lbl_attributes;
-        fm_loc = lbl.lbl_loc;
-        fm_name = lbl.lbl_name;
-        fm_pos = lbl.lbl_pos;
+      let metadata = Lambda.Field_record {
+        attributes = lbl.lbl_attributes;
+        loc = lbl.lbl_loc;
+        name = lbl.lbl_name;
+        pos = lbl.lbl_pos;
       } in
       begin match lbl.lbl_repres with
           Record_regular | Record_inlined _ ->
