@@ -956,16 +956,6 @@ and transl_setinstvar ~scopes loc self var expr =
 
 and transl_record ~scopes loc env fields repres opt_init_expr =
   let size = Array.length fields in
-  let metadata = Block_record {
-    fields = Array.map (fun (f,_) -> Lambda.{
-     brf_name = f.lbl_name;
-     brf_mut = f.lbl_mut;
-     brf_pos = f.lbl_pos;
-     brf_loc = f.lbl_loc;
-     brf_attributes = f.lbl_attributes;
-    }) fields;
-    representation = repres
-  } in
   (* Determine if there are "enough" fields (only relevant if this is a
      functional-style record update *)
   let no_init = match opt_init_expr with None -> true | _ -> false in
@@ -1000,6 +990,16 @@ and transl_record ~scopes loc env fields repres opt_init_expr =
       then Mutable
       else Immutable in
     let lam =
+      let metadata = Block_record {
+        fields = Array.map (fun (f,_) -> Lambda.{
+         brf_name = f.lbl_name;
+         brf_mut = f.lbl_mut;
+         brf_pos = f.lbl_pos;
+         brf_loc = f.lbl_loc;
+         brf_attributes = f.lbl_attributes;
+        }) fields;
+        representation = repres
+      } in
       try
         if mut = Mutable then raise Not_constant;
         let cl = List.map extract_constant ll in

@@ -2894,7 +2894,7 @@ let call_switcher_variant_constr loc sw_metadata fail arg int_lambda_list =
     ( Alias,
       Pgenval,
       v,
-      Lprim (Pfield (0, None), [ arg ], loc),
+      Lprim (Pfield (0, sw_metadata), [ arg ], loc),
       call_switcher loc sw_metadata fail (Lvar v) min_int max_int int_lambda_list )
 
 let combine_variant loc sw_metadata row arg partial ctx def (tag_lambda_list, total1, _pats)
