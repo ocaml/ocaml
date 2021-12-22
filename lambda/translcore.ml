@@ -472,11 +472,12 @@ and transl_exp0 ~in_new_scope ~scopes e =
   | Texp_ifthenelse(cond, ifso, Some ifnot) ->
       Lifthenelse(transl_exp ~scopes cond,
                   event_before ~scopes ifso (transl_exp ~scopes ifso),
-                  event_before ~scopes ifnot (transl_exp ~scopes ifnot))
+                  event_before ~scopes ifnot (transl_exp ~scopes ifnot),
+                  None)
   | Texp_ifthenelse(cond, ifso, None) ->
       Lifthenelse(transl_exp ~scopes cond,
                   event_before ~scopes ifso (transl_exp ~scopes ifso),
-                  lambda_unit)
+                  lambda_unit, None)
   | Texp_sequence(expr1, expr2) ->
       Lsequence(transl_exp ~scopes expr1,
                 event_before ~scopes expr2 (transl_exp ~scopes expr2))
@@ -569,7 +570,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
       if !Clflags.noassert
       then lambda_unit
       else Lifthenelse (transl_exp ~scopes cond, lambda_unit,
-                        assert_failed ~scopes e)
+                        assert_failed ~scopes e, None)
   | Texp_lazy e ->
       (* when e needs no computation (constants, identifiers, ...), we
          optimize the translation just as Lazy.lazy_from_val would
@@ -670,7 +671,7 @@ and transl_guard ~scopes guard rhs =
   | None -> expr
   | Some cond ->
       event_before ~scopes cond
-        (Lifthenelse(transl_exp ~scopes cond, expr, staticfail))
+        (Lifthenelse(transl_exp ~scopes cond, expr, staticfail, None))
 
 and transl_case ~scopes {c_lhs; c_guard; c_rhs} =
   c_lhs, transl_guard ~scopes c_guard c_rhs

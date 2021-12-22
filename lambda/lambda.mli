@@ -90,6 +90,8 @@ type field_metadata = {
 type switch_metadata =
   | Switch_construct of { name : string; arity : int }
 
+type ifthenelse_metadata = | List 
+
 type primitive =
   | Pbytes_to_string
   | Pbytes_of_string
@@ -323,7 +325,7 @@ type lambda =
   | Ltrywith of lambda * Ident.t * lambda
 (* Lifthenelse (e, t, f) evaluates t if e evaluates to 0, and
    evaluates f if e evaluates to any other value *)
-  | Lifthenelse of lambda * lambda * lambda
+  | Lifthenelse of lambda * lambda * lambda * ifthenelse_metadata option
   | Lsequence of lambda * lambda
   | Lwhile of lambda * lambda
   | Lfor of Ident.t * lambda * lambda * direction_flag * lambda

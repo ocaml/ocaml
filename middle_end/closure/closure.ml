@@ -1152,7 +1152,7 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
       let (ubody, _) = close env body in
       let (uhandler, _) = close env handler in
       (Utrywith(ubody, VP.create id, uhandler), Value_unknown)
-  | Lifthenelse(arg, ifso, ifnot) ->
+  | Lifthenelse(arg, ifso, ifnot, _meta) ->
       begin match close env arg with
         (uarg, Value_const (Uconst_int n)) ->
           sequence_constant_expr uarg

@@ -1931,7 +1931,7 @@ let inline_lazy_force_cond arg loc =
                       ap_specialised = Default_specialise
                     },
                   (* ... arg *)
-                  varg ) ) ) )
+                  varg, None ), None ) ) )
 
 let inline_lazy_force_switch arg loc =
   let idarg = Ident.create_local "lzarg" in
@@ -1966,7 +1966,7 @@ let inline_lazy_force_switch arg loc =
                 sw_failaction = Some varg;
                 sw_metadata = None;
               },
-              loc ) ) )
+              loc ), None ) )
 
 let inline_lazy_force arg loc =
   if !Clflags.afl_instrument then
@@ -2172,7 +2172,7 @@ let make_string_test_sequence loc arg sw d =
                   [ arg; Lconst (Const_immstring str) ],
                   loc ),
               k,
-              lam ))
+              lam, None ))
         sw d)
 
 let rec split k xs =
@@ -2191,7 +2191,8 @@ let tree_way_test loc arg lt eq gt =
   Lifthenelse
     ( Lprim (Pintcomp Clt, [ arg; zero_lam ], loc),
       lt,
-      Lifthenelse (Lprim (Pintcomp Clt, [ zero_lam; arg ], loc), gt, eq) )
+      Lifthenelse (Lprim (Pintcomp Clt, [ zero_lam; arg ], loc), gt, eq, None),
+      None )
 
 (* Dichotomic tree *)
 
@@ -2286,7 +2287,8 @@ let rec do_tests_fail loc fail tst arg = function
       Lifthenelse
         ( Lprim (tst, [ arg; Lconst (Const_base (c, None)) ], loc),
           do_tests_fail loc fail tst arg rem,
-          act )
+          act,
+          None )
 
 let rec do_tests_nofail loc tst arg = function
   | [] -> fatal_error "Matching.do_tests_nofail"
@@ -2295,7 +2297,8 @@ let rec do_tests_nofail loc tst arg = function
       Lifthenelse
         ( Lprim (tst, [ arg; Lconst (Const_base (c, None)) ], loc),
           do_tests_nofail loc tst arg rem,
-          act )
+          act,
+          None )
 
 let make_test_sequence loc fail tst lt_tst arg const_lambda_list =
   let const_lambda_list = sort_lambda_list const_lambda_list in
@@ -2316,7 +2319,8 @@ let make_test_sequence loc fail tst lt_tst arg const_lambda_list =
     Lifthenelse
       ( Lprim (lt_tst, [ arg; Lconst (Const_base (fst (List.hd list2), None)) ], loc),
         make_test_sequence list1,
-        make_test_sequence list2 )
+        make_test_sequence list2,
+        None )
   in
   hs (make_test_sequence const_lambda_list)
 
@@ -2362,7 +2366,7 @@ module SArg = struct
 
   let make_isin h arg = Lprim (Pnot, [ make_isout h arg ], Loc_unknown)
 
-  let make_if cond ifso ifnot = Lifthenelse (cond, ifso, ifnot)
+  let make_if cond ifso ifnot = Lifthenelse (cond, ifso, ifnot, None)
 
   let make_switch loc arg cases acts =
     let l = ref [] in
@@ -2795,7 +2799,7 @@ let combine_constructor loc sw_metadata arg pat_env cstr partial ctx def
                   (fun (path, act) rem ->
                     let ext = transl_extension_path loc pat_env path in
                     Lifthenelse
-                      (Lprim (Pintcomp Ceq, [ Lvar tag; ext ], loc), act, rem))
+                      (Lprim (Pintcomp Ceq, [ Lvar tag; ext ], loc), act, rem, None))
                   nonconsts default
               in
               Llet (Alias, Pgenval, tag, Lprim (Pfield (0, None), [ arg ], loc), tests)
@@ -2803,7 +2807,7 @@ let combine_constructor loc sw_metadata arg pat_env cstr partial ctx def
         List.fold_right
           (fun (path, act) rem ->
             let ext = transl_extension_path loc pat_env path in
-            Lifthenelse (Lprim (Pintcomp Ceq, [ arg; ext ], loc), act, rem))
+            Lifthenelse (Lprim (Pintcomp Ceq, [ arg; ext ], loc), act, rem, None))
           consts nonconst_lambda
       in
       (lambda1, Jumps.union local_jumps total1)
@@ -2834,7 +2838,7 @@ let combine_constructor loc sw_metadata arg pat_env cstr partial ctx def
             | 1, 1, [ (0, act1) ], [ (0, act2) ] ->
                 (* Typically, match on lists, will avoid isint primitive in that
               case *)
-                Lifthenelse (arg, act2, act1)
+                Lifthenelse (arg, act2, act1, Some List)
             | n, 0, _, [] ->
                 (* The type defines constant constructors only *)
                 call_switcher loc sw_metadata fail_opt arg 0 (n - 1) consts 
@@ -2855,7 +2859,8 @@ let combine_constructor loc sw_metadata arg pat_env cstr partial ctx def
                     Lifthenelse
                       ( Lprim (Pisint, [ arg ], loc),
                         call_switcher loc sw_metadata fail_opt arg 0 (n - 1) consts,
-                        act )
+                        act,
+                        None )
                 | None ->
                     (* Emit a switch, as bytecode implements this sophisticated
                       instruction *)
@@ -2908,7 +2913,7 @@ let combine_variant loc sw_metadata row arg partial ctx def (tag_lambda_list, to
   else
     num_constr := max_int;
   let test_int_or_block arg if_int if_block =
-    Lifthenelse (Lprim (Pisint, [ arg ], loc), if_int, if_block)
+    Lifthenelse (Lprim (Pisint, [ arg ], loc), if_int, if_block, None)
   in
   let sig_complete = List.length tag_lambda_list = !num_constr
   and one_action = same_actions tag_lambda_list in
@@ -3076,14 +3081,14 @@ let rec approx_present v = function
 
 let rec lower_bind v arg lam =
   match lam with
-  | Lifthenelse (cond, ifso, ifnot) -> (
+  | Lifthenelse (cond, ifso, ifnot, meta) -> (
       let pcond = approx_present v cond
       and pso = approx_present v ifso
       and pnot = approx_present v ifnot in
       match (pcond, pso, pnot) with
       | false, false, false -> lam
-      | false, true, false -> Lifthenelse (cond, lower_bind v arg ifso, ifnot)
-      | false, false, true -> Lifthenelse (cond, ifso, lower_bind v arg ifnot)
+      | false, true, false -> Lifthenelse (cond, lower_bind v arg ifso, ifnot, meta)
+      | false, false, true -> Lifthenelse (cond, ifso, lower_bind v arg ifnot, meta)
       | _, _, _ -> bind Alias v arg lam
     )
   | Lswitch (ls, ({ sw_consts = [ (i, act) ]; sw_blocks = [] } as sw), loc)
@@ -3560,8 +3565,8 @@ let rec map_return f = function
   | Llet (str, k, id, l1, l2) -> Llet (str, k, id, l1, map_return f l2)
   | Lmutlet (k, id, l1, l2) -> Lmutlet (k, id, l1, map_return f l2)
   | Lletrec (l1, l2) -> Lletrec (l1, map_return f l2)
-  | Lifthenelse (lcond, lthen, lelse) ->
-      Lifthenelse (lcond, map_return f lthen, map_return f lelse)
+  | Lifthenelse (lcond, lthen, lelse, meta) ->
+      Lifthenelse (lcond, map_return f lthen, map_return f lelse, meta)
   | Lsequence (l1, l2) -> Lsequence (l1, map_return f l2)
   | Levent (l, ev) -> Levent (map_return f l, ev)
   | Ltrywith (l1, id, l2) -> Ltrywith (map_return f l1, id, map_return f l2)
