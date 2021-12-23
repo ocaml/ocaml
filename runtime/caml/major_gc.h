@@ -13,8 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
-#ifndef CAML_MAJOR_GC
-#define CAML_MAJOR_GC
+#ifndef CAML_MAJOR_GC_H
+#define CAML_MAJOR_GC_H
 
 #ifdef CAML_INTERNALS
 

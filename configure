@@ -748,7 +748,6 @@ build_vendor
 build_cpu
 build
 force_instrumented_runtime
-naked_pointers
 compute_deps
 stdlib_manpages
 PACKLD

@@ -2,7 +2,7 @@
 /*                                                                        */
 /*                                 OCaml                                  */
 /*                                                                        */
-/*              Damien Doligez, projet Para, INRIA Rocquencourt           */
+/*             Damien Doligez, projet Para, INRIA Rocquencourt            */
 /*                                                                        */
 /*   Copyright 1996 Institut National de Recherche en Informatique et     */
 /*     en Automatique.                                                    */

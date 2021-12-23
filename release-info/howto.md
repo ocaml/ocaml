@@ -25,12 +25,12 @@ rm -f /tmp/env-$USER.sh
 cat >/tmp/env-$USER.sh <<EOF
 # Update the data below
 export MAJOR=4
-export MINOR=13
+export MINOR=12
 export BUGFIX=0
-export PLUSEXT=~alpha1
+export PLUSEXT=
 
 # names for the release announce
-export HUMAN=Florian Angeletti
+export HUMAN=
 
 # do we need to use tar or gtar?
 export TAR=tar

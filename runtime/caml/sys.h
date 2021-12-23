@@ -12,6 +12,7 @@
 /*   special exception on linking described in the file LICENSE.          */
 /*                                                                        */
 /**************************************************************************/
+
 #ifndef CAML_SYS_H
 #define CAML_SYS_H
 
