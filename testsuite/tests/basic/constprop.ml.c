@@ -4,7 +4,6 @@
    * bytecode
      compare_programs = "false"
    * native
-     compare_programs = "false"
 *)
 
 (* This file has extension .ml.c because it needs to be preprocessed

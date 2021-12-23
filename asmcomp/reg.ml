@@ -140,23 +140,6 @@ let name t =
     | None -> with_spilled
     | Some part -> with_spilled ^ "#" ^ Int.to_string part
 
-let to_string r =
-  let loc_str = match r.loc with
-    | Unknown -> "U"
-    | Reg i -> "R("^(string_of_int i)^")"
-    | Stack sl -> match sl with
-      | Local i -> "S_L("^(string_of_int i)^")"
-      | Incoming i-> "S_I("^(string_of_int i)^")"
-      | Outgoing i -> "S_O("^(string_of_int i)^")"
-      | Domainstate i -> "S_D("^(string_of_int i)^")"
-  in
-  let typ_str = match r.typ with
-    | Addr -> "A"
-    | Int -> "I"
-    | Float -> "F"
-    | Val -> "V"
-  in "("^loc_str^","^typ_str^")"
-
 let first_virtual_reg_stamp = ref (-1)
 
 let reset() =
