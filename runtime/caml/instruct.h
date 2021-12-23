@@ -63,7 +63,6 @@ enum instructions {
   GETSTRINGCHAR,
   PERFORM, RESUME, RESUMETERM, REPERFORMTERM,
 FIRST_UNIMPLEMENTED_OP};
-/* Please put Multicore specific opcodes at the end */
 
 #endif /* CAML_INTERNALS */
 
