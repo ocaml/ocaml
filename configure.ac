@@ -169,7 +169,6 @@ AC_SUBST([flexlink_flags])
 AC_SUBST([PACKLD])
 AC_SUBST([stdlib_manpages])
 AC_SUBST([compute_deps])
-AC_SUBST([naked_pointers])
 AC_SUBST([force_instrumented_runtime])
 
 ## Generated files
