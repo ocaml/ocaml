@@ -1884,8 +1884,7 @@ let get_mod_field modname field =
              fatal_error ("Primitive " ^ modname ^ "." ^ field ^ " not found.")
          | path, _ -> 
              let metadata = Some (Field_module {
-               mod_name = modname;
-               field_name = field;
+               address = Env.find_value_address path env 
              }) in
              transl_value_path Loc_unknown metadata env path
        ))

@@ -94,8 +94,7 @@ type field_metadata =
       pos : int;
     }
   | Field_module of {
-      mod_name : string;
-      field_name : string;
+      address: Env.address
     }
   | Field_primitive of {
       mod_name : string;
