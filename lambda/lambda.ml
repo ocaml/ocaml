@@ -711,7 +711,12 @@ let rec transl_address loc metadata = function
       then Lprim(Pgetglobal id, [], loc)
       else Lvar id
   | Env.Adot(addr, pos) ->
-      Lprim(Pfield (pos, metadata), [transl_address loc metadata addr], loc)
+      let metadata' = match metadata with
+      | Some (Field_module { mod_name; _ }) ->
+        Some (Field_module { mod_name; field_name = "WHAT"; })
+      | _ -> None
+      in
+      Lprim(Pfield (pos, metadata'), [transl_address loc metadata addr], loc)
 
 let transl_path find loc metadata env path =
   match find path env with
