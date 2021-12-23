@@ -99,9 +99,7 @@ let all_phys_regs =
 let phys_reg n =
   if n < 100 then hard_int_reg.(n) else hard_float_reg.(n - 100)
 
-let reg_x0 = phys_reg 0
-let reg_x1 = phys_reg 1
-let reg_x15 = phys_reg 15
+let reg_x8 = phys_reg 8
 let reg_d7 = phys_reg 107
 
 let stack_slot slot ty =
@@ -167,7 +165,7 @@ let outgoing ofs =
 let not_supported _ofs = fatal_error "Proc.loc_results: cannot call"
 
 (* OCaml calling convention:
-     first integer args in x0...x15
+     first integer args in r0...r15
      first float args in d0...d15
      remaining args in domain state area, then on stack.
    Return values in r0...r15 or d0...d15. *)
@@ -192,7 +190,7 @@ let loc_results res =
   loc
 
 (* C calling convention:
-     first integer args in x0...x7
+     first integer args in r0...r7
      first float args in d0...d7
      remaining args on stack.
    macOS/iOS peculiarity: int32 arguments passed on stack occupy 4 bytes,
