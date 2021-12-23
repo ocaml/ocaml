@@ -101,10 +101,9 @@ type constructor_metadata = {
   cm_arity: int;
 }
 
-type switch_metadata =
-  | Switch_construct of constructor_metadata list 
+type switch_metadata = constructor_metadata list
 
-type ifthenelse_metadata = | List
+type ifthenelse_metadata = constructor_metadata list
 
 type primitive =
   | Pbytes_to_string

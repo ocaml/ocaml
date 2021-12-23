@@ -2848,7 +2848,7 @@ let combine_constructor loc metadata arg pat_env cstr partial ctx def
             | 1, 1, [ (0, act1) ], [ (0, act2) ] ->
                 (* Typically, match on lists, will avoid isint primitive in that
               case *)
-                Lifthenelse (arg, act2, act1, Some List)
+                Lifthenelse (arg, act2, act1, metadata)
             | n, 0, _, [] ->
                 (* The type defines constant constructors only *)
                 call_switcher loc metadata fail_opt arg 0 (n - 1) consts 
@@ -3283,7 +3283,7 @@ and do_compile_matching ~scopes repr partial ctx pmh =
 
 
       (* NOTE: we need to dereference the type in case its a link *)
-      let metadata = match (Btype.repr ph.pat_type).desc with
+      let metadata: Lambda.constructor_metadata list option = match (Btype.repr ph.pat_type).desc with
       | Tconstr (path, _, _) ->
           (match (Env.find_type path ph.pat_env) with
           | { type_kind = Type_variant (cstrs, _repr); _ } ->
@@ -3300,7 +3300,7 @@ and do_compile_matching ~scopes repr partial ctx pmh =
                     | Cstr_record fields -> List.length fields);
                 }
               ) cstrs in
-              Some (Switch_construct meta)
+              Some (meta)
           | _ -> None)
       | _ -> None
       in
