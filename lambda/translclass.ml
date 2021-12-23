@@ -138,7 +138,7 @@ let rec build_object_init ~scopes cl_table obj params inh_init obj_init cl =
                    Loc_unknown)]
       in
       let loc = of_location ~scopes cl.cl_loc in
-      let path_lam = transl_class_path loc cl.cl_env path in
+      let path_lam = transl_class_path loc None cl.cl_env path in
       ((envs, (path, path_lam, obj_init) :: inh_init),
        mkappl(Lvar obj_init, env @ [obj]))
   | Tcl_structure str ->
@@ -433,7 +433,7 @@ let rec transl_class_rebind ~scopes obj_init cl vf =
         with Not_found -> raise Exit
       end;
       let cl_loc = of_location ~scopes cl.cl_loc in
-      let path_lam = transl_class_path cl_loc cl.cl_env path in
+      let path_lam = transl_class_path cl_loc None cl.cl_env path in
       (path, path_lam, obj_init)
   | Tcl_fun (_, pat, _, cl, partial) ->
       let path, path_lam, obj_init =

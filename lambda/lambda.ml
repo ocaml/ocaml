@@ -87,6 +87,14 @@ type field_metadata =
       name : string;
       pos : int;
     }
+  | Field_module of {
+      mod_name : string;
+      field_name : string;
+    }
+  | Field_primitive of {
+      mod_name : string;
+      prim_name : string;
+    }
 
 type constructor_metadata = {
   cm_kind: [ `block | `const ];
@@ -697,40 +705,45 @@ let rec patch_guarded patch = function
 
 (* Translate an access path *)
 
-let rec transl_address loc = function
+let rec transl_address loc metadata = function
   | Env.Aident id ->
       if Ident.global id
       then Lprim(Pgetglobal id, [], loc)
       else Lvar id
   | Env.Adot(addr, pos) ->
-      Lprim(Pfield (pos, None), [transl_address loc addr], loc)
+      Lprim(Pfield (pos, metadata), [transl_address loc metadata addr], loc)
 
-let transl_path find loc env path =
+let transl_path find loc metadata env path =
   match find path env with
   | exception Not_found ->
       fatal_error ("Cannot find address for: " ^ (Path.name path))
-  | addr -> transl_address loc addr
+  | addr -> transl_address loc metadata addr
 
 (* Translation of identifiers *)
 
-let transl_module_path loc env path =
-  transl_path Env.find_module_address loc env path
+let transl_module_path loc metadata env path =
+  transl_path Env.find_module_address loc metadata env path
 
-let transl_value_path loc env path =
-  transl_path Env.find_value_address loc env path
+let transl_value_path loc metadata env path =
+  transl_path Env.find_value_address loc metadata env path
 
-let transl_extension_path loc env path =
-  transl_path Env.find_constructor_address loc env path
+let transl_extension_path loc metadata env path =
+  transl_path Env.find_constructor_address loc metadata env path
 
-let transl_class_path loc env path =
-  transl_path Env.find_class_address loc env path
+let transl_class_path loc metadata env path =
+  transl_path Env.find_class_address loc metadata env path
 
 let transl_prim mod_name name =
   let pers = Ident.create_persistent mod_name in
   let env = Env.add_persistent_structure pers Env.empty in
   let lid = Longident.Ldot (Longident.Lident mod_name, name) in
   match Env.find_value_by_name lid env with
-  | path, _ -> transl_value_path Loc_unknown env path
+  | path, _ ->
+      let metadata = Some (Field_primitive {
+        mod_name = mod_name;
+        prim_name = name;
+      }) in
+      transl_value_path Loc_unknown metadata env path
   | exception Not_found ->
       fatal_error ("Primitive " ^ name ^ " not found.")
 

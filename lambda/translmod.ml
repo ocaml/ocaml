@@ -98,7 +98,7 @@ let rec apply_coercion loc strict restr arg =
   | Tcoerce_primitive { pc_loc = _; pc_desc; pc_env; pc_type; } ->
       Translprim.transl_primitive loc pc_desc pc_env pc_type None
   | Tcoerce_alias (env, path, cc) ->
-      let lam = transl_module_path loc env path in
+      let lam = transl_module_path loc None env path in
       name_lambda strict arg
         (fun _ -> apply_coercion loc Alias cc lam)
 
@@ -508,7 +508,7 @@ and transl_module ~scopes cc rootpath mexp =
   match mexp.mod_desc with
   | Tmod_ident (path,_) ->
       apply_coercion loc Strict cc
-        (transl_module_path loc mexp.mod_env path)
+        (transl_module_path loc None mexp.mod_env path)
   | Tmod_structure str ->
       fst (transl_struct ~scopes loc [] cc rootpath str)
   | Tmod_functor _ ->
@@ -979,7 +979,7 @@ let field_of_str loc str =
     | Tcoerce_primitive { pc_loc = _; pc_desc; pc_env; pc_type; } ->
         Translprim.transl_primitive loc pc_desc pc_env pc_type None
     | Tcoerce_alias (env, path, cc) ->
-        let lam = transl_module_path loc env path in
+        let lam = transl_module_path loc None env path in
         apply_coercion loc Alias cc lam
     | _ -> apply_coercion loc Strict cc (Lvar ids.(pos))
 
@@ -1305,7 +1305,7 @@ let transl_store_structure ~scopes glob map prims aliases str =
               cont)
 
   and store_alias (pos, env, path, cc) =
-    let path_lam = transl_module_path Loc_unknown env path in
+    let path_lam = transl_module_path Loc_unknown None env path in
     let init_val = apply_coercion Loc_unknown Strict cc path_lam in
     Lprim(Psetfield(pos, Pointer, Root_initialization),
           [Lprim(Pgetglobal glob, [], Loc_unknown);

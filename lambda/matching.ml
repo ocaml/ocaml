@@ -1882,7 +1882,12 @@ let get_mod_field modname field =
          match Env.find_value_by_name (Longident.Lident field) env with
          | exception Not_found ->
              fatal_error ("Primitive " ^ modname ^ "." ^ field ^ " not found.")
-         | path, _ -> transl_value_path Loc_unknown env path
+         | path, _ -> 
+             let metadata = Some (Field_module {
+               mod_name = modname;
+               field_name = field;
+             }) in
+             transl_value_path Loc_unknown metadata env path
        ))
 
 let code_force_lazy_block = get_mod_field "CamlinternalLazy" "force_lazy_block"
@@ -2803,7 +2808,7 @@ let combine_constructor loc metadata arg pat_env cstr partial ctx def
               let tests =
                 List.fold_right
                   (fun (path, act) rem ->
-                    let ext = transl_extension_path loc pat_env path in
+                    let ext = transl_extension_path loc None pat_env path in
                     Lifthenelse
                       (Lprim (Pintcomp Ceq, [ Lvar tag; ext ], loc), act, rem, None))
                   nonconsts default
@@ -2812,7 +2817,7 @@ let combine_constructor loc metadata arg pat_env cstr partial ctx def
         in
         List.fold_right
           (fun (path, act) rem ->
-            let ext = transl_extension_path loc pat_env path in
+            let ext = transl_extension_path loc None pat_env path in
             Lifthenelse (Lprim (Pintcomp Ceq, [ arg; ext ], loc), act, rem, None))
           consts nonconst_lambda
       in
@@ -3463,7 +3468,7 @@ let failure_handler ~scopes loc ~failer () =
   | Raise_match_failure ->
     let sloc = Scoped_location.of_location ~scopes loc in
     let slot =
-      transl_extension_path sloc
+      transl_extension_path sloc None
         Env.initial_safe_string Predef.path_match_failure
     in
     let fname, line, char =

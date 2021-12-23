@@ -67,7 +67,7 @@ let transl_extension_constructor ~scopes env path ext =
          Lprim (prim_fresh_oo_id, [Lconst (const_int 0)], loc)],
         loc)
   | Text_rebind(path, _lid) ->
-      transl_extension_path loc env path
+      transl_extension_path loc None env path
 
 (* To propagate structured constants *)
 
@@ -188,7 +188,7 @@ let event_function ~scopes exp lam =
 
 let assert_failed ~scopes exp =
   let slot =
-    transl_extension_path Loc_unknown
+    transl_extension_path Loc_unknown None
       Env.initial_safe_string Predef.path_assert_failure
   in
   let loc = exp.exp_loc in
@@ -228,7 +228,7 @@ let transl_ident loc env ty path desc =
   | Val_anc _ ->
       raise(Error(to_location loc, Free_super_var))
   | Val_reg | Val_self _ ->
-      transl_value_path loc env path
+      transl_value_path loc None env path
   |  _ -> fatal_error "Translcore.transl_exp: bad Texp_ident"
 
 let rec transl_exp ~scopes e =
@@ -359,14 +359,14 @@ and transl_exp0 ~in_new_scope ~scopes e =
           end
       | Cstr_extension(path, is_const) ->
           let lam = transl_extension_path
-                      (of_location ~scopes e.exp_loc) e.exp_env path in
+                      (of_location ~scopes e.exp_loc) None e.exp_env path in
           if is_const then lam
           else
             Lprim(Pmakeblock(0, Immutable, Some (Pgenval :: shape), Some metadata),
                   lam :: ll, of_location ~scopes e.exp_loc)
       end
   | Texp_extension_constructor (_, path) ->
-      transl_extension_path (of_location ~scopes e.exp_loc) e.exp_env path
+      transl_extension_path (of_location ~scopes e.exp_loc) None e.exp_env path
   | Texp_variant(l, arg) ->
       let tag = Btype.hash_variant l in
       begin match arg with
@@ -505,7 +505,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
       Lapply{
         ap_loc=loc;
         ap_func=
-          Lprim(Pfield (0, None), [transl_class_path loc e.exp_env cl], loc);
+          Lprim(Pfield (0, None), [transl_class_path loc None e.exp_env cl], loc);
         ap_args=[lambda_unit];
         ap_tailcall=Default_tailcall;
         ap_inlined=Default_inline;
@@ -513,17 +513,17 @@ and transl_exp0 ~in_new_scope ~scopes e =
       }
   | Texp_instvar(path_self, path, _) ->
       let loc = of_location ~scopes e.exp_loc in
-      let self = transl_value_path loc e.exp_env path_self in
-      let var = transl_value_path loc e.exp_env path in
+      let self = transl_value_path loc None e.exp_env path_self in
+      let var = transl_value_path loc None e.exp_env path in
       Lprim(Pfield_computed, [self; var], loc)
   | Texp_setinstvar(path_self, path, _, expr) ->
       let loc = of_location ~scopes e.exp_loc in
-      let self = transl_value_path loc e.exp_env path_self in
-      let var = transl_value_path loc e.exp_env path in
+      let self = transl_value_path loc None e.exp_env path_self in
+      let var = transl_value_path loc None e.exp_env path in
       transl_setinstvar ~scopes loc self var expr
   | Texp_override(path_self, modifs) ->
       let loc = of_location ~scopes e.exp_loc in
-      let self = transl_value_path loc e.exp_env path_self in
+      let self = transl_value_path loc None e.exp_env path_self in
       let cpy = Ident.create_local "copy" in
       Llet(Strict, Pgenval, cpy,
            Lapply{
@@ -536,7 +536,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
            },
            List.fold_right
              (fun (path, _, expr) rem ->
-               let var = transl_value_path loc e.exp_env path in
+               let var = transl_value_path loc None e.exp_env path in
                 Lsequence(transl_setinstvar ~scopes Loc_unknown
                             (Lvar cpy) var expr, rem))
              modifs
@@ -1022,7 +1022,7 @@ and transl_record ~scopes loc env fields repres opt_init_expr =
         | Record_float ->
             Lprim(Pmakearray (Pfloatarray, mut), ll, loc)
         | Record_extension path ->
-            let slot = transl_extension_path loc env path in
+            let slot = transl_extension_path loc None env path in
             Lprim(Pmakeblock(0, mut, Some (Pgenval :: shape), Some metadata), slot :: ll, loc)
     in
     begin match opt_init_expr with

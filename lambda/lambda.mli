@@ -93,6 +93,14 @@ type field_metadata =
       name : string;
       pos : int;
     }
+  | Field_module of {
+      mod_name : string;
+      field_name : string;
+    }
+  | Field_primitive of {
+      mod_name : string;
+      prim_name : string;
+    }
 
 type constructor_metadata = {
   cm_kind: [ `block | `const ];
@@ -433,10 +441,10 @@ val transl_prim: string -> string -> lambda
 
 val free_variables: lambda -> Ident.Set.t
 
-val transl_module_path: scoped_location -> Env.t -> Path.t -> lambda
-val transl_value_path: scoped_location -> Env.t -> Path.t -> lambda
-val transl_extension_path: scoped_location -> Env.t -> Path.t -> lambda
-val transl_class_path: scoped_location -> Env.t -> Path.t -> lambda
+val transl_module_path: scoped_location -> field_metadata option -> Env.t -> Path.t -> lambda
+val transl_value_path: scoped_location -> field_metadata option -> Env.t -> Path.t -> lambda
+val transl_extension_path: scoped_location -> field_metadata option -> Env.t -> Path.t -> lambda
+val transl_class_path: scoped_location -> field_metadata option -> Env.t -> Path.t -> lambda
 
 val make_sequence: ('a -> lambda) -> 'a list -> lambda
 
