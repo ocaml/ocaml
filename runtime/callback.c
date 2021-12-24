@@ -26,8 +26,6 @@
 #include "caml/mlvalues.h"
 #include "caml/platform.h"
 
-static __thread int callback_depth = 0;
-
 /*
  * These macros are for ensuring effects are handled correctly
  * inside callbacks. There are two aspects:
@@ -336,21 +334,6 @@ CAMLexport const value* caml_named_value(char const *name)
   }
   caml_plat_unlock(&named_value_lock);
   return NULL;
-}
-
-CAMLexport int caml_get_callback_depth ()
-{
-  return callback_depth;
-}
-
-void caml_incr_callback_depth ()
-{
-  callback_depth++;
-}
-
-void caml_decr_callback_depth ()
-{
-  callback_depth--;
 }
 
 CAMLexport void caml_iterate_named_values(caml_named_action f)

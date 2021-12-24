@@ -293,7 +293,6 @@ value caml_interprete(code_t prog, asize_t prog_size)
   initial_stack_words =
     Stack_high(domain_state->current_stack) - domain_state->current_stack->sp;
   initial_external_raise = domain_state->external_raise;
-  caml_incr_callback_depth ();
 
   if (sigsetjmp(raise_buf.buf, 0)) {
     /* no non-volatile local variables read here */
@@ -962,7 +961,6 @@ value caml_interprete(code_t prog, asize_t prog_size)
           domain_state->trap_sp_off = initial_trap_sp_off;
           domain_state->current_stack->sp =
             Stack_high(domain_state->current_stack) - initial_stack_words ;
-          caml_decr_callback_depth ();
           return Make_exception_result(accu);
         } else {
           struct stack_info* old_stack = domain_state->current_stack;
@@ -1246,7 +1244,6 @@ value caml_interprete(code_t prog, asize_t prog_size)
       domain_state->external_raise = initial_external_raise;
       domain_state->trap_sp_off = initial_trap_sp_off;
       domain_state->current_stack->sp = sp;
-      caml_decr_callback_depth ();
       return accu;
 
     Instruct(EVENT):
