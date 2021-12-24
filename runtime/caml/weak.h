@@ -18,8 +18,6 @@
 #ifndef CAML_WEAK_H
 #define CAML_WEAK_H
 
-#ifdef CAML_INTERNALS
-
 #include "mlvalues.h"
 #include "memory.h"
 
@@ -27,6 +25,8 @@
 extern "C" {
 #endif
 extern value caml_ephe_none;
+
+#ifdef CAML_INTERNALS
 
 struct caml_ephe_info {
   value todo; /* These are ephemerons which need to be marked and swept in the
