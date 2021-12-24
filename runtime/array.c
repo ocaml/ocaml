@@ -233,12 +233,14 @@ CAMLprim value caml_make_vect(value len, value init)
         caml_minor_collection ();
       }
       CAMLassert(!(Is_block(init) && Is_young(init)));
-      res = caml_alloc(size, 0);
+      res = caml_alloc_shr(size, 0);
       /* We now know that [init] is not in the minor heap, so there is
          no need to call [caml_initialize]. */
       for (i = 0; i < size; i++) Field(res, i) = init;
     }
   }
+  /* Give the GC a chance to run */
+  caml_process_pending_actions ();
   CAMLreturn (res);
 }
 
@@ -281,11 +283,16 @@ CAMLprim value caml_make_array(value init)
       CAMLreturn (init);
     } else {
       wsize = size * Double_wosize;
-      res = caml_alloc(wsize, Double_array_tag);
+      if (wsize <= Max_young_wosize) {
+        res = caml_alloc_small(wsize, Double_array_tag);
+      } else {
+        res = caml_alloc_shr(wsize, Double_array_tag);
+      }
       for (i = 0; i < size; i++) {
         double d = Double_val(Field(init, i));
         Store_double_flat_field(res, i, d);
       }
+      caml_process_pending_actions();
       CAMLreturn (res);
     }
   }
@@ -309,19 +316,15 @@ CAMLprim value caml_array_blit(value a1, value ofs1, value a2, value ofs2,
                                value n)
 {
 #ifdef FLAT_FLOAT_ARRAY
-  if (Tag_val(a2) == Double_array_tag) {
+  if (Tag_val(a2) == Double_array_tag)
     return caml_floatarray_blit(a1, ofs1, a2, ofs2, n);
-  } else {
 #endif
-    CAMLassert (Tag_val(a2) != Double_array_tag);
-    caml_blit_fields(a1, Long_val(ofs1), a2, Long_val(ofs2), Long_val(n));
-    /* Many caml_modify in a row can create a lot of old-to-young refs.
-        Give the minor GC a chance to run if it needs to. */
-    caml_check_urgent_gc(Val_unit);
-    return Val_unit;
-#ifdef FLAT_FLOAT_ARRAY
-  }
-#endif
+  CAMLassert (Tag_val(a2) != Double_array_tag);
+  caml_blit_fields(a1, Long_val(ofs1), a2, Long_val(ofs2), Long_val(n));
+  /* Many caml_modify in a row can create a lot of old-to-young refs.
+     Give the minor GC a chance to run if it needs to. */
+  caml_check_urgent_gc(Val_unit);
+  return Val_unit;
 }
 
 /* A generic function for extraction and concatenation of sub-arrays */

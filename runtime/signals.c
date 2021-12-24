@@ -171,7 +171,11 @@ CAMLexport void caml_leave_blocking_section(void)
 static value caml_signal_handlers;
 
 void caml_init_signal_handling() {
+  mlsize_t i;
+
   caml_signal_handlers = caml_alloc_shr(NSIG, 0);
+  for (i = 0; i < NSIG; i++)
+    Field(caml_signal_handlers, i) = Val_unit;
   caml_register_generational_global_root(&caml_signal_handlers);
 }
 

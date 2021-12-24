@@ -287,7 +287,7 @@ static value ephe_get_field_copy (value e, mlsize_t offset)
       infix_offs = Infix_offset_val(v);
       v -= infix_offs;
     }
-    elt = caml_alloc_shr (Wosize_val(v), Tag_val(v));
+    elt = caml_alloc (Wosize_val(v), Tag_val(v));
 
     clean_field(e, offset);
     v = Field(e, offset);
