@@ -1,3 +1,4 @@
+- : unit = ()
 type ('a, 'container) iterator = ('a -> unit) -> 'container -> unit
 type 'a generator = unit -> 'a option
 type ('a, 'container) iter2gen =

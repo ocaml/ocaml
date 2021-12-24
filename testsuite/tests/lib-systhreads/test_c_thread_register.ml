@@ -3,9 +3,8 @@
    * hassysthreads
    include systhreads
    ** not-bsd
-   *** libunix
-   **** bytecode
-   **** native
+   *** bytecode
+   *** native
 *)
 
 (* spins a external thread from C and register it to the OCaml runtime *)

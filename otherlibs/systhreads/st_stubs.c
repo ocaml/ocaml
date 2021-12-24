@@ -32,7 +32,9 @@
 #include "caml/signals.h"
 #include "caml/sys.h"
 #include "caml/memprof.h"
-#include "threads.h"
+
+/* threads.h is *not* included since it contains the _external_ declarations for
+   the caml_c_thread_register and caml_c_thread_unregister functions. */
 
 /* Max computation time before rescheduling, in milliseconds */
 #define Thread_timeout 50
@@ -522,7 +524,7 @@ static void * caml_thread_start(void * v)
 
   st_tls_set(Thread_key, th);
 
-  caml_domain_set_name(T("Domain"));
+  caml_domain_set_name("Domain");
 
   st_masterlock_acquire(&Thread_main_lock);
   Current_thread = st_tls_get(Thread_key);

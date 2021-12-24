@@ -526,7 +526,7 @@ AS_CASE([$ocaml_cv_cc_vendor],
   [sunc-*],
     [CPP="$CC -E -Qn"], # suppress generation of Sun PRO ident string
   [msvc-*],
-    [CPP="$CC -nologo -EP"];
+    [CPP="$CC -nologo -EP"],
 #  TODO: why can we not use $CPP in multicore, fix this?
   [CPP="$CC -E -P"])
 
@@ -875,6 +875,8 @@ AC_CHECK_HEADER([sys/select.h], [AC_DEFINE([HAS_SYS_SELECT_H])], [],
   [#include <sys/types.h>])
 
 AC_CHECK_HEADER([stdatomic.h], [AC_DEFINE([HAS_STDATOMIC_H])])
+
+AC_CHECK_HEADER([sys/mman.h], [AC_DEFINE([HAS_SYS_MMAN_H])])
 
 # Checks for types
 
@@ -1809,6 +1811,7 @@ AS_CASE([$enable_systhreads,$enable_unix_lib],
     [*-*-mingw32|*-pc-windows],
       [systhread_support=true
       otherlibraries="$otherlibraries systhreads"
+      PTHREAD_LIBS="-lpthread"
       AC_MSG_NOTICE([the Win32 threads library is supported])],
     [AX_PTHREAD(
       [systhread_support=true
@@ -1959,8 +1962,8 @@ AC_CHECK_LIB(execinfo, backtrace, cclibs="$cclibs -lexecinfo",[])
 
 AS_CASE([$host],
   [*-*-mingw32],
-    [bytecclibs="-lws2_32 -lversion"
-    nativecclibs="-lws2_32 -lversion"],
+    [bytecclibs="-lws2_32 -lversion -lpthread -lgcc_eh -lDbgHelp"
+    nativecclibs="-lws2_32 -lversion -lpthread -lgcc_eh -lDbgHelp"],
   [*-pc-windows],
     [bytecclibs="advapi32.lib ws2_32.lib version.lib"
     nativecclibs="advapi32.lib ws2_32.lib version.lib"],

@@ -29,9 +29,6 @@ __declspec(noreturn) void __cdecl abort(void);
 #include <string.h>
 #include <stdarg.h>
 #include <stdlib.h>
-#if defined(DEBUG) || defined(NATIVE_CODE)
-#include <execinfo.h>
-#endif
 #include "caml/config.h"
 #include "caml/misc.h"
 #include "caml/memory.h"
@@ -49,31 +46,13 @@ caml_timing_hook caml_finalise_end_hook = NULL;
 
 #if defined(DEBUG) || defined(NATIVE_CODE)
 
-static void print_trace (void)
-{
-  void *array[10];
-  size_t size;
-  char **strings;
-  size_t i;
-
-  size = backtrace (array, 10);
-  strings = backtrace_symbols (array, size);
-
-  caml_gc_log ("Obtained %zd stack frames.", size);
-
-  for (i = 0; i < size; i++)
-    caml_gc_log ("%s", strings[i]);
-
-  free (strings);
-}
-
 void caml_failed_assert (char * expr, char_os * file_os, int line)
 {
   char* file = caml_stat_strdup_of_os(file_os);
-  fprintf (stderr, "[%02d] file %s; line %d ### Assertion failed: %s\n",
-           Caml_state ? Caml_state->id : -1, file, line, expr);
-  print_trace ();
-  fflush (stderr);
+  fprintf(stderr, "[%02d] file %s; line %d ### Assertion failed: %s\n",
+          Caml_state ? Caml_state->id : -1, file, line, expr);
+  caml_print_trace();
+  fflush(stderr);
   caml_stat_free(file);
   abort();
 }

@@ -332,7 +332,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #ifdef DEBUG
     caml_bcodcount++;
     if (caml_icount-- == 0) caml_stop_here ();
-    if (caml_params->trace_level>1) printf("\n##%ld\n", caml_bcodcount);
+    if (caml_params->trace_level>1)
+      printf("\n##%" ARCH_INTNAT_PRINTF_FORMAT "d\n", caml_bcodcount);
     if (caml_params->trace_level) caml_disasm_instr(pc);
     if (caml_params->trace_level>1) {
       printf("env=");

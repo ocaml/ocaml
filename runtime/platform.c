@@ -15,13 +15,18 @@
 /**************************************************************************/
 #define CAML_INTERNALS
 
-#include <sys/mman.h>
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
 #include <sys/time.h>
 #include "caml/platform.h"
 #include "caml/fail.h"
+#ifdef HAS_SYS_MMAN_H
+#include <sys/mman.h>
+#endif
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 /* Mutexes */
 
@@ -142,11 +147,16 @@ static uintnat round_up(uintnat size, uintnat align) {
   return (size + align - 1) & ~(align - 1);
 }
 
+long caml_sys_pagesize = 0;
 
 uintnat caml_mem_round_up_pages(uintnat size)
 {
-  return round_up(size, sysconf(_SC_PAGESIZE));
+  return round_up(size, caml_sys_pagesize);
 }
+
+#ifdef _WIN32
+#define MAP_FAILED 0
+#endif
 
 void* caml_mem_map(uintnat size, uintnat alignment, int reserve_only)
 {
@@ -158,8 +168,14 @@ void* caml_mem_map(uintnat size, uintnat alignment, int reserve_only)
   alignment = caml_mem_round_up_pages(alignment);
 
   CAMLassert (alloc_sz > size);
+#ifdef _WIN32
+  /* Memory is only reserved at this point. It'll be committed after the
+     trim. */
+  mem = VirtualAlloc(NULL, alloc_sz, MEM_RESERVE, PAGE_NOACCESS);
+#else
   mem = mmap(0, alloc_sz, reserve_only ? PROT_NONE : (PROT_READ | PROT_WRITE),
              MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+#endif
   if (mem == MAP_FAILED) {
     return 0;
   }
@@ -168,10 +184,28 @@ void* caml_mem_map(uintnat size, uintnat alignment, int reserve_only)
   base = (uintnat)mem;
   aligned_start = round_up(base, alignment);
   aligned_end = aligned_start + caml_mem_round_up_pages(size);
+#ifdef _WIN32
+  /* VirtualFree can be used to decommit portions of memory, but it can only
+     release the entire block of memory. For Windows, repeat the call but this
+     time specify the address. */
+  if (!VirtualFree(mem, 0, MEM_RELEASE))
+    printf("The world seems to be upside down\n");
+  mem = VirtualAlloc((void*)aligned_start,
+                     aligned_end - aligned_start + 1,
+                     MEM_RESERVE | (reserve_only ? 0 : MEM_COMMIT),
+                     reserve_only ? PAGE_NOACCESS : PAGE_READWRITE);
+  if (!mem)
+    printf("Trimming failed\n");
+  else if (mem != (void*)aligned_start)
+    printf("Hang on a sec - it's allocated a different block?!\n");
+#else
   caml_mem_unmap((void*)base, aligned_start - base);
   caml_mem_unmap((void*)aligned_end, (base + alloc_sz) - aligned_end);
+#endif
   return (void*)aligned_start;
 }
+
+#ifndef _WIN32
 static void* map_fixed(void* mem, uintnat size, int prot)
 {
   if (mmap((void*)mem, size, prot,
@@ -182,9 +216,13 @@ static void* map_fixed(void* mem, uintnat size, int prot)
     return mem;
   }
 }
+#endif
 
 void* caml_mem_commit(void* mem, uintnat size)
 {
+#ifdef _WIN32
+  return VirtualAlloc(mem, size, MEM_COMMIT, PAGE_READWRITE);
+#else
   void* p = map_fixed(mem, size, PROT_READ | PROT_WRITE);
   /*
     FIXME: On Linux, with overcommit, you stand a better
@@ -195,16 +233,27 @@ void* caml_mem_commit(void* mem, uintnat size)
       if (p) memset(p, 0, size);
   */
   return p;
+#endif
 }
 
 void caml_mem_decommit(void* mem, uintnat size)
 {
+#ifdef _WIN32
+  if (!VirtualFree(mem, size, MEM_DECOMMIT))
+    printf("VirtualFree failed to decommit\n");
+#else
   map_fixed(mem, size, PROT_NONE);
+#endif
 }
 
 void caml_mem_unmap(void* mem, uintnat size)
 {
+#ifdef _WIN32
+  if (!VirtualFree(mem, size, MEM_RELEASE))
+    printf("VirtualFree failed\n");
+#else
   munmap(mem, size);
+#endif
 }
 
 #define Min_sleep_ns       10000 // 10 us

@@ -1,8 +1,9 @@
 (* TEST
 * hasunix
 include unix
-** bytecode
-** native
+** not-windows
+*** bytecode
+*** native
 *)
 
 (* this test checks that the domain lock is properly reinitialized

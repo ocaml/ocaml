@@ -67,24 +67,27 @@ let tsl_block_of_file_safe test_filename =
 let print_usage () =
   Printf.printf "%s\n%!" Options.usage
 
-type result_summary = No_failure | Some_failure
+type result_summary = No_failure | Some_failure | All_skipped
+let join_result summary result =
+  let open Result in
+  match result.status, summary with
+  | Fail, _
+  | _, Some_failure -> Some_failure
+  | Skip, All_skipped -> All_skipped
+  | _ -> No_failure
+
 let join_summaries sa sb =
   match sa, sb with
-  | Some_failure, _ | _, Some_failure -> Some_failure
-  | No_failure, No_failure -> No_failure
-
-let summary_of_result res =
-  let open Result in
-  match res.status with
-  | Pass -> No_failure
-  | Skip -> No_failure
-  | Fail -> Some_failure
+  | Some_failure, _
+  | _, Some_failure -> Some_failure
+  | All_skipped, All_skipped -> All_skipped
+  | _ -> No_failure
 
 let rec run_test log common_prefix path behavior = function
   Node (testenvspec, test, env_modifiers, subtrees) ->
   Printf.printf "%s %s (%s) => %!" common_prefix path test.Tests.test_name;
-  let (msg, children_behavior, summary) = match behavior with
-    | Skip_all_tests -> "n/a", Skip_all_tests, No_failure
+  let (msg, children_behavior, result) = match behavior with
+    | Skip_all_tests -> "n/a", Skip_all_tests, Result.skip
     | Run env ->
       let testenv0 = interpret_environment_statements env testenvspec in
       let testenv = List.fold_left apply_modifiers testenv0 env_modifiers in
@@ -92,14 +95,13 @@ let rec run_test log common_prefix path behavior = function
       let msg = Result.string_of_result result in
       let children_behavior =
         if Result.is_pass result then Run newenv else Skip_all_tests in
-      let summary = summary_of_result result in
-      (msg, children_behavior, summary) in
+      (msg, children_behavior, result) in
   Printf.printf "%s\n%!" msg;
-  join_summaries summary
-    (run_test_trees log common_prefix path children_behavior subtrees)
+  join_result
+    (run_test_trees log common_prefix path children_behavior subtrees) result
 
 and run_test_trees log common_prefix path behavior trees =
-  List.fold_left join_summaries No_failure
+  List.fold_left join_summaries All_skipped
     (List.mapi (run_test_i log common_prefix path behavior) trees)
 
 and run_test_i log common_prefix path behavior i test_tree =
@@ -127,6 +129,7 @@ let init_tests_to_skip () =
   tests_to_skip := String.words (Sys.safe_getenv "OCAMLTEST_SKIP_TESTS")
 
 let test_file test_filename =
+  let start = Unix.gettimeofday () in
   let skip_test = List.mem test_filename !tests_to_skip in
   let tsl_block = tsl_block_of_file_safe test_filename in
   let (rootenv_statements, test_trees) = test_trees_of_tsl_block tsl_block in
@@ -209,10 +212,14 @@ let test_file test_filename =
   | Some_failure ->
       if not Options.log_to_stderr then
         Sys.dump_file stderr ~prefix:"> " log_filename
-  | No_failure ->
+  | No_failure | All_skipped ->
       if not Options.keep_test_dir_on_success then
         clean_test_build_directory ()
-  end
+  end;
+  if Options.show_timings && summary = No_failure then
+    let wall_clock_duration = Unix.gettimeofday () -. start in
+    Printf.eprintf "Wall clock: %s took %.02fs\n%!"
+                   test_filename wall_clock_duration
 
 let is_test s =
   match tsl_block_of_file s with

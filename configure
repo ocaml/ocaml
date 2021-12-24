@@ -12650,11 +12650,10 @@ case $ocaml_cv_cc_vendor in #(
     CPP="$CC -E -Qn" ;; #(
   # suppress generation of Sun PRO ident string
   msvc-*) :
-    CPP="$CC -nologo -EP";
-#  TODO: why can we not use $CPP in multicore, fix this?
-  CPP="$CC -E -P" ;; #(
+    CPP="$CC -nologo -EP" ;; #(
   *) :
-     ;;
+    #  TODO: why can we not use $CPP in multicore, fix this?
+  CPP="$CC -E -P" ;;
 esac
 
 # Libraries to build depending on the host
@@ -13481,6 +13480,14 @@ fi
 ac_fn_c_check_header_mongrel "$LINENO" "stdatomic.h" "ac_cv_header_stdatomic_h" "$ac_includes_default"
 if test "x$ac_cv_header_stdatomic_h" = xyes; then :
   $as_echo "#define HAS_STDATOMIC_H 1" >>confdefs.h
+
+fi
+
+
+
+ac_fn_c_check_header_mongrel "$LINENO" "sys/mman.h" "ac_cv_header_sys_mman_h" "$ac_includes_default"
+if test "x$ac_cv_header_sys_mman_h" = xyes; then :
+  $as_echo "#define HAS_SYS_MMAN_H 1" >>confdefs.h
 
 fi
 
@@ -16664,6 +16671,7 @@ $as_echo "$as_me: the Win32/POSIX threads library is disabled" >&6;} ;; #(
   *-*-mingw32|*-pc-windows) :
     systhread_support=true
       otherlibraries="$otherlibraries systhreads"
+      PTHREAD_LIBS="-lpthread"
       { $as_echo "$as_me:${as_lineno-$LINENO}: the Win32 threads library is supported" >&5
 $as_echo "$as_me: the Win32 threads library is supported" >&6;} ;; #(
   *) :
@@ -17816,8 +17824,8 @@ fi
 
 case $host in #(
   *-*-mingw32) :
-    bytecclibs="-lws2_32 -lversion"
-    nativecclibs="-lws2_32 -lversion" ;; #(
+    bytecclibs="-lws2_32 -lversion -lpthread -lgcc_eh -lDbgHelp"
+    nativecclibs="-lws2_32 -lversion -lpthread -lgcc_eh -lDbgHelp" ;; #(
   *-pc-windows) :
     bytecclibs="advapi32.lib ws2_32.lib version.lib"
     nativecclibs="advapi32.lib ws2_32.lib version.lib" ;; #(

@@ -39,6 +39,9 @@
 #include <errno.h>
 #include <string.h>
 #include <signal.h>
+#if defined(DEBUG) || defined(NATIVE_CODE)
+#include <dbghelp.h>
+#endif
 #include "caml/alloc.h"
 #include "caml/codefrag.h"
 #include "caml/fail.h"
@@ -49,6 +52,8 @@
 #include "caml/signals.h"
 #include "caml/sys.h"
 #include "caml/winsupport.h"
+#include "caml/startup_aux.h"
+#include "caml/platform.h"
 
 #include "caml/config.h"
 
@@ -1088,7 +1093,135 @@ CAMLexport clock_t caml_win32_clock(void)
   return (clock_t)(total / clocks_per_sec);
 }
 
-int caml_thread_setname(wchar_t *name)
+int caml_thread_setname(const char* name)
 {
-  return -1;
+  int ret;
+  /* XXX Duplicates unix.c, but MSVC will add some specific code here */
+  pthread_t self = pthread_self();
+
+  ret = pthread_setname_np(self, name);
+  if (ret == ERANGE)
+    return -1;
+  return 0;
 }
+
+static LARGE_INTEGER frequency;
+static LARGE_INTEGER clock_offset;
+typedef void (WINAPI *LPFN_GETSYSTEMTIME) (LPFILETIME);
+
+void caml_init_os_params(void)
+{
+  SYSTEM_INFO si;
+  LPFN_GETSYSTEMTIME pGetSystemTime;
+  FILETIME stamp;
+  ULARGE_INTEGER now;
+  LARGE_INTEGER counter;
+
+  /* Get the system page size */
+  GetSystemInfo(&si);
+  caml_sys_pagesize = si.dwPageSize;
+
+  /* Get the number of nanoseconds for each tick in QueryPerformanceCounter */
+  QueryPerformanceFrequency(&frequency);
+  /* Convert the frequency to the duration of 1 tick in ns */
+  frequency.QuadPart = 1000000000LL / frequency.QuadPart;
+
+  /* Get the current time as accurately as we can.
+     GetSystemTimePreciseAsFileTime is available on Windows 8 / Server 2012+ and
+     gives <1us precision. For Windows 7 and earlier, which is only accurate to
+     10-100ms. */
+  pGetSystemTime =
+    (LPFN_GETSYSTEMTIME)GetProcAddress(GetModuleHandle(L"kernel32"),
+                                       "GetSystemTimePreciseAsFileTime");
+  if (!pGetSystemTime)
+    pGetSystemTime = GetSystemTimeAsFileTime;
+
+  /* Get the time and the performance counter. Get the performance counter first
+     to ensure no quantum effects */
+  QueryPerformanceCounter(&counter);
+  pGetSystemTime(&stamp);
+
+  now.LowPart = stamp.dwLowDateTime;
+  now.HighPart = stamp.dwHighDateTime;
+
+  /* Convert a FILETIME in 100ns ticks since 1 January 1601 to
+     ns since 1 Jan 1970. */
+  clock_offset.QuadPart =
+    ((now.QuadPart - INT64_LITERAL(0x19DB1DED53E8000U)) * 100);
+
+  /* Get the offset between QueryPerformanceCounter and
+     GetSystemTimePreciseAsFileTime in order to return a true timestamp, rather
+     than just a monotonic time source */
+  clock_offset.QuadPart -= (counter.QuadPart * frequency.QuadPart);
+
+  GetSystemTimePreciseAsFileTime(&stamp);
+  now.LowPart = stamp.dwLowDateTime;
+  now.HighPart = stamp.dwHighDateTime;
+  now.QuadPart *= 100;
+}
+
+int64_t caml_time_counter(void)
+{
+  LARGE_INTEGER now;
+  /* Windows 2000 is no longer supported, so this function always succeeds */
+  QueryPerformanceCounter(&now);
+  return (now.QuadPart * frequency.QuadPart + clock_offset.QuadPart);
+}
+
+#if defined(DEBUG) || defined(NATIVE_CODE)
+void caml_print_trace(void)
+{
+  CONTEXT context;
+  STACKFRAME64 frame;
+  HANDLE hProcess = GetCurrentProcess();
+  HANDLE hThread = GetCurrentThread();
+  static int symbols_loaded = 0;
+  int i = 0;
+
+  memset(&context, 0, sizeof(CONTEXT));
+  memset(&frame, 0, sizeof(STACKFRAME64));
+
+  /* SymCleanup at present is never called */
+  if (!symbols_loaded && SymInitialize(hProcess, NULL, TRUE)) {
+    fprintf(stderr, "Loaded symbols\n");
+    symbols_loaded = 1;
+  }
+
+  context.ContextFlags = CONTEXT_FULL;
+  RtlCaptureContext(&context);
+
+#ifdef _M_X64
+  frame.AddrPC.Mode =
+    frame.AddrFrame.Mode = frame.AddrStack.Mode = AddrModeFlat;
+  frame.AddrPC.Offset = context.Rip;
+  frame.AddrFrame.Offset = context.Rsp;
+  frame.AddrStack.Offset = context.Rsp;
+#else
+#error Unsupported Windows architecture
+#endif
+
+  /* For the symbols to be populated, compile with ocamlopt -g and run
+     `cv2pdb prog.exe` to generate prog.pdb. The output of this stack trace is
+     limited, probably because we make no effort to emit correct DWARF
+     information on Windows.
+
+     cv2pdb can be downloaded from https://github.com/rainers/cv2pdb */
+  while (i++ < 10 && StackWalk64(IMAGE_FILE_MACHINE_AMD64,
+                                 hProcess, hThread,
+                                 &frame, &context, NULL,
+                                 SymFunctionTableAccess64, SymGetModuleBase64,
+                                 NULL)) {
+    char buffer[sizeof(SYMBOL_INFO) + MAX_SYM_NAME * sizeof(wchar_t)];
+    PSYMBOL_INFO symbol = (PSYMBOL_INFO)buffer;
+    DWORD64 offset = 0;
+    char *name;
+    symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+    symbol->MaxNameLen = MAX_SYM_NAME;
+    if (SymFromAddr(hProcess, frame.AddrPC.Offset, &offset, symbol))
+      name = symbol->Name;
+    else
+      name = "???";
+    caml_gc_log("[%02d] %s\n", i, name);
+  }
+}
+#endif

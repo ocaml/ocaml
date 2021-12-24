@@ -41,15 +41,15 @@ void caml_handle_gc_interrupt(void);
 void caml_handle_gc_interrupt_no_async_exceptions(void);
 void caml_handle_incoming_interrupts(void);
 
-void caml_interrupt_self(void);
+CAMLextern void caml_interrupt_self(void);
 
-CAMLexport void caml_reset_domain_lock(void);
-CAMLexport int caml_bt_is_in_blocking_section(void);
-CAMLexport intnat caml_domain_is_multicore (void);
-CAMLexport void caml_bt_enter_ocaml(void);
-CAMLexport void caml_bt_exit_ocaml(void);
-CAMLexport void caml_acquire_domain_lock(void);
-CAMLexport void caml_release_domain_lock(void);
+CAMLextern void caml_reset_domain_lock(void);
+CAMLextern int caml_bt_is_in_blocking_section(void);
+CAMLextern intnat caml_domain_is_multicore (void);
+CAMLextern void caml_bt_enter_ocaml(void);
+CAMLextern void caml_bt_exit_ocaml(void);
+CAMLextern void caml_acquire_domain_lock(void);
+CAMLextern void caml_release_domain_lock(void);
 
 CAMLextern void (*caml_atfork_hook)(void);
 
@@ -57,8 +57,8 @@ CAMLextern void (*caml_domain_start_hook)(void);
 CAMLextern void (*caml_domain_stop_hook)(void);
 CAMLextern void (*caml_domain_external_interrupt_hook)(void);
 
-void caml_init_domains(uintnat minor_heap_size);
-void caml_init_domain_self(int);
+CAMLextern void caml_init_domains(uintnat minor_heap_size);
+CAMLextern void caml_init_domain_self(int);
 
 CAMLextern atomic_uintnat caml_num_domains_running;
 CAMLextern uintnat caml_minor_heaps_base;
@@ -94,7 +94,7 @@ int caml_global_barrier_num_domains();
 
 int caml_domain_is_terminating(void);
 
-void caml_domain_set_name(char_os*);
+CAMLextern void caml_domain_set_name(char*);
 
 #endif /* CAML_INTERNALS */
 

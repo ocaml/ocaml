@@ -50,7 +50,8 @@ void caml_change_max_stack_size (uintnat new_max_size)
 
   if (new_max_size < size) new_max_size = size;
   if (new_max_size != caml_max_stack_size){
-    caml_gc_log ("Changing stack limit to %luk bytes",
+    caml_gc_log ("Changing stack limit to %"
+                 ARCH_INTNAT_PRINTF_FORMAT "uk bytes",
                      new_max_size * sizeof (value) / 1024);
   }
   caml_max_stack_size = new_max_size;
@@ -158,7 +159,8 @@ value caml_alloc_stack (value hval, value hexn, value heff) {
 
   if (!stack) caml_raise_out_of_memory();
 
-  fiber_debug_log ("Allocate stack=%p of %lu words", stack, caml_fiber_wsz);
+  fiber_debug_log ("Allocate stack=%p of %" ARCH_INTNAT_PRINTF_FORMAT
+                     "u words", stack, caml_fiber_wsz);
 
   return Val_ptr(stack);
 }

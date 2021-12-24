@@ -292,7 +292,8 @@ void caml_init_gc ()
   caml_max_stack_size = caml_params->init_max_stack_wsz;
   caml_fiber_wsz = caml_params->init_fiber_wsz;
   caml_percent_free = norm_pfree (caml_params->init_percent_free);
-  caml_gc_log ("Initial stack limit: %luk bytes",
+  caml_gc_log ("Initial stack limit: %"
+               ARCH_INTNAT_PRINTF_FORMAT "uk bytes",
                caml_max_stack_size / 1024 * sizeof (value));
 
   caml_custom_major_ratio =

@@ -53,41 +53,47 @@ function set_configuration {
     case "$1" in
         cygwin*)
             dep='--disable-dependency-generation'
+            man=''
         ;;
         mingw32)
             build='--build=i686-pc-cygwin'
             host='--host=i686-w64-mingw32'
             dep='--disable-dependency-generation'
+            man=''
         ;;
         mingw64)
             build='--build=i686-pc-cygwin'
             host='--host=x86_64-w64-mingw32'
             dep='--disable-dependency-generation'
+            man='--disable-stdlib-manpages'
         ;;
         msvc32)
             build='--build=i686-pc-cygwin'
             host='--host=i686-pc-windows'
             dep='--disable-dependency-generation'
+            man=''
         ;;
         msvc64)
             build='--build=x86_64-pc-cygwin'
             host='--host=x86_64-pc-windows'
             # Explicitly test dependency generation on msvc64
             dep='--enable-dependency-generation'
+            man=''
         ;;
     esac
 
     mkdir -p "$CACHE_DIRECTORY"
     ./configure --cache-file="$CACHE_DIRECTORY/config.cache-$1" \
-                $dep $build $host --prefix="$2" --enable-ocamltest || ( \
+                $dep $build $man $host --prefix="$2" --enable-ocamltest || ( \
       rm -f "$CACHE_DIRECTORY/config.cache-$1" ; \
       ./configure --cache-file="$CACHE_DIRECTORY/config.cache-$1" \
-                  $dep $build $host --prefix="$2" --enable-ocamltest )
+                  $dep $build $man $host --prefix="$2" --enable-ocamltest )
 
 #    FILE=$(pwd | cygpath -f - -m)/Makefile.config
 #    run "Content of $FILE" cat Makefile.config
 }
 
+PARALLEL_URL='https://ftpmirror.gnu.org/parallel/parallel-latest.tar.bz2'
 APPVEYOR_BUILD_FOLDER=$(echo "$APPVEYOR_BUILD_FOLDER" | cygpath -f -)
 FLEXDLLROOT="$PROGRAMFILES/flexdll"
 OCAMLROOT=$(echo "$OCAMLROOT" | cygpath -f - -m)
@@ -99,8 +105,24 @@ if [[ $BOOTSTRAP_FLEXDLL = 'false' ]] ; then
   esac
 fi
 
+# This is needed at all stages while winpthreads is in use for 5.00
+# This step can be moved back to the test phase (or removed entirely?) when
+# winpthreads stops being used.
+if [[ $PORT = 'mingw64' ]] ; then
+  export PATH="$PATH:/usr/x86_64-w64-mingw32/sys-root/mingw/bin"
+elif [[ $PORT = 'mingw32' ]] ; then
+  export PATH="$PATH:/usr/i686-w64-mingw32/sys-root/mingw/bin"
+fi
+
 case "$1" in
   install)
+    pushd /tmp &>/dev/null
+    curl -Ls $PARALLEL_URL | bunzip2 - | tar x
+    cd parallel-*
+    ./configure
+    make
+    make install
+    popd &/dev/null
     if [[ $BOOTSTRAP_FLEXDLL = 'false' ]] ; then
       mkdir -p "$FLEXDLLROOT"
       cd "$APPVEYOR_BUILD_FOLDER/../flexdll"
@@ -124,12 +146,9 @@ case "$1" in
           "$FULL_BUILD_PREFIX-$PORT/tools/check-symbol-names" \
           $FULL_BUILD_PREFIX-$PORT/runtime/*.a
     fi
-    if [[ $PORT = 'mingw64' ]] ; then
-      export PATH="$PATH:/usr/x86_64-w64-mingw32/sys-root/mingw/bin"
-    elif [[ $PORT = 'mingw32' ]] ; then
-      export PATH="$PATH:/usr/i686-w64-mingw32/sys-root/mingw/bin"
-    fi
-    run "test $PORT" $MAKE -C "$FULL_BUILD_PREFIX-$PORT" tests
+    # FIXME At present, running the testsuite takes too long
+    #run "test $PORT" \
+    #    $MAKE -C "$FULL_BUILD_PREFIX-$PORT/testsuite" SHOW_TIMINGS=1 parallel
     run "install $PORT" $MAKE -C "$FULL_BUILD_PREFIX-$PORT" install
     if [[ $PORT = 'msvc64' ]] ; then
       run "$MAKE check_all_arches" \

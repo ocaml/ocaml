@@ -329,12 +329,12 @@ static void caml_wait_interrupt_serviced(struct interruptor* target)
 }
 
 #define MAX_DOMAIN_NAME_LENGTH 16
-void caml_domain_set_name(char_os *name)
+void caml_domain_set_name(char *name)
 {
   char thread_name[MAX_DOMAIN_NAME_LENGTH];
-  snprintf_os(thread_name, MAX_DOMAIN_NAME_LENGTH,
-              T("%s%d"), name, Caml_state->id);
-  caml_thread_setname_os(thread_name);
+  snprintf(thread_name, MAX_DOMAIN_NAME_LENGTH,
+           "%s%d", name, Caml_state->id);
+  caml_thread_setname(thread_name);
 }
 
 asize_t caml_norm_minor_heap_size (intnat wsize)
@@ -621,7 +621,7 @@ void caml_init_domains(uintnat minor_heap_wsz) {
   caml_init_signal_handling();
 
   CAML_EVENTLOG_INIT();
-  caml_domain_set_name(T("Domain"));
+  caml_domain_set_name("Domain");
 }
 
 void caml_init_domain_self(int domain_id) {
@@ -663,8 +663,10 @@ struct domain_startup_params {
   struct domain_ml_values* ml_values;
   dom_internal* newdom;
   uintnat unique_id;
+#ifndef _WIN32
   /* signal mask to set after it is safe to do so */
   sigset_t mask;
+#endif
 };
 
 static void* backup_thread_func(void* v)
@@ -676,7 +678,7 @@ static void* backup_thread_func(void* v)
   domain_self = di;
   SET_Caml_state((void*)(di->tls_area));
 
-  caml_domain_set_name(T("BackupThread"));
+  caml_domain_set_name("BackupThread");
 
   CAML_EVENTLOG_IS_BACKUP_THREAD();
 
@@ -736,7 +738,9 @@ static void* backup_thread_func(void* v)
 static void install_backup_thread (dom_internal* di)
 {
   int err;
+#ifndef _WIN32
   sigset_t mask, old_mask;
+#endif
 
   if (di->backup_thread_running == 0) {
     CAMLassert (di->backup_thread_msg == BT_INIT || /* Using fresh domain */
@@ -749,14 +753,18 @@ static void install_backup_thread (dom_internal* di)
       caml_plat_lock (&di->domain_lock);
     }
 
+#ifndef _WIN32
     /* No signals on the backup thread */
     sigfillset(&mask);
     pthread_sigmask(SIG_BLOCK, &mask, &old_mask);
+#endif
 
     atomic_store_rel(&di->backup_thread_msg, BT_ENTERING_OCAML);
     err = pthread_create(&di->backup_thread, 0, backup_thread_func, (void*)di);
 
+#ifndef _WIN32
     pthread_sigmask(SIG_SETMASK, &old_mask, NULL);
+#endif
 
     if (err)
       caml_failwith("failed to create domain backup thread");
@@ -821,12 +829,14 @@ static void* domain_thread_func(void* v)
   if (domain_self) {
     install_backup_thread(domain_self);
 
+#ifndef _WIN32
     /* it is now safe for us to handle signals */
     pthread_sigmask(SIG_SETMASK, &p->mask, NULL);
+#endif
 
     caml_gc_log("Domain starting (unique_id = %"ARCH_INTNAT_PRINTF_FORMAT"u)",
                 domain_self->interruptor.unique_id);
-    caml_domain_set_name(T("Domain"));
+    caml_domain_set_name("Domain");
     caml_domain_start_hook();
     caml_callback(ml_values->callback, Val_unit);
     domain_terminate();
@@ -846,7 +856,9 @@ CAMLprim value caml_domain_spawn(value callback, value mutex)
   struct domain_startup_params p;
   pthread_t th;
   int err;
+#ifndef _WIN32
   sigset_t mask, old_mask;
+#endif
 
   CAML_EV_BEGIN(EV_DOMAIN_SPAWN);
   p.parent = &domain_self->interruptor;
@@ -864,12 +876,17 @@ CAMLprim value caml_domain_spawn(value callback, value mutex)
    pthread_create inherits the current signals set and we want to avoid
    a signal handler being triggered in the new domain before
    the domain_state is fully populated. */
+#ifndef _WIN32
+  /* FIXME Spawning threads -> unix.c/win32.c */
   sigfillset(&mask);
   pthread_sigmask(SIG_BLOCK, &mask, &old_mask);
   p.mask = old_mask;
+#endif
   err = pthread_create(&th, 0, domain_thread_func, (void*)&p);
+#ifndef _WIN32
   /* we can restore the signal mask we had initially now */
   pthread_sigmask(SIG_SETMASK, &old_mask, NULL);
+#endif
 
   if (err) {
     caml_failwith("failed to create domain thread");
@@ -1434,12 +1451,9 @@ CAMLprim value caml_domain_dls_get(value unused)
 CAMLprim value caml_ml_domain_set_name(value name)
 {
   CAMLparam1(name);
-  char_os* name_os;
 
   if (caml_string_length(name) >= MAX_DOMAIN_NAME_LENGTH)
     caml_invalid_argument("caml_ml_domain_set_name");
-  name_os = caml_stat_strdup_to_os(String_val(name));
-  caml_thread_setname_os(name_os);
-  caml_stat_free(name_os);
+  caml_thread_setname(String_val(name));
   CAMLreturn(Val_unit);
 }
