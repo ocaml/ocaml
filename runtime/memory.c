@@ -201,18 +201,23 @@ CAMLexport void caml_adjust_gc_speed (mlsize_t res, mlsize_t max)
   }
 }
 
+/* You must use [caml_intialize] to store the initial value in a field of a
+   block, unless you are sure the value is not a young block, in which case a
+   plain assignment would do.
+
+   [caml_initialize] never calls the GC, so you may call it while a block is
+   unfinished (i.e. just after a call to [caml_alloc_shr].) */
 CAMLexport CAMLweakdef void caml_initialize (value *fp, value val)
 {
 #ifdef DEBUG
   if (Is_young((value)fp))
-    CAMLassert(*fp == Debug_uninit_minor ||
-           *fp == Val_unit);
+    CAMLassert(*fp == Debug_uninit_minor || *fp == Val_unit);
   else
-    CAMLassert(*fp == Debug_uninit_major ||
-           *fp == Val_unit);
+    CAMLassert(*fp == Debug_uninit_major || *fp == Val_unit);
 #endif
-  write_barrier((value)fp, 0, *fp, val);
   *fp = val;
+  if (!Is_young((value)fp) && Is_block_and_young (val))
+    Ref_table_add(&Caml_state->minor_tables->major_ref, fp);
 }
 
 CAMLexport int caml_atomic_cas_field (
@@ -367,16 +372,13 @@ Caml_inline value alloc_shr(mlsize_t wosize, tag_t tag, int noexc)
     caml_request_major_slice();
   }
 
+#ifdef DEBUG
   if (tag < No_scan_tag) {
     mlsize_t i;
-    for (i = 0; i < wosize; i++) {
-      value init_val = Val_unit;
-#ifdef DEBUG
-      init_val = Debug_uninit_major;
-#endif
-      Op_hp(v)[i] = init_val;
-    }
+    for (i = 0; i < wosize; i++)
+      Op_hp(v)[i] = Debug_uninit_major;
   }
+#endif
   return Val_hp(v);
 }
 
