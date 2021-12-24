@@ -53,10 +53,6 @@ CAMLextern void caml_startup_pooled (char_os ** argv);
 CAMLextern value caml_startup_pooled_exn (char_os ** argv);
 CAMLextern void caml_shutdown (void);
 
-CAMLextern int caml_get_callback_depth (void);
-void caml_incr_callback_depth (void);
-void caml_decr_callback_depth (void);
-
 #ifdef __cplusplus
 }
 #endif
