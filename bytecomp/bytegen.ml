@@ -397,7 +397,6 @@ let comp_primitive p sz args =
   | Pcompare_ints -> Kccall("caml_int_compare", 2)
   | Pcompare_floats -> Kccall("caml_float_compare", 2)
   | Pcompare_bints bi -> comp_bint_primitive bi "compare" args
-  | Pmakeblock(tag, _mut, _) -> Kmakeblock(List.length args, tag)
   | Pfield(n, _ptr, _mut) -> Kgetfield n
   | Pfield_computed -> Kgetvectitem
   | Psetfield(n, _ptr, _init) -> Ksetfield n
@@ -532,6 +531,7 @@ let comp_primitive p sz args =
   | Praise _
   | Pmakearray _ | Pduparray _
   | Pfloatcomp _
+  | Pmakeblock _
   | Pfloatfield _
     ->
       fatal_error "Bytegen.comp_primitive"

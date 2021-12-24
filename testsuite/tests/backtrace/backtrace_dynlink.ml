@@ -25,7 +25,7 @@ ocamlrunparam += ",b=1"
 ****** check-program-output
 *)
 
-(* test for backtrace and stack unwinding with dynlib. *)
+(* test for backtrace and stack unwinding with dynlink. *)
 (* https://github.com/ocaml-multicore/ocaml-multicore/issues/440 *)
 (* https://github.com/ocaml-multicore/ocaml-multicore/pull/499 *)
 

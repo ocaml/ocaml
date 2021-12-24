@@ -215,7 +215,7 @@ void caml_thread_restore_runtime_state(void)
 
 static void caml_thread_enter_blocking_section(void)
 {
-  /* save the current runtime state in the thread descriptor
+  /* Save the current runtime state in the thread descriptor
      of the current thread */
   Current_thread = st_tls_get(Thread_key);
   caml_thread_save_runtime_state();
@@ -233,8 +233,8 @@ static void caml_thread_leave_blocking_section(void)
 #endif
   /* Wait until the runtime is free */
   st_masterlock_acquire(&Thread_main_lock);
-  /* Update Curr_thread to point to the thread descriptor corresponding
-     to the thread currently executing */
+  /* Update Current_thread to point to the thread descriptor corresponding to
+     the thread currently executing */
   Current_thread = st_tls_get(Thread_key);
   /* Restore the runtime state from the curr_thread descriptor */
   caml_thread_restore_runtime_state();
@@ -296,10 +296,9 @@ static value caml_thread_new_descriptor(value clos)
     mu = caml_threadstatus_new();
     /* Create a descriptor for the new thread */
     descr = caml_alloc_small(3, 0);
-    Ident(descr) = Val_long(atomic_load_acq(&thread_next_id));
+    Ident(descr) = Val_long(atomic_fetch_add(&thread_next_id, +1));
     Start_closure(descr) = clos;
     Terminated(descr) = mu;
-    atomic_fetch_add(&thread_next_id, +1);
   End_roots();
   return descr;
 }
@@ -338,33 +337,28 @@ static void caml_thread_reinitialize(void)
   Current_thread->prev = Current_thread;
   All_threads = Current_thread;
 
-  // within the child, the domain_lock needs to be reset
-  // and acquired.
+  /* Within the child, the domain_lock needs to be reset and acquired. */
   caml_reset_domain_lock();
   caml_acquire_domain_lock();
-  // master_lock needs to be initialized again.
-  // this process will also be the effective owner of the lock.
-  // so there is no need to run st_masterlock_acquire (busy = 1)
+  /* The master lock needs to be initialized again. This process will also be
+     the effective owner of the lock. So there is no need to run
+     st_masterlock_acquire (busy = 1) */
   st_masterlock_init(&Thread_main_lock);
 }
 
-CAMLprim value caml_thread_initialize(value unit);
-CAMLprim value caml_thread_initialize_domain(value unit);
-
 CAMLprim value caml_thread_join(value th);
 
-/* This hook is run when a domain shut downs. (see domains.c) */
-/* When a domain shut downs, the state must be cleared */
-/* to allow proper reuse of the domain slot the next time a domain */
-/* is started on this slot */
-/* If a program is single-domain, we mimic trunk's behavior and do not */
-/* care about ongoing thread: the program will exit. */
+/* This hook is run when a domain shuts down (see domains.c).
+
+   When a domain shuts down, the state must be cleared to allow proper reuse of
+   the domain slot the next time a domain is started on this slot. If a program
+   is single-domain, we mimic OCaml 4's behavior and do not care about ongoing
+   thread: the program will exit. */
 static void caml_thread_domain_stop_hook(void) {
-  /* If the program runs multiple domains, we should not let */
-  /* systhreads to hang around when a domain exit. */
-  /* If the domain is not the last one (and the last one will always */
-  /* be domain 0) we force the domain to join on every threads */
-  /* in the chaining before wrapping up, */
+  /* If the program runs multiple domains, we should not let systhreads to hang
+     around when a domain exit. If the domain is not the last one (and the last
+     one will always be domain 0) we force the domain to join on every thread
+     in the chaining before wrapping up. */
   if (!caml_domain_alone()) {
 
     while (Current_thread->next != Current_thread) {
@@ -386,7 +380,7 @@ static void caml_thread_termination_hook(void) {
 }
 #endif /* NATIVE_CODE */
 
-value caml_thread_initialize_domain(value v)
+CAMLprim value caml_thread_initialize_domain(value v)
 {
   CAMLparam0();
 

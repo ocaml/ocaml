@@ -85,8 +85,8 @@ Caml_inline void sync_check_error(int retcode, char * msg)
   msglen = strlen(msg);
   errlen = strlen(err);
   str = caml_alloc_string(msglen + 2 + errlen);
-  memmove (&Byte(str, 0), msg, msglen);
-  memmove (&Byte(str, msglen), ": ", 2);
-  memmove (&Byte(str, msglen + 2), err, errlen);
+  memcpy (&Byte(str, 0), msg, msglen);
+  memcpy (&Byte(str, msglen), ": ", 2);
+  memcpy (&Byte(str, msglen + 2), err, errlen);
   caml_raise_sys_error(str);
 }

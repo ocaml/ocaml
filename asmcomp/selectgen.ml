@@ -268,7 +268,7 @@ module Effect_and_coeffect : sig
   val none : t
   val arbitrary : t
 
-  val effect_ : t -> Effect.t
+  val effect : t -> Effect.t
   val coeffect : t -> Coeffect.t
 
   val pure_and_copure : t -> bool
@@ -284,7 +284,7 @@ end = struct
   let none = Effect.None, Coeffect.None
   let arbitrary = Effect.Arbitrary, Coeffect.Arbitrary
 
-  let effect_ (e, _ce) = e
+  let effect (e, _ce) = e
   let coeffect (_e, ce) = ce
 
   let pure_and_copure (e, ce) = Effect.pure e && Coeffect.copure ce
@@ -324,8 +324,7 @@ method is_simple_expr = function
   | Cop(op, args, _) ->
       begin match op with
         (* The following may have side effects *)
-      | Capply _ | Cextcall _ | Calloc | Cstore _ | Craise _ | Copaque
-      -> false
+      | Capply _ | Cextcall _ | Calloc | Cstore _ | Craise _ | Copaque -> false
         (* The remaining operations are simple if their args are *)
       | Cload _ | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi | Cand | Cor
       | Cxor | Clsl | Clsr | Casr | Ccmpi _ | Caddv | Cadda | Ccmpa _ | Cnegf
@@ -874,7 +873,7 @@ method private emit_parts (env:environment) ~effects_after exp =
   let module EC = Effect_and_coeffect in
   let may_defer_evaluation =
     let ec = self#effects_of exp in
-    match EC.effect_ ec with
+    match EC.effect ec with
     | Effect.Arbitrary | Effect.Raise ->
       (* Preserve the ordering of effectful expressions by evaluating them
          early (in the correct order) and assigning their results to
@@ -896,14 +895,14 @@ method private emit_parts (env:environment) ~effects_after exp =
            every [exp'] (for [exp'] as in the comment above) has no effects
            "worse" (in the sense of the ordering in [Effect.t]) than raising
            an exception. *)
-        match EC.effect_ effects_after with
+        match EC.effect effects_after with
         | Effect.None | Effect.Raise -> true
         | Effect.Arbitrary -> false
       end
       | Coeffect.Arbitrary -> begin
         (* Arbitrary expressions may only be deferred if evaluation of
            every [exp'] (for [exp'] as in the comment above) has no effects. *)
-        match EC.effect_ effects_after with
+        match EC.effect effects_after with
         | Effect.None -> true
         | Effect.Arbitrary | Effect.Raise -> false
       end
