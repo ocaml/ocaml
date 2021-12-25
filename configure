@@ -14542,6 +14542,17 @@ case $arch in #(
 esac ;;
 esac
 
+# Disable DT_TEXTREL warnings on Linux and BSD i386
+# See https://github.com/ocaml/ocaml/issues/9800
+
+case "$system" in #(
+  linux_elf|bsd_elf) :
+    mksharedlib="$mksharedlib -Wl,-z,notext"
+    mkmaindll="$mkmaindll -Wl,-z,notext" ;; #(
+  *) :
+     ;;
+esac
+
 # Assembler
 
 if test -n "$target_alias"; then :
