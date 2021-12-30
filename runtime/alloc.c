@@ -37,14 +37,14 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
 
   CAMLassert (tag < 256);
   CAMLassert (tag != Infix_tag);
-  if (wosize == 0){
-    result = Atom (tag);
-  } else if (wosize <= Max_young_wosize) {
-    Alloc_small (result, wosize, tag,
-                 { caml_handle_gc_interrupt_no_async_exceptions(); });
-    if (tag < No_scan_tag){
-      for (i = 0; i < wosize; i++) {
-        Field(result, i) = Val_unit;
+  if (wosize <= Max_young_wosize){
+    if (wosize == 0){
+      result = Atom (tag);
+    }else{
+      Alloc_small (result, wosize, tag,
+                   { caml_handle_gc_interrupt_no_async_exceptions(); });
+      if (tag < No_scan_tag){
+        for (i = 0; i < wosize; i++) Field (result, i) = Val_unit;
       }
     }
   } else {
@@ -52,9 +52,8 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
     if (tag < No_scan_tag) {
       for (i = 0; i < wosize; i++) Field (result, i) = Val_unit;
     }
-    result = caml_check_urgent_gc(result);
+    result = caml_check_urgent_gc (result);
   }
-
   return result;
 }
 
@@ -182,10 +181,17 @@ CAMLexport value caml_alloc_tuple(mlsize_t n)
 /* [len] is a number of bytes (chars) */
 CAMLexport value caml_alloc_string (mlsize_t len)
 {
+  value result;
   mlsize_t offset_index;
   mlsize_t wosize = (len + sizeof (value)) / sizeof (value);
-  value result = caml_alloc(wosize, String_tag);
 
+  if (wosize <= Max_young_wosize) {
+    Alloc_small (result, wosize, String_tag,
+                 { caml_handle_gc_interrupt_no_async_exceptions(); });
+  }else{
+    result = caml_alloc_shr (wosize, String_tag);
+    result = caml_check_urgent_gc (result);
+  }
   Field (result, wosize - 1) = 0;
   offset_index = Bsize_wsize (wosize) - 1;
   Byte (result, offset_index) = offset_index - len;
@@ -229,14 +235,13 @@ CAMLexport value caml_alloc_array(value (*funct)(char const *),
 
   nbr = 0;
   while (arr[nbr] != 0) nbr++;
-  if (nbr == 0) {
-    CAMLreturn (Atom(0));
-  } else {
-    result = caml_alloc (nbr, 0);
-    for (n = 0; n < nbr; n++) {
-      Store_field(result, n, funct(arr[n]));
-    }
-    CAMLreturn (result);
+  result = caml_alloc (nbr, 0);
+  for (n = 0; n < nbr; n++) {
+    /* The two statements below must be separate because of evaluation
+       order (don't take the address &Field(result, n) before
+       calling funct, which may cause a GC and move result). */
+    v = funct(arr[n]);
+    caml_modify(&Field(result, n), v);
   }
   CAMLreturn (result);
 }
@@ -250,11 +255,12 @@ value caml_alloc_float_array(mlsize_t len)
   /* For consistency with [caml_make_vect], which can't tell whether it should
      create a float array or not when the size is zero, the tag is set to
      zero when the size is zero. */
-  if (wosize == 0) {
-    return Atom(0);
-  } else if (wosize <= Max_young_wosize) {
-    Alloc_small (result, wosize, Double_array_tag,
-                 { caml_handle_gc_interrupt_no_async_exceptions(); });
+  if (wosize <= Max_young_wosize){
+    if (wosize == 0)
+      return Atom(0);
+    else
+      Alloc_small (result, wosize, Double_array_tag,
+                   { caml_handle_gc_interrupt_no_async_exceptions(); });
   } else {
     result = caml_alloc_shr (wosize, Double_array_tag);
     result = caml_check_urgent_gc (result);
@@ -276,7 +282,7 @@ CAMLexport int caml_convert_flag_list(value list, const int *flags)
   int res;
   res = 0;
   while (list != Val_int(0)) {
-    res |= flags[Int_field(list, 0)];
+    res |= flags[Int_val(Field(list, 0))];
     list = Field(list, 1);
   }
   return res;
