@@ -50,9 +50,6 @@
 #include <mach-o/dyld.h>
 #endif
 #include <pthread.h>
-#if defined(DEBUG) || defined(NATIVE_CODE)
-#include <execinfo.h>
-#endif
 #include "caml/fail.h"
 #include "caml/memory.h"
 #include "caml/misc.h"
@@ -465,23 +462,3 @@ void caml_init_os_params(void)
   caml_sys_pagesize = sysconf(_SC_PAGESIZE);
   return;
 }
-
-#if defined(DEBUG) || defined(NATIVE_CODE)
-void caml_print_trace(void)
-{
-  void *array[10];
-  size_t size;
-  char **strings;
-  size_t i;
-
-  size = backtrace(array, 10);
-  strings = backtrace_symbols(array, size);
-
-  caml_gc_log("Obtained %ld stack frames.\n", size);
-
-  for (i = 0; i < size; i++)
-    caml_gc_log("[%02zd] %s\n", i, strings[i]);
-
-  free(strings);
-}
-#endif

@@ -23,7 +23,7 @@
 extern uintnat caml_max_stack_size;
 extern uintnat caml_fiber_wsz;
 
-void caml_init_gc ();
+void caml_init_gc (void);
 value caml_gc_stat(value);
 value caml_gc_major(value);
 

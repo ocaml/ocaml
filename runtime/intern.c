@@ -86,7 +86,7 @@ struct caml_intern_state {
 };
 
 /* Allocates the domain local intern state if needed */
-static struct caml_intern_state* get_intern_state ()
+static struct caml_intern_state* get_intern_state (void)
 {
   struct caml_intern_state* s;
 
@@ -110,7 +110,7 @@ static struct caml_intern_state* get_intern_state ()
   return s;
 }
 
-void caml_free_intern_state ()
+void caml_free_intern_state (void)
 {
   if (Caml_state->intern_state != NULL)
     caml_stat_free(Caml_state->intern_state);

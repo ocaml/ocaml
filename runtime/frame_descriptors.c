@@ -163,7 +163,7 @@ void caml_register_frametable(intnat *table)
   caml_plat_unlock(&descr_mutex);
 }
 
-caml_frame_descrs caml_get_frame_descrs()
+caml_frame_descrs caml_get_frame_descrs(void)
 {
   struct frametable_version *ft =
     (struct frametable_version*)atomic_load_acq(&current_frametable);

@@ -86,7 +86,7 @@ struct caml_heap_state {
   struct heap_stats stats;
 };
 
-struct caml_heap_state* caml_init_shared_heap() {
+struct caml_heap_state* caml_init_shared_heap (void) {
   int i;
   struct caml_heap_state* heap;
 
@@ -665,7 +665,7 @@ struct heap_verify_state {
   struct addrmap seen;
 };
 
-struct heap_verify_state* caml_verify_begin()
+struct heap_verify_state* caml_verify_begin (void)
 {
   struct heap_verify_state init = {0, 0, 0, 0, ADDRMAP_INIT};
   struct heap_verify_state* st = caml_stat_alloc(sizeof init);
@@ -673,7 +673,7 @@ struct heap_verify_state* caml_verify_begin()
   return st;
 }
 
-static void verify_push(void* st_v, value v, value* p)
+static void verify_push (void* st_v, value v, value* p)
 {
   struct heap_verify_state* st = st_v;
   if (!Is_block(v)) return;
@@ -830,7 +830,7 @@ static void verify_swept (struct caml_heap_state* local) {
   CAMLassert(local->stats.large_blocks == large_stats.live_blocks);
 }
 
-void caml_cycle_heap_stw() {
+void caml_cycle_heap_stw (void) {
   struct global_heap_state oldg = caml_global_heap_state;
   struct global_heap_state newg;
   newg.UNMARKED     = oldg.MARKED;

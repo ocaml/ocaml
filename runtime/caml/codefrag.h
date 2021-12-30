@@ -38,7 +38,7 @@ struct code_fragment {
 
 /* Initialise codefrag. This must be done before any of the other
    operations in codefrag. */
-void caml_init_codefrag();
+void caml_init_codefrag(void);
 
 /* Register a code fragment for addresses [start] (included)
    to [end] (excluded).  This range of addresses is assumed
@@ -81,7 +81,7 @@ extern unsigned char * caml_digest_of_code_fragment(struct code_fragment *);
 
 /* Cleans up (and frees) removed code fragments. Must be called from a stop the
    world pause by only a single thread. */
-extern void caml_code_fragment_cleanup();
+extern void caml_code_fragment_cleanup(void);
 
 #endif
 

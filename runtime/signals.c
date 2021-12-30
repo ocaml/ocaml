@@ -170,7 +170,7 @@ CAMLexport void caml_leave_blocking_section(void)
 
 static value caml_signal_handlers;
 
-void caml_init_signal_handling() {
+void caml_init_signal_handling(void) {
   mlsize_t i;
 
   caml_signal_handlers = caml_alloc_shr(NSIG, 0);
@@ -345,7 +345,7 @@ CAMLexport int caml_rev_convert_signal_number(int signo)
   return signo;
 }
 
-int caml_init_signal_stack()
+int caml_init_signal_stack(void)
 {
 #ifdef POSIX_SIGNALS
   stack_t stk;
@@ -378,7 +378,7 @@ int caml_init_signal_stack()
   return 0;
 }
 
-void caml_free_signal_stack()
+void caml_free_signal_stack(void)
 {
 #ifdef POSIX_SIGNALS
   stack_t stk, disable = {0};

@@ -85,7 +85,7 @@ extern void caml_win32_overflow_detection (void);
 #if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
 
 /* PR 4887: avoid crash box of windows runtime on some system calls */
-extern void caml_install_invalid_parameter_handler();
+extern void caml_install_invalid_parameter_handler(void);
 
 #endif
 

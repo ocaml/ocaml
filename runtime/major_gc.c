@@ -75,10 +75,6 @@ static atomic_uintnat domain_global_roots_started;
 
 gc_phase_t caml_gc_phase;
 
-uintnat caml_get_num_domains_to_mark () {
-  return atomic_load_acq(&num_domains_to_mark);
-}
-
 extern value caml_ephe_none; /* See weak.c */
 
 static struct ephe_cycle_info_t {
@@ -109,7 +105,7 @@ static void ephe_next_cycle ()
   caml_plat_unlock(&ephe_lock);
 }
 
-void caml_ephe_todo_list_emptied ()
+void caml_ephe_todo_list_emptied (void)
 {
   caml_plat_lock(&ephe_lock);
 
@@ -180,16 +176,17 @@ void caml_final_domain_terminate (caml_domain_state *domain_state)
   }
 }
 
-static int no_orphaned_work ()
+static int no_orphaned_work (void)
 {
   return
     orph_structs.ephe_list_live == 0 &&
     orph_structs.final_info == NULL;
 }
 
-void caml_orphan_allocated_words() {
-    atomic_fetch_add
-      (&terminated_domains_allocated_words, Caml_state->allocated_words);
+void caml_orphan_allocated_words (void)
+{
+  atomic_fetch_add(&terminated_domains_allocated_words,
+                   Caml_state->allocated_words);
 }
 
 Caml_inline value ephe_list_tail(value e)
@@ -250,7 +247,7 @@ void caml_add_to_orphaned_ephe_list(struct caml_ephe_info* ephe_info)
   caml_plat_unlock(&orphaned_lock);
 }
 
-void caml_adopt_orphaned_work ()
+void caml_adopt_orphaned_work (void)
 {
   caml_domain_state* domain_state = Caml_state;
   value last;
@@ -315,7 +312,7 @@ static struct {
   struct buf_list_t *l;
  } caml_stat_space_overhead = {0, 0, 0, NULL};
 
-double caml_mean_space_overhead ()
+double caml_mean_space_overhead (void)
 {
   int index = caml_stat_space_overhead.index;
   struct buf_list_t *t, *l = caml_stat_space_overhead.l;
@@ -533,7 +530,7 @@ static void commit_major_slice_work(intnat words_done) {
 }
 
 static void mark_stack_prune(struct mark_stack* stk);
-static struct pool* find_pool_to_rescan();
+static struct pool* find_pool_to_rescan(void);
 
 
 #ifdef DEBUG
@@ -575,7 +572,7 @@ static void realloc_mark_stack (struct mark_stack* stk)
 }
 
 static void mark_stack_push(struct mark_stack* stk, value block,
-      uintnat offset, intnat* work)
+                            uintnat offset, intnat* work)
 {
   value v;
   int i, block_wsz = Wosize_val(block), end;
@@ -630,14 +627,16 @@ static void mark_stack_push(struct mark_stack* stk, value block,
 }
 
 /* to fit scanning_action */
-static void mark_stack_push_act(void* state, value v, value* ignored) {
+static void mark_stack_push_act(void* state, value v, value* ignored)
+{
   if (Tag_val(v) < No_scan_tag && Tag_val(v) != Cont_tag)
     mark_stack_push(Caml_state->mark_stack, v, 0, NULL);
 }
 
 /* This function shrinks the mark stack back to the MARK_STACK_INIT_SIZE size
    and is called at domain termination via caml_finish_marking. */
-void caml_shrink_mark_stack () {
+void caml_shrink_mark_stack (void)
+{
   struct mark_stack* stk = Caml_state->mark_stack;
   intnat init_stack_bsize = MARK_STACK_INIT_SIZE * sizeof(mark_entry);
   mark_entry* shrunk_stack;
@@ -1222,7 +1221,7 @@ static void try_complete_gc_phase (caml_domain_state* domain, void* unused,
   CAML_EV_END(EV_MAJOR_GC_PHASE_CHANGE);
 }
 
-intnat caml_opportunistic_major_work_available ()
+intnat caml_opportunistic_major_work_available (void)
 {
   caml_domain_state* domain_state = Caml_state;
   return !domain_state->sweeping_done || !domain_state->marking_done;
@@ -1466,7 +1465,7 @@ static void finish_major_cycle_callback (caml_domain_state* domain, void* arg,
   }
 }
 
-void caml_finish_major_cycle ()
+void caml_finish_major_cycle (void)
 {
   uintnat saved_major_cycles = caml_major_cycles_completed;
 
@@ -1476,7 +1475,8 @@ void caml_finish_major_cycle ()
   }
 }
 
-void caml_empty_mark_stack () {
+void caml_empty_mark_stack (void)
+{
   while (!Caml_state->marking_done){
     mark(1000);
     caml_handle_incoming_interrupts();
@@ -1488,7 +1488,8 @@ void caml_empty_mark_stack () {
   Caml_state->stat_blocks_marked = 0;
 }
 
-void caml_finish_marking () {
+void caml_finish_marking (void)
+{
   if (!Caml_state->marking_done) {
     CAML_EV_BEGIN(EV_MAJOR_FINISH_MARKING);
     caml_empty_mark_stack();
@@ -1499,7 +1500,8 @@ void caml_finish_marking () {
   }
 }
 
-void caml_finish_sweeping () {
+void caml_finish_sweeping (void)
+{
   if (Caml_state->sweeping_done) return;
   CAML_EV_BEGIN(EV_MAJOR_FINISH_SWEEPING);
   while (!Caml_state->sweeping_done) {
@@ -1515,7 +1517,7 @@ void caml_finish_sweeping () {
   CAML_EV_END(EV_MAJOR_FINISH_SWEEPING);
 }
 
-static struct pool* find_pool_to_rescan()
+static struct pool* find_pool_to_rescan(void)
 {
   struct pool* p;
 
@@ -1620,7 +1622,7 @@ int caml_init_major_gc(caml_domain_state* d) {
   return 0;
 }
 
-void caml_teardown_major_gc() {
+void caml_teardown_major_gc(void) {
   CAMLassert(Caml_state->mark_stack->count == 0);
   caml_stat_free(Caml_state->mark_stack->stack);
   caml_stat_free(Caml_state->mark_stack);

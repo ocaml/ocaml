@@ -66,15 +66,15 @@ extern void caml_set_minor_heap_size (asize_t); /* size in bytes */
 extern void caml_empty_minor_heap_no_major_slice_from_stw
   (caml_domain_state* domain, void* unused, int participating_count,
     caml_domain_state** participating); /* in STW */
-extern int caml_try_stw_empty_minor_heap_on_all_domains(); /* out STW */
-extern void caml_empty_minor_heaps_once(); /* out STW */
+extern int caml_try_stw_empty_minor_heap_on_all_domains(void); /* out STW */
+extern void caml_empty_minor_heaps_once(void); /* out STW */
 CAMLextern void garbage_collection (void); /* def in asmrun/signals.c */
 header_t caml_get_header_val(value v);
 void caml_alloc_table (struct caml_ref_table *tbl, asize_t sz, asize_t rsv);
 extern void caml_realloc_ref_table (struct caml_ref_table *);
 extern void caml_realloc_ephe_ref_table (struct caml_ephe_ref_table *);
 extern void caml_realloc_custom_table (struct caml_custom_table *);
-struct caml_minor_tables* caml_alloc_minor_tables();
+struct caml_minor_tables* caml_alloc_minor_tables(void);
 void caml_free_minor_tables(struct caml_minor_tables*);
 void caml_empty_minor_heap_setup(caml_domain_state* domain);
 

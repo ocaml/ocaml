@@ -116,7 +116,7 @@ struct caml_extern_state {
   struct output_block * extern_output_block;
 };
 
-static struct caml_extern_state* get_extern_state ()
+static struct caml_extern_state* get_extern_state (void)
 {
   struct caml_extern_state* extern_state;
 
@@ -140,7 +140,7 @@ static struct caml_extern_state* get_extern_state ()
   return extern_state;
 }
 
-void caml_free_extern_state ()
+void caml_free_extern_state (void)
 {
   if (Caml_state->extern_state != NULL) {
     caml_stat_free(Caml_state->extern_state);

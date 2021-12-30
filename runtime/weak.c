@@ -36,7 +36,7 @@ value caml_ephe_none = (value)&caml_dummy[1];
 #define None_val (Val_int(0))
 #define Some_tag 0
 
-struct caml_ephe_info* caml_alloc_ephe_info ()
+struct caml_ephe_info* caml_alloc_ephe_info (void)
 {
   struct caml_ephe_info* e =
     caml_stat_alloc_noexc (sizeof(struct caml_ephe_info));

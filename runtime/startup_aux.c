@@ -40,7 +40,7 @@ extern void caml_win32_unregister_overflow_detection (void);
 static struct caml_params params;
 const struct caml_params* const caml_params = &params;
 
-static void init_startup_params()
+static void init_startup_params(void)
 {
 #ifndef NATIVE_CODE
   char_os * cds_file;

@@ -87,7 +87,7 @@ CAMLprim value caml_gc_quick_stat(value v)
   CAMLreturn (res);
 }
 
-double caml_gc_minor_words_unboxed()
+double caml_gc_minor_words_unboxed (void)
 {
   return (Caml_state->stat_minor_words
           + ((double) ((uintnat)Caml_state->young_end -
@@ -287,7 +287,7 @@ CAMLprim value caml_get_minor_free (value v)
     ((uintnat)Caml_state->young_ptr - (uintnat)Caml_state->young_start);
 }
 
-void caml_init_gc ()
+void caml_init_gc (void)
 {
   caml_max_stack_size = caml_params->init_max_stack_wsz;
   caml_fiber_wsz = caml_params->init_fiber_wsz;

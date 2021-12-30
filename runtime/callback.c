@@ -280,7 +280,8 @@ struct named_value {
 static struct named_value * named_value_table[Named_value_size] = { NULL, };
 static caml_plat_mutex named_value_lock = CAML_PLAT_MUTEX_INITIALIZER;
 
-void caml_init_callbacks() {
+void caml_init_callbacks(void)
+{
   init_callback_code();
 }
 
