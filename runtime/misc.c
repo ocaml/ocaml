@@ -51,7 +51,6 @@ void caml_failed_assert (char * expr, char_os * file_os, int line)
   char* file = caml_stat_strdup_of_os(file_os);
   fprintf(stderr, "[%02d] file %s; line %d ### Assertion failed: %s\n",
           Caml_state ? Caml_state->id : -1, file, line, expr);
-  caml_print_trace();
   fflush(stderr);
   caml_stat_free(file);
   abort();
@@ -60,7 +59,7 @@ void caml_failed_assert (char * expr, char_os * file_os, int line)
 
 #if defined(DEBUG)
 static __thread int noalloc_level = 0;
-int caml_noalloc_begin()
+int caml_noalloc_begin(void)
 {
   return noalloc_level++;
 }
@@ -69,7 +68,7 @@ void caml_noalloc_end(int* noalloc)
   int curr = --noalloc_level;
   CAMLassert(*noalloc == curr);
 }
-void caml_alloc_point_here()
+void caml_alloc_point_here(void)
 {
   CAMLassert(noalloc_level == 0);
 }

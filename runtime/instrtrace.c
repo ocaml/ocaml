@@ -37,7 +37,9 @@ extern code_t caml_start_code;
 
 __thread intnat caml_icount = 0;
 
-void caml_stop_here () {}
+void caml_stop_here (void)
+{
+}
 
 char * caml_instr_string (code_t pc);
 

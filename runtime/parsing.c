@@ -170,10 +170,10 @@ CAMLprim value caml_parse_engine(struct parser_tables *tables,
   case TOKEN_READ:
     RESTORE;
     if (Is_block(arg)) {
-      env->curr_char = Val_int(Int_field(tables->transl_block, Tag_val(arg)));
+      env->curr_char = Field(tables->transl_block, Tag_val(arg));
       caml_modify(&env->lval, Field(arg, 0));
     } else {
-      env->curr_char = Val_int(Int_field(tables->transl_const, Int_val(arg)));
+      env->curr_char = Field(tables->transl_const, Int_val(arg));
       caml_modify(&env->lval, Val_long(0));
     }
     if (trace()) print_token(tables, state, arg);

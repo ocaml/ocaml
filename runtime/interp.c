@@ -333,7 +333,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     if (caml_icount-- == 0) caml_stop_here ();
     if (caml_params->trace_level>1)
       printf("\n##%" ARCH_INTNAT_PRINTF_FORMAT "d\n", caml_bcodcount);
-    if (caml_params->trace_level) caml_disasm_instr(pc);
+    if (caml_params->trace_level>0) caml_disasm_instr(pc);
     if (caml_params->trace_level>1) {
       printf("env=");
       caml_trace_value_file(env,prog,prog_size,stdout);
@@ -740,15 +740,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
         for (i = 1; i < wosize; i++) Field(block, i) = *sp++;
       } else {
         block = caml_alloc_shr(wosize, tag);
-        Setup_for_c_call;
         caml_initialize(&Field(block, 0), accu);
-        Restore_after_c_call;
-        for (i = 1; i < wosize; i++) {
-          value v = *sp++;
-          Setup_for_c_call;
-          caml_initialize(&Field(block, i), v);
-          Restore_after_c_call;
-        }
+        for (i = 1; i < wosize; i++) caml_initialize(&Field(block, i), *sp++);
       }
       accu = block;
       Next;
@@ -789,9 +782,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       if (size <= Max_young_wosize / Double_wosize) {
         Alloc_small(block, size * Double_wosize, Double_array_tag, Enter_gc);
       } else {
-        Setup_for_gc;
         block = caml_alloc_shr(size * Double_wosize, Double_array_tag);
-        Restore_after_gc;
       }
       Store_double_flat_field(block, 0, Double_val(accu));
       for (i = 1; i < size; i++){
@@ -1163,11 +1154,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
       accu += *pc << 1;
       pc++;
       Next;
-    Instruct(OFFSETREF): {
-        long n = Long_field(accu, 0);
-        n += *pc;
-        caml_modify(&Field(accu, 0), Val_long(n));
-      }
+    Instruct(OFFSETREF):
+      Field(accu, 0) += *pc << 1;
       accu = Val_unit;
       pc++;
       Next;
@@ -1177,8 +1165,10 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
 /* Object-oriented operations */
 
+#define Lookup(obj, lab) Field (Field (obj, 0), Int_val(lab))
+
     Instruct(GETMETHOD):
-      accu = Field (Field(sp[0], 0), Int_val(accu));
+      accu = Lookup(sp[0], accu);
       Next;
 
 #define CAML_METHOD_CACHE
@@ -1198,11 +1188,11 @@ value caml_interprete(code_t prog, asize_t prog_size)
       *--sp = accu;
       accu = Val_int(*pc++);
       ofs = *pc & Field(meths,1);
-      if (*(value*)(((char*)(Op_val(meths)+3)) + ofs) == accu) {
+      if (*(value*)(((char*)&Field(meths,3)) + ofs) == accu) {
 #ifdef CAML_TEST_CACHE
         hits++;
 #endif
-        accu = *(value*)(((char*)(Op_val(meths)+2)) + ofs);
+        accu = *(value*)(((char*)&Field(meths,2)) + ofs);
       }
       else
       {

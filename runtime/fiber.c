@@ -57,7 +57,8 @@ void caml_change_max_stack_size (uintnat new_max_size)
   caml_max_stack_size = new_max_size;
 }
 
-struct stack_info** caml_alloc_stack_cache () {
+struct stack_info** caml_alloc_stack_cache (void)
+{
   int i;
 
   struct stack_info** stack_cache =
@@ -245,7 +246,7 @@ void caml_scan_stack(scanning_action f, void* fdata,
   }
 }
 
-void caml_maybe_expand_stack ()
+void caml_maybe_expand_stack (void)
 {
   struct stack_info* stk = Caml_state->current_stack;
   uintnat stack_available =

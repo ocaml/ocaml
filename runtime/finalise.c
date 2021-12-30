@@ -138,7 +138,7 @@ int caml_final_update_last (caml_domain_state* d)
   return 0;
 }
 
-void caml_final_do_calls ()
+void caml_final_do_calls (void)
 {
   struct final f;
   value res;
@@ -400,7 +400,7 @@ CAMLprim value caml_final_release (value unit)
   return Val_unit;
 }
 
-struct caml_final_info* caml_alloc_final_info ()
+struct caml_final_info* caml_alloc_final_info (void)
 {
   struct caml_final_info* f =
     caml_stat_alloc_noexc (sizeof(struct caml_final_info));

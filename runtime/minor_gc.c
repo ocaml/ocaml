@@ -85,7 +85,7 @@ static void clear_table (struct generic_table *tbl)
     tbl->limit = tbl->threshold;
 }
 
-struct caml_minor_tables* caml_alloc_minor_tables()
+struct caml_minor_tables* caml_alloc_minor_tables(void)
 {
   struct caml_minor_tables *r =
       caml_stat_alloc_noexc(sizeof(struct caml_minor_tables));
@@ -750,7 +750,7 @@ void caml_empty_minor_heap_no_major_slice_from_stw(caml_domain_state* domain,
 }
 
 /* must be called outside a STW section */
-int caml_try_stw_empty_minor_heap_on_all_domains ()
+int caml_try_stw_empty_minor_heap_on_all_domains (void)
 {
   #ifdef DEBUG
   CAMLassert(!caml_domain_is_in_stw());
@@ -766,7 +766,7 @@ int caml_try_stw_empty_minor_heap_on_all_domains ()
 
 /* must be called outside a STW section, will retry until we have emptied our
    minor heap */
-void caml_empty_minor_heaps_once ()
+void caml_empty_minor_heaps_once (void)
 {
   uintnat saved_minor_cycle = atomic_load(&caml_minor_cycles_started);
 

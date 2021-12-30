@@ -64,13 +64,13 @@ CAMLextern atomic_uintnat caml_num_domains_running;
 CAMLextern uintnat caml_minor_heaps_base;
 CAMLextern uintnat caml_minor_heaps_end;
 
-Caml_inline intnat caml_domain_alone()
+Caml_inline intnat caml_domain_alone(void)
 {
   return atomic_load_acq(&caml_num_domains_running) == 1;
 }
 
 #ifdef DEBUG
-int caml_domain_is_in_stw();
+int caml_domain_is_in_stw(void);
 #endif
 
 int caml_try_run_on_all_domains_with_spin_work(
@@ -86,11 +86,11 @@ int caml_try_run_on_all_domains(
 
 /* barriers */
 typedef uintnat barrier_status;
-void caml_global_barrier();
-barrier_status caml_global_barrier_begin();
+void caml_global_barrier(void);
+barrier_status caml_global_barrier_begin(void);
 int caml_global_barrier_is_final(barrier_status);
 void caml_global_barrier_end(barrier_status);
-int caml_global_barrier_num_domains();
+int caml_global_barrier_num_domains(void);
 
 int caml_domain_is_terminating(void);
 

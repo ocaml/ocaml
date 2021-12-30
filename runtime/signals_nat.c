@@ -57,7 +57,7 @@ extern signal_handler caml_win32_signal(int sig, signal_handler action);
    Only generated assembly code can call [caml_garbage_collection],
    via the caml_call_gc assembly stubs.  */
 
-void caml_garbage_collection()
+void caml_garbage_collection(void)
 {
   frame_descr* d;
   intnat allocsz = 0;

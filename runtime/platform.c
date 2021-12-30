@@ -61,7 +61,7 @@ void caml_plat_assert_locked(caml_plat_mutex* m)
 #endif
 }
 
-void caml_plat_assert_all_locks_unlocked()
+void caml_plat_assert_all_locks_unlocked(void)
 {
 #ifdef DEBUG
   if (lockdepth) caml_fatal_error("Locks still locked at termination");
@@ -96,26 +96,6 @@ void caml_plat_wait(caml_plat_cond* cond)
 {
   caml_plat_assert_locked(cond->mutex);
   check_err("wait", pthread_cond_wait(&cond->cond, cond->mutex));
-}
-
-int caml_plat_timedwait(caml_plat_cond* cond, int64_t until)
-{
-  struct timespec t;
-  int err;
-  if (until < 0) {
-    /* until < 0 has definitely timed out, long ago.
-       letting the code below run risks feeding negative tv_nsec
-       to timedwait, since (-1 % 1000000000) = -1. */
-    return 1;
-  }
-  t.tv_sec  = until / 1000000000;
-  t.tv_nsec = until % 1000000000;
-  err = pthread_cond_timedwait(&cond->cond, cond->mutex, &t);
-  if (err == ETIMEDOUT) {
-    return 1;
-  } else {
-    return 0;
-  }
 }
 
 void caml_plat_broadcast(caml_plat_cond* cond)

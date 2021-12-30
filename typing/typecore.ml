@@ -148,8 +148,6 @@ type error =
   | No_value_clauses
   | Exception_pattern_disallowed
   | Mixed_value_and_exception_patterns_under_guard
-  | Effect_pattern_below_toplevel
-  | Invalid_continuation_pattern
   | Inlined_record_escape
   | Inlined_record_expected
   | Unrefuted_pattern of pattern
@@ -5819,12 +5817,6 @@ let report_error ~loc env = function
       Location.errorf ~loc
         "@[Mixing value and exception patterns under when-guards is not \
          supported.@]"
-  | Effect_pattern_below_toplevel ->
-      Location.errorf ~loc
-        "@[Effect patterns must be at the top level of a match case.@]"
-  | Invalid_continuation_pattern ->
-      Location.errorf ~loc
-        "@[Invalid continuation pattern: only variables and _ are allowed .@]"
   | Inlined_record_escape ->
       Location.errorf ~loc
         "@[This form is not allowed as the type of the inlined record could \

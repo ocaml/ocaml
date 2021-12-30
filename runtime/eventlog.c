@@ -86,9 +86,10 @@ static atomic_uintnat eventlog_paused = 0;
 
 static __thread uint8_t is_backup_thread = 0;
 
-void caml_eventlog_is_backup_thread() {
+void caml_eventlog_is_backup_thread (void)
+{
   is_backup_thread = 1;
-};
+}
 
 static int64_t time_counter(void)
 {
@@ -300,7 +301,7 @@ static void teardown_eventlog(void)
   }
 }
 
-void caml_eventlog_init()
+void caml_eventlog_init (void)
 {
   char_os *toggle = caml_secure_getenv(T("OCAML_EVENTLOG_ENABLED"));
 
@@ -385,7 +386,7 @@ void caml_ev_alloc(uint64_t sz)
   }
 }
 
-void caml_ev_flush()
+void caml_ev_flush (void)
 {
   if (!eventlog_enabled) return;
   if (eventlog_paused) return;
@@ -397,7 +398,7 @@ void caml_ev_flush()
   };
 }
 
-void caml_eventlog_disable()
+void caml_eventlog_disable (void)
 {
   atomic_store_rel(&eventlog_enabled, 0);
 }

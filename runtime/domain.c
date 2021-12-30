@@ -239,12 +239,12 @@ static dom_internal* next_free_domain() {
 CAMLexport pthread_key_t caml_domain_state_key;
 static pthread_once_t key_once = PTHREAD_ONCE_INIT;
 
-static void caml_make_domain_state_key ()
+static void caml_make_domain_state_key (void)
 {
   (void) pthread_key_create (&caml_domain_state_key, NULL);
 }
 
-void caml_init_domain_state_key ()
+void caml_init_domain_state_key (void)
 {
   pthread_once(&key_once, caml_make_domain_state_key);
 }
@@ -260,7 +260,7 @@ Caml_inline void interrupt_domain(struct interruptor* s) {
   atomic_store_rel(s->interrupt_word, INTERRUPT_MAGIC);
 }
 
-int caml_incoming_interrupts_queued()
+int caml_incoming_interrupts_queued(void)
 {
   return atomic_load_acq(&domain_self->interruptor.interrupt_pending);
 }
@@ -285,7 +285,7 @@ static void handle_incoming_otherwise_relax (struct interruptor* self)
     cpu_relax();
 }
 
-void caml_handle_incoming_interrupts()
+void caml_handle_incoming_interrupts(void)
 {
   handle_incoming(&domain_self->interruptor);
 }
@@ -939,7 +939,7 @@ CAMLprim value caml_ml_domain_unique_token (value unit)
 /* sense-reversing barrier */
 #define BARRIER_SENSE_BIT 0x100000
 
-barrier_status caml_global_barrier_begin()
+barrier_status caml_global_barrier_begin(void)
 {
   uintnat b = 1 + atomic_fetch_add(&stw_request.barrier, 1);
   return b;
@@ -965,18 +965,18 @@ void caml_global_barrier_end(barrier_status b)
   }
 }
 
-void caml_global_barrier()
+void caml_global_barrier(void)
 {
   barrier_status b = caml_global_barrier_begin();
   caml_global_barrier_end(b);
 }
 
-int caml_global_barrier_num_domains()
+int caml_global_barrier_num_domains(void)
 {
   return stw_request.num_domains;
 }
 
-static void decrement_stw_domains_still_processing()
+static void decrement_stw_domains_still_processing(void)
 {
   /* we check if we are the last to leave a stw section
      if so, clear the stw_leader to allow the new stw sections to start.
@@ -994,7 +994,7 @@ static void decrement_stw_domains_still_processing()
   }
 }
 
-static void caml_poll_gc_work();
+static void caml_poll_gc_work(void);
 static void stw_handler(caml_domain_state* domain)
 {
   CAML_EV_BEGIN(EV_STW_HANDLER);
@@ -1034,7 +1034,7 @@ static void stw_handler(caml_domain_state* domain)
 
 
 #ifdef DEBUG
-int caml_domain_is_in_stw() {
+int caml_domain_is_in_stw(void) {
   return Caml_state->inside_stw_handler;
 }
 #endif
@@ -1149,11 +1149,11 @@ int caml_try_run_on_all_domains(
                                                  leader_setup, 0, 0);
 }
 
-void caml_interrupt_self() {
+void caml_interrupt_self(void) {
   interrupt_domain(&domain_self->interruptor);
 }
 
-static void caml_poll_gc_work()
+static void caml_poll_gc_work(void)
 {
   CAMLalloc_point_here;
 
@@ -1191,7 +1191,8 @@ static void caml_poll_gc_work()
 
 }
 
-CAMLexport int caml_check_pending_actions() {
+CAMLexport int caml_check_pending_actions (void)
+{
   atomic_uintnat* young_limit = domain_self->interruptor.interrupt_word;
 
   return atomic_load_acq(young_limit) == INTERRUPT_MAGIC;
@@ -1225,12 +1226,12 @@ CAMLexport void caml_process_pending_actions(void)
   caml_process_pending_signals();
 }
 
-void caml_handle_gc_interrupt_no_async_exceptions()
+void caml_handle_gc_interrupt_no_async_exceptions(void)
 {
   handle_gc_interrupt();
 }
 
-void caml_handle_gc_interrupt()
+void caml_handle_gc_interrupt(void)
 {
   handle_gc_interrupt();
 }
@@ -1246,7 +1247,7 @@ CAMLexport int caml_bt_is_in_blocking_section(void)
 
 }
 
-CAMLexport intnat caml_domain_is_multicore ()
+CAMLexport intnat caml_domain_is_multicore (void)
 {
   dom_internal *self = domain_self;
   return (!caml_domain_alone() || self->backup_thread_running);
@@ -1326,13 +1327,13 @@ static void handover_finalisers(caml_domain_state* domain_state)
   caml_final_domain_terminate(domain_state);
 }
 
-int caml_domain_is_terminating ()
+int caml_domain_is_terminating (void)
 {
   struct interruptor* s = &domain_self->interruptor;
   return s->terminating;
 }
 
-static void domain_terminate()
+static void domain_terminate (void)
 {
   caml_domain_state* domain_state = domain_self->state;
   struct interruptor* s = &domain_self->interruptor;

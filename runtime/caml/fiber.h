@@ -114,7 +114,7 @@ void caml_scan_stack(scanning_action f, void* fdata,
    returns nonzero on success */
 int caml_try_realloc_stack (asize_t required_size);
 void caml_change_max_stack_size (uintnat new_max_size);
-void caml_maybe_expand_stack();
+void caml_maybe_expand_stack(void);
 CAMLextern void caml_free_stack(struct stack_info* stk);
 
 #ifdef NATIVE_CODE
