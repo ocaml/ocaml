@@ -824,13 +824,13 @@ static void* domain_thread_func(void* v)
   }
   caml_plat_broadcast(&p->parent->cond);
   caml_plat_unlock(&p->parent->lock);
-  /* cannot access p below here */
+  /* Cannot access p below here. */
 
   if (domain_self) {
     install_backup_thread(domain_self);
 
 #ifndef _WIN32
-    /* it is now safe for us to handle signals */
+    /* It is now safe for us to handle signals */
     pthread_sigmask(SIG_SETMASK, &p->mask, NULL);
 #endif
 
@@ -840,8 +840,8 @@ static void* domain_thread_func(void* v)
     caml_domain_start_hook();
     caml_callback(ml_values->callback, Val_unit);
     domain_terminate();
-    /* joining domains will lock/unlock the terminate_mutex
-      so this unlock will release them if any are waiting */
+    /* Joining domains will lock/unlock the terminate_mutex so this unlock will
+       release them if any domains are waiting. */
     sync_mutex_unlock(terminate_mutex);
     free_domain_ml_values(ml_values);
   } else {
@@ -872,10 +872,10 @@ CAMLprim value caml_domain_spawn(value callback, value mutex)
   }
   init_domain_ml_values(p.ml_values, callback, mutex);
 
-/* we block all signals while we spawn the new domain, this is because
-   pthread_create inherits the current signals set and we want to avoid
-   a signal handler being triggered in the new domain before
-   the domain_state is fully populated. */
+/* We block all signals while we spawn the new domain. This is because
+   pthread_create inherits the current signals set, and we want to avoid a
+   signal handler being triggered in the new domain before the domain_state is
+   fully populated. */
 #ifndef _WIN32
   /* FIXME Spawning threads -> unix.c/win32.c */
   sigfillset(&mask);
@@ -884,7 +884,7 @@ CAMLprim value caml_domain_spawn(value callback, value mutex)
 #endif
   err = pthread_create(&th, 0, domain_thread_func, (void*)&p);
 #ifndef _WIN32
-  /* we can restore the signal mask we had initially now */
+  /* We can restore the signal mask we had initially now. */
   pthread_sigmask(SIG_SETMASK, &old_mask, NULL);
 #endif
 
@@ -892,8 +892,8 @@ CAMLprim value caml_domain_spawn(value callback, value mutex)
     caml_failwith("failed to create domain thread");
   }
 
-  /* while waiting for the child thread to startup
-     we need to servicing any STW if they come in */
+  /* While waiting for the child thread to start up, we need to service any
+     stop-the-world requests as they come in. */
   caml_plat_lock(&domain_self->interruptor.lock);
   while (p.status == Dom_starting) {
     if (caml_incoming_interrupts_queued()) {
@@ -917,9 +917,8 @@ CAMLprim value caml_domain_spawn(value callback, value mutex)
     free_domain_ml_values(p.ml_values);
     caml_failwith("failed to allocate domain");
   }
-  /* When domain 0 first spawn a domain,
-     the backup thread is not active, we ensure
-     it is started here. */
+  /* When domain 0 first spawns a domain, the backup thread is not active, we
+     ensure it is started here. */
   install_backup_thread(domain_self);
   CAML_EV_END(EV_DOMAIN_SPAWN);
   CAMLreturn (Val_long(p.unique_id));

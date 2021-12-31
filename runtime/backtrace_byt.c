@@ -465,8 +465,6 @@ static void read_main_debug_info(struct debug_info *di)
     num_events = caml_getword(chan);
     events = caml_alloc(num_events, 0);
 
-    for (i = 0; i < num_events; i++) Field(events, i) = Val_unit;
-
     for (i = 0; i < num_events; i++) {
       orig = caml_getword(chan);
       evl = caml_input_val(chan);

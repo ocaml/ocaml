@@ -289,8 +289,6 @@ CAMLprim value caml_convert_raw_backtrace(value bt)
 
   array = caml_alloc(index, 0);
 
-  for (i = 0; i < index; i++) Field(array, i) = Val_unit;
-
   for (i = 0, index = 0; i < Wosize_val(bt); ++i)
   {
     debuginfo dbg;
