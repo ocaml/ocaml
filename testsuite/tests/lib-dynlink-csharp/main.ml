@@ -31,7 +31,11 @@ module = "plugin.ml"
 module = ""
 flags = "-output-obj"
 program = "main_obj.${objext}"
-all_modules = "dynlink.cma entry.c main.ml"
+all_modules = "dynlink.cma main.ml"
+***** ocamlc.byte
+module = ""
+flags = "-c"
+all_modules = "entry.c"
 ****** script
 script = "${mkdll} -maindll -o main.dll main_obj.${objext} entry.${objext} \
                    ${ocamlsrcdir}/runtime/libcamlrun.${libext} ${bytecc_libs}"
@@ -67,7 +71,11 @@ all_modules = "plugin.ml"
 ***** ocamlopt.byte
 flags = "-output-obj"
 program = "main_obj.${objext}"
-all_modules = "dynlink.cmxa entry.c main.ml"
+all_modules = "dynlink.cmxa main.ml"
+***** ocamlopt.byte
+flags = "-c"
+program = "entry.${objext}"
+all_modules = "entry.c"
 ****** script
 script = "${mkdll} -maindll -o main.dll main_obj.${objext} entry.${objext} \
                    ${ocamlsrcdir}/runtime/libasmrun.${libext} ${nativecc_libs}"
