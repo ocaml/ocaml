@@ -43,12 +43,11 @@ enum {
 #undef DOMAIN_STATE
 };
 
-/* TODO: CAML_NAME_SPACE working? */
 #define LAST_DOMAIN_STATE_MEMBER extra_params
 
- /* Check that the structure was laid out without padding,
-    since the runtime assumes this in computing offsets */
- CAML_STATIC_ASSERT(
+/* Check that the structure was laid out without padding,
+   since the runtime assumes this in computing offsets */
+CAML_STATIC_ASSERT(
     offsetof(caml_domain_state, LAST_DOMAIN_STATE_MEMBER) ==
     (Domain_state_num_fields - 1) * 8);
 

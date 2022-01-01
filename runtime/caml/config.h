@@ -153,7 +153,7 @@ typedef uint64_t uintnat;
 #error "No integer type available to represent pointers"
 #endif
 
-#define UINTNAT_MAX -1
+#define UINTNAT_MAX ((uintnat)-1)
 
 #endif /* CAML_CONFIG_H_NO_TYPEDEFS */
 
@@ -255,13 +255,6 @@ typedef uint64_t uintnat;
    when fragmentation occurs.
  */
 #define Max_percent_free_def 500
-
-/* Default setting for promoting with minor GC: 10%.
-   If the portion of the minor heap to be scanned during a promotion is greater
-   than 10%, then we promote the object by performing a local garbage
-   collection.
- */
-#define Percent_to_promote_with_GC 10
 
 /* Maximum number of domains */
 #define Max_domains 128
