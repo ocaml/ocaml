@@ -24,7 +24,10 @@
     compatibility: when people will start writing code to run on
     Multicore, it would be nice if their use of Atomic was
     backward-compatible with older versions of OCaml without having to
-    import additional compatibility layers. *)
+    import additional compatibility layers.
+
+    @since 4.12
+*)
 
 (** An atomic (mutable) reference to a value of type ['a]. *)
 type !'a t
