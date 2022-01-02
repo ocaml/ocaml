@@ -1,4 +1,5 @@
 (* TEST
+ * hasunix
  * setup-ocamlopt.opt-build-env
  ** ocamlopt.opt
     program2 = "test3.${objext}"
