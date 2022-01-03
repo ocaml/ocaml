@@ -118,12 +118,7 @@ let prim_size prim args =
   match prim with
   | Pread_symbol _ -> 1
   | Pmakeblock _ -> 5 + List.length args
-  | Pfield(_, isptr, Mutable) ->
-      begin match isptr with
-      | Pointer -> 2
-      | Immediate -> 1
-      end
-  | Pfield(_, _, Immutable) -> 1
+  | Pfield _ -> 1
   | Psetfield(_f, isptr, init) ->
     begin match init with
     | Root_initialization
