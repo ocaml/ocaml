@@ -18,7 +18,7 @@
 
 #define MAX_CHAIN 100
 
-static uintnat pos_initial(struct addrmap* t, value key)
+Caml_inline uintnat pos_initial(struct addrmap* t, value key)
 {
   uintnat pos = (uintnat)key;
   pos *= 0xcc9e2d51;

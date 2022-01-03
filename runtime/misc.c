@@ -44,7 +44,7 @@ caml_timing_hook caml_minor_gc_end_hook = NULL;
 caml_timing_hook caml_finalise_begin_hook = NULL;
 caml_timing_hook caml_finalise_end_hook = NULL;
 
-#if defined(DEBUG) || defined(NATIVE_CODE)
+#ifdef DEBUG
 
 void caml_failed_assert (char * expr, char_os * file_os, int line)
 {
