@@ -54,8 +54,9 @@ extern caml_generated_constant
 
 /* Exception raising */
 
-extern void caml_raise_exception (caml_domain_state* state, value bucket)
-  Noreturn;
+CAMLnoreturn_start
+  extern void caml_raise_exception (caml_domain_state* state, value bucket)
+CAMLnoreturn_end;
 
 /* Used by the stack overflow handler -> deactivate ASAN (see
    segv_handler in signals_nat.c). */

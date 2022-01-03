@@ -63,9 +63,9 @@ struct caml_thread_descr {
 struct caml_thread_struct {
 
   value descr;              /* The heap-allocated descriptor (root) */
-  struct caml_thread_struct * next;  /* Double linking of running threads */
+  struct caml_thread_struct * next; /* Doubly-linked list of running threads */
   struct caml_thread_struct * prev;
-  int domain_id;      /* which domain's thread chaining it is */
+  int domain_id;      /* The id of the domain to which this thread belong to */
   struct stack_info* current_stack;      /* saved Caml_state->current_stack */
   struct c_stack_link* c_stack;          /* saved Caml_state->c_stack */
   struct caml__roots_block *local_roots; /* saved value of local_roots */
@@ -152,7 +152,7 @@ static void caml_thread_scan_roots(scanning_action action,
 
   th = Current_thread;
 
-  // a GC could be triggered before current_dec is initialized
+  /* GC could be triggered before [Current_thread] is initialized */
   if (th != NULL) {
     do {
       (*action)(fdata, th->descr, &th->descr);
@@ -358,7 +358,7 @@ static void caml_thread_domain_stop_hook(void) {
   /* If the program runs multiple domains, we should not let systhreads to hang
      around when a domain exit. If the domain is not the last one (and the last
      one will always be domain 0) we force the domain to join on every thread
-     in the chaining before wrapping up. */
+     on its chain before wrapping up. */
   if (!caml_domain_alone()) {
 
     while (Current_thread->next != Current_thread) {
@@ -429,15 +429,15 @@ void caml_thread_interrupt_hook(void)
   return;
 }
 
-// This setup function is called as an entrypoint to the Thread module.
-// This will setup the global variables and hooks for systhreads
-// cooperate with the runtime system, after initializing
-// the thread chaining.
+/* [caml_thread_initialize] initialises the systhreads infrastructure. This
+   function first sets up the chain for systhreads on this domain, then setup
+   the global variables and hooks for systhreads to cooperate with the runtime
+   system. */
 CAMLprim value caml_thread_initialize(value unit)   /* ML */
 {
   CAMLparam0();
 
-  // We first initialize the thread chaining.
+  /* First initialise the systhread chain on this domain */
   caml_thread_initialize_domain(Val_unit);
 
   prev_scan_roots_hook = caml_scan_roots_hook;
@@ -480,19 +480,20 @@ static void caml_thread_stop(void)
 
   next = Current_thread->next;
 
-  // The main domain thread does not go through caml_thread_stop.
-  // There is always one more thread in the chaining at this point in time.
+  /* The main domain thread does not go through [caml_thread_stop]. There is
+     always one more thread in the chain at this point in time. */
   CAMLassert(next != Current_thread);
 
   caml_threadstatus_terminate(Terminated(Current_thread->descr));
   caml_thread_remove_info(Current_thread);
 
-  // FIXME: tricky bit with backup thread
-  // Normally we expect the next thread to kick in and resume operation
-  // by first setting Current_thread to the right TLS dec data.
-  // However it may very well be that there's no runnable dec next
-  // (eg: next dec is blocking.), so we set it to next for now to give a
-  // valid state to the backup thread.
+  /* FIXME: tricky bit with backup thread
+
+     Normally we expect the next thread to kick in and resume operation by
+     first setting Current_thread to the right TLS dec data. However it may
+     very well be that there's no runnable dec next (eg: next dec is
+     blocking.), so we set it to next for now to give a valid state to the
+     backup thread. */
   Current_thread = next;
 
   caml_thread_restore_runtime_state();
@@ -560,9 +561,8 @@ static int create_tick_thread()
   pthread_sigmask(SIG_BLOCK, &mask, &old_mask);
 #endif
 
-  err = st_thread_create(&Tick_thread_id,
-                           caml_thread_tick,
-                           (void *) &Caml_state->id);
+  err = st_thread_create(&Tick_thread_id, caml_thread_tick,
+                         (void *) &Caml_state->id);
 
 #ifdef POSIX_SIGNALS
   pthread_sigmask(SIG_SETMASK, &old_mask, NULL);

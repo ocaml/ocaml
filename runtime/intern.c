@@ -93,10 +93,7 @@ static struct caml_intern_state* get_intern_state (void)
   if (Caml_state->intern_state != NULL)
     return Caml_state->intern_state;
 
-  s = caml_stat_alloc_noexc(sizeof(struct caml_intern_state));
-  if (s == NULL) {
-    caml_raise_out_of_memory ();
-  }
+  s = caml_stat_alloc(sizeof(struct caml_intern_state));
 
   s->intern_src = NULL;
   s->intern_input = NULL;
