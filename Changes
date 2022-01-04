@@ -252,6 +252,10 @@ OCaml 4.14.0
 - #10527: Show "#help;; for help" at toplevel startup
   (Wiktor Kuchta, review by David Allsopp and Florian Angeletti)
 
+- #10846: add the `-shape` command-line option to ocamlobjinfo. When reading a
+  `cmt` file, shape information will only be shown if that option is used.
+  (Ulysse Gérard, review by Florian Angeletti)
+
 ### Debugging:
 
 - #10517, #10594: when running ocamldebug on a program linked with the
