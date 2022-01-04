@@ -175,11 +175,6 @@ let print fmt =
   in
   Format.fprintf fmt"@[%a@]@;" aux
 
-let improve_uid uid t =
-  match t.uid with
-  | Some _ -> t
-  | None -> { t with uid }
-
 let fresh_var ?(name="shape-var") uid =
   let var = Ident.create_local name in
   var, { uid = Some uid; desc = Var var }
@@ -220,244 +215,171 @@ module Make_reduce(Params : sig
   val read_unit_shape : unit_name:string -> t option
   val find_shape : env -> Ident.t -> t
 end) = struct
-  type strategy = Weak | Strong
-  type local_env = t option Ident.tbl
+  (* We implement a strong call-by-value reduction. *)
+  type nf = { uid: Uid.t option; desc: nf_desc }
+  and nf_desc =
+    | NVar of var
+    | NApp of nf * nf
+    | NAbs of local_env * var * t * nf
+    | NStruct of nf Item.Map.t
+    | NProj of nf * Item.t
+    | NLeaf
+    | NComp_unit of string
+    | NoFuelLeft of desc
+  (* A type of normal forms for strong call-by-value evaluation.
+     The normal form of an abstraction
+       Abs(x, t)
+     is a closure
+       NAbs(env, x, t, nft)
+     when [env] is the local environment, and [nft]
+     is the strong normal form of [t]. *)
+
+  and local_env = nf option Ident.tbl
   (* Local environments carry an optional strong normal form: when
      reducing in the body of an abstraction [Abs(x, body)], we bind
      [x] to [None] in the environment. [Some v] is used for actual
      substitutions, for example in [App(Abs(x, body), t)], when [v] is
      the strong normal form of [v]. *)
 
+  let improve_uid uid (nf : nf) =
+    match nf.uid with
+    | Some _ -> nf
+    | None -> { nf with uid }
+
+  let in_memo_table memo_table memo_key f arg =
+    match Hashtbl.find memo_table memo_key with
+    | res -> res
+    | exception Not_found ->
+        let res = f arg in
+        Hashtbl.replace memo_table memo_key res;
+        res
+
   type env = {
     fuel: int ref;
     global_env: Params.env;
     local_env: local_env;
-    memo_table: (strategy * local_env * t, local_env * t) Hashtbl.t;
+    memo_table: (local_env * t, nf) Hashtbl.t;
   }
 
   let bind env var shape =
     { env with local_env = Ident.add var shape env.local_env }
 
-  (* # Note on the implementation of strong reduction.
-
-     ## Simple version
-
-     The general idea is to reduce under abstractions
-     (and within structures). This could be implemented with code
-     looking as follows:
-
-     let rec reduce_strong env = function
-     | ...
-     | Abs (x, body) ->
-       let env' = bind env x None in
-       Abs (x, reduce_strong env' body)
-     | App(t, u) ->
-       let f = reduce_strong env t in
-       let v = reduce_strong env u in
-       begin match f with
-       | Abs(x, body) ->
-         let env' = bind env x (Some v) in
-         reduce_strong env' body
-       | other -> App(other, v)
-       end
-
-
-     ## Mixing Weak|Strong for efficiency
-
-     A problem with this approach is that the body of `t` is traversed twice:
-     - once when computing `let f = reduce_strong env t`, which goes under abstractions
-     - a second time when computing `reduce_strong (bind env x v) body`
-
-     Traversing the input twice can lead to an exponential blowup, consider for example
-       (\x2. (\x1. (\x0. large_normal_form) y0) y1) y2
-     which comes naturally as a desugaring of
-       let x2 = y2 in let x1 = y1 in let x0 = y0 in large_normal_form
-     and whose reduction following the rule would traverse `large_normal_form` 8 times.
-
-     To avoid this problem, we mix strong reductions as above with "weak" reductions,
-     that stop on abstractions and returns a partially-evaluated value.
-
-     let rec reduce strategy env = function
-     | ...
-     | Abs(x, t) ->
-       begin match strategy with
-       | Weak -> Abs(x, t)
-       | Strong ->
-         let env' = bind env x None in
-         Abs(x, reduce_strong env' t)
-       end
-     | App(t, u) ->
-       let f = reduce Weak env t in
-       let v = reduce Strong env u in
-       begin match f with
-       | Abs(x, body) ->
-         let env' = bind env x (Some v) in
-         reduce strategy env' body
-       | other -> App(other, v)
-       end
-
-     With this version, on `App(t, u)` we first perform a Weak
-     reduction of `t`, which stops at the first Abs(x, body) without
-     traversing the body, which is only traversed during the reduction
-     `reduce strategy env' body` that follows -- whether that
-     reduction is Weak or Strong depends on the caller.
-
-     Notice that even when the strategy is `Weak`, the function
-     argument `u` is reduced strongly: only the "main" part of the
-     code, the one whose evaluation will give the final result,
-     is reduced weakly. This corresponds to the "code" argument
-     in an abstract machine -- as opposed to the continuation and
-     environments, where we only store strong values.
-
-     This choice of reducing strongly outside the "main" subexpression
-     gives us the following guarantee: at function types, a normal
-     form for the Weak strategy must be either an Abs(x,t) or
-     (if evaluation got stuck on free variables) a Strong normal form:
-     in the
-       | other -> App(other, v)
-     case of application, we can assume that `other` is in strong
-     normal form, and `App(other, v)` is also a strong normal form
-     because `v` is.
-
-
-     ### Returning environments
-
-     A final problem remains with this second version: it has a bug.
-     The problem is that the weak value corresponding to Abs(x, t)
-     should not be
-       Abs(x, t)
-     but a closure
-       Clos(local_env, x, t)
-     Indeed `t` was not traversed yet and it may contain variables bound
-     in the environment, so returning just `Abs(x, t)` returns unbound
-     identifier.
-
-     On the other hand, when we have a Strong normal form Abs(x, t),
-     we do not need the environment anymore: `t` was fully traversed
-     and all variables from the local environment have been substituted.
-
-     Morally the type of "return value" should be different for
-     the Weak and Strong strategies; we could represent this using
-     a GADT, but it would make everything more complex, in particular
-     the memoization code.
-
-     Instead of introducing a notion of closures, we make our
-     strategy-generic function [reduce_strat] return a pair of the
-     local environment and the value (weak or strong). Then we have
-     two helpers, [reduce_strong] which throws this local environment
-     away and [reduce_weak] which returns it.
-
-     (We could also introduce Let-bindings to be able to reify the
-     local environment back into the term, but that would change the
-     syntax observable from outside this module.)
-
-     Scoping invariants about [reduce_strat strategy env]:
-     - we assume that [env] only contains closed strong normal forms
-     - then it returns a pair [(env', t)] where:
-       + [env'] is an extension of [env]
-       + if [strategy = Weak], [t] may contain variables bound in [env']
-       + if [strategy = Strong], [t] is a closed strong normal form
-  *)
-  let rec reduce_weak env t =
-    reduce_strat Weak env t
-
-  and reduce_strong env t =
-    let (_result_env, normal_form) = reduce_strat Strong env t in
-    normal_form
-
-  and reduce_strat strategy env t =
+  let rec reduce_ env t =
     let {fuel = _; global_env = _; local_env; memo_table} = env in
-    let memo_key = (strategy, local_env, t) in
-    match Hashtbl.find memo_table memo_key with
-    | result -> result
-    | exception Not_found ->
-        let result = reduce_ strategy env t in
-        Hashtbl.replace memo_table memo_key result;
-        result
+    let memo_key = (local_env, t) in
+    in_memo_table memo_table memo_key (reduce__ env) t
+  (* Memoization is absolutely essential for performance on this
+     problem, because the normal forms we build can in some real-world
+     cases contain an exponential amount of redundancy. Memoization
+     can avoid the repeated evaluation of identical subterms,
+     providing a large speedup, but even more importantly it
+     implicitly shares the memory of the repeated results, providing
+     much smaller normal forms (that blow up again if printed back
+     as trees). A functor-heavy file from Irmin has its shape normal
+     form decrease from 100Mio to 2.5Mio when memoization is
+     enabled. *)
 
-  and reduce_ strategy ({fuel; global_env; local_env; _} as env) t =
-    let reduce env t = reduce_strat strategy env t in
-    let return nf = local_env, nf in
-    if !fuel < 0 then
-      return t
+  and reduce__ ({fuel; global_env; local_env; _} as env) (t : t) =
+    let reduce env t = reduce_ env t in
+    let return desc : nf = { uid = t.uid; desc } in
+    if !fuel < 0 then return (NoFuelLeft t.desc)
     else
       match t.desc with
       | Comp_unit unit_name ->
           begin match Params.read_unit_shape ~unit_name with
           | Some t -> reduce env t
-          | None -> return t
+          | None -> return (NComp_unit unit_name)
           end
       | App(f, arg) ->
-          let lenv_f, f = reduce_weak env f in
-          let arg = reduce_strong env arg in
-          let env = { env with local_env = lenv_f } in
+          let f = reduce env f in
           begin match f.desc with
-          | Abs(var, body) ->
-              (* we only add Strong normal forms to the environment. *)
-              let env = bind env var (Some arg) in
-              let lenv_v, v = reduce env body in
-              lenv_v, improve_uid t.uid v
+          | NAbs(clos_env, var, body, _body_nf) ->
+              let arg = reduce env arg in
+              let env = bind { env with local_env = clos_env } var (Some arg) in
+              reduce env body
+              |> improve_uid t.uid
           | _ ->
-              (* If f is well-typed at a function type, its Weak
-                 normal forms are either Abs or a Strong normal form. *)
-              return { t with desc = App(f, arg) }
+              let arg = reduce env arg in
+              return (NApp(f, arg))
           end
       | Proj(str, item) ->
-          let lenv_str, str = reduce_weak env str in
-          let env = { env with local_env = lenv_str } in
-          let nored () = return { t with desc = Proj(str, item) } in
+          let str = reduce env str in
+          let nored () = return (NProj(str, item)) in
           begin match str.desc with
-          | Struct items ->
+          | NStruct (items) ->
               begin match Item.Map.find item items with
               | exception Not_found -> nored ()
-              | item ->
-                  reduce env item
+              | nf -> nf
+                  (* TODO try |> improve_uid t.uid *)
               end
           | _ ->
-              (* If [str] is well-typed at a function type, its Weak
-                 normal forms are either Abs or a Strong normal form. *)
               nored ()
           end
       | Abs(var, body) ->
-          begin match strategy with
-          | Weak -> return t
-          | Strong ->
-              let env = bind env var None in
-              let _, v = reduce env body in
-              return { t with desc = Abs(var, v) }
-          end
+          let body_nf = reduce (bind env var None) body in
+          return (NAbs(local_env, var, body, body_nf))
       | Var id ->
           begin match Ident.find_same id local_env with
-          (* local_env bindings are already in Strong normal form *)
-          | None -> return t
-          | Some def -> return def
+          (* Note: instead of binding abstraction-bound variables to
+             [None], we unify it with the [Some v] case by binding the
+             bound variable [x] to [NVar x].
+
+             One reason to distinguish the situations is that we can
+             provide a different [Uid.t] location; for bound
+             variables, we use the [Uid.t] of the bound occurrence
+             (not the binding site), whereas for bound values we use
+             their binding-time [Uid.t]. *)
+          | None -> return (NVar id)
+          | Some def -> def
           | exception Not_found ->
           match Params.find_shape global_env id with
           | res ->
-              if res = t then
-                (* reducing here would loop forever *)
-                return t
-              else begin
-                decr fuel;
-                reduce env res
-              end
+              decr fuel;
+              reduce env res
           | exception Not_found ->
-              return t
+              return (NVar id)
           end
-      | Leaf -> return t
+      | Leaf -> return NLeaf
       | Struct m ->
-          begin match strategy with
-          | Weak -> return t
-          | Strong ->
-              return { t with desc = Struct (Item.Map.map (reduce_strong env) m) }
-          end
+          let mnf = Item.Map.map (reduce env) m in
+          return (NStruct mnf)
+
+  let read_back : nf -> t =
+    let memo_table = Hashtbl.create 42 in
+    (* The [nf] normal form we receive may contain a lot of internal
+       sharing due to the use of memoization in the evaluator. We have
+       to memoize here again, otherwise the sharing is lost by mapping
+       over the term as a tree. *)
+
+    let rec read_back nf =
+      in_memo_table memo_table nf read_back_ nf
+
+    and read_back_ (nf : nf) : t =
+      { uid = nf.uid; desc = read_back_desc nf.desc }
+
+    and read_back_desc = function
+      | NVar v ->
+          Var v
+      | NApp (nft, nfu) ->
+          App(read_back nft, read_back nfu)
+      | NAbs (_env, x, _t, nf) ->
+          Abs(x, read_back nf)
+      | NStruct nstr ->
+          Struct (Item.Map.map read_back nstr)
+      | NProj (nf, item) ->
+          Proj (read_back nf, item)
+      | NLeaf -> Leaf
+      | NComp_unit s -> Comp_unit s
+      | NoFuelLeft t -> t
+
+    in fun nf -> read_back nf
 
   let reduce global_env t =
     let fuel = ref Params.fuel in
     let memo_table = Hashtbl.create 42 in
     let local_env = Ident.empty in
     let env = { fuel; global_env; memo_table; local_env} in
-    reduce_strong env t
+    reduce_ env t |> read_back
 end
 
 module Local_reduce =
