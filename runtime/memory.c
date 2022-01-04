@@ -323,38 +323,6 @@ CAMLexport void caml_set_fields (value obj, value v)
   }
 }
 
-CAMLexport void caml_blit_fields (
-  value src, int srcoff, value dst, int dstoff, int n)
-{
-  CAMLparam2(src, dst);
-  int i;
-  CAMLassert(Is_block(src));
-  CAMLassert(Is_block(dst));
-  CAMLassert(srcoff + n <= Wosize_val(src));
-  CAMLassert(dstoff + n <= Wosize_val(dst));
-  CAMLassert(Tag_val(src) != Infix_tag);
-  CAMLassert(Tag_val(dst) != Infix_tag);
-
-  /* we can't use memcpy/memmove since they may not do atomic word writes.
-     for instance, they may copy a byte at a time */
-  if (src == dst && srcoff < dstoff) {
-    /* copy descending */
-    for (i = n; i > 0; i--) {
-      caml_modify(
-        &Field(dst, dstoff + i - 1),
-        Field(src, srcoff + i - 1));
-    }
-  } else {
-    /* copy ascending */
-    for (i = 0; i < n; i++) {
-      caml_modify(
-        &Field(dst, dstoff + i),
-        Field(src, srcoff + i));
-    }
-  }
-  CAMLreturn0;
-}
-
 Caml_inline value alloc_shr(mlsize_t wosize, tag_t tag, int noexc)
 {
   caml_domain_state *dom_st = Caml_state;
