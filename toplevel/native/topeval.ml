@@ -169,6 +169,19 @@ let execute_phrase print_outcome ppf phr =
       let sg' = Typemod.Signature_names.simplify newenv names sg in
       ignore (Includemod.signatures oldenv ~mark:Mark_positive sg sg');
       Typecore.force_delayed_checks ();
+      (* `let _ = <expression>` or even just `<expression>` require special
+         handling in toplevels, or nothing is displayed. In bytecode, the
+         lambda for <expression> is directly executed and the result _is_ the
+         value. In native, the lambda for <expression> is compiled and loaded
+         from a DLL, and the result of loading that DLL is _not_ the value
+         itself. In native, <expression> must therefore be named so that it can
+         be looked up after the DLL has been dlopen'd.
+
+         The expression is "named" after typing in order to ensure that both
+         bytecode and native toplevels always type-check _exactly_ the same
+         expression. Adding the binding at the parsetree level (before typing)
+         can create observable differences (e.g. in type variable names, see
+         tool-toplevel/pr10712.ml in the testsuite) *)
       let str, sg', rewritten =
          match str.str_items with
          | [ { str_desc = Tstr_eval (e, attrs) ; str_loc = loc } ]
