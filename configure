@@ -12846,6 +12846,30 @@ $as_echo "$as_me: WARNING: Consider using GCC version 4.2 or above." >&2;};
     common_cflags="-nologo -O2 -Gy- -MD $cc_warnings"
       common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
       internal_cppflags='-DUNICODE -D_UNICODE'
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the C compiler supports -d2VolatileMetadata-" >&5
+$as_echo_n "checking whether the C compiler supports -d2VolatileMetadata-... " >&6; }
+  saved_CFLAGS="$CFLAGS"
+  CFLAGS="-d2VolatileMetadata- $CFLAGS"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+int main() { return 0; }
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  cl_has_volatile_metadata=true
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  cl_has_volatile_metadata=false
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  CFLAGS="$saved_CFLAGS"
+
+      if test "x$cl_has_volatile_metadata" = "xtrue"; then :
+  internal_cflags='-d2VolatileMetadata-'
+fi
       internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
       internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)" ;; #(
   xlc-*) :
