@@ -384,6 +384,11 @@ OCaml 4.14.0
   (Sébastien Hinderer, review by David Allsopp, Daniel Bünzli, Xavier Leroy
   and Gabriel Scherer)
 
+- #10797: Compile with -d2VolatileMetadata- on supporting versions of Visual
+  Studio. This suppresses the addition of .voltbl sections and eliminates
+  linking errors in systhreads.
+  (David Allsopp, review by Jonah Beckford and Sébastien Hinderer)
+
 ### Bug fixes:
 
 - #9214, #10709: Wrong unmarshaling of function pointers in debugger mode.
