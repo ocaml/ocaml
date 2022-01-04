@@ -3,6 +3,10 @@
    * toplevel.opt
 *)
 
+(* Various test-cases ensuring that the native and bytecode toplevels produce
+   the same output *)
+
+(* PR 10712 *)
 module A : sig
   type ('foo, 'bar) t
 
@@ -24,4 +28,8 @@ A.get_foo
 
 (* Type variables be 'a and 'b (original names lost in let-binding) *)
 let _bar = A.get_foo
+;;
+
+(* PR 10849 *)
+let _ : int = 42
 ;;
