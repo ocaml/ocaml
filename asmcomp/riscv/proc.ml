@@ -286,7 +286,7 @@ let prologue_required fd =
   frame_required fd
 
 (* See
-   https://github.com/riscv/riscv-elf-psabi-doc/blob/master/riscv-elf.md *)
+   https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/master/riscv-elf.adoc *)
 
 let int_dwarf_reg_numbers =
   [| 10; 11; 12; 13; 14; 15; 16; 17;
