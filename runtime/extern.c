@@ -129,6 +129,7 @@ static struct caml_extern_state* get_extern_state (void)
     return NULL;
   }
 
+  extern_state->extern_flags = 0;
   extern_state->obj_counter = 0;
   extern_state->size_32 = 0;
   extern_state->size_64 = 0;
