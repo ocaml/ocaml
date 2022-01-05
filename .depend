@@ -6270,6 +6270,7 @@ toplevel/genprintval.cmi : \
     typing/outcometree.cmi \
     typing/env.cmi
 toplevel/topcommon.cmo : \
+    typing/typedtree.cmi \
     parsing/printast.cmi \
     typing/predef.cmi \
     parsing/pprintast.cmi \
@@ -6292,9 +6293,11 @@ toplevel/topcommon.cmo : \
     driver/compmisc.cmi \
     driver/compenv.cmi \
     utils/clflags.cmi \
+    parsing/asttypes.cmi \
     parsing/ast_helper.cmi \
     toplevel/topcommon.cmi
 toplevel/topcommon.cmx : \
+    typing/typedtree.cmx \
     parsing/printast.cmx \
     typing/predef.cmx \
     parsing/pprintast.cmx \
@@ -6317,11 +6320,13 @@ toplevel/topcommon.cmx : \
     driver/compmisc.cmx \
     driver/compenv.cmx \
     utils/clflags.cmx \
+    parsing/asttypes.cmi \
     parsing/ast_helper.cmx \
     toplevel/topcommon.cmi
 toplevel/topcommon.cmi : \
     utils/warnings.cmi \
     typing/types.cmi \
+    typing/typedtree.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
     typing/outcometree.cmi \
@@ -6468,7 +6473,6 @@ toplevel/byte/topeval.cmo : \
     file_formats/cmo_format.cmi \
     utils/clflags.cmi \
     bytecomp/bytegen.cmi \
-    parsing/asttypes.cmi \
     toplevel/byte/topeval.cmi
 toplevel/byte/topeval.cmx : \
     utils/warnings.cmx \
@@ -6504,7 +6508,6 @@ toplevel/byte/topeval.cmx : \
     file_formats/cmo_format.cmi \
     utils/clflags.cmx \
     bytecomp/bytegen.cmx \
-    parsing/asttypes.cmi \
     toplevel/byte/topeval.cmi
 toplevel/byte/topeval.cmi : \
     toplevel/topcommon.cmi \
@@ -6605,7 +6608,6 @@ toplevel/native/topeval.cmo : \
     driver/compmisc.cmi \
     middle_end/compilenv.cmi \
     utils/clflags.cmi \
-    parsing/asttypes.cmi \
     asmcomp/asmlink.cmi \
     toplevel/native/topeval.cmi
 toplevel/native/topeval.cmx : \
@@ -6636,7 +6638,6 @@ toplevel/native/topeval.cmx : \
     driver/compmisc.cmx \
     middle_end/compilenv.cmx \
     utils/clflags.cmx \
-    parsing/asttypes.cmi \
     asmcomp/asmlink.cmx \
     toplevel/native/topeval.cmi
 toplevel/native/topeval.cmi : \
