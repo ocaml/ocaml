@@ -135,23 +135,14 @@ let execute_phrase print_outcome ppf phr =
               if print_outcome then
                 Printtyp.wrap_printing_env ~error:false oldenv (fun () ->
                   match str.str_items with
-                  | [ { str_desc =
-                          (Tstr_eval (exp, _)
-                          |Tstr_value
-                              (Asttypes.Nonrecursive,
-                               [{vb_pat = {pat_desc=Tpat_any};
-                                 vb_expr = exp}
-                               ]
-                              )
-                          )
-                      }
-                    ] ->
-                      let outv = outval_of_value newenv v exp.exp_type in
-                      let ty = Printtyp.tree_of_type_scheme exp.exp_type in
-                      Ophr_eval (outv, ty)
-
                   | [] -> Ophr_signature []
-                  | _ -> Ophr_signature (pr_item oldenv sg'))
+                  | _ ->
+                      match find_eval_phrase str with
+                      | Some (exp, _, _) ->
+                        let outv = outval_of_value newenv v exp.exp_type in
+                        let ty = Printtyp.tree_of_type_scheme exp.exp_type in
+                        Ophr_eval (outv, ty)
+                      | None -> Ophr_signature (pr_item oldenv sg'))
               else Ophr_signature []
           | Exception exn ->
               toplevel_env := oldenv;

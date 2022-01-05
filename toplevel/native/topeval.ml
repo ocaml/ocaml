@@ -183,21 +183,11 @@ let execute_phrase print_outcome ppf phr =
          can create observable differences (e.g. in type variable names, see
          tool-toplevel/topeval.ml in the testsuite) *)
       let str, sg', rewritten =
-         match str.str_items with
-         | [ { str_desc = Tstr_eval (e, attrs) ; str_loc = loc } ]
-         | [ { str_desc = Tstr_value (Asttypes.Nonrecursive,
-                                       [{ vb_expr = e
-                                        ; vb_pat =
-                                            { pat_desc = Tpat_any
-                                            ; pat_extra =
-                                                ([] | [Tpat_constraint _, _, _])
-                                            ; _ }
-                                        ; vb_attributes = attrs }])
-             ; str_loc = loc }
-           ] ->
+         match find_eval_phrase str with
+         | Some (e, attrs, loc) ->
              let str, sg' = name_expression ~loc ~attrs e in
              str, sg', true
-         | _ -> str, sg', false
+         | None -> str, sg', false
       in
       let module_ident, res, required_globals, size =
         if Config.flambda then

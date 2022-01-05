@@ -65,6 +65,10 @@ val print_out_signature :
   (formatter -> Outcometree.out_sig_item list -> unit) ref
 val print_out_phrase :
   (formatter -> Outcometree.out_phrase -> unit) ref
+val find_eval_phrase :
+  Typedtree.structure ->
+    (Typedtree.expression * Typedtree.attributes * Location.t) option
+
 
 
 exception Undefined_global of string

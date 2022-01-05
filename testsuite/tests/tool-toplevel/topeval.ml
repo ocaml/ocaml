@@ -33,3 +33,15 @@ let _bar = A.get_foo
 (* PR 10849 *)
 let _ : int = 42
 ;;
+
+let (_ : int) : int = 42
+;;
+
+let List.(_) = 42
+;;
+
+let List.(String.(_)) = 42
+;;
+
+let List.(_) : int = 42
+;;
