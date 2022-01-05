@@ -431,8 +431,8 @@ CAMLprim value caml_sys_get_argv(value unit)
   CAMLlocal2 (exe_name, res);
   exe_name = caml_copy_string_of_os(caml_params->exe_name);
   res = caml_alloc_small(2, 0);
-  caml_initialize(&Field(res, 0), exe_name);
-  caml_initialize(&Field(res, 1), main_argv);
+  Field(res, 0) = exe_name;
+  Field(res, 1) = main_argv;
   CAMLreturn(res);
 }
 
@@ -454,7 +454,6 @@ CAMLprim value caml_sys_executable_name(value unit)
 
 void caml_sys_init(char_os * exe_name, char_os **argv)
 {
-  value v;
 #ifdef _WIN32
   /* Initialises the caml_win32_* globals on Windows with the version of
      Windows which is running */
@@ -464,9 +463,8 @@ void caml_sys_init(char_os * exe_name, char_os **argv)
 #endif
 #endif
   caml_init_exe_name(exe_name);
-  v = caml_alloc_array((void *)caml_copy_string_of_os,
-                       (char const **) argv);
-  main_argv = v;
+  main_argv = caml_alloc_array((void *)caml_copy_string_of_os,
+                               (char const **) argv);
   caml_register_generational_global_root(&main_argv);
 }
 
@@ -585,7 +583,7 @@ int caml_unix_random_seed(intnat data[16])
     while (nread > 0) data[n++] = buffer[--nread];
   }
   /* If the read from /dev/urandom fully succeeded, we now have 96 bits
-    of good random data and can stop here. */
+     of good random data and can stop here. */
   if (n >= 12) return n;
   /* Otherwise, complement whatever we got (probably nothing)
      with some not-very-random data. */
