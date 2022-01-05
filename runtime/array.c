@@ -156,8 +156,9 @@ static value caml_array_unsafe_set_addr(value array, value index,value newval)
 
 /* [ floatarray -> int -> float -> unit ] */
 /* [MM]: [caml_array_unsafe_set_addr] has a fence for enforcing the OCaml
-   memory model through its use of [caml_modify]. [caml_floatarray_unsafe_set]
-   will also need a similar fence in [Store_double_flat_field]. */
+   memory model through its use of [caml_modify].
+   [MM] [TODO]: [caml_floatarray_unsafe_set] will also need a similar fence in
+   [Store_double_flat_field]. */
 CAMLprim value caml_floatarray_unsafe_set(value array, value index,value newval)
 {
   intnat idx = Long_val(index);
