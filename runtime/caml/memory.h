@@ -50,8 +50,10 @@ CAMLextern value caml_alloc_shr_preserving_profinfo (mlsize_t, tag_t,
 #endif /* WITH_PROFINFO */
 CAMLextern value caml_alloc_shr_no_raise (mlsize_t wosize, tag_t);
 CAMLextern void caml_adjust_gc_speed (mlsize_t, mlsize_t);
-CAMLextern void caml_alloc_dependent_memory (mlsize_t);
-CAMLextern void caml_free_dependent_memory (mlsize_t);
+CAMLextern void caml_alloc_dependent_memory (mlsize_t bsz);
+CAMLextern void caml_free_dependent_memory (mlsize_t bsz);
+CAMLextern void caml_modify (value *, value);
+CAMLextern void caml_initialize (value *, value);
 CAMLextern int caml_atomic_cas_field (value, intnat, value, value);
 CAMLextern value caml_check_urgent_gc (value);
 #ifdef CAML_INTERNALS
@@ -62,9 +64,6 @@ CAMLextern int caml_add_to_heap (char *mem);
 
 CAMLextern int caml_huge_fallback_count; /* FIXME KC: Make per domain */
 
-/* old CAPI function compatability */
-CAMLextern void caml_modify (value *, value);
-CAMLextern void caml_initialize (value *, value);
 
 /* [caml_stat_*] functions below provide an interface to the static memory
    manager built into the runtime, which can be used for managing static
@@ -197,7 +196,7 @@ extern uintnat caml_use_huge_pages;
 #define DEBUG_clear(result, wosize) do{ \
   uintnat caml__DEBUG_i; \
   for (caml__DEBUG_i = 0; caml__DEBUG_i < (wosize); ++ caml__DEBUG_i){ \
-    Op_val (result)[caml__DEBUG_i] = Debug_uninit_minor; \
+    Field ((result), caml__DEBUG_i) = Debug_uninit_minor; \
   } \
 }while(0)
 #else
@@ -546,7 +545,6 @@ struct caml__roots_block {
 
 #define End_roots() CAML_LOCAL_ROOTS = caml__roots_block.next; }
 
-/** Compatability with old C-API **/
 
 /* [caml_register_global_root] registers a global C variable as a memory root
    for the duration of the program, or until [caml_remove_global_root] is

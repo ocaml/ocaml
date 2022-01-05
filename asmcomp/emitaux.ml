@@ -197,8 +197,8 @@ let emit_frames a =
         if Debuginfo.is_none d then 0 else 1
       | Dbg_alloc dbgs ->
         if !Clflags.debug &&
-          List.exists (fun d ->
-            not (Debuginfo.is_none d.Debuginfo.alloc_dbg)) dbgs
+           List.exists (fun d ->
+             not (Debuginfo.is_none d.Debuginfo.alloc_dbg)) dbgs
         then 3 else 2
     in
     a.efa_code_label fd.fd_lbl;
@@ -375,9 +375,7 @@ let emit_debug_info_gen dbg file_emitter loc_emitter =
             file_num in
         loc_emitter ~file_num ~line ~col;
       end
-    end
-
-(* Emission of block headers immediately prior to function entry points *)
+  end
 
 let emit_debug_info dbg =
   emit_debug_info_gen dbg (fun ~file_num ~file_name ->

@@ -1159,11 +1159,3 @@ void caml_init_os_params(void)
   now.HighPart = stamp.dwHighDateTime;
   now.QuadPart *= 100;
 }
-
-int64_t caml_time_counter(void)
-{
-  LARGE_INTEGER now;
-  /* Windows 2000 is no longer supported, so this function always succeeds */
-  QueryPerformanceCounter(&now);
-  return (now.QuadPart * frequency.QuadPart + clock_offset.QuadPart);
-}

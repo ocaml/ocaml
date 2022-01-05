@@ -128,41 +128,41 @@ static intnat do_compare_val(struct compare_stack* stk,
         return Long_val(v1) - Long_val(v2);
       /* Subtraction above cannot overflow and cannot result in UNORDERED */
       switch (Tag_val(v2)) {
-      case Forward_tag:
-        v2 = Forward_val(v2);
-        continue;
-      case Custom_tag: {
-        int res;
-        int (*compare)(value v1, value v2) = Custom_ops_val(v2)->compare_ext;
-        if (compare == NULL) break;  /* for backward compatibility */
-        Caml_state->compare_unordered = 0;
-        res = compare(v1, v2);
-        if (Caml_state->compare_unordered && !total) return UNORDERED;
-        if (res != 0) return res;
-        goto next_item;
-      }
-      default: /*fallthrough*/;
-      }
+        case Forward_tag:
+          v2 = Forward_val(v2);
+          continue;
+        case Custom_tag: {
+          int res;
+          int (*compare)(value v1, value v2) = Custom_ops_val(v2)->compare_ext;
+          if (compare == NULL) break;  /* for backward compatibility */
+          Caml_state->compare_unordered = 0;
+          res = compare(v1, v2);
+          if (Caml_state->compare_unordered && !total) return UNORDERED;
+          if (res != 0) return res;
+          goto next_item;
+        }
+        default: /*fallthrough*/;
+        }
 
       return LESS;                /* v1 long < v2 block */
     }
     if (Is_long(v2)) {
       switch (Tag_val(v1)) {
-      case Forward_tag:
-        v1 = Forward_val(v1);
-        continue;
-      case Custom_tag: {
-        int res;
-        int (*compare)(value v1, value v2) = Custom_ops_val(v1)->compare_ext;
-        if (compare == NULL) break;  /* for backward compatibility */
-        Caml_state->compare_unordered = 0;
-        res = compare(v1, v2);
-        if (Caml_state->compare_unordered && !total) return UNORDERED;
-        if (res != 0) return res;
-        goto next_item;
-      }
-      default: /*fallthrough*/;
-      }
+        case Forward_tag:
+          v1 = Forward_val(v1);
+          continue;
+        case Custom_tag: {
+          int res;
+          int (*compare)(value v1, value v2) = Custom_ops_val(v1)->compare_ext;
+          if (compare == NULL) break;  /* for backward compatibility */
+          Caml_state->compare_unordered = 0;
+          res = compare(v1, v2);
+          if (Caml_state->compare_unordered && !total) return UNORDERED;
+          if (res != 0) return res;
+          goto next_item;
+        }
+        default: /*fallthrough*/;
+        }
       return GREATER;            /* v1 block > v2 long */
     }
     t1 = Tag_val(v1);
@@ -280,8 +280,8 @@ static intnat do_compare_val(struct compare_stack* stk,
       if (sz1 > 1) {
         sp++;
         if (sp >= stk->limit) sp = compare_resize_stack(stk, sp);
-        sp->v1 = Op_val(v1) + 1;
-        sp->v2 = Op_val(v2) + 1;
+        sp->v1 = &Field(v1, 1);
+        sp->v2 = &Field(v2, 1);
         sp->count = sz1 - 1;
       }
       /* Continue comparison with first field */

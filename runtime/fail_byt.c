@@ -72,7 +72,7 @@ CAMLexport void caml_raise_with_args(value tag, int nargs, value args[])
 {
   CAMLparam1 (tag);
   CAMLxparamN (args, nargs);
-  CAMLlocal1(bucket);
+  value bucket;
   int i;
 
   CAMLassert(1 + nargs <= Max_young_wosize);
@@ -164,57 +164,49 @@ CAMLexport void caml_array_bound_error(void)
 CAMLexport void caml_raise_out_of_memory(void)
 {
   check_global_data("Out_of_memory");
-  caml_raise_constant(Field(caml_global_data,
-                                OUT_OF_MEMORY_EXN));
+  caml_raise_constant(Field(caml_global_data, OUT_OF_MEMORY_EXN));
 }
 
 CAMLexport void caml_raise_stack_overflow(void)
 {
   check_global_data("Stack_overflow");
-  caml_raise_constant(Field(caml_global_data,
-                                STACK_OVERFLOW_EXN));
+  caml_raise_constant(Field(caml_global_data, STACK_OVERFLOW_EXN));
 }
 
 CAMLexport void caml_raise_sys_error(value msg)
 {
   check_global_data_param("Sys_error", String_val(msg));
-  caml_raise_with_arg(Field(caml_global_data,
-                                SYS_ERROR_EXN), msg);
+  caml_raise_with_arg(Field(caml_global_data, SYS_ERROR_EXN), msg);
 }
 
 CAMLexport void caml_raise_end_of_file(void)
 {
   check_global_data("End_of_file");
-  caml_raise_constant(Field(caml_global_data,
-                                END_OF_FILE_EXN));
+  caml_raise_constant(Field(caml_global_data, END_OF_FILE_EXN));
 }
 
 CAMLexport void caml_raise_zero_divide(void)
 {
   check_global_data("Division_by_zero");
-  caml_raise_constant(Field(caml_global_data,
-                                ZERO_DIVIDE_EXN));
+  caml_raise_constant(Field(caml_global_data, ZERO_DIVIDE_EXN));
 }
 
 CAMLexport void caml_raise_not_found(void)
 {
   check_global_data("Not_found");
-  caml_raise_constant(Field(caml_global_data,
-                                NOT_FOUND_EXN));
+  caml_raise_constant(Field(caml_global_data, NOT_FOUND_EXN));
 }
 
 CAMLexport void caml_raise_sys_blocked_io(void)
 {
   check_global_data("Sys_blocked_io");
-  caml_raise_constant(Field(caml_global_data,
-                                SYS_BLOCKED_IO));
+  caml_raise_constant(Field(caml_global_data, SYS_BLOCKED_IO));
 }
 
 CAMLexport void caml_raise_continuation_already_taken(void)
 {
   check_global_data("Continuation_already_taken");
-  caml_raise_constant(Field(caml_global_data,
-                                CONTINUATION_ALREADY_TAKEN_EXN));
+  caml_raise_constant(Field(caml_global_data, CONTINUATION_ALREADY_TAKEN_EXN));
 }
 
 CAMLexport value caml_raise_if_exception(value res)

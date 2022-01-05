@@ -200,7 +200,7 @@ CAMLprim value caml_parse_engine(struct parser_tables *tables,
     if (errflag < 3) {
       errflag = 3;
       while (1) {
-        state1 = Int_field(env->s_stack, sp);
+        state1 = Int_val(Field(env->s_stack, sp));
         n1 = Short(tables->sindex, state1);
         n2 = n1 + ERRCODE;
         if (n1 != 0 && n2 >= 0 && n2 <= Int_val(tables->tablesize) &&
@@ -245,8 +245,8 @@ CAMLprim value caml_parse_engine(struct parser_tables *tables,
   case STACKS_GROWN_1:
     RESTORE;
   push:
-    Store_field (env->s_stack, sp, Val_int(state));
-    Store_field (env->v_stack, sp, env->lval);
+    Field(env->s_stack, sp) = Val_int(state);
+    caml_modify(&Field(env->v_stack, sp), env->lval);
     Store_field (env->symb_start_stack, sp, env->symb_start);
     Store_field (env->symb_end_stack, sp, env->symb_end);
     goto loop;
@@ -260,7 +260,7 @@ CAMLprim value caml_parse_engine(struct parser_tables *tables,
     env->rule_len = Val_int(m);
     sp = sp - m + 1;
     m = Short(tables->lhs, n);
-    state1 = Int_field(env->s_stack, sp - 1);
+    state1 = Int_val(Field(env->s_stack, sp - 1));
     n1 = Short(tables->gindex, m);
     n2 = n1 + state1;
     if (n1 != 0 && n2 >= 0 && n2 <= Int_val(tables->tablesize) &&
@@ -281,7 +281,7 @@ CAMLprim value caml_parse_engine(struct parser_tables *tables,
                                 /* The ML code calls the semantic action */
   case SEMANTIC_ACTION_COMPUTED:
     RESTORE;
-    Store_field(env->s_stack, sp, Val_int(state));
+    Field(env->s_stack, sp) = Val_int(state);
     caml_modify(&Field(env->v_stack, sp), arg);
     asp = Int_val(env->asp);
     Store_field (env->symb_end_stack, sp, Field(env->symb_end_stack, asp));

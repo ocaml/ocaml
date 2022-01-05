@@ -110,7 +110,7 @@ void caml_raise_with_args(value tag, int nargs, value args[])
 {
   CAMLparam1 (tag);
   CAMLxparamN (args, nargs);
-  CAMLlocal1 (bucket);
+  value bucket;
   int i;
 
   bucket = caml_alloc (1 + nargs, 0);

@@ -44,12 +44,9 @@ CAMLextern value caml_alloc_8(tag_t, value, value, value, value,
 CAMLextern value caml_alloc_9(tag_t, value, value, value, value,
                               value, value, value, value, value);
 CAMLextern value caml_alloc_small (mlsize_t, tag_t);
-#define Init_field_small(o, i, x) (Op_val(o)[i] = (x))
-CAMLextern value caml_alloc_small_with_my_or_given_profinfo (mlsize_t wosize,
-  tag_t tag, uintnat profinfo);
 CAMLextern value caml_alloc_tuple (mlsize_t);
 CAMLextern value caml_alloc_float_array (mlsize_t len);
-CAMLextern value caml_alloc_string (mlsize_t); /* len in bytes (chars) */
+CAMLextern value caml_alloc_string (mlsize_t len);  /* len in bytes (chars) */
 CAMLextern value caml_alloc_initialized_string (mlsize_t len, const char *);
 CAMLextern value caml_copy_string (char const *);
 CAMLextern value caml_copy_string_array (char const * const*);
@@ -73,6 +70,21 @@ CAMLextern value caml_alloc_final (mlsize_t, /*size in words*/
                                    mlsize_t  /*max resources*/);
 
 CAMLextern int caml_convert_flag_list (value, const int *);
+
+/* Convenience functions to deal with unboxable types. */
+Caml_inline value caml_alloc_unboxed (value arg) { return arg; }
+Caml_inline value caml_alloc_boxed (value arg) {
+  value result = caml_alloc_small (1, 0);
+  Field (result, 0) = arg;
+  return result;
+}
+Caml_inline value caml_field_unboxed (value arg) { return arg; }
+Caml_inline value caml_field_boxed (value arg) { return Field (arg, 0); }
+
+/* Unannotated unboxable types are boxed by default. (may change in the
+   future) */
+#define caml_alloc_unboxable caml_alloc_boxed
+#define caml_field_unboxable caml_field_boxed
 
 #ifdef __cplusplus
 }

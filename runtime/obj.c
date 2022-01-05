@@ -138,7 +138,7 @@ CAMLprim value caml_obj_block(value tag, value size)
 CAMLprim value caml_obj_with_tag(value new_tag_v, value arg)
 {
   CAMLparam2 (new_tag_v, arg);
-  CAMLlocal2 (res, x);
+  CAMLlocal1 (res);
   mlsize_t sz, i;
   tag_t tg;
 
@@ -280,7 +280,7 @@ CAMLprim value caml_lazy_update_to_forcing (value v)
 
 CAMLprim value caml_get_public_method (value obj, value tag)
 {
-  value meths = Field(obj, 0);
+  value meths = Field (obj, 0);
   int li = 3, hi = Field(meths,0), mi;
   while (li < hi) {
     mi = ((li+hi) >> 1) | 1;

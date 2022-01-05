@@ -115,7 +115,7 @@ CAMLexport value caml_setup_afl(value unit)
   afl_read();
 
   /* ensure that another module has not already spawned a domain */
-  if (!caml_domain_alone())
+  if (!caml_domain_is_multicore())
     caml_fatal_error("afl-fuzz: cannot fork with multiple domains running");
 
   while (1) {

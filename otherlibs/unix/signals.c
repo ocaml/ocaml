@@ -35,7 +35,7 @@ static void decode_sigset(value vset, sigset_t * set)
 {
   sigemptyset(set);
   while (vset != Val_int(0)) {
-    int sig = caml_convert_signal_number(Int_field(vset, 0));
+    int sig = caml_convert_signal_number(Int_val(Field(vset, 0)));
     sigaddset(set, sig);
     vset = Field(vset, 1);
   }
