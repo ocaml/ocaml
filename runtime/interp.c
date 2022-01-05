@@ -135,7 +135,7 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
 
 #define Check_trap_barrier \
   if (domain_state->trap_sp_off >= domain_state->trap_barrier_off) \
-      caml_debugger(TRAP_BARRIER, Val_unit)
+    caml_debugger(TRAP_BARRIER, Val_unit)
 
 /* Register optimization.
    Some compilers underestimate the use of the local variables representing
@@ -322,8 +322,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #ifdef DEBUG
  next_instr:
   if (caml_icount-- == 0) caml_stop_here ();
-  CAMLassert(Stack_base(domain_state->current_stack) <= sp &&
-         sp <= Stack_high(domain_state->current_stack));
+  CAMLassert(Stack_base(domain_state->current_stack) <= sp);
+  CAMLassert(sp <= Stack_high(domain_state->current_stack));
 #endif
   goto *(void *)(jumptbl_base + *pc++); /* Jump to the first instruction */
 #else
@@ -341,8 +341,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
       caml_trace_accu_sp_file(accu,sp,prog,prog_size,stdout);
       fflush(stdout);
     };
-    CAMLassert(Stack_base(domain_state->current_stack) <= sp &&
-           sp <= Stack_high(domain_state->current_stack));
+    CAMLassert(Stack_base(domain_state->current_stack) <= sp);
+    CAMLassert(sp <= Stack_high(domain_state->current_stack));
 
 #endif
     curr_instr = *pc++;
