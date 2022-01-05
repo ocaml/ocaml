@@ -65,7 +65,7 @@ struct caml_thread_struct {
   value descr;              /* The heap-allocated descriptor (root) */
   struct caml_thread_struct * next; /* Doubly-linked list of running threads */
   struct caml_thread_struct * prev;
-  int domain_id;      /* The id of the domain to which this thread belong to */
+  int domain_id;      /* The id of the domain to which this thread belongs */
   struct stack_info* current_stack;      /* saved Caml_state->current_stack */
   struct c_stack_link* c_stack;          /* saved Caml_state->c_stack */
   struct caml__roots_block *local_roots; /* saved value of local_roots */
@@ -82,8 +82,8 @@ struct caml_thread_struct {
 #ifndef NATIVE_CODE
   intnat trap_sp_off;      /* saved value of Caml_state->trap_sp_off */
   intnat trap_barrier_off; /* saved value of Caml_state->trap_barrier_off */
-  /* saved value of Caml_state->external_raise */
   struct caml_exception_context* external_raise;
+    /* saved value of Caml_state->external_raise */
 #endif
 
 #ifdef POSIX_SIGNALS
@@ -768,7 +768,7 @@ CAMLprim value caml_thread_exit(value unit)   /* ML */
   } else {
     /* Bytecode, or thread created from C */
     st_thread_exit();
-  };
+  }
   return Val_unit;  /* not reached */
 }
 
