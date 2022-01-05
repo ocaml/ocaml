@@ -138,15 +138,6 @@ CAMLextern clock_t caml_win32_clock(void);
 
 #endif /* _WIN32 */
 
-/* Returns the current value of a counter that increments once per nanosecond.
-   On systems that support it, this uses a monotonic timesource which ignores
-   changes in the system time (so that this counter increases by 1000000 each
-   millisecond, even if the system clock was set back by an hour during that
-   millisecond). This makes it useful for benchmarking and timeouts, but not
-   for telling the time. The units are always nanoseconds, but the achieved
-   resolution may be less. The starting point is unspecified. */
-extern int64_t caml_time_counter(void);
-
 extern void caml_init_os_params(void);
 
 #endif /* CAML_INTERNALS */
