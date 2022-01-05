@@ -165,9 +165,9 @@ CAMLprim value caml_gc_set(value v)
   uintnat new_custom_maj, new_custom_min, new_custom_sz;
   CAML_EV_BEGIN(EV_EXPLICIT_GC_SET);
 
-  caml_change_max_stack_size (Long_field (v, 5));
+  caml_change_max_stack_size (Long_val (Field (v, 5)));
 
-  newpf = norm_pfree (Long_field (v, 2));
+  newpf = norm_pfree (Long_val (Field (v, 2)));
   if (newpf != caml_percent_free){
     caml_percent_free = newpf;
     caml_gc_message (0x20, "New space overhead: %"
@@ -201,7 +201,7 @@ CAMLprim value caml_gc_set(value v)
 
   /* Minor heap size comes last because it will trigger a minor collection
      (thus invalidating [v]) and it can raise [Out_of_memory]. */
-  newminwsz = caml_norm_minor_heap_size (Long_field (v, 0));
+  newminwsz = caml_norm_minor_heap_size (Long_val (Field (v, 0)));
   if (newminwsz != Caml_state->minor_heap_wsz){
     caml_gc_message (0x20, "New minor heap size: %"
                      ARCH_SIZET_PRINTF_FORMAT "uk words\n", newminwsz / 1024);

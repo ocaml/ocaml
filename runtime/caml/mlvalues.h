@@ -246,7 +246,7 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 /* Another special case: objects */
 #define Object_tag 248
 #define Class_val(val) Field((val), 0)
-#define Oid_val(val) Long_field((val), 1)
+#define Oid_val(val) Long_val(Field((val), 1))
 CAMLextern value caml_get_public_method (value obj, value tag);
 /* Called as:
    caml_callback(caml_get_public_method(obj, caml_hash_variant(name)), obj) */
@@ -439,10 +439,6 @@ CAMLextern value caml_atom(tag_t);
 #define Is_some(v) Is_block(v)
 
 CAMLextern value caml_set_oo_id(value obj);
-
-#define Int_field(x, i) Int_val(Field(x, i))
-#define Long_field(x, i) Long_val(Field(x, i))
-#define Bool_field(x, i) Bool_val(Field(x, i))
 
 /* Header for out-of-heap blocks. */
 
