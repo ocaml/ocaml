@@ -34,14 +34,14 @@ let _bar = A.get_foo
 let _ : int = 42
 ;;
 
-let (_ : int) : int = 42
+let (_ : bool) : bool = false
 ;;
 
-let List.(_) = 42
+let List.(_) = ""
 ;;
 
-let List.(String.(_)) = 42
+let List.(String.(_)) = 'd'
 ;;
 
-let List.(_) : int = 42
+let List.(_) : float = 42.0
 ;;
