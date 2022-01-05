@@ -451,7 +451,7 @@ OCaml 4.14.0
 
 - #10849: Display the result of `let _ : <type> = <expr>` in the native
   toplevel, as in the bytecode toplevel.
-  (David Allsopp, report by Nathan Rebours, review by ???)
+  (David Allsopp, report by Nathan Rebours, review by Gabriel Scherer)
 
 
 OCaml 4.13 maintenance branch
