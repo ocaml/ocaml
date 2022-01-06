@@ -48,7 +48,6 @@ using std::memory_order_seq_cst;
 #define ATOMIC_UINTNAT_INIT(x) (x)
 typedef _Atomic uintnat atomic_uintnat;
 typedef _Atomic intnat atomic_intnat;
-typedef _Atomic double atomic_double;
 
 #elif defined(__GNUC__)
 
@@ -65,7 +64,6 @@ typedef enum memory_order {
 #define ATOMIC_UINTNAT_INIT(x) { (x) }
 typedef struct { uintnat repr; } atomic_uintnat;
 typedef struct { intnat repr; } atomic_intnat;
-typedef struct { double repr; } atomic_double;
 
 #define atomic_load_explicit(x, m) __atomic_load_n(&(x)->repr, (m))
 #define atomic_load(x) atomic_load_explicit((x), memory_order_seq_cst)

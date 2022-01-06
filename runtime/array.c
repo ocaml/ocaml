@@ -342,34 +342,16 @@ static void wo_memmove (value* const dst, const value* const src,
   }
 }
 
-/* See comments attached to [wo_memmove] */
+/* [MM] [TODO]: Not consistent with the memory model. See the discussion in
+   https://github.com/ocaml-multicore/ocaml-multicore/pull/822. */
 CAMLprim value caml_floatarray_blit(value a1, value ofs1, value a2, value ofs2,
                                     value n)
 {
-  double *dst, *src;
-  mlsize_t nvals, i;
-
-  dst = (double *)a2 + Long_val(ofs2);
-  src = (double *)a1 + Long_val(ofs1);
-  nvals = Long_val(n);
-
-  if (caml_domain_alone ()) {
-    memmove (dst, src, nvals * sizeof(double));
-  } else {
-    /* See memory model [MM] notes in memory.c */
-    atomic_thread_fence(memory_order_acquire);
-    if (dst < src) {
-      /* copy ascending */
-      for (i = 0; i < nvals; i++)
-        atomic_store_explicit(&((atomic_double*)dst)[i], src[i],
-                              memory_order_release);
-    } else {
-      /* copy descending */
-      for (i = nvals; i > 0; i--)
-        atomic_store_explicit(&((atomic_double*)dst)[i-1], src[i-1],
-                              memory_order_release);
-    }
-  }
+  /* See memory model [MM] notes in memory.c */
+  atomic_thread_fence(memory_order_acquire);
+  memmove((double *)a2 + Long_val(ofs2),
+          (double *)a1 + Long_val(ofs1),
+          Long_val(n) * sizeof(double));
   return Val_unit;
 }
 
