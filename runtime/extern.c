@@ -1136,6 +1136,7 @@ CAMLprim value caml_obj_reachable_words(value v)
   uintnat pos;
 
   obj_counter = 0;
+  extern_flags = 0;
   extern_init_position_table();
   sp = extern_stack;
   size = 0;
