@@ -66,7 +66,7 @@ value caml_addrmap_lookup(struct addrmap* t, value key)
 static void addrmap_alloc(struct addrmap* t, uintnat sz)
 {
   uintnat i;
-  CAMLassert(sz > 0 && (sz & (sz - 1)) == 0); /* sz must be a power of 2 */
+  CAMLassert(Is_power_of_2(sz));
   t->entries = caml_stat_alloc(sizeof(struct addrmap_entry) * sz);
   t->size = sz;
   for (i = 0; i < sz; i++) {
