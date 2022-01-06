@@ -13,13 +13,18 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Printf
-
 type t = exn = ..
 
 let printers = Atomic.make []
 
-let locfmt = format_of_string "File \"%s\", line %d, characters %d-%d: %s"
+let use_printers x =
+  let rec conv = function
+    | hd :: tl ->
+        (match hd x with
+         | None | exception _ -> conv tl
+         | Some s -> Some s)
+    | [] -> None in
+  conv (Atomic.get printers)
 
 let add_field x i b =
   let f = Obj.field x i in
@@ -34,24 +39,23 @@ let add_field x i b =
   else
     Buffer.add_char b '_'
 
-let use_printers x =
-  let rec conv = function
-    | hd :: tl ->
-        (match hd x with
-         | None | exception _ -> conv tl
-         | Some s -> Some s)
-    | [] -> None in
-  conv (Atomic.get printers)
+let msg_with_loc file line start stop msg =
+  let int x = string_of_int x in
+  String.concat ""
+    ["File \""; file; "\", ";
+     "line "; int line; ", ";
+     "characters "; int start; "-"; int stop;
+     ": "; msg]
 
 let to_string_default = function
   | Out_of_memory -> "Out of memory"
   | Stack_overflow -> "Stack overflow"
   | Match_failure(file, line, char) ->
-      sprintf locfmt file line char (char+5) "Pattern matching failed"
+      msg_with_loc file line char (char+5) "Pattern matching failed"
   | Assert_failure(file, line, char) ->
-      sprintf locfmt file line char (char+6) "Assertion failed"
+      msg_with_loc file line char (char+6) "Assertion failed"
   | Undefined_recursive_module(file, line, char) ->
-      sprintf locfmt file line char (char+6) "Undefined recursive module"
+      msg_with_loc file line char (char+6) "Undefined recursive module"
   | x ->
       let x = Obj.repr x in
       if Obj.tag x <> 0 then
@@ -78,11 +82,17 @@ let to_string e =
   | Some s -> s
   | None -> to_string_default e
 
+
+let output_string_exn chan s exn =
+  output_string chan s;
+  output_string chan (to_string exn);
+  output_string chan "\n"
+
 let print fct arg =
   try
     fct arg
   with x ->
-    eprintf "Uncaught exception: %s\n" (to_string x);
+    output_string_exn stderr "Uncaught exception: " x;
     flush stderr;
     raise x
 
@@ -91,7 +101,7 @@ let catch fct arg =
     fct arg
   with x ->
     flush stdout;
-    eprintf "Uncaught exception: %s\n" (to_string x);
+    output_string_exn stderr "Uncaught exception: " x;
     exit 2
 
 type raw_backtrace_slot
@@ -148,23 +158,31 @@ let format_backtrace_slot pos slot =
       if l.is_raise then
         (* compiler-inserted re-raise, skipped *) None
       else
-        Some (sprintf "%s unknown location" (info false))
+        Some ((info false) ^ " unknown location" )
   | Known_location l ->
-      Some (sprintf "%s %s in file \"%s\"%s, line %d, characters %d-%d"
-              (info l.is_raise) l.defname l.filename
-              (if l.is_inline then " (inlined)" else "")
-              l.line_number l.start_char l.end_char)
+      let int x = string_of_int x in
+      let if_ b s = if b then s else "" in
+      let s =
+       String.concat ""
+         [ (info l.is_raise); " "; l.defname ;
+           " in file \""; l.filename; "\""; (if_ l.is_inline " (inlined)");
+           ", line "; int l.line_number;
+           ", characters "; (int l.start_char); "-"; (int l.end_char)]
+      in
+      Some s
 
 let print_exception_backtrace outchan backtrace =
   match backtrace with
   | None ->
-      fprintf outchan
+      output_string outchan
         "(Program not linked with -g, cannot print stack backtrace)\n"
   | Some a ->
       for i = 0 to Array.length a - 1 do
         match format_backtrace_slot i a.(i) with
           | None -> ()
-          | Some str -> fprintf outchan "%s\n" str
+          | Some str ->
+              output_string outchan str;
+              output_string outchan "\n"
       done
 
 let print_raw_backtrace outchan raw_backtrace =
@@ -183,7 +201,9 @@ let backtrace_to_string backtrace =
       for i = 0 to Array.length a - 1 do
         match format_backtrace_slot i a.(i) with
           | None -> ()
-          | Some str -> bprintf b "%s\n" str
+          | Some str ->
+            Buffer.add_string b str;
+            Buffer.add_string b "\n"
       done;
       Buffer.contents b
 
@@ -308,11 +328,11 @@ let errors = [| "";
 |]
 
 let default_uncaught_exception_handler exn raw_backtrace =
-  eprintf "Fatal error: exception %s\n" (to_string exn);
+  output_string_exn stderr "Fatal error: exception " exn;
   print_raw_backtrace stderr raw_backtrace;
   let status = get_debug_info_status () in
   if status < 0 then
-    prerr_endline errors.(abs status);
+    output_string stderr errors.(abs status);
   flush stderr
 
 let uncaught_exception_handler = ref default_uncaught_exception_handler
@@ -342,10 +362,11 @@ let handle_uncaught_exception' exn debugger_in_use =
       !uncaught_exception_handler exn raw_backtrace
     with exn' ->
       let raw_backtrace' = try_get_raw_backtrace () in
-      eprintf "Fatal error: exception %s\n" (to_string exn);
+      output_string_exn stderr
+        "Fatal error: exception " exn;
       print_raw_backtrace stderr raw_backtrace;
-      eprintf "Fatal error in uncaught exception handler: exception %s\n"
-        (to_string exn');
+      output_string_exn stderr
+        "Fatal error in uncaught exception handler: exception " exn';
       print_raw_backtrace stderr raw_backtrace';
       flush stderr
   with
