@@ -13,8 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Printf
-
 type t = exn = ..
 
 let printers = Atomic.make []
@@ -24,9 +22,9 @@ let locfmt = format_of_string "File \"%s\", line %d, characters %d-%d: %s"
 let field x i =
   let f = Obj.field x i in
   if not (Obj.is_block f) then
-    sprintf "%d" (Obj.magic f : int)           (* can also be a char *)
+    Printf.sprintf "%d" (Obj.magic f : int)           (* can also be a char *)
   else if Obj.tag f = Obj.string_tag then
-    sprintf "%S" (Obj.magic f : string)
+    Printf.sprintf "%S" (Obj.magic f : string)
   else if Obj.tag f = Obj.double_tag then
     string_of_float (Obj.magic f : float)
   else
@@ -34,14 +32,14 @@ let field x i =
 
 let rec other_fields x i =
   if i >= Obj.size x then ""
-  else sprintf ", %s%s" (field x i) (other_fields x (i+1))
+  else Printf.sprintf ", %s%s" (field x i) (other_fields x (i+1))
 
 let fields x =
   match Obj.size x with
   | 0 -> ""
   | 1 -> ""
-  | 2 -> sprintf "(%s)" (field x 1)
-  | _ -> sprintf "(%s%s)" (field x 1) (other_fields x 2)
+  | 2 -> Printf.sprintf "(%s)" (field x 1)
+  | _ -> Printf.sprintf "(%s%s)" (field x 1) (other_fields x 2)
 
 let use_printers x =
   let rec conv = function
@@ -56,11 +54,11 @@ let to_string_default = function
   | Out_of_memory -> "Out of memory"
   | Stack_overflow -> "Stack overflow"
   | Match_failure(file, line, char) ->
-      sprintf locfmt file line char (char+5) "Pattern matching failed"
+      Printf.sprintf locfmt file line char (char+5) "Pattern matching failed"
   | Assert_failure(file, line, char) ->
-      sprintf locfmt file line char (char+6) "Assertion failed"
+      Printf.sprintf locfmt file line char (char+6) "Assertion failed"
   | Undefined_recursive_module(file, line, char) ->
-      sprintf locfmt file line char (char+6) "Undefined recursive module"
+      Printf.sprintf locfmt file line char (char+6) "Undefined recursive module"
   | x ->
       let x = Obj.repr x in
       if Obj.tag x <> 0 then
@@ -79,7 +77,7 @@ let print fct arg =
   try
     fct arg
   with x ->
-    eprintf "Uncaught exception: %s\n" (to_string x);
+    Printf.eprintf "Uncaught exception: %s\n" (to_string x);
     flush stderr;
     raise x
 
@@ -88,7 +86,7 @@ let catch fct arg =
     fct arg
   with x ->
     flush stdout;
-    eprintf "Uncaught exception: %s\n" (to_string x);
+    Printf.eprintf "Uncaught exception: %s\n" (to_string x);
     exit 2
 
 type raw_backtrace_slot
@@ -145,9 +143,9 @@ let format_backtrace_slot pos slot =
       if l.is_raise then
         (* compiler-inserted re-raise, skipped *) None
       else
-        Some (sprintf "%s unknown location" (info false))
+        Some (Printf.sprintf "%s unknown location" (info false))
   | Known_location l ->
-      Some (sprintf "%s %s in file \"%s\"%s, line %d, characters %d-%d"
+      Some (Printf.sprintf "%s %s in file \"%s\"%s, line %d, characters %d-%d"
               (info l.is_raise) l.defname l.filename
               (if l.is_inline then " (inlined)" else "")
               l.line_number l.start_char l.end_char)
@@ -155,13 +153,13 @@ let format_backtrace_slot pos slot =
 let print_exception_backtrace outchan backtrace =
   match backtrace with
   | None ->
-      fprintf outchan
+      Printf.fprintf outchan
         "(Program not linked with -g, cannot print stack backtrace)\n"
   | Some a ->
       for i = 0 to Array.length a - 1 do
         match format_backtrace_slot i a.(i) with
           | None -> ()
-          | Some str -> fprintf outchan "%s\n" str
+          | Some str -> Printf.fprintf outchan "%s\n" str
       done
 
 let print_raw_backtrace outchan raw_backtrace =
@@ -180,7 +178,7 @@ let backtrace_to_string backtrace =
       for i = 0 to Array.length a - 1 do
         match format_backtrace_slot i a.(i) with
           | None -> ()
-          | Some str -> bprintf b "%s\n" str
+          | Some str -> Printf.bprintf b "%s\n" str
       done;
       Buffer.contents b
 
@@ -305,7 +303,7 @@ let errors = [| "";
 |]
 
 let default_uncaught_exception_handler exn raw_backtrace =
-  eprintf "Fatal error: exception %s\n" (to_string exn);
+  Printf.eprintf "Fatal error: exception %s\n" (to_string exn);
   print_raw_backtrace stderr raw_backtrace;
   let status = get_debug_info_status () in
   if status < 0 then
@@ -339,9 +337,9 @@ let handle_uncaught_exception' exn debugger_in_use =
       !uncaught_exception_handler exn raw_backtrace
     with exn' ->
       let raw_backtrace' = try_get_raw_backtrace () in
-      eprintf "Fatal error: exception %s\n" (to_string exn);
+      Printf.eprintf "Fatal error: exception %s\n" (to_string exn);
       print_raw_backtrace stderr raw_backtrace;
-      eprintf "Fatal error in uncaught exception handler: exception %s\n"
+      Printf.eprintf "Fatal error in uncaught exception handler: exception %s\n"
         (to_string exn');
       print_raw_backtrace stderr raw_backtrace';
       flush stderr

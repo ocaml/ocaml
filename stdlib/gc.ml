@@ -64,21 +64,20 @@ external get_minor_free : unit -> int = "caml_get_minor_free"
 external eventlog_pause : unit -> unit = "caml_eventlog_pause"
 external eventlog_resume : unit -> unit = "caml_eventlog_resume"
 
-open Printf
-
 let print_stat c =
   let st = stat () in
+  let fprintf = Printf.fprintf in
   fprintf c "minor_collections:      %d\n" st.minor_collections;
   fprintf c "major_collections:      %d\n" st.major_collections;
   fprintf c "compactions:            %d\n" st.compactions;
   fprintf c "forced_major_collections: %d\n" st.forced_major_collections;
   fprintf c "\n";
-  let l1 = String.length (sprintf "%.0f" st.minor_words) in
+  let l1 = String.length (Printf.sprintf "%.0f" st.minor_words) in
   fprintf c "minor_words:    %*.0f\n" l1 st.minor_words;
   fprintf c "promoted_words: %*.0f\n" l1 st.promoted_words;
   fprintf c "major_words:    %*.0f\n" l1 st.major_words;
   fprintf c "\n";
-  let l2 = String.length (sprintf "%d" st.top_heap_words) in
+  let l2 = String.length (Printf.sprintf "%d" st.top_heap_words) in
   fprintf c "top_heap_words: %*d\n" l2 st.top_heap_words;
   fprintf c "heap_words:     %*d\n" l2 st.heap_words;
   fprintf c "live_words:     %*d\n" l2 st.live_words;
