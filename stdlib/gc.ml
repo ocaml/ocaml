@@ -66,28 +66,27 @@ external eventlog_resume : unit -> unit = "caml_eventlog_resume"
 
 let print_stat c =
   let st = stat () in
-  let fprintf = Printf.fprintf in
-  fprintf c "minor_collections:      %d\n" st.minor_collections;
-  fprintf c "major_collections:      %d\n" st.major_collections;
-  fprintf c "compactions:            %d\n" st.compactions;
-  fprintf c "forced_major_collections: %d\n" st.forced_major_collections;
-  fprintf c "\n";
+  Printf.fprintf c "minor_collections:      %d\n" st.minor_collections;
+  Printf.fprintf c "major_collections:      %d\n" st.major_collections;
+  Printf.fprintf c "compactions:            %d\n" st.compactions;
+  Printf.fprintf c "forced_major_collections: %d\n" st.forced_major_collections;
+  Printf.fprintf c "\n";
   let l1 = String.length (Printf.sprintf "%.0f" st.minor_words) in
-  fprintf c "minor_words:    %*.0f\n" l1 st.minor_words;
-  fprintf c "promoted_words: %*.0f\n" l1 st.promoted_words;
-  fprintf c "major_words:    %*.0f\n" l1 st.major_words;
-  fprintf c "\n";
+  Printf.fprintf c "minor_words:    %*.0f\n" l1 st.minor_words;
+  Printf.fprintf c "promoted_words: %*.0f\n" l1 st.promoted_words;
+  Printf.fprintf c "major_words:    %*.0f\n" l1 st.major_words;
+  Printf.fprintf c "\n";
   let l2 = String.length (Printf.sprintf "%d" st.top_heap_words) in
-  fprintf c "top_heap_words: %*d\n" l2 st.top_heap_words;
-  fprintf c "heap_words:     %*d\n" l2 st.heap_words;
-  fprintf c "live_words:     %*d\n" l2 st.live_words;
-  fprintf c "free_words:     %*d\n" l2 st.free_words;
-  fprintf c "largest_free:   %*d\n" l2 st.largest_free;
-  fprintf c "fragments:      %*d\n" l2 st.fragments;
-  fprintf c "\n";
-  fprintf c "live_blocks: %d\n" st.live_blocks;
-  fprintf c "free_blocks: %d\n" st.free_blocks;
-  fprintf c "heap_chunks: %d\n" st.heap_chunks
+  Printf.fprintf c "top_heap_words: %*d\n" l2 st.top_heap_words;
+  Printf.fprintf c "heap_words:     %*d\n" l2 st.heap_words;
+  Printf.fprintf c "live_words:     %*d\n" l2 st.live_words;
+  Printf.fprintf c "free_words:     %*d\n" l2 st.free_words;
+  Printf.fprintf c "largest_free:   %*d\n" l2 st.largest_free;
+  Printf.fprintf c "fragments:      %*d\n" l2 st.fragments;
+  Printf.fprintf c "\n";
+  Printf.fprintf c "live_blocks: %d\n" st.live_blocks;
+  Printf.fprintf c "free_blocks: %d\n" st.free_blocks;
+  Printf.fprintf c "heap_chunks: %d\n" st.heap_chunks
 
 
 let allocated_bytes () =
