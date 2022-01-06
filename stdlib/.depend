@@ -448,12 +448,10 @@ stdlib__Lexing.cmx : lexing.ml \
     stdlib__Lexing.cmi
 stdlib__Lexing.cmi : lexing.mli
 stdlib__List.cmo : list.ml \
-    stdlib__Sys.cmi \
     stdlib__Seq.cmi \
     stdlib__Either.cmi \
     stdlib__List.cmi
 stdlib__List.cmx : list.ml \
-    stdlib__Sys.cmx \
     stdlib__Seq.cmx \
     stdlib__Either.cmx \
     stdlib__List.cmi
@@ -565,16 +563,16 @@ stdlib__Parsing.cmi : parsing.mli \
     stdlib__Obj.cmi \
     stdlib__Lexing.cmi
 stdlib__Printexc.cmo : printexc.ml \
+    stdlib__String.cmi \
     stdlib.cmi \
-    stdlib__Printf.cmi \
     stdlib__Obj.cmi \
     stdlib__Buffer.cmi \
     stdlib__Atomic.cmi \
     stdlib__Array.cmi \
     stdlib__Printexc.cmi
 stdlib__Printexc.cmx : printexc.ml \
+    stdlib__String.cmx \
     stdlib.cmx \
-    stdlib__Printf.cmx \
     stdlib__Obj.cmx \
     stdlib__Buffer.cmx \
     stdlib__Atomic.cmx \
