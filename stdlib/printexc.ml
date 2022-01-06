@@ -21,27 +21,18 @@ let printers = Atomic.make []
 
 let locfmt = format_of_string "File \"%s\", line %d, characters %d-%d: %s"
 
-let field x i =
+let add_field x i b =
   let f = Obj.field x i in
   if not (Obj.is_block f) then
-    sprintf "%d" (Obj.magic f : int)           (* can also be a char *)
+    Buffer.add_string b (string_of_int (Obj.magic f : int)) (* can also be a char *)
   else if Obj.tag f = Obj.string_tag then
-    sprintf "%S" (Obj.magic f : string)
+    (Buffer.add_char b '"';
+     Buffer.add_string b (Obj.magic f : string);
+     Buffer.add_char b '"')
   else if Obj.tag f = Obj.double_tag then
-    string_of_float (Obj.magic f : float)
+    Buffer.add_string b (string_of_float (Obj.magic f : float))
   else
-    "_"
-
-let rec other_fields x i =
-  if i >= Obj.size x then ""
-  else sprintf ", %s%s" (field x i) (other_fields x (i+1))
-
-let fields x =
-  match Obj.size x with
-  | 0 -> ""
-  | 1 -> ""
-  | 2 -> sprintf "(%s)" (field x 1)
-  | _ -> sprintf "(%s%s)" (field x 1) (other_fields x 2)
+    Buffer.add_char b '_'
 
 let use_printers x =
   let rec conv = function
@@ -68,7 +59,19 @@ let to_string_default = function
       else
         let constructor =
           (Obj.magic (Obj.field (Obj.field x 0) 0) : string) in
-        constructor ^ (fields x)
+        match Obj.size x with
+        | 0 | 1 -> constructor
+        | n ->
+            let b = Buffer.create (String.length constructor + n * 10) in
+            Buffer.add_string b constructor;
+            Buffer.add_char b '(';
+            add_field x 1 b;
+            for i = 2 to Obj.size x do
+              Buffer.add_string b ", ";
+              add_field x i b;
+            done;
+            Buffer.add_char b ')';
+            Buffer.contents b
 
 let to_string e =
   match use_printers e with
