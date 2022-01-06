@@ -27,13 +27,13 @@ struct addrmap {
 
 #define ADDRMAP_INIT {0,0}
 
-int caml_addrmap_contains(struct addrmap* t, value v);
-value caml_addrmap_lookup(struct addrmap* t, value v);
+int caml_addrmap_contains(struct addrmap* t, value k);
+value caml_addrmap_lookup(struct addrmap* t, value k);
 
 #define ADDRMAP_NOT_PRESENT ((value)(0))
 #define ADDRMAP_INVALID_KEY ((value)(0))
 
-value* caml_addrmap_insert_pos(struct addrmap* t, value v);
+value* caml_addrmap_insert_pos(struct addrmap* t, value k);
 
 /* must not already be present */
 void caml_addrmap_insert(struct addrmap* t, value k, value v);
