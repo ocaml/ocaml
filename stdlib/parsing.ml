@@ -15,21 +15,19 @@
 
 (* The parsing engine *)
 
-open Lexing
-
 (* Internal interface to the parsing engine *)
 
 type parser_env =
   { mutable s_stack : int array;        (* States *)
     mutable v_stack : Obj.t array;      (* Semantic attributes *)
-    mutable symb_start_stack : position array; (* Start positions *)
-    mutable symb_end_stack : position array;   (* End positions *)
+    mutable symb_start_stack : Lexing.position array; (* Start positions *)
+    mutable symb_end_stack : Lexing.position array;   (* End positions *)
     mutable stacksize : int;            (* Size of the stacks *)
     mutable stackbase : int;            (* Base sp for current parse *)
     mutable curr_char : int;            (* Last token read *)
     mutable lval : Obj.t;               (* Its semantic attribute *)
-    mutable symb_start : position;      (* Start pos. of the current symbol*)
-    mutable symb_end : position;        (* End pos. of the current symbol *)
+    mutable symb_start : Lexing.position;      (* Start pos. of the current symbol*)
+    mutable symb_end : Lexing.position;        (* End pos. of the current symbol *)
     mutable asp : int;                  (* The stack pointer for attributes *)
     mutable rule_len : int;             (* Number of rhs items in the rule *)
     mutable rule_number : int;          (* Rule number to reduce by *)
@@ -89,14 +87,14 @@ external set_trace: bool -> bool
 let env =
   { s_stack = Array.make 100 0;
     v_stack = Array.make 100 (Obj.repr ());
-    symb_start_stack = Array.make 100 dummy_pos;
-    symb_end_stack = Array.make 100 dummy_pos;
+    symb_start_stack = Array.make 100 Lexing.dummy_pos;
+    symb_end_stack = Array.make 100 Lexing.dummy_pos;
     stacksize = 100;
     stackbase = 0;
     curr_char = 0;
     lval = Obj.repr ();
-    symb_start = dummy_pos;
-    symb_end = dummy_pos;
+    symb_start = Lexing.dummy_pos;
+    symb_end = Lexing.dummy_pos;
     asp = 0;
     rule_len = 0;
     rule_number = 0;
@@ -109,8 +107,8 @@ let grow_stacks() =
   let newsize = oldsize * 2 in
   let new_s = Array.make newsize 0
   and new_v = Array.make newsize (Obj.repr ())
-  and new_start = Array.make newsize dummy_pos
-  and new_end = Array.make newsize dummy_pos in
+  and new_start = Array.make newsize Lexing.dummy_pos
+  and new_end = Array.make newsize Lexing.dummy_pos in
     Array.blit env.s_stack 0 new_s 0 oldsize;
     env.s_stack <- new_s;
     Array.blit env.v_stack 0 new_v 0 oldsize;
@@ -128,6 +126,7 @@ let clear_parser() =
 let current_lookahead_fun = ref (fun (_ : Obj.t) -> false)
 
 let yyparse tables start lexer lexbuf =
+  let open Lexing in
   let rec loop cmd arg =
     match parse_engine tables env cmd arg with
       Read_token ->
@@ -201,10 +200,10 @@ let symbol_end_pos () = env.symb_end_stack.(env.asp)
 let rhs_start_pos n = env.symb_start_stack.(env.asp - (env.rule_len - n))
 let rhs_end_pos n = env.symb_end_stack.(env.asp - (env.rule_len - n))
 
-let symbol_start () = (symbol_start_pos ()).pos_cnum
-let symbol_end () = (symbol_end_pos ()).pos_cnum
-let rhs_start n = (rhs_start_pos n).pos_cnum
-let rhs_end n = (rhs_end_pos n).pos_cnum
+let symbol_start () = (symbol_start_pos ()).Lexing.pos_cnum
+let symbol_end () = (symbol_end_pos ()).Lexing.pos_cnum
+let rhs_start n = (rhs_start_pos n).Lexing.pos_cnum
+let rhs_end n = (rhs_end_pos n).Lexing.pos_cnum
 
 let is_current_lookahead tok =
   (!current_lookahead_fun)(Obj.repr tok)
