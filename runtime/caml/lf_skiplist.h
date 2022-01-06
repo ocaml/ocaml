@@ -123,6 +123,6 @@ extern void caml_lf_skiplist_free_garbage(struct lf_skiplist *sk);
       var = caml__next;                                                        \
     }                                                                          \
   }
-#endif
+#endif /* CAML_INTERNALS */
 
-#endif
+#endif /* CAML_SKIPLIST_H */
