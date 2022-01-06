@@ -13,8 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Obj
-
 (**** Object representation ****)
 
 external set_id: 'a -> 'a = "caml_set_oo_id" [@@noalloc]
@@ -52,7 +50,7 @@ let initial_object_size = 2
 type item = DummyA | DummyB | DummyC of int
 let _ = [DummyA; DummyB; DummyC 0] (* to avoid warnings *)
 
-let dummy_item = (magic () : item)
+let dummy_item = (Obj.magic () : item)
 
 (**** Types ****)
 
@@ -77,7 +75,7 @@ let public_method_label s : tag =
   (* make it signed for 64 bits architectures *)
   let tag = if !accu > 0x3FFFFFFF then !accu - (1 lsl 31) else !accu in
   (* Printf.eprintf "%s = %d\n" s tag; flush stderr; *)
-  magic tag
+  Obj.magic tag
 
 (**** Sparse array ****)
 
@@ -118,7 +116,7 @@ let dummy_table =
 let table_count = ref 0
 
 (* dummy_met should be a pointer, so use an atom *)
-let dummy_met : item = obj (Obj.new_block 0 0)
+let dummy_met : item = Obj.obj (Obj.new_block 0 0)
 (* if debugging is needed, this could be a good idea: *)
 (* let dummy_met () = failwith "Undefined method" *)
 
@@ -130,9 +128,9 @@ let new_table pub_labels =
   incr table_count;
   let len = Array.length pub_labels in
   let methods = Array.make (len*2+2) dummy_met in
-  methods.(0) <- magic len;
-  methods.(1) <- magic (fit_size len * Sys.word_size / 8 - 1);
-  for i = 0 to len - 1 do methods.(i*2+3) <- magic pub_labels.(i) done;
+  methods.(0) <- Obj.magic len;
+  methods.(1) <- Obj.magic (fit_size len * Sys.word_size / 8 - 1);
+  for i = 0 to len - 1 do methods.(i*2+3) <- Obj.magic pub_labels.(i) done;
   { methods = methods;
     methods_by_name = Meths.empty;
     methods_by_label = Labs.empty;
@@ -191,7 +189,7 @@ let get_method table label =
   with Not_found -> table.methods.(label)
 
 let to_list arr =
-  if arr == magic 0 then [] else Array.to_list arr
+  if arr == Obj.magic 0 then [] else Array.to_list arr
 
 let narrow table vars virt_meths concr_meths =
   let vars = to_list vars
@@ -298,7 +296,7 @@ let get_key tags : item =
 *)
 
 let create_table public_methods =
-  if public_methods == magic 0 then new_table [||] else
+  if public_methods == Obj.magic 0 then new_table [||] else
   (* [public_methods] must be in ascending order for bytecode *)
   let tags = Array.map public_method_label public_methods in
   let table = new_table tags in
@@ -313,7 +311,7 @@ let create_table public_methods =
 let init_class table =
   inst_var_count := !inst_var_count + table.size - 1;
   table.initializers <- List.rev table.initializers;
-  resize table (3 + magic table.methods.(1) * 16 / Sys.word_size)
+  resize table (3 + Obj.magic table.methods.(1) * 16 / Sys.word_size)
 
 let inherits cla vals virt_meths concr_meths (_, super, _, env) top =
   narrow cla vals virt_meths concr_meths;
@@ -321,10 +319,10 @@ let inherits cla vals virt_meths concr_meths (_, super, _, env) top =
     if top then super cla env else Obj.repr (super cla) in
   widen cla;
   Array.concat
-    [[| repr init |];
-     magic (Array.map (get_variable cla) (to_array vals) : int array);
+    [[| Obj.repr init |];
+     Obj.magic (Array.map (get_variable cla) (to_array vals) : int array);
      Array.map
-       (fun nm -> repr (get_method cla (get_method_label cla nm) : closure))
+       (fun nm -> Obj.repr (get_method cla (get_method_label cla nm) : closure))
        (to_array concr_meths) ]
 
 let make_class pub_meths class_init =
@@ -508,7 +506,7 @@ let send_meth m n c =
 let new_cache table =
   let n = new_method table in
   let n =
-    if n mod 2 = 0 || n > 2 + magic table.methods.(1) * 16 / Sys.word_size
+    if n mod 2 = 0 || n > 2 + Obj.magic table.methods.(1) * 16 / Sys.word_size
     then n else new_method table
   in
   table.methods.(n) <- Obj.magic 0;
@@ -542,7 +540,7 @@ type impl =
   | Closure of closure
 
 let method_impl table i arr =
-  let next () = incr i; magic arr.(!i) in
+  let next () = incr i; Obj.magic arr.(!i) in
   match next() with
     GetConst -> let x : t = next() in get_const x
   | GetVar   -> let n = next() in get_var n
@@ -594,7 +592,7 @@ let method_impl table i arr =
       send_env m e n (new_cache table)
   | SendMeth ->
       let m = next() in let n = next () in send_meth m n (new_cache table)
-  | Closure _ as clo -> magic clo
+  | Closure _ as clo -> Obj.magic clo
 
 let set_methods table methods =
   let len = Array.length methods in let i = ref 0 in
