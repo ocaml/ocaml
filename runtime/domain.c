@@ -323,7 +323,6 @@ static void caml_wait_interrupt_serviced(struct interruptor* target)
     SPIN_WAIT {
       if (!atomic_load_acq(&target->interrupt_pending))
         return;
-      cpu_relax();
     }
   }
 }
