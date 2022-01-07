@@ -143,11 +143,6 @@ static uintnat norm_pfree (uintnat p)
   return Max (p, 1);
 }
 
-/*static uintnat norm_pmax (uintnat p)
-{
-  return p;
-}*/
-
 static uintnat norm_custom_maj (uintnat p)
 {
   return Max (p, 1);

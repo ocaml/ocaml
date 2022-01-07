@@ -196,7 +196,7 @@ static struct extern_item * extern_resize_stack(struct caml_extern_state* s,
   memcpy (newstack, s->extern_stack,
           sizeof(struct extern_item) * sp_offset);
 
-  /* Free to old stack if it is not the initial stack */
+  /* Free the old stack if it is not the initial stack */
   if (s->extern_stack != s->extern_stack_init)
     caml_stat_free(s->extern_stack);
 
@@ -309,7 +309,7 @@ static void extern_resize_position_table(struct caml_extern_state *s)
     new_entries[h] = old.entries[i];
   }
 
-  /* Free the old tables if it is not the initial stack */
+  /* Free the old tables if they are not the initial ones */
   if (old.present != s->pos_table_present_init) {
     caml_stat_free(old.present);
     caml_stat_free(old.entries);

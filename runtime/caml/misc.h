@@ -274,6 +274,7 @@ void caml_alloc_point_here(void);
    [abort()] is called. */
 extern void (*caml_fatal_error_hook) (char *msg, va_list args);
 
+CAMLnoreturn_start
 CAMLextern void caml_fatal_error (char *, ...)
 #ifdef __GNUC__
   __attribute__ ((format (printf, 1, 2)))
@@ -436,8 +437,8 @@ struct ext_table {
 
 extern void caml_ext_table_init(struct ext_table * tbl, int init_capa);
 extern int caml_ext_table_add(struct ext_table * tbl, void * data);
-extern void caml_ext_table_free(struct ext_table * tbl, int free_entries);
 extern void caml_ext_table_remove(struct ext_table * tbl, void * data);
+extern void caml_ext_table_free(struct ext_table * tbl, int free_entries);
 extern void caml_ext_table_clear(struct ext_table * tbl, int free_entries);
 
 /* Add to [contents] the (short) names of the files contained in

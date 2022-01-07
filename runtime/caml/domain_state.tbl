@@ -15,7 +15,7 @@
 /**************************************************************************/
 
 DOMAIN_STATE(volatile uintnat, young_limit)
-/* Minor heap limit. Typically young_limit == young_end, but this field is set
+/* Minor heap limit. Typically young_limit == young_start, but this field is set
  * by other domains to signal this domain by causing a spurious allocation
  * failure. */
 
@@ -26,13 +26,13 @@ DOMAIN_STATE(value*, young_start)
 /* Start of the minor heap */
 
 DOMAIN_STATE(value*, young_end)
-/* End of the minor heap. always(young_end <= young_ptr <= young_start) */
+/* End of the minor heap. always(young_start <= young_ptr <= young_end) */
 
 DOMAIN_STATE(struct stack_info*, current_stack)
 /* Current stack */
 
 DOMAIN_STATE(void*, exn_handler)
-/* Pointer into into the current stack */
+/* Pointer into the current stack */
 
 DOMAIN_STATE(struct c_stack_link*, c_stack)
 /* The C stack associated with this domain.
