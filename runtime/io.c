@@ -279,6 +279,11 @@ CAMLexport void caml_flush(struct channel *channel)
   *((channel)->curr)++ = (ch);                                            \
 }while(0)
 
+CAMLexport void caml_putch(struct channel *channel, int ch)
+{
+  Putch(channel, ch);
+}
+
 CAMLexport void caml_putword(struct channel *channel, uint32_t w)
 {
   if (! caml_channel_binary_mode(channel))
@@ -368,6 +373,11 @@ CAMLexport unsigned char caml_refill(struct channel *channel)
   ((channel)->curr >= (channel)->max                                        \
    ? caml_refill(channel)                                                   \
    : (unsigned char) *((channel)->curr)++)
+
+CAMLexport unsigned char caml_getch(struct channel *channel)
+{
+  return Getch(channel);
+}
 
 CAMLexport uint32_t caml_getword(struct channel *channel)
 {

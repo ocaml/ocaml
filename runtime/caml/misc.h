@@ -263,7 +263,7 @@ void caml_alloc_point_here(void);
 #define CAMLalloc_point_here ((void)0)
 #endif
 
-#define Is_power_of_2(x) (((x) & ((x) - 1)) == 0)
+#define Is_power_of_2(x) ((x) > 0 && ((x) & ((x) - 1)) == 0)
 
 /* This hook is called when a fatal error occurs in the OCaml
    runtime. It is given arguments to be passed to the [vprintf]-like

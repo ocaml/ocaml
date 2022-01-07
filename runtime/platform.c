@@ -119,11 +119,8 @@ void caml_plat_cond_free(caml_plat_cond* cond)
 
 /* Memory management */
 
-#define Is_power_2(align) \
-  ((align) != 0 && ((align) & ((align) - 1)) == 0)
-
 static uintnat round_up(uintnat size, uintnat align) {
-  CAMLassert(Is_power_2(align));
+  CAMLassert(Is_power_of_2(align));
   return (size + align - 1) & ~(align - 1);
 }
 
@@ -144,7 +141,7 @@ void* caml_mem_map(uintnat size, uintnat alignment, int reserve_only)
   void* mem;
   uintnat base, aligned_start, aligned_end;
 
-  CAMLassert(Is_power_2(alignment));
+  CAMLassert(Is_power_of_2(alignment));
   alignment = caml_mem_round_up_pages(alignment);
 
   CAMLassert (alloc_sz > size);

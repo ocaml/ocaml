@@ -28,7 +28,7 @@ Caml_inline uintnat pos_initial(struct addrmap* t, value key)
   return pos & (t->size - 1);
 }
 
-static uintnat pos_next(struct addrmap* t, uintnat pos)
+Caml_inline uintnat pos_next(struct addrmap* t, uintnat pos)
 {
   return (pos + 1) & (t->size - 1);
 }
@@ -66,7 +66,7 @@ value caml_addrmap_lookup(struct addrmap* t, value key)
 static void addrmap_alloc(struct addrmap* t, uintnat sz)
 {
   uintnat i;
-  CAMLassert(sz > 0 && (sz & (sz - 1)) == 0); /* sz must be a power of 2 */
+  CAMLassert(Is_power_of_2(sz));
   t->entries = caml_stat_alloc(sizeof(struct addrmap_entry) * sz);
   t->size = sz;
   for (i = 0; i < sz; i++) {
