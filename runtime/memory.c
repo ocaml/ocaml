@@ -124,8 +124,6 @@
    generated.
 */
 
-/* The write barrier does not read or write the heap, it just
-   modifies domain-local data structures. */
 Caml_inline void write_barrier(
   value obj, intnat field, value old_val, value new_val)
 {
