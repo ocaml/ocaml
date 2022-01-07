@@ -59,6 +59,7 @@
 #include "caml/sys.h"
 #include "caml/startup.h"
 #include "caml/startup_aux.h"
+#include "caml/version.h"
 
 #include "build_config.h"
 
@@ -71,6 +72,17 @@
 #endif
 
 static char magicstr[EXEC_MAGIC_LENGTH+1];
+
+/* Print the specified error message followed by an end-of-line and exit */
+static void error(char *msg, ...)
+{
+  va_list ap;
+  va_start(ap, msg);
+  vfprintf (stderr, msg, ap);
+  va_end(ap);
+  fprintf(stderr, "\n");
+  exit(127);
+}
 
 /* Read the trailer of a bytecode file */
 
@@ -262,6 +274,103 @@ Algorithm:
 
 */
 
+static void do_print_help(void)
+{
+  printf("%s\n",
+    "Usage: ocamlrun [<options>] [--] <executable> [<command-line>]\n"
+    "Options are:\n"
+    "  -b  Set runtime parameter b (detailed exception backtraces)\n"
+    "  -config  Print configuration values and exit\n"
+    "  -I <dir>  Add <dir> to the list of DLL search directories\n"
+    "  -m  Print the magic number of <executable> and exit\n"
+    "  -M  Print the magic number expected by this runtime and exit\n"
+    "  -p  Print the names of the primitives known to this runtime\n"
+    "  -t  Trace the execution of the bytecode interpreter (specify multiple\n"
+    "      times to increase verbosity)\n"
+    "  -v  Set runtime parameter v=61 (GC event information)\n"
+    "  -version  Print version string and exit\n"
+    "  -vnum  Print short version number and exit\n"
+    "  -help  Display this list of options\n"
+    "  --help  Display this list of options");
+}
+
+/* Parse options on the command line */
+
+static int parse_command_line(char_os **argv)
+{
+  int i, j, len, parsed;
+  /* cast to make caml_params mutable; this assumes we are only called
+     by one thread at startup */
+  struct caml_params* params = (struct caml_params*)caml_params;
+
+  for(i = 1; argv[i] != NULL && argv[i][0] == '-'; i++) {
+    len = strlen_os(argv[i]);
+    parsed = 1;
+    if (len == 2) {
+      /* Single-letter options, e.g. -v */
+      switch(argv[i][1]) {
+      case '-':
+        return i + 1;
+        break;
+      case 't':
+        params->trace_level += 1; /* ignored unless DEBUG mode */
+        break;
+      case 'v':
+        params->verb_gc = 0x001+0x004+0x008+0x010+0x020;
+        break;
+      case 'p':
+        for (j = 0; caml_names_of_builtin_cprim[j] != NULL; j++)
+          printf("%s\n", caml_names_of_builtin_cprim[j]);
+        exit(0);
+        break;
+      case 'b':
+        caml_record_backtraces(1);
+        break;
+      case 'I':
+        if (argv[i + 1] != NULL) {
+          caml_ext_table_add(&caml_shared_libs_path, argv[i + 1]);
+          i++;
+        } else {
+          error("option '-I' needs an argument.");
+        }
+        break;
+      case 'm':
+        params->print_magic = 1;
+        break;
+      case 'M':
+        printf("%s\n", EXEC_MAGIC);
+        exit(0);
+        break;
+      default:
+        parsed = 0;
+      }
+    } else {
+      /* Named options, e.g. -version */
+      if (!strcmp_os(argv[i], T("-version"))) {
+        printf("%s\n", "The OCaml runtime, version " OCAML_VERSION_STRING);
+        exit(0);
+      } else if (!strcmp_os(argv[i], T("-vnum"))) {
+        printf("%s\n", OCAML_VERSION_STRING);
+        exit(0);
+      } else if (!strcmp_os(argv[i], T("-help")) ||
+                 !strcmp_os(argv[i], T("--help"))) {
+        do_print_help();
+        exit(0);
+      } else if (!strcmp_os(argv[i], T("-config"))) {
+        params->print_config = 1;
+      } else {
+        parsed = 0;
+      }
+    }
+
+    if (!parsed)
+      error("unknown option %s", caml_stat_strdup_of_os(argv[i]));
+  }
+
+  return i;
+}
+
+
 #ifdef _WIN32
 extern void caml_signal_thread(void * lpParam);
 #endif
@@ -326,24 +435,24 @@ CAMLexport void caml_main(char_os **argv)
   }
 
   if (fd < 0) {
-    pos = caml_parse_command_line(argv);
+    pos = parse_command_line(argv);
     if (argv[pos] == 0) {
-      caml_command_error("no bytecode file specified");
+      error("no bytecode file specified");
     }
     exe_name = argv[pos];
     fd = caml_attempt_open(&exe_name, &trail, 1);
     switch(fd) {
     case FILE_NOT_FOUND:
-      caml_command_error("cannot find file '%s'",
+      error("cannot find file '%s'",
                        caml_stat_strdup_of_os(argv[pos]));
       break;
     case BAD_BYTECODE:
-      caml_command_error(
+      error(
         "the file '%s' is not a bytecode executable file",
         caml_stat_strdup_of_os(exe_name));
       break;
     case WRONG_MAGIC:
-      caml_command_error(
+      error(
         "the file '%s' has not the right magic number: "\
         "expected %s, got %s",
         caml_stat_strdup_of_os(exe_name),
