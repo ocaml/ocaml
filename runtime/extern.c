@@ -1209,6 +1209,7 @@ CAMLprim value caml_obj_reachable_words(value v)
   struct caml_extern_state *s = get_extern_state ();
 
   s->obj_counter = 0;
+  s->extern_flags = 0;
   extern_init_position_table(s);
   sp = s->extern_stack;
   size = 0;
