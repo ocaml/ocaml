@@ -318,26 +318,6 @@ external get_minor_free : unit -> int = "caml_get_minor_free"
 
     @since 4.03.0 *)
 
-(*external get_bucket : int -> int = "caml_get_major_bucket" [@@noalloc] *)
-(** [get_bucket n] returns the current size of the [n]-th future bucket
-    of the GC smoothing system. The unit is one millionth of a full GC.
-    @raise Invalid_argument if [n] is negative, return 0 if n is larger
-    than the smoothing window.
-
-    @since 4.03.0 *)
-
-(* external get_credit : unit -> int = "caml_get_major_credit" [@@noalloc] *)
-(** [get_credit ()] returns the current size of the "work done in advance"
-    counter of the GC smoothing system. The unit is one millionth of a
-    full GC.
-
-    @since 4.03.0 *)
-
-(* external huge_fallback_count : unit -> int = "caml_gc_huge_fallback_count" *)
-(** Return the number of times we tried to map huge pages and had to fall
-    back to small pages. This is always 0 if [OCAMLRUNPARAM] contains [H=1].
-    @since 4.03.0 *)
-
 val finalise : ('a -> unit) -> 'a -> unit
 (** [finalise f v] registers [f] as a finalisation function for [v].
    [v] must be heap-allocated.  [f] will be called with [v] as
