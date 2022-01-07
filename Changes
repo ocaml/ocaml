@@ -438,16 +438,6 @@ OCaml 4.14.0
 - #10763, #10764: fix miscompilation of method delegation
   (Alain Frisch, review by Vincent Laviron and Jacques Garrigue)
 
-- #10822, #10823: Bad interaction between ambivalent types and subtyping
-  coercions (Jacques Garrigue, report and review by Frédéric Bour)
-
-- #10849: Display the result of `let _ : <type> = <expr>` in the native
-  toplevel, as in the bytecode toplevel.
-  (David Allsopp, report by Nathan Rebours, review by Gabriel Scherer)
-
-- #10853: `Obj.reachable_words` could crash if called after a marshaling
-  operation in `NO_SHARING` mode.
-  (Xavier Leroy, report by Anil Madhavapeddy, review by Alain Frisch)
 
 OCaml 4.13 maintenance branch
 -----------------------------
