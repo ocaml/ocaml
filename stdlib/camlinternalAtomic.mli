@@ -28,3 +28,13 @@ val compare_and_set : 'a t -> 'a -> 'a -> bool
 val fetch_and_add : int t -> int -> int
 val incr : int t -> unit
 val decr : int t -> unit
+module Array : sig
+  val get : 'a array -> int -> 'a
+  val unsafe_get : 'a array -> int -> 'a
+  val set : 'a array -> int -> 'a -> unit
+  val unsafe_set : 'a array -> int -> 'a -> unit
+  val exchange : 'a array -> int -> 'a -> 'a
+  val unsafe_exchange : 'a array -> int -> 'a -> 'a
+  val fetch_and_add : 'a array -> int -> int -> int
+  val compare_and_set : 'a array -> int -> 'a -> 'a -> bool
+end

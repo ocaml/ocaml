@@ -91,6 +91,14 @@ type primitive =
   | Parraysetu of array_kind
   | Parrayrefs of array_kind
   | Parraysets of array_kind
+  | Parrayatomicrefs of array_kind
+  | Parrayatomicrefu of array_kind
+  | Parrayatomicsets of array_kind
+  | Parrayatomicsetu of array_kind
+  | Parrayatomicxchgs of array_kind
+  | Parrayatomicxchgu of array_kind
+  | Parrayatomic_fetch_add
+  | Parrayatomic_cas of array_kind
   (* Test if the argument is a block or an immediate integer *)
   | Pisint
   (* Test if the (integer) argument is outside an interval *)

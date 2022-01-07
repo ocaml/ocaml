@@ -88,6 +88,14 @@ let convert (prim : Lambda.primitive) : Clambda_primitives.primitive =
   | Parraysetu kind -> Parraysetu kind
   | Parrayrefs kind -> Parrayrefs kind
   | Parraysets kind -> Parraysets kind
+  | Parrayatomicrefu kind -> Parrayatomicrefu kind
+  | Parrayatomicrefs kind -> Parrayatomicrefs kind
+  | Parrayatomicsetu kind -> Parrayatomicsetu kind
+  | Parrayatomicsets kind -> Parrayatomicsets kind
+  | Parrayatomicxchgu kind -> Parrayatomicxchgu kind
+  | Parrayatomicxchgs kind -> Parrayatomicxchgs kind
+  | Parrayatomic_fetch_add -> Parrayatomic_fetch_add
+  | Parrayatomic_cas kind -> Parrayatomic_cas kind
   | Pisint -> Pisint
   | Pisout -> Pisout
   | Pcvtbint (src, dest) -> Pcvtbint (src, dest)

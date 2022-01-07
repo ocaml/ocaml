@@ -256,19 +256,35 @@ val array_indexing :
 
 (** Array loads and stores
     [unboxed_float_array_ref] and [float_array_ref] differ in the
-    boxing of the result; [float_array_set] takes an unboxed float *)
+    boxing of the result; idem for [unboxed_float_array_atomic_ref] and
+    [float_array_atomic_ref].
+    [float_array_set] takes an unboxed float; [float_array_atomic_set] takes a
+    boxed float. *)
 val addr_array_ref : expression -> expression -> Debuginfo.t -> expression
+val addr_array_atomic_ref :
+  expression -> expression -> Debuginfo.t -> expression
 val int_array_ref : expression -> expression -> Debuginfo.t -> expression
+val int_array_atomic_ref : expression -> expression -> Debuginfo.t -> expression
 val unboxed_float_array_ref :
   expression -> expression -> Debuginfo.t -> expression
+val unboxed_float_array_atomic_ref :
+  expression -> expression -> Debuginfo.t -> expression
 val float_array_ref : expression -> expression -> Debuginfo.t -> expression
+val float_array_atomic_ref :
+  expression -> expression -> Debuginfo.t -> expression
 val addr_array_set :
   expression -> expression -> expression -> Debuginfo.t -> expression
 val addr_array_initialize :
   expression -> expression -> expression -> Debuginfo.t -> expression
+val addr_array_atomic_set :
+  expression -> expression -> expression -> Debuginfo.t -> expression
 val int_array_set :
   expression -> expression -> expression -> Debuginfo.t -> expression
+val int_array_atomic_set :
+  expression -> expression -> expression -> Debuginfo.t -> expression
 val float_array_set :
+  expression -> expression -> expression -> Debuginfo.t -> expression
+val float_array_atomic_set :
   expression -> expression -> expression -> Debuginfo.t -> expression
 
 (** Strings *)
@@ -499,6 +515,8 @@ val bigstring_load :
 (** Array access. Args: array, index *)
 val arrayref_unsafe : Lambda.array_kind -> binary_primitive
 val arrayref_safe : Lambda.array_kind -> binary_primitive
+val arrayatomicref_unsafe : Lambda.array_kind -> binary_primitive
+val arrayatomicref_safe : Lambda.array_kind -> binary_primitive
 
 type ternary_primitive =
   expression -> expression -> expression -> Debuginfo.t -> expression
@@ -521,6 +539,16 @@ val bytesset_safe : ternary_primitive
     Args: array, index, value *)
 val arrayset_unsafe : Lambda.array_kind -> ternary_primitive
 val arrayset_safe : Lambda.array_kind -> ternary_primitive
+val arrayatomicset_unsafe : Lambda.array_kind -> ternary_primitive
+val arrayatomicset_safe : Lambda.array_kind -> ternary_primitive
+
+(** Set the element at the given index in the given array to the given value,
+    and returns the old value, atomically.
+    [value] is expected to be a regular caml value (i.e. never an unboxed
+    float) in all cases.
+    Args: array, index, value *)
+val array_atomic_exchange_unsafe : Lambda.array_kind -> ternary_primitive
+val array_atomic_exchange_safe : Lambda.array_kind -> ternary_primitive
 
 (** Set a chunk of data in the given bytes or bigstring structure.
     See also [string_load] and [bigstring_load].

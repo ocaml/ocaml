@@ -30,3 +30,19 @@ external ignore : 'a -> unit = "%ignore"
 let set r x = ignore (exchange r x)
 let incr r = ignore (fetch_and_add r 1)
 let decr r = ignore (fetch_and_add r (-1))
+
+module Array = struct
+  external get : 'a array -> int -> 'a = "%array_atomic_safe_get"
+  external unsafe_get : 'a array -> int -> 'a = "%array_atomic_unsafe_get"
+  external set : 'a array -> int -> 'a -> unit = "%array_atomic_safe_set"
+  external unsafe_set : 'a array -> int -> 'a -> unit =
+    "%array_atomic_unsafe_set"
+  external exchange : 'a array -> int -> 'a -> 'a =
+    "%array_atomic_safe_exchange"
+  external unsafe_exchange : 'a array -> int -> 'a -> 'a =
+    "%array_atomic_unsafe_exchange"
+  external fetch_and_add : 'a array -> int -> int -> int =
+    "%array_atomic_fetch_add"
+  external compare_and_set : 'a array -> int -> 'a -> 'a -> bool =
+    "%array_atomic_cas"
+end

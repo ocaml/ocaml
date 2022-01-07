@@ -123,7 +123,10 @@ let preserve_tailcall_for_prim = function
   | Pcompare_ints | Pcompare_floats | Pcompare_bints _
   | Pbyteslength | Pbytesrefu | Pbytessetu | Pbytesrefs | Pbytessets
   | Pmakearray _ | Pduparray _ | Parraylength _ | Parrayrefu _ | Parraysetu _
-  | Parrayrefs _ | Parraysets _ | Pisint | Pisout | Pbintofint _ | Pintofbint _
+  | Parrayrefs _ | Parraysets _ | Parrayatomicrefu _ | Parrayatomicrefs _
+  | Parrayatomicsetu _ | Parrayatomicsets _ | Parrayatomicxchgu _
+  | Parrayatomicxchgs _ | Parrayatomic_fetch_add | Parrayatomic_cas _
+  | Pisint | Pisout | Pbintofint _ | Pintofbint _
   | Pcvtbint _ | Pnegbint _ | Paddbint _ | Psubbint _ | Pmulbint _ | Pdivbint _
   | Pmodbint _ | Pandbint _ | Porbint _ | Pxorbint _ | Plslbint _ | Plsrbint _
   | Pasrbint _ | Pbintcomp _ | Pbigarrayref _ | Pbigarrayset _ | Pbigarraydim _
@@ -450,15 +453,53 @@ let comp_primitive p sz args =
   | Parrayrefs Pgenarray -> Kccall("caml_array_get", 2)
   | Parrayrefs Pfloatarray -> Kccall("caml_floatarray_get", 2)
   | Parrayrefs _ -> Kccall("caml_array_get_addr", 2)
+  | Parrayatomicrefs Pgenarray -> Kccall("caml_array_atomic_get", 2)
+  | Parrayatomicrefs Pfloatarray -> Kccall("caml_floatarray_atomic_get", 2)
+  | Parrayatomicrefs (Paddrarray|Pintarray) ->
+      Kccall("caml_array_atomic_get_addr", 2)
   | Parraysets Pgenarray -> Kccall("caml_array_set", 3)
   | Parraysets Pfloatarray -> Kccall("caml_floatarray_set", 3)
   | Parraysets _ -> Kccall("caml_array_set_addr", 3)
+  | Parrayatomicsets Pgenarray -> Kccall("caml_array_atomic_set", 3)
+  | Parrayatomicsets Pfloatarray -> Kccall("caml_floatarray_atomic_set", 3)
+  | Parrayatomicsets (Paddrarray|Pintarray) ->
+      Kccall("caml_array_atomic_set_addr", 3)
   | Parrayrefu Pgenarray -> Kccall("caml_array_unsafe_get", 2)
   | Parrayrefu Pfloatarray -> Kccall("caml_floatarray_unsafe_get", 2)
   | Parrayrefu _ -> Kgetvectitem
+  | Parrayatomicrefu Pgenarray -> Kccall("caml_array_atomic_unsafe_get", 2)
+  | Parrayatomicrefu Pfloatarray ->
+      Kccall("caml_floatarray_atomic_unsafe_get", 2)
+  | Parrayatomicrefu (Paddrarray|Pintarray) ->
+      Kccall("caml_array_atomic_unsafe_get_addr", 2)
   | Parraysetu Pgenarray -> Kccall("caml_array_unsafe_set", 3)
   | Parraysetu Pfloatarray -> Kccall("caml_floatarray_unsafe_set", 3)
   | Parraysetu _ -> Ksetvectitem
+  | Parrayatomicsetu Pgenarray -> Kccall("caml_array_atomic_unsafe_set", 3)
+  | Parrayatomicsetu Pfloatarray ->
+      Kccall("caml_floatarray_atomic_unsafe_set", 3)
+  | Parrayatomicsetu (Paddrarray|Pintarray) ->
+      Kccall("caml_array_atomic_unsafe_set_addr", 3)
+  | Parrayatomicxchgu Pgenarray ->
+      Kccall("caml_array_atomic_unsafe_exchange", 3)
+  | Parrayatomicxchgu Pfloatarray ->
+      Kccall("caml_floatarray_atomic_unsafe_exchange", 3)
+  | Parrayatomicxchgu (Paddrarray|Pintarray) ->
+      Kccall("caml_array_atomic_unsafe_exchange_addr", 3)
+  | Parrayatomicxchgs Pgenarray ->
+      Kccall("caml_array_atomic_exchange", 3)
+  | Parrayatomicxchgs Pfloatarray ->
+      Kccall("caml_floatarray_atomic_exchange", 3)
+  | Parrayatomicxchgs (Paddrarray|Pintarray) ->
+      Kccall("caml_array_atomic_exchange_addr", 3)
+  | Parrayatomic_fetch_add ->
+      Kccall("caml_array_atomic_fetch_add", 3)
+  | Parrayatomic_cas Pgenarray ->
+      Kccall("caml_array_atomic_compare_and_set", 4)
+  | Parrayatomic_cas Pfloatarray ->
+      Kccall("caml_floatarray_atomic_compare_and_set", 4)
+  | Parrayatomic_cas (Paddrarray|Pintarray) ->
+      Kccall("caml_array_atomic_compare_and_set_addr", 4)
   | Pctconst c ->
      let const_name = match c with
        | Big_endian -> "big_endian"

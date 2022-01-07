@@ -119,6 +119,162 @@ CAMLprim value caml_array_set(value array, value index, value newval)
   return caml_array_set_addr(array, index, newval);
 }
 
+/* [ 'a array -> int -> 'a -> 'a ] where 'a != float */
+CAMLprim value caml_array_atomic_unsafe_exchange_addr(
+  value array, value index, value newval)
+{
+  CAMLparam3 (array, index, newval);
+  intnat idx = Long_val(index);
+  CAMLreturn (caml_atomic_exchange_field(array, idx, newval));
+}
+
+/* [ 'a array -> int -> 'a -> 'a ] where 'a != float */
+CAMLprim value caml_array_atomic_exchange_addr(
+  value array, value index, value newval)
+{
+  CAMLparam3 (array, index, newval);
+  intnat idx = Long_val(index);
+  if (idx < 0 || idx >= Wosize_val(array)) caml_array_bound_error();
+  CAMLreturn (caml_atomic_exchange_field(array, idx, newval));
+}
+
+/* [ 'a array -> int -> 'a -> unit ] where 'a != float */
+CAMLprim value caml_array_atomic_unsafe_set_addr(
+  value array, value index, value newval)
+{
+  CAMLparam3 (array, index, newval);
+  intnat idx = Long_val(index);
+  caml_atomic_exchange_field(array, idx, newval);
+  CAMLreturn (Val_unit);
+}
+/* [ 'a array -> int -> 'a -> unit ] where 'a != float */
+CAMLprim value caml_array_atomic_set_addr(
+  value array, value index, value newval)
+{
+  CAMLparam3 (array, index, newval);
+  caml_array_atomic_exchange_addr(array, index, newval);
+  CAMLreturn (Val_unit);
+}
+
+/* [ floatarray -> int -> float -> float ] */
+CAMLprim value caml_floatarray_atomic_unsafe_exchange(
+  value array, value index, value newval)
+{
+  CAMLparam3 (array, index, newval);
+  CAMLlocal1 (res);
+  intnat idx = Long_val(index);
+  double d = Double_val (newval), d_old;
+
+  CAMLassert (Tag_val(array) == Double_array_tag);
+
+  d_old = caml_atomic_exchange_double_flat_field(array, idx, d);
+  Alloc_small(res, Double_wosize, Double_tag,
+    { caml_handle_gc_interrupt_no_async_exceptions(); });
+  Store_double_val(res, d_old);
+  CAMLreturn (res);
+}
+
+/* [ floatarray -> int -> float -> float ] */
+CAMLprim value caml_floatarray_atomic_exchange(value array, value index, value newval)
+{
+  CAMLparam3 (array, index, newval);
+  CAMLlocal1 (res);
+  intnat idx = Long_val(index);
+  double d = Double_val (newval), d_old;
+
+  CAMLassert (Tag_val(array) == Double_array_tag);
+  if (idx < 0 || idx >= Wosize_val(array) / Double_wosize)
+    caml_array_bound_error();
+
+  d_old = caml_atomic_exchange_double_flat_field(array, idx, d);
+  Alloc_small(res, Double_wosize, Double_tag,
+    { caml_handle_gc_interrupt_no_async_exceptions(); });
+  Store_double_val(res, d_old);
+  CAMLreturn (res);
+}
+
+/* [ floatarray -> int -> float -> unit ] */
+CAMLprim value caml_floatarray_atomic_unsafe_set(
+  value array, value index, value newval)
+{
+  CAMLparam3 (array, index, newval);
+  intnat idx = Long_val(index);
+  double d = Double_val (newval);
+  CAMLassert (Tag_val(array) == Double_array_tag);
+
+  caml_atomic_exchange_double_flat_field(array, idx, d);
+  CAMLreturn (Val_unit);
+}
+
+/* [ floatarray -> int -> float -> unit ] */
+CAMLprim value caml_floatarray_atomic_set(
+  value array, value index, value newval)
+{
+  CAMLparam3 (array, index, newval);
+  intnat idx = Long_val(index);
+  double d = Double_val (newval);
+  CAMLassert (Tag_val(array) == Double_array_tag);
+  if (idx < 0 || idx >= Wosize_val(array) / Double_wosize)
+    caml_array_bound_error();
+
+  caml_atomic_exchange_double_flat_field(array, idx, d);
+  CAMLreturn (Val_unit);
+}
+
+/* [ 'a array -> int -> 'a -> 'a ] */
+CAMLprim value caml_array_atomic_unsafe_exchange(
+  value array, value index, value newval)
+{
+  CAMLparam3 (array, index, newval);
+#ifdef FLAT_FLOAT_ARRAY
+  if (Tag_val(array) == Double_array_tag)
+    CAMLreturn (caml_floatarray_atomic_unsafe_exchange(array, index, newval));
+#else
+  CAMLassert (Tag_val(array) != Double_array_tag);
+#endif
+  CAMLreturn (caml_array_atomic_unsafe_exchange_addr(array, index, newval));
+}
+
+/* [ 'a array -> int -> 'a -> 'a ] */
+CAMLprim value caml_array_atomic_exchange(value array, value index, value newval)
+{
+  CAMLparam3 (array, index, newval);
+#ifdef FLAT_FLOAT_ARRAY
+  if (Tag_val(array) == Double_array_tag)
+    CAMLreturn (caml_floatarray_atomic_exchange(array, index, newval));
+#else
+  CAMLassert (Tag_val(array) != Double_array_tag);
+#endif
+  CAMLreturn (caml_array_atomic_exchange_addr(array, index, newval));
+}
+
+/* [ 'a array -> int -> 'a -> unit ] */
+CAMLprim value caml_array_atomic_unsafe_set(
+  value array, value index, value newval)
+{
+  CAMLparam3 (array, index, newval);
+#ifdef FLAT_FLOAT_ARRAY
+  if (Tag_val(array) == Double_array_tag)
+    CAMLreturn (caml_floatarray_atomic_unsafe_set(array, index, newval));
+#else
+  CAMLassert (Tag_val(array) != Double_array_tag);
+#endif
+  CAMLreturn (caml_array_atomic_unsafe_set_addr(array, index, newval));
+}
+
+/* [ 'a array -> int -> 'a -> unit ] */
+CAMLprim value caml_array_atomic_set(value array, value index, value newval)
+{
+  CAMLparam3 (array, index, newval);
+#ifdef FLAT_FLOAT_ARRAY
+  if (Tag_val(array) == Double_array_tag)
+    CAMLreturn (caml_floatarray_atomic_set(array, index, newval));
+#else
+  CAMLassert (Tag_val(array) != Double_array_tag);
+#endif
+  CAMLreturn (caml_array_atomic_set_addr(array, index, newval));
+}
+
 /* [ floatarray -> int -> float ] */
 CAMLprim value caml_floatarray_unsafe_get(value array, value index)
 {
@@ -144,6 +300,134 @@ CAMLprim value caml_array_unsafe_get(value array, value index)
   CAMLassert (Tag_val(array) != Double_array_tag);
 #endif
   return Field(array, Long_val(index));
+}
+
+/* [ floatarray -> int -> float ] */
+CAMLprim value caml_floatarray_atomic_unsafe_get(value array, value index)
+{
+  CAMLparam2 (array, index);
+  CAMLlocal1 (res);
+  intnat idx = Long_val(index);
+  double d;
+
+  CAMLassert (Tag_val(array) == Double_array_tag);
+  d = atomic_load_double_flat_field(array, idx);
+  Alloc_small(res, Double_wosize, Double_tag,
+    { caml_handle_gc_interrupt_no_async_exceptions(); });
+  /* TODO: If I'm not mistaken, no fence needed before this initializing
+     store... right? */
+  Store_double_val(res, d);
+  CAMLreturn (res);
+}
+
+CAMLprim value caml_array_atomic_unsafe_get_addr(value array, value index)
+{
+  CAMLparam2 (array, index);
+  CAMLreturn (atomic_load_field(array, Long_val(index)));
+}
+
+/* [ 'a array -> int -> 'a ] */
+CAMLprim value caml_array_atomic_unsafe_get(value array, value index)
+{
+  CAMLparam2 (array, index);
+#ifdef FLAT_FLOAT_ARRAY
+  if (Tag_val(array) == Double_array_tag)
+    CAMLreturn (caml_floatarray_unsafe_get(array, index));
+#else
+  CAMLassert (Tag_val(array) != Double_array_tag);
+#endif
+  CAMLreturn (caml_array_atomic_unsafe_get_addr(array, index));
+}
+
+/* [ 'a array -> int -> 'a ] where 'a != float */
+CAMLprim value caml_array_atomic_get_addr(value array, value index)
+{
+  CAMLparam2 (array, index);
+  intnat idx = Long_val(index);
+  if (idx < 0 || idx >= Wosize_val(array)) caml_array_bound_error();
+  CAMLreturn (caml_array_atomic_unsafe_get_addr(array, index));
+}
+
+/* [ floatarray -> int -> float ] */
+CAMLprim value caml_floatarray_atomic_get(value array, value index)
+{
+  CAMLparam2 (array, index);
+  intnat idx = Long_val(index);
+
+  /* TODO: This assertion is checked twice. Maybe not ideal. */
+  CAMLassert (Tag_val(array) == Double_array_tag);
+  if (idx < 0 || idx >= Wosize_val(array) / Double_wosize)
+    caml_array_bound_error();
+  CAMLreturn (caml_floatarray_atomic_unsafe_get(array, index));
+}
+
+/* [ 'a array -> int -> 'a ] */
+CAMLprim value caml_array_atomic_get(value array, value index)
+{
+  CAMLparam2 (array, index);
+#ifdef FLAT_FLOAT_ARRAY
+  if (Tag_val(array) == Double_array_tag)
+    CAMLreturn (caml_floatarray_atomic_get(array, index));
+#else
+  CAMLassert (Tag_val(array) != Double_array_tag);
+#endif
+  CAMLreturn (caml_array_atomic_get_addr(array, index));
+}
+
+/* [ int array -> int -> int -> int ] */
+CAMLprim value caml_array_atomic_fetch_add(value array, value index, value incr)
+{
+  CAMLparam3 (array, index, incr);
+  intnat idx = Long_val(index);
+
+  if (idx < 0 || idx >= Wosize_val(array)) caml_array_bound_error();
+  CAMLreturn (caml_atomic_fetch_add_field(array, idx, incr));
+}
+
+
+/* [ 'a array -> int -> 'a -> 'a -> bool ] where 'a != float */
+CAMLprim value caml_array_atomic_compare_and_set_addr(
+  value array, value index, value oldval, value newval)
+{
+  CAMLparam4 (array, index, oldval, newval);
+  CAMLlocal1 (res);
+  intnat idx = Long_val(index);
+
+  if (idx < 0 || idx >= Wosize_val(array)) caml_array_bound_error();
+  res = Val_bool(caml_atomic_cas_field(array, idx, oldval, newval));
+  CAMLreturn (res);
+}
+
+/* [ float array -> int -> float -> float -> bool ] */
+CAMLprim value caml_floatarray_atomic_compare_and_set(
+  value array, value index, value oldval, value newval)
+{
+  CAMLparam4 (array, index, oldval, newval);
+  CAMLlocal1 (res);
+  intnat idx = Long_val(index);
+  double old_d = Double_val(oldval), new_d = Double_val(newval);
+
+  CAMLassert (Tag_val(array) == Double_array_tag);
+  if (idx < 0 || idx >= Wosize_val(array) / Double_wosize)
+    caml_array_bound_error();
+  res = Val_bool(caml_atomic_cas_double_flat_field(array, idx, old_d, new_d));
+  CAMLreturn (res);
+}
+
+/* [ 'a array -> int -> 'a -> 'a -> bool ] */
+CAMLprim value caml_array_atomic_compare_and_set(
+  value array, value index, value oldval, value newval)
+{
+  CAMLparam4 (array, index, oldval, newval);
+#ifdef FLAT_FLOAT_ARRAY
+  if (Tag_val(array) == Double_array_tag)
+    CAMLreturn (
+      caml_floatarray_atomic_compare_and_set(array, index, oldval, newval));
+#else
+  CAMLassert (Tag_val(array) != Double_array_tag);
+#endif
+  CAMLreturn (
+    caml_array_atomic_compare_and_set_addr(array, index, oldval, newval));
 }
 
 /* [ 'a array -> int -> 'a -> unit ] where 'a != float */

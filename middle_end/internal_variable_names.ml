@@ -76,6 +76,14 @@ let parrayrefs = "Parrayrefs"
 let parrayrefu = "Parrayrefu"
 let parraysets = "Parraysets"
 let parraysetu = "Parraysetu"
+let parrayatomicrefs = "Parrayatomicrefs"
+let parrayatomicrefu = "Parrayatomicrefu"
+let parrayatomicsets = "Parrayatomicsets"
+let parrayatomicsetu = "Parrayatomicsetu"
+let parrayatomicxchgs = "Parrayatomicxchgs"
+let parrayatomicxchgu = "Parrayatomicxchgu"
+let parrayatomic_fetch_add = "Parrayatomic_fetch_add"
+let parrayatomic_cas = "Parrayatomic_cas"
 let pasrbint = "Pasrbint"
 let pasrint = "Pasrint"
 let pbbswap = "Pbbswap"
@@ -190,6 +198,14 @@ let parrayrefs_arg = "Parrayrefs_arg"
 let parrayrefu_arg = "Parrayrefu_arg"
 let parraysets_arg = "Parraysets_arg"
 let parraysetu_arg = "Parraysetu_arg"
+let parrayatomicrefs_arg = "Parrayatomicrefs_arg"
+let parrayatomicrefu_arg = "Parrayatomicrefu_arg"
+let parrayatomicsets_arg = "Parrayatomicsets_arg"
+let parrayatomicsetu_arg = "Parrayatomicsetu_arg"
+let parrayatomicxchgs_arg = "Parrayatomicxchgs_arg"
+let parrayatomicxchgu_arg = "Parrayatomicxchgu_arg"
+let parrayatomic_fetch_add_arg = "Parrayatomic_fetch_add_arg"
+let parrayatomic_cas_arg = "Parrayatomic_cas_arg"
 let partial_fun = "partial_fun"
 let pasrbint_arg = "Pasrbint_arg"
 let pasrint_arg = "Pasrint_arg"
@@ -384,6 +400,14 @@ let of_primitive : Lambda.primitive -> string = function
   | Parraysetu _ -> parraysetu
   | Parrayrefs _ -> parrayrefs
   | Parraysets _ -> parraysets
+  | Parrayatomicrefu _ -> parrayatomicrefu
+  | Parrayatomicrefs _ -> parrayatomicrefs
+  | Parrayatomicsetu _ -> parrayatomicsetu
+  | Parrayatomicsets _ -> parrayatomicsets
+  | Parrayatomicxchgu _ -> parrayatomicxchgu
+  | Parrayatomicxchgs _ -> parrayatomicxchgs
+  | Parrayatomic_fetch_add -> parrayatomic_fetch_add
+  | Parrayatomic_cas _ -> parrayatomic_cas
   | Pctconst _ -> pctconst
   | Pisint -> pisint
   | Pisout -> pisout
@@ -496,6 +520,14 @@ let of_primitive_arg : Lambda.primitive -> string = function
   | Parraysetu _ -> parraysetu_arg
   | Parrayrefs _ -> parrayrefs_arg
   | Parraysets _ -> parraysets_arg
+  | Parrayatomicrefu _ -> parrayatomicrefu_arg
+  | Parrayatomicrefs _ -> parrayatomicrefs_arg
+  | Parrayatomicsetu _ -> parrayatomicsetu_arg
+  | Parrayatomicsets _ -> parrayatomicsets_arg
+  | Parrayatomicxchgu _ -> parrayatomicxchgu_arg
+  | Parrayatomicxchgs _ -> parrayatomicxchgs_arg
+  | Parrayatomic_fetch_add -> parrayatomic_fetch_add_arg
+  | Parrayatomic_cas _ -> parrayatomic_cas_arg
   | Pctconst _ -> pctconst_arg
   | Pisint -> pisint_arg
   | Pisout -> pisout_arg

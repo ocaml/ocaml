@@ -199,6 +199,14 @@ let primitives_table =
     "%array_safe_set", Primitive ((Parraysets gen_array_kind), 3);
     "%array_unsafe_get", Primitive ((Parrayrefu gen_array_kind), 2);
     "%array_unsafe_set", Primitive ((Parraysetu gen_array_kind), 3);
+    "%array_atomic_safe_get", Primitive ((Parrayatomicrefs gen_array_kind), 2);
+    "%array_atomic_unsafe_get", Primitive ((Parrayatomicrefu gen_array_kind), 2);
+    "%array_atomic_safe_set", Primitive ((Parrayatomicsets gen_array_kind), 3);
+    "%array_atomic_unsafe_set", Primitive ((Parrayatomicsetu gen_array_kind), 3);
+    "%array_atomic_safe_exchange", Primitive ((Parrayatomicxchgs gen_array_kind), 3);
+    "%array_atomic_unsafe_exchange", Primitive ((Parrayatomicxchgu gen_array_kind), 3);
+    "%array_atomic_fetch_add", Primitive (Parrayatomic_fetch_add, 3);
+    "%array_atomic_cas", Primitive ((Parrayatomic_cas gen_array_kind), 4);
     "%obj_size", Primitive ((Parraylength gen_array_kind), 1);
     "%obj_field", Primitive ((Parrayrefu gen_array_kind), 2);
     "%obj_set_field", Primitive ((Parraysetu gen_array_kind), 3);
@@ -467,6 +475,41 @@ let specialize_primitive env ty ~has_constant_constructor prim =
       let array_type = glb_array_type t (array_type_kind env p1) in
       if t = array_type then None
       else Some (Primitive (Parraysets array_type, arity))
+    end
+  | Primitive (Parrayatomicrefu t, arity), p1 :: _ -> begin
+      let array_type = glb_array_type t (array_type_kind env p1) in
+      if t = array_type then None
+      else Some (Primitive (Parrayatomicrefu array_type, arity))
+    end
+  | Primitive (Parrayatomicsetu t, arity), p1 :: _ -> begin
+      let array_type = glb_array_type t (array_type_kind env p1) in
+      if t = array_type then None
+      else Some (Primitive (Parrayatomicsetu array_type, arity))
+    end
+  | Primitive (Parrayatomicrefs t, arity), p1 :: _ -> begin
+      let array_type = glb_array_type t (array_type_kind env p1) in
+      if t = array_type then None
+      else Some (Primitive (Parrayatomicrefs array_type, arity))
+    end
+  | Primitive (Parrayatomicsets t, arity), p1 :: _ -> begin
+      let array_type = glb_array_type t (array_type_kind env p1) in
+      if t = array_type then None
+      else Some (Primitive (Parrayatomicsets array_type, arity))
+    end
+  | Primitive (Parrayatomicxchgu t, arity), p1 :: _ -> begin
+      let array_type = glb_array_type t (array_type_kind env p1) in
+      if t = array_type then None
+      else Some (Primitive (Parrayatomicxchgu array_type, arity))
+    end
+  | Primitive (Parrayatomicxchgs t, arity), p1 :: _ -> begin
+      let array_type = glb_array_type t (array_type_kind env p1) in
+      if t = array_type then None
+      else Some (Primitive (Parrayatomicxchgs array_type, arity))
+    end
+  | Primitive (Parrayatomic_cas t, arity), p1 :: _ -> begin
+      let array_type = glb_array_type t (array_type_kind env p1) in
+      if t = array_type then None
+      else Some (Primitive (Parrayatomic_cas array_type, arity))
     end
   | Primitive (Pbigarrayref(unsafe, n, Pbigarray_unknown,
                             Pbigarray_unknown_layout), arity), p1 :: _ -> begin
@@ -802,7 +845,13 @@ let lambda_primitive_needs_event_after = function
   | Paddfloat | Psubfloat | Pmulfloat | Pdivfloat | Pstringrefs | Pbytesrefs
   | Pbytessets | Pmakearray (Pgenarray, _) | Pduparray _
   | Parrayrefu (Pgenarray | Pfloatarray) | Parraysetu (Pgenarray | Pfloatarray)
-  | Parrayrefs _ | Parraysets _ | Pbintofint _ | Pcvtbint _ | Pnegbint _
+  | Parrayrefs _ | Parraysets _
+  | Parrayatomicrefu (Pgenarray | Pfloatarray)
+  | Parrayatomicsetu (Pgenarray | Pfloatarray)
+  | Parrayatomicrefs _ | Parrayatomicsets _ | Parrayatomic_fetch_add
+  | Parrayatomic_cas _
+  | Parrayatomicxchgu (Pgenarray | Pfloatarray) | Parrayatomicxchgs _
+  | Pbintofint _ | Pcvtbint _ | Pnegbint _
   | Paddbint _ | Psubbint _ | Pmulbint _ | Pdivbint _ | Pmodbint _ | Pandbint _
   | Porbint _ | Pxorbint _ | Plslbint _ | Plsrbint _ | Pasrbint _ | Pbintcomp _
   | Pcompare_bints _
@@ -823,7 +872,9 @@ let lambda_primitive_needs_event_after = function
   | Pcompare_ints | Pcompare_floats
   | Pfloatcomp _ | Pstringlength | Pstringrefu | Pbyteslength | Pbytesrefu
   | Pbytessetu | Pmakearray ((Pintarray | Paddrarray | Pfloatarray), _)
-  | Parraylength _ | Parrayrefu _ | Parraysetu _ | Pisint | Pisout
+  | Parraylength _ | Parrayrefu _ | Parraysetu _
+  | Parrayatomicrefu _ | Parrayatomicsetu _ | Parrayatomicxchgu _
+  | Pisint | Pisout
   | Patomic_exchange | Patomic_cas | Patomic_fetch_add | Patomic_load _
   | Pintofbint _ | Pctconst _ | Pbswap16 | Pint_as_pointer | Popaque | Pdls_get
       -> false

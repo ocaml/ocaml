@@ -243,6 +243,30 @@ CAMLexport int caml_atomic_cas_field (
   }
 }
 
+CAMLexport int caml_atomic_cas_double_flat_field (
+  value obj, intnat field, double oldval, double newval)
+{
+  if (caml_domain_alone()) {
+    /* non-atomic CAS since only this thread can access the object */
+    double* p = &Double_flat_field(obj, field);
+    if (*p == oldval) {
+      *p = newval;
+      /* No write barrier needed for writing a flat double field. */
+      return 1;
+    } else {
+      return 0;
+    }
+  } else {
+    /* need a real CAS */
+    double *p = &Double_flat_field(obj, field);
+    if (atomic_compare_exchange_strong((atomic_double *)p, &oldval, newval)) {
+      /* No write barrier needed for writing a flat double field. */
+      return 1;
+    } else {
+      return 0;
+    }
+  }
+}
 
 CAMLprim value caml_atomic_load (value ref)
 {
@@ -254,6 +278,32 @@ CAMLprim value caml_atomic_load (value ref)
     atomic_thread_fence(memory_order_acquire);
     v = atomic_load(Op_atomic_val(ref));
     return v;
+  }
+}
+
+CAMLexport value atomic_load_field (value obj, intnat field)
+{
+  if (caml_domain_alone()) {
+    return Field(obj, field);
+  } else {
+    value v;
+    value* ref = &Field(obj, field);
+    /* See Note [MM] above */
+    atomic_thread_fence(memory_order_acquire);
+    v = atomic_load(Op_atomic_val(ref));
+    return v;
+  }
+}
+
+CAMLexport double atomic_load_double_flat_field (value obj, intnat field)
+{
+  if (caml_domain_alone()) {
+    return Double_flat_field(obj, field);
+  } else {
+    double* ref = &Double_flat_field(obj, field);
+    /* See Note [MM] above */
+    atomic_thread_fence(memory_order_acquire);
+    return atomic_load((atomic_double *)(ref));
   }
 }
 
@@ -270,6 +320,40 @@ CAMLprim value caml_atomic_exchange (value ref, value v)
     ret = atomic_exchange(Op_atomic_val(ref), v);
   }
   write_barrier(ref, 0, ret, v);
+  return ret;
+}
+
+CAMLexport value caml_atomic_exchange_field (value obj, intnat field, value newval)
+{
+  value ret;
+  if (caml_domain_alone()) {
+    ret = Field(obj, field);
+    Field(obj, field) = newval;
+  } else {
+    value* ref = &Field(obj, field);
+    /* See Note [MM] above */
+    atomic_thread_fence(memory_order_acquire);
+    ret = atomic_exchange(Op_atomic_val(ref), newval);
+  }
+  write_barrier(obj, field, ret, newval);
+  return ret;
+}
+
+CAMLexport double caml_atomic_exchange_double_flat_field (
+  value obj, intnat field, double newval)
+{
+  double ret;
+  if (caml_domain_alone()) {
+    ret = Double_flat_field(obj, field);
+    Store_double_flat_field(obj, field, newval);
+  } else {
+    double* ref = &Double_flat_field(obj, field);
+    /* See Note [MM] above */
+    atomic_thread_fence(memory_order_acquire);
+    ret = atomic_exchange((atomic_double *)(ref), newval);
+  }
+  /* TODO: IIUC no need for a write barrier here, since we're writing unboxed
+     floats? Please confirm. */
   return ret;
 }
 
@@ -307,6 +391,23 @@ CAMLprim value caml_atomic_fetch_add (value ref, value incr)
   } else {
     atomic_value *p = &Op_atomic_val(ref)[0];
     ret = atomic_fetch_add(p, 2*Long_val(incr));
+  }
+  return ret;
+}
+
+CAMLexport value caml_atomic_fetch_add_field(value obj, intnat field, value incr)
+{
+  value ret;
+  if (caml_domain_alone()) {
+    value* p = &Field(obj, field);
+    CAMLassert(Is_long(*p));
+    ret = *p;
+    *p = Val_long(Long_val(ret) + Long_val(incr));
+    /* no write barrier needed, integer write */
+  } else {
+    value* p = &Field(obj, field);
+    ret = atomic_fetch_add(Op_atomic_val(p), 2*Long_val(incr));
+    /* no write barrier needed, integer write */
   }
   return ret;
 }

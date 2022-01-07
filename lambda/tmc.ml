@@ -865,6 +865,9 @@ let rec choice ctx t =
     | Pstringlength | Pstringrefu  | Pstringrefs
     | Pbyteslength | Pbytesrefu | Pbytessetu | Pbytesrefs | Pbytessets
     | Parraylength _ | Parrayrefu _ | Parraysetu _ | Parrayrefs _ | Parraysets _
+    | Parrayatomicrefu _ | Parrayatomicrefs _ | Parrayatomicsetu _
+    | Parrayatomicsets _ | Parrayatomicxchgu _ | Parrayatomicxchgs _
+    | Parrayatomic_fetch_add | Parrayatomic_cas _
     | Pisint | Pisout
     | Pignore
     | Pcompare_ints | Pcompare_floats | Pcompare_bints _

@@ -163,6 +163,14 @@ let primitive ppf (prim:Clambda_primitives.primitive) =
   | Parraysetu k -> fprintf ppf "array.unsafe_set[%s]" (array_kind k)
   | Parrayrefs k -> fprintf ppf "array.get[%s]" (array_kind k)
   | Parraysets k -> fprintf ppf "array.set[%s]" (array_kind k)
+  | Parrayatomicrefu k -> fprintf ppf "array.atomic_unsafe_get[%s]" (array_kind k)
+  | Parrayatomicrefs k -> fprintf ppf "array.atomic_get[%s]" (array_kind k)
+  | Parrayatomicsetu k -> fprintf ppf "array.atomic_unsafe_set[%s]" (array_kind k)
+  | Parrayatomicsets k -> fprintf ppf "array.atomic_set[%s]" (array_kind k)
+  | Parrayatomicxchgu k -> fprintf ppf "array.atomic_unsafe_exchange[%s]" (array_kind k)
+  | Parrayatomicxchgs k -> fprintf ppf "array.atomic_exchange[%s]" (array_kind k)
+  | Parrayatomic_fetch_add -> fprintf ppf "array.atomic_fetch_add"
+  | Parrayatomic_cas k -> fprintf ppf "array.atomic_cas[%s]" (array_kind k)
   | Pisint -> fprintf ppf "isint"
   | Pisout -> fprintf ppf "isout"
   | Pbintofint bi -> print_boxed_integer "of_int" ppf bi

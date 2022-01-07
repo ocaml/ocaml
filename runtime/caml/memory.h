@@ -52,6 +52,12 @@ CAMLextern void caml_free_dependent_memory (mlsize_t bsz);
 CAMLextern void caml_modify (value *, value);
 CAMLextern void caml_initialize (value *, value);
 CAMLextern int caml_atomic_cas_field (value, intnat, value, value);
+CAMLextern int caml_atomic_cas_double_flat_field (value, intnat, double, double);
+CAMLextern value atomic_load_field (value, intnat);
+CAMLextern double atomic_load_double_flat_field (value, intnat);
+CAMLextern value caml_atomic_exchange_field (value, intnat, value);
+CAMLextern double caml_atomic_exchange_double_flat_field (value, intnat, double);
+CAMLextern value caml_atomic_fetch_add_field(value, intnat, value);
 CAMLextern value caml_check_urgent_gc (value);
 #ifdef CAML_INTERNALS
 CAMLextern char *caml_alloc_for_heap (asize_t request);   /* Size in bytes. */

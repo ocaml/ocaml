@@ -98,6 +98,7 @@ let for_primitive (prim : Clambda_primitives.primitive) =
   | Pfield_computed
   | Pfloatfield _
   | Parrayrefu _
+  | Parrayatomicrefu _
   | Pstringrefu
   | Pbytesrefu
   | Pstring_load (_, Unsafe)
@@ -106,6 +107,7 @@ let for_primitive (prim : Clambda_primitives.primitive) =
   | Pbigstring_load (_, Unsafe) ->
       No_effects, Has_coeffects
   | Parrayrefs _
+  | Parrayatomicrefs _
   | Pstringrefs
   | Pbytesrefs
   | Pstring_load (_, Safe)
@@ -123,6 +125,8 @@ let for_primitive (prim : Clambda_primitives.primitive) =
   | Patomic_fetch_add
   | Parraysetu _
   | Parraysets _
+  | Parrayatomicsetu _
+  | Parrayatomicsets _
   | Pbytessetu
   | Pbytessets
   | Pbytes_set _
@@ -131,6 +135,12 @@ let for_primitive (prim : Clambda_primitives.primitive) =
       (* Whether or not some of these are "unsafe" is irrelevant; they always
          have an effect. *)
       Arbitrary_effects, No_coeffects
+  | Parrayatomicxchgu _
+  | Parrayatomicxchgs _
+  | Parrayatomic_fetch_add
+  | Parrayatomic_cas _ ->
+      (* These primitives both read and modify mutable state. *)
+      Arbitrary_effects, Has_coeffects
   | Pbswap16
   | Pbbswap _ -> No_effects, No_coeffects
   | Pint_as_pointer -> No_effects, No_coeffects

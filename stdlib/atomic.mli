@@ -60,3 +60,55 @@ val incr : int t -> unit
 
 (** [decr r] atomically decrements the value of [r] by [1]. *)
 val decr : int t -> unit
+
+(** Module providing atomic operations on arrays. *)
+module Array : sig
+  (** [get a n] returns the element number [n] at array [a], performing the
+      read atomically.
+      The first element has number 0.
+      The last element has number [length a - 1].
+
+      @raise Invalid_argument
+      if [n] is outside the range 0 to [(length a - 1)]. *)
+  val get : 'a array -> int -> 'a
+
+  (** TODO Make undocumented. *)
+  val unsafe_get : 'a array -> int -> 'a
+
+  (** [set a n x] modifies array [a] atomically, replacing
+      element number [n] with [x].
+
+      @raise Invalid_argument
+      if [n] is outside the range 0 to [length a - 1]. *)
+  val set : 'a array -> int -> 'a -> unit
+
+  (** TODO Make undocumented. *)
+  val unsafe_set : 'a array -> int -> 'a -> unit
+
+  (** [exchange a n x] replaces element number [n] of array [a] with [x], and
+      returns the old element at that index. The whole operation is atomic.
+
+      @raise Invalid_argument
+      if [n] is outside the range 0 to [length a - 1]. *)
+  val exchange : 'a array -> int -> 'a -> 'a
+
+  (** TODO Make undocumented. *)
+  val unsafe_exchange : 'a array -> int -> 'a -> 'a
+
+  (** [fetch_and_add arr idx incr] atomically increments the value at [idx] by
+      [incr], and returns the old value (before the increment).
+
+      @raise Invalid_argument
+      if [n] is outside the range 0 to [(length a - 1)]. *)
+  val fetch_and_add : 'a array -> int -> int -> int
+
+  (** [compare_and_set r seen v] sets the new value of [r] to [v] only
+      if its current value is physically equal to [seen] -- the
+      comparison and the set occur atomically. Returns [true] if the
+      comparison succeeded (so the set happened) and [false]
+      otherwise.
+
+      @raise Invalid_argument
+      if [n] is outside the range 0 to [(length a - 1)]. *)
+  val compare_and_set : 'a array -> int -> 'a -> 'a -> bool
+end
