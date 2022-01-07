@@ -548,6 +548,9 @@ module Type = struct
      pld_attributes = add_info_attrs info attrs;
     }
 
+  let tuple_constructor_argument cts = Pcstr_tuple cts
+
+  let record_constructor_argument lds = Pcstr_record lds
 end
 
 (** Type extensions *)
