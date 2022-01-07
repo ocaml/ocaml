@@ -27,8 +27,8 @@
 #include "caml/platform.h"
 
 /*
- * These macros are for ensuring effects are handled correctly
- * inside callbacks. There are two aspects:
+ * These functions are to ensure effects are handled correctly inside
+ * callbacks. There are two aspects:
  *  - we clear the stack parent for a callback to force an Unhandled
  *  exception rather than effects being passed over the callback
  *  - we register the stack parent as a local root while the callback
@@ -48,8 +48,6 @@ Caml_inline void restore_stack_parent(caml_domain_state* domain_state,
   CAMLassert(Stack_parent(domain_state->current_stack) == NULL);
   Stack_parent(domain_state->current_stack) = parent_stack;
 }
-
-#define RESTORE_STACK_PARENT(domain_state) \
 
 
 #ifndef NATIVE_CODE
@@ -164,8 +162,9 @@ CAMLexport value caml_callback_exn(value closure, value arg)
     restore_stack_parent(domain_state, cont);
 
     CAMLreturn (res);
+  } else {
+    return caml_callback_asm(domain_state, closure, &arg);
   }
-  return caml_callback_asm(domain_state, closure, &arg);
 }
 
 CAMLexport value caml_callback2_exn(value closure, value arg1, value arg2)
@@ -184,8 +183,9 @@ CAMLexport value caml_callback2_exn(value closure, value arg1, value arg2)
     restore_stack_parent(domain_state, cont);
 
     CAMLreturn (res);
+  } else {
+    return caml_callback2_asm(domain_state, closure, args);
   }
-  return caml_callback2_asm(domain_state, closure, args);
 }
 
 CAMLexport value caml_callback3_exn(value closure,
@@ -205,11 +205,12 @@ CAMLexport value caml_callback3_exn(value closure,
     restore_stack_parent(domain_state, cont);
 
     CAMLreturn (res);
+  } else {
+    return caml_callback3_asm(domain_state, closure, args);
   }
-  return caml_callback3_asm(domain_state, closure, args);
 }
 
-/* Native-code callbacks.  caml_callback[123]_exn are implemented in asm. */
+/* Native-code callbacks.  caml_callback[123]_asm are implemented in asm. */
 
 CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
 {
