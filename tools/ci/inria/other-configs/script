@@ -38,9 +38,8 @@ ${main} -conf --disable-native-compiler \
         -conf --disable-ocamldoc \
         -conf --disable-dependency-generation \
         -no-native
-${main} -conf --disable-naked-pointers
 ${main} -with-bootstrap -conf --disable-flat-float-array
-${main} -conf --enable-flambda -conf --disable-naked-pointers
+${main} -conf --enable-flambda
 ${main} -conf --enable-reserved-header-bits=27
 OCAMLRUNPARAM="c=1" ${main}
 ${main} -conf --with-pic
