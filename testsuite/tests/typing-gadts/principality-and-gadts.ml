@@ -440,3 +440,19 @@ let bar x =
 [%%expect{|
 val bar : string foo -> string = <fun>
 |}]
+
+(* #10822 *)
+type t
+type u = private t
+type ('a, 'b) eq = Refl : ('a, 'a) eq
+[%%expect{|
+type t
+type u = private t
+type ('a, 'b) eq = Refl : ('a, 'a) eq
+|}]
+
+let foo (type s) x (Refl : (s, u) eq) =
+  (x : s :> t)
+[%%expect{|
+val foo : 's -> ('s, u) eq -> t = <fun>
+|}]
