@@ -229,12 +229,12 @@ module Exp = struct
       pbop_loc = loc;
     }
 
-  let open_description expr override loc attributes=
+  let open_description ?(loc = !default_loc) ?(override_flag=Fresh) ?(attrs=[]) expr =
     {
       popen_expr = expr;
-      popen_override = override;
+      popen_override = override_flag;
       popen_loc = loc;
-      popen_attributes = attributes;
+      popen_attributes = attrs;
     }
 end
 
