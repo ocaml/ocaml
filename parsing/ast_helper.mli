@@ -277,6 +277,14 @@ module Mod:
       module_expr
     val unpack: ?loc:loc -> ?attrs:attrs -> expression -> module_expr
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> module_expr
+
+    val mod_desc_ident : Longident.t Asttypes.loc -> module_expr_desc
+    val mod_desc_structure : structure -> module_expr_desc
+    val mod_desc_functor : functor_parameter -> module_expr -> module_expr_desc
+    val mod_desc_apply : module_expr -> module_expr -> module_expr_desc
+    val mod_desc_constraint : module_expr -> module_type -> module_expr_desc
+    val mod_desc_unpack : expression -> module_expr_desc
+    val mod_desc_extension : extension -> module_expr_desc
   end
 
 (** Signature items *)

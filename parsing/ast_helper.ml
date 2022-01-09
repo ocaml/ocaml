@@ -257,6 +257,15 @@ let mk ?(loc = !default_loc) ?(attrs = []) d =
   let constraint_ ?loc ?attrs m mty = mk ?loc ?attrs (Pmod_constraint (m, mty))
   let unpack ?loc ?attrs e = mk ?loc ?attrs (Pmod_unpack e)
   let extension ?loc ?attrs a = mk ?loc ?attrs (Pmod_extension a)
+
+
+  let mod_desc_ident loc = Pmod_ident loc
+  let mod_desc_structure s = Pmod_structure s
+  let mod_desc_functor fp mexp = Pmod_functor (fp, mexp)
+  let mod_desc_apply mexp1 mexp2 = Pmod_apply (mexp1, mexp2)
+  let mod_desc_constraint mexp mtyp  = Pmod_constraint (mexp, mtyp)
+  let mod_desc_unpack exp = Pmod_unpack exp
+  let mod_desc_extension exp = Pmod_extension exp
 end
 
 module Sig = struct
