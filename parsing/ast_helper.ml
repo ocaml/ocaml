@@ -236,6 +236,14 @@ module Exp = struct
       popen_loc = loc;
       popen_attributes = attrs;
     }
+
+  let open_declaration ?(loc = !default_loc) ?(override_flag=Fresh) ?(attrs=[]) expr =
+    {
+      popen_expr = expr;
+      popen_override = override_flag;
+      popen_loc = loc;
+      popen_attributes = attrs;
+    }
 end
 
 module Mty = struct

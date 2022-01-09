@@ -197,6 +197,10 @@ module Exp:
                            -> ?attrs:attrs -> Longident.t Asttypes.loc
                            -> open_description
 
+    val open_declaration : ?loc:loc -> ?override_flag:override_flag
+                           -> ?attrs:attrs -> module_expr
+                           -> open_declaration
+
   end
 
 (** Value declarations *)
