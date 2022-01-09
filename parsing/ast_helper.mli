@@ -192,6 +192,10 @@ module Exp:
 
     val case: pattern -> ?guard:expression -> expression -> case
     val binding_op: str -> pattern -> expression -> loc -> binding_op
+
+    val open_description : Longident.t Asttypes.loc -> override_flag -> Location.t ->
+      attributes -> open_description
+
   end
 
 (** Value declarations *)

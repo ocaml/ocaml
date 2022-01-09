@@ -228,6 +228,14 @@ module Exp = struct
       pbop_exp = exp;
       pbop_loc = loc;
     }
+
+  let open_description expr override loc attributes=
+    {
+      popen_expr = expr;
+      popen_override = override;
+      popen_loc = loc;
+      popen_attributes = attributes;
+    }
 end
 
 module Mty = struct
