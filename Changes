@@ -80,6 +80,11 @@ OCaml 4.14.0
 - #10730, 10731: Fix bug in `Obj.reachable_words` causing a slowdown when called
   multiple time (Alain Frisch, report by ygrek, review by Xavier Leroy)
 
+- #10860: Create position independent code for ARM32 runtime when compiler flag
+  __PIC__ is defined. Renamed Caml_state() macro to Caml_state_var() macro to
+  unshadow compiler expressions, especially Caml_state(GOT_PREL)
+  (Jonah Beckford)
+
 ### Code generation and optimizations:
 
 - #10578: Increase the number of integer registers used for
