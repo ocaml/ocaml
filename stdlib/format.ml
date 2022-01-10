@@ -557,9 +557,6 @@ let pp_close_stag state () =
     | Some tag_name ->
       state.pp_print_close_tag tag_name
 
-let pp_open_tag state s = pp_open_stag state (String_tag s)
-let pp_close_tag state () = pp_close_stag state ()
-
 let pp_set_print_tags state b = state.pp_print_tags <- b
 let pp_set_mark_tags state b = state.pp_mark_tags <- b
 let pp_get_print_tags state () = state.pp_print_tags
@@ -603,7 +600,7 @@ let pp_rinit state =
   pp_open_sys_box state
 
 let clear_tag_stack state =
-  Stack.iter (fun _ -> pp_close_tag state ()) state.pp_tag_stack
+  Stack.iter (fun _ -> pp_close_stag state ()) state.pp_tag_stack
 
 
 (* Flushing pretty-printer queue. *)
@@ -1176,8 +1173,6 @@ and open_hvbox v = pp_open_hvbox (DLS.get std_formatter_key) v
 and open_hovbox v = pp_open_hovbox (DLS.get std_formatter_key) v
 and open_box v = pp_open_box (DLS.get std_formatter_key) v
 and close_box v = pp_close_box (DLS.get std_formatter_key) v
-and open_tag v = pp_open_tag (DLS.get std_formatter_key) v
-and close_tag v = pp_close_tag (DLS.get std_formatter_key) v
 and open_stag v = pp_open_stag (DLS.get std_formatter_key) v
 and close_stag v = pp_close_stag (DLS.get std_formatter_key) v
 and print_as v w = pp_print_as (DLS.get std_formatter_key) v w
@@ -1336,7 +1331,7 @@ open CamlinternalFormat
 (* Interpret a formatting entity on a formatter. *)
 let output_formatting_lit ppf fmting_lit = match fmting_lit with
   | Close_box                 -> pp_close_box ppf ()
-  | Close_tag                 -> pp_close_tag ppf ()
+  | Close_tag                 -> pp_close_stag ppf ()
   | Break (_, width, offset)  -> pp_print_break ppf width offset
   | FFlush                    -> pp_print_flush ppf ()
   | Force_newline             -> pp_force_newline ppf ()
@@ -1493,85 +1488,3 @@ let () = Domain.at_first_spawn (fun () ->
              out_flush = buffered_out_flush Stdlib.stderr err_buf_key};
 
   Domain.at_exit flush_standard_formatters)
-
-(*
-
-  Deprecated stuff.
-
-*)
-
-(* Deprecated : subsumed by pp_set_formatter_out_functions *)
-let pp_set_all_formatter_output_functions state
-    ~out:f ~flush:g ~newline:h ~spaces:i =
-  pp_set_formatter_output_functions state f g;
-  state.pp_out_newline <- h;
-  state.pp_out_spaces <- i
-
-(* Deprecated : subsumed by pp_get_formatter_out_functions *)
-let pp_get_all_formatter_output_functions state () =
-  (state.pp_out_string, state.pp_out_flush,
-   state.pp_out_newline, state.pp_out_spaces)
-
-
-(* Deprecated : subsumed by set_formatter_out_functions *)
-let set_all_formatter_output_functions ~out =
-  pp_set_all_formatter_output_functions (DLS.get std_formatter_key) ~out
-
-
-(* Deprecated : subsumed by get_formatter_out_functions *)
-let get_all_formatter_output_functions () =
-  pp_get_all_formatter_output_functions (DLS.get std_formatter_key) ()
-
-
-(* Deprecated : error prone function, do not use it.
-   This function is neither compositional nor incremental, since it flushes
-   the pretty-printer queue at each call.
-   To get the same functionality, define a formatter of your own writing to
-   the buffer argument, as in
-   let ppf = formatter_of_buffer b
-   then use {!fprintf ppf} as usual. *)
-let bprintf b (Format (fmt, _) : ('a, formatter, unit) format) =
-  let ppf = formatter_of_buffer b in
-  let k acc = output_acc ppf acc; pp_flush_queue ppf false in
-  make_printf k End_of_acc fmt
-
-
-(* Deprecated : alias for ksprintf. *)
-let kprintf = ksprintf
-
-
-
-(* Deprecated tag functions *)
-
-type formatter_tag_functions = {
-  mark_open_tag : tag -> string;
-  mark_close_tag : tag -> string;
-  print_open_tag : tag -> unit;
-  print_close_tag : tag -> unit;
-}
-
-
-let pp_set_formatter_tag_functions state {
-     mark_open_tag = mot;
-     mark_close_tag = mct;
-     print_open_tag = pot;
-     print_close_tag = pct;
-   } =
-  let stringify f e = function String_tag s -> f s | _ -> e in
-  state.pp_mark_open_tag <- stringify mot "";
-  state.pp_mark_close_tag <- stringify mct "";
-  state.pp_print_open_tag <- stringify pot ();
-  state.pp_print_close_tag <- stringify pct ()
-
-let pp_get_formatter_tag_functions fmt () =
-  let funs = pp_get_formatter_stag_functions fmt () in
-  let mark_open_tag s = funs.mark_open_stag (String_tag s) in
-  let mark_close_tag s = funs.mark_close_stag (String_tag s) in
-  let print_open_tag s = funs.print_open_stag (String_tag s) in
-  let print_close_tag s = funs.print_close_stag (String_tag s) in
-  {mark_open_tag; mark_close_tag; print_open_tag; print_close_tag}
-
-let set_formatter_tag_functions v =
-  pp_set_formatter_tag_functions (DLS.get std_formatter_key) v
-and get_formatter_tag_functions () =
-  pp_get_formatter_tag_functions (DLS.get std_formatter_key) ()
