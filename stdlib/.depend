@@ -660,7 +660,6 @@ stdlib__Scanf.cmo : scanf.ml \
     stdlib__String.cmi \
     stdlib.cmi \
     stdlib__Printf.cmi \
-    stdlib__List.cmi \
     stdlib__Int.cmi \
     camlinternalFormatBasics.cmi \
     camlinternalFormat.cmi \
@@ -671,7 +670,6 @@ stdlib__Scanf.cmx : scanf.ml \
     stdlib__String.cmx \
     stdlib.cmx \
     stdlib__Printf.cmx \
-    stdlib__List.cmx \
     stdlib__Int.cmx \
     camlinternalFormatBasics.cmx \
     camlinternalFormat.cmx \
