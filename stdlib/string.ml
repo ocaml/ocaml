@@ -243,17 +243,6 @@ let split_on_char sep s =
   done;
   sub s 0 !j :: !r
 
-(* Deprecated functions implemented via other deprecated functions *)
-[@@@ocaml.warning "-3"]
-let uppercase s =
-  B.uppercase (bos s) |> bts
-let lowercase s =
-  B.lowercase (bos s) |> bts
-let capitalize s =
-  B.capitalize (bos s) |> bts
-let uncapitalize s =
-  B.uncapitalize (bos s) |> bts
-
 type t = string
 
 let compare (x: t) (y: t) = Stdlib.compare x y

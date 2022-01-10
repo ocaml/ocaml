@@ -446,40 +446,6 @@ val fill : bytes -> int -> int -> char -> unit
     @deprecated This is a deprecated alias of
     {!Bytes.fill}/{!BytesLabels.fill}. *)
 
-val uppercase : string -> string
-  [@@ocaml.deprecated
-    "Use String.uppercase_ascii/StringLabels.uppercase_ascii instead."]
-(** Return a copy of the argument, with all lowercase letters
-    translated to uppercase, including accented letters of the ISO
-    Latin-1 (8859-1) character set.
-
-    @deprecated Functions operating on Latin-1 character set are deprecated. *)
-
-val lowercase : string -> string
-  [@@ocaml.deprecated
-    "Use String.lowercase_ascii/StringLabels.lowercase_ascii instead."]
-(** Return a copy of the argument, with all uppercase letters
-    translated to lowercase, including accented letters of the ISO
-    Latin-1 (8859-1) character set.
-
-    @deprecated Functions operating on Latin-1 character set are deprecated. *)
-
-val capitalize : string -> string
-  [@@ocaml.deprecated
-    "Use String.capitalize_ascii/StringLabels.capitalize_ascii instead."]
-(** Return a copy of the argument, with the first character set to uppercase,
-    using the ISO Latin-1 (8859-1) character set..
-
-    @deprecated Functions operating on Latin-1 character set are deprecated. *)
-
-val uncapitalize : string -> string
-  [@@ocaml.deprecated
-    "Use String.uncapitalize_ascii/StringLabels.uncapitalize_ascii instead."]
-(** Return a copy of the argument, with the first character set to lowercase,
-    using the ISO Latin-1 (8859-1) character set.
-
-    @deprecated Functions operating on Latin-1 character set are deprecated. *)
-
 (** {1 Binary decoding of integers} *)
 
 (** The functions in this section binary decode integers from strings.
