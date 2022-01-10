@@ -26,8 +26,8 @@ end
 {
  ("Pair", module) ->
      Abs<.9>
-        (X/284,
-         Abs(Y/285, {
+        (X/282,
+         Abs(Y/283, {
                      ("t", type) -> <.5>;
                      ("to_string", value) -> <.6>;
                      }));
