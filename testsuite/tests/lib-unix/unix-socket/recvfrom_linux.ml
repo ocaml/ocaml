@@ -1,7 +1,7 @@
 (* TEST
 include unix
 modules = "recvfrom.ml"
-script = "sh ${test_source_directory}/is-linux.sh"
+script = "sh '${test_source_directory}'/is-linux.sh"
 * hasunix
 ** script
 *** bytecode

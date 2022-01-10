@@ -26,7 +26,7 @@ program = "${test_build_directory}/worker.byte"
 
 program = "${test_build_directory}/master.byte"
 
-arguments = "${test_build_directory}/worker.byte"
+arguments = "'${test_build_directory}'/worker.byte"
 
 ******* check-program-output
 
@@ -50,7 +50,7 @@ program = "${test_build_directory}/worker.opt"
 
 program = "${test_build_directory}/master.opt"
 
-arguments = "${test_build_directory}/worker.opt"
+arguments = "'${test_build_directory}'/worker.opt"
 
 ******* check-program-output
 
@@ -73,7 +73,7 @@ arguments = "${test_build_directory}/worker.opt"
 open Tscanf2_io;;
 
 let worker = Sys.argv.(1);;
-let ic, oc = Unix.open_process worker;;
+let ic, oc = Unix.open_process_args worker [| worker |];;
 let ib = Scanf.Scanning.from_channel ic;;
 let ob = Buffer.create 1024;;
 

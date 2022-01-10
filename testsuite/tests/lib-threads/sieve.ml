@@ -1,6 +1,6 @@
 (* TEST
 
-script = "sh ${test_source_directory}/test-runtime-cleanup.sh"
+script = "sh '${test_source_directory}'/test-runtime-cleanup.sh"
 
 * hassysthreads
 include systhreads

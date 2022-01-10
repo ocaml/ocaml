@@ -16,7 +16,7 @@
 (* Helper functions to build OCaml-related commands *)
 
 let ocamlrun program =
-  Ocaml_files.ocamlrun ^ " " ^ program
+  Filename.quote Ocaml_files.ocamlrun ^ " " ^ Filename.quote program
 
 let ocamlrun_ocamlc = ocamlrun Ocaml_files.ocamlc
 

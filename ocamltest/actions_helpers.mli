@@ -51,6 +51,7 @@ val run_cmd :
   out_channel -> Environments.t -> string list -> int
 
 val run : string -> bool -> bool -> Variables.t
+                 -> bool
                  -> Variables.t option -> Actions.code
 
 val run_program : Actions.code

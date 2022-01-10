@@ -6,7 +6,7 @@ all_modules = "test.ml"
 flags = "-warn-error +A"
 ocamlc_byte_exit_status = "2"
 *** script
-script = "sh ${test_source_directory}/check-error-cleanup.sh"
+script = "sh '${test_source_directory}'/check-error-cleanup.sh"
 *)
 
 (* Regression test for MPR#7918 *)

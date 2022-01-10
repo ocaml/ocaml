@@ -1,5 +1,5 @@
 (* TEST
-flags = "-I ${ocamlsrcdir}/parsing -I ${ocamlsrcdir}/toplevel"
+flags = "-I '${ocamlsrcdir}'/parsing -I '${ocamlsrcdir}'/toplevel"
 include ocamlcommon
 *)
 let position = Lexing.{ (* This corresponds to File "file.ml", line 100, character 10 *)

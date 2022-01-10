@@ -15,7 +15,7 @@
 
 .NOTPARALLEL:
 
-BASEDIR := $(shell pwd)
+BASEDIR := '$(shell pwd)'
 
 ROOTDIR = ..
 include $(ROOTDIR)/Makefile.common
@@ -30,7 +30,7 @@ else
   SORT=sort
 endif
 
-BASEDIR_HOST := $(shell $(CYGPATH) "$(BASEDIR)")
+BASEDIR_HOST := $(shell $(CYGPATH) $(BASEDIR))
 ROOTDIR_HOST := $(BASEDIR_HOST)/$(ROOTDIR)
 
 OCAMLTESTDIR = $(BASEDIR_HOST)/$(DIR)/_ocamltest
@@ -255,8 +255,9 @@ one: lib tools
       2>&1 | tee $(TESTLOG).one ; \
    fi
 	@if [ -n '$(TEST)' ] ; then \
-    TERM=dumb $(OCAMLTESTENV) $(ocamltest) $(OCAMLTESTFLAGS) $(TEST) \
-     2>&1 | tee $(TESTLOG).one; fi
+    { TERM=dumb $(OCAMLTESTENV) $(ocamltest) $(OCAMLTESTFLAGS) $(TEST) \
+     2>&1 || \
+	   echo " ... testing '$(TEST)' => unexpected error"; } | tee $(TESTLOG).one; fi
 	@if [ -n '$(LIST)' ] ; then \
      while IFS='' read -r LINE; do \
        $(MAKE) --no-print-directory exec-one DIR=$$LINE ; \
@@ -270,7 +271,7 @@ exec-one:
 	@if $(ocamltest) -list-tests $(DIR) >/dev/null 2>&1; then \
 	  echo "Running tests from '$$DIR' ..."; \
 	  $(MAKE) exec-ocamltest DIR=$(DIR) \
-	    OCAMLTESTENV="OCAMLTESTDIR=$(OCAMLTESTDIR)"; \
+	    OCAMLTESTENV="OCAMLTESTDIR='$(OCAMLTESTDIR)'"; \
 	else \
 	  for dir in $(DIR)/*; do \
 	    if [ -d $$dir ]; then \

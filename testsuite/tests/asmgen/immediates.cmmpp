@@ -2,7 +2,7 @@
 
 (* T
 readonly_files = "mainimmed.c"
-arguments = "-I ${test_source_directory} mainimmed.c"
+arguments = "-I '${test_source_directory}' mainimmed.c"
 * asmgen
 *)
 

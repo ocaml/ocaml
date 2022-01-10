@@ -8,7 +8,7 @@ all_modules = "myppx.ml"
 *** ocamlc.byte
 module = "test.ml"
 flags = "-thread \
-         -I ${test_build_directory} \
+         -I '${test_build_directory}' \
          -open List \
          -rectypes \
          -principal \

@@ -5,7 +5,7 @@
    flags = "-save-ir-after scheduling -S"
  **** check-ocamlopt.byte-output
  ***** script
-   script = "sh ${test_source_directory}/save_ir_after_scheduling.sh"
+   script = "sh '${test_source_directory}'/save_ir_after_scheduling.sh"
 *)
 
 let foo f x =

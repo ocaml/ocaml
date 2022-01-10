@@ -213,11 +213,18 @@ all: dynlink.cma $(extract_crc)
 
 allopt: dynlink.cmxa
 
+# Copied from Makefile
+ifeq "$(strip $(NATDYNLINKOPTS))" ""
+OCAML_NATDYNLINKOPTS=
+else
+OCAML_NATDYNLINKOPTS = -ccopt "$(NATDYNLINKOPTS)"
+endif
+
 dynlink.cma: $(OBJS)
-	$(OCAMLC) $(COMPFLAGS) -ccopt "$(NATDYNLINKOPTS)" -a -I byte -o $@ $^
+	$(OCAMLC) $(COMPFLAGS) $(OCAML_NATDYNLINKOPTS) -a -I byte -o $@ $^
 
 dynlink.cmxa: $(NATOBJS)
-	$(OCAMLOPT) $(COMPFLAGS) -ccopt "$(NATDYNLINKOPTS)" -a -I native \
+	$(OCAMLOPT) $(COMPFLAGS) $(OCAML_NATDYNLINKOPTS) -a -I native \
 	            -o $@ $^
 # As for all other .cmxa files, ensure that the .cmx files are in the same
 # directory. If this were omitted, ocamldoc in particular will fail to build

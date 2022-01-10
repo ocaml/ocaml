@@ -1,7 +1,7 @@
 (* TEST
    plugins="odoc_test.ml"
    * ocamldoc
-    flags="-I ${ocamlsrcdir}/ocamldoc"
+    flags="-I '${ocamlsrcdir}'/ocamldoc"
 *)
 
 module Foo = struct type t = int let x = 1 end;;

@@ -4,10 +4,11 @@ use_runtime = "false"
 
 * setup-ocamlc.byte-build-env
 ** ocamlc.byte
-flags = "-w -a -output-complete-exe -ccopt -I${ocamlsrcdir}/runtime"
-program = "github9344"
+flags = "-w -a -output-complete-exe -ccopt -I'${ocamlsrcdir}'/runtime"
+program = "./github9344"
 *** run
-program = "sh ${test_source_directory}/github9344.sh"
+ocamlrunparam += ",b=1"
+exit_status = "2"
 **** check-program-output
 *)
 

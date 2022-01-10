@@ -42,7 +42,7 @@ let directories env =
   Actions_helpers.words_of_variable env Ocaml_variables.directories
 
 let directory_flags env =
-  let f dir = ("-I " ^ dir) in
+  let f dir = ("-I " ^ Filename.quote dir) in
   let l = List.map f (directories env) in
   String.concat " " l
 
@@ -111,7 +111,7 @@ let ocamllex =
 let ocamlyacc =
 {
   description = "parser";
-  command = Ocaml_files.ocamlyacc;
+  command = Filename.quote Ocaml_files.ocamlyacc;
   flags = ocamlyacc_flags;
   generated_compilation_units =
     fun parser_name ->
@@ -210,6 +210,7 @@ let cmas_need_dynamic_loading directories libraries =
 let compile_program (compiler : Ocaml_compilers.compiler) log env =
   let program_variable = compiler#program_variable in
   let program_file = Environments.safe_lookup program_variable env in
+  let program_file = Filename.quote program_file in
   let all_modules =
     Actions_helpers.words_of_variable env Ocaml_variables.all_modules in
   let output_variable = compiler#output_variable in
@@ -221,9 +222,12 @@ let compile_program (compiler : Ocaml_compilers.compiler) log env =
     if has_c_file then Ocaml_flags.c_includes else "" in
   let expected_exit_status =
     Ocaml_tools.expected_exit_status env (compiler :> Ocaml_tools.tool) in
+  let make_filename_quoted filename =
+    Ocaml_filetypes.make_filename filename |> Filename.quote
+  in
   let module_names =
     (binary_modules compiler#target env) ^ " " ^
-    (String.concat " " (List.map Ocaml_filetypes.make_filename modules)) in
+    (String.concat " " (List.map make_filename_quoted modules)) in
   let what = Printf.sprintf "Compiling program %s from modules %s"
     program_file module_names in
   Printf.fprintf log "%s\n%!" what;
@@ -281,6 +285,12 @@ let compile_program (compiler : Ocaml_compilers.compiler) log env =
             what (String.concat " " commandline) exit_status) in
         (Result.fail_with_reason reason, env)
       end
+
+let compile_program (compiler : Ocaml_compilers.compiler) log env =
+  try
+    compile_program compiler log env
+  with
+    Invalid_argument error -> (Result.fail_with_reason error, env)
 
 let compile_module compiler module_ log env =
   let expected_exit_status =
@@ -515,6 +525,7 @@ let ocamlopt_opt =
 
 let env_with_lib_unix env =
   let libunixdir = Ocaml_directories.libunix in
+  let libunixdir = Filename.quote libunixdir in
   let newlibs =
     match Environments.lookup Ocaml_variables.caml_ld_library_path env with
     | None -> libunixdir
@@ -530,7 +541,7 @@ let debug log env =
   [
     Ocaml_commands.ocamlrun_ocamldebug;
     Ocaml_flags.ocamldebug_default_flags;
-    program
+    Filename.quote program
   ] in
   let systemenv =
     Environments.append_to_system_env
@@ -611,7 +622,7 @@ let mklib log env =
   let commandline =
   [
     Ocaml_commands.ocamlrun_ocamlmklib;
-    "-ocamlc '" ^ ocamlc_command ^ "'";
+    "-ocamlc \"" ^ ocamlc_command ^ "\"";
     "-o " ^ program
   ] @ modules env in
   let expected_exit_status = 0 in
@@ -638,6 +649,7 @@ let finalise_codegen_cc test_basename _log env =
     Filename.make_filename test_basename "s"
   in
   let archmod = Ocaml_files.asmgen_archmod in
+  let archmod = Filename.quote archmod in
   let modules = test_module ^ " " ^ archmod in
   let program = Filename.make_filename test_basename "out" in
   let env = Environments.add_bindings
@@ -737,6 +749,7 @@ let codegen = Actions.make "codegen" run_codegen
 
 let run_cc log env =
   let program = Environments.safe_lookup Builtin_variables.program env in
+  let program = Filename.quote program in
   let what = Printf.sprintf "Running C compiler to build %s" program in
   Printf.fprintf log "%s\n%!" what;
   let output_exe =
@@ -746,10 +759,10 @@ let run_cc log env =
   [
     Ocamltest_config.cc;
     Ocamltest_config.cflags;
-    "-I" ^ Ocaml_directories.runtime;
+    "-I" ^ Filename.quote Ocaml_directories.runtime;
     output_exe ^ program;
     Environments.safe_lookup Builtin_variables.arguments env;
-  ] @ modules env in
+  ] @ List.map Filename.quote (modules env) in
   let expected_exit_status = 0 in
   let exit_status =
     Actions_helpers.run_cmd
@@ -771,7 +784,7 @@ let cc = Actions.make "cc" run_cc
 
 let run_expect_once input_file principal log env =
   let expect_flags = Sys.safe_getenv "EXPECT_FLAGS" in
-  let repo_root = "-repo-root " ^ Ocaml_directories.srcdir in
+  let repo_root = "-repo-root " ^ Filename.quote Ocaml_directories.srcdir in
   let principal_flag = if principal then "-principal" else "" in
   let commandline =
   [
@@ -872,8 +885,8 @@ let compare_programs backend comparison_tool log env =
   end else really_compare_programs backend comparison_tool log env
 
 let make_bytecode_programs_comparison_tool =
-  let ocamlrun = Ocaml_files.ocamlrun in
-  let cmpbyt = Ocaml_files.cmpbyt in
+  let ocamlrun = Filename.quote Ocaml_files.ocamlrun in
+  let cmpbyt = Filename.quote Ocaml_files.cmpbyt in
   let tool_name = ocamlrun ^ " " ^ cmpbyt in
   Filecompare.make_comparison_tool tool_name ""
 

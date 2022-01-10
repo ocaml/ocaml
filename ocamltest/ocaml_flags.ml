@@ -17,14 +17,14 @@
 
 let stdlib =
   let stdlib_path = Ocaml_directories.stdlib in
-  "-nostdlib -I " ^ stdlib_path
+  "-nostdlib -I " ^ Filename.quote stdlib_path
 
 let include_toplevel_directory =
-  "-I " ^ Ocaml_directories.toplevel
+  "-I " ^ Filename.quote Ocaml_directories.toplevel
 
 let c_includes =
   let dir = Ocaml_directories.runtime in
-  "-ccopt -I" ^ dir
+  "-ccopt -I" ^ Filename.quote dir
 
 let runtime_variant_flags () = match Ocaml_files.runtime_variant() with
   | Ocaml_files.Normal -> ""
@@ -33,7 +33,7 @@ let runtime_variant_flags () = match Ocaml_files.runtime_variant() with
 
 let runtime_flags env backend c_files =
   let runtime_library_flags = "-I " ^
-    Ocaml_directories.runtime in
+    Filename.quote Ocaml_directories.runtime in
   let rt_flags = match backend with
     | Ocaml_backends.Native -> runtime_variant_flags ()
     | Ocaml_backends.Bytecode ->
@@ -46,7 +46,7 @@ let runtime_flags env backend c_files =
           in
           if use_runtime = Some false
           then ""
-          else "-use-runtime " ^ Ocaml_files.ocamlrun
+          else "-use-runtime " ^ Filename.quote Ocaml_files.ocamlrun
         end
       end in
   rt_flags ^ " " ^ runtime_library_flags
@@ -55,7 +55,7 @@ let toplevel_default_flags = "-noinit -no-version -noprompt"
 
 let ocamldebug_default_flags =
   "-no-version -no-prompt -no-time -no-breakpoint-message " ^
-  ("-I " ^ Ocaml_directories.stdlib ^ " ") ^
-  ("-topdirs-path " ^ Ocaml_directories.toplevel)
+  ("-I " ^ Filename.quote Ocaml_directories.stdlib ^ " ") ^
+  ("-topdirs-path " ^ Filename.quote Ocaml_directories.toplevel)
 
 let ocamlobjinfo_default_flags = "-null-crc"
