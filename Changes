@@ -9,7 +9,7 @@ Working version
 
 * #10863: Remove "caml/compatibility.h". It is no longer needed to define
   `CAML_NAME_SPACE` to avoid bringing "short" names into scope.
-  (Nicolás Ojeda Bär)
+  (Nicolás Ojeda Bär, review by Xavier Leroy)
 
 ### Code generation and optimizations:
 
