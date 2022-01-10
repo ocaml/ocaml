@@ -35,8 +35,8 @@ str_MLIS := str.mli
 unix_MLIS := unix.mli unixLabels.mli
 dynlink_MLIS := dynlink.mli
 thread_MLIS := \
-  thread.mli condition.mli mutex.mli event.mli \
-  threadUnix.mli semaphore.mli
+  thread.mli event.mli \
+  threadUnix.mli
 
 STDLIB=$(filter-out stdlib__Pervasives, $(STDLIB_MODULES))
 

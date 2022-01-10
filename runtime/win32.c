@@ -39,6 +39,9 @@
 #include <errno.h>
 #include <string.h>
 #include <signal.h>
+#if defined(DEBUG) || defined(NATIVE_CODE)
+#include <dbghelp.h>
+#endif
 #include "caml/alloc.h"
 #include "caml/codefrag.h"
 #include "caml/fail.h"
@@ -49,6 +52,8 @@
 #include "caml/signals.h"
 #include "caml/sys.h"
 #include "caml/winsupport.h"
+#include "caml/startup_aux.h"
+#include "caml/platform.h"
 
 #include "caml/config.h"
 
@@ -95,7 +100,7 @@ int caml_read_fd(int fd, int flags, void * buf, int n)
 {
   int retcode;
   if ((flags & CHANNEL_FLAG_FROM_SOCKET) == 0) {
-    caml_enter_blocking_section_no_pending();
+    caml_enter_blocking_section();
     retcode = read(fd, buf, n);
     /* Large reads from console can fail with ENOMEM.  Reduce requested size
        and try again. */
@@ -105,7 +110,7 @@ int caml_read_fd(int fd, int flags, void * buf, int n)
     caml_leave_blocking_section();
     if (retcode == -1) caml_sys_io_error(NO_ARG);
   } else {
-    caml_enter_blocking_section_no_pending();
+    caml_enter_blocking_section();
     retcode = recv((SOCKET) _get_osfhandle(fd), buf, n, 0);
     caml_leave_blocking_section();
     if (retcode == -1) caml_win32_sys_error(WSAGetLastError());
@@ -117,12 +122,12 @@ int caml_write_fd(int fd, int flags, void * buf, int n)
 {
   int retcode;
   if ((flags & CHANNEL_FLAG_FROM_SOCKET) == 0) {
-    caml_enter_blocking_section_no_pending();
+    caml_enter_blocking_section();
     retcode = write(fd, buf, n);
     caml_leave_blocking_section();
     if (retcode == -1) caml_sys_io_error(NO_ARG);
   } else {
-    caml_enter_blocking_section_no_pending();
+    caml_enter_blocking_section();
     retcode = send((SOCKET) _get_osfhandle(fd), buf, n, 0);
     caml_leave_blocking_section();
     if (retcode == -1) caml_win32_sys_error(WSAGetLastError());
@@ -230,7 +235,7 @@ void * caml_dlopen(wchar_t * libname, int for_execution, int global)
   int flags = (global ? FLEXDLL_RTLD_GLOBAL : 0);
   if (!for_execution) flags |= FLEXDLL_RTLD_NOEXEC;
   handle = flexdll_wdlopen(libname, flags);
-  if ((handle != NULL) && ((caml_verb_gc & 0x100) != 0)) {
+  if ((handle != NULL) && ((caml_params->verb_gc & 0x100) != 0)) {
     flexdll_dump_exports(handle);
     fflush(stdout);
   }
@@ -645,7 +650,7 @@ static void invalid_parameter_handler(const wchar_t* expression,
 }
 
 
-void caml_install_invalid_parameter_handler()
+void caml_install_invalid_parameter_handler(void)
 {
   _set_invalid_parameter_handler(invalid_parameter_handler);
 }
@@ -1086,4 +1091,71 @@ CAMLexport clock_t caml_win32_clock(void)
   /* total in 100-nanosecond intervals (1e7 / CLOCKS_PER_SEC) */
   clocks_per_sec = INT64_LITERAL(10000000U) / (ULONGLONG)CLOCKS_PER_SEC;
   return (clock_t)(total / clocks_per_sec);
+}
+
+int caml_thread_setname(const char* name)
+{
+  int ret;
+  /* XXX Duplicates unix.c, but MSVC will add some specific code here */
+  pthread_t self = pthread_self();
+
+  ret = pthread_setname_np(self, name);
+  if (ret == ERANGE)
+    return -1;
+  return 0;
+}
+
+static LARGE_INTEGER frequency;
+static LARGE_INTEGER clock_offset;
+typedef void (WINAPI *LPFN_GETSYSTEMTIME) (LPFILETIME);
+
+void caml_init_os_params(void)
+{
+  SYSTEM_INFO si;
+  LPFN_GETSYSTEMTIME pGetSystemTime;
+  FILETIME stamp;
+  ULARGE_INTEGER now;
+  LARGE_INTEGER counter;
+
+  /* Get the system page size */
+  GetSystemInfo(&si);
+  caml_sys_pagesize = si.dwPageSize;
+
+  /* Get the number of nanoseconds for each tick in QueryPerformanceCounter */
+  QueryPerformanceFrequency(&frequency);
+  /* Convert the frequency to the duration of 1 tick in ns */
+  frequency.QuadPart = 1000000000LL / frequency.QuadPart;
+
+  /* Get the current time as accurately as we can.
+     GetSystemTimePreciseAsFileTime is available on Windows 8 / Server 2012+ and
+     gives <1us precision. For Windows 7 and earlier, which is only accurate to
+     10-100ms. */
+  pGetSystemTime =
+    (LPFN_GETSYSTEMTIME)GetProcAddress(GetModuleHandle(L"kernel32"),
+                                       "GetSystemTimePreciseAsFileTime");
+  if (!pGetSystemTime)
+    pGetSystemTime = GetSystemTimeAsFileTime;
+
+  /* Get the time and the performance counter. Get the performance counter first
+     to ensure no quantum effects */
+  QueryPerformanceCounter(&counter);
+  pGetSystemTime(&stamp);
+
+  now.LowPart = stamp.dwLowDateTime;
+  now.HighPart = stamp.dwHighDateTime;
+
+  /* Convert a FILETIME in 100ns ticks since 1 January 1601 to
+     ns since 1 Jan 1970. */
+  clock_offset.QuadPart =
+    ((now.QuadPart - INT64_LITERAL(0x19DB1DED53E8000U)) * 100);
+
+  /* Get the offset between QueryPerformanceCounter and
+     GetSystemTimePreciseAsFileTime in order to return a true timestamp, rather
+     than just a monotonic time source */
+  clock_offset.QuadPart -= (counter.QuadPart * frequency.QuadPart);
+
+  GetSystemTimePreciseAsFileTime(&stamp);
+  now.LowPart = stamp.dwLowDateTime;
+  now.HighPart = stamp.dwHighDateTime;
+  now.QuadPart *= 100;
 }

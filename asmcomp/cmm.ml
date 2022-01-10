@@ -150,7 +150,10 @@ type memory_chunk =
 and operation =
     Capply of machtype
   | Cextcall of string * machtype * exttype list * bool
-  | Cload of memory_chunk * Asttypes.mutable_flag
+  | Cload of
+      { memory_chunk: memory_chunk
+      ; mutability: Asttypes.mutable_flag
+      ; is_atomic: bool }
   | Calloc
   | Cstore of memory_chunk * Lambda.initialization_or_assignment
   | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi
@@ -165,6 +168,7 @@ and operation =
   | Craise of Lambda.raise_kind
   | Ccheckbound
   | Copaque
+  | Cdls_get
 
 type expression =
     Cconst_int of int * Debuginfo.t

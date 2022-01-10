@@ -77,7 +77,7 @@
 #define CODE_DOUBLE_ARRAY64_LITTLE 0x17
 #define CODE_CODEPOINTER 0x10
 #define CODE_INFIXPOINTER 0x11
-#define CODE_CUSTOM 0x12 /* deprecated */
+/* #define CODE_CUSTOM 0x12  -- no longer supported */
 #define CODE_CUSTOM_LEN 0x18
 #define CODE_CUSTOM_FIXED 0x19
 
@@ -100,10 +100,14 @@
 #define ENTRIES_PER_TRAIL_BLOCK  1025
 #define SIZE_EXTERN_OUTPUT_BLOCK 8100
 
+void caml_free_extern_state (void);
+
 /* The entry points */
 
 void caml_output_val (struct channel * chan, value v, value flags);
   /* Output [v] with flags [flags] on the channel [chan]. */
+
+void caml_free_intern_state (void);
 
 #endif /* CAML_INTERNALS */
 
@@ -137,7 +141,7 @@ CAMLextern value caml_input_value_from_malloc(char * data, intnat ofs);
      to the beginning of the buffer, and [ofs] is the offset of the
      beginning of the externed data in this buffer.  The buffer is
      deallocated with [free] on return, or if an exception is raised. */
-CAMLextern value caml_input_value_from_block(char * data, intnat len);
+CAMLextern value caml_input_value_from_block(const char * data, intnat len);
   /* Read a structured value from a user-provided buffer.  [data] points
      to the beginning of the externed data in this buffer,
      and [len] is the length in bytes of valid data in this buffer.

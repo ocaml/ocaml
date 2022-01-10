@@ -1,0 +1,10 @@
+[Caml] Call caml_to_c
+[Caml] Enter c_to_caml
+0
+5000050000
+[Caml] Leave c_to_caml
+[Caml] Return from caml_to_c
+[C] Enter caml_to_c
+[C] Call c_to_caml
+[C] Return from c_to_caml
+[C] Leave caml_to_c

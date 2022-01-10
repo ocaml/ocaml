@@ -14,6 +14,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+val stack_ctx_words : int
+
 type t =
 #define DOMAIN_STATE(type, name) | Domain_##name
 #include "domain_state.tbl"

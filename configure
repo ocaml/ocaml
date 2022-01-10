@@ -748,8 +748,7 @@ build_os
 build_vendor
 build_cpu
 build
-naked_pointers_checker
-naked_pointers
+force_instrumented_runtime
 compute_deps
 stdlib_manpages
 PACKLD
@@ -903,7 +902,6 @@ enable_ocamltest
 enable_native_toplevel
 enable_frame_pointers
 enable_naked_pointers
-enable_naked_pointers_checker
 enable_spacetime
 enable_cfi
 enable_imprecise_c99_float_ops
@@ -912,6 +910,7 @@ enable_installing_bytecode_programs
 enable_native_compiler
 enable_flambda
 enable_flambda_invariants
+enable_force_instrumented_runtime
 enable_cmm_invariants
 with_target_bindir
 enable_reserved_header_bits
@@ -1577,10 +1576,6 @@ Optional Features:
   --enable-native-toplevel
                           build the native toplevel
   --enable-frame-pointers use frame pointers in runtime and generated code
-  --disable-naked-pointers
-                          do not allow naked pointers
-  --enable-naked-pointers-checker
-                          enable the naked pointers checker
   --disable-cfi           disable the CFI directives in assembly files
   --enable-imprecise-c99-float-ops
                           enables potentially imprecise replacement
@@ -1595,6 +1590,8 @@ Optional Features:
   --enable-flambda        enable flambda optimizations
   --enable-flambda-invariants
                           enable invariants checks in flambda
+  --force-instrumented-runtime
+                          force the usage of the instrumented runtime
   --enable-cmm-invariants enable invariants checks in Cmm
   --enable-reserved-header-bits=BITS
                           reserve BITS (between 0 and 31) bits in block
@@ -2810,7 +2807,8 @@ toolchain="cc"
 profinfo=false
 profinfo_width=0
 extralibs=
-instrumented_runtime=false
+instrumented_runtime=true
+force_instrumented_runtime=false
 instrumented_runtime_libs=""
 bootstrapping_flexdll=false
 
@@ -3247,13 +3245,10 @@ fi
 
 # Check whether --enable-naked-pointers was given.
 if test "${enable_naked_pointers+set}" = set; then :
-  enableval=$enable_naked_pointers;
-fi
+  enableval=$enable_naked_pointers; as_fn_error $? "Naked pointers are not allowed in OCaml Multicore." "$LINENO" 5
+else
+  $as_echo "#define NO_NAKED_POINTERS 1" >>confdefs.h
 
-
-# Check whether --enable-naked-pointers-checker was given.
-if test "${enable_naked_pointers_checker+set}" = set; then :
-  enableval=$enable_naked_pointers_checker;
 fi
 
 
@@ -3301,6 +3296,12 @@ fi
 # Check whether --enable-flambda-invariants was given.
 if test "${enable_flambda_invariants+set}" = set; then :
   enableval=$enable_flambda_invariants;
+fi
+
+
+# Check whether --enable-force-instrumented-runtime was given.
+if test "${enable_force_instrumented_runtime+set}" = set; then :
+  enableval=$enable_force_instrumented_runtime;
 fi
 
 
@@ -12652,7 +12653,8 @@ case $ocaml_cv_cc_vendor in #(
   msvc-*) :
     CPP="$CC -nologo -EP" ;; #(
   *) :
-     ;;
+    #  TODO: why can we not use $CPP in multicore, fix this?
+  CPP="$CC -E -P" ;;
 esac
 
 # Libraries to build depending on the host
@@ -13495,6 +13497,22 @@ ac_fn_c_check_header_compile "$LINENO" "sys/select.h" "ac_cv_header_sys_select_h
 "
 if test "x$ac_cv_header_sys_select_h" = xyes; then :
   $as_echo "#define HAS_SYS_SELECT_H 1" >>confdefs.h
+
+fi
+
+
+
+ac_fn_c_check_header_mongrel "$LINENO" "stdatomic.h" "ac_cv_header_stdatomic_h" "$ac_includes_default"
+if test "x$ac_cv_header_stdatomic_h" = xyes; then :
+  $as_echo "#define HAS_STDATOMIC_H 1" >>confdefs.h
+
+fi
+
+
+
+ac_fn_c_check_header_mongrel "$LINENO" "sys/mman.h" "ac_cv_header_sys_mman_h" "$ac_includes_default"
+if test "x$ac_cv_header_sys_mman_h" = xyes; then :
+  $as_echo "#define HAS_SYS_MMAN_H 1" >>confdefs.h
 
 fi
 
@@ -15024,6 +15042,11 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
  ;;
 esac
+
+if test "x$enable_force_instrumented_runtime" = "xyes"; then :
+  force_instrumented_runtime=true
+
+fi
 
 # The instrumented runtime is built by default
 # if the proper clock source is found.
@@ -16673,6 +16696,7 @@ $as_echo "$as_me: the Win32/POSIX threads library is disabled" >&6;} ;; #(
   *-*-mingw32|*-pc-windows) :
     systhread_support=true
       otherlibraries="$otherlibraries systhreads"
+      PTHREAD_LIBS="-lpthread"
       { $as_echo "$as_me:${as_lineno-$LINENO}: the Win32 threads library is supported" >&5
 $as_echo "$as_me: the Win32 threads library is supported" >&6;} ;; #(
   *) :
@@ -17610,38 +17634,6 @@ $as_echo "$as_me: not using frame pointers" >&6;}
   frame_pointers=false
 fi
 
-## No naked pointers
-
-if test x"$enable_naked_pointers" = "xno" ; then :
-  naked_pointers=false
-   $as_echo "#define NO_NAKED_POINTERS 1" >>confdefs.h
-
-else
-  naked_pointers=true
-fi
-
-if test x"$enable_naked_pointers_checker" = "xyes" ; then :
-  if test x"$enable_naked_pointers" = "xno" ; then :
-  as_fn_error $? "--enable-naked-pointers-checker and --disable-naked-pointers are incompatible" "$LINENO" 5
-fi
-   case "$arch","$system" in #(
-  amd64,linux|amd64,macosx \
-    |amd64,openbsd|amd64,win64 \
-    |amd64,freebsd|amd64,solaris \
-    |arm64,linux|arm64,macosx) :
-    naked_pointers_checker=true
-      $as_echo "#define NAKED_POINTERS_CHECKER 1" >>confdefs.h
- ;; #(
-  *) :
-    as_fn_error $? "naked pointers checker not supported on this platform" "$LINENO" 5
-   ;; #(
-  *) :
-     ;;
-esac
-else
-  naked_pointers_checker=false
-fi
-
 ## Check for mmap support for huge pages and contiguous heap
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether mmap supports huge pages" >&5
@@ -17875,16 +17867,57 @@ ocamlc_cflags="$common_cflags $sharedlib_cflags \$(CFLAGS)"
 ocamlc_cppflags="$common_cppflags \$(CPPFLAGS)"
 cclibs="$cclibs $mathlib"
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for backtrace in -lexecinfo" >&5
+$as_echo_n "checking for backtrace in -lexecinfo... " >&6; }
+if ${ac_cv_lib_execinfo_backtrace+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lexecinfo  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char backtrace ();
+int
+main ()
+{
+return backtrace ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_execinfo_backtrace=yes
+else
+  ac_cv_lib_execinfo_backtrace=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_execinfo_backtrace" >&5
+$as_echo "$ac_cv_lib_execinfo_backtrace" >&6; }
+if test "x$ac_cv_lib_execinfo_backtrace" = xyes; then :
+  cclibs="$cclibs -lexecinfo"
+fi
+
+
 case $host in #(
   *-*-mingw32) :
-    bytecclibs="-lws2_32 -lversion"
-    nativecclibs="-lws2_32 -lversion" ;; #(
+    bytecclibs="-lws2_32 -lversion -lpthread -lgcc_eh -lDbgHelp"
+    nativecclibs="-lws2_32 -lversion -lpthread -lgcc_eh -lDbgHelp" ;; #(
   *-pc-windows) :
     bytecclibs="advapi32.lib ws2_32.lib version.lib"
     nativecclibs="advapi32.lib ws2_32.lib version.lib" ;; #(
   *) :
     bytecclibs="$cclibs $DLLIBS $PTHREAD_LIBS"
-  nativecclibs="$cclibs $DLLIBS" ;;
+  nativecclibs="$cclibs $DLLIBS $PTHREAD_LIBS" ;;
 esac
 
 if test x"$libdir" = x'${exec_prefix}/lib'; then :

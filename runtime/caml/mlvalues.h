@@ -22,6 +22,14 @@
 #include "config.h"
 #include "misc.h"
 
+/* Needed here for domain_state */
+typedef intnat value;
+typedef atomic_intnat atomic_value;
+typedef int32_t opcode_t;
+typedef opcode_t * code_t;
+
+#include "domain_state.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -57,7 +65,6 @@ extern "C" {
          This is for use only by the GC.
 */
 
-typedef intnat value;
 typedef uintnat header_t;
 typedef uintnat mlsize_t;
 typedef unsigned int tag_t;             /* Actually, an unsigned char */
@@ -135,9 +142,8 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 #define Profinfo_hd(hd) NO_PROFINFO
 #endif /* WITH_PROFINFO */
 
-#define Hd_val(val) (((header_t *) (val)) [-1])        /* Also an l-value. */
-#define Hd_op(op) (Hd_val (op))                        /* Also an l-value. */
-#define Hd_bp(bp) (Hd_val (bp))                        /* Also an l-value. */
+#define Hd_val(val) (((header_t *) (val)) [-1] + 0)
+#define Hp_atomic_val(val) ((atomic_uintnat *)(val) - 1)
 #define Hd_hp(hp) (* ((header_t *) (hp)))              /* Also an l-value. */
 #define Hp_val(val) (((header_t *) (val)) - 1)
 #define Hp_op(op) (Hp_val (op))
@@ -202,11 +208,18 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 
 /* Pointer to the first field. */
 #define Op_val(x) ((value *) (x))
+#define Op_atomic_val(x) ((atomic_value *) (x))
 /* Fields are numbered from 0. */
 #define Field(x, i) (((value *)(x)) [i])           /* Also an l-value. */
 
-typedef int32_t opcode_t;
-typedef opcode_t * code_t;
+/* Is_young(val) is true iff val is in the reserved area for minor heaps */
+
+#define Is_young(val) \
+  (CAMLassert (Is_block (val)), \
+   (char *)(val) < (char *)caml_minor_heaps_end && \
+   (char *)(val) > (char *)caml_minor_heaps_base)
+
+#define Is_block_and_young(val) (Is_block(val) && Is_young(val))
 
 /* NOTE: [Forward_tag] and [Infix_tag] must be just under
    [No_scan_tag], with [Infix_tag] the lower one.
@@ -219,6 +232,7 @@ typedef opcode_t * code_t;
    See stdlib/lazy.ml. */
 #define Forward_tag 250
 #define Forward_val(v) Field(v, 0)
+/* FIXME: not immutable once shortcutting is implemented */
 
 /* If tag == Infix_tag : an infix header inside a closure */
 /* Infix_tag must be odd so that the infix header is scanned as an integer */
@@ -239,6 +253,17 @@ CAMLextern value caml_get_public_method (value obj, value tag);
 /* caml_get_public_method returns 0 if tag not in the table.
    Note however that tags being hashed, same tag does not necessarily mean
    same method name. */
+
+Caml_inline value Val_ptr(void* p)
+{
+  CAMLassert(((value)p & 1) == 0);
+  return (value)p + 1;
+}
+Caml_inline void* Ptr_val(value val)
+{
+  CAMLassert(val & 1);
+  return (void*)(val - 1);
+}
 
 /* Special case of tuples of fields: closures */
 #define Closure_tag 247
@@ -261,9 +286,16 @@ CAMLextern value caml_get_public_method (value obj, value tag);
   (((uintnat)(arity) << 24) + ((uintnat)(delta) << 1) + 1)
 #endif
 
-/* This tag is used (with Forward_tag) to implement lazy values.
+/* This tag is used (with Forcing_tag & Forward_tag) to implement lazy values.
    See major_gc.c and stdlib/lazy.ml. */
 #define Lazy_tag 246
+
+/* Tag used for continuations (see fiber.c) */
+#define Cont_tag 245
+
+/* This tag is used (with Lazy_tag & Forward_tag) to implement lazy values.
+ * See major_gc.c and stdlib/lazy.ml. */
+#define Forcing_tag 244
 
 /* Another special case: variants */
 CAMLextern value caml_hash_variant(char const * tag);
@@ -363,7 +395,7 @@ CAMLextern int caml_is_double_array (value);   /* 0 is false, 1 is true */
    the GC; therefore, they must not contain any [value].
    See [custom.h] for operations on method suites. */
 #define Custom_tag 255
-#define Data_custom_val(v) ((void *) &Field((v), 1))
+#define Data_custom_val(v) ((void *) (Op_val(v) + 1))
 struct custom_operations;       /* defined in [custom.h] */
 
 /* Int32.t, Int64.t and Nativeint.t are represented as custom blocks. */
@@ -379,8 +411,8 @@ CAMLextern int64_t caml_Int64_val(value v);
 
 /* 3- Atoms are 0-tuples.  They are statically allocated once and for all. */
 
-CAMLextern header_t *caml_atom_table;
-#define Atom(tag) (Val_hp (&(caml_atom_table [(tag)])))
+CAMLextern value caml_atom(tag_t);
+#define Atom(tag) caml_atom(tag)
 
 /* Booleans are integers 0 or 1 */
 
@@ -406,10 +438,6 @@ CAMLextern header_t *caml_atom_table;
 #define Is_none(v) ((v) == Val_none)
 #define Is_some(v) Is_block(v)
 
-/* The table of global identifiers */
-
-extern value caml_global_data;
-
 CAMLextern value caml_set_oo_id(value obj);
 
 /* Header for out-of-heap blocks. */
@@ -417,8 +445,8 @@ CAMLextern value caml_set_oo_id(value obj);
 #define Caml_out_of_heap_header(wosize, tag)                                  \
       (/*CAMLassert ((wosize) <= Max_wosize),*/                               \
        ((header_t) (((header_t) (wosize) << 10)                               \
-                    + (3 << 8) /* matches [Caml_black]. See [gc.h] */         \
-                    + (tag_t) (tag)))                                         \
+           + (3 << 8) /* matches [NOT_MARKABLE]. See [shared_heap.h]. */      \
+           + (tag_t) (tag)))                                                  \
       )
 
 #ifdef __cplusplus

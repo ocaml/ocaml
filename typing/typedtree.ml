@@ -161,7 +161,7 @@ and 'k case =
     }
 
 and record_label_definition =
-  | Kept of Types.type_expr
+  | Kept of Types.type_expr * mutable_flag
   | Overridden of Longident.t loc * expression
 
 and binding_op =

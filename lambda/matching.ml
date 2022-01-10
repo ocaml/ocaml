@@ -1766,7 +1766,8 @@ let get_expr_args_constr ~scopes head (arg, _mut) rem =
       if pos > last_pos then
         argl
       else
-        (Lprim (Pfield pos, [ arg ], loc), binding_kind) :: make_args (pos + 1)
+        (Lprim (Pfield (pos, Pointer, Immutable), [ arg ], loc),
+               binding_kind) :: make_args (pos + 1)
     in
     make_args first_pos
   in
@@ -1794,7 +1795,7 @@ let get_expr_args_variant_constant = drop_expr_arg
 
 let get_expr_args_variant_nonconst ~scopes head (arg, _mut) rem =
   let loc = head_loc ~scopes head in
-  (Lprim (Pfield 1, [ arg ], loc), Alias) :: rem
+  (Lprim (Pfield (1, Pointer, Immutable), [ arg ], loc), Alias) :: rem
 
 let divide_variant ~scopes row ctx { cases = cl; args; default = def } =
   let rec divide = function
@@ -1876,12 +1877,12 @@ let get_mod_field modname field =
 
 let code_force_lazy_block = get_mod_field "CamlinternalLazy" "force_lazy_block"
 
-let code_force_lazy = get_mod_field "CamlinternalLazy" "force"
+let code_force_lazy = get_mod_field "CamlinternalLazy" "force_gen"
 
 (* inline_lazy_force inlines the beginning of the code of Lazy.force. When
    the value argument is tagged as:
    - forward, take field 0
-   - lazy, call the primitive that forces (without testing again the tag)
+   - lazy || forcing, call the primitive that forces
    - anything else, return it
 
    Using Lswitch below relies on the fact that the GC does not shortcut
@@ -1892,8 +1893,11 @@ let inline_lazy_force_cond arg loc =
   let idarg = Ident.create_local "lzarg" in
   let varg = Lvar idarg in
   let tag = Ident.create_local "tag" in
-  let tag_var = Lvar tag in
   let force_fun = Lazy.force code_force_lazy_block in
+  let test_tag t =
+    Lprim(Pintcomp Ceq, [Lvar tag; Lconst(Const_base(Const_int t))], loc)
+  in
+
   Llet
     ( Strict,
       Pgenval,
@@ -1905,18 +1909,16 @@ let inline_lazy_force_cond arg loc =
           tag,
           Lprim (Pccall prim_obj_tag, [ varg ], loc),
           Lifthenelse
-            (* if (tag == Obj.forward_tag) then varg.(0) else ... *)
-            ( Lprim
-                ( Pintcomp Ceq,
-                  [ tag_var; Lconst (Const_base (Const_int Obj.forward_tag)) ],
-                  loc ),
-              Lprim (Pfield 0, [ varg ], loc),
+            ( (* if (tag == Obj.forward_tag) then varg.(0) else ... *)
+              test_tag Obj.forward_tag,
+              Lprim (Pfield (0, Pointer, Mutable), [ varg ], loc),
               Lifthenelse
-                (* if (tag == Obj.lazy_tag) then Lazy.force varg else ... *)
-                ( Lprim
-                    ( Pintcomp Ceq,
-                      [ tag_var; Lconst (Const_base (Const_int Obj.lazy_tag)) ],
-                      loc ),
+                (
+                  (* ... if tag == Obj.lazy_tag || tag == Obj.forcing_tag then
+                         Lazy.force varg
+                       else ... *)
+                  Lprim (Psequor,
+                       [test_tag Obj.lazy_tag; test_tag Obj.forcing_tag], loc),
                   Lapply
                     { ap_tailcall = Default_tailcall;
                       ap_loc = loc;
@@ -1941,14 +1943,26 @@ let inline_lazy_force_switch arg loc =
         ( Lprim (Pisint, [ varg ], loc),
           varg,
           Lswitch
-            ( varg,
-              { sw_numconsts = 0;
-                sw_consts = [];
-                sw_numblocks = 256;
+            ( Lprim (Pccall prim_obj_tag, [ varg ], loc),
+              { sw_numblocks = 0;
+                sw_blocks = [];
+                sw_numconsts = 256;
                 (* PR#6033 - tag ranges from 0 to 255 *)
-                sw_blocks =
-                  [ (Obj.forward_tag, Lprim (Pfield 0, [ varg ], loc));
-                    ( Obj.lazy_tag,
+                sw_consts =
+                  [ (Obj.forward_tag, Lprim (Pfield(0, Pointer, Mutable),
+                                             [ varg ], loc));
+
+                    (Obj.lazy_tag,
+                      Lapply
+                        { ap_tailcall = Default_tailcall;
+                          ap_loc = loc;
+                          ap_func = force_fun;
+                          ap_args = [varg];
+                          ap_inlined = Default_inline;
+                          ap_specialised = Default_specialise
+                        } );
+
+                    (Obj.forcing_tag,
                       Lapply
                         { ap_tailcall = Default_tailcall;
                           ap_loc = loc;
@@ -1972,7 +1986,7 @@ let inline_lazy_force arg loc =
       { ap_tailcall = Default_tailcall;
         ap_loc = loc;
         ap_func = Lazy.force code_force_lazy;
-        ap_args = [ arg ];
+        ap_args = [ Lconst (Const_base (Const_int 0)); arg ];
         ap_inlined = Default_inline;
         ap_specialised = Default_specialise
       }
@@ -2009,7 +2023,8 @@ let get_expr_args_tuple ~scopes head (arg, _mut) rem =
     if pos >= arity then
       rem
     else
-      (Lprim (Pfield pos, [ arg ], loc), Alias) :: make_args (pos + 1)
+      (Lprim (Pfield (pos, Pointer, Immutable), [ arg ], loc),
+             Alias) :: make_args (pos + 1)
   in
   make_args 0
 
@@ -2049,14 +2064,16 @@ let get_expr_args_record ~scopes head (arg, _mut) rem =
       rem
     else
       let lbl = all_labels.(pos) in
+      let ptr = Typeopt.maybe_pointer_type head.pat_env lbl.lbl_arg in
       let access =
         match lbl.lbl_repres with
         | Record_regular
         | Record_inlined _ ->
-            Lprim (Pfield lbl.lbl_pos, [ arg ], loc)
+            Lprim (Pfield (lbl.lbl_pos, ptr, lbl.lbl_mut), [ arg ], loc)
         | Record_unboxed _ -> arg
         | Record_float -> Lprim (Pfloatfield lbl.lbl_pos, [ arg ], loc)
-        | Record_extension _ -> Lprim (Pfield (lbl.lbl_pos + 1), [ arg ], loc)
+        | Record_extension _ ->
+            Lprim (Pfield (lbl.lbl_pos + 1, ptr, lbl.lbl_mut), [ arg ], loc)
       in
       let str =
         match lbl.lbl_mut with
@@ -2802,7 +2819,8 @@ let combine_constructor loc arg pat_env cstr partial ctx def
                       (Lprim (Pintcomp Ceq, [ Lvar tag; ext ], loc), act, rem))
                   nonconsts default
               in
-              Llet (Alias, Pgenval, tag, Lprim (Pfield 0, [ arg ], loc), tests)
+              Llet (Alias, Pgenval, tag,
+                    Lprim (Pfield (0, Pointer, Immutable), [ arg ], loc), tests)
         in
         List.fold_right
           (fun (path, act) rem ->
@@ -2897,7 +2915,7 @@ let call_switcher_variant_constr loc fail arg int_lambda_list =
     ( Alias,
       Pgenval,
       v,
-      Lprim (Pfield 0, [ arg ], loc),
+      Lprim (Pfield (0, Pointer, Immutable), [ arg ], loc),
       call_switcher loc fail (Lvar v) min_int max_int int_lambda_list )
 
 let combine_variant loc row arg partial ctx def (tag_lambda_list, total1, _pats)

@@ -103,6 +103,14 @@ be called from C \\
 "Printexc" & p.~\stdpageref{Printexc} & a catch-all exception handler \\
 "Sys" & p.~\stdpageref{Sys} & system interface \\
 \end{tabular}
+\subsubsection*{sss:stdlib-multicore}{Multicore interface:}
+\begin{tabular}{lll}
+"Domain" & p.~\stdpageref{Domain} & domain spawn and join \\
+"Mutex" & p.~\stdpageref{Mutex} & mutual exclusion locks \\
+"Condition" & p.~\stdpageref{Condition} & condition variables \\
+"Semaphore" & p.~\stdpageref{Semaphore} & semaphores \\
+"EffectHandlers" & p.~\stdpageref{EffectHandlers} & deep and shallow effect handlers \\
+\end{tabular}
 \subsubsection*{sss:stdlib-misc}{Misc:}
 \begin{tabular}{lll}
 "Fun" & p.~\stdpageref{Fun} & function values \\
@@ -122,7 +130,10 @@ be called from C \\
 \stddocitem{Callback}{registering OCaml values with the C runtime}
 \stddocitem{Char}{character operations}
 \stddocitem{Complex}{complex numbers}
+\stddocitem{Condition}{condition variables to synchronize between threads}
+\stddocitem{Domain}{Domain spawn/join and domain local variables}
 \stddocitem{Digest}{MD5 message digest}
+\stddocitem{EffectHandlers}{deep and shallow effect handlers}
 \stddocitem{Either}{either values}
 \stddocitem{Ephemeron}{Ephemerons and weak hash table}
 \stddocitem{Filename}{operations on file names}
@@ -143,6 +154,7 @@ be called from C \\
 \stddocitem{Map}{association tables over ordered types}
 \stddocitem{Marshal}{marshaling of data structures}
 \stddocitem{MoreLabels}{include modules \texttt{Hashtbl}, \texttt{Map} and \texttt{Set} with labels}
+\stddocitem{Mutex}{locks for mutual exclusion}
 \stddocitem{Nativeint}{processor-native integers}
 \stddocitem{Oo}{object-oriented extension}
 \stddocitem{Option}{option values}
@@ -156,6 +168,7 @@ be called from C \\
 \stddocitem{Scanf}{formatted input functions}
 \stddocitem{Seq}{functional iterators}
 \stddocitem{Set}{sets over ordered types}
+\stddocitem{Semaphore}{semaphores, another thread synchronization mechanism}
 \stddocitem{Stack}{last-in first-out stacks}
 \stddocitem{StdLabels}{include modules \texttt{Array}, \texttt{List} and \texttt{String} with labels}
 \stddocitem{Stream}{streams and parsers}

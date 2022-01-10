@@ -63,10 +63,21 @@ let cfi_endproc () =
 let cfi_adjust_cfa_offset n =
   if Config.asm_cfi_supported then D.cfi_adjust_cfa_offset n
 
+let cfi_remember_state () =
+  if Config.asm_cfi_supported then D.cfi_remember_state ()
+
+let cfi_restore_state () =
+  if Config.asm_cfi_supported then D.cfi_restore_state ()
+
+let cfi_def_cfa_register reg =
+  if Config.asm_cfi_supported then D.cfi_def_cfa_register reg
+
 let emit_debug_info dbg =
   emit_debug_info_gen dbg D.file D.loc
 
 let fp = Config.with_frame_pointers
+
+let stack_threshold_size = Config.stack_threshold * 8 (* bytes *)
 
 let frame_size env =                     (* includes return address *)
   if env.f.fun_frame_required then begin
@@ -525,26 +536,35 @@ let emit_instr env fallthrough i =
           end
         end
       end
-  | Lop(Iextcall { func; alloc; }) ->
+  | Lop(Iextcall { func; alloc; stack_ofs }) ->
       add_used_symbol func;
-      if alloc then begin
+      let base_stack_size =
+        if Arch.win64 then
+          32 (* Windows x64 rcx+rdx+r8+r9 shadow stack *)
+        else
+          0 in
+      if stack_ofs > base_stack_size then begin
+        I.lea (mem64 QWORD base_stack_size RSP) r13;
+        I.lea (mem64 QWORD stack_ofs RSP) r12;
+        load_symbol_addr func rax;
+        emit_call "caml_c_call_stack_args";
+        record_frame env i.live (Dbg_other i.dbg);
+      end else if alloc then begin
         load_symbol_addr func rax;
         emit_call "caml_c_call";
         record_frame env i.live (Dbg_other i.dbg);
-        if system <> S_win64 then begin
-
-          (* In amd64.S, "caml_c_call" tail-calls the C function (in order to
-             produce nicer backtraces), so we need to restore r15 manually after
-             it returns (note that this increases code size).
-
-             In amd64nt.asm (used for Win64), "caml_c_call" invokes the C
-             function via a regular call, and restores r15 itself, thus avoiding
-             the code size increase. *)
-
-          I.mov (domain_field Domainstate.Domain_young_ptr) r15
-        end
       end else begin
-        emit_call func
+        I.mov rsp rbp;
+        cfi_remember_state ();
+        cfi_def_cfa_register "rbp";
+        (* NB: gdb has asserts on contiguous stacks that mean it
+           will not unwind through this unless we were to tag this
+           calling frame with cfi_signal_frame in it's definition. *)
+        I.mov (domain_field Domainstate.Domain_c_stack) rsp;
+
+        emit_call func;
+        I.mov rbp rsp;
+        cfi_restore_state ();
       end
   | Lop(Istackoffset n) ->
       if n < 0
@@ -720,6 +740,8 @@ let emit_instr env fallthrough i =
       I.movsxd (arg32 i 0) (res i 0)
   | Lop(Ispecific(Izextend32)) ->
       I.mov (arg32 i 0) (res32 i 0)
+  | Lop (Idls_get) ->
+      I.mov (domain_field Domainstate.Domain_dls_root) (res i 0)
   | Lreloadretaddr ->
       ()
   | Lreturn ->
@@ -820,12 +842,12 @@ let emit_instr env fallthrough i =
       load_label_addr lbl_handler r11;
       I.push r11;
       cfi_adjust_cfa_offset 8;
-      I.push (domain_field Domainstate.Domain_exception_pointer);
+      I.push (domain_field Domainstate.Domain_exn_handler);
       cfi_adjust_cfa_offset 8;
-      I.mov rsp (domain_field Domainstate.Domain_exception_pointer);
+      I.mov rsp (domain_field Domainstate.Domain_exn_handler);
       env.stack_offset <- env.stack_offset + 16;
   | Lpoptrap ->
-      I.pop (domain_field Domainstate.Domain_exception_pointer);
+      I.pop (domain_field Domainstate.Domain_exn_handler);
       cfi_adjust_cfa_offset (-8);
       I.add (int 8) rsp;
       cfi_adjust_cfa_offset (-8);
@@ -833,15 +855,14 @@ let emit_instr env fallthrough i =
   | Lraise k ->
       begin match k with
       | Lambda.Raise_regular ->
-          I.mov (int 0) (domain_field Domainstate.Domain_backtrace_pos);
           emit_call "caml_raise_exn";
           record_frame env Reg.Set.empty (Dbg_raise i.dbg)
       | Lambda.Raise_reraise ->
-          emit_call "caml_raise_exn";
+          emit_call "caml_reraise_exn";
           record_frame env Reg.Set.empty (Dbg_raise i.dbg)
       | Lambda.Raise_notrace ->
-          I.mov (domain_field Domainstate.Domain_exception_pointer) rsp;
-          I.pop (domain_field Domainstate.Domain_exception_pointer);
+          I.mov (domain_field Domainstate.Domain_exn_handler) rsp;
+          I.pop (domain_field Domainstate.Domain_exn_handler);
           I.pop r11;
           I.jmp r11
       end
@@ -854,6 +875,30 @@ let rec emit_all env fallthrough i =
       emit_all env (Linear.has_fallthrough i.desc) i.next
 
 let all_functions = ref []
+
+type preproc_fun_result =
+  { max_stack_size : int;
+    contains_nontail_calls : bool }
+
+let preproc_fun env fun_body _fun_name =
+  let rec proc_instr r s i =
+    if i.desc = Lend then r else
+        let upd_size r delta =
+          {r with max_stack_size = max r.max_stack_size (s+delta)}
+        in
+        let (r',s') = match i.desc with
+          | Lop (Istackoffset n) -> (upd_size r n, s+n)
+          | Lpushtrap _ -> (upd_size r 16, s+16)
+          | Lpoptrap -> (r, s-16)
+          | Lop (Icall_ind | Icall_imm _ ) ->
+              ({r with contains_nontail_calls = true}, s)
+          | _ -> (r, s)
+        in
+        proc_instr r' s' i.next
+  in
+  let fs = frame_size env in
+  let r = {max_stack_size = fs; contains_nontail_calls = false} in
+  proc_instr r fs fun_body
 
 (* Emission of a function declaration *)
 
@@ -873,9 +918,38 @@ let fundecl fundecl =
   D.label (emit_symbol fundecl.fun_name);
   emit_debug_info fundecl.fun_dbg;
   cfi_startproc ();
+  if !Clflags.runtime_variant = "d" then
+    emit_call "caml_assert_stack_invariants";
+  let { max_stack_size; contains_nontail_calls} =
+    preproc_fun env fundecl.fun_body fundecl.fun_name
+  in
+  let handle_overflow = ref None in
+  if contains_nontail_calls || max_stack_size >= stack_threshold_size then begin
+    let overflow = new_label () and ret = new_label () in
+    let threshold_offset = Domainstate.stack_ctx_words * 8 + stack_threshold_size in
+    I.lea (mem64 NONE (-(max_stack_size + threshold_offset)) RSP) r10;
+    I.cmp (domain_field Domainstate.Domain_current_stack) r10;
+    I.jb (label overflow);
+    def_label ret;
+    handle_overflow := Some (overflow, ret)
+  end;
   emit_all env true fundecl.fun_body;
   List.iter emit_call_gc env.call_gc_sites;
   emit_call_bound_errors env;
+  begin match !handle_overflow with
+  | None -> ()
+  | Some (overflow,ret) -> begin
+      def_label overflow;
+      (* Pass the desired stack size on the stack, since all of the
+        argument-passing registers may be in use.
+        Also serves to align the stack properly before the call *)
+      I.push (int (Config.stack_threshold + max_stack_size / 8));
+        (* measured in words *)
+      emit_call "caml_call_realloc_stack";
+      I.pop r10; (* ignored *)
+      I.jmp (label ret)
+    end
+  end;
   if fundecl.fun_frame_required then begin
     let n = (frame_size env) - 8 - (if fp then 8 else 0) in
     if n <> 0

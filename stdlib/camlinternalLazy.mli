@@ -17,13 +17,10 @@
     All functions in this module are for system use only, not for the
     casual user. *)
 
-exception Undefined
-
 type 'a t = 'a lazy_t
+
+exception Undefined
 
 val force_lazy_block : 'a lazy_t -> 'a
 
-val force_val_lazy_block : 'a lazy_t -> 'a
-
-val force : 'a lazy_t -> 'a
-val force_val : 'a lazy_t -> 'a
+val force_gen : only_val:bool -> 'a lazy_t -> 'a

@@ -23,6 +23,7 @@
 #include <pthread.h>
 #include <signal.h>
 #include <time.h>
+#include <caml/sync.h>
 #include <sys/time.h>
 #ifdef __linux__
 #include <unistd.h>
@@ -30,19 +31,22 @@
 
 typedef int st_retcode;
 
-#define SIGPREEMPTION SIGVTALRM
+/* Variables used to stop "tick" threads */
+static atomic_uintnat tick_thread_stop[Max_domains];
+#define Tick_thread_stop tick_thread_stop[Caml_state->id]
 
 /* OS-specific initialization */
 
 static int st_initialize(void)
 {
-  caml_sigmask_hook = pthread_sigmask;
+  atomic_store_rel(&Tick_thread_stop, 0);
   return 0;
 }
 
 /* Thread creation.  Created in detached mode if [res] is NULL. */
 
 typedef pthread_t st_thread_id;
+
 
 static int st_thread_create(st_thread_id * res,
                             void * (*fn)(void *), void * arg)
@@ -75,7 +79,11 @@ CAMLnoreturn_end;
 
 static void st_thread_exit(void)
 {
+#ifdef _WIN32
+  ExitThread(0);
+#else
   pthread_exit(NULL);
+#endif
 }
 
 static void st_thread_join(st_thread_id thr)
@@ -115,44 +123,76 @@ Caml_inline void st_thread_set_id(intnat id)
    threads. */
 
 typedef struct {
-  pthread_mutex_t lock;         /* to protect contents  */
-  int busy;                     /* 0 = free, 1 = taken */
-  volatile int waiters;         /* number of threads waiting on master lock */
-  pthread_cond_t is_free;       /* signaled when free */
+  pthread_mutex_t lock;           /* to protect contents */
+  uintnat busy;                   /* 0 = free, 1 = taken */
+  atomic_uintnat waiters;         /* number of threads waiting on master lock */
+  pthread_cond_t is_free;         /* signaled when free */
 } st_masterlock;
 
 static void st_masterlock_init(st_masterlock * m)
 {
+
   pthread_mutex_init(&m->lock, NULL);
   pthread_cond_init(&m->is_free, NULL);
   m->busy = 1;
-  m->waiters = 0;
+  atomic_store_rel(&m->waiters, 0);
+
+  return;
+};
+
+static void st_bt_lock_acquire(st_masterlock *m) {
+
+  /* We do not want to signal the backup thread is it is not "working"
+     as it may very well not be, because we could have just resumed
+     execution from another thread right away. */
+  if (caml_bt_is_in_blocking_section()) {
+    caml_bt_enter_ocaml();
+  }
+
+  caml_acquire_domain_lock();
+
+  return;
 }
 
-static void st_masterlock_acquire(st_masterlock * m)
+static void st_bt_lock_release(st_masterlock *m) {
+
+  /* Here we do want to signal the backup thread iff there's
+     no thread waiting to be scheduled, and the backup thread is currently
+     idle. */
+  if (atomic_load_acq(&m->waiters) == 0 &&
+      caml_bt_is_in_blocking_section() == 0) {
+    caml_bt_exit_ocaml();
+  }
+
+  caml_release_domain_lock();
+
+  return;
+}
+
+static void st_masterlock_acquire(st_masterlock *m)
 {
   pthread_mutex_lock(&m->lock);
   while (m->busy) {
-    m->waiters ++;
+    atomic_fetch_add(&m->waiters, +1);
     pthread_cond_wait(&m->is_free, &m->lock);
-    m->waiters --;
+    atomic_fetch_add(&m->waiters, -1);
   }
   m->busy = 1;
+  st_bt_lock_acquire(m);
   pthread_mutex_unlock(&m->lock);
+
+  return;
 }
 
 static void st_masterlock_release(st_masterlock * m)
 {
   pthread_mutex_lock(&m->lock);
   m->busy = 0;
-  pthread_mutex_unlock(&m->lock);
+  st_bt_lock_release(m);
   pthread_cond_signal(&m->is_free);
-}
+  pthread_mutex_unlock(&m->lock);
 
-CAMLno_tsan  /* This can be called for reading [waiters] without locking. */
-Caml_inline int st_masterlock_waiters(st_masterlock * m)
-{
-  return m->waiters;
+  return;
 }
 
 /* Scheduling hints */
@@ -166,21 +206,30 @@ Caml_inline int st_masterlock_waiters(st_masterlock * m)
 */
 Caml_inline void st_thread_yield(st_masterlock * m)
 {
+  uintnat waiters;
+
   pthread_mutex_lock(&m->lock);
   /* We must hold the lock to call this. */
-  assert(m->busy);
 
   /* We already checked this without the lock, but we might have raced--if
      there's no waiter, there's nothing to do and no one to wake us if we did
      wait, so just keep going. */
-  if (m->waiters == 0) {
+  waiters = atomic_load_acq(&m->waiters);
+
+  if (waiters == 0) {
     pthread_mutex_unlock(&m->lock);
     return;
   }
 
   m->busy = 0;
+  atomic_fetch_add(&m->waiters, +1);
   pthread_cond_signal(&m->is_free);
-  m->waiters++;
+  /* releasing the domain lock but not triggering bt messaging
+     messaging the bt should not be required because yield assumes
+     that a thread will resume execution (be it the yielding thread
+     or a waiting thread */
+  caml_release_domain_lock();
+
   do {
     /* Note: the POSIX spec prevents the above signal from pairing with this
        wait, which is good: we'll reliably continue waiting until the next
@@ -188,106 +237,15 @@ Caml_inline void st_thread_yield(st_masterlock * m)
        wakeup, which are rare at best.) */
        pthread_cond_wait(&m->is_free, &m->lock);
   } while (m->busy);
+
   m->busy = 1;
-  m->waiters--;
+  atomic_fetch_add(&m->waiters, -1);
+
+  caml_acquire_domain_lock();
+
   pthread_mutex_unlock(&m->lock);
-}
 
-/* Mutexes */
-
-typedef pthread_mutex_t * st_mutex;
-
-static int st_mutex_create(st_mutex * res)
-{
-  int rc;
-  pthread_mutexattr_t attr;
-  st_mutex m;
-
-  rc = pthread_mutexattr_init(&attr);
-  if (rc != 0) goto error1;
-  rc = pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
-  if (rc != 0) goto error2;
-  m = caml_stat_alloc_noexc(sizeof(pthread_mutex_t));
-  if (m == NULL) { rc = ENOMEM; goto error2; }
-  rc = pthread_mutex_init(m, &attr);
-  if (rc != 0) goto error3;
-  pthread_mutexattr_destroy(&attr);
-  *res = m;
-  return 0;
-error3:
-  caml_stat_free(m);
-error2:
-  pthread_mutexattr_destroy(&attr);
-error1:
-  return rc;
-}
-
-static int st_mutex_destroy(st_mutex m)
-{
-  int rc;
-  rc = pthread_mutex_destroy(m);
-  caml_stat_free(m);
-  return rc;
-}
-
-#define MUTEX_DEADLOCK EDEADLK
-
-Caml_inline int st_mutex_lock(st_mutex m)
-{
-  return pthread_mutex_lock(m);
-}
-
-#define MUTEX_PREVIOUSLY_UNLOCKED 0
-#define MUTEX_ALREADY_LOCKED EBUSY
-
-Caml_inline int st_mutex_trylock(st_mutex m)
-{
-  return pthread_mutex_trylock(m);
-}
-
-#define MUTEX_NOT_OWNED EPERM
-
-Caml_inline int st_mutex_unlock(st_mutex m)
-{
-  return pthread_mutex_unlock(m);
-}
-
-/* Condition variables */
-
-typedef pthread_cond_t * st_condvar;
-
-static int st_condvar_create(st_condvar * res)
-{
-  int rc;
-  st_condvar c = caml_stat_alloc_noexc(sizeof(pthread_cond_t));
-  if (c == NULL) return ENOMEM;
-  rc = pthread_cond_init(c, NULL);
-  if (rc != 0) { caml_stat_free(c); return rc; }
-  *res = c;
-  return 0;
-}
-
-static int st_condvar_destroy(st_condvar c)
-{
-  int rc;
-  rc = pthread_cond_destroy(c);
-  caml_stat_free(c);
-  return rc;
-}
-
-Caml_inline int st_condvar_signal(st_condvar c)
-{
-  return pthread_cond_signal(c);
-}
-
-Caml_inline int st_condvar_broadcast(st_condvar c)
-{
-  return pthread_cond_broadcast(c);
-}
-
-Caml_inline int st_condvar_wait(st_condvar c, st_mutex m)
-{
-  return pthread_cond_wait(c, m);
+  return;
 }
 
 /* Triggered events */
@@ -297,6 +255,7 @@ typedef struct st_event_struct {
   int status;                   /* 0 = not triggered, 1 = triggered */
   pthread_cond_t triggered;     /* signaled when triggered */
 } * st_event;
+
 
 static int st_event_create(st_event * res)
 {
@@ -347,49 +306,27 @@ static int st_event_wait(st_event e)
   return rc;
 }
 
-/* Reporting errors */
-
-static void st_check_error(int retcode, char * msg)
-{
-  char * err;
-  int errlen, msglen;
-  value str;
-
-  if (retcode == 0) return;
-  if (retcode == ENOMEM) caml_raise_out_of_memory();
-  err = strerror(retcode);
-  msglen = strlen(msg);
-  errlen = strlen(err);
-  str = caml_alloc_string(msglen + 2 + errlen);
-  memmove (&Byte(str, 0), msg, msglen);
-  memmove (&Byte(str, msglen), ": ", 2);
-  memmove (&Byte(str, msglen + 2), err, errlen);
-  caml_raise_sys_error(str);
-}
-
-/* Variable used to stop the "tick" thread */
-static volatile int caml_tick_thread_stop = 0;
-
-/* The tick thread: posts a SIGPREEMPTION signal periodically */
+/* The tick thread: interrupt the domain periodically to force preemption  */
 
 static void * caml_thread_tick(void * arg)
 {
+  caml_domain_state *domain;
+  uintnat *domain_id = (uintnat *) arg;
   struct timeval timeout;
-  sigset_t mask;
 
-  /* Block all signals so that we don't try to execute an OCaml signal handler*/
-  sigfillset(&mask);
-  pthread_sigmask(SIG_BLOCK, &mask, NULL);
-  while(! caml_tick_thread_stop) {
+  caml_init_domain_self(*domain_id);
+  domain = Caml_state;
+
+  caml_domain_set_name("Tick");
+  while(! atomic_load_acq(&Tick_thread_stop)) {
     /* select() seems to be the most efficient way to suspend the
        thread for sub-second intervals */
     timeout.tv_sec = 0;
     timeout.tv_usec = Thread_timeout * 1000;
     select(0, NULL, NULL, NULL, &timeout);
-    /* The preemption signal should never cause a callback, so don't
-     go through caml_handle_signal(), just record signal delivery via
-     caml_record_signal(). */
-    caml_record_signal(SIGPREEMPTION);
+
+    atomic_store_rel((atomic_uintnat*)&domain->requested_external_interrupt, 1);
+    caml_interrupt_self();
   }
   return NULL;
 }
@@ -408,11 +345,13 @@ int pthread_atfork(void (*prepare)(void), void (*parent)(void),
 
 static int st_atfork(void (*fn)(void))
 {
-  return pthread_atfork(NULL, NULL, fn);
+  caml_atfork_hook = fn;
+  return 0;
 }
 
 /* Signal handling */
 
+#ifndef _WIN32
 static void st_decode_sigset(value vset, sigset_t * set)
 {
   sigemptyset(set);
@@ -445,9 +384,11 @@ static value st_encode_sigset(sigset_t * set)
 }
 
 static int sigmask_cmd[3] = { SIG_SETMASK, SIG_BLOCK, SIG_UNBLOCK };
+#endif
 
 value caml_thread_sigmask(value cmd, value sigs) /* ML */
 {
+#ifndef _WIN32
   int how;
   sigset_t set, oldset;
   int retcode;
@@ -457,10 +398,14 @@ value caml_thread_sigmask(value cmd, value sigs) /* ML */
   caml_enter_blocking_section();
   retcode = pthread_sigmask(how, &set, &oldset);
   caml_leave_blocking_section();
-  st_check_error(retcode, "Thread.sigmask");
+  sync_check_error(retcode, "Thread.sigmask");
   /* Run any handlers for just-unmasked pending signals */
-  caml_process_pending_actions();
+  caml_process_pending_signals();
   return st_encode_sigset(&oldset);
+#else
+  caml_invalid_argument("Thread.sigmask not implemented");
+  return Val_int(0);            /* not reached */
+#endif
 }
 
 value caml_wait_signal(value sigs) /* ML */
@@ -473,7 +418,7 @@ value caml_wait_signal(value sigs) /* ML */
   caml_enter_blocking_section();
   retcode = sigwait(&set, &signo);
   caml_leave_blocking_section();
-  st_check_error(retcode, "Thread.wait_signal");
+  sync_check_error(retcode, "Thread.wait_signal");
   return Val_int(caml_rev_convert_signal_number(signo));
 #else
   caml_invalid_argument("Thread.wait_signal not implemented");

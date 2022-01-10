@@ -153,6 +153,8 @@ typedef uint64_t uintnat;
 #error "No integer type available to represent pointers"
 #endif
 
+#define UINTNAT_MAX ((uintnat)-1)
+
 #endif /* CAML_CONFIG_H_NO_TYPEDEFS */
 
 /* Endianness of floats */
@@ -190,10 +192,19 @@ typedef uint64_t uintnat;
 #define Page_size (1 << Page_log)
 
 /* Initial size of stack (bytes). */
+#ifdef DEBUG
+#define Stack_size (32 * sizeof(value))
+#else
 #define Stack_size (4096 * sizeof(value))
+#endif
 
 /* Minimum free size of stack (bytes); below that, it is reallocated. */
-#define Stack_threshold (256 * sizeof(value))
+#define Stack_threshold_words 16
+#define Stack_threshold (Stack_threshold_words * sizeof(value))
+
+/* Number of words used in the control structure at the start of a stack
+   (see fiber.h) */
+#define Stack_ctx_words 5
 
 /* Default maximum size of the stack (words). */
 #define Max_stack_def (1024 * 1024)
@@ -206,8 +217,8 @@ typedef uint64_t uintnat;
 
 
 /* Minimum size of the minor zone (words).
-   This must be at least [2 * Max_young_whsize]. */
-#define Minor_heap_min 4096
+   This must be at least [Max_young_wosize + 1]. */
+#define Minor_heap_min (Max_young_wosize + 1)
 
 /* Maximum size of the minor zone (words).
    Must be greater than or equal to [Minor_heap_min].
@@ -244,6 +255,9 @@ typedef uint64_t uintnat;
    when fragmentation occurs.
  */
 #define Max_percent_free_def 500
+
+/* Maximum number of domains */
+#define Max_domains 128
 
 /* Default setting for the major GC slice smoothing window: 1
    (i.e. no smoothing)

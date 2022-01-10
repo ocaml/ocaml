@@ -3242,7 +3242,7 @@ and type_expect_
                   unify_exp_types loc env ty_arg1 ty_arg2;
                   with_explanation (fun () ->
                     unify_exp_types loc env (instance ty_expected) ty_res2);
-                  Kept ty_arg1
+                  Kept (ty_arg1, lbl.lbl_mut)
                 end
             in
             let label_definitions = Array.map unify_kept lbl.lbl_all in

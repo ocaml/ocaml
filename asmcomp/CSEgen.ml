@@ -236,9 +236,9 @@ method class_of_operation op =
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat -> Op_pure
   | Ispecific _ -> Op_other
+  | Idls_get -> Op_load Mutable
 
 (* Operations that are so cheap that it isn't worth factoring them. *)
-
 method is_cheap_operation op =
   match op with
   | Iconst_int _ -> true

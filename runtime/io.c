@@ -31,6 +31,7 @@
 #include </usr/include/io.h>
 #endif
 #include "caml/alloc.h"
+#include "caml/camlatomic.h"
 #include "caml/custom.h"
 #include "caml/fail.h"
 #include "caml/io.h"
@@ -38,6 +39,7 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/osdeps.h"
+#include "caml/platform.h"
 #include "caml/signals.h"
 #include "caml/sys.h"
 
@@ -52,13 +54,54 @@
 #define lseek _lseeki64
 #endif
 
+/* List of opened channels and its mutex */
+CAMLexport caml_plat_mutex
+  caml_all_opened_channels_mutex = CAML_PLAT_MUTEX_INITIALIZER;
 
 /* Hooks for locking channels */
 
-CAMLexport void (*caml_channel_mutex_free) (struct channel *) = NULL;
-CAMLexport void (*caml_channel_mutex_lock) (struct channel *) = NULL;
-CAMLexport void (*caml_channel_mutex_unlock) (struct channel *) = NULL;
-CAMLexport void (*caml_channel_mutex_unlock_exn) (void) = NULL;
+static __thread struct channel* last_channel_locked = NULL;
+
+static void channel_mutex_free_default(struct channel *chan)
+{
+  caml_plat_mutex_free(&chan->mutex);
+}
+
+static void channel_mutex_lock_default(struct channel *chan)
+{
+  if( caml_plat_try_lock(&chan->mutex) ) {
+    last_channel_locked = chan;
+    return;
+  }
+
+  /* If unsuccessful, block on mutex */
+  caml_enter_blocking_section();
+  caml_plat_lock(&chan->mutex);
+  last_channel_locked = chan;
+  caml_leave_blocking_section();
+}
+
+static void channel_mutex_unlock_default(struct channel *chan)
+{
+  caml_plat_unlock(&chan->mutex);
+  last_channel_locked = NULL;
+}
+
+static void channel_mutex_unlock_exn_default(void)
+{
+  struct channel * chan = last_channel_locked;
+  if (chan != NULL && caml_channel_mutex_unlock != NULL)
+    caml_channel_mutex_unlock(chan);
+}
+
+CAMLexport void (*caml_channel_mutex_free) (struct channel *)
+  = channel_mutex_free_default;
+CAMLexport void (*caml_channel_mutex_lock) (struct channel *)
+  = channel_mutex_lock_default;
+CAMLexport void (*caml_channel_mutex_unlock) (struct channel *)
+  = channel_mutex_unlock_default;
+CAMLexport void (*caml_channel_mutex_unlock_exn) (void)
+  = channel_mutex_unlock_exn_default;
 
 /* List of opened channels */
 CAMLexport struct channel * caml_all_opened_channels = NULL;
@@ -91,6 +134,34 @@ Caml_inline int descriptor_is_in_binary_mode(int fd)
 #endif
 }
 
+static void link_channel (struct channel* channel)
+{
+  caml_plat_lock (&caml_all_opened_channels_mutex);
+  channel->next = caml_all_opened_channels;
+  CAMLassert(channel->prev == NULL);
+  if (caml_all_opened_channels != NULL)
+    caml_all_opened_channels->prev = channel;
+  caml_all_opened_channels = channel;
+  caml_plat_unlock (&caml_all_opened_channels_mutex);
+}
+
+static void unlink_channel(struct channel *channel)
+{
+  caml_plat_lock (&caml_all_opened_channels_mutex);
+  if (channel->prev == NULL) {
+    CAMLassert (channel == caml_all_opened_channels);
+    caml_all_opened_channels = caml_all_opened_channels->next;
+    if (caml_all_opened_channels != NULL)
+      caml_all_opened_channels->prev = NULL;
+  } else {
+    channel->prev->next = channel->next;
+    if (channel->next != NULL) channel->next->prev = channel->prev;
+  }
+  channel->next = NULL;
+  channel->prev = NULL;
+  caml_plat_unlock (&caml_all_opened_channels_mutex);
+}
+
 CAMLexport struct channel * caml_open_descriptor_in(int fd)
 {
   struct channel * channel;
@@ -102,15 +173,14 @@ CAMLexport struct channel * caml_open_descriptor_in(int fd)
   caml_leave_blocking_section();
   channel->curr = channel->max = channel->buff;
   channel->end = channel->buff + IO_BUFFER_SIZE;
-  channel->mutex = NULL;
-  channel->refcount = 0;
-  channel->flags = descriptor_is_in_binary_mode(fd) ? 0 : CHANNEL_TEXT_MODE;
-  channel->next = caml_all_opened_channels;
+  caml_plat_mutex_init(&channel->mutex);
+  atomic_store_rel(&channel->refcount, 0);
   channel->prev = NULL;
   channel->name = NULL;
-  if (caml_all_opened_channels != NULL)
-    caml_all_opened_channels->prev = channel;
-  caml_all_opened_channels = channel;
+  channel->flags = descriptor_is_in_binary_mode(fd) ? 0 : CHANNEL_TEXT_MODE;
+
+  link_channel (channel);
+
   return channel;
 }
 
@@ -123,24 +193,17 @@ CAMLexport struct channel * caml_open_descriptor_out(int fd)
   return channel;
 }
 
-static void unlink_channel(struct channel *channel)
-{
-  if (channel->prev == NULL) {
-    CAMLassert (channel == caml_all_opened_channels);
-    caml_all_opened_channels = caml_all_opened_channels->next;
-    if (caml_all_opened_channels != NULL)
-      caml_all_opened_channels->prev = NULL;
-  } else {
-    channel->prev->next = channel->next;
-    if (channel->next != NULL) channel->next->prev = channel->prev;
-  }
-}
-
 CAMLexport void caml_close_channel(struct channel *channel)
 {
   close(channel->fd);
-  if (caml_channel_mutex_free != NULL) (*caml_channel_mutex_free)(channel);
+
   unlink_channel(channel);
+    if (atomic_load_acq(&channel->refcount) > 0) {
+    /* [caml_ml_out_channels_list] may have a reference to this channel. */
+    link_channel (channel);
+    return;
+  }
+  if (caml_channel_mutex_free != NULL) (*caml_channel_mutex_free)(channel);
   caml_stat_free(channel->name);
   caml_stat_free(channel);
 }
@@ -446,7 +509,12 @@ void caml_finalize_channel(value vchan)
 {
   struct channel * chan = Channel(vchan);
   if ((chan->flags & CHANNEL_FLAG_MANAGED_BY_GC) == 0) return;
-  if (--chan->refcount > 0) return;
+  unlink_channel(chan);
+  if (atomic_fetch_add (&chan->refcount, -1) > 1) {
+    /* [caml_ml_out_channels_list] may have a reference to this channel. */
+    link_channel (chan);
+    return;
+  }
   if (caml_channel_mutex_free != NULL) (*caml_channel_mutex_free)(chan);
 
   if (chan->fd != -1 && chan->name && caml_runtime_warnings_active())
@@ -463,7 +531,6 @@ void caml_finalize_channel(value vchan)
       channel now, but (i) flushing can raise exceptions, and (ii) it
       is potentially a blocking operation.  Both are forbidden in a
       finalization function.
-
       Refs:
       http://caml.inria.fr/mantis/view.php?id=6902
       https://github.com/ocaml/ocaml/pull/210
@@ -472,8 +539,9 @@ void caml_finalize_channel(value vchan)
       fprintf(stderr,
               "[ocaml] (moreover, it has unflushed data)\n"
               );
-  } else {
-    unlink_channel(chan);
+  }
+  else
+  {
     caml_stat_free(chan->name);
     caml_stat_free(chan);
   }
@@ -505,7 +573,7 @@ static struct custom_operations channel_operations = {
 CAMLexport value caml_alloc_channel(struct channel *chan)
 {
   value res;
-  chan->refcount++;
+  atomic_fetch_add (&chan->refcount, 1);
   res = caml_alloc_custom_mem(&channel_operations, sizeof(struct channel *),
                               sizeof(struct channel));
   Channel(res) = chan;
@@ -537,27 +605,56 @@ CAMLprim value caml_ml_set_channel_name(value vchannel, value vname)
   return Val_unit;
 }
 
+#define Pair_tag 0
+
+struct channel_list {
+  struct channel* channel;
+  struct channel_list* next;
+};
+
 CAMLprim value caml_ml_out_channels_list (value unit)
 {
   CAMLparam0 ();
   CAMLlocal3 (res, tail, chan);
   struct channel * channel;
+  struct channel_list *channel_list = NULL, *cl_tmp;
+  mlsize_t i, num_channels = 0;
 
-  res = Val_emptylist;
+  caml_plat_lock (&caml_all_opened_channels_mutex);
   for (channel = caml_all_opened_channels;
        channel != NULL;
-       channel = channel->next)
-    /* Include only output channels opened from OCaml and not closed yet.
-       Testing channel->fd >= 0 looks unnecessary, as
+       channel = channel->next) {
+    /* Testing channel->fd >= 0 looks unnecessary, as
        caml_ml_close_channel changes max when setting fd to -1. */
-    if (channel->max == NULL
-        && channel->flags & CHANNEL_FLAG_MANAGED_BY_GC) {
-      chan = caml_alloc_channel (channel);
-      tail = res;
-      res = caml_alloc_small (2, Tag_cons);
-      Field (res, 0) = chan;
-      Field (res, 1) = tail;
+    if (channel->max == NULL) {
+      /* refcount is incremented here to keep the channel alive */
+      atomic_fetch_add (&channel->refcount, 1);
+      num_channels++;
+      cl_tmp = caml_stat_alloc_noexc (sizeof(struct channel_list));
+      if (cl_tmp == NULL)
+        caml_fatal_error ("caml_ml_out_channels_list: out of memory");
+      cl_tmp->channel = channel;
+      cl_tmp->next = channel_list;
+      channel_list = cl_tmp;
     }
+  }
+  caml_plat_unlock (&caml_all_opened_channels_mutex);
+
+  res = Val_emptylist;
+  cl_tmp = NULL;
+  for (i = 0; i < num_channels; i++) {
+    chan = caml_alloc_channel (channel_list->channel);
+    /* refcount would have been incremented by caml_alloc_channel. Decrement
+     * our earlier increment */
+    atomic_fetch_add (&channel_list->channel->refcount, -1);
+    tail = res;
+    res = caml_alloc_small (2, Pair_tag);
+    Field (res, 0) = chan;
+    Field (res, 1) = tail;
+    cl_tmp = channel_list;
+    channel_list = channel_list->next;
+    caml_stat_free (cl_tmp);
+  }
   CAMLreturn (res);
 }
 

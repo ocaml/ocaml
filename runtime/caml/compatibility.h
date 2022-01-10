@@ -56,10 +56,6 @@
 /* **** array.c */
 
 /* **** backtrace.c */
-#define backtrace_active CAML_DEPRECATED("backtrace_active", "caml_backtrace_active") caml_backtrace_active
-#define backtrace_pos CAML_DEPRECATED("backtrace_pos", "caml_backtrace_pos") caml_backtrace_pos
-#define backtrace_buffer CAML_DEPRECATED("backtrace_buffer", "caml_backtrace_buffer") caml_backtrace_buffer
-#define backtrace_last_exn CAML_DEPRECATED("backtrace_last_exn", "caml_backtrace_last_exn") caml_backtrace_last_exn
 #define print_exception_backtrace CAML_DEPRECATED("print_exception_backtrace", "caml_print_exception_backtrace") caml_print_exception_backtrace
 
 /* **** callback.c */
@@ -76,7 +72,6 @@
 /* **** compact.c */
 
 /* **** compare.c */
-#define compare_unordered CAML_DEPRECATED("compare_unordered", "caml_compare_unordered") caml_compare_unordered
 
 /* **** custom.c */
 #define alloc_custom CAML_DEPRECATED("alloc_custom", "caml_alloc_custom") caml_alloc_custom
@@ -103,7 +98,6 @@
 #define serialize_block_float_8 CAML_DEPRECATED("serialize_block_float_8", "caml_serialize_block_float_8") caml_serialize_block_float_8
 
 /* **** fail.c */
-#define external_raise CAML_DEPRECATED("external_raise", "caml_external_raise") caml_external_raise
 #define mlraise CAML_DEPRECATED("mlraise", "caml_raise") caml_raise /*SP*/
 #define raise_constant CAML_DEPRECATED("raise_constant", "caml_raise_constant") caml_raise_constant
 #define raise_with_arg CAML_DEPRECATED("raise_with_arg", "caml_raise_with_arg") caml_raise_with_arg
@@ -226,22 +220,12 @@
 
 /* **** memory.c */
 #define alloc_shr CAML_DEPRECATED("alloc_shr", "caml_alloc_shr") caml_alloc_shr
-#define initialize CAML_DEPRECATED("initialize", "caml_initialize") caml_initialize
 #define modify CAML_DEPRECATED("modify", "caml_modify") caml_modify
 #define stat_alloc CAML_DEPRECATED("stat_alloc", "caml_stat_alloc") caml_stat_alloc
 #define stat_free CAML_DEPRECATED("stat_free", "caml_stat_free") caml_stat_free
 #define stat_resize CAML_DEPRECATED("stat_resize", "caml_stat_resize") caml_stat_resize
 
 /* **** meta.c */
-
-/* **** minor_gc.c */
-#define young_start CAML_DEPRECATED("young_start", "caml_young_start") caml_young_start
-#define young_end CAML_DEPRECATED("young_end", "caml_young_end") caml_young_end
-#define young_ptr CAML_DEPRECATED("young_ptr", "caml_young_ptr") caml_young_ptr
-#define young_limit CAML_DEPRECATED("young_limit", "caml_young_limit") caml_young_limit
-#define ref_table CAML_DEPRECATED("ref_table", "caml_ref_table") caml_ref_table
-#define minor_collection CAML_DEPRECATED("minor_collection", "caml_minor_collection") caml_minor_collection
-#define check_urgent_gc CAML_DEPRECATED("check_urgent_gc", "caml_check_urgent_gc") caml_check_urgent_gc
 
 /* **** misc.c */
 
@@ -255,32 +239,20 @@
 #define format_caml_exception CAML_DEPRECATED("format_caml_exception", "caml_format_exception") caml_format_exception /*SP*/
 
 /* **** roots.c */
-#define local_roots CAML_DEPRECATED("local_roots", "caml_local_roots") caml_local_roots
-#define scan_roots_hook CAML_DEPRECATED("scan_roots_hook", "caml_scan_roots_hook") caml_scan_roots_hook
 #define do_local_roots CAML_DEPRECATED("do_local_roots", "caml_do_local_roots") caml_do_local_roots
 
 /* **** signals.c */
 #define pending_signals CAML_DEPRECATED("pending_signals", "caml_pending_signals") caml_pending_signals
-#define something_to_do CAML_DEPRECATED("something_to_do", "caml_something_to_do") caml_something_to_do
-#define enter_blocking_section_hook CAML_DEPRECATED("enter_blocking_section_hook", "caml_enter_blocking_section_hook") caml_enter_blocking_section_hook
-#define leave_blocking_section_hook CAML_DEPRECATED("leave_blocking_section_hook", "caml_leave_blocking_section_hook") caml_leave_blocking_section_hook
 #define enter_blocking_section CAML_DEPRECATED("enter_blocking_section", "caml_enter_blocking_section") caml_enter_blocking_section
 #define leave_blocking_section CAML_DEPRECATED("leave_blocking_section", "caml_leave_blocking_section") caml_leave_blocking_section
 #define convert_signal_number CAML_DEPRECATED("convert_signal_number", "caml_convert_signal_number") caml_convert_signal_number
 
 /* **** runtime/signals.c */
-#define garbage_collection CAML_DEPRECATED("garbage_collection", "caml_garbage_collection") caml_garbage_collection
 
 /* **** stacks.c */
-#define stack_low CAML_DEPRECATED("stack_low", "caml_stack_low") caml_stack_low
-#define stack_high CAML_DEPRECATED("stack_high", "caml_stack_high") caml_stack_high
-#define stack_threshold CAML_DEPRECATED("stack_threshold", "caml_stack_threshold") caml_stack_threshold
-#define extern_sp CAML_DEPRECATED("extern_sp", "caml_extern_sp") caml_extern_sp
-#define trapsp CAML_DEPRECATED("trapsp", "caml_trapsp") caml_trapsp
-#define trap_barrier CAML_DEPRECATED("trap_barrier", "caml_trap_barrier") caml_trap_barrier
 
 /* **** startup.c */
-#define atom_table CAML_DEPRECATED("atom_table", "caml_atom_table") caml_atom_table
+
 /* **** runtime/startup_nat.c */
 #define static_data_start CAML_DEPRECATED("static_data_start", "caml_static_data_start") caml_static_data_start
 #define static_data_end CAML_DEPRECATED("static_data_end", "caml_static_data_end") caml_static_data_end

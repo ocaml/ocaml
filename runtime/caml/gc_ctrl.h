@@ -20,34 +20,24 @@
 
 #include "misc.h"
 
-/* Global variables moved to Caml_state in 4.10 */
-#define caml_stat_minor_words (Caml_state_field(stat_minor_words))
-#define caml_stat_promoted_words (Caml_state_field(stat_promoted_words))
-#define caml_stat_major_words (Caml_state_field(stat_major_words))
-#define caml_stat_minor_collections (Caml_state_field(stat_minor_collections))
-#define caml_stat_major_collections (Caml_state_field(stat_major_collections))
-#define caml_stat_heap_wsz (Caml_state_field(stat_heap_wsz))
-#define caml_stat_top_heap_wsz (Caml_state_field(stat_top_heap_wsz))
-#define caml_stat_compactions (Caml_state_field(stat_compactions))
-#define caml_stat_heap_chunks (Caml_state_field(stat_heap_chunks))
+extern uintnat caml_max_stack_size;
+extern uintnat caml_fiber_wsz;
 
-/*
-  minor_size: cf. minor_heap_size in gc.mli
-  major_size: Size in words of the initial major heap
-  major_incr: cf. major_heap_increment in gc.mli
-  percent_fr: cf. space_overhead in gc.mli
-  percent_m : cf. max_overhead in gc.mli
-  window    : cf. window_size in gc.mli
-  custom_maj: cf. custom_major_ratio in gc.mli
-  custom_min: cf. custom_minor_ratio in gc.mli
-  custom_bsz: cf. custom_minor_max_size in gc.mli
-  policy    : cf. allocation_policy in gc.mli
-*/
-void caml_init_gc (uintnat minor_size, uintnat major_size, uintnat major_incr,
-                   uintnat percent_fr, uintnat percent_m, uintnat window,
-                   uintnat custom_maj, uintnat custom_min, uintnat custom_bsz,
-                   uintnat policy);
+void caml_init_gc (void);
+value caml_gc_stat(value);
+value caml_gc_major(value);
 
+
+#define caml_stat_top_heap_wsz caml_top_heap_words(Caml_state->shared_heap)
+#define caml_stat_compactions 0
+#define caml_stat_heap_wsz Wsize_bsize(caml_heap_size(Caml_state->shared_heap))
+#define caml_stat_heap_chunks caml_heap_blocks(Caml_state->shared_heap)
+#define caml_stat_major_collections Caml_state->stat_major_collections
+#define caml_stat_minor_collections Caml_state->stat_minor_collections
+#define caml_stat_promoted_words Caml_state->stat_promoted_words
+#define caml_allocated_words Caml_state->allocated_words
+#define caml_stat_major_words Caml_state->stat_major_words
+#define caml_stat_minor_words Caml_state->stat_minor_words
 
 #ifdef DEBUG
 void caml_heap_check (void);

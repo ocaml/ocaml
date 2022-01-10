@@ -20,7 +20,6 @@
 #include <stdio.h>
 #include <signal.h>
 #include "caml/alloc.h"
-#include "caml/domain.h"
 #include "caml/fail.h"
 #include "caml/io.h"
 #include "caml/gc.h"
@@ -49,7 +48,9 @@ extern caml_generated_constant
   caml_exn_Sys_blocked_io,
   caml_exn_Stack_overflow,
   caml_exn_Assert_failure,
-  caml_exn_Undefined_recursive_module;
+  caml_exn_Undefined_recursive_module,
+  caml_exn_Unhandled,
+  caml_exn_Continuation_already_taken;
 
 /* Exception raising */
 
@@ -62,22 +63,23 @@ CAMLnoreturn_end;
 CAMLno_asan
 void caml_raise(value v)
 {
+  char* exception_pointer;
+
   Unlock_exn();
 
   CAMLassert(!Is_exception_result(v));
 
   // avoid calling caml_raise recursively
-  v = caml_process_pending_actions_with_root_exn(v);
+  v = caml_process_pending_signals_with_root_exn(v);
   if (Is_exception_result(v))
     v = Extract_exception(v);
 
-  if (Caml_state->exception_pointer == NULL) {
-    caml_terminate_signals();
-    caml_fatal_uncaught_exception(v);
-  }
+  exception_pointer = (char*)Caml_state->c_stack;
+
+  if (exception_pointer == NULL) caml_fatal_uncaught_exception(v);
 
   while (Caml_state->local_roots != NULL &&
-         (char *) Caml_state->local_roots < Caml_state->exception_pointer) {
+         (char *) Caml_state->local_roots < exception_pointer) {
     Caml_state->local_roots = Caml_state->local_roots->next;
   }
 
@@ -111,8 +113,7 @@ void caml_raise_with_args(value tag, int nargs, value args[])
   value bucket;
   int i;
 
-  CAMLassert(1 + nargs <= Max_young_wosize);
-  bucket = caml_alloc_small (1 + nargs, 0);
+  bucket = caml_alloc (1 + nargs, 0);
   Field(bucket, 0) = tag;
   for (i = 0; i < nargs; i++) Field(bucket, 1 + i) = args[i];
   caml_raise(bucket);
@@ -185,6 +186,11 @@ void caml_raise_sys_blocked_io(void)
   caml_raise_constant((value) caml_exn_Sys_blocked_io);
 }
 
+void caml_raise_continuation_already_taken(void)
+{
+  caml_raise_constant((value) caml_exn_Continuation_already_taken);
+}
+
 CAMLexport value caml_raise_if_exception(value res)
 {
   if (Is_exception_result(res)) caml_raise(Extract_exception(res));
@@ -195,20 +201,20 @@ CAMLexport value caml_raise_if_exception(value res)
    do a GC before the exception is raised (lack of stack descriptors
    for the ccall to [caml_array_bound_error]).  */
 
-static const value * caml_array_bound_error_exn = NULL;
-
 void caml_array_bound_error(void)
 {
-  if (caml_array_bound_error_exn == NULL) {
-    caml_array_bound_error_exn =
-      caml_named_value("Pervasives.array_bound_error");
-    if (caml_array_bound_error_exn == NULL) {
+  static atomic_uintnat exn_cache = ATOMIC_UINTNAT_INIT(0);
+  const value* exn = (const value*)atomic_load_acq(&exn_cache);
+  if (!exn) {
+    exn = caml_named_value("Pervasives.array_bound_error");
+    if (!exn) {
       fprintf(stderr, "Fatal error: exception "
-                      "Invalid_argument(\"index out of bounds\")\n");
+        "Invalid_argument(\"index out of bounds\")\n");
       exit(2);
     }
+    atomic_store_rel(&exn_cache, (uintnat)exn);
   }
-  caml_raise(*caml_array_bound_error_exn);
+  caml_raise(*exn);
 }
 
 int caml_is_special_exception(value exn) {

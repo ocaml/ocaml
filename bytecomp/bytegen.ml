@@ -109,7 +109,8 @@ let rec is_tailcall = function
    from the tail call optimization? *)
 
 let preserve_tailcall_for_prim = function
-  | Popaque | Psequor | Psequand ->
+  | Popaque | Psequor | Psequand
+  | Prunstack | Pperform | Presume | Preperform ->
       true
   | Pbytes_to_string | Pbytes_of_string | Pignore | Pgetglobal _ | Psetglobal _
   | Pmakeblock _ | Pfield _ | Pfield_computed | Psetfield _
@@ -130,7 +131,9 @@ let preserve_tailcall_for_prim = function
   | Pbytes_load_32 _ | Pbytes_load_64 _ | Pbytes_set_16 _ | Pbytes_set_32 _
   | Pbytes_set_64 _ | Pbigstring_load_16 _ | Pbigstring_load_32 _
   | Pbigstring_load_64 _ | Pbigstring_set_16 _ | Pbigstring_set_32 _
-  | Pbigstring_set_64 _ | Pctconst _ | Pbswap16 | Pbbswap _ | Pint_as_pointer ->
+  | Pbigstring_set_64 _ | Pctconst _ | Pbswap16 | Pbbswap _ | Pint_as_pointer
+  | Patomic_exchange | Patomic_cas | Patomic_fetch_add | Patomic_load _
+  | Pdls_get ->
       false
 
 (* Add a Kpop N instruction in front of a continuation *)
@@ -369,6 +372,8 @@ let compunit_name = ref ""
 
 let max_stack_used = ref 0
 
+let check_stack sz =
+  if sz > !max_stack_used then max_stack_used := sz
 
 (* Sequence of string tests *)
 
@@ -383,7 +388,8 @@ let comp_bint_primitive bi suff args =
                 | Pint64 -> "caml_int64_" in
   Kccall(pref ^ suff, List.length args)
 
-let comp_primitive p args =
+let comp_primitive p sz args =
+  check_stack sz;
   match p with
     Pgetglobal id -> Kgetglobal id
   | Psetglobal id -> Ksetglobal id
@@ -391,13 +397,16 @@ let comp_primitive p args =
   | Pcompare_ints -> Kccall("caml_int_compare", 2)
   | Pcompare_floats -> Kccall("caml_float_compare", 2)
   | Pcompare_bints bi -> comp_bint_primitive bi "compare" args
-  | Pfield n -> Kgetfield n
+  | Pfield(n, _ptr, _mut) -> Kgetfield n
   | Pfield_computed -> Kgetvectitem
   | Psetfield(n, _ptr, _init) -> Ksetfield n
   | Psetfield_computed(_ptr, _init) -> Ksetvectitem
   | Psetfloatfield (n, _init) -> Ksetfloatfield n
   | Pduprecord _ -> Kccall("caml_obj_dup", 1)
   | Pccall p -> Kccall(p.prim_name, p.prim_arity)
+  | Pperform ->
+      check_stack (sz + 4);
+      Kperform
   | Pnegint -> Knegint
   | Paddint -> Kaddint
   | Psubint -> Ksubint
@@ -508,9 +517,15 @@ let comp_primitive p args =
   | Pint_as_pointer -> Kccall("caml_int_as_pointer", 1)
   | Pbytes_to_string -> Kccall("caml_string_of_bytes", 1)
   | Pbytes_of_string -> Kccall("caml_bytes_of_string", 1)
+  | Patomic_load _ -> Kccall("caml_atomic_load", 1)
+  | Patomic_exchange -> Kccall("caml_atomic_exchange", 2)
+  | Patomic_cas -> Kccall("caml_atomic_cas", 3)
+  | Patomic_fetch_add -> Kccall("caml_atomic_fetch_add", 2)
+  | Pdls_get -> Kccall("caml_domain_dls_get", 1)
   (* The cases below are handled in [comp_expr] before the [comp_primitive] call
      (in the order in which they appear below),
      so they should never be reached in this function. *)
+  | Prunstack | Presume | Preperform
   | Pignore | Popaque
   | Pnot | Psequand | Psequor
   | Praise _
@@ -538,7 +553,7 @@ module Storer =
    Result = list of instructions that evaluate exp, then perform cont. *)
 
 let rec comp_expr env exp sz cont =
-  if sz > !max_stack_used then max_stack_used := sz;
+  check_stack sz;
   match exp with
     Lvar id | Lmutvar id ->
       begin try
@@ -754,6 +769,25 @@ let rec comp_expr env exp sz cont =
                  (Kmakeblock(List.length args, 0) ::
                   Kccall("caml_make_array", 1) :: cont)
       end
+  | Lprim((Presume|Prunstack), args, _) ->
+      let nargs = List.length args - 1 in
+      assert (nargs = 2);
+      (* Resume itself only pushes 3 words, but perform adds another *)
+      check_stack (sz + 4);
+      if is_tailcall cont then
+        comp_args env args sz
+          (Kresumeterm(sz + nargs) :: discard_dead_code cont)
+      else
+        comp_args env args sz (Kresume :: cont)
+  | Lprim(Preperform, args, _) ->
+      let nargs = List.length args - 1 in
+      assert (nargs = 2);
+      check_stack (sz + 3);
+      if is_tailcall cont then
+        comp_args env args sz
+          (Kreperformterm(sz + nargs) :: discard_dead_code cont)
+      else
+        fatal_error "Reperform used in non-tail position"
   | Lprim (Pduparray (kind, mutability),
            [Lprim (Pmakearray (kind',_),args,_)], loc) ->
       assert (kind = kind');
@@ -769,7 +803,8 @@ let rec comp_expr env exp sz cont =
   | Lprim (Pintcomp c, [arg ; (Lconst _ as k)], _) ->
       let p = Pintcomp (swap_integer_comparison c)
       and args = [k ; arg] in
-      comp_args env args sz (comp_primitive p args :: cont)
+      let nargs = List.length args - 1 in
+      comp_args env args sz (comp_primitive p (sz + nargs - 1) args :: cont)
   | Lprim (Pfloatcomp cmp, args, _) ->
       let cont =
         match cmp with
@@ -792,7 +827,8 @@ let rec comp_expr env exp sz cont =
       let cont = add_pseudo_event loc !compunit_name cont in
       comp_args env args sz (Kgetfloatfield n :: cont)
   | Lprim(p, args, _) ->
-      comp_args env args sz (comp_primitive p args :: cont)
+      let nargs = List.length args - 1 in
+      comp_args env args sz (comp_primitive p (sz + nargs - 1) args :: cont)
   | Lstaticcatch (body, (i, vars) , handler) ->
       let vars = List.map fst vars in
       let nvars = List.length vars in

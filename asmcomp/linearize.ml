@@ -327,6 +327,7 @@ let fundecl f =
       fun_prologue_required
   in
   { fun_name = f.Mach.fun_name;
+    fun_args = Reg.set_of_array f.Mach.fun_args;
     fun_body;
     fun_fast = not (List.mem Cmm.Reduce_code_size f.Mach.fun_codegen_options);
     fun_dbg  = f.Mach.fun_dbg;

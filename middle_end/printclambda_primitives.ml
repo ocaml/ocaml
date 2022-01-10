@@ -61,7 +61,14 @@ let primitive ppf (prim:Clambda_primitives.primitive) =
       fprintf ppf "makeblock %i%a" tag Printlambda.block_shape shape
   | Pmakeblock(tag, Mutable, shape) ->
       fprintf ppf "makemutable %i%a" tag Printlambda.block_shape shape
-  | Pfield n -> fprintf ppf "field %i" n
+  | Pfield(n, ptr, mut) ->
+      let instr =
+        match ptr, mut with
+        | Immediate, _ -> "field_int "
+        | Pointer, Mutable -> "field_mut "
+        | Pointer, Immutable -> "field_imm "
+      in
+      fprintf ppf "%s%i" instr n
   | Pfield_computed -> fprintf ppf "field_computed"
   | Psetfield(n, ptr, init) ->
       let instr =
@@ -100,6 +107,10 @@ let primitive ppf (prim:Clambda_primitives.primitive) =
       fprintf ppf "setfloatfield%s %i" init n
   | Pduprecord (rep, size) ->
       fprintf ppf "duprecord %a %i" Printlambda.record_rep rep size
+  | Prunstack -> fprintf ppf "runstack"
+  | Pperform -> fprintf ppf "perform"
+  | Presume -> fprintf ppf "resume"
+  | Preperform -> fprintf ppf "reperform"
   | Pccall p -> fprintf ppf "%s" p.Primitive.prim_name
   | Praise k -> fprintf ppf "%s" (Lambda.raise_kind k)
   | Psequand -> fprintf ppf "&&"
@@ -202,4 +213,12 @@ let primitive ppf (prim:Clambda_primitives.primitive) =
   | Pbswap16 -> fprintf ppf "bswap16"
   | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
   | Pint_as_pointer -> fprintf ppf "int_as_pointer"
+  | Patomic_load {immediate_or_pointer} ->
+      (match immediate_or_pointer with
+        | Immediate -> fprintf ppf "atomic_load_imm"
+        | Pointer -> fprintf ppf "atomic_load_ptr")
+  | Patomic_exchange -> fprintf ppf "atomic_exchange"
+  | Patomic_cas -> fprintf ppf "atomic_cas"
+  | Patomic_fetch_add -> fprintf ppf "atomic_fetch_add"
   | Popaque -> fprintf ppf "opaque"
+  | Pdls_get -> fprintf ppf "dls_get"

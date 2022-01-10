@@ -279,6 +279,10 @@ let print_line b = function
   | Cfi_adjust_cfa_offset n -> bprintf b "\t.cfi_adjust_cfa_offset %d" n
   | Cfi_endproc -> bprintf b "\t.cfi_endproc"
   | Cfi_startproc -> bprintf b "\t.cfi_startproc"
+  | Cfi_remember_state -> bprintf b "\t.cfi_remember_state"
+  | Cfi_restore_state -> bprintf b "\t.cfi_restore_state"
+  | Cfi_def_cfa_register reg -> bprintf b "\t.cfi_def_cfa_register %%%s" reg
+  | Cfi_def_cfa_offset n -> bprintf b "\t.cfi_def_cfa_offset %d" n
   | File (file_num, file_name) ->
       bprintf b "\t.file\t%d\t\"%s\""
         file_num (X86_proc.string_of_string_literal file_name)

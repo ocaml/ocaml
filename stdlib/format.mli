@@ -30,15 +30,27 @@
    - {!std_formatter} outputs to {{!Stdlib.stdout}stdout}
    - {!err_formatter} outputs to {{!Stdlib.stderr}stderr}
 
-   Most functions in the {!Format} module come in two variants:
-   a short version that operates on {!std_formatter} and the
-   generic version prefixed by [pp_] that takes a formatter
-   as its first argument.
+   Most functions in the {!Format} module come in two variants: a short version
+   that operates on the current domain's standard formatter as obtained using
+   {!get_std_formatter} and the generic version prefixed by [pp_] that takes a
+   formatter as its first argument. For the version that operates on the
+   current domain's standard formatter, the call to {!get_std_formatter} is
+   delayed until the last argument is received.
 
    More formatters can be created with {!formatter_of_out_channel},
-   {!formatter_of_buffer}, {!formatter_of_symbolic_output_buffer}
-   or using {{!section:formatter}custom formatters}.
+   {!formatter_of_buffer}, {!formatter_of_symbolic_output_buffer} or using
+   {{!section:formatter}custom formatters}.
 
+   Warning: Since {{!section:formatter}formatters} contain mutable state, it is
+   not thread-safe to use the same formatter on multiple domains in parallel
+   without synchronization.
+
+   If multiple domains write to the same output channel using the
+   predefined formatters (as obtained by {!get_std_formatter} or
+   {!get_err_formatter}), the output from the domains will be interleaved with
+   each other at points where the formatters are flushed, such as with
+   {!print_flush}. This synchronization is not performed by formatters obtained
+   from {!formatter_of_out_channel} (on the standard out channels or others).
 *)
 
 (** {1 Introduction}
@@ -944,19 +956,41 @@ val get_formatter_stag_functions : unit -> formatter_stag_functions
 
 val formatter_of_out_channel : out_channel -> formatter
 (** [formatter_of_out_channel oc] returns a new formatter writing
-  to the corresponding output channel [oc].
+    to the corresponding output channel [oc].
 *)
 
+val synchronized_formatter_of_out_channel :
+  out_channel -> formatter Domain.DLS.key
+(** [synchronized_formatter_of_out_channel oc] returns the key to the
+    domain-local state that holds the domain-local formatter for writing to the
+    corresponding output channel [oc].
+
+    When the formatter is used with multiple domains, the output from the
+    domains will be interleaved with each other at points where the formatter
+    is flushed, such as with {!print_flush}.
+*)
+
+
 val std_formatter : formatter
-(** The standard formatter to write to standard output.
+(** The initial domain's standard formatter to write to standard output.
 
   It is defined as {!formatter_of_out_channel} {!Stdlib.stdout}.
 *)
 
+val get_std_formatter : unit -> formatter
+(** [get_std_formatter ()] returns the current domain's standard formatter used
+    to write to standard output.
+*)
+
 val err_formatter : formatter
-(** A formatter to write to standard error.
+(** The initial domain's formatter to write to standard error.
 
   It is defined as {!formatter_of_out_channel} {!Stdlib.stderr}.
+*)
+
+val get_err_formatter : unit -> formatter
+(* [get_err_formatter ()] returns the current domain's formatter used to write
+   to standard error.
 *)
 
 val formatter_of_buffer : Buffer.t -> formatter
@@ -967,17 +1001,26 @@ val formatter_of_buffer : Buffer.t -> formatter
 *)
 
 val stdbuf : Buffer.t
-(** The string buffer in which [str_formatter] writes. *)
+(** The initial domain's string buffer in which [str_formatter] writes. *)
+
+val get_stdbuf : unit -> Buffer.t
+(** [get_stdbuf ()] returns the current domain's string buffer in which the
+    current domain's string formatter writes. *)
 
 val str_formatter : formatter
-(** A formatter to output to the {!stdbuf} string buffer.
+(** The initial domain's formatter to output to the {!stdbuf} string buffer.
 
   [str_formatter] is defined as {!formatter_of_buffer} {!stdbuf}.
 *)
 
+val get_str_formatter : unit -> formatter
+(** The current domain's formatter to output to the current domains string
+    buffer.
+*)
+
 val flush_str_formatter : unit -> string
-(** Returns the material printed with [str_formatter], flushes
-  the formatter and resets the corresponding buffer.
+(** Returns the material printed with [str_formatter] of the current domain,
+    flushes the formatter and resets the corresponding buffer.
 *)
 
 val make_formatter :
@@ -992,6 +1035,17 @@ val make_formatter :
   returns a formatter to the {!Stdlib.out_channel} [oc].
 *)
 
+val make_synchronized_formatter :
+  (string -> int -> int -> unit) -> (unit -> unit) -> formatter Domain.DLS.key
+(** [make_synchronized_formatter out flush] returns the key to the domain-local
+    state that holds the domain-local formatter that outputs with function
+    [out], and flushes with function [flush].
+
+    When the formatter is used with multiple domains, the output from the
+    domains will be interleaved with each other at points where the formatter
+    is flushed, such as with {!print_flush}.
+*)
+
 val formatter_of_out_functions :
   formatter_out_functions -> formatter
 (** [formatter_of_out_functions out_funs] returns a new formatter that writes
@@ -1002,6 +1056,8 @@ val formatter_of_out_functions :
 
   @since 4.06.0
 *)
+
+
 
 (** {2:symbolic Symbolic pretty-printing} *)
 
@@ -1237,10 +1293,24 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a
 *)
 
 val printf : ('a, formatter, unit) format -> 'a
-(** Same as [fprintf] above, but output on [std_formatter]. *)
+(** Same as [fprintf] above, but output on [get_std_formatter ()].
+
+    It is defined similarly to [fun fmt -> fprintf (get_std_formatter ()) fmt]
+    but delays calling [get_std_formatter] until after the final argument
+    required by the [format] is received. When used with multiple domains, the
+    output from the domains will be interleaved with each other at points where
+    the formatter is flushed, such as with {!print_flush}.
+*)
 
 val eprintf : ('a, formatter, unit) format -> 'a
-(** Same as [fprintf] above, but output on [err_formatter]. *)
+(** Same as [fprintf] above, but output on [get_err_formatter ()].
+
+    It is defined similarly to [fun fmt -> fprintf (get_err_formatter ()) fmt]
+    but delays calling [get_err_formatter] until after the final argument
+    required by the [format] is received. When used with multiple domains, the
+    output from the domains will be interleaved with each other at points where
+    the formatter is flushed, such as with {!print_flush}.
+*)
 
 val sprintf : ('a, unit, string) format -> 'a
 (** Same as [printf] above, but instead of printing on a formatter,

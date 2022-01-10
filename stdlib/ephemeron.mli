@@ -70,9 +70,6 @@ module type S = sig
       the bindings are weak, even if [mem h k] is true, a subsequent
       [find h k] may raise [Not_found] because the garbage collector
       can run between the two.
-
-      Moreover, the table shouldn't be modified during a call to [iter].
-      Use [filter_map_inplace] in this case.
   *)
 
   type key
@@ -88,20 +85,8 @@ module type S = sig
   val find_all : 'a t -> key -> 'a list
   val replace : 'a t -> key -> 'a -> unit
   val mem : 'a t -> key -> bool
-  val iter : (key -> 'a -> unit) -> 'a t -> unit
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  val filter_map_inplace : (key -> 'a -> 'a option) -> 'a t -> unit
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
   val length : 'a t -> int
   val stats : 'a t -> Hashtbl.statistics
-  val to_seq : 'a t -> (key * 'a) Seq.t
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  val to_seq_keys : _ t -> key Seq.t
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  val to_seq_values : 'a t -> 'a Seq.t
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
   val add_seq : 'a t -> (key * 'a) Seq.t -> unit
   val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
   val of_seq : (key * 'a) Seq.t -> 'a t
@@ -133,20 +118,8 @@ module type SeededS = sig
   val find_all : 'a t -> key -> 'a list
   val replace : 'a t -> key -> 'a -> unit
   val mem : 'a t -> key -> bool
-  val iter : (key -> 'a -> unit) -> 'a t -> unit
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  val filter_map_inplace : (key -> 'a -> 'a option) -> 'a t -> unit
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
   val length : 'a t -> int
   val stats : 'a t -> Hashtbl.statistics
-  val to_seq : 'a t -> (key * 'a) Seq.t
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  val to_seq_keys : _ t -> key Seq.t
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  val to_seq_values : 'a t -> 'a Seq.t
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
   val add_seq : 'a t -> (key * 'a) Seq.t -> unit
   val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
   val of_seq : (key * 'a) Seq.t -> 'a t
@@ -162,96 +135,6 @@ end
 
 module K1 : sig
   type ('k,'d) t (** an ephemeron with one key *)
-
-  val create: unit -> ('k,'d) t
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** [Ephemeron.K1.create ()] creates an ephemeron with one key. The
-      data and the key are empty *)
-
-  val get_key: ('k,'d) t -> 'k option
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** [Ephemeron.K1.get_key eph] returns [None] if the key of [eph] is
-      empty, [Some x] (where [x] is the key) if it is full. *)
-
-  val get_key_copy: ('k,'d) t -> 'k option
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** [Ephemeron.K1.get_key_copy eph] returns [None] if the key of [eph] is
-      empty, [Some x] (where [x] is a (shallow) copy of the key) if
-      it is full. This function has the same GC friendliness as {!Weak.get_copy}
-
-      If the element is a custom block it is not copied.
-  *)
-
-  val set_key: ('k,'d) t -> 'k -> unit
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** [Ephemeron.K1.set_key eph el] sets the key of [eph] to be a
-      (full) key to [el]
-  *)
-
-  val unset_key: ('k,'d) t -> unit
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** [Ephemeron.K1.unset_key eph el] sets the key of [eph] to be an
-      empty key. Since there is only one key, the ephemeron starts
-      behaving like a reference on the data. *)
-
-  val check_key: ('k,'d) t -> bool
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** [Ephemeron.K1.check_key eph] returns [true] if the key of the [eph]
-      is full, [false] if it is empty. Note that even if
-      [Ephemeron.K1.check_key eph] returns [true], a subsequent
-      {!Ephemeron.K1.get_key}[eph] can return [None].
-  *)
-
-
-  val blit_key : ('k,_) t -> ('k,_) t -> unit
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** [Ephemeron.K1.blit_key eph1 eph2] sets the key of [eph2] with
-      the key of [eph1]. Contrary to using {!Ephemeron.K1.get_key}
-      followed by {!Ephemeron.K1.set_key} or {!Ephemeron.K1.unset_key}
-      this function does not prevent the incremental GC from erasing
-      the value in its current cycle. *)
-
-  val get_data: ('k,'d) t -> 'd option
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** [Ephemeron.K1.get_data eph] returns [None] if the data of [eph] is
-      empty, [Some x] (where [x] is the data) if it is full. *)
-
-  val get_data_copy: ('k,'d) t -> 'd option
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** [Ephemeron.K1.get_data_copy eph] returns [None] if the data of [eph] is
-      empty, [Some x] (where [x] is a (shallow) copy of the data) if
-      it is full. This function has the same GC friendliness as {!Weak.get_copy}
-
-      If the element is a custom block it is not copied.
-  *)
-
-  val set_data: ('k,'d) t -> 'd -> unit
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** [Ephemeron.K1.set_data eph el] sets the data of [eph] to be a
-      (full) data to [el]
-  *)
-
-  val unset_data: ('k,'d) t -> unit
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** [Ephemeron.K1.unset_data eph el] sets the key of [eph] to be an
-      empty key. The ephemeron starts behaving like a weak pointer.
-  *)
-
-  val check_data: ('k,'d) t -> bool
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** [Ephemeron.K1.check_data eph] returns [true] if the data of the [eph]
-      is full, [false] if it is empty. Note that even if
-      [Ephemeron.K1.check_data eph] returns [true], a subsequent
-      {!Ephemeron.K1.get_data}[eph] can return [None].
-  *)
-
-  val blit_data : (_,'d) t -> (_,'d) t -> unit
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** [Ephemeron.K1.blit_data eph1 eph2] sets the data of [eph2] with
-      the data of [eph1]. Contrary to using {!Ephemeron.K1.get_data}
-      followed by {!Ephemeron.K1.set_data} or {!Ephemeron.K1.unset_data}
-      this function does not prevent the incremental GC from erasing
-      the value in its current cycle. *)
 
   val make : 'k -> 'd -> ('k,'d) t
   (** [Ephemeron.K1.make k d] creates an ephemeron with key [k] and data [d]. *)
@@ -301,86 +184,6 @@ end
 
 module K2 : sig
   type ('k1,'k2,'d) t (** an ephemeron with two keys *)
-
-  val create: unit -> ('k1,'k2,'d) t
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** Same as {!Ephemeron.K1.create} *)
-
-  val get_key1: ('k1,'k2,'d) t -> 'k1 option
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** Same as {!Ephemeron.K1.get_key} *)
-
-  val get_key1_copy: ('k1,'k2,'d) t -> 'k1 option
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** Same as {!Ephemeron.K1.get_key_copy} *)
-
-  val set_key1: ('k1,'k2,'d) t -> 'k1 -> unit
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** Same as {!Ephemeron.K1.set_key} *)
-
-  val unset_key1: ('k1,'k2,'d) t -> unit
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** Same as {!Ephemeron.K1.unset_key} *)
-
-  val check_key1: ('k1,'k2,'d) t ->  bool
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** Same as {!Ephemeron.K1.check_key} *)
-
-  val get_key2: ('k1,'k2,'d) t -> 'k2 option
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** Same as {!Ephemeron.K1.get_key} *)
-
-  val get_key2_copy: ('k1,'k2,'d) t -> 'k2 option
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** Same as {!Ephemeron.K1.get_key_copy} *)
-
-  val set_key2: ('k1,'k2,'d) t -> 'k2 -> unit
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** Same as {!Ephemeron.K1.set_key} *)
-
-  val unset_key2: ('k1,'k2,'d) t -> unit
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** Same as {!Ephemeron.K1.unset_key} *)
-
-  val check_key2: ('k1,'k2,'d) t -> bool
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** Same as {!Ephemeron.K1.check_key} *)
-
-  val blit_key1: ('k1,_,_) t -> ('k1,_,_) t -> unit
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** Same as {!Ephemeron.K1.blit_key} *)
-
-  val blit_key2: (_,'k2,_) t -> (_,'k2,_) t -> unit
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** Same as {!Ephemeron.K1.blit_key} *)
-
-  val blit_key12: ('k1,'k2,_) t -> ('k1,'k2,_) t -> unit
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** Same as {!Ephemeron.K1.blit_key} *)
-
-  val get_data: ('k1,'k2,'d) t -> 'd option
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** Same as {!Ephemeron.K1.get_data} *)
-
-  val get_data_copy: ('k1,'k2,'d) t -> 'd option
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** Same as {!Ephemeron.K1.get_data_copy} *)
-
-  val set_data: ('k1,'k2,'d) t -> 'd -> unit
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** Same as {!Ephemeron.K1.set_data} *)
-
-  val unset_data: ('k1,'k2,'d) t -> unit
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** Same as {!Ephemeron.K1.unset_data} *)
-
-  val check_data: ('k1,'k2,'d) t -> bool
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** Same as {!Ephemeron.K1.check_data} *)
-
-  val blit_data: ('k1,'k2,'d) t -> ('k1,'k2,'d) t -> unit
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** Same as {!Ephemeron.K1.blit_data} *)
 
   val make : 'k1 -> 'k2 -> 'd -> ('k1,'k2,'d) t
   (** Same as {!Ephemeron.K1.make} *)
@@ -436,58 +239,6 @@ module Kn : sig
   type ('k,'d) t (** an ephemeron with an arbitrary number of keys
                       of the same type *)
 
-  val create: int -> ('k,'d) t
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** Same as {!Ephemeron.K1.create} *)
-
-  val get_key: ('k,'d) t -> int -> 'k option
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** Same as {!Ephemeron.K1.get_key} *)
-
-  val get_key_copy: ('k,'d) t -> int -> 'k option
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** Same as {!Ephemeron.K1.get_key_copy} *)
-
-  val set_key: ('k,'d) t -> int -> 'k -> unit
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** Same as {!Ephemeron.K1.set_key} *)
-
-  val unset_key: ('k,'d) t -> int -> unit
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** Same as {!Ephemeron.K1.unset_key} *)
-
-  val check_key: ('k,'d) t -> int ->  bool
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** Same as {!Ephemeron.K1.check_key} *)
-
-  val blit_key: ('k,_) t -> int -> ('k,_) t -> int -> int -> unit
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** Same as {!Ephemeron.K1.blit_key} *)
-
-  val get_data: ('k,'d) t -> 'd option
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** Same as {!Ephemeron.K1.get_data} *)
-
-  val get_data_copy: ('k,'d) t -> 'd option
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** Same as {!Ephemeron.K1.get_data_copy} *)
-
-  val set_data: ('k,'d) t -> 'd -> unit
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** Same as {!Ephemeron.K1.set_data} *)
-
-  val unset_data: ('k,'d) t -> unit
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** Same as {!Ephemeron.K1.unset_data} *)
-
-  val check_data: ('k,'d) t -> bool
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** Same as {!Ephemeron.K1.check_data} *)
-
-  val blit_data: ('k,'d) t -> ('k,'d) t -> unit
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  (** Same as {!Ephemeron.K1.blit_data} *)
-
   val make : 'k array -> 'd -> ('k,'d) t
   (** Same as {!Ephemeron.K1.make} *)
 
@@ -535,54 +286,3 @@ module Kn : sig
 
 end
 (** Ephemerons with arbitrary number of keys of the same type. *)
-
-module GenHashTable: sig
-  (** Define a hash table on generic containers which have a notion of
-      "death" and aliveness. If a binding is dead the hash table can
-      automatically remove it. *)
-
-  [@@@alert old_ephemeron_api "This module won't be available in 5.0"]
-
-  type equal =
-  | ETrue
-  | EFalse
-  | EDead (** the container is dead *)
-
-  module MakeSeeded(H:
-  sig
-    type t
-    (** keys *)
-
-    type 'a container
-    (** contains keys and the associated data *)
-
-    val hash: int -> t -> int
-    (** same as {!Hashtbl.SeededHashedType} *)
-
-    val equal: 'a container -> t -> equal
-    (** equality predicate used to compare a key with the one in a
-        container. Can return [EDead] if the keys in the container are
-        dead *)
-
-    val create: t -> 'a -> 'a container
-    (** [create key data] creates a container from
-        some initials keys and one data *)
-
-    val get_key: 'a container -> t option
-    (** [get_key cont] returns the keys if they are all alive *)
-
-    val get_data: 'a container -> 'a option
-    (** [get_data cont] returns the data if it is alive *)
-
-    val set_key_data: 'a container -> t -> 'a -> unit
-    (** [set_key_data cont] modifies the key and data *)
-
-    val check_key: 'a container -> bool
-    (** [check_key cont] checks if all the keys contained in the data
-        are alive *)
-  end) : SeededS with type key = H.t
-  (** Functor building an implementation of an hash table that use the container
-      for keeping the information given *)
-
-end
-(** Hash tables on generic containers with notion of death and aliveness. *)

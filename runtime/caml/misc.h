@@ -29,6 +29,8 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
+#include "camlatomic.h"
+
 /* Deprecation warnings */
 
 #if defined(__GNUC__) || defined(__clang__)
@@ -233,6 +235,36 @@ CAMLnoreturn_end;
 #define CAMLassert(x) ((void) 0)
 #endif
 
+#ifdef __GNUC__
+#define CAMLcheckresult __attribute__((warn_unused_result))
+#define CAMLlikely(e)   __builtin_expect((e), 1)
+#define CAMLunlikely(e) __builtin_expect((e), 0)
+#else
+#define CAMLcheckresult
+#define CAMLlikely(e) (e)
+#define CAMLunlikely(e) (e)
+#endif
+
+/* GC status assertions.
+
+   CAMLnoalloc at the start of a block means that the GC must not be
+   invoked during the block. */
+#if defined(__GNUC__) && defined(DEBUG)
+int caml_noalloc_begin(void);
+void caml_noalloc_end(int*);
+void caml_alloc_point_here(void);
+#define CAMLnoalloc                          \
+  int caml__noalloc                          \
+  __attribute__((cleanup(caml_noalloc_end),unused)) \
+    = caml_noalloc_begin()
+#define CAMLalloc_point_here (caml_alloc_point_here())
+#else
+#define CAMLnoalloc
+#define CAMLalloc_point_here ((void)0)
+#endif
+
+#define Is_power_of_2(x) ((x) > 0 && ((x) & ((x) - 1)) == 0)
+
 /* This hook is called when a fatal error occurs in the OCaml
    runtime. It is given arguments to be passed to the [vprintf]-like
    functions in order to synthetize the error message.
@@ -248,6 +280,11 @@ CAMLextern void caml_fatal_error (char *, ...)
   __attribute__ ((format (printf, 1, 2)))
 #endif
 CAMLnoreturn_end;
+CAMLextern void caml_fatal_error_arg (const char *fmt, const char *arg)
+                                     Noreturn;
+CAMLextern void caml_fatal_error_arg2 (const char *fmt1, const char *arg1,
+                                       const char *fmt2, const char *arg2)
+                                      Noreturn;
 
 /* Detection of available C built-in functions, the Clang way. */
 
@@ -425,7 +462,12 @@ CAMLextern int caml_read_directory(char_os * dirname,
 
 /* GC flags and messages */
 
-extern uintnat caml_verb_gc;
+void caml_gc_log (char *, ...)
+#ifdef __GNUC__
+  __attribute__ ((format (printf, 1, 2)))
+#endif
+;
+
 void caml_gc_message (int, char *, ...)
 #ifdef __GNUC__
   __attribute__ ((format (printf, 2, 3)))
@@ -441,8 +483,13 @@ int caml_runtime_warnings_active(void);
 #define Debug_tag(x) (INT64_LITERAL(0xD700D7D7D700D6D7u) \
                       | ((uintnat) (x) << 16) \
                       | ((uintnat) (x) << 48))
+#define Is_debug_tag(x) \
+  (((x) & \
+      INT64_LITERAL(0xff00ffffff00ffffu)) == INT64_LITERAL(0xD700D7D7D700D6D7u))
 #else
 #define Debug_tag(x) (0xD700D6D7ul | ((uintnat) (x) << 16))
+#define Is_debug_tag(x) \
+  (((x) & 0xff00fffful) == 0xD700D6D7ul)
 #endif /* ARCH_SIXTYFOUR */
 
 /*
@@ -473,10 +520,6 @@ int caml_runtime_warnings_active(void);
 
 #define Debug_uninit_stat    0xD7
 
-/* Note: the first argument is in fact a [value] but we don't have this
-   type available yet because we can't include [mlvalues.h] in this file.
-*/
-extern void caml_set_fields (intnat v, uintnat, uintnat);
 #endif /* DEBUG */
 
 
@@ -495,6 +538,9 @@ extern int caml_snwprintf(wchar_t * buf,
 #else
 #define snprintf_os snprintf
 #endif
+
+/* platform dependent thread naming */
+extern int caml_thread_setname(const char* name);
 
 /* Macro used to deactivate thread and address sanitizers on some
    functions. */

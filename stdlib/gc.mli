@@ -91,7 +91,8 @@ type stat =
     (** Number of forced full major collections completed since the program
         was started. @since 4.12.0 *)
 }
-(** The memory management counters are returned in a [stat] record.
+(** The memory management counters are returned in a [stat] record. These
+   counters give values for the whole program.
 
    The total amount of memory allocated by the program since it was started
    is (in words) [minor_words + major_words - promoted_words].  Multiply by
@@ -103,7 +104,9 @@ type control =
   { mutable minor_heap_size : int;
     [@ocaml.deprecated_mutable "Use {(Gc.get()) with Gc.minor_heap_size = ...}"]
     (** The size (in words) of the minor heap.  Changing
-       this parameter will trigger a minor collection.  Default: 256k. *)
+       this parameter will trigger a minor collection. The total size of the
+       minor heap used by this program will be this number multiplied by the
+       number of active domains. Default: 256k. *)
 
     mutable major_heap_increment : int;
     [@ocaml.deprecated_mutable
@@ -156,9 +159,8 @@ type control =
 
     mutable stack_limit : int;
     [@ocaml.deprecated_mutable "Use {(Gc.get()) with Gc.stack_limit = ...}"]
-    (** The maximum size of the stack (in words).  This is only
-       relevant to the byte-code runtime, as the native code runtime
-       uses the operating system's stack.  Default: 1024k. *)
+    (** The maximum size of the fiber stacks (in words).
+       Default: 1024k. *)
 
     mutable allocation_policy : int;
     [@ocaml.deprecated_mutable
@@ -245,24 +247,27 @@ type control =
 
 external stat : unit -> stat = "caml_gc_stat"
 (** Return the current values of the memory management counters in a
-   [stat] record.  This function examines every heap block to get the
-   statistics. *)
+   [stat] record that represent the program's total memory stats.
+   This function causes a full major collection. *)
 
 external quick_stat : unit -> stat = "caml_gc_quick_stat"
 (** Same as [stat] except that [live_words], [live_blocks], [free_words],
-    [free_blocks], [largest_free], and [fragments] are set to 0.  This
-    function is much faster than [stat] because it does not need to go
-    through the heap. *)
+    [free_blocks], [largest_free], and [fragments] are set to 0. Due to
+    per-domain buffers it may only represent the state of the program's
+    total memory usage since the last minor collection. This function is
+    much faster than [stat] because it does not need to trigger a full
+    major collection. *)
 
 external counters : unit -> float * float * float = "caml_gc_counters"
-(** Return [(minor_words, promoted_words, major_words)].  This function
-    is as fast as [quick_stat]. *)
+(** Return [(minor_words, promoted_words, major_words)] for the current
+    domain or potentially previous domains.  This function is as fast as
+    [quick_stat]. *)
 
 external minor_words : unit -> (float [@unboxed])
   = "caml_gc_minor_words" "caml_gc_minor_words_unboxed"
-(** Number of words allocated in the minor heap since the program was
-    started. This number is accurate in byte-code programs, but only an
-    approximation in programs compiled to native code.
+(** Number of words allocated in the minor heap by this domain or potentially
+    previous domains. This number is accurate in byte-code programs, but
+    only an approximation in programs compiled to native code.
 
     In native code this function does not allocate.
 
@@ -300,36 +305,17 @@ external compact : unit -> unit = "caml_gc_compaction"
 
 val print_stat : out_channel -> unit
 (** Print the current values of the memory management counters (in
-   human-readable form) into the channel argument. *)
+   human-readable form) of the total program into the channel argument. *)
 
 val allocated_bytes : unit -> float
-(** Return the total number of bytes allocated since the program was
-   started.  It is returned as a [float] to avoid overflow problems
+(** Return the number of bytes allocated by this domain and potentially
+   a previous domain. It is returned as a [float] to avoid overflow problems
    with [int] on 32-bit machines. *)
 
 external get_minor_free : unit -> int = "caml_get_minor_free"
-(** Return the current size of the free space inside the minor heap.
+(** Return the current size of the free space inside the minor heap of this
+   domain.
 
-    @since 4.03.0 *)
-
-external get_bucket : int -> int = "caml_get_major_bucket" [@@noalloc]
-(** [get_bucket n] returns the current size of the [n]-th future bucket
-    of the GC smoothing system. The unit is one millionth of a full GC.
-    @raise Invalid_argument if [n] is negative, return 0 if n is larger
-    than the smoothing window.
-
-    @since 4.03.0 *)
-
-external get_credit : unit -> int = "caml_get_major_credit" [@@noalloc]
-(** [get_credit ()] returns the current size of the "work done in advance"
-    counter of the GC smoothing system. The unit is one millionth of a
-    full GC.
-
-    @since 4.03.0 *)
-
-external huge_fallback_count : unit -> int = "caml_gc_huge_fallback_count"
-(** Return the number of times we tried to map huge pages and had to fall
-    back to small pages. This is always 0 if [OCAMLRUNPARAM] contains [H=1].
     @since 4.03.0 *)
 
 val finalise : ('a -> unit) -> 'a -> unit

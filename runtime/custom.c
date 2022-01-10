@@ -23,6 +23,7 @@
 #include "caml/gc_ctrl.h"
 #include "caml/memory.h"
 #include "caml/mlvalues.h"
+#include "caml/shared_heap.h"
 #include "caml/signals.h"
 #include "caml/memprof.h"
 
@@ -30,7 +31,7 @@ uintnat caml_custom_major_ratio = Custom_major_ratio_def;
 uintnat caml_custom_minor_ratio = Custom_minor_ratio_def;
 uintnat caml_custom_minor_max_bsz = Custom_minor_max_bsz_def;
 
-static value alloc_custom_gen (struct custom_operations * ops,
+static value alloc_custom_gen (const struct custom_operations * ops,
                                uintnat bsz,
                                mlsize_t mem,
                                mlsize_t max_major,
@@ -55,28 +56,29 @@ static value alloc_custom_gen (struct custom_operations * ops,
       }
       /* The remaining [mem_minor] will be counted if the block survives a
          minor GC */
-      add_to_custom_table (Caml_state->custom_table, result,
-                           mem_minor, max_major);
+      add_to_custom_table (&Caml_state->minor_tables->custom, result,
+                           mem, max_major);
       /* Keep track of extra resources held by custom block in
          minor heap. */
       if (mem_minor != 0) {
         if (max_minor == 0) max_minor = 1;
         Caml_state->extra_heap_resources_minor +=
           (double) mem_minor / (double) max_minor;
-        if (Caml_state->extra_heap_resources_minor > 1.0)
-          caml_minor_collection ();
+        if (Caml_state->extra_heap_resources_minor > 1.0) {
+          caml_request_minor_gc ();
+        }
       }
     }
   } else {
     result = caml_alloc_shr(wosize, Custom_tag);
     Custom_ops_val(result) = ops;
     caml_adjust_gc_speed(mem, max_major);
-    caml_check_urgent_gc(Val_unit);
+    result = caml_check_urgent_gc(result);
   }
   CAMLreturn(result);
 }
 
-CAMLexport value caml_alloc_custom(struct custom_operations * ops,
+CAMLexport value caml_alloc_custom(const struct custom_operations * ops,
                                    uintnat bsz,
                                    mlsize_t mem,
                                    mlsize_t max)
@@ -84,10 +86,11 @@ CAMLexport value caml_alloc_custom(struct custom_operations * ops,
   return alloc_custom_gen (ops, bsz, mem, max, mem, max);
 }
 
-CAMLexport value caml_alloc_custom_mem(struct custom_operations * ops,
+CAMLexport value caml_alloc_custom_mem(const struct custom_operations * ops,
                                        uintnat bsz,
                                        mlsize_t mem)
 {
+
   mlsize_t mem_minor =
     mem < caml_custom_minor_max_bsz ? mem : caml_custom_minor_max_bsz;
   mlsize_t max_major =
@@ -100,22 +103,22 @@ CAMLexport value caml_alloc_custom_mem(struct custom_operations * ops,
        the major GC takes 1.5 cycles (previous cycle + marking phase) before
        it starts to deallocate dead blocks allocated during the previous cycle.
        [heap_size / 150] is really [heap_size * (2/3) / 100] (but faster). */
-    Bsize_wsize (Caml_state->stat_heap_wsz) / 150 * caml_custom_major_ratio;
+    caml_heap_size(Caml_state->shared_heap) / 150 * caml_custom_major_ratio;
   mlsize_t max_minor =
     Bsize_wsize (Caml_state->minor_heap_wsz) / 100 * caml_custom_minor_ratio;
   value v = alloc_custom_gen (ops, bsz, mem, max_major, mem_minor, max_minor);
-  caml_memprof_track_custom(v, mem);
   return v;
 }
 
 struct custom_operations_list {
-  struct custom_operations * ops;
+  const struct custom_operations * ops;
   struct custom_operations_list * next;
 };
 
 static struct custom_operations_list * custom_ops_table = NULL;
 
-CAMLexport void caml_register_custom_operations(struct custom_operations * ops)
+CAMLexport void
+caml_register_custom_operations(const struct custom_operations * ops)
 {
   struct custom_operations_list * l =
     caml_stat_alloc(sizeof(struct custom_operations_list));
@@ -130,7 +133,8 @@ struct custom_operations * caml_find_custom_operations(char * ident)
 {
   struct custom_operations_list * l;
   for (l = custom_ops_table; l != NULL; l = l->next)
-    if (strcmp(l->ops->identifier, ident) == 0) return l->ops;
+    if (strcmp(l->ops->identifier, ident) == 0)
+      return (struct custom_operations*)l->ops;
   return NULL;
 }
 
@@ -141,7 +145,7 @@ struct custom_operations * caml_final_custom_operations(final_fun fn)
   struct custom_operations_list * l;
   struct custom_operations * ops;
   for (l = custom_ops_final_table; l != NULL; l = l->next)
-    if (l->ops->finalize == fn) return l->ops;
+    if (l->ops->finalize == fn) return (struct custom_operations*)l->ops;
   ops = caml_stat_alloc(sizeof(struct custom_operations));
   ops->identifier = "_final";
   ops->finalize = fn;

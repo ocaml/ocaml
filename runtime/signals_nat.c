@@ -27,15 +27,15 @@
 #include <errno.h>
 #include <stdio.h>
 #include "caml/codefrag.h"
+#include "caml/domain.h"
 #include "caml/fail.h"
+#include "caml/fiber.h"
+#include "caml/frame_descriptors.h"
 #include "caml/memory.h"
 #include "caml/osdeps.h"
 #include "caml/signals.h"
-#include "caml/signals_machdep.h"
 #include "signals_osdep.h"
 #include "caml/stack.h"
-#include "caml/memprof.h"
-#include "caml/finalise.h"
 
 #ifndef NSIG
 #define NSIG 64
@@ -46,7 +46,6 @@ typedef void (*signal_handler)(int signo);
 #ifdef _WIN32
 extern signal_handler caml_win32_signal(int sig, signal_handler action);
 #define signal(sig,act) caml_win32_signal(sig,act)
-extern void caml_win32_overflow_detection();
 #endif
 
 /* This routine is the common entry point for garbage collection
@@ -61,40 +60,66 @@ extern void caml_win32_overflow_detection();
 void caml_garbage_collection(void)
 {
   frame_descr* d;
-  intnat allocsz = 0, i, nallocs;
-  unsigned char* alloc_len;
+  intnat allocsz = 0;
+  char *sp;
+  uintnat retaddr;
+  intnat whsize;
+
+  caml_frame_descrs fds = caml_get_frame_descrs();
+  struct stack_info* stack = Caml_state->current_stack;
+
+  sp = (char*)stack->sp;
+  retaddr = *(uintnat*)sp;
 
   { /* Find the frame descriptor for the current allocation */
-    uintnat h = Hash_retaddr(Caml_state->last_return_address);
+    uintnat h = Hash_retaddr(retaddr, fds.mask);
     while (1) {
-      d = caml_frame_descriptors[h];
-      if (d->retaddr == Caml_state->last_return_address) break;
-      h = (h + 1) & caml_frame_descriptors_mask;
+      d = fds.descriptors[h];
+      if (d->retaddr == retaddr) break;
+      h = (h + 1) & fds.mask;
     }
     /* Must be an allocation frame */
     CAMLassert(d && d->frame_size != 0xFFFF && (d->frame_size & 2));
   }
 
-  /* Compute the total allocation size at this point,
-     including allocations combined by Comballoc */
-  alloc_len = (unsigned char*)(&d->live_ofs[d->num_live]);
-  nallocs = *alloc_len++;
+  { /* Compute the total allocation size at this point,
+       including allocations combined by Comballoc */
+    unsigned char* alloc_len = (unsigned char*)(&d->live_ofs[d->num_live]);
+    int i, nallocs = *alloc_len++;
 
-  if (nallocs == 0) {
-    /* This is a poll */
-    caml_process_pending_actions();
-  }
-  else
-  {
-    for (i = 0; i < nallocs; i++) {
-      allocsz += Whsize_wosize(Wosize_encoded_alloc_len(alloc_len[i]));
+    if (nallocs == 0) {
+      /* This is a poll */
+      caml_process_pending_actions();
+      return;
+    }
+    else
+    {
+      for (i = 0; i < nallocs; i++) {
+        allocsz += Whsize_wosize(Wosize_encoded_alloc_len(alloc_len[i]));
+      }
+      /* We have computed whsize (including header)
+         but need wosize (without) */
+      allocsz -= 1;
     }
 
-    /* We have computed whsize (including header), but need wosize (without) */
-    allocsz -= 1;
+    whsize = Whsize_wosize(allocsz);
 
-    caml_alloc_small_dispatch(allocsz, CAML_DO_TRACK | CAML_FROM_CAML,
-                              nallocs, alloc_len);
+    /* Put the young pointer back to what is was before our tiggering
+       allocation */
+    Caml_state->young_ptr += whsize;
+
+    /* When caml_garbage_collection returns, we assume there is enough space in
+      the minor heap for the triggering allocation. Due to finalisers in the
+      major heap, it is possible for there to be a sequence of events where a
+      single call to caml_handle_gc_interrupt does not lead to that. We do it
+      in a loop to ensure it. */
+    do {
+      caml_process_pending_actions();
+    } while
+       ( (uintnat)(Caml_state->young_ptr - whsize) <= Caml_state->young_limit );
+
+    /* Re-do the allocation: we now have enough space in the minor heap. */
+    Caml_state->young_ptr -= whsize;
   }
 }
 
@@ -152,205 +177,4 @@ int caml_set_signal_action(int signo, int action)
     return 1;
   else
     return 0;
-}
-
-/* Machine- and OS-dependent handling of bound check trap */
-
-#if defined(TARGET_power) \
-  || defined(TARGET_s390x)
-DECLARE_SIGNAL_HANDLER(trap_handler)
-{
-#if defined(SYS_rhapsody)
-  /* Unblock SIGTRAP */
-  { sigset_t mask;
-    sigemptyset(&mask);
-    sigaddset(&mask, SIGTRAP);
-    caml_sigmask_hook(SIG_UNBLOCK, &mask, NULL);
-  }
-#endif
-  Caml_state->exception_pointer = (char *) CONTEXT_EXCEPTION_POINTER;
-  Caml_state->young_ptr = (value *) CONTEXT_YOUNG_PTR;
-  Caml_state->bottom_of_stack = (char *) CONTEXT_SP;
-  Caml_state->last_return_address = (uintnat) CONTEXT_PC;
-  caml_array_bound_error();
-}
-#endif
-
-/* Machine- and OS-dependent handling of stack overflow */
-
-#ifdef HAS_STACK_OVERFLOW_DETECTION
-#ifndef CONTEXT_SP
-#error "CONTEXT_SP is required if HAS_STACK_OVERFLOW_DETECTION is defined"
-#endif
-
-/* Code compiled with ocamlopt never accesses more than
-   EXTRA_STACK bytes below the stack pointer. */
-#define EXTRA_STACK 256
-
-#ifdef RETURN_AFTER_STACK_OVERFLOW
-extern void caml_stack_overflow(caml_domain_state*);
-#endif
-
-/* Address sanitizer is confused when running the stack overflow
-   handler in an alternate stack. We deactivate it for all the
-   functions used by the stack overflow handler. */
-CAMLno_asan
-DECLARE_SIGNAL_HANDLER(segv_handler)
-{
-  struct sigaction act;
-  char * fault_addr;
-
-  /* Sanity checks:
-     - faulting address is word-aligned
-     - faulting address is on the stack, or within EXTRA_STACK of it
-     - we are in OCaml code */
-  fault_addr = CONTEXT_FAULTING_ADDRESS;
-  if (((uintnat) fault_addr & (sizeof(intnat) - 1)) == 0
-      && fault_addr < Caml_state->top_of_stack
-      && (uintnat)fault_addr >= CONTEXT_SP - EXTRA_STACK
-#ifdef CONTEXT_PC
-      && caml_find_code_fragment_by_pc((char *) CONTEXT_PC) != NULL
-#endif
-      ) {
-#ifdef RETURN_AFTER_STACK_OVERFLOW
-    /* Tweak the PC part of the context so that on return from this
-       handler, we jump to the asm function [caml_stack_overflow]
-       (from $ARCH.S). */
-#ifdef CONTEXT_PC
-    CONTEXT_C_ARG_1 = (context_reg) Caml_state;
-    CONTEXT_PC = (context_reg) &caml_stack_overflow;
-#else
-#error "CONTEXT_PC must be defined if RETURN_AFTER_STACK_OVERFLOW is"
-#endif
-#else
-    /* Raise a Stack_overflow exception straight from this signal handler */
-#if defined(CONTEXT_YOUNG_PTR)
-    Caml_state->young_ptr = (value *) CONTEXT_YOUNG_PTR;
-#endif
-#if defined(CONTEXT_EXCEPTION_POINTER)
-    Caml_state->exception_pointer = (char *) CONTEXT_EXCEPTION_POINTER;
-#endif
-    caml_raise_stack_overflow();
-#endif
-#ifdef NAKED_POINTERS_CHECKER
-  } else if (Caml_state->checking_pointer_pc) {
-#ifdef CONTEXT_PC
-    CONTEXT_PC = (context_reg)Caml_state->checking_pointer_pc;
-#else
-#error "CONTEXT_PC must be defined if RETURN_AFTER_STACK_OVERFLOW is"
-#endif /* CONTEXT_PC */
-#endif /* NAKED_POINTERS_CHECKER */
-  } else {
-    /* Otherwise, deactivate our exception handler and return,
-       causing fatal signal to be generated at point of error. */
-    act.sa_handler = SIG_DFL;
-    act.sa_flags = 0;
-    sigemptyset(&act.sa_mask);
-    sigaction(SIGSEGV, &act, NULL);
-  }
-}
-
-#endif
-
-/* Initialization of signal stuff */
-
-void caml_init_signals(void)
-{
-  /* Bound-check trap handling */
-
-#if defined(TARGET_power)
-  { struct sigaction act;
-    sigemptyset(&act.sa_mask);
-    SET_SIGACT(act, trap_handler);
-#if !defined(SYS_rhapsody)
-    act.sa_flags |= SA_NODEFER;
-#endif
-    sigaction(SIGTRAP, &act, NULL);
-  }
-#endif
-
-#if defined(TARGET_s390x)
-  { struct sigaction act;
-    sigemptyset(&act.sa_mask);
-    SET_SIGACT(act, trap_handler);
-    sigaction(SIGFPE, &act, NULL);
-  }
-#endif
-
-#ifdef HAS_STACK_OVERFLOW_DETECTION
-  if (caml_setup_stack_overflow_detection() != -1) {
-    struct sigaction act;
-    SET_SIGACT(act, segv_handler);
-    act.sa_flags |= SA_ONSTACK | SA_NODEFER;
-    sigemptyset(&act.sa_mask);
-    sigaction(SIGSEGV, &act, NULL);
-  }
-#endif
-}
-
-/* Termination of signal stuff */
-
-#if defined(TARGET_power) || defined(TARGET_s390x) \
-    || defined(HAS_STACK_OVERFLOW_DETECTION)
-static void set_signal_default(int signum)
-{
-  struct sigaction act;
-  sigemptyset(&act.sa_mask);
-  act.sa_handler = SIG_DFL;
-  act.sa_flags = 0;
-  sigaction(signum, &act, NULL);
-}
-#endif
-
-void caml_terminate_signals(void)
-{
-#if defined(TARGET_power)
-  set_signal_default(SIGTRAP);
-#endif
-
-#if defined(TARGET_s390x)
-  set_signal_default(SIGFPE);
-#endif
-
-#ifdef HAS_STACK_OVERFLOW_DETECTION
-  set_signal_default(SIGSEGV);
-  caml_stop_stack_overflow_detection();
-#endif
-}
-
-/* Allocate and select an alternate stack for handling signals,
-   especially SIGSEGV signals.
-   Each thread needs its own alternate stack.
-   The alternate stack used to be statically-allocated for the main thread,
-   but this is incompatible with Glibc 2.34 and newer, where SIGSTKSZ
-   may not be a compile-time constant (issue #10250). */
-
-CAMLexport int caml_setup_stack_overflow_detection(void)
-{
-#ifdef HAS_STACK_OVERFLOW_DETECTION
-  stack_t stk;
-  stk.ss_sp = malloc(SIGSTKSZ);
-  if (stk.ss_sp == NULL) return -1;
-  stk.ss_size = SIGSTKSZ;
-  stk.ss_flags = 0;
-  return sigaltstack(&stk, NULL);
-#else
-  return 0;
-#endif
-}
-
-CAMLexport int caml_stop_stack_overflow_detection(void)
-{
-#ifdef HAS_STACK_OVERFLOW_DETECTION
-  stack_t oldstk, stk;
-  stk.ss_flags = SS_DISABLE;
-  if (sigaltstack(&stk, &oldstk) == -1) return -1;
-  /* If caml_setup_stack_overflow_detection failed, we are not using
-     an alternate signal stack.  SS_DISABLE will be set in oldstk,
-     and there is nothing to free in this case. */
-  if (! (oldstk.ss_flags & SS_DISABLE)) free(oldstk.ss_sp);
-  return 0;
-#else
-  return 0;
-#endif
 }

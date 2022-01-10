@@ -26,7 +26,8 @@ let convert (prim : Lambda.primitive) : Clambda_primitives.primitive =
   match prim with
   | Pmakeblock (tag, mutability, shape) ->
       Pmakeblock (tag, mutability, shape)
-  | Pfield field -> Pfield field
+  | Pfield (field, imm_or_pointer, mutability) ->
+      Pfield (field, imm_or_pointer, mutability)
   | Pfield_computed -> Pfield_computed
   | Psetfield (field, imm_or_pointer, init_or_assign) ->
       Psetfield (field, imm_or_pointer, init_or_assign)
@@ -36,6 +37,10 @@ let convert (prim : Lambda.primitive) : Clambda_primitives.primitive =
   | Psetfloatfield (field, init_or_assign) ->
       Psetfloatfield (field, init_or_assign)
   | Pduprecord (repr, size) -> Pduprecord (repr, size)
+  | Prunstack -> Prunstack
+  | Pperform -> Pperform
+  | Presume -> Presume
+  | Preperform -> Preperform
   | Pccall prim -> Pccall prim
   | Praise kind -> Praise kind
   | Psequand -> Psequand
@@ -139,8 +144,13 @@ let convert (prim : Lambda.primitive) : Clambda_primitives.primitive =
   | Pbigarraydim dim -> Pbigarraydim dim
   | Pbswap16 -> Pbswap16
   | Pint_as_pointer -> Pint_as_pointer
+  | Patomic_load { immediate_or_pointer } ->
+      Patomic_load { immediate_or_pointer }
+  | Patomic_exchange -> Patomic_exchange
+  | Patomic_cas -> Patomic_cas
+  | Patomic_fetch_add -> Patomic_fetch_add
   | Popaque -> Popaque
-
+  | Pdls_get -> Pdls_get
   | Pbytes_to_string
   | Pbytes_of_string
   | Pctconst _

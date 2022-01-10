@@ -61,9 +61,6 @@ external major : unit -> unit = "caml_gc_major"
 external full_major : unit -> unit = "caml_gc_full_major"
 external compact : unit -> unit = "caml_gc_compaction"
 external get_minor_free : unit -> int = "caml_get_minor_free"
-external get_bucket : int -> int = "caml_get_major_bucket" [@@noalloc]
-external get_credit : unit -> int = "caml_get_major_credit" [@@noalloc]
-external huge_fallback_count : unit -> int = "caml_gc_huge_fallback_count"
 external eventlog_pause : unit -> unit = "caml_eventlog_pause"
 external eventlog_resume : unit -> unit = "caml_eventlog_resume"
 

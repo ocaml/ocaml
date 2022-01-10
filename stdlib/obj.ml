@@ -30,6 +30,9 @@ external size : t -> int = "%obj_size"
 external reachable_words : t -> int = "caml_obj_reachable_words"
 external field : t -> int -> t = "%obj_field"
 external set_field : t -> int -> t -> unit = "%obj_set_field"
+external compare_and_swap_field : t -> int -> t -> t -> bool
+  = "caml_obj_compare_and_swap"
+external is_shared : t -> bool = "caml_obj_is_shared"
 external floatarray_get : floatarray -> int -> float = "caml_floatarray_get"
 external floatarray_set :
     floatarray -> int -> float -> unit = "caml_floatarray_set"
@@ -47,8 +50,10 @@ external add_offset : t -> Int32.t -> t = "caml_obj_add_offset"
 external with_tag : int -> t -> t = "caml_obj_with_tag"
 
 let first_non_constant_constructor_tag = 0
-let last_non_constant_constructor_tag = 245
+let last_non_constant_constructor_tag = 243
 
+let forcing_tag = 244
+let cont_tag = 245
 let lazy_tag = 246
 let closure_tag = 247
 let object_tag = 248

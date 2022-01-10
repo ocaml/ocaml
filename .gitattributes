@@ -72,6 +72,9 @@ tools/mantis2gh_stripped.csv typo.missing-header
 .depend                  typo.prune
 /.depend.menhir          typo.prune
 
+# These can be fixed at some point
+/tools/*.py              typo.long-line
+
 # Makefiles may contain tabs
 Makefile*                typo.makefile-whitespace=may
 
@@ -183,6 +186,7 @@ tools/ocamlsize text eol=lf
 tools/pre-commit-githook text eol=lf
 tools/markdown-add-pr-links.sh text eol=lf
 runtime/caml/compatibility.h typo.long-line=may
+runtime/caml/sizeclasses.h typo.missing-header typo.white-at-eol
 
 # These are all Perl scripts, so may not actually require this
 manual/tools/caml-tex text eol=lf

@@ -869,6 +869,12 @@ let rec choice ctx t =
     | Pignore
     | Pcompare_ints | Pcompare_floats | Pcompare_bints _
 
+    (* we don't handle effect or DLS primitives *)
+    | Prunstack | Pperform | Presume | Preperform | Pdls_get
+
+    (* we don't handle atomic primitives *)
+    | Patomic_exchange | Patomic_cas | Patomic_fetch_add | Patomic_load _
+
     (* we don't handle array indices as destinations yet *)
     | (Pmakearray _ | Pduparray _)
 

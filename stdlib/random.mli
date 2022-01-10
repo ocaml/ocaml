@@ -13,23 +13,31 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Pseudo-random number generators (PRNG). *)
+(** Pseudo-random number generators (PRNG).
+
+    With multiple domains, by default, each domain is initialised with the same
+    random seed. Hence, each domain will yield the same sequence of numbers. If
+    you wish to have uncorrelated sequences of random numbers on each domain,
+    one way to achieve this is to call {!self_init} on each domain before
+    requesting random numbers.
+
+*)
 
 (** {1 Basic functions} *)
 
 val init : int -> unit
-(** Initialize the generator, using the argument as a seed.
-     The same seed will always yield the same sequence of numbers. *)
+(** Initialize the domain-local generator, using the argument as a seed.
+    The same seed will always yield the same sequence of numbers. *)
 
 val full_init : int array -> unit
 (** Same as {!Random.init} but takes more data as seed. *)
 
 val self_init : unit -> unit
-(** Initialize the generator with a random seed chosen
-   in a system-dependent way.  If [/dev/urandom] is available on
-   the host machine, it is used to provide a highly random initial
-   seed.  Otherwise, a less random seed is computed from system
-   parameters (current time, process IDs). *)
+(** Initialize the domain-local generator with a random seed chosen
+    in a system-dependent way.  If [/dev/urandom] is available on the host
+    machine, it is used to provide a highly random initial seed.  Otherwise, a
+    less random seed is computed from system parameters (current time, process
+    IDs, domain-local state). *)
 
 val bits : unit -> int
 (** Return 30 random bits in a nonnegative integer.
@@ -131,7 +139,8 @@ end
 
 
 val get_state : unit -> State.t
-(** Return the current state of the generator used by the basic functions. *)
+(** Return the current domain-local state of the generator used by the basic
+    functions. *)
 
 val set_state : State.t -> unit
-(** Set the state of the generator used by the basic functions. *)
+(** Set the domain-local state of the generator used by the basic functions. *)

@@ -196,7 +196,7 @@ end
 
 (* This is the state you get with [init 27182818] and then applying
    the "land 0x3FFFFFFF" filter to them.  See #5575, #5793, #5977. *)
-let default = {
+let mk_default () = {
   State.st = [|
       0x3ae2522b; 0x1d8d4634; 0x15b4fad0; 0x18b14ace; 0x12f8a3c4; 0x3b086c47;
       0x16d467d6; 0x101d91c7; 0x321df177; 0x0176c193; 0x1ff72bf1; 0x1e889109;
@@ -212,26 +212,28 @@ let default = {
   State.idx = 0;
 }
 
-let bits () = State.bits default
-let int bound = State.int default bound
-let full_int bound = State.full_int default bound
-let int32 bound = State.int32 default bound
-let nativeint bound = State.nativeint default bound
-let int64 bound = State.int64 default bound
-let float scale = State.float default scale
-let bool () = State.bool default
-let bits32 () = State.bits32 default
-let bits64 () = State.bits64 default
-let nativebits () = State.nativebits default
+let random_key = Domain.DLS.new_key mk_default
 
-let full_init seed = State.full_init default seed
-let init seed = State.full_init default [| seed |]
+let bits () = State.bits (Domain.DLS.get random_key)
+let int bound = State.int (Domain.DLS.get random_key) bound
+let full_int bound = State.full_int (Domain.DLS.get random_key) bound
+let int32 bound = State.int32 (Domain.DLS.get random_key) bound
+let nativeint bound = State.nativeint (Domain.DLS.get random_key) bound
+let int64 bound = State.int64 (Domain.DLS.get random_key) bound
+let float scale = State.float (Domain.DLS.get random_key) scale
+let bool () = State.bool (Domain.DLS.get random_key)
+let bits32 () = State.bits32 (Domain.DLS.get random_key)
+let bits64 () = State.bits64 (Domain.DLS.get random_key)
+let nativebits () = State.nativebits (Domain.DLS.get random_key)
+
+let full_init seed = State.full_init (Domain.DLS.get random_key) seed
+let init seed = State.full_init (Domain.DLS.get random_key) [| seed |]
 let self_init () = full_init (random_seed())
 
 (* Manipulating the current state. *)
 
-let get_state () = State.copy default
-let set_state s = State.assign default s
+let get_state () = State.copy (Domain.DLS.get random_key)
+let set_state s = State.assign (Domain.DLS.get random_key) s
 
 (********************
 

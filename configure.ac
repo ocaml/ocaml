@@ -55,7 +55,8 @@ toolchain="cc"
 profinfo=false
 profinfo_width=0
 extralibs=
-instrumented_runtime=false
+instrumented_runtime=true
+force_instrumented_runtime=false
 instrumented_runtime_libs=""
 bootstrapping_flexdll=false
 
@@ -168,8 +169,7 @@ AC_SUBST([flexlink_flags])
 AC_SUBST([PACKLD])
 AC_SUBST([stdlib_manpages])
 AC_SUBST([compute_deps])
-AC_SUBST([naked_pointers])
-AC_SUBST([naked_pointers_checker])
+AC_SUBST([force_instrumented_runtime])
 
 ## Generated files
 
@@ -300,13 +300,9 @@ AC_ARG_ENABLE([frame-pointers],
   [AS_HELP_STRING([--enable-frame-pointers],
     [use frame pointers in runtime and generated code])])
 
-AC_ARG_ENABLE([naked-pointers],
-  [AS_HELP_STRING([--disable-naked-pointers],
-    [do not allow naked pointers])])
-
-AC_ARG_ENABLE([naked-pointers-checker],
-  [AS_HELP_STRING([--enable-naked-pointers-checker],
-    [enable the naked pointers checker])])
+AC_ARG_ENABLE([naked-pointers], [],
+  [AC_MSG_ERROR([Naked pointers are not allowed in OCaml Multicore.])],
+  [AC_DEFINE([NO_NAKED_POINTERS])])
 
 AC_ARG_ENABLE([spacetime], [],
   [AC_MSG_ERROR([spacetime profiling was deleted in OCaml 4.12.])],
@@ -339,6 +335,10 @@ AC_ARG_ENABLE([flambda],
 AC_ARG_ENABLE([flambda-invariants],
   [AS_HELP_STRING([--enable-flambda-invariants],
     [enable invariants checks in flambda])])
+
+AC_ARG_ENABLE([force-instrumented-runtime],
+  [AS_HELP_STRING([--force-instrumented-runtime],
+    [force the usage of the instrumented runtime])])
 
 AC_ARG_ENABLE([cmm-invariants],
   [AS_HELP_STRING([--enable-cmm-invariants],
@@ -526,7 +526,9 @@ AS_CASE([$ocaml_cv_cc_vendor],
   [sunc-*],
     [CPP="$CC -E -Qn"], # suppress generation of Sun PRO ident string
   [msvc-*],
-    [CPP="$CC -nologo -EP"])
+    [CPP="$CC -nologo -EP"],
+#  TODO: why can we not use $CPP in multicore, fix this?
+  [CPP="$CC -E -P"])
 
 # Libraries to build depending on the host
 
@@ -874,6 +876,10 @@ AC_CHECK_HEADER([dirent.h], [AC_DEFINE([HAS_DIRENT])], [],
 
 AC_CHECK_HEADER([sys/select.h], [AC_DEFINE([HAS_SYS_SELECT_H])], [],
   [#include <sys/types.h>])
+
+AC_CHECK_HEADER([stdatomic.h], [AC_DEFINE([HAS_STDATOMIC_H])])
+
+AC_CHECK_HEADER([sys/mman.h], [AC_DEFINE([HAS_SYS_MMAN_H])])
 
 # Checks for types
 
@@ -1351,6 +1357,10 @@ AS_CASE([$host],
   ]
 )
 
+AS_IF([test "x$enable_force_instrumented_runtime" = "xyes"],
+  [force_instrumented_runtime=true]
+)
+
 # The instrumented runtime is built by default
 # if the proper clock source is found.
 # If asked via --enable-instrumented-runtime, configuration fails if the proper
@@ -1804,6 +1814,7 @@ AS_CASE([$enable_systhreads,$enable_unix_lib],
     [*-*-mingw32|*-pc-windows],
       [systhread_support=true
       otherlibraries="$otherlibraries systhreads"
+      PTHREAD_LIBS="-lpthread"
       AC_MSG_NOTICE([the Win32 threads library is supported])],
     [AX_PTHREAD(
       [systhread_support=true
@@ -1844,30 +1855,6 @@ AS_IF([test x"$enable_frame_pointers" = "xyes"],
   )],
   [AC_MSG_NOTICE([not using frame pointers])
   frame_pointers=false])
-
-## No naked pointers
-
-AS_IF([test x"$enable_naked_pointers" = "xno" ],
-  [naked_pointers=false
-   AC_DEFINE([NO_NAKED_POINTERS])],
-  [naked_pointers=true])
-
-AS_IF([test x"$enable_naked_pointers_checker" = "xyes" ],
-  [AS_IF([test x"$enable_naked_pointers" = "xno" ],
-         [AC_MSG_ERROR(m4_normalize([
-               --enable-naked-pointers-checker and --disable-naked-pointers
-               are incompatible]))])
-   AS_CASE(["$arch","$system"],
-    [amd64,linux|amd64,macosx \
-    |amd64,openbsd|amd64,win64 \
-    |amd64,freebsd|amd64,solaris \
-    |arm64,linux|arm64,macosx],
-      [naked_pointers_checker=true
-      AC_DEFINE([NAKED_POINTERS_CHECKER])],
-    [*],
-      [AC_MSG_ERROR([naked pointers checker not supported on this platform])]
-  )],
-  [naked_pointers_checker=false])
 
 ## Check for mmap support for huge pages and contiguous heap
 OCAML_MMAP_SUPPORTS_HUGE_PAGES
@@ -1974,15 +1961,17 @@ ocamlc_cflags="$common_cflags $sharedlib_cflags \$(CFLAGS)"
 ocamlc_cppflags="$common_cppflags \$(CPPFLAGS)"
 cclibs="$cclibs $mathlib"
 
+AC_CHECK_LIB(execinfo, backtrace, cclibs="$cclibs -lexecinfo",[])
+
 AS_CASE([$host],
   [*-*-mingw32],
-    [bytecclibs="-lws2_32 -lversion"
-    nativecclibs="-lws2_32 -lversion"],
+    [bytecclibs="-lws2_32 -lversion -lpthread -lgcc_eh -lDbgHelp"
+    nativecclibs="-lws2_32 -lversion -lpthread -lgcc_eh -lDbgHelp"],
   [*-pc-windows],
     [bytecclibs="advapi32.lib ws2_32.lib version.lib"
     nativecclibs="advapi32.lib ws2_32.lib version.lib"],
   [bytecclibs="$cclibs $DLLIBS $PTHREAD_LIBS"
-  nativecclibs="$cclibs $DLLIBS"])
+  nativecclibs="$cclibs $DLLIBS $PTHREAD_LIBS"])
 
 AS_IF([test x"$libdir" = x'${exec_prefix}/lib'],
   [libdir="$libdir"/ocaml])

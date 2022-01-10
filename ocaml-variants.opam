@@ -7,14 +7,57 @@ depends: [
   "base-unix" {post}
   "base-bigarray" {post}
   "base-threads" {post}
+  "base-domains" {post}
+  "ocaml-option-nnp"
 ]
 conflict-class: "ocaml-core-compiler"
 flags: compiler
 build: [
-  ["./configure" "--prefix=%{prefix}%" "--docdir=%{doc}%/ocaml"]
+  [
+    "./configure"
+    "--prefix=%{prefix}%"
+    "--docdir=%{doc}%/ocaml"
+    "--with-afl" {ocaml-option-afl:installed}
+    "--disable-native-compiler" {ocaml-option-bytecode-only:installed}
+    "--disable-force-safe-string" {ocaml-option-default-unsafe-string:installed}
+    "DEFAULT_STRING=unsafe" {ocaml-option-default-unsafe-string:installed}
+    "--disable-flat-float-array" {ocaml-option-no-flat-float-array:installed}
+    "--enable-flambda" {ocaml-option-flambda:installed}
+    "--enable-frame-pointers" {ocaml-option-fp:installed}
+    "CC=cc" {!ocaml-option-32bit:installed & !ocaml-option-musl:installed & (os="openbsd"|os="macos")}
+    "CC=musl-gcc" {ocaml-option-musl:installed & os-distribution!="alpine"}
+    "CFLAGS=-Os" {ocaml-option-musl:installed}
+    #"CC=gcc -m32" {ocaml-option-32bit:installed & os="linux"}
+    #"CC=gcc -Wl,-read_only_relocs,suppress -arch i386 -m32" {ocaml-option-32bit:installed & os="macos"}
+    "ASPP=cc -c" {!ocaml-option-32bit:installed & !ocaml-option-musl:installed & (os="openbsd"|os="macos")}
+    "ASPP=musl-gcc -c" {ocaml-option-musl:installed & os-distribution!="alpine"}
+    #"ASPP=gcc -m32 -c" {ocaml-option-32bit:installed & os="linux"}
+    #"ASPP=gcc -arch i386 -m32 -c" {ocaml-option-32bit:installed & os="macos"}
+    #"AS=as --32" {ocaml-option-32bit:installed & os="linux"}
+    #"AS=as -arch i386" {ocaml-option-32bit:installed & os="macos"}
+    #"--host=i386-linux" {ocaml-option-32bit:installed & os="linux"}
+    #"--host=i386-apple-darwin13.2.0" {ocaml-option-32bit:installed & os="macos"}
+    #"PARTIALLD=ld -r -melf_i386" {ocaml-option-32bit:installed & os="linux"}
+    # 32bit options above commented out just to reduce diff with ocaml-variants.4.12.0+options
+    "LIBS=-static" {ocaml-option-static:installed}
+  ]
   [make "-j%{jobs}%"]
 ]
 install: [make "install"]
+conflicts: [
+  "ocaml-option-32bit"      # Not yet implemented
+  "ocaml-option-nnpchecker" # Fundamentally not possible
+]
+depopts: [
+  "ocaml-option-afl"
+  "ocaml-option-bytecode-only"
+  "ocaml-option-default-unsafe-string"
+  "ocaml-option-no-flat-float-array"
+  "ocaml-option-flambda"
+  "ocaml-option-fp"
+  "ocaml-option-musl"
+  "ocaml-option-static"
+]
 maintainer: "caml-list@inria.fr"
 homepage: "https://github.com/ocaml/ocaml/"
 bug-reports: "https://github.com/ocaml/ocaml/issues"

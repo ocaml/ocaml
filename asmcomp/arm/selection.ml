@@ -53,6 +53,7 @@ exception Use_default
 let r1 = phys_reg 1
 let r6 = phys_reg 6
 let r7 = phys_reg 7
+let r12 = phys_reg 8
 
 let pseudoregs_for_operation op arg res =
   match op with
@@ -267,9 +268,11 @@ method private select_operation_softfp op args dbg =
        [Cop(Cextcall(func, typ_int, [XFloat;XFloat], false),
             args, dbg)])
   (* Add coercions around loads and stores of 32-bit floats *)
-  | (Cload (Single, mut), args) ->
+  | (Cload {memory_chunk=Single; mutability; is_atomic=false}, args) ->
       (self#iextcall "__aeabi_f2d" typ_float [XInt],
-        [Cop(Cload (Word_int, mut), args, dbg)])
+        [Cop(Cload {memory_chunk=Word_int;
+                    mutability;
+                    is_atomic=false}, args, dbg)])
   | (Cstore (Single, init), [arg1; arg2]) ->
       let arg2' =
         Cop(Cextcall("__aeabi_d2f", typ_int, [XFloat], false),

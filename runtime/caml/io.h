@@ -20,8 +20,10 @@
 
 #ifdef CAML_INTERNALS
 
+#include "camlatomic.h"
 #include "misc.h"
 #include "mlvalues.h"
+#include "platform.h"
 
 #ifndef IO_BUFFER_SIZE
 #define IO_BUFFER_SIZE 65536
@@ -40,9 +42,9 @@ struct channel {
   char * end;                   /* Physical end of the buffer */
   char * curr;                  /* Current position in the buffer */
   char * max;                   /* Logical end of the buffer (for input) */
-  void * mutex;                 /* Placeholder for mutex (for systhreads) */
+  caml_plat_mutex mutex;        /* Mutex protecting buffer */
   struct channel * next, * prev;/* Double chaining of channels (flush_all) */
-  int refcount;                 /* Number of custom blocks owning the channel */
+  atomic_uintnat refcount;      /* Number of custom blocks owning the channel */
   int flags;                    /* Bitfield */
   char buff[IO_BUFFER_SIZE];    /* The buffer itself */
   char * name;                  /* Optional name (to report fd leaks) */

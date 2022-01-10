@@ -28,63 +28,47 @@
 #endif
 #include "caml/osdeps.h"
 #include "caml/startup_aux.h"
-
+#include "caml/prims.h"
 
 #ifdef _WIN32
 extern void caml_win32_unregister_overflow_detection (void);
 #endif
 
-CAMLexport header_t *caml_atom_table = NULL;
+/* Configuration parameters and flags */
 
-/* Initialize the atom table */
-void caml_init_atom_table(void)
+static struct caml_params params;
+const struct caml_params* const caml_params = &params;
+
+static void init_startup_params(void)
 {
-  caml_stat_block b;
-  int i;
+#ifndef NATIVE_CODE
+  char_os * cds_file;
+#endif
 
-  /* PR#9128: We need to give the atom table its own page to make sure
-     it does not share a page with a non-value, which would break code
-     which depend on the correctness of the page table. For example,
-     if the atom table shares a page with bytecode, then functions in
-     the runtime may decide to follow a code pointer in a closure, as
-     if it were a pointer to a value.
-
-     We add 1 padding at the end of the atom table because the atom
-     pointer actually points to the word *following* the corresponding
-     entry in the table (the entry is an empty block *header*).
-  */
-  asize_t request = (256 + 1) * sizeof(header_t);
-  request = (request + Page_size - 1) / Page_size * Page_size;
-  caml_atom_table =
-    caml_stat_alloc_aligned_noexc(request, 0, &b);
-
-  for(i = 0; i < 256; i++) {
-    caml_atom_table[i] = Make_header(0, i, Caml_black);
+  params.init_percent_free = Percent_free_def;
+  params.init_max_percent_free = Max_percent_free_def;
+  params.init_minor_heap_wsz = Minor_heap_def;
+  params.init_heap_chunk_sz = Heap_chunk_def;
+  params.init_heap_wsz = Init_heap_def;
+  params.init_custom_major_ratio = Custom_major_ratio_def;
+  params.init_custom_minor_ratio = Custom_minor_ratio_def;
+  params.init_custom_minor_max_bsz = Custom_minor_max_bsz_def;
+  params.init_max_stack_wsz = Max_stack_def;
+  params.init_fiber_wsz = (Stack_threshold * 2) / sizeof(value);
+#ifdef DEBUG
+  params.verb_gc = 0x3F;
+#endif
+#ifndef NATIVE_CODE
+  cds_file = caml_secure_getenv(T("CAML_DEBUG_FILE"));
+  if (cds_file != NULL) {
+    params.cds_file = caml_stat_strdup_os(cds_file);
   }
-  if (caml_page_table_add(In_static_data,
-                          caml_atom_table, caml_atom_table + 256 + 1) != 0) {
-    caml_fatal_error("not enough memory for initial page table");
-  }
+#endif
+  params.trace_level = 0;
+  params.cleanup_on_exit = 0;
+  params.print_magic = 0;
+  params.print_config = 0;
 }
-
-
-/* Parse the OCAMLRUNPARAM environment variable. */
-
-uintnat caml_init_percent_free = Percent_free_def;
-uintnat caml_init_max_percent_free = Max_percent_free_def;
-uintnat caml_init_minor_heap_wsz = Minor_heap_def;
-uintnat caml_init_heap_chunk_sz = Heap_chunk_def;
-uintnat caml_init_heap_wsz = Init_heap_def;
-uintnat caml_init_max_stack_wsz = Max_stack_def;
-uintnat caml_init_major_window = Major_window_def;
-uintnat caml_init_custom_major_ratio = Custom_major_ratio_def;
-uintnat caml_init_custom_minor_ratio = Custom_minor_ratio_def;
-uintnat caml_init_custom_minor_max_bsz = Custom_minor_max_bsz_def;
-uintnat caml_init_policy = Allocation_policy_def;
-extern int caml_parser_trace;
-uintnat caml_trace_level = 0;
-int caml_cleanup_on_exit = 0;
-
 
 static void scanmult (char_os *opt, uintnat *var)
 {
@@ -103,34 +87,39 @@ static void scanmult (char_os *opt, uintnat *var)
 void caml_parse_ocamlrunparam(void)
 {
   char_os *opt = caml_secure_getenv (T("OCAMLRUNPARAM"));
-  uintnat p;
+
+  init_startup_params();
 
   if (opt == NULL) opt = caml_secure_getenv (T("CAMLRUNPARAM"));
 
   if (opt != NULL){
     while (*opt != '\0'){
       switch (*opt++){
-      case 'a': scanmult (opt, &caml_init_policy); break;
-      case 'b': scanmult (opt, &p); caml_record_backtraces(p); break;
-      case 'c': scanmult (opt, &p); caml_cleanup_on_exit = (p != 0); break;
-      case 'h': scanmult (opt, &caml_init_heap_wsz); break;
-      case 'H': scanmult (opt, &caml_use_huge_pages); break;
-      case 'i': scanmult (opt, &caml_init_heap_chunk_sz); break;
-      case 'l': scanmult (opt, &caml_init_max_stack_wsz); break;
-      case 'M': scanmult (opt, &caml_init_custom_major_ratio); break;
-      case 'm': scanmult (opt, &caml_init_custom_minor_ratio); break;
-      case 'n': scanmult (opt, &caml_init_custom_minor_max_bsz); break;
-      case 'o': scanmult (opt, &caml_init_percent_free); break;
-      case 'O': scanmult (opt, &caml_init_max_percent_free); break;
-      case 'p': scanmult (opt, &p); caml_parser_trace = (p != 0); break;
+      //case 'a': scanmult (opt, &p); caml_set_allocation_policy (p); break;
+      case 'b': scanmult (opt, &params.backtrace_enabled); break;
+      case 'c': scanmult (opt, &params.cleanup_on_exit); break;
+      case 'e': scanmult (opt, &params.eventlog_enabled); break;
+      case 'f': scanmult (opt, &params.init_fiber_wsz); break;
+      case 'h': scanmult (opt, &params.init_heap_wsz); break;
+      //case 'H': scanmult (opt, &caml_use_huge_pages); break;
+      case 'i': scanmult (opt, &params.init_heap_chunk_sz); break;
+      case 'l': scanmult (opt, &params.init_max_stack_wsz); break;
+      case 'M': scanmult (opt, &params.init_custom_major_ratio); break;
+      case 'm': scanmult (opt, &params.init_custom_minor_ratio); break;
+      case 'n': scanmult (opt, &params.init_custom_minor_max_bsz); break;
+      case 'o': scanmult (opt, &params.init_percent_free); break;
+      case 'O': scanmult (opt, &params.init_max_percent_free); break;
+      case 'p': scanmult (opt, &params.parser_trace); break;
       case 'R': break; /*  see stdlib/hashtbl.mli */
-      case 's': scanmult (opt, &caml_init_minor_heap_wsz); break;
-      case 't': scanmult (opt, &caml_trace_level); break;
-      case 'v': scanmult (opt, &caml_verb_gc); break;
-      case 'w': scanmult (opt, &caml_init_major_window); break;
+      case 's': scanmult (opt, &params.init_minor_heap_wsz); break;
+      case 't': scanmult (opt, &params.trace_level); break;
+      case 'v': scanmult (opt, &params.verb_gc); break;
+      case 'V': scanmult (opt, &params.verify_heap); break;
+      //case 'w': scanmult (opt, &caml_init_major_window); break;
       case 'W': scanmult (opt, &caml_runtime_warnings); break;
       case ',': continue;
       }
+      --opt; /* to handle patterns like ",b=1" */
       while (*opt != '\0'){
         if (*opt++ == ',') break;
       }
@@ -195,4 +184,16 @@ CAMLexport void caml_shutdown(void)
 #endif
 
   shutdown_happened = 1;
+}
+
+void caml_init_exe_name(const char_os* exe_name)
+{
+  params.exe_name = exe_name;
+}
+
+void caml_init_section_table(const char* section_table,
+                             asize_t section_table_size)
+{
+  params.section_table = section_table;
+  params.section_table_size = section_table_size;
 }

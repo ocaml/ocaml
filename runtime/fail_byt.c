@@ -29,7 +29,7 @@
 #include "caml/mlvalues.h"
 #include "caml/printexc.h"
 #include "caml/signals.h"
-#include "caml/stacks.h"
+#include "caml/fiber.h"
 
 CAMLexport void caml_raise(value v)
 {
@@ -37,13 +37,18 @@ CAMLexport void caml_raise(value v)
   CAMLassert(!Is_exception_result(v));
 
   // avoid calling caml_raise recursively
-  v = caml_process_pending_actions_with_root_exn(v);
+  v = caml_process_pending_signals_with_root_exn(v);
   if (Is_exception_result(v))
     v = Extract_exception(v);
 
-  Caml_state->exn_bucket = v;
   if (Caml_state->external_raise == NULL) caml_fatal_uncaught_exception(v);
-  siglongjmp(Caml_state->external_raise->buf, 1);
+  *Caml_state->external_raise->exn_bucket = v;
+
+  while(Caml_state->local_roots != Caml_state->external_raise->local_roots) {
+    Caml_state->local_roots = Caml_state->local_roots->next;
+  }
+
+  siglongjmp(Caml_state->external_raise->jmp->buf, 1);
 }
 
 CAMLexport void caml_raise_constant(value tag)
@@ -98,15 +103,16 @@ CAMLexport void caml_raise_with_string(value tag, char const *msg)
 */
 static void check_global_data(char const *exception_name)
 {
-  if (caml_global_data == 0) {
-    fprintf(stderr, "Fatal error: exception %s\n", exception_name);
+  if (caml_global_data == 0 || !Is_block(caml_global_data)) {
+    fprintf(stderr, "Fatal error: exception %s during initialisation\n",
+            exception_name);
     exit(2);
   }
 }
 
 static void check_global_data_param(char const *exception_name, char const *msg)
 {
-  if (caml_global_data == 0) {
+  if (caml_global_data == 0 || !Is_block(caml_global_data)) {
     fprintf(stderr, "Fatal error: exception %s(\"%s\")\n", exception_name, msg);
     exit(2);
   }
@@ -197,6 +203,12 @@ CAMLexport void caml_raise_sys_blocked_io(void)
   caml_raise_constant(Field(caml_global_data, SYS_BLOCKED_IO));
 }
 
+CAMLexport void caml_raise_continuation_already_taken(void)
+{
+  check_global_data("Continuation_already_taken");
+  caml_raise_constant(Field(caml_global_data, CONTINUATION_ALREADY_TAKEN_EXN));
+}
+
 CAMLexport value caml_raise_if_exception(value res)
 {
   if (Is_exception_result(res)) caml_raise(Extract_exception(res));
@@ -208,8 +220,15 @@ int caml_is_special_exception(value exn) {
      a more readable textual representation of some exceptions. It is
      better to fall back to the general, less readable representation
      than to abort with a fatal error as above. */
-  if (caml_global_data == 0) return 0;
-  return exn == Field(caml_global_data, MATCH_FAILURE_EXN)
-    || exn == Field(caml_global_data, ASSERT_FAILURE_EXN)
-    || exn == Field(caml_global_data, UNDEFINED_RECURSIVE_MODULE_EXN);
+
+  value f;
+
+  if (caml_global_data == 0 || !Is_block(caml_global_data)) {
+    return 0;
+  }
+
+  f = caml_global_data;
+  return exn == Field(f, MATCH_FAILURE_EXN)
+      || exn == Field(f, ASSERT_FAILURE_EXN)
+      || exn == Field(f, UNDEFINED_RECURSIVE_MODULE_EXN);
 }

@@ -1017,6 +1017,7 @@ type 'a t = < a : 'a >
 type u = 'a t as 'a
 |}];;
 
+
 (* pass typetexp, but fails during Typedecl.check_recursion *)
 type ('a1, 'b1) ty1 = 'a1 -> unit constraint 'a1 = [> `V1 of ('a1, 'b1) ty2 as 'b1]
 and  ('a2, 'b2) ty2 = 'b2 -> unit constraint 'b2 = [> `V2 of ('a2, 'b2) ty1 as 'a2];;

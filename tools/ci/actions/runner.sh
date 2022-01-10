@@ -21,8 +21,6 @@ PREFIX=~/local
 MAKE="make $MAKE_ARG"
 SHELL=dash
 
-MAKE_WARN="$MAKE --warn-undefined-variables"
-
 export PATH=$PREFIX/bin:$PATH
 
 Configure () {
@@ -31,7 +29,6 @@ Configure () {
 ------------------------------------------------------------------------
 This test builds the OCaml compiler distribution with your pull request
 and runs its testsuite.
-
 Failing to build the compiler distribution, or testsuite failures are
 critical errors that must be understood and fixed before your pull
 request can be merged.
@@ -40,9 +37,7 @@ EOF
 
   configure_flags="\
     --prefix=$PREFIX \
-    --enable-flambda-invariants \
-    --enable-ocamltest \
-    --disable-dependency-generation \
+    --enable-debug-runtime \
     $CONFIG_ARG"
 
   case $XARCH in
@@ -65,17 +60,28 @@ EOF
 }
 
 Build () {
-  script --return --command "$MAKE_WARN world.opt" build.log
+  $MAKE world.opt
   echo Ensuring that all names are prefixed in the runtime
   ./tools/check-symbol-names runtime/*.a
 }
 
 Test () {
-  cd testsuite
-  echo Running the testsuite with the normal runtime
-  $MAKE all
-  echo Running the testsuite with the debug runtime
-  $MAKE USE_RUNTIME='d' OCAMLTESTDIR="$(pwd)/_ocamltestd" TESTLOG=_logd all
+  echo Running the testsuite
+  $MAKE -C testsuite all
+  cd ..
+}
+
+TestLoop () {
+  echo Running testsuite for "$@"
+  rm -f to_test.txt
+  for test in "$@"
+  do
+      echo tests/$test >> to_test.txt
+  done
+  for it in {1..$2}
+  do
+      $MAKE -C testsuite one LIST=../to_test.txt || exit 1
+  done || exit 1
   cd ..
 }
 
@@ -89,15 +95,6 @@ Install () {
 }
 
 Checks () {
-  set +x
-  STATUS=0
-  if grep -Fq ' warning: undefined variable ' build.log; then
-    echo -e '\e[31mERROR\e[0m Undefined Makefile variables detected!'
-    grep -F ' warning: undefined variable ' build.log | sort | uniq
-    STATUS=1
-  fi
-  rm build.log
-  set -x
   if fgrep 'SUPPORTS_SHARED_LIBRARIES=true' Makefile.config &>/dev/null ; then
     echo Check the code examples in the manual
     $MAKE manual-pregen
@@ -119,7 +116,6 @@ Checks () {
   test -z "$(git status --porcelain)"
   # Check that there are no ignored files
   test -z "$(git ls-files --others -i --exclude-standard)"
-  exit $STATUS
 }
 
 CheckManual () {
@@ -174,6 +170,7 @@ case $1 in
 configure) Configure;;
 build) Build;;
 test) Test;;
+test_multicore) TestLoop "${@:3}";;
 api-docs) API_Docs;;
 install) Install;;
 manual) BuildManual;;

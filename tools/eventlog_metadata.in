@@ -51,8 +51,11 @@ stream {
     id = 0;
     event.header := struct { /* for each event */
         tracing_clock_int_t timestamp;
-        uint32_t pid;
         uint32_t id;
+    };
+    event.context := struct {
+        uint32_t tid;
+        uint8_t is_backup_thread;
     };
 };
 
@@ -94,7 +97,43 @@ enum gc_phase : uint16_t {
     "minor/copy",
     "minor/update_weak",
     "minor/finalized",
-    "explicit/gc_major_slice"
+    "explicit/gc_major_slice",
+    "domain/spawn",
+    "domain/send_interrupt",
+    "domain/idle_wait",
+    "finalise/update_first",
+    "finalise/update_last",
+    "interrupt/gc",
+    "interrupt/remote",
+    "major/ephe_mark",
+    "major/ephe_sweep",
+    "major/finish_marking",
+    "major_gc/cycle_domains",
+    "major_gc/phase_change",
+    "major_gc/stw",
+    "major/mark_opportunistic",
+    "major/slice",
+    "minor/clear",
+    "minor/finalizers/oldify",
+    "minor/global_roots",
+    "minor/leave_barrier",
+    "stw/api_barrier",
+    "stw/handler",
+    "stw/leader",
+    "minor/clear",
+    "minor_finalized",
+    "minor_finalizers_oldify",
+    "minor_global_roots",
+    "minor_leave_barrier",
+    "minor_local_roots",
+    "minor_ref_tables",
+    "minor_update_weak",
+    "stw_api_barrier",
+    "stw_handler",
+    "stw_leader",
+    "major_finish_sweeping",
+    "minor_finalizers_admin",
+    "domain/condition_wait"
 };
 
 /*
