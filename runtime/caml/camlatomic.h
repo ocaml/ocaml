@@ -16,9 +16,6 @@
 #ifndef CAML_ATOMIC_H
 #define CAML_ATOMIC_H
 
-#ifndef CAML_NAME_SPACE
-#include "compatibility.h"
-#endif
 #include "config.h"
 #include "misc.h"
 

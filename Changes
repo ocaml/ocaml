@@ -7,6 +7,13 @@ Working version
 - #10831: Multicore OCaml
   (The multicore team, caml-devel and more)
 
+* #10863: Remove support for old, unprefixed C runtime function names such as
+  `alloc`.  The new names prefixed with `caml_` must be used instead, such as
+  `caml_alloc`.  Consequently, it is no longer needed to define
+  `CAML_NAME_SPACE` to avoid bringing unprefixed names into scope: this is now
+  the default behavior.
+  (Nicolás Ojeda Bär, review by Xavier Leroy)
+
 ### Code generation and optimizations:
 
 ### Standard library:
