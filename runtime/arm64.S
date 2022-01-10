@@ -63,7 +63,7 @@
 #include "../runtime/caml/domain_state.tbl"
 #undef DOMAIN_STATE
 
-#define Caml_state(var) [DOMAIN_STATE_PTR, 8*domain_field_caml_##var]
+#define Caml_state_var(var) [DOMAIN_STATE_PTR, 8*domain_field_caml_##var]
 
 /* Globals and labels */
 #if defined(SYS_macosx)
@@ -159,10 +159,10 @@ FUNCTION(caml_call_gc)
         CFI_STARTPROC
 L(caml_call_gc):
     /* Record return address */
-        str     x30, Caml_state(last_return_address)
+        str     x30, Caml_state_var(last_return_address)
     /* Record lowest stack address */
         mov     TMP, sp
-        str     TMP, Caml_state(bottom_of_stack)
+        str     TMP, Caml_state_var(bottom_of_stack)
     /* Set up stack space, saving return address and frame pointer */
     /* (2 regs RA/GP, 24 allocatable int regs, 24 caller-save float regs) * 8 */
         CFI_OFFSET(29, -400)
@@ -200,11 +200,11 @@ L(caml_call_gc):
         stp     d30, d31, [sp, 384]
     /* Store pointer to saved integer registers in Caml_state->gc_regs */
         add     TMP, sp, #16
-        str     TMP, Caml_state(gc_regs)
+        str     TMP, Caml_state_var(gc_regs)
     /* Save current allocation pointer for debugging purposes */
-        str     ALLOC_PTR, Caml_state(young_ptr)
+        str     ALLOC_PTR, Caml_state_var(young_ptr)
     /* Save trap pointer in case an exception is raised during GC */
-        str     TRAP_PTR, Caml_state(exception_pointer)
+        str     TRAP_PTR, Caml_state_var(exception_pointer)
     /* Call the garbage collector */
         bl      G(caml_garbage_collection)
     /* Restore registers */
@@ -233,7 +233,7 @@ L(caml_call_gc):
         ldp     d28, d29, [sp, 368]
         ldp     d30, d31, [sp, 384]
     /* Reload new allocation pointer */
-        ldr     ALLOC_PTR, Caml_state(young_ptr)
+        ldr     ALLOC_PTR, Caml_state_var(young_ptr)
     /* Free stack space and return to caller */
         ldp     x29, x30, [sp], 400
         ret
@@ -242,7 +242,7 @@ L(caml_call_gc):
 
 FUNCTION(caml_alloc1)
         CFI_STARTPROC
-        ldr     TMP, Caml_state(young_limit)
+        ldr     TMP, Caml_state_var(young_limit)
         sub     ALLOC_PTR, ALLOC_PTR, #16
         cmp     ALLOC_PTR, TMP
         b.lo    L(caml_call_gc)
@@ -252,7 +252,7 @@ FUNCTION(caml_alloc1)
 
 FUNCTION(caml_alloc2)
         CFI_STARTPROC
-        ldr     TMP, Caml_state(young_limit)
+        ldr     TMP, Caml_state_var(young_limit)
         sub     ALLOC_PTR, ALLOC_PTR, #24
         cmp     ALLOC_PTR, TMP
         b.lo    L(caml_call_gc)
@@ -262,7 +262,7 @@ FUNCTION(caml_alloc2)
 
 FUNCTION(caml_alloc3)
         CFI_STARTPROC
-        ldr     TMP, Caml_state(young_limit)
+        ldr     TMP, Caml_state_var(young_limit)
         sub     ALLOC_PTR, ALLOC_PTR, #32
         cmp     ALLOC_PTR, TMP
         b.lo    L(caml_call_gc)
@@ -272,7 +272,7 @@ FUNCTION(caml_alloc3)
 
 FUNCTION(caml_allocN)
         CFI_STARTPROC
-        ldr     TMP, Caml_state(young_limit)
+        ldr     TMP, Caml_state_var(young_limit)
         sub     ALLOC_PTR, ALLOC_PTR, ADDITIONAL_ARG
         cmp     ALLOC_PTR, TMP
         b.lo    L(caml_call_gc)
@@ -289,16 +289,16 @@ FUNCTION(caml_c_call)
         mov     x19, x30
         CFI_REGISTER(30, 19)
     /* Record lowest stack address and return address */
-        str     x30, Caml_state(last_return_address)
+        str     x30, Caml_state_var(last_return_address)
         add     TMP, sp, #0
-        str     TMP, Caml_state(bottom_of_stack)
+        str     TMP, Caml_state_var(bottom_of_stack)
     /* Make the exception handler alloc ptr available to the C code */
-        str     ALLOC_PTR, Caml_state(young_ptr)
-        str     TRAP_PTR, Caml_state(exception_pointer)
+        str     ALLOC_PTR, Caml_state_var(young_ptr)
+        str     TRAP_PTR, Caml_state_var(exception_pointer)
     /* Call the function */
         blr     ADDITIONAL_ARG
     /* Reload alloc ptr  */
-        ldr     ALLOC_PTR, Caml_state(young_ptr)
+        ldr     ALLOC_PTR, Caml_state_var(young_ptr)
     /* Return */
         ret     x19
         CFI_ENDPROC
@@ -335,37 +335,37 @@ L(jump_to_caml):
     /* Load domain state pointer from argument */
         mov     DOMAIN_STATE_PTR, TMP
     /* Setup a callback link on the stack */
-        ldr     x8, Caml_state(bottom_of_stack)
-        ldr     x9, Caml_state(last_return_address)
-        ldr     x10, Caml_state(gc_regs)
+        ldr     x8, Caml_state_var(bottom_of_stack)
+        ldr     x9, Caml_state_var(last_return_address)
+        ldr     x10, Caml_state_var(gc_regs)
         stp     x8, x9, [sp, -32]!     /* 16-byte alignment */
         CFI_ADJUST(32)
         str     x10, [sp, 16]
     /* Setup a trap frame to catch exceptions escaping the OCaml code */
-        ldr     x8, Caml_state(exception_pointer)
+        ldr     x8, Caml_state_var(exception_pointer)
         adr     x9, L(trap_handler)
         stp     x8, x9, [sp, -16]!
         CFI_ADJUST(16)
         add     TRAP_PTR, sp, #0
     /* Reload allocation pointer */
-        ldr     ALLOC_PTR, Caml_state(young_ptr)
+        ldr     ALLOC_PTR, Caml_state_var(young_ptr)
     /* Call the OCaml code */
         blr     TMP2
 L(caml_retaddr):
     /* Pop the trap frame, restoring caml_exception_pointer */
         ldr     x8, [sp], 16
         CFI_ADJUST(-16)
-        str     x8, Caml_state(exception_pointer)
+        str     x8, Caml_state_var(exception_pointer)
     /* Pop the callback link, restoring the global variables */
 L(return_result):
         ldr     x10, [sp, 16]
         ldp     x8, x9, [sp], 32
         CFI_ADJUST(-32)
-        str     x8, Caml_state(bottom_of_stack)
-        str     x9, Caml_state(last_return_address)
-        str     x10, Caml_state(gc_regs)
+        str     x8, Caml_state_var(bottom_of_stack)
+        str     x9, Caml_state_var(last_return_address)
+        str     x10, Caml_state_var(gc_regs)
     /* Update allocation pointer */
-        str     ALLOC_PTR, Caml_state(young_ptr)
+        str     ALLOC_PTR, Caml_state_var(young_ptr)
     /* Reload callee-save registers and return address */
         ldp     x19, x20, [sp, 16]
         ldp     x21, x22, [sp, 32]
@@ -389,7 +389,7 @@ L(return_result):
 L(trap_handler):
         CFI_STARTPROC
     /* Save exception pointer */
-        str     TRAP_PTR, Caml_state(exception_pointer)
+        str     TRAP_PTR, Caml_state_var(exception_pointer)
     /* Encode exception bucket as an exception result */
         orr     x0, x0, #2
     /* Return it */
@@ -401,7 +401,7 @@ L(trap_handler):
 FUNCTION(caml_raise_exn)
         CFI_STARTPROC
     /* Test if backtrace is active */
-        ldr     TMP, Caml_state(backtrace_active)
+        ldr     TMP, Caml_state_var(backtrace_active)
         cbnz    TMP, 2f
 1:  /* Cut stack at current trap handler */
         mov     sp, TRAP_PTR
@@ -432,10 +432,10 @@ FUNCTION(caml_raise_exception)
     /* Load the exception bucket */
         mov     x0, C_ARG_2
     /* Reload trap ptr and alloc ptr */
-        ldr     TRAP_PTR, Caml_state(exception_pointer)
-        ldr     ALLOC_PTR, Caml_state(young_ptr)
+        ldr     TRAP_PTR, Caml_state_var(exception_pointer)
+        ldr     ALLOC_PTR, Caml_state_var(young_ptr)
     /* Test if backtrace is active */
-        ldr     TMP, Caml_state(backtrace_active)
+        ldr     TMP, Caml_state_var(backtrace_active)
         cbnz    TMP, 2f
 1:  /* Cut stack at current trap handler */
         mov     sp, TRAP_PTR
@@ -447,8 +447,8 @@ FUNCTION(caml_raise_exception)
         mov     x19, x0
     /* Stash the backtrace */
                                                       /* arg1: exn bucket */
-        ldr     x1, Caml_state(last_return_address)   /* arg2: pc of raise */
-        ldr     x2, Caml_state(bottom_of_stack)       /* arg3: sp of raise */
+        ldr     x1, Caml_state_var(last_return_address)  /* arg2: pc of raise */
+        ldr     x2, Caml_state_var(bottom_of_stack)      /* arg3: sp of raise */
         mov     x3, TRAP_PTR   /* arg4: sp of handler */
         bl      G(caml_stash_backtrace)
     /* Restore exception bucket and raise */
