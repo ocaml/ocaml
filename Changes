@@ -7,6 +7,10 @@ Working version
 - #10831: Multicore OCaml
   (The multicore team, caml-devel and more)
 
+* #10863: Remove "caml/compatibility.h". It is no longer needed to define
+  `CAML_NAME_SPACE` to avoid bringing "short" names into scope.
+  (Nicolás Ojeda Bär)
+
 ### Code generation and optimizations:
 
 ### Standard library:
