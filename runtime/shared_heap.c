@@ -390,7 +390,7 @@ static void* pool_allocate(struct caml_heap_state* local, sizeclass sz) {
 }
 
 static void* large_allocate(struct caml_heap_state* local, mlsize_t sz) {
-  large_alloc* a = malloc(sz + LARGE_ALLOC_HEADER_SZ);
+  large_alloc* a = caml_stat_alloc_noexc(sz + LARGE_ALLOC_HEADER_SZ);
   if (!a) return NULL;
   local->stats.large_words += Wsize_bsize(sz + LARGE_ALLOC_HEADER_SZ);
   if (local->stats.large_words > local->stats.large_max_words)
@@ -537,7 +537,7 @@ static intnat large_alloc_sweep(struct caml_heap_state* local) {
     local->owner->swept_words +=
       Whsize_hd(hd) + Wsize_bsize(LARGE_ALLOC_HEADER_SZ);
     local->stats.large_blocks--;
-    free(a);
+    caml_stat_free(a);
   } else {
     a->next = local->swept_large;
     local->swept_large = a;
