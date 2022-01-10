@@ -33,7 +33,6 @@ external unsafe_blit :
 external unsafe_fill :
   'a array -> int -> int -> 'a -> unit = "caml_array_fill"
 external create_float: int -> float array = "caml_make_float_vect"
-let make_float = create_float
 
 module Floatarray = struct
   external create : int -> floatarray = "caml_floatarray_create"
@@ -63,8 +62,6 @@ let make_matrix sx sy init =
     unsafe_set res x (create sy init)
   done;
   res
-
-let create_matrix = make_matrix
 
 let copy a =
   let l = length a in if l = 0 then [||] else unsafe_sub a 0 l
