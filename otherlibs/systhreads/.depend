@@ -8,10 +8,3 @@ thread.cmo : \
 thread.cmx : \
     thread.cmi
 thread.cmi :
-threadUnix.cmo : \
-    thread.cmi \
-    threadUnix.cmi
-threadUnix.cmx : \
-    thread.cmx \
-    threadUnix.cmi
-threadUnix.cmi :
