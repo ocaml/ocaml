@@ -46,10 +46,7 @@ external field : t -> int -> t = "%obj_field"
     [set_field] MUST NOT be called on immutable blocks.  (Blocks allocated
     in C stubs, or with [new_block] below, are always considered mutable.)
 
-    The same goes for [set_double_field] and [set_tag].  However, for
-    [set_tag], in the case of immutable blocks where the middle-end optimizers
-    never see code that discriminates on their tag (for example records), the
-    operation should be safe.  Such uses are nonetheless discouraged.
+    The same goes for [set_double_field].
 
     For experts only:
     [set_field] et al can be made safe by first wrapping the block in
@@ -60,8 +57,6 @@ external set_field : t -> int -> t -> unit = "%obj_set_field"
 external compare_and_swap_field : t -> int -> t -> t -> bool
   = "caml_obj_compare_and_swap"
 external is_shared : t -> bool = "caml_obj_is_shared"
-external set_tag : t -> int -> unit = "caml_obj_set_tag"
-  [@@ocaml.deprecated "Use with_tag instead."]
 
 val [@inline always] double_field : t -> int -> float  (* @since 3.11.2 *)
 val [@inline always] set_double_field : t -> int -> float -> unit
@@ -75,8 +70,6 @@ external set_raw_field : t -> int -> raw_data -> unit
 
 external new_block : int -> int -> t = "caml_obj_block"
 external dup : t -> t = "caml_obj_dup"
-external truncate : t -> int -> unit = "caml_obj_truncate"
-  [@@ocaml.deprecated]
 external add_offset : t -> Int32.t -> t = "caml_obj_add_offset"
          (* @since 3.12.0 *)
 external with_tag : int -> t -> t = "caml_obj_with_tag"
@@ -98,8 +91,6 @@ val string_tag : int   (* both [string] and [bytes] *)
 val double_tag : int
 val double_array_tag : int
 val custom_tag : int
-val final_tag : int
-  [@@ocaml.deprecated "Replaced by custom_tag."]
 
 val int_tag : int
 val out_of_heap_tag : int
@@ -120,12 +111,6 @@ sig
   val [@inline always] name : t -> string
   val [@inline always] id : t -> int
 end
-val extension_constructor : 'a -> extension_constructor
-  [@@ocaml.deprecated "use Obj.Extension_constructor.of_val"]
-val [@inline always] extension_name : extension_constructor -> string
-  [@@ocaml.deprecated "use Obj.Extension_constructor.name"]
-val [@inline always] extension_id : extension_constructor -> int
-  [@@ocaml.deprecated "use Obj.Extension_constructor.id"]
 
 module Ephemeron: sig
   (** Ephemeron with arbitrary arity and untyped *)
