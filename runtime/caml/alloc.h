@@ -17,9 +17,6 @@
 #define CAML_ALLOC_H
 
 
-#ifndef CAML_NAME_SPACE
-#include "compatibility.h"
-#endif
 #include "misc.h"
 #include "mlvalues.h"
 

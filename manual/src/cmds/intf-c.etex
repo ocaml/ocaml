@@ -185,23 +185,9 @@ serialization and deserialization functions for custom blocks
 \entree{"caml/threads.h"}{operations for interfacing in the presence
   of multiple threads (see section~\ref{s:C-multithreading}).}
 \end{tableau}
-Before including any of these files, you should define the "CAML_NAME_SPACE"
-macro. For instance,
-\begin{verbatim}
-#define CAML_NAME_SPACE
-#include "caml/mlvalues.h"
-#include "caml/fail.h"
-\end{verbatim}
 These files reside in the "caml/" subdirectory of the OCaml
 standard library directory, which is returned by the command
 "ocamlc -where" (usually "/usr/local/lib/ocaml" or "/usr/lib/ocaml").
-
-{\bf Note:}
-Including the header files without first defining "CAML_NAME_SPACE"
-introduces in scope short names for most functions.
-Those short names are deprecated, and may be removed in the future
-because they usually produce clashes with names defined by other
-C libraries.
 
 \subsection{ss:staticlink-c-code}{Statically linking C code with OCaml code}
 
@@ -1297,7 +1283,6 @@ The stub code file, "curses_stubs.c", looks like this:
 \begin{verbatim}
 /* File curses_stubs.c -- stub code for curses */
 #include <curses.h>
-#define CAML_NAME_SPACE
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/alloc.h>
@@ -2651,8 +2636,6 @@ of the function to bind:
 The rest of the binding is the same for both platforms:
 
 \begin{verbatim}
-#define CAML_NAME_SPACE
-
 #include <caml/mlvalues.h>
 #include <caml/misc.h>
 #include <caml/alloc.h>

@@ -692,8 +692,6 @@ AS_CASE([$host],
       internal_cflags="$cc_warnings"],
     [common_cflags="-O"])])
 
-internal_cppflags="-DCAML_NAME_SPACE $internal_cppflags"
-
 # Enable SSE2 on x86 mingw to avoid using 80-bit registers.
 AS_CASE([$host],
   [i686-*-mingw32],

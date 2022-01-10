@@ -2959,7 +2959,6 @@ OCAML_VERSION_SHORT=5.00
 
 
 
-
 ## Generated files
 
 ac_config_files="$ac_config_files Makefile.build_config"
@@ -12887,8 +12886,6 @@ fi
     common_cflags="-O" ;;
 esac ;;
 esac
-
-internal_cppflags="-DCAML_NAME_SPACE $internal_cppflags"
 
 # Enable SSE2 on x86 mingw to avoid using 80-bit registers.
 case $host in #(
