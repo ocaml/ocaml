@@ -18,6 +18,11 @@ Working version
 
 ### Standard library:
 
+- Atomic helper functions
+  modify : ('a -> 'a) -> 'a t -> unit
+  modify_get : ('a -> 'b * 'a) -> 'a t -> 'b
+  (Gabriel Scherer, review by ???)
+
 ### Other libraries:
 
 ### Tools:

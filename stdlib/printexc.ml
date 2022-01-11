@@ -265,11 +265,8 @@ let get_backtrace () = raw_backtrace_to_string (get_raw_backtrace ())
 external record_backtrace: bool -> unit = "caml_record_backtrace"
 external backtrace_status: unit -> bool = "caml_backtrace_status"
 
-let rec register_printer fn =
-  let old_printers = Atomic.get printers in
-  let new_printers = fn :: old_printers in
-  let success = Atomic.compare_and_set printers old_printers new_printers in
-  if not success then register_printer fn
+let register_printer fn =
+  Atomic.modify (List.cons fn) printers
 
 external get_callstack: int -> raw_backtrace = "caml_get_current_callstack"
 
