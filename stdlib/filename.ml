@@ -100,9 +100,7 @@ module Unix : SYSDEPS = struct
     && (String.length n < 2 || String.sub n 0 2 <> "./")
     && (String.length n < 3 || String.sub n 0 3 <> "../")
   let check_suffix name suff =
-    String.length name >= String.length suff &&
-    String.sub name (String.length name - String.length suff)
-                    (String.length suff) = suff
+    String.ends_with ~suffix:suff name
 
   let chop_suffix_opt ~suffix filename =
     let len_s = String.length suffix and len_f = String.length filename in
