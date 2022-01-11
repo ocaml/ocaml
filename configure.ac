@@ -1799,37 +1799,35 @@ AS_CASE([$arch,$system],
     AC_MSG_RESULT([yes])],
   [AC_MSG_RESULT([no])])
 
-## Determine if the POSIX threads library is supported
+## Determine how to link with the POSIX threads library
+
+AS_CASE([$host],
+  [*-*-mingw32|*-pc-windows],
+    [PTHREAD_LIBS="-lpthread"],
+  [AX_PTHREAD(
+    [common_cflags="$common_cflags $PTHREAD_CFLAGS"
+    saved_CFLAGS="$CFLAGS"
+    saved_LIBS="$LIBS"
+    CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+    LIBS="$LIBS $PTHREAD_LIBS"
+    AC_CHECK_FUNC([sigwait], [AC_DEFINE([HAS_SIGWAIT])])
+    LIBS="$saved_LIBS"
+    CFLAGS="$saved_CFLAGS"],
+    [AC_MSG_ERROR(m4_normalize([POSIX threads are required but not supported on
+      this platform]))])])
+
+## Activate the systhread library
 
 AS_CASE([$enable_systhreads,$enable_unix_lib],
   [yes,no],
     [systhread_support=false
-    AC_MSG_ERROR([the Win32/POSIX threads library requires the unix library])],
+    AC_MSG_ERROR([the threads library requires the unix library])],
   [no,*|*,no],
     [systhread_support=false
-    AC_MSG_NOTICE([the Win32/POSIX threads library is disabled])],
-  [AS_CASE([$host],
-    [*-*-mingw32|*-pc-windows],
-      [systhread_support=true
-      otherlibraries="$otherlibraries systhreads"
-      PTHREAD_LIBS="-lpthread"
-      AC_MSG_NOTICE([the Win32 threads library is supported])],
-    [AX_PTHREAD(
-      [systhread_support=true
-      otherlibraries="$otherlibraries systhreads"
-      common_cflags="$common_cflags $PTHREAD_CFLAGS"
-      AC_MSG_NOTICE([the POSIX threads library is supported])
-      saved_CFLAGS="$CFLAGS"
-      saved_LIBS="$LIBS"
-      CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
-      LIBS="$LIBS $PTHREAD_LIBS"
-      AC_CHECK_FUNC([sigwait], [AC_DEFINE([HAS_SIGWAIT])])
-      LIBS="$saved_LIBS"
-      CFLAGS="$saved_CFLAGS"],
-      [AS_IF([test x"$enable_systhreads" = "xyes"],
-        [AC_MSG_ERROR([the POSIX thread library is not available])],
-        [systhread_support=false
-        AC_MSG_NOTICE([the POSIX threads library is not supported])])])])])
+    AC_MSG_NOTICE([the threads library is disabled])],
+  [systhread_support=true
+  otherlibraries="$otherlibraries systhreads"
+  AC_MSG_NOTICE([the threads library is supported])])
 
 ## Does the assembler support debug prefix map and CFI directives
 as_has_debug_prefix_map=false

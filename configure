@@ -16678,24 +16678,11 @@ $as_echo "yes" >&6; } ;; #(
 $as_echo "no" >&6; } ;;
 esac
 
-## Determine if the POSIX threads library is supported
+## Determine how to link with the POSIX threads library
 
-case $enable_systhreads,$enable_unix_lib in #(
-  yes,no) :
-    systhread_support=false
-    as_fn_error $? "the Win32/POSIX threads library requires the unix library" "$LINENO" 5 ;; #(
-  no,*|*,no) :
-    systhread_support=false
-    { $as_echo "$as_me:${as_lineno-$LINENO}: the Win32/POSIX threads library is disabled" >&5
-$as_echo "$as_me: the Win32/POSIX threads library is disabled" >&6;} ;; #(
-  *) :
-    case $host in #(
+case $host in #(
   *-*-mingw32|*-pc-windows) :
-    systhread_support=true
-      otherlibraries="$otherlibraries systhreads"
-      PTHREAD_LIBS="-lpthread"
-      { $as_echo "$as_me:${as_lineno-$LINENO}: the Win32 threads library is supported" >&5
-$as_echo "$as_me: the Win32 threads library is supported" >&6;} ;; #(
+    PTHREAD_LIBS="-lpthread" ;; #(
   *) :
 
 
@@ -17406,33 +17393,23 @@ test -n "$PTHREAD_CXX" || PTHREAD_CXX="$CXX"
 
 # Finally, execute ACTION-IF-FOUND/ACTION-IF-NOT-FOUND:
 if test "x$ax_pthread_ok" = "xyes"; then
-        systhread_support=true
-      otherlibraries="$otherlibraries systhreads"
-      common_cflags="$common_cflags $PTHREAD_CFLAGS"
-      { $as_echo "$as_me:${as_lineno-$LINENO}: the POSIX threads library is supported" >&5
-$as_echo "$as_me: the POSIX threads library is supported" >&6;}
-      saved_CFLAGS="$CFLAGS"
-      saved_LIBS="$LIBS"
-      CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
-      LIBS="$LIBS $PTHREAD_LIBS"
-      ac_fn_c_check_func "$LINENO" "sigwait" "ac_cv_func_sigwait"
+        common_cflags="$common_cflags $PTHREAD_CFLAGS"
+    saved_CFLAGS="$CFLAGS"
+    saved_LIBS="$LIBS"
+    CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+    LIBS="$LIBS $PTHREAD_LIBS"
+    ac_fn_c_check_func "$LINENO" "sigwait" "ac_cv_func_sigwait"
 if test "x$ac_cv_func_sigwait" = xyes; then :
   $as_echo "#define HAS_SIGWAIT 1" >>confdefs.h
 
 fi
 
-      LIBS="$saved_LIBS"
-      CFLAGS="$saved_CFLAGS"
+    LIBS="$saved_LIBS"
+    CFLAGS="$saved_CFLAGS"
         :
 else
         ax_pthread_ok=no
-        if test x"$enable_systhreads" = "xyes"; then :
-  as_fn_error $? "the POSIX thread library is not available" "$LINENO" 5
-else
-  systhread_support=false
-        { $as_echo "$as_me:${as_lineno-$LINENO}: the POSIX threads library is not supported" >&5
-$as_echo "$as_me: the POSIX threads library is not supported" >&6;}
-fi
+        as_fn_error $? "POSIX threads are required but not supported on this platform" "$LINENO" 5
 fi
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
@@ -17441,7 +17418,23 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
  ;;
-esac ;;
+esac
+
+## Activate the systhread library
+
+case $enable_systhreads,$enable_unix_lib in #(
+  yes,no) :
+    systhread_support=false
+    as_fn_error $? "the threads library requires the unix library" "$LINENO" 5 ;; #(
+  no,*|*,no) :
+    systhread_support=false
+    { $as_echo "$as_me:${as_lineno-$LINENO}: the threads library is disabled" >&5
+$as_echo "$as_me: the threads library is disabled" >&6;} ;; #(
+  *) :
+    systhread_support=true
+  otherlibraries="$otherlibraries systhreads"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: the threads library is supported" >&5
+$as_echo "$as_me: the threads library is supported" >&6;} ;;
 esac
 
 ## Does the assembler support debug prefix map and CFI directives
