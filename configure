@@ -14413,13 +14413,23 @@ fi; system=elf ;; #(
      ;;
 esac
 
-if test x"$enable_native_compiler" = "xno"; then :
-  native_compiler=false
-  { $as_echo "$as_me:${as_lineno-$LINENO}: the native compiler is disabled" >&5
-$as_echo "$as_me: the native compiler is disabled" >&6;}
-else
-  native_compiler=true
-fi
+case $enable_native_compiler,$arch in #(
+  no,*) :
+    native_compiler=false
+    { $as_echo "$as_me:${as_lineno-$LINENO}: the native compiler is disabled" >&5
+$as_echo "$as_me: the native compiler is disabled" >&6;} ;; #(
+  yes,none) :
+    as_fn_error 69 "the native compiler is not supported on this platform" "$LINENO" 5 ;; #(
+  *,none) :
+    native_compiler=false
+    { $as_echo "$as_me:${as_lineno-$LINENO}: the native compiler is not supported on this platform" >&5
+$as_echo "$as_me: the native compiler is not supported on this platform" >&6;} ;; #(
+  *,*) :
+    native_compiler=true
+ ;; #(
+  *) :
+     ;;
+esac
 
 if ! $native_compiler; then :
   natdynlink=false

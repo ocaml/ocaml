@@ -1151,10 +1151,18 @@ AS_CASE([$host],
     [arch=riscv; model=riscv64; system=linux]
 )
 
-AS_IF([test x"$enable_native_compiler" = "xno"],
-  [native_compiler=false
-  AC_MSG_NOTICE([the native compiler is disabled])],
-  [native_compiler=true])
+AS_CASE([$enable_native_compiler,$arch],
+  [no,*],
+    [native_compiler=false
+    AC_MSG_NOTICE([the native compiler is disabled])],
+  [yes,none],
+    [AC_MSG_ERROR([the native compiler is not supported on this platform], 69)],
+  [*,none],
+    [native_compiler=false
+    AC_MSG_NOTICE([the native compiler is not supported on this platform])],
+  [*,*],
+    [native_compiler=true]
+)
 
 AS_IF([! $native_compiler], [natdynlink=false])
 
