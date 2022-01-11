@@ -917,6 +917,7 @@ enable_warn_error
 enable_force_safe_string
 enable_flat_float_array
 enable_function_sections
+enable_mmap_map_stack
 with_afl
 with_flexdll
 enable_shared
@@ -1600,6 +1601,7 @@ Optional Features:
                           do not use flat float arrays
   --disable-function-sections
                           do not emit each function in a separate section
+  --enable-mmap-map-stack use mmap to allocate stacks instead of malloc
   --enable-shared[=PKGS]  build shared libraries [default=yes]
   --enable-static[=PKGS]  build static libraries [default=yes]
   --enable-fast-install[=PKGS]
@@ -3364,6 +3366,12 @@ if test "${enable_function_sections+set}" = set; then :
   enableval=$enable_function_sections;
 else
   enable_function_sections=auto
+fi
+
+
+# Check whether --enable-mmap-map-stack was given.
+if test "${enable_mmap_map_stack+set}" = set; then :
+  enableval=$enable_mmap_map_stack;
 fi
 
 
@@ -17671,6 +17679,76 @@ else
   $as_echo "#define FLAT_FLOAT_ARRAY 1" >>confdefs.h
 
   flat_float_array=true
+fi
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether mmap supports MAP_STACK" >&5
+$as_echo_n "checking whether mmap supports MAP_STACK... " >&6; }
+  if test "$cross_compiling" = yes; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no assumed" >&5
+$as_echo "no assumed" >&6; }
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <sys/mman.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main (int argc, char *argv[]){
+  void *block;
+  block = mmap (NULL, 4096, PROT_READ | PROT_WRITE,
+                MAP_ANONYMOUS | MAP_PRIVATE | MAP_STACK,
+                -1, 0);
+  if (block == MAP_FAILED)
+     return 1;
+  return 0;
+}
+
+_ACEOF
+if ac_fn_c_try_run "$LINENO"; then :
+  has_mmap_map_stack=true
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+
+
+if test x"$enable_mmap_map_stack" = "xyes"; then :
+  if test x"$has_mmap_map_stack" = "xtrue"; then :
+  case $target in #(
+  *-freebsd*) :
+    as_fn_error $? "mmap MAP_STACK not supported on FreeBSD" "$LINENO" 5 ;; #(
+  *) :
+    with_mmap_map_stack=true;
+            $as_echo "#define USE_MMAP_MAP_STACK 1" >>confdefs.h
+ ;; #(
+  *) :
+     ;;
+esac
+else
+  as_fn_error $? "mmap MAP_STACK requested but not found on $target" "$LINENO" 5
+fi
+
+else
+  case $target in #(
+  *-openbsd*) :
+    with_mmap_map_stack=true;
+      $as_echo "#define USE_MMAP_MAP_STACK 1" >>confdefs.h
+
+      { $as_echo "$as_me:${as_lineno-$LINENO}: using MAP_STACK on OpenBSD due to stack checking" >&5
+$as_echo "$as_me: using MAP_STACK on OpenBSD due to stack checking" >&6;} ;; #(
+  *) :
+    with_mmap_map_stack=false ;; #(
+  *) :
+     ;;
+esac
+
 fi
 
 if test x"$enable_function_sections" = "xno"; then :

@@ -50,6 +50,7 @@ struct stack_info {
    * Stacks may be unpooled if either the stack size is not 2**N multiple of
    * [caml_fiber_wsz] or the stack is bigger than pooled sizes. */
   struct stack_info** size_bucket;
+  size_t size; /* only used when USE_MMAP_MAP_STACK is defined */
   uintnat magic;
 };
 

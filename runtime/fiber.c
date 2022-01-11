@@ -35,6 +35,9 @@
 #include "caml/stack.h"
 #include "caml/frame_descriptors.h"
 #endif
+#ifdef USE_MMAP_MAP_STACK
+#include <sys/mman.h>
+#endif
 
 #ifdef DEBUG
 #define fiber_debug_log(...) caml_gc_log(__VA_ARGS__)
@@ -75,10 +78,22 @@ struct stack_info** caml_alloc_stack_cache (void)
 
 Caml_inline struct stack_info* alloc_for_stack (mlsize_t wosize)
 {
-  return caml_stat_alloc_noexc(sizeof(struct stack_info) +
-                               sizeof(value) * wosize +
-                               8 /* for alignment */ +
-                               sizeof(struct stack_handler));
+  size_t len = sizeof(struct stack_info) +
+               sizeof(value) * wosize +
+               8 /* for alignment to 16-bytes, needed for arm64 */ +
+               sizeof(struct stack_handler);
+#ifdef USE_MMAP_MAP_STACK
+  struct stack_info* si;
+  si = mmap(NULL, len, PROT_WRITE | PROT_READ,
+             MAP_ANONYMOUS | MAP_PRIVATE | MAP_STACK, -1, 0);
+  if (si == MAP_FAILED)
+    return NULL;
+
+  si->size = len;
+  return si;
+#else
+  return caml_stat_alloc_noexc(len);
+#endif /* USE_MMAP_MAP_STACK */
 }
 
 Caml_inline struct stack_info** stack_cache_bucket (mlsize_t wosize) {
@@ -461,7 +476,11 @@ void caml_free_stack (struct stack_info* stack)
 #ifdef DEBUG
     memset(stack, 0x42, (char*)stack->handler - (char*)stack);
 #endif
+#ifdef USE_MMAP_MAP_STACK
+    munmap(stack, stack->size);
+#else
     caml_stat_free(stack);
+#endif
   }
 }
 
