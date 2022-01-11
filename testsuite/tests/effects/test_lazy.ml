@@ -1,7 +1,7 @@
 (* TEST *)
 
-open EffectHandlers
-open EffectHandlers.Deep
+open Effect
+open Effect.Deep
 
 type _ eff += Stop : unit eff
 

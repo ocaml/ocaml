@@ -14,8 +14,8 @@ let rec deep = function
   | n ->
      caml_to_c (fun () -> deep (n-1))
 
-open EffectHandlers
-open EffectHandlers.Deep
+open Effect
+open Effect.Deep
 
 type _ eff += E : unit eff
 

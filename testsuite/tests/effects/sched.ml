@@ -1,8 +1,8 @@
 (* TEST
  *)
 
-open EffectHandlers
-open EffectHandlers.Deep
+open Effect
+open Effect.Deep
 
 exception E
 type _ eff += Yield : unit eff

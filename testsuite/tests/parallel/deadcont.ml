@@ -11,8 +11,8 @@ include unix
     https://github.com/ocamllabs/ocaml-multicore/issues/175
  *)
 
-open EffectHandlers
-open EffectHandlers.Deep
+open Effect
+open Effect.Deep
 
 type _ eff += Poke : unit eff
 
