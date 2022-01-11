@@ -677,7 +677,7 @@ static void* backup_thread_func(void* v)
   domain_self = di;
   SET_Caml_state((void*)(di->tls_area));
 
-  caml_domain_set_name("BackupThread");
+  caml_domain_set_name("Backup");
 
   CAML_EVENTLOG_IS_BACKUP_THREAD();
 

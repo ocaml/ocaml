@@ -1093,16 +1093,11 @@ CAMLexport clock_t caml_win32_clock(void)
   return (clock_t)(total / clocks_per_sec);
 }
 
-int caml_thread_setname(const char* name)
+void caml_thread_setname(const char* name)
 {
-  int ret;
   /* XXX Duplicates unix.c, but MSVC will add some specific code here */
   pthread_t self = pthread_self();
-
-  ret = pthread_setname_np(self, name);
-  if (ret == ERANGE)
-    return -1;
-  return 0;
+  pthread_setname_np(self, name);
 }
 
 static LARGE_INTEGER frequency;
