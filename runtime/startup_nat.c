@@ -38,9 +38,6 @@
 #include "caml/stack.h"
 #include "caml/startup_aux.h"
 #include "caml/sys.h"
-#ifdef HAS_UI
-#include "caml/ui.h"
-#endif
 
 extern int caml_parser_trace;
 extern char caml_system__code_begin, caml_system__code_end;
