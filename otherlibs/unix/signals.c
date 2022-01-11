@@ -29,6 +29,9 @@
 #define NSIG 64
 #endif
 
+#define BITS_PER_WORD (sizeof(uintnat) * 8)
+#define NSIG_WORDS ((NSIG + BITS_PER_WORD - 1) / BITS_PER_WORD)
+
 #ifdef POSIX_SIGNALS
 
 static void decode_sigset(value vset, sigset_t * set)
@@ -80,11 +83,17 @@ CAMLprim value unix_sigprocmask(value vaction, value vset)
 CAMLprim value unix_sigpending(value unit)
 {
   sigset_t pending;
-  int i;
+  int i, j;
+  uintnat curr;
   if (sigpending(&pending) == -1) uerror("sigpending", Nothing);
-  for (i = 1; i < NSIG; i++)
-    if(atomic_load_explicit(&caml_pending_signals[i], memory_order_seq_cst))
-      sigaddset(&pending, i);
+  for (i = 0; i < NSIG_WORDS; i++) {
+    curr = atomic_load(&caml_pending_signals[i]);
+    if (curr == 0) continue;
+    for (j = 0; j < BITS_PER_WORD; j++) {
+      if (curr & ((uintnat)1 << j))
+      sigaddset(&pending, i * BITS_PER_WORD + j);
+    }
+  }
   return encode_sigset(&pending);
 }
 

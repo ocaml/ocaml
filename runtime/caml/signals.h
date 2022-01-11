@@ -41,7 +41,7 @@ CAMLextern int caml_check_pending_actions (void);
 /* Returns 1 if there are pending actions, 0 otherwise. */
 
 #ifdef CAML_INTERNALS
-CAMLextern atomic_intnat caml_pending_signals[];
+CAMLextern atomic_uintnat caml_pending_signals[];
 
 /* Global variables moved to Caml_state in 4.10 */
 #define caml_requested_major_slice (Caml_state_field(requested_major_slice))
