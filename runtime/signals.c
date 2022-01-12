@@ -28,7 +28,6 @@
 #include "caml/mlvalues.h"
 #include "caml/roots.h"
 #include "caml/signals.h"
-#include "caml/signals_machdep.h"
 #include "caml/sys.h"
 #include "caml/memprof.h"
 #include "caml/finalise.h"
