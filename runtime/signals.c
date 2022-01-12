@@ -34,13 +34,17 @@
 #include "caml/finalise.h"
 
 #ifndef NSIG
-#define NSIG 64
+#define NSIG 65
 #endif
 
 #define BITS_PER_WORD (sizeof(uintnat) * 8)
-#define NSIG_WORDS ((NSIG + BITS_PER_WORD - 1) / BITS_PER_WORD)
+#define NSIG_WORDS ((NSIG - 1 + BITS_PER_WORD - 1) / BITS_PER_WORD)
 
-/* The set of pending signals (received but not yet processed) */
+/* The set of pending signals (received but not yet processed).
+   It is represented as a bit vector.
+   Valid signal numbers range from 1 to NSIG - 1 included.
+   (This is checked when we install a signal handler.)
+   Signal 1 is the least significant bit of caml_pending_signals[0]. */
 
 CAMLexport atomic_uintnat caml_pending_signals[NSIG_WORDS];
 
@@ -85,7 +89,7 @@ CAMLexport value caml_process_pending_signals_exn(void)
     for (j = 0; j < BITS_PER_WORD; j++) {
       mask = (uintnat)1 << j;
       if ((curr & mask) == 0) goto next_bit;
-      signo = i * 8 + j;
+      signo = i * 8 + j + 1;
 #ifdef POSIX_SIGNALS
       if (sigismember(&set, signo)) goto next_bit;
 #endif
@@ -124,10 +128,11 @@ CAMLexport void caml_process_pending_signals(void) {
 
 CAMLexport void caml_record_signal(int signal_number)
 {
-  unsigned int signo = signal_number;
-  if (signo >= NSIG) return;
-  atomic_fetch_or(&caml_pending_signals[signo / BITS_PER_WORD],
-                  (uintnat)1 << (signo % BITS_PER_WORD));
+  unsigned int i;
+  if (signal_number <= 0 || signal_number >= NSIG) return;
+  i = signal_number - 1;
+  atomic_fetch_or(&caml_pending_signals[i / BITS_PER_WORD],
+                  (uintnat)1 << (i % BITS_PER_WORD));
   caml_interrupt_self();
 }
 
@@ -412,7 +417,7 @@ CAMLprim value caml_install_signal_handler(value signal_number, value action)
   int sig, act, oldact;
 
   sig = caml_convert_signal_number(Int_val(signal_number));
-  if (sig < 0 || sig >= NSIG)
+  if (sig <= 0 || sig >= NSIG)
     caml_invalid_argument("Sys.signal: unavailable signal");
   switch(action) {
   case Val_int(0):              /* Signal_default */

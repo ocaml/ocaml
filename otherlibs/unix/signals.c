@@ -26,11 +26,11 @@
 #include "unixsupport.h"
 
 #ifndef NSIG
-#define NSIG 64
+#define NSIG 65
 #endif
 
 #define BITS_PER_WORD (sizeof(uintnat) * 8)
-#define NSIG_WORDS ((NSIG + BITS_PER_WORD - 1) / BITS_PER_WORD)
+#define NSIG_WORDS ((NSIG - 1 + BITS_PER_WORD - 1) / BITS_PER_WORD)
 
 #ifdef POSIX_SIGNALS
 
@@ -91,7 +91,7 @@ CAMLprim value unix_sigpending(value unit)
     if (curr == 0) continue;
     for (j = 0; j < BITS_PER_WORD; j++) {
       if (curr & ((uintnat)1 << j))
-      sigaddset(&pending, i * BITS_PER_WORD + j);
+      sigaddset(&pending, i * BITS_PER_WORD + j + 1);
     }
   }
   return encode_sigset(&pending);
