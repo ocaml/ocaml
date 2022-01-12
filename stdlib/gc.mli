@@ -101,24 +101,20 @@ type stat =
 *)
 
 type control =
-  { mutable minor_heap_size : int;
-    [@ocaml.deprecated_mutable "Use {(Gc.get()) with Gc.minor_heap_size = ...}"]
+  { minor_heap_size : int;
     (** The size (in words) of the minor heap.  Changing
        this parameter will trigger a minor collection. The total size of the
        minor heap used by this program will be this number multiplied by the
        number of active domains. Default: 256k. *)
 
-    mutable major_heap_increment : int;
-    [@ocaml.deprecated_mutable
-         "Use {(Gc.get()) with Gc.major_heap_increment = ...}"]
+    major_heap_increment : int;
     (** How much to add to the major heap when increasing it. If this
         number is less than or equal to 1000, it is a percentage of
         the current heap size (i.e. setting it to 100 will double the heap
         size at each increase). If it is more than 1000, it is a fixed
         number of words that will be added to the heap. Default: 15. *)
 
-    mutable space_overhead : int;
-    [@ocaml.deprecated_mutable "Use {(Gc.get()) with Gc.space_overhead = ...}"]
+    space_overhead : int;
     (** The major GC speed is computed from this parameter.
        This is the memory that will be "wasted" because the GC does not
        immediately collect unreachable blocks.  It is expressed as a
@@ -127,8 +123,7 @@ type control =
        blocks more eagerly) if [space_overhead] is smaller.
        Default: 120. *)
 
-    mutable verbose : int;
-    [@ocaml.deprecated_mutable "Use {(Gc.get()) with Gc.verbose = ...}"]
+    verbose : int;
     (** This value controls the GC messages on standard error output.
        It is a sum of some of the following flags, to print messages
        on the corresponding events:
@@ -145,8 +140,7 @@ type control =
        - [0x400] Output GC statistics at program exit.
        Default: 0. *)
 
-    mutable max_overhead : int;
-    [@ocaml.deprecated_mutable "Use {(Gc.get()) with Gc.max_overhead = ...}"]
+    max_overhead : int;
     (** Heap compaction is triggered when the estimated amount
        of "wasted" memory is more than [max_overhead] percent of the
        amount of live data.  If [max_overhead] is set to 0, heap
@@ -157,14 +151,11 @@ type control =
        to set [allocation_policy] to 2.
        Default: 500. *)
 
-    mutable stack_limit : int;
-    [@ocaml.deprecated_mutable "Use {(Gc.get()) with Gc.stack_limit = ...}"]
+    stack_limit : int;
     (** The maximum size of the fiber stacks (in words).
        Default: 1024k. *)
 
-    mutable allocation_policy : int;
-    [@ocaml.deprecated_mutable
-         "Use {(Gc.get()) with Gc.allocation_policy = ...}"]
+    allocation_policy : int;
     (** The policy used for allocating in the major heap.
         Possible values are 0, 1 and 2.
 

@@ -218,23 +218,11 @@ external ( && ) : bool -> bool -> bool = "%sequand"
    Right-associative operator,  see {!Ocaml_operators} for more information.
 *)
 
-external ( & ) : bool -> bool -> bool = "%sequand"
-  [@@ocaml.deprecated "Use (&&) instead."]
-(** @deprecated {!Stdlib.( && )} should be used instead.
-    Right-associative operator, see {!Ocaml_operators} for more information.
-*)
-
 external ( || ) : bool -> bool -> bool = "%sequor"
 (** The boolean 'or'. Evaluation is sequential, left-to-right:
    in [e1 || e2], [e1] is evaluated first, and if it returns [true],
    [e2] is not evaluated at all.
    Right-associative operator,  see {!Ocaml_operators} for more information.
-*)
-
-external ( or ) : bool -> bool -> bool = "%sequor"
-  [@@ocaml.deprecated "Use (||) instead."]
-(** @deprecated {!Stdlib.( || )} should be used instead.
-    Right-associative operator, see {!Ocaml_operators} for more information.
 *)
 
 (** {1 Debugging} *)

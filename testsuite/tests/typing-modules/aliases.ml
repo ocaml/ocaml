@@ -18,8 +18,6 @@ module C' :
     external code : char -> int = "%identity"
     val chr : int -> char
     val escaped : char -> string
-    val lowercase : char -> char
-    val uppercase : char -> char
     val lowercase_ascii : char -> char
     val uppercase_ascii : char -> char
     type t = char
@@ -33,8 +31,6 @@ module C3 :
     external code : char -> int = "%identity"
     val chr : int -> char
     val escaped : char -> string
-    val lowercase : char -> char
-    val uppercase : char -> char
     val lowercase_ascii : char -> char
     val uppercase_ascii : char -> char
     type t = char
@@ -62,8 +58,6 @@ module F :
       external code : char -> int = "%identity"
       val chr : int -> char
       val escaped : char -> string
-      val lowercase : char -> char
-      val uppercase : char -> char
       val lowercase_ascii : char -> char
       val uppercase_ascii : char -> char
       type t = char
@@ -76,8 +70,6 @@ module C4 :
     external code : char -> int = "%identity"
     val chr : int -> char
     val escaped : char -> string
-    val lowercase : char -> char
-    val uppercase : char -> char
     val lowercase_ascii : char -> char
     val uppercase_ascii : char -> char
     type t = char

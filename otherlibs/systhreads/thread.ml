@@ -68,11 +68,6 @@ let exit () =
   ignore (Sys.opaque_identity (check_memprof_cb ()));
   exit_stub ()
 
-(* Thread.kill is currently not implemented due to problems with
-   cleanup handlers on several platforms *)
-
-let kill th = invalid_arg "Thread.kill: not implemented"
-
 (* Preemption *)
 
 let preempt signal = yield()
@@ -100,9 +95,6 @@ let () =
 (* Wait functions *)
 
 let delay = Unix.sleepf
-
-let wait_read fd = ()
-let wait_write fd = ()
 
 let wait_timed_read fd d =
   match Unix.select [fd] [] [] d with ([], _, _) -> false | (_, _, _) -> true

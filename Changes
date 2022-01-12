@@ -18,6 +18,26 @@ Working version
 
 ### Standard library:
 
+* #10867: Remove deprecated values: Array.create, Array.make_float,
+  Array.create_matrix, Bytes.uppercase, Bytes.lowercase, Bytes.capitalize,
+  Bytes.uncapitalize, Char.lowercase, Char.uppercase, Filename.temp_dir_name,
+  Format.bprintf, Format.kprintf, Format.set_all_formatter_output_functions,
+  Format.get_all_formatter_output_functions,
+  Format.pp_set_all_formatter_output_functions,
+  Format.pp_get_all_formatter_output_functions, Format.pp_open_tag,
+  Format.pp_close_tag, Format.open_tag, Format.close_tag,
+  Format.formatter_tag_functions, Format.pp_set_formatter_tag_functions,
+  Format.pp_get_formatter_tag_functions, Format.set_formatter_tag_functions,
+  Format.get_formatter_tag_functions, Gc (mutability of the fields of type
+  Gc.control), Lazy.lazy_from_fun, Lazy.lazy_from_val, Lazy.lazy_is_val,
+  Obj.set_tag, Obj.truncate, Obj.final_tag, Obj.extension_constructor,
+  Obj.extension_name, Obj.extension_id, Scanf.stdib, Scanf.fscanf,
+  Scanf.kfscanf, Stdlib.( & ), Stdlib.( or ), String.set, String.copy,
+  String.fill, String.unsafe_set, String.unsafe_fill, String.uppercase,
+  String.lowercase, String.capitalize, String.uncapitalize, Thread.kill,
+  Thread.wait_write, Thread.wait_read, the whole ThreadUnix module.
+  (Nicolás Ojeda Bär, review by Damien Doligez)
+
 ### Other libraries:
 
 ### Tools:

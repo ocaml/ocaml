@@ -225,12 +225,3 @@ val max: t -> t -> t
 (** Return the greater of the two arguments.
     @since 4.13.0
  *)
-
-
-(**/**)
-
-(** {1 Deprecated functions} *)
-
-external format : string -> int32 -> string = "caml_int32_format"
-(** Do not use this deprecated function.  Instead,
-   used {!Printf.sprintf} with a [%l...] format. *)

@@ -44,13 +44,6 @@ val id : t -> int
 val exit : unit -> unit
 (** Terminate prematurely the currently executing thread. *)
 
-val kill : t -> unit
-  [@@ocaml.deprecated "Not implemented, do not use"]
-(** This function was supposed to terminate prematurely the thread
-    whose handle is given.  It is not currently implemented due to
-    problems with cleanup handlers on many POSIX 1003.1c implementations.
-    It always raises the [Invalid_argument] exception. *)
-
 (** {1 Suspending threads} *)
 
 val delay: float -> unit
@@ -74,16 +67,6 @@ val yield : unit -> unit
     system.  The {!Unix} module provides equivalent functionality, in
     a more general and more standard-conformant manner.  It is recommended
     to use {!Unix} functions directly. *)
-
-val wait_read : Unix.file_descr -> unit
-  [@@ocaml.deprecated "This function no longer does anything"]
-(** This function does nothing in the current implementation of the threading
-    library and can be removed from all user programs. *)
-
-val wait_write : Unix.file_descr -> unit
-  [@@ocaml.deprecated "This function no longer does anything"]
-(** This function does nothing in the current implementation of the threading
-    library and can be removed from all user programs. *)
 
 val wait_timed_read : Unix.file_descr -> float -> bool
 (** See {!Thread.wait_timed_write}.*)

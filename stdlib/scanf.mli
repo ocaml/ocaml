@@ -195,12 +195,6 @@ val name_of_input : in_channel -> string
     @since 3.09.0
 *)
 
-val stdib : in_channel
-  [@@ocaml.deprecated "Use Scanf.Scanning.stdin instead."]
-(** A deprecated alias for {!Scanning.stdin}, the scanning buffer reading from
-    {!Stdlib.stdin}.
-*)
-
 end
 
 (** {1 Type of formatted input functions} *)
@@ -534,26 +528,3 @@ val unescaped : string -> string
     For instance, [Scanf.unescaped "\""] will fail.
     @since 4.00.0
 *)
-
-(** {1 Deprecated} *)
-
-val fscanf : Stdlib.in_channel -> ('a, 'b, 'c, 'd) scanner
-  [@@ocaml.deprecated "Use Scanning.from_channel then Scanf.bscanf."]
-(** @deprecated [Scanf.fscanf] is error prone and deprecated since 4.03.0.
-
-    This function violates the following invariant of the {!Scanf} module:
-    To preserve scanning semantics, all scanning functions defined in {!Scanf}
-    must read from a user defined {!Scanning.in_channel} formatted input
-    channel.
-
-    If you need to read from a {!Stdlib.in_channel} input channel
-    [ic], simply define a {!Scanning.in_channel} formatted input channel as in
-    [let ib = Scanning.from_channel ic],
-    then use [Scanf.bscanf ib] as usual.
-*)
-
-val kfscanf :
-  Stdlib.in_channel -> (Scanning.in_channel -> exn -> 'd) ->
-    ('a, 'b, 'c, 'd) scanner
-  [@@ocaml.deprecated "Use Scanning.from_channel then Scanf.kscanf."]
-(** @deprecated [Scanf.kfscanf] is error prone and deprecated since 4.03.0. *)
