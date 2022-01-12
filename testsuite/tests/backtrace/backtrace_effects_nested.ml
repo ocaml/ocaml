@@ -2,8 +2,8 @@
    flags = "-g"
 *)
 
-open EffectHandlers
-open EffectHandlers.Deep
+open Effect
+open Effect.Deep
 
 type _ eff += E : unit eff
             | Inc : unit eff

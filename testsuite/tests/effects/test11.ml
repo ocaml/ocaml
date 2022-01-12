@@ -4,8 +4,8 @@
 (* Tests RESUMETERM with extra_args != 0 in bytecode,
    by calling a handler with a tail-continue that returns a function *)
 
-open EffectHandlers
-open EffectHandlers.Deep
+open Effect
+open Effect.Deep
 
 type _ eff += E : int eff
 

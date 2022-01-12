@@ -4,8 +4,8 @@
 
 (* https://github.com/ocaml-multicore/ocaml-multicore/issues/479 *)
 
-open EffectHandlers
-open EffectHandlers.Deep
+open Effect
+open Effect.Deep
 
 [@@@warning "-5-26"];;
 

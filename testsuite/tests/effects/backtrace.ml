@@ -3,8 +3,8 @@
    ocamlrunparam += ",b=1"
 *)
 
-open EffectHandlers
-open EffectHandlers.Deep
+open Effect
+open Effect.Deep
 
 let rec foo i =
   if i = 0 then ()

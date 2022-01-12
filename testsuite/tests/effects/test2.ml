@@ -2,8 +2,8 @@
  *)
 
 open Printf
-open EffectHandlers
-open EffectHandlers.Deep
+open Effect
+open Effect.Deep
 
 type _ eff += E : int -> int eff
 

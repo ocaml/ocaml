@@ -150,8 +150,8 @@ end
 
 module Scheduler =
 struct
-  open EffectHandlers
-  open EffectHandlers.Deep
+  open Effect
+  open Effect.Deep
 
   type 'a cont = ('a, unit) continuation
 
