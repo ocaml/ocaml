@@ -1,10 +1,4 @@
 (* TEST (* Just a test-driver *)
-   * skip
-     reason = "See https://github.com/ocaml/ocaml/issues/10864"
-*)
-
-(* The previous test, to be reinstated later *)
-(*
    * native-compiler
    ** script
        script = "sh ${test_source_directory}/has-afl-showmap.sh"
