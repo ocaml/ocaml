@@ -25,6 +25,7 @@
 #include "caml/fail.h"
 #include "caml/memory.h"
 
+#include "caml/signals.h"
 #include "caml/sync.h"
 #include "caml/eventlog.h"
 
