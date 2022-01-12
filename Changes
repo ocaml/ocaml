@@ -29,7 +29,7 @@ Working version
   String.fill, String.unsafe_set, String.unsafe_fill, String.uppercase,
   String.lowercase, String.capitalize, String.uncapitalize, Thread.kill,
   Thread.wait_write, Thread.wait_read, the whole ThreadUnix module.
-  (Nicolás Ojeda Bär)
+  (Nicolás Ojeda Bär, review by Damien Doligez)
 
 ### Other libraries:
 
