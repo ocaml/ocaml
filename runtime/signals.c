@@ -33,13 +33,6 @@
 #include "caml/memprof.h"
 #include "caml/finalise.h"
 
-#ifndef NSIG
-#define NSIG 65
-#endif
-
-#define BITS_PER_WORD (sizeof(uintnat) * 8)
-#define NSIG_WORDS ((NSIG - 1 + BITS_PER_WORD - 1) / BITS_PER_WORD)
-
 /* The set of pending signals (received but not yet processed).
    It is represented as a bit vector.
    Valid signal numbers range from 1 to NSIG - 1 included.

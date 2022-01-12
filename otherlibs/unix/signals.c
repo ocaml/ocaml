@@ -25,13 +25,6 @@
 #include <caml/signals.h>
 #include "unixsupport.h"
 
-#ifndef NSIG
-#define NSIG 65
-#endif
-
-#define BITS_PER_WORD (sizeof(uintnat) * 8)
-#define NSIG_WORDS ((NSIG - 1 + BITS_PER_WORD - 1) / BITS_PER_WORD)
-
 #ifdef POSIX_SIGNALS
 
 static void decode_sigset(value vset, sigset_t * set)

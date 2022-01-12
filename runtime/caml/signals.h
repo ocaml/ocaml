@@ -16,8 +16,8 @@
 #ifndef CAML_SIGNALS_H
 #define CAML_SIGNALS_H
 
-#if defined(CAML_INTERNALS) && defined(POSIX_SIGNALS)
-#include<signal.h>
+#if defined(CAML_INTERNALS)
+#include <signal.h>
 #endif
 
 #include "misc.h"
@@ -41,7 +41,15 @@ CAMLextern int caml_check_pending_actions (void);
 /* Returns 1 if there are pending actions, 0 otherwise. */
 
 #ifdef CAML_INTERNALS
-CAMLextern atomic_uintnat caml_pending_signals[];
+
+#ifndef NSIG
+#define NSIG 65
+#endif
+
+#define BITS_PER_WORD (sizeof(uintnat) * 8)
+#define NSIG_WORDS ((NSIG - 1 + BITS_PER_WORD - 1) / BITS_PER_WORD)
+
+CAMLextern atomic_uintnat caml_pending_signals[NSIG_WORDS];
 
 /* Global variables moved to Caml_state in 4.10 */
 #define caml_requested_major_slice (Caml_state_field(requested_major_slice))
