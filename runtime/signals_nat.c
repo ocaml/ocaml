@@ -30,13 +30,6 @@
 #include "caml/signals.h"
 #include "caml/stack.h"
 
-typedef void (*signal_handler)(int signo);
-
-#ifdef _WIN32
-extern signal_handler caml_win32_signal(int sig, signal_handler action);
-#define signal(sig,act) caml_win32_signal(sig,act)
-#endif
-
 /* This routine is the common entry point for garbage collection
    and signal handling.  It can trigger a callback to OCaml code.
    With system threads, this callback can cause a context switch.
@@ -110,47 +103,4 @@ void caml_garbage_collection(void)
     /* Re-do the allocation: we now have enough space in the minor heap. */
     Caml_state->young_ptr -= whsize;
   }
-}
-
-static void handle_signal(int sig)
-{
-  int saved_errno;
-  /* Save the value of errno (PR#5982). */
-  saved_errno = errno;
-#if !defined(POSIX_SIGNALS) && !defined(BSD_SIGNALS)
-  signal(sig, handle_signal);
-#endif
-  caml_record_signal(sig);
-  errno = saved_errno;
-}
-
-int caml_set_signal_action(int signo, int action)
-{
-  signal_handler act, oldact;
-#ifdef POSIX_SIGNALS
-  struct sigaction sigact, oldsigact;
-#endif
-
-  switch(action) {
-  case 0:  act = SIG_DFL; break;
-  case 1:  act = SIG_IGN; break;
-  default: act = handle_signal; break;
-  }
-
-#ifdef POSIX_SIGNALS
-  sigact.sa_handler = act;
-  sigemptyset(&sigact.sa_mask);
-  sigact.sa_flags = 0;
-  if (sigaction(signo, &sigact, &oldsigact) == -1) return -1;
-  oldact = oldsigact.sa_handler;
-#else
-  oldact = signal(signo, act);
-  if (oldact == SIG_ERR) return -1;
-#endif
-  if (oldact == handle_signal)
-    return 2;
-  else if (oldact == SIG_IGN)
-    return 1;
-  else
-    return 0;
 }
