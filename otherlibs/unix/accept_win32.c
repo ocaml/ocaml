@@ -20,6 +20,9 @@
 #include "unixsupport.h"
 #include "socketaddr.h"
 
+/* from dup_win32.c */
+extern SOCKET caml_win32_duplicate_socket(BOOL inherit, SOCKET oldsock);
+
 CAMLprim value caml_unix_accept(value cloexec, value sock)
 {
   CAMLparam0();
@@ -29,7 +32,8 @@ CAMLprim value caml_unix_accept(value cloexec, value sock)
   value res;
   union sock_addr_union addr;
   socklen_param_type addr_len;
-  DWORD err = 0;
+  DWORD err = 0, flags;
+  BOOL inherit = ! caml_unix_cloexec_p(cloexec);
 
   addr_len = sizeof(addr);
   caml_enter_blocking_section();
@@ -40,7 +44,24 @@ CAMLprim value caml_unix_accept(value cloexec, value sock)
     caml_win32_maperr(err);
     caml_uerror("accept", Nothing);
   }
-  caml_win32_set_cloexec((HANDLE) snew, cloexec);
+
+  /* accept sockets should be non-inheritable (cloexec) by default
+   * but let's check anyway */
+  if (! GetHandleInformation((HANDLE) snew, &flags)) {
+    caml_win32_maperr(GetLastError());
+    caml_uerror("accept", Nothing);
+  }
+  /* duplicate the socket if the requested inheritance bit doesn't
+   * match the socket */
+  if (!!(flags & HANDLE_FLAG_INHERIT) != inherit) {
+    SOCKET snew_dup = caml_win32_duplicate_socket(inherit, snew);
+    if (snew_dup == INVALID_SOCKET) {
+      caml_uerror("accept", Nothing);
+    }
+    closesocket(snew);
+    snew = snew_dup;
+  }
+
   fd = caml_win32_alloc_socket(snew);
   adr = caml_unix_alloc_sockaddr(&addr, addr_len, snew);
   res = caml_alloc_small(2, 0);

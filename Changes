@@ -278,6 +278,11 @@ Working version
   instead of `value`.
   (Xavier Leroy, review by David Allsopp)
 
+- #10885: On Windows, change the inheritance bit (close-on-exec /
+  keep-on-exec) on sockets returned by `accept` only if needed, and
+  duplicate the socket instead of calling `SetHandleInformation`.
+  (Antonin Décimo, review by Nicolás Ojeda Bär)
+
 ### Tools:
 
 - #12340: testsuite: collect known issues with current -short-paths

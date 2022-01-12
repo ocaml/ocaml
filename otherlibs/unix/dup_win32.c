@@ -34,7 +34,7 @@ static HANDLE duplicate_handle(BOOL inherit, HANDLE oldh)
   return newh;
 }
 
-static SOCKET duplicate_socket(BOOL inherit, SOCKET oldsock)
+SOCKET caml_win32_duplicate_socket(BOOL inherit, SOCKET oldsock)
 {
   WSAPROTOCOL_INFO info;
 
@@ -64,8 +64,8 @@ CAMLprim value caml_unix_dup(value cloexec, value fd)
     CAMLreturn(newfd);
   }
   case KIND_SOCKET: {
-    SOCKET newsock = duplicate_socket(! caml_unix_cloexec_p(cloexec),
-                                      Socket_val(fd));
+    SOCKET newsock = caml_win32_duplicate_socket(! caml_unix_cloexec_p(cloexec),
+                                                 Socket_val(fd));
     if (newsock == INVALID_SOCKET)
       caml_uerror("dup", Nothing);
     newfd = caml_win32_alloc_socket(newsock);
@@ -96,8 +96,8 @@ CAMLprim value caml_unix_dup2(value cloexec, value fd1, value fd2)
   }
   case KIND_SOCKET: {
     SOCKET oldsock = Socket_val(fd2),
-      newsock = duplicate_socket(! caml_unix_cloexec_p(cloexec),
-                                 Socket_val(fd1));
+      newsock = caml_win32_duplicate_socket(! caml_unix_cloexec_p(cloexec),
+                                            Socket_val(fd1));
     if (newsock == INVALID_SOCKET)
       caml_uerror("dup2", Nothing);
     Socket_val(fd2) = newsock;
