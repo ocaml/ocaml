@@ -51,7 +51,7 @@ int caml_check_for_pending_signals(void)
   int i;
 
   for (i = 0; i < NSIG_WORDS; i++) {
-    if (atomic_load_explicit(&caml_pending_signals[i], memory_order_seq_cst))
+    if (atomic_load_explicit(&caml_pending_signals[i], memory_order_relaxed))
       return 1;
   }
   return 0;
@@ -78,7 +78,8 @@ CAMLexport value caml_process_pending_signals_exn(void)
 #endif
 
   for (i = 0; i < NSIG_WORDS; i++) {
-    curr = atomic_load(&caml_pending_signals[i]);
+    curr = atomic_load_explicit(&caml_pending_signals[i],
+                                memory_order_relaxed);
     if (curr == 0) goto next_word;
     /* Scan curr for bits set */
     for (j = 0; j < BITS_PER_WORD; j++) {
@@ -98,7 +99,8 @@ CAMLexport value caml_process_pending_signals_exn(void)
       if (Is_exception_result(exn)) return exn;
       /* curr probably changed during the evaluation of the signal handler;
          refresh it from memory */
-      curr = atomic_load(&caml_pending_signals[i]);
+      curr = atomic_load_explicit(&caml_pending_signals[i],
+                                  memory_order_relaxed);
       if (curr == 0) goto next_word;
     next_bit: /* skip */;
     }
