@@ -505,7 +505,7 @@ let mk_S f =
 ;;
 
 let mk_safe_string =
-  "-safe-string", Arg.Unit (fun () -> ()), " (was set when configuring the compiler)"
+  "-safe-string", Arg.Unit (fun () -> ()), " (default unconditionally since 5.00)"
 ;;
 
 let mk_shared f =
@@ -577,8 +577,7 @@ let mk_unsafe f =
 
 let mk_unsafe_string =
  let err () =
-   raise (Arg.Bad "OCaml has been configured with -force-safe-string: \
-                   -unsafe-string is not available")
+   raise (Arg.Bad "-unsafe-string is not available since OCaml 5.00")
  in
  "-unsafe-string", Arg.Unit err, " (option not available)"
 ;;
