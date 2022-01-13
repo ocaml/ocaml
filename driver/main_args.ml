@@ -505,7 +505,8 @@ let mk_S f =
 ;;
 
 let mk_safe_string =
-  "-safe-string", Arg.Unit (fun () -> ()), " (default unconditionally since 5.00)"
+  "-safe-string", Arg.Unit (fun () -> ()),
+  " (default unconditionally since 5.00)"
 ;;
 
 let mk_shared f =

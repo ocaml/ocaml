@@ -377,8 +377,8 @@ AC_ARG_ENABLE([force-safe-string], [],
 
 AC_ARG_VAR([DEFAULT_STRING], [])
 AS_IF([test x"$DEFAULT_STRING" != "x" ],
-  [AC_MSG_ERROR([The DEFAULT_STRING option variable was deleted in OCaml 5.00.])],
-  [])
+  [AC_MSG_ERROR(
+   [The DEFAULT_STRING option variable was deleted in OCaml 5.00.])])
 
 AC_ARG_ENABLE([flat-float-array],
   [AS_HELP_STRING([--disable-flat-float-array],
