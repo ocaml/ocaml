@@ -1406,11 +1406,6 @@ module Oo             = Oo
 module Option         = Option
 module Out_channel    = Out_channel
 module Parsing        = Parsing
-module Pervasives     = Pervasives
-[@@deprecated "Use Stdlib instead.\n\
-\n\
-If you need to stay compatible with OCaml < 4.07, you can use the \n\
-stdlib-shims library: https://github.com/ocaml/stdlib-shims"]
 module Printexc       = Printexc
 module Printf         = Printf
 module Queue          = Queue

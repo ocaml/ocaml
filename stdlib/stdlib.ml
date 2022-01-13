@@ -612,7 +612,6 @@ module Oo             = Oo
 module Option         = Option
 module Out_channel    = Out_channel
 module Parsing        = Parsing
-module Pervasives     = Pervasives
 module Printexc       = Printexc
 module Printf         = Printf
 module Queue          = Queue

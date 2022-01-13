@@ -76,7 +76,6 @@
                     stdlib__Oo
                     stdlib__Option
                     stdlib__Parsing
-                    stdlib__Pervasives
                     stdlib__Printexc
                     stdlib__Printf
                     stdlib__Queue

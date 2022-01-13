@@ -37,9 +37,9 @@ dynlink_MLIS := dynlink.mli
 thread_MLIS := \
   thread.mli event.mli
 
-STDLIB=$(filter-out stdlib__Pervasives, $(STDLIB_MODULES))
+STDLIB=$(STDLIB_MODULES)
 
-stdlib_UNPREFIXED=$(filter-out pervasives, $(STDLIB_MODULE_BASENAMES))
+stdlib_UNPREFIXED=$(STDLIB_MODULE_BASENAMES)
 
 otherlibref := $(dynlink_MLIS:%.mli=%)
 
@@ -55,9 +55,8 @@ ifneq "$(filter systhreads,$(OTHERLIBRARIES))" ""
 otherlibref += $(thread_MLIS:%.mli=%)
 endif
 
-libref_EXTRA=stdlib__pervasives
 libref_TEXT=Ocaml_operators Format_tutorial
-libref_C=$(call capitalize,$(libref) $(libref_EXTRA))
+libref_C=$(call capitalize,$(libref))
 
 PARSING_MLIS := $(call sort, \
   $(notdir $(wildcard $(ROOTDIR)/parsing/*.mli))\
