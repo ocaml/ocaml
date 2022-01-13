@@ -273,9 +273,9 @@ AC_ARG_ENABLE([unix-lib],
   [AS_HELP_STRING([--disable-unix-lib],
     [do not build the unix library])])
 
-AC_ARG_ENABLE([bigarray-lib],
-  [AS_HELP_STRING([--disable-bigarray-lib],
-    [do not build the legacy separate bigarray library])])
+AC_ARG_ENABLE([bigarray-lib], [],
+  [AC_MSG_ERROR([The bigarray-lib option was deleted in OCaml 5.00.])],
+  [])
 
 AC_ARG_ENABLE([ocamldoc],
   [AS_HELP_STRING([--disable-ocamldoc],
@@ -425,9 +425,7 @@ AC_ARG_WITH([flexdll],
 AS_IF([test x"$enable_unix_lib" = "xno"],
   [AS_IF([test x"$enable_debugger" = "xyes"],
     [AC_MSG_ERROR([replay debugger requires the unix library])],
-    [enable_debugger="no"])
-   AS_IF([test x"$enable_bigarray_lib" = "xyes"],
-    [AC_MSG_ERROR([legacy bigarray library requires the unix library])])])
+    [enable_debugger="no"])])
 
 AS_IF([test x"$enable_unix_lib" = "xno" -o x"$enable_str_lib" = "xno"],
   [AS_IF([test x"$enable_ocamldoc" = "xyes"],
@@ -547,9 +545,7 @@ AS_CASE([$host],
 otherlibraries="dynlink"
 AS_IF([test x"$enable_unix_lib" != "xno"],
   [enable_unix_lib=yes
-  AS_IF([test x"$enable_bigarray_lib" != "xno"],
-    [otherlibraries="$otherlibraries $unixlib bigarray"],
-    [otherlibraries="$otherlibraries $unixlib"])])
+   otherlibraries="$otherlibraries $unixlib"])
 AS_IF([test x"$enable_str_lib" != "xno"],
   [otherlibraries="$otherlibraries str"])
 
