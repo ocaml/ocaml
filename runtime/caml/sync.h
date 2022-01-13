@@ -18,8 +18,6 @@
 #ifndef CAML_SYNC_H
 #define CAML_SYNC_H
 
-#define CAML_INTERNALS
-
 #include "alloc.h"
 #include "custom.h"
 #include "fail.h"
