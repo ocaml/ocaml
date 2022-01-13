@@ -732,6 +732,7 @@ CFLAGS
 LIBTOOL
 ac_ct_LD
 LD
+DEFAULT_STRING
 WINDOWS_UNICODE_MODE
 DLLIBS
 PARTIALLD
@@ -915,6 +916,7 @@ with_target_bindir
 enable_reserved_header_bits
 enable_stdlib_manpages
 enable_warn_error
+enable_force_safe_string
 enable_flat_float_array
 enable_function_sections
 with_afl
@@ -936,6 +938,7 @@ ASPP
 PARTIALLD
 DLLIBS
 WINDOWS_UNICODE_MODE
+DEFAULT_STRING
 CC
 CFLAGS
 LDFLAGS
@@ -1631,6 +1634,8 @@ Some influential environment variables:
               libs
   WINDOWS_UNICODE_MODE
               how to handle Unicode under Windows: ansi, compatible
+  DEFAULT_STRING
+
   CC          C compiler command
   CFLAGS      C compiler flags
   LDFLAGS     linker flags, e.g. -L<lib dir> if you have libraries in a
@@ -3338,6 +3343,17 @@ fi
 
 
 
+
+# Check whether --enable-force-safe-string was given.
+if test "${enable_force_safe_string+set}" = set; then :
+  enableval=$enable_force_safe_string; as_fn_error $? "The force-safe-string option was deleted in OCaml 5.00." "$LINENO" 5
+fi
+
+
+
+if test x"$DEFAULT_STRING" != "x" ; then :
+  as_fn_error $? "The DEFAULT_STRING option variable was deleted in OCaml 5.00." "$LINENO" 5
+fi
 
 # Check whether --enable-flat-float-array was given.
 if test "${enable_flat_float_array+set}" = set; then :

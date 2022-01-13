@@ -371,6 +371,15 @@ AC_ARG_ENABLE([warn-error],
 AC_ARG_VAR([WINDOWS_UNICODE_MODE],
   [how to handle Unicode under Windows: ansi, compatible])
 
+AC_ARG_ENABLE([force-safe-string], [],
+  [AC_MSG_ERROR([The force-safe-string option was deleted in OCaml 5.00.])],
+  [])
+
+AC_ARG_VAR([DEFAULT_STRING], [])
+AS_IF([test x"$DEFAULT_STRING" != "x" ],
+  [AC_MSG_ERROR([The DEFAULT_STRING option variable was deleted in OCaml 5.00.])],
+  [])
+
 AC_ARG_ENABLE([flat-float-array],
   [AS_HELP_STRING([--disable-flat-float-array],
     [do not use flat float arrays])])
