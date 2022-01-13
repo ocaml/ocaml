@@ -180,8 +180,6 @@ CAMLextern wchar_t* caml_stat_wcsconcat(int n, ...);
 
 #ifdef CAML_INTERNALS
 
-extern uintnat caml_use_huge_pages;
-
 #ifdef HAS_HUGE_PAGES
 #include <sys/mman.h>
 #define Heap_page_size HUGE_PAGE_SIZE

@@ -229,28 +229,11 @@ typedef uint64_t uintnat;
    Must be a multiple of [Page_size / sizeof (value)]. */
 #define Heap_chunk_min (15 * Page_size)
 
-/* Default size increment when growing the heap.
-   If this is <= 1000, it's a percentage of the current heap size.
-   If it is > 1000, it's a number of words. */
-#define Heap_chunk_def 15
-
-/* Default initial size of the major heap (words);
-   Must be a multiple of [Page_size / sizeof (value)]. */
-#define Init_heap_def (31 * Page_size)
-/* (about 512 kB for a 32-bit platform, 1 MB for a 64-bit platform.) */
-
 
 /* Default speed setting for the major GC.  The heap will grow until
    the dead objects and the free list represent this percentage of the
    total size of live objects. */
 #define Percent_free_def 120
-
-/* Default setting for the compacter: 500%
-   (i.e. trigger the compacter when 5/6 of the heap is free or garbage)
-   This can be set quite high because the overhead is over-estimated
-   when fragmentation occurs.
- */
-#define Max_percent_free_def 500
 
 /* Maximum number of domains */
 #define Max_domains 128
