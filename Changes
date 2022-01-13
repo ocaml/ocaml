@@ -53,7 +53,7 @@ Working version
 * #10893: Remove configuration options --disable-force-safe-string and
   DEFAULT_STRING=unsafe as well as --enable-force-safe-string and
   DEFAULT_STRING=safe which are now the default unconditionally.
-  (Kate Deplaix, review by Gabriel Scherer)
+  (Kate Deplaix, review by Gabriel Scherer and David Allsopp)
 
 ### Bug fixes:
 
