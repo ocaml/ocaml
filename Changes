@@ -43,6 +43,10 @@ Working version
   Thread.wait_write, Thread.wait_read, the whole ThreadUnix module.
   (Nicolás Ojeda Bär, review by Damien Doligez)
 
+* #10896: Remove Stream, Genlex and Pervasives. Also remove legacy bigarray
+  library.
+  (Nicolás Ojeda Bär, review by Kate Deplaix)
+
 ### Other libraries:
 
 ### Tools:
