@@ -351,12 +351,12 @@ int caml_init_signal_stack(void)
   stack_t stk;
   stk.ss_flags = 0;
   stk.ss_size = SIGSTKSZ;
-  stk.ss_sp = caml_stat_alloc_noexc(stk.ss_size);
+  stk.ss_sp = malloc(stk.ss_size);
   if(stk.ss_sp == NULL) {
     return -1;
   }
   if (sigaltstack(&stk, NULL) < 0) {
-    caml_stat_free(stk.ss_sp);
+    free(stk.ss_sp);
     return -1;
   }
 
@@ -389,7 +389,7 @@ void caml_free_signal_stack(void)
   if (sigaltstack(&disable, &stk) < 0) {
     caml_fatal_error_arg("Failed to reset signal stack: %s", strerror(errno));
   }
-  caml_stat_free(stk.ss_sp);
+  free(stk.ss_sp);
 #endif
 }
 
