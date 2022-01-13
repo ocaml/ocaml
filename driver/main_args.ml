@@ -505,10 +505,7 @@ let mk_S f =
 ;;
 
 let mk_safe_string f =
-  "-safe-string", Arg.Unit f,
-  if Config.safe_string then " (was set when configuring the compiler)"
-  else if Config.default_safe_string then " Make strings immutable (default)"
-  else " Make strings immutable"
+  "-safe-string", Arg.Unit f, " (was set when configuring the compiler)"
 ;;
 
 let mk_shared f =
@@ -578,17 +575,12 @@ let mk_unsafe f =
   " Do not compile bounds checking on array and string access"
 ;;
 
-let mk_unsafe_string f =
-  if Config.safe_string then
-    let err () =
-      raise (Arg.Bad "OCaml has been configured with -force-safe-string: \
-                      -unsafe-string is not available")
-    in
-    "-unsafe-string", Arg.Unit err, " (option not available)"
-  else if Config.default_safe_string then
-    "-unsafe-string", Arg.Unit f, " Make strings mutable"
-  else
-    "-unsafe-string", Arg.Unit f, " Make strings mutable (default)"
+let mk_unsafe_string _f =
+ let err () =
+   raise (Arg.Bad "OCaml has been configured with -force-safe-string: \
+                   -unsafe-string is not available")
+ in
+ "-unsafe-string", Arg.Unit err, " (option not available)"
 ;;
 
 let mk_use_runtime f =

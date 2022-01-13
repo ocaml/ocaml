@@ -898,7 +898,6 @@ typing/parmatch.cmo : \
     typing/ident.cmi \
     typing/env.cmi \
     typing/ctype.cmi \
-    utils/config.cmi \
     typing/btype.cmi \
     parsing/asttypes.cmi \
     parsing/ast_helper.cmi \
@@ -921,7 +920,6 @@ typing/parmatch.cmx : \
     typing/ident.cmx \
     typing/env.cmx \
     typing/ctype.cmx \
-    utils/config.cmx \
     typing/btype.cmx \
     parsing/asttypes.cmi \
     parsing/ast_helper.cmx \
@@ -974,7 +972,6 @@ typing/persistent_env.cmo : \
     utils/load_path.cmi \
     utils/lazy_backtrack.cmi \
     utils/consistbl.cmi \
-    utils/config.cmi \
     file_formats/cmi_format.cmi \
     utils/clflags.cmi \
     typing/persistent_env.cmi
@@ -985,7 +982,6 @@ typing/persistent_env.cmx : \
     utils/load_path.cmx \
     utils/lazy_backtrack.cmx \
     utils/consistbl.cmx \
-    utils/config.cmx \
     file_formats/cmi_format.cmx \
     utils/clflags.cmx \
     typing/persistent_env.cmi
@@ -3954,7 +3950,6 @@ middle_end/closure/closure.cmo : \
     typing/env.cmi \
     lambda/debuginfo.cmi \
     middle_end/convert_primitives.cmi \
-    utils/config.cmi \
     middle_end/compilenv.cmi \
     utils/clflags.cmi \
     middle_end/clambda_primitives.cmi \
@@ -3977,7 +3972,6 @@ middle_end/closure/closure.cmx : \
     typing/env.cmx \
     lambda/debuginfo.cmx \
     middle_end/convert_primitives.cmx \
-    utils/config.cmx \
     middle_end/compilenv.cmx \
     utils/clflags.cmx \
     middle_end/clambda_primitives.cmx \
@@ -4167,7 +4161,6 @@ middle_end/flambda/closure_conversion.cmo : \
     middle_end/flambda/flambda.cmi \
     lambda/debuginfo.cmi \
     middle_end/convert_primitives.cmi \
-    utils/config.cmi \
     middle_end/compilation_unit.cmi \
     middle_end/flambda/base_types/closure_origin.cmi \
     middle_end/flambda/base_types/closure_id.cmi \
@@ -4196,7 +4189,6 @@ middle_end/flambda/closure_conversion.cmx : \
     middle_end/flambda/flambda.cmx \
     lambda/debuginfo.cmx \
     middle_end/convert_primitives.cmx \
-    utils/config.cmx \
     middle_end/compilation_unit.cmx \
     middle_end/flambda/base_types/closure_origin.cmx \
     middle_end/flambda/base_types/closure_id.cmx \

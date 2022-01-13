@@ -2551,7 +2551,7 @@ let save_signature_with_imports ~alerts sg modname filename imports =
     ~alerts sg modname filename
 
 (* Make the initial environment *)
-let (initial_safe_string, initial_unsafe_string) =
+let initial =
   Predef.build_initial_env
     (add_type ~check:false)
     (add_extension ~check:false ~rebind:false)
@@ -3020,7 +3020,7 @@ let lookup_all_dot_constructors ~errors ~use ~loc usage l s env =
   | Longident.Lident "*predef*" ->
       (* Hack to support compilation of default arguments *)
       lookup_all_ident_constructors
-        ~errors ~use ~loc usage s initial_safe_string
+        ~errors ~use ~loc usage s initial
   | _ ->
       let (_, comps) = lookup_structure_components ~errors ~use ~loc l env in
       match NameMap.find s comps.comp_constrs with

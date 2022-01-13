@@ -732,7 +732,6 @@ CFLAGS
 LIBTOOL
 ac_ct_LD
 LD
-DEFAULT_STRING
 WINDOWS_UNICODE_MODE
 DLLIBS
 PARTIALLD
@@ -916,7 +915,6 @@ with_target_bindir
 enable_reserved_header_bits
 enable_stdlib_manpages
 enable_warn_error
-enable_force_safe_string
 enable_flat_float_array
 enable_function_sections
 with_afl
@@ -938,7 +936,6 @@ ASPP
 PARTIALLD
 DLLIBS
 WINDOWS_UNICODE_MODE
-DEFAULT_STRING
 CC
 CFLAGS
 LDFLAGS
@@ -1599,8 +1596,6 @@ Optional Features:
   --disable-stdlib-manpages
                           do not build or install the library man pages
   --enable-warn-error     treat C compiler warnings as errors
-  --disable-force-safe-string
-                          do not force strings to be safe
   --disable-flat-float-array
                           do not use flat float arrays
   --disable-function-sections
@@ -1636,8 +1631,6 @@ Some influential environment variables:
               libs
   WINDOWS_UNICODE_MODE
               how to handle Unicode under Windows: ansi, compatible
-  DEFAULT_STRING
-              whether strings should be safe (default) or unsafe
   CC          C compiler command
   CFLAGS      C compiler flags
   LDFLAGS     linker flags, e.g. -L<lib dir> if you have libraries in a
@@ -3341,39 +3334,6 @@ fi
 # Check whether --enable-warn-error was given.
 if test "${enable_warn_error+set}" = set; then :
   enableval=$enable_warn_error;
-fi
-
-
-
-
-# There are two configure-time string safety options,
-# --(enable|disable)-force-safe-string and
-# DEFAULT_STRING=safe|unsafe that
-# interact with a compile-time (un)safe-string option.
-#
-# If --enable-force-safe-string is set at configure time, then the compiler
-# will always enforce that string and bytes are distinct: the
-# compile-time -unsafe-string option is disabled. This lets us
-# assume pervasive string immutability, for code optimizations and
-# in the C layer.
-#
-# If --disable-force-safe-string is set at configure-time, the compiler
-# will use the compile-time (un)safe-string option to decide whether
-# string and bytes are compatible on a per-file basis. The
-# configuration variable DEFAULT_STRING=safe|unsafe decides which
-# setting will be chosen by default, if no compile-time option is
-# explicitly passed.
-#
-# The configure-time behavior of OCaml 4.05 and older was equivalent
-# to --disable-force-safe-string DEFAULT_STRING=unsafe. With OCaml 4.06
-# and older was equivalent to --disable-force-safe-string DEFAULT_STRING=safe.
-# With OCaml 4.10 and later use --enable-force-safe-string DEFAULT_STRING=safe.
-# We expect the --disable-force-safe-string and DEFAULT_STRING=unsafe options
-# to be removed in the future.
-
-# Check whether --enable-force-safe-string was given.
-if test "${enable_force_safe_string+set}" = set; then :
-  enableval=$enable_force_safe_string;
 fi
 
 
@@ -17844,19 +17804,11 @@ else
   afl=false
 fi
 
-if test x"$enable_force_safe_string" = "xno"; then :
-  force_safe_string=false
-else
-  $as_echo "#define CAML_SAFE_STRING 1" >>confdefs.h
+# Not used internally since 5.00 but kept for compatibility
+$as_echo "#define CAML_SAFE_STRING 1" >>confdefs.h
 
-   force_safe_string=true
-fi
-
-if test x"$DEFAULT_STRING" = "xunsafe"; then :
-  default_safe_string=false
-else
-  default_safe_string=true
-fi
+force_safe_string=true
+default_safe_string=true
 
 oc_cflags="$common_cflags $internal_cflags"
 oc_cppflags="$common_cppflags $internal_cppflags"

@@ -118,12 +118,8 @@ let rec declare_const t (const : Lambda.structured_constant)
   | Const_base (Const_char c) -> (Const (Char c), Names.const_char)
   | Const_base (Const_string (s, _, _)) ->
     let const, name =
-      if Config.safe_string then
-        (Flambda.Allocated_const (Immutable_string s),
-         Names.const_immstring)
-      else
-        (Flambda.Allocated_const (String s),
-         Names.const_string)
+      (Flambda.Allocated_const (Immutable_string s),
+       Names.const_immstring)
     in
     register_const t const name
   | Const_base (Const_float c) ->
