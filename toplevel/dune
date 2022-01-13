@@ -61,7 +61,6 @@
                     stdlib__Float
                     stdlib__Format
                     stdlib__Gc
-                    stdlib__Genlex
                     stdlib__Hashtbl
                     stdlib__Int32
                     stdlib__Int64
@@ -89,7 +88,6 @@
                     stdlib__Stack
                     ; stdlib__StdLabels
                     stdlib
-                    stdlib__Stream
                     stdlib__String
                     ; stdlib__StringLabels
                     stdlib__Sys
