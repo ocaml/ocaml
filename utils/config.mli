@@ -221,18 +221,6 @@ val profinfo_width : int
 (** How many bits are to be used in values' headers for profiling
     information *)
 
-val safe_string: bool
-(** Whether the compiler was configured with -force-safe-string;
-    in that case, the -unsafe-string compile-time option is unavailable
-
-    @since 4.05.0 *)
-
-val default_safe_string: bool
-(** Whether the compiler was configured to use the -safe-string
-    or -unsafe-string compile-time option by default.
-
-    @since 4.06.0 *)
-
 val flat_float_array : bool
 (** Whether the compiler and runtime automagically flatten float
     arrays *)

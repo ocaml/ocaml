@@ -52,8 +52,6 @@ let flambda = %%FLAMBDA%%
 let ocamlc_default_flags = ""
 let ocamlopt_default_flags = ""
 
-let safe_string = %%FORCE_SAFE_STRING%%
-
 let flat_float_array = %%FLAT_FLOAT_ARRAY%%
 
 let ocamldoc = %%WITH_OCAMLDOC%%
