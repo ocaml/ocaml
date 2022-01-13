@@ -333,10 +333,13 @@ CAMLexport int caml_setup_stack_overflow_detection(void)
   if (stk.ss_sp == NULL) return -1;
   stk.ss_size = SIGSTKSZ;
   stk.ss_flags = 0;
-  return sigaltstack(&stk, NULL);
-#else
-  return 0;
+  if (sigaltstack(&stk, NULL) == -1) {
+    free(stk.ss_sp);
+    return -1;
+  }
 #endif
+  /* Success (or stack overflow detection not available) */
+  return 0;
 }
 
 CAMLexport int caml_stop_stack_overflow_detection(void)
