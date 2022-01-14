@@ -103,8 +103,8 @@ struct caml_thread_table {
   st_thread_id tick_thread_id;
 };
 
-/* thread_table instance, up to Max_domains */
-static struct caml_thread_table thread_table[Max_domains];
+/* thread_table instance, up to max_domains */
+static struct caml_thread_table thread_table[caml_params->max_domains];
 
 /* the "head" of the circular list of thread descriptors for this domain */
 #define All_threads thread_table[Caml_state->id].all_threads

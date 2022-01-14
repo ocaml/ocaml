@@ -157,7 +157,7 @@ static struct {
   int num_domains;
   atomic_uintnat barrier;
 
-  caml_domain_state* participating[Max_domains];
+  caml_domain_state* participating[caml_params->max_domains];
 } stw_request = {
   ATOMIC_UINTNAT_INIT(0),
   ATOMIC_UINTNAT_INIT(0),
@@ -174,7 +174,7 @@ static caml_plat_mutex all_domains_lock = CAML_PLAT_MUTEX_INITIALIZER;
 static caml_plat_cond all_domains_cond =
     CAML_PLAT_COND_INITIALIZER(&all_domains_lock);
 static atomic_uintnat /* dom_internal* */ stw_leader = 0;
-static struct dom_internal all_domains[Max_domains];
+static struct dom_internal all_domains[caml_params->max_domains];
 
 CAMLexport atomic_uintnat caml_num_domains_running;
 
@@ -186,11 +186,11 @@ static __thread dom_internal* domain_self;
 /*
  * This structure is protected by all_domains_lock
  * [0, participating_domains) are all the domains taking part in STW sections
- * [participating_domains, Max_domains) are all those domains free to be used
+ * [participating_domains, max_domains) are all those domains free to be used
  */
 static struct {
   int participating_domains;
-  dom_internal* domains[Max_domains];
+  dom_internal* domains[caml_params->max_domains];
 } stw_domains = {
   0,
   { 0 }
@@ -198,9 +198,9 @@ static struct {
 
 static void add_to_stw_domains(dom_internal* dom) {
   int i;
-  CAMLassert(stw_domains.participating_domains < Max_domains);
+  CAMLassert(stw_domains.participating_domains < caml_params->max_domains);
   for(i=stw_domains.participating_domains; stw_domains.domains[i]!=dom; ++i) {
-    CAMLassert(i<Max_domains);
+    CAMLassert(i<caml_params->max_domains);
   }
 
   /* swap passed domain with domain at stw_domains.participating_domains */
@@ -214,7 +214,7 @@ static void add_to_stw_domains(dom_internal* dom) {
 static void remove_from_stw_domains(dom_internal* dom) {
   int i;
   for(i=0; stw_domains.domains[i]!=dom; ++i) {
-    CAMLassert(i<Max_domains);
+    CAMLassert(i<caml_params->max_domains);
   }
   CAMLassert(i < stw_domains.participating_domains);
 
@@ -226,10 +226,10 @@ static void remove_from_stw_domains(dom_internal* dom) {
 }
 
 static dom_internal* next_free_domain() {
-  if (stw_domains.participating_domains == Max_domains)
+  if (stw_domains.participating_domains == caml_params->max_domains)
     return NULL;
 
-  CAMLassert(stw_domains.participating_domains < Max_domains);
+  CAMLassert(stw_domains.participating_domains < caml_params->max_domains);
   return stw_domains.domains[stw_domains.participating_domains];
 }
 
@@ -342,7 +342,7 @@ asize_t caml_norm_minor_heap_size (intnat wsize)
   if (wsize < Minor_heap_min) wsize = Minor_heap_min;
   bs = caml_mem_round_up_pages(Bsize_wsize (wsize));
 
-  max = Bsize_wsize(Minor_heap_max);
+  max = Bsize_wsize(caml_params->minor_heap_max_wsz);
 
   if (bs > max) bs = max;
 
@@ -562,14 +562,14 @@ void caml_init_domains(uintnat minor_heap_wsz) {
   void* tls_base;
 
   /* sanity check configuration */
-  if (caml_mem_round_up_pages(Bsize_wsize(Minor_heap_max))
-          != Bsize_wsize(Minor_heap_max))
-    caml_fatal_error("Minor_heap_max misconfigured for this platform");
+  if (caml_mem_round_up_pages(Bsize_wsize(caml_params->minor_heap_max_wsz))
+          != Bsize_wsize(caml_params->minor_heap_max_wsz))
+    caml_fatal_error("minor_heap_max misconfigured for this platform");
 
   /* reserve memory space for minor heaps and tls_areas */
-  size = (uintnat)Bsize_wsize(Minor_heap_max) * Max_domains;
+  size = (uintnat)Bsize_wsize(caml_params->minor_heap_max_wsz) * caml_params->max_domains;
   tls_size = caml_mem_round_up_pages(sizeof(caml_domain_state));
-  tls_areas_size = tls_size * Max_domains;
+  tls_areas_size = tls_size * caml_params->max_domains;
 
   heaps_base = caml_mem_map(size, size, 1 /* reserve_only */);
   tls_base =
@@ -581,7 +581,7 @@ void caml_init_domains(uintnat minor_heap_wsz) {
   caml_minor_heaps_end = (uintnat) heaps_base + size;
   caml_tls_areas_base = (uintnat) tls_base;
 
-  for (i = 0; i < Max_domains; i++) {
+  for (i = 0; i < caml_params->max_domains; i++) {
     struct dom_internal* dom = &all_domains[i];
     uintnat domain_minor_heap_base;
     uintnat domain_tls_base;
@@ -605,13 +605,13 @@ void caml_init_domains(uintnat minor_heap_wsz) {
     dom->backup_thread_msg = BT_INIT;
 
     domain_minor_heap_base = caml_minor_heaps_base +
-      (uintnat)Bsize_wsize(Minor_heap_max) * (uintnat)i;
+      (uintnat)Bsize_wsize(caml_params->minor_heap_max_wsz) * (uintnat)i;
     domain_tls_base = caml_tls_areas_base + tls_size * (uintnat)i;
     dom->tls_area = domain_tls_base;
     dom->tls_area_end = domain_tls_base + tls_size;
     dom->minor_heap_area = domain_minor_heap_base;
     dom->minor_heap_area_end =
-         domain_minor_heap_base + Bsize_wsize(Minor_heap_max);
+         domain_minor_heap_base + Bsize_wsize(caml_params->minor_heap_max_wsz);
   }
 
   create_domain(minor_heap_wsz);
@@ -624,7 +624,7 @@ void caml_init_domains(uintnat minor_heap_wsz) {
 }
 
 void caml_init_domain_self(int domain_id) {
-  CAMLassert (domain_id >= 0 && domain_id < Max_domains);
+  CAMLassert (domain_id >= 0 && domain_id < caml_params->max_domains);
   domain_self = &all_domains[domain_id];
   SET_Caml_state(domain_self->state);
 }
@@ -1092,7 +1092,7 @@ int caml_try_run_on_all_domains_with_spin_work(
 #ifdef DEBUG
   {
     int domains_participating = 0;
-    for(i=0; i<Max_domains; i++) {
+    for(i=0; i<caml_params->max_domains; i++) {
       if(all_domains[i].interruptor.running)
         domains_participating++;
     }
@@ -1377,7 +1377,7 @@ static void domain_terminate (void)
       finished = 1;
       s->terminating = 0;
       s->running = 0;
-      s->unique_id += Max_domains;
+      s->unique_id += caml_params->max_domains;
 
       /* Remove this domain from stw_domains */
       remove_from_stw_domains(domain_self);

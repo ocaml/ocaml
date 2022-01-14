@@ -907,7 +907,7 @@ static intnat ephe_sweep (caml_domain_state* domain_state, intnat budget)
   return budget;
 }
 
-static struct gc_stats sampled_gc_stats[Max_domains];
+static struct gc_stats sampled_gc_stats[caml_params->max_domains];
 
 void caml_accum_heap_stats(struct heap_stats* acc, const struct heap_stats* h)
 {
@@ -941,7 +941,7 @@ void caml_sample_gc_stats(struct gc_stats* buf)
   int my_id = Caml_state->id;
   memset(buf, 0, sizeof(*buf));
 
-  for (i=0; i<Max_domains; i++) {
+  for (i=0; i<caml_params->max_domains; i++) {
     struct gc_stats* s = &sampled_gc_stats[i];
     struct heap_stats* h = &s->major_heap;
     if (i != my_id) {
