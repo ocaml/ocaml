@@ -48,7 +48,6 @@ struct caml_params {
   uintnat init_custom_minor_max_bsz;
 
   uintnat init_max_stack_wsz;
-  uintnat init_fiber_wsz;
 
   uintnat backtrace_enabled;
   uintnat runtime_warnings;
