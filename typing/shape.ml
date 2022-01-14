@@ -290,7 +290,34 @@ end) = struct
      much smaller normal forms (that blow up again if printed back
      as trees). A functor-heavy file from Irmin has its shape normal
      form decrease from 100Mio to 2.5Mio when memoization is enabled.
-  *)
+
+     Note: the local environment is part of the memoization key, while
+     it is defined using a type Ident.Map.t of non-canonical balanced
+     trees: two maps could have exactly the same items, but be
+     balanced differently and therefore hash differently, reducing
+     the effectivenss of memoization.
+     This could in theory happen, say, with the two programs
+       (fun x -> fun y -> ...)
+     and
+       (fun y -> fun x -> ...)
+     having "the same" local environments, with additions done in
+     a different order, giving non-structurally-equal trees. Should we
+     define our own hash functions to provide robust hashing on
+     environments?
+
+     We believe that the answer is "no": this problem does not occur
+     in practice. We can assume that identifiers are unique on valid
+     typedtree fragments (identifier "stamps" distinguish
+     binding positions); in particular the two program fragments above
+     in fact bind *distinct* identifiers x (with different stamps) and
+     different identifiers y, so the environments are distinct. If two
+     environments are structurally the same, they must correspond to
+     the evaluation evnrionments of two sub-terms that are under
+     exactly the same scope of binders. So the two environments were
+     obtained by the same term traversal, adding binders in the same
+     order, giving the same balanced trees: the environments have the
+     same hash.
+*)
 
   and reduce__ ({fuel; global_env; local_env; _} as env) (t : t) =
     let reduce env t = reduce_ env t in
