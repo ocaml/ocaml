@@ -33,21 +33,28 @@
 #include "caml/memprof.h"
 #include "caml/finalise.h"
 
-#ifndef NSIG
-#define NSIG 64
-#endif
+/* The set of pending signals (received but not yet processed).
+   It is represented as a bit vector.
+   Valid signal numbers range from 1 to NSIG - 1 included.
+   (This is checked when we install a signal handler.)
+   Signal 1 is the least significant bit of caml_pending_signals[0]. */
 
-/* The set of pending signals (received but not yet processed) */
+CAMLexport atomic_uintnat caml_pending_signals[NSIG_WORDS];
 
-CAMLexport atomic_intnat caml_pending_signals[NSIG];
 static caml_plat_mutex signal_install_mutex = CAML_PLAT_MUTEX_INITIALIZER;
 
 int caml_check_for_pending_signals(void)
 {
   int i;
-
-  for (i = 0; i < NSIG; i++) {
-    if (atomic_load_explicit(&caml_pending_signals[i], memory_order_seq_cst))
+  /* [MM] This fence compensates for the fact that Caml_check_gc_interrupt
+     reads young_limit non-atomically.  It is possible in theory to
+     see young_limit updated without caml_pending_signals being set
+     and then resetting young_limit after the check.  This would delay
+     processing the pending signal until young_limit is updated again.
+     There may be nicer ways to address this scenario. */
+  atomic_thread_fence(memory_order_acquire);
+  for (i = 0; i < NSIG_WORDS; i++) {
+    if (atomic_load_explicit(&caml_pending_signals[i], memory_order_relaxed))
       return 1;
   }
   return 0;
@@ -57,8 +64,8 @@ int caml_check_for_pending_signals(void)
 
 CAMLexport value caml_process_pending_signals_exn(void)
 {
-  int i;
-  intnat specific_signal_pending;
+  int i, j, signo;
+  uintnat curr, mask ;
   value exn;
 #ifdef POSIX_SIGNALS
   sigset_t set;
@@ -72,30 +79,35 @@ CAMLexport value caml_process_pending_signals_exn(void)
 #ifdef POSIX_SIGNALS
   pthread_sigmask(/* dummy */ SIG_BLOCK, NULL, &set);
 #endif
-  for (i = 0; i < NSIG; i++) {
-    if ( atomic_load_explicit
-          (&caml_pending_signals[i], memory_order_seq_cst) == 0 )
-      continue;
-#ifdef POSIX_SIGNALS
-    if(sigismember(&set, i))
-      continue;
-#endif
-  again:
-    specific_signal_pending = atomic_load_explicit
-                               (&caml_pending_signals[i], memory_order_seq_cst);
-    if( specific_signal_pending > 0 ) {
-      if( !atomic_compare_exchange_strong(
-            &caml_pending_signals[i],
-             &specific_signal_pending, 0) ) {
-        /* We failed our CAS because another thread beat us to processing
-           this signal. Try again to see if there are more of this signal
-           to process. */
-        goto again;
-      }
 
-      exn = caml_execute_signal_exn(i, 0);
+  for (i = 0; i < NSIG_WORDS; i++) {
+    curr = atomic_load_explicit(&caml_pending_signals[i],
+                                memory_order_relaxed);
+    if (curr == 0) goto next_word;
+    /* Scan curr for bits set */
+    for (j = 0; j < BITS_PER_WORD; j++) {
+      mask = (uintnat)1 << j;
+      if ((curr & mask) == 0) goto next_bit;
+      signo = i * 8 + j + 1;
+#ifdef POSIX_SIGNALS
+      if (sigismember(&set, signo)) goto next_bit;
+#endif
+      while (! atomic_compare_exchange_strong(&caml_pending_signals[i],
+                                              &curr, curr & ~mask)) {
+        /* curr was refreshed, test it again */
+        if (curr == 0) goto next_word;
+        if ((curr & mask) == 0) goto next_bit;
+      }
+      exn = caml_execute_signal_exn(signo, 0);
       if (Is_exception_result(exn)) return exn;
+      /* curr probably changed during the evaluation of the signal handler;
+         refresh it from memory */
+      curr = atomic_load_explicit(&caml_pending_signals[i],
+                                  memory_order_relaxed);
+      if (curr == 0) goto next_word;
+    next_bit: /* skip */;
     }
+  next_word: /* skip */;
   }
   return Val_unit;
 }
@@ -107,7 +119,7 @@ CAMLexport void caml_process_pending_signals(void) {
 
 /* Record the delivery of a signal, and arrange for it to be processed
    as soon as possible:
-   - via the pending signal counters, processed in
+   - via the pending signal bitvector, processed in
      caml_process_pending_signals_exn.
    - by playing with the allocation limit, processed in
      caml_garbage_collection
@@ -115,9 +127,11 @@ CAMLexport void caml_process_pending_signals(void) {
 
 CAMLexport void caml_record_signal(int signal_number)
 {
-  atomic_store_explicit
-    (&caml_pending_signals[signal_number], 1, memory_order_seq_cst);
-
+  unsigned int i;
+  if (signal_number <= 0 || signal_number >= NSIG) return;
+  i = signal_number - 1;
+  atomic_fetch_or(&caml_pending_signals[i / BITS_PER_WORD],
+                  (uintnat)1 << (i % BITS_PER_WORD));
   caml_interrupt_self();
 }
 
@@ -408,7 +422,7 @@ CAMLprim value caml_install_signal_handler(value signal_number, value action)
   int sig, act, oldact;
 
   sig = caml_convert_signal_number(Int_val(signal_number));
-  if (sig < 0 || sig >= NSIG)
+  if (sig <= 0 || sig >= NSIG)
     caml_invalid_argument("Sys.signal: unavailable signal");
   switch(action) {
   case Val_int(0):              /* Signal_default */

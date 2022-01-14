@@ -27,10 +27,6 @@
 #include "caml/signals.h"
 #include "caml/signals_machdep.h"
 
-#ifndef NSIG
-#define NSIG 64
-#endif
-
 #ifdef _WIN32
 typedef void (*sighandler)(int sig);
 extern sighandler caml_win32_signal(int sig, sighandler action);
@@ -45,7 +41,6 @@ static void handle_signal(int signal_number)
 #if !defined(POSIX_SIGNALS) && !defined(BSD_SIGNALS)
   signal(signal_number, handle_signal);
 #endif
-  if (signal_number < 0 || signal_number >= NSIG) return;
   caml_record_signal(signal_number);
   errno = saved_errno;
 }

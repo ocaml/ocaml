@@ -37,10 +37,6 @@
 #include "signals_osdep.h"
 #include "caml/stack.h"
 
-#ifndef NSIG
-#define NSIG 64
-#endif
-
 typedef void (*signal_handler)(int signo);
 
 #ifdef _WIN32
@@ -131,7 +127,6 @@ DECLARE_SIGNAL_HANDLER(handle_signal)
 #if !defined(POSIX_SIGNALS) && !defined(BSD_SIGNALS)
   signal(sig, handle_signal);
 #endif
-  if (sig < 0 || sig >= NSIG) return;
   caml_record_signal(sig);
   errno = saved_errno;
 }
