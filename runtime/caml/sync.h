@@ -15,7 +15,8 @@
 
 /* POSIX thread implementation of the user facing Mutex and Condition */
 
-#define CAML_INTERNALS
+#ifndef CAML_SYNC_H
+#define CAML_SYNC_H
 
 #include "alloc.h"
 #include "custom.h"
@@ -90,3 +91,5 @@ Caml_inline void sync_check_error(int retcode, char * msg)
   memcpy (&Byte(str, msglen + 2), err, errlen);
   caml_raise_sys_error(str);
 }
+
+#endif /* CAML_SYNC_H */
