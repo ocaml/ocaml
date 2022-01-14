@@ -2,6 +2,9 @@
    include testing
 *)
 
+(* Check that the numbers drawn from the default state are the same
+   on all platforms. *)
+
 open Random
 
 let _ =

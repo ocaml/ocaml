@@ -15,12 +15,14 @@
 
 (** Pseudo-random number generators (PRNG).
 
-    With multiple domains, by default, each domain is initialised with the same
-    random seed. Hence, each domain will yield the same sequence of numbers. If
-    you wish to have uncorrelated sequences of random numbers on each domain,
-    one way to achieve this is to call {!self_init} on each domain before
-    requesting random numbers.
+    With multiple domains, each domain has its own generator that evolves
+    independently of the generators of other domains.  When a domain is
+    created, its generator is initialized by splitting the state
+    of the generator associated with the parent domain.
 
+    In contrast, all threads within a domain share the same domain-local
+    generator.  Independent generators can be created with the {!Random.split}
+    function and used with the functions from the {!Random.State} module.
 *)
 
 (** {1 Basic functions} *)
@@ -121,15 +123,6 @@ module State : sig
   val copy : t -> t
   (** Return a copy of the given state. *)
 
-  val split : t -> t
-  (** Splits the PRNG state, returning a supposedly-independent state.
-      (The current state advances immediately,
-       but effect-free initialization of the split state is performed lazily.)
-
-      Note: with the current PRNG algorithm, we do not expect splitting to have
-      good statistical properties.
-  *)
-
   val bits : t -> int
   val int : t -> int -> int
   val full_int : t -> int -> int
@@ -144,12 +137,22 @@ module State : sig
   (** These functions are the same as the basic functions, except that they
       use (and update) the given PRNG state instead of the default one.
   *)
+
+  val split : t -> t
+  (** Draw a fresh PRNG state from the given PRNG state.
+      The new PRNG is statistically independent from the given PRNG.
+      Data can be drawn from both PRNGs, in any order, without risk of
+      correlation.  Both PRNGs can be split later, arbitrarily many times. *)
+
 end
 
-
 val get_state : unit -> State.t
-(** Return the current domain-local state of the generator used by the basic
+(** Return the current state of the domain-local generator used by the basic
     functions. *)
 
 val set_state : State.t -> unit
-(** Set the domain-local state of the generator used by the basic functions. *)
+(** Set the state of the domain-local generator used by the basic functions. *)
+
+val split : unit -> State.t
+(** Draw a fresh PRNG state from the current state of the domain-local generator
+    used by the default functions.  See {!Random.State.split}. *)
