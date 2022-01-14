@@ -113,6 +113,8 @@ static void caml_sys_check_path(value name)
   }
 }
 
+extern void caml_terminate_signals(void);
+
 CAMLexport void caml_do_exit(int retcode)
 {
   if ((caml_verb_gc & 0x400) != 0) {
@@ -158,6 +160,9 @@ CAMLexport void caml_do_exit(int retcode)
     caml_shutdown();
 #ifdef _WIN32
   caml_restore_win32_terminal();
+#endif
+#ifdef NATIVE_CODE
+  caml_terminate_signals();
 #endif
 #ifdef NAKED_POINTERS_CHECKER
   if (retcode == 0 && caml_naked_pointers_detected) {
