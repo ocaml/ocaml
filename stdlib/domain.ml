@@ -64,9 +64,24 @@ module DLS = struct
 
   let key_counter = Atomic.make 0
 
-  let new_key f =
-    let k = Atomic.fetch_and_add key_counter 1 in
-    (k, f)
+  type key_initializer =
+    KI: 'a key * ('a -> 'a) -> key_initializer
+
+  let parent_keys = Atomic.make ([] : key_initializer list)
+
+  let rec add_parent_key ki =
+    let l = Atomic.get parent_keys in
+    if not (Atomic.compare_and_set parent_keys l (ki :: l))
+    then add_parent_key ki
+
+  let new_key ?split_from_parent init_orphan =
+    let idx = Atomic.fetch_and_add key_counter 1 in
+    let k = (idx, init_orphan) in
+    begin match split_from_parent with
+    | None -> ()
+    | Some split -> add_parent_key (KI(k, split))
+    end;
+    k
 
   (* If necessary, grow the current domain's local state array such that [idx]
    * is a valid index in the array. *)
@@ -100,6 +115,18 @@ module DLS = struct
       st.(idx) <- (Sys.opaque_identity v');
       Obj.magic v'
     else Obj.magic v
+
+  let get_initial_keys () : (int * Obj.t) list =
+    List.map
+      (fun (KI ((idx, _) as k, split)) ->
+           (idx, Obj.repr (split (get k))))
+      (Atomic.get parent_keys)
+
+  let set_initial_keys (l: (int * Obj.t) list) =
+    List.iter
+      (fun (idx, v) ->
+        let st = maybe_grow idx in st.(idx) <- v)
+      l
 
 end
 
@@ -163,12 +190,19 @@ let cas r vold vnew =
 
 let spawn f =
   do_at_first_spawn ();
+  let pk = DLS.get_initial_keys () in
   (* the termination_mutex is used to block a joining thread *)
   let termination_mutex = Mutex.create () in
   let state = Atomic.make Running in
   let at_startup = Atomic.get startup_function in
   let body () =
-    let result = match DLS.create_dls (); at_startup (); f () with
+    let result =
+      match
+        DLS.create_dls ();
+        DLS.set_initial_keys pk;
+        at_startup ();
+        f ()
+      with
       | x -> Ok x
       | exception ex -> Error ex
     in

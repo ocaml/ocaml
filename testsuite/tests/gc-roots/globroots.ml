@@ -30,7 +30,10 @@ module Test(G: GLOBREF) () = struct
 
   let size = 1024
 
-  let random_state = Domain.DLS.new_key Random.State.make_self_init
+  let random_state =
+    Domain.DLS.new_key
+      ~split_from_parent:Random.State.split
+      Random.State.make_self_init
 
   let vals = Array.init size Int.to_string
 

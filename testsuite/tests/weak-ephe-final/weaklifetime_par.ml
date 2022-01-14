@@ -3,7 +3,10 @@
 
 let size = 1000;;
 let num_domains = 4;;
-let random_state = Domain.DLS.new_key Random.State.make_self_init
+let random_state =
+  Domain.DLS.new_key
+    ~split_from_parent:Random.State.split
+    Random.State.make_self_init
 
 let random_int = Random.State.int (Domain.DLS.get random_state)
 

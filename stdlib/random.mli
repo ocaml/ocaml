@@ -121,6 +121,15 @@ module State : sig
   val copy : t -> t
   (** Return a copy of the given state. *)
 
+  val split : t -> t
+  (** Splits the PRNG state, returning a supposedly-independent state.
+      (The current state advances immediately,
+       but effect-free initialization of the split state is performed lazily.)
+
+      Note: with the current PRNG algorithm, we do not expect splitting to have
+      good statistical properties.
+  *)
+
   val bits : t -> int
   val int : t -> int -> int
   val full_int : t -> int -> int
