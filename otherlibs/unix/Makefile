@@ -34,7 +34,7 @@ COBJS=accept.o access.o addrofstr.o alarm.o bind.o channels.o chdir.o \
   getnameinfo.o getpeername.o getpid.o getppid.o getproto.o getpw.o \
   gettimeofday.o getserv.o getsockname.o getuid.o gmtime.o \
   initgroups.o isatty.o itimer.o kill.o link.o listen.o lockf.o lseek.o \
-  mkdir.o mkfifo.o mmap.o mmap_ba.o \
+  mem_read.o mkdir.o mkfifo.o mmap.o mmap_ba.o \
   nice.o open.o opendir.o pipe.o putenv.o read.o realpath.o \
   readdir.o readlink.o rename.o rewinddir.o rmdir.o select.o sendrecv.o \
   setgid.o setgroups.o setsid.o setuid.o shutdown.o signals.o \

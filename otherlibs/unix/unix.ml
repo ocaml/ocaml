@@ -240,6 +240,7 @@ type open_flag =
   | O_KEEPEXEC
 
 type file_perm = int
+type buffer = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
 
 
 external openfile : string -> open_flag list -> file_perm -> file_descr
@@ -248,6 +249,8 @@ external close : file_descr -> unit = "unix_close"
 external fsync : file_descr -> unit = "unix_fsync"
 external unsafe_read : file_descr -> bytes -> int -> int -> int
    = "unix_read"
+external unsafe_mem_read : file_descr -> buffer -> int -> int -> int
+   = "unix_mem_read"
 external unsafe_write : file_descr -> bytes -> int -> int -> int = "unix_write"
 external unsafe_single_write : file_descr -> bytes -> int -> int -> int
    = "unix_single_write"
@@ -256,6 +259,10 @@ let read fd buf ofs len =
   if ofs < 0 || len < 0 || ofs > Bytes.length buf - len
   then invalid_arg "Unix.read"
   else unsafe_read fd buf ofs len
+let mem_read fd buf ofs len =
+  if ofs < 0 || len < 0 || ofs > Bigarray.Array1.size_in_bytes buf - len
+  then invalid_arg "Unix.mem_read"
+  else unsafe_mem_read fd buf ofs len
 let write fd buf ofs len =
   if ofs < 0 || len < 0 || ofs > Bytes.length buf - len
   then invalid_arg "Unix.write"
