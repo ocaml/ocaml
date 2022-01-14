@@ -14,6 +14,9 @@ Working version
   the default behavior.
   (Nicolás Ojeda Bär, review by Xavier Leroy)
 
+- #10902: Do not register empty code fragments in natdynlink.
+  (David Allsopp, review by Xavier Leroy and Damien Doligez)
+
 ### Code generation and optimizations:
 
 ### Standard library:
