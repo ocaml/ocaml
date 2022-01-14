@@ -8,7 +8,6 @@ depends: [
   "base-bigarray" {post}
   "base-threads" {post}
   "base-domains" {post}
-  "ocaml-option-nnp"
 ]
 conflict-class: "ocaml-core-compiler"
 flags: compiler
@@ -46,6 +45,7 @@ build: [
 install: [make "install"]
 conflicts: [
   "ocaml-option-32bit"      # Not yet implemented
+  "ocaml-option-nnp"
   "ocaml-option-nnpchecker" # Fundamentally not possible
 ]
 depopts: [
