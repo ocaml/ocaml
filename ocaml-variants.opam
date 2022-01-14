@@ -8,7 +8,6 @@ depends: [
   "base-bigarray" {post}
   "base-threads" {post}
   "base-domains" {post}
-  "ocaml-option-nnp"
 ]
 conflict-class: "ocaml-core-compiler"
 flags: compiler
