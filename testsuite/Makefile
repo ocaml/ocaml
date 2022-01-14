@@ -111,10 +111,20 @@ endif
 
 TIMEOUT ?= 600 # 10 minutes
 
+# SHOW_TIMINGS should be set by the user (to a non-empty value) if they want
+# the timings for each test file to be included in the log
+SHOW_TIMINGS ?=
+ifeq "$(SHOW_TIMINGS)" ""
+  OCAMLTEST_SHOW_TIMINGS_FLAG :=
+else
+  OCAMLTEST_SHOW_TIMINGS_FLAG := -show-timings
+endif
+
 OCAMLTESTFLAGS := \
   -timeout $(TIMEOUT) \
   $(OCAMLTEST_PROMOTE_FLAG) \
-  $(OCAMLTEST_KEEP_TEST_DIR_ON_SUCCESS_FLAG)
+  $(OCAMLTEST_KEEP_TEST_DIR_ON_SUCCESS_FLAG) \
+  $(OCAMLTEST_SHOW_TIMINGS_FLAG)
 
 # Make sure USE_RUNTIME is defined
 USE_RUNTIME ?=

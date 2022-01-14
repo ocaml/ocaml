@@ -124,6 +124,10 @@ type instruction =
   | Kgetpubmet of int
   | Kgetdynmet
   | Kevent of debug_event
+  | Kperform
+  | Kresume
+  | Kresumeterm of int
+  | Kreperformterm of int
   | Kstop
 
 val immed_min: int

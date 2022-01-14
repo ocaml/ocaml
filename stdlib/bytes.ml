@@ -385,14 +385,6 @@ let split_on_char sep s =
   done;
   sub s 0 !j :: !r
 
-(* Deprecated functions implemented via other deprecated functions *)
-[@@@ocaml.warning "-3"]
-let uppercase s = map Char.uppercase s
-let lowercase s = map Char.lowercase s
-
-let capitalize s = apply1 Char.uppercase s
-let uncapitalize s = apply1 Char.lowercase s
-
 (** {1 Iterators} *)
 
 let to_seq s =

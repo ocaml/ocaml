@@ -25,6 +25,8 @@
 #include "caml/intext.h"
 #include "caml/osdeps.h"
 #include "caml/fail.h"
+#include "caml/frame_descriptors.h"
+#include "caml/globroots.h"
 #include "caml/signals.h"
 
 #include "caml/hooks.h"
@@ -50,6 +52,8 @@ static void *getsym(void *handle, const char *module, const char *name){
   caml_stat_free(fullname);
   return sym;
 }
+
+extern char caml_globals_map[];
 
 CAMLprim value caml_natdynlink_getmap(value unit)
 {
@@ -111,16 +115,12 @@ CAMLprim value caml_natdynlink_run(value handle_v, value symbol) {
   sym = optsym("__gc_roots");
   if (NULL != sym) caml_register_dyn_global(sym);
 
-  sym = optsym("__data_begin");
-  sym2 = optsym("__data_end");
-  if (NULL != sym && NULL != sym2)
-    caml_page_table_add(In_static_data, sym, sym2);
-
   sym = optsym("__code_begin");
   sym2 = optsym("__code_end");
-  if (NULL != sym && NULL != sym2)
+  if (NULL != sym && NULL != sym2) {
     caml_register_code_fragment((char *) sym, (char *) sym2,
                                 DIGEST_LATER, NULL);
+  }
 
   if( caml_natdynlink_hook != NULL ) caml_natdynlink_hook(handle,unit);
 

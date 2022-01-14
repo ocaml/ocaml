@@ -253,8 +253,6 @@ int error_table[] = {
   EHOSTUNREACH, ELOOP, EOVERFLOW /*, EUNKNOWNERR */
 };
 
-static const value * unix_error_exn = NULL;
-
 value unix_error_of_code (int errcode)
 {
   int errconstr;
@@ -288,18 +286,17 @@ int code_of_unix_error (value error)
 void unix_error(int errcode, const char *cmdname, value cmdarg)
 {
   value res;
+  const value * unix_error_exn;
   value name = Val_unit, err = Val_unit, arg = Val_unit;
 
   Begin_roots3 (name, err, arg);
     arg = cmdarg == Nothing ? caml_copy_string("") : cmdarg;
     name = caml_copy_string(cmdname);
     err = unix_error_of_code (errcode);
-    if (unix_error_exn == NULL) {
-      unix_error_exn = caml_named_value("Unix.Unix_error");
-      if (unix_error_exn == NULL)
-        caml_invalid_argument("Exception Unix.Unix_error not initialized,"
-                         " please link unix.cma");
-    }
+    unix_error_exn = caml_named_value("Unix.Unix_error");
+    if (unix_error_exn == NULL)
+      caml_invalid_argument("Exception Unix.Unix_error not initialized,"
+                       " please link unix.cma");
     res = caml_alloc_small(4, 0);
     Field(res, 0) = *unix_error_exn;
     Field(res, 1) = err;

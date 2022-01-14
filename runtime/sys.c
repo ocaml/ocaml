@@ -51,15 +51,16 @@
 #include "caml/gc_ctrl.h"
 #include "caml/major_gc.h"
 #include "caml/io.h"
-#include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/osdeps.h"
 #include "caml/signals.h"
-#include "caml/stacks.h"
+#include "caml/fiber.h"
 #include "caml/sys.h"
-#include "caml/version.h"
+#include "caml/startup.h"
 #include "caml/callback.h"
 #include "caml/startup_aux.h"
+#include "caml/major_gc.h"
+#include "caml/shared_heap.h"
 
 static char * error_message(void)
 {
@@ -86,9 +87,9 @@ CAMLexport void caml_sys_error(value arg)
     mlsize_t err_len = strlen(err);
     mlsize_t arg_len = caml_string_length(arg);
     str = caml_alloc_string(arg_len + 2 + err_len);
-    memmove(&Byte(str, 0), String_val(arg), arg_len);
-    memmove(&Byte(str, arg_len), ": ", 2);
-    memmove(&Byte(str, arg_len + 2), err, err_len);
+    memcpy(&Byte(str, 0), String_val(arg), arg_len);
+    memcpy(&Byte(str, arg_len), ": ", 2);
+    memcpy(&Byte(str, arg_len + 2), err, err_len);
   }
   caml_raise_sys_error(str);
   CAMLnoreturn;
@@ -115,57 +116,63 @@ static void caml_sys_check_path(value name)
 
 CAMLexport void caml_do_exit(int retcode)
 {
-  if ((caml_verb_gc & 0x400) != 0) {
-    /* cf caml_gc_counters */
-    double minwords = Caml_state->stat_minor_words
-      + (double) (Caml_state->young_end - Caml_state->young_ptr);
-    double prowords = Caml_state->stat_promoted_words;
-    double majwords =
-      Caml_state->stat_major_words + (double) caml_allocated_words;
-    double allocated_words = minwords + majwords - prowords;
-    intnat mincoll = Caml_state->stat_minor_collections;
-    intnat majcoll = Caml_state->stat_major_collections;
-    intnat heap_words = Caml_state->stat_heap_wsz;
-    intnat heap_chunks = Caml_state->stat_heap_chunks;
-    intnat top_heap_words = Caml_state->stat_top_heap_wsz;
-    intnat cpct = Caml_state->stat_compactions;
-    intnat forcmajcoll = Caml_state->stat_forced_major_collections;
-    caml_gc_message(0x400, "allocated_words: %.0f\n", allocated_words);
-    caml_gc_message(0x400, "minor_words: %.0f\n", minwords);
-    caml_gc_message(0x400, "promoted_words: %.0f\n", prowords);
-    caml_gc_message(0x400, "major_words: %.0f\n", majwords);
-    caml_gc_message(0x400, "minor_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                    mincoll);
-    caml_gc_message(0x400, "major_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                    majcoll);
-    caml_gc_message(0x400, "heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                    heap_words);
-    caml_gc_message(0x400, "heap_chunks: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                    heap_chunks);
-    caml_gc_message(0x400, "top_heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                    top_heap_words);
-    caml_gc_message(0x400, "compactions: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                    cpct);
-    caml_gc_message(0x400,
-                    "forced_major_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                    forcmajcoll);
+  caml_domain_state* domain_state = Caml_state;
+  struct gc_stats s;
+
+  if ((caml_params->verb_gc & 0x400) != 0) {
+    caml_sample_gc_stats(&s);
+    {
+      /* cf caml_gc_counters */
+      double minwords = s.minor_words
+        + (double) (domain_state->young_end - domain_state->young_ptr);
+      double majwords = s.major_words + (double) domain_state->allocated_words;
+      double allocated_words = minwords + majwords - s.promoted_words;
+      intnat heap_words =
+        s.major_heap.pool_words + s.major_heap.large_words;
+      intnat top_heap_words =
+        s.major_heap.pool_max_words + s.major_heap.large_max_words;
+
+      if (heap_words == 0) {
+        heap_words = Wsize_bsize(caml_heap_size(Caml_state->shared_heap));
+      }
+
+      if (top_heap_words == 0) {
+        top_heap_words = caml_top_heap_words(Caml_state->shared_heap);
+      }
+
+      caml_gc_message(0x400, "allocated_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+                      (intnat)allocated_words);
+      caml_gc_message(0x400, "minor_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+                      (intnat) minwords);
+      caml_gc_message(0x400, "promoted_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+                      (intnat) s.promoted_words);
+      caml_gc_message(0x400, "major_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+                      (intnat) majwords);
+      caml_gc_message(0x400,
+          "minor_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+          (intnat) s.minor_collections);
+      caml_gc_message(0x400,
+          "major_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+          domain_state->stat_major_collections);
+      caml_gc_message(0x400,
+          "forced_major_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+          (intnat)s.forced_major_collections);
+      caml_gc_message(0x400, "heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+                      heap_words);
+      caml_gc_message(0x400, "top_heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+                      top_heap_words);
+      caml_gc_message(0x400, "mean_space_overhead: %lf\n",
+                      caml_mean_space_overhead());
+    }
   }
 
 #ifndef NATIVE_CODE
   caml_debugger(PROGRAM_EXIT, Val_unit);
 #endif
-  if (caml_cleanup_on_exit)
+  if (caml_params->cleanup_on_exit)
     caml_shutdown();
 #ifdef _WIN32
   caml_restore_win32_terminal();
-#endif
-  caml_terminate_signals();
-#ifdef NAKED_POINTERS_CHECKER
-  if (retcode == 0 && caml_naked_pointers_detected) {
-    fprintf (stderr, "\nOut-of-heap pointers were detected by the runtime.\n"
-                     "The process would otherwise have terminated normally.\n");
-    retcode = 70; /* EX_SOFTWARE; see sysexits.h */
-  }
 #endif
   exit(retcode);
 }
@@ -189,7 +196,7 @@ CAMLprim value caml_sys_exit(value retcode)
 #endif
 #endif
 
-static int sys_open_flags[] = {
+const static int sys_open_flags[] = {
   O_RDONLY, O_WRONLY, O_APPEND | O_WRONLY, O_CREAT, O_TRUNC, O_EXCL,
   O_BINARY, O_TEXT, O_NONBLOCK
 };
@@ -416,14 +423,13 @@ CAMLprim value caml_sys_getenv(value var)
   return val;
 }
 
-char_os * caml_exe_name;
 static value main_argv;
 
 CAMLprim value caml_sys_get_argv(value unit)
 {
   CAMLparam0 ();   /* unit is unused */
   CAMLlocal2 (exe_name, res);
-  exe_name = caml_copy_string_of_os(caml_exe_name);
+  exe_name = caml_copy_string_of_os(caml_params->exe_name);
   res = caml_alloc_small(2, 0);
   Field(res, 0) = exe_name;
   Field(res, 1) = main_argv;
@@ -443,7 +449,7 @@ CAMLprim value caml_sys_modify_argv(value new_argv)
 
 CAMLprim value caml_sys_executable_name(value unit)
 {
-  return caml_copy_string_of_os(caml_exe_name);
+  return caml_copy_string_of_os(caml_params->exe_name);
 }
 
 void caml_sys_init(char_os * exe_name, char_os **argv)
@@ -456,7 +462,7 @@ void caml_sys_init(char_os * exe_name, char_os **argv)
   caml_setup_win32_terminal();
 #endif
 #endif
-  caml_exe_name = exe_name;
+  caml_init_exe_name(exe_name);
   main_argv = caml_alloc_array((void *)caml_copy_string_of_os,
                                (char const **) argv);
   caml_register_generational_global_root(&main_argv);
@@ -718,13 +724,4 @@ CAMLprim value caml_sys_isatty(value chan)
 #endif
 
   return ret;
-}
-
-CAMLprim value caml_sys_const_naked_pointers_checked(value unit)
-{
-#ifdef NAKED_POINTERS_CHECKER
-  return Val_true;
-#else
-  return Val_false;
-#endif
 }

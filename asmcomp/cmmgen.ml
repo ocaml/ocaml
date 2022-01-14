@@ -521,7 +521,7 @@ let rec transl env e =
             dbg)
       | (Pbigarraydim(n), [b]) ->
           let dim_ofs = 4 + n in
-          tag_int (Cop(Cload (Word_int, Mutable),
+          tag_int (Cop(mk_load_mut Word_int,
             [field_address (transl env b) dim_ofs dbg],
             dbg)) dbg
       | (p, [arg]) ->
@@ -537,6 +537,10 @@ let rec transl env e =
         ->
           fatal_error "Cmmgen.transl:prim, wrong arity"
       | ((Pfield_computed|Psequand
+         | Prunstack | Pperform | Presume | Preperform
+         | Pdls_get
+         | Patomic_load _ | Patomic_exchange
+         | Patomic_cas | Patomic_fetch_add
          | Psequor | Pnot | Pnegint | Paddint | Psubint
          | Pmulint | Pandint | Porint | Pxorint | Plslint
          | Plsrint | Pasrint | Pintoffloat | Pfloatofint
@@ -679,7 +683,7 @@ let rec transl env e =
       end
   | Uunreachable ->
       let dbg = Debuginfo.none in
-      Cop(Cload (Word_int, Mutable), [Cconst_int (0, dbg)], dbg)
+      Cop(mk_load_mut Word_int, [Cconst_int (0, dbg)], dbg)
 
 and transl_catch env nfail ids body handler dbg =
   let ids = List.map (fun (id, kind) -> (id, kind, ref No_result)) ids in
@@ -795,7 +799,7 @@ and transl_prim_1 env p arg dbg =
     Popaque ->
       opaque (transl env arg) dbg
   (* Heap operations *)
-  | Pfield n ->
+  | Pfield(n, _, _) ->
       get_field env (transl env arg) n dbg
   | Pfloatfield n ->
       let ptr = transl env arg in
@@ -852,7 +856,20 @@ and transl_prim_1 env p arg dbg =
   | Pbswap16 ->
       tag_int (bswap16 (ignore_high_bit_int (untag_int
         (transl env arg) dbg)) dbg) dbg
+  | Pperform ->
+      let cont = make_alloc dbg Obj.cont_tag [int_const dbg 0] in
+      Cop(Capply typ_val,
+       [Cconst_symbol ("caml_perform", dbg); transl env arg; cont],
+       dbg)
+  | Pdls_get ->
+      Cop(Cdls_get, [transl env arg], dbg)
+  | Patomic_load {immediate_or_pointer = Immediate} ->
+      Cop(mk_load_mut Word_int, [transl env arg], dbg)
+  | Patomic_load {immediate_or_pointer = Pointer} ->
+      Cop(mk_load_mut Word_val, [transl env arg], dbg)
   | (Pfield_computed | Psequand | Psequor
+    | Prunstack | Presume | Preperform
+    | Patomic_exchange | Patomic_cas | Patomic_fetch_add
     | Paddint | Psubint | Pmulint | Pandint
     | Porint | Pxorint | Plslint | Plsrint | Pasrint
     | Paddfloat | Psubfloat | Pmulfloat | Pdivfloat
@@ -1036,6 +1053,14 @@ and transl_prim_2 env p arg1 arg2 dbg =
       tag_int (Cop(Ccmpi cmp,
                      [transl_unbox_int dbg env bi arg1;
                       transl_unbox_int dbg env bi arg2], dbg)) dbg
+  | Patomic_exchange ->
+     Cop (Cextcall ("caml_atomic_exchange", typ_val, [], false),
+          [transl env arg1; transl env arg2], dbg)
+  | Patomic_fetch_add ->
+     Cop (Cextcall ("caml_atomic_fetch_add", typ_int, [], false),
+          [transl env arg1; transl env arg2], dbg)
+  | Prunstack | Pperform | Presume | Preperform | Pdls_get
+  | Patomic_cas | Patomic_load _
   | Pnot | Pnegint | Pintoffloat | Pfloatofint | Pnegfloat
   | Pabsfloat | Pstringlength | Pbyteslength | Pbytessetu | Pbytessets
   | Pisint | Pbswap16 | Pint_as_pointer | Popaque | Pread_symbol _
@@ -1087,6 +1112,31 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
       bigstring_set size unsafe (transl env arg1) (transl env arg2)
         (transl_unbox_sized size dbg env arg3) dbg
 
+  | Patomic_cas ->
+     Cop (Cextcall ("caml_atomic_cas", typ_int, [], false),
+          [transl env arg1; transl env arg2; transl env arg3], dbg)
+
+  (* Effects *)
+  | Presume ->
+      Cop (Capply typ_val,
+           [Cconst_symbol ("caml_resume", dbg);
+           transl env arg1; transl env arg2; transl env arg3],
+           dbg)
+
+  | Prunstack ->
+      Cop (Capply typ_val,
+           [Cconst_symbol ("caml_runstack", dbg);
+           transl env arg1; transl env arg2; transl env arg3],
+           dbg)
+
+  | Preperform ->
+      Cop (Capply typ_val,
+           [Cconst_symbol ("caml_reperform", dbg);
+           transl env arg1; transl env arg2; transl env arg3],
+           dbg)
+
+  | Pperform | Pdls_get
+  | Patomic_exchange | Patomic_fetch_add | Patomic_load _
   | Pfield_computed | Psequand | Psequor | Pnot | Pnegint | Paddint
   | Psubint | Pmulint | Pandint | Porint | Pxorint | Plslint | Plsrint | Pasrint
   | Pintoffloat | Pfloatofint | Pnegfloat | Pabsfloat | Paddfloat | Psubfloat

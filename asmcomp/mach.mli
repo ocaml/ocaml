@@ -49,7 +49,8 @@ type operation =
   | Itailcall_imm of { func : string; }
   | Iextcall of { func : string;
                   ty_res : Cmm.machtype; ty_args : Cmm.exttype list;
-                  alloc : bool; }
+                  alloc : bool;
+                  stack_ofs : int; }
   | Istackoffset of int
   | Iload of Cmm.memory_chunk * Arch.addressing_mode * Asttypes.mutable_flag
   | Istore of Cmm.memory_chunk * Arch.addressing_mode * bool
@@ -62,6 +63,7 @@ type operation =
   | Iopaque
   | Ispecific of Arch.specific_operation
   | Ipoll of { return_label: Cmm.label option }
+  | Idls_get
 
 type instruction =
   { desc: instruction_desc;

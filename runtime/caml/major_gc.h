@@ -18,84 +18,73 @@
 
 #ifdef CAML_INTERNALS
 
-#include "freelist.h"
-#include "misc.h"
+typedef enum {
+  Phase_sweep_and_mark_main,
+  Phase_mark_final,
+  Phase_sweep_ephe
+} gc_phase_t;
+extern gc_phase_t caml_gc_phase;
 
-/* An interval of a single object to be scanned.
-   The end pointer must always be one-past-the-end of a heap block,
-   but the start pointer is not necessarily the start of the block */
-typedef struct {
-  value* start;
-  value* end;
-} mark_entry;
+Caml_inline char caml_gc_phase_char(gc_phase_t phase) {
+  switch (phase) {
+    case Phase_sweep_and_mark_main:
+      return 'M';
+    case Phase_mark_final:
+      return 'F';
+    case Phase_sweep_ephe:
+      return 'E';
+    default:
+      return 'U';
+  }
+}
 
-typedef struct {
-  void *block;           /* address of the malloced block this chunk lives in */
-  asize_t allocated;     /* in bytes, used for compaction */
-  asize_t size;          /* in bytes */
-  char *next;
-  mark_entry redarken_first;  /* first block in chunk to redarken */
-  value* redarken_end;     /* one-past-end of last block for redarkening */
-} heap_chunk_head;
-
-#define Chunk_head(c) (((heap_chunk_head *) (c)) - 1)
-#define Chunk_size(c) Chunk_head(c)->size
-#define Chunk_alloc(c) Chunk_head(c)->allocated
-#define Chunk_next(c) Chunk_head(c)->next
-#define Chunk_block(c) Chunk_head(c)->block
-
-extern int caml_gc_phase;
-extern int caml_gc_subphase;
-extern uintnat caml_allocated_words;
-extern double caml_extra_heap_resources;
-extern uintnat caml_dependent_size, caml_dependent_allocated;
-extern uintnat caml_fl_wsz_at_phase_change;
-extern int caml_ephe_list_pure;
-
-#define Phase_mark 0
-#define Phase_clean 1
-#define Phase_sweep 2
-#define Phase_idle 3
-
-/* Subphase of mark */
-#define Subphase_mark_roots 10
-/* Subphase_mark_roots: At the end of this subphase all the global
-   roots are marked. */
-#define Subphase_mark_main 11
-/* Subphase_mark_main: At the end of this subphase all the value alive at
-   the start of this subphase and created during it are marked. */
-#define Subphase_mark_final 12
-/* Subphase_mark_final: At the start of this subphase register which
-   value with an ocaml finalizer are not marked, the associated
-   finalizer will be run later. So we mark now these values as alive,
-   since they must be available for their finalizer.
-  */
-
-CAMLextern char *caml_heap_start;
-extern uintnat total_heap_size;
-extern char *caml_gc_sweep_hp;
-
-extern int caml_major_window;
-extern double caml_major_ring[Max_major_window];
-extern int caml_major_ring_index;
-extern double caml_major_work_credit;
-extern double caml_gc_clock;
-
-/* [caml_major_gc_hook] is called just between the end of the mark
-   phase and the beginning of the sweep phase of the major GC.
-
-   This hook must not allocate, change any heap value, nor
-   call OCaml code. */
-CAMLextern void (*caml_major_gc_hook)(void);
-
-void caml_init_major_heap (asize_t);           /* size in bytes */
-asize_t caml_clip_heap_chunk_wsz (asize_t wsz);
-void caml_darken (value, value *);
+intnat caml_opportunistic_major_work_available (void);
+void caml_opportunistic_major_collection_slice (intnat);
+/* auto-triggered slice from within the GC */
+#define AUTO_TRIGGERED_MAJOR_SLICE -1
+/* external triggered slice, but GC will compute the amount of work */
+#define GC_CALCULATE_MAJOR_SLICE 0
 void caml_major_collection_slice (intnat);
-void caml_shrink_mark_stack ();
-void major_collection (void);
-void caml_finish_major_cycle (void);
-void caml_set_major_window (int);
+void caml_finish_sweeping(void);
+void caml_finish_marking (void);
+int caml_init_major_gc(caml_domain_state*);
+void caml_teardown_major_gc(void);
+void caml_darken(void*, value, value* ignored);
+void caml_darken_cont(value);
+void caml_mark_root(value, value*);
+void caml_empty_mark_stack(void);
+void caml_finish_major_cycle(void);
+
+/* Ephemerons and finalisers */
+void caml_ephe_todo_list_emptied(void);
+void caml_orphan_allocated_words(void);
+void caml_add_to_orphaned_ephe_list(struct caml_ephe_info* ephe_info);
+void caml_add_orphaned_finalisers (struct caml_final_info*);
+void caml_final_domain_terminate (caml_domain_state *domain_state);
+
+struct heap_stats {
+  intnat pool_words;
+  intnat pool_max_words;
+  intnat pool_live_words;
+  intnat pool_live_blocks;
+  intnat pool_frag_words;
+  intnat large_words;
+  intnat large_max_words;
+  intnat large_blocks;
+};
+void caml_accum_heap_stats(struct heap_stats* acc, const struct heap_stats* s);
+void caml_remove_heap_stats(struct heap_stats* acc, const struct heap_stats* s);
+
+struct gc_stats {
+  uint64_t minor_words;
+  uint64_t promoted_words;
+  uint64_t major_words;
+  uint64_t minor_collections;
+  uint64_t forced_major_collections;
+  struct heap_stats major_heap;
+};
+void caml_sample_gc_stats(struct gc_stats* buf);
+void caml_sample_gc_collect(caml_domain_state *domain);
 
 /* Forces finalisation of all heap-allocated values,
    disregarding both local and global roots.
@@ -106,10 +95,12 @@ void caml_set_major_window (int);
 */
 void caml_finalise_heap (void);
 
-#ifdef NAKED_POINTERS_CHECKER
-extern int caml_naked_pointers_detected;
-#endif
+/* This variable is only written with the world stopped,
+   so it need not be atomic */
+extern uintnat caml_major_cycles_completed;
 
-#endif /* CAML_INTERNALiS */
+double caml_mean_space_overhead(void);
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_MAJOR_GC_H */

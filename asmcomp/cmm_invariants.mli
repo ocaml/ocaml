@@ -12,7 +12,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Check a number of continuation-related invariants *)
+(** Check a number of continuation-related invariants *)
 
 (* Currently, this checks that :
    - Every use of a continuation occurs within the scope of its handler
@@ -32,5 +32,4 @@
 (** [run ppf fundecl] analyses the given function, and returns whether
     any errors were encountered (with corresponding error messages printed
     on the given formatter). *)
-
 val run : Format.formatter -> Cmm.fundecl -> bool

@@ -96,9 +96,10 @@ CAMLextern void caml_record_backtraces(int);
  * raise and re-raise are distinguished by:
  * - passing reraise = 1 to [caml_stash_backtrace] (see below) in the bytecode
  *   interpreter;
- * - directly resetting [Caml_state->backtrace_pos] to 0 in native
-     runtimes for raise.
+ * - directly resetting [Caml_state->backtrace_pos] to 0 in native runtimes for
+ *   raise.
  */
+
 
 #ifndef NATIVE_CODE
 

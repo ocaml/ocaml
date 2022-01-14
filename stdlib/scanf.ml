@@ -39,12 +39,7 @@ module type SCANNING = sig
   type file_name = string
 
   val stdin : in_channel
-  (* The scanning buffer reading from [Stdlib.stdin].
-     [stdib] is equivalent to [Scanning.from_channel Stdlib.stdin]. *)
-
-  val stdib : in_channel
-  (* An alias for [Scanf.stdin], the scanning buffer reading from
-     [Stdlib.stdin]. *)
+  (* The scanning buffer reading from [Stdlib.stdin]. *)
 
   val next_char : scanbuf -> char
   (* [Scanning.next_char ib] advance the scanning buffer for
@@ -129,9 +124,6 @@ module type SCANNING = sig
   val from_channel : Stdlib.in_channel -> in_channel
 
   val close_in : in_channel -> unit
-
-  val memo_from_channel : Stdlib.in_channel -> in_channel
-  (* Obsolete. *)
 
 end
 
@@ -353,7 +345,7 @@ module Scanning : SCANNING = struct
   let from_ic_raise_at_end = from_ic scan_raise_at_end
 
   (* The scanning buffer reading from [Stdlib.stdin].
-     One could try to define [stdib] as a scanning buffer reading a character
+     One could try to define [stdin] as a scanning buffer reading a character
      at a time (no bufferization at all), but unfortunately the top-level
      interaction would be wrong. This is due to some kind of
      'race condition' when reading from [Stdlib.stdin],
@@ -370,9 +362,6 @@ module Scanning : SCANNING = struct
   let stdin =
     from_ic scan_raise_at_end
       (From_file ("-", Stdlib.stdin)) Stdlib.stdin
-
-
-  let stdib = stdin
 
   let open_in_file open_in fname =
     match fname with
@@ -398,36 +387,6 @@ module Scanning : SCANNING = struct
       Stdlib.close_in ic
     | From_file (_fname, ic) -> Stdlib.close_in ic
     | From_function | From_string -> ()
-
-
-  (*
-     Obsolete: a memo [from_channel] version to build a [Scanning.in_channel]
-     scanning buffer out of a [Stdlib.in_channel].
-     This function was used to try to preserve the scanning
-     semantics for the (now obsolete) function [fscanf].
-     Given that all scanner must read from a [Scanning.in_channel] scanning
-     buffer, [fscanf] must read from one!
-     More precisely, given [ic], all successive calls [fscanf ic] must read
-     from the same scanning buffer.
-     This obliged this library to allocated scanning buffers that were
-     not properly garbage collectable, hence leading to memory leaks.
-     If you need to read from a [Stdlib.in_channel] input channel
-     [ic], simply define a [Scanning.in_channel] formatted input channel as in
-     [let ib = Scanning.from_channel ic], then use [Scanf.bscanf ib] as usual.
-  *)
-  let memo_from_ic =
-    let memo = ref [] in
-    (fun scan_close_ic ic ->
-     try List.assq ic !memo with
-     | Not_found ->
-       let ib =
-         from_ic scan_close_ic (From_channel ic) ic in
-       memo := (ic, ib) :: !memo;
-       ib)
-
-
-  (* Obsolete: see {!memo_from_ic} above. *)
-  let memo_from_channel = memo_from_ic scan_raise_at_end
 
 end
 
@@ -1522,7 +1481,7 @@ let bscanf ib fmt = kbscanf ib scanf_bad_input fmt
 let ksscanf s ef fmt = kbscanf (Scanning.from_string s) ef fmt
 let sscanf s fmt = kbscanf (Scanning.from_string s) scanf_bad_input fmt
 
-let scanf fmt = kscanf Scanning.stdib scanf_bad_input fmt
+let scanf fmt = kscanf Scanning.stdin scanf_bad_input fmt
 
 (***)
 
@@ -1551,8 +1510,3 @@ let format_from_string s fmt =
 
 let unescaped s =
   sscanf ("\"" ^ s ^ "\"") "%S%!" (fun x -> x)
-
-
-(* Deprecated *)
-let kfscanf ic ef fmt = kbscanf (Scanning.memo_from_channel ic) ef fmt
-let fscanf ic fmt = kscanf (Scanning.memo_from_channel ic) scanf_bad_input fmt

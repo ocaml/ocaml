@@ -1,0 +1,12 @@
+31 7 82
+20 86 99
+3 74 67
+73 1 53
+15 48 91
+48 37 72
+54 68 47
+43 2 60
+41 29 67
+39 43 91
+Note: we observe in this output that the random numbers of each child domain
+appear uncorrelated, yet are produced deterministically.

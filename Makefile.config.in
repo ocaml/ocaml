@@ -181,6 +181,7 @@ OTHERLIBRARIES=@otherlibraries@
 # Needed for the "systhreads" package
 PTHREAD_LIBS=@PTHREAD_LIBS@
 PTHREAD_CAML_LIBS=$(addprefix -cclib ,$(PTHREAD_LIBS))
+PTHREAD_CFLAGS=@PTHREAD_CFLAGS@
 
 UNIX_OR_WIN32=@unix_or_win32@
 UNIXLIB=@unixlib@
@@ -236,11 +237,15 @@ ASM_CFI_SUPPORTED=@asm_cfi_supported@
 WITH_FRAME_POINTERS=@frame_pointers@
 WITH_PROFINFO=@profinfo@
 PROFINFO_WIDTH=@profinfo_width@
+LIBUNWIND_AVAILABLE=@libunwind_available@
+LIBUNWIND_INCLUDE_FLAGS=@libunwind_include_flags@
+LIBUNWIND_LINK_FLAGS=@libunwind_link_flags@
 WITH_FPIC=@fpic@
 TARGET=@target@
 HOST=@host@
 FLAMBDA=@flambda@
 WITH_FLAMBDA_INVARIANTS=@flambda_invariants@
+FORCE_INSTRUMENTED_RUNTIME=@force_instrumented_runtime@
 WITH_CMM_INVARIANTS=@cmm_invariants@
 FORCE_SAFE_STRING=@force_safe_string@
 DEFAULT_SAFE_STRING=@default_safe_string@
@@ -250,7 +255,7 @@ FLAT_FLOAT_ARRAY=@flat_float_array@
 FUNCTION_SECTIONS=@function_sections@
 AWK=@AWK@
 STDLIB_MANPAGES=@stdlib_manpages@
-NAKED_POINTERS=@naked_pointers@
+NAKED_POINTERS=false
 
 ### Native command to build ocamlrun.exe
 

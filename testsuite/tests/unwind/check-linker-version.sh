@@ -13,4 +13,4 @@ else
   test_result=${TEST_PASS};
 fi
 
-exit ${TEST_RESULT}
+exit ${test_result}

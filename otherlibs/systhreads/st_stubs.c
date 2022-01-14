@@ -22,6 +22,7 @@
 #include "caml/debugger.h"
 #include "caml/domain.h"
 #include "caml/fail.h"
+#include "caml/fiber.h"
 #include "caml/io.h"
 #include "caml/memory.h"
 #include "caml/misc.h"
@@ -29,21 +30,11 @@
 #include "caml/printexc.h"
 #include "caml/roots.h"
 #include "caml/signals.h"
-#ifdef NATIVE_CODE
-#include "caml/stack.h"
-#else
-#include "caml/stacks.h"
-#endif
 #include "caml/sys.h"
 #include "caml/memprof.h"
 
 /* threads.h is *not* included since it contains the _external_ declarations for
    the caml_c_thread_register and caml_c_thread_unregister functions. */
-
-#ifndef NATIVE_CODE
-/* Initial size of bytecode stack when a thread is created (4 Ko) */
-#define Thread_stack_size (Stack_size / 4)
-#endif
 
 /* Max computation time before rescheduling, in milliseconds */
 #define Thread_timeout 50
@@ -70,59 +61,72 @@ struct caml_thread_descr {
 /* The infos on threads (allocated via caml_stat_alloc()) */
 
 struct caml_thread_struct {
+
   value descr;              /* The heap-allocated descriptor (root) */
-  struct caml_thread_struct * next;  /* Double linking of running threads */
+  struct caml_thread_struct * next; /* Doubly-linked list of running threads */
   struct caml_thread_struct * prev;
-#ifdef NATIVE_CODE
-  char * top_of_stack;      /* Top of stack for this thread (approx.) */
-  char * bottom_of_stack;   /* Saved value of Caml_state->bottom_of_stack */
-  uintnat last_retaddr;     /* Saved value of Caml_state->last_return_address */
-  value * gc_regs;          /* Saved value of Caml_state->gc_regs */
-  char * exception_pointer; /* Saved value of Caml_state->exception_pointer */
-  struct caml__roots_block * local_roots; /* Saved value of local_roots */
-  struct longjmp_buffer * exit_buf; /* For thread exit */
-#else
-  value * stack_low; /* The execution stack for this thread */
-  value * stack_high;
-  value * stack_threshold;
-  value * sp;        /* Saved value of Caml_state->extern_sp for this thread */
-  value * trapsp;    /* Saved value of Caml_state->trapsp for this thread */
-  /* Saved value of Caml_state->local_roots */
-  struct caml__roots_block * local_roots;
-  struct longjmp_buffer * external_raise; /* Saved Caml_state->external_raise */
+  int domain_id;      /* The id of the domain to which this thread belongs */
+  struct stack_info* current_stack;      /* saved Caml_state->current_stack */
+  struct c_stack_link* c_stack;          /* saved Caml_state->c_stack */
+  struct caml__roots_block *local_roots; /* saved value of local_roots */
+  struct longjmp_buffer *exit_buf;       /* For thread exit */
+  int backtrace_pos;           /* saved value of Caml_state->backtrace_pos */
+  code_t * backtrace_buffer;   /* saved value of Caml_state->backtrace_buffer */
+  value backtrace_last_exn;
+    /* saved value of Caml_state->backtrace_last_exn (root) */
+  value * gc_regs;           /* saved value of Caml_state->gc_regs */
+  value * gc_regs_buckets;   /* saved value of Caml_state->gc_regs_buckets */
+  value ** gc_regs_slot;     /* saved value of Caml_state->gc_regs_slot */
+  void * exn_handler;        /* saved value of Caml_state->exn_handler */
+
+#ifndef NATIVE_CODE
+  intnat trap_sp_off;      /* saved value of Caml_state->trap_sp_off */
+  intnat trap_barrier_off; /* saved value of Caml_state->trap_barrier_off */
+  struct caml_exception_context* external_raise;
+    /* saved value of Caml_state->external_raise */
 #endif
-  int backtrace_pos; /* Saved Caml_state->backtrace_pos */
-  backtrace_slot * backtrace_buffer; /* Saved Caml_state->backtrace_buffer */
-  value backtrace_last_exn;  /* Saved Caml_state->backtrace_last_exn (root) */
-  struct caml_memprof_th_ctx *memprof_ctx;
+
+#ifdef POSIX_SIGNALS
+  sigset_t init_mask;
+#endif
 };
 
-typedef struct caml_thread_struct * caml_thread_t;
+typedef struct caml_thread_struct* caml_thread_t;
 
-/* The "head" of the circular list of thread descriptors */
-static caml_thread_t all_threads = NULL;
+/* overall table for threads accross domains */
+struct caml_thread_table {
+  caml_thread_t all_threads;
+  caml_thread_t current_thread;
+  st_tlskey thread_key;
+  st_masterlock thread_lock;
+  int tick_thread_running;
+  st_thread_id tick_thread_id;
+};
 
-/* The descriptor for the currently executing thread */
-static caml_thread_t curr_thread = NULL;
+/* thread_table instance, up to Max_domains */
+static struct caml_thread_table thread_table[Max_domains];
 
-/* The master lock protecting the OCaml runtime system */
-static st_masterlock caml_master_lock;
+/* the "head" of the circular list of thread descriptors for this domain */
+#define All_threads thread_table[Caml_state->id].all_threads
 
-/* Whether the "tick" thread is already running */
-static int caml_tick_thread_running = 0;
+/* The descriptor for the currently executing thread for this domain */
+#define Current_thread thread_table[Caml_state->id].current_thread
 
-/* The thread identifier of the "tick" thread */
-static st_thread_id caml_tick_thread_id;
+/* The master lock protecting this domain's thread chaining */
+#define Thread_main_lock thread_table[Caml_state->id].thread_lock
+
+/* Whether the "tick" thread is already running for this domain */
+#define Tick_thread_running thread_table[Caml_state->id].tick_thread_running
+
+/* The thread identifier of the "tick" thread for this domain */
+#define Tick_thread_id thread_table[Caml_state->id].tick_thread_id
 
 /* The key used for storing the thread descriptor in the specific data
    of the corresponding system thread. */
-static st_tlskey thread_descriptor_key;
-
-/* The key used for unlocking I/O channels on exceptions */
-static st_tlskey last_channel_locked_key;
+#define Thread_key thread_table[Caml_state->id].thread_key
 
 /* Identifier for next thread creation */
-static intnat thread_next_ident = 0;
+static atomic_uintnat thread_next_id = 0;
 
 /* Forward declarations */
 static value caml_threadstatus_new (void);
@@ -137,99 +141,86 @@ extern void (*caml_termination_hook)(void);
 
 /* Hook for scanning the stacks of the other threads */
 
-static void (*prev_scan_roots_hook) (scanning_action);
+static void (*prev_scan_roots_hook) (scanning_action, void *,
+                                     caml_domain_state *);
 
-static void caml_thread_scan_roots(scanning_action action)
+static void caml_thread_scan_roots(scanning_action action,
+                                   void *fdata,
+                                   caml_domain_state *domain_state)
 {
-  caml_thread_t th = curr_thread;
-  do {
-    (*action)(th->descr, &th->descr);
-    (*action)(th->backtrace_last_exn, &th->backtrace_last_exn);
-    /* Don't rescan the stack of the current thread, it was done already */
-    if (th != curr_thread) {
-#ifdef NATIVE_CODE
-      if (th->bottom_of_stack != NULL)
-        caml_do_local_roots(action, th->bottom_of_stack, th->last_retaddr,
-                       th->gc_regs, th->local_roots);
-#else
-      caml_do_local_roots(action, th->sp, th->stack_high, th->local_roots);
-#endif
-    }
-    th = th->next;
-  } while (th != curr_thread);
-  /* Hook */
-  if (prev_scan_roots_hook != NULL) (*prev_scan_roots_hook)(action);
+  caml_thread_t th;
+
+  th = Current_thread;
+
+  /* GC could be triggered before [Current_thread] is initialized */
+  if (th != NULL) {
+    do {
+      (*action)(fdata, th->descr, &th->descr);
+      (*action)(fdata, th->backtrace_last_exn, &th->backtrace_last_exn);
+      if (th != Current_thread) {
+        if (th->current_stack != NULL)
+          caml_do_local_roots(action, fdata, th->local_roots,
+                              th->current_stack, th->gc_regs);
+      }
+      th = th->next;
+    } while (th != Current_thread);
+
+  };
+
+  if (prev_scan_roots_hook != NULL)
+    (*prev_scan_roots_hook)(action, fdata, domain_state);
+
+  return;
 }
 
-/* Hook for iterating over Memprof's entries arrays */
-
-static void memprof_ctx_iter(th_ctx_action f, void* data)
+void caml_thread_save_runtime_state(void)
 {
-  caml_thread_t th = curr_thread;
-  do {
-    f(th->memprof_ctx, data);
-    th = th->next;
-  } while (th != curr_thread);
+  Current_thread->current_stack = Caml_state->current_stack;
+  Current_thread->c_stack = Caml_state->c_stack;
+  Current_thread->gc_regs = Caml_state->gc_regs;
+  Current_thread->gc_regs_buckets = Caml_state->gc_regs_buckets;
+  Current_thread->gc_regs_slot = Caml_state->gc_regs_slot;
+  Current_thread->exn_handler = Caml_state->exn_handler;
+  Current_thread->local_roots = Caml_state->local_roots;
+  Current_thread->backtrace_pos = Caml_state->backtrace_pos;
+  Current_thread->backtrace_buffer = Caml_state->backtrace_buffer;
+  Current_thread->backtrace_last_exn = Caml_state->backtrace_last_exn;
+#ifndef NATIVE_CODE
+  Current_thread->trap_sp_off = Caml_state->trap_sp_off;
+  Current_thread->trap_barrier_off = Caml_state->trap_barrier_off;
+  Current_thread->external_raise = Caml_state->external_raise;
+#endif
 }
 
-/* Saving and restoring runtime state in curr_thread */
-
-Caml_inline void caml_thread_save_runtime_state(void)
+void caml_thread_restore_runtime_state(void)
 {
-#ifdef NATIVE_CODE
-  curr_thread->top_of_stack = Caml_state->top_of_stack;
-  curr_thread->bottom_of_stack = Caml_state->bottom_of_stack;
-  curr_thread->last_retaddr = Caml_state->last_return_address;
-  curr_thread->gc_regs = Caml_state->gc_regs;
-  curr_thread->exception_pointer = Caml_state->exception_pointer;
-#else
-  curr_thread->stack_low = Caml_state->stack_low;
-  curr_thread->stack_high = Caml_state->stack_high;
-  curr_thread->stack_threshold = Caml_state->stack_threshold;
-  curr_thread->sp = Caml_state->extern_sp;
-  curr_thread->trapsp = Caml_state->trapsp;
-  curr_thread->external_raise = Caml_state->external_raise;
+  Caml_state->current_stack = Current_thread->current_stack;
+  Caml_state->c_stack = Current_thread->c_stack;
+  Caml_state->gc_regs = Current_thread->gc_regs;
+  Caml_state->gc_regs_buckets = Current_thread->gc_regs_buckets;
+  Caml_state->gc_regs_slot = Current_thread->gc_regs_slot;
+  Caml_state->exn_handler = Current_thread->exn_handler;
+  Caml_state->local_roots = Current_thread->local_roots;
+  Caml_state->backtrace_pos = Current_thread->backtrace_pos;
+  Caml_state->backtrace_buffer = Current_thread->backtrace_buffer;
+  Caml_state->backtrace_last_exn = Current_thread->backtrace_last_exn;
+#ifndef NATIVE_CODE
+  Caml_state->trap_sp_off = Current_thread->trap_sp_off;
+  Caml_state->trap_barrier_off = Current_thread->trap_barrier_off;
+  Caml_state->external_raise = Current_thread->external_raise;
 #endif
-  curr_thread->local_roots = Caml_state->local_roots;
-  curr_thread->backtrace_pos = Caml_state->backtrace_pos;
-  curr_thread->backtrace_buffer = Caml_state->backtrace_buffer;
-  curr_thread->backtrace_last_exn = Caml_state->backtrace_last_exn;
-  caml_memprof_leave_thread();
-}
-
-Caml_inline void caml_thread_restore_runtime_state(void)
-{
-#ifdef NATIVE_CODE
-  Caml_state->top_of_stack = curr_thread->top_of_stack;
-  Caml_state->bottom_of_stack= curr_thread->bottom_of_stack;
-  Caml_state->last_return_address = curr_thread->last_retaddr;
-  Caml_state->gc_regs = curr_thread->gc_regs;
-  Caml_state->exception_pointer = curr_thread->exception_pointer;
-#else
-  Caml_state->stack_low = curr_thread->stack_low;
-  Caml_state->stack_high = curr_thread->stack_high;
-  Caml_state->stack_threshold = curr_thread->stack_threshold;
-  Caml_state->extern_sp = curr_thread->sp;
-  Caml_state->trapsp = curr_thread->trapsp;
-  Caml_state->external_raise = curr_thread->external_raise;
-#endif
-  Caml_state->local_roots = curr_thread->local_roots;
-  Caml_state->backtrace_pos = curr_thread->backtrace_pos;
-  Caml_state->backtrace_buffer = curr_thread->backtrace_buffer;
-  Caml_state->backtrace_last_exn = curr_thread->backtrace_last_exn;
-  caml_memprof_enter_thread(curr_thread->memprof_ctx);
 }
 
 /* Hooks for caml_enter_blocking_section and caml_leave_blocking_section */
-
 
 static void caml_thread_enter_blocking_section(void)
 {
   /* Save the current runtime state in the thread descriptor
      of the current thread */
+  Current_thread = st_tls_get(Thread_key);
   caml_thread_save_runtime_state();
   /* Tell other threads that the runtime is free */
-  st_masterlock_release(&caml_master_lock);
+  st_masterlock_release(&Thread_main_lock);
 }
 
 static void caml_thread_leave_blocking_section(void)
@@ -241,89 +232,15 @@ static void caml_thread_leave_blocking_section(void)
   DWORD error = GetLastError();
 #endif
   /* Wait until the runtime is free */
-  st_masterlock_acquire(&caml_master_lock);
-  /* Update curr_thread to point to the thread descriptor corresponding
-     to the thread currently executing */
-  curr_thread = st_tls_get(thread_descriptor_key);
+  st_masterlock_acquire(&Thread_main_lock);
+  /* Update Current_thread to point to the thread descriptor corresponding to
+     the thread currently executing */
+  Current_thread = st_tls_get(Thread_key);
   /* Restore the runtime state from the curr_thread descriptor */
   caml_thread_restore_runtime_state();
 #ifdef _WIN32
   SetLastError(error);
 #endif
-}
-
-/* Hooks for I/O locking */
-
-static void caml_io_mutex_free(struct channel *chan)
-{
-  st_mutex mutex = chan->mutex;
-  if (mutex != NULL) {
-    st_mutex_destroy(mutex);
-    chan->mutex = NULL;
-  }
-}
-
-static void caml_io_mutex_lock(struct channel *chan)
-{
-  st_mutex mutex = chan->mutex;
-
-  if (mutex == NULL) {
-    st_check_error(st_mutex_create(&mutex), "channel locking"); /*PR#7038*/
-    chan->mutex = mutex;
-  }
-  /* PR#4351: first try to acquire mutex without releasing the master lock */
-  if (st_mutex_trylock(mutex) == MUTEX_PREVIOUSLY_UNLOCKED) {
-    st_tls_set(last_channel_locked_key, (void *) chan);
-    return;
-  }
-  /* If unsuccessful, block on mutex */
-  caml_enter_blocking_section();
-  st_mutex_lock(mutex);
-  /* Problem: if a signal occurs at this point,
-     and the signal handler raises an exception, we will not
-     unlock the mutex.  The alternative (doing the setspecific
-     before locking the mutex is also incorrect, since we could
-     then unlock a mutex that is unlocked or locked by someone else. */
-  st_tls_set(last_channel_locked_key, (void *) chan);
-  caml_leave_blocking_section();
-}
-
-static void caml_io_mutex_unlock(struct channel *chan)
-{
-  st_mutex_unlock(chan->mutex);
-  st_tls_set(last_channel_locked_key, NULL);
-}
-
-static void caml_io_mutex_unlock_exn(void)
-{
-  struct channel * chan = st_tls_get(last_channel_locked_key);
-  if (chan != NULL) caml_io_mutex_unlock(chan);
-}
-
-/* Hook for estimating stack usage */
-
-static uintnat (*prev_stack_usage_hook)(void);
-
-static uintnat caml_thread_stack_usage(void)
-{
-  uintnat sz;
-  caml_thread_t th;
-
-  /* Don't add stack for current thread, this is done elsewhere */
-  for (sz = 0, th = curr_thread->next;
-       th != curr_thread;
-       th = th->next) {
-#ifdef NATIVE_CODE
-  if(th->top_of_stack != NULL && th->bottom_of_stack != NULL &&
-     th->top_of_stack > th->bottom_of_stack)
-       sz += (value *) th->top_of_stack - (value *) th->bottom_of_stack;
-#else
-    sz += th->stack_high - th->sp;
-#endif
-  }
-  if (prev_stack_usage_hook != NULL)
-    sz += prev_stack_usage_hook();
-  return sz;
 }
 
 /* Create and setup a new thread info block.
@@ -333,30 +250,38 @@ static uintnat caml_thread_stack_usage(void)
 static caml_thread_t caml_thread_new_info(void)
 {
   caml_thread_t th;
-  th = (caml_thread_t) caml_stat_alloc_noexc(sizeof(struct caml_thread_struct));
+  caml_domain_state *domain_state;
+
+  domain_state = Caml_state;
+  th = NULL;
+  th = (caml_thread_t)caml_stat_alloc_noexc(sizeof(struct caml_thread_struct));
   if (th == NULL) return NULL;
-  th->descr = Val_unit;         /* filled later */
-#ifdef NATIVE_CODE
-  th->bottom_of_stack = NULL;
-  th->top_of_stack = NULL;
-  th->last_retaddr = 1;
-  th->exception_pointer = NULL;
+  th->descr = Val_unit;
+  th->next = NULL;
+  th->prev = NULL;
+  th->domain_id = domain_state->id;
+  th->current_stack = caml_alloc_main_stack(Stack_size / sizeof(value));;
+  if (th->current_stack == NULL) {
+    caml_stat_free(th);
+    return NULL;
+  }
+  th->c_stack = NULL;
   th->local_roots = NULL;
   th->exit_buf = NULL;
-#else
-  /* Allocate the stacks */
-  th->stack_low = (value *) caml_stat_alloc(Thread_stack_size);
-  th->stack_high = th->stack_low + Thread_stack_size / sizeof(value);
-  th->stack_threshold = th->stack_low + Stack_threshold / sizeof(value);
-  th->sp = th->stack_high;
-  th->trapsp = th->stack_high;
-  th->local_roots = NULL;
-  th->external_raise = NULL;
-#endif
   th->backtrace_pos = 0;
   th->backtrace_buffer = NULL;
   th->backtrace_last_exn = Val_unit;
-  th->memprof_ctx = caml_memprof_new_th_ctx();
+  th->gc_regs = NULL;
+  th->gc_regs_buckets = NULL;
+  th->gc_regs_slot = NULL;
+  th->exn_handler = NULL;
+
+#ifndef NATIVE_CODE
+  th->trap_sp_off = 1;
+  th->trap_barrier_off = 2;
+  th->external_raise = NULL;
+#endif
+
   return th;
 }
 
@@ -371,10 +296,9 @@ static value caml_thread_new_descriptor(value clos)
     mu = caml_threadstatus_new();
     /* Create a descriptor for the new thread */
     descr = caml_alloc_small(3, 0);
-    Ident(descr) = Val_long(thread_next_ident);
+    Ident(descr) = Val_long(atomic_fetch_add(&thread_next_id, +1));
     Start_closure(descr) = clos;
     Terminated(descr) = mu;
-    thread_next_ident++;
   End_roots();
   return descr;
 }
@@ -385,180 +309,279 @@ static value caml_thread_new_descriptor(value clos)
 static void caml_thread_remove_info(caml_thread_t th)
 {
   if (th->next == th)
-    all_threads = NULL; /* last OCaml thread exiting */
-  else if (all_threads == th)
-    all_threads = th->next;     /* PR#5295 */
+    All_threads = NULL; /* last OCaml thread exiting */
+  else if (All_threads == th)
+    All_threads = th->next;     /* PR#5295 */
   th->next->prev = th->prev;
   th->prev->next = th->next;
-#ifndef NATIVE_CODE
-  caml_stat_free(th->stack_low);
-#endif
-  if (th->backtrace_buffer != NULL) caml_stat_free(th->backtrace_buffer);
+  caml_free_stack(th->current_stack);
   caml_stat_free(th);
+  return;
 }
 
 /* Reinitialize the thread machinery after a fork() (PR#4577) */
+/* TODO(engil): more work on the multicore fork machinery. */
 
 static void caml_thread_reinitialize(void)
 {
-  struct channel * chan;
+  caml_thread_t th, next;
 
-  /* Remove all other threads (now nonexistent)
-     from the doubly-linked list of threads */
-  while (curr_thread->next != curr_thread) {
-    caml_memprof_delete_th_ctx(curr_thread->next->memprof_ctx);
-    caml_thread_remove_info(curr_thread->next);
+  th = Current_thread->next;
+  while (th != Current_thread) {
+    next = th->next;
+    caml_free_stack(th->current_stack);
+    caml_stat_free(th);
+    th = next;
   }
+  Current_thread->next = Current_thread;
+  Current_thread->prev = Current_thread;
+  All_threads = Current_thread;
 
-  /* Reinitialize the master lock machinery,
-     just in case the fork happened while other threads were doing
-     caml_leave_blocking_section */
-  st_masterlock_init(&caml_master_lock);
-  /* Tick thread is not currently running in child process, will be
-     re-created at next Thread.create */
-  caml_tick_thread_running = 0;
-  /* Destroy all IO mutexes; will be reinitialized on demand */
-  for (chan = caml_all_opened_channels;
-       chan != NULL;
-       chan = chan->next) {
-    if (chan->mutex != NULL) {
-      st_mutex_destroy(chan->mutex);
-      chan->mutex = NULL;
-    }
-  }
+  /* Within the child, the domain_lock needs to be reset and acquired. */
+  caml_reset_domain_lock();
+  caml_acquire_domain_lock();
+  /* The master lock needs to be initialized again. This process will also be
+     the effective owner of the lock. So there is no need to run
+     st_masterlock_acquire (busy = 1) */
+  st_masterlock_init(&Thread_main_lock);
 }
 
-/* Initialize the thread machinery */
+CAMLprim value caml_thread_join(value th);
 
-CAMLprim value caml_thread_initialize(value unit)   /* ML */
+/* This hook is run when a domain shuts down (see domains.c).
+
+   When a domain shuts down, the state must be cleared to allow proper reuse of
+   the domain slot the next time a domain is started on this slot. If a program
+   is single-domain, we mimic OCaml 4's behavior and do not care about ongoing
+   thread: the program will exit. */
+static void caml_thread_domain_stop_hook(void) {
+  /* If the program runs multiple domains, we should not let systhreads to hang
+     around when a domain exit. If the domain is not the last one (and the last
+     one will always be domain 0) we force the domain to join on every thread
+     on its chain before wrapping up. */
+  if (!caml_domain_alone()) {
+
+    while (Current_thread->next != Current_thread) {
+      caml_thread_join(Current_thread->next->descr);
+    }
+
+    /* another domain thread may be joining on this domain's descriptor */
+    caml_threadstatus_terminate(Terminated(Current_thread->descr));
+
+    caml_stat_free(Current_thread);
+    Current_thread = NULL;
+    All_threads = NULL;
+  };
+}
+
+#ifdef NATIVE_CODE
+static void caml_thread_termination_hook(void) {
+  st_thread_exit();
+}
+#endif /* NATIVE_CODE */
+
+CAMLprim value caml_thread_initialize_domain(value v)
 {
-  /* Protect against repeated initialization (PR#3532) */
-  if (curr_thread != NULL) return Val_unit;
+  CAMLparam0();
+
+  caml_thread_t new_thread;
+
   /* OS-specific initialization */
   st_initialize();
-  /* Initialize and acquire the master lock */
-  st_masterlock_init(&caml_master_lock);
-  /* Initialize the keys */
-  st_tls_newkey(&thread_descriptor_key);
-  st_tls_newkey(&last_channel_locked_key);
-  /* Set up a thread info block for the current thread */
-  curr_thread =
+
+  st_masterlock_init(&Thread_main_lock);
+
+  new_thread =
     (caml_thread_t) caml_stat_alloc(sizeof(struct caml_thread_struct));
-  curr_thread->descr = caml_thread_new_descriptor(Val_unit);
-  curr_thread->next = curr_thread;
-  curr_thread->prev = curr_thread;
-  all_threads = curr_thread;
-  curr_thread->backtrace_last_exn = Val_unit;
+
+  new_thread->descr = caml_thread_new_descriptor(Val_unit);
+  new_thread->next = new_thread;
+  new_thread->prev = new_thread;
+  new_thread->backtrace_last_exn = Val_unit;
 #ifdef NATIVE_CODE
-  curr_thread->exit_buf = &caml_termination_jmpbuf;
+  new_thread->exit_buf = &caml_termination_jmpbuf;
 #endif
-  curr_thread->memprof_ctx = &caml_memprof_main_ctx;
-  /* The stack-related fields will be filled in at the next
-     caml_enter_blocking_section */
-  /* Associate the thread descriptor with the thread */
-  st_tls_set(thread_descriptor_key, (void *) curr_thread);
-  st_thread_set_id(Ident(curr_thread->descr));
-  /* Set up the hooks */
+
+  st_tls_newkey(&Thread_key);
+  st_tls_set(Thread_key, (void *) new_thread);
+  st_thread_set_id(Ident(new_thread->descr));
+
+  All_threads = new_thread;
+  Current_thread = new_thread;
+  Tick_thread_running = 0;
+
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value caml_thread_yield(value unit);
+
+void caml_thread_interrupt_hook(void)
+{
+  uintnat is_on = 1;
+  caml_domain_state *domain = Caml_state;
+  atomic_uintnat* req_external_interrupt =
+    (atomic_uintnat*)&domain->requested_external_interrupt;
+
+  if (atomic_compare_exchange_strong(req_external_interrupt, &is_on, 0)) {
+    caml_thread_yield(Val_unit);
+  }
+
+  return;
+}
+
+/* [caml_thread_initialize] initialises the systhreads infrastructure. This
+   function first sets up the chain for systhreads on this domain, then setup
+   the global variables and hooks for systhreads to cooperate with the runtime
+   system. */
+CAMLprim value caml_thread_initialize(value unit)   /* ML */
+{
+  CAMLparam0();
+
+  /* First initialise the systhread chain on this domain */
+  caml_thread_initialize_domain(Val_unit);
+
   prev_scan_roots_hook = caml_scan_roots_hook;
   caml_scan_roots_hook = caml_thread_scan_roots;
   caml_enter_blocking_section_hook = caml_thread_enter_blocking_section;
   caml_leave_blocking_section_hook = caml_thread_leave_blocking_section;
 #ifdef NATIVE_CODE
-  caml_termination_hook = st_thread_exit;
+  caml_termination_hook = caml_thread_termination_hook;
 #endif
-  caml_channel_mutex_free = caml_io_mutex_free;
-  caml_channel_mutex_lock = caml_io_mutex_lock;
-  caml_channel_mutex_unlock = caml_io_mutex_unlock;
-  caml_channel_mutex_unlock_exn = caml_io_mutex_unlock_exn;
-  prev_stack_usage_hook = caml_stack_usage_hook;
-  caml_stack_usage_hook = caml_thread_stack_usage;
-  caml_memprof_th_ctx_iter_hook = memprof_ctx_iter;
-  /* Set up fork() to reinitialize the thread machinery in the child
-     (PR#4577) */
-  st_atfork(caml_thread_reinitialize);
-  return Val_unit;
-}
+  caml_domain_external_interrupt_hook = caml_thread_interrupt_hook;
+  caml_domain_stop_hook = caml_thread_domain_stop_hook;
 
-/* Cleanup the thread machinery when the runtime is shut down. Joining the tick
-   thread take 25ms on average / 50ms in the worst case, so we don't do it on
-   program exit. */
+  st_atfork(caml_thread_reinitialize);
+
+  CAMLreturn(Val_unit);
+}
 
 CAMLprim value caml_thread_cleanup(value unit)   /* ML */
 {
-  if (caml_tick_thread_running){
-    caml_tick_thread_stop = 1;
-    st_thread_join(caml_tick_thread_id);
-    caml_tick_thread_stop = 0;
-    caml_tick_thread_running = 0;
+  if (Tick_thread_running){
+    atomic_store_rel(&Tick_thread_stop, 1);
+    st_thread_join(Tick_thread_id);
+    atomic_store_rel(&Tick_thread_stop, 0);
+    Tick_thread_running = 0;
   }
+
   return Val_unit;
 }
-
 /* Thread cleanup at termination */
 
 static void caml_thread_stop(void)
 {
+  caml_thread_t next;
+
   /* PR#5188, PR#7220: some of the global runtime state may have
      changed as the thread was running, so we save it in the
      curr_thread data to make sure that the cleanup logic
      below uses accurate information. */
   caml_thread_save_runtime_state();
-  /* Tell memprof that this thread is terminating. */
-  caml_memprof_delete_th_ctx(curr_thread->memprof_ctx);
-  /* Signal that the thread has terminated */
-  caml_threadstatus_terminate(Terminated(curr_thread->descr));
-  /* Remove th from the doubly-linked list of threads and free its info block */
-  caml_thread_remove_info(curr_thread);
+
+  next = Current_thread->next;
+
+  /* The main domain thread does not go through [caml_thread_stop]. There is
+     always one more thread in the chain at this point in time. */
+  CAMLassert(next != Current_thread);
+
+  caml_threadstatus_terminate(Terminated(Current_thread->descr));
+  caml_thread_remove_info(Current_thread);
+
+  /* FIXME: tricky bit with backup thread
+
+     Normally we expect the next thread to kick in and resume operation by
+     first setting Current_thread to the right TLS dec data. However it may
+     very well be that there's no runnable dec next (eg: next dec is
+     blocking.), so we set it to next for now to give a valid state to the
+     backup thread. */
+  Current_thread = next;
+
+  caml_thread_restore_runtime_state();
+
   /* If no other OCaml thread remains, ask the tick thread to stop
      so that it does not prevent the whole process from exiting (#9971) */
-  if (all_threads == NULL) caml_thread_cleanup(Val_unit);
-  /* OS-specific cleanups */
-  st_thread_cleanup();
-  /* Release the runtime system */
-  st_masterlock_release(&caml_master_lock);
+  if (All_threads == NULL) caml_thread_cleanup(Val_unit);
+
+  st_masterlock_release(&Thread_main_lock);
 }
 
 /* Create a thread */
 
-static ST_THREAD_FUNCTION caml_thread_start(void * arg)
+static void * caml_thread_start(void * v)
 {
-  caml_thread_t th = (caml_thread_t) arg;
+  caml_thread_t th = (caml_thread_t) v;
   value clos;
 #ifdef NATIVE_CODE
   struct longjmp_buffer termination_buf;
-  char tos;
-  /* Record top of stack (approximative) */
-  th->top_of_stack = &tos;
 #endif
 
-  /* Associate the thread descriptor with the thread */
-  st_tls_set(thread_descriptor_key, (void *) th);
-  /* Acquire the global mutex */
-  caml_leave_blocking_section();
+  caml_init_domain_self(th->domain_id);
+
+  st_tls_set(Thread_key, th);
+
+  caml_domain_set_name("Domain");
+
+  st_masterlock_acquire(&Thread_main_lock);
+  Current_thread = st_tls_get(Thread_key);
+  caml_thread_restore_runtime_state();
+
   st_thread_set_id(Ident(th->descr));
-  caml_setup_stack_overflow_detection();
+
+#ifdef POSIX_SIGNALS
+  /* restore the signal mask from the spawning thread, now it is safe for the
+     signal handler to run (as Caml_state is initialised) */
+  pthread_sigmask(SIG_SETMASK, &th->init_mask, NULL);
+#endif
+
 #ifdef NATIVE_CODE
   /* Setup termination handler (for caml_thread_exit) */
   if (sigsetjmp(termination_buf.buf, 0) == 0) {
-    th->exit_buf = &termination_buf;
+    Current_thread->exit_buf = &termination_buf;
 #endif
-    /* Callback the closure */
-    clos = Start_closure(th->descr);
-    caml_modify(&(Start_closure(th->descr)), Val_unit);
-    caml_callback_exn(clos, Val_unit);
-    caml_thread_stop();
+  clos = Start_closure(Current_thread->descr);
+  caml_modify(&(Start_closure(Current_thread->descr)), Val_unit);
+  caml_callback_exn(clos, Val_unit);
+  caml_thread_stop();
 #ifdef NATIVE_CODE
   }
 #endif
-  caml_stop_stack_overflow_detection();
-  /* The thread now stops running */
+
   return 0;
+}
+
+static int create_tick_thread()
+{
+  int err;
+#ifdef POSIX_SIGNALS
+  sigset_t mask, old_mask;
+
+  /* Block all signals so that we don't try to execute an OCaml signal
+     handler in the new tick thread */
+  sigfillset(&mask);
+  pthread_sigmask(SIG_BLOCK, &mask, &old_mask);
+#endif
+
+  err = st_thread_create(&Tick_thread_id, caml_thread_tick,
+                         (void *) &Caml_state->id);
+
+#ifdef POSIX_SIGNALS
+  pthread_sigmask(SIG_SETMASK, &old_mask, NULL);
+#endif
+
+  return err;
 }
 
 CAMLprim value caml_thread_new(value clos)          /* ML */
 {
+  CAMLparam1(clos);
   caml_thread_t th;
   st_retcode err;
+#ifdef POSIX_SIGNALS
+  sigset_t mask, old_mask;
+
+  sigfillset(&mask);
+  pthread_sigmask(SIG_BLOCK, &mask, &old_mask);
+#endif
 
 #ifndef NATIVE_CODE
   if (caml_debugger_in_use)
@@ -566,30 +589,41 @@ CAMLprim value caml_thread_new(value clos)          /* ML */
 #endif
   /* Create a thread info block */
   th = caml_thread_new_info();
-  if (th == NULL) caml_raise_out_of_memory();
-  /* Equip it with a thread descriptor */
+
+  if (th == NULL)
+    caml_raise_out_of_memory();
+
   th->descr = caml_thread_new_descriptor(clos);
-  /* Add thread info block to the list of threads */
-  th->next = curr_thread->next;
-  th->prev = curr_thread;
-  curr_thread->next->prev = th;
-  curr_thread->next = th;
-  /* Create the new thread */
+
+#ifdef POSIX_SIGNALS
+  th->init_mask = mask;
+#endif
+
+  th->next = Current_thread->next;
+  th->prev = Current_thread;
+
+  Current_thread->next->prev = th;
+  Current_thread->next = th;
+
   err = st_thread_create(NULL, caml_thread_start, (void *) th);
+
+#ifdef POSIX_SIGNALS
+  /* regardless of error, return our sigmask to the original state */
+  pthread_sigmask(SIG_SETMASK, &old_mask, NULL);
+#endif
+
   if (err != 0) {
     /* Creation failed, remove thread info block from list of threads */
     caml_thread_remove_info(th);
-    st_check_error(err, "Thread.create");
+    sync_check_error(err, "Thread.create");
   }
-  /* Create the tick thread if not already done.
-     Because of PR#4666, we start the tick thread late, only when we create
-     the first additional thread in the current process*/
-  if (! caml_tick_thread_running) {
-    err = st_thread_create(&caml_tick_thread_id, caml_thread_tick, NULL);
-    st_check_error(err, "Thread.create");
-    caml_tick_thread_running = 1;
+
+  if (! Tick_thread_running) {
+    err = create_tick_thread();
+    sync_check_error(err, "Thread.create");
+    Tick_thread_running = 1;
   }
-  return th->descr;
+  CAMLreturn(th->descr);
 }
 
 /* Register a thread already created from C */
@@ -600,41 +634,44 @@ CAMLexport int caml_c_thread_register(void)
   st_retcode err;
 
   /* Already registered? */
-  if (st_tls_get(thread_descriptor_key) != NULL) return 0;
+  if (Caml_state == NULL) {
+    caml_init_domain_self(0);
+  };
+  if (st_tls_get(Thread_key) != NULL) return 0;
+  /* Take master lock to protect access to the runtime */
+  st_masterlock_acquire(&Thread_main_lock);
   /* Create a thread info block */
   th = caml_thread_new_info();
-  if (th == NULL) return 0;
-#ifdef NATIVE_CODE
-  th->top_of_stack = (char *) &err;
-#endif
-  /* Take master lock to protect access to the chaining of threads */
-  st_masterlock_acquire(&caml_master_lock);
+  /* If it fails, we release the lock and return an error. */
+  if (th == NULL) {
+    st_masterlock_release(&Thread_main_lock);
+    return 0;
+  }
   /* Add thread info block to the list of threads */
-  if (all_threads == NULL) {
+  if (All_threads == NULL) {
     th->next = th;
     th->prev = th;
-    all_threads = th;
+    All_threads = th;
   } else {
-    th->next = all_threads->next;
-    th->prev = all_threads;
-    all_threads->next->prev = th;
-    all_threads->next = th;
+    th->next = All_threads->next;
+    th->prev = All_threads;
+    All_threads->next->prev = th;
+    All_threads->next = th;
   }
   /* Associate the thread descriptor with the thread */
-  st_tls_set(thread_descriptor_key, (void *) th);
-  /* Release the master lock */
-  st_masterlock_release(&caml_master_lock);
-  /* Now we can re-enter the run-time system and heap-allocate the descriptor */
-  caml_leave_blocking_section();
+  st_tls_set(Thread_key, (void *) th);
+  /* Allocate the thread descriptor on the heap */
   th->descr = caml_thread_new_descriptor(Val_unit);  /* no closure */
   st_thread_set_id(Ident(th->descr));
-  /* Create the tick thread if not already done.  */
-  if (! caml_tick_thread_running) {
-    err = st_thread_create(&caml_tick_thread_id, caml_thread_tick, NULL);
-    if (err == 0) caml_tick_thread_running = 1;
+
+  if (! Tick_thread_running) {
+    err = create_tick_thread();
+    sync_check_error(err, "caml_register_c_thread");
+    Tick_thread_running = 1;
   }
-  /* Exit the run-time system */
-  caml_enter_blocking_section();
+
+  /* Release the master lock */
+  st_masterlock_release(&Thread_main_lock);
   return 1;
 }
 
@@ -643,20 +680,32 @@ CAMLexport int caml_c_thread_register(void)
 
 CAMLexport int caml_c_thread_unregister(void)
 {
-  caml_thread_t th = st_tls_get(thread_descriptor_key);
+  caml_thread_t th;
+
+  /* If Caml_state is not set, this thread was likely not registered */
+  if (Caml_state == NULL) return 0;
+
+  th = st_tls_get(Thread_key);
   /* Not registered? */
   if (th == NULL) return 0;
   /* Wait until the runtime is available */
-  st_masterlock_acquire(&caml_master_lock);
-  /* Forget the thread descriptor */
-  st_tls_set(thread_descriptor_key, NULL);
+  st_masterlock_acquire(&Thread_main_lock);
+  /*  Forget the thread descriptor */
+  st_tls_set(Thread_key, NULL);
   /* Remove thread info block from list of threads, and free it */
   caml_thread_remove_info(th);
+
+  Current_thread = All_threads;
+
   /* If no other OCaml thread remains, ask the tick thread to stop
      so that it does not prevent the whole process from exiting (#9971) */
-  if (all_threads == NULL) caml_thread_cleanup(Val_unit);
+  if (All_threads == NULL)
+    caml_thread_cleanup(Val_unit);
+  else
+    caml_thread_restore_runtime_state();
+
   /* Release the runtime */
-  st_masterlock_release(&caml_master_lock);
+  st_masterlock_release(&Thread_main_lock);
   return 1;
 }
 
@@ -664,9 +713,7 @@ CAMLexport int caml_c_thread_unregister(void)
 
 CAMLprim value caml_thread_self(value unit)         /* ML */
 {
-  if (curr_thread == NULL)
-    caml_invalid_argument("Thread.self: not initialized");
-  return curr_thread->descr;
+  return Current_thread->descr;
 }
 
 /* Return the identifier of a thread */
@@ -682,7 +729,7 @@ CAMLprim value caml_thread_uncaught_exception(value exn)  /* ML */
 {
   char * msg = caml_format_exception(exn);
   fprintf(stderr, "Thread %d killed on uncaught exception %s\n",
-          Int_val(Ident(curr_thread->descr)), msg);
+          Int_val(Ident(Current_thread->descr)), msg);
   caml_stat_free(msg);
   if (Caml_state->backtrace_active) caml_print_exception_backtrace();
   fflush(stderr);
@@ -695,7 +742,12 @@ CAMLprim value caml_thread_exit(value unit)   /* ML */
 {
   struct longjmp_buffer * exit_buf = NULL;
 
-  if (curr_thread == NULL)
+  /* we check if another domain was ever started */
+  if (caml_domain_is_multicore())
+    caml_invalid_argument
+      ("Thread.exit: unsupported call under multiple domains");
+
+  if (Current_thread == NULL)
     caml_invalid_argument("Thread.exit: not initialized");
 
   /* In native code, we cannot call pthread_exit here because on some
@@ -707,7 +759,7 @@ CAMLprim value caml_thread_exit(value unit)   /* ML */
      a creation point (exit_buf == NULL).
  */
 #ifdef NATIVE_CODE
-  exit_buf = curr_thread->exit_buf;
+  exit_buf = Current_thread->exit_buf;
 #endif
   caml_thread_stop();
   if (exit_buf != NULL) {
@@ -724,19 +776,14 @@ CAMLprim value caml_thread_exit(value unit)   /* ML */
 
 CAMLprim value caml_thread_yield(value unit)        /* ML */
 {
-  if (st_masterlock_waiters(&caml_master_lock) == 0) return Val_unit;
+  if (atomic_load_acq(&Thread_main_lock.waiters) == 0) return Val_unit;
 
-  /* Do all the parts of a blocking section enter/leave except lock
-     manipulation, which we'll do more efficiently in st_thread_yield. (Since
-     our blocking section doesn't contain anything interesting, don't bother
-     with saving errno.)
-  */
-  caml_raise_if_exception(caml_process_pending_signals_exn());
+  caml_process_pending_signals();
   caml_thread_save_runtime_state();
-  st_thread_yield(&caml_master_lock);
-  curr_thread = st_tls_get(thread_descriptor_key);
+  st_thread_yield(&Thread_main_lock);
+  Current_thread = st_tls_get(Thread_key);
   caml_thread_restore_runtime_state();
-  caml_raise_if_exception(caml_process_pending_signals_exn());
+  caml_process_pending_signals();
 
   return Val_unit;
 }
@@ -746,159 +793,7 @@ CAMLprim value caml_thread_yield(value unit)        /* ML */
 CAMLprim value caml_thread_join(value th)          /* ML */
 {
   st_retcode rc = caml_threadstatus_wait(Terminated(th));
-  st_check_error(rc, "Thread.join");
-  return Val_unit;
-}
-
-/* Mutex operations */
-
-#define Mutex_val(v) (* ((st_mutex *) Data_custom_val(v)))
-
-static void caml_mutex_finalize(value wrapper)
-{
-  st_mutex_destroy(Mutex_val(wrapper));
-}
-
-static int caml_mutex_compare(value wrapper1, value wrapper2)
-{
-  st_mutex mut1 = Mutex_val(wrapper1);
-  st_mutex mut2 = Mutex_val(wrapper2);
-  return mut1 == mut2 ? 0 : mut1 < mut2 ? -1 : 1;
-}
-
-static intnat caml_mutex_hash(value wrapper)
-{
-  return (intnat) (Mutex_val(wrapper));
-}
-
-static struct custom_operations caml_mutex_ops = {
-  "_mutex",
-  caml_mutex_finalize,
-  caml_mutex_compare,
-  caml_mutex_hash,
-  custom_serialize_default,
-  custom_deserialize_default,
-  custom_compare_ext_default,
-  custom_fixed_length_default
-};
-
-CAMLprim value caml_mutex_new(value unit)        /* ML */
-{
-  st_mutex mut = NULL;          /* suppress warning */
-  value wrapper;
-  st_check_error(st_mutex_create(&mut), "Mutex.create");
-  wrapper = caml_alloc_custom(&caml_mutex_ops, sizeof(st_mutex *),
-                              0, 1);
-  Mutex_val(wrapper) = mut;
-  return wrapper;
-}
-
-CAMLprim value caml_mutex_lock(value wrapper)     /* ML */
-{
-  st_mutex mut = Mutex_val(wrapper);
-  st_retcode retcode;
-
-  /* PR#4351: first try to acquire mutex without releasing the master lock */
-  if (st_mutex_trylock(mut) == MUTEX_PREVIOUSLY_UNLOCKED) return Val_unit;
-  /* If unsuccessful, block on mutex */
-  Begin_root(wrapper)           /* prevent the deallocation of mutex */
-    caml_enter_blocking_section();
-    retcode = st_mutex_lock(mut);
-    caml_leave_blocking_section();
-  End_roots();
-  st_check_error(retcode, "Mutex.lock");
-  return Val_unit;
-}
-
-CAMLprim value caml_mutex_unlock(value wrapper)           /* ML */
-{
-  st_mutex mut = Mutex_val(wrapper);
-  st_retcode retcode;
-  /* PR#4351: no need to release and reacquire master lock */
-  retcode = st_mutex_unlock(mut);
-  st_check_error(retcode, "Mutex.unlock");
-  return Val_unit;
-}
-
-CAMLprim value caml_mutex_try_lock(value wrapper)           /* ML */
-{
-  st_mutex mut = Mutex_val(wrapper);
-  st_retcode retcode;
-  retcode = st_mutex_trylock(mut);
-  if (retcode == MUTEX_ALREADY_LOCKED) return Val_false;
-  st_check_error(retcode, "Mutex.try_lock");
-  return Val_true;
-}
-
-/* Conditions operations */
-
-#define Condition_val(v) (* (st_condvar *) Data_custom_val(v))
-
-static void caml_condition_finalize(value wrapper)
-{
-  st_condvar_destroy(Condition_val(wrapper));
-}
-
-static int caml_condition_compare(value wrapper1, value wrapper2)
-{
-  st_condvar cond1 = Condition_val(wrapper1);
-  st_condvar cond2 = Condition_val(wrapper2);
-  return cond1 == cond2 ? 0 : cond1 < cond2 ? -1 : 1;
-}
-
-static intnat caml_condition_hash(value wrapper)
-{
-  return (intnat) (Condition_val(wrapper));
-}
-
-static struct custom_operations caml_condition_ops = {
-  "_condition",
-  caml_condition_finalize,
-  caml_condition_compare,
-  caml_condition_hash,
-  custom_serialize_default,
-  custom_deserialize_default,
-  custom_compare_ext_default,
-  custom_fixed_length_default
-};
-
-CAMLprim value caml_condition_new(value unit)        /* ML */
-{
-  st_condvar cond = NULL;       /* suppress warning */
-  value wrapper;
-  st_check_error(st_condvar_create(&cond), "Condition.create");
-  wrapper = caml_alloc_custom(&caml_condition_ops, sizeof(st_condvar *),
-                              0, 1);
-  Condition_val(wrapper) = cond;
-  return wrapper;
-}
-
-CAMLprim value caml_condition_wait(value wcond, value wmut)           /* ML */
-{
-  st_condvar cond = Condition_val(wcond);
-  st_mutex mut = Mutex_val(wmut);
-  st_retcode retcode;
-
-  Begin_roots2(wcond, wmut)     /* prevent deallocation of cond and mutex */
-    caml_enter_blocking_section();
-    retcode = st_condvar_wait(cond, mut);
-    caml_leave_blocking_section();
-  End_roots();
-  st_check_error(retcode, "Condition.wait");
-  return Val_unit;
-}
-
-CAMLprim value caml_condition_signal(value wrapper)           /* ML */
-{
-  st_check_error(st_condvar_signal(Condition_val(wrapper)),
-                 "Condition.signal");
-  return Val_unit;
-}
-
-CAMLprim value caml_condition_broadcast(value wrapper)           /* ML */
-{
-  st_check_error(st_condvar_broadcast(Condition_val(wrapper)),
-                 "Condition.broadcast");
+  sync_check_error(rc, "Thread.join");
   return Val_unit;
 }
 
@@ -933,8 +828,9 @@ static value caml_threadstatus_new (void)
 {
   st_event ts = NULL;           /* suppress warning */
   value wrapper;
-  st_check_error(st_event_create(&ts), "Thread.create");
-  wrapper = caml_alloc_custom(&caml_threadstatus_ops, sizeof(st_event *),
+  sync_check_error(st_event_create(&ts), "Thread.create");
+  wrapper = caml_alloc_custom(&caml_threadstatus_ops,
+                              sizeof(st_event *),
                               0, 1);
   Threadstatus_val(wrapper) = ts;
   return wrapper;
@@ -955,5 +851,6 @@ static st_retcode caml_threadstatus_wait (value wrapper)
     retcode = st_event_wait(ts);
     caml_leave_blocking_section();
   End_roots();
+
   return retcode;
 }

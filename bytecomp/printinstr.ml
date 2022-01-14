@@ -100,6 +100,10 @@ let instruction ppf = function
   | Kgetmethod -> fprintf ppf "\tgetmethod"
   | Kgetpubmet n -> fprintf ppf "\tgetpubmet %i" n
   | Kgetdynmet -> fprintf ppf "\tgetdynmet"
+  | Kperform -> fprintf ppf "\tperform"
+  | Kresume -> fprintf ppf "\tresume"
+  | Kresumeterm n -> fprintf ppf "\tresumeterm %i" n
+  | Kreperformterm n -> fprintf ppf "\treperformterm %i" n
   | Kstop -> fprintf ppf "\tstop"
   | Kevent ev -> fprintf ppf "\tevent \"%s\" %i-%i"
                          ev.ev_loc.Location.loc_start.Lexing.pos_fname

@@ -14,81 +14,144 @@
 /*                                                                        */
 /**************************************************************************/
 
-DOMAIN_STATE(value*, young_limit)
+DOMAIN_STATE(volatile uintnat, young_limit)
+/* Minor heap limit. Typically young_limit == young_start, but this field is set
+ * by other domains to signal this domain by causing a spurious allocation
+ * failure. */
+
 DOMAIN_STATE(value*, young_ptr)
-/* Minor heap limit. See minor_gc.c. */
+/* Minor heap pointer */
 
-DOMAIN_STATE(char*, exception_pointer)
-/* Exception pointer that points into the current stack */
-
-DOMAIN_STATE(void*, young_base)
 DOMAIN_STATE(value*, young_start)
+/* Start of the minor heap */
+
 DOMAIN_STATE(value*, young_end)
-DOMAIN_STATE(value*, young_alloc_start)
-DOMAIN_STATE(value*, young_alloc_end)
-DOMAIN_STATE(value*, young_alloc_mid)
-DOMAIN_STATE(value*, young_trigger)
-DOMAIN_STATE(asize_t, minor_heap_wsz)
-DOMAIN_STATE(intnat, in_minor_collection)
-DOMAIN_STATE(double, extra_heap_resources_minor)
-DOMAIN_STATE(struct caml_ref_table*, ref_table)
-DOMAIN_STATE(struct caml_ephe_ref_table*, ephe_ref_table)
-DOMAIN_STATE(struct caml_custom_table*, custom_table)
-/* See minor_gc.c */
+/* End of the minor heap. always(young_start <= young_ptr <= young_end) */
+
+DOMAIN_STATE(struct stack_info*, current_stack)
+/* Current stack */
+
+DOMAIN_STATE(void*, exn_handler)
+/* Pointer into the current stack */
+
+DOMAIN_STATE(struct c_stack_link*, c_stack)
+/* The C stack associated with this domain.
+ * Used by this domain to perform external calls. */
+
+DOMAIN_STATE(struct stack_info**, stack_cache)
+/* This is a list of freelist buckets of stacks */
+
+DOMAIN_STATE(value*, gc_regs_buckets)
+
+DOMAIN_STATE(value*, gc_regs)
+
+DOMAIN_STATE(value**, gc_regs_slot)
+
+DOMAIN_STATE(struct caml_minor_tables*, minor_tables)
 
 DOMAIN_STATE(struct mark_stack*, mark_stack)
-/* See major_gc.c */
+/* Mark stack */
 
-DOMAIN_STATE(value*, stack_low)
-DOMAIN_STATE(value*, stack_high)
-DOMAIN_STATE(value*, stack_threshold)
-DOMAIN_STATE(value*, extern_sp)
-DOMAIN_STATE(value*, trapsp)
-DOMAIN_STATE(value*, trap_barrier)
-DOMAIN_STATE(struct longjmp_buffer*, external_raise)
-DOMAIN_STATE(value, exn_bucket)
-/* See interp.c */
+DOMAIN_STATE(uintnat, marking_done)
+/* Is marking done for the current major cycle. */
 
-DOMAIN_STATE(char*, top_of_stack)
-DOMAIN_STATE(char*, bottom_of_stack)
-DOMAIN_STATE(uintnat, last_return_address)
-DOMAIN_STATE(value*, gc_regs)
-/* See roots_nat.c */
+DOMAIN_STATE(uintnat, sweeping_done)
+/* Is sweeping done for the current major cycle. */
+
+DOMAIN_STATE(uintnat, allocated_words)
+
+DOMAIN_STATE(uintnat, swept_words)
+
+DOMAIN_STATE(intnat, major_work_computed)
+/* total work accumulated in this GC clock cycle (in words) */
+
+DOMAIN_STATE(intnat, major_work_todo)
+/* balance of work to do in this GC clock cycle (in words)
+ *  positive: we need to do this amount of work to finish the slice
+ *  negative: we have done more than we need and this is credit
+ */
+
+DOMAIN_STATE(double, major_gc_clock)
+
+DOMAIN_STATE(struct caml__roots_block*, local_roots)
+
+DOMAIN_STATE(struct caml_ephe_info*, ephe_info)
+
+DOMAIN_STATE(struct caml_final_info*, final_info)
+
+DOMAIN_STATE(intnat, backtrace_pos)
 
 DOMAIN_STATE(intnat, backtrace_active)
-DOMAIN_STATE(intnat, backtrace_pos)
-DOMAIN_STATE(backtrace_slot*, backtrace_buffer)
+
+DOMAIN_STATE(code_t*, backtrace_buffer)
+
 DOMAIN_STATE(value, backtrace_last_exn)
-/* See backtrace.c */
 
 DOMAIN_STATE(intnat, compare_unordered)
-DOMAIN_STATE(intnat, requested_major_slice)
-DOMAIN_STATE(intnat, requested_minor_gc)
-DOMAIN_STATE(struct caml__roots_block *, local_roots)
 
-DOMAIN_STATE(double, stat_minor_words)
-DOMAIN_STATE(double, stat_promoted_words)
-DOMAIN_STATE(double, stat_major_words)
+DOMAIN_STATE(uintnat, oo_next_id_local)
+
+DOMAIN_STATE(uintnat, requested_major_slice)
+
+DOMAIN_STATE(uintnat, requested_minor_gc)
+
+DOMAIN_STATE(uintnat, requested_external_interrupt)
+
+DOMAIN_STATE(int, parser_trace)
+/* See parsing.c */
+
+DOMAIN_STATE(asize_t, minor_heap_wsz)
+
+DOMAIN_STATE(struct caml_heap_state*, shared_heap)
+
+DOMAIN_STATE(int, id)
+
+DOMAIN_STATE(int, unique_id)
+
+DOMAIN_STATE(struct pool**, pools_to_rescan)
+DOMAIN_STATE(int, pools_to_rescan_len)
+DOMAIN_STATE(int, pools_to_rescan_count)
+
+DOMAIN_STATE(value, dls_root)
+/* Domain-local state */
+
+DOMAIN_STATE(double, extra_heap_resources)
+DOMAIN_STATE(double, extra_heap_resources_minor)
+
+DOMAIN_STATE(uintnat, dependent_size)
+DOMAIN_STATE(uintnat, dependent_allocated)
+
+DOMAIN_STATE(struct caml_extern_state*, extern_state)
+DOMAIN_STATE(struct caml_intern_state*, intern_state)
+
+/*****************************************************************************/
+/* GC stats (see gc_ctrl.c and the Gc module). */
+/* These stats represent only the current domain's respective values. */
+/* Use the Gc module to get aggregated total program stats. */
+/*****************************************************************************/
+DOMAIN_STATE(uintnat, stat_minor_words)
+DOMAIN_STATE(uintnat, stat_promoted_words)
+DOMAIN_STATE(uintnat, stat_major_words)
 DOMAIN_STATE(intnat, stat_minor_collections)
 DOMAIN_STATE(intnat, stat_major_collections)
-DOMAIN_STATE(intnat, stat_heap_wsz)
-DOMAIN_STATE(intnat, stat_top_heap_wsz)
-DOMAIN_STATE(intnat, stat_compactions)
 DOMAIN_STATE(intnat, stat_forced_major_collections)
-DOMAIN_STATE(intnat, stat_heap_chunks)
-/* See gc_ctrl.c */
+DOMAIN_STATE(uintnat, stat_blocks_marked)
 
-DOMAIN_STATE(uintnat, eventlog_startup_timestamp)
-DOMAIN_STATE(long, eventlog_startup_pid)
 DOMAIN_STATE(uintnat, eventlog_paused)
 DOMAIN_STATE(uintnat, eventlog_enabled)
 DOMAIN_STATE(FILE*, eventlog_out)
+DOMAIN_STATE(struct event_buffer *, eventlog_buffer)
 /* See eventlog.c */
 
-#if defined(NAKED_POINTERS_CHECKER) && !defined(_WIN32)
-DOMAIN_STATE(void*, checking_pointer_pc)
-/* See major_gc.c */
-#endif
+DOMAIN_STATE(int, inside_stw_handler)
+/* whether or not a domain is inside of a stop-the-world handler
+   this is used for several debug assertions inside of methods
+   that can only be called from either in or outside this state. */
+
+DOMAIN_STATE(intnat, trap_sp_off)
+DOMAIN_STATE(intnat, trap_barrier_off)
+DOMAIN_STATE(struct caml_exception_context*, external_raise)
+/* Bytecode TLS vars, not used for native code */
 
 DOMAIN_STATE(extra_params_area, extra_params)
 /* This member must occur last, because it is an array, not a scalar */

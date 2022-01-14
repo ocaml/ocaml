@@ -546,7 +546,7 @@ let substitute_read_symbol_field_for_variables
           Expr (
             Flambda.create_let block (make_named t)
               (Flambda.create_let field
-                 (Prim (Pfield h, [block], Debuginfo.none))
+                 (Prim (Pfield (h, Pointer, Mutable), [block], Debuginfo.none))
                  (Var field)))
     in
     Flambda.create_let fresh_var (make_named path) expr
@@ -905,7 +905,7 @@ let projection_to_named (projection : Projection.t) : Flambda.named =
   | Project_closure project_closure -> Project_closure project_closure
   | Move_within_set_of_closures move -> Move_within_set_of_closures move
   | Field (field_index, var) ->
-    Prim (Pfield field_index, [var], Debuginfo.none)
+    Prim (Pfield (field_index, Pointer, Mutable), [var], Debuginfo.none)
 
 type specialised_to_same_as =
   | Not_specialised

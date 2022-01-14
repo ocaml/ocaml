@@ -21,16 +21,14 @@
 */
 
 #include <string.h>
+#include <stdarg.h>
 #include "caml/alloc.h"
 #include "caml/custom.h"
 #include "caml/major_gc.h"
 #include "caml/memory.h"
 #include "caml/mlvalues.h"
-#include "caml/stacks.h"
-#include "caml/signals.h"
-
-#define Setup_for_gc
-#define Restore_after_gc
+#include "caml/fiber.h"
+#include "caml/domain.h"
 
 CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
 {
@@ -43,20 +41,123 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
     if (wosize == 0){
       result = Atom (tag);
     }else{
-      Alloc_small (result, wosize, tag);
+      Alloc_small (result, wosize, tag,
+                   { caml_handle_gc_interrupt_no_async_exceptions(); });
       if (tag < No_scan_tag){
         for (i = 0; i < wosize; i++) Field (result, i) = Val_unit;
       }
     }
-  }else{
+  } else {
     result = caml_alloc_shr (wosize, tag);
-    if (tag < No_scan_tag){
+    if (tag < No_scan_tag) {
       for (i = 0; i < wosize; i++) Field (result, i) = Val_unit;
     }
     result = caml_check_urgent_gc (result);
   }
   return result;
 }
+
+Caml_inline void enter_gc_preserving_vals(mlsize_t wosize, value* vals)
+{
+  mlsize_t i;
+  CAMLparam0();
+  /* Copy the values to be preserved to a different array.
+     The original vals array never escapes, generating better code in
+     the fast path. */
+  CAMLlocalN(vals_copy, wosize);
+  for (i = 0; i < wosize; i++) vals_copy[i] = vals[i];
+  caml_handle_gc_interrupt_no_async_exceptions();
+  for (i = 0; i < wosize; i++) vals[i] = vals_copy[i];
+  CAMLreturn0;
+}
+
+Caml_inline value do_alloc_small(mlsize_t wosize, tag_t tag, value* vals)
+{
+  value v;
+  mlsize_t i;
+  CAMLassert (tag < 256);
+  Alloc_small(v, wosize, tag,
+      { enter_gc_preserving_vals(wosize, vals); });
+  for (i = 0; i < wosize; i++) {
+    Field(v, i) = vals[i];
+  }
+  return v;
+}
+
+
+CAMLexport value caml_alloc_1 (tag_t tag, value a)
+{
+  value v[1] = {a};
+  return do_alloc_small(1, tag, v);
+}
+
+CAMLexport value caml_alloc_2 (tag_t tag, value a, value b)
+{
+  value v[2] = {a, b};
+  return do_alloc_small(2, tag, v);
+}
+
+CAMLexport value caml_alloc_3 (tag_t tag, value a, value b, value c)
+{
+  value v[3] = {a, b, c};
+  return do_alloc_small(3, tag, v);
+}
+
+CAMLexport value caml_alloc_4 (tag_t tag, value a, value b, value c, value d)
+{
+  value v[4] = {a, b, c, d};
+  return do_alloc_small(4, tag, v);
+}
+
+CAMLexport value caml_alloc_5 (tag_t tag, value a, value b, value c, value d,
+                               value e)
+{
+  value v[5] = {a, b, c, d, e};
+  return do_alloc_small(5, tag, v);
+}
+
+CAMLexport value caml_alloc_6 (tag_t tag, value a, value b, value c, value d,
+                               value e, value f)
+{
+  value v[6] = {a, b, c, d, e, f};
+  return do_alloc_small(6, tag, v);
+}
+
+CAMLexport value caml_alloc_7 (tag_t tag, value a, value b, value c, value d,
+                               value e, value f, value g)
+{
+  value v[7] = {a, b, c, d, e, f, g};
+  return do_alloc_small(7, tag, v);
+}
+
+CAMLexport value caml_alloc_8 (tag_t tag, value a, value b, value c, value d,
+                               value e, value f, value g, value h)
+{
+  value v[8] = {a, b, c, d, e, f, g, h};
+  return do_alloc_small(8, tag, v);
+}
+
+CAMLexport value caml_alloc_9 (tag_t tag, value a, value b, value c, value d,
+                               value e, value f, value g, value h, value i)
+{
+  value v[9] = {a, b, c, d, e, f, g, h, i};
+  return do_alloc_small(9, tag, v);
+}
+
+CAMLexport value caml_alloc_N (mlsize_t wosize, tag_t tag, ...)
+{
+  va_list args;
+  mlsize_t i;
+  value vals[wosize];
+  value ret;
+  va_start(args, tag);
+  for (i = 0; i < wosize; i++)
+    vals[i] = va_arg(args, value);
+  ret = do_alloc_small(wosize, tag, vals);
+  va_end(args);
+  return ret;
+}
+
 
 CAMLexport value caml_alloc_small (mlsize_t wosize, tag_t tag)
 {
@@ -65,7 +166,9 @@ CAMLexport value caml_alloc_small (mlsize_t wosize, tag_t tag)
   CAMLassert (wosize > 0);
   CAMLassert (wosize <= Max_young_wosize);
   CAMLassert (tag < 256);
-  Alloc_small (result, wosize, tag);
+  CAMLassert (tag != Infix_tag);
+  Alloc_small (result, wosize, tag,
+               { caml_handle_gc_interrupt_no_async_exceptions(); });
   return result;
 }
 
@@ -83,7 +186,8 @@ CAMLexport value caml_alloc_string (mlsize_t len)
   mlsize_t wosize = (len + sizeof (value)) / sizeof (value);
 
   if (wosize <= Max_young_wosize) {
-    Alloc_small (result, wosize, String_tag);
+    Alloc_small (result, wosize, String_tag,
+                 { caml_handle_gc_interrupt_no_async_exceptions(); });
   }else{
     result = caml_alloc_shr (wosize, String_tag);
     result = caml_check_urgent_gc (result);
@@ -123,7 +227,7 @@ CAMLexport value caml_copy_string(char const *s)
 }
 
 CAMLexport value caml_alloc_array(value (*funct)(char const *),
-                                  char const ** arr)
+                                  char const * const* arr)
 {
   CAMLparam0 ();
   mlsize_t nbr, n;
@@ -155,8 +259,9 @@ value caml_alloc_float_array(mlsize_t len)
     if (wosize == 0)
       return Atom(0);
     else
-      Alloc_small (result, wosize, Double_array_tag);
-  }else {
+      Alloc_small (result, wosize, Double_array_tag,
+                   { caml_handle_gc_interrupt_no_async_exceptions(); });
+  } else {
     result = caml_alloc_shr (wosize, Double_array_tag);
     result = caml_check_urgent_gc (result);
   }
@@ -167,12 +272,12 @@ value caml_alloc_float_array(mlsize_t len)
 }
 
 
-CAMLexport value caml_copy_string_array(char const ** arr)
+CAMLexport value caml_copy_string_array(char const * const * arr)
 {
   return caml_alloc_array(caml_copy_string, arr);
 }
 
-CAMLexport int caml_convert_flag_list(value list, int *flags)
+CAMLexport int caml_convert_flag_list(value list, const int *flags)
 {
   int res;
   res = 0;
@@ -218,7 +323,7 @@ CAMLprim value caml_alloc_dummy_infix(value vsize, value voffset)
   Closinfo_val(v) = Make_closinfo(0, wosize);
   if (offset > 0) {
     v += Bsize_wsize(offset);
-    Hd_val(v) = Make_header(offset, Infix_tag, Caml_white);
+    (((header_t *) (v)) [-1]) = Make_header(offset, Infix_tag, 0);
   }
   return v;
 }

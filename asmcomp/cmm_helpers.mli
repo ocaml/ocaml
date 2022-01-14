@@ -188,6 +188,7 @@ val return_unit : Debuginfo.t -> expression -> expression
 val remove_unit : expression -> expression
 
 (** Blocks *)
+val mk_load_mut : memory_chunk -> operation
 
 (** [field_address ptr n dbg] returns an expression for the address of the
     [n]th field of the block pointed to by [ptr] *)

@@ -312,10 +312,23 @@ let cfi_endproc () =
   if is_cfi_enabled () then
     emit_string "\t.cfi_endproc\n"
 
+let cfi_remember_state () =
+  if is_cfi_enabled () then
+    emit_string "\t.cfi_remember_state\n"
+
+let cfi_restore_state () =
+  if is_cfi_enabled () then
+    emit_string "\t.cfi_restore_state\n"
+
 let cfi_adjust_cfa_offset n =
   if is_cfi_enabled () then
   begin
     emit_string "\t.cfi_adjust_cfa_offset\t"; emit_int n; emit_string "\n";
+  end
+
+let cfi_def_cfa_offset n =
+  if is_cfi_enabled () then begin
+    emit_string "\t.cfi_def_cfa_offset\t"; emit_int n; emit_string "\n";
   end
 
 let cfi_offset ~reg ~offset =

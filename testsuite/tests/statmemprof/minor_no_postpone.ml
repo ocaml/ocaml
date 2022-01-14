@@ -1,5 +1,7 @@
 (* TEST
    modules = "minor_no_postpone_stub.c"
+   * skip
+   reason = "port stat-mem-prof : https://github.com/ocaml/ocaml/pull/8634"
 *)
 
 open Gc.Memprof

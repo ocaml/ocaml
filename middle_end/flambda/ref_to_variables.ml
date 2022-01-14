@@ -155,7 +155,7 @@ let eliminate_ref_of_expr flam =
         flam
     and aux_named (named : Flambda.named) : Flambda.named =
       match named with
-      | Prim(Pfield field, [v], _)
+      | Prim(Pfield (field, _, _), [v], _)
         when convertible_variable v ->
         (match get_variable v field with
          | None -> Expr Proved_unreachable

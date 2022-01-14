@@ -28,8 +28,5 @@ the "-I +threads" option (see chapter~\ref{c:camlc}).
 
 \begin{linklist}
 \libdocitem{Thread}{lightweight threads}
-\libdocitem{Mutex}{locks for mutual exclusion}
-\libdocitem{Condition}{condition variables to synchronize between threads}
-\libdocitem{Semaphore}{semaphores, another thread synchronization mechanism}
 \libdocitem{Event}{first-class synchronous communication}
 \end{linklist}

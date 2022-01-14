@@ -18,6 +18,7 @@
 /* Operations on objects */
 
 #include <string.h>
+#include "caml/camlatomic.h"
 #include "caml/alloc.h"
 #include "caml/fail.h"
 #include "caml/gc.h"
@@ -27,20 +28,29 @@
 #include "caml/minor_gc.h"
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
+#include "caml/platform.h"
 #include "caml/prims.h"
-#include "caml/signals.h"
+
+static int obj_tag (value arg)
+{
+  header_t hd;
+
+  if (Is_long (arg)) {
+    return 1000;   /* int_tag */
+  } else if ((long) arg & (sizeof (value) - 1)) {
+    return 1002;   /* unaligned_tag */
+  } else {
+    /* The acquire load ensures that reading the field of a Forward_tag
+       block in stdlib/camlinternalLazy.ml:force_gen has the necessary
+       synchronization. */
+    hd = (header_t)atomic_load_acq(Hp_atomic_val(arg));
+    return Tag_hd(hd);
+  }
+}
 
 CAMLprim value caml_obj_tag(value arg)
 {
-  if (Is_long (arg)){
-    return Val_int (1000);   /* int_tag */
-  }else if ((long) arg & (sizeof (value) - 1)){
-    return Val_int (1002);   /* unaligned_tag */
-  }else if (Is_in_value_area (arg)){
-    return Val_int(Tag_val(arg));
-  }else{
-    return Val_int (1001);   /* out_of_heap_tag */
-  }
+  return Val_int (obj_tag(arg));
 }
 
 CAMLprim value caml_obj_set_tag (value arg, value new_tag)
@@ -58,13 +68,6 @@ CAMLprim value caml_obj_raw_field(value arg, value pos)
 CAMLprim value caml_obj_set_raw_field(value arg, value pos, value bits)
 {
   Field(arg, Long_val(pos)) = (value) Nativeint_val(bits);
-  return Val_unit;
-}
-
-CAMLprim value caml_obj_make_forward (value blk, value fwd)
-{
-  caml_modify(&Field(blk, 0), fwd);
-  Tag_val (blk) = Forward_tag;
   return Val_unit;
 }
 
@@ -154,9 +157,8 @@ CAMLprim value caml_obj_with_tag(value new_tag_v, value arg)
        and some of the "values" being copied are actually code pointers.
        That's because the new "value" does not point to the minor heap. */
     for (i = 0; i < sz; i++) caml_initialize(&Field(res, i), Field(arg, i));
-    /* Give gc a chance to run, and run memprof callbacks */
-    caml_process_pending_actions();
   }
+
   CAMLreturn (res);
 }
 
@@ -183,39 +185,7 @@ CAMLprim value caml_obj_dup(value arg)
 */
 CAMLprim value caml_obj_truncate (value v, value newsize)
 {
-  mlsize_t new_wosize = Long_val (newsize);
-  header_t hd = Hd_val (v);
-  tag_t tag = Tag_hd (hd);
-  color_t color = Color_hd (hd);
-  color_t frag_color = Is_young(v) ? 0 : Caml_black;
-  mlsize_t wosize = Wosize_hd (hd);
-  mlsize_t i;
-
-  if (tag == Double_array_tag) new_wosize *= Double_wosize;  /* PR#2520 */
-
-  if (new_wosize <= 0 || new_wosize > wosize){
-    caml_invalid_argument ("Obj.truncate");
-  }
-  if (new_wosize == wosize) return Val_unit;
-  /* PR#2400: since we're about to lose our references to the elements
-     beyond new_wosize in v, erase them explicitly so that the GC
-     can darken them as appropriate. */
-  if (tag < No_scan_tag) {
-    for (i = new_wosize; i < wosize; i++){
-      caml_modify(&Field(v, i), Val_unit);
-#ifdef DEBUG
-      Field (v, i) = Debug_free_truncate;
-#endif
-    }
-  }
-  /* We must use an odd tag for the header of the leftovers so it does not
-     look like a pointer because there may be some references to it in
-     ref_table. */
-  Field (v, new_wosize) =
-    Make_header (Wosize_whsize (wosize-new_wosize), Abstract_tag, frag_color);
-  Hd_val (v) =
-    Make_header_with_profinfo (new_wosize, tag, color, Profinfo_val(v));
-  return Val_unit;
+  caml_failwith("Obj.truncate not supported");
 }
 
 CAMLprim value caml_obj_add_offset (value v, value offset)
@@ -223,11 +193,22 @@ CAMLprim value caml_obj_add_offset (value v, value offset)
   return v + (unsigned long) Int32_val (offset);
 }
 
-/* The following function is used in stdlib/lazy.ml.
-   It is not written in OCaml because it must be atomic with respect
-   to the GC.
- */
+CAMLprim value caml_obj_compare_and_swap (value v, value f,
+                                          value oldv, value newv)
+{
+  int res = caml_atomic_cas_field(v, Int_val(f), oldv, newv);
+  caml_check_urgent_gc(Val_unit);
+  return Val_int(res);
+}
 
+CAMLprim value caml_obj_is_shared (value obj)
+{
+  return Val_int(Is_long(obj) || !Is_young(obj));
+}
+
+/* The following functions are used to support lazy values. They are not
+ * written in OCaml in order to ensure atomicity guarantees with respect to the
+ * GC. */
 CAMLprim value caml_lazy_make_forward (value v)
 {
   CAMLparam1 (v);
@@ -236,6 +217,61 @@ CAMLprim value caml_lazy_make_forward (value v)
   res = caml_alloc_small (1, Forward_tag);
   Field (res, 0) = v;
   CAMLreturn (res);
+}
+
+static int obj_update_tag (value blk, int old_tag, int new_tag)
+{
+  header_t hd;
+  tag_t tag;
+
+  SPIN_WAIT {
+    hd = Hd_val(blk);
+    tag = Tag_hd(hd);
+
+    if (tag != old_tag) return 0;
+    if (caml_domain_alone()) {
+      Tag_val (blk) = new_tag;
+      return 1;
+    }
+
+    if (atomic_compare_exchange_strong(Hp_atomic_val(blk), &hd,
+                                       (hd & ~0xFF) | new_tag))
+      return 1;
+  }
+}
+
+CAMLprim value caml_lazy_reset_to_lazy (value v)
+{
+  CAMLassert (Tag_val(v) == Forcing_tag);
+
+  obj_update_tag (v, Forcing_tag, Lazy_tag);
+  return Val_unit;
+}
+
+CAMLprim value caml_lazy_update_to_forward (value v)
+{
+  CAMLassert (Tag_val(v) == Forcing_tag);
+
+  obj_update_tag (v, Forcing_tag, Forward_tag);
+  return Val_unit;
+}
+
+CAMLprim value caml_lazy_read_result (value v)
+{
+  if (obj_tag(v) == Forward_tag)
+    return Field(v,0);
+  return v;
+}
+
+CAMLprim value caml_lazy_update_to_forcing (value v)
+{
+  if (Is_block(v) && /* Needed to ensure that we don't attempt to update the
+                        header of a integer value */
+      obj_update_tag (v, Lazy_tag, Forcing_tag)) {
+    return Val_int(0);
+  } else {
+    return Val_int(1);
+  }
 }
 
 /* For mlvalues.h and camlinternalOO.ml
@@ -255,18 +291,24 @@ CAMLprim value caml_get_public_method (value obj, value tag)
   return (tag == Field(meths,li) ? Field (meths, li-1) : 0);
 }
 
-static value oo_last_id = Val_int(0);
+/* Allocate OO ids in chunks, to avoid contention */
+#define Id_chunk 1024
 
-CAMLprim value caml_set_oo_id (value obj) {
-  Field(obj, 1) = oo_last_id;
-  oo_last_id += 2;
-  return obj;
-}
+static atomic_uintnat oo_next_id;
 
 CAMLprim value caml_fresh_oo_id (value v) {
-  v = oo_last_id;
-  oo_last_id += 2;
+  if (Caml_state->oo_next_id_local % Id_chunk == 0) {
+    Caml_state->oo_next_id_local =
+      atomic_fetch_add(&oo_next_id, Id_chunk);
+  }
+  v = Val_long(Caml_state->oo_next_id_local++);
   return v;
+}
+
+CAMLprim value caml_set_oo_id (value obj) {
+  value v = Val_unit;
+  Field(obj, 1) = caml_fresh_oo_id(v);
+  return obj;
 }
 
 CAMLprim value caml_int_as_pointer (value n) {

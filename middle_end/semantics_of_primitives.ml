@@ -35,6 +35,8 @@ let for_primitive (prim : Clambda_primitives.primitive) =
       No_effects, No_coeffects
   | Pccall _ -> Arbitrary_effects, Has_coeffects
   | Praise _ -> Arbitrary_effects, No_coeffects
+  | Prunstack | Pperform | Presume | Preperform ->
+      Arbitrary_effects, Has_coeffects
   | Pnot
   | Pnegint
   | Paddint
@@ -115,6 +117,10 @@ let for_primitive (prim : Clambda_primitives.primitive) =
   | Psetfield _
   | Psetfield_computed _
   | Psetfloatfield _
+  | Patomic_load _
+  | Patomic_exchange
+  | Patomic_cas
+  | Patomic_fetch_add
   | Parraysetu _
   | Parraysets _
   | Pbytessetu
@@ -132,6 +138,9 @@ let for_primitive (prim : Clambda_primitives.primitive) =
   | Psequand
   | Psequor ->
       (* Removed by [Closure_conversion] in the flambda pipeline. *)
+      No_effects, No_coeffects
+  | Pdls_get ->
+      (* only read *)
       No_effects, No_coeffects
 
 type return_type =

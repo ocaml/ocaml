@@ -39,7 +39,7 @@ value stub(value ref)
 
   /* Large allocations */
   caml_alloc(1000, 0);
-  caml_alloc_shr(1000, 0);
+  caml_alloc_shr(1000, String_tag);
   caml_alloc_tuple(1000);
   caml_alloc_float_array(1000);
   caml_alloc_string(10000);

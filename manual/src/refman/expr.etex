@@ -553,6 +553,9 @@ implementation-dependent. The current implementation also supports
 a certain class of recursive definitions of non-functional values,
 as explained in section~\ref{s:letrecvalues}.
 
+\subsubsection{sss:expr-let-exception}{Local exceptions}
+(Introduced in OCaml 4.04)
+
 It is possible to define local exceptions in expressions:
 @ "let" exception constr-decl "in" expr @ .
 

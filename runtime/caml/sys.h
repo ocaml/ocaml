@@ -41,8 +41,6 @@ CAMLnoreturn_start
 CAMLextern void caml_do_exit (int)
 CAMLnoreturn_end;
 
-extern char_os * caml_exe_name;
-
 #ifdef __cplusplus
 }
 #endif

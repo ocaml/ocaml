@@ -13,8 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-[@@@ocaml.warning "-32"]
-
 module type SeededS = sig
 
   type key
@@ -30,20 +28,8 @@ module type SeededS = sig
   val find_all : 'a t -> key -> 'a list
   val replace : 'a t -> key -> 'a -> unit
   val mem : 'a t -> key -> bool
-  val iter : (key -> 'a -> unit) -> 'a t -> unit
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  val filter_map_inplace : (key -> 'a -> 'a option) -> 'a t -> unit
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
   val length : 'a t -> int
   val stats : 'a t -> Hashtbl.statistics
-  val to_seq : 'a t -> (key * 'a) Seq.t
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  val to_seq_keys : _ t -> key Seq.t
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  val to_seq_values : 'a t -> 'a Seq.t
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
   val add_seq : 'a t -> (key * 'a) Seq.t -> unit
   val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
   val of_seq : (key * 'a) Seq.t -> 'a t
@@ -67,20 +53,8 @@ module type S = sig
   val find_all : 'a t -> key -> 'a list
   val replace : 'a t -> key -> 'a -> unit
   val mem : 'a t -> key -> bool
-  val iter : (key -> 'a -> unit) -> 'a t -> unit
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  val filter_map_inplace : (key -> 'a -> 'a option) -> 'a t -> unit
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
   val length : 'a t -> int
   val stats : 'a t -> Hashtbl.statistics
-  val to_seq : 'a t -> (key * 'a) Seq.t
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  val to_seq_keys : _ t -> key Seq.t
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
-  val to_seq_values : 'a t -> 'a Seq.t
-    [@@alert old_ephemeron_api "This function won't be available in 5.0"]
   val add_seq : 'a t -> (key * 'a) Seq.t -> unit
   val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
   val of_seq : (key * 'a) Seq.t -> 'a t
@@ -102,7 +76,6 @@ module GenHashTable = struct
     val hash: int -> t -> int
     val equal: 'a container -> t -> equal
     val get_data: 'a container -> 'a option
-    val get_key: 'a container -> t option
     val set_key_data: 'a container -> t -> 'a -> unit
     val check_key: 'a container -> bool
   end) : SeededS with type key = H.t
@@ -240,7 +213,7 @@ module GenHashTable = struct
 
     (** {!find} don't remove dead keys because it would be surprising for
         the user that a read-only function mutates the state (eg. concurrent
-        access). Same for {!iter}, {!fold}, {!mem}.
+        access). Same for {!mem}.
     *)
     let rec find_rec key hkey = function
       | Empty ->
@@ -346,59 +319,6 @@ module GenHashTable = struct
       | Cons(_hk, _c, rest) -> mem_in_bucket rest in
       mem_in_bucket h.data.(key_index h hkey)
 
-    let iter f h =
-      let rec do_bucket = function
-        | Empty ->
-            ()
-        | Cons(_, c, rest) ->
-            begin match H.get_key c, H.get_data c with
-            | None, _ | _, None -> ()
-            | Some k, Some d -> f k d
-            end; do_bucket rest in
-      let d = h.data in
-      for i = 0 to Array.length d - 1 do
-        do_bucket d.(i)
-      done
-
-    let fold f h init =
-      let rec do_bucket b accu =
-        match b with
-          Empty ->
-            accu
-        | Cons(_, c, rest) ->
-            let accu = begin match H.get_key c, H.get_data c with
-              | None, _ | _, None -> accu
-              | Some k, Some d -> f k d accu
-            end in
-            do_bucket rest accu  in
-      let d = h.data in
-      let accu = ref init in
-      for i = 0 to Array.length d - 1 do
-        accu := do_bucket d.(i) !accu
-      done;
-      !accu
-
-    let filter_map_inplace f h =
-      let rec do_bucket = function
-        | Empty ->
-            Empty
-        | Cons(hk, c, rest) ->
-            match H.get_key c, H.get_data c with
-            | None, _ | _, None ->
-                do_bucket rest
-            | Some k, Some d ->
-                match f k d with
-                | None ->
-                    do_bucket rest
-                | Some new_d ->
-                    H.set_key_data c k new_d;
-                    Cons(hk, c, do_bucket rest)
-      in
-      let d = h.data in
-      for i = 0 to Array.length d - 1 do
-        d.(i) <- do_bucket d.(i)
-      done
-
     let length h = h.size
 
     let rec bucket_length accu = function
@@ -443,29 +363,6 @@ module GenHashTable = struct
         max_bucket_length = mbl;
         bucket_histogram = histo }
 
-    let to_seq tbl =
-      (* capture current array, so that even if the table is resized we
-         keep iterating on the same array *)
-      let tbl_data = tbl.data in
-      (* state: index * next bucket to traverse *)
-      let rec aux i buck () = match buck with
-        | Empty ->
-            if i = Array.length tbl_data
-            then Seq.Nil
-            else aux(i+1) tbl_data.(i) ()
-        | Cons (_, c, next) ->
-            begin match H.get_key c, H.get_data c with
-              | None, _ | _, None -> aux i next ()
-              | Some key, Some data ->
-                  Seq.Cons ((key, data), aux i next)
-            end
-      in
-      aux 0 Empty
-
-    let to_seq_keys m = Seq.map fst (to_seq m)
-
-    let to_seq_values m = Seq.map snd (to_seq m)
-
     let add_seq tbl i =
       Seq.iter (fun (k,v) -> add tbl k v) i
 
@@ -497,20 +394,12 @@ module K1 = struct
   let create () : ('k,'d) t = ObjEph.create 1
 
   let get_key (t:('k,'d) t) : 'k option = obj_opt (ObjEph.get_key t 0)
-  let get_key_copy (t:('k,'d) t) : 'k option = obj_opt (ObjEph.get_key_copy t 0)
   let set_key (t:('k,'d) t) (k:'k) : unit = ObjEph.set_key t 0 (Obj.repr k)
-  let unset_key (t:('k,'d) t) : unit = ObjEph.unset_key t 0
   let check_key (t:('k,'d) t) : bool = ObjEph.check_key t 0
 
-  let blit_key (t1:('k,'d) t) (t2:('k,'d) t): unit =
-    ObjEph.blit_key t1 0 t2 0 1
-
   let get_data (t:('k,'d) t) : 'd option = obj_opt (ObjEph.get_data t)
-  let get_data_copy (t:('k,'d) t) : 'd option = obj_opt (ObjEph.get_data_copy t)
   let set_data (t:('k,'d) t) (d:'d) : unit = ObjEph.set_data t (Obj.repr d)
   let unset_data (t:('k,'d) t) : unit = ObjEph.unset_data t
-  let check_data (t:('k,'d) t) : bool = ObjEph.check_data t
-  let blit_data (t1:(_,'d) t) (t2:(_,'d) t) : unit = ObjEph.blit_data t1 t2
 
   let make key data =
     let eph = create () in
@@ -542,7 +431,6 @@ module K1 = struct
         | Some k' ->
             if H.equal k k' then GenHashTable.ETrue else GenHashTable.EFalse
       let get_data = get_data
-      let get_key = get_key
       let set_key_data c k d =
         unset_data c;
         set_key c k;
@@ -603,37 +491,19 @@ module K2 = struct
   let create () : ('k1,'k2,'d) t = ObjEph.create 2
 
   let get_key1 (t:('k1,'k2,'d) t) : 'k1 option = obj_opt (ObjEph.get_key t 0)
-  let get_key1_copy (t:('k1,'k2,'d) t) : 'k1 option =
-    obj_opt (ObjEph.get_key_copy t 0)
   let set_key1 (t:('k1,'k2,'d) t) (k:'k1) : unit =
     ObjEph.set_key t 0 (Obj.repr k)
-  let unset_key1 (t:('k1,'k2,'d) t) : unit = ObjEph.unset_key t 0
   let check_key1 (t:('k1,'k2,'d) t) : bool = ObjEph.check_key t 0
 
   let get_key2 (t:('k1,'k2,'d) t) : 'k2 option = obj_opt (ObjEph.get_key t 1)
-  let get_key2_copy (t:('k1,'k2,'d) t) : 'k2 option =
-    obj_opt (ObjEph.get_key_copy t 1)
   let set_key2 (t:('k1,'k2,'d) t) (k:'k2) : unit =
     ObjEph.set_key t 1 (Obj.repr k)
-  let unset_key2 (t:('k1,'k2,'d) t) : unit = ObjEph.unset_key t 1
   let check_key2 (t:('k1,'k2,'d) t) : bool = ObjEph.check_key t 1
 
-
-  let blit_key1 (t1:('k1,_,_) t) (t2:('k1,_,_) t) : unit =
-    ObjEph.blit_key t1 0 t2 0 1
-  let blit_key2 (t1:(_,'k2,_) t) (t2:(_,'k2,_) t) : unit =
-    ObjEph.blit_key t1 1 t2 1 1
-  let blit_key12 (t1:('k1,'k2,_) t) (t2:('k1,'k2,_) t) : unit =
-    ObjEph.blit_key t1 0 t2 0 2
-
   let get_data (t:('k1,'k2,'d) t) : 'd option = obj_opt (ObjEph.get_data t)
-  let get_data_copy (t:('k1,'k2,'d) t) : 'd option =
-    obj_opt (ObjEph.get_data_copy t)
   let set_data (t:('k1,'k2,'d) t) (d:'d) : unit =
     ObjEph.set_data t (Obj.repr d)
   let unset_data (t:('k1,'k2,'d) t) : unit = ObjEph.unset_data t
-  let check_data (t:('k1,'k2,'d) t) : bool = ObjEph.check_data t
-  let blit_data (t1:(_,_,'d) t) (t2:(_,_,'d) t) : unit = ObjEph.blit_data t1 t2
 
   let make key1 key2 data =
     let eph = create () in
@@ -674,10 +544,6 @@ module K2 = struct
             if H1.equal k1 k1' && H2.equal k2 k2'
             then GenHashTable.ETrue else GenHashTable.EFalse
       let get_data = get_data
-      let get_key c =
-        match get_key1 c, get_key2 c with
-        | None, _ | _ , None -> None
-        | Some k1', Some k2' -> Some (k1', k2')
       let set_key_data c (k1,k2) d =
         unset_data c;
         set_key1 c k1; set_key2 c k2;
@@ -746,22 +612,13 @@ module Kn = struct
   let length (k:('k,'d) t) : int = ObjEph.length k
 
   let get_key (t:('k,'d) t) (n:int) : 'k option = obj_opt (ObjEph.get_key t n)
-  let get_key_copy (t:('k,'d) t) (n:int) : 'k option =
-    obj_opt (ObjEph.get_key_copy t n)
   let set_key (t:('k,'d) t) (n:int) (k:'k) : unit =
     ObjEph.set_key t n (Obj.repr k)
-  let unset_key (t:('k,'d) t) (n:int) : unit = ObjEph.unset_key t n
   let check_key (t:('k,'d) t) (n:int) : bool = ObjEph.check_key t n
 
-  let blit_key (t1:('k,'d) t) (o1:int) (t2:('k,'d) t) (o2:int) (l:int) : unit =
-    ObjEph.blit_key t1 o1 t2 o2 l
-
   let get_data (t:('k,'d) t) : 'd option = obj_opt (ObjEph.get_data t)
-  let get_data_copy (t:('k,'d) t) : 'd option = obj_opt (ObjEph.get_data_copy t)
   let set_data (t:('k,'d) t) (d:'d) : unit = ObjEph.set_data t (Obj.repr d)
   let unset_data (t:('k,'d) t) : unit = ObjEph.unset_data t
-  let check_data (t:('k,'d) t) : bool = ObjEph.check_data t
-  let blit_data (t1:(_,'d) t) (t2:(_,'d) t) : unit = ObjEph.blit_data t1 t2
 
   let make keys data =
     let l = Array.length keys in
@@ -817,24 +674,6 @@ module Kn = struct
           in
           equal_array k c (len-1)
       let get_data = get_data
-      let get_key c =
-        let len = length c in
-        if len = 0 then Some [||]
-        else
-          match get_key c 0 with
-          | None -> None
-          | Some k0 ->
-              let rec fill a i =
-                if i < 1 then Some a
-                else
-                  match get_key c i with
-                  | None -> None
-                  | Some ki ->
-                      a.(i) <- ki;
-                      fill a (i-1)
-              in
-              let a = Array.make len k0 in
-              fill a (len-1)
       let set_key_data c k d =
         unset_data c;
         for i=0 to Array.length k -1 do

@@ -28,6 +28,6 @@ value factorial(value n){
   int m = Int_val(n);
   for (i = 1; i <= m; i++) x *= i;
   sprintf(buf,"%i",x);
-  s = copy_string(buf);
+  s = caml_copy_string(buf);
   CAMLreturn (s);
 }

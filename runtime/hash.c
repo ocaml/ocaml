@@ -204,14 +204,7 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
     if (Is_long(v)) {
       h = caml_hash_mix_intnat(h, v);
       num--;
-    }
-    else if (!Is_in_value_area(v)) {
-      /* v is a pointer outside the heap, probably a code pointer.
-         Shall we count it?  Let's say yes by compatibility with old code. */
-      h = caml_hash_mix_intnat(h, v);
-      num--;
-    }
-    else {
+    } else {
       switch (Tag_val(v)) {
       case String_tag:
         h = caml_hash_mix_string(h, v);
@@ -242,7 +235,7 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
            Forward_tag links being followed */
         for (i = MAX_FORWARD_DEREFERENCE; i > 0; i--) {
           v = Forward_val(v);
-          if (Is_long(v) || !Is_in_value_area(v) || Tag_val(v) != Forward_tag)
+          if (Is_long(v) || Tag_val(v) != Forward_tag)
             goto again;
         }
         /* Give up on this object and move to the next */
@@ -260,7 +253,6 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
           num--;
         }
         break;
-#ifdef NO_NAKED_POINTERS
       case Closure_tag: {
         mlsize_t startenv;
         len = Wosize_val(v);
@@ -281,7 +273,11 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
         }
         break;
       }
-#endif
+      case Cont_tag:
+        /* All continuations hash to the same value,
+           since we have no idea how to distinguish them. */
+        break;
+
       default:
         /* Mix in the tag and size, but do not count this towards [num] */
         h = caml_hash_mix_uint32(h, Whitehd_hd(Hd_val(v)));
