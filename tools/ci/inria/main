@@ -176,6 +176,8 @@ case "${OCAML_ARCH}" in
     instdir='C:/ocamlmgw64'
     cleanup=true
     check_make_alldepend=true
+    # This is needed until the winpthreads support is implemented directly
+    export PATH="$PATH:/usr/x86_64-w64-mingw32/sys-root/mingw/bin"
   ;;
   msvc)
     build='--build=i686-pc-cygwin'
