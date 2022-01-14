@@ -554,6 +554,16 @@ let test_bool dbg cmm =
         Cconst_int (1, dbg)
   | c -> Cop(Ccmpi Cne, [c; Cconst_int (1, dbg)], dbg)
 
+(* Access to block fields *)
+
+let mk_load_mut ~is_atomic memory_chunk =
+  Cload {memory_chunk; mutability=Mutable; is_atomic}
+
+let mk_load_immut memory_chunk =
+  (* Loads from immutable values can be compiled as plain loads regardless of
+     atomicity requirements, so we mark them as non-atomic. *)
+  Cload {memory_chunk; mutability=Immutable; is_atomic=false}
+
 (* Float *)
 
 let box_float dbg c = Cop(Calloc, [alloc_float_header dbg; c], dbg)
@@ -569,13 +579,9 @@ let unbox_float dbg =
           | Some (Uconst_float x) ->
               Cconst_float (x, dbg) (* or keep _dbg? *)
           | _ ->
-              Cop(Cload {memory_chunk=Double; mutability=Immutable;
-                         is_atomic=false},
-                  [cmm], dbg)
+              Cop(mk_load_immut Double, [cmm], dbg)
           end
-      | cmm -> Cop(Cload {memory_chunk=Double; mutability=Immutable;
-                         is_atomic=false},
-                   [cmm], dbg)
+      | cmm -> Cop(mk_load_immut Double, [cmm], dbg)
     )
 
 (* Complex *)
@@ -584,10 +590,9 @@ let box_complex dbg c_re c_im =
   Cop(Calloc, [alloc_floatarray_header 2 dbg; c_re; c_im], dbg)
 
 let complex_re c dbg =
-  Cop(Cload {memory_chunk=Double; mutability=Immutable; is_atomic=false},
-      [c], dbg)
+  Cop(mk_load_immut Double, [c], dbg)
 let complex_im c dbg =
-  Cop(Cload {memory_chunk=Double; mutability=Immutable; is_atomic=false},
+  Cop(mk_load_immut Double,
       [Cop(Cadda, [c; Cconst_int (size_float, dbg)], dbg)], dbg)
 
 (* Unit *)
@@ -623,11 +628,6 @@ let rec remove_unit = function
   | Ctuple [] as c -> c
   | c -> Csequence(c, Ctuple [])
 
-(* Access to block fields *)
-
-let mk_load_mut memory_chunk =
-  Cload {memory_chunk; mutability=Mutable; is_atomic=false}
-
 let field_address ptr n dbg =
   if n = 0
   then ptr
@@ -646,9 +646,10 @@ let non_profinfo_mask =
   else 0 (* [non_profinfo_mask] is unused in this case *)
 
 let get_header ptr dbg =
-  (* We cannot deem this as [Immutable] due to the presence of [Obj.truncate]
-     and [Obj.set_tag]. *)
-  Cop(mk_load_mut Word_int,
+  (* Headers are deemed immutable, except for the color bits, therefore under
+     the premise that the color bits are not used by callers of this function,
+     the load can be performed as an immutable load. *)
+  Cop(mk_load_immut Word_int,
     [Cop(Cadda, [ptr; Cconst_int(-size_int, dbg)], dbg)], dbg)
 
 let get_header_without_profinfo ptr dbg =
@@ -665,7 +666,7 @@ let get_tag ptr dbg =
     Cop(Cand, [get_header ptr dbg; Cconst_int (255, dbg)], dbg)
   else                                  (* If byte loads are efficient *)
     (* Same comment as [get_header] above *)
-    Cop(mk_load_mut Byte_unsigned,
+    Cop(mk_load_immut Byte_unsigned,
         [Cop(Cadda, [ptr; Cconst_int(tag_offset, dbg)], dbg)], dbg)
 
 let get_size ptr dbg =
@@ -732,13 +733,13 @@ let array_indexing ?typ log2size ptr ofs dbg =
                     Cconst_int((-1) lsl (log2size - 1), dbg)], dbg)
 
 let addr_array_ref arr ofs dbg =
-  Cop(mk_load_mut Word_val,
+  Cop(mk_load_mut ~is_atomic:false Word_val,
     [array_indexing log2_size_addr arr ofs dbg], dbg)
 let int_array_ref arr ofs dbg =
-  Cop(mk_load_mut Word_int,
+  Cop(mk_load_mut ~is_atomic:false Word_int,
     [array_indexing log2_size_addr arr ofs dbg], dbg)
 let unboxed_float_array_ref arr ofs dbg =
-  Cop(mk_load_mut Double,
+  Cop(mk_load_mut ~is_atomic:false Double,
     [array_indexing log2_size_float arr ofs dbg], dbg)
 let float_array_ref arr ofs dbg =
   box_float dbg (unboxed_float_array_ref arr ofs dbg)
@@ -773,11 +774,14 @@ let string_length exp dbg =
              dbg),
          Cop(Csubi,
              [Cvar tmp_var;
-               Cop(mk_load_mut Byte_unsigned,
+               (* Here we access the padding word of the string, which is
+                  immutable. *)
+               (* TODO: Confirm this is thread-safe. *)
+               Cop(mk_load_immut Byte_unsigned,
                      [Cop(Cadda, [str; Cvar tmp_var], dbg)], dbg)], dbg)))
 
 let bigstring_length ba dbg =
-  Cop(mk_load_mut Word_int, [field_address ba 5 dbg], dbg)
+  Cop(mk_load_mut ~is_atomic:true Word_int, [field_address ba 5 dbg], dbg)
 
 (* Message sending *)
 
@@ -789,7 +793,7 @@ let lookup_tag obj tag dbg =
 
 let lookup_label obj lab dbg =
   bind "lab" lab (fun lab ->
-    let table = Cop (mk_load_mut Word_val, [obj], dbg) in
+    let table = Cop (mk_load_mut ~is_atomic:false Word_val, [obj], dbg) in
     addr_array_ref table lab dbg)
 
 let call_cached_method obj tag cache pos args dbg =
@@ -826,6 +830,8 @@ let make_alloc dbg tag args =
   make_alloc_generic addr_array_init dbg tag (List.length args) args
 
 let make_float_alloc dbg tag args =
+  (* TODO: No atomicity constraints on initializing stores... right?
+     So using the non-atomic [float_array_set] is fine here. *)
   make_alloc_generic float_array_set dbg tag
                      (List.length args * size_float / size_addr) args
 
@@ -882,7 +888,7 @@ let bigarray_indexing unsafe elt_kind layout b args dbg =
         bind "idx" arg (fun idx ->
           (* Load the untagged int bound for the given dimension *)
           let bound =
-            Cop(mk_load_mut Word_int,
+            Cop(mk_load_mut ~is_atomic:false Word_int,
                 [field_address b dim_ofs dbg], dbg)
           in
           let idxn = untag_int idx dbg in
@@ -893,7 +899,7 @@ let bigarray_indexing unsafe elt_kind layout b args dbg =
       let rem = ba_indexing (dim_ofs + delta_ofs) delta_ofs argl in
       (* Load the untagged int bound for the given dimension *)
       let bound =
-        Cop(mk_load_mut Word_int,
+        Cop(mk_load_mut ~is_atomic:false Word_int,
             [field_address b dim_ofs dbg], dbg)
       in
       if unsafe then add_int (mul_int (decr_int rem dbg) bound dbg) arg1 dbg
@@ -920,7 +926,7 @@ let bigarray_indexing unsafe elt_kind layout b args dbg =
     bigarray_elt_size elt_kind in
   (* [array_indexing] can simplify the given expressions *)
   array_indexing ~typ:Addr (Misc.log2 elt_size)
-                 (Cop(mk_load_mut Word_int,
+                 (Cop(mk_load_mut ~is_atomic:false Word_int,
                     [field_address b 1 dbg], dbg)) offset dbg
 
 let bigarray_word_kind : Lambda.bigarray_kind -> memory_chunk = function
@@ -947,13 +953,14 @@ let bigarray_get unsafe elt_kind layout b args dbg =
         bind "addr"
           (bigarray_indexing unsafe elt_kind layout b args dbg) (fun addr ->
             bind "reval"
-              (Cop(mk_load_mut kind, [addr], dbg)) (fun reval ->
-                bind "imval"
-                  (Cop(mk_load_mut kind,
-                       [Cop(Cadda, [addr; Cconst_int (sz, dbg)], dbg)], dbg))
-                  (fun imval -> box_complex dbg reval imval)))
+              (Cop(mk_load_mut ~is_atomic:false kind, [addr], dbg))
+                (fun reval ->
+                  bind "imval"
+                    (Cop(mk_load_mut ~is_atomic:false kind,
+                         [Cop(Cadda, [addr; Cconst_int (sz, dbg)], dbg)], dbg))
+                    (fun imval -> box_complex dbg reval imval)))
     | _ ->
-        Cop(mk_load_mut (bigarray_word_kind elt_kind),
+        Cop(mk_load_mut ~is_atomic:false (bigarray_word_kind elt_kind),
             [bigarray_indexing unsafe elt_kind layout b args dbg],
             dbg))
 
@@ -1035,8 +1042,9 @@ let split_int64_for_32bit_target arg dbg =
   bind "split_int64" arg (fun arg ->
     let first = Cop (Cadda, [Cconst_int (size_int, dbg); arg], dbg) in
     let second = Cop (Cadda, [Cconst_int (2 * size_int, dbg); arg], dbg) in
-    Ctuple [Cop (mk_load_mut Thirtytwo_unsigned, [first], dbg);
-            Cop (mk_load_mut Thirtytwo_unsigned, [second], dbg)])
+    Ctuple [Cop (mk_load_mut ~is_atomic:false Thirtytwo_unsigned, [first], dbg);
+            Cop (mk_load_mut ~is_atomic:false Thirtytwo_unsigned, [second],
+                  dbg)])
 
 let alloc_matches_boxed_int bi ~hdr ~ops =
   match (bi : Primitive.boxed_integer), hdr, ops with
@@ -1060,7 +1068,7 @@ let unbox_int dbg bi =
       then Thirtytwo_signed else Word_int
       in
       Cop(
-        Cload {memory_chunk; mutability=Immutable; is_atomic=false},
+        mk_load_immut memory_chunk,
         [Cop(Cadda, [arg; Cconst_int (size_addr, dbg)], dbg)], dbg)
   in
   map_tail
@@ -1115,11 +1123,13 @@ let make_unsigned_int bi arg dbg =
 
 let unaligned_load_16 ptr idx dbg =
   if Arch.allow_unaligned_access
-  then Cop(mk_load_mut Sixteen_unsigned, [add_int ptr idx dbg], dbg)
+  then Cop(mk_load_mut ~is_atomic:false Sixteen_unsigned, [add_int ptr idx dbg],
+            dbg)
   else
     let cconst_int i = Cconst_int (i, dbg) in
-    let v1 = Cop(mk_load_mut Byte_unsigned, [add_int ptr idx dbg], dbg) in
-    let v2 = Cop(mk_load_mut Byte_unsigned,
+    let v1 = Cop(mk_load_mut ~is_atomic:false Byte_unsigned,
+                  [add_int ptr idx dbg], dbg) in
+    let v2 = Cop(mk_load_mut ~is_atomic:false Byte_unsigned,
                  [add_int (add_int ptr idx dbg) (cconst_int 1) dbg], dbg) in
     let b1, b2 = if Arch.big_endian then v1, v2 else v2, v1 in
     Cop(Cor, [lsl_int b1 (cconst_int 8) dbg; b2], dbg)
@@ -1144,17 +1154,19 @@ let unaligned_set_16 ptr idx newval dbg =
 
 let unaligned_load_32 ptr idx dbg =
   if Arch.allow_unaligned_access
-  then Cop(mk_load_mut Thirtytwo_unsigned, [add_int ptr idx dbg], dbg)
+  then Cop(mk_load_mut ~is_atomic:false Thirtytwo_unsigned,
+            [add_int ptr idx dbg], dbg)
   else
     let cconst_int i = Cconst_int (i, dbg) in
-    let v1 = Cop(mk_load_mut Byte_unsigned, [add_int ptr idx dbg], dbg) in
-    let v2 = Cop(mk_load_mut Byte_unsigned,
+    let v1 = Cop(mk_load_mut ~is_atomic:false Byte_unsigned,
+                  [add_int ptr idx dbg], dbg) in
+    let v2 = Cop(mk_load_mut ~is_atomic:false Byte_unsigned,
                  [add_int (add_int ptr idx dbg) (cconst_int 1) dbg], dbg)
     in
-    let v3 = Cop(mk_load_mut Byte_unsigned,
+    let v3 = Cop(mk_load_mut ~is_atomic:false Byte_unsigned,
                  [add_int (add_int ptr idx dbg) (cconst_int 2) dbg], dbg)
     in
-    let v4 = Cop(mk_load_mut Byte_unsigned,
+    let v4 = Cop(mk_load_mut ~is_atomic:false Byte_unsigned,
                  [add_int (add_int ptr idx dbg) (cconst_int 3) dbg], dbg)
     in
     let b1, b2, b3, b4 =
@@ -1206,23 +1218,24 @@ let unaligned_set_32 ptr idx newval dbg =
 let unaligned_load_64 ptr idx dbg =
   assert(size_int = 8);
   if Arch.allow_unaligned_access
-  then Cop(mk_load_mut Word_int, [add_int ptr idx dbg], dbg)
+  then Cop(mk_load_mut ~is_atomic:false Word_int, [add_int ptr idx dbg], dbg)
   else
     let cconst_int i = Cconst_int (i, dbg) in
-    let v1 = Cop(mk_load_mut Byte_unsigned, [add_int ptr idx dbg], dbg) in
-    let v2 = Cop(mk_load_mut Byte_unsigned,
+    let v1 = Cop(mk_load_mut ~is_atomic:false Byte_unsigned,
+                  [add_int ptr idx dbg], dbg) in
+    let v2 = Cop(mk_load_mut ~is_atomic:false Byte_unsigned,
                  [add_int (add_int ptr idx dbg) (cconst_int 1) dbg], dbg) in
-    let v3 = Cop(mk_load_mut Byte_unsigned,
+    let v3 = Cop(mk_load_mut ~is_atomic:false Byte_unsigned,
                  [add_int (add_int ptr idx dbg) (cconst_int 2) dbg], dbg) in
-    let v4 = Cop(mk_load_mut Byte_unsigned,
+    let v4 = Cop(mk_load_mut ~is_atomic:false Byte_unsigned,
                  [add_int (add_int ptr idx dbg) (cconst_int 3) dbg], dbg) in
-    let v5 = Cop(mk_load_mut Byte_unsigned,
+    let v5 = Cop(mk_load_mut ~is_atomic:false Byte_unsigned,
                  [add_int (add_int ptr idx dbg) (cconst_int 4) dbg], dbg) in
-    let v6 = Cop(mk_load_mut Byte_unsigned,
+    let v6 = Cop(mk_load_mut ~is_atomic:false Byte_unsigned,
                  [add_int (add_int ptr idx dbg) (cconst_int 5) dbg], dbg) in
-    let v7 = Cop(mk_load_mut Byte_unsigned,
+    let v7 = Cop(mk_load_mut ~is_atomic:false Byte_unsigned,
                  [add_int (add_int ptr idx dbg) (cconst_int 6) dbg], dbg) in
-    let v8 = Cop(mk_load_mut Byte_unsigned,
+    let v8 = Cop(mk_load_mut ~is_atomic:false Byte_unsigned,
                  [add_int (add_int ptr idx dbg) (cconst_int 7) dbg], dbg) in
     let b1, b2, b3, b4, b5, b6, b7, b8 =
       if Arch.big_endian
@@ -1486,7 +1499,8 @@ let make_switch arg cases actions dbg =
     Cmmgen_state.add_constant table (Const_table (Local,
         Array.to_list (Array.map (fun act ->
           const_actions.(act)) cases)));
-    addr_array_ref (Cconst_symbol (table, dbg)) (tag_int arg dbg) dbg
+    addr_array_ref (Cconst_symbol (table, dbg))
+      (tag_int arg dbg) dbg
   in
   let make_affine_computation ~offset ~slope arg dbg =
     (* In case the resulting integers are an affine function of the index, we
@@ -1750,7 +1764,8 @@ let cache_public_method meths tag cache dbg =
   Clet_mut (
   VP.create li, typ_int, cconst_int 3,
   Clet_mut (
-  VP.create hi, typ_int, Cop(mk_load_mut Word_int, [meths], dbg),
+  VP.create hi, typ_int,
+  Cop(mk_load_mut ~is_atomic:false Word_int, [meths], dbg),
   Csequence(
   ccatch
     (raise_num, [],
@@ -1766,7 +1781,7 @@ let cache_public_method meths tag cache dbg =
         Cifthenelse
           (Cop (Ccmpi Clt,
                 [tag;
-                 Cop(mk_load_mut Word_int,
+                 Cop(mk_load_mut ~is_atomic:false Word_int,
                      [Cop(Cadda,
                           [meths; lsl_const (Cvar mi) log2_size_addr dbg],
                           dbg)],
@@ -1857,12 +1872,13 @@ let send_function arity =
     let cached_pos = Cvar cached in
     let tag_pos = Cop(Cadda, [Cop (Cadda, [cached_pos; Cvar meths], dbg ());
                               cconst_int(3*size_addr-1)], dbg ()) in
-    let tag' = Cop(mk_load_mut Word_int, [tag_pos], dbg ()) in
+    let tag' = Cop(mk_load_mut ~is_atomic:false Word_int, [tag_pos], dbg ()) in
     Clet (
-    VP.create meths, Cop(mk_load_mut Word_val, [obj], dbg ()),
+    VP.create meths, Cop(mk_load_mut ~is_atomic:false Word_val, [obj], dbg ()),
     Clet (
     VP.create cached,
-      Cop(Cand, [Cop(mk_load_mut Word_int, [cache], dbg ()); mask],
+      Cop(Cand, [Cop(mk_load_mut ~is_atomic:false Word_int, [cache], dbg ());
+                 mask],
           dbg ()),
     Clet (
     VP.create real,
@@ -1872,7 +1888,7 @@ let send_function arity =
                 dbg (),
                 cached_pos,
                 dbg ()),
-    Cop(mk_load_mut Word_val,
+    Cop(mk_load_mut ~is_atomic:false Word_val,
       [Cop(Cadda, [Cop (Cadda, [Cvar real; Cvar meths], dbg ());
        cconst_int(2*size_addr-1)], dbg ())], dbg ()))))
 
@@ -2117,8 +2133,8 @@ let generic_functions shared units =
 
 type unary_primitive = expression -> Debuginfo.t -> expression
 
-let floatfield n ptr dbg =
-  Cop(mk_load_mut Double,
+let floatfield ~load_atomic n ptr dbg =
+  Cop(mk_load_mut ~is_atomic:load_atomic Double,
       [if n = 0 then ptr
        else Cop(Cadda, [ptr; Cconst_int(n * size_float, dbg)], dbg)],
       dbg)
@@ -2143,7 +2159,7 @@ let offsetref n arg dbg =
     (bind "ref" arg (fun arg ->
          Cop(Cstore (Word_int, Assignment),
              [arg;
-              add_const (Cop(mk_load_mut Word_int, [arg], dbg))
+              add_const (Cop(mk_load_mut ~is_atomic:false Word_int, [arg], dbg))
                 (n lsl 1) dbg],
              dbg)))
 
@@ -2290,18 +2306,18 @@ let int_comp_caml cmp arg1 arg2 dbg =
   tag_int(Cop(Ccmpi cmp,
               [arg1; arg2], dbg)) dbg
 
-let stringref_unsafe arg1 arg2 dbg =
-  tag_int(Cop(mk_load_mut Byte_unsigned,
+let stringref_unsafe ~is_atomic arg1 arg2 dbg =
+  tag_int(Cop(mk_load_mut ~is_atomic Byte_unsigned,
               [add_int arg1 (untag_int arg2 dbg) dbg],
               dbg)) dbg
 
-let stringref_safe arg1 arg2 dbg =
+let stringref_safe ~is_atomic arg1 arg2 dbg =
   tag_int
     (bind "index" (untag_int arg2 dbg) (fun idx ->
       bind "str" arg1 (fun str ->
         Csequence(
           make_checkbound dbg [string_length str dbg; idx],
-          Cop(mk_load_mut Byte_unsigned,
+          Cop(mk_load_mut ~is_atomic Byte_unsigned,
             [add_int str idx dbg], dbg))))) dbg
 
 let string_load size unsafe arg1 arg2 dbg =
@@ -2317,7 +2333,7 @@ let bigstring_load size unsafe arg1 arg2 dbg =
    (bind "index" (untag_int arg2 dbg) (fun idx ->
     bind "ba" arg1 (fun ba ->
     bind "ba_data"
-     (Cop(mk_load_mut Word_int, [field_address ba 1 dbg], dbg))
+     (Cop(mk_load_mut ~is_atomic:false Word_int, [field_address ba 1 dbg], dbg))
      (fun ba_data ->
         check_bound unsafe size dbg
           (bigstring_length ba dbg)
@@ -2522,7 +2538,8 @@ let bigstring_set size unsafe arg1 arg2 arg3 dbg =
     bind "index" (untag_int arg2 dbg) (fun idx ->
     bind "ba" arg1 (fun ba ->
     bind "ba_data"
-         (Cop(mk_load_mut Word_int, [field_address ba 1 dbg], dbg))
+         (Cop(mk_load_mut ~is_atomic:false Word_int, [field_address ba 1 dbg],
+               dbg))
          (fun ba_data ->
             check_bound unsafe size dbg (bigstring_length ba dbg)
               idx (unaligned_set size ba_data idx newval dbg))))))
@@ -2598,7 +2615,7 @@ let entry_point namelist =
   let incr_global_inited () =
     Cop(Cstore (Word_int, Assignment),
         [cconst_symbol "caml_globals_inited";
-         Cop(Caddi, [Cop(mk_load_mut Word_int,
+         Cop(Caddi, [Cop(mk_load_mut ~is_atomic:false Word_int,
                        [cconst_symbol "caml_globals_inited"], dbg ());
                      cconst_int 1], dbg ())], dbg ()) in
   let body =

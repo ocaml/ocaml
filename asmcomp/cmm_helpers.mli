@@ -188,7 +188,7 @@ val return_unit : Debuginfo.t -> expression -> expression
 val remove_unit : expression -> expression
 
 (** Blocks *)
-val mk_load_mut : memory_chunk -> operation
+val mk_load_mut : is_atomic:bool -> memory_chunk -> operation
 
 (** [field_address ptr n dbg] returns an expression for the address of the
     [n]th field of the block pointed to by [ptr] *)
@@ -421,7 +421,7 @@ type unary_primitive = expression -> Debuginfo.t -> expression
 
 (** Return the n-th field of a float array (or float-only record), as an
     unboxed float *)
-val floatfield : int -> unary_primitive
+val floatfield : load_atomic:bool -> int -> unary_primitive
 
 (** Int_as_pointer primitive *)
 val int_as_pointer : unary_primitive
@@ -480,8 +480,8 @@ val int_comp_caml : Lambda.integer_comparison -> binary_primitive
 (** Strings, Bytes and Bigstrings *)
 
 (** Regular string/bytes access. Args: string/bytes, index *)
-val stringref_unsafe : binary_primitive
-val stringref_safe : binary_primitive
+val stringref_unsafe : is_atomic:bool -> binary_primitive
+val stringref_safe : is_atomic:bool -> binary_primitive
 
 (** Load by chunk from string/bytes, bigstring. Args: string, index *)
 val string_load :

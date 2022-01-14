@@ -521,7 +521,7 @@ let rec transl env e =
             dbg)
       | (Pbigarraydim(n), [b]) ->
           let dim_ofs = 4 + n in
-          tag_int (Cop(mk_load_mut Word_int,
+          tag_int (Cop(mk_load_mut ~is_atomic:true Word_int,
             [field_address (transl env b) dim_ofs dbg],
             dbg)) dbg
       | (p, [arg]) ->
@@ -683,7 +683,7 @@ let rec transl env e =
       end
   | Uunreachable ->
       let dbg = Debuginfo.none in
-      Cop(mk_load_mut Word_int, [Cconst_int (0, dbg)], dbg)
+      Cop(mk_load_mut ~is_atomic:false Word_int, [Cconst_int (0, dbg)], dbg)
 
 and transl_catch env nfail ids body handler dbg =
   let ids = List.map (fun (id, kind) -> (id, kind, ref No_result)) ids in
@@ -803,7 +803,7 @@ and transl_prim_1 env p arg dbg =
       get_field env (transl env arg) n dbg
   | Pfloatfield n ->
       let ptr = transl env arg in
-      box_float dbg (floatfield n ptr dbg)
+      box_float dbg (floatfield ~load_atomic:false n ptr dbg)
   | Pint_as_pointer ->
       int_as_pointer (transl env arg) dbg
   (* Exceptions *)
@@ -864,9 +864,9 @@ and transl_prim_1 env p arg dbg =
   | Pdls_get ->
       Cop(Cdls_get, [transl env arg], dbg)
   | Patomic_load {immediate_or_pointer = Immediate} ->
-      Cop(mk_load_mut Word_int, [transl env arg], dbg)
+      Cop(mk_load_mut ~is_atomic:true Word_int, [transl env arg], dbg)
   | Patomic_load {immediate_or_pointer = Pointer} ->
-      Cop(mk_load_mut Word_val, [transl env arg], dbg)
+      Cop(mk_load_mut ~is_atomic:true Word_val, [transl env arg], dbg)
   | (Pfield_computed | Psequand | Psequor
     | Prunstack | Presume | Preperform
     | Patomic_exchange | Patomic_cas | Patomic_fetch_add
@@ -987,9 +987,9 @@ and transl_prim_2 env p arg1 arg2 dbg =
 
   (* String operations *)
   | Pstringrefu | Pbytesrefu ->
-      stringref_unsafe (transl env arg1) (transl env arg2) dbg
+      stringref_unsafe ~is_atomic:false (transl env arg1) (transl env arg2) dbg
   | Pstringrefs | Pbytesrefs ->
-      stringref_safe (transl env arg1) (transl env arg2) dbg
+      stringref_safe ~is_atomic:false (transl env arg1) (transl env arg2) dbg
   | Pstring_load(size, unsafe) | Pbytes_load(size, unsafe) ->
       string_load size unsafe (transl env arg1) (transl env arg2) dbg
   | Pbigstring_load(size, unsafe) ->
