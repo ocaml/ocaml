@@ -5466,6 +5466,7 @@ middle_end/flambda/simple_value_approx.cmo : \
     middle_end/compilation_unit.cmi \
     middle_end/flambda/base_types/closure_origin.cmi \
     middle_end/flambda/base_types/closure_id.cmi \
+    utils/clflags.cmi \
     middle_end/flambda/allocated_const.cmi \
     middle_end/flambda/simple_value_approx.cmi
 middle_end/flambda/simple_value_approx.cmx : \
@@ -5490,6 +5491,7 @@ middle_end/flambda/simple_value_approx.cmx : \
     middle_end/compilation_unit.cmx \
     middle_end/flambda/base_types/closure_origin.cmx \
     middle_end/flambda/base_types/closure_id.cmx \
+    utils/clflags.cmx \
     middle_end/flambda/allocated_const.cmx \
     middle_end/flambda/simple_value_approx.cmi
 middle_end/flambda/simple_value_approx.cmi : \
