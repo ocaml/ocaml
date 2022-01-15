@@ -1,6 +1,6 @@
 (* TEST *)
 
-let test1 =
+let[@inline never][@local never] test1 () =
   let r' = ref 0 in
   let rec foo () =
     let r = ref 0 in
@@ -10,13 +10,13 @@ let test1 =
   Gc.minor();
   assert (!r' = 1)
 
-let test2 =
+let[@inline never][@local never] test2 () =
   let r = ref 0 in
   Gc.finalise (fun r -> assert (!r = 1); print_endline "test2: 1") r;
   Gc.finalise (fun r -> assert (!r = 0); print_endline "test2: 2"; r := 1) r;
   Gc.full_major()
 
-let test3 =
+let[@inline never][@local never] test3 () =
   Gc.full_major ();
   let rec foo () =
     let r = ref 0 in
@@ -34,3 +34,8 @@ let test3 =
   print_endline "test3: joined";
   (* Now this domain takes over the finalisers from d *)
   Gc.full_major()
+
+let _ =
+  test1 ();
+  test2 ();
+  test3 ()
