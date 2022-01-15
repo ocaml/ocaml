@@ -157,6 +157,7 @@ void* caml_mem_map(uintnat size, uintnat alignment, int reserve_only)
 #ifdef _WIN32
   /* Memory is only reserved at this point. It'll be committed after the
      trim. */
+again:
   mem = VirtualAlloc(NULL, alloc_sz, MEM_RESERVE, PAGE_NOACCESS);
 #else
   mem = mmap(0, alloc_sz, reserve_only ? PROT_NONE : (PROT_READ | PROT_WRITE),
@@ -175,10 +176,24 @@ void* caml_mem_map(uintnat size, uintnat alignment, int reserve_only)
      release the entire block of memory. For Windows, repeat the call but this
      time specify the address. */
   VirtualFree(mem, 0, MEM_RELEASE);
-  VirtualAlloc((void*)aligned_start,
-               aligned_end - aligned_start + 1,
-               MEM_RESERVE | (reserve_only ? 0 : MEM_COMMIT),
-               reserve_only ? PAGE_NOACCESS : PAGE_READWRITE);
+  mem = VirtualAlloc((void*)aligned_start,
+                     aligned_end - aligned_start + 1,
+                     MEM_RESERVE | (reserve_only ? 0 : MEM_COMMIT),
+                     reserve_only ? PAGE_NOACCESS : PAGE_READWRITE);
+  if (mem == NULL) {
+    /* VirtualAlloc can return the following three interesting errors:
+         - ERROR_INVALID_ADDRESS - pages are already reserved (race)
+         - ERROR_NOT_ENOUGH_MEMORY - address space exhausted
+         - ERROR_COMMITMENT_LIMIT - memory exhausted */
+    if (GetLastError() == ERROR_INVALID_ADDRESS) {
+      SetLastError(0);
+      /* Raced - try again. */
+      goto again;
+    } else {
+      return 0;
+    }
+  }
+  CAMLassert(mem == (void*)aligned_start);
 #else
   caml_mem_unmap((void*)base, aligned_start - base);
   caml_mem_unmap((void*)aligned_end, (base + alloc_sz) - aligned_end);
