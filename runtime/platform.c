@@ -174,16 +174,11 @@ void* caml_mem_map(uintnat size, uintnat alignment, int reserve_only)
   /* VirtualFree can be used to decommit portions of memory, but it can only
      release the entire block of memory. For Windows, repeat the call but this
      time specify the address. */
-  if (!VirtualFree(mem, 0, MEM_RELEASE))
-    printf("The world seems to be upside down\n");
-  mem = VirtualAlloc((void*)aligned_start,
-                     aligned_end - aligned_start + 1,
-                     MEM_RESERVE | (reserve_only ? 0 : MEM_COMMIT),
-                     reserve_only ? PAGE_NOACCESS : PAGE_READWRITE);
-  if (!mem)
-    printf("Trimming failed\n");
-  else if (mem != (void*)aligned_start)
-    printf("Hang on a sec - it's allocated a different block?!\n");
+  VirtualFree(mem, 0, MEM_RELEASE);
+  VirtualAlloc((void*)aligned_start,
+               aligned_end - aligned_start + 1,
+               MEM_RESERVE | (reserve_only ? 0 : MEM_COMMIT),
+               reserve_only ? PAGE_NOACCESS : PAGE_READWRITE);
 #else
   caml_mem_unmap((void*)base, aligned_start - base);
   caml_mem_unmap((void*)aligned_end, (base + alloc_sz) - aligned_end);
@@ -225,8 +220,7 @@ void* caml_mem_commit(void* mem, uintnat size)
 void caml_mem_decommit(void* mem, uintnat size)
 {
 #ifdef _WIN32
-  if (!VirtualFree(mem, size, MEM_DECOMMIT))
-    printf("VirtualFree failed to decommit\n");
+  VirtualFree(mem, size, MEM_DECOMMIT);
 #else
   map_fixed(mem, size, PROT_NONE);
 #endif
@@ -235,8 +229,7 @@ void caml_mem_decommit(void* mem, uintnat size)
 void caml_mem_unmap(void* mem, uintnat size)
 {
 #ifdef _WIN32
-  if (!VirtualFree(mem, size, MEM_RELEASE))
-    printf("VirtualFree failed\n");
+  VirtualFree(mem, size, MEM_RELEASE);
 #else
   munmap(mem, size);
 #endif
