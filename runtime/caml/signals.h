@@ -66,7 +66,6 @@ CAMLextern void caml_record_signal(int signal_number);
 CAMLextern value caml_process_pending_signals_exn(void);
 CAMLextern void caml_process_pending_signals(void);
 void caml_set_action_pending (void);
-int caml_set_signal_action(int signo, int action);
 
 CAMLextern value caml_process_pending_signals_with_root_exn (value extra_root);
 void caml_init_signal_handling(void);

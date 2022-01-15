@@ -22,7 +22,7 @@ include $(ROOTDIR)/Makefile.common
 BYTECODE_C_SOURCES := $(addsuffix .c, \
   interp misc fix_code startup_aux startup_byt major_gc \
   minor_gc memory alloc roots globroots fail_byt signals \
-  signals_byt printexc backtrace_byt backtrace compare ints eventlog \
+  printexc backtrace_byt backtrace compare ints eventlog \
   floats str array io extern intern hash sys meta parsing gc_ctrl md5 obj \
   lexing callback debugger weak finalise custom dynlink \
   platform fiber shared_heap addrmap \
