@@ -24,7 +24,7 @@ open Arch
 
 let bind name arg fn =
   match arg with
-    Cvar _ | Cconst_int _ | Cconst_natint _ | Cconst_symbol _ -> fn arg
+  | Cvar _ | Cconst_int _ | Cconst_natint _ | Cconst_symbol _ -> fn arg
   | _ -> let id = V.create_local name in Clet(VP.create id, arg, fn (Cvar id))
 
 let bind_load name arg fn =
@@ -34,7 +34,7 @@ let bind_load name arg fn =
 
 let bind_nonvar name arg fn =
   match arg with
-    Cconst_int _ | Cconst_natint _ | Cconst_symbol _ -> fn arg
+  | Cconst_int _ | Cconst_natint _ | Cconst_symbol _ -> fn arg
   | _ -> let id = V.create_local name in Clet(VP.create id, arg, fn (Cvar id))
 
 let caml_black = Nativeint.shift_left (Nativeint.of_int 3) 8
@@ -250,11 +250,12 @@ let div_float c1 c2 dbg =
   match (c1, c2) with
   | c, Cconst_float(1.0, _) ->
       c
-  | c, Cconst_float(f, _) when Float.is_integer f ->
-      let n = Float.to_int f in
-      if is_power2 n
+  | c, Cconst_float(f, _) ->
+      (* x = 0.5 if and only if f is a power of 2 *)
+      let x, exp = Float.frexp f in
+      if x = 0.5 && abs exp < 1023
       then
-        mul_float c (Cconst_float(2.**(-. Float.of_int (Misc.log2 n)), dbg)) dbg
+        mul_float c (Cconst_float(Float.ldexp 1. exp, dbg)) dbg
       else
         Cop(Cdivf, [c1; c2], dbg)
   | _, _ ->
@@ -453,7 +454,7 @@ let raise_symbol dbg symb =
 
 let rec div_int c1 c2 is_safe dbg =
   match (c1, c2) with
-    (c1, Cconst_int (0, _)) ->
+  | (c1, Cconst_int (0, _)) ->
       Csequence(c1, raise_symbol dbg "caml_exn_Division_by_zero")
   | (c1, Cconst_int (1, _)) ->
       c1
@@ -887,7 +888,7 @@ let curry_function_sym n =
 (* Big arrays *)
 
 let bigarray_elt_size : Lambda.bigarray_kind -> int = function
-    Pbigarray_unknown -> assert false
+  | Pbigarray_unknown -> assert false
   | Pbigarray_float32 -> 4
   | Pbigarray_float64 -> 8
   | Pbigarray_sint8 -> 1
@@ -960,7 +961,7 @@ let bigarray_indexing unsafe elt_kind layout b args dbg =
                     [field_address b 1 dbg], dbg)) offset dbg
 
 let bigarray_word_kind : Lambda.bigarray_kind -> memory_chunk = function
-    Pbigarray_unknown -> assert false
+  | Pbigarray_unknown -> assert false
   | Pbigarray_float32 -> Single
   | Pbigarray_float64 -> Double
   | Pbigarray_sint8 -> Byte_signed
@@ -977,7 +978,7 @@ let bigarray_word_kind : Lambda.bigarray_kind -> memory_chunk = function
 let bigarray_get unsafe elt_kind layout b args dbg =
   bind "ba" b (fun b ->
     match (elt_kind : Lambda.bigarray_kind) with
-      Pbigarray_complex32 | Pbigarray_complex64 ->
+    | Pbigarray_complex32 | Pbigarray_complex64 ->
         let kind = bigarray_word_kind elt_kind in
         let sz = bigarray_elt_size elt_kind / 2 in
         bind "addr"
@@ -996,7 +997,7 @@ let bigarray_get unsafe elt_kind layout b args dbg =
 let bigarray_set unsafe elt_kind layout b args newval dbg =
   bind "ba" b (fun b ->
     match (elt_kind : Lambda.bigarray_kind) with
-      Pbigarray_complex32 | Pbigarray_complex64 ->
+    | Pbigarray_complex32 | Pbigarray_complex64 ->
         let kind = bigarray_word_kind elt_kind in
         let sz = bigarray_elt_size elt_kind / 2 in
         bind "newval" newval (fun newv ->
@@ -1045,13 +1046,13 @@ let zero_extend_32 dbg e =
 
 let operations_boxed_int (bi : Primitive.boxed_integer) =
   match bi with
-    Pnativeint -> caml_nativeint_ops
+  | Pnativeint -> caml_nativeint_ops
   | Pint32 -> caml_int32_ops
   | Pint64 -> caml_int64_ops
 
 let alloc_header_boxed_int (bi : Primitive.boxed_integer) =
   match bi with
-    Pnativeint -> alloc_boxedintnat_header
+  | Pnativeint -> alloc_boxedintnat_header
   | Pint32 -> alloc_boxedint32_header
   | Pint64 -> alloc_boxedint64_header
 
