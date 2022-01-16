@@ -3,6 +3,7 @@
 (*                                 OCaml                                  *)
 (*                                                                        *)
 (*               Damien Doligez, projet Para, INRIA Rocquencourt          *)
+(*          Xavier Leroy, projet Cambium, College de France and Inria     *)
 (*                                                                        *)
 (*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
@@ -43,8 +44,8 @@ val self_init : unit -> unit
 
 val bits : unit -> int
 (** Return 30 random bits in a nonnegative integer.
-    @before 3.12.0 used a different algorithm (affects all the following
-                   functions)
+    @before 5.00.0 used a different algorithm
+                   (affects all the following functions)
 *)
 
 val int : int -> int
@@ -117,8 +118,9 @@ module State : sig
   (** Create a new state and initialize it with the given seed. *)
 
   val make_self_init : unit -> t
-  (** Create a new state and initialize it with a system-dependent
-      low-entropy seed. *)
+  (** Create a new state and initialize it with a random seed chosen
+      in a system-dependent way.
+      The seed is obtained as described in {!Random.self_init}. *)
 
   val copy : t -> t
   (** Return a copy of the given state. *)
@@ -142,7 +144,8 @@ module State : sig
   (** Draw a fresh PRNG state from the given PRNG state.
       The new PRNG is statistically independent from the given PRNG.
       Data can be drawn from both PRNGs, in any order, without risk of
-      correlation.  Both PRNGs can be split later, arbitrarily many times. *)
+      correlation.  Both PRNGs can be split later, arbitrarily many times.
+      @since 5.00.0 *)
 
 end
 
@@ -154,5 +157,6 @@ val set_state : State.t -> unit
 (** Set the state of the domain-local generator used by the basic functions. *)
 
 val split : unit -> State.t
-(** Draw a fresh PRNG state from the current state of the domain-local generator
-    used by the default functions.  See {!Random.State.split}. *)
+(** Draw a fresh PRNG state from the current state of the domain-local
+    generator used by the default functions.  See {!Random.State.split}.
+    @since 5.00.0 *)
