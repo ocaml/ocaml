@@ -18,6 +18,11 @@ Working version
 
 ### Standard library:
 
+- #10742: Use LXM as the pseudo-random number generator for module Random.
+  Add `Random.State.split` and `Random.split` to "split" a PRNG off
+  another PRNG.
+  (Xavier Leroy, review by Gabriel Scherer and Hugo Heuzard)
+
 * #10867: Remove deprecated values: Array.create, Array.make_float,
   Array.create_matrix, Bytes.uppercase, Bytes.lowercase, Bytes.capitalize,
   Bytes.uncapitalize, Char.lowercase, Char.uppercase, Filename.temp_dir_name,
