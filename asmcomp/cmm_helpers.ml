@@ -253,9 +253,13 @@ let div_float c1 c2 dbg =
   | c, Cconst_float(f, _) ->
       (* x = 0.5 if and only if f is a power of 2 *)
       let x, exp = Float.frexp f in
+      (* We can transform x/.2^{N} into x*.2^{-N} if and only 
+         if |N| < 1023, because otherwise one of the may not be
+         a valid floating point number (2.**1023. evaluates to 
+         +infinity). *)
       if x = 0.5 && abs exp < 1023
       then
-        mul_float c (Cconst_float(Float.ldexp 1. exp, dbg)) dbg
+        mul_float c (Cconst_float(Float.ldexp 0.5 exp, dbg)) dbg
       else
         Cop(Cdivf, [c1; c2], dbg)
   | _, _ ->
