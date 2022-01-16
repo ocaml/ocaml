@@ -264,7 +264,7 @@ and expression_desc =
       Ident.t option * string option loc * Types.module_presence * module_expr *
         expression
   | Texp_letexception of extension_constructor * expression
-  | Texp_assert of expression
+  | Texp_assert of expression * Location.t
   | Texp_lazy of expression
   | Texp_object of class_structure * string list
   | Texp_pack of module_expr
