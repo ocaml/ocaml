@@ -42,7 +42,7 @@ external update_to_forward : Obj.t -> unit =
 
 (* Assumes [blk] is a block with tag forcing *)
 let do_force_block blk =
-  let b = Obj.repr (Sys.opaque_identity blk) in
+  let b = Obj.repr blk in
   let closure = (Obj.obj (Obj.field b 0) : unit -> 'arg) in
   Obj.set_field b 0 (Obj.repr ()); (* Release the closure *)
   try
