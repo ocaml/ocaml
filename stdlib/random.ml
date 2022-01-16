@@ -58,13 +58,13 @@ module State = struct
       Bytes.set_int64_le b (i * 8) (Int64.of_int seed.(i))
     done;
     Bytes.set b (n * 8) '\x01';
-    let d1 = Bytes.unsafe_of_string (Digest.bytes b) in
+    let d1 = Digest.bytes b in
     Bytes.set b (n * 8) '\x02';
-    let d2 = Bytes.unsafe_of_string (Digest.bytes b) in
-    set s (Bytes.get_int64_le d1 0)
-          (Bytes.get_int64_le d1 8)
-          (Bytes.get_int64_le d2 0)
-          (Bytes.get_int64_le d2 8)
+    let d2 = Digest.bytes b in
+    set s (String.get_int64_le d1 0)
+          (String.get_int64_le d1 8)
+          (String.get_int64_le d2 0)
+          (String.get_int64_le d2 8)
 
   let make seed =
     let s = create() in reinit s seed; s
@@ -148,7 +148,8 @@ module State = struct
     then fun s bound -> Nativeint.of_int32 (int32 s (Nativeint.to_int32 bound))
     else fun s bound -> Int64.to_nativeint (int64 s (Int64.of_nativeint bound))
 
-  (* Return a float 0 < x < 1 with at most 53 bits of precision. *)
+  (* Return a float 0 < x < 1 uniformly distributed among the
+     multiples of 2^-53 *)
   let rec rawfloat s =
     let b = next s in
     let n = Int64.shift_right_logical b 11 in
