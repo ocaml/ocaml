@@ -225,7 +225,7 @@ let asr_int c1 c2 dbg =
 
 let add_float c1 c2 dbg =
   match (c1, c2) with
-  | (c, Cconst_float(-0.0, _)) | (c, Cconst_float(-0.0, _)) ->
+  | (c, Cconst_float(-0.0, _)) | (Cconst_float(-0.0, _), c) ->
       c
   | _, _ ->
       Cop(Caddf, [c1; c2], dbg)
@@ -239,9 +239,9 @@ let sub_float c1 c2 dbg =
 
 let mul_float c1 c2 dbg =
   match (c1, c2) with
-  | (c, Cconst_float(1.0, _)) | (c, Cconst_float(1.0, _)) ->
+  | (c, Cconst_float(1.0, _)) | (Cconst_float(1.0, _), c) ->
       c
-  | (c, Cconst_float(2.0, _)) | (c, Cconst_float(2.0, _)) ->
+  | (c, Cconst_float(2.0, _)) | (Cconst_float(2.0, _), c) ->
       add_float c c dbg
   | _, _ ->
       Cop(Cmulf, [c1; c2], dbg)
@@ -254,7 +254,7 @@ let div_float c1 c2 dbg =
       let n = Float.to_int f in
       if is_power2 n
       then
-        mul_float c (Cconst_float(2.**(-Float.of_int (Misc.log2 n)), dbg)) dbg
+        mul_float c (Cconst_float(2.**(-. Float.of_int (Misc.log2 n)), dbg)) dbg
       else
         Cop(Cdivf, [c1; c2], dbg)
   | _, _ ->
@@ -2329,6 +2329,14 @@ let int_comp_caml cmp arg1 arg2 dbg =
 let add_float_caml arg1 arg2 dbg =
   box_float dbg (add_float arg1 arg2 dbg)
 
+let sub_float_caml arg1 arg2 dbg =
+  box_float dbg (sub_float arg1 arg2 dbg)
+
+let mul_float_caml arg1 arg2 dbg =
+  box_float dbg (mul_float arg1 arg2 dbg)
+
+let div_float_caml arg1 arg2 dbg =
+  box_float dbg (div_float arg1 arg2 dbg)
 
 let stringref_unsafe arg1 arg2 dbg =
   tag_int(Cop(mk_load_mut Byte_unsigned,
