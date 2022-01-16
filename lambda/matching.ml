@@ -1890,9 +1890,11 @@ let code_force_lazy = get_mod_field "CamlinternalLazy" "force_gen"
 *)
 
 let call_force_lazy_block varg loc =
-  (* The argument is wrapped with [Popaque] to prevent the compiler from making
-     any assumptions on its contents. Alternatively, [ap_inlined] could be set
-     to [Never_inline]. *)
+  (* The argument is wrapped with [Popaque] to prevent the rest of the compiler
+     from making any assumptions on its contents (see comments on
+     [CamlinternalLazy.force_gen]).
+     Alternatively, [ap_inlined] could be set to [Never_inline] to acheive a
+     similar result. *)
   let force_fun = Lazy.force code_force_lazy_block in
   Lapply
     { ap_tailcall = Default_tailcall;
