@@ -17,12 +17,6 @@
 
 /* Signal handling, code specific to the native-code compiler */
 
-#if defined(TARGET_amd64) && defined (SYS_linux)
-#define _GNU_SOURCE
-#endif
-#if defined(TARGET_i386) && defined (SYS_linux_elf)
-#define _GNU_SOURCE
-#endif
 #include <signal.h>
 #include <errno.h>
 #include <stdio.h>
@@ -34,15 +28,7 @@
 #include "caml/memory.h"
 #include "caml/osdeps.h"
 #include "caml/signals.h"
-#include "signals_osdep.h"
 #include "caml/stack.h"
-
-typedef void (*signal_handler)(int signo);
-
-#ifdef _WIN32
-extern signal_handler caml_win32_signal(int sig, signal_handler action);
-#define signal(sig,act) caml_win32_signal(sig,act)
-#endif
 
 /* This routine is the common entry point for garbage collection
    and signal handling.  It can trigger a callback to OCaml code.
@@ -117,59 +103,4 @@ void caml_garbage_collection(void)
     /* Re-do the allocation: we now have enough space in the minor heap. */
     Caml_state->young_ptr -= whsize;
   }
-}
-
-DECLARE_SIGNAL_HANDLER(handle_signal)
-{
-  int saved_errno;
-  /* Save the value of errno (PR#5982). */
-  saved_errno = errno;
-#if !defined(POSIX_SIGNALS) && !defined(BSD_SIGNALS)
-  signal(sig, handle_signal);
-#endif
-  caml_record_signal(sig);
-  errno = saved_errno;
-}
-
-int caml_set_signal_action(int signo, int action)
-{
-  signal_handler oldact;
-#ifdef POSIX_SIGNALS
-  struct sigaction sigact, oldsigact;
-#else
-  signal_handler act;
-#endif
-
-#ifdef POSIX_SIGNALS
-  switch(action) {
-  case 0:
-    sigact.sa_handler = SIG_DFL;
-    sigact.sa_flags = 0;
-    break;
-  case 1:
-    sigact.sa_handler = SIG_IGN;
-    sigact.sa_flags = 0;
-    break;
-  default:
-    SET_SIGACT(sigact, handle_signal);
-    break;
-  }
-  sigemptyset(&sigact.sa_mask);
-  if (sigaction(signo, &sigact, &oldsigact) == -1) return -1;
-  oldact = oldsigact.sa_handler;
-#else
-  switch(action) {
-  case 0:  act = SIG_DFL; break;
-  case 1:  act = SIG_IGN; break;
-  default: act = handle_signal; break;
-  }
-  oldact = signal(signo, act);
-  if (oldact == SIG_ERR) return -1;
-#endif
-  if (oldact == (signal_handler) handle_signal)
-    return 2;
-  else if (oldact == SIG_IGN)
-    return 1;
-  else
-    return 0;
 }

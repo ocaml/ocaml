@@ -28,7 +28,6 @@
 #include "caml/mlvalues.h"
 #include "caml/roots.h"
 #include "caml/signals.h"
-#include "caml/signals_machdep.h"
 #include "caml/sys.h"
 #include "caml/memprof.h"
 #include "caml/finalise.h"
@@ -414,6 +413,49 @@ void caml_free_signal_stack(void)
 }
 
 /* Installation of a signal handler (as per [Sys.signal]) */
+
+static void handle_signal(int signal_number)
+{
+  int saved_errno;
+  /* Save the value of errno (PR#5982). */
+  saved_errno = errno;
+#if !defined(POSIX_SIGNALS) && !defined(BSD_SIGNALS)
+  signal(signal_number, handle_signal);
+#endif
+  caml_record_signal(signal_number);
+  errno = saved_errno;
+}
+
+static int caml_set_signal_action(int signo, int action)
+{
+  void (*act)(int signo), (*oldact)(int signo);
+#ifdef POSIX_SIGNALS
+  struct sigaction sigact, oldsigact;
+#endif
+
+  switch (action) {
+  case 0:  act = SIG_DFL; break;
+  case 1:  act = SIG_IGN; break;
+  default: act = handle_signal; break;
+  }
+
+#ifdef POSIX_SIGNALS
+  sigact.sa_handler = act;
+  sigemptyset(&sigact.sa_mask);
+  sigact.sa_flags = 0;
+  if (sigaction(signo, &sigact, &oldsigact) == -1) return -1;
+  oldact = oldsigact.sa_handler;
+#else
+  oldact = signal(signo, act);
+  if (oldact == SIG_ERR) return -1;
+#endif
+  if (oldact == handle_signal)
+    return 2;
+  else if (oldact == SIG_IGN)
+    return 1;
+  else
+    return 0;
+}
 
 CAMLprim value caml_install_signal_handler(value signal_number, value action)
 {
