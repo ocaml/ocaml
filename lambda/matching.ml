@@ -1892,8 +1892,8 @@ let code_force_lazy = get_mod_field "CamlinternalLazy" "force_gen"
 let call_force_lazy_block varg loc =
   (* The argument is wrapped with [Popaque] to prevent the rest of the compiler
      from making any assumptions on its contents (see comments on
-     [CamlinternalLazy.force_gen]).
-     Alternatively, [ap_inlined] could be set to [Never_inline] to acheive a
+     [CamlinternalLazy.force_gen], and discussions on PRs #9998 and #10909).
+     Alternatively, [ap_inlined] could be set to [Never_inline] to achieve a
      similar result. *)
   let force_fun = Lazy.force code_force_lazy_block in
   Lapply
