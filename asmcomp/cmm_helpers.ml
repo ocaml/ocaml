@@ -191,9 +191,8 @@ let rec mul_int c1 c2 dbg =
   | (c1, c2) ->
       Cop(Cmuli, [c1; c2], dbg)
 
-
 let ignore_low_bit_int = function
-    Cop(Caddi,
+  | Cop(Caddi,
         [(Cop(Clsl, [_; Cconst_int (n, _)], _) as c); Cconst_int (1, _)], _)
       when n > 0
       -> c
@@ -202,13 +201,13 @@ let ignore_low_bit_int = function
 
 (* removes the 1-bit sign-extension left by untag_int (tag_int c) *)
 let ignore_high_bit_int = function
-    Cop(Casr,
+  | Cop(Casr,
         [Cop(Clsl, [c; Cconst_int (1, _)], _); Cconst_int (1, _)], _) -> c
   | c -> c
 
 let lsr_int c1 c2 dbg =
   match c2 with
-    Cconst_int (0, _) ->
+  | Cconst_int (0, _) ->
       c1
   | Cconst_int (n, _) when n > 0 ->
       Cop(Clsr, [ignore_low_bit_int c1; c2], dbg)
@@ -217,16 +216,53 @@ let lsr_int c1 c2 dbg =
 
 let asr_int c1 c2 dbg =
   match c2 with
-    Cconst_int (0, _) ->
+  | Cconst_int (0, _) ->
       c1
   | Cconst_int (n, _) when n > 0 ->
       Cop(Casr, [ignore_low_bit_int c1; c2], dbg)
   | _ ->
       Cop(Casr, [c1; c2], dbg)
 
+let add_float c1 c2 dbg =
+  match (c1, c2) with
+  | (c, Cconst_float(-0.0, _)) | (c, Cconst_float(-0.0, _)) ->
+      c
+  | _, _ ->
+      Cop(Caddf, [c1; c2], dbg)
+
+let sub_float c1 c2 dbg =
+  match (c1, c2) with
+  | c, Cconst_float(0.0, _) ->
+      c
+  | _, _ ->
+      Cop(Csubf, [c1; c2], dbg)
+
+let mul_float c1 c2 dbg =
+  match (c1, c2) with
+  | (c, Cconst_float(1.0, _)) | (c, Cconst_float(1.0, _)) ->
+      c
+  | (c, Cconst_float(2.0, _)) | (c, Cconst_float(2.0, _)) ->
+      add_float c c dbg
+  | _, _ ->
+      Cop(Cmulf, [c1; c2], dbg)
+
+let div_float c1 c2 dbg =
+  match (c1, c2) with
+  | c, Cconst_float(1.0, _) ->
+      c
+  | c, Cconst_float(f, _) when Float.is_integer f ->
+      let n = Float.to_int f in
+      if is_power2 n
+      then
+        mul_float c (Cconst_float(2.**(-Float.of_int (Misc.log2 n)), dbg)) dbg
+      else
+        Cop(Cdivf, [c1; c2], dbg)
+  | _, _ ->
+      Cop(Cdivf, [c1; c2], dbg)
+
 let tag_int i dbg =
   match i with
-    Cconst_int (n, _) ->
+  | Cconst_int (n, _) ->
       int_const dbg n
   | Cop(Casr, [c; Cconst_int (n, _)], _) when n > 0 ->
       Cop(Cor,
@@ -237,7 +273,7 @@ let tag_int i dbg =
 
 let untag_int i dbg =
   match i with
-    Cconst_int (n, _) -> Cconst_int(n asr 1, dbg)
+  | Cconst_int (n, _) -> Cconst_int(n asr 1, dbg)
   | Cop(Cor, [Cop(Casr, [c; Cconst_int (n, _)], _); Cconst_int (1, _)], _)
     when n > 0 && n < size_int * 8 ->
       Cop(Casr, [c; Cconst_int (n+1, dbg)], dbg)
@@ -2289,6 +2325,10 @@ let asr_int_caml arg1 arg2 dbg =
 let int_comp_caml cmp arg1 arg2 dbg =
   tag_int(Cop(Ccmpi cmp,
               [arg1; arg2], dbg)) dbg
+
+let add_float_caml arg1 arg2 dbg =
+  box_float dbg (add_float arg1 arg2 dbg)
+
 
 let stringref_unsafe arg1 arg2 dbg =
   tag_int(Cop(mk_load_mut Byte_unsigned,

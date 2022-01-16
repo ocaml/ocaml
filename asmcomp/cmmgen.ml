@@ -960,25 +960,21 @@ and transl_prim_2 env p arg1 arg2 dbg =
       transl_isout (transl env arg1) (transl env arg2) dbg
   (* Float operations *)
   | Paddfloat ->
-      box_float dbg (Cop(Caddf,
-                    [transl_unbox_float dbg env arg1;
-                     transl_unbox_float dbg env arg2],
-                    dbg))
+      let a1 = transl_unbox_float dbg env arg1 in
+      let a2 = transl_unbox_float dbg env arg2 in
+      add_float_caml a1 a2 dbg
   | Psubfloat ->
-      box_float dbg (Cop(Csubf,
-                    [transl_unbox_float dbg env arg1;
-                     transl_unbox_float dbg env arg2],
-                    dbg))
+      let a1 = transl_unbox_float dbg env arg1 in
+      let a2 = transl_unbox_float dbg env arg2 in
+      sub_float_caml a1 a2 dbg
   | Pmulfloat ->
-      box_float dbg (Cop(Cmulf,
-                    [transl_unbox_float dbg env arg1;
-                     transl_unbox_float dbg env arg2],
-                    dbg))
+      let a1 = transl_unbox_float dbg env arg1 in
+      let a2 = transl_unbox_float dbg env arg2 in
+      mul_float_caml a1 a2 dbg
   | Pdivfloat ->
-      box_float dbg (Cop(Cdivf,
-                    [transl_unbox_float dbg env arg1;
-                     transl_unbox_float dbg env arg2],
-                    dbg))
+      let a1 = transl_unbox_float dbg env arg1 in
+      let a2 = transl_unbox_float dbg env arg2 in
+      div_float_caml a1 a2 dbg
   | Pfloatcomp cmp ->
       tag_int(Cop(Ccmpf cmp,
                   [transl_unbox_float dbg env arg1;

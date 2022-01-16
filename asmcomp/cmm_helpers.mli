@@ -122,6 +122,12 @@ val div_int :
 val mod_int :
   expression -> expression -> Lambda.is_safe -> Debuginfo.t -> expression
 
+(** Arithmetical operations on floats *)
+val add_float : expression -> expression -> Debuginfo.t -> expression
+val sub_float : expression -> expression -> Debuginfo.t -> expression
+val mul_float : expression -> expression -> Debuginfo.t -> expression
+val div_float : expression -> expression -> Debuginfo.t -> expression
+
 (** Integer tagging. [tag_int x = (x lsl 1) + 1] *)
 val tag_int : expression -> Debuginfo.t -> expression
 
@@ -476,6 +482,12 @@ val lsl_int_caml : binary_primitive
 val lsr_int_caml : binary_primitive
 val asr_int_caml : binary_primitive
 val int_comp_caml : Lambda.integer_comparison -> binary_primitive
+
+(** Operations on OCaml floars *)
+val add_float_caml : binary_primitive
+val sub_float_caml : binary_primitive
+val mul_float_caml : binary_primitive
+val div_float_caml : binary_primitive
 
 (** Strings, Bytes and Bigstrings *)
 
