@@ -188,6 +188,8 @@ The following environment variables are also consulted:
         \item[512 (= 0x200)] Computation of compaction-triggering condition.
         \item[1024 (= 0x400)] Output GC statistics at program exit.
   \end{options}
+  \item[V] ("verify_heap") runs an integrity check on the heap just after
+    the completion of a major GC cycle
   \item[W] Print runtime warnings to stderr (such as Channel opened on file 
     dies without being closed, unflushed data, etc.)
 
