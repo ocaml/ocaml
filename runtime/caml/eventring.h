@@ -156,8 +156,9 @@ typedef enum {
   E_CORRUPT_STREAM = -2,
   E_ALLOC_FAIL = -3,
   E_PATH_FAILURE = -4,
-  E_STAT_FAILURE = -5,
-  E_NO_CURRENT_RING = -6
+  E_OPEN_FAILURE = -5,
+  E_NO_CURRENT_RING = -6,
+  E_MAP_FAILURE = -7,
 } eventring_error;
 
 /* Starts eventring. Needs to be called before [caml_eventring_create_cursor] */
@@ -177,7 +178,7 @@ extern value caml_eventring_resume();
    ignored). This function will return a cursor which can we be used with
    caml_eventring_read_poll to read events from the eventrings. */
 extern eventring_error
-caml_eventring_create_cursor(const char *eventring_path, int pid,
+caml_eventring_create_cursor(const char_os* eventring_path, int pid,
                              struct caml_eventring_cursor **cursor_res);
 
 /* Set the runtime_begin event callback on the cursor */
@@ -280,7 +281,7 @@ void caml_eventring_destroy();
 
 /* Returns the location of the eventring for the current process if started or
    NULL otherwise */
-char* caml_eventring_current_location();
+char_os* caml_eventring_current_location();
 
 /* Functions for putting runtime data on to the eventring */
 void caml_ev_begin(ev_runtime_phase phase);

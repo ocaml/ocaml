@@ -29,13 +29,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/mman.h>
 #include <sys/stat.h>
 
 #ifdef _WIN32
 #include <process.h>
+#include <processthreadsapi.h>
 #include <wtypes.h>
-#elif defined(HAS_UNISTD)
+#else
+#include <sys/mman.h>
+#endif
+
+
+#if defined(HAS_UNISTD)
 #include <unistd.h>
 #endif
 
@@ -47,10 +52,16 @@
 
 typedef enum { EV_RUNTIME, EV_USER } ev_category;
 
-static char *eventring_path;
 static struct eventring_metadata_header *current_metadata = NULL;
-static char *current_ring_loc = NULL;
 static int current_ring_total_size;
+
+static char_os *eventring_path;
+static char_os *current_ring_loc = NULL;
+
+#ifdef _WIN32
+static HANDLE ring_file_handle;
+static HANDLE ring_handle;
+#endif
 
 static int ring_size_words;
 
@@ -115,8 +126,14 @@ static void teardown_eventring(caml_domain_state *domain_state, void *data,
                                caml_domain_state **participanting_domains) {
   caml_global_barrier();
   if (participanting_domains[0] == domain_state) {
+#ifdef _WIN32
+    UnmapViewOfFile(current_metadata);
+    CloseHandle(ring_file_handle);
+    CloseHandle(ring_handle);
+#else
     munmap(current_metadata, current_ring_total_size);
     unlink(current_ring_loc);
+#endif
 
     caml_stat_free(current_ring_loc);
     current_metadata = NULL;
@@ -126,7 +143,7 @@ static void teardown_eventring(caml_domain_state *domain_state, void *data,
   caml_global_barrier();
 }
 
-char* caml_eventring_current_location() {
+char_os* caml_eventring_current_location() {
   if( atomic_load_acq(&eventring_enabled) ) {
     return current_ring_loc;
   } else {
@@ -153,16 +170,21 @@ create_and_start_ring_buffers(caml_domain_state *domain_state, void *data,
   if (participanting_domains[0] == domain_state) {
     /* Don't initialise eventring twice */
     if (!atomic_load_acq(&eventring_enabled)) {
-      int ring_fd, ret, ring_headers_length;
-      long int pid;
+      int ret, ring_headers_length;
+#ifdef _WIN32
+      DWORD pid = GetCurrentProcessId();
+#else
+      int ring_fd;
+      long int pid = getpid();
+#endif
 
       current_ring_loc = caml_stat_alloc(EVENTRING_MAX_MSG_LENGTH);
 
-      pid = getpid();
-
       if (eventring_path) {
+        char* path_u8 = caml_stat_strdup_of_os(eventring_path);
         snprintf_os(current_ring_loc, EVENTRING_MAX_MSG_LENGTH,
-                    T("%s/%ld.eventring"), eventring_path, pid);
+                    T("%s/%ld.eventring"), path_u8, pid);
+        caml_stat_free(path_u8);
       } else {
         snprintf_os(current_ring_loc, EVENTRING_MAX_MSG_LENGTH,
                     T("%ld.eventring"), pid);
@@ -173,6 +195,49 @@ create_and_start_ring_buffers(caml_domain_state *domain_state, void *data,
                          sizeof(struct eventring_buffer_header)) +
           sizeof(struct eventring_metadata_header);
 
+#ifdef _WIN32
+      ring_file_handle = CreateFile(
+        current_ring_loc,
+        GENERIC_READ | GENERIC_WRITE,
+        FILE_SHARE_READ | FILE_SHARE_WRITE,
+        NULL,
+        CREATE_ALWAYS,
+        FILE_ATTRIBUTE_NORMAL,
+        NULL
+      );
+
+      if (ring_file_handle == INVALID_HANDLE_VALUE) {
+        char* ring_loc_u8 = caml_stat_strdup_of_os(current_ring_loc);
+        caml_fatal_error("Couldn't open ring buffer loc: %s",
+                          ring_loc_u8);
+        caml_stat_free(ring_loc_u8);
+      }
+
+      ring_handle = CreateFileMapping(
+        ring_file_handle,
+        NULL,
+        PAGE_READWRITE,
+        0,
+        current_ring_total_size,
+        NULL
+      );
+
+      if (ring_handle == INVALID_HANDLE_VALUE) {
+        caml_fatal_error("Could not create file mapping");
+      }
+
+      current_metadata = MapViewOfFile(
+        ring_handle,
+        FILE_MAP_ALL_ACCESS,
+        0,
+        0,
+        0
+      );
+
+      if( current_metadata == NULL ) {
+        caml_fatal_error("failed to map view of file");
+      }
+#else
       ring_fd =
           open(current_ring_loc, O_RDWR | O_CREAT, (S_IRUSR | S_IWUSR));
 
@@ -189,6 +254,11 @@ create_and_start_ring_buffers(caml_domain_state *domain_state, void *data,
 
       current_metadata = mmap(NULL, current_ring_total_size,
                               PROT_READ | PROT_WRITE, MAP_SHARED, ring_fd, 0);
+
+      // TODO: Check metadata for null
+
+      close(ring_fd);
+#endif
 
       ring_headers_length =
           Max_domains * sizeof(struct eventring_buffer_header);
@@ -217,8 +287,6 @@ create_and_start_ring_buffers(caml_domain_state *domain_state, void *data,
         ring_buffer->ring_head = 0;
         ring_buffer->ring_tail = 0;
       }
-
-      close(ring_fd);
 
       atomic_store_rel(&eventring_enabled, 1);
       atomic_store_rel(&eventring_paused, 0);

@@ -29,13 +29,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/mman.h>
+
 #include <sys/stat.h>
 
 #ifdef _WIN32
 #include <process.h>
+#include <processthreadsapi.h>
 #include <wtypes.h>
-#elif defined(HAS_UNISTD)
+#else
+#include <sys/mman.h>
+#endif
+
+
+#if defined(HAS_UNISTD)
 #include <unistd.h>
 #endif
 
@@ -47,6 +53,10 @@ struct caml_eventring_cursor {
   uint64_t *current_positions;      /* positions in the rings for each domain */
   size_t ring_file_size_bytes; /* the size of the eventring file in bytes */
   int next_read_domain;        /* the last domain we read from */
+#ifdef _WIN32
+  HANDLE ring_file_handle;
+  HANDLE ring_handle;
+#endif
   /* callbacks */
   int (*runtime_begin)(int domain_id, void *callback_data, uint64_t timestamp,
                         ev_runtime_phase phase);
@@ -65,14 +75,18 @@ struct caml_eventring_cursor {
 /* C-API for reading from an eventring */
 
 eventring_error
-caml_eventring_create_cursor(const char *eventring_path, int pid,
+caml_eventring_create_cursor(const char_os* eventring_path, int pid,
                              struct caml_eventring_cursor **cursor_res) {
-  int ring_fd, ret;
+  int ret;
+
+#ifndef _WIN32
+  int ring_fd;
   struct stat tmp_stat;
+#endif
 
   struct caml_eventring_cursor *cursor =
       caml_stat_alloc_noexc(sizeof(struct caml_eventring_cursor));
-  char *eventring_loc;
+  char_os *eventring_loc;
 
   if (cursor == NULL) {
     return E_ALLOC_FAIL;
@@ -94,8 +108,10 @@ caml_eventring_create_cursor(const char *eventring_path, int pid,
   } else {
   /* In this case we are reading the ring for a different process */
     if (eventring_path) {
+      char* path_u8 = caml_stat_strdup_of_os(eventring_path);
       ret = snprintf_os(eventring_loc, RING_FILE_NAME_MAX_LEN,
-                      T("%s/%d.eventring"), eventring_path, pid);
+                      T("%s/%d.eventring"), path_u8, pid);
+      caml_stat_free(path_u8);
     } else {
       ret =
           snprintf_os(eventring_loc, RING_FILE_NAME_MAX_LEN,
@@ -109,20 +125,85 @@ caml_eventring_create_cursor(const char *eventring_path, int pid,
     }
   }
 
+#ifdef _WIN32
+  cursor->ring_file_handle = CreateFile(
+    eventring_loc,
+    GENERIC_READ | GENERIC_WRITE,
+    FILE_SHARE_READ | FILE_SHARE_WRITE,
+    NULL,
+    OPEN_EXISTING,
+    FILE_ATTRIBUTE_NORMAL,
+    NULL
+  );
+
+  if (cursor->ring_file_handle == INVALID_HANDLE_VALUE) {
+    caml_stat_free(cursor);
+    caml_stat_free(eventring_loc);
+    return E_OPEN_FAILURE;
+  }
+
+  cursor->ring_handle = CreateFileMapping(
+    cursor->ring_file_handle,
+    NULL,
+    PAGE_READWRITE,
+    0,
+    0,
+    NULL
+  );
+
+  if (cursor->ring_handle == INVALID_HANDLE_VALUE) {
+    caml_stat_free(cursor);
+    caml_stat_free(eventring_loc);
+    return E_MAP_FAILURE;
+  }
+
+  cursor->metadata = MapViewOfFile(
+    cursor->ring_handle,
+    FILE_MAP_ALL_ACCESS,
+    0,
+    0,
+    0
+  );
+
+  if( cursor->metadata == NULL ) {
+    caml_stat_free(cursor);
+    caml_stat_free(eventring_loc);
+    return E_MAP_FAILURE;
+  }
+
+  cursor->ring_file_size_bytes = GetFileSize(cursor->ring_file_handle, NULL);
+#else
   ring_fd = open(eventring_loc, O_RDONLY, 0);
+
+  if( ring_fd == -1 ) {
+    caml_stat_free(cursor);
+    caml_stat_free(eventring_loc);
+    return E_OPEN_FAILURE;
+  }
+
   ret = fstat(ring_fd, &tmp_stat);
 
   if (ret < 0) {
     caml_stat_free(cursor);
     caml_stat_free(eventring_loc);
-    return E_STAT_FAILURE;
+    return E_OPEN_FAILURE;
   }
 
   cursor->ring_file_size_bytes = tmp_stat.st_size;
+
   cursor->metadata = mmap(NULL, cursor->ring_file_size_bytes, PROT_READ,
                           MAP_SHARED, ring_fd, 0);
+
+  if( cursor->metadata == MAP_FAILED ) {
+    caml_stat_free(cursor);
+    caml_stat_free(eventring_loc);
+    return E_MAP_FAILURE;
+  }
+#endif
+
   cursor->current_positions =
       caml_stat_alloc(cursor->metadata->max_domains * sizeof(uint64_t));
+
   for (int j = 0; j < cursor->metadata->max_domains; j++) {
     cursor->current_positions[j] = 0;
   }
@@ -188,7 +269,13 @@ void caml_eventring_set_lost_events(struct caml_eventring_cursor *cursor,
 void caml_eventring_free_cursor(struct caml_eventring_cursor *cursor) {
   if (cursor->cursor_open) {
     cursor->cursor_open = 0;
+#ifdef _WIN32
+    UnmapViewOfFile(cursor->metadata);
+    CloseHandle(cursor->ring_file_handle);
+    CloseHandle(cursor->ring_handle);
+#else
     munmap(cursor->metadata, cursor->ring_file_size_bytes);
+#endif
     caml_stat_free(cursor->current_positions);
     caml_stat_free(cursor);
   }
@@ -495,7 +582,7 @@ CAMLprim value caml_ml_eventring_create_cursor(value path_pid_option) {
   CAMLlocal1(wrapper);
   struct caml_eventring_cursor *cursor;
   int pid;
-  const char *path;
+  const char_os* path;
   eventring_error res;
 
   wrapper = caml_alloc_custom(&cursor_operations,
@@ -504,7 +591,8 @@ CAMLprim value caml_ml_eventring_create_cursor(value path_pid_option) {
   Cursor_val(wrapper) = NULL;
 
   if (Is_some(path_pid_option)) {
-    path = String_val(Field(path_pid_option, 0));
+    const char* path_u8 = String_val(Field(path_pid_option, 0));
+    path = caml_stat_strdup_to_os(path_u8);
     pid = Int_val(Field(path_pid_option, 1));
   } else {
     path = NULL;
@@ -514,12 +602,18 @@ CAMLprim value caml_ml_eventring_create_cursor(value path_pid_option) {
   res = caml_eventring_create_cursor(path, pid, &cursor);
 
   if (res != E_SUCCESS) {
+    caml_stat_free(&path);
+
     switch(res) {
       case E_PATH_FAILURE:
         caml_failwith("Could not construct path for cursor");
-      case E_STAT_FAILURE:
+      case E_OPEN_FAILURE:
         caml_failwith(
           "Could create cursor for specified path. Was eventring started?");
+      case E_MAP_FAILURE:
+        caml_failwith(
+          "Could not map underlying eventring."
+        );
       case E_NO_CURRENT_RING:
         caml_failwith("No ring for current process. Was eventring started?");
       default:
