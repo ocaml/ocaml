@@ -241,8 +241,11 @@ let mul_float c1 c2 dbg =
   match (c1, c2) with
   | (c, Cconst_float(1.0, _)) | (Cconst_float(1.0, _), c) ->
       c
+  (* FIXME we can't just add c to itself like that as it would reproduce
+     twice its side effects.
   | (c, Cconst_float(2.0, _)) | (Cconst_float(2.0, _), c) ->
       add_float c c dbg
+   *)
   | _, _ ->
       Cop(Cmulf, [c1; c2], dbg)
 
@@ -259,7 +262,7 @@ let div_float c1 c2 dbg =
          +infinity). *)
       if x = 0.5 && abs exp < 1023
       then
-        mul_float c (Cconst_float(Float.ldexp 0.5 exp, dbg)) dbg
+        mul_float c (Cconst_float(Float.ldexp 2.0 (-exp), dbg)) dbg
       else
         Cop(Cdivf, [c1; c2], dbg)
   | _, _ ->
