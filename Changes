@@ -46,6 +46,10 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- #10909: Disable warning 59 (assignment to immutable blocks) unless flambda
+  invariant checks are enabled.
+  (Vincent Laviron, review by Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
 
 ### Build system:

@@ -22,7 +22,11 @@ libraries = "dynlink"
 all_modules = "backtrace_dynlink.cmx"
 ***** run
 ocamlrunparam += ",b=1"
-****** check-program-output
+****** no-flambda
+******* check-program-output
+****** flambda
+reference = "${test_source_directory}/backtrace_dynlink.flambda.reference"
+******* check-program-output
 *)
 
 (* test for backtrace and stack unwinding with dynlink. *)
