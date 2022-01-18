@@ -1062,99 +1062,107 @@ model=default
 system=unknown
 
 AS_CASE([$host],
-  [[i[3456]86-*-linux*]],
-    [arch=i386; system=linux_elf],
-  [[i[3456]86-*-*bsd*]],
-    [arch=i386; system=bsd_elf],
-  [[i[3456]86-*-haiku*]],
-    [arch=i386; system=beos],
-  [[i[3456]86-*-cygwin]],
-    [arch=i386; system=cygwin],
-  [[i[3456]86-*-gnu*]],
-    [arch=i386; system=gnu],
-  [[i[3456]86-*-mingw32]],
-    [arch=i386; system=mingw],
-  [i686-pc-windows],
-    [arch=i386; system=win32],
-  [x86_64-pc-windows],
-    [arch=amd64; system=win64],
-  [[powerpc64le*-*-linux*]],
-    [arch=power; model=ppc64le; system=elf],
-  [[powerpc*-*-linux*]],
-    [arch=power; AS_IF([$arch64],[model=ppc64],[model=ppc]); system=elf],
-  [[s390x*-*-linux*]],
-    [arch=s390x; model=z10; system=elf],
-  # expected to match "gnueabihf" as well as "musleabihf"
-  [armv6*-*-linux-*eabihf],
-    [arch=arm; model=armv6; system=linux_eabihf],
-  [armv7*-*-linux-*eabihf],
-    [arch=arm; model=armv7; system=linux_eabihf],
-  [armv8*-*-linux-*eabihf],
-    [arch=arm; model=armv8; system=linux_eabihf],
-  [armv8*-*-linux-*eabi],
-    [arch=arm; model=armv8; system=linux_eabi],
-  [armv7*-*-linux-*eabi],
-    [arch=arm; model=armv7; system=linux_eabi],
-  [armv6t2*-*-linux-*eabi],
-    [arch=arm; model=armv6t2; system=linux_eabi],
-  [armv6*-*-linux-*eabi],
-    [arch=arm; model=armv6; system=linux_eabi],
-  [armv6*-*-freebsd*],
-    [arch=arm; model=armv6; system=freebsd],
-  [earmv6*-*-netbsd*],
-    [arch=arm; model=armv6; system=netbsd],
-  [earmv7*-*-netbsd*],
-    [arch=arm; model=armv7; system=netbsd],
-  [armv5te*-*-linux-*eabi],
-    [arch=arm; model=armv5te; system=linux_eabi],
-  [armv5*-*-linux-*eabi],
-    [arch=arm; model=armv5; system=linux_eabi],
-  [arm*-*-linux-*eabihf],
-    [arch=arm; system=linux_eabihf],
-  [arm*-*-linux-*eabi],
-    [arch=arm; system=linux_eabi],
-  [arm*-*-openbsd*],
-    [arch=arm; system=bsd],
-  [zaurus*-*-openbsd*],
-    [arch=arm; system=bsd],
+dnl [[i[3456]86-*-linux*]],
+dnl   [arch=i386; system=linux_elf],
+dnl [[i[3456]86-*-*bsd*]],
+dnl   [arch=i386; system=bsd_elf],
+dnl [[i[3456]86-*-haiku*]],
+dnl   [arch=i386; system=beos],
+dnl [[i[3456]86-*-cygwin]],
+dnl   [arch=i386; system=cygwin],
+dnl [[i[3456]86-*-gnu*]],
+dnl   [arch=i386; system=gnu],
+dnl [[i[3456]86-*-mingw32]],
+dnl   [arch=i386; system=mingw],
+dnl [i686-pc-windows],
+dnl   [arch=i386; system=win32],
+dnl [x86_64-pc-windows],
+dnl   [arch=amd64; system=win64],
+dnl [[powerpc64le*-*-linux*]],
+dnl   [arch=power; model=ppc64le; system=elf],
+dnl [[powerpc*-*-linux*]],
+dnl   [arch=power; AS_IF([$arch64],[model=ppc64],[model=ppc]); system=elf],
+dnl [[s390x*-*-linux*]],
+dnl   [arch=s390x; model=z10; system=elf],
+dnl # expected to match "gnueabihf" as well as "musleabihf"
+dnl [armv6*-*-linux-*eabihf],
+dnl   [arch=arm; model=armv6; system=linux_eabihf],
+dnl [armv7*-*-linux-*eabihf],
+dnl   [arch=arm; model=armv7; system=linux_eabihf],
+dnl [armv8*-*-linux-*eabihf],
+dnl   [arch=arm; model=armv8; system=linux_eabihf],
+dnl [armv8*-*-linux-*eabi],
+dnl   [arch=arm; model=armv8; system=linux_eabi],
+dnl [armv7*-*-linux-*eabi],
+dnl   [arch=arm; model=armv7; system=linux_eabi],
+dnl [armv6t2*-*-linux-*eabi],
+dnl   [arch=arm; model=armv6t2; system=linux_eabi],
+dnl [armv6*-*-linux-*eabi],
+dnl   [arch=arm; model=armv6; system=linux_eabi],
+dnl [armv6*-*-freebsd*],
+dnl   [arch=arm; model=armv6; system=freebsd],
+dnl [earmv6*-*-netbsd*],
+dnl   [arch=arm; model=armv6; system=netbsd],
+dnl [earmv7*-*-netbsd*],
+dnl   [arch=arm; model=armv7; system=netbsd],
+dnl [armv5te*-*-linux-*eabi],
+dnl   [arch=arm; model=armv5te; system=linux_eabi],
+dnl [armv5*-*-linux-*eabi],
+dnl   [arch=arm; model=armv5; system=linux_eabi],
+dnl [arm*-*-linux-*eabihf],
+dnl   [arch=arm; system=linux_eabihf],
+dnl [arm*-*-linux-*eabi],
+dnl   [arch=arm; system=linux_eabi],
+dnl [arm*-*-openbsd*],
+dnl   [arch=arm; system=bsd],
+dnl [zaurus*-*-openbsd*],
+dnl   [arch=arm; system=bsd],
   [x86_64-*-linux*],
     [arch=amd64; system=linux],
-  [x86_64-*-gnu*],
-    [arch=amd64; system=gnu],
-  [x86_64-*-dragonfly*],
-    [arch=amd64; system=dragonfly],
-  [x86_64-*-solaris*],
-    [arch=amd64; system=solaris],
+dnl [x86_64-*-gnu*],
+dnl   [arch=amd64; system=gnu],
+dnl [x86_64-*-dragonfly*],
+dnl   [arch=amd64; system=dragonfly],
+dnl [x86_64-*-solaris*],
+dnl   [arch=amd64; system=solaris],
   [x86_64-*-freebsd*],
     [arch=amd64; system=freebsd],
   [x86_64-*-netbsd*],
     [arch=amd64; system=netbsd],
   [x86_64-*-openbsd*],
     [arch=amd64; system=openbsd],
-  [x86_64-*-haiku*],
-    [arch=amd64; system=beos],
-  [arm64-*-darwin*],
-    [arch=arm64; system=macosx],
-  [aarch64-*-darwin*],
-    [arch=arm64; system=macosx],
+dnl [x86_64-*-haiku*],
+dnl   [arch=amd64; system=beos],
+dnl [arm64-*-darwin*],
+dnl   [arch=arm64; system=macosx],
+dnl [aarch64-*-darwin*],
+dnl   [arch=arm64; system=macosx],
   [x86_64-*-darwin*],
     [arch=amd64; system=macosx],
   [x86_64-*-mingw32],
     [arch=amd64; system=mingw64],
-  [aarch64-*-linux*],
-    [arch=arm64; system=linux],
-  [aarch64-*-freebsd*],
-    [arch=arm64; system=freebsd],
-  [x86_64-*-cygwin*],
-    [arch=amd64; system=cygwin],
-  [riscv64-*-linux*],
-    [arch=riscv; model=riscv64; system=linux]
+dnl [aarch64-*-linux*],
+dnl   [arch=arm64; system=linux],
+dnl [aarch64-*-freebsd*],
+dnl   [arch=arm64; system=freebsd],
+dnl [x86_64-*-cygwin*],
+dnl   [arch=amd64; system=cygwin],
+dnl [riscv64-*-linux*],
+dnl   [arch=riscv; model=riscv64; system=linux]
 )
 
-AS_IF([test x"$enable_native_compiler" = "xno"],
-  [native_compiler=false
-  AC_MSG_NOTICE([the native compiler is disabled])],
-  [native_compiler=true])
+AS_CASE([$enable_native_compiler,$arch],
+  [no,*],
+    [native_compiler=false
+    AC_MSG_NOTICE([the native compiler is disabled])],
+  [yes,none],
+    [AC_MSG_ERROR([the native compiler is not supported on this platform], 69)],
+  [*,none],
+    [native_compiler=false
+    AC_MSG_NOTICE([the native compiler is not supported on this platform])],
+  [*,*],
+    [native_compiler=true]
+)
 
 AS_IF([! $native_compiler], [natdynlink=false])
 
@@ -1799,37 +1807,35 @@ AS_CASE([$arch,$system],
     AC_MSG_RESULT([yes])],
   [AC_MSG_RESULT([no])])
 
-## Determine if the POSIX threads library is supported
+## Determine how to link with the POSIX threads library
+
+AS_CASE([$host],
+  [*-*-mingw32|*-pc-windows],
+    [PTHREAD_LIBS="-lpthread"],
+  [AX_PTHREAD(
+    [common_cflags="$common_cflags $PTHREAD_CFLAGS"
+    saved_CFLAGS="$CFLAGS"
+    saved_LIBS="$LIBS"
+    CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+    LIBS="$LIBS $PTHREAD_LIBS"
+    AC_CHECK_FUNC([sigwait], [AC_DEFINE([HAS_SIGWAIT])])
+    LIBS="$saved_LIBS"
+    CFLAGS="$saved_CFLAGS"],
+    [AC_MSG_ERROR(m4_normalize([POSIX threads are required but not supported on
+      this platform]))])])
+
+## Activate the systhread library
 
 AS_CASE([$enable_systhreads,$enable_unix_lib],
   [yes,no],
     [systhread_support=false
-    AC_MSG_ERROR([the Win32/POSIX threads library requires the unix library])],
+    AC_MSG_ERROR([the threads library requires the unix library])],
   [no,*|*,no],
     [systhread_support=false
-    AC_MSG_NOTICE([the Win32/POSIX threads library is disabled])],
-  [AS_CASE([$host],
-    [*-*-mingw32|*-pc-windows],
-      [systhread_support=true
-      otherlibraries="$otherlibraries systhreads"
-      PTHREAD_LIBS="-lpthread"
-      AC_MSG_NOTICE([the Win32 threads library is supported])],
-    [AX_PTHREAD(
-      [systhread_support=true
-      otherlibraries="$otherlibraries systhreads"
-      common_cflags="$common_cflags $PTHREAD_CFLAGS"
-      AC_MSG_NOTICE([the POSIX threads library is supported])
-      saved_CFLAGS="$CFLAGS"
-      saved_LIBS="$LIBS"
-      CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
-      LIBS="$LIBS $PTHREAD_LIBS"
-      AC_CHECK_FUNC([sigwait], [AC_DEFINE([HAS_SIGWAIT])])
-      LIBS="$saved_LIBS"
-      CFLAGS="$saved_CFLAGS"],
-      [AS_IF([test x"$enable_systhreads" = "xyes"],
-        [AC_MSG_ERROR([the POSIX thread library is not available])],
-        [systhread_support=false
-        AC_MSG_NOTICE([the POSIX threads library is not supported])])])])])
+    AC_MSG_NOTICE([the threads library is disabled])],
+  [systhread_support=true
+  otherlibraries="$otherlibraries systhreads"
+  AC_MSG_NOTICE([the threads library is supported])])
 
 ## Does the assembler support debug prefix map and CFI directives
 as_has_debug_prefix_map=false

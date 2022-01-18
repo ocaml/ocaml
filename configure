@@ -14317,109 +14317,39 @@ model=default
 system=unknown
 
 case $host in #(
-  i[3456]86-*-linux*) :
-    arch=i386; system=linux_elf ;; #(
-  i[3456]86-*-*bsd*) :
-    arch=i386; system=bsd_elf ;; #(
-  i[3456]86-*-haiku*) :
-    arch=i386; system=beos ;; #(
-  i[3456]86-*-cygwin) :
-    arch=i386; system=cygwin ;; #(
-  i[3456]86-*-gnu*) :
-    arch=i386; system=gnu ;; #(
-  i[3456]86-*-mingw32) :
-    arch=i386; system=mingw ;; #(
-  i686-pc-windows) :
-    arch=i386; system=win32 ;; #(
-  x86_64-pc-windows) :
-    arch=amd64; system=win64 ;; #(
-  powerpc64le*-*-linux*) :
-    arch=power; model=ppc64le; system=elf ;; #(
-  powerpc*-*-linux*) :
-    arch=power; if $arch64; then :
-  model=ppc64
-else
-  model=ppc
-fi; system=elf ;; #(
-  s390x*-*-linux*) :
-    arch=s390x; model=z10; system=elf ;; #(
-  # expected to match "gnueabihf" as well as "musleabihf"
-  armv6*-*-linux-*eabihf) :
-    arch=arm; model=armv6; system=linux_eabihf ;; #(
-  armv7*-*-linux-*eabihf) :
-    arch=arm; model=armv7; system=linux_eabihf ;; #(
-  armv8*-*-linux-*eabihf) :
-    arch=arm; model=armv8; system=linux_eabihf ;; #(
-  armv8*-*-linux-*eabi) :
-    arch=arm; model=armv8; system=linux_eabi ;; #(
-  armv7*-*-linux-*eabi) :
-    arch=arm; model=armv7; system=linux_eabi ;; #(
-  armv6t2*-*-linux-*eabi) :
-    arch=arm; model=armv6t2; system=linux_eabi ;; #(
-  armv6*-*-linux-*eabi) :
-    arch=arm; model=armv6; system=linux_eabi ;; #(
-  armv6*-*-freebsd*) :
-    arch=arm; model=armv6; system=freebsd ;; #(
-  earmv6*-*-netbsd*) :
-    arch=arm; model=armv6; system=netbsd ;; #(
-  earmv7*-*-netbsd*) :
-    arch=arm; model=armv7; system=netbsd ;; #(
-  armv5te*-*-linux-*eabi) :
-    arch=arm; model=armv5te; system=linux_eabi ;; #(
-  armv5*-*-linux-*eabi) :
-    arch=arm; model=armv5; system=linux_eabi ;; #(
-  arm*-*-linux-*eabihf) :
-    arch=arm; system=linux_eabihf ;; #(
-  arm*-*-linux-*eabi) :
-    arch=arm; system=linux_eabi ;; #(
-  arm*-*-openbsd*) :
-    arch=arm; system=bsd ;; #(
-  zaurus*-*-openbsd*) :
-    arch=arm; system=bsd ;; #(
-  x86_64-*-linux*) :
+    x86_64-*-linux*) :
     arch=amd64; system=linux ;; #(
-  x86_64-*-gnu*) :
-    arch=amd64; system=gnu ;; #(
-  x86_64-*-dragonfly*) :
-    arch=amd64; system=dragonfly ;; #(
-  x86_64-*-solaris*) :
-    arch=amd64; system=solaris ;; #(
-  x86_64-*-freebsd*) :
+    x86_64-*-freebsd*) :
     arch=amd64; system=freebsd ;; #(
   x86_64-*-netbsd*) :
     arch=amd64; system=netbsd ;; #(
   x86_64-*-openbsd*) :
     arch=amd64; system=openbsd ;; #(
-  x86_64-*-haiku*) :
-    arch=amd64; system=beos ;; #(
-  arm64-*-darwin*) :
-    arch=arm64; system=macosx ;; #(
-  aarch64-*-darwin*) :
-    arch=arm64; system=macosx ;; #(
-  x86_64-*-darwin*) :
+    x86_64-*-darwin*) :
     arch=amd64; system=macosx ;; #(
   x86_64-*-mingw32) :
     arch=amd64; system=mingw64 ;; #(
-  aarch64-*-linux*) :
-    arch=arm64; system=linux ;; #(
-  aarch64-*-freebsd*) :
-    arch=arm64; system=freebsd ;; #(
-  x86_64-*-cygwin*) :
-    arch=amd64; system=cygwin ;; #(
-  riscv64-*-linux*) :
-    arch=riscv; model=riscv64; system=linux
- ;; #(
   *) :
      ;;
 esac
 
-if test x"$enable_native_compiler" = "xno"; then :
-  native_compiler=false
-  { $as_echo "$as_me:${as_lineno-$LINENO}: the native compiler is disabled" >&5
-$as_echo "$as_me: the native compiler is disabled" >&6;}
-else
-  native_compiler=true
-fi
+case $enable_native_compiler,$arch in #(
+  no,*) :
+    native_compiler=false
+    { $as_echo "$as_me:${as_lineno-$LINENO}: the native compiler is disabled" >&5
+$as_echo "$as_me: the native compiler is disabled" >&6;} ;; #(
+  yes,none) :
+    as_fn_error 69 "the native compiler is not supported on this platform" "$LINENO" 5 ;; #(
+  *,none) :
+    native_compiler=false
+    { $as_echo "$as_me:${as_lineno-$LINENO}: the native compiler is not supported on this platform" >&5
+$as_echo "$as_me: the native compiler is not supported on this platform" >&6;} ;; #(
+  *,*) :
+    native_compiler=true
+ ;; #(
+  *) :
+     ;;
+esac
 
 if ! $native_compiler; then :
   natdynlink=false
@@ -16678,24 +16608,11 @@ $as_echo "yes" >&6; } ;; #(
 $as_echo "no" >&6; } ;;
 esac
 
-## Determine if the POSIX threads library is supported
+## Determine how to link with the POSIX threads library
 
-case $enable_systhreads,$enable_unix_lib in #(
-  yes,no) :
-    systhread_support=false
-    as_fn_error $? "the Win32/POSIX threads library requires the unix library" "$LINENO" 5 ;; #(
-  no,*|*,no) :
-    systhread_support=false
-    { $as_echo "$as_me:${as_lineno-$LINENO}: the Win32/POSIX threads library is disabled" >&5
-$as_echo "$as_me: the Win32/POSIX threads library is disabled" >&6;} ;; #(
-  *) :
-    case $host in #(
+case $host in #(
   *-*-mingw32|*-pc-windows) :
-    systhread_support=true
-      otherlibraries="$otherlibraries systhreads"
-      PTHREAD_LIBS="-lpthread"
-      { $as_echo "$as_me:${as_lineno-$LINENO}: the Win32 threads library is supported" >&5
-$as_echo "$as_me: the Win32 threads library is supported" >&6;} ;; #(
+    PTHREAD_LIBS="-lpthread" ;; #(
   *) :
 
 
@@ -17406,33 +17323,23 @@ test -n "$PTHREAD_CXX" || PTHREAD_CXX="$CXX"
 
 # Finally, execute ACTION-IF-FOUND/ACTION-IF-NOT-FOUND:
 if test "x$ax_pthread_ok" = "xyes"; then
-        systhread_support=true
-      otherlibraries="$otherlibraries systhreads"
-      common_cflags="$common_cflags $PTHREAD_CFLAGS"
-      { $as_echo "$as_me:${as_lineno-$LINENO}: the POSIX threads library is supported" >&5
-$as_echo "$as_me: the POSIX threads library is supported" >&6;}
-      saved_CFLAGS="$CFLAGS"
-      saved_LIBS="$LIBS"
-      CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
-      LIBS="$LIBS $PTHREAD_LIBS"
-      ac_fn_c_check_func "$LINENO" "sigwait" "ac_cv_func_sigwait"
+        common_cflags="$common_cflags $PTHREAD_CFLAGS"
+    saved_CFLAGS="$CFLAGS"
+    saved_LIBS="$LIBS"
+    CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+    LIBS="$LIBS $PTHREAD_LIBS"
+    ac_fn_c_check_func "$LINENO" "sigwait" "ac_cv_func_sigwait"
 if test "x$ac_cv_func_sigwait" = xyes; then :
   $as_echo "#define HAS_SIGWAIT 1" >>confdefs.h
 
 fi
 
-      LIBS="$saved_LIBS"
-      CFLAGS="$saved_CFLAGS"
+    LIBS="$saved_LIBS"
+    CFLAGS="$saved_CFLAGS"
         :
 else
         ax_pthread_ok=no
-        if test x"$enable_systhreads" = "xyes"; then :
-  as_fn_error $? "the POSIX thread library is not available" "$LINENO" 5
-else
-  systhread_support=false
-        { $as_echo "$as_me:${as_lineno-$LINENO}: the POSIX threads library is not supported" >&5
-$as_echo "$as_me: the POSIX threads library is not supported" >&6;}
-fi
+        as_fn_error $? "POSIX threads are required but not supported on this platform" "$LINENO" 5
 fi
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
@@ -17441,7 +17348,23 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
  ;;
-esac ;;
+esac
+
+## Activate the systhread library
+
+case $enable_systhreads,$enable_unix_lib in #(
+  yes,no) :
+    systhread_support=false
+    as_fn_error $? "the threads library requires the unix library" "$LINENO" 5 ;; #(
+  no,*|*,no) :
+    systhread_support=false
+    { $as_echo "$as_me:${as_lineno-$LINENO}: the threads library is disabled" >&5
+$as_echo "$as_me: the threads library is disabled" >&6;} ;; #(
+  *) :
+    systhread_support=true
+  otherlibraries="$otherlibraries systhreads"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: the threads library is supported" >&5
+$as_echo "$as_me: the threads library is supported" >&6;} ;;
 esac
 
 ## Does the assembler support debug prefix map and CFI directives
