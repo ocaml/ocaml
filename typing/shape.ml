@@ -209,6 +209,11 @@ let proj ?uid t item =
 let app ?uid f ~arg =
       { uid; desc = App (f, arg) }
 
+let decompose_abs t =
+  match t.desc with
+  | Abs (x, t) -> Some (x, t)
+  | _ -> None
+
 module Make_reduce(Params : sig
   type env
   val fuel : int

@@ -452,9 +452,9 @@ and try_modtypes ~in_eq ~loc env ~mark subst mty1 mty2 orig_shape =
           subst param1 param2
       in
       let var, res_shape =
-        match orig_shape.Shape.desc with
-        | Abs (var, res_shape) -> var, res_shape
-        | _ ->
+        match Shape.decompose_abs orig_shape with
+        | Some (var, res_shape) -> var, res_shape
+        | None ->
             (* Using a fresh variable with a placeholder uid here is fine: users
                will never try to jump to the definition of that variable.
                If they try to jump to the parameter from inside the functor,
