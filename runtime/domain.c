@@ -157,7 +157,7 @@ static struct {
   int num_domains;
   atomic_uintnat barrier;
 
-  caml_domain_state* participating[caml_params->max_domains];
+  caml_domain_state** participating; /* array of length caml_params->max_domains */
 } stw_request = {
   ATOMIC_UINTNAT_INIT(0),
   ATOMIC_UINTNAT_INIT(0),
@@ -167,14 +167,14 @@ static struct {
   NULL,
   0,
   ATOMIC_UINTNAT_INIT(0),
-  { 0 },
+  NULL,
 };
 
 static caml_plat_mutex all_domains_lock = CAML_PLAT_MUTEX_INITIALIZER;
 static caml_plat_cond all_domains_cond =
     CAML_PLAT_COND_INITIALIZER(&all_domains_lock);
 static atomic_uintnat /* dom_internal* */ stw_leader = 0;
-static struct dom_internal all_domains[caml_params->max_domains];
+static struct dom_internal* all_domains; /* array of length caml_params->max_domains */
 
 CAMLexport atomic_uintnat caml_num_domains_running;
 
@@ -190,10 +190,10 @@ static __thread dom_internal* domain_self;
  */
 static struct {
   int participating_domains;
-  dom_internal* domains[caml_params->max_domains];
+  dom_internal** domains; /* array of length caml_params->max_domains */
 } stw_domains = {
   0,
-  { 0 }
+  NULL
 };
 
 static void add_to_stw_domains(dom_internal* dom) {
@@ -580,6 +580,10 @@ void caml_init_domains(uintnat minor_heap_wsz) {
   caml_minor_heaps_base = (uintnat) heaps_base;
   caml_minor_heaps_end = (uintnat) heaps_base + size;
   caml_tls_areas_base = (uintnat) tls_base;
+
+  stw_request.participating = caml_mem_map(caml_params->max_domains * sizeof(caml_domain_state*), sizeof(caml_domain_state*), 0);
+  all_domains = caml_mem_map(caml_params->max_domains * sizeof(struct dom_internal), sizeof(dom_internal), 0);
+  stw_domains.domains = caml_mem_map(caml_params->max_domains * sizeof(struct dom_internal*), sizeof(dom_internal*), 0);
 
   for (i = 0; i < caml_params->max_domains; i++) {
     struct dom_internal* dom = &all_domains[i];
