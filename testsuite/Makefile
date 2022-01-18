@@ -345,6 +345,12 @@ clean:
 	find . -name '*_ocamltest*' | xargs rm -rf
 	rm -f $(failstamp)
 
+.PHONY: distclean
+distclean: clean
+	rm -f _log*
+	$(MACE) -C lib distclean
+	$(MAKE) -C tools distclean
+
 .PHONY: report
 report:
 	@if [ ! -f $(TESTLOG) ]; then echo "No $(TESTLOG) file."; exit 1; fi

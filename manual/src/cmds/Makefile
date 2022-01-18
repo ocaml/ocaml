@@ -29,3 +29,6 @@ all: $(FILES)
 .PHONY: clean
 clean:
 	rm -f *.tex
+
+.PHONY: distclean
+distclean: clean

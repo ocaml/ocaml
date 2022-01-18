@@ -97,3 +97,6 @@ clean:
 	rm -f *.cm* *.o *.obj
 	rm -f expect_test expect_test.exe codegen codegen.exe
 	rm -f parsecmm.ml parsecmm.mli lexcmm.ml
+
+.PHONY: distclean
+distclean: clean

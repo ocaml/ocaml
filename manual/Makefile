@@ -41,9 +41,11 @@ pregen: tools
 .PHONY: clean
 clean:
 	$(MAKE) -C src clean
-	$(MAKE) -C tools  clean
-	$(MAKE) -C tests  clean
+	$(MAKE) -C tools clean
+	$(MAKE) -C tests clean
 
 .PHONY: distclean
 distclean: clean
 	$(MAKE) -C src distclean
+	$(MAKE) -C tools distclean
+	$(MAKE) -C tests distclean
