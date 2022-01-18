@@ -285,7 +285,7 @@ CAMLprim value caml_get_minor_free (value v)
 
 void caml_init_gc (void)
 {
-  sampled_gc_stats = (struct gc_stats*) malloc(sizeof(struct gc_stats) * caml_params->max_domains);
+  sampled_gc_stats = (struct gc_stats*) calloc(caml_params->max_domains, sizeof(struct gc_stats));
   caml_max_stack_size = caml_params->init_max_stack_wsz;
   caml_fiber_wsz = (Stack_threshold * 2) / sizeof(value);
   caml_percent_free = norm_pfree (caml_params->init_percent_free);
