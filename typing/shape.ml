@@ -377,12 +377,11 @@ end) = struct
           | Some def -> force def
           | exception Not_found ->
           match Params.find_shape global_env id with
+          | exception Not_found -> return (NVar id)
           | res when res = t -> return (NVar id)
           | res ->
               decr fuel;
               reduce env res
-          |  exception Not_found ->
-             return NLeaf (* avoid loops. *)
           end
       | Leaf -> return NLeaf
       | Struct m ->
