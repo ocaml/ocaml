@@ -241,11 +241,12 @@ let mul_float c1 c2 dbg =
   match (c1, c2) with
   | (c, Cconst_float(1.0, _)) | (Cconst_float(1.0, _), c) ->
       c
-  (* FIXME we can't just add c to itself like that as it would reproduce
-     twice its side effects.
   | (c, Cconst_float(2.0, _)) | (Cconst_float(2.0, _), c) ->
-      add_float c c dbg
-   *)
+     (* We transform x *. 2.0 into x +. x, by creating a temporary variable and
+        outputting let tmp = x in tmp +. tmp to avoid calculating x twice. *)
+     let tmp_var = V.create_local "tmp" in
+     let var = Cvar tmp_var in
+     Clet (VP.create tmp_var, c, add_float var var dbg)
   | _, _ ->
       Cop(Cmulf, [c1; c2], dbg)
 
@@ -256,9 +257,9 @@ let div_float c1 c2 dbg =
   | c, Cconst_float(f, _) ->
       (* x = 0.5 if and only if f is a power of 2 *)
       let x, exp = Float.frexp f in
-      (* We can transform x/.2^{N} into x*.2^{-N} if and only 
+      (* We can transform x/.2^{N} into x*.2^{-N} if and only
          if |N| < 1023, because otherwise one of the may not be
-         a valid floating point number (2.**1023. evaluates to 
+         a valid floating point number (2.**1023. evaluates to
          +infinity). *)
       if x = 0.5 && abs exp < 1023
       then
