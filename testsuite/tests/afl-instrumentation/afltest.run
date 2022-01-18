@@ -11,8 +11,8 @@ echo "running $NTESTS tests..."
 for t in `seq 1 $NTESTS`; do
   printf "%14s: " `./test name $t`
   # when run twice, the instrumentation output should double
-  afl-showmap -q -o output-1 -- ./test 1 $t
-  afl-showmap -q -o output-2 -- ./test 2 $t
+  afl-showmap -m none -q -o output-1 -- ./test 1 $t
+  afl-showmap -m none -q -o output-2 -- ./test 2 $t
   # see afl-showmap.c for what the numbers mean
   cat output-1 | sed '
     s/:6/:7/; s/:5/:6/;
