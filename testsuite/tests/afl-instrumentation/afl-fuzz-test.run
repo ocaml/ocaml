@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+output="${program}".output
+exec > ${output} 2>&1
+
+mkdir readline-input
+echo asdf > readline-input/testcase
+env AFL_SKIP_CPUFREQ=1 timeout 30s afl-fuzz -m none -i readline-input -o readline-output ./readline > afl-output
+
+if grep -q "1 uniq crashes found" afl-output; then
+  echo "all tests passed";
+  exit ${TEST_PASS}
+else
+  echo "failed:"
+  cat afl-output
+  exit ${TEST_FAIL};
+fi
