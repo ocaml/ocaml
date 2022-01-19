@@ -428,6 +428,10 @@ OCaml 4.14.0
 - #10730, 10731: Fix bug in `Obj.reachable_words` causing a slowdown when called
   multiple time (Alain Frisch, report by ygrek, review by Xavier Leroy)
 
+- #10926: Rename the two internal Windows Unicode functions with `caml_` prefix
+  instead of `win_`.
+  (David Allsopp, review by Kate Deplaix and Xavier Leroy)
+
 ### Code generation and optimizations:
 
 - #10578: Increase the number of integer registers used for

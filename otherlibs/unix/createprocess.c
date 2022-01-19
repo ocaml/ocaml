@@ -120,11 +120,11 @@ value win_create_process_native(value cmd, value cmdline, value env,
   if (Is_some(env)) {
     env = Some_val(env);
     size =
-      win_multi_byte_to_wide_char(String_val(env),
-                                  caml_string_length(env), NULL, 0);
+      caml_win32_multi_byte_to_wide_char(String_val(env),
+                                         caml_string_length(env), NULL, 0);
     wenv = caml_stat_alloc((size + 1)*sizeof(wchar_t));
-    win_multi_byte_to_wide_char(String_val(env),
-                                caml_string_length(env), wenv, size);
+    caml_win32_multi_byte_to_wide_char(String_val(env),
+                                       caml_string_length(env), wenv, size);
     wenv[size] = 0;
   } else {
     wenv = NULL;

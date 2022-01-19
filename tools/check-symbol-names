@@ -34,9 +34,6 @@ $2 ~ /^_?uerror$/ { next }
 $2 ~ /^__x86.get_pc_thunk./ { next }
 # for mingw32
 $2 ~ /^.debug_/ { next }
-# windows unicode support
-$2 ~ /^_win_multi_byte_to_wide_char$/ { next }
-$2 ~ /^_win_wide_char_to_multi_byte$/ { next }
 # print the rest
 { found=1; print $1 " " $2 " " $3 }
 # fail if there were any results

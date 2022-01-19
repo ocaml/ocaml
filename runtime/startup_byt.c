@@ -235,9 +235,9 @@ static char_os * read_section_to_os(int fd, struct exec_trailer *trail,
   if (read(fd, data, len) != len)
     caml_fatal_error("error reading section %s", name);
   data[len] = 0;
-  wlen = win_multi_byte_to_wide_char(data, len, NULL, 0);
+  wlen = caml_win32_multi_byte_to_wide_char(data, len, NULL, 0);
   wdata = caml_stat_alloc((wlen + 1)*sizeof(wchar_t));
-  win_multi_byte_to_wide_char(data, len, wdata, wlen);
+  caml_win32_multi_byte_to_wide_char(data, len, wdata, wlen);
   wdata[wlen] = 0;
   caml_stat_free(data);
   return wdata;

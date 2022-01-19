@@ -77,11 +77,11 @@ CAMLprim value unix_readlink(value opath)
           int cbLen = point->SymbolicLinkReparseBuffer.SubstituteNameLength / sizeof(WCHAR);
           int len;
           len =
-            win_wide_char_to_multi_byte(
+            caml_win32_wide_char_to_multi_byte(
               point->SymbolicLinkReparseBuffer.PathBuffer + point->SymbolicLinkReparseBuffer.SubstituteNameOffset / sizeof(WCHAR),
               cbLen, NULL, 0);
           result = caml_alloc_string(len);
-          win_wide_char_to_multi_byte(
+          caml_win32_wide_char_to_multi_byte(
             point->SymbolicLinkReparseBuffer.PathBuffer + point->SymbolicLinkReparseBuffer.SubstituteNameOffset / sizeof(WCHAR),
             cbLen,
             (char *)String_val(result),
