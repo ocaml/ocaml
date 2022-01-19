@@ -43,9 +43,9 @@ CAMLprim value unix_spawn(value executable, /* string */
 
   caml_unix_check_path(executable, "create_process");
   path = String_val(executable);
-  argv = cstringvect(args, "create_process");
+  argv = unix_cstringvect(args, "create_process");
   if (Is_some(optenv)) {
-    envp = cstringvect(Some_val(optenv), "create_process");
+    envp = unix_cstringvect(Some_val(optenv), "create_process");
   } else {
     envp = environ;
   }
@@ -75,8 +75,8 @@ CAMLprim value unix_spawn(value executable, /* string */
   }
  error:
   posix_spawn_file_actions_destroy(&act);
-  cstringvect_free(argv);
-  if (Is_some(optenv)) cstringvect_free(envp);
+  unix_cstringvect_free(argv);
+  if (Is_some(optenv)) unix_cstringvect_free(envp);
   if (r != 0) unix_error(r, "create_process", executable);
   return Val_long(pid);
 }
@@ -110,17 +110,17 @@ CAMLprim value unix_spawn(value executable, /* string */
 
   caml_unix_check_path(executable, "create_process");
   path = String_val(executable);
-  argv = cstringvect(args, "create_process");
+  argv = unix_cstringvect(args, "create_process");
   if (Is_some(optenv)) {
-    envp = cstringvect(Some_val(optenv), "create_process");
+    envp = unix_cstringvect(Some_val(optenv), "create_process");
   } else {
     envp = NULL;
   }
   pid = fork();
   if (pid != 0) {
     /* This is the parent process */
-    cstringvect_free(argv);
-    if (envp != NULL) cstringvect_free(envp);
+    unix_cstringvect_free(argv);
+    if (envp != NULL) unix_cstringvect_free(envp);
     if (pid == -1) uerror("create_process", executable);
     return Val_long(pid);
   }

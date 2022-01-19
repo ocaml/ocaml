@@ -26,13 +26,13 @@ CAMLprim value unix_execve(value path, value args, value env)
   char_os ** envp;
   char_os * wpath;
   caml_unix_check_path(path, "execve");
-  argv = cstringvect(args, "execve");
-  envp = cstringvect(env, "execve");
+  argv = unix_cstringvect(args, "execve");
+  envp = unix_cstringvect(env, "execve");
   wpath = caml_stat_strdup_to_os(String_val(path));
   (void) execve_os(wpath, EXECV_CAST argv, EXECV_CAST envp);
   caml_stat_free(wpath);
-  cstringvect_free(argv);
-  cstringvect_free(envp);
+  unix_cstringvect_free(argv);
+  unix_cstringvect_free(envp);
   uerror("execve", path);
   return Val_unit;                  /* never reached, but suppress warnings */
                                 /* from smart compilers */

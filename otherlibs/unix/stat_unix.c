@@ -83,8 +83,8 @@ static value stat_aux(int use_64, struct stat *buf)
   v = caml_alloc_small(12, 0);
   Field (v, 0) = Val_int (buf->st_dev);
   Field (v, 1) = Val_int (buf->st_ino);
-  Field (v, 2) = cst_to_constr(buf->st_mode & S_IFMT, file_kind_table,
-                               sizeof(file_kind_table) / sizeof(int), 0);
+  Field (v, 2) = unix_cst_to_constr(buf->st_mode & S_IFMT, file_kind_table,
+                                    sizeof(file_kind_table) / sizeof(int), 0);
   Field (v, 3) = Val_int (buf->st_mode & 07777);
   Field (v, 4) = Val_int (buf->st_nlink);
   Field (v, 5) = Val_int (buf->st_uid);

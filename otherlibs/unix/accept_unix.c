@@ -48,7 +48,7 @@ CAMLprim value unix_accept(value cloexec, value sock)
 #if !(defined(HAS_ACCEPT4) && defined(SOCK_CLOEXEC))
   if (clo) unix_set_cloexec(retcode, "accept", Nothing);
 #endif
-  a = alloc_sockaddr(&addr, addr_len, retcode);
+  a = unix_alloc_sockaddr(&addr, addr_len, retcode);
   res = caml_alloc_small(2, 0);
   Field(res, 0) = Val_int(retcode);
   Field(res, 1) = a;

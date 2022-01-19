@@ -28,7 +28,7 @@ CAMLprim value unix_connect(value socket, value address)
   union sock_addr_union addr;
   socklen_param_type addr_len;
 
-  get_sockaddr(address, &addr, &addr_len);
+  unix_get_sockaddr(address, &addr, &addr_len);
   caml_enter_blocking_section();
   retcode = connect(Int_val(socket), &addr.s_gen, addr_len);
   caml_leave_blocking_section();

@@ -76,7 +76,7 @@ CAMLprim value unix_recvfrom(value sock, value buff, value ofs, value len,
     uerror("recvfrom", Nothing);
   }
   memmove (&Byte(buff, Long_val(ofs)), iobuf, ret);
-  adr = alloc_sockaddr(&addr, addr_len, -1);
+  adr = unix_alloc_sockaddr(&addr, addr_len, -1);
   res = caml_alloc_small(2, 0);
   Field(res, 0) = Val_int(ret);
   Field(res, 1) = adr;
@@ -119,7 +119,7 @@ value unix_sendto_native(value sock, value buff, value ofs, value len,
   socklen_param_type addr_len;
   DWORD err = 0;
 
-  get_sockaddr(dest, &addr, &addr_len);
+  unix_get_sockaddr(dest, &addr, &addr_len);
   numbytes = Long_val(len);
   if (numbytes > UNIX_BUFFER_SIZE) numbytes = UNIX_BUFFER_SIZE;
   memmove (iobuf, &Byte(buff, Long_val(ofs)), numbytes);

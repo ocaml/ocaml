@@ -26,7 +26,7 @@ CAMLprim value unix_connect(socket, address)
   socklen_param_type addr_len;
   DWORD err = 0;
 
-  get_sockaddr(address, &addr, &addr_len);
+  unix_get_sockaddr(address, &addr, &addr_len);
   caml_enter_blocking_section();
   if (connect(s, &addr.s_gen, addr_len) == -1)
     err = WSAGetLastError();

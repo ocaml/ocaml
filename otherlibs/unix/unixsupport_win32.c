@@ -267,7 +267,8 @@ value unix_error_of_code (int errcode)
   value err;
 
   errconstr =
-      cst_to_constr(errcode, error_table, sizeof(error_table)/sizeof(int), -1);
+      unix_cst_to_constr(errcode, error_table,
+                         sizeof(error_table)/sizeof(int), -1);
   if (errconstr == Val_int(-1)) {
     err = caml_alloc_small(1, 0);
     Field(err, 0) = Val_int(errcode);
@@ -277,7 +278,7 @@ value unix_error_of_code (int errcode)
   return err;
 }
 
-int code_of_unix_error (value error)
+int unix_code_of_unix_error (value error)
 {
   if (Is_block(error)) {
     return Int_val(Field(error, 0));

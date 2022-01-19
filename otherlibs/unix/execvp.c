@@ -27,11 +27,11 @@ CAMLprim value unix_execvp(value path, value args)
   char_os ** argv;
   char_os * wpath;
   caml_unix_check_path(path, "execvp");
-  argv = cstringvect(args, "execvp");
+  argv = unix_cstringvect(args, "execvp");
   wpath = caml_stat_strdup_to_os(String_val(path));
   (void) execvp_os((const char_os *)wpath, EXECV_CAST argv);
   caml_stat_free(wpath);
-  cstringvect_free(argv);
+  unix_cstringvect_free(argv);
   uerror("execvp", path);
   return Val_unit;                  /* never reached, but suppress warnings */
                                     /* from smart compilers */
@@ -50,8 +50,8 @@ CAMLprim value unix_execvpe(value path, value args, value env)
   char_os * wpath;
   int err;
   caml_unix_check_path(path, "execvpe");
-  argv = cstringvect(args, "execvpe");
-  envp = cstringvect(env, "execvpe");
+  argv = unix_cstringvect(args, "execvpe");
+  envp = unix_cstringvect(env, "execvpe");
   wpath = caml_stat_strdup_to_os(String_val(path));
 #ifdef HAS_EXECVPE
   (void) execvpe_os((const char_os *)wpath, EXECV_CAST argv, EXECV_CAST envp);
@@ -60,8 +60,8 @@ CAMLprim value unix_execvpe(value path, value args, value env)
   err = unix_execvpe_emulation(wpath, argv, envp);
 #endif
   caml_stat_free(wpath);
-  cstringvect_free(argv);
-  cstringvect_free(envp);
+  unix_cstringvect_free(argv);
+  unix_cstringvect_free(envp);
   unix_error(err, "execvpe", path);
   return Val_unit;                  /* never reached, but suppress warnings */
                                     /* from smart compilers */

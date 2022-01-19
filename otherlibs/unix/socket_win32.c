@@ -17,11 +17,11 @@
 #include <caml/memory.h>
 #include "unixsupport.h"
 
-int socket_domain_table[] = {
+int unix_socket_domain_table[] = {
   PF_UNIX, PF_INET, PF_INET6
 };
 
-int socket_type_table[] = {
+int unix_socket_type_table[] = {
   SOCK_STREAM, SOCK_DGRAM, SOCK_RAW, SOCK_SEQPACKET
 };
 
@@ -66,8 +66,8 @@ CAMLprim value unix_socket(value cloexec, value domain, value type, value proto)
   CAMLparam4(cloexec, domain, type, proto);
   CAMLlocal1(v_socket);
   SOCKET s;
-  s = win32_socket(socket_domain_table[Int_val(domain)],
-                   socket_type_table[Int_val(type)],
+  s = win32_socket(unix_socket_domain_table[Int_val(domain)],
+                   unix_socket_type_table[Int_val(type)],
                    Int_val(proto),
                    NULL,
                    ! unix_cloexec_p(cloexec));

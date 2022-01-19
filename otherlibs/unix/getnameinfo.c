@@ -43,7 +43,7 @@ CAMLprim value unix_getnameinfo(value vaddr, value vopts)
   char serv[1024];
   int opts, retcode;
 
-  get_sockaddr(vaddr, &addr, &addr_len);
+  unix_get_sockaddr(vaddr, &addr, &addr_len);
   opts = caml_convert_flag_list(vopts, getnameinfo_flag_table);
   caml_enter_blocking_section();
   retcode =

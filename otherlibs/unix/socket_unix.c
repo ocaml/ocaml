@@ -23,7 +23,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-int socket_domain_table[] = {
+int unix_socket_domain_table[] = {
   PF_UNIX, PF_INET,
 #if defined(HAS_IPV6)
   PF_INET6
@@ -34,7 +34,7 @@ int socket_domain_table[] = {
 #endif
 };
 
-int socket_type_table[] = {
+int unix_socket_type_table[] = {
   SOCK_STREAM, SOCK_DGRAM, SOCK_RAW, SOCK_SEQPACKET
 };
 
@@ -42,11 +42,11 @@ CAMLprim value unix_socket(value cloexec, value domain,
                            value type, value proto)
 {
   int retcode;
-  int ty = socket_type_table[Int_val(type)];
+  int ty = unix_socket_type_table[Int_val(type)];
 #ifdef SOCK_CLOEXEC
   if (unix_cloexec_p(cloexec)) ty |= SOCK_CLOEXEC;
 #endif
-  retcode = socket(socket_domain_table[Int_val(domain)],
+  retcode = socket(unix_socket_domain_table[Int_val(domain)],
                    ty, Int_val(proto));
   if (retcode == -1) uerror("socket", Nothing);
 #ifndef SOCK_CLOEXEC

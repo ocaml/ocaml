@@ -21,7 +21,7 @@
 #include <caml/osdeps.h>
 #include "unixsupport.h"
 
-char_os ** cstringvect(value arg, char * cmdname)
+char_os ** unix_cstringvect(value arg, char * cmdname)
 {
   char_os ** res;
   mlsize_t size, i;
@@ -37,7 +37,7 @@ char_os ** cstringvect(value arg, char * cmdname)
   return res;
 }
 
-void cstringvect_free(char_os ** v)
+void unix_cstringvect_free(char_os ** v)
 {
   int i = 0;
   while (v[i]) caml_stat_free(v[i++]);

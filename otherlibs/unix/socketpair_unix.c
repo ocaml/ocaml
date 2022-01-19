@@ -22,18 +22,18 @@
 
 #include <sys/socket.h>
 
-extern int socket_domain_table[], socket_type_table[];
+extern int unix_socket_domain_table[], unix_socket_type_table[];
 
 CAMLprim value unix_socketpair(value cloexec, value domain,
                                value type, value proto)
 {
   int sv[2];
   value res;
-  int ty = socket_type_table[Int_val(type)];
+  int ty = unix_socket_type_table[Int_val(type)];
 #ifdef SOCK_CLOEXEC
   if (unix_cloexec_p(cloexec)) ty |= SOCK_CLOEXEC;
 #endif
-  if (socketpair(socket_domain_table[Int_val(domain)],
+  if (socketpair(unix_socket_domain_table[Int_val(domain)],
                  ty, Int_val(proto), sv) == -1)
     uerror("socketpair", Nothing);
 #ifndef SOCK_CLOEXEC

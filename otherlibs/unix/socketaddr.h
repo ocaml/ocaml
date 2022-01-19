@@ -64,16 +64,17 @@ typedef int socklen_param_type;
 extern "C" {
 #endif
 
-extern void get_sockaddr (value mladdr,
-                          union sock_addr_union * addr /*out*/,
-                          socklen_param_type * addr_len /*out*/);
-extern value alloc_sockaddr (union sock_addr_union * addr /*in*/,
-                      socklen_param_type addr_len, int close_on_error);
-extern value alloc_inet_addr (struct in_addr * inaddr);
+extern void unix_get_sockaddr (value mladdr,
+                               union sock_addr_union * addr /*out*/,
+                               socklen_param_type * addr_len /*out*/);
+extern value unix_alloc_sockaddr (union sock_addr_union * addr /*in*/,
+                                  socklen_param_type addr_len,
+                                  int close_on_error);
+extern value unix_alloc_inet_addr (struct in_addr * inaddr);
 #define GET_INET_ADDR(v) (*((struct in_addr *) (v)))
 
 #ifdef HAS_IPV6
-extern value alloc_inet6_addr (struct in6_addr * inaddr);
+extern value unix_alloc_inet6_addr (struct in6_addr * inaddr);
 #define GET_INET6_ADDR(v) (*((struct in6_addr *) (v)))
 #endif
 

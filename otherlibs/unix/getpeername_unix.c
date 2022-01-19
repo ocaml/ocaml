@@ -30,7 +30,7 @@ CAMLprim value unix_getpeername(value sock)
   addr_len = sizeof(addr);
   retcode = getpeername(Int_val(sock), &addr.s_gen, &addr_len);
   if (retcode == -1) uerror("getpeername", Nothing);
-  return alloc_sockaddr(&addr, addr_len, -1);
+  return unix_alloc_sockaddr(&addr, addr_len, -1);
 }
 
 #else

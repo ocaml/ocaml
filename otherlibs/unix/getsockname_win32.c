@@ -29,5 +29,5 @@ CAMLprim value unix_getsockname(value sock)
     win32_maperr(WSAGetLastError());
     uerror("getsockname", Nothing);
   }
-  return alloc_sockaddr(&addr, addr_len, -1);
+  return unix_alloc_sockaddr(&addr, addr_len, -1);
 }

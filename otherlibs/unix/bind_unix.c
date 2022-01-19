@@ -27,7 +27,7 @@ CAMLprim value unix_bind(value socket, value address)
   union sock_addr_union addr;
   socklen_param_type addr_len;
 
-  get_sockaddr(address, &addr, &addr_len);
+  unix_get_sockaddr(address, &addr, &addr_len);
   ret = bind(Int_val(socket), &addr.s_gen, addr_len);
   if (ret == -1) uerror("bind", Nothing);
   return Val_unit;
