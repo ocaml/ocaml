@@ -20,7 +20,7 @@
 #include "winworker.h"
 #include "windbug.h"
 
-value val_process_id;
+value caml_win32_process_id;
 
 CAMLprim value win_startup(unit)
      value unit;
@@ -33,9 +33,9 @@ CAMLprim value win_startup(unit)
   DuplicateHandle(GetCurrentProcess(), GetCurrentProcess(),
                   GetCurrentProcess(), &h, 0, TRUE,
                   DUPLICATE_SAME_ACCESS);
-  val_process_id = Val_int(h);
+  caml_win32_process_id = Val_int(h);
 
-  worker_init();
+  unix_worker_init();
 
   return Val_unit;
 }
@@ -43,7 +43,7 @@ CAMLprim value win_startup(unit)
 CAMLprim value win_cleanup(unit)
      value unit;
 {
-  worker_cleanup();
+  unix_worker_cleanup();
 
   (void) WSACleanup();
 
