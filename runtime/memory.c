@@ -425,6 +425,26 @@ static struct pool_block* get_pool_block(caml_stat_block b)
   }
 }
 
+/* Linking a pool block into the ring */
+static void link_pool_block(struct pool_block *pb)
+{
+  caml_plat_lock(&pool_mutex);
+  pb->next = pool->next;
+  pb->prev = pool;
+  pool->next->prev = pb;
+  pool->next = pb;
+  caml_plat_unlock(&pool_mutex);
+}
+
+/* Unlinking a pool block from the ring */
+static void unlink_pool_block(struct pool_block *pb)
+{
+    caml_plat_lock(&pool_mutex);
+    pb->prev->next = pb->next;
+    pb->next->prev = pb->prev;
+    caml_plat_unlock(&pool_mutex);
+}
+
 CAMLexport void caml_stat_create_pool(void)
 {
   if (pool == NULL) {
@@ -467,15 +487,7 @@ CAMLexport caml_stat_block caml_stat_alloc_noexc(asize_t sz)
     memset(&(pb->data), Debug_uninit_stat, sz);
     pb->magic = Debug_pool_magic;
 #endif
-
-    /* Linking the block into the ring */
-    caml_plat_lock(&pool_mutex);
-    pb->next = pool->next;
-    pb->prev = pool;
-    pool->next->prev = pb;
-    pool->next = pb;
-    caml_plat_unlock(&pool_mutex);
-
+    link_pool_block(pb);
     return &(pb->data);
   }
 }
@@ -536,13 +548,7 @@ CAMLexport void caml_stat_free(caml_stat_block b)
   else {
     struct pool_block *pb = get_pool_block(b);
     if (pb == NULL) return;
-
-    /* Unlinking the block from the ring */
-    caml_plat_lock(&pool_mutex);
-    pb->prev->next = pb->next;
-    pb->next->prev = pb->prev;
-    caml_plat_unlock(&pool_mutex);
-
+    unlink_pool_block(pb);
     free(pb);
   }
 }
@@ -557,16 +563,20 @@ CAMLexport caml_stat_block caml_stat_resize_noexc(caml_stat_block b, asize_t sz)
     return realloc(b, sz);
   else {
     struct pool_block *pb = get_pool_block(b);
-    struct pool_block *pb_new = realloc(pb, sz + SIZEOF_POOL_BLOCK);
-    if (pb_new == NULL) return NULL;
-
-    /* Relinking the new block into the ring in place of the old one */
-    caml_plat_lock(&pool_mutex);
-    pb_new->prev->next = pb_new;
-    pb_new->next->prev = pb_new;
-    caml_plat_unlock(&pool_mutex);
-
-    return &(pb_new->data);
+    struct pool_block *pb_new;
+    /* Unlinking the block because it can be freed by realloc
+       while other domains access the pool concurrently. */
+    unlink_pool_block(pb);
+    /* Reallocating */
+    pb_new = realloc(pb, sz + SIZEOF_POOL_BLOCK);
+    if (pb_new == NULL) {
+      /* The old block is still there, relinking it */
+      link_pool_block(pb);
+      return NULL;
+    } else {
+      link_pool_block(pb_new);
+      return &(pb_new->data);
+    }
   }
 }
 
