@@ -16,8 +16,8 @@
 
 # Commands to run for the 'other-configs' job on Inria's CI
 
-# Stop on error
-set -e
+# Stop on error and be verbose
+set -e -x
 
 mainjob=./tools/ci/inria/main
 main="${mainjob} -j8"
