@@ -20,7 +20,7 @@ set -o pipefail
 
 nm -A -P "$@" | LC_ALL=C awk '
 # ignore caml_foo, camlFoo_bar, _caml_foo, _camlFoo_bar
-$2 ~ /^(_?caml[_A-Z])/ { next }
+$2 ~ /^(\.refptr\.)?(_?caml[_A-Z])/ { next }
 # ignore local and undefined symbols
 $3 ~ /^[a-zU]$/ { next }
 # ignore "main", which should be externally linked
