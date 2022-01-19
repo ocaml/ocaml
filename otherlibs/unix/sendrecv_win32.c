@@ -42,7 +42,7 @@ CAMLprim value unix_recv(value sock, value buff, value ofs, value len,
   if (ret == -1) err = WSAGetLastError();
   caml_leave_blocking_section();
   if (ret == -1) {
-    win32_maperr(err);
+    caml_win32_maperr(err);
     uerror("recv", Nothing);
   }
   memmove (&Byte(buff, Long_val(ofs)), iobuf, ret);
@@ -72,7 +72,7 @@ CAMLprim value unix_recvfrom(value sock, value buff, value ofs, value len,
   if (ret == -1) err = WSAGetLastError();
   caml_leave_blocking_section();
   if (ret == -1) {
-    win32_maperr(err);
+    caml_win32_maperr(err);
     uerror("recvfrom", Nothing);
   }
   memmove (&Byte(buff, Long_val(ofs)), iobuf, ret);
@@ -101,7 +101,7 @@ CAMLprim value unix_send(value sock, value buff, value ofs, value len,
   if (ret == -1) err = WSAGetLastError();
   caml_leave_blocking_section();
   if (ret == -1) {
-    win32_maperr(err);
+    caml_win32_maperr(err);
     uerror("send", Nothing);
   }
   return Val_int(ret);
@@ -128,7 +128,7 @@ value unix_sendto_native(value sock, value buff, value ofs, value len,
   if (ret == -1) err = WSAGetLastError();
   caml_leave_blocking_section();
   if (ret == -1) {
-    win32_maperr(err);
+    caml_win32_maperr(err);
     uerror("sendto", Nothing);
   }
   return Val_int(ret);

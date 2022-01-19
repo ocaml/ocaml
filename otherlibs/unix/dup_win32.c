@@ -28,7 +28,7 @@ static HANDLE duplicate_handle(BOOL inherit, HANDLE oldh)
                         0L,
                         inherit,
                         DUPLICATE_SAME_ACCESS)) {
-    win32_maperr(GetLastError());
+    caml_win32_maperr(GetLastError());
     return INVALID_HANDLE_VALUE;
   }
   return newh;
@@ -41,7 +41,7 @@ static SOCKET duplicate_socket(BOOL inherit, SOCKET oldsock)
   if (SOCKET_ERROR == WSADuplicateSocket(oldsock,
                                          GetCurrentProcessId(),
                                          &info)) {
-    win32_maperr(WSAGetLastError());
+    caml_win32_maperr(WSAGetLastError());
     return INVALID_SOCKET;
   }
 

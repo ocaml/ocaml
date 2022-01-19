@@ -55,12 +55,12 @@ static int socketpair(int domain, int type, int protocol,
   int rc;
 
   if (GetTempPath(MAX_PATH + 1, dirname) == 0) {
-    win32_maperr(GetLastError());
+    caml_win32_maperr(GetLastError());
     goto fail;
   }
 
   if (GetTempFileName(dirname, L"osp", 0U, path) == 0) {
-    win32_maperr(GetLastError());
+    caml_win32_maperr(GetLastError());
     goto fail;
   }
 
@@ -71,7 +71,7 @@ static int socketpair(int domain, int type, int protocol,
   rc = WideCharToMultiByte(CP_UTF8, 0, path, -1, addr.s_unix.sun_path,
                            UNIX_PATH_MAX, NULL, NULL);
   if (rc == 0) {
-    win32_maperr(GetLastError());
+    caml_win32_maperr(GetLastError());
     goto fail_path;
   }
 
@@ -83,7 +83,7 @@ static int socketpair(int domain, int type, int protocol,
   if (DeleteFile(path) == 0) {
     drc = GetLastError();
     if (drc != ERROR_FILE_NOT_FOUND) {
-      win32_maperr(drc);
+      caml_win32_maperr(drc);
       goto fail_sockets;
     }
   }
@@ -137,7 +137,7 @@ static int socketpair(int domain, int type, int protocol,
     goto fail_wsa;
 
   if (DeleteFile(path) == 0) {
-    win32_maperr(GetLastError());
+    caml_win32_maperr(GetLastError());
     goto fail_sockets;
   }
 
@@ -153,7 +153,7 @@ static int socketpair(int domain, int type, int protocol,
   return 0;
 
 fail_wsa:
-  win32_maperr(WSAGetLastError());
+  caml_win32_maperr(WSAGetLastError());
 
 fail_path:
   DeleteFile(path);

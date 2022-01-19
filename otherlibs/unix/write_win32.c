@@ -50,7 +50,7 @@ CAMLprim value unix_write(value fd, value buf, value vofs, value vlen)
       caml_leave_blocking_section();
     }
     if (err) {
-      win32_maperr(err);
+      caml_win32_maperr(err);
       uerror("write", Nothing);
     }
     written += numwritten;
@@ -90,7 +90,7 @@ CAMLprim value unix_single_write(value fd, value buf, value vofs, value vlen)
       caml_leave_blocking_section();
     }
     if (err) {
-      win32_maperr(err);
+      caml_win32_maperr(err);
       uerror("single_write", Nothing);
     }
     written = numwritten;

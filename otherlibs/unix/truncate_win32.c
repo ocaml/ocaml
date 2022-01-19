@@ -32,7 +32,7 @@ static int win_truncate_handle(HANDLE fh, __int64 len)
   fp.QuadPart = len;
   if (SetFilePointerEx(fh, fp, NULL, FILE_BEGIN) == 0 ||
       SetEndOfFile(fh) == 0) {
-    win32_maperr(GetLastError());
+    caml_win32_maperr(GetLastError());
     return -1;
   }
   return 0;
@@ -46,7 +46,7 @@ static int win_ftruncate(HANDLE fh, __int64 len)
   /* Duplicate the handle, so we are free to modify its file position. */
   if (DuplicateHandle(currproc, fh, currproc, &dupfh, 0, FALSE,
                       DUPLICATE_SAME_ACCESS) == 0) {
-    win32_maperr(GetLastError());
+    caml_win32_maperr(GetLastError());
     return -1;
   }
   ret = win_truncate_handle(dupfh, len);
@@ -61,7 +61,7 @@ static int win_truncate(WCHAR * path, __int64 len)
   fh = CreateFile(path, GENERIC_WRITE, 0, NULL,
                   OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
   if (fh == INVALID_HANDLE_VALUE) {
-    win32_maperr(GetLastError());
+    caml_win32_maperr(GetLastError());
     return -1;
   }
   ret = win_truncate_handle(fh, len);

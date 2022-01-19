@@ -21,7 +21,7 @@ CAMLprim value unix_close(value fd)
 {
   if (Descr_kind_val(fd) == KIND_SOCKET) {
     if (closesocket(Socket_val(fd)) != 0) {
-      win32_maperr(WSAGetLastError());
+      caml_win32_maperr(WSAGetLastError());
       uerror("close", Nothing);
     }
   } else {
@@ -33,7 +33,7 @@ CAMLprim value unix_close(value fd)
          uerror("close", Nothing);
     } else {
       if (! CloseHandle(Handle_val(fd))) {
-        win32_maperr(GetLastError());
+        caml_win32_maperr(GetLastError());
         uerror("close", Nothing);
       }
     }

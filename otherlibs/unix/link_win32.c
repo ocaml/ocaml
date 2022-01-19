@@ -57,7 +57,7 @@ CAMLprim value unix_link(value follow, value path1, value path2)
   caml_stat_free(wpath2);
 
   if (! result) {
-    win32_maperr(GetLastError());
+    caml_win32_maperr(GetLastError());
     uerror("link", path2);
   }
   return Val_unit;

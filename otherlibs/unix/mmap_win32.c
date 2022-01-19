@@ -27,7 +27,7 @@
 #include "unixsupport.h"
 
 #define uerror(func, arg) \
-  do { win32_maperr(GetLastError()); uerror(func, arg); } while(0)
+  do { caml_win32_maperr(GetLastError()); uerror(func, arg); } while(0)
 
 /* Defined in [mmap_ba.c] */
 extern value caml_unix_mapped_alloc(int, int, void *, intnat *);

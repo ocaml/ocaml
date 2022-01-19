@@ -41,7 +41,7 @@ CAMLprim value win_findfirst(value name)
     if (err == ERROR_NO_MORE_FILES)
       caml_raise_end_of_file();
     else {
-      win32_maperr(err);
+      caml_win32_maperr(err);
       uerror("opendir", Nothing);
     }
   }
@@ -64,7 +64,7 @@ CAMLprim value win_findnext(value valh)
     if (err == ERROR_NO_MORE_FILES)
       caml_raise_end_of_file();
     else {
-      win32_maperr(err);
+      caml_win32_maperr(err);
       uerror("readdir", Nothing);
     }
   }
@@ -74,7 +74,7 @@ CAMLprim value win_findnext(value valh)
 CAMLprim value win_findclose(value valh)
 {
   if (! FindClose(Handle_val(valh))) {
-    win32_maperr(GetLastError());
+    caml_win32_maperr(GetLastError());
     uerror("closedir", Nothing);
   }
   return Val_unit;

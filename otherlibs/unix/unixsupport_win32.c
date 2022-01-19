@@ -154,7 +154,7 @@ static struct error_entry win_error_table[] = {
   { 0, -1, 0 }
 };
 
-void win32_maperr(DWORD errcode)
+void caml_win32_maperr(DWORD errcode)
 {
   int i;
 
@@ -343,7 +343,7 @@ int win_set_inherit(HANDLE fd, BOOL inherit)
   if (! SetHandleInformation(fd,
                              HANDLE_FLAG_INHERIT,
                              inherit ? HANDLE_FLAG_INHERIT : 0)) {
-    win32_maperr(GetLastError());
+    caml_win32_maperr(GetLastError());
     return -1;
   }
   return 0;

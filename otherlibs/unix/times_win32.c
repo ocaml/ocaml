@@ -45,7 +45,7 @@ value unix_times(value unit) {
 
   if (!(GetProcessTimes(GetCurrentProcess(), &creation, &exit, &stime,
                         &utime))) {
-    win32_maperr(GetLastError());
+    caml_win32_maperr(GetLastError());
     uerror("times", Nothing);
   }
 

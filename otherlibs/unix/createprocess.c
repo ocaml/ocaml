@@ -138,7 +138,7 @@ value win_create_process_native(value cmd, value cmdline, value env,
   caml_stat_free(wcmdline);
   caml_stat_free(exefile);
   if (err != ERROR_SUCCESS) {
-    win32_maperr(err);
+    caml_win32_maperr(err);
     uerror("create_process", cmd);
   }
   /* Return the process handle as pseudo-PID

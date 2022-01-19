@@ -38,7 +38,7 @@ static void set_file_pointer(HANDLE h, LARGE_INTEGER gohere,
   if(ret == INVALID_SET_FILE_POINTER) {
     DWORD err = GetLastError();
     if(err != NO_ERROR) {
-      win32_maperr(err);
+      caml_win32_maperr(err);
       uerror("lockf", Nothing);
     }
   }
@@ -153,7 +153,7 @@ CAMLprim value unix_lockf(value fd, value cmd, value span)
     uerror("lockf", Nothing);
   }
   if (err != NO_ERROR) {
-    win32_maperr(err);
+    caml_win32_maperr(err);
     uerror("lockf", Nothing);
   }
   CAMLreturn(Val_unit);

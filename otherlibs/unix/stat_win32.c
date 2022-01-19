@@ -208,7 +208,7 @@ static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, _
   else {
     caml_enter_blocking_section();
     if (!GetFileInformationByHandle(h, &info)) {
-      win32_maperr(GetLastError());
+      caml_win32_maperr(GetLastError());
       caml_leave_blocking_section();
       if (path) CloseHandle(h);
       return 0;
@@ -261,7 +261,7 @@ static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, _
         }
         else {
           if (!GetFileInformationByHandle(h, &info)) {
-            win32_maperr(GetLastError());
+            caml_win32_maperr(GetLastError());
             caml_leave_blocking_section();
             CloseHandle(h);
             return 0;
@@ -290,14 +290,14 @@ static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, _
     }
 
     if (!use_64 && res->st_size > Max_long) {
-      win32_maperr(ERROR_ARITHMETIC_OVERFLOW);
+      caml_win32_maperr(ERROR_ARITHMETIC_OVERFLOW);
       return 0;
     }
 
     if (!convert_time(&info.ftLastWriteTime, &res->st_mtime, 0) ||
         !convert_time(&info.ftLastAccessTime, &res->st_atime, res->st_mtime) ||
         !convert_time(&info.ftCreationTime, &res->st_ctime, res->st_mtime)) {
-      win32_maperr(GetLastError());
+      caml_win32_maperr(GetLastError());
       return 0;
     }
 
@@ -434,7 +434,7 @@ static value do_fstat(value handle, int use_64)
   case FILE_TYPE_UNKNOWN:
     unix_error(EBADF, "fstat", Nothing);
   default:
-    win32_maperr(GetLastError());
+    caml_win32_maperr(GetLastError());
     uerror("fstat", Nothing);
   }
   return stat_aux(use_64, st_ino, &buf);

@@ -37,7 +37,7 @@ CAMLprim value unix_accept(value cloexec, value sock)
   if (snew == INVALID_SOCKET) err = WSAGetLastError ();
   caml_leave_blocking_section();
   if (snew == INVALID_SOCKET) {
-    win32_maperr(err);
+    caml_win32_maperr(err);
     uerror("accept", Nothing);
   }
   win_set_cloexec((HANDLE) snew, cloexec);

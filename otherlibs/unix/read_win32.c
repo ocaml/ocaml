@@ -51,7 +51,7 @@ CAMLprim value unix_read(value fd, value buf, value ofs, value vlen)
       err = 0;
       numread = 0;
     } else {
-      win32_maperr(err);
+      caml_win32_maperr(err);
       uerror("read", Nothing);
     }
   }

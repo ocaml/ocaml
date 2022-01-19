@@ -83,7 +83,10 @@ CAMLprim value win_inchannel_of_filedescr(value handle)
   fflush(stdin);
 #endif
   err = win_check_stream_semantics(handle);
-  if (err != 0) { win32_maperr(err); uerror("in_channel_of_descr", Nothing); }
+  if (err != 0) {
+    caml_win32_maperr(err);
+    uerror("in_channel_of_descr", Nothing);
+  }
   chan = caml_open_descriptor_in(win_CRT_fd_of_filedescr(handle));
   chan->flags |= CHANNEL_FLAG_MANAGED_BY_GC;
                  /* as in caml_ml_open_descriptor_in() */
@@ -102,7 +105,10 @@ CAMLprim value win_outchannel_of_filedescr(value handle)
   DWORD err;
 
   err = win_check_stream_semantics(handle);
-  if (err != 0) { win32_maperr(err); uerror("out_channel_of_descr", Nothing); }
+  if (err != 0) {
+    caml_win32_maperr(err);
+    uerror("out_channel_of_descr", Nothing);
+  }
   chan = caml_open_descriptor_out(win_CRT_fd_of_filedescr(handle));
   chan->flags |= CHANNEL_FLAG_MANAGED_BY_GC;
                  /* as in caml_ml_open_descriptor_out() */

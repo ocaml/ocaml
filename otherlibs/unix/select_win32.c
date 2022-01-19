@@ -875,7 +875,7 @@ static LPSELECTDATA select_data_dispatch (LPSELECTDATA lpSelectData,
 
     default:
       DEBUG_PRINT("Handle %x is unknown", hFileDescr);
-      win32_maperr(ERROR_INVALID_HANDLE);
+      caml_win32_maperr(ERROR_INVALID_HANDLE);
       uerror("select", Nothing);
       break;
   };
@@ -1060,7 +1060,7 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
       caml_leave_blocking_section();
       if (err) {
         DEBUG_PRINT("Error %ld occurred", err);
-        win32_maperr(err);
+        caml_win32_maperr(err);
         uerror("select", Nothing);
       }
       read_list = fdset_to_fdlist(readfds, &read);
@@ -1313,7 +1313,7 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
       DEBUG_PRINT("Raise error if required");
       if (err != 0)
         {
-          win32_maperr(err);
+          caml_win32_maperr(err);
           uerror("select", Nothing);
         }
     }

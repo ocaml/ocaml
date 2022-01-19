@@ -26,7 +26,7 @@ CAMLprim value unix_getpeername(value sock)
   addr_len = sizeof(addr);
   retcode = getpeername(Socket_val(sock), &addr.s_gen, &addr_len);
   if (retcode == -1) {
-    win32_maperr(WSAGetLastError());
+    caml_win32_maperr(WSAGetLastError());
     uerror("getpeername", Nothing);
   }
   return unix_alloc_sockaddr(&addr, addr_len, -1);

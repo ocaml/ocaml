@@ -111,7 +111,7 @@ again:
   caml_stat_free(dest);
 
   if (!result) {
-    win32_maperr(GetLastError());
+    caml_win32_maperr(GetLastError());
     uerror("symlink", odest);
   }
 

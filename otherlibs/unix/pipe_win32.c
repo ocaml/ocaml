@@ -34,7 +34,7 @@ CAMLprim value unix_pipe(value cloexec, value unit)
   attr.lpSecurityDescriptor = NULL;
   attr.bInheritHandle = unix_cloexec_p(cloexec) ? FALSE : TRUE;
   if (! CreatePipe(&readh, &writeh, &attr, SIZEBUF)) {
-    win32_maperr(GetLastError());
+    caml_win32_maperr(GetLastError());
     uerror("pipe", Nothing);
   }
   readfd = win_alloc_handle(readh);

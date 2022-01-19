@@ -49,14 +49,14 @@ CAMLprim value unix_realpath (value p)
 
   if (h == INVALID_HANDLE_VALUE)
   {
-    win32_maperr (GetLastError ());
+    caml_win32_maperr (GetLastError ());
     uerror ("realpath", p);
   }
 
   wr_len = GetFinalPathNameByHandle (h, NULL, 0, VOLUME_NAME_DOS);
   if (wr_len == 0)
   {
-    win32_maperr (GetLastError ());
+    caml_win32_maperr (GetLastError ());
     CloseHandle (h);
     uerror ("realpath", p);
   }
@@ -66,7 +66,7 @@ CAMLprim value unix_realpath (value p)
 
   if (wr_len == 0)
   {
-    win32_maperr (GetLastError ());
+    caml_win32_maperr (GetLastError ());
     CloseHandle (h);
     caml_stat_free (wr);
     uerror ("realpath", p);

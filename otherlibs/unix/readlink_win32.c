@@ -41,7 +41,7 @@ CAMLprim value unix_readlink(value opath)
 
   if (attributes == INVALID_FILE_ATTRIBUTES) {
     caml_stat_free(path);
-    win32_maperr(GetLastError());
+    caml_win32_maperr(GetLastError());
     uerror("readlink", opath);
   }
   else if (!(attributes & FILE_ATTRIBUTE_REPARSE_POINT)) {
@@ -96,7 +96,7 @@ CAMLprim value unix_readlink(value opath)
       }
       else {
         caml_leave_blocking_section();
-        win32_maperr(GetLastError());
+        caml_win32_maperr(GetLastError());
         CloseHandle(h);
         uerror("readlink", opath);
       }

@@ -32,7 +32,7 @@ CAMLprim value unix_connect(socket, address)
     err = WSAGetLastError();
   caml_leave_blocking_section();
   if (err) {
-    win32_maperr(err);
+    caml_win32_maperr(err);
     uerror("connect", Nothing);
   }
   return Val_unit;
