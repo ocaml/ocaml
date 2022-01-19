@@ -44,7 +44,7 @@ typedef struct _SELECTHANDLESET {
 
 typedef SELECTHANDLESET *LPSELECTHANDLESET;
 
-void handle_set_init (LPSELECTHANDLESET hds, LPHANDLE lpHdl, DWORD max)
+static void handle_set_init (LPSELECTHANDLESET hds, LPHANDLE lpHdl, DWORD max)
 {
   DWORD i;
 
@@ -59,7 +59,7 @@ void handle_set_init (LPSELECTHANDLESET hds, LPHANDLE lpHdl, DWORD max)
   };
 }
 
-void handle_set_add (LPSELECTHANDLESET hds, HANDLE hdl)
+static void handle_set_add (LPSELECTHANDLESET hds, HANDLE hdl)
 {
   LPSELECTHANDLESET res;
 
@@ -72,7 +72,7 @@ void handle_set_add (LPSELECTHANDLESET hds, HANDLE hdl)
   DEBUG_PRINT("Adding handle %x to set %x", hdl, hds);
 }
 
-BOOL handle_set_mem (LPSELECTHANDLESET hds, HANDLE hdl)
+static BOOL handle_set_mem (LPSELECTHANDLESET hds, HANDLE hdl)
 {
   BOOL  res;
   DWORD i;
@@ -86,7 +86,7 @@ BOOL handle_set_mem (LPSELECTHANDLESET hds, HANDLE hdl)
   return res;
 }
 
-void handle_set_reset (LPSELECTHANDLESET hds)
+static void handle_set_reset (LPSELECTHANDLESET hds)
 {
   DWORD i;
 
@@ -184,7 +184,8 @@ static BOOL check_error(LPSELECTDATA lpSelectData, BOOL bFailed)
 }
 
 /* Create data associated with a  select operation */
-LPSELECTDATA select_data_new (LPSELECTDATA lpSelectData, SELECTTYPE EType)
+static LPSELECTDATA select_data_new (LPSELECTDATA lpSelectData,
+                                     SELECTTYPE EType)
 {
   /* Allocate the data structure */
   LPSELECTDATA res;
@@ -213,7 +214,7 @@ LPSELECTDATA select_data_new (LPSELECTDATA lpSelectData, SELECTTYPE EType)
 }
 
 /* Free select data */
-void select_data_free (LPSELECTDATA lpSelectData)
+static void select_data_free (LPSELECTDATA lpSelectData)
 {
   DWORD i;
 
@@ -234,8 +235,8 @@ void select_data_free (LPSELECTDATA lpSelectData)
 }
 
 /* Add a result to select data, return zero if something goes wrong. */
-DWORD select_data_result_add (LPSELECTDATA lpSelectData, SELECTMODE EMode,
-                              int lpOrigIdx)
+static DWORD select_data_result_add (LPSELECTDATA lpSelectData,
+                                     SELECTMODE EMode, int lpOrigIdx)
 {
   DWORD res;
   DWORD i;
@@ -254,11 +255,11 @@ DWORD select_data_result_add (LPSELECTDATA lpSelectData, SELECTMODE EMode,
 }
 
 /* Add a query to select data, return zero if something goes wrong */
-DWORD select_data_query_add (LPSELECTDATA lpSelectData,
-                             SELECTMODE EMode,
-                             HANDLE hFileDescr,
-                             int lpOrigIdx,
-                             unsigned int uFlagsFd)
+static DWORD select_data_query_add (LPSELECTDATA lpSelectData,
+                                    SELECTMODE EMode,
+                                    HANDLE hFileDescr,
+                                    int lpOrigIdx,
+                                    unsigned int uFlagsFd)
 {
   DWORD res;
   DWORD i;
@@ -282,8 +283,8 @@ DWORD select_data_query_add (LPSELECTDATA lpSelectData,
  * If none is found, create a new one. Return the corresponding SELECTDATA, and
  * update provided SELECTDATA head, if required.
  */
-LPSELECTDATA select_data_job_search (LPSELECTDATA *lppSelectData,
-                                     SELECTTYPE EType)
+static LPSELECTDATA select_data_job_search (LPSELECTDATA *lppSelectData,
+                                            SELECTTYPE EType)
 {
   LPSELECTDATA res;
 
@@ -318,7 +319,7 @@ LPSELECTDATA select_data_job_search (LPSELECTDATA *lppSelectData,
 /*      Console        */
 /***********************/
 
-void read_console_poll(HANDLE hStop, void *_data)
+static void read_console_poll(HANDLE hStop, void *_data)
 {
   HANDLE events[2];
   INPUT_RECORD record;
@@ -376,11 +377,11 @@ void read_console_poll(HANDLE hStop, void *_data)
 }
 
 /* Add a function to monitor console input */
-LPSELECTDATA read_console_poll_add (LPSELECTDATA lpSelectData,
-                                    SELECTMODE EMode,
-                                    HANDLE hFileDescr,
-                                    int lpOrigIdx,
-                                    unsigned int uFlagsFd)
+static LPSELECTDATA read_console_poll_add (LPSELECTDATA lpSelectData,
+                                           SELECTMODE EMode,
+                                           HANDLE hFileDescr,
+                                           int lpOrigIdx,
+                                           unsigned int uFlagsFd)
 {
   LPSELECTDATA res;
 
@@ -396,7 +397,7 @@ LPSELECTDATA read_console_poll_add (LPSELECTDATA lpSelectData,
 /***********************/
 
 /* Monitor a pipe for input */
-void read_pipe_poll (HANDLE hStop, void *_data)
+static void read_pipe_poll (HANDLE hStop, void *_data)
 {
   DWORD         res;
   DWORD         event;
@@ -467,11 +468,11 @@ void read_pipe_poll (HANDLE hStop, void *_data)
 }
 
 /* Add a function to monitor pipe input */
-LPSELECTDATA read_pipe_poll_add (LPSELECTDATA lpSelectData,
-                                 SELECTMODE EMode,
-                                 HANDLE hFileDescr,
-                                 int lpOrigIdx,
-                                 unsigned int uFlagsFd)
+static LPSELECTDATA read_pipe_poll_add (LPSELECTDATA lpSelectData,
+                                        SELECTMODE EMode,
+                                        HANDLE hFileDescr,
+                                        int lpOrigIdx,
+                                        unsigned int uFlagsFd)
 {
   LPSELECTDATA res;
   LPSELECTDATA hd;
@@ -496,7 +497,7 @@ LPSELECTDATA read_pipe_poll_add (LPSELECTDATA lpSelectData,
 /***********************/
 
 /* Monitor socket */
-void socket_poll (HANDLE hStop, void *_data)
+static void socket_poll (HANDLE hStop, void *_data)
 {
   LPSELECTDATA   lpSelectData;
   LPSELECTQUERY    iterQuery;
@@ -615,11 +616,11 @@ void socket_poll (HANDLE hStop, void *_data)
 }
 
 /* Add a function to monitor socket */
-LPSELECTDATA socket_poll_add (LPSELECTDATA lpSelectData,
-                              SELECTMODE EMode,
-                              HANDLE hFileDescr,
-                              int lpOrigIdx,
-                              unsigned int uFlagsFd)
+static LPSELECTDATA socket_poll_add (LPSELECTDATA lpSelectData,
+                                     SELECTMODE EMode,
+                                     HANDLE hFileDescr,
+                                     int lpOrigIdx,
+                                     unsigned int uFlagsFd)
 {
   LPSELECTDATA res;
   LPSELECTDATA candidate;
@@ -714,11 +715,11 @@ LPSELECTDATA socket_poll_add (LPSELECTDATA lpSelectData,
 /***********************/
 
 /* Add a static result */
-LPSELECTDATA static_poll_add (LPSELECTDATA lpSelectData,
-                              SELECTMODE EMode,
-                              HANDLE hFileDescr,
-                              int lpOrigIdx,
-                              unsigned int uFlagsFd)
+static LPSELECTDATA static_poll_add (LPSELECTDATA lpSelectData,
+                                     SELECTMODE EMode,
+                                     HANDLE hFileDescr,
+                                     int lpOrigIdx,
+                                     unsigned int uFlagsFd)
 {
   LPSELECTDATA res;
   LPSELECTDATA hd;
@@ -783,8 +784,9 @@ static SELECTHANDLETYPE get_handle_type(value fd)
 }
 
 /* Choose what to do with given data */
-LPSELECTDATA select_data_dispatch (LPSELECTDATA lpSelectData, SELECTMODE EMode,
-                                   value fd, int lpOrigIdx)
+static LPSELECTDATA select_data_dispatch (LPSELECTDATA lpSelectData,
+                                          SELECTMODE EMode,
+                                          value fd, int lpOrigIdx)
 {
   LPSELECTDATA    res;
   HANDLE          hFileDescr;

@@ -45,10 +45,10 @@ struct _WORKER {
 #define THREAD_WORKERS_MAX 16
 #define THREAD_WORKERS_MEM 4000
 
-LPWORKER lpWorkers       = NULL;
-DWORD    nWorkersCurrent = 0;
-DWORD    nWorkersMax     = 0;
-HANDLE   hWorkersMutex   = INVALID_HANDLE_VALUE;
+static LPWORKER lpWorkers       = NULL;
+static DWORD    nWorkersCurrent = 0;
+static DWORD    nWorkersMax     = 0;
+static HANDLE   hWorkersMutex   = INVALID_HANDLE_VALUE;
 
 DWORD WINAPI worker_wait (LPVOID _data)
 {
