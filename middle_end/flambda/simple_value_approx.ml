@@ -552,15 +552,17 @@ let useful t =
 let all_not_useful ts = List.for_all (fun t -> not (useful t)) ts
 
 let warn_on_mutation t =
-  match t.descr with
-  | Value_block(_, fields) -> Array.length fields > 0
-  | Value_string { contents = Some _ }
-  | Value_int _ | Value_char _
-  | Value_set_of_closures _ | Value_float _ | Value_boxed_int _
-  | Value_closure _ -> true
-  | Value_string { contents = None } | Value_float_array _
-  | Value_unresolved _ | Value_unknown _ | Value_bottom -> false
-  | Value_extern _ | Value_symbol _ -> assert false
+  if not !Clflags.flambda_invariant_checks then false
+  else
+    match t.descr with
+    | Value_block(_, fields) -> Array.length fields > 0
+    | Value_string { contents = Some _ }
+    | Value_int _ | Value_char _
+    | Value_set_of_closures _ | Value_float _ | Value_boxed_int _
+    | Value_closure _ -> true
+    | Value_string { contents = None } | Value_float_array _
+    | Value_unresolved _ | Value_unknown _ | Value_bottom -> false
+    | Value_extern _ | Value_symbol _ -> assert false
 
 type get_field_result =
   | Ok of t

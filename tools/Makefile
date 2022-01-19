@@ -347,6 +347,9 @@ DEPINCLUDES=$(INCLUDES)
 depend: beforedepend
 	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mli *.ml > .depend
 
-.PHONY: clean install beforedepend depend
+.PHONY: clean distclean install beforedepend depend
+
+distclean: clean
+	rm -f eventlog_metadata *.bak
 
 include .depend

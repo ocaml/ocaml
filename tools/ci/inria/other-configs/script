@@ -16,8 +16,8 @@
 
 # Commands to run for the 'other-configs' job on Inria's CI
 
-# Stop on error
-set -e
+# Stop on error and be verbose
+set -e -x
 
 mainjob=./tools/ci/inria/main
 main="${mainjob} -j8"
@@ -31,6 +31,7 @@ ${main} -conf --disable-native-compiler \
         -conf --disable-shared \
         -conf --disable-debug-runtime \
         -conf --disable-instrumented-runtime \
+        -conf --disable-systhreads \
         -conf --disable-str-lib \
         -conf --disable-unix-lib \
         -conf --disable-bigarray-lib \

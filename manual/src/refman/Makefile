@@ -41,3 +41,6 @@ all: $(FILES)
 clean:
 	rm -f *.tex
 	rm -f extensions/*.tex
+
+.PHONY: distclean
+distclean: clean

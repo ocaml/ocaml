@@ -61,6 +61,9 @@ clean::
 clean::
 	rm -f parser.ml parser.mli parser.output
 
+.PHONY: distclean
+distclean: clean
+
 beforedepend:: parser.ml parser.mli
 
 clean::

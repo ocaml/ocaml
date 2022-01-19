@@ -347,6 +347,9 @@ clean:
 	rm -f generators/*.cm[taiox] generators/*.a generators/*.lib generators/*.o generators/*.obj \
         generators/*.cmx[as]
 
+.PHONY: distclean
+distclean: clean
+
 .PHONY: depend
 depend: $(DEPEND_PREREQS)
 	$(OCAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mll *.mly *.ml *.mli > .depend

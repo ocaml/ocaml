@@ -1154,9 +1154,17 @@ depend: beforedepend
 
 .PHONY: distclean
 distclean: clean
+	$(MAKE) -C debugger distclean
+	$(MAKE) -C lex distclean
 	$(MAKE) -C manual distclean
+	$(MAKE) -C ocamldoc distclean
+	$(MAKE) -C ocamltest distclean
+	$(MAKE) -C otherlibs distclean
 	$(MAKE) -C runtime distclean
 	$(MAKE) -C stdlib distclean
+	$(MAKE) -C testsuite distclean
+	$(MAKE) -C tools distclean
+	$(MAKE) -C yacc distclean
 	rm -f boot/ocamlrun boot/ocamlrun.exe boot/camlheader \
 	      boot/ocamlruns boot/ocamlruns.exe \
 	      boot/flexlink.byte boot/flexlink.byte.exe \
@@ -1165,9 +1173,6 @@ distclean: clean
 	rm -f Makefile.config Makefile.build_config
 	rm -rf autom4te.cache flexdll-sources
 	rm -f config.log config.status libtool
-	rm -f tools/eventlog_metadata
-	rm -f tools/*.bak
-	rm -f testsuite/_log*
 
 include .depend
 

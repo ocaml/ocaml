@@ -26,7 +26,7 @@ export LC_ALL=C
       lexing md5 meta memprof obj parsing signals str sys callback weak \
       finalise domain platform fiber memory startup_aux sync \
       dynlink backtrace_byt backtrace afl \
-      bigarray eventlog
+      bigarray eventlog prng
   do
       sed -n -e 's/^CAMLprim value \([a-z0-9_][a-z0-9_]*\).*/\1/p' "$prim.c"
   done

@@ -1,5 +1,13 @@
 (* TEST
-   flags = "-g"
+
+flags = "-g"
+* bytecode
+* no-flambda
+** native
+* flambda
+reference = "${test_source_directory}/backtrace_effects_nested.flambda.reference"
+** native
+
 *)
 
 open Effect
