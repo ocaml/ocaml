@@ -664,7 +664,7 @@ struct domain_startup_params {
   uintnat unique_id;
 #ifndef _WIN32
   /* signal mask to set after it is safe to do so */
-  sigset_t mask;
+  sigset_t* mask;
 #endif
 };
 
@@ -803,6 +803,9 @@ static void* domain_thread_func(void* v)
   sync_mutex terminate_mutex = NULL;
   struct domain_startup_params* p = v;
   struct domain_ml_values *ml_values = p->ml_values;
+#ifndef _WIN32
+  sigset_t mask = *(p->mask);
+#endif
 
   create_domain(caml_params->init_minor_heap_wsz);
   /* this domain is now part of the STW participant set */
@@ -830,7 +833,7 @@ static void* domain_thread_func(void* v)
 
 #ifndef _WIN32
     /* It is now safe for us to handle signals */
-    pthread_sigmask(SIG_SETMASK, &p->mask, NULL);
+    pthread_sigmask(SIG_SETMASK, &mask, NULL);
 #endif
 
     caml_gc_log("Domain starting (unique_id = %"ARCH_INTNAT_PRINTF_FORMAT"u)",
@@ -879,7 +882,7 @@ CAMLprim value caml_domain_spawn(value callback, value mutex)
   /* FIXME Spawning threads -> unix.c/win32.c */
   sigfillset(&mask);
   pthread_sigmask(SIG_BLOCK, &mask, &old_mask);
-  p.mask = old_mask;
+  p.mask = &old_mask;
 #endif
   err = pthread_create(&th, 0, domain_thread_func, (void*)&p);
 #ifndef _WIN32
