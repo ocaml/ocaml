@@ -362,24 +362,6 @@ stdlib__Gc.cmx : gc.ml \
     stdlib__Gc.cmi
 stdlib__Gc.cmi : gc.mli \
     stdlib__Printexc.cmi
-stdlib__Genlex.cmo : genlex.ml \
-    stdlib__String.cmi \
-    stdlib__Stream.cmi \
-    stdlib__List.cmi \
-    stdlib__Hashtbl.cmi \
-    stdlib__Char.cmi \
-    stdlib__Bytes.cmi \
-    stdlib__Genlex.cmi
-stdlib__Genlex.cmx : genlex.ml \
-    stdlib__String.cmx \
-    stdlib__Stream.cmx \
-    stdlib__List.cmx \
-    stdlib__Hashtbl.cmx \
-    stdlib__Char.cmx \
-    stdlib__Bytes.cmx \
-    stdlib__Genlex.cmi
-stdlib__Genlex.cmi : genlex.mli \
-    stdlib__Stream.cmi
 stdlib__Hashtbl.cmo : hashtbl.ml \
     stdlib__Sys.cmi \
     stdlib__String.cmi \
@@ -581,10 +563,6 @@ stdlib__Parsing.cmx : parsing.ml \
 stdlib__Parsing.cmi : parsing.mli \
     stdlib__Obj.cmi \
     stdlib__Lexing.cmi
-stdlib__Pervasives.cmo : pervasives.ml \
-    camlinternalFormatBasics.cmi
-stdlib__Pervasives.cmx : pervasives.ml \
-    camlinternalFormatBasics.cmx
 stdlib__Printexc.cmo : printexc.ml \
     stdlib.cmi \
     stdlib__Printf.cmi \
@@ -738,19 +716,6 @@ stdlib__StdLabels.cmi : stdLabels.mli \
     stdlib__ArrayLabels.cmi
 std_exit.cmo :
 std_exit.cmx :
-stdlib__Stream.cmo : stream.ml \
-    stdlib__String.cmi \
-    stdlib__List.cmi \
-    stdlib__Lazy.cmi \
-    stdlib__Bytes.cmi \
-    stdlib__Stream.cmi
-stdlib__Stream.cmx : stream.ml \
-    stdlib__String.cmx \
-    stdlib__List.cmx \
-    stdlib__Lazy.cmx \
-    stdlib__Bytes.cmx \
-    stdlib__Stream.cmi
-stdlib__Stream.cmi : stream.mli
 stdlib__String.cmo : string.ml \
     stdlib.cmi \
     stdlib__Bytes.cmi \

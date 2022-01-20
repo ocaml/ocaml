@@ -168,9 +168,6 @@ INSTALL_BYTECODE_PROGRAMS=@install_bytecode_programs@
 
 ### Which libraries to compile and install
 # Currently available:
-#       bigarray          Large, multidimensional numerical arrays
-#                           (legacy support: this library is now part of the
-#                            Standard Library)
 #       dynlink           Dynamic linking (bytecode and native)
 #       (win32)unix       Unix system calls
 #       str               Regular expressions and high-level string processing

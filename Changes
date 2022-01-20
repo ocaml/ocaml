@@ -26,7 +26,8 @@ Working version
 * #10867: Remove deprecated values: Array.create, Array.make_float,
   Array.create_matrix, Bytes.uppercase, Bytes.lowercase, Bytes.capitalize,
   Bytes.uncapitalize, Char.lowercase, Char.uppercase, Filename.temp_dir_name,
-  Format.bprintf, Format.kprintf, Format.set_all_formatter_output_functions,
+  Int32.format, Int64.format, Nativeint.format, Format.bprintf, Format.kprintf,
+  Format.set_all_formatter_output_functions,
   Format.get_all_formatter_output_functions,
   Format.pp_set_all_formatter_output_functions,
   Format.pp_get_all_formatter_output_functions, Format.pp_open_tag,
@@ -42,6 +43,10 @@ Working version
   String.lowercase, String.capitalize, String.uncapitalize, Thread.kill,
   Thread.wait_write, Thread.wait_read, the whole ThreadUnix module.
   (Nicolás Ojeda Bär, review by Damien Doligez)
+
+* #10896: Remove Stream, Genlex and Pervasives. Also remove legacy standalone
+  bigarray library (the Bigarray module is now part of the standard library).
+  (Nicolás Ojeda Bär, review by Kate Deplaix and Anil Madhavapeddy)
 
 ### Other libraries:
 
@@ -412,6 +417,10 @@ OCaml 4.14.0
   modules that can be used by external tooling to perform definition-aware
   operations. (Ulysse Gérard, Thomas Refis and Leo White, review by Florian
   Angeletti)
+
+- #10742: strong call-by-need reduction for shapes
+  (Gabriel Scherer and Nathanaëlle Courant,
+   review by Florian Angeletti, Ulysse Gérard and Thomas Refis)
 
 ### Build system:
 

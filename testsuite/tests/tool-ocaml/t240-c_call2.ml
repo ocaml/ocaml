@@ -7,7 +7,7 @@ ocaml_script_as_argument = "true"
 *)
 
 open Lib;;
-if Pervasives.compare 1 2 <> -1 then raise Not_found;;
+if Stdlib.compare 1 2 <> -1 then raise Not_found;;
 
 (**
        0 CONSTINT 42

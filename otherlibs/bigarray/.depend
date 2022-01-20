@@ -1,5 +1,0 @@
-bigarray.cmo : \
-    bigarray.cmi
-bigarray.cmx : \
-    bigarray.cmi
-bigarray.cmi :

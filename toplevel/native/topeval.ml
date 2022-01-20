@@ -165,10 +165,11 @@ let execute_phrase print_outcome ppf phr =
         Typemod.type_toplevel_phrase oldenv sstr
       in
       if !Clflags.dump_typedtree then Printtyped.implementation ppf str;
-      if !Clflags.dump_shape then Shape.print ppf shape;
       let sg' = Typemod.Signature_names.simplify newenv names sg in
       ignore (Includemod.signatures oldenv ~mark:Mark_positive sg sg');
       Typecore.force_delayed_checks ();
+      let shape = Shape.local_reduce shape in
+      if !Clflags.dump_shape then Shape.print ppf shape;
       (* `let _ = <expression>` or even just `<expression>` require special
          handling in toplevels, or nothing is displayed. In bytecode, the
          lambda for <expression> is directly executed and the result _is_ the

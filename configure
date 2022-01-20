@@ -1570,7 +1570,6 @@ Optional Features:
   --disable-systhreads    disable the Win32/POSIX threads library
   --disable-str-lib       do not build the str library
   --disable-unix-lib      do not build the unix library
-  --disable-bigarray-lib  do not build the legacy separate bigarray library
   --disable-ocamldoc      do not build the ocamldoc documentation system
   --disable-ocamltest     do not build the ocamltest driver
   --enable-native-toplevel
@@ -3204,7 +3203,8 @@ fi
 
 # Check whether --enable-bigarray-lib was given.
 if test "${enable_bigarray_lib+set}" = set; then :
-  enableval=$enable_bigarray_lib;
+  enableval=$enable_bigarray_lib; as_fn_error $? "The bigarray-lib option was deleted in OCaml 5.00, \
+as the Bigarray module is now part of the standard library." "$LINENO" 5
 fi
 
 
@@ -3414,9 +3414,6 @@ if test x"$enable_unix_lib" = "xno"; then :
   as_fn_error $? "replay debugger requires the unix library" "$LINENO" 5
 else
   enable_debugger="no"
-fi
-   if test x"$enable_bigarray_lib" = "xyes"; then :
-  as_fn_error $? "legacy bigarray library requires the unix library" "$LINENO" 5
 fi
 fi
 
@@ -12677,11 +12674,7 @@ esac
 otherlibraries="dynlink"
 if test x"$enable_unix_lib" != "xno"; then :
   enable_unix_lib=yes
-  if test x"$enable_bigarray_lib" != "xno"; then :
-  otherlibraries="$otherlibraries $unixlib bigarray"
-else
-  otherlibraries="$otherlibraries $unixlib"
-fi
+   otherlibraries="$otherlibraries $unixlib"
 fi
 if test x"$enable_str_lib" != "xno"; then :
   otherlibraries="$otherlibraries str"
