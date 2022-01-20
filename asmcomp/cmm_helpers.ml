@@ -224,23 +224,13 @@ let asr_int c1 c2 dbg =
       Cop(Casr, [c1; c2], dbg)
 
 let add_float c1 c2 dbg =
-  match (c1, c2) with
-  | (c, Cconst_float(-0.0, _)) | (Cconst_float(-0.0, _), c) ->
-      c
-  | _, _ ->
-      Cop(Caddf, [c1; c2], dbg)
+  Cop(Caddf, [c1; c2], dbg)
 
 let sub_float c1 c2 dbg =
-  match (c1, c2) with
-  | c, Cconst_float(0.0, _) ->
-      c
-  | _, _ ->
-      Cop(Csubf, [c1; c2], dbg)
+  Cop(Csubf, [c1; c2], dbg)
 
 let mul_float c1 c2 dbg =
   match (c1, c2) with
-  | (c, Cconst_float(1.0, _)) | (Cconst_float(1.0, _), c) ->
-      c
   | (c, Cconst_float(2.0, _)) | (Cconst_float(2.0, _), c) ->
      (* We transform x *. 2.0 into x +. x, by creating a temporary variable and
         outputting let tmp = x in tmp +. tmp to avoid calculating x twice. *)
@@ -252,15 +242,12 @@ let mul_float c1 c2 dbg =
 
 let div_float c1 c2 dbg =
   match (c1, c2) with
-  | c, Cconst_float(1.0, _) ->
-      c
   | c, Cconst_float(f, _) ->
       (* x = 0.5 if and only if f is a power of 2 *)
       let x, exp = Float.frexp f in
-      (* We can transform x/.2^{N} into x*.2^{-N} if and only
-         if |N| < 1023, because otherwise one of the may not be
-         a valid floating point number (2.**1023. evaluates to
-         +infinity). *)
+      (* We can transform x/.2^{N} into x*.2^{-N} if and only if |N| < 1023,
+         because otherwise one of the may not be a valid floating point number
+         (2.**1023. evaluates to +infinity). *)
       if x = 0.5 && abs exp < 1023
       then
         mul_float c (Cconst_float(Float.ldexp 2.0 (-exp), dbg)) dbg
@@ -518,7 +505,7 @@ let rec div_int c1 c2 is_safe dbg =
 
 let mod_int c1 c2 is_safe dbg =
   match (c1, c2) with
-    (c1, Cconst_int (0, _)) ->
+  | (c1, Cconst_int (0, _)) ->
       Csequence(c1, raise_symbol dbg "caml_exn_Division_by_zero")
   | (c1, Cconst_int ((1 | (-1)), _)) ->
       Csequence(c1, Cconst_int (0, dbg))
@@ -560,7 +547,7 @@ let mod_int c1 c2 is_safe dbg =
    can occur, in which case we force x / -1 = -x and x mod -1 = 0. (PR#5513). *)
 
 let is_different_from x = function
-    Cconst_int (n, _) -> n <> x
+  | Cconst_int (n, _) -> n <> x
   | Cconst_natint (n, _) -> n <> Nativeint.of_int x
   | _ -> false
 
@@ -640,7 +627,7 @@ let complex_im c dbg =
 let return_unit dbg c = Csequence(c, Cconst_int (1, dbg))
 
 let rec remove_unit = function
-    Cconst_int (1, _) -> Ctuple []
+  | Cconst_int (1, _) -> Ctuple []
   | Csequence(c, Cconst_int (1, _)) -> c
   | Csequence(c1, c2) ->
       Csequence(c1, remove_unit c2)
@@ -920,7 +907,7 @@ let bigarray_indexing unsafe elt_kind layout b args dbg =
      transforms it into a one dimensional offset.  The offsets are expressions
      evaluating to tagged int. *)
   let rec ba_indexing dim_ofs delta_ofs = function
-    [] -> assert false
+  | [] -> assert false
   | [arg] ->
       if unsafe then arg
       else
@@ -954,7 +941,7 @@ let bigarray_indexing unsafe elt_kind layout b args dbg =
   (* The offset as an expression evaluating to int *)
   let offset =
     match (layout : Lambda.bigarray_layout) with
-      Pbigarray_unknown_layout ->
+    | Pbigarray_unknown_layout ->
         assert false
     | Pbigarray_c_layout ->
         ba_indexing (4 + List.length args) (-1) (List.rev args)
@@ -1423,7 +1410,7 @@ let int64_native_prim name arity ~alloc =
 
 let simplif_primitive_32bits :
   Clambda_primitives.primitive -> Clambda_primitives.primitive = function
-    Pbintofint Pint64 -> Pccall (default_prim "caml_int64_of_int")
+  | Pbintofint Pint64 -> Pccall (default_prim "caml_int64_of_int")
   | Pintofbint Pint64 -> Pccall (default_prim "caml_int64_to_int")
   | Pcvtbint(Pint32, Pint64) -> Pccall (default_prim "caml_int64_of_int32")
   | Pcvtbint(Pint64, Pint32) -> Pccall (default_prim "caml_int64_to_int32")
