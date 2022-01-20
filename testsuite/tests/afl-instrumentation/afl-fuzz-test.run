@@ -4,10 +4,12 @@ output="${program}".output
 exec > ${output} 2>&1
 
 mkdir readline-input
-echo asdf > readline-input/testcase
-env AFL_SKIP_CPUFREQ=1 timeout 30s afl-fuzz -m none -i readline-input -o readline-output ./readline > afl-output
+echo a > readline-input/testcase
+export AFL_SKIP_CPUFREQ=1 AFL_FAST_CAL=1 AFL_NO_UI=1
+timeout 1s afl-fuzz -m none -i readline-input -o readline-output ./readline > afl-output
 
-if grep -q "1 uniq crashes found" afl-output; then
+if [ `ls -1 readline-output/crashes/id* 2>/dev/null | wc -l ` -gt 0 ];
+then
   echo "all tests passed";
   exit ${TEST_PASS}
 else
