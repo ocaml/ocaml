@@ -247,7 +247,7 @@ void caml_init_domain_state_key (void)
 }
 
 #else
-CAMLexport __thread caml_domain_state* Caml_state;
+CAMLexport __thread caml_domain_state* caml_state;
 #endif
 
 /* Interrupt functions */
