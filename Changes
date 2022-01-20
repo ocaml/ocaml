@@ -413,6 +413,10 @@ OCaml 4.14.0
   operations. (Ulysse Gérard, Thomas Refis and Leo White, review by Florian
   Angeletti)
 
+- #10742: strong call-by-need reduction for shapes
+  (Gabriel Scherer and Nathanaëlle Courant,
+   review by Florian Angeletti, Ulysse Gérard and Thomas Refis)
+
 ### Build system:
 
 - #10717: Simplify the installation of man pages
