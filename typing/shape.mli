@@ -89,6 +89,8 @@ val str : ?uid:Uid.t -> t Item.Map.t -> t
 val proj : ?uid:Uid.t -> t -> Item.t -> t
 val leaf : Uid.t -> t
 
+val decompose_abs : t -> (var * t) option
+
 val for_persistent_unit : string -> t
 val leaf_for_unpack : t
 
@@ -151,3 +153,5 @@ module Make_reduce(Context : sig
   end) : sig
   val reduce : Context.env -> t -> t
 end
+
+val local_reduce : t -> t

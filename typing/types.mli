@@ -626,6 +626,7 @@ and ext_status =
   | Text_next                      (* not first constructor in an extension *)
   | Text_exception
 
+val item_visibility : signature_item -> visibility
 
 (* Constructor and record label descriptions inserted held in typing
    environments *)
