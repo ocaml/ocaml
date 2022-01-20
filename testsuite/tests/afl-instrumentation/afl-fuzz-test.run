@@ -5,10 +5,10 @@ exec > ${output} 2>&1
 
 mkdir readline-input
 echo a > readline-input/testcase
-export AFL_SKIP_CPUFREQ=1 AFL_FAST_CAL=1 AFL_NO_UI=1
-timeout 1s afl-fuzz -m none -i readline-input -o readline-output ./readline > afl-output
+export AFL_SKIP_CPUFREQ=1 AFL_FAST_CAL=1 AFL_NO_UI=1 AFL_BENCH_UNTIL_CRASH=1
+timeout 10s afl-fuzz -m none -i readline-input -o readline-output ./readline > afl-output
 
-if [ `ls -1 readline-output/crashes/id* 2>/dev/null | wc -l ` -gt 0 ];
+if [ `grep "unique_crashes" readline-output/fuzzer_stats | cut -d ':' -f 2` -gt 0 ];
 then
   echo "all tests passed";
   exit ${TEST_PASS}
