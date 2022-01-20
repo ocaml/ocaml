@@ -7,6 +7,6 @@
    **** ocamlopt.byte
          program = "${test_build_directory}/readline"
          flags = "-afl-instrument"
-	 all_modules = "readline.ml"
+         all_modules = "readline.ml"
    ***** run
 *)
