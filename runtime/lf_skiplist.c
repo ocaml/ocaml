@@ -353,8 +353,10 @@ int caml_lf_skiplist_insert(struct lf_skiplist *sk, uintnat key, uintnat data) {
     struct lf_skipcell *succ;
 
     if (found) {
-      /* node already exists, we don't need to do anything */
-      return 0;
+      /* Already present; update data */
+      atomic_store_explicit((atomic_uintnat*)&succs[0]->data, data,
+                            memory_order_relaxed);
+      return 1;
     } else {
       /* node does not exist. We need to generate a random top_level and
        * construct a new node. The new node's forward array (which contains the
