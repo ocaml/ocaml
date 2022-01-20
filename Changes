@@ -132,6 +132,9 @@ OCaml 4.14.0
   OCaml.
   (Damien Doligez, review by Stephen Dolan)
 
+* #10922: Add deprecation warnings on {Int32,Int64,Nativeint}.format.
+  (Nicolás Ojeda Bär, review by Xavier Leroy and Florian Angeletti)
+
 ### Other libraries:
 
 - #10192: Add support for Unix domain sockets on Windows and use them
