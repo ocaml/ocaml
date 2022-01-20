@@ -133,7 +133,7 @@ link:stdlib/[]:: The standard library. Each file is largely
 independent and should not need further knowledge.
 
 link:otherlibs/[]:: External libraries such as `unix`, `threads`,
-`dynlink`, `str` and `bigarray`.
+`dynlink` and `str`.
 
 Instructions for building the full reference manual are provided in
 link:manual/README.md[]. However, if you only modify the documentation

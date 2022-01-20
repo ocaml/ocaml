@@ -1387,8 +1387,6 @@ module Float          = Float
 module Format         = Format
 module Fun            = Fun
 module Gc             = Gc
-module Genlex         = Genlex
-[@@deprecated "Use the camlp-streams library instead."]
 module Hashtbl        = Hashtbl
 module In_channel     = In_channel
 module Int            = Int
@@ -1408,11 +1406,6 @@ module Oo             = Oo
 module Option         = Option
 module Out_channel    = Out_channel
 module Parsing        = Parsing
-module Pervasives     = Pervasives
-[@@deprecated "Use Stdlib instead.\n\
-\n\
-If you need to stay compatible with OCaml < 4.07, you can use the \n\
-stdlib-shims library: https://github.com/ocaml/stdlib-shims"]
 module Printexc       = Printexc
 module Printf         = Printf
 module Queue          = Queue
@@ -1424,8 +1417,6 @@ module Seq            = Seq
 module Set            = Set
 module Stack          = Stack
 module StdLabels      = StdLabels
-module Stream         = Stream
-[@@deprecated "Use the camlp-streams library instead."]
 module String         = String
 module StringLabels   = StringLabels
 module Sys            = Sys

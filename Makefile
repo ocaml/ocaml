@@ -805,7 +805,7 @@ clean::
 	$(MAKE) -C runtime clean
 	rm -f stdlib/libcamlrun.a stdlib/libcamlrun.lib
 
-otherlibs_all := bigarray dynlink \
+otherlibs_all := dynlink \
   str systhreads unix win32unix
 subdirs := debugger lex ocamldoc ocamltest stdlib tools \
   $(addprefix otherlibs/, $(otherlibs_all)) \
