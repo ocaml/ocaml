@@ -274,7 +274,8 @@ AC_ARG_ENABLE([unix-lib],
     [do not build the unix library])])
 
 AC_ARG_ENABLE([bigarray-lib], [],
-  [AC_MSG_ERROR([The bigarray-lib option was deleted in OCaml 5.00.])],
+  [AC_MSG_ERROR([The bigarray-lib option was deleted in OCaml 5.00, \
+as the Bigarray module is now part of the standard library.])],
   [])
 
 AC_ARG_ENABLE([ocamldoc],

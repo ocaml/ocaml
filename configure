@@ -3203,7 +3203,8 @@ fi
 
 # Check whether --enable-bigarray-lib was given.
 if test "${enable_bigarray_lib+set}" = set; then :
-  enableval=$enable_bigarray_lib; as_fn_error $? "The bigarray-lib option was deleted in OCaml 5.00." "$LINENO" 5
+  enableval=$enable_bigarray_lib; as_fn_error $? "The bigarray-lib option was deleted in OCaml 5.00, \
+as the Bigarray module is now part of the standard library." "$LINENO" 5
 fi
 
 
