@@ -55,7 +55,6 @@ module type TESTSIG = sig
     val minus_one: t
     val min_int: t
     val max_int: t
-    val format : string -> t -> string
     val to_string: t -> string
     val of_string: string -> t
   end
@@ -114,18 +113,15 @@ struct
     test 10 (of_string "0x80000000") min_int;
     test 11 (of_string "0xFFFFFFFF") minus_one;
 
-    testing_function "to_string, format";
+    testing_function "to_string";
     List.iter (fun (n, s) -> test n (to_string (of_string s)) s)
       [1, "0"; 2, "123"; 3, "-456"; 4, "1234567890";
        5, "1073741824"; 6, "2147483647"; 7, "-2147483648"];
-    List.iter (fun (n, s) -> test n (format "0x%X" (of_string s)) s)
-      [8, "0x0"; 9, "0x123"; 10, "0xABCDEF"; 11, "0x12345678";
-       12, "0x7FFFFFFF"; 13, "0x80000000"; 14, "0xFFFFFFFF"];
-    test 15 (to_string max_int) "2147483647";
-    test 16 (to_string min_int) "-2147483648";
-    test 17 (to_string zero) "0";
-    test 18 (to_string one) "1";
-    test 19 (to_string minus_one) "-1";
+    test 8 (to_string max_int) "2147483647";
+    test 9 (to_string min_int) "-2147483648";
+    test 10 (to_string zero) "0";
+    test 11 (to_string one) "1";
+    test 12 (to_string minus_one) "-1";
 
     testing_function "neg";
     test 1 (neg (of_int 0)) (of_int 0);
@@ -373,21 +369,17 @@ struct
     test 10 (of_string "0x8000000000000000") min_int;
     test 11 (of_string "0xFFFFFFFFFFFFFFFF") minus_one;
 
-    testing_function "to_string, format";
+    testing_function "to_string";
     List.iter (fun (n, s) -> test n (to_string (of_string s)) s)
       [1, "0"; 2, "123"; 3, "-456"; 4, "1234567890";
        5, "1234567890123456789";
        6, "9223372036854775807";
        7, "-9223372036854775808"];
-    List.iter (fun (n, s) -> test n ("0x" ^ format "%X" (of_string s)) s)
-      [8, "0x0"; 9, "0x123"; 10, "0xABCDEF"; 11, "0x1234567812345678";
-       12, "0x7FFFFFFFFFFFFFFF"; 13, "0x8000000000000000";
-       14, "0xFFFFFFFFFFFFFFFF"];
-    test 15 (to_string max_int) "9223372036854775807";
-    test 16 (to_string min_int) "-9223372036854775808";
-    test 17 (to_string zero) "0";
-    test 18 (to_string one) "1";
-    test 19 (to_string minus_one) "-1";
+    test 8 (to_string max_int) "9223372036854775807";
+    test 9 (to_string min_int) "-9223372036854775808";
+    test 10 (to_string zero) "0";
+    test 11 (to_string one) "1";
+    test 12 (to_string minus_one) "-1";
 
     testing_function "neg";
     test 1 (neg (of_int 0)) (of_int 0);
