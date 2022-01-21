@@ -918,7 +918,7 @@ let message = function
   | Illegal_backslash ->
     "illegal backslash escape in string.\n\
     Hint: Single backslashes \\ are reserved for escape sequences\n\
-    (\\n, \\r,...). Did you check the list of OCaml escape sequences?\n\
+    (\\n, \\r, ...). Did you check the list of OCaml escape sequences?\n\
     To get a backslash character, escape it with a second backslash: \\\\."
   | Implicit_public_methods l ->
       "the following private methods were made public implicitly:\n "
