@@ -281,9 +281,10 @@ Working version
 - #11338: Turn some partial application warnings into hints.
   (Leo White, review by Stephen Dolan)
 
-- #10929: Improve warning 14 (illegal backslash) with a better explanation
+- #10931: Improve warning 14 (illegal backslash) with a better explanation
   of the causes and how to fix it.
-  (David Allsopp, Florian Angeletti, Lucas De Angelis, Gabriel Scherer)
+  (David Allsopp, Florian Angeletti, Lucas De Angelis, Gabriel Scherer,
+  review by Nicolás Ojeda Bär and Florian Angeletti)
 
 - #10911: Improve the location reported by parenthesized assert expressions
   (Fabian Hemmer, review by Gabriel Scherer)
