@@ -45,6 +45,38 @@ arch_error() {
   error "$msg"
 }
 
+unsupported_config()
+{
+  echo "Exiting (OCaml is known not to work on ${NODE_NAME}.)"
+  exit
+}
+
+# Skip the test on those architectures where OCaml is known not to work
+case "${NODE_NAME}" in
+  ocaml-alpine) unsupported_config;;
+  ocaml-arm-32) unsupported_config;;
+  ocaml-arm-64) unsupported_config;;
+  ocaml-centos-oldest) unsupported_config;;
+  ocaml-cygwin-32) unsupported_config;;
+  ocaml-cygwin-64) unsupported_config;;
+  ocaml-fedora-latest) unsupported_config;;
+  ocaml-linux-32) unsupported_config;;
+  ocaml-linux-64) unsupported_config;;
+  ocaml-mingw-32) unsupported_config;;
+  ocaml-msvc-32) unsupported_config;;
+  ocaml-msvc-64) unsupported_config;;
+  ocaml-omnios) unsupported_config;;
+  ocaml-openbsd-64) unsupported_config;;
+  ocaml-ppc-32) unsupported_config;;
+  ocaml-ppc-64) unsupported_config;;
+  ocaml-ppc-64-le) unsupported_config;;
+  ocaml-ubuntu-latest) unsupported_config;;
+  ocaml-zsystems) unsupported_config;;
+esac
+
+# Dump environment
+env
+
 # Kill a task on Windows
 # Errors are ignored
 kill_task()
