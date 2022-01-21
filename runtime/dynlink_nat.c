@@ -117,7 +117,8 @@ CAMLprim value caml_natdynlink_run(value handle_v, value symbol) {
 
   sym = optsym("__code_begin");
   sym2 = optsym("__code_end");
-  if (NULL != sym && NULL != sym2) {
+  /* Do not register empty code fragments */
+  if (NULL != sym && NULL != sym2 && sym != sym2) {
     caml_register_code_fragment((char *) sym, (char *) sym2,
                                 DIGEST_LATER, NULL);
   }
