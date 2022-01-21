@@ -73,19 +73,6 @@ Caml_inline void st_thread_cleanup(void)
 
 /* Thread termination */
 
-CAMLnoreturn_start
-static void st_thread_exit(void)
-CAMLnoreturn_end;
-
-static void st_thread_exit(void)
-{
-#ifdef _WIN32
-  ExitThread(0);
-#else
-  pthread_exit(NULL);
-#endif
-}
-
 static void st_thread_join(st_thread_id thr)
 {
   pthread_join(thr, NULL);

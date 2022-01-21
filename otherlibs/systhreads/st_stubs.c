@@ -69,7 +69,6 @@ struct caml_thread_struct {
   struct stack_info* current_stack;      /* saved Caml_state->current_stack */
   struct c_stack_link* c_stack;          /* saved Caml_state->c_stack */
   struct caml__roots_block *local_roots; /* saved value of local_roots */
-  struct longjmp_buffer *exit_buf;       /* For thread exit */
   int backtrace_pos;           /* saved value of Caml_state->backtrace_pos */
   code_t * backtrace_buffer;   /* saved value of Caml_state->backtrace_buffer */
   value backtrace_last_exn;
@@ -132,12 +131,6 @@ static atomic_uintnat thread_next_id = 0;
 static value caml_threadstatus_new (void);
 static void caml_threadstatus_terminate (value);
 static st_retcode caml_threadstatus_wait (value);
-
-/* Imports from the native-code runtime system */
-#ifdef NATIVE_CODE
-extern struct longjmp_buffer caml_termination_jmpbuf;
-extern void (*caml_termination_hook)(void);
-#endif
 
 /* Hook for scanning the stacks of the other threads */
 
@@ -267,7 +260,6 @@ static caml_thread_t caml_thread_new_info(void)
   }
   th->c_stack = NULL;
   th->local_roots = NULL;
-  th->exit_buf = NULL;
   th->backtrace_pos = 0;
   th->backtrace_buffer = NULL;
   th->backtrace_last_exn = Val_unit;
@@ -374,12 +366,6 @@ static void caml_thread_domain_stop_hook(void) {
   };
 }
 
-#ifdef NATIVE_CODE
-static void caml_thread_termination_hook(void) {
-  st_thread_exit();
-}
-#endif /* NATIVE_CODE */
-
 CAMLprim value caml_thread_initialize_domain(value v)
 {
   CAMLparam0();
@@ -398,9 +384,6 @@ CAMLprim value caml_thread_initialize_domain(value v)
   new_thread->next = new_thread;
   new_thread->prev = new_thread;
   new_thread->backtrace_last_exn = Val_unit;
-#ifdef NATIVE_CODE
-  new_thread->exit_buf = &caml_termination_jmpbuf;
-#endif
 
   st_tls_newkey(&Thread_key);
   st_tls_set(Thread_key, (void *) new_thread);
@@ -444,9 +427,6 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
   caml_scan_roots_hook = caml_thread_scan_roots;
   caml_enter_blocking_section_hook = caml_thread_enter_blocking_section;
   caml_leave_blocking_section_hook = caml_thread_leave_blocking_section;
-#ifdef NATIVE_CODE
-  caml_termination_hook = caml_thread_termination_hook;
-#endif
   caml_domain_external_interrupt_hook = caml_thread_interrupt_hook;
   caml_domain_stop_hook = caml_thread_domain_stop_hook;
 
@@ -511,9 +491,6 @@ static void * caml_thread_start(void * v)
 {
   caml_thread_t th = (caml_thread_t) v;
   value clos;
-#ifdef NATIVE_CODE
-  struct longjmp_buffer termination_buf;
-#endif
 
   caml_init_domain_self(th->domain_id);
 
@@ -533,18 +510,10 @@ static void * caml_thread_start(void * v)
   pthread_sigmask(SIG_SETMASK, &th->init_mask, NULL);
 #endif
 
-#ifdef NATIVE_CODE
-  /* Setup termination handler (for caml_thread_exit) */
-  if (sigsetjmp(termination_buf.buf, 0) == 0) {
-    Current_thread->exit_buf = &termination_buf;
-#endif
   clos = Start_closure(Current_thread->descr);
   caml_modify(&(Start_closure(Current_thread->descr)), Val_unit);
   caml_callback_exn(clos, Val_unit);
   caml_thread_stop();
-#ifdef NATIVE_CODE
-  }
-#endif
 
   return 0;
 }
@@ -734,42 +703,6 @@ CAMLprim value caml_thread_uncaught_exception(value exn)  /* ML */
   if (Caml_state->backtrace_active) caml_print_exception_backtrace();
   fflush(stderr);
   return Val_unit;
-}
-
-/* Terminate current thread */
-
-CAMLprim value caml_thread_exit(value unit)   /* ML */
-{
-  struct longjmp_buffer * exit_buf = NULL;
-
-  /* we check if another domain was ever started */
-  if (caml_domain_is_multicore())
-    caml_invalid_argument
-      ("Thread.exit: unsupported call under multiple domains");
-
-  if (Current_thread == NULL)
-    caml_invalid_argument("Thread.exit: not initialized");
-
-  /* In native code, we cannot call pthread_exit here because on some
-     systems this raises a C++ exception, and ocamlopt-generated stack
-     frames cannot be unwound.  Instead, we longjmp to the thread
-     creation point (in caml_thread_start) or to the point in
-     caml_main where caml_termination_hook will be called.
-     Note that threads created in C then registered do not have
-     a creation point (exit_buf == NULL).
- */
-#ifdef NATIVE_CODE
-  exit_buf = Current_thread->exit_buf;
-#endif
-  caml_thread_stop();
-  if (exit_buf != NULL) {
-    /* Native-code and (main thread or thread created by OCaml) */
-    siglongjmp(exit_buf->buf, 1);
-  } else {
-    /* Bytecode, or thread created from C */
-    st_thread_exit();
-  }
-  return Val_unit;  /* not reached */
 }
 
 /* Allow re-scheduling */

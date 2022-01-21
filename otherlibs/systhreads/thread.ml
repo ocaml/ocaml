@@ -29,7 +29,6 @@ external yield : unit -> unit = "caml_thread_yield"
 external self : unit -> t = "caml_thread_self" [@@noalloc]
 external id : t -> int = "caml_thread_id" [@@noalloc]
 external join : t -> unit = "caml_thread_join"
-external exit_stub : unit -> unit = "caml_thread_exit"
 
 (* For new, make sure the function passed to thread_new never
    raises an exception. *)
@@ -42,13 +41,18 @@ let uncaught_exception_handler = ref default_uncaught_exception_handler
 
 let set_uncaught_exception_handler fn = uncaught_exception_handler := fn
 
+exception Exit
+
 let create fn arg =
   thread_new
     (fun () ->
       try
         fn arg;
         ignore (Sys.opaque_identity (check_memprof_cb ()))
-      with exn ->
+      with
+      | Exit ->
+        ignore (Sys.opaque_identity (check_memprof_cb ()))
+      | exn ->
         let raw_backtrace = Printexc.get_raw_backtrace () in
         flush stdout; flush stderr;
         try
@@ -65,8 +69,7 @@ let create fn arg =
           flush stderr)
 
 let exit () =
-  ignore (Sys.opaque_identity (check_memprof_cb ()));
-  exit_stub ()
+  raise Exit
 
 (* Preemption *)
 
