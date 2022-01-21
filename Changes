@@ -104,6 +104,11 @@ Working version
   bigarray library (the Bigarray module is now part of the standard library).
   (Nicolás Ojeda Bär, review by Kate Deplaix and Anil Madhavapeddy)
 
+- #10921: Use getentropy, when available, to seed the generator during
+  `Random.self_init`
+  (Michael Hendricks, review by Gabriel Scherer, Xavier Leroy, and
+  Anil Madhavapeddy)
+
 * #10924: Add deprecated attribute to Printexc.catch, Printf.kprintf and
   Unix.SO_ERROR.
   (Nicolás Ojeda Bär, review by Damien Doligez)

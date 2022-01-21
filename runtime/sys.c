@@ -588,18 +588,27 @@ int caml_unix_random_seed(intnat data[16])
 {
   int fd;
   int n = 0;
+  unsigned char buffer[12];
+  int nread = 0;
 
-  /* Try /dev/urandom first */
+  /* Try kernel entropy first */
+#ifdef HAS_GETENTROPY
+  (void)fd; /* fd unused with getentropy */
+  if (getentropy(buffer, 12) != -1) {
+    nread = 12;
+  }
+#else
   fd = open("/dev/urandom", O_RDONLY, 0);
   if (fd != -1) {
-    unsigned char buffer[12];
-    int nread = read(fd, buffer, 12);
+    nread = read(fd, buffer, 12);
     close(fd);
-    while (nread > 0) data[n++] = buffer[--nread];
   }
-  /* If the read from /dev/urandom fully succeeded, we now have 96 bits
+#endif
+  while (nread > 0) data[n++] = buffer[--nread];
+  /* If the kernel provided enough entropy, we now have 96 bits
      of good random data and can stop here. */
   if (n >= 12) return n;
+
   /* Otherwise, complement whatever we got (probably nothing)
      with some not-very-random data. */
   {
