@@ -50,7 +50,7 @@ Working version
 
 * #10924: Add deprecated attribute to Printexc.catch, Printf.kprintf and
   Unix.SO_ERROR.
-  (Nicolás Ojeda Bär)
+  (Nicolás Ojeda Bär, review by Damien Doligez)
 
 ### Other libraries:
 
