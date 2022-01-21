@@ -76,4 +76,4 @@ let main () =
   close_in ic;
   close_out oc
 
-let _ = Printexc.catch main (); exit 0
+let _ = main (); exit 0
