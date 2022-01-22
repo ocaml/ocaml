@@ -15,6 +15,9 @@
 
 (* Handling of sections in bytecode executable files *)
 
+let exec_magic_length =
+  String.length Config.exec_magic_number
+
 (* List of all sections, in reverse order *)
 
 let section_table = ref ([] : (string * int) list)
@@ -46,11 +49,11 @@ let write_toc_and_trailer outchan =
 exception Bad_magic_number
 
 let read_toc ic =
-  let pos_trailer = in_channel_length ic - 16 in
+  let pos_trailer = in_channel_length ic - exec_magic_length - 4 in
   seek_in ic pos_trailer;
   let num_sections = input_binary_int ic in
   let header =
-    really_input_string ic (String.length Config.exec_magic_number)
+    really_input_string ic exec_magic_length
   in
   if header <> Config.exec_magic_number then raise Bad_magic_number;
   seek_in ic (pos_trailer - 8 * num_sections);
@@ -76,7 +79,7 @@ let seek_section ic name =
       if n = name
       then begin seek_in ic (curr_ofs - len); len end
       else seek_sec (curr_ofs - len) rem in
-  seek_sec (in_channel_length ic - 16 - 8 * List.length !section_table)
+  seek_sec (in_channel_length ic - exec_magic_length - 4 - 8 * List.length !section_table)
            !section_table
 
 (* Return the contents of a section, as a string *)
@@ -93,7 +96,7 @@ let read_section_struct ic name =
 (* Return the position of the beginning of the first section *)
 
 let pos_first_section ic =
-  in_channel_length ic - 16 - 8 * List.length !section_table -
+  in_channel_length ic - exec_magic_length - 4 - 8 * List.length !section_table -
   List.fold_left (fun total (_name, len) -> total + len) 0 !section_table
 
 let reset () =

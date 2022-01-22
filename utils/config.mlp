@@ -92,26 +92,22 @@ let flat_float_array = %%FLAT_FLOAT_ARRAY%%
 let function_sections = %%FUNCTION_SECTIONS%%
 let afl_instrument = %%AFL_INSTRUMENT%%
 
-let exec_magic_number = "Caml1999X031"
+let magic_number c =
+  let {Sys.major; minor; patchlevel; _} = Sys.ocaml_release in
+  Printf.sprintf "Caml%c%d%02d%02d" c major minor patchlevel
+
+let exec_magic_number = magic_number 'X'
     (* exec_magic_number is duplicated in runtime/caml/exec.h *)
-and cmi_magic_number = "Caml1999I031"
-and cmo_magic_number = "Caml1999O031"
-and cma_magic_number = "Caml1999A031"
-and cmx_magic_number =
-  if flambda then
-    "Caml1999y031"
-  else
-    "Caml1999Y031"
-and cmxa_magic_number =
-  if flambda then
-    "Caml1999z031"
-  else
-    "Caml1999Z031"
-and ast_impl_magic_number = "Caml1999M031"
-and ast_intf_magic_number = "Caml1999N031"
-and cmxs_magic_number = "Caml1999D031"
-and cmt_magic_number = "Caml1999T031"
-and linear_magic_number = "Caml1999L031"
+and cmi_magic_number = magic_number 'I'
+and cmo_magic_number = magic_number 'O'
+and cma_magic_number = magic_number 'A'
+and cmx_magic_number = magic_number (if flambda then 'y' else 'Y')
+and cmxa_magic_number = magic_number (if flambda then 'z' else 'Z')
+and ast_impl_magic_number = magic_number 'M'
+and ast_intf_magic_number = magic_number 'N'
+and cmxs_magic_number = magic_number 'D'
+and cmt_magic_number = magic_number 'T'
+and linear_magic_number = magic_number 'L'
 
 let interface_suffix = ref ".mli"
 

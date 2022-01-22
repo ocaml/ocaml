@@ -20,6 +20,8 @@
 
 #ifdef CAML_INTERNALS
 
+#include "version.h"
+
 /* Executable bytecode files are composed of a number of sections,
    identified by 4-character names.  A table of contents at the
    end of the file lists the section names along with their sizes,
@@ -46,7 +48,7 @@ struct section_descriptor {
   uint32_t len;                   /* Length of data in bytes */
 };
 
-#define EXEC_MAGIC_LENGTH 12
+#define EXEC_MAGIC_LENGTH 10
 
 /* Structure of the trailer. */
 
@@ -60,7 +62,10 @@ struct exec_trailer {
 
 /* Magic number for this release */
 
-#define EXEC_MAGIC "Caml1999X031"
+#define STR2(x) #x
+#define STR(x) STR2(x)
+
+#define EXEC_MAGIC "CamlX" STR(OCAML_VERSION)
 
 #endif /* CAML_INTERNALS */
 
