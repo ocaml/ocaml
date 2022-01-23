@@ -45,6 +45,9 @@
 #ifdef HAS_GETTIMEOFDAY
 #include <sys/time.h>
 #endif
+#ifdef __APPLE__
+#include <sys/random.h> /* for getentropy */
+#endif
 #include "caml/alloc.h"
 #include "caml/debugger.h"
 #include "caml/fail.h"
@@ -586,22 +589,21 @@ extern int caml_win32_random_seed (intnat data[16]);
 #else
 int caml_unix_random_seed(intnat data[16])
 {
-  int fd;
   int n = 0;
   unsigned char buffer[12];
   int nread = 0;
 
   /* Try kernel entropy first */
-#ifdef HAS_GETENTROPY
-  (void)fd; /* fd unused with getentropy */
+#if defined(HAS_GETENTROPY) || defined(__APPLE__)
   if (getentropy(buffer, 12) != -1) {
     nread = 12;
-  }
+  } else
 #else
-  fd = open("/dev/urandom", O_RDONLY, 0);
-  if (fd != -1) {
-    nread = read(fd, buffer, 12);
-    close(fd);
+  { int fd = open("/dev/urandom", O_RDONLY, 0);
+    if (fd != -1) {
+      nread = read(fd, buffer, 12);
+      close(fd);
+    }
   }
 #endif
   while (nread > 0) data[n++] = buffer[--nread];
