@@ -383,7 +383,8 @@ int caml_reallocate_minor_heap(asize_t wsize)
   domain_state->young_start = (value*)domain_self->minor_heap_area;
   domain_state->young_end =
       (value*)(domain_self->minor_heap_area + Bsize_wsize(wsize));
-  domain_state->young_limit = (uintnat) domain_state->young_start;
+  atomic_store_rel(&domain_state->young_limit,
+                   (uintnat) domain_state->young_start);
   domain_state->young_ptr = domain_state->young_end;
   return 0;
 }
@@ -416,7 +417,7 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
         goto domain_init_complete;
       }
       domain_state = (caml_domain_state*)(d->tls_area);
-      young_limit = (atomic_uintnat*)&domain_state->young_limit;
+      young_limit = &domain_state->young_limit;
       s->interrupt_word = young_limit;
       atomic_store_rel(young_limit, (uintnat)domain_state->young_start);
     }

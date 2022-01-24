@@ -98,7 +98,8 @@ void caml_garbage_collection(void)
     do {
       caml_process_pending_actions();
     } while
-       ( (uintnat)(Caml_state->young_ptr - whsize) <= Caml_state->young_limit );
+       ( (uintnat)(Caml_state->young_ptr - whsize) <=
+         atomic_load_explicit(&Caml_state->young_limit, memory_order_relaxed) );
 
     /* Re-do the allocation: we now have enough space in the minor heap. */
     Caml_state->young_ptr -= whsize;
