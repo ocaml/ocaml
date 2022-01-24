@@ -85,6 +85,8 @@ CFI_ENDPROC; \
 CFI_ENDPROC
 #endif
 
+#define CAML_FUNCTION(name) FUNCTION(name)
+
 #ifdef ASM_CFI_SUPPORTED
 #define CFI_STARTPROC .cfi_startproc
 #define CFI_ENDPROC .cfi_endproc
@@ -467,7 +469,7 @@ G(caml_system__code_begin):
         movsd   (15+13)*8(%r15),%xmm15;                \
         movq    Caml_state(young_ptr), %r15
 
-FUNCTION(caml_call_realloc_stack)
+CAML_FUNCTION(caml_call_realloc_stack)
         CFI_SIGNAL_FRAME
         SAVE_ALL_REGS
         movq    8(%rsp), C_ARG_1 /* argument */
@@ -484,7 +486,7 @@ FUNCTION(caml_call_realloc_stack)
         jmp     GCALL(caml_raise_exn)
 ENDFUNCTION(caml_call_realloc_stack)
 
-FUNCTION(caml_call_gc)
+CAML_FUNCTION(caml_call_gc)
         CFI_SIGNAL_FRAME
 LBL(caml_call_gc):
         SAVE_ALL_REGS
@@ -497,28 +499,28 @@ LBL(caml_call_gc):
         ret
 ENDFUNCTION(caml_call_gc)
 
-FUNCTION(caml_alloc1)
+CAML_FUNCTION(caml_alloc1)
         subq    $16, %r15
         cmpq    Caml_state(young_limit), %r15
         jb      LBL(caml_call_gc)
         ret
 ENDFUNCTION(caml_alloc1)
 
-FUNCTION(caml_alloc2)
+CAML_FUNCTION(caml_alloc2)
         subq    $24, %r15
         cmpq    Caml_state(young_limit), %r15
         jb      LBL(caml_call_gc)
         ret
 ENDFUNCTION(caml_alloc2)
 
-FUNCTION(caml_alloc3)
+CAML_FUNCTION(caml_alloc3)
         subq    $32, %r15
         cmpq    Caml_state(young_limit), %r15
         jb      LBL(caml_call_gc)
         ret
 ENDFUNCTION(caml_alloc3)
 
-FUNCTION(caml_allocN)
+CAML_FUNCTION(caml_allocN)
         cmpq    Caml_state(young_limit), %r15
         jb      LBL(caml_call_gc)
         ret
@@ -528,7 +530,7 @@ ENDFUNCTION(caml_allocN)
 /* Call a C function from OCaml */
 /******************************************************************************/
 
-FUNCTION(caml_c_call)
+CAML_FUNCTION(caml_c_call)
         CFI_SIGNAL_FRAME
 LBL(caml_c_call):
     /* Arguments:
@@ -548,7 +550,7 @@ LBL(caml_c_call):
         ret
 ENDFUNCTION(caml_c_call)
 
-FUNCTION(caml_c_call_stack_args)
+CAML_FUNCTION(caml_c_call_stack_args)
         CFI_SIGNAL_FRAME
     /* Arguments:
         C arguments         : %rdi, %rsi, %rdx, %rcx, %r8, and %r9
@@ -686,7 +688,7 @@ ENDFUNCTION(caml_start_program)
 
 /* Raise an exception from OCaml */
 
-FUNCTION(caml_raise_exn)
+CAML_FUNCTION(caml_raise_exn)
 LBL(caml_raise_exn):
         testq   $1, Caml_state(backtrace_active)
         jne   LBL(116)
@@ -709,7 +711,7 @@ LBL(117):
         ret
 ENDFUNCTION(caml_raise_exn)
 
-FUNCTION(caml_reraise_exn)
+CAML_FUNCTION(caml_reraise_exn)
         testq   $1, Caml_state(backtrace_active)
         jne   LBL(117)
         RESTORE_EXN_HANDLER_OCAML
@@ -782,7 +784,7 @@ ENDFUNCTION(caml_callback3_asm)
  */
 /******************************************************************************/
 
-FUNCTION(caml_perform)
+CAML_FUNCTION(caml_perform)
     /*  %rax: effect to perform
         %rbx: freshly allocated continuation */
         movq    Caml_state(current_stack), %rsi /* %rsi := old stack */
@@ -813,7 +815,7 @@ LBL(112):
         jmp LBL(caml_raise_exn)
 ENDFUNCTION(caml_perform)
 
-FUNCTION(caml_reperform)
+CAML_FUNCTION(caml_reperform)
     /*  %rax: effect to reperform
         %rbx: continuation
         %rdi: last_fiber */
@@ -824,7 +826,7 @@ FUNCTION(caml_reperform)
         jmp     LBL(do_perform)
 ENDFUNCTION(caml_reperform)
 
-FUNCTION(caml_resume)
+CAML_FUNCTION(caml_resume)
     /* %rax -> stack, %rbx -> fun, %rdi -> arg */
         leaq    -1(%rax), %r10  /* %r10 (new stack) = Ptr_val(%rax) */
         movq    %rdi, %rax      /* %rax := argument to function in %rbx */
@@ -847,7 +849,7 @@ ENDFUNCTION(caml_resume)
 
 /* Run a function on a new stack,
    then invoke either the value or exception handler */
-FUNCTION(caml_runstack)
+CAML_FUNCTION(caml_runstack)
         CFI_SIGNAL_FRAME
     /* %rax -> stack, %rbx -> fun, %rdi -> arg */
         andq    $-2, %rax       /* %rax = Ptr_val(%rax) */
@@ -915,12 +917,12 @@ LBL(fiber_exn_handler):
         jmp     1b
 ENDFUNCTION(caml_runstack)
 
-FUNCTION(caml_ml_array_bound_error)
+CAML_FUNCTION(caml_ml_array_bound_error)
         LEA_VAR(caml_array_bound_error, %rax)
         jmp     LBL(caml_c_call)
 ENDFUNCTION(caml_ml_array_bound_error)
 
-FUNCTION(caml_assert_stack_invariants)
+CAML_FUNCTION(caml_assert_stack_invariants)
 /*      CHECK_STACK_ALIGNMENT */
         movq    Caml_state(current_stack), %r11
         movq    %rsp, %r10
