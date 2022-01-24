@@ -143,7 +143,8 @@ and operation =
   | Cextcall of string * machtype * exttype list * bool
       (** The [machtype] is the machine type of the result.
           The [exttype list] describes the unboxing types of the arguments.
-          An empty list means "all arguments are machine words [XInt]". *)
+          An empty list means "all arguments are machine words [XInt]".
+          The boolean indicates whether the function may allocate. *)
   | Cload of
       { memory_chunk: memory_chunk
       ; mutability: Asttypes.mutable_flag
