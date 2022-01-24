@@ -86,6 +86,7 @@ CFI_ENDPROC
 #endif
 
 #define CAML_FUNCTION(name) FUNCTION(name)
+#define C_FUNCTION(name) FUNCTION(name)
 
 #ifdef ASM_CFI_SUPPORTED
 #define CFI_STARTPROC .cfi_startproc
@@ -592,7 +593,7 @@ ENDFUNCTION(caml_c_call_stack_args)
 /* Start the OCaml program */
 /******************************************************************************/
 
-FUNCTION(caml_start_program)
+C_FUNCTION(caml_start_program)
         CFI_SIGNAL_FRAME
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
@@ -720,7 +721,7 @@ ENDFUNCTION(caml_reraise_exn)
 
 /* Raise an exception from C */
 
-FUNCTION(caml_raise_exception)
+C_FUNCTION(caml_raise_exception)
         movq    C_ARG_1, %r14                /* Caml_state */
         movq    C_ARG_2, %rax
     /* Load young_ptr into %r15 */
@@ -735,7 +736,7 @@ ENDFUNCTION(caml_raise_exception)
 /* Callback from C to OCaml */
 /******************************************************************************/
 
-FUNCTION(caml_callback_asm)
+C_FUNCTION(caml_callback_asm)
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
     /* Initial loading of arguments */
@@ -748,7 +749,7 @@ FUNCTION(caml_callback_asm)
         jmp     LBL(caml_start_program)
 ENDFUNCTION(caml_callback_asm)
 
-FUNCTION(caml_callback2_asm)
+C_FUNCTION(caml_callback2_asm)
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
     /* Initial loading of arguments */
@@ -761,7 +762,7 @@ FUNCTION(caml_callback2_asm)
         jmp     LBL(caml_start_program)
 ENDFUNCTION(caml_callback2_asm)
 
-FUNCTION(caml_callback3_asm)
+C_FUNCTION(caml_callback3_asm)
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
     /* Initial loading of arguments */
