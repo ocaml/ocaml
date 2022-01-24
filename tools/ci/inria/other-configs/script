@@ -34,7 +34,6 @@ ${main} -conf --disable-native-compiler \
         -conf --disable-systhreads \
         -conf --disable-str-lib \
         -conf --disable-unix-lib \
-        -conf --disable-bigarray-lib \
         -conf --disable-ocamldoc \
         -conf --disable-dependency-generation \
         -no-native
