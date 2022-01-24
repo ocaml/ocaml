@@ -28,6 +28,7 @@ open Cmo_format
 let no_approx = ref false
 let no_code = ref false
 let no_crc = ref false
+let shape = ref false
 
 module Magic_number = Misc.Magic_number
 
@@ -115,10 +116,12 @@ let print_cmt_infos cmt =
     (match cmt.cmt_interface_digest with
      | None -> ""
      | Some crc -> string_of_crc crc);
-  printf "Implementation shape: ";
+  if !shape then begin
+    printf "Implementation shape: ";
     (match cmt.cmt_impl_shape with
     | None -> printf "(none)\n"
     | Some shape -> Format.printf "\n%a" Shape.print shape)
+  end
 
 let print_general_infos name crc defines cmi cmx =
   printf "Name: %s\n" name;
@@ -387,6 +390,8 @@ let arg_list = [
     " Do not print module approximation information";
   "-no-code", Arg.Set no_code,
     " Do not print code from exported flambda functions";
+  "-shape", Arg.Set shape,
+    " Print the shape of the module";
   "-null-crc", Arg.Set no_crc, " Print a null CRC for imported interfaces";
   "-args", Arg.Expand Arg.read_arg,
      "<file> Read additional newline separated command line arguments \n\
