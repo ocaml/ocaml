@@ -135,7 +135,12 @@ let rec remove_instr node = function
 
 (* We treat Lreloadretaddr as a word-sized load *)
 
-let some_load = (Iload(Cmm.Word_int, Arch.identity_addressing, Mutable))
+let some_load =
+  Iload {
+    memory_chunk = Cmm.Word_int;
+    addressing_mode = Arch.identity_addressing;
+    mutability = Mutable;
+    is_atomic = false }
 
 (* The generic scheduler *)
 
@@ -181,7 +186,7 @@ method is_store = function
   | _ -> false
 
 method is_load = function
-    Iload(_, _, _) -> true
+    Iload _ -> true
   | _ -> false
 
 method is_checkbound = function
