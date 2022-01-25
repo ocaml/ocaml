@@ -185,6 +185,7 @@ static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, _
   HANDLE h;
   unsigned short mode;
   int is_symlink = 0;
+  DWORD error = ERROR_SUCCESS;
 
   if (!path) {
     h = fstat;
@@ -200,13 +201,52 @@ static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, _
                    NULL);
     caml_leave_blocking_section();
   }
-  if (h == INVALID_HANDLE_VALUE) {
+  /* The dance with GetLastError caters for files marked for deletion */
+  if (h == INVALID_HANDLE_VALUE && (!path || ((error = GetLastError()) != ERROR_ACCESS_DENIED &&
+                                              error != ERROR_SHARING_VIOLATION &&
+                                              error != ERROR_SEM_TIMEOUT))) {
     errno = ENOENT;
     return 0;
   }
   else {
     caml_enter_blocking_section();
-    if (!GetFileInformationByHandle(h, &info)) {
+    if (h == INVALID_HANDLE_VALUE) {
+      WIN32_FIND_DATA alt_info;
+      if ((h = FindFirstFile(path, &alt_info)) != INVALID_HANDLE_VALUE) {
+        /* Not certain that this can happen, but you never know */
+        if (alt_info.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) {
+          if (do_lstat) {
+            /* This records S_IFLNK later and prevents re-opening */
+            is_symlink = 1;
+            /* This prevents any attempt to read the handle */
+            info.dwFileAttributes = alt_info.dwFileAttributes & ~FILE_ATTRIBUTE_REPARSE_POINT;
+          } else {
+            /* We couldn't open the symlink to read it, so we can't possibly stat it */
+            errno = ENOENT;
+            CloseHandle(h);
+            return 0;
+          }
+        } else {
+          info.dwFileAttributes = alt_info.dwFileAttributes;
+        }
+        info.ftCreationTime.dwLowDateTime = alt_info.ftCreationTime.dwLowDateTime;
+        info.ftCreationTime.dwHighDateTime = alt_info.ftCreationTime.dwHighDateTime;
+        info.ftLastAccessTime.dwLowDateTime = alt_info.ftLastAccessTime.dwLowDateTime;
+        info.ftLastAccessTime.dwHighDateTime = alt_info.ftLastAccessTime.dwHighDateTime;
+        info.ftLastWriteTime.dwLowDateTime = alt_info.ftLastWriteTime.dwLowDateTime;
+        info.ftLastWriteTime.dwHighDateTime = alt_info.ftLastWriteTime.dwHighDateTime;
+        /* XXX Could possibly do better with GetVolumeInformation */
+        info.dwVolumeSerialNumber = 0;
+        info.nFileSizeHigh = alt_info.nFileSizeHigh;
+        info.nFileSizeLow = alt_info.nFileSizeLow;
+        /* XXX Could possibly do better with FindFirstFileName */
+        info.nNumberOfLinks = 1;
+        /* h gets closed later */
+      } else {
+        errno = ENOENT;
+        return 0;
+      }
+    } else if (!GetFileInformationByHandle(h, &info)) {
       win32_maperr(GetLastError());
       caml_leave_blocking_section();
       if (path) CloseHandle(h);

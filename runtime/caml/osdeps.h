@@ -136,6 +136,8 @@ CAMLextern void caml_expand_command_line (int *, wchar_t ***);
 
 CAMLextern clock_t caml_win32_clock(void);
 
+extern int caml_win32_get_attributes(wchar_t *p);
+
 #endif /* _WIN32 */
 
 extern void caml_init_os_params(void);

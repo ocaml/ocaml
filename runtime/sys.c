@@ -28,6 +28,7 @@
 #include <sys/stat.h>
 #ifdef _WIN32
 #include <direct.h> /* for _wchdir and _wgetcwd */
+#include <windows.h>
 #else
 #include <sys/wait.h>
 #endif
@@ -245,9 +246,7 @@ CAMLprim value caml_sys_close(value fd_v)
 
 CAMLprim value caml_sys_file_exists(value name)
 {
-#ifdef _WIN32
-  struct _stati64 st;
-#else
+#ifndef _WIN32
   struct stat st;
 #endif
   char_os * p;
@@ -256,7 +255,11 @@ CAMLprim value caml_sys_file_exists(value name)
   if (! caml_string_is_c_safe(name)) return Val_false;
   p = caml_stat_strdup_to_os(String_val(name));
   caml_enter_blocking_section();
-  ret = stat_os(p, &st);
+#ifdef _WIN32
+  ret = (caml_win32_get_attributes(p) != -1 ? 0 : -1);
+#else
+  ret = stat(p, &st);
+#endif
   caml_leave_blocking_section();
   caml_stat_free(p);
 
@@ -266,9 +269,7 @@ CAMLprim value caml_sys_file_exists(value name)
 CAMLprim value caml_sys_is_directory(value name)
 {
   CAMLparam1(name);
-#ifdef _WIN32
-  struct _stati64 st;
-#else
+#ifndef _WIN32
   struct stat st;
 #endif
   char_os * p;
@@ -277,15 +278,19 @@ CAMLprim value caml_sys_is_directory(value name)
   caml_sys_check_path(name);
   p = caml_stat_strdup_to_os(String_val(name));
   caml_enter_blocking_section();
-  ret = stat_os(p, &st);
+#ifdef _WIN32
+  ret = caml_win32_get_attributes(p);
+#else
+  ret = stat(p, &st);
+#endif
   caml_leave_blocking_section();
   caml_stat_free(p);
 
   if (ret == -1) caml_sys_error(name);
-#ifdef S_ISDIR
-  CAMLreturn(Val_bool(S_ISDIR(st.st_mode)));
+#ifdef _WIN32
+  CAMLreturn(Val_bool(ret & FILE_ATTRIBUTE_DIRECTORY));
 #else
-  CAMLreturn(Val_bool(st.st_mode & S_IFDIR));
+  CAMLreturn(Val_bool(S_ISDIR(st.st_mode)));
 #endif
 }
 
