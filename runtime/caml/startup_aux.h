@@ -36,22 +36,17 @@ struct caml_params {
   uintnat verb_gc;
   uintnat parser_trace;
   uintnat trace_level;
-  uintnat eventlog_enabled;
   uintnat verify_heap;
   uintnat print_magic;
   uintnat print_config;
 
   uintnat init_percent_free;
-  uintnat init_max_percent_free;
   uintnat init_minor_heap_wsz;
-  uintnat init_heap_chunk_sz;
-  uintnat init_heap_wsz;
   uintnat init_custom_major_ratio;
   uintnat init_custom_minor_ratio;
   uintnat init_custom_minor_max_bsz;
 
   uintnat init_max_stack_wsz;
-  uintnat init_fiber_wsz;
 
   uintnat backtrace_enabled;
   uintnat runtime_warnings;

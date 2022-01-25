@@ -285,7 +285,7 @@ CAMLprim value caml_get_minor_free (value v)
 void caml_init_gc (void)
 {
   caml_max_stack_size = caml_params->init_max_stack_wsz;
-  caml_fiber_wsz = caml_params->init_fiber_wsz;
+  caml_fiber_wsz = (Stack_threshold * 2) / sizeof(value);
   caml_percent_free = norm_pfree (caml_params->init_percent_free);
   caml_gc_log ("Initial stack limit: %"
                ARCH_INTNAT_PRINTF_FORMAT "uk bytes",
