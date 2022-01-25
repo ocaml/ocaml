@@ -589,10 +589,19 @@ void caml_init_domains(uintnat minor_heap_wsz) {
   */
   participating_size = caml_params->max_domains * sizeof(caml_domain_state*);
   stw_request.participating = caml_stat_alloc_noexc(participating_size);  /* not freed */
+  if (stw_request.participating == NULL) {
+      caml_fatal_error("not enough memory to startup");
+  }
   all_domains_size = caml_params->max_domains * sizeof(struct dom_internal);
   all_domains = caml_stat_alloc_noexc(all_domains_size); /* not freed */
+  if (all_domains == NULL) {
+      caml_fatal_error("not enough memory to startup");
+  }
   stw_domains_size = caml_params->max_domains * sizeof(struct dom_internal*);
   stw_domains.domains = caml_stat_alloc_noexc(stw_domains_size);  /* not freed */
+  if (stw_domains.domains == NULL) {
+      caml_fatal_error("not enough memory to startup");
+  }
 
   for (i = 0; i < caml_params->max_domains; i++) {
     struct dom_internal* dom = &all_domains[i];
@@ -860,7 +869,7 @@ static void* domain_thread_func(void* v)
     sync_mutex_unlock(terminate_mutex);
     free_domain_ml_values(ml_values);
   } else {
-    caml_gc_log("Failed to create domain");
+    caml_gc_log("Failed to create domain.");
   }
   return 0;
 }
@@ -904,7 +913,7 @@ CAMLprim value caml_domain_spawn(value callback, value mutex)
 #endif
 
   if (err) {
-    caml_failwith("failed to create domain thread");
+    caml_failwith("failed to create domain thread. You can set the 'Max_domains' OCAMLRUNPARAM parameter to increase the domain limit.");
   }
 
   /* While waiting for the child thread to start up, we need to service any

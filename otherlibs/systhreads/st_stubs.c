@@ -393,6 +393,9 @@ CAMLprim value caml_thread_initialize_domain(value v)
   if (thread_table == NULL) {
     /* not freed https://github.com/ocaml-multicore/ocaml-multicore/issues/795#issuecomment-1015314683 */
     thread_table = caml_stat_alloc_noexc(caml_params->max_domains * sizeof(struct caml_thread_table));
+    if (thread_table == NULL) {
+      caml_fatal_error("not enough memory to startup");
+    }
   }
 
   st_masterlock_init(&Thread_main_lock);
