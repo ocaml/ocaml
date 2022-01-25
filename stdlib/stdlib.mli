@@ -892,8 +892,14 @@ val prerr_newline : unit -> unit
 
 val read_line : unit -> string
 (** Flush standard output, then read characters from standard input
-   until a newline character is encountered. Return the string of
-   all characters read, without the newline character at the end. *)
+   until a newline character is encountered.
+
+   Return the string of all characters read, without the newline character
+   at the end.
+
+   @raise End_of_file if the end of the file is reached at the beginning of
+   line.
+*)
 
 val read_int_opt: unit -> int option
 (** Flush standard output, then read one line from standard input
