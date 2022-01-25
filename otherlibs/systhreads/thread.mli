@@ -29,7 +29,7 @@ val create : ('a -> 'b) -> 'a -> t
    The new thread terminates when the application [funct arg]
    returns, either normally or by raising the {!Thread.Exit} exception
    or by raising any other uncaught exception.
-   In the latter case, the uncaught exception is printed on standard error,
+   In the last case, the uncaught exception is printed on standard error,
    but not propagated back to the parent thread. Similarly, the
    result of the application [funct arg] is discarded and not
    directly accessible to the parent thread. *)
@@ -43,19 +43,25 @@ val id : t -> int
    It can be used to build data structures indexed by threads. *)
 
 exception Exit
-(** Exception raised by {!Thread.exit} or by user code to initiate
-    termination of the current thread.  In a thread created by
-    [{!Thread.create} funct arg], if the [Exit] exception reaches the
-    top of the application [funct arg], it has the effect of terminating
-    the current thread silently.  In other contexts, there is no implicit
-    handling of the [Exit] exception. *)
+(** Exception raised by user code to initiate termination of the
+    current thread.
+    In a thread created by [{!Thread.create} funct arg], if the
+    {!Thread.Exit} exception reaches the top of the application
+    [funct arg], it has the effect of terminating the current thread
+    silently.  In other contexts, there is no implicit handling of the
+    {!Thread.Exit} exception. *)
 
 val exit : unit -> unit
+[@@ocaml.deprecated "Use 'raise Thread.Exit' instead."]
 (** Raise the {!Thread.Exit} exception.
     In a thread created by {!Thread.create}, this will cause the thread
     to terminate prematurely, unless the thread function handles the
     exception itself.  {!Fun.protect} finalizers and catch-all
     exception handlers will be executed.
+
+    To make it clear that an exception is raised and will trigger
+    finalizers and catch-all exception handlers, it is recommended
+    to write [raise {!Thread.Exit}] instead of [{!Thread.exit} ()].
 
     @before 5.00 A different implementation was used, not based on raising
         an exception, and not running finalizers and catch-all handlers.
