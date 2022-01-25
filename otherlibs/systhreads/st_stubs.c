@@ -30,6 +30,7 @@
 #include "caml/printexc.h"
 #include "caml/roots.h"
 #include "caml/signals.h"
+#include "caml/startup.h"
 #include "caml/sys.h"
 #include "caml/memprof.h"
 
@@ -104,7 +105,7 @@ struct caml_thread_table {
 };
 
 /* thread_table instance, up to max_domains */
-static struct caml_thread_table thread_table[caml_params->max_domains];
+static struct caml_thread_table* thread_table; /* array of length caml_params->max_domains */
 
 /* the "head" of the circular list of thread descriptors for this domain */
 #define All_threads thread_table[Caml_state->id].all_threads
@@ -387,7 +388,12 @@ CAMLprim value caml_thread_initialize_domain(value v)
   caml_thread_t new_thread;
 
   /* OS-specific initialization */
-  st_initialize();
+  st_initialize(caml_params->max_domains);
+
+  if (thread_table == NULL) {
+    /* not freed https://github.com/ocaml-multicore/ocaml-multicore/issues/795#issuecomment-1015314683 */
+    thread_table = caml_stat_alloc_noexc(caml_params->max_domains * sizeof(struct caml_thread_table));
+  }
 
   st_masterlock_init(&Thread_main_lock);
 

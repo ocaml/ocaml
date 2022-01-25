@@ -584,12 +584,15 @@ void caml_init_domains(uintnat minor_heap_wsz) {
   caml_minor_heaps_end = (uintnat) heaps_base + size;
   caml_tls_areas_base = (uintnat) tls_base;
 
+  /* none of the following allocations is freed,
+     see https://github.com/ocaml-multicore/ocaml-multicore/issues/795#issuecomment-1015314683.
+  */
   participating_size = caml_params->max_domains * sizeof(caml_domain_state*);
-  stw_request.participating = caml_mem_map(participating_size, participating_size, 0);
+  stw_request.participating = caml_stat_alloc_noexc(participating_size);  /* not freed */
   all_domains_size = caml_params->max_domains * sizeof(struct dom_internal);
-  all_domains = caml_mem_map(all_domains_size, all_domains_size, 0);
+  all_domains = caml_stat_alloc_noexc(all_domains_size); /* not freed */
   stw_domains_size = caml_params->max_domains * sizeof(struct dom_internal*);
-  stw_domains.domains = caml_mem_map(stw_domains_size, stw_domains_size, 0);
+  stw_domains.domains = caml_stat_alloc_noexc(stw_domains_size);  /* not freed */
 
   for (i = 0; i < caml_params->max_domains; i++) {
     struct dom_internal* dom = &all_domains[i];
