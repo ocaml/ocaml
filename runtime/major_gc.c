@@ -907,7 +907,7 @@ static intnat ephe_sweep (caml_domain_state* domain_state, intnat budget)
   return budget;
 }
 
-struct gc_stats *sampled_gc_stats; /* see gc_ctrl.c */
+struct gc_stats *sampled_gc_stats;
 
 void caml_accum_heap_stats(struct heap_stats* acc, const struct heap_stats* h)
 {
