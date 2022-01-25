@@ -302,6 +302,10 @@ Working version
   they were already inheritable.
   (Antonin Décimo, review by Xavier Leroy and Nicolás Ojeda Bär)
 
+- #10868: Fix off-by-1 bug when initializing frame hashtables
+  (Jonah Beckford, review by Tom Kelly, Nicolás Ojeda Bär and
+  KC Sivaramakrishnan)
+
 - #11077: Make dumpobj compatible with absence of naked pointer support
   (Olivier Nicole and Jan Midtgaard, review by Gabriel Scherer)
 
@@ -327,6 +331,7 @@ Working version
   -Wundef (or equivalent).
   (David Allsopp and Nicolás Ojeda Bär, review by Nicolás Ojeda Bär and
    Sebastien Hinderer)
+
 
 OCaml 4.14.0
 ----------------

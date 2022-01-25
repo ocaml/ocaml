@@ -93,7 +93,9 @@ static caml_frame_descrs build_frame_descriptors(link* frametables)
         h = (h+1) & table.mask;
       }
       table.descriptors[h] = d;
-      d = next_frame_descr(d);
+      if (j != len - 1) {
+        d = next_frame_descr(d);
+      }
     }
   }
   return table;
