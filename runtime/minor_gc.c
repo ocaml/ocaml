@@ -632,7 +632,7 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
      released to avoid races where another domain signals an interrupt
      and we clobber it */
   atomic_store_rel
-    ((atomic_uintnat*)&domain->young_limit, (uintnat)domain->young_start);
+    (&domain->young_limit, (uintnat)domain->young_start);
 
   atomic_store_rel
     ((atomic_uintnat*)&domain->young_ptr, (uintnat)domain->young_end);

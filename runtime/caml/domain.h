@@ -30,7 +30,9 @@ extern "C" {
 
 #define Caml_check_gc_interrupt(dom_st)   \
   (CAMLalloc_point_here, \
-   CAMLunlikely((uintnat)(dom_st)->young_ptr < (dom_st)->young_limit))
+   CAMLunlikely( \
+     (uintnat)(dom_st)->young_ptr < \
+     atomic_load_explicit(&((dom_st)->young_limit), memory_order_relaxed)))
 
 asize_t caml_norm_minor_heap_size (intnat);
 int caml_reallocate_minor_heap(asize_t);

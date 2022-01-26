@@ -46,7 +46,7 @@ int caml_check_for_pending_signals(void)
 {
   int i;
   /* [MM] This fence compensates for the fact that Caml_check_gc_interrupt
-     reads young_limit non-atomically.  It is possible in theory to
+     reads young_limit with a relaxed load.  It is possible in theory to
      see young_limit updated without caml_pending_signals being set
      and then resetting young_limit after the check.  This would delay
      processing the pending signal until young_limit is updated again.
