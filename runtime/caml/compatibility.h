@@ -307,10 +307,10 @@
 /* ************************************************************* */
 
 /* **** otherlibs/bigarray */
-#define int8 CAML_DEPRECATED("int8", "caml_ba_int8") caml_ba_int8
-#define uint8 CAML_DEPRECATED("uint8", "caml_ba_uint8") caml_ba_uint8
-#define int16 CAML_DEPRECATED("int16", "caml_ba_int16") caml_ba_int16
-#define uint16 CAML_DEPRECATED("uint16", "caml_ba_uint16") caml_ba_uint16
+#define int8 caml_ba_int8
+#define uint8 caml_ba_uint8
+#define int16 caml_ba_int16
+#define uint16 caml_ba_uint16
 #define MAX_NUM_DIMS CAML_DEPRECATED("MAX_NUM_DIMS", "CAML_BA_MAX_NUM_DIMS") CAML_BA_MAX_NUM_DIMS
 #define caml_bigarray_kind CAML_DEPRECATED("caml_bigarray_kind", "caml_ba_kind") caml_ba_kind
 #define BIGARRAY_FLOAT32 CAML_DEPRECATED("BIGARRAY_FLOAT32", "CAML_BA_FLOAT32") CAML_BA_FLOAT32
