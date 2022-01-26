@@ -29,6 +29,12 @@ Working version
   (Anil Madhavapeddy, review by Gabriel Scherer, Tom Kelly,
    Michael Hendricks and KC Sivaramakrishnan).
 
+- #10950: Do not use mmap to allocate Caml_state.
+  In order to reduce virtual memory usage, we dynamically allocate
+  the domain_state structure.
+  (Enguerrand Decorne, KC Sivaramakrishnan and Tom Kelly,
+  review by Anil Madhavapeddy and Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 ### Standard library:

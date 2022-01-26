@@ -134,8 +134,6 @@ struct dom_internal {
   caml_plat_cond domain_cond;
 
   /* readonly */
-  uintnat tls_area;
-  uintnat tls_area_end;
   uintnat minor_heap_area;
   uintnat minor_heap_area_end;
 };
@@ -180,7 +178,6 @@ CAMLexport atomic_uintnat caml_num_domains_running;
 
 CAMLexport uintnat caml_minor_heaps_base;
 CAMLexport uintnat caml_minor_heaps_end;
-CAMLexport uintnat caml_tls_areas_base;
 static __thread dom_internal* domain_self;
 
 /*
@@ -235,7 +232,7 @@ static dom_internal* next_free_domain() {
 
 #ifdef __APPLE__
 /* OSX has issues with dynamic loading + exported TLS.
-    This is slower but works */
+   This is slower but works */
 CAMLexport pthread_key_t caml_domain_state_key;
 static pthread_once_t key_once = PTHREAD_ONCE_INIT;
 
@@ -417,6 +414,9 @@ static uintnat fresh_domain_unique_id(void) {
 /* must be run on the domain's thread */
 static void create_domain(uintnat initial_minor_heap_wsize) {
   dom_internal* d = 0;
+  caml_domain_state* domain_state;
+  struct interruptor* s;
+
   CAMLassert (domain_self == 0);
 
   /* take the all_domains_lock so that we can alter the STW participant
@@ -424,43 +424,42 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
   caml_plat_lock(&all_domains_lock);
 
   /* wait until any in-progress STW sections end */
-  while (atomic_load_acq(&stw_leader)) caml_plat_wait(&all_domains_cond);
+  while (atomic_load_acq(&stw_leader))
+    caml_plat_wait(&all_domains_cond);
 
   d = next_free_domain();
   if (d) {
-    struct interruptor* s = &d->interruptor;
+    s = &d->interruptor;
     CAMLassert(!s->running);
     CAMLassert(!s->interrupt_pending);
-    if (!s->interrupt_word) {
-      caml_domain_state* domain_state;
-      atomic_uintnat* young_limit;
-      /* never been started before, so set up minor heap */
-      if (!caml_mem_commit(
-              (void*)d->tls_area, (d->tls_area_end - d->tls_area))) {
-        /* give up now */
-        d = 0;
+
+    domain_self = d;
+
+    /* If the chosen domain slot has not been previously used, allocate a fresh
+     * domain state. Otherwise, reuse it. Reusing the slot ensures that the GC
+     * stats are not lost. */
+    if (!d->state) {
+      /* FIXME: Never freed. Not clear when to. */
+      domain_state = (caml_domain_state*)
+        caml_stat_calloc_noexc(1, sizeof(caml_domain_state));
+      if (domain_state == NULL)
         goto domain_init_complete;
-      }
-      domain_state = (caml_domain_state*)(d->tls_area);
-      young_limit = &domain_state->young_limit;
-      s->interrupt_word = young_limit;
-      atomic_store_rel(young_limit, (uintnat)domain_state->young_start);
+      d->state = domain_state;
+    } else {
+      domain_state = d->state;
     }
+
+    SET_Caml_state((void*)domain_state);
+
     s->unique_id = fresh_domain_unique_id();
+    s->interrupt_word = &domain_state->young_limit;
     s->running = 1;
     atomic_fetch_add(&caml_num_domains_running, 1);
-  }
 
-  if (d) {
-    caml_domain_state* domain_state;
-    domain_self = d;
-    SET_Caml_state((void*)(d->tls_area));
-    domain_state = (caml_domain_state*)(d->tls_area);
     caml_plat_lock(&d->domain_lock);
 
     domain_state->id = d->id;
     domain_state->unique_id = d->interruptor.unique_id;
-    d->state = domain_state;
     CAMLassert(!d->interruptor.interrupt_pending);
 
     domain_state->extra_heap_resources = 0.0;
@@ -582,35 +581,25 @@ CAMLexport void caml_reset_domain_lock(void)
 void caml_init_domains(uintnat minor_heap_wsz) {
   int i;
   uintnat size;
-  uintnat tls_size;
-  uintnat tls_areas_size;
   void* heaps_base;
-  void* tls_base;
 
   /* sanity check configuration */
   if (caml_mem_round_up_pages(Bsize_wsize(Minor_heap_max))
           != Bsize_wsize(Minor_heap_max))
     caml_fatal_error("Minor_heap_max misconfigured for this platform");
 
-  /* reserve memory space for minor heaps and tls_areas */
+  /* reserve memory space for minor heaps */
   size = (uintnat)Bsize_wsize(Minor_heap_max) * Max_domains;
-  tls_size = caml_mem_round_up_pages(sizeof(caml_domain_state));
-  tls_areas_size = tls_size * Max_domains;
-
   heaps_base = caml_mem_map(size, size, 1 /* reserve_only */);
-  tls_base =
-      caml_mem_map(tls_areas_size, tls_areas_size, 1 /* reserve_only */);
-  if (!heaps_base || !tls_base)
+  if (heaps_base == NULL)
     caml_fatal_error("Not enough heap memory to start up");
 
   caml_minor_heaps_base = (uintnat) heaps_base;
   caml_minor_heaps_end = (uintnat) heaps_base + size;
-  caml_tls_areas_base = (uintnat) tls_base;
 
   for (i = 0; i < Max_domains; i++) {
     struct dom_internal* dom = &all_domains[i];
     uintnat domain_minor_heap_base;
-    uintnat domain_tls_base;
 
     stw_domains.domains[i] = dom;
 
@@ -632,9 +621,6 @@ void caml_init_domains(uintnat minor_heap_wsz) {
 
     domain_minor_heap_base = caml_minor_heaps_base +
       (uintnat)Bsize_wsize(Minor_heap_max) * (uintnat)i;
-    domain_tls_base = caml_tls_areas_base + tls_size * (uintnat)i;
-    dom->tls_area = domain_tls_base;
-    dom->tls_area_end = domain_tls_base + tls_size;
     dom->minor_heap_area = domain_minor_heap_base;
     dom->minor_heap_area_end =
          domain_minor_heap_base + Bsize_wsize(Minor_heap_max);
@@ -708,7 +694,7 @@ static void* backup_thread_func(void* v)
   struct interruptor* s = &di->interruptor;
 
   domain_self = di;
-  SET_Caml_state((void*)(di->tls_area));
+  SET_Caml_state((void*)(di->state));
 
   caml_domain_set_name("Backup");
 
