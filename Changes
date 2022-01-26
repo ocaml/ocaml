@@ -237,6 +237,11 @@ OCaml 4.14.0
   WSADuplicateSocket on sockets instead of DuplicateHandle.
   (Antonin Décimo, review by Xavier Leroy and Nicolás Ojeda Bär)
 
+- #10951: Introduce the Thread.Exit exception as an alternative way to
+  terminate threads prematurely.  This alternative way will become
+  the standard way in 5.00.
+  (Xavier Leroy, review by Florian Angeletti)
+
 ### Tools:
 
 - #3959, #7202, #10476: ocaml, in script mode, directive errors
