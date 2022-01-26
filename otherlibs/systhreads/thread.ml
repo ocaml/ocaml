@@ -57,7 +57,9 @@ let create fn arg =
         flush stdout; flush stderr;
         try
           !uncaught_exception_handler exn
-        with exn' ->
+        with
+        | Exit -> ()
+        | exn' ->
           Printf.eprintf
             "Thread %d killed on uncaught exception %s\n"
             (id (self ())) (Printexc.to_string exn);
