@@ -57,6 +57,15 @@ Working version
 
 ### Other libraries:
 
+* #9071, #9100, #10935: Reimplement `Thread.exit()` as raising the
+  exception `Thread.Exit`, and mark `Thread.exit` as deprecated.
+  The new implementation changes the behavior compared with
+  the OCaml 4 implementation.  For example, the new implementation
+  causes `Fun.finally` finalizers to be run and catch-all exception
+  handlers to prevent termination.
+  (Jacques-Henri Jourdan and Xavier Leroy, review by Damien Doligez,
+  Guillaume Munch-Maccagnoni, Gabriel Scherer, and Enguerrand Decorne)
+
 ### Tools:
 
 ### Manual and documentation:
