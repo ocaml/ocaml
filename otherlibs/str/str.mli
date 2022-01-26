@@ -51,19 +51,24 @@ val regexp : string -> regexp
               are [$^\.*+?[]].
 
    In regular expressions you will often use backslash characters; it's
-   easier to use a verbatim string literal [{|...|}] to avoid having to
-   escape backslashes. And, if you want a regular expression that
-   matches a literal backslash character, you need to double it, i.e.
-   [Str.regexp {|\\|}].
+   easier to use a quoted string literal [{|...|}] to avoid having to
+   escape backslashes.
 
    For example, the following expression:
    {[ let r = Str.regexp {|hello \([A-Za-z]+\)|} in
       Str.replace_first r {|\1|} "hello world" ]}
    returns the string ["world"].
 
-   This is just a recommendation; you can use double quote string
-   literals i.e.  ["..."], however you will have to carefully escape
-   backslashes. *)
+   If you want a regular expression that matches a literal backslash
+   character, you need to double it: [Str.regexp {|\\|}].
+
+   You can use regular string literals ["..."] too, however you will
+   have to escape backslashes. To repeat the example above with a
+   regular string literal:
+   {[ let r = Str.regexp "hello \\([A-Za-z]+\\)" in
+      Str.replace_first r "\\1" "hello world" ]}
+
+   And the double backslash regular expression: [Str.regexp "\\\\"]. *)
 
 val regexp_case_fold : string -> regexp
 (** Same as [regexp], but the compiled expression will match text
