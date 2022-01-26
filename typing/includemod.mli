@@ -93,6 +93,7 @@ module Error: sig
     missings: Types.signature_item list;
     incompatibles: (Ident.t * sigitem_symptom) list;
     oks: (int * Typedtree.module_coercion) list;
+    unknowns: ((Types.signature_item as 'it) * 'it * int) list
   }
   and sigitem_symptom =
     | Core of core_sigitem_symptom
