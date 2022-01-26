@@ -27,8 +27,9 @@ val create : ('a -> 'b) -> 'a -> t
    The application of [Thread.create]
    returns the handle of the newly created thread.
    The new thread terminates when the application [funct arg]
-   returns, either normally or by raising an uncaught exception.
-   In the latter case, the exception is printed on standard error,
+   returns, either normally or by raising the {!Thread.Exit} exception
+   or by raising any other uncaught exception.
+   In the last case, the uncaught exception is printed on standard error,
    but not propagated back to the parent thread. Similarly, the
    result of the application [funct arg] is discarded and not
    directly accessible to the parent thread. *)
@@ -40,6 +41,18 @@ val id : t -> int
 (** Return the identifier of the given thread. A thread identifier
    is an integer that identifies uniquely the thread.
    It can be used to build data structures indexed by threads. *)
+
+exception Exit
+(** Exception raised by user code to initiate termination of the
+    current thread.
+    In a thread created by [{!Thread.create} funct arg], if the
+    {!Thread.Exit} exception reaches the top of the application
+    [funct arg], it has the effect of terminating the current thread
+    silently.  In other contexts, there is no implicit handling of the
+    {!Thread.Exit} exception.
+
+    @since 4.14.0
+*)
 
 val exit : unit -> unit
 (** Terminate prematurely the currently executing thread. *)
