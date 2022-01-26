@@ -43,13 +43,12 @@ val id : t -> int
    It can be used to build data structures indexed by threads. *)
 
 exception Exit
-(** Exception raised by user code to initiate termination of the
-    current thread.
-    In a thread created by [{!Thread.create} funct arg], if the
-    {!Thread.Exit} exception reaches the top of the application
-    [funct arg], it has the effect of terminating the current thread
-    silently.  In other contexts, there is no implicit handling of the
-    {!Thread.Exit} exception.
+(** Exception that can be raised by user code to initiate termination
+    of the current thread.
+    Compared to calling [{!Thread.exit} ()], raising the {!Thread.Exit}
+    exception will trigger {!Fun.finally} finalizers and catch-all
+    exception handlers.
+    It is the recommended way to terminate threads prematurely.
 
     @since 4.14.0
 *)
