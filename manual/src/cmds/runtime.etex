@@ -130,6 +130,9 @@ The following environment variables are also consulted:
         pooling (as in "caml_startup_pooled"). This mode can be used to detect
         leaks with a third-party memory debugger.
   \item[d] ("max_domains") Maximum number of domains that can exist at the same time.
+        Default: 16. Note: The default settings of "max_domains" and
+        "minor_heap_max_wsz" cause valgrind to fail with "Fatal error: Not enough heap
+        memory to start up". Smaller values must be used to run valgrind.
   \item[l] ("stack_limit") The limit (in words) of the stack size. This is only
         relevant to the byte-code runtime, as the native code runtime uses the
         operating system's stack.
@@ -158,7 +161,7 @@ The following environment variables are also consulted:
         The multiplier is "k", "M", or "G", for multiplication by $2^{10}$,
         $2^{20}$, and $2^{30}$ respectively.
   \item[N] ("minor_heap_max_wsz") Maximum size of the minor zone (words).
-   Must be greater than or equal to [Minor_heap_min].
+   Must be greater than or equal to [Minor_heap_min]. Default: 256k.
   \item[o] ("space_overhead")  The major GC speed setting.
         See the Gc module documentation for details.
   \item[p] (parser trace) Turn on debugging support for
