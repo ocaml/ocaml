@@ -75,7 +75,7 @@ CAMLprim value unix_mktime(value t)
     tm.tm_year = Int_val(Field(t, 5));
     tm.tm_wday = Int_val(Field(t, 6));
     tm.tm_yday = Int_val(Field(t, 7));
-    tm.tm_isdst = -1; /* tm.tm_isdst = Bool_val(Field(t, 8)); */
+    tm.tm_isdst = Bool_val(Field(t, 8));
     clock = mktime(&tm);
     if (clock == (time_t) -1) unix_error(ERANGE, "mktime", Nothing);
     tmval = alloc_tm(&tm);
