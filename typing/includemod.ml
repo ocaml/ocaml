@@ -373,6 +373,14 @@ let mark_error_as_recoverable r =
 let mark_error_as_unrecoverable r =
   Result.map_error (fun error -> { error; recoverable=false}) r
 
+type signature_online_difference = {
+  runtime_coercions: (int * Typedtree.module_coercion) list;
+  shape_map: Shape.Map.t;
+  deep_modifications:bool;
+  errors: (Ident.t * Error.sigitem_symptom) list;
+  leftovers: ((Types.signature_item as 'it) * 'it * int) list
+}
+
 (**
    In the group of mutual functions below, the [~in_eq] argument is [true] when
    we are in fact checking equality of module types.
@@ -618,28 +626,28 @@ and signatures  ~in_eq ~loc env ~mark subst sig1 sig2 mod_shape =
      and the coercion to be applied to it. *)
   let rec pair_components subst paired unpaired = function
       [] ->
-        let oks, (shape_map, deep_modifications), errors, leftovers =
+        let d =
           signature_components ~in_eq ~loc env ~mark new_env subst mod_shape
             Shape.Map.empty
             (List.rev paired)
         in
-        begin match unpaired, errors, oks, leftovers with
+        begin match unpaired, d.errors, d.runtime_coercions, d.leftovers with
             | [], [], cc, [] ->
                 let shape =
-                  if not deep_modifications && exported_len1 = exported_len2
+                  if not d.deep_modifications && exported_len1 = exported_len2
                   then mod_shape
-                  else Shape.str ?uid:mod_shape.Shape.uid shape_map
+                  else Shape.str ?uid:mod_shape.Shape.uid d.shape_map
                 in
                 if runtime_len1 = runtime_len2 then (* see PR#5098 *)
                   Ok (simplify_structure_coercion cc id_pos_list, shape)
                 else
                   Ok (Tcoerce_structure (cc, id_pos_list), shape)
-            | missings, incompatibles, cc, leftovers ->
+            | missings, incompatibles, runtime_coercions, leftovers ->
                 Error {
                   Error.env=new_env;
                   missings;
                   incompatibles;
-                  oks=cc;
+                  oks=runtime_coercions;
                   leftovers;
                 }
         end
@@ -686,7 +694,13 @@ and signatures  ~in_eq ~loc env ~mark subst sig1 sig2 mod_shape =
 and signature_components  ~in_eq ~loc old_env ~mark env subst
     orig_shape shape_map paired =
   match paired with
-  | [] -> [], (shape_map, false), [], []
+  | [] -> {
+      runtime_coercions=[];
+      shape_map;
+      deep_modifications=false;
+      errors=[];
+      leftovers=[]
+    }
   | (sigi1, sigi2, pos) :: rem ->
       let shape_modified = ref false in
       let id, item, shape_map, present_at_runtime =
@@ -781,22 +795,27 @@ and signature_components  ~in_eq ~loc old_env ~mark env subst
         | _ ->
             assert false
       in
-      let oks, (final_map, deep_modifications), errors, unknowns as r =
+      let r =
         match item with
         | Error { recoverable = false; error } ->
-            let final_map = shape_map, !shape_modified in
-            [], final_map, [id,error], rem
+            { runtime_coercions=[];
+              shape_map;
+              deep_modifications= !shape_modified;
+              errors=[id,error];
+              leftovers=rem
+            }
         | Error { recoverable = true; _ } | Ok _ ->
             signature_components ~in_eq ~loc old_env ~mark env subst
               orig_shape shape_map rem
       in
-      let final_map = final_map, deep_modifications || !shape_modified in
+      let deep_modifications = r.deep_modifications || !shape_modified in
       match item with
       | Ok x when present_at_runtime ->
-          (pos,x) :: oks, final_map, errors, unknowns
-      | Ok _ -> oks, final_map, errors, unknowns
+          let runtime_coercions = (pos,x) :: r.runtime_coercions in
+          { r with runtime_coercions; deep_modifications }
+      | Ok _ -> { r with deep_modifications }
       | Error {error; recoverable = true }  ->
-          oks, final_map, (id,error) :: errors, unknowns
+          { r with errors = (id,error) :: r.errors; deep_modifications }
       | Error {recoverable=false; _ }  -> r
 
 and module_declarations  ~in_eq ~loc env ~mark  subst id1 md1 md2 orig_shape =
