@@ -285,7 +285,8 @@ CAMLprim value caml_get_minor_free (value v)
 
 void caml_init_gc (void)
 {
-  caml_sampled_gc_stats = caml_stat_alloc_noexc(caml_params->max_domains * sizeof(struct gc_stats));
+  caml_sampled_gc_stats =
+    caml_stat_alloc_noexc(caml_params->max_domains * sizeof(struct gc_stats));
   if (caml_sampled_gc_stats == NULL) {
     caml_fatal_error("not enough memory to startup");
   }

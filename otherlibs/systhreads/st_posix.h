@@ -31,8 +31,9 @@
 
 typedef int st_retcode;
 
-/* Variables used to stop "tick" threads, array of length caml_params->max_domains */
-static atomic_uintnat* tick_thread_stop; //[caml_params->max_domains];
+/* Variables used to stop "tick" threads, array of length
+caml_params->max_domains */
+static atomic_uintnat* tick_thread_stop;
 #define Tick_thread_stop tick_thread_stop[Caml_state->id]
 
 /* OS-specific initialization */
@@ -40,8 +41,9 @@ static atomic_uintnat* tick_thread_stop; //[caml_params->max_domains];
 static int st_initialize(uint max_domains)
 {
   if (tick_thread_stop == NULL) {
-    /* not freed, https://github.com/ocaml-multicore/ocaml-multicore/issues/795#issuecomment-1015314683 */
-    tick_thread_stop = caml_stat_alloc_noexc(max_domains * sizeof(atomic_uintnat));
+    /* not freed */
+    tick_thread_stop =
+      caml_stat_alloc_noexc(max_domains * sizeof(atomic_uintnat));
     if (tick_thread_stop == NULL) {
       caml_fatal_error("not enough memory to startup");
     }

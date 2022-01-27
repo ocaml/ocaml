@@ -104,8 +104,8 @@ struct caml_thread_table {
   st_thread_id tick_thread_id;
 };
 
-/* thread_table instance, up to max_domains */
-static struct caml_thread_table* thread_table; /* array of length caml_params->max_domains */
+/* thread_table instance, up to caml_params->max_domains */
+static struct caml_thread_table* thread_table;
 
 /* the "head" of the circular list of thread descriptors for this domain */
 #define All_threads thread_table[Caml_state->id].all_threads
@@ -391,8 +391,10 @@ CAMLprim value caml_thread_initialize_domain(value v)
   st_initialize(caml_params->max_domains);
 
   if (thread_table == NULL) {
-    /* not freed https://github.com/ocaml-multicore/ocaml-multicore/issues/795#issuecomment-1015314683 */
-    thread_table = caml_stat_alloc_noexc(caml_params->max_domains * sizeof(struct caml_thread_table));
+    /* not freed */
+    thread_table = caml_stat_alloc_noexc(
+      caml_params->max_domains * sizeof(struct caml_thread_table)
+    );
     if (thread_table == NULL) {
       caml_fatal_error("not enough memory to startup");
     }
