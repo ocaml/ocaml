@@ -158,6 +158,8 @@ CAMLprim value caml_obj_with_tag(value new_tag_v, value arg)
        and some of the "values" being copied are actually code pointers.
        That's because the new "value" does not point to the minor heap. */
     for (i = 0; i < sz; i++) caml_initialize(&Field(res, i), Field(arg, i));
+    /* Give gc a chance to run, and run memprof callbacks */
+    caml_process_pending_actions();
   }
 
   CAMLreturn (res);
