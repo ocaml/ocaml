@@ -244,6 +244,9 @@ OCaml 4.14.0
 
 ### Tools:
 
+- #10839: Fix regression of #show when printing class type
+  (Élie Brami, review by Florian Angeletti)
+
 - #3959, #7202, #10476: ocaml, in script mode, directive errors
   (`#use "missing_file";;`) use stderr and exit with an error.
   (Florian Angeletti, review by Gabriel Scherer)
