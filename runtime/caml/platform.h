@@ -18,6 +18,8 @@
 #define CAML_PLAT_THREADS_H
 /* Platform-specific concurrency and memory primitives */
 
+#ifdef CAML_INTERNALS
+
 #include <pthread.h>
 #include <errno.h>
 #include <string.h>
@@ -161,5 +163,7 @@ Caml_inline void caml_plat_unlock(caml_plat_mutex* m)
 /* On Windows, the SYSTEM_INFO.dwPageSize is a DWORD (32-bit), but conveniently
    long is also 32-bit */
 extern long caml_sys_pagesize;
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_PLATFORM_H */
