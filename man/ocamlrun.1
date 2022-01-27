@@ -142,32 +142,19 @@ chapter "Standard Library", section "Gc".
 
 .RS 7
 .TP
-.BR a \ (allocation_policy)
-The policy used for allocating in the OCaml heap.  Possible values
-are 0 for the next-fit policy, 1 for the first-fit
-policy, and 2 for the best-fit policy. The default is 2.
-See the Gc module documentation for details.
-.TP
-.B b
+.BR b \ (backtrace_enabled)
 Trigger the printing of a stack backtrace
 when an uncaught exception aborts the program.
 This option takes no argument.
 .TP
-.B c
-(cleanup_on_exit) Shut the runtime down gracefully on exit. The option
+.BR c \ (cleanup_on_exit)
+Shut the runtime down gracefully on exit. The option
 also enables pooling (as in caml_startup_pooled). This mode can be used
 to detect leaks with a third-party memory debugger.
 .TP
-.BR h
-The initial size of the major heap (in words).
-.TP
-.BR H
-Allocate heap chunks by mmapping huge pages. Huge pages are locked into
-memory, and are not swapped.
-.TP
-.BR i \ (major_heap_increment)
-The default size increment for the major heap (in words if greater than 1000,
-else in percents of the heap size).
+.BR d \ (max_domains)
+Maximum number of domains that can exist at the same time.
+Default: 16.
 .TP
 .BR l \ (stack_limit)
 The limit (in words) of the stack size.
@@ -180,7 +167,7 @@ heap. Expressed as a percentage of minor heap size.
 Note: this only applies to values allocated with
 .B caml_alloc_custom_mem
 (e.g. bigarrays).
- Default: 100.
+Default: 100.
 .TP
 .BR M \ (custom_major_ratio)
 Target ratio of floating garbage to
@@ -208,11 +195,12 @@ Note: this only applies to values allocated with
 (e.g. bigarrays).
 Default: 8192 bytes.
 .TP
+.BR N \ (minor_heap_max_wsz)
+Maximum size of the minor zone (words).
+Default: 256k.
+.TP
 .BR o \ (space_overhead)
 The major GC speed setting.
-.TP
-.BR O \ (max_overhead)
-The heap compaction trigger setting.
 .TP
 .B p
 Turn on debugging support for
@@ -271,10 +259,6 @@ Computation of compaction-triggering condition.
 
 .BR 0x400
 Output GC statistics at program exit, in the same format as Gc.print_stat.
-.TP
-.BR w \ (window_size)
-Set size of the window used by major GC for smoothing out variations in
-its workload. This is an integer between 1 and 50. (Default: 1)
 .TP
 .BR W
 Print runtime warnings to stderr (such as Channel opened on file dies without
