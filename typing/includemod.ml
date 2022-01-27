@@ -368,9 +368,9 @@ let retrieve_functor_params env mty =
    incoherent types.
 *)
 type 'a recoverable_error = { error: 'a; recoverable:bool }
-let recoverable_error r =
+let mark_error_as_recoverable r =
   Result.map_error (fun error -> { error; recoverable=true}) r
-let unrecoverable_error r =
+let mark_error_as_unrecoverable r =
   Result.map_error (fun error -> { error; recoverable=false}) r
 
 (**
@@ -695,25 +695,25 @@ and signature_components  ~in_eq ~loc old_env ~mark env subst
             let item =
               value_descriptions ~loc env ~mark subst id1 valdecl1 valdecl2
             in
+            let item = mark_error_as_recoverable item in
             let present_at_runtime = match valdecl2.val_kind with
               | Val_prim _ -> false
               | _ -> true
             in
             let shape_map = Shape.Map.add_value_proj shape_map id1 orig_shape in
-            let item = recoverable_error item in
             id1, item, shape_map, present_at_runtime
         | Sig_type(id1, tydec1, _, _), Sig_type(_id2, tydec2, _, _) ->
             let item =
               type_declarations ~loc ~old_env env ~mark subst id1 tydec1 tydec2
             in
-            let item = unrecoverable_error item in
+            let item = mark_error_as_unrecoverable item in
             let shape_map = Shape.Map.add_type_proj shape_map id1 orig_shape in
             id1, item, shape_map, false
         | Sig_typext(id1, ext1, _, _), Sig_typext(_id2, ext2, _, _) ->
             let item =
               extension_constructors ~loc env ~mark  subst id1 ext1 ext2
             in
-            let item = unrecoverable_error item in
+            let item = mark_error_as_unrecoverable item in
             let shape_map =
               Shape.Map.add_extcons_proj shape_map id1 orig_shape
             in
@@ -748,7 +748,7 @@ and signature_components  ~in_eq ~loc old_env ~mark env subst
                     true, Result.map (fun i -> Tcoerce_alias (env, p1, i)) item
                 | Mp_absent, Mp_present, _ -> assert false
               in
-              let item = unrecoverable_error item in
+              let item = mark_error_as_unrecoverable item in
               id1, item, shape_map, present_at_runtime
             end
         | Sig_modtype(id1, info1, _), Sig_modtype(_id2, info2, _) ->
@@ -758,7 +758,7 @@ and signature_components  ~in_eq ~loc old_env ~mark env subst
             let shape_map =
               Shape.Map.add_module_type_proj shape_map id1 orig_shape
             in
-            let item = unrecoverable_error item in
+            let item = mark_error_as_unrecoverable item in
             id1, item, shape_map, false
         | Sig_class(id1, decl1, _, _), Sig_class(_id2, decl2, _, _) ->
             let item =
@@ -767,16 +767,16 @@ and signature_components  ~in_eq ~loc old_env ~mark env subst
             let shape_map =
               Shape.Map.add_class_proj shape_map id1 orig_shape
             in
-            let item = unrecoverable_error item in
+            let item = mark_error_as_unrecoverable item in
             id1, item, shape_map, true
         | Sig_class_type(id1, info1, _, _), Sig_class_type(_id2, info2, _, _) ->
             let item =
               class_type_declarations ~loc ~old_env env subst info1 info2
             in
+            let item = mark_error_as_unrecoverable item in
             let shape_map =
               Shape.Map.add_class_type_proj shape_map id1 orig_shape
             in
-            let item = unrecoverable_error item in
             id1, item, shape_map, false
         | _ ->
             assert false
