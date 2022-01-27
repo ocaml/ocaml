@@ -45,7 +45,7 @@ val id : t -> int
 exception Exit
 (** Exception raised by user code to initiate termination of the
     current thread.
-    In a thread created by [{!Thread.create} funct arg], if the
+    In a thread created by {!Thread.create} [funct] [arg], if the
     {!Thread.Exit} exception reaches the top of the application
     [funct arg], it has the effect of terminating the current thread
     silently.  In other contexts, there is no implicit handling of the
@@ -61,7 +61,7 @@ val exit : unit -> unit
 
     To make it clear that an exception is raised and will trigger
     finalizers and catch-all exception handlers, it is recommended
-    to write [raise {!Thread.Exit}] instead of [{!Thread.exit} ()].
+    to write [raise Thread.Exit] instead of [Thread.exit ()].
 
     @before 5.00 A different implementation was used, not based on raising
         an exception, and not running finalizers and catch-all handlers.
