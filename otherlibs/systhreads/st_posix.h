@@ -38,7 +38,7 @@ static atomic_uintnat* tick_thread_stop;
 
 /* OS-specific initialization */
 
-static int st_initialize(uint max_domains)
+static int st_initialize(uintnat max_domains)
 {
   if (tick_thread_stop == NULL) {
     /* not freed */
