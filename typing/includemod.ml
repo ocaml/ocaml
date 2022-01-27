@@ -104,7 +104,7 @@ module Error = struct
     missings: signature_item list;
     incompatibles: (Ident.t * sigitem_symptom) list;
     oks: (int * module_coercion) list;
-    unknowns: (signature_item * signature_item * int) list;
+    leftovers: (signature_item * signature_item * int) list;
   }
   and sigitem_symptom =
     | Core of core_sigitem_symptom
@@ -618,12 +618,12 @@ and signatures  ~in_eq ~loc env ~mark subst sig1 sig2 mod_shape =
      and the coercion to be applied to it. *)
   let rec pair_components subst paired unpaired = function
       [] ->
-        let oks, (shape_map, deep_modifications), errors, unknowns =
+        let oks, (shape_map, deep_modifications), errors, leftovers =
           signature_components ~in_eq ~loc env ~mark new_env subst mod_shape
             Shape.Map.empty
             (List.rev paired)
         in
-        begin match unpaired, errors, oks, unknowns with
+        begin match unpaired, errors, oks, leftovers with
             | [], [], cc, [] ->
                 let shape =
                   if not deep_modifications && exported_len1 = exported_len2
@@ -634,13 +634,13 @@ and signatures  ~in_eq ~loc env ~mark subst sig1 sig2 mod_shape =
                   Ok (simplify_structure_coercion cc id_pos_list, shape)
                 else
                   Ok (Tcoerce_structure (cc, id_pos_list), shape)
-            | missings, incompatibles, cc, unknowns ->
+            | missings, incompatibles, cc, leftovers ->
                 Error {
                   Error.env=new_env;
                   missings;
                   incompatibles;
                   oks=cc;
-                  unknowns
+                  leftovers;
                 }
         end
     | item2 :: rem ->
