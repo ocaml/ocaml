@@ -106,7 +106,9 @@ OCaml 4.14.0
 
 * #10955: Add OCAMLRUNPARAM options d ("max_domains") and N
   ("minor_heap_max_wsz") to set the maximum number of domains, and,
-  respectively, the maximum size of the minor gc zone per domain.
+  respectively, the maximum size of the minor gc zone per domain on program
+  start. Changed the default max domains to 16 (previously, it was 128).
+  (Sabine Schmaltz, KC Sivaramakrishnan, review by ...)
 
 * #9391, #9424: Fix failed assertion in runtime due to ephemerons *set_* and
   *blit_* function during Mark phase
