@@ -221,10 +221,8 @@ CAMLextern wchar_t* caml_stat_wcsconcat(int n, ...);
 
 #endif /* CAML_INTERNALS */
 
-struct caml__mutex_unwind;
 struct caml__roots_block {
   struct caml__roots_block *next;
-  struct caml__mutex_unwind *mutexes;
   intnat ntables;
   intnat nitems;
   value *tables [5];
@@ -296,7 +294,6 @@ struct caml__roots_block {
   CAMLunused_start int caml__dummy_##x = ( \
     (caml__roots_##x.next = *caml_local_roots_ptr), \
     (*caml_local_roots_ptr = &caml__roots_##x), \
-    (caml__roots_##x.mutexes = 0), \
     (caml__roots_##x.nitems = 1), \
     (caml__roots_##x.ntables = 1), \
     (caml__roots_##x.tables [0] = &x), \
@@ -308,7 +305,6 @@ struct caml__roots_block {
   CAMLunused_start int caml__dummy_##x = ( \
     (caml__roots_##x.next = *caml_local_roots_ptr), \
     (*caml_local_roots_ptr = &caml__roots_##x), \
-    (caml__roots_##x.mutexes = 0), \
     (caml__roots_##x.nitems = 1), \
     (caml__roots_##x.ntables = 2), \
     (caml__roots_##x.tables [0] = &x), \
@@ -321,7 +317,6 @@ struct caml__roots_block {
   CAMLunused_start int caml__dummy_##x = ( \
     (caml__roots_##x.next = *caml_local_roots_ptr), \
     (*caml_local_roots_ptr = &caml__roots_##x), \
-    (caml__roots_##x.mutexes = 0), \
     (caml__roots_##x.nitems = 1), \
     (caml__roots_##x.ntables = 3), \
     (caml__roots_##x.tables [0] = &x), \
@@ -335,7 +330,6 @@ struct caml__roots_block {
   CAMLunused_start int caml__dummy_##x = ( \
     (caml__roots_##x.next = *caml_local_roots_ptr), \
     (*caml_local_roots_ptr = &caml__roots_##x), \
-    (caml__roots_##x.mutexes = 0), \
     (caml__roots_##x.nitems = 1), \
     (caml__roots_##x.ntables = 4), \
     (caml__roots_##x.tables [0] = &x), \
@@ -350,7 +344,6 @@ struct caml__roots_block {
   CAMLunused_start int caml__dummy_##x = ( \
     (caml__roots_##x.next = *caml_local_roots_ptr), \
     (*caml_local_roots_ptr = &caml__roots_##x), \
-    (caml__roots_##x.mutexes = 0), \
     (caml__roots_##x.nitems = 1), \
     (caml__roots_##x.ntables = 5), \
     (caml__roots_##x.tables [0] = &x), \
@@ -366,7 +359,6 @@ struct caml__roots_block {
   CAMLunused_start int caml__dummy_##x = ( \
     (caml__roots_##x.next = *caml_local_roots_ptr), \
     (*caml_local_roots_ptr = &caml__roots_##x), \
-    (caml__roots_##x.mutexes = 0), \
     (caml__roots_##x.nitems = (size)), \
     (caml__roots_##x.ntables = 1), \
     (caml__roots_##x.tables[0] = &(x[0])), \
@@ -401,21 +393,7 @@ struct caml__roots_block {
     x[caml__i_##x] = Val_unit; \
   }
 
-#ifdef DEBUG
-#define CAMLcheck_mutexes do {   \
-  struct caml__roots_block* r;   \
-  for (r = CAML_LOCAL_ROOTS;     \
-       r != caml__frame;         \
-       r = r->next) {            \
-    CAMLassert(r->mutexes == 0); \
-  }                              \
-} while (0)
-#else
-#define CAMLcheck_mutexes do {} while(0)
-#endif
-
 #define CAMLdrop do{              \
-  CAMLcheck_mutexes;              \
   *caml_local_roots_ptr = caml__frame; \
 }while (0)
 
@@ -469,7 +447,6 @@ struct caml__roots_block {
   caml_domain_state* domain_state = Caml_state; \
   caml__roots_block.next = domain_state->local_roots; \
   domain_state->local_roots = &caml__roots_block; \
-  caml__roots_block.mutexes = 0; \
   caml__roots_block.nitems = 1; \
   caml__roots_block.ntables = 1; \
   caml__roots_block.tables[0] = &(r0);
@@ -479,7 +456,6 @@ struct caml__roots_block {
   caml_domain_state* domain_state = Caml_state; \
   caml__roots_block.next = domain_state->local_roots; \
   domain_state->local_roots = &caml__roots_block; \
-  caml__roots_block.mutexes = 0; \
   caml__roots_block.nitems = 1; \
   caml__roots_block.ntables = 2; \
   caml__roots_block.tables[0] = &(r0); \
@@ -490,7 +466,6 @@ struct caml__roots_block {
   caml_domain_state* domain_state = Caml_state; \
   caml__roots_block.next = domain_state->local_roots; \
   domain_state->local_roots = &caml__roots_block; \
-  caml__roots_block.mutexes = 0; \
   caml__roots_block.nitems = 1; \
   caml__roots_block.ntables = 3; \
   caml__roots_block.tables[0] = &(r0); \
@@ -502,7 +477,6 @@ struct caml__roots_block {
   caml_domain_state* domain_state = Caml_state; \
   caml__roots_block.next = domain_state->local_roots; \
   domain_state->local_roots = &caml__roots_block; \
-  caml__roots_block.mutexes = 0; \
   caml__roots_block.nitems = 1; \
   caml__roots_block.ntables = 4; \
   caml__roots_block.tables[0] = &(r0); \
@@ -515,7 +489,6 @@ struct caml__roots_block {
   caml_domain_state* domain_state = Caml_state; \
   caml__roots_block.next = domain_state->local_roots; \
   domain_state->local_roots = &caml__roots_block; \
-  caml__roots_block.mutexes = 0; \
   caml__roots_block.nitems = 1; \
   caml__roots_block.ntables = 5; \
   caml__roots_block.tables[0] = &(r0); \
@@ -529,7 +502,6 @@ struct caml__roots_block {
   caml_domain_state* domain_state = Caml_state; \
   caml__roots_block.next = domain_state->local_roots; \
   domain_state->local_roots = &caml__roots_block; \
-  caml__roots_block.mutexes = 0; \
   caml__roots_block.nitems = (size); \
   caml__roots_block.ntables = 1; \
   caml__roots_block.tables[0] = (table);

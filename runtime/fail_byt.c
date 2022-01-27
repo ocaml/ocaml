@@ -44,9 +44,7 @@ CAMLexport void caml_raise(value v)
   if (Caml_state->external_raise == NULL) caml_fatal_uncaught_exception(v);
   *Caml_state->external_raise->exn_bucket = v;
 
-  while(Caml_state->local_roots != Caml_state->external_raise->local_roots) {
-    Caml_state->local_roots = Caml_state->local_roots->next;
-  }
+  Caml_state->local_roots = Caml_state->external_raise->local_roots;
 
   siglongjmp(Caml_state->external_raise->jmp->buf, 1);
 }

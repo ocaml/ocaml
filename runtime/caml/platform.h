@@ -109,11 +109,6 @@ void caml_plat_broadcast(caml_plat_cond*);
 void caml_plat_signal(caml_plat_cond*);
 void caml_plat_cond_free(caml_plat_cond*);
 
-struct caml__mutex_unwind {
-  caml_plat_mutex* mutex;
-  struct caml__mutex_unwind* next;
-};
-
 /* Memory management primitives (mmap) */
 
 uintnat caml_mem_round_up_pages(uintnat size);
