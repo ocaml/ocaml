@@ -907,7 +907,7 @@ static intnat ephe_sweep (caml_domain_state* domain_state, intnat budget)
   return budget;
 }
 
-struct gc_stats *sampled_gc_stats;
+struct gc_stats *caml_sampled_gc_stats;
 
 void caml_accum_heap_stats(struct heap_stats* acc, const struct heap_stats* h)
 {
@@ -942,7 +942,7 @@ void caml_sample_gc_stats(struct gc_stats* buf)
   memset(buf, 0, sizeof(*buf));
 
   for (i=0; i<caml_params->max_domains; i++) {
-    struct gc_stats* s = &sampled_gc_stats[i];
+    struct gc_stats* s = &caml_sampled_gc_stats[i];
     struct heap_stats* h = &s->major_heap;
     if (i != my_id) {
       buf->minor_words += s->minor_words;
@@ -976,7 +976,7 @@ void caml_sample_gc_stats(struct gc_stats* buf)
 /* update GC stats for this given domain */
 inline void caml_sample_gc_collect(caml_domain_state* domain)
 {
-  struct gc_stats* stats = &sampled_gc_stats[domain->id];
+  struct gc_stats* stats = &caml_sampled_gc_stats[domain->id];
 
   stats->minor_words = domain->stat_minor_words;
   stats->promoted_words = domain->stat_promoted_words;
