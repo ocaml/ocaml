@@ -40,18 +40,25 @@ let uncaught_exception_handler = ref default_uncaught_exception_handler
 
 let set_uncaught_exception_handler fn = uncaught_exception_handler := fn
 
+exception Exit
+
 let create fn arg =
   thread_new
     (fun () ->
       try
         fn arg;
         ignore (Sys.opaque_identity (check_memprof_cb ()))
-      with exn ->
+      with
+      | Exit ->
+        ignore (Sys.opaque_identity (check_memprof_cb ()))
+      | exn ->
         let raw_backtrace = Printexc.get_raw_backtrace () in
         flush stdout; flush stderr;
         try
           !uncaught_exception_handler exn
-        with exn' ->
+        with
+        | Exit -> ()
+        | exn' ->
           Printf.eprintf
             "Thread %d killed on uncaught exception %s\n"
             (id (self ())) (Printexc.to_string exn);
