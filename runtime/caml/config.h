@@ -236,7 +236,7 @@ typedef uint64_t uintnat;
 #define Percent_free_def 120
 
 /* Maximum number of domains */
-#define Max_domains_def 128
+#define Max_domains_def 16
 
 /* Default setting for the major GC slice smoothing window: 1
    (i.e. no smoothing)
