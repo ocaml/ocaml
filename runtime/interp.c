@@ -71,14 +71,12 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
 
 /* GC interface */
 
-#undef Alloc_small_origin
-// Do call asynchronous callbacks from allocation functions
-#define Alloc_small_origin CAML_FROM_CAML
 #define Setup_for_gc \
   { sp -= 3; sp[0] = accu; sp[1] = env; sp[2] = (value)pc; \
     domain_state->current_stack->sp = sp; }
 #define Restore_after_gc \
   { sp = domain_state->current_stack->sp; accu = sp[0]; env = sp[1]; sp += 3; }
+/* Do call asynchronous callbacks from allocation functions */
 #define Enter_gc \
   { Setup_for_gc; \
     caml_process_pending_actions();         \

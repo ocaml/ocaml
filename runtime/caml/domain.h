@@ -40,7 +40,6 @@ int caml_reallocate_minor_heap(asize_t);
 int caml_incoming_interrupts_queued(void);
 
 void caml_handle_gc_interrupt(void);
-void caml_handle_gc_interrupt_no_async_exceptions(void);
 void caml_handle_incoming_interrupts(void);
 
 CAMLextern void caml_interrupt_self(void);

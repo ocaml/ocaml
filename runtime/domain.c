@@ -1244,13 +1244,9 @@ CAMLexport void caml_process_pending_actions(void)
   caml_process_pending_signals();
 }
 
-void caml_handle_gc_interrupt_no_async_exceptions(void)
-{
-  handle_gc_interrupt();
-}
-
 void caml_handle_gc_interrupt(void)
 {
+  /* FIXME: do not run async callbakcs */
   handle_gc_interrupt();
 }
 
