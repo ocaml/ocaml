@@ -373,13 +373,35 @@ let mark_error_as_recoverable r =
 let mark_error_as_unrecoverable r =
   Result.map_error (fun error -> { error; recoverable=false}) r
 
-type signature_online_difference = {
-  runtime_coercions: (int * Typedtree.module_coercion) list;
-  shape_map: Shape.Map.t;
-  deep_modifications:bool;
-  errors: (Ident.t * Error.sigitem_symptom) list;
-  leftovers: ((Types.signature_item as 'it) * 'it * int) list
-}
+
+module Sign_diff = struct
+  type t = {
+    runtime_coercions: (int * Typedtree.module_coercion) list;
+    shape_map: Shape.Map.t;
+    deep_modifications:bool;
+    errors: (Ident.t * Error.sigitem_symptom) list;
+    leftovers: ((Types.signature_item as 'it) * 'it * int) list
+  }
+
+  let empty = {
+    runtime_coercions = [];
+    shape_map = Shape.Map.empty;
+    deep_modifications = false;
+    errors = [];
+    leftovers = []
+  }
+
+  let merge x y =
+    {
+      runtime_coercions = x.runtime_coercions @ y.runtime_coercions;
+      shape_map = y.shape_map;
+      (* the shape map is threaded the map during the difference computation,
+          the last shape map contains all previous elements. *)
+      deep_modifications = x.deep_modifications || y.deep_modifications;
+      errors = x.errors @ y.errors;
+      leftovers = x.leftovers @ y.leftovers
+    }
+end
 
 (**
    In the group of mutual functions below, the [~in_eq] argument is [true] when
@@ -626,6 +648,7 @@ and signatures  ~in_eq ~loc env ~mark subst sig1 sig2 mod_shape =
      and the coercion to be applied to it. *)
   let rec pair_components subst paired unpaired = function
       [] ->
+        let open Sign_diff in
         let d =
           signature_components ~in_eq ~loc env ~mark new_env subst mod_shape
             Shape.Map.empty
@@ -694,13 +717,7 @@ and signatures  ~in_eq ~loc env ~mark subst sig1 sig2 mod_shape =
 and signature_components  ~in_eq ~loc old_env ~mark env subst
     orig_shape shape_map paired =
   match paired with
-  | [] -> {
-      runtime_coercions=[];
-      shape_map;
-      deep_modifications=false;
-      errors=[];
-      leftovers=[]
-    }
+  | [] -> Sign_diff.{ empty with shape_map }
   | (sigi1, sigi2, pos) :: rem ->
       let shape_modified = ref false in
       let id, item, shape_map, present_at_runtime =
@@ -795,28 +812,31 @@ and signature_components  ~in_eq ~loc old_env ~mark env subst
         | _ ->
             assert false
       in
-      let r =
+      let deep_modifications = !shape_modified in
+      let first =
         match item with
+        | Ok x ->
+            let runtime_coercions =
+              if present_at_runtime then [pos,x] else []
+            in
+            Sign_diff.{ empty with deep_modifications; runtime_coercions }
+        | Error { recoverable = true; error } ->
+            Sign_diff.{ empty with errors=[id,error]; deep_modifications }
         | Error { recoverable = false; error } ->
-            { runtime_coercions=[];
-              shape_map;
-              deep_modifications= !shape_modified;
-              errors=[id,error];
-              leftovers=rem
-            }
-        | Error { recoverable = true; _ } | Ok _ ->
-            signature_components ~in_eq ~loc old_env ~mark env subst
-              orig_shape shape_map rem
+            let errors =[id,error] in
+            Sign_diff.{ empty with deep_modifications; errors; leftovers=rem }
       in
-      let deep_modifications = r.deep_modifications || !shape_modified in
-      match item with
-      | Ok x when present_at_runtime ->
-          let runtime_coercions = (pos,x) :: r.runtime_coercions in
-          { r with runtime_coercions; deep_modifications }
-      | Ok _ -> { r with deep_modifications }
-      | Error {error; recoverable = true }  ->
-          { r with errors = (id,error) :: r.errors; deep_modifications }
-      | Error {recoverable=false; _ }  -> r
+      let continue = match item with
+        | Ok _ -> true
+        | Error x -> x.recoverable
+      in
+      let rest =
+        if continue then
+          signature_components ~in_eq ~loc old_env ~mark env subst
+            orig_shape shape_map rem
+        else Sign_diff.empty
+       in
+       Sign_diff.merge first rest
 
 and module_declarations  ~in_eq ~loc env ~mark  subst id1 md1 md2 orig_shape =
   Builtin_attributes.check_alerts_inclusion
