@@ -1276,6 +1276,7 @@ static intnat major_collection_slice(intnat howmuch,
   }
 
   if (log_events) CAML_EV_BEGIN(EV_MAJOR_SLICE);
+  call_timing_hook(&caml_major_slice_begin_hook);
 
   if (!domain_state->sweeping_done) {
     if (log_events) CAML_EV_BEGIN(EV_MAJOR_SWEEP);
@@ -1387,6 +1388,7 @@ mark_again:
     }
   }
 
+  call_timing_hook(&caml_major_slice_end_hook);
   if (log_events) CAML_EV_END(EV_MAJOR_SLICE);
 
   caml_gc_log

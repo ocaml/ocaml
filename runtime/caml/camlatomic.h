@@ -17,7 +17,6 @@
 #define CAML_ATOMIC_H
 
 #include "config.h"
-#include "misc.h"
 
 /* On platforms supporting C11 atomics, this file just includes <stdatomic.h>.
 

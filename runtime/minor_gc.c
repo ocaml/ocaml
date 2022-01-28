@@ -474,6 +474,7 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
 
   caml_gc_log ("Minor collection of domain %d starting", domain->id);
   CAML_EV_BEGIN(EV_MINOR);
+  call_timing_hook(&caml_minor_gc_begin_hook);
 
   if( participating[0] == Caml_state ) {
     CAML_EV_BEGIN(EV_MINOR_GLOBAL_ROOTS);
@@ -648,6 +649,7 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
   domain->stat_minor_collections++;
   domain->stat_promoted_words += domain->allocated_words - prev_alloc_words;
 
+  call_timing_hook(&caml_minor_gc_end_hook);
   CAML_EV_END(EV_MINOR);
   caml_gc_log ("Minor collection of domain %d completed: %2.0f%% of %u KB live",
                domain->id,

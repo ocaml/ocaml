@@ -37,12 +37,12 @@ __declspec(noreturn) void __cdecl abort(void);
 #include "caml/startup.h"
 #include "caml/startup_aux.h"
 
-caml_timing_hook caml_major_slice_begin_hook = NULL;
-caml_timing_hook caml_major_slice_end_hook = NULL;
-caml_timing_hook caml_minor_gc_begin_hook = NULL;
-caml_timing_hook caml_minor_gc_end_hook = NULL;
-caml_timing_hook caml_finalise_begin_hook = NULL;
-caml_timing_hook caml_finalise_end_hook = NULL;
+_Atomic caml_timing_hook caml_major_slice_begin_hook = (caml_timing_hook)NULL;
+_Atomic caml_timing_hook caml_major_slice_end_hook = (caml_timing_hook)NULL;
+_Atomic caml_timing_hook caml_minor_gc_begin_hook = (caml_timing_hook)NULL;
+_Atomic caml_timing_hook caml_minor_gc_end_hook = (caml_timing_hook)NULL;
+_Atomic caml_timing_hook caml_finalise_begin_hook = (caml_timing_hook)NULL;
+_Atomic caml_timing_hook caml_finalise_end_hook = (caml_timing_hook)NULL;
 
 #ifdef DEBUG
 
