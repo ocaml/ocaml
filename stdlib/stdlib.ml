@@ -182,8 +182,7 @@ let neg_infinity =
   float_of_bits 0xFF_F0_00_00_00_00_00_00L
 let signaling_nan =
   float_of_bits 0x7F_F0_00_00_00_00_00_01L
-let quiet_nan =
-  float_of_bits 0x7F_F8_00_00_00_00_00_01L
+let quiet_nan = infinity -. infinity
 let nan = quiet_nan
 let max_float =
   float_of_bits 0x7F_EF_FF_FF_FF_FF_FF_FFL
