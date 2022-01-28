@@ -918,9 +918,7 @@ CAMLprim value caml_domain_spawn(value callback, value mutex)
 #endif
 
   if (err) {
-    caml_failwith("failed to create domain thread. "
-      "You can set the 'Max_domains' OCAMLRUNPARAM parameter "
-      "to increase the domain limit.");
+    caml_failwith("failed to create domain thread.");
   }
 
   /* While waiting for the child thread to start up, we need to service any
@@ -946,7 +944,9 @@ CAMLprim value caml_domain_spawn(value callback, value mutex)
     /* failed */
     pthread_join(th, 0);
     free_domain_ml_values(p.ml_values);
-    caml_failwith("failed to allocate domain");
+    caml_failwith("failed to allocate domain. "
+      "You can set the 'Max_domains' OCAMLRUNPARAM parameter "
+      "to increase the domain limit.");
   }
   /* When domain 0 first spawns a domain, the backup thread is not active, we
      ensure it is started here. */
