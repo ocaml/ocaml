@@ -219,7 +219,7 @@ typedef uint64_t uintnat;
 /* Maximum size of the minor zone (words).
    Must be greater than or equal to [Minor_heap_min].
 */
-#define Minor_heap_max_def (1 << 28)
+#define Minor_heap_max_def Minor_heap_def
 
 /* Default size of the minor zone. (words)  */
 #define Minor_heap_def 262144
