@@ -62,5 +62,5 @@ val reset : unit -> unit
     that new instances start with). *)
 
 val is_bound : unit -> bool
-(** Returns [true] when a scope is active (i.e. when called from the callback
+(** Returns [true] when a store is active (i.e. when called from the callback
     passed to {!with_store}), [false] otherwise. *)
