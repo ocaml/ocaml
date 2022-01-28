@@ -37,7 +37,7 @@ CAMLexport void caml_raise(value v)
   CAMLassert(!Is_exception_result(v));
 
   // avoid calling caml_raise recursively
-  v = caml_process_pending_signals_with_root_exn(v);
+  v = caml_process_pending_actions_with_root_exn(v);
   if (Is_exception_result(v))
     v = Extract_exception(v);
 

@@ -30,6 +30,7 @@
 #include "caml/mlvalues.h"
 #include "caml/platform.h"
 #include "caml/prims.h"
+#include "caml/signals.h"
 
 static int obj_tag (value arg)
 {

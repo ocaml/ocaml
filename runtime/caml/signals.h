@@ -38,7 +38,13 @@ CAMLextern void caml_process_pending_actions (void);
    exceptions asynchronously into OCaml code. */
 
 CAMLextern int caml_check_pending_actions (void);
-/* Returns 1 if there are pending actions, 0 otherwise. */
+/* Returns 1 if there are pending actions, 0 otherwise.
+   FIXME: Unreliable in OCaml 5.0. */
+
+// FIXME: Not implemented in OCaml 5.0.
+//CAMLextern value caml_process_pending_actions_exn (void);
+/* Same as [caml_process_pending_actions], but returns the exception
+   if any (otherwise returns [Val_unit]). */
 
 #ifdef CAML_INTERNALS
 
@@ -64,10 +70,10 @@ CAMLextern int caml_rev_convert_signal_number (int);
 value caml_execute_signal_exn(int signal_number, int in_signal_handler);
 CAMLextern void caml_record_signal(int signal_number);
 CAMLextern value caml_process_pending_signals_exn(void);
-CAMLextern void caml_process_pending_signals(void);
 void caml_set_action_pending (void);
+value caml_process_pending_actions_with_root (value extra_root); // raises
+value caml_process_pending_actions_with_root_exn (value extra_root);
 
-CAMLextern value caml_process_pending_signals_with_root_exn (value extra_root);
 void caml_init_signal_handling(void);
 int caml_init_signal_stack(void);
 void caml_free_signal_stack(void);

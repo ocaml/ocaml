@@ -24,6 +24,10 @@
 extern "C" {
 #endif
 
+/* It is guaranteed that these allocation functions will not trigger
+   any OCaml callback such as finalizers or signal handlers.
+   FIXME: Not implemented in OCaml 5.0. */
+
 CAMLextern value caml_alloc (mlsize_t, tag_t);
 CAMLextern value caml_alloc_N(mlsize_t, tag_t, ...);
 CAMLextern value caml_alloc_1(tag_t, value);
