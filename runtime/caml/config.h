@@ -216,13 +216,13 @@ typedef uint64_t uintnat;
    This must be at least [Max_young_wosize + 1]. */
 #define Minor_heap_min (Max_young_wosize + 1)
 
+/* Default size of the minor zone. (words)  */
+#define Minor_heap_def 262144
+
 /* Maximum size of the minor zone (words).
    Must be greater than or equal to [Minor_heap_min].
 */
 #define Minor_heap_max_def Minor_heap_def
-
-/* Default size of the minor zone. (words)  */
-#define Minor_heap_def 262144
 
 
 /* Minimum size increment when growing the heap (words).
