@@ -187,11 +187,11 @@ val iteri : (int -> 'a -> unit) -> 'a t -> unit
 
     @since 4.14 *)
 
-val fold_lefti : (int -> 'b -> 'a -> 'b) -> 'b -> 'a t -> 'b
+val fold_lefti : ('b -> int -> 'a -> 'b) -> 'b -> 'a t -> 'b
 (** [fold_lefti f _ xs] invokes [f _ i x] successively
     for every element [x] located at index [i] of the sequence [xs].
 
-    An accumulator of type ['a] is threaded through the calls to [f].
+    An accumulator of type ['b] is threaded through the calls to [f].
 
     It terminates only if the sequence [xs] is finite.
 
