@@ -98,14 +98,16 @@ void caml_gc_message (int level, char *msg, ...)
   }
 }
 
-void (*caml_fatal_error_hook) (char *msg, va_list args) = NULL;
+_Atomic fatal_error_hook caml_fatal_error_hook = (fatal_error_hook)NULL;
 
 CAMLexport void caml_fatal_error (char *msg, ...)
 {
   va_list ap;
+  fatal_error_hook hook;
   va_start(ap, msg);
-  if(caml_fatal_error_hook != NULL) {
-    caml_fatal_error_hook(msg, ap);
+  hook = atomic_load(&caml_fatal_error_hook);
+  if (hook != NULL) {
+    (*hook)(msg, ap);
   } else {
     fprintf (stderr, "Fatal error: ");
     vfprintf (stderr, msg, ap);

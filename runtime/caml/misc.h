@@ -282,8 +282,11 @@ void caml_alloc_point_here(void);
    If it returns, the runtime calls [abort()].
 
    If it is [NULL], the error message is printed on stderr and then
-   [abort()] is called. */
-extern void (*caml_fatal_error_hook) (char *msg, va_list args);
+   [abort()] is called.
+
+   This function must be reentrant. */
+typedef void (*fatal_error_hook) (char *msg, va_list args);
+extern _Atomic fatal_error_hook caml_fatal_error_hook;
 
 CAMLnoreturn_start
 CAMLextern void caml_fatal_error (char *, ...)
