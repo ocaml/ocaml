@@ -415,6 +415,10 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
 {
   CAMLparam0();
 
+  if (!caml_domain_alone())
+    caml_failwith("caml_thread_initialize: cannot initialize Thread "
+                  "while several domains are running.");
+
   /* First initialise the systhread chain on this domain */
   caml_thread_initialize_domain(Val_unit);
 
