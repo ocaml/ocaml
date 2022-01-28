@@ -1,4 +1,5 @@
 (* TEST
+   ocamlrunparam += ",N=512k"
 *)
 
 open Gc
