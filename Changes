@@ -4,6 +4,10 @@ Working version
 ### Language features:
 
 ### Runtime system:
+- #10964: Ring-buffer based runtime tracing (eventring)
+  Eventring is a very low overhead runtime tracing system designed for
+  continuous monitoring of OCaml applications.
+  (Sadiq Jaffer, review by ??)
 
 - #10831: Multicore OCaml
   (The multicore team, caml-devel and more)
