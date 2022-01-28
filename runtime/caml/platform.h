@@ -121,8 +121,7 @@ void caml_mem_unmap(void* mem, uintnat size);
 Caml_inline void check_err(char* action, int err)
 {
   if (err) {
-    caml_fatal_error_arg2(
-      "Fatal error during %s", action, ": %s\n", strerror(err));
+    caml_fatal_error("Fatal error during %s: %s\n", action, strerror(err));
   }
 }
 

@@ -45,7 +45,7 @@ CAMLextern value caml_alloc_shr_preserving_profinfo (mlsize_t, tag_t,
 #define caml_alloc_shr_preserving_profinfo(size, tag, header) \
   caml_alloc_shr(size, tag)
 #endif /* WITH_PROFINFO */
-CAMLextern value caml_alloc_shr_no_raise (mlsize_t wosize, tag_t);
+
 CAMLextern void caml_adjust_gc_speed (mlsize_t, mlsize_t);
 CAMLextern void caml_alloc_dependent_memory (mlsize_t bsz);
 CAMLextern void caml_free_dependent_memory (mlsize_t bsz);
@@ -58,8 +58,6 @@ CAMLextern char *caml_alloc_for_heap (asize_t request);   /* Size in bytes. */
 CAMLextern void caml_free_for_heap (char *mem);
 CAMLextern int caml_add_to_heap (char *mem);
 #endif /* CAML_INTERNALS */
-
-CAMLextern int caml_huge_fallback_count; /* FIXME KC: Make per domain */
 
 
 /* [caml_stat_*] functions below provide an interface to the static memory

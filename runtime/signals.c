@@ -405,7 +405,7 @@ void caml_free_signal_stack(void)
      but OSX/Darwin fails if the size isn't set. */
   disable.ss_size = SIGSTKSZ;
   if (sigaltstack(&disable, &stk) < 0) {
-    caml_fatal_error_arg("Failed to reset signal stack: %s", strerror(errno));
+    caml_fatal_error("Failed to reset signal stack: %s", strerror(errno));
   }
   /* Memory was allocated with malloc directly; see caml_init_signal_stack */
   free(stk.ss_sp);
