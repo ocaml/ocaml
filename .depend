@@ -900,7 +900,6 @@ typing/outcometree.cmi : \
     parsing/asttypes.cmi
 typing/parmatch.cmo : \
     utils/warnings.cmi \
-    typing/untypeast.cmi \
     typing/types.cmi \
     typing/typedtree.cmi \
     typing/tast_iterator.cmi \
@@ -918,11 +917,9 @@ typing/parmatch.cmo : \
     typing/ctype.cmi \
     typing/btype.cmi \
     parsing/asttypes.cmi \
-    parsing/ast_helper.cmi \
     typing/parmatch.cmi
 typing/parmatch.cmx : \
     utils/warnings.cmx \
-    typing/untypeast.cmx \
     typing/types.cmx \
     typing/typedtree.cmx \
     typing/tast_iterator.cmx \
@@ -940,12 +937,10 @@ typing/parmatch.cmx : \
     typing/ctype.cmx \
     typing/btype.cmx \
     parsing/asttypes.cmi \
-    parsing/ast_helper.cmx \
     typing/parmatch.cmi
 typing/parmatch.cmi : \
     typing/types.cmi \
     typing/typedtree.cmi \
-    parsing/parsetree.cmi \
     parsing/location.cmi \
     typing/env.cmi \
     parsing/asttypes.cmi
@@ -1359,6 +1354,7 @@ typing/typeclass.cmi : \
     parsing/asttypes.cmi
 typing/typecore.cmo : \
     utils/warnings.cmi \
+    typing/untypeast.cmi \
     typing/typetexp.cmi \
     typing/types.cmi \
     typing/typedtree.cmi \
@@ -1391,6 +1387,7 @@ typing/typecore.cmo : \
     typing/typecore.cmi
 typing/typecore.cmx : \
     utils/warnings.cmx \
+    typing/untypeast.cmx \
     typing/typetexp.cmx \
     typing/types.cmx \
     typing/typedtree.cmx \
