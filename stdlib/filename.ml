@@ -361,3 +361,14 @@ let open_temp_file ?(mode = [Open_text]) ?(perms = 0o600)
     with Sys_error _ as e ->
       if counter >= 20 then raise e else try_name (counter + 1)
   in try_name 0
+
+let temp_dir ?(temp_dir = Domain.DLS.get current_temp_dir_name)
+    ?(perms = 0o700) prefix suffix =
+  let rec try_name counter =
+    let name = temp_file_name temp_dir prefix suffix in
+    try
+      Sys.mkdir name perms;
+      name
+    with Sys_error _ as e ->
+      if counter >= 20 then raise e else try_name (counter + 1)
+  in try_name 0
