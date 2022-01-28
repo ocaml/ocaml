@@ -466,6 +466,7 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
   value **r;
   intnat c, curr_idx;
   int remembered_roots = 0;
+  scan_roots_hook scan_roots_hook;
 
   st.domain = domain;
 
@@ -620,8 +621,9 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
   caml_do_local_roots(&oldify_one, &st, domain->local_roots,
                       domain->current_stack, domain->gc_regs);
 
-  if (caml_scan_roots_hook != NULL)
-    (*caml_scan_roots_hook)(&oldify_one, &st, domain);
+  scan_roots_hook = atomic_load(&caml_scan_roots_hook);
+  if (scan_roots_hook != NULL)
+    (*scan_roots_hook)(&oldify_one, &st, domain);
 
   CAML_EV_BEGIN(EV_MINOR_LOCAL_ROOTS_PROMOTE);
   oldify_mopup (&st, 0);

@@ -133,8 +133,7 @@ static st_retcode caml_threadstatus_wait (value);
 
 /* Hook for scanning the stacks of the other threads */
 
-static void (*prev_scan_roots_hook) (scanning_action, void *,
-                                     caml_domain_state *);
+static scan_roots_hook prev_scan_roots_hook;
 
 static void caml_thread_scan_roots(scanning_action action,
                                    void *fdata,
@@ -419,8 +418,8 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
   /* First initialise the systhread chain on this domain */
   caml_thread_initialize_domain(Val_unit);
 
-  prev_scan_roots_hook = caml_scan_roots_hook;
-  caml_scan_roots_hook = caml_thread_scan_roots;
+  prev_scan_roots_hook = atomic_exchange(&caml_scan_roots_hook,
+                                         caml_thread_scan_roots);
   caml_enter_blocking_section_hook = caml_thread_enter_blocking_section;
   caml_leave_blocking_section_hook = caml_thread_leave_blocking_section;
   caml_domain_external_interrupt_hook = caml_thread_interrupt_hook;

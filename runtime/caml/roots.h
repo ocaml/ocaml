@@ -22,8 +22,8 @@
 #include "memory.h"
 
 typedef void (*scanning_action) (void*, value, value *);
-CAMLextern void (*caml_scan_roots_hook)(scanning_action, void*,
-                                        caml_domain_state*);
+typedef void (*scan_roots_hook) (scanning_action, void*, caml_domain_state*);
+CAMLextern _Atomic scan_roots_hook caml_scan_roots_hook;
 
 CAMLextern void caml_do_roots (scanning_action f, void* data,
                                caml_domain_state* d, int do_final_val);
