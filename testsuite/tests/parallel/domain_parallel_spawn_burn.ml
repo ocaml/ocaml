@@ -3,6 +3,7 @@
 include unix
 ** bytecode
 ** native
+  ocamlrunparam += ",d=32"
 *)
 
 open Domain
