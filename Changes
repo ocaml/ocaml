@@ -451,6 +451,9 @@ OCaml 4.14.0
   operation in `NO_SHARING` mode.
   (Xavier Leroy, report by Anil Madhavapeddy, review by Alain Frisch)
 
+- #10907, #10959: Wrong type inferred from existential types
+  (Jacques Garrigue and Gabriel Scherer, report by @dyzsr *)
+
 
 OCaml 4.13 maintenance branch
 -----------------------------
