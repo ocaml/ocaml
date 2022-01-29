@@ -63,12 +63,13 @@ val regexp : string -> regexp
    character, you need to double it: [Str.regexp {|\\|}].
 
    You can use regular string literals ["..."] too, however you will
-   have to escape backslashes. To repeat the example above with a
-   regular string literal:
+   have to escape backslashes. The example above can be rewritten with a
+   regular string literal as:
    {[ let r = Str.regexp "hello \\([A-Za-z]+\\)" in
       Str.replace_first r "\\1" "hello world" ]}
 
-   And the double backslash regular expression: [Str.regexp "\\\\"]. *)
+   And the regular expression for matching a backslash becomes a
+   quadruple backslash: [Str.regexp "\\\\"]. *)
 
 val regexp_case_fold : string -> regexp
 (** Same as [regexp], but the compiled expression will match text
