@@ -843,6 +843,7 @@ module PpxContext = struct
         lid "principal", make_bool !Clflags.principal;
         lid "transparent_modules", make_bool !Clflags.transparent_modules;
         lid "unboxed_types", make_bool !Clflags.unboxed_types;
+        lid "unsafe_string", make_bool false; (* kept for backward compatibility *)
         get_cookies ()
       ]
     in
