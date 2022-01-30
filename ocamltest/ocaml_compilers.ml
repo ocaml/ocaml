@@ -40,12 +40,12 @@ class compiler
   method target = target
 
   method program_variable =
-    if Ocaml_backends.is_native host
+    if Ocaml_backends.is_native host && not Sys.win32
     then Builtin_variables.program2
     else Builtin_variables.program
 
   method program_output_variable =
-    if Ocaml_backends.is_native host
+    if Ocaml_backends.is_native host && not Sys.win32
     then None
     else Some Builtin_variables.output
 

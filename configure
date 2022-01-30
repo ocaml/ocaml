@@ -692,6 +692,7 @@ ac_subst_vars='LTLIBOBJS
 LIBOBJS
 PTHREAD_CFLAGS
 PTHREAD_LIBS
+PTHREAD_CXX
 PTHREAD_CC
 ax_pthread_config
 rlwrap
@@ -747,8 +748,7 @@ build_os
 build_vendor
 build_cpu
 build
-naked_pointers_checker
-naked_pointers
+force_instrumented_runtime
 compute_deps
 stdlib_manpages
 PACKLD
@@ -902,7 +902,6 @@ enable_ocamltest
 enable_native_toplevel
 enable_frame_pointers
 enable_naked_pointers
-enable_naked_pointers_checker
 enable_spacetime
 enable_cfi
 enable_imprecise_c99_float_ops
@@ -911,6 +910,7 @@ enable_installing_bytecode_programs
 enable_native_compiler
 enable_flambda
 enable_flambda_invariants
+enable_force_instrumented_runtime
 enable_cmm_invariants
 with_target_bindir
 enable_reserved_header_bits
@@ -1570,16 +1570,11 @@ Optional Features:
   --disable-systhreads    disable the Win32/POSIX threads library
   --disable-str-lib       do not build the str library
   --disable-unix-lib      do not build the unix library
-  --disable-bigarray-lib  do not build the legacy separate bigarray library
   --disable-ocamldoc      do not build the ocamldoc documentation system
   --disable-ocamltest     do not build the ocamltest driver
   --enable-native-toplevel
                           build the native toplevel
   --enable-frame-pointers use frame pointers in runtime and generated code
-  --disable-naked-pointers
-                          do not allow naked pointers
-  --enable-naked-pointers-checker
-                          enable the naked pointers checker
   --disable-cfi           disable the CFI directives in assembly files
   --enable-imprecise-c99-float-ops
                           enables potentially imprecise replacement
@@ -1594,6 +1589,8 @@ Optional Features:
   --enable-flambda        enable flambda optimizations
   --enable-flambda-invariants
                           enable invariants checks in flambda
+  --force-instrumented-runtime
+                          force the usage of the instrumented runtime
   --enable-cmm-invariants enable invariants checks in Cmm
   --enable-reserved-header-bits=BITS
                           reserve BITS (between 0 and 31) bits in block
@@ -2809,7 +2806,8 @@ toolchain="cc"
 profinfo=false
 profinfo_width=0
 extralibs=
-instrumented_runtime=false
+instrumented_runtime=true
+force_instrumented_runtime=false
 instrumented_runtime_libs=""
 bootstrapping_flexdll=false
 
@@ -2924,7 +2922,6 @@ OCAML_VERSION_SHORT=5.00
 
 
  # TODO: rename this variable
-
 
 
 
@@ -3206,7 +3203,8 @@ fi
 
 # Check whether --enable-bigarray-lib was given.
 if test "${enable_bigarray_lib+set}" = set; then :
-  enableval=$enable_bigarray_lib;
+  enableval=$enable_bigarray_lib; as_fn_error $? "The bigarray-lib option was deleted in OCaml 5.00, \
+as the Bigarray module is now part of the standard library." "$LINENO" 5
 fi
 
 
@@ -3246,13 +3244,10 @@ fi
 
 # Check whether --enable-naked-pointers was given.
 if test "${enable_naked_pointers+set}" = set; then :
-  enableval=$enable_naked_pointers;
-fi
+  enableval=$enable_naked_pointers; as_fn_error $? "Naked pointers are not allowed in OCaml Multicore." "$LINENO" 5
+else
+  $as_echo "#define NO_NAKED_POINTERS 1" >>confdefs.h
 
-
-# Check whether --enable-naked-pointers-checker was given.
-if test "${enable_naked_pointers_checker+set}" = set; then :
-  enableval=$enable_naked_pointers_checker;
 fi
 
 
@@ -3300,6 +3295,12 @@ fi
 # Check whether --enable-flambda-invariants was given.
 if test "${enable_flambda_invariants+set}" = set; then :
   enableval=$enable_flambda_invariants;
+fi
+
+
+# Check whether --enable-force-instrumented-runtime was given.
+if test "${enable_force_instrumented_runtime+set}" = set; then :
+  enableval=$enable_force_instrumented_runtime;
 fi
 
 
@@ -3413,9 +3414,6 @@ if test x"$enable_unix_lib" = "xno"; then :
   as_fn_error $? "replay debugger requires the unix library" "$LINENO" 5
 else
   enable_debugger="no"
-fi
-   if test x"$enable_bigarray_lib" = "xyes"; then :
-  as_fn_error $? "legacy bigarray library requires the unix library" "$LINENO" 5
 fi
 fi
 
@@ -12651,7 +12649,8 @@ case $ocaml_cv_cc_vendor in #(
   msvc-*) :
     CPP="$CC -nologo -EP" ;; #(
   *) :
-     ;;
+    #  TODO: why can we not use $CPP in multicore, fix this?
+  CPP="$CC -E -P" ;;
 esac
 
 # Libraries to build depending on the host
@@ -12675,11 +12674,7 @@ esac
 otherlibraries="dynlink"
 if test x"$enable_unix_lib" != "xno"; then :
   enable_unix_lib=yes
-  if test x"$enable_bigarray_lib" != "xno"; then :
-  otherlibraries="$otherlibraries $unixlib bigarray"
-else
-  otherlibraries="$otherlibraries $unixlib"
-fi
+   otherlibraries="$otherlibraries $unixlib"
 fi
 if test x"$enable_str_lib" != "xno"; then :
   otherlibraries="$otherlibraries str"
@@ -12846,6 +12841,30 @@ $as_echo "$as_me: WARNING: Consider using GCC version 4.2 or above." >&2;};
     common_cflags="-nologo -O2 -Gy- -MD $cc_warnings"
       common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
       internal_cppflags='-DUNICODE -D_UNICODE'
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the C compiler supports -d2VolatileMetadata-" >&5
+$as_echo_n "checking whether the C compiler supports -d2VolatileMetadata-... " >&6; }
+  saved_CFLAGS="$CFLAGS"
+  CFLAGS="-d2VolatileMetadata- $CFLAGS"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+int main() { return 0; }
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  cl_has_volatile_metadata=true
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  cl_has_volatile_metadata=false
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  CFLAGS="$saved_CFLAGS"
+
+      if test "x$cl_has_volatile_metadata" = "xtrue"; then :
+  internal_cflags='-d2VolatileMetadata-'
+fi
       internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
       internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)" ;; #(
   xlc-*) :
@@ -12860,8 +12879,6 @@ $as_echo "$as_me: WARNING: Consider using GCC version 4.2 or above." >&2;};
     common_cflags="-O" ;;
 esac ;;
 esac
-
-internal_cppflags="-DCAML_NAME_SPACE $internal_cppflags"
 
 # Enable SSE2 on x86 mingw to avoid using 80-bit registers.
 case $host in #(
@@ -13470,6 +13487,22 @@ ac_fn_c_check_header_compile "$LINENO" "sys/select.h" "ac_cv_header_sys_select_h
 "
 if test "x$ac_cv_header_sys_select_h" = xyes; then :
   $as_echo "#define HAS_SYS_SELECT_H 1" >>confdefs.h
+
+fi
+
+
+
+ac_fn_c_check_header_mongrel "$LINENO" "stdatomic.h" "ac_cv_header_stdatomic_h" "$ac_includes_default"
+if test "x$ac_cv_header_stdatomic_h" = xyes; then :
+  $as_echo "#define HAS_STDATOMIC_H 1" >>confdefs.h
+
+fi
+
+
+
+ac_fn_c_check_header_mongrel "$LINENO" "sys/mman.h" "ac_cv_header_sys_mman_h" "$ac_includes_default"
+if test "x$ac_cv_header_sys_mman_h" = xyes; then :
+  $as_echo "#define HAS_SYS_MMAN_H 1" >>confdefs.h
 
 fi
 
@@ -14277,109 +14310,39 @@ model=default
 system=unknown
 
 case $host in #(
-  i[3456]86-*-linux*) :
-    arch=i386; system=linux_elf ;; #(
-  i[3456]86-*-*bsd*) :
-    arch=i386; system=bsd_elf ;; #(
-  i[3456]86-*-haiku*) :
-    arch=i386; system=beos ;; #(
-  i[3456]86-*-cygwin) :
-    arch=i386; system=cygwin ;; #(
-  i[3456]86-*-gnu*) :
-    arch=i386; system=gnu ;; #(
-  i[3456]86-*-mingw32) :
-    arch=i386; system=mingw ;; #(
-  i686-pc-windows) :
-    arch=i386; system=win32 ;; #(
-  x86_64-pc-windows) :
-    arch=amd64; system=win64 ;; #(
-  powerpc64le*-*-linux*) :
-    arch=power; model=ppc64le; system=elf ;; #(
-  powerpc*-*-linux*) :
-    arch=power; if $arch64; then :
-  model=ppc64
-else
-  model=ppc
-fi; system=elf ;; #(
-  s390x*-*-linux*) :
-    arch=s390x; model=z10; system=elf ;; #(
-  # expected to match "gnueabihf" as well as "musleabihf"
-  armv6*-*-linux-*eabihf) :
-    arch=arm; model=armv6; system=linux_eabihf ;; #(
-  armv7*-*-linux-*eabihf) :
-    arch=arm; model=armv7; system=linux_eabihf ;; #(
-  armv8*-*-linux-*eabihf) :
-    arch=arm; model=armv8; system=linux_eabihf ;; #(
-  armv8*-*-linux-*eabi) :
-    arch=arm; model=armv8; system=linux_eabi ;; #(
-  armv7*-*-linux-*eabi) :
-    arch=arm; model=armv7; system=linux_eabi ;; #(
-  armv6t2*-*-linux-*eabi) :
-    arch=arm; model=armv6t2; system=linux_eabi ;; #(
-  armv6*-*-linux-*eabi) :
-    arch=arm; model=armv6; system=linux_eabi ;; #(
-  armv6*-*-freebsd*) :
-    arch=arm; model=armv6; system=freebsd ;; #(
-  earmv6*-*-netbsd*) :
-    arch=arm; model=armv6; system=netbsd ;; #(
-  earmv7*-*-netbsd*) :
-    arch=arm; model=armv7; system=netbsd ;; #(
-  armv5te*-*-linux-*eabi) :
-    arch=arm; model=armv5te; system=linux_eabi ;; #(
-  armv5*-*-linux-*eabi) :
-    arch=arm; model=armv5; system=linux_eabi ;; #(
-  arm*-*-linux-*eabihf) :
-    arch=arm; system=linux_eabihf ;; #(
-  arm*-*-linux-*eabi) :
-    arch=arm; system=linux_eabi ;; #(
-  arm*-*-openbsd*) :
-    arch=arm; system=bsd ;; #(
-  zaurus*-*-openbsd*) :
-    arch=arm; system=bsd ;; #(
-  x86_64-*-linux*) :
+    x86_64-*-linux*) :
     arch=amd64; system=linux ;; #(
-  x86_64-*-gnu*) :
-    arch=amd64; system=gnu ;; #(
-  x86_64-*-dragonfly*) :
-    arch=amd64; system=dragonfly ;; #(
-  x86_64-*-solaris*) :
-    arch=amd64; system=solaris ;; #(
-  x86_64-*-freebsd*) :
+    x86_64-*-freebsd*) :
     arch=amd64; system=freebsd ;; #(
   x86_64-*-netbsd*) :
     arch=amd64; system=netbsd ;; #(
   x86_64-*-openbsd*) :
     arch=amd64; system=openbsd ;; #(
-  x86_64-*-haiku*) :
-    arch=amd64; system=beos ;; #(
-  arm64-*-darwin*) :
-    arch=arm64; system=macosx ;; #(
-  aarch64-*-darwin*) :
-    arch=arm64; system=macosx ;; #(
-  x86_64-*-darwin*) :
+    x86_64-*-darwin*) :
     arch=amd64; system=macosx ;; #(
   x86_64-*-mingw32) :
     arch=amd64; system=mingw64 ;; #(
-  aarch64-*-linux*) :
-    arch=arm64; system=linux ;; #(
-  aarch64-*-freebsd*) :
-    arch=arm64; system=freebsd ;; #(
-  x86_64-*-cygwin*) :
-    arch=amd64; system=cygwin ;; #(
-  riscv64-*-linux*) :
-    arch=riscv; model=riscv64; system=linux
- ;; #(
   *) :
      ;;
 esac
 
-if test x"$enable_native_compiler" = "xno"; then :
-  native_compiler=false
-  { $as_echo "$as_me:${as_lineno-$LINENO}: the native compiler is disabled" >&5
-$as_echo "$as_me: the native compiler is disabled" >&6;}
-else
-  native_compiler=true
-fi
+case $enable_native_compiler,$arch in #(
+  no,*) :
+    native_compiler=false
+    { $as_echo "$as_me:${as_lineno-$LINENO}: the native compiler is disabled" >&5
+$as_echo "$as_me: the native compiler is disabled" >&6;} ;; #(
+  yes,none) :
+    as_fn_error 69 "the native compiler is not supported on this platform" "$LINENO" 5 ;; #(
+  *,none) :
+    native_compiler=false
+    { $as_echo "$as_me:${as_lineno-$LINENO}: the native compiler is not supported on this platform" >&5
+$as_echo "$as_me: the native compiler is not supported on this platform" >&6;} ;; #(
+  *,*) :
+    native_compiler=true
+ ;; #(
+  *) :
+     ;;
+esac
 
 if ! $native_compiler; then :
   natdynlink=false
@@ -14999,6 +14962,11 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
  ;;
 esac
+
+if test "x$enable_force_instrumented_runtime" = "xyes"; then :
+  force_instrumented_runtime=true
+
+fi
 
 # The instrumented runtime is built by default
 # if the proper clock source is found.
@@ -16633,23 +16601,11 @@ $as_echo "yes" >&6; } ;; #(
 $as_echo "no" >&6; } ;;
 esac
 
-## Determine if the POSIX threads library is supported
+## Determine how to link with the POSIX threads library
 
-case $enable_systhreads,$enable_unix_lib in #(
-  yes,no) :
-    systhread_support=false
-    as_fn_error $? "the Win32/POSIX threads library requires the unix library" "$LINENO" 5 ;; #(
-  no,*|*,no) :
-    systhread_support=false
-    { $as_echo "$as_me:${as_lineno-$LINENO}: the Win32/POSIX threads library is disabled" >&5
-$as_echo "$as_me: the Win32/POSIX threads library is disabled" >&6;} ;; #(
-  *) :
-    case $host in #(
+case $host in #(
   *-*-mingw32|*-pc-windows) :
-    systhread_support=true
-      otherlibraries="$otherlibraries systhreads"
-      { $as_echo "$as_me:${as_lineno-$LINENO}: the Win32 threads library is supported" >&5
-$as_echo "$as_me: the Win32 threads library is supported" >&6;} ;; #(
+    PTHREAD_LIBS="-lpthread" ;; #(
   *) :
 
 
@@ -16676,6 +16632,9 @@ if test "x$PTHREAD_CFLAGS$PTHREAD_LIBS" != "x"; then
         ax_pthread_save_LIBS="$LIBS"
         if test "x$PTHREAD_CC" != "x"; then :
   CC="$PTHREAD_CC"
+fi
+        if test "x$PTHREAD_CXX" != "x"; then :
+  CXX="$PTHREAD_CXX"
 fi
         CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
         LIBS="$PTHREAD_LIBS $LIBS"
@@ -17235,11 +17194,19 @@ fi
     #handle absolute path differently from PATH based program lookup
                      case "x$CC" in #(
   x/*) :
-    if as_fn_executable_p ${CC}_r; then :
+
+			   if as_fn_executable_p ${CC}_r; then :
   PTHREAD_CC="${CC}_r"
-fi ;; #(
+fi
+			   if test "x${CXX}" != "x"; then :
+  if as_fn_executable_p ${CXX}_r; then :
+  PTHREAD_CXX="${CXX}_r"
+fi
+fi
+			  ;; #(
   *) :
-    for ac_prog in ${CC}_r
+
+			   for ac_prog in ${CC}_r
 do
   # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
@@ -17281,8 +17248,56 @@ fi
   test -n "$PTHREAD_CC" && break
 done
 test -n "$PTHREAD_CC" || PTHREAD_CC="$CC"
- ;;
-esac ;; #(
+
+			   if test "x${CXX}" != "x"; then :
+  for ac_prog in ${CXX}_r
+do
+  # Extract the first word of "$ac_prog", so it can be a program name with args.
+set dummy $ac_prog; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_PTHREAD_CXX+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$PTHREAD_CXX"; then
+  ac_cv_prog_PTHREAD_CXX="$PTHREAD_CXX" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_PTHREAD_CXX="$ac_prog"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+PTHREAD_CXX=$ac_cv_prog_PTHREAD_CXX
+if test -n "$PTHREAD_CXX"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $PTHREAD_CXX" >&5
+$as_echo "$PTHREAD_CXX" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+  test -n "$PTHREAD_CXX" && break
+done
+test -n "$PTHREAD_CXX" || PTHREAD_CXX="$CXX"
+
+fi
+
+                      ;;
+esac
+                     ;; #(
   *) :
      ;;
 esac
@@ -17292,6 +17307,8 @@ esac
 fi
 
 test -n "$PTHREAD_CC" || PTHREAD_CC="$CC"
+test -n "$PTHREAD_CXX" || PTHREAD_CXX="$CXX"
+
 
 
 
@@ -17299,33 +17316,23 @@ test -n "$PTHREAD_CC" || PTHREAD_CC="$CC"
 
 # Finally, execute ACTION-IF-FOUND/ACTION-IF-NOT-FOUND:
 if test "x$ax_pthread_ok" = "xyes"; then
-        systhread_support=true
-      otherlibraries="$otherlibraries systhreads"
-      common_cflags="$common_cflags $PTHREAD_CFLAGS"
-      { $as_echo "$as_me:${as_lineno-$LINENO}: the POSIX threads library is supported" >&5
-$as_echo "$as_me: the POSIX threads library is supported" >&6;}
-      saved_CFLAGS="$CFLAGS"
-      saved_LIBS="$LIBS"
-      CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
-      LIBS="$LIBS $PTHREAD_LIBS"
-      ac_fn_c_check_func "$LINENO" "sigwait" "ac_cv_func_sigwait"
+        common_cflags="$common_cflags $PTHREAD_CFLAGS"
+    saved_CFLAGS="$CFLAGS"
+    saved_LIBS="$LIBS"
+    CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+    LIBS="$LIBS $PTHREAD_LIBS"
+    ac_fn_c_check_func "$LINENO" "sigwait" "ac_cv_func_sigwait"
 if test "x$ac_cv_func_sigwait" = xyes; then :
   $as_echo "#define HAS_SIGWAIT 1" >>confdefs.h
 
 fi
 
-      LIBS="$saved_LIBS"
-      CFLAGS="$saved_CFLAGS"
+    LIBS="$saved_LIBS"
+    CFLAGS="$saved_CFLAGS"
         :
 else
         ax_pthread_ok=no
-        if test x"$enable_systhreads" = "xyes"; then :
-  as_fn_error $? "the POSIX thread library is not available" "$LINENO" 5
-else
-  systhread_support=false
-        { $as_echo "$as_me:${as_lineno-$LINENO}: the POSIX threads library is not supported" >&5
-$as_echo "$as_me: the POSIX threads library is not supported" >&6;}
-fi
+        as_fn_error $? "POSIX threads are required but not supported on this platform" "$LINENO" 5
 fi
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
@@ -17334,7 +17341,23 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
  ;;
-esac ;;
+esac
+
+## Activate the systhread library
+
+case $enable_systhreads,$enable_unix_lib in #(
+  yes,no) :
+    systhread_support=false
+    as_fn_error $? "the threads library requires the unix library" "$LINENO" 5 ;; #(
+  no,*|*,no) :
+    systhread_support=false
+    { $as_echo "$as_me:${as_lineno-$LINENO}: the threads library is disabled" >&5
+$as_echo "$as_me: the threads library is disabled" >&6;} ;; #(
+  *) :
+    systhread_support=true
+  otherlibraries="$otherlibraries systhreads"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: the threads library is supported" >&5
+$as_echo "$as_me: the threads library is supported" >&6;} ;;
 esac
 
 ## Does the assembler support debug prefix map and CFI directives
@@ -17522,38 +17545,6 @@ else
   { $as_echo "$as_me:${as_lineno-$LINENO}: not using frame pointers" >&5
 $as_echo "$as_me: not using frame pointers" >&6;}
   frame_pointers=false
-fi
-
-## No naked pointers
-
-if test x"$enable_naked_pointers" = "xno" ; then :
-  naked_pointers=false
-   $as_echo "#define NO_NAKED_POINTERS 1" >>confdefs.h
-
-else
-  naked_pointers=true
-fi
-
-if test x"$enable_naked_pointers_checker" = "xyes" ; then :
-  if test x"$enable_naked_pointers" = "xno" ; then :
-  as_fn_error $? "--enable-naked-pointers-checker and --disable-naked-pointers are incompatible" "$LINENO" 5
-fi
-   case "$arch","$system" in #(
-  amd64,linux|amd64,macosx \
-    |amd64,openbsd|amd64,win64 \
-    |amd64,freebsd|amd64,solaris \
-    |arm64,linux|arm64,macosx) :
-    naked_pointers_checker=true
-      $as_echo "#define NAKED_POINTERS_CHECKER 1" >>confdefs.h
- ;; #(
-  *) :
-    as_fn_error $? "naked pointers checker not supported on this platform" "$LINENO" 5
-   ;; #(
-  *) :
-     ;;
-esac
-else
-  naked_pointers_checker=false
 fi
 
 ## Check for mmap support for huge pages and contiguous heap
@@ -17789,16 +17780,57 @@ ocamlc_cflags="$common_cflags $sharedlib_cflags \$(CFLAGS)"
 ocamlc_cppflags="$common_cppflags \$(CPPFLAGS)"
 cclibs="$cclibs $mathlib"
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for backtrace in -lexecinfo" >&5
+$as_echo_n "checking for backtrace in -lexecinfo... " >&6; }
+if ${ac_cv_lib_execinfo_backtrace+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lexecinfo  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char backtrace ();
+int
+main ()
+{
+return backtrace ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_execinfo_backtrace=yes
+else
+  ac_cv_lib_execinfo_backtrace=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_execinfo_backtrace" >&5
+$as_echo "$ac_cv_lib_execinfo_backtrace" >&6; }
+if test "x$ac_cv_lib_execinfo_backtrace" = xyes; then :
+  cclibs="$cclibs -lexecinfo"
+fi
+
+
 case $host in #(
   *-*-mingw32) :
-    bytecclibs="-lws2_32 -lversion"
-    nativecclibs="-lws2_32 -lversion" ;; #(
+    bytecclibs="-lws2_32 -lversion -lpthread -lgcc_eh -lDbgHelp"
+    nativecclibs="-lws2_32 -lversion -lpthread -lgcc_eh -lDbgHelp" ;; #(
   *-pc-windows) :
     bytecclibs="advapi32.lib ws2_32.lib version.lib"
     nativecclibs="advapi32.lib ws2_32.lib version.lib" ;; #(
   *) :
     bytecclibs="$cclibs $DLLIBS $PTHREAD_LIBS"
-  nativecclibs="$cclibs $DLLIBS" ;;
+  nativecclibs="$cclibs $DLLIBS $PTHREAD_LIBS" ;;
 esac
 
 if test x"$libdir" = x'${exec_prefix}/lib'; then :

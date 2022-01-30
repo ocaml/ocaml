@@ -55,7 +55,8 @@ toolchain="cc"
 profinfo=false
 profinfo_width=0
 extralibs=
-instrumented_runtime=false
+instrumented_runtime=true
+force_instrumented_runtime=false
 instrumented_runtime_libs=""
 bootstrapping_flexdll=false
 
@@ -168,8 +169,7 @@ AC_SUBST([flexlink_flags])
 AC_SUBST([PACKLD])
 AC_SUBST([stdlib_manpages])
 AC_SUBST([compute_deps])
-AC_SUBST([naked_pointers])
-AC_SUBST([naked_pointers_checker])
+AC_SUBST([force_instrumented_runtime])
 
 ## Generated files
 
@@ -273,9 +273,10 @@ AC_ARG_ENABLE([unix-lib],
   [AS_HELP_STRING([--disable-unix-lib],
     [do not build the unix library])])
 
-AC_ARG_ENABLE([bigarray-lib],
-  [AS_HELP_STRING([--disable-bigarray-lib],
-    [do not build the legacy separate bigarray library])])
+AC_ARG_ENABLE([bigarray-lib], [],
+  [AC_MSG_ERROR([The bigarray-lib option was deleted in OCaml 5.00, \
+as the Bigarray module is now part of the standard library.])],
+  [])
 
 AC_ARG_ENABLE([ocamldoc],
   [AS_HELP_STRING([--disable-ocamldoc],
@@ -300,13 +301,9 @@ AC_ARG_ENABLE([frame-pointers],
   [AS_HELP_STRING([--enable-frame-pointers],
     [use frame pointers in runtime and generated code])])
 
-AC_ARG_ENABLE([naked-pointers],
-  [AS_HELP_STRING([--disable-naked-pointers],
-    [do not allow naked pointers])])
-
-AC_ARG_ENABLE([naked-pointers-checker],
-  [AS_HELP_STRING([--enable-naked-pointers-checker],
-    [enable the naked pointers checker])])
+AC_ARG_ENABLE([naked-pointers], [],
+  [AC_MSG_ERROR([Naked pointers are not allowed in OCaml Multicore.])],
+  [AC_DEFINE([NO_NAKED_POINTERS])])
 
 AC_ARG_ENABLE([spacetime], [],
   [AC_MSG_ERROR([spacetime profiling was deleted in OCaml 4.12.])],
@@ -339,6 +336,10 @@ AC_ARG_ENABLE([flambda],
 AC_ARG_ENABLE([flambda-invariants],
   [AS_HELP_STRING([--enable-flambda-invariants],
     [enable invariants checks in flambda])])
+
+AC_ARG_ENABLE([force-instrumented-runtime],
+  [AS_HELP_STRING([--force-instrumented-runtime],
+    [force the usage of the instrumented runtime])])
 
 AC_ARG_ENABLE([cmm-invariants],
   [AS_HELP_STRING([--enable-cmm-invariants],
@@ -425,9 +426,7 @@ AC_ARG_WITH([flexdll],
 AS_IF([test x"$enable_unix_lib" = "xno"],
   [AS_IF([test x"$enable_debugger" = "xyes"],
     [AC_MSG_ERROR([replay debugger requires the unix library])],
-    [enable_debugger="no"])
-   AS_IF([test x"$enable_bigarray_lib" = "xyes"],
-    [AC_MSG_ERROR([legacy bigarray library requires the unix library])])])
+    [enable_debugger="no"])])
 
 AS_IF([test x"$enable_unix_lib" = "xno" -o x"$enable_str_lib" = "xno"],
   [AS_IF([test x"$enable_ocamldoc" = "xyes"],
@@ -526,7 +525,9 @@ AS_CASE([$ocaml_cv_cc_vendor],
   [sunc-*],
     [CPP="$CC -E -Qn"], # suppress generation of Sun PRO ident string
   [msvc-*],
-    [CPP="$CC -nologo -EP"])
+    [CPP="$CC -nologo -EP"],
+#  TODO: why can we not use $CPP in multicore, fix this?
+  [CPP="$CC -E -P"])
 
 # Libraries to build depending on the host
 
@@ -545,9 +546,7 @@ AS_CASE([$host],
 otherlibraries="dynlink"
 AS_IF([test x"$enable_unix_lib" != "xno"],
   [enable_unix_lib=yes
-  AS_IF([test x"$enable_bigarray_lib" != "xno"],
-    [otherlibraries="$otherlibraries $unixlib bigarray"],
-    [otherlibraries="$otherlibraries $unixlib"])])
+   otherlibraries="$otherlibraries $unixlib"])
 AS_IF([test x"$enable_str_lib" != "xno"],
   [otherlibraries="$otherlibraries str"])
 
@@ -676,6 +675,9 @@ AS_CASE([$host],
       [common_cflags="-nologo -O2 -Gy- -MD $cc_warnings"
       common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
       internal_cppflags='-DUNICODE -D_UNICODE'
+      OCAML_CL_HAS_VOLATILE_METADATA
+      AS_IF([test "x$cl_has_volatile_metadata" = "xtrue"],
+            [internal_cflags='-d2VolatileMetadata-'])
       internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
       internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
     [xlc-*],
@@ -686,8 +688,6 @@ AS_CASE([$host],
       [common_cflags="-O4 -xc99=all -D_XPG6 $CFLAGS";
       internal_cflags="$cc_warnings"],
     [common_cflags="-O"])])
-
-internal_cppflags="-DCAML_NAME_SPACE $internal_cppflags"
 
 # Enable SSE2 on x86 mingw to avoid using 80-bit registers.
 AS_CASE([$host],
@@ -872,6 +872,10 @@ AC_CHECK_HEADER([dirent.h], [AC_DEFINE([HAS_DIRENT])], [],
 AC_CHECK_HEADER([sys/select.h], [AC_DEFINE([HAS_SYS_SELECT_H])], [],
   [#include <sys/types.h>])
 
+AC_CHECK_HEADER([stdatomic.h], [AC_DEFINE([HAS_STDATOMIC_H])])
+
+AC_CHECK_HEADER([sys/mman.h], [AC_DEFINE([HAS_SYS_MMAN_H])])
+
 # Checks for types
 
 ## off_t
@@ -1055,99 +1059,107 @@ model=default
 system=unknown
 
 AS_CASE([$host],
-  [[i[3456]86-*-linux*]],
-    [arch=i386; system=linux_elf],
-  [[i[3456]86-*-*bsd*]],
-    [arch=i386; system=bsd_elf],
-  [[i[3456]86-*-haiku*]],
-    [arch=i386; system=beos],
-  [[i[3456]86-*-cygwin]],
-    [arch=i386; system=cygwin],
-  [[i[3456]86-*-gnu*]],
-    [arch=i386; system=gnu],
-  [[i[3456]86-*-mingw32]],
-    [arch=i386; system=mingw],
-  [i686-pc-windows],
-    [arch=i386; system=win32],
-  [x86_64-pc-windows],
-    [arch=amd64; system=win64],
-  [[powerpc64le*-*-linux*]],
-    [arch=power; model=ppc64le; system=elf],
-  [[powerpc*-*-linux*]],
-    [arch=power; AS_IF([$arch64],[model=ppc64],[model=ppc]); system=elf],
-  [[s390x*-*-linux*]],
-    [arch=s390x; model=z10; system=elf],
-  # expected to match "gnueabihf" as well as "musleabihf"
-  [armv6*-*-linux-*eabihf],
-    [arch=arm; model=armv6; system=linux_eabihf],
-  [armv7*-*-linux-*eabihf],
-    [arch=arm; model=armv7; system=linux_eabihf],
-  [armv8*-*-linux-*eabihf],
-    [arch=arm; model=armv8; system=linux_eabihf],
-  [armv8*-*-linux-*eabi],
-    [arch=arm; model=armv8; system=linux_eabi],
-  [armv7*-*-linux-*eabi],
-    [arch=arm; model=armv7; system=linux_eabi],
-  [armv6t2*-*-linux-*eabi],
-    [arch=arm; model=armv6t2; system=linux_eabi],
-  [armv6*-*-linux-*eabi],
-    [arch=arm; model=armv6; system=linux_eabi],
-  [armv6*-*-freebsd*],
-    [arch=arm; model=armv6; system=freebsd],
-  [earmv6*-*-netbsd*],
-    [arch=arm; model=armv6; system=netbsd],
-  [earmv7*-*-netbsd*],
-    [arch=arm; model=armv7; system=netbsd],
-  [armv5te*-*-linux-*eabi],
-    [arch=arm; model=armv5te; system=linux_eabi],
-  [armv5*-*-linux-*eabi],
-    [arch=arm; model=armv5; system=linux_eabi],
-  [arm*-*-linux-*eabihf],
-    [arch=arm; system=linux_eabihf],
-  [arm*-*-linux-*eabi],
-    [arch=arm; system=linux_eabi],
-  [arm*-*-openbsd*],
-    [arch=arm; system=bsd],
-  [zaurus*-*-openbsd*],
-    [arch=arm; system=bsd],
+dnl [[i[3456]86-*-linux*]],
+dnl   [arch=i386; system=linux_elf],
+dnl [[i[3456]86-*-*bsd*]],
+dnl   [arch=i386; system=bsd_elf],
+dnl [[i[3456]86-*-haiku*]],
+dnl   [arch=i386; system=beos],
+dnl [[i[3456]86-*-cygwin]],
+dnl   [arch=i386; system=cygwin],
+dnl [[i[3456]86-*-gnu*]],
+dnl   [arch=i386; system=gnu],
+dnl [[i[3456]86-*-mingw32]],
+dnl   [arch=i386; system=mingw],
+dnl [i686-pc-windows],
+dnl   [arch=i386; system=win32],
+dnl [x86_64-pc-windows],
+dnl   [arch=amd64; system=win64],
+dnl [[powerpc64le*-*-linux*]],
+dnl   [arch=power; model=ppc64le; system=elf],
+dnl [[powerpc*-*-linux*]],
+dnl   [arch=power; AS_IF([$arch64],[model=ppc64],[model=ppc]); system=elf],
+dnl [[s390x*-*-linux*]],
+dnl   [arch=s390x; model=z10; system=elf],
+dnl # expected to match "gnueabihf" as well as "musleabihf"
+dnl [armv6*-*-linux-*eabihf],
+dnl   [arch=arm; model=armv6; system=linux_eabihf],
+dnl [armv7*-*-linux-*eabihf],
+dnl   [arch=arm; model=armv7; system=linux_eabihf],
+dnl [armv8*-*-linux-*eabihf],
+dnl   [arch=arm; model=armv8; system=linux_eabihf],
+dnl [armv8*-*-linux-*eabi],
+dnl   [arch=arm; model=armv8; system=linux_eabi],
+dnl [armv7*-*-linux-*eabi],
+dnl   [arch=arm; model=armv7; system=linux_eabi],
+dnl [armv6t2*-*-linux-*eabi],
+dnl   [arch=arm; model=armv6t2; system=linux_eabi],
+dnl [armv6*-*-linux-*eabi],
+dnl   [arch=arm; model=armv6; system=linux_eabi],
+dnl [armv6*-*-freebsd*],
+dnl   [arch=arm; model=armv6; system=freebsd],
+dnl [earmv6*-*-netbsd*],
+dnl   [arch=arm; model=armv6; system=netbsd],
+dnl [earmv7*-*-netbsd*],
+dnl   [arch=arm; model=armv7; system=netbsd],
+dnl [armv5te*-*-linux-*eabi],
+dnl   [arch=arm; model=armv5te; system=linux_eabi],
+dnl [armv5*-*-linux-*eabi],
+dnl   [arch=arm; model=armv5; system=linux_eabi],
+dnl [arm*-*-linux-*eabihf],
+dnl   [arch=arm; system=linux_eabihf],
+dnl [arm*-*-linux-*eabi],
+dnl   [arch=arm; system=linux_eabi],
+dnl [arm*-*-openbsd*],
+dnl   [arch=arm; system=bsd],
+dnl [zaurus*-*-openbsd*],
+dnl   [arch=arm; system=bsd],
   [x86_64-*-linux*],
     [arch=amd64; system=linux],
-  [x86_64-*-gnu*],
-    [arch=amd64; system=gnu],
-  [x86_64-*-dragonfly*],
-    [arch=amd64; system=dragonfly],
-  [x86_64-*-solaris*],
-    [arch=amd64; system=solaris],
+dnl [x86_64-*-gnu*],
+dnl   [arch=amd64; system=gnu],
+dnl [x86_64-*-dragonfly*],
+dnl   [arch=amd64; system=dragonfly],
+dnl [x86_64-*-solaris*],
+dnl   [arch=amd64; system=solaris],
   [x86_64-*-freebsd*],
     [arch=amd64; system=freebsd],
   [x86_64-*-netbsd*],
     [arch=amd64; system=netbsd],
   [x86_64-*-openbsd*],
     [arch=amd64; system=openbsd],
-  [x86_64-*-haiku*],
-    [arch=amd64; system=beos],
-  [arm64-*-darwin*],
-    [arch=arm64; system=macosx],
-  [aarch64-*-darwin*],
-    [arch=arm64; system=macosx],
+dnl [x86_64-*-haiku*],
+dnl   [arch=amd64; system=beos],
+dnl [arm64-*-darwin*],
+dnl   [arch=arm64; system=macosx],
+dnl [aarch64-*-darwin*],
+dnl   [arch=arm64; system=macosx],
   [x86_64-*-darwin*],
     [arch=amd64; system=macosx],
   [x86_64-*-mingw32],
     [arch=amd64; system=mingw64],
-  [aarch64-*-linux*],
-    [arch=arm64; system=linux],
-  [aarch64-*-freebsd*],
-    [arch=arm64; system=freebsd],
-  [x86_64-*-cygwin*],
-    [arch=amd64; system=cygwin],
-  [riscv64-*-linux*],
-    [arch=riscv; model=riscv64; system=linux]
+dnl [aarch64-*-linux*],
+dnl   [arch=arm64; system=linux],
+dnl [aarch64-*-freebsd*],
+dnl   [arch=arm64; system=freebsd],
+dnl [x86_64-*-cygwin*],
+dnl   [arch=amd64; system=cygwin],
+dnl [riscv64-*-linux*],
+dnl   [arch=riscv; model=riscv64; system=linux]
 )
 
-AS_IF([test x"$enable_native_compiler" = "xno"],
-  [native_compiler=false
-  AC_MSG_NOTICE([the native compiler is disabled])],
-  [native_compiler=true])
+AS_CASE([$enable_native_compiler,$arch],
+  [no,*],
+    [native_compiler=false
+    AC_MSG_NOTICE([the native compiler is disabled])],
+  [yes,none],
+    [AC_MSG_ERROR([the native compiler is not supported on this platform], 69)],
+  [*,none],
+    [native_compiler=false
+    AC_MSG_NOTICE([the native compiler is not supported on this platform])],
+  [*,*],
+    [native_compiler=true]
+)
 
 AS_IF([! $native_compiler], [natdynlink=false])
 
@@ -1346,6 +1358,10 @@ AS_CASE([$host],
     ],
     [has_monotonic_clock=false])
   ]
+)
+
+AS_IF([test "x$enable_force_instrumented_runtime" = "xyes"],
+  [force_instrumented_runtime=true]
 )
 
 # The instrumented runtime is built by default
@@ -1788,36 +1804,35 @@ AS_CASE([$arch,$system],
     AC_MSG_RESULT([yes])],
   [AC_MSG_RESULT([no])])
 
-## Determine if the POSIX threads library is supported
+## Determine how to link with the POSIX threads library
+
+AS_CASE([$host],
+  [*-*-mingw32|*-pc-windows],
+    [PTHREAD_LIBS="-lpthread"],
+  [AX_PTHREAD(
+    [common_cflags="$common_cflags $PTHREAD_CFLAGS"
+    saved_CFLAGS="$CFLAGS"
+    saved_LIBS="$LIBS"
+    CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+    LIBS="$LIBS $PTHREAD_LIBS"
+    AC_CHECK_FUNC([sigwait], [AC_DEFINE([HAS_SIGWAIT])])
+    LIBS="$saved_LIBS"
+    CFLAGS="$saved_CFLAGS"],
+    [AC_MSG_ERROR(m4_normalize([POSIX threads are required but not supported on
+      this platform]))])])
+
+## Activate the systhread library
 
 AS_CASE([$enable_systhreads,$enable_unix_lib],
   [yes,no],
     [systhread_support=false
-    AC_MSG_ERROR([the Win32/POSIX threads library requires the unix library])],
+    AC_MSG_ERROR([the threads library requires the unix library])],
   [no,*|*,no],
     [systhread_support=false
-    AC_MSG_NOTICE([the Win32/POSIX threads library is disabled])],
-  [AS_CASE([$host],
-    [*-*-mingw32|*-pc-windows],
-      [systhread_support=true
-      otherlibraries="$otherlibraries systhreads"
-      AC_MSG_NOTICE([the Win32 threads library is supported])],
-    [AX_PTHREAD(
-      [systhread_support=true
-      otherlibraries="$otherlibraries systhreads"
-      common_cflags="$common_cflags $PTHREAD_CFLAGS"
-      AC_MSG_NOTICE([the POSIX threads library is supported])
-      saved_CFLAGS="$CFLAGS"
-      saved_LIBS="$LIBS"
-      CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
-      LIBS="$LIBS $PTHREAD_LIBS"
-      AC_CHECK_FUNC([sigwait], [AC_DEFINE([HAS_SIGWAIT])])
-      LIBS="$saved_LIBS"
-      CFLAGS="$saved_CFLAGS"],
-      [AS_IF([test x"$enable_systhreads" = "xyes"],
-        [AC_MSG_ERROR([the POSIX thread library is not available])],
-        [systhread_support=false
-        AC_MSG_NOTICE([the POSIX threads library is not supported])])])])])
+    AC_MSG_NOTICE([the threads library is disabled])],
+  [systhread_support=true
+  otherlibraries="$otherlibraries systhreads"
+  AC_MSG_NOTICE([the threads library is supported])])
 
 ## Does the assembler support debug prefix map and CFI directives
 as_has_debug_prefix_map=false
@@ -1841,30 +1856,6 @@ AS_IF([test x"$enable_frame_pointers" = "xyes"],
   )],
   [AC_MSG_NOTICE([not using frame pointers])
   frame_pointers=false])
-
-## No naked pointers
-
-AS_IF([test x"$enable_naked_pointers" = "xno" ],
-  [naked_pointers=false
-   AC_DEFINE([NO_NAKED_POINTERS])],
-  [naked_pointers=true])
-
-AS_IF([test x"$enable_naked_pointers_checker" = "xyes" ],
-  [AS_IF([test x"$enable_naked_pointers" = "xno" ],
-         [AC_MSG_ERROR(m4_normalize([
-               --enable-naked-pointers-checker and --disable-naked-pointers
-               are incompatible]))])
-   AS_CASE(["$arch","$system"],
-    [amd64,linux|amd64,macosx \
-    |amd64,openbsd|amd64,win64 \
-    |amd64,freebsd|amd64,solaris \
-    |arm64,linux|arm64,macosx],
-      [naked_pointers_checker=true
-      AC_DEFINE([NAKED_POINTERS_CHECKER])],
-    [*],
-      [AC_MSG_ERROR([naked pointers checker not supported on this platform])]
-  )],
-  [naked_pointers_checker=false])
 
 ## Check for mmap support for huge pages and contiguous heap
 OCAML_MMAP_SUPPORTS_HUGE_PAGES
@@ -1971,15 +1962,17 @@ ocamlc_cflags="$common_cflags $sharedlib_cflags \$(CFLAGS)"
 ocamlc_cppflags="$common_cppflags \$(CPPFLAGS)"
 cclibs="$cclibs $mathlib"
 
+AC_CHECK_LIB(execinfo, backtrace, cclibs="$cclibs -lexecinfo",[])
+
 AS_CASE([$host],
   [*-*-mingw32],
-    [bytecclibs="-lws2_32 -lversion"
-    nativecclibs="-lws2_32 -lversion"],
+    [bytecclibs="-lws2_32 -lversion -lpthread -lgcc_eh -lDbgHelp"
+    nativecclibs="-lws2_32 -lversion -lpthread -lgcc_eh -lDbgHelp"],
   [*-pc-windows],
     [bytecclibs="advapi32.lib ws2_32.lib version.lib"
     nativecclibs="advapi32.lib ws2_32.lib version.lib"],
   [bytecclibs="$cclibs $DLLIBS $PTHREAD_LIBS"
-  nativecclibs="$cclibs $DLLIBS"])
+  nativecclibs="$cclibs $DLLIBS $PTHREAD_LIBS"])
 
 AS_IF([test x"$libdir" = x'${exec_prefix}/lib'],
   [libdir="$libdir"/ocaml])

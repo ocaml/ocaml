@@ -193,6 +193,14 @@ stdlib__Complex.cmo : complex.ml \
 stdlib__Complex.cmx : complex.ml \
     stdlib__Complex.cmi
 stdlib__Complex.cmi : complex.mli
+stdlib__Condition.cmo : condition.ml \
+    stdlib__Mutex.cmi \
+    stdlib__Condition.cmi
+stdlib__Condition.cmx : condition.ml \
+    stdlib__Mutex.cmx \
+    stdlib__Condition.cmi
+stdlib__Condition.cmi : condition.mli \
+    stdlib__Mutex.cmi
 stdlib__Digest.cmo : digest.ml \
     stdlib__String.cmi \
     stdlib__Char.cmi \
@@ -204,6 +212,35 @@ stdlib__Digest.cmx : digest.ml \
     stdlib__Bytes.cmx \
     stdlib__Digest.cmi
 stdlib__Digest.cmi : digest.mli
+stdlib__Domain.cmo : domain.ml \
+    stdlib__Sys.cmi \
+    stdlib.cmi \
+    stdlib__Obj.cmi \
+    stdlib__Mutex.cmi \
+    stdlib__List.cmi \
+    stdlib__Atomic.cmi \
+    stdlib__Array.cmi \
+    stdlib__Domain.cmi
+stdlib__Domain.cmx : domain.ml \
+    stdlib__Sys.cmx \
+    stdlib.cmx \
+    stdlib__Obj.cmx \
+    stdlib__Mutex.cmx \
+    stdlib__List.cmx \
+    stdlib__Atomic.cmx \
+    stdlib__Array.cmx \
+    stdlib__Domain.cmi
+stdlib__Domain.cmi : domain.mli
+stdlib__Effect.cmo : effect.ml \
+    stdlib__Printexc.cmi \
+    stdlib__Obj.cmi \
+    stdlib__Effect.cmi
+stdlib__Effect.cmx : effect.ml \
+    stdlib__Printexc.cmx \
+    stdlib__Obj.cmx \
+    stdlib__Effect.cmi
+stdlib__Effect.cmi : effect.mli \
+    stdlib__Printexc.cmi
 stdlib__Either.cmo : either.ml \
     stdlib__Either.cmi
 stdlib__Either.cmx : either.ml \
@@ -240,7 +277,7 @@ stdlib__Filename.cmo : filename.ml \
     stdlib__Random.cmi \
     stdlib__Printf.cmi \
     stdlib__List.cmi \
-    stdlib__Lazy.cmi \
+    stdlib__Domain.cmi \
     stdlib__Buffer.cmi \
     stdlib__Filename.cmi
 stdlib__Filename.cmx : filename.ml \
@@ -249,7 +286,7 @@ stdlib__Filename.cmx : filename.ml \
     stdlib__Random.cmx \
     stdlib__Printf.cmx \
     stdlib__List.cmx \
-    stdlib__Lazy.cmx \
+    stdlib__Domain.cmx \
     stdlib__Buffer.cmx \
     stdlib__Filename.cmi
 stdlib__Filename.cmi : filename.mli
@@ -277,6 +314,7 @@ stdlib__Format.cmo : format.ml \
     stdlib__List.cmi \
     stdlib__Int.cmi \
     stdlib__Either.cmi \
+    stdlib__Domain.cmi \
     camlinternalFormatBasics.cmi \
     camlinternalFormat.cmi \
     stdlib__Bytes.cmi \
@@ -291,6 +329,7 @@ stdlib__Format.cmx : format.ml \
     stdlib__List.cmx \
     stdlib__Int.cmx \
     stdlib__Either.cmx \
+    stdlib__Domain.cmx \
     camlinternalFormatBasics.cmx \
     camlinternalFormat.cmx \
     stdlib__Bytes.cmx \
@@ -300,6 +339,7 @@ stdlib__Format.cmi : format.mli \
     stdlib.cmi \
     stdlib__Seq.cmi \
     stdlib__Either.cmi \
+    stdlib__Domain.cmi \
     stdlib__Buffer.cmi
 stdlib__Fun.cmo : fun.ml \
     stdlib__Printexc.cmi \
@@ -322,32 +362,14 @@ stdlib__Gc.cmx : gc.ml \
     stdlib__Gc.cmi
 stdlib__Gc.cmi : gc.mli \
     stdlib__Printexc.cmi
-stdlib__Genlex.cmo : genlex.ml \
-    stdlib__String.cmi \
-    stdlib__Stream.cmi \
-    stdlib__List.cmi \
-    stdlib__Hashtbl.cmi \
-    stdlib__Char.cmi \
-    stdlib__Bytes.cmi \
-    stdlib__Genlex.cmi
-stdlib__Genlex.cmx : genlex.ml \
-    stdlib__String.cmx \
-    stdlib__Stream.cmx \
-    stdlib__List.cmx \
-    stdlib__Hashtbl.cmx \
-    stdlib__Char.cmx \
-    stdlib__Bytes.cmx \
-    stdlib__Genlex.cmi
-stdlib__Genlex.cmi : genlex.mli \
-    stdlib__Stream.cmi
 stdlib__Hashtbl.cmo : hashtbl.ml \
     stdlib__Sys.cmi \
     stdlib__String.cmi \
     stdlib__Seq.cmi \
     stdlib__Random.cmi \
     stdlib__Obj.cmi \
-    stdlib__Lazy.cmi \
     stdlib__Int.cmi \
+    stdlib__Domain.cmi \
     stdlib__Array.cmi \
     stdlib__Hashtbl.cmi
 stdlib__Hashtbl.cmx : hashtbl.ml \
@@ -356,8 +378,8 @@ stdlib__Hashtbl.cmx : hashtbl.ml \
     stdlib__Seq.cmx \
     stdlib__Random.cmx \
     stdlib__Obj.cmx \
-    stdlib__Lazy.cmx \
     stdlib__Int.cmx \
+    stdlib__Domain.cmx \
     stdlib__Array.cmx \
     stdlib__Hashtbl.cmi
 stdlib__Hashtbl.cmi : hashtbl.mli \
@@ -476,6 +498,11 @@ stdlib__MoreLabels.cmi : moreLabels.mli \
     stdlib__Seq.cmi \
     stdlib__Map.cmi \
     stdlib__Hashtbl.cmi
+stdlib__Mutex.cmo : mutex.ml \
+    stdlib__Mutex.cmi
+stdlib__Mutex.cmx : mutex.ml \
+    stdlib__Mutex.cmi
+stdlib__Mutex.cmi : mutex.mli
 stdlib__Nativeint.cmo : nativeint.ml \
     stdlib__Sys.cmi \
     stdlib.cmi \
@@ -536,10 +563,6 @@ stdlib__Parsing.cmx : parsing.ml \
 stdlib__Parsing.cmi : parsing.mli \
     stdlib__Obj.cmi \
     stdlib__Lexing.cmi
-stdlib__Pervasives.cmo : pervasives.ml \
-    camlinternalFormatBasics.cmi
-stdlib__Pervasives.cmx : pervasives.ml \
-    camlinternalFormatBasics.cmx
 stdlib__Printexc.cmo : printexc.ml \
     stdlib.cmi \
     stdlib__Printf.cmi \
@@ -579,24 +602,24 @@ stdlib__Queue.cmi : queue.mli \
     stdlib__Seq.cmi
 stdlib__Random.cmo : random.ml \
     stdlib__String.cmi \
-    stdlib.cmi \
     stdlib__Nativeint.cmi \
     stdlib__Int64.cmi \
     stdlib__Int32.cmi \
-    stdlib__Int.cmi \
+    stdlib__Domain.cmi \
     stdlib__Digest.cmi \
-    stdlib__Char.cmi \
+    stdlib__Bytes.cmi \
+    stdlib__Bigarray.cmi \
     stdlib__Array.cmi \
     stdlib__Random.cmi
 stdlib__Random.cmx : random.ml \
     stdlib__String.cmx \
-    stdlib.cmx \
     stdlib__Nativeint.cmx \
     stdlib__Int64.cmx \
     stdlib__Int32.cmx \
-    stdlib__Int.cmx \
+    stdlib__Domain.cmx \
     stdlib__Digest.cmx \
-    stdlib__Char.cmx \
+    stdlib__Bytes.cmx \
+    stdlib__Bigarray.cmx \
     stdlib__Array.cmx \
     stdlib__Random.cmi
 stdlib__Random.cmi : random.mli \
@@ -615,7 +638,6 @@ stdlib__Scanf.cmo : scanf.ml \
     stdlib__String.cmi \
     stdlib.cmi \
     stdlib__Printf.cmi \
-    stdlib__List.cmi \
     stdlib__Int.cmi \
     camlinternalFormatBasics.cmi \
     camlinternalFormat.cmi \
@@ -626,7 +648,6 @@ stdlib__Scanf.cmx : scanf.ml \
     stdlib__String.cmx \
     stdlib.cmx \
     stdlib__Printf.cmx \
-    stdlib__List.cmx \
     stdlib__Int.cmx \
     camlinternalFormatBasics.cmx \
     camlinternalFormat.cmx \
@@ -635,6 +656,15 @@ stdlib__Scanf.cmx : scanf.ml \
     stdlib__Scanf.cmi
 stdlib__Scanf.cmi : scanf.mli \
     stdlib.cmi
+stdlib__Semaphore.cmo : semaphore.ml \
+    stdlib__Mutex.cmi \
+    stdlib__Condition.cmi \
+    stdlib__Semaphore.cmi
+stdlib__Semaphore.cmx : semaphore.ml \
+    stdlib__Mutex.cmx \
+    stdlib__Condition.cmx \
+    stdlib__Semaphore.cmi
+stdlib__Semaphore.cmi : semaphore.mli
 stdlib__Seq.cmo : seq.ml \
     stdlib__Lazy.cmi \
     stdlib__Either.cmi \
@@ -686,19 +716,6 @@ stdlib__StdLabels.cmi : stdLabels.mli \
     stdlib__ArrayLabels.cmi
 std_exit.cmo :
 std_exit.cmx :
-stdlib__Stream.cmo : stream.ml \
-    stdlib__String.cmi \
-    stdlib__List.cmi \
-    stdlib__Lazy.cmi \
-    stdlib__Bytes.cmi \
-    stdlib__Stream.cmi
-stdlib__Stream.cmx : stream.ml \
-    stdlib__String.cmx \
-    stdlib__List.cmx \
-    stdlib__Lazy.cmx \
-    stdlib__Bytes.cmx \
-    stdlib__Stream.cmi
-stdlib__Stream.cmi : stream.mli
 stdlib__String.cmo : string.ml \
     stdlib.cmi \
     stdlib__Bytes.cmi \

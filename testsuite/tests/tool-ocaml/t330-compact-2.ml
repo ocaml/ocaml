@@ -8,7 +8,7 @@ ocaml_script_as_argument = "true"
 
 open Lib;;
 Gc.compact ();;
-let _ = Pervasives.do_at_exit();;
+let _ = Stdlib.do_at_exit();;
 
 (**
        0 CONSTINT 42

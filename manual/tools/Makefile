@@ -21,8 +21,12 @@ texquote2: texquote2.ml
 
 %.cmi: %.mli
 	$(OCAMLC) $(COMPFLAGS) -c $<
+
 .PHONY: clean
 clean:
 	rm -f *.o *.cm? *.cmx?
 	rm -f transf.ml
 	rm -f texquote2 transf
+
+.PHONY: distclean
+distclean: clean

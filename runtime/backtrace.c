@@ -29,23 +29,14 @@
 #include "caml/debugger.h"
 #include "caml/startup.h"
 
-void caml_init_backtrace(void)
-{
-  caml_register_global_root(&Caml_state->backtrace_last_exn);
-}
-
 /* Start or stop the backtrace machinery */
 CAMLexport void caml_record_backtraces(int flag)
 {
   if (flag != Caml_state->backtrace_active) {
     Caml_state->backtrace_active = flag;
     Caml_state->backtrace_pos = 0;
-    Caml_state->backtrace_last_exn = Val_unit;
-    /* Note: We do lazy initialization of Caml_state->backtrace_buffer when
-       needed in order to simplify the interface with the thread
-       library (thread creation doesn't need to allocate
-       Caml_state->backtrace_buffer). So we don't have to allocate it here.
-    */
+    caml_modify_generational_global_root(&Caml_state->backtrace_last_exn,
+                                         Val_unit);
   }
   return;
 }
@@ -166,17 +157,35 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
   CAMLparam0();
   CAMLlocal1(res);
 
+  /* Beware: the allocations below may cause finalizers to be run, and another
+     backtrace---possibly of a different length---to be stashed (for example
+     if the finalizer raises then catches an exception).  We choose to ignore
+     any such finalizer backtraces and return the original one. */
+
   if (!Caml_state->backtrace_active ||
       Caml_state->backtrace_buffer == NULL ||
       Caml_state->backtrace_pos == 0) {
     res = caml_alloc(0, 0);
   }
   else {
-    intnat i, len = Caml_state->backtrace_pos;
+    backtrace_slot saved_caml_backtrace_buffer[BACKTRACE_BUFFER_SIZE];
+    int saved_caml_backtrace_pos;
+    intnat i;
 
-    res = caml_alloc(len, 0);
-    for (i = 0; i < len; i++)
-      Field(res, i) = Val_backtrace_slot(Caml_state->backtrace_buffer[i]);
+    saved_caml_backtrace_pos = Caml_state->backtrace_pos;
+
+    if (saved_caml_backtrace_pos > BACKTRACE_BUFFER_SIZE) {
+      saved_caml_backtrace_pos = BACKTRACE_BUFFER_SIZE;
+    }
+
+    memcpy(saved_caml_backtrace_buffer, Caml_state->backtrace_buffer,
+           saved_caml_backtrace_pos * sizeof(backtrace_slot));
+
+    res = caml_alloc(saved_caml_backtrace_pos, 0);
+    for (i = 0; i < saved_caml_backtrace_pos; i++) {
+      caml_initialize(&Field(res, i),
+                      Val_backtrace_slot(saved_caml_backtrace_buffer[i]));
+    }
   }
 
   CAMLreturn(res);
@@ -190,7 +199,9 @@ CAMLprim value caml_restore_raw_backtrace(value exn, value backtrace)
   intnat i;
   mlsize_t bt_size;
 
-  Caml_state->backtrace_last_exn = exn;
+  caml_domain_state* domain_state = Caml_state;
+
+  caml_modify_generational_global_root (&domain_state->backtrace_last_exn, exn);
 
   bt_size = Wosize_val(backtrace);
   if(bt_size > BACKTRACE_BUFFER_SIZE){
@@ -200,19 +211,19 @@ CAMLprim value caml_restore_raw_backtrace(value exn, value backtrace)
   /* We don't allocate if the backtrace is empty (no -g or backtrace
      not activated) */
   if(bt_size == 0){
-    Caml_state->backtrace_pos = 0;
+    domain_state->backtrace_pos = 0;
     return Val_unit;
   }
 
   /* Allocate if needed and copy the backtrace buffer */
-  if (Caml_state->backtrace_buffer == NULL &&
-      caml_alloc_backtrace_buffer() == -1) {
+  if (domain_state->backtrace_buffer == NULL
+      && caml_alloc_backtrace_buffer() == -1){
     return Val_unit;
   }
 
-  Caml_state->backtrace_pos = bt_size;
-  for(i=0; i < Caml_state->backtrace_pos; i++){
-    Caml_state->backtrace_buffer[i] = Backtrace_slot_val(Field(backtrace, i));
+  domain_state->backtrace_pos = bt_size;
+  for(i=0; i < domain_state->backtrace_pos; i++){
+    domain_state->backtrace_buffer[i] = Backtrace_slot_val(Field(backtrace, i));
   }
 
   return Val_unit;
@@ -358,23 +369,9 @@ CAMLprim value caml_get_exception_backtrace(value unit)
       Store_field(arr, i, caml_convert_debuginfo(dbg));
     }
 
-    res = caml_alloc_small(1, 0); Field(res, 0) = arr; /* Some */
+    res = caml_alloc_small(1, 0);
+    Field(res, 0) = arr; /* Some */
   }
 
-  CAMLreturn(res);
-}
-
-CAMLprim value caml_get_current_callstack(value max_frames_value)
-{
-  CAMLparam1(max_frames_value);
-  CAMLlocal1(res);
-  value* callstack = NULL;
-  intnat callstack_alloc_len = 0;
-  intnat callstack_len =
-    caml_collect_current_callstack(&callstack, &callstack_alloc_len,
-                                   Long_val(max_frames_value), -1);
-  res = caml_alloc(callstack_len, 0);
-  memcpy(Op_val(res), callstack, sizeof(value) * callstack_len);
-  caml_stat_free(callstack);
   CAMLreturn(res);
 }

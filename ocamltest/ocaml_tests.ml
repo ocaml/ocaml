@@ -20,38 +20,65 @@ open Builtin_actions
 open Ocaml_actions
 
 let bytecode =
-  let opt_actions =
+  let byte_build =
+  [
+    setup_ocamlc_byte_build_env;
+    ocamlc_byte;
+    check_ocamlc_byte_output
+  ] in
+  let opt_build =
   [
     setup_ocamlc_opt_build_env;
     ocamlc_opt;
-    check_ocamlc_opt_output;
-    compare_bytecode_programs
+    check_ocamlc_opt_output
   ] in
 {
   test_name = "bytecode";
   test_run_by_default = true;
   test_actions =
+  (if Sys.win32 && Ocamltest_config.arch<>"none" then
+    opt_build
+  else
+    byte_build) @
   [
-    setup_ocamlc_byte_build_env;
-    ocamlc_byte;
-    check_ocamlc_byte_output;
     run;
     check_program_output;
-  ] @ (if Ocamltest_config.native_compiler then opt_actions else [])
+  ] @
+  (if not Sys.win32 && Ocamltest_config.native_compiler then
+    opt_build @ [compare_bytecode_programs]
+  else
+    []
+  )
 }
 
 let native =
-  let opt_actions =
+  let byte_build =
   [
     setup_ocamlopt_byte_build_env;
     ocamlopt_byte;
     check_ocamlopt_byte_output;
-    run;
-    check_program_output;
+  ] in
+  let opt_build =
+  [
     setup_ocamlopt_opt_build_env;
     ocamlopt_opt;
     check_ocamlopt_opt_output;
   ] in
+  let opt_actions =
+  (if Sys.win32 then
+    opt_build
+  else
+    byte_build
+  ) @
+  [
+    run;
+    check_program_output;
+  ] @
+  (if not Sys.win32 then
+    opt_build
+  else
+    []
+  ) in
   {
     test_name = "native";
     test_run_by_default = true;
@@ -67,11 +94,18 @@ let toplevel = {
     setup_ocaml_build_env;
     ocaml;
     check_ocaml_output;
-(*
+  ]
+}
+
+let nattoplevel = {
+  test_name = "toplevel.opt";
+  test_run_by_default = false;
+  test_actions =
+  [
+    shared_libraries;
     setup_ocamlnat_build_env;
     ocamlnat;
     check_ocamlnat_output;
-*)
   ]
 }
 
@@ -135,6 +169,7 @@ let _ =
     bytecode;
     native;
     toplevel;
+    nattoplevel;
     expect;
     ocamldoc;
     asmgen;

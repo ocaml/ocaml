@@ -17,9 +17,6 @@
 #define CAML_CUSTOM_H
 
 
-#ifndef CAML_NAME_SPACE
-#include "compatibility.h"
-#endif
 #include "mlvalues.h"
 
 struct custom_fixed_length {
@@ -48,23 +45,24 @@ struct custom_operations {
 #define custom_compare_ext_default NULL
 #define custom_fixed_length_default NULL
 
-#define Custom_ops_val(v) (*((struct custom_operations **) (v)))
+#define Custom_ops_val(v) (*((const struct custom_operations **) (v)))
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 
-CAMLextern value caml_alloc_custom(struct custom_operations * ops,
+CAMLextern value caml_alloc_custom(const struct custom_operations * ops,
                                    uintnat size, /*size in bytes*/
                                    mlsize_t mem, /*resources consumed*/
                                    mlsize_t max  /*max resources*/);
 
-CAMLextern value caml_alloc_custom_mem(struct custom_operations * ops,
+CAMLextern value caml_alloc_custom_mem(const struct custom_operations * ops,
                                        uintnat size, /*size in bytes*/
                                        mlsize_t mem  /*memory consumed*/);
 
-CAMLextern void caml_register_custom_operations(struct custom_operations * ops);
+CAMLextern void
+          caml_register_custom_operations(const struct custom_operations * ops);
 
 /* Global variable moved to Caml_state in 4.10 */
 #define caml_compare_unordered (Caml_state_field(compare_unordered))
@@ -76,10 +74,10 @@ extern struct custom_operations *
 
 extern void caml_init_custom_operations(void);
 
-extern struct custom_operations caml_nativeint_ops;
-extern struct custom_operations caml_int32_ops;
-extern struct custom_operations caml_int64_ops;
-extern struct custom_operations caml_ba_ops;
+extern const struct custom_operations caml_nativeint_ops;
+extern const struct custom_operations caml_int32_ops;
+extern const struct custom_operations caml_int64_ops;
+extern const struct custom_operations caml_ba_ops;
 #endif /* CAML_INTERNALS */
 
 #ifdef __cplusplus

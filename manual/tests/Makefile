@@ -58,3 +58,6 @@ endif
 .PHONY: clean
 clean:
 	rm -f *.cm? *.cmx? cross-reference-checker
+
+.PHONY: distclean
+distclean: clean

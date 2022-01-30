@@ -67,14 +67,15 @@ let env_empty = {
 let oper_result_type = function
     Capply ty -> ty
   | Cextcall(_s, ty_res, _ty_args, _alloc) -> ty_res
-  | Cload (c, _) ->
-      begin match c with
+  | Cload {memory_chunk} ->
+      begin match memory_chunk with
       | Word_val -> typ_val
       | Single | Double -> typ_float
       | _ -> typ_int
       end
   | Calloc -> typ_val
   | Cstore (_c, _) -> typ_void
+  | Cdls_get -> typ_val
   | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi |
     Cand | Cor | Cxor | Clsl | Clsr | Casr |
     Ccmpi _ | Ccmpa _ | Ccmpf _ -> typ_int
@@ -328,7 +329,8 @@ method is_simple_expr = function
       | Cload _ | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi | Cand | Cor
       | Cxor | Clsl | Clsr | Casr | Ccmpi _ | Caddv | Cadda | Ccmpa _ | Cnegf
       | Cabsf | Caddf | Csubf | Cmulf | Cdivf | Cfloatofint | Cintoffloat
-      | Ccmpf _ | Ccheckbound -> List.for_all self#is_simple_expr args
+      | Ccmpf _ | Ccheckbound | Cdls_get ->
+          List.for_all self#is_simple_expr args
       end
   | Cassign _ | Cifthenelse _ | Cswitch _ | Ccatch _ | Cexit _
   | Ctrywith _ -> false
@@ -366,8 +368,9 @@ method effects_of exp =
       | Calloc -> EC.none
       | Cstore _ -> EC.effect_only Effect.Arbitrary
       | Craise _ | Ccheckbound -> EC.effect_only Effect.Raise
-      | Cload (_, Asttypes.Immutable) -> EC.none
-      | Cload (_, Asttypes.Mutable) -> EC.coeffect_only Coeffect.Read_mutable
+      | Cload {mutability = Asttypes.Immutable} -> EC.none
+      | Cload {mutability = Asttypes.Mutable} | Cdls_get ->
+          EC.coeffect_only Coeffect.Read_mutable
       | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi | Cand | Cor | Cxor
       | Clsl | Clsr | Casr | Ccmpi _ | Caddv | Cadda | Ccmpa _ | Cnegf | Cabsf
       | Caddf | Csubf | Cmulf | Cdivf | Cfloatofint | Cintoffloat | Ccmpf _ ->
@@ -425,8 +428,8 @@ method mark_instr = function
       | Lambda.Raise_regular
       | Lambda.Raise_reraise ->
           (* PR#6239 *)
-          (* caml_stash_backtrace; we #mark_call rather than
-             #mark_c_tailcall to get a good stack backtrace *)
+        (* caml_stash_backtrace; we #mark_call rather than
+           #mark_c_tailcall to get a good stack backtrace *)
           self#mark_call
     end
   | Itrywith _ ->
@@ -442,10 +445,10 @@ method select_operation op args _dbg =
   | (Capply _, _) ->
     (Icall_ind, args)
   | (Cextcall(func, ty_res, ty_args, alloc), _) ->
-    Iextcall { func; ty_res; ty_args; alloc; }, args
-  | (Cload (chunk, mut), [arg]) ->
-      let (addr, eloc) = self#select_addressing chunk arg in
-      (Iload(chunk, addr, mut), [eloc])
+    Iextcall { func; alloc; ty_res; ty_args; stack_ofs = -1}, args
+  | (Cload {memory_chunk; mutability}, [arg]) ->
+      let (addr, eloc) = self#select_addressing memory_chunk arg in
+      (Iload(memory_chunk, addr, mutability), [eloc])
   | (Cstore (chunk, init), [arg1; arg2]) ->
       let (addr, eloc) = self#select_addressing chunk arg1 in
       let is_assign =
@@ -461,6 +464,7 @@ method select_operation op args _dbg =
         (Istore(chunk, addr, is_assign), [arg2; eloc])
         (* Inversion addr/datum in Istore *)
       end
+  | (Cdls_get, _) -> Idls_get, args
   | (Calloc, _) -> (Ialloc {bytes = 0; dbginfo = []}), args
   | (Caddi, _) -> self#select_arith_comm Iadd args
   | (Csubi, _) -> self#select_arith Isub args
@@ -712,12 +716,13 @@ method emit_expr (env:environment) exp =
               self#insert_debug env (Iop new_op) dbg loc_arg loc_res;
               self#insert_move_results env loc_res rd stack_ofs;
               Some rd
-          | Iextcall { ty_args; _} ->
+          | Iextcall r ->
               let (loc_arg, stack_ofs) =
-                self#emit_extcall_args env ty_args new_args in
+                self#emit_extcall_args env r.ty_args new_args in
               let rd = self#regs_for ty in
               let loc_res =
-                self#insert_op_debug env new_op dbg
+                self#insert_op_debug env
+                  (Iextcall {r with stack_ofs = stack_ofs}) dbg
                   loc_arg (Proc.loc_external_results (Reg.typv rd)) in
               self#insert_move_results env loc_res rd stack_ofs;
               Some rd

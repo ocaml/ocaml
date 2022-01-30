@@ -127,6 +127,9 @@ clean:: partialclean
 	rm -f *.dll *.so *.a *.lib *.o *.obj
 	rm -rf $(DEPDIR)
 
+.PHONY: distclean
+distclean: clean
+
 %.cmi: %.mli
 	$(CAMLC) -c $(COMPFLAGS) $<
 

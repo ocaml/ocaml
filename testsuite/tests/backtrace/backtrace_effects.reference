@@ -1,0 +1,11 @@
+(** get_callstack **)
+Raised by primitive operation at Backtrace_effects.bar in file "backtrace_effects.ml", line 18, characters 13-39
+Called from Backtrace_effects.foo in file "backtrace_effects.ml", line 25, characters 12-17
+Called from Backtrace_effects in file "backtrace_effects.ml", line 41, characters 8-14
+(** get_continuation_callstack **)
+Raised by primitive operation at Backtrace_effects.bar in file "backtrace_effects.ml", line 20, characters 4-13
+Called from Backtrace_effects.foo in file "backtrace_effects.ml", line 25, characters 12-17
+(** raise **)
+Fatal error: exception Stdlib.Exit
+Raised at Backtrace_effects.baz.(fun) in file "backtrace_effects.ml", line 31, characters 21-28
+Called from Backtrace_effects in file "backtrace_effects.ml", line 41, characters 8-14

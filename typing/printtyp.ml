@@ -1573,7 +1573,7 @@ let value_description id ppf decl =
 
 let method_type priv ty =
   match priv, get_desc ty with
-  | Public, Tpoly(ty, tyl) -> (ty, tyl)
+  | Mpublic, Tpoly(ty, tyl) -> (ty, tyl)
   | _ , _ -> (ty, [])
 
 let prepare_method _lab (priv, _virt, ty) =
@@ -1584,7 +1584,7 @@ let tree_of_method mode (lab, priv, virt, ty) =
   let (ty, tyl) = method_type priv ty in
   let tty = tree_of_typexp mode ty in
   Names.remove_names (List.map Transient_expr.repr tyl);
-  let priv = priv = Private in
+  let priv = priv <> Mpublic in
   let virt = virt = Virtual in
   Ocsg_method (lab, priv, virt, tty)
 

@@ -22,7 +22,7 @@ ifneq "$(CCOMPTYPE)" "msvc"
 OC_CFLAGS += -g
 endif
 
-OC_CFLAGS += $(SHAREDLIB_CFLAGS)
+OC_CFLAGS += $(SHAREDLIB_CFLAGS) $(PTHREAD_CFLAGS)
 
 OC_CPPFLAGS += -I$(ROOTDIR)/runtime
 
@@ -50,14 +50,12 @@ LIBNAME=threads
 BYTECODE_C_OBJS=st_stubs.b.$(O)
 NATIVECODE_C_OBJS=st_stubs.n.$(O)
 
-THREADS_SOURCES = thread.ml mutex.ml condition.ml event.ml threadUnix.ml \
-  semaphore.ml
+THREADS_SOURCES = thread.ml event.ml
 
 THREADS_BCOBJS = $(THREADS_SOURCES:.ml=.cmo)
 THREADS_NCOBJS = $(THREADS_SOURCES:.ml=.cmx)
 
-MLIFILES=thread.mli mutex.mli condition.mli event.mli threadUnix.mli \
-  semaphore.mli
+MLIFILES=thread.mli event.mli
 
 CMIFILES=$(MLIFILES:.mli=.cmi)
 
@@ -107,12 +105,17 @@ endif
 	$(CC) -c $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
 	  $(OUTPUTOBJ)$@ $<
 
+.PHONY: partialclean
 partialclean:
 	rm -f *.cm*
 
+.PHONY: clean
 clean: partialclean
 	rm -f dllthreads*.so dllthreads*.dll *.a *.lib *.o *.obj
 	rm -rf $(DEPDIR)
+
+.PHONY: distclean
+distclean: clean
 
 INSTALL_THREADSLIBDIR=$(INSTALL_LIBDIR)/$(LIBNAME)
 

@@ -46,20 +46,6 @@ let escaped = function
       bytes_unsafe_set s 3 (unsafe_chr (48 + n mod 10));
       unsafe_to_string s
 
-let lowercase = function
-  | 'A' .. 'Z'
-  | '\192' .. '\214'
-  | '\216' .. '\222' as c ->
-    unsafe_chr(code c + 32)
-  | c -> c
-
-let uppercase = function
-  | 'a' .. 'z'
-  | '\224' .. '\246'
-  | '\248' .. '\254' as c ->
-    unsafe_chr(code c - 32)
-  | c -> c
-
 let lowercase_ascii = function
   | 'A' .. 'Z' as c -> unsafe_chr(code c + 32)
   | c -> c

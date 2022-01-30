@@ -68,11 +68,8 @@ CAMLprim value caml_floatarray_get(value array, value index)
   if (idx < 0 || idx >= Wosize_val(array) / Double_wosize)
     caml_array_bound_error();
   d = Double_flat_field(array, idx);
-#define Setup_for_gc
-#define Restore_after_gc
-  Alloc_small(res, Double_wosize, Double_tag);
-#undef Setup_for_gc
-#undef Restore_after_gc
+  Alloc_small(res, Double_wosize, Double_tag,
+    { caml_handle_gc_interrupt_no_async_exceptions(); });
   Store_double_val(res, d);
   return res;
 }
@@ -131,11 +128,8 @@ CAMLprim value caml_floatarray_unsafe_get(value array, value index)
 
   CAMLassert (Tag_val(array) == Double_array_tag);
   d = Double_flat_field(array, idx);
-#define Setup_for_gc
-#define Restore_after_gc
-  Alloc_small(res, Double_wosize, Double_tag);
-#undef Setup_for_gc
-#undef Restore_after_gc
+  Alloc_small(res, Double_wosize, Double_tag,
+    { caml_handle_gc_interrupt_no_async_exceptions(); });
   Store_double_val(res, d);
   return res;
 }
@@ -161,6 +155,10 @@ static value caml_array_unsafe_set_addr(value array, value index,value newval)
 }
 
 /* [ floatarray -> int -> float -> unit ] */
+/* [MM]: [caml_array_unsafe_set_addr] has a fence for enforcing the OCaml
+   memory model through its use of [caml_modify].
+   [MM] [TODO]: [caml_floatarray_unsafe_set] will also need a similar fence in
+   [Store_double_flat_field]. */
 CAMLprim value caml_floatarray_unsafe_set(value array, value index,value newval)
 {
   intnat idx = Long_val(index);
@@ -191,18 +189,15 @@ CAMLprim value caml_floatarray_create(value len)
     if (wosize == 0)
       return Atom(0);
     else
-#define Setup_for_gc
-#define Restore_after_gc
-      Alloc_small (result, wosize, Double_array_tag);
-#undef Setup_for_gc
-#undef Restore_after_gc
+      Alloc_small (result, wosize, Double_array_tag,
+        { caml_handle_gc_interrupt_no_async_exceptions(); });
   }else if (wosize > Max_wosize)
     caml_invalid_argument("Float.Array.create");
   else {
     result = caml_alloc_shr (wosize, Double_array_tag);
   }
-  // Give the GC a chance to run, and run memprof callbacks
-  return caml_process_pending_actions_with_root (result);
+  /* Give the GC a chance to run */
+  return caml_check_urgent_gc (result);
 }
 
 /* [len] is a [value] representing number of words or floats */
@@ -217,8 +212,7 @@ CAMLprim value caml_make_vect(value len, value init)
     res = Atom(0);
 #ifdef FLAT_FLOAT_ARRAY
   } else if (Is_block(init)
-           && Is_in_value_area(init)
-           && Tag_val(init) == Double_tag) {
+             && Tag_val(init) == Double_tag) {
     mlsize_t wsize;
     double d;
     d = Double_val(init);
@@ -249,7 +243,7 @@ CAMLprim value caml_make_vect(value len, value init)
       for (i = 0; i < size; i++) Field(res, i) = init;
     }
   }
-  // Give the GC a chance to run, and run memprof callbacks
+  /* Give the GC a chance to run */
   caml_process_pending_actions ();
   CAMLreturn (res);
 }
@@ -289,7 +283,6 @@ CAMLprim value caml_make_array(value init)
   } else {
     v = Field(init, 0);
     if (Is_long(v)
-        || ! Is_in_value_area(v)
         || Tag_val(v) != Double_tag) {
       CAMLreturn (init);
     } else {
@@ -303,7 +296,6 @@ CAMLprim value caml_make_array(value init)
         double d = Double_val(Field(init, i));
         Store_double_flat_field(res, i, d);
       }
-      // run memprof callbacks
       caml_process_pending_actions();
       CAMLreturn (res);
     }
@@ -315,9 +307,48 @@ CAMLprim value caml_make_array(value init)
 
 /* Blitting */
 
+/* [wo_memmove] copies [nvals] values from [src] to [dst]. If there is a single
+   domain running, then we use [memmove]. Otherwise, we copy one word at a
+   time.
+
+   Since the [memmove] implementation does not guarantee that the writes are
+   always word-sized, we explicitly perform word-sized writes of the release
+   kind to avoid mixed-mode accesses. Performing release writes should be
+   sufficient to prevent smart compilers from coalesing the writes into vector
+   writes, and hence prevent mixed-mode accesses. [MM].
+   */
+static void wo_memmove (value* const dst, const value* const src,
+                        mlsize_t nvals)
+{
+  mlsize_t i;
+
+  if (caml_domain_alone ()) {
+    memmove (dst, src, nvals * sizeof (value));
+  } else {
+    /* See memory model [MM] notes in memory.c */
+    atomic_thread_fence(memory_order_acquire);
+    if (dst < src) {
+      /* copy ascending */
+      for (i = 0; i < nvals; i++)
+        atomic_store_explicit(&((atomic_value*)dst)[i], src[i],
+                              memory_order_release);
+
+    } else {
+      /* copy descending */
+      for (i = nvals; i > 0; i--)
+        atomic_store_explicit(&((atomic_value*)dst)[i-1], src[i-1],
+                              memory_order_release);
+    }
+  }
+}
+
+/* [MM] [TODO]: Not consistent with the memory model. See the discussion in
+   https://github.com/ocaml-multicore/ocaml-multicore/pull/822. */
 CAMLprim value caml_floatarray_blit(value a1, value ofs1, value a2, value ofs2,
                                     value n)
 {
+  /* See memory model [MM] notes in memory.c */
+  atomic_thread_fence(memory_order_acquire);
   memmove((double *)a2 + Long_val(ofs2),
           (double *)a1 + Long_val(ofs1),
           Long_val(n) * sizeof(double));
@@ -339,10 +370,10 @@ CAMLprim value caml_array_blit(value a1, value ofs1, value a2, value ofs2,
     /* Arrays of values, destination is in young generation.
        Here too we can do a direct copy since this cannot create
        old-to-young pointers, nor mess up with the incremental major GC.
-       Again, memmove takes care of overlap. */
-    memmove(&Field(a2, Long_val(ofs2)),
-            &Field(a1, Long_val(ofs1)),
-            Long_val(n) * sizeof(value));
+       Again, wo_memmove takes care of overlap. */
+    wo_memmove(&Field(a2, Long_val(ofs2)),
+               &Field(a1, Long_val(ofs1)),
+               Long_val(n));
     return Val_unit;
   }
   /* Array of values, destination is in old generation.
@@ -406,6 +437,8 @@ static value caml_array_gather(intnat num_arrays,
     wsize = size * Double_wosize;
     res = caml_alloc(wsize, Double_array_tag);
     for (i = 0, pos = 0; i < num_arrays; i++) {
+      /* [res] is freshly allocated, and no other domain has a reference to it.
+         Hence, a plain [memcpy] is sufficient. */
       memcpy((double *)res + pos,
              (double *)arrays[i] + offsets[i],
              lengths[i] * sizeof(double));
@@ -419,6 +452,8 @@ static value caml_array_gather(intnat num_arrays,
        We can use memcpy directly. */
     res = caml_alloc_small(size, 0);
     for (i = 0, pos = 0; i < num_arrays; i++) {
+      /* [res] is freshly allocated, and no other domain has a reference to it.
+         Hence, a plain [memcpy] is sufficient. */
       memcpy(&Field(res, pos),
              &Field(arrays[i], offsets[i]),
              lengths[i] * sizeof(value));
@@ -445,7 +480,7 @@ static value caml_array_gather(intnat num_arrays,
     /* Many caml_initialize in a row can create a lot of old-to-young
        refs.  Give the minor GC a chance to run if it needs to.
        Run memprof callbacks for the major allocation. */
-    res = caml_process_pending_actions_with_root (res);
+    res = caml_check_urgent_gc(res);
   }
   CAMLreturn (res);
 }
@@ -539,17 +574,16 @@ CAMLprim value caml_array_fill(value array,
     for (; len > 0; len--, fp++) *fp = val;
   } else {
     int is_val_young_block = Is_block(val) && Is_young(val);
-    CAMLassert(Is_in_heap(fp));
     for (; len > 0; len--, fp++) {
       value old = *fp;
       if (old == val) continue;
       *fp = val;
       if (Is_block(old)) {
         if (Is_young(old)) continue;
-        if (caml_gc_phase == Phase_mark) caml_darken(old, NULL);
+        caml_darken(NULL, old, NULL);
       }
       if (is_val_young_block)
-        add_to_ref_table (Caml_state->ref_table, fp);
+        Ref_table_add(&Caml_state->minor_tables->major_ref, fp);
     }
     if (is_val_young_block) caml_check_urgent_gc (Val_unit);
   }

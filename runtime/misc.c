@@ -28,11 +28,14 @@ __declspec(noreturn) void __cdecl abort(void);
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <stdlib.h>
 #include "caml/config.h"
 #include "caml/misc.h"
 #include "caml/memory.h"
 #include "caml/osdeps.h"
-#include "caml/version.h"
+#include "caml/domain.h"
+#include "caml/startup.h"
+#include "caml/startup_aux.h"
 
 caml_timing_hook caml_major_slice_begin_hook = NULL;
 caml_timing_hook caml_major_slice_end_hook = NULL;
@@ -46,28 +49,47 @@ caml_timing_hook caml_finalise_end_hook = NULL;
 void caml_failed_assert (char * expr, char_os * file_os, int line)
 {
   char* file = caml_stat_strdup_of_os(file_os);
-  fprintf (stderr, "file %s; line %d ### Assertion failed: %s\n",
-           file, line, expr);
-  fflush (stderr);
+  fprintf(stderr, "[%02d] file %s; line %d ### Assertion failed: %s\n",
+          Caml_state ? Caml_state->id : -1, file, line, expr);
+  fflush(stderr);
   caml_stat_free(file);
   abort();
 }
+#endif
 
-void caml_set_fields (value v, uintnat start, uintnat filler)
+#if defined(DEBUG)
+static __thread int noalloc_level = 0;
+int caml_noalloc_begin(void)
 {
-  mlsize_t i;
-  for (i = start; i < Wosize_val (v); i++){
-    Field (v, i) = (value) filler;
+  return noalloc_level++;
+}
+void caml_noalloc_end(int* noalloc)
+{
+  int curr = --noalloc_level;
+  CAMLassert(*noalloc == curr);
+}
+void caml_alloc_point_here(void)
+{
+  CAMLassert(noalloc_level == 0);
+}
+#endif /* DEBUG */
+
+void caml_gc_log (char *msg, ...)
+{
+  if ((caml_params->verb_gc & 0x800) != 0) {
+    char fmtbuf[512];
+    va_list args;
+    va_start (args, msg);
+    sprintf(fmtbuf, "[%02d] %s\n", Caml_state ? Caml_state->id : -1, msg);
+    vfprintf(stderr, fmtbuf, args);
+    va_end (args);
+    fflush(stderr);
   }
 }
 
-#endif /* DEBUG */
-
-uintnat caml_verb_gc = 0;
-
 void caml_gc_message (int level, char *msg, ...)
 {
-  if ((caml_verb_gc & level) != 0){
+  if ((caml_params->verb_gc & level) != 0){
     va_list ap;
     va_start(ap, msg);
     vfprintf (stderr, msg, ap);
@@ -91,6 +113,20 @@ CAMLexport void caml_fatal_error (char *msg, ...)
   }
   va_end(ap);
   abort();
+}
+
+CAMLexport void caml_fatal_error_arg (const char *fmt, const char *arg)
+{
+  fprintf (stderr, fmt, arg);
+  exit(2);
+}
+
+CAMLexport void caml_fatal_error_arg2 (const char *fmt1, const char *arg1,
+                                       const char *fmt2, const char *arg2)
+{
+  fprintf (stderr, fmt1, arg1);
+  fprintf (stderr, fmt2, arg2);
+  exit(2);
 }
 
 void caml_ext_table_init(struct ext_table * tbl, int init_capa)

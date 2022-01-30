@@ -4,12 +4,67 @@ Working version
 ### Language features:
 
 ### Runtime system:
+- #10831: Multicore OCaml
+  (The multicore team, caml-devel and more)
+
+* #10863, #10933: Remove support for old, unprefixed C runtime function names
+  such as `alloc`.  The new names prefixed with `caml_` must be used instead,
+  such as `caml_alloc`.  Consequently, it is no longer needed to define
+  `CAML_NAME_SPACE` to avoid bringing unprefixed names into scope: this is now
+  the default behavior.
+  (Nicolás Ojeda Bär, review by Xavier Leroy)
+
+- #10902: Do not register empty code fragments in natdynlink.
+  (David Allsopp, review by Xavier Leroy and Damien Doligez)
 
 ### Code generation and optimizations:
 
 ### Standard library:
 
+- #10742: Use LXM as the pseudo-random number generator for module Random.
+  Add `Random.State.split` and `Random.split` to "split" a PRNG off
+  another PRNG.
+  (Xavier Leroy, review by Gabriel Scherer and Hugo Heuzard)
+
+* #10867: Remove deprecated values: Array.create, Array.make_float,
+  Array.create_matrix, Bytes.uppercase, Bytes.lowercase, Bytes.capitalize,
+  Bytes.uncapitalize, Char.lowercase, Char.uppercase, Filename.temp_dir_name,
+  Int32.format, Int64.format, Nativeint.format, Format.bprintf, Format.kprintf,
+  Format.set_all_formatter_output_functions,
+  Format.get_all_formatter_output_functions,
+  Format.pp_set_all_formatter_output_functions,
+  Format.pp_get_all_formatter_output_functions, Format.pp_open_tag,
+  Format.pp_close_tag, Format.open_tag, Format.close_tag,
+  Format.formatter_tag_functions, Format.pp_set_formatter_tag_functions,
+  Format.pp_get_formatter_tag_functions, Format.set_formatter_tag_functions,
+  Format.get_formatter_tag_functions, Gc (mutability of the fields of type
+  Gc.control), Lazy.lazy_from_fun, Lazy.lazy_from_val, Lazy.lazy_is_val,
+  Obj.set_tag, Obj.truncate, Obj.final_tag, Obj.extension_constructor,
+  Obj.extension_name, Obj.extension_id, Scanf.stdib, Scanf.fscanf,
+  Scanf.kfscanf, Stdlib.( & ), Stdlib.( or ), String.set, String.copy,
+  String.fill, String.unsafe_set, String.unsafe_fill, String.uppercase,
+  String.lowercase, String.capitalize, String.uncapitalize, Thread.kill,
+  Thread.wait_write, Thread.wait_read, the whole ThreadUnix module.
+  (Nicolás Ojeda Bär, review by Damien Doligez)
+
+* #10896: Remove Stream, Genlex and Pervasives. Also remove legacy standalone
+  bigarray library (the Bigarray module is now part of the standard library).
+  (Nicolás Ojeda Bär, review by Kate Deplaix and Anil Madhavapeddy)
+
+* #10924: Add deprecated attribute to Printexc.catch, Printf.kprintf and
+  Unix.SO_ERROR.
+  (Nicolás Ojeda Bär, review by Damien Doligez)
+
 ### Other libraries:
+
+* #9071, #9100, #10935: Reimplement `Thread.exit()` as raising the
+  exception `Thread.Exit`, and mark `Thread.exit` as deprecated.
+  The new implementation changes the behavior compared with
+  the OCaml 4 implementation.  For example, the new implementation
+  causes `Fun.finally` finalizers to be run and catch-all exception
+  handlers to prevent termination.
+  (Jacques-Henri Jourdan and Xavier Leroy, review by Damien Doligez,
+  Guillaume Munch-Maccagnoni, Gabriel Scherer, and Enguerrand Decorne)
 
 ### Tools:
 
@@ -17,7 +72,18 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- #10909: Disable warning 59 (assignment to immutable blocks) unless flambda
+  invariant checks are enabled.
+  (Vincent Laviron, review by Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
+
+- #10878, #10909: restore flambda after the Multicore merge.
+  (Vincent Laviron, review by Gabriel Scherer and Xavier Leroy)
+
+- #10864, #10888: restore afl-fuzz mode for sequential programs.
+  (Jan Midtgaard, review by Xavier Leroy and Gabriel Scherer)
+
 
 ### Build system:
 
@@ -64,6 +130,10 @@ OCaml 4.14.0
   (Xavier Leroy and David Allsopp, review by Sébastien Hinderer and
    Damien Doligez)
 
+- #10698, #10726: Free the alternate signal stack when the main OCaml
+   code or an OCaml thread stops
+  (Xavier Leroy, review by David Allsopp and Damien Doligez)
+
 - #10730, 10731: Fix bug in `Obj.reachable_words` causing a slowdown when called
   multiple time (Alain Frisch, report by ygrek, review by Xavier Leroy)
 
@@ -88,6 +158,9 @@ OCaml 4.14.0
 
 - #10728: Ensure that functions are evaluated after their arguments
   (Stephen Dolan, review by Mark Shinwell)
+
+- #10732: Ensure right-to-left evaluation of arguments in cmm_helpers
+  (Greta Yorsh, review by Xavier Leroy)
 
 ### Standard library:
 
@@ -164,7 +237,20 @@ OCaml 4.14.0
   WSADuplicateSocket on sockets instead of DuplicateHandle.
   (Antonin Décimo, review by Xavier Leroy and Nicolás Ojeda Bär)
 
+- #10951: Introduce the Thread.Exit exception as an alternative way to
+  terminate threads prematurely.  This alternative way will become
+  the standard way in 5.00.
+  (Xavier Leroy, review by Florian Angeletti)
+
 ### Tools:
+
+- #9701: Release bytecode only after collecting backtrace information
+  for exceptions, same for dynamic loaded code compiled from toplevel on
+  ocamlnat.
+  (Renato Alencar, reported by Krzysztof Leśniak, reviewed by Gabriel Scherer)
+
+- #10839: Fix regression of #show when printing class type
+  (Élie Brami, review by Florian Angeletti)
 
 - #3959, #7202, #10476: ocaml, in script mode, directive errors
   (`#use "missing_file";;`) use stderr and exit with an error.
@@ -188,10 +274,9 @@ OCaml 4.14.0
 - #10527: Show "#help;; for help" at toplevel startup
   (Wiktor Kuchta, review by David Allsopp and Florian Angeletti)
 
-- #9701: Release bytecode only after collecting backtrace information
-  for exceptions, same for dynamic loaded code compiled from toplevel on
-  ocamlnat.
-  (Renato Alencar, reported by Krzysztof Leśniak, reviewed by Gabriel Scherer)
+- #10846: add the `-shape` command-line option to ocamlobjinfo. When reading a
+  `cmt` file, shape information will only be shown if that option is used.
+  (Ulysse Gérard, review by Florian Angeletti)
 
 ### Debugging:
 
@@ -218,6 +303,9 @@ OCaml 4.14.0
 - #10281, #10685: Add description of C compiler on macOS and Windows platforms.
   (Dong An, review by Xavier Leroy and David Allsopp)
 
+- #10589: Fix many typos (excess/inconsistent spaces) in the HTML manual.
+  (Wiktor Kuchta, review by Florian Angeletti)
+
 - #10605: manual, name few css classes to ease styling and maintainability.
   (Florian Angeletti, review by Wiktor Kuchta and Gabriel Scherer)
 
@@ -233,7 +321,8 @@ OCaml 4.14.0
 
 ### Compiler user-interface and warnings:
 
-- #10328: Give more precise error when disambiguation could not possibly work.
+- #10328, #10780: Give more precise error when disambiguation could not
+  possibly work.
   (Leo White, review by Gabriel Scherer and Florian Angeletti)
 
 - #10361: Improve error messages for mismatched record and variant
@@ -288,6 +377,10 @@ OCaml 4.14.0
 - #10541: Make field_kind and commutable abstract, enforcing correct access
   (Jacques Garrigue and Takafumi Saikawa,
    review by Thomas Refis and Florian Angeletti)
+
+- #10575: add a -dump-dir flag, which redirects all debugging printer
+   (`-dprofile`, `-dlambda`, ...) to the target directory
+  (Florian Angeletti, review by Thomas Refis and Gabriel Scherer)
 
 * #10627: Make row_field abstract
   Completes #10474 by making row_field abstract too.
@@ -365,6 +458,10 @@ OCaml 4.14.0
   operations. (Ulysse Gérard, Thomas Refis and Leo White, review by Florian
   Angeletti)
 
+- #10742: strong call-by-need reduction for shapes
+  (Gabriel Scherer and Nathanaëlle Courant,
+   review by Florian Angeletti, Ulysse Gérard and Thomas Refis)
+
 ### Build system:
 
 - #10717: Simplify the installation of man pages
@@ -373,6 +470,11 @@ OCaml 4.14.0
 - #10739: Stop installing extract_crc
   (Sébastien Hinderer, review by David Allsopp, Daniel Bünzli, Xavier Leroy
   and Gabriel Scherer)
+
+- #10797: Compile with -d2VolatileMetadata- on supporting versions of Visual
+  Studio. This suppresses the addition of .voltbl sections and eliminates
+  linking errors in systhreads.
+  (David Allsopp, review by Jonah Beckford and Sébastien Hinderer)
 
 ### Bug fixes:
 
@@ -420,11 +522,23 @@ OCaml 4.14.0
   implementation of stat
   (Antonin Décimo, review by David Allsopp)
 
+- #10712: Type-check toplevel terms in the native toplevel in the same way as
+  the bytecode toplevel. In particular, this fixes the loss of type variable
+  names in the native toplevel.
+  (Leo White, review by David Allsopp and Gabriel Scherer)
+
 - #10735: Uncaught unify exception from `build_as_type`
   (Jacques Garrigue, report and review by Leo White)
 
 - #10763, #10764: fix miscompilation of method delegation
   (Alain Frisch, review by Vincent Laviron and Jacques Garrigue)
+
+- #10822, #10823: Bad interaction between ambivalent types and subtyping
+  coercions (Jacques Garrigue, report and review by Frédéric Bour)
+
+- #10849: Display the result of `let _ : <type> = <expr>` in the native
+  toplevel, as in the bytecode toplevel.
+  (David Allsopp, report by Nathan Rebours, review by Gabriel Scherer)
 
 
 OCaml 4.13 maintenance branch

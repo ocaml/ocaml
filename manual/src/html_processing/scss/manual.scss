@@ -116,8 +116,7 @@ a:hover{
 }
 :target{
     background-color:rgba(255,215,181,.3)!important;
-    box-shadow:0 0 0 1px rgba(255,215,181,.8)!important;
-    border-radius:1px
+    box-shadow: inset 0 0 0 1px rgba(255,215,181,.8)!important;
 }
 :hover>a.section-anchor{
     visibility:visible
@@ -301,8 +300,16 @@ div.caml-example.toplevel div.caml-input::before{
     /* content:"#"; */ /* pre-4.11 */
     color:#888
 }
-span.number{
-    padding-right: 1ex;
+span.number, span.chapter-number {
+    padding-right: 0.5ex;
+}
+ul li .number {
+    width: 3.5ch;
+    display: inline-block;
+    text-align: right;
+}
+#sidebar .number {
+    width: 2.5ch;
 }
 span.syntax-token {
 	font-family: $font-mono;

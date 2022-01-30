@@ -1,7 +1,5 @@
 ROOTDIR = ../../..
 
-CSLDIR = $(ROOTDIR)
-
 TEXQUOTE = $(ROOTDIR)/runtime/ocamlrun ../../tools/texquote2
 
 FILES = core.tex builtin.tex stdlib-blurb.tex compilerlibs.tex \
@@ -18,3 +16,6 @@ all: etex-files
 .PHONY: clean
 clean:
 	rm -f *.tex ocamldoc.out ocamldoc.sty
+
+.PHONY: distclean
+distclean: clean

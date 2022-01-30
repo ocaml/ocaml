@@ -16,7 +16,7 @@
 ROOTDIR=..
 include $(ROOTDIR)/Makefile.common
 
-OTHERLIBRARIES ?= bigarray dynlink str systhreads \
+OTHERLIBRARIES ?= dynlink str systhreads \
                   unix win32unix
 
 # $1: target name to dispatch to all otherlibs/*/Makefile
@@ -30,8 +30,9 @@ define dispatch
 $(eval $(call dispatch_,$1))
 endef
 
-.PHONY: all allopt clean partialclean
+.PHONY: all allopt clean distclean partialclean
 $(call dispatch,all)
 $(call dispatch,allopt)
 $(call dispatch,clean)
+$(call dispatch,distclean)
 $(call dispatch,partialclean)

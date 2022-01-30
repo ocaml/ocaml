@@ -89,7 +89,7 @@ let assign_symbols_and_collect_constant_definitions
       | Project_closure ({ closure_id } as project_closure) ->
         assign_existing_symbol (closure_symbol ~backend  closure_id);
         record_definition (AA.Project_closure project_closure)
-      | Prim (Pfield index, [block], _) ->
+      | Prim (Pfield (index, _, _), [block], _) ->
         record_definition (AA.Field (block, index))
       | Prim (Pfield _, _, _) ->
         Misc.fatal_errorf "[Pfield] with the wrong number of arguments"

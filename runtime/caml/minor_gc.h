@@ -16,22 +16,16 @@
 #ifndef CAML_MINOR_GC_H
 #define CAML_MINOR_GC_H
 
-#include "address_class.h"
+#include "misc.h"
 #include "config.h"
 
-/* Global variables moved to Caml_state in 4.10 */
-#define caml_young_start (Caml_state_field(young_start))
-#define caml_young_end (Caml_state_field(young_end))
-#define caml_young_ptr (Caml_state_field(young_ptr))
-#define caml_young_limit (Caml_state_field(young_limit))
-#define caml_young_alloc_start (Caml_state_field(young_alloc_start))
-#define caml_young_alloc_end (Caml_state_field(young_alloc_end))
-#define caml_young_alloc_mid (Caml_state_field(young_alloc_mid))
-#define caml_young_trigger (Caml_state_field(young_trigger))
-#define caml_minor_heap_wsz (Caml_state_field(minor_heap_wsz))
-#define caml_in_minor_collection (Caml_state_field(in_minor_collection))
-#define caml_extra_heap_resources_minor \
-  (Caml_state_field(extra_heap_resources_minor))
+#define caml_young_end Caml_state->young_end
+#define caml_young_ptr Caml_state->young_ptr
+#define caml_young_start Caml_state->young_start
+#define caml_young_limit Caml_state->young_limit
+#define caml_young_alloc_start Caml_state->young_start
+#define caml_young_alloc_end Caml_state->young_end
+#define caml_minor_heap_wsz Caml_state->minor_heap_wsz
 
 
 #define CAML_TABLE_STRUCT(t) { \
@@ -50,7 +44,6 @@ struct caml_ephe_ref_elt {
   value ephe;      /* an ephemeron in major heap */
   mlsize_t offset; /* the offset that points in the minor heap  */
 };
-
 struct caml_ephe_ref_table CAML_TABLE_STRUCT(struct caml_ephe_ref_elt);
 
 struct caml_custom_elt {
@@ -58,52 +51,46 @@ struct caml_custom_elt {
   mlsize_t mem;    /* The parameters for adjusting GC speed. */
   mlsize_t max;
 };
-
 struct caml_custom_table CAML_TABLE_STRUCT(struct caml_custom_elt);
-/* Table of custom blocks in the minor heap that contain finalizers
-   or GC speed parameters. */
+
+struct caml_minor_tables {
+  struct caml_ref_table major_ref;
+  struct caml_ephe_ref_table ephe_ref;
+  struct caml_custom_table custom;
+};
 
 CAMLextern void caml_minor_collection (void);
 
 #ifdef CAML_INTERNALS
 extern void caml_set_minor_heap_size (asize_t); /* size in bytes */
-extern void caml_empty_minor_heap (void);
-extern void caml_gc_dispatch (void);
-extern void caml_garbage_collection (void); /* runtime/signals_nat.c */
-extern void caml_oldify_one (value, value *);
-extern void caml_oldify_mopup (void);
-
+extern void caml_empty_minor_heap_no_major_slice_from_stw
+  (caml_domain_state* domain, void* unused, int participating_count,
+    caml_domain_state** participating); /* in STW */
+extern int caml_try_stw_empty_minor_heap_on_all_domains(void); /* out STW */
+extern void caml_empty_minor_heaps_once(void); /* out STW */
+CAMLextern void garbage_collection (void); /* def in asmrun/signals.c */
+header_t caml_get_header_val(value v);
+void caml_alloc_table (struct caml_ref_table *tbl, asize_t sz, asize_t rsv);
 extern void caml_realloc_ref_table (struct caml_ref_table *);
-extern void caml_alloc_table (struct caml_ref_table *, asize_t, asize_t);
 extern void caml_realloc_ephe_ref_table (struct caml_ephe_ref_table *);
-extern void caml_alloc_ephe_table (struct caml_ephe_ref_table *,
-                                   asize_t, asize_t);
 extern void caml_realloc_custom_table (struct caml_custom_table *);
-extern void caml_alloc_custom_table (struct caml_custom_table *,
-                                     asize_t, asize_t);
-void caml_alloc_minor_tables (void);
+struct caml_minor_tables* caml_alloc_minor_tables(void);
+void caml_free_minor_tables(struct caml_minor_tables*);
+void caml_empty_minor_heap_setup(caml_domain_state* domain);
 
-/* Asserts that a word is a valid header for a young object */
-#define CAMLassert_young_header(hd)                \
-  CAMLassert(Wosize_hd(hd) > 0 &&                  \
-             Wosize_hd(hd) <= Max_young_wosize &&  \
-             Color_hd(hd) == 0)
+#ifdef DEBUG
+extern int caml_debug_is_minor(value val);
+extern int caml_debug_is_major(value val);
+#endif
 
-#define Oldify(p) do{ \
-    value __oldify__v__ = *p; \
-    if (Is_block (__oldify__v__) && Is_young (__oldify__v__)){ \
-      caml_oldify_one (__oldify__v__, (p)); \
-    } \
-  }while(0)
-
-Caml_inline void add_to_ref_table (struct caml_ref_table *tbl, value *p)
-{
-  if (tbl->ptr >= tbl->limit){
-    CAMLassert (tbl->ptr == tbl->limit);
-    caml_realloc_ref_table (tbl);
-  }
-  *tbl->ptr++ = p;
-}
+#define Ref_table_add(ref_table, x) do {                                \
+    struct caml_ref_table* ref = (ref_table);                           \
+    if (ref->ptr >= ref->limit) {                                       \
+      CAMLassert (ref->ptr == ref->limit);                              \
+      caml_realloc_ref_table (ref);                                     \
+    }                                                                   \
+    *ref->ptr++ = (x);                                                  \
+  } while (0)
 
 Caml_inline void add_to_ephe_ref_table (struct caml_ephe_ref_table *tbl,
                                           value ar, mlsize_t offset)

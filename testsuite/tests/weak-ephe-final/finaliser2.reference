@@ -1,0 +1,7 @@
+test1
+test2: 2
+test2: 1
+test3: joined
+test3: parent.1
+test3: child.1
+test3: child.2

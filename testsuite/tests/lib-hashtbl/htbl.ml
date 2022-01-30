@@ -175,14 +175,6 @@ module TI2 = Test(HI2)(MI)
 module TSP = Test(HSP)(MSP)
 module TSL = Test(HSL)(MSL)
 
-(* These work with the old ephemeron API *)
-[@@@alert "-old_ephemeron_api"]
-module TWS  = Test(WS)(MS)
-module TWSP1 = Test(WSP1)(MSP)
-module TWSP2 = Test(WSP2)(MSP)
-module TWSL = Test(WSL)(MSL)
-module TWSA = Test(WSA)(MSA)
-
 (* Data set: strings from a file, associated with their line number *)
 
 let file_data filename =
@@ -257,20 +249,7 @@ let _ =
   printf "-- Pairs of strings\n%!";
   TSP.test (pair_data d);
   printf "-- Lists of strings\n%!";
-  TSL.test (list_data d);
-  (* weak *)
-  let d =
-    try file_data "../../LICENSE" with Sys_error _ -> string_data in
-  printf "-- Weak K1 -- Strings, functorial interface\n%!";
-  TWS.test d;
-  printf "-- Weak K1 -- Pairs of strings\n%!";
-  TWSP1.test (pair_data d);
-  printf "-- Weak K2 -- Pairs of strings\n%!";
-  TWSP2.test (pair_data d);
-  printf "-- Weak K1 -- Lists of strings\n%!";
-  TWSL.test (list_data d);
-  printf "-- Weak Kn -- Arrays of strings\n%!";
-  TWSA.test (Array.map (fun (l,i) -> (Array.of_list l,i)) (list_data d))
+  TSL.test (list_data d)
 
 
 let () =

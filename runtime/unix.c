@@ -24,10 +24,10 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <errno.h>
 #include <sys/ioctl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <fcntl.h>
 #include "caml/config.h"
 #if defined(SUPPORT_DYNAMIC_LINKING) && !defined(BUILDING_LIBCAMLRUNS)
@@ -49,6 +49,10 @@
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
 #endif
+#include <pthread.h>
+#if defined(__OpenBSD__) || defined(__FreeBSD__)
+#include <pthread_np.h>
+#endif
 #include "caml/fail.h"
 #include "caml/memory.h"
 #include "caml/misc.h"
@@ -57,6 +61,7 @@
 #include "caml/sys.h"
 #include "caml/io.h"
 #include "caml/alloc.h"
+#include "caml/platform.h"
 
 #ifndef S_ISREG
 #define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
@@ -433,4 +438,24 @@ int caml_num_rows_fd(int fd)
 #else
   return -1;
 #endif
+}
+
+void caml_thread_setname(const char* name)
+{
+#if defined(__APPLE__)
+  pthread_setname_np(name);
+#else /* not apple */
+  pthread_t self = pthread_self();
+#if defined(__OpenBSD__) || defined(__FreeBSD__)
+  pthread_set_name_np(self, name);
+#else /* linux glibc/musl or NetBSD */
+  pthread_setname_np(self, name);
+#endif
+#endif /* __APPLE__ */
+}
+
+void caml_init_os_params(void)
+{
+  caml_sys_pagesize = sysconf(_SC_PAGESIZE);
+  return;
 }

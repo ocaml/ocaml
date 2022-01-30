@@ -269,6 +269,9 @@ clean: partialclean
 	      $(LOCAL_SRC)/*.ml $(LOCAL_SRC)/*.mli $(LOCAL_SRC)/Makefile \
 	      $(LOCAL_SRC)/.depend byte/dynlink.mli native/dynlink.mli
 
+.PHONY: distclean
+distclean: clean
+
 .PHONY: beforedepend
 beforedepend: dynlink_platform_intf.mli
 

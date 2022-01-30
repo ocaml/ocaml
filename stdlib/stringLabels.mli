@@ -398,27 +398,6 @@ val is_valid_utf_16le : t -> bool
 (** [is_valid_utf_16le b] is [true] if and only if [b] contains valid
     UTF-16LE data. *)
 
-(** {1:deprecated Deprecated functions} *)
-
-external create : int -> bytes = "caml_create_string"
-  [@@ocaml.deprecated "Use Bytes.create/BytesLabels.create instead."]
-(** [create n] returns a fresh byte sequence of length [n].
-    The sequence is uninitialized and contains arbitrary bytes.
-    @raise Invalid_argument if [n < 0] or [n > ]{!Sys.max_string_length}.
-
-    @deprecated This is a deprecated alias of
-    {!Bytes.create}/{!BytesLabels.create}. *)
-
-external set : bytes -> int -> char -> unit = "%string_safe_set"
-  [@@ocaml.deprecated "Use Bytes.set/BytesLabels.set instead."]
-(** [set s n c] modifies byte sequence [s] in place,
-    replacing the byte at index [n] with [c].
-    You can also write [s.[n] <- c] instead of [set s n c].
-    @raise Invalid_argument if [n] is not a valid index in [s].
-
-    @deprecated This is a deprecated alias of
-    {!Bytes.set}/{!BytesLabels.set}. *)
-
 val blit :
   src:string -> src_pos:int -> dst:bytes -> dst_pos:int -> len:int -> unit
 (** [blit ~src ~src_pos ~dst ~dst_pos ~len] copies [len] bytes
@@ -428,57 +407,6 @@ val blit :
     @raise Invalid_argument if [src_pos] and [len] do not
     designate a valid range of [src], or if [dst_pos] and [len]
     do not designate a valid range of [dst]. *)
-
-val copy : string -> string
-  [@@ocaml.deprecated "Strings now immutable: no need to copy"]
-(** Return a copy of the given string.
-
-    @deprecated Because strings are immutable, it doesn't make much
-    sense to make identical copies of them. *)
-
-val fill : bytes -> pos:int -> len:int -> char -> unit
-  [@@ocaml.deprecated "Use Bytes.fill/BytesLabels.fill instead."]
-(** [fill s ~pos ~len c] modifies byte sequence [s] in place,
-    replacing [len] bytes by [c], starting at [pos].
-    @raise Invalid_argument if [pos] and [len] do not
-    designate a valid substring of [s].
-
-    @deprecated This is a deprecated alias of
-    {!Bytes.fill}/{!BytesLabels.fill}. *)
-
-val uppercase : string -> string
-  [@@ocaml.deprecated
-    "Use String.uppercase_ascii/StringLabels.uppercase_ascii instead."]
-(** Return a copy of the argument, with all lowercase letters
-    translated to uppercase, including accented letters of the ISO
-    Latin-1 (8859-1) character set.
-
-    @deprecated Functions operating on Latin-1 character set are deprecated. *)
-
-val lowercase : string -> string
-  [@@ocaml.deprecated
-    "Use String.lowercase_ascii/StringLabels.lowercase_ascii instead."]
-(** Return a copy of the argument, with all uppercase letters
-    translated to lowercase, including accented letters of the ISO
-    Latin-1 (8859-1) character set.
-
-    @deprecated Functions operating on Latin-1 character set are deprecated. *)
-
-val capitalize : string -> string
-  [@@ocaml.deprecated
-    "Use String.capitalize_ascii/StringLabels.capitalize_ascii instead."]
-(** Return a copy of the argument, with the first character set to uppercase,
-    using the ISO Latin-1 (8859-1) character set..
-
-    @deprecated Functions operating on Latin-1 character set are deprecated. *)
-
-val uncapitalize : string -> string
-  [@@ocaml.deprecated
-    "Use String.uncapitalize_ascii/StringLabels.uncapitalize_ascii instead."]
-(** Return a copy of the argument, with the first character set to lowercase,
-    using the ISO Latin-1 (8859-1) character set.
-
-    @deprecated Functions operating on Latin-1 character set are deprecated. *)
 
 (** {1 Binary decoding of integers} *)
 
@@ -605,11 +533,6 @@ val get_int64_le : string -> int -> int64
 (* The following is for system use only. Do not call directly. *)
 
 external unsafe_get : string -> int -> char = "%string_unsafe_get"
-external unsafe_set : bytes -> int -> char -> unit = "%string_unsafe_set"
-  [@@ocaml.deprecated]
 external unsafe_blit :
   src:string -> src_pos:int -> dst:bytes -> dst_pos:int -> len:int ->
     unit = "caml_blit_string" [@@noalloc]
-external unsafe_fill :
-  bytes -> pos:int -> len:int -> char -> unit = "caml_fill_string" [@@noalloc]
-  [@@ocaml.deprecated]

@@ -93,7 +93,7 @@ module Create(P: Order.Total) = struct
                             List.iter (fun j -> j#emit e) archivers_;
                         cont e
                     in
-                    Printf.kprintf f
+                    Printf.ksprintf f
         end
 end
 

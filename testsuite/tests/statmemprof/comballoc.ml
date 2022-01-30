@@ -1,8 +1,10 @@
 (* TEST
    flags = "-g"
-   * bytecode
+   * skip
+   reason = "port stat-mem-prof : https://github.com/ocaml/ocaml/pull/8634"
+   ** bytecode
      reference = "${test_source_directory}/comballoc.byte.reference"
-   * native
+   ** native
      reference = "${test_source_directory}/comballoc.opt.reference"
 *)
 

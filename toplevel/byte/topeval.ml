@@ -124,10 +124,11 @@ let execute_phrase print_outcome ppf phr =
         Typemod.type_toplevel_phrase oldenv sstr
       in
       if !Clflags.dump_typedtree then Printtyped.implementation ppf str;
-      if !Clflags.dump_shape then Shape.print ppf shape;
       let sg' = Typemod.Signature_names.simplify newenv sn sg in
       ignore (Includemod.signatures ~mark:Mark_positive oldenv sg sg');
       Typecore.force_delayed_checks ();
+      let shape = Shape.local_reduce shape in
+      if !Clflags.dump_shape then Shape.print ppf shape;
       let lam = Translmod.transl_toplevel_definition str in
       Warnings.check_fatal ();
       begin try
@@ -139,23 +140,14 @@ let execute_phrase print_outcome ppf phr =
               if print_outcome then
                 Printtyp.wrap_printing_env ~error:false oldenv (fun () ->
                   match str.str_items with
-                  | [ { str_desc =
-                          (Tstr_eval (exp, _)
-                          |Tstr_value
-                              (Asttypes.Nonrecursive,
-                               [{vb_pat = {pat_desc=Tpat_any};
-                                 vb_expr = exp}
-                               ]
-                              )
-                          )
-                      }
-                    ] ->
-                      let outv = outval_of_value newenv v exp.exp_type in
-                      let ty = Printtyp.tree_of_type_scheme exp.exp_type in
-                      Ophr_eval (outv, ty)
-
                   | [] -> Ophr_signature []
-                  | _ -> Ophr_signature (pr_item oldenv sg'))
+                  | _ ->
+                      match find_eval_phrase str with
+                      | Some (exp, _, _) ->
+                        let outv = outval_of_value newenv v exp.exp_type in
+                        let ty = Printtyp.tree_of_type_scheme exp.exp_type in
+                        Ophr_eval (outv, ty)
+                      | None -> Ophr_signature (pr_item oldenv sg'))
               else Ophr_signature []
           | Exception exn ->
               toplevel_env := oldenv;

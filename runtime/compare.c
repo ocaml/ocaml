@@ -127,8 +127,6 @@ static intnat do_compare_val(struct compare_stack* stk,
       if (Is_long(v2))
         return Long_val(v1) - Long_val(v2);
       /* Subtraction above cannot overflow and cannot result in UNORDERED */
-      if (!Is_in_value_area(v2))
-        return LESS;
       switch (Tag_val(v2)) {
         case Forward_tag:
           v2 = Forward_val(v2);
@@ -145,11 +143,10 @@ static intnat do_compare_val(struct compare_stack* stk,
         }
         default: /*fallthrough*/;
         }
+
       return LESS;                /* v1 long < v2 block */
     }
     if (Is_long(v2)) {
-      if (!Is_in_value_area(v1))
-        return GREATER;
       switch (Tag_val(v1)) {
         case Forward_tag:
           v1 = Forward_val(v1);
@@ -167,14 +164,6 @@ static intnat do_compare_val(struct compare_stack* stk,
         default: /*fallthrough*/;
         }
       return GREATER;            /* v1 block > v2 long */
-    }
-    /* If one of the objects is outside the heap (but is not an atom),
-       use address comparison. Since both addresses are 2-aligned,
-       shift lsb off to avoid overflow in subtraction. */
-    if (! Is_in_value_area(v1) || ! Is_in_value_area(v2)) {
-      if (v1 == v2) goto next_item;
-      return (v1 >> 1) - (v2 >> 1);
-      /* Subtraction above cannot result in UNORDERED */
     }
     t1 = Tag_val(v1);
     t2 = Tag_val(v2);
@@ -253,6 +242,9 @@ static intnat do_compare_val(struct compare_stack* stk,
     case Infix_tag:
       compare_free_stack(stk);
       caml_invalid_argument("compare: functional value");
+    case Cont_tag:
+      compare_free_stack(stk);
+      caml_invalid_argument("compare: continuation value");
     case Object_tag: {
       intnat oid1 = Oid_val(v1);
       intnat oid2 = Oid_val(v2);

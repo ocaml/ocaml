@@ -117,8 +117,10 @@ let operation d = function
   | Capply _ty -> "app" ^ location d
   | Cextcall(lbl, _ty_res, _ty_args, _alloc) ->
       Printf.sprintf "extcall \"%s\"%s" lbl (location d)
-  | Cload (c, Asttypes.Immutable) -> Printf.sprintf "load %s" (chunk c)
-  | Cload (c, Asttypes.Mutable) -> Printf.sprintf "load_mut %s" (chunk c)
+  | Cload {memory_chunk; mutability} -> (
+    match mutability with
+    | Asttypes.Immutable -> Printf.sprintf "load %s" (chunk memory_chunk)
+    | Asttypes.Mutable   -> Printf.sprintf "load_mut %s" (chunk memory_chunk))
   | Calloc -> "alloc" ^ location d
   | Cstore (c, init) ->
     let init =
@@ -156,6 +158,7 @@ let operation d = function
   | Craise k -> Lambda.raise_kind k ^ location d
   | Ccheckbound -> "checkbound" ^ location d
   | Copaque -> "opaque"
+  | Cdls_get -> "dls_get"
 
 let rec expr ppf = function
   | Cconst_int (n, _dbg) -> fprintf ppf "%i" n

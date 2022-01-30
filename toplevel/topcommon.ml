@@ -64,6 +64,18 @@ let print_out_sig_item = Oprint.out_sig_item
 let print_out_signature = Oprint.out_signature
 let print_out_phrase = Oprint.out_phrase
 
+let find_eval_phrase str =
+  let open Typedtree in
+  match str.str_items with
+  | [ { str_desc = Tstr_eval (e, attrs) ; str_loc = loc } ]
+  | [ { str_desc = Tstr_value (Asttypes.Nonrecursive,
+                                [{ vb_expr = e
+                                 ; vb_pat = { pat_desc = Tpat_any; _ }
+                                 ; vb_attributes = attrs }])
+      ; str_loc = loc }
+    ] ->
+      Some (e, attrs, loc)
+  | _ -> None
 
 (* The current typing environment for the toplevel *)
 

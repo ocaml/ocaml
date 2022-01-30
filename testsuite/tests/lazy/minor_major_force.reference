@@ -1,0 +1,16 @@
+Gc.minor ()
+x.lzy_string=<not forced> [shared=true]
+x.lzy_int=<not forced> [shared=true]
+x is setup on major heap
+
+updating fields in x
+
+x.lzy_string=<not forced> [shared=false]
+x.lzy_int=<not forced> [shared=false]
+forcing x.lzy_str [0.237544] false 250
+forcing x.lzy_int [252] false 250
+x.lzy_string=0.237544 [shared=false]
+x.lzy_int=252 [shared=false]
+Gc.minor ()
+x.lzy_string=0.237544 [shared=true]
+x.lzy_int=252 [shared=true]

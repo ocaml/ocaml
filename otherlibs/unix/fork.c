@@ -19,14 +19,21 @@
 #include <caml/debugger.h>
 #include <caml/eventlog.h>
 #include "unixsupport.h"
+#include <caml/domain.h>
+#include <caml/fail.h>
 
 CAMLprim value unix_fork(value unit)
 {
   int ret;
+  if (caml_domain_is_multicore()) {
+    caml_failwith
+      ("Unix.fork may not be called while other domains were created");
+  }
 
   CAML_EV_FLUSH();
 
   ret = fork();
+  if (ret == 0) caml_atfork_hook();
   if (ret == -1) uerror("fork", Nothing);
 
   CAML_EVENTLOG_DO({

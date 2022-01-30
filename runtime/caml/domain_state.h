@@ -17,23 +17,21 @@
 #ifndef CAML_STATE_H
 #define CAML_STATE_H
 
+#ifdef __APPLE__
+#include <pthread.h>
+#endif
 #include <stddef.h>
 #include <stdio.h>
+
 #include "misc.h"
-#include "mlvalues.h"
 
 #define NUM_EXTRA_PARAMS 64
 typedef value extra_params_area[NUM_EXTRA_PARAMS];
 
 /* This structure sits in the TLS area and is also accessed efficiently
  * via native code, which is why the indices are important */
-
 typedef struct {
-#ifdef CAML_NAME_SPACE
 #define DOMAIN_STATE(type, name) CAMLalign(8) type name;
-#else
-#define DOMAIN_STATE(type, name) CAMLalign(8) type _##name;
-#endif
 #include "domain_state.tbl"
 #undef DOMAIN_STATE
 } caml_domain_state;
@@ -45,11 +43,7 @@ enum {
 #undef DOMAIN_STATE
 };
 
-#ifdef CAML_NAME_SPACE
 #define LAST_DOMAIN_STATE_MEMBER extra_params
-#else
-#define LAST_DOMAIN_STATE_MEMBER _extra_params
-#endif
 
 /* Check that the structure was laid out without padding,
    since the runtime assumes this in computing offsets */
@@ -57,11 +51,20 @@ CAML_STATIC_ASSERT(
     offsetof(caml_domain_state, LAST_DOMAIN_STATE_MEMBER) ==
     (Domain_state_num_fields - 1) * 8);
 
-CAMLextern caml_domain_state* Caml_state;
-#ifdef CAML_NAME_SPACE
-#define Caml_state_field(field) Caml_state->field
+#ifdef __APPLE__
+  CAMLextern pthread_key_t caml_domain_state_key;
+  CAMLextern void caml_init_domain_state_key(void);
+  #define CAML_INIT_DOMAIN_STATE caml_init_domain_state_key()
+  #define Caml_state \
+      ((caml_domain_state*) pthread_getspecific(caml_domain_state_key))
+  #define SET_Caml_state(x) \
+      (pthread_setspecific(caml_domain_state_key, x))
 #else
-#define Caml_state_field(field) Caml_state->_##field
+  CAMLextern __thread caml_domain_state* Caml_state;
+  #define CAML_INIT_DOMAIN_STATE
+  #define SET_Caml_state(x) (Caml_state = (x))
 #endif
+
+#define Caml_state_field(field) (Caml_state->field)
 
 #endif /* CAML_STATE_H */

@@ -22,26 +22,6 @@ Removal: passed
 Insertion: passed
 Insertion: passed
 Removal: passed
--- Weak K1 -- Strings, functorial interface
-Insertion: passed
-Insertion: passed
-Removal: passed
--- Weak K1 -- Pairs of strings
-Insertion: passed
-Insertion: passed
-Removal: passed
--- Weak K2 -- Pairs of strings
-Insertion: passed
-Insertion: passed
-Removal: passed
--- Weak K1 -- Lists of strings
-Insertion: passed
-Insertion: passed
-Removal: passed
--- Weak Kn -- Arrays of strings
-Insertion: passed
-Insertion: passed
-Removal: passed
 1000 elements
 100,2
 200,4

@@ -3242,7 +3242,7 @@ and type_expect_
                   unify_exp_types loc env ty_arg1 ty_arg2;
                   with_explanation (fun () ->
                     unify_exp_types loc env (instance ty_expected) ty_res2);
-                  Kept ty_arg1
+                  Kept (ty_arg1, lbl.lbl_mut)
                 end
             in
             let label_definitions = Array.map unify_kept lbl.lbl_all in
@@ -3459,15 +3459,15 @@ and type_expect_
             and (cty', ty', force') =
               Typetexp.transl_simple_type_delayed env sty'
             in
+            end_def ();
+            generalize_structure ty;
+            generalize_structure ty';
             begin try
-              let force'' = subtype env ty ty' in
+              let force'' = subtype env (instance ty) (instance ty') in
               force (); force' (); force'' ()
             with Subtype err ->
               raise (Error(loc, env, Not_subtype err))
             end;
-            end_def ();
-            generalize_structure ty;
-            generalize_structure ty';
             (type_argument env sarg ty (instance ty),
              instance ty', Some cty, cty')
       in

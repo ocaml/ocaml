@@ -208,6 +208,10 @@ type asm_line =
   | Cfi_adjust_cfa_offset of int
   | Cfi_endproc
   | Cfi_startproc
+  | Cfi_remember_state
+  | Cfi_restore_state
+  | Cfi_def_cfa_register of string
+  | Cfi_def_cfa_offset of int
   | File of int * string (* (file_num, file_name) *)
   | Indirect_symbol of string
   | Loc of int * int * int (* (file_num, line, col) *)

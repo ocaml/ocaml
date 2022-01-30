@@ -128,7 +128,11 @@ and class_signature =
   { csig_self: type_expr;
     mutable csig_self_row: type_expr;
     mutable csig_vars: (mutable_flag * virtual_flag * type_expr) Vars.t;
-    mutable csig_meths: (private_flag * virtual_flag * type_expr) Meths.t; }
+    mutable csig_meths: (method_privacy * virtual_flag * type_expr) Meths.t; }
+
+and method_privacy =
+  | Mpublic
+  | Mprivate of field_kind
 
 (* Variance *)
 
@@ -399,6 +403,15 @@ let may_equal_constr c1 c2 =
          true
      | tag1, tag2 ->
          equal_tag tag1 tag2)
+
+let item_visibility = function
+  | Sig_value (_, _, vis)
+  | Sig_type (_, _, _, vis)
+  | Sig_typext (_, _, _, vis)
+  | Sig_module (_, _, _, _, vis)
+  | Sig_modtype (_, _, vis)
+  | Sig_class (_, _, _, vis)
+  | Sig_class_type (_, _, _, vis) -> vis
 
 type label_description =
   { lbl_name: string;                   (* Short name *)

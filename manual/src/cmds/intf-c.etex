@@ -185,23 +185,9 @@ serialization and deserialization functions for custom blocks
 \entree{"caml/threads.h"}{operations for interfacing in the presence
   of multiple threads (see section~\ref{s:C-multithreading}).}
 \end{tableau}
-Before including any of these files, you should define the "CAML_NAME_SPACE"
-macro. For instance,
-\begin{verbatim}
-#define CAML_NAME_SPACE
-#include "caml/mlvalues.h"
-#include "caml/fail.h"
-\end{verbatim}
 These files reside in the "caml/" subdirectory of the OCaml
 standard library directory, which is returned by the command
 "ocamlc -where" (usually "/usr/local/lib/ocaml" or "/usr/lib/ocaml").
-
-{\bf Note:}
-Including the header files without first defining "CAML_NAME_SPACE"
-introduces in scope short names for most functions.
-Those short names are deprecated, and may be removed in the future
-because they usually produce clashes with names defined by other
-C libraries.
 
 \subsection{ss:staticlink-c-code}{Statically linking C code with OCaml code}
 
@@ -1297,7 +1283,6 @@ The stub code file, "curses_stubs.c", looks like this:
 \begin{verbatim}
 /* File curses_stubs.c -- stub code for curses */
 #include <curses.h>
-#define CAML_NAME_SPACE
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/alloc.h>
@@ -1727,8 +1712,8 @@ compilation of OCaml, as the variable "OC_LDFLAGS".
 OCaml have been compiled with the "/MD" flag, and therefore
 all other object files linked with it should also be compiled with
 "/MD".
-\item other systems: you may have to add one or more of "-lcurses",
-"-lm", "-ldl", depending on your OS and C compiler.
+\item other systems: you may have to add one or both of
+"-lm" and "-ldl", depending on your OS and C compiler.
 \end{itemize}
 
 \paragraph{Stack backtraces.}  When OCaml bytecode produced by
@@ -1778,6 +1763,12 @@ Once a runtime is unloaded, it cannot be started up again without reloading the
 shared library and reinitializing its static data. Therefore, at the moment, the
 facility is only useful for building reloadable shared libraries.
 
+\paragraph{Unix signal handling.}  Depending on the target platform and
+operating system, the native-code runtime system may install signal
+handlers for one or several of the "SIGSEGV", "SIGTRAP" and "SIGFPE"
+signals when "caml_startup" is called, and reset these signals to
+their default behaviors when "caml_shutdown" is called.  The main
+program written in~C should not try to handle these signals itself.
 
 \section{s:c-advexample}{Advanced example with callbacks}
 
@@ -2645,8 +2636,6 @@ of the function to bind:
 The rest of the binding is the same for both platforms:
 
 \begin{verbatim}
-#define CAML_NAME_SPACE
-
 #include <caml/mlvalues.h>
 #include <caml/misc.h>
 #include <caml/alloc.h>

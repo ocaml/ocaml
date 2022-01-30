@@ -19,13 +19,16 @@ type !'a t
 
 external create : int -> 'a t = "caml_weak_create"
 
+(** number of additional values in a weak pointer
+ *    - Link
+ *    - Data *)
+let additional_values = 2 (* CAML_EPHE_FIRST_KEY in weak.h *)
+
 let create l =
   if not (0 <= l && l <= Obj.Ephemeron.max_ephe_length) then
     invalid_arg("Weak.create");
   create l
 
-(** number of additional values in a weak pointer *)
-let additional_values = 2
 
 let length x = Obj.size(Obj.repr x) - additional_values
 

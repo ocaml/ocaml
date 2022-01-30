@@ -234,16 +234,3 @@ val max: t -> t -> t
 (** Return the greater of the two arguments.
     @since 4.13.0
  *)
-
-
-(**/**)
-
-(** {1 Deprecated functions} *)
-
-external format : string -> nativeint -> string = "caml_nativeint_format"
-(** [Nativeint.format fmt n] return the string representation of the
-   native integer [n] in the format specified by [fmt].
-   [fmt] is a [Printf]-style format consisting of exactly
-   one [%d], [%i], [%u], [%x], [%X] or [%o] conversion specification.
-   This function is deprecated; use {!Printf.sprintf} with a [%nx] format
-   instead. *)

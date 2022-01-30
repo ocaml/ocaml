@@ -173,17 +173,6 @@ val set_temp_dir_name : string -> unit
     @since 4.00.0
 *)
 
-val temp_dir_name : string
-  [@@ocaml.deprecated "Use Filename.get_temp_dir_name instead"]
-(** The name of the initial temporary directory:
-    Under Unix, the value of the [TMPDIR] environment variable, or "/tmp"
-    if the variable is not set.
-    Under Windows, the value of the [TEMP] environment variable, or "."
-    if the variable is not set.
-    @deprecated You should use {!Filename.get_temp_dir_name} instead.
-    @since 3.09.1
-*)
-
 val quote : string -> string
 (** Return a quoted version of a file name, suitable for use as
     one argument in a command line, escaping all meta-characters.

@@ -21,14 +21,8 @@
 
 #ifdef SYS_macosx
 #define CALL_GEN_CODE _call_gen_code
-#define CAML_C_CALL _caml_c_call
-#define CAML_NEGF_MASK _caml_negf_mask
-#define CAML_ABSF_MASK _caml_absf_mask
 #else
 #define CALL_GEN_CODE call_gen_code
-#define CAML_C_CALL caml_c_call
-#define CAML_NEGF_MASK caml_negf_mask
-#define CAML_ABSF_MASK caml_absf_mask
 #endif
 
         .globl  CALL_GEN_CODE
@@ -53,31 +47,3 @@ CALL_GEN_CODE:
         popq    %rbp
         popq    %rbx
         ret
-
-        .globl  CAML_C_CALL
-        .align  ALIGN
-CAML_C_CALL:
-        jmp     *%rax
-
-#ifdef SYS_macosx
-        .literal16
-#elif defined(SYS_mingw64) || defined(SYS_cygwin)
-        .section        .rodata.cst8
-#else
-        .section        .rodata.cst8,"aM",@progbits,8
-#endif
-        .globl  CAML_NEGF_MASK
-        .align  ALIGN
-CAML_NEGF_MASK:
-        .quad   0x8000000000000000, 0
-        .globl  CAML_ABSF_MASK
-        .align  ALIGN
-CAML_ABSF_MASK:
-        .quad   0x7FFFFFFFFFFFFFFF, 0
-
-        .comm   young_limit, 8
-
-#if defined(SYS_linux)
-    /* Mark stack as non-executable */
-        .section .note.GNU-stack,"",%progbits
-#endif

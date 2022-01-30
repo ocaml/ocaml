@@ -54,7 +54,8 @@ let rec build_closure_env env_param pos = function
     [] -> V.Map.empty
   | id :: rem ->
       V.Map.add id
-        (Uprim(P.Pfield pos, [Uvar env_param], Debuginfo.none))
+        (Uprim(P.Pfield(pos, Pointer, Immutable),
+              [Uvar env_param], Debuginfo.none))
           (build_closure_env env_param (pos+1) rem)
 
 (* Auxiliary for accessing globals.  We change the name of the global
@@ -479,10 +480,11 @@ let simplif_prim_pure ~backend fpc p (args, approxs) dbg =
         (Uprim(p, args, dbg), Value_tuple (Array.of_list approxs))
       end
   (* Field access *)
-  | Pfield n, _, [ Value_const(Uconst_ref(_, Some (Uconst_block(_, l)))) ]
+  | Pfield (n, _, _), _,
+            [ Value_const(Uconst_ref(_, Some (Uconst_block(_, l)))) ]
     when n < List.length l ->
       make_const (List.nth l n)
-  | Pfield n, [ Uprim(P.Pmakeblock _, ul, _) ], [approx]
+  | Pfield(n, _, _), [ Uprim(P.Pmakeblock _, ul, _) ], [approx]
     when n < List.length ul ->
       (* This case is particularly useful for removing allocations
          for optional parameters *)
@@ -849,7 +851,7 @@ let check_constant_result ulam approx =
           let glb =
             Uprim(P.Pread_symbol id, [], Debuginfo.none)
           in
-          Uprim(P.Pfield i, [glb], Debuginfo.none), approx
+          Uprim(P.Pfield(i, Pointer, Immutable), [glb], Debuginfo.none), approx
       end
   | _ -> (ulam, approx)
 
@@ -1102,10 +1104,10 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
       let dbg = Debuginfo.from_location loc in
       check_constant_result (getglobal dbg id)
                             (Compilenv.global_approx id)
-  | Lprim(Pfield n, [lam], loc) ->
+  | Lprim(Pfield (n, ptr, mut), [lam], loc) ->
       let (ulam, approx) = close env lam in
       let dbg = Debuginfo.from_location loc in
-      check_constant_result (Uprim(P.Pfield n, [ulam], dbg))
+      check_constant_result (Uprim(P.Pfield (n, ptr, mut), [ulam], dbg))
                             (field_approx n approx)
   | Lprim(Psetfield(n, is_ptr, init), [Lprim(Pgetglobal id, [], _); lam], loc)->
       let (ulam, approx) = close env lam in

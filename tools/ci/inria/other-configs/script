@@ -16,8 +16,8 @@
 
 # Commands to run for the 'other-configs' job on Inria's CI
 
-# Stop on error
-set -e
+# Stop on error and be verbose
+set -e -x
 
 mainjob=./tools/ci/inria/main
 main="${mainjob} -j8"
@@ -34,13 +34,11 @@ ${main} -conf --disable-native-compiler \
         -conf --disable-systhreads \
         -conf --disable-str-lib \
         -conf --disable-unix-lib \
-        -conf --disable-bigarray-lib \
         -conf --disable-ocamldoc \
         -conf --disable-dependency-generation \
         -no-native
-${main} -conf --disable-naked-pointers
 ${main} -with-bootstrap -conf --disable-flat-float-array
-${main} -conf --enable-flambda -conf --disable-naked-pointers
+${main} -conf --enable-flambda
 ${main} -conf --enable-reserved-header-bits=27
 OCAMLRUNPARAM="c=1" ${main}
 ${main} -conf --with-pic
