@@ -244,6 +244,11 @@ OCaml 4.14.0
 
 ### Tools:
 
+- #9701: Release bytecode only after collecting backtrace information
+  for exceptions, same for dynamic loaded code compiled from toplevel on
+  ocamlnat.
+  (Renato Alencar, reported by Krzysztof Leśniak, reviewed by Gabriel Scherer)
+
 - #10839: Fix regression of #show when printing class type
   (Élie Brami, review by Florian Angeletti)
 
