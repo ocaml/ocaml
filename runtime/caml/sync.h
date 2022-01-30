@@ -82,7 +82,7 @@ Caml_inline void sync_check_error(int retcode, char * msg)
 
   if (retcode == 0) return;
   if (retcode == ENOMEM) caml_raise_out_of_memory();
-  err = strerror(retcode);
+  err = caml_strerror(retcode);
   msglen = strlen(msg);
   errlen = strlen(err);
   str = caml_alloc_string(msglen + 2 + errlen);

@@ -539,6 +539,8 @@ extern int caml_snwprintf(wchar_t * buf,
 /* platform dependent best-effort thread naming */
 extern void caml_thread_setname(const char* name);
 
+extern char *caml_strerror(int errnum);
+
 /* Macro used to deactivate thread and address sanitizers on some
    functions. */
 #define CAMLno_tsan

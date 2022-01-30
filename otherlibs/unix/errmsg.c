@@ -21,5 +21,6 @@
 CAMLprim value unix_error_message(value err)
 {
   int errnum = code_of_unix_error(err);
+  /* strerror is safe here as we have the domain runtime lock */
   return caml_copy_string(strerror(errnum));
 }

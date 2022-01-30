@@ -62,11 +62,6 @@
 #include "caml/major_gc.h"
 #include "caml/shared_heap.h"
 
-static char * error_message(void)
-{
-  return strerror(errno);
-}
-
 #ifndef EAGAIN
 #define EAGAIN (-1)
 #endif
@@ -79,8 +74,7 @@ CAMLexport void caml_sys_error(value arg)
   CAMLparam1 (arg);
   char * err;
   CAMLlocal1 (str);
-
-  err = error_message();
+  err = caml_strerror(errno);
   if (arg == NO_ARG) {
     str = caml_copy_string(err);
   } else {

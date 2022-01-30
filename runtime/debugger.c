@@ -133,7 +133,7 @@ static void open_connection(void)
     caml_fatal_error("cannot connect to debugger at %s\n"
                      "error: %s",
                      (dbg_addr ? dbg_addr : "(none)"),
-                     strerror (errno));
+                     caml_strerror (errno));
   dbg_in = caml_open_descriptor_in(dbg_socket);
   dbg_out = caml_open_descriptor_out(dbg_socket);
   /* The code in this file does not bracket channel I/O operations with
