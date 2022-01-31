@@ -665,15 +665,21 @@ static void free_domain_ml_values(struct domain_ml_values* ml_values) {
   caml_stat_free(ml_values);
 }
 
+/* This is the structure of the data exchanged between the parent
+   domain and child domain during domain_spawn. Some fields are 'in'
+   parameters, passed from the parent to the child, others are 'out'
+   parameters returned to the parent by the child.
+*/
 struct domain_startup_params {
-  struct interruptor* parent;
-  enum domain_status status;
-  struct domain_ml_values* ml_values;
-  dom_internal* newdom;
-  uintnat unique_id;
+  struct interruptor* parent; /* in */
+  enum domain_status status; /* in+out:
+                                parent and child synchronize on this value. */
+  struct domain_ml_values* ml_values; /* in */
+  dom_internal* newdom; /* out */
+  uintnat unique_id; /* out */
 #ifndef _WIN32
   /* signal mask to set after it is safe to do so */
-  sigset_t* mask;
+  sigset_t* mask; /* in */
 #endif
 };
 
