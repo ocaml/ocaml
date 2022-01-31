@@ -17,6 +17,9 @@ Working version
 - #10902: Do not register empty code fragments in natdynlink.
   (David Allsopp, review by Xavier Leroy and Damien Doligez)
 
+- #10969: Provide a thread-safe `caml_strerror` runtime function.
+  (Anil Madhavapeddy, review by Edwin Török, David Allsopp and Xavier Leroy)
+
 ### Code generation and optimizations:
 
 ### Standard library:
