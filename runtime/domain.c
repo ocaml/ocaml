@@ -428,6 +428,7 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
       s->interrupt_word = young_limit;
       atomic_store_rel(young_limit, (uintnat)domain_state->young_start);
     }
+    s->unique_id = fresh_domain_unique_id();
     s->running = 1;
     atomic_fetch_add(&caml_num_domains_running, 1);
   }
@@ -604,7 +605,7 @@ void caml_init_domains(uintnat minor_heap_wsz) {
                         &dom->interruptor.lock);
     dom->interruptor.running = 0;
     dom->interruptor.terminating = 0;
-    dom->interruptor.unique_id = fresh_domain_unique_id();
+    dom->interruptor.unique_id = 0;
     dom->interruptor.interrupt_pending = 0;
 
     caml_plat_mutex_init(&dom->domain_lock);
@@ -1385,7 +1386,6 @@ static void domain_terminate (void)
       finished = 1;
       s->terminating = 0;
       s->running = 0;
-      s->unique_id = fresh_domain_unique_id();
 
       /* Remove this domain from stw_domains */
       remove_from_stw_domains(domain_self);
