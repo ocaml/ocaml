@@ -176,6 +176,8 @@ static caml_plat_cond all_domains_cond =
 static atomic_uintnat /* dom_internal* */ stw_leader = 0;
 static struct dom_internal all_domains[Max_domains];
 
+static atomic_uintnat next_domain_unique_id = 0;
+
 CAMLexport atomic_uintnat caml_num_domains_running;
 
 CAMLexport uintnat caml_minor_heaps_base;
@@ -389,6 +391,11 @@ int caml_reallocate_minor_heap(asize_t wsize)
   return 0;
 }
 
+static uintnat fresh_domain_unique_id(void)
+{
+  return atomic_fetch_add(&next_domain_unique_id, 1);
+}
+
 /* must be run on the domain's thread */
 static void create_domain(uintnat initial_minor_heap_wsize) {
   dom_internal* d = 0;
@@ -597,7 +604,7 @@ void caml_init_domains(uintnat minor_heap_wsz) {
                         &dom->interruptor.lock);
     dom->interruptor.running = 0;
     dom->interruptor.terminating = 0;
-    dom->interruptor.unique_id = i;
+    dom->interruptor.unique_id = fresh_domain_unique_id();
     dom->interruptor.interrupt_pending = 0;
 
     caml_plat_mutex_init(&dom->domain_lock);
@@ -930,7 +937,7 @@ CAMLprim value caml_domain_spawn(value callback, value mutex)
 CAMLprim value caml_ml_domain_id(value unit)
 {
   CAMLnoalloc;
-  return Val_int(domain_self->interruptor.unique_id);
+  return Val_long(domain_self->interruptor.unique_id);
 }
 
 CAMLprim value caml_ml_domain_unique_token (value unit)
@@ -1378,7 +1385,7 @@ static void domain_terminate (void)
       finished = 1;
       s->terminating = 0;
       s->running = 0;
-      s->unique_id += Max_domains;
+      s->unique_id = fresh_domain_unique_id();
 
       /* Remove this domain from stw_domains */
       remove_from_stw_domains(domain_self);
