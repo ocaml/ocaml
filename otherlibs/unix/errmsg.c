@@ -15,12 +15,14 @@
 
 #include <errno.h>
 #include <string.h>
+
+#define CAML_INTERNALS
 #include <caml/alloc.h>
+#include <caml/misc.h>
 #include "unixsupport.h"
 
 CAMLprim value unix_error_message(value err)
 {
   int errnum = code_of_unix_error(err);
-  /* strerror is safe here as we have the domain runtime lock */
-  return caml_copy_string(strerror(errnum));
+  return caml_copy_string(caml_strerror(errnum));
 }

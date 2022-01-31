@@ -16,7 +16,9 @@
 #include <string.h>
 #include <stdio.h>
 
+#ifndef _WIN32
 static __thread char caml_errbuf[1024];
+#endif
 
 char*
 caml_strerror(int errnum)
