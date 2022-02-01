@@ -754,8 +754,6 @@ stdlib_manpages
 PACKLD
 flexlink_flags
 flexdll_chain
-default_safe_string
-force_safe_string
 afl
 function_sections
 flat_float_array
@@ -2955,8 +2953,6 @@ OCAML_VERSION_SHORT=5.00
 
 
 
-
-
 ## Generated files
 
 ac_config_files="$ac_config_files Makefile.build_config"
@@ -3346,13 +3342,15 @@ fi
 
 # Check whether --enable-force-safe-string was given.
 if test "${enable_force_safe_string+set}" = set; then :
-  enableval=$enable_force_safe_string; as_fn_error $? "The force-safe-string option was deleted in OCaml 5.00." "$LINENO" 5
+  enableval=$enable_force_safe_string; if test "x$enableval" = 'xno'; then :
+  as_fn_error $? "Support for mutable strings was removed in OCaml 5.00." "$LINENO" 5
+fi
 fi
 
 
 
-if test x"$DEFAULT_STRING" != "x" ; then :
-  as_fn_error $? "The DEFAULT_STRING option variable was deleted in OCaml 5.00." "$LINENO" 5
+if test x"$DEFAULT_STRING" = "xunsafe"; then :
+  as_fn_error $? "Support for mutable strings was removed in OCaml 5.00." "$LINENO" 5
 fi
 
 # Check whether --enable-flat-float-array was given.
@@ -17823,8 +17821,6 @@ fi
 # Not used internally since 5.00 but kept for compatibility
 $as_echo "#define CAML_SAFE_STRING 1" >>confdefs.h
 
-force_safe_string=true
-default_safe_string=true
 
 oc_cflags="$common_cflags $internal_cflags"
 oc_cppflags="$common_cppflags $internal_cppflags"

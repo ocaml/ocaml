@@ -162,8 +162,6 @@ AC_SUBST([windows_unicode])
 AC_SUBST([flat_float_array])
 AC_SUBST([function_sections])
 AC_SUBST([afl])
-AC_SUBST([force_safe_string])
-AC_SUBST([default_safe_string])
 AC_SUBST([flexdll_chain])
 AC_SUBST([flexlink_flags])
 AC_SUBST([PACKLD])
@@ -1924,8 +1922,6 @@ AS_IF([test x"$with_afl" = "xyes"],
 
 # Not used internally since 5.00 but kept for compatibility
 AC_DEFINE([CAML_SAFE_STRING])
-force_safe_string=true
-default_safe_string=true
 
 oc_cflags="$common_cflags $internal_cflags"
 oc_cppflags="$common_cppflags $internal_cppflags"
