@@ -605,8 +605,6 @@ CAMLprim value caml_ml_set_channel_name(value vchannel, value vname)
   return Val_unit;
 }
 
-#define Pair_tag 0
-
 struct channel_list {
   struct channel* channel;
   struct channel_list* next;
@@ -626,7 +624,8 @@ CAMLprim value caml_ml_out_channels_list (value unit)
        channel = channel->next) {
     /* Testing channel->fd >= 0 looks unnecessary, as
        caml_ml_close_channel changes max when setting fd to -1. */
-    if (channel->max == NULL) {
+    if (channel->max == NULL
+        && channel->flags & CHANNEL_FLAG_MANAGED_BY_GC) {
       /* refcount is incremented here to keep the channel alive */
       atomic_fetch_add (&channel->refcount, 1);
       num_channels++;
@@ -648,7 +647,7 @@ CAMLprim value caml_ml_out_channels_list (value unit)
      * our earlier increment */
     atomic_fetch_add (&channel_list->channel->refcount, -1);
     tail = res;
-    res = caml_alloc_small (2, Pair_tag);
+    res = caml_alloc_small (2, Tag_cons);
     Field (res, 0) = chan;
     Field (res, 1) = tail;
     cl_tmp = channel_list;
