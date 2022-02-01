@@ -23,11 +23,12 @@
 #include <pthread.h>
 #include <signal.h>
 #include <time.h>
-#include <caml/sync.h>
 #include <sys/time.h>
 #ifdef __linux__
 #include <unistd.h>
 #endif
+
+#include "../../runtime/sync_posix.h"
 
 typedef int st_retcode;
 

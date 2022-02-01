@@ -833,7 +833,6 @@ static void domain_terminate();
 
 static void* domain_thread_func(void* v)
 {
-  sync_mutex terminate_mutex = NULL;
   struct domain_startup_params* p = v;
   struct domain_ml_values *ml_values = p->ml_values;
 #ifndef _WIN32
@@ -848,10 +847,9 @@ static void* domain_thread_func(void* v)
   caml_plat_lock(&p->parent->lock);
   if (domain_self) {
     /* this domain is part of STW sections, so can read ml_values */
-    terminate_mutex = Mutex_val(ml_values->mutex);
     /* we lock terminate_mutex here and unlock when the domain is torn down
       this provides a simple block for domains attempting to join */
-    sync_mutex_lock(terminate_mutex);
+    caml_ml_mutex_lock(ml_values->mutex);
     p->status = Dom_started;
     p->unique_id = domain_self->interruptor.unique_id;
   } else {
@@ -877,7 +875,7 @@ static void* domain_thread_func(void* v)
     domain_terminate();
     /* Joining domains will lock/unlock the terminate_mutex so this unlock will
        release them if any domains are waiting. */
-    sync_mutex_unlock(terminate_mutex);
+    caml_ml_mutex_unlock(ml_values->mutex);
     free_domain_ml_values(ml_values);
   } else {
     caml_gc_log("Failed to create domain");
