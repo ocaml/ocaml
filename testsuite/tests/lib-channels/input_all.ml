@@ -1,4 +1,5 @@
 (* TEST
+include systhreads
 readonly_files = "input_all.ml"
 *)
 
@@ -86,3 +87,28 @@ let check midpoint =
 
 let () =
   List.iter check [0; 1; String.length raw_contents]
+
+let random_char () =
+  Char.chr (Random.int 256)
+
+let test_pipe n =
+  let buf = Bytes.init n (fun _ -> random_char ()) in
+  let toread, towrite = Unix.pipe () in
+  let producer () =
+    let rec loop pos rem =
+      let n = Unix.write towrite buf pos rem in
+      if n = rem then Unix.close towrite
+      else loop (pos + n) (rem - n)
+    in
+    loop 0 (Bytes.length buf)
+  in
+  let read_buf = ref "" in
+  let consumer () = read_buf := In_channel.input_all (Unix.in_channel_of_descr toread) in
+  let producer = Thread.create producer () in
+  let consumer = Thread.create consumer () in
+  Thread.join producer;
+  Thread.join consumer;
+  assert (!read_buf = Bytes.unsafe_to_string buf)
+
+let () =
+  test_pipe 655397
