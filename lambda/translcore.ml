@@ -189,7 +189,7 @@ let event_function ~scopes exp lam =
 let assert_failed ~scopes exp =
   let slot =
     transl_extension_path Loc_unknown
-      Env.initial_safe_string Predef.path_assert_failure
+      Env.initial Predef.path_assert_failure
   in
   let loc = exp.exp_loc in
   let (fname, line, char) =

@@ -754,8 +754,6 @@ stdlib_manpages
 PACKLD
 flexlink_flags
 flexdll_chain
-default_safe_string
-force_safe_string
 afl
 function_sections
 flat_float_array
@@ -1598,8 +1596,6 @@ Optional Features:
   --disable-stdlib-manpages
                           do not build or install the library man pages
   --enable-warn-error     treat C compiler warnings as errors
-  --disable-force-safe-string
-                          do not force strings to be safe
   --disable-flat-float-array
                           do not use flat float arrays
   --disable-function-sections
@@ -1636,7 +1632,7 @@ Some influential environment variables:
   WINDOWS_UNICODE_MODE
               how to handle Unicode under Windows: ansi, compatible
   DEFAULT_STRING
-              whether strings should be safe (default) or unsafe
+
   CC          C compiler command
   CFLAGS      C compiler flags
   LDFLAGS     linker flags, e.g. -L<lib dir> if you have libraries in a
@@ -2956,8 +2952,6 @@ OCAML_VERSION_SHORT=5.00
 
 
 
-
-
 ## Generated files
 
 ac_config_files="$ac_config_files Makefile.build_config"
@@ -3346,38 +3340,18 @@ fi
 
 
 
-# There are two configure-time string safety options,
-# --(enable|disable)-force-safe-string and
-# DEFAULT_STRING=safe|unsafe that
-# interact with a compile-time (un)safe-string option.
-#
-# If --enable-force-safe-string is set at configure time, then the compiler
-# will always enforce that string and bytes are distinct: the
-# compile-time -unsafe-string option is disabled. This lets us
-# assume pervasive string immutability, for code optimizations and
-# in the C layer.
-#
-# If --disable-force-safe-string is set at configure-time, the compiler
-# will use the compile-time (un)safe-string option to decide whether
-# string and bytes are compatible on a per-file basis. The
-# configuration variable DEFAULT_STRING=safe|unsafe decides which
-# setting will be chosen by default, if no compile-time option is
-# explicitly passed.
-#
-# The configure-time behavior of OCaml 4.05 and older was equivalent
-# to --disable-force-safe-string DEFAULT_STRING=unsafe. With OCaml 4.06
-# and older was equivalent to --disable-force-safe-string DEFAULT_STRING=safe.
-# With OCaml 4.10 and later use --enable-force-safe-string DEFAULT_STRING=safe.
-# We expect the --disable-force-safe-string and DEFAULT_STRING=unsafe options
-# to be removed in the future.
-
 # Check whether --enable-force-safe-string was given.
 if test "${enable_force_safe_string+set}" = set; then :
-  enableval=$enable_force_safe_string;
+  enableval=$enable_force_safe_string; if test "x$enableval" = 'xno'; then :
+  as_fn_error $? "Support for mutable strings was removed in OCaml 5.00." "$LINENO" 5
+fi
 fi
 
 
 
+if test x"$DEFAULT_STRING" = "xunsafe"; then :
+  as_fn_error $? "Support for mutable strings was removed in OCaml 5.00." "$LINENO" 5
+fi
 
 # Check whether --enable-flat-float-array was given.
 if test "${enable_flat_float_array+set}" = set; then :
@@ -17758,20 +17732,6 @@ if test x"$with_afl" = "xyes"; then :
   afl=true
 else
   afl=false
-fi
-
-if test x"$enable_force_safe_string" = "xno"; then :
-  force_safe_string=false
-else
-  $as_echo "#define CAML_SAFE_STRING 1" >>confdefs.h
-
-   force_safe_string=true
-fi
-
-if test x"$DEFAULT_STRING" = "xunsafe"; then :
-  default_safe_string=false
-else
-  default_safe_string=true
 fi
 
 oc_cflags="$common_cflags $internal_cflags"

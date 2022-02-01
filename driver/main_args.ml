@@ -504,11 +504,9 @@ let mk_S f =
   "-S", Arg.Unit f, " Keep intermediate assembly file"
 ;;
 
-let mk_safe_string f =
-  "-safe-string", Arg.Unit f,
-  if Config.safe_string then " (was set when configuring the compiler)"
-  else if Config.default_safe_string then " Make strings immutable (default)"
-  else " Make strings immutable"
+let mk_safe_string =
+  "-safe-string", Arg.Unit (fun () -> ()),
+  " (default unconditionally since 5.00)"
 ;;
 
 let mk_shared f =
@@ -578,17 +576,11 @@ let mk_unsafe f =
   " Do not compile bounds checking on array and string access"
 ;;
 
-let mk_unsafe_string f =
-  if Config.safe_string then
-    let err () =
-      raise (Arg.Bad "OCaml has been configured with -force-safe-string: \
-                      -unsafe-string is not available")
-    in
-    "-unsafe-string", Arg.Unit err, " (option not available)"
-  else if Config.default_safe_string then
-    "-unsafe-string", Arg.Unit f, " Make strings mutable"
-  else
-    "-unsafe-string", Arg.Unit f, " Make strings mutable (default)"
+let mk_unsafe_string =
+ let err () =
+   raise (Arg.Bad "-unsafe-string is not available since OCaml 5.00")
+ in
+ "-unsafe-string", Arg.Unit err, " (option not available)"
 ;;
 
 let mk_use_runtime f =
@@ -929,7 +921,6 @@ module type Common_options = sig
   val _no_principal : unit -> unit
   val _rectypes : unit -> unit
   val _no_rectypes : unit -> unit
-  val _safe_string : unit -> unit
   val _short_paths : unit -> unit
   val _strict_sequence : unit -> unit
   val _no_strict_sequence : unit -> unit
@@ -938,7 +929,6 @@ module type Common_options = sig
   val _force_tmc : unit -> unit
   val _unboxed_types : unit -> unit
   val _no_unboxed_types : unit -> unit
-  val _unsafe_string : unit -> unit
   val _version : unit -> unit
   val _vnum : unit -> unit
   val _w : string -> unit
@@ -1004,7 +994,6 @@ module type Compiler_options = sig
   val _runtime_variant : string -> unit
   val _with_runtime : unit -> unit
   val _without_runtime : unit -> unit
-  val _safe_string : unit -> unit
   val _short_paths : unit -> unit
   val _thread : unit -> unit
   val _v : unit -> unit
@@ -1225,7 +1214,7 @@ struct
     mk_runtime_variant F._runtime_variant;
     mk_with_runtime F._with_runtime;
     mk_without_runtime F._without_runtime;
-    mk_safe_string F._safe_string;
+    mk_safe_string;
     mk_short_paths F._short_paths;
     mk_strict_sequence F._strict_sequence;
     mk_no_strict_sequence F._no_strict_sequence;
@@ -1236,7 +1225,7 @@ struct
     mk_unboxed_types F._unboxed_types;
     mk_no_unboxed_types F._no_unboxed_types;
     mk_unsafe F._unsafe;
-    mk_unsafe_string F._unsafe_string;
+    mk_unsafe_string;
     mk_use_runtime F._use_runtime;
     mk_use_runtime_2 F._use_runtime;
     mk_v F._v;
@@ -1300,7 +1289,7 @@ struct
     mk_no_principal F._no_principal;
     mk_rectypes F._rectypes;
     mk_no_rectypes F._no_rectypes;
-    mk_safe_string F._safe_string;
+    mk_safe_string;
     mk_short_paths F._short_paths;
     mk_stdin F._stdin;
     mk_strict_sequence F._strict_sequence;
@@ -1310,7 +1299,7 @@ struct
     mk_unboxed_types F._unboxed_types;
     mk_no_unboxed_types F._no_unboxed_types;
     mk_unsafe F._unsafe;
-    mk_unsafe_string F._unsafe_string;
+    mk_unsafe_string;
     mk_version F._version;
     mk__version F._version;
     mk_no_version F._no_version;
@@ -1427,7 +1416,7 @@ struct
     mk_with_runtime F._with_runtime;
     mk_without_runtime F._without_runtime;
     mk_S F._S;
-    mk_safe_string F._safe_string;
+    mk_safe_string;
     mk_shared F._shared;
     mk_short_paths F._short_paths;
     mk_strict_sequence F._strict_sequence;
@@ -1442,7 +1431,7 @@ struct
     mk_unboxed_types F._unboxed_types;
     mk_no_unboxed_types F._no_unboxed_types;
     mk_unsafe F._unsafe;
-    mk_unsafe_string F._unsafe_string;
+    mk_unsafe_string;
     mk_v F._v;
     mk_verbose F._verbose;
     mk_version F._version;
@@ -1546,7 +1535,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_no_rectypes F._no_rectypes;
     mk_remove_unused_arguments F._remove_unused_arguments;
     mk_S F._S;
-    mk_safe_string F._safe_string;
+    mk_safe_string;
     mk_short_paths F._short_paths;
     mk_stdin F._stdin;
     mk_strict_sequence F._strict_sequence;
@@ -1558,7 +1547,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_unboxed_types F._unboxed_types;
     mk_no_unboxed_types F._no_unboxed_types;
     mk_unsafe F._unsafe;
-    mk_unsafe_string F._unsafe_string;
+    mk_unsafe_string;
     mk_verbose F._verbose;
     mk_version F._version;
     mk__version F._version;
@@ -1628,7 +1617,7 @@ struct
     mk_no_principal F._no_principal;
     mk_rectypes F._rectypes;
     mk_no_rectypes F._no_rectypes;
-    mk_safe_string F._safe_string;
+    mk_safe_string;
     mk_short_paths F._short_paths;
     mk_strict_sequence F._strict_sequence;
     mk_no_strict_sequence F._no_strict_sequence;
@@ -1638,7 +1627,7 @@ struct
     mk_force_tmc F._force_tmc;
     mk_unboxed_types F._unboxed_types;
     mk_no_unboxed_types F._no_unboxed_types;
-    mk_unsafe_string F._unsafe_string;
+    mk_unsafe_string;
     mk_v F._v;
     mk_verbose F._verbose;
     mk_version F._version;
@@ -1719,12 +1708,10 @@ module Default = struct
     let _open s = open_modules := (s :: (!open_modules))
     let _principal = set principal
     let _rectypes = set recursive_types
-    let _safe_string = clear unsafe_string
     let _short_paths = clear real_paths
     let _strict_formats = set strict_formats
     let _strict_sequence = set strict_sequence
     let _unboxed_types = set unboxed_types
-    let _unsafe_string = set unsafe_string
     let _w s =
       Warnings.parse_options false s |> Option.iter Location.(prerr_alert none)
 

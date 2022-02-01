@@ -897,9 +897,9 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
      close_approx_var env id
   | Lmutvar id -> (Uvar id, Value_unknown)
   | Lconst cst ->
-      let str ?(shared = true) cst =
+      let str cst =
         let name =
-          Compilenv.new_structured_constant cst ~shared
+          Compilenv.new_structured_constant cst ~shared:true
         in
         Uconst_ref (name, Some cst)
       in
@@ -914,13 +914,7 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
         | Const_immstring s ->
             str (Uconst_string s)
         | Const_base (Const_string (s, _, _)) ->
-              (* Strings (even literal ones) must be assumed to be mutable...
-                 except when OCaml has been configured with
-                 -safe-string.  Passing -safe-string at compilation
-                 time is not enough, since the unit could be linked
-                 with another one compiled without -safe-string, and
-                 that one could modify our string literal.  *)
-            str ~shared:Config.safe_string (Uconst_string s)
+            str (Uconst_string s)
         | Const_base(Const_float x) -> str (Uconst_float (float_of_string x))
         | Const_base(Const_int32 x) -> str (Uconst_int32 x)
         | Const_base(Const_int64 x) -> str (Uconst_int64 x)

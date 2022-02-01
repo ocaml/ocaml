@@ -162,8 +162,6 @@ AC_SUBST([windows_unicode])
 AC_SUBST([flat_float_array])
 AC_SUBST([function_sections])
 AC_SUBST([afl])
-AC_SUBST([force_safe_string])
-AC_SUBST([default_safe_string])
 AC_SUBST([flexdll_chain])
 AC_SUBST([flexlink_flags])
 AC_SUBST([PACKLD])
@@ -372,37 +370,14 @@ AC_ARG_ENABLE([warn-error],
 AC_ARG_VAR([WINDOWS_UNICODE_MODE],
   [how to handle Unicode under Windows: ansi, compatible])
 
-# There are two configure-time string safety options,
-# --(enable|disable)-force-safe-string and
-# DEFAULT_STRING=safe|unsafe that
-# interact with a compile-time (un)safe-string option.
-#
-# If --enable-force-safe-string is set at configure time, then the compiler
-# will always enforce that string and bytes are distinct: the
-# compile-time -unsafe-string option is disabled. This lets us
-# assume pervasive string immutability, for code optimizations and
-# in the C layer.
-#
-# If --disable-force-safe-string is set at configure-time, the compiler
-# will use the compile-time (un)safe-string option to decide whether
-# string and bytes are compatible on a per-file basis. The
-# configuration variable DEFAULT_STRING=safe|unsafe decides which
-# setting will be chosen by default, if no compile-time option is
-# explicitly passed.
-#
-# The configure-time behavior of OCaml 4.05 and older was equivalent
-# to --disable-force-safe-string DEFAULT_STRING=unsafe. With OCaml 4.06
-# and older was equivalent to --disable-force-safe-string DEFAULT_STRING=safe.
-# With OCaml 4.10 and later use --enable-force-safe-string DEFAULT_STRING=safe.
-# We expect the --disable-force-safe-string and DEFAULT_STRING=unsafe options
-# to be removed in the future.
+AC_ARG_ENABLE([force-safe-string], [],
+  [AS_IF([test "x$enableval" = 'xno'],
+    [AC_MSG_ERROR([Support for mutable strings was removed in OCaml 5.00.])])],
+  [])
 
-AC_ARG_ENABLE([force-safe-string],
-  [AS_HELP_STRING([--disable-force-safe-string],
-    [do not force strings to be safe])])
-
-AC_ARG_VAR([DEFAULT_STRING],
-  [whether strings should be safe (default) or unsafe])
+AC_ARG_VAR([DEFAULT_STRING], [])
+AS_IF([test x"$DEFAULT_STRING" = "xunsafe"],
+  [AC_MSG_ERROR([Support for mutable strings was removed in OCaml 5.00.])])
 
 AC_ARG_ENABLE([flat-float-array],
   [AS_HELP_STRING([--disable-flat-float-array],
@@ -1946,15 +1921,6 @@ AS_IF([test x"$enable_function_sections" = "xno"],
 AS_IF([test x"$with_afl" = "xyes"],
   [afl=true],
   [afl=false])
-
-AS_IF([test x"$enable_force_safe_string" = "xno"],
-  [force_safe_string=false],
-  [AC_DEFINE([CAML_SAFE_STRING])
-   force_safe_string=true])
-
-AS_IF([test x"$DEFAULT_STRING" = "xunsafe"],
-  [default_safe_string=false],
-  [default_safe_string=true])
 
 oc_cflags="$common_cflags $internal_cflags"
 oc_cppflags="$common_cppflags $internal_cppflags"

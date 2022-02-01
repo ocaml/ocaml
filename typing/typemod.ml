@@ -113,14 +113,9 @@ let type_open_ ?used_slot ?toplevel ovf env loc lid =
       ignore (extract_sig_open env lid.loc md.md_type);
       assert false
 
-let initial_env ~loc ~safe_string ~initially_opened_module
+let initial_env ~loc ~initially_opened_module
     ~open_implicit_modules =
-  let env =
-    if safe_string then
-      Env.initial_safe_string
-    else
-      Env.initial_unsafe_string
-  in
+  let env = Env.initial in
   let open_module env m =
     let open Asttypes in
     let lexbuf = Lexing.from_string m in
@@ -3131,7 +3126,7 @@ let package_units initial_env objfiles cmifile modulename =
          let modname = String.capitalize_ascii(Filename.basename pref) in
          let sg = Env.read_signature modname (pref ^ ".cmi") in
          if Filename.check_suffix f ".cmi" &&
-            not(Mtype.no_code_needed_sig Env.initial_safe_string sg)
+            not(Mtype.no_code_needed_sig Env.initial sg)
          then raise(Error(Location.none, Env.empty,
                           Implementation_is_required f));
          (modname, Env.read_signature modname (pref ^ ".cmi")))

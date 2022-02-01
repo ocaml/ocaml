@@ -68,7 +68,7 @@ val package_units:
 
 (* Should be in Envaux, but it breaks the build of the debugger *)
 val initial_env:
-  loc:Location.t -> safe_string:bool ->
+  loc:Location.t ->
   initially_opened_module:string option ->
   open_implicit_modules:string list -> Env.t
 

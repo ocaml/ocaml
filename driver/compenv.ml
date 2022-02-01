@@ -227,6 +227,16 @@ let parse_warnings error v =
 let read_one_param ppf position name v =
   let set name options s =  setter ppf (fun b -> b) name options s in
   let clear name options s = setter ppf (fun b -> not b) name options s in
+  let compat name s =
+    let error_if_unset = function
+      | true -> true
+      | false ->
+        Printf.ksprintf (print_error ppf)
+          "Unsetting %s is not supported anymore" name;
+        true
+    in
+    setter ppf error_if_unset name [ ref true ] s
+  in
   match name with
   | "g" -> set "g" [ Clflags.debug ] v
   | "bin-annot" -> set "bin-annot" [ Clflags.binary_annotations ] v
@@ -243,7 +253,7 @@ let read_one_param ppf position name v =
   | "nolabels" -> set "nolabels" [ classic ] v
   | "principal" -> set "principal"  [ principal ] v
   | "rectypes" -> set "rectypes" [ recursive_types ] v
-  | "safe-string" -> clear "safe-string" [ unsafe_string ] v
+  | "safe-string" -> compat "safe-string" v (* kept for compatibility *)
   | "strict-sequence" -> set "strict-sequence" [ strict_sequence ] v
   | "strict-formats" -> set "strict-formats" [ strict_formats ] v
   | "thread" -> set "thread" [ use_threads ] v

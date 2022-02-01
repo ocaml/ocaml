@@ -81,8 +81,8 @@ let mkdll, mkexe, mkmaindll =
 let flambda = %%FLAMBDA%%
 let with_flambda_invariants = %%WITH_FLAMBDA_INVARIANTS%%
 let with_cmm_invariants = %%WITH_CMM_INVARIANTS%%
-let safe_string = %%FORCE_SAFE_STRING%%
-let default_safe_string = %%DEFAULT_SAFE_STRING%%
+let safe_string = true
+let default_safe_string = true
 let windows_unicode = %%WINDOWS_UNICODE%% != 0
 let naked_pointers = %%NAKED_POINTERS%%
 let force_instrumented_runtime = %%FORCE_INSTRUMENTED_RUNTIME%%

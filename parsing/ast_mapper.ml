@@ -843,7 +843,7 @@ module PpxContext = struct
         lid "principal", make_bool !Clflags.principal;
         lid "transparent_modules", make_bool !Clflags.transparent_modules;
         lid "unboxed_types", make_bool !Clflags.unboxed_types;
-        lid "unsafe_string", make_bool !Clflags.unsafe_string;
+        lid "unsafe_string", make_bool false; (* kept for compatibility *)
         get_cookies ()
       ]
     in
@@ -923,8 +923,6 @@ module PpxContext = struct
           Clflags.transparent_modules := get_bool payload
       | "unboxed_types" ->
           Clflags.unboxed_types := get_bool payload
-      | "unsafe_string" ->
-          Clflags.unsafe_string := get_bool payload
       | "cookies" ->
           let l = get_list (get_pair get_string (fun x -> x)) payload in
           cookies :=
