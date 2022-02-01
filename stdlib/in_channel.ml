@@ -125,7 +125,7 @@ let ensure buf ofs n =
     in
     let new_buf = Bytes.create new_len in
     Bytes.blit buf 0 new_buf 0 ofs;
-    buf
+    new_buf
   end
 
 let input_all ic =
