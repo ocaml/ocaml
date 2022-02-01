@@ -416,3 +416,32 @@ let mk_env f : Emitenv.per_function_env =
     symbol_literals = [];
     size_literals = 0;
   }
+
+type preproc_stack_check_result =
+  { max_frame_size : int;
+    contains_nontail_calls : bool }
+
+let preproc_stack_check ~fun_body ~frame_size ~trap_size =
+  let rec loop (i:Linear.instruction) fs max_fs nontail_flag =
+    match i.desc with
+      | Lend -> { max_frame_size = max_fs;
+                  contains_nontail_calls = nontail_flag}
+      | Ladjust_trap_depth { delta_traps } ->
+        let s = fs + (trap_size * delta_traps) in
+        loop i.next s (max s max_fs) nontail_flag
+      | Lpushtrap _ ->
+        let s = fs + trap_size in
+        loop i.next s (max s max_fs) nontail_flag
+      | Lpoptrap ->
+        loop i.next (fs - trap_size) max_fs nontail_flag
+      | Lop (Istackoffset n) ->
+        let s = fs + n in
+        loop i.next s (max s max_fs) nontail_flag
+      | Lop (Icall_ind | Icall_imm _ ) ->
+        loop i.next fs max_fs true
+      | Lprologue | Lop _ | Lreloadretaddr | Lreturn | Llabel _
+      | Lbranch _ | Lcondbranch _ | Lcondbranch3 _ | Lswitch _
+      | Lentertrap | Lraise _ ->
+        loop i.next fs max_fs nontail_flag
+  in
+  loop fun_body frame_size frame_size false
