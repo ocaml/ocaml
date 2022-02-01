@@ -208,8 +208,8 @@ OCaml 4.14.0
    Daniel Bünzli, Naëla Courant, Craig Ferguson, Wiktor Kuchta, Xavier
    Leroy, Guillaume Munch-Maccagnoni, Raphaël Proust, and Gabriel Scherer)
 
-- #10596: Add with_open_bin, with_open_text and with_open_gen to In_channel and
-  Out_channel. Also, add In_channel.input_all.
+- #10596, #10978: Add with_open_bin, with_open_text and with_open_gen to
+  In_channel and Out_channel. Also, add In_channel.input_all.
   (Nicolás Ojeda Bär, review by Daniel Bünzli, Jérémie Dimino, Damien Doligez
   and Xavier Leroy)
 
