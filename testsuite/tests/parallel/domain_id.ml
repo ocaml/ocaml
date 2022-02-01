@@ -7,33 +7,18 @@ include unix
 
 open Domain
 
-let id () = ()
+let test_main_domain () =
+  assert ((Domain.self () :> int) = 0);
+  assert (Domain.is_main_domain ());
+  ()
 
+let id () = ()
 
 let newdom_id () =
   let d = Domain.spawn id in
   let n = Domain.get_id d in
   join d;
   (n :> int)
-
-let test_domain_reuse () =
-  (* checks that domain slots are getting reused quickly,
-     by checking that subsequent domain IDs are an arithmetic
-     progression (implies that you're getting the same domain
-     over and over, but its ID increases by Max_domains.
-
-     this test has to run first, since it makes assumptions
-     about domain IDs *)
-  let first = newdom_id () in
-  let curr = ref (newdom_id ()) in
-  let delta = !curr - first in
-  assert (delta > 0);
-  for i = 1 to 10000 do
-    let next = newdom_id () in
-    assert (next - !curr = delta);
-    curr := next
-  done
-
 
 let test_different_ids () =
   let d1 = Domain.spawn id in
@@ -45,6 +30,6 @@ let test_different_ids () =
 
 
 let () =
-  test_domain_reuse ();
+  test_main_domain ();
   test_different_ids ();
   print_endline "ok"
