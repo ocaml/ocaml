@@ -176,9 +176,6 @@ static caml_plat_cond all_domains_cond =
 static atomic_uintnat /* dom_internal* */ stw_leader = 0;
 static struct dom_internal all_domains[Max_domains];
 
-/* This variable is owned by [all_domains_lock] */
-static uintnat next_domain_unique_id = 0;
-
 CAMLexport atomic_uintnat caml_num_domains_running;
 
 CAMLexport uintnat caml_minor_heaps_base;
@@ -392,6 +389,31 @@ int caml_reallocate_minor_heap(asize_t wsize)
   return 0;
 }
 
+/* This variable is owned by [all_domains_lock]. */
+static uintnat next_domain_unique_id = 0;
+
+/* Precondition: you must own [all_domains_lock].
+
+   Specification:
+   - returns 0 on the first call
+     (we want the main domain to have unique_id 0)
+   - returns distinct ids unless there is an overflow
+   - never returns 0 again, even in presence of overflow.
+ */
+static uintnat fresh_domain_unique_id(void) {
+    uintnat next = next_domain_unique_id++;
+
+    /* On 32-bit systems, there is a risk of wraparound of the unique
+       id counter. We have decided to let that happen and live with
+       it, but we still ensure that id 0 is not reused, to avoid
+       having new domains believe that they are the main domain. */
+    if (next_domain_unique_id == 0)
+      next_domain_unique_id++;
+
+    return next;
+}
+
+
 /* must be run on the domain's thread */
 static void create_domain(uintnat initial_minor_heap_wsize) {
   dom_internal* d = 0;
@@ -424,7 +446,7 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
       s->interrupt_word = young_limit;
       atomic_store_rel(young_limit, (uintnat)domain_state->young_start);
     }
-    s->unique_id = next_domain_unique_id++;
+    s->unique_id = fresh_domain_unique_id();
     s->running = 1;
     atomic_fetch_add(&caml_num_domains_running, 1);
   }
@@ -621,6 +643,7 @@ void caml_init_domains(uintnat minor_heap_wsz) {
 
   create_domain(minor_heap_wsz);
   if (!domain_self) caml_fatal_error("Failed to create main domain");
+  CAMLassert (domain_self->state->unique_id == 0);
 
   caml_init_signal_handling();
 
