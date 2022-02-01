@@ -17818,10 +17818,6 @@ else
   afl=false
 fi
 
-# Not used internally since 5.00 but kept for compatibility
-$as_echo "#define CAML_SAFE_STRING 1" >>confdefs.h
-
-
 oc_cflags="$common_cflags $internal_cflags"
 oc_cppflags="$common_cppflags $internal_cppflags"
 ocamlc_cflags="$common_cflags $sharedlib_cflags \$(CFLAGS)"

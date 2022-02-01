@@ -1920,9 +1920,6 @@ AS_IF([test x"$with_afl" = "xyes"],
   [afl=true],
   [afl=false])
 
-# Not used internally since 5.00 but kept for compatibility
-AC_DEFINE([CAML_SAFE_STRING])
-
 oc_cflags="$common_cflags $internal_cflags"
 oc_cppflags="$common_cppflags $internal_cppflags"
 ocamlc_cflags="$common_cflags $sharedlib_cflags \$(CFLAGS)"

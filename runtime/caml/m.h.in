@@ -90,7 +90,7 @@
 
 #undef CAML_WITH_FPIC
 
-#undef CAML_SAFE_STRING
+#define CAML_SAFE_STRING 1
 
 #undef FLAT_FLOAT_ARRAY
 
