@@ -45,8 +45,6 @@ DOMAIN_STATE(value*, gc_regs_buckets)
 
 DOMAIN_STATE(value*, gc_regs)
 
-DOMAIN_STATE(value**, gc_regs_slot)
-
 DOMAIN_STATE(struct caml_minor_tables*, minor_tables)
 
 DOMAIN_STATE(struct mark_stack*, mark_stack)

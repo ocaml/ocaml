@@ -490,7 +490,6 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
 
     domain_state->gc_regs_buckets = NULL;
     domain_state->gc_regs = NULL;
-    domain_state->gc_regs_slot = NULL;
 
     domain_state->allocated_words = 0;
     domain_state->swept_words = 0;

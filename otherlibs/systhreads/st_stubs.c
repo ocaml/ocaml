@@ -75,7 +75,6 @@ struct caml_thread_struct {
     /* saved value of Caml_state->backtrace_last_exn (root) */
   value * gc_regs;           /* saved value of Caml_state->gc_regs */
   value * gc_regs_buckets;   /* saved value of Caml_state->gc_regs_buckets */
-  value ** gc_regs_slot;     /* saved value of Caml_state->gc_regs_slot */
   void * exn_handler;        /* saved value of Caml_state->exn_handler */
 
 #ifndef NATIVE_CODE
@@ -172,7 +171,6 @@ void caml_thread_save_runtime_state(void)
   Current_thread->c_stack = Caml_state->c_stack;
   Current_thread->gc_regs = Caml_state->gc_regs;
   Current_thread->gc_regs_buckets = Caml_state->gc_regs_buckets;
-  Current_thread->gc_regs_slot = Caml_state->gc_regs_slot;
   Current_thread->exn_handler = Caml_state->exn_handler;
   Current_thread->local_roots = Caml_state->local_roots;
   Current_thread->backtrace_pos = Caml_state->backtrace_pos;
@@ -191,7 +189,6 @@ void caml_thread_restore_runtime_state(void)
   Caml_state->c_stack = Current_thread->c_stack;
   Caml_state->gc_regs = Current_thread->gc_regs;
   Caml_state->gc_regs_buckets = Current_thread->gc_regs_buckets;
-  Caml_state->gc_regs_slot = Current_thread->gc_regs_slot;
   Caml_state->exn_handler = Current_thread->exn_handler;
   Caml_state->local_roots = Current_thread->local_roots;
   Caml_state->backtrace_pos = Current_thread->backtrace_pos;
@@ -265,7 +262,6 @@ static caml_thread_t caml_thread_new_info(void)
   th->backtrace_last_exn = Val_unit;
   th->gc_regs = NULL;
   th->gc_regs_buckets = NULL;
-  th->gc_regs_slot = NULL;
   th->exn_handler = NULL;
 
 #ifndef NATIVE_CODE
