@@ -371,13 +371,12 @@ AC_ARG_VAR([WINDOWS_UNICODE_MODE],
 
 AC_ARG_ENABLE([force-safe-string], [],
   [AS_IF([test "x$enableval" = 'xno'],
-    AC_MSG_ERROR([Support for mutable strings was removed in OCaml 5.00.]))],
+    [AC_MSG_ERROR([Support for mutable strings was removed in OCaml 5.00.])])],
   [])
 
 AC_ARG_VAR([DEFAULT_STRING], [])
 AS_IF([test x"$DEFAULT_STRING" = "xunsafe"],
-  [AC_MSG_ERROR(
-   [Support for mutable strings was removed in OCaml 5.00.])])
+  [AC_MSG_ERROR([Support for mutable strings was removed in OCaml 5.00.])])
 
 AC_ARG_ENABLE([flat-float-array],
   [AS_HELP_STRING([--disable-flat-float-array],
