@@ -176,7 +176,8 @@ static caml_plat_cond all_domains_cond =
 static atomic_uintnat /* dom_internal* */ stw_leader = 0;
 static struct dom_internal all_domains[Max_domains];
 
-static atomic_uintnat next_domain_unique_id = 0;
+/* This variable is owned by [all_domains_lock] */
+static uintnat next_domain_unique_id = 0;
 
 CAMLexport atomic_uintnat caml_num_domains_running;
 
@@ -391,11 +392,6 @@ int caml_reallocate_minor_heap(asize_t wsize)
   return 0;
 }
 
-static uintnat fresh_domain_unique_id(void)
-{
-  return atomic_fetch_add(&next_domain_unique_id, 1);
-}
-
 /* must be run on the domain's thread */
 static void create_domain(uintnat initial_minor_heap_wsize) {
   dom_internal* d = 0;
@@ -428,7 +424,7 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
       s->interrupt_word = young_limit;
       atomic_store_rel(young_limit, (uintnat)domain_state->young_start);
     }
-    s->unique_id = fresh_domain_unique_id();
+    s->unique_id = next_domain_unique_id++;
     s->running = 1;
     atomic_fetch_add(&caml_num_domains_running, 1);
   }
