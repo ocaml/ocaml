@@ -875,6 +875,10 @@ static void* domain_thread_func(void* v)
     domain_terminate();
     /* Joining domains will lock/unlock the terminate_mutex so this unlock will
        release them if any domains are waiting. */
+    /* The domain has left the STW set, but all minor heaps will have been
+       collected in domain_terminate.
+       So ml_values->mutex is in the major heap and will not be moved */
+    CAMLassert(!Is_young(ml_values->mutex));
     caml_ml_mutex_unlock(ml_values->mutex);
     free_domain_ml_values(ml_values);
   } else {
