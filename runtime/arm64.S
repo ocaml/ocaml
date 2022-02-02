@@ -194,77 +194,82 @@ G(name):
         mov     sp, TMP
 .endm
 
-/* save all of the registers that may be in use to a free gc_regs bucket.
-   Return: bucket in ALLOC_PTR; clobbers TMP
+/* Save all of the registers that may be in use to a free gc_regs bucket
+   and store ALLOC_PTR and TRAP_PTR back to Caml_state
+   At the end the saved registers are placed in Caml_state(gc_regs)
  */
 .macro SAVE_ALL_REGS
     /* First, save the young_ptr & exn_handler */
         str     ALLOC_PTR, Caml_state(young_ptr)
         str     TRAP_PTR, Caml_state(exn_handler)
     /* Now, use TMP to point to the gc_regs bucket */
-        ldr     ALLOC_PTR, Caml_state(gc_regs_buckets)
-        ldr     TMP, [ALLOC_PTR, 0] /* next ptr */
-        str     TMP, Caml_state(gc_regs_buckets)
+        ldr     TMP, Caml_state(gc_regs_buckets)
+        ldr     TMP2, [TMP, 0] /* next ptr */
+        str     TMP2, Caml_state(gc_regs_buckets)
     /* Save allocatable registers */
-        stp     x0, x1, [ALLOC_PTR, 16]
-        stp     x2, x3, [ALLOC_PTR, 32]
-        stp     x4, x5, [ALLOC_PTR, 48]
-        stp     x6, x7, [ALLOC_PTR, 64]
-        stp     x8, x9, [ALLOC_PTR, 80]
-        stp     x10, x11, [ALLOC_PTR, 96]
-        stp     x12, x13, [ALLOC_PTR, 112]
-        stp     x14, x15, [ALLOC_PTR, 128]
-        stp     x19, x20, [ALLOC_PTR, 144]
-        stp     x21, x22, [ALLOC_PTR, 160]
-        stp     x23, x24, [ALLOC_PTR, 176]
-        str     x25, [ALLOC_PTR, 192]
-        stp     d0, d1, [ALLOC_PTR, 208]
-        stp     d2, d3, [ALLOC_PTR, 224]
-        stp     d4, d5, [ALLOC_PTR, 240]
-        stp     d6, d7, [ALLOC_PTR, 256]
-        stp     d16, d17, [ALLOC_PTR, 272]
-        stp     d18, d19, [ALLOC_PTR, 288]
-        stp     d20, d21, [ALLOC_PTR, 304]
-        stp     d22, d23, [ALLOC_PTR, 320]
-        stp     d24, d25, [ALLOC_PTR, 336]
-        stp     d26, d27, [ALLOC_PTR, 352]
-        stp     d28, d29, [ALLOC_PTR, 368]
-        stp     d30, d31, [ALLOC_PTR, 384]
-        add     ALLOC_PTR, ALLOC_PTR, #16
+        stp     x0, x1, [TMP, 16]
+        stp     x2, x3, [TMP, 32]
+        stp     x4, x5, [TMP, 48]
+        stp     x6, x7, [TMP, 64]
+        stp     x8, x9, [TMP, 80]
+        stp     x10, x11, [TMP, 96]
+        stp     x12, x13, [TMP, 112]
+        stp     x14, x15, [TMP, 128]
+        stp     x19, x20, [TMP, 144]
+        stp     x21, x22, [TMP, 160]
+        stp     x23, x24, [TMP, 176]
+        str     x25, [TMP, 192]
+        stp     d0, d1, [TMP, 208]
+        stp     d2, d3, [TMP, 224]
+        stp     d4, d5, [TMP, 240]
+        stp     d6, d7, [TMP, 256]
+        stp     d16, d17, [TMP, 272]
+        stp     d18, d19, [TMP, 288]
+        stp     d20, d21, [TMP, 304]
+        stp     d22, d23, [TMP, 320]
+        stp     d24, d25, [TMP, 336]
+        stp     d26, d27, [TMP, 352]
+        stp     d28, d29, [TMP, 368]
+        stp     d30, d31, [TMP, 384]
+        add     TMP, TMP, #16
+        str     TMP, Caml_state(gc_regs)
 .endm
 
-/* Undo SAVE_ALL_REGS. Expects gc_regs bucket in ALLOC_PTR */
+/* Undo SAVE_ALL_REGS by loading the registers saved in Caml_state(gc_regs)
+   and refreshing ALLOC_PTR & TRAP_PTR from Caml_state */
 .macro RESTORE_ALL_REGS
     /* Restore x0, x1, freeing up the next ptr slot */
-        sub     ALLOC_PTR, ALLOC_PTR, #16
-        ldp     x0, x1, [ALLOC_PTR, 16]
-        ldr     TMP, Caml_state(gc_regs_buckets)
-        str     TMP, [ALLOC_PTR, 0]  /* next ptr */
-        str     ALLOC_PTR, Caml_state(gc_regs_buckets)
+        ldr     TMP, Caml_state(gc_regs)
+        sub     TMP, TMP, #16
     /* Restore registers */
-        ldp     x2, x3, [ALLOC_PTR, 32]
-        ldp     x4, x5, [ALLOC_PTR, 48]
-        ldp     x6, x7, [ALLOC_PTR, 64]
-        ldp     x8, x9, [ALLOC_PTR, 80]
-        ldp     x10, x11, [ALLOC_PTR, 96]
-        ldp     x12, x13, [ALLOC_PTR, 112]
-        ldp     x14, x15, [ALLOC_PTR, 128]
-        ldp     x19, x20, [ALLOC_PTR, 144]
-        ldp     x21, x22, [ALLOC_PTR, 160]
-        ldp     x23, x24, [ALLOC_PTR, 176]
-        ldr     x25, [ALLOC_PTR, 192]
-        ldp     d0, d1, [ALLOC_PTR, 208]
-        ldp     d2, d3, [ALLOC_PTR, 224]
-        ldp     d4, d5, [ALLOC_PTR, 240]
-        ldp     d6, d7, [ALLOC_PTR, 256]
-        ldp     d16, d17, [ALLOC_PTR, 272]
-        ldp     d18, d19, [ALLOC_PTR, 288]
-        ldp     d20, d21, [ALLOC_PTR, 304]
-        ldp     d22, d23, [ALLOC_PTR, 320]
-        ldp     d24, d25, [ALLOC_PTR, 336]
-        ldp     d26, d27, [ALLOC_PTR, 352]
-        ldp     d28, d29, [ALLOC_PTR, 368]
-        ldp     d30, d31, [ALLOC_PTR, 384]
+        ldp     x0, x1, [TMP, 16]
+        ldp     x2, x3, [TMP, 32]
+        ldp     x4, x5, [TMP, 48]
+        ldp     x6, x7, [TMP, 64]
+        ldp     x8, x9, [TMP, 80]
+        ldp     x10, x11, [TMP, 96]
+        ldp     x12, x13, [TMP, 112]
+        ldp     x14, x15, [TMP, 128]
+        ldp     x19, x20, [TMP, 144]
+        ldp     x21, x22, [TMP, 160]
+        ldp     x23, x24, [TMP, 176]
+        ldr     x25, [TMP, 192]
+        ldp     d0, d1, [TMP, 208]
+        ldp     d2, d3, [TMP, 224]
+        ldp     d4, d5, [TMP, 240]
+        ldp     d6, d7, [TMP, 256]
+        ldp     d16, d17, [TMP, 272]
+        ldp     d18, d19, [TMP, 288]
+        ldp     d20, d21, [TMP, 304]
+        ldp     d22, d23, [TMP, 320]
+        ldp     d24, d25, [TMP, 336]
+        ldp     d26, d27, [TMP, 352]
+        ldp     d28, d29, [TMP, 368]
+        ldp     d30, d31, [TMP, 384]
+    /* Put gc_regs struct back in bucket linked list */
+        ldr     TMP2, Caml_state(gc_regs_buckets)
+        str     TMP2, [TMP, 0]  /* next ptr */
+        str     TMP, Caml_state(gc_regs_buckets)
     /* Reload new allocation pointer & exn handler */
         ldr     ALLOC_PTR, Caml_state(young_ptr)
         ldr     TRAP_PTR, Caml_state(exn_handler)
@@ -283,7 +288,7 @@ FUNCTION(caml_call_realloc_stack)
         stp     x29, x30, [sp, -16]!
         CFI_ADJUST(16)
         add     x29, sp, #0
-    /* Save all registers */
+    /* Save all registers (including ALLOC_PTR & TRAP_PTR) */
         SAVE_ALL_REGS
         ldr     C_ARG_1, [sp, 16] /* argument */
         SWITCH_OCAML_TO_C
@@ -312,18 +317,12 @@ L(caml_call_gc):
         stp     x29, x30, [sp, -16]!
         CFI_ADJUST(16)
         add     x29, sp, #0
-    /* Save current allocation pointer for debugging purposes */
-        str     ALLOC_PTR, Caml_state(young_ptr)
-    /* Save trap pointer in case an exception is raised during GC */
-        str     TRAP_PTR, Caml_state(exn_handler)
-    /* Store all registers */
+    /* Store all registers (including ALLOC_PTR & TRAP_PTR) */
         SAVE_ALL_REGS
-        str     ALLOC_PTR, Caml_state(gc_regs)
         SWITCH_OCAML_TO_C
     /* Call the garbage collector */
         bl      G(caml_garbage_collection)
         SWITCH_C_TO_OCAML
-        ldr     ALLOC_PTR, Caml_state(gc_regs)
         RESTORE_ALL_REGS
     /* Free stack space and return to caller */
         ldp     x29, x30, [sp], 16
@@ -384,9 +383,6 @@ FUNCTION(caml_c_call)
     /* Make the exception handler alloc ptr available to the C code */
         str     ALLOC_PTR, Caml_state(young_ptr)
         str     TRAP_PTR, Caml_state(exn_handler)
-    /* Preserve return address in callee-save register x19 */
-    /*    mov     x19, x30
-        CFI_REGISTER(30, 19) */
     /* Call the function */
         blr     ADDITIONAL_ARG
     /* Reload alloc ptr  */
