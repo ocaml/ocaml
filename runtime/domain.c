@@ -389,6 +389,31 @@ int caml_reallocate_minor_heap(asize_t wsize)
   return 0;
 }
 
+/* This variable is owned by [all_domains_lock]. */
+static uintnat next_domain_unique_id = 0;
+
+/* Precondition: you must own [all_domains_lock].
+
+   Specification:
+   - returns 0 on the first call
+     (we want the main domain to have unique_id 0)
+   - returns distinct ids unless there is an overflow
+   - never returns 0 again, even in presence of overflow.
+ */
+static uintnat fresh_domain_unique_id(void) {
+    uintnat next = next_domain_unique_id++;
+
+    /* On 32-bit systems, there is a risk of wraparound of the unique
+       id counter. We have decided to let that happen and live with
+       it, but we still ensure that id 0 is not reused, to avoid
+       having new domains believe that they are the main domain. */
+    if (next_domain_unique_id == 0)
+      next_domain_unique_id++;
+
+    return next;
+}
+
+
 /* must be run on the domain's thread */
 static void create_domain(uintnat initial_minor_heap_wsize) {
   dom_internal* d = 0;
@@ -421,6 +446,7 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
       s->interrupt_word = young_limit;
       atomic_store_rel(young_limit, (uintnat)domain_state->young_start);
     }
+    s->unique_id = fresh_domain_unique_id();
     s->running = 1;
     atomic_fetch_add(&caml_num_domains_running, 1);
   }
@@ -596,7 +622,7 @@ void caml_init_domains(uintnat minor_heap_wsz) {
                         &dom->interruptor.lock);
     dom->interruptor.running = 0;
     dom->interruptor.terminating = 0;
-    dom->interruptor.unique_id = i;
+    dom->interruptor.unique_id = 0;
     dom->interruptor.interrupt_pending = 0;
 
     caml_plat_mutex_init(&dom->domain_lock);
@@ -616,6 +642,7 @@ void caml_init_domains(uintnat minor_heap_wsz) {
 
   create_domain(minor_heap_wsz);
   if (!domain_self) caml_fatal_error("Failed to create main domain");
+  CAMLassert (domain_self->state->unique_id == 0);
 
   caml_init_signal_handling();
 
@@ -656,15 +683,21 @@ static void free_domain_ml_values(struct domain_ml_values* ml_values) {
   caml_stat_free(ml_values);
 }
 
+/* This is the structure of the data exchanged between the parent
+   domain and child domain during domain_spawn. Some fields are 'in'
+   parameters, passed from the parent to the child, others are 'out'
+   parameters returned to the parent by the child.
+*/
 struct domain_startup_params {
-  struct interruptor* parent;
-  enum domain_status status;
-  struct domain_ml_values* ml_values;
-  dom_internal* newdom;
-  uintnat unique_id;
+  struct interruptor* parent; /* in */
+  enum domain_status status; /* in+out:
+                                parent and child synchronize on this value. */
+  struct domain_ml_values* ml_values; /* in */
+  dom_internal* newdom; /* out */
+  uintnat unique_id; /* out */
 #ifndef _WIN32
   /* signal mask to set after it is safe to do so */
-  sigset_t* mask;
+  sigset_t* mask; /* in */
 #endif
 };
 
@@ -929,7 +962,7 @@ CAMLprim value caml_domain_spawn(value callback, value mutex)
 CAMLprim value caml_ml_domain_id(value unit)
 {
   CAMLnoalloc;
-  return Val_int(domain_self->interruptor.unique_id);
+  return Val_long(domain_self->interruptor.unique_id);
 }
 
 CAMLprim value caml_ml_domain_unique_token (value unit)
@@ -1377,7 +1410,6 @@ static void domain_terminate (void)
       finished = 1;
       s->terminating = 0;
       s->running = 0;
-      s->unique_id += Max_domains;
 
       /* Remove this domain from stw_domains */
       remove_from_stw_domains(domain_self);
