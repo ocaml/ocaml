@@ -36,6 +36,7 @@ let create n =
 
 let contents b = Bytes.sub_string b.buffer 0 b.position
 let to_bytes b = Bytes.sub b.buffer 0 b.position
+let unsafe_internal_buffer b = b.buffer
 
 let sub b ofs len =
   if ofs < 0 || len < 0 || ofs > b.position - len

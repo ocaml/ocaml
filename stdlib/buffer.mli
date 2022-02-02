@@ -80,6 +80,17 @@ val nth : t -> int -> char
 val length : t -> int
 (** Return the number of characters currently contained in the buffer. *)
 
+val unsafe_internal_buffer : t -> bytes
+(** Access the internal byte buffer.
+
+    The content of [unsafe_internal_buffer b]
+    is only defined within [0 ... Buffer.length b-1], and is invalidated
+    as soon as any length-modifying function is called (e.g. {!add_char}, {!clear},
+    {!truncate}).
+
+    @since 4.14
+*)
+
 val clear : t -> unit
 (** Empty the buffer. *)
 
