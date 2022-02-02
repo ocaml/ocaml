@@ -47,6 +47,9 @@
    For instance with the following type definitions,</li>
 </ul>
 </div>
+<ul class="info-attributes">
+<li><b>Concurrent-unsafe</b></li>
+</ul>
 </div>
 <hr width="100%">
 

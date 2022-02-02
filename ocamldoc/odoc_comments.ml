@@ -80,7 +80,15 @@ module Info_retriever =
                    (n, MyTexter.text_of_string s)) !Odoc_comments_global.raised_exceptions);
                  i_return_value =
                  (match !Odoc_comments_global.return_value with
-                   None -> None | Some s -> Some (MyTexter.text_of_string s)) ;
+                     None -> None | Some s -> Some (MyTexter.text_of_string s)) ;
+                   i_concurrency = (match !Odoc_comments_global.concurrency with
+                       | None -> None
+                       | Some "systhread-safe" -> Some Systhread_safe
+                       | Some "fiber-safe" -> Some Fiber_safe
+                       | Some "domain-safe" -> Some Domain_safe
+                       | Some "concurrent-unsafe" -> Some Concurrent_unsafe
+                       | Some s -> raise (Failure (Odoc_messages.not_a_valid_concurrency_tag s))
+                     );
                  i_custom = (List.map
                                (fun (tag, s) -> (tag, MyTexter.text_of_string s))
                                !Odoc_comments_global.customs)
@@ -229,6 +237,7 @@ let info_of_string s =
       i_params = [] ;
       i_raised_exceptions = [] ;
       i_return_value = None ;
+      i_concurrency = None;
       i_custom = [] ;
     }
   in

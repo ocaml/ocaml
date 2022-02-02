@@ -281,6 +281,8 @@ let should_escape_at_sign = "The character @ has a special meaning in ocamldoc c
 If you want to write a single @, you must escape it as \\@."
 let bad_tree = "Incorrect tree structure."
 let not_a_valid_tag s = s^" is not a valid tag."
+let not_a_valid_concurrency_tag s =
+  Printf.sprintf "%S is not a valid concurrency safety level." s
 let fun_without_param f = "Function "^f^" has no parameter.";;
 let method_without_param f = "Method "^f^" has no parameter.";;
 let anonymous_parameters f = "Function "^f^" has anonymous parameters."

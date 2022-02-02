@@ -25,6 +25,9 @@
 <div class="info-desc">
 <p>Check that all toplevel items are given a unique id.</p>
 </div>
+<ul class="info-attributes">
+<li><b>Concurrent-unsafe</b></li>
+</ul>
 </div>
 <hr width="100%">
 

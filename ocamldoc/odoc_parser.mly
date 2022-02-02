@@ -37,6 +37,11 @@ let blank = "[ \010\013\009\012]"
 %token T_DEPRECATED
 %token T_RAISES
 %token T_RETURN
+%token T_CONCURRENT_UNSAFE
+%token T_SYSTHREAD_SAFE
+%token T_FIBER_SAFE
+%token T_DOMAIN_SAFE
+%token T_CONCURRENCY
 %token <string> T_CUSTOM
 
 %token EOF
@@ -85,6 +90,7 @@ element:
 | deprecated { () }
 | raise_exc { () }
 | return { () }
+| concurrency { () }
 | custom { () }
 ;
 
@@ -160,7 +166,18 @@ raise_exc:
 return:
     T_RETURN Desc { return_value := Some $2 }
 ;
+concurrency:
+  | T_CONCURRENCY Desc { concurrency := Some $2 }
+  | T_CONCURRENT_UNSAFE Desc { concurrency := Some "concurrent-unsafe" }
+  | T_SYSTHREAD_SAFE Desc { concurrency := Some "systhread-safe" }
+  | T_FIBER_SAFE Desc { concurrency := Some "fiber-safe" }
+  | T_DOMAIN_SAFE Desc { concurrency := Some "domain-safe" }
+  | T_CONCURRENT_UNSAFE { concurrency := Some "concurrent-unsafe" }
+  | T_SYSTHREAD_SAFE { concurrency := Some "systhread-safe" }
+  | T_FIBER_SAFE { concurrency := Some "fiber-safe" }
+  | T_DOMAIN_SAFE { concurrency := Some "domain-safe" }
 
+;
 custom:
     T_CUSTOM Desc { customs := !customs @ [($1, $2)] }
 ;

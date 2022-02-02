@@ -89,7 +89,7 @@ let remove_stars s =
   Str.global_replace (Str.regexp ("^"^blank^"*\\*")) "" s
 }
 
-let lowercase = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
+let lowercase = ['a'-'z' '\223'-'\246' '\248'-'\255' '_' '-']
 let uppercase = ['A'-'Z' '\192'-'\214' '\216'-'\222']
 let identchar =
   ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
@@ -319,6 +319,16 @@ and elements = parse
              T_RAISES
          | "return" ->
              T_RETURN
+         | "concurrency" ->
+             T_CONCURRENCY
+         | "systhread-safe" ->
+             T_SYSTHREAD_SAFE
+         | "fiber-safe" ->
+             T_FIBER_SAFE
+         | "domain-safe" ->
+             T_DOMAIN_SAFE
+         | "concurrent-unsafe"  ->
+             T_CONCURRENT_UNSAFE
          | s ->
              if !Odoc_global.no_custom_tags then
                raise (Failure (Odoc_messages.not_a_valid_tag s))

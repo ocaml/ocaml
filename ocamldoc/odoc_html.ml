@@ -644,6 +644,17 @@ class virtual info =
           self#html_of_text b [Raw s];
           bs b "</li>\n"
 
+    (** Print html code for the concurrency safety information .*)
+    method html_of_concurrency b toplevel clevel =
+      match clevel with
+      | Some Domain_safe -> bp b "<li><b>Domain-safe</b></li>\n"
+      | Some Fiber_safe -> bp b "<li><b>Fiber-safe</b></li>\n"
+      | Some Systhread_safe -> bp b "<li><b>Systhread-safe</b></li>\n"
+      | Some Concurrent_unsafe -> bp b "<li><b>Concurrent-unsafe</b></li>\n"
+      | None ->
+          if toplevel then
+            bp b "<li><b>Concurrent-unsafe</b></li>\n"
+
     (** Print html code for the given "before" information.*)
     method html_of_before b l =
       let f (v, text) =
@@ -731,7 +742,7 @@ class virtual info =
        @param indent can be specified not to use the style of info comments;
        default is [true].
     *)
-    method html_of_info ?(cls="") ?(indent=true) b info_opt =
+    method html_of_info ?(cls="") ?(toplevel=false) ?(indent=true) b info_opt =
       match info_opt with
         None ->
           ()
@@ -767,6 +778,7 @@ class virtual info =
           self#html_of_raised_exceptions b' info.M.i_raised_exceptions;
           self#html_of_return_opt b' info.M.i_return_value;
           self#html_of_sees b' info.M.i_sees;
+          self#html_of_concurrency b' toplevel info.M.i_concurrency;
           self#html_of_custom b' info.M.i_custom;
           if Buffer.length b' > 0 then
             begin
@@ -2063,7 +2075,7 @@ class html =
       if info then
         (
          if complete then
-           self#html_of_info ~cls: "module top" ~indent: true
+           self#html_of_info ~cls: "module top" ~indent: true ~toplevel:true
          else
            self#html_of_info_first_sentence
         ) b m.m_info
@@ -2094,7 +2106,7 @@ class html =
       if info then
         (
          if complete then
-           self#html_of_info ~cls: "modtype top" ~indent: true
+           self#html_of_info ~cls: "modtype top" ~indent: true ~toplevel:true
          else
            self#html_of_info_first_sentence
         ) b mt.mt_info
@@ -2249,7 +2261,7 @@ class html =
       bs b "</pre>" ;
       (
        if complete then
-         self#html_of_info ~cls: "class top" ~indent: true
+         self#html_of_info ~cls: "class top" ~indent: true ~toplevel:false
        else
          self#html_of_info_first_sentence
       ) b c.cl_info
@@ -2292,7 +2304,7 @@ class html =
       bs b "</pre>";
       (
        if complete then
-         self#html_of_info ~cls: "classtype top" ~indent: true
+         self#html_of_info ~cls: "classtype top" ~indent: true ~toplevel:false
        else
          self#html_of_info_first_sentence
       ) b ct.clt_info

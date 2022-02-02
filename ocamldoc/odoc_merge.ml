@@ -124,6 +124,9 @@ let merge_info merge_options (m1 : info) (m2 : info) =
     merge_opt (List.mem Merge_return_value merge_options)
       m1.i_return_value m2.i_return_value (fun t1 t2 -> t1 @ (Newline :: t2))
   in
+  let new_concurrency =
+    merge_opt false m1.i_concurrency m2.i_concurrency (fun x _ -> x)
+  in
   let new_custom = merge_lists (List.mem Merge_return_value merge_options)
       m1.i_custom m2.i_custom (@)
   in
@@ -138,6 +141,7 @@ let merge_info merge_options (m1 : info) (m2 : info) =
     Odoc_types.i_params = new_params ;
     Odoc_types.i_raised_exceptions = new_raised_exceptions ;
     Odoc_types.i_return_value = new_rv ;
+    Odoc_types.i_concurrency = new_concurrency;
     Odoc_types.i_custom = new_custom ;
   }
 

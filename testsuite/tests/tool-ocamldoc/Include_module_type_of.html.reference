@@ -19,6 +19,9 @@
 <div class="info-desc">
 <p>Test <code class="code"><span class="keyword">include</span>&nbsp;<span class="keyword">module</span>&nbsp;<span class="keyword">type</span>&nbsp;<span class="keyword">of</span>...</code> variants</p>
 </div>
+<ul class="info-attributes">
+<li><b>Concurrent-unsafe</b></li>
+</ul>
 </div>
 <hr width="100%">
 

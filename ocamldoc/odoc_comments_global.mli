@@ -45,6 +45,10 @@ val raised_exceptions : (string * string) list ref
 (** the description of the return value *)
 val return_value : string option ref
 
+
+(** the description of the return value *)
+val concurrency : string option ref
+
 (** the strings associated to custom tags. *)
 val customs : (string * string) list ref
 

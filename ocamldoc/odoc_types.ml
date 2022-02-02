@@ -67,6 +67,12 @@ type param = (string * text)
 
 type raised_exception = (string * text)
 
+type concurrency_safety_level =
+  | Concurrent_unsafe
+  | Systhread_safe
+  | Fiber_safe
+  | Domain_safe
+
 type info = {
     i_desc : text option;
     i_authors : string list;
@@ -78,6 +84,7 @@ type info = {
     i_params : param list;
     i_raised_exceptions : raised_exception list;
     i_return_value : text option ;
+    i_concurrency : concurrency_safety_level option;
     i_custom : (string * text) list ;
   }
 
@@ -92,6 +99,7 @@ let dummy_info = {
   i_params = [] ;
   i_raised_exceptions = [] ;
   i_return_value = None ;
+  i_concurrency = None;
   i_custom = [] ;
 }
 

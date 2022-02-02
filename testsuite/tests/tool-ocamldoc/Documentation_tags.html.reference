@@ -19,6 +19,9 @@
 <div class="info-desc">
 <p>Test the html rendering of ocamldoc documentation tags</p>
 </div>
+<ul class="info-attributes">
+<li><b>Concurrent-unsafe</b></li>
+</ul>
 </div>
 <hr width="100%">
 
@@ -31,6 +34,7 @@
 <li><b>Since</b> Now</li>
 <li><b>Returns</b> ()</li>
 <li><b>See also</b> <i>Documentation_tags.mli</i> Self reference</li>
+<li><b>Domain-safe</b></li>
 </ul>
 </div>
 

@@ -71,6 +71,12 @@ type param = (string * text)
 
 type raised_exception = (string * text)
 
+type concurrency_safety_level = Odoc_types.concurrency_safety_level =
+  | Concurrent_unsafe
+  | Systhread_safe
+  | Fiber_safe
+  | Domain_safe
+
 type info = Odoc_types.info = {
     i_desc : text option;
     i_authors : string list;
@@ -82,6 +88,7 @@ type info = Odoc_types.info = {
     i_params : param list;
     i_raised_exceptions : raised_exception list;
     i_return_value : text option ;
+    i_concurrency: concurrency_safety_level option;
     i_custom : (string * text) list ;
   }
 

@@ -49,6 +49,7 @@
 <ul class="info-attributes">
 <li><b>Author(s):</b> : Florian Angeletti</li>
 <li><b>Version:</b> : 1</li>
+<li><b>Concurrent-unsafe</b></li>
 </ul>
 </div>
 <hr width="100%">

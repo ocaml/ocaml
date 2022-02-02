@@ -22,6 +22,9 @@
 <p>This test focuses on the printing of documentation for inline record
   within the latex generator.</p>
 </div>
+<ul class="info-attributes">
+<li><b>Concurrent-unsafe</b></li>
+</ul>
 </div>
 <hr width="100%">
 

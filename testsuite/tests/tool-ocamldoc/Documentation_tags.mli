@@ -14,6 +14,7 @@ val heterological: unit
  @see "Documentation_tags.mli" Self reference
  @since Now
  @before Time not implemented
+ @domain-safe
 *)
 
 val noop: unit

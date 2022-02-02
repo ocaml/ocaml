@@ -84,6 +84,14 @@ type param = (string * text)
 (** Raised exception name and description. *)
 type raised_exception = (string * text)
 
+(** The safety level with respect to concurrent executions *)
+type concurrency_safety_level = Odoc_types.concurrency_safety_level =
+  | Concurrent_unsafe
+  | Systhread_safe
+  | Fiber_safe
+  | Domain_safe
+
+
 (** Information in a special comment
 @before 3.12.0 \@before information was not present.
 *)
@@ -98,6 +106,7 @@ type info = Odoc_types.info = {
     i_params : param list; (** The list of parameter descriptions. *)
     i_raised_exceptions : raised_exception list; (** The list of raised exceptions. *)
     i_return_value : text option; (** The description text of the return value. *)
+    i_concurrency: concurrency_safety_level option; (** The safety level for concurrent use *)
     i_custom : (string * text) list ; (** A text associated to a custom @-tag. *)
   }
 

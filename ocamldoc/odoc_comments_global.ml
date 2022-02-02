@@ -35,6 +35,8 @@ let raised_exceptions = ref ([] : (string * string) list)
 
 let return_value = ref (None : string option)
 
+let concurrency = ref (None : string option)
+
 let customs = ref []
 
 let init () =
@@ -48,4 +50,5 @@ let init () =
   params := [];
   raised_exceptions := [];
   return_value := None ;
+  concurrency := None;
   customs := []

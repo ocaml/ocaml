@@ -19,6 +19,9 @@
 <div class="info-desc">
 <p>This test is here to check the latex code generated for variants</p>
 </div>
+<ul class="info-attributes">
+<li><b>Concurrent-unsafe</b></li>
+</ul>
 </div>
 <hr width="100%">
 
