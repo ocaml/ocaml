@@ -216,34 +216,47 @@ CAMLprim value caml_gc_minor(value v)
   return Val_unit;
 }
 
-CAMLprim value caml_gc_major(value v)
+static value gc_major_exn(void)
 {
+  value exn = Val_unit;
   CAML_EV_BEGIN(EV_EXPLICIT_GC_MAJOR);
-  CAMLassert (v == Val_unit);
   caml_gc_log ("Major GC cycle requested");
   caml_empty_minor_heaps_once();
   caml_finish_major_cycle();
-  caml_final_do_calls ();
+  exn = caml_final_do_calls_exn();
   CAML_EV_END(EV_EXPLICIT_GC_MAJOR);
-  return Val_unit;
+  return exn;
 }
 
-CAMLprim value caml_gc_full_major(value v)
+CAMLprim value caml_gc_major(value v)
+{
+  CAMLassert (v == Val_unit);
+  return caml_raise_if_exception(gc_major_exn());
+}
+
+static value gc_full_major_exn(void)
 {
   int i;
+  value exn = Val_unit;
   CAML_EV_BEGIN(EV_EXPLICIT_GC_FULL_MAJOR);
-  CAMLassert (v == Val_unit);
   caml_gc_log ("Full Major GC requested");
   /* In general, it can require up to 3 GC cycles for a
      currently-unreachable object to be collected. */
   for (i = 0; i < 3; i++) {
     caml_empty_minor_heaps_once();
     caml_finish_major_cycle();
-    caml_final_do_calls ();
+    exn = caml_final_do_calls_exn ();
+    if (Is_exception_result(exn)) break;
   }
   ++ Caml_state->stat_forced_major_collections;
   CAML_EV_END(EV_EXPLICIT_GC_FULL_MAJOR);
-  return Val_unit;
+  return exn;
+}
+
+CAMLprim value caml_gc_full_major(value v)
+{
+  CAMLassert (v == Val_unit);
+  return caml_raise_if_exception(gc_full_major_exn());
 }
 
 CAMLprim value caml_gc_major_slice (value v)
@@ -257,23 +270,25 @@ CAMLprim value caml_gc_major_slice (value v)
 
 CAMLprim value caml_gc_compaction(value v)
 {
+  value exn = Val_unit;
   CAML_EV_BEGIN(EV_EXPLICIT_GC_COMPACT);
   CAMLassert (v == Val_unit);
-  caml_gc_major(v);
+  exn = gc_major_exn();
   ++ Caml_state->stat_forced_major_collections;
   CAML_EV_END(EV_EXPLICIT_GC_COMPACT);
-  return Val_unit;
+  return exn;
 }
-
 
 CAMLprim value caml_gc_stat(value v)
 {
-  value result;
+  value res;
   CAML_EV_BEGIN(EV_EXPLICIT_GC_STAT);
-  caml_gc_full_major(Val_unit);
-  result = caml_gc_quick_stat(Val_unit);
+  res = gc_full_major_exn();
+  if (Is_exception_result(res)) goto out;
+  res = caml_gc_quick_stat(Val_unit);
+ out:
   CAML_EV_END(EV_EXPLICIT_GC_STAT);
-  return result;
+  return caml_raise_if_exception(res);
 }
 
 CAMLprim value caml_get_minor_free (value v)
