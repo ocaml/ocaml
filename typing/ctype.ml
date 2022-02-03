@@ -1189,12 +1189,16 @@ let existential_name cstr ty =
   | Tvar (Some name) -> "$" ^ cstr.cstr_name ^ "_'" ^ name
   | _ -> "$" ^ cstr.cstr_name
 
-let instance_constructor ?in_pattern cstr =
+type existential_treatment =
+  | Keep_existentials_flexible
+  | Make_existentials_abstract of { env: Env.t ref; scope: int }
+
+let instance_constructor existential_treatment cstr =
   For_copy.with_scope (fun scope ->
     let copy_existential =
-      match in_pattern with
-      | None -> copy scope
-      | Some (env, fresh_constr_scope) ->
+      match existential_treatment with
+      | Keep_existentials_flexible -> copy scope
+      | Make_existentials_abstract {env; scope = fresh_constr_scope} ->
           fun existential ->
             let decl = new_local_type () in
             let name = existential_name cstr existential in
