@@ -714,9 +714,12 @@ let solve_Ppat_construct ~refine env loc constr no_existentials
         ty_args, ty_res, unify_res ty_res, None
     | Some (name_list, sty) ->
         let existential_treatment =
-          if name_list = []
-          then default_existential_treatment
-          else Keep_existentials_flexible
+          if name_list = [] then
+            default_existential_treatment
+          else
+            (* we will unify them (in solve_constructor_annotation) with the
+               local types provided by the user *)
+            Keep_existentials_flexible
         in
         let ty_args, ty_res, ty_ex =
           instance_constructor existential_treatment constr
