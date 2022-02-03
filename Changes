@@ -23,6 +23,12 @@ Working version
   (Guillaume Munch-Maccagnoni, review by Enguerrand Decorne, Xavier
   Leroy, Gabriel Scherer, and KC Sivaramakrishnan)
 
+- #10875: Add option to allocate stacks with mmap(MAP_STACK) instead of malloc.
+  This is exposed via a configure --enable-mmap-map-stack option, and is
+  enabled by default on OpenBSD where it is mandatory.
+  (Anil Madhavapeddy, review by Gabriel Scherer, Tom Kelly,
+   Michael Hendricks and KC Sivaramakrishnan).
+
 ### Code generation and optimizations:
 
 ### Standard library:
