@@ -55,7 +55,8 @@ Working version
   Unix.SO_ERROR.
   (Nicolás Ojeda Bär, review by Damien Doligez)
 
-* #10982: Add Buffer.unsafe_internal_buffer, to access the buffer's internal bytes.
+* #10982: Add Buffer.unsafe_internal_buffer, to access the
+  buffer's internal bytes.
   (Simon Cruanes)
 
 ### Other libraries:
