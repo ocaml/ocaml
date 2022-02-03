@@ -253,7 +253,7 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner
 val bscanf_opt : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner_opt
 (** Same as {!Scanf.bscanf}, but returns [None] in case of scanning failure.
 
-    @since 5.01.0 *)
+    @since 5.00.0 *)
 
 (** {1 Format string description} *)
 
@@ -474,7 +474,7 @@ val sscanf : string -> ('a, 'b, 'c, 'd) scanner
 val sscanf_opt : string -> ('a, 'b, 'c, 'd) scanner_opt
 (** Same as {!Scanf.sscanf}, but returns [None] in case of scanning failure.
 
-    @since 5.01.0 *)
+    @since 5.00.0 *)
 
 val scanf : ('a, 'b, 'c, 'd) scanner
 (** Same as {!Scanf.bscanf}, but reads from the predefined formatted input
@@ -484,7 +484,7 @@ val scanf : ('a, 'b, 'c, 'd) scanner
 val scanf_opt : ('a, 'b, 'c, 'd) scanner_opt
 (** Same as {!Scanf.scanf}, but returns [None] in case of scanning failure.
 
-    @since 5.01.0 *)
+    @since 5.00.0 *)
 
 val kscanf :
   Scanning.in_channel -> (Scanning.in_channel -> exn -> 'd) ->
