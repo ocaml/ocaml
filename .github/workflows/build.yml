@@ -42,6 +42,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      - name: OS Dependencies
+        if: runner.os == 'MacOS'
+        run: brew install parallel
       - name: configure tree
         run: |
           CONFIG_ARG=${{ matrix.config_arg }} MAKE_ARG=-j XARCH=x64 bash -xe tools/ci/actions/runner.sh configure
