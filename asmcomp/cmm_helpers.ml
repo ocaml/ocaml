@@ -628,6 +628,9 @@ let rec remove_unit = function
 let mk_load_mut memory_chunk =
   Cload {memory_chunk; mutability=Mutable; is_atomic=false}
 
+let mk_load_atomic memory_chunk =
+  Cload {memory_chunk; mutability=Mutable; is_atomic=true}
+
 let field_address ptr n dbg =
   if n = 0
   then ptr

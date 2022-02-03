@@ -574,27 +574,27 @@ let emit_instr env fallthrough i =
       if n <> 0
       then cfi_adjust_cfa_offset n;
       env.stack_offset <- env.stack_offset + n
-  | Lop(Iload(chunk, addr, _mut)) ->
+  | Lop(Iload { memory_chunk; addressing_mode; _ }) ->
       let dest = res i 0 in
-      begin match chunk with
+      begin match memory_chunk with
       | Word_int | Word_val ->
-          I.mov (addressing addr QWORD i 0) dest
+          I.mov (addressing addressing_mode QWORD i 0) dest
       | Byte_unsigned ->
-          I.movzx (addressing addr BYTE i 0) dest
+          I.movzx (addressing addressing_mode BYTE i 0) dest
       | Byte_signed ->
-          I.movsx (addressing addr BYTE i 0) dest
+          I.movsx (addressing addressing_mode BYTE i 0) dest
       | Sixteen_unsigned ->
-          I.movzx (addressing addr WORD i 0) dest
+          I.movzx (addressing addressing_mode WORD i 0) dest
       | Sixteen_signed ->
-          I.movsx (addressing addr WORD i 0) dest;
+          I.movsx (addressing addressing_mode WORD i 0) dest;
       | Thirtytwo_unsigned ->
-          I.mov (addressing addr DWORD i 0) (res32 i 0)
+          I.mov (addressing addressing_mode DWORD i 0) (res32 i 0)
       | Thirtytwo_signed ->
-          I.movsxd (addressing addr DWORD i 0) dest
+          I.movsxd (addressing addressing_mode DWORD i 0) dest
       | Single ->
-          I.cvtss2sd (addressing addr REAL4 i 0) dest
+          I.cvtss2sd (addressing addressing_mode REAL4 i 0) dest
       | Double ->
-          I.movsd (addressing addr REAL8 i 0) dest
+          I.movsd (addressing addressing_mode REAL8 i 0) dest
       end
   | Lop(Istore(chunk, addr, _)) ->
       begin match chunk with
