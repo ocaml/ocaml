@@ -104,6 +104,7 @@ module Error = struct
     missings: signature_item list;
     incompatibles: (Ident.t * sigitem_symptom) list;
     oks: (int * module_coercion) list;
+    leftovers: (signature_item * signature_item * int) list;
   }
   and sigitem_symptom =
     | Core of core_sigitem_symptom
@@ -361,6 +362,47 @@ let retrieve_functor_params env mty =
    Return the restriction that transforms a value of the smaller type
    into a value of the bigger type. *)
 
+(* When computing a signature difference, we need to distinguish between
+   recoverable errors at the value level and unrecoverable errors at the type
+   level that require us to stop the computation of the difference due to
+   incoherent types.
+*)
+type 'a recoverable_error = { error: 'a; recoverable:bool }
+let mark_error_as_recoverable r =
+  Result.map_error (fun error -> { error; recoverable=true}) r
+let mark_error_as_unrecoverable r =
+  Result.map_error (fun error -> { error; recoverable=false}) r
+
+
+module Sign_diff = struct
+  type t = {
+    runtime_coercions: (int * Typedtree.module_coercion) list;
+    shape_map: Shape.Map.t;
+    deep_modifications:bool;
+    errors: (Ident.t * Error.sigitem_symptom) list;
+    leftovers: ((Types.signature_item as 'it) * 'it * int) list
+  }
+
+  let empty = {
+    runtime_coercions = [];
+    shape_map = Shape.Map.empty;
+    deep_modifications = false;
+    errors = [];
+    leftovers = []
+  }
+
+  let merge x y =
+    {
+      runtime_coercions = x.runtime_coercions @ y.runtime_coercions;
+      shape_map = y.shape_map;
+      (* the shape map is threaded the map during the difference computation,
+          the last shape map contains all previous elements. *)
+      deep_modifications = x.deep_modifications || y.deep_modifications;
+      errors = x.errors @ y.errors;
+      leftovers = x.leftovers @ y.leftovers
+    }
+end
+
 (**
    In the group of mutual functions below, the [~in_eq] argument is [true] when
    we are in fact checking equality of module types.
@@ -606,24 +648,31 @@ and signatures  ~in_eq ~loc env ~mark subst sig1 sig2 mod_shape =
      and the coercion to be applied to it. *)
   let rec pair_components subst paired unpaired = function
       [] ->
-        let oks, (shape_map, deep_modifications), errors =
+        let open Sign_diff in
+        let d =
           signature_components ~in_eq ~loc env ~mark new_env subst mod_shape
             Shape.Map.empty
             (List.rev paired)
         in
-        begin match unpaired, errors, oks with
-            | [], [], cc ->
+        begin match unpaired, d.errors, d.runtime_coercions, d.leftovers with
+            | [], [], cc, [] ->
                 let shape =
-                  if not deep_modifications && exported_len1 = exported_len2
+                  if not d.deep_modifications && exported_len1 = exported_len2
                   then mod_shape
-                  else Shape.str ?uid:mod_shape.Shape.uid shape_map
+                  else Shape.str ?uid:mod_shape.Shape.uid d.shape_map
                 in
                 if runtime_len1 = runtime_len2 then (* see PR#5098 *)
                   Ok (simplify_structure_coercion cc id_pos_list, shape)
                 else
                   Ok (Tcoerce_structure (cc, id_pos_list), shape)
-            | missings, incompatibles, cc ->
-                Error { env=new_env; Error.missings; incompatibles; oks=cc }
+            | missings, incompatibles, runtime_coercions, leftovers ->
+                Error {
+                  Error.env=new_env;
+                  missings;
+                  incompatibles;
+                  oks=runtime_coercions;
+                  leftovers;
+                }
         end
     | item2 :: rem ->
         let (id2, _loc, name2) = item_ident_name item2 in
@@ -668,7 +717,7 @@ and signatures  ~in_eq ~loc env ~mark subst sig1 sig2 mod_shape =
 and signature_components  ~in_eq ~loc old_env ~mark env subst
     orig_shape shape_map paired =
   match paired with
-  | [] -> [], (shape_map, false), []
+  | [] -> Sign_diff.{ empty with shape_map }
   | (sigi1, sigi2, pos) :: rem ->
       let shape_modified = ref false in
       let id, item, shape_map, present_at_runtime =
@@ -677,6 +726,7 @@ and signature_components  ~in_eq ~loc old_env ~mark env subst
             let item =
               value_descriptions ~loc env ~mark subst id1 valdecl1 valdecl2
             in
+            let item = mark_error_as_recoverable item in
             let present_at_runtime = match valdecl2.val_kind with
               | Val_prim _ -> false
               | _ -> true
@@ -687,12 +737,14 @@ and signature_components  ~in_eq ~loc old_env ~mark env subst
             let item =
               type_declarations ~loc ~old_env env ~mark subst id1 tydec1 tydec2
             in
+            let item = mark_error_as_unrecoverable item in
             let shape_map = Shape.Map.add_type_proj shape_map id1 orig_shape in
             id1, item, shape_map, false
         | Sig_typext(id1, ext1, _, _), Sig_typext(_id2, ext2, _, _) ->
             let item =
               extension_constructors ~loc env ~mark  subst id1 ext1 ext2
             in
+            let item = mark_error_as_unrecoverable item in
             let shape_map =
               Shape.Map.add_extcons_proj shape_map id1 orig_shape
             in
@@ -727,6 +779,7 @@ and signature_components  ~in_eq ~loc old_env ~mark env subst
                     true, Result.map (fun i -> Tcoerce_alias (env, p1, i)) item
                 | Mp_absent, Mp_present, _ -> assert false
               in
+              let item = mark_error_as_unrecoverable item in
               id1, item, shape_map, present_at_runtime
             end
         | Sig_modtype(id1, info1, _), Sig_modtype(_id2, info2, _) ->
@@ -736,6 +789,7 @@ and signature_components  ~in_eq ~loc old_env ~mark env subst
             let shape_map =
               Shape.Map.add_module_type_proj shape_map id1 orig_shape
             in
+            let item = mark_error_as_unrecoverable item in
             id1, item, shape_map, false
         | Sig_class(id1, decl1, _, _), Sig_class(_id2, decl2, _, _) ->
             let item =
@@ -744,11 +798,13 @@ and signature_components  ~in_eq ~loc old_env ~mark env subst
             let shape_map =
               Shape.Map.add_class_proj shape_map id1 orig_shape
             in
+            let item = mark_error_as_unrecoverable item in
             id1, item, shape_map, true
         | Sig_class_type(id1, info1, _, _), Sig_class_type(_id2, info2, _, _) ->
             let item =
               class_type_declarations ~loc ~old_env env subst info1 info2
             in
+            let item = mark_error_as_unrecoverable item in
             let shape_map =
               Shape.Map.add_class_type_proj shape_map id1 orig_shape
             in
@@ -756,15 +812,28 @@ and signature_components  ~in_eq ~loc old_env ~mark env subst
         | _ ->
             assert false
       in
-      let oks, (final_map, deep_modifications), errors =
-        signature_components ~in_eq ~loc old_env ~mark env subst
-          orig_shape shape_map rem
+      let deep_modifications = !shape_modified in
+      let first =
+        match item with
+        | Ok x ->
+            let runtime_coercions =
+              if present_at_runtime then [pos,x] else []
+            in
+            Sign_diff.{ empty with deep_modifications; runtime_coercions }
+        | Error { error; recoverable=_ } ->
+            Sign_diff.{ empty with errors=[id,error]; deep_modifications }
       in
-      let final_map = final_map, deep_modifications || !shape_modified in
-      match item with
-      | Ok x when present_at_runtime -> (pos,x) :: oks, final_map, errors
-      | Ok _ -> oks, final_map, errors
-      | Error y -> oks , final_map, (id,y) :: errors
+      let continue = match item with
+        | Ok _ -> true
+        | Error x -> x.recoverable
+      in
+      let rest =
+        if continue then
+          signature_components ~in_eq ~loc old_env ~mark env subst
+            orig_shape shape_map rem
+        else Sign_diff.{ empty with leftovers=rem }
+       in
+       Sign_diff.merge first rest
 
 and module_declarations  ~in_eq ~loc env ~mark  subst id1 md1 md2 orig_shape =
   Builtin_attributes.check_alerts_inclusion

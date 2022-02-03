@@ -541,6 +541,10 @@ OCaml 4.14.0
 - #10822, #10823: Bad interaction between ambivalent types and subtyping
   coercions (Jacques Garrigue, report and review by Frédéric Bour)
 
+- #10836, #10952: avoid internal typechecker errors when checking signature
+  inclusion in presence of incompatible types.
+  (Florian Angeletti, report by Craig Ferguson, review by Gabriel Scherer)
+
 - #10849: Display the result of `let _ : <type> = <expr>` in the native
   toplevel, as in the bytecode toplevel.
   (David Allsopp, report by Nathan Rebours, review by Gabriel Scherer)
