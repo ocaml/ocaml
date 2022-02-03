@@ -1455,38 +1455,29 @@ fun ib fmt readers pad prec scan token -> match pad, prec with
 (******************************************************************************)
             (* Defining [scanf] and various flavors of [scanf] *)
 
-type 'a kscanf_result = Args of 'a | Exc of exn
-
-let rec apply : type a b . a -> (a, b) heter_list -> b = fun f args ->
-  match args with
-  | Cons (x, r) -> apply (f x) r
-  | Nil -> f
-
-let kscanf ib ef (Format (fmt, str)) =
-  let k readers f =
-    Scanning.reset_token ib;
-    match try Args (make_scanf ib fmt readers) with
-      | (Scan_failure _ | Failure _ | End_of_file) as exc -> Exc exc
-      | Invalid_argument msg ->
-        invalid_arg (msg ^ " in format \"" ^ String.escaped str ^ "\"")
-    with
-      | Args args -> apply f args
-      | Exc exc -> ef ib exc
+let kscanf_gen ib ef af (Format (fmt, str)) =
+  let rec apply : type a b . a -> (a, b) heter_list -> b =
+    fun f args -> match args with
+    | Cons (x, r) -> apply (f x) r
+    | Nil -> f
   in
-  take_format_readers k fmt
-
-let kscanf_opt ib (Format (fmt, str)) =
   let k readers f =
     Scanning.reset_token ib;
     match make_scanf ib fmt readers with
-    | exception (Scan_failure _ | Failure _ | End_of_file) ->
-        None
+    | exception (Scan_failure _ | Failure _ | End_of_file as exc) ->
+        ef ib exc
     | exception Invalid_argument msg ->
         invalid_arg (msg ^ " in format \"" ^ String.escaped str ^ "\"")
     | args ->
-        Some (apply f args)
+        af (apply f args)
   in
   take_format_readers k fmt
+
+let kscanf ib ef fmt =
+  kscanf_gen ib ef (fun x -> x) fmt
+
+let kscanf_opt ib fmt =
+  kscanf_gen ib (fun _ _ -> None) (fun x -> Some x) fmt
 
 (***)
 
