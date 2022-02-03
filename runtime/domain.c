@@ -829,10 +829,11 @@ CAMLexport void (*caml_domain_stop_hook)(void) =
 CAMLexport void (*caml_domain_external_interrupt_hook)(void) =
    caml_domain_external_interrupt_hook_default;
 
-static void domain_terminate(struct domain_ml_values * ml_values);
+static void domain_terminate();
 
 static void* domain_thread_func(void* v)
 {
+  sync_mutex terminate_mutex = NULL;
   struct domain_startup_params* p = v;
   struct domain_ml_values *ml_values = p->ml_values;
 #ifndef _WIN32
@@ -847,10 +848,10 @@ static void* domain_thread_func(void* v)
   caml_plat_lock(&p->parent->lock);
   if (domain_self) {
     /* this domain is part of STW sections, so can read ml_values */
-    /* we lock the termination mutex here and unlock in domain_terminate,
-       when the domain is torn down.
-       This provides a simple block for domains attempting to join */
-    caml_ml_mutex_lock(ml_values->mutex);
+    terminate_mutex = Mutex_val(ml_values->mutex);
+    /* we lock terminate_mutex here and unlock when the domain is torn down
+      this provides a simple block for domains attempting to join */
+    caml_mutex_lock(terminate_mutex);
     p->status = Dom_started;
     p->unique_id = domain_self->interruptor.unique_id;
   } else {
@@ -873,7 +874,10 @@ static void* domain_thread_func(void* v)
     caml_domain_set_name("Domain");
     caml_domain_start_hook();
     caml_callback(ml_values->callback, Val_unit);
-    domain_terminate(ml_values); /* will unlock the termination mutex */
+    domain_terminate();
+    /* Joining domains will lock/unlock the terminate_mutex so this unlock will
+       release them if any domains are waiting. */
+    caml_mutex_unlock(terminate_mutex);
     free_domain_ml_values(ml_values);
   } else {
     caml_gc_log("Failed to create domain");
@@ -1363,7 +1367,7 @@ int caml_domain_is_terminating (void)
   return s->terminating;
 }
 
-static void domain_terminate (struct domain_ml_values * ml_values)
+static void domain_terminate (void)
 {
   caml_domain_state* domain_state = domain_self->state;
   struct interruptor* s = &domain_self->interruptor;
@@ -1406,13 +1410,6 @@ static void domain_terminate (struct domain_ml_values * ml_values)
       finished = 1;
       s->terminating = 0;
       s->running = 0;
-
-      /* Unlock the termination mutex so that other domains waiting
-         for the termination of this domain are woken up.
-         This needs to be done while we're still part of the STW group,
-         to be sure that ml_values->mutex (a heap-allocated Custom block)
-         is not being moved by a concurrent GC. */
-      caml_ml_mutex_unlock(ml_values->mutex);
 
       /* Remove this domain from stw_domains */
       remove_from_stw_domains(domain_self);

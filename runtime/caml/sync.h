@@ -13,7 +13,7 @@
 /*                                                                        */
 /**************************************************************************/
 
-/* Operations on mutexes and condition variables from the OCaml stdlib */
+/* Operations on mutexes from the OCaml stdlib */
 
 #ifndef CAML_SYNC_H
 #define CAML_SYNC_H
@@ -22,23 +22,12 @@
 
 #include "mlvalues.h"
 
-/* Mutex.lock: Mutex.t -> unit */
-CAMLextern value caml_ml_mutex_lock(value mut);
+typedef pthread_mutex_t * sync_mutex;
 
-/* Mutex.unlock: Mutex.t -> unit */
-CAMLextern value caml_ml_mutex_unlock(value mut);
+#define Mutex_val(v) (* ((sync_mutex *) Data_custom_val(v)))
 
-/* Mutex.try_lock: Mutex.t -> bool */
-CAMLextern value caml_ml_mutex_try_lock(value mut);
-
-/* Condition.wait: Condition.t -> Mutex.t -> unit */
-CAMLextern value caml_ml_condition_wait(value cond, value mut);
-
-/* Condition.signal: Condition.t -> unit */
-CAMLextern value caml_ml_condition_signal(value cond);
-
-/* Condition.broadcast: Condition.t -> unit */
-CAMLextern value caml_ml_condition_broadcast(value cond);
+CAMLextern int caml_mutex_lock(sync_mutex mut);
+CAMLextern int caml_mutex_unlock(sync_mutex mut);
 
 #endif /* CAML_INTERNALS */
 

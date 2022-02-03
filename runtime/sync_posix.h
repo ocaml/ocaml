@@ -24,9 +24,9 @@ typedef int sync_retcode;
 
 /* Mutexes */
 
-typedef pthread_mutex_t * sync_mutex;
-
-#define Mutex_val(v) (* ((sync_mutex *) Data_custom_val(v)))
+/* Already defined in <caml/sync.h> */
+/* typedef pthread_mutex_t * sync_mutex; */
+/* #define Mutex_val(v) (* ((sync_mutex *) Data_custom_val(v))) */
 
 Caml_inline int sync_mutex_create(sync_mutex * res)
 {
