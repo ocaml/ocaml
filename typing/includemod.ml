@@ -820,11 +820,8 @@ and signature_components  ~in_eq ~loc old_env ~mark env subst
               if present_at_runtime then [pos,x] else []
             in
             Sign_diff.{ empty with deep_modifications; runtime_coercions }
-        | Error { recoverable = true; error } ->
+        | Error { error; recoverable=_ } ->
             Sign_diff.{ empty with errors=[id,error]; deep_modifications }
-        | Error { recoverable = false; error } ->
-            let errors =[id,error] in
-            Sign_diff.{ empty with deep_modifications; errors; leftovers=rem }
       in
       let continue = match item with
         | Ok _ -> true
@@ -834,7 +831,7 @@ and signature_components  ~in_eq ~loc old_env ~mark env subst
         if continue then
           signature_components ~in_eq ~loc old_env ~mark env subst
             orig_shape shape_map rem
-        else Sign_diff.empty
+        else Sign_diff.{ empty with leftovers=rem }
        in
        Sign_diff.merge first rest
 
