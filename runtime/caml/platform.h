@@ -28,17 +28,22 @@
 #define MAP_ANONYMOUS MAP_ANON
 #endif
 
-/* Loads and stores with acquire and release semantics respectively */
+/* Hint for busy-waiting loops */
 
 Caml_inline void cpu_relax() {
+#ifdef __GNUC__
 #if defined(__x86_64__) || defined(__i386__)
   asm volatile("pause" ::: "memory");
 #elif defined(__aarch64__)
   asm volatile ("yield" ::: "memory");
 #else
-  #warning "cpu_relax() undefined for this architecture!"
+  /* Just a compiler barrier */
+  asm volatile ("" ::: "memory");
+#endif
 #endif
 }
+
+/* Loads and stores with acquire and release semantics respectively */
 
 Caml_inline uintnat atomic_load_acq(atomic_uintnat* p) {
   return atomic_load_explicit(p, memory_order_acquire);
