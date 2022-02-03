@@ -716,11 +716,14 @@ let solve_Ppat_construct ~refine env loc constr no_existentials
           solve_constructor_annotation env name_list sty ty_args ty_ex in
         ty_args, ty_res, equated_types, existential_ctyp
   in
+  if constr.cstr_existentials <> [] then
+    lower_variables_only !env expansion_scope ty_res;
   end_def ();
   generalize_structure expected_ty;
   generalize_structure ty_res;
   List.iter generalize_structure ty_args;
-  if !Clflags.principal then begin
+  if !Clflags.principal && refine = None then begin
+    (* Do not warn for couter examples *)
     let exception Warn_only_once in
     try
       TypePairs.iter

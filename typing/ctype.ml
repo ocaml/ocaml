@@ -853,6 +853,10 @@ let rec lower_contravariant env var_level visited contra ty =
         iter_type_expr (lower_rec contra) ty
   end
 
+let lower_variables_only env level ty =
+  simple_abbrevs := Mnil;
+  lower_contravariant env level (Hashtbl.create 7) true ty
+
 let lower_contravariant env ty =
   simple_abbrevs := Mnil;
   lower_contravariant env !nongen_level (Hashtbl.create 7) false ty

@@ -545,6 +545,8 @@ OCaml 4.14.0
   toplevel, as in the bytecode toplevel.
   (David Allsopp, report by Nathan Rebours, review by Gabriel Scherer)
 
+- #10907, #10959: Wrong type inferred from existential types
+  (Jacques Garrigue and Gabriel Scherer, report by @dyzsr, review by Leo White)
 
 OCaml 4.13 maintenance branch
 -----------------------------
