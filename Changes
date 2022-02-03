@@ -545,6 +545,10 @@ OCaml 4.14.0
   toplevel, as in the bytecode toplevel.
   (David Allsopp, report by Nathan Rebours, review by Gabriel Scherer)
 
+- #10853: `Obj.reachable_words` could crash if called after a marshaling
+  operation in `NO_SHARING` mode.
+  (Xavier Leroy, report by Anil Madhavapeddy, review by Alain Frisch)
+
 - #10907, #10959: Wrong type inferred from existential types
   (Jacques Garrigue and Gabriel Scherer, report by @dyzsr, review by Leo White)
 
