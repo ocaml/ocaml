@@ -60,6 +60,8 @@ void caml_change_max_stack_size (uintnat new_max_size)
   caml_max_stack_size = new_max_size;
 }
 
+#define NUM_STACK_SIZE_CLASSES 5
+
 struct stack_info** caml_alloc_stack_cache (void)
 {
   int i;

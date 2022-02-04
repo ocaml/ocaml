@@ -27,22 +27,28 @@
 
 struct stack_info;
 
+/* stack_handler describes the state for using fibers as part of effects */
 struct stack_handler {
   value handle_value;
   value handle_exn;
   value handle_effect;
-  struct stack_info* parent;
+  struct stack_info* parent; /* parent OCaml stack if any */
 };
 
+/* stack_info describes the OCaml stack. It is used for:
+ *  - storing information about the OCaml stack allowing it to be switched
+ *  - accessing the stack_handler for the stack to handle effects
+ *  - handling a freelist of OCaml stacks in a stack_cache
+ */
 struct stack_info {
 #ifdef NATIVE_CODE
-  void* sp;
-  void* exception_ptr;
+  void* sp;            /* stack pointer of the OCaml stack when suspended */
+  void* exception_ptr; /* exception pointer of OCaml stack when suspended */
 #else
   value* sp;
   value* exception_ptr;
 #endif
-  struct stack_handler* handler;
+  struct stack_handler* handler; /* effect handling state for the fiber */
 
   /* [size_bucket] is a pointer to a bucket in Caml->stack_cache if this
    * size is pooled. If unpooled, it is NULL.
@@ -83,8 +89,6 @@ CAML_STATIC_ASSERT(sizeof(struct stack_info) ==
  * +------------------------+ <--- Stack_base
  * |   struct stack_info    |
  * +------------------------+ <--- Caml_state->current_stack
- * |      HEADER WORD       |
- * +------------------------+
  */
 
 /* This structure is used for storing the OCaml return pointer when
@@ -98,8 +102,6 @@ struct c_stack_link {
   void* sp;
   struct c_stack_link* prev;
 };
-
-#define NUM_STACK_SIZE_CLASSES 5
 
 /* The table of global identifiers */
 extern value caml_global_data;
