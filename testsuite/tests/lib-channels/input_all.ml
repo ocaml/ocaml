@@ -1,6 +1,11 @@
 (* TEST
+
+* hassysthreads
 include systhreads
 readonly_files = "input_all.ml"
+** bytecode
+** native
+
 *)
 
 let data_file =
