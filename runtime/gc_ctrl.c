@@ -24,6 +24,7 @@
 #include "caml/minor_gc.h"
 #include "caml/shared_heap.h"
 #include "caml/misc.h"
+#include "caml/memory.h"
 #include "caml/mlvalues.h"
 #ifdef NATIVE_CODE
 #include "caml/stack.h"
@@ -34,7 +35,6 @@
 #include "caml/globroots.h"
 #include "caml/signals.h"
 #include "caml/startup.h"
-#include "caml/domain.h"
 #include "caml/eventlog.h"
 #include "caml/fail.h"
 
