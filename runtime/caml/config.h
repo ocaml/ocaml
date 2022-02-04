@@ -209,7 +209,7 @@ typedef uint64_t uintnat;
 
 /* Number of words used in the control structure at the start of a stack
    (see fiber.h) */
-#define Stack_ctx_words 5
+#define Stack_ctx_words 6
 
 /* Default maximum size of the stack (words). */
 #define Max_stack_def (1024 * 1024)

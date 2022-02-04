@@ -249,6 +249,30 @@ camlPervasives__loop_1128:
         AC_MSG_RESULT([no])])])
   ])])
 
+AC_DEFUN([OCAML_MMAP_SUPPORTS_MAP_STACK], [
+  AC_MSG_CHECKING([whether mmap supports MAP_STACK])
+  AC_RUN_IFELSE(
+    [AC_LANG_SOURCE([[
+#include <sys/mman.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main (int argc, char *argv[]){
+  void *block;
+  block = mmap (NULL, 4096, PROT_READ | PROT_WRITE,
+                MAP_ANONYMOUS | MAP_PRIVATE | MAP_STACK,
+                -1, 0);
+  if (block == MAP_FAILED)
+     return 1;
+  return 0;
+}
+    ]])],
+    [has_mmap_map_stack=true
+    AC_MSG_RESULT([yes])],
+    [AC_MSG_RESULT([no])],
+    [AC_MSG_RESULT([no assumed])])
+])
+
 AC_DEFUN([OCAML_MMAP_SUPPORTS_HUGE_PAGES], [
   AC_MSG_CHECKING([whether mmap supports huge pages])
   AC_RUN_IFELSE(
