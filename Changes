@@ -17,6 +17,12 @@ Working version
 - #10902: Do not register empty code fragments in natdynlink.
   (David Allsopp, review by Xavier Leroy and Damien Doligez)
 
+- #10965: `caml_fatal_error_hook`, GC timing hooks, and
+  `caml_scan_roots_hook` are now atomic variables. Restore GC timing
+  hooks.
+  (Guillaume Munch-Maccagnoni, review by Enguerrand Decorne, Xavier
+  Leroy, Gabriel Scherer, and KC Sivaramakrishnan)
+
 ### Code generation and optimizations:
 
 ### Standard library:

@@ -185,12 +185,26 @@ extern "C" {
 #endif
 
 /* GC timing hooks. These can be assigned by the user. These hooks
-   must not allocate, change any heap value, nor call OCaml code.
-*/
+   must not allocate, change any heap value, nor call OCaml code. They
+   can obtain the domain id with Caml_state->id. These functions must
+   be reentrant. */
 typedef void (*caml_timing_hook) (void);
-extern caml_timing_hook caml_major_slice_begin_hook, caml_major_slice_end_hook;
-extern caml_timing_hook caml_minor_gc_begin_hook, caml_minor_gc_end_hook;
-extern caml_timing_hook caml_finalise_begin_hook, caml_finalise_end_hook;
+extern _Atomic caml_timing_hook caml_major_slice_begin_hook;
+extern _Atomic caml_timing_hook caml_major_slice_end_hook;
+extern _Atomic caml_timing_hook caml_minor_gc_begin_hook;
+extern _Atomic caml_timing_hook caml_minor_gc_end_hook;
+extern _Atomic caml_timing_hook caml_finalise_begin_hook;
+extern _Atomic caml_timing_hook caml_finalise_end_hook;
+
+#ifdef CAML_INTERNALS
+
+Caml_inline void call_timing_hook(_Atomic caml_timing_hook * a)
+{
+  caml_timing_hook h = atomic_load_explicit(a, memory_order_relaxed);
+  if (h != NULL) (*h)();
+}
+
+#endif /* CAML_INTERNALS */
 
 #define CAML_STATIC_ASSERT_3(b, l) \
   CAMLunused_start \
@@ -268,8 +282,11 @@ void caml_alloc_point_here(void);
    If it returns, the runtime calls [abort()].
 
    If it is [NULL], the error message is printed on stderr and then
-   [abort()] is called. */
-extern void (*caml_fatal_error_hook) (char *msg, va_list args);
+   [abort()] is called.
+
+   This function must be reentrant. */
+typedef void (*fatal_error_hook) (char *msg, va_list args);
+extern _Atomic fatal_error_hook caml_fatal_error_hook;
 
 CAMLnoreturn_start
 CAMLextern void caml_fatal_error (char *, ...)

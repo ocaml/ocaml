@@ -42,14 +42,16 @@
 intnat caml_globals_inited = 0;
 #endif
 
-CAMLexport void (*caml_scan_roots_hook)
-  (scanning_action, void* fdata, caml_domain_state *) = NULL;
+CAMLexport _Atomic scan_roots_hook caml_scan_roots_hook =
+  (scan_roots_hook)NULL;
 
 void caml_do_roots (scanning_action f, void* fdata, caml_domain_state* d,
                     int do_final_val)
 {
+  scan_roots_hook hook;
   caml_do_local_roots(f, fdata, d->local_roots, d->current_stack, d->gc_regs);
-  if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(f, fdata, d);
+  hook = atomic_load(&caml_scan_roots_hook);
+  if (hook != NULL) (*hook)(f, fdata, d);
   caml_final_do_roots(f, fdata, d, do_final_val);
 
 }

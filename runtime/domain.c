@@ -810,18 +810,10 @@ static void caml_domain_stop_default(void)
   return;
 }
 
-static void caml_domain_start_default(void)
-{
-  return;
-}
-
 static void caml_domain_external_interrupt_hook_default(void)
 {
   return;
 }
-
-CAMLexport void (*caml_domain_start_hook)(void) =
-   caml_domain_start_default;
 
 CAMLexport void (*caml_domain_stop_hook)(void) =
    caml_domain_stop_default;
@@ -872,7 +864,6 @@ static void* domain_thread_func(void* v)
     caml_gc_log("Domain starting (unique_id = %"ARCH_INTNAT_PRINTF_FORMAT"u)",
                 domain_self->interruptor.unique_id);
     caml_domain_set_name("Domain");
-    caml_domain_start_hook();
     caml_callback(ml_values->callback, Val_unit);
     domain_terminate();
     /* Joining domains will lock/unlock the terminate_mutex so this unlock will

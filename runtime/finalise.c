@@ -146,6 +146,7 @@ void caml_final_do_calls (void)
 
   if (fi->running_finalisation_function) return;
   if (fi->todo_head != NULL) {
+    call_timing_hook(&caml_finalise_begin_hook);
     caml_gc_message (0x80, "Calling finalisation functions.\n");
     while (1) {
       while (fi->todo_head != NULL && fi->todo_head->size == 0) {
@@ -164,6 +165,7 @@ void caml_final_do_calls (void)
       if (Is_exception_result(res)) caml_raise (Extract_exception (res));
     }
     caml_gc_message (0x80, "Done calling finalisation functions.\n");
+    call_timing_hook(&caml_finalise_end_hook);
   }
 }
 

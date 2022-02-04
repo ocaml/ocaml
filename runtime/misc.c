@@ -37,12 +37,12 @@ __declspec(noreturn) void __cdecl abort(void);
 #include "caml/startup.h"
 #include "caml/startup_aux.h"
 
-caml_timing_hook caml_major_slice_begin_hook = NULL;
-caml_timing_hook caml_major_slice_end_hook = NULL;
-caml_timing_hook caml_minor_gc_begin_hook = NULL;
-caml_timing_hook caml_minor_gc_end_hook = NULL;
-caml_timing_hook caml_finalise_begin_hook = NULL;
-caml_timing_hook caml_finalise_end_hook = NULL;
+_Atomic caml_timing_hook caml_major_slice_begin_hook = (caml_timing_hook)NULL;
+_Atomic caml_timing_hook caml_major_slice_end_hook = (caml_timing_hook)NULL;
+_Atomic caml_timing_hook caml_minor_gc_begin_hook = (caml_timing_hook)NULL;
+_Atomic caml_timing_hook caml_minor_gc_end_hook = (caml_timing_hook)NULL;
+_Atomic caml_timing_hook caml_finalise_begin_hook = (caml_timing_hook)NULL;
+_Atomic caml_timing_hook caml_finalise_end_hook = (caml_timing_hook)NULL;
 
 #ifdef DEBUG
 
@@ -98,14 +98,16 @@ void caml_gc_message (int level, char *msg, ...)
   }
 }
 
-void (*caml_fatal_error_hook) (char *msg, va_list args) = NULL;
+_Atomic fatal_error_hook caml_fatal_error_hook = (fatal_error_hook)NULL;
 
 CAMLexport void caml_fatal_error (char *msg, ...)
 {
   va_list ap;
+  fatal_error_hook hook;
   va_start(ap, msg);
-  if(caml_fatal_error_hook != NULL) {
-    caml_fatal_error_hook(msg, ap);
+  hook = atomic_load(&caml_fatal_error_hook);
+  if (hook != NULL) {
+    (*hook)(msg, ap);
   } else {
     fprintf (stderr, "Fatal error: ");
     vfprintf (stderr, msg, ap);

@@ -72,6 +72,7 @@ void caml_init_signal_handling(void);
 int caml_init_signal_stack(void);
 void caml_free_signal_stack(void);
 
+/* These hooks are not modified after other threads are spawned. */
 CAMLextern void (*caml_enter_blocking_section_hook)(void);
 CAMLextern void (*caml_leave_blocking_section_hook)(void);
 #endif /* CAML_INTERNALS */
