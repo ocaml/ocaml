@@ -805,7 +805,8 @@ CAMLexport value caml_check_urgent_gc (value extra_root)
 
 static void realloc_generic_table
 (struct generic_table *tbl, asize_t element_size,
- char * msg_intr_int, char *msg_threshold, char *msg_growing, char *msg_error)
+ ev_gc_counter ev_counter_name,
+ char *msg_threshold, char *msg_growing, char *msg_error)
 {
   CAMLassert (tbl->ptr == tbl->limit);
   CAMLassert (tbl->limit <= tbl->end);
@@ -815,6 +816,7 @@ static void realloc_generic_table
     alloc_generic_table (tbl, Caml_state->minor_heap_wsz / 8, 256,
                          element_size);
   }else if (tbl->limit == tbl->threshold){
+    CAML_EV_COUNTER (ev_counter_name, 1);
     caml_gc_message (0x08, msg_threshold, 0);
     tbl->limit = tbl->end;
     caml_request_minor_gc ();
@@ -840,7 +842,7 @@ void caml_realloc_ref_table (struct caml_ref_table *tbl)
 {
   realloc_generic_table
     ((struct generic_table *) tbl, sizeof (value *),
-     "request_minor/realloc_ref_table@",
+     EV_C_REQUEST_MINOR_REALLOC_REF_TABLE,
      "ref_table threshold crossed\n",
      "Growing ref_table to %" ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
      "ref_table overflow");
@@ -850,7 +852,7 @@ void caml_realloc_ephe_ref_table (struct caml_ephe_ref_table *tbl)
 {
   realloc_generic_table
     ((struct generic_table *) tbl, sizeof (struct caml_ephe_ref_elt),
-     "request_minor/realloc_ephe_ref_table@",
+     EV_C_REQUEST_MINOR_REALLOC_EPHE_REF_TABLE,
      "ephe_ref_table threshold crossed\n",
      "Growing ephe_ref_table to %" ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
      "ephe_ref_table overflow");
@@ -860,7 +862,7 @@ void caml_realloc_custom_table (struct caml_custom_table *tbl)
 {
   realloc_generic_table
     ((struct generic_table *) tbl, sizeof (struct caml_custom_elt),
-     "request_minor/realloc_custom_table@",
+     EV_C_REQUEST_MINOR_REALLOC_CUSTOM_TABLE,
      "custom_table threshold crossed\n",
      "Growing custom_table to %" ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
      "custom_table overflow");
