@@ -842,10 +842,10 @@ static void* domain_thread_func(void* v)
     /* this domain is part of STW sections, so can read ml_values */
     terminate_mutex = Mutex_val(ml_values->mutex);
     /* we lock terminate_mutex here and unlock when the domain is torn down
-      this provides a simple block for domains attempting to join 
+      this provides a simple block for domains attempting to join
       NB: terminate_mutex will not be moved by the garbage collector
       as it is not an OCaml block. ml_values->mutex is registered as
-      a global root and keeps the mutex custom memory alive with 
+      a global root and keeps the mutex custom memory alive with
       the garbage collector. */
     caml_mutex_lock(terminate_mutex);
     p->status = Dom_started;
