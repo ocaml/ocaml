@@ -371,8 +371,8 @@ external ( mod ) : int -> int -> int = "%modint"
 *)
 
 val abs : int -> int
-(** Return the absolute value of the argument.  Note that this may be
-  negative if the argument is [min_int]. *)
+(** [abs x] is the absolute value of [x]. On [min_int] this
+   is [min_int] itself and thus remains negative. *)
 
 val max_int : int
 (** The greatest representable integer. *)

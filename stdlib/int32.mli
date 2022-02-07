@@ -86,7 +86,8 @@ val pred : int32 -> int32
 (** Predecessor.  [Int32.pred x] is [Int32.sub x Int32.one]. *)
 
 val abs : int32 -> int32
-(** Return the absolute value of its argument. *)
+(** [abs x] is the absolute value of [x]. On [min_int] this
+   is [min_int] itself and thus remains negative. *)
 
 val max_int : int32
 (** The greatest representable 32-bit integer, 2{^31} - 1. *)
