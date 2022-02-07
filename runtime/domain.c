@@ -846,7 +846,7 @@ static void* domain_thread_func(void* v)
       NB: terminate_mutex will not be moved by the garbage collector
       as it is not an OCaml block. ml_values->mutex is registered as
       a global root and keeps the mutex custom memory alive with 
-      the garbage collector. 
+      the garbage collector. */
     caml_mutex_lock(terminate_mutex);
     p->status = Dom_started;
     p->unique_id = domain_self->interruptor.unique_id;
