@@ -842,8 +842,12 @@ static void* domain_thread_func(void* v)
     /* this domain is part of STW sections, so can read ml_values */
     terminate_mutex = Mutex_val(ml_values->mutex);
     /* we lock terminate_mutex here and unlock when the domain is torn down
-      this provides a simple block for domains attempting to join */
-    sync_mutex_lock(terminate_mutex);
+      this provides a simple block for domains attempting to join 
+      NB: terminate_mutex will not be moved by the garbage collector
+      as it is not an OCaml block. ml_values->mutex is registered as
+      a global root and keeps the mutex custom memory alive with 
+      the garbage collector. 
+    caml_mutex_lock(terminate_mutex);
     p->status = Dom_started;
     p->unique_id = domain_self->interruptor.unique_id;
   } else {
@@ -868,7 +872,7 @@ static void* domain_thread_func(void* v)
     domain_terminate();
     /* Joining domains will lock/unlock the terminate_mutex so this unlock will
        release them if any domains are waiting. */
-    sync_mutex_unlock(terminate_mutex);
+    caml_mutex_unlock(terminate_mutex);
     free_domain_ml_values(ml_values);
   } else {
     caml_gc_log("Failed to create domain");

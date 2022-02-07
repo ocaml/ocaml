@@ -15,10 +15,6 @@
 
 #define CAML_INTERNALS
 
-#include <pthread.h>
-#include <signal.h>
-#include <stdio.h>
-
 #include "caml/alloc.h"
 #include "caml/custom.h"
 #include "caml/domain_state.h"
@@ -29,40 +25,10 @@
 #include "caml/sync.h"
 #include "caml/eventlog.h"
 
+/* System-dependent part */
+#include "sync_posix.h"
+
 /* Mutex operations */
-
-static int sync_mutex_create(sync_mutex * res)
-{
-  int rc;
-  pthread_mutexattr_t attr;
-  sync_mutex m;
-
-  rc = pthread_mutexattr_init(&attr);
-  if (rc != 0) goto error1;
-  rc = pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
-  if (rc != 0) goto error2;
-  m = caml_stat_alloc_noexc(sizeof(pthread_mutex_t));
-  if (m == NULL) { rc = ENOMEM; goto error2; }
-  rc = pthread_mutex_init(m, &attr);
-  if (rc != 0) goto error3;
-  pthread_mutexattr_destroy(&attr);
-  *res = m;
-  return 0;
-error3:
-  caml_stat_free(m);
-error2:
-  pthread_mutexattr_destroy(&attr);
-error1:
-  return rc;
-}
-
-static int sync_mutex_destroy(sync_mutex m)
-{
-  int rc;
-  rc = pthread_mutex_destroy(m);
-  caml_stat_free(m);
-  return rc;
-}
 
 static void caml_mutex_finalize(value wrapper)
 {
@@ -91,6 +57,16 @@ static const struct custom_operations caml_mutex_ops = {
   custom_compare_ext_default,
   custom_fixed_length_default
 };
+
+CAMLexport int caml_mutex_lock(sync_mutex mut)
+{
+  return sync_mutex_lock(mut);
+}
+
+CAMLexport int caml_mutex_unlock(sync_mutex mut)
+{
+  return sync_mutex_unlock(mut);
+}
 
 CAMLprim value caml_ml_mutex_new(value unit)        /* ML */
 {
@@ -141,27 +117,7 @@ CAMLprim value caml_ml_mutex_try_lock(value wrapper)           /* ML */
   return Val_true;
 }
 
-
-/* Conditions operations */
-
-static int sync_condvar_create(sync_condvar * res)
-{
-  int rc;
-  sync_condvar c = caml_stat_alloc_noexc(sizeof(pthread_cond_t));
-  if (c == NULL) return ENOMEM;
-  rc = pthread_cond_init(c, NULL);
-  if (rc != 0) { caml_stat_free(c); return rc; }
-  *res = c;
-  return 0;
-}
-
-static int sync_condvar_destroy(sync_condvar c)
-{
-  int rc;
-  rc = pthread_cond_destroy(c);
-  caml_stat_free(c);
-  return rc;
-}
+/* Condition variables operations */
 
 static void caml_condition_finalize(value wrapper)
 {
