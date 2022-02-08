@@ -428,125 +428,128 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
     caml_plat_wait(&all_domains_cond);
 
   d = next_free_domain();
-  if (d) {
-    s = &d->interruptor;
-    CAMLassert(!s->running);
-    CAMLassert(!s->interrupt_pending);
 
-    domain_self = d;
+  if (d == NULL)
+    goto domain_init_complete;
 
-    /* If the chosen domain slot has not been previously used, allocate a fresh
-     * domain state. Otherwise, reuse it. Reusing the slot ensures that the GC
-     * stats are not lost. */
-    if (d->state == NULL) {
-      /* FIXME: Never freed. Not clear when to. */
-      domain_state = (caml_domain_state*)
-        caml_stat_calloc_noexc(1, sizeof(caml_domain_state));
-      if (domain_state == NULL)
-        goto domain_init_complete;
-      d->state = domain_state;
-    } else {
-      domain_state = d->state;
-    }
+  s = &d->interruptor;
+  CAMLassert(!s->running);
+  CAMLassert(!s->interrupt_pending);
 
-    SET_Caml_state((void*)domain_state);
+  domain_self = d;
 
-    s->unique_id = fresh_domain_unique_id();
-    s->interrupt_word = &domain_state->young_limit;
-    s->running = 1;
-    atomic_fetch_add(&caml_num_domains_running, 1);
+  /* If the chosen domain slot has not been previously used, allocate a fresh
+   * domain state. Otherwise, reuse it. Reusing the slot ensures that the GC
+   * stats are not lost. */
+  if (d->state == NULL) {
+    /* FIXME: Never freed. Not clear when to. */
+    domain_state = (caml_domain_state*)
+      caml_stat_calloc_noexc(1, sizeof(caml_domain_state));
+    if (domain_state == NULL)
+      goto domain_init_complete;
+    d->state = domain_state;
+  } else {
+    domain_state = d->state;
+  }
 
-    caml_plat_lock(&d->domain_lock);
+  SET_Caml_state((void*)domain_state);
 
-    domain_state->id = d->id;
-    domain_state->unique_id = d->interruptor.unique_id;
-    CAMLassert(!d->interruptor.interrupt_pending);
+  s->unique_id = fresh_domain_unique_id();
+  s->interrupt_word = &domain_state->young_limit;
+  s->running = 1;
+  atomic_fetch_add(&caml_num_domains_running, 1);
 
-    domain_state->extra_heap_resources = 0.0;
-    domain_state->extra_heap_resources_minor = 0.0;
+  caml_plat_lock(&d->domain_lock);
 
-    domain_state->dependent_size = 0;
-    domain_state->dependent_allocated = 0;
+  domain_state->id = d->id;
+  domain_state->unique_id = d->interruptor.unique_id;
+  CAMLassert(!d->interruptor.interrupt_pending);
 
-    if (caml_init_signal_stack() < 0) {
-      goto init_signal_stack_failure;
-    }
+  domain_state->extra_heap_resources = 0.0;
+  domain_state->extra_heap_resources_minor = 0.0;
 
-    domain_state->young_start = domain_state->young_end =
-      domain_state->young_ptr = 0;
-    domain_state->minor_tables = caml_alloc_minor_tables();
-    if(domain_state->minor_tables == NULL) {
-      goto alloc_minor_tables_failure;
-    }
+  domain_state->dependent_size = 0;
+  domain_state->dependent_allocated = 0;
 
-    d->state->shared_heap = caml_init_shared_heap();
-    if(d->state->shared_heap == NULL) {
-      goto init_shared_heap_failure;
-    }
+  if (caml_init_signal_stack() < 0) {
+    goto init_signal_stack_failure;
+  }
 
-    if (caml_init_major_gc(domain_state) < 0) {
-      goto init_major_gc_failure;
-    }
+  domain_state->young_start = domain_state->young_end =
+    domain_state->young_ptr = 0;
+  domain_state->minor_tables = caml_alloc_minor_tables();
+  if(domain_state->minor_tables == NULL) {
+    goto alloc_minor_tables_failure;
+  }
 
-    if(caml_reallocate_minor_heap(initial_minor_heap_wsize) < 0) {
-      goto reallocate_minor_heap_failure;
-    }
+  d->state->shared_heap = caml_init_shared_heap();
+  if(d->state->shared_heap == NULL) {
+    goto init_shared_heap_failure;
+  }
 
-    domain_state->dls_root = Val_unit;
-    caml_register_generational_global_root(&domain_state->dls_root);
+  if (caml_init_major_gc(domain_state) < 0) {
+    goto init_major_gc_failure;
+  }
 
-    domain_state->stack_cache = caml_alloc_stack_cache();
-    if(domain_state->stack_cache == NULL) {
-      goto create_stack_cache_failure;
-    }
+  if(caml_reallocate_minor_heap(initial_minor_heap_wsize) < 0) {
+    goto reallocate_minor_heap_failure;
+  }
 
-    domain_state->extern_state = NULL;
+  domain_state->dls_root = Val_unit;
+  caml_register_generational_global_root(&domain_state->dls_root);
 
-    domain_state->intern_state = NULL;
+  domain_state->stack_cache = caml_alloc_stack_cache();
+  if(domain_state->stack_cache == NULL) {
+    goto create_stack_cache_failure;
+  }
 
-    domain_state->current_stack =
-        caml_alloc_main_stack(Stack_size / sizeof(value));
-    if(domain_state->current_stack == NULL) {
-      goto alloc_main_stack_failure;
-    }
+  domain_state->extern_state = NULL;
 
-    domain_state->c_stack = NULL;
-    domain_state->exn_handler = NULL;
+  domain_state->intern_state = NULL;
 
-    domain_state->gc_regs_buckets = NULL;
-    domain_state->gc_regs = NULL;
+  domain_state->current_stack =
+      caml_alloc_main_stack(Stack_size / sizeof(value));
+  if(domain_state->current_stack == NULL) {
+    goto alloc_main_stack_failure;
+  }
 
-    domain_state->allocated_words = 0;
-    domain_state->swept_words = 0;
+  domain_state->c_stack = NULL;
+  domain_state->exn_handler = NULL;
 
-    domain_state->local_roots = NULL;
+  domain_state->gc_regs_buckets = NULL;
+  domain_state->gc_regs = NULL;
 
-    domain_state->backtrace_buffer = NULL;
-    domain_state->backtrace_last_exn = Val_unit;
-    domain_state->backtrace_active = 0;
-    caml_register_generational_global_root(&domain_state->backtrace_last_exn);
+  domain_state->allocated_words = 0;
+  domain_state->swept_words = 0;
 
-    domain_state->compare_unordered = 0;
-    domain_state->oo_next_id_local = 0;
+  domain_state->local_roots = NULL;
 
-    domain_state->requested_major_slice = 0;
-    domain_state->requested_minor_gc = 0;
-    domain_state->requested_external_interrupt = 0;
+  domain_state->backtrace_buffer = NULL;
+  domain_state->backtrace_last_exn = Val_unit;
+  domain_state->backtrace_active = 0;
+  caml_register_generational_global_root(&domain_state->backtrace_last_exn);
 
-    domain_state->parser_trace = 0;
+  domain_state->compare_unordered = 0;
+  domain_state->oo_next_id_local = 0;
 
-    if (caml_params->backtrace_enabled) {
-      caml_record_backtraces(1);
-    }
+  domain_state->requested_major_slice = 0;
+  domain_state->requested_minor_gc = 0;
+  domain_state->requested_external_interrupt = 0;
+
+  domain_state->parser_trace = 0;
+
+  if (caml_params->backtrace_enabled) {
+    caml_record_backtraces(1);
+  }
 
 #ifndef NATIVE_CODE
-    domain_state->external_raise = NULL;
-    domain_state->trap_sp_off = 1;
-    domain_state->trap_barrier_off = 0;
+  domain_state->external_raise = NULL;
+  domain_state->trap_sp_off = 1;
+  domain_state->trap_barrier_off = 0;
 #endif
 
-    add_to_stw_domains(domain_self);
-    goto domain_init_complete;
+  add_to_stw_domains(domain_self);
+  goto domain_init_complete;
 
 alloc_main_stack_failure:
 create_stack_cache_failure:
@@ -563,7 +566,7 @@ alloc_minor_tables_failure:
 init_signal_stack_failure:
   domain_self = NULL;
 
-  }
+
 domain_init_complete:
   caml_plat_unlock(&all_domains_lock);
 }
