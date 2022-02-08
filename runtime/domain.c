@@ -134,8 +134,6 @@ struct dom_internal {
   caml_plat_cond domain_cond;
 
   /* readonly */
-  uintnat tls_area;
-  uintnat tls_area_end;
   uintnat minor_heap_area;
   uintnat minor_heap_area_end;
 };
@@ -180,7 +178,6 @@ CAMLexport atomic_uintnat caml_num_domains_running;
 
 CAMLexport uintnat caml_minor_heaps_base;
 CAMLexport uintnat caml_minor_heaps_end;
-CAMLexport uintnat caml_tls_areas_base;
 static __thread dom_internal* domain_self;
 
 /*
@@ -235,7 +232,7 @@ static dom_internal* next_free_domain() {
 
 #ifdef __APPLE__
 /* OSX has issues with dynamic loading + exported TLS.
-    This is slower but works */
+   This is slower but works */
 CAMLexport pthread_key_t caml_domain_state_key;
 static pthread_once_t key_once = PTHREAD_ONCE_INIT;
 
@@ -417,6 +414,9 @@ static uintnat fresh_domain_unique_id(void) {
 /* must be run on the domain's thread */
 static void create_domain(uintnat initial_minor_heap_wsize) {
   dom_internal* d = 0;
+  caml_domain_state* domain_state;
+  struct interruptor* s;
+
   CAMLassert (domain_self == 0);
 
   /* take the all_domains_lock so that we can alter the STW participant
@@ -424,130 +424,132 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
   caml_plat_lock(&all_domains_lock);
 
   /* wait until any in-progress STW sections end */
-  while (atomic_load_acq(&stw_leader)) caml_plat_wait(&all_domains_cond);
+  while (atomic_load_acq(&stw_leader))
+    caml_plat_wait(&all_domains_cond);
 
   d = next_free_domain();
-  if (d) {
-    struct interruptor* s = &d->interruptor;
-    CAMLassert(!s->running);
-    CAMLassert(!s->interrupt_pending);
-    if (!s->interrupt_word) {
-      caml_domain_state* domain_state;
-      atomic_uintnat* young_limit;
-      /* never been started before, so set up minor heap */
-      if (!caml_mem_commit(
-              (void*)d->tls_area, (d->tls_area_end - d->tls_area))) {
-        /* give up now */
-        d = 0;
-        goto domain_init_complete;
-      }
-      domain_state = (caml_domain_state*)(d->tls_area);
-      young_limit = &domain_state->young_limit;
-      s->interrupt_word = young_limit;
-      atomic_store_rel(young_limit, (uintnat)domain_state->young_start);
-    }
-    s->unique_id = fresh_domain_unique_id();
-    s->running = 1;
-    atomic_fetch_add(&caml_num_domains_running, 1);
+
+  if (d == NULL)
+    goto domain_init_complete;
+
+  s = &d->interruptor;
+  CAMLassert(!s->running);
+  CAMLassert(!s->interrupt_pending);
+
+  domain_self = d;
+
+  /* If the chosen domain slot has not been previously used, allocate a fresh
+   * domain state. Otherwise, reuse it. Reusing the slot ensures that the GC
+   * stats are not lost. */
+  if (d->state == NULL) {
+    /* FIXME: Never freed. Not clear when to. */
+    domain_state = (caml_domain_state*)
+      caml_stat_calloc_noexc(1, sizeof(caml_domain_state));
+    if (domain_state == NULL)
+      goto domain_init_complete;
+    d->state = domain_state;
+  } else {
+    domain_state = d->state;
   }
 
-  if (d) {
-    caml_domain_state* domain_state;
-    domain_self = d;
-    SET_Caml_state((void*)(d->tls_area));
-    domain_state = (caml_domain_state*)(d->tls_area);
-    caml_plat_lock(&d->domain_lock);
+  SET_Caml_state((void*)domain_state);
 
-    domain_state->id = d->id;
-    domain_state->unique_id = d->interruptor.unique_id;
-    d->state = domain_state;
-    CAMLassert(!d->interruptor.interrupt_pending);
+  s->unique_id = fresh_domain_unique_id();
+  s->interrupt_word = &domain_state->young_limit;
+  s->running = 1;
+  atomic_fetch_add(&caml_num_domains_running, 1);
 
-    domain_state->extra_heap_resources = 0.0;
-    domain_state->extra_heap_resources_minor = 0.0;
+  caml_plat_lock(&d->domain_lock);
 
-    domain_state->dependent_size = 0;
-    domain_state->dependent_allocated = 0;
+  domain_state->id = d->id;
+  domain_state->unique_id = d->interruptor.unique_id;
+  CAMLassert(!d->interruptor.interrupt_pending);
 
-    if (caml_init_signal_stack() < 0) {
-      goto init_signal_stack_failure;
-    }
+  domain_state->extra_heap_resources = 0.0;
+  domain_state->extra_heap_resources_minor = 0.0;
 
-    domain_state->young_start = domain_state->young_end =
-      domain_state->young_ptr = 0;
-    domain_state->minor_tables = caml_alloc_minor_tables();
-    if(domain_state->minor_tables == NULL) {
-      goto alloc_minor_tables_failure;
-    }
+  domain_state->dependent_size = 0;
+  domain_state->dependent_allocated = 0;
 
-    d->state->shared_heap = caml_init_shared_heap();
-    if(d->state->shared_heap == NULL) {
-      goto init_shared_heap_failure;
-    }
+  if (caml_init_signal_stack() < 0) {
+    goto init_signal_stack_failure;
+  }
 
-    if (caml_init_major_gc(domain_state) < 0) {
-      goto init_major_gc_failure;
-    }
+  domain_state->young_start = domain_state->young_end =
+    domain_state->young_ptr = 0;
+  domain_state->minor_tables = caml_alloc_minor_tables();
+  if(domain_state->minor_tables == NULL) {
+    goto alloc_minor_tables_failure;
+  }
 
-    if(caml_reallocate_minor_heap(initial_minor_heap_wsize) < 0) {
-      goto reallocate_minor_heap_failure;
-    }
+  d->state->shared_heap = caml_init_shared_heap();
+  if(d->state->shared_heap == NULL) {
+    goto init_shared_heap_failure;
+  }
 
-    domain_state->dls_root = Val_unit;
-    caml_register_generational_global_root(&domain_state->dls_root);
+  if (caml_init_major_gc(domain_state) < 0) {
+    goto init_major_gc_failure;
+  }
 
-    domain_state->stack_cache = caml_alloc_stack_cache();
-    if(domain_state->stack_cache == NULL) {
-      goto create_stack_cache_failure;
-    }
+  if(caml_reallocate_minor_heap(initial_minor_heap_wsize) < 0) {
+    goto reallocate_minor_heap_failure;
+  }
 
-    domain_state->extern_state = NULL;
+  domain_state->dls_root = Val_unit;
+  caml_register_generational_global_root(&domain_state->dls_root);
 
-    domain_state->intern_state = NULL;
+  domain_state->stack_cache = caml_alloc_stack_cache();
+  if(domain_state->stack_cache == NULL) {
+    goto create_stack_cache_failure;
+  }
 
-    domain_state->current_stack =
-        caml_alloc_main_stack(Stack_size / sizeof(value));
-    if(domain_state->current_stack == NULL) {
-      goto alloc_main_stack_failure;
-    }
+  domain_state->extern_state = NULL;
 
-    domain_state->c_stack = NULL;
-    domain_state->exn_handler = NULL;
+  domain_state->intern_state = NULL;
 
-    domain_state->gc_regs_buckets = NULL;
-    domain_state->gc_regs = NULL;
+  domain_state->current_stack =
+      caml_alloc_main_stack(Stack_size / sizeof(value));
+  if(domain_state->current_stack == NULL) {
+    goto alloc_main_stack_failure;
+  }
 
-    domain_state->allocated_words = 0;
-    domain_state->swept_words = 0;
+  domain_state->c_stack = NULL;
+  domain_state->exn_handler = NULL;
 
-    domain_state->local_roots = NULL;
+  domain_state->gc_regs_buckets = NULL;
+  domain_state->gc_regs = NULL;
 
-    domain_state->backtrace_buffer = NULL;
-    domain_state->backtrace_last_exn = Val_unit;
-    domain_state->backtrace_active = 0;
-    caml_register_generational_global_root(&domain_state->backtrace_last_exn);
+  domain_state->allocated_words = 0;
+  domain_state->swept_words = 0;
 
-    domain_state->compare_unordered = 0;
-    domain_state->oo_next_id_local = 0;
+  domain_state->local_roots = NULL;
 
-    domain_state->requested_major_slice = 0;
-    domain_state->requested_minor_gc = 0;
-    domain_state->requested_external_interrupt = 0;
+  domain_state->backtrace_buffer = NULL;
+  domain_state->backtrace_last_exn = Val_unit;
+  domain_state->backtrace_active = 0;
+  caml_register_generational_global_root(&domain_state->backtrace_last_exn);
 
-    domain_state->parser_trace = 0;
+  domain_state->compare_unordered = 0;
+  domain_state->oo_next_id_local = 0;
 
-    if (caml_params->backtrace_enabled) {
-      caml_record_backtraces(1);
-    }
+  domain_state->requested_major_slice = 0;
+  domain_state->requested_minor_gc = 0;
+  domain_state->requested_external_interrupt = 0;
+
+  domain_state->parser_trace = 0;
+
+  if (caml_params->backtrace_enabled) {
+    caml_record_backtraces(1);
+  }
 
 #ifndef NATIVE_CODE
-    domain_state->external_raise = NULL;
-    domain_state->trap_sp_off = 1;
-    domain_state->trap_barrier_off = 0;
+  domain_state->external_raise = NULL;
+  domain_state->trap_sp_off = 1;
+  domain_state->trap_barrier_off = 0;
 #endif
 
-    add_to_stw_domains(domain_self);
-    goto domain_init_complete;
+  add_to_stw_domains(domain_self);
+  goto domain_init_complete;
 
 alloc_main_stack_failure:
 create_stack_cache_failure:
@@ -564,7 +566,7 @@ alloc_minor_tables_failure:
 init_signal_stack_failure:
   domain_self = NULL;
 
-  }
+
 domain_init_complete:
   caml_plat_unlock(&all_domains_lock);
 }
@@ -582,35 +584,25 @@ CAMLexport void caml_reset_domain_lock(void)
 void caml_init_domains(uintnat minor_heap_wsz) {
   int i;
   uintnat size;
-  uintnat tls_size;
-  uintnat tls_areas_size;
   void* heaps_base;
-  void* tls_base;
 
   /* sanity check configuration */
   if (caml_mem_round_up_pages(Bsize_wsize(Minor_heap_max))
           != Bsize_wsize(Minor_heap_max))
     caml_fatal_error("Minor_heap_max misconfigured for this platform");
 
-  /* reserve memory space for minor heaps and tls_areas */
+  /* reserve memory space for minor heaps */
   size = (uintnat)Bsize_wsize(Minor_heap_max) * Max_domains;
-  tls_size = caml_mem_round_up_pages(sizeof(caml_domain_state));
-  tls_areas_size = tls_size * Max_domains;
-
   heaps_base = caml_mem_map(size, size, 1 /* reserve_only */);
-  tls_base =
-      caml_mem_map(tls_areas_size, tls_areas_size, 1 /* reserve_only */);
-  if (!heaps_base || !tls_base)
+  if (heaps_base == NULL)
     caml_fatal_error("Not enough heap memory to start up");
 
   caml_minor_heaps_base = (uintnat) heaps_base;
   caml_minor_heaps_end = (uintnat) heaps_base + size;
-  caml_tls_areas_base = (uintnat) tls_base;
 
   for (i = 0; i < Max_domains; i++) {
     struct dom_internal* dom = &all_domains[i];
     uintnat domain_minor_heap_base;
-    uintnat domain_tls_base;
 
     stw_domains.domains[i] = dom;
 
@@ -632,9 +624,6 @@ void caml_init_domains(uintnat minor_heap_wsz) {
 
     domain_minor_heap_base = caml_minor_heaps_base +
       (uintnat)Bsize_wsize(Minor_heap_max) * (uintnat)i;
-    domain_tls_base = caml_tls_areas_base + tls_size * (uintnat)i;
-    dom->tls_area = domain_tls_base;
-    dom->tls_area_end = domain_tls_base + tls_size;
     dom->minor_heap_area = domain_minor_heap_base;
     dom->minor_heap_area_end =
          domain_minor_heap_base + Bsize_wsize(Minor_heap_max);
@@ -708,7 +697,7 @@ static void* backup_thread_func(void* v)
   struct interruptor* s = &di->interruptor;
 
   domain_self = di;
-  SET_Caml_state((void*)(di->tls_area));
+  SET_Caml_state((void*)(di->state));
 
   caml_domain_set_name("Backup");
 
