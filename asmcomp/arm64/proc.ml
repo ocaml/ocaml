@@ -272,7 +272,7 @@ let destroyed_at_oper = function
   | Iop(Ialloc _) | Iop(Ipoll _) ->
       [| reg_x8 |]
   | Iop( Iintoffloat | Ifloatofint
-       | Iload(Single, _, _) | Istore(Single, _, _)) ->
+       | Iload{memory_chunk=Single; _} | Istore(Single, _, _)) ->
       [| reg_d7 |]            (* d7 / s7 destroyed *)
   | _ -> [||]
 
@@ -291,7 +291,7 @@ let max_register_pressure = function
   | Iextcall _ -> [| 7; 8 |]  (* 7 integer callee-saves, 8 FP callee-saves *)
   | Ialloc _ | Ipoll _ -> [| 22; 32 |]
   | Iintoffloat | Ifloatofint
-  | Iload(Single, _, _) | Istore(Single, _, _) -> [| 23; 31 |]
+  | Iload{memory_chunk=Single; _} | Istore(Single, _, _) -> [| 23; 31 |]
   | _ -> [| 23; 32 |]
 
 (* Layout of the stack *)

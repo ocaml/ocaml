@@ -468,9 +468,19 @@ module BR = Branch_relaxation.Make (struct
       else if alloc then 3
       else 5
     | Lop (Istackoffset _) -> 2
-    | Lop (Iload (size, addr, _)) | Lop (Istore (size, addr, _)) ->
-      let based = match addr with Iindexed _ -> 0 | Ibased _ -> 1 in
-      based + begin match size with Single -> 2 | _ -> 1 end
+    | Lop (Iload  { memory_chunk; addressing_mode; is_atomic }) ->
+      let based = match addressing_mode with Iindexed _ -> 0 | Ibased _ -> 1
+      and barrier = if is_atomic then 1 else 0
+      and single = match memory_chunk with Single -> 2 | _ -> 1 in
+      based + barrier + single
+    | Lop (Istore (memory_chunk, addressing_mode, assignment)) ->
+      let based = match addressing_mode with Iindexed _ -> 0 | Ibased _ -> 1
+      and barrier =
+        match memory_chunk, assignment with
+        | (Word_int | Word_val), true -> 1
+        | _ -> 0
+      and single = match memory_chunk with Single -> 2 | _ -> 1 in
+      based + barrier + single
     | Lop (Ialloc _) when f.fun_fast -> 5
     | Lop (Ispecific (Ifar_alloc _)) when f.fun_fast -> 6
     | Lop (Ipoll _) -> 3
@@ -742,35 +752,45 @@ let emit_instr env i =
         assert (n mod 16 = 0);
         emit_stack_adjustment (-n);
         env.stack_offset <- env.stack_offset + n
-    | Lop(Iload(size, addr, _mut)) ->
+    | Lop(Iload { memory_chunk; addressing_mode; is_atomic }) ->
+        assert(memory_chunk = Word_int || memory_chunk = Word_val || is_atomic = false);
         let dst = i.res.(0) in
         let base =
-          match addr with
+          match addressing_mode with
           | Iindexed _ -> i.arg.(0)
           | Ibased(s, ofs) ->
               assert (not !Clflags.dlcode);  (* see selection.ml *)
               `	adrp	{emit_reg reg_tmp1}, {emit_symbol_offset s ofs}\n`;
               reg_tmp1 in
-        begin match size with
+        begin match memory_chunk with
         | Byte_unsigned ->
-            `	ldrb	{emit_wreg dst}, {emit_addressing addr base}\n`
+            `	ldrb	{emit_wreg dst}, {emit_addressing addressing_mode base}\n`
         | Byte_signed ->
-            `	ldrsb	{emit_reg dst}, {emit_addressing addr base}\n`
+            `	ldrsb	{emit_reg dst}, {emit_addressing addressing_mode base}\n`
         | Sixteen_unsigned ->
-            `	ldrh	{emit_wreg dst}, {emit_addressing addr base}\n`
+            `	ldrh	{emit_wreg dst}, {emit_addressing addressing_mode base}\n`
         | Sixteen_signed ->
-            `	ldrsh	{emit_reg dst}, {emit_addressing addr base}\n`
+            `	ldrsh	{emit_reg dst}, {emit_addressing addressing_mode base}\n`
         | Thirtytwo_unsigned ->
-            `	ldr	{emit_wreg dst}, {emit_addressing addr base}\n`
+            `	ldr	{emit_wreg dst}, {emit_addressing addressing_mode base}\n`
         | Thirtytwo_signed ->
-            `	ldrsw	{emit_reg dst}, {emit_addressing addr base}\n`
+            `	ldrsw	{emit_reg dst}, {emit_addressing addressing_mode base}\n`
         | Single ->
-            `	ldr	s7, {emit_addressing addr base}\n`;
+            `	ldr	s7, {emit_addressing addressing_mode base}\n`;
             `	fcvt	{emit_reg dst}, s7\n`
-        | Word_int | Word_val | Double ->
-            `	ldr	{emit_reg dst}, {emit_addressing addr base}\n`
+        | Word_int | Word_val ->
+            if is_atomic then begin
+              assert (addressing_mode = Iindexed 0);
+              ` dmb ishld\n`;
+              `	ldar	{emit_reg dst}, [{emit_reg i.arg.(0)}]\n`
+            end else
+              `	ldr	{emit_reg dst}, {emit_addressing addressing_mode base}\n`
+        | Double ->
+            `	ldr	{emit_reg dst}, {emit_addressing addressing_mode base}\n`
         end
-    | Lop(Istore(size, addr, _)) ->
+    | Lop(Istore(size, addr, assignment)) ->
+        (* NB: assignments other than Word_int and Word_val do not follow the
+        Multicore OCaml memory model and so do not emit a barrier *)
         let src = i.arg.(0) in
         let base =
           match addr with
@@ -789,7 +809,11 @@ let emit_instr env i =
         | Single ->
             `	fcvt	s7, {emit_reg src}\n`;
             `	str	s7, {emit_addressing addr base}\n`;
-        | Word_int | Word_val | Double ->
+        | Word_int | Word_val ->
+            (* memory model barrier for non-initializing store *)
+            if assignment then ` dmb ishld\n`;
+            `	str	{emit_reg src}, {emit_addressing addr base}\n`
+        | Double ->
             `	str	{emit_reg src}, {emit_addressing addr base}\n`
         end
     | Lop(Ialloc { bytes = n; dbginfo }) ->
