@@ -438,7 +438,7 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
     /* If the chosen domain slot has not been previously used, allocate a fresh
      * domain state. Otherwise, reuse it. Reusing the slot ensures that the GC
      * stats are not lost. */
-    if (!d->state) {
+    if (d->state == NULL) {
       /* FIXME: Never freed. Not clear when to. */
       domain_state = (caml_domain_state*)
         caml_stat_calloc_noexc(1, sizeof(caml_domain_state));
