@@ -42,7 +42,7 @@ CAMLexport atomic_uintnat caml_pending_signals[NSIG_WORDS];
 
 static caml_plat_mutex signal_install_mutex = CAML_PLAT_MUTEX_INITIALIZER;
 
-int caml_check_for_pending_signals(void)
+int caml_check_pending_signals(void)
 {
   int i;
   /* [MM] This fence compensates for the fact that Caml_check_gc_interrupt
@@ -72,7 +72,7 @@ CAMLexport value caml_process_pending_signals_exn(void)
 
   /* Check that there is indeed a pending signal before issuing the
       syscall in [pthread_sigmask]. */
-  if (!caml_check_for_pending_signals())
+  if (!caml_check_pending_signals())
     return Val_unit;
 
 #ifdef POSIX_SIGNALS
@@ -156,7 +156,7 @@ CAMLexport void caml_enter_blocking_section(void)
     caml_enter_blocking_section_hook ();
     /* Check again for pending signals.
        If none, done; otherwise, try again */
-    if (!caml_check_for_pending_signals()) break;
+    if (!caml_check_pending_signals()) break;
     caml_leave_blocking_section_hook ();
   }
 }
@@ -232,6 +232,12 @@ void caml_request_minor_gc (void)
   caml_interrupt_self();
 }
 
+CAMLexport int caml_check_pending_actions(void)
+{
+  return (caml_check_pending_interrupt() ||
+          caml_check_pending_signals());
+}
+
 CAMLexport void caml_process_pending_actions(void)
 {
   caml_handle_gc_interrupt();
@@ -240,22 +246,24 @@ CAMLexport void caml_process_pending_actions(void)
 
 value caml_process_pending_actions_with_root(value root)
 {
-  /* FIXME: only root it if there is something to do */
-  CAMLparam1(root);
-  caml_process_pending_actions();
-  CAMLreturn(root);
+  if (caml_check_pending_actions()) {
+    CAMLparam1(root);
+    caml_process_pending_actions();
+    CAMLdrop;
+  }
+  return root;
 }
 
-value caml_process_pending_actions_with_root_exn(value extra_root)
+value caml_process_pending_actions_with_root_exn(value root)
 {
   /* FIXME: call handle_gc_interrupt and finalisers */
-  if (caml_check_for_pending_signals()) {
-    CAMLparam1(extra_root);
+  if (caml_check_pending_signals()) {
+    CAMLparam1(root);
     value exn = caml_process_pending_signals_exn();
     if (Is_exception_result(exn)) CAMLreturn(exn);
     CAMLdrop;
   }
-  return extra_root;
+  return root;
 }
 
 /* FIXME: not implemented (see above)

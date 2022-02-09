@@ -913,7 +913,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
     Instruct(POPTRAP):
       if (Caml_check_gc_interrupt(domain_state) ||
-          caml_check_for_pending_signals()) {
+          caml_check_pending_signals()) {
         /* We must check here so that if a signal is pending and its
            handler triggers an exception, the exception is trapped
            by the current try...with, not the enclosing one. */
@@ -997,7 +997,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
     Instruct(CHECK_SIGNALS):    /* accu not preserved */
       if (Caml_check_gc_interrupt(domain_state) ||
-          caml_check_for_pending_signals())
+          caml_check_pending_signals())
         goto process_signal;
       Next;
 
