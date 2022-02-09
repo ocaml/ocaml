@@ -245,6 +245,7 @@ let add_inline_attribute expr loc attributes =
             (Warnings.Duplicated_attribute "inline")
       end;
       let attr = { attr with inline } in
+      check_local_inline loc attr;
       check_poll_inline loc attr;
       Lfunction { funct with attr = attr }
   | expr, (Always_inline | Hint_inline | Never_inline | Unroll _) ->
