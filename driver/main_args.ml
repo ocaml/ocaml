@@ -1051,7 +1051,7 @@ end;;
 module type Bytetop_options = sig
   include Toplevel_options
   val _dinstr : unit -> unit
-
+  val _verbose : unit -> unit
 end;;
 
 module type Optcommon_options = sig
@@ -1326,6 +1326,8 @@ struct
     mk_args F._args;
     mk_args0 F._args0;
     mk_eval F._eval;
+
+    mk_verbose F._verbose;
   ]
 end;;
 
@@ -1936,6 +1938,7 @@ module Default = struct
     include Toplevel
     include Core
     let _dinstr = set dump_instr
+    let _verbose = set verbose
   end
 
   module Opttopmain = struct
