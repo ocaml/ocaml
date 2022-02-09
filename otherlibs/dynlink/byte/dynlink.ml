@@ -106,10 +106,11 @@ module Bytecode = struct
     LongString.set code compunit.cu_codesize (Char.chr Opcodes.opRETURN);
     LongString.blit_string "\000\000\000\001\000\000\000" 0
       code (compunit.cu_codesize + 1) 7;
-    begin try
+    begin try DC.with_lock (fun () ->
       Symtable.patch_object code compunit.cu_reloc;
       Symtable.check_global_initialized compunit.cu_reloc;
       Symtable.update_global_table ()
+      )
     with Symtable.Error error ->
       let new_error : DT.linking_error =
         match error with
@@ -131,7 +132,7 @@ module Bytecode = struct
         seek_in ic compunit.cu_debug;
         [| input_value ic |]
       end in
-    if priv then Symtable.hide_additions old_state;
+    if priv then DC.with_lock (fun () -> Symtable.hide_additions old_state);
     let _, clos = Meta.reify_bytecode code events (Some digest) in
     try ignore ((clos ()) : Obj.t)
     with exn ->
