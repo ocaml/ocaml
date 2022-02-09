@@ -24,9 +24,11 @@
 
 CAMLprim value unix_pipe(value cloexec, value unit)
 {
+  CAMLparam0();
+  CAMLlocal2(readfd, writefd);
   SECURITY_ATTRIBUTES attr;
   HANDLE readh, writeh;
-  value readfd = Val_unit, writefd = Val_unit, res;
+  value res;
 
   attr.nLength = sizeof(attr);
   attr.lpSecurityDescriptor = NULL;
@@ -35,12 +37,10 @@ CAMLprim value unix_pipe(value cloexec, value unit)
     win32_maperr(GetLastError());
     uerror("pipe", Nothing);
   }
-  Begin_roots2(readfd, writefd)
-    readfd = win_alloc_handle(readh);
-    writefd = win_alloc_handle(writeh);
-    res = caml_alloc_small(2, 0);
-    Field(res, 0) = readfd;
-    Field(res, 1) = writefd;
-  End_roots();
-  return res;
+  readfd = win_alloc_handle(readh);
+  writefd = win_alloc_handle(writeh);
+  res = caml_alloc_small(2, 0);
+  Field(res, 0) = readfd;
+  Field(res, 1) = writefd;
+  CAMLreturn(res);
 }

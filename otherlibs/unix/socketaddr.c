@@ -111,6 +111,8 @@ value alloc_unix_sockaddr(value path) {
 value alloc_sockaddr(union sock_addr_union * adr /*in*/,
                      socklen_param_type adr_len, int close_on_error)
 {
+  CAMLparam0();
+  CAMLlocal1(a);
   value res;
   if (adr_len < offsetof(struct sockaddr, sa_data)) {
     // Only possible for an unnamed AF_UNIX socket, in
@@ -143,22 +145,18 @@ value alloc_sockaddr(union sock_addr_union * adr /*in*/,
       break;
     }
   case AF_INET:
-    { value a = alloc_inet_addr(&adr->s_inet.sin_addr);
-      Begin_root (a);
-        res = caml_alloc_small(2, 1);
-        Field(res,0) = a;
-        Field(res,1) = Val_int(ntohs(adr->s_inet.sin_port));
-      End_roots();
+    { a = alloc_inet_addr(&adr->s_inet.sin_addr);
+      res = caml_alloc_small(2, 1);
+      Field(res,0) = a;
+      Field(res,1) = Val_int(ntohs(adr->s_inet.sin_port));
       break;
     }
 #ifdef HAS_IPV6
   case AF_INET6:
-    { value a = alloc_inet6_addr(&adr->s_inet6.sin6_addr);
-      Begin_root (a);
-        res = caml_alloc_small(2, 1);
-        Field(res,0) = a;
-        Field(res,1) = Val_int(ntohs(adr->s_inet6.sin6_port));
-      End_roots();
+    { a = alloc_inet6_addr(&adr->s_inet6.sin6_addr);
+      res = caml_alloc_small(2, 1);
+      Field(res,0) = a;
+      Field(res,1) = Val_int(ntohs(adr->s_inet6.sin6_port));
       break;
     }
 #endif
@@ -166,7 +164,7 @@ value alloc_sockaddr(union sock_addr_union * adr /*in*/,
     if (close_on_error != -1) close (close_on_error);
     unix_error(EAFNOSUPPORT, "", Nothing);
   }
-  return res;
+  CAMLreturn(res);
 }
 
 #endif

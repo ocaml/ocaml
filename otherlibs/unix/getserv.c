@@ -31,20 +31,19 @@
 
 static value alloc_service_entry(struct servent *entry)
 {
+  CAMLparam0();
+  CAMLlocal3(name, aliases, proto);
   value res;
-  value name = Val_unit, aliases = Val_unit, proto = Val_unit;
 
-  Begin_roots3 (name, aliases, proto);
-    name = caml_copy_string(entry->s_name);
-    aliases = caml_copy_string_array((const char**)entry->s_aliases);
-    proto = caml_copy_string(entry->s_proto);
-    res = caml_alloc_small(4, 0);
-    Field(res,0) = name;
-    Field(res,1) = aliases;
-    Field(res,2) = Val_int(ntohs(entry->s_port));
-    Field(res,3) = proto;
-  End_roots();
-  return res;
+  name = caml_copy_string(entry->s_name);
+  aliases = caml_copy_string_array((const char**)entry->s_aliases);
+  proto = caml_copy_string(entry->s_proto);
+  res = caml_alloc_small(4, 0);
+  Field(res,0) = name;
+  Field(res,1) = aliases;
+  Field(res,2) = Val_int(ntohs(entry->s_port));
+  Field(res,3) = proto;
+  CAMLreturn(res);
 }
 
 CAMLprim value unix_getservbyname(value name, value proto)

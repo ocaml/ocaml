@@ -29,30 +29,29 @@
 
 CAMLprim value unix_write(value fd, value buf, value vofs, value vlen)
 {
+  CAMLparam1(buf);
   long ofs, len, written;
   int numbytes, ret;
   char iobuf[UNIX_BUFFER_SIZE];
 
-  Begin_root (buf);
-    ofs = Long_val(vofs);
-    len = Long_val(vlen);
-    written = 0;
-    while (len > 0) {
-      numbytes = len > UNIX_BUFFER_SIZE ? UNIX_BUFFER_SIZE : len;
-      memmove (iobuf, &Byte(buf, ofs), numbytes);
-      caml_enter_blocking_section();
-      ret = write(Int_val(fd), iobuf, numbytes);
-      caml_leave_blocking_section();
-      if (ret == -1) {
-        if ((errno == EAGAIN || errno == EWOULDBLOCK) && written > 0) break;
-        uerror("write", Nothing);
-      }
-      written += ret;
-      ofs += ret;
-      len -= ret;
+  ofs = Long_val(vofs);
+  len = Long_val(vlen);
+  written = 0;
+  while (len > 0) {
+    numbytes = len > UNIX_BUFFER_SIZE ? UNIX_BUFFER_SIZE : len;
+    memmove (iobuf, &Byte(buf, ofs), numbytes);
+    caml_enter_blocking_section();
+    ret = write(Int_val(fd), iobuf, numbytes);
+    caml_leave_blocking_section();
+    if (ret == -1) {
+      if ((errno == EAGAIN || errno == EWOULDBLOCK) && written > 0) break;
+      uerror("write", Nothing);
     }
-  End_roots();
-  return Val_long(written);
+    written += ret;
+    ofs += ret;
+    len -= ret;
+  }
+  CAMLreturn(Val_long(written));
 }
 
 /* When an error occurs after the first loop, unix_write reports the
@@ -65,22 +64,21 @@ CAMLprim value unix_write(value fd, value buf, value vofs, value vlen)
 
 CAMLprim value unix_single_write(value fd, value buf, value vofs, value vlen)
 {
+  CAMLparam1(buf);
   long ofs, len;
   int numbytes, ret;
   char iobuf[UNIX_BUFFER_SIZE];
 
-  Begin_root (buf);
-    ofs = Long_val(vofs);
-    len = Long_val(vlen);
-    ret = 0;
-    if (len > 0) {
-      numbytes = len > UNIX_BUFFER_SIZE ? UNIX_BUFFER_SIZE : len;
-      memmove (iobuf, &Byte(buf, ofs), numbytes);
-      caml_enter_blocking_section();
-      ret = write(Int_val(fd), iobuf, numbytes);
-      caml_leave_blocking_section();
-      if (ret == -1) uerror("single_write", Nothing);
-    }
-  End_roots();
-  return Val_int(ret);
+  ofs = Long_val(vofs);
+  len = Long_val(vlen);
+  ret = 0;
+  if (len > 0) {
+    numbytes = len > UNIX_BUFFER_SIZE ? UNIX_BUFFER_SIZE : len;
+    memmove (iobuf, &Byte(buf, ofs), numbytes);
+    caml_enter_blocking_section();
+    ret = write(Int_val(fd), iobuf, numbytes);
+    caml_leave_blocking_section();
+    if (ret == -1) uerror("single_write", Nothing);
+  }
+  CAMLreturn(Val_int(ret));
 }

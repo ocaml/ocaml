@@ -83,19 +83,19 @@ CAMLprim value caml_ml_mutex_new(value unit)        /* ML */
 
 CAMLprim value caml_ml_mutex_lock(value wrapper)     /* ML */
 {
+  CAMLparam1(wrapper);
   sync_retcode retcode;
   sync_mutex mut = Mutex_val(wrapper);
 
   /* PR#4351: first try to acquire mutex without releasing the master lock */
-  if (sync_mutex_trylock(mut) == MUTEX_PREVIOUSLY_UNLOCKED) return Val_unit;
-  /* If unsuccessful, block on mutex */
-  Begin_root(wrapper)
+  if (sync_mutex_trylock(mut) != MUTEX_PREVIOUSLY_UNLOCKED) {
+    /* If unsuccessful, block on mutex */
     caml_enter_blocking_section();
     retcode = sync_mutex_lock(mut);
     caml_leave_blocking_section();
-  End_roots();
-  sync_check_error(retcode, "Mutex.lock");
-  return Val_unit;
+    sync_check_error(retcode, "Mutex.lock");
+  }
+  CAMLreturn(Val_unit);
 }
 
 CAMLprim value caml_ml_mutex_unlock(value wrapper)           /* ML */
@@ -162,20 +162,19 @@ CAMLprim value caml_ml_condition_new(value unit)        /* ML */
 
 CAMLprim value caml_ml_condition_wait(value wcond, value wmut)     /* ML */
 {
+  CAMLparam2(wcond, wmut);
   sync_condvar cond = Condition_val(wcond);
   sync_mutex mut = Mutex_val(wmut);
   sync_retcode retcode;
 
   CAML_EV_BEGIN(EV_DOMAIN_CONDITION_WAIT);
-  Begin_roots2(wcond, wmut)
-    caml_enter_blocking_section();
-    retcode = sync_condvar_wait(cond, mut);
-    caml_leave_blocking_section();
-  End_roots();
+  caml_enter_blocking_section();
+  retcode = sync_condvar_wait(cond, mut);
+  caml_leave_blocking_section();
   sync_check_error(retcode, "Condition.wait");
   CAML_EV_END(EV_DOMAIN_CONDITION_WAIT);
 
-  return Val_unit;
+  CAMLreturn(Val_unit);
 }
 
 CAMLprim value caml_ml_condition_signal(value wrapper)           /* ML */
