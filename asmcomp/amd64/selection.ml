@@ -174,14 +174,14 @@ method select_addressing _chunk exp =
     | Ascaledadd(e1, e2, scale) ->
         (Iindexed2scaled(scale, d), Ctuple[e1; e2])
 
-method! select_store is_assign addr exp =
+method! select_store chunk is_assign addr exp =
   match exp with
     Cconst_int (n, _dbg) when is_immediate n ->
       (Ispecific(Istore_int(Nativeint.of_int n, addr, is_assign)), Ctuple [])
   | (Cconst_natint (n, _dbg)) when is_immediate_natint n ->
       (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
   | _ ->
-      super#select_store is_assign addr exp
+      super#select_store chunk is_assign addr exp
 
 method! select_operation op args dbg =
   match op with

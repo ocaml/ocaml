@@ -204,12 +204,6 @@ val field_address : expression -> int -> Debuginfo.t -> expression
 val get_field_gen :
   Asttypes.mutable_flag -> expression -> int -> Debuginfo.t -> expression
 
-(** [set_field ptr n newval init dbg] returns an expression for setting the
-    [n]th field of the block pointed to by [ptr] to [newval] *)
-val set_field :
-  expression -> int -> expression -> Lambda.initialization_or_assignment ->
-  Debuginfo.t -> expression
-
 (** Load a block's header *)
 val get_header : expression -> Debuginfo.t -> expression
 

@@ -85,8 +85,8 @@ class virtual selector_generic : object
   method select_condition : Cmm.expression -> Mach.test * Cmm.expression
     (* Can be overridden to deal with special test instructions *)
   method select_store :
-    bool -> Arch.addressing_mode -> Cmm.expression ->
-                                         Mach.operation * Cmm.expression
+    Cmm.memory_chunk -> bool -> Arch.addressing_mode -> Cmm.expression ->
+    Mach.operation * Cmm.expression
     (* Can be overridden to deal with special store constant instructions *)
   method regs_for : Cmm.machtype -> Reg.t array
     (* Return an array of fresh registers of the given type.

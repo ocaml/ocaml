@@ -280,7 +280,7 @@ expr:
           Debuginfo.none) }
   | LPAREN ADDRASET expr expr expr RPAREN
       { let open Lambda in
-        Cop(Cstore (Word_val, Assignment),
+        Cop(Cstore (Word_int, Assignment),
             [access_array $3 $4 Arch.size_addr; $5], Debuginfo.none) }
   | LPAREN INTASET expr expr expr RPAREN
       { let open Lambda in

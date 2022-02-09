@@ -196,7 +196,7 @@ method select_addressing _chunk exp =
   | (Ascaledadd(e1, e2, scale), d) ->
       (Iindexed2scaled(scale, d), Ctuple[e1; e2])
 
-method! select_store is_assign addr exp =
+method! select_store chunk is_assign addr exp =
   match exp with
     Cconst_int (n, _) ->
       (Ispecific(Istore_int(Nativeint.of_int n, addr, is_assign)), Ctuple [])
@@ -205,7 +205,7 @@ method! select_store is_assign addr exp =
   | Cconst_symbol (s, _) ->
       (Ispecific(Istore_symbol(s, addr, is_assign)), Ctuple [])
   | _ ->
-      super#select_store is_assign addr exp
+      super#select_store chunk is_assign addr exp
 
 method! select_operation op args dbg =
   match op with

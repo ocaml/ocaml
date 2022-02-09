@@ -640,9 +640,6 @@ let get_field_gen mutability ptr n dbg =
   Cop(Cload {memory_chunk=Word_val; mutability; is_atomic=false},
       [field_address ptr n dbg], dbg)
 
-let set_field ptr n newval init dbg =
-  Cop(Cstore (Word_val, init), [field_address ptr n dbg; newval], dbg)
-
 let non_profinfo_mask =
   if Config.profinfo
   then (1 lsl (64 - Config.profinfo_width)) - 1
@@ -2222,7 +2219,8 @@ let setfield n ptr init arg1 arg2 dbg =
              [field_address arg1 n dbg; arg2],
              dbg))
   | Simple ->
-      return_unit dbg (set_field arg1 n arg2 init dbg)
+      return_unit dbg
+        (Cop(Cstore (Word_int, init), [field_address arg1 n dbg; arg2], dbg))
 
 let setfloatfield n init arg1 arg2 dbg =
   return_unit dbg (

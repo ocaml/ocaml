@@ -596,9 +596,10 @@ let emit_instr env fallthrough i =
       | Double ->
           I.movsd (addressing addressing_mode REAL8 i 0) dest
       end
-  | Lop(Istore(chunk, addr, _)) ->
+  | Lop(Istore(chunk, addr, is_assignment)) ->
       begin match chunk with
       | Word_int | Word_val ->
+          assert (not (chunk = Word_val && is_assignment));
           I.mov (arg i 0) (addressing addr QWORD i 1)
       | Byte_unsigned | Byte_signed ->
           I.mov (arg8 i 0) (addressing addr BYTE i 1)

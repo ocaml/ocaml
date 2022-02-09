@@ -400,8 +400,9 @@ method virtual select_addressing :
 
 (* Default instruction selection for stores (of words) *)
 
-method select_store is_assign addr arg =
-  (Istore(Word_val, addr, is_assign), arg)
+method select_store chunk is_assign addr arg =
+  assert (not (chunk = Word_val && is_assign));
+  (Istore(chunk, addr, is_assign), arg)
 
 (* call marking methods, documented in selectgen.mli *)
 val contains_calls = ref false
@@ -458,7 +459,7 @@ method select_operation op args _dbg =
         | Lambda.Assignment -> true
       in
       if chunk = Word_int || chunk = Word_val then begin
-        let (op, newarg2) = self#select_store is_assign addr arg2 in
+        let (op, newarg2) = self#select_store chunk is_assign addr arg2 in
         (op, [newarg2; eloc])
       end else begin
         (Istore(chunk, addr, is_assign), [arg2; eloc])
@@ -995,7 +996,7 @@ method emit_stores env data regs_addr =
     ref (Arch.offset_addressing Arch.identity_addressing (-Arch.size_int)) in
   List.iter
     (fun e ->
-      let (op, arg) = self#select_store false !a e in
+      let (op, arg) = self#select_store Word_val false !a e in
       match self#emit_expr env arg with
         None -> assert false
       | Some regs ->
