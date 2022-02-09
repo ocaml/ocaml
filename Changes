@@ -221,10 +221,11 @@ OCaml 4.14.0
   (Nicolás Ojeda Bär, review by John Whitington, Daniel Bünzli, David Allsopp
   and Xavier Leroy)
 
-* #10583: Add over 40 new functions in Seq.
+* #10583, #10998: Add over 40 new functions in Seq.
   (François Pottier and Simon Cruanes, review by Nicolás Ojeda Bär,
-   Daniel Bünzli, Naëla Courant, Craig Ferguson, Wiktor Kuchta, Xavier
-   Leroy, Guillaume Munch-Maccagnoni, Raphaël Proust, and Gabriel Scherer)
+  Daniel Bünzli, Naëla Courant, Craig Ferguson, Wiktor Kuchta,
+  Xavier Leroy, Guillaume Munch-Maccagnoni, Raphaël Proust, Gabriel Scherer
+  and Thierry Martinez)
 
 - #10596, #10978: Add with_open_bin, with_open_text and with_open_gen to
   In_channel and Out_channel. Also, add In_channel.input_all.
