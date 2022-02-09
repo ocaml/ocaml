@@ -118,16 +118,16 @@ let rec iteri_aux f i xs =
 let[@inline] iteri f xs =
   iteri_aux f 0 xs
 
-let rec fold_lefti_aux f i accu xs =
+let rec fold_lefti_aux f accu i xs =
   match xs() with
   | Nil ->
       accu
   | Cons (x, xs) ->
-      let accu = f i accu x in
-      fold_lefti_aux f (i+1) accu xs
+      let accu = f accu i x in
+      fold_lefti_aux f accu (i+1) xs
 
 let[@inline] fold_lefti f accu xs =
-  fold_lefti_aux f 0 accu xs
+  fold_lefti_aux f accu 0 xs
 
 let rec for_all p xs =
   match xs() with
