@@ -399,7 +399,7 @@ static void write_to_ring(ev_category category, ev_message_type type,
 
   /* Below we write the header. To reiterate the event header structure:
 
-    event header fields (for runtime events):
+    event header fields
 
     length (10 bits)
     runtime or user event (1 bit)
