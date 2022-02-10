@@ -216,7 +216,9 @@ create_and_start_ring_buffers(caml_domain_state *domain_state, void *data,
       current_metadata = mmap(NULL, current_ring_total_size,
                               PROT_READ | PROT_WRITE, MAP_SHARED, ring_fd, 0);
 
-      // TODO: Check metadata for null
+      if (current_metadata == NULL) {
+        caml_fatal_error("Unable to mmap ring buffer");
+      }
 
       close(ring_fd);
 #endif
