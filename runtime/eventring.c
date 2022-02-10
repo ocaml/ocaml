@@ -84,9 +84,9 @@ void caml_eventring_init() {
 
 static void teardown_eventring(caml_domain_state *domain_state, void *data,
                                int num_participating,
-                               caml_domain_state **participanting_domains) {
+                               caml_domain_state **participating_domains) {
   caml_global_barrier();
-  if (participanting_domains[0] == domain_state) {
+  if (participating_domains[0] == domain_state) {
 #ifdef _WIN32
     UnmapViewOfFile(current_metadata);
     CloseHandle(ring_file_handle);
@@ -123,12 +123,12 @@ void caml_eventring_destroy() {
 static void
 create_and_start_ring_buffers(caml_domain_state *domain_state, void *data,
                               int num_participating,
-                              caml_domain_state **participanting_domains) {
+                              caml_domain_state **participating_domains) {
   /* Everyone must be stopped for starting and stopping eventring */
   caml_global_barrier();
 
   /* Only do this on one domain */
-  if (participanting_domains[0] == domain_state) {
+  if (participating_domains[0] == domain_state) {
     /* Don't initialise eventring twice */
     if (!atomic_load_acq(&eventring_enabled)) {
       int ret, ring_headers_length;
