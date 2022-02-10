@@ -100,6 +100,7 @@ void caml_parse_ocamlrunparam(void)
       case 'M': scanmult (opt, &params.init_custom_major_ratio); break;
       case 'm': scanmult (opt, &params.init_custom_minor_ratio); break;
       case 'n': scanmult (opt, &params.init_custom_minor_max_bsz); break;
+      case 'o': scanmult (opt, &params.init_percent_free); break;
       case 'p': scanmult (opt, &params.parser_trace); break;
       case 'R': break; /*  see stdlib/hashtbl.mli */
       case 's': scanmult (opt, &params.init_minor_heap_wsz); break;
