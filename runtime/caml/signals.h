@@ -40,6 +40,11 @@ CAMLextern void caml_process_pending_actions (void);
 CAMLextern int caml_check_pending_actions (void);
 /* Returns 1 if there are pending actions, 0 otherwise. */
 
+// FIXME: Not implemented in OCaml 5.0.
+//CAMLextern value caml_process_pending_actions_exn (void);
+/* Same as [caml_process_pending_actions], but returns the exception
+   if any (otherwise returns [Val_unit]). */
+
 #ifdef CAML_INTERNALS
 
 #ifndef NSIG
@@ -55,7 +60,7 @@ CAMLextern atomic_uintnat caml_pending_signals[NSIG_WORDS];
 #define caml_requested_major_slice (Caml_state_field(requested_major_slice))
 #define caml_requested_minor_gc (Caml_state_field(requested_minor_gc))
 
-int caml_check_for_pending_signals(void);
+int caml_check_pending_signals(void);
 void caml_update_young_limit(void);
 void caml_request_major_slice (void);
 void caml_request_minor_gc (void);
@@ -64,10 +69,10 @@ CAMLextern int caml_rev_convert_signal_number (int);
 value caml_execute_signal_exn(int signal_number, int in_signal_handler);
 CAMLextern void caml_record_signal(int signal_number);
 CAMLextern value caml_process_pending_signals_exn(void);
-CAMLextern void caml_process_pending_signals(void);
 void caml_set_action_pending (void);
+value caml_process_pending_actions_with_root (value extra_root); // raises
+value caml_process_pending_actions_with_root_exn (value extra_root);
 
-CAMLextern value caml_process_pending_signals_with_root_exn (value extra_root);
 void caml_init_signal_handling(void);
 int caml_init_signal_stack(void);
 void caml_free_signal_stack(void);

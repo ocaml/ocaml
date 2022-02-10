@@ -42,7 +42,7 @@ CAMLexport atomic_uintnat caml_pending_signals[NSIG_WORDS];
 
 static caml_plat_mutex signal_install_mutex = CAML_PLAT_MUTEX_INITIALIZER;
 
-int caml_check_for_pending_signals(void)
+int caml_check_pending_signals(void)
 {
   int i;
   /* [MM] This fence compensates for the fact that Caml_check_gc_interrupt
@@ -72,7 +72,7 @@ CAMLexport value caml_process_pending_signals_exn(void)
 
   /* Check that there is indeed a pending signal before issuing the
       syscall in [pthread_sigmask]. */
-  if (!caml_check_for_pending_signals())
+  if (!caml_check_pending_signals())
     return Val_unit;
 
 #ifdef POSIX_SIGNALS
@@ -109,11 +109,6 @@ CAMLexport value caml_process_pending_signals_exn(void)
   next_word: /* skip */;
   }
   return Val_unit;
-}
-
-CAMLexport void caml_process_pending_signals(void) {
-  value exn = caml_process_pending_signals_exn();
-  caml_raise_if_exception(exn);
 }
 
 /* Record the delivery of a signal, and arrange for it to be processed
@@ -157,11 +152,11 @@ CAMLexport void caml_enter_blocking_section(void)
 {
   while (1){
     /* Process all pending signals now */
-    caml_process_pending_signals();
+    caml_raise_if_exception(caml_process_pending_signals_exn());
     caml_enter_blocking_section_hook ();
     /* Check again for pending signals.
        If none, done; otherwise, try again */
-    if (!caml_check_for_pending_signals()) break;
+    if (!caml_check_pending_signals()) break;
     caml_leave_blocking_section_hook ();
   }
 }
@@ -237,16 +232,46 @@ void caml_request_minor_gc (void)
   caml_interrupt_self();
 }
 
-CAMLextern value caml_process_pending_signals_with_root_exn(value extra_root)
+CAMLexport int caml_check_pending_actions(void)
 {
-  CAMLparam1(extra_root);
-  value exn = caml_process_pending_signals_exn();
-  if (Is_exception_result(exn))
-    CAMLreturn(exn);
-  CAMLdrop;
-  return extra_root;
+  return (caml_check_pending_interrupt() ||
+          caml_check_pending_signals());
 }
 
+CAMLexport void caml_process_pending_actions(void)
+{
+  caml_handle_gc_interrupt();
+  caml_raise_if_exception(caml_process_pending_signals_exn());
+}
+
+value caml_process_pending_actions_with_root(value root)
+{
+  if (caml_check_pending_actions()) {
+    CAMLparam1(root);
+    caml_process_pending_actions();
+    CAMLdrop;
+  }
+  return root;
+}
+
+value caml_process_pending_actions_with_root_exn(value root)
+{
+  /* FIXME: call handle_gc_interrupt and finalisers */
+  if (caml_check_pending_signals()) {
+    CAMLparam1(root);
+    value exn = caml_process_pending_signals_exn();
+    if (Is_exception_result(exn)) CAMLreturn(exn);
+    CAMLdrop;
+  }
+  return root;
+}
+
+/* FIXME: not implemented (see above)
+CAMLexport value caml_process_pending_actions_exn(void)
+{
+  return caml_process_pending_actions_with_root_exn(Val_unit);
+}
+*/
 
 /* OS-independent numbering of signals */
 
@@ -405,7 +430,7 @@ void caml_free_signal_stack(void)
      but OSX/Darwin fails if the size isn't set. */
   disable.ss_size = SIGSTKSZ;
   if (sigaltstack(&disable, &stk) < 0) {
-    caml_fatal_error_arg("Failed to reset signal stack: %s", strerror(errno));
+    caml_fatal_error("Failed to reset signal stack: %s", strerror(errno));
   }
   /* Memory was allocated with malloc directly; see caml_init_signal_stack */
   free(stk.ss_sp);
@@ -508,6 +533,6 @@ CAMLprim value caml_install_signal_handler(value signal_number, value action)
     caml_modify(&Field(caml_signal_handlers, sig), Field(action, 0));
     caml_plat_unlock(&signal_install_mutex);
   }
-  caml_process_pending_signals();
+  caml_raise_if_exception(caml_process_pending_signals_exn());
   CAMLreturn (res);
 }

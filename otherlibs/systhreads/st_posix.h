@@ -388,7 +388,7 @@ value caml_thread_sigmask(value cmd, value sigs) /* ML */
   caml_leave_blocking_section();
   sync_check_error(retcode, "Thread.sigmask");
   /* Run any handlers for just-unmasked pending signals */
-  caml_process_pending_signals();
+  caml_process_pending_actions();
   return st_encode_sigset(&oldset);
 #else
   caml_invalid_argument("Thread.sigmask not implemented");

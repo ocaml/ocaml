@@ -26,6 +26,7 @@
 #include "caml/memory.h"
 #include "caml/mlvalues.h"
 #include "caml/shared_heap.h"
+#include "caml/signals.h"
 #include "caml/weak.h"
 
 value caml_dummy[] =
@@ -63,7 +64,8 @@ CAMLprim value caml_ephe_create (value len)
   domain_state->ephe_info->live = res;
   for (i = CAML_EPHE_DATA_OFFSET; i < size; i++)
     Field(res, i) = caml_ephe_none;
-  return res;
+  /* run memprof callbacks */
+  return caml_process_pending_actions_with_root(res);
 }
 
 CAMLprim value caml_weak_create (value len)
@@ -252,6 +254,8 @@ static value ephe_get_field (value e, mlsize_t offset)
     res = caml_alloc_shr (1, Some_tag);
     caml_initialize(&Field(res, 0), elt);
   }
+  /* run GC and memprof callbacks */
+  caml_process_pending_actions();
   CAMLreturn (res);
 }
 
@@ -279,7 +283,10 @@ static value ephe_get_field_copy (value e, mlsize_t offset)
 
   clean_field(e, offset);
   v = Field(e, offset);
-  if (v == caml_ephe_none) CAMLreturn (None_val);
+  if (v == caml_ephe_none) {
+    res = None_val;
+    goto out;
+  }
 
   /** Don't copy custom_block #7279 */
   if (Is_block(v) && Tag_val(v) != Custom_tag) {
@@ -319,6 +326,9 @@ static value ephe_get_field_copy (value e, mlsize_t offset)
   }
   res = caml_alloc_shr (1, Some_tag);
   caml_initialize(&Field(res, 0), elt + infix_offs);
+ out:
+  /* run GC and memprof callbacks */
+  caml_process_pending_actions();
   CAMLreturn(res);
 }
 

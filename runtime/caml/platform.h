@@ -18,6 +18,8 @@
 #define CAML_PLAT_THREADS_H
 /* Platform-specific concurrency and memory primitives */
 
+#ifdef CAML_INTERNALS
+
 #include <pthread.h>
 #include <errno.h>
 #include <string.h>
@@ -109,11 +111,6 @@ void caml_plat_broadcast(caml_plat_cond*);
 void caml_plat_signal(caml_plat_cond*);
 void caml_plat_cond_free(caml_plat_cond*);
 
-struct caml__mutex_unwind {
-  caml_plat_mutex* mutex;
-  struct caml__mutex_unwind* next;
-};
-
 /* Memory management primitives (mmap) */
 
 uintnat caml_mem_round_up_pages(uintnat size);
@@ -126,8 +123,7 @@ void caml_mem_unmap(void* mem, uintnat size);
 Caml_inline void check_err(char* action, int err)
 {
   if (err) {
-    caml_fatal_error_arg2(
-      "Fatal error during %s", action, ": %s\n", strerror(err));
+    caml_fatal_error("Fatal error during %s: %s\n", action, strerror(err));
   }
 }
 
@@ -167,5 +163,7 @@ Caml_inline void caml_plat_unlock(caml_plat_mutex* m)
 /* On Windows, the SYSTEM_INFO.dwPageSize is a DWORD (32-bit), but conveniently
    long is also 32-bit */
 extern long caml_sys_pagesize;
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_PLATFORM_H */

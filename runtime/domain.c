@@ -1209,22 +1209,23 @@ static void caml_poll_gc_work(void)
 
 }
 
-CAMLexport int caml_check_pending_actions (void)
+int caml_check_pending_interrupt(void)
 {
   atomic_uintnat* young_limit = domain_self->interruptor.interrupt_word;
-
   return atomic_load_acq(young_limit) == INTERRUPT_MAGIC;
 }
 
-static void handle_gc_interrupt() {
+/* FIXME: do not raise async exceptions */
+void caml_handle_gc_interrupt(void)
+{
   atomic_uintnat* young_limit = domain_self->interruptor.interrupt_word;
   CAMLalloc_point_here;
 
   CAML_EV_BEGIN(EV_INTERRUPT_GC);
-  if (caml_check_pending_actions()) {
+  if (caml_check_pending_interrupt()) {
     /* interrupt */
     CAML_EV_BEGIN(EV_INTERRUPT_REMOTE);
-    while (caml_check_pending_actions()) {
+    while (caml_check_pending_interrupt()) {
       uintnat i = INTERRUPT_MAGIC;
       atomic_compare_exchange_strong(
           young_limit, &i, (uintnat)Caml_state->young_start);
@@ -1236,22 +1237,6 @@ static void handle_gc_interrupt() {
   caml_poll_gc_work();
 
   CAML_EV_END(EV_INTERRUPT_GC);
-}
-
-CAMLexport void caml_process_pending_actions(void)
-{
-  handle_gc_interrupt();
-  caml_process_pending_signals();
-}
-
-void caml_handle_gc_interrupt_no_async_exceptions(void)
-{
-  handle_gc_interrupt();
-}
-
-void caml_handle_gc_interrupt(void)
-{
-  handle_gc_interrupt();
 }
 
 CAMLexport int caml_bt_is_in_blocking_section(void)

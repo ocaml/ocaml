@@ -41,8 +41,7 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
     if (wosize == 0){
       result = Atom (tag);
     }else{
-      Alloc_small (result, wosize, tag,
-                   { caml_handle_gc_interrupt_no_async_exceptions(); });
+      Alloc_small (result, wosize, tag, { caml_handle_gc_interrupt(); });
       if (tag < No_scan_tag){
         for (i = 0; i < wosize; i++) Field (result, i) = Val_unit;
       }
@@ -66,7 +65,7 @@ Caml_inline void enter_gc_preserving_vals(mlsize_t wosize, value* vals)
      the fast path. */
   CAMLlocalN(vals_copy, wosize);
   for (i = 0; i < wosize; i++) vals_copy[i] = vals[i];
-  caml_handle_gc_interrupt_no_async_exceptions();
+  caml_handle_gc_interrupt();
   for (i = 0; i < wosize; i++) vals[i] = vals_copy[i];
   CAMLreturn0;
 }
@@ -167,8 +166,7 @@ CAMLexport value caml_alloc_small (mlsize_t wosize, tag_t tag)
   CAMLassert (wosize <= Max_young_wosize);
   CAMLassert (tag < 256);
   CAMLassert (tag != Infix_tag);
-  Alloc_small (result, wosize, tag,
-               { caml_handle_gc_interrupt_no_async_exceptions(); });
+  Alloc_small (result, wosize, tag, { caml_handle_gc_interrupt(); });
   return result;
 }
 
@@ -186,8 +184,7 @@ CAMLexport value caml_alloc_string (mlsize_t len)
   mlsize_t wosize = (len + sizeof (value)) / sizeof (value);
 
   if (wosize <= Max_young_wosize) {
-    Alloc_small (result, wosize, String_tag,
-                 { caml_handle_gc_interrupt_no_async_exceptions(); });
+    Alloc_small (result, wosize, String_tag, { caml_handle_gc_interrupt(); });
   }else{
     result = caml_alloc_shr (wosize, String_tag);
     result = caml_check_urgent_gc (result);
@@ -260,7 +257,7 @@ value caml_alloc_float_array(mlsize_t len)
       return Atom(0);
     else
       Alloc_small (result, wosize, Double_array_tag,
-                   { caml_handle_gc_interrupt_no_async_exceptions(); });
+                   { caml_handle_gc_interrupt(); });
   } else {
     result = caml_alloc_shr (wosize, Double_array_tag);
     result = caml_check_urgent_gc (result);
