@@ -44,12 +44,6 @@
 #include <unistd.h>
 #endif
 
-#ifdef HAS_MACH_ABSOLUTE_TIME
-#include <mach/mach_time.h>
-#elif HAS_POSIX_MONOTONIC_CLOCK
-#include <time.h>
-#endif
-
 typedef enum { EV_RUNTIME, EV_USER } ev_category;
 
 static struct eventring_metadata_header *current_metadata = NULL;

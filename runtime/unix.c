@@ -30,7 +30,6 @@
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <time.h>
 #include <errno.h>
 #include "caml/config.h"
 #if defined(SUPPORT_DYNAMIC_LINKING) && !defined(BUILDING_LIBCAMLRUNS)
@@ -43,6 +42,11 @@
 #endif
 #ifdef HAS_UNISTD
 #include <unistd.h>
+#endif
+#ifdef HAS_POSIX_MONOTONIC_CLOCK
+#include <time.h>
+#elif HAS_MACH_ABSOLUTE_TIME
+#include <mach/mach_time.h>
 #endif
 #ifdef HAS_DIRENT
 #include <dirent.h>
