@@ -26,7 +26,8 @@ let test_different_ids () =
   assert (get_id d1 <> get_id d2);
   join d1; join d2;
   let d3 = Domain.spawn id in
-  assert (get_id d1 <> get_id d3)
+  assert (get_id d1 <> get_id d3);
+  join d3
 
 
 let () =
