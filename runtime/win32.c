@@ -1154,3 +1154,20 @@ void caml_init_os_params(void)
   now.HighPart = stamp.dwHighDateTime;
   now.QuadPart *= 100;
 }
+
+int64_t caml_time_counter(void)
+{
+  static double clock_freq = 0;
+  static LARGE_INTEGER now;
+
+  if (clock_freq == 0) {
+    LARGE_INTEGER f;
+    if (!QueryPerformanceFrequency(&f))
+      return 0;
+    clock_freq = (1000000000.0 / f.QuadPart);
+  };
+
+  if (!QueryPerformanceCounter(&now))
+    return 0;
+  return (int64_t)(now.QuadPart * clock_freq);
+}

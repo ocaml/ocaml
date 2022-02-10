@@ -68,45 +68,6 @@ static int ring_size_words;
 static atomic_uintnat eventring_enabled = 0;
 static atomic_uintnat eventring_paused = 0;
 
-static int64_t time_counter(void) {
-#ifdef _WIN32
-  static double clock_freq = 0;
-  static LARGE_INTEGER now;
-
-  if (clock_freq == 0) {
-    LARGE_INTEGER f;
-    if (!QueryPerformanceFrequency(&f))
-      return 0;
-    clock_freq = (1000000000.0 / f.QuadPart);
-  };
-
-  if (!QueryPerformanceCounter(&now))
-    return 0;
-  return (int64_t)(now.QuadPart * clock_freq);
-
-#elif defined(HAS_MACH_ABSOLUTE_TIME)
-  static mach_timebase_info_data_t time_base = {0};
-  uint64_t now;
-
-  if (time_base.denom == 0) {
-    if (mach_timebase_info(&time_base) != KERN_SUCCESS)
-      return 0;
-
-    if (time_base.denom == 0)
-      return 0;
-  }
-
-  now = mach_absolute_time();
-  return (int64_t)((now * time_base.numer) / time_base.denom);
-
-#elif defined(HAS_POSIX_MONOTONIC_CLOCK)
-  struct timespec t;
-  clock_gettime(CLOCK_MONOTONIC, &t);
-  return (int64_t)t.tv_sec * (int64_t)1000000000 + (int64_t)t.tv_nsec;
-
-#endif
-}
-
 static void write_to_ring(ev_category category, ev_message_type type,
                           int event_id, int event_length, uint64_t *content,
                           int word_offset);
@@ -357,7 +318,7 @@ static void write_to_ring(ev_category category, ev_message_type type,
       current_metadata->ring_size_elements - ring_tail_offset;
   uint64_t padding_required = 0;
 
-  uint64_t timestamp = time_counter();
+  uint64_t timestamp = caml_time_counter();
 
   /* length must be less than 2^10 */
   CAMLassert(event_length < EVENTRING_MAX_MSG_LENGTH);
