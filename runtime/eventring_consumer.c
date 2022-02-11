@@ -295,7 +295,10 @@ caml_eventring_read_poll(struct caml_eventring_cursor *cursor,
   }
 
   /* this loop looks a bit odd because we're iterating from the last domain
-     that we read from on the last read_poll call and then looping around. */
+     that we read from on the last read_poll call and then looping around.
+     This is necessary because in the case where the consumer can't keep up
+     with message production (i.e max_events is hit each time) it ensures that
+     messages are read from all domains, rather than just the first. */
   for (int i = 0; i < cursor->metadata->max_domains && !early_exit; i++) {
     int domain_num = (start_domain + i) % cursor->metadata->max_domains;
 
