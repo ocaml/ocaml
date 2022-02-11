@@ -185,8 +185,9 @@ val resume : unit -> unit
 val create_cursor : (string * int) option -> cursor
 (** [create_cursor path_pid] creates a cursor to read from an eventring. If
     [path_pid] is None then a cursor is created for the current process.
-    Otherwise the pair contains a string [path] and int [pid] for the
-    eventring of an external process to monitor. *)
+    Otherwise the pair contains a string [path] to the directory that contains
+    the [pid].eventring file and int [pid] for the eventring of an external
+    process to monitor. *)
 
 val free_cursor : cursor -> unit
 (** Free a previously created eventring cursor *)
