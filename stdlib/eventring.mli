@@ -23,7 +23,7 @@
     When enabled (either via setting the OCAML_EVENTRING_START environment
     variable or calling Eventring.start) a file with the pid of the process and
     extension .eventring will be created. By default this is in the current
-    directory but can be over-ridden by the OCAML_EVENTRING_PREFIX environent
+    directory but can be over-ridden by the OCAML_EVENTRING_DIR environent
     variable. Each domain maintains its own ring buffer in a section of the
     larger file into which it emits events.
 
