@@ -3007,13 +3007,17 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
       end else begin
         let sourceintf =
           Filename.remove_extension sourcefile ^ !Config.interface_suffix in
-        if Sys.file_exists sourceintf then begin
+        if !Clflags.cmi_file <> None || Sys.file_exists sourceintf then begin
           let intf_file =
-            try
-              Load_path.find_uncap (modulename ^ ".cmi")
-            with Not_found ->
-              raise(Error(Location.in_file sourcefile, Env.empty,
-                          Interface_not_compiled sourceintf)) in
+            match !Clflags.cmi_file with
+            | None ->
+              (try
+                Load_path.find_uncap (modulename ^ ".cmi")
+              with Not_found ->
+                raise(Error(Location.in_file sourcefile, Env.empty,
+                      Interface_not_compiled sourceintf)))
+            | Some cmi_file -> cmi_file
+          in
           let dclsig = Env.read_signature modulename intf_file in
           let coercion, shape =
             Includemod.compunit initial_env ~mark:Mark_positive
@@ -3044,7 +3048,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
           normalize_signature simple_sg;
           Typecore.force_delayed_checks ();
           (* See comment above. Here the target signature contains all
-             the value being exported. We can still capture unused
+             the values being exported. We can still capture unused
              declarations like "let x = true;; let x = 1;;", because in this
              case, the inferred signature contains only the last declaration. *)
           let shape = Shape.local_reduce shape in

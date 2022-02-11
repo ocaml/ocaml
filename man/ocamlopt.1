@@ -301,6 +301,10 @@ can help in writing an explicit interface (.mli file) for a file:
 just redirect the standard output of the compiler to a .mli file,
 and edit that file to remove all declarations of unexported names.
 .TP
+.B \-cmi-file \ filename
+Type-check the source implementation to be compiled against the
+specified interface file (by-passes the normal lookup for .mli and .cmi files).
+.TP
 .BI \-I \ directory
 Add the given directory to the list of directories searched for
 compiled interface files (.cmi), compiled object code files (.cmx),
