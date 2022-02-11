@@ -163,13 +163,24 @@ module Callbacks : sig
 end
 
 val start : unit -> unit
-(** Start eventring on the current process *)
+(** [start ()] will start the collection of events in the runtime if not already
+  started.
+
+  Events can be consumed by creating a cursor with [create_cursor] and providing
+  a set of callbacks to be called for each type of event.
+*)
 
 val pause : unit -> unit
-(** Pause eventring on the current process *)
+(** [pause ()] will pause the collection of events in the runtime.
+   Traces are collected if the program has called [Eventring.start ()] or
+   the OCAML_EVENTRING_START environment variable has been set.
+*)
 
 val resume : unit -> unit
-(** Resume eventring on the current process *)
+(** [resume ()] will resume the collection of events in the runtime.
+   Traces are collected if the program has called [Eventring.start ()] or
+   the OCAML_EVENTRING_START environment variable has been set.
+*)
 
 val create_cursor : (string * int) option -> cursor
 (** [create_cursor path_pid] creates a cursor to read from an eventring. If
