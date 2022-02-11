@@ -593,7 +593,7 @@ void caml_init_domains(uintnat minor_heap_wsz) {
 
   /* reserve memory space for minor heaps */
   size = (uintnat)Bsize_wsize(Minor_heap_max) * Max_domains;
-  heaps_base = caml_mem_map(size, size, 1 /* reserve_only */);
+  heaps_base = caml_mem_map(size, caml_sys_pagesize, 1 /* reserve_only */);
   if (heaps_base == NULL)
     caml_fatal_error("Not enough heap memory to start up");
 
