@@ -436,9 +436,6 @@ void caml_ev_alloc(uint64_t sz) {
   }
 }
 
-/*  Note that this function does not trigger an actual disk flush, it just
-    pushes events in the event buffer.
-*/
 void caml_ev_alloc_flush() {
   int i;
 
