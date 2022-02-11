@@ -44,6 +44,8 @@
 #include <unistd.h>
 #endif
 
+#define EVENTRING_VERSION 1
+
 typedef enum { EV_RUNTIME, EV_USER } ev_category;
 
 static struct eventring_metadata_header *current_metadata = NULL;
@@ -220,7 +222,7 @@ create_and_start_ring_buffers(caml_domain_state *domain_state, void *data,
       ring_headers_length =
           Max_domains * sizeof(struct eventring_buffer_header);
 
-      current_metadata->version = 1;
+      current_metadata->version = EVENTRING_VERSION;
       current_metadata->max_domains = Max_domains;
       current_metadata->ring_header_size_bytes =
           sizeof(struct eventring_buffer_header);
