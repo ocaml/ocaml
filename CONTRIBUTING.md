@@ -60,6 +60,40 @@ https://help.github.com/articles/allowing-changes-to-a-pull-request-branch-creat
 significantly delay the inclusion of an otherwise perfectly ok
 contribution.
 
+### Maintainers
+
+The current list of maintainers is as follows:
+
+- @alainfrisch Alain Frisch
+- @Armael Armaël Guéneau
+- @avsm Anil Madhavapeddy
+- @chambart Pierre Chambart
+- @damiendoligez Damien Doligez
+- @dra27 David Allsopp
+- @Engil Enguerrand
+- @garrigue Jacques Garrigue
+- @gasche Gabriel Scherer
+- @jhjourdan Jacques-Henri Jourdan
+- @kayceesrk KC Sivaramakrishnan
+- @let-def Frédéric Bour
+- @lpw25 Leo White
+- @lthls Vincent Laviron
+- @maranget Luc Maranget
+- @mshinwell Mark Shinwell
+- @nojb Nicolás Ojeda Bär
+- @Octachron Florian Angeletti
+- @sadiqj Sadiq Jaffer
+- @shindere Sébastien Hinderer
+- @stedolan Stephen Dolan
+- @trefis Thomas Refis
+- @xavierleroy Xavier Leroy
+- @yallop Jeremy Yallop
+
+<!-- Note: the list comes from [this Github
+page](https://github.com/orgs/ocaml/teams/ocaml-dev/members), plus
+Anil as co-owner of the github/ocaml/ organization. Oddly enough,
+Github does not make the page publicly accessible. -->
+
 
 ## Coding guidelines
 

@@ -57,6 +57,7 @@ tools/mantis2gh_stripped.csv typo.missing-header
 /.github/**              typo.missing-header typo.long-line=may typo.very-long-line=may
 
 /.mailmap                typo.long-line typo.missing-header typo.non-ascii
+/CONTRIBUTING.md         typo.non-ascii=may
 /.merlin                 typo.missing-header
 /Changes                 typo.utf8 typo.missing-header
 /release-info/News       typo.utf8 typo.missing-header
