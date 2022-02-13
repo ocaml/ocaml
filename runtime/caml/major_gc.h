@@ -62,65 +62,6 @@ void caml_add_to_orphaned_ephe_list(struct caml_ephe_info* ephe_info);
 void caml_add_orphaned_finalisers (struct caml_final_info*);
 void caml_final_domain_terminate (caml_domain_state *domain_state);
 
-
-/* The Gc module provides two kind of runtime statistics:
-   - Heap stats: statistics about heap memory, see shared_heap.c
-   - Allocation stats: statistics about past allocations and collections,
-     see major_gc.c
-
-   To avoid synchronization costs, each domain tracks its own statistics.
-   We never access the "live stats" of other domains running concurrently,
-   only their "sampled stats", a past version of the live stats saved
-   at a safepoint -- during stop-the-world minor collections and
-   on domain termination.
-*/
-struct heap_stats {
-  intnat pool_words;
-  intnat pool_max_words;
-  intnat pool_live_words;
-  intnat pool_live_blocks;
-  intnat pool_frag_words;
-  intnat large_words;
-  intnat large_max_words;
-  intnat large_blocks;
-};
-
-/* Note: accumulating stats then removing them is not a no-op, as
-   accumulating updates maximum values.
-
-   For example, if pool_words and pool_max_words are initially 0,
-   adding 10 then removing 10 will reset pool_words to 0 but leave
-   pool_max_words at 10. */
-void caml_accum_heap_stats(struct heap_stats* acc, const struct heap_stats* s);
-void caml_remove_heap_stats(struct heap_stats* acc, const struct heap_stats* s);
-
-struct alloc_stats {
-  uint64_t minor_words;
-  uint64_t promoted_words;
-  uint64_t major_words;
-  uint64_t minor_collections;
-  uint64_t forced_major_collections;
-};
-void caml_accum_alloc_stats(struct alloc_stats* acc, const struct alloc_stats* s);
-void caml_collect_alloc_stats_sample(
-  caml_domain_state *local,
-  struct alloc_stats *sample);
-
-struct gc_stats {
-  struct alloc_stats alloc_stats;
-  struct heap_stats heap_stats;
-};
-
-/* Update the sampled stats of a domain from its live stats. */
-void caml_collect_gc_stats_sample(caml_domain_state *domain);
-
-/* Compute global runtime stats.
-
-   The result is an approximation, it uses the live stats of the
-   current domain but the sampled stats of other domains. */
-void caml_compute_gc_stats(struct gc_stats* buf);
-
-
 /* Forces finalisation of all heap-allocated values,
    disregarding both local and global roots.
 

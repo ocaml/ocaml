@@ -22,6 +22,7 @@
 #include "roots.h"
 #include "domain.h"
 #include "misc.h"
+#include "gc_stats.h"
 
 struct caml_heap_state;
 struct pool;
