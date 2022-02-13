@@ -31,6 +31,7 @@
 #include "caml/memory.h"
 #include "caml/osdeps.h"
 #include "caml/skiplist.h"
+#include "caml/sys.h"
 
 int caml_debugger_in_use = 0;
 uintnat caml_event_count;
@@ -110,6 +111,7 @@ static struct skiplist event_points_table = SKIPLIST_STATIC_INITIALIZER;
 
 static void open_connection(void)
 {
+  char buf[1024];
 #ifdef _WIN32
   /* Set socket to synchronous mode (= non-overlapped) so that file
      descriptor-oriented functions (read()/write() etc.) can be
@@ -133,7 +135,7 @@ static void open_connection(void)
     caml_fatal_error("cannot connect to debugger at %s\n"
                      "error: %s",
                      (dbg_addr ? dbg_addr : "(none)"),
-                     strerror (errno));
+                     caml_strerror(errno, buf, sizeof(buf)));
   dbg_in = caml_open_descriptor_in(dbg_socket);
   dbg_out = caml_open_descriptor_out(dbg_socket);
   /* The code in this file does not bracket channel I/O operations with

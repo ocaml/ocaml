@@ -23,6 +23,7 @@
 
 #include "caml/signals.h"
 #include "caml/sync.h"
+#include "caml/sys.h"
 #include "caml/eventlog.h"
 
 /* System-dependent part */

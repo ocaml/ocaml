@@ -124,12 +124,13 @@ Caml_inline int sync_condvar_wait(sync_condvar c, sync_mutex m)
 static void sync_check_error(int retcode, char * msg)
 {
   char * err;
+  char buf[1024];
   int errlen, msglen;
   value str;
 
   if (retcode == 0) return;
   if (retcode == ENOMEM) caml_raise_out_of_memory();
-  err = strerror(retcode);
+  err = caml_strerror(retcode, buf, sizeof(buf));
   msglen = strlen(msg);
   errlen = strlen(err);
   str = caml_alloc_string(msglen + 2 + errlen);
