@@ -264,10 +264,6 @@ static void pool_global_adopt_stats(struct caml_heap_state* local,
     calc_pool_stats(r, sz, &pool_stats);
     caml_accum_heap_stats(&local->stats, &pool_stats);
     caml_remove_heap_stats(&pool_freelist.stats, &pool_stats);
-
-    if (local->stats.pool_words > local->stats.pool_max_words) {
-        local->stats.pool_max_words = local->stats.pool_words;
-    }
 }
 
 /* Adopt pool from the pool_freelist avail and full pools

@@ -84,6 +84,13 @@ struct heap_stats {
   intnat large_max_words;
   intnat large_blocks;
 };
+
+/* Note: accumulating stats then removing them is not a no-op, as
+   accumulating updates maximum values.
+
+   For example, if pool_words and pool_max_words are initially 0,
+   adding 10 then removing 10 will reset pool_words to 0 but leave
+   pool_max_words at 10. */
 void caml_accum_heap_stats(struct heap_stats* acc, const struct heap_stats* s);
 void caml_remove_heap_stats(struct heap_stats* acc, const struct heap_stats* s);
 

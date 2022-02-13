@@ -913,17 +913,21 @@ static intnat ephe_sweep (caml_domain_state* domain_state, intnat budget)
    collection, and on domain termination. */
 static struct gc_stats sampled_gc_stats[Max_domains];
 
+Caml_inline intnat intnat_max(intnat a, intnat b) {
+  return (a > b ? a : b);
+}
+
 void caml_accum_heap_stats(struct heap_stats* acc, const struct heap_stats* h)
 {
   acc->pool_words += h->pool_words;
-  if (acc->pool_max_words < h->pool_max_words)
-    acc->pool_max_words = h->pool_max_words;
+  acc->pool_max_words = intnat_max(acc->pool_max_words, acc->pool_words);
+  acc->pool_max_words = intnat_max(acc->pool_max_words, h->pool_max_words);
   acc->pool_live_words += h->pool_live_words;
   acc->pool_live_blocks += h->pool_live_blocks;
   acc->pool_frag_words += h->pool_frag_words;
   acc->large_words += h->large_words;
-  if (acc->large_max_words < h->large_max_words)
-    acc->large_max_words = h->large_max_words;
+  acc->large_max_words = intnat_max(acc->large_max_words, acc->large_words);
+  acc->large_max_words = intnat_max(acc->large_max_words, h->large_max_words);
   acc->large_blocks += h->large_blocks;
 }
 
