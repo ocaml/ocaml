@@ -104,13 +104,13 @@ struct gc_stats {
 };
 
 /* Update the sampled stats of a domain from its live stats. */
-void caml_sample_gc_collect(caml_domain_state *domain);
+void caml_collect_gc_stats_sample(caml_domain_state *domain);
 
 /* Compute global runtime stats.
 
    The result is an approximation, it uses the live stats of the
    current domain but the sampled stats of other domains. */
-void caml_sample_gc_stats(struct gc_stats* buf);
+void caml_compute_gc_stats(struct gc_stats* buf);
 
 
 /* Forces finalisation of all heap-allocated values,

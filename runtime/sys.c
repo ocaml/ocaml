@@ -133,7 +133,7 @@ CAMLexport void caml_do_exit(int retcode)
   struct gc_stats s;
 
   if ((caml_params->verb_gc & 0x400) != 0) {
-    caml_sample_gc_stats(&s);
+    caml_compute_gc_stats(&s);
     {
       /* cf caml_gc_counters */
       double minwords = s.minor_words

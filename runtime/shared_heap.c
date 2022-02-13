@@ -150,7 +150,9 @@ void caml_teardown_shared_heap(struct caml_heap_state* heap) {
               released, released_large);
 }
 
-void caml_sample_heap_stats(struct caml_heap_state* local, struct heap_stats* sample)
+void caml_collect_heap_stats_sample(
+  struct caml_heap_state* local,
+  struct heap_stats* sample)
 {
   *sample = local->stats;
 }

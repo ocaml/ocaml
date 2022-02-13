@@ -57,7 +57,7 @@ CAMLprim value caml_gc_quick_stat(value v)
   /* get a copy of these before allocating anything... */
   intnat majcoll;
   struct gc_stats s;
-  caml_sample_gc_stats(&s);
+  caml_compute_gc_stats(&s);
   majcoll = Caml_state->stat_major_collections;
 
   res = caml_alloc_tuple (17);

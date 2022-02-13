@@ -942,7 +942,7 @@ void caml_remove_heap_stats(struct heap_stats* acc, const struct heap_stats* h)
 }
 
 /* Compute global stats for the whole runtime. */
-void caml_sample_gc_stats(struct gc_stats* buf)
+void caml_compute_gc_stats(struct gc_stats* buf)
 {
   int i;
   intnat pool_max = 0, large_max = 0;
@@ -986,7 +986,7 @@ void caml_sample_gc_stats(struct gc_stats* buf)
 }
 
 /* Update the sampled stats for the given domain. */
-void caml_sample_gc_collect(caml_domain_state* domain)
+void caml_collect_gc_stats_sample(caml_domain_state* domain)
 {
   struct gc_stats* stats = &sampled_gc_stats[domain->id];
 
@@ -995,7 +995,7 @@ void caml_sample_gc_collect(caml_domain_state* domain)
   stats->major_words = domain->stat_major_words;
   stats->minor_collections = domain->stat_minor_collections;
   stats->forced_major_collections = domain->stat_forced_major_collections;
-  caml_sample_heap_stats(domain->shared_heap, &stats->major_heap);
+  caml_collect_heap_stats_sample(domain->shared_heap, &stats->major_heap);
 }
 
 static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
@@ -1034,7 +1034,7 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
         struct gc_stats s;
         intnat heap_words, not_garbage_words, swept_words;
 
-        caml_sample_gc_stats(&s);
+        caml_compute_gc_stats(&s);
         heap_words = s.major_heap.pool_words + s.major_heap.large_words;
         not_garbage_words = s.major_heap.pool_live_words
                             + s.major_heap.large_words;

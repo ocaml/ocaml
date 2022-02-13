@@ -1404,7 +1404,7 @@ static void domain_terminate (void)
   }
   /* We can not touch domain_self->interruptor after here
      because it may be reused */
-  caml_sample_gc_collect(domain_state);
+  caml_collect_gc_stats_sample(domain_state);
   caml_remove_generational_global_root(&domain_state->dls_root);
   caml_remove_generational_global_root(&domain_state->backtrace_last_exn);
 

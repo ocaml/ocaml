@@ -688,7 +688,7 @@ static void caml_stw_empty_minor_heap_no_major_slice(caml_domain_state* domain,
   caml_empty_minor_heap_promote(domain, participating_count, participating);
 
   /* collect gc stats before leaving the barrier */
-  caml_sample_gc_collect(domain);
+  caml_collect_gc_stats_sample(domain);
 
   if( participating_count > 1 ) {
     CAML_EV_BEGIN(EV_MINOR_LEAVE_BARRIER);
