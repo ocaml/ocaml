@@ -94,13 +94,21 @@ struct heap_stats {
 void caml_accum_heap_stats(struct heap_stats* acc, const struct heap_stats* s);
 void caml_remove_heap_stats(struct heap_stats* acc, const struct heap_stats* s);
 
-struct gc_stats {
+struct alloc_stats {
   uint64_t minor_words;
   uint64_t promoted_words;
   uint64_t major_words;
   uint64_t minor_collections;
   uint64_t forced_major_collections;
-  struct heap_stats major_heap;
+};
+void caml_accum_alloc_stats(struct alloc_stats* acc, const struct alloc_stats* s);
+void caml_collect_alloc_stats_sample(
+  caml_domain_state *local,
+  struct alloc_stats *sample);
+
+struct gc_stats {
+  struct alloc_stats alloc_stats;
+  struct heap_stats heap_stats;
 };
 
 /* Update the sampled stats of a domain from its live stats. */

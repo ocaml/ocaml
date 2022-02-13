@@ -61,29 +61,29 @@ CAMLprim value caml_gc_quick_stat(value v)
   majcoll = Caml_state->stat_major_collections;
 
   res = caml_alloc_tuple (17);
-  Store_field (res, 0, caml_copy_double ((double)s.minor_words));
-  Store_field (res, 1, caml_copy_double ((double)s.promoted_words));
-  Store_field (res, 2, caml_copy_double ((double)s.major_words));
-  Store_field (res, 3, Val_long (s.minor_collections));
+  Store_field (res, 0, caml_copy_double ((double)s.alloc_stats.minor_words));
+  Store_field (res, 1, caml_copy_double ((double)s.alloc_stats.promoted_words));
+  Store_field (res, 2, caml_copy_double ((double)s.alloc_stats.major_words));
+  Store_field (res, 3, Val_long (s.alloc_stats.minor_collections));
   Store_field (res, 4, Val_long (majcoll));
   Store_field (res, 5, Val_long (
-    s.major_heap.pool_words + s.major_heap.large_words));
+    s.heap_stats.pool_words + s.heap_stats.large_words));
   Store_field (res, 6, Val_long (0));
   Store_field (res, 7, Val_long (
-    s.major_heap.pool_live_words + s.major_heap.large_words));
+    s.heap_stats.pool_live_words + s.heap_stats.large_words));
   Store_field (res, 8, Val_long (
-    s.major_heap.pool_live_blocks + s.major_heap.large_blocks));
+    s.heap_stats.pool_live_blocks + s.heap_stats.large_blocks));
   Store_field (res, 9, Val_long (
-    s.major_heap.pool_words - s.major_heap.pool_live_words
-    - s.major_heap.pool_frag_words));
+    s.heap_stats.pool_words - s.heap_stats.pool_live_words
+    - s.heap_stats.pool_frag_words));
   Store_field (res, 10, Val_long (0));
   Store_field (res, 11, Val_long (0));
-  Store_field (res, 12, Val_long (s.major_heap.pool_frag_words));
+  Store_field (res, 12, Val_long (s.heap_stats.pool_frag_words));
   Store_field (res, 13, Val_long (0));
   Store_field (res, 14, Val_long (
-    s.major_heap.pool_max_words + s.major_heap.large_max_words));
+    s.heap_stats.pool_max_words + s.heap_stats.large_max_words));
   Store_field (res, 15, Val_long (0));
-  Store_field (res, 16, Val_long (s.forced_major_collections));
+  Store_field (res, 16, Val_long (s.alloc_stats.forced_major_collections));
   CAMLreturn (res);
 }
 

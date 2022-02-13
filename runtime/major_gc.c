@@ -941,6 +941,25 @@ void caml_remove_heap_stats(struct heap_stats* acc, const struct heap_stats* h)
   acc->large_blocks -= h->large_blocks;
 }
 
+void caml_accum_alloc_stats(struct alloc_stats* acc, const struct alloc_stats* s) {
+  acc->minor_words += s->minor_words;
+  acc->promoted_words += s->promoted_words;
+  acc->major_words += s->major_words;
+  acc->minor_collections += s->minor_collections;
+  acc->forced_major_collections += s->forced_major_collections;
+}
+
+void caml_collect_alloc_stats_sample(
+  caml_domain_state *local,
+  struct alloc_stats *sample)
+{
+  sample->minor_words = local->stat_minor_words;
+  sample->promoted_words = local->stat_promoted_words;
+  sample->major_words = local->stat_major_words;
+  sample->minor_collections = local->stat_minor_collections;
+  sample->forced_major_collections = local->stat_forced_major_collections;
+}
+
 /* Compute global stats for the whole runtime. */
 void caml_compute_gc_stats(struct gc_stats* buf)
 {
@@ -955,20 +974,15 @@ void caml_compute_gc_stats(struct gc_stats* buf)
 
        For the heap stats, we always used the sampled stats. */
     struct gc_stats* s = &sampled_gc_stats[i];
-    struct heap_stats* h = &s->major_heap;
     if (i != my_id) {
-      buf->minor_words += s->minor_words;
-      buf->promoted_words += s->promoted_words;
-      buf->major_words += s->major_words;
-      buf->minor_collections += s->minor_collections;
-      buf->forced_major_collections += s->forced_major_collections;
+      caml_accum_alloc_stats(&buf->alloc_stats, &s->alloc_stats);
+      caml_accum_heap_stats(&buf->heap_stats, &s->heap_stats);
     }
     else {
-      buf->minor_words += Caml_state->stat_minor_words;
-      buf->promoted_words += Caml_state->stat_promoted_words;
-      buf->major_words += Caml_state->stat_major_words;
-      buf->minor_collections += Caml_state->stat_minor_collections;
-      buf->forced_major_collections += s->forced_major_collections;
+      struct alloc_stats alloc_stats;
+      caml_collect_alloc_stats_sample(Caml_state, &alloc_stats);
+      caml_accum_alloc_stats(&buf->alloc_stats, &alloc_stats);
+      caml_accum_heap_stats(&buf->heap_stats, &s->heap_stats);
       //FIXME use live heap stats instead of sampled heap stats below?
     }
     /* The instantaneous maximum heap size cannot be computed
@@ -977,25 +991,19 @@ void caml_compute_gc_stats(struct gc_stats* buf)
        maxima, which is completely wrong.
 
        FIXME: maybe maintain coarse global maxima? */
-    pool_max += h->pool_max_words;
-    large_max += h->large_max_words;
-    caml_accum_heap_stats(&buf->major_heap, h);
+    pool_max += s->heap_stats.pool_max_words;
+    large_max += s->heap_stats.large_max_words;
   }
-  buf->major_heap.pool_max_words = pool_max;
-  buf->major_heap.large_max_words = large_max;
+  buf->heap_stats.pool_max_words = pool_max;
+  buf->heap_stats.large_max_words = large_max;
 }
 
 /* Update the sampled stats for the given domain. */
 void caml_collect_gc_stats_sample(caml_domain_state* domain)
 {
   struct gc_stats* stats = &sampled_gc_stats[domain->id];
-
-  stats->minor_words = domain->stat_minor_words;
-  stats->promoted_words = domain->stat_promoted_words;
-  stats->major_words = domain->stat_major_words;
-  stats->minor_collections = domain->stat_minor_collections;
-  stats->forced_major_collections = domain->stat_forced_major_collections;
-  caml_collect_heap_stats_sample(domain->shared_heap, &stats->major_heap);
+  caml_collect_alloc_stats_sample(domain, &stats->alloc_stats);
+  caml_collect_heap_stats_sample(domain->shared_heap, &stats->heap_stats);
 }
 
 static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
@@ -1035,9 +1043,9 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
         intnat heap_words, not_garbage_words, swept_words;
 
         caml_compute_gc_stats(&s);
-        heap_words = s.major_heap.pool_words + s.major_heap.large_words;
-        not_garbage_words = s.major_heap.pool_live_words
-                            + s.major_heap.large_words;
+        heap_words = s.heap_stats.pool_words + s.heap_stats.large_words;
+        not_garbage_words = s.heap_stats.pool_live_words
+                            + s.heap_stats.large_words;
         swept_words = domain->swept_words;
         caml_gc_log ("heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d "
                       "not_garbage_words %"ARCH_INTNAT_PRINTF_FORMAT"d "
