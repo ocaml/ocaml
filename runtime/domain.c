@@ -439,8 +439,15 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
   domain_self = d;
 
   /* If the chosen domain slot has not been previously used, allocate a fresh
-   * domain state. Otherwise, reuse it. Reusing the slot ensures that the GC
-   * stats are not lost. */
+     domain state. Otherwise, reuse it.
+
+     Reusing the slot ensures that the GC stats are not lost:
+     - Heap stats are moved to the free list on domain termination,
+       so we don't reuse those stats (caml_init_shared_heap will reset them)
+     - But currently there is no orphaning process for allocation stats,
+       we just reuse the previous stats from the previous domain
+       with the same index.
+  */
   if (d->state == NULL) {
     /* FIXME: Never freed. Not clear when to. */
     domain_state = (caml_domain_state*)

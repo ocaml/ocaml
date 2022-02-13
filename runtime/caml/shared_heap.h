@@ -31,7 +31,8 @@ void caml_teardown_shared_heap(struct caml_heap_state* heap);
 
 value* caml_shared_try_alloc(struct caml_heap_state*, mlsize_t, tag_t, int);
 
-void caml_sample_heap_stats(struct caml_heap_state*, struct heap_stats*);
+/* Copy the domain-local heap stats into a heap stats sample. */
+void caml_sample_heap_stats(struct caml_heap_state* local, struct heap_stats *sample);
 
 uintnat caml_heap_size(struct caml_heap_state*);
 uintnat caml_top_heap_words(struct caml_heap_state*);

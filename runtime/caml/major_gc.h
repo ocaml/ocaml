@@ -62,6 +62,18 @@ void caml_add_to_orphaned_ephe_list(struct caml_ephe_info* ephe_info);
 void caml_add_orphaned_finalisers (struct caml_final_info*);
 void caml_final_domain_terminate (caml_domain_state *domain_state);
 
+
+/* The Gc module provides two kind of runtime statistics:
+   - Heap stats: statistics about heap memory, see shared_heap.c
+   - Allocation stats: statistics about past allocations and collections,
+     see major_gc.c
+
+   To avoid synchronization costs, each domain tracks its own statistics.
+   We never access the "live stats" of other domains running concurrently,
+   only their "sampled stats", a past version of the live stats saved
+   at a safepoint -- during stop-the-world minor collections and
+   on domain termination.
+*/
 struct heap_stats {
   intnat pool_words;
   intnat pool_max_words;
@@ -83,8 +95,16 @@ struct gc_stats {
   uint64_t forced_major_collections;
   struct heap_stats major_heap;
 };
-void caml_sample_gc_stats(struct gc_stats* buf);
+
+/* Update the sampled stats of a domain from its live stats. */
 void caml_sample_gc_collect(caml_domain_state *domain);
+
+/* Compute global runtime stats.
+
+   The result is an approximation, it uses the live stats of the
+   current domain but the sampled stats of other domains. */
+void caml_sample_gc_stats(struct gc_stats* buf);
+
 
 /* Forces finalisation of all heap-allocated values,
    disregarding both local and global roots.

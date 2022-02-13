@@ -150,9 +150,9 @@ void caml_teardown_shared_heap(struct caml_heap_state* heap) {
               released, released_large);
 }
 
-void caml_sample_heap_stats(struct caml_heap_state* local, struct heap_stats* h)
+void caml_sample_heap_stats(struct caml_heap_state* local, struct heap_stats* sample)
 {
-  *h = local->stats;
+  *sample = local->stats;
 }
 
 
@@ -286,6 +286,8 @@ static pool* pool_global_adopt(struct caml_heap_state* local, sizeclass sz)
       }
       #endif
 
+      /* The stats for the adopted pool are moved from the
+         free pool stats to the heap stats of the adopting domain. */
       calc_pool_stats(r, sz, &tmp_stats);
       caml_accum_heap_stats(&local->stats, &tmp_stats);
       caml_remove_heap_stats(&pool_freelist.stats, &tmp_stats);
@@ -587,6 +589,8 @@ uintnat caml_heap_size(struct caml_heap_state* local) {
 }
 
 uintnat caml_top_heap_words(struct caml_heap_state* local) {
+  /* FIXME: summing two maximums computed at different points in time
+     returns an incorrect result. */
   return local->stats.pool_max_words + local->stats.large_max_words;
 }
 

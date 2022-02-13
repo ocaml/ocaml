@@ -907,6 +907,10 @@ static intnat ephe_sweep (caml_domain_state* domain_state, intnat budget)
   return budget;
 }
 
+/* The "sampled stats" of a domain are a recent copy of its
+   domain-local stats, accessed without synchronization and only
+   updated ("sampled") during stop-the-world events -- each minor
+   collection, and on domain termination. */
 static struct gc_stats sampled_gc_stats[Max_domains];
 
 void caml_accum_heap_stats(struct heap_stats* acc, const struct heap_stats* h)
@@ -933,7 +937,7 @@ void caml_remove_heap_stats(struct heap_stats* acc, const struct heap_stats* h)
   acc->large_blocks -= h->large_blocks;
 }
 
-
+/* Compute global stats for the whole runtime. */
 void caml_sample_gc_stats(struct gc_stats* buf)
 {
   int i;
@@ -942,6 +946,10 @@ void caml_sample_gc_stats(struct gc_stats* buf)
   memset(buf, 0, sizeof(*buf));
 
   for (i=0; i<Max_domains; i++) {
+    /* For allocation stats, we use the live stats of the current domain
+       and the sampled stats of other domains.
+
+       For the heap stats, we always used the sampled stats. */
     struct gc_stats* s = &sampled_gc_stats[i];
     struct heap_stats* h = &s->major_heap;
     if (i != my_id) {
@@ -957,12 +965,12 @@ void caml_sample_gc_stats(struct gc_stats* buf)
       buf->major_words += Caml_state->stat_major_words;
       buf->minor_collections += Caml_state->stat_minor_collections;
       buf->forced_major_collections += s->forced_major_collections;
-      //FIXME handle the case for major heap stats [h]
+      //FIXME use live heap stats instead of sampled heap stats below?
     }
     /* The instantaneous maximum heap size cannot be computed
        from per-domain statistics, and would be very expensive
        to maintain directly. Here, we just sum the per-domain
-       maxima, which is statistically dubious.
+       maxima, which is completely wrong.
 
        FIXME: maybe maintain coarse global maxima? */
     pool_max += h->pool_max_words;
@@ -973,7 +981,7 @@ void caml_sample_gc_stats(struct gc_stats* buf)
   buf->major_heap.large_max_words = large_max;
 }
 
-/* update GC stats for this given domain */
+/* Update the sampled stats for the given domain. */
 inline void caml_sample_gc_collect(caml_domain_state* domain)
 {
   struct gc_stats* stats = &sampled_gc_stats[domain->id];
