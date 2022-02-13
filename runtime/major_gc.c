@@ -986,7 +986,7 @@ void caml_sample_gc_stats(struct gc_stats* buf)
 }
 
 /* Update the sampled stats for the given domain. */
-inline void caml_sample_gc_collect(caml_domain_state* domain)
+void caml_sample_gc_collect(caml_domain_state* domain)
 {
   struct gc_stats* stats = &sampled_gc_stats[domain->id];
 
