@@ -1440,10 +1440,8 @@ static void domain_terminate (void)
   }
   /* We can not touch domain_self->interruptor after here
      because it may be reused */
-  caml_collect_gc_stats_sample(domain_state);
   caml_remove_generational_global_root(&domain_state->dls_root);
   caml_remove_generational_global_root(&domain_state->backtrace_last_exn);
-
   caml_stat_free(domain_state->final_info);
   caml_stat_free(domain_state->ephe_info);
   caml_free_intern_state();
@@ -1455,6 +1453,15 @@ static void domain_terminate (void)
   caml_free_minor_tables(domain_state->minor_tables);
   domain_state->minor_tables = 0;
   caml_free_signal_stack();
+
+  caml_orphan_alloc_stats(domain_state);
+  /* Heap stats were orphaned by caml_teardown_shared_heap above.
+     At this point, the stats of the domain must be empty;
+     we also clear the sampled copy.
+
+     Note: We cannot call caml_collect_gc_stats_sample to clear the
+     sample at this point as the shared heap is gone. */
+  caml_clear_gc_stats_sample(domain_state);
 
   if(domain_state->current_stack != NULL) {
     caml_free_stack(domain_state->current_stack);

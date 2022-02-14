@@ -71,8 +71,13 @@ struct gc_stats {
   struct heap_stats heap_stats;
 };
 
+void caml_orphan_alloc_stats(caml_domain_state *);
+
 /* Update the sampled stats of a domain from its live stats. */
 void caml_collect_gc_stats_sample(caml_domain_state *domain);
+
+/* Clear the sampled stats on domain termination. */
+void caml_clear_gc_stats_sample(caml_domain_state *domain);
 
 /* Compute global runtime stats.
 
