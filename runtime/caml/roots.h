@@ -19,7 +19,7 @@
 #ifdef CAML_INTERNALS
 
 #include "misc.h"
-#include "memory.h"
+#include "domain.h"
 
 typedef void (*scanning_action) (void*, value, value *);
 typedef void (*scan_roots_hook) (scanning_action, void*, caml_domain_state*);

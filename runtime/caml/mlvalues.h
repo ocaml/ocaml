@@ -19,14 +19,6 @@
 #include "config.h"
 #include "misc.h"
 
-/* Needed here for domain_state */
-typedef intnat value;
-typedef atomic_intnat atomic_value;
-typedef int32_t opcode_t;
-typedef opcode_t * code_t;
-
-#include "domain_state.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -62,11 +54,15 @@ extern "C" {
          This is for use only by the GC.
 */
 
+typedef intnat value;
 typedef uintnat header_t;
 typedef uintnat mlsize_t;
 typedef unsigned int tag_t;             /* Actually, an unsigned char */
 typedef uintnat color_t;
 typedef uintnat mark_t;
+typedef atomic_intnat atomic_value;
+typedef int32_t opcode_t;
+typedef opcode_t * code_t;
 
 #include "domain_state.h"
 

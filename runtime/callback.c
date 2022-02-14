@@ -18,6 +18,7 @@
 /* Callbacks from C to OCaml */
 
 #include <string.h>
+#include "caml/alloc.h"
 #include "caml/callback.h"
 #include "caml/codefrag.h"
 #include "caml/fail.h"

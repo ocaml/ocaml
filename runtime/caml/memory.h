@@ -27,7 +27,6 @@
 #include "domain.h"
 #include "misc.h"
 #include "mlvalues.h"
-#include "alloc.h"
 
 #ifdef __cplusplus
 extern "C" {
