@@ -121,13 +121,13 @@ void caml_mem_decommit(void* mem, uintnat size);
 void caml_mem_unmap(void* mem, uintnat size);
 
 
+CAMLnoreturn_start
+void caml_plat_fatal_error(char * action, int err)
+CAMLnoreturn_end;
+
 Caml_inline void check_err(char* action, int err)
 {
-  if (err) {
-    char buf[1024];
-    caml_fatal_error("Fatal error during %s: %s\n",
-                     action, caml_strerror(err, buf, sizeof(buf)));
-  }
+  if (err) caml_plat_fatal_error(action, err);
 }
 
 #ifdef DEBUG
