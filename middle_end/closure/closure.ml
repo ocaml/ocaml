@@ -963,20 +963,20 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
         let funct_var = V.create_local "funct" in
         let fenv = V.Map.add funct_var fapprox fenv in
         let (new_fun, approx) = close { backend; fenv; cenv; mutable_vars }
-          (Lfunction{
-               kind = Curried;
-               return = Pgenval;
-               params = List.map (fun v -> v, Pgenval) final_args;
-               body = Lapply{
-                 ap_loc=loc;
-                 ap_func=(Lvar funct_var);
-                 ap_args=internal_args;
-                 ap_tailcall=Default_tailcall;
-                 ap_inlined=Default_inline;
-                 ap_specialised=Default_specialise;
-               };
-               loc;
-               attr = default_function_attribute})
+          (lfunction
+             ~kind:Curried
+             ~return:Pgenval
+             ~params:(List.map (fun v -> v, Pgenval) final_args)
+             ~body:(Lapply{
+                ap_loc=loc;
+                ap_func=(Lvar funct_var);
+                ap_args=internal_args;
+                ap_tailcall=Default_tailcall;
+                ap_inlined=Default_inline;
+                ap_specialised=Default_specialise;
+              })
+             ~loc
+             ~attr:default_function_attribute)
         in
         let new_fun =
           iter first_args

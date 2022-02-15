@@ -586,12 +586,12 @@ and transl_exp0 ~in_new_scope ~scopes e =
          transl_exp ~scopes e
       | `Other ->
          (* other cases compile to a lazy block holding a function *)
-         let fn = Lfunction {kind = Curried;
-                             params= [Ident.create_local "param", Pgenval];
-                             return = Pgenval;
-                             attr = default_function_attribute;
-                             loc = of_location ~scopes e.exp_loc;
-                             body = transl_exp ~scopes e} in
+         let fn = lfunction ~kind:Curried
+                            ~params:[Ident.create_local "param", Pgenval]
+                            ~return:Pgenval
+                            ~attr:default_function_attribute
+                            ~loc:(of_location ~scopes e.exp_loc)
+                            ~body:(transl_exp ~scopes e) in
           Lprim(Pmakeblock(Config.lazy_tag, Mutable, None), [fn],
                 of_location ~scopes e.exp_loc)
       end
@@ -734,22 +734,17 @@ and transl_apply ~scopes
         let body =
           match build_apply handle ((Lvar id_arg, optional)::args') l with
             Lfunction{kind = Curried; params = ids; return;
-                      body = lam; attr; loc} ->
-              Lfunction{kind = Curried;
-                        params = (id_arg, Pgenval)::ids;
-                        return;
-                        body = lam; attr;
-                        loc}
-          | Levent(Lfunction{kind = Curried; params = ids; return;
-                             body = lam; attr; loc}, _) ->
-              Lfunction{kind = Curried; params = (id_arg, Pgenval)::ids;
-                        return;
-                        body = lam; attr;
-                        loc}
+                      body = lam; attr; loc}
+               when List.length ids < Lambda.max_arity () ->
+              lfunction ~kind:Curried
+                        ~params:((id_arg, Pgenval)::ids)
+                        ~return
+                        ~body:lam ~attr
+                        ~loc
           | lam ->
-              Lfunction{kind = Curried; params = [id_arg, Pgenval];
-                        return = Pgenval; body = lam;
-                        attr = default_stub_attribute; loc = loc}
+              lfunction ~kind:Curried ~params:[id_arg, Pgenval]
+                        ~return:Pgenval ~body:lam
+                        ~attr:default_stub_attribute ~loc
         in
         List.fold_left
           (fun body (id, lam) -> Llet(Strict, Pgenval, id, lam, body))
@@ -879,7 +874,7 @@ and transl_function ~scopes e param cases partial =
   in
   let attr = default_function_attribute in
   let loc = of_location ~scopes e.exp_loc in
-  let lam = Lfunction{kind; params; return; body; attr; loc} in
+  let lam = lfunction ~kind ~params ~return ~body ~attr ~loc in
   Translattribute.add_function_attributes lam e.exp_loc e.exp_attributes
 
 (* Like transl_exp, but used when a new scope was just introduced. *)
@@ -1185,7 +1180,7 @@ and transl_letop ~scopes loc env let_ ands param case partial =
     in
     let attr = default_function_attribute in
     let loc = of_location ~scopes case.c_rhs.exp_loc in
-    Lfunction{kind; params; return; body; attr; loc}
+    lfunction ~kind ~params ~return ~body ~attr ~loc
   in
   Lapply{
     ap_loc = of_location ~scopes loc;

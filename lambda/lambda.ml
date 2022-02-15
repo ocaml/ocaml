@@ -360,6 +360,15 @@ let const_int n = Const_base (Const_int n)
 
 let const_unit = const_int 0
 
+let max_arity () =
+  if !Clflags.native_code then 126 else max_int
+  (* 126 = 127 (the maximal number of parameters supported in C--)
+           - 1 (the hidden parameter containing the environment) *)
+
+let lfunction ~kind ~params ~return ~body ~attr ~loc =
+  assert (List.length params <= max_arity ());
+  Lfunction { kind; params; return; body; attr; loc }
+
 let lambda_unit = Lconst const_unit
 
 let default_function_attribute = {
@@ -997,11 +1006,6 @@ let find_exact_application kind ~arity args =
           else Some (List.map (fun cst -> Lconst cst) const_args)
       | _ -> None
       end
-
-let max_arity () =
-  if !Clflags.native_code then 126 else max_int
-  (* 126 = 127 (the maximal number of parameters supported in C--)
-           - 1 (the hidden parameter containing the environment) *)
 
 let reset () =
   raise_count := 0

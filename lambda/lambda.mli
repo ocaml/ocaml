@@ -305,7 +305,7 @@ type lambda =
   | Levent of lambda * lambda_event
   | Lifused of Ident.t * lambda
 
-and lfunction =
+and lfunction = private
   { kind: function_kind;
     params: (Ident.t * value_kind) list;
     return: value_kind;
@@ -367,6 +367,16 @@ val const_int : int -> structured_constant
 val lambda_unit: lambda
 val name_lambda: let_kind -> lambda -> (Ident.t -> lambda) -> lambda
 val name_lambda_list: lambda list -> (lambda list -> lambda) -> lambda
+
+val lfunction :
+  kind:function_kind ->
+  params:(Ident.t * value_kind) list ->
+  return:value_kind ->
+  body:lambda ->
+  attr:function_attribute -> (* specified with [@inline] attribute *)
+  loc:scoped_location ->
+  lambda
+
 
 val iter_head_constructor: (lambda -> unit) -> lambda -> unit
 (** [iter_head_constructor f lam] apply [f] to only the first level of

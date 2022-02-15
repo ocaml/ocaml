@@ -234,6 +234,9 @@ let check_poll_local loc attr =
   | _ ->
       ()
 
+let lfunction_with_attr ~attr { kind; params; return; body; attr=_; loc } =
+  lfunction ~kind ~params ~return ~body ~attr ~loc
+
 let add_inline_attribute expr loc attributes =
   match expr, get_inline_attribute attributes with
   | expr, Default_inline -> expr
@@ -247,7 +250,7 @@ let add_inline_attribute expr loc attributes =
       let attr = { attr with inline } in
       check_local_inline loc attr;
       check_poll_inline loc attr;
-      Lfunction { funct with attr = attr }
+      lfunction_with_attr ~attr funct
   | expr, (Always_inline | Hint_inline | Never_inline | Unroll _) ->
       Location.prerr_warning loc
         (Warnings.Misplaced_attribute "inline");
@@ -264,7 +267,7 @@ let add_specialise_attribute expr loc attributes =
             (Warnings.Duplicated_attribute "specialise")
       end;
       let attr = { attr with specialise } in
-      Lfunction { funct with attr }
+      lfunction_with_attr ~attr funct
   | expr, (Always_specialise | Never_specialise) ->
       Location.prerr_warning loc
         (Warnings.Misplaced_attribute "specialise");
@@ -283,7 +286,7 @@ let add_local_attribute expr loc attributes =
       let attr = { attr with local } in
       check_local_inline loc attr;
       check_poll_local loc attr;
-      Lfunction { funct with attr }
+      lfunction_with_attr ~attr funct
   | expr, (Always_local | Never_local) ->
       Location.prerr_warning loc
         (Warnings.Misplaced_attribute "local");
@@ -298,7 +301,7 @@ let add_tmc_attribute expr loc attributes =
             Location.prerr_warning loc
               (Warnings.Duplicated_attribute "tail_mod_cons");
         let attr = { funct.attr with tmc_candidate = true } in
-        Lfunction { funct with attr }
+        lfunction_with_attr ~attr funct
     | expr ->
         Location.prerr_warning loc
           (Warnings.Misplaced_attribute "tail_mod_cons");
@@ -320,7 +323,7 @@ let add_poll_attribute expr loc attributes =
       check_poll_inline loc attr;
       check_poll_local loc attr;
       let attr = { attr with inline = Never_inline; local = Never_local } in
-      Lfunction { funct with attr }
+      lfunction_with_attr ~attr funct
   | expr, Error_poll ->
       Location.prerr_warning loc
         (Warnings.Misplaced_attribute "error_poll");

@@ -179,6 +179,9 @@ OCaml 4.14.0
 - #10681: Enforce boolean conditions for the native backend
   (Vincent Laviron, review by Gabriel Scherer)
 
+- #10719: Ensure that build_apply respects Lambda.max_arity
+  (Stephen Dolan, review by Xavier Leroy)
+
 - #10728: Ensure that functions are evaluated after their arguments
   (Stephen Dolan, review by Mark Shinwell)
 
