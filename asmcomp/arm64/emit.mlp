@@ -35,7 +35,6 @@ let reg_trap_ptr = phys_reg 23 (* x26 *)
 let reg_alloc_ptr = phys_reg 24 (* x27 *)
 let reg_tmp1 = phys_reg 26 (* x16 *)
 let reg_x8 = phys_reg 8 (* x8 *)
-let reg_x19 = phys_reg 16 (* x19 *)
 let reg_stack_arg_begin = phys_reg 17  (* x20 *)
 let reg_stack_arg_end  = phys_reg 18 (* x21 *)
 
@@ -539,7 +538,7 @@ module BR = Branch_relaxation.Make (struct
     | Lpoptrap -> 1
     | Lraise k ->
       begin match k with
-      | Lambda.Raise_regular -> 2
+      | Lambda.Raise_regular -> 1
       | Lambda.Raise_reraise -> 1
       | Lambda.Raise_notrace -> 4
       end
@@ -739,13 +738,15 @@ let emit_instr env i =
           ` bl  {emit_symbol "caml_c_call"}\n`;
           `{record_frame env i.live (Dbg_other i.dbg)}\n`
         end else begin
-          (* store ocaml stack in callee saved register *)
-          ` mov {emit_reg reg_x19}, sp\n`;
+          (* store ocaml stack in the frame pointer register
+             NB: no need to store previous x29 because OCaml frames don't
+             maintain frame pointer *)
+          ` mov x29, sp\n`;
           let offset = Domainstate.(idx_of_field Domain_c_stack) * 8 in
           ` ldr {emit_reg reg_tmp1}, [{emit_reg reg_domain_state_ptr}, {emit_int offset}]\n`;
           ` mov sp, {emit_reg reg_tmp1}\n`;
           ` bl {emit_symbol func}\n`;
-          ` mov sp, {emit_reg reg_x19}\n`
+          ` mov sp, x29\n`
           (* TODO: CFI for this *)
         end
     | Lop(Istackoffset n) ->
@@ -1036,8 +1037,6 @@ let emit_instr env i =
     | Lraise k ->
         begin match k with
         | Lambda.Raise_regular ->
-          let offset = Domainstate.(idx_of_field Domain_backtrace_pos) * 8 in
-          `	str	xzr, [{emit_reg reg_domain_state_ptr}, {emit_int offset}]\n`;
           `	bl	{emit_symbol "caml_raise_exn"}\n`;
           `{record_frame env Reg.Set.empty (Dbg_raise i.dbg)}\n`
         | Lambda.Raise_reraise ->

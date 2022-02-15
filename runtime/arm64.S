@@ -219,6 +219,8 @@ G(name):
         stp     x21, x22, [TMP, 160]
         stp     x23, x24, [TMP, 176]
         str     x25, [TMP, 192]
+    /* Save caller-save floating-point registers
+       (callee-saves are preserved by C functions) */
         stp     d0, d1, [TMP, 208]
         stp     d2, d3, [TMP, 224]
         stp     d4, d5, [TMP, 240]
@@ -300,7 +302,7 @@ FUNCTION(caml_call_realloc_stack)
         ldp     x29, x30, [sp], 16
         ret
 1:      RESTORE_ALL_REGS
-    /* Free stack space and return to caller */
+    /* Raise the Stack_overflow exception */
         ldp     x29, x30, [sp], 16
         add     sp, sp, 16 /* pop argument */
         ADDRGLOBAL(x0, caml_exn_Stack_overflow)
@@ -375,6 +377,8 @@ FUNCTION(caml_allocN)
 
 FUNCTION(caml_c_call)
         CFI_STARTPROC
+        CFI_OFFSET(29, -16)
+        CFI_OFFSET(30, -8)
         stp     x29, x30, [sp, -16]!
         CFI_ADJUST(16)
         add     x29, sp, #0
@@ -402,6 +406,8 @@ FUNCTION(caml_c_call_stack_args)
         C function   : ADDITIONAL_ARG
         C stack args : begin=STACK_ARG_BEGIN
                        end=STACK_ARG_END */
+        CFI_OFFSET(29, -16)
+        CFI_OFFSET(30, -8)
         stp     x29, x30, [sp, -16]!
         CFI_ADJUST(16)
         add     x29, sp, #0
@@ -487,7 +493,7 @@ L(jump_to_caml):
         ldr     x9, Caml_state(exn_handler)
         adr     x10, L(trap_handler)
         stp     x9, x10, [x8, -16]!
-        add     TRAP_PTR, x8, #0
+        mov     TRAP_PTR, x8
     /* Switch stacks and call the OCaml code */
         mov     sp, x8
 #ifdef ASM_CFI_SUPPORTED
@@ -515,7 +521,7 @@ L(return_result):
         mov     sp, x9
         /* TODO: CFI_RESTORE_STATE */
     /* Pop the struct c_stack_link */
-        ldp     x8, x9, [sp, 16] /* C_stack_prev, pad */
+        ldr     x8, Cstack_prev(sp)
         add     sp, sp, 32
         CFI_ADJUST(-32)
         str     x8, Caml_state(c_stack)
@@ -567,7 +573,7 @@ FUNCTION(caml_raise_exn)
         ldr     TMP, Caml_state(backtrace_active)
         cbnz    TMP, 2f
 1:
-        JUMP_TO_TRAP_PTR;
+        JUMP_TO_TRAP_PTR
 2:  /* Zero backtrace_pos */
         str     xzr, Caml_state(backtrace_pos)
 L(caml_reraise_exn_stash):
