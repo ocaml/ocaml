@@ -477,10 +477,10 @@ OCaml 4.14.0
   (David Allsopp and Nathan Rebours, review by Louis Gesbert,
   Nicolás Ojeda Bär and Gabriel Scherer)
 
-- #10718: Add "Shape" information to the cmt files. Shapes are an abstraction of
-  modules that can be used by external tooling to perform definition-aware
-  operations. (Ulysse Gérard, Thomas Refis and Leo White, review by Florian
-  Angeletti)
+- #10718, #11012: Add "Shape" information to the cmt files. Shapes are an
+  abstraction of modules that can be used by external tooling to perform
+  definition-aware operations.
+  (Ulysse Gérard, Thomas Refis and Leo White, review by Florian Angeletti)
 
 - #10742: strong call-by-need reduction for shapes
   (Gabriel Scherer and Nathanaëlle Courant,
