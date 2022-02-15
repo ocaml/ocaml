@@ -182,21 +182,19 @@ CAMLdeprecated_typedef(addr, char *);
   #define CAMLunused
 #endif
 
+/* GC timing hooks. These can be assigned by the user. These hooks
+   must not allocate, change any heap value, nor call OCaml code. They
+   can obtain the domain id with Caml_state->id. These functions must
+   be reentrant. */
+typedef void (*caml_timing_hook) (void);
 #ifdef __cplusplus
-extern "C" {
-#endif
-
-/* Timing hooks. These can be assigned by the user. The functions
-   registered with these hooks must not allocate on the OCaml heap,
-   change any heap value, nor call OCaml code.
-
-   The hooks should be assigned using [atomic_exchange], and the
-   previous function should be called in the new one.
-
-   Thread-safety: These functions can be called from several domains
-   at once. They must be reentrant. They can obtain an identifier of
-   the current domain with [Caml_state->id] or
-   [Caml_state->unique_id].  */
+extern std::atomic<caml_timing_hook> caml_major_slice_begin_hook;
+extern std::atomic<caml_timing_hook> caml_major_slice_end_hook;
+extern std::atomic<caml_timing_hook> caml_minor_gc_begin_hook;
+extern std::atomic<caml_timing_hook> caml_minor_gc_end_hook;
+extern std::atomic<caml_timing_hook> caml_finalise_begin_hook;
+extern std::atomic<caml_timing_hook> caml_finalise_end_hook;
+#else
 typedef void (*caml_timing_hook) (void);
 extern _Atomic caml_timing_hook caml_major_slice_begin_hook;
 extern _Atomic caml_timing_hook caml_major_slice_end_hook;
@@ -205,6 +203,11 @@ extern _Atomic caml_timing_hook caml_minor_gc_end_hook;
 extern _Atomic caml_timing_hook caml_finalise_begin_hook;
 extern _Atomic caml_timing_hook caml_finalise_end_hook;
 extern _Atomic caml_timing_hook caml_domain_terminated_hook;
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #ifdef CAML_INTERNALS
 
@@ -298,7 +301,11 @@ void caml_alloc_point_here(void);
 
    This function must be reentrant. */
 typedef void (*fatal_error_hook) (char *msg, va_list args);
+#ifdef __cplusplus
+extern std::atomic<fatal_error_hook> caml_fatal_error_hook;
+#else
 extern _Atomic fatal_error_hook caml_fatal_error_hook;
+#endif
 
 CAMLnoreturn_start
 CAMLextern void caml_fatal_error (char *, ...)
