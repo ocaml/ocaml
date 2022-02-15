@@ -764,12 +764,12 @@ let transl_primitive loc p env ty path =
   match params with
   | [] -> body
   | _ ->
-      Lfunction{ kind = Curried;
-                 params;
-                 return = Pgenval;
-                 attr = default_stub_attribute;
-                 loc;
-                 body; }
+      lfunction ~kind:Curried
+                ~params
+                ~return:Pgenval
+                ~attr:default_stub_attribute
+                ~loc
+                ~body
 
 let lambda_primitive_needs_event_after = function
   (* We add an event after any primitive resulting in a C call that
