@@ -372,6 +372,9 @@ OCaml 4.14.0
 
 ### Build system:
 
+- #10828 Build native-code compilers on OpenBSD/aarch64
+  (Christopher Zimmermann)
+
 - #10717: Simplify the installation of man pages
   (Sébastien Hinderer, review by David Allsopp)
 
