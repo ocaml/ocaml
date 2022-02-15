@@ -1196,15 +1196,6 @@ AS_CASE([$arch],
        [common_cflags="-no-pie $common_cflags"],
     [])])
 
-# Disable DT_TEXTREL warnings on Linux and BSD i386
-# See https://github.com/ocaml/ocaml/issues/9800
-
-AS_CASE(["$system"],
-  [linux_elf|bsd_elf],
-    [mksharedlib="$mksharedlib -Wl,-z,notext"
-    mkmaindll="$mkmaindll -Wl,-z,notext"],
-  [])
-
 # Assembler
 
 AS_IF([test -n "$target_alias"],
