@@ -937,6 +937,7 @@ let reset_declaration_caches () =
   Types.Uid.Tbl.clear !module_declarations;
   Types.Uid.Tbl.clear !used_constructors;
   Types.Uid.Tbl.clear !used_labels;
+  Types.Uid.Tbl.clear !uid_to_loc;
   ()
 
 let reset_cache () =
