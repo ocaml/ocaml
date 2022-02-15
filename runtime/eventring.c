@@ -295,7 +295,8 @@ static struct eventring_buffer_header *get_ring_buffer_by_domain_id
 static void write_to_ring(ev_category category, ev_message_type type,
                           int event_id, int event_length, uint64_t *content,
                           int word_offset) {
-  /* account for header and timestamp */
+
+  /* account for header and timestamp (which are both uint64) */
   uint64_t length_with_header_ts = event_length + 2;
 
   struct eventring_buffer_header *domain_ring_header =
