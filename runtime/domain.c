@@ -1209,12 +1209,6 @@ static void caml_poll_gc_work(void)
 
 }
 
-int caml_check_pending_interrupt(void)
-{
-  atomic_uintnat* young_limit = domain_self->interruptor.interrupt_word;
-  return atomic_load_acq(young_limit) == INTERRUPT_MAGIC;
-}
-
 /* FIXME: do not raise async exceptions */
 void caml_handle_gc_interrupt(void)
 {
@@ -1222,10 +1216,10 @@ void caml_handle_gc_interrupt(void)
   CAMLalloc_point_here;
 
   CAML_EV_BEGIN(EV_INTERRUPT_GC);
-  if (caml_check_pending_interrupt()) {
+  if (atomic_load_acq(young_limit) == INTERRUPT_MAGIC) {
     /* interrupt */
     CAML_EV_BEGIN(EV_INTERRUPT_REMOTE);
-    while (caml_check_pending_interrupt()) {
+    while (atomic_load_acq(young_limit) == INTERRUPT_MAGIC) {
       uintnat i = INTERRUPT_MAGIC;
       atomic_compare_exchange_strong(
           young_limit, &i, (uintnat)Caml_state->young_start);
