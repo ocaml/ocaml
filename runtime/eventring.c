@@ -46,6 +46,42 @@
 
 #define EVENTRING_VERSION 1
 
+/*
+This file contains the implementation for eventring's producer. The consumer
+can be found in eventring_consumer.
+
+Eventring is a transport for runtime events. When enabled the caml_ev_* probes
+emit events that get written to per-domain memory-mapped ring buffers. Consumers
+can be written that use the OCaml or C apis to consume these events
+asynchronously. This can be done both inside or outside the process.
+
+The ring buffer is structured as a flight recorder, overwriting old data when is
+insufficient space to write new events. This enables users to potentially only
+read the ring when some anomalous event occurs. No coordination is needed with
+consumers who read the events - they detect races with the producer and discard
+events when that happens.
+
+The producer code is contained here . By default a <pid>.eventring file is
+created in the current directory (overridable by setting
+OCAML_EVENTRING_DIR). This file contains a ring buffer for each possible domain
+(Max_domains). It is laid out in a structure that enables sparsity. On-disk
+(or in-memory) footprint is proportional to the max number of concurrent domains
+the process has ever run.
+
+On disk structure:
+
+----------------------------------------------------------------
+| File header (version, offsets, etc..)                        |
+----------------------------------------------------------------
+| Ring 0..Max_domains metadata                                 |
+| (head and tail indexes, one per cache line)                  |
+----------------------------------------------------------------
+| Ring 0..Max_domains data                                     |
+| (actual ring data, default 2^16 words = 512k bytes)          |
+----------------------------------------------------------------
+
+*/
+
 typedef enum { EV_RUNTIME, EV_USER } ev_category;
 
 static struct eventring_metadata_header *current_metadata = NULL;
