@@ -84,9 +84,9 @@ On disk structure:
 
 typedef enum { EV_RUNTIME, EV_USER } ev_category;
 
+/* These store state for the current ring buffers open for writing */
 static struct eventring_metadata_header *current_metadata = NULL;
 static int current_ring_total_size;
-
 static char_os *eventring_path;
 static char_os *current_ring_loc = NULL;
 
@@ -95,6 +95,7 @@ static HANDLE ring_file_handle;
 static HANDLE ring_handle;
 #endif
 
+/* This comes from OCAMLRUNPARAMs and is initialised in caml_eventring_init */
 static int ring_size_words;
 
 static atomic_uintnat eventring_enabled = 0;
@@ -114,6 +115,7 @@ void caml_eventring_init() {
   }
 }
 
+/* Remove the ringbuffers. This is only to be called in a stop-the-world */
 static void teardown_eventring(caml_domain_state *domain_state, void *data,
                                int num_participating,
                                caml_domain_state **participating_domains) {
@@ -136,6 +138,8 @@ static void teardown_eventring(caml_domain_state *domain_state, void *data,
   caml_global_barrier();
 }
 
+/* Return the current location for the ring buffers of this process. This is
+  used in the consumer to read the ring buffers of the current process */
 char_os* caml_eventring_current_location() {
   if( atomic_load_acq(&eventring_enabled) ) {
     return current_ring_loc;
@@ -144,6 +148,8 @@ char_os* caml_eventring_current_location() {
   }
 }
 
+/* Write a lifecycle event and then trigger a stop the world to tear down the
+  ring buffers */
 void caml_eventring_destroy() {
   if (atomic_load_acq(&eventring_enabled)) {
     write_to_ring(EV_RUNTIME, EV_LIFECYCLE, EV_RING_STOP, 0, NULL, 0);
@@ -152,6 +158,8 @@ void caml_eventring_destroy() {
   }
 }
 
+/* Create the ring buffers. This must only be called from a stop the world
+  pause. */
 static void
 create_and_start_ring_buffers(caml_domain_state *domain_state, void *data,
                               int num_participating,
@@ -254,7 +262,6 @@ create_and_start_ring_buffers(caml_domain_state *domain_state, void *data,
 
       close(ring_fd);
 #endif
-
       ring_headers_length =
           Max_domains * sizeof(struct eventring_buffer_header);
 
@@ -267,12 +274,15 @@ create_and_start_ring_buffers(caml_domain_state *domain_state, void *data,
       current_metadata->ring_size_elements = ring_size_words;
       current_metadata->headers_offset =
           sizeof(struct eventring_metadata_header);
+
       /* strictly we can calculate this in a consumer but for simplicity we
          store it in the metadata header */
       current_metadata->data_offset =
         current_metadata->headers_offset + ring_headers_length;
 
       for (int domain_num = 0; domain_num < Max_domains; domain_num++) {
+        /* we initialise each ring's metadata. We use the offset to the headers
+          and then find the slot for each of domain in Max_domains */
         struct eventring_buffer_header *ring_buffer =
             (struct eventring_buffer_header
                  *)((char *)current_metadata +
@@ -335,22 +345,34 @@ static void write_to_ring(ev_category category, ev_message_type type,
   /* account for header and timestamp (which are both uint64) */
   uint64_t length_with_header_ts = event_length + 2;
 
+  /* there is a ring buffer (made up of header and data) for each domain */
   struct eventring_buffer_header *domain_ring_header =
       get_ring_buffer_by_domain_id(Caml_state->id);
 
+  /* get the pointer to the data for this domain's ring buffer */
   uint64_t *ring_ptr = (uint64_t *)((char*)current_metadata +
                                     current_metadata->data_offset
                         + Caml_state->id * current_metadata->ring_size_bytes);
 
+  /* the head and tail indexes for the current domain's ring buffer (out of
+      the header) */
   uint64_t ring_head = atomic_load_explicit(&domain_ring_header->ring_head,
                                             memory_order_acquire);
   uint64_t ring_tail = atomic_load_explicit(&domain_ring_header->ring_tail,
                                             memory_order_acquire);
 
+  /* since rings can only be powers of two in size, we use this mask to cheaply
+    convert the head and tail indexes in to the physical offset in the ring
+    buffer's data. */
   uint64_t ring_mask = current_metadata->ring_size_elements - 1;
   uint64_t ring_tail_offset = ring_tail & ring_mask;
+
+  /* we avoid writing events that straddle the end of the ring buffer */
   uint64_t ring_distance_to_end =
       current_metadata->ring_size_elements - ring_tail_offset;
+  /* when we might write an event that is bigger than the physical size
+    remaining we add a padding event instead and then write the actual
+    event to the start of the ring buffer */
   uint64_t padding_required = 0;
 
   uint64_t timestamp = caml_time_counter();
@@ -360,16 +382,16 @@ static void write_to_ring(ev_category category, ev_message_type type,
   /* Runtime event with type EV_INTERNAL and id 0 is reserved for padding */
   CAMLassert(!(category == EV_RUNTIME && type == EV_INTERNAL && event_id == 0));
 
-  // Work out if padding is required
+  /* work out if padding is required */
   if (ring_distance_to_end < length_with_header_ts) {
     padding_required = ring_distance_to_end;
   }
 
-  // First we check if a write would take us over the head
+  /* First we check if a write would take us over the head */
   while ((ring_tail + length_with_header_ts + padding_required) - ring_head >=
          ring_size_words) {
-    // The write would over-write some old bit of data. Need to advance the
-    // head.
+    /* The write would over-write some old bit of data. Need to advance the
+      head. */
     uint64_t head_header = ring_ptr[ring_head & ring_mask];
 
     ring_head += EVENTRING_ITEM_LENGTH(head_header);
@@ -381,9 +403,9 @@ static void write_to_ring(ev_category category, ev_message_type type,
   if (padding_required > 0) {
     ring_ptr[ring_tail_offset] =
         (ring_distance_to_end
-         << 54); // Padding header with size ring_distance_to_end
-                 // Readers will skip the message and go straight
-                 // to the beginning of the ring.
+         << 54); /* Padding header with size ring_distance_to_end
+                    Readers will skip the message and go straight
+                    to the beginning of the ring. */
 
     ring_tail += ring_distance_to_end;
 
