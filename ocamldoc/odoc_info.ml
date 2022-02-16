@@ -71,6 +71,11 @@ type param = (string * text)
 
 type raised_exception = (string * text)
 
+type alert = Odoc_types.alert = {
+  alert_name : string;
+  alert_payload : string option;
+}
+
 type info = Odoc_types.info = {
     i_desc : text option;
     i_authors : string list;
@@ -83,9 +88,8 @@ type info = Odoc_types.info = {
     i_raised_exceptions : raised_exception list;
     i_return_value : text option ;
     i_custom : (string * text) list ;
+    i_alerts : alert list ;
   }
-
-type alert = Odoc_types.alert = { alert_name : string; alert_payload : string option }
 
 type location = Odoc_types.location = {
     loc_impl : Location.t option ;

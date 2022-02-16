@@ -84,6 +84,11 @@ type param = (string * text)
 (** Raised exception name and description. *)
 type raised_exception = (string * text)
 
+type alert = Odoc_types.alert = {
+  alert_name : string;
+  alert_payload : string option;
+}
+
 (** Information in a special comment
 @before 3.12.0 \@before information was not present.
 *)
@@ -99,9 +104,8 @@ type info = Odoc_types.info = {
     i_raised_exceptions : raised_exception list; (** The list of raised exceptions. *)
     i_return_value : text option; (** The description text of the return value. *)
     i_custom : (string * text) list ; (** A text associated to a custom @-tag. *)
+    i_alerts : alert list ; (** Alerts associated to the same item. Not from special comments. *)
   }
-
-type alert = Odoc_types.alert = { alert_name : string; alert_payload : string option }
 
 (** Location of elements in implementation and interface files. *)
 type location = Odoc_types.location = {
@@ -321,7 +325,6 @@ module Value :
           mutable val_parameters : Odoc_parameter.parameter list ; (** The parameters, if any. *)
           mutable val_code : string option ; (** The code of the value, if we had the only the implementation file. *)
           mutable val_loc : location ;
-          mutable val_alerts : alert list ; (** Alerts attached to the item. *)
         }
 
     (** Representation of a class attribute. *)

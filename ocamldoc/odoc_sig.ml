@@ -118,7 +118,7 @@ module type Info_retriever =
         (Odoc_types.text -> 'a) -> string -> string -> (Odoc_types.info option * 'a list)
   end
 
-let analyze_ext_attributes attrs =
+let alert_of_attribute attr =
   let open Parsetree in
   let load_constant_string = function
     | { pexp_desc = Pexp_constant (Pconst_string (text, _, _)); _ } -> Some text
@@ -138,22 +138,25 @@ let analyze_ext_attributes attrs =
         | _ -> None)
     | _ -> None
   in
-  List.filter_map
-    (fun attr ->
-      match attr.attr_name.txt with
-      | "deprecated" | "ocaml.deprecated" ->
-          Some
-            {
-              alert_name = "deprecated";
-              alert_payload = deprecated_payload attr.attr_payload;
-            }
-      | "alert" | "ocaml.alert" -> (
-          match alert_payload attr.attr_payload with
-          | Some (alert_name, alert_payload) ->
-              Some { alert_name; alert_payload }
-          | None -> None)
-      | _ -> None)
-    attrs
+  match attr.attr_name.txt with
+  | "deprecated" | "ocaml.deprecated" ->
+      Some
+        {
+          alert_name = "deprecated";
+          alert_payload = deprecated_payload attr.attr_payload;
+        }
+  | "alert" | "ocaml.alert" -> (
+      match alert_payload attr.attr_payload with
+      | Some (alert_name, alert_payload) -> Some { alert_name; alert_payload }
+      | None -> None)
+  | _ -> None
+
+let analyze_alerts info attrs =
+  match List.filter_map alert_of_attribute attrs with
+  | [] -> info
+  | _ :: _ as i_alerts ->
+      let info = Option.value ~default:Odoc_types.dummy_info info in
+      Some { info with i_alerts }
 
 module Analyser =
   functor (My_ir : Info_retriever) ->
@@ -600,7 +603,6 @@ module Analyser =
               val_parameters = Odoc_value.dummy_parameter_list subst_typ ;
               val_code = None ;
               val_loc = { loc_impl = None ; loc_inter = Some loc };
-              val_alerts = [] ;
             } ;
             met_private = private_flag = Asttypes.Private ;
             met_virtual = false ;
@@ -662,7 +664,6 @@ module Analyser =
                   val_parameters = [] ;
                   val_code = None ;
                   val_loc = { loc_impl = None ; loc_inter = Some loc} ;
-                  val_alerts = [] ;
                 } ;
                 att_mutable = mutable_flag = Asttypes.Mutable ;
                 att_virtual = virtual_flag = Asttypes.Virtual ;
@@ -813,6 +814,7 @@ module Analyser =
             in
             let name = Name.parens_if_infix name_pre.txt in
             let subst_typ = Odoc_env.subst_type env type_expr in
+            let comment_opt = analyze_alerts comment_opt value_desc.Parsetree.pval_attributes in
             let v =
               {
                 val_name = Name.concat current_module_name name ;
@@ -822,7 +824,6 @@ module Analyser =
                 val_parameters = Odoc_value.dummy_parameter_list subst_typ ;
                 val_code = None ;
                 val_loc = { loc_impl = None ; loc_inter = Some sig_item_loc } ;
-                val_alerts = analyze_ext_attributes value_desc.Parsetree.pval_attributes ;
               }
             in
             let (maybe_more, info_after_opt) =

@@ -28,7 +28,6 @@ type t_value = {
     mutable val_parameters : Odoc_parameter.parameter list ;
     mutable val_code : string option ;
     mutable val_loc : Odoc_types.location ;
-    mutable val_alerts : Odoc_types.alert list ;
   }
 
 (** Representation of a class attribute. *)

@@ -76,7 +76,7 @@ class html =
     (** Print html code for a value. *)
     method! private html_of_value b v =
       Odoc_info.reset_type_names ();
-      self#html_of_info ~alerts:v.val_alerts b v.val_info;
+      self#html_of_info b v.val_info;
       bs b "<pre>";
       bs b (self#keyword "val");
       bs b " ";

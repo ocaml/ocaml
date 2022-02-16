@@ -200,6 +200,7 @@ let merge_param = ('p', "merge @param")
 let merge_raised_exception = ('e', "merge @raise")
 let merge_return_value = ('r', "merge @return")
 let merge_custom = ('c', "merge custom @-tags")
+let merge_alert = ('x', "merge alerts")
 let merge_all = ('A', "merge all")
 
 let no_index = " Do not build index for Info files "^texi_only
@@ -236,6 +237,7 @@ let merge_options =
        merge_raised_exception ;
        merge_return_value ;
        merge_custom ;
+       merge_alert ;
        merge_all ]
   )
 

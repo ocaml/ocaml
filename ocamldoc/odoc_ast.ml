@@ -335,6 +335,7 @@ module Analyser =
         @raise Failure if an error occurs.*)
      let tt_analyse_value env current_module_name comment_opt loc pat_exp rec_flag attrs =
        let (pat, exp) = pat_exp in
+       let comment_opt = Odoc_sig.analyze_alerts comment_opt attrs in
        match (pat.pat_desc, exp.exp_desc) with
          (Typedtree.Tpat_var (ident, _), Typedtree.Texp_function { cases = pat_exp_list2; _ }) ->
            (* a new function is defined *)
@@ -357,7 +358,6 @@ module Analyser =
              val_parameters = tt_analyse_function_parameters env comment_opt pat_exp_list2 ;
              val_code = code ;
              val_loc = { loc_impl = Some loc ; loc_inter = None } ;
-             val_alerts = Odoc_sig.analyze_ext_attributes attrs ;
            }
            in
            [ new_value ]
@@ -382,7 +382,6 @@ module Analyser =
              val_parameters = [] ;
              val_code = code ;
              val_loc = { loc_impl = Some loc ; loc_inter = None } ;
-             val_alerts = Odoc_sig.analyze_ext_attributes attrs ;
            }
            in
            [ new_value ]
@@ -568,7 +567,6 @@ module Analyser =
                 val_parameters = [] ;
                 val_code = code ;
                 val_loc = { loc_impl = Some loc ; loc_inter = None } ;
-                val_alerts = [] ;
               } ;
               att_mutable = mutable_flag = Asttypes.Mutable ;
               att_virtual = virt ;
@@ -608,7 +606,6 @@ module Analyser =
                 val_parameters = [] ;
                 val_code = code ;
                 val_loc = { loc_impl = Some loc ; loc_inter = None } ;
-                val_alerts = [] ;
               } ;
               met_private = private_flag = Asttypes.Private ;
               met_virtual = true ;
@@ -650,7 +647,6 @@ module Analyser =
                 val_parameters = tt_analyse_method_expression env complete_name info_opt exp ;
                 val_code = code ;
                 val_loc = { loc_impl = Some loc ; loc_inter = None } ;
-                val_alerts = [] ;
               } ;
               met_private = private_flag = Asttypes.Private ;
               met_virtual = false ;
@@ -1143,6 +1139,7 @@ module Analyser =
               else
                 None
             in
+            let comment_opt = Odoc_sig.analyze_alerts comment_opt val_desc.Parsetree.pval_attributes in
             let new_value = {
                 val_name = complete_name ;
                 val_info = comment_opt ;
@@ -1151,7 +1148,6 @@ module Analyser =
                 val_parameters = [] ;
                 val_code = code ;
                 val_loc = { loc_impl = Some loc ; loc_inter = None } ;
-                val_alerts = Odoc_sig.analyze_ext_attributes val_desc.Parsetree.pval_attributes ;
               }
             in
             let new_env = Odoc_env.add_value env new_value.val_name in

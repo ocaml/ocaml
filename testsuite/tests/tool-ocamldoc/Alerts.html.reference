@@ -40,9 +40,29 @@
 </ul>
 </div>
 
-<pre><span id="VALc"><span class="keyword">val</span> c</span> : <code class="type">int</code></pre><p>The deprecated attribute.</p>
+<pre><span id="VALc"><span class="keyword">val</span> c</span> : <code class="type">int</code></pre><div class="info ">
+<ul class="info-attributes">
+<li><b>Alert foo</b> bar</li>
+</ul>
+</div>
+<p>The deprecated attribute.</p>
 
-<pre><span id="VALd"><span class="keyword">val</span> d</span> : <code class="type">int</code></pre><p>No payload</p>
+<pre><span id="VALd"><span class="keyword">val</span> d</span> : <code class="type">int</code></pre><div class="info ">
+<ul class="info-attributes">
+<li><b>Alert deprecated</b> foo</li>
+</ul>
+</div>
+<p>No payload</p>
 
-<pre><span id="VALe"><span class="keyword">val</span> e</span> : <code class="type">int</code></pre>
-<pre><span id="VALf"><span class="keyword">val</span> f</span> : <code class="type">int</code></pre></body></html>
+<pre><span id="VALe"><span class="keyword">val</span> e</span> : <code class="type">int</code></pre><div class="info ">
+<ul class="info-attributes">
+<li><b>Alert deprecated</b></li>
+</ul>
+</div>
+
+<pre><span id="VALf"><span class="keyword">val</span> f</span> : <code class="type">int</code></pre><div class="info ">
+<ul class="info-attributes">
+<li><b>Alert foo</b></li>
+</ul>
+</div>
+</body></html>
