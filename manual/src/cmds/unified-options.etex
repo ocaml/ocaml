@@ -117,6 +117,16 @@ directory \var{dir}. \comp{(See the "-custom" option.)}
 }%notop
 
 \notop{%
+\item["-cmi-file" \var{filename}]
+Use the given interface file to type-check the ML source file to compile.
+When this option is not specified, the compiler looks for a \var{.mli} file
+with the same base name than the implementation it is compiling and in the
+same directory. If such a file is found, the compiler looks for a
+correspoinding \var{.cmi} file in the included directories and reports an
+error if it fails to find one.
+}%notop
+
+\notop{%
 \item["-color" \var{mode}]
 Enable or disable colors in compiler messages (especially warnings and errors).
 The following modes are supported:

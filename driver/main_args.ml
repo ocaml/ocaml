@@ -62,6 +62,11 @@ let mk_clambda_checks f =
     field access checks (for debugging the compiler)"
 ;;
 
+let mk_cmi_file f =
+  "-cmi-file", Arg.String f,
+    "<file>  Use the <file> interface file to type-check"
+;;
+
 let mk_compact f =
   "-compact", Arg.Unit f, " Optimize code size rather than speed"
 ;;
@@ -966,6 +971,7 @@ module type Compiler_options = sig
   val _cc : string -> unit
   val _cclib : string -> unit
   val _ccopt : string -> unit
+  val _cmi_file : string -> unit
   val _config : unit -> unit
   val _config_var : string -> unit
   val _for_pack : string -> unit
@@ -1160,6 +1166,7 @@ struct
     mk_cc F._cc;
     mk_cclib F._cclib;
     mk_ccopt F._ccopt;
+    mk_cmi_file F._cmi_file;
     mk_color F._color;
     mk_error_style F._error_style;
     mk_compat_32 F._compat_32;
@@ -1856,6 +1863,7 @@ module Default = struct
     let _cc s = c_compiler := (Some s)
     let _cclib s = Compenv.defer (ProcessObjects (Misc.rev_split_words s))
     let _ccopt s = Compenv.first_ccopts := (s :: (!Compenv.first_ccopts))
+    let _cmi_file s = cmi_file := (Some s)
     let _config = Misc.show_config_and_exit
     let _config_var = Misc.show_config_variable_and_exit
     let _dprofile () = profile_columns := Profile.all_columns
