@@ -437,7 +437,7 @@ end) = struct
     let reduce_memo_table, read_back_memo_table =
       match shared_memo_tables with
       | Some tables -> tables
-      | None -> Hashtbl.(create 42, create 42)
+      | None -> Hashtbl.create 42, Hashtbl.create 42
     in
     let local_env = Ident.Map.empty in
     let env = {
