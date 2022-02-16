@@ -21,6 +21,9 @@ val c : int
 val d : int
 [@@deprecated "foo"]
 
+val d' : int
+[@@alert deprecated "foo"]
+
 (** No payload *)
 
 val e : int
@@ -28,3 +31,9 @@ val e : int
 
 val f : int
 [@@alert foo]
+
+(** Both deprecated tag and alert *)
+
+val g : int
+[@@deprecated "foo"]
+(** @deprecated bar *)

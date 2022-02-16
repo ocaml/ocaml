@@ -152,11 +152,27 @@ let alert_of_attribute attr =
   | _ -> None
 
 let analyze_alerts info attrs =
+  (* Remove any deprecated alert if the tag is present. *)
+  let unify_deprecated alert (depr_tag, acc) =
+    match alert.alert_name with
+    | "deprecated" ->
+        let depr_tag =
+          match (depr_tag, alert.alert_payload) with
+          | Some (_ :: _), _ -> depr_tag
+          | _, Some text -> Some [ Odoc_types.Raw text ]
+          | _, None -> Some []
+        in
+        (depr_tag, acc)
+    | _ -> (depr_tag, alert :: acc)
+  in
   match List.filter_map alert_of_attribute attrs with
   | [] -> info
-  | _ :: _ as i_alerts ->
+  | _ :: _ as alerts ->
       let info = Option.value ~default:Odoc_types.dummy_info info in
-      Some { info with i_alerts }
+      let i_deprecated, i_alerts =
+        List.fold_right unify_deprecated alerts (info.i_deprecated, [])
+      in
+      Some { info with i_deprecated; i_alerts }
 
 module Analyser =
   functor (My_ir : Info_retriever) ->

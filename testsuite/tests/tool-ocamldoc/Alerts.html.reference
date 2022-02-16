@@ -48,21 +48,31 @@
 <p>The deprecated attribute.</p>
 
 <pre><span id="VALd"><span class="keyword">val</span> d</span> : <code class="type">int</code></pre><div class="info ">
-<ul class="info-attributes">
-<li><b>Alert deprecated</b> foo</li>
-</ul>
+<div class="info-deprecated">
+<span class="warning">Deprecated. </span>foo</div>
+</div>
+
+<pre><span id="VALd'"><span class="keyword">val</span> d'</span> : <code class="type">int</code></pre><div class="info ">
+<div class="info-deprecated">
+<span class="warning">Deprecated. </span>foo</div>
 </div>
 <p>No payload</p>
 
 <pre><span id="VALe"><span class="keyword">val</span> e</span> : <code class="type">int</code></pre><div class="info ">
-<ul class="info-attributes">
-<li><b>Alert deprecated</b></li>
-</ul>
+<div class="info-deprecated">
+<span class="warning">Deprecated. </span></div>
 </div>
 
 <pre><span id="VALf"><span class="keyword">val</span> f</span> : <code class="type">int</code></pre><div class="info ">
 <ul class="info-attributes">
 <li><b>Alert foo</b></li>
 </ul>
+</div>
+<p>Both deprecated tag and alert</p>
+
+<pre><span id="VALg"><span class="keyword">val</span> g</span> : <code class="type">int</code></pre><div class="info ">
+<div class="info-deprecated">
+<span class="warning">Deprecated. </span>foo
+bar</div>
 </div>
 </body></html>
