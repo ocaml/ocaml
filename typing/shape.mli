@@ -147,6 +147,8 @@ module Make_reduce(Context : sig
 
     val fuel : int
 
+    val share_memo : bool
+
     val read_unit_shape : unit_name:string -> t option
 
     val find_shape : env -> Ident.t -> t

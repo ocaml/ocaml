@@ -217,6 +217,7 @@ let decompose_abs t =
 module Make_reduce(Params : sig
   type env
   val fuel : int
+  val share_memo : bool
   val read_unit_shape : unit_name:string -> t option
   val find_shape : env -> Ident.t -> t
 end) = struct
@@ -258,6 +259,15 @@ end) = struct
      bind [x] to [None] in the environment. [Some v] is used for
      actual substitutions, for example in [App(Abs(x, body), t)], when
      [v] is a thunk that will evaluate to the normal form of [t]. *)
+
+  (* In some cases it might be useful to keep the same memo table for
+     successive calls of reduce. These shared memo table are initialized
+     when the functor is instantiated. *)
+  let shared_memo_tables =
+    if Params.share_memo then
+      Some (Hashtbl.create 42, Hashtbl.create 42)
+    else
+      None
 
   let improve_uid uid (nf : nf) =
     match nf.uid with
@@ -424,8 +434,11 @@ end) = struct
 
   let reduce global_env t =
     let fuel = ref Params.fuel in
-    let reduce_memo_table = Hashtbl.create 42 in
-    let read_back_memo_table = Hashtbl.create 42 in
+    let reduce_memo_table, read_back_memo_table =
+      match shared_memo_tables with
+      | Some tables -> tables
+      | None -> Hashtbl.(create 42, create 42)
+    in
     let local_env = Ident.Map.empty in
     let env = {
       fuel;
@@ -448,6 +461,7 @@ module Local_reduce =
     let fuel = 10
     let read_unit_shape ~unit_name:_ = None
     let find_shape _env _id = raise Not_found
+    let share_memo = false
   end)
 
 let local_reduce shape =
