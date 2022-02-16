@@ -185,11 +185,12 @@ CAMLextern wchar_t* caml_stat_wcsconcat(int n, ...);
 #endif
 
 #ifdef DEBUG
-#define DEBUG_clear(result, wosize) do{ \
-  uintnat caml__DEBUG_i; \
-  for (caml__DEBUG_i = 0; caml__DEBUG_i < (wosize); ++ caml__DEBUG_i){ \
-    Field ((result), caml__DEBUG_i) = Debug_uninit_minor; \
-  } \
+#define DEBUG_clear(result, wosize) do{                                     \
+  uintnat caml__DEBUG_i;                                                    \
+  for (caml__DEBUG_i = 0; caml__DEBUG_i < (wosize); ++ caml__DEBUG_i) {     \
+    CAMLassert(Field((result), caml__DEBUG_i) == Debug_free_minor);         \
+    Field ((result), caml__DEBUG_i) = Debug_uninit_minor;                   \
+  }                                                                         \
 }while(0)
 #else
 #define DEBUG_clear(result, wosize)
