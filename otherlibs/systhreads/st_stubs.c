@@ -207,7 +207,6 @@ static void caml_thread_enter_blocking_section(void)
 {
   /* Save the current runtime state in the thread descriptor
      of the current thread */
-  Current_thread = st_tls_get(Thread_key);
   caml_thread_save_runtime_state();
   /* Tell other threads that the runtime is free */
   st_masterlock_release(&Thread_main_lock);
