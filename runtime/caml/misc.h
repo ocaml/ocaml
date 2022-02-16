@@ -186,15 +186,7 @@ CAMLdeprecated_typedef(addr, char *);
    must not allocate, change any heap value, nor call OCaml code. They
    can obtain the domain id with Caml_state->id. These functions must
    be reentrant. */
-typedef void (*caml_timing_hook) (void);
-#ifdef __cplusplus
-extern std::atomic<caml_timing_hook> caml_major_slice_begin_hook;
-extern std::atomic<caml_timing_hook> caml_major_slice_end_hook;
-extern std::atomic<caml_timing_hook> caml_minor_gc_begin_hook;
-extern std::atomic<caml_timing_hook> caml_minor_gc_end_hook;
-extern std::atomic<caml_timing_hook> caml_finalise_begin_hook;
-extern std::atomic<caml_timing_hook> caml_finalise_end_hook;
-#else
+#ifndef __cplusplus
 typedef void (*caml_timing_hook) (void);
 extern _Atomic caml_timing_hook caml_major_slice_begin_hook;
 extern _Atomic caml_timing_hook caml_major_slice_end_hook;
@@ -300,10 +292,8 @@ void caml_alloc_point_here(void);
    [abort()] is called.
 
    This function must be reentrant. */
+#ifndef __cplusplus
 typedef void (*fatal_error_hook) (char *msg, va_list args);
-#ifdef __cplusplus
-extern std::atomic<fatal_error_hook> caml_fatal_error_hook;
-#else
 extern _Atomic fatal_error_hook caml_fatal_error_hook;
 #endif
 
