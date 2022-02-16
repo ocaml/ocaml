@@ -729,7 +729,7 @@ class virtual info =
 
     method html_of_alerts b alerts =
       List.iter (fun { alert_name; alert_payload } ->
-          bp b "<li><b>%s %s</b>" Odoc_messages.alert alert_name;
+          bp b "<li><b>%s %s.</b>" Odoc_messages.alert alert_name;
           (match alert_payload with Some p -> bp b " %s" p | None -> ());
           bp b "</li>\n"
         ) alerts

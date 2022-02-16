@@ -554,6 +554,7 @@ class texi =
                           self#text_of_return_opt info.i_return_value )
                    else [] ;
                    self#text_of_custom info.i_custom ;
+                   self#text_of_alerts info.i_alerts ;
                  ] in
           if block
           then [ Block t ]

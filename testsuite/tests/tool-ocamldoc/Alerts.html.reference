@@ -27,7 +27,7 @@
 <p>Documentation after.</p>
 </div>
 <ul class="info-attributes">
-<li><b>Alert foo</b> bar</li>
+<li><b>Alert foo.</b> bar</li>
 </ul>
 </div>
 
@@ -36,13 +36,13 @@
 <p>Documentation before.</p>
 </div>
 <ul class="info-attributes">
-<li><b>Alert foo</b> bar</li>
+<li><b>Alert foo.</b> bar</li>
 </ul>
 </div>
 
 <pre><span id="VALc"><span class="keyword">val</span> c</span> : <code class="type">int</code></pre><div class="info ">
 <ul class="info-attributes">
-<li><b>Alert foo</b> bar</li>
+<li><b>Alert foo.</b> bar</li>
 </ul>
 </div>
 <p>The deprecated attribute.</p>
@@ -65,7 +65,7 @@
 
 <pre><span id="VALf"><span class="keyword">val</span> f</span> : <code class="type">int</code></pre><div class="info ">
 <ul class="info-attributes">
-<li><b>Alert foo</b></li>
+<li><b>Alert foo.</b></li>
 </ul>
 </div>
 <p>Both deprecated tag and alert</p>
