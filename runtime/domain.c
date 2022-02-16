@@ -371,7 +371,7 @@ int caml_reallocate_minor_heap(asize_t wsize)
     for (;
          p < (uintnat*)(domain_self->minor_heap_area + Bsize_wsize(wsize));
          p++)
-      *p = Debug_uninit_align;
+      *p = Debug_free_minor;
   }
 #endif
 

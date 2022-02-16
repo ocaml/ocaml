@@ -431,7 +431,7 @@ again:
   if (redo) goto again;
 }
 
-void caml_empty_minor_heap_domain_clear(caml_domain_state* domain, void* unused)
+void caml_empty_minor_heap_domain_clear(caml_domain_state* domain)
 {
   struct caml_minor_tables *minor_tables = domain->minor_tables;
 
@@ -442,14 +442,6 @@ void caml_empty_minor_heap_domain_clear(caml_domain_state* domain, void* unused)
   clear_table ((struct generic_table *)&minor_tables->custom);
 
   domain->extra_heap_resources_minor = 0.0;
-
-#ifdef DEBUG
-  {
-    uintnat* p = (uintnat*)domain->young_start;
-    for (; p < (uintnat*)domain->young_end; p++)
-      *p = Debug_uninit_align;
-  }
-#endif
 }
 
 void caml_empty_minor_heap_promote(caml_domain_state* domain,
@@ -683,9 +675,10 @@ static void caml_stw_empty_minor_heap_no_major_slice(caml_domain_state* domain,
                                             int participating_count,
                                             caml_domain_state** participating)
 {
-  #ifdef DEBUG
+#ifdef DEBUG
+  int minor_words_used = domain->young_end - domain->young_ptr;
   CAMLassert(caml_domain_is_in_stw());
-  #endif
+#endif
 
   if( participating[0] == Caml_state ) {
     atomic_fetch_add(&caml_minor_cycles_started, 1);
@@ -716,7 +709,14 @@ static void caml_stw_empty_minor_heap_no_major_slice(caml_domain_state* domain,
 
   CAML_EV_BEGIN(EV_MINOR_CLEAR);
   caml_gc_log("running stw empty_minor_heap_domain_clear");
-  caml_empty_minor_heap_domain_clear(domain, 0);
+  caml_empty_minor_heap_domain_clear(domain);
+#ifdef DEBUG
+  {
+    uintnat* p = ((uintnat*)(domain->young_end)) - minor_words_used;
+    for (int i=0; i<minor_words_used; ++i) p[i] = Debug_free_minor;
+  }
+#endif
+
   CAML_EV_END(EV_MINOR_CLEAR);
   caml_gc_log("finished stw empty_minor_heap");
 }
