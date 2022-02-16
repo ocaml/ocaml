@@ -81,6 +81,8 @@ type info = {
     i_custom : (string * text) list ;
   }
 
+type alert = { alert_name : string; alert_payload : string option }
+
 let dummy_info = {
   i_desc = None ;
   i_authors = [] ;

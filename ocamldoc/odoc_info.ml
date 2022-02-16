@@ -85,6 +85,8 @@ type info = Odoc_types.info = {
     i_custom : (string * text) list ;
   }
 
+type alert = Odoc_types.alert = { alert_name : string; alert_payload : string option }
+
 type location = Odoc_types.location = {
     loc_impl : Location.t option ;
     loc_inter : Location.t option ;

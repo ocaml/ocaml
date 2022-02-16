@@ -109,6 +109,8 @@ module type Info_retriever =
 
   end
 
+val analyze_ext_attributes : Parsetree.attributes -> Odoc_types.alert list
+
 module Analyser :
   Info_retriever ->
     sig

@@ -149,6 +149,8 @@ let merge_info_opt merge_options mli_opt ml_opt =
   | None, None -> None
   | Some i1, Some i2 -> Some (merge_info merge_options i1 i2)
 
+let merge_alerts val1 val2 = merge_lists true val1.val_alerts val2.val_alerts (@) 
+
 (** merge of two t_type, one for a .mli, another for the .ml.
    The .mli type is completed with the information in the .ml type. *)
 let merge_types merge_options mli ml =
@@ -314,6 +316,7 @@ let merge_classes merge_options mli ml =
                      a.att_value.val_info <- merge_info_opt merge_options
                          a.att_value.val_info a2.att_value.val_info;
                      a.att_value.val_loc <- { a.att_value.val_loc with loc_impl = a2.att_value.val_loc.loc_impl } ;
+                     a.att_value.val_alerts <- merge_alerts a.att_value a2.att_value;
                      if !Odoc_global.keep_code then
                        a.att_value.val_code <- a2.att_value.val_code;
                      true
@@ -349,6 +352,7 @@ let merge_classes merge_options mli ml =
                      m.met_value.val_parameters <- (merge_parameters
                                                       m.met_value.val_parameters
                                                       m2.met_value.val_parameters) ;
+                     m.met_value.val_alerts <- merge_alerts m.met_value m2.met_value ;
                      (* we must reassociate comments in @param to the corresponding
                         parameters because the associated comment of a parameter may have been changed by the merge.*)
                      Odoc_value.update_value_parameters_text m.met_value;
@@ -391,6 +395,7 @@ let merge_class_types merge_options mli ml =
                      a.att_value.val_info <- merge_info_opt merge_options
                          a.att_value.val_info a2.att_value.val_info;
                      a.att_value.val_loc <- { a.att_value.val_loc with loc_impl = a2.att_value.val_loc.loc_impl } ;
+                     a.att_value.val_alerts <- merge_alerts a.att_value a2.att_value ;
                      if !Odoc_global.keep_code then
                        a.att_value.val_code <- a2.att_value.val_code;
 
@@ -426,6 +431,7 @@ let merge_class_types merge_options mli ml =
                      m.met_value.val_parameters <- (merge_parameters
                                                       m.met_value.val_parameters
                                                       m2.met_value.val_parameters) ;
+                     m.met_value.val_alerts <- merge_alerts m.met_value m2.met_value ;
                      (* we must reassociate comments in @param to the corresponding
                         parameters because the associated comment of a parameter may have been changed by the merge.*)
                      Odoc_value.update_value_parameters_text m.met_value;
@@ -617,6 +623,7 @@ let rec merge_module_types merge_options mli ml =
                      v.val_parameters <- (merge_parameters
                                             v.val_parameters
                                             v2.val_parameters) ;
+                     v.val_alerts <- merge_alerts v v2 ;
                      (* we must reassociate comments in @param to the corresponding
                         parameters because the associated comment of a parameter may have been changed by the merge.*)
                      Odoc_value.update_value_parameters_text v;
@@ -890,6 +897,7 @@ and merge_modules merge_options mli ml =
                  v.val_parameters <- (merge_parameters
                                         v.val_parameters
                                         v2.val_parameters) ;
+                 v.val_alerts <- merge_alerts v v2 ;
                  (* we must reassociate comments in @param to the corresponding
                     parameters because the associated comment of a parameter may have been changed by the merge.*)
                  Odoc_value.update_value_parameters_text v;

@@ -26,12 +26,18 @@
 <div class="info-desc">
 <p>Documentation after.</p>
 </div>
+<ul class="info-attributes">
+<li><b>Alert foo</b> bar</li>
+</ul>
 </div>
 
 <pre><span id="VALb"><span class="keyword">val</span> b</span> : <code class="type">int</code></pre><div class="info ">
 <div class="info-desc">
 <p>Documentation before.</p>
 </div>
+<ul class="info-attributes">
+<li><b>Alert foo</b> bar</li>
+</ul>
 </div>
 
 <pre><span id="VALc"><span class="keyword">val</span> c</span> : <code class="type">int</code></pre><p>The deprecated attribute.</p>

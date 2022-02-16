@@ -94,6 +94,8 @@ type info = {
     i_custom : (string * text) list ; (** A text associated to a custom @-tag. *)
   }
 
+type alert = { alert_name : string; alert_payload : string option }
+
 (** An empty info structure. *)
 val dummy_info : info
 

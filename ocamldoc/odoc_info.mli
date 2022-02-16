@@ -101,6 +101,8 @@ type info = Odoc_types.info = {
     i_custom : (string * text) list ; (** A text associated to a custom @-tag. *)
   }
 
+type alert = Odoc_types.alert = { alert_name : string; alert_payload : string option }
+
 (** Location of elements in implementation and interface files. *)
 type location = Odoc_types.location = {
     loc_impl : Location.t option ; (** implementation location *)
@@ -319,6 +321,7 @@ module Value :
           mutable val_parameters : Odoc_parameter.parameter list ; (** The parameters, if any. *)
           mutable val_code : string option ; (** The code of the value, if we had the only the implementation file. *)
           mutable val_loc : location ;
+          mutable val_alerts : alert list ; (** Alerts attached to the item. *)
         }
 
     (** Representation of a class attribute. *)

@@ -727,11 +727,18 @@ class virtual info =
         )
         l
 
+    method html_of_alerts b alerts =
+      List.iter (fun { alert_name; alert_payload } ->
+          bp b "<li><b>%s %s</b>" Odoc_messages.alert alert_name;
+          (match alert_payload with Some p -> bp b " %s" p | None -> ());
+          bp b "</li>\n"
+        ) alerts
+
     (** Print html code for a description, except for the [i_params] field.
        @param indent can be specified not to use the style of info comments;
        default is [true].
     *)
-    method html_of_info ?(cls="") ?(indent=true) b info_opt =
+    method html_of_info ?(cls="") ?(indent=true) ?(alerts=[]) b info_opt =
       match info_opt with
         None ->
           ()
@@ -768,6 +775,7 @@ class virtual info =
           self#html_of_return_opt b' info.M.i_return_value;
           self#html_of_sees b' info.M.i_sees;
           self#html_of_custom b' info.M.i_custom;
+          self#html_of_alerts b' alerts;
           if Buffer.length b' > 0 then
             begin
               bs b "<ul class=\"info-attributes\">\n";
@@ -1554,7 +1562,7 @@ class html =
       bs b " : ";
       self#html_of_type_expr b (Name.father v.val_name) v.val_type;
       bs b "</pre>";
-      self#html_of_info b v.val_info;
+      self#html_of_info ~alerts:v.val_alerts b v.val_info;
       (
        if !with_parameter_list then
          self#html_of_parameter_list b (Name.father v.val_name) v.val_parameters
@@ -2063,10 +2071,10 @@ class html =
       if info then
         (
          if complete then
-           self#html_of_info ~cls: "module top" ~indent: true
+           self#html_of_info ~cls: "module top" ~indent: true b m.m_info
          else
-           self#html_of_info_first_sentence
-        ) b m.m_info
+           self#html_of_info_first_sentence b m.m_info
+        )
       else
         ()
 
@@ -2094,10 +2102,10 @@ class html =
       if info then
         (
          if complete then
-           self#html_of_info ~cls: "modtype top" ~indent: true
+           self#html_of_info ~cls: "modtype top" ~indent: true b mt.mt_info
          else
-           self#html_of_info_first_sentence
-        ) b mt.mt_info
+           self#html_of_info_first_sentence b mt.mt_info
+        )
       else
         ()
 
@@ -2249,10 +2257,10 @@ class html =
       bs b "</pre>" ;
       (
        if complete then
-         self#html_of_info ~cls: "class top" ~indent: true
+         self#html_of_info ~cls: "class top" ~indent: true b c.cl_info
        else
-         self#html_of_info_first_sentence
-      ) b c.cl_info
+         self#html_of_info_first_sentence b c.cl_info
+      )
 
     (** Print html code for a class type. *)
     method html_of_class_type b ?(complete=true) ?(with_link=true) ct =
@@ -2292,10 +2300,10 @@ class html =
       bs b "</pre>";
       (
        if complete then
-         self#html_of_info ~cls: "classtype top" ~indent: true
+         self#html_of_info ~cls: "classtype top" ~indent: true b ct.clt_info
        else
-         self#html_of_info_first_sentence
-      ) b ct.clt_info
+         self#html_of_info_first_sentence b ct.clt_info
+      )
 
     (** Return html code to represent a dag, represented as in Odoc_dag2html. *)
     method html_of_dag dag =
