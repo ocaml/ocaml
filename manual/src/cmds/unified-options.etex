@@ -451,14 +451,13 @@ object code files (".cmx"), and libraries (".cmxa"). See also option
 }%nat
 
 \notop{%
-\item["-o" \var{exec-file}]
-Specify the name of the output file produced by the
-\nat{linker}\comp{compiler}. The
+\item["-o" \var{output-file}]
+Specify the name of the output file to produce. For executable files, the
 default output name is "a.out" under Unix and "camlprog.exe" under
 Windows. If the "-a" option is given, specify the name of the library
 produced.  If the "-pack" option is given, specify the name of the
 packed object file produced.  If the "-output-obj" or "-output-complete-obj"
-options are given, specify the name of the output file produced.
+options are given, specify the name of the produced object file.
 \nat{If the "-shared" option is given, specify the name of plugin
 file produced.}
 \comp{If the "-c" option is given, specify the name of the object
