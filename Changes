@@ -4,6 +4,7 @@ Working version
 ### Language features:
 
 ### Runtime system:
+
 - #10831: Multicore OCaml
   (The multicore team, caml-devel and more)
 
@@ -34,6 +35,9 @@ Working version
   the domain_state structure.
   (Enguerrand Decorne, KC Sivaramakrishnan and Tom Kelly,
   review by Anil Madhavapeddy and Gabriel Scherer)
+
+- #11010: Use strerror_r for reentrant error string conversion.
+  (Anil Madhavapeddy and Xavier Leroy, review by same and Edwin Török)
 
 ### Code generation and optimizations:
 
