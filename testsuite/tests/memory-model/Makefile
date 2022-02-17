@@ -1,6 +1,7 @@
-PREFIX=/opt/ocaml
-OCAMLC=$(PREFIX)/bin/ocamlc
-OCAMLOPT=$(PREFIX)/bin/ocamlopt
+OCAMLRUN=../../../boot/ocamlrun
+OPTS=-nostdlib -I ../../../stdlib
+OCAMLC=$(OCAMLRUN) ../../../ocamlc $(OPTS)
+OCAMLOPT=$(OCAMLRUN) ../../../ocamlopt $(OPTS)
 
 
 PGM=forbidden.exe publish.exe
@@ -13,7 +14,8 @@ OBJ=opt.cmx barrier.cmx hist.cmx shared.cmx run.cmx outcome.cmx
 BBJ=$(OBJ:.cmx=.cmo)
 SRC=$(OBJ:.cmx=.ml) $(PGM:.exe=.ml) $(MOREPGM:.exe=.ml)
 MLI=$(OBJ:.cmx=.mli)
-all: native
+
+all: native byte
 
 native: $(PGM)
 
