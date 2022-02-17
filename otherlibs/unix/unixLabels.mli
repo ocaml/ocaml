@@ -230,13 +230,14 @@ val fork : unit -> int
 (** Fork a new process. The returned integer is 0 for the child
    process, the pid of the child process for the parent process.
 
-   On Windows: not implemented, use {!create_process} or threads. *)
+   @raise Invalid_argument on Windows. Use {!create_process} or threads
+   instead. *)
 
 val wait : unit -> int * process_status
 (** Wait until one of the children processes die, and return its pid
    and termination status.
 
-   On Windows: not implemented, use {!waitpid}. *)
+   @raise Invalid_argument on Windows. Use {!waitpid} instead. *)
 
 val waitpid : mode:wait_flag list -> int -> int * process_status
 (** Same as {!wait}, but waits for the child process whose pid is given.
@@ -287,14 +288,15 @@ val getpid : unit -> int
 val getppid : unit -> int
 (** Return the pid of the parent process.
 
-    On Windows: not implemented (because it is meaningless). *)
+    @raise Invalid_argument on Windows (because it is
+    meaningless) *)
 
 val nice : int -> int
 (** Change the process priority. The integer argument is added to the
    ``nice'' value. (Higher values of the ``nice'' value mean
    lower priorities.) Return the new nice value.
 
-   On Windows: not implemented. *)
+   @raise Invalid_argument on Windows *)
 
 (** {1 Basic file input/output} *)
 
@@ -667,23 +669,23 @@ val chmod : string -> perm:file_perm -> unit
 val fchmod : file_descr -> perm:file_perm -> unit
 (** Change the permissions of an opened file.
 
-    On Windows: not implemented. *)
+    @raise Invalid_argument on Windows *)
 
 val chown : string -> uid:int -> gid:int -> unit
 (** Change the owner uid and owner gid of the named file.
 
-    On Windows: not implemented. *)
+    @raise Invalid_argument on Windows *)
 
 val fchown : file_descr -> uid:int -> gid:int -> unit
 (** Change the owner uid and owner gid of an opened file.
 
-    On Windows: not implemented. *)
+    @raise Invalid_argument on Windows *)
 
 val umask : int -> int
 (** Set the process's file mode creation mask, and return the previous
     mask.
 
-    On Windows: not implemented. *)
+    @raise Invalid_argument on Windows *)
 
 val access : string -> perm:access_permission list -> unit
 (** Check that the process has the given permissions over the named file.
@@ -794,7 +796,7 @@ val getcwd : unit -> string
 val chroot : string -> unit
 (** Change the process root directory.
 
-    On Windows: not implemented. *)
+    @raise Invalid_argument on Windows *)
 
 type dir_handle = Unix.dir_handle
 (** The type of descriptors over opened directories. *)
@@ -828,7 +830,7 @@ val pipe : ?cloexec: (* thwart tools/sync_stdlib_docs *) bool ->
 val mkfifo : string -> perm:file_perm -> unit
 (** Create a named pipe with the given permissions (see {!umask}).
 
-   On Windows: not implemented. *)
+   @raise Invalid_argument on Windows *)
 
 
 (** {1 High-level process and redirection management} *)
@@ -1125,24 +1127,28 @@ val sigprocmask : mode:sigprocmask_command -> int list -> int list
    function redirects to [Thread.sigmask]. I.e., [sigprocmask] only
    changes the mask of the current thread.
 
-   On Windows: not implemented (no inter-process signals on Windows). *)
+   @raise Invalid_argument on Windows (no inter-process signals on
+   Windows) *)
 
 val sigpending : unit -> int list
 (** Return the set of blocked signals that are currently pending.
 
-   On Windows: not implemented (no inter-process signals on Windows). *)
+   @raise Invalid_argument on Windows (no inter-process
+   signals on Windows) *)
 
 val sigsuspend : int list -> unit
 (** [sigsuspend sigs] atomically sets the blocked signals to [sigs]
    and waits for a non-ignored, non-blocked signal to be delivered.
    On return, the blocked signals are reset to their initial value.
 
-   On Windows: not implemented (no inter-process signals on Windows). *)
+   @raise Invalid_argument on Windows (no inter-process signals on
+   Windows) *)
 
 val pause : unit -> unit
 (** Wait until a non-ignored, non-blocked signal is delivered.
 
-  On Windows: not implemented (no inter-process signals on Windows). *)
+   @raise Invalid_argument on Windows (no inter-process signals on
+   Windows) *)
 
 
 (** {1 Time functions} *)
@@ -1201,7 +1207,7 @@ val mktime : tm -> float * tm
 val alarm : int -> int
 (** Schedule a [SIGALRM] signal after the given number of seconds.
 
-   On Windows: not implemented. *)
+   @raise Invalid_argument on Windows *)
 
 val sleep : int -> unit
 (** Stop execution for the given number of seconds. *)
@@ -1246,7 +1252,7 @@ type interval_timer_status = Unix.interval_timer_status =
 val getitimer : interval_timer -> interval_timer_status
 (** Return the current status of the given interval timer.
 
-   On Windows: not implemented. *)
+   @raise Invalid_argument on Windows *)
 
 val setitimer :
   interval_timer -> interval_timer_status -> interval_timer_status
@@ -1259,7 +1265,7 @@ val setitimer :
    Setting [s.it_interval] to zero causes the timer to be disabled
    after its next expiration.
 
-   On Windows: not implemented. *)
+   @raise Invalid_argument on Windows *)
 
 
 (** {1 User id, group id} *)
@@ -1277,7 +1283,7 @@ val geteuid : unit -> int
 val setuid : int -> unit
 (** Set the real user id and effective user id for the process.
 
-   On Windows: not implemented. *)
+   @raise Invalid_argument on Windows *)
 
 val getgid : unit -> int
 (** Return the group id of the user executing the process.
@@ -1292,7 +1298,7 @@ val getegid : unit -> int
 val setgid : int -> unit
 (** Set the real group id and effective group id for the process.
 
-   On Windows: not implemented. *)
+   @raise Invalid_argument on Windows *)
 
 val getgroups : unit -> int array
 (** Return the list of groups to which the user executing the process
@@ -1304,7 +1310,7 @@ val setgroups : int array -> unit
 (** [setgroups groups] sets the supplementary group IDs for the
     calling process. Appropriate privileges are required.
 
-    On Windows: not implemented. *)
+    @raise Invalid_argument on Windows *)
 
 val initgroups : string -> int -> unit
 (** [initgroups user group] initializes the group access list by
@@ -1312,7 +1318,7 @@ val initgroups : string -> int -> unit
     which [user] is a member. The additional group [group] is also
     added to the list.
 
-    On Windows: not implemented. *)
+    @raise Invalid_argument on Windows *)
 
 type passwd_entry = Unix.passwd_entry =
   { pw_name : string;
@@ -1443,7 +1449,9 @@ val socketpair :
     file_descr * file_descr
 (** Create a pair of unnamed sockets, connected together.
    See {!set_close_on_exec} for documentation on the [cloexec]
-   optional argument. *)
+   optional argument.
+
+   @raise Invalid_argument on Windows *)
 
 val accept : ?cloexec: (* thwart tools/sync_stdlib_docs *) bool ->
              file_descr -> file_descr * sockaddr
@@ -1643,7 +1651,7 @@ val establish_server :
    {!Stdlib.close_out} and leave the input channel unclosed,
    for reasons explained in {!Unix.in_channel_of_descr}.
 
-   On Windows: not implemented (use threads). *)
+   @raise Invalid_argument on Windows. Use threads instead. *)
 
 
 (** {1 Host and protocol databases} *)
@@ -1821,7 +1829,7 @@ val tcgetattr : file_descr -> terminal_io
 (** Return the status of the terminal referred to by the given
    file descriptor.
 
-   On Windows: not implemented. *)
+   @raise Invalid_argument on Windows *)
 
 type setattr_when = Unix.setattr_when =
     TCSANOW
@@ -1838,20 +1846,20 @@ val tcsetattr : file_descr -> mode:setattr_when -> terminal_io -> unit
    the output parameters; [TCSAFLUSH], when changing the input
    parameters.
 
-   On Windows: not implemented. *)
+   @raise Invalid_argument on Windows *)
 
 val tcsendbreak : file_descr -> duration:int -> unit
 (** Send a break condition on the given file descriptor.
    The second argument is the duration of the break, in 0.1s units;
    0 means standard duration (0.25s).
 
-   On Windows: not implemented. *)
+   @raise Invalid_argument on Windows *)
 
 val tcdrain : file_descr -> unit
 (** Waits until all output written on the given file descriptor
    has been transmitted.
 
-   On Windows: not implemented. *)
+   @raise Invalid_argument on Windows *)
 
 type flush_queue = Unix.flush_queue =
     TCIFLUSH
@@ -1865,7 +1873,7 @@ val tcflush : file_descr -> mode:flush_queue -> unit
    [TCOFLUSH] flushes data written but not transmitted, and
    [TCIOFLUSH] flushes both.
 
-   On Windows: not implemented. *)
+   @raise Invalid_argument on Windows *)
 
 type flow_action = Unix.flow_action =
     TCOOFF
@@ -1880,10 +1888,10 @@ val tcflow : file_descr -> mode:flow_action -> unit
    [TCIOFF] transmits a STOP character to suspend input,
    and [TCION] transmits a START character to restart input.
 
-   On Windows: not implemented. *)
+   @raise Invalid_argument on Windows *)
 
 val setsid : unit -> int
 (** Put the calling process in a new session and detach it from
    its controlling terminal.
 
-   On Windows: not implemented. *)
+   @raise Invalid_argument on Windows *)
