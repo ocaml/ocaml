@@ -28,6 +28,15 @@
 #include <windows.h>
 #endif
 
+/* Error reporting */
+
+void caml_plat_fatal_error(char * action, int err)
+{
+  char buf[1024];
+  caml_fatal_error("Fatal error during %s: %s\n",
+                   action, caml_strerror(err, buf, sizeof(buf)));
+}
+
 /* Mutexes */
 
 void caml_plat_mutex_init(caml_plat_mutex * m)

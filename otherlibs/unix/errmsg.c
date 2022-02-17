@@ -13,13 +13,17 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include <errno.h>
 #include <string.h>
 #include <caml/alloc.h>
+#include <caml/sys.h>
 #include "unixsupport.h"
 
 CAMLprim value unix_error_message(value err)
 {
+  char buf[1024];
   int errnum = code_of_unix_error(err);
-  return caml_copy_string(strerror(errnum));
+  return caml_copy_string(caml_strerror(errnum, buf, sizeof(buf)));
 }
