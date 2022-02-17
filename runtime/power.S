@@ -148,7 +148,7 @@
 #include "../runtime/caml/domain_state.tbl"
 #undef DOMAIN_STATE
 
-#define Caml_state(var) 8*domain_field_caml_##var(DOMAIN_STATE_PTR)
+#define Caml_state_var(var) 8*domain_field_caml_##var(DOMAIN_STATE_PTR)
 
 #if defined(MODEL_ppc64)
         .section ".opd","aw"
@@ -167,17 +167,17 @@ FUNCTION(caml_call_gc)
         stwu    1, -STACKSIZE(1)
     /* Record return address into OCaml code */
         mflr    0
-        stg     0, Caml_state(last_return_address)
+        stg     0, Caml_state_var(last_return_address)
     /* Record lowest stack address */
         addi    0, 1, STACKSIZE
-        stg     0, Caml_state(bottom_of_stack)
+        stg     0, Caml_state_var(bottom_of_stack)
     /* Record pointer to register array */
         addi    0, 1, 8*32 + PARAM_SAVE_AREA + RESERVED_STACK
-        stg     0, Caml_state(gc_regs)
+        stg     0, Caml_state_var(gc_regs)
     /* Save current allocation pointer for debugging purposes */
-        stg     ALLOC_PTR, Caml_state(young_ptr)
+        stg     ALLOC_PTR, Caml_state_var(young_ptr)
     /* Save exception pointer (if e.g. a sighandler raises) */
-        stg     TRAP_PTR, Caml_state(exception_pointer)
+        stg     TRAP_PTR, Caml_state_var(exception_pointer)
     /* Save all registers used by the code generator */
         addi    11, 1, 8*32 + PARAM_SAVE_AREA + RESERVED_STACK - WORD
         stgu    3, WORD(11)
@@ -241,7 +241,7 @@ FUNCTION(caml_call_gc)
         nop
 #endif
     /* Reload new allocation pointer */
-        lg      ALLOC_PTR, Caml_state(young_ptr)
+        lg      ALLOC_PTR, Caml_state_var(young_ptr)
     /* Restore all regs used by the code generator */
         addi    11, 1, 8*32 + PARAM_SAVE_AREA + RESERVED_STACK - WORD
         lgu     3, WORD(11)
@@ -300,7 +300,7 @@ FUNCTION(caml_call_gc)
         lfdu    30, 8(11)
         lfdu    31, 8(11)
     /* Return to caller, resuming the allocation */
-        lg      11, Caml_state(last_return_address)
+        lg      11, Caml_state_var(last_return_address)
         mtlr    11
     /* For PPC64: restore the TOC that the caller saved at the usual place */
 #ifdef TOC_SAVE
@@ -320,11 +320,11 @@ FUNCTION(caml_c_call)
         mflr    C_CALL_RET_ADDR
         .cfi_register 65, C_CALL_RET_ADDR
     /* Record lowest stack address and return address */
-        stg     1, Caml_state(bottom_of_stack)
-        stg     C_CALL_RET_ADDR, Caml_state(last_return_address)
+        stg     1, Caml_state_var(bottom_of_stack)
+        stg     C_CALL_RET_ADDR, Caml_state_var(last_return_address)
     /* Make the exception handler and alloc ptr available to the C code */
-        stg     ALLOC_PTR, Caml_state(young_ptr)
-        stg     TRAP_PTR, Caml_state(exception_pointer)
+        stg     ALLOC_PTR, Caml_state_var(young_ptr)
+        stg     TRAP_PTR, Caml_state_var(exception_pointer)
     /* Call C function (address in C_CALL_FUN) */
 #if defined(MODEL_ppc)
         mtctr   C_CALL_FUN
@@ -348,7 +348,7 @@ FUNCTION(caml_c_call)
     /* Restore return address (in 27, preserved by the C function) */
         mtlr    C_CALL_RET_ADDR
     /* Reload allocation pointer*/
-        lg      ALLOC_PTR, Caml_state(young_ptr)
+        lg      ALLOC_PTR, Caml_state_var(young_ptr)
     /* Return to caller */
         blr
         .cfi_endproc
@@ -357,7 +357,7 @@ ENDFUNCTION(caml_c_call)
 /* Raise an exception from OCaml */
 
 FUNCTION(caml_raise_exn)
-        lg      0, Caml_state(backtrace_active)
+        lg      0, Caml_state_var(backtrace_active)
         cmpwi   0, 0
         bne     .L111
 .L110:
@@ -391,13 +391,13 @@ FUNCTION(caml_raise_exception)
     /* Load domain state pointer */
         mr      DOMAIN_STATE_PTR, 3
         mr      3, 4
-        lg      0, Caml_state(backtrace_active)
+        lg      0, Caml_state_var(backtrace_active)
         cmpwi   0, 0
         bne     .L121
 .L120:
     /* Reload OCaml global registers */
-        lg      1, Caml_state(exception_pointer)
-        lg      ALLOC_PTR, Caml_state(young_ptr)
+        lg      1, Caml_state_var(exception_pointer)
+        lg      ALLOC_PTR, Caml_state_var(young_ptr)
     /* Pop trap frame */
         lg      0, TRAP_HANDLER_OFFSET(1)
         mtctr   0
@@ -408,9 +408,9 @@ FUNCTION(caml_raise_exception)
 .L121:
         mr      27, 3           /* preserve exn bucket in callee-save reg */
                                 /* arg1: exception bucket, already in r3 */
-        lg      4, Caml_state(last_return_address) /* arg2: PC of raise */
-        lg      5, Caml_state(bottom_of_stack)     /* arg3: SP of raise */
-        lg      6, Caml_state(exception_pointer)   /* arg4: SP of handler */
+        lg      4, Caml_state_var(last_return_address) /* arg2: PC of raise */
+        lg      5, Caml_state_var(bottom_of_stack)     /* arg3: SP of raise */
+        lg      6, Caml_state_var(exception_pointer)   /* arg4: SP of handler */
         addi    1, 1, -(PARAM_SAVE_AREA + RESERVED_STACK)
                                          /* reserve stack space for C call */
         bl      caml_stash_backtrace
@@ -484,11 +484,11 @@ FUNCTION(caml_start_program)
     /* Load domain state pointer from argument */
         mr      DOMAIN_STATE_PTR, START_PRG_DOMAIN_STATE_PTR
     /* Set up a callback link */
-        lg      11, Caml_state(bottom_of_stack)
+        lg      11, Caml_state_var(bottom_of_stack)
         stg     11, CALLBACK_LINK_OFFSET(1)
-        lg      11, Caml_state(last_return_address)
+        lg      11, Caml_state_var(last_return_address)
         stg     11, (CALLBACK_LINK_OFFSET + WORD)(1)
-        lg      11, Caml_state(gc_regs)
+        lg      11, Caml_state_var(gc_regs)
         stg     11, (CALLBACK_LINK_OFFSET + 2 * WORD)(1)
     /* Build an exception handler to catch exceptions escaping out of OCaml */
         bl      .L103
@@ -498,11 +498,11 @@ FUNCTION(caml_start_program)
         .cfi_adjust_cfa_offset TRAP_SIZE
         mflr    0
         stg     0, TRAP_HANDLER_OFFSET(1)
-        lg      11, Caml_state(exception_pointer)
+        lg      11, Caml_state_var(exception_pointer)
         stg     11, TRAP_PREVIOUS_OFFSET(1)
         mr      TRAP_PTR, 1
     /* Reload allocation pointer */
-        lg      ALLOC_PTR, Caml_state(young_ptr)
+        lg      ALLOC_PTR, Caml_state_var(young_ptr)
     /* Call the OCaml code (address in r12) */
 #if defined(MODEL_ppc)
         mtctr   12
@@ -524,19 +524,19 @@ FUNCTION(caml_start_program)
 #endif
     /* Pop the trap frame, restoring caml_exception_pointer */
         lg      0, TRAP_PREVIOUS_OFFSET(1)
-        stg     0, Caml_state(exception_pointer)
+        stg     0, Caml_state_var(exception_pointer)
         addi    1, 1, TRAP_SIZE
         .cfi_adjust_cfa_offset -TRAP_SIZE
     /* Pop the callback link, restoring the global variables */
 .L106:
         lg      0, CALLBACK_LINK_OFFSET(1)
-        stg     0, Caml_state(bottom_of_stack)
+        stg     0, Caml_state_var(bottom_of_stack)
         lg      0, (CALLBACK_LINK_OFFSET + WORD)(1)
-        stg     0, Caml_state(last_return_address)
+        stg     0, Caml_state_var(last_return_address)
         lg      0, (CALLBACK_LINK_OFFSET + 2 * WORD)(1)
-        stg     0, Caml_state(gc_regs)
+        stg     0, Caml_state_var(gc_regs)
     /* Update allocation pointer */
-        stg     ALLOC_PTR, Caml_state(young_ptr)
+        stg     ALLOC_PTR, Caml_state_var(young_ptr)
     /* Restore callee-save registers */
         addi    11, 1, CALLBACK_LINK_SIZE + RESERVED_STACK - WORD
         lgu     14, WORD(11)
@@ -589,7 +589,7 @@ FUNCTION(caml_start_program)
         ld      2, (STACKSIZE + TOC_SAVE_PARENT)(1)
 #endif
     /* Update caml_exception_pointer */
-        stg     TRAP_PTR, Caml_state(exception_pointer)
+        stg     TRAP_PTR, Caml_state_var(exception_pointer)
     /* Encode exception bucket as an exception result and return it */
         ori     3, 3, 2
         b       .L106

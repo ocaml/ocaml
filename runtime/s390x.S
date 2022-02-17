@@ -32,7 +32,7 @@
 #include "../runtime/caml/domain_state.tbl"
 #undef DOMAIN_STATE
 
-#define Caml_state(var) 8*domain_field_caml_##var(%r10)
+#define Caml_state_var(var) 8*domain_field_caml_##var(%r10)
 
         .section ".text"
 
@@ -48,17 +48,17 @@ caml_call_gc:
 #define FRAMESIZE (16*8 + 16*8)
         lay     %r15, -FRAMESIZE(%r15)
     /* Record return address into OCaml code */
-        stg     %r14, Caml_state(last_return_address)
+        stg     %r14, Caml_state_var(last_return_address)
     /* Record lowest stack address */
         lay     %r0, FRAMESIZE(%r15)
-        stg     %r0, Caml_state(bottom_of_stack)
+        stg     %r0, Caml_state_var(bottom_of_stack)
     /* Record pointer to register array */
         lay     %r0, (8*16)(%r15)
-        stg     %r0, Caml_state(gc_regs)
+        stg     %r0, Caml_state_var(gc_regs)
     /* Save current allocation pointer for debugging purposes */
-        stg     %r11, Caml_state(young_ptr)
+        stg     %r11, Caml_state_var(young_ptr)
     /* Save exception pointer (if e.g. a sighandler raises) */
-        stg     %r13, Caml_state(exception_pointer)
+        stg     %r13, Caml_state_var(exception_pointer)
     /* Save all registers used by the code generator */
         stmg    %r2,%r9, (8*16)(%r15)
         stg     %r12, (8*16 + 8*8)(%r15)
@@ -84,7 +84,7 @@ caml_call_gc:
         brasl   %r14, caml_garbage_collection@PLT
         lay     %r15, 160(%r15)
     /* Reload new allocation pointer */
-        lg      %r11, Caml_state(young_ptr)
+        lg      %r11, Caml_state_var(young_ptr)
     /* Restore all regs used by the code generator */
         lmg     %r2,%r9, (8*16)(%r15)
         lg      %r12, (8*16 + 8*8)(%r15)
@@ -105,7 +105,7 @@ caml_call_gc:
         ld      %f14, 112(%r15)
         ld      %f15, 120(%r15)
     /* Return to caller */
-        lg      %r1, Caml_state(last_return_address)
+        lg      %r1, Caml_state_var(last_return_address)
     /* Deallocate stack frame */
         lay     %r15, FRAMESIZE(%r15)
     /* Return */
@@ -116,22 +116,22 @@ caml_call_gc:
         .globl  caml_c_call
         .type   caml_c_call, @function
 caml_c_call:
-        stg     %r15, Caml_state(bottom_of_stack)
+        stg     %r15, Caml_state_var(bottom_of_stack)
 .L101:
     /* Save return address */
         ldgr    %f15, %r14
     /* Get ready to call C function (address in r7) */
     /* Record lowest stack address and return address */
-        stg     %r14, Caml_state(last_return_address)
+        stg     %r14, Caml_state_var(last_return_address)
     /* Make the exception handler and alloc ptr available to the C code */
-        stg     %r11, Caml_state(young_ptr)
-        stg     %r13, Caml_state(exception_pointer)
+        stg     %r11, Caml_state_var(young_ptr)
+        stg     %r13, Caml_state_var(exception_pointer)
     /* Call the function */
         basr %r14, %r7
     /* restore return address */
         lgdr    %r14,%f15
     /* Reload allocation pointer */
-        lg      %r11, Caml_state(young_ptr)
+        lg      %r11, Caml_state_var(young_ptr)
     /* Return to caller */
         br %r14
 
@@ -139,7 +139,7 @@ caml_c_call:
         .globl  caml_raise_exn
         .type   caml_raise_exn, @function
 caml_raise_exn:
-        lg      %r0, Caml_state(backtrace_active)
+        lg      %r0, Caml_state_var(backtrace_active)
         cgfi    %r0, 0
         jne     .L110
 .L111:
@@ -169,13 +169,13 @@ caml_raise_exn:
 caml_raise_exception:
         lgr     %r10, %r2       /* Load domain state pointer */
         lgr     %r2, %r3        /* Move exception bucket to arg1 register */
-        lg      %r0, Caml_state(backtrace_active)
+        lg      %r0, Caml_state_var(backtrace_active)
         cgfi    %r0, 0
         jne    .L112
 .L113:
     /* Reload OCaml global registers */
-        lg      %r15, Caml_state(exception_pointer)
-        lg      %r11, Caml_state(young_ptr)
+        lg      %r15, Caml_state_var(exception_pointer)
+        lg      %r11, Caml_state_var(young_ptr)
     /* Pop trap frame */
         lg      %r1, 0(%r15)
         lg      %r13, 8(%r15)
@@ -185,9 +185,9 @@ caml_raise_exception:
 .L112:
         ldgr    %f15,%r2        /* preserve exn bucket in callee-save reg */
                                 /* arg1: exception bucket, already in r2 */
-        lg      %r3, Caml_state(last_return_address) /* arg2: PC of raise */
-        lg      %r4, Caml_state(bottom_of_stack)     /* arg3: SP of raise */
-        lg      %r5, Caml_state(exception_pointer)   /* arg4: SP of handler */
+        lg      %r3, Caml_state_var(last_return_address) /*arg2: PC of raise*/
+        lg      %r4, Caml_state_var(bottom_of_stack)     /*arg3: SP of raise*/
+        lg      %r5, Caml_state_var(exception_pointer)   /*arg4: SP of handler*/
     /* reserve stack space for C call */
         lay     %r15, -160(%r15)
         brasl   %r14, caml_stash_backtrace@PLT
@@ -225,11 +225,11 @@ caml_start_program:
         lgr     %r10, %r1
     /* Set up a callback link */
         lay     %r15, -32(%r15)
-        lg      %r1, Caml_state(bottom_of_stack)
+        lg      %r1, Caml_state_var(bottom_of_stack)
         stg     %r1, 0(%r15)
-        lg      %r1, Caml_state(last_return_address)
+        lg      %r1, Caml_state_var(last_return_address)
         stg     %r1, 8(%r15)
-        lg      %r1, Caml_state(gc_regs)
+        lg      %r1, Caml_state_var(gc_regs)
         stg     %r1, 16(%r15)
     /* Build an exception handler to catch exceptions escaping out of OCaml */
         brasl   %r14, .L103
@@ -237,31 +237,31 @@ caml_start_program:
 .L103:
         lay     %r15, -16(%r15)
         stg     %r14, 0(%r15)
-        lg      %r1, Caml_state(exception_pointer)
+        lg      %r1, Caml_state_var(exception_pointer)
         stg     %r1, 8(%r15)
         lgr     %r13, %r15
     /* Reload allocation pointer */
-        lg      %r11, Caml_state(young_ptr)
+        lg      %r11, Caml_state_var(young_ptr)
     /* Call the OCaml code */
         lgr     %r1,%r0
         basr    %r14, %r1
 .L105:
     /* Pop the trap frame, restoring caml_exception_pointer */
         lg      %r0, 8(%r15)
-        stg     %r0, Caml_state(exception_pointer)
+        stg     %r0, Caml_state_var(exception_pointer)
         la      %r15, 16(%r15)
     /* Pop the callback link, restoring the global variables */
 .L106:
         lg      %r5, 0(%r15)
         lg      %r6, 8(%r15)
         lg      %r0, 16(%r15)
-        stg     %r5, Caml_state(bottom_of_stack)
-        stg     %r6, Caml_state(last_return_address)
-        stg     %r0, Caml_state(gc_regs)
+        stg     %r5, Caml_state_var(bottom_of_stack)
+        stg     %r6, Caml_state_var(last_return_address)
+        stg     %r0, Caml_state_var(gc_regs)
         la      %r15, 32(%r15)
 
     /* Update allocation pointer */
-        stg     %r11, Caml_state(young_ptr)
+        stg     %r11, Caml_state_var(young_ptr)
 
     /* Restore registers */
         lmg     %r6,%r14, 0(%r15)
@@ -281,7 +281,7 @@ caml_start_program:
     /* The trap handler: */
 .L104:
     /* Update caml_exception_pointer */
-        stg     %r13, Caml_state(exception_pointer)
+        stg     %r13, Caml_state_var(exception_pointer)
     /* Encode exception bucket as an exception result and return it */
         oill     %r2,  2
         j       .L106
@@ -331,7 +331,7 @@ caml_callback3_asm:
 caml_ml_array_bound_error:
         /* Save return address before decrementing SP, otherwise
            the frame descriptor for the call site is not correct */
-        stg     %r15, Caml_state(bottom_of_stack)
+        stg     %r15, Caml_state_var(bottom_of_stack)
         lay     %r15, -160(%r15)    /* Reserve stack space for C call */
         Addrglobal(%r7, caml_array_bound_error)
         j       .L101
