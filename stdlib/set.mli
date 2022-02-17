@@ -186,7 +186,7 @@ module type S =
     (** Return the list of all elements of the given set.
        The returned list is sorted in increasing order with respect
        to the ordering [Ord.compare], where [Ord] is the argument
-       given to {!Make}. *)
+       given to {!Stdlib.Set.Make}. *)
 
     val min_elt: t -> elt
     (** Return the smallest element of the given set
@@ -201,11 +201,11 @@ module type S =
     *)
 
     val max_elt: t -> elt
-    (** Same as {!S.min_elt}, but returns the largest element of the
+    (** Same as {!min_elt}, but returns the largest element of the
        given set. *)
 
     val max_elt_opt: t -> elt option
-    (** Same as {!S.min_elt_opt}, but returns the largest element of the
+    (** Same as {!min_elt_opt}, but returns the largest element of the
         given set.
         @since 4.05
     *)

@@ -12,7 +12,6 @@
 #*   special exception on linking described in the file LICENSE.          *
 #*                                                                        *
 #**************************************************************************
-ROOTDIR = ..
 DOCGEN= $(ROOTDIR)/api_docgen
 
 include $(ROOTDIR)/Makefile.common
@@ -30,7 +29,7 @@ DOC_STDLIB_DIRS = $(addprefix $(ROOTDIR)/, stdlib \
 .PHONY: all
 all: html pdf man
 
-DIRS = $(addprefix build/,libref compilerlibref man latex texi \
+DIRS = build/ $(addprefix build/,libref compilerlibref man latex texi \
   html html/libref html/compilerlibref)
 
 $(DIRS):
@@ -43,7 +42,7 @@ html:
 build/latex/alldoc.pdf: build/latex/stdlib_input.tex \
   build/latex/compilerlibs_input.tex | build/latex/ifocamldoc.tex
 
-$(DOCGEN)/build/Compiler_libs.mld: $(DOCGEN)/Compiler_libs.pre.mld
+build/Compiler_libs.mld: $(DOCGEN)/Compiler_libs.pre.mld | build/
 	cp $< $@ && echo "{!modules:$(compilerlibref_C)}" >> $@
 
 build/latex/ifocamldoc.tex: $(ROOTDIR)/Makefile.config | build/latex
@@ -51,6 +50,5 @@ build/latex/ifocamldoc.tex: $(ROOTDIR)/Makefile.config | build/latex
 build/latex/alldoc.tex:$(DOCGEN)/alldoc.tex | build/latex
 	cp $< $@
 
-$(compilerlibref_TEXT:%=build/%.mld) $(libref_TEXT:%=build/%.mld): \
-build/%.mld:$(DOCGEN)/%.mld
+build/%.mld: $(DOCGEN)/%.mld | build/
 	cp $< $@

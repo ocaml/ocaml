@@ -302,7 +302,8 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner
     - [x] or [X]: reads an unsigned hexadecimal integer ([[0-9a-fA-F]+]).
     - [o]: reads an unsigned octal integer ([[0-7]+]).
     - [s]: reads a string argument that spreads as much as possible, until the
-      following bounding condition holds: {ul
+      following bounding condition holds:
+      {ul
       {- a whitespace has been found (see {!Scanf.space}),}
       {- a scanning indication (see scanning {!Scanf.indication}) has been
          encountered,}

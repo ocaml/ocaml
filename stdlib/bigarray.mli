@@ -210,7 +210,7 @@ val kind_size_in_bytes : ('a, 'b) kind -> int
 (** {1 Array layouts} *)
 
 type c_layout = C_layout_typ (**)
-(** See {!Bigarray.fortran_layout}.*)
+(** See {!type:Bigarray.fortran_layout}.*)
 
 type fortran_layout = Fortran_layout_typ (**)
 (** To facilitate interoperability with existing C and Fortran code,
@@ -233,10 +233,10 @@ type fortran_layout = Fortran_layout_typ (**)
    and [(x+1, y)] are adjacent in memory.
 
    Each layout style is identified at the type level by the
-   phantom types {!Bigarray.c_layout} and {!Bigarray.fortran_layout}
+   phantom types {!type:Bigarray.c_layout} and {!type:Bigarray.fortran_layout}
    respectively. *)
 
-(** {7 Supported layouts}
+(** {2 Supported layouts}
 
    The GADT type ['a layout] represents one of the two supported
    memory layouts: C-style or Fortran-style. Its constructors are
@@ -971,7 +971,8 @@ end
 external genarray_of_array0 :
   ('a, 'b, 'c) Array0.t -> ('a, 'b, 'c) Genarray.t = "%identity"
 (** Return the generic Bigarray corresponding to the given zero-dimensional
-   Bigarray. @since 4.05.0 *)
+    Bigarray.
+    @since 4.05.0 *)
 
 external genarray_of_array1 :
   ('a, 'b, 'c) Array1.t -> ('a, 'b, 'c) Genarray.t = "%identity"

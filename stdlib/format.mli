@@ -320,7 +320,7 @@ val pp_print_custom_break :
 
    The custom break is useful if you want to change which visible
    (non-whitespace) characters are printed in case of break or no break. For
-   example, when printing a list {[ [a; b; c] ]}, you might want to add a
+   example, when printing a list [ [a; b; c] ], you might want to add a
    trailing semicolon when it is printed vertically:
 
    {[
@@ -985,10 +985,12 @@ val make_formatter :
 (** [make_formatter out flush] returns a new formatter that outputs with
   function [out], and flushes with function [flush].
 
-  For instance, {[
+  For instance,
+  {[
     make_formatter
       (Stdlib.output oc)
-      (fun () -> Stdlib.flush oc) ]}
+      (fun () -> Stdlib.flush oc)
+  ]}
   returns a formatter to the {!Stdlib.out_channel} [oc].
 *)
 
