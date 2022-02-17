@@ -1278,7 +1278,7 @@ type ('a,'b) result = Ok of 'a | Error of 'b
       For [printf]-style functions from module {!Printf}, ['b] is typically
       [out_channel];
       for [printf]-style functions from module {!Format}, ['b] is typically
-      {!Format.formatter};
+      {!type:Format.formatter};
       for [scanf]-style functions from module {!Scanf}, ['b] is typically
       {!Scanf.Scanning.in_channel}.
 

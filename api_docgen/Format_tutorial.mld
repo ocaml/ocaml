@@ -1,3 +1,5 @@
+{0 Using the Format module}
+
 {1 Principles}
 
 Line breaking is based on three concepts:
@@ -37,22 +39,21 @@ There are 4 types of boxes. (The most often used is the "hov" box type, so skip
 the rest at first reading).
 
   - {b horizontal box} ({i h} box, as obtained by the
-    {!open_hbox} procedure): within this box, break hints do not
+    {!Format.open_hbox} procedure): within this box, break hints do not
     lead to line breaks.
   - {b vertical box} ({i v} box, as obtained by the
-    {!open_vbox} procedure): within this box, every break hint lead
+    {!Format.open_vbox} procedure): within this box, every break hint lead
     to a new line.
   - {b vertical/horizontal box} ({i hv} box, as obtained by
-    the {!open_hvbox} procedure): if it is possible, the entire box
+    the {!Format.open_hvbox} procedure): if it is possible, the entire box
     is written on a single line; otherwise, every break hint within the box
     leads to a new line.
   - {b vertical or horizontal box} ({i hov} box, as obtained
-    by the {!open_box} or {!open_hovbox} procedures): within this box, break
-    hints are used to cut the line when there is no more room on the line.
-    There are two kinds of "hov" boxes, you can find the details
-    below. In first approximation, let me
-    consider these two kinds of "hov" boxes as equivalent and
-    obtained by calling the {!open_box} procedure.
+    by the {!Format.open_box} or {!Format.open_hovbox} procedures): within this
+    box, break hints are used to cut the line when there is no more room on the
+    line. There are two kinds of "hov" boxes, you can find the details below.
+    In first approximation, let me consider these two kinds of "hov" boxes as
+    equivalent and obtained by calling the {!Format.open_box} procedure.
 
 Let me give an example. Suppose we can write 10 chars before
 the right margin (that indicates no more room). We represent any
@@ -216,13 +217,14 @@ indentation (as obtained by [open_hovbox 1]), and b is [print_break 1 2], then
 The "hov" box type is refined into two categories.
 
 - {b the vertical or horizontal {i packing} box} (as obtained by the
-{!open_hovbox} procedure): break hints are used to cut the line when there is no
-more room on the line; no new line occurs if there is enough room on the line.
-- {b vertical or horizontal {i structural} box} (as obtained by the {!open_box}
-procedure): similar to the "hov" packing box, the break hints are used to cut
-the line when there is no more room on the line; in addition, break hints that
-can show the box structure lead to new lines even if there is enough room on
-the current line.
+{!Format.open_hovbox} procedure): break hints are used to cut the line when
+there is no more room on the line; no new line occurs if there is enough room
+on the line.
+- {b vertical or horizontal {i structural} box} (as obtained by the
+{!Format.open_box} procedure): similar to the "hov" packing box, the break
+hints are used to cut the line when there is no more room on the line; in
+addition, break hints that can show the box structure lead to new lines even if
+there is enough room on the current line.
 
 The difference between a packing and a structural "hov" box is shown by a
 routine that closes boxes and parentheses at the end of printing: with packing
@@ -231,7 +233,8 @@ is enough room on the line, whereas with structural boxes each break hint will
 lead to a new line. For instance, when printing
 "\[(---\[(----\[(---b)\]b)\]b)\]", where "b" is a break hint without extra
 indentation ([print_cut ()]). If "\[" means opening of a packing "hov" box
-({!open_hovbox}), "\[(---\[(----\[(---b)\]b)\]b)\]" is printed as follows:
+({!Format.open_hovbox}), "\[(---\[(----\[(---b)\]b)\]b)\]" is printed as
+follows:
 
 {[
 (---
@@ -239,9 +242,9 @@ indentation ([print_cut ()]). If "\[" means opening of a packing "hov" box
   (---)))
 ]}
 
-If we replace the packing boxes by structural boxes ({!open_box}), each break
-hint that precedes a closing parenthesis can show the boxes structure, if it
-leads to a new line; hence "\[(---\[(----\[(---b)\]b)\]b)\]" is printed like
+If we replace the packing boxes by structural boxes ({!Format.open_box}), each
+break hint that precedes a closing parenthesis can show the boxes structure, if
+it leads to a new line; hence "\[(---\[(----\[(---b)\]b)\]b)\]" is printed like
 this:
 
 {[
@@ -257,8 +260,8 @@ this:
 
 When writing a pretty-printing routine, follow these simple rules:
 
-+ Boxes must be opened and closed consistently ([open_*] and {!close_box} must
-be nested like parentheses).
++ Boxes must be opened and closed consistently ([open_*] and
+{!Format.close_box} must be nested like parentheses).
 + Never hesitate to open a box.
 + Output many break hints, otherwise the pretty-printer is in a bad situation
 where it tries to do its best, which is always "worse than your bad".
@@ -275,10 +278,10 @@ is a usual (and elegant) way to indent the expression part of a definition.  In
 short, it is often necessary to print unbreakable spaces; however, most of the
 time a space should be considered a break hint.
 + Do not try to force new lines, let the pretty-printer do it for you: that's
-its only job.  In particular, do not use {!force_newline}: this procedure
-effectively leads to a newline, but it also as the unfortunate side effect to
-partially reinitialise the pretty-printing engine, so that the rest of the
-printing material is noticeably messed up.
+its only job.  In particular, do not use {!Format.force_newline}: this
+procedure effectively leads to a newline, but it also as the unfortunate side
+effect to partially reinitialise the pretty-printing engine, so that the rest
+of the printing material is noticeably messed up.
 + Never put newline characters directly in the strings to be printed: pretty
 printing engine will consider this newline character as any other character
 written on the current line and this will completely mess up the output.

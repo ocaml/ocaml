@@ -944,7 +944,6 @@ partialclean::
 .PHONY: html_doc
 html_doc: ocamldoc
 	$(MAKE) -C api_docgen html
-	@echo "documentation is in ./api_docgen/html/"
 
 .PHONY: manpages
 manpages:
