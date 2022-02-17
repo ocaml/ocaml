@@ -676,7 +676,7 @@ static void caml_stw_empty_minor_heap_no_major_slice(caml_domain_state* domain,
                                             caml_domain_state** participating)
 {
 #ifdef DEBUG
-  int minor_words_used = domain->young_end - domain->young_ptr;
+  uintnat* initial_young_ptr = (uintnat*)domain->young_ptr;
   CAMLassert(caml_domain_is_in_stw());
 #endif
 
@@ -712,8 +712,8 @@ static void caml_stw_empty_minor_heap_no_major_slice(caml_domain_state* domain,
   caml_empty_minor_heap_domain_clear(domain);
 #ifdef DEBUG
   {
-    uintnat* p = ((uintnat*)(domain->young_end)) - minor_words_used;
-    for (int i=0; i<minor_words_used; ++i) p[i] = Debug_free_minor;
+    for (uintnat* p = initial_young_ptr; p < (uintnat*)domain->young_end; ++p)
+      *p = Debug_free_minor;
   }
 #endif
 
