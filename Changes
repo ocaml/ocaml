@@ -383,6 +383,9 @@ OCaml 4.14.0
   spurious `as 'a`s in types.
   (Antal Spector-Zabusky, review by Florian Angeletti)
 
+- #10794: Clarify warning 57 (Ambiguous or-pattern variables under guard)
+  (Wiktor Kuchta, review by Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
 
 - #1599: add unset directive to ocamltest to clear environment variables before
