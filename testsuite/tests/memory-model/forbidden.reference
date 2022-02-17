@@ -2,7 +2,11 @@ Observation SB+AA Never
 Observation R+PA Never
 Observation R+AA Never
 Observation MP+PA Never
+Observation MP+PFetch Never
+Observation MP+PCas Never
 Observation MP+AP Never
+Observation MP+FetchP Never
+Observation MP+CasP Never
 Observation MP+AA Never
 Observation LB Never
 Observation 2+2W+PA Never
@@ -14,7 +18,11 @@ Observation SB+AA Never
 Observation R+PA Never
 Observation R+AA Never
 Observation MP+PA Never
+Observation MP+PFetch Never
+Observation MP+PCas Never
 Observation MP+AP Never
+Observation MP+FetchP Never
+Observation MP+CasP Never
 Observation MP+AA Never
 Observation LB Never
 Observation 2+2W+PA Never

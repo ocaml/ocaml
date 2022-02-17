@@ -285,6 +285,52 @@ module MP = struct
 
   end
 
+  module PFetch = struct
+
+    module Key = MakeKey(struct let name = "MP+PFetch" end)(NO)
+
+    module Env = EnvPA
+
+    type out0 = unit
+
+    let code0 (x,y) =
+      x := 1 ;
+      ignore (Atomic.fetch_and_add y 1)
+
+    type out1 = { t0:int; t1:int; }
+
+    let code1 (x,y) =
+      let r0 = Atomic.get y in
+      let r1 = !x in
+      {t0=r0; t1=r1;}
+
+    let out2key _ () { t0; t1; } = Key.make t0 t1
+
+  end
+
+  module PCas = struct
+
+    module Key = MakeKey(struct let name = "MP+PCas" end)(NO)
+
+    module Env = EnvPA
+
+    type out0 = unit
+
+    let code0 (x,y) =
+      x := 1 ;
+      while not (Atomic.compare_and_set y 0 1) do () done
+
+    type out1 = { t0:int; t1:int; }
+
+    let code1 (x,y) =
+      let r0 = Atomic.get y in
+      let r1 = !x in
+      {t0=r0; t1=r1;}
+
+    let out2key (_,y) () { t0; t1; } =  assert (Atomic.get y = 1) ; Key.make t0 t1
+
+  end
+
   module AP = struct
 
     module Key = MakeKey(struct let name = "MP+AP" end)(NO)
@@ -309,6 +355,57 @@ module MP = struct
     let out2key _ () { t0; t1; } = Key.make t0 t1
 
   end
+
+  module FetchP = struct
+
+    module Key = MakeKey(struct let name = "MP+FetchP" end)(NO)
+
+    module Env = EnvAP
+
+    type in_t = int Atomic.t * int ref
+
+    type out0 = unit
+
+    let code0 (x,y) =
+      ignore (Atomic.fetch_and_add x 1) ;
+      y := 1
+
+    type out1 = { t0:int; t1:int; }
+
+    let code1 (x,y) =
+      let r0 = !y in
+      let r1 = Atomic.get x in
+      {t0=r0; t1=r1;}
+
+    let out2key (x,_) () { t0; t1; } = Key.make t0 t1
+
+  end
+
+  module CasP = struct
+
+    module Key = MakeKey(struct let name = "MP+CasP" end)(NO)
+
+    module Env = EnvAP
+
+    type in_t = int Atomic.t * int ref
+
+    type out0 = unit
+
+    let code0 (x,y) =
+      while not (Atomic.compare_and_set x 0 1) do () done ;
+      y := 1
+
+    type out1 = { t0:int; t1:int; }
+
+    let code1 (x,y) =
+      let r0 = !y in
+      let r1 = Atomic.get x in
+      {t0=r0; t1=r1;}
+
+    let out2key (x,_) () { t0; t1; } = assert (Atomic.get x = 1) ; Key.make t0 t1
+
+  end
+
 
   module AA = struct
 
@@ -570,8 +667,16 @@ module Forbid(C:Opt.Config) = struct
   let () = T3.zyva()
   module T4 = Run(MP.PA)
   let () = T4.zyva()
+  module T40 = Run(MP.PFetch)
+  let () = T40.zyva()
+  module T41 = Run(MP.PCas)
+  let () = T41.zyva()
   module T5 = Run(MP.AP)
   let () = T5.zyva()
+  module T50 = Run(MP.FetchP)
+  let () = T50.zyva()
+  module T51 = Run(MP.CasP)
+  let () = T51.zyva()
   module T6 = Run(MP.AA)
   let () = T6.zyva()
   module T7 = Run(LB)
