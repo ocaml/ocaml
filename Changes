@@ -502,6 +502,11 @@ OCaml 4.14.0
 
 ### Build system:
 
+- #10835 Disable DT_TEXTREL warnings on x86 32 bit architecture by passing
+  -Wl,-z,notext in mksharedlib and mkmaindll. Fixes relocation issues, reported
+  in #9800, making local patches in Debian, Alpine, and FreeBSD superfluous.
+  (Hannes Mehnert with Kate Deplaix and Stéphane Glondu, review by Xavier Leroy)
+
 - #10717: Simplify the installation of man pages
   (Sébastien Hinderer, review by David Allsopp)
 
