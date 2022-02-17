@@ -11,7 +11,7 @@ module type Config = sig
   val verbose : bool
   val size : int
   val nruns : int
-  val ninstances : int
+  val navail : int
 end
 
 module Make :

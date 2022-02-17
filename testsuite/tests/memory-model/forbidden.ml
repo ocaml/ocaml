@@ -617,7 +617,7 @@ let () =
               let verbose = C.verbose
               let size = C.size / 10
               let nruns = C.nruns * 10
-              let ninstances = C.ninstances
+              let navail = C.navail
             end)
       end in
       let module _ = Twice(Config) in ()

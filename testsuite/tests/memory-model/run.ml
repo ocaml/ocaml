@@ -62,8 +62,10 @@ module Make(C:Opt.Config)(T:Test) =
         run_rec Hist.empty 0
     end
 
+    let  ninstances = max 1 (C.navail / 2)
+
     let zyva () =
-      List.init C.ninstances
+      List.init ninstances
         (fun _ ->
           let module I = Instance(struct end) in
           Domain.spawn I.zyva)

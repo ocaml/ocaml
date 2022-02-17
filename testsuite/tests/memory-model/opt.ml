@@ -2,13 +2,13 @@
 let verbose = ref false
 and size = ref 5000
 and nruns = ref 20
-and ninstances = ref 1
+and navail = ref 2
 
 module type Config = sig
   val verbose : bool
   val size : int
   val nruns : int
-  val ninstances : int
+  val navail : int
 end
 
 module Make (N : sig val pgm : string end) =
@@ -25,8 +25,8 @@ module Make (N : sig val pgm : string end) =
           "-q",Clear verbose,"be silent";
           "-s",Int (fun i -> size :=i), doc_def "size of arrays" size ;
           "-r",Int (fun i -> nruns :=i),doc_def "number of interations" nruns ;
-          "-n",Int (fun i -> ninstances :=i),
-          doc_def "number of concurrent test instances" ninstances ;
+          "-a",Int (fun i -> navail :=i),
+          doc_def "number of cores available for tests" navail ;
         ]
         (fun _ -> raise (Bad "No argument allowed"))
         (Printf.sprintf "%s: (options)*, where options are:" pgm)
@@ -35,7 +35,7 @@ module Make (N : sig val pgm : string end) =
       let verbose = !verbose
       let size = !size
       let nruns = !nruns
-      let ninstances = !ninstances
+      let navail = !navail
     end
 
   end
