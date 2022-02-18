@@ -111,6 +111,7 @@ AC_SUBST([oc_cflags])
 AC_SUBST([oc_cppflags])
 AC_SUBST([oc_ldflags])
 AC_SUBST([oc_dll_ldflags])
+AC_SUBST([MKLIB_LDFLAGS])
 AC_SUBST([bytecclibs])
 AC_SUBST([nativecclibs])
 AC_SUBST([ocamlc_cflags])
@@ -177,6 +178,7 @@ AC_CONFIG_FILES([stdlib/sys.ml])
 AC_CONFIG_FILES([manual/src/version.tex])
 AC_CONFIG_FILES([manual/src/html_processing/src/common.ml])
 AC_CONFIG_FILES([tools/eventlog_metadata])
+AC_CONFIG_FILES([tools/ocamlmklib.ml])
 AC_CONFIG_HEADERS([runtime/caml/m.h])
 AC_CONFIG_HEADERS([runtime/caml/s.h])
 AC_CONFIG_HEADERS([runtime/caml/version.h])
@@ -978,6 +980,10 @@ AS_IF([test x"$enable_shared" != "xno"],
       supports_shared_libraries=true])])
 
 AS_IF([test -z "$mkmaindll"], [mkmaindll=$mksharedlib])
+
+AS_IF([test -z "$OC_LDFLAGS"],
+      [MKLIB_LDFLAGS=""],
+      [MKLIB_LDFLAGS="\"$OC_LDFLAGS\""])
 
 # Configure native dynlink
 
