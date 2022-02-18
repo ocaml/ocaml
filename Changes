@@ -90,6 +90,10 @@ Working version
 
 ### Tools:
 
+* #11004: Litmus tests for checking the implementation of the
+  memory model.
+  (Luc Maranget, review by Gabriel Scherer and Xavier Leroy)
+
 ### Manual and documentation:
 
 ### Compiler user-interface and warnings:
