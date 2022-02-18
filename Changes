@@ -124,6 +124,9 @@ Working version
 
 ### Bug fixes:
 
+- #11025: Do not pass -no-pie to the C compiler on musl/arm64
+  (omni and Kate Deplaix, review by Xavier Leroy)
+
 OCaml 4.14.0
 ----------------
 
