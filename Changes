@@ -338,6 +338,10 @@ OCaml 4.14.0
 - #10281, #10685: Add description of C compiler on macOS and Windows platforms.
   (Dong An, review by Xavier Leroy and David Allsopp)
 
+- #10397: Document exceptions raised by Unix module functions on Windows
+  (Martin Jambon, review by Daniel Bünzli, David Alsopp, Damien Doligez,
+   Xavier Leroy, and Florian Angeletti)
+
 - #10589: Fix many typos (excess/inconsistent spaces) in the HTML manual.
   (Wiktor Kuchta, review by Florian Angeletti)
 
