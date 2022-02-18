@@ -10,6 +10,9 @@ OCaml 4.14 maintenance version
   (Antonin Décimo, review by Xavier Leroy, David Allsopp, Sébastien
    Hinderer and Nick Barnes)
 
+* #10723: do not use `-flat-namespace` linking for macOS.
+  (Carlo Cabrera, review by Damien Doligez)
+
 ### Build system:
 
 - #11590: Allow installing to a destination path containing spaces.
