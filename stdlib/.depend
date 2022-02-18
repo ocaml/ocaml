@@ -34,10 +34,8 @@ stdlib__ArrayLabels.cmx : arrayLabels.ml \
 stdlib__ArrayLabels.cmi : arrayLabels.mli \
     stdlib__Seq.cmi
 stdlib__Atomic.cmo : atomic.ml \
-    camlinternalAtomic.cmi \
     stdlib__Atomic.cmi
 stdlib__Atomic.cmx : atomic.ml \
-    camlinternalAtomic.cmx \
     stdlib__Atomic.cmi
 stdlib__Atomic.cmi : atomic.mli
 stdlib__Bigarray.cmo : bigarray.ml \
@@ -109,11 +107,6 @@ stdlib__Callback.cmx : callback.ml \
     stdlib__Obj.cmx \
     stdlib__Callback.cmi
 stdlib__Callback.cmi : callback.mli
-camlinternalAtomic.cmo : \
-    camlinternalAtomic.cmi
-camlinternalAtomic.cmx : \
-    camlinternalAtomic.cmi
-camlinternalAtomic.cmi :
 camlinternalFormat.cmo : \
     stdlib__Sys.cmi \
     stdlib__String.cmi \
@@ -670,12 +663,12 @@ stdlib__Semaphore.cmi : semaphore.mli
 stdlib__Seq.cmo : seq.ml \
     stdlib__Lazy.cmi \
     stdlib__Either.cmi \
-    camlinternalAtomic.cmi \
+    stdlib__Atomic.cmi \
     stdlib__Seq.cmi
 stdlib__Seq.cmx : seq.ml \
     stdlib__Lazy.cmx \
     stdlib__Either.cmx \
-    camlinternalAtomic.cmx \
+    stdlib__Atomic.cmx \
     stdlib__Seq.cmi
 stdlib__Seq.cmi : seq.mli \
     stdlib__Either.cmi
@@ -775,11 +768,9 @@ stdlib__Weak.cmi : weak.mli \
     stdlib__Hashtbl.cmi
 stdlib.cmo : \
     camlinternalFormatBasics.cmi \
-    camlinternalAtomic.cmi \
     stdlib.cmi
 stdlib.cmx : \
     camlinternalFormatBasics.cmx \
-    camlinternalAtomic.cmx \
     stdlib.cmi
 stdlib.cmi : \
     camlinternalFormatBasics.cmi

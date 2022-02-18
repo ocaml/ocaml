@@ -37,7 +37,7 @@ OC_CPPFLAGS += -I$(ROOTDIR)/runtime
 include StdlibModules
 
 OBJS=$(addsuffix .cmo,$(STDLIB_MODULES))
-NOSTDLIB= camlinternalFormatBasics.cmo camlinternalAtomic.cmo stdlib.cmo
+NOSTDLIB= camlinternalFormatBasics.cmo stdlib.cmo
 OTHERS=$(filter-out $(NOSTDLIB),$(OBJS))
 
 .PHONY: all
