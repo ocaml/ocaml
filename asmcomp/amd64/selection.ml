@@ -19,6 +19,7 @@ open Arch
 open Proc
 open Cmm
 open Mach
+open Selectgen
 
 (* Auxiliary for recognizing addressing modes *)
 
@@ -121,46 +122,44 @@ let inline_ops =
   [ "sqrt"; "caml_bswap16_direct"; "caml_int32_direct_bswap";
     "caml_int64_direct_bswap"; "caml_nativeint_direct_bswap" ]
 
-let is_immediate n = n <= 0x7FFF_FFFF && n >= -0x8000_0000
+let is_immediate_int n = n <= 0x7FFF_FFFF && n >= -0x8000_0000
 
 let is_immediate_natint n = n <= 0x7FFF_FFFFn && n >= -0x8000_0000n
 
 (* The selector class *)
 
-class selector = object (self)
+let super = Selectgen.default_selector
 
-inherit Selectgen.selector_generic as super
-
-method! is_immediate op n =
+let is_immediate self op n =
   match op with
   | Iadd | Isub | Imul | Iand | Ior | Ixor | Icomp _ | Icheckbound ->
-      is_immediate n
+      is_immediate_int n
   | _ ->
-      super#is_immediate op n
+      super.is_immediate self op n
 
-method is_immediate_test _cmp n = is_immediate n
+let is_immediate_test _self _cmp n = is_immediate_int n
 
-method! is_simple_expr e =
+let is_simple_expr self e =
   match e with
   | Cop(Cextcall (fn, _, _, _), args, _)
     when List.mem fn inline_ops ->
       (* inlined ops are simple if their arguments are *)
-      List.for_all self#is_simple_expr args
+      List.for_all (self.is_simple_expr self) args
   | _ ->
-      super#is_simple_expr e
+      super.is_simple_expr self e
 
-method! effects_of e =
+let effects_of self e =
   match e with
   | Cop(Cextcall(fn, _, _, _), args, _)
     when List.mem fn inline_ops ->
-      Selectgen.Effect_and_coeffect.join_list_map args self#effects_of
+      Selectgen.Effect_and_coeffect.join_list_map args (self.effects_of self)
   | _ ->
-      super#effects_of e
+      super.effects_of self e
 
-method select_addressing _chunk exp =
+let select_addressing _self _chunk exp =
   let (a, d) = select_addr exp in
   (* PR#4625: displacement must be a signed 32-bit immediate *)
-  if not (is_immediate d)
+  if not (is_immediate_int d)
   then (Iindexed 0, exp)
   else match a with
     | Asymbol s ->
@@ -174,37 +173,55 @@ method select_addressing _chunk exp =
     | Ascaledadd(e1, e2, scale) ->
         (Iindexed2scaled(scale, d), Ctuple[e1; e2])
 
-method! select_store is_assign addr exp =
+let select_store self is_assign addr exp =
   match exp with
-    Cconst_int (n, _dbg) when is_immediate n ->
+    Cconst_int (n, _dbg) when is_immediate_int n ->
       (Ispecific(Istore_int(Nativeint.of_int n, addr, is_assign)), Ctuple [])
   | (Cconst_natint (n, _dbg)) when is_immediate_natint n ->
       (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
   | _ ->
-      super#select_store is_assign addr exp
+      super.select_store self is_assign addr exp
 
-method! select_operation op args dbg =
+(* Recognize float arithmetic with mem *)
+
+let select_floatarith self commutative regular_op mem_op args =
+  match args with
+    [arg1; Cop(Cload {memory_chunk=(Double as chunk)}, [loc2], _)] ->
+      let (addr, arg2) = self.select_addressing self chunk loc2 in
+      (Ispecific(Ifloatarithmem(mem_op, addr)),
+                 [arg1; arg2])
+  | [Cop(Cload {memory_chunk=(Double as chunk)}, [loc1], _); arg2]
+        when commutative ->
+      let (addr, arg1) = self.select_addressing self chunk loc1 in
+      (Ispecific(Ifloatarithmem(mem_op, addr)),
+                 [arg2; arg1])
+  | [arg1; arg2] ->
+      (regular_op, [arg1; arg2])
+  | _ ->
+      assert false
+
+let select_operation self op args dbg =
   match op with
   (* Recognize the LEA instruction *)
     Caddi | Caddv | Cadda | Csubi ->
-      begin match self#select_addressing Word_int (Cop(op, args, dbg)) with
+      begin match self.select_addressing self Word_int (Cop(op, args, dbg)) with
         (Iindexed _, _)
-      | (Iindexed2 0, _) -> super#select_operation op args dbg
+      | (Iindexed2 0, _) -> super.select_operation self op args dbg
       | (addr, arg) -> (Ispecific(Ilea addr), [arg])
       end
   (* Recognize float arithmetic with memory. *)
   | Caddf ->
-      self#select_floatarith true Iaddf Ifloatadd args
+      select_floatarith self true Iaddf Ifloatadd args
   | Csubf ->
-      self#select_floatarith false Isubf Ifloatsub args
+      select_floatarith self false Isubf Ifloatsub args
   | Cmulf ->
-      self#select_floatarith true Imulf Ifloatmul args
+      select_floatarith self true Imulf Ifloatmul args
   | Cdivf ->
-      self#select_floatarith false Idivf Ifloatdiv args
+      select_floatarith self false Idivf Ifloatdiv args
   | Cextcall("sqrt", _, _, false) ->
      begin match args with
        [Cop(Cload {memory_chunk=(Double as chunk)}, [loc], _dbg)] ->
-         let (addr, arg) = self#select_addressing chunk loc in
+         let (addr, arg) = self.select_addressing self chunk loc in
          (Ispecific(Ifloatsqrtf addr), [arg])
      | [arg] ->
          (Ispecific Isqrtf, [arg])
@@ -215,11 +232,11 @@ method! select_operation op args dbg =
   | Cstore ((Word_int|Word_val as chunk), _init) ->
       begin match args with
         [loc; Cop(Caddi, [Cop(Cload _, [loc'], _); Cconst_int (n, _dbg)], _)]
-        when loc = loc' && is_immediate n ->
-          let (addr, arg) = self#select_addressing chunk loc in
+        when loc = loc' && is_immediate_int n ->
+          let (addr, arg) = self.select_addressing self chunk loc in
           (Ispecific(Ioffset_loc(n, addr)), [arg])
       | _ ->
-          super#select_operation op args dbg
+          super.select_operation self op args dbg
       end
   | Cextcall("caml_bswap16_direct", _, _, _) ->
       (Ispecific (Ibswap 16), args)
@@ -233,7 +250,7 @@ method! select_operation op args dbg =
       begin match args with
         [Cop(Clsl, [k; Cconst_int (32, _)], _); Cconst_int (32, _)] ->
           (Ispecific Isextend32, [k])
-        | _ -> super#select_operation op args dbg
+        | _ -> super.select_operation self op args dbg
       end
   (* Recognize zero extension *)
   | Cand ->
@@ -243,44 +260,37 @@ method! select_operation op args dbg =
     | [Cconst_int (0xffff_ffff, _); arg]
     | [Cconst_natint (0xffff_ffffn, _); arg] ->
       Ispecific Izextend32, [arg]
-    | _ -> super#select_operation op args dbg
+    | _ -> super.select_operation self op args dbg
     end
-  | _ -> super#select_operation op args dbg
+  | _ -> super.select_operation self op args dbg
 
-(* Recognize float arithmetic with mem *)
-
-method select_floatarith commutative regular_op mem_op args =
-  match args with
-    [arg1; Cop(Cload {memory_chunk=(Double as chunk)}, [loc2], _)] ->
-      let (addr, arg2) = self#select_addressing chunk loc2 in
-      (Ispecific(Ifloatarithmem(mem_op, addr)),
-                 [arg1; arg2])
-  | [Cop(Cload {memory_chunk=(Double as chunk)}, [loc1], _); arg2]
-        when commutative ->
-      let (addr, arg1) = self#select_addressing chunk loc1 in
-      (Ispecific(Ifloatarithmem(mem_op, addr)),
-                 [arg2; arg1])
-  | [arg1; arg2] ->
-      (regular_op, [arg1; arg2])
-  | _ ->
-      assert false
-
-method! mark_c_tailcall =
-  contains_calls := true
+let mark_c_tailcall self =
+  self.contains_calls := true
 
 (* Deal with register constraints *)
 
-method! insert_op_debug env op dbg rs rd =
+let insert_op_debug self env op dbg rs rd =
   try
     let (rsrc, rdst) = pseudoregs_for_operation op rs rd in
-    self#insert_moves env rs rsrc;
-    self#insert_debug env (Iop op) dbg rsrc rdst;
-    self#insert_moves env rdst rd;
+    insert_moves self env rs rsrc;
+    insert_debug self env (Iop op) dbg rsrc rdst;
+    insert_moves self env rdst rd;
     rd
   with Use_default ->
-    super#insert_op_debug env op dbg rs rd
-
-end
+    super.insert_op_debug self env op dbg rs rd
 
 let fundecl ~future_funcnames f =
-  (new selector)#emit_fundecl ~future_funcnames f
+  let selector =
+    { super with
+      is_immediate;
+      is_immediate_test;
+      select_addressing;
+      is_simple_expr;
+      effects_of;
+      select_operation;
+      select_store;
+      insert_op_debug;
+      mark_c_tailcall;
+    }
+  in
+  emit_fundecl selector ~future_funcnames f
