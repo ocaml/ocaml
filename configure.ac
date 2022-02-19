@@ -197,6 +197,20 @@ AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 AC_CANONICAL_TARGET
 
+# Systems that are known not to work, even in bytecode only.
+
+AS_CASE([$host],
+  [*-pc-windows],
+    [AC_MSG_ERROR([the MSVC compiler is not supported currently], 69)],
+  [*-*-cygwin*],
+    [AC_MSG_ERROR([Cygwin is not supported currently], 69)],
+  [i386-*-solaris*],
+    [AC_MSG_ERROR([Building for 32 bits target is not supported. \
+If your host is 64 bits, you can try with './configure CC="gcc -m64"' \
+(or "cc -m64" if you don't have GCC).])])
+
+# MSVC special case
+
 AS_CASE([$host],
   [*-pc-windows],
     [CC=cl
@@ -205,10 +219,6 @@ AS_CASE([$host],
     SO=dll
     outputexe=-Fe
     syslib='$(1).lib'],
-  [i386-*-solaris*],
-    [AC_MSG_ERROR([Building for 32 bits target is not supported. \
-If your host is 64 bits, you can try with './configure CC="gcc -m64"' \
-(or "cc -m64" if you don't have GCC).])],
   [ccomptype=cc
   S=s
   SO=so
