@@ -605,10 +605,8 @@ AS_CASE([$enable_warn_error,OCAML__DEVELOPMENT_VERSION],
 # - strict no-overflow conditions on signed integer arithmetic
 #   (the OCaml runtime assumes Java-style behavior of signed integer arith.)
 # Concerning optimization level, -O3 is somewhat risky, so take -O2.
-# Concerning language version, gnu99 is ISO C99 plus GNU extensions
-# that are often used in standard headers.  Older GCC versions
-# defaults to gnu89, which is not C99.  Clang defaults to gnu99 or
-# gnu11, which is fine.
+# Concerning language version, recent enough versions of GCC and Clang
+# default to gnu11 (C11 + GNU extensions) or gnu17, which is fine.
 
 # Note: the vendor macro can not recognize MinGW because it calls the
 # C preprocessor directly so no compiler specific macro like __MING32__
@@ -634,32 +632,13 @@ AS_CASE([$host],
     [clang-*],
       [common_cflags="-O2 -fno-strict-aliasing -fwrapv";
       internal_cflags="$cc_warnings -fno-common"],
-    [gcc-[[012]]-*],
-      # Some versions known to miscompile OCaml, e,g, 2.7.2.1, some 2.96.
-      # Plus: C99 support unknown.
+    [gcc-[[0123]]-*|gcc-4-[[0-8]]],
+      # No C11 support
       [AC_MSG_ERROR(m4_normalize([This version of GCC is too old.
-        Please use GCC version 4.2 or above.]))],
-    [gcc-3-*|gcc-4-[[01]]],
-      # No -fwrapv option before GCC 3.4.
-      # Known problems with -fwrapv fixed in 4.2 only.
-      [AC_MSG_WARN(m4_normalize([This version of GCC is rather old.
-        Reducing optimization level."]));
-      AC_MSG_WARN([Consider using GCC version 4.2 or above.]);
-      common_cflags="-std=gnu99 -O";
-      internal_cflags="$cc_warnings"],
-    [gcc-4-[[234]]],
-      # No -fexcess-precision option before GCC 4.5
-      [common_cflags="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv \
--fno-builtin-memcmp";
-      internal_cflags="$cc_warnings"],
-    [gcc-4-*],
-      [common_cflags="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv \
--fno-builtin-memcmp";
-      internal_cflags="$cc_warnings -fexcess-precision=standard"],
+        Please use GCC version 4.9 or above.]), 69)],
     [gcc-*],
       [common_cflags="-O2 -fno-strict-aliasing -fwrapv";
-      internal_cflags="$cc_warnings -fno-common \
--fexcess-precision=standard"],
+      internal_cflags="$cc_warnings -fno-common -fexcess-precision=standard"],
     [msvc-*],
       [common_cflags="-nologo -O2 -Gy- -MD $cc_warnings"
       common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
