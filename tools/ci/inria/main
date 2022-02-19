@@ -246,6 +246,13 @@ fi
 
 eval ./configure "$CCOMP" $build $host --prefix='$instdir' $confoptions
 
+grep -q '^ARCH=none' Makefile.config && make_native=false
+
+if test "$flambda" = "true" && test "$make_native" = "false"; then
+  echo "No need to test flambda in a bytecode-only system; skipping the test."
+  exit 0
+fi
+
 if $bootstrap; then
   $make $jobs --warn-undefined-variables core
   $make $jobs --warn-undefined-variables coreboot
