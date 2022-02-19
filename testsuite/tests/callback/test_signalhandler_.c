@@ -13,9 +13,14 @@
 /*                                                                        */
 /**************************************************************************/
 
+#include <signal.h>
+
 #include "caml/mlvalues.h"
 #include "caml/memory.h"
 #include "caml/callback.h"
+
+#define CAML_INTERNALS
+#include "caml/signals.h"
 
 value mycallback1(value fun, value arg)
 {
@@ -67,3 +72,12 @@ value mycamlparam (value v, value fun, value arg)
   v = x;
   CAMLreturn (v);
 }
+
+value mykill(value pid, value signal)
+{
+  int sig;
+  sig = caml_convert_signal_number(Int_val(signal));
+  kill(Int_val(pid), sig);
+  return Val_unit;
+}
+
