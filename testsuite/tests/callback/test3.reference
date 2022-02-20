@@ -1,7 +1,7 @@
 [Caml] Call caml_to_c
 [Caml] Enter c_to_caml
 0
-5000050000
+ok
 [Caml] Leave c_to_caml
 [Caml] Return from caml_to_c
 [C] Enter caml_to_c

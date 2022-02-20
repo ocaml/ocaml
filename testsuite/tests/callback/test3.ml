@@ -24,7 +24,9 @@ let c_to_caml () =
   let l = mk_list 1000 [] in
   Printf.printf "%d\n" (List.hd l);
   (* Stack overflow *)
-  Printf.printf "%d\n" (sum 100000);
+  let s = sum 100000 in
+  Printf.printf "%s\n"
+    (if s = Int64.to_int 5000050000L then "ok" else "error");
   printf "[Caml] Leave c_to_caml\n%!"
 
 let _ = Callback.register "c_to_caml" c_to_caml
