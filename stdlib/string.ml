@@ -104,15 +104,9 @@ let trim s =
     then bts (B.trim (bos s))
   else s
 
-let escaped s =
-  let rec escape_if_needed s n i =
-    if i >= n then s else
-      match unsafe_get s i with
-      | '\"' | '\\' | '\000'..'\031' | '\127'.. '\255' ->
-          bts (B.escaped (bos s))
-      | _ -> escape_if_needed s n (i+1)
-  in
-  escape_if_needed s (length s) 0
+let escaped_ascii s = bos s |> B.escaped_ascii |> bts
+let escaped = escaped_ascii
+let escaped_utf8 s = bos s |> B.escaped_utf8 |> bts
 
 (* duplicated in bytes.ml *)
 let rec index_rec s lim i c =

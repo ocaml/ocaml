@@ -216,6 +216,39 @@ val escaped : bytes -> bytes
     @raise Invalid_argument if the result is longer than
     {!Sys.max_string_length} bytes. *)
 
+val escaped_ascii : bytes -> bytes
+(** [escape_ascii s] is [s] with all characters outside the printable US-ASCII
+    range represented by escape sequences.
+
+    All characters outside the US-ASCII printable range \[0x20 .. 0x7E\] are
+    escaped, as well as backslash (0x2F) and double-quote (0x22).
+
+    The function {!Scanf.unescaped} is a left inverse of [escaped],
+    i.e. [Scanf.unescaped (escaped s) = s] for any string [s] (unless
+    [escaped s] fails).
+
+    @raise Invalid_argument if the result is longer than
+    {!Sys.max_string_length} bytes.
+
+    @since 4.14.0 *)
+
+val escaped_utf8 : bytes -> bytes
+(** [escape s] is [s] with special characters replaced with escape sequences,
+    following the lexical conventions of OCaml.
+
+    The following characters are escaped:
+    double quote (['\"'], newline (['\n']), carriage return (['\r']),
+    tab (['\t']), backspace (['\b']), DEL (0x7F),
+    and everything in the \[0x00 .. 0x1F\] range.
+
+    @raise Invalid_argument if the result is longer than
+    {!Sys.max_string_length} bytes.
+
+    @since 4.14.0 *)
+
+(* Intentionally undocumented. *)
+val _escaped : ?escape_unicode:bool -> bytes -> bytes
+
 val index : bytes -> char -> int
 (** [index s c] returns the index of the first occurrence of byte [c]
     in [s].

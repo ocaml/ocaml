@@ -1466,7 +1466,7 @@ let kscanf ib ef (Format (fmt, str)) =
     match try Args (make_scanf ib fmt readers) with
       | (Scan_failure _ | Failure _ | End_of_file) as exc -> Exc exc
       | Invalid_argument msg ->
-        invalid_arg (msg ^ " in format \"" ^ String.escaped str ^ "\"")
+        invalid_arg (msg ^ " in format \"" ^ String.escaped_ascii str ^ "\"")
     with
       | Args args -> apply f args
       | Exc exc -> ef ib exc
@@ -1505,7 +1505,7 @@ let sscanf_format :
 
 
 let format_from_string s fmt =
-  sscanf_format ("\"" ^ String.escaped s ^ "\"") fmt (fun x -> x)
+  sscanf_format ("\"" ^ String.escaped_ascii s ^ "\"") fmt (fun x -> x)
 
 
 let unescaped s =
