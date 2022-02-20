@@ -93,7 +93,7 @@ module Shallow = struct
     let error _ = failwith "impossible" in
     let effc eff k _last_fiber =
       match eff with
-      | M.Initial_setup__ -> raise (E k)
+      | M.Initial_setup__ -> raise_notrace (E k)
       | _ -> error ()
     in
     let s = alloc_stack error error effc in
