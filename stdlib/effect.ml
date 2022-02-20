@@ -114,32 +114,23 @@ module Shallow = struct
   external reperform :
     'a eff -> ('a, 'b) continuation -> last_fiber -> 'c = "%reperform"
 
+  let continue_gen k resume_fun v handler =
+    let effc eff k last_fiber =
+      match handler.effc eff with
+      | Some f -> f k
+      | None -> reperform eff k last_fiber
+    in
+    let stack = update_handler k handler.retc handler.exnc effc in
+    resume stack resume_fun v
+
   let continue_with k v handler =
-    let effc eff k last_fiber =
-      match handler.effc eff with
-      | Some f -> f k
-      | None -> reperform eff k last_fiber
-    in
-    let stack = update_handler k handler.retc handler.exnc effc in
-    resume stack (fun x -> x) v
+    continue_gen k (fun x -> x) v handler
 
-  let discontinue_with k x handler =
-    let effc eff k last_fiber =
-      match handler.effc eff with
-      | Some f -> f k
-      | None -> reperform eff k last_fiber
-    in
-    let stack = update_handler k handler.retc handler.exnc effc in
-    resume stack (fun e -> raise e) x
+  let discontinue_with k v handler =
+    continue_gen k (fun e -> raise e) v handler
 
-  let discontinue_with_backtrace k x bt handler =
-    let effc eff k last_fiber =
-      match handler.effc eff with
-      | Some f -> f k
-      | None -> reperform eff k last_fiber
-    in
-    let stack = update_handler k handler.retc handler.exnc effc in
-    resume stack (fun e -> Printexc.raise_with_backtrace e bt) x
+  let discontinue_with_backtrace k v bt handler =
+    continue_gen k (fun e -> Printexc.raise_with_backtrace e bt) v handler
 
   external get_callstack :
     ('a,'b) continuation -> int -> Printexc.raw_backtrace =
