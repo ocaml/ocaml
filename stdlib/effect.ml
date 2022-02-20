@@ -97,7 +97,9 @@ module Shallow = struct
       | _ -> error ()
     in
     let s = alloc_stack error error effc in
-    try Obj.magic (runstack s f' ()) with E k -> k
+    match runstack s f' () with
+    | exception E k -> k
+    | _ -> error ()
 
   type ('a,'b) handler =
     { retc: 'a -> 'b;
