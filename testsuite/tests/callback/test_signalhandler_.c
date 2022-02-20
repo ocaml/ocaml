@@ -80,4 +80,3 @@ value mykill(value pid, value signal)
   kill(Int_val(pid), sig);
   return Val_unit;
 }
-
