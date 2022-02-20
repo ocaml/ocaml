@@ -623,14 +623,8 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
   CAML_EV_END(EV_MINOR_LOCAL_ROOTS_PROMOTE);
   CAML_EV_END(EV_MINOR_LOCAL_ROOTS);
 
-  /* we reset these pointers before allowing any mutators to be
-     released to avoid races where another domain signals an interrupt
-     and we clobber it */
-  atomic_store_rel
-    (&domain->young_limit, (uintnat)domain->young_start);
-
-  atomic_store_rel
-    ((atomic_uintnat*)&domain->young_ptr, (uintnat)domain->young_end);
+  domain->young_ptr = domain->young_end;
+  caml_reset_young_limit(domain);
 
   if( participating_count > 1 ) {
     atomic_fetch_add_explicit

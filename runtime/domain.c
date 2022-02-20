@@ -491,7 +491,7 @@ static int allocate_minor_heap(asize_t wsize) {
   domain_state->young_end =
       (value*)(domain_self->minor_heap_area_start + Bsize_wsize(wsize));
   domain_state->young_ptr = domain_state->young_end;
-  caml_update_young_limit();
+  caml_reset_young_limit(domain_state);
 
   check_minor_heap();
   return 0;
@@ -678,6 +678,8 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
   domain_state->trap_sp_off = 1;
   domain_state->trap_barrier_off = 0;
 #endif
+
+  caml_reset_young_limit(domain_state);
 
   add_to_stw_domains(domain_self);
   goto domain_init_complete;
@@ -1490,13 +1492,15 @@ void caml_interrupt_self(void) {
   interrupt_domain(&domain_self->interruptor);
 }
 
-void caml_update_young_limit(void)
+void caml_reset_young_limit(caml_domain_state * dom_st)
 {
-  caml_domain_state * dom_st = Caml_state;
+  CAMLassert(dom_st == Caml_state);
   /* An interrupt might have been queued in the meanwhile; this
      achieves the proper synchronisation. */
   atomic_exchange(&dom_st->young_limit, (uintnat)dom_st->young_start);
   if (caml_incoming_interrupts_queued()
+      || dom_st->requested_minor_gc
+      || dom_st->requested_major_slice
       || atomic_load_explicit(&dom_st->requested_external_interrupt,
                               memory_order_relaxed)) {
     atomic_store_rel(&dom_st->young_limit, (uintnat)-1);
@@ -1539,6 +1543,7 @@ static void caml_poll_gc_work(void)
     caml_domain_external_interrupt_hook();
   }
 
+  caml_reset_young_limit(Caml_state);
 }
 
 /* FIXME: do not raise async exceptions */
@@ -1553,7 +1558,7 @@ void caml_handle_gc_interrupt(void)
     CAML_EV_END(EV_INTERRUPT_REMOTE);
   }
 
-  caml_update_young_limit();
+  caml_reset_young_limit(Caml_state);
   caml_poll_gc_work();
 
   CAML_EV_END(EV_INTERRUPT_GC);
