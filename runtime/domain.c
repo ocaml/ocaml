@@ -283,11 +283,9 @@ void caml_init_domain_state_key (void)
 CAMLexport __thread caml_domain_state* caml_state;
 #endif
 
-/* Interrupt functions */
-static const uintnat INTERRUPT_MAGIC = (uintnat)(-1);
-
-Caml_inline void interrupt_domain(struct interruptor* s) {
-  atomic_store_rel(s->interrupt_word, INTERRUPT_MAGIC);
+Caml_inline void interrupt_domain(struct interruptor* s)
+{
+  atomic_store_rel(s->interrupt_word, (uintnat)(-1));
 }
 
 int caml_incoming_interrupts_queued(void)
@@ -492,9 +490,8 @@ static int allocate_minor_heap(asize_t wsize) {
   domain_state->young_start = (value*)domain_self->minor_heap_area_start;
   domain_state->young_end =
       (value*)(domain_self->minor_heap_area_start + Bsize_wsize(wsize));
-  atomic_store_rel(&domain_state->young_limit,
-                   (uintnat) domain_state->young_start);
   domain_state->young_ptr = domain_state->young_end;
+  caml_update_young_limit();
 
   check_minor_heap();
   return 0;
@@ -1493,6 +1490,20 @@ void caml_interrupt_self(void) {
   interrupt_domain(&domain_self->interruptor);
 }
 
+void caml_update_young_limit(void)
+{
+  caml_domain_state * dom_st = Caml_state;
+  /* An interrupt might have been queued in the meanwhile; this
+     achieves the proper synchronisation. */
+  atomic_exchange(&dom_st->young_limit, (uintnat)dom_st->young_start);
+  if (caml_incoming_interrupts_queued()
+      || atomic_load_explicit(&dom_st->requested_external_interrupt,
+                              memory_order_relaxed)) {
+    atomic_store_rel(&dom_st->young_limit, (uintnat)-1);
+    CAMLassert(caml_check_gc_interrupt(dom_st));
+  }
+}
+
 static void caml_poll_gc_work(void)
 {
   CAMLalloc_point_here;
@@ -1533,22 +1544,16 @@ static void caml_poll_gc_work(void)
 /* FIXME: do not raise async exceptions */
 void caml_handle_gc_interrupt(void)
 {
-  atomic_uintnat* young_limit = domain_self->interruptor.interrupt_word;
   CAMLalloc_point_here;
 
   CAML_EV_BEGIN(EV_INTERRUPT_GC);
-  if (atomic_load_acq(young_limit) == INTERRUPT_MAGIC) {
-    /* interrupt */
+  if (caml_incoming_interrupts_queued()) {
     CAML_EV_BEGIN(EV_INTERRUPT_REMOTE);
-    while (atomic_load_acq(young_limit) == INTERRUPT_MAGIC) {
-      uintnat i = INTERRUPT_MAGIC;
-      atomic_compare_exchange_strong(
-          young_limit, &i, (uintnat)Caml_state->young_start);
-    }
     caml_handle_incoming_interrupts();
     CAML_EV_END(EV_INTERRUPT_REMOTE);
   }
 
+  caml_update_young_limit();
   caml_poll_gc_work();
 
   CAML_EV_END(EV_INTERRUPT_GC);
