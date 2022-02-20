@@ -14429,15 +14429,17 @@ else
 fi
 
 if test -z "$PARTIALLD"; then :
-  case "$arch,$cc_basename,$system,$model" in #(
-  amd64,*gcc*,macosx,*) :
+  case "$host,$cc_basename" in #(
+  x86_64-*-darwin*,*gcc*) :
     PACKLD_FLAGS=' -arch x86_64' ;; #(
-  power,*gcc*,elf,ppc) :
-    PACKLD_FLAGS=' -m elf32ppclinux' ;; #(
-  power,*gcc*,elf,ppc64) :
-    PACKLD_FLAGS=' -m elf64ppc' ;; #(
-  power,*gcc*,elf,ppc64le) :
+  powerpc64le*-*-linux*,*gcc*) :
     PACKLD_FLAGS=' -m elf64lppc' ;; #(
+  powerpc*-*-linux*,*gcc*) :
+    if $arch64; then :
+  PACKLD_FLAGS=' -m elf64ppc'
+else
+  PACKLD_FLAGS=' -m elf32ppclinux'
+fi ;; #(
   *) :
     PACKLD_FLAGS='' ;;
 esac

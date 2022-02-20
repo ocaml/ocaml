@@ -1141,11 +1141,13 @@ AC_DEFINE_UNQUOTED([OCAML_OS_TYPE], ["$ostype"])
 
 AC_CHECK_TOOL([DIRECT_LD],[ld])
 AS_IF([test -z "$PARTIALLD"],
-  [AS_CASE(["$arch,$cc_basename,$system,$model"],
-    [amd64,*gcc*,macosx,*], [PACKLD_FLAGS=' -arch x86_64'],
-    [power,*gcc*,elf,ppc], [PACKLD_FLAGS=' -m elf32ppclinux'],
-    [power,*gcc*,elf,ppc64], [PACKLD_FLAGS=' -m elf64ppc'],
-    [power,*gcc*,elf,ppc64le], [PACKLD_FLAGS=' -m elf64lppc'],
+  [AS_CASE(["$host,$cc_basename"],
+    [x86_64-*-darwin*,*gcc*], [PACKLD_FLAGS=' -arch x86_64'],
+    [powerpc64le*-*-linux*,*gcc*], [PACKLD_FLAGS=' -m elf64lppc'],
+    [powerpc*-*-linux*,*gcc*],
+       [AS_IF([$arch64],
+              [PACKLD_FLAGS=' -m elf64ppc'],
+              [PACKLD_FLAGS=' -m elf32ppclinux'])],
     [PACKLD_FLAGS=''])
   # The string for PACKLD must be capable of being concatenated with the
   # output filename. Don't assume that all C compilers understand GNU -ofoo
