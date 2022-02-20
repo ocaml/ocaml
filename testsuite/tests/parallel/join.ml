@@ -48,8 +48,8 @@ let join2 () =
     assert !r
 
 let () =
-  main_join 100;
-  let flags = Array.make 100 false in
+  main_join 15;
+  let flags = Array.make 14 false in
   other_join flags (Array.length flags) (Domain.spawn ignore);
   assert (Array.for_all (fun x -> x) flags);
   join2 ();

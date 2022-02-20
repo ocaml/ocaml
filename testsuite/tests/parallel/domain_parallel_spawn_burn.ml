@@ -11,14 +11,14 @@ open Domain
    from parallel domains *)
 
 let rec burn l =
-  if List.hd l > 14 then ()
+  if List.hd l > 13 then ()
   else
     burn (l @ l |> List.map (fun x -> x + 1))
 
 let test_parallel_spawn () =
   for i = 1 to 20 do
-    let a = Array.init 25 (fun _ -> Domain.spawn (fun () -> burn [0])) in
-    for j = 0 to 24 do
+    let a = Array.init 12 (fun _ -> Domain.spawn (fun () -> burn [0])) in
+    for j = 0 to 11 do
       join a.(j)
     done
   done
