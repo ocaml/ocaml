@@ -94,7 +94,8 @@ val pred : nativeint -> nativeint
    [Nativeint.pred x] is [Nativeint.sub x Nativeint.one]. *)
 
 val abs : nativeint -> nativeint
-(** Return the absolute value of its argument. *)
+(** [abs x] is the absolute value of [x]. On [min_int] this
+   is [min_int] itself and thus remains negative. *)
 
 val size : int
 (** The size in bits of a native integer.  This is equal to [32]
