@@ -42,7 +42,7 @@ endef
 
 # define the right conditional for the manual
 build/latex/ifocamldoc.tex: | build/latex
-	printf '\\newif\ifocamldoc\ocamldocfalse\n' > $@
+	printf '\\newif\\ifocamldoc\\ocamldocfalse\n' > $@
 
 
 # \input{} all modules in the stdlib for the latex api manual

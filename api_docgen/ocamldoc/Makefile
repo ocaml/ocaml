@@ -38,7 +38,7 @@ ALL_MAN= $(ALL_DOC:%=build/man/%.3o)
 ALL_LATEX= $(ALL_DOC:%=build/latex/%.tex)
 
 build/latex/ifocamldoc.tex: | build/latex
-	printf '\\newif\ifocamldoc\ocamldoctrue\n' > $@
+	printf '\\newif\\ifocamldoc\\ocamldoctrue\n' > $@
 
 $(libref:%=build/libref/%.odoc): build/libref/%.odoc: %.mli | build/libref
 	$(OCAMLDOC_RUN) -nostdlib -hide Stdlib -lib Stdlib \
