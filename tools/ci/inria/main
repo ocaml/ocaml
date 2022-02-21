@@ -169,6 +169,8 @@ case "${OCAML_ARCH}" in
     instdir='C:/ocamlmgw'
     cleanup=true
     check_make_alldepend=true
+    # This is needed until the winpthreads support is implemented directly
+    export PATH="$PATH:/usr/i686-w64-mingw32/sys-root/mingw/bin"
   ;;
   mingw64)
     build='--build=x86_64-pc-cygwin'
@@ -243,6 +245,13 @@ if test "$flambda" = "true"; then
 fi
 
 eval ./configure "$CCOMP" $build $host --prefix='$instdir' $confoptions
+
+grep -q '^ARCH=none' Makefile.config && make_native=false
+
+if test "$flambda" = "true" && test "$make_native" = "false"; then
+  echo "No need to test flambda in a bytecode-only system; skipping the test."
+  exit 0
+fi
 
 if $bootstrap; then
   $make $jobs --warn-undefined-variables core

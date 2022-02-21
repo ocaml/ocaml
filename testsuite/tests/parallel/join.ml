@@ -5,6 +5,13 @@ include unix
 ** native
 *)
 
+let test_size =
+  try int_of_string (Sys.getenv "OCAML_TEST_SIZE")
+  with Not_found | Failure _ -> 0
+
+let num_domains =
+  if test_size >= 2 then 100 else 14
+
 let main_join n =
   let a = Array.init n (fun _ -> false) in
   Array.init n (fun i -> Domain.spawn (fun () ->
@@ -48,8 +55,8 @@ let join2 () =
     assert !r
 
 let () =
-  main_join 100;
-  let flags = Array.make 100 false in
+  main_join num_domains;
+  let flags = Array.make num_domains false in
   other_join flags (Array.length flags) (Domain.spawn ignore);
   assert (Array.for_all (fun x -> x) flags);
   join2 ();

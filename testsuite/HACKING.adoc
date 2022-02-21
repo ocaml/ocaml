@@ -1,7 +1,5 @@
 == Running the testsuite
 
-== Creating a new test
-
 == Useful Makefile targets
 
 `make parallel`::
@@ -30,3 +28,27 @@
   `git diff`, that the change really corresponds to an intended output
   difference, and not to a regression. You then need to commit the change to
   reference file, and your commit message should explain why the output changed.
+
+== Creating a new test
+
+== Dimensioning the tests
+
+By default, tests should run well on small virtual machines (2 cores,
+2 Gb RAM, 64 or 32 bits), taking at most one minute, and preferably
+less than 10 seconds, to run on such a machine.
+
+Some machines used for continuous integration are more capable than
+that.  They use the `OCAML_TEST_SIZE` environment variable to report
+the available resources:
+
+|====
+| `OCAML_TEST_SIZE`  |  Resources          | Word size
+
+| `1` or unset       | 2 cores, 2 Gb RAM   | 32 or 64 bits
+| `2`                | 4 cores, 4 Gb RAM   | 64 bits
+| `3`                | 8 cores, 8 Gb RAM   | 64 bits
+|=====
+
+Tests, then, can check the `OCAML_TEST_SIZE` environment variable and
+increase the number of cores or the amount of memory used.  The
+default should always be 2 cores and 2 Gb RAM.
