@@ -2,9 +2,10 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*             Stephen Dolan, University of Cambridge                     *)
+(*                 Stephen Dolan, University of Cambridge                 *)
 (*             Gabriel Scherer, projet Partout, INRIA Paris-Saclay        *)
 (*                                                                        *)
+(*   Copyright 2017-2018 University of Cambridge.                         *)
 (*   Copyright 2020 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
 (*                                                                        *)
@@ -14,17 +15,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** This module provides a purely sequential implementation of the
-    concurrent atomic references provided by the Multicore OCaml
-    standard library:
-
-    https://github.com/ocaml-multicore/ocaml-multicore/blob/parallel_minor_gc/stdlib/atomic.mli
-
-    This sequential implementation is provided in the interest of
-    compatibility: when people will start writing code to run on
-    Multicore, it would be nice if their use of Atomic was
-    backward-compatible with older versions of OCaml without having to
-    import additional compatibility layers.
+(** Atomic references.
 
     @since 4.12
 *)

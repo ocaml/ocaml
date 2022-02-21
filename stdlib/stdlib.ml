@@ -547,21 +547,27 @@ let ( ^^ ) (Format (fmt1, str1)) (Format (fmt2, str2)) =
 
 external sys_exit : int -> 'a = "caml_sys_exit"
 
-let exit_function = CamlinternalAtomic.make flush_all
+(* for at_exit *)
+type 'a atomic_t
+external atomic_make : 'a -> 'a atomic_t = "%makemutable"
+external atomic_get : 'a atomic_t -> 'a = "%atomic_load"
+external atomic_compare_and_set : 'a atomic_t -> 'a -> 'a -> bool
+  = "%atomic_cas"
+
+let exit_function = atomic_make flush_all
 
 let rec at_exit f =
-  let module Atomic = CamlinternalAtomic in
   (* MPR#7253, MPR#7796: make sure "f" is executed only once *)
-  let f_yet_to_run = Atomic.make true in
-  let old_exit = Atomic.get exit_function in
+  let f_yet_to_run = atomic_make true in
+  let old_exit = atomic_get exit_function in
   let new_exit () =
-    if Atomic.compare_and_set f_yet_to_run true false then f () ;
+    if atomic_compare_and_set f_yet_to_run true false then f () ;
     old_exit ()
   in
-  let success = Atomic.compare_and_set exit_function old_exit new_exit in
+  let success = atomic_compare_and_set exit_function old_exit new_exit in
   if not success then at_exit f
 
-let do_at_exit () = (CamlinternalAtomic.get exit_function) ()
+let do_at_exit () = (atomic_get exit_function) ()
 
 let exit retcode =
   do_at_exit ();

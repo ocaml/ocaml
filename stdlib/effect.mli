@@ -18,7 +18,7 @@ type _ eff = ..
 external perform : 'a eff -> 'a = "%perform"
 (** [perform e] performs an effect [e].
 
-    @raises Unhandled if there is no active handler. *)
+    @raise Unhandled if there is no active handler. *)
 
 module Deep : sig
   (** Deep handlers *)
