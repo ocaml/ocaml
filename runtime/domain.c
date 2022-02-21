@@ -1233,7 +1233,6 @@ static void decrement_stw_domains_still_processing(void)
   }
 }
 
-static void caml_poll_gc_work(void);
 static void stw_handler(caml_domain_state* domain)
 {
   CAML_EV_BEGIN(EV_STW_HANDLER);
@@ -1481,7 +1480,7 @@ void caml_reset_young_limit(caml_domain_state * dom_st)
   }
 }
 
-static void caml_poll_gc_work(void)
+void caml_poll_gc_work(void)
 {
   CAMLalloc_point_here;
 

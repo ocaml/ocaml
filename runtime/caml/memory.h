@@ -201,14 +201,8 @@ enum caml_alloc_small_flags {
   CAML_FROM_C = 0,     CAML_FROM_CAML = 2 // call async callbacks
 };
 
-#define Alloc_small_enter_GC_flags(flags, dom_st, wosize) do {          \
-    (dom_st)->young_ptr += Whsize_wosize(wosize);                       \
-    if ((flags) & CAML_FROM_CAML)                                       \
-      caml_process_pending_actions();                                   \
-    else                                                                \
-      caml_handle_gc_interrupt();                                       \
-    (dom_st)->young_ptr -= Whsize_wosize(wosize);                       \
-  } while (0)
+#define Alloc_small_enter_GC_flags(flags, dom_st, wosize) \
+  caml_alloc_small_dispatch((dom_st), (wosize), (flags), 1, NULL);
 
 // Do not call asynchronous callbacks from allocation functions
 #define Alloc_small_enter_GC(dom_st, wosize)    \
@@ -220,7 +214,7 @@ enum caml_alloc_small_flags {
                                  CAMLassert ((wosize) <= Max_young_wosize); \
   caml_domain_state* dom_st = Caml_state;                                   \
   dom_st->young_ptr -=  Whsize_wosize(wosize);                              \
-  while (Caml_check_gc_interrupt(dom_st)) {                                 \
+  if (Caml_check_gc_interrupt(dom_st)) {                                    \
     GC(dom_st, wosize);                                                     \
   }                                                                         \
   Hd_hp (dom_st->young_ptr) =                                               \

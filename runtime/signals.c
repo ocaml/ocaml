@@ -231,20 +231,25 @@ CAMLexport int caml_check_pending_actions(void)
           caml_check_pending_signals());
 }
 
-CAMLexport void caml_process_pending_actions(void)
+value caml_do_pending_actions_exn(void)
 {
   caml_handle_gc_interrupt();
-  caml_raise_if_exception(caml_process_pending_signals_exn());
+  return caml_process_pending_signals_exn();
 }
 
 value caml_process_pending_actions_with_root(value root)
 {
   if (caml_check_pending_actions()) {
     CAMLparam1(root);
-    caml_process_pending_actions();
+    caml_raise_if_exception(caml_do_pending_actions_exn());
     CAMLdrop;
   }
   return root;
+}
+
+CAMLexport void caml_process_pending_actions(void)
+{
+  caml_process_pending_actions_with_root(Val_unit);
 }
 
 value caml_process_pending_actions_with_root_exn(value root)

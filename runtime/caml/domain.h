@@ -62,6 +62,7 @@ void caml_update_minor_heap_max(uintnat minor_heap_wsz);
 /* is there a STW interrupt queued that needs servicing */
 int caml_incoming_interrupts_queued(void);
 
+void caml_poll_gc_work(void);
 void caml_handle_gc_interrupt(void);
 void caml_handle_incoming_interrupts(void);
 
