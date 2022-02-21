@@ -28,6 +28,7 @@ extern "C" {
 #include "domain_state.h"
 #include "platform.h"
 
+/* is the minor heap full or an external interrupt has been triggered */
 #define Caml_check_gc_interrupt(dom_st)   \
   (CAMLalloc_point_here, \
    CAMLunlikely( \
@@ -37,9 +38,9 @@ extern "C" {
 asize_t caml_norm_minor_heap_size (intnat);
 int caml_reallocate_minor_heap(asize_t);
 
+/* is there a STW interrupt queued that needs servicing */
 int caml_incoming_interrupts_queued(void);
 
-int caml_check_pending_interrupt(void);
 void caml_handle_gc_interrupt(void);
 void caml_handle_incoming_interrupts(void);
 
