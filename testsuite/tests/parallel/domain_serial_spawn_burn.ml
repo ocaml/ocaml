@@ -7,11 +7,18 @@ include unix
 
 open Domain
 
+let test_size =
+  try int_of_string (Sys.getenv "OCAML_TEST_SIZE")
+  with Not_found | Failure _ -> 0
+
+let list_size =
+  if test_size >= 2 then 14 else 13
+
 (* This test looks to spawn domains while doing a bunch of explicit minor and major GC calls
    from parallel domains *)
 
 let rec burn l =
-  if List.hd l > 13 then ()
+  if List.hd l > test_size then ()
   else
     burn (l @ l |> List.map (fun x -> x + 1))
 
