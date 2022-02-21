@@ -49,15 +49,9 @@
 
 /* The ML value describing a thread (heap-allocated) */
 
-struct caml_thread_descr {
-  value ident;                  /* Unique integer ID */
-  value start_closure;          /* The closure to start this thread */
-  value terminated;             /* Triggered event for thread termination */
-};
-
-#define Ident(v) (((struct caml_thread_descr *)(v))->ident)
-#define Start_closure(v) (((struct caml_thread_descr *)(v))->start_closure)
-#define Terminated(v) (((struct caml_thread_descr *)(v))->terminated)
+#define Ident(v) Field(v, 0)
+#define Start_closure(v) Field(v, 1)
+#define Terminated(v) Field(v, 2)
 
 /* The infos on threads (allocated via caml_stat_alloc()) */
 
@@ -282,10 +276,8 @@ static value caml_thread_new_descriptor(value clos)
   /* Create and initialize the termination semaphore */
   mu = caml_threadstatus_new();
   /* Create a descriptor for the new thread */
-  descr = caml_alloc_small(3, 0);
-  Ident(descr) = Val_long(atomic_fetch_add(&thread_next_id, +1));
-  Start_closure(descr) = clos;
-  Terminated(descr) = mu;
+  descr = caml_alloc_3(3, Val_long(atomic_fetch_add(&thread_next_id, +1)),
+                       clos, mu);
   CAMLreturn(descr);
 }
 
