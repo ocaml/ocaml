@@ -27,8 +27,7 @@ static value alloc_process_status(HANDLE pid, int status)
   CAMLlocal1(st);
   value res;
 
-  st = caml_alloc(1, 0);
-  Field(st, 0) = Val_int(status);
+  st = caml_alloc_boxed(Val_int(status));
   res = caml_alloc_small(2, 0);
   Field(res, 0) = Val_long((intnat) pid);
   Field(res, 1) = st;
