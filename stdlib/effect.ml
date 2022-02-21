@@ -12,8 +12,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type _ eff = ..
-external perform : 'a eff -> 'a = "%perform"
+type _ t = ..
+external perform : 'a t -> 'a = "%perform"
 
 type ('a, 'b) stack
 
@@ -30,7 +30,7 @@ module Deep = struct
   external alloc_stack :
     ('a -> 'b) ->
     (exn -> 'b) ->
-    ('c eff -> ('c, 'b) continuation -> last_fiber -> 'b) ->
+    ('c t -> ('c, 'b) continuation -> last_fiber -> 'b) ->
     ('a, 'b) stack = "caml_alloc_stack"
 
   let continue k v = resume (take_cont_noexc k) (fun x -> x) v
@@ -43,10 +43,10 @@ module Deep = struct
   type ('a,'b) handler =
     { retc: 'a -> 'b;
       exnc: exn -> 'b;
-      effc: 'c.'c eff -> (('c,'b) continuation -> 'b) option }
+      effc: 'c.'c t -> (('c,'b) continuation -> 'b) option }
 
   external reperform :
-    'a eff -> ('a, 'b) continuation -> last_fiber -> 'b = "%reperform"
+    'a t -> ('a, 'b) continuation -> last_fiber -> 'b = "%reperform"
 
   let match_with comp arg handler =
     let effc eff k last_fiber =
@@ -58,7 +58,7 @@ module Deep = struct
     runstack s comp arg
 
   type 'a effect_handler =
-    { effc: 'b. 'b eff -> (('b,'a) continuation -> 'a) option }
+    { effc: 'b. 'b t -> (('b,'a) continuation -> 'a) option }
 
   let try_with comp arg handler =
     let effc' eff k last_fiber =
@@ -82,12 +82,12 @@ module Shallow = struct
   external alloc_stack :
     ('a -> 'b) ->
     (exn -> 'b) ->
-    ('c eff -> ('c, 'b) continuation -> last_fiber -> 'b) ->
+    ('c t -> ('c, 'b) continuation -> last_fiber -> 'b) ->
     ('a, 'b) stack = "caml_alloc_stack"
 
 
   let fiber : type a b. (a -> b) -> (a, b) continuation = fun f ->
-    let module M = struct type _ eff += Initial_setup__ : a eff end in
+    let module M = struct type _ t += Initial_setup__ : a t end in
     let exception E of (a,b) continuation in
     let f' () = f (perform M.Initial_setup__) in
     let error _ = failwith "impossible" in
@@ -102,17 +102,17 @@ module Shallow = struct
   type ('a,'b) handler =
     { retc: 'a -> 'b;
       exnc: exn -> 'b;
-      effc: 'c.'c eff -> (('c,'a) continuation -> 'b) option }
+      effc: 'c.'c t -> (('c,'a) continuation -> 'b) option }
 
   external update_handler :
     ('a,'b) continuation ->
     ('b -> 'c) ->
     (exn -> 'c) ->
-    ('d eff -> ('d,'b) continuation -> last_fiber -> 'c) ->
+    ('d t -> ('d,'b) continuation -> last_fiber -> 'c) ->
     ('a,'c) stack = "caml_continuation_use_and_update_handler_noexc" [@@noalloc]
 
   external reperform :
-    'a eff -> ('a, 'b) continuation -> last_fiber -> 'c = "%reperform"
+    'a t -> ('a, 'b) continuation -> last_fiber -> 'c = "%reperform"
 
   let continue_with k v handler =
     let effc eff k last_fiber =
