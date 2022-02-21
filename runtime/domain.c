@@ -356,7 +356,7 @@ int caml_reallocate_minor_heap(asize_t wsize)
      no race whereby other code could attempt to reuse the memory. */
   caml_mem_decommit(
       (void*)domain_self->minor_heap_area,
-      domain_self->minor_heap_area_end - domain_self->minor_heap_area);
+      (char*)domain_state->young_end - (char*)domain_state->young_start);
 
   wsize = caml_norm_minor_heap_size(wsize);
 
