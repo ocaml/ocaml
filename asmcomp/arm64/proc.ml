@@ -254,7 +254,7 @@ let regs_are_volatile _rs = false
 
 (* Registers destroyed by operations *)
 
-let destroyed_at_c_call =
+let destroyed_at_c_noalloc_call =
   (* x19-x28, d8-d15 preserved *)
   Array.of_list (List.map phys_reg
     [0;1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;
@@ -263,14 +263,16 @@ let destroyed_at_c_call =
      124;125;126;127;128;129;130;131])
 
 let destroyed_at_oper = function
-  | Iop(Icall_ind | Icall_imm _) | Iop(Iextcall { alloc = true; }) ->
+  | Iop(Icall_ind | Icall_imm _) ->
       all_phys_regs
-  | Iop(Iextcall { alloc = false; }) ->
-      destroyed_at_c_call
+  | Iop(Iextcall {alloc; stack_ofs; }) ->
+      assert (stack_ofs >= 0);
+      if alloc || stack_ofs > 0 then all_phys_regs
+      else destroyed_at_c_noalloc_call
   | Iop(Ialloc _) | Iop(Ipoll _) ->
       [| reg_x8 |]
   | Iop( Iintoffloat | Ifloatofint
-       | Iload(Single, _, _) | Istore(Single, _, _)) ->
+       | Iload{memory_chunk=Single; _} | Istore(Single, _, _)) ->
       [| reg_d7 |]            (* d7 / s7 destroyed *)
   | _ -> [||]
 
@@ -289,7 +291,7 @@ let max_register_pressure = function
   | Iextcall _ -> [| 7; 8 |]  (* 7 integer callee-saves, 8 FP callee-saves *)
   | Ialloc _ | Ipoll _ -> [| 22; 32 |]
   | Iintoffloat | Ifloatofint
-  | Iload(Single, _, _) | Istore(Single, _, _) -> [| 23; 31 |]
+  | Iload{memory_chunk=Single; _} | Istore(Single, _, _) -> [| 23; 31 |]
   | _ -> [| 23; 32 |]
 
 (* Layout of the stack *)

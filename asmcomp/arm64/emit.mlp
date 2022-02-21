@@ -35,6 +35,8 @@ let reg_trap_ptr = phys_reg 23 (* x26 *)
 let reg_alloc_ptr = phys_reg 24 (* x27 *)
 let reg_tmp1 = phys_reg 26 (* x16 *)
 let reg_x8 = phys_reg 8 (* x8 *)
+let reg_stack_arg_begin = phys_reg 17  (* x20 *)
+let reg_stack_arg_end  = phys_reg 18 (* x21 *)
 
 (* Output a label *)
 
@@ -460,12 +462,24 @@ module BR = Branch_relaxation.Make (struct
     | Lop (Itailcall_ind) -> epilogue_size f
     | Lop (Itailcall_imm { func; _ }) ->
       if func = f.fun_name then 1 else epilogue_size f
-    | Lop (Iextcall { alloc = false; }) -> 1
-    | Lop (Iextcall { alloc = true; }) -> 3
+    | Lop (Iextcall {alloc; stack_ofs} ) ->
+      if stack_ofs > 0 then 5
+      else if alloc then 3
+      else 5
     | Lop (Istackoffset _) -> 2
-    | Lop (Iload (size, addr, _)) | Lop (Istore (size, addr, _)) ->
-      let based = match addr with Iindexed _ -> 0 | Ibased _ -> 1 in
-      based + begin match size with Single -> 2 | _ -> 1 end
+    | Lop (Iload  { memory_chunk; addressing_mode; is_atomic }) ->
+      let based = match addressing_mode with Iindexed _ -> 0 | Ibased _ -> 1
+      and barrier = if is_atomic then 1 else 0
+      and single = match memory_chunk with Single -> 2 | _ -> 1 in
+      based + barrier + single
+    | Lop (Istore (memory_chunk, addressing_mode, assignment)) ->
+      let based = match addressing_mode with Iindexed _ -> 0 | Ibased _ -> 1
+      and barrier =
+        match memory_chunk, assignment with
+        | (Word_int | Word_val), true -> 1
+        | _ -> 0
+      and single = match memory_chunk with Single -> 2 | _ -> 1 in
+      based + barrier + single
     | Lop (Ialloc _) when f.fun_fast -> 5
     | Lop (Ispecific (Ifar_alloc _)) when f.fun_fast -> 6
     | Lop (Ipoll _) -> 3
@@ -498,6 +512,7 @@ module BR = Branch_relaxation.Make (struct
     | Lop (Ispecific (Ibswap _)) -> 1
     | Lop (Ispecific Imove32) -> 1
     | Lop (Ispecific (Isignext _)) -> 1
+    | Lop (Idls_get) -> 1
     | Lreloadretaddr -> 0
     | Lreturn -> epilogue_size f
     | Llabel _ -> 0
@@ -523,7 +538,7 @@ module BR = Branch_relaxation.Make (struct
     | Lpoptrap -> 1
     | Lraise k ->
       begin match k with
-      | Lambda.Raise_regular -> 2
+      | Lambda.Raise_regular -> 1
       | Lambda.Raise_reraise -> 1
       | Lambda.Raise_notrace -> 4
       end
@@ -711,45 +726,72 @@ let emit_instr env i =
           `	b	{emit_label env.f.fun_tailrec_entry_point_label}\n`
         else
           output_epilogue env (fun () -> `	b	{emit_symbol func}\n`)
-    | Lop(Iextcall { func; alloc = false; }) ->
-        `	bl	{emit_symbol func}\n`
-    | Lop(Iextcall { func; alloc = true; }) ->
-        emit_load_symbol_addr reg_x8 func;
-        `	bl	{emit_symbol "caml_c_call"}\n`;
-        `{record_frame env i.live (Dbg_other i.dbg)}\n`
+    | Lop(Iextcall {func; alloc; stack_ofs}) ->
+        if stack_ofs > 0 then begin
+          ` mov {emit_reg reg_stack_arg_begin}, sp\n`;
+          ` add {emit_reg reg_stack_arg_end}, sp, #{emit_int (Misc.align stack_ofs 16)}\n`;
+          emit_load_symbol_addr reg_x8 func;
+          ` bl  {emit_symbol "caml_c_call_stack_args"}\n`;
+          `{record_frame env i.live (Dbg_other i.dbg)}\n`
+        end else if alloc then begin
+          emit_load_symbol_addr reg_x8 func;
+          ` bl  {emit_symbol "caml_c_call"}\n`;
+          `{record_frame env i.live (Dbg_other i.dbg)}\n`
+        end else begin
+          (* store ocaml stack in the frame pointer register
+             NB: no need to store previous x29 because OCaml frames don't
+             maintain frame pointer *)
+          ` mov x29, sp\n`;
+          let offset = Domainstate.(idx_of_field Domain_c_stack) * 8 in
+          ` ldr {emit_reg reg_tmp1}, [{emit_reg reg_domain_state_ptr}, {emit_int offset}]\n`;
+          ` mov sp, {emit_reg reg_tmp1}\n`;
+          ` bl {emit_symbol func}\n`;
+          ` mov sp, x29\n`
+          (* TODO: CFI for this *)
+        end
     | Lop(Istackoffset n) ->
         assert (n mod 16 = 0);
         emit_stack_adjustment (-n);
         env.stack_offset <- env.stack_offset + n
-    | Lop(Iload(size, addr, _mut)) ->
+    | Lop(Iload { memory_chunk; addressing_mode; is_atomic }) ->
+        assert(memory_chunk = Word_int || memory_chunk = Word_val || is_atomic = false);
         let dst = i.res.(0) in
         let base =
-          match addr with
+          match addressing_mode with
           | Iindexed _ -> i.arg.(0)
           | Ibased(s, ofs) ->
               assert (not !Clflags.dlcode);  (* see selection.ml *)
               `	adrp	{emit_reg reg_tmp1}, {emit_symbol_offset s ofs}\n`;
               reg_tmp1 in
-        begin match size with
+        begin match memory_chunk with
         | Byte_unsigned ->
-            `	ldrb	{emit_wreg dst}, {emit_addressing addr base}\n`
+            `	ldrb	{emit_wreg dst}, {emit_addressing addressing_mode base}\n`
         | Byte_signed ->
-            `	ldrsb	{emit_reg dst}, {emit_addressing addr base}\n`
+            `	ldrsb	{emit_reg dst}, {emit_addressing addressing_mode base}\n`
         | Sixteen_unsigned ->
-            `	ldrh	{emit_wreg dst}, {emit_addressing addr base}\n`
+            `	ldrh	{emit_wreg dst}, {emit_addressing addressing_mode base}\n`
         | Sixteen_signed ->
-            `	ldrsh	{emit_reg dst}, {emit_addressing addr base}\n`
+            `	ldrsh	{emit_reg dst}, {emit_addressing addressing_mode base}\n`
         | Thirtytwo_unsigned ->
-            `	ldr	{emit_wreg dst}, {emit_addressing addr base}\n`
+            `	ldr	{emit_wreg dst}, {emit_addressing addressing_mode base}\n`
         | Thirtytwo_signed ->
-            `	ldrsw	{emit_reg dst}, {emit_addressing addr base}\n`
+            `	ldrsw	{emit_reg dst}, {emit_addressing addressing_mode base}\n`
         | Single ->
-            `	ldr	s7, {emit_addressing addr base}\n`;
+            `	ldr	s7, {emit_addressing addressing_mode base}\n`;
             `	fcvt	{emit_reg dst}, s7\n`
-        | Word_int | Word_val | Double ->
-            `	ldr	{emit_reg dst}, {emit_addressing addr base}\n`
+        | Word_int | Word_val ->
+            if is_atomic then begin
+              assert (addressing_mode = Iindexed 0);
+              ` dmb ishld\n`;
+              `	ldar	{emit_reg dst}, [{emit_reg i.arg.(0)}]\n`
+            end else
+              `	ldr	{emit_reg dst}, {emit_addressing addressing_mode base}\n`
+        | Double ->
+            `	ldr	{emit_reg dst}, {emit_addressing addressing_mode base}\n`
         end
-    | Lop(Istore(size, addr, _)) ->
+    | Lop(Istore(size, addr, assignment)) ->
+        (* NB: assignments other than Word_int and Word_val do not follow the
+        Multicore OCaml memory model and so do not emit a barrier *)
         let src = i.arg.(0) in
         let base =
           match addr with
@@ -768,7 +810,11 @@ let emit_instr env i =
         | Single ->
             `	fcvt	s7, {emit_reg src}\n`;
             `	str	s7, {emit_addressing addr base}\n`;
-        | Word_int | Word_val | Double ->
+        | Word_int | Word_val ->
+            (* memory model barrier for non-initializing store *)
+            if assignment then ` dmb ishld\n`;
+            `	str	{emit_reg src}, {emit_addressing addr base}\n`
+        | Double ->
             `	str	{emit_reg src}, {emit_addressing addr base}\n`
         end
     | Lop(Ialloc { bytes = n; dbginfo }) ->
@@ -890,6 +936,9 @@ let emit_instr env i =
         end
     | Lop(Ispecific(Isignext size)) ->
         `	sbfm	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, #0, #{emit_int (size - 1)}\n`
+    | Lop(Idls_get) ->
+        let offset = Domainstate.(idx_of_field Domain_dls_root) * 8 in
+        ` ldr {emit_reg i.res.(0)}, [{emit_reg reg_domain_state_ptr}, {emit_int offset}]\n`
     | Lreloadretaddr ->
         ()
     | Lreturn ->
@@ -988,12 +1037,10 @@ let emit_instr env i =
     | Lraise k ->
         begin match k with
         | Lambda.Raise_regular ->
-          let offset = Domainstate.(idx_of_field Domain_backtrace_pos) * 8 in
-          `	str	xzr, [{emit_reg reg_domain_state_ptr}, {emit_int offset}]\n`;
           `	bl	{emit_symbol "caml_raise_exn"}\n`;
           `{record_frame env Reg.Set.empty (Dbg_raise i.dbg)}\n`
         | Lambda.Raise_reraise ->
-          `	bl	{emit_symbol "caml_raise_exn"}\n`;
+          `	bl	{emit_symbol "caml_reraise_exn"}\n`;
           `{record_frame env Reg.Set.empty (Dbg_raise i.dbg)}\n`
         | Lambda.Raise_notrace ->
           `	mov	sp, {emit_reg reg_trap_ptr}\n`;
@@ -1021,16 +1068,58 @@ let fundecl fundecl =
   let num_call_gc, num_check_bound =
     num_call_gc_and_check_bound_points env
   in
+
+  (* Dynamic stack checking *)
+  let stack_threshold_size = Config.stack_threshold * 8 in (* bytes *)
+  let { max_frame_size; contains_nontail_calls} =
+    preproc_stack_check
+      ~fun_body:fundecl.fun_body ~frame_size:(frame_size env) ~trap_size:16
+  in
+  let stack_check_size = ref 0 in
+  let handle_overflow = ref None in
+  if contains_nontail_calls || max_frame_size >= stack_threshold_size then begin
+    let overflow = new_label () and ret = new_label () in
+    let threshold_offset = Domainstate.stack_ctx_words * 8 + stack_threshold_size in
+    let f = max_frame_size + threshold_offset in
+    let offset = Domainstate.(idx_of_field Domain_current_stack) * 8 in
+    `  ldr {emit_reg reg_tmp1}, [{emit_reg reg_domain_state_ptr}, #{emit_int offset}]\n`;
+    `  add {emit_reg reg_tmp1}, {emit_reg reg_tmp1}, #{emit_int f}\n`;
+    `  cmp sp, {emit_reg reg_tmp1}\n`;
+    `  bcc {emit_label overflow}\n`;
+    `{emit_label ret}:\n`;
+    handle_overflow := Some (overflow, ret);
+    stack_check_size := 5
+  end;
+
   let max_out_of_line_code_offset =
+    !stack_check_size +
     max_out_of_line_code_offset ~num_call_gc
       ~num_check_bound
   in
+
   BR.relax fundecl ~max_out_of_line_code_offset;
+
   emit_all env fundecl.fun_body;
   List.iter emit_call_gc env.call_gc_sites;
   List.iter emit_call_bound_error env.bound_error_sites;
   assert (List.length env.call_gc_sites = num_call_gc);
   assert (List.length env.bound_error_sites = num_check_bound);
+
+  begin match !handle_overflow with
+  | None -> ()
+  | Some (overflow,ret) -> begin
+      `{emit_label overflow}:\n`;
+      (* Pass the desired frame size on the stack, since all of the
+        argument-passing registers may be in use. *)
+      let s = (Config.stack_threshold + max_frame_size / 8) in
+      `  mov {emit_reg reg_tmp1}, #{emit_int s}\n`;
+      `  stp {emit_reg reg_tmp1}, x30, [sp, #-16]!\n`;
+      `  bl {emit_symbol "caml_call_realloc_stack"}\n`;
+      `  ldp {emit_reg reg_tmp1}, x30, [sp], #16\n`;
+      `  b {emit_label ret}\n`
+    end
+  end;
+
   cfi_endproc();
   emit_symbol_type emit_symbol fundecl.fun_name "function";
   emit_symbol_size fundecl.fun_name;

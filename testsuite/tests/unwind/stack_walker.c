@@ -44,7 +44,9 @@ value ml_perform_stack_walk(value unused) {
               const char* mod_end = strstr(mangled, "__");
               const char* id_begin = strchr(mod_end + 2, '_');
               if (!id_begin) id_begin = mangled + strlen(mangled);
-              printf("%.*s.%.*s\n", mod_end - mangled, mangled, id_begin - (mod_end + 2), mod_end + 2);
+              printf("%.*s.%.*s\n",
+                     (int) (mod_end - mangled), mangled,
+                     (int) (id_begin - (mod_end + 2)), mod_end + 2);
             } else {
               printf("%s\n", procname);
             }

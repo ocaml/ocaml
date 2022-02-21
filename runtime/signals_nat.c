@@ -51,6 +51,7 @@ void caml_garbage_collection(void)
   struct stack_info* stack = Caml_state->current_stack;
 
   sp = (char*)stack->sp;
+  Pop_frame_pointer(sp);
   retaddr = *(uintnat*)sp;
 
   { /* Find the frame descriptor for the current allocation */

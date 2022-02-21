@@ -234,7 +234,9 @@ CAMLexport int caml_atomic_cas_field (
   } else {
     /* need a real CAS */
     atomic_value* p = &Op_atomic_val(obj)[field];
-    if (atomic_compare_exchange_strong(p, &oldval, newval)) {
+    int cas_ret = atomic_compare_exchange_strong(p, &oldval, newval);
+    atomic_thread_fence(memory_order_release); /* generates `dmb ish` on Arm64*/
+    if (cas_ret) {
       write_barrier(obj, field, oldval, newval);
       return 1;
     } else {
@@ -268,6 +270,7 @@ CAMLprim value caml_atomic_exchange (value ref, value v)
     /* See Note [MM] above */
     atomic_thread_fence(memory_order_acquire);
     ret = atomic_exchange(Op_atomic_val(ref), v);
+    atomic_thread_fence(memory_order_release); /* generates `dmb ish` on Arm64*/
   }
   write_barrier(ref, 0, ret, v);
   return ret;
@@ -286,7 +289,9 @@ CAMLprim value caml_atomic_cas (value ref, value oldv, value newv)
     }
   } else {
     atomic_value* p = &Op_atomic_val(ref)[0];
-    if (atomic_compare_exchange_strong(p, &oldv, newv)) {
+    int cas_ret = atomic_compare_exchange_strong(p, &oldv, newv);
+    atomic_thread_fence(memory_order_release); /* generates `dmb ish` on Arm64*/
+    if (cas_ret) {
       write_barrier(ref, 0, oldv, newv);
       return Val_int(1);
     } else {
@@ -307,6 +312,7 @@ CAMLprim value caml_atomic_fetch_add (value ref, value incr)
   } else {
     atomic_value *p = &Op_atomic_val(ref)[0];
     ret = atomic_fetch_add(p, 2*Long_val(incr));
+    atomic_thread_fence(memory_order_release); /* generates `dmb ish` on Arm64*/
   }
   return ret;
 }

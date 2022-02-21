@@ -186,9 +186,9 @@ void caml_get_stack_sp_pc (struct stack_info* stack,
 {
   char* p = (char*)stack->sp;
 
-  p += sizeof(value);
-  *sp = p;
-  *pc = Saved_return_address(*sp);
+  Pop_frame_pointer(p);
+  *pc = *(uintnat*)p; /* ret addr */
+  *sp = p + sizeof(value);
 }
 
 Caml_inline void scan_stack_frames(scanning_action f, void* fdata,
@@ -210,6 +210,7 @@ Caml_inline void scan_stack_frames(scanning_action f, void* fdata,
 next_chunk:
   if (sp == (char*)Stack_high(stack)) return;
 
+  Pop_frame_pointer(sp);
   retaddr = *(uintnat*)sp;
   sp += sizeof(value);
 

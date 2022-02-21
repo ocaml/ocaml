@@ -44,6 +44,12 @@ Working version
 
 ### Code generation and optimizations:
 
+- #10972: ARM64 multicore support: OCaml & C stack separation;
+  dynamic stack size checks; fiber and effects support.
+  (Tom Kelly and Xavier Leroy, review by KC Sivaramakrishnan, Xavier Leroy
+  Guillaume Munch-Maccagnoni, Eduardo Rafael, Stephen Dolan and
+  Gabriel Scherer)
+
 ### Standard library:
 
 - #10742: Use LXM as the pseudo-random number generator for module Random.
