@@ -16,7 +16,7 @@
 (* Hash tables *)
 
 (* We do dynamic hashing, and resize the table and rehash the elements
-   when buckets become too long. *)
+   when the load factor becomes too high. *)
 
 type ('a, 'b) t =
   { mutable size: int;                        (* number of entries *)
