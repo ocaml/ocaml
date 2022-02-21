@@ -1474,7 +1474,8 @@ void caml_reset_young_limit(caml_domain_state * dom_st)
       || dom_st->requested_minor_gc
       || dom_st->requested_major_slice
       || atomic_load_explicit(&dom_st->requested_external_interrupt,
-                              memory_order_relaxed)) {
+                              memory_order_relaxed)
+      || caml_check_pending_signals()) {
     atomic_store_rel(&dom_st->young_limit, (uintnat)-1);
     CAMLassert(caml_check_gc_interrupt(dom_st));
   }

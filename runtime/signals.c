@@ -227,8 +227,7 @@ void caml_request_minor_gc (void)
 
 CAMLexport int caml_check_pending_actions(void)
 {
-  return (Caml_check_gc_interrupt(Caml_state) ||
-          caml_check_pending_signals());
+  return Caml_check_gc_interrupt(Caml_state);
 }
 
 value caml_do_pending_actions_exn(void)
