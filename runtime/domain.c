@@ -1198,7 +1198,7 @@ static void caml_poll_gc_work(void)
       thread.
       */
     CAML_EV_BEGIN(EV_MINOR_FINALIZED);
-    caml_final_do_calls();
+    caml_raise_if_exception(caml_final_do_calls_exn());
     CAML_EV_END(EV_MINOR_FINALIZED);
   }
 
