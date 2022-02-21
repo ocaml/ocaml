@@ -117,6 +117,8 @@ Working version
 - #10864, #10888: restore afl-fuzz mode for sequential programs.
   (Jan Midtgaard, review by Xavier Leroy and Gabriel Scherer)
 
+- #11008: rework GC statistics in the Multicore runtime
+  (Gabriel Scherer, review by Enguerrand Decorne)
 
 ### Build system:
 

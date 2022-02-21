@@ -62,30 +62,6 @@ void caml_add_to_orphaned_ephe_list(struct caml_ephe_info* ephe_info);
 void caml_add_orphaned_finalisers (struct caml_final_info*);
 void caml_final_domain_terminate (caml_domain_state *domain_state);
 
-struct heap_stats {
-  intnat pool_words;
-  intnat pool_max_words;
-  intnat pool_live_words;
-  intnat pool_live_blocks;
-  intnat pool_frag_words;
-  intnat large_words;
-  intnat large_max_words;
-  intnat large_blocks;
-};
-void caml_accum_heap_stats(struct heap_stats* acc, const struct heap_stats* s);
-void caml_remove_heap_stats(struct heap_stats* acc, const struct heap_stats* s);
-
-struct gc_stats {
-  uint64_t minor_words;
-  uint64_t promoted_words;
-  uint64_t major_words;
-  uint64_t minor_collections;
-  uint64_t forced_major_collections;
-  struct heap_stats major_heap;
-};
-void caml_sample_gc_stats(struct gc_stats* buf);
-void caml_sample_gc_collect(caml_domain_state *domain);
-
 /* Forces finalisation of all heap-allocated values,
    disregarding both local and global roots.
 

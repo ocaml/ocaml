@@ -27,6 +27,7 @@
 #include "caml/fiber.h"
 #include "caml/finalise.h"
 #include "caml/globroots.h"
+#include "caml/gc_stats.h"
 #include "caml/memory.h"
 #include "caml/mlvalues.h"
 #include "caml/platform.h"
@@ -907,84 +908,6 @@ static intnat ephe_sweep (caml_domain_state* domain_state, intnat budget)
   return budget;
 }
 
-static struct gc_stats sampled_gc_stats[Max_domains];
-
-void caml_accum_heap_stats(struct heap_stats* acc, const struct heap_stats* h)
-{
-  acc->pool_words += h->pool_words;
-  if (acc->pool_max_words < h->pool_max_words)
-    acc->pool_max_words = h->pool_max_words;
-  acc->pool_live_words += h->pool_live_words;
-  acc->pool_live_blocks += h->pool_live_blocks;
-  acc->pool_frag_words += h->pool_frag_words;
-  acc->large_words += h->large_words;
-  if (acc->large_max_words < h->large_max_words)
-    acc->large_max_words = h->large_max_words;
-  acc->large_blocks += h->large_blocks;
-}
-
-void caml_remove_heap_stats(struct heap_stats* acc, const struct heap_stats* h)
-{
-  acc->pool_words -= h->pool_words;
-  acc->pool_live_words -= h->pool_live_words;
-  acc->pool_live_blocks -= h->pool_live_blocks;
-  acc->pool_frag_words -= h->pool_frag_words;
-  acc->large_words -= h->large_words;
-  acc->large_blocks -= h->large_blocks;
-}
-
-
-void caml_sample_gc_stats(struct gc_stats* buf)
-{
-  int i;
-  intnat pool_max = 0, large_max = 0;
-  int my_id = Caml_state->id;
-  memset(buf, 0, sizeof(*buf));
-
-  for (i=0; i<Max_domains; i++) {
-    struct gc_stats* s = &sampled_gc_stats[i];
-    struct heap_stats* h = &s->major_heap;
-    if (i != my_id) {
-      buf->minor_words += s->minor_words;
-      buf->promoted_words += s->promoted_words;
-      buf->major_words += s->major_words;
-      buf->minor_collections += s->minor_collections;
-      buf->forced_major_collections += s->forced_major_collections;
-    }
-    else {
-      buf->minor_words += Caml_state->stat_minor_words;
-      buf->promoted_words += Caml_state->stat_promoted_words;
-      buf->major_words += Caml_state->stat_major_words;
-      buf->minor_collections += Caml_state->stat_minor_collections;
-      buf->forced_major_collections += s->forced_major_collections;
-      //FIXME handle the case for major heap stats [h]
-    }
-    /* The instantaneous maximum heap size cannot be computed
-       from per-domain statistics, and would be very expensive
-       to maintain directly. Here, we just sum the per-domain
-       maxima, which is statistically dubious.
-
-       FIXME: maybe maintain coarse global maxima? */
-    pool_max += h->pool_max_words;
-    large_max += h->large_max_words;
-    caml_accum_heap_stats(&buf->major_heap, h);
-  }
-  buf->major_heap.pool_max_words = pool_max;
-  buf->major_heap.large_max_words = large_max;
-}
-
-/* update GC stats for this given domain */
-inline void caml_sample_gc_collect(caml_domain_state* domain)
-{
-  struct gc_stats* stats = &sampled_gc_stats[domain->id];
-
-  stats->minor_words = domain->stat_minor_words;
-  stats->promoted_words = domain->stat_promoted_words;
-  stats->major_words = domain->stat_major_words;
-  stats->minor_collections = domain->stat_minor_collections;
-  stats->forced_major_collections = domain->stat_forced_major_collections;
-  caml_sample_heap_stats(domain->shared_heap, &stats->major_heap);
-}
 
 static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
                                        int participating_count,
@@ -1022,10 +945,10 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
         struct gc_stats s;
         intnat heap_words, not_garbage_words, swept_words;
 
-        caml_sample_gc_stats(&s);
-        heap_words = s.major_heap.pool_words + s.major_heap.large_words;
-        not_garbage_words = s.major_heap.pool_live_words
-                            + s.major_heap.large_words;
+        caml_compute_gc_stats(&s);
+        heap_words = s.heap_stats.pool_words + s.heap_stats.large_words;
+        not_garbage_words = s.heap_stats.pool_live_words
+                            + s.heap_stats.large_words;
         swept_words = domain->swept_words;
         caml_gc_log ("heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d "
                       "not_garbage_words %"ARCH_INTNAT_PRINTF_FORMAT"d "

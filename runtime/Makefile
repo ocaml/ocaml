@@ -39,6 +39,7 @@ COMMON_C_SOURCES := $(addsuffix .c, \
   finalise \
   floats \
   gc_ctrl \
+  gc_stats \
   globroots \
   hash \
   intern \

@@ -150,9 +150,11 @@ void caml_teardown_shared_heap(struct caml_heap_state* heap) {
               released, released_large);
 }
 
-void caml_sample_heap_stats(struct caml_heap_state* local, struct heap_stats* h)
+void caml_collect_heap_stats_sample(
+  struct caml_heap_state* local,
+  struct heap_stats* sample)
 {
-  *h = local->stats;
+  *sample = local->stats;
 }
 
 
@@ -253,6 +255,19 @@ static intnat pool_sweep(struct caml_heap_state* local,
                          sizeclass sz ,
                          int release_to_global_pool);
 
+/* The stats for an adopted pool are moved from the free pool stats to
+   the heap stats of the adopting domain. */
+static void pool_global_adopt_stats(struct caml_heap_state* local,
+                                    pool *r,
+                                    sizeclass sz)
+{
+    struct heap_stats pool_stats = { 0 };
+
+    calc_pool_stats(r, sz, &pool_stats);
+    caml_accum_heap_stats(&local->stats, &pool_stats);
+    caml_remove_heap_stats(&pool_freelist.stats, &pool_stats);
+}
+
 /* Adopt pool from the pool_freelist avail and full pools
    to satisfy an alloction */
 static pool* pool_global_adopt(struct caml_heap_state* local, sizeclass sz)
@@ -271,10 +286,10 @@ static pool* pool_global_adopt(struct caml_heap_state* local, sizeclass sz)
     r = pool_freelist.global_avail_pools[sz];
 
     if( r ) {
-      struct heap_stats tmp_stats = { 0 };
       pool_freelist.global_avail_pools[sz] = r->next;
       r->next = 0;
       local->avail_pools[sz] = r;
+      pool_global_adopt_stats(local, r, sz);
 
       #ifdef DEBUG
       {
@@ -286,37 +301,22 @@ static pool* pool_global_adopt(struct caml_heap_state* local, sizeclass sz)
       }
       #endif
 
-      calc_pool_stats(r, sz, &tmp_stats);
-      caml_accum_heap_stats(&local->stats, &tmp_stats);
-      caml_remove_heap_stats(&pool_freelist.stats, &tmp_stats);
-
-      if (local->stats.pool_words > local->stats.pool_max_words)
-        local->stats.pool_max_words = local->stats.pool_words;
     }
   }
 
   /* There were no global avail pools, so let's adopt one of the full ones and
      try our luck sweeping it later on */
   if( !r ) {
-    struct heap_stats tmp_stats = { 0 };
-
     r = pool_freelist.global_full_pools[sz];
 
     if( r ) {
       pool_freelist.global_full_pools[sz] = r->next;
       r->next = local->full_pools[sz];
       local->full_pools[sz] = r;
-
-      calc_pool_stats(r, sz, &tmp_stats);
-      caml_accum_heap_stats(&local->stats, &tmp_stats);
-      caml_remove_heap_stats(&pool_freelist.stats, &tmp_stats);
+      pool_global_adopt_stats(local, r, sz);
 
       adopted_pool = 1;
       r = 0; // this pool is full
-
-      if (local->stats.pool_words > local->stats.pool_max_words) {
-        local->stats.pool_max_words = local->stats.pool_words;
-      }
     }
   }
 
@@ -587,6 +587,8 @@ uintnat caml_heap_size(struct caml_heap_state* local) {
 }
 
 uintnat caml_top_heap_words(struct caml_heap_state* local) {
+  /* FIXME: summing two maximums computed at different points in time
+     returns an incorrect result. */
   return local->stats.pool_max_words + local->stats.large_max_words;
 }
 
