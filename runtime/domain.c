@@ -346,10 +346,50 @@ asize_t caml_norm_minor_heap_size (intnat wsize)
   return Wsize_bsize(bs);
 }
 
+/* The current minor heap layout is as follows:
+
+- A contiguous memory block of size [Minor_heap_max * Max_domains]
+  is reserved by [caml_init_domains]. The boundaries of this
+  reserved area are stored in the globals
+    [caml_minor_heaps_base]
+  and
+    [caml_minor_heaps_base_end}.
+
+- Each domain gets a reserved section of this block of size
+  [Minor_heap_max], whose boundaries are stored as
+    [domain_self->minor_heap_base]
+  and
+    [domain_self->minor_heap_base_end]
+
+- Each domain then commits a segment of size
+    [domain_state->minor_heap_wsz]
+  starting at
+    [domain_state->minor_heap_base]
+  that it actually uses.
+
+  This is done below in
+    [caml_reallocate_minor_heap]
+  which is called both at domain-initialization (by [create_domain])
+  and if a request comes to change the minor heap size.
+
+  The boundaries of this committed memory area are
+    [domain_state->young_start]
+  and
+    [domain_state->young_end].
+*/
 int caml_reallocate_minor_heap(asize_t wsize)
 {
   caml_domain_state* domain_state = Caml_state;
   CAMLassert(domain_state->young_ptr == domain_state->young_end);
+
+  CAMLassert(
+    (/* unitialized minor heap */
+      domain_state->young_start == NULL
+      && domain_state->young_end == NULL)
+    ||
+    (/* initialized minor heap */
+      domain_state->young_start == (value*)domain_self->minor_heap_area
+      && domain_state->young_end < (value*)domain_self->minor_heap_area_end));
 
   /* free old minor heap.
      instead of unmapping the heap, we decommit it, so there's
@@ -482,8 +522,10 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
     goto init_signal_stack_failure;
   }
 
-  domain_state->young_start = domain_state->young_end =
-    domain_state->young_ptr = 0;
+  domain_state->young_start =
+    domain_state->young_end =
+    domain_state->young_ptr = NULL;
+
   domain_state->minor_tables = caml_alloc_minor_tables();
   if(domain_state->minor_tables == NULL) {
     goto alloc_minor_tables_failure;
