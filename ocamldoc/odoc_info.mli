@@ -850,11 +850,6 @@ val text_string_of_text : text -> string
 *)
 val info_of_string : string -> info
 
-(** [info_string_of_info info] returns the string representing
-   the given [info]. This string can then be parsed again
-   by {!Odoc_info.info_of_string}.*)
-val info_string_of_info : info -> string
-
 (** [info_of_comment_file file] parses the given file
    and return an {!Odoc_info.info} structure. The content of the
    file must have the same syntax as the content of a special comment.
