@@ -477,6 +477,11 @@ OCaml 4.14.0
 - #10907, #10959: Wrong type inferred from existential types
   (Jacques Garrigue and Gabriel Scherer, report by @dyzsr, review by Leo White)
 
+- #10688: Move frame descriptor table from `rodata` to `data` section on
+  RISC-V.  Improves support for building DLLs and PIEs. In particular, this
+  applies to all binaries in distributions that build PIEs by default (eg
+  Gentoo and Alpine).
+  (Alex Fan, review by Gabriel Scherer)
 
 OCaml 4.13 maintenance branch
 -----------------------------
