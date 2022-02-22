@@ -553,8 +553,8 @@ class texi =
                    then ( linebreak ::
                           self#text_of_return_opt info.i_return_value )
                    else [] ;
-                   self#text_of_custom info.i_custom ;
                    self#text_of_alerts info.i_alerts ;
+                   self#text_of_custom info.i_custom ;
                  ] in
           if block
           then [ Block t ]

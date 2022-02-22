@@ -774,8 +774,8 @@ class virtual info =
           self#html_of_raised_exceptions b' info.M.i_raised_exceptions;
           self#html_of_return_opt b' info.M.i_return_value;
           self#html_of_sees b' info.M.i_sees;
-          self#html_of_custom b' info.M.i_custom;
           self#html_of_alerts b' info.M.i_alerts;
+          self#html_of_custom b' info.M.i_custom;
           if Buffer.length b' > 0 then
             begin
               bs b "<ul class=\"info-attributes\">\n";

@@ -245,8 +245,8 @@ class virtual info =
                 self#str_man_of_return_opt info.M.i_return_value;
                 self#str_man_of_sees info.M.i_sees;
               ]
-              @ self#str_man_of_custom info.M.i_custom
               @ self#str_man_of_alerts info.M.i_alerts
+              @ self#str_man_of_custom info.M.i_custom
           in
           let l = List.filter ((<>) "") l in
           Buffer.add_string b (String.concat "\n.sp\n" l)

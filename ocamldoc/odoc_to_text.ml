@@ -179,8 +179,8 @@ class virtual info =
             (self#text_of_raised_exceptions info.i_raised_exceptions) @
             (self#text_of_return_opt info.i_return_value) @
             (self#text_of_sees info.i_sees) @
-            (self#text_of_custom info.i_custom) @
-            (self#text_of_alerts info.i_alerts)
+            (self#text_of_alerts info.i_alerts) @
+            (self#text_of_custom info.i_custom)
           in
           if block then
             [Block t]
