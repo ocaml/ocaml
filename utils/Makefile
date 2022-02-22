@@ -77,7 +77,6 @@ config.ml: config.mlp $(ROOTDIR)/Makefile.config Makefile
 	    $(call SUBST_STRING,RPATH) \
 	    $(call SUBST_STRING,MKSHAREDLIBRPATH) \
 	    $(call SUBST,WINDOWS_UNICODE) \
-	    $(call SUBST,NAKED_POINTERS) \
 	    $(call SUBST,SUPPORTS_SHARED_LIBRARIES) \
 	    $(call SUBST,SYSTEM) \
 	    $(call SUBST,SYSTHREAD_SUPPORT) \

@@ -84,7 +84,7 @@ let with_cmm_invariants = %%WITH_CMM_INVARIANTS%%
 let safe_string = true
 let default_safe_string = true
 let windows_unicode = %%WINDOWS_UNICODE%% != 0
-let naked_pointers = %%NAKED_POINTERS%%
+let naked_pointers = false
 let force_instrumented_runtime = %%FORCE_INSTRUMENTED_RUNTIME%%
 
 let flat_float_array = %%FLAT_FLOAT_ARRAY%%

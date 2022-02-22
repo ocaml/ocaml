@@ -118,6 +118,3 @@ val function_sections : bool
 
 val instrumented_runtime : bool
 (** Whether the instrumented runtime is available *)
-
-val naked_pointers : bool
-(** Whether the runtime system supports naked pointers outside the heap *)

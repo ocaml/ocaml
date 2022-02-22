@@ -259,8 +259,9 @@ AC_ARG_ENABLE([instrumented-runtime],
   [enable_instrumented_runtime=auto])
 
 AC_ARG_ENABLE([vmthreads], [],
-  [AC_MSG_ERROR([The vmthreads library is no longer available. \
-It was deleted in OCaml 4.09.])],
+  [AS_IF([test "x$enableval" != 'xno'],
+    [AC_MSG_ERROR(m4_normalize([The vmthreads library is no longer available.
+      It was deleted in OCaml 4.09.]))])],
   [])
 
 AC_ARG_ENABLE([systhreads],
@@ -268,9 +269,10 @@ AC_ARG_ENABLE([systhreads],
     [disable the Win32/POSIX threads library])])
 
 AC_ARG_ENABLE([graph-lib], [],
-  [AC_MSG_ERROR([The graphics library is no longer distributed with OCaml \
-since version 4.09. It is now distributed as a separate "graphics" package: \
-https://github.com/ocaml/graphics])],
+  [AS_IF([test "x$enableval" != 'xno'],
+    [AC_MSG_ERROR(m4_normalize([The graphics library is no longer distributed
+      with OCaml since version 4.09. It is now distributed as a separate
+      "graphics" package: https://github.com/ocaml/graphics]))])],
   [])
 
 AC_ARG_ENABLE([str-lib],
@@ -282,8 +284,9 @@ AC_ARG_ENABLE([unix-lib],
     [do not build the unix library])])
 
 AC_ARG_ENABLE([bigarray-lib], [],
-  [AC_MSG_ERROR([The bigarray-lib option was deleted in OCaml 5.00, \
-as the Bigarray module is now part of the standard library.])],
+  [AS_IF([test "x$enableval" != 'xno'],
+    [AC_MSG_ERROR(m4_normalize([The bigarray-lib option was deleted in OCaml
+      5.00, as the Bigarray module is now part of the standard library.]))])],
   [])
 
 AC_ARG_ENABLE([ocamldoc],
@@ -310,11 +313,18 @@ AC_ARG_ENABLE([frame-pointers],
     [use frame pointers in runtime and generated code])])
 
 AC_ARG_ENABLE([naked-pointers], [],
-  [AC_MSG_ERROR([Naked pointers are not allowed in OCaml Multicore.])],
-  [AC_DEFINE([NO_NAKED_POINTERS])])
+  [AS_IF([test "x$enableval" != 'xno'],
+    [AC_MSG_ERROR([Naked pointers were prohibited in OCaml 5.00.])])],
+  [])
+
+AC_ARG_ENABLE([naked-pointers-checker], [],
+  [AS_IF([test "x$enableval" != 'xno'],
+    [AC_MSG_ERROR([The naked pointers checker was removed in OCaml 5.00.])])],
+  [])
 
 AC_ARG_ENABLE([spacetime], [],
-  [AC_MSG_ERROR([spacetime profiling was deleted in OCaml 4.12.])],
+  [AS_IF([test "x$enableval" != 'xno'],
+    [AC_MSG_ERROR([spacetime profiling was deleted in OCaml 4.12.])])],
   [])
 
 AC_ARG_ENABLE([cfi],

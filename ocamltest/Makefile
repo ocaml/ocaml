@@ -272,7 +272,6 @@ ocamltest_config.ml: ocamltest_config.ml.in Makefile ../Makefile.config
 	    $(call SUBST,CCOMPTYPE) \
 	    $(call SUBST,WINDOWS_UNICODE) \
 	    $(call SUBST,FUNCTION_SECTIONS) \
-	    $(call SUBST,NAKED_POINTERS) \
 	    $< > $@
 
 # Manual

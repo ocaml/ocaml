@@ -900,6 +900,7 @@ enable_ocamltest
 enable_native_toplevel
 enable_frame_pointers
 enable_naked_pointers
+enable_naked_pointers_checker
 enable_spacetime
 enable_cfi
 enable_imprecise_c99_float_ops
@@ -3179,8 +3180,9 @@ fi
 
 # Check whether --enable-vmthreads was given.
 if test "${enable_vmthreads+set}" = set; then :
-  enableval=$enable_vmthreads; as_fn_error $? "The vmthreads library is no longer available. \
-It was deleted in OCaml 4.09." "$LINENO" 5
+  enableval=$enable_vmthreads; if test "x$enableval" != 'xno'; then :
+  as_fn_error $? "The vmthreads library is no longer available. It was deleted in OCaml 4.09." "$LINENO" 5
+fi
 fi
 
 
@@ -3192,9 +3194,9 @@ fi
 
 # Check whether --enable-graph-lib was given.
 if test "${enable_graph_lib+set}" = set; then :
-  enableval=$enable_graph_lib; as_fn_error $? "The graphics library is no longer distributed with OCaml \
-since version 4.09. It is now distributed as a separate \"graphics\" package: \
-https://github.com/ocaml/graphics" "$LINENO" 5
+  enableval=$enable_graph_lib; if test "x$enableval" != 'xno'; then :
+  as_fn_error $? "The graphics library is no longer distributed with OCaml since version 4.09. It is now distributed as a separate \"graphics\" package: https://github.com/ocaml/graphics" "$LINENO" 5
+fi
 fi
 
 
@@ -3212,8 +3214,9 @@ fi
 
 # Check whether --enable-bigarray-lib was given.
 if test "${enable_bigarray_lib+set}" = set; then :
-  enableval=$enable_bigarray_lib; as_fn_error $? "The bigarray-lib option was deleted in OCaml 5.00, \
-as the Bigarray module is now part of the standard library." "$LINENO" 5
+  enableval=$enable_bigarray_lib; if test "x$enableval" != 'xno'; then :
+  as_fn_error $? "The bigarray-lib option was deleted in OCaml 5.00, as the Bigarray module is now part of the standard library." "$LINENO" 5
+fi
 fi
 
 
@@ -3253,16 +3256,25 @@ fi
 
 # Check whether --enable-naked-pointers was given.
 if test "${enable_naked_pointers+set}" = set; then :
-  enableval=$enable_naked_pointers; as_fn_error $? "Naked pointers are not allowed in OCaml Multicore." "$LINENO" 5
-else
-  $as_echo "#define NO_NAKED_POINTERS 1" >>confdefs.h
+  enableval=$enable_naked_pointers; if test "x$enableval" != 'xno'; then :
+  as_fn_error $? "Naked pointers were prohibited in OCaml 5.00." "$LINENO" 5
+fi
+fi
 
+
+# Check whether --enable-naked-pointers-checker was given.
+if test "${enable_naked_pointers_checker+set}" = set; then :
+  enableval=$enable_naked_pointers_checker; if test "x$enableval" != 'xno'; then :
+  as_fn_error $? "The naked pointers checker was removed in OCaml 5.00." "$LINENO" 5
+fi
 fi
 
 
 # Check whether --enable-spacetime was given.
 if test "${enable_spacetime+set}" = set; then :
-  enableval=$enable_spacetime; as_fn_error $? "spacetime profiling was deleted in OCaml 4.12." "$LINENO" 5
+  enableval=$enable_spacetime; if test "x$enableval" != 'xno'; then :
+  as_fn_error $? "spacetime profiling was deleted in OCaml 4.12." "$LINENO" 5
+fi
 fi
 
 

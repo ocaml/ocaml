@@ -33,8 +33,7 @@ external reachable_words : t -> int = "caml_obj_reachable_words"
   (**
      Computes the total size (in words, including the headers) of all
      heap blocks accessible from the argument.  Statically
-     allocated blocks are excluded, unless the runtime system
-     was configured with [--disable-naked-pointers].
+     allocated blocks are included.
 
      @since 4.04
   *)
