@@ -830,6 +830,12 @@ module Analyser =
             in
             let name = Name.parens_if_infix name_pre.txt in
             let subst_typ = Odoc_env.subst_type env type_expr in
+            let (maybe_more, info_after_opt) =
+              My_ir.just_after_special
+                !file_name
+                (get_string_of_file pos_end_ele pos_limit)
+            in
+            let comment_opt = merge_infos comment_opt info_after_opt in
             let comment_opt = analyze_alerts comment_opt value_desc.Parsetree.pval_attributes in
             let v =
               {
@@ -842,12 +848,6 @@ module Analyser =
                 val_loc = { loc_impl = None ; loc_inter = Some sig_item_loc } ;
               }
             in
-            let (maybe_more, info_after_opt) =
-              My_ir.just_after_special
-                !file_name
-                (get_string_of_file pos_end_ele pos_limit)
-            in
-            v.val_info <- merge_infos v.val_info info_after_opt ;
             (* update the parameter description *)
             Odoc_value.update_value_parameters_text v;
 

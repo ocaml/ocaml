@@ -72,7 +72,6 @@
 
 <pre><span id="VALg"><span class="keyword">val</span> g</span> : <code class="type">int</code></pre><div class="info ">
 <div class="info-deprecated">
-<span class="warning">Deprecated. </span>foo
-bar</div>
+<span class="warning">Deprecated. </span>bar</div>
 </div>
 </body></html>
