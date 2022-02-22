@@ -109,7 +109,7 @@ let at_most_one_element x = match x with
 It is also possible to copy the components of a module inside
 another module by using an "include" statement. This can be
 particularly useful to extend existing modules. As an illustration,
-we could add functions that returns an optional value rather than
+we could add functions that return an optional value rather than
 an exception when the priority queue is empty.
 \begin{caml_example}{toplevel}
 module PrioQueueOpt =
