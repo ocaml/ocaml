@@ -152,12 +152,10 @@ module Stdlib : sig
 
   module Array : sig
     val exists2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
-    (* Same as [Array.exists], but for a two-argument predicate. Raise
-       Invalid_argument if the two arrays are determined to have
-       different lengths. *)
+    (** Same as [Array.exists2] from the standard library. *)
 
     val for_alli : (int -> 'a -> bool) -> 'a array -> bool
-    (** Same as {!Array.for_all}, but the
+    (** Same as [Array.for_all] from the standard library, but the
         function is applied with the index of the element as first argument,
         and the element itself as second argument. *)
 

@@ -214,6 +214,10 @@ OCaml 4.14.0
 - #10281, #10685: Add description of C compiler on macOS and Windows platforms.
   (Dong An, review by Xavier Leroy and David Allsopp)
 
+- #10397: Document exceptions raised by Unix module functions on Windows
+  (Martin Jambon, review by Daniel Bünzli, David Alsopp, Damien Doligez,
+   Xavier Leroy, and Florian Angeletti)
+
 - #10589: Fix many typos (excess/inconsistent spaces) in the HTML manual.
   (Wiktor Kuchta, review by Florian Angeletti)
 
@@ -258,6 +262,9 @@ OCaml 4.14.0
   are always reused in the following portion of the trace and also removes
   spurious `as 'a`s in types.
   (Antal Spector-Zabusky, review by Florian Angeletti)
+
+- #10794: Clarify warning 57 (Ambiguous or-pattern variables under guard)
+  (Wiktor Kuchta, review by Gabriel Scherer)
 
 ### Internal/compiler-libs changes:
 
@@ -378,6 +385,11 @@ OCaml 4.14.0
 - #10828 Build native-code compilers on OpenBSD/aarch64
   (Christopher Zimmermann)
 
+- #10835 Disable DT_TEXTREL warnings on x86 32 bit architecture by passing
+  -Wl,-z,notext in mksharedlib and mkmaindll. Fixes relocation issues, reported
+  in #9800, making local patches in Debian, Alpine, and FreeBSD superfluous.
+  (Hannes Mehnert with Kate Deplaix and Stéphane Glondu, review by Xavier Leroy)
+
 - #10717: Simplify the installation of man pages
   (Sébastien Hinderer, review by David Allsopp)
 
@@ -464,6 +476,12 @@ OCaml 4.14.0
 
 - #10907, #10959: Wrong type inferred from existential types
   (Jacques Garrigue and Gabriel Scherer, report by @dyzsr, review by Leo White)
+
+- #10688: Move frame descriptor table from `rodata` to `data` section on
+  RISC-V.  Improves support for building DLLs and PIEs. In particular, this
+  applies to all binaries in distributions that build PIEs by default (eg
+  Gentoo and Alpine).
+  (Alex Fan, review by Gabriel Scherer)
 
 - #11031: Exception handlers restore the rbp register when using frame-pointers
   on amd64.

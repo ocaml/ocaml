@@ -966,17 +966,24 @@ let message = function
   | Inlining_impossible reason ->
       Printf.sprintf "Cannot inline: %s" reason
   | Ambiguous_var_in_pattern_guard vars ->
-      let msg =
-        let vars = List.sort String.compare vars in
+      let vars = List.sort String.compare vars in
+      let vars_explanation =
+        let in_different_places =
+          "in different places in different or-pattern alternatives"
+        in
         match vars with
         | [] -> assert false
-        | [x] -> "variable " ^ x
+        | [x] -> "variable " ^ x ^ " appears " ^ in_different_places
         | _::_ ->
-            "variables " ^ String.concat "," vars in
+            let vars = String.concat ", " vars in
+            "variables " ^ vars ^ " appear " ^ in_different_places
+      in
       Printf.sprintf
         "Ambiguous or-pattern variables under guard;\n\
-         %s may match different arguments. %t"
-        msg ref_manual_explanation
+         %s.\n\
+         Only the first match will be used to evaluate the guard expression.\n\
+         %t"
+        vars_explanation ref_manual_explanation
   | No_cmx_file name ->
       Printf.sprintf
         "no cmx file was found in path for module %s, \

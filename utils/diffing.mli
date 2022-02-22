@@ -1,4 +1,3 @@
-
 (**************************************************************************)
 (*                                                                        *)
 (*                                 OCaml                                  *)
@@ -14,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** {0 Parametric diffing}
+(** Parametric diffing
 
     This module implements diffing over lists of arbitrary content.
     It is parameterized by

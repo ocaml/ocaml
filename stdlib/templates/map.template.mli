@@ -220,7 +220,7 @@ module type S =
     (** Return the list of all bindings of the given map.
        The returned list is sorted in increasing order of keys with respect
        to the ordering [Ord.compare], where [Ord] is the argument
-       given to {!Make}.
+       given to {!Stdlib.Map.Make}.
         @since 3.12.0
      *)
 
@@ -239,13 +239,13 @@ module type S =
      *)
 
     val max_binding: 'a t -> (key * 'a)
-    (** Same as {!S.min_binding}, but returns the binding with
+    (** Same as {!min_binding}, but returns the binding with
         the largest key in the given map.
         @since 3.12.0
      *)
 
     val max_binding_opt: 'a t -> (key * 'a) option
-    (** Same as {!S.min_binding_opt}, but returns the binding with
+    (** Same as {!min_binding_opt}, but returns the binding with
         the largest key in the given map.
         @since 4.05
      *)
@@ -328,7 +328,7 @@ module type S =
        with respect to the ordering over the type of the keys. *)
 
     val mapi: f:(key -> 'a -> 'b) -> 'a t -> 'b t
-    (** Same as {!S.map}, but the function receives as arguments both the
+    (** Same as {!map}, but the function receives as arguments both the
        key and the associated value for each binding of the map. *)
 
     (** {1 Maps and Sequences} *)
