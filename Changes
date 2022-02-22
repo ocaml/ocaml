@@ -135,6 +135,12 @@ Working version
 
 ### Bug fixes:
 
+- #10688: Move frame descriptor table from `rodata` to `data` section on
+  RISC-V.  Improves support for building DLLs and PIEs. In particular, this
+  applies to all binaries in distributions that build PIEs by default (eg
+  Gentoo and Alpine).
+  (Alex Fan, review by Gabriel Scherer)
+
 - #11025: Do not pass -no-pie to the C compiler on musl/arm64
   (omni and Kate Deplaix, review by Xavier Leroy)
 
