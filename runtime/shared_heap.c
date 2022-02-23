@@ -209,7 +209,7 @@ static void calc_pool_stats(pool* a, sizeclass sz, struct heap_stats* s) {
   s->pool_frag_words += Wsize_bsize(POOL_HEADER_SZ);
 
   while (p + wh <= end) {
-    header_t hd = (header_t)atomic_load_explicit((atomic_uint*)p,
+    header_t hd = (header_t)atomic_load_explicit((atomic_uintnat*)p,
                                                   memory_order_relaxed);
     if (hd) {
       s->pool_live_words += Whsize_hd(hd);
