@@ -290,27 +290,27 @@ int code_of_unix_error (value error)
 
 void unix_error(int errcode, const char *cmdname, value cmdarg)
 {
+  CAMLparam0();
+  CAMLlocal3(name, err, arg);
   value res;
-  value name = Val_unit, err = Val_unit, arg = Val_unit;
   int errconstr;
 
-  Begin_roots3 (name, err, arg);
-    arg = cmdarg == Nothing ? caml_copy_string("") : cmdarg;
-    name = caml_copy_string(cmdname);
-    err = unix_error_of_code (errcode);
-    if (unix_error_exn == NULL) {
-      unix_error_exn = caml_named_value("Unix.Unix_error");
-      if (unix_error_exn == NULL)
-        caml_invalid_argument("Exception Unix.Unix_error not initialized,"
-                         " please link unix.cma");
-    }
-    res = caml_alloc_small(4, 0);
-    Field(res, 0) = *unix_error_exn;
-    Field(res, 1) = err;
-    Field(res, 2) = name;
-    Field(res, 3) = arg;
-  End_roots();
+  arg = cmdarg == Nothing ? caml_copy_string("") : cmdarg;
+  name = caml_copy_string(cmdname);
+  err = unix_error_of_code (errcode);
+  if (unix_error_exn == NULL) {
+    unix_error_exn = caml_named_value("Unix.Unix_error");
+    if (unix_error_exn == NULL)
+      caml_invalid_argument("Exception Unix.Unix_error not initialized,"
+                       " please link unix.cma");
+  }
+  res = caml_alloc_small(4, 0);
+  Field(res, 0) = *unix_error_exn;
+  Field(res, 1) = err;
+  Field(res, 2) = name;
+  Field(res, 3) = arg;
   caml_raise(res);
+  CAMLnoreturn;
 }
 
 void uerror(const char * cmdname, value cmdarg)

@@ -41,7 +41,9 @@
 
 static value alloc_process_status(int pid, int status)
 {
-  value st, res;
+  CAMLparam0();
+  CAMLlocal1(st);
+  value res;
 
   // status is undefined when pid is zero so we set a default value.
   if (pid == 0) status = 0;
@@ -58,12 +60,10 @@ static value alloc_process_status(int pid, int status)
     st = caml_alloc_small(1, TAG_WSIGNALED);
     Field(st, 0) = Val_int(caml_rev_convert_signal_number(WTERMSIG(status)));
   }
-  Begin_root (st);
-    res = caml_alloc_small(2, 0);
-    Field(res, 0) = Val_int(pid);
-    Field(res, 1) = st;
-  End_roots();
-  return res;
+  res = caml_alloc_small(2, 0);
+  Field(res, 0) = Val_int(pid);
+  Field(res, 1) = st;
+  CAMLreturn(res);
 }
 
 CAMLprim value unix_wait(value unit)

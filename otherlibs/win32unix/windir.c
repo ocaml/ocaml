@@ -25,34 +25,32 @@
 
 CAMLprim value win_findfirst(value name)
 {
+  CAMLparam0();
+  CAMLlocal2(valname, valh);
   HANDLE h;
   value v;
   WIN32_FIND_DATAW fileinfo;
-  value valname = Val_unit;
-  value valh = Val_unit;
   wchar_t * wname;
 
   caml_unix_check_path(name, "opendir");
-  Begin_roots2 (valname,valh);
-    wname = caml_stat_strdup_to_utf16(String_val(name));
-    h = FindFirstFile(wname,&fileinfo);
-    caml_stat_free(wname);
-    if (h == INVALID_HANDLE_VALUE) {
-      DWORD err = GetLastError();
-      if (err == ERROR_NO_MORE_FILES)
-        caml_raise_end_of_file();
-      else {
-        win32_maperr(err);
-        uerror("opendir", Nothing);
-      }
+  wname = caml_stat_strdup_to_utf16(String_val(name));
+  h = FindFirstFile(wname,&fileinfo);
+  caml_stat_free(wname);
+  if (h == INVALID_HANDLE_VALUE) {
+    DWORD err = GetLastError();
+    if (err == ERROR_NO_MORE_FILES)
+      caml_raise_end_of_file();
+    else {
+      win32_maperr(err);
+      uerror("opendir", Nothing);
     }
-    valname = caml_copy_string_of_utf16(fileinfo.cFileName);
-    valh = win_alloc_handle(h);
-    v = caml_alloc_small(2, 0);
-    Field(v,0) = valname;
-    Field(v,1) = valh;
-  End_roots();
-  return v;
+  }
+  valname = caml_copy_string_of_utf16(fileinfo.cFileName);
+  valh = win_alloc_handle(h);
+  v = caml_alloc_small(2, 0);
+  Field(v,0) = valname;
+  Field(v,1) = valh;
+  CAMLreturn(v);
 }
 
 CAMLprim value win_findnext(value valh)

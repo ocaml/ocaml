@@ -177,6 +177,9 @@ unix_getsockopt_aux(char * name,
                     enum option_type ty, int level, int option,
                     value socket)
 {
+  CAMLparam0();
+  CAMLlocal1(err);
+  value res;
   union option_value optval;
   socklen_param_type optsize;
 
@@ -200,32 +203,29 @@ unix_getsockopt_aux(char * name,
 
   switch (ty) {
   case TYPE_BOOL:
-    return Val_bool(optval.i);
+    res = Val_bool(optval.i);
   case TYPE_INT:
-    return Val_int(optval.i);
+    res = Val_int(optval.i);
   case TYPE_LINGER:
     if (optval.lg.l_onoff == 0) {
-      return Val_none;
+      res = Val_none;
     } else {
-      return caml_alloc_some(Val_int(optval.lg.l_linger));
+      res = caml_alloc_some(Val_int(optval.lg.l_linger));
     }
   case TYPE_TIMEVAL:
-    return caml_copy_double((double) optval.tv.tv_sec
-                       + (double) optval.tv.tv_usec / 1e6);
+    res = caml_copy_double((double) optval.tv.tv_sec
+                           + (double) optval.tv.tv_usec / 1e6);
   case TYPE_UNIX_ERROR:
     if (optval.i == 0) {
-      return Val_none;
+      res = Val_none;
     } else {
-      value err, res;
       err = unix_error_of_code(optval.i);
-      Begin_root(err);
-        res = caml_alloc_some(err);
-      End_roots();
-      return res;
+      res = caml_alloc_some(err);
     }
   default:
     unix_error(EINVAL, name, Nothing);
   }
+  CAMLreturn(res);
 }
 
 CAMLexport value

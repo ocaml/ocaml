@@ -22,9 +22,11 @@
 
 CAMLprim value unix_accept(value cloexec, value sock)
 {
+  CAMLparam0();
+  CAMLlocal2(fd, adr);
   SOCKET sconn = Socket_val(sock);
   SOCKET snew;
-  value fd = Val_unit, adr = Val_unit, res;
+  value res;
   union sock_addr_union addr;
   socklen_param_type addr_len;
   DWORD err = 0;
@@ -39,12 +41,10 @@ CAMLprim value unix_accept(value cloexec, value sock)
     uerror("accept", Nothing);
   }
   win_set_cloexec((HANDLE) snew, cloexec);
-  Begin_roots2 (fd, adr)
-    fd = win_alloc_socket(snew);
-    adr = alloc_sockaddr(&addr, addr_len, snew);
-    res = caml_alloc_small(2, 0);
-    Field(res, 0) = fd;
-    Field(res, 1) = adr;
-  End_roots();
-  return res;
+  fd = win_alloc_socket(snew);
+  adr = alloc_sockaddr(&addr, addr_len, snew);
+  res = caml_alloc_small(2, 0);
+  Field(res, 0) = fd;
+  Field(res, 1) = adr;
+  CAMLreturn(res);
 }

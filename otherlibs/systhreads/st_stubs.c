@@ -49,15 +49,9 @@
 
 /* The ML value describing a thread (heap-allocated) */
 
-struct caml_thread_descr {
-  value ident;                  /* Unique integer ID */
-  value start_closure;          /* The closure to start this thread */
-  value terminated;             /* Triggered event for thread termination */
-};
-
-#define Ident(v) (((struct caml_thread_descr *)(v))->ident)
-#define Start_closure(v) (((struct caml_thread_descr *)(v))->start_closure)
-#define Terminated(v) (((struct caml_thread_descr *)(v))->terminated)
+#define Ident(v) Field(v, 0)
+#define Start_closure(v) Field(v, 1)
+#define Terminated(v) Field(v, 2)
 
 /* The infos on threads (allocated via caml_stat_alloc()) */
 
@@ -276,18 +270,15 @@ static caml_thread_t caml_thread_new_info(void)
 
 static value caml_thread_new_descriptor(value clos)
 {
-  value mu = Val_unit;
+  CAMLparam1(clos);
+  CAMLlocal1(mu);
   value descr;
-  Begin_roots2 (clos, mu)
-    /* Create and initialize the termination semaphore */
-    mu = caml_threadstatus_new();
-    /* Create a descriptor for the new thread */
-    descr = caml_alloc_small(3, 0);
-    Ident(descr) = Val_long(atomic_fetch_add(&thread_next_id, +1));
-    Start_closure(descr) = clos;
-    Terminated(descr) = mu;
-  End_roots();
-  return descr;
+  /* Create and initialize the termination semaphore */
+  mu = caml_threadstatus_new();
+  /* Create a descriptor for the new thread */
+  descr = caml_alloc_3(3, Val_long(atomic_fetch_add(&thread_next_id, +1)),
+                       clos, mu);
+  CAMLreturn(descr);
 }
 
 /* Remove a thread info block from the list of threads.
@@ -781,14 +772,13 @@ static void caml_threadstatus_terminate (value wrapper)
 
 static st_retcode caml_threadstatus_wait (value wrapper)
 {
+  CAMLparam1(wrapper); /* prevent deallocation of ts */
   st_event ts = Threadstatus_val(wrapper);
   st_retcode retcode;
 
-  Begin_roots1(wrapper)         /* prevent deallocation of ts */
-    caml_enter_blocking_section();
-    retcode = st_event_wait(ts);
-    caml_leave_blocking_section();
-  End_roots();
+  caml_enter_blocking_section();
+  retcode = st_event_wait(ts);
+  caml_leave_blocking_section();
 
-  return retcode;
+  CAMLreturnT(st_retcode, retcode);
 }

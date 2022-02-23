@@ -27,18 +27,17 @@
 
 static value alloc_proto_entry(struct protoent *entry)
 {
+  CAMLparam0();
+  CAMLlocal2(name, aliases);
   value res;
-  value name = Val_unit, aliases = Val_unit;
 
-  Begin_roots2 (name, aliases);
-    name = caml_copy_string(entry->p_name);
-    aliases = caml_copy_string_array((const char**)entry->p_aliases);
-    res = caml_alloc_small(3, 0);
-    Field(res,0) = name;
-    Field(res,1) = aliases;
-    Field(res,2) = Val_int(entry->p_proto);
-  End_roots();
-  return res;
+  name = caml_copy_string(entry->p_name);
+  aliases = caml_copy_string_array((const char**)entry->p_aliases);
+  res = caml_alloc_small(3, 0);
+  Field(res,0) = name;
+  Field(res,1) = aliases;
+  Field(res,2) = Val_int(entry->p_proto);
+  CAMLreturn(res);
 }
 
 CAMLprim value unix_getprotobyname(value name)

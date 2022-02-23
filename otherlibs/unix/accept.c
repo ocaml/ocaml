@@ -27,9 +27,10 @@
 
 CAMLprim value unix_accept(value cloexec, value sock)
 {
+  CAMLparam0();
+  CAMLlocal1(a);
   int retcode;
   value res;
-  value a;
   union sock_addr_union addr;
   socklen_param_type addr_len;
   int clo = unix_cloexec_p(cloexec);
@@ -48,12 +49,10 @@ CAMLprim value unix_accept(value cloexec, value sock)
   if (clo) unix_set_cloexec(retcode, "accept", Nothing);
 #endif
   a = alloc_sockaddr(&addr, addr_len, retcode);
-  Begin_root (a);
-    res = caml_alloc_small(2, 0);
-    Field(res, 0) = Val_int(retcode);
-    Field(res, 1) = a;
-  End_roots();
-  return res;
+  res = caml_alloc_small(2, 0);
+  Field(res, 0) = Val_int(retcode);
+  Field(res, 1) = a;
+  CAMLreturn(res);
 }
 
 #else

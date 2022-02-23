@@ -21,18 +21,17 @@
 
 CAMLprim value unix_read(value fd, value buf, value ofs, value len)
 {
+  CAMLparam1(buf);
   long numbytes;
   int ret;
   char iobuf[UNIX_BUFFER_SIZE];
 
-  Begin_root (buf);
-    numbytes = Long_val(len);
-    if (numbytes > UNIX_BUFFER_SIZE) numbytes = UNIX_BUFFER_SIZE;
-    caml_enter_blocking_section();
-    ret = read(Int_val(fd), iobuf, (int) numbytes);
-    caml_leave_blocking_section();
-    if (ret == -1) uerror("read", Nothing);
-    memmove (&Byte(buf, Long_val(ofs)), iobuf, ret);
-  End_roots();
-  return Val_int(ret);
+  numbytes = Long_val(len);
+  if (numbytes > UNIX_BUFFER_SIZE) numbytes = UNIX_BUFFER_SIZE;
+  caml_enter_blocking_section();
+  ret = read(Int_val(fd), iobuf, (int) numbytes);
+  caml_leave_blocking_section();
+  if (ret == -1) uerror("read", Nothing);
+  memmove (&Byte(buf, Long_val(ofs)), iobuf, ret);
+  CAMLreturn(Val_int(ret));
 }

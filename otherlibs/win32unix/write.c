@@ -22,80 +22,78 @@
 
 CAMLprim value unix_write(value fd, value buf, value vofs, value vlen)
 {
+  CAMLparam2(fd, buf);
   intnat ofs, len, written;
   DWORD numbytes, numwritten;
   char iobuf[UNIX_BUFFER_SIZE];
   DWORD err = 0;
 
-  Begin_root (buf);
-    ofs = Long_val(vofs);
-    len = Long_val(vlen);
-    written = 0;
-    while (len > 0) {
-      numbytes = len > UNIX_BUFFER_SIZE ? UNIX_BUFFER_SIZE : len;
-      memmove (iobuf, &Byte(buf, ofs), numbytes);
-      if (Descr_kind_val(fd) == KIND_SOCKET) {
-        int ret;
-        SOCKET s = Socket_val(fd);
-        caml_enter_blocking_section();
-        ret = send(s, iobuf, numbytes, 0);
-        if (ret == SOCKET_ERROR) err = WSAGetLastError();
-        caml_leave_blocking_section();
-        numwritten = ret;
-      } else {
-        HANDLE h = Handle_val(fd);
-        caml_enter_blocking_section();
-        if (! WriteFile(h, iobuf, numbytes, &numwritten, NULL))
-          err = GetLastError();
-        caml_leave_blocking_section();
-      }
-      if (err) {
-        win32_maperr(err);
-        uerror("write", Nothing);
-      }
-      written += numwritten;
-      ofs += numwritten;
-      len -= numwritten;
+  ofs = Long_val(vofs);
+  len = Long_val(vlen);
+  written = 0;
+  while (len > 0) {
+    numbytes = len > UNIX_BUFFER_SIZE ? UNIX_BUFFER_SIZE : len;
+    memmove (iobuf, &Byte(buf, ofs), numbytes);
+    if (Descr_kind_val(fd) == KIND_SOCKET) {
+      int ret;
+      SOCKET s = Socket_val(fd);
+      caml_enter_blocking_section();
+      ret = send(s, iobuf, numbytes, 0);
+      if (ret == SOCKET_ERROR) err = WSAGetLastError();
+      caml_leave_blocking_section();
+      numwritten = ret;
+    } else {
+      HANDLE h = Handle_val(fd);
+      caml_enter_blocking_section();
+      if (! WriteFile(h, iobuf, numbytes, &numwritten, NULL))
+        err = GetLastError();
+      caml_leave_blocking_section();
     }
-  End_roots();
-  return Val_long(written);
+    if (err) {
+      win32_maperr(err);
+      uerror("write", Nothing);
+    }
+    written += numwritten;
+    ofs += numwritten;
+    len -= numwritten;
+  }
+  CAMLreturn(Val_long(written));
 }
 
 CAMLprim value unix_single_write(value fd, value buf, value vofs, value vlen)
 {
+  CAMLparam1(buf);
   intnat ofs, len, written;
   DWORD numbytes, numwritten;
   char iobuf[UNIX_BUFFER_SIZE];
   DWORD err = 0;
 
-  Begin_root (buf);
-    ofs = Long_val(vofs);
-    len = Long_val(vlen);
-    written = 0;
-    if (len > 0) {
-      numbytes = len > UNIX_BUFFER_SIZE ? UNIX_BUFFER_SIZE : len;
-      memmove (iobuf, &Byte(buf, ofs), numbytes);
-      if (Descr_kind_val(fd) == KIND_SOCKET) {
-        int ret;
-        SOCKET s = Socket_val(fd);
-        caml_enter_blocking_section();
-        ret = send(s, iobuf, numbytes, 0);
-        if (ret == SOCKET_ERROR) err = WSAGetLastError();
-        caml_leave_blocking_section();
-        numwritten = ret;
-      } else {
-        HANDLE h = Handle_val(fd);
-        caml_enter_blocking_section();
-        if (! WriteFile(h, iobuf, numbytes, &numwritten, NULL))
-          err = GetLastError();
-        caml_leave_blocking_section();
-      }
-      if (err) {
-        win32_maperr(err);
-        uerror("single_write", Nothing);
-      }
-      written = numwritten;
+  ofs = Long_val(vofs);
+  len = Long_val(vlen);
+  written = 0;
+  if (len > 0) {
+    numbytes = len > UNIX_BUFFER_SIZE ? UNIX_BUFFER_SIZE : len;
+    memmove (iobuf, &Byte(buf, ofs), numbytes);
+    if (Descr_kind_val(fd) == KIND_SOCKET) {
+      int ret;
+      SOCKET s = Socket_val(fd);
+      caml_enter_blocking_section();
+      ret = send(s, iobuf, numbytes, 0);
+      if (ret == SOCKET_ERROR) err = WSAGetLastError();
+      caml_leave_blocking_section();
+      numwritten = ret;
+    } else {
+      HANDLE h = Handle_val(fd);
+      caml_enter_blocking_section();
+      if (! WriteFile(h, iobuf, numbytes, &numwritten, NULL))
+        err = GetLastError();
+      caml_leave_blocking_section();
     }
-  End_roots();
-  return Val_long(written);
+    if (err) {
+      win32_maperr(err);
+      uerror("single_write", Nothing);
+    }
+    written = numwritten;
+  }
+  CAMLreturn(Val_long(written));
 }

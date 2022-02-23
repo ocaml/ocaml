@@ -42,6 +42,11 @@ Working version
 - #11010: Use strerror_r for reentrant error string conversion.
   (Anil Madhavapeddy and Xavier Leroy, review by same and Edwin Török)
 
+- #11002: Do not use Begin_roots/End_roots macros in the runtime system.  Also
+  fix a missing root registration in the implementation of Unix.write on
+  Windows.
+  (Nicolás Ojeda Bär, review by Xavier Leroy and David Allsopp)
+
 ### Code generation and optimizations:
 
 - #10972: ARM64 multicore support: OCaml & C stack separation;
