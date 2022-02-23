@@ -105,7 +105,7 @@ if [[ $BOOTSTRAP_FLEXDLL = 'false' ]] ; then
   esac
 fi
 
-# This is needed at all stages while winpthreads is in use for 5.00
+# This is needed at all stages while winpthreads is in use for 5.0
 # This step can be moved back to the test phase (or removed entirely?) when
 # winpthreads stops being used.
 if [[ $PORT = 'mingw64' ]] ; then

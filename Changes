@@ -120,6 +120,11 @@ Working version
   (Sébastien Hinderer, review by Damien Doligez, Daniel Bünzli and
   Florian Angeletti)
 
+* #11049: Stop padding 1-digit compiler minor version numbers.
+  (So for instance OCaml 5.0 rather than 5.00)
+  (Sébastien Hinderer, review by David Allsopp, Florian Angeletti and
+  Xavier Leroy)
+
 ### Internal/compiler-libs changes:
 
 - #10878, #10909: restore flambda after the Multicore merge.
@@ -300,7 +305,7 @@ OCaml 4.14.0
 
 - #10951: Introduce the Thread.Exit exception as an alternative way to
   terminate threads prematurely.  This alternative way will become
-  the standard way in 5.00.
+  the standard way in 5.0.
   (Xavier Leroy, review by Florian Angeletti)
 
 ### Tools:

@@ -44,7 +44,7 @@ val self_init : unit -> unit
 
 val bits : unit -> int
 (** Return 30 random bits in a nonnegative integer.
-    @before 5.00.0 used a different algorithm
+    @before 5.0.0 used a different algorithm
                    (affects all the following functions)
 *)
 
@@ -145,7 +145,7 @@ module State : sig
       The new PRNG is statistically independent from the given PRNG.
       Data can be drawn from both PRNGs, in any order, without risk of
       correlation.  Both PRNGs can be split later, arbitrarily many times.
-      @since 5.00.0 *)
+      @since 5.0.0 *)
 
 end
 
@@ -159,4 +159,4 @@ val set_state : State.t -> unit
 val split : unit -> State.t
 (** Draw a fresh PRNG state from the current state of the domain-local
     generator used by the default functions.  See {!Random.State.split}.
-    @since 5.00.0 *)
+    @since 5.0.0 *)

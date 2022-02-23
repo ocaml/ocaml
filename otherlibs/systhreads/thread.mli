@@ -63,7 +63,7 @@ val exit : unit -> unit
     finalizers and catch-all exception handlers, it is recommended
     to write [raise Thread.Exit] instead of [Thread.exit ()].
 
-    @before 5.00 A different implementation was used, not based on raising
+    @before 5.0 A different implementation was used, not based on raising
         an exception, and not running finalizers and catch-all handlers.
         The previous implementation had a different behavior when called
         outside of a thread created by {!Thread.create}. *)

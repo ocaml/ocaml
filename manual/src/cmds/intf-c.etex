@@ -463,8 +463,8 @@ floating-point numbers.}
 
 In earlier versions of OCaml, it was possible to use
 word-aligned pointers to addresses outside the heap as OCaml values,
-just by casting the pointer to type "value".  Starting with OCaml
-4.11, this usage is deprecated and will stop being supported in OCaml 5.00.
+just by casting the pointer to type "value".  This usage is no longer
+supported since OCaml 5.0.
 
 A correct way to manipulate pointers to out-of-heap blocks from
 OCaml is to store those pointers in OCaml blocks with tag
