@@ -174,6 +174,18 @@ let analyze_alerts info attrs =
       in
       Some { info with i_deprecated; i_alerts }
 
+(** Look for signature-item alerts ([\[@@@...\]]) at the beginning of a
+    signature. Stop at any other item. These alerts are considered attached to
+    the entire signature, similarly to the first comment, which becomes the
+    preamble. *)
+let analyze_toplevel_alerts info ast =
+  let rec extract_attributes = function
+    | { Parsetree.psig_desc = Parsetree.Psig_attribute attr; _ } :: tl ->
+        attr :: extract_attributes tl
+    | _ :: _ | [] -> []
+  in
+  analyze_alerts info (extract_attributes ast)
+
 module Analyser =
   functor (My_ir : Info_retriever) ->
   struct
@@ -1879,6 +1891,7 @@ module Analyser =
       in
       let len, info_opt = preamble !file_name !file
           (fun x -> x.Parsetree.psig_loc) ast in
+      let info_opt = analyze_toplevel_alerts info_opt ast in
       let elements =
         analyse_parsetree Odoc_env.empty signat mod_name len (String.length !file) ast
       in
