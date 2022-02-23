@@ -291,7 +291,7 @@ Caml_inline void interrupt_domain(struct interruptor* s)
 {
   atomic_uintnat * interrupt_word =
     atomic_load_explicit(&s->interrupt_word, memory_order_relaxed);
-  atomic_store_rel(interrupt_word, (uintnat)(-1));
+  atomic_store_rel(interrupt_word, INTERRUPT_EXTERNAL);
 }
 
 int caml_incoming_interrupts_queued(void)
@@ -1464,8 +1464,9 @@ void caml_interrupt_all_for_signal(void)
 
 void caml_reset_young_limit(caml_domain_state * dom_st)
 {
-  /* An interrupt might have been queued in the meanwhile; this
-     achieves the proper synchronisation. */
+  /* An interrupt might have been queued in the meanwhile; the
+     atomic_exchange achieves the proper synchronisation by reading
+     the previous value. */
   atomic_exchange(&dom_st->young_limit, (uintnat)dom_st->young_start);
   dom_internal * d = &all_domains[dom_st->id];
   if (atomic_load_relaxed(&d->interruptor.interrupt_pending)
@@ -1473,7 +1474,8 @@ void caml_reset_young_limit(caml_domain_state * dom_st)
       || dom_st->requested_major_slice
       || atomic_load_relaxed(&dom_st->requested_external_interrupt)
       || dom_st->action_pending) {
-    atomic_store_rel(&dom_st->young_limit, (uintnat)-1);
+    /* We distinguish fresh interrupts from ones we are delaying. */
+    atomic_store_relaxed(&dom_st->young_limit, (uintnat)dom_st->young_end + 1);
     CAMLassert(caml_check_gc_interrupt(dom_st));
   }
 }

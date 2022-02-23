@@ -37,12 +37,13 @@ extern "C" {
 #define Max_domains 16
 #endif
 
-/* is the minor heap full or an external interrupt has been triggered */
-Caml_inline int caml_check_gc_interrupt(caml_domain_state * dom_st)
+/* is the minor heap full or has an external interrupt been triggered? */
+Caml_inline int caml_check_gc_interrupt(uintnat young_ptr,
+                                        caml_domain_state * dom_st)
 {
   CAMLalloc_point_here;
   uintnat young_limit = atomic_load_relaxed(&dom_st->young_limit);
-  if ((uintnat)dom_st->young_ptr < young_limit) {
+  if (young_ptr < young_limit) {
     /* Synchronise for the case when [young_limit] was used to interrupt
        us. */
     atomic_thread_fence(memory_order_acquire);
@@ -51,8 +52,13 @@ Caml_inline int caml_check_gc_interrupt(caml_domain_state * dom_st)
   return 0;
 }
 
-#define Caml_check_gc_interrupt(dom_st)           \
-  (CAMLunlikely(caml_check_gc_interrupt(dom_st)))
+/* Interrupt functions */
+#define INTERRUPT_EXTERNAL ((uintnat)-1)
+
+#define Caml_check_gc_interrupt(dom_st)                                 \
+  (CAMLunlikely(caml_check_gc_interrupt((uintnat)dom_st->young_ptr, dom_st)))
+#define Caml_check_gc_external_interrupt(dom_st)                        \
+  (CAMLunlikely(caml_check_gc_interrupt(INTERRUPT_EXTERNAL - 1, dom_st)))
 
 asize_t caml_norm_minor_heap_size (intnat);
 int caml_reallocate_minor_heap(asize_t);

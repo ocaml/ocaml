@@ -163,16 +163,20 @@ CAMLexport void (*caml_leave_blocking_section_hook)(void) =
 
 CAMLexport void caml_enter_blocking_section(void)
 {
-  while (1){
+  caml_domain_state * domain = Caml_state;
+  while (1) {
     /* Process all pending signals now */
-    caml_raise_if_exception(caml_process_pending_signals_exn());
+    if (Caml_check_gc_interrupt(domain)) {
+      /* Some actions might remain after this, but it is no longer an
+         external interrupt. */
+      caml_set_action_pending(domain);
+      caml_handle_gc_interrupt();
+      caml_raise_if_exception(caml_process_pending_signals_exn());
+    }
     caml_enter_blocking_section_hook ();
-    /* Check again for pending signals.
-       If none, done; otherwise, try again */
-    // FIXME: does this become very slow if a signal is recorded but
-    // is masked for everybody in capacity of running signals at this
-    // point?
-    if (!caml_check_pending_signals()) break;
+    /* Check again if a signal arrived in the meanwhile. If none, done;
+       otherwise, try again */
+    if (!Caml_check_gc_external_interrupt(domain)) break;
     caml_leave_blocking_section_hook ();
   }
 }
@@ -301,7 +305,9 @@ void caml_request_minor_gc (void)
 void caml_set_action_pending(caml_domain_state * dom_st)
 {
   dom_st->action_pending = 1;
-  atomic_store_rel(&dom_st->young_limit, (uintnat)-1);
+  /* Non-external interrupt */
+  atomic_store_rel(&dom_st->young_limit, (uintnat)dom_st->young_end + 1);
+  CAMLassert(caml_check_gc_interrupt(dom_st));
 }
 
 CAMLexport int caml_check_pending_actions(void)
