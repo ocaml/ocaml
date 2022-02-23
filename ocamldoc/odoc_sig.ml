@@ -259,6 +259,17 @@ module Analyser =
 
     let merge_infos = Odoc_merge.merge_info_opt Odoc_types.all_merge_options
 
+    (** Fetch the comment just after an item then merge the info with
+        [comment_opt]. If [attrs] is passed, alerts will be read from it. If
+        [sig_] is passed, top-level alerts will be read from the beginning of
+        the signature, see
+        [analyze_toplevel_alerts]. *)
+    let get_info ?(attrs = []) ?(sig_ = []) comment_opt start stop =
+      let maybe_more, info_after_opt = just_after_special start stop in
+      let comment_opt = merge_infos comment_opt info_after_opt in
+      let comment_opt = analyze_alerts comment_opt attrs in
+      maybe_more, analyze_toplevel_alerts comment_opt sig_
+
     (** Module for extracting documentation comments for record from different
         tree types *)
     module Record = struct
@@ -842,13 +853,10 @@ module Analyser =
             in
             let name = Name.parens_if_infix name_pre.txt in
             let subst_typ = Odoc_env.subst_type env type_expr in
-            let (maybe_more, info_after_opt) =
-              My_ir.just_after_special
-                !file_name
-                (get_string_of_file pos_end_ele pos_limit)
+            let (maybe_more, comment_opt) =
+              get_info ~attrs:value_desc.Parsetree.pval_attributes comment_opt
+                pos_end_ele pos_limit
             in
-            let comment_opt = merge_infos comment_opt info_after_opt in
-            let comment_opt = analyze_alerts comment_opt value_desc.Parsetree.pval_attributes in
             let v =
               {
                 val_name = Name.concat current_module_name name ;
@@ -1212,17 +1220,14 @@ module Analyser =
               else
                 None
             in
-            let (maybe_more, info_after_opt) =
-              My_ir.just_after_special
-                !file_name
-                (get_string_of_file pos_end_ele pos_limit)
-            in
-            let comment_opt = merge_infos comment_opt info_after_opt in
-            let comment_opt = analyze_alerts comment_opt pmd_attributes in
-            let comment_opt =
-              match module_type.Parsetree.pmty_desc with
-              | Parsetree.Pmty_signature sg -> analyze_toplevel_alerts comment_opt sg
-              | _ -> comment_opt
+            let (maybe_more, comment_opt) =
+              let sig_ =
+                match module_type.Parsetree.pmty_desc with
+                | Parsetree.Pmty_signature sg -> Some sg
+                | _ -> None
+              in
+              get_info ~attrs:pmd_attributes ?sig_ comment_opt pos_end_ele
+                pos_limit
             in
             let new_module =
               {
@@ -1337,17 +1342,14 @@ module Analyser =
                     else
                       None
                   in
-                  let (maybe_more, info_after_opt) =
-                    My_ir.just_after_special
-                      !file_name
-                      (get_string_of_file loc_end pos_limit2)
-                  in
-                  let assoc_com = merge_infos assoc_com info_after_opt in
-                  let assoc_com = analyze_alerts assoc_com pmd_attributes in
-                  let assoc_com =
-                    match modtype.Parsetree.pmty_desc with
-                    | Parsetree.Pmty_signature sg -> analyze_toplevel_alerts assoc_com sg
-                    | _ -> assoc_com
+                  let (maybe_more, assoc_com) =
+                    let sig_ =
+                      match modtype.Parsetree.pmty_desc with
+                      | Parsetree.Pmty_signature sg -> Some sg
+                      | _ -> None
+                    in
+                    get_info ~attrs:pmd_attributes ?sig_ assoc_com loc_end
+                      pos_limit2
                   in
                   let new_module =
                     {
@@ -1395,19 +1397,14 @@ module Analyser =
                 | Some sig_mtype -> Some (analyse_module_type_kind env complete_name module_type sig_mtype)
                 | None -> None
             in
-
-            let (maybe_more, info_after_opt) =
-              My_ir.just_after_special
-                !file_name
-                (get_string_of_file pos_end_ele pos_limit)
-            in
-            let comment_opt = merge_infos comment_opt info_after_opt in
-            let comment_opt = analyze_alerts comment_opt pmodtype_attrs in
-            let comment_opt =
-              match pmodtype_decl with
-              | Some { Parsetree.pmty_desc = Parsetree.Pmty_signature sg; _ } ->
-                  analyze_toplevel_alerts comment_opt sg
-              | _ -> comment_opt
+            let (maybe_more, comment_opt) =
+              let sig_ =
+                match pmodtype_decl with
+                | Some { Parsetree.pmty_desc = Parsetree.Pmty_signature sg; _ } ->
+                    Some sg
+                | _ -> None
+              in
+              get_info ~attrs:pmodtype_attrs ?sig_ comment_opt pos_end_ele pos_limit
             in
             let mt =
               {
