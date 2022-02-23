@@ -38,7 +38,7 @@
 #include "caml/eventlog.h"
 #include "caml/fail.h"
 
-uintnat caml_max_stack_size;
+uintnat caml_max_stack_wsize;
 uintnat caml_fiber_wsz;
 
 extern uintnat caml_major_heap_increment; /* percent or words; see major_gc.c */
@@ -129,7 +129,7 @@ CAMLprim value caml_gc_get(value v)
   Store_field (res, 0, Val_long (Caml_state->minor_heap_wsz));  /* s */
   Store_field (res, 2, Val_long (caml_percent_free));           /* o */
   Store_field (res, 3, Val_long (caml_params->verb_gc));        /* v */
-  Store_field (res, 5, Val_long (caml_max_stack_size));         /* l */
+  Store_field (res, 5, Val_long (caml_max_stack_wsize));        /* l */
   Store_field (res, 8, Val_long (caml_custom_major_ratio));     /* M */
   Store_field (res, 9, Val_long (caml_custom_minor_ratio));     /* m */
   Store_field (res, 10, Val_long (caml_custom_minor_max_bsz));  /* n */
@@ -299,12 +299,12 @@ CAMLprim value caml_get_minor_free (value v)
 
 void caml_init_gc (void)
 {
-  caml_max_stack_size = caml_params->init_max_stack_wsz;
+  caml_max_stack_wsize = caml_params->init_max_stack_wsz;
   caml_fiber_wsz = (Stack_threshold * 2) / sizeof(value);
   caml_percent_free = norm_pfree (caml_params->init_percent_free);
   caml_gc_log ("Initial stack limit: %"
                ARCH_INTNAT_PRINTF_FORMAT "uk bytes",
-               caml_max_stack_size / 1024 * sizeof (value));
+               caml_max_stack_wsize / 1024 * sizeof (value));
 
   caml_custom_major_ratio =
       norm_custom_maj (caml_params->init_custom_major_ratio);

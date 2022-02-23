@@ -456,6 +456,7 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
   dom_internal* d = 0;
   caml_domain_state* domain_state;
   struct interruptor* s;
+  uintnat stack_wsize = caml_get_init_stack_wsize();
 
   CAMLassert (domain_self == 0);
 
@@ -557,7 +558,7 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
   domain_state->intern_state = NULL;
 
   domain_state->current_stack =
-      caml_alloc_main_stack(Stack_size / sizeof(value));
+      caml_alloc_main_stack(stack_wsize);
   if(domain_state->current_stack == NULL) {
     goto alloc_main_stack_failure;
   }

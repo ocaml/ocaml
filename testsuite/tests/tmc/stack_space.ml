@@ -1,10 +1,17 @@
 (* TEST
-   ocamlrunparam += ",l=10"
-   * bytecode
+   * setup-ocamlc.byte-build-env
+   ** ocamlc.byte
+   module = "stack_space.ml"
+   *** ocamlc.byte
+   program = "./test.byte.exe"
+   all_modules = "stack_space.cmo"
+   module = ""
+   **** run
+   ocamlrunparam += ",l=300"
 *)
 
-(* large with respect to the stack-size=10 setting above *)
-let large = 1000
+(* large with respect to the stack-size=300 setting above *)
+let large = 30000
 
 let init n f =
   let[@tail_mod_cons] rec init_aux i n f =

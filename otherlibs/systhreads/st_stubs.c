@@ -234,6 +234,7 @@ static caml_thread_t caml_thread_new_info(void)
 {
   caml_thread_t th;
   caml_domain_state *domain_state;
+  uintnat stack_wsize = caml_get_init_stack_wsize();
 
   domain_state = Caml_state;
   th = NULL;
@@ -243,7 +244,7 @@ static caml_thread_t caml_thread_new_info(void)
   th->next = NULL;
   th->prev = NULL;
   th->domain_id = domain_state->id;
-  th->current_stack = caml_alloc_main_stack(Stack_size / sizeof(value));
+  th->current_stack = caml_alloc_main_stack(stack_wsize);
   if (th->current_stack == NULL) {
     caml_stat_free(th);
     return NULL;

@@ -20,7 +20,7 @@
 
 #include "misc.h"
 
-extern uintnat caml_max_stack_size;
+extern uintnat caml_max_stack_wsize;
 extern uintnat caml_fiber_wsz;
 
 void caml_init_gc (void);
