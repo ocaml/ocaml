@@ -20,6 +20,7 @@
 
 #define _GNU_SOURCE  /* For sched.h CPU_ZERO(3) and CPU_COUNT(3) */
 #include "caml/config.h"
+#include <stdbool.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <pthread.h>
@@ -298,7 +299,12 @@ CAMLexport caml_domain_state* caml_get_domain_state(void)
 Caml_inline void interrupt_domain(struct interruptor* s)
 {
   atomic_uintnat * interrupt_word = atomic_load_relaxed(&s->interrupt_word);
-  atomic_store_release(interrupt_word, (uintnat)(-1));
+  atomic_store_release(interrupt_word, UINTNAT_MAX);
+}
+
+Caml_inline void interrupt_domain_local(caml_domain_state* dom_st)
+{
+  atomic_store_relaxed(&dom_st->young_limit, UINTNAT_MAX);
 }
 
 int caml_incoming_interrupts_queued(void)
@@ -660,7 +666,7 @@ static void domain_create(uintnat initial_minor_heap_wsize) {
   domain_state->c_stack = NULL;
   domain_state->exn_handler = NULL;
 
-  domain_state->action_pending = 0;
+  domain_state->action_pending = false;
 
   domain_state->gc_regs_buckets = NULL;
   domain_state->gc_regs = NULL;
@@ -1602,17 +1608,27 @@ void caml_reset_young_limit(caml_domain_state * dom_st)
   /* An interrupt might have been queued in the meanwhile; the
      atomic_exchange achieves the proper synchronisation with the
      reads that follow (an atomic_store is not enough). */
-  atomic_exchange(&dom_st->young_limit, (uintnat)dom_st->young_trigger);
+  if (atomic_exchange(&dom_st->young_limit, (uintnat)dom_st->young_trigger)
+      == UINTNAT_MAX) {
+    /* In case a signal just arrived, we need to remember that we must
+       run signal handlers. */
+    caml_set_action_pending(dom_st);
+  }
+  /* In case of actions that we never delay, interrupt the domain
+     again immediately. */
   dom_internal * d = &all_domains[dom_st->id];
   if (atomic_load_relaxed(&d->interruptor.interrupt_pending)
       || dom_st->requested_minor_gc
       || dom_st->requested_major_slice
       || dom_st->major_slice_epoch < atomic_load (&caml_major_slice_epoch)
-      || atomic_load_relaxed(&dom_st->requested_external_interrupt)
-      || dom_st->action_pending) {
-    atomic_store_release(&dom_st->young_limit, (uintnat)-1);
-    CAMLassert(caml_check_gc_interrupt(dom_st));
+      || atomic_load_relaxed(&dom_st->requested_external_interrupt)) {
+    interrupt_domain_local(dom_st);
   }
+}
+
+void caml_update_young_limit_after_c_call(caml_domain_state * dom_st)
+{
+  if (CAMLunlikely(dom_st->action_pending)) interrupt_domain_local(dom_st);
 }
 
 Caml_inline void advance_global_major_slice_epoch (caml_domain_state* d)

@@ -288,6 +288,15 @@ ENDFUNCTION caml_call_gc
 
 /* Call a C function from OCaml.  Function to call is in C_CALL_FUN */
 
+.macro RET_FROM_C_CALL
+        lbz     TMP, Caml_state(action_pending)
+        cmplwi  TMP, 0
+        beqlr   0
+        li      TMP, -1
+        std     TMP, Caml_state(young_limit)
+        blr
+.endm
+
 FUNCTION caml_c_call
 .Lcaml_c_call:
    /* Save return address in caller's frame AND in a callee-save register */
@@ -311,7 +320,7 @@ FUNCTION caml_c_call
     /* Switch from C to OCaml */
         SWITCH_C_TO_OCAML
     /* Return to caller */
-        blr
+        RET_FROM_C_CALL
 ENDFUNCTION caml_c_call
 
 FUNCTION caml_c_call_stack_args
@@ -351,7 +360,7 @@ FUNCTION caml_c_call_stack_args
     /* Switch from C to OCaml */
         SWITCH_C_TO_OCAML
     /* Return to caller */
-        blr
+        RET_FROM_C_CALL
 ENDFUNCTION caml_c_call_stack_args
 
 /* Raise an exception from OCaml */

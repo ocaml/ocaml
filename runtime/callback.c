@@ -122,6 +122,7 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
      However, they are never used afterwards,
      as they were copied into the root [domain_state->current_stack]. */
 
+  caml_update_young_limit_after_c_call(domain_state);
   res = caml_interprete(callback_code, sizeof(callback_code));
   if (Is_exception_result(res))
     domain_state->current_stack->sp += narg + 4; /* PR#3419 */
@@ -187,6 +188,7 @@ CAMLexport value caml_callback_exn(value closure, value arg)
     End_roots();
 
     Begin_roots1(cont);
+    caml_update_young_limit_after_c_call(domain_state);
     res = caml_callback_asm(domain_state, closure, &arg);
     End_roots();
 
@@ -194,6 +196,7 @@ CAMLexport value caml_callback_exn(value closure, value arg)
 
     return res;
   } else {
+    caml_update_young_limit_after_c_call(domain_state);
     return caml_callback_asm(domain_state, closure, &arg);
   }
 }
@@ -214,6 +217,7 @@ CAMLexport value caml_callback2_exn(value closure, value arg1, value arg2)
 
     Begin_roots1(cont);
     value args[] = {arg1, arg2};
+    caml_update_young_limit_after_c_call(domain_state);
     res = caml_callback2_asm(domain_state, closure, args);
     End_roots();
 
@@ -222,6 +226,7 @@ CAMLexport value caml_callback2_exn(value closure, value arg1, value arg2)
     return res;
   } else {
     value args[] = {arg1, arg2};
+    caml_update_young_limit_after_c_call(domain_state);
     return caml_callback2_asm(domain_state, closure, args);
   }
 }
@@ -243,6 +248,7 @@ CAMLexport value caml_callback3_exn(value closure,
 
     Begin_root(cont);
     value args[] = {arg1, arg2, arg3};
+    caml_update_young_limit_after_c_call(domain_state);
     res = caml_callback3_asm(domain_state, closure, args);
     End_roots();
 
@@ -251,6 +257,7 @@ CAMLexport value caml_callback3_exn(value closure,
     return res;
   } else {
     value args[] = {arg1, arg2, arg3};
+    caml_update_young_limit_after_c_call(domain_state);
     return caml_callback3_asm(domain_state, closure, args);
   }
 }

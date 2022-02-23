@@ -819,6 +819,8 @@ void caml_alloc_small_dispatch (caml_domain_state * dom_st,
          asynchronous callbacks. */
       caml_raise_if_exception(caml_do_pending_actions_exn());
     else {
+      /* In the case of allocations performed from C, only perform
+         non-delayable actions. */
       caml_handle_gc_interrupt();
       /* We might be here due to a recently-recorded signal, so we
          need to remember that we must run signal handlers. In
@@ -826,7 +828,7 @@ void caml_alloc_small_dispatch (caml_domain_state * dom_st,
          polls with caml_process_pending_actions, we want to force a
          query of all callbacks at every minor collection or major
          slice (similarly to OCaml behaviour). */
-      dom_st->action_pending = 1;
+      caml_set_action_pending(dom_st);
     }
 
     /* Now, there might be enough room in the minor heap to do our

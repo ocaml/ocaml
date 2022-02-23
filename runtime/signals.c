@@ -19,6 +19,7 @@
 
 #include <signal.h>
 #include <errno.h>
+#include <stdbool.h>
 #include "caml/config.h"
 #ifdef USE_MMAP_MAP_STACK
 #include <sys/mman.h>
@@ -200,7 +201,7 @@ CAMLexport void caml_leave_blocking_section(void)
 
      So we force the examination of signals as soon as possible.
   */
-  if (Caml_state->action_pending || caml_check_pending_signals())
+  if (caml_check_pending_signals())
     caml_set_action_pending(Caml_state);
 
   errno = saved_errno;
@@ -267,43 +268,57 @@ void caml_request_minor_gc (void)
 }
 
 
-/* Pending asynchronous actions ([Caml_state->action_pending])
+/* Pending asynchronous actions (the flag [Caml_state->action_pending])
    ===
+
+   [Caml_state->action_pending] records that an asynchronous action
+   might have been delayed.
 
    There are two kinds of asynchronous actions:
 
-   - Those that cannot be delayed but never call OCaml code (STW
-     interrupts, requested minor or major GC, forced systhread yield).
+   - Those that we execute immediately in all circumstances (STW
+     interrupts, requested minor or major GC, forced systhread yield);
+     they must never call OCaml code.
 
-   - Those that may raise OCaml exceptions but can be delayed
-     (asynchronous callbacks, finalisers, memprof callbacks).
+   - Those that run OCaml code and may raise OCaml exceptions
+     (asynchronous callbacks, finalisers, memprof callbacks); those
+     can be delayed, and do not run during allocations from C.
 
-   [Caml_state->action_pending] records whether an action of the
-   second kind is currently pending, and is reset _at the beginning_
-   of processing all actions.
+   Queued asynchronous actions are notified to the domain by setting
+   [young_limit] to a high value, thereby making the next allocation
+   fail. When this happens, all non-delayable actions are performed
+   immediately. Then, the delayable actions are either all processed
+   immediately, if the context is ready to run OCaml code concurrently
+   and receive an asynchronous exception (in the case of an allocation
+   from OCaml), or [Caml_state->action_pending] is set in order to
+   record that an action of the delayable kind might be pending (in
+   the case of an allocation from C, typically).
 
-   Hence, when a delayable action is pending, either
-   [Caml_state->action_pending] is 1, or there is a function currently
-   running which is executing all actions.
+   [Caml_state->action_pending] remains set until the program calls
+   [caml_process_pending_actions], [caml_leave_blocking_section], or
+   it returns to OCaml. When returning to OCaml, we set again
+   [Caml_state->young_limit] to a high value if
+   [Caml_state->action_pending] is set.
 
-   This is used to ensure that [Caml_state->young_limit] is always set
-   appropriately.
+   [Caml_state->action_pending] is then reset _at the beginning_ of
+   processing all actions. Hence, when a delayable action is pending,
+   either [Caml_state->action_pending] is true, or there is a function
+   running which is in process of executing all actions.
 
    In case there are two different callbacks (say, a signal and a
    finaliser) arriving at the same time, then the processing of one
    awaits the return of the other. In case of long-running callbacks,
    we may want to run the second one without waiting the end of the
    first one. We do this by provoking an additional polling every
-   minor collection and every major slice. To guarantee a low latency
-   for signals, we avoid delaying signal handlers in that case by
-   calling them first.
+   minor collection and every major slice. In order to guarantee a low
+   latency for signals, we avoid delaying signal handlers in that case
+   by calling them first.
 */
 
 /* We assume that we have unique access to dom_st. */
 CAMLexport void caml_set_action_pending(caml_domain_state * dom_st)
 {
-  dom_st->action_pending = 1;
-  atomic_store_release(&dom_st->young_limit, (uintnat)-1);
+  dom_st->action_pending = true;
 }
 
 CAMLexport int caml_check_pending_actions(void)
@@ -314,15 +329,17 @@ CAMLexport int caml_check_pending_actions(void)
 
 value caml_do_pending_actions_exn(void)
 {
-  Caml_state->action_pending = 0;
-
   /* 1. Non-delayable actions that do not run OCaml code. */
 
   /* Do any pending STW interrupt, minor collection or major slice */
   caml_handle_gc_interrupt();
   /* [young_limit] has now been reset. */
 
-  /* 2. Delayable actions that may raise OCaml exceptions. */
+  /* 2. Delayable actions that may raise OCaml exceptions.
+
+     We can now clear the action_pending flag since we are going to
+     execute all actions. */
+  Caml_state->action_pending = false;
 
   /* Call signal handlers first */
   value exn = caml_process_pending_signals_exn();

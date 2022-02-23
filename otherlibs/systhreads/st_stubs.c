@@ -757,7 +757,7 @@ CAMLprim value caml_thread_yield(value unit)
   save_runtime_state();
   st_thread_yield(m);
   restore_runtime_state(This_thread);
-  if (Caml_state->action_pending || caml_check_pending_signals())
+  if (caml_check_pending_signals())
     caml_set_action_pending(Caml_state);
 
   return Val_unit;
