@@ -435,12 +435,13 @@ module Analyser =
         Object_type (List.map f @@ fst @@ Ctype.flatten_fields fields)
       | _ -> Other (Odoc_env.subst_type env type_expr)
 
-    let get_field env name_comment_list {Types.ld_id=field_name;ld_mutable=mutable_flag;ld_type=type_expr} =
+    let get_field env name_comment_list {Types.ld_id=field_name;ld_mutable=mutable_flag;ld_type=type_expr;ld_attributes} =
       let field_name = Ident.name field_name in
       let comment_opt =
         try List.assoc field_name name_comment_list
         with Not_found -> None
       in
+      let comment_opt = analyze_alerts comment_opt ld_attributes in
       {
         rf_name = field_name ;
         rf_mutable = mutable_flag = Mutable ;
@@ -453,7 +454,7 @@ module Analyser =
         Types.Type_abstract ->
           Odoc_type.Type_abstract
       | Types.Type_variant (l,_) ->
-          let f {Types.cd_id=constructor_name;cd_args;cd_res=ret_type} =
+          let f {Types.cd_id=constructor_name;cd_args;cd_res=ret_type;cd_attributes} =
             let constructor_name = Ident.name constructor_name in
             let comment_opt =
               try match List.assoc constructor_name name_comment_list with
@@ -461,6 +462,7 @@ module Analyser =
                 | x -> x
               with Not_found -> None
             in
+            let comment_opt = analyze_alerts comment_opt cd_attributes in
             let vc_args =
               match cd_args with
               | Cstr_tuple l -> Cstr_tuple (List.map (Odoc_env.subst_type env) l)
@@ -877,7 +879,8 @@ module Analyser =
         | Parsetree.Psig_typext tyext ->
           let new_env, types_ext_list, last_ext =
             List.fold_left
-              (fun (env_acc, exts_acc, _) -> fun {Parsetree.pext_name = { txt = name }} ->
+              (fun (env_acc, exts_acc, _) ->
+               fun {Parsetree.pext_name = { txt = name }; pext_attributes; _} ->
                 let complete_name = Name.concat current_module_name name in
                 let env_acc = Odoc_env.add_extension env_acc complete_name in
                 let types_ext =
@@ -885,7 +888,7 @@ module Analyser =
                   with Not_found ->
                     raise (Failure (Odoc_messages.extension_not_found current_module_name name))
                 in
-                  env_acc, ((name, types_ext) :: exts_acc), Some types_ext
+                  env_acc, ((name, pext_attributes, types_ext) :: exts_acc), Some types_ext
               )
               (env, [], None)
               tyext.Parsetree.ptyext_constructors
@@ -898,7 +901,7 @@ module Analyser =
           in
           let new_te =
             {
-              te_info = comment_opt;
+              te_info = None;
               te_type_name =
                 Odoc_env.full_type_name new_env (Name.from_path ty_path);
               te_type_parameters =
@@ -918,7 +921,7 @@ module Analyser =
           let rec analyse_extension_constructors maybe_more exts_acc types_ext_list =
             match types_ext_list with
               [] -> (maybe_more, List.rev exts_acc)
-            | (name, types_ext) :: q ->
+            | (name, attrs, types_ext) :: q ->
               let ext_loc_end =  Loc.end_ types_ext.Types.ext_loc in
               let xt_args =
                 match types_ext.ext_args with
@@ -928,6 +931,14 @@ module Analyser =
                     let docs = Record.(doc types ext_loc_end) l in
                     Cstr_record (List.map (get_field new_env docs) l)
               in
+              let (maybe_more, comment_opt) =
+                let pos_limit2 =
+                  match q with
+                    [] -> pos_limit
+                  | (_, _, next) :: _ -> Loc.start (next.Types.ext_loc)
+                in
+                get_info ~attrs None ext_loc_end pos_limit2
+              in
               let new_x =
                 {
                   xt_name = Name.concat current_module_name name ;
@@ -936,33 +947,27 @@ module Analyser =
                   xt_type_extension = new_te;
                   xt_alias = None ;
                   xt_loc = { loc_impl = None ; loc_inter = Some types_ext.Types.ext_loc} ;
-                  xt_text = None;
+                  xt_text = comment_opt;
                 }
               in
-              let pos_limit2 =
-                match q with
-                  [] -> pos_limit
-                | (_, next) :: _ -> Loc.start (next.Types.ext_loc)
-              in
-              let (maybe_more, comment_opt) =
-                just_after_special ext_loc_end pos_limit2 in
-                new_x.xt_text <- comment_opt;
-                analyse_extension_constructors maybe_more (new_x :: exts_acc) q
+              analyse_extension_constructors maybe_more (new_x :: exts_acc) q
           in
           let (maybe_more, exts) = analyse_extension_constructors 0 [] types_ext_list in
-            new_te.te_constructors <- exts;
-            let (maybe_more2, info_after_opt) =
-              just_after_special (pos_end_ele + maybe_more) pos_limit
-            in
-              new_te.te_info <- merge_infos new_te.te_info info_after_opt ;
-              (maybe_more + maybe_more2, new_env, [ Element_type_extension new_te ])
+          new_te.te_constructors <- exts;
+          let (maybe_more2, comment_opt) =
+            get_info ~attrs:tyext.Parsetree.ptyext_attributes comment_opt
+              (pos_end_ele + maybe_more) pos_limit
+          in
+          new_te.te_info <- comment_opt;
+          (maybe_more + maybe_more2, new_env, [ Element_type_extension new_te ])
 
-        | Parsetree.Psig_exception ext ->
-            let name = ext.Parsetree.ptyexn_constructor.Parsetree.pext_name in
+        | Parsetree.Psig_exception {Parsetree.ptyexn_constructor;ptyexn_attributes;_} ->
+            let {Parsetree.pext_name;pext_attributes;_} = ptyexn_constructor in
+            let name = pext_name.txt in
             let types_ext =
-              try Signature_search.search_extension table name.txt
+              try Signature_search.search_extension table name
               with Not_found ->
-                raise (Failure (Odoc_messages.exception_not_found current_module_name name.txt))
+                raise (Failure (Odoc_messages.exception_not_found current_module_name name))
             in
             let ex_args =
               let pos_end = Loc.end_ types_ext.ext_loc in
@@ -972,9 +977,13 @@ module Analyser =
                   let docs = Record.(doc types) pos_end l in
                   Cstr_record (List.map (get_field env docs) l)
             in
+            let (maybe_more, comment_opt) =
+              get_info ~attrs:(ptyexn_attributes @ pext_attributes) comment_opt
+                pos_end_ele pos_limit
+            in
             let e =
               {
-                ex_name = Name.concat current_module_name name.txt ;
+                ex_name = Name.concat current_module_name name ;
                 ex_info = comment_opt ;
                 ex_args;
                 ex_ret = Option.map (Odoc_env.subst_type env) types_ext.ext_ret_type ;
@@ -989,12 +998,6 @@ module Analyser =
                    ) ;
               }
             in
-            let (maybe_more, info_after_opt) =
-              My_ir.just_after_special
-                !file_name
-                (get_string_of_file pos_end_ele pos_limit)
-            in
-            e.ex_info <- merge_infos e.ex_info info_after_opt ;
             let new_env = Odoc_env.add_extension env e.ex_name in
             (maybe_more, new_env, [ Element_exception e ])
 
@@ -1049,6 +1052,11 @@ module Analyser =
                   let loc_start = Loc.start type_decl.Parsetree.ptype_loc in
                   let new_end = Loc.end_ type_decl.Parsetree.ptype_loc
                                 + maybe_more in
+                  (* get the comment associated to the whole type *)
+                  let (maybe_more2, assoc_com) =
+                    get_info ~attrs:type_decl.Parsetree.ptype_attributes
+                      assoc_com new_end pos_limit2
+                  in
                   (* associate the comments to each constructor and build the [Type.t_type] *)
                   let new_type =
                     {
@@ -1078,12 +1086,6 @@ module Analyser =
                         ) ;
                     }
                   in
-                  let (maybe_more2, info_after_opt) =
-                    My_ir.just_after_special
-                      !file_name
-                      (get_string_of_file new_end pos_limit2)
-                  in
-                  new_type.ty_info <- merge_infos new_type.ty_info info_after_opt ;
                   let (new_maybe_more, eles) = f
                       (maybe_more + maybe_more2)
                       (new_end + maybe_more2)
@@ -1506,6 +1508,10 @@ module Analyser =
                      class_desc.Parsetree.pci_expr
                      sig_class_type
                  in
+                 let (maybe_more, assoc_com) =
+                   get_info ~attrs:class_desc.Parsetree.pci_attributes
+                     assoc_com pos_end pos_limit2
+                 in
                  let new_class =
                    {
                      cl_name = complete_name ;
@@ -1518,9 +1524,6 @@ module Analyser =
                      cl_loc = { loc_impl = None ; loc_inter = Some class_desc.Parsetree.pci_loc } ;
                    }
                  in
-                 let (maybe_more, info_after_opt) =
-                   just_after_special pos_end pos_limit2 in
-                 new_class.cl_info <- merge_infos new_class.cl_info info_after_opt ;
                  Odoc_class.class_update_parameters_text new_class ;
                  let (new_maybe_more, eles) =
                    f maybe_more (pos_end + maybe_more) q
@@ -1578,6 +1581,10 @@ module Analyser =
                       ct_decl.Parsetree.pci_expr
                       sig_class_type
                   in
+                  let (maybe_more, assoc_com) =
+                    get_info ~attrs:ct_decl.Parsetree.pci_attributes assoc_com
+                      pos_end pos_limit2
+                  in
                   let ct =
                     {
                       clt_name = complete_name ;
@@ -1589,10 +1596,6 @@ module Analyser =
                       clt_loc = { loc_impl = None ; loc_inter = Some ct_decl.Parsetree.pci_loc } ;
                     }
                   in
-                  let (maybe_more, info_after_opt) =
-                    just_after_special pos_end pos_limit2
-                  in
-                  ct.clt_info <- merge_infos ct.clt_info info_after_opt ;
                   let (new_maybe_more, eles) =
                     f maybe_more (pos_end + maybe_more) q
                   in

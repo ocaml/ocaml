@@ -37,3 +37,19 @@ val f : int
 val g : int
 [@@deprecated "foo"]
 (** @deprecated bar *)
+
+(** Constructors and fields and other items. *)
+
+type r = { x : int [@deprecated "foo"] }
+
+type v = C [@deprecated "foo"]
+
+type t [@@deprecated "foo"]
+
+exception E [@deprecated "foo"]
+
+external f : int -> int = "" [@@deprecated "foo"]
+
+type e = ..
+type e += Ext [@@deprecated "foo"]
+type e += Ext2 [@deprecated "foo"]
