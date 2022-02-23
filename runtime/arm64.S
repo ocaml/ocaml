@@ -687,6 +687,14 @@ FUNCTION(caml_callback3_asm)
         ldp     x29, x30, [sp], 16
 .endm
 
+
+/*
+ * A continuation is a one word object that points to a fiber. A fiber [f] will
+ * point to its parent at Handler_parent(Stack_handler(f)). In the following,
+ * the [last_fiber] refers to the last fiber in the linked-list formed by the
+ * parent pointer.
+ */
+
 FUNCTION(caml_perform)
         CFI_STARTPROC
     /*  x0: effect to perform
@@ -709,7 +717,7 @@ L(do_perform):
         str     xzr, Handler_parent(x9) /* Set parent of performer to NULL */
         ldr     TMP, Handler_effect(x9)
         mov     x2, x3                 /* x2 := last_fiber */
-        mov     x3, TMP                /* x2 := effect handler */
+        mov     x3, TMP                /* x3 := effect handler */
         b       G(caml_apply3)
 1:
     /*  switch back to original performer before raising Unhandled
@@ -739,7 +747,7 @@ FUNCTION(caml_reperform)
 
 FUNCTION(caml_resume)
 CFI_STARTPROC
-    /*  x0: new stack
+    /*  x0: new fiber
         x1: fun
         x2: arg */
         sub     x0, x0, 1 /* x0 = Ptr_val(x0) */
@@ -766,7 +774,7 @@ CFI_STARTPROC
    return the value or invoke exception handler */
 FUNCTION(caml_runstack)
 CFI_STARTPROC
-    /*  x0: stack
+    /*  x0: fiber
         x1: fun
         x2: arg */
         stp     x29, x30, [sp, -16]!

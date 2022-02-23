@@ -103,6 +103,48 @@ struct c_stack_link {
   struct c_stack_link* prev;
 };
 
+/* Overview of the native stack switching primitives for effects
+ *
+ * For an understanding of effect handlers in OCaml please see:
+ *  Retrofitting Effect Handlers onto OCaml, KC Sivaramakrishnan, et al.
+ *  PLDI 2021
+ *
+ * In native compilation the stack switching primitives Prunstack,
+ * Pperform, Preperform and Presume make use of corresponding functions
+ * implemented in the assembly files for an architecture (such as
+ * runtime/amd64.S).
+ *
+ * A continuation object represents a suspended OCaml stack. It contains
+ * the stack pointer tagged as an integer to avoid being followed by the GC.
+ * In the code the tagged pointer can be referred to as a 'fiber':
+ *     fiber := Val_ptr(stack)
+ *
+ * caml_runstack new_stack function argument
+ *  caml_runstack launches a function (with an argument) in a new OCaml
+ *  stack. It switches execution from the parent OCaml stack to the fresh
+ *  stack and installs an exception handler. On return the new OCaml stack
+ *  is freed, the stack is restored to the parent OCaml stack and the
+ *  handle_value/handle_exn function is executed on the parent OCaml stack.
+ *
+ * caml_perform effect continuation
+ *  caml_perform captures the current OCaml stack in the continuation object
+ *  provided and raises the effect by switching to the parent OCaml stack and
+ *  then executing the handle_effect function. Should there be no parent OCaml
+ *  stack then the Unhandled exception is raised.
+ *
+ * caml_reperform effect continuation last_fiber
+ *  caml_reperform is used to walk up the parent OCaml stacks to execute the
+ *  next effect handler installed in the chain. This function is implemented
+ *  by setting up the required registers then jumping into caml_perform which
+ *  does the switch to the parent and execution of the handle_effect function.
+ *
+ * caml_resume new_fiber function argument
+ *  caml_resume resumes execution on new_fiber by making the current stack
+ *  the parent of the new_fiber and then switching to the stack for new_fiber.
+ *  The function with argument is then executed on the new stack. Care is taken
+ *  to check if the new_fiber argument has already been resumed and so is null.
+ */
+
 /* The table of global identifiers */
 extern value caml_global_data;
 

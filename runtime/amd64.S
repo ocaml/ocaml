@@ -856,7 +856,7 @@ ENDFUNCTION(G(caml_reperform))
 
 FUNCTION(G(caml_resume))
 CFI_STARTPROC
-    /* %rax -> stack, %rbx -> fun, %rdi -> arg */
+    /* %rax -> fiber, %rbx -> fun, %rdi -> arg */
         leaq    -1(%rax), %r10  /* %r10 (new stack) = Ptr_val(%rax) */
         movq    %rdi, %rax      /* %rax := argument to function in %rbx */
     /*  check if stack null, then already used */
@@ -882,7 +882,7 @@ ENDFUNCTION(G(caml_resume))
 FUNCTION(G(caml_runstack))
 CFI_STARTPROC
         CFI_SIGNAL_FRAME
-    /* %rax -> stack, %rbx -> fun, %rdi -> arg */
+    /* %rax -> fiber, %rbx -> fun, %rdi -> arg */
         andq    $-2, %rax       /* %rax = Ptr_val(%rax) */
     /* save old stack pointer and exception handler */
         movq    Caml_state(current_stack), %rcx
