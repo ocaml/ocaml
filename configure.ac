@@ -604,7 +604,7 @@ AS_CASE([$ocaml_cv_cc_vendor],
     cc_warnings=''],
   [outputobj='-o $(EMPTY)'
   warn_error_flag='-Werror'
-  cc_warnings='-Wall -Wdeclaration-after-statement'])
+  cc_warnings='-Wall'])
 
 AS_CASE([$enable_warn_error,OCAML__DEVELOPMENT_VERSION],
   [yes,*|,true],

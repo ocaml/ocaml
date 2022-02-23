@@ -12772,7 +12772,7 @@ case $ocaml_cv_cc_vendor in #(
   *) :
     outputobj='-o $(EMPTY)'
   warn_error_flag='-Werror'
-  cc_warnings='-Wall -Wdeclaration-after-statement' ;;
+  cc_warnings='-Wall' ;;
 esac
 
 case $enable_warn_error,true in #(
