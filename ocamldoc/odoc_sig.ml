@@ -1193,7 +1193,8 @@ module Analyser =
         | Parsetree.Psig_module {Parsetree.pmd_name={txt=None}} ->
             (0, env, [])
 
-        | Parsetree.Psig_module {Parsetree.pmd_name={txt=Some name}; pmd_type=module_type} ->
+        | Parsetree.Psig_module {Parsetree.pmd_name={txt=Some name};
+                                 pmd_type=module_type; pmd_attributes} ->
             let complete_name = Name.concat current_module_name name in
             (* get the module type in the signature by the module name *)
             let sig_module_type =
@@ -1211,6 +1212,18 @@ module Analyser =
               else
                 None
             in
+            let (maybe_more, info_after_opt) =
+              My_ir.just_after_special
+                !file_name
+                (get_string_of_file pos_end_ele pos_limit)
+            in
+            let comment_opt = merge_infos comment_opt info_after_opt in
+            let comment_opt = analyze_alerts comment_opt pmd_attributes in
+            let comment_opt =
+              match module_type.Parsetree.pmty_desc with
+              | Parsetree.Pmty_signature sg -> analyze_toplevel_alerts comment_opt sg
+              | _ -> comment_opt
+            in
             let new_module =
               {
                 m_name = complete_name ;
@@ -1226,12 +1239,6 @@ module Analyser =
                 m_text_only = false ;
               }
             in
-            let (maybe_more, info_after_opt) =
-              My_ir.just_after_special
-                !file_name
-                (get_string_of_file pos_end_ele pos_limit)
-            in
-            new_module.m_info <- merge_infos new_module.m_info info_after_opt ;
             let new_env = Odoc_env.add_module env new_module.m_name in
             let new_env2 =
               match new_module.m_type with (* FIXME : can this be a Tmty_ident? in this case, we wouldn't have the signature *)
@@ -1295,7 +1302,8 @@ module Analyser =
                   in
                   (maybe_more2, ele_comments @ eles)
 
-              | {Parsetree.pmd_name={txt = Some name}; pmd_type=modtype} :: q ->
+              | {Parsetree.pmd_name={txt = Some name}; pmd_type=modtype;
+                 pmd_attributes} :: q ->
                   let complete_name = Name.concat current_module_name name in
                   let loc = modtype.Parsetree.pmty_loc in
                   let loc_start = Loc.start loc in
@@ -1329,6 +1337,18 @@ module Analyser =
                     else
                       None
                   in
+                  let (maybe_more, info_after_opt) =
+                    My_ir.just_after_special
+                      !file_name
+                      (get_string_of_file loc_end pos_limit2)
+                  in
+                  let assoc_com = merge_infos assoc_com info_after_opt in
+                  let assoc_com = analyze_alerts assoc_com pmd_attributes in
+                  let assoc_com =
+                    match modtype.Parsetree.pmty_desc with
+                    | Parsetree.Pmty_signature sg -> analyze_toplevel_alerts assoc_com sg
+                    | _ -> assoc_com
+                  in
                   let new_module =
                     {
                       m_name = complete_name ;
@@ -1344,12 +1364,6 @@ module Analyser =
                       m_text_only = false ;
                     }
                   in
-                  let (maybe_more, info_after_opt) =
-                    My_ir.just_after_special
-                      !file_name
-                      (get_string_of_file loc_end pos_limit2)
-                  in
-                  new_module.m_info <- merge_infos new_module.m_info info_after_opt ;
 
                   let (maybe_more2, eles) = f
                       maybe_more
@@ -1361,8 +1375,12 @@ module Analyser =
             let (maybe_more, mods) = f ~first: true 0 pos_start_ele decls in
             (maybe_more, new_env, mods)
 
-        | Parsetree.Psig_modtype {Parsetree.pmtd_name=name; pmtd_type=pmodtype_decl}
-        | Parsetree.Psig_modtypesubst {Parsetree.pmtd_name=name; pmtd_type=pmodtype_decl} ->
+        | Parsetree.Psig_modtype {Parsetree.pmtd_name=name;
+                                  pmtd_type=pmodtype_decl;
+                                  pmtd_attributes=pmodtype_attrs}
+        | Parsetree.Psig_modtypesubst {Parsetree.pmtd_name=name;
+                                       pmtd_type=pmodtype_decl;
+                                       pmtd_attributes=pmodtype_attrs} ->
             let complete_name = Name.concat current_module_name name.txt in
             let sig_mtype =
               try Signature_search.search_module_type table name.txt
@@ -1378,6 +1396,19 @@ module Analyser =
                 | None -> None
             in
 
+            let (maybe_more, info_after_opt) =
+              My_ir.just_after_special
+                !file_name
+                (get_string_of_file pos_end_ele pos_limit)
+            in
+            let comment_opt = merge_infos comment_opt info_after_opt in
+            let comment_opt = analyze_alerts comment_opt pmodtype_attrs in
+            let comment_opt =
+              match pmodtype_decl with
+              | Some { Parsetree.pmty_desc = Parsetree.Pmty_signature sg; _ } ->
+                  analyze_toplevel_alerts comment_opt sg
+              | _ -> comment_opt
+            in
             let mt =
               {
                 mt_name = complete_name ;
@@ -1389,12 +1420,6 @@ module Analyser =
                 mt_loc = { loc_impl = None ; loc_inter = Some sig_item_loc } ;
               }
             in
-            let (maybe_more, info_after_opt) =
-              My_ir.just_after_special
-                !file_name
-                (get_string_of_file pos_end_ele pos_limit)
-            in
-            mt.mt_info <- merge_infos mt.mt_info info_after_opt ;
             let new_env = Odoc_env.add_module_type env mt.mt_name in
             let new_env2 =
               match sig_mtype with (* FIXME : can this be a Tmty_ident? in this case, we wouldn't have the signature *)
