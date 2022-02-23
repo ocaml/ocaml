@@ -209,7 +209,8 @@ CAMLexport CAMLweakdef void caml_initialize (value *fp, value val)
 {
 #ifdef DEBUG
   if (Is_young((value)fp))
-    CAMLassert(*fp == Debug_uninit_minor || *fp == Val_unit);
+    CAMLassert(*fp == Debug_uninit_minor ||
+               *fp == Debug_uninit_tmc   || *fp == Val_unit);
   else
     CAMLassert(*fp == Debug_uninit_major || *fp == Val_unit);
 #endif

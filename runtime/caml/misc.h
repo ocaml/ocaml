@@ -531,6 +531,9 @@ int caml_runtime_warnings_active(void);
 
 #define Debug_uninit_stat    0xD7
 
+/* Placeholder value needs to be edited in lambda/tmc.ml as well. */
+#define Debug_uninit_tmc     0xBBBB
+
 #endif /* DEBUG */
 
 

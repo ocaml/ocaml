@@ -124,7 +124,7 @@ end = struct
 
   let tmc_placeholder =
     (* we choose a placeholder whose tagged representation will be
-       reconizable. *)
+       reconizable. When changed, edit it in misc.h as well. *)
     Lconst (Const_base (Const_int (0xBBBB / 2)))
 
   let with_placeholder constr (body : offset destination -> lambda) =
