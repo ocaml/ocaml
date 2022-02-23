@@ -209,8 +209,7 @@ static void calc_pool_stats(pool* a, sizeclass sz, struct heap_stats* s) {
   s->pool_frag_words += Wsize_bsize(POOL_HEADER_SZ);
 
   while (p + wh <= end) {
-    header_t hd = (header_t)atomic_load_explicit((atomic_uintnat*)p,
-                                                  memory_order_relaxed);
+    header_t hd = (header_t)atomic_load_relaxed((atomic_uintnat*)p);
     if (hd) {
       s->pool_live_words += Whsize_hd(hd);
       s->pool_frag_words += wh - Whsize_hd(hd);
@@ -457,8 +456,7 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
     struct heap_stats* s = &local->stats;
 
     while (p + wh <= end) {
-      header_t hd = (header_t)atomic_load_explicit((atomic_uintnat*)p,
-                                                    memory_order_relaxed);
+      header_t hd = (header_t)atomic_load_relaxed((atomic_uintnat*)p);
       if (hd == 0) {
         /* already on freelist */
         all_used = 0;
@@ -469,7 +467,7 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
           if (final_fun != NULL) final_fun(Val_hp(p));
         }
         /* add to freelist */
-        atomic_store_explicit((atomic_uintnat*)p, 0, memory_order_relaxed);
+        atomic_store_relaxed((atomic_uintnat*)p, 0);
         p[1] = (value)a->next_obj;
         CAMLassert(Is_block((value)p));
 #ifdef DEBUG

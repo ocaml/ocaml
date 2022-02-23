@@ -48,12 +48,24 @@ Caml_inline void cpu_relax() {
 
 /* Loads and stores with acquire and release semantics respectively */
 
-Caml_inline uintnat atomic_load_acq(atomic_uintnat* p) {
+Caml_inline uintnat atomic_load_acq(atomic_uintnat* p)
+{
   return atomic_load_explicit(p, memory_order_acquire);
 }
 
-Caml_inline void atomic_store_rel(atomic_uintnat* p, uintnat v) {
+Caml_inline uintnat atomic_load_relaxed(atomic_uintnat* p)
+{
+  return atomic_load_explicit(p, memory_order_relaxed);
+}
+
+Caml_inline void atomic_store_rel(atomic_uintnat* p, uintnat v)
+{
   atomic_store_explicit(p, v, memory_order_release);
+}
+
+Caml_inline void atomic_store_relaxed(atomic_uintnat* p, uintnat v)
+{
+  atomic_store_explicit(p, v, memory_order_relaxed);
 }
 
 /* Spin-wait loops */

@@ -687,10 +687,9 @@ static void mark_slice_darken(struct mark_stack* stk, value v, mlsize_t i,
                   goto again;
           }
         } else {
-          atomic_store_explicit(
+          atomic_store_relaxed(
             Hp_atomic_val(child),
-            With_status_hd(chd, caml_global_heap_state.MARKED),
-            memory_order_relaxed);
+            With_status_hd(chd, caml_global_heap_state.MARKED));
         }
         if(Tag_hd(chd) < No_scan_tag){
           mark_stack_push(stk, child, 0, work);
@@ -748,8 +747,7 @@ void caml_darken_cont(value cont)
   CAMLassert(Is_block(cont) && !Is_young(cont) && Tag_val(cont) == Cont_tag);
   {
     SPIN_WAIT {
-      header_t hd
-            = atomic_load_explicit(Hp_atomic_val(cont), memory_order_relaxed);
+      header_t hd = atomic_load_relaxed(Hp_atomic_val(cont));
       CAMLassert(!Has_status_hd(hd, caml_global_heap_state.GARBAGE));
       if (Has_status_hd(hd, caml_global_heap_state.MARKED))
         break;
@@ -786,10 +784,9 @@ void caml_darken(void* state, value v, value* ignored) {
     if (Tag_hd(hd) == Cont_tag) {
       caml_darken_cont(v);
     } else {
-      atomic_store_explicit(
+      atomic_store_relaxed(
          Hp_atomic_val(v),
-         With_status_hd(hd, caml_global_heap_state.MARKED),
-         memory_order_relaxed);
+         With_status_hd(hd, caml_global_heap_state.MARKED));
       if (Tag_hd(hd) < No_scan_tag) {
         mark_stack_push(Caml_state->mark_stack, v, 0, NULL);
       }
