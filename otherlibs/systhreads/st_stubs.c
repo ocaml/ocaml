@@ -380,9 +380,8 @@ CAMLprim value caml_thread_yield(value unit);
 void caml_thread_interrupt_hook(void)
 {
   uintnat is_on = 1;
-  caml_domain_state *domain = Caml_state;
   atomic_uintnat* req_external_interrupt =
-    (atomic_uintnat*)&domain->requested_external_interrupt;
+    &Caml_state->requested_external_interrupt;
 
   if (atomic_compare_exchange_strong(req_external_interrupt, &is_on, 0)) {
     caml_thread_yield(Val_unit);
