@@ -79,7 +79,7 @@ module Native = struct
   let run_shared_startup handle =
     ndl_run handle "_shared_startup"
 
-  let run handle ~unit_header ~priv:_ =
+  let run _lock handle ~unit_header ~priv:_ =
     List.iter (fun cu ->
         try ndl_run handle cu
         with exn ->

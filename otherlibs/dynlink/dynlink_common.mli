@@ -33,8 +33,3 @@ module Make (_ : Dynlink_platform_intf.S) : sig
   val all_units : unit -> string list
   val allow_unsafe_modules : bool -> unit
 end
-
-(** The bytecode implementation needs to reacquire the global dynlinking lock
-    when updating the global symbol table.
-*)
-val with_lock: (unit -> 'a) -> 'a

@@ -31,13 +31,6 @@ module String = struct
   end
 end
 
-(* Limit the number of concurrent users to one *)
-let global_lock = Mutex.create ()
-let with_lock f =
-  Mutex.lock global_lock;
-  Fun.protect f
-    ~finally:(fun () -> Mutex.unlock global_lock)
-
 module Make (P : Dynlink_platform_intf.S) = struct
   module DT = Dynlink_types
   module UH = P.Unit_header
@@ -79,14 +72,39 @@ module Make (P : Dynlink_platform_intf.S) = struct
     }
   end
 
-  let global_state = ref State.empty
+(* Limit the number of concurrent users to one *)
+  module Global: sig
+    type t = {
+      mutable state:State.t;
+      mutable inited:bool;
+      mutable unsafe_allowed:bool;
+    }
+    val lock: Mutex.t
+    val with_lock: (t->'a) -> 'a
+  end
+  = struct
+    let lock = Mutex.create ()
+    type t = {
+      mutable state:State.t;
+      mutable inited:bool;
+      mutable unsafe_allowed:bool;
+    }
+    let state = {
+      state = State.empty;
+      inited = false;
+      unsafe_allowed = false;
 
-  let inited = ref false
-
-  let unsafe_allowed = ref false
+    }
+    let with_lock0 f =
+      Mutex.lock lock;
+      Fun.protect f
+        ~finally:(fun () -> Mutex.unlock lock)
+    let with_lock f = with_lock0 (fun () -> f state)
+  end
+  open Global
 
   let allow_unsafe_modules b =
-    with_lock (fun () -> unsafe_allowed := b)
+    with_lock (fun global -> global.unsafe_allowed <- b)
 
   let check_symbols_disjoint ~descr syms1 syms2 =
     let exe = Sys.executable_name in
@@ -102,7 +120,7 @@ module Make (P : Dynlink_platform_intf.S) = struct
       failwith msg
     end
 
-  let default_available_units () =
+  let default_available_units global =
     let exe = Sys.executable_name in
     let ifaces, implems, defined_symbols =
       P.fold_initial_units
@@ -141,14 +159,14 @@ module Make (P : Dynlink_platform_intf.S) = struct
         public_dynamically_loaded_units = String.Set.empty;
       }
     in
-    global_state := state
+    global.state <- state
 
   let init () =
-    with_lock (fun () ->
-    if not !inited then begin
+    with_lock (fun global ->
+    if not global.inited then begin
       P.init ();
-      default_available_units ();
-      inited := true
+      default_available_units global;
+      global.inited <- true
     end)
 
   let set_loaded_implem filename ui implems =
@@ -216,13 +234,14 @@ module Make (P : Dynlink_platform_intf.S) = struct
     end;
     String.Map.add name (UH.crc ui, filename, DT.Not_initialized) implems
 
-  let check_unsafe_module ui =
-    if (not !unsafe_allowed) && UH.unsafe_module ui then begin
+  let check_unsafe_module unsafe_allowed ui =
+    if not unsafe_allowed && UH.unsafe_module ui then begin
       raise (DT.Error Unsafe_file)
     end
 
-  let check filename (units : UH.t list) (state : State.t) ~priv =
-    List.iter (fun ui -> check_unsafe_module ui) units;
+  let check filename (units : UH.t list) (state : State.t)
+      ~unsafe_allowed ~priv =
+    List.iter (fun ui -> check_unsafe_module unsafe_allowed ui) units;
     let new_units =
       String.Set.of_list (List.map (fun ui -> UH.name ui) units)
     in
@@ -279,43 +298,43 @@ module Make (P : Dynlink_platform_intf.S) = struct
 
   let set_allowed_units allowed_units =
     let allowed_units = String.Set.of_list allowed_units in
-    with_lock (fun () ->
-        global_state := { !global_state with allowed_units }
+    with_lock (fun global ->
+        global.state <- { global.state with allowed_units }
       )
 
   let allow_only units =
-    with_lock (fun () ->
+    with_lock (fun global ->
         let allowed_units =
-          String.Set.inter (!global_state).allowed_units
+          String.Set.inter global.state.allowed_units
             (String.Set.of_list units)
         in
-        global_state := { !global_state with allowed_units }
+        global.state <- { global.state with allowed_units }
       )
 
   let prohibit units =
-    with_lock (fun () ->
+    with_lock (fun global ->
         let allowed_units =
-          String.Set.diff (!global_state).allowed_units
+          String.Set.diff global.state.allowed_units
             (String.Set.of_list units)
         in
-        global_state := { !global_state with
+        global.state <- { global.state with
           allowed_units;
         }
       )
 
   let main_program_units () =
     init ();
-    let global_state = with_lock (fun () -> !global_state) in
+    let global_state = with_lock (fun {state;_} -> state) in
     String.Set.elements global_state.main_program_units
 
   let public_dynamically_loaded_units () =
     init ();
-    let global_state = with_lock (fun () -> !global_state) in
+    let global_state = with_lock (fun {state;_} -> state) in
     String.Set.elements global_state.public_dynamically_loaded_units
 
   let all_units () =
     init ();
-    let global_state = with_lock (fun () -> !global_state) in
+    let global_state = with_lock (fun {state;_} -> state) in
     String.Set.elements (String.Set.union
       global_state.main_program_units
       global_state.public_dynamically_loaded_units)
@@ -331,17 +350,19 @@ module Make (P : Dynlink_platform_intf.S) = struct
     | exception exn -> raise (DT.Error (Cannot_open_dynamic_library exn))
     | handle, units ->
       try
-        with_lock (fun () ->
-            global_state := check filename units !global_state ~priv;
+        with_lock (fun ({unsafe_allowed; _ } as global) ->
+            global.state <- check filename units global.state
+                ~unsafe_allowed
+                ~priv;
             P.run_shared_startup handle;
           );
         List.iter
           (fun unit_header ->
              (* Linked modules might call Dynlink themselves,
                 we need to release the lock *)
-             P.run handle ~unit_header ~priv;
-             if not priv then with_lock (fun () ->
-                 global_state := set_loaded filename unit_header !global_state
+             P.run Global.lock handle ~unit_header ~priv;
+             if not priv then with_lock (fun global ->
+                 global.state <- set_loaded filename unit_header global.state
                )
           )
           units;
@@ -354,7 +375,7 @@ module Make (P : Dynlink_platform_intf.S) = struct
   let loadfile_private filename = load true filename
 
   let unsafe_get_global_value ~bytecode_or_asm_symbol =
-    with_lock (fun () -> P.unsafe_get_global_value ~bytecode_or_asm_symbol)
+    with_lock (fun _ -> P.unsafe_get_global_value ~bytecode_or_asm_symbol)
 
   let is_native = P.is_native
   let adapt_filename = P.adapt_filename
