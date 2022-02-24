@@ -74,6 +74,7 @@ static void generic_final_update
       - k : index in to_do_tl, next available slot.
   */
   if (todo_count > 0) {
+    caml_set_action_pending(d);
     alloc_todo (d, todo_count);
     j = k = 0;
     for (i = 0; i < final->old; i++){
@@ -252,6 +253,7 @@ static void generic_final_minor_update
       - k : index in to_do_tl, next available slot.
   */
   if (todo_count > 0) {
+    caml_set_action_pending(d);
     alloc_todo (d, todo_count);
     k = 0;
     j = final->old;

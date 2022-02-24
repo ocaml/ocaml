@@ -1492,16 +1492,6 @@ void caml_poll_gc_work(void)
     /* out of minor heap or collection forced */
     Caml_state->requested_minor_gc = 0;
     caml_empty_minor_heaps_once();
-
-    /* FIXME: a domain will only ever call finalizers if its minor
-      heap triggers the minor collection
-      Care may be needed with finalizers running when the domain
-      is waiting in a blocking section and serviced by the backup
-      thread.
-      */
-    CAML_EV_BEGIN(EV_MINOR_FINALIZED);
-    caml_raise_if_exception(caml_final_do_calls_exn());
-    CAML_EV_END(EV_MINOR_FINALIZED);
   }
 
   if (Caml_state->requested_major_slice) {
@@ -1514,11 +1504,9 @@ void caml_poll_gc_work(void)
   if (atomic_load_acq(&Caml_state->requested_external_interrupt)) {
     caml_domain_external_interrupt_hook();
   }
-
   caml_reset_young_limit(Caml_state);
 }
 
-/* FIXME: do not raise async exceptions */
 void caml_handle_gc_interrupt(void)
 {
   CAMLalloc_point_here;
@@ -1530,7 +1518,6 @@ void caml_handle_gc_interrupt(void)
     CAML_EV_END(EV_INTERRUPT_REMOTE);
   }
 
-  caml_reset_young_limit(Caml_state);
   caml_poll_gc_work();
 }
 

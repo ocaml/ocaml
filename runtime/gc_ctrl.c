@@ -243,7 +243,7 @@ static value gc_major_exn(void)
   caml_gc_log ("Major GC cycle requested");
   caml_empty_minor_heaps_once();
   caml_finish_major_cycle();
-  exn = caml_final_do_calls_exn();
+  exn = caml_process_pending_actions_exn();
   CAML_EV_END(EV_EXPLICIT_GC_MAJOR);
   return exn;
 }
@@ -265,7 +265,7 @@ static value gc_full_major_exn(void)
   for (i = 0; i < 3; i++) {
     caml_empty_minor_heaps_once();
     caml_finish_major_cycle();
-    exn = caml_final_do_calls_exn ();
+    exn = caml_process_pending_actions_exn ();
     if (Is_exception_result(exn)) break;
   }
   ++ Caml_state->stat_forced_major_collections;

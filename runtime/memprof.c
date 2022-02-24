@@ -568,7 +568,7 @@ static void check_action_pending(void)
 {
   if (local->suspended) return;
   if (callback_idx < entries_global.len || local->entries.len > 0)
-    caml_set_action_pending();
+    caml_set_action_pending(Caml_state);
 }
 
 void caml_memprof_set_suspended(int s)

@@ -181,7 +181,7 @@ CAMLexport void caml_leave_blocking_section(void)
      So we force the examination of signals as soon as possible.
   */
   if (Caml_state->action_pending || caml_check_pending_signals())
-    caml_set_action_pending();
+    caml_set_action_pending(Caml_state);
 
   errno = saved_errno;
 }
@@ -276,11 +276,12 @@ void caml_request_minor_gc (void)
 */
 
 CAMLno_tsan /* When called from [caml_record_signal], these memory
-               accesses may not be synchronized. */
-void caml_set_action_pending(void)
+               accesses may not be synchronized. Otherwise we assume
+               that we have unique access to dom_st. */
+void caml_set_action_pending(caml_domain_state * dom_st)
 {
-  Caml_state->action_pending = 1;
-  caml_interrupt_self();
+  dom_st->action_pending = 1;
+  atomic_store_rel(&dom_st->young_limit, (uintnat)-1);
 }
 
 CAMLexport int caml_check_pending_actions(void)
@@ -321,43 +322,36 @@ exception:
      it might be the case that we did not run all the callbacks we
      needed. Therefore, we set [Caml_state->action_pending] again in
      order to force reexamination of callbacks. */
-  caml_set_action_pending();
+  caml_set_action_pending(Caml_state);
   return exn;
-}
-
-value caml_process_pending_actions_with_root(value root)
-{
-  if (caml_check_pending_actions()) {
-    CAMLparam1(root);
-    caml_raise_if_exception(caml_do_pending_actions_exn());
-    CAMLdrop;
-  }
-  return root;
-}
-
-CAMLexport void caml_process_pending_actions(void)
-{
-  caml_process_pending_actions_with_root(Val_unit);
 }
 
 value caml_process_pending_actions_with_root_exn(value root)
 {
-  /* FIXME: call handle_gc_interrupt and finalisers */
-  if (caml_check_pending_signals()) {
+  if (caml_check_pending_actions()) {
     CAMLparam1(root);
-    value exn = caml_process_pending_signals_exn();
+    value exn = caml_do_pending_actions_exn();
     if (Is_exception_result(exn)) CAMLreturn(exn);
     CAMLdrop;
   }
   return root;
 }
 
-/* FIXME: not implemented (see above)
+value caml_process_pending_actions_with_root(value root)
+{
+  return caml_raise_if_exception(
+    caml_process_pending_actions_with_root_exn(root));
+}
+
 CAMLexport value caml_process_pending_actions_exn(void)
 {
   return caml_process_pending_actions_with_root_exn(Val_unit);
 }
-*/
+
+CAMLexport void caml_process_pending_actions(void)
+{
+  caml_process_pending_actions_with_root(Val_unit);
+}
 
 /* OS-independent numbering of signals */
 
