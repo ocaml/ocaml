@@ -85,6 +85,11 @@ Working version
   types, is now required to build the OCaml runtime system.
   (Xavier Leroy, review by David Allsopp and Sébastien Hinderer)
 
+- #10915, #11039, #11057, #11095, #11190: Implement quality treatment for
+  asynchronous actions in multicore. Reimplement the old behaviour of
+  `caml_process_pending*` for multicore.
+  (Guillaume Munch-Maccagnoni, review by Sadiq Jaffer and Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 - #10972: ARM64 multicore support: OCaml & C stack separation;
