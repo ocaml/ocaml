@@ -290,7 +290,8 @@ void caml_init_callbacks(void)
 static unsigned int hash_value_name(char const *name)
 {
   unsigned int h;
-  for (h = 0; *name != 0; name++) h = h * 19 + *name;
+  /* "djb2" hash function */
+  for (h = 5381; *name != 0; name++) h = h * 33 + *name;
   return h % Named_value_size;
 }
 
