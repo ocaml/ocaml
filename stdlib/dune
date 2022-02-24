@@ -24,7 +24,7 @@
    (per_module
      ((action (run awk -f %{dep:expand_module_aliases.awk} %{input-file}))
       stdlib)
-     ;; AWFUL HACKS: remove once 5.00 is release
+     ;; AWFUL HACKS: remove once 5.0 is released
      ;; (this is needed because we're building with a compiler which doesn't
      ;; know these primitives yet)
      ;; It's especially ugly because the compiler insists on checking arity...

@@ -1,9 +1,9 @@
 opam-version: "2.0"
-version: "5.00.0+trunk"
+version: "5.0+trunk"
 license: "LGPL-2.1-or-later WITH OCaml-LGPL-linking-exception"
 synopsis: "OCaml development version"
 depends: [
-  "ocaml" {= "5.00.0" & post}
+  "ocaml" {= "5.0.0" & post}
   "base-unix" {post}
   "base-bigarray" {post}
   "base-threads" {post}
@@ -44,7 +44,7 @@ install: [make "install"]
 conflicts: [
   "ocaml-option-32bit"      # Not yet implemented
   "ocaml-option-nnpchecker" # Fundamentally not possible
-  "ocaml-option-default-unsafe-string" # Not supported since 5.00
+  "ocaml-option-default-unsafe-string" # Not supported since 5.0
 ]
 depopts: [
   "ocaml-option-afl"

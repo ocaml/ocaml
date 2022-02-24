@@ -19,7 +19,7 @@
 /* CAML_NAME_SPACE was introduced in OCaml 3.08 to declare compatibility with
    the newly caml_-prefixed names of C runtime functions and to disable the
    definition of compatibility macros for the un-prefixed names. The
-   compatibility layer was removed in OCaml 5.00, so CAML_NAME_SPACE is the
+   compatibility layer was removed in OCaml 5.0, so CAML_NAME_SPACE is the
    default. */
 #ifndef CAML_NAME_SPACE
 #define CAML_NAME_SPACE

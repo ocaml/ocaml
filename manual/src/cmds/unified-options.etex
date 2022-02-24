@@ -670,7 +670,7 @@ Linux AMD 64, they must contain only position-independent code).
 \item["-safe-string"]
 Enforce the separation between types "string" and "bytes",
 thereby making strings read-only. This is the default, and enforced
-since OCaml 5.00.
+since OCaml 5.0.
 
 \item["-short-paths"]
 When a type is visible under several module-paths, use the shortest
@@ -722,7 +722,7 @@ unspecified result instead of raising a "Division_by_zero" exception.
 Identify the types "string" and "bytes", thereby making strings writable.
 This is intended for compatibility with old source code and should not
 be used with new software. This option raises an error unconditionally
-since OCaml 5.00.
+since OCaml 5.0.
 
 \comp{%
 \item["-use-runtime" \var{runtime-name}]

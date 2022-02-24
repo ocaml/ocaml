@@ -511,7 +511,7 @@ let mk_S f =
 
 let mk_safe_string =
   "-safe-string", Arg.Unit (fun () -> ()),
-  " (default unconditionally since 5.00)"
+  " (default unconditionally since 5.0)"
 ;;
 
 let mk_shared f =
@@ -583,7 +583,7 @@ let mk_unsafe f =
 
 let mk_unsafe_string =
  let err () =
-   raise (Arg.Bad "-unsafe-string is not available since OCaml 5.00")
+   raise (Arg.Bad "-unsafe-string is not available since OCaml 5.0")
  in
  "-unsafe-string", Arg.Unit err, " (option not available)"
 ;;
