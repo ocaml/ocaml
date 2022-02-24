@@ -103,11 +103,34 @@ CAMLexport value caml_process_pending_signals_exn(void)
 }
 
 /* Record the delivery of a signal, and arrange for it to be processed
-   as soon as possible:
-   - via Caml_state->action_pending, processed in
-     caml_process_pending_actions.
-   - by playing with the allocation limit, processed in
-     caml_alloc_small_dispatch.
+   as soon as possible, by playing with the allocation limit,
+   processed in caml_alloc_small_dispatch.
+
+   We interrupt all domains when a signal arrives. The point of view
+   of this commit is that signals (SIGINT, SIGALRM...) arrive
+   infrequently-enough that this is affordable.
+
+   * In mixed C/OCaml applications there is no guarantee that the
+     POSIX signal handler runs in an OCaml thread so Caml_state might
+     not be available.
+
+   * OSX implementation of Caml_state: POSIX/Apple's doc is unclear
+     whether explicit TLS is safe to read from signal handlers (in old
+     implementations it is not), but this might be a theoretical
+     concern only. (In particular it is unclear how to give it atomic
+     type.)
+
+   * While C11 mandates that atomic thread-local variables are
+     async-signal-safe for reading, gcc does not conform and can
+     allocate in corner cases involving dynamic linking.
+
+   * Do not make the hypothesis that the thread executing a POSIX
+     signal handler is the most ready to execute the corresponding
+     OCaml signal handler. (This is likely unnecessary for idiomatic
+     usage of signals, but acting differently depending on whether we
+     can access the current domain is more work given the situation
+     around async-signal-safety of TLS.) In particular, we do not need
+     to mask signals when spawning threads and domains.
 */
 CAMLexport void caml_record_signal(int signal_number)
 {
@@ -116,8 +139,7 @@ CAMLexport void caml_record_signal(int signal_number)
   i = signal_number - 1;
   atomic_fetch_or(&caml_pending_signals[i / BITS_PER_WORD],
                   (uintnat)1 << (i % BITS_PER_WORD));
-  // FIXME: the TLS variable is not thread-safe
-  caml_interrupt_self();
+  caml_interrupt_all_for_signal();
 }
 
 /* Management of blocking sections. */
@@ -262,7 +284,7 @@ void caml_request_minor_gc (void)
    [Caml_state->action_pending] is 1, or there is a function currently
    running which is executing all actions.
 
-   This is used to ensure [Caml_state->young_limit] is always set
+   This is used to ensure that [Caml_state->young_limit] is always set
    appropriately.
 
    In case there are two different callbacks (say, a signal and a
@@ -275,9 +297,7 @@ void caml_request_minor_gc (void)
    calling them first.
 */
 
-CAMLno_tsan /* When called from [caml_record_signal], these memory
-               accesses may not be synchronized. Otherwise we assume
-               that we have unique access to dom_st. */
+/* We assume that we have unique access to dom_st. */
 void caml_set_action_pending(caml_domain_state * dom_st)
 {
   dom_st->action_pending = 1;
