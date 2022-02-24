@@ -290,7 +290,8 @@ void caml_init_callbacks(void)
 static unsigned int hash_value_name(char const *name)
 {
   unsigned int h;
-  for (h = 0; *name != 0; name++) h = h * 19 + *name;
+  /* "djb2" hash function */
+  for (h = 5381; *name != 0; name++) h = h * 33 + *name;
   return h % Named_value_size;
 }
 
@@ -342,10 +343,12 @@ CAMLexport const value* caml_named_value(char const *name)
 CAMLexport void caml_iterate_named_values(caml_named_action f)
 {
   int i;
+  caml_plat_lock(&named_value_lock);
   for(i = 0; i < Named_value_size; i++){
     struct named_value * nv;
     for (nv = named_value_table[i]; nv != NULL; nv = nv->next) {
       f( Op_val(nv->val), nv->name );
     }
   }
+  caml_plat_unlock(&named_value_lock);
 }
