@@ -54,12 +54,6 @@ CAMLprim value caml_obj_tag(value arg)
   return Val_int (obj_tag(arg));
 }
 
-CAMLprim value caml_obj_set_tag (value arg, value new_tag)
-{
-  Tag_val (arg) = Int_val (new_tag);
-  return Val_unit;
-}
-
 CAMLprim value caml_obj_raw_field(value arg, value pos)
 {
   /* Represent field contents as a native integer */
@@ -168,27 +162,6 @@ CAMLprim value caml_obj_with_tag(value new_tag_v, value arg)
 CAMLprim value caml_obj_dup(value arg)
 {
   return caml_obj_with_tag(Val_long(Tag_val(arg)), arg);
-}
-
-/* Shorten the given block to the given size and return void.
-   Raise Invalid_argument if the given size is less than or equal
-   to 0 or greater than the current size.
-
-   algorithm:
-   Change the length field of the header.  Make up a black object
-   with the leftover part of the object: this is needed in the major
-   heap and harmless in the minor heap. The object cannot be white
-   because there may still be references to it in the ref table. By
-   using a black object we ensure that the ref table will be emptied
-   before the block is reallocated (since there must be a minor
-   collection within each major cycle).
-
-   [newsize] is a value encoding a number of fields (words, except
-   for float arrays on 32-bit architectures).
-*/
-CAMLprim value caml_obj_truncate (value v, value newsize)
-{
-  caml_failwith("Obj.truncate not supported");
 }
 
 CAMLprim value caml_obj_add_offset (value v, value offset)
