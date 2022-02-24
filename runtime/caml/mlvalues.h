@@ -135,8 +135,10 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 #define Profinfo_hd(hd) NO_PROFINFO
 #endif /* WITH_PROFINFO */
 
-#define Hd_val(val) (((header_t *) (val)) [-1] + 0)
 #define Hp_atomic_val(val) ((atomic_uintnat *)(val) - 1)
+#define Hd_val(val) ((header_t) \
+  (atomic_load_explicit(Hp_atomic_val(val), memory_order_relaxed)))
+
 #define Hd_hp(hp) (* ((header_t *) (hp)))              /* Also an l-value. */
 #define Hp_val(val) (((header_t *) (val)) - 1)
 #define Hp_op(op) (Hp_val (op))
