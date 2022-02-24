@@ -57,6 +57,13 @@ Working version
 - #11105: Fix handling of fiber stack cache with multiple domains
   (Jon Ludlam, KC Sivaramakrishnan and Tom Kelly)
 
+- #11054: Respect user provided maximum stack space
+  Make sure the stack we initially request is sized accordingly to
+  the user provided settings. tmc/stack_space is also updated by
+  this PR in order to account for this change.
+  (Enguerrand Decorne, report by Jon Ludlam,
+  review by Tom Kelly, KC Sivaramakrishnan and Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 - #10972: ARM64 multicore support: OCaml & C stack separation;
