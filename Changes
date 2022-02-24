@@ -118,7 +118,7 @@ Working version
 
 - #10981: Implement a -cmi-file option for ocamlc and ocamlopt.
   (Sébastien Hinderer, review by Damien Doligez, Daniel Bünzli and
-  Florian   Angeletti)
+  Florian Angeletti)
 
 ### Internal/compiler-libs changes:
 
