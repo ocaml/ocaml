@@ -1,0 +1,36 @@
+# computation f
+camlEffects__f
+caml_runstack
+camlEffects__entry
+caml_program
+caml_start_program
+main
+# perform effect (E 0)
+# caught effect (E 0). continuing...
+camlEffects__h_effect_e
+camlEffects__entry
+caml_program
+caml_start_program
+main
+# perform returns 1
+camlEffects__f
+caml_runstack
+camlEffects__h_effect_e
+camlEffects__entry
+caml_program
+caml_start_program
+main
+# done 2
+camlEffects__v_retc
+camlEffects__h_effect_e
+camlEffects__entry
+caml_program
+caml_start_program
+main
+# continue returns 3
+camlEffects__h_effect_e
+camlEffects__entry
+caml_program
+caml_start_program
+main
+# result=4
