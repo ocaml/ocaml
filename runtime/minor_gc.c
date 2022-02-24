@@ -820,9 +820,12 @@ void caml_alloc_small_dispatch (caml_domain_state * dom_st,
       caml_raise_if_exception(caml_do_pending_actions_exn());
     else {
       caml_handle_gc_interrupt();
-      /* In the case of long-running C code that regularly polls with
-         [caml_process_pending_actions], still force a query of all
-         callbacks at every minor collection or major slice. */
+      /* We might be here due to a recently-recorded signal, so we
+         need to remember that we must run signal handlers. In
+         addition, in the case of long-running C code that regularly
+         polls with caml_process_pending_actions, we want to force a
+         query of all callbacks at every minor collection or major
+         slice (similarly to OCaml behaviour). */
       dom_st->action_pending = 1;
     }
 

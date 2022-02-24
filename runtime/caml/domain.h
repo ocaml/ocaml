@@ -66,6 +66,7 @@ void caml_handle_gc_interrupt(void);
 void caml_handle_incoming_interrupts(void);
 
 CAMLextern void caml_interrupt_self(void);
+void caml_interrupt_all_for_signal(void);
 void caml_reset_young_limit(caml_domain_state *);
 
 CAMLextern void caml_reset_domain_lock(void);

@@ -141,7 +141,10 @@ typedef cpuset_t cpu_set_t;
 
 /* control of STW interrupts */
 struct interruptor {
-  atomic_uintnat* interrupt_word;
+  /* The outermost atomic is for synchronization with
+     caml_interrupt_all_for_signal. The innermost atomic is also for
+     cross-domain communication.*/
+  _Atomic(atomic_uintnat *) interrupt_word;
   caml_plat_mutex lock;
   caml_plat_cond cond;
 
@@ -205,7 +208,7 @@ static caml_plat_mutex all_domains_lock = CAML_PLAT_MUTEX_INITIALIZER;
 static caml_plat_cond all_domains_cond =
     CAML_PLAT_COND_INITIALIZER(&all_domains_lock);
 static atomic_uintnat /* dom_internal* */ stw_leader = 0;
-static struct dom_internal all_domains[Max_domains];
+static dom_internal all_domains[Max_domains];
 
 CAMLexport atomic_uintnat caml_num_domains_running;
 
@@ -294,7 +297,8 @@ CAMLexport caml_domain_state* caml_get_domain_state(void)
 
 Caml_inline void interrupt_domain(struct interruptor* s)
 {
-  atomic_store_release(s->interrupt_word, (uintnat)(-1));
+  atomic_uintnat * interrupt_word = atomic_load_relaxed(&s->interrupt_word);
+  atomic_store_release(interrupt_word, (uintnat)(-1));
 }
 
 int caml_incoming_interrupts_queued(void)
@@ -585,8 +589,14 @@ static void domain_create(uintnat initial_minor_heap_wsize) {
 
   caml_state = domain_state;
 
+  domain_state->young_limit = 0;
+  /* Synchronized with [caml_interrupt_all_for_signal], so that the
+     initializing write of young_limit happens before any
+     interrupt. */
+  atomic_store_explicit(&s->interrupt_word, &domain_state->young_limit,
+                        memory_order_release);
+
   s->unique_id = fresh_domain_unique_id();
-  s->interrupt_word = &domain_state->young_limit;
   s->running = 1;
   atomic_fetch_add(&caml_num_domains_running, 1);
 
@@ -876,7 +886,7 @@ void caml_init_domains(uintnat minor_heap_wsz) {
 
     dom->id = i;
 
-    dom->interruptor.interrupt_word = 0;
+    dom->interruptor.interrupt_word = NULL;
     caml_plat_mutex_init(&dom->interruptor.lock);
     caml_plat_cond_init(&dom->interruptor.cond,
                         &dom->interruptor.lock);
@@ -1586,8 +1596,26 @@ int caml_try_run_on_all_domains_async(
                                                  leader_setup, 0, 0);
 }
 
-void caml_interrupt_self(void) {
+void caml_interrupt_self(void)
+{
   interrupt_domain(&domain_self->interruptor);
+}
+
+/* async-signal-safe */
+void caml_interrupt_all_for_signal(void)
+{
+  for (dom_internal *d = all_domains; d < &all_domains[Max_domains]; d++) {
+    /* [all_domains] is an array of values. So we can access
+       [interrupt_word] directly without synchronisation other than
+       with other people who access the same [interrupt_word].*/
+    atomic_uintnat * interrupt_word =
+      atomic_load_explicit(&d->interruptor.interrupt_word,
+                           memory_order_acquire);
+    /* Early exit: if the current domain was never initialized, then
+       neither have been any of the remaining ones. */
+    if (interrupt_word == NULL) return;
+    interrupt_domain(&d->interruptor);
+  }
 }
 
 void caml_reset_young_limit(caml_domain_state * dom_st)
