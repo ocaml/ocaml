@@ -124,7 +124,6 @@ type merge_option =
                                and all raised exceptions are kept. *)
   | Merge_return_value (** Information on return value are concatenated. *)
   | Merge_custom (** Merge custom tags (all pairs (tag, text) are kept). *)
-  | Merge_alert (** Merge alerts (all kept). *)
 
 (** The list with all merge options. *)
 val all_merge_options : merge_option list

@@ -127,9 +127,9 @@ let merge_info merge_options (m1 : info) (m2 : info) =
   let new_custom = merge_lists (List.mem Merge_custom merge_options)
       m1.i_custom m2.i_custom (@)
   in
-  let new_alerts = merge_lists (List.mem Merge_alert merge_options)
-      m1.i_alerts m2.i_alerts (@)
-  in
+  (* When merging comments, alerts should always be added after the merge. When
+     merging modules, only alerts in the interface are kept. *)
+  let new_alerts = m1.i_alerts in
   {
     Odoc_types.i_desc = new_desc_opt ;
     Odoc_types.i_authors = new_authors ;
@@ -148,7 +148,9 @@ let merge_info merge_options (m1 : info) (m2 : info) =
 (** Merge of two optional info structures. *)
 let merge_info_opt merge_options mli_opt ml_opt =
   match mli_opt, ml_opt with
-    None, Some i -> Some i
+    None, Some i ->
+      (* Be sure not to take alerts from an impl when an intf is present. *)
+      Some { i with i_alerts = [] }
   | Some i, None -> Some i
   | None, None -> None
   | Some i1, Some i2 -> Some (merge_info merge_options i1 i2)

@@ -118,7 +118,6 @@ type merge_option =
   | Merge_raised_exception
   | Merge_return_value
   | Merge_custom
-  | Merge_alert
 
 let all_merge_options = [
   Merge_description ;
@@ -132,7 +131,6 @@ let all_merge_options = [
   Merge_raised_exception ;
   Merge_return_value ;
   Merge_custom ;
-  Merge_alert ;
 ]
 
 type magic = string

@@ -137,7 +137,6 @@ let analyse_merge_options s =
     (M.merge_raised_exception, [Odoc_types.Merge_raised_exception]) ;
     (M.merge_return_value, [Odoc_types.Merge_return_value]) ;
     (M.merge_custom, [Odoc_types.Merge_custom]) ;
-    (M.merge_alert, [Odoc_types.Merge_alert]) ;
     (M.merge_all, Odoc_types.all_merge_options)
   ]
   in
