@@ -228,11 +228,9 @@ stdlib__Domain.cmx : domain.ml \
 stdlib__Domain.cmi : domain.mli
 stdlib__Effect.cmo : effect.ml \
     stdlib__Printexc.cmi \
-    stdlib__Obj.cmi \
     stdlib__Effect.cmi
 stdlib__Effect.cmx : effect.ml \
     stdlib__Printexc.cmx \
-    stdlib__Obj.cmx \
     stdlib__Effect.cmi
 stdlib__Effect.cmi : effect.mli \
     stdlib__Printexc.cmi
