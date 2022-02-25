@@ -246,6 +246,16 @@ void caml_debugger_init(void)
     sock_addr.s_inet.sin_port = htons(atoi(port));
     sock_addr_len = sizeof(sock_addr.s_inet);
   }
+  /* We completely disable channel locking because:
+     1. The debugger is not compatible with threads, so we don't need locks.
+     2. This file doesn't use locks around channel operations, but
+        function [check_pending] in io.c assumes that the channel is locked
+        and tries to unlock it.
+  */
+  caml_channel_mutex_free = NULL;
+  caml_channel_mutex_lock = NULL;
+  caml_channel_mutex_unlock = NULL;
+  caml_channel_mutex_unlock_exn = NULL;
   open_connection();
   caml_debugger_in_use = 1;
   /* Bigger than default caml_trap_sp_off (1) */
@@ -440,7 +450,9 @@ void caml_debugger(enum event_kind event, value param)
       break;
     case REQ_CHECKPOINT:
 #ifndef _WIN32
+      caml_release_domain_lock (); /* Don't fork while holding a lock. */
       i = fork();
+      caml_acquire_domain_lock ();
       if (i == 0) {
         close_connection();     /* Close parent connection. */
         open_connection();      /* Open new connection with debugger */
