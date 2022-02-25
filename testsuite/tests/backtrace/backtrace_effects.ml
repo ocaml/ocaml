@@ -7,7 +7,7 @@
 open Effect
 open Effect.Deep
 
-type _ eff += E : unit eff
+type _ t += E : unit t
 
 let bar i =
   if i < 0 then begin
@@ -29,7 +29,7 @@ let baz () =
   match_with foo 10
   { retc = (fun x -> ());
     exnc = (fun e -> raise e);
-    effc = fun (type a) (e : a eff) ->
+    effc = fun (type a) (e : a t) ->
       match e with
       | E -> Some (fun (k : (a, _) continuation) ->
           print_endline "(** get_continuation_callstack **)";

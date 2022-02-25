@@ -3,7 +3,7 @@
 open Effect
 open Effect.Deep
 
-type _ eff += Stop : unit eff
+type _ t += Stop : unit t
 
 let f count =
   let r = ref 0 in
@@ -17,7 +17,7 @@ let _ =
   let l = lazy (f 1_000) in
   let v1 =
     try_with Lazy.force l
-    { effc = fun (type a) (e : a eff) ->
+    { effc = fun (type a) (e : a t) ->
         match e with
         | Stop -> Some (fun (k : (a, _) continuation) -> continue k ())
         | _ -> None }
@@ -26,7 +26,7 @@ let _ =
   let l2 = lazy (f 2_000) in
   let v2 =
     try_with Lazy.force l2
-    { effc = fun (type a) (e : a eff) ->
+    { effc = fun (type a) (e : a t) ->
         match e with
         | Stop -> Some (fun (k : (a, _) continuation) ->
             let d = Domain.spawn(fun () -> continue k ()) in
@@ -37,7 +37,7 @@ let _ =
   let l3 = lazy (f 3_000) in
   let _ =
     try_with Lazy.force l3
-    { effc = fun (type a) (e : a eff) ->
+    { effc = fun (type a) (e : a t) ->
         match e with
         | Stop -> Some (fun _ ->
             try

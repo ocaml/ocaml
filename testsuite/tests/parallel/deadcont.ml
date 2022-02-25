@@ -14,7 +14,7 @@ include unix
 open Effect
 open Effect.Deep
 
-type _ eff += Poke : unit eff
+type _ t += Poke : unit t
 
 type result = Done | Poking of (unit -> result)
 
@@ -32,7 +32,7 @@ let domain_handler f =
   match_with f ()
   { retc = (fun () -> Done);
     exnc = (fun e -> raise e);
-    effc = fun (type a) (e : a eff) ->
+    effc = fun (type a) (e : a t) ->
           match e with
           | Poke -> Some (fun (k : (a, _) continuation) ->
               Poking (fun () ->

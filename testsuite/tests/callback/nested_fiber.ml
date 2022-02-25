@@ -11,7 +11,7 @@ external caml_to_c : (unit -> 'a) -> 'a = "caml_to_c"
 open Effect
 open Effect.Deep
 
-type _ eff += E : unit eff
+type _ t += E : unit t
 
 type 'a tree = Empty | Node of 'a tree * 'a tree
 
@@ -34,7 +34,7 @@ let f () =
   match_with g ()
   { retc = (fun () -> Printf.printf "g() returned: %d\n%!" !z);
     exnc = (fun e -> raise e);
-    effc = fun (type a) (e : a eff) ->
+    effc = fun (type a) (e : a t) ->
           match e with
           | E -> Some (fun (k : (a, _) continuation) -> assert false)
           | _ -> None };
@@ -46,7 +46,7 @@ let () =
   match_with f ()
   { retc = (fun () -> Printf.printf "f() returned: %d\n%!" !z);
     exnc = (fun e -> raise e);
-    effc = fun (type a) (e : a eff) ->
+    effc = fun (type a) (e : a t) ->
       match e with
       | E -> Some (fun k -> assert false)
       | _ -> None };
