@@ -20,6 +20,8 @@ type pc =
   { frag : int;
     pos : int; }
 
+val main_frag : int
+
 type execution_summary =
     Event
   | Breakpoint

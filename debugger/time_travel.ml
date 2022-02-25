@@ -381,7 +381,7 @@ let new_checkpoint pid fd =
      c_breakpoint_version = 0;
      c_breakpoints = [];
      c_trap_barrier = 0;
-     c_code_fragments = [0]}
+     c_code_fragments = [main_frag]}
   in
     insert_checkpoint new_checkpoint
 

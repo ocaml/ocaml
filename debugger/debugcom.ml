@@ -49,6 +49,12 @@ type pc =
   { frag : int;
     pos : int; }
 
+(* Identifier of the code fragment for the main program.
+   Numbering starts at 1 and the runtime registers 2 fragments before
+   the main program: one for uncaught exceptions and one for callbacks.
+*)
+let main_frag = 3
+
 let set_event {frag; pos} =
   output_char !conn.io_out 'e';
   output_binary_int !conn.io_out frag;
