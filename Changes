@@ -158,6 +158,9 @@ Working version
 
 ### Manual and documentation:
 
+- #11058: runtime/HACKING.adoc tips on debugging the runtime
+  (Gabriel Scherer, review by Enguerrand Decorne and Nicolás Ojeda Bär)
+
 ### Compiler user-interface and warnings:
 
 - #10909: Disable warning 59 (assignment to immutable blocks) unless flambda
@@ -183,6 +186,9 @@ Working version
 
 - #11008, #11047: rework GC statistics in the Multicore runtime
   (Gabriel Scherer, review by Enguerrand Decorne)
+
+- #11058: basic debugging documentation in runtime/HACKING.adoc
+  (Gabriel Scherer, review by ???)
 
 ### Build system:
 
