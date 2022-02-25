@@ -664,17 +664,18 @@ CAMLprim value caml_thread_yield(value unit)
   if (atomic_load_acq(&Thread_main_lock.waiters) == 0) return Val_unit;
 
   /* Do all the parts of a blocking section enter/leave except lock
-     manipulation, which we'll do more efficiently in st_thread_yield. (Since
-     our blocking section doesn't contain anything interesting, don't bother
-     with saving errno.)
+     manipulation, which we'll do more efficiently in st_thread_yield,
+     and asynchronous actions (since caml_handle_gc_interrupt must not
+     raise). (Since our blocking section doesn't contain anything
+     interesting, don't bother with saving errno.)
   */
 
-  caml_raise_if_exception(caml_process_pending_signals_exn());
   caml_thread_save_runtime_state();
   st_thread_yield(&Thread_main_lock);
   Current_thread = st_tls_get(caml_thread_key);
   caml_thread_restore_runtime_state();
-  caml_raise_if_exception(caml_process_pending_signals_exn());
+  if (Caml_state->action_pending || caml_check_pending_signals())
+    caml_set_action_pending(Caml_state);
 
   return Val_unit;
 }
