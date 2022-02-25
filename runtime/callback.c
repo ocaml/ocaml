@@ -102,6 +102,7 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
 
   cont = save_and_clear_stack_parent(domain_state);
 
+  caml_update_young_limit_after_c_call(domain_state);
   res = caml_interprete(callback_code, sizeof(callback_code));
   if (Is_exception_result(res))
     domain_state->current_stack->sp += narg + 4; /* PR#3419 */
@@ -159,6 +160,7 @@ CAMLexport value caml_callback_exn(value closure, value arg)
     value res;
 
     cont = save_and_clear_stack_parent(domain_state);
+    caml_update_young_limit_after_c_call(domain_state);
     res = caml_callback_asm(domain_state, closure, &arg);
     restore_stack_parent(domain_state, cont);
 
@@ -180,6 +182,7 @@ CAMLexport value caml_callback2_exn(value closure, value arg1, value arg2)
     value res;
 
     cont = save_and_clear_stack_parent(domain_state);
+    caml_update_young_limit_after_c_call(domain_state);
     res = caml_callback2_asm(domain_state, closure, args);
     restore_stack_parent(domain_state, cont);
 
@@ -202,6 +205,7 @@ CAMLexport value caml_callback3_exn(value closure,
     value res;
 
     cont = save_and_clear_stack_parent(domain_state);
+    caml_update_young_limit_after_c_call(domain_state);
     res = caml_callback3_asm(domain_state, closure, args);
     restore_stack_parent(domain_state, cont);
 

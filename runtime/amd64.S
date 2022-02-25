@@ -535,6 +535,15 @@ ENDFUNCTION(G(caml_allocN))
 /* Call a C function from OCaml */
 /******************************************************************************/
 
+/* Update [young_limit] when returning from C calls */
+#define RET_FROM_C_CALL                         \
+        cmpq    $0, Caml_state(action_pending); \
+        jne     1f;                             \
+        ret;                                    \
+1:                                              \
+        movq    $-1, Caml_state(young_limit);   \
+        ret
+
 FUNCTION(G(caml_c_call))
 CFI_STARTPROC
         CFI_SIGNAL_FRAME
@@ -553,7 +562,7 @@ LBL(caml_c_call):
     /* Load ocaml stack and restore global variables */
         SWITCH_C_TO_OCAML
     /* Return to OCaml caller */
-        ret
+        RET_FROM_C_CALL
 CFI_ENDPROC
 ENDFUNCTION(G(caml_c_call))
 
@@ -593,7 +602,7 @@ LBL(106):
     /* Load ocaml stack and restore global variables */
         SWITCH_C_TO_OCAML
     /* Return to OCaml caller */
-        ret
+        RET_FROM_C_CALL
 CFI_ENDPROC
 ENDFUNCTION(G(caml_c_call_stack_args))
 

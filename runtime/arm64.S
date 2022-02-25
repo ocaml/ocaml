@@ -417,6 +417,17 @@ FUNCTION(caml_allocN)
 /* Call a C function from OCaml */
 /* Function to call is in ADDITIONAL_ARG */
 
+/* Update [young_limit] when returning from C calls. */
+.macro RET_FROM_C_CALL
+        ldr     TMP, Caml_state(action_pending)
+        cbnz    TMP, 1f
+        ret
+1:
+        mov     TMP, #-1
+        str     TMP, Caml_state(young_limit)
+        ret
+.endm
+
 FUNCTION(caml_c_call)
         CFI_STARTPROC
         CFI_OFFSET(29, -16)
@@ -437,9 +448,9 @@ FUNCTION(caml_c_call)
         SWITCH_C_TO_OCAML
     /* Return */
         ldp     x29, x30, [sp], 16
-        ret
+        RET_FROM_C_CALL
         CFI_ENDPROC
-        END_FUNCTION(caml_c_call)
+END_FUNCTION(caml_c_call)
 
 FUNCTION(caml_c_call_stack_args)
         CFI_STARTPROC
@@ -478,8 +489,9 @@ FUNCTION(caml_c_call_stack_args)
         SWITCH_C_TO_OCAML
     /* Return */
         ldp     x29, x30, [sp], 16
-        ret
-CFI_ENDPROC
+        RET_FROM_C_CALL
+        CFI_ENDPROC
+END_FUNCTION(caml_c_call_stack_args)
 
 /* Start the OCaml program */
 

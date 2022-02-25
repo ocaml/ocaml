@@ -291,7 +291,12 @@ Caml_inline void interrupt_domain(struct interruptor* s)
 {
   atomic_uintnat * interrupt_word =
     atomic_load_explicit(&s->interrupt_word, memory_order_relaxed);
-  atomic_store_rel(interrupt_word, INTERRUPT_EXTERNAL);
+  atomic_store_rel(interrupt_word, UINTNAT_MAX);
+}
+
+Caml_inline void interrupt_domain_local(caml_domain_state* dom_st)
+{
+  atomic_store_relaxed(&dom_st->young_limit, UINTNAT_MAX);
 }
 
 int caml_incoming_interrupts_queued(void)
@@ -1462,22 +1467,37 @@ void caml_interrupt_all_for_signal(void)
   }
 }
 
+/* To avoid any risk of forgetting an action, [caml_reset_young_limit]
+   is the only way (together with [interrupt_domain*]) through which
+   [young_limit] can be modified. We take care here of all possible
+   races. */
 void caml_reset_young_limit(caml_domain_state * dom_st)
 {
   /* An interrupt might have been queued in the meanwhile; the
-     atomic_exchange achieves the proper synchronisation by reading
-     the previous value. */
+     atomic_exchange achieves the proper synchronisation with the
+     reads that follow (unlike an atomic_store). */
   atomic_exchange(&dom_st->young_limit, (uintnat)dom_st->young_start);
-  dom_internal * d = &all_domains[dom_st->id];
-  if (atomic_load_relaxed(&d->interruptor.interrupt_pending)
+  /* We might be here due to a recently-recorded signal (or a signal
+     might just have arrived), so we need to remember that we must run
+     signal handlers. In addition, in the case of long-running C code
+     that regularly polls with caml_process_pending_actions, we want
+     to force a query of all callbacks at every minor collection or
+     major slice (similarly to OCaml behaviour). */
+  caml_set_action_pending(dom_st);
+  /* In case of actions that we never delay, interrupt the domain
+     again immediately. */
+  atomic_uintnat * interrupt_pending =
+    &all_domains[dom_st->id].interruptor.interrupt_pending;
+  if (atomic_load_relaxed(interrupt_pending)
       || dom_st->requested_minor_gc
       || dom_st->requested_major_slice
-      || atomic_load_relaxed(&dom_st->requested_external_interrupt)
-      || dom_st->action_pending) {
-    /* We distinguish fresh interrupts from ones we are delaying. */
-    atomic_store_relaxed(&dom_st->young_limit, (uintnat)dom_st->young_end + 1);
-    CAMLassert(caml_check_gc_interrupt(dom_st));
-  }
+      || atomic_load_relaxed(&dom_st->requested_external_interrupt))
+    interrupt_domain_local(dom_st);
+}
+
+void caml_update_young_limit_after_c_call(caml_domain_state * dom_st)
+{
+  if (dom_st->action_pending) interrupt_domain_local(dom_st);
 }
 
 void caml_poll_gc_work(void)

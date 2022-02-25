@@ -91,7 +91,9 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
   { sp -= 2; sp[0] = env; sp[1] = (value)(pc + 1); \
     domain_state->current_stack->sp = sp; }
 #define Restore_after_c_call \
-  { sp = domain_state->current_stack->sp; env = *sp; sp += 2; }
+  { sp = domain_state->current_stack->sp; env = *sp; sp += 2; \
+    caml_update_young_limit_after_c_call(domain_state);       \
+  }
 
 /* For VM threads purposes, an event frame must look like accu + a
    C_CALL frame + a RETURN 1 frame.
