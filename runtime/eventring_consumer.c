@@ -52,7 +52,7 @@ struct caml_eventring_cursor {
   struct eventring_metadata_header *metadata; /* pointer to the ring metadata */
   uint64_t *current_positions;      /* positions in the rings for each domain */
   size_t ring_file_size_bytes; /* the size of the eventring file in bytes */
-  int next_read_domain;        /* the last domain we read from */
+  int next_read_domain;        /* the next domain to read from */
 #ifdef _WIN32
   HANDLE ring_file_handle;
   HANDLE ring_handle;
