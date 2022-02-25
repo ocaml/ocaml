@@ -4,7 +4,7 @@
 open Effect
 open Effect.Deep
 
-type _ eff += E : unit eff
+type _ t += E : unit t
 exception X
 
 let () =
@@ -16,7 +16,7 @@ let () =
       exnc = (function
         | X -> 10
         | e -> raise e);
-      effc = (fun (type a) (e : a eff) ->
+      effc = (fun (type a) (e : a t) ->
         match e with
         | E -> Some (fun k -> 11)
         | e -> None) }

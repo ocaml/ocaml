@@ -12,10 +12,14 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type _ eff = ..
-(* Type of effects *)
+(** Effects.
 
-external perform : 'a eff -> 'a = "%perform"
+    @since 5.00.0 *)
+
+type _ t = ..
+(** The type of effects. *)
+
+external perform : 'a t -> 'a = "%perform"
 (** [perform e] performs an effect [e].
 
     @raise Unhandled if there is no active handler. *)
@@ -52,7 +56,7 @@ module Deep : sig
   type ('a,'b) handler =
     { retc: 'a -> 'b;
       exnc: exn -> 'b;
-      effc: 'c.'c eff -> (('c,'b) continuation -> 'b) option }
+      effc: 'c.'c t -> (('c,'b) continuation -> 'b) option }
   (** [('a,'b) handler] is a handler record with three fields -- [retc]
       is the value handler, [exnc] handles exceptions, and [effc] handles the
       effects performed by the computation enclosed by the handler. *)
@@ -61,7 +65,7 @@ module Deep : sig
   (** [match_with f v h] runs the computation [f v] in the handler [h]. *)
 
   type 'a effect_handler =
-    { effc: 'b. 'b eff -> (('b, 'a) continuation -> 'a) option }
+    { effc: 'b. 'b t -> (('b, 'a) continuation -> 'a) option }
   (** ['a effect_handler] is a deep handler with an identity value handler
       [fun x -> x] and an exception handler that raises any exception
       [fun e -> raise e]. *)
@@ -89,7 +93,7 @@ module Shallow : sig
   type ('a,'b) handler =
     { retc: 'a -> 'b;
       exnc: exn -> 'b;
-      effc: 'c.'c eff -> (('c,'a) continuation -> 'b) option }
+      effc: 'c.'c t -> (('c,'a) continuation -> 'b) option }
   (** [('a,'b) handler] is a handler record with three fields -- [retc]
       is the value handler, [exnc] handles exceptions, and [effc] handles the
       effects performed by the computation enclosed by the handler. *)

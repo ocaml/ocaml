@@ -15,8 +15,8 @@ let handle_state init f x =
   loop init (fiber f) x
 *)
 
-type _ eff += Get : int eff
-            | Set : int -> unit eff
+type _ t += Get : int t
+          | Set : int -> unit t
 
 let handle_state init f x =
   let rec loop : type a r. int -> (a, r) continuation -> a -> r * int =
@@ -24,7 +24,7 @@ let handle_state init f x =
       continue_with k x
       { retc = (fun result -> result, state);
         exnc = (fun e -> raise e);
-        effc = (fun (type b) (eff : b eff) ->
+        effc = (fun (type b) (eff : b t) ->
           match eff with
           | Get -> Some (fun (k : (b,r) continuation) ->
               loop state k state)

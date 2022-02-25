@@ -3,7 +3,7 @@ type ('a, 'container) iterator = ('a -> unit) -> 'container -> unit
 type 'a generator = unit -> 'a option
 type ('a, 'container) iter2gen =
     ('a, 'container) iterator -> 'container -> 'a generator
-type _ Stdlib.Effect.eff += Hold : unit Effect.eff
+type _ Stdlib.Effect.t += Hold : unit Effect.t
 val iter2gen : (int, 'a) iter2gen = <fun>
 val f : unit -> unit = <fun>
 Hold 1

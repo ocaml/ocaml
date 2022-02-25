@@ -155,11 +155,11 @@ struct
 
   type 'a cont = ('a, unit) continuation
 
-  type _ eff += Suspend : ('a cont -> 'a option) -> 'a eff
-              | Resume : ('a cont * 'a) -> unit eff
-              | GetTid : int eff
-              | Spawn : (unit -> unit) -> unit eff
-              | Yield : unit eff
+  type _ t += Suspend : ('a cont -> 'a option) -> 'a t
+            | Resume : ('a cont * 'a) -> unit t
+            | GetTid : int t
+            | Spawn : (unit -> unit) -> unit t
+            | Yield : unit t
 
   let suspend f = perform (Suspend f)
   let resume t v = perform (Resume (t, v))
@@ -186,7 +186,7 @@ struct
       match_with f ()
       { retc = (fun () -> dequeue ());
         exnc = (fun e -> raise e);
-        effc = fun (type a) (e : a eff) ->
+        effc = fun (type a) (e : a t) ->
           match e with
           | Suspend f -> Some (fun (k : (a, _) continuation) ->
               match f k with

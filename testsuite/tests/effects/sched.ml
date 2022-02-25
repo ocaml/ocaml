@@ -5,9 +5,9 @@ open Effect
 open Effect.Deep
 
 exception E
-type _ eff += Yield : unit eff
-            | Fork : (unit -> string) -> unit eff
-            | Ping : unit eff
+type _ t += Yield : unit t
+          | Fork : (unit -> string) -> unit t
+          | Ping : unit t
 exception Pong
 
 let say = print_string
@@ -27,7 +27,7 @@ let run main =
       exnc = (function
         | E -> say "!"; dequeue ()
         | e -> raise e);
-      effc = fun (type a) (e : a eff) ->
+      effc = fun (type a) (e : a t) ->
         match e with
         | Yield -> Some (fun (k : (a, _) continuation) ->
             say ","; enqueue k; dequeue ())
@@ -48,7 +48,7 @@ let test () =
         exnc = (function
           | Pong -> say "]"
           | e -> raise e);
-        effc = fun (type a) (e : a eff) ->
+        effc = fun (type a) (e : a t) ->
           match e with
           | Yield -> Some (fun (k : (a,_) continuation) -> failwith "what?")
           | _ -> None }
