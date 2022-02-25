@@ -396,6 +396,8 @@ end
 type ('a, 'b, 'c, 'd) scanner =
      ('a, Scanning.in_channel, 'b, 'c, 'a -> 'd, 'd) format6 -> 'c
 
+type ('a, 'b, 'c, 'd) scanner_opt =
+     ('a, Scanning.in_channel, 'b, 'c, 'a -> 'd option, 'd) format6 -> 'c
 
 (* Reporting errors. *)
 exception Scan_failure of string
@@ -1453,9 +1455,7 @@ fun ib fmt readers pad prec scan token -> match pad, prec with
 (******************************************************************************)
             (* Defining [scanf] and various flavors of [scanf] *)
 
-type 'a kscanf_result = Args of 'a | Exc of exn
-
-let kscanf ib ef (Format (fmt, str)) =
+let kscanf_gen ib ef af (Format (fmt, str)) =
   let rec apply : type a b . a -> (a, b) heter_list -> b =
     fun f args -> match args with
     | Cons (x, r) -> apply (f x) r
@@ -1463,25 +1463,34 @@ let kscanf ib ef (Format (fmt, str)) =
   in
   let k readers f =
     Scanning.reset_token ib;
-    match try Args (make_scanf ib fmt readers) with
-      | (Scan_failure _ | Failure _ | End_of_file) as exc -> Exc exc
-      | Invalid_argument msg ->
+    match make_scanf ib fmt readers with
+    | exception (Scan_failure _ | Failure _ | End_of_file as exc) ->
+        ef ib exc
+    | exception Invalid_argument msg ->
         invalid_arg (msg ^ " in format \"" ^ String.escaped str ^ "\"")
-    with
-      | Args args -> apply f args
-      | Exc exc -> ef ib exc
+    | args ->
+        af (apply f args)
   in
   take_format_readers k fmt
+
+let kscanf ib ef fmt =
+  kscanf_gen ib ef (fun x -> x) fmt
+
+let kscanf_opt ib fmt =
+  kscanf_gen ib (fun _ _ -> None) (fun x -> Some x) fmt
 
 (***)
 
 let kbscanf = kscanf
 let bscanf ib fmt = kbscanf ib scanf_bad_input fmt
+let bscanf_opt ib fmt = kscanf_opt ib fmt
 
 let ksscanf s ef fmt = kbscanf (Scanning.from_string s) ef fmt
 let sscanf s fmt = kbscanf (Scanning.from_string s) scanf_bad_input fmt
+let sscanf_opt s fmt = kscanf_opt (Scanning.from_string s) fmt
 
 let scanf fmt = kscanf Scanning.stdin scanf_bad_input fmt
+let scanf_opt fmt = kscanf_opt Scanning.stdin fmt
 
 (***)
 

@@ -223,6 +223,9 @@ type ('a, 'b, 'c, 'd) scanner =
     @since 3.10.0
 *)
 
+type ('a, 'b, 'c, 'd) scanner_opt =
+     ('a, Scanning.in_channel, 'b, 'c, 'a -> 'd option, 'd) format6 -> 'c
+
 exception Scan_failure of string
 (** When the input can not be read according to the format string
     specification, formatted input functions typically raise exception
@@ -246,6 +249,11 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner
     argument corresponding to the [%r] conversions specified in the format
     string.
 *)
+
+val bscanf_opt : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner_opt
+(** Same as {!Scanf.bscanf}, but returns [None] in case of scanning failure.
+
+    @since 5.0 *)
 
 (** {1 Format string description} *)
 
@@ -464,10 +472,20 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner
 val sscanf : string -> ('a, 'b, 'c, 'd) scanner
 (** Same as {!Scanf.bscanf}, but reads from the given string. *)
 
+val sscanf_opt : string -> ('a, 'b, 'c, 'd) scanner_opt
+(** Same as {!Scanf.sscanf}, but returns [None] in case of scanning failure.
+
+    @since 5.0 *)
+
 val scanf : ('a, 'b, 'c, 'd) scanner
 (** Same as {!Scanf.bscanf}, but reads from the predefined formatted input
     channel {!Scanf.Scanning.stdin} that is connected to {!Stdlib.stdin}.
 *)
+
+val scanf_opt : ('a, 'b, 'c, 'd) scanner_opt
+(** Same as {!Scanf.scanf}, but returns [None] in case of scanning failure.
+
+    @since 5.0 *)
 
 val kscanf :
   Scanning.in_channel -> (Scanning.in_channel -> exn -> 'd) ->
