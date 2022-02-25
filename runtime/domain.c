@@ -389,7 +389,7 @@ int caml_reallocate_minor_heap(asize_t wsize)
     ||
     (/* initialized minor heap */
       domain_state->young_start == (value*)domain_self->minor_heap_area
-      && domain_state->young_end < (value*)domain_self->minor_heap_area_end));
+      && domain_state->young_end <= (value*)domain_self->minor_heap_area_end));
 
   /* free old minor heap.
      instead of unmapping the heap, we decommit it, so there's
