@@ -746,17 +746,19 @@ CAMLprim value caml_thread_yield(value unit)
   if (st_masterlock_waiters(m) == 0)
     return Val_unit;
 
-  /* Do all the parts of a blocking section enter/leave except lock
-     manipulation, which we'll do more efficiently in st_thread_yield. (Since
-     our blocking section doesn't contain anything interesting, don't bother
-     with saving errno.)
+  /* Do all the parts of a blocking section enter&leave except lock
+     manipulation, which we will do more efficiently in
+     st_thread_yield, and asynchronous actions (since
+     [caml_thread_yield] must not raise). (Since our blocking section
+     does not contain anything interesting, do not bother saving
+     errno.)
   */
 
-  caml_raise_if_exception(caml_process_pending_signals_exn());
   save_runtime_state();
   st_thread_yield(m);
   restore_runtime_state(This_thread);
-  caml_raise_if_exception(caml_process_pending_signals_exn());
+  if (Caml_state->action_pending || caml_check_pending_signals())
+    caml_set_action_pending(Caml_state);
 
   return Val_unit;
 }

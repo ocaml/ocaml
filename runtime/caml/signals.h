@@ -60,7 +60,7 @@ CAMLextern atomic_uintnat caml_pending_signals[NSIG_WORDS];
 #define caml_requested_major_slice (Caml_state_field(requested_major_slice))
 #define caml_requested_minor_gc (Caml_state_field(requested_minor_gc))
 
-int caml_check_pending_signals(void);
+CAMLextern int caml_check_pending_signals(void);
 void caml_request_major_slice (int global);
 void caml_request_minor_gc (void);
 CAMLextern int caml_convert_signal_number (int);
@@ -68,7 +68,7 @@ CAMLextern int caml_rev_convert_signal_number (int);
 value caml_execute_signal_exn(int signal_number, int in_signal_handler);
 CAMLextern void caml_record_signal(int signal_number);
 CAMLextern value caml_process_pending_signals_exn(void);
-void caml_set_action_pending(caml_domain_state *);
+CAMLextern void caml_set_action_pending(caml_domain_state *);
 value caml_do_pending_actions_exn(void);
 value caml_process_pending_actions_with_root (value extra_root); // raises
 value caml_process_pending_actions_with_root_exn (value extra_root);

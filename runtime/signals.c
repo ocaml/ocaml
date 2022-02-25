@@ -45,7 +45,7 @@ CAMLexport atomic_uintnat caml_pending_signals[NSIG_WORDS];
 
 static caml_plat_mutex signal_install_mutex = CAML_PLAT_MUTEX_INITIALIZER;
 
-int caml_check_pending_signals(void)
+CAMLexport int caml_check_pending_signals(void)
 {
   int i;
   for (i = 0; i < NSIG_WORDS; i++) {
@@ -300,7 +300,7 @@ void caml_request_minor_gc (void)
 */
 
 /* We assume that we have unique access to dom_st. */
-void caml_set_action_pending(caml_domain_state * dom_st)
+CAMLexport void caml_set_action_pending(caml_domain_state * dom_st)
 {
   dom_st->action_pending = 1;
   atomic_store_release(&dom_st->young_limit, (uintnat)-1);
