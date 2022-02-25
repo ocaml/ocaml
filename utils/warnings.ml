@@ -107,7 +107,6 @@ type t =
   | Missing_mli                             (* 70 *)
   | Unused_tmc_attribute                    (* 71 *)
   | Tmc_breaks_tailcall                     (* 72 *)
-;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
    the numbers of existing warnings.
@@ -189,10 +188,8 @@ let number = function
   | Missing_mli -> 70
   | Unused_tmc_attribute -> 71
   | Tmc_breaks_tailcall -> 72
-;;
 
 let last_warning_number = 72
-;;
 
 type description =
   { number : int;
@@ -447,7 +444,6 @@ let descriptions = [
     description = "A tail call is turned into a non-tail call \
                    by the @tail_mod_cons transformation." };
 ]
-;;
 
 let name_to_number =
   let h = Hashtbl.create last_warning_number in
@@ -455,7 +451,6 @@ let name_to_number =
       List.iter (fun name -> Hashtbl.add h name number) names
     ) descriptions;
   fun s -> Hashtbl.find_opt h s
-;;
 
 (* Must be the max number returned by the [number] function. *)
 
@@ -489,7 +484,6 @@ let letter = function
   | 'y' -> [26]
   | 'z' -> [27]
   | _ -> assert false
-;;
 
 type state =
   {
@@ -766,7 +760,6 @@ let parse_opt error active errflag s =
         | '@', Some n -> action Set_all n; None
         | _ -> parse_and_eval s
       end
-;;
 
 let parse_options errflag s =
   let error = Array.copy (!current).error in
@@ -776,11 +769,11 @@ let parse_options errflag s =
   alerts
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
-let defaults_w = "+a-4-7-9-27-29-30-32..42-44-45-48-50-60-66..70";;
-let defaults_warn_error = "-a+31";;
+let defaults_w = "+a-4-7-9-27-29-30-32..42-44-45-48-50-60-66..70"
+let defaults_warn_error = "-a+31"
 
-let () = ignore @@ parse_options false defaults_w;;
-let () = ignore @@ parse_options true defaults_warn_error;;
+let () = ignore @@ parse_options false defaults_w
+let () = ignore @@ parse_options true defaults_warn_error
 
 let ref_manual_explanation () =
   (* manual references are checked a posteriori by the manual
@@ -1045,9 +1038,8 @@ let message = function
        the [@tail_mod_cons] attribute, or mark this call with\n\
        the [@tailcall false] attribute to make its non-tailness \
        explicit."
-;;
 
-let nerrors = ref 0;;
+let nerrors = ref 0
 
 type reporting_information =
   { id : string
@@ -1106,7 +1098,7 @@ let report_alert (alert : alert) =
           sub_locs;
         }
 
-exception Errors;;
+exception Errors
 
 let reset_fatal () =
   nerrors := 0
@@ -1115,8 +1107,7 @@ let check_fatal () =
   if !nerrors > 0 then begin
     nerrors := 0;
     raise Errors;
-  end;
-;;
+  end
 
 let help_warnings () =
   List.iter
@@ -1141,4 +1132,3 @@ let help_warnings () =
           (String.concat ", " (List.map Int.to_string l))
   done;
   exit 0
-;;

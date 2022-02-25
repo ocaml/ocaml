@@ -28,7 +28,7 @@ open Longident
 open Parsetree
 open Ast_helper
 
-let prefix_symbols  = [ '!'; '?'; '~' ] ;;
+let prefix_symbols  = [ '!'; '?'; '~' ]
 let infix_symbols = [ '='; '<'; '>'; '@'; '^'; '|'; '&'; '+'; '-'; '*'; '/';
                       '$'; '%'; '#' ]
 

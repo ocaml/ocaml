@@ -617,7 +617,6 @@ module Color = struct
     | Magenta
     | Cyan
     | White
-  ;;
 
   type style =
     | FG of color (* foreground *)

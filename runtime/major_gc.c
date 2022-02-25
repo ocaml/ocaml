@@ -1490,7 +1490,7 @@ static void mark_stack_prune (struct mark_stack* stk)
           Caml_state->pools_to_rescan_len * sizeof(struct pool *));
     }
     Caml_state->pools_to_rescan[Caml_state->pools_to_rescan_count++]
-      = (struct pool*) (e->key);;
+      = (struct pool*) (e->key);
   });
 
   caml_gc_log(

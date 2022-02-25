@@ -58,7 +58,7 @@ let mkappl (func, args) =
     ap_tailcall=Default_tailcall;
     ap_inlined=Default_inline;
     ap_specialised=Default_specialise;
-  };;
+  }
 
 let lsequence l1 l2 =
   if l2 = lambda_unit then l1 else Lsequence(l1, l2)

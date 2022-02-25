@@ -243,7 +243,7 @@ static caml_thread_t caml_thread_new_info(void)
   th->next = NULL;
   th->prev = NULL;
   th->domain_id = domain_state->id;
-  th->current_stack = caml_alloc_main_stack(Stack_size / sizeof(value));;
+  th->current_stack = caml_alloc_main_stack(Stack_size / sizeof(value));
   if (th->current_stack == NULL) {
     caml_stat_free(th);
     return NULL;

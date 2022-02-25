@@ -537,7 +537,6 @@ let rec compare_lengths l1 l2 =
   | [], _ -> -1
   | _, [] -> 1
   | _ :: l1, _ :: l2 -> compare_lengths l1 l2
-;;
 
 let rec compare_length_with l n =
   match l with
@@ -547,7 +546,6 @@ let rec compare_length_with l n =
   | _ :: l ->
     if n <= 0 then 1 else
       compare_length_with l (n-1)
-;;
 
 (** {1 Comparison} *)
 

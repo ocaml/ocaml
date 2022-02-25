@@ -209,15 +209,14 @@ let type_object =
 let re node =
   Cmt_format.add_saved_type (Cmt_format.Partial_expression node);
   node
-;;
+
 let rp node =
   Cmt_format.add_saved_type (Cmt_format.Partial_pattern (Value, node));
   node
-;;
+
 let rcp node =
   Cmt_format.add_saved_type (Cmt_format.Partial_pattern (Computation, node));
   node
-;;
 
 
 (* Context for inline record arguments; see [type_ident] *)
@@ -451,8 +450,7 @@ let reset_pattern allow =
   pattern_variables := [];
   pattern_force := [];
   allow_modules := allow;
-  module_variables := [];
-;;
+  module_variables := []
 
 let maybe_add_pattern_variables_ghost loc_let env pv =
   List.fold_right
@@ -1241,7 +1239,6 @@ let type_label_a_list
       lbl_a_list
   in
   map_fold_cont type_lbl_a lbl_a_list k
-;;
 
 (* Checks over the labels mentioned in a record pattern:
    no duplicate definitions (error); properly closed (warning) *)

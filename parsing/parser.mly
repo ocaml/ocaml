@@ -98,13 +98,13 @@ let push_loc x acc =
 
 let reloc_pat ~loc x =
   { x with ppat_loc = make_loc loc;
-           ppat_loc_stack = push_loc x.ppat_loc x.ppat_loc_stack };;
+           ppat_loc_stack = push_loc x.ppat_loc x.ppat_loc_stack }
 let reloc_exp ~loc x =
   { x with pexp_loc = make_loc loc;
-           pexp_loc_stack = push_loc x.pexp_loc x.pexp_loc_stack };;
+           pexp_loc_stack = push_loc x.pexp_loc x.pexp_loc_stack }
 let reloc_typ ~loc x =
   { x with ptyp_loc = make_loc loc;
-           ptyp_loc_stack = push_loc x.ptyp_loc x.ptyp_loc_stack };;
+           ptyp_loc_stack = push_loc x.ptyp_loc x.ptyp_loc_stack }
 
 let mkexpvar ~loc (name : string) =
   mkexp ~loc (Pexp_ident(mkrhs (Lident name) loc))

@@ -438,7 +438,6 @@ let type_decl_is_alias sdecl = (* assuming no explicit constraint *)
        | () -> Some lid
      end
   | _ -> None
-;;
 
 let params_are_constrained =
   let rec loop = function
@@ -449,7 +448,6 @@ let params_are_constrained =
        | _ -> true
   in
   loop
-;;
 
 type with_info =
   | With_type of Parsetree.type_declaration

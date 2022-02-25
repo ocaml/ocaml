@@ -79,12 +79,11 @@ let is_unit_name name =
     done;
     true
   with Exit -> false
-;;
 
 let check_unit_name filename name =
   if not (is_unit_name name) then
     Location.prerr_warning (Location.in_file filename)
-      (Warnings.Bad_module_name name);;
+      (Warnings.Bad_module_name name)
 
 (* Compute name of module from output file name *)
 let module_of_filename inputfile outputprefix =
@@ -98,7 +97,6 @@ let module_of_filename inputfile outputprefix =
   let name = String.capitalize_ascii name in
   check_unit_name inputfile name;
   name
-;;
 
 type filename = string
 

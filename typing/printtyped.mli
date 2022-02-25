@@ -13,11 +13,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Typedtree;;
-open Format;;
+open Typedtree
+open Format
 
-val interface : formatter -> signature -> unit;;
-val implementation : formatter -> structure -> unit;;
+val interface : formatter -> signature -> unit
+val implementation : formatter -> structure -> unit
 
 val implementation_with_coercion :
-  formatter -> Typedtree.implementation -> unit;;
+  formatter -> Typedtree.implementation -> unit

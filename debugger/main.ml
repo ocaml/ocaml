@@ -160,12 +160,11 @@ let set_directory dir =
   Sys.chdir dir
 let print_version () =
   printf "The OCaml debugger, version %s@." Sys.ocaml_version;
-  exit 0;
-;;
+  exit 0
+
 let print_version_num () =
   printf "%s@." Sys.ocaml_version;
-  exit 0;
-;;
+  exit 0
 
 let speclist = [
    "-c", Arg.Int set_checkpoints,

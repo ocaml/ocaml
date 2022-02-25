@@ -124,7 +124,6 @@ module type Compiler_options = sig
   val _args: string -> string array
   val _args0: string -> string array
 end
-;;
 
 module type Toplevel_options = sig
   include Core_options
@@ -140,7 +139,6 @@ module type Toplevel_options = sig
   val _error_style : string -> unit
   val _eval: string -> unit
 end
-;;
 
 module type Bytecomp_options = sig
   include Core_options
@@ -159,13 +157,13 @@ module type Bytecomp_options = sig
   val _dcamlprimc : unit -> unit
 
   val _use_prims : string -> unit
-end;;
+end
 
 module type Bytetop_options = sig
   include Toplevel_options
   val _dinstr : unit -> unit
 
-end;;
+end
 
 module type Optcommon_options = sig
   val _compact : unit -> unit
@@ -221,7 +219,7 @@ module type Optcommon_options = sig
   val _dlinear :  unit -> unit
   val _dinterval : unit -> unit
   val _dstartup :  unit -> unit
-end;;
+end
 
 module type Optcomp_options = sig
   include Core_options
@@ -236,14 +234,14 @@ module type Optcomp_options = sig
   val _afl_inst_ratio : int -> unit
   val _function_sections : unit -> unit
   val _save_ir_after : string -> unit
-end;;
+end
 
 module type Opttop_options = sig
   include Toplevel_options
   include Optcommon_options
   val _verbose : unit -> unit
   val _S : unit -> unit
-end;;
+end
 
 module type Ocamldoc_options = sig
   include Common_options
@@ -259,13 +257,13 @@ end
 
 module type Arg_list = sig
     val list : (string * Arg.spec * string) list
-end;;
+end
 
-module Make_bytecomp_options : Bytecomp_options -> Arg_list;;
-module Make_bytetop_options : Bytetop_options -> Arg_list;;
-module Make_optcomp_options : Optcomp_options -> Arg_list;;
-module Make_opttop_options : Opttop_options -> Arg_list;;
-module Make_ocamldoc_options : Ocamldoc_options -> Arg_list;;
+module Make_bytecomp_options : Bytecomp_options -> Arg_list
+module Make_bytetop_options : Bytetop_options -> Arg_list
+module Make_optcomp_options : Optcomp_options -> Arg_list
+module Make_opttop_options : Opttop_options -> Arg_list
+module Make_ocamldoc_options : Ocamldoc_options -> Arg_list
 
 (** [options_with_command_line_syntax options r] returns [options2] that behaves
     like [options], but additionally pushes command line argument on [r] (quoted

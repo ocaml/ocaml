@@ -154,11 +154,9 @@ let insn_sched = ref insn_sched_default (* -[no-]insn-sched *)
 let std_include_flag prefix =
   if !no_std_include then ""
   else (prefix ^ (Filename.quote Config.standard_library))
-;;
 
 let std_include_dir () =
   if !no_std_include then [] else [Config.standard_library]
-;;
 
 let shared = ref false (* -shared *)
 let dlcode = ref true (* not -nodynlink *)
@@ -172,7 +170,7 @@ let runtime_variant =
         | true -> "i"
         | false -> "")
 
-let with_runtime = ref true;;         (* -with-runtime *)
+let with_runtime = ref true         (* -with-runtime *)
 
 let keep_docs = ref false              (* -keep-docs *)
 let keep_locs = ref true               (* -keep-locs *)

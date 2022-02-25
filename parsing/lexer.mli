@@ -35,12 +35,11 @@ type error =
   | Keyword_as_label of string
   | Invalid_literal of string
   | Invalid_directive of string * string option
-;;
 
 exception Error of error * Location.t
 
-val in_comment : unit -> bool;;
-val in_string : unit -> bool;;
+val in_comment : unit -> bool
+val in_string : unit -> bool
 
 
 val print_warnings : bool ref

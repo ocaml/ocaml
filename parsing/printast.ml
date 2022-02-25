@@ -13,11 +13,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Asttypes;;
-open Format;;
-open Lexing;;
-open Location;;
-open Parsetree;;
+open Asttypes
+open Format
+open Lexing
+open Location
+open Parsetree
 
 let fmt_position with_name f l =
   let fname = if with_name then l.pos_fname else "" in
@@ -25,7 +25,6 @@ let fmt_position with_name f l =
   then fprintf f "%s[%d]" fname l.pos_cnum
   else fprintf f "%s[%d,%d+%d]" fname l.pos_lnum l.pos_bol
                (l.pos_cnum - l.pos_bol)
-;;
 
 let fmt_location f loc =
   if not !Clflags.locations then ()
@@ -35,29 +34,24 @@ let fmt_location f loc =
                          (fmt_position p_2nd_name) loc.loc_end;
     if loc.loc_ghost then fprintf f " ghost";
   end
-;;
 
 let rec fmt_longident_aux f x =
   match x with
-  | Longident.Lident (s) -> fprintf f "%s" s;
-  | Longident.Ldot (y, s) -> fprintf f "%a.%s" fmt_longident_aux y s;
+  | Longident.Lident (s) -> fprintf f "%s" s
+  | Longident.Ldot (y, s) -> fprintf f "%a.%s" fmt_longident_aux y s
   | Longident.Lapply (y, z) ->
-      fprintf f "%a(%a)" fmt_longident_aux y fmt_longident_aux z;
-;;
+      fprintf f "%a(%a)" fmt_longident_aux y fmt_longident_aux z
 
-let fmt_longident f x = fprintf f "\"%a\"" fmt_longident_aux x;;
+let fmt_longident f x = fprintf f "\"%a\"" fmt_longident_aux x
 
 let fmt_longident_loc f (x : Longident.t loc) =
-  fprintf f "\"%a\" %a" fmt_longident_aux x.txt fmt_location x.loc;
-;;
+  fprintf f "\"%a\" %a" fmt_longident_aux x.txt fmt_location x.loc
 
 let fmt_string_loc f (x : string loc) =
-  fprintf f "\"%s\" %a" x.txt fmt_location x.loc;
-;;
+  fprintf f "\"%s\" %a" x.txt fmt_location x.loc
 
 let fmt_str_opt_loc f (x : string option loc) =
-  fprintf f "\"%s\" %a" (Option.value x.txt ~default:"_") fmt_location x.loc;
-;;
+  fprintf f "\"%s\" %a" (Option.value x.txt ~default:"_") fmt_location x.loc
 
 let fmt_char_option f = function
   | None -> fprintf f "None"
@@ -65,32 +59,28 @@ let fmt_char_option f = function
 
 let fmt_constant f x =
   match x with
-  | Pconst_integer (i,m) -> fprintf f "PConst_int (%s,%a)" i fmt_char_option m;
-  | Pconst_char (c) -> fprintf f "PConst_char %02x" (Char.code c);
+  | Pconst_integer (i,m) -> fprintf f "PConst_int (%s,%a)" i fmt_char_option m
+  | Pconst_char (c) -> fprintf f "PConst_char %02x" (Char.code c)
   | Pconst_string (s, strloc, None) ->
-      fprintf f "PConst_string(%S,%a,None)" s fmt_location strloc ;
+      fprintf f "PConst_string(%S,%a,None)" s fmt_location strloc
   | Pconst_string (s, strloc, Some delim) ->
-      fprintf f "PConst_string (%S,%a,Some %S)" s fmt_location strloc delim;
-  | Pconst_float (s,m) -> fprintf f "PConst_float (%s,%a)" s fmt_char_option m;
-;;
+      fprintf f "PConst_string (%S,%a,Some %S)" s fmt_location strloc delim
+  | Pconst_float (s,m) -> fprintf f "PConst_float (%s,%a)" s fmt_char_option m
 
 let fmt_mutable_flag f x =
   match x with
-  | Immutable -> fprintf f "Immutable";
-  | Mutable -> fprintf f "Mutable";
-;;
+  | Immutable -> fprintf f "Immutable"
+  | Mutable -> fprintf f "Mutable"
 
 let fmt_virtual_flag f x =
   match x with
-  | Virtual -> fprintf f "Virtual";
-  | Concrete -> fprintf f "Concrete";
-;;
+  | Virtual -> fprintf f "Virtual"
+  | Concrete -> fprintf f "Concrete"
 
 let fmt_override_flag f x =
   match x with
-  | Override -> fprintf f "Override";
-  | Fresh -> fprintf f "Fresh";
-;;
+  | Override -> fprintf f "Override"
+  | Fresh -> fprintf f "Fresh"
 
 let fmt_closed_flag f x =
   match x with
@@ -99,53 +89,46 @@ let fmt_closed_flag f x =
 
 let fmt_rec_flag f x =
   match x with
-  | Nonrecursive -> fprintf f "Nonrec";
-  | Recursive -> fprintf f "Rec";
-;;
+  | Nonrecursive -> fprintf f "Nonrec"
+  | Recursive -> fprintf f "Rec"
 
 let fmt_direction_flag f x =
   match x with
-  | Upto -> fprintf f "Up";
-  | Downto -> fprintf f "Down";
-;;
+  | Upto -> fprintf f "Up"
+  | Downto -> fprintf f "Down"
 
 let fmt_private_flag f x =
   match x with
-  | Public -> fprintf f "Public";
-  | Private -> fprintf f "Private";
-;;
+  | Public -> fprintf f "Public"
+  | Private -> fprintf f "Private"
 
 let line i f s (*...*) =
   fprintf f "%s" (String.make ((2*i) mod 72) ' ');
   fprintf f s (*...*)
-;;
 
 let list i f ppf l =
   match l with
-  | [] -> line i ppf "[]\n";
+  | [] -> line i ppf "[]\n"
   | _ :: _ ->
      line i ppf "[\n";
      List.iter (f (i+1) ppf) l;
-     line i ppf "]\n";
-;;
+     line i ppf "]\n"
 
 let option i f ppf x =
   match x with
-  | None -> line i ppf "None\n";
+  | None -> line i ppf "None\n"
   | Some x ->
       line i ppf "Some\n";
-      f (i+1) ppf x;
-;;
+      f (i+1) ppf x
 
-let longident_loc i ppf li = line i ppf "%a\n" fmt_longident_loc li;;
-let string i ppf s = line i ppf "\"%s\"\n" s;;
-let string_loc i ppf s = line i ppf "%a\n" fmt_string_loc s;;
-let str_opt_loc i ppf s = line i ppf "%a\n" fmt_str_opt_loc s;;
+let longident_loc i ppf li = line i ppf "%a\n" fmt_longident_loc li
+let string i ppf s = line i ppf "\"%s\"\n" s
+let string_loc i ppf s = line i ppf "%a\n" fmt_string_loc s
+let str_opt_loc i ppf s = line i ppf "%a\n" fmt_str_opt_loc s
 let arg_label i ppf = function
   | Nolabel -> line i ppf "Nolabel\n"
   | Optional s -> line i ppf "Optional \"%s\"\n" s
   | Labelled s -> line i ppf "Labelled \"%s\"\n" s
-;;
 
 let typevars ppf vs =
   List.iter (fun x -> fprintf ppf " %a" Pprintast.tyvar x.txt) vs
@@ -953,7 +936,6 @@ and label_x_bool_x_core_type_list i ppf x =
   | Rinherit (ct) ->
       line i ppf "Rinherit\n";
       core_type (i+1) ppf ct
-;;
 
 let rec toplevel_phrase i ppf x =
   match x with
@@ -968,15 +950,14 @@ let rec toplevel_phrase i ppf x =
 
 and directive_argument i ppf x =
   match x.pdira_desc with
-  | Pdir_string (s) -> line i ppf "Pdir_string \"%s\"\n" s;
-  | Pdir_int (n, None) -> line i ppf "Pdir_int %s\n" n;
-  | Pdir_int (n, Some m) -> line i ppf "Pdir_int %s%c\n" n m;
-  | Pdir_ident (li) -> line i ppf "Pdir_ident %a\n" fmt_longident li;
-  | Pdir_bool (b) -> line i ppf "Pdir_bool %s\n" (string_of_bool b);
-;;
+  | Pdir_string (s) -> line i ppf "Pdir_string \"%s\"\n" s
+  | Pdir_int (n, None) -> line i ppf "Pdir_int %s\n" n
+  | Pdir_int (n, Some m) -> line i ppf "Pdir_int %s%c\n" n m
+  | Pdir_ident (li) -> line i ppf "Pdir_ident %a\n" fmt_longident li
+  | Pdir_bool (b) -> line i ppf "Pdir_bool %s\n" (string_of_bool b)
 
-let interface ppf x = list 0 signature_item ppf x;;
+let interface ppf x = list 0 signature_item ppf x
 
-let implementation ppf x = list 0 structure_item ppf x;;
+let implementation ppf x = list 0 structure_item ppf x
 
-let top_phrase ppf x = toplevel_phrase 0 ppf x;;
+let top_phrase ppf x = toplevel_phrase 0 ppf x

@@ -16,15 +16,15 @@
 (** *)
 
 class type doc_generator =
-  object method generate : Odoc_module.t_module list -> unit end;;
+  object method generate : Odoc_module.t_module list -> unit end
 
 module type Base = sig
     class generator : doc_generator
-  end;;
+  end
 
 module Base_generator : Base = struct
   class generator : doc_generator = object method generate _ = () end
-  end;;
+  end
 
 module type Base_functor = Base -> Base
 module type Html_functor = Odoc_html.Html_generator -> Odoc_html.Html_generator
@@ -40,7 +40,6 @@ type generator =
   | Man of (module Odoc_man.Man_generator)
   | Dot of (module Odoc_dot.Dot_generator)
   | Base of (module Base)
-;;
 
 let get_minimal_generator = function
   Html m ->
@@ -61,4 +60,3 @@ let get_minimal_generator = function
 | Base m ->
     let module M = (val m : Base) in
     new M.generator
-    ;;

@@ -203,7 +203,6 @@ let assert_failed ~scopes exp =
               [Const_base(Const_string (fname, exp.exp_loc, None));
                Const_base(Const_int line);
                Const_base(Const_int char)]))], loc))], loc)
-;;
 
 let rec cut n l =
   if n = 0 then ([],l) else

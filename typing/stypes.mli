@@ -17,7 +17,7 @@
 
 (* Clflags.save_types must be true *)
 
-open Typedtree;;
+open Typedtree
 
 type annotation =
   | Ti_pat : 'k pattern_category * 'k general_pattern -> annotation
@@ -26,11 +26,10 @@ type annotation =
   | Ti_mod   of module_expr
   | An_call of Location.t * Annot.call
   | An_ident of Location.t * string * Annot.ident
-;;
 
-val record : annotation -> unit;;
-val record_phrase : Location.t -> unit;;
-val dump : string option -> unit;;
+val record : annotation -> unit
+val record_phrase : Location.t -> unit
+val dump : string option -> unit
 
-val get_location : annotation -> Location.t;;
-val get_info : unit -> annotation list;;
+val get_location : annotation -> Location.t
+val get_info : unit -> annotation list
