@@ -4,308 +4,308 @@ include dynlink
 libraries = ""
 readonly_files = "store.ml main.ml Plugin_0.ml Plugin_0_0.ml Plugin_0_0_0.ml Plugin_0_0_0_0.ml Plugin_0_1.ml Plugin_0_1_0.ml Plugin_0_1_0_0.ml Plugin_0_2.ml Plugin_0_2_0.ml Plugin_0_2_0_0.ml Plugin_0_2_1.ml Plugin_0_2_1_0.ml Plugin_0_2_2.ml Plugin_0_2_2_0.ml Plugin_0_2_3.ml Plugin_0_2_3_0.ml Plugin_1.ml Plugin_1_0.ml Plugin_1_0_0.ml Plugin_1_0_0_0.ml Plugin_1_1.ml Plugin_1_2.ml Plugin_1_2_0.ml Plugin_1_2_0_0.ml Plugin_1_3.ml Plugin_2.ml Plugin_2_0.ml Plugin_2_0_0.ml Plugin_2_0_0_0.ml Plugin_3.ml Plugin_3_0.ml Plugin_3_1.ml Plugin_3_2.ml Plugin_3_2_0.ml Plugin_3_2_0_0.ml Plugin_3_2_1.ml Plugin_3_2_2.ml Plugin_3_2_2_0.ml Plugin_3_2_2_1.ml"
 
-* shared-libraries
-** setup-ocamlc.byte-build-env
-*** ocamlc.byte
+*01 shared-libraries
+*02 setup-ocamlc.byte-build-env
+*03 ocamlc.byte
 module = "store.ml"
-**** ocamlc.byte
+*04 ocamlc.byte
 module = "Plugin_0.ml"
-***** ocamlc.byte
+*05 ocamlc.byte
 module = "Plugin_0_0.ml"
-****** ocamlc.byte
+*06 ocamlc.byte
 module = "Plugin_0_0_0.ml"
-******* ocamlc.byte
+*07 ocamlc.byte
 module = "Plugin_0_0_0_0.ml"
-******** ocamlc.byte
+*08 ocamlc.byte
 module = "Plugin_0_1.ml"
-********* ocamlc.byte
+*09 ocamlc.byte
 module = "Plugin_0_1_0.ml"
-********** ocamlc.byte
+*10 ocamlc.byte
 module = "Plugin_0_1_0_0.ml"
-*********** ocamlc.byte
+*11 ocamlc.byte
 module = "Plugin_0_2.ml"
-************ ocamlc.byte
+*12 ocamlc.byte
 module = "Plugin_0_2_0.ml"
-************* ocamlc.byte
+*13 ocamlc.byte
 module = "Plugin_0_2_0_0.ml"
-************** ocamlc.byte
+*14 ocamlc.byte
 module = "Plugin_0_2_1.ml"
-*************** ocamlc.byte
+*15 ocamlc.byte
 module = "Plugin_0_2_1_0.ml"
-**************** ocamlc.byte
+*16 ocamlc.byte
 module = "Plugin_0_2_2.ml"
-***************** ocamlc.byte
+*17 ocamlc.byte
 module = "Plugin_0_2_2_0.ml"
-****************** ocamlc.byte
+*18 ocamlc.byte
 module = "Plugin_0_2_3.ml"
-******************* ocamlc.byte
+*19 ocamlc.byte
 module = "Plugin_0_2_3_0.ml"
-******************** ocamlc.byte
+*20 ocamlc.byte
 module = "Plugin_1.ml"
-********************* ocamlc.byte
+*21 ocamlc.byte
 module = "Plugin_1_0.ml"
-********************** ocamlc.byte
+*22 ocamlc.byte
 module = "Plugin_1_0_0.ml"
-*********************** ocamlc.byte
+*23 ocamlc.byte
 module = "Plugin_1_0_0_0.ml"
-************************ ocamlc.byte
+*24 ocamlc.byte
 module = "Plugin_1_1.ml"
-************************* ocamlc.byte
+*25 ocamlc.byte
 module = "Plugin_1_2.ml"
-************************** ocamlc.byte
+*26 ocamlc.byte
 module = "Plugin_1_2_0.ml"
-*************************** ocamlc.byte
+*27 ocamlc.byte
 module = "Plugin_1_2_0_0.ml"
-**************************** ocamlc.byte
+*28 ocamlc.byte
 module = "Plugin_1_3.ml"
-***************************** ocamlc.byte
+*29 ocamlc.byte
 module = "Plugin_2.ml"
-****************************** ocamlc.byte
+*30 ocamlc.byte
 module = "Plugin_2_0.ml"
-******************************* ocamlc.byte
+*31 ocamlc.byte
 module = "Plugin_2_0_0.ml"
-******************************** ocamlc.byte
+*32 ocamlc.byte
 module = "Plugin_2_0_0_0.ml"
-********************************* ocamlc.byte
+*33 ocamlc.byte
 module = "Plugin_3.ml"
-********************************** ocamlc.byte
+*34 ocamlc.byte
 module = "Plugin_3_0.ml"
-*********************************** ocamlc.byte
+*35 ocamlc.byte
 module = "Plugin_3_1.ml"
-************************************ ocamlc.byte
+*36 ocamlc.byte
 module = "Plugin_3_2.ml"
-************************************* ocamlc.byte
+*37 ocamlc.byte
 module = "Plugin_3_2_0.ml"
-************************************** ocamlc.byte
+*38 ocamlc.byte
 module = "Plugin_3_2_0_0.ml"
-*************************************** ocamlc.byte
+*39 ocamlc.byte
 module = "Plugin_3_2_1.ml"
-**************************************** ocamlc.byte
+*40 ocamlc.byte
 module = "Plugin_3_2_2.ml"
-***************************************** ocamlc.byte
+*41 ocamlc.byte
 module = "Plugin_3_2_2_0.ml"
-****************************************** ocamlc.byte
+*42 ocamlc.byte
 module = "Plugin_3_2_2_1.ml"
-******************************************* ocamlc.byte
+*43 ocamlc.byte
 module = "main.ml"
-******************************************** ocamlc.byte
+*44 ocamlc.byte
 program = "./main.byte.exe"
 libraries= "dynlink"
 all_modules = "store.cmo main.cmo"
 module = ""
-********************************************* run
-********************************************** check-program-output
+*45 run
+*46 check-program-output
 
-** native-dynlink
-*** setup-ocamlopt.byte-build-env
-**** ocamlopt.byte
+*02 native-dynlink
+*03 setup-ocamlopt.byte-build-env
+*04 ocamlopt.byte
 flags = ""
 module = "store.ml"
-***** ocamlopt.byte
+*05 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_0.cmxs"
 module = ""
 all_modules = "Plugin_0.ml"
-****** ocamlopt.byte
+*06 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_0_0.cmxs"
 module = ""
 all_modules = "Plugin_0_0.ml"
-******* ocamlopt.byte
+*07 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_0_0_0.cmxs"
 module = ""
 all_modules = "Plugin_0_0_0.ml"
-******** ocamlopt.byte
+*08 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_0_0_0_0.cmxs"
 module = ""
 all_modules = "Plugin_0_0_0_0.ml"
-********* ocamlopt.byte
+*09 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_0_1.cmxs"
 module = ""
 all_modules = "Plugin_0_1.ml"
-********** ocamlopt.byte
+*10 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_0_1_0.cmxs"
 module = ""
 all_modules = "Plugin_0_1_0.ml"
-*********** ocamlopt.byte
+*11 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_0_1_0_0.cmxs"
 module = ""
 all_modules = "Plugin_0_1_0_0.ml"
-************ ocamlopt.byte
+*12 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_0_2.cmxs"
 module = ""
 all_modules = "Plugin_0_2.ml"
-************* ocamlopt.byte
+*13 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_0_2_0.cmxs"
 module = ""
 all_modules = "Plugin_0_2_0.ml"
-************** ocamlopt.byte
+*14 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_0_2_0_0.cmxs"
 module = ""
 all_modules = "Plugin_0_2_0_0.ml"
-*************** ocamlopt.byte
+*15 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_0_2_1.cmxs"
 module = ""
 all_modules = "Plugin_0_2_1.ml"
-**************** ocamlopt.byte
+*16 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_0_2_1_0.cmxs"
 module = ""
 all_modules = "Plugin_0_2_1_0.ml"
-***************** ocamlopt.byte
+*17 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_0_2_2.cmxs"
 module = ""
 all_modules = "Plugin_0_2_2.ml"
-****************** ocamlopt.byte
+*18 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_0_2_2_0.cmxs"
 module = ""
 all_modules = "Plugin_0_2_2_0.ml"
-******************* ocamlopt.byte
+*19 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_0_2_3.cmxs"
 module = ""
 all_modules = "Plugin_0_2_3.ml"
-******************** ocamlopt.byte
+*20 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_0_2_3_0.cmxs"
 module = ""
 all_modules = "Plugin_0_2_3_0.ml"
-********************* ocamlopt.byte
+*21 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_1.cmxs"
 module = ""
 all_modules = "Plugin_1.ml"
-********************** ocamlopt.byte
+*22 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_1_0.cmxs"
 module = ""
 all_modules = "Plugin_1_0.ml"
-*********************** ocamlopt.byte
+*23 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_1_0_0.cmxs"
 module = ""
 all_modules = "Plugin_1_0_0.ml"
-************************ ocamlopt.byte
+*24 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_1_0_0_0.cmxs"
 module = ""
 all_modules = "Plugin_1_0_0_0.ml"
-************************* ocamlopt.byte
+*25 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_1_1.cmxs"
 module = ""
 all_modules = "Plugin_1_1.ml"
-************************** ocamlopt.byte
+*26 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_1_2.cmxs"
 module = ""
 all_modules = "Plugin_1_2.ml"
-*************************** ocamlopt.byte
+*27 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_1_2_0.cmxs"
 module = ""
 all_modules = "Plugin_1_2_0.ml"
-**************************** ocamlopt.byte
+*28 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_1_2_0_0.cmxs"
 module = ""
 all_modules = "Plugin_1_2_0_0.ml"
-***************************** ocamlopt.byte
+*29 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_1_3.cmxs"
 module = ""
 all_modules = "Plugin_1_3.ml"
-****************************** ocamlopt.byte
+*30 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_2.cmxs"
 module = ""
 all_modules = "Plugin_2.ml"
-******************************* ocamlopt.byte
+*31 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_2_0.cmxs"
 module = ""
 all_modules = "Plugin_2_0.ml"
-******************************** ocamlopt.byte
+*32 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_2_0_0.cmxs"
 module = ""
 all_modules = "Plugin_2_0_0.ml"
-********************************* ocamlopt.byte
+*33 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_2_0_0_0.cmxs"
 module = ""
 all_modules = "Plugin_2_0_0_0.ml"
-********************************** ocamlopt.byte
+*34 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_3.cmxs"
 module = ""
 all_modules = "Plugin_3.ml"
-*********************************** ocamlopt.byte
+*35 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_3_0.cmxs"
 module = ""
 all_modules = "Plugin_3_0.ml"
-************************************ ocamlopt.byte
+*36 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_3_1.cmxs"
 module = ""
 all_modules = "Plugin_3_1.ml"
-************************************* ocamlopt.byte
+*37 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_3_2.cmxs"
 module = ""
 all_modules = "Plugin_3_2.ml"
-************************************** ocamlopt.byte
+*38 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_3_2_0.cmxs"
 module = ""
 all_modules = "Plugin_3_2_0.ml"
-*************************************** ocamlopt.byte
+*39 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_3_2_0_0.cmxs"
 module = ""
 all_modules = "Plugin_3_2_0_0.ml"
-**************************************** ocamlopt.byte
+*40 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_3_2_1.cmxs"
 module = ""
 all_modules = "Plugin_3_2_1.ml"
-***************************************** ocamlopt.byte
+*41 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_3_2_2.cmxs"
 module = ""
 all_modules = "Plugin_3_2_2.ml"
-****************************************** ocamlopt.byte
+*42 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_3_2_2_0.cmxs"
 module = ""
 all_modules = "Plugin_3_2_2_0.ml"
-******************************************* ocamlopt.byte
+*43 ocamlopt.byte
 flags = "-shared"
 program= "Plugin_3_2_2_1.cmxs"
 module = ""
 all_modules = "Plugin_3_2_2_1.ml"
-******************************************** ocamlopt.byte
+*44 ocamlopt.byte
 flags = ""
 module = "main.ml"
-********************************************* ocamlopt.byte
+*45 ocamlopt.byte
 program = "./main.exe"
 libraries="dynlink"
 all_modules = "store.cmx main.cmx"
 module = ""
-********************************************** run
-*********************************************** check-program-output
+*46 run
+*47 check-program-output
 *)
 
 (*  This module and all plugin modules are generated by a call to test_generator.ml with parameters:
