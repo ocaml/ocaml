@@ -506,13 +506,7 @@ maybe_start plugin_opt
         Format.fprintf ppf {|@[<h>%s%s%s@]%(%)|}  quote link quote sep
       ) pairs
 
-
-  let repeat n ppf fmt =
-    for i = 1 to n do
-      Format.fprintf ppf fmt
-    done
-
-  let task ppf n = repeat n ppf "*"
+  let task ppf n = Format.fprintf ppf "*%02d" n
 
   let main_header ppf node =
     Format.fprintf ppf {|@[<v>(* TEST
@@ -521,9 +515,9 @@ include dynlink
 libraries = ""
 readonly_files = "@[<h>store.ml main.ml%a@]"
 
-* shared-libraries
-** setup-ocamlc.byte-build-env
-*** ocamlc.byte
+*01 shared-libraries
+*02 setup-ocamlc.byte-build-env
+*03 ocamlc.byte
 module = "store.ml"@ @]|}
       files node;
     let bytecode_compilation i node =
@@ -568,9 +562,9 @@ module = "store.ml"@ @]|}
       end
     in
     Format.fprintf ppf
-      "@[<v>** native-dynlink@ \
-       *** setup-ocamlopt.byte-build-env@ \
-       **** ocamlopt.byte@ \
+      "@[<v>*02 native-dynlink@ \
+       *03 setup-ocamlopt.byte-build-env@ \
+       *04 ocamlopt.byte@ \
        flags = \"\"@ \
        module = \"store.ml\"@ \
        @]";
