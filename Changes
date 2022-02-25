@@ -635,6 +635,11 @@ OCaml 4.14.0
   Gentoo and Alpine).
   (Alex Fan, review by Gabriel Scherer)
 
+- #11031: Exception handlers restore the rbp register when using frame-pointers
+  on amd64.
+  (Fabrice Buoro, with help from Stephen Dolan, Tom Kelly and Mark Shinwell,
+  review by Xavier Leroy)
+
 OCaml 4.13 maintenance branch
 -----------------------------
 

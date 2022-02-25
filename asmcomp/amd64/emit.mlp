@@ -826,7 +826,10 @@ let emit_instr env fallthrough i =
       done;
       emit_named_text_section env.f.fun_name
   | Lentertrap ->
-      ()
+      if fp then begin
+        let delta = frame_size env - 16 (* retaddr + rbp *) in
+        I.lea (mem64 NONE delta RSP) rbp
+      end;
   | Ladjust_trap_depth { delta_traps; } ->
       (* each trap occupies 16 bytes on the stack *)
       let delta = 16 * delta_traps in
