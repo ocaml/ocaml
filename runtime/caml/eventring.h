@@ -172,11 +172,12 @@ extern value caml_eventring_pause();
    this domain immediately and all other domains soon. */
 extern value caml_eventring_resume();
 
-/* [eventring_path] is a path to a directory containing eventrings or NULL.
-   [pid] is the process id (or equivalent) of the startup OCaml process, if < 0
-   then a cursor for the current process is created (and [eventring_path] is
-   ignored). This function will return a cursor which can we be used with
-   caml_eventring_read_poll to read events from the eventrings. */
+/* Create a cursor to read events from an eventring. Cursors can be created for
+   eventrings in and out of process. To create one for the current process, pass
+   [eventring_path] as NULL and a [pid] < 0. Otherwise [eventring_path] is a
+   path to a directory containing the .eventring files. [pid] is the process id
+   (or equivalent) of the startup OCaml process. The resulting cursor can be
+   used with `caml_eventring_read_poll` to read events from the eventrings. */
 extern eventring_error
 caml_eventring_create_cursor(const char_os* eventring_path, int pid,
                              struct caml_eventring_cursor **cursor_res);
