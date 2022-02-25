@@ -142,6 +142,9 @@ module Bytecode = struct
         clos
       )
     in
+    (* We need to release the dynlink lock here to let the module initialization
+       code dynlinks plugins too.
+    *)
     try ignore ((clos ()) : Obj.t);
     with exn ->
       Printexc.raise_with_backtrace
