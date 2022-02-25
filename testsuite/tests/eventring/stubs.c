@@ -82,7 +82,7 @@ value get_event_counts(void) {
     res = caml_eventring_create_cursor(NULL, -1, &cursor);
 
     if( res != E_SUCCESS ) {
-        caml_failwith("invalid or non-existent cursor");
+        caml_failwith("Eventring.get_event_counts: invalid or non-existent cursor");
     }
 
     caml_eventring_set_runtime_begin(cursor, &ev_begin);
@@ -92,7 +92,7 @@ value get_event_counts(void) {
                                    &events_consumed);
 
     if( res != E_SUCCESS ) {
-        caml_failwith("error reading from rings");
+        caml_failwith("Eventring.get_event_counts: error reading from rings");
     }
 
     Field(counts_tuple, 0) = Val_long(tmp_counters.minors);
