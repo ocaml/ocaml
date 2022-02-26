@@ -143,16 +143,18 @@ unix_getsockopt_aux(char * name,
   switch (ty) {
   case TYPE_BOOL:
   case TYPE_INT:
-    res = Val_int(optval.i);
+    res = Val_int(optval.i); break;
   case TYPE_LINGER:
     if (optval.lg.l_onoff == 0) {
       res = Val_none;
     } else {
       res = caml_alloc_some(Val_int(optval.lg.l_linger));
     }
+    break;
   case TYPE_TIMEVAL:
     res = caml_copy_double((double) optval.tv.tv_sec
                            + (double) optval.tv.tv_usec / 1e6);
+    break;
   case TYPE_UNIX_ERROR:
     if (optval.i == 0) {
       res = Val_none;
@@ -160,6 +162,7 @@ unix_getsockopt_aux(char * name,
       err = unix_error_of_code(optval.i);
       res = caml_alloc_some(err);
     }
+    break;
   default:
     unix_error(EINVAL, name, Nothing);
   }
