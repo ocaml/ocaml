@@ -725,7 +725,8 @@ AS_IF([test x"$supports_shared_libraries" != 'xfalse'], [
     [flexmsg=''
     AS_CASE([$target],
       [*-*-cygwin*|*-w64-mingw32|*-pc-windows],
-      [AS_IF([test x"$with_flexdll" = 'x' || test x"$with_flexdll" = 'xflexdll'],
+      [AS_IF([m4_normalize([test x"$with_flexdll" = 'x'
+                            || test x"$with_flexdll" = 'xflexdll'])],
         [AS_IF([test -f 'flexdll/flexdll.h'],
           [flexdir=flexdll
           iflexdir='$(ROOTDIR)/flexdll'
