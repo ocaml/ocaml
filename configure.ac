@@ -1182,7 +1182,7 @@ AS_IF([test -z "$PARTIALLD"],
 # e.g. Ubuntu >= 17.10 for i386, which uses the glibc dynamic loader.
 
 AS_CASE([$arch],
-  [amd64|aarch64|s390x|none],
+  [amd64|arm64|s390x|none],
     # ocamlopt generates PIC code or doesn't generate code at all
     [],
   [AS_CASE([$host],
