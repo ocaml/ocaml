@@ -8,7 +8,7 @@ value stub(value ref)
 {
   CAMLparam1(ref);
   CAMLlocal2(x, y);
-  int i; char* s; intnat coll_before;
+  char* s; intnat coll_before;
 
   printf("C, before: %d\n", Int_val(Field(ref, 0)));
 
