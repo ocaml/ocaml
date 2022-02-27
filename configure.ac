@@ -427,7 +427,7 @@ AS_IF([test x"$enable_unix_lib" = "xno"],
     [AC_MSG_ERROR([replay debugger requires the unix library])],
     [enable_debugger="no"])])
 
-AS_IF([test x"$enable_unix_lib" = "xno" -o x"$enable_str_lib" = "xno"],
+AS_IF([test x"$enable_unix_lib" = "xno" || test x"$enable_str_lib" = "xno"],
   [AS_IF([test x"$enable_ocamldoc" = "xyes"],
     [AC_MSG_ERROR([ocamldoc requires the unix and str libraries])],
     [enable_ocamldoc="no"
@@ -725,7 +725,8 @@ AS_IF([test x"$supports_shared_libraries" != 'xfalse'], [
     [flexmsg=''
     AS_CASE([$target],
       [*-*-cygwin*|*-w64-mingw32|*-pc-windows],
-      [AS_IF([test x"$with_flexdll" = 'x' -o x"$with_flexdll" = 'xflexdll'],
+      [AS_IF([m4_normalize([test x"$with_flexdll" = 'x'
+                            || test x"$with_flexdll" = 'xflexdll'])],
         [AS_IF([test -f 'flexdll/flexdll.h'],
           [flexdir=flexdll
           iflexdir='$(ROOTDIR)/flexdll'
@@ -754,7 +755,7 @@ AS_IF([test x"$supports_shared_libraries" != 'xfalse'], [
 
   AC_CHECK_PROG([flexlink],[flexlink],[flexlink])
 
-  AS_IF([test -n "$flexlink" -a -z "$flexdir"],[
+  AS_IF([test -n "$flexlink" && test -z "$flexdir"],[
     OCAML_TEST_FLEXLINK([$flexlink], [$flexdll_chain],
                         [$internal_cppflags], [$host])
 
@@ -768,7 +769,7 @@ AS_IF([test x"$supports_shared_libraries" != 'xfalse'], [
 
   OCAML_TEST_FLEXDLL_H([$flexdir])
 
-  AS_IF([test -n "$flexlink" -a x"$have_flexdll_h" = 'xno'],
+  AS_IF([test -n "$flexlink" && test x"$have_flexdll_h" = 'xno'],
     [OCAML_TEST_FLEXLINK_WHERE([$flexlink])
     AS_IF([test "x$have_flexdll_h" = 'xyes'],
       [internal_cppflags="$internal_cppflags -I \"$flexlink_where\""])
