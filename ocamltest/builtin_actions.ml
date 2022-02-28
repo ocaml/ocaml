@@ -181,6 +181,12 @@ let function_sections = make
      "Target supports function sections"
      "Target does not support function sections")
 
+let frame_pointers = make
+  "frame_pointers"
+  (Actions_helpers.pass_or_skip (Ocamltest_config.frame_pointers)
+     "frame-pointers available"
+     "frame-pointers not available")
+
 let has_symlink = make
   "has_symlink"
   (Actions_helpers.pass_or_skip (Unix.has_symlink () )
@@ -302,6 +308,7 @@ let _ =
     arch_i386;
     arch_power;
     function_sections;
+    frame_pointers;
     file_exists;
     copy;
   ]
