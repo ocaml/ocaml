@@ -1,2 +1,2 @@
-let () = Plugin_1_0.add "[0_0_2_1]->[0_1]"
-let add x = Plugin_1_0.add x
+let () = Store.add "[0_0_2_1]->[]"
+let add x = Store.add x
