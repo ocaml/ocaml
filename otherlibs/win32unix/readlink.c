@@ -91,7 +91,7 @@ CAMLprim value unix_readlink(value opath)
         else {
           errno = EINVAL;
           CloseHandle(h);
-          uerror("readline", opath);
+          uerror("readlink", opath);
         }
       }
       else {
