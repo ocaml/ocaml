@@ -103,11 +103,14 @@ struct c_stack_link {
   struct c_stack_link* prev;
 };
 
-/* Overview of the native stack switching primitives for effects
+/* Overview of the stack switching primitives for effects
  *
  * For an understanding of effect handlers in OCaml please see:
  *  Retrofitting Effect Handlers onto OCaml, KC Sivaramakrishnan, et al.
  *  PLDI 2021
+ *
+ *  Native code
+ *  -----------
  *
  * In native compilation the stack switching primitives Prunstack,
  * Pperform, Preperform and Presume make use of corresponding functions
@@ -143,6 +146,46 @@ struct c_stack_link {
  *  the parent of the new_fiber and then switching to the stack for new_fiber.
  *  The function with argument is then executed on the new stack. Care is taken
  *  to check if the new_fiber argument has already been resumed and so is null.
+ *
+ *
+ *  Bytecode
+ *  --------
+ *
+ * In bytecode compilation the primitives are mapped to effect instructions and
+ * some changes are made to the bytecode interpreter on every function return
+ * and exception raise. In particular:
+ *
+ *  Presume | Prunstack -> RESUME (& RESUMETERM if a tail call)
+ *   RESUME checks that the stack is valid (a NULL stack indicates a
+ *   continuation that has already been resumed). The stacks are then switched
+ *   with the old stack becoming the parent of the new stack. Care is taken
+ *   to setup the exception handler for the new stack. Execution continues
+ *   on the new OCaml stack with the passed function and argument.
+ *
+ *  Pperform -> PERFORM
+ *   PERFORM captures the current stack in a continuation object it allocates.
+ *   The parent stack is then switched to and the handle_effect function for
+ *   the parent stack is executed. If no parent stack exists then the
+ *   Unhandled exception is raised.
+ *
+ *  Preperform -> REPERFORMTERM
+ *   REPERFORMTERM is used to walk up the parent OCaml stacks to execute the
+ *   next effect handler installed in the chain. The instruction takes care to
+ *   switch back to the continuation stack to raise the Unhandled exception in
+ *   in the case no parent is left. Otherwise the instruction switches to the
+ *   parent stack and executes the handle_effect function for that parent stack.
+ *
+ *  Special return handling:
+ *   There is special handling on every function return (see do_return of
+ *   interp.c). This handling allows the completion of a child stack to be
+ *   detected. On completion of a child stack, the child stack is freed and
+ *   control returns to the parent stack to execute the handle_value function.
+ *
+ *  Special exception handling:
+ *   When an exception is raised (see raise_notrace of interp.c), the trap
+ *   offset is checked. If there are no more exceptions in this stack and a
+ *   parent stack exists, then the child stack is freed and the
+ *   handle_exception function is executed on the parent stack.
  */
 
 /* The table of global identifiers */
