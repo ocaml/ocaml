@@ -593,6 +593,10 @@ Working version
 
 ### Build system:
 
+- #11862: Allow testing whether the C compiler supports a flag. Use it
+  to test and fix an old style declaration warning.
+  (Antonin Décimo, review by Sébastien Hinderer and David Allsopp)
+
 - #11590: Allow installing to a destination path containing spaces.
    (Élie Brami, review by Sébastien Hinderer and David Allsopp)
 
