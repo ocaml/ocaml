@@ -197,6 +197,19 @@ let string_of_return_opt return_opt =
     None -> ""
   | Some s -> Odoc_messages.returns^" "^(string_of_text s)^"\n"
 
+let string_of_alert_list l =
+  List.concat_map
+    (fun al ->
+      let payload =
+        match al.Odoc_types.alert_payload with
+        | Some p -> [ " "; p ]
+        | None -> []
+      in
+      Odoc_messages.alert :: " " :: al.Odoc_types.alert_name
+      :: (payload @ [ "\n" ]))
+    l
+  |> String.concat ""
+
 let string_of_info i =
   let module M = Odoc_types in
   (match i.M.i_deprecated with
@@ -211,7 +224,8 @@ let string_of_info i =
   (string_of_version_opt i.M.i_version)^
   (string_of_since_opt i.M.i_since)^
   (string_of_raised_exceptions i.M.i_raised_exceptions)^
-  (string_of_return_opt i.M.i_return_value)
+  (string_of_return_opt i.M.i_return_value)^
+  (string_of_alert_list i.M.i_alerts)
 
 let apply_opt f v_opt =
   match v_opt with

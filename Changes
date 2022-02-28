@@ -111,6 +111,13 @@ Working version
   memory model.
   (Luc Maranget, review by Gabriel Scherer and Xavier Leroy)
 
+- #11024: Handle alerts in ocamldoc.
+  The alert `[@@alert deprecated]` is handled specifically and it's no longer
+  needed to duplicate the deprecated annotation (the alert for the compiler and
+  the tag for the documentation). Every other alerts also appear in the
+  documentation.
+  (Jules Aguillon, review by Florian Angeletti)
+
 ### Manual and documentation:
 
 ### Compiler user-interface and warnings:
