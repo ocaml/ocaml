@@ -45,20 +45,25 @@
 #include "caml/sync.h"
 #include "caml/weak.h"
 
-/* From a runtime perspective, domains must handle stop-the-world (STW)
-   sections, during which:
-    - they are within a section no mutator code is running
-    - all domains will execute the section in parallel
-    - barriers are provided to know all domains have reached the
-      same stage within a section
+/* The runtime can run stop-the-world (STW) sections, during which all
+   active domains run the same code in parallel (with a barrier
+   mechanism to synchronize within this code). See
+   [caml_try_run_on_all_domains] below.
 
    Stop-the-world sections are used to handle duties such as:
     - minor GC
-    - major GC to trigger major state machine phase changes
+    - major GC phase changes
 
-   Two invariants for STW sections:
-    - domains only execute mutator code if in the stop-the-world set
-    - domains in the stop-the-world set guarantee to service the sections
+   We guarantee that no mutator code runs in parallel with a STW
+   section, and neither does domain initialization or cleanup code.
+
+   To provide these guarantees:
+    - domains must register as STW participants before running any
+      mutator code
+    - domains registered as STW participants must be careful to
+      service STW interrupt requests
+    - STW sections must not trigger callbacks (eg. finalisers or
+      signal handlers).
 */
 
 /* The main C-stack for a domain can enter a blocking call.
@@ -463,9 +468,12 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
      set atomically */
   caml_plat_lock(&all_domains_lock);
 
-  /* wait until any in-progress STW sections end */
-  while (atomic_load_acq(&stw_leader))
+  /* Wait until any in-progress STW sections end. */
+  while (atomic_load_acq(&stw_leader)) {
+    /* [caml_plat_wait] releases [all_domains_lock] until the current
+       STW section ends, and then takes the lock again. */
     caml_plat_wait(&all_domains_cond);
+  }
 
   d = next_free_domain();
 
@@ -1106,6 +1114,55 @@ int caml_domain_is_in_stw(void) {
 }
 #endif
 
+/* During a stop-the-world (STW), all currently running domains stop
+   their usual work and synchronize to all call the same function.
+
+   STW sections use [all_domains_lock] and the variable [stw_leader]
+   (0 when no STW section is running, the dom_internal* pointer of the
+   STW leader when a STW section is running) to guarantee that no
+   domain is running something else:
+
+   - If two STW sections are attempted in parallel, only one will
+     manage to take the lock, and the domain starting the other will
+     join that winning STW section, without running its own STW code
+     at all. (This is the [_try_] in the function name: if it returns
+     0, the STW section did not run at all, so you should call this
+     function in a loop.)
+
+   - Domain initialization code from [create_domain] will not run in
+     parallel with a STW section, as [create_domain] starts bit
+     looping until (1) it has the [all_domains_lock] and (2) there is
+     no current STW section (using the [stw_leader] variable).
+
+   - Domain cleanup code will not run in parallel with a STW section:
+     the [domain_terminate] function is careful to only start domain
+     cleanup when (1) it has the [all_domains_lock] and (2) it hasn't
+     received any request to participate in a STW section.
+
+   Each domain leaves the section as soon as it is finished running
+   the section code. In particular, a mutator may resume while some
+   other domain are still in the section. Section code that needs to
+   happen before any mutator must be followed by a barrier, forcing
+   all STW participants to synchronize.
+
+   Taken together, these properties guarantee that STW sections act as
+   a proper exclusion mechanism: for example, some mutable state can
+   be "protected by STW" if it is only mutated within STW section,
+   with a barrier before the next read.
+
+   Note: in the case of both [create_domain] and [domain_terminate] it
+   is important that the loops (waiting for STW sections to finish)
+   regularly release [all_domains_lock], to avoid deadlocks scenario
+   with in-progress STW sections.
+    - For [domain_terminate] we release the lock and join
+      the STW section before resuming.
+    - For [create_domain] we wait until the end of the section using
+      the condition variable [all_domains_cond] over
+      [all_domains_lock], which is broadcasted when a STW section
+      finishes.
+   The same logic would apply for any other situations in which a domain
+   wants to join or leave the set of STW participants.
+*/
 int caml_try_run_on_all_domains_with_spin_work(
   void (*handler)(caml_domain_state*, void*, int, caml_domain_state**),
   void* data,
@@ -1119,7 +1176,13 @@ int caml_try_run_on_all_domains_with_spin_work(
   caml_gc_log("requesting STW");
 
   /* Don't touch the lock if there's already a stw leader
-    OR we can't get the lock */
+     OR we can't get the lock.
+
+     Note: this read on [stw_leader] is an optimization, giving up
+     faster (before trying to take the lock) in contended
+     situations. Without this read, [stw_leader] would be protected by
+     [all_domains_lock] and could be a non-atomic variable.
+  */
   if (atomic_load_acq(&stw_leader) ||
       !caml_plat_try_lock(&all_domains_lock)) {
     caml_handle_incoming_interrupts();
@@ -1178,7 +1241,20 @@ int caml_try_run_on_all_domains_with_spin_work(
     }
   }
 
-  /* domains now know they are part of the STW */
+  /* Domains now know they are part of the STW.
+
+     Note: releasing the lock will not allow new domain to be created
+     in parallel with the rest of the STW section, as new domains
+     follow the protocol of waiting on [all_domains_cond] which is
+     only broadcast at the end of the STW section.
+
+     The reason we use a condition variable [all_domains_cond] instead
+     of just holding the lock until the end of the STW section is that
+     the last domain to exit the section (and broadcast the condition)
+     is not necessarily the same as the domain starting the section
+     (and taking the lock) -- whereas POSIX mutexes must be unlocked
+     by the same thread that locked them.
+  */
   caml_plat_unlock(&all_domains_lock);
 
   for(i = 0; i < stw_request.num_domains; i++) {
@@ -1198,6 +1274,9 @@ int caml_try_run_on_all_domains_with_spin_work(
   domain_state->inside_stw_handler = 0;
   #endif
 
+  /* Note: the last domain passing through this function will
+     temporarily take [all_domains_lock] again and use it to broadcast
+     [all_domains_cond], waking up any domain waiting to be created. */
   decrement_stw_domains_still_processing();
 
   CAML_EV_END(EV_STW_LEADER);
@@ -1396,6 +1475,8 @@ static void domain_terminate (void)
     caml_finish_sweeping();
 
     caml_empty_minor_heaps_once();
+    /* Note: [caml_empty_minor_heaps_once] will also join any ongoing
+       STW sections that has sent an interrupt to this domain. */
 
     caml_finish_marking();
     handover_ephemerons(domain_state);
