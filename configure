@@ -805,6 +805,7 @@ ocamlc_cppflags
 ocamlc_cflags
 nativecclibs
 bytecclibs
+MKLIB_LDFLAGS
 oc_dll_ldflags
 oc_ldflags
 oc_cppflags
@@ -2920,6 +2921,7 @@ OCAML_VERSION_SHORT=5.0
 
 
 
+
  # TODO: rename this variable
 
 
@@ -2968,6 +2970,8 @@ ac_config_files="$ac_config_files manual/src/version.tex"
 ac_config_files="$ac_config_files manual/src/html_processing/src/common.ml"
 
 ac_config_files="$ac_config_files tools/eventlog_metadata"
+
+ac_config_files="$ac_config_files tools/ocamlmklib.ml"
 
 ac_config_headers="$ac_config_headers runtime/caml/m.h"
 
@@ -14139,6 +14143,12 @@ if test -z "$mkmaindll"; then :
   mkmaindll=$mksharedlib
 fi
 
+if test -z "$OC_LDFLAGS"; then :
+  MKLIB_LDFLAGS=""
+else
+  MKLIB_LDFLAGS="\"$OC_LDFLAGS\""
+fi
+
 # Configure native dynlink
 
 natdynlink=false
@@ -18961,6 +18971,7 @@ do
     "manual/src/version.tex") CONFIG_FILES="$CONFIG_FILES manual/src/version.tex" ;;
     "manual/src/html_processing/src/common.ml") CONFIG_FILES="$CONFIG_FILES manual/src/html_processing/src/common.ml" ;;
     "tools/eventlog_metadata") CONFIG_FILES="$CONFIG_FILES tools/eventlog_metadata" ;;
+    "tools/ocamlmklib.ml") CONFIG_FILES="$CONFIG_FILES tools/ocamlmklib.ml" ;;
     "runtime/caml/m.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/m.h" ;;
     "runtime/caml/s.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/s.h" ;;
     "runtime/caml/version.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/version.h" ;;
