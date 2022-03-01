@@ -323,9 +323,12 @@ caml_eventring_read_poll(struct caml_eventring_cursor *cursor,
 
       if (ring_head > cursor->current_positions[domain_num]) {
         if (cursor->lost_events) {
-          cursor->lost_events(domain_num, callback_data,
-                                    ring_head -
-                                        cursor->current_positions[domain_num]);
+          if (!cursor->lost_events(domain_num, callback_data,
+                                   ring_head -
+                                   cursor->current_positions[domain_num])){
+            early_exit = 1;
+            continue;
+          }
         }
         cursor->current_positions[domain_num] = ring_head;
       }
