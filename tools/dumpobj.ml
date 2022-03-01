@@ -110,7 +110,7 @@ let rec print_struct_const = function
 (* Print an obj *)
 
 let same_custom x y =
-  Obj.field x 0 = Obj.field (Obj.repr y) 0
+  Nativeint.equal (Obj.raw_field x 0) (Obj.raw_field (Obj.repr y) 0)
 
 let rec print_obj x =
   if Obj.is_block x then begin
