@@ -95,45 +95,57 @@ module Bytecode = struct
 
   let run_shared_startup _ = ()
 
-  let run (ic, file_name, file_digest) ~unit_header ~priv =
+  let with_lock lock f =
+    Mutex.lock lock;
+    Fun.protect f
+      ~finally:(fun () -> Mutex.unlock lock)
+
+  let run lock (ic, file_name, file_digest) ~unit_header ~priv =
     let open Misc in
-    let old_state = Symtable.current_state () in
-    let compunit : Cmo_format.compilation_unit = unit_header in
-    seek_in ic compunit.cu_pos;
-    let code_size = compunit.cu_codesize + 8 in
-    let code = LongString.create code_size in
-    LongString.input_bytes_into code ic compunit.cu_codesize;
-    LongString.set code compunit.cu_codesize (Char.chr Opcodes.opRETURN);
-    LongString.blit_string "\000\000\000\001\000\000\000" 0
-      code (compunit.cu_codesize + 1) 7;
-    begin try
-      Symtable.patch_object code compunit.cu_reloc;
-      Symtable.check_global_initialized compunit.cu_reloc;
-      Symtable.update_global_table ()
-    with Symtable.Error error ->
-      let new_error : DT.linking_error =
-        match error with
-        | Symtable.Undefined_global s -> Undefined_global s
-        | Symtable.Unavailable_primitive s -> Unavailable_primitive s
-        | Symtable.Uninitialized_global s -> Uninitialized_global s
-        | Symtable.Wrong_vm _ -> assert false
-      in
-      raise (DT.Error (Linking_error (file_name, new_error)))
-    end;
-    (* PR#5215: identify this code fragment by
-       digest of file contents + unit name.
-       Unit name is needed for .cma files, which produce several code
-       fragments. *)
-    let digest = Digest.string (file_digest ^ compunit.cu_name) in
-    let events =
-      if compunit.cu_debug = 0 then [| |]
-      else begin
-        seek_in ic compunit.cu_debug;
-        [| input_value ic |]
-      end in
-    if priv then Symtable.hide_additions old_state;
-    let _, clos = Meta.reify_bytecode code events (Some digest) in
-    try ignore ((clos ()) : Obj.t)
+    let clos = with_lock lock (fun () ->
+        let old_state = Symtable.current_state () in
+        let compunit : Cmo_format.compilation_unit = unit_header in
+        seek_in ic compunit.cu_pos;
+        let code_size = compunit.cu_codesize + 8 in
+        let code = LongString.create code_size in
+        LongString.input_bytes_into code ic compunit.cu_codesize;
+        LongString.set code compunit.cu_codesize (Char.chr Opcodes.opRETURN);
+        LongString.blit_string "\000\000\000\001\000\000\000" 0
+          code (compunit.cu_codesize + 1) 7;
+        begin try
+          Symtable.patch_object code compunit.cu_reloc;
+          Symtable.check_global_initialized compunit.cu_reloc;
+          Symtable.update_global_table ()
+        with Symtable.Error error ->
+          let new_error : DT.linking_error =
+            match error with
+            | Symtable.Undefined_global s -> Undefined_global s
+            | Symtable.Unavailable_primitive s -> Unavailable_primitive s
+            | Symtable.Uninitialized_global s -> Uninitialized_global s
+            | Symtable.Wrong_vm _ -> assert false
+          in
+          raise (DT.Error (Linking_error (file_name, new_error)))
+        end;
+        (* PR#5215: identify this code fragment by
+           digest of file contents + unit name.
+           Unit name is needed for .cma files, which produce several code
+           fragments. *)
+        let digest = Digest.string (file_digest ^ compunit.cu_name) in
+        let events =
+          if compunit.cu_debug = 0 then [| |]
+          else begin
+            seek_in ic compunit.cu_debug;
+            [| input_value ic |]
+          end in
+        if priv then Symtable.hide_additions old_state;
+        let _, clos = Meta.reify_bytecode code events (Some digest) in
+        clos
+      )
+    in
+    (* We need to release the dynlink lock here to let the module initialization
+       code dynlinks plugins too.
+    *)
+    try ignore ((clos ()) : Obj.t);
     with exn ->
       Printexc.raise_with_backtrace
         (DT.Error (Library's_module_initializers_failed exn))

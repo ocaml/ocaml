@@ -129,6 +129,9 @@ testsuite/tests/**/*.reference               typo.prune
 # Expect tests with overly long lines of expected output
 testsuite/tests/parsing/docstrings.ml        typo.very-long-line
 
+# Generated test with overly long ocamltest description
+testsuite/tests/lib-dynlink-domains/main.ml  typo.very-long-line
+
 # The normalisation tests have very specific line endings which mustn't be
 # corrupted by git.
 testsuite/tests/tool-ocamltest/norm*.reference binary

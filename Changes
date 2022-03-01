@@ -105,6 +105,10 @@ Working version
   (Jacques-Henri Jourdan and Xavier Leroy, review by Damien Doligez,
   Guillaume Munch-Maccagnoni, Gabriel Scherer, and Enguerrand Decorne)
 
+- #11034: Dynlink library, add a global lock to make dynlinking
+  thread-safe.
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Tools:
 
 * #11004: Litmus tests for checking the implementation of the
