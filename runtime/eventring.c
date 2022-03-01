@@ -138,6 +138,20 @@ static void teardown_eventring(caml_domain_state *domain_state, void *data,
   caml_global_barrier();
 }
 
+void caml_eventring_post_fork() {
+  /* We are after a call to fork (which can only happen when there is a single
+     domain) and no mutator code that can spawn a new domain can have run yet.
+     Let's be double sure. */
+  CAMLassert(caml_domain_alone());
+
+  if (atomic_load_acq(&eventring_enabled)) {
+    caml_try_run_on_all_domains(&teardown_eventring, NULL, NULL);
+
+    /* We still have the path and ring size from our parent */
+    caml_eventring_start();
+  }
+}
+
 /* Return the current location for the ring buffers of this process. This is
   used in the consumer to read the ring buffers of the current process */
 char_os* caml_eventring_current_location() {

@@ -280,6 +280,9 @@ void caml_eventring_init();
    from [caml_sys_exit] */
 void caml_eventring_destroy();
 
+/* Handle safely re-initialising the eventring structures in a forked child */
+void caml_eventring_post_fork();
+
 /* Returns the location of the eventring for the current process if started or
    NULL otherwise */
 char_os* caml_eventring_current_location();
