@@ -109,20 +109,26 @@ ocamloptp.opt$(EXE): $(call byte2native, $(OCAMLCP) ocamloptp.cmo)
 
 opt:: profiling.cmx
 
+INSTALL_LIBDIR_PROFILING = $(INSTALL_LIBDIR)/profiling
+
 install::
+# If installing over a previous OCaml version, ensure the module is removed
+# from the previous installation.
+	rm -f "$(INSTALL_LIBDIR)"/profiling.cm* "$(INSTALL_LIBDIR)/profiling.$(O)"
+	$(MKDIR) "$(INSTALL_LIBDIR_PROFILING)"
 	$(INSTALL_DATA) \
 	  profiling.cmi profiling.cmo \
-	  "$(INSTALL_LIBDIR)"
+	  "$(INSTALL_LIBDIR_PROFILING)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
 	  profiling.cmt profiling.cmti \
-	  "$(INSTALL_LIBDIR)"
+	  "$(INSTALL_LIBDIR_PROFILING)"
 endif
 
 installopt::
 	$(INSTALL_DATA) \
           profiling.cmx profiling.$(O) \
-	  "$(INSTALL_LIBDIR)"
+	  "$(INSTALL_LIBDIR_PROFILING)"
 
 # To help building mixed-mode libraries (OCaml + C)
 OCAMLMKLIB = config.cmo build_path_prefix_map.cmo misc.cmo ocamlmklib.cmo
