@@ -6517,7 +6517,6 @@ toplevel/byte/topmain.cmo : \
     toplevel/topcommon.cmi \
     typing/printtyp.cmi \
     typing/path.cmi \
-    utils/misc.cmi \
     driver/main_args.cmi \
     parsing/location.cmi \
     typing/env.cmi \
@@ -6535,7 +6534,6 @@ toplevel/byte/topmain.cmx : \
     toplevel/topcommon.cmx \
     typing/printtyp.cmx \
     typing/path.cmx \
-    utils/misc.cmx \
     driver/main_args.cmx \
     parsing/location.cmx \
     typing/env.cmx \
@@ -6678,7 +6676,6 @@ toplevel/native/topmain.cmo : \
     toplevel/toploop.cmi \
     toplevel/native/topeval.cmi \
     toplevel/topcommon.cmi \
-    utils/misc.cmi \
     driver/main_args.cmi \
     parsing/location.cmi \
     driver/compmisc.cmi \
@@ -6689,7 +6686,6 @@ toplevel/native/topmain.cmx : \
     toplevel/toploop.cmx \
     toplevel/native/topeval.cmx \
     toplevel/topcommon.cmx \
-    utils/misc.cmx \
     driver/main_args.cmx \
     parsing/location.cmx \
     driver/compmisc.cmx \

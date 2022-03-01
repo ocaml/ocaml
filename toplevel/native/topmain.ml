@@ -92,18 +92,11 @@ module Options = Main_args.Make_opttop_options (struct
 
 end)
 
-let () =
-  let extra_paths =
-    match Sys.getenv "OCAMLTOP_INCLUDE_PATH" with
-    | exception Not_found -> []
-    | s -> Misc.split_path_contents s
-  in
-  Clflags.include_dirs := List.rev_append extra_paths !Clflags.include_dirs
-
 let main () =
   let ppf = Format.err_formatter in
   Clflags.native_code := true;
   let program = "ocamlnat" in
+  Topcommon.update_search_path_from_env ();
   Compenv.readenv ppf Before_args;
   Clflags.add_arguments __LOC__ Options.list;
   Compenv.parse_arguments ~current argv file_argument program;

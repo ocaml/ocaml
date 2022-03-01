@@ -31,6 +31,11 @@ open Format
 
 val set_paths : unit -> unit
 
+(* Add directories listed in OCAMLTOP_INCLUDE_PATH to the end of the search
+   path *)
+
+val update_search_path_from_env : unit -> unit
+
 (* Management and helpers for the execution *)
 
 val toplevel_env : Env.t ref
