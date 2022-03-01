@@ -302,7 +302,7 @@ AC_ARG_WITH([odoc],
 
 AC_ARG_ENABLE([ocamltest],
   [AS_HELP_STRING([--disable-ocamltest],
-    [do not build the ocamltest driver])])
+    [do not build ocamltest])])
 
 AC_ARG_ENABLE([native-toplevel],
   [AS_HELP_STRING([--enable-native-toplevel],
