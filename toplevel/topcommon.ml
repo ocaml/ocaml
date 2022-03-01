@@ -282,8 +282,15 @@ let update_search_path_from_env () =
     let env = Sys.getenv_opt "OCAMLTOP_INCLUDE_PATH" in
     Option.fold ~none:[] ~some:Misc.split_path_contents env
   in
-  Clflags.include_dirs :=
-    "+toplevel" :: List.rev_append extra_paths !Clflags.include_dirs
+  Clflags.include_dirs := List.rev_append extra_paths !Clflags.include_dirs
+
+let load_topdirs_signature () =
+  try ignore (Load_path.find "topdirs.cmi")
+  with Not_found ->
+    let compiler_libs =
+      Filename.concat Config.standard_library "compiler-libs" in
+    let topdirs_cmi = Filename.concat compiler_libs "topdirs.cmi" in
+    ignore (Env.read_signature "Topdirs" topdirs_cmi)
 
 let initialize_toplevel_env () =
   toplevel_env := Compmisc.initial_env()

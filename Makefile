@@ -364,7 +364,6 @@ endif # ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
 
 INSTALL_COMPLIBDIR = $(DESTDIR)$(COMPLIBDIR)
 INSTALL_FLEXDLLDIR = $(INSTALL_LIBDIR)/flexdll
-INSTALL_LIBDIR_TOPLEVEL = $(INSTALL_LIBDIR)/toplevel
 FLEXDLL_MANIFEST = default$(filter-out _i386,_$(ARCH)).manifest
 
 DOC_FILES=\
@@ -380,7 +379,6 @@ install:
 	$(MKDIR) "$(INSTALL_LIBDIR)"
 	$(MKDIR) "$(INSTALL_STUBLIBDIR)"
 	$(MKDIR) "$(INSTALL_COMPLIBDIR)"
-	$(MKDIR) "$(INSTALL_LIBDIR_TOPLEVEL)"
 	$(MKDIR) "$(INSTALL_DOCDIR)"
 	$(MAKE) -C runtime install
 	$(INSTALL_PROG) ocaml$(EXE) "$(INSTALL_BINDIR)"
@@ -431,15 +429,6 @@ endif
 # If installing over a previous OCaml version, ensure the module is removed
 # from the previous installation.
 	rm -f "$(INSTALL_LIBDIR)"/topdirs.cm* "$(INSTALL_LIBDIR)/topdirs.mli"
-	$(INSTALL_DATA) \
-	   toplevel/topdirs.cmi \
-	   "$(INSTALL_LIBDIR_TOPLEVEL)"
-ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
-	$(INSTALL_DATA) \
-	   toplevel/topdirs.cmt \
-	   toplevel/topdirs.cmti toplevel/topdirs.mli \
-	   "$(INSTALL_LIBDIR_TOPLEVEL)"
-endif
 	$(MAKE) -C tools install
 ifeq "$(UNIX_OR_WIN32)" "unix" # Install manual pages only on Unix
 	$(MAKE) -C man install
