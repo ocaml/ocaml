@@ -198,13 +198,13 @@ typedef uint64_t uintnat;
 
 /* Initial size of stack (bytes). */
 #ifdef DEBUG
-#define Stack_size (32 * sizeof(value))
+#define Stack_size (64 * sizeof(value))
 #else
 #define Stack_size (4096 * sizeof(value))
 #endif
 
 /* Minimum free size of stack (bytes); below that, it is reallocated. */
-#define Stack_threshold_words 16
+#define Stack_threshold_words 32
 #define Stack_threshold (Stack_threshold_words * sizeof(value))
 
 /* Number of words used in the control structure at the start of a stack
