@@ -609,18 +609,17 @@ CAMLprim value caml_ml_eventring_create_cursor(value path_pid_option) {
 
     switch(res) {
       case E_PATH_FAILURE:
-        caml_failwith("Could not construct path for cursor");
+        caml_failwith("Eventring: could not construct path for cursor.");
       case E_OPEN_FAILURE:
-        caml_failwith(
-          "Could create cursor for specified path. Was eventring started?");
+        caml_failwith("Eventring: could not create cursor for specified path.");
       case E_MAP_FAILURE:
-        caml_failwith(
-          "Could not map underlying eventring."
+        caml_failwith("Eventring: could not map underlying eventring."
         );
       case E_NO_CURRENT_RING:
-        caml_failwith("No ring for current process. Was eventring started?");
+        caml_failwith(
+        "Eventring: no ring for current process. Was eventring started?");
       default:
-        caml_failwith("Could not obtain cursor");
+        caml_failwith("Eventring: could not obtain cursor");
     }
   }
 
@@ -660,11 +659,11 @@ CAMLprim value caml_ml_eventring_read_poll(value wrapped_cursor,
   eventring_error res;
 
   if (cursor == NULL) {
-    caml_failwith("Invalid or closed cursor");
+    caml_failwith("Eventring: invalid or closed cursor");
   }
 
   if (!cursor->cursor_open) {
-    caml_failwith("Eventring cursor is not open");
+    caml_failwith("Eventring: cursor is not open");
   }
 
   res = caml_eventring_read_poll
@@ -673,12 +672,12 @@ CAMLprim value caml_ml_eventring_read_poll(value wrapped_cursor,
   if (res != E_SUCCESS) {
     switch (res) {
     case E_CORRUPT_STREAM:
-      caml_failwith("corrupt stream");
+      caml_failwith("Eventring: corrupt stream");
     case E_CURSOR_NOT_OPEN:
-      caml_failwith("cursor is not open");
+      caml_failwith("Eventring: cursor is not open");
     default:
       /* this should never happen */
-      caml_failwith("unspecified error");
+      caml_failwith("Eventring: unspecified error");
     }
   }
 
