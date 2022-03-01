@@ -188,6 +188,10 @@ let number = function
   | Missing_mli -> 70
   | Unused_tmc_attribute -> 71
   | Tmc_breaks_tailcall -> 72
+;;
+(* DO NOT REMOVE the ;; above: it is used by
+   the testsuite/ests/warnings/mnemonics.mll test to determine where
+   the  definition of the number function above ends *)
 
 let last_warning_number = 72
 
