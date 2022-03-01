@@ -837,7 +837,6 @@ let rec pkey chan  = function
     let acts = Array.make !index (fun _ -> assert false) in
     Hashtbl.iter (fun _ (i,act) -> acts.(i) <- act) t ;
     {cases = r ; actions = acts}
-  ;;
 
 
   let do_zyva loc (low,high) arg cases actions =
@@ -892,6 +891,5 @@ let rec pkey chan  = function
   prerr_endline "" ;
 *)
     hs (c_test {arg=arg ; off=0} s)
-  ;;
 
 end

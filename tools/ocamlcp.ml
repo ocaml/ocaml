@@ -15,16 +15,15 @@
 
 open Printf
 
-let make_archive = ref false;;
-let with_impl = ref false;;
-let with_intf = ref false;;
-let with_mli = ref false;;
-let with_ml = ref false;;
+let make_archive = ref false
+let with_impl = ref false
+let with_intf = ref false
+let with_mli = ref false
+let with_ml = ref false
 
 let process_file filename =
   if Filename.check_suffix filename ".ml" then with_ml := true;
-  if Filename.check_suffix filename ".mli" then with_mli := true;
-;;
+  if Filename.check_suffix filename ".mli" then with_mli := true
 
 let usage = "Usage: ocamlcp <options> <files>\noptions are:"
 
@@ -40,14 +39,13 @@ module Options = Main_args.Make_bytecomp_options (struct
     let _pp _ = incompatible "-pp"
     let _ppx _ = incompatible "-ppx"
     let anonymous = process_file
-  end);;
+  end)
 
 let rev_compargs = ref ([] : string list)
 let rev_profargs = ref ([] : string list)
 
 let add_profarg s =
   rev_profargs := (Filename.quote s) :: "-m" :: !rev_profargs
-;;
 
 let anon filename =
   process_file filename;
@@ -93,4 +91,3 @@ let status =
         (String.concat " " (List.rev !rev_compargs)))
 in
 exit status
-;;

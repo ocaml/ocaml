@@ -1041,11 +1041,11 @@ let rec mark_loops_rec visited ty =
         printer_iter_type_expr (mark_loops_rec visited) ty
 
 let mark_loops ty =
-  mark_loops_rec [] ty;;
+  mark_loops_rec [] ty
 
 let prepare_type ty =
   reserve_names ty;
-  mark_loops ty;;
+  mark_loops ty
 
 let reset_loop_marks () =
   visited_objects := []; aliased := []; delayed := []; printed_aliases := []

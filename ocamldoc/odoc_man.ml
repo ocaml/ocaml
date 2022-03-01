@@ -32,7 +32,7 @@ let new_buf () = Buffer.create 1024
 let bp = Printf.bprintf
 let bs = Buffer.add_string
 
-let linebreak = "\n.sp\n";;
+let linebreak = "\n.sp\n"
 
 (** A class used to get a [text] for info structures. *)
 class virtual info =

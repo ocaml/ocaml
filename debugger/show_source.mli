@@ -15,12 +15,11 @@
 (**************************************************************************)
 
 (* Print the line containing the point *)
-val show_point : Instruct.debug_event -> bool -> unit;;
+val show_point : Instruct.debug_event -> bool -> unit
 
 (* Tell Emacs we are nowhere in the source. *)
-val show_no_point : unit -> unit;;
+val show_no_point : unit -> unit
 
 (* Display part of the source. *)
 val show_listing :
   Lexing.position -> string -> int -> int -> int -> bool -> unit
-;;

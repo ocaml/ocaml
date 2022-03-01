@@ -42,9 +42,8 @@ let merge_before_tags l =
       iter acc l2
   in
   iter [] l
-;;
 
-let version_separators = Str.regexp "[\\.\\+]";;
+let version_separators = Str.regexp "[\\.\\+]"
 
 let merge_opt cond x y merge = match x, y with
   | None, None -> None

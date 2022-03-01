@@ -90,7 +90,7 @@ module Options = Main_args.Make_opttop_options (struct
     let anonymous s = file_argument s
     let _eval s = input_argument (Toploop.String s)
 
-end);;
+end)
 
 let () =
   let extra_paths =

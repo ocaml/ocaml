@@ -16,5 +16,5 @@
 
 (* Run-time library for profiled programs *)
 
-val counters: (string * (string * int array)) list ref;;
-val incr: int array -> int -> unit;;
+val counters: (string * (string * int array)) list ref
+val incr: int array -> int -> unit

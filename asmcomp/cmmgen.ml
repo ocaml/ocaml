@@ -126,7 +126,6 @@ type rhs_kind =
   | RHS_infix of { blocksize : int; offset : int }
   | RHS_floatblock of int
   | RHS_nonrec
-;;
 
 let rec expr_size env = function
   | Uvar id ->

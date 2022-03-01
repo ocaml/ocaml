@@ -77,16 +77,16 @@ type alias_state =
   | Alias_to_resolve
 
 (** Couples of module name aliases. *)
-let (module_aliases : (Name.t, Name.t * alias_state) Hashtbl.t) = Hashtbl.create 13 ;;
+let (module_aliases : (Name.t, Name.t * alias_state) Hashtbl.t) = Hashtbl.create 13
 
 (** Couples of module or module type name aliases. *)
-let module_and_modtype_aliases = Hashtbl.create 13;;
+let module_and_modtype_aliases = Hashtbl.create 13
 
 (** Couples of extension name aliases. *)
-let extension_aliases = Hashtbl.create 13;;
+let extension_aliases = Hashtbl.create 13
 
 (** Couples of exception name aliases. *)
-let exception_aliases = Hashtbl.create 13;;
+let exception_aliases = Hashtbl.create 13
 
 let rec build_alias_list = function
     [] -> ()

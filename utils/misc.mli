@@ -366,7 +366,6 @@ module Color : sig
     | Magenta
     | Cyan
     | White
-  ;;
 
   type style =
     | FG of color (* foreground *)

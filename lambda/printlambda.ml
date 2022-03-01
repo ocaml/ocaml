@@ -80,7 +80,7 @@ let boxed_integer_mark name = function
   | Pint64 -> Printf.sprintf "Int64.%s" name
 
 let print_boxed_integer name ppf bi =
-  fprintf ppf "%s" (boxed_integer_mark name bi);;
+  fprintf ppf "%s" (boxed_integer_mark name bi)
 
 let print_bigarray name unsafe kind ppf layout =
   fprintf ppf "Bigarray.%s[%s,%s]"
@@ -112,7 +112,6 @@ let record_rep ppf r =
   | Record_unboxed true -> fprintf ppf "inlined(unboxed)"
   | Record_float -> fprintf ppf "float"
   | Record_extension path -> fprintf ppf "ext(%a)" Printtyp.path path
-;;
 
 let block_shape ppf shape = match shape with
   | None | Some [] -> ()

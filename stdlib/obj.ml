@@ -130,7 +130,7 @@ module Ephemeron = struct
   let additional_values = 2
   let max_ephe_length = Sys.max_array_length - additional_values
 
-  external create : int -> t = "caml_ephe_create";;
+  external create : int -> t = "caml_ephe_create"
   let create l =
     if not (0 <= l && l <= max_ephe_length) then
       invalid_arg "Obj.Ephemeron.create";
