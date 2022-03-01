@@ -325,7 +325,7 @@ CAMLprim value caml_eventring_start() {
 }
 
 CAMLprim value caml_eventring_pause() {
-  atomic_uintnat paused = atomic_load_acq(&eventring_paused);
+  uintnat paused = atomic_load_acq(&eventring_paused);
 
   if (atomic_load_acq(&eventring_enabled) && !paused) {
     if( atomic_compare_exchange_strong(&eventring_paused, &paused, 1) ) {
@@ -337,7 +337,7 @@ CAMLprim value caml_eventring_pause() {
 }
 
 CAMLprim value caml_eventring_resume() {
-  atomic_uintnat paused = atomic_load_acq(&eventring_paused);
+  uintnat paused = atomic_load_acq(&eventring_paused);
 
   if (atomic_load_acq(&eventring_enabled) && paused) {
     if( atomic_compare_exchange_strong(&eventring_paused, &paused, 0) ) {
