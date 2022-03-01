@@ -86,6 +86,12 @@ struct caml_heap_state {
   struct heap_stats stats;
 };
 
+
+/* You need to hold the [pool_freelist] lock to call these functions. */
+static void orphan_heap_stats_with_lock(struct caml_heap_state *);
+static void adopt_pool_stats_with_lock(struct caml_heap_state *,
+                                       pool *, sizeclass);
+
 struct caml_heap_state* caml_init_shared_heap (void) {
   int i;
   struct caml_heap_state* heap;
@@ -143,18 +149,11 @@ void caml_teardown_shared_heap(struct caml_heap_state* heap) {
     pool_freelist.global_large = a;
     released_large++;
   }
-  caml_accum_heap_stats(&pool_freelist.stats, &heap->stats);
+  orphan_heap_stats_with_lock(heap);
   caml_plat_unlock(&pool_freelist.lock);
   caml_stat_free(heap);
   caml_gc_log("Shutdown shared heap. Released %d active pools, %d large",
               released, released_large);
-}
-
-void caml_collect_heap_stats_sample(
-  struct caml_heap_state* local,
-  struct heap_stats* sample)
-{
-  *sample = local->stats;
 }
 
 
@@ -256,19 +255,6 @@ static intnat pool_sweep(struct caml_heap_state* local,
                          sizeclass sz ,
                          int release_to_global_pool);
 
-/* The stats for an adopted pool are moved from the free pool stats to
-   the heap stats of the adopting domain. */
-static void pool_global_adopt_stats(struct caml_heap_state* local,
-                                    pool *r,
-                                    sizeclass sz)
-{
-    struct heap_stats pool_stats = { 0 };
-
-    calc_pool_stats(r, sz, &pool_stats);
-    caml_accum_heap_stats(&local->stats, &pool_stats);
-    caml_remove_heap_stats(&pool_freelist.stats, &pool_stats);
-}
-
 /* Adopt pool from the pool_freelist avail and full pools
    to satisfy an alloction */
 static pool* pool_global_adopt(struct caml_heap_state* local, sizeclass sz)
@@ -290,7 +276,7 @@ static pool* pool_global_adopt(struct caml_heap_state* local, sizeclass sz)
       pool_freelist.global_avail_pools[sz] = r->next;
       r->next = 0;
       local->avail_pools[sz] = r;
-      pool_global_adopt_stats(local, r, sz);
+      adopt_pool_stats_with_lock(local, r, sz);
 
       #ifdef DEBUG
       {
@@ -314,7 +300,7 @@ static pool* pool_global_adopt(struct caml_heap_state* local, sizeclass sz)
       pool_freelist.global_full_pools[sz] = r->next;
       r->next = local->full_pools[sz];
       local->full_pools[sz] = r;
-      pool_global_adopt_stats(local, r, sz);
+      adopt_pool_stats_with_lock(local, r, sz);
 
       adopted_pool = 1;
       r = 0; // this pool is full
@@ -614,6 +600,52 @@ void caml_redarken_pool(struct pool* r, scanning_action f, void* fdata) {
 }
 
 
+/* Heap and freelist stats */
+
+/* Move the given heap stats to the orphan pools.
+   You need to hold the [pool_freelist] lock. */
+static void orphan_heap_stats_with_lock(struct caml_heap_state *heap) {
+  caml_accum_heap_stats(&pool_freelist.stats, &heap->stats);
+  memset(&heap->stats, 0, sizeof(heap->stats));
+}
+
+/* The stats for an adopted pool are moved from the free pool stats to
+   the heap stats of the adopting domain.
+   You need to hold the [pool_freelist] lock. */
+static void adopt_pool_stats_with_lock(
+  struct caml_heap_state* adopter, pool *r, sizeclass sz)
+{
+    struct heap_stats pool_stats = { 0, };
+
+    calc_pool_stats(r, sz, &pool_stats);
+    caml_accum_heap_stats(&adopter->stats, &pool_stats);
+    caml_remove_heap_stats(&pool_freelist.stats, &pool_stats);
+}
+
+/* Move the stats of all orphan pools into the given heap.
+   You need to hold the [pool_freelist] lock. */
+static void adopt_all_pool_stats_with_lock(struct caml_heap_state *adopter) {
+  caml_accum_heap_stats(&adopter->stats, &pool_freelist.stats);
+  memset(&pool_freelist.stats, 0, sizeof(pool_freelist.stats));
+}
+
+void caml_collect_heap_stats_sample(
+  struct caml_heap_state* local,
+  struct heap_stats* sample)
+{
+  *sample = local->stats;
+}
+
+/* Add the orphan pool stats to a stats accumulator. */
+void caml_accum_orphan_heap_stats(struct heap_stats* acc)
+{
+  caml_plat_lock(&pool_freelist.lock);
+  caml_accum_heap_stats(acc, &pool_freelist.stats);
+  caml_plat_unlock(&pool_freelist.lock);
+}
+
+
+/* Atoms */
 static const header_t atoms[256] = {
 #define A(i) Make_header(0, i, NOT_MARKABLE)
 A(0),A(1),A(2),A(3),A(4),A(5),A(6),A(7),A(8),A(9),A(10),
@@ -878,8 +910,7 @@ void caml_cycle_heap(struct caml_heap_state* local) {
     received_l++;
   }
   if (received_p || received_l) {
-    caml_accum_heap_stats(&local->stats, &pool_freelist.stats);
-    memset(&pool_freelist.stats, 0, sizeof(pool_freelist.stats));
+    adopt_all_pool_stats_with_lock(local);
   }
   caml_plat_unlock(&pool_freelist.lock);
   if (received_p || received_l)

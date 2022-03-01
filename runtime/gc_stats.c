@@ -68,6 +68,41 @@ void caml_collect_alloc_stats_sample(
   sample->forced_major_collections = local->stat_forced_major_collections;
 }
 
+void caml_reset_domain_alloc_stats(caml_domain_state *local)
+{
+  local->stat_minor_words = 0;
+  local->stat_promoted_words = 0;
+  local->stat_major_words = 0;
+  local->stat_minor_collections = 0;
+  local->stat_forced_major_collections = 0;
+}
+
+
+/* We handle orphaning allocation stats here,
+   whereas orphaning of heap stats is done in shared_heap.c */
+static caml_plat_mutex orphan_lock = CAML_PLAT_MUTEX_INITIALIZER;
+static struct alloc_stats orphaned_alloc_stats = {0,};
+
+void caml_accum_orphan_alloc_stats(struct alloc_stats *acc) {
+  caml_plat_lock(&orphan_lock);
+  caml_accum_alloc_stats(acc, &orphaned_alloc_stats);
+  caml_plat_unlock(&orphan_lock);
+}
+
+void caml_orphan_alloc_stats(caml_domain_state *domain) {
+  struct alloc_stats alloc_stats;
+
+  /* move alloc stats from the domain to [alloc_stats] */
+  caml_collect_alloc_stats_sample(domain, &alloc_stats);
+  caml_reset_domain_alloc_stats(domain);
+
+  /* push them into the oprhan stats */
+  caml_plat_lock(&orphan_lock);
+  caml_accum_alloc_stats(&orphaned_alloc_stats, &alloc_stats);
+  caml_plat_unlock(&orphan_lock);
+}
+
+
 /* The "sampled stats" of a domain are a recent copy of its
    domain-local stats, accessed without synchronization and only
    updated ("sampled") during stop-the-world events -- each minor
@@ -82,6 +117,11 @@ void caml_collect_gc_stats_sample(caml_domain_state* domain)
   caml_collect_heap_stats_sample(domain->shared_heap, &stats->heap_stats);
 }
 
+void caml_clear_gc_stats_sample(caml_domain_state *domain) {
+  struct gc_stats* stats = &sampled_gc_stats[domain->id];
+  memset(stats, 0, sizeof(*stats));
+}
+
 /* Compute global stats for the whole runtime. */
 void caml_compute_gc_stats(struct gc_stats* buf)
 {
@@ -89,6 +129,9 @@ void caml_compute_gc_stats(struct gc_stats* buf)
   intnat pool_max = 0, large_max = 0;
   int my_id = Caml_state->id;
   memset(buf, 0, sizeof(*buf));
+
+  caml_accum_orphan_heap_stats(&buf->heap_stats);
+  caml_accum_orphan_alloc_stats(&buf->alloc_stats);
 
   for (i=0; i<Max_domains; i++) {
     /* For allocation stats, we use the live stats of the current domain
