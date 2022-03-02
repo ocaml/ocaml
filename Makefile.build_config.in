@@ -35,6 +35,11 @@ COMPUTE_DEPS=@compute_deps@
 # the build system.
 OC_DLL_LDFLAGS=@oc_dll_ldflags@
 
+# Which tool to use to display differences between files
+DIFF=@DIFF@
+# Which flags to pass to the diff tool
+DIFF_FLAGS=@DIFF_FLAGS@
+
 # The rlwrap command (for the *runtop targets)
 RLWRAP=@rlwrap@
 
