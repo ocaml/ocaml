@@ -47,6 +47,9 @@ Working version
   Windows.
   (Nicolás Ojeda Bär, review by Xavier Leroy and David Allsopp)
 
+- #11022: Track GC work for all managed bigarray allocations
+  (Stephen Dolan, report by Andrew Hunter, review by Damien Doligez)
+
 ### Code generation and optimizations:
 
 - #10972: ARM64 multicore support: OCaml & C stack separation;
