@@ -82,10 +82,12 @@ environments.cmi : \
 filecompare.cmo : \
     run_command.cmi \
     ocamltest_stdlib.cmi \
+    ocamltest_config.cmi \
     filecompare.cmi
 filecompare.cmx : \
     run_command.cmx \
     ocamltest_stdlib.cmx \
+    ocamltest_config.cmx \
     filecompare.cmi
 filecompare.cmi :
 main.cmo : \
