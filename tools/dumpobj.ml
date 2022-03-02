@@ -423,7 +423,7 @@ let print_instr ic =
   else print_string names_of_instructions.(op);
   begin try
     let shape = List.assoc op op_shapes in
-    if shape <> Nothing then print_string " ";
+    if shape <> Nothing && shape <> Switch then print_string " ";
     match shape with
     | Uint -> print_int (inputu ic)
     | Sint -> print_int (inputs ic)
