@@ -208,10 +208,10 @@ CAMLexport void caml_adjust_gc_speed (mlsize_t res, mlsize_t max)
 CAMLexport CAMLweakdef void caml_initialize (value *fp, value val)
 {
 #ifdef DEBUG
-  if (Is_young((value)fp))
-    CAMLassert(*fp == Debug_uninit_minor || *fp == Val_unit);
-  else
-    CAMLassert(*fp == Debug_uninit_major || *fp == Val_unit);
+  /* Previous value should not be a pointer.
+     In the debug runtime, it can be either a TMC placeholder,
+     or an unitialized value canary (Debug_uninit_{major,minor}). */
+  CAMLassert(Is_long(*fp) || *fp == Val_unit);
 #endif
   *fp = val;
   if (!Is_young((value)fp) && Is_block_and_young (val))
