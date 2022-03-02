@@ -170,6 +170,9 @@ Working version
   (David Allsopp, report by Xia Li-yao)
 
 
+- #11077: Make dumpobj compatible with absence of naked pointer support
+  (Olivier Nicole and Jan Midtgaard, review by Gabriel Scherer)
+
 OCaml 4.14.0
 ----------------
 
