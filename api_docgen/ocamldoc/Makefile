@@ -44,20 +44,20 @@ $(libref:%=build/libref/%.odoc): build/libref/%.odoc: %.mli | build/libref
 	$(OCAMLDOC_RUN) -nostdlib -hide Stdlib -lib Stdlib \
 	-pp \
 "$(AWK) -v ocamldoc=true -f ../../stdlib/expand_module_aliases.awk" \
-	$(DOC_STDLIB_INCLUDES) $< -dump  $@
+	$(DOC_STDLIB_INCLUDES) -hide-warnings  $< -dump  $@
 
 $(compilerlibref:%=build/compilerlibref/%.odoc):\
 build/compilerlibref/%.odoc: %.mli | build/compilerlibref
 	$(OCAMLDOC_RUN) -nostdlib -hide Stdlib \
-	$(DOC_ALL_INCLUDES) $< -dump  $@
+	$(DOC_ALL_INCLUDES) -hide-warnings $< -dump  $@
 
 $(compilerlibref_TEXT:%=build/compilerlibref/%.odoc):\
 build/compilerlibref/%.odoc: build/%.mld | build/compilerlibref
-	$(OCAMLDOC_RUN) $(DOC_ALL_INCLUDES) -text $< -dump  $@
+	$(OCAMLDOC_RUN)  -hide-warnings $(DOC_ALL_INCLUDES) -text $< -dump  $@
 
 $(libref_TEXT:%=build/libref/%.odoc):\
 build/libref/%.odoc: build/%.mld | build/libref
-	$(OCAMLDOC_RUN) $(DOC_STDLIB_INCLUDES) -text $< -dump  $@
+	$(OCAMLDOC_RUN) -hide-warnings $(DOC_STDLIB_INCLUDES) -text $< -dump  $@
 
 ALL_COMPILED_DOC=$(ALL_DOC:%=build/%.odoc)
 build/man/Stdlib.3o: $(ALL_COMPILED_DOC) | build/man
