@@ -44,6 +44,9 @@ rule token = parse
   | "*" (num+ as n) { TEST_DEPTH (int_of_string n)}
   | "+=" { PLUSEQUAL }
   | "=" { EQUAL }
+  | "+" { PLUS }
+  | "{" { TEST_SEQ_BEGIN }
+  | "}" { TEST_SEQ_END }
   | identchar *
     { let s = Lexing.lexeme lexbuf in
       match s with

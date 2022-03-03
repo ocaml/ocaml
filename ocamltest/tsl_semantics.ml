@@ -34,6 +34,10 @@ let no_such_modifiers loc name =
   Printf.eprintf "%s\nNo such modifiers %s\n%!" locstr name;
   exit 2
 
+let malformed_test_sequence () =
+  Printf.eprintf "Malformed test sequence\n%!";
+  exit 2
+
 let apply_modifiers env modifiers_name =
   let name = modifiers_name.node in
   let modifier = Environments.Include name in
@@ -85,16 +89,20 @@ let interpret_environment_statement env statement = match statement.node with
 let interpret_environment_statements env l =
   List.fold_left interpret_environment_statement env l
 
+type test_node =
+| Simple_test of Tests.t * string located list
+| Sequence_test of
+  ((Tsl_ast.environment_statement located list) * Tests.t) list
+
 type test_tree =
   | Node of
     (Tsl_ast.environment_statement located list) *
-    Tests.t *
-    string located list *
+    test_node *
     (test_tree list)
 
-let too_deep testname max_level real_level =
-  Printf.eprintf "Test %s should have depth atmost %d but has depth %d\n%!"
-    testname max_level real_level;
+let too_deep max_level real_level =
+  Printf.eprintf "Test should have depth atmost %d but has depth %d\n%!"
+    max_level real_level;
   exit 2
 
 let unexpected_environment_statement s =
@@ -107,6 +115,24 @@ let no_such_test_or_action t =
   Printf.eprintf "%s\nNo such test or action: %s\n%!" locstr t.node;
   exit 2
 
+let find_test name =
+  match Tests.lookup name.node with
+  | None ->
+    begin match Actions.lookup name.node with
+      | None -> no_such_test_or_action name
+      | Some action -> (Tests.test_of_action action)
+    end
+  | Some t -> t
+
+let rec seq_of_items_aux = function
+  | ([], []) -> []
+  | (_::_, []) -> malformed_test_sequence ()
+  | (acc, Seq_env_statement es :: items) -> seq_of_items_aux (es::acc, items)
+  | (acc, Test_name name :: items) ->
+    (acc, find_test name) :: seq_of_items_aux ([], items)
+
+let seq_of_items items = seq_of_items_aux ([], items)
+
 let test_trees_of_tsl_block tsl_block =
   let rec env_of_lines = function
     | [] -> ([], [])
@@ -117,26 +143,29 @@ let test_trees_of_tsl_block tsl_block =
   and tree_of_lines depth = function
     | [] -> (None, [])
     | line::remaining_lines as l ->
-      begin match line with
+      begin
+        match line with
         | Environment_statement s -> unexpected_environment_statement s
-        | Test (test_depth, located_name, env_modifiers) ->
+        | Test (test_depth, test) ->
           begin
-            let name = located_name.node in
-            if test_depth > depth then too_deep name depth test_depth
+            if test_depth > depth then too_deep depth test_depth
             else if test_depth < depth then (None, l)
-            else
+            else begin
               let (env, rem) = env_of_lines remaining_lines in
               let (trees, rem) = trees_of_lines (depth+1) rem in
-              match Tests.lookup name with
-                | None ->
-                  begin match Actions.lookup name with
-                    | None -> no_such_test_or_action located_name
-                    | Some action ->
-                      let test = Tests.test_of_action action in
-                      (Some (Node (env, test, env_modifiers, trees)), rem)
-                  end
-                | Some test ->
-                  (Some (Node (env, test, env_modifiers, trees)), rem)
+              match test with
+              | Simple (name, env_modifiers) ->
+                let (env, rem) = env_of_lines remaining_lines in
+                let (trees, rem) = trees_of_lines (depth+1) rem in
+                let test = find_test name in
+                let test_node = Simple_test (test, env_modifiers) in
+                let tree = Node (env, test_node, trees) in
+                (Some tree, rem)
+              | Sequence items ->
+                let test_node = Sequence_test (seq_of_items items) in
+                let tree = Node (env, test_node, trees) in
+                (Some tree, rem)
+            end
           end
       end
   and trees_of_lines depth lines =
@@ -158,9 +187,13 @@ let test_trees_of_tsl_block tsl_block =
     | (Environment_statement s)::_ -> unexpected_environment_statement s
     | _ -> assert false
 
-let rec tests_in_tree_aux set = function Node (_, test, _, subtrees) ->
+let rec tests_in_tree_aux set = function Node (_, test, subtrees) ->
   let set' = List.fold_left tests_in_tree_aux set subtrees in
-  Tests.TestSet.add test set'
+  match test with
+  | Simple_test (t, _) -> Tests.TestSet.add t set'
+  | Sequence_test tests ->
+    let f s (_, t) = Tests.TestSet.add t s in
+    List.fold_left f set' tests
 
 let tests_in_tree t = tests_in_tree_aux Tests.TestSet.empty t
 

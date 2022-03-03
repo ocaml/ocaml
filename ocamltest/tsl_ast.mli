@@ -28,10 +28,15 @@ type environment_statement =
 
 type tsl_item =
   | Environment_statement of environment_statement located
-  | Test of
-    int (* test depth *) *
+  | Test of int (* test depth *) * test
+and test =
+  | Simple of
     string located (* test name *) *
     string located list (* environment modifiers *)
+  | Sequence of test_seq_item list
+and test_seq_item =
+  | Seq_env_statement of environment_statement located
+  | Test_name of string located
 
 type tsl_block = tsl_item list
 

@@ -27,7 +27,7 @@ let mkidentifier id = make_identifier ~loc:(symbol_rloc()) id
 let mkenvstmt envstmt =
   let located_env_statement =
     make_environment_statement ~loc:(symbol_rloc()) envstmt in
-  Environment_statement located_env_statement
+  located_env_statement
 
 %}
 
@@ -35,7 +35,8 @@ let mkenvstmt envstmt =
 %token TSL_BEGIN_OCAML_STYLE TSL_END_OCAML_STYLE
 %token COMMA
 %token <int> TEST_DEPTH
-%token EQUAL PLUSEQUAL
+%token EQUAL PLUS PLUSEQUAL
+%token TEST_SEQ_BEGIN TEST_SEQ_END
 %token INCLUDE SET UNSET WITH
 %token <string> IDENTIFIER
 %token <string> STRING
@@ -55,10 +56,24 @@ tsl_items:
 
 tsl_item:
 | test_item { $1 }
-| env_item { $1 }
+| env_item { Environment_statement $1 }
 
-test_item:
-  TEST_DEPTH identifier with_environment_modifiers { (Test ($1, $2, $3)) }
+test_item: TEST_DEPTH test { Test ($1, $2) }
+
+test:
+| identifier with_environment_modifiers { Simple ($1, $2) }
+| sequence { Sequence $1 }
+
+sequence:
+  TEST_SEQ_BEGIN test_seq_item opt_test_seq_items TEST_SEQ_END { $2::$3 }
+
+test_seq_item:
+| PLUS identifier { Test_name $2 }
+| env_item { Seq_env_statement $1 }
+
+opt_test_seq_items:
+| { [] }
+| test_seq_item opt_test_seq_items { $1::$2 }
 
 with_environment_modifiers:
 | { [] }

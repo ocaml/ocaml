@@ -84,19 +84,45 @@ let join_summaries sa sb =
   | _ -> No_failure
 
 let rec run_test log common_prefix path behavior = function
-  Node (testenvspec, test, env_modifiers, subtrees) ->
-  Printf.printf "%s %s (%s) => %!" common_prefix path test.Tests.test_name;
-  let (msg, children_behavior, result) = match behavior with
-    | Skip_all_tests -> "n/a", Skip_all_tests, Result.skip
+  Node (testenvspec, test, subtrees) ->
+  let (children_behavior, result) = match behavior with
+    | Skip_all_tests ->
+      Printf.printf "n/a\n%!";
+      (Skip_all_tests, Result.skip)
     | Run env ->
       let testenv0 = interpret_environment_statements env testenvspec in
-      let testenv = List.fold_left apply_modifiers testenv0 env_modifiers in
-      let (result, newenv) = Tests.run log testenv test in
-      let msg = Result.string_of_result result in
-      let children_behavior =
-        if Result.is_pass result then Run newenv else Skip_all_tests in
-      (msg, children_behavior, result) in
-  Printf.printf "%s\n%!" msg;
+      begin match test with
+        | Simple_test (test, env_modifiers) ->
+          Printf.printf "%s %s (%s) => %!"
+            common_prefix path test.Tests.test_name;
+          let testenv = List.fold_left apply_modifiers testenv0 env_modifiers in
+          let (result, newenv) = Tests.run log testenv test in
+          Printf.printf "%s\n%!" (Result.string_of_result result);
+          let children_behavior =
+            if Result.is_pass result then Run newenv else Skip_all_tests
+          in
+          (children_behavior, result)
+        | Sequence_test tests ->
+          let rec run_test_seq n env = function
+            | [] -> (Result.pass, env)
+            | (env_statements, test)::tests ->
+              Printf.printf "%s %s #%d (%s) => %!"
+                common_prefix path n test.Tests.test_name;
+              let testenv =
+                interpret_environment_statements env env_statements
+              in
+              let (result, newenv) = Tests.run log testenv test in
+              Printf.printf "%s\n%!" (Result.string_of_result result);
+              if Result.is_pass result then run_test_seq (n+1) newenv tests
+              else (result, newenv)
+          in
+          let (result, newenv) = run_test_seq 1 env tests in
+          let children_behavior =
+            if Result.is_pass result then Run newenv else Skip_all_tests
+          in
+          (children_behavior, result)
+      end
+  in
   join_result
     (run_test_trees log common_prefix path children_behavior subtrees) result
 
@@ -136,7 +162,7 @@ let test_file test_filename =
   let test_trees = match test_trees with
     | [] ->
       let default_tests = Tests.default_tests() in
-      let make_tree test = Node ([], test, [], []) in
+      let make_tree test = Node ([], Simple_test (test, []), []) in
       List.map make_tree default_tests
     | _ -> test_trees in
   let used_tests = tests_in_trees test_trees in
