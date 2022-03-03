@@ -131,40 +131,28 @@ module Ephemeron: sig
   (** return the number of keys *)
 
   val get_key: t -> int -> obj_t option
-  (** Same as {!Stdlib.Ephemeron.K1.get_key} *)
 
   val get_key_copy: t -> int -> obj_t option
-  (** Same as {!Stdlib.Ephemeron.K1.get_key_copy} *)
 
   val set_key: t -> int -> obj_t -> unit
-  (** Same as {!Stdlib.Ephemeron.K1.set_key} *)
 
   val unset_key: t -> int -> unit
-  (** Same as {!Stdlib.Ephemeron.K1.unset_key} *)
 
   val check_key: t -> int -> bool
-  (** Same as {!Stdlib.Ephemeron.K1.check_key} *)
 
   val blit_key : t -> int -> t -> int -> int -> unit
-  (** Same as {!Stdlib.Ephemeron.K1.blit_key} *)
 
   val get_data: t -> obj_t option
-  (** Same as {!Stdlib.Ephemeron.K1.get_data} *)
 
   val get_data_copy: t -> obj_t option
-  (** Same as {!Stdlib.Ephemeron.K1.get_data_copy} *)
 
   val set_data: t -> obj_t -> unit
-  (** Same as {!Stdlib.Ephemeron.K1.set_data} *)
 
   val unset_data: t -> unit
-  (** Same as {!Stdlib.Ephemeron.K1.unset_data} *)
 
   val check_data: t -> bool
-  (** Same as {!Stdlib.Ephemeron.K1.check_data} *)
 
   val blit_data : t -> t -> unit
-  (** Same as {!Stdlib.Ephemeron.K1.blit_data} *)
 
   val max_ephe_length: int
   (** Maximum length of an ephemeron, ie the maximum number of keys an
