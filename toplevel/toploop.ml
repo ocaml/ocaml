@@ -22,7 +22,17 @@ type input =
   | File of string
   | String of string
 
+type loaded = Empty | Load : ('a -> bool) * 'a -> loaded
+
 let use_print_results = ref true
+let last_loaded = ref Empty
+
+let remember f args = last_loaded := Load(f, args); f args
+
+let reload () =
+  match !last_loaded with
+  | Empty -> true
+  | Load (f, args) -> f args
 
 let filename_of_input = function
   | File name -> name
