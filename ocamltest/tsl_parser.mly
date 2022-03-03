@@ -36,7 +36,6 @@ let mkenvstmt envstmt =
 %token COMMA
 %token <int> TEST_DEPTH
 %token EQUAL PLUSEQUAL
-/* %token COLON */
 %token INCLUDE SET UNSET WITH
 %token <string> IDENTIFIER
 %token <string> STRING
