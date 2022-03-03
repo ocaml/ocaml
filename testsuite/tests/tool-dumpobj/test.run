@@ -1,5 +1,1 @@
-if ${ocamlsrcdir}/tools/dumpobj.opt ${program} > ${output}; then
-  exit ${TEST_SUCC}
-else
-  exit ${TEST_FAIL}
-fi
+${ocamlrun} ${ocamlsrcdir}/tools/dumpobj -nobanners ${program} > ${output}

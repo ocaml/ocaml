@@ -1,8 +1,10 @@
 (* TEST
-  * setup-ocamlc.byte-build-env
-  ** ocamlc.byte
-    compile_only = "false"
-    all_modules = "test.ml"
-  *** run
+
+flags = "-nopervasives"
+
+* setup-ocamlc.byte-build-env
+** ocamlc.byte
+*** run
+**** check-program-output
 *)
-let x = 42
+let x = 42L
