@@ -248,10 +248,17 @@ let test_pheasant () =
   | exception Dynlink.Error (
       Dynlink.Module_already_loaded "Partridge") -> ()
 
+let debug_runtime = String.equal (Sys.runtime_variant ()) "d"
+
+(* test_cow_repeated is disabled when running with the debug runtime.
+   Reloading multiple times a module can cause an already initialized block
+   to be overwritten. See https://github.com/ocaml/ocaml/issues/11016 *)
 let () =
   test_sheep ();
-  test_cow_repeated ();
-  test_cow_repeated ();
+  if (not debug_runtime) then (
+    test_cow_repeated ();
+    test_cow_repeated ()
+  );
   test_cow_same_name_same_mli ();
   test_cow_same_name_different_mli ();
   test_pig ();
