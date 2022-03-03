@@ -32,6 +32,9 @@
 
 GITHUB=https://github.com/ocaml/ocaml
 
-sed "s,(Changes#\(.*\)),[Changes file for \\1]($GITHUB/blob/\\1/Changes),g" $1 \
+# Note: "cat $1 | sed ..." could be "sed ... $1", but this form makes
+# it easier to remove or reorder some of the sed passes.
+cat $1 \
+| sed "s,(Changes#\(.*\)),[Changes file for \\1]($GITHUB/blob/\\1/Changes),g" \
 | sed "s,#\([0-9]\+\),#[\\1]($GITHUB/issues/\\1),g" \
 | sed "s/^*/* [*breaking change*]/g"
