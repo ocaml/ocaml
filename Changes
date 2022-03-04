@@ -160,6 +160,9 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- #11089: Add 'since <version>' information to compiler warnings.
+  (André Maroneze, review by Florian Angeletti and Gabriel Scherer)
+
 - #10909: Disable warning 59 (assignment to immutable blocks) unless flambda
   invariant checks are enabled.
   (Vincent Laviron, review by Gabriel Scherer)
