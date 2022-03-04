@@ -702,20 +702,18 @@ let solve_Ppat_construct ~refine env loc constr no_existentials
     unify_pat_types_return_equated_pairs ~refine loc env ty_res expected_ty
   in
   let expansion_scope = get_gadt_equations_level () in
-  let default_existential_treatment =
-    Make_existentials_abstract { env; scope = expansion_scope }
-  in
   let ty_args, ty_res, equated_types, existential_ctyp =
     match existential_styp with
       None ->
         let ty_args, ty_res, _ =
-          instance_constructor default_existential_treatment constr
+          instance_constructor
+            (Make_existentials_abstract { env; scope = expansion_scope }) constr
         in
         ty_args, ty_res, unify_res ty_res, None
     | Some (name_list, sty) ->
         let existential_treatment =
           if name_list = [] then
-            default_existential_treatment
+            Make_existentials_abstract { env; scope = expansion_scope }
           else
             (* we will unify them (in solve_constructor_annotation) with the
                local types provided by the user *)
