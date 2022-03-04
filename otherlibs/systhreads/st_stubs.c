@@ -276,7 +276,7 @@ static value caml_thread_new_descriptor(value clos)
   /* Create and initialize the termination semaphore */
   mu = caml_threadstatus_new();
   /* Create a descriptor for the new thread */
-  descr = caml_alloc_3(3, Val_long(atomic_fetch_add(&thread_next_id, +1)),
+  descr = caml_alloc_3(0, Val_long(atomic_fetch_add(&thread_next_id, +1)),
                        clos, mu);
   CAMLreturn(descr);
 }
