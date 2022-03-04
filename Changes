@@ -42,10 +42,11 @@ Working version
 - #11010: Use strerror_r for reentrant error string conversion.
   (Anil Madhavapeddy and Xavier Leroy, review by same and Edwin Török)
 
-- #11002: Do not use Begin_roots/End_roots macros in the runtime system.  Also
-  fix a missing root registration in the implementation of Unix.write on
-  Windows.
-  (Nicolás Ojeda Bär, review by Xavier Leroy and David Allsopp)
+- #11002, #11066, #11086: Do not use Begin_roots/End_roots macros in
+  the runtime system.  Also fix a missing root registration in the
+  implementation of Unix.write on Windows.
+  (Nicolás Ojeda Bär, Daniel Bünzli and Antonin Décimo,
+   review by Xavier Leroy and David Allsopp)
 
 - #11022: Track GC work for all managed bigarray allocations
   (Stephen Dolan, report by Andrew Hunter, review by Damien Doligez)
