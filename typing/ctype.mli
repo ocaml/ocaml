@@ -152,8 +152,12 @@ val new_local_type:
         ?loc:Location.t ->
         ?manifest_and_scope:(type_expr * int) -> unit -> type_declaration
 val existential_name: constructor_description -> type_expr -> string
-val instance_constructor:
-        ?in_pattern:Env.t ref * int ->
+
+type existential_treatment =
+  | Keep_existentials_flexible
+  | Make_existentials_abstract of { env: Env.t ref; scope: int }
+
+val instance_constructor: existential_treatment ->
         constructor_description -> type_expr list * type_expr * type_expr list
         (* Same, for a constructor. Also returns existentials. *)
 val instance_parameterized_type:

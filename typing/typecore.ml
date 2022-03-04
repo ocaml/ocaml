@@ -557,7 +557,9 @@ and build_as_type_aux ~refine (env : Env.t ref) p =
         vto <> None (* be lazy and keep the type for node constraints *) in
       if keep then p.pat_type else
       let tyl = List.map (build_as_type env) pl in
-      let ty_args, ty_res, _ = instance_constructor cstr in
+      let ty_args, ty_res, _ =
+        instance_constructor Keep_existentials_flexible cstr
+      in
       List.iter2 (fun (p,ty) -> unify_pat ~refine env {p with pat_type = ty})
         (List.combine pl tyl) ty_args;
       ty_res
@@ -702,13 +704,22 @@ let solve_Ppat_construct ~refine env loc constr no_existentials
     match existential_styp with
       None ->
         let ty_args, ty_res, _ =
-          instance_constructor ~in_pattern:(env, expansion_scope) constr in
+          instance_constructor
+            (Make_existentials_abstract { env; scope = expansion_scope }) constr
+        in
         ty_args, ty_res, unify_res ty_res, None
     | Some (name_list, sty) ->
-        let in_pattern =
-          if name_list = [] then Some (env, expansion_scope) else None in
+        let existential_treatment =
+          if name_list = [] then
+            Make_existentials_abstract { env; scope = expansion_scope }
+          else
+            (* we will unify them (in solve_constructor_annotation) with the
+               local types provided by the user *)
+            Keep_existentials_flexible
+        in
         let ty_args, ty_res, ty_ex =
-          instance_constructor ?in_pattern constr in
+          instance_constructor existential_treatment constr
+        in
         let equated_types = unify_res ty_res in
         let ty_args, existential_ctyp =
           solve_constructor_annotation env name_list sty ty_args ty_ex in
@@ -4730,7 +4741,9 @@ and type_construct env loc lid sarg ty_expected_explained attrs =
                             (lid.txt, constr.cstr_arity, List.length sargs)));
   let separate = !Clflags.principal || Env.has_local_constraints env in
   if separate then (begin_def (); begin_def ());
-  let (ty_args, ty_res, _) = instance_constructor constr in
+  let (ty_args, ty_res, _) =
+    instance_constructor Keep_existentials_flexible constr
+  in
   let texp =
     re {
       exp_desc = Texp_construct(lid, constr, []);
