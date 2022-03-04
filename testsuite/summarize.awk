@@ -138,15 +138,6 @@ function record_unexp() {
     record_unexp();
 }
 
-/^re-ran / {
-    if (in_test){
-        printf("error at line %d: found re-ran inside a test\n", NR);
-        errored = 1;
-    }else{
-        RERAN[substr($0, 8, length($0)-7)] += 1;
-        ++ reran;
-    }
-}
 
 END {
     if (errored){
