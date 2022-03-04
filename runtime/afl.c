@@ -164,7 +164,7 @@ CAMLexport value caml_setup_afl(value unit)
 
 CAMLprim value caml_reset_afl_instrumentation(value full)
 {
-  if (full != Val_int(0)) {
+  if (full == Val_true) {
     memset(caml_afl_area_ptr, 0, sizeof(afl_area_initial));
   }
   caml_afl_prev_loc = 0;

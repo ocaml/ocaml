@@ -65,7 +65,7 @@ CAMLprim value unix_getaddrinfo(value vnode, value vserv, value vopts)
   int retcode;
 
   if (! (caml_string_is_c_safe(vnode) && caml_string_is_c_safe(vserv)))
-    CAMLreturn (Val_int(0));
+    CAMLreturn (Val_emptylist);
 
   /* Extract "node" parameter */
   if (caml_string_length(vnode) == 0) {
@@ -82,7 +82,7 @@ CAMLprim value unix_getaddrinfo(value vnode, value vserv, value vopts)
   /* Parse options, set hints */
   memset(&hints, 0, sizeof(hints));
   hints.ai_family = PF_UNSPEC;
-  for (/*nothing*/; Is_block(vopts); vopts = Field(vopts, 1)) {
+  for (/*nothing*/; vopts != Val_emptylist; vopts = Field(vopts, 1)) {
     v = Field(vopts, 0);
     if (Is_block(v))
       switch (Tag_val(v)) {
@@ -113,11 +113,11 @@ CAMLprim value unix_getaddrinfo(value vnode, value vserv, value vopts)
   if (node != NULL) caml_stat_free(node);
   if (serv != NULL) caml_stat_free(serv);
   /* Convert result */
-  vres = Val_int(0);
+  vres = Val_emptylist;
   if (retcode == 0) {
     for (r = res; r != NULL; r = r->ai_next) {
       e = convert_addrinfo(r);
-      v = caml_alloc_small(2, 0);
+      v = caml_alloc_small(2, Tag_cons);
       Field(v, 0) = e;
       Field(v, 1) = vres;
       vres = v;

@@ -53,7 +53,7 @@ static value fdset_to_fdlist(value fdlist, fd_set *fdset)
   for (l = fdlist; l != Val_emptylist; l = Field(l, 1)) {
     int fd = Int_val(Field(l, 0));
     if (FD_ISSET(fd, fdset)) {
-      value newres = caml_alloc_small(2, 0);
+      value newres = caml_alloc_small(2, Tag_cons);
       Field(newres, 0) = Val_int(fd);
       Field(newres, 1) = res;
       res = newres;

@@ -333,12 +333,9 @@ CAMLprim value caml_raw_backtrace_next_slot(value slot)
   dbg = caml_debuginfo_next(dbg);
 
   if (dbg == NULL)
-    v = Val_int(0); /* None */
+    v = Val_none;
   else
-  {
-    v = caml_alloc(1, 0);
-    Field(v, 0) = Val_debuginfo(dbg);
-  }
+    v = caml_alloc_some(Val_debuginfo(dbg));
 
   CAMLreturn(v);
 }
@@ -358,7 +355,7 @@ CAMLprim value caml_get_exception_backtrace(value unit)
   intnat i;
 
   if (!caml_debug_info_available()) {
-    res = Val_int(0); /* None */
+    res = Val_none;
   } else {
     backtrace = caml_get_exception_raw_backtrace(Val_unit);
 
@@ -369,8 +366,7 @@ CAMLprim value caml_get_exception_backtrace(value unit)
       Store_field(arr, i, caml_convert_debuginfo(dbg));
     }
 
-    res = caml_alloc_small(1, 0);
-    Field(res, 0) = arr; /* Some */
+    res = caml_alloc_some(arr);
   }
 
   CAMLreturn(res);
