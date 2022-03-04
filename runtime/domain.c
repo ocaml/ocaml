@@ -46,33 +46,41 @@
 #include "caml/weak.h"
 
 /* The runtime can run stop-the-world (STW) sections, during which all
-   active domains run the same code in parallel (with a barrier
-   mechanism to synchronize within this code). See
-   [caml_try_run_on_all_domains] below.
+   active domains run the same callback in parallel (with a barrier
+   mechanism to synchronize within the callback).
 
    Stop-the-world sections are used to handle duties such as:
     - minor GC
     - major GC phase changes
 
-   We guarantee that no mutator code runs in parallel with a STW
-   section, and domains are blocked from entering or leaving the set of active
-   STW participants while a STW section is in progress.
+   Code within the STW callback can have the guarantee that no mutator
+   code runs in parallel -- precisely, the guarantee holds only for
+   code that is followed by a barrier. Furthermore, new domains being
+   spawned are blocked from running any mutator code while a STW
+   section is in progress, and terminating domains cannot stop until
+   they have participated to all STW sections currently in progress.
 
    To provide these guarantees:
-    - domains must register as STW participants before running any
-      mutator code
-    - domains registered as STW participants must be careful to
-      service STW interrupt requests
-    - STW sections must not trigger callbacks (eg. finalisers or
-      signal handlers).
+    - Domains must register as STW participants before running any
+      mutator code.
+    - STW sections must not trigger other callbacks into mutator code
+      (eg. finalisers or signal handlers).
+
+   See the comments on [caml_try_run_on_all_domains_with_spin_work]
+   below for more details on the synchronization mechanisms involved.
 */
 
-/* The main C-stack for a domain can enter a blocking call.
-   In this scenario a 'backup thread' will become responsible for
-   servicing the STW sections on behalf of the domain. Care is needed
-   to hand off duties for servicing STW sections between the main
-   pthread and the backup pthread when caml_enter_blocking_section
-   and caml_leave_blocking_section are called.
+/* For timely handling of STW requests, domains registered as STW
+   participants must be careful to service STW interrupt requests. The
+   compiler inserts "poll points" in mutator code, and the runtime
+   uses a "backup thread" mechanism during blocking sections.
+
+   When the main C-stack for a domain enters a blocking call,
+   a 'backup thread' becomes responsible for servicing the STW
+   sections on behalf of the domain. Care is needed to hand off duties
+   for servicing STW sections between the main pthread and the backup
+   pthread when caml_enter_blocking_section and
+   caml_leave_blocking_section are called.
 
    When the state for the backup thread is BT_IN_BLOCKING_SECTION
    the backup thread will service the STW section.
@@ -1125,10 +1133,10 @@ int caml_domain_is_in_stw(void) {
 
    - If two STW sections are attempted in parallel, only one will
      manage to take the lock, and the domain starting the other will
-     join that winning STW section, without running its own STW code
-     at all. (This is the [_try_] in the function name: if it returns
-     0, the STW section did not run at all, so you should call this
-     function in a loop.)
+     join that winning STW section, without running its own STW
+     callback at all. (This is the [_try_] in the function name: if it
+     returns 0, the STW section did not run at all, so you should call
+     this function in a loop.)
 
    - Domain initialization code from [create_domain] will not run in
      parallel with a STW section, as [create_domain] starts by
@@ -1143,10 +1151,10 @@ int caml_domain_is_in_stw(void) {
      any request to participate in a STW section.
 
    Each domain leaves the section as soon as it is finished running
-   the section code. In particular, a mutator may resume while some
-   other domain are still in the section. Section code that needs to
-   happen before any mutator must be followed by a barrier, forcing
-   all STW participants to synchronize.
+   the STW section callback. In particular, a mutator may resume while
+   some other domains are still in the section. Any code within the STW
+   callback that needs to happen before any mutator must be followed
+   by a barrier, forcing all STW participants to synchronize.
 
    Taken together, these properties guarantee that STW sections act as
    a proper exclusion mechanism: for example, some mutable state
