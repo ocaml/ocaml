@@ -153,6 +153,9 @@ Working version
   DEFAULT_STRING=safe which are now the default unconditionally.
   (Kate Deplaix, review by Gabriel Scherer and David Allsopp)
 
+- Build native-code compilers on OpenBSD/aarch64
+  (Christopher Zimmermann)
+
 ### Bug fixes:
 
 - #11025, #11036: Do not pass -no-pie to the C compiler on musl/arm64
