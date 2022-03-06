@@ -76,8 +76,8 @@ value caml_process_pending_actions_with_root_exn (value extra_root);
 void caml_init_signal_handling(void);
 void caml_init_signals();
 void caml_terminate_signals();
-CAMLextern void * caml_init_signal_stack(void);
-CAMLextern void caml_free_signal_stack(void *);
+CAMLextern stack_t * caml_init_signal_stack(void);
+CAMLextern void caml_free_signal_stack(stack_t *);
 
 /* These hooks are not modified after other threads are spawned. */
 CAMLextern void (*caml_enter_blocking_section_hook)(void);

@@ -31,6 +31,9 @@
 #include "caml/sys.h"
 #include "caml/memprof.h"
 #include "caml/finalise.h"
+#ifdef USE_MMAP_MAP_STACK
+#include <sys/mman.h>
+#endif
 
 /* The set of pending signals (received but not yet processed).
    It is represented as a bit vector.
@@ -465,54 +468,67 @@ CAMLexport int caml_rev_convert_signal_number(int signo)
   return signo;
 }
 
-void * caml_init_signal_stack(void)
+stack_t * caml_init_signal_stack(void)
 {
 #ifdef POSIX_SIGNALS
-  stack_t stk;
-  stk.ss_flags = 0;
-  stk.ss_size = SIGSTKSZ;
+  stack_t * stk = malloc(sizeof(stack_t));
+  stk->ss_flags = 0;
+  stk->ss_size = SIGSTKSZ;
   /* The memory used for the alternate signal stack must not free'd before
-     calling sigaltstack with SS_DISABLE. malloc is therefore used rather
+     calling sigaltstack with SS_DISABLE. malloc/mmap is therefore used rather
      than caml_stat_alloc_noexc so that if a shutdown path erroneously fails
      to call caml_free_signal_stack then we have a memory leak rather than a
      nasty piece of undefined behaviour forced on the caller. */
-  stk.ss_sp = malloc(stk.ss_size);
-  if(stk.ss_sp == NULL) {
+#ifdef USE_MMAP_MAP_STACK
+  stk->ss_sp = mmap(NULL, stk->ss_size, PROT_WRITE | PROT_READ,
+             MAP_ANONYMOUS | MAP_PRIVATE | MAP_STACK, -1, 0);
+  if (stk->ss_sp == MAP_FAILED)
+    return NULL;
+#else
+  stk->ss_sp = malloc(stk->ss_size);
+  if(stk->ss_sp == NULL)
+    return NULL;
+#endif /* USE_MMAP_MAP_STACK */
+
+  if (sigaltstack(stk, NULL) < 0) {
+    free(stk->ss_sp);
     return NULL;
   }
-  if (sigaltstack(&stk, NULL) < 0) {
-    free(stk.ss_sp);
-    return NULL;
-  }
-  return stk.ss_sp;
+  return stk;
 #else
   return NULL;
 #endif
 }
 
-void caml_free_signal_stack(void * signal_stack)
+void caml_free_signal_stack(stack_t * signal_stack)
 {
 #ifdef POSIX_SIGNALS
-  stack_t stk, disable;
-  disable.ss_flags = SS_DISABLE;
-  disable.ss_sp = NULL;  /* not required but avoids a valgrind false alarm */
-  disable.ss_size = SIGSTKSZ; /* macOS wants a valid size here */
-  if (sigaltstack(&disable, &stk) < 0) {
-    caml_fatal_error("Failed to reset signal stack (err %d)", errno);
+  stack_t stk;
+  /* Get current stack */
+  if (sigaltstack(NULL, &stk) < 0) {
+    caml_fatal_error("Failed to get current signal stack (err %d)", errno);
   }
-  /* Check whether someone else installed their own signal stack */
-  if (!(stk.ss_flags & SS_DISABLE) && stk.ss_sp != signal_stack) {
-    /* Re-activate their signal stack. */
-    sigaltstack(&stk, NULL);
+  /* Only disable if signal_stack is still the active signal stack. */
+  if (!(stk.ss_flags & SS_DISABLE) && stk.ss_sp == signal_stack->ss_sp) {
+    stk.ss_flags = SS_DISABLE;
+    if (sigaltstack(&stk, NULL) < 0) {
+      caml_fatal_error("Failed to reset signal stack (err %d)", errno);
+    }
   }
-  /* Memory was allocated with malloc directly; see caml_init_signal_stack */
+  /* Memory was allocated with malloc/mmap directly;
+     see caml_init_signal_stack */
+#ifdef USE_MMAP_MAP_STACK
+  munmap(signal_stack->ss_sp, signal_stack->ss_size);
+#else
+  free(signal_stack->ss_sp);
+#endif /* USE_MMAP_MAP_STACK */
   free(signal_stack);
-#endif
+#endif /* POSIX_SIGNALS */
 }
 
 #ifdef POSIX_SIGNALS
 /* This is the alternate signal stack block for domain 0 */
-static void * caml_signal_stack_0 = NULL;
+static stack_t * caml_signal_stack_0 = NULL;
 #endif
 
 void caml_init_signals(void)

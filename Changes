@@ -229,11 +229,11 @@ OCaml 5.0
   (Guillaume Munch-Maccagnoni, review by Xavier Leroy and Gabriel
   Scherer)
 
-- #10875: Add option to allocate stacks with mmap(MAP_STACK) instead of malloc.
+- #10875, #11091: Add option to allocate stacks with mmap instead of malloc.
   This is exposed via a configure --enable-mmap-map-stack option, and is
-  enabled by default on OpenBSD where it is mandatory.
-  (Anil Madhavapeddy, review by Gabriel Scherer, Tom Kelly,
-   Michael Hendricks and KC Sivaramakrishnan).
+  enabled by default on OpenBSD where it is mandatory to use MAP_STACK.
+  (Anil Madhavapeddy and Christopher Zimmerman, review by Gabriel Scherer,
+   Tom Kelly, Michael Hendricks and KC Sivaramakrishnan).
 
 - #10950: Do not use mmap to allocate Caml_state.
   In order to reduce virtual memory usage, we dynamically allocate
