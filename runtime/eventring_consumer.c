@@ -599,7 +599,7 @@ CAMLprim value caml_ml_eventring_create_cursor(value path_pid_option) {
   if (Is_some(path_pid_option)) {
     const char* path_u8 = String_val(Field(Some_val(path_pid_option), 0));
     path = caml_stat_strdup_to_os(path_u8);
-    pid = Int_val(Field(path_pid_option, 1));
+    pid = Int_val(Field(Some_val(path_pid_option), 1));
   } else {
     path = NULL;
     pid = -1;
