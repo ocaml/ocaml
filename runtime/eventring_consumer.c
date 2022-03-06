@@ -588,7 +588,7 @@ CAMLprim value caml_ml_eventring_create_cursor(value path_pid_option) {
   CAMLlocal1(wrapper);
   struct caml_eventring_cursor *cursor;
   int pid;
-  const char_os* path;
+  char_os* path;
   eventring_error res;
 
   wrapper = caml_alloc_custom(&cursor_operations,
@@ -609,7 +609,7 @@ CAMLprim value caml_ml_eventring_create_cursor(value path_pid_option) {
 
   if (res != E_SUCCESS) {
     if( path != NULL ) {
-      caml_stat_free(&path);
+      caml_stat_free(path);
     }
 
     switch(res) {
@@ -636,6 +636,10 @@ CAMLprim value caml_ml_eventring_create_cursor(value path_pid_option) {
   caml_eventring_set_lost_events(cursor, ml_lost_events);
 
   Cursor_val(wrapper) = cursor;
+
+  if( path != NULL ) {
+    caml_stat_free(path);
+  }
 
   CAMLreturn(wrapper);
 }
