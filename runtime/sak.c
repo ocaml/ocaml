@@ -34,7 +34,12 @@
 #define printf_os wprintf
 #else
 #define strncmp_os strncmp
+#ifdef __NetBSD__
+/* NOTE: See CAVEATS section in https://man.netbsd.org/ctype.3 */
+#define toupper_os(x) toupper((unsigned char)x)
+#else
 #define toupper_os toupper
+#endif
 #define printf_os printf
 #endif
 
