@@ -60,7 +60,7 @@ val full_int : int -> int
      If [bound] is less than 2{^30}, [Random.full_int bound] is equal to
      {!Random.int}[ bound]. If [bound] is greater than 2{^30} (on 64-bit systems
      or non-standard environments, such as JavaScript), [Random.full_int]
-     returns a value, where {!Random.int} raises {!Invalid_argument}.
+     returns a value, where {!Random.int} raises {!Stdlib.Invalid_argument}.
 
     @since 4.13.0 *)
 
