@@ -14443,7 +14443,9 @@ case $host in #(
     arch=amd64; system=mingw64 ;; #(
   aarch64-*-linux*) :
     arch=arm64; system=linux ;; #(
-    aarch64-*-openbsd*) :
+  aarch64-*-freebsd*) :
+    arch=arm64; system=freebsd ;; #(
+  aarch64-*-openbsd*) :
     arch=arm64; system=openbsd ;; #(
   *) :
      ;;
