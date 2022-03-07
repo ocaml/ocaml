@@ -23,8 +23,8 @@
 (** {1 Creators} *)
 
 val s_ref : 'a -> 'a ref
-(** Similar to {!val:ref}, except the allocated reference is registered into
-    the store. *)
+(** Similar to {!val:Stdlib.ref}, except the allocated reference is registered
+    into the store. *)
 
 val s_table : ('a -> 'b) -> 'a -> 'b ref
 (** Used to register hash tables. Those also need to be placed into refs to be

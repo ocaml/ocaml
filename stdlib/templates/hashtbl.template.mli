@@ -401,7 +401,7 @@ module type SeededHashedType =
           the seed.  It must be the case that if [equal x y] is true,
           then [hash seed x = hash seed y] for any value of [seed].
           A suitable choice for [hash] is the function
-          {!Stdlib.Hashtbl.seeded_hash} below. *)
+          {!Hashtbl.seeded_hash} below. *)
   end
 (** The input signature of the functor {!MakeSeeded}.
     @since 4.00.0 *)

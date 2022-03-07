@@ -60,7 +60,7 @@ v}
     Unicode character U+1F42B.
 
     {b Past mutability.} OCaml strings used to be modifiable in place,
-    for instance via the {!String.set} and {!String.blit}
+    for instance via the [String.set] and [String.blit]
     functions. This use is nowadays only possible when the compiler is
     put in "unsafe-string" mode by giving the [-unsafe-string]
     command-line option. This compatibility mode makes the types
