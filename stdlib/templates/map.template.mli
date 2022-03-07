@@ -220,7 +220,7 @@ module type S =
     (** Return the list of all bindings of the given map.
        The returned list is sorted in increasing order of keys with respect
        to the ordering [Ord.compare], where [Ord] is the argument
-       given to {!Stdlib.Map.Make}.
+       given to {!Map.Make}.
         @since 3.12.0
      *)
 

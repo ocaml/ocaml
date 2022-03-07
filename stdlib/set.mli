@@ -186,7 +186,7 @@ module type S =
     (** Return the list of all elements of the given set.
        The returned list is sorted in increasing order with respect
        to the ordering [Ord.compare], where [Ord] is the argument
-       given to {!Stdlib.Set.Make}. *)
+       given to {!Set.Make}. *)
 
     val min_elt: t -> elt
     (** Return the smallest element of the given set

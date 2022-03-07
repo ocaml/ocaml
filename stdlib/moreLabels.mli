@@ -420,7 +420,7 @@ module Hashtbl : sig
             the seed.  It must be the case that if [equal x y] is true,
             then [hash seed x = hash seed y] for any value of [seed].
             A suitable choice for [hash] is the function
-            {!Stdlib.Hashtbl.seeded_hash} below. *)
+            {!Hashtbl.seeded_hash} below. *)
     end
   (** The input signature of the functor {!MakeSeeded}.
       @since 4.00.0 *)
@@ -735,7 +735,7 @@ module Map : sig
       (** Return the list of all bindings of the given map.
          The returned list is sorted in increasing order of keys with respect
          to the ordering [Ord.compare], where [Ord] is the argument
-         given to {!Stdlib.Map.Make}.
+         given to {!Map.Make}.
           @since 3.12.0
        *)
 
@@ -1050,7 +1050,7 @@ module Set : sig
       (** Return the list of all elements of the given set.
          The returned list is sorted in increasing order with respect
          to the ordering [Ord.compare], where [Ord] is the argument
-         given to {!Stdlib.Set.Make}. *)
+         given to {!Set.Make}. *)
 
       val min_elt: t -> elt
       (** Return the smallest element of the given set
