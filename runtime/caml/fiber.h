@@ -78,7 +78,8 @@ CAML_STATIC_ASSERT(sizeof(struct stack_info) ==
  * +------------------------+
  * |  struct stack_handler  |
  * +------------------------+ <--- Stack_high
- * |     caml_runstack      |
+ * |    caml_runstack /     |
+ * |   caml_start_program   |
  * +------------------------+
  * |                        |
  * .      OCaml frames      . <--- sp
