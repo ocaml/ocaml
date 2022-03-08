@@ -242,7 +242,7 @@ let find_all p =
   | x :: l -> if p x then find (x :: accu) l else find accu l in
   find []
 
-let number_of f lst = 
+let count f lst = 
   let rec aux n = function
     | [] -> n
     | h :: t -> if f h then aux (n + 1) t else aux n t
