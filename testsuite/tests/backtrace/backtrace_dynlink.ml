@@ -11,13 +11,17 @@ libraries = ""
   + native-dynlink
   + setup-ocamlopt.byte-build-env
   }
-** ocamlopt.byte
+** {
    module = "backtrace_dynlink.ml"
    flags = "-g"
-** ocamlopt.byte
+   + ocamlopt.byte
+   }
+** {
    program = "backtrace_dynlink_plugin.cmxs"
    flags = "-shared -g"
    all_modules = "backtrace_dynlink_plugin.ml"
+   + ocamlopt.byte
+   }
 ** {
    program = "${test_build_directory}/main.exe"
    libraries = "dynlink"
@@ -33,8 +37,6 @@ libraries = ""
     + flambda
     + check-program-output
     }
-
-
 
 *)
 
