@@ -334,6 +334,11 @@ val find_all : ('a -> bool) -> 'a list -> 'a list
 (** [find_all] is another name for {!filter}.
  *)
 
+val number_of : ('a -> bool) -> 'a list -> int
+(** [number_of f l] returns the number of elements int the list [l]
+   that satisfy a given condition [f].
+ *)
+
 val filteri : (int -> 'a -> bool) -> 'a list -> 'a list
 (** Same as {!filter}, but the predicate is applied to the index of
    the element as first argument (counting from 0), and the element

@@ -242,6 +242,14 @@ let find_all p =
   | x :: l -> if p x then find (x :: accu) l else find accu l in
   find []
 
+let rec number_of f = function
+  | [] -> 0
+  | h :: t -> begin 
+      if f h 
+      then 1 + number_of f t 
+      else number_of f t
+    end
+
 let filter = find_all
 
 let filteri p l =
