@@ -553,16 +553,16 @@ let emit_instr env fallthrough i =
         emit_call "caml_c_call";
         record_frame env i.live (Dbg_other i.dbg);
       end else begin
-        I.mov rsp rbp;
+        I.mov rsp rbx;
         cfi_remember_state ();
-        cfi_def_cfa_register "rbp";
+        cfi_def_cfa_register "rbx";
         (* NB: gdb has asserts on contiguous stacks that mean it
            will not unwind through this unless we were to tag this
            calling frame with cfi_signal_frame in it's definition. *)
         I.mov (domain_field Domainstate.Domain_c_stack) rsp;
 
         emit_call func;
-        I.mov rbp rsp;
+        I.mov rbx rsp;
         cfi_restore_state ();
       end
   | Lop(Istackoffset n) ->
