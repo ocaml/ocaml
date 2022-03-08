@@ -924,9 +924,11 @@ let fundecl fundecl =
         argument-passing registers may be in use.
         Also serves to align the stack properly before the call *)
       I.push (int (Config.stack_threshold + max_frame_size / 8));
+      cfi_adjust_cfa_offset 8;
         (* measured in words *)
       emit_call "caml_call_realloc_stack";
       I.pop r10; (* ignored *)
+      cfi_adjust_cfa_offset (-8);
       I.jmp (label ret)
     end
   end;
