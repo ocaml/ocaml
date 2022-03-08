@@ -291,7 +291,7 @@ let regs_are_volatile _rs = false
 (* Registers destroyed by operations *)
 
 let destroyed_at_c_call =
-  (* C calling conventions preserve rbp, but it is clobbered
+  (* C calling conventions preserve rbx, but it is clobbered
      by the code sequence used for C calls in emit.mlp, so it
      is marked as destroyed. *)
   if win64 then
@@ -301,7 +301,6 @@ let destroyed_at_c_call =
        100;101;102;103;104;105])
   else
     (* Unix: rbx, r12-r15 preserved *)
-    (* FIXME fabbing using rbx in replacement of rbp *)
     Array.of_list(List.map phys_reg
       [0;1;2;3;4;5;6;7;10;11;
        100;101;102;103;104;105;106;107;
