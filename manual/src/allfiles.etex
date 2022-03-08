@@ -71,6 +71,7 @@ and as a
 \input{flambda.tex}
 \input{afl-fuzz.tex}
 \input{instrumented-runtime.tex}
+\input{tail-mod-cons.tex}
 
 \part{The OCaml library}
 \label{p:library}
