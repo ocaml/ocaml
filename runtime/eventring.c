@@ -127,7 +127,12 @@ static void teardown_eventring(caml_domain_state *domain_state, void *data,
     CloseHandle(ring_handle);
 #else
     munmap(current_metadata, current_ring_total_size);
-    unlink(current_ring_loc);
+
+    int remove_file = *(int*)data;
+
+    if( remove_file ) {
+      unlink(current_ring_loc);
+    }
 #endif
 
     caml_stat_free(current_ring_loc);
@@ -145,7 +150,9 @@ void caml_eventring_post_fork() {
   CAMLassert(caml_domain_alone());
 
   if (atomic_load_acq(&eventring_enabled)) {
-    caml_try_run_on_all_domains(&teardown_eventring, NULL, NULL);
+    /* unmmap eventrings from the parent but don't remove the files */
+    int remove_file = 0;
+    caml_try_run_on_all_domains(&teardown_eventring, &remove_file, NULL);
 
     /* We still have the path and ring size from our parent */
     caml_eventring_start();
@@ -168,7 +175,9 @@ void caml_eventring_destroy() {
   if (atomic_load_acq(&eventring_enabled)) {
     write_to_ring(EV_RUNTIME, EV_LIFECYCLE, EV_RING_STOP, 0, NULL, 0);
 
-    caml_try_run_on_all_domains(&teardown_eventring, NULL, NULL);
+    /* clean up eventring when we exit. */
+    int remove_file = 1;
+    caml_try_run_on_all_domains(&teardown_eventring, &remove_file, NULL);
   }
 }
 
