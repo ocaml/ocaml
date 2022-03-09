@@ -138,10 +138,16 @@ static void open_connection(void)
                      caml_strerror(errno, buf, sizeof(buf)));
   dbg_in = caml_open_descriptor_in(dbg_socket);
   dbg_out = caml_open_descriptor_out(dbg_socket);
-  /* The code in this file does not bracket channel I/O operations with
-     Lock and Unlock, but this is safe because the debugger only works
-     with single-threaded programs.  The program being debugged
-     will abort when it creates a thread. */
+  /* We need to lock the channels because the low-level I/O calls expect
+     to work on locked channels. We keep them locked because they are
+     private to this code and never used concurrently. */
+  Lock (dbg_in);
+  Lock (dbg_out);
+  /* We also need to remove them from the list of all open channels,
+     otherwise the flush-everything-at-exit code will try to relock them. */
+  caml_unlink_channel (dbg_in);
+  caml_unlink_channel (dbg_out);
+
   if (!caml_debugger_in_use) caml_putword(dbg_out, -1); /* first connection */
 #ifdef _WIN32
   caml_putword(dbg_out, _getpid());
@@ -153,7 +159,11 @@ static void open_connection(void)
 
 static void close_connection(void)
 {
+  caml_link_channel (dbg_in);
+  Unlock (dbg_in);
   caml_close_channel(dbg_in);
+  caml_link_channel (dbg_out);
+  Unlock (dbg_out);
   caml_close_channel(dbg_out);
   dbg_socket = -1;              /* was closed by caml_close_channel */
 }
@@ -246,16 +256,6 @@ void caml_debugger_init(void)
     sock_addr.s_inet.sin_port = htons(atoi(port));
     sock_addr_len = sizeof(sock_addr.s_inet);
   }
-  /* We completely disable channel locking because:
-     1. The debugger is not compatible with threads, so we don't need locks.
-     2. This file doesn't use locks around channel operations, but
-        function [check_pending] in io.c assumes that the channel is locked
-        and tries to unlock it.
-  */
-  caml_channel_mutex_free = NULL;
-  caml_channel_mutex_lock = NULL;
-  caml_channel_mutex_unlock = NULL;
-  caml_channel_mutex_unlock_exn = NULL;
   open_connection();
   caml_debugger_in_use = 1;
   /* Bigger than default caml_trap_sp_off (1) */
@@ -450,8 +450,12 @@ void caml_debugger(enum event_kind event, value param)
       break;
     case REQ_CHECKPOINT:
 #ifndef _WIN32
-      caml_release_domain_lock (); /* Don't fork while holding a lock. */
+      caml_release_domain_lock (); /* Don't fork while holding locks. */
+      Unlock (dbg_out);
+      Unlock (dbg_in);
       i = fork();
+      Lock (dbg_in);
+      Lock (dbg_out);
       caml_acquire_domain_lock ();
       if (i == 0) {
         close_connection();     /* Close parent connection. */
