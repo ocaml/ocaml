@@ -120,7 +120,7 @@ val select :
    {!Unix.select}. *)
 
 val wait_pid : int -> int * Unix.process_status
-[@@ocaml.deprecated "Use Unix.wait instead."]
+[@@ocaml.deprecated "Use Unix.waitpid instead."]
 (** Same function as {!Unix.waitpid}.
    [wait_pid p] suspends the execution of the calling thread
    until the process specified by the process identifier [p]
