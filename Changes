@@ -116,6 +116,11 @@ Working version
   thread-safe.
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #11087: deprecate Thread.wait_timed_read, Thread.wait_timed_write,
+  Thread.select, Thread.wait_pid. The same functionality is available in the
+  Unix module.
+  (Nicolás Ojeda Bär, review by Anil Madhavapeddy)
+
 ### Tools:
 
 * #11004: Litmus tests for checking the implementation of the

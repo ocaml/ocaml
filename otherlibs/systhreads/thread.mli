@@ -93,9 +93,11 @@ val yield : unit -> unit
     to use {!Unix} functions directly. *)
 
 val wait_timed_read : Unix.file_descr -> float -> bool
+[@@ocaml.deprecated "Use Unix.select instead."]
 (** See {!Thread.wait_timed_write}.*)
 
 val wait_timed_write : Unix.file_descr -> float -> bool
+[@@ocaml.deprecated "Use Unix.select instead."]
 (** Suspend the execution of the calling thread until at least
    one character or EOF is available for reading ([wait_timed_read]) or
    one character can be written without blocking ([wait_timed_write])
@@ -110,6 +112,7 @@ val select :
   Unix.file_descr list -> Unix.file_descr list ->
   Unix.file_descr list -> float ->
     Unix.file_descr list * Unix.file_descr list * Unix.file_descr list
+[@@ocaml.deprecated "Use Unix.select instead."]
 (** Same function as {!Unix.select}.
    Suspend the execution of the calling thread until input/output
    becomes possible on the given Unix file descriptors.
@@ -117,6 +120,7 @@ val select :
    {!Unix.select}. *)
 
 val wait_pid : int -> int * Unix.process_status
+[@@ocaml.deprecated "Use Unix.waitpid instead."]
 (** Same function as {!Unix.waitpid}.
    [wait_pid p] suspends the execution of the calling thread
    until the process specified by the process identifier [p]
