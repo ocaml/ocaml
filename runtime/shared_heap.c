@@ -111,6 +111,10 @@ struct caml_heap_state* caml_init_shared_heap (void) {
   return heap;
 }
 
+/* This must always be called while holding the pool_freelist mutex. We annotate
+to avoid ThreadSanitizer instrumenting this and complaining about data races
+that could effectively never happen. */
+CAMLno_tsan
 static int move_all_pools(pool** src, pool** dst, caml_domain_state* new_owner){
   int count = 0;
   while (*src) {
@@ -256,7 +260,11 @@ static intnat pool_sweep(struct caml_heap_state* local,
                          int release_to_global_pool);
 
 /* Adopt pool from the pool_freelist avail and full pools
-   to satisfy an alloction */
+   to satisfy an alloction. This function is marked `no_tsan` to avoid
+   ThreadSanitizer warning about data races in the check we do prior to
+   acquiring the mutex. Stores to these locations are only done while
+   holding the pool_freelist mutex (either here or in move_all_pools). */
+CAMLno_tsan
 static pool* pool_global_adopt(struct caml_heap_state* local, sizeclass sz)
 {
   pool* r = NULL;
