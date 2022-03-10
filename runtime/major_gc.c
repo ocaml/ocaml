@@ -177,6 +177,10 @@ void caml_final_domain_terminate (caml_domain_state *domain_state)
   }
 }
 
+/* We annotate this to avoid ThreadSanitizer instrumentation because the only
+writes to orph_structs.final_info is done while holding the orphaned_lock
+mutex */
+CAMLno_tsan
 static int no_orphaned_work (void)
 {
   return
