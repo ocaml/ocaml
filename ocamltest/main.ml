@@ -85,8 +85,10 @@ let join_summaries sa sb =
 
 let rec run_test log common_prefix path behavior = function
   Node (testenvspec, test, env_modifiers, subtrees) ->
-  Printf.printf "%s %s (%s) => %!" common_prefix path test.Tests.test_name;
-  let (msg, children_behavior, result) = match behavior with
+  let msg1 =
+    Printf.sprintf "%s %s (%s) => " common_prefix path test.Tests.test_name
+  in
+  let (msg2, children_behavior, result) = match behavior with
     | Skip_all_tests -> "n/a", Skip_all_tests, Result.skip
     | Run env ->
       let testenv0 = interpret_environment_statements env testenvspec in
@@ -96,7 +98,7 @@ let rec run_test log common_prefix path behavior = function
       let children_behavior =
         if Result.is_pass result then Run newenv else Skip_all_tests in
       (msg, children_behavior, result) in
-  Printf.printf "%s\n%!" msg;
+  Printf.printf "%s%s\n%!" msg1 msg2;
   join_result
     (run_test_trees log common_prefix path children_behavior subtrees) result
 
