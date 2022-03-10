@@ -143,10 +143,6 @@ static void open_connection(void)
      private to this code and never used concurrently. */
   Lock (dbg_in);
   Lock (dbg_out);
-  /* We also need to remove them from the list of all open channels,
-     otherwise the flush-everything-at-exit code will try to relock them. */
-  caml_unlink_channel (dbg_in);
-  caml_unlink_channel (dbg_out);
 
   if (!caml_debugger_in_use) caml_putword(dbg_out, -1); /* first connection */
 #ifdef _WIN32
@@ -159,10 +155,8 @@ static void open_connection(void)
 
 static void close_connection(void)
 {
-  caml_link_channel (dbg_in);
   Unlock (dbg_in);
   caml_close_channel(dbg_in);
-  caml_link_channel (dbg_out);
   Unlock (dbg_out);
   caml_close_channel(dbg_out);
   dbg_socket = -1;              /* was closed by caml_close_channel */

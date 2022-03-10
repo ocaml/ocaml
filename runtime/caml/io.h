@@ -124,10 +124,6 @@ CAMLextern struct channel * caml_all_opened_channels;
 CAMLextern value caml_ml_open_descriptor_in(value fd);
 CAMLextern value caml_ml_open_descriptor_out(value fd);
 
-/* Required by the debugger */
-CAMLextern void caml_link_channel(struct channel *);
-CAMLextern void caml_unlink_channel(struct channel *);
-
 #endif /* CAML_INTERNALS */
 
 #endif /* CAML_IO_H */

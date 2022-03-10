@@ -137,7 +137,7 @@ Caml_inline int descriptor_is_in_binary_mode(int fd)
 #endif
 }
 
-CAMLexport void caml_link_channel (struct channel* channel)
+static void link_channel (struct channel* channel)
 {
   channel->next = caml_all_opened_channels;
   CAMLassert(channel->prev == NULL);
@@ -146,7 +146,7 @@ CAMLexport void caml_link_channel (struct channel* channel)
   caml_all_opened_channels = channel;
 }
 
-CAMLexport void caml_unlink_channel(struct channel *channel)
+static void unlink_channel(struct channel *channel)
 {
   if (channel->prev == NULL) {
     CAMLassert (channel == caml_all_opened_channels);
