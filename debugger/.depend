@@ -475,6 +475,7 @@ program_management.cmo : \
     ../typing/envaux.cmi \
     debugger_config.cmi \
     ../driver/compmisc.cmi \
+    debugcom.cmi \
     breakpoints.cmi \
     program_management.cmi
 program_management.cmx : \
@@ -493,6 +494,7 @@ program_management.cmx : \
     ../typing/envaux.cmx \
     debugger_config.cmx \
     ../driver/compmisc.cmx \
+    debugcom.cmx \
     breakpoints.cmx \
     program_management.cmi
 program_management.cmi :
