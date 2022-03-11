@@ -1,0 +1,13 @@
+# This is a list of functions to ignore for tsan. These are only for
+# Tag-macro and Field-macro related races. Any other races should be fixed
+# or functions annotated with CAMLno_tsan (with a justification as to why)
+fun:oldify_one
+fun:oldify_mopup
+fun:try_update_object_header
+fun:mark_slice_darken
+fun:mark_stack_push
+fun:caml_modify
+fun:caml_ephe_clean
+fun:do_check_key_clean
+fun:ephe_mark
+fun:caml_darken
