@@ -422,7 +422,8 @@ value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize,
     if (!p) return 0;
   }
   colour = pinned ? NOT_MARKABLE : caml_global_heap_state.MARKED;
-  Hd_hp (p) = Make_header(wosize, tag, colour);
+  atomic_store_explicit((atomic_uintnat*)p,
+    (uintnat)Make_header(wosize, tag, colour), memory_order_relaxed);
 #ifdef DEBUG
   {
     int i;
