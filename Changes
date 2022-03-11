@@ -54,6 +54,9 @@ Working version
 - #10802: Use 4.12 value macros and helpers in C code
   (Antonin Décimo, review by Gabriel Scherer)
 
+- #11105: Fix handling of fiber stack cache with multiple domains
+  (Jon Ludlam, KC Sivaramakrishnan and Tom Kelly)
+
 ### Code generation and optimizations:
 
 - #10972: ARM64 multicore support: OCaml & C stack separation;
