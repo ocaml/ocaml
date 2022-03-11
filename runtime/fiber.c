@@ -123,15 +123,17 @@ alloc_size_class_stack_noexc(mlsize_t wosize, int cache_bucket,
 {
   struct stack_info* stack;
   struct stack_handler* hand;
+  struct stack_info **cache = Caml_state->stack_cache;
 
   CAML_STATIC_ASSERT(sizeof(struct stack_info) % sizeof(value) == 0);
   CAML_STATIC_ASSERT(sizeof(struct stack_handler) % sizeof(value) == 0);
 
+  CAMLassert(cache != NULL);
+
   if (cache_bucket != -1 &&
-      Caml_state->stack_cache != NULL &&
-      Caml_state->stack_cache[cache_bucket] != NULL) {
-    stack = Caml_state->stack_cache[cache_bucket];
-    Caml_state->stack_cache[cache_bucket] =
+      cache[cache_bucket] != NULL) {
+    stack = cache[cache_bucket];
+    cache[cache_bucket] =
       (struct stack_info*)stack->exception_ptr;
     CAMLassert(stack->cache_bucket == stack_cache_bucket(wosize));
     hand = stack->handler;
@@ -474,12 +476,14 @@ struct stack_info* caml_alloc_main_stack (uintnat init_size)
 void caml_free_stack (struct stack_info* stack)
 {
   CAMLnoalloc;
+  struct stack_info** cache = Caml_state->stack_cache;
+
   CAMLassert(stack->magic == 42);
-  if (stack->cache_bucket != -1 &&
-      Caml_state->stack_cache != NULL) {
+  CAMLassert(cache != NULL);
+  if (stack->cache_bucket != -1) {
     stack->exception_ptr =
-      (void*)(Caml_state->stack_cache[stack->cache_bucket]);
-    Caml_state->stack_cache[stack->cache_bucket] = stack;
+      (void*)(cache[stack->cache_bucket]);
+    cache[stack->cache_bucket] = stack;
 #ifdef DEBUG
     memset(Stack_base(stack), 0x42,
            (Stack_high(stack)-Stack_base(stack))*sizeof(value));
