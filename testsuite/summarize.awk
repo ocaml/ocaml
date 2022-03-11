@@ -134,12 +134,9 @@ function record_unexp() {
     record_unexp();
 }
 
-# Record anything else seen on a test result as a failure
-/=> .* / {
-    if (in_test) record_unexp();
-}
-
 END {
+    if (in_test) record_unexp();
+
     if (errored){
         printf ("\n#### Some fatal error occurred during testing.\n\n");
         exit (3);
