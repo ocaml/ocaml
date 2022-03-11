@@ -131,7 +131,8 @@ alloc_size_class_stack_noexc(mlsize_t wosize, int cache_bucket,
       Caml_state->stack_cache != NULL &&
       Caml_state->stack_cache[cache_bucket] != NULL) {
     stack = Caml_state->stack_cache[cache_bucket];
-    Caml_state->stack_cache[cache_bucket] = (struct stack_info*)stack->exception_ptr;
+    Caml_state->stack_cache[cache_bucket] =
+      (struct stack_info*)stack->exception_ptr;
     CAMLassert(stack->cache_bucket == stack_cache_bucket(wosize));
     hand = stack->handler;
   } else {
@@ -476,7 +477,8 @@ void caml_free_stack (struct stack_info* stack)
   CAMLassert(stack->magic == 42);
   if (stack->cache_bucket != -1 &&
       Caml_state->stack_cache != NULL) {
-    stack->exception_ptr = (void*)(Caml_state->stack_cache[stack->cache_bucket]);
+    stack->exception_ptr =
+      (void*)(Caml_state->stack_cache[stack->cache_bucket]);
     Caml_state->stack_cache[stack->cache_bucket] = stack;
 #ifdef DEBUG
     memset(Stack_base(stack), 0x42,
