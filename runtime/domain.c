@@ -325,6 +325,8 @@ static void caml_wait_interrupt_serviced(struct interruptor* target)
 }
 
 #define MAX_DOMAIN_NAME_LENGTH 16
+CAMLno_tsan /* Caml_state->id is only modified by the current thread so this
+               is a benign race. */
 void caml_domain_set_name(char *name)
 {
   char thread_name[MAX_DOMAIN_NAME_LENGTH];
