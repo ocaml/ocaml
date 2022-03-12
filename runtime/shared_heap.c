@@ -246,7 +246,8 @@ Caml_inline void pool_initialize(pool* r,
   p += wh;
 
   while (p + wh <= end) {
-    p[0] = 0; /* zero header indicates free object */
+    /* zero header indicates free object */
+    atomic_store_explicit((atomic_uintnat*)p, 0, memory_order_relaxed);
     p[1] = (value)(p - wh);
     p += wh;
   }
