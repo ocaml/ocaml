@@ -321,7 +321,6 @@ void caml_handle_incoming_interrupts(void)
 int caml_send_interrupt(struct interruptor* target)
 {
   /* signal that there is an interrupt pending */
-  CAMLassert(!atomic_load_acq(&target->interrupt_pending));
   atomic_store_rel(&target->interrupt_pending, 1);
 
   /* Signal the condition variable, in case the target is
@@ -1425,13 +1424,10 @@ int caml_try_run_on_all_domains_with_spin_work(
 
   /* Next, interrupt all domains */
   for(i = 0; i < stw_domains.participating_domains; i++) {
-    caml_domain_state* d = stw_domains.domains[i]->state;
-    stw_request.participating[i] = d;
-    if (d != domain_state) {
-      caml_send_interrupt(&stw_domains.domains[i]->interruptor);
-    } else {
-      CAMLassert(!domain_self->interruptor.interrupt_pending);
-    }
+    dom_internal * d = stw_domains.domains[i];
+    stw_request.participating[i] = d->state;
+    CAMLassert(!d->interruptor.interrupt_pending);
+    if (d->state != domain_state) caml_send_interrupt(&d->interruptor);
   }
 
   /* Domains now know they are part of the STW.
