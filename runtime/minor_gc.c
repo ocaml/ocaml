@@ -806,10 +806,9 @@ void caml_alloc_small_dispatch (caml_domain_state * dom_st,
       // FIXME: do not call finalisers
       caml_handle_gc_interrupt();
       /* In the case of long-running C code that regularly polls with
-         caml_process_pending_actions, force a query of all callbacks
-         at every minor collection or major slice. */
-      // FIXME
-      //caml_something_to_do = 1;
+         [caml_process_pending_actions], still force a query of all
+         callbacks at every minor collection or major slice. */
+      dom_st->action_pending = 1;
     }
 
     /* Now, there might be enough room in the minor heap to do our
