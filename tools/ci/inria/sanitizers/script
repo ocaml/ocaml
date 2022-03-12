@@ -119,7 +119,8 @@ git clean -q -f -d -x
 
 ./configure \
   CC=clang-13 \
-  CFLAGS="-O1 -fno-omit-frame-pointer -fsanitize=thread" \
+  CFLAGS="-O1 -fno-omit-frame-pointer -fsanitize=thread \
+  -fsanitize-ignorelist=`pwd`/tools/ci/inria/sanitizers/tsan-ignorelist.txt" \
   --disable-stdlib-manpages --enable-dependency-generation
 
 # Build the system
