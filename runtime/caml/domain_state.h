@@ -60,7 +60,8 @@ CAML_STATIC_ASSERT(
   #define SET_Caml_state(x) \
       (pthread_setspecific(caml_domain_state_key, x))
 #else
-  CAMLextern __thread caml_domain_state* Caml_state;
+  CAMLextern __thread caml_domain_state* caml_state;
+  #define Caml_state caml_state
   #define CAML_INIT_DOMAIN_STATE
   #define SET_Caml_state(x) (Caml_state = (x))
 #endif
