@@ -17,6 +17,9 @@
 
 ROOTDIR = ..
 
+# enable debug info for run_*.c
+CFLAGS=-g
+
 include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 
