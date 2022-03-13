@@ -181,6 +181,9 @@ Working version
 
 ### Bug fixes:
 
+- #11112: harden -use-runtime against spaces or quotes in the provided path
+  (Gabriel Scherer, report by Brahima Dibassi, review by David Allsopp)
+
 - #11025, #11036: Do not pass -no-pie to the C compiler on musl/arm64
   (omni, Kate Deplaix and Antonio Nuno Monteiro, review by Xavier Leroy)
 
