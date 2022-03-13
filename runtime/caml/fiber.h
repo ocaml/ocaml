@@ -50,12 +50,12 @@ struct stack_info {
 #endif
   struct stack_handler* handler; /* effect handling state for the fiber */
 
-  /* [size_bucket] is a pointer to a bucket in Caml->stack_cache if this
-   * size is pooled. If unpooled, it is NULL.
+  /* [cache_bucket] is an index into the [Caml_state->stack_cache] array if
+   * this size is pooled. If unpooled, it is [-1].
    *
    * Stacks may be unpooled if either the stack size is not 2**N multiple of
    * [caml_fiber_wsz] or the stack is bigger than pooled sizes. */
-  struct stack_info** size_bucket;
+  int cache_bucket;
   size_t size; /* only used when USE_MMAP_MAP_STACK is defined */
   uintnat magic;
 };
