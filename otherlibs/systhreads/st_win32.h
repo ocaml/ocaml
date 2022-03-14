@@ -19,6 +19,11 @@
 #define _WIN32_WINNT 0x0400
 #include <windows.h>
 
+Caml_inline void st_msleep(int msec)
+{
+  Sleep(msec);
+}
+
 #include "st_pthreads.h"
 
 /* Signal handling -- none under Win32 */

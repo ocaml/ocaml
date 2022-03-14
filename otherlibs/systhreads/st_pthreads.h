@@ -285,18 +285,13 @@ static void * caml_thread_tick(void * arg)
 {
   caml_domain_state *domain;
   uintnat *domain_id = (uintnat *) arg;
-  struct timeval timeout;
 
   caml_init_domain_self(*domain_id);
   domain = Caml_state;
 
   caml_domain_set_name("Tick");
   while(! atomic_load_acq(&Tick_thread_stop)) {
-    /* select() seems to be the most efficient way to suspend the
-       thread for sub-second intervals */
-    timeout.tv_sec = 0;
-    timeout.tv_usec = Thread_timeout * 1000;
-    select(0, NULL, NULL, NULL, &timeout);
+    st_msleep(Thread_timeout);
 
     atomic_store_rel((atomic_uintnat*)&domain->requested_external_interrupt, 1);
     caml_interrupt_self();
