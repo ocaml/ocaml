@@ -71,14 +71,14 @@ clean::
 
 # The dependency generator
 
-OCAMLDEP = \
+ocamldep_objects = \
   $(ROOTDIR)/compilerlibs/ocamlcommon.cma \
   $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
   ocamldep.cmo depend.cmi
 
 ocamldep$(EXE): LINKFLAGS += -compat-32
-ocamldep$(EXE): $(OCAMLDEP)
-ocamldep.opt$(EXE): $(call byte2native, $(OCAMLDEP))
+ocamldep$(EXE): $(ocamldep_objects)
+ocamldep.opt$(EXE): $(call byte2native, $(ocamldep_objects))
 
 # The profiler
 
@@ -341,11 +341,12 @@ clean::
 clean::
 	rm -f *.cmo *.cmi *.cma *.dll *.so *.lib *.a
 
-CAMLDEP=$(BOOT_OCAMLC) -depend
-DEPFLAGS=-slash
+OCAMLDEP ?= $(BEST_OCAMLDEP)
+OC_OCAMLDEP_FLAGS = -slash
 DEPINCLUDES=$(INCLUDES)
 depend: beforedepend
-	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mli *.ml > .depend
+	$(OCAMLDEP) $(OC_OCAMLDEPFLAGS) $(OCAMLDEPFLAGS) $(DEPINCLUDES) \
+	  *.mli *.ml > .depend
 
 .PHONY: clean distclean install beforedepend depend
 

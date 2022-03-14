@@ -32,8 +32,8 @@ CAMLOPT = $(OCAMLRUN) $(ROOTDIR)/ocamlopt$(EXE) -nostdlib -I $(ROOTDIR)/stdlib
 COMPFLAGS = -absname -w +a-4-9-41-42-44-45-48-70 -warn-error +A \
             -safe-string -strict-sequence -strict-formats -bin-annot
 LINKFLAGS =
-CAMLDEP = $(BOOT_OCAMLC) -depend
-DEPFLAGS = -slash
+OCAMLDEP = $(BOOT_OCAMLC) -depend
+OC_OCAMLDEPFLAGS = -slash
 DEPINCLUDES =
 
 OBJS=cset.cmo syntax.cmo parser.cmo lexer.cmo table.cmo lexgen.cmo \
@@ -81,6 +81,7 @@ beforedepend:: lexer.ml
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
 depend: beforedepend
-	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mli *.ml > .depend
+	$(OCAMLDEP) $(OC_OCAMLDEPFLAGS) $(OCAMLDEPFLAGS) $(DEPINCLUDES) \
+	  *.mli *.ml > .depend
 
 include .depend

@@ -23,8 +23,9 @@ OCAMLYACCFLAGS = --strict -v
 STDLIBFLAGS = -nostdlib -I $(ROOTDIR)/stdlib
 OCAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
 OCAMLOPT = $(BEST_OCAMLOPT) $(STDLIBFLAGS)
-OCAMLDEP = $(BEST_OCAMLDEP)
-DEPFLAGS = -slash
+OCAMLDEP ?= $(BEST_OCAMLDEP)
+OC_OCAMLDEPFLAGS = -slash
+OCAMLDEP_CMD = $(OCAMLDEP) $(OC_OCAMLDEPFLAGS) $(OCAMLDEPFLAGS) $(DEPINCLUDES)
 
 # For installation
 ##############
@@ -352,7 +353,7 @@ distclean: clean
 
 .PHONY: depend
 depend: $(DEPEND_PREREQS)
-	$(OCAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mll *.mly *.ml *.mli > .depend
-	$(OCAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -shared generators/*.ml >> .depend
+	$(OCAMLDEP_CMD) *.mll *.mly *.ml *.mli > .depend
+	$(OCAMLDEP_CMD) -shared generators/*.ml >> .depend
 
 include .depend

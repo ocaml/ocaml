@@ -58,8 +58,9 @@ else
 OCAML_NATDYNLINKOPTS = -ccopt "$(NATDYNLINKOPTS)"
 endif
 
-CAMLDEP=$(OCAMLRUN) boot/ocamlc -depend
-DEPFLAGS=-slash
+OCAMLDEP ?= $(OCAMLRUN) boot/ocamlc -depend
+OC_OCAMLDEPFLAGS = -slash
+OCAMLDEP_CMD = $(OCAMLDEP) $(OC_OCAMLDEPFLAGS) $(OCAMLDEPFLAGS)
 DEPINCLUDES=$(INCLUDES)
 
 OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
@@ -1153,7 +1154,7 @@ depend: beforedepend
          middle_end/flambda/base_types \
          driver toplevel toplevel/byte toplevel/native; \
 	 do \
-	   $(CAMLDEP) $(DEPFLAGS) -I $$d $(DEPINCLUDES) $$d/*.mli $$d/*.ml \
+	   $(OCAMLDEP_CMD) -I $$d $(DEPINCLUDES) $$d/*.mli $$d/*.ml \
 	   || exit; \
          done) > .depend
 

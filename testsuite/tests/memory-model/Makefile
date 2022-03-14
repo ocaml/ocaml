@@ -1,8 +1,13 @@
-OCAMLRUN=../../../boot/ocamlrun
-OPTS=-nostdlib -I ../../../stdlib
-OCAMLC=$(OCAMLRUN) ../../../ocamlc $(OPTS)
-OCAMLOPT=$(OCAMLRUN) ../../../ocamlopt $(OPTS)
+ROOTDIR = ../../..
 
+include $(ROOTDIR)/Makefile.common
+include $(ROOTDIR)/Makefile.best_binaries
+
+STDLIBFLAGS = -nostdlib -I $(ROOTDIR)/stdlib
+OCAMLC ?= $(BEST_OCAMLC) $(STDLIBFLAGS)
+OCAMLOPT ?= $(BEST_OCAMLOPT) $(STDLIBFLAGS)
+OCAMLDEP ?= $(BEST_OCAMLDEP)
+OC_OCAMLDEPFLAGS = -slash
 
 PGM=forbidden.exe publish.exe
 MOREPGM=
@@ -39,10 +44,11 @@ clean::
 %.exe: %.cmx $(OBJ)
 	$(OCAMLOPT) -o $@ $(OBJ) $<
 
-%.byt: %.cmo $(BBJ)
-	$(OCAMLC) -o $@ $(BBJ) $<
+%.byt: $(BBJ) %.cmo
+	$(OCAMLC) -o $@ $^
 
 depend:
-	ocamldep $(SRC)  $(MLI) > .depend
+	$(OCAMLDEP) $(OC_OCAMLDEPFLAGS) $(OCAMLDEPFLAGS) \
+	  $(SRC) $(MLI) > .depend
 
 -include .depend

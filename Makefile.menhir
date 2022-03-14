@@ -159,12 +159,16 @@ clean-menhir: partialclean-menhir
 
 ## depend-menhir
 
+OCAMLDEP_CMD = \
+  $(OCAMLDEP) $(OC_OCAMLDEPFLAGS) $(OCAMLDEPFLAGS) $(DEPINCLUDES)
+
 .PHONY: depend-menhir
 depend-menhir:
-	$(MENHIR) --depend --ocamldep "$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES)" \
-          parsing/parser.mly > .depend.menhir
-# this rule depends on the variables CAMLDEP, DEPFLAGS, DEPINCLUDES
-# defined in Makefile, so it can only be invoked from the main Makefile
+	$(MENHIR) --depend --ocamldep "$(OCAMLDEP_CMD)" \
+	  parsing/parser.mly > .depend.menhir
+# This rule depends on the OCAMLDEP, OC_OCAMLDEPFLAGS and DEPINCLUDES
+# variables defined in Makefile, so it can only be invoked from the
+# main Makefile
 
 include .depend.menhir
 
