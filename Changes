@@ -140,6 +140,10 @@ Working version
 - #11079: Add the -nobanners option to dumpobj.
   (Sébastien Hinderer, review by Gabriel Scherer and Vincent Laviron)
 
+- #11100: Fix ocamltest to make sure failed tests are not counted as
+  "unexpected error".
+  (Damien Doligez, review by xxx)
+
 ### Manual and documentation:
 
 ### Compiler user-interface and warnings:
