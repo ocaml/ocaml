@@ -45,19 +45,32 @@
 #define fiber_debug_log(...)
 #endif
 
-void caml_change_max_stack_size (uintnat new_max_size)
+uintnat caml_get_init_stack_wsize (void)
+{
+  uintnat default_stack_wsize = Wsize_bsize(Stack_init_bsize);
+  uintnat stack_wsize;
+
+  if (default_stack_wsize < caml_max_stack_wsize)
+    stack_wsize = default_stack_wsize;
+  else
+    stack_wsize = caml_max_stack_wsize;
+
+  return stack_wsize;
+}
+
+void caml_change_max_stack_size (uintnat new_max_wsize)
 {
   struct stack_info *current_stack = Caml_state->current_stack;
-  asize_t size = Stack_high(current_stack) - (value*)current_stack->sp
+  asize_t wsize = Stack_high(current_stack) - (value*)current_stack->sp
                  + Stack_threshold / sizeof (value);
 
-  if (new_max_size < size) new_max_size = size;
-  if (new_max_size != caml_max_stack_size){
+  if (new_max_wsize < wsize) new_max_wsize = wsize;
+  if (new_max_wsize != caml_max_stack_wsize){
     caml_gc_log ("Changing stack limit to %"
                  ARCH_INTNAT_PRINTF_FORMAT "uk bytes",
-                     new_max_size * sizeof (value) / 1024);
+                     new_max_wsize * sizeof (value) / 1024);
   }
-  caml_max_stack_size = new_max_size;
+  caml_max_stack_wsize = new_max_wsize;
 }
 
 #define NUM_STACK_SIZE_CLASSES 5
@@ -410,29 +423,29 @@ rewrite_exception_stack(struct stack_info *old_stack,
 int caml_try_realloc_stack(asize_t required_space)
 {
   struct stack_info *old_stack, *new_stack;
-  asize_t size;
+  asize_t wsize;
   int stack_used;
   CAMLnoalloc;
 
   old_stack = Caml_state->current_stack;
   stack_used = Stack_high(old_stack) - (value*)old_stack->sp;
-  size = Stack_high(old_stack) - Stack_base(old_stack);
+  wsize = Stack_high(old_stack) - Stack_base(old_stack);
   do {
-    if (size >= caml_max_stack_size) return 0;
-    size *= 2;
-  } while (size < stack_used + required_space);
+    if (wsize >= caml_max_stack_wsize) return 0;
+    wsize *= 2;
+  } while (wsize < stack_used + required_space);
 
-  if (size > 4096 / sizeof(value)) {
+  if (wsize > 4096 / sizeof(value)) {
     caml_gc_log ("Growing stack to %"
                  ARCH_INTNAT_PRINTF_FORMAT "uk bytes",
-                 (uintnat) size * sizeof(value) / 1024);
+                 (uintnat) wsize * sizeof(value) / 1024);
   } else {
     caml_gc_log ("Growing stack to %"
                  ARCH_INTNAT_PRINTF_FORMAT "u bytes",
-                 (uintnat) size * sizeof(value));
+                 (uintnat) wsize * sizeof(value));
   }
 
-  new_stack = alloc_stack_noexc(size,
+  new_stack = alloc_stack_noexc(wsize,
                                 Stack_handle_value(old_stack),
                                 Stack_handle_exception(old_stack),
                                 Stack_handle_effect(old_stack));
@@ -466,10 +479,10 @@ int caml_try_realloc_stack(asize_t required_space)
   return 1;
 }
 
-struct stack_info* caml_alloc_main_stack (uintnat init_size)
+struct stack_info* caml_alloc_main_stack (uintnat init_wsize)
 {
   struct stack_info* stk =
-    alloc_stack_noexc(init_size, Val_unit, Val_unit, Val_unit);
+    alloc_stack_noexc(init_wsize, Val_unit, Val_unit, Val_unit);
   return stk;
 }
 

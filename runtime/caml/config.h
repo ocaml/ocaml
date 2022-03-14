@@ -198,9 +198,9 @@ typedef uint64_t uintnat;
 
 /* Initial size of stack (bytes). */
 #ifdef DEBUG
-#define Stack_size (64 * sizeof(value))
+#define Stack_init_bsize (64 * sizeof(value))
 #else
-#define Stack_size (4096 * sizeof(value))
+#define Stack_init_bsize (4096 * sizeof(value))
 #endif
 
 /* Minimum free size of stack (bytes); below that, it is reallocated. */
