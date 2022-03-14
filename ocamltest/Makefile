@@ -200,7 +200,6 @@ ocamlopt = $(BEST_OCAMLOPT) $(flags)
 
 ocamldep := $(BEST_OCAMLDEP)
 depflags := -slash
-depincludes :=
 
 .SECONDARY: $(lexers:.mll=.ml) $(parsers:.mly=.mli) $(parsers:.mly=.ml)
 
@@ -312,7 +311,7 @@ $(DEPDIR)/%.$(D): %.c | $(DEPDIR)
 
 .PHONY: depend
 depend: $(dependencies_generated_prereqs)
-	$(ocamldep) $(depflags) $(depincludes) $(mli_files) $(ml_files) \
+	$(ocamldep) $(depflags) $(mli_files) $(ml_files) \
 	  > .depend
 
 -include .depend
