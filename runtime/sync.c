@@ -69,7 +69,7 @@ CAMLexport int caml_mutex_unlock(sync_mutex mut)
   return sync_mutex_unlock(mut);
 }
 
-CAMLprim value caml_ml_mutex_new(value unit)        /* ML */
+CAMLprim value caml_ml_mutex_new(value unit)
 {
   sync_mutex mut = NULL;
   value wrapper;
@@ -81,7 +81,7 @@ CAMLprim value caml_ml_mutex_new(value unit)        /* ML */
   return wrapper;
 }
 
-CAMLprim value caml_ml_mutex_lock(value wrapper)     /* ML */
+CAMLprim value caml_ml_mutex_lock(value wrapper)
 {
   CAMLparam1(wrapper);
   sync_retcode retcode;
@@ -98,7 +98,7 @@ CAMLprim value caml_ml_mutex_lock(value wrapper)     /* ML */
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_ml_mutex_unlock(value wrapper)           /* ML */
+CAMLprim value caml_ml_mutex_unlock(value wrapper)
 {
   sync_retcode retcode;
   sync_mutex mut = Mutex_val(wrapper);
@@ -108,7 +108,7 @@ CAMLprim value caml_ml_mutex_unlock(value wrapper)           /* ML */
   return Val_unit;
 }
 
-CAMLprim value caml_ml_mutex_try_lock(value wrapper)           /* ML */
+CAMLprim value caml_ml_mutex_try_lock(value wrapper)
 {
   sync_mutex mut = Mutex_val(wrapper);
   sync_retcode retcode;
@@ -148,7 +148,7 @@ static struct custom_operations caml_condition_ops = {
   custom_fixed_length_default
 };
 
-CAMLprim value caml_ml_condition_new(value unit)        /* ML */
+CAMLprim value caml_ml_condition_new(value unit)
 {
   value wrapper;
   sync_condvar cond = NULL;
@@ -160,7 +160,7 @@ CAMLprim value caml_ml_condition_new(value unit)        /* ML */
   return wrapper;
 }
 
-CAMLprim value caml_ml_condition_wait(value wcond, value wmut)     /* ML */
+CAMLprim value caml_ml_condition_wait(value wcond, value wmut)
 {
   CAMLparam2(wcond, wmut);
   sync_condvar cond = Condition_val(wcond);
@@ -177,14 +177,14 @@ CAMLprim value caml_ml_condition_wait(value wcond, value wmut)     /* ML */
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_ml_condition_signal(value wrapper)           /* ML */
+CAMLprim value caml_ml_condition_signal(value wrapper)
 {
   sync_check_error(sync_condvar_signal(Condition_val(wrapper)),
                  "Condition.signal");
   return Val_unit;
 }
 
-CAMLprim value caml_ml_condition_broadcast(value wrapper)           /* ML */
+CAMLprim value caml_ml_condition_broadcast(value wrapper)
 {
   sync_check_error(sync_condvar_broadcast(Condition_val(wrapper)),
                  "Condition.broadcast");

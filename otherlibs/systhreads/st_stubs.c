@@ -403,7 +403,7 @@ void caml_thread_interrupt_hook(void)
    function first sets up the chain for systhreads on this domain, then setup
    the global variables and hooks for systhreads to cooperate with the runtime
    system. */
-CAMLprim value caml_thread_initialize(value unit)   /* ML */
+CAMLprim value caml_thread_initialize(value unit)
 {
   CAMLparam0();
 
@@ -426,7 +426,7 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_thread_cleanup(value unit)   /* ML */
+CAMLprim value caml_thread_cleanup(value unit)
 {
   if (Tick_thread_running){
     atomic_store_rel(&Tick_thread_stop, 1);
@@ -531,7 +531,7 @@ static int create_tick_thread()
   return err;
 }
 
-CAMLprim value caml_thread_new(value clos)          /* ML */
+CAMLprim value caml_thread_new(value clos)
 {
   CAMLparam1(clos);
   caml_thread_t th;
@@ -671,21 +671,21 @@ CAMLexport int caml_c_thread_unregister(void)
 
 /* Return the current thread */
 
-CAMLprim value caml_thread_self(value unit)         /* ML */
+CAMLprim value caml_thread_self(value unit)
 {
   return Current_thread->descr;
 }
 
 /* Return the identifier of a thread */
 
-CAMLprim value caml_thread_id(value th)          /* ML */
+CAMLprim value caml_thread_id(value th)
 {
   return Ident(th);
 }
 
 /* Print uncaught exception and backtrace */
 
-CAMLprim value caml_thread_uncaught_exception(value exn)  /* ML */
+CAMLprim value caml_thread_uncaught_exception(value exn)
 {
   char * msg = caml_format_exception(exn);
   fprintf(stderr, "Thread %d killed on uncaught exception %s\n",
@@ -698,7 +698,7 @@ CAMLprim value caml_thread_uncaught_exception(value exn)  /* ML */
 
 /* Allow re-scheduling */
 
-CAMLprim value caml_thread_yield(value unit)        /* ML */
+CAMLprim value caml_thread_yield(value unit)
 {
   if (atomic_load_acq(&Thread_main_lock.waiters) == 0) return Val_unit;
 
@@ -720,7 +720,7 @@ CAMLprim value caml_thread_yield(value unit)        /* ML */
 
 /* Suspend the current thread until another thread terminates */
 
-CAMLprim value caml_thread_join(value th)          /* ML */
+CAMLprim value caml_thread_join(value th)
 {
   st_retcode rc = caml_threadstatus_wait(Terminated(th));
   sync_check_error(rc, "Thread.join");
