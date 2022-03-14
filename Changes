@@ -149,7 +149,7 @@ Working version
 
 - #11100: Fix ocamltest to make sure failed tests are not counted as
   "unexpected error".
-  (Damien Doligez, review by xxx)
+  (Damien Doligez, review by Sébastien Hinderer)
 
 ### Manual and documentation:
 
