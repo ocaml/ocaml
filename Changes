@@ -1,6 +1,12 @@
 OCaml 4.14 maintenance version
 -------------------------------
 
+### Tools:
+
+- #11100: Fix ocamltest to make sure failed tests are not counted as
+  "unexpected error".
+  (Damien Doligez, review by Sébastien Hinderer)
+
 ### Bug fixes:
 
 - #15019, #15030: `Marshal.from_{string,bytes}`: guard against overflow in
