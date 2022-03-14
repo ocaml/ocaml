@@ -50,7 +50,7 @@ let norm2 x = x.re *. x.re +. x.im *. x.im
 
 let norm x = Float.hypot x.re x.im
 
-let arg x = atan2 x.im x.re
+let arg x = Float.atan2 x.im x.re
 
 let polar n a = { re = cos a *. n; im = sin a *. n }
 
