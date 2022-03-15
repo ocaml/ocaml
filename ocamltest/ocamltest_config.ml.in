@@ -27,6 +27,9 @@ let cflags = "%%OC_CFLAGS%%"
 
 let ccomptype = "%%CCOMPTYPE%%"
 
+let diff = "%%DIFF%%"
+let diff_flags = "%%DIFF_FLAGS%%"
+
 let shared_libraries = %%SUPPORTS_SHARED_LIBRARIES%%
 
 let libunix = %%unix%%

@@ -22,16 +22,22 @@ val afl_instrument : bool
 (** Whether AFL support has been enabled in the compiler *)
 
 val asm : string
-(** Path to the assembler*)
+(** Path to the assembler *)
 
 val cc : string
-(** Path to the C compiler*)
+(** Path to the C compiler *)
 
 val cflags : string
 (** Flags to pass to the C compiler *)
 
 val ccomptype : string
 (** Type of C compiler (msvc, cc, etc.) *)
+
+val diff : string
+(** Path to the diff tool *)
+
+val diff_flags : string
+(** Flags to pass to the diff tool *)
 
 val shared_libraries : bool
 (** [true] if shared libraries are supported, [false] otherwise *)

@@ -81,6 +81,7 @@ AC_SUBST([OCAML_VERSION_PATCHLEVEL], [OCAML__VERSION_PATCHLEVEL])
 AC_SUBST([OCAML_VERSION_EXTRA], [OCAML__VERSION_EXTRA])
 AC_SUBST([OCAML_VERSION_SHORT], [OCAML__VERSION_SHORT])
 AC_SUBST([CC])
+AC_SUBST([DIFF_FLAGS])
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
@@ -302,7 +303,7 @@ AC_ARG_WITH([odoc],
 
 AC_ARG_ENABLE([ocamltest],
   [AS_HELP_STRING([--disable-ocamltest],
-    [do not build the ocamltest driver])])
+    [do not build ocamltest])])
 
 AC_ARG_ENABLE([native-toplevel],
   [AS_HELP_STRING([--enable-native-toplevel],
@@ -1877,6 +1878,22 @@ AS_IF([test "x$documentation_tool_cmd" = 'x']
 AS_CASE([$enable_ocamltest,OCAML__DEVELOPMENT_VERSION],
   [yes,*|,true],[ocamltest='ocamltest'],
   [ocamltest=''])
+
+AS_IF([test -n "$ocamltest"],
+  [AC_CHECK_PROGS([DIFF], [patdiff diff], [none])
+  DIFF_FLAGS=""
+  flags=""
+  AS_CASE([$DIFF],
+    [diff], [flags="--strip-trailing-cr -u"],
+    [none],
+      [AC_MSG_ERROR([ocamltest requires a diff tool])])
+  for flag in ${flags}; do
+    AC_MSG_CHECKING([whether $DIFF supports $flag]);
+    AS_IF([$DIFF $DIFF_FLAGS $flag $0 $0 > /dev/null 2>&1],
+      [DIFF_FLAGS="$DIFF_FLAGS $flag"
+      AC_MSG_RESULT([yes])],
+      [AC_MSG_RESULT([no])])
+  done])
 
 AS_IF([test x"$enable_flambda" = "xyes"],
   [flambda=true
