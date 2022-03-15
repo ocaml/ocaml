@@ -15,7 +15,11 @@
 
 .NOTPARALLEL:
 
-BASEDIR := $(shell pwd)
+BASEDIR := "$(shell pwd)"
+ifneq "$(shell echo $(BASEDIR) | grep ' ')" ""
+$(error The Testsuite does not handle spaces\
+   in the ocaml working directory path: $(BASEDIR))
+endif
 
 ROOTDIR = ..
 include $(ROOTDIR)/Makefile.common
