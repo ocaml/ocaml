@@ -195,8 +195,8 @@ again:
   }
   CAMLassert(mem == (void*)aligned_start);
 #else
-  caml_mem_unmap((void*)base, aligned_start - base);
-  caml_mem_unmap((void*)aligned_end, (base + alloc_sz) - aligned_end);
+  munmap((void*)base, aligned_start - base);
+  munmap((void*)aligned_end, (base + alloc_sz) - aligned_end);
 #endif
   return (void*)aligned_start;
 }
@@ -238,15 +238,6 @@ void caml_mem_decommit(void* mem, uintnat size)
   VirtualFree(mem, size, MEM_DECOMMIT);
 #else
   map_fixed(mem, size, PROT_NONE);
-#endif
-}
-
-void caml_mem_unmap(void* mem, uintnat size)
-{
-#ifdef _WIN32
-  VirtualFree(mem, size, MEM_RELEASE);
-#else
-  munmap(mem, size);
 #endif
 }
 
