@@ -376,7 +376,6 @@ CAMLprim value caml_thread_initialize_domain(value v)
 
   st_tls_newkey(&Thread_key);
   st_tls_set(Thread_key, (void *) new_thread);
-  st_thread_set_id(Ident(new_thread->descr));
 
   All_threads = new_thread;
   Current_thread = new_thread;
@@ -494,8 +493,6 @@ static void * caml_thread_start(void * v)
   st_masterlock_acquire(&Thread_main_lock);
   Current_thread = st_tls_get(Thread_key);
   caml_thread_restore_runtime_state();
-
-  st_thread_set_id(Ident(th->descr));
 
 #ifdef POSIX_SIGNALS
   /* restore the signal mask from the spawning thread, now it is safe for the
@@ -624,7 +621,6 @@ CAMLexport int caml_c_thread_register(void)
   st_tls_set(Thread_key, (void *) th);
   /* Allocate the thread descriptor on the heap */
   th->descr = caml_thread_new_descriptor(Val_unit);  /* no closure */
-  st_thread_set_id(Ident(th->descr));
 
   if (! Tick_thread_running) {
     err = create_tick_thread();

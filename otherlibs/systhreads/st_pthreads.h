@@ -63,13 +63,6 @@ static int st_thread_create(st_thread_id * res,
 
 #define ST_THREAD_FUNCTION void *
 
-/* Cleanup at thread exit */
-
-Caml_inline void st_thread_cleanup(void)
-{
-  return;
-}
-
 /* Thread termination */
 
 static void st_thread_join(st_thread_id thr)
@@ -95,12 +88,6 @@ Caml_inline void * st_tls_get(st_tlskey k)
 Caml_inline void st_tls_set(st_tlskey k, void * v)
 {
   pthread_setspecific(k, v);
-}
-
-/* Windows-specific hook. */
-Caml_inline void st_thread_set_id(intnat id)
-{
-  return;
 }
 
 /* The master lock.  This is a mutex that is held most of the time,
