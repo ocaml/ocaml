@@ -235,7 +235,9 @@ void* caml_mem_commit(void* mem, uintnat size)
 void caml_mem_decommit(void* mem, uintnat size)
 {
 #ifdef _WIN32
-  VirtualFree(mem, size, MEM_DECOMMIT);
+  /* VirtualFree can't decommit zero bytes */
+  if (size)
+    VirtualFree(mem, size, MEM_DECOMMIT);
 #else
   map_fixed(mem, size, PROT_NONE);
 #endif
