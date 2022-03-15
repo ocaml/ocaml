@@ -191,9 +191,6 @@ Working version
 - #11112: harden -use-runtime against spaces or quotes in the provided path
   (Gabriel Scherer, report by Brahima Dibassi, review by David Allsopp)
 
-- #11025, #11036: Do not pass -no-pie to the C compiler on musl/arm64
-  (omni, Kate Deplaix and Antonio Nuno Monteiro, review by Xavier Leroy)
-
 - #11068, #11070: Fix typo in function name given in Unix_error exception for
   Unix.readlink on Windows.
   (David Allsopp, report by Xia Li-yao)
@@ -693,6 +690,13 @@ OCaml 4.14.0
   on amd64.
   (Fabrice Buoro, with help from Stephen Dolan, Tom Kelly and Mark Shinwell,
   review by Xavier Leroy)
+
+- #11025, #11036: Do not pass -no-pie to the C compiler on musl/arm64
+  (omni, Kate Deplaix and Antonio Nuno Monteiro, review by Xavier Leroy)
+
+- #11101, #11109: A recursive type constraint fails on 4.14
+  (Jacques Garrigue, report and review by Florian Angeletti)
+
 
 OCaml 4.13 maintenance branch
 -----------------------------

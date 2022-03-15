@@ -1776,7 +1776,8 @@ let occur env ty0 ty =
   try
     while
       type_changed := false;
-      occur_rec env allow_recursive TypeSet.empty ty0 ty;
+      if not (eq_type ty0 ty) then
+        occur_rec env allow_recursive TypeSet.empty ty0 ty;
       !type_changed
     do () (* prerr_endline "changed" *) done;
     merge type_changed old
@@ -2706,7 +2707,7 @@ and unify3 env t1 t1' t2 t2' =
   | _ ->
     begin match !umode with
     | Expression ->
-        occur_for Unify !env t1' t2';
+        occur_for Unify !env t1' t2;
         link_type t1' t2
     | Pattern ->
         add_type_equality t1' t2'

@@ -720,6 +720,7 @@ let log_type ty =
 let link_type ty ty' =
   let ty = repr ty in
   let ty' = repr ty' in
+  if ty == ty' then () else begin
   log_type ty;
   let desc = ty.desc in
   Transient_expr.set_desc ty (Tlink ty');
@@ -736,6 +737,7 @@ let link_type ty ty' =
       | None, None   -> ()
       end
   | _ -> ()
+  end
   (* ; assert (check_memorized_abbrevs ()) *)
   (*  ; check_expans [] ty' *)
 (* TODO: consider eliminating set_type_desc, replacing it with link types *)
