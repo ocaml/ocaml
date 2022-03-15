@@ -24,7 +24,7 @@
 #include <signal.h>
 #include <time.h>
 #include <sys/time.h>
-#ifdef __linux__
+#ifdef HAS_UNISTD
 #include <unistd.h>
 #endif
 
