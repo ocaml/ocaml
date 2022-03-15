@@ -492,7 +492,7 @@ OCaml 4.14.0
   (omni, Kate Deplaix and Antonio Nuno Monteiro, review by Xavier Leroy)
 
 - #11101, #11109: A recursive type constraint fails on 4.14
-  (Jacques Garrigue, report by Florian Angeletti)
+  (Jacques Garrigue, report and review by Florian Angeletti)
 
 
 OCaml 4.13 maintenance branch

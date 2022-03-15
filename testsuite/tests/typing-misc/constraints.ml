@@ -324,8 +324,8 @@ type 'a node = <  > constraint 'a = < clone : 'a; node : 'a node; .. >
 |}]
 
 module Raise: sig val default_extension: 'a node extension as 'a end = struct
-  let default_extension = assert false
+  let default_extension = failwith "Default_extension failure"
 end;;
 [%%expect{|
-Exception: Assert_failure ("", 2, 26).
+Exception: Failure "Default_extension failure".
 |}]
