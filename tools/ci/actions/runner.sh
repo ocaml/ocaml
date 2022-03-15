@@ -20,6 +20,7 @@ PREFIX=~/local
 
 MAKE="make $MAKE_ARG"
 SHELL=dash
+TEST_SEQUENTIALLY=$TEST_SEQUENTIALLY
 
 export PATH=$PREFIX/bin:$PATH
 
@@ -71,17 +72,18 @@ Test () {
   cd ..
 }
 
-TestLoop () {
-  echo Running testsuite for "$@"
-  rm -f to_test.txt
-  for test in "$@"
-  do
-      echo tests/$test >> to_test.txt
-  done
-  for it in {1..$2}
-  do
-      $MAKE -C testsuite one LIST=../to_test.txt || exit 1
-  done || exit 1
+# By default, TestPrefix will attempt to run the tests
+# in the given directory in parallel.
+# Setting $TEST_SEQUENTIALLY will avoid this behaviour.
+TestPrefix () {
+  if [[ -z "${TEST_SEQUENTIALLY}" ]]; then
+    TO_RUN=parallel-"$1"
+  else
+    TO_RUN="one DIR=tests/$1"
+  fi
+  echo Running single testsuite directory with $TO_RUN
+
+  $MAKE -C testsuite $TO_RUN
   cd ..
 }
 
@@ -170,7 +172,7 @@ case $1 in
 configure) Configure;;
 build) Build;;
 test) Test;;
-test_multicore) TestLoop "${@:3}";;
+test_prefix) TestPrefix $2;;
 api-docs) API_Docs;;
 install) Install;;
 manual) BuildManual;;
