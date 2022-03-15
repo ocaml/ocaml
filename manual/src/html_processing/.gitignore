@@ -1,3 +1,4 @@
+camlp-streams
 dune
 markup.ml
 uchar
