@@ -19,5 +19,18 @@
 #define _WIN32_WINNT 0x0400
 #include <windows.h>
 
-/* FIXME Replace winpthreads implementation with native */
-#include "st_posix.h"
+#include "st_pthreads.h"
+
+/* Signal handling -- none under Win32 */
+
+value caml_thread_sigmask(value cmd, value sigs)
+{
+  caml_invalid_argument("Thread.sigmask not implemented");
+  return Val_int(0);            /* not reached */
+}
+
+value caml_wait_signal(value sigs)
+{
+  caml_invalid_argument("Thread.wait_signal not implemented");
+  return Val_int(0);            /* not reached */
+}
