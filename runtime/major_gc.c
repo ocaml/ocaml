@@ -572,12 +572,24 @@ static void realloc_mark_stack (struct mark_stack* stk)
   }
 }
 
+Caml_inline void mark_stack_push_range(struct mark_stack* stk,
+                                       value* start, value* end)
+{
+  mark_entry* me;
+
+  if (stk->count == stk->size)
+    realloc_mark_stack(stk);
+
+  me = &stk->stack[stk->count++];
+  me->start = start;
+  me->end = end;
+}
+
 /* returns the work done by skipping unmarkable objects */
-static intnat mark_stack_push(struct mark_stack* stk, value block)
+static intnat mark_stack_push_block(struct mark_stack* stk, value block)
 {
   int i, block_wsz = Wosize_val(block), end;
   uintnat offset = 0;
-  mark_entry* me;
 
   if (Tag_val(block) == Closure_tag) {
     /* Skip the code pointers and integers at beginning of closure;
@@ -610,12 +622,9 @@ static intnat mark_stack_push(struct mark_stack* stk, value block)
     return Whsize_wosize(block_wsz - offset);
   }
 
-  if (stk->count == stk->size)
-    realloc_mark_stack(stk);
-
-  me = &stk->stack[stk->count++];
-  me->start = Op_val(block) + i;
-  me->end = Op_val(block) + block_wsz;
+  mark_stack_push_range(stk,
+                        Op_val(block) + i,
+                        Op_val(block) + block_wsz);
 
   /* take credit for the work we skipped due to the optimisation.
      we will take credit for the header later as part of marking. */
@@ -626,7 +635,7 @@ static intnat mark_stack_push(struct mark_stack* stk, value block)
 static void mark_stack_push_act(void* state, value v, volatile value* ignored)
 {
   if (Tag_val(v) < No_scan_tag && Tag_val(v) != Cont_tag)
-    mark_stack_push(Caml_state->mark_stack, v);
+    mark_stack_push_block(Caml_state->mark_stack, v);
 }
 
 /* This function shrinks the mark stack back to the MARK_STACK_INIT_SIZE size
@@ -684,7 +693,7 @@ static void mark_slice_darken(struct mark_stack* stk, value child,
             With_status_hd(chd, caml_global_heap_state.MARKED));
         }
         if(Tag_hd(chd) < No_scan_tag){
-          *work -= mark_stack_push(stk, child);
+          *work -= mark_stack_push_block(stk, child);
         } else {
           *work -= Wosize_hd(chd);
         }
@@ -698,10 +707,7 @@ static intnat do_some_marking(struct mark_stack* stk, intnat budget) {
     mark_entry me = stk->stack[--stk->count];
     while (me.start < me.end) {
       if (budget <= 0) {
-        if (stk->count == stk->size)
-          realloc_mark_stack(stk);
-
-        stk->stack[stk->count++] = me;
+        mark_stack_push_range(stk, me.start, me.end);
         return budget;
       }
       budget--;
@@ -782,7 +788,7 @@ void caml_darken(void* state, value v, volatile value* ignored) {
          Hp_atomic_val(v),
          With_status_hd(hd, caml_global_heap_state.MARKED));
       if (Tag_hd(hd) < No_scan_tag) {
-        mark_stack_push(domain_state->mark_stack, v);
+        mark_stack_push_block(domain_state->mark_stack, v);
       }
     }
   }
