@@ -1169,7 +1169,11 @@ let begin_assembly() =
   emit_named_text_section lbl_begin;
   `	.globl	{emit_symbol lbl_begin}\n`;
   `{emit_symbol lbl_begin}:\n`;
-  (* avoid collision for unwind test with code_begin symbol *)
+  (* we need to pad here to avoid collision for the unwind test between
+     the code_begin symbol and the first function. (See also #4690)
+     Alignment is needed to avoid linker warnings for
+     shared_startup__code_{begin,end} (e.g. tests/lib-dynlink-pr4839).
+   *)
   if macosx then ` nop\n .align 3\n`;
   ()
 
