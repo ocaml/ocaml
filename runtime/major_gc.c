@@ -703,8 +703,7 @@ static void mark_slice_darken(struct mark_stack* stk, value child,
   }
 }
 
-static intnat do_some_marking(intnat budget) {
-  struct mark_stack* stk = Caml_state->mark_stack;
+static intnat do_some_marking(struct mark_stack* stk, intnat budget) {
   while (stk->count > 0) {
     mark_entry me = stk->stack[--stk->count];
     while (me.start < me.end) {
@@ -726,15 +725,16 @@ static intnat do_some_marking(intnat budget) {
 
 /* mark until the budget runs out or marking is done */
 static intnat mark(intnat budget) {
-  while (budget > 0 && !Caml_state->marking_done) {
-    budget = do_some_marking(budget);
+  caml_domain_state *domain_state = Caml_state;
+  while (budget > 0 && !domain_state->marking_done) {
+    budget = do_some_marking(domain_state->mark_stack, budget);
     if (budget > 0) {
       struct pool* p = find_pool_to_rescan();
       if (p) {
         caml_redarken_pool(p, &mark_stack_push_act, 0);
       } else {
         ephe_next_cycle ();
-        Caml_state->marking_done = 1;
+        domain_state->marking_done = 1;
         atomic_fetch_add_verify_ge0(&num_domains_to_mark, -1);
       }
     }
@@ -780,9 +780,10 @@ void caml_darken(void* state, value v, volatile value* ignored) {
     hd = Hd_val(v);
   }
   if (Has_status_hd(hd, caml_global_heap_state.UNMARKED)) {
-    if (Caml_state->marking_done) {
+    caml_domain_state* domain_state = Caml_state;
+    if (domain_state->marking_done) {
       atomic_fetch_add(&num_domains_to_mark, 1);
-      Caml_state->marking_done = 0;
+      domain_state->marking_done = 0;
     }
     if (Tag_hd(hd) == Cont_tag) {
       caml_darken_cont(v);
@@ -791,7 +792,7 @@ void caml_darken(void* state, value v, volatile value* ignored) {
          Hp_atomic_val(v),
          With_status_hd(hd, caml_global_heap_state.MARKED));
       if (Tag_hd(hd) < No_scan_tag) {
-        mark_stack_push(Caml_state->mark_stack, v, 0, NULL);
+        mark_stack_push(domain_state->mark_stack, v, 0, NULL);
       }
     }
   }
