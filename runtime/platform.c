@@ -243,6 +243,15 @@ void caml_mem_decommit(void* mem, uintnat size)
 #endif
 }
 
+void caml_mem_unmap(void* mem, uintnat size)
+{
+#ifdef _WIN32
+  VirtualFree(mem, 0, MEM_RELEASE);
+#else
+  munmap(mem, size);
+#endif
+}
+
 #define Min_sleep_ns       10000 // 10 us
 #define Slow_sleep_ns    1000000 //  1 ms
 #define Max_sleep_ns  1000000000 //  1 s

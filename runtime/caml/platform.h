@@ -118,6 +118,7 @@ uintnat caml_mem_round_up_pages(uintnat size);
 void* caml_mem_map(uintnat size, uintnat alignment, int reserve_only);
 void* caml_mem_commit(void* mem, uintnat size);
 void caml_mem_decommit(void* mem, uintnat size);
+void caml_mem_unmap(void* mem, uintnat size);
 
 
 CAMLnoreturn_start
