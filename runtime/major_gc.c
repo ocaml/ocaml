@@ -44,8 +44,8 @@
 #define INITIAL_POOLS_TO_RESCAN_LEN 4
 
 typedef struct {
-  value block;
-  uintnat offset;
+  value* start;
+  value* end;
 } mark_entry;
 
 struct mark_stack {
@@ -579,21 +579,26 @@ static void mark_stack_push(struct mark_stack* stk, value block,
   int i, block_wsz = Wosize_val(block), end;
   mark_entry* me;
 
-  if (offset == 0 && Tag_val(block) == Closure_tag) {
+  if (Tag_val(block) == Closure_tag) {
     /* Skip the code pointers and integers at beginning of closure;
        start scanning at the first word of the environment part. */
-    offset = Start_env_closinfo(Closinfo_val(block));
+    if (offset == 0)
+      offset = Start_env_closinfo(Closinfo_val(block));
+
+    CAMLassert(offset <= Wosize_val(block)
+      && offset >= Start_env_closinfo(Closinfo_val(block)));
   }
 
+  CAMLassert(Has_status_hd(Hd_val(block), caml_global_heap_state.MARKED));
   CAMLassert(Is_block(block) && !Is_young(block));
   CAMLassert(Tag_val(block) != Infix_tag);
   CAMLassert(Tag_val(block) < No_scan_tag);
   CAMLassert(Tag_val(block) != Cont_tag);
   CAMLassert(offset <= block_wsz);
 
-  /* Optimisation to avoid pushing small, unmarkable objects such as [Some 42]
-   * into the mark stack. */
-  end =  (block_wsz < 8 ? block_wsz : 8);
+  /* Optimisation to avoid pushing small, unmarkable objects such as
+     [Some 42] into the mark stack. */
+  end = (block_wsz < 8 ? block_wsz : 8);
 
   for (i = offset; i < end; i++) {
     v = Field(block, i);
@@ -623,8 +628,8 @@ static void mark_stack_push(struct mark_stack* stk, value block,
     realloc_mark_stack(stk);
 
   me = &stk->stack[stk->count++];
-  me->block = block;
-  me->offset = offset;
+  me->start = Op_val(block) + offset;
+  me->end = Op_val(block) + block_wsz;
 }
 
 /* to fit scanning_action */
@@ -658,13 +663,10 @@ void caml_shrink_mark_stack (void)
 
 void caml_darken_cont(value cont);
 
-static void mark_slice_darken(struct mark_stack* stk, value v, mlsize_t i,
+static void mark_slice_darken(struct mark_stack* stk, value child,
                               intnat* work)
 {
-  value child;
   header_t chd;
-
-  child = Field(v, i);
 
   if (Is_markable(child)){
     chd = Hd_val(child);
@@ -705,19 +707,17 @@ static intnat do_some_marking(intnat budget) {
   struct mark_stack* stk = Caml_state->mark_stack;
   while (stk->count > 0) {
     mark_entry me = stk->stack[--stk->count];
-    intnat me_end = Wosize_val(me.block);
-    while (me.offset != me_end) {
+    while (me.start < me.end) {
       if (budget <= 0) {
-        mark_stack_push(stk, me.block, me.offset, NULL);
+        if (stk->count == stk->size)
+          realloc_mark_stack(stk);
+
+        stk->stack[stk->count++] = me;
         return budget;
       }
       budget--;
-      CAMLassert(Is_markable(me.block) &&
-                 Has_status_hd(Hd_val(me.block),
-                               caml_global_heap_state.MARKED) &&
-                 Tag_val(me.block) < No_scan_tag &&
-                 Tag_val(me.block) != Cont_tag);
-      mark_slice_darken(stk, me.block, me.offset++, &budget);
+      mark_slice_darken(stk, *me.start, &budget);
+      me.start++;
     }
     budget--; /* credit for header */
   }
@@ -1476,7 +1476,7 @@ static void mark_stack_prune (struct mark_stack* stk)
   /* Insert used pools into skiplist */
   for(entry_idx = 0; entry_idx < stk->count; entry_idx++){
     mark_entry me = mark_stack[entry_idx];
-    struct pool* pool = caml_pool_of_shared_block(me.block);
+    struct pool* pool = caml_pool_of_shared_block(Val_op(me.start));
     if (!pool) {
       // This could be a large allocation - which is off-heap. Hold on to it.
       mark_stack[large_idx++] = me;
