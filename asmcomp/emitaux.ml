@@ -340,6 +340,13 @@ let cfi_offset ~reg ~offset =
     emit_string "\n"
   end
 
+let cfi_def_cfa_register ~reg =
+  if is_cfi_enabled () then begin
+    emit_string "\t.cfi_def_cfa_register ";
+    emit_int reg;
+    emit_string "\n"
+  end
+
 (* Emit debug information *)
 
 (* This assoc list is expected to be very short *)

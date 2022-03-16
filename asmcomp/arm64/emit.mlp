@@ -742,12 +742,14 @@ let emit_instr env i =
              NB: no need to store previous x29 because OCaml frames don't
              maintain frame pointer *)
           ` mov x29, sp\n`;
+          cfi_remember_state ();
+          cfi_def_cfa_register ~reg:29;
           let offset = Domainstate.(idx_of_field Domain_c_stack) * 8 in
           ` ldr {emit_reg reg_tmp1}, [{emit_reg reg_domain_state_ptr}, {emit_int offset}]\n`;
           ` mov sp, {emit_reg reg_tmp1}\n`;
           ` bl {emit_symbol func}\n`;
-          ` mov sp, x29\n`
-          (* TODO: CFI for this *)
+          ` mov sp, x29\n`;
+          cfi_restore_state ()
         end
     | Lop(Istackoffset n) ->
         assert (n mod 16 = 0);
@@ -1166,7 +1168,14 @@ let begin_assembly() =
   let lbl_begin = Compilenv.make_symbol (Some "code_begin") in
   emit_named_text_section lbl_begin;
   `	.globl	{emit_symbol lbl_begin}\n`;
-  `{emit_symbol lbl_begin}:\n`
+  `{emit_symbol lbl_begin}:\n`;
+  (* we need to pad here to avoid collision for the unwind test between
+     the code_begin symbol and the first function. (See also #4690)
+     Alignment is needed to avoid linker warnings for
+     shared_startup__code_{begin,end} (e.g. tests/lib-dynlink-pr4839).
+   *)
+  if macosx then ` nop\n .align 3\n`;
+  ()
 
 let end_assembly () =
   let lbl_end = Compilenv.make_symbol (Some "code_end") in

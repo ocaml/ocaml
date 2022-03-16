@@ -13233,8 +13233,11 @@ $as_echo "$as_me: WARNING: flexlink not found: shared library support disabled."
 esac
 
 case $cc_basename,$host in #(
-  *,*-*-darwin*) :
+  *,x86_64-*-darwin*) :
     mkexe="$mkexe -Wl,-no_compact_unwind";
+    $as_echo "#define HAS_ARCH_CODE32 1" >>confdefs.h
+ ;; #(
+  *,aarch64-*-darwin*|arm64-*-darwin*) :
     $as_echo "#define HAS_ARCH_CODE32 1" >>confdefs.h
  ;; #(
   *,*-*-haiku*) :
@@ -14082,10 +14085,14 @@ natdynlinkopts=""
 
 if test x"$enable_shared" != "xno"; then :
   case $host in #(
-  *-apple-darwin*) :
+  x86_64-apple-darwin*) :
     mksharedlib="$CC -shared \
                    -undefined dynamic_lookup -Wl,-no_compact_unwind \
                    \$(LDFLAGS)"
+      supports_shared_libraries=true ;; #(
+  aarch64-apple-darwin*|arm64-apple-darwin*) :
+    mksharedlib="$CC -shared \
+                   -undefined dynamic_lookup \$(LDFLAGS)"
       supports_shared_libraries=true ;; #(
   *-*-mingw32) :
     mksharedlib='$(FLEXLINK)'

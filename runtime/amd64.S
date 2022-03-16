@@ -149,7 +149,6 @@
      https://github.com/hjl-tools/x86-psABI/wiki/x86-64-psABI-1.0.pdf */
 
 #define DW_CFA_def_cfa_expression 0x0f
-#define DW_CFA_val_offset         0x14
 #define DW_REG_rbp                6
 #define DW_REG_rsp                7
 #define DW_REG_r13                13

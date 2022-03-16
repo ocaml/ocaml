@@ -44,13 +44,44 @@
 #define CFI_ADJUST(n) .cfi_adjust_cfa_offset n
 #define CFI_REGISTER(r1,r2) .cfi_register r1,r2
 #define CFI_OFFSET(r,n) .cfi_offset r,n
+#define CFI_DEF_CFA_REGISTER(r) .cfi_def_cfa_register r
+#define CFI_SIGNAL_FRAME .cfi_signal_frame
+#define CFI_REMEMBER_STATE .cfi_remember_state
+#define CFI_RESTORE_STATE .cfi_restore_state
 #else
 #define CFI_STARTPROC
 #define CFI_ENDPROC
 #define CFI_ADJUST(n)
 #define CFI_REGISTER(r1,r2)
 #define CFI_OFFSET(r,n)
+#define CFI_DEF_CFA_REGISTER(r)
+#define CFI_SIGNAL_FRAME
+#define CFI_REMEMBER_STATE
+#define CFI_RESTORE_STATE
 #endif
+
+/* DWARF
+
+   These constants are taken from:
+
+     DWARF Debugging Information Format, Version 3
+     http://dwarfstd.org/doc/Dwarf3.pdf
+
+   with the ARM64 specific register numbers coming from
+   Table 4 ("Mapping from DWARF register numbers to Arm
+   64-bit architecture registers") of:
+
+     https://developer.arm.com/documentation/ihi0057/latest
+
+ */
+
+#define DW_CFA_def_cfa_expression 0x0f
+#define DW_REG_x21                21
+#define DW_REG_sp                 31
+#define DW_OP_breg                0x70
+#define DW_OP_deref               0x06
+#define DW_OP_plus_uconst         0x23
+
 
         .set    domain_curr_field, 0
 #if defined(SYS_macosx)
@@ -158,6 +189,7 @@ G(name):
 
 /* struct stack_info */
 #define Stack_sp(reg)           [reg]
+#define Stack_sp_offset         0
 #define Stack_exception(reg)    [reg, #8]
 #define Stack_handler(reg)      [reg, #16]
 #define Stack_handler_from_cont(reg) [reg, #15]
@@ -165,6 +197,7 @@ G(name):
 /* struct c_stack_link */
 #define Cstack_stack(reg)       [reg]
 #define Cstack_sp(reg)          [reg, #8]
+#define Cstack_sp_offset        8
 #define Cstack_prev(reg)        [reg, #16]
 
 /* struct stack_handler */
@@ -172,6 +205,7 @@ G(name):
 #define Handler_exception(reg)  [reg, #8]
 #define Handler_effect(reg)     [reg, #16]
 #define Handler_parent(reg)     [reg, #24]
+#define Handler_parent_offset   24
 
 /* Switch from OCaml to C stack. */
 .macro SWITCH_OCAML_TO_C
@@ -186,12 +220,20 @@ G(name):
         str     TMP, Cstack_sp(TMP2)
     /* Switch to C stack */
         mov     sp, TMP2
+#ifdef ASM_CFI_SUPPORTED
+        CFI_REMEMBER_STATE
+    /* sp  points to the c_stack_link. */
+        .cfi_escape DW_CFA_def_cfa_expression, 5,                 \
+           DW_OP_breg + DW_REG_sp, Cstack_sp_offset, DW_OP_deref, \
+           DW_OP_plus_uconst, 16 /* fp + retaddr */
+#endif
 .endm
 
 /* Switch from C to OCaml stack. */
 .macro SWITCH_C_TO_OCAML
         ldr     TMP, Cstack_sp(sp)
         mov     sp, TMP
+        CFI_RESTORE_STATE
 .endm
 
 /* Save all of the registers that may be in use to a free gc_regs bucket
@@ -497,7 +539,16 @@ L(jump_to_caml):
     /* Switch stacks and call the OCaml code */
         mov     sp, x8
 #ifdef ASM_CFI_SUPPORTED
-    /* TODO: the CFI magic for the stack switch */
+        CFI_REMEMBER_STATE
+        .cfi_escape DW_CFA_def_cfa_expression, 3 + 2 + 2,             \
+            /* sp points to the exn handler on the OCaml stack */     \
+            /* sp + 16 contains the C_STACK_SP */                     \
+          DW_OP_breg + DW_REG_sp, 16 /* exn handler */, DW_OP_deref,  \
+            /* 32   struct c_stack_link + pad */                      \
+            /* 18*8 callee save regs */                               \
+            /* 16   fp + ret addr */                                  \
+            /* need to split to get under 127 limit */                \
+          DW_OP_plus_uconst, 96, DW_OP_plus_uconst, 96
 #endif
     /* Call the OCaml code */
         blr     TMP2
@@ -519,7 +570,7 @@ L(return_result):
         str     x9, Stack_sp(x8)
         ldr     x9, Caml_state(c_stack)
         mov     sp, x9
-        /* TODO: CFI_RESTORE_STATE */
+        CFI_RESTORE_STATE
     /* Pop the struct c_stack_link */
         ldr     x8, Cstack_prev(sp)
         add     sp, sp, 32
@@ -777,6 +828,8 @@ CFI_STARTPROC
     /*  x0: fiber
         x1: fun
         x2: arg */
+        CFI_OFFSET(29, -16)
+        CFI_OFFSET(30, -8)
         stp     x29, x30, [sp, -16]!
         CFI_ADJUST(16)
         add     x29, sp, #0
@@ -803,7 +856,17 @@ CFI_STARTPROC
         mov     TRAP_PTR, x9
     /* Switch to the new stack */
         mov     sp, x9
-        /* TODO: CFI for this */
+#ifdef ASM_CFI_SUPPORTED
+        CFI_REMEMBER_STATE
+        .cfi_escape DW_CFA_def_cfa_expression, 3+3+2,       \
+          DW_OP_breg + DW_REG_sp,                           \
+            16 /* exn */ +                                  \
+            8 /* gc_regs slot (unused) */ +                 \
+            8 /* C_STACK_SP for DWARF (unused) */           \
+            + Handler_parent_offset, DW_OP_deref,           \
+          DW_OP_plus_uconst, Stack_sp_offset, DW_OP_deref,  \
+          DW_OP_plus_uconst, 16 /* fp + ret addr */
+#endif
     /* Call the function on the new stack */
         mov     x0, x2
         blr     x3
@@ -821,6 +884,9 @@ L(frame_runstack):
     /* free old stack by switching directly to c_stack;
        is a no-alloc call */
         ldr     x21, Stack_sp(TMP) /* saved across C call */
+        CFI_RESTORE_STATE
+        CFI_REMEMBER_STATE
+        CFI_DEF_CFA_REGISTER(DW_REG_x21)
         ldr     TMP, Caml_state(c_stack)
         mov     sp, TMP
         bl      G(caml_free_stack)
@@ -828,9 +894,11 @@ L(frame_runstack):
         mov     x0, x20
         mov     x1, x19
         mov     sp, x21
+        CFI_RESTORE_STATE
         ldr     TMP, [x19]  /* code pointer */
     /* Invoke handle_value (or handle_exn) */
         ldp     x29, x30, [sp], 16
+        CFI_ADJUST(-16)
         br      TMP
 L(fiber_exn_handler):
         add     x8, sp, 16  /* x8 := stack_handler */

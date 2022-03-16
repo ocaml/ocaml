@@ -792,9 +792,11 @@ AS_CASE([$flexdir,$supports_shared_libraries,$flexlink,$host],
     [AC_MSG_ERROR([flexlink is required for native Win32])])
 
 AS_CASE([$cc_basename,$host],
-  [*,*-*-darwin*],
+  [*,x86_64-*-darwin*],
     [mkexe="$mkexe -Wl,-no_compact_unwind";
     AC_DEFINE([HAS_ARCH_CODE32], [1])],
+  [*,aarch64-*-darwin*|arm64-*-darwin*],
+    AC_DEFINE([HAS_ARCH_CODE32], [1]),
   [*,*-*-haiku*], [mathlib=""],
   [*,*-*-cygwin*],
     [common_cppflags="$common_cppflags -U_WIN32"
@@ -933,10 +935,14 @@ natdynlinkopts=""
 
 AS_IF([test x"$enable_shared" != "xno"],
   [AS_CASE([$host],
-    [*-apple-darwin*],
+    [x86_64-apple-darwin*],
       [mksharedlib="$CC -shared \
                    -undefined dynamic_lookup -Wl,-no_compact_unwind \
                    \$(LDFLAGS)"
+      supports_shared_libraries=true],
+    [aarch64-apple-darwin*|arm64-apple-darwin*],
+      [mksharedlib="$CC -shared \
+                   -undefined dynamic_lookup \$(LDFLAGS)"
       supports_shared_libraries=true],
     [*-*-mingw32],
       [mksharedlib='$(FLEXLINK)'
