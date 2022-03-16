@@ -58,7 +58,7 @@ CAMLprim value caml_gc_quick_stat(value v)
   intnat majcoll;
   struct gc_stats s;
   caml_compute_gc_stats(&s);
-  majcoll = Caml_state->stat_major_collections;
+  majcoll = caml_major_cycles_completed;
 
   res = caml_alloc_tuple (17);
   Store_field (res, 0, caml_copy_double ((double)s.alloc_stats.minor_words));
