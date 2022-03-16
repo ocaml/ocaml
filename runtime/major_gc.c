@@ -572,18 +572,17 @@ static void realloc_mark_stack (struct mark_stack* stk)
   }
 }
 
-static void mark_stack_push(struct mark_stack* stk, value block,
-                            uintnat offset, intnat* work)
+/* returns the work done by skipping unmarkable objects */
+static intnat mark_stack_push(struct mark_stack* stk, value block)
 {
-  value v;
   int i, block_wsz = Wosize_val(block), end;
+  uintnat offset = 0;
   mark_entry* me;
 
   if (Tag_val(block) == Closure_tag) {
     /* Skip the code pointers and integers at beginning of closure;
        start scanning at the first word of the environment part. */
-    if (offset == 0)
-      offset = Start_env_closinfo(Closinfo_val(block));
+    offset = Start_env_closinfo(Closinfo_val(block));
 
     CAMLassert(offset <= Wosize_val(block)
       && offset >= Start_env_closinfo(Closinfo_val(block)));
@@ -594,14 +593,13 @@ static void mark_stack_push(struct mark_stack* stk, value block,
   CAMLassert(Tag_val(block) != Infix_tag);
   CAMLassert(Tag_val(block) < No_scan_tag);
   CAMLassert(Tag_val(block) != Cont_tag);
-  CAMLassert(offset <= block_wsz);
 
   /* Optimisation to avoid pushing small, unmarkable objects such as
      [Some 42] into the mark stack. */
   end = (block_wsz < 8 ? block_wsz : 8);
 
   for (i = offset; i < end; i++) {
-    v = Field(block, i);
+    value v = Field(block, i);
 
     if (Is_markable(v))
       break;
@@ -609,34 +607,26 @@ static void mark_stack_push(struct mark_stack* stk, value block,
 
   if (i == block_wsz){
     /* nothing left to mark and credit header */
-    if(work != NULL){
-      /* we should take credit for it though */
-      *work -= Whsize_wosize(block_wsz - offset);
-    }
-    return;
+    return Whsize_wosize(block_wsz - offset);
   }
-
-  if( work != NULL ) {
-    /* take credit for the work we skipped due to the optimisation.
-       we will take credit for the header later as part of marking. */
-    *work -= (i - offset);
-  }
-
-  offset = i;
 
   if (stk->count == stk->size)
     realloc_mark_stack(stk);
 
   me = &stk->stack[stk->count++];
-  me->start = Op_val(block) + offset;
+  me->start = Op_val(block) + i;
   me->end = Op_val(block) + block_wsz;
+
+  /* take credit for the work we skipped due to the optimisation.
+     we will take credit for the header later as part of marking. */
+  return i - offset;
 }
 
 /* to fit scanning_action */
 static void mark_stack_push_act(void* state, value v, volatile value* ignored)
 {
   if (Tag_val(v) < No_scan_tag && Tag_val(v) != Cont_tag)
-    mark_stack_push(Caml_state->mark_stack, v, 0, NULL);
+    mark_stack_push(Caml_state->mark_stack, v);
 }
 
 /* This function shrinks the mark stack back to the MARK_STACK_INIT_SIZE size
@@ -694,7 +684,7 @@ static void mark_slice_darken(struct mark_stack* stk, value child,
             With_status_hd(chd, caml_global_heap_state.MARKED));
         }
         if(Tag_hd(chd) < No_scan_tag){
-          mark_stack_push(stk, child, 0, work);
+          *work -= mark_stack_push(stk, child);
         } else {
           *work -= Wosize_hd(chd);
         }
@@ -792,7 +782,7 @@ void caml_darken(void* state, value v, volatile value* ignored) {
          Hp_atomic_val(v),
          With_status_hd(hd, caml_global_heap_state.MARKED));
       if (Tag_hd(hd) < No_scan_tag) {
-        mark_stack_push(domain_state->mark_stack, v, 0, NULL);
+        mark_stack_push(domain_state->mark_stack, v);
       }
     }
   }
