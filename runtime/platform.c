@@ -246,9 +246,11 @@ void caml_mem_decommit(void* mem, uintnat size)
 void caml_mem_unmap(void* mem, uintnat size)
 {
 #ifdef _WIN32
-  VirtualFree(mem, 0, MEM_RELEASE);
+  if (!VirtualFree(mem, 0, MEM_RELEASE))
+    CAMLassert(0);
 #else
-  munmap(mem, size);
+  if (munmap(mem, size) != 0)
+    CAMLassert(0);
 #endif
 }
 
