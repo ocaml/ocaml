@@ -1028,7 +1028,6 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
     caml_global_barrier();
   }
 
-  domain->stat_major_collections++;
   caml_cycle_heap(domain->shared_heap);
   domain->sweeping_done = 0;
 

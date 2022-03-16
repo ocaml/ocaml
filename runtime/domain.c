@@ -464,7 +464,6 @@ static uintnat fresh_domain_unique_id(void) {
     return next;
 }
 
-
 /* must be run on the domain's thread */
 static void create_domain(uintnat initial_minor_heap_wsize) {
   dom_internal* d = 0;
