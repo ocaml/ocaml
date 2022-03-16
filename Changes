@@ -702,6 +702,9 @@ OCaml 4.14.0
 - #11101, #11109: A recursive type constraint fails on 4.14
   (Jacques Garrigue, report and review by Florian Angeletti)
 
+- #11118: Fix integer overflow on 64-bit Windows when indexing bigarrays (which
+  could lead to a segmentation fault).
+  (Roven Gabriel, review by Nicolás Ojeda Bär and Xavier Leroy)
 
 OCaml 4.13 maintenance branch
 -----------------------------
