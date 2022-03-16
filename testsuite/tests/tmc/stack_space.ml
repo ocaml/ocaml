@@ -9,7 +9,7 @@ let large = 1000
 let init n f =
   let[@tail_mod_cons] rec init_aux i n f =
     if i = n then []
-    else f i :: init_aux (i + 1) n f
+    else f i :: (init_aux[@tailcall]) (i + 1) n f
   in init_aux 0 n f
 
 module ListMap = struct
@@ -17,7 +17,7 @@ module ListMap = struct
     | [] -> []
     | x :: xs ->
         (* Note: tail-mod-cons guarantees that 'map f xs' is evaluated last *)
-        f x :: map f xs
+        f x :: (map[@tailcall]) f xs
 
   let _ =
     init large Fun.id

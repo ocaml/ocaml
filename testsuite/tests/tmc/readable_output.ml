@@ -5,7 +5,7 @@
 (* Check that the code produced by TMC reads reasonably well. *)
 let[@tail_mod_cons] rec map f = function
   | [] -> []
-  | x :: xs -> f x :: map f xs
+  | x :: xs -> f x :: (map[@tailcall]) f xs
 ;;
 [%%expect{|
 (letrec
@@ -39,7 +39,7 @@ and 'a rec_list = 'a cell option
 
 let[@tail_mod_cons] rec rec_map f = function
   | None -> None
-  | Some {hd; tl} -> Some { hd = f hd; tl = rec_map f tl }
+  | Some {hd; tl} -> Some { hd = f hd; tl = (rec_map[@tailcall]) f tl }
 ;;
 [%%expect{|
 (letrec
@@ -72,7 +72,7 @@ val rec_map : ('a -> 'b) -> 'a rec_list -> 'b rec_list = <fun>
    for each constructor.  *)
 let[@tail_mod_cons] rec trip = function
   | [] -> []
-  | x :: xs -> (x, 0) :: (x, 1) :: (x, 2) :: trip xs
+  | x :: xs -> (x, 0) :: (x, 1) :: (x, 2) :: (trip[@tailcall]) xs
 ;;
 [%%expect{|
 (letrec
@@ -108,7 +108,7 @@ val trip : 'a list -> ('a * int) list = <fun>
    (ideally, only in the DPS version) *)
 let[@tail_mod_cons] rec effects f = function
   | [] -> []
-  | (x, y) :: xs -> f x :: f y :: effects f xs
+  | (x, y) :: xs -> f x :: f y :: (effects[@tailcall]) f xs
 ;;
 [%%expect{|
 (letrec
@@ -144,7 +144,7 @@ let[@tail_mod_cons] rec map_stutter f xs =
   f None :: (
     match xs with
     | [] -> []
-    | x :: xs -> f (Some x) :: map_stutter f xs
+    | x :: xs -> f (Some x) :: (map_stutter[@tailcall]) f xs
   )
 ;;
 [%%expect{|
@@ -185,7 +185,7 @@ let[@tail_mod_cons] rec smap_stutter f xs n =
   if n = 0 then []
   else f None :: (
     let v = f (Some xs.hd) in
-    v :: smap_stutter f (xs.tl ()) (n - 1)
+    v :: (smap_stutter[@tailcall]) f (xs.tl ()) (n - 1)
   )
 ;;
 [%%expect{|

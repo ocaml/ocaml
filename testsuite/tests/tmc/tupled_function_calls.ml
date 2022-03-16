@@ -7,7 +7,7 @@
 let[@tail_mod_cons] rec tupled_map (f, li) =
   match li with
   | [] -> []
-  | x :: xs -> f x :: tupled_map (f, xs)
+  | x :: xs -> f x :: (tupled_map[@tailcall]) (f, xs)
 
 (* The recursive call here is not "direct" for the
    Tupled calling convention (which is only used by the native compiler),

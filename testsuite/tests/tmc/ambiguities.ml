@@ -11,25 +11,25 @@ module Ambiguous = struct
   let[@tail_mod_cons] rec map f = function
   | Leaf v -> Leaf (f v)
   | Node (left, right) ->
-    Node (map f left, map f right)
+    Node ((map[@tailcall]) f left, (map[@tailcall]) f right)
 end
 [%%expect{|
-Line 5, characters 4-34:
-5 |     Node (map f left, map f right)
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Line 5, characters 4-60:
+5 |     Node ((map[@tailcall]) f left, (map[@tailcall]) f right)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: [@tail_mod_cons]: this constructor application may be TMC-transformed
-       in several different ways. Please disambiguate by adding an explicit
-       [@tailcall] attribute to the call that should be made tail-recursive,
-       or a [@tailcall false] attribute on calls that should not be
-       transformed.
-Line 5, characters 10-20:
-5 |     Node (map f left, map f right)
-              ^^^^^^^^^^
-  This call could be annotated.
-Line 5, characters 22-33:
-5 |     Node (map f left, map f right)
-                          ^^^^^^^^^^^
-  This call could be annotated.
+       in several different ways. Only one of the arguments may become a TMC
+       call, but several arguments contain calls that are explicitly marked
+       as tail-recursive. Please fix the conflict by reviewing and fixing the
+       conflicting annotations.
+Line 5, characters 10-33:
+5 |     Node ((map[@tailcall]) f left, (map[@tailcall]) f right)
+              ^^^^^^^^^^^^^^^^^^^^^^^
+  This call is explicitly annotated.
+Line 5, characters 35-59:
+5 |     Node ((map[@tailcall]) f left, (map[@tailcall]) f right)
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^
+  This call is explicitly annotated.
 |}]
 
 module Positive_disambiguation = struct
@@ -43,16 +43,15 @@ module Positive_disambiguation :
   sig val map : ('a -> 'b) -> 'a tree -> 'b tree end
 |}]
 
+(* (* This test only makes sense if we specialize implicit TMC calls.
+      We currently do not, so it is commented out. *)
 module Negative_disambiguation = struct
   let[@tail_mod_cons] rec map f = function
   | Leaf v -> Leaf (f v)
   | Node (left, right) ->
     Node ((map [@tailcall false]) f left, map f right)
 end
-[%%expect{|
-module Negative_disambiguation :
-  sig val map : ('a -> 'b) -> 'a tree -> 'b tree end
-|}]
+*)
 
 module Positive_and_negative_disambiguation = struct
   (* in-depth disambiguations *)
@@ -127,6 +126,7 @@ module Deep_nesting_nonambiguous :
   end
 |}]
 
+(* (* This test only makes sense if we specialize implicit TMC calls. *)
 module Deep_nesting_ambiguous = struct
   type 'a tree = Leaf of 'a | Node of 'a tree * ('a tree * ('a tree * ('a tree * 'a tree)))
 
@@ -139,38 +139,9 @@ module Deep_nesting_ambiguous = struct
       assert (map succ (Node (Leaf 0, (Leaf 1, (Leaf 2, (Leaf 3, Leaf 4)))))
                       = Node (Leaf 1, (Leaf 2, (Leaf 3, (Leaf 4, Leaf 5)))))
 end
-[%%expect {|
-Line 7, characters 10-71:
-7 |           Node (map f t1, (map f t2, (map f t3, (map f t4, map f t5))))
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: [@tail_mod_cons]: this constructor application may be TMC-transformed
-       in several different ways. Please disambiguate by adding an explicit
-       [@tailcall] attribute to the call that should be made tail-recursive,
-       or a [@tailcall false] attribute on calls that should not be
-       transformed.
-Line 7, characters 16-24:
-7 |           Node (map f t1, (map f t2, (map f t3, (map f t4, map f t5))))
-                    ^^^^^^^^
-  This call could be annotated.
-Line 7, characters 27-35:
-7 |           Node (map f t1, (map f t2, (map f t3, (map f t4, map f t5))))
-                               ^^^^^^^^
-  This call could be annotated.
-Line 7, characters 38-46:
-7 |           Node (map f t1, (map f t2, (map f t3, (map f t4, map f t5))))
-                                          ^^^^^^^^
-  This call could be annotated.
-Line 7, characters 49-57:
-7 |           Node (map f t1, (map f t2, (map f t3, (map f t4, map f t5))))
-                                                     ^^^^^^^^
-  This call could be annotated.
-Line 7, characters 59-67:
-7 |           Node (map f t1, (map f t2, (map f t3, (map f t4, map f t5))))
-                                                               ^^^^^^^^
-  This call could be annotated.
-|}]
+*)
 
-
+(* (* This test only makes sense if we specialize implicit TMC calls. *)
 module Disjunctions_ambiguous = struct
   type t = Leaf of int | Node of t * t
 
@@ -192,39 +163,7 @@ module Disjunctions_ambiguous = struct
            else shift ~flip k right)
         )
 end
-[%%expect {|
-Lines 13-20, characters 8-9:
-13 | ........Node (
-14 |           (if flip
-15 |            then shift ~flip (- k) left
-16 |            else shift ~flip k left),
-17 |           (if flip
-18 |            then shift ~flip (- k) right
-19 |            else shift ~flip k right)
-20 |         )
-Error: [@tail_mod_cons]: this constructor application may be TMC-transformed
-       in several different ways. Please disambiguate by adding an explicit
-       [@tailcall] attribute to the call that should be made tail-recursive,
-       or a [@tailcall false] attribute on calls that should not be
-       transformed.
-Line 15, characters 16-38:
-15 |            then shift ~flip (- k) left
-                     ^^^^^^^^^^^^^^^^^^^^^^
-  This call could be annotated.
-Line 16, characters 16-34:
-16 |            else shift ~flip k left),
-                     ^^^^^^^^^^^^^^^^^^
-  This call could be annotated.
-Line 18, characters 16-39:
-18 |            then shift ~flip (- k) right
-                     ^^^^^^^^^^^^^^^^^^^^^^^
-  This call could be annotated.
-Line 19, characters 16-35:
-19 |            else shift ~flip k right)
-                     ^^^^^^^^^^^^^^^^^^^
-  This call could be annotated.
-|}]
-
+*)
 module Disjunctions_disambiguated = struct
   type t = Leaf of int | Node of t * t
 

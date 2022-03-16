@@ -5,7 +5,7 @@
 let[@tail_mod_cons] rec append xs ys =
   match xs with
   | [] -> ys
-  | x :: xs -> x :: append xs ys
+  | x :: xs -> x :: (append[@tailcall]) xs ys
 [%%expect {|
 val append : 'a list -> 'a list -> 'a list = <fun>
 |}]
@@ -41,7 +41,7 @@ let[@tail_mod_cons] rec flatten = function
       let[@tail_mod_cons] rec append_flatten xs xss =
         match xs with
         | [] -> flatten xss
-        | x :: xs -> x :: append_flatten xs xss
+        | x :: xs -> x :: (append_flatten[@tailcall]) xs xss
       in append_flatten xs xss
 [%%expect {|
 val flatten : 'a list list -> 'a list = <fun>
@@ -56,7 +56,7 @@ let[@tail_mod_cons] rec flatten = function
         | [] -> flatten xss
         | x :: xs ->
             (* incorrect: this call to append_flatten is not transformed *)
-            x :: append_flatten xs xss
+            x :: (append_flatten[@tailcall]) xs xss
       in append_flatten xs xss
 [%%expect {|
 Line 10, characters 9-30:
@@ -78,10 +78,18 @@ Lines 1-10, characters 34-30:
  6 |         | [] -> flatten xss
  7 |         | x :: xs ->
  8 |             (* incorrect: this call to append_flatten is not transformed *)
- 9 |             x :: append_flatten xs xss
+ 9 |             x :: (append_flatten[@tailcall]) xs xss
 10 |       in append_flatten xs xss
 Warning 71 [unused-tmc-attribute]: This function is marked @tail_mod_cons
 but is never applied in TMC position.
+Line 9, characters 17-51:
+9 |             x :: (append_flatten[@tailcall]) xs xss
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 51 [wrong-tailcall-expectation]: expected tailcall
+Line 9, characters 17-51:
+9 |             x :: (append_flatten[@tailcall]) xs xss
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 51 [wrong-tailcall-expectation]: expected tailcall
 val flatten : 'a list list -> 'a list = <fun>
 |}]
 
@@ -100,7 +108,7 @@ let rec flatten = function
                not tail-recursive. *)
             flatten xss
         | x :: xs ->
-            x :: append_flatten xs xss
+            x :: (append_flatten[@tailcall]) xs xss
       in append_flatten xs xss
 [%%expect {|
 Line 13, characters 12-23:
@@ -135,7 +143,7 @@ module Tail_calls_to_non_specialized_functions = struct
     | [] -> []
     | x :: xs ->
         if f x
-        then x :: filter_1 f xs
+        then x :: (filter_1[@tailcall]) f xs
         else
           list_id
             (* no [@tailcall false]: this should warn that
@@ -147,7 +155,7 @@ module Tail_calls_to_non_specialized_functions = struct
     | [] -> []
     | x :: xs ->
         if f x
-        then x :: filter_2 f xs
+        then x :: (filter_2[@tailcall]) f xs
         else
           (list_id[@tailcall false])
             (* [@tailcall false]: this should *not* warn that
@@ -235,8 +243,10 @@ module All_annotations_flipped = struct
         let[@tail_mod_cons] map' l = map_wrong f l in
         C (map' a,
            (map' [@tailcall false])
-             (* this attribute results in the other map' being selected for TMC,
-                no warning here. *)
+             (* With this attribute flipped, without specialization of
+                implicit TMC calls, no callsite of map' get
+                specialized. The declaration of map' should warn about
+                this. *)
              b)
 end
 [%%expect {|
@@ -250,6 +260,19 @@ so the call will not be transformed into a tail call.
 Please either mark the called function with the [@tail_mod_cons]
 attribute, or mark this call with the [@tailcall false] attribute
 to make its non-tailness explicit.
+Lines 11-33, characters 36-15:
+11 | ....................................f l =
+12 |     match l with
+13 |     | N v -> N (f v)
+14 |     | Graft n ->
+15 |         if n >= 0
+...
+30 |                 implicit TMC calls, no callsite of map' get
+31 |                 specialized. The declaration of map' should warn about
+32 |                 this. *)
+33 |              b)
+Warning 71 [unused-tmc-attribute]: This function is marked @tail_mod_cons
+but is never applied in TMC position.
 Line 17, characters 17-67:
 17 |         else Tau ((graft[@tailcall]) (* this should also warn *) n)
                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -17,6 +17,19 @@
 
 open Lambda
 
+(* The TMC codebase supports both "explicit"
+   tmc-transformation requests, that is, calls in TMC
+   position that are annotated with [@tailcall] by the
+   user, and "implicit" transformations of specializable
+   calls in TMC position.
+
+   However, for a first iteration of this feature, we have
+   decided to only consider "explicit" transformations,
+   and never implicitly optimize non-annotated calls.
+*)
+let specialize_implicit_tmc_calls = false
+
+
 (* Error-reporting information for ambiguous TMC calls *)
 type tmc_call_information = {
   loc: scoped_location;
@@ -38,7 +51,6 @@ type error =
   | Ambiguous_constructor_arguments of ambiguous_arguments
 
 exception Error of Location.t * error
-
 
 type 'offset destination = {
   var: Ident.t;
@@ -669,6 +681,12 @@ let rec choice ctx t =
         | Tailcall_expectation true -> true
         | Tailcall_expectation false -> raise No_tmc
       in
+      (* Non-tail calls must be explicitly annotated,
+         unless we support specializing implicit calls. *)
+      if not tail
+      && not (explicit_tailcall_request || specialize_implicit_tmc_calls)
+      then
+        raise No_tmc;
       match apply.ap_func with
       | Lvar f ->
           let specialized =

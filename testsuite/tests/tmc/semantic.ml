@@ -30,14 +30,16 @@
 let [@tail_mod_cons] rec verbose_map n f xs =
   match xs with
   | [] -> Format.printf "nil %d@." n; []
-  | x :: xs -> (Format.printf "hd %d@." n; f x) :: (Format.printf "tl %d@." n; verbose_map (n + 1)f xs)
+  | x :: xs ->
+      (Format.printf "hd %d@." n; f x)
+      :: (Format.printf "tl %d@." n; (verbose_map[@tailcall]) (n + 1)f xs)
 
 let _ =
   assert (verbose_map 0 (fun x -> x + 1) [1; 2; 3] = [2; 3; 4])
 
 (* Test that delayed constructors are properly restored inside non-TMC contexts *)
 let[@tail_mod_cons] rec weird xs =
-  () :: match xs with [] -> [] | x :: xs -> x :: weird xs
+  () :: match xs with [] -> [] | x :: xs -> x :: (weird[@tailcall]) xs
 
 let _ =
   assert (weird [] = [()]);
