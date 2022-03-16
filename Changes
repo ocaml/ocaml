@@ -195,9 +195,14 @@ Working version
   Unix.readlink on Windows.
   (David Allsopp, report by Xia Li-yao)
 
-
 - #11077: Make dumpobj compatible with absence of naked pointer support
   (Olivier Nicole and Jan Midtgaard, review by Gabriel Scherer)
+
+- #11111: fix fork() usage in ocamltest C code.
+  When calling fork() from C code with the Multicore runtime active,
+  one needs to call caml_atfork_hook() on the forked child before it
+  can use the OCaml runtime.
+  (Gabriel Scherer, review by Xavier Leroy, report by Brahima Dibassi)
 
 OCaml 4.14.0
 ----------------

@@ -29,6 +29,7 @@
 
 #include "run.h"
 #include "run_common.h"
+#include <caml/domain.h>
 
 #define COREFILENAME "core"
 
@@ -346,6 +347,7 @@ int run_command(const command_settings *settings)
       myperror("fork");
       return -1;
     case 0: /* child process */
+      caml_atfork_hook();
       exit( run_command_child(settings) );
     default:
       return run_command_parent(settings, child_pid);
