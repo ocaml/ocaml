@@ -759,7 +759,7 @@ void caml_darken_cont(value cont)
               With_status_hd(hd, NOT_MARKABLE))) {
         value stk = Field(cont, 0);
         if (Ptr_val(stk) != NULL)
-          caml_scan_stack(&caml_darken, darken_scanning_flags, 0,
+          caml_scan_stack(&caml_darken, darken_scanning_flags, Caml_state,
                           Ptr_val(stk), 0);
         atomic_store_explicit(
           Hp_atomic_val(cont),
@@ -780,7 +780,7 @@ void caml_darken(void* state, value v, volatile value* ignored) {
     hd = Hd_val(v);
   }
   if (Has_status_hd(hd, caml_global_heap_state.UNMARKED)) {
-    caml_domain_state* domain_state = Caml_state;
+    caml_domain_state* domain_state = (caml_domain_state*)state;
     if (domain_state->marking_done) {
       atomic_fetch_add(&num_domains_to_mark, 1);
       domain_state->marking_done = 0;
@@ -827,7 +827,7 @@ static intnat ephe_mark (intnat budget, uintnat for_cycle,
     alive_data = 1;
 
     if (force_alive)
-      caml_darken (0, v, 0);
+      caml_darken (domain_state, v, 0);
 
     /* If ephemeron is unmarked, data is dead */
     if (is_unmarked(v)) alive_data = 0;
@@ -860,7 +860,7 @@ static intnat ephe_mark (intnat budget, uintnat for_cycle,
 
     if (force_alive || alive_data) {
       if (data != caml_ephe_none && Is_block(data)) {
-        caml_darken (0, data, 0);
+        caml_darken (domain_state, data, 0);
       }
       Ephe_link(v) = domain_state->ephe_info->live;
       domain_state->ephe_info->live = v;
@@ -1036,13 +1036,13 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
   domain->major_gc_clock = 0.0;
 
   CAML_EV_BEGIN(EV_MAJOR_MARK_ROOTS);
-  caml_do_roots (&caml_darken, darken_scanning_flags, NULL, domain, 0);
+  caml_do_roots (&caml_darken, darken_scanning_flags, domain, domain, 0);
   {
     uintnat work_unstarted = WORK_UNSTARTED;
     if(atomic_compare_exchange_strong(&domain_global_roots_started,
                                       &work_unstarted,
                                       WORK_STARTED)){
-        caml_scan_global_roots(&caml_darken, NULL);
+        caml_scan_global_roots(&caml_darken, domain);
     }
   }
   CAML_EV_END(EV_MAJOR_MARK_ROOTS);
