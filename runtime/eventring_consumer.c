@@ -349,6 +349,8 @@ caml_eventring_read_poll(struct caml_eventring_cursor *cursor,
              ring_ptr + (cursor->current_positions[domain_num] & ring_mask),
              msg_length * sizeof(uint64_t));
 
+      atomic_thread_fence(memory_order_seq_cst);
+
       ring_head = atomic_load_explicit(&eventring_buffer_header->ring_head,
                                        memory_order_acquire);
 
