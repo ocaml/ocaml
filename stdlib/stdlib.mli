@@ -19,7 +19,7 @@
     compilation. All components of this module can therefore be
     referred by their short name, without prefixing them by [Stdlib].
 
-    It particular, it provides the basic operations over the built-in
+    In particular, it provides the basic operations over the built-in
     types (numbers, booleans, byte sequences, strings, exceptions,
     references, lists, arrays, input-output channels, ...) and the
     {{!modules}standard library modules}.
