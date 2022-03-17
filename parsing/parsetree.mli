@@ -104,13 +104,13 @@ and core_type_desc =
            Invariant: [n >= 2].
         *)
   | Ptyp_constr of Longident.t loc * core_type list
-        (** [Ptyp_constr(loc, l)] represents:
+        (** [Ptyp_constr(lident, l)] represents:
             - [tconstr]               when [l=[]],
             - [T tconstr]             when [l=[T]],
             - [(T1, ..., Tn) tconstr] when [l=[T1 ; ... ; Tn]].
          *)
   | Ptyp_object of object_field list * closed_flag
-        (** [Ptyp_object([ l1:T1; ...; ln:Tn ], flag)] Represents:
+        (** [Ptyp_object([ l1:T1; ...; ln:Tn ], flag)] represents:
             - [< l1:T1; ...; ln:Tn >]
                                     when [flag] is {{!Asttypes.Closed}[Closed]},
             - [< l1:T1; ...; ln:Tn; .. >]
@@ -125,19 +125,19 @@ and core_type_desc =
   | Ptyp_alias of core_type * string
         (** Represents [T as 'a]. *)
   | Ptyp_variant of row_field list * closed_flag * label list option
-        (** [Ptyp_variant([`A;`B], flag, labels)]Represents:
+        (** [Ptyp_variant([`A;`B], flag, labels)] represents:
             - [[ `A|`B ]]
-                 when [flag]   is {{!Asttypes.Closed}[Closed]}
-                  and [labels] is [None],
+                 when [flag],                       [labels]
+                   is {{!Asttypes.Closed}[Closed]}, [None],
             - [[> `A|`B ]]
-                 when [flag]   is {{!Asttypes.Open}[Open]}
-                  and [labels] is [None],
+                 when [flag],                       [labels]
+                   is {{!Asttypes.Open}[Open]},     [None],
             - [[< `A|`B ]]
-                 when [flag]   is {{!Asttypes.Closed}[Closed]}
-                  and [labels] is [Some []],
+                 when [flag],                       [labels]
+                   is {{!Asttypes.Closed}[Closed]}, [Some []],
             - [[< `A|`B > `X `Y ]]
-                 when [flag] is {{!Asttypes.Closed}[Closed]}
-                  and [labels] is [Some ["X";"Y"]].
+                 when [flag],                       [labels]
+                   is {{!Asttypes.Closed}[Closed]}, [Some ["X";"Y"]].
          *)
   | Ptyp_poly of string loc list * core_type
         (** Represents ['a1 ... 'an. T]
