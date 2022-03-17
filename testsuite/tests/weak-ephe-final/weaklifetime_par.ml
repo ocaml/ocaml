@@ -3,6 +3,7 @@
 
 let size = 1000;;
 let num_domains = 4;;
+let num_rounds = 4;;
 
 type block = int array;;
 
@@ -70,6 +71,7 @@ let check_and_change data i j =
 
 let dummy = ref [||];;
 
+
 let run index () =
   let domain_data = Array.init 100 (fun i ->
     let n = 1 + Random.int 100 in
@@ -80,7 +82,9 @@ let run index () =
   ) in
   while gccount () < 5 do
     dummy := Array.make (Random.int 300) 0;
-    let i = (Random.int (size/num_domains)) + index * size/num_domains in
+    let per_domain_size = size / num_domains in
+    assert (index < num_domains);
+    let i = index * per_domain_size + Random.int per_domain_size in
     let j = Random.int (Array.length data.(i).objs) in
     check_and_change data i j;
     let ix = Random.int 100 in
@@ -89,9 +93,17 @@ let run index () =
   done
 
 let _ =
-  for index = 0 to 4 do
-    let domains = Array.init (num_domains - 1) (fun i -> Domain.spawn(run ((i + index) mod 5))) in
-    run ((num_domains - 1 + index) mod 5) ();
+  for round = 1 to num_rounds do
+    (* Each domain owns a region of the data array, starting at
+         [index i * (size / num_domains)]
+       and of size [size / num_domains].
+
+       Note that the regions are rotated on each round, to help surface
+       potential bugs coming from a new domain reusing the memory of
+       a previous domain. *)
+    let index i = (i + round) mod num_domains in
+    let domains = Array.init (num_domains - 1) (fun i -> Domain.spawn(run (index i))) in
+    run (index (num_domains) mod num_domains) ();
     Array.iter Domain.join domains
   done;
   print_endline "ok"
