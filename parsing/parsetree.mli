@@ -24,20 +24,20 @@ open Asttypes
 
 type constant =
     Pconst_integer of string * char option
-  (** Represents integer constants such as [3] [3l] [3L] [3n].
+  (** Integer constants such as [3] [3l] [3L] [3n].
 
      Suffixes [[g-z][G-Z]] are accepted by the parser.
      Suffixes except ['l'], ['L'] and ['n'] are rejected by the typechecker
   *)
   | Pconst_char of char
-  (** Represents a character such as ['c']. *)
+  (** Character such as ['c']. *)
   | Pconst_string of string * Location.t * string option
-  (** Represents a constant string such as ["constant"] or [{delim|other constant|delim}].
+  (** Constant string such as ["constant"] or [{delim|other constant|delim}].
 
      The location span the content of the string, without the delimiters.
   *)
   | Pconst_float of string * char option
-  (** Represents a float constant such as [3.4], [2e5] or [1.4e-4].
+  (** Float constant such as [3.4], [2e5] or [1.4e-4].
 
      Suffixes [g-z][G-Z] are accepted by the parser.
      Suffixes are rejected by the typechecker.
@@ -52,14 +52,14 @@ type attribute = {
     attr_payload : payload;
     attr_loc : Location.t;
   }
-       (** Represents attributes such as [[\@id ARG]] and [[\@\@id ARG]].
+       (** Attributes such as [[\@id ARG]] and [[\@\@id ARG]].
 
           Metadata containers passed around within the AST.
           The compiler ignores unknown attributes.
        *)
 
 and extension = string loc * payload
-      (** Represents extension points such as [[%id ARG] and [%%id ARG]].
+      (** Extension points such as [[%id ARG] and [%%id ARG]].
 
          Sub-language placeholder -- rejected by the typechecker.
       *)
@@ -69,11 +69,11 @@ and attributes = attribute list
 and payload =
   | PStr of structure
   | PSig of signature
-      (** Represents [: SIG] in an attribute or an extension point *)
+      (** [: SIG] in an attribute or an extension point *)
   | PTyp of core_type
-      (** Represents [: T] in an attribute or an extension point *)
+      (** [: T] in an attribute or an extension point *)
   | PPat of pattern * expression option
-      (** Represents [? P]  or  [? P when E], in an attribute or an extension point *)
+      (** [? P]  or  [? P when E], in an attribute or an extension point *)
 
 (** {1 Core language} *)
 
@@ -89,9 +89,9 @@ and core_type =
 
 and core_type_desc =
   | Ptyp_any
-        (** Represents [_] *)
+        (** [_] *)
   | Ptyp_var of string
-        (** Represents a type var such as ['a] *)
+        (** A type var such as ['a] *)
   | Ptyp_arrow of arg_label * core_type * core_type
         (** [Ptyp_arrow(lbl, T1, T2)] represents:
             - [T1 -> T2]    when [lbl] is  {{!Asttypes.Nolabel}[Nolabel]},
@@ -123,7 +123,7 @@ and core_type_desc =
             - [(T1, ..., Tn) #tconstr] when [l=[T1 ; ... ; Tn]].
          *)
   | Ptyp_alias of core_type * string
-        (** Represents [T as 'a]. *)
+        (** [T as 'a]. *)
   | Ptyp_variant of row_field list * closed_flag * label list option
         (** [Ptyp_variant([`A;`B], flag, labels)] represents:
             - [[ `A|`B ]]
@@ -140,7 +140,7 @@ and core_type_desc =
                    is {{!Asttypes.Closed}[Closed]}, [Some ["X";"Y"]].
          *)
   | Ptyp_poly of string loc list * core_type
-        (** Represents ['a1 ... 'an. T]
+        (** ['a1 ... 'an. T]
 
            Can only appear in the following context:
 
@@ -161,9 +161,9 @@ and core_type_desc =
            - As the {!pval_type} field of a {!value_description}.
          *)
   | Ptyp_package of package_type
-        (** Represents [(module S)]. *)
+        (** [(module S)]. *)
   | Ptyp_extension of extension
-        (** Represents [[%id]]. *)
+        (** [[%id]]. *)
 
 and package_type = Longident.t loc * (Longident.t loc * core_type) list
       (** As {!package_type} typed values:
@@ -192,7 +192,7 @@ and row_field_desc =
             (see 4.2 in the manual)
         *)
   | Rinherit of core_type
-        (** Represents [[ | t ]] *)
+        (** [[ | t ]] *)
 
 and object_field = {
   pof_desc : object_field_desc;
@@ -216,21 +216,20 @@ and pattern =
 
 and pattern_desc =
   | Ppat_any
-        (** Represents the pattern [_]. *)
+        (** The pattern [_]. *)
   | Ppat_var of string loc
-        (** Represents the variable pattern such as [x] *)
+        (** The variable pattern such as [x] *)
   | Ppat_alias of pattern * string loc
         (** [Ppat_alias] represents patterns such as [P as 'a] *)
   | Ppat_constant of constant
-        (** Represents patterns
-            such as [1], ['a'], ["true"], [1.0], [1l], [1L], [1n] *)
+        (** Patterns such as [1], ['a'], ["true"], [1.0], [1l], [1L], [1n] *)
   | Ppat_interval of constant * constant
-        (** Represents patterns such as ['a'..'z'].
+        (** Patterns such as ['a'..'z'].
 
            Other forms of interval are recognized by the parser
            but rejected by the type-checker. *)
   | Ppat_tuple of pattern list
-        (** Represents patterns [(P1, ..., Pn)].
+        (** Patterns [(P1, ..., Pn)].
 
            Invariant: [n >= 2]
         *)
@@ -257,15 +256,15 @@ and pattern_desc =
            Invariant: [n > 0]
          *)
   | Ppat_array of pattern list
-        (** Represents pattern [[| P1; ...; Pn |]] *)
+        (** Pattern [[| P1; ...; Pn |]] *)
   | Ppat_or of pattern * pattern
-        (** Represents pattern [P1 | P2] *)
+        (** Pattern [P1 | P2] *)
   | Ppat_constraint of pattern * core_type
-        (** Represents pattern [(P : T)] *)
+        (** Pattern [(P : T)] *)
   | Ppat_type of Longident.t loc
-        (** Represents pattern [#tconst] *)
+        (** Pattern [#tconst] *)
   | Ppat_lazy of pattern
-        (** Represents pattern [lazy P] *)
+        (** Pattern [lazy P] *)
   | Ppat_unpack of string option loc
         (** [Ppat_unpack(s)] represents:
             - [(module P)] when [s] is [Some "P"]
@@ -275,11 +274,11 @@ and pattern_desc =
            [Ppat_constraint(Ppat_unpack(Some "P"), Ptyp_package S)]
          *)
   | Ppat_exception of pattern
-        (** Represents pattern [exception P] *)
+        (** Pattern [exception P] *)
   | Ppat_extension of extension
-        (** Represents pattern [[%id]] *)
+        (** Pattern [[%id]] *)
   | Ppat_open of Longident.t loc * pattern
-        (** Represents pattern [M.(P)] *)
+        (** Pattern [M.(P)] *)
 
 (** {2 Value expressions} *)
 
@@ -293,11 +292,11 @@ and expression =
 
 and expression_desc =
   | Pexp_ident of Longident.t loc
-        (** Represents identifiers such as [x] and [M.x]
+        (** Identifiers such as [x] and [M.x]
          *)
   | Pexp_constant of constant
-        (** Represents expressions constant
-            such as [1], ['a'], ["true"], [1.0], [1l], [1L], [1n] *)
+        (** Expressions constant such as [1], ['a'], ["true"], [1.0], [1l],
+            [1L], [1n] *)
   | Pexp_let of rec_flag * value_binding list * expression
         (** [Pexp_let(flag, [(P1,E1) ; ... ; (Pn,En)], E)] represents:
             - [let P1 = E1 and ... and Pn = EN in E]
@@ -306,7 +305,7 @@ and expression_desc =
                  when [flag] is {{!Asttypes.Recursive}[Recursive]}.
          *)
   | Pexp_function of case list
-        (** Represents [function P1 -> E1 | ... | Pn -> En] *)
+        (** [function P1 -> E1 | ... | Pn -> En] *)
   | Pexp_fun of arg_label * expression option * pattern * expression
         (** [Pexp_fun(lbl, exp1, pat, expr2)] represents:
             - [fun P -> E1]     when [lbl] is {{!Asttypes.Nolabel}[Nolabel]}
@@ -336,11 +335,11 @@ and expression_desc =
            Invariant: [n > 0]
          *)
   | Pexp_match of expression * case list
-        (** Represents [match E0 with P1 -> E1 | ... | Pn -> En] *)
+        (** [match E0 with P1 -> E1 | ... | Pn -> En] *)
   | Pexp_try of expression * case list
-        (** Represents [try E0 with P1 -> E1 | ... | Pn -> En] *)
+        (** [try E0 with P1 -> E1 | ... | Pn -> En] *)
   | Pexp_tuple of expression list
-        (** Represents expressions [(E1, ..., En)]
+        (** Expressions [(E1, ..., En)]
 
            Invariant: [n >= 2]
         *)
@@ -363,78 +362,76 @@ and expression_desc =
            Invariant: [n > 0]
          *)
   | Pexp_field of expression * Longident.t loc
-        (** Represents [E.l] *)
+        (** [E.l] *)
   | Pexp_setfield of expression * Longident.t loc * expression
-        (** Represents [E1.l <- E2] *)
+        (** [E1.l <- E2] *)
   | Pexp_array of expression list
-        (** Represents [[| E1; ...; En |]] *)
+        (** [[| E1; ...; En |]] *)
   | Pexp_ifthenelse of expression * expression * expression option
-        (** Represents [if E1 then E2 else E3] *)
+        (** [if E1 then E2 else E3] *)
   | Pexp_sequence of expression * expression
-        (** Represents [E1; E2] *)
+        (** [E1; E2] *)
   | Pexp_while of expression * expression
-        (** Represents [while E1 do E2 done] *)
+        (** [while E1 do E2 done] *)
   | Pexp_for of
       pattern * expression * expression * direction_flag * expression
-        (** Represents:
+        (** [Pexp_for(i, E1, E2, direction, E3)] represents:
             - [for i = E1 to E2 do E3 done]
-                                     when [flag] is {{!Asttypes.Upto}[Upto]}
+                                when [direction] is {{!Asttypes.Upto}[Upto]}
             - [for i = E1 downto E2 do E3 done]
-                                     when [flag] is {{!Asttypes.Downto}[Downto]}
+                                when [direction] is {{!Asttypes.Downto}[Downto]}
          *)
   | Pexp_constraint of expression * core_type
-        (** Represents [(E : T)] *)
+        (** [(E : T)] *)
   | Pexp_coerce of expression * core_type option * core_type
         (** [Pexp_coerce(E, from, T)] represents
             - [(E :> T)]      when [from] is [None],
             - [(E : T0 :> T)] when [from] is [Some T0].
          *)
   | Pexp_send of expression * label loc
-        (** Represents [E # m] *)
+        (** [E # m] *)
   | Pexp_new of Longident.t loc
-        (** Represents [new M.c] *)
+        (** [new M.c] *)
   | Pexp_setinstvar of label loc * expression
-        (** Represents [x <- 2] *)
+        (** [x <- 2] *)
   | Pexp_override of (label loc * expression) list
-        (** Represents [{< x1 = E1; ...; Xn = En >}] *)
+        (** [{< x1 = E1; ...; Xn = En >}] *)
   | Pexp_letmodule of string option loc * module_expr * expression
-        (** Represents [let module M = ME in E] *)
+        (** [let module M = ME in E] *)
   | Pexp_letexception of extension_constructor * expression
-        (** Represents [let exception C in E] *)
+        (** [let exception C in E] *)
   | Pexp_assert of expression
-        (** Represents [assert E].
+        (** [assert E].
 
            Note: [assert false] is treated in a special way by the
            type-checker. *)
   | Pexp_lazy of expression
-        (** Represents [lazy E] *)
+        (** [lazy E] *)
   | Pexp_poly of expression * core_type option
         (** Used for method bodies.
 
            Can only be used as the expression under {!Cfk_concrete}
            for methods (not values). *)
   | Pexp_object of class_structure
-        (** Represents [object ... end] *)
+        (** [object ... end] *)
   | Pexp_newtype of string loc * expression
-        (** Represents [fun (type t) -> E] *)
+        (** [fun (type t) -> E] *)
   | Pexp_pack of module_expr
-        (** Represents [(module ME)].
+        (** [(module ME)].
 
            [(module ME : S)] is represented as
            [Pexp_constraint(Pexp_pack ME, Ptyp_package S)] *)
   | Pexp_open of open_declaration * expression
-        (** Represents:
-            - [M.(E)]
+        (** - [M.(E)]
             - [let open M in E]
             - [let open! M in E] *)
   | Pexp_letop of letop
-        (** Represents:
-            - [let* P = E0 in E1]
+        (** - [let* P = E0 in E1]
             - [let* P0 = E00 and* P1 = E01 in E1] *)
   | Pexp_extension of extension
-        (** Represents [[%id]] *)
+        (** [[%id]] *)
   | Pexp_unreachable
-        (** Represents [.] *)
+        (** [.] *)
 
 and case =
     {
@@ -482,7 +479,7 @@ and type_declaration =
      ptype_params: (core_type * (variance * injectivity)) list;
            (** [('a1,...'an) t; None] represents  [_]*)
      ptype_cstrs: (core_type * core_type * Location.t) list;
-           (** Represents [... constraint T1=T1'  ... constraint Tn=Tn'] *)
+           (** [... constraint T1=T1'  ... constraint Tn=Tn'] *)
      ptype_kind: type_kind;
      ptype_private: private_flag;
            (** for [= private ...] *)
@@ -631,11 +628,10 @@ and class_type =
 
 and class_type_desc =
   | Pcty_constr of Longident.t loc * core_type list
-        (** Represents:
-      - [c]
-      - [['a1, ..., 'an] c] *)
+        (** - [c]
+            - [['a1, ..., 'an] c] *)
   | Pcty_signature of class_signature
-        (** Represents [object ... end] *)
+        (** [object ... end] *)
   | Pcty_arrow of arg_label * core_type * class_type
         (** [Pcty_arrow(lbl, T, CT)] represents:
             - [T -> CT]    when [lbl] is {{!Asttypes.Nolabel}[Nolabel]},
@@ -643,9 +639,9 @@ and class_type_desc =
             - [?l:T -> CT] when [lbl] is {{!Asttypes.Optional}[Optional l]}.
          *)
   | Pcty_extension of extension
-        (** Represents [%id] *)
+        (** [%id] *)
   | Pcty_open of open_description * class_type
-        (** Represents [let open M in CT] *)
+        (** [let open M in CT] *)
 
 and class_signature =
     {
@@ -666,20 +662,20 @@ and class_type_field =
 
 and class_type_field_desc =
   | Pctf_inherit of class_type
-        (** Represents [inherit CT] *)
+        (** [inherit CT] *)
   | Pctf_val of (label loc * mutable_flag * virtual_flag * core_type)
-        (** Represents [val x: T] *)
+        (** [val x: T] *)
   | Pctf_method of (label loc * private_flag * virtual_flag * core_type)
-        (** Represents [method x: T]
+        (** [method x: T]
 
             Note: [T] can be a {!Ptyp_poly}.
         *)
   | Pctf_constraint of (core_type * core_type)
-        (** Represents [constraint T1 = T2] *)
+        (** [constraint T1 = T2] *)
   | Pctf_attribute of attribute
-        (** Represents [[\@\@\@id]] *)
+        (** [[\@\@\@id]] *)
   | Pctf_extension of extension
-        (** Represents [[%%id]] *)
+        (** [[%%id]] *)
 
 and 'a class_infos =
     {
@@ -713,9 +709,9 @@ and class_expr =
 
 and class_expr_desc =
   | Pcl_constr of Longident.t loc * core_type list
-        (** Represents [c] and [['a1, ..., 'an] c] *)
+        (** [c] and [['a1, ..., 'an] c] *)
   | Pcl_structure of class_structure
-        (** Represents [object ... end] *)
+        (** [object ... end] *)
   | Pcl_fun of arg_label * expression option * pattern * class_expr
         (** [Pcl_fun(lbl, exp, P, CE)] represents:
             - [fun P -> CE]     when [lbl] is {{!Asttypes.Nolabel}[Nolabel]}
@@ -737,18 +733,18 @@ and class_expr_desc =
             Invariant: [n > 0]
         *)
   | Pcl_let of rec_flag * value_binding list * class_expr
-        (** Represents:
+        (** [Pcl_let(rec, [(P1, E1); ... ; (Pn, En)], CE)] represents:
             - [let P1 = E1 and ... and Pn = EN in CE]
-                        when [flag] is {{!Asttypes.Nonrecursive}[Nonrecursive]},
+                         when [rec] is {{!Asttypes.Nonrecursive}[Nonrecursive]},
             - [let rec P1 = E1 and ... and Pn = EN in CE]
-                        when [flag] is {{!Asttypes.Recursive}[Recursive]}.
+                         when [rec] is {{!Asttypes.Recursive}[Recursive]}.
         *)
   | Pcl_constraint of class_expr * class_type
-        (** Represents [(CE : CT)] *)
+        (** [(CE : CT)] *)
   | Pcl_extension of extension
-        (** Represents [[%id]] *)
+        (** [[%id]] *)
   | Pcl_open of open_description * class_expr
-        (** Represents [let open M in CE] *)
+        (** [let open M in CE] *)
 
 and class_structure =
     {
@@ -795,18 +791,17 @@ and class_field_desc =
                          and [kind] is {{!Cfk_concrete}[Cfk_virtual(T)]}
   *)
   | Pcf_method of (label loc * private_flag * class_field_kind)
-        (** Represents:
-            - [method x = E]            ([E] can be a {!Pexp_poly})
+        (** - [method x = E]            ([E] can be a {!Pexp_poly})
             - [method virtual x: T]     ([T] can be a {!Ptyp_poly})
   *)
   | Pcf_constraint of (core_type * core_type)
-        (** Represents [constraint T1 = T2] *)
+        (** [constraint T1 = T2] *)
   | Pcf_initializer of expression
-        (** Represents [initializer E] *)
+        (** [initializer E] *)
   | Pcf_attribute of attribute
-        (** Represents [[\@\@\@id]] *)
+        (** [[\@\@\@id]] *)
   | Pcf_extension of extension
-        (** Represents [[%%id]] *)
+        (** [[%%id]] *)
 
 and class_field_kind =
   | Cfk_virtual of core_type
@@ -829,21 +824,21 @@ and module_type_desc =
   | Pmty_ident of Longident.t loc
         (** [Pmty_ident(S)] represents [S] *)
   | Pmty_signature of signature
-        (** Represents [sig ... end] *)
+        (** [sig ... end] *)
   | Pmty_functor of functor_parameter * module_type
-        (** Represents [functor(X : MT1) -> MT2] *)
+        (** [functor(X : MT1) -> MT2] *)
   | Pmty_with of module_type * with_constraint list
-        (** Represents [MT with ...] *)
+        (** [MT with ...] *)
   | Pmty_typeof of module_expr
-        (** Represents [module type of ME] *)
+        (** [module type of ME] *)
   | Pmty_extension of extension
-        (** Represents [[%id]] *)
+        (** [[%id]] *)
   | Pmty_alias of Longident.t loc
-        (** Represents [(module M)] *)
+        (** [(module M)] *)
 
 and functor_parameter =
   | Unit
-        (** Represents [()] *)
+        (** [()] *)
   | Named of string option loc * module_type
         (** [Named(name, MT)] represents:
             - [(X : MT)] when [name] is [Some X],
@@ -859,40 +854,39 @@ and signature_item =
 
 and signature_item_desc =
   | Psig_value of value_description
-        (** Represents:
-            - [val x: T]
+        (** - [val x: T]
             - [external x: T = "s1" ... "sn"]
          *)
   | Psig_type of rec_flag * type_declaration list
-        (** Represents [type t1 = ... and ... and tn  = ...] *)
+        (** [type t1 = ... and ... and tn  = ...] *)
   | Psig_typesubst of type_declaration list
-        (** Represents [type t1 := ... and ... and tn := ...]  *)
+        (** [type t1 := ... and ... and tn := ...]  *)
   | Psig_typext of type_extension
-        (** Represents [type t1 += ...] *)
+        (** [type t1 += ...] *)
   | Psig_exception of type_exception
-        (** Represents [exception C of T] *)
+        (** [exception C of T] *)
   | Psig_module of module_declaration
-        (** Represents [module X = M] and [module X : MT] *)
+        (** [module X = M] and [module X : MT] *)
   | Psig_modsubst of module_substitution
-        (** Represents [module X := M] *)
+        (** [module X := M] *)
   | Psig_recmodule of module_declaration list
-        (** Represents [module rec X1 : MT1 and ... and Xn : MTn] *)
+        (** [module rec X1 : MT1 and ... and Xn : MTn] *)
   | Psig_modtype of module_type_declaration
-        (** Represents [module type S = MT] and [module type S] *)
+        (** [module type S = MT] and [module type S] *)
   | Psig_modtypesubst of module_type_declaration
-        (** Represents [module type S :=  ...]  *)
+        (** [module type S :=  ...]  *)
   | Psig_open of open_description
-        (** Represents [open X] *)
+        (** [open X] *)
   | Psig_include of include_description
-        (** Represents [include MT] *)
+        (** [include MT] *)
   | Psig_class of class_description list
-        (** Represents [class c1 : ... and ... and cn : ...] *)
+        (** [class c1 : ... and ... and cn : ...] *)
   | Psig_class_type of class_type_declaration list
-        (** Represents [class type ct1 = ... and ... and ctn = ...] *)
+        (** [class type ct1 = ... and ... and ctn = ...] *)
   | Psig_attribute of attribute
-        (** Represents [[\@\@\@id]] *)
+        (** [[\@\@\@id]] *)
   | Psig_extension of extension * attributes
-        (** Represents [[%%id]] *)
+        (** [[%%id]] *)
 
 and module_declaration =
     {
@@ -963,20 +957,20 @@ and include_declaration = module_expr include_infos
 
 and with_constraint =
   | Pwith_type of Longident.t loc * type_declaration
-        (** Represents [with type X.t = ...]
+        (** [with type X.t = ...]
 
             Note: the last component of the longident must match
             the name of the type_declaration. *)
   | Pwith_module of Longident.t loc * Longident.t loc
-        (** Represents [with module X.Y = Z] *)
+        (** [with module X.Y = Z] *)
   | Pwith_modtype of Longident.t loc * module_type
-        (** Represents [with module type X.Y = Z] *)
+        (** [with module type X.Y = Z] *)
   | Pwith_modtypesubst of Longident.t loc * module_type
-        (** Represents [with module type X.Y := sig end] *)
+        (** [with module type X.Y := sig end] *)
   | Pwith_typesubst of Longident.t loc * type_declaration
-        (** Represents [with type X.t := ..., same format as [Pwith_type]] *)
+        (** [with type X.t := ..., same format as [Pwith_type]] *)
   | Pwith_modsubst of Longident.t loc * Longident.t loc
-        (** Represents [with module X.Y := Z] *)
+        (** [with module X.Y := Z] *)
 
 (** {2 Value expressions for the module language} *)
 
@@ -989,19 +983,19 @@ and module_expr =
 
 and module_expr_desc =
   | Pmod_ident of Longident.t loc
-        (** Represents [X] *)
+        (** [X] *)
   | Pmod_structure of structure
-        (** Represents [struct ... end] *)
+        (** [struct ... end] *)
   | Pmod_functor of functor_parameter * module_expr
-        (** Represents [functor(X : MT1) -> ME] *)
+        (** [functor(X : MT1) -> ME] *)
   | Pmod_apply of module_expr * module_expr
-        (** Represents [ME1(ME2)] *)
+        (** [ME1(ME2)] *)
   | Pmod_constraint of module_expr * module_type
-        (** Represents [(ME : MT)] *)
+        (** [(ME : MT)] *)
   | Pmod_unpack of expression
-        (** Represents [(val E)] *)
+        (** [(val E)] *)
   | Pmod_extension of extension
-        (** Represents [[%id]] *)
+        (** [[%id]] *)
 
 and structure = structure_item list
 
@@ -1013,44 +1007,42 @@ and structure_item =
 
 and structure_item_desc =
   | Pstr_eval of expression * attributes
-        (** Represents [E] *)
+        (** [E] *)
   | Pstr_value of rec_flag * value_binding list
-        (** Represents:
+        (** [Pstr_value(rec, [(P1, E1 ; ... ; (Pn, En))])] represents:
             - [let P1 = E1 and ... and Pn = EN]
-                        when [flag] is {{!Asttypes.Nonrecursive}[Nonrecursive]},
+                         when [rec] is {{!Asttypes.Nonrecursive}[Nonrecursive]},
             - [let rec P1 = E1 and ... and Pn = EN ]
-                        when [flag] is {{!Asttypes.Recursive}[Recursive]}.
+                         when [rec] is {{!Asttypes.Recursive}[Recursive]}.
         *)
   | Pstr_primitive of value_description
-        (** Represents:
-            - [val x: T]
+        (** - [val x: T]
             - [external x: T = "s1" ... "sn" ]*)
   | Pstr_type of rec_flag * type_declaration list
-        (** Represents [type t1 = ... and ... and tn = ...] *)
+        (** [type t1 = ... and ... and tn = ...] *)
   | Pstr_typext of type_extension
-        (** Represents [type t1 += ...] *)
+        (** [type t1 += ...] *)
   | Pstr_exception of type_exception
-        (** Represents:
-            - [exception C of T]
+        (** - [exception C of T]
             - [exception C = M.X] *)
   | Pstr_module of module_binding
-        (** Represents [module X = ME] *)
+        (** [module X = ME] *)
   | Pstr_recmodule of module_binding list
-        (** Represents [module rec X1 = ME1 and ... and Xn = MEn] *)
+        (** [module rec X1 = ME1 and ... and Xn = MEn] *)
   | Pstr_modtype of module_type_declaration
-        (** Represents [module type S = MT] *)
+        (** [module type S = MT] *)
   | Pstr_open of open_declaration
-        (** Represents [open X] *)
+        (** [open X] *)
   | Pstr_class of class_declaration list
-        (** Represents [class c1 = ... and ... and cn = ...] *)
+        (** [class c1 = ... and ... and cn = ...] *)
   | Pstr_class_type of class_type_declaration list
-        (** Represents [class type ct1 = ... and ... and ctn = ...] *)
+        (** [class type ct1 = ... and ... and ctn = ...] *)
   | Pstr_include of include_declaration
-        (** Represents [include ME] *)
+        (** [include ME] *)
   | Pstr_attribute of attribute
-        (** Represents [[\@\@\@id]] *)
+        (** [[\@\@\@id]] *)
   | Pstr_extension of extension * attributes
-        (** Represents [[%%id]] *)
+        (** [[%%id]] *)
 
 and value_binding =
   {
@@ -1076,7 +1068,7 @@ and module_binding =
 type toplevel_phrase =
   | Ptop_def of structure
   | Ptop_dir of toplevel_directive
-     (** Represents [#use], [#load] ... *)
+     (** [#use], [#load] ... *)
 
 and toplevel_directive =
   {
