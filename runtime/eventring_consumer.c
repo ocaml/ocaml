@@ -424,7 +424,10 @@ caml_eventring_read_poll(struct caml_eventring_cursor *cursor,
     } while (cursor->current_positions[domain_num] < ring_tail &&
              (max_events == 0 || consumed < max_events) && !early_exit);
 
-    cursor->next_read_domain = (domain_num + 1) % cursor->metadata->max_domains;
+    /* next domain to read from (saved in the cursor so we can resume from it
+       if need be in the next poll of the cursor). */
+    cursor->next_read_domain =
+      (domain_num + 1 == cursor->metadata->max_domains) ? 0 : domain_num + 1;
   }
 
   if (events_consumed != NULL) {
