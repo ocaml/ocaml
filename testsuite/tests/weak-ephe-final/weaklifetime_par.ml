@@ -80,7 +80,8 @@ let run index () =
       wp = Weak.create n;
     }
   ) in
-  while gccount () < 5 do
+  let gc_start = gccount () in
+  while gccount () - gc_start < 5 do
     dummy := Array.make (Random.int 300) 0;
     let per_domain_size = size / num_domains in
     assert (index < num_domains);
