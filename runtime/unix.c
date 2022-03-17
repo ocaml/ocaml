@@ -442,9 +442,6 @@ int64_t caml_time_counter(void)
   if (time_base.denom == 0) {
     if (mach_timebase_info(&time_base) != KERN_SUCCESS)
       return 0;
-
-    if (time_base.denom == 0)
-      return 0;
   }
 
   now = mach_absolute_time();
