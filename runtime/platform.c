@@ -21,11 +21,15 @@
 #include <sys/time.h>
 #include "caml/platform.h"
 #include "caml/fail.h"
+#include "caml/lf_skiplist.h"
 #ifdef HAS_SYS_MMAN_H
 #include <sys/mman.h>
 #endif
 #ifdef _WIN32
 #include <windows.h>
+#endif
+#ifdef DEBUG
+#include "caml/domain.h"
 #endif
 
 /* Error reporting */
@@ -144,11 +148,24 @@ uintnat caml_mem_round_up_pages(uintnat size)
 #define MAP_FAILED 0
 #endif
 
+#ifdef DEBUG
+static struct lf_skiplist mmap_blocks = {NULL};
+#endif
+
 void* caml_mem_map(uintnat size, uintnat alignment, int reserve_only)
 {
   uintnat alloc_sz = caml_mem_round_up_pages(size + alignment);
   void* mem;
   uintnat base, aligned_start, aligned_end;
+
+#ifdef DEBUG
+  if (mmap_blocks.head == NULL) {
+    /* The first call to caml_mem_map should be during caml_init_domains, called
+       by caml_init_gc during startup - i.e. before any domains have started. */
+    CAMLassert(atomic_load_acq(&caml_num_domains_running) <= 1);
+    caml_lf_skiplist_init(&mmap_blocks);
+  }
+#endif
 
   CAMLassert(Is_power_of_2(alignment));
   alignment = caml_mem_round_up_pages(alignment);
@@ -157,6 +174,7 @@ void* caml_mem_map(uintnat size, uintnat alignment, int reserve_only)
 #ifdef _WIN32
   /* Memory is only reserved at this point. It'll be committed after the
      trim. */
+again:
   mem = VirtualAlloc(NULL, alloc_sz, MEM_RESERVE, PAGE_NOACCESS);
 #else
   mem = mmap(0, alloc_sz, reserve_only ? PROT_NONE : (PROT_READ | PROT_WRITE),
@@ -174,19 +192,31 @@ void* caml_mem_map(uintnat size, uintnat alignment, int reserve_only)
   /* VirtualFree can be used to decommit portions of memory, but it can only
      release the entire block of memory. For Windows, repeat the call but this
      time specify the address. */
-  if (!VirtualFree(mem, 0, MEM_RELEASE))
-    printf("The world seems to be upside down\n");
+  VirtualFree(mem, 0, MEM_RELEASE);
   mem = VirtualAlloc((void*)aligned_start,
                      aligned_end - aligned_start + 1,
                      MEM_RESERVE | (reserve_only ? 0 : MEM_COMMIT),
                      reserve_only ? PAGE_NOACCESS : PAGE_READWRITE);
-  if (!mem)
-    printf("Trimming failed\n");
-  else if (mem != (void*)aligned_start)
-    printf("Hang on a sec - it's allocated a different block?!\n");
+  if (mem == NULL) {
+    /* VirtualAlloc can return the following three interesting errors:
+         - ERROR_INVALID_ADDRESS - pages are already reserved (race)
+         - ERROR_NOT_ENOUGH_MEMORY - address space exhausted
+         - ERROR_COMMITMENT_LIMIT - memory exhausted */
+    if (GetLastError() == ERROR_INVALID_ADDRESS) {
+      SetLastError(0);
+      /* Raced - try again. */
+      goto again;
+    } else {
+      return 0;
+    }
+  }
+  CAMLassert(mem == (void*)aligned_start);
 #else
-  caml_mem_unmap((void*)base, aligned_start - base);
-  caml_mem_unmap((void*)aligned_end, (base + alloc_sz) - aligned_end);
+  munmap((void*)base, aligned_start - base);
+  munmap((void*)aligned_end, (base + alloc_sz) - aligned_end);
+#endif
+#ifdef DEBUG
+  caml_lf_skiplist_insert(&mmap_blocks, aligned_start, size);
 #endif
   return (void*)aligned_start;
 }
@@ -225,8 +255,9 @@ void* caml_mem_commit(void* mem, uintnat size)
 void caml_mem_decommit(void* mem, uintnat size)
 {
 #ifdef _WIN32
-  if (!VirtualFree(mem, size, MEM_DECOMMIT))
-    printf("VirtualFree failed to decommit\n");
+  /* VirtualFree can't decommit zero bytes */
+  if (size)
+    VirtualFree(mem, size, MEM_DECOMMIT);
 #else
   map_fixed(mem, size, PROT_NONE);
 #endif
@@ -234,11 +265,20 @@ void caml_mem_decommit(void* mem, uintnat size)
 
 void caml_mem_unmap(void* mem, uintnat size)
 {
+#ifdef DEBUG
+  uintnat data;
+  CAMLassert(caml_lf_skiplist_find(&mmap_blocks, (uintnat)mem, &data) != 0);
+  CAMLassert(data == size);
+#endif
 #ifdef _WIN32
-  if (!VirtualFree(mem, size, MEM_RELEASE))
-    printf("VirtualFree failed\n");
+  if (!VirtualFree(mem, 0, MEM_RELEASE))
+    CAMLassert(0);
 #else
-  munmap(mem, size);
+  if (munmap(mem, size) != 0)
+    CAMLassert(0);
+#endif
+#ifdef DEBUG
+  caml_lf_skiplist_remove(&mmap_blocks, (uintnat)mem);
 #endif
 }
 
