@@ -298,11 +298,3 @@ static void * caml_thread_tick(void * arg)
   }
   return NULL;
 }
-
-/* "At fork" processing */
-
-static int st_atfork(void (*fn)(void))
-{
-  caml_atfork_hook = fn;
-  return 0;
-}

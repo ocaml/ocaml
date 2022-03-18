@@ -413,7 +413,7 @@ CAMLprim value caml_thread_initialize(value unit)
   caml_domain_external_interrupt_hook = caml_thread_interrupt_hook;
   caml_domain_stop_hook = caml_thread_domain_stop_hook;
 
-  st_atfork(caml_thread_reinitialize);
+  caml_atfork_hook = caml_thread_reinitialize;
 
   CAMLreturn(Val_unit);
 }
