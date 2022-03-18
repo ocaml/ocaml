@@ -1206,11 +1206,6 @@ static intnat major_collection_slice(intnat howmuch,
     return budget;
   }
 
-  /* TODO: The logging in this function will need to be sorted out before
-      we can merge eventring_multicore. Right now the spinning in
-      [finish_major_cycle_callback] causes this to emit hundreds of thousands
-      of spans */
-
   if (log_events) CAML_EV_BEGIN(EV_MAJOR_SLICE);
   call_timing_hook(&caml_major_slice_begin_hook);
 
