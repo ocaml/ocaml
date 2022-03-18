@@ -247,6 +247,8 @@ struct eventring_buffer_header {
   uint64_t padding[8]; /* Padding so headers don't share cache lines */
 };
 
+/* For a more detailed explanation of the eventring file layout, see
+   eventring.c */
 struct eventring_metadata_header {
   uint64_t version;
   uint64_t max_domains;
