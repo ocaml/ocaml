@@ -195,6 +195,12 @@ Working version
   Unix.readlink on Windows.
   (David Allsopp, report by Xia Li-yao)
 
+- #10807: Don't duplicate standard handles in the child process
+  spawned by win32unix Unix.create_process if the handles were already
+  inheritable. Fix broken signalling of EOF on standard handles if
+  they were already inheritable.
+  (Antonin Décimo, review by Xavier Leroy and Nicolás Ojeda Bär)
+
 - #11077: Make dumpobj compatible with absence of naked pointer support
   (Olivier Nicole and Jan Midtgaard, review by Gabriel Scherer)
 
