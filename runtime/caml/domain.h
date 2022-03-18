@@ -35,9 +35,10 @@ extern "C" {
      (uintnat)(dom_st)->young_ptr < \
      atomic_load_explicit(&((dom_st)->young_limit), memory_order_relaxed)))
 
-asize_t caml_norm_minor_heap_size (intnat);
-int caml_reallocate_minor_heap(asize_t);
-void caml_update_minor_heap_max(uintnat minor_heap_wsz);
+asize_t caml_norm_minor_heap_wsize (intnat);
+void caml_stw_resize_minor_heaps(caml_domain_state*, void*, int,
+                                     caml_domain_state**);
+void caml_check_minor_heap();
 
 /* is there a STW interrupt queued that needs servicing */
 int caml_incoming_interrupts_queued(void);
@@ -60,10 +61,10 @@ CAMLextern void (*caml_atfork_hook)(void);
 CAMLextern void (*caml_domain_stop_hook)(void);
 CAMLextern void (*caml_domain_external_interrupt_hook)(void);
 
-CAMLextern void caml_init_domains(uintnat minor_heap_wsz);
+CAMLextern void caml_init_domains();
 CAMLextern void caml_init_domain_self(int);
 
-CAMLextern uintnat caml_minor_heap_max_wsz;
+CAMLextern uintnat caml_minor_heap_wsz;
 
 CAMLextern atomic_uintnat caml_num_domains_running;
 CAMLextern uintnat caml_minor_heaps_start;

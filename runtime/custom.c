@@ -105,7 +105,7 @@ CAMLexport value caml_alloc_custom_mem(const struct custom_operations * ops,
        [heap_size / 150] is really [heap_size * (2/3) / 100] (but faster). */
     caml_heap_size(Caml_state->shared_heap) / 150 * caml_custom_major_ratio;
   mlsize_t max_minor =
-    Bsize_wsize (Caml_state->minor_heap_wsz) / 100 * caml_custom_minor_ratio;
+    Bsize_wsize (caml_minor_heap_wsz) / 100 * caml_custom_minor_ratio;
   value v = alloc_custom_gen (ops, bsz, mem, max_major, mem_minor, max_minor);
   return v;
 }

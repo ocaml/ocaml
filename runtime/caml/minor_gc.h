@@ -25,7 +25,6 @@
 #define caml_young_limit Caml_state->young_limit
 #define caml_young_alloc_start Caml_state->young_start
 #define caml_young_alloc_end Caml_state->young_end
-#define caml_minor_heap_wsz Caml_state->minor_heap_wsz
 
 
 #define CAML_TABLE_STRUCT(t) { \
@@ -62,7 +61,7 @@ struct caml_minor_tables {
 CAMLextern void caml_minor_collection (void);
 
 #ifdef CAML_INTERNALS
-extern void caml_set_minor_heap_size (asize_t); /* size in bytes */
+extern void caml_set_minor_heap_wsz (asize_t);
 extern void caml_empty_minor_heap_no_major_slice_from_stw
   (caml_domain_state* domain, void* unused, int participating_count,
     caml_domain_state** participating); /* in STW */

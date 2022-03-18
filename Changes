@@ -64,6 +64,11 @@ Working version
   (Enguerrand Decorne, report by Jon Ludlam,
   review by Tom Kelly, KC Sivaramakrishnan and Gabriel Scherer)
 
+- #11082, #11142: Changing the minor heap size via Gc.set applies
+  to all domains.
+  (Sabine Schmaltz, Gabriel Scherer, review by Xavier Leroy,
+  KC Sivaramakrishnan, Enguerrand Decorne, Tom Kelly, ???)
+
 ### Code generation and optimizations:
 
 - #10972: ARM64 multicore support: OCaml & C stack separation;
