@@ -48,6 +48,7 @@ extern uintnat caml_allocation_policy;    /*        see freelist.c */
 extern uintnat caml_custom_major_ratio;   /* see custom.c */
 extern uintnat caml_custom_minor_ratio;   /* see custom.c */
 extern uintnat caml_custom_minor_max_bsz; /* see custom.c */
+extern uintnat caml_minor_heap_max_wsz;   /* see domain.c */
 
 CAMLprim value caml_gc_quick_stat(value v)
 {
@@ -160,6 +161,7 @@ CAMLprim value caml_gc_set(value v)
   uintnat new_custom_maj, new_custom_min, new_custom_sz;
   CAML_EV_BEGIN(EV_EXPLICIT_GC_SET);
 
+
   caml_change_max_stack_size (Long_val (Field (v, 5)));
 
   newpf = norm_pfree (Long_val (Field (v, 2)));
@@ -197,13 +199,31 @@ CAMLprim value caml_gc_set(value v)
   /* Minor heap size comes last because it will trigger a minor collection
      (thus invalidating [v]) and it can raise [Out_of_memory]. */
   newminwsz = caml_norm_minor_heap_size (Long_val (Field (v, 0)));
-  if (newminwsz != Caml_state->minor_heap_wsz){
+
+  if (newminwsz != Caml_state->minor_heap_wsz) {
     caml_gc_message (0x20, "New minor heap size: %"
                      ARCH_INTNAT_PRINTF_FORMAT "uk words\n", newminwsz / 1024);
+  }
+
+  if (newminwsz > caml_minor_heap_max_wsz) {
+    caml_gc_log ("update minor heap max: %"
+                 ARCH_SIZET_PRINTF_FORMAT "uk words", newminwsz / 1024);
+    caml_update_minor_heap_max(newminwsz);
+  }
+  CAMLassert(newminwsz <= caml_minor_heap_max_wsz);
+  if (newminwsz != Caml_state->minor_heap_wsz) {
+    caml_gc_log ("current minor heap size: %"
+                 ARCH_SIZET_PRINTF_FORMAT "uk words",
+                 Caml_state->minor_heap_wsz / 1024);
+    caml_gc_log ("set minor heap size: %"
+                 ARCH_SIZET_PRINTF_FORMAT "uk words", newminwsz / 1024);
+    /* FIXME: when (newminwsz > caml_minor_heap_max_wsz) and
+       (newminwsz != Caml_state->minor_heap_wsz) are both true,
+       the current domain reallocates its own minor heap twice. */
     caml_set_minor_heap_size (newminwsz);
   }
-  CAML_EV_END(EV_EXPLICIT_GC_SET);
 
+  CAML_EV_END(EV_EXPLICIT_GC_SET);
   return Val_unit;
 }
 
@@ -299,6 +319,9 @@ CAMLprim value caml_get_minor_free (value v)
 
 void caml_init_gc (void)
 {
+  caml_minor_heap_max_wsz =
+    caml_norm_minor_heap_size(caml_params->init_minor_heap_wsz);
+
   caml_max_stack_wsize = caml_params->init_max_stack_wsz;
   caml_fiber_wsz = (Stack_threshold * 2) / sizeof(value);
   caml_percent_free = norm_pfree (caml_params->init_percent_free);

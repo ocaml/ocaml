@@ -212,7 +212,7 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 #define Is_young(val) \
   (CAMLassert (Is_block (val)), \
    (char *)(val) < (char *)caml_minor_heaps_end && \
-   (char *)(val) > (char *)caml_minor_heaps_base)
+   (char *)(val) > (char *)caml_minor_heaps_start)
 
 #define Is_block_and_young(val) (Is_block(val) && Is_young(val))
 
