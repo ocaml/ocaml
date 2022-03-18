@@ -997,6 +997,39 @@ Missing cmi file when looking up module alias.
 .br
 Unexpected documentation comment.
 
+.B 51 [wrong-tailcall-expectation]
+.br
+Function call annotated with an incorrect @tailcall attribute
+
+.B 52 [fragile-literal-pattern]
+.br
+Fragile constant pattern.
+
+.B 53 [misplaced-attribute]
+.br
+Attribute cannot appear in this context.
+
+.B 54 [duplicated-attribute]
+.br
+Attribute used more than once on an expression.
+
+.B 55 [inlining-impossible]
+.br
+Inlining impossible.
+
+.B 56 [unreachable-case]
+.br
+Unreachable case in a pattern-matching (based on type information).
+
+.B 57 [ambiguous-var-in-pattern-guard]
+.br
+Ambiguous or-pattern variables under guard.
+
+.B 58 [no-cmx-file]
+.br
+Missing cmx file.
+
+
 .B 59 [flambda-assignment-to-non-mutable-value]
 .br
 Assignment on non-mutable value.
@@ -1037,6 +1070,24 @@ Unused functor parameter.
 .br
 Pattern-matching depending on mutable state prevents the remaining
 arguments from being uncurried.
+
+.B 69 [unused-field]
+.br
+Unused record field.
+
+.B 70 [missing-mli]
+.br
+Missing interface file.
+
+.B 71 [unused-tmc-attribute]
+.br
+Unused @tail_mod_cons attribute
+
+.B 72 [tmc-breaks-tailcall]
+.br
+A tail call is turned into a non-tail call by the @tail_mod_cons
+transformation.
+
 
 The letters stand for the following sets of warnings.  Any letter not
 mentioned here corresponds to the empty set.
