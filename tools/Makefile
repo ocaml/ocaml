@@ -36,10 +36,11 @@ CAMLC = $(BOOT_OCAMLC) -g -nostdlib -I $(ROOTDIR)/boot \
         -use-prims $(ROOTDIR)/runtime/primitives -I $(ROOTDIR)
 CAMLOPT = $(OCAMLRUN) $(ROOTDIR)/ocamlopt$(EXE) \
   -g -nostdlib -I $(ROOTDIR)/stdlib
-INCLUDES = $(addprefix -I $(ROOTDIR)/,utils parsing typing bytecomp \
-                       middle_end middle_end/closure middle_end/flambda \
-                       middle_end/flambda/base_types driver toplevel \
-                       file_formats lambda)
+DIRS = $(addprefix $(ROOTDIR)/,utils parsing typing bytecomp \
+                   middle_end middle_end/closure middle_end/flambda \
+                   middle_end/flambda/base_types driver toplevel \
+                   file_formats lambda)
+INCLUDES = $(addprefix -I ,$(DIRS))
 COMPFLAGS = -absname -w +a-4-9-41-42-44-45-48-70 -strict-sequence \
 -warn-error +A -principal -safe-string -strict-formats -bin-annot $(INCLUDES)
 LINKFLAGS = $(INCLUDES)
@@ -342,9 +343,9 @@ clean::
 clean::
 	rm -f *.cmo *.cmi *.cma *.dll *.so *.lib *.a
 
-DEPINCLUDES=$(INCLUDES)
+OC_OCAMLDEPDIRS = $(DIRS)
 depend: beforedepend
-	$(OCAMLDEP_CMD) $(DEPINCLUDES) *.mli *.ml > .depend
+	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 
 .PHONY: clean distclean install beforedepend depend
 

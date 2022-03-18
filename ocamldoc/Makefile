@@ -53,23 +53,15 @@ endif
 # Compilation
 #############
 
-INCLUDES_DEP=\
-  -I $(ROOTDIR)/utils \
-  -I $(ROOTDIR)/parsing \
-  -I $(ROOTDIR)/typing \
-  -I $(ROOTDIR)/driver \
-  -I $(ROOTDIR)/bytecomp \
-  -I $(ROOTDIR)/toplevel
 
-INCLUDES_NODEP=\
-  -I $(ROOTDIR)/stdlib \
-  -I $(ROOTDIR)/compilerlibs \
-  -I $(ROOTDIR)/otherlibs/str \
-  -I $(ROOTDIR)/otherlibs/dynlink \
-  -I $(ROOTDIR)/otherlibs/dynlink/native \
-  -I $(ROOTDIR)/otherlibs/$(UNIXLIB)
+INCLUDE_DIRS = $(addprefix $(ROOTDIR)/,\
+  utils parsing typing driver bytecomp toplevel)
+INCLUDES_DEP = $(addprefix -I ,$(INCLUDE_DIRS))
+INCLUDES_NODEP = $(addprefix -I $(ROOTDIR)/,\
+  stdlib compilerlibs otherlibs/str otherlibs/dynlink \
+  otherlibs/dynlink/native otherlibs/$(UNIXLIB))
 
-DEPINCLUDES=$(INCLUDES_DEP)
+OC_OCAMLDEPDIRS = $(INCLUDE_DIRS)
 INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)
 
 COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48-70 -warn-error +A \
@@ -350,7 +342,7 @@ distclean: clean
 
 .PHONY: depend
 depend: $(DEPEND_PREREQS)
-	$(OCAMLDEP_CMD) $(DEPINCLUDES) *.mll *.mly *.ml *.mli > .depend
-	$(OCAMLDEP_CMD) $(DEPINCLUDES) -shared generators/*.ml >> .depend
+	$(OCAMLDEP_CMD) *.mll *.mly *.ml *.mli > .depend
+	$(OCAMLDEP_CMD) -shared generators/*.ml >> .depend
 
 include .depend
