@@ -108,7 +108,7 @@ Working version
   Unix.SO_ERROR.
   (Nicolás Ojeda Bär, review by Damien Doligez)
 
-- #10986: Add Scqnf.sscanf_opt, Scanf.bscanf_opt and Scanf.scanf_opt.
+- #10986: Add Scanf.sscanf_opt, Scanf.bscanf_opt and Scanf.scanf_opt.
   (Nicolás Ojeda Bär, review by Florian Angeletti and Gabriel Scherer)
 
 ### Other libraries:
