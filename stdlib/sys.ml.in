@@ -32,7 +32,6 @@ external unix : unit -> bool = "%ostype_unix"
 external win32 : unit -> bool = "%ostype_win32"
 external cygwin : unit -> bool = "%ostype_cygwin"
 external get_backend_type : unit -> backend_type = "%backend_type"
-external isatty : out_channel -> bool = "caml_sys_isatty"
 
 let executable_name = get_executable_name()
 let (os_type, _, _) = get_config()

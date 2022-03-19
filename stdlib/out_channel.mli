@@ -158,3 +158,9 @@ val set_buffered : t -> bool -> unit
 val is_buffered : t -> bool
 (** [is_buffered oc] returns whether the channel [oc] is buffered (see
     {!set_buffered}). *)
+
+val isatty : t -> bool
+(** Returns [true] if the given channel refers to a terminal or console
+    window, [false] otherwise.
+
+    @since 5.0.0 *)
