@@ -43,7 +43,8 @@ implementation of "map" above becomes \emph{tail-recursive}, in the
 sense that it only consumes a constant amount of stack space. The
 OCaml compiler implements this transformation on demand, using the
 "[\@tail_mod_cons]" or "[\@ocaml.tail_mod_cons]" attribute on the
-function to transform.
+function to transform, and the "[\@tailcall]" or "[\@ocaml.tailcall]"
+attribute on calls in tail-modulo-cons position.
 
 \begin{caml_example*}{verbatim}
 let[@tail_mod_cons] rec map f l =
@@ -51,7 +52,7 @@ let[@tail_mod_cons] rec map f l =
   | [] -> []
   | x :: xs ->
     let y = f x in
-    y :: map f xs
+    y :: (map[@tailcall]) f xs
 \end{caml_example*}
 
 \begin{caml_example}{toplevel}
@@ -60,18 +61,19 @@ List.length (map Fun.id (List.init 1_000_000 Fun.id));;
 
 This transformation only improves calls in tail-modulo-cons position,
 it does not improve recursive calls that do not fit in this fragment:
-\begin{caml_example*}{verbatim}[warning=71]
+\begin{caml_example*}{verbatim}[warning=51,warning=71]
 (* does *not* work: addition is not a data constructor *)
 let[@tail_mod_cons] rec length l =
   match l with
   | [] -> 0
-  | _ :: xs -> 1 + length xs
+  | _ :: xs -> 1 + (length[@tailcall]) xs
 \end{caml_example*}
 
 It is of course possible to use the "[\@tail_mod_cons]" transformation
 on functions that contain some recursive calls in tail-modulo-cons
 position, and some calls in other, arbitrary positions. Only the tail
-calls and tail-modulo-cons calls will happen in constant stack space.
+calls and the annotated tail-modulo-cons calls will happen in constant
+stack space.
 
 \paragraph{General design} This feature is provided as an explicit
 program transformation, not an implicit optimization. It is
@@ -108,8 +110,8 @@ performance to the original version, even on small inputs.
 
 \paragraph{Evaluation order} Beware that the tail-modulo-cons
 transformation has an effect on evaluation order: the constructor
-argument that is transformed into tail-position will always be
-evaluated last. Consider the following example:
+argument that is transformed into tail-position (there is at most one)
+will always be evaluated last. Consider the following example:
 
 \begin{caml_example*}{verbatim}
 type 'a two_headed_list =
@@ -119,7 +121,7 @@ type 'a two_headed_list =
 let[@tail_mod_cons] rec map f = function
   | Nil -> Nil
   | Consnoc (front, body, rear) ->
-    Consnoc (f front, map f body, f rear)
+    Consnoc (f front, (map[@tailcall]) f body, f rear)
 \end{caml_example*}
 
 Due to the "[\@tail_mod_cons]" transformation, the calls to "f front"
@@ -150,63 +152,6 @@ tail-mod-cons are as follows:
   using a convenient monadic notation.
 \end{itemize}
 
-\section{sec:disambiguation}{Disambiguation}
-
-It may happen that several arguments of a constructor are recursive
-calls to a tail-modulo-cons function. The transformation can only turn
-one of these calls into a tail call. The compiler will not make an
-implicit choice, but ask the user to provide an explicit
-disambiguation.
-
-Consider this type of syntactic expressions (assuming some
-pre-existing type "var" of expression variables):
-\begin{caml_example*}{verbatim}
-type var (* some pre-existing type of variables *)
-
-type exp =
-  | Var of var
-  | Let of binding * exp
-and binding = var * exp
-\end{caml_example*}
-
-Consider a "map" function on variables. The direct definition has two
-recursive calls inside arguments of the "Let" constructor, so it gets
-rejected as ambiguous.
-\begin{caml_example*}{verbatim}[error]
-let[@tail_mod_cons] rec map_vars f exp =
-  match exp with
-  | Var v -> Var (f v)
-  | Let ((v, def), body) ->
-    Let ((f v, map_vars f def), map_vars f body)
-\end{caml_example*}
-
-To disambiguate, the user should add a "[\@tailcall]" attribute to the
-recursive call that should be transformed to tail position:
-\begin{caml_example*}{verbatim}
-let[@tail_mod_cons] rec map_vars f exp =
-  match exp with
-  | Var v -> Var (f v)
-  | Let ((v, def), body) ->
-    Let ((f v, map_vars f def), (map_vars[@tailcall]) f body)
-\end{caml_example*}
-Be aware that the resulting function is \emph{not} tail-recursive, the
-recursive call on "def" will consume stack space. However, expression
-trees tend to be right-leaning (lots of "Let" in sequence,
-rather than nested inside each other), so putting the call on "body"
-in tail position is an interesting improvement over the naive
-definition: it gives bounded stack space consumption if we assume
-a bound on the nesting depth of "Let" constructs.
-
-One would also get an error when using conflicting annotations, asking
-for two of the constructor arguments to be put in tail position:
-\begin{caml_example*}{verbatim}[error]
-let[@tail_mod_cons] rec map_vars f exp =
-  match exp with
-  | Var v -> Var (f v)
-  | Let ((v, def), body) ->
-    Let ((f v, (map_vars[@tailcall]) f def), (map_vars[@tailcall]) f body)
-\end{caml_example*}
-
 \section{sec:out-of-tmc}{Danger: getting out of tail-mod-cons}
 
 Due to the nature of the tail-mod-cons transformation
@@ -215,7 +160,8 @@ Due to the nature of the tail-mod-cons transformation
 \item Calls from a tail-mod-cons function to another tail-mod-cons
   function declared in the same recursive-binding group are
   transformed into tail calls, as soon as they occur in tail position
-  or tail-modulo-cons position in the source function.
+  or in explicitly-annotated tail-modulo-cons position in the source
+  function.
 \item Calls from a function \emph{not} annotated tail-mod-cons to
   a tail-mod-cons function or, conversely, from a tail-mod-cons
   function to a non-tail-mod-cons function are transformed into
@@ -250,7 +196,7 @@ let[@tail_mod_cons] rec flatten = function
     let[@tail_mod_cons] rec append_flatten xs xss =
       match xs with
       | [] -> flatten xss
-      | x :: xs -> x :: append_flatten xs xss
+      | x :: xs -> x :: (append_flatten[@tailcall]) xs xss
     in append_flatten xs xss
 \end{caml_example*}
 
@@ -278,30 +224,28 @@ let[@tail_mod_cons] rec flatten = function
 and[@tail_mod_cons] append_flatten xs xss =
   match xs with
   | [] -> flatten xss
-  | x :: xs -> x :: append_flatten xs xss
+  | x :: xs -> x :: (append_flatten[@tailcall]) xs xss
 \end{caml_example*}
 
 Non-recursive functions can also be annotated "[\@tail_mod_cons]"; this is
 typically useful for local bindings to recursive functions.
 
 Incorrect version:
-\begin{caml_example*}{verbatim}[warning=51,warning=71]
-let[@tail_mod_cons] rec map_vars f exp =
-  let self exp = map_vars f exp in
-  match exp with
-  | Var v -> Var (f v)
-  | Let ((v, def), body) ->
-    Let ((f v, self def), (self[@tailcall]) body)
+\begin{caml_example*}{verbatim}[warning=71]
+let[@tail_mod_cons] rec map f li =
+  let self xs = map f xs in
+  match li with
+  | [] -> []
+  | x :: xs -> f x :: (self[@tailcall]) xs
 \end{caml_example*}
 
 Recommended fix:
 \begin{caml_example*}{verbatim}
-let[@tail_mod_cons] rec map_vars f exp =
-  let[@tail_mod_cons] self exp = map_vars f exp in
-  match exp with
-  | Var v -> Var (f v)
-  | Let ((v, def), body) ->
-    Let ((f v, self def), (self[@tailcall]) body)
+let[@tail_mod_cons] rec map f li =
+  let[@tail_mod_cons] self xs = map f xs in
+  match li with
+  | [] -> []
+  | x :: xs -> f x :: (self[@tailcall]) xs
 \end{caml_example*}
 
 In other cases, there is either no benefit in making the called function
@@ -446,7 +390,7 @@ let[@tail_mod_cons] rec map f li =
     let y = f x in
     y ::
       (* this call is in TMC position *)
-      map f xs
+      (map[@tailcall]) f xs
 \end{caml_example*}
 
 \begin{caml_example*}{verbatim}[warning=71]
@@ -458,7 +402,7 @@ let[@tail_mod_cons] rec map f li =
     let y = f x in
     let ys =
       (* this call is not in TMC position anymore *)
-      map f xs in
+      (map[@taillcall]) f xs in
     y :: ys
 \end{caml_example*}
 
