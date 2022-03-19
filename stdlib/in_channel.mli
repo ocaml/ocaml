@@ -161,7 +161,7 @@ val set_binary_mode : t -> bool -> unit
     between text mode and binary mode. *)
 
 val isatty : t -> bool
-(** Returns [true] if the given channel refers to a terminal or console
-    window, [false] otherwise.
+(** [isatty ic] is [true] if [ic] refers to a terminal or console window,
+    [false] otherwise.
 
     @since 5.0.0 *)

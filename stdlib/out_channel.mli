@@ -160,7 +160,7 @@ val is_buffered : t -> bool
     {!set_buffered}). *)
 
 val isatty : t -> bool
-(** Returns [true] if the given channel refers to a terminal or console
-    window, [false] otherwise.
+(** [isatty oc] is [true] if [oc] refers to a terminal or console window,
+    [false] otherwise.
 
     @since 5.0.0 *)
