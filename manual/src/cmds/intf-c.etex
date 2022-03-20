@@ -327,7 +327,7 @@ achieving the same effect as
         ocamlc -o myprog a.cmo b.cmo ... -dllib -lmylib
 \end{alltt}
 Using this mechanism, users of the library "mylib.cma" do not need to
-known that it references C code, nor whether this C code must be
+know that it references C code, nor whether this C code must be
 statically linked (using "-custom") or dynamically linked.
 
 \subsection{ss:c-static-vs-dynamic}{Choosing between static linking and dynamic linking}
