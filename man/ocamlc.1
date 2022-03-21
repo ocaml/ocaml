@@ -721,8 +721,23 @@ with an error after displaying it.
 
 The
 .I warning\-list
-argument is a sequence of warning specifiers, with no separators
-between them.  A warning specifier is one of the following:
+argument is either a mnemonic warning specifier or a sequence of single
+character warning specifiers, with no separators between them. A mnemonic
+warning specifier is one of the following
+
+.BI + name
+\ \ Enable warning
+.IR name .
+
+.BI \- name
+\ \ Disable warning
+.IR name .
+
+.BI @ name
+\ \ Enable and mark as fatal warning
+.IR name .
+
+A single character warning specifier is one of the following:
 
 .BI + num
 \ \ Enable warning number
@@ -780,7 +795,7 @@ The letter may be uppercase or lowercase.
 \ \ Disable the set of warnings corresponding to
 .IR lowercase\-letter .
 
-The warning numbers are as follows.
+The warning numbers and mnemonic names are as follows.
 
 .B 1 [comment-start]
 .br
