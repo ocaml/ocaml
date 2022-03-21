@@ -18,11 +18,11 @@ jobs:
           MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh build
       - name: Prepare Artifact
         run: |
-          tar -czf /tmp/sources.tar.gz .
+          tar --zstd -cf /tmp/sources.tar.zstd .
       - uses: actions/upload-artifact@v2
         with:
           name: compiler
-          path: /tmp/sources.tar.gz
+          path: /tmp/sources.tar.zstd
           retention-days: 1
 
   build-misc:
@@ -80,7 +80,7 @@ jobs:
           name: compiler
       - name: Unpack Artifact
         run: |
-          tar xf sources.tar.gz
+          tar --zstd -xf sources.tar.zstd
       - name: Run the testsuite
         if: ${{ matrix.id == 'normal' }}
         run: |
