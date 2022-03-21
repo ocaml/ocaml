@@ -2572,14 +2572,14 @@ let check_statement exp =
    If [exp] has a function type, we check that it is not syntactically the
    result of a function application, as this is often a bug in certain contexts
    (eg the rhs of a let-binding or in the argument of [ignore]). For example,
-   [ignore (List.map print_int)] written by mistake instad of [ignore (List.map
+   [ignore (List.map print_int)] written by mistake instead of [ignore (List.map
    print_int li)].
 
    The check can be disabled by explicitly annotating the expression with a type
    constraint, eg [(e : _ -> _)].
 
    If [statement] is [true] and the [ignored-partial-application] is {em not}
-   triggered, then the [non-unit-statement] check is performaed (see
+   triggered, then the [non-unit-statement] check is performed (see
    [check_statement]).
 
    If the type of [exp] is not known at the time this function is called, the
