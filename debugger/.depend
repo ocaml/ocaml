@@ -644,7 +644,8 @@ trap_barrier.cmx : \
     debugcom.cmx \
     checkpoints.cmx \
     trap_barrier.cmi
-trap_barrier.cmi :
+trap_barrier.cmi : \
+    debugcom.cmi
 unix_tools.cmo : \
     ../otherlibs/unix/unix.cmi \
     ../utils/misc.cmi \
