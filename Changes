@@ -154,7 +154,7 @@ Working version
   (Kate Deplaix, review by Gabriel Scherer and David Allsopp)
 
 - Build native-code compilers on OpenBSD/aarch64
-  (Christopher Zimmermann)
+  (Christopher Zimmermann, review by Anil Madhavapeddy)
 
 ### Bug fixes:
 
