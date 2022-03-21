@@ -14,7 +14,8 @@
 (**************************************************************************)
 
 (* Initialize the search path.
-   [dir] is always searched first (default: the current directory),
+   [dir] (default: the current directory)
+   is always searched first  unless -nocwd is specified,
    then the directories specified with the -I option (in command-line order),
    then the standard library directory (unless the -nostdlib option is given).
  *)
@@ -30,8 +31,13 @@ let init_path ?(dir="") () =
     !Compenv.first_include_dirs
   in
   let exp_dirs =
-    List.map (Misc.expand_directory Config.standard_library) dirs in
-  Load_path.init (dir :: List.rev_append exp_dirs (Clflags.std_include_dir ()));
+    List.map (Misc.expand_directory Config.standard_library) dirs
+  in
+  let dirs =
+    (if !Clflags.no_cwd then [] else [dir])
+    @ List.rev_append exp_dirs (Clflags.std_include_dir ())
+  in
+  Load_path.init(dirs);
   Env.reset_cache ()
 
 (* Return the initial environment in which compilation proceeds. *)

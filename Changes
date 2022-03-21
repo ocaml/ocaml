@@ -179,6 +179,10 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- #9140, #11131: New command-line flag -nocwd to not include implicit
+  the current directory to the load path.
+  (Thomas Roglin, review by Gabriel Scherer and Nicolás Ojeda Bär)
+
 - #11089: Add 'since <version>' information to compiler warnings.
   (André Maroneze, review by Florian Angeletti and Gabriel Scherer)
 
