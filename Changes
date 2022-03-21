@@ -186,6 +186,9 @@ Working version
   DEFAULT_STRING=safe which are now the default unconditionally.
   (Kate Deplaix, review by Gabriel Scherer and David Allsopp)
 
+- Build native-code compilers on OpenBSD/aarch64
+  (Christopher Zimmermann, review by Anil Madhavapeddy)
+
 ### Bug fixes:
 
 - #11112: harden -use-runtime against spaces or quotes in the provided path
