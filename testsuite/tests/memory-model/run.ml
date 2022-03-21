@@ -45,7 +45,7 @@ module Make(C:Opt.Config)(T:Test) =
             (* Initialise memory and barrier *)
             T.Env.reinit env ;
             Barrier.reinit barrier ;
-            (* Performe on test round *)
+            (* Perform on test round *)
             let d0 = Domain.spawn f0 in
             let d1 = Domain.spawn f1 in
             let t0 = Domain.join d0 in

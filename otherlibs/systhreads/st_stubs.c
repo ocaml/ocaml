@@ -86,7 +86,7 @@ struct caml_thread_struct {
 
 typedef struct caml_thread_struct* caml_thread_t;
 
-/* overall table for threads accross domains */
+/* overall table for threads across domains */
 struct caml_thread_table {
   caml_thread_t all_threads;
   caml_thread_t current_thread;

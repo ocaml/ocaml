@@ -213,7 +213,7 @@ void caml_get_stack_sp_pc (struct stack_info* stack,
 
 value caml_continuation_use (value cont);
 
-/* Replace the stack of a continuation that was previouly removed
+/* Replace the stack of a continuation that was previously removed
    with caml_continuation_use. The GC must not be allowed to run
    between continuation_use and continuation_replace.
    Used for cloning continuations and continuation backtraces. */

@@ -734,7 +734,7 @@ FUNCTION(caml_callback3_asm)
         mov     sp, TMP
     /* restore exn_handler for new stack */
         ldr     TRAP_PTR, Stack_exception(\new_stack)
-    /* Restore frame pointer and reurn address for new_stack */
+    /* Restore frame pointer and return address for new_stack */
         ldp     x29, x30, [sp], 16
 .endm
 

@@ -397,7 +397,7 @@ int caml_reallocate_minor_heap(asize_t wsize)
   CAMLassert(domain_state->young_ptr == domain_state->young_end);
 
   CAMLassert(
-    (/* unitialized minor heap */
+    (/* uninitialized minor heap */
       domain_state->young_start == NULL
       && domain_state->young_end == NULL)
     ||

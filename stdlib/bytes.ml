@@ -537,7 +537,7 @@ let dec_invalid = Uchar.utf_decode_invalid
 let[@inline] dec_ret n u = Uchar.utf_decode n (Uchar.unsafe_of_int u)
 
 (* In case of decoding error, if we error on the first byte, we
-   consume the byte, otherwise we consume the [n] bytes preceeding
+   consume the byte, otherwise we consume the [n] bytes preceding
    the erroring byte.
 
    This means that if a client uses decodes without caring about

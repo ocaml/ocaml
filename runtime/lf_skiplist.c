@@ -18,7 +18,7 @@
 #define CAML_INTERNALS
 
 /* A concurrent dictionary data structure implemented as skip lists. This
-    implementation is based on the sequential skip list implemetation in
+    implementation is based on the sequential skip list implementation in
     the runtime by Xavier Leroy but extends it to be safe under concurrent
     modification. It has the property that insert/remove are lock-free and
     contains is further wait-free. It is literally a textbook implementation
@@ -251,7 +251,7 @@ retry:
    marked nodes and does not snip them out. As a consequence, it is wait-free.
 
    This implementation differs from of the 'contains' in "The Art of
-   Multiprocessor Programming" to fix the erronous swap of pred and curr inside
+   Multiprocessor Programming" to fix the erroneous swap of pred and curr inside
    the while(marked) loop. It also uses [search_level] to avoid scanning the
    sentinels unnecessarily.
  */
@@ -490,7 +490,7 @@ int caml_lf_skiplist_remove(struct lf_skiplist *sk, uintnat key) {
         }
 
         /* If we end up here then we lost to a thread inserting a node directly
-           after the node we were removing. That's why we move on one sucessor.
+           after the node we were removing. That's why we move on one successor.
          */
       }
     }
