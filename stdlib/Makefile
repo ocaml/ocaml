@@ -14,6 +14,10 @@
 #**************************************************************************
 
 ROOTDIR = ..
+# NOTE: it is important that the OCAMLDEP variable is defined *before*
+# Makefile.common gets included, so that its local definition here
+# take precedence over its general shared definitions in Makefile.common.
+OCAMLDEP ?= $(BOOT_OCAMLDEP)
 
 include $(ROOTDIR)/Makefile.common
 
@@ -29,9 +33,6 @@ OPTCOMPFLAGS += -O3
 endif
 OPTCOMPILER=$(ROOTDIR)/ocamlopt
 CAMLOPT=$(OCAMLRUN) $(OPTCOMPILER)
-OCAMLDEP ?= $(BOOT_OCAMLC) -depend
-OC_OCAMLDEPFLAGS = -slash
-OCAMLDEP_CMD = $(OCAMLDEP) $(OC_OCAMLDEPFLAGS) $(OCAMLDEPFLAGS)
 
 OC_CPPFLAGS += -I$(ROOTDIR)/runtime
 

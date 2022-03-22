@@ -25,8 +25,6 @@ CAMLC=$(BEST_OCAMLC) -g -nostdlib -I $(ROOTDIR)/stdlib
 COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48-70 -warn-error +A \
           -safe-string -strict-sequence -strict-formats
 LINKFLAGS=-linkall -I $(UNIXDIR) -I $(DYNLINKDIR)
-OCAMLDEP ?= $(BEST_OCAMLDEP)
-OC_OCAMLDEPFLAGS = -slash
 DEPINCLUDES=$(INCLUDES)
 
 DIRECTORIES=$(UNIXDIR) $(DYNLINKDIR) $(addprefix $(ROOTDIR)/,\
@@ -80,7 +78,7 @@ ocamldebug_entry.cmo: ocamldebug_entry.ml ocamldebug.cmo
 	$(CAMLC) -c $(COMPFLAGS) -for-pack ocamldebug $<
 
 depend: beforedepend
-	$(OCAMLDEP) $(OC_OCAMLDEPFLAGS) $(OCAMLDEPFLAGS) $(DEPINCLUDES) \
+	$(OCAMLDEP_CMD) $(DEPINCLUDES) \
 	  *.mli *.ml | sed -e 's,$(UNIXDIR)/,$$(UNIXDIR)/,' > .depend
 
 clean::

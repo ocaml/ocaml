@@ -6,8 +6,6 @@ include $(ROOTDIR)/Makefile.best_binaries
 STDLIBFLAGS = -nostdlib -I $(ROOTDIR)/stdlib
 OCAMLC ?= $(BEST_OCAMLC) $(STDLIBFLAGS)
 OCAMLOPT ?= $(BEST_OCAMLOPT) $(STDLIBFLAGS)
-OCAMLDEP ?= $(BEST_OCAMLDEP)
-OC_OCAMLDEPFLAGS = -slash
 
 PGM=forbidden.exe publish.exe
 MOREPGM=
@@ -48,7 +46,6 @@ clean::
 	$(OCAMLC) -o $@ $^
 
 depend:
-	$(OCAMLDEP) $(OC_OCAMLDEPFLAGS) $(OCAMLDEPFLAGS) \
-	  $(SRC) $(MLI) > .depend
+	$(OCAMLDEP_CMD) $(SRC) $(MLI) > .depend
 
 -include .depend

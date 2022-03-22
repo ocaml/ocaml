@@ -19,6 +19,7 @@ ROOTDIR = ..
 # over the one there.
 OCAMLLEX ?= $(BOOT_OCAMLLEX)
 include $(ROOTDIR)/Makefile.common
+include $(ROOTDIR)/Makefile.best_binaries
 
 # Setup GNU make variables storing per-target source and target,
 # a list of installed tools, and a function to quote a filename for
@@ -341,12 +342,9 @@ clean::
 clean::
 	rm -f *.cmo *.cmi *.cma *.dll *.so *.lib *.a
 
-OCAMLDEP ?= $(BEST_OCAMLDEP)
-OC_OCAMLDEP_FLAGS = -slash
 DEPINCLUDES=$(INCLUDES)
 depend: beforedepend
-	$(OCAMLDEP) $(OC_OCAMLDEPFLAGS) $(OCAMLDEPFLAGS) $(DEPINCLUDES) \
-	  *.mli *.ml > .depend
+	$(OCAMLDEP_CMD) $(DEPINCLUDES) *.mli *.ml > .depend
 
 .PHONY: clean distclean install beforedepend depend
 

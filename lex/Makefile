@@ -17,9 +17,12 @@
 
 ROOTDIR = ..
 
-# NOTE: it is important that OCAMLLEX is defined *before* Makefile.common
-# gets included, so that its definition here takes precedence
-# over the one there.
+# NOTE: it is important that the OCAMLDEP and OCAMLLEX variables
+# are defined *before* Makefile.common gets included, so that
+# their local definitions here take precedence over their
+# general shared definitions in Makefile.common.
+
+OCAMLDEP ?= $(BOOT_OCAMLDEP)
 OCAMLLEX ?= $(BOOT_OCAMLLEX)
 
 include $(ROOTDIR)/Makefile.common
@@ -32,8 +35,6 @@ CAMLOPT = $(OCAMLRUN) $(ROOTDIR)/ocamlopt$(EXE) -nostdlib -I $(ROOTDIR)/stdlib
 COMPFLAGS = -absname -w +a-4-9-41-42-44-45-48-70 -warn-error +A \
             -safe-string -strict-sequence -strict-formats -bin-annot
 LINKFLAGS =
-OCAMLDEP = $(BOOT_OCAMLC) -depend
-OC_OCAMLDEPFLAGS = -slash
 DEPINCLUDES =
 
 OBJS=cset.cmo syntax.cmo parser.cmo lexer.cmo table.cmo lexgen.cmo \
@@ -81,7 +82,6 @@ beforedepend:: lexer.ml
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
 depend: beforedepend
-	$(OCAMLDEP) $(OC_OCAMLDEPFLAGS) $(OCAMLDEPFLAGS) $(DEPINCLUDES) \
-	  *.mli *.ml > .depend
+	$(OCAMLDEP_CMD) $(DEPINCLUDES) *.mli *.ml > .depend
 
 include .depend

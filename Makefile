@@ -16,9 +16,11 @@
 # The main Makefile
 
 ROOTDIR = .
-# NOTE: it is important that OCAMLLEX is defined *before* Makefile.common
-# gets included, so that its definition here takes precedence
-# over the one there.
+# NOTE: it is important that the OCAMLDEP and OCAMLLEX variables
+# are defined *before* Makefile.common gets included, so that
+# their local definitions here take precedence over their
+# general shared definitions in Makefile.common.
+OCAMLDEP ?= $(BOOT_OCAMLDEP)
 OCAMLLEX ?= $(BOOT_OCAMLLEX)
 include Makefile.common
 
@@ -58,9 +60,6 @@ else
 OCAML_NATDYNLINKOPTS = -ccopt "$(NATDYNLINKOPTS)"
 endif
 
-OCAMLDEP ?= $(OCAMLRUN) boot/ocamlc -depend
-OC_OCAMLDEPFLAGS = -slash
-OCAMLDEP_CMD = $(OCAMLDEP) $(OC_OCAMLDEPFLAGS) $(OCAMLDEPFLAGS)
 DEPINCLUDES=$(INCLUDES)
 
 OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)

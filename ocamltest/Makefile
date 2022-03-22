@@ -198,9 +198,6 @@ ocamlc = $(BEST_OCAMLC) $(flags)
 
 ocamlopt = $(BEST_OCAMLOPT) $(flags)
 
-OCAMLDEP ?= $(BEST_OCAMLDEP)
-OC_OCAMLDEPFLAGS = -slash
-
 .SECONDARY: $(lexers:.mll=.ml) $(parsers:.mly=.mli) $(parsers:.mly=.ml)
 
 .PHONY: all allopt opt.opt # allopt and opt.opt are synonyms
@@ -311,7 +308,6 @@ $(DEPDIR)/%.$(D): %.c | $(DEPDIR)
 
 .PHONY: depend
 depend: $(dependencies_generated_prereqs)
-	$(OCAMLDEP) $(OC_OCAMLDEPFLAGS) $(OCAMLDEPFLAGS) \
-	  $(mli_files) $(ml_files) > .depend
+	$(OCAMLDEP_CMD) $(mli_files) $(ml_files) > .depend
 
 -include .depend

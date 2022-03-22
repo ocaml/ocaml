@@ -14,13 +14,9 @@
 #*                                                                        *
 #**************************************************************************
 
-OCAMLDEP ?= $(BEST_OCAMLDEP)
-OC_OCAMLDEPFLAGS = -slash
-
 $(LOCAL_SRC)/.depend: $(COMPILERLIBS_COPIED_SOURCES) \
   $(COMPILERLIBS_COPIED_SOURCES_INTFS) $(LOCAL_SRC)/Makefile
-	$(OCAMLDEP) $(OC_OCAMLDEPFLAGS) $(OCAMLDEPFLAGS) -I $(LOCAL_SRC) \
-	$(COMPILERLIBS_COPIED_SOURCES) \
+	$(OCAMLDEP_CMD) -I $(LOCAL_SRC) $(COMPILERLIBS_COPIED_SOURCES) \
 	$(COMPILERLIBS_COPIED_SOURCES_INTFS) \
         > $(LOCAL_SRC)/.depend
 
