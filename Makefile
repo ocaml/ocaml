@@ -140,10 +140,21 @@ FLEXDLL_OBJECTS = \
 FLEXLINK_BUILD_ENV = \
   MSVC_DETECT=0 OCAML_CONFIG_FILE=../Makefile.config \
   CHAINS=$(FLEXDLL_CHAIN) ROOTDIR=..
+FLEXDLL_SOURCE_FILES = \
+  $(wildcard $(FLEXDLL_SOURCES)/*.c) $(wildcard $(FLEXDLL_SOURCES)/*.h) \
+  $(wildcard $(FLEXDLL_SOURCES)/*.ml)
 
 boot/ocamlruns$(EXE):
 	$(MAKE) -C runtime ocamlruns$(EXE)
 	cp runtime/ocamlruns$(EXE) boot/ocamlruns$(EXE)
+
+boot/flexlink.byte$(EXE): $(FLEXDLL_SOURCE_FILES)
+	$(MAKE) -C $(FLEXDLL_SOURCES) $(FLEXLINK_BUILD_ENV) \
+	  OCAMLRUN='$$(ROOTDIR)/boot/ocamlruns$(EXE)' NATDYNLINK=false \
+	  OCAMLOPT='$(value BOOT_OCAMLC) $(USE_RUNTIME_PRIMS) $(USE_STDLIB)' \
+	  -B flexlink.exe support
+	cp $(FLEXDLL_SOURCES)/flexlink.exe boot/flexlink.byte$(EXE)
+	cp $(addprefix $(FLEXDLL_SOURCES)/, $(FLEXDLL_OBJECTS)) boot/
 
 # Start up the system from the distribution compiler
 # The process depends on whether FlexDLL is also being bootstrapped.
@@ -167,12 +178,7 @@ ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
 else
 	$(MAKE) -C stdlib OCAMLRUN='$$(ROOTDIR)/boot/ocamlruns$(EXE)' \
     CAMLC='$$(BOOT_OCAMLC)' all
-	$(MAKE) -C $(FLEXDLL_SOURCES) $(FLEXLINK_BUILD_ENV) \
-	  OCAMLRUN='$$(ROOTDIR)/boot/ocamlruns$(EXE)' NATDYNLINK=false \
-	  OCAMLOPT='$(value BOOT_OCAMLC) $(USE_RUNTIME_PRIMS) $(USE_STDLIB)' \
-	  flexlink.exe support
-	mv $(FLEXDLL_SOURCES)/flexlink.exe boot/flexlink.byte$(EXE)
-	cp $(addprefix $(FLEXDLL_SOURCES)/, $(FLEXDLL_OBJECTS)) boot/
+	$(MAKE) boot/flexlink.byte$(EXE)
 	$(MAKE) -C runtime $(BOOT_FLEXLINK_CMD) all
 endif # ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
 	cp runtime/ocamlrun$(EXE) boot/ocamlrun$(EXE)
@@ -354,11 +360,11 @@ else
   FLEXLINK_OCAMLOPT=../ocamlopt.opt$(EXE)
 endif
 
-flexlink.opt$(EXE):
+flexlink.opt$(EXE): $(FLEXDLL_SOURCE_FILES)
 	$(MAKE) -C $(FLEXDLL_SOURCES) $(FLEXLINK_BUILD_ENV) \
     OCAML_FLEXLINK='$(value OCAMLRUN) $$(ROOTDIR)/boot/flexlink.byte$(EXE)' \
-	  OCAMLOPT="$(FLEXLINK_OCAMLOPT) -nostdlib -I ../stdlib" flexlink.exe
-	mv $(FLEXDLL_SOURCES)/flexlink.exe $@
+	  OCAMLOPT="$(FLEXLINK_OCAMLOPT) -nostdlib -I ../stdlib" -B flexlink.exe
+	cp $(FLEXDLL_SOURCES)/flexlink.exe $@
 
 partialclean::
 	rm -f flexlink.opt$(EXE)
