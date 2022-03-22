@@ -113,7 +113,9 @@ module Timestamp = struct
 end
 
 module Callbacks = struct
-    type[@warning "-69"] t = {
+    (* these record callbacks are only called from C code in the runtime
+       so we suppress the unused field warning *)
+    type[@warning "-unused-field"] t = {
       runtime_begin: (Domain.id -> Timestamp.t -> runtime_phase -> unit) option;
       runtime_end: (Domain.id -> Timestamp.t -> runtime_phase -> unit) option;
       runtime_counter: (Domain.id -> Timestamp.t -> runtime_counter
