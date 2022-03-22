@@ -34,6 +34,8 @@
 #include "caml/sys.h"
 #include "caml/memprof.h"
 
+#include "../../runtime/sync_posix.h"
+
 /* threads.h is *not* included since it contains the _external_ declarations for
    the caml_c_thread_register and caml_c_thread_unregister functions. */
 
@@ -208,12 +210,6 @@ static void caml_thread_enter_blocking_section(void)
 
 static void caml_thread_leave_blocking_section(void)
 {
-#ifdef _WIN32
-  /* TlsGetValue calls SetLastError which will mask any error which occurred
-     prior to the caml_thread_leave_blocking_section call. EnterCriticalSection
-     does not do this. */
-  DWORD error = GetLastError();
-#endif
   /* Wait until the runtime is free */
   st_masterlock_acquire(&Thread_main_lock);
   /* Update Current_thread to point to the thread descriptor corresponding to
@@ -221,9 +217,6 @@ static void caml_thread_leave_blocking_section(void)
   Current_thread = st_tls_get(Thread_key);
   /* Restore the runtime state from the curr_thread descriptor */
   caml_thread_restore_runtime_state();
-#ifdef _WIN32
-  SetLastError(error);
-#endif
 }
 
 /* Create and setup a new thread info block.
@@ -374,7 +367,6 @@ CAMLprim value caml_thread_initialize_domain(value v)
 
   st_tls_newkey(&Thread_key);
   st_tls_set(Thread_key, (void *) new_thread);
-  st_thread_set_id(Ident(new_thread->descr));
 
   All_threads = new_thread;
   Current_thread = new_thread;
@@ -403,7 +395,7 @@ void caml_thread_interrupt_hook(void)
    function first sets up the chain for systhreads on this domain, then setup
    the global variables and hooks for systhreads to cooperate with the runtime
    system. */
-CAMLprim value caml_thread_initialize(value unit)   /* ML */
+CAMLprim value caml_thread_initialize(value unit)
 {
   CAMLparam0();
 
@@ -421,12 +413,12 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
   caml_domain_external_interrupt_hook = caml_thread_interrupt_hook;
   caml_domain_stop_hook = caml_thread_domain_stop_hook;
 
-  st_atfork(caml_thread_reinitialize);
+  caml_atfork_hook = caml_thread_reinitialize;
 
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_thread_cleanup(value unit)   /* ML */
+CAMLprim value caml_thread_cleanup(value unit)
 {
   if (Tick_thread_running){
     atomic_store_rel(&Tick_thread_stop, 1);
@@ -493,8 +485,6 @@ static void * caml_thread_start(void * v)
   Current_thread = st_tls_get(Thread_key);
   caml_thread_restore_runtime_state();
 
-  st_thread_set_id(Ident(th->descr));
-
 #ifdef POSIX_SIGNALS
   /* restore the signal mask from the spawning thread, now it is safe for the
      signal handler to run (as Caml_state is initialised) */
@@ -531,7 +521,7 @@ static int create_tick_thread()
   return err;
 }
 
-CAMLprim value caml_thread_new(value clos)          /* ML */
+CAMLprim value caml_thread_new(value clos)
 {
   CAMLparam1(clos);
   caml_thread_t th;
@@ -622,7 +612,6 @@ CAMLexport int caml_c_thread_register(void)
   st_tls_set(Thread_key, (void *) th);
   /* Allocate the thread descriptor on the heap */
   th->descr = caml_thread_new_descriptor(Val_unit);  /* no closure */
-  st_thread_set_id(Ident(th->descr));
 
   if (! Tick_thread_running) {
     err = create_tick_thread();
@@ -671,21 +660,21 @@ CAMLexport int caml_c_thread_unregister(void)
 
 /* Return the current thread */
 
-CAMLprim value caml_thread_self(value unit)         /* ML */
+CAMLprim value caml_thread_self(value unit)
 {
   return Current_thread->descr;
 }
 
 /* Return the identifier of a thread */
 
-CAMLprim value caml_thread_id(value th)          /* ML */
+CAMLprim value caml_thread_id(value th)
 {
   return Ident(th);
 }
 
 /* Print uncaught exception and backtrace */
 
-CAMLprim value caml_thread_uncaught_exception(value exn)  /* ML */
+CAMLprim value caml_thread_uncaught_exception(value exn)
 {
   char * msg = caml_format_exception(exn);
   fprintf(stderr, "Thread %d killed on uncaught exception %s\n",
@@ -698,7 +687,7 @@ CAMLprim value caml_thread_uncaught_exception(value exn)  /* ML */
 
 /* Allow re-scheduling */
 
-CAMLprim value caml_thread_yield(value unit)        /* ML */
+CAMLprim value caml_thread_yield(value unit)
 {
   if (atomic_load_acq(&Thread_main_lock.waiters) == 0) return Val_unit;
 
@@ -720,7 +709,7 @@ CAMLprim value caml_thread_yield(value unit)        /* ML */
 
 /* Suspend the current thread until another thread terminates */
 
-CAMLprim value caml_thread_join(value th)          /* ML */
+CAMLprim value caml_thread_join(value th)
 {
   st_retcode rc = caml_threadstatus_wait(Terminated(th));
   sync_check_error(rc, "Thread.join");
