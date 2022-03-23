@@ -2,7 +2,7 @@
  * ocamldoc with html
  *)
 
-(** Alerts from implentation. *)
+(** Alerts from implementation. *)
 
 let x = 0
 [@@deprecated "foo"]

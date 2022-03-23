@@ -20,7 +20,7 @@
 
 <pre><span id="MODULEAlerts_impl"><span class="keyword">module</span> Alerts_impl</span>: <code class="code"><span class="keyword">sig</span></code> <a href="Alerts_impl.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
 <div class="info-desc">
-<p>Alerts from implentation.</p>
+<p>Alerts from implementation.</p>
 </div>
 </div>
 <hr width="100%">

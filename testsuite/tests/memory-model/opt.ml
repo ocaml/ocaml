@@ -32,7 +32,7 @@ module Make (N : sig val pgm : string end) =
           "-v",Set verbose,"be verbose";
           "-q",Clear verbose,"be silent";
           "-s",Int (fun i -> size :=i), doc_def "size of arrays" size ;
-          "-r",Int (fun i -> nruns :=i),doc_def "number of interations" nruns ;
+          "-r",Int (fun i -> nruns :=i),doc_def "number of iterations" nruns ;
           "-a",Int (fun i -> navail :=i),
           doc_def "number of cores available for tests" navail ;
         ]

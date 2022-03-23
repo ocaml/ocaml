@@ -15,7 +15,7 @@ let f () =
 
 let h : type a. a t -> ((a, 'b) continuation -> 'b) option = function
   | E v -> Some (fun k ->
-      printf "caught effect (E %d). continuting..\n%!" v;
+      printf "caught effect (E %d). continuing..\n%!" v;
       let v = continue k (v + 1) in
       printf "continue returns %d\n%!" v;
       v + 1)

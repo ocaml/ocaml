@@ -210,7 +210,7 @@ CAMLexport CAMLweakdef void caml_initialize (value *fp, value val)
 #ifdef DEBUG
   /* Previous value should not be a pointer.
      In the debug runtime, it can be either a TMC placeholder,
-     or an unitialized value canary (Debug_uninit_{major,minor}). */
+     or an uninitialized value canary (Debug_uninit_{major,minor}). */
   CAMLassert(Is_long(*fp));
 #endif
   *fp = val;

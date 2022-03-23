@@ -82,7 +82,7 @@ module Publish = struct
 
   (* Publication of string reference, with subsequent updates.
    * Notice that if publication is not properly protected,
-   * the test may crash by attemping to print junk *)
+   * the test may crash by attempting to print junk *)
   module String = struct
 
     let null = "*null*"

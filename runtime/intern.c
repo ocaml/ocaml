@@ -794,7 +794,7 @@ CAMLprim value caml_input_value(value vchan)
 
 /* Reading from memory-resident blocks */
 
-/* XXX KC: Unused primitive. Remove with boostrap. */
+/* XXX KC: Unused primitive. Remove with bootstrap. */
 CAMLprim value caml_input_value_to_outside_heap(value vchan)
 {
   return caml_input_value(vchan);

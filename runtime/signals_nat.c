@@ -87,7 +87,7 @@ void caml_garbage_collection(void)
 
     whsize = Whsize_wosize(allocsz);
 
-    /* Put the young pointer back to what is was before our tiggering
+    /* Put the young pointer back to what is was before our triggering
        allocation */
     Caml_state->young_ptr += whsize;
 
