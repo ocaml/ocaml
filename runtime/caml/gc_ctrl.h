@@ -22,6 +22,7 @@
 
 extern uintnat caml_max_stack_wsize;
 extern uintnat caml_fiber_wsz;
+extern uintnat caml_major_cycles_completed;
 
 void caml_init_gc (void);
 value caml_gc_stat(value);
@@ -32,7 +33,7 @@ value caml_gc_major(value);
 #define caml_stat_compactions 0
 #define caml_stat_heap_wsz Wsize_bsize(caml_heap_size(Caml_state->shared_heap))
 #define caml_stat_heap_chunks caml_heap_blocks(Caml_state->shared_heap)
-#define caml_stat_major_collections Caml_state->stat_major_collections
+#define caml_stat_major_collections caml_major_cycles_completed
 #define caml_stat_minor_collections Caml_state->stat_minor_collections
 #define caml_stat_promoted_words Caml_state->stat_promoted_words
 #define caml_allocated_words Caml_state->allocated_words

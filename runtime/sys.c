@@ -168,7 +168,7 @@ CAMLexport void caml_do_exit(int retcode)
           (intnat) s.alloc_stats.minor_collections);
       caml_gc_message(0x400,
           "major_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-          domain_state->stat_major_collections);
+          caml_major_cycles_completed);
       caml_gc_message(0x400,
           "forced_major_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
           (intnat)s.alloc_stats.forced_major_collections);
