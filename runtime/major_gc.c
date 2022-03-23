@@ -19,6 +19,7 @@
 #include <string.h>
 #include <math.h>
 
+#include "caml/addrmap.h"
 #include "caml/config.h"
 #include "caml/codefrag.h"
 #include "caml/domain.h"
@@ -36,12 +37,10 @@
 #include "caml/shared_heap.h"
 #include "caml/startup_aux.h"
 #include "caml/weak.h"
-#include "caml/skiplist.h"
 
 /* NB the MARK_STACK_INIT_SIZE must be larger than the number of objects
    that can be in a pool, see POOL_WSIZE */
 #define MARK_STACK_INIT_SIZE (1 << 12)
-#define INITIAL_POOLS_TO_RESCAN_LEN 4
 
 typedef struct {
   value* start;
@@ -52,6 +51,8 @@ struct mark_stack {
   mark_entry* stack;
   uintnat count;
   uintnat size;
+  struct addrmap compressed_stack;
+  addrmap_iterator compressed_stack_iter;
 };
 
 uintnat caml_percent_free = Percent_free_def;
@@ -531,8 +532,6 @@ static void commit_major_slice_work(intnat words_done) {
 }
 
 static void mark_stack_prune(struct mark_stack* stk);
-static struct pool* find_pool_to_rescan(void);
-
 
 #ifdef DEBUG
 #define Is_markable(v) \
@@ -547,29 +546,26 @@ static void realloc_mark_stack (struct mark_stack* stk)
   mark_entry* new;
   uintnat mark_stack_bsize = stk->size * sizeof(mark_entry);
 
-  caml_gc_log ("Growing mark stack to %"ARCH_INTNAT_PRINTF_FORMAT"uk bytes\n",
-               (intnat) mark_stack_bsize * 2 / 1024);
+  if (mark_stack_bsize < caml_heap_size(Caml_state->shared_heap) / 32) {
+    caml_gc_log ("Growing mark stack to %"ARCH_INTNAT_PRINTF_FORMAT"uk bytes\n",
+                 (intnat) mark_stack_bsize * 2 / 1024);
 
-  new = (mark_entry*) caml_stat_resize_noexc ((char*) stk->stack,
-                                              2 * mark_stack_bsize);
-  if (new != NULL) {
-    stk->stack = new;
-    stk->size *= 2;
-    return;
+    new = (mark_entry*) caml_stat_resize_noexc ((char*) stk->stack,
+                                                2 * mark_stack_bsize);
+    if (new != NULL) {
+      stk->stack = new;
+      stk->size *= 2;
+      return;
+    }
+    caml_gc_log ("No room for growing mark stack. Pruning..\n");
   }
 
-  caml_fatal_error("No room for growing mark stack.\n");
-  /* TODO: re-enable mark stack prune when safe to remark a pool
-    from a foreign domain which is also allocating from that pool
-   */
-  if (0) {
-    caml_gc_log ("Mark stack size is %"ARCH_INTNAT_PRINTF_FORMAT"u"
-                "bytes (> 32 * major heap size of this domain %"
-                ARCH_INTNAT_PRINTF_FORMAT"u bytes. Pruning..\n",
-                mark_stack_bsize,
-                caml_heap_size(Caml_state->shared_heap));
-    mark_stack_prune(stk);
-  }
+  caml_gc_log ("Mark stack size is %"ARCH_INTNAT_PRINTF_FORMAT"u "
+               "bytes (> major heap size of this domain %"
+               ARCH_INTNAT_PRINTF_FORMAT"u bytes / 32). Pruning..\n",
+               mark_stack_bsize,
+               caml_heap_size(Caml_state->shared_heap));
+  mark_stack_prune(stk);
 }
 
 Caml_inline void mark_stack_push_range(struct mark_stack* stk,
@@ -629,13 +625,6 @@ static intnat mark_stack_push_block(struct mark_stack* stk, value block)
   /* take credit for the work we skipped due to the optimisation.
      we will take credit for the header later as part of marking. */
   return i - offset;
-}
-
-/* to fit scanning_action */
-static void mark_stack_push_act(void* state, value v, volatile value* ignored)
-{
-  if (Tag_val(v) < No_scan_tag && Tag_val(v) != Cont_tag)
-    mark_stack_push_block(Caml_state->mark_stack, v);
 }
 
 /* This function shrinks the mark stack back to the MARK_STACK_INIT_SIZE size
@@ -719,15 +708,46 @@ static intnat do_some_marking(struct mark_stack* stk, intnat budget) {
   return budget;
 }
 
+/* compressed mark stack */
+#define PAGE_MASK (~(uintnat)(BITS_PER_WORD-1))
+#define PTR_TO_PAGE(v) (((uintnat)(v)>>3) & PAGE_MASK)
+#define PTR_TO_PAGE_OFFSET(v) ((((uintnat)(v)>>3) & ~PAGE_MASK))
+
+struct compressed_ptr_page {
+  uintnat bitfield;
+  uintnat count;
+};
+
 /* mark until the budget runs out or marking is done */
 static intnat mark(intnat budget) {
   caml_domain_state *domain_state = Caml_state;
   while (budget > 0 && !domain_state->marking_done) {
     budget = do_some_marking(domain_state->mark_stack, budget);
     if (budget > 0) {
-      struct pool* p = find_pool_to_rescan();
-      if (p) {
-        caml_redarken_pool(p, &mark_stack_push_act, 0);
+      int i;
+      struct mark_stack* mstk = domain_state->mark_stack;
+      addrmap_iterator it = mstk->compressed_stack_iter;
+      if (caml_addrmap_iter_ok(&mstk->compressed_stack, it)) {
+        uintnat k = caml_addrmap_iter_key(&mstk->compressed_stack, it);
+        struct compressed_ptr_page *v =
+             (struct compressed_ptr_page*)
+                caml_addrmap_iter_value(&mstk->compressed_stack, it);
+
+        /* NB: must update the iterator here, as possible that
+           mark_slice_darken could lead to the mark stack being pruned
+           and invalidation of the iterator */
+        mstk->compressed_stack_iter =
+                      caml_addrmap_next(&mstk->compressed_stack, it);
+
+        for(i=0; i<BITS_PER_WORD; i++) {
+          if(v->bitfield & ((uintnat)1 << i)) {
+            value* p = (value*)((k + i)<<3);
+            mark_slice_darken(domain_state->mark_stack, *p, &budget);
+            CAMLassert(v->count-- > 0);
+          }
+        }
+        CAMLassert(v->count == 0);
+        caml_stat_free(v);
       } else {
         ephe_next_cycle ();
         domain_state->marking_done = 1;
@@ -1043,7 +1063,10 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
   }
   CAML_EV_END(EV_MAJOR_MARK_ROOTS);
 
-  if (domain->mark_stack->count == 0) {
+  if (domain->mark_stack->count == 0 &&
+      !caml_addrmap_iter_ok(&domain->mark_stack->compressed_stack,
+                            domain->mark_stack->compressed_stack_iter)
+      ) {
     atomic_fetch_add_verify_ge0(&num_domains_to_mark, -1);
     domain->marking_done = 1;
   }
@@ -1447,78 +1470,105 @@ void caml_finish_sweeping (void)
   CAML_EV_END(EV_MAJOR_FINISH_SWEEPING);
 }
 
-static struct pool* find_pool_to_rescan(void)
-{
-  struct pool* p;
+Caml_inline int add_addr(struct addrmap* amap, value v) {
+  uintnat k = PTR_TO_PAGE(v);
+  uintnat flag = (uintnat)1 << PTR_TO_PAGE_OFFSET(v);
+  struct compressed_ptr_page *p = NULL;
+  int new_entry = 0;
 
-  if (Caml_state->pools_to_rescan_count > 0) {
-    p = Caml_state->pools_to_rescan[--Caml_state->pools_to_rescan_count];
-    caml_gc_log
-    ("Redarkening pool %p (%d others left)",
-    p,
-    Caml_state->pools_to_rescan_count);
+  value* amap_pos = caml_addrmap_insert_pos(amap, k);
+
+  if (*amap_pos == ADDRMAP_NOT_PRESENT) {
+    p = caml_stat_alloc_noexc(sizeof(struct compressed_ptr_page));
+    if (p == NULL)
+      caml_fatal_error("Unable to allocate for compressed entry address");
+    p->bitfield = p->count = 0;
+    new_entry = 1;
+    *amap_pos = (value)p;
   } else {
-    p = 0;
+    p = (struct compressed_ptr_page *)*amap_pos;
   }
 
-  return p;
+  CAMLassert(v == (value)((k + PTR_TO_PAGE_OFFSET(v))<<3));
+
+  if (!(p->bitfield & flag)) {
+    p->bitfield |= flag;
+    p->count++;
+  }
+
+  return new_entry;
 }
 
-static void mark_stack_prune (struct mark_stack* stk)
+static void mark_stack_prune(struct mark_stack* stk)
 {
-  int entry_idx, large_idx = 0;
-  mark_entry* mark_stack = stk->stack;
-
-  struct skiplist chunk_sklist = SKIPLIST_STATIC_INITIALIZER;
-  /* Insert used pools into skiplist */
-  for(entry_idx = 0; entry_idx < stk->count; entry_idx++){
-    mark_entry me = mark_stack[entry_idx];
-    struct pool* pool = caml_pool_of_shared_block(Val_op(me.start));
-    if (!pool) {
-      // This could be a large allocation - which is off-heap. Hold on to it.
-      mark_stack[large_idx++] = me;
-      continue;
-    }
-    caml_skiplist_insert(&chunk_sklist, (uintnat)pool,
-    (uintnat)pool + sizeof(pool));
+  /* copy out old compressed entries */
+  uintnat old_compressed_entries = 0;
+  struct addrmap new_compressed_stack = ADDRMAP_INIT;
+  addrmap_iterator it;
+  for (it = stk->compressed_stack_iter;
+       caml_addrmap_iter_ok(&stk->compressed_stack, it);
+       it = caml_addrmap_next(&stk->compressed_stack, it)) {
+    value k = caml_addrmap_iter_key(&stk->compressed_stack, it);
+    value v = caml_addrmap_iter_value(&stk->compressed_stack, it);
+    caml_addrmap_insert(&new_compressed_stack, k, v);
+    ++old_compressed_entries;
+  }
+  if (old_compressed_entries > 0) {
+    caml_gc_log("Preserved %"ARCH_INTNAT_PRINTF_FORMAT "d compressed entries",
+                old_compressed_entries);
   }
 
-  /* Traverse through entire skiplist and put it into pools to rescan */
-  FOREACH_SKIPLIST_ELEMENT(e, &chunk_sklist, {
-    if(Caml_state->pools_to_rescan_len == Caml_state->pools_to_rescan_count){
-      Caml_state->pools_to_rescan_len =
-        Caml_state->pools_to_rescan_len * 2 + 128;
-
-      Caml_state->pools_to_rescan =
-        caml_stat_resize(
-          Caml_state->pools_to_rescan,
-          Caml_state->pools_to_rescan_len * sizeof(struct pool *));
+  /* scan mark stack and determine page densities */
+  int i;
+  uintnat new_stk_count = 0, compressed_entries = 0, total_words = 0;
+  for (i=0; i < stk->count; i++) {
+    mark_entry me = stk->stack[i];
+    total_words += me.end - me.start;
+    if (me.end - me.start > BITS_PER_WORD) {
+      /* keep entry in the stack as more efficent and move to front */
+      stk->stack[new_stk_count++] = me;
+    } else {
+      while(me.start < me.end) {
+        compressed_entries += add_addr(&new_compressed_stack,
+                                       (uintnat)me.start);
+        me.start++;
+      }
     }
-    Caml_state->pools_to_rescan[Caml_state->pools_to_rescan_count++]
-      = (struct pool*) (e->key);
-  });
+  }
 
-  caml_gc_log(
-    "Mark stack overflow. Postponing %d pools",
-    Caml_state->pools_to_rescan_count);
+  caml_gc_log("Compressed %"ARCH_INTNAT_PRINTF_FORMAT "d mark stack words into "
+              "%"ARCH_INTNAT_PRINTF_FORMAT "d mark stack entries and "
+              "%"ARCH_INTNAT_PRINTF_FORMAT "d compressed entries",
+              total_words, new_stk_count,
+              compressed_entries+old_compressed_entries);
 
-  stk->count = large_idx;
+  stk->count = new_stk_count;
+  CAMLassert(stk->count < stk->size);
+
+  /* free old stack and replace with the new stack */
+  caml_addrmap_clear(&stk->compressed_stack);
+  stk->compressed_stack = new_compressed_stack;
+  stk->compressed_stack_iter = caml_addrmap_iterator(&stk->compressed_stack);
 }
 
 int caml_init_major_gc(caml_domain_state* d) {
-  Caml_state->mark_stack = caml_stat_alloc_noexc(sizeof(struct mark_stack));
-  if(Caml_state->mark_stack == NULL) {
+  d->mark_stack = caml_stat_alloc_noexc(sizeof(struct mark_stack));
+  if(d->mark_stack == NULL) {
     return -1;
   }
-  Caml_state->mark_stack->stack =
+  d->mark_stack->stack =
     caml_stat_alloc_noexc(MARK_STACK_INIT_SIZE * sizeof(mark_entry));
-  if(Caml_state->mark_stack->stack == NULL) {
-    caml_stat_free(Caml_state->mark_stack);
-    Caml_state->mark_stack = NULL;
+  if(d->mark_stack->stack == NULL) {
+    caml_stat_free(d->mark_stack);
+    d->mark_stack = NULL;
     return -1;
   }
-  Caml_state->mark_stack->count = 0;
-  Caml_state->mark_stack->size = MARK_STACK_INIT_SIZE;
+  d->mark_stack->count = 0;
+  d->mark_stack->size = MARK_STACK_INIT_SIZE;
+  caml_addrmap_init(&d->mark_stack->compressed_stack);
+  d->mark_stack->compressed_stack_iter =
+                  caml_addrmap_iterator(&d->mark_stack->compressed_stack);
+
   /* Fresh domains do not need to performing marking or sweeping. */
   d->sweeping_done = 1;
   d->marking_done = 1;
@@ -1528,37 +1578,34 @@ int caml_init_major_gc(caml_domain_state* d) {
   /* Finalisers. Fresh domains participate in updating finalisers. */
   d->final_info = caml_alloc_final_info ();
   if(d->final_info == NULL) {
-    caml_stat_free(Caml_state->mark_stack->stack);
-    caml_stat_free(Caml_state->mark_stack);
+    caml_stat_free(d->mark_stack->stack);
+    caml_stat_free(d->mark_stack);
     return -1;
   }
   d->ephe_info = caml_alloc_ephe_info();
   if(d->ephe_info == NULL) {
     caml_stat_free(d->final_info);
-    caml_stat_free(Caml_state->mark_stack->stack);
-    caml_stat_free(Caml_state->mark_stack);
+    caml_stat_free(d->mark_stack->stack);
+    caml_stat_free(d->mark_stack);
     d->final_info = NULL;
-    Caml_state->mark_stack = NULL;
+    d->mark_stack = NULL;
     return -1;
   }
   atomic_fetch_add(&num_domains_to_final_update_first, 1);
   atomic_fetch_add(&num_domains_to_final_update_last, 1);
 
-  Caml_state->pools_to_rescan =
-    caml_stat_alloc_noexc(INITIAL_POOLS_TO_RESCAN_LEN * sizeof(struct pool*));
-  Caml_state->pools_to_rescan_len = INITIAL_POOLS_TO_RESCAN_LEN;
-  Caml_state->pools_to_rescan_count = 0;
-
   return 0;
 }
 
 void caml_teardown_major_gc(void) {
-  CAMLassert(Caml_state->mark_stack->count == 0);
-  caml_stat_free(Caml_state->mark_stack->stack);
-  caml_stat_free(Caml_state->mark_stack);
-  if( Caml_state->pools_to_rescan_len > 0 )
-    caml_stat_free(Caml_state->pools_to_rescan);
-  Caml_state->mark_stack = NULL;
+  caml_domain_state* d = Caml_state;
+  CAMLassert(!caml_addrmap_iter_ok(&d->mark_stack->compressed_stack,
+                                   d->mark_stack->compressed_stack_iter));
+  caml_addrmap_clear(&d->mark_stack->compressed_stack);
+  CAMLassert(d->mark_stack->count == 0);
+  caml_stat_free(d->mark_stack->stack);
+  caml_stat_free(d->mark_stack);
+  d->mark_stack = NULL;
 }
 
 void caml_finalise_heap (void)
