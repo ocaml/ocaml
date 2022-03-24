@@ -248,7 +248,9 @@ extern value caml_eventring_read_poll_ml(value wrapped_cursor,
 struct eventring_buffer_header {
   atomic_uint_fast64_t ring_head;
   atomic_uint_fast64_t ring_tail;
-  uint64_t padding[8]; /* Padding so headers don't share cache lines */
+  uint64_t padding[8]; /* Padding so headers don't share cache lines. Eight
+                          words guarantees that buffer headers don't share
+                          cache lines, even for non-aligned allocations. */
 };
 
 /* For a more detailed explanation of the eventring file layout, see
