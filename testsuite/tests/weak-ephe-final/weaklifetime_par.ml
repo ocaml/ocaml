@@ -1,9 +1,14 @@
 (* TEST
 *)
 
-let size = 1000
-let num_domains = 4
-let num_rounds = 4
+let size, num_domains, num_gcs, num_rounds =
+  let test_size =
+    try int_of_string (Sys.getenv "OCAML_TEST_SIZE")
+    with Not_found | Failure _ -> 0
+  in
+  if test_size >= 3
+  then (1000, 4, 5, 4)
+  else ( 400, 2, 5, 3)
 
 type block = int array
 
@@ -79,7 +84,7 @@ let run index () =
     }
   ) in
   let gc_start = gccount () in
-  while gccount () - gc_start < 5 do
+  while gccount () - gc_start < num_gcs do
     dummy := Array.make (Random.int 300) 0;
     let per_domain_size = size / num_domains in
     assert (index < num_domains);

@@ -3,7 +3,8 @@
 
 let () = Random.init 12345
 
-let size = 1000
+let size, num_gcs =
+  1000, 20
 
 type block = int array
 
@@ -70,7 +71,7 @@ let check_and_change i j =
 let dummy = ref [||]
 
 let () =
-  while gccount () < 20 do
+  while gccount () < num_gcs do
     dummy := Array.make (Random.int 300) 0;
     let i = Random.int size in
     let j = Random.int (Array.length data.(i).objs) in
