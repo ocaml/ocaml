@@ -174,11 +174,14 @@ extern value caml_eventring_pause();
 extern value caml_eventring_resume();
 
 /* Create a cursor to read events from an eventring. Cursors can be created for
-   eventrings in and out of process. To create one for the current process, pass
-   [eventring_path] as NULL and a [pid] < 0. Otherwise [eventring_path] is a
-   path to a directory containing the .eventring files. [pid] is the process id
-   (or equivalent) of the startup OCaml process. The resulting cursor can be
-   used with `caml_eventring_read_poll` to read events from the eventrings. */
+   eventrings in and out of process. An eventring may have multiple cursors
+   reading from it at any point in time and a program may have multiple cursors
+   open concurrently (for example if multiple consumers want different sets
+   of events). To create one for the current process, pass [eventring_path] as
+   NULL and a [pid] < 0. Otherwise [eventring_path] is a path to a directory
+   containing the .eventring files. [pid] is the process id (or equivalent) of
+   the startup OCaml process. The resulting cursor can be used with
+   `caml_eventring_read_poll` to read events from the eventrings. */
 extern eventring_error
 caml_eventring_create_cursor(const char_os* eventring_path, int pid,
                              struct caml_eventring_cursor **cursor_res);
