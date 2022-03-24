@@ -16,6 +16,10 @@
 .NOTPARALLEL:
 
 BASEDIR := $(shell pwd)
+ifneq "$(words |$(BASEDIR)|)" "1"
+$(error The Testsuite does not handle spaces\
+   in the ocaml working directory path: $(BASEDIR))
+endif
 
 ROOTDIR = ..
 include $(ROOTDIR)/Makefile.common
