@@ -15,7 +15,7 @@
 
 .NOTPARALLEL:
 
-BASEDIR := "$(shell pwd)"
+BASEDIR := $(shell pwd)
 ifneq "$(words |$(BASEDIR)|)" "1"
 $(error The Testsuite does not handle spaces\
    in the ocaml working directory path: $(BASEDIR))
