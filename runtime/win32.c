@@ -27,6 +27,7 @@
 #include <winbase.h>
 #include <winsock2.h>
 #include <winioctl.h>
+#include <processthreadsapi.h>
 #include <direct.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -1091,6 +1092,67 @@ CAMLexport clock_t caml_win32_clock(void)
   /* total in 100-nanosecond intervals (1e7 / CLOCKS_PER_SEC) */
   clocks_per_sec = INT64_LITERAL(10000000U) / (ULONGLONG)CLOCKS_PER_SEC;
   return (clock_t)(total / clocks_per_sec);
+}
+
+typedef HRESULT(WINAPI* LPFN_GETTHREADDESCRIPTION)(HANDLE hThread,
+                                                  PWSTR* ppszThreadDescription);
+static LPFN_GETTHREADDESCRIPTION pGetThreadDescription = NULL;
+static int no_getthreaddescription = 0;
+
+/* on Windows, caml_thread_getname is only called in the testcase for
+best effort OS-thread naming */
+void caml_thread_getname(char* name)
+{
+again:
+  if (no_getthreaddescription) {
+    caml_invalid_argument("GetThreadDescription not available");
+  }
+  if (!pGetThreadDescription) {
+    if (!(pGetThreadDescription =
+        (LPFN_GETTHREADDESCRIPTION)GetProcAddress(GetModuleHandle(L"kernel32"),
+                                                  "GetThreadDescription"))) {
+      no_getthreaddescription = 1;
+    }
+    goto again;
+  }
+
+  HANDLE self = GetCurrentThread();
+  wchar_t *thread_description = NULL;
+
+  pGetThreadDescription(self, &thread_description);
+  win_wide_char_to_multi_byte(thread_description,
+                              wcslen(thread_description) + 1,
+                              name, MAX_THREAD_NAME_LENGTH);
+
+  LocalFree(thread_description);
+}
+
+typedef HRESULT(WINAPI* LPFN_SETTHREADDESCRIPTION)(HANDLE hThread,
+                                                  PCWSTR lpThreadDescription);
+static LPFN_SETTHREADDESCRIPTION pSetThreadDescription = NULL;
+static int no_setthreaddescription = 0;
+
+void caml_thread_setname(const char* name)
+{
+again:
+  /* best effort thread naming means that if SetThreadDescription does
+     not exist, we do nothing */
+  if (no_setthreaddescription) return;
+  if (!pSetThreadDescription) {
+    if (!(pSetThreadDescription =
+        (LPFN_SETTHREADDESCRIPTION)GetProcAddress(GetModuleHandle(L"kernel32"),
+                                                  "SetThreadDescription"))) {
+      no_setthreaddescription = 1;
+    }
+    goto again;
+  }
+
+  wchar_t* r = caml_stat_strdup_to_utf16(name);
+
+  HANDLE self = GetCurrentThread();
+  pSetThreadDescription(self, r);
+
+  caml_stat_free(r);
 }
 
 static LARGE_INTEGER frequency;

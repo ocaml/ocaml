@@ -109,6 +109,7 @@ DOMAIN_STATE(struct caml_heap_state*, shared_heap)
 DOMAIN_STATE(int, id)
 
 DOMAIN_STATE(int, unique_id)
+DOMAIN_STATE(char*, name)
 
 DOMAIN_STATE(struct pool**, pools_to_rescan)
 DOMAIN_STATE(int, pools_to_rescan_len)

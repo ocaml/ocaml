@@ -124,6 +124,15 @@ OCaml 5.0
   `caml_process_pending*` for multicore.
   (Guillaume Munch-Maccagnoni, review by Sadiq Jaffer and Gabriel Scherer)
 
+- #11174: Implements `Domain.set_name` and `Domain.get_name` to assign and
+  read names of domains. With OCAMLRUNPARAM flag "T=1", the runtime propagates
+  the assigned domain names to the respective operating system threads.
+  Using OCAMLRUNPARAM "T=2", the runtime, in addition, decorates
+  the assigned OS thread names with the hexadecimal unique domain id
+  and flags that identify the domain, backup, and tick threads.
+  This is an experimental feature, for debugging purposes only.
+  (Sabine Schmaltz, review by ...)
+
 ### Code generation and optimizations:
 
 - #10972: ARM64 multicore support: OCaml & C stack separation;

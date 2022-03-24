@@ -172,6 +172,14 @@ The following environment variables are also consulted:
         This option takes no argument.
   \item[s] ("minor_heap_size")  Size of the minor heap. (in words)
   \item[t] Set the trace level for the debug runtime (ignored by the standard runtime).
+  \item[T] (domain thread names)
+            T=1: the runtime assigns the name of the domain as POSIX thread name
+            for the domain threads, on operating systems that support this.
+
+            T=2: The runtime additionally decorates the assigned domain thread names
+            with the hexadecimal domain id and flags to identify backup threads (B),
+            tick threads (T), and threads generated via `Thread.new` (N).
+            This is an experimental feature, for debugging purposes only!
   \item[v] ("verbose")  What GC messages to print to stderr.  This
   is a sum of values selected from the following:
   \begin{options}
