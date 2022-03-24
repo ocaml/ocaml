@@ -124,17 +124,17 @@ and core_type_desc =
   | Ptyp_variant of row_field list * closed_flag * label list option
       (** [Ptyp_variant([`A;`B], flag, labels)] represents:
             - [[ `A|`B ]]
-                when [flag],                                   [labels]
-                  is {{!Asttypes.closed_flag.Closed}[Closed]}, [None],
+                      when [flag]   is {{!Asttypes.closed_flag.Closed}[Closed]},
+                       and [labels] is [None],
             - [[> `A|`B ]]
-                when [flag],                                   [labels]
-                  is {{!Asttypes.closed_flag.Open}[Open]},     [None],
+                      when [flag]   is {{!Asttypes.closed_flag.Open}[Open]},
+                       and [labels] is [None],
             - [[< `A|`B ]]
-                when [flag],                                   [labels]
-                  is {{!Asttypes.closed_flag.Closed}[Closed]}, [Some []],
+                      when [flag]   is {{!Asttypes.closed_flag.Closed}[Closed]},
+                       and [labels] is [Some []],
             - [[< `A|`B > `X `Y ]]
-                when [flag],                                   [labels]
-                  is {{!Asttypes.closed_flag.Closed}[Closed]}, [Some ["X";"Y"]].
+                      when [flag]   is {{!Asttypes.closed_flag.Closed}[Closed]},
+                       and [labels] is [Some ["X";"Y"]].
          *)
   | Ptyp_poly of string loc list * core_type
       (** ['a1 ... 'an. T]
