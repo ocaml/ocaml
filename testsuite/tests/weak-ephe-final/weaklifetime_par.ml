@@ -1,21 +1,20 @@
 (* TEST
 *)
 
-let size = 1000;;
-let num_domains = 4;;
-let num_rounds = 4;;
+let size = 1000
+let num_domains = 4
+let num_rounds = 4
 
-type block = int array;;
+type block = int array
 
 type objdata =
   | Present of block
   | Absent of int  (* GC count at time of erase *)
-;;
 
 type bunch = {
   objs : objdata array;
   wp : block Weak.t;
-};;
+}
 
 let data =
   Array.init size (fun i ->
@@ -25,13 +24,12 @@ let data =
       wp = Weak.create n;
     }
   )
-;;
 
 let gccount () =
   let res = (Gc.quick_stat ()).Gc.major_collections in
   res
 
-type change = No_change | Fill | Erase;;
+type change = No_change | Fill | Erase
 
 (* Check the correctness condition on the data at (i,j):
    1. if the block is present, the weak pointer must be full
@@ -57,7 +55,7 @@ let check_and_change data i j =
     | Present _, true ->
       if Random.int 10 = 0 then Erase else No_change
   in
-  match change with
+  begin match change with
   | No_change -> ()
   | Fill ->
     let x = Array.make (1 + Random.int 10) 42 in
@@ -67,10 +65,10 @@ let check_and_change data i j =
     data.(i).objs.(j) <- Absent gc1;
     let gc2 = gccount () in
     if gc1 <> gc2 then data.(i).objs.(j) <- Absent gc2;
-;;
+  end
 
-let dummy = ref [||];;
 
+let dummy = ref [||]
 
 let run index () =
   let domain_data = Array.init 100 (fun i ->
