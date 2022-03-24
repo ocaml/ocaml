@@ -1297,6 +1297,13 @@ AS_IF([$has_c99_float_ops],
          C99 float ops unavailable, replacements enabled
          (ancient Visual Studio)]))])])])
 
+## getentropy
+AC_CHECK_HEADER([unistd.h],
+  [AC_CHECK_DECL([getentropy],
+                 [AC_DEFINE([HAS_GETENTROPY])], [],
+                 [[#include <unistd.h>]])],
+  [])
+
 ## getrusage
 AC_CHECK_FUNC([getrusage], [AC_DEFINE([HAS_GETRUSAGE])])
 

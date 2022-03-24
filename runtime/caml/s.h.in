@@ -60,6 +60,8 @@
 /* Define HAS_WORKING_ROUND is the round function is correctly implemented. This
    hatch exists primarily for https://sourceforge.net/p/mingw-w64/bugs/573/ */
 
+#undef HAS_GETENTROPY
+
 #undef HAS_GETRUSAGE
 
 #undef HAS_TIMES

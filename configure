@@ -14868,6 +14868,20 @@ fi
 fi
 fi
 
+## getentropy
+ac_fn_c_check_header_mongrel "$LINENO" "unistd.h" "ac_cv_header_unistd_h" "$ac_includes_default"
+if test "x$ac_cv_header_unistd_h" = xyes; then :
+  ac_fn_c_check_decl "$LINENO" "getentropy" "ac_cv_have_decl_getentropy" "#include <unistd.h>
+"
+if test "x$ac_cv_have_decl_getentropy" = xyes; then :
+  $as_echo "#define HAS_GETENTROPY 1" >>confdefs.h
+
+fi
+
+fi
+
+
+
 ## getrusage
 ac_fn_c_check_func "$LINENO" "getrusage" "ac_cv_func_getrusage"
 if test "x$ac_cv_func_getrusage" = xyes; then :
