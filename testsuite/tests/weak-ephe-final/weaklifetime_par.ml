@@ -1,42 +1,40 @@
 (* TEST
 *)
 
-let size = 1000;;
-let num_domains = 4;;
-let random_state =
-  Domain.DLS.new_key
-    ~split_from_parent:Random.State.split
-    Random.State.make_self_init
+let size, num_domains, num_gcs, num_rounds =
+  let test_size =
+    try int_of_string (Sys.getenv "OCAML_TEST_SIZE")
+    with Not_found | Failure _ -> 0
+  in
+  if test_size >= 3
+  then (1000, 4, 5, 4)
+  else ( 400, 2, 5, 3)
 
-let random_int = Random.State.int (Domain.DLS.get random_state)
-
-type block = int array;;
+type block = int array
 
 type objdata =
   | Present of block
   | Absent of int  (* GC count at time of erase *)
-;;
 
 type bunch = {
   objs : objdata array;
   wp : block Weak.t;
-};;
+}
 
 let data =
   Array.init size (fun i ->
-    let n = 1 + random_int size in
+    let n = 1 + Random.int size in
     {
       objs = Array.make n (Absent 0);
       wp = Weak.create n;
     }
   )
-;;
 
 let gccount () =
   let res = (Gc.quick_stat ()).Gc.major_collections in
   res
 
-type change = No_change | Fill | Erase;;
+type change = No_change | Fill | Erase
 
 (* Check the correctness condition on the data at (i,j):
    1. if the block is present, the weak pointer must be full
@@ -60,44 +58,56 @@ let check_and_change data i j =
     | Absent n, true -> assert (gc1 <= n+2); No_change
     | Absent _, false -> Fill
     | Present _, true ->
-      if random_int 10 = 0 then Erase else No_change
+      if Random.int 10 = 0 then Erase else No_change
   in
-  match change with
+  begin match change with
   | No_change -> ()
   | Fill ->
-    let x = Array.make (1 + random_int 10) 42 in
+    let x = Array.make (1 + Random.int 10) 42 in
     data.(i).objs.(j) <- Present x;
     Weak.set data.(i).wp j (Some x);
   | Erase ->
     data.(i).objs.(j) <- Absent gc1;
     let gc2 = gccount () in
     if gc1 <> gc2 then data.(i).objs.(j) <- Absent gc2;
-;;
+  end
 
-let dummy = ref [||];;
+
+let dummy = ref [||]
 
 let run index () =
   let domain_data = Array.init 100 (fun i ->
-    let n = 1 + random_int 100 in
+    let n = 1 + Random.int 100 in
     {
       objs = Array.make n (Absent 0);
       wp = Weak.create n;
     }
   ) in
-  while gccount () < 5 do
-    dummy := Array.make (random_int 300) 0;
-    let i = (random_int (size/num_domains)) + index * size/num_domains in
-    let j = random_int (Array.length data.(i).objs) in
+  let gc_start = gccount () in
+  while gccount () - gc_start < num_gcs do
+    dummy := Array.make (Random.int 300) 0;
+    let per_domain_size = size / num_domains in
+    assert (index < num_domains);
+    let i = index * per_domain_size + Random.int per_domain_size in
+    let j = Random.int (Array.length data.(i).objs) in
     check_and_change data i j;
-    let ix = random_int 100 in
-    let jx = random_int (Array.length domain_data.(ix).objs) in
+    let ix = Random.int 100 in
+    let jx = Random.int (Array.length domain_data.(ix).objs) in
     check_and_change domain_data ix jx
   done
 
 let _ =
-  for index = 0 to 4 do
-    let domains = Array.init (num_domains - 1) (fun i -> Domain.spawn(run ((i + index) mod 5))) in
-    run ((num_domains - 1 + index) mod 5) ();
+  for round = 1 to num_rounds do
+    (* Each domain owns a region of the data array, starting at
+         [index i * (size / num_domains)]
+       and of size [size / num_domains].
+
+       Note that the regions are rotated on each round, to help surface
+       potential bugs coming from a new domain reusing the memory of
+       a previous domain. *)
+    let index i = (i + round) mod num_domains in
+    let domains = Array.init (num_domains - 1) (fun i -> Domain.spawn(run (index i))) in
+    run (index (num_domains) mod num_domains) ();
     Array.iter Domain.join domains
   done;
   print_endline "ok"
