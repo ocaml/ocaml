@@ -31,6 +31,12 @@ CAMLextern void caml_enter_blocking_section (void);
 CAMLextern void caml_enter_blocking_section_no_pending (void);
 CAMLextern void caml_leave_blocking_section (void);
 
+CAMLextern int caml_thread_has_lock(void);
+/* [caml_thread_has_lock] returns 1 if the thread belongs to a domain
+   and it holds the lock of its domain, otherwise it returns 0. This
+   function can be called from any thread including unregistered C
+   threads. */
+
 CAMLextern void caml_process_pending_actions (void);
 /* Checks for pending actions and executes them. This includes pending
    minor and major collections, signal handlers, finalisers, and

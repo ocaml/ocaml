@@ -60,6 +60,7 @@ void caml_handle_incoming_interrupts(void);
 CAMLextern void caml_interrupt_self(void);
 void caml_reset_young_limit(caml_domain_state *);
 
+CAMLextern _Thread_local int caml_thread_has_domain_lock;
 CAMLextern void caml_reset_domain_lock(void);
 CAMLextern int caml_bt_is_in_blocking_section(void);
 CAMLextern intnat caml_domain_is_multicore (void);

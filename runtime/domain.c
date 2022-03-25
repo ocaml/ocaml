@@ -1555,10 +1555,13 @@ CAMLexport intnat caml_domain_is_multicore (void)
   return (!caml_domain_alone() || self->backup_thread_running);
 }
 
+CAMLexport _Thread_local int caml_thread_has_domain_lock = 0;
+
 CAMLexport void caml_acquire_domain_lock(void)
 {
   dom_internal* self = domain_self;
   caml_plat_lock(&self->domain_lock);
+  caml_thread_has_domain_lock = 1;
 }
 
 CAMLexport void caml_bt_enter_ocaml(void)
@@ -1575,6 +1578,7 @@ CAMLexport void caml_bt_enter_ocaml(void)
 CAMLexport void caml_release_domain_lock(void)
 {
   dom_internal* self = domain_self;
+  caml_thread_has_domain_lock = 0;
   caml_plat_unlock(&self->domain_lock);
 }
 

@@ -169,6 +169,11 @@ CAMLexport void caml_leave_blocking_section(void)
   errno = saved_errno;
 }
 
+CAMLexport int caml_thread_has_lock(void)
+{
+  return caml_thread_has_domain_lock;
+}
+
 static value caml_signal_handlers;
 
 void caml_init_signal_handling(void) {
