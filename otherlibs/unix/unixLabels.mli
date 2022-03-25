@@ -580,7 +580,7 @@ val map_file :
   copy-on-write of the modified pages; the underlying file is not
   affected.
 
-  [Genarray.map_file] is much more efficient than reading
+  {!map_file} is much more efficient than reading
   the whole file in a Bigarray, modifying that Bigarray,
   and writing it afterwards.
 
@@ -588,7 +588,7 @@ val map_file :
   the actual size of the file, the major dimension (that is,
   the first dimension for an array with C layout, and the last
   dimension for an array with Fortran layout) can be given as
-  [-1].  [Genarray.map_file] then determines the major dimension
+  [-1].  {!map_file} then determines the major dimension
   from the size of the file.  The file must contain an integral
   number of sub-arrays as determined by the non-major dimensions,
   otherwise [Failure] is raised.
