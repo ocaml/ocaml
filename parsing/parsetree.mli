@@ -313,8 +313,8 @@ and expression_desc =
                        and [exp0] is [Some E0]
 
            Notes:
-           - If [E0] is provided, only {{!Asttypes.arg_label.Optional}[Optional]}
-             is allowed.
+           - If [E0] is provided, only
+             {{!Asttypes.arg_label.Optional}[Optional]} is allowed.
            - [fun P1 P2 .. Pn -> E1] is represented as nested
              {{!expression_desc.Pexp_fun}[Pexp_fun]}.
            - [let f P = E] is represented using
@@ -897,7 +897,7 @@ and 'a open_infos =
      popen_loc: Location.t;
      popen_attributes: attributes;
     }
-(** Values of type [’a open_infos] represents:
+(** Values of type ['a open_infos] represents:
     - [open! X] when {{!open_infos.popen_override}[popen_override]}
                   is {{!Asttypes.override_flag.Override}[Override]}
     (silences the "used identifier shadowing" warning)
