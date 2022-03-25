@@ -582,22 +582,22 @@ and type_exception =
 
 and extension_constructor_kind =
   | Pext_decl of string loc list * constructor_arguments * core_type option
-      (** [Pext_decl(l_vars, c_args, t_opt)]
+      (** [Pext_decl(existentials, c_args, t_opt)]
           describes a new extension constructor. It can be:
           - [C of T1 * ... * Tn] when:
-               {ul {- [l_vars] is [[]],}
+               {ul {- [existentials] is [[]],}
                    {- [c_args] is [[T1; ...; Tn]],}
                    {- [t_opt] is [None]}.}
           - [C: T0] when
-               {ul {- [l_vars] is [[]],}
+               {ul {- [existentials] is [[]],}
                    {- [c_args] is [[]],}
                    {- [t_opt] is [Some T0].}}
           - [C: T1 * ... * Tn -> T0] when
-               {ul {- [l_vars] is [[]],}
+               {ul {- [existentials] is [[]],}
                    {- [c_args] is [[T1; ...; Tn]],}
                    {- [t_opt] is [Some T0].}}
           - [C: 'a... . T1 * ... * Tn -> T0] when
-               {ul {- [l_vars] is [['a;...]],}
+               {ul {- [existentials] is [['a;...]],}
                    {- [c_args] is [[T1; ... ; Tn]],}
                    {- [t_opt] is [Some T0].}}
        *)
