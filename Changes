@@ -128,6 +128,11 @@ Working version
 - #8878: Add String.hash and String.seeded_hash.
   (Tom Kelly, review by Alain Frisch and Nicolás Ojeda Bär)
 
+- #11138: Add C function `caml_thread_has_lock` which returns true if
+  and only if the current thread belongs to a domain, and holds the
+  lock of its domain.
+  (Guillaume Munch-Maccagnoni, review by Sadiq Jaffer and Xavier Leroy)
+
 ### Other libraries:
 
 * #9071, #9100, #10935: Reimplement `Thread.exit()` as raising the
