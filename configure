@@ -14313,7 +14313,9 @@ system=unknown
 case $host in #(
     x86_64-*-linux*) :
     arch=amd64; system=linux ;; #(
-    x86_64-*-freebsd*) :
+    x86_64-*-solaris*) :
+    arch=amd64; system=solaris ;; #(
+  x86_64-*-freebsd*) :
     arch=amd64; system=freebsd ;; #(
   x86_64-*-netbsd*) :
     arch=amd64; system=netbsd ;; #(
