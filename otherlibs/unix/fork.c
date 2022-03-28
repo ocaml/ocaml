@@ -22,6 +22,17 @@
 #include <caml/domain.h>
 #include <caml/fail.h>
 
+/* Post-fork tasks to be carried out in the parent */
+void caml_atfork_parent(pid_t child_pid) {
+  CAML_EV_LIFECYCLE(EV_FORK_PARENT, child_pid);
+}
+
+/* Post-fork tasks to be carried out in the child */
+void caml_atfork_child() {
+  caml_eventring_post_fork();
+  CAML_EV_LIFECYCLE(EV_FORK_CHILD, 0);
+}
+
 CAMLprim value unix_fork(value unit)
 {
   int ret;
@@ -37,10 +48,9 @@ CAMLprim value unix_fork(value unit)
   if (ret == -1) uerror("fork", Nothing);
 
   if (ret == 0) {
-    caml_eventring_post_fork();
-    CAML_EV_LIFECYCLE(EV_FORK_CHILD, 0);
+    caml_atfork_child();
   } else {
-    CAML_EV_LIFECYCLE(EV_FORK_PARENT, ret);
+    caml_atfork_parent(ret);
   }
 
   if (caml_debugger_in_use)
