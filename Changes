@@ -462,6 +462,10 @@ OCaml 4.14.0
 - #11107: Lifted comments in the Parsetree module into actual documentation.
   (Paul-Elliot Anglès d'Auriac, review by Florian Angeletti)
 
+- #11120, #11133: man pages, add missing warning entries and add mnemonic names
+  to the list of warnings.
+  (Florian Angeletti, report by Kate Deplaix, review by Gabriel Scherer)
+
 ### Compiler user-interface and warnings:
 
 - #10328, #10780: Give more precise error when disambiguation could not

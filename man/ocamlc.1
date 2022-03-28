@@ -721,8 +721,23 @@ with an error after displaying it.
 
 The
 .I warning\-list
-argument is a sequence of warning specifiers, with no separators
-between them.  A warning specifier is one of the following:
+argument is either a mnemonic warning specifier or a sequence of single
+character warning specifiers, with no separators between them. A mnemonic
+warning specifier is one of the following
+
+.BI + name
+\ \ Enable warning
+.IR name .
+
+.BI \- name
+\ \ Disable warning
+.IR name .
+
+.BI @ name
+\ \ Enable and mark as fatal warning
+.IR name .
+
+A single character warning specifier is one of the following:
 
 .BI + num
 \ \ Enable warning number
@@ -780,203 +795,314 @@ The letter may be uppercase or lowercase.
 \ \ Disable the set of warnings corresponding to
 .IR lowercase\-letter .
 
-The warning numbers are as follows.
+The warning numbers and mnemonic names are as follows.
 
-1
-\ \ \ Suspicious-looking start-of-comment mark.
+.B 1 [comment-start]
+.br
+Suspicious-looking start-of-comment mark.
 
-2
-\ \ \ Suspicious-looking end-of-comment mark.
+.B 2 [comment-not-end]
+.br
+Suspicious-looking end-of-comment mark.
 
-3
-\ \ \ Deprecated feature.
+.B 3
+.br
+Deprecated feature.
 
-4
-\ \ \ Fragile pattern matching: matching that will remain
+.B 4 [fragile-match]
+.br
+Fragile pattern matching: matching that will remain
 complete even if additional constructors are added to one of the
 variant types matched.
 
-5
-\ \ \ Partially applied function: expression whose result has
+.B 5 [ignored-partial-application]
+.br
+Partially applied function: expression whose result has
 function type and is ignored.
 
-6
-\ \ \ Label omitted in function application.
+.B 6 [labels-omitted]
+.br
+Label omitted in function application.
 
-7
-\ \ \ Method overridden without using the "method!" keyword.
+.B 7 [method-override]
+.br
+Method overridden without using the "method!" keyword.
 
-8
-\ \ \ Partial match: missing cases in pattern-matching.
+.B 8 [partial-match]
+.br
+Partial match: missing cases in pattern-matching.
 
-9
-\ \ \ Missing fields in a record pattern.
+.B 9 [missing-record-field-pattern]
+.br
+Missing fields in a record pattern.
 
-10
-\ \ Expression on the left-hand side of a sequence that doesn't
+.B 10 [non-unit-statement]
+.br
+Expression on the left-hand side of a sequence that doesn't
 have type
 .B unit
 (and that is not a function, see warning number 5).
 
-11
-\ \ Redundant case in a pattern matching (unused match case).
+.B 11 [redundant-case]
+.br
+Redundant case in a pattern matching (unused match case).
 
-12
-\ \ Redundant sub-pattern in a pattern-matching.
+.B 12 [redundant-subpat]
+.br
+Redundant sub-pattern in a pattern-matching.
 
-13
-\ \ Override of an instance variable.
+.B 13 [instance-variable-override]
+.br
+Override of an instance variable.
 
-14
-\ \ Illegal backslash escape in a string constant.
+.B 14 [illegal-backslash]
+.br
+Illegal backslash escape in a string constant.
 
-15
-\ \ Private method made public implicitly.
+.B 15 [implicit-public-methods]
+.br
+Private method made public implicitly.
 
-16
-\ \ Unerasable optional argument.
+.B 16 [unerasable-optional-argument]
+.br
+Unerasable optional argument.
 
-17
-\ \ Undeclared virtual method.
+.B 17 [undeclared-virtual-method]
+.br
+Undeclared virtual method.
 
-18
-\ \ Non-principal type.
+.B 18 [not-principal]
+.br
+Non-principal type.
 
-19
-\ \ Type without principality.
+.B 19 [non-principal-labels]
+.br
+Type without principality.
 
-20
-\ \ Unused function argument.
+.B 20 [ignored-extra-argument]
+.br
+Unused function argument.
 
-21
-\ \ Non-returning statement.
+.B 21 [nonreturning-statement]
+.br
+Non-returning statement.
 
-22
-\ \ Preprocessor warning.
+.B 22 [preprocessor]
+.br
+Preprocessor warning.
 
-23
-\ \ Useless record
+.B 23 [useless-record-with]
+.br
+Useless record
 .B with
 clause.
 
-24
-\ \ Bad module name: the source file name is not a valid OCaml module name.
+.B 24 [bad-module-name]
+.br
+Bad module name: the source file name is not a valid OCaml module name.
 
-25
-\ \ Deprecated: now part of warning 8.
+.B 25
+.br
+Deprecated: now part of warning 8.
 
-26
-\ \ Suspicious unused variable: unused variable that is bound with
+.B 26 [unused-var]
+.br
+Suspicious unused variable: unused variable that is bound with
 .BR let \ or \ as ,
 and doesn't start with an underscore (_) character.
 
-27
-\ \ Innocuous unused variable: unused variable that is not bound with
+.B 27 [unused-var-strict]
+.br
+Innocuous unused variable: unused variable that is not bound with
 .BR let \ nor \ as ,
 and doesn't start with an underscore (_) character.
 
-28
-\ \ A pattern contains a constant constructor applied to the underscore (_)
+.B 28 [wildcard-arg-to-constant-constr]
+.br
+A pattern contains a constant constructor applied to the underscore (_)
 pattern.
 
-29
-\ \ A non-escaped end-of-line was found in a string constant.  This may
+.B 29 [eol-in-string]
+.br
+A non-escaped end-of-line was found in a string constant.  This may
 cause portability problems between Unix and Windows.
 
-30
-\ \ Two labels or constructors of the same name are defined in two
+.B 30 [duplicate-definitions]
+.br
+Two labels or constructors of the same name are defined in two
 mutually recursive types.
 
-31
-\ \ A module is linked twice in the same executable.
+.B 31 [module-linked-twice]
+.br
+A module is linked twice in the same executable.
 
-32
-\ \ Unused value declaration.
+.B 32 [unused-value-declaration]
+.br
+Unused value declaration.
 
-33
-\ \ Unused open statement.
+.B 33 [unused-open]
+.br
+Unused open statement.
 
-34
-\ \ Unused type declaration.
+.B 34 [unused-type-declaration]
+.br
+Unused type declaration.
 
-35
-\ \ Unused for-loop index.
+.B 35 [unused-for-index]
+.br
+Unused for-loop index.
 
-36
-\ \ Unused ancestor variable.
+.B 36 [unused-ancestor]
+.br
+Unused ancestor variable.
 
-37
-\ \ Unused constructor.
+.B 37 [unused-constructor]
+.br
+Unused constructor.
 
-38
-\ \ Unused extension constructor.
+.B 38 [unused-extension]
+.br
+Unused extension constructor.
 
-39
-\ \ Unused rec flag.
+.B 39 [unused-rec-flag]
+.br
+Unused rec flag.
 
-40
-\ \ Constructor or label name used out of scope.
+.B 40 [name-out-of-scope]
+.br
+Constructor or label name used out of scope.
 
-41
-\ \ Ambiguous constructor or label name.
+.B 41 [ambiguous-name]
+.br
+Ambiguous constructor or label name.
 
-42
-\ \ Disambiguated constructor or label name.
+.B 42 [disambiguated-name]
+.br
+Disambiguated constructor or label name.
 
-43
-\ \ Nonoptional label applied as optional.
+.B 43 [nonoptional-label]
+.br
+Nonoptional label applied as optional.
 
-44
-\ \ Open statement shadows an already defined identifier.
+.B 44 [open-shadow-identifier]
+.br
+Open statement shadows an already defined identifier.
 
-45
-\ \ Open statement shadows an already defined label or constructor.
+.B 45 [open-shadow-label-constructor]
+.br
+Open statement shadows an already defined label or constructor.
 
-46
-\ \ Error in environment variable.
+.B 46 [bad-env-variable]
+.br
+Error in environment variable.
 
-47
-\ \ Illegal attribute payload.
+.B 47 [attribute-payload]
+.br
+Illegal attribute payload.
 
-48
-\ \ Implicit elimination of optional arguments.
+.B 48 [eliminated-optional-arguments]
+.br
+Implicit elimination of optional arguments.
 
-49
-\ \ Missing cmi file when looking up module alias.
+.B 49 [no-cmi-file]
+.br
+Missing cmi file when looking up module alias.
 
-50
-\ \ Unexpected documentation comment.
+.B 50 [unexpected-docstring]
+.br
+Unexpected documentation comment.
 
-59
-\ \ Assignment on non-mutable value.
+.B 51 [wrong-tailcall-expectation]
+.br
+Function call annotated with an incorrect @tailcall attribute
 
-60
-\ \ Unused module declaration.
+.B 52 [fragile-literal-pattern]
+.br
+Fragile constant pattern.
 
-61
-\ \ Unannotated unboxable type in primitive declaration.
+.B 53 [misplaced-attribute]
+.br
+Attribute cannot appear in this context.
 
-62
-\ \ Type constraint on GADT type declaration.
+.B 54 [duplicated-attribute]
+.br
+Attribute used more than once on an expression.
 
-63
-\ \ Erroneous printed signature.
+.B 55 [inlining-impossible]
+.br
+Inlining impossible.
 
-64
-\ \ -unsafe used with a preprocessor returning a syntax tree.
+.B 56 [unreachable-case]
+.br
+Unreachable case in a pattern-matching (based on type information).
 
-65
-\ \ Type declaration defining a new '()' constructor.
+.B 57 [ambiguous-var-in-pattern-guard]
+.br
+Ambiguous or-pattern variables under guard.
 
-66
-\ \ Unused open! statement.
+.B 58 [no-cmx-file]
+.br
+Missing cmx file.
 
-67
-\ \ Unused functor parameter.
 
-68
-\ \ Pattern-matching depending on mutable state prevents the remaining
+.B 59 [flambda-assignment-to-non-mutable-value]
+.br
+Assignment on non-mutable value.
+
+.B 60 [unused-module]
+.br
+Unused module declaration.
+
+.B 61 [unboxable-type-in-prim-decl]
+.br
+Unannotated unboxable type in primitive declaration.
+
+.B 62 [constraint-on-gadt]
+.br
+Type constraint on GADT type declaration.
+
+.B 63 [erroneous-printed-signature]
+.br
+Erroneous printed signature.
+
+.B 64 [unsafe-array-syntax-without-parsing]
+.br
+-unsafe used with a preprocessor returning a syntax tree.
+
+.B 65 [redefining-unit]
+.br
+Type declaration defining a new '()' constructor.
+
+.B 66 [unused-open-bang]
+.br
+Unused open! statement.
+
+.B 67 [unused-functor-parameter]
+.br
+Unused functor parameter.
+
+.B 68 [match-on-mutable-state-prevent-uncurry]
+.br
+Pattern-matching depending on mutable state prevents the remaining
 arguments from being uncurried.
+
+.B 69 [unused-field]
+.br
+Unused record field.
+
+.B 70 [missing-mli]
+.br
+Missing interface file.
+
+.B 71 [unused-tmc-attribute]
+.br
+Unused @tail_mod_cons attribute
+
+.B 72 [tmc-breaks-tailcall]
+.br
+A tail call is turned into a non-tail call by the @tail_mod_cons
+transformation.
+
 
 The letters stand for the following sets of warnings.  Any letter not
 mentioned here corresponds to the empty set.
