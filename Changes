@@ -459,6 +459,9 @@ OCaml 4.14.0
   CSS for coloring bullets
   (Wiktor Kuchta, review by Florian Angeletti)
 
+- #11107: Lifted comments in the Parsetree module into actual documentation.
+  (Paul-Elliot Anglès d'Auriac, review by Florian Angeletti)
+
 ### Compiler user-interface and warnings:
 
 - #10328, #10780: Give more precise error when disambiguation could not
