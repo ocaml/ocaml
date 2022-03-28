@@ -155,7 +155,14 @@ void caml_eventring_post_fork() {
   CAMLassert(caml_domain_alone());
 
   if (atomic_load_acq(&eventring_enabled)) {
-    /* unmmap eventrings from the parent but don't remove the files */
+    /* In the child we need to tear down the various structures used for the
+    existing eventring from the parent. In doing so we need to make sure we
+    don't remove the eventring file itself as that may still be used by
+    the parent. Note: any concurrent call to disable eventring will also use
+    [remove_file = 1], as only [caml_eventring_post_fork] uses [remove_file = 0]
+    and that call cannot be executed in parallel with another. In particular,
+    the file will be removed no matter which of the concurrent STW sections win
+    to run [teardown_eventring] first. */
     int remove_file = 0;
     do {
       caml_try_run_on_all_domains(&stw_teardown_eventring, &remove_file, NULL);
