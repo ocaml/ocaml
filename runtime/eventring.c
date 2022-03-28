@@ -222,10 +222,8 @@ stw_create_eventring(caml_domain_state *domain_state, void *data,
       current_ring_loc = caml_stat_alloc(EVENTRING_MAX_MSG_LENGTH);
 
       if (eventring_path) {
-        char* path_u8 = caml_stat_strdup_of_os(eventring_path);
         snprintf_os(current_ring_loc, EVENTRING_MAX_MSG_LENGTH,
-                    T("%s/%ld.eventring"), path_u8, pid);
-        caml_stat_free(path_u8);
+                    T("%s/%ld.eventring"), eventring_path, pid);
       } else {
         snprintf_os(current_ring_loc, EVENTRING_MAX_MSG_LENGTH,
                     T("%ld.eventring"), pid);
