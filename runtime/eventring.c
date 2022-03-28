@@ -55,11 +55,11 @@ emit events that get written to per-domain memory-mapped ring buffers. Consumers
 can be written that use the OCaml or C apis to consume these events
 asynchronously. This can be done both inside or outside the process.
 
-The ring buffer is structured as a flight recorder, overwriting old data when is
-insufficient space to write new events. This enables users to potentially only
-read the ring when some anomalous event occurs. No coordination is needed with
-consumers who read the events - they detect races with the producer and discard
-events when that happens.
+The ring buffer is structured as a flight recorder, overwriting old data when
+there is insufficient space to write new events. This enables users to
+potentially only read the ring when some anomalous event occurs. No coordination
+is needed with consumers who read the events - they detect races with the
+producer and discard events when that happens.
 
 The producer code is contained here . By default a <pid>.eventring file is
 created in the current directory (overridable by setting
