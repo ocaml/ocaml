@@ -341,10 +341,8 @@ stw_create_eventring(caml_domain_state *domain_state, void *data,
 }
 
 CAMLprim value caml_eventring_start() {
-  if (!atomic_load_acq(&eventring_enabled)) {
-    do {
-      caml_try_run_on_all_domains(&stw_create_eventring, NULL, NULL);
-    } while(!atomic_load_acq(&eventring_enabled));
+  while (!atomic_load_acq(&eventring_enabled)) {
+    caml_try_run_on_all_domains(&stw_create_eventring, NULL, NULL);
   }
 
   return Val_unit;
