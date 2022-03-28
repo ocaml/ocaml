@@ -156,7 +156,9 @@ void caml_eventring_post_fork() {
   if (atomic_load_acq(&eventring_enabled)) {
     /* unmmap eventrings from the parent but don't remove the files */
     int remove_file = 0;
-    caml_try_run_on_all_domains(&stw_teardown_eventring, &remove_file, NULL);
+    do {
+      caml_try_run_on_all_domains(&stw_teardown_eventring, &remove_file, NULL);
+    } while(atomic_load_acq(&eventring_enabled));
 
     /* We still have the path and ring size from our parent */
     caml_eventring_start();
@@ -181,14 +183,17 @@ void caml_eventring_destroy() {
 
     /* clean up eventring when we exit. */
     int remove_file = 1;
-    caml_try_run_on_all_domains(&stw_teardown_eventring, &remove_file, NULL);
+    do {
+      caml_try_run_on_all_domains(&stw_teardown_eventring, &remove_file, NULL);
+    }
+    while( atomic_load_acq(&eventring_enabled) );
   }
 }
 
 /* Create the ring buffers. This must only be called from a stop the world
   pause. */
 static void
-create_and_start_ring_buffers(caml_domain_state *domain_state, void *data,
+stw_create_eventring(caml_domain_state *domain_state, void *data,
                               int num_participating,
                               caml_domain_state **participating_domains) {
   /* Everyone must be stopped for starting and stopping eventring */
@@ -331,7 +336,9 @@ create_and_start_ring_buffers(caml_domain_state *domain_state, void *data,
 
 CAMLprim value caml_eventring_start() {
   if (!atomic_load_acq(&eventring_enabled)) {
-    caml_try_run_on_all_domains(&create_and_start_ring_buffers, NULL, NULL);
+    do {
+      caml_try_run_on_all_domains(&stw_create_eventring, NULL, NULL);
+    } while(!atomic_load_acq(&eventring_enabled));
   }
 
   return Val_unit;
