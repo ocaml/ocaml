@@ -36,9 +36,6 @@
 #define CAML_EV_LIFECYCLE(l,d) caml_ev_lifecycle(l,d)
 #define CAML_EVENTRING_INIT() caml_eventring_init()
 #define CAML_EVENTRING_DESTROY() caml_eventring_destroy()
-
-#define CAML_EV_FLUSH() caml_ev_flush()
-
 typedef enum {
     EV_INTERNAL,
     EV_LIFECYCLE,
@@ -300,9 +297,14 @@ void caml_ev_begin(ev_runtime_phase phase);
 void caml_ev_end(ev_runtime_phase phase);
 void caml_ev_counter(ev_runtime_counter counter, uint64_t val);
 void caml_ev_lifecycle(ev_lifecycle lifecycle, int64_t data);
+
+/* caml_ev_alloc records the (bucketed) size of allocations into the major heap.
+   It appears only in alloc_shr and caml_shared_try_alloc. These buckets are
+   meant to be flushed explicitly by the caller through the caml_ev_alloc_flush
+   function. Until then the buckets are just updated until flushed.
+*/
 void caml_ev_alloc(uint64_t sz);
 void caml_ev_alloc_flush();
-void caml_ev_flush();
 
 #endif /* CAML_INTERNALS */
 

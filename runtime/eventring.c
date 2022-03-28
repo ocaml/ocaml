@@ -505,11 +505,6 @@ void caml_ev_lifecycle(ev_lifecycle lifecycle, int64_t data) {
 static uint64_t alloc_buckets[EVENTRING_NUM_ALLOC_BUCKETS] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-/* This function records allocations in caml_alloc_shr_aux in given bucket sizes
-   These buckets are meant to be flushed explicitly by the caller through the
-   caml_ev_alloc_flush function. Until then the buckets are just updated until
-   flushed.
-*/
 void caml_ev_alloc(uint64_t sz) {
   if ( !ring_is_active() )
     return;
@@ -536,8 +531,4 @@ void caml_ev_alloc_flush() {
   for (i = 1; i < EVENTRING_NUM_ALLOC_BUCKETS; i++) {
     alloc_buckets[i] = 0;
   }
-}
-
-void caml_ev_flush() {
-  // This is a no-op for eventring
 }

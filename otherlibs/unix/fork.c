@@ -41,8 +41,6 @@ CAMLprim value unix_fork(value unit)
       ("Unix.fork may not be called while other domains were created");
   }
 
-  CAML_EV_FLUSH();
-
   ret = fork();
   if (ret == 0) caml_atfork_hook();
   if (ret == -1) uerror("fork", Nothing);
