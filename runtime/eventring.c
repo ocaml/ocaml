@@ -147,10 +147,11 @@ static void stw_teardown_eventring(caml_domain_state *domain_state,
   caml_global_barrier();
 }
 
+
 void caml_eventring_post_fork() {
-  /* We are after a call to fork (which can only happen when there is a single
-     domain) and no mutator code that can spawn a new domain can have run yet.
-     Let's be double sure. */
+  /* We are here in the child process after a call to fork (which can only
+     happen when there is a single domain) and no mutator code that can spawn a
+     new domain can have run yet. Let's be double sure. */
   CAMLassert(caml_domain_alone());
 
   if (atomic_load_acq(&eventring_enabled)) {
