@@ -121,14 +121,18 @@ static void stw_teardown_eventring(caml_domain_state *domain_state,
                                caml_domain_state **participating_domains) {
   caml_global_barrier();
   if (participating_domains[0] == domain_state) {
+    int remove_file = *(int*)remove_file_data;
+
 #ifdef _WIN32
     UnmapViewOfFile(current_metadata);
     CloseHandle(ring_file_handle);
     CloseHandle(ring_handle);
+
+    if( remove_file ) {
+      DeleteFile(current_ring_loc);
+    }
 #else
     munmap(current_metadata, current_ring_total_size);
-
-    int remove_file = *(int*)remove_file_data;
 
     if( remove_file ) {
       unlink(current_ring_loc);
