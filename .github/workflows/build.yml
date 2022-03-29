@@ -18,27 +18,26 @@ jobs:
         make -C testsuite USE_RUNTIME=d all
   i386-static:
     runs-on: ubuntu-latest
+    container:
+      image: i386/ubuntu:18.04
+      options: --platform linux/i386 --user root
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-    - name: Packages
-      run: |
-        sudo apt-get update -y && sudo apt-get install -y gcc-multilib gfortran-multilib
-    - name: configure tree
-      run: |
-        XARCH=i386 CONFIG_ARG='--disable-stdlib-manpages --disable-shared --enable-cmm-invariants' bash -xe tools/ci/actions/runner.sh configure
-    - name: Build
-      run: |
-        bash -xe tools/ci/actions/runner.sh build
-    - name: Run the testsuite
-      run: |
-        bash -xe tools/ci/actions/runner.sh test
-    - name: Install
-      run: |
-        bash -xe tools/ci/actions/runner.sh install
-    - name: Other checks
-      run: |
-        bash -xe tools/ci/actions/runner.sh other-checks
+      - name: OS Dependencies
+        run: |
+          apt-get update
+          apt-get install -y git gcc make parallel
+      - name: Checkout
+        # See https://github.com/actions/checkout/issues/334
+        uses: actions/checkout@v1
+      - name: configure tree
+        run: |
+          MAKE_ARG=-j XARCH=i386 bash -xe tools/ci/actions/runner.sh configure
+      - name: Build
+        run: |
+          MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh build
+      - name: Run the testsuite
+        run: |
+          bash -xe tools/ci/actions/runner.sh test
   full-flambda:
     runs-on: ubuntu-latest
     steps:
