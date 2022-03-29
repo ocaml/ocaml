@@ -434,7 +434,7 @@ let descriptions = [
   { number = 51;
     names = ["wrong-tailcall-expectation"];
     description =
-      "Function call annotated with an incorrect @tailcall attribute";
+      "Function call annotated with an incorrect @tailcall attribute.";
     since = since 4 3 };
   { number = 52;
     names = ["fragile-literal-pattern"];
@@ -518,7 +518,7 @@ let descriptions = [
     since = since 4 13 };
   { number = 71;
     names = ["unused-tmc-attribute"];
-    description = "Unused @tail_mod_cons attribute";
+    description = "Unused @tail_mod_cons attribute.";
     since = since 4 14 };
   { number = 72;
     names = ["tmc-breaks-tailcall"];
