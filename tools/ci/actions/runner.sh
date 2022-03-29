@@ -56,7 +56,7 @@ EOF
 }
 
 Build () {
-  $MAKE world.opt
+  $MAKE
   echo Ensuring that all names are prefixed in the runtime
   ./tools/check-symbol-names runtime/*.a otherlibs/*/lib*.a
 }
