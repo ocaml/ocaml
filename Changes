@@ -194,6 +194,11 @@ Working version
 - #11092: Build native-code compilers on OpenBSD/aarch64.
   (Christopher Zimmermann, review by Anil Madhavapeddy)
 
+- #11126: Build system: make it possible to choose which ocamldep
+  (and flags) to use when computing depencies for the compiler.
+  Add a -no-slash option to ocamldep to let users override -slash.
+  (Sébastien Hinderer, review by David Allsopp)
+
 ### Bug fixes:
 
 - #11112: harden -use-runtime against spaces or quotes in the provided path

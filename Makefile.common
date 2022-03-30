@@ -60,6 +60,8 @@ else
   BOOT_OCAMLC = $(OCAMLRUN) $(ROOTDIR)/boot/ocamlc
 endif
 
+BOOT_OCAMLDEP = $(BOOT_OCAMLC) -depend
+
 ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
   FLEXLINK_ENV =
   CAMLOPT_CMD = $(CAMLOPT)
@@ -139,6 +141,18 @@ ifneq ($(EXE),)
 $(1): $(1)$(EXE)
 endif
 endef # PROGRAM_SYNONYM
+
+# Definitions related to ocamldep
+
+# Default value for OCAMLDEP
+# In those directories where this needs to be overridden, the overriding
+# should take place *before* Makefile.common is included.
+
+OCAMLDEP ?= $(BEST_OCAMLDEP)
+OC_OCAMLDEPFLAGS = -slash
+OC_OCAMLDEPDIRS =
+OCAMLDEP_CMD = $(OCAMLDEP) $(OC_OCAMLDEPFLAGS) \
+  $(addprefix -I ,$(OC_OCAMLDEPDIRS)) $(OCAMLDEPFLAGS)
 
 # Lexer generation
 

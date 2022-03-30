@@ -27,7 +27,7 @@ $(foreach m,$(1),$(call capitalize_one,$m))
 endef
 
 define sort
-$(shell $(BEST_OCAMLDEP) -sort $(1))
+$(shell $(OCAMLDEP) -sort $(1))
 endef
 
 

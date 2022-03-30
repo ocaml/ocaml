@@ -19,6 +19,7 @@ ROOTDIR = ..
 # over the one there.
 OCAMLLEX ?= $(BOOT_OCAMLLEX)
 include $(ROOTDIR)/Makefile.common
+include $(ROOTDIR)/Makefile.best_binaries
 
 # Setup GNU make variables storing per-target source and target,
 # a list of installed tools, and a function to quote a filename for
@@ -35,10 +36,11 @@ CAMLC = $(BOOT_OCAMLC) -g -nostdlib -I $(ROOTDIR)/boot \
         -use-prims $(ROOTDIR)/runtime/primitives -I $(ROOTDIR)
 CAMLOPT = $(OCAMLRUN) $(ROOTDIR)/ocamlopt$(EXE) \
   -g -nostdlib -I $(ROOTDIR)/stdlib
-INCLUDES = $(addprefix -I $(ROOTDIR)/,utils parsing typing bytecomp \
-                       middle_end middle_end/closure middle_end/flambda \
-                       middle_end/flambda/base_types driver toplevel \
-                       file_formats lambda)
+DIRS = $(addprefix $(ROOTDIR)/,utils parsing typing bytecomp \
+                   middle_end middle_end/closure middle_end/flambda \
+                   middle_end/flambda/base_types driver toplevel \
+                   file_formats lambda)
+INCLUDES = $(addprefix -I ,$(DIRS))
 COMPFLAGS = -absname -w +a-4-9-41-42-44-45-48-70 -strict-sequence \
 -warn-error +A -principal -safe-string -strict-formats -bin-annot $(INCLUDES)
 LINKFLAGS = $(INCLUDES)
@@ -71,14 +73,14 @@ clean::
 
 # The dependency generator
 
-OCAMLDEP = \
+ocamldep_objects = \
   $(ROOTDIR)/compilerlibs/ocamlcommon.cma \
   $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
   ocamldep.cmo depend.cmi
 
 ocamldep$(EXE): LINKFLAGS += -compat-32
-ocamldep$(EXE): $(OCAMLDEP)
-ocamldep.opt$(EXE): $(call byte2native, $(OCAMLDEP))
+ocamldep$(EXE): $(ocamldep_objects)
+ocamldep.opt$(EXE): $(call byte2native, $(ocamldep_objects))
 
 # The profiler
 
@@ -341,11 +343,9 @@ clean::
 clean::
 	rm -f *.cmo *.cmi *.cma *.dll *.so *.lib *.a
 
-CAMLDEP=$(BOOT_OCAMLC) -depend
-DEPFLAGS=-slash
-DEPINCLUDES=$(INCLUDES)
+OC_OCAMLDEPDIRS = $(DIRS)
 depend: beforedepend
-	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mli *.ml > .depend
+	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 
 .PHONY: clean distclean install beforedepend depend
 

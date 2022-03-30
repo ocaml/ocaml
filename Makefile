@@ -16,9 +16,11 @@
 # The main Makefile
 
 ROOTDIR = .
-# NOTE: it is important that OCAMLLEX is defined *before* Makefile.common
-# gets included, so that its definition here takes precedence
-# over the one there.
+# NOTE: it is important that the OCAMLDEP and OCAMLLEX variables
+# are defined *before* Makefile.common gets included, so that
+# their local definitions here take precedence over their
+# general shared definitions in Makefile.common.
+OCAMLDEP ?= $(BOOT_OCAMLDEP)
 OCAMLLEX ?= $(BOOT_OCAMLLEX)
 include Makefile.common
 
@@ -40,12 +42,10 @@ include stdlib/StdlibModules
 CAMLC=$(BOOT_OCAMLC) -g -nostdlib -I boot -use-prims runtime/primitives
 CAMLOPT=$(OCAMLRUN) ./ocamlopt$(EXE) -g -nostdlib -I stdlib -I otherlibs/dynlink
 ARCHES=amd64 i386 arm arm64 power s390x riscv
-INCLUDES=-I utils -I parsing -I typing -I bytecomp -I file_formats \
-        -I lambda -I middle_end -I middle_end/closure \
-        -I middle_end/flambda -I middle_end/flambda/base_types \
-        -I asmcomp \
-        -I driver -I toplevel
-
+DIRS = utils parsing typing bytecomp file_formats lambda middle_end \
+  middle_end/closure middle_end/flambda middle_end/flambda/base_types \
+  asmcomp driver toplevel
+INCLUDES = $(addprefix -I ,$(DIRS))
 COMPFLAGS=-strict-sequence -principal -absname \
           -w +a-4-9-40-41-42-44-45-48-66-70 \
           -warn-error +a \
@@ -58,9 +58,7 @@ else
 OCAML_NATDYNLINKOPTS = -ccopt "$(NATDYNLINKOPTS)"
 endif
 
-CAMLDEP=$(OCAMLRUN) boot/ocamlc -depend
-DEPFLAGS=-slash
-DEPINCLUDES=$(INCLUDES)
+OC_OCAMLDEPDIRS = $(DIRS)
 
 OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
 OCAMLTEST_OPT=$(WITH_OCAMLTEST:=.opt)
@@ -1153,7 +1151,8 @@ depend: beforedepend
          middle_end/flambda/base_types \
          driver toplevel toplevel/byte toplevel/native; \
 	 do \
-	   $(CAMLDEP) $(DEPFLAGS) -I $$d $(DEPINCLUDES) $$d/*.mli $$d/*.ml \
+	   $(OCAMLDEP) $(OC_OCAMLDEPFLAGS) -I $$d $(INCLUDES) \
+	   $(OCAMLDEPFLAGS) $$d/*.mli $$d/*.ml \
 	   || exit; \
          done) > .depend
 
