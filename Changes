@@ -199,6 +199,12 @@ Working version
   Add a -no-slash option to ocamldep to let users override -slash.
   (Sébastien Hinderer, review by David Allsopp)
 
+- #11147: Factorize the stdlib-related compilation flags. Make it
+  possible to control them consistently through the STDLIBFLAGS
+  build variable. Make sure ocamldoc and ocamllex get compiled and
+  linked with debugging informations (-g).
+  (Sébastien Hinderer, review by Gabriel Scherer)
+
 ### Bug fixes:
 
 - #11112: harden -use-runtime against spaces or quotes in the provided path
