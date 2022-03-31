@@ -26,7 +26,7 @@ operating systems with limited stack space -- the dreaded
 "Stack_overflow" exception.
 
 \begin{caml_example}{toplevel}
-List.length (map Fun.id (List.init 1_000_000 Fun.id));;
+List.length (map (fun x -> x) (List.init 1_000_000 (fun i -> i)));;
 \end{caml_example}
 
 In this implementation of "map", the recursive call happens in
@@ -55,7 +55,7 @@ let[@tail_mod_cons] rec map f l =
 \end{caml_example*}
 
 \begin{caml_example}{toplevel}
-List.length (map Fun.id (List.init 1_000_000 Fun.id));;
+List.length (map (fun x -> x) (List.init 1_000_000 (fun i -> i)));;
 \end{caml_example}
 
 This transformation only improves calls in tail-modulo-cons position,
