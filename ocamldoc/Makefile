@@ -20,7 +20,6 @@ include $(ROOTDIR)/Makefile.best_binaries
 
 OCAMLYACCFLAGS = --strict -v
 
-STDLIBFLAGS = -nostdlib -I $(ROOTDIR)/stdlib
 OCAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
 OCAMLOPT = $(BEST_OCAMLOPT) $(STDLIBFLAGS)
 
@@ -58,7 +57,7 @@ INCLUDE_DIRS = $(addprefix $(ROOTDIR)/,\
   utils parsing typing driver bytecomp toplevel)
 INCLUDES_DEP = $(addprefix -I ,$(INCLUDE_DIRS))
 INCLUDES_NODEP = $(addprefix -I $(ROOTDIR)/,\
-  stdlib compilerlibs otherlibs/str otherlibs/dynlink \
+  compilerlibs otherlibs/str otherlibs/dynlink \
   otherlibs/dynlink/native otherlibs/$(UNIXLIB))
 
 OC_OCAMLDEPDIRS = $(INCLUDE_DIRS)
@@ -67,7 +66,7 @@ INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)
 COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48-70 -warn-error +A \
   -safe-string -strict-sequence -strict-formats -bin-annot -principal
 
-LINKFLAGS=$(INCLUDES) -nostdlib
+LINKFLAGS = $(INCLUDES)
 
 CMOFILES=\
   odoc_config.cmo \

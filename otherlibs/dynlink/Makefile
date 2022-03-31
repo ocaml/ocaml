@@ -24,8 +24,8 @@ ROOTDIR = ../..
 include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 
-OCAMLC=$(BEST_OCAMLC) -g -nostdlib -I $(ROOTDIR)/stdlib
-OCAMLOPT=$(BEST_OCAMLOPT) -g -nostdlib -I $(ROOTDIR)/stdlib
+OCAMLC=$(BEST_OCAMLC) $(STDLIBFLAGS) -g
+OCAMLOPT=$(BEST_OCAMLOPT) $(STDLIBFLAGS) -g
 
 # COMPFLAGS should be in sync with the toplevel Makefile's COMPFLAGS.
 COMPFLAGS=-strict-sequence -principal -absname \

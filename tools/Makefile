@@ -34,8 +34,7 @@ endef
 
 CAMLC = $(BOOT_OCAMLC) -g -nostdlib -I $(ROOTDIR)/boot \
         -use-prims $(ROOTDIR)/runtime/primitives -I $(ROOTDIR)
-CAMLOPT = $(OCAMLRUN) $(ROOTDIR)/ocamlopt$(EXE) \
-  -g -nostdlib -I $(ROOTDIR)/stdlib
+CAMLOPT = $(OCAMLRUN) $(ROOTDIR)/ocamlopt$(EXE) $(STDLIBFLAGS) -g
 DIRS = $(addprefix $(ROOTDIR)/,utils parsing typing bytecomp \
                    middle_end middle_end/closure middle_end/flambda \
                    middle_end/flambda/base_types driver toplevel \
@@ -318,7 +317,7 @@ caml_tex := caml-tex$(EXE)
 # configuration.
 $(caml_tex): INCLUDES += $(addprefix -I $(ROOTDIR)/otherlibs/,str $(UNIXLIB))
 $(caml_tex): $(caml_tex_files)
-	$(OCAMLRUN) $(ROOTDIR)/ocamlc$(EXE) -nostdlib -I $(ROOTDIR)/stdlib \
+	$(OCAMLRUN) $(ROOTDIR)/ocamlc$(EXE) $(STDLIBFLAGS) \
 	  $(LINKFLAGS) -linkall -o $@ -no-alias-deps $^
 
 # we need str and unix which depend on the bytecode version of other tools

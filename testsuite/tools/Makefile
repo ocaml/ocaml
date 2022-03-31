@@ -24,7 +24,6 @@ ASPPFLAGS ?=
 include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 
-STDLIBFLAGS = -nostdlib -I $(ROOTDIR)/stdlib
 OCAMLC ?= $(BEST_OCAMLC) $(STDLIBFLAGS)
 OCAMLOPT ?= $(BEST_OCAMLOPT) $(STDLIBFLAGS)
 
