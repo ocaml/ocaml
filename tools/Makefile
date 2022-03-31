@@ -32,7 +32,7 @@ define byte2native
 $(patsubst %.cmo,%.cmx,$(patsubst %.cma,%.cmxa,$1))
 endef
 
-CAMLC = $(BOOT_OCAMLC) -g -nostdlib -I $(ROOTDIR)/boot \
+CAMLC = $(BOOT_OCAMLC) $(BOOT_STDLIBFLAGS) -g \
         -use-prims $(ROOTDIR)/runtime/primitives -I $(ROOTDIR)
 CAMLOPT = $(OCAMLRUN) $(ROOTDIR)/ocamlopt$(EXE) $(STDLIBFLAGS) -g
 DIRS = $(addprefix $(ROOTDIR)/,utils parsing typing bytecomp \

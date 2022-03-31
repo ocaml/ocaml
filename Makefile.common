@@ -51,6 +51,7 @@ NEW_OCAMLRUN ?= $(ROOTDIR)/runtime/ocamlrun$(EXE)
 
 # Standard library flags
 STDLIBFLAGS ?= -nostdlib -I $(ROOTDIR)/stdlib
+BOOT_STDLIBFLAGS ?= -nostdlib -I $(ROOTDIR)/boot
 
 TEST_BOOT_OCAMLC_OPT = $(shell \
   test $(ROOTDIR)/boot/ocamlc.opt -nt $(ROOTDIR)/boot/ocamlc; \

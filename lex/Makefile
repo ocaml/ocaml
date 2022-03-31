@@ -29,7 +29,7 @@ include $(ROOTDIR)/Makefile.common
 
 OCAMLYACCFLAGS = -v
 
-CAMLC = $(BOOT_OCAMLC) -nostdlib -I $(ROOTDIR)/boot \
+CAMLC = $(BOOT_OCAMLC) $(BOOT_STDLIBFLAGS) \
   -use-prims $(ROOTDIR)/runtime/primitives -strict-sequence
 CAMLOPT = $(OCAMLRUN) $(ROOTDIR)/ocamlopt$(EXE) $(STDLIBFLAGS)
 COMPFLAGS = -g -absname -w +a-4-9-41-42-44-45-48-70 -warn-error +A \
