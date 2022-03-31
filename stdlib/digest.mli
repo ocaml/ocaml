@@ -17,14 +17,14 @@
 
    This module provides functions to compute 'digests', also known as
    'hashes', of arbitrary-length strings or files.
-   The supported hashing algorithm is MD5. *)
+   The supported hashing algorithms are BLAKE2 and MD5. *)
 
 (** {1 Basic functions} *)
 
 (** The functions in this section use the MD5 hash function to produce
    128-bit digests (16 bytes).  MD5 is not cryptographically secure.
    Hence, these functions should not be used for security-sensitive
-   applications.  *)
+   applications.  The BLAKE2 functions below are cryptographically secure. *)
 
 type t = string
 (** The type of digests: 16-character strings. *)
@@ -57,7 +57,7 @@ val subbytes : bytes -> int -> int -> t
     of [s] starting at index [ofs] and containing [len] bytes.
     @since 4.02 *)
 
-external channel : in_channel -> int -> t = "caml_md5_chan"
+val channel : in_channel -> int -> t
 (** If [len] is nonnegative, [Digest.channel ic len] reads [len]
    characters from channel [ic] and returns their digest, or raises
    [End_of_file] if end-of-file is reached before [len] characters
@@ -98,7 +98,7 @@ module type S = sig
   val compare : t -> t -> int
     (** Compare two digests, , with the same specification as
         {!Stdlib.compare}. *)
-        
+
   val equal : t -> t -> bool
     (** Test two digests for equality. *)
 
@@ -145,6 +145,25 @@ end
        @since 5.2 *)
 
 (** {1 Specific hash functions} *)
+
+module BLAKE2_128 : S
+  (** [BLAKE2_128] is the BLAKE2b hash function producing
+      128-bit (16-byte) digests.  It is cryptographically secure.
+      However, the small size of the digests enable brute-force attacks
+      in [2{^64}] attempts.
+      @since 5.2 *)
+
+module BLAKE2_256 : S
+  (** [BLAKE2_256] is the BLAKE2b hash function producing
+      256-bit (32-byte) digests.  It is cryptographically secure,
+      and the digests are large enough to thwart brute-force attacks.
+      @since 5.2 *)
+
+module BLAKE2_512 : S
+  (** [BLAKE2_512] is the BLAKE2b hash function producing
+      512-bit (64-byte) digests.  It is cryptographically secure,
+      and the digests are large enough to thwart brute-force attacks.
+      @since 5.2 *)
 
 module MD5 : S
   (** [MD5] is the MD5 hash function.  It produces 128-bit (16-byte) digests
