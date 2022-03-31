@@ -201,7 +201,8 @@ Working version
 
 - #11147: Factorize the stdlib-related compilation flags. Make it
   possible to control them consistently through the STDLIBFLAGS
-  build variable.
+  build variable. Make sure ocamldoc and ocamllex get compiled and
+  linked with debugging informations (-g).
   (Sébastien Hinderer, review by Gabriel Scherer)
 
 ### Bug fixes:

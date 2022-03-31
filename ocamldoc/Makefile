@@ -63,10 +63,11 @@ INCLUDES_NODEP = $(addprefix -I $(ROOTDIR)/,\
 OC_OCAMLDEPDIRS = $(INCLUDE_DIRS)
 INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)
 
-COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48-70 -warn-error +A \
+COMPFLAGS = \
+  -g $(INCLUDES) -absname -w +a-4-9-41-42-44-45-48-70 -warn-error +A \
   -safe-string -strict-sequence -strict-formats -bin-annot -principal
 
-LINKFLAGS = $(INCLUDES)
+LINKFLAGS = -g $(INCLUDES)
 
 CMOFILES=\
   odoc_config.cmo \
@@ -199,7 +200,7 @@ DEPEND_PREREQS = $(LEXERS:.mll=.ml) \
 	$(OCAMLC) $(COMPFLAGS) -c $<
 
 %.cmi: %.mli
-	$(OCAMLC)  $(COMPFLAGS) -c $<
+	$(OCAMLC) $(COMPFLAGS) -c $<
 
 %.cmx: %.ml
 	$(OCAMLOPT) $(COMPFLAGS) -c $<
