@@ -121,8 +121,10 @@ let runtime_counter_name counter =
   | EV_C_REQUEST_MAJOR_ALLOC_SHR -> "request_major_alloc_shr"
   | EV_C_REQUEST_MAJOR_ADJUST_GC_SPEED -> "request_major_adjust_gc_speed"
   | EV_C_REQUEST_MINOR_REALLOC_REF_TABLE -> "request_minor_realloc_ref_table"
-  | EV_C_REQUEST_MINOR_REALLOC_EPHE_REF_TABLE -> "request_minor_realloc_ephe_ref_table"
-  | EV_C_REQUEST_MINOR_REALLOC_CUSTOM_TABLE -> "request_minor_realloc_custom_table"
+  | EV_C_REQUEST_MINOR_REALLOC_EPHE_REF_TABLE ->
+      "request_minor_realloc_ephe_ref_table"
+  | EV_C_REQUEST_MINOR_REALLOC_CUSTOM_TABLE ->
+      "request_minor_realloc_custom_table"
 
 let runtime_phase_name phase =
   match phase with
