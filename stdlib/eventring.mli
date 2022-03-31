@@ -115,7 +115,7 @@ type runtime_phase =
 | EV_DOMAIN_RESIZE_HEAP_RESERVATION
 (** The type for span events emitted by the runtime *)
 
-type ev_lifecycle =
+type lifecycle =
   EV_RING_START
 | EV_RING_STOP
 | EV_RING_PAUSE
@@ -125,6 +125,15 @@ type ev_lifecycle =
 | EV_DOMAIN_SPAWN
 | EV_DOMAIN_TERMINATE
 (** Lifecycle events for the ring itself *)
+
+val lifecycle_name : lifecycle -> string
+(** Return a string representation of a given lifecycle event type *)
+
+val runtime_phase_name : runtime_phase -> string
+(** Return a string representation of a given runtime phase event type *)
+
+val runtime_counter_name : runtime_counter -> string
+(** Return a string representation of a given runtime counter type *)
 
 type cursor
 (** Type of the cursor used when consuming *)
@@ -147,7 +156,7 @@ module Callbacks : sig
              ?runtime_counter:(Domain.id -> Timestamp.t -> runtime_counter
                                 -> int -> unit) ->
              ?alloc:(Domain.id -> Timestamp.t -> int array -> unit) ->
-             ?lifecycle:(Domain.id -> Timestamp.t -> ev_lifecycle
+             ?lifecycle:(Domain.id -> Timestamp.t -> lifecycle
                             -> int option -> unit) ->
              ?lost_events:(Domain.id -> int -> unit) -> unit -> t
   (** Create a [Callback] that optionally subscribes to one or more runtime
