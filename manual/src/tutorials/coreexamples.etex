@@ -139,13 +139,13 @@ piece of data. For instance, here is a "deriv" function that takes any
 float function as argument and returns an approximation of its
 derivative function:
 \begin{caml_example}{toplevel}
-let deriv f dx = function x -> (f (x +. dx) -. f x) /. dx;;
+let deriv f dx = fun x -> (f (x +. dx) -. f x) /. dx;;
 let sin' = deriv sin 1e-6;;
 sin' pi;;
 \end{caml_example}
 Even function composition is definable:
 \begin{caml_example}{toplevel}
-let compose f g = function x -> f (g x);;
+let compose f g = fun x -> f (g x);;
 let cos2 = compose square cos;;
 \end{caml_example}
 
@@ -156,7 +156,7 @@ over a data structure. For instance, the standard OCaml library
 provides a "List.map" functional that applies a given function to each
 element of a list, and returns the list of the results:
 \begin{caml_example}{toplevel}
-List.map (function n -> n * 2 + 1) [0;1;2;3;4];;
+List.map (fun n -> n * 2 + 1) [0;1;2;3;4];;
 \end{caml_example}
 This functional, along with a number of other list and array
 functionals, is predefined because it is often useful, but there is

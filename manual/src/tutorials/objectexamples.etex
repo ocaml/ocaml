@@ -752,7 +752,7 @@ points.
 % Conversely, the class "int_comparable" inherits from class
 %"comparable", but type "int_comparable" is not a subtype of "comparable".
 %\begin{caml_example}{toplevel}
-%function x -> (x : int_comparable :> comparable);;
+%fun x -> (x : int_comparable :> comparable);;
 %\end{caml_example}
 
 The domain of a coercion can often be omitted. For instance, one can
@@ -832,7 +832,7 @@ abbreviation not being completely defined yet, and so its subtypes are not
 clearly known.  Then, a coercion "(_ :> c)" or "(_ : #c :> c)" is taken to be
 the identity function, as in
 \begin{caml_example}{toplevel}
-function x -> (x :> 'a);;
+fun x -> (x :> 'a);;
 \end{caml_example}
 As a consequence, if the coercion is applied to "self", as in the
 following example, the type of "self" is unified with the closed type
