@@ -17,11 +17,13 @@
 
 ROOTDIR = ..
 
-# enable debug info for run_*.c
-CFLAGS=-g
-
 include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
+
+# Enable debug info for C files
+ifneq "$(CCOMPTYPE)" "msvc"
+OC_CFLAGS += -g
+endif
 
 ifeq "$(filter str,$(OTHERLIBRARIES))" ""
   str := false
