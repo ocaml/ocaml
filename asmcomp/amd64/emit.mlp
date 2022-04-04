@@ -1072,7 +1072,7 @@ let end_assembly() =
       efa_string = (fun s -> D.bytes (s ^ "\000"))
     };
 
-  if system = S_linux then begin
+  if system = S_linux || system = S_freebsd || system = S_netbsd || system = S_openbsd then begin
     let frametable = emit_symbol (Compilenv.make_symbol (Some "frametable")) in
     D.size frametable (ConstSub (ConstThis, ConstLabel frametable))
   end;
