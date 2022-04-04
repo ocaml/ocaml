@@ -1,3 +1,8 @@
+* #10845 Emit frametable size on amd64 BSD (OpenBSD, FreeBSD, NetBSD) systems
+  (emitted for Linux in #8805)
+  (Hannes Mehnert, review by Nicolás Ojeda Bär)
+
+
 OCaml 4.14 maintenance version
 
 ### Runtime system:
