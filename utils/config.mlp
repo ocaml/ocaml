@@ -50,13 +50,10 @@ let bytecomp_c_libraries = "%%BYTECCLIBS%%"
    the recommended approach is to use the constituent variables
    c_compiler, ocamlc_cflags, ocamlc_cppflags etc., directly.
 *)
-let make_flags cflags cppflags =
-  if in_boot_compiler then ""
-  else " " ^ cflags ^ " " ^ cppflags
 let bytecomp_c_compiler =
-  c_compiler ^ make_flags ocamlc_cflags ocamlc_cppflags
+  c_compiler ^ " " ^ ocamlc_cflags ^ " " ^ ocamlc_cppflags
 let native_c_compiler =
-  c_compiler ^ make_flags ocamlopt_cflags ocamlopt_cppflags
+  c_compiler ^ " " ^ ocamlopt_cflags ^ " " ^ ocamlopt_cppflags
 let native_c_libraries = "%%NATIVECCLIBS%%"
 let native_pack_linker = "%%PACKLD%%"
 let default_rpath = "%%RPATH%%"

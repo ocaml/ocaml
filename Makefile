@@ -268,17 +268,15 @@ coreboot:
 # runtime/ocamlrun
 	$(MAKE) promote-cross
 # Rebuild ocamlc and ocamllex (run on runtime/ocamlrun)
-# utils/config.ml will have the fixed bootstrap configuration
 	$(MAKE) partialclean
-	$(MAKE) IN_COREBOOT_CYCLE=true ocamlc ocamllex ocamltools
+	$(MAKE) ocamlc ocamllex ocamltools
 # Rebuild the library (using runtime/ocamlrun ./ocamlc)
 	$(MAKE) library-cross
 # Promote the new compiler and the new runtime
 	$(MAKE) OCAMLRUN=runtime/ocamlrun$(EXE) promote
 # Rebuild the core system
-# utils/config.ml must still have the fixed bootstrap configuration
 	$(MAKE) partialclean
-	$(MAKE) IN_COREBOOT_CYCLE=true core
+	$(MAKE) core
 # Check if fixpoint reached
 	$(MAKE) compare
 else
@@ -303,8 +301,6 @@ endif
 # Never mind, just do make bootstrap to reach fixpoint again.
 .PHONY: bootstrap
 bootstrap: coreboot
-# utils/config.ml must be restored to config.status's configuration
-	rm -f utils/config.ml
 	$(MAKE) all
 
 # Compile everything the first time
