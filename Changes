@@ -806,6 +806,10 @@ OCaml 5.0.0 (15 December 2022)
 - #11134: Optimise 'include struct' in more cases
   (Stephen Dolan, review by Leo White and Vincent Laviron)
 
+- #11163: Always serialize doubles in little-endian format on systems which
+  natively use big-endian format doubles.
+  (David Allsopp, review by Xavier Leroy)
+
 ### Standard library:
 
 - #10742: Use LXM as the pseudo-random number generator for module Random.

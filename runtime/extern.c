@@ -508,12 +508,29 @@ static void writeblock(struct caml_extern_state* s, const char * data,
 }
 
 Caml_inline void writeblock_float8(struct caml_extern_state* s,
-                                   const double * data, intnat ndoubles)
+                                   void * data, intnat ndoubles)
 {
-#if ARCH_FLOAT_ENDIANNESS == 0x01234567 || ARCH_FLOAT_ENDIANNESS == 0x76543210
-  writeblock(s, (const char *) data, ndoubles * 8);
+  if (s->extern_ptr + 8 * ndoubles > s->extern_limit)
+    grow_extern_output(s, 8 * ndoubles);
+#if ARCH_FLOAT_ENDIANNESS == 0x01234567
+  memcpy(s->extern_ptr, data, ndoubles * 8);
+  s->extern_ptr += ndoubles * 8;
+#elif ARCH_FLOAT_ENDIANNESS == 0x76543210
+  {
+    unsigned char * p;
+    char * q;
+    for (p = data, q = s->extern_ptr; ndoubles > 0; ndoubles--, p += 8, q += 8)
+      Reverse_64(q, p);
+    s->extern_ptr = q;
+  }
 #else
-  caml_serialize_block_float_8(data, ndoubles);
+  {
+    unsigned char * p;
+    char * q;
+    for (p = data, q = s->extern_ptr; ndoubles > 0; ndoubles--, p += 8, q += 8)
+      Permute_64(q, 0x01234567, p, ARCH_FLOAT_ENDIANNESS);
+    s->extern_ptr = q;
+  }
 #endif
 }
 
@@ -647,7 +664,7 @@ Caml_inline void extern_string(struct caml_extern_state *s,
 
 Caml_inline void extern_double(struct caml_extern_state* s, value v)
 {
-  writebyte(s, CODE_DOUBLE_NATIVE);
+  writebyte(s, CODE_DOUBLE_LITTLE);
   writeblock_float8(s, (double *) v, 1);
 }
 
@@ -657,18 +674,18 @@ Caml_inline void extern_double_array(struct caml_extern_state* s,
                                      value v, mlsize_t nfloats)
 {
   if (nfloats < 0x100) {
-    writecode8(s, CODE_DOUBLE_ARRAY8_NATIVE, nfloats);
+    writecode8(s, CODE_DOUBLE_ARRAY8_LITTLE, nfloats);
   } else {
 #ifdef ARCH_SIXTYFOUR
     if (nfloats > 0x1FFFFF && (s->extern_flags & COMPAT_32))
       extern_failwith(s, "output_value: float array cannot be read back on "
                       "32-bit platform");
     if (nfloats < (uintnat) 1 << 32)
-      writecode32(s, CODE_DOUBLE_ARRAY32_NATIVE, nfloats);
+      writecode32(s, CODE_DOUBLE_ARRAY32_LITTLE, nfloats);
     else
-      writecode64(s, CODE_DOUBLE_ARRAY64_NATIVE, nfloats);
+      writecode64(s, CODE_DOUBLE_ARRAY64_LITTLE, nfloats);
 #else
-    writecode32(s, CODE_DOUBLE_ARRAY32_NATIVE, nfloats);
+    writecode32(s, CODE_DOUBLE_ARRAY32_LITTLE, nfloats);
 #endif
   }
   writeblock_float8(s, (double *) v, nfloats);
@@ -1310,28 +1327,7 @@ CAMLexport void caml_serialize_block_8(void * data, intnat len)
 
 CAMLexport void caml_serialize_block_float_8(void * data, intnat len)
 {
-  struct caml_extern_state* s = get_extern_state ();
-  if (s->extern_ptr + 8 * len > s->extern_limit) grow_extern_output(s, 8 * len);
-#if ARCH_FLOAT_ENDIANNESS == 0x01234567
-  memcpy(s->extern_ptr, data, len * 8);
-  s->extern_ptr += len * 8;
-#elif ARCH_FLOAT_ENDIANNESS == 0x76543210
-  {
-    unsigned char * p;
-    char * q;
-    for (p = data, q = s->extern_ptr; len > 0; len--, p += 8, q += 8)
-      Reverse_64(q, p);
-    s->extern_ptr = q;
-  }
-#else
-  {
-    unsigned char * p;
-    char * q;
-    for (p = data, q = s->extern_ptr; len > 0; len--, p += 8, q += 8)
-      Permute_64(q, 0x01234567, p, ARCH_FLOAT_ENDIANNESS);
-    s->extern_ptr = q;
-  }
-#endif
+  writeblock_float8(get_extern_state(), data, len);
 }
 
 CAMLprim value caml_obj_reachable_words(value v)
