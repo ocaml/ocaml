@@ -236,6 +236,12 @@ Working version
   can use the OCaml runtime.
   (Gabriel Scherer, review by Xavier Leroy, report by Brahima Dibassi)
 
+- #10809: Use the WSA_FLAG_NO_HANDLE_INHERIT on Windows when creating
+  sockets with WSASocket if the cloexec (non-inheritable) parameter is
+  true. Fixes a race condition where a child process could inherit the
+  socket and deadlock the parent.
+  (Antonin Décimo, review by Xavier Leroy)
+
 OCaml 4.14.0
 ----------------
 

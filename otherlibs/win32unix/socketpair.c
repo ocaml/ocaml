@@ -35,7 +35,8 @@ extern int socket_type_table[]; /* from socket.c */
 #else
 
 static int socketpair(int domain, int type, int protocol,
-                      SOCKET socket_vector[2])
+                      SOCKET socket_vector[2],
+                      BOOL inherit)
 {
   wchar_t dirname[MAX_PATH + 1], path[MAX_PATH + 1];
   union sock_addr_union addr;
@@ -74,7 +75,7 @@ static int socketpair(int domain, int type, int protocol,
     goto fail_path;
   }
 
-  listener = socket(domain, type, protocol);
+  listener = win32_socket(domain, type, protocol, NULL, inherit);
   if (listener == INVALID_SOCKET)
     goto fail_wsa;
 
@@ -95,7 +96,7 @@ static int socketpair(int domain, int type, int protocol,
   if (rc == SOCKET_ERROR)
     goto fail_wsa;
 
-  client = socket(domain, type, protocol);
+  client = win32_socket(domain, type, protocol, NULL, inherit);
   if (client == INVALID_SOCKET)
     goto fail_wsa;
 
@@ -181,14 +182,12 @@ CAMLprim value unix_socketpair(value cloexec, value domain, value type,
   rc = socketpair(socket_domain_table[Int_val(domain)],
                   socket_type_table[Int_val(type)],
                   Int_val(protocol),
-                  sv);
+                  sv,
+                  ! unix_cloexec_p(cloexec));
   caml_leave_blocking_section();
 
   if (rc == SOCKET_ERROR)
     uerror("socketpair", Nothing);
-
-  win_set_cloexec((HANDLE) sv[0], cloexec);
-  win_set_cloexec((HANDLE) sv[1], cloexec);
 
   result = caml_alloc_tuple(2);
   Store_field(result, 0, win_alloc_socket(sv[0]));
