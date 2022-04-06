@@ -41,24 +41,22 @@
     Pstr_value Nonrec
     [
       <def>
-        pattern (quotedextensions.ml[20,363+4]..[21,390+26]) ghost
-          Ppat_constraint
-          pattern (quotedextensions.ml[20,363+4]..[20,363+26])
-            Ppat_extension "M.foo"
-            [
-              structure_item (quotedextensions.ml[20,363+4]..[20,363+26]) ghost
-                Pstr_eval
-                expression (quotedextensions.ml[20,363+4]..[20,363+26]) ghost
-                  Pexp_constant PConst_string (" <hello>{x} ",(quotedextensions.ml[20,363+12]..[20,363+24]),Some "")
-            ]
-          core_type (quotedextensions.ml[21,390+4]..[21,390+26])
-            Ptyp_extension "M.foo"
-            [
-              structure_item (quotedextensions.ml[21,390+4]..[21,390+26]) ghost
-                Pstr_eval
-                expression (quotedextensions.ml[21,390+4]..[21,390+26]) ghost
-                  Pexp_constant PConst_string (" <hello>{x} ",(quotedextensions.ml[21,390+12]..[21,390+24]),Some "")
-            ]
+        pattern (quotedextensions.ml[20,363+4]..[20,363+26])
+          Ppat_extension "M.foo"
+          [
+            structure_item (quotedextensions.ml[20,363+4]..[20,363+26]) ghost
+              Pstr_eval
+              expression (quotedextensions.ml[20,363+4]..[20,363+26]) ghost
+                Pexp_constant PConst_string (" <hello>{x} ",(quotedextensions.ml[20,363+12]..[20,363+24]),Some "")
+          ]
+        core_type (quotedextensions.ml[21,390+4]..[21,390+26])
+          Ptyp_extension "M.foo"
+          [
+            structure_item (quotedextensions.ml[21,390+4]..[21,390+26]) ghost
+              Pstr_eval
+              expression (quotedextensions.ml[21,390+4]..[21,390+26]) ghost
+                Pexp_constant PConst_string (" <hello>{x} ",(quotedextensions.ml[21,390+12]..[21,390+24]),Some "")
+          ]
         expression (quotedextensions.ml[22,417+4]..[22,417+26])
           Pexp_extension "M.foo"
           [
@@ -72,24 +70,22 @@
     Pstr_value Nonrec
     [
       <def>
-        pattern (quotedextensions.ml[23,444+4]..[24,480+35]) ghost
-          Ppat_constraint
-          pattern (quotedextensions.ml[23,444+4]..[23,444+35])
-            Ppat_extension "M.foo"
-            [
-              structure_item (quotedextensions.ml[23,444+4]..[23,444+35]) ghost
-                Pstr_eval
-                expression (quotedextensions.ml[23,444+4]..[23,444+35]) ghost
-                  Pexp_constant PConst_string (" <hello>{|x|} ",(quotedextensions.ml[23,444+16]..[23,444+30]),Some "bar")
-            ]
-          core_type (quotedextensions.ml[24,480+4]..[24,480+35])
-            Ptyp_extension "M.foo"
-            [
-              structure_item (quotedextensions.ml[24,480+4]..[24,480+35]) ghost
-                Pstr_eval
-                expression (quotedextensions.ml[24,480+4]..[24,480+35]) ghost
-                  Pexp_constant PConst_string (" <hello>{|x|} ",(quotedextensions.ml[24,480+16]..[24,480+30]),Some "bar")
-            ]
+        pattern (quotedextensions.ml[23,444+4]..[23,444+35])
+          Ppat_extension "M.foo"
+          [
+            structure_item (quotedextensions.ml[23,444+4]..[23,444+35]) ghost
+              Pstr_eval
+              expression (quotedextensions.ml[23,444+4]..[23,444+35]) ghost
+                Pexp_constant PConst_string (" <hello>{|x|} ",(quotedextensions.ml[23,444+16]..[23,444+30]),Some "bar")
+          ]
+        core_type (quotedextensions.ml[24,480+4]..[24,480+35])
+          Ptyp_extension "M.foo"
+          [
+            structure_item (quotedextensions.ml[24,480+4]..[24,480+35]) ghost
+              Pstr_eval
+              expression (quotedextensions.ml[24,480+4]..[24,480+35]) ghost
+                Pexp_constant PConst_string (" <hello>{|x|} ",(quotedextensions.ml[24,480+16]..[24,480+30]),Some "bar")
+          ]
         expression (quotedextensions.ml[25,516+4]..[25,516+35])
           Pexp_extension "M.foo"
           [
