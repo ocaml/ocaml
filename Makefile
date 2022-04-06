@@ -202,12 +202,21 @@ core: coldstart
 
 # Check if fixpoint reached
 
-CMPBYT := $(OCAMLRUN) tools/cmpbyt$(EXE)
+# We use tools/cmpbyt because it has better error reporting, but cmp could also
+# be used.
+CMPCMD ?= $(OCAMLRUN) tools/cmpbyt$(EXE)
 
 .PHONY: compare
 compare:
-	@if $(CMPBYT) boot/ocamlc ocamlc$(EXE) \
-         && $(CMPBYT) boot/ocamllex lex/ocamllex$(EXE); \
+# The core system has to be rebuilt after bootstrap anyway, so strip ocamlc
+# and ocamllex, which means the artefacts should be identical.
+	mv ocamlc$(EXE) ocamlc.tmp
+	$(OCAMLRUN) tools/stripdebug ocamlc.tmp ocamlc$(EXE)
+	mv lex/ocamllex$(EXE) ocamllex.tmp
+	$(OCAMLRUN) tools/stripdebug ocamllex.tmp lex/ocamllex$(EXE)
+	rm -f ocamllex.tmp ocamlc.tmp
+	@if $(CMPCMD) boot/ocamlc ocamlc$(EXE) \
+         && $(CMPCMD) boot/ocamllex lex/ocamllex$(EXE); \
 	then echo "Fixpoint reached, bootstrap succeeded."; \
 	else \
 	  echo "Fixpoint not reached, try one more bootstrapping cycle."; \
@@ -315,7 +324,8 @@ endif
 .PHONY: bootstrap
 bootstrap: coreboot
 # utils/config.ml must be restored to config.status's configuration
-	rm -f utils/config.ml
+# lex/ocamllex$(EXE) was stripped in order to compare it
+	rm -f utils/config.ml lex/ocamllex$(EXE)
 	$(MAKE) all
 
 # Compile everything the first time
