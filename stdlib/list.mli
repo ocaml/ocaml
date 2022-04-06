@@ -366,8 +366,6 @@ val partition_map : ('a -> ('b, 'c) Either.t) -> 'a list -> 'b list * 'c list
 
 
 (** {1 Association lists} *)
-
-
 val assoc : 'a -> ('a * 'b) list -> 'b
 (** [assoc a l] returns the value associated with key [a] in the list of
    pairs [l]. That is,
@@ -419,6 +417,30 @@ val remove_assq : 'a -> ('a * 'b) list -> ('a * 'b) list
    of structural equality to compare keys. Not tail-recursive.
  *)
 
+val cons_assoc : 'a -> 'b -> ('a * 'b) list -> ('a * 'b) list
+(** [cons_assoc k v li] is [(k, v) :: li]. This function is useful
+    to populate association lists *)
+
+val iter_assoc : ('k -> 'v -> unit) -> ('k * 'v) list -> unit
+(** [List.iter_assoc f [(k1, v1); (k2, v2); ...; (kn, vn)]] is
+    [f k1 v1; f k2 v2; ...; f kn vn].
+
+    @since 4.12.0
+*)
+
+val fold_assoc_left : ('a -> 'k -> 'v -> 'a) -> 'a -> ('k * 'v) list -> 'a
+(** [List.fold_assoc_left f a [(k1,v1); ...; (kn,vn)]] is
+    [f (... (f (f a k1 v1) k2 v2) ...) kn vn].
+
+    @since 4.12.0
+*)
+
+val fold_assoc_right : ('k -> 'v -> 'b -> 'b) -> ('k * 'v) list -> 'b -> 'b
+(** [List.fold_assoc_right f [(k1,v1); ...; (kn,vn)] b] is
+   [f k1 v1 (f k2 v2 (... (f kn vn b) ...))].  Not tail-recursive.
+
+    @since 4.12.0
+*)
 
 (** {1 Lists of pairs} *)
 

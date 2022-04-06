@@ -419,6 +419,13 @@ val remove_assq : 'a -> ('a * 'b) list -> ('a * 'b) list
    of structural equality to compare keys. Not tail-recursive.
  *)
 
+val fold_assoc_left : f:('a -> 'k -> 'v -> 'a) -> init:'a -> ('k * 'v) list -> 'a
+(** [List.fold_assoc_left f a [(k1,v1); ...; (kn,vn)]] is
+    [f (... (f (f a k1 v1) k2 v2) ...) kn vn]. *)
+
+val fold_assoc_right : f:('k -> 'v -> 'b -> 'b) -> ('k * 'v) list -> init:'b -> 'b
+(** [List.fold_assoc_right f [(k1,v1); ...; (kn,vn)] b] is
+   [f k1 v1 (f k2 v2 (... (f kn vn b) ...))].  Not tail-recursive. *)
 
 (** {1 Lists of pairs} *)
 
