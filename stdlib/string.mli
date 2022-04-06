@@ -494,16 +494,18 @@ val get_int32_ne : string -> int -> int32
 *)
 
 val hash : t -> int
-(** The hash function for strings, with the same specification as
-    {!Hashtbl.hash}. Along with the type [t], this function [hash]
-    allows the module [String] to be passed as argument to the functor
-    {!HashTbl.Make}.
+(** An unseeded hash function for strings, with the same output value as
+    {!Hashtbl.hash}. This function allows this module to be passed as argument
+    to the functor {!Hashtbl.Make}.
+
     @since 5.0.0 *)
 
 val seeded_hash : int -> t -> int
-(** A seeded hash function for strings, with the same specification as
-    {!Hashtbl.seeded_hash}.
-    @since 5.0.0. *)
+(** A seeded hash function for strings, with the same output value as
+    {!Hashtbl.seeded_hash}. This function allows this module to be passed as
+    argument to the functor {!Hashtbl.MakeSeeded}.
+
+    @since 5.0.0 *)
 
 val get_int32_be : string -> int -> int32
 (** [get_int32_be b i] is [b]'s big-endian 32-bit integer

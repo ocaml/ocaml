@@ -85,31 +85,31 @@ module SS = struct
   type t = string
   let compare (x:t) (y:t) = Stdlib.compare x y
   let equal (x:t) (y:t) = x=y
-  let hash = Hashtbl.seeded_hash
+  let seeded_hash = Hashtbl.seeded_hash
 end
 module SI = struct
   type t = int
   let compare (x:t) (y:t) = Stdlib.compare x y
   let equal (x:t) (y:t) = x=y
-  let hash = Hashtbl.seeded_hash
+  let seeded_hash = Hashtbl.seeded_hash
 end
 module SSP = struct
   type t = string*string
   let compare (x:t) (y:t) = Stdlib.compare x y
   let equal (x:t) (y:t) = x=y
-  let hash = Hashtbl.seeded_hash
+  let seeded_hash = Hashtbl.seeded_hash
 end
 module SSL = struct
   type t = string list
   let compare (x:t) (y:t) = Stdlib.compare x y
   let equal (x:t) (y:t) = x=y
-  let hash = Hashtbl.seeded_hash
+  let seeded_hash = Hashtbl.seeded_hash
 end
 module SSA = struct
   type t = string array
   let compare (x:t) (y:t) = Stdlib.compare x y
   let equal (x:t) (y:t) = x=y
-  let hash = Hashtbl.seeded_hash
+  let seeded_hash = Hashtbl.seeded_hash
 end
 
 module MS = Map.Make(SS)
