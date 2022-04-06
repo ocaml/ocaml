@@ -243,6 +243,9 @@ val deprecated: ?def:t -> ?use:t -> t -> string -> unit
 val alert: ?def:t -> ?use:t -> kind:string -> t -> string -> unit
 (** Prints an arbitrary alert. *)
 
+val auto_include_alert: string -> unit
+(** Prints an alert that -I +lib has been automatically added ot the load
+    path *)
 
 (** {1 Reporting errors} *)
 

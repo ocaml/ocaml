@@ -895,6 +895,19 @@ let alert ?(def = none) ?(use = none) ~kind loc message =
 let deprecated ?def ?use loc message =
   alert ?def ?use ~kind:"deprecated" loc message
 
+let auto_include_alert lib =
+  let message = Printf.sprintf "\
+    OCaml's lib directory layout changed in 5.0. The %s subdirectory has been \
+    automatically added to the search path, but you should add -I +%s to the \
+    command-line to silence this alert (e.g. by adding %s to the list of \
+    libraries in your dune file, or adding use_%s to your _tags file for \
+    ocamlbuild, or using -package %s for ocamlfind)." lib lib lib lib lib in
+  let alert =
+    {Warnings.kind="ocaml_deprecated_auto_include"; use=none; def=none;
+     message = Format.asprintf "@[@\n%a@]" Format.pp_print_text message}
+  in
+  prerr_alert none alert
+
 (******************************************************************************)
 (* Reporting errors on exceptions *)
 

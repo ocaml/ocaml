@@ -31,10 +31,10 @@ UTILS = \
   utils/identifiable.cmo \
   utils/numbers.cmo \
   utils/arg_helper.cmo \
-  utils/clflags.cmo \
-  utils/profile.cmo \
   utils/local_store.cmo \
   utils/load_path.cmo \
+  utils/clflags.cmo \
+  utils/profile.cmo \
   utils/terminfo.cmo \
   utils/ccomp.cmo \
   utils/warnings.cmo \

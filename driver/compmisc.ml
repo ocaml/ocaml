@@ -13,6 +13,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
+let auto_include find_in_dir fn =
+  if !Clflags.no_std_include then
+    raise Not_found
+  else
+    Load_path.auto_include_otherlibs Location.auto_include_alert find_in_dir fn
+
 (* Initialize the search path.
    [dir] (default: the current directory)
    is always searched first  unless -nocwd is specified,
