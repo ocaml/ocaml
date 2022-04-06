@@ -18,8 +18,6 @@ let bindir = "%%BINDIR%%"
 
 let standard_library_default = "%%LIBDIR%%"
 
-let in_boot_compiler = false
-
 let ccomp_type = "%%CCOMPTYPE%%"
 let c_compiler = "%%CC%%"
 let c_output_obj = "%%OUTPUTOBJ%%"

@@ -14,15 +14,10 @@
 (**************************************************************************)
 
 (* Configuration for the boot compiler. The compiler should refuse to bootstrap
-   if configured with values which would contradict the configuration below.
-   Config.in_boot_compiler is used throughout the compiler to prevent accidental
-   use of "<boot compiler>" values, but should not be used to control
-   compilation decisions (i.e. if Config.in_boot_compiler is found to be true,
-   the result of the code path should be a fatal error) *)
+   if configured with values which would contradict the configuration below. *)
 
 let bindir = "<boot compiler>"
 let standard_library_default = "<boot compiler>"
-let in_boot_compiler = true
 let ccomp_type = "<boot compiler>"
 let c_compiler = "<boot compiler>"
 let c_output_obj = "<boot compiler>"

@@ -77,7 +77,6 @@ let display_msvc_output file name =
     Sys.remove file
 
 let compile_file ?output ?(opt="") ?stable_name name =
-  Misc.fatal_in_boot_compiler "Cannot compile C files with the boot compiler";
   let (pipe, file) =
     if Config.ccomp_type = "msvc" && not !Clflags.verbose then
       try
@@ -130,7 +129,6 @@ let compile_file ?output ?(opt="") ?stable_name name =
   exit
 
 let create_archive archive file_list =
-  Misc.fatal_in_boot_compiler "Cannot create C archives with the boot compiler";
   Misc.remove_file archive;
   let quoted_archive = Filename.quote archive in
   if file_list = [] then
@@ -171,7 +169,6 @@ let remove_Wl cclibs =
     else cclib)
 
 let call_linker mode output_name files extra =
-  Misc.fatal_in_boot_compiler "Cannot call the C linker from the boot compiler";
   Profile.record_call "c-linker" (fun () ->
     let cmd =
       if mode = Partial then

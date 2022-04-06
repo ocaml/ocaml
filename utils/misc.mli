@@ -21,7 +21,6 @@
 *)
 
 val fatal_error: string -> 'a
-val fatal_in_boot_compiler: string -> unit
 val fatal_errorf: ('a, Format.formatter, unit, 'b) format4 -> 'a
 exception Fatal_error
 
