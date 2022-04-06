@@ -52,7 +52,7 @@ module Dir : sig
 end
 
 val init :
-  ?auto_include:((Dir.t -> string -> string option) -> string -> string) ->
+  auto_include:((Dir.t -> string -> string option) -> string -> string) ->
   string list -> unit
 (** [init l] is the same as [reset (); List.iter add_dir (List.rev l)] *)
 

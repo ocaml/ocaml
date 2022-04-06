@@ -85,7 +85,7 @@ let prepend_add dir =
       STbl.replace !files_uncap (String.uncapitalize_ascii base) fn
     ) dir.Dir.files
 
-let init ?(auto_include=default_auto_include_callback) l =
+let init ~auto_include l =
   reset ();
   dirs := List.rev_map Dir.create l;
   List.iter prepend_add !dirs;

@@ -267,6 +267,12 @@ Working version
   (Sébastien Hinderer, review by David Allsopp, Nicolás Ojeda Bär,
   Xavier Leroy, Vincent Laviron and Antonin Décimo)
 
+* #11198: Install the Dynlink, Str and Unix libraries to individual
+  subdirectories of LIBDIR. The compiler, debugger and toplevel automatically
+  add `-I +lib` if required, but display an alert.
+  (David Allsopp, review by Florian Angeletti, Nicolás Ojeda Bär,
+   Valentin Gatien-Baron and Sébastien Hinderer)
+
 - #11200: Install ocamlprof's Profiling runtime module to a +profiling,
   removing it from the default namespace.
   (David Allsopp, review by Sébastien Hinderer)
