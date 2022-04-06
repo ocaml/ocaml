@@ -415,11 +415,11 @@ module Hashtbl : sig
       val equal: t -> t -> bool
       (** The equality predicate used to compare keys. *)
 
-      val hash: int -> t -> int
+      val seeded_hash: int -> t -> int
         (** A seeded hashing function on keys.  The first argument is
             the seed.  It must be the case that if [equal x y] is true,
-            then [hash seed x = hash seed y] for any value of [seed].
-            A suitable choice for [hash] is the function
+            then [seeded_hash seed x = seeded_hash seed y] for any value of
+            [seed].  A suitable choice for [seeded_hash] is the function
             {!Hashtbl.seeded_hash} below. *)
     end
   (** The input signature of the functor {!MakeSeeded}.
