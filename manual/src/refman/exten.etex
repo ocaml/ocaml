@@ -119,4 +119,9 @@ that are implemented in OCaml, but not described in chapter \ref{c:refman}.
 %HEVEA\cutname{bindingops.html}
 \input{bindingops.tex}
 
+\section{s:effect-handlers}{Effect handlers}
+%HEVEA\cutname{effects.html}
+\input{effects.tex}
+
+
 %HEVEA\cutend
