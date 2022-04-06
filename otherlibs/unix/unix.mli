@@ -362,6 +362,12 @@ val read : file_descr -> bytes -> int -> int -> int
     storing them in byte sequence [buf], starting at position [pos] in
     [buf]. Return the number of bytes actually read. *)
 
+type buffer = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+val mem_read : file_descr -> buffer -> int -> int -> int
+(** [read fd buf pos len] reads [len] bytes from descriptor [fd],
+    storing them in bigstring [buf], starting at position [pos] in
+    [buf]. Return the number of bytes actually read. *)
+
 val write : file_descr -> bytes -> int -> int -> int
 (** [write fd buf pos len] writes [len] bytes to descriptor [fd],
     taking them from byte sequence [buf], starting at position [pos]
