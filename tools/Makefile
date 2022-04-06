@@ -299,7 +299,7 @@ caml_tex_files := \
   $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
   $(ROOTDIR)/compilerlibs/ocamltoplevel.cma \
   $(ROOTDIR)/otherlibs/str/str.cma \
-  $(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.cma \
+  $(ROOTDIR)/otherlibs/unix/unix.cma \
   caml_tex.ml
 
 # checkstack tool
@@ -315,7 +315,7 @@ caml_tex := caml-tex$(EXE)
 # $(ROOTDIR)/ocamlc not $(ROOTDIR)/boot/ocamlc since the boot
 # compiler does not necessarily have the correct shared library
 # configuration.
-$(caml_tex): INCLUDES += $(addprefix -I $(ROOTDIR)/otherlibs/,str $(UNIXLIB))
+$(caml_tex): INCLUDES += $(addprefix -I $(ROOTDIR)/otherlibs/,str unix)
 $(caml_tex): $(caml_tex_files)
 	$(OCAMLRUN) $(ROOTDIR)/ocamlc$(EXE) $(STDLIBFLAGS) \
 	  $(LINKFLAGS) -linkall -o $@ -no-alias-deps $^

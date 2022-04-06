@@ -230,6 +230,10 @@ Working version
   linked with debugging informations (-g).
   (Sébastien Hinderer, review by Gabriel Scherer)
 
+- #11160: otherlibs: merge win32unix into unix.
+  (Sébastien Hinderer, review by David Allsopp, Nicolás Ojeda Bär,
+  Xavier Leroy, Vincent Laviron and Antonin Décimo)
+
 ### Bug fixes:
 
 - #11112: harden -use-runtime against spaces or quotes in the provided path

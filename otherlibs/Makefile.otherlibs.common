@@ -128,7 +128,7 @@ clean:: partialclean
 	rm -rf $(DEPDIR)
 
 .PHONY: distclean
-distclean: clean
+distclean:: clean
 
 %.cmi: %.mli
 	$(CAMLC) -c $(COMPFLAGS) $<

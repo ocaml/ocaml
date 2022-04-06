@@ -80,12 +80,6 @@ LIBFILES=stdlib.cma std_exit.cmo *.cmi camlheader
 COMPLIBDIR=$(LIBDIR)/compiler-libs
 
 TOPINCLUDES=$(addprefix -I otherlibs/,$(filter-out %threads,$(OTHERLIBRARIES)))
-ifeq "$(UNIX_OR_WIN32)" "unix"
-EXTRAPATH=
-else
-EXTRAPATH = PATH="otherlibs/win32unix:$(PATH)"
-endif
-
 
 ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
   COLDSTART_DEPS =
@@ -682,14 +676,14 @@ runtop:
 	$(MAKE) ocamlc
 	$(MAKE) otherlibraries
 	$(MAKE) ocaml
-	@$(EXTRAPATH) $(RLWRAP) $(OCAMLRUN) ./ocaml$(EXE) $(OC_TOPFLAGS)
+	@$(RLWRAP) $(OCAMLRUN) ./ocaml$(EXE) $(OC_TOPFLAGS)
 
 .PHONY: natruntop
 natruntop:
 	$(MAKE) core
 	$(MAKE) opt
 	$(MAKE) ocamlnat
-	@$(FLEXLINK_ENV) $(EXTRAPATH) $(RLWRAP) ./ocamlnat$(EXE) $(OC_TOPFLAGS)
+	@$(FLEXLINK_ENV) $(RLWRAP) ./ocamlnat$(EXE) $(OC_TOPFLAGS)
 
 # Native dynlink
 
@@ -809,10 +803,8 @@ clean::
 	$(MAKE) -C runtime clean
 	rm -f stdlib/libcamlrun.a stdlib/libcamlrun.lib
 
-otherlibs_all := dynlink \
-  str systhreads unix win32unix
-subdirs := debugger lex ocamldoc ocamltest stdlib tools \
-  $(addprefix otherlibs/, $(otherlibs_all)) \
+subdirs = stdlib $(addprefix otherlibs/, $(ALL_OTHERLIBS)) \
+  debugger lex ocamldoc ocamltest tools
 
 .PHONY: alldepend
 alldepend: depend

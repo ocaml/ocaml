@@ -37,7 +37,7 @@ else
   systhreads := true
 endif
 
-ifeq "$(filter $(UNIXLIB),$(OTHERLIBRARIES))" ""
+ifeq "$(filter unix,$(OTHERLIBRARIES))" ""
   ocamltest_unix := dummy
   unix_name :=
   unix_path :=
@@ -46,7 +46,7 @@ ifeq "$(filter $(UNIXLIB),$(OTHERLIBRARIES))" ""
 else
   ocamltest_unix := real
   unix_name := unix
-  unix_path := $(ROOTDIR)/otherlibs/$(UNIXLIB)
+  unix_path := $(ROOTDIR)/otherlibs/unix
   unix_include := -I $(unix_path) $(EMPTY)
   ifeq "$(UNIX_OR_WIN32)" "win32"
     unix := Some false

@@ -819,7 +819,6 @@ extralibs
 syslib
 outputobj
 outputexe
-unixlib
 unix_or_win32
 systhread_support
 system
@@ -2873,7 +2872,6 @@ OCAML_VERSION_SHORT=5.0
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
-
 
 
 
@@ -12667,12 +12665,9 @@ esac
 
 case $host in #(
   *-*-mingw32|*-pc-windows) :
-    unix_or_win32="win32"
-    unixlib="win32unix"
-     ;; #(
+    unix_or_win32="win32" ;; #(
   *) :
-    unix_or_win32="unix"
-  unixlib="unix" ;;
+    unix_or_win32="unix" ;;
 esac
 case $host in #(
   *-*-cygwin*|*-*-mingw32|*-pc-windows) :
@@ -12684,7 +12679,7 @@ esac
 otherlibraries="dynlink"
 if test x"$enable_unix_lib" != "xno"; then :
   enable_unix_lib=yes
-   otherlibraries="$otherlibraries $unixlib"
+   otherlibraries="$otherlibraries unix"
 fi
 if test x"$enable_str_lib" != "xno"; then :
   otherlibraries="$otherlibraries str"

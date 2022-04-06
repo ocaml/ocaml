@@ -16,13 +16,10 @@
 ROOTDIR=..
 include $(ROOTDIR)/Makefile.common
 
-OTHERLIBRARIES ?= dynlink str systhreads \
-                  unix win32unix
-
 # $1: target name to dispatch to all otherlibs/*/Makefile
 define dispatch_
 $1:
-	@for lib in $$(OTHERLIBRARIES); do \
+	for lib in $$(OTHERLIBRARIES); do \
 	  ($$(MAKE) -C $$$$lib $1) || exit $$$$?; \
 	done
 endef
