@@ -203,7 +203,9 @@ strings that match @regexp@.
 (option) Match the empty string, or a string matching @regexp@.
 
 \item[@regexp_1 '|' regexp_2@]
-(alternative) Match any string that matches @regexp_1@ or @regexp_2@
+(alternative) Match any string that matches @regexp_1@ or @regexp_2@.
+If both regular expressions are character sets, the result will be the character
+set obtained by forming the union of the corresponding sets.
 
 \item[@regexp_1 regexp_2@]
 (concatenation) Match the concatenation of two strings, the first
