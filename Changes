@@ -170,6 +170,10 @@ Working version
 - #11058: runtime/HACKING.adoc tips on debugging the runtime
   (Gabriel Scherer, review by Enguerrand Decorne and Nicolás Ojeda Bär)
 
+- #11093: Add an effect handlers tutorial
+  (KC Sivaramakrishnan, review by François Pottier, Gabriel Scherer, François
+  Bobot and Wiktor Kuchta)
+
 ### Compiler user-interface and warnings:
 
 - #11089: Add 'since <version>' information to compiler warnings.

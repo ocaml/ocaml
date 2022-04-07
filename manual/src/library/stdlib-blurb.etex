@@ -47,6 +47,7 @@ the above 4 modules \\
 "Int" & p.~\stdpageref{Int} & integer values \\
 "Option" & p.~\stdpageref{Option} & option values \\
 "Result" & p.~\stdpageref{Result} & result values \\
+"Effect" & p.~\stdpageref{Effect} & effect handlers \\
 "Either" & p.~\stdpageref{Either} & either values \\
 "Hashtbl" & p.~\stdpageref{Hashtbl} & hash tables and hash functions \\
 "Random" & p.~\stdpageref{Random} & pseudo-random number generator \\

@@ -146,15 +146,14 @@ let f x = x
 \end{caml_example*}
 ```
 
-The {verbatim} or {toplevel} argument of the environment corresponds
-to the the mode of the example, three modes are available toplevel, verbatim and signature.
-The `toplevel` mode mimics the appearance and behavior of the toplevel.
-In particular, toplevel examples must end with a double semi-colon `;;`,
-otherwise an error would be raised.
-The `verbatim` does not require a final `;;` and is intended to be
-a lighter mode for code examples.
-If you want to declare a signature instead of ocaml code,
-you must use the `{signature}` argument to the `caml_example` environment.
+The {verbatim} or {toplevel} argument of the environment corresponds to the mode
+of the example. Three modes are available -- toplevel, verbatim and signature.
+The `toplevel` mode mimics the appearance and behavior of the toplevel. In
+particular, toplevel examples must end with a double semi-colon `;;`, otherwise
+an error would be raised. The `verbatim` does not require a final `;;` and is
+intended to be a lighter mode for code examples. If you want to declare a
+signature instead of ocaml code, you must use the `{signature}` argument to the
+`caml_example` environment.
 
 ```latex
 \begin{caml_example*}{signature}
@@ -162,11 +161,11 @@ val none : 'a option
 \end{caml_example*}
 ```
 
-By default, `caml-tex` raises an error and stops if the output of one
-the `caml_example` environment contains an unexpected error or warning.
-If such an error or warning is, in fact, expected, it is necessary to
-indicate the expected output status to `caml-tex` by adding either
-an option to the `caml_example` environment:
+By default, `caml-tex` raises an error and stops if the output of one the
+`caml_example` environment contains an unexpected error or warning. If such an
+error or warning is, in fact, expected, it is necessary to indicate the expected
+output status to `caml-tex` by adding either an option to the `caml_example`
+environment:
 ```latex
 \begin{caml_example}{toplevel}[error]
 1 + 2. ;;
@@ -207,10 +206,10 @@ module M = struct
 \end{caml_example*}
 ```
 
-Another possibility to avoid displaying distracting code is to use
-the `caml_eval` environment. This environment is a companion environment
-to `caml_example` and can be used to evaluate OCaml expressions in the
-toplevel without printing anything:
+Another possibility to avoid displaying distracting code is to use the
+`caml_eval` environment. This environment is a companion environment to
+`caml_example` and can be used to evaluate OCaml expressions in the toplevel
+without printing anything:
 ```latex
 \begin{caml_eval}
 let pi = 4. *. atan 1.;;
