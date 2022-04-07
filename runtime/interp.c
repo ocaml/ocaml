@@ -72,7 +72,7 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
 /* GC interface */
 
 #define Setup_for_gc \
-  { sp -= 3; sp[0] = accu; sp[1] = env; sp[2] = (value)pc; \
+  { sp -= 3; sp[0] = accu; sp[1] = env; sp[2] = Val_ptr(pc); \
     domain_state->current_stack->sp = sp; }
 #define Restore_after_gc \
   { sp = domain_state->current_stack->sp; accu = sp[0]; env = sp[1]; sp += 3; }
@@ -86,7 +86,7 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
    first backtrace slot points to the event following the C call
    instruction. */
 #define Setup_for_c_call \
-  { sp -= 2; sp[0] = env; sp[1] = (value)(pc + 1); \
+  { sp -= 2; sp[0] = env; sp[1] = Val_ptr(pc + 1); \
     domain_state->current_stack->sp = sp; }
 #define Restore_after_c_call \
   { sp = domain_state->current_stack->sp; env = *sp; sp += 2; }
@@ -100,20 +100,20 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
     sp[0] = accu; /* accu */ \
     sp[1] = Val_unit; /* C_CALL frame: dummy environment */ \
     sp[2] = Val_unit; /* RETURN frame: dummy local 0 */ \
-    sp[3] = (value) pc; /* RETURN frame: saved return address */  \
+    sp[3] = Val_ptr (pc); /* RETURN frame: saved return address */  \
     sp[4] = env; /* RETURN frame: saved environment */ \
     sp[5] = Val_long(extra_args); /* RETURN frame: saved extra args */ \
     domain_state->current_stack->sp = sp; }
 #define Restore_after_event \
   { sp = domain_state->current_stack->sp; accu = sp[0]; \
-    pc = (code_t) sp[3]; env = sp[4]; extra_args = Long_val(sp[5]); \
+    pc = Ptr_val(sp[3]); env = sp[4]; extra_args = Long_val(sp[5]); \
     sp += 6; }
 
 /* Debugger interface */
 
 #define Setup_for_debugger \
    { sp -= 4; \
-     sp[0] = accu; sp[1] = (value)(pc - 1); \
+     sp[0] = accu; sp[1] = Val_ptr(pc - 1); \
      sp[2] = env; sp[3] = Val_long(extra_args); \
      domain_state->current_stack->sp = sp; }
 #define Restore_after_debugger \
@@ -431,7 +431,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
     Instruct(PUSH_RETADDR): {
       sp -= 3;
-      sp[0] = (value) (pc + *pc);
+      sp[0] = Val_ptr (pc + *pc);
       sp[1] = env;
       sp[2] = Val_long(extra_args);
       pc++;
@@ -447,7 +447,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       value arg1 = sp[0];
       sp -= 3;
       sp[0] = arg1;
-      sp[1] = (value)pc;
+      sp[1] = Val_ptr(pc);
       sp[2] = env;
       sp[3] = Val_long(extra_args);
       pc = Code_val(accu);
@@ -461,7 +461,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       sp -= 3;
       sp[0] = arg1;
       sp[1] = arg2;
-      sp[2] = (value)pc;
+      sp[2] = Val_ptr(pc);
       sp[3] = env;
       sp[4] = Val_long(extra_args);
       pc = Code_val(accu);
@@ -477,7 +477,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       sp[0] = arg1;
       sp[1] = arg2;
       sp[2] = arg3;
-      sp[3] = (value)pc;
+      sp[3] = Val_ptr(pc);
       sp[4] = env;
       sp[5] = Val_long(extra_args);
       pc = Code_val(accu);
@@ -569,7 +569,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
         goto check_stacks;
       } else {
         /* return to callee, no stack switching */
-        pc = (code_t)(sp[0]);
+        pc = Ptr_val(sp[0]);
         env = sp[1];
         extra_args = Long_val(sp[2]);
         sp += 3;
@@ -903,7 +903,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
     Instruct(PUSHTRAP):
       sp -= 4;
-      Trap_pc(sp) = pc + *pc;
+      Trap_pc(sp) = Val_ptr(pc + *pc);
       Trap_link(sp) = Val_long(domain_state->trap_sp_off);
       sp[2] = env;
       sp[3] = Val_long(extra_args);
@@ -930,7 +930,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(RERAISE):
       Check_trap_barrier;
       if (domain_state->backtrace_active) {
-        *--sp = (value)(pc - 1);
+        *--sp = Val_ptr(pc - 1);
         caml_stash_backtrace(accu, sp, 1);
       }
       goto raise_notrace;
@@ -939,7 +939,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     raise_exception:
       Check_trap_barrier;
       if (domain_state->backtrace_active) {
-        *--sp = (value)(pc - 1);
+        *--sp = Val_ptr(pc - 1);
         caml_stash_backtrace(accu, sp, 0);
       }
     raise_notrace:
@@ -972,7 +972,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       } else {
         sp =
            Stack_high(domain_state->current_stack) + domain_state->trap_sp_off;
-        pc = Trap_pc(sp);
+        pc = Ptr_val(Trap_pc(sp));
         domain_state->trap_sp_off = Long_val(Trap_link(sp));
         env = sp[2];
         extra_args = Long_val(sp[3]);
@@ -1254,7 +1254,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       sp -= 3;
       sp[0] = Val_long(domain_state->trap_sp_off);
       sp[1] = Val_long(0);
-      sp[2] = (value)pc;
+      sp[2] = Val_ptr(pc);
       sp[3] = env;
       sp[4] = Val_long(extra_args);
       goto do_resume;
@@ -1304,7 +1304,7 @@ do_resume: {
 
       sp -= 4;
       sp[0] = Val_long(domain_state->trap_sp_off);
-      sp[1] = (value)pc;
+      sp[1] = Val_ptr(pc);
       sp[2] = env;
       sp[3] = Val_long(extra_args);
 

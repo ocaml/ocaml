@@ -287,8 +287,8 @@ void caml_stash_backtrace(value exn, value * sp, int reraise)
   trap_sp = Stack_high(Caml_state->current_stack) + Caml_state->trap_sp_off;
   for (/*nothing*/; sp < trap_sp; sp++) {
     code_t p;
-    if (Is_long(*sp)) continue;
-    p = (code_t) *sp;
+    if (Is_block(*sp)) continue;
+    p = Ptr_val(*sp);
     if (Caml_state->backtrace_pos >= BACKTRACE_BUFFER_SIZE) break;
     if (find_debug_info(p) != NULL)
       Caml_state->backtrace_buffer[Caml_state->backtrace_pos++] = p;
@@ -304,16 +304,17 @@ code_t caml_next_frame_pointer(value* stack_high, value ** sp,
 {
   while (*sp < stack_high) {
     value *spv = (*sp)++;
-    code_t *p;
-    if (Is_long(*spv)) continue;
-    p = (code_t*) spv;
-    if((code_t*)&Trap_pc(stack_high + *trap_spoff) == p) {
+    code_t pc;
+    if (Is_block(*spv)) continue;
+    if(&Trap_pc(stack_high + *trap_spoff) == spv) {
       *trap_spoff = Trap_link(stack_high + *trap_spoff);
       continue;
     }
 
-    if (find_debug_info(*p) != NULL)
-      return *p;
+    pc = Ptr_val(*spv);
+
+    if (find_debug_info(pc) != NULL)
+      return pc;
   }
   return NULL;
 }

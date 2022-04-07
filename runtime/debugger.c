@@ -346,7 +346,7 @@ void caml_debugger_code_unloaded(int index)
   })
 }
 
-#define Pc(sp) ((code_t)((sp)[0]))
+#define Pc(sp) (Ptr_val((sp)[0]))
 #define Env(sp) ((sp)[1])
 #define Extra_args(sp) (Long_val(((sp)[2])))
 #define Locals(sp) ((sp) + 3)

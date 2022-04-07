@@ -95,7 +95,7 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   callback_code[3] = narg;
 
   domain_state->current_stack->sp[narg] =
-                     (value)(callback_code + 4); /* return address */
+                     Val_ptr(callback_code + 4); /* return address */
   domain_state->current_stack->sp[narg + 1] = Val_unit;    /* environment */
   domain_state->current_stack->sp[narg + 2] = Val_long(0); /* extra args */
   domain_state->current_stack->sp[narg + 3] = closure;

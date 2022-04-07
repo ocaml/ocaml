@@ -347,7 +347,11 @@ CAMLprim value caml_ensure_stack_capacity(value required_space)
 */
 
 Caml_inline int is_block_and_not_code_frag(value v) {
-  return Is_block(v) && caml_find_code_fragment_by_pc((char *) v) == NULL;
+  if (!Is_block(v)) return 0;
+
+  /* Bytecode code pointers should always be tagged */
+  CAMLassert (caml_find_code_fragment_by_pc((char *) v) == NULL);
+  return 1;
 }
 
 void caml_scan_stack(scanning_action f, void* fdata,

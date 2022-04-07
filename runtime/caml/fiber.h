@@ -191,7 +191,7 @@ struct c_stack_link {
 /* The table of global identifiers */
 extern value caml_global_data;
 
-#define Trap_pc(tp) (((code_t *)(tp))[0])
+#define Trap_pc(tp) ((tp)[0])
 #define Trap_link(tp) ((tp)[1])
 
 struct stack_info** caml_alloc_stack_cache (void);

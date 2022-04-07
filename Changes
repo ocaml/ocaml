@@ -64,6 +64,9 @@ Working version
   (Enguerrand Decorne, report by Jon Ludlam,
   review by Tom Kelly, KC Sivaramakrishnan and Gabriel Scherer)
 
+- #??: Optimise bytecode stack scanning by tagging code pointers
+  (Stephen Dolan, review by ??)
+
 ### Code generation and optimizations:
 
 - #10972: ARM64 multicore support: OCaml & C stack separation;
