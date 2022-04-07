@@ -142,6 +142,7 @@ module State : sig
 
   val split : t -> t
   (** Draw a fresh PRNG state from the given PRNG state.
+      (The given PRNG state is modified.)
       The new PRNG is statistically independent from the given PRNG.
       Data can be drawn from both PRNGs, in any order, without risk of
       correlation.  Both PRNGs can be split later, arbitrarily many times.
@@ -150,13 +151,17 @@ module State : sig
 end
 
 val get_state : unit -> State.t
-(** Return the current state of the domain-local generator used by the basic
-    functions. *)
+(** [get_state()] returns a fresh copy of the current state of the
+    domain-local generator (which is used by the basic functions). *)
 
 val set_state : State.t -> unit
-(** Set the state of the domain-local generator used by the basic functions. *)
+(** [set_state s] updates the current state of the domain-local
+    generator (which is used by the basic functions) by copying
+    the state [s] into it. *)
 
 val split : unit -> State.t
 (** Draw a fresh PRNG state from the current state of the domain-local
-    generator used by the default functions.  See {!Random.State.split}.
+    generator used by the default functions.
+    (The state of the domain-local generator is modified.)
+    See {!Random.State.split}.
     @since 5.0.0 *)
