@@ -590,9 +590,9 @@ ifeq "$(INSTALL_OCAMLNAT)" "true"
 	  $(INSTALL_PROG) ocamlnat$(EXE) "$(INSTALL_BINDIR)"
 endif
 	cd "$(INSTALL_COMPLIBDIR)" && \
-	   printf "ocamlcommon.$(A)\nocamlbytecomp.$(A)\nocamloptcomp.$(A)" |\
-	   xargs -I{} $(RANLIB) {}
-
+	   $(RANLIB) ocamlcommon.$(A) && \
+	   $(RANLIB) ocamlbytecomp.$(A) && \
+	   $(RANLIB) ocamloptcomp.$(A)
 
 # Installation of the *.ml sources of compiler-libs
 .PHONY: install-compiler-sources
