@@ -40,9 +40,6 @@ module Env : sig
 
   val add_global : t -> int -> Symbol.t -> t
   val find_global : t -> int -> Symbol.t
-
-  val at_toplevel : t -> bool
-  val not_at_toplevel : t -> t
 end
 
 (** Used to represent information about a set of function declarations
