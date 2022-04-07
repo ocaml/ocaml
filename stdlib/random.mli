@@ -141,7 +141,8 @@ module State : sig
   *)
 
   val split : t -> t
-  (** Draw a fresh PRNG state from the given PRNG state (which is modified).
+  (** Draw a fresh PRNG state from the given PRNG state.
+      (The given PRNG state is modified.)
       The new PRNG is statistically independent from the given PRNG.
       Data can be drawn from both PRNGs, in any order, without risk of
       correlation.  Both PRNGs can be split later, arbitrarily many times.
