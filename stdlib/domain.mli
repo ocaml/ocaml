@@ -51,8 +51,8 @@ val at_first_spawn : (unit -> unit) -> unit
     @raise Invalid_argument if the first domain has already been spawned. *)
 
 val at_exit : (unit -> unit) -> unit
-(** Register the given function to be called at when a domain exits. This
-    function is also registered with {!Stdlib.at_exit}. If the registered
+(** Register the given function to be called at when a spawned domain exits.
+    This function is also registered with {!Stdlib.at_exit}. If the registered
     function raises an exception, the exceptions are ignored. The registered
     functions are called in 'last in, first out' order: the function most
     recently added with [at_exit] is called first. *)
