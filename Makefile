@@ -589,6 +589,8 @@ endif
 ifeq "$(INSTALL_OCAMLNAT)" "true"
 	  $(INSTALL_PROG) ocamlnat$(EXE) "$(INSTALL_BINDIR)"
 endif
+	# Libaries need to be passed separately, as non-GNU ranlib may not support
+	# running on multiple files, like llvm-ranlib.
 	cd "$(INSTALL_COMPLIBDIR)" && \
 	   $(RANLIB) ocamlcommon.$(A) && \
 	   $(RANLIB) ocamlbytecomp.$(A) && \
