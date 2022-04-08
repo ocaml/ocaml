@@ -155,7 +155,7 @@ CAMLexport void caml_ba_finalize(value v)
     if (b->proxy == NULL) {
       free(b->data);
     } else {
-      if (caml_atomic_refcount_decr(&b->proxy->refcount) == 0) {
+      if (caml_atomic_refcount_decr(&b->proxy->refcount) == 1) {
         free(b->proxy->data);
         free(b->proxy);
       }
