@@ -27,9 +27,10 @@ val spawn : (unit -> 'a) -> 'a t
 val join : 'a t -> 'a
 (** [join d] blocks until domain [d] runs to completion.
     If [d] results in a value, then that is returned by [join d].
-    If [d] raises an uncaught exception, then that is thrown by [join d].
-    Domains may only be joined once: subsequent uses of [join d]
-    raise Invalid_argument. *)
+    If [d] raises an uncaught exception, then that is re-raised by [join d].
+
+    @raise Invalid_argument if the domain was already joined.
+    Domains may only be joined once. *)
 
 type id = private int
 (** Domains have unique integer identifiers *)
@@ -41,20 +42,27 @@ val self : unit -> id
 (** [self ()] is the identifier of the currently running domain *)
 
 val at_first_spawn : (unit -> unit) -> unit
-(** Register the given function to be called before the first domain is
-    spawned.
+(** Register the given function to be called before any domain is
+    spawned (except the initial domain) and before any function registered
+    with {!val:at_startup} is called. The functions registered with
+    [at_first_spawn] are called in 'last in, first out' order: the function
+    most recently added with [at_first_spawn] is called first.
 
     @raise Invalid_argument if the first domain has already been spawned. *)
 
 val at_exit : (unit -> unit) -> unit
-(** Register the given function to be called at when a domain exits. This
-    function is also registered with {!Stdlib.at_exit}. If the registered
-    function raises an exception, the exceptions are ignored. *)
+(** Register the given function to be called at when a spawned domain exits.
+    This function is also registered with {!Stdlib.at_exit}. If the registered
+    function raises an exception, the exceptions are ignored. The registered
+    functions are called in 'last in, first out' order: the function most
+    recently added with [at_exit] is called first. *)
 
 val at_startup : (unit -> unit) -> unit
 (** Register the given function to be called when a domain starts. This
     function is called before the callback specified to [spawn f] is
-    executed. *)
+    executed. The registered functions are called in 'last in, first out'
+    order: the function most recently added with [at_startup] is
+    called first. *)
 
 val cpu_relax : unit -> unit
 (** If busy-waiting, calling cpu_relax () between iterations
