@@ -81,10 +81,8 @@ let testing = make_library_modifier
 let tool_ocaml_lib = make_module_modifier
   "lib" (compiler_subdir ["testsuite"; "lib"])
 
-let unixlibdir = if Sys.win32 then "win32unix" else "unix"
-
 let unix = make_library_modifier
-  "unix" [compiler_subdir ["otherlibs"; unixlibdir]]
+  "unix" [compiler_subdir ["otherlibs"; "unix"]]
 
 let dynlink =
   make_library_modifier "dynlink"

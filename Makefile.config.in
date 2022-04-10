@@ -181,7 +181,6 @@ PTHREAD_CAML_LIBS=$(addprefix -cclib ,$(PTHREAD_LIBS))
 PTHREAD_CFLAGS=@PTHREAD_CFLAGS@
 
 UNIX_OR_WIN32=@unix_or_win32@
-UNIXLIB=@unixlib@
 INSTALL_SOURCE_ARTIFACTS=@install_source_artifacts@
 
 OC_CFLAGS=@oc_cflags@
@@ -272,6 +271,10 @@ FLEXLINK_CMD=flexlink
 FLEXLINK=$(FLEXLINK_CMD) $(FLEXLINK_FLAGS)
 
 # Deprecated variables
+
+## Variables deprecated since OCaml 5.0
+
+UNIXLIB=unix
 
 ## Variables renamed in OCaml 4.13
 

@@ -77,8 +77,8 @@ let libunix = make
 let libwin32unix = make
   "libwin32unix"
   (Actions_helpers.pass_or_skip (Ocamltest_config.libunix = Some false)
-    "libwin32unix available"
-    "libwin32unix not available")
+    "win32 variant of the unix library available"
+    "win32 variant of the unix library not available")
 
 let hassysthreads = make
   "hassysthreads"

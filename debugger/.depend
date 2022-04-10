@@ -40,7 +40,7 @@ checkpoints.cmi : \
     debugcom.cmi
 command_line.cmo : \
     unix_tools.cmi \
-    $(UNIXDIR)/unix.cmi \
+    ../otherlibs/unix/unix.cmi \
     ../typing/types.cmi \
     time_travel.cmi \
     symbols.cmi \
@@ -77,7 +77,7 @@ command_line.cmo : \
     command_line.cmi
 command_line.cmx : \
     unix_tools.cmx \
-    $(UNIXDIR)/unix.cmx \
+    ../otherlibs/unix/unix.cmx \
     ../typing/types.cmx \
     time_travel.cmx \
     symbols.cmx \
@@ -256,12 +256,12 @@ history.cmx : \
     history.cmi
 history.cmi :
 input_handling.cmo : \
-    $(UNIXDIR)/unix.cmi \
+    ../otherlibs/unix/unix.cmi \
     primitives.cmi \
     parameters.cmi \
     input_handling.cmi
 input_handling.cmx : \
-    $(UNIXDIR)/unix.cmx \
+    ../otherlibs/unix/unix.cmx \
     primitives.cmx \
     parameters.cmx \
     input_handling.cmi
@@ -307,7 +307,7 @@ loadprinter.cmi : \
     ../otherlibs/dynlink/dynlink.cmi
 main.cmo : \
     unix_tools.cmi \
-    $(UNIXDIR)/unix.cmi \
+    ../otherlibs/unix/unix.cmi \
     time_travel.cmi \
     show_information.cmi \
     question.cmi \
@@ -329,7 +329,7 @@ main.cmo : \
     checkpoints.cmi
 main.cmx : \
     unix_tools.cmx \
-    $(UNIXDIR)/unix.cmx \
+    ../otherlibs/unix/unix.cmx \
     time_travel.cmx \
     show_information.cmx \
     question.cmx \
@@ -350,9 +350,9 @@ main.cmx : \
     ../utils/clflags.cmx \
     checkpoints.cmx
 ocamldebug_entry.cmo : \
-    $(UNIXDIR)/unix.cmi
+    ../otherlibs/unix/unix.cmi
 ocamldebug_entry.cmx : \
-    $(UNIXDIR)/unix.cmx
+    ../otherlibs/unix/unix.cmx
 parameters.cmo : \
     ../utils/load_path.cmi \
     ../typing/envaux.cmi \
@@ -402,13 +402,13 @@ pos.cmx : \
 pos.cmi : \
     events.cmi
 primitives.cmo : \
-    $(UNIXDIR)/unix.cmi \
+    ../otherlibs/unix/unix.cmi \
     primitives.cmi
 primitives.cmx : \
-    $(UNIXDIR)/unix.cmx \
+    ../otherlibs/unix/unix.cmx \
     primitives.cmi
 primitives.cmi : \
-    $(UNIXDIR)/unix.cmi
+    ../otherlibs/unix/unix.cmi
 printval.cmo : \
     ../typing/types.cmi \
     ../bytecomp/symtable.cmi \
@@ -439,7 +439,7 @@ printval.cmi : \
     debugcom.cmi
 program_loading.cmo : \
     unix_tools.cmi \
-    $(UNIXDIR)/unix.cmi \
+    ../otherlibs/unix/unix.cmi \
     primitives.cmi \
     parameters.cmi \
     input_handling.cmi \
@@ -447,7 +447,7 @@ program_loading.cmo : \
     program_loading.cmi
 program_loading.cmx : \
     unix_tools.cmx \
-    $(UNIXDIR)/unix.cmx \
+    ../otherlibs/unix/unix.cmx \
     primitives.cmx \
     parameters.cmx \
     input_handling.cmx \
@@ -457,7 +457,7 @@ program_loading.cmi : \
     primitives.cmi
 program_management.cmo : \
     unix_tools.cmi \
-    $(UNIXDIR)/unix.cmi \
+    ../otherlibs/unix/unix.cmi \
     time_travel.cmi \
     symbols.cmi \
     question.cmi \
@@ -474,7 +474,7 @@ program_management.cmo : \
     program_management.cmi
 program_management.cmx : \
     unix_tools.cmx \
-    $(UNIXDIR)/unix.cmx \
+    ../otherlibs/unix/unix.cmx \
     time_travel.cmx \
     symbols.cmx \
     question.cmx \
@@ -638,12 +638,12 @@ trap_barrier.cmx : \
     trap_barrier.cmi
 trap_barrier.cmi :
 unix_tools.cmo : \
-    $(UNIXDIR)/unix.cmi \
+    ../otherlibs/unix/unix.cmi \
     ../utils/misc.cmi \
     unix_tools.cmi
 unix_tools.cmx : \
-    $(UNIXDIR)/unix.cmx \
+    ../otherlibs/unix/unix.cmx \
     ../utils/misc.cmx \
     unix_tools.cmi
 unix_tools.cmi : \
-    $(UNIXDIR)/unix.cmi
+    ../otherlibs/unix/unix.cmi

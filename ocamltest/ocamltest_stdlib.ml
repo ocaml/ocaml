@@ -29,7 +29,7 @@ end
 module Filename = struct
   include Filename
   let path_sep = if Sys.win32 then ";" else ":"
-  (* This function comes from otherlibs/win32unix/unix.ml *)
+  (* This function comes from otherlibs/unix/unix_win32.ml *)
   let maybe_quote f =
     if String.contains f ' ' ||
       String.contains f '\"' ||

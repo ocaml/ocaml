@@ -102,9 +102,9 @@ ocamldoc/Changes.txt     typo.missing-header
 ocamldoc/ocamldoc.sty    typo.missing-header
 ocamldoc/odoc_index.html typo.missing-header
 
-otherlibs/win32unix/readlink.c    typo.long-line
-otherlibs/win32unix/stat.c        typo.long-line
-otherlibs/win32unix/symlink.c     typo.long-line
+otherlibs/unix/readlink_win32.c    typo.long-line
+otherlibs/unix/stat_win32.c        typo.long-line
+otherlibs/unix/symlink_win32.c     typo.long-line
 
 runtime/sak.c            typo.non-ascii
 

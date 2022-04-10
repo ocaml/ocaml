@@ -26,7 +26,6 @@ OCAMLOPT = $(BEST_OCAMLOPT) $(STDLIBFLAGS)
 # For installation
 ##############
 
-CP=cp
 programs := ocamldoc ocamldoc.opt
 include Makefile.best_ocamldoc
 
@@ -58,7 +57,7 @@ INCLUDE_DIRS = $(addprefix $(ROOTDIR)/,\
 INCLUDES_DEP = $(addprefix -I ,$(INCLUDE_DIRS))
 INCLUDES_NODEP = $(addprefix -I $(ROOTDIR)/,\
   compilerlibs otherlibs/str otherlibs/dynlink \
-  otherlibs/dynlink/native otherlibs/$(UNIXLIB))
+  otherlibs/dynlink/native otherlibs/unix)
 
 OC_OCAMLDEPDIRS = $(INCLUDE_DIRS)
 INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)
@@ -274,7 +273,7 @@ test_stdlib:
 	$(MKDIR) $@
 	$(OCAMLDOC_RUN) -html -colorize-code -sort -d $@ $(INCLUDES) -dump $@/stdlib.odoc -keep-code \
 	$(ROOTDIR)/stdlib/*.mli \
-	$(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.mli \
+	$(ROOTDIR)/otherlibs/unix/unix.mli \
 	$(ROOTDIR)/otherlibs/str/str.mli
 
 .PHONY: test_stdlib_code
@@ -282,7 +281,7 @@ test_stdlib_code:
 	$(MKDIR) $@
 	$(OCAMLDOC_RUN) -html -colorize-code -sort -d $@ $(INCLUDES) -dump $@/stdlib.odoc -keep-code \
 	`ls $(ROOTDIR)/stdlib/*.ml | grep -v Labels` \
-	$(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.ml \
+	$(ROOTDIR)/otherlibs/unix/unix.ml \
 	$(ROOTDIR)/otherlibs/str/str.ml
 
 .PHONY: test_latex
@@ -298,7 +297,7 @@ test_latex_simple:
 	-latextitle 6,subsection -latextitle 7,subsubection \
 	$(ROOTDIR)/stdlib/hashtbl.mli \
 	$(ROOTDIR)/stdlib/arg.mli \
-	$(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.mli \
+	$(ROOTDIR)/otherlibs/unix/unix.mli \
 	$(ROOTDIR)/stdlib/map.mli
 
 .PHONY: test_man
@@ -320,7 +319,7 @@ autotest_stdlib:
 	$(OCAMLDOC_RUN_PLUGINS) -g autotest/odoc_test.cmo\
 	$(INCLUDES) -keep-code \
 	$(ROOTDIR)/stdlib/*.mli \
-	$(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.mli \
+	$(ROOTDIR)/otherlibs/unix/unix.mli \
 	$(ROOTDIR)/otherlibs/str/str.mli
 
 # backup, clean and depend :
