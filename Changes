@@ -264,7 +264,9 @@ OCaml 5.0
   Patrick Ferris, Tom Kelly)
 
 - #10831: Multicore OCaml
-  (The multicore team, caml-devel and more)
+  (Tom Kelly, KC Sivaramakrishnan, Stephen Dolan, Enguerrand Decorne,
+   Sadiq Jaffer, Sudha Parimala, David Allsopp, Leo White, the rest of
+   the multicore team, caml-devel and more)
 
 * #10723: do not use `-flat-namespace` linking for macOS.
   (Carlo Cabrera, review by Damien Doligez)
