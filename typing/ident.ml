@@ -152,6 +152,19 @@ let print_with_scope ppf id = print ~with_scope:true ppf id
 
 let print ppf id = print ~with_scope:false ppf id
 
+(* For the documentation of ['a Ident.tbl], see ident.mli.
+
+   The implementation is a copy-paste specialization of
+   a balanced-tree implementation similar to Map.
+     ['a tbl]
+   is a slightly more compact version of
+     [(Ident.t * 'a) list Map.Make(String)]
+
+   This implementation comes from Caml Light where duplication was
+   unavoidable in absence of functors. It works well enough, and so
+   far we have not had strong incentives to do the deduplication work
+   (implementation, tests, benchmarks, etc.).
+*)
 type 'a tbl =
     Empty
   | Node of 'a tbl * 'a data * 'a tbl * int

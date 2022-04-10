@@ -63,7 +63,36 @@ val highest_scope: int
 val reinit: unit -> unit
 
 type 'a tbl
-        (* Association tables from identifiers to type 'a. *)
+(** ['a tbl] represents association tables from identifiers to values
+   of type ['a].
+
+   ['a tbl] plays the role of map, but bindings can be looked up
+   from either the full Ident using [find_same], or just its
+   user-visible name using [find_name]. In general the two lookups may
+   not return the same result, as an identifier may have been shadowed
+   in the environment by a distinct identifier with the same name.
+
+   [find_all] returns the bindings for all idents of a given name,
+   most recently introduced first.
+
+   In other words,
+     ['a tbl]
+   corresponds to
+     [(Ident.t * 'a) list Map.Make(String)]
+   and the implementation is very close to that representation.
+
+   Note in particular that searching among idents of the same name
+   takes linear time, and that [add] simply extends the list without
+   checking for duplicates. So it is not a good idea to implement
+   union by repeated [add] calls, which may result in many duplicated
+   identifiers and poor [find_same] performance. It is even possible
+   to build overly large same-name lists such that non-recursive
+   functions like [find_all] or [fold_all] blow the stack.
+
+   You should probably use [Map.Make(Ident)] instead, unless you
+   really need to query bindings by user-visible name, not just by
+   unique identifiers.
+*)
 
 val empty: 'a tbl
 val add: t -> 'a -> 'a tbl -> 'a tbl
