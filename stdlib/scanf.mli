@@ -81,6 +81,12 @@
     facility is fully type-checked at compile time.
 *)
 
+(** {2 Note on concurrent use} *)
+
+(** Since values of type {!Scanning.in_channel} contain inner mutable states,
+    they are not safe to use concurrently without external synchronization.
+*)
+
 (** {1 Formatted input channel} *)
 
 module Scanning : sig
@@ -92,6 +98,8 @@ type in_channel
    A Scanf.Scanning.in_channel value is also called a {i formatted input
    channel} or equivalently a {i scanning buffer}.
    The type {!Scanning.scanbuf} below is an alias for [Scanning.in_channel].
+   Note that a [Scanning.in_channel] is not concurrency-safe: concurrent use
+   may produce arbitrary values or exceptions.
    @since 3.12.0
 *)
 
