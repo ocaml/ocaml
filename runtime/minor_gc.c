@@ -119,21 +119,17 @@ extern int caml_debug_is_major(value val) {
 }
 #endif
 
-void caml_set_minor_heap_size (asize_t wsize)
+void caml_set_minor_heap_wsz(asize_t requested_wsz)
 {
-  caml_domain_state* domain_state = Caml_state;
-  struct caml_minor_tables *r = domain_state->minor_tables;
-
-  if (domain_state->young_ptr != domain_state->young_end)
-    caml_minor_collection();
-
-  if(caml_reallocate_minor_heap(wsize) < 0) {
-    caml_fatal_error("Fatal error: No memory for minor heap");
+  caml_gc_log("Changing heap_max_wsz from %" ARCH_INTNAT_PRINTF_FORMAT
+              "u to %" ARCH_INTNAT_PRINTF_FORMAT "u.",
+              caml_minor_heap_wsz, requested_wsz);
+  while (requested_wsz != caml_minor_heap_wsz) {
+    caml_try_run_on_all_domains(
+      &caml_stw_resize_minor_heaps, (void*)requested_wsz, 0);
   }
-
-  reset_minor_tables(r);
+  caml_check_minor_heap();
 }
-
 /*****************************************************************************/
 
 struct oldify_state {
@@ -813,7 +809,7 @@ static void realloc_generic_table
   CAMLassert (tbl->limit >= tbl->threshold);
 
   if (tbl->base == NULL){
-    alloc_generic_table (tbl, Caml_state->minor_heap_wsz / 8, 256,
+    alloc_generic_table (tbl, caml_minor_heap_wsz / 8, 256,
                          element_size);
   }else if (tbl->limit == tbl->threshold){
     CAML_EV_COUNTER (ev_counter_name, 1);

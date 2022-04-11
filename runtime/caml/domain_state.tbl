@@ -98,8 +98,6 @@ DOMAIN_STATE(uintnat, requested_external_interrupt)
 DOMAIN_STATE(int, parser_trace)
 /* See parsing.c */
 
-DOMAIN_STATE(asize_t, minor_heap_wsz)
-
 DOMAIN_STATE(struct caml_heap_state*, shared_heap)
 
 DOMAIN_STATE(int, id)
