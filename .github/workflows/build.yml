@@ -8,7 +8,7 @@ on:
       - 'trunk'
   pull_request:
 
-# List of test directories for the taskset, debug-s4096 and linux-O0 jobs.
+# List of test directories for the debug-s4096 and linux-O0 jobs.
 # These directories are selected because of their tendencies to reach corner
 # cases in the runtime system.
 env:
@@ -130,7 +130,6 @@ jobs:
 #        debug runtime and minor heap verification.
 # debug-s4086: select testsuite run with the debug runtime and a small
 #              minor heap.
-# taskset: run selected testsuite directories on only one core.
   extra:
     needs: build
     runs-on: ubuntu-latest
@@ -139,7 +138,6 @@ jobs:
         id:
           - debug
           - debug-s4096
-          - taskset
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v2
@@ -163,12 +161,4 @@ jobs:
         run: |
           for dir in $PARALLEL_TESTS; do \
             bash -cxe "SHOW_TIMINGS=1 tools/ci/actions/runner.sh test_prefix $dir"; \
-          done
-      - name: Run the testsuite (taskset -c 0)
-        # TEST_SEQUENTIALLY=1 is used here as doing a parallel run on only one core is not useful.
-        # It means `make parellel-` won't be used, using `make one DIR=` instead.
-        if: ${{ matrix.id == 'taskset' }}
-        run: |
-          for dir in $PARALLEL_TESTS; do \
-             taskset -c 1 bash -cxe "SHOW_TIMINGS=1 TEST_SEQUENTIALLY=1 tools/ci/actions/runner.sh test_prefix $dir"; \
           done

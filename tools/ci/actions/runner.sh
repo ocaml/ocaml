@@ -20,7 +20,6 @@ PREFIX=~/local
 
 MAKE="make $MAKE_ARG"
 SHELL=dash
-TEST_SEQUENTIALLY=$TEST_SEQUENTIALLY
 
 export PATH=$PREFIX/bin:$PATH
 
@@ -74,15 +73,9 @@ Test () {
 
 # By default, TestPrefix will attempt to run the tests
 # in the given directory in parallel.
-# Setting $TEST_SEQUENTIALLY will avoid this behaviour.
 TestPrefix () {
-  if [[ -z "${TEST_SEQUENTIALLY}" ]]; then
-    TO_RUN=parallel-"$1"
-  else
-    TO_RUN="one DIR=tests/$1"
-  fi
+  TO_RUN=parallel-"$1"
   echo Running single testsuite directory with $TO_RUN
-
   $MAKE -C testsuite $TO_RUN
   cd ..
 }
