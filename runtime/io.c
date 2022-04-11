@@ -597,11 +597,13 @@ CAMLprim value caml_ml_open_descriptor_out(value fd)
 CAMLprim value caml_ml_set_channel_name(value vchannel, value vname)
 {
   struct channel * channel = Channel(vchannel);
+  Lock(channel);
   caml_stat_free(channel->name);
   if (caml_string_length(vname) > 0)
     channel->name = caml_stat_strdup(String_val(vname));
   else
     channel->name = NULL;
+  Unlock(channel);
   return Val_unit;
 }
 
@@ -672,21 +674,23 @@ CAMLprim value caml_ml_close_channel(value vchannel)
   /* For output channels, must have flushed before */
   struct channel * channel = Channel(vchannel);
 
+  Lock(channel);
   /* Ensure that every read or write on the channel will cause an
      immediate caml_flush_partial or caml_refill, thus raising a Sys_error
      exception */
   channel->curr = channel->max = channel->end;
 
   /* If already closed, we are done */
-  if (channel->fd == -1) return Val_unit;
+  if (channel->fd != -1) {
+    fd = channel->fd;
+    channel->fd = -1;
+    caml_enter_blocking_section_no_pending();
+    result = close(fd);
+    caml_leave_blocking_section();
 
-  fd = channel->fd;
-  channel->fd = -1;
-  caml_enter_blocking_section_no_pending();
-  result = close(fd);
-  caml_leave_blocking_section();
-
-  if (result == -1) caml_sys_error (NO_ARG);
+    if (result == -1) caml_sys_error (NO_ARG);
+  }
+  Unlock(channel);
   return Val_unit;
 }
 
@@ -727,6 +731,7 @@ CAMLprim value caml_ml_set_binary_mode(value vchannel, value mode)
 {
 #if defined(_WIN32) || defined(__CYGWIN__)
   struct channel * channel = Channel(vchannel);
+  Lock(channel);
 #if defined(_WIN32)
   /* The implementation of [caml_read_fd] and [caml_write_fd] in win32.c
      doesn't support socket I/O with CRLF conversion. */
@@ -742,6 +747,7 @@ CAMLprim value caml_ml_set_binary_mode(value vchannel, value mode)
     channel->flags &= ~CHANNEL_TEXT_MODE;
   else
     channel->flags |= CHANNEL_TEXT_MODE;
+  Unlock(channel);
 #endif
   return Val_unit;
 }
@@ -758,9 +764,9 @@ CAMLprim value caml_ml_flush(value vchannel)
   CAMLparam1 (vchannel);
   struct channel * channel = Channel(vchannel);
 
-  if (channel->fd == -1) CAMLreturn(Val_unit);
   Lock(channel);
-  caml_flush(channel);
+  if (channel->fd != -1)
+    caml_flush(channel);
   Unlock(channel);
   CAMLreturn (Val_unit);
 }
@@ -768,12 +774,15 @@ CAMLprim value caml_ml_flush(value vchannel)
 CAMLprim value caml_ml_set_buffered(value vchannel, value mode)
 {
   struct channel * channel = Channel(vchannel);
+  Lock(channel);
   if (Bool_val(mode)) {
     channel->flags &= ~CHANNEL_FLAG_UNBUFFERED;
   } else {
     channel->flags |= CHANNEL_FLAG_UNBUFFERED;
-    caml_ml_flush(vchannel);
+    if (channel->fd != -1)
+      caml_flush(channel);
   }
+  Unlock(channel);
   return Val_unit;
 }
 
@@ -858,14 +867,23 @@ CAMLprim value caml_ml_seek_out_64(value vchannel, value pos)
 
 CAMLprim value caml_ml_pos_out(value vchannel)
 {
-  file_offset pos = caml_pos_out(Channel(vchannel));
+  file_offset pos;
+  struct channel *channel = Channel(vchannel);
+  Lock(channel);
+  pos = caml_pos_out(channel);
+  Unlock(channel);
   if (pos > Max_long) { errno = EOVERFLOW; caml_sys_error(NO_ARG); }
   return Val_long(pos);
 }
 
 CAMLprim value caml_ml_pos_out_64(value vchannel)
 {
-  return Val_file_offset(caml_pos_out(Channel(vchannel)));
+  file_offset pos;
+  struct channel *channel = Channel(vchannel);
+  Lock(channel);
+  pos = caml_pos_out(channel);
+  Unlock(channel);
+  return Val_file_offset(pos);
 }
 
 CAMLprim value caml_ml_input_char(value vchannel)
@@ -957,14 +975,23 @@ CAMLprim value caml_ml_seek_in_64(value vchannel, value pos)
 
 CAMLprim value caml_ml_pos_in(value vchannel)
 {
-  file_offset pos = caml_pos_in(Channel(vchannel));
+  file_offset pos;
+  struct channel *channel = Channel(vchannel);
+  Lock(channel);
+  pos = caml_pos_in(channel);
+  Unlock(channel);
   if (pos > Max_long) { errno = EOVERFLOW; caml_sys_error(NO_ARG); }
   return Val_long(pos);
 }
 
 CAMLprim value caml_ml_pos_in_64(value vchannel)
 {
-  return Val_file_offset(caml_pos_in(Channel(vchannel)));
+  file_offset pos;
+  struct channel *channel = Channel(vchannel);
+  Lock(channel);
+  pos = caml_pos_in(channel);
+  Unlock(channel);
+  return Val_file_offset(pos);
 }
 
 CAMLprim value caml_ml_input_scan_line(value vchannel)
