@@ -236,6 +236,9 @@ Working version
 
 ### Bug fixes:
 
+- #11167: Fix memory leak from signal stack.
+  (Antoni Żewierżejew, review by Gabriel Scherer and Enguerrand Decorne)
+
 - #11112: harden -use-runtime against spaces or quotes in the provided path
   (Gabriel Scherer, report by Brahima Dibassi, review by David Allsopp)
 

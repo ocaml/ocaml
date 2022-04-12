@@ -29,6 +29,7 @@
 #include "caml/osdeps.h"
 #include "caml/startup_aux.h"
 #include "caml/prims.h"
+#include "caml/signals.h"
 
 #ifdef _WIN32
 extern void caml_win32_unregister_overflow_detection (void);
@@ -166,6 +167,7 @@ CAMLexport void caml_shutdown(void)
   caml_free_shared_libs();
 #endif
   caml_stat_destroy_pool();
+  caml_free_signal_stack();
 #if defined(_WIN32) && defined(NATIVE_CODE)
   caml_win32_unregister_overflow_detection();
 #endif
