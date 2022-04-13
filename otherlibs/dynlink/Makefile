@@ -189,10 +189,14 @@ $(LOCAL_SRC)/%.cmx: $(LOCAL_SRC)/%.ml
 # Rules for building the [Dynlink_compilerlibs] bytecode and native packs
 # from their components.
 
-byte/dynlink_compilerlibs.cmo: $(COMPILERLIBS_CMO)
-	$(OCAMLC) $(COMPFLAGS) -pack -o $@ $(COMPILERLIBS_CMO)
-
-byte/dynlink_compilerlibs.cmi: byte/dynlink_compilerlibs.cmo
+# A multi-target pattern rule can tell GNU make that the recipe simultaneously
+# produces both the cmo and cmi file for Dynlink_compilerlibs. GNU make 4.3+
+# would be required to do the same thing with a static rule (with its grouped
+# targets feature).
+byt%/dynlink_compilerlibs.cmo byt%/dynlink_compilerlibs.cmi: $(COMPILERLIBS_CMO)
+	@$(if $(filter-out e,$*),\
+        $(error Should only build byte/dynlink_compilerlibs.cmo!))
+	$(OCAMLC) $(COMPFLAGS) -pack -o byte/dynlink_compilerlibs.cmo $^
 
 native/dynlink_compilerlibs.cmx: $(COMPILERLIBS_CMX)
 	$(OCAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) -pack -o $@ $(COMPILERLIBS_CMX)
