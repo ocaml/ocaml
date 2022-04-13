@@ -29,19 +29,6 @@
 #include "caml/shared_heap.h"
 #include "caml/fiber.h"
 
-#ifdef NATIVE_CODE
-#include "caml/stack.h"
-/* Communication with [caml_start_program] and [caml_call_gc]. */
-
-/* The global roots.
-   FIXME: These should be promoted, and not scanned here.
-   FIXME: caml_globals_inited makes assumptions about store ordering.
-   XXX KC : What to do here?
-*/
-
-intnat caml_globals_inited = 0;
-#endif
-
 CAMLexport _Atomic scan_roots_hook caml_scan_roots_hook =
   (scan_roots_hook)NULL;
 
