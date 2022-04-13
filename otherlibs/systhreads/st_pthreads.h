@@ -283,17 +283,16 @@ static int st_event_wait(st_event e)
 
 static void * caml_thread_tick(void * arg)
 {
-  caml_domain_state *domain;
   uintnat *domain_id = (uintnat *) arg;
 
   caml_init_domain_self(*domain_id);
-  domain = Caml_state;
+  caml_domain_state *domain = Caml_state;
 
   caml_domain_set_name("Tick");
   while(! atomic_load_acq(&Tick_thread_stop)) {
     st_msleep(Thread_timeout);
 
-    atomic_store_rel((atomic_uintnat*)&domain->requested_external_interrupt, 1);
+    atomic_store_rel(&domain->requested_external_interrupt, 1);
     caml_interrupt_self();
   }
   return NULL;

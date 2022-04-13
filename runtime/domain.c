@@ -283,11 +283,9 @@ void caml_init_domain_state_key (void)
 CAMLexport __thread caml_domain_state* caml_state;
 #endif
 
-/* Interrupt functions */
-static const uintnat INTERRUPT_MAGIC = (uintnat)(-1);
-
-Caml_inline void interrupt_domain(struct interruptor* s) {
-  atomic_store_rel(s->interrupt_word, INTERRUPT_MAGIC);
+Caml_inline void interrupt_domain(struct interruptor* s)
+{
+  atomic_store_rel(s->interrupt_word, (uintnat)(-1));
 }
 
 int caml_incoming_interrupts_queued(void)
@@ -323,7 +321,6 @@ void caml_handle_incoming_interrupts(void)
 int caml_send_interrupt(struct interruptor* target)
 {
   /* signal that there is an interrupt pending */
-  CAMLassert(!atomic_load_acq(&target->interrupt_pending));
   atomic_store_rel(&target->interrupt_pending, 1);
 
   /* Signal the condition variable, in case the target is
@@ -492,9 +489,8 @@ static int allocate_minor_heap(asize_t wsize) {
   domain_state->young_start = (value*)domain_self->minor_heap_area_start;
   domain_state->young_end =
       (value*)(domain_self->minor_heap_area_start + Bsize_wsize(wsize));
-  atomic_store_rel(&domain_state->young_limit,
-                   (uintnat) domain_state->young_start);
   domain_state->young_ptr = domain_state->young_end;
+  caml_reset_young_limit(domain_state);
 
   check_minor_heap();
   return 0;
@@ -681,6 +677,8 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
   domain_state->trap_sp_off = 1;
   domain_state->trap_barrier_off = 0;
 #endif
+
+  caml_reset_young_limit(domain_state);
 
   add_to_stw_domains(domain_self);
   goto domain_init_complete;
@@ -1426,13 +1424,10 @@ int caml_try_run_on_all_domains_with_spin_work(
 
   /* Next, interrupt all domains */
   for(i = 0; i < stw_domains.participating_domains; i++) {
-    caml_domain_state* d = stw_domains.domains[i]->state;
-    stw_request.participating[i] = d;
-    if (d != domain_state) {
-      caml_send_interrupt(&stw_domains.domains[i]->interruptor);
-    } else {
-      CAMLassert(!domain_self->interruptor.interrupt_pending);
-    }
+    dom_internal * d = stw_domains.domains[i];
+    stw_request.participating[i] = d->state;
+    CAMLassert(!d->interruptor.interrupt_pending);
+    if (d->state != domain_state) caml_send_interrupt(&d->interruptor);
   }
 
   /* Domains now know they are part of the STW.
@@ -1493,6 +1488,22 @@ void caml_interrupt_self(void) {
   interrupt_domain(&domain_self->interruptor);
 }
 
+void caml_reset_young_limit(caml_domain_state * dom_st)
+{
+  CAMLassert(dom_st == Caml_state);
+  /* An interrupt might have been queued in the meanwhile; this
+     achieves the proper synchronisation. */
+  atomic_exchange(&dom_st->young_limit, (uintnat)dom_st->young_start);
+  if (caml_incoming_interrupts_queued()
+      || dom_st->requested_minor_gc
+      || dom_st->requested_major_slice
+      || atomic_load_explicit(&dom_st->requested_external_interrupt,
+                              memory_order_relaxed)) {
+    atomic_store_rel(&dom_st->young_limit, (uintnat)-1);
+    CAMLassert(caml_check_gc_interrupt(dom_st));
+  }
+}
+
 static void caml_poll_gc_work(void)
 {
   CAMLalloc_point_here;
@@ -1524,32 +1535,26 @@ static void caml_poll_gc_work(void)
     CAML_EV_END(EV_MAJOR);
   }
 
-  if (atomic_load_acq(
-          (atomic_uintnat*)&Caml_state->requested_external_interrupt)) {
+  if (atomic_load_acq(&Caml_state->requested_external_interrupt)) {
     caml_domain_external_interrupt_hook();
   }
 
+  caml_reset_young_limit(Caml_state);
 }
 
 /* FIXME: do not raise async exceptions */
 void caml_handle_gc_interrupt(void)
 {
-  atomic_uintnat* young_limit = domain_self->interruptor.interrupt_word;
   CAMLalloc_point_here;
 
   CAML_EV_BEGIN(EV_INTERRUPT_GC);
-  if (atomic_load_acq(young_limit) == INTERRUPT_MAGIC) {
-    /* interrupt */
+  if (caml_incoming_interrupts_queued()) {
     CAML_EV_BEGIN(EV_INTERRUPT_REMOTE);
-    while (atomic_load_acq(young_limit) == INTERRUPT_MAGIC) {
-      uintnat i = INTERRUPT_MAGIC;
-      atomic_compare_exchange_strong(
-          young_limit, &i, (uintnat)Caml_state->young_start);
-    }
     caml_handle_incoming_interrupts();
     CAML_EV_END(EV_INTERRUPT_REMOTE);
   }
 
+  caml_reset_young_limit(Caml_state);
   caml_poll_gc_work();
 
   CAML_EV_END(EV_INTERRUPT_GC);

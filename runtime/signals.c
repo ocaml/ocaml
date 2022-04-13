@@ -45,13 +45,6 @@ static caml_plat_mutex signal_install_mutex = CAML_PLAT_MUTEX_INITIALIZER;
 int caml_check_pending_signals(void)
 {
   int i;
-  /* [MM] This fence compensates for the fact that Caml_check_gc_interrupt
-     reads young_limit with a relaxed load.  It is possible in theory to
-     see young_limit updated without caml_pending_signals being set
-     and then resetting young_limit after the check.  This would delay
-     processing the pending signal until young_limit is updated again.
-     There may be nicer ways to address this scenario. */
-  atomic_thread_fence(memory_order_acquire);
   for (i = 0; i < NSIG_WORDS; i++) {
     if (atomic_load_explicit(&caml_pending_signals[i], memory_order_relaxed))
       return 1;

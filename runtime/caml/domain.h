@@ -23,17 +23,29 @@ extern "C" {
 
 #ifdef CAML_INTERNALS
 
+#include "camlatomic.h"
 #include "config.h"
 #include "mlvalues.h"
 #include "domain_state.h"
 #include "platform.h"
 
 /* is the minor heap full or an external interrupt has been triggered */
-#define Caml_check_gc_interrupt(dom_st)   \
-  (CAMLalloc_point_here, \
-   CAMLunlikely( \
-     (uintnat)(dom_st)->young_ptr < \
-     atomic_load_explicit(&((dom_st)->young_limit), memory_order_relaxed)))
+Caml_inline int caml_check_gc_interrupt(caml_domain_state * dom_st)
+{
+  CAMLalloc_point_here;
+  uintnat young_limit =
+    atomic_load_explicit(&dom_st->young_limit, memory_order_relaxed);
+  if ((uintnat)dom_st->young_ptr < young_limit) {
+    /* Synchronise for the case when [young_limit] was used to interrupt
+       us. */
+    atomic_thread_fence(memory_order_acquire);
+    return 1;
+  }
+  return 0;
+}
+
+#define Caml_check_gc_interrupt(dom_st)           \
+  (CAMLunlikely(caml_check_gc_interrupt(dom_st)))
 
 asize_t caml_norm_minor_heap_size (intnat);
 int caml_reallocate_minor_heap(asize_t);
@@ -46,6 +58,7 @@ void caml_handle_gc_interrupt(void);
 void caml_handle_incoming_interrupts(void);
 
 CAMLextern void caml_interrupt_self(void);
+void caml_reset_young_limit(caml_domain_state *);
 
 CAMLextern void caml_reset_domain_lock(void);
 CAMLextern int caml_bt_is_in_blocking_section(void);

@@ -54,6 +54,10 @@ void caml_garbage_collection(void)
   Pop_frame_pointer(sp);
   retaddr = *(uintnat*)sp;
 
+  /* Synchronise for the case when [young_limit] was used to interrupt
+     us. */
+  atomic_thread_fence(memory_order_acquire);
+
   { /* Find the frame descriptor for the current allocation */
     uintnat h = Hash_retaddr(retaddr, fds.mask);
     while (1) {
@@ -100,7 +104,7 @@ void caml_garbage_collection(void)
       caml_process_pending_actions();
     } while
        ( (uintnat)(Caml_state->young_ptr - whsize) <=
-         atomic_load_explicit(&Caml_state->young_limit, memory_order_relaxed) );
+         atomic_load_explicit(&Caml_state->young_limit, memory_order_acquire) );
 
     /* Re-do the allocation: we now have enough space in the minor heap. */
     Caml_state->young_ptr -= whsize;
