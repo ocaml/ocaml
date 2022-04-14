@@ -88,10 +88,6 @@ LDFLAGS?=@LDFLAGS@
 ### How to invoke the C preprocessor through the C compiler
 CPP=@CPP@
 
-### How to invoke ranlib
-RANLIB=@RANLIB@
-RANLIBCMD=@RANLIBCMD@
-
 ### How to invoke ar
 ARCMD=@AR@
 

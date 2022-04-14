@@ -95,7 +95,6 @@ install::
 	fi
 ifneq "$(STUBSLIB)" ""
 	$(INSTALL_DATA) $(STUBSLIB) "$(INSTALL_LIBDIR)/"
-	cd "$(INSTALL_LIBDIR)"; $(RANLIB) lib$(CLIBNAME).$(A)
 endif
 
 	$(INSTALL_DATA) \
@@ -115,7 +114,6 @@ installopt:
 	$(INSTALL_DATA) \
 	   $(CAMLOBJS_NAT) $(LIBNAME).cmxa $(LIBNAME).$(A) \
 	   "$(INSTALL_LIBDIR)/"
-	cd "$(INSTALL_LIBDIR)"; $(RANLIB) $(LIBNAME).a
 	if test -f $(LIBNAME).cmxs; then \
 	  $(INSTALL_PROG) $(LIBNAME).cmxs "$(INSTALL_LIBDIR)"; \
 	fi
