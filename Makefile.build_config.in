@@ -20,7 +20,7 @@
 # $(ROOTDIR) has been defined.
 
 include $(ROOTDIR)/Makefile.config
-INSTALL ?= @INSTALL@
+INSTALL ?= @INSTALL@ -p
 INSTALL_DATA ?= @INSTALL_DATA@
 INSTALL_PROG ?= @INSTALL_PROGRAM@
 

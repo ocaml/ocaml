@@ -25,6 +25,11 @@ OCaml 4.14 maintenance branch
 - #11392, #11392: assertion failure with -rectypes and external definitions
   (Gabriel Scherer, review by Florian Angeletti, report by Dmitrii Kosarev)
 
+### Compiler user-interface and warnings:
+
+- #11184: Stop calling ranlib on created / installed libraries
+  (Sébastien Hinderer, review by Xavier Leroy)
+
 ### Manual and documentation:
 
 - #11045, #11409: document that the array argument to `caml_callbackN`

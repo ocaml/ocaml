@@ -585,8 +585,6 @@ endif
 ifeq "$(INSTALL_OCAMLNAT)" "true"
 	  $(INSTALL_PROG) ocamlnat$(EXE) "$(INSTALL_BINDIR)"
 endif
-	cd "$(INSTALL_COMPLIBDIR)" && \
-	   $(RANLIB) ocamlcommon.$(A) ocamlbytecomp.$(A) ocamloptcomp.$(A)
 
 # Installation of the *.ml sources of compiler-libs
 .PHONY: install-compiler-sources

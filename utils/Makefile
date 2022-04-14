@@ -73,7 +73,6 @@ config.ml: config.mlp $(ROOTDIR)/Makefile.config Makefile
 	    $(call SUBST_STRING,OCAMLOPT_CPPFLAGS) \
 	    $(call SUBST_STRING,PACKLD) \
 	    $(call SUBST,PROFINFO_WIDTH) \
-	    $(call SUBST_STRING,RANLIBCMD) \
 	    $(call SUBST_STRING,RPATH) \
 	    $(call SUBST_STRING,MKSHAREDLIBRPATH) \
 	    $(call SUBST,FORCE_SAFE_STRING) \
