@@ -42,11 +42,13 @@ CAMLprim value unix_fork(value unit)
   }
 
   ret = fork();
-  if (ret == 0) caml_atfork_hook();
+
   if (ret == -1) uerror("fork", Nothing);
 
   if (ret == 0) {
     caml_atfork_child();
+    /* the following hook can be redefined in other places */
+    caml_atfork_hook();
   } else {
     caml_atfork_parent(ret);
   }
