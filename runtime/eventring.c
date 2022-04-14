@@ -108,7 +108,7 @@ static void write_to_ring(ev_category category, ev_message_type type,
 void caml_eventring_init() {
   eventring_path = caml_secure_getenv(T("OCAML_EVENTRING_DIR"));
 
-  ring_size_words = 1 << caml_params->eventring_size;
+  ring_size_words = 1 << caml_params->eventring_log_wsize;
 
   if (caml_secure_getenv(T("OCAML_EVENTRING_START"))) {
     caml_eventring_start();
