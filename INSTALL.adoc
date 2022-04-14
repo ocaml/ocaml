@@ -43,8 +43,8 @@
 * Under Cygwin, the `gcc-core` package is required. `flexdll` is also necessary
   for shared library support.
 
-* Binutils including `ar`, `ranlib`, and `strip` are required if your
-  distribution does not already provide them with the C compiler.
+* Binutils including `ar` and `strip` are required if your distribution
+  does not already provide them with the C compiler.
 
 == Configuration
 

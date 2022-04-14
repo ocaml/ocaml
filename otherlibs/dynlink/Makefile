@@ -249,12 +249,11 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 endif
 
 installopt:
-	if $(NATDYNLINK); then \
-	  $(INSTALL_DATA) \
-	    $(NATOBJS) dynlink.cmxa dynlink.$(A) \
-	    "$(INSTALL_LIBDIR)" && \
-	  cd "$(INSTALL_LIBDIR)" && $(RANLIB) dynlink.$(A); \
-	fi
+ifeq "$(strip $(NATDYNLINK))" "true"
+	$(INSTALL_DATA) \
+	  $(NATOBJS) dynlink.cmxa dynlink.$(A) \
+	  "$(INSTALL_LIBDIR)"
+endif
 
 partialclean:
 	rm -f $(extract_crc) *.cm[ioaxt] *.cmti *.cmxa \

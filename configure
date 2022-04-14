@@ -713,6 +713,7 @@ NMEDIT
 DSYMUTIL
 MANIFEST_TOOL
 AWK
+RANLIB
 STRIP
 ac_ct_AR
 DLLTOOL
@@ -795,8 +796,6 @@ natdynlinkopts
 natdynlink
 supports_shared_libraries
 mklib
-RANLIBCMD
-RANLIB
 AR
 shebangscripts
 long_shebang
@@ -2872,8 +2871,6 @@ OCAML_VERSION_SHORT=5.0
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
-
-
 
 
 
@@ -12525,27 +12522,17 @@ else
 fi ;;
 esac
 
-# Extracting information from libtool's configuration
-if test -n "$RANLIB" ; then :
-  RANLIBCMD="$RANLIB"
-else
-  RANLIB="$AR rs"; RANLIBCMD=""
-
-fi
-
 case $host in #(
   # In config/Makefile.mingw*, we had:
   # TARGET=i686-w64-mingw32 and x86_64-w64-mingw32
   # TOOLPREF=$(TARGET)-
   # ARCMD=$(TOOLPREF)ar
-  # RANLIB=$(TOOLPREF)ranlib
-  # RANLIBCMD=$(TOOLPREF)ranlib
-  # However autoconf and libtool seem to use ar and ranlib
+  # However autoconf and libtool seem to use ar
   # So we let them do, at the moment
   *-pc-windows) :
 
       libext=lib
-      AR=""; RANLIB=echo; RANLIBCMD=""
+      AR=""
       if test "$host_cpu" = "x86_64" ; then :
   machine="-machine:AMD64 "
 else
@@ -12555,7 +12542,7 @@ fi
      ;; #(
   *) :
 
-    mklib="rm -f \$(1) && ${AR} rc \$(1) \$(2) && ${RANLIB} \$(1)"
+    mklib="rm -f \$(1) && ${AR} rc \$(1) \$(2)"
    ;;
 esac
 

@@ -195,6 +195,9 @@ Working version
   (Sébastien Hinderer, review by David Allsopp, Florian Angeletti and
   Xavier Leroy)
 
+- #11184: Stop calling ranlib on created / installed libraries
+  (Sébastien Hinderer, review by Xavier Leroy)
+
 ### Internal/compiler-libs changes:
 
 - #10878, #10909: restore flambda after the Multicore merge.

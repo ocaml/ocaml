@@ -120,8 +120,6 @@ AC_SUBST([bootstrapping_flexdll])
 AC_SUBST([long_shebang])
 AC_SUBST([shebangscripts])
 AC_SUBST([AR])
-AC_SUBST([RANLIB])
-AC_SUBST([RANLIBCMD])
 AC_SUBST([mklib])
 AC_SUBST([supports_shared_libraries])
 AC_SUBST([natdynlink])
@@ -472,32 +470,24 @@ AS_CASE([$enable_dependency_generation],
       [compute_deps=true])],
     [compute_deps=false])])
 
-# Extracting information from libtool's configuration
-AS_IF([test -n "$RANLIB" ],
-  [RANLIBCMD="$RANLIB"],
-  [RANLIB="$AR rs"; RANLIBCMD=""]
-)
-
 AS_CASE([$host],
   # In config/Makefile.mingw*, we had:
   # TARGET=i686-w64-mingw32 and x86_64-w64-mingw32
   # TOOLPREF=$(TARGET)-
   # ARCMD=$(TOOLPREF)ar
-  # RANLIB=$(TOOLPREF)ranlib
-  # RANLIBCMD=$(TOOLPREF)ranlib
-  # However autoconf and libtool seem to use ar and ranlib
+  # However autoconf and libtool seem to use ar
   # So we let them do, at the moment
   [*-pc-windows],
     [
       libext=lib
-      AR=""; RANLIB=echo; RANLIBCMD=""
+      AR=""
       AS_IF([test "$host_cpu" = "x86_64" ],
         [machine="-machine:AMD64 "],
         [machine=""])
       mklib="link -lib -nologo $machine /out:\$(1) \$(2)"
     ],
   [
-    mklib="rm -f \$(1) && ${AR} rc \$(1) \$(2) && ${RANLIB} \$(1)"
+    mklib="rm -f \$(1) && ${AR} rc \$(1) \$(2)"
   ])
 
 ## Find vendor of the C compiler
