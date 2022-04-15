@@ -239,6 +239,9 @@ Working version
 
 ### Bug fixes:
 
+- #11194: Fix inconsitent type-vars names in "unbound type var" messages
+  (Ulysse Gérard, ?)
+
 - #11167: Fix memory leak from signal stack.
   (Antoni Żewierżejew, review by Gabriel Scherer and Enguerrand Decorne)
 
