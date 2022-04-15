@@ -105,7 +105,7 @@ static void write_to_ring(ev_category category, ev_message_type type,
                           int event_id, int event_length, uint64_t *content,
                           int word_offset);
 
-void eventring_create_raw();
+static void eventring_create_raw();
 
 void caml_eventring_init() {
   eventring_path = caml_secure_getenv(T("OCAML_EVENTRING_DIR"));
@@ -123,7 +123,7 @@ void caml_eventring_init() {
 /* teardown the ring buffers. This must be called from a stop-the-world
    unless we are sure there is only a single domain running (e.g after a fork)
 */
-void eventring_teardown_raw(int remove_file) {
+static void eventring_teardown_raw(int remove_file) {
 #ifdef _WIN32
     UnmapViewOfFile(current_metadata);
     CloseHandle(ring_file_handle);
@@ -206,7 +206,7 @@ void caml_eventring_destroy() {
 /* Create the initial eventrings. This must be called from within a
   stop-the-world section if we cannot be sure there is only a single
   domain running. */
-void eventring_create_raw() {
+static void eventring_create_raw() {
   /* Don't initialise eventring twice */
   if (!atomic_load_acq(&eventring_enabled)) {
     int ret, ring_headers_length;
