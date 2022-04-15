@@ -2057,11 +2057,12 @@ let report_error env ppf = function
       Includeclass.report_error Type ppf error
   | Unbound_val lab ->
       fprintf ppf "Unbound instance variable %s" lab
-  | Unbound_type_var (printer, reason) ->
-      let print_reason ppf (ty0, real, lab, ty) =
-        let ty1 =
-          if real then ty0 else Btype.newgenty(Tobject(ty0, ref None)) in
-        Printtyp.prepare_for_printing [ty; ty1];
+  | Unbound_type_var (printer, (ty0, real, lab, ty)) ->
+      let ty1 =
+        if real then ty0 else Btype.newgenty(Tobject(ty0, ref None))
+      in
+      Printtyp.prepare_for_printing [ty; ty1];
+      let print_reason ppf (ty0, lab, ty) =
         fprintf ppf
           "The method %s@ has type@;<1 2>%a@ where@ %a@ is unbound"
           lab
@@ -2071,7 +2072,7 @@ let report_error env ppf = function
       fprintf ppf
         "@[<v>@[Some type variables are unbound in this type:@;<1 2>%t@]@ \
               @[%a@]@]"
-       printer print_reason reason
+       printer print_reason (ty0, lab, ty)
   | Non_generalizable_class (id, clty) ->
       fprintf ppf
         "@[The type of this class,@ %a,@ \
