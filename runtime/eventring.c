@@ -361,24 +361,24 @@ CAMLprim value caml_eventring_start() {
 }
 
 CAMLprim value caml_eventring_pause() {
-  uintnat paused = atomic_load_acq(&eventring_paused);
+  if (!atomic_load_acq(&eventring_enabled)) return Val_unit;
 
-  if (atomic_load_acq(&eventring_enabled) && !paused) {
-    if( atomic_compare_exchange_strong(&eventring_paused, &paused, 1) ) {
-      caml_ev_lifecycle(EV_RING_PAUSE, 0);
-    }
+  uintnat not_paused = 0;
+
+  if( atomic_compare_exchange_strong(&eventring_paused, &not_paused, 1) ) {
+    caml_ev_lifecycle(EV_RING_PAUSE, 0);
   }
 
   return Val_unit;
 }
 
 CAMLprim value caml_eventring_resume() {
-  uintnat paused = atomic_load_acq(&eventring_paused);
+  if (!atomic_load_acq(&eventring_enabled)) return Val_unit;
 
-  if (atomic_load_acq(&eventring_enabled) && paused) {
-    if( atomic_compare_exchange_strong(&eventring_paused, &paused, 0) ) {
-      caml_ev_lifecycle(EV_RING_RESUME, 0);
-    }
+  uintnat paused = 1;
+
+  if( atomic_compare_exchange_strong(&eventring_paused, &paused, 0) ) {
+    caml_ev_lifecycle(EV_RING_RESUME, 0);
   }
 
   return Val_unit;
