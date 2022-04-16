@@ -1,8 +1,4 @@
 (* TEST
-* hasunix
-include unix
-** bytecode
-** native
 *)
 
 let r = ref (Some 0)
