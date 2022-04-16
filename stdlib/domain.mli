@@ -25,12 +25,9 @@ val spawn : (unit -> 'a) -> 'a t
     current domain. *)
 
 val join : 'a t -> 'a
-(** [join d] blocks until domain [d] runs to completion.
-    If [d] results in a value, then that is returned by [join d].
-    If [d] raises an uncaught exception, then that is re-raised by [join d].
-
-    @raise Invalid_argument if the domain was already joined.
-    Domains may only be joined once. *)
+(** [join d] blocks until domain [d] runs to completion. If [d] results in a
+    value, then that is returned by [join d]. If [d] raises an uncaught
+    exception, then that is re-raised by [join d]. *)
 
 type id = private int
 (** Domains have unique integer identifiers *)

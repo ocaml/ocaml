@@ -213,6 +213,7 @@ stdlib__Domain.cmo : domain.ml \
     stdlib__Obj.cmi \
     stdlib__Mutex.cmi \
     stdlib__List.cmi \
+    stdlib__Condition.cmi \
     stdlib__Atomic.cmi \
     stdlib__Array.cmi \
     stdlib__Domain.cmi
@@ -222,6 +223,7 @@ stdlib__Domain.cmx : domain.ml \
     stdlib__Obj.cmx \
     stdlib__Mutex.cmx \
     stdlib__List.cmx \
+    stdlib__Condition.cmx \
     stdlib__Atomic.cmx \
     stdlib__Array.cmx \
     stdlib__Domain.cmi
