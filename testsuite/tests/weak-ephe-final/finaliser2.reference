@@ -1,7 +1,5 @@
 test1
-test2: 2
-test2: 1
-test3: joined
-test3: parent.1
-test3: child.1
-test3: child.2
+test2: installed 2nd
+test2: installed 1st
+test3: child.finalise
+test3: child.finalise_last
