@@ -82,8 +82,6 @@ let bytecc_libs = "%%BYTECCLIBS%%"
 
 let nativecc_libs = "%%NATIVECCLIBS%%"
 
-let windows_unicode = %%WINDOWS_UNICODE%% != 0
-
 let function_sections = %%FUNCTION_SECTIONS%%
 
 let instrumented_runtime = %%INSTRUMENTED_RUNTIME%%

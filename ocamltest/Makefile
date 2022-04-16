@@ -273,7 +273,6 @@ ocamltest_config.ml: ocamltest_config.ml.in Makefile ../Makefile.config
 	    $(call SUBST,CCOMPTYPE) \
 	    $(call SUBST,DIFF) \
 	    $(call SUBST,DIFF_FLAGS) \
-	    $(call SUBST,WINDOWS_UNICODE) \
 	    $(call SUBST,FUNCTION_SECTIONS) \
 	    $< > $@
 

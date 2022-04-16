@@ -87,12 +87,6 @@ static BOOL WINAPI ctrl_handler(DWORD event)
     return FALSE;
 }
 
-#if WINDOWS_UNICODE
-#define CP CP_UTF8
-#else
-#define CP CP_ACP
-#endif
-
 static void write_console(HANDLE hOut, WCHAR *wstr)
 {
   DWORD consoleMode, numwritten, len;
@@ -103,7 +97,7 @@ static void write_console(HANDLE hOut, WCHAR *wstr)
     WriteConsole(hOut, wstr, wcslen(wstr), &numwritten, NULL);
   } else { /* The output stream is redirected */
     len =
-      WideCharToMultiByte(CP, 0, wstr, wcslen(wstr), str, sizeof(str),
+      WideCharToMultiByte(CP_UTF8, 0, wstr, wcslen(wstr), str, sizeof(str),
                           NULL, NULL);
     WriteFile(hOut, str, len, &numwritten, NULL);
   }
@@ -184,7 +178,7 @@ int wmain(void)
 #endif
   }
   CloseHandle(h);
-  MultiByteToWideChar(CP, 0, runtime_path, -1, wruntime_path,
+  MultiByteToWideChar(CP_UTF8, 0, runtime_path, -1, wruntime_path,
                       sizeof(wruntime_path)/sizeof(wchar_t));
   run_runtime(wruntime_path , cmdline);
 #if _MSC_VER >= 1200

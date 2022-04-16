@@ -1,8 +1,7 @@
 (* TEST
 include unix
 flags += "-strict-sequence -safe-string -w +A -warn-error +A"
-* windows-unicode
-** toplevel
+* toplevel
 *)
 
 let foreign_names =
@@ -44,22 +43,6 @@ let foreign_names2 =
   in
   take (List.length foreign_names) to_create_and_delete_files
 ;;
-
-(* let env0 =
-     List.sort compare
-     (List.mapi (fun i v -> Printf.sprintf "OCAML_UTF8_VAR%d=%s" i v)
-                foreign_names2) *)
-
-(* let read_all ic = *)
-(*   set_binary_mode_in ic false; *)
-(*   let rec loop acc = *)
-(*     match input_line ic with *)
-(*     | exception End_of_file -> *)
-(*         List.rev acc *)
-(*     | s -> *)
-(*         loop (s :: acc) *)
-(*   in *)
-(*   loop [] *)
 
 (** WRAPPERS *)
 
@@ -104,27 +87,6 @@ let unix_readdir s =
 let sys_readdir s =
   List.sort compare (Array.to_list (Sys.readdir s))
 ;;
-
-(* let open_process_in cmdline = *)
-(*   let f cmdline = *)
-(*     let ic as proc = Unix.open_process_in cmdline in *)
-(*     let l = List.tl (read_all ic) in *)
-(*     ignore (Unix.close_process_in proc); *)
-(*     l *)
-(*   in *)
-(*   wrap "Unix.open_process_in" f ell cmdline (list quote) *)
-
-(* let open_process_full filter cmdline env =
-     let f cmdline env =
-       let (ic, _, _) as proc =
-         Unix.open_process_full cmdline (Array.of_list env)
-       in
-       let l = read_all ic in
-       ignore (Unix.close_process_full proc);
-       List.sort compare (List.filter filter l)
-     in
-     wrap2 "Unix.open_process_full" f ell (list quote) cmdline env (list quote)
-*)
 
 let test_readdir readdir =
   let filter s = List.mem s test_files && Filename.check_suffix s ".txt" in
@@ -261,7 +223,7 @@ let test_symlink () =
   in
   Sys.remove foofile;
   Sys.remove fileln;
-  Unix.rmdir dirln;
+  Unix.unlink dirln;
   Unix.rmdir foodir;
   res
 ;;

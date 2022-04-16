@@ -18,7 +18,6 @@
 #include <windows.h>
 
 /* See corresponding values in runtime/win32.c */
-static int windows_unicode_enabled = WINDOWS_UNICODE;
 static int windows_unicode_strict = 1;
 
 /* Adapted from runtime/win32.c */
@@ -30,14 +29,10 @@ int win_wide_char_to_multi_byte(const wchar_t *s, int slen,
   if (slen == 0)
     return 0;
 
-  if (windows_unicode_enabled != 0)
-    retcode =
-      WideCharToMultiByte(CP_UTF8,
-                          windows_unicode_strict ? WC_ERR_INVALID_CHARS : 0,
-                          s, slen, out, outlen, NULL, NULL);
-  else
-    retcode =
-      WideCharToMultiByte(CP_ACP, 0, s, slen, out, outlen, NULL, NULL);
+  retcode =
+    WideCharToMultiByte(CP_UTF8,
+                        windows_unicode_strict ? WC_ERR_INVALID_CHARS : 0,
+                        s, slen, out, outlen, NULL, NULL);
 
   if (retcode == 0)
     return -1;

@@ -237,6 +237,10 @@ Working version
   (Sébastien Hinderer, review by David Allsopp, Nicolás Ojeda Bär,
   Xavier Leroy, Vincent Laviron and Antonin Décimo)
 
+- #?????: Remove the possibility of passing WINDOWS_UNICODE_MODE=ansi to the
+  configure script. Unicode support is now always enabled.
+  (Nicolás Ojeda Bär)
+
 ### Bug fixes:
 
 - #11167: Fix memory leak from signal stack.

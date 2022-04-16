@@ -848,7 +848,6 @@ int caml_win32_unlink(const wchar_t * path) {
 }
 
 /* Windows Unicode support */
-static uintnat windows_unicode_enabled = WINDOWS_UNICODE;
 
 /* If [windows_unicode_strict] is non-zero, then illegal UTF-8 characters (on
    the OCaml side) or illegal UTF-16 characters (on the Windows side) cause an
@@ -874,16 +873,12 @@ CAMLexport int win_multi_byte_to_wide_char(const char *s, int slen,
   if (slen == 0)
     return 0;
 
-  if (windows_unicode_enabled != 0) {
-    retcode =
-      MultiByteToWideChar(CP_UTF8,
-                          windows_unicode_strict ? MB_ERR_INVALID_CHARS : 0,
-                          s, slen, out, outlen);
-    if (retcode == 0 && windows_unicode_fallback != 0)
-      retcode = MultiByteToWideChar(CP_ACP, 0, s, slen, out, outlen);
-  } else {
+  retcode =
+    MultiByteToWideChar(CP_UTF8,
+                        windows_unicode_strict ? MB_ERR_INVALID_CHARS : 0,
+                        s, slen, out, outlen);
+  if (retcode == 0 && windows_unicode_fallback != 0)
     retcode = MultiByteToWideChar(CP_ACP, 0, s, slen, out, outlen);
-  }
 
   if (retcode == 0)
     caml_win32_sys_error(GetLastError());
@@ -906,14 +901,10 @@ CAMLexport int win_wide_char_to_multi_byte(const wchar_t *s, int slen,
   if (slen == 0)
     return 0;
 
-  if (windows_unicode_enabled != 0)
-    retcode =
-      WideCharToMultiByte(CP_UTF8,
-                          windows_unicode_strict ? WC_ERR_INVALID_CHARS : 0,
-                          s, slen, out, outlen, NULL, NULL);
-  else
-    retcode =
-      WideCharToMultiByte(CP_ACP, 0, s, slen, out, outlen, NULL, NULL);
+  retcode =
+    WideCharToMultiByte(CP_UTF8,
+                        windows_unicode_strict ? WC_ERR_INVALID_CHARS : 0,
+                        s, slen, out, outlen, NULL, NULL);
 
   if (retcode == 0)
     caml_win32_sys_error(GetLastError());

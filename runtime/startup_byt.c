@@ -399,12 +399,7 @@ static void do_print_config(void)
 #else
          "false");
 #endif
-  printf("windows_unicode: %s\n",
-#if WINDOWS_UNICODE
-         "true");
-#else
-         "false");
-#endif
+  printf("windows_unicode: true\n");
   printf("supports_shared_libraries: %s\n",
 #ifdef SUPPORT_DYNAMIC_LINKING
          "true");

@@ -145,9 +145,8 @@ extern void caml_init_os_params(void);
 #ifdef _WIN32
 
 /* [caml_stat_strdup_to_utf16(s)] returns a NULL-terminated copy of [s],
-   re-encoded in UTF-16.  The encoding of [s] is assumed to be UTF-8 if
-   [caml_windows_unicode_runtime_enabled] is non-zero **and** [s] is valid
-   UTF-8, or the current Windows code page otherwise.
+   re-encoded in UTF-16.  The encoding of [s] is assumed to be UTF-8 if [s] is
+   valid UTF-8, or the current Windows code page otherwise.
 
    The returned string is allocated with [caml_stat_alloc], so it should be free
    using [caml_stat_free].
@@ -155,8 +154,7 @@ extern void caml_init_os_params(void);
 CAMLextern wchar_t* caml_stat_strdup_to_utf16(const char *s);
 
 /* [caml_stat_strdup_of_utf16(s)] returns a NULL-terminated copy of [s],
-   re-encoded in UTF-8 if [caml_windows_unicode_runtime_enabled] is non-zero or
-   the current Windows code page otherwise.
+   re-encoded in UTF-8.
 
    The returned string is allocated with [caml_stat_alloc], so it should be free
    using [caml_stat_free].
@@ -164,8 +162,7 @@ CAMLextern wchar_t* caml_stat_strdup_to_utf16(const char *s);
 CAMLextern char* caml_stat_strdup_of_utf16(const wchar_t *s);
 
 /* [caml_copy_string_of_utf16(s)] returns an OCaml string containing a copy of
-   [s] re-encoded in UTF-8 if [caml_windows_unicode_runtime_enabled] is non-zero
-   or in the current code page otherwise.
+   [s] re-encoded in UTF-8.
 */
 CAMLextern value caml_copy_string_of_utf16(const wchar_t *s);
 

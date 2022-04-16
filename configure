@@ -12790,9 +12790,7 @@ case $host in #(
 -fexcess-precision=standard"
         # TODO: see whether the code can be fixed to avoid -Wno-unused
         common_cflags="-O2 -fno-strict-aliasing -fwrapv -mms-bitfields"
-        internal_cppflags='-D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE'
-        internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
-        internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)" ;; #(
+        internal_cppflags='-D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE' ;; #(
   *) :
     as_fn_error $? "Unsupported C compiler for a Mingw build" "$LINENO" 5 ;;
 esac ;; #(
@@ -12834,9 +12832,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
       if test "x$cl_has_volatile_metadata" = "xtrue"; then :
   internal_cflags='-d2VolatileMetadata-'
-fi
-      internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
-      internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)" ;; #(
+fi ;; #(
   xlc-*) :
     common_cflags="-O5 -qtune=balanced -qnoipa -qinline";
       internal_cflags="$cc_warnings" ;; #(
@@ -17978,14 +17974,14 @@ case $host in #(
   *-*-mingw32|*-pc-windows) :
     case $WINDOWS_UNICODE_MODE in #(
   ansi) :
-    windows_unicode=0 ;; #(
+    as_fn_error $? "legacy unicode mode is no longer supported" "$LINENO" 5 ;; #(
   compatible|"") :
-    windows_unicode=1 ;; #(
+     ;; #(
   *) :
     as_fn_error $? "unexpected windows unicode mode" "$LINENO" 5 ;;
 esac ;; #(
   *) :
-    windows_unicode=0 ;;
+     ;;
 esac
 
 # Define default prefix correctly for the different Windows ports

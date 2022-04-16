@@ -621,9 +621,7 @@ AS_CASE([$host],
 -fexcess-precision=standard"
         # TODO: see whether the code can be fixed to avoid -Wno-unused
         common_cflags="-O2 -fno-strict-aliasing -fwrapv -mms-bitfields"
-        internal_cppflags='-D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE'
-        internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
-        internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
+        internal_cppflags='-D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE'],
       [AC_MSG_ERROR([Unsupported C compiler for a Mingw build])])],
   [AS_CASE([$ocaml_cv_cc_vendor],
     [clang-*],
@@ -642,9 +640,7 @@ AS_CASE([$host],
       internal_cppflags='-DUNICODE -D_UNICODE'
       OCAML_CL_HAS_VOLATILE_METADATA
       AS_IF([test "x$cl_has_volatile_metadata" = "xtrue"],
-            [internal_cflags='-d2VolatileMetadata-'])
-      internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
-      internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
+            [internal_cflags='-d2VolatileMetadata-'])],
     [xlc-*],
       [common_cflags="-O5 -qtune=balanced -qnoipa -qinline";
       internal_cflags="$cc_warnings"],
@@ -1998,11 +1994,10 @@ AS_CASE([$host],
   [*-*-mingw32|*-pc-windows],
     [AS_CASE([$WINDOWS_UNICODE_MODE],
       [ansi],
-        [windows_unicode=0],
+        [AC_MSG_ERROR([legacy unicode mode is no longer supported])],
       [compatible|""],
-        [windows_unicode=1],
-      [AC_MSG_ERROR([unexpected windows unicode mode])])],
-  [windows_unicode=0])
+        [],
+      [AC_MSG_ERROR([unexpected windows unicode mode])])])
 
 # Define default prefix correctly for the different Windows ports
 AS_IF([test x"$prefix" = "xNONE"],

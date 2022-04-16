@@ -116,8 +116,6 @@ val bytecc_libs : string
 
 val nativecc_libs : string
 
-val windows_unicode : bool
-
 val function_sections : bool
 (** Whether the compiler was configured to generate
     each function in a separate section *)

@@ -476,9 +476,7 @@ void caml_sys_init(char_os * exe_name, char_os **argv)
   /* Initialises the caml_win32_* globals on Windows with the version of
      Windows which is running */
   caml_probe_win32_version();
-#if WINDOWS_UNICODE
   caml_setup_win32_terminal();
-#endif
 #endif
   caml_init_exe_name(exe_name);
   main_argv = caml_alloc_array((void *)caml_copy_string_of_os,
