@@ -697,6 +697,21 @@ let method_type label sign =
   | (_, _, ty) -> ty
   | exception Not_found -> assert false
 
+let method_type' label ty =
+  let rec aux ty =
+    match get_desc ty with
+    | Tfield (name, k, ty, tys) ->
+        if name = label && k == field_public then
+          Some ty
+        else
+          aux tys
+    | _ ->
+        None
+  in
+  match get_desc ty with
+  | Tobject (fields, _) -> aux fields
+  | _ -> None
+
 let instance_variable_type label sign =
   match Vars.find label sign.csig_vars with
   | (_, _, ty) -> ty

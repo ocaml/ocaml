@@ -955,6 +955,21 @@ Warning 17 [undeclared-virtual-method]: the virtual method m is not declared.
 class c : object method m : int method n : int end
 |}];;
 
+class virtual c = object (self : 'c)
+  constraint 'c = < f : int; .. >
+end
+[%%expect {|
+class virtual c : object method virtual f : int end
+|}];;
+
+class virtual c = object (self : 'c)
+  constraint 'c = < f : int; .. >
+  method g = self # f
+end
+[%%expect {|
+class virtual c : object method virtual f : int method g : int end
+|}];;
+
 class [ 'a ] c = object (_ : 'a) end;;
 let o = object
     method m = 1

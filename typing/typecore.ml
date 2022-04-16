@@ -3517,11 +3517,17 @@ and type_expect_
                   | id -> id, Btype.method_type met sign
                   | exception Not_found ->
                       let id = Ident.create_local met in
-                      let ty = newvar () in
+                      let ty =
+                        match Btype.method_type' met sign.csig_self with
+                        | None ->
+                            Location.prerr_warning loc
+                              (Warnings.Undeclared_virtual_method met);
+                            newvar ()
+                        | Some ty ->
+                            ty
+                      in
                       meths_ref := Meths.add met id !meths_ref;
                       add_method env met Private Virtual ty sign;
-                      Location.prerr_warning loc
-                        (Warnings.Undeclared_virtual_method met);
                       id, ty
                 end
             in
