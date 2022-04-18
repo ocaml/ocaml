@@ -893,26 +893,17 @@ enum domain_status { Dom_starting, Dom_started, Dom_failed };
 
 struct domain_ml_values {
   value callback;
-  value mutex;
-  /* this mutex is taken when a domain starts and released when it terminates
-    which provides a simple way to block domains attempting to join this domain
-   */
 };
 
-static void init_domain_ml_values(
-  struct domain_ml_values* ml_values,
-  value callback,
-  value mutex)
+static void init_domain_ml_values(struct domain_ml_values* ml_values,
+                                  value callback)
 {
   ml_values->callback = callback;
-  ml_values->mutex = mutex;
   caml_register_generational_global_root(&ml_values->callback);
-  caml_register_generational_global_root(&ml_values->mutex);
 }
 
 static void free_domain_ml_values(struct domain_ml_values* ml_values) {
   caml_remove_generational_global_root(&ml_values->callback);
-  caml_remove_generational_global_root(&ml_values->mutex);
   caml_stat_free(ml_values);
 }
 
@@ -1058,7 +1049,6 @@ static void domain_terminate();
 
 static void* domain_thread_func(void* v)
 {
-  sync_mutex terminate_mutex = NULL;
   struct domain_startup_params* p = v;
   struct domain_ml_values *ml_values = p->ml_values;
 #ifndef _WIN32
@@ -1072,15 +1062,6 @@ static void* domain_thread_func(void* v)
   /* handshake with the parent domain */
   caml_plat_lock(&p->parent->lock);
   if (domain_self) {
-    /* this domain is part of STW sections, so can read ml_values */
-    terminate_mutex = Mutex_val(ml_values->mutex);
-    /* we lock terminate_mutex here and unlock when the domain is torn down
-      this provides a simple block for domains attempting to join
-      NB: terminate_mutex will not be moved by the garbage collector
-      as it is not an OCaml block. ml_values->mutex is registered as
-      a global root and keeps the mutex custom memory alive with
-      the garbage collector. */
-    caml_mutex_lock(terminate_mutex);
     p->status = Dom_started;
     p->unique_id = domain_self->interruptor.unique_id;
   } else {
@@ -1103,9 +1084,6 @@ static void* domain_thread_func(void* v)
     caml_domain_set_name("Domain");
     caml_callback(ml_values->callback, Val_unit);
     domain_terminate();
-    /* Joining domains will lock/unlock the terminate_mutex so this unlock will
-       release them if any domains are waiting. */
-    caml_mutex_unlock(terminate_mutex);
     free_domain_ml_values(ml_values);
   } else {
     caml_gc_log("Failed to create domain");
@@ -1113,9 +1091,9 @@ static void* domain_thread_func(void* v)
   return 0;
 }
 
-CAMLprim value caml_domain_spawn(value callback, value mutex)
+CAMLprim value caml_domain_spawn(value callback)
 {
-  CAMLparam2 (callback, mutex);
+  CAMLparam1 (callback);
   struct domain_startup_params p;
   pthread_t th;
   int err;
@@ -1133,7 +1111,7 @@ CAMLprim value caml_domain_spawn(value callback, value mutex)
   if (!p.ml_values) {
     caml_failwith("failed to create ml values for domain thread");
   }
-  init_domain_ml_values(p.ml_values, callback, mutex);
+  init_domain_ml_values(p.ml_values, callback);
 
 /* We block all signals while we spawn the new domain. This is because
    pthread_create inherits the current signals set, and we want to avoid a
