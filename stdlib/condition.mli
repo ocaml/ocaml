@@ -31,8 +31,9 @@
    nonempty. A thread that inserts an element into the queue signals
    that the queue is nonempty. A condition variable is used for this
    purpose. This communication channel conveys the information that
-   the property "the queue is nonempty" is true, or (more accurately)
-   may be true.
+   the property "the queue is nonempty" is true, or more accurately,
+   may be true. (We explain below why the receiver of a signal cannot
+   be certain that the property holds.)
 
    In short, a condition variable [c] is used to convey the information
    that a certain property [P] about a shared data structure [D],
@@ -53,10 +54,12 @@
    include "the queue is nonempty" and "the queue is not full".
    It is up to the programmer to keep track, for each condition
    variable, of the corresponding property [P].
-   A signal should be sent on the condition variable [c]
-   only when the property [P] is definitely true.
-   When a signal is received, however, one cannot assume that [P] is
-   definitely true; one must explicitly test whether [P] is true.
+   A signal is sent on the condition variable [c]
+   as an indication that the property [P] is true, or may be true.
+   On the receiving end, however, a thread that is woken up
+   cannot assume that [P] is true;
+   after a call to {!wait} terminates,
+   one must explicitly test whether [P] is true.
    There are several reasons why this is so.
    One reason is that,
    between the moment when the signal is sent
@@ -82,13 +85,6 @@
      if (* the property P over D is now satisfied *) then Condition.signal c;
      Mutex.unlock m
    ]}
-
-   {!signal} and {!broadcast} should be called only when the mutex [m]
-   associated with the condition variable [c] is locked.
-   Otherwise, there would be a risk that some other thread is currently
-   inside a critical section, has determined that the property [P]
-   associated with [c] is false, but has not yet called [wait]. In such a
-   case, the signal would be lost, leading to a potential deadlock.
 *)
 
 type t
@@ -114,14 +110,15 @@ val wait : t -> Mutex.t -> unit
 
 val signal : t -> unit
 (**[signal c] wakes up one of the threads waiting on the condition
-   variable [c]. This call is permitted only if the mutex [m]
-   associated with [c] is currently locked. It should be the case that
-   the property [P] associated with the condition variable [c] is true
-   when [signal] is called. *)
+   variable [c], if there is one. If there is none, this call has
+   no effect.
+
+   It is recommended to call [signal c] inside a critical section,
+   that is, while the mutex [m] associated with [c] is held. *)
 
 val broadcast : t -> unit
 (**[broadcast c] wakes up all threads waiting on the condition
-   variable [c]. This call is permitted only if the mutex [m]
-   associated with [c] is currently locked. It should be the case that
-   the property [P] associated with the condition variable [c] is true
-   when [broadcast] is called. *)
+   variable [c]. If there are none, this call has no effect.
+
+   It is recommended to call [broadcast c] inside a critical section,
+   that is, while the mutex [m] associated with [c] is held. *)
