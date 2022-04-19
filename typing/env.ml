@@ -1139,7 +1139,7 @@ let type_of_cstr path = function
   | _ -> assert false
 
 let find_type_data path env =
-  match Path.constructor_typath path with
+  match Path.typath_of_path path with
   | Regular p -> begin
       match Path.Map.find p env.local_constraints with
       | decl ->

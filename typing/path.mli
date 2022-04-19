@@ -44,8 +44,8 @@ type typath =
   | Ext of t
   | Cstr of t * string
 
-val constructor_typath: t -> typath
-val destructor_typath: typath -> t
+val typath_of_path: t -> typath
+val path_of_typath: typath -> t
 val map_typath: (t -> t) -> typath -> typath
 val is_constructor_typath: t -> bool
 

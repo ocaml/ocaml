@@ -108,14 +108,14 @@ type typath =
   | Ext of t
   | Cstr of t * string
 
-let constructor_typath = function
+let typath_of_path = function
   | Pident id as p when is_uident (Ident.name id) -> Ext p
   | Pdot(ty_path, s) as p when is_uident s ->
       if is_uident (last ty_path) then Ext p
       else Cstr (ty_path, s)
   | p -> Regular p
 
-let destructor_typath = function
+let path_of_typath = function
   | Cstr (ty_path, s)
     -> Pdot(ty_path, s)
   | Ext p
@@ -127,7 +127,7 @@ let map_typath f = function
   | Cstr (p, s) -> Cstr (f p, s)
 
 let is_constructor_typath p =
-  match constructor_typath p with
+  match typath_of_path p with
   | Regular _ -> false
   | _ -> true
 
