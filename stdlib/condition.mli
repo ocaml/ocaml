@@ -57,12 +57,15 @@
    only when the property [P] is definitely true.
    When a signal is received, however, one cannot assume that [P] is
    definitely true; one must explicitly test whether [P] is true.
-   The reason is that,
+   There are several reasons why this is so.
+   One reason is that,
    between the moment when the signal is sent
    and the moment when a waiting thread receives the signal
    and is scheduled,
    the property [P] may be falsified by some other thread
    that is able to acquire the mutex [m] and alter the data structure [D].
+   Another reason is that {i spurious wakeups} may occur:
+   a waiting thread can be woken up even if no signal was sent.
 
    Assuming that [D] is a shared data structure
    protected by the mutex [m],
