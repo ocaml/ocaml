@@ -619,8 +619,6 @@ Line 9, characters 0-25:
     ^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The type abbreviation foo is cyclic:
          'a foo = 'a foo list,
-         'a foo list contains 'a foo,
-         'a foo = 'a foo list,
          'a foo list contains 'a foo
 |}];;
 
@@ -913,8 +911,7 @@ type t = u and u = t;;
 Line 1, characters 0-10:
 1 | type t = u and u = t;;
     ^^^^^^^^^^
-Error: The definition of t contains a cycle:
-         u = t,
+Error: The type abbreviation t is cyclic:
          t = u,
          u = t
 |}];;
@@ -1033,7 +1030,7 @@ Line 1, characters 0-83:
 1 | type ('a1, 'b1) ty1 = 'a1 -> unit constraint 'a1 = [> `V1 of ('a1, 'b1) ty2 as 'b1]
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The definition of ty1 contains a cycle:
-         [> `V1 of ('a, 'b) ty2 as 'b ] as 'a contains 'b
+         ([> `V1 of 'a ] as 'b, 'a) ty2 as 'a contains 'a
 |}];;
 
 (* PR#8359: expanding may change original in Ctype.unify2 *)
