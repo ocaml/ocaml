@@ -82,8 +82,7 @@ jobs:
       - name: Build the manual
         run: |
           MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh manual
-       # Temporarily disabled 23-Apr-2021 while Dune isn't building
-        if: steps.manual.outputs.changed == 'disabled'
+        if: steps.manual.outputs.changed == 'true'
       - name: Other checks
         run: |
           MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh other-checks
