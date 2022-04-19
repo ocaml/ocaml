@@ -1,4 +1,9 @@
-(* TEST *)
+(* TEST
+* hasunix
+include unix
+** bytecode
+** native
+*)
 
 let () = Out_channel.set_buffered stdout false
 
@@ -41,6 +46,7 @@ let[@inline never][@local never] test3 () =
       print_endline "test3: child.finalise") r)
   in
   Domain.join d;
+  Unix.sleep 1;
   (* Now this domain takes over the finalisers from d *)
   Gc.full_major();
   assert (!c = 2)
