@@ -31,6 +31,7 @@ jobs:
           MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh build
       - name: Prepare Artifact
         run: |
+          git config --local --unset http.https://github.com/.extraheader
           tar --zstd -cf /tmp/sources.tar.zstd .
       - name: Upload Artifact
         uses: actions/upload-artifact@v2
