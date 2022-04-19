@@ -36,6 +36,7 @@
 #include "caml/intext.h"
 #include "caml/major_gc.h"
 #include "caml/minor_gc.h"
+#include "caml/misc.h"
 #include "caml/memory.h"
 #include "caml/osdeps.h"
 #include "caml/platform.h"
@@ -1049,6 +1050,9 @@ CAMLexport void (*caml_domain_stop_hook)(void) =
 CAMLexport void (*caml_domain_external_interrupt_hook)(void) =
    caml_domain_external_interrupt_hook_default;
 
+CAMLexport _Atomic caml_timing_hook caml_domain_terminated_hook =
+  (caml_timing_hook)NULL;
+
 static void domain_terminate();
 
 static void* domain_thread_func(void* v)
@@ -1661,8 +1665,11 @@ static void domain_terminate (void)
   pthread_sigmask(SIG_BLOCK, &mask, NULL);
 #endif
 
-  // run the domain termination hook
+  /* Join ongoing systhreads, if necessary, and then run user-defined
+     termination hooks. No OCaml code can run on this domain after
+     this. */
   caml_domain_stop_hook();
+  call_timing_hook(&caml_domain_terminated_hook);
 
   while (!finished) {
     caml_orphan_allocated_words();
