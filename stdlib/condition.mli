@@ -101,7 +101,43 @@
    that is able to acquire the mutex [m] and alter the data structure [D].
    Another reason is that {i spurious wakeups} may occur:
    a waiting thread can be woken up even if no signal was sent.
-*)
+
+   Here is a complete example, where a mutex protects a sequential
+   unbounded queue, and where a condition variable is used to signal
+   that the queue is nonempty.
+   {[
+     type 'a safe_queue =
+       { queue : 'a Queue.t; mutex : Mutex.t; nonempty : Condition.t }
+
+     let create () =
+       { queue = Queue.create(); mutex = Mutex.create();
+         nonempty = Condition.create() }
+
+     let add v q =
+       Mutex.lock q.mutex;
+       let was_empty = Queue.is_empty q.queue in
+       Queue.add v q.queue;
+       if was_empty then Condition.broadcast q.nonempty;
+       Mutex.unlock q.mutex
+
+     let take q =
+       Mutex.lock q.mutex;
+       while Queue.is_empty q.queue do Condition.wait q.nonempty q.mutex done;
+       let v = Queue.take q.queue in (* cannot fail because queue is nonempty *)
+       Mutex.unlock q.mutex;
+       v
+   ]}
+   Because the call to {!broadcast} takes place inside the critical
+   section, the following property holds whenever the mutex is unlocked:
+   {i if the queue is nonempty, then no thread is waiting},
+   or, in other words,
+   {i if some thread is waiting, then the queue must be empty}.
+   This is a desirable property: if a thread
+   that attempts to execute a [take] operation
+   could remain suspended
+   even though the queue is nonempty,
+   that would be a problematic situation,
+   known as a {i deadlock}. *)
 
 type t
 (** The type of condition variables. *)
