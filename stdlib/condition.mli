@@ -29,15 +29,47 @@
    thread that wishes to extract an element finds that the queue is
    currently empty, then this thread waits for the queue to become
    nonempty. A thread that inserts an element into the queue signals
-   that the queue is nonempty. A condition variable is used for this
+   that the queue has become nonempty. A condition variable is used for this
    purpose. This communication channel conveys the information that
    the property "the queue is nonempty" is true, or more accurately,
    may be true. (We explain below why the receiver of a signal cannot
    be certain that the property holds.)
 
+   To continue the example of the queue, assuming that the queue has a fixed
+   maximum capacity, then a thread that wishes to insert an element
+   may find that the queue is full. Then, this thread must wait for
+   the queue to become not full, and a thread that extracts an element
+   of the queue signals that the queue has become not full. Another
+   condition variable is used for this purpose.
+
    In short, a condition variable [c] is used to convey the information
    that a certain property [P] about a shared data structure [D],
    protected by a mutex [m], may be true.
+
+   Condition variables provide an efficient alternative to busy-waiting.
+   When one wishes to wait for the property [P] to be true,
+   instead of writing a busy-waiting loop:
+   {[
+     Mutex.lock m;
+     while not P do
+       Mutex.unlock m; Mutex.lock m
+     done;
+     <update the data structure>;
+     Mutex.unlock m
+   ]}
+   one uses {!wait} in the body of the loop, as follows:
+   {[
+     Mutex.lock m;
+     while not P do
+       Condition.wait c m
+     done;
+     <update the data structure>;
+     Mutex.unlock m
+   ]}
+   The busy-waiting loop is inefficient because the waiting thread
+   consumes processing time and creates contention of the mutex [m].
+   Calling {!wait} allows the waiting thread to be suspended, so it
+   does not consume any computing resources while waiting.
 
    With a condition variable [c], exactly one mutex [m] is associated.
    This association is implicit: the mutex [m] is not explicitly passed
@@ -45,9 +77,9 @@
    each condition variable [c], which is the associated mutex [m].
 
    With a mutex [m], several condition variables can be associated.
-   For instance, in a bounded queue, one condition variable could
-   be used to indicate that the queue is nonempty, and another condition
-   variable could be used to indicate that the queue is not full.
+   In the example of the bounded queue, one condition variable is
+   used to indicate that the queue is nonempty, and another condition
+   variable is used to indicate that the queue is not full.
 
    With a condition variable [c], exactly one logical property [P]
    should be associated. Examples of such properties
@@ -69,22 +101,6 @@
    that is able to acquire the mutex [m] and alter the data structure [D].
    Another reason is that {i spurious wakeups} may occur:
    a waiting thread can be woken up even if no signal was sent.
-
-   Assuming that [D] is a shared data structure
-   protected by the mutex [m],
-   and assuming that [c] is a condition variable
-   associated with the mutex [m]
-   and with the property [P],
-   a typical usage scenario is as follows:
-   {[
-     Mutex.lock m;
-     while (* the property P over D is not satisfied *) do
-       Condition.wait c m
-     done;
-     (* Modify D *)
-     if (* the property P over D is now satisfied *) then Condition.signal c;
-     Mutex.unlock m
-   ]}
 *)
 
 type t
@@ -93,8 +109,8 @@ type t
 val create : unit -> t
 (**[create()] creates and returns a new condition variable.
    This condition variable should be associated (in the programmer's mind)
-   with a certain mutex [m], and should be used only when the mutex [m] is
-   locked. *)
+   with a certain mutex [m] and with a certain property [P] of the data
+   structure that is protected by the mutex [m]. *)
 
 val wait : t -> Mutex.t -> unit
 (**The call [wait c m] is permitted only if [m] is the mutex associated
@@ -114,11 +130,11 @@ val signal : t -> unit
    no effect.
 
    It is recommended to call [signal c] inside a critical section,
-   that is, while the mutex [m] associated with [c] is held. *)
+   that is, while the mutex [m] associated with [c] is locked. *)
 
 val broadcast : t -> unit
 (**[broadcast c] wakes up all threads waiting on the condition
    variable [c]. If there are none, this call has no effect.
 
    It is recommended to call [broadcast c] inside a critical section,
-   that is, while the mutex [m] associated with [c] is held. *)
+   that is, while the mutex [m] associated with [c] is locked. *)
