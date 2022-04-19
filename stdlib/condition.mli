@@ -123,7 +123,7 @@
      let take q =
        Mutex.lock q.mutex;
        while Queue.is_empty q.queue do Condition.wait q.nonempty q.mutex done;
-       let v = Queue.take q.queue in (* cannot fail because queue is nonempty *)
+       let v = Queue.take q.queue in (* cannot fail since queue is nonempty *)
        Mutex.unlock q.mutex;
        v
    ]}
