@@ -1167,13 +1167,13 @@ let find_type_data path env =
         end
       in
       type_of_cstr path cstr
-  | LocalExt id ->
+  | Ext (Pident id) ->
       let cstr =
         try (TycompTbl.find_same id env.constrs).cda_description
         with Not_found -> assert false
       in
       type_of_cstr path cstr
-  | Ext (mod_path, s) ->
+  | Ext (Pdot (mod_path, s)) ->
       let comps =
         try find_structure_components mod_path env
         with Not_found -> assert false
@@ -1183,9 +1183,12 @@ let find_type_data path env =
         with Not_found -> assert false
       in
       let exts = List.filter is_ext cstrs in
-      match exts with
+      begin match exts with
       | [cda] -> type_of_cstr path cda.cda_description
       | _ -> assert false
+      end
+  | Ext (Papply _) ->
+      assert false
 
 let find_type p env =
   (find_type_data p env).tda_declaration

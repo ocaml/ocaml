@@ -41,11 +41,12 @@ val is_uident: string -> bool
 
 type typath =
   | Regular of t
-  | Ext of t * string
-  | LocalExt of Ident.t
+  | Ext of t
   | Cstr of t * string
 
 val constructor_typath: t -> typath
+val destructor_typath: typath -> t
+val map_typath: (t -> t) -> typath -> typath
 val is_constructor_typath: t -> bool
 
 module Map : Map.S with type key = t
