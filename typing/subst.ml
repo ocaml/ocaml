@@ -121,11 +121,9 @@ let type_path s path =
         fatal_error "Subst.type_path"
 
 let type_path s p =
-  match Path.constructor_typath p with
-  | Regular p -> type_path s p
-  | Cstr (ty_path, cstr) -> Pdot(type_path s ty_path, cstr)
-  | LocalExt _ -> type_path s p
-  | Ext (p, cstr) -> Pdot(module_path s p, cstr)
+  p |> Path.constructor_typath |>
+  Path.map_typath (type_path s) |>
+  Path.destructor_typath
 
 let to_subst_by_type_function s p =
   match Path.Map.find p s.types with

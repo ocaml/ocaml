@@ -121,6 +121,11 @@ let destructor_typath = function
   | Ext p
   | Regular p -> p
 
+let map_typath f = function
+  | Regular p -> Regular (f p)
+  | Ext p -> Ext (f p)
+  | Cstr (p, s) -> Cstr (f p, s)
+
 let is_constructor_typath p =
   match constructor_typath p with
   | Regular _ -> false
