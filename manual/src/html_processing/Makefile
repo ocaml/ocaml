@@ -89,7 +89,7 @@ distclean::
 
 # We need Dune and Lambda Soup; Markup.ml and Uutf are dependencies
 DUNE_TAG = 3.4.0
-LAMBDASOUP_TAG = 0.7.3
+LAMBDASOUP_TAG = 500
 MARKUP_TAG = 1.0.3
 UUTF_TAG = v1.0.3
 RE_TAG = 1.10.4
@@ -119,7 +119,7 @@ distclean::
 	rm -rf ocaml-re
 
 lambdasoup:
-	git clone https://github.com/aantron/lambdasoup.git -n -o upstream
+	git clone https://github.com/dra27/lambdasoup.git -n -o dra27
 	cd lambdasoup; $(GIT_CHECKOUT) $(LAMBDASOUP_TAG)
 
 distclean::
