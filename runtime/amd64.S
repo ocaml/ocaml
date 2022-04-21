@@ -256,12 +256,13 @@
 /* Switch between OCaml stacks. Clobbers %r12.
    Expects old stack in %rsi and target stack in %r10.
    Leaves old stack in %rsi and target stack in %r10. */
-#define SWITCH_OCAML_STACKS                               \
+#define SWITCH_OCAML_STACKS_AUX(OP)                       \
         ENTER_FUNCTION                                    \
     /* Save OCaml SP and exn_handler in the stack info */ \
         movq    %rsp, Stack_sp(%rsi);                     \
         movq    Caml_state(exn_handler), %r12;            \
         movq    %r12, Stack_exception(%rsi);              \
+        OP                                                \
     /* switch stacks */                                   \
         movq    %r10, Caml_state(current_stack);          \
         movq    Stack_sp(%r10), %rsp;                     \
@@ -270,6 +271,22 @@
         movq    Stack_exception(%r10), %r12;              \
         movq    %r12, Caml_state(exn_handler);            \
         LEAVE_FUNCTION
+
+#define SWITCH_OCAML_STACKS  SWITCH_OCAML_STACKS_AUX()
+
+/* To be used by SWITCH_OCAML_STACKS_AUX for overwriting
+   the first base pointer on the new stack in case the
+   old stack was reallocated. */
+#ifdef WITH_FRAME_POINTERS
+#define OVERWRITE_BASE_POINTER                            \
+        movq    Stack_handler(%r10), %r12;                \
+    /* Overwrite saved rbp in caml_runstack frame */      \
+    /* offset: 4w (caml_runstack) + 2w (rip and rbp) */   \
+        leaq    -48(%r12), %r12;                          \
+        movq    %rbp, 0(%r12);
+#else
+#define OVERWRITE_BASE_POINTER
+#endif
 
 /******************************************************************************/
 /* Save and restore all callee-save registers on stack.
@@ -912,7 +929,7 @@ CFI_STARTPROC
         jnz     1b
         movq    Caml_state(current_stack), %rsi
         movq    %rsi, Handler_parent(%rcx)
-        SWITCH_OCAML_STACKS
+        SWITCH_OCAML_STACKS_AUX(OVERWRITE_BASE_POINTER)
         jmp     *(%rbx)
 2:      LEA_VAR(caml_exn_Continuation_already_taken, %rax)
         jmp LBL(caml_raise_exn)
