@@ -1,7 +1,7 @@
 #define CAML_NAME_SPACE
 
 #include "caml/alloc.h"
-#include "caml/eventring.h"
+#include "caml/runtime_events.h"
 #include "caml/fail.h"
 #include "caml/memory.h"
 #include "caml/mlvalues.h"
@@ -17,8 +17,8 @@ struct counters {
     int compacts;
 };
 
-void start_eventring() {
-    caml_eventring_start();
+void start_runtime_events() {
+    caml_runtime_events_start();
 }
 
 int ev_begin(int domain_id, void* callback_data,
@@ -70,25 +70,25 @@ int ev_end(int domain_id, void* callback_data, uint64_t timestamp,
 value get_event_counts(void) {
     CAMLparam0();
     CAMLlocal1(counts_tuple);
-    eventring_error res;
+    runtime_events_error res;
     uintnat events_consumed;
 
     struct counters tmp_counters = { 0 };
 
     counts_tuple = caml_alloc_small(3, 0);
 
-    struct caml_eventring_cursor* cursor;
+    struct caml_runtime_events_cursor* cursor;
 
-    res = caml_eventring_create_cursor(NULL, -1, &cursor);
+    res = caml_runtime_events_create_cursor(NULL, -1, &cursor);
 
     if( res != E_SUCCESS ) {
         caml_failwith("Eventring.get_event_counts: invalid or non-existent cursor");
     }
 
-    caml_eventring_set_runtime_begin(cursor, &ev_begin);
-    caml_eventring_set_runtime_end(cursor, &ev_end);
+    caml_runtime_events_set_runtime_begin(cursor, &ev_begin);
+    caml_runtime_events_set_runtime_end(cursor, &ev_end);
 
-    res = caml_eventring_read_poll(cursor, &tmp_counters, 0,
+    res = caml_runtime_events_read_poll(cursor, &tmp_counters, 0,
                                    &events_consumed);
 
     if( res != E_SUCCESS ) {
@@ -99,7 +99,7 @@ value get_event_counts(void) {
     Field(counts_tuple, 1) = Val_long(tmp_counters.majors);
     Field(counts_tuple, 2) = Val_long(tmp_counters.compacts);
 
-    caml_eventring_free_cursor(cursor);
+    caml_runtime_events_free_cursor(cursor);
 
     CAMLreturn(counts_tuple);
 }

@@ -26,7 +26,7 @@
 #include "caml/misc.h"
 #include "caml/memory.h"
 #include "caml/mlvalues.h"
-#include "caml/eventring.h"
+#include "caml/runtime_events.h"
 #ifdef NATIVE_CODE
 #include "caml/stack.h"
 #include "caml/frame_descriptors.h"

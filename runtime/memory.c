@@ -32,7 +32,7 @@
 #include "caml/alloc.h"
 #include "caml/fiber.h"
 #include "caml/platform.h"
-#include "caml/eventring.h"
+#include "caml/runtime_events.h"
 
 /* Note [MM]: Enforcing the memory model.
 

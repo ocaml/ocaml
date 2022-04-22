@@ -269,7 +269,7 @@ typedef uint64_t uintnat;
 /* Default allocation policy. */
 #define Allocation_policy_def caml_policy_best_fit
 
-/* Default size of eventring ringbuffers, in words, in powers of two */
-#define Default_eventring_log_wsize 16
+/* Default size of runtime_events ringbuffers, in words, in powers of two */
+#define Default_runtime_events_log_wsize 16
 
 #endif /* CAML_CONFIG_H */

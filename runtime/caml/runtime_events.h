@@ -16,8 +16,8 @@
 /*                                                                        */
 /**************************************************************************/
 
-#ifndef CAML_EVENTRING_H
-#define CAML_EVENTRING_H
+#ifndef CAML_RUNTIME_EVENTS_H
+#define CAML_RUNTIME_EVENTS_H
 
 #include "mlvalues.h"
 #include <stdint.h>
@@ -34,8 +34,8 @@
 #define CAML_EV_END(p) caml_ev_end(p)
 #define CAML_EV_COUNTER(c,v) caml_ev_counter(c,v)
 #define CAML_EV_LIFECYCLE(l,d) caml_ev_lifecycle(l,d)
-#define CAML_EVENTRING_INIT() caml_eventring_init()
-#define CAML_EVENTRING_DESTROY() caml_eventring_destroy()
+#define CAML_RUNTIME_EVENTS_INIT() caml_runtime_events_init()
+#define CAML_RUNTIME_EVENTS_DESTROY() caml_runtime_events_destroy()
 typedef enum {
     EV_INTERNAL,
     EV_LIFECYCLE,
@@ -145,8 +145,8 @@ typedef enum {
     EV_C_REQUEST_MINOR_REALLOC_CUSTOM_TABLE
 } ev_runtime_counter;
 
-/* external C-API for reading from the eventring */
-struct caml_eventring_cursor;
+/* external C-API for reading from the runtime_events */
+struct caml_runtime_events_cursor;
 
 typedef enum {
   E_SUCCESS = 0,
@@ -157,92 +157,92 @@ typedef enum {
   E_OPEN_FAILURE = -5,
   E_NO_CURRENT_RING = -6,
   E_MAP_FAILURE = -7,
-} eventring_error;
+} runtime_events_error;
 
-/* Starts eventring. Needs to be called before [caml_eventring_create_cursor] */
-extern value caml_eventring_start();
+/* Starts runtime_events. Needs to be called before [caml_runtime_events_create_cursor] */
+extern value caml_runtime_events_start();
 
-/* Pauses eventring. No new events (other than the pause itself) will be written
-   to the eventrings by this domain immediately and all other domains soon. */
-extern value caml_eventring_pause();
+/* Pauses runtime_events. No new events (other than the pause itself) will be written
+   to the runtime_eventss by this domain immediately and all other domains soon. */
+extern value caml_runtime_events_pause();
 
-/* Removes eventring. New events (as well as a resume event) will be written to
+/* Removes runtime_events. New events (as well as a resume event) will be written to
    this domain immediately and all other domains soon. */
-extern value caml_eventring_resume();
+extern value caml_runtime_events_resume();
 
-/* Create a cursor to read events from an eventring. Cursors can be created for
-   eventrings in and out of process. An eventring may have multiple cursors
+/* Create a cursor to read events from an runtime_events. Cursors can be created for
+   runtime_eventss in and out of process. An runtime_events may have multiple cursors
    reading from it at any point in time and a program may have multiple cursors
    open concurrently (for example if multiple consumers want different sets
-   of events). To create one for the current process, pass [eventring_path] as
-   NULL and a [pid] < 0. Otherwise [eventring_path] is a path to a directory
-   containing the .eventring files. [pid] is the process id (or equivalent) of
+   of events). To create one for the current process, pass [runtime_events_path] as
+   NULL and a [pid] < 0. Otherwise [runtime_events_path] is a path to a directory
+   containing the .runtime_events files. [pid] is the process id (or equivalent) of
    the startup OCaml process. The resulting cursor can be used with
-   `caml_eventring_read_poll` to read events from the eventrings. */
-extern eventring_error
-caml_eventring_create_cursor(const char_os* eventring_path, int pid,
-                             struct caml_eventring_cursor **cursor_res);
+   `caml_runtime_events_read_poll` to read events from the runtime_eventss. */
+extern runtime_events_error
+caml_runtime_events_create_cursor(const char_os* runtime_events_path, int pid,
+                             struct caml_runtime_events_cursor **cursor_res);
 
 /* Set the runtime_begin event callback on the cursor */
-extern void caml_eventring_set_runtime_begin(
-    struct caml_eventring_cursor *cursor,
+extern void caml_runtime_events_set_runtime_begin(
+    struct caml_runtime_events_cursor *cursor,
     int (*f)(int domain_id, void *callback_data, uint64_t timestamp,
              ev_runtime_phase phase));
 
 /* Set the runtime_end event callback on the cursor */
-extern void caml_eventring_set_runtime_end(
-    struct caml_eventring_cursor *cursor,
+extern void caml_runtime_events_set_runtime_end(
+    struct caml_runtime_events_cursor *cursor,
     int (*f)(int domain_id, void *callback_data, uint64_t timestamp,
              ev_runtime_phase phase));
 
 /* Set the runtime_counter event callback on the cursor */
-extern void caml_eventring_set_runtime_counter(
-    struct caml_eventring_cursor *cursor,
+extern void caml_runtime_events_set_runtime_counter(
+    struct caml_runtime_events_cursor *cursor,
     int (*f)(int domain_id, void *callback_data, uint64_t timestamp,
              ev_runtime_counter counter, uint64_t val));
 
 /* Set the alloc event callback on the cursor */
 extern void
-caml_eventring_set_runtime_alloc(struct caml_eventring_cursor *cursor,
+caml_runtime_events_set_runtime_alloc(struct caml_runtime_events_cursor *cursor,
                                  int (*f)(int domain_id, void *callback_data,
                                           uint64_t timestamp, uint64_t *sz));
 
 /* Set the lifecycle event callback on the cursor */
-extern void caml_eventring_set_lifecycle(
-    struct caml_eventring_cursor *cursor,
+extern void caml_runtime_events_set_lifecycle(
+    struct caml_runtime_events_cursor *cursor,
     int (*f)(int domain_id, void *callback_data, int64_t timestamp,
               ev_lifecycle lifecycle, int64_t data));
 
 /* Set the lost events callback on the cursor */
-extern void caml_eventring_set_lost_events(
-    struct caml_eventring_cursor *cursor,
+extern void caml_runtime_events_set_lost_events(
+    struct caml_runtime_events_cursor *cursor,
     int (*f)(int domain_id, void *callback_data, int lost_words));
 
-/* frees a cursor obtained from caml_eventring_creator_cursor */
+/* frees a cursor obtained from caml_runtime_events_creator_cursor */
 extern void
-caml_eventring_free_cursor(struct caml_eventring_cursor *cursor);
+caml_runtime_events_free_cursor(struct caml_runtime_events_cursor *cursor);
 
-/* polls the eventring pointed to by [cursor] and calls the appropriate callback
+/* polls the runtime_events pointed to by [cursor] and calls the appropriate callback
     for each new event up to at most [max_events] times.
 
     Returns the number of events consumed in [events_consumed], if set.
 
     0 for [max_events] indicates no limit to the number of callbacks. */
-CAMLextern eventring_error caml_eventring_read_poll(
-    struct caml_eventring_cursor *cursor,
+CAMLextern runtime_events_error caml_runtime_events_read_poll(
+    struct caml_runtime_events_cursor *cursor,
     void *callback_data,
     uintnat max_events, uintnat *events_consumed);
 
-/* OCaml API for reading from the eventring. Documented in eventring.ml */
-extern value caml_eventring_create_cursor_ml(value path_pid);
-extern value caml_eventring_free_cursor_ml(value wrapped_cursor);
-extern value caml_eventring_read_poll_ml(value wrapped_cursor,
+/* OCaml API for reading from the runtime_events. Documented in runtime_events.ml */
+extern value caml_runtime_events_create_cursor_ml(value path_pid);
+extern value caml_runtime_events_free_cursor_ml(value wrapped_cursor);
+extern value caml_runtime_events_read_poll_ml(value wrapped_cursor,
                                               value callbacks,
                                               value max_events_option);
 
 #ifdef CAML_INTERNALS
 
-struct eventring_buffer_header {
+struct runtime_events_buffer_header {
   atomic_uint_fast64_t ring_head;
   atomic_uint_fast64_t ring_tail;
   uint64_t padding[8]; /* Padding so headers don't share cache lines. Eight
@@ -250,9 +250,9 @@ struct eventring_buffer_header {
                           cache lines, even for non-aligned allocations. */
 };
 
-/* For a more detailed explanation of the eventring file layout, see
-   eventring.c */
-struct eventring_metadata_header {
+/* For a more detailed explanation of the runtime_events file layout, see
+   runtime_events.c */
+struct runtime_events_metadata_header {
   uint64_t version;
   uint64_t max_domains;
   uint64_t ring_header_size_bytes; /* Ring buffer header size (bytes) */
@@ -263,36 +263,36 @@ struct eventring_metadata_header {
   uint64_t padding; /* Make the header a multiple of 64 bytes */
 };
 
-#define EVENTRING_NUM_ALLOC_BUCKETS 20
-#define EVENTRING_MAX_MSG_LENGTH (1 << 10)
+#define RUNTIME_EVENTS_NUM_ALLOC_BUCKETS 20
+#define RUNTIME_EVENTS_MAX_MSG_LENGTH (1 << 10)
 
 /* event header fields (for runtime events):
 | -- length (10 bits) -- | runtime or user event (1 bit) | event type (4 bits) |
 event id (13 bits)
 */
 
-#define EVENTRING_ITEM_LENGTH(header) (((header) >> 54) & ((1UL << 10) - 1))
-#define EVENTRING_ITEM_IS_RUNTIME(header) !((header) | (1UL << 53))
-#define EVENTRING_ITEM_IS_USER(header) ((header) | (1UL << 53))
-#define EVENTRING_ITEM_TYPE(header) (((header) >> 49) & ((1UL << 4) - 1))
-#define EVENTRING_ITEM_ID(header) (((header) >> 36) & ((1UL << 13) - 1))
+#define RUNTIME_EVENTS_ITEM_LENGTH(header) (((header) >> 54) & ((1UL << 10) - 1))
+#define RUNTIME_EVENTS_ITEM_IS_RUNTIME(header) !((header) | (1UL << 53))
+#define RUNTIME_EVENTS_ITEM_IS_USER(header) ((header) | (1UL << 53))
+#define RUNTIME_EVENTS_ITEM_TYPE(header) (((header) >> 49) & ((1UL << 4) - 1))
+#define RUNTIME_EVENTS_ITEM_ID(header) (((header) >> 36) & ((1UL << 13) - 1))
 
-/* Set up eventring (and check if we need to start it immediately). Called
+/* Set up runtime_events (and check if we need to start it immediately). Called
    from startup* */
-void caml_eventring_init();
+void caml_runtime_events_init();
 
-/* Destroy all allocated eventring structures and clear up the ring. Called
+/* Destroy all allocated runtime_events structures and clear up the ring. Called
    from [caml_sys_exit] */
-void caml_eventring_destroy();
+void caml_runtime_events_destroy();
 
-/* Handle safely re-initialising the eventring structures in a forked child */
-void caml_eventring_post_fork();
+/* Handle safely re-initialising the runtime_events structures in a forked child */
+void caml_runtime_events_post_fork();
 
-/* Returns the location of the eventring for the current process if started or
+/* Returns the location of the runtime_events for the current process if started or
    NULL otherwise */
-char_os* caml_eventring_current_location();
+char_os* caml_runtime_events_current_location();
 
-/* Functions for putting runtime data on to the eventring */
+/* Functions for putting runtime data on to the runtime_events */
 void caml_ev_begin(ev_runtime_phase phase);
 void caml_ev_end(ev_runtime_phase phase);
 void caml_ev_counter(ev_runtime_counter counter, uint64_t val);
@@ -308,4 +308,4 @@ void caml_ev_alloc_flush();
 
 #endif /* CAML_INTERNALS */
 
-#endif /*CAML_EVENTRING_H*/
+#endif /*CAML_RUNTIME_EVENTS_H*/

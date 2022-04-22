@@ -23,7 +23,7 @@
      callback.c weak.c
    finalise.c dynlink.c backtrace_byt.c backtrace.c
      afl.c
-   bigarray.c eventring.c)
+   bigarray.c runtime_events.c)
  (action  (with-stdout-to %{targets} (run %{dep:gen_primitives.sh}))))
 
 (rule

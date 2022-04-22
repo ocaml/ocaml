@@ -1,5 +1,3 @@
-#!/bin/sh
-
 #**************************************************************************
 #*                                                                        *
 #*                                 OCaml                                  *
@@ -15,21 +13,19 @@
 #*                                                                        *
 #**************************************************************************
 
-# duplicated from $(ROOTDIR)/runtime/Makefile
+# Makefile for the str library
 
-# #8985: the meaning of character range a-z depends on the locale, so force C
-#        locale throughout.
-export LC_ALL=C
-(
-  for prim in \
-      alloc array compare extern floats gc_ctrl hash intern interp ints io \
-      lexing md5 meta memprof obj parsing signals str sys callback weak \
-      finalise domain platform fiber memory startup_aux sync \
-      dynlink backtrace_byt backtrace afl \
-      bigarray runtime_events prng
-  do
-      sed -n -e 's/^CAMLprim value \([a-z0-9_][a-z0-9_]*\).*/\1/p' "$prim.c"
-  done
-  sed -n -e 's/^CAMLprim_int64_[0-9](\([a-z0-9_][a-z0-9_]*\)).*/caml_int64_\1\
-caml_int64_\1_native/p' ints.c
-) | sort | uniq
+LIBNAME=runtime_events
+COBJS=runtime_events_consumer.$(O) runtime_events.$(O)
+CLIBNAME=camlruntime_events
+CAMLOBJS=runtime_events.cmo
+
+include ../Makefile.otherlibs.common
+runtime_events.cmo: runtime_events.cmi
+runtime_events.cmx: runtime_events.cmi
+
+.PHONY: depend
+depend:
+	$(OCAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash *.mli *.ml > .depend
+
+include .depend

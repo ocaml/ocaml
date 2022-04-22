@@ -17,7 +17,7 @@
 #include "caml/alloc.h"
 #include "caml/callback.h"
 #include "caml/custom.h"
-#include "caml/eventring.h"
+#include "caml/runtime_events.h"
 #include "caml/fail.h"
 #include "caml/memory.h"
 #include "caml/misc.h"
@@ -47,11 +47,11 @@
 
 #define RING_FILE_NAME_MAX_LEN 512
 
-struct caml_eventring_cursor {
+struct caml_runtime_events_cursor {
   int cursor_open;                  /* has this cursor been opened? */
-  struct eventring_metadata_header *metadata; /* pointer to the ring metadata */
+  struct runtime_events_metadata_header *metadata; /* pointer to the ring metadata */
   uint64_t *current_positions;      /* positions in the rings for each domain */
-  size_t ring_file_size_bytes; /* the size of the eventring file in bytes */
+  size_t ring_file_size_bytes; /* the size of the runtime_events file in bytes */
   int next_read_domain;        /* the next domain to read from */
 #ifdef _WIN32
   HANDLE ring_file_handle;
@@ -72,11 +72,11 @@ struct caml_eventring_cursor {
   int (*lost_events)(int domain_id, void *callback_data, int lost_words);
 };
 
-/* C-API for reading from an eventring */
+/* C-API for reading from an runtime_events */
 
-eventring_error
-caml_eventring_create_cursor(const char_os* eventring_path, int pid,
-                             struct caml_eventring_cursor **cursor_res) {
+runtime_events_error
+caml_runtime_events_create_cursor(const char_os* runtime_events_path, int pid,
+                             struct caml_runtime_events_cursor **cursor_res) {
   int ret;
 
 #ifndef _WIN32
@@ -84,50 +84,50 @@ caml_eventring_create_cursor(const char_os* eventring_path, int pid,
   struct stat tmp_stat;
 #endif
 
-  struct caml_eventring_cursor *cursor =
-      caml_stat_alloc_noexc(sizeof(struct caml_eventring_cursor));
-  char_os *eventring_loc;
+  struct caml_runtime_events_cursor *cursor =
+      caml_stat_alloc_noexc(sizeof(struct caml_runtime_events_cursor));
+  char_os *runtime_events_loc;
 
   if (cursor == NULL) {
     return E_ALLOC_FAIL;
   }
 
-  eventring_loc = caml_stat_alloc_noexc(RING_FILE_NAME_MAX_LEN);
+  runtime_events_loc = caml_stat_alloc_noexc(RING_FILE_NAME_MAX_LEN);
 
-  if (eventring_loc == NULL) {
+  if (runtime_events_loc == NULL) {
     return E_ALLOC_FAIL;
   }
 
   /* If pid < 0 then we create a cursor for the current process */
   if (pid < 0) {
-    eventring_loc = caml_eventring_current_location();
+    runtime_events_loc = caml_runtime_events_current_location();
 
-    if( eventring_loc == NULL ) {
+    if( runtime_events_loc == NULL ) {
       return E_NO_CURRENT_RING;
     }
   } else {
   /* In this case we are reading the ring for a different process */
-    if (eventring_path) {
-      char* path_u8 = caml_stat_strdup_of_os(eventring_path);
-      ret = snprintf_os(eventring_loc, RING_FILE_NAME_MAX_LEN,
-                      T("%s/%d.eventring"), path_u8, pid);
+    if (runtime_events_path) {
+      char* path_u8 = caml_stat_strdup_of_os(runtime_events_path);
+      ret = snprintf_os(runtime_events_loc, RING_FILE_NAME_MAX_LEN,
+                      T("%s/%d.events"), path_u8, pid);
       caml_stat_free(path_u8);
     } else {
       ret =
-          snprintf_os(eventring_loc, RING_FILE_NAME_MAX_LEN,
-                      T("%d.eventring"), pid);
+          snprintf_os(runtime_events_loc, RING_FILE_NAME_MAX_LEN,
+                      T("%d.events"), pid);
     }
 
     if (ret < 0) {
       caml_stat_free(cursor);
-      caml_stat_free(eventring_loc);
+      caml_stat_free(runtime_events_loc);
       return E_PATH_FAILURE;
     }
   }
 
 #ifdef _WIN32
   cursor->ring_file_handle = CreateFile(
-    eventring_loc,
+    runtime_events_loc,
     GENERIC_READ | GENERIC_WRITE,
     FILE_SHARE_READ | FILE_SHARE_WRITE,
     NULL,
@@ -138,7 +138,7 @@ caml_eventring_create_cursor(const char_os* eventring_path, int pid,
 
   if (cursor->ring_file_handle == INVALID_HANDLE_VALUE) {
     caml_stat_free(cursor);
-    caml_stat_free(eventring_loc);
+    caml_stat_free(runtime_events_loc);
     return E_OPEN_FAILURE;
   }
 
@@ -153,7 +153,7 @@ caml_eventring_create_cursor(const char_os* eventring_path, int pid,
 
   if (cursor->ring_handle == INVALID_HANDLE_VALUE) {
     caml_stat_free(cursor);
-    caml_stat_free(eventring_loc);
+    caml_stat_free(runtime_events_loc);
     return E_MAP_FAILURE;
   }
 
@@ -167,17 +167,17 @@ caml_eventring_create_cursor(const char_os* eventring_path, int pid,
 
   if( cursor->metadata == NULL ) {
     caml_stat_free(cursor);
-    caml_stat_free(eventring_loc);
+    caml_stat_free(runtime_events_loc);
     return E_MAP_FAILURE;
   }
 
   cursor->ring_file_size_bytes = GetFileSize(cursor->ring_file_handle, NULL);
 #else
-  ring_fd = open(eventring_loc, O_RDONLY, 0);
+  ring_fd = open(runtime_events_loc, O_RDONLY, 0);
 
   if( ring_fd == -1 ) {
     caml_stat_free(cursor);
-    caml_stat_free(eventring_loc);
+    caml_stat_free(runtime_events_loc);
     return E_OPEN_FAILURE;
   }
 
@@ -185,7 +185,7 @@ caml_eventring_create_cursor(const char_os* eventring_path, int pid,
 
   if (ret < 0) {
     caml_stat_free(cursor);
-    caml_stat_free(eventring_loc);
+    caml_stat_free(runtime_events_loc);
     return E_OPEN_FAILURE;
   }
 
@@ -196,7 +196,7 @@ caml_eventring_create_cursor(const char_os* eventring_path, int pid,
 
   if( cursor->metadata == MAP_FAILED ) {
     caml_stat_free(cursor);
-    caml_stat_free(eventring_loc);
+    caml_stat_free(runtime_events_loc);
     return E_MAP_FAILURE;
   }
 #endif
@@ -222,7 +222,7 @@ caml_eventring_create_cursor(const char_os* eventring_path, int pid,
   return E_SUCCESS;
 }
 
-void caml_eventring_set_runtime_begin(struct caml_eventring_cursor *cursor,
+void caml_runtime_events_set_runtime_begin(struct caml_runtime_events_cursor *cursor,
                                       int (*f)(int domain_id,
                                                void *callback_data,
                                                uint64_t timestamp,
@@ -230,27 +230,27 @@ void caml_eventring_set_runtime_begin(struct caml_eventring_cursor *cursor,
   cursor->runtime_begin = f;
 }
 
-void caml_eventring_set_runtime_end(struct caml_eventring_cursor *cursor,
+void caml_runtime_events_set_runtime_end(struct caml_runtime_events_cursor *cursor,
                                     int (*f)(int domain_id, void *callback_data,
                                              uint64_t timestamp,
                                              ev_runtime_phase phase)) {
   cursor->runtime_end = f;
 }
 
-void caml_eventring_set_runtime_counter(
-    struct caml_eventring_cursor *cursor,
+void caml_runtime_events_set_runtime_counter(
+    struct caml_runtime_events_cursor *cursor,
     int (*f)(int domain_id, void *callback_data, uint64_t timestamp,
              ev_runtime_counter counter, uint64_t val)) {
   cursor->runtime_counter = f;
 }
 
-void caml_eventring_set_alloc(struct caml_eventring_cursor *cursor,
+void caml_runtime_events_set_alloc(struct caml_runtime_events_cursor *cursor,
                               int (*f)(int domain_id, void *callback_data,
                                        uint64_t timestamp, uint64_t *sz)) {
   cursor->alloc = f;
 }
 
-void caml_eventring_set_lifecycle(struct caml_eventring_cursor *cursor,
+void caml_runtime_events_set_lifecycle(struct caml_runtime_events_cursor *cursor,
                                   int (*f)(int domain_id, void *callback_data,
                                             int64_t timestamp,
                                             ev_lifecycle lifecycle,
@@ -258,15 +258,15 @@ void caml_eventring_set_lifecycle(struct caml_eventring_cursor *cursor,
   cursor->lifecycle = f;
 }
 
-void caml_eventring_set_lost_events(struct caml_eventring_cursor *cursor,
+void caml_runtime_events_set_lost_events(struct caml_runtime_events_cursor *cursor,
                                     int (*f)(int domain_id,
                                               void *callback_data,
                                               int lost_words)) {
   cursor->lost_events = f;
 }
 
-/* frees a cursor obtained from caml_eventring_reader_create */
-void caml_eventring_free_cursor(struct caml_eventring_cursor *cursor) {
+/* frees a cursor obtained from caml_runtime_events_reader_create */
+void caml_runtime_events_free_cursor(struct caml_runtime_events_cursor *cursor) {
   if (cursor->cursor_open) {
     cursor->cursor_open = 0;
 #ifdef _WIN32
@@ -281,8 +281,8 @@ void caml_eventring_free_cursor(struct caml_eventring_cursor *cursor) {
   }
 }
 
-eventring_error
-caml_eventring_read_poll(struct caml_eventring_cursor *cursor,
+runtime_events_error
+caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
                          void *callback_data, uintnat max_events,
                          uintnat *events_consumed) {
   int consumed = 0;
@@ -302,8 +302,8 @@ caml_eventring_read_poll(struct caml_eventring_cursor *cursor,
   for (int i = 0; i < cursor->metadata->max_domains && !early_exit; i++) {
     int domain_num = (start_domain + i) % cursor->metadata->max_domains;
 
-    struct eventring_buffer_header *eventring_buffer_header =
-        (struct eventring_buffer_header *)(
+    struct runtime_events_buffer_header *runtime_events_buffer_header =
+        (struct runtime_events_buffer_header *)(
           (char*)cursor->metadata +
           cursor->metadata->headers_offset +
           domain_num * cursor->metadata->ring_header_size_bytes
@@ -314,11 +314,11 @@ caml_eventring_read_poll(struct caml_eventring_cursor *cursor,
                                 domain_num * cursor->metadata->ring_size_bytes);
 
     do {
-      uint64_t buf[EVENTRING_MAX_MSG_LENGTH];
+      uint64_t buf[RUNTIME_EVENTS_MAX_MSG_LENGTH];
       uint64_t ring_mask, header, msg_length;
-      ring_head = atomic_load_explicit(&eventring_buffer_header->ring_head,
+      ring_head = atomic_load_explicit(&runtime_events_buffer_header->ring_head,
                                        memory_order_acquire);
-      ring_tail = atomic_load_explicit(&eventring_buffer_header->ring_tail,
+      ring_tail = atomic_load_explicit(&runtime_events_buffer_header->ring_tail,
                                        memory_order_acquire);
 
       if (ring_head > cursor->current_positions[domain_num]) {
@@ -339,9 +339,9 @@ caml_eventring_read_poll(struct caml_eventring_cursor *cursor,
 
       ring_mask = cursor->metadata->ring_size_elements - 1;
       header = ring_ptr[cursor->current_positions[domain_num] & ring_mask];
-      msg_length = EVENTRING_ITEM_LENGTH(header);
+      msg_length = RUNTIME_EVENTS_ITEM_LENGTH(header);
 
-      if (msg_length > EVENTRING_MAX_MSG_LENGTH) {
+      if (msg_length > RUNTIME_EVENTS_MAX_MSG_LENGTH) {
         return E_CORRUPT_STREAM;
       }
 
@@ -351,7 +351,7 @@ caml_eventring_read_poll(struct caml_eventring_cursor *cursor,
 
       atomic_thread_fence(memory_order_seq_cst);
 
-      ring_head = atomic_load_explicit(&eventring_buffer_header->ring_head,
+      ring_head = atomic_load_explicit(&runtime_events_buffer_header->ring_head,
                                        memory_order_acquire);
 
       /* Check the message we've read hasn't been overwritten by the writer */
@@ -370,11 +370,11 @@ caml_eventring_read_poll(struct caml_eventring_cursor *cursor,
         }
       }
 
-      switch (EVENTRING_ITEM_TYPE(header)) {
+      switch (RUNTIME_EVENTS_ITEM_TYPE(header)) {
       case EV_BEGIN:
         if (cursor->runtime_begin) {
           if( !cursor->runtime_begin(domain_num, callback_data, buf[1],
-                                      EVENTRING_ITEM_ID(header)) ) {
+                                      RUNTIME_EVENTS_ITEM_ID(header)) ) {
                                         early_exit = 1;
                                         continue;
                                       }
@@ -383,7 +383,7 @@ caml_eventring_read_poll(struct caml_eventring_cursor *cursor,
       case EV_EXIT:
         if (cursor->runtime_end) {
           if( !cursor->runtime_end(domain_num, callback_data, buf[1],
-                                    EVENTRING_ITEM_ID(header)) ) {
+                                    RUNTIME_EVENTS_ITEM_ID(header)) ) {
                                       early_exit = 1;
                                       continue;
                                     };
@@ -392,7 +392,7 @@ caml_eventring_read_poll(struct caml_eventring_cursor *cursor,
       case EV_COUNTER:
         if (cursor->runtime_counter) {
           if( !cursor->runtime_counter(domain_num, callback_data, buf[1],
-                                        EVENTRING_ITEM_ID(header), buf[2]) ) {
+                                        RUNTIME_EVENTS_ITEM_ID(header), buf[2]) ) {
                                           early_exit = 1;
                                           continue;
                                         };
@@ -409,14 +409,14 @@ caml_eventring_read_poll(struct caml_eventring_cursor *cursor,
       case EV_LIFECYCLE:
         if (cursor->lifecycle) {
           if( !cursor->lifecycle(domain_num, callback_data, buf[1],
-                                  EVENTRING_ITEM_ID(header), buf[2]) ) {
+                                  RUNTIME_EVENTS_ITEM_ID(header), buf[2]) ) {
                                     early_exit = 1;
                                     continue;
                                   }
         }
       }
 
-      if (EVENTRING_ITEM_TYPE(header) != EV_INTERNAL) {
+      if (RUNTIME_EVENTS_ITEM_TYPE(header) != EV_INTERNAL) {
         consumed++;
       }
 
@@ -437,13 +437,13 @@ caml_eventring_read_poll(struct caml_eventring_cursor *cursor,
   return E_SUCCESS;
 }
 
-#define Cursor_val(v) (*((struct caml_eventring_cursor **)Data_custom_val(v)))
+#define Cursor_val(v) (*((struct caml_runtime_events_cursor **)Data_custom_val(v)))
 
 static void finalise_cursor(value v) {
-  struct caml_eventring_cursor *cursor = Cursor_val(v);
+  struct caml_runtime_events_cursor *cursor = Cursor_val(v);
 
   if (cursor != NULL) {
-    caml_eventring_free_cursor(cursor);
+    caml_runtime_events_free_cursor(cursor);
 
     Cursor_val(v) = NULL;
   }
@@ -524,9 +524,9 @@ static int ml_alloc(int domain_id, void *callback_data, uint64_t timestamp,
     int i;
 
     ts_val = caml_copy_int64(timestamp);
-    misc_val = caml_alloc(EVENTRING_NUM_ALLOC_BUCKETS, 0);
+    misc_val = caml_alloc(RUNTIME_EVENTS_NUM_ALLOC_BUCKETS, 0);
 
-    for (i = 0; i < EVENTRING_NUM_ALLOC_BUCKETS; i++) {
+    for (i = 0; i < RUNTIME_EVENTS_NUM_ALLOC_BUCKETS; i++) {
       Store_field(misc_val, i, Val_long(sz[i]));
     }
 
@@ -583,21 +583,21 @@ static int ml_lost_events(int domain_id, void *callback_data, int lost_words) {
 }
 
 static struct custom_operations cursor_operations = {
-    "eventring.cursor",         finalise_cursor,
+    "runtime_events.cursor",         finalise_cursor,
     custom_compare_default,     custom_hash_default,
     custom_serialize_default,   custom_deserialize_default,
     custom_compare_ext_default, custom_fixed_length_default};
 
-CAMLprim value caml_ml_eventring_create_cursor(value path_pid_option) {
+CAMLprim value caml_ml_runtime_events_create_cursor(value path_pid_option) {
   CAMLparam1(path_pid_option);
   CAMLlocal1(wrapper);
-  struct caml_eventring_cursor *cursor;
+  struct caml_runtime_events_cursor *cursor;
   int pid;
   char_os* path;
-  eventring_error res;
+  runtime_events_error res;
 
   wrapper = caml_alloc_custom(&cursor_operations,
-                              sizeof(struct caml_eventring_cursor *), 0, 1);
+                              sizeof(struct caml_runtime_events_cursor *), 0, 1);
 
   Cursor_val(wrapper) = NULL;
 
@@ -610,7 +610,7 @@ CAMLprim value caml_ml_eventring_create_cursor(value path_pid_option) {
     pid = -1;
   }
 
-  res = caml_eventring_create_cursor(path, pid, &cursor);
+  res = caml_runtime_events_create_cursor(path, pid, &cursor);
 
   if (res != E_SUCCESS) {
     if( path != NULL ) {
@@ -623,22 +623,22 @@ CAMLprim value caml_ml_eventring_create_cursor(value path_pid_option) {
       case E_OPEN_FAILURE:
         caml_failwith("Eventring: could not create cursor for specified path.");
       case E_MAP_FAILURE:
-        caml_failwith("Eventring: could not map underlying eventring."
+        caml_failwith("Eventring: could not map underlying runtime_events."
         );
       case E_NO_CURRENT_RING:
         caml_failwith(
-        "Eventring: no ring for current process. Was eventring started?");
+        "Eventring: no ring for current process. Was runtime_events started?");
       default:
         caml_failwith("Eventring: could not obtain cursor");
     }
   }
 
-  caml_eventring_set_runtime_begin(cursor, ml_runtime_begin);
-  caml_eventring_set_runtime_end(cursor, ml_runtime_end);
-  caml_eventring_set_runtime_counter(cursor, ml_runtime_counter);
-  caml_eventring_set_alloc(cursor, ml_alloc);
-  caml_eventring_set_lifecycle(cursor, ml_lifecycle);
-  caml_eventring_set_lost_events(cursor, ml_lost_events);
+  caml_runtime_events_set_runtime_begin(cursor, ml_runtime_begin);
+  caml_runtime_events_set_runtime_end(cursor, ml_runtime_end);
+  caml_runtime_events_set_runtime_counter(cursor, ml_runtime_counter);
+  caml_runtime_events_set_alloc(cursor, ml_alloc);
+  caml_runtime_events_set_lifecycle(cursor, ml_lifecycle);
+  caml_runtime_events_set_lost_events(cursor, ml_lost_events);
 
   Cursor_val(wrapper) = cursor;
 
@@ -649,28 +649,28 @@ CAMLprim value caml_ml_eventring_create_cursor(value path_pid_option) {
   CAMLreturn(wrapper);
 }
 
-CAMLprim value caml_ml_eventring_free_cursor(value wrapped_cursor) {
+CAMLprim value caml_ml_runtime_events_free_cursor(value wrapped_cursor) {
   CAMLparam1(wrapped_cursor);
 
-  struct caml_eventring_cursor *cursor = Cursor_val(wrapped_cursor);
+  struct caml_runtime_events_cursor *cursor = Cursor_val(wrapped_cursor);
 
   if (cursor != NULL) {
-    caml_eventring_free_cursor(cursor);
+    caml_runtime_events_free_cursor(cursor);
     Cursor_val(wrapped_cursor) = NULL;
   }
 
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_ml_eventring_read_poll(value wrapped_cursor,
+CAMLprim value caml_ml_runtime_events_read_poll(value wrapped_cursor,
                                                 value callbacks_val,
                                                 value max_events_val) {
   CAMLparam3(wrapped_cursor, callbacks_val, max_events_val);
 
   uintnat events_consumed = 0;
   int max_events = Is_some(max_events_val) ? Some_val(max_events_val) : 0;
-  struct caml_eventring_cursor *cursor = Cursor_val(wrapped_cursor);
-  eventring_error res;
+  struct caml_runtime_events_cursor *cursor = Cursor_val(wrapped_cursor);
+  runtime_events_error res;
 
   if (cursor == NULL) {
     caml_failwith("Eventring: invalid or closed cursor");
@@ -680,7 +680,7 @@ CAMLprim value caml_ml_eventring_read_poll(value wrapped_cursor,
     caml_failwith("Eventring: cursor is not open");
   }
 
-  res = caml_eventring_read_poll
+  res = caml_runtime_events_read_poll
                         (cursor, &callbacks_val, max_events, &events_consumed);
 
   if (res != E_SUCCESS) {

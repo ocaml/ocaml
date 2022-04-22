@@ -12,7 +12,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Eventring - ring buffer-based runtime tracing
+(** Runtime events - ring buffer-based runtime tracing
 
     This module enables users to enable and subscribe to tracing events
     from the Garbage Collector and othe parts of the OCaml runtime. This can
@@ -20,14 +20,14 @@
     can be used to subscribe to events for the current process or external
     processes asynchronously.
 
-    When enabled (either via setting the OCAML_EVENTRING_START environment
-    variable or calling Eventring.start) a file with the pid of the process and
-    extension .eventring will be created. By default this is in the current
-    directory but can be over-ridden by the OCAML_EVENTRING_DIR environent
+    When enabled (either via setting the OCAML_RUNTIME_EVENTS_START environment
+    variable or calling Runtime_events.start) a file with the pid of the process and
+    extension .runtime_events will be created. By default this is in the current
+    directory but can be over-ridden by the OCAML_RUNTIME_EVENTS_DIR environent
     variable. Each domain maintains its own ring buffer in a section of the
     larger file into which it emits events.
 
-    There is additionally a set of C APIs in eventring.h that can enable
+    There is additionally a set of C APIs in runtime_events.h that can enable
     zero-impact monitoring of the current process or bindings for other
     languages.
 *)
@@ -182,30 +182,30 @@ val start : unit -> unit
 
 val pause : unit -> unit
 (** [pause ()] will pause the collection of events in the runtime.
-   Traces are collected if the program has called [Eventring.start ()] or
-   the OCAML_EVENTRING_START environment variable has been set.
+   Traces are collected if the program has called [Runtime_events.start ()] or
+   the OCAML_RUNTIME_EVENTS_START environment variable has been set.
 *)
 
 val resume : unit -> unit
 (** [resume ()] will resume the collection of events in the runtime.
-   Traces are collected if the program has called [Eventring.start ()] or
-   the OCAML_EVENTRING_START environment variable has been set.
+   Traces are collected if the program has called [Runtime_events.start ()] or
+   the OCAML_RUNTIME_EVENTS_START environment variable has been set.
 *)
 
 val create_cursor : (string * int) option -> cursor
-(** [create_cursor path_pid] creates a cursor to read from an eventring. Cursors
-   can be created for eventrings in and out of process. An eventring may have
+(** [create_cursor path_pid] creates a cursor to read from an runtime_events. Cursors
+   can be created for runtime_eventss in and out of process. An runtime_events may have
    multiple cursors reading from it at any point in time and a program may have
    multiple cursors open concurrently (for example if multiple consumers want
    different sets of events). If [path_pid] is None then a cursor is created for
    the current process. Otherwise the pair contains a string [path] to the
-   directory that contains the [pid].eventring file and int [pid] for the
-   eventring of an external process to monitor. *)
+   directory that contains the [pid].runtime_events file and int [pid] for the
+   runtime_events of an external process to monitor. *)
 
 val free_cursor : cursor -> unit
-(** Free a previously created eventring cursor *)
+(** Free a previously created runtime_events cursor *)
 
 val read_poll : cursor -> Callbacks.t -> int option -> int
 (** [read_poll cursor callbacks max_option] calls the corresponding functions
-    on [callbacks] for up to [max_option] events read off [cursor]'s eventring
+    on [callbacks] for up to [max_option] events read off [cursor]'s runtime_events
     and returns the number of events read. *)

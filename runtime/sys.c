@@ -50,7 +50,7 @@
 #endif
 #include "caml/alloc.h"
 #include "caml/debugger.h"
-#include "caml/eventring.h"
+#include "caml/runtime_events.h"
 #include "caml/fail.h"
 #include "caml/gc_ctrl.h"
 #include "caml/major_gc.h"
@@ -185,8 +185,8 @@ CAMLexport void caml_do_exit(int retcode)
     }
   }
 
-/* Tear down eventring before we leave */
-CAML_EVENTRING_DESTROY();
+/* Tear down runtime_events before we leave */
+CAML_RUNTIME_EVENTS_DESTROY();
 
 #ifndef NATIVE_CODE
   caml_debugger(PROGRAM_EXIT, Val_unit);

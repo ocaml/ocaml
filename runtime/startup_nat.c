@@ -23,7 +23,7 @@
 #include "caml/custom.h"
 #include "caml/codefrag.h"
 #include "caml/debugger.h"
-#include "caml/eventring.h"
+#include "caml/runtime_events.h"
 #include "caml/fiber.h"
 #include "caml/fail.h"
 #include "caml/gc.h"
@@ -109,9 +109,9 @@ value caml_startup_common(char_os **argv, int pooling)
   caml_init_os_params();
   caml_init_gc ();
 
-  /* eventring's init can cause a stop-the-world pause, so it must be done
+  /* runtime_events's init can cause a stop-the-world pause, so it must be done
      after we've initialised the garbage collector */
-  CAML_EVENTRING_INIT();
+  CAML_RUNTIME_EVENTS_INIT();
 
   init_segments();
 #ifdef _WIN32

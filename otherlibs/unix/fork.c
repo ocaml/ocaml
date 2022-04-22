@@ -17,7 +17,7 @@
 
 #include <caml/mlvalues.h>
 #include <caml/debugger.h>
-#include <caml/eventring.h>
+#include <caml/runtime_events.h>
 #include "unixsupport.h"
 #include <caml/domain.h>
 #include <caml/fail.h>
@@ -29,7 +29,7 @@ void caml_atfork_parent(pid_t child_pid) {
 
 /* Post-fork tasks to be carried out in the child */
 void caml_atfork_child() {
-  caml_eventring_post_fork();
+  caml_runtime_events_post_fork();
   CAML_EV_LIFECYCLE(EV_FORK_CHILD, 0);
 }
 

@@ -37,7 +37,7 @@
 #include "caml/debugger.h"
 #include "caml/domain_state.h"
 #include "caml/dynlink.h"
-#include "caml/eventring.h"
+#include "caml/runtime_events.h"
 #include "caml/exec.h"
 #include "caml/fail.h"
 #include "caml/fiber.h"
@@ -536,8 +536,8 @@ CAMLexport void caml_main(char_os **argv)
   /* Initialize the abstract machine */
   caml_init_gc ();
 
-  /* bring up eventring after we've initialised the gc */
-  CAML_EVENTRING_INIT();
+  /* bring up runtime_events after we've initialised the gc */
+  CAML_RUNTIME_EVENTS_INIT();
 
   Caml_state->external_raise = NULL;
   /* Initialize the interpreter */
@@ -628,8 +628,8 @@ CAMLexport value caml_startup_code_exn(
   /* Initialize the abstract machine */
   caml_init_gc ();
 
-  /* eventring has to be brought up after the gc */
-  CAML_EVENTRING_INIT();
+  /* runtime_events has to be brought up after the gc */
+  CAML_RUNTIME_EVENTS_INIT();
 
   exe_name = caml_executable_name();
   if (exe_name == NULL) exe_name = caml_search_exe_in_path(argv[0]);

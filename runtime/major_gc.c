@@ -22,7 +22,7 @@
 #include "caml/config.h"
 #include "caml/codefrag.h"
 #include "caml/domain.h"
-#include "caml/eventring.h"
+#include "caml/runtime_events.h"
 #include "caml/fail.h"
 #include "caml/fiber.h"
 #include "caml/finalise.h"

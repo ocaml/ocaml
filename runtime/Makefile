@@ -33,8 +33,6 @@ COMMON_C_SOURCES := $(addsuffix .c, \
   debugger \
   domain \
   dynlink \
-  eventring \
-  eventring_consumer \
   extern \
   fiber \
   finalise \
@@ -62,6 +60,7 @@ COMMON_C_SOURCES := $(addsuffix .c, \
   printexc \
   prng \
   roots \
+  runtime_events \
   shared_heap \
   signals \
   skiplist \

@@ -27,7 +27,7 @@
 #include "caml/callback.h"
 #include "caml/domain.h"
 #include "caml/domain_state.h"
-#include "caml/eventring.h"
+#include "caml/runtime_events.h"
 #include "caml/fail.h"
 #include "caml/fiber.h"
 #include "caml/finalise.h"
