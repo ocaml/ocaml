@@ -144,6 +144,9 @@ OCaml 5.0
   (Gabriel Scherer, review by Xavier Leroy,
    Guillaume Munch-Maccagnoni, Sadiq Jaffer and Tom Kelly)
 
+- #11144: Restore frame-pointers support for amd64
+  (Fabrice Buoro, review by Frederic Bour and KC Sivaramakrishnan)
+
 ### Code generation and optimizations:
 
 - #10972: ARM64 multicore support: OCaml & C stack separation;
