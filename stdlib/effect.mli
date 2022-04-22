@@ -14,7 +14,7 @@
 
 (** Effects.
 
-    @since 5.00.0 *)
+    @since 5.0 *)
 
 type _ t = ..
 (** The type of effects. *)
