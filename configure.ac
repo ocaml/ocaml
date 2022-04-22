@@ -538,7 +538,7 @@ AS_CASE([$host],
     [exeext=".exe"],
   [exeext=''])
 
-otherlibraries="dynlink"
+otherlibraries="dynlink runtime_events"
 AS_IF([test x"$enable_unix_lib" != "xno"],
   [enable_unix_lib=yes
    otherlibraries="$otherlibraries unix"])

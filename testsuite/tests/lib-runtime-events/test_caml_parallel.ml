@@ -1,5 +1,7 @@
-(* TEST *)
-open Eventring
+(* TEST
+include runtime_events
+*)
+open Runtime_events
 
 let majors = Atomic.make 0
 let minors = Atomic.make 0

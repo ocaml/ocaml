@@ -90,7 +90,7 @@ endif # ifeq "$(wildcard $(ROOTDIR)/flexlink.opt$(EXE))" ""
 endif # ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
 
 # List of other libraries
-ALL_OTHERLIBS = dynlink str systhreads unix
+ALL_OTHERLIBS = dynlink str systhreads unix runtime_events
 
 OPTCOMPFLAGS=
 ifeq "$(FUNCTION_SECTIONS)" "true"

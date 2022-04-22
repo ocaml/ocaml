@@ -1,5 +1,7 @@
-(* TEST *)
-open Eventring
+(* TEST
+include runtime_events
+*)
+open Runtime_events
 
 let major = ref 0
 let minor = ref 0

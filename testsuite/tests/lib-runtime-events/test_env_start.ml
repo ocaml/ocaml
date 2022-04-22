@@ -1,15 +1,16 @@
 (* TEST
-set OCAML_EVENTRING_START = "1"
+include runtime_events
+set OCAML_RUNTIME_EVENTS_START = "1"
 *)
 
-(* In this test the eventring should already be started by the environment
+(* In this test the runtime_events should already be started by the environment
    variable that we are passing and so we should not need to start it *)
 
 let got_start = ref false
 
 let lifecycle domain_id ts lifecycle_event data =
   match lifecycle_event with
-  | Eventring.EV_RING_START ->
+  | Runtime_events.EV_RING_START ->
       begin
           assert(match data with
           | Some(pid) -> true
@@ -19,7 +20,7 @@ let lifecycle domain_id ts lifecycle_event data =
   | _ -> ()
 
 let () =
-  let cursor = Eventring.create_cursor None in
-    let callbacks = Eventring.Callbacks.create ~lifecycle () in
-      let _read = Eventring.read_poll cursor callbacks None in
+  let cursor = Runtime_events.create_cursor None in
+    let callbacks = Runtime_events.Callbacks.create ~lifecycle () in
+      let _read = Runtime_events.read_poll cursor callbacks None in
         assert(!got_start)

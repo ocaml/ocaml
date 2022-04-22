@@ -13,12 +13,12 @@
 #*                                                                        *
 #**************************************************************************
 
-# Makefile for the str library
+# Makefile for the runtime events library
 
 LIBNAME=runtime_events
-COBJS=runtime_events_consumer.$(O) runtime_events.$(O)
 CLIBNAME=camlruntime_events
 CAMLOBJS=runtime_events.cmo
+COBJS=runtime_events_consumer.$(O)
 
 include ../Makefile.otherlibs.common
 runtime_events.cmo: runtime_events.cmi

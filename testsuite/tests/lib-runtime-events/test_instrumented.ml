@@ -1,9 +1,10 @@
 (* TEST
   * native
+    include runtime_events
     flags = "-runtime-variant=i"
 *)
 
-open Eventring
+open Runtime_events
 
 let list_ref = ref []
 let total_sizes = ref 0
