@@ -893,17 +893,21 @@ enum domain_status { Dom_starting, Dom_started, Dom_failed };
 
 struct domain_ml_values {
   value callback;
+  value term_mutex;
 };
 
 static void init_domain_ml_values(struct domain_ml_values* ml_values,
-                                  value callback)
+                                  value callback, value term_mutex)
 {
   ml_values->callback = callback;
+  ml_values->term_mutex = term_mutex;
   caml_register_generational_global_root(&ml_values->callback);
+  caml_register_generational_global_root(&ml_values->term_mutex);
 }
 
 static void free_domain_ml_values(struct domain_ml_values* ml_values) {
   caml_remove_generational_global_root(&ml_values->callback);
+  caml_remove_generational_global_root(&ml_values->term_mutex);
   caml_stat_free(ml_values);
 }
 
@@ -1084,6 +1088,18 @@ static void* domain_thread_func(void* v)
     caml_domain_set_name("Domain");
     caml_callback(ml_values->callback, Val_unit);
     domain_terminate();
+
+    /* This domain currently holds the [term_mutex], and has signaled all the
+       waiting domains to be woken up. We unlock the [term_mutex] to release
+       the joining domains. The unlock is done after [domain_terminate] to
+       ensure that this domain has released all of its runtime state. */
+    caml_mutex_unlock(Mutex_val(ml_values->term_mutex));
+
+    /* [ml_values] must be freed after unlocking [term_mutex]. This ensures
+       that [term_mutex] is only removed from the root set after [term_mutex]
+       is unlocked. Otherwise, there is a risk of [term_mutex] being destroyed
+       by [caml_mutex_finalize] finaliser while it remains locked, leading to
+       undefined behaviour. */
     free_domain_ml_values(ml_values);
   } else {
     caml_gc_log("Failed to create domain");
@@ -1091,9 +1107,9 @@ static void* domain_thread_func(void* v)
   return 0;
 }
 
-CAMLprim value caml_domain_spawn(value callback)
+CAMLprim value caml_domain_spawn(value callback, value mutex)
 {
-  CAMLparam1 (callback);
+  CAMLparam2 (callback, mutex);
   struct domain_startup_params p;
   pthread_t th;
   int err;
@@ -1111,7 +1127,7 @@ CAMLprim value caml_domain_spawn(value callback)
   if (!p.ml_values) {
     caml_failwith("failed to create ml values for domain thread");
   }
-  init_domain_ml_values(p.ml_values, callback);
+  init_domain_ml_values(p.ml_values, callback, mutex);
 
 /* We block all signals while we spawn the new domain. This is because
    pthread_create inherits the current signals set, and we want to avoid a
@@ -1640,9 +1656,18 @@ static void domain_terminate (void)
   caml_domain_state* domain_state = domain_self->state;
   struct interruptor* s = &domain_self->interruptor;
   int finished = 0;
+#ifdef POSIX_SIGNALS
+  sigset_t mask;
+#endif
 
   caml_gc_log("Domain terminating");
   s->terminating = 1;
+
+#ifdef POSIX_SIGNALS
+  /* Block all signals so that signal handlers do not run on this thread */
+  sigfillset(&mask);
+  pthread_sigmask(SIG_BLOCK, &mask, NULL);
+#endif
 
   // run the domain termination hook
   caml_domain_stop_hook();

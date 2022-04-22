@@ -19,7 +19,7 @@
 module Raw = struct
   (* Low-level primitives provided by the runtime *)
   type t = private int
-  external spawn : (unit -> unit) -> t
+  external spawn : (unit -> unit) -> Mutex.t -> t
     = "caml_domain_spawn"
   external self : unit -> t
     = "caml_ml_domain_id"
@@ -207,12 +207,12 @@ let spawn f =
     | Running ->
         term_state := Finished result;
         Condition.broadcast term_condition;
-        Mutex.unlock term_mutex
     | Finished _ ->
-        Mutex.unlock term_mutex;
         failwith "internal error: Am I already finished?"
+    (* [term_mutex] is unlocked in the runtime after the cleanup functions on
+       the C side are finished. *)
   in
-  { domain = Raw.spawn body;
+  { domain = Raw.spawn body term_mutex;
     term_mutex;
     term_condition;
     term_state }
