@@ -438,6 +438,9 @@ let emit_instr env i =
   | Lop(Ispecific sop) ->
       let instr = name_for_specific sop in
       `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(2)}\n`
+  | Lop (Idls_get) ->
+      (* Here to maintain build *)
+      assert false
   | Lreloadretaddr ->
       let n = frame_size env in
       reload_ra n

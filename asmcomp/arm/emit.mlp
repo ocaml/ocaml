@@ -730,6 +730,9 @@ let emit_instr env i =
         | _ ->
             assert false
         end
+    | Lop (Idls_get) ->
+        (* Here to maintain build *)
+        assert false
     | Lreloadretaddr ->
         let n = frame_size env in
         `	ldr	lr, [sp, #{emit_int(n-4)}]\n`; 1
