@@ -52,6 +52,7 @@ jobs:
       - name: Unpack Artifact
         run: |
           tar --zstd -xf sources.tar.zstd
+          rm -f sources.tar.zstd
       - name: Packages
         run: |
           sudo apt-get update -y && sudo apt-get install -y texlive-latex-extra texlive-fonts-recommended hevea sass
@@ -146,6 +147,7 @@ jobs:
       - name: Unpack Artifact
         run: |
           tar --zstd -xf sources.tar.zstd
+          rm -f sources.tar.zstd
       - name: Run the testsuite (debug runtime)
         if: ${{ matrix.id == 'debug' }}
         env:
