@@ -53,7 +53,6 @@ exception Use_default
 let r1 = phys_reg 1
 let r6 = phys_reg 6
 let r7 = phys_reg 7
-let r12 = phys_reg 8
 
 let pseudoregs_for_operation op arg res =
   match op with
