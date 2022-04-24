@@ -187,7 +187,7 @@ method select_shift_arith op dbg arithop arithrevop args =
       end
 
 method private iextcall func ty_res ty_args =
-  Iextcall { func; ty_res; ty_args; alloc = false; }
+  Iextcall { func; ty_res; ty_args; alloc = false; stack_ofs = 0 }
 
 method! select_operation op args dbg =
   match (op, args) with
