@@ -470,10 +470,10 @@ module BR = Branch_relaxation.Make (struct
       size 3 (2 + tocload_size()) (2 + tocload_size())
     | Lop(Iextcall { alloc = false; _}) -> size 1 2 2
     | Lop(Istackoffset _) -> 1
-    | Lop(Iload(chunk, addr, _mut)) ->
-      if chunk = Byte_signed
-      then load_store_size addr + 1
-      else load_store_size addr
+    | Lop(Iload {memory_chunk; addressing_mode; _ }) ->
+      if memory_chunk = Byte_signed
+      then load_store_size addressing_mode + 1
+      else load_store_size addressing_mode
     | Lop(Istore(_chunk, addr, _)) -> load_store_size addr
     | Lop(Ialloc _) -> 5
     | Lop(Ispecific(Ialloc_far _)) -> 6
@@ -775,9 +775,9 @@ let emit_instr env i =
     | Lop(Istackoffset n) ->
         `	addi	1, 1, {emit_int (-n)}\n`;
         adjust_stack_offset env n
-    | Lop(Iload(chunk, addr, _mut)) ->
+    | Lop(Iload { memory_chunk; addressing_mode; _ }) ->
         let loadinstr =
-          match chunk with
+          match memory_chunk with
           | Byte_unsigned -> "lbz"
           | Byte_signed -> "lbz"
           | Sixteen_unsigned -> "lhz"
@@ -787,8 +787,8 @@ let emit_instr env i =
 	  | Word_int | Word_val -> lg
           | Single -> "lfs"
           | Double -> "lfd" in
-        emit_load_store loadinstr addr i.arg 0 i.res.(0);
-        if chunk = Byte_signed then
+        emit_load_store loadinstr addressing_mode i.arg 0 i.res.(0);
+        if memory_chunk = Byte_signed then
           `	extsb	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
     | Lop(Istore(chunk, addr, _)) ->
         let storeinstr =

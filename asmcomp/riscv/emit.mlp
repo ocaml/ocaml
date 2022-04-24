@@ -313,12 +313,12 @@ let emit_instr env i =
       assert (n mod 16 = 0);
       emit_stack_adjustment (-n);
       adjust_stack_offset env n
-  | Lop(Iload(Single, Iindexed ofs, _mut)) ->
+  | Lop(Iload { memory_chunk = Single; addressing_mode = Iindexed ofs; _ } ) ->
       `	flw	{emit_reg i.res.(0)}, {emit_int ofs}({emit_reg i.arg.(0)})\n`;
       `	fcvt.d.s	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
-  | Lop(Iload(chunk, Iindexed ofs, _mut)) ->
+  | Lop(Iload { memory_chunk; addressing_mode = Iindexed ofs } ) ->
       let instr =
-        match chunk with
+        match memory_chunk with
         | Byte_unsigned -> "lbu"
         | Byte_signed -> "lb"
         | Sixteen_unsigned -> "lhu"
