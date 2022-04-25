@@ -300,7 +300,7 @@ let emit_literals env =
     `	.align	2\n`;
     List.iter
       (fun { lbl_got; lbl_pic } ->
-        `{emit_label lbl_pic}:	.word	_GLOBAL_OFFSET_TABLE_-({emit_label lbl_got}+{emit_int offset})\n`)
+        `{emit_label lbl_got}:	.word	_GLOBAL_OFFSET_TABLE_-({emit_label lbl_pic}+{emit_int offset})\n`)
       env.gotrel_literals;
     List.iter
       (fun { sym; lbl } ->
