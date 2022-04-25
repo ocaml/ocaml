@@ -303,9 +303,6 @@ val concrete_instance_vars : class_signature -> VarSet.t
    @raises [Assert_failure] if the class has no such method. *)
 val method_type : label -> class_signature -> type_expr
 
-(* Return the type of a method in an object type. *)
-val method_type' : label -> type_expr -> type_expr option
-
 (* Return the type of an instance variable.
    @raises [Assert_failure] if the class has no such method. *)
 val instance_variable_type : label -> class_signature -> type_expr
