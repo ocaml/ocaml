@@ -121,9 +121,10 @@ let type_path s path =
         fatal_error "Subst.type_path"
 
 let type_path s p =
-  p |> Path.typath_of_path |>
-  Path.map_typath (type_path s) |>
-  Path.path_of_typath
+  p
+  |> Path.typath_of_path
+  |> Path.map_typath (type_path s)
+  |> Path.path_of_typath
 
 let to_subst_by_type_function s p =
   match Path.Map.find p s.types with

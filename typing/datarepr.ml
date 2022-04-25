@@ -61,7 +61,7 @@ let constructor_existentials cd_args cd_res =
   in
   (tyl, existentials)
 
-let constructor_args ~current_unit priv cd_args cd_res path rep =
+let constructor_args ~current_unit priv cd_args cd_res typath rep =
   let tyl, existentials = constructor_existentials cd_args cd_res in
   match cd_args with
   | Cstr_tuple l -> existentials, l, None
@@ -88,7 +88,7 @@ let constructor_args ~current_unit priv cd_args cd_res path rep =
         }
       in
       existentials,
-      [ newgenconstr path type_params ],
+      [ newgenconstr (Path.path_of_typath typath) type_params ],
       Some tdecl
 
 let constructor_descrs ~current_unit ty_path decl cstrs rep =
@@ -125,7 +125,7 @@ let constructor_descrs ~current_unit ty_path decl cstrs rep =
             | Variant_regular -> Record_inlined idx_nonconst
           in
           constructor_args ~current_unit decl.type_private cd_args cd_res
-            (Path.Pdot (ty_path, cstr_name)) representation
+            (Path.Cstr (ty_path, cstr_name)) representation
         in
         let cstr =
           { cstr_name;
@@ -154,7 +154,7 @@ let extension_descr ~current_unit path_ext ext =
   in
   let existentials, cstr_args, cstr_inlined =
     constructor_args ~current_unit ext.ext_private ext.ext_args ext.ext_ret_type
-      path_ext (Record_extension path_ext)
+      (Path.Ext path_ext) (Record_extension path_ext)
   in
     { cstr_name = Path.last path_ext;
       cstr_res = ty_res;
