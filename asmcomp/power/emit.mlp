@@ -784,7 +784,7 @@ let emit_instr env i =
           | Sixteen_signed -> "lha"
           | Thirtytwo_unsigned -> "lwz"
           | Thirtytwo_signed -> if ppc64 then "lwa" else "lwz"
-	  | Word_int | Word_val -> lg
+          | Word_int | Word_val -> lg
           | Single -> "lfs"
           | Double -> "lfd" in
         emit_load_store loadinstr addr i.arg 0 i.res.(0);
@@ -795,8 +795,8 @@ let emit_instr env i =
           match chunk with
           | Byte_unsigned | Byte_signed -> "stb"
           | Sixteen_unsigned | Sixteen_signed -> "sth"
-	  | Thirtytwo_unsigned | Thirtytwo_signed -> "stw"
-	  | Word_int | Word_val -> stg
+          | Thirtytwo_unsigned | Thirtytwo_signed -> "stw"
+          | Word_int | Word_val -> stg
           | Single -> "stfs"
           | Double -> "stfd" in
         emit_load_store storeinstr addr i.arg 1 i.arg.(0)
@@ -855,12 +855,12 @@ let emit_instr env i =
         let instr = name_for_floatop2 op in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
     | Lop(Ifloatofint) ->
-	if ppc64 then begin
+        if ppc64 then begin
           (* Can use protected zone (288 bytes below r1 *)
-	  `	std	{emit_reg i.arg.(0)}, -16(1)\n`;
+          `	std	{emit_reg i.arg.(0)}, -16(1)\n`;
           `	lfd	{emit_reg i.res.(0)}, -16(1)\n`;
           `	fcfid	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
-	end else begin
+        end else begin
           let lbl = new_label() in
           env.float_literals <- {fl=0x4330000080000000L; lbl} :: env.float_literals;
           `	addis	11, 0, {emit_upper emit_label lbl}\n`;
@@ -872,7 +872,7 @@ let emit_instr env i =
           `	lfd	{emit_reg i.res.(0)}, 0(1)\n`;
           `	addi	1, 1, 16\n`;
           `	fsub	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}, 0\n`
-	end
+        end
     | Lop(Iintoffloat) ->
         if ppc64 then begin
           (* Can use protected zone (288 bytes below r1 *)

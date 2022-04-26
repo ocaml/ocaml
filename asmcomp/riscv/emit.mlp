@@ -542,8 +542,8 @@ let emit_instr env i =
           record_frame env Reg.Set.empty (Dbg_raise i.dbg)
       | Lambda.Raise_notrace ->
           `	mv	sp, {emit_reg reg_trap}\n`;
-	  emit_load reg_tmp size_addr;
-	  emit_load reg_trap 0;
+          emit_load reg_tmp size_addr;
+          emit_load reg_trap 0;
           `	addi	sp, sp, 16\n`;
           `	jr	{emit_reg reg_tmp}\n`
       end
