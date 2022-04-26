@@ -923,13 +923,13 @@ struct domain_startup_params {
   struct domain_ml_values* ml_values; /* in */
   dom_internal* newdom; /* out */
   uintnat unique_id; /* out */
-#ifdef POSIX_SIGNALS
+#ifndef _WIN32
   /* signal mask to set after it is safe to do so */
   sigset_t* mask; /* in */
 #endif
 };
 
-#ifdef POSIX_SIGNALS
+#ifndef _WIN32
 #define With_signals_blocked(e) { \
   sigset_t mask, old_mask; \
   sigfillset(&mask); \
@@ -938,7 +938,7 @@ struct domain_startup_params {
   pthread_sigmask(SIG_SETMASK, &old_mask, NULL); }
 #else
 #define With_signals_blocked(e) { e; }
-#endif /* POSIX_SIGNALS */
+#endif /* !_WIN32 */
 
 static void* backup_thread_func(void* v)
 {
@@ -1055,7 +1055,7 @@ static void* domain_thread_func(void* v)
 {
   struct domain_startup_params* p = v;
   struct domain_ml_values *ml_values = p->ml_values;
-#ifdef POSIX_SIGNALS
+#ifndef _WIN32
   sigset_t mask = *(p->mask);
 #endif
 
@@ -1078,7 +1078,7 @@ static void* domain_thread_func(void* v)
   if (domain_self) {
     install_backup_thread(domain_self);
 
-#ifdef POSIX_SIGNALS
+#ifndef _WIN32
     /* It is now safe for us to handle signals */
     pthread_sigmask(SIG_SETMASK, &mask, NULL);
 #endif
@@ -1131,7 +1131,7 @@ CAMLprim value caml_domain_spawn(value callback, value mutex)
    signal handler being triggered in the new domain before the domain_state is
    fully populated. */
   With_signals_blocked(
-#ifdef POSIX_SIGNALS
+#ifndef _WIN32
     p.mask = &old_mask;
 #endif
     err = pthread_create(&th, 0, domain_thread_func, (void*)&p);
@@ -1648,14 +1648,14 @@ static void domain_terminate (void)
   caml_domain_state* domain_state = domain_self->state;
   struct interruptor* s = &domain_self->interruptor;
   int finished = 0;
-#ifdef POSIX_SIGNALS
+#ifndef _WIN32
   sigset_t mask;
 #endif
 
   caml_gc_log("Domain terminating");
   s->terminating = 1;
 
-#ifdef POSIX_SIGNALS
+#ifndef _WIN32
   /* Block all signals so that signal handlers do not run on this thread */
   sigfillset(&mask);
   pthread_sigmask(SIG_BLOCK, &mask, NULL);
