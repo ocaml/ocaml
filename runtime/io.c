@@ -32,7 +32,6 @@
 #endif
 #include "caml/alloc.h"
 #include "caml/camlatomic.h"
-#include "caml/atomic_refcount.h"
 #include "caml/custom.h"
 #include "caml/fail.h"
 #include "caml/io.h"
@@ -175,7 +174,7 @@ CAMLexport struct channel * caml_open_descriptor_in(int fd)
   channel->curr = channel->max = channel->buff;
   channel->end = channel->buff + IO_BUFFER_SIZE;
   caml_plat_mutex_init(&channel->mutex);
-  caml_atomic_refcount_init(&channel->refcount,0);
+  atomic_store_rel(&channel->refcount, 0);
   channel->prev = NULL;
   channel->name = NULL;
   channel->flags = descriptor_is_in_binary_mode(fd) ? 0 : CHANNEL_TEXT_MODE;
@@ -199,7 +198,7 @@ CAMLexport void caml_close_channel(struct channel *channel)
   close(channel->fd);
 
   unlink_channel(channel);
-    if (caml_atomic_refcount_get(&channel->refcount) > 0) {
+    if (atomic_load_acq(&channel->refcount) > 0) {
     /* [caml_ml_out_channels_list] may have a reference to this channel. */
     link_channel (channel);
     return;
@@ -511,7 +510,7 @@ void caml_finalize_channel(value vchan)
   struct channel * chan = Channel(vchan);
   if ((chan->flags & CHANNEL_FLAG_MANAGED_BY_GC) == 0) return;
   unlink_channel(chan);
-  if (caml_atomic_refcount_decr(&chan->refcount) > 1) {
+  if (atomic_fetch_add (&chan->refcount, -1) > 1) {
     /* [caml_ml_out_channels_list] may have a reference to this channel. */
     link_channel (chan);
     return;
@@ -574,7 +573,7 @@ static struct custom_operations channel_operations = {
 CAMLexport value caml_alloc_channel(struct channel *chan)
 {
   value res;
-  caml_atomic_refcount_incr (&chan->refcount);
+  atomic_fetch_add (&chan->refcount, 1);
   res = caml_alloc_custom_mem(&channel_operations, sizeof(struct channel *),
                               sizeof(struct channel));
   Channel(res) = chan;
@@ -628,7 +627,7 @@ CAMLprim value caml_ml_out_channels_list (value unit)
     if (channel->max == NULL
         && channel->flags & CHANNEL_FLAG_MANAGED_BY_GC) {
       /* refcount is incremented here to keep the channel alive */
-      caml_atomic_refcount_incr(&channel->refcount);
+      atomic_fetch_add (&channel->refcount, 1);
       num_channels++;
       cl_tmp = caml_stat_alloc_noexc (sizeof(struct channel_list));
       if (cl_tmp == NULL)
@@ -646,7 +645,7 @@ CAMLprim value caml_ml_out_channels_list (value unit)
     chan = caml_alloc_channel (channel_list->channel);
     /* refcount would have been incremented by caml_alloc_channel. Decrement
      * our earlier increment */
-    caml_atomic_refcount_decr(&channel_list->channel->refcount);
+    atomic_fetch_add (&channel_list->channel->refcount, -1);
     tail = res;
     res = caml_alloc_small (2, Tag_cons);
     Field (res, 0) = chan;
