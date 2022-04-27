@@ -91,7 +91,7 @@ val rev : 'a list -> 'a list
 (** List reversal. *)
 
 val init : len:int -> f:(int -> 'a) -> 'a list
-(** [init ~len ~f] is [f 0; f 1; ...; f (len-1)], evaluated left to right.
+(** [init ~len ~f] is [[f 0; f 1; ...; f (len-1)]], evaluated left to right.
     @raise Invalid_argument if [len < 0].
     @since 4.06.0
  *)
@@ -158,8 +158,8 @@ val compare : cmp:('a -> 'a -> int) -> 'a list -> 'a list -> int
 
 val iter : f:('a -> unit) -> 'a list -> unit
 (** [iter ~f [a1; ...; an]] applies function [f] in turn to
-   [a1; ...; an]. It is equivalent to
-   [begin f a1; f a2; ...; f an; () end].
+   [[a1; ...; an]]. It is equivalent to
+   [f a1; f a2; ...; f an].
  *)
 
 val iteri : f:(int -> 'a -> unit) -> 'a list -> unit
