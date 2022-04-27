@@ -16,18 +16,12 @@
 #ifndef CAML_ATOMIC_REFCOUNT_H
 #define CAML_ATOMIC_REFCOUNT_H
 
-
 #define CAML_INTERNALS
 #include "camlatomic.h"
 #include "platform.h"
 
-
 Caml_inline void caml_atomic_refcount_init(atomic_uintnat* refc, uintnat n){
   atomic_store_rel(refc, n);
-};
-
-Caml_inline uintnat caml_atomic_refcount_get(atomic_uintnat* refcount){
-  return atomic_load_acq(refcount);
 };
 
 Caml_inline uintnat caml_atomic_refcount_decr(atomic_uintnat* refcount){
@@ -37,6 +31,5 @@ Caml_inline uintnat caml_atomic_refcount_decr(atomic_uintnat* refcount){
 Caml_inline uintnat caml_atomic_refcount_incr(atomic_uintnat* refcount){
   return atomic_fetch_add (refcount, 1);
 };
-
 
 #endif // CAML_ATOMIC_REFCOUNT_H
