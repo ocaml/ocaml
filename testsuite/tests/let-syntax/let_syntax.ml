@@ -146,7 +146,7 @@ let let_unbound =
 Line 3, characters 4-8:
 3 |     let+ x = 1 in
         ^^^^
-Error: Unbound value "let+"
+Error: Unbound value "(let+)"
 |}];;
 
 module And_unbound = struct
@@ -166,7 +166,7 @@ let and_unbound =
 Line 4, characters 4-8:
 4 |     and+ y = 2 in
         ^^^^
-Error: Unbound value "and+"
+Error: Unbound value "(and+)"
 |}];;
 
 module Ill_typed_1 = struct
