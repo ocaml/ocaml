@@ -55,10 +55,10 @@ PARSING = \
   parsing/docstrings.cmo \
   parsing/syntaxerr.cmo \
   parsing/ast_helper.cmo \
-  parsing/pprintast.cmo \
   parsing/camlinternalMenhirLib.cmo \
   parsing/parser.cmo \
   parsing/lexer.cmo \
+  parsing/pprintast.cmo \
   parsing/parse.cmo \
   parsing/printast.cmo \
   parsing/ast_mapper.cmo \

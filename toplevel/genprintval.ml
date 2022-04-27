@@ -378,7 +378,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                    then nest tree_of_val depth forced_obj ty_arg
                    else      tree_of_val depth forced_obj ty_arg
                  in
-                 Oval_constr (Oide_ident (Out_name.create "lazy"), [v])
+                 Oval_lazy v
                end
           | Tconstr(path, ty_list, _) -> begin
               try

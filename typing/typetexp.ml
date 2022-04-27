@@ -126,7 +126,8 @@ let type_variable loc name =
   try
     TyVarMap.find name !type_variables
   with Not_found ->
-    raise(Error(loc, Env.empty, Unbound_type_variable ("'" ^ name)))
+    raise(Error(loc, Env.empty,
+                Unbound_type_variable (Pprintast.tyvar_name name)))
 
 let valid_tyvar_name name =
   name <> "" && name.[0] <> '_'
@@ -586,7 +587,8 @@ let globalize_used_variables env fixed =
         r := (loc, v,  TyVarMap.find name !type_variables) :: !r
       with Not_found ->
         if fixed && Btype.is_Tvar ty then
-          raise(Error(loc, env, Unbound_type_variable ("'"^name)));
+          raise(Error(loc, env,
+                      Unbound_type_variable (Pprintast.tyvar_name name)));
         let v2 = new_global_var () in
         r := (loc, v, v2) :: !r;
         type_variables := TyVarMap.add name v2 !type_variables)
@@ -684,7 +686,8 @@ open Printtyp
 
 let report_error env ppf = function
   | Unbound_type_variable name ->
-      let add_name name _ l = if name = "_" then l else ("'" ^ name) :: l in
+      let add_name name _ l =
+        if name = "_" then l else Pprintast.tyvar_name name :: l in
       let names = TyVarMap.fold add_name !type_variables [] in
     fprintf ppf "The type variable %s is unbound in this type declaration.@ %a"
       name
