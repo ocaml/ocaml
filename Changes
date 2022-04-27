@@ -274,6 +274,11 @@ Working version
   socket and deadlock the parent.
   (Antonin Décimo, review by Xavier Leroy)
 
+- #11204: Fix regression introduced in 4.14.0 that would trigger Warning 17 when
+  calling virtual methods introduced by constraining the self type from within
+  the class definition.
+  (Nicolás Ojeda Bär, review by Leo White)
+
 OCaml 4.14.0
 ----------------
 
