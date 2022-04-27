@@ -268,6 +268,12 @@ OCaml 5.0
   (Guillaume Munch-Maccagnoni, review by Sadiq Jaffer, Xavier Leroy and
   Gabriel Scherer)
 
+- #11223: The serialization format of custom blocks changed in 4.08,
+  but the deserializer would still support the pre-4.08 format.  OCaml
+  5.x removed support for this old format; provide a clear error message
+  in this case.
+  (Hugo Heuzard, review by Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 - #10972: ARM64 multicore support: OCaml & C stack separation;

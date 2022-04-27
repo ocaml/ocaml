@@ -596,6 +596,11 @@ static void intern_rec(struct caml_intern_state* s,
         sp->arg = ofs;
         ReadItems(s, dest, 1);
         continue;  /* with next iteration of main loop, skipping *dest = v */
+      case OLD_CODE_CUSTOM:
+        intern_cleanup(s);
+        caml_failwith("input_value: custom blocks serialized with "
+                      "OCaml 4.08.0 (or prior) are no longer supported");
+        break;
       case CODE_CUSTOM_LEN:
       case CODE_CUSTOM_FIXED: {
         uintnat expected_size, temp_size;
