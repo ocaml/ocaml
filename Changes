@@ -1,3 +1,13 @@
+OCaml 4.14 maintenance branch
+-----------------------------
+
+### Bug fixes:
+
+- #11204: Fix regression introduced in 4.14.0 that would trigger Warning 17 when
+  calling virtual methods introduced by constraining the self type from within
+  the class definition.
+  (Nicolás Ojeda Bär, review by Leo White)
+
 OCaml 4.14.0 (28 March 2022)
 ----------------------------
 
@@ -61,7 +71,6 @@ OCaml 4.14.0 (28 March 2022)
   abstraction of modules that can be used by external tooling to perform
   definition-aware operations.
   (Ulysse Gérard, Thomas Refis and Leo White, review by Florian Angeletti)
-
 
 ### Language features:
 

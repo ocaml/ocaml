@@ -552,12 +552,11 @@ type first_pass_accummulater =
     concrete_vals : VarSet.t;
     local_meths : MethSet.t;
     local_vals : VarSet.t;
-    vars : Ident.t Vars.t;
-    meths : Ident.t Meths.t; }
+    vars : Ident.t Vars.t; }
 
 let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
   let { rev_fields; val_env; par_env; concrete_meths; concrete_vals;
-        local_meths; local_vals; vars; meths } = acc
+        local_meths; local_vals; vars } = acc
   in
   let loc = cf.pcf_loc in
   let attributes = cf.pcf_attributes in
@@ -612,13 +611,6 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
                   (val_env, par_env, inherited_vars, vars))
                parent_sign.csig_vars (val_env, par_env, [], vars)
            in
-           let meths =
-             Meths.fold
-               (fun label _ meths ->
-                  if Meths.mem label meths then meths
-                  else Meths.add label (Ident.create_local label) meths)
-               parent_sign.csig_meths meths
-           in
            (* Methods available through super *)
            let super_meths =
              MethSet.fold
@@ -641,7 +633,7 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
            in
            let rev_fields = field :: rev_fields in
            { acc with rev_fields; val_env; par_env;
-                      concrete_meths; concrete_vals; vars; meths })
+                      concrete_meths; concrete_vals; vars })
   | Pcf_val (label, mut, Cfk_virtual styp) ->
       with_attrs
         (fun () ->
@@ -723,15 +715,11 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
            let cty = transl_simple_type val_env false sty in
            let ty = cty.ctyp_type in
            add_method loc val_env label.txt priv Virtual ty sign;
-           let meths =
-             if Meths.mem label.txt meths then meths
-             else Meths.add label.txt (Ident.create_local label.txt) meths
-           in
            let field =
              Virtual_method { label; priv; cty; loc; attributes }
            in
            let rev_fields = field :: rev_fields in
-           { acc with rev_fields; meths })
+           { acc with rev_fields })
 
   | Pcf_method (label, priv, Cfk_concrete (override, expr)) ->
       with_attrs
@@ -785,10 +773,6 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
                raise(Error(loc, val_env,
                            Field_type_mismatch ("method", label.txt, err)))
            end;
-           let meths =
-             if Meths.mem label.txt meths then meths
-             else Meths.add label.txt (Ident.create_local label.txt) meths
-           in
            let sdefinition = make_method self_loc cl_num expr in
            let warning_state = Warnings.backup () in
            let field =
@@ -799,7 +783,7 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
            let rev_fields = field :: rev_fields in
            let concrete_meths = MethSet.add label.txt concrete_meths in
            let local_meths = MethSet.add label.txt local_meths in
-           { acc with rev_fields; concrete_meths; local_meths; meths })
+           { acc with rev_fields; concrete_meths; local_meths })
 
   | Pcf_constraint (sty1, sty2) ->
       with_attrs
@@ -837,11 +821,10 @@ and class_fields_first_pass self_loc cl_num sign self_scope
   let local_meths = MethSet.empty in
   let local_vals = VarSet.empty in
   let vars = Vars.empty in
-  let meths = Meths.empty in
   let init_acc =
     { rev_fields; val_env; par_env;
       concrete_meths; concrete_vals;
-      local_meths; local_vals; vars; meths }
+      local_meths; local_vals; vars }
   in
   let acc =
     Builtin_attributes.warning_scope []
@@ -850,7 +833,7 @@ and class_fields_first_pass self_loc cl_num sign self_scope
           (class_field_first_pass self_loc cl_num sign self_scope)
           init_acc cfs)
   in
-  List.rev acc.rev_fields, acc.vars, acc.meths
+  List.rev acc.rev_fields, acc.vars
 
 and class_field_second_pass cl_num sign met_env field =
   let mkcf desc loc attrs =
@@ -1003,7 +986,7 @@ and class_structure cl_num virt self_scope final val_env met_env loc
   end;
 
   (* Typing of class fields *)
-  let (fields, vars, meths) =
+  let (fields, vars) =
     class_fields_first_pass self_loc cl_num sign self_scope
            val_env par_env str
   in
@@ -1015,6 +998,13 @@ and class_structure cl_num virt self_scope final val_env met_env loc
   (* Update the class signature *)
   update_class_signature loc val_env
     ~warn_implicit_public:false virt kind sign;
+
+  let meths =
+    Meths.fold
+      (fun label _ meths ->
+         Meths.add label (Ident.create_local label) meths)
+      sign.csig_meths Meths.empty
+  in
 
   (* Close the signature if it is final *)
   begin match final with
