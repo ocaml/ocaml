@@ -75,11 +75,11 @@ try
   test (sprintf "%*u" (-4) 42 = "42  ");
 
   printf "\nu negative\n%!";
-  begin match Sys.word_size with
-  | 32 ->
+  begin match Sys.int_size with
+  | 31 ->
      test (sprintf "%u" (-1) = "2147483647");
      test (sprintf "%#u" (-1) = "2_147_483_647");
-  | 64 ->
+  | 63 ->
      test (sprintf "%u" (-1) = "9223372036854775807");
      test (sprintf "%#u" (-1) = "9_223_372_036_854_775_807");
   | _ -> test false
@@ -103,10 +103,10 @@ try
   test (sprintf "%-0+ #*x" 5 42 = "0x2a ");
 
   printf "\nx negative\n%!";
-  begin match Sys.word_size with
-  | 32 ->
+  begin match Sys.int_size with
+  | 31 ->
      test (sprintf "%x" (-42) = "7fffffd6");
-  | 64 ->
+  | 63 ->
      test (sprintf "%x" (-42) = "7fffffffffffffd6");
   | _ -> test false
   end;
@@ -126,10 +126,10 @@ try
     (* >> '-' is incompatible with '0' *)
 
   printf "\nx negative\n%!";
-  begin match Sys.word_size with
-  | 32 ->
+  begin match Sys.int_size with
+  | 31 ->
      test (sprintf "%X" (-42) = "7FFFFFD6");
-  | 64 ->
+  | 63 ->
      test (sprintf "%X" (-42) = "7FFFFFFFFFFFFFD6");
   | _ -> test false
   end;
@@ -149,10 +149,10 @@ try
     (* >> '-' is incompatible with 'o' *)
 
   printf "\no negative\n%!";
-  begin match Sys.word_size with
-  | 32 ->
+  begin match Sys.int_size with
+  | 31 ->
      test (sprintf "%o" (-42) = "17777777726");
-  | 64 ->
+  | 63 ->
      test (sprintf "%o" (-42) = "777777777777777777726");
   | _ -> test false
   end;
