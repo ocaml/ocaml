@@ -38,9 +38,9 @@ STDLIB_MODULE_BASENAMES = \
   sys obj atomic camlinternalLazy lazy \
   seq option result bool char uchar \
   list int bytes string unit marshal array float int32 int64 nativeint \
-  lexing parsing set map stack queue buffer \
+  lexing set map stack queue buffer \
   mutex condition semaphore domain \
-  camlinternalFormat printf arg \
+  parsing camlinternalFormat printf arg \
   printexc fun gc digest bigarray random hashtbl weak \
   format scanf callback camlinternalOO oo camlinternalMod ephemeron \
   filename complex arrayLabels listLabels bytesLabels stringLabels moreLabels \

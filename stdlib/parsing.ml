@@ -86,7 +86,8 @@ external parse_engine :
 external set_trace: bool -> bool
     = "caml_set_parser_trace"
 
-let env =
+let env_key =
+  Domain.DLS.new_key (fun () ->
   { s_stack = Array.make 100 0;
     v_stack = Array.make 100 (Obj.repr ());
     symb_start_stack = Array.make 100 dummy_pos;
@@ -103,8 +104,11 @@ let env =
     sp = 0;
     state = 0;
     errflag = 0 }
+    )
+ let get_env () = Domain.DLS.get env_key
 
 let grow_stacks() =
+  let env = get_env () in
   let oldsize = env.stacksize in
   let newsize = oldsize * 2 in
   let new_s = Array.make newsize 0
@@ -122,12 +126,14 @@ let grow_stacks() =
     env.stacksize <- newsize
 
 let clear_parser() =
+  let env = get_env () in
   Array.fill env.v_stack 0 env.stacksize (Obj.repr ());
   env.lval <- Obj.repr ()
 
-let current_lookahead_fun = ref (fun (_ : Obj.t) -> false)
+let current_lookahead_fun = Domain.DLS.new_key (fun () (_ : Obj.t) -> false)
 
 let yyparse tables start lexer lexbuf =
+  let env = get_env () in
   let rec loop cmd arg =
     match parse_engine tables env cmd arg with
       Read_token ->
@@ -176,7 +182,7 @@ let yyparse tables start lexer lexbuf =
       YYexit v ->
         Obj.magic v
     | _ ->
-        current_lookahead_fun :=
+        Domain.DLS.set current_lookahead_fun
           (fun tok ->
             if Obj.is_block tok
             then tables.transl_block.(Obj.tag tok) = curr_char
@@ -187,6 +193,7 @@ let peek_val env n =
   Obj.magic env.v_stack.(env.asp - n)
 
 let symbol_start_pos () =
+  let env = get_env () in
   let rec loop i =
     if i <= 0 then env.symb_end_stack.(env.asp)
     else begin
@@ -197,9 +204,15 @@ let symbol_start_pos () =
   in
   loop env.rule_len
 
-let symbol_end_pos () = env.symb_end_stack.(env.asp)
-let rhs_start_pos n = env.symb_start_stack.(env.asp - (env.rule_len - n))
-let rhs_end_pos n = env.symb_end_stack.(env.asp - (env.rule_len - n))
+let symbol_end_pos () =
+  let env = get_env () in
+  env.symb_end_stack.(env.asp)
+let rhs_start_pos n =
+  let env = get_env () in
+  env.symb_start_stack.(env.asp - (env.rule_len - n))
+let rhs_end_pos n =
+  let env = get_env () in
+  env.symb_end_stack.(env.asp - (env.rule_len - n))
 
 let symbol_start () = (symbol_start_pos ()).pos_cnum
 let symbol_end () = (symbol_end_pos ()).pos_cnum
@@ -207,6 +220,6 @@ let rhs_start n = (rhs_start_pos n).pos_cnum
 let rhs_end n = (rhs_end_pos n).pos_cnum
 
 let is_current_lookahead tok =
-  (!current_lookahead_fun)(Obj.repr tok)
+  (Domain.DLS.get current_lookahead_fun)(Obj.repr tok)
 
 let parse_error (_ : string) = ()
