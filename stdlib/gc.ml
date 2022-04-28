@@ -66,28 +66,29 @@ external eventlog_resume : unit -> unit = "caml_eventlog_resume"
 
 let print_stat c =
   let st = stat () in
-  let print fmt = Printf.fprintf c (fmt ^^ "\n") in
-  print "minor_collections:      %d" st.minor_collections;
-  print "major_collections:      %d" st.major_collections;
-  print "compactions:            %d" st.compactions;
-  print "forced_major_collections: %d" st.forced_major_collections;
-  print "";
+  let print_nl fmt = Printf.kfprintf (fun oc -> output_char oc '\n') c fmt in
+  print_nl "minor_collections:      %d" st.minor_collections;
+  print_nl "major_collections:      %d" st.major_collections;
+  print_nl "compactions:            %d" st.compactions;
+  print_nl "forced_major_collections: %d" st.forced_major_collections;
+  print_nl "";
   let l1 = String.length (Printf.sprintf "%.0f" st.minor_words) in
-  print "minor_words:    %*.0f" l1 st.minor_words;
-  print "promoted_words: %*.0f" l1 st.promoted_words;
-  print "major_words:    %*.0f" l1 st.major_words;
-  print "";
+  print_nl "minor_words:    %*.0f" l1 st.minor_words;
+  print_nl "promoted_words: %*.0f" l1 st.promoted_words;
+  print_nl "major_words:    %*.0f" l1 st.major_words;
+  print_nl "";
   let l2 = String.length (Printf.sprintf "%d" st.top_heap_words) in
-  print "top_heap_words: %*d" l2 st.top_heap_words;
-  print "heap_words:     %*d" l2 st.heap_words;
-  print "live_words:     %*d" l2 st.live_words;
-  print "free_words:     %*d" l2 st.free_words;
-  print "largest_free:   %*d" l2 st.largest_free;
-  print "fragments:      %*d" l2 st.fragments;
-  print "";
-  print "live_blocks: %d" st.live_blocks;
-  print "free_blocks: %d" st.free_blocks;
-  print "heap_chunks: %d" st.heap_chunks
+  print_nl "top_heap_words: %*d" l2 st.top_heap_words;
+  print_nl "heap_words:     %*d" l2 st.heap_words;
+  print_nl "live_words:     %*d" l2 st.live_words;
+  print_nl "free_words:     %*d" l2 st.free_words;
+  print_nl "largest_free:   %*d" l2 st.largest_free;
+  print_nl "fragments:      %*d" l2 st.fragments;
+  print_nl "";
+  print_nl "live_blocks: %d" st.live_blocks;
+  print_nl "free_blocks: %d" st.free_blocks;
+  print_nl "heap_chunks: %d" st.heap_chunks;
+  flush c
 
 
 let allocated_bytes () =
