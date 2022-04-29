@@ -1085,7 +1085,7 @@ let fundecl fundecl =
     let f = max_frame_size + threshold_offset in
     let offset = Domainstate.(idx_of_field Domain_current_stack) * 8 in
     `  ldr {emit_reg reg_tmp1}, [{emit_reg reg_domain_state_ptr}, #{emit_int offset}]\n`;
-    `  add {emit_reg reg_tmp1}, {emit_reg reg_tmp1}, #{emit_int f}\n`;
+    emit_addimm reg_tmp1 reg_tmp1 f;
     `  cmp sp, {emit_reg reg_tmp1}\n`;
     `  bcc {emit_label overflow}\n`;
     `{emit_label ret}:\n`;
