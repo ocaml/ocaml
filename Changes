@@ -128,9 +128,6 @@ Working version
 - #8878: Add String.hash and String.seeded_hash.
   (Tom Kelly, review by Alain Frisch and Nicolás Ojeda Bär)
 
-- #11192: Better documentation for condition variables.
-  (François Pottier, review by Luc Maranget, Xavier Leroy, and Wiktor Kuchta)
-
 ### Other libraries:
 
 * #9071, #9100, #10935: Reimplement `Thread.exit()` as raising the
@@ -179,6 +176,9 @@ Working version
 - #11093: Add an effect handlers tutorial
   (KC Sivaramakrishnan, review by François Pottier, Gabriel Scherer, François
   Bobot and Wiktor Kuchta)
+
+- #11192: Better documentation for condition variables.
+  (François Pottier, review by Luc Maranget, Xavier Leroy, and Wiktor Kuchta)
 
 ### Compiler user-interface and warnings:
 
