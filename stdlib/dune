@@ -22,7 +22,11 @@
  (flags (:standard -w -9 -nolabels))
  (preprocess
    (per_module
-     ((action (run awk -f %{dep:expand_module_aliases.awk} %{input-file}))
+    ((action
+      (progn
+       (run sed -i s/%atomic_load/%identity/ %{input-file})
+       (run sed -i s/%atomic_cas/%obj_set_field/ %{input-file})
+       (run awk -f %{dep:expand_module_aliases.awk} %{input-file})))
       stdlib)
      ;; AWFUL HACKS: remove once 5.0 is released
      ;; (this is needed because we're building with a compiler which doesn't
@@ -33,7 +37,7 @@
           (run sed -i s/%atomic_load/%identity/ %{input-file})
           (run sed -i s/%atomic_cas/%obj_set_field/ %{input-file})
           (run sed s/%atomic_[a-z_]*/%addint/ %{input-file})))
-      camlinternalAtomic)
+      atomic)
      ((action (run sed s/%dls_get/%identity/ %{input-file}))
       domain)
      ((action
