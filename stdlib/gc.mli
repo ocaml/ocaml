@@ -428,7 +428,10 @@ external eventlog_resume : unit -> unit = "caml_eventlog_resume"
    and started with the environment variable OCAML_EVENTLOG_ENABLED.
    This call can be used after calling [eventlog_pause], or if the program
    was started with OCAML_EVENTLOG_ENABLED=p. (which pauses the collection of
-   traces before the first event.) *)
+   traces before the first event.)
+
+   @since 5.0
+  *)
 
 
 (** [Memprof] is a sampling engine for allocated memory words. Every
