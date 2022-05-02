@@ -103,34 +103,6 @@ let is_uident s =
   | 'A'..'Z' -> true
   | _ -> false
 
-type typath =
-  | Regular of t
-  | Ext of t
-  | Cstr of t * string
-
-let typath_of_path = function
-  | Pident id as p when is_uident (Ident.name id) -> Ext p
-  | Pdot(ty_path, s) as p when is_uident s ->
-      if is_uident (last ty_path) then Ext p
-      else Cstr (ty_path, s)
-  | p -> Regular p
-
-let path_of_typath = function
-  | Cstr (ty_path, s)
-    -> Pdot(ty_path, s)
-  | Ext p
-  | Regular p -> p
-
-let map_typath f = function
-  | Regular p -> Regular (f p)
-  | Ext p -> Ext (f p)
-  | Cstr (p, s) -> Cstr (f p, s)
-
-let is_constructor_typath p =
-  match typath_of_path p with
-  | Regular _ -> false
-  | _ -> true
-
 module T = struct
   type nonrec t = t
   let compare = compare

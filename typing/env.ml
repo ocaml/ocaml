@@ -132,6 +132,7 @@ let used_labels : label_usage usage_tbl ref =
 
 (** Map indexed by the name of module components. *)
 module NameMap = String.Map
+module TyNameMap = Map.Make(Path.TyPath.Order(String))
 
 type value_unbound_reason =
   | Val_unbound_instance_variable
@@ -324,7 +325,7 @@ module IdTbl =
               its local names to produce a valid path in the current
               environment. *)
 
-          components: 'b NameMap.t;
+          components: 'b TyNameMap.t;
           (** Components from the opened module. *)
 
           using: (string -> ('a * 'a) option -> unit) option;

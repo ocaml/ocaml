@@ -18,6 +18,26 @@ open Local_store
 let lowest_scope  = 0
 let highest_scope = 100000000
 
+(* type part = *)
+(*   | Regular *)
+(*   | ExtCstr *)
+(*   | Row *)
+(*   | Obj *)
+(*   | Cstr of string *)
+
+(* let compare_part p1 p2 = *)
+(*   if p1 == p2 then 0 else *)
+(*     match (p1, p2) with *)
+(*       (Cstr s1, Cstr s2) -> String.compare s1 s2 *)
+(*     | (Regular, _) -> -1 *)
+(*     | (_, Regular) -> 1 *)
+(*     | (ExtCstr, _) -> -1 *)
+(*     | (_, ExtCstr) -> 1 *)
+(*     | (Row, _) -> -1 *)
+(*     | (_, Row) -> 1 *)
+(*     | (Obj, _) -> -1 *)
+(*     | (_, Obj) -> 1 *)
+
 type t =
   | Local of { name: string; stamp: int }
   | Scoped of { name: string; stamp: int; scope: int }
@@ -151,6 +171,45 @@ let print ~with_scope ppf =
 let print_with_scope ppf id = print ~with_scope:true ppf id
 
 let print ppf id = print ~with_scope:false ppf id
+
+module TyPath = struct
+  type 'a t =
+    | Regular of 'a
+    | Ext of 'a
+    | Cstr of 'a * string
+    | Row of 'a
+    | Obj of 'a
+
+  (* let typath_of_path = function *)
+  (*   | Pident id as p when is_uident (Ident.name id) -> Ext p *)
+  (*   | Pdot(ty_path, s) as p when is_uident s -> *)
+  (*       if is_uident (last ty_path) then Ext p *)
+  (*       else Cstr (ty_path, s) *)
+  (*   | p -> Regular p *)
+
+  (* let path_of_typath = function *)
+  (*   | Cstr (ty_path, s) *)
+  (*     -> Pdot(ty_path, s) *)
+  (*   | Ext p *)
+  (*   | Regular p -> p *)
+
+  let map_typath f = function
+    | Regular p -> Regular (f p)
+    | Ext p -> Ext (f p)
+    | Row p -> Row (f p)
+    | Obj p -> Obj (f p)
+    | Cstr (p, s) -> Cstr (f p, s)
+
+  let is_constructor_typath = function
+    | Regular _ -> false
+    | _ -> true
+
+  module Order(M: Set.OrderedType) =
+  struct
+    type nonrec t = M.t t
+    let compare                 (* Cf. Path.compare *)
+  end
+end
 
 (* For the documentation of ['a Ident.tbl], see ident.mli.
 
