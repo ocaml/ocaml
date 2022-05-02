@@ -18,6 +18,8 @@
 type t =
     Pident of Ident.t
   | Pdot of t * string
+  | Pcstr_ty of t * string
+  | Pext_ty of t
   | Papply of t * t
 
 val same: t -> t -> bool
@@ -37,15 +39,6 @@ val heads: t -> Ident.t list
 
 val last: t -> string
 
-val is_uident: string -> bool
-
-type typath =
-  | Regular of t
-  | Ext of t * string
-  | LocalExt of Ident.t
-  | Cstr of t * string
-
-val constructor_typath: t -> typath
 val is_constructor_typath: t -> bool
 
 module Map : Map.S with type key = t

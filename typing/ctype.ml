@@ -193,12 +193,15 @@ let restore_global_level gl =
   global_level := gl
 
 (**** Whether a path points to an object type (with hidden row variable) ****)
+let is_object_type_name name =
+  name.[0] = '#'
+
 let is_object_type path =
-  let name =
-    match path with Path.Pident id -> Ident.name id
-    | Path.Pdot(_, s) -> s
-    | Path.Papply _ -> assert false
-  in name.[0] = '#'
+  match path with
+  | Path.Pident id -> is_object_type_name (Ident.name id)
+  | Path.Pdot(_, s) -> is_object_type_name s
+  | Path.Pcstr_ty _ | Path.Pext_ty _ -> false
+  | Path.Papply _ -> assert false
 
 (**** Control tracing of GADT instances *)
 
@@ -275,8 +278,9 @@ let set_mode_pattern ~generate ~injective ~allow_recursive f =
 
 (*** Checks for type definitions ***)
 
-let in_current_module = function
+let rec in_current_module = function
   | Path.Pident _ -> true
+  | Path.Pcstr_ty(p, _) | Path.Pext_ty p -> in_current_module p
   | Path.Pdot _ | Path.Papply _ -> false
 
 let in_pervasives p =

@@ -50,7 +50,8 @@ let fmt_modname f = function
 let rec fmt_path_aux f x =
   match x with
   | Path.Pident (s) -> fprintf f "%a" fmt_ident s
-  | Path.Pdot (y, s) -> fprintf f "%a.%s" fmt_path_aux y s
+  | Path.Pdot (y, s) | Path.Pcstr_ty (y, s) -> fprintf f "%a.%s" fmt_path_aux y s
+  | Path.Pext_ty y -> fmt_path_aux f y
   | Path.Papply (y, z) ->
       fprintf f "%a(%a)" fmt_path_aux y fmt_path_aux z
 
