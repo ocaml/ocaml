@@ -102,23 +102,23 @@ external finalise_last : (unit -> unit) -> 'a -> unit =
 external finalise_release : unit -> unit = "caml_final_release"
 
 
-type alarm = bool ref
+type alarm = bool Atomic.t
 type alarm_rec = {active : alarm; f : unit -> unit}
 
 let rec call_alarm arec =
-  if !(arec.active) then begin
+  if Atomic.get arec.active then begin
     finalise call_alarm arec;
     arec.f ();
   end
 
 
 let create_alarm f =
-  let arec = { active = ref true; f = f } in
+  let arec = { active = Atomic.make true; f = f } in
   finalise call_alarm arec;
   arec.active
 
 
-let delete_alarm a = a := false
+let delete_alarm a = Atomic.set a false
 
 module Memprof =
   struct
