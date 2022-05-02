@@ -249,7 +249,7 @@ let classify_expression : Typedtree.expression -> sd =
             *)
             Dynamic
         end
-    | Path.Pdot _ | Path.Papply _ ->
+    | Path.Pdot _ | Path.Pcstr_ty _ | Path.Pext_ty _ | Path.Papply _ ->
         (* local modules could have such paths to local definitions;
             classify_expression could be extend to compute module
             shapes more precisely *)
@@ -909,6 +909,7 @@ and path : Path.t -> term_judg =
           path f << Dereference;
           path p << Dereference;
         ]
+    | Path.Pcstr_ty _ | Path.Pext_ty _ -> assert false
 
 (* G |- struct ... end : m *)
 and structure : Typedtree.structure -> term_judg =

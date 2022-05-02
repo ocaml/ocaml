@@ -209,6 +209,10 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
             | exception Not_found -> false
           then Oide_ident name
           else Oide_dot (Printtyp.tree_of_path p, Out_name.print name)
+      | Pcstr_ty _ | Pext_ty _ ->
+          (* These can only appear directly inside of the associated
+             constructor so we can just drop the prefix *)
+          Oide_ident name
       | Papply _ ->
           Printtyp.tree_of_path ty_path
 
