@@ -754,7 +754,7 @@ asmcomp/scheduling.ml: asmcomp/$(ARCH)/scheduling.ml
 cvt_emit := tools/cvt_emit$(EXE)
 
 asmcomp/emit.ml: asmcomp/$(ARCH)/emit.mlp $(cvt_emit)
-	echo \# 1 \"$(ARCH)/emit.mlp\" > $@
+	echo \# 1 \"asmcomp/$(ARCH)/emit.mlp\" > $@
 	$(OCAMLRUN) $(cvt_emit) < $< >> $@ \
 	|| { rm -f $@; exit 2; }
 
