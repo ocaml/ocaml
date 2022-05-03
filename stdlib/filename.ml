@@ -334,12 +334,13 @@ let temp_file_name temp_dir prefix suffix =
   let rnd = (Random.State.bits random_state) land 0xFFFFFF in
   concat temp_dir (Printf.sprintf "%s%06x%s" prefix rnd suffix)
 
-let current_temp_dir_name = ref temp_dir_name
+let current_temp_dir_name =
+  Domain.DLS.new_key ~split_from_parent:Fun.id (fun () -> temp_dir_name)
 
-let set_temp_dir_name s = current_temp_dir_name := s
-let get_temp_dir_name () = !current_temp_dir_name
+let set_temp_dir_name s = Domain.DLS.set current_temp_dir_name s
+let get_temp_dir_name () = Domain.DLS.get current_temp_dir_name
 
-let temp_file ?(temp_dir = !current_temp_dir_name) prefix suffix =
+let temp_file ?(temp_dir = Domain.DLS.get current_temp_dir_name) prefix suffix =
   let rec try_name counter =
     let name = temp_file_name temp_dir prefix suffix in
     try
@@ -350,7 +351,8 @@ let temp_file ?(temp_dir = !current_temp_dir_name) prefix suffix =
   in try_name 0
 
 let open_temp_file ?(mode = [Open_text]) ?(perms = 0o600)
-                   ?(temp_dir = !current_temp_dir_name) prefix suffix =
+    ?(temp_dir = Domain.DLS.get current_temp_dir_name)
+    prefix suffix =
   let rec try_name counter =
     let name = temp_file_name temp_dir prefix suffix in
     try

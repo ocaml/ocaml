@@ -172,6 +172,8 @@ val get_temp_dir_name : unit -> string
 val set_temp_dir_name : string -> unit
 (** Change the temporary directory returned by {!Filename.get_temp_dir_name}
     and used by {!Filename.temp_file} and {!Filename.open_temp_file}.
+    The temporary directory is a domain-local value which is inherited
+    by child domains.
     @since 4.00.0
 *)
 

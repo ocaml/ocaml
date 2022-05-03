@@ -186,7 +186,7 @@ val randomize : unit -> unit
     It is recommended that applications or Web frameworks that need to
     protect themselves against the denial-of-service attack described
     in {!create} call [Hashtbl.randomize()] at initialization
-    time.
+    time before any domains are created.
 
     Note that once [Hashtbl.randomize()] was called, there is no way
     to revert to the non-randomized default behavior of {!create}.
