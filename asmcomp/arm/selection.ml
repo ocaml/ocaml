@@ -54,7 +54,6 @@ exception Use_default
 let r1 = phys_reg 1
 let r6 = phys_reg 6
 let r7 = phys_reg 7
-let r12 = phys_reg 8
 
 let pseudoregs_for_operation op arg res =
   match op with
@@ -189,7 +188,7 @@ method select_shift_arith op dbg arithop arithrevop args =
       end
 
 method private iextcall func ty_res ty_args =
-  Iextcall { func; ty_res; ty_args; alloc = false; }
+  Iextcall { func; ty_res; ty_args; alloc = false; stack_ofs = 0 }
 
 method! select_operation op args dbg =
   match (op, args) with

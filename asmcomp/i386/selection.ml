@@ -134,7 +134,7 @@ let pseudoregs_for_operation op arg res =
   (* For floating-point operations and floating-point loads,
      the result is always left at the top of the floating-point stack *)
   | Iconst_float _ | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
-  | Ifloatofint | Iload((Single | Double ), _, _)
+  | Ifloatofint | Iload { memory_chunk = ( Single | Double ); _ }
   | Ispecific(Isubfrev | Idivfrev | Ifloatarithmem _ | Ifloatspecial _) ->
       (arg, [| tos |], false)           (* don't move it immediately *)
   (* For storing a byte, the argument must be in eax...edx.
@@ -250,13 +250,13 @@ method! select_operation op args dbg =
 
 method select_floatarith regular_op reversed_op mem_op mem_rev_op args =
   match args with
-    [arg1; Cop(Cload (chunk, _), [loc2], _)] ->
-      let (addr, arg2) = self#select_addressing chunk loc2 in
-      (Ispecific(Ifloatarithmem(chunk_double chunk, mem_op, addr)),
+    [arg1; Cop(Cload { memory_chunk; _ }, [loc2], _)] ->
+      let (addr, arg2) = self#select_addressing memory_chunk loc2 in
+      (Ispecific(Ifloatarithmem(chunk_double memory_chunk, mem_op, addr)),
                  [arg1; arg2])
-  | [Cop(Cload (chunk, _), [loc1], _); arg2] ->
-      let (addr, arg1) = self#select_addressing chunk loc1 in
-      (Ispecific(Ifloatarithmem(chunk_double chunk, mem_rev_op, addr)),
+  | [Cop(Cload { memory_chunk; _ }, [loc1], _); arg2] ->
+      let (addr, arg1) = self#select_addressing memory_chunk loc1 in
+      (Ispecific(Ifloatarithmem(chunk_double memory_chunk, mem_rev_op, addr)),
                  [arg2; arg1])
   | [arg1; arg2] ->
       (* Evaluate bigger subexpression first to minimize stack usage.
@@ -290,10 +290,10 @@ method select_push exp =
     Cconst_int (n, _) -> (Ispecific(Ipush_int(Nativeint.of_int n)), Ctuple [])
   | Cconst_natint (n, _) -> (Ispecific(Ipush_int n), Ctuple [])
   | Cconst_symbol (s, _) -> (Ispecific(Ipush_symbol s), Ctuple [])
-  | Cop(Cload ((Word_int | Word_val as chunk), _), [loc], _) ->
+  | Cop(Cload { memory_chunk = (Word_int | Word_val as chunk); _ }, [loc], _) ->
       let (addr, arg) = self#select_addressing chunk loc in
       (Ispecific(Ipush_load addr), arg)
-  | Cop(Cload (Double, _), [loc], _) ->
+  | Cop(Cload { memory_chunk = Double; _ }, [loc], _) ->
       let (addr, arg) = self#select_addressing Double loc in
       (Ispecific(Ipush_load_float addr), arg)
   | _ -> (Ispecific(Ipush), exp)

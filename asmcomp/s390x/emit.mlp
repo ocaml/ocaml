@@ -363,9 +363,9 @@ let emit_instr env i =
         emit_stack_adjust n;
         env.stack_offset <- env.stack_offset + n
 
-     | Lop(Iload(chunk, addr, _mut)) ->
+     | Lop(Iload { memory_chunk; addressing_mode; _ }) ->
         let loadinstr =
-          match chunk with
+          match memory_chunk with
             Byte_unsigned -> "llgc"
           | Byte_signed -> "lgb"
           | Sixteen_unsigned -> "llgh"
@@ -375,8 +375,8 @@ let emit_instr env i =
           | Word_int | Word_val -> "lg"
           | Single -> "ley"
           | Double -> "ldy" in
-        emit_load_store loadinstr addr i.arg 0 i.res.(0);
-        if chunk = Single then
+        emit_load_store loadinstr addressing_mode i.arg 0 i.res.(0);
+        if memory_chunk = Single then
           `	ldebr	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
 
     | Lop(Istore(Single, addr, _)) ->
@@ -539,6 +539,9 @@ let emit_instr env i =
         assert (i.arg.(2).loc = i.res.(0).loc);
         let instr = name_for_specific sop in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
+    | Lop (Idls_get) ->
+        (* Here to maintain build *)
+        assert false
     | Lreloadretaddr ->
         let n = frame_size env in
         `	lg	%r14, {emit_int(n - size_addr)}(%r15)\n`

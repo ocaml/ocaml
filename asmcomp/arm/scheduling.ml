@@ -30,7 +30,7 @@ method oper_latency = function
   (* Loads have a latency of two cycles in general *)
     Iconst_symbol _
   | Iconst_float _
-  | Iload(_, _, _)
+  | Iload _
   | Ireload
   | Ifloatofint       (* mcr/mrc count as memory access *)
   | Iintoffloat -> 2

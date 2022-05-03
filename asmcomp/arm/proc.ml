@@ -313,7 +313,7 @@ let destroyed_at_oper = function
     when !arch >= ARMv8 && !thumb ->
       [| phys_reg 3 |]  (* r3 destroyed *)
   | Iop(Iintoffloat | Ifloatofint
-  | Iload(Single, _, _) | Istore(Single, _, _)) ->
+  | Iload { memory_chunk = Single; _ } | Istore(Single, _, _)) ->
       [| phys_reg 107 |]            (* d7 (s14-s15) destroyed *)
   | _ -> [||]
 
@@ -337,7 +337,7 @@ let max_register_pressure = function
   | Ialloc _ -> if abi = EABI then [| 7; 0; 0 |] else [| 7; 8; 8 |]
   | Iconst_symbol _ when !Clflags.pic_code -> [| 7; 16; 32 |]
   | Iintoffloat | Ifloatofint
-  | Iload(Single, _, _) | Istore(Single, _, _) -> [| 9; 15; 31 |]
+  | Iload { memory_chunk = Single; _ } | Istore(Single, _, _) -> [| 9; 15; 31 |]
   | Iintop Imulh when !arch < ARMv6 -> [| 8; 16; 32 |]
   | _ -> [| 9; 16; 32 |]
 

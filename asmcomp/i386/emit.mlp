@@ -548,23 +548,23 @@ let emit_instr env fallthrough i =
       else I.sub (int n) esp;
       cfi_adjust_cfa_offset n;
       env.stack_offset <- env.stack_offset + n
-  | Lop(Iload(chunk, addr, _mut)) ->
+  | Lop(Iload { memory_chunk; addressing_mode; _ }) ->
       let dest = i.res.(0) in
-      begin match chunk with
+      begin match memory_chunk with
       | Word_int | Word_val | Thirtytwo_signed | Thirtytwo_unsigned ->
-          I.mov (addressing addr DWORD i 0) (reg dest)
+          I.mov (addressing addressing_mode DWORD i 0) (reg dest)
       | Byte_unsigned ->
-          I.movzx (addressing addr BYTE i 0) (reg dest)
+          I.movzx (addressing addressing_mode BYTE i 0) (reg dest)
       | Byte_signed ->
-          I.movsx (addressing addr BYTE i 0) (reg dest)
+          I.movsx (addressing addressing_mode BYTE i 0) (reg dest)
       | Sixteen_unsigned ->
-          I.movzx (addressing addr WORD i 0) (reg dest)
+          I.movzx (addressing addressing_mode WORD i 0) (reg dest)
       | Sixteen_signed ->
-          I.movsx (addressing addr WORD i 0) (reg dest)
+          I.movsx (addressing addressing_mode WORD i 0) (reg dest)
       | Single ->
-          I.fld (addressing addr REAL4 i 0)
+          I.fld (addressing addressing_mode REAL4 i 0)
       | Double ->
-          I.fld (addressing addr REAL8 i 0)
+          I.fld (addressing addressing_mode REAL8 i 0)
       end
   | Lop(Istore(chunk, addr, _)) ->
       begin match chunk with
@@ -783,6 +783,9 @@ let emit_instr env fallthrough i =
       if Array.length i.arg = 2 && is_tos i.arg.(1) then
         I.fxch st1;
       emit_floatspecial s
+  | Lop (Idls_get) ->
+      (* Here to maintain build *)
+      assert false
   | Lreloadretaddr ->
       ()
   | Lreturn ->
@@ -855,14 +858,14 @@ let emit_instr env fallthrough i =
       if trap_frame_size > 8 then
         I.sub (int (trap_frame_size - 8)) esp;
       load_domain_state edx;
-      I.push (domain_field Domain_exception_pointer RDX);
+      I.push (domain_field Domain_exn_handler RDX);
       cfi_adjust_cfa_offset trap_frame_size;
-      I.mov esp (domain_field Domain_exception_pointer RDX);
+      I.mov esp (domain_field Domain_exn_handler RDX);
       env.stack_offset <- env.stack_offset + trap_frame_size
   | Lpoptrap ->
       I.mov edx (mem32 DWORD 4 RSP);
       load_domain_state edx;
-      I.pop (domain_field Domain_exception_pointer RDX);
+      I.pop (domain_field Domain_exn_handler RDX);
       I.pop edx;
       if trap_frame_size > 8 then
         I.add (int (trap_frame_size - 8)) esp;
@@ -880,8 +883,8 @@ let emit_instr env fallthrough i =
           record_frame env Reg.Set.empty (Dbg_raise i.dbg)
       | Lambda.Raise_notrace ->
           load_domain_state ebx;
-          I.mov (domain_field Domain_exception_pointer RBX) esp;
-          I.pop (domain_field Domain_exception_pointer RBX);
+          I.mov (domain_field Domain_exn_handler RBX) esp;
+          I.pop (domain_field Domain_exn_handler RBX);
           if trap_frame_size > 8 then
             I.add (int (trap_frame_size - 8)) esp;
           I.pop ebx;

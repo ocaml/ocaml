@@ -529,12 +529,12 @@ let emit_instr env i =
         let ninstr = emit_stack_adjustment (-n) in
         env.stack_offset <- env.stack_offset + n;
         ninstr
-    | Lop(Iload(Single, addr, _mut)) when !fpu >= VFPv2 ->
-        `	flds	s14, {emit_addressing addr i.arg 0}\n`;
+    | Lop(Iload { memory_chunk = Single; addressing_mode ; _ }) when !fpu >= VFPv2 ->
+        `	flds	s14, {emit_addressing addressing_mode i.arg 0}\n`;
         `	fcvtds	{emit_reg i.res.(0)}, s14\n`; 2
-    | Lop(Iload(Double, addr, _mut)) when !fpu = Soft ->
+    | Lop(Iload { memory_chunk = Double; addressing_mode; _ }) when !fpu = Soft ->
         (* Use LDM or LDRD if possible *)
-        begin match i.res.(0), i.res.(1), addr with
+        begin match i.res.(0), i.res.(1), addressing_mode with
           {loc = Reg rt}, {loc = Reg rt2}, Iindexed 0
           when rt < rt2 ->
             `	ldm	{emit_reg i.arg.(0)}, \{{emit_reg i.res.(0)}, {emit_reg i.res.(1)}}\n`; 1
@@ -542,26 +542,26 @@ let emit_instr env i =
           when !arch >= ARMv5TE && rt mod 2 == 0 && rt2 = rt + 1 ->
             `	ldrd	{emit_reg i.res.(0)}, {emit_reg i.res.(1)}, {emit_addressing addr i.arg 0}\n`; 1
         | _ ->
-            let addr' = offset_addressing addr 4 in
+            let addressing_mode' = offset_addressing addressing_mode 4 in
             if i.res.(0).loc <> i.arg.(0).loc then begin
-              `	ldr	{emit_reg i.res.(0)}, {emit_addressing addr i.arg 0}\n`;
-              `	ldr	{emit_reg i.res.(1)}, {emit_addressing addr' i.arg 0}\n`
+              `	ldr	{emit_reg i.res.(0)}, {emit_addressing addressing_mode i.arg 0}\n`;
+              `	ldr	{emit_reg i.res.(1)}, {emit_addressing addressing_mode' i.arg 0}\n`
             end else begin
-              `	ldr	{emit_reg i.res.(1)}, {emit_addressing addr' i.arg 0}\n`;
-              `	ldr	{emit_reg i.res.(0)}, {emit_addressing addr i.arg 0}\n`
+              `	ldr	{emit_reg i.res.(1)}, {emit_addressing addressing_mode' i.arg 0}\n`;
+              `	ldr	{emit_reg i.res.(0)}, {emit_addressing addressing_mode i.arg 0}\n`
             end; 2
         end
-    | Lop(Iload(size, addr, _mut)) ->
+    | Lop(Iload { memory_chunk; addressing_mode; _ }) ->
         let r = i.res.(0) in
         let instr =
-          match size with
+          match memory_chunk with
             Byte_unsigned -> "ldrb"
           | Byte_signed -> "ldrsb"
           | Sixteen_unsigned -> "ldrh"
           | Sixteen_signed -> "ldrsh"
           | Double -> "fldd"
           | _ (* 32-bit quantities *) -> "ldr" in
-        `	{emit_string instr}	{emit_reg r}, {emit_addressing addr i.arg 0}\n`; 1
+        `	{emit_string instr}	{emit_reg r}, {emit_addressing addressing_mode i.arg 0}\n`; 1
     | Lop(Istore(Single, addr, _)) when !fpu >= VFPv2 ->
         `	fcvtsd	s14, {emit_reg i.arg.(0)}\n`;
         `	fsts	s14, {emit_addressing addr i.arg 1}\n`; 2
@@ -729,6 +729,9 @@ let emit_instr env i =
         | _ ->
             assert false
         end
+    | Lop (Idls_get) ->
+        (* Here to maintain build *)
+        assert false
     | Lreloadretaddr ->
         let n = frame_size env in
         `	ldr	lr, [sp, #{emit_int(n-4)}]\n`; 1
