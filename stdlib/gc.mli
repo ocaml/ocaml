@@ -433,7 +433,7 @@ external eventlog_resume : unit -> unit = "caml_eventlog_resume"
    was started with OCAML_EVENTLOG_ENABLED=p. (which pauses the collection of
    traces before the first event.)
 
-   @since 5.0
+   @since 4.11
   *)
 
 
