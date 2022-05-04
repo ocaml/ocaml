@@ -740,42 +740,17 @@ let parse s () =
   Format.printf "%d@." r
 
 let () =
-  let dl = List.map Domain.spawn [parse "1+6\n"; parse "7+8\n"; parse "9+17\n"] in
-  List.iter Domain.join dl
-\end{verbatim}
-
-
-It is also safe to suspend and resume a parser on the same domain if no other parsers run in the interim on this domain.
-
-\begin{verbatim}
-let parse s =
-  let lexbuf = Lexing.from_string s in
-  let r = Parser.main Lexer.token lexbuf in
-  Format.printf "%d@." r
-
-let rec print s n =
-  if n = 0 then ()
-  else begin
-    Format.printf "print(%s) %d@." s n;
-    Thread.yield ();
-    print s (n-1)
-  end
-
-let on_domain s () =
-  let t1 = Thread.create (print s) 10 in
-  let t2 = Thread.create parse (s^"\n") in
-  Thread.join t1; Thread.join t2
-
-let () =
   let dl =
-    List.map (fun s ->Domain.spawn (on_domain s))
-      ["1+6"; "7+8"; "9+17"]
+    List.map Domain.spawn [parse "1+6\n"; parse "7+8\n"; parse "9+17\n"]
   in
   List.iter Domain.join dl
 \end{verbatim}
+It is also safe to suspend and resume a parser on the same domain if no other
+parsers run in the interim on this domain.
 
-
-It is not safe to migrate a parser execution to a different domain or to interleave the execution of two or more parsers on the same domain.
+It is \textit{not} safe to migrate a parser execution to a different domain
+or to interleave the execution of two or more parsers on the same domain, using
+for instance threads from the "threads" library.
 Interleaved execution should be forbidden with locks before calling the parsers:
 \begin{verbatim}
 let with_lock m f =
