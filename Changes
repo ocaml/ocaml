@@ -177,6 +177,9 @@ Working version
   (KC Sivaramakrishnan, review by François Pottier, Gabriel Scherer, François
   Bobot and Wiktor Kuchta)
 
+- #11192: Better documentation for condition variables.
+  (François Pottier, review by Luc Maranget, Xavier Leroy, and Wiktor Kuchta)
+
 ### Compiler user-interface and warnings:
 
 - #9140, #11131: New command-line flag -nocwd to not include implicit
