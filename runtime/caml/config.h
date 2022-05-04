@@ -212,7 +212,8 @@ typedef uint64_t uintnat;
 #define Stack_ctx_words 6
 
 /* Default maximum size of the stack (words). */
-#define Max_stack_def (1024 * 1024)
+/* (1 Gib for 64-bit platforms, 512 Mib for 32-bit platforms) */
+#define Max_stack_def (128 * 1024 * 1024)
 
 
 /* Maximum size of a block allocated in the young generation (words). */
