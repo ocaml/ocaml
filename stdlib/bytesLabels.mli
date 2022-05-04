@@ -739,6 +739,72 @@ val set_int64_le : bytes -> int -> int64 -> unit
 *)
 
 
+(** {1:bytes_concurrency Byte sequences and concurrency safety}
+
+    Care must be taken when concurrently accessing byte sequences from
+    multiple domains: accessing a byte sequence will never crash a program,
+    but unsynchronized accesses might yield surprising
+    (non-sequentially-consistent) results.
+
+    {2:byte_atomicity Atomicity}
+
+    Every byte sequence operation that accesses more than one byte is not
+    atomic. This includes iteration and scanning.
+
+    For example, consider the following program:
+{[let size = 100_000_000
+let b = Bytes.make size  ' '
+let update b f ()  =
+  Bytes.iteri (fun i x -> Bytes.set b i (Char.chr (f (Char.code x)))) b
+let d1 = Domain.spawn (update b (fun x -> x + 1))
+let d2 = Domain.spawn (update b (fun x -> 2 * x + 1))
+let () = Domain.join d1; Domain.join d2
+]}
+    the bytes sequence [b] may contain a non-deterministic mixture
+    of ['!'], ['A'], ['B'], and ['C'] values.
+
+
+    After executing this code, each byte of the sequence [b] is either ['!'],
+    ['A'], ['B'], or ['C']. If atomicity is required, then the user must
+    implement their own synchronization (for example, using {!Mutex.t}).
+
+    {2:bytes_data_race Data races}
+
+    If two domains only access disjoint parts of a byte sequence, then the
+    observed behaviour is the equivalent to some sequential interleaving of the
+    operations from the two domains.
+
+    A data race is said to occur when two domains access the same byte
+    without synchronization and at least one of the accesses is a write.
+    In the absence of data races, the observed behaviour is equivalent to some
+    sequential interleaving of the operations from different domains.
+
+    Whenever possible, data races should be avoided by using synchronization
+    to mediate the accesses to the elements of the sequence.
+
+    Indeed, in the presence of data races, programs will not crash but the
+    observed behaviour may not be equivalent to any sequential interleaving of
+    operations from different domains. Nevertheless, even in the presence of
+    data races, a read operation will return the value of some prior write to
+    that location.
+
+    {2:bytes_mixed_access Mixed-size accesses }
+
+    Another subtle point is that if a data race involves mixed-size writes and
+    reads to the same location, the order in which those writes and reads
+    are observed by domains is not specified.
+    For instance, the following code write sequentially a 32-bit integer and a
+    [char] to the same index
+{[
+let b = Bytes.make 10 '\000'
+let d1 = Domain.spawn (fun () -> Bytes.set_int32_ne b 0 100; b.[0] <- 'd' )
+]}
+
+    In this situation, a domain that observes the write of 'd' to b.[0] is not
+    guaranteed to also observe the write to indices [1], [2], or [3].
+
+*)
+
 (**/**)
 
 (* The following is for system use only. Do not call directly. *)

@@ -320,6 +320,78 @@ val of_seq : 'a Seq.t -> 'a array
 (** Create an array from the generator
     @since 4.07 *)
 
+(** {1:array_concurrency Arrays and concurrency safety}
+
+    Care must be taken when concurrently accessing arrays from multiple
+    domains: accessing an array will never crash a program, but unsynchronized
+    accesses might yield surprising (non-sequentially-consistent) results.
+
+    {2:array_atomicity Atomicity}
+
+    Every array operation that accesses more than one array element is not
+    atomic. This includes iteration, scanning, sorting, splitting and
+    combining arrays.
+
+    For example, consider the following program:
+{[let size = 100_000_000
+let a = Array.make size 1
+let d1 = Domain.spawn (fun () ->
+   Array.iteri (fun i x -> a.(i) <- x + 1) a
+)
+let d2 = Domain.spawn (fun () ->
+  Array.iteri (fun i x -> a.(i) <- 2 * x + 1) a
+)
+let () = Domain.join d1; Domain.join d2
+]}
+
+    After executing this code, each field of the array [a] is either [2], [3],
+    [4] or [5]. If atomicity is required, then the user must implement their own
+    synchronization (for example, using {!Mutex.t}).
+
+    {2:array_data_race Data races}
+
+    If two domains only access disjoint parts of the array, then the
+    observed behaviour is the equivalent to some sequential interleaving of the
+    operations from the two domains.
+
+    A data race is said to occur when two domains access the same array element
+    without synchronization and at least one of the accesses is a write.
+    In the absence of data races, the observed behaviour is equivalent to some
+    sequential interleaving of the operations from different domains.
+
+    Whenever possible, data races should be avoided by using synchronization to
+    mediate the accesses to the array elements.
+
+    Indeed, in the presence of data races, programs will not crash but the
+    observed behaviour may not be equivalent to any sequential interleaving of
+    operations from different domains. Nevertheless, even in the presence of
+    data races, a read operation will return the value of some prior write to
+    that location (with a few exceptions for float arrays).
+
+    {2:array_data_race_exceptions Float arrays}
+
+    Float arrays have two supplementary caveats in the presence of data races.
+
+    First, the blit operation might copy an array byte-by-byte. Data races
+    between such a blit operation and another operation might produce surprising
+    values due to tearing: partial writes interleaved with other operations can
+    create float values that would not exist with a sequential execution.
+
+    For instance, at the end of
+ {[let zeros = Array.make size 0.
+let max_floats = Array.make size Float.max_float
+let res = Array.copy zeros
+let d1 = Domain.spawn (fun () -> Array.blit zeros 0 res 0 size)
+let d2 = Domain.spawn (fun () -> Array.blit max_floats 0 res 0 size)
+let () = Domain.join d1; Domain.join d2
+]}
+    the [res] array might contain values that are neither [0.] nor [max_float].
+
+    Second, on 32-bit architectures, getting or setting a field involves two
+    separate memory accesses. In the presence of data races, the user may
+    observe tearing on any operation.
+*)
+
 (**/**)
 
 (** {1 Undocumented functions} *)
