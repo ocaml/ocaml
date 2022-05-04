@@ -145,9 +145,15 @@ ocamlcmt.cmx : \
     ../utils/clflags.cmx \
     ../typing/annot.cmi
 ocamlcp.cmo : \
+    ocamlcp_common.cmo \
+    ../driver/main_args.cmi
+ocamlcp.cmx : \
+    ocamlcp_common.cmx \
+    ../driver/main_args.cmx
+ocamlcp_common.cmo : \
     ../driver/main_args.cmi \
     ../driver/compenv.cmi
-ocamlcp.cmx : \
+ocamlcp_common.cmx : \
     ../driver/main_args.cmx \
     ../driver/compenv.cmx
 ocamldep.cmo : \
@@ -167,11 +173,11 @@ ocamlmktop.cmx : \
     ../utils/config.cmx \
     ../utils/ccomp.cmx
 ocamloptp.cmo : \
-    ../driver/main_args.cmi \
-    ../driver/compenv.cmi
+    ocamlcp_common.cmo \
+    ../driver/main_args.cmi
 ocamloptp.cmx : \
-    ../driver/main_args.cmx \
-    ../driver/compenv.cmx
+    ocamlcp_common.cmx \
+    ../driver/main_args.cmx
 ocamlprof.cmo : \
     ../utils/warnings.cmi \
     ../parsing/parsetree.cmi \

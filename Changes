@@ -168,6 +168,9 @@ Working version
   "unexpected error".
   (Damien Doligez, review by Sébastien Hinderer)
 
+- #11245: Merge the common code of ocamlcp and ocamloptp into a single module.
+  (David Allsopp, review by Sébastien Hinderer)
+
 ### Manual and documentation:
 
 - #11058: runtime/HACKING.adoc tips on debugging the runtime
