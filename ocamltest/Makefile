@@ -87,7 +87,7 @@ else
 WITH_OCAMLDEBUG := false
 endif
 
-OC_CPPFLAGS += -I$(ROOTDIR)/runtime -DCAML_INTERNALS
+OC_CPPFLAGS += -DCAML_INTERNALS
 
 ifdef UNIX_OR_WIN32
 run_source := run_$(UNIX_OR_WIN32).c

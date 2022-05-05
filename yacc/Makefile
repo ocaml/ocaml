@@ -19,8 +19,6 @@ ROOTDIR = ..
 
 include $(ROOTDIR)/Makefile.common
 
-OC_CPPFLAGS += -I$(ROOTDIR)/runtime
-
 ifeq "$(UNIX_OR_WIN32)" "win32"
 WSTR_OBJ = wstr
 else

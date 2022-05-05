@@ -34,8 +34,6 @@ endif
 OPTCOMPILER=$(ROOTDIR)/ocamlopt
 CAMLOPT=$(OCAMLRUN) $(OPTCOMPILER)
 
-OC_CPPFLAGS += -I$(ROOTDIR)/runtime
-
 include StdlibModules
 
 OBJS=$(addsuffix .cmo,$(STDLIB_MODULES))

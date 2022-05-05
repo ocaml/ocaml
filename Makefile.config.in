@@ -181,7 +181,7 @@ INSTALL_SOURCE_ARTIFACTS=@install_source_artifacts@
 
 OC_CFLAGS=@oc_cflags@
 CFLAGS?=@CFLAGS@
-OC_CPPFLAGS=@oc_cppflags@
+OC_CPPFLAGS=-I$(ROOTDIR)/runtime @oc_cppflags@
 CPPFLAGS?=@CPPFLAGS@
 OCAMLC_CFLAGS=@ocamlc_cflags@
 
