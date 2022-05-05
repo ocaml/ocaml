@@ -196,7 +196,7 @@ static void scan_native_globals(scanning_action f, void* fdata)
   caml_plat_unlock(&roots_mutex);
 
   /* The global roots */
-  for (i = 0; i <= caml_globals_inited && caml_globals[i] != 0; i++) {
+  for (i = 0; caml_globals[i] != 0; i++) {
     for(glob = caml_globals[i]; *glob != 0; glob++) {
       for (j = 0; j < Wosize_val(*glob); j++){
         f(fdata, Field(*glob, j), &Field(*glob, j));
