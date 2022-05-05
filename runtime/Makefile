@@ -164,10 +164,6 @@ OC_CPPFLAGS += -DCAMLDLLIMPORT=
 OC_DEBUG_CPPFLAGS=-DDEBUG
 OC_INSTR_CPPFLAGS=-DCAML_INSTR
 
-# Commands used to build native libraries
-
-LIBS := $(BYTECCLIBS)
-
 # Build, install and clean targets
 
 .PHONY: all
@@ -291,10 +287,10 @@ build_config.h: $(ROOTDIR)/Makefile.config sak$(EXE)
 # Libraries and programs
 
 ocamlrun$(EXE): prims.$(O) libcamlrun.$(A)
-	$(MKEXE) -o $@ $^ $(LIBS)
+	$(MKEXE) -o $@ $^ $(BYTECCLIBS)
 
 ocamlruns$(EXE): prims.$(O) libcamlrun_non_shared.$(A)
-	$(call MKEXE_USING_COMPILER,$@,$^ $(LIBS))
+	$(call MKEXE_USING_COMPILER,$@,$^ $(BYTECCLIBS))
 
 libcamlrun.$(A): $(libcamlrun_OBJECTS)
 	$(call MKLIB,$@, $^)
@@ -303,13 +299,13 @@ libcamlrun_non_shared.$(A): $(libcamlrun_non_shared_OBJECTS)
 	$(call MKLIB,$@, $^)
 
 ocamlrund$(EXE): prims.$(O) libcamlrund.$(A)
-	$(MKEXE) $(MKEXEDEBUGFLAG) -o $@ $^ $(LIBS)
+	$(MKEXE) $(MKEXEDEBUGFLAG) -o $@ $^ $(BYTECCLIBS)
 
 libcamlrund.$(A): $(libcamlrund_OBJECTS)
 	$(call MKLIB,$@, $^)
 
 ocamlruni$(EXE): prims.$(O) libcamlruni.$(A)
-	$(MKEXE) -o $@ $^ $(INSTRUMENTED_RUNTIME_LIBS) $(LIBS)
+	$(MKEXE) -o $@ $^ $(INSTRUMENTED_RUNTIME_LIBS) $(BYTECCLIBS)
 
 libcamlruni.$(A): $(libcamlruni_OBJECTS)
 	$(call MKLIB,$@, $^)
