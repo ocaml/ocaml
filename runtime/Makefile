@@ -172,10 +172,6 @@ OC_NATIVE_CPPFLAGS += -DSYS_$(SYSTEM)
 OC_DEBUG_CPPFLAGS=-DDEBUG
 OC_INSTR_CPPFLAGS=-DCAML_INSTR
 
-ifeq "$(TOOLCHAIN)" "msvc"
-ASMFLAGS=
-endif
-
 ASPPFLAGS = -DSYS_$(SYSTEM) -I$(ROOTDIR)/runtime
 ifeq "$(UNIX_OR_WIN32)" "unix"
 ASPPFLAGS += -DMODEL_$(MODEL)
@@ -446,25 +442,25 @@ domain_state32.inc: caml/domain_state.tbl gen_domain_state32_inc.awk
 	$(AWK) -f ./gen_domain_state32_inc.awk $< > $@
 
 amd64nt.obj: amd64nt.asm domain_state64.inc
-	$(ASM)$@ $(ASMFLAGS) $<
+	$(ASM)$@ $<
 
 i386nt.obj: i386nt.asm domain_state32.inc
-	$(ASM)$@ $(ASMFLAGS) $<
+	$(ASM)$@ $<
 
 amd64nt.d.obj: amd64nt.asm domain_state64.inc
-	$(ASM)$@ $(ASMFLAGS) $(OC_DEBUG_CPPFLAGS) $<
+	$(ASM)$@ $(OC_DEBUG_CPPFLAGS) $<
 
 i386nt.d.obj: i386nt.asm domain_state32.inc
-	$(ASM)$@ $(ASMFLAGS) $(OC_DEBUG_CPPFLAGS) $<
+	$(ASM)$@ $(OC_DEBUG_CPPFLAGS) $<
 
 amd64nt.i.obj: amd64nt.asm domain_state64.inc
-	$(ASM)$@ $(ASMFLAGS) $(OC_INSTR_CPPFLAGS) $<
+	$(ASM)$@ $(OC_INSTR_CPPFLAGS) $<
 
 i386nt.i.obj: i386nt.asm domain_state32.inc
-	$(ASM)$@ $(ASMFLAGS) $(OC_INSTR_CPPFLAGS) $<
+	$(ASM)$@ $(OC_INSTR_CPPFLAGS) $<
 
 %_libasmrunpic.obj: %.asm
-	$(ASM)$@ $(ASMFLAGS) $<
+	$(ASM)$@ $<
 
 # Dependencies
 
