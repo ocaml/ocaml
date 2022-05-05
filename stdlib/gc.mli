@@ -442,7 +442,10 @@ external eventlog_pause : unit -> unit = "caml_eventlog_pause"
    Traces are collected if the program is linked to the instrumented runtime
    and started with the environment variable OCAML_EVENTLOG_ENABLED.
    Events are flushed to disk after pausing, and no new events will be
-   recorded until [eventlog_resume] is called. *)
+   recorded until [eventlog_resume] is called.
+
+   @since 4.11
+  *)
 
 external eventlog_resume : unit -> unit = "caml_eventlog_resume"
 (** [eventlog_resume ()] will resume the collection of traces in the
@@ -451,7 +454,10 @@ external eventlog_resume : unit -> unit = "caml_eventlog_resume"
    and started with the environment variable OCAML_EVENTLOG_ENABLED.
    This call can be used after calling [eventlog_pause], or if the program
    was started with OCAML_EVENTLOG_ENABLED=p. (which pauses the collection of
-   traces before the first event.) *)
+   traces before the first event.)
+
+   @since 4.11
+  *)
 
 
 (** [Memprof] is a sampling engine for allocated memory words. Every
