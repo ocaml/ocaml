@@ -132,6 +132,9 @@ nothing.
 \item["-sort"]
 Sort files according to their dependencies.
 
+\item["-strict"]
+Fail if an input file does not exist.
+
 \item["-version"]
 Print version string and exit.
 

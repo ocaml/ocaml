@@ -38,6 +38,7 @@ let allow_approximation = ref false
 let map_files = ref []
 let module_map = ref String.Map.empty
 let debug = ref false
+let strict = ref false
 
 module Error_occurred : sig
   val set : unit -> unit
@@ -326,7 +327,7 @@ let read_parse_and_extract parse_function extract_function def ast_kind
     end
   with x -> begin
     print_exception x;
-    if not !allow_approximation then begin
+    if !strict || not !allow_approximation then begin
       Error_occurred.set ();
       (String.Set.empty, def)
     end else
@@ -414,7 +415,9 @@ let process_file_as process_fun def source_file =
       ));
   Location.input_name := source_file;
   try
-    if Sys.file_exists source_file then process_fun source_file else def
+    if !strict || Sys.file_exists source_file
+    then process_fun source_file
+    else def
   with x -> report_err x; def
 
 let process_file source_file ~ml_file ~mli_file ~def =
@@ -643,6 +646,8 @@ let run_main argv =
         " (Windows) Preserve any backslash \\ in file paths";
       "-sort", Arg.Set sort_files,
         " Sort files according to their dependencies";
+     "-strict", Arg.Set strict,
+       " Fail if an input file does not exist";
       "-version", Arg.Unit print_version,
         " Print version and exit";
       "-vnum", Arg.Unit print_version_num,

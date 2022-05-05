@@ -349,6 +349,11 @@ Working version
   reduction in size.
   (Xavier Leroy, review by Edwin Török and Gabriel Scherer)
 
+- #11593: ocamldep: add a -strict flag to fail when an input file does not
+  exist.
+  (Etienne Millon, Mark Shinwell, review by Nicolás Ojeda Bär and Sébastien
+  Hinderer)
+
 ### Manual and documentation:
 
 - #9430, #11291: Document the general desugaring rules for binding operators.
