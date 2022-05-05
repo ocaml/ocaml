@@ -15,6 +15,8 @@
 
 /* Run programs with rediretions and timeouts under Unix */
 
+#define CAML_INTERNALS
+
 #include <stdio.h>
 #include <limits.h>
 #include <stdlib.h>

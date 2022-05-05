@@ -26,8 +26,7 @@ ifneq "$(CCOMPTYPE)" "msvc"
 OC_CFLAGS += -g
 endif
 
-OC_CFLAGS += $(SHAREDLIB_CFLAGS) $(EXTRACFLAGS)
-OC_CPPFLAGS += -I$(ROOTDIR)/runtime $(EXTRACPPFLAGS)
+OC_CFLAGS += $(SHAREDLIB_CFLAGS)
 
 # Compilation options
 COMPFLAGS=-absname -w +a-4-9-41-42-44-45-48 -warn-error +A -bin-annot -g \
@@ -44,8 +43,6 @@ MKLIB=$(OCAMLRUN) $(ROOTDIR)/tools/ocamlmklib
 # Variables that can be defined by individual libraries,
 # but have sensible default values:
 COBJS ?=
-EXTRACFLAGS ?=
-EXTRACPPFLAGS ?=
 EXTRACAMLFLAGS ?=
 LINKOPTS ?=
 LDOPTS ?=
