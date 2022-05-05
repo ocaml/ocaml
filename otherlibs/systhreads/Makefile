@@ -24,9 +24,6 @@ endif
 
 OC_CFLAGS += $(SHAREDLIB_CFLAGS) $(PTHREAD_CFLAGS)
 
-NATIVE_CPPFLAGS = \
-  -DNATIVE_CODE -DTARGET_$(ARCH) -DMODEL_$(MODEL) -DSYS_$(SYSTEM)
-
 LIBS = $(STDLIBFLAGS) -I $(ROOTDIR)/otherlibs/unix
 
 CAMLC=$(BEST_OCAMLC) $(LIBS)
@@ -93,7 +90,7 @@ $(LIBNAME).cmxa: $(THREADS_NCOBJS)
 # st_stubs.n.$(O) from the same source file st_stubs.c (it is compiled
 # twice, each time with different options).
 
-st_stubs.n.$(O): OC_CPPFLAGS += $(NATIVE_CPPFLAGS)
+st_stubs.n.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
 
 ifneq "$(COMPUTE_DEPS)" "false"
 st_stubs.%.$(O): st_stubs.c
@@ -158,8 +155,8 @@ ifeq "$(COMPUTE_DEPS)" "true"
 include $(addprefix $(DEPDIR)/, $(DEP_FILES))
 endif
 
-%.n.$(O): OC_CPPFLAGS += $(NATIVE_CPPFLAGS)
-%.n.$(D): OC_CPPFLAGS += $(NATIVE_CPPFLAGS)
+%.n.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
+%.n.$(D): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
 
 define GEN_RULE
 $(DEPDIR)/%.$(1).$(D): %.c | $(DEPDIR)

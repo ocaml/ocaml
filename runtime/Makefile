@@ -161,21 +161,8 @@ endif
 
 OC_CPPFLAGS += -DCAMLDLLIMPORT=
 
-OC_NATIVE_CPPFLAGS = -DNATIVE_CODE -DTARGET_$(ARCH)
-
-ifeq "$(UNIX_OR_WIN32)" "unix"
-OC_NATIVE_CPPFLAGS += -DMODEL_$(MODEL)
-endif
-
-OC_NATIVE_CPPFLAGS += -DSYS_$(SYSTEM)
-
 OC_DEBUG_CPPFLAGS=-DDEBUG
 OC_INSTR_CPPFLAGS=-DCAML_INSTR
-
-ASPPFLAGS = -DSYS_$(SYSTEM) -I$(ROOTDIR)/runtime
-ifeq "$(UNIX_OR_WIN32)" "unix"
-ASPPFLAGS += -DMODEL_$(MODEL)
-endif
 
 # Commands used to build native libraries
 
@@ -424,16 +411,16 @@ ASPP_ERROR = \
           echo "try producing $*.o by hand.";\
           exit 2; }
 %.o: %.S
-	$(ASPP) $(ASPPFLAGS) -o $@ $< || $(ASPP_ERROR)
+	$(ASPP) $(OC_ASPPFLAGS) -o $@ $< || $(ASPP_ERROR)
 
 %.d.o: %.S
-	$(ASPP) $(ASPPFLAGS) $(OC_DEBUG_CPPFLAGS) -o $@ $< || $(ASPP_ERROR)
+	$(ASPP) $(OC_ASPPFLAGS) $(OC_DEBUG_CPPFLAGS) -o $@ $< || $(ASPP_ERROR)
 
 %.i.o: %.S
-	$(ASPP) $(ASPPFLAGS) $(OC_INSTR_CPPFLAGS) -o $@ $< || $(ASPP_ERROR)
+	$(ASPP) $(OC_ASPPFLAGS) $(OC_INSTR_CPPFLAGS) -o $@ $< || $(ASPP_ERROR)
 
 %_libasmrunpic.o: %.S
-	$(ASPP) $(ASPPFLAGS) $(SHAREDLIB_CFLAGS) -o $@ $<
+	$(ASPP) $(OC_ASPPFLAGS) $(SHAREDLIB_CFLAGS) -o $@ $<
 
 domain_state64.inc: caml/domain_state.tbl gen_domain_state64_inc.awk
 	$(AWK) -f ./gen_domain_state64_inc.awk $< > $@

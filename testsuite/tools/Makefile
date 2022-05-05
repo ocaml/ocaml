@@ -19,7 +19,6 @@ ROOTDIR = ../..
 COMPILERLIBSDIR = $(ROOTDIR)/compilerlibs
 
 RUNTIME_VARIANT ?=
-ASPPFLAGS ?=
 
 include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
@@ -89,7 +88,7 @@ asmgen_i386.obj: asmgen_i386nt.asm
 	$(OCAMLOPT) $(COMPFLAGS) -c $<
 
 %.$(O): %.S
-	$(ASPP) $(ASPPFLAGS) -DSYS_$(SYSTEM) -DMODEL_$(MODEL) -o $@ $<
+	$(ASPP) $(OC_ASPPFLAGS) -o $@ $<
 
 .PHONY: clean
 clean:
