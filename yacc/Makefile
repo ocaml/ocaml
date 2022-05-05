@@ -36,7 +36,7 @@ generated_files := ocamlyacc$(EXE) $(ocamlyacc_OBJECTS)
 all: ocamlyacc$(EXE)
 
 ocamlyacc$(EXE): $(ocamlyacc_OBJECTS)
-	$(MKEXE) -o $@ $^ $(EXTRALIBS)
+	$(MKEXE) -o $@ $^
 
 .PHONY: clean
 clean:

@@ -168,10 +168,6 @@ OC_INSTR_CPPFLAGS=-DCAML_INSTR
 
 LIBS := $(BYTECCLIBS)
 
-ifeq "$(UNIX_OR_WIN32)" "win32"
-LIBS += $(EXTRALIBS)
-endif
-
 # Build, install and clean targets
 
 .PHONY: all

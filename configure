@@ -814,7 +814,6 @@ ccomptype
 mkexedebugflag
 mkexe
 fpic
-extralibs
 syslib
 outputobj
 outputexe
@@ -2805,7 +2804,6 @@ SO="so"
 toolchain="cc"
 profinfo=false
 profinfo_width=0
-extralibs=
 instrumented_runtime=true
 force_instrumented_runtime=false
 instrumented_runtime_libs=""
@@ -2872,7 +2870,6 @@ OCAML_VERSION_SHORT=5.0
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
-
 
 
 

@@ -54,7 +54,6 @@ SO="so"
 toolchain="cc"
 profinfo=false
 profinfo_width=0
-extralibs=
 instrumented_runtime=true
 force_instrumented_runtime=false
 instrumented_runtime_libs=""
@@ -102,7 +101,6 @@ AC_SUBST([unix_or_win32])
 AC_SUBST([outputexe])
 AC_SUBST([outputobj])
 AC_SUBST([syslib])
-AC_SUBST([extralibs])
 AC_SUBST([fpic])
 AC_SUBST([mkexe])
 AC_SUBST([mkexedebugflag])
