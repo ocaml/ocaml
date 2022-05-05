@@ -17913,6 +17913,13 @@ else
   afl=false
 fi
 
+# Enable debugging support
+# TODO: add a --disable-debug-info configure option that disables debugging
+# info for both C and OCaml
+if test "$ccomptype" != "msvc"; then :
+  internal_cflags="-g $internal_cflags"
+fi
+
 oc_cflags="$common_cflags $internal_cflags"
 oc_cppflags="$common_cppflags $internal_cppflags"
 ocamlc_cflags="$common_cflags $sharedlib_cflags \$(CFLAGS)"

@@ -155,10 +155,6 @@ libasmrunpic_OBJECTS := $(NATIVE_C_SOURCES:.c=.npic.$(O)) \
 
 # General (non target-specific) assembler and compiler flags
 
-ifneq "$(CCOMPTYPE)" "msvc"
-OC_CFLAGS += -g
-endif
-
 OC_CPPFLAGS += -DCAMLDLLIMPORT=
 
 OC_DEBUG_CPPFLAGS=-DDEBUG

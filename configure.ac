@@ -1974,6 +1974,12 @@ AS_IF([test x"$with_afl" = "xyes"],
   [afl=true],
   [afl=false])
 
+# Enable debugging support
+# TODO: add a --disable-debug-info configure option that disables debugging
+# info for both C and OCaml
+AS_IF([test "$ccomptype" != "msvc"],
+  [internal_cflags="-g $internal_cflags"])
+
 oc_cflags="$common_cflags $internal_cflags"
 oc_cppflags="$common_cppflags $internal_cppflags"
 ocamlc_cflags="$common_cflags $sharedlib_cflags \$(CFLAGS)"
