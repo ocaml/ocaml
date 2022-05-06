@@ -54,7 +54,6 @@ SO="so"
 toolchain="cc"
 profinfo=false
 profinfo_width=0
-extralibs=
 instrumented_runtime=true
 force_instrumented_runtime=false
 instrumented_runtime_libs=""
@@ -91,6 +90,7 @@ AC_SUBST([exeext])
 AC_SUBST([OBJEXT])
 AC_SUBST([libext])
 AC_SUBST([S])
+AC_SUBST([runtime_asm_objects])
 AC_SUBST([SO])
 AC_SUBST([arch])
 AC_SUBST([arch64])
@@ -101,7 +101,6 @@ AC_SUBST([unix_or_win32])
 AC_SUBST([outputexe])
 AC_SUBST([outputobj])
 AC_SUBST([syslib])
-AC_SUBST([extralibs])
 AC_SUBST([fpic])
 AC_SUBST([mkexe])
 AC_SUBST([mkexedebugflag])
@@ -1127,6 +1126,11 @@ dnl [riscv64-*-linux*],
 dnl   [arch=riscv; model=riscv64; system=linux]
 )
 
+AS_CASE([$ccomptype],
+  [msvc],
+    [runtime_asm_objects=${arch}nt.${OBJEXT}],
+  [runtime_asm_objects=${arch}.${OBJEXT}])
+
 AS_CASE([$enable_native_compiler,$arch],
   [no,*],
     [native_compiler=false
@@ -1969,6 +1973,12 @@ AS_IF([test x"$enable_function_sections" = "xno"],
 AS_IF([test x"$with_afl" = "xyes"],
   [afl=true],
   [afl=false])
+
+# Enable debugging support
+# TODO: add a --disable-debug-info configure option that disables debugging
+# info for both C and OCaml
+AS_IF([test "$ccomptype" != "msvc"],
+  [internal_cflags="-g $internal_cflags"])
 
 oc_cflags="$common_cflags $internal_cflags"
 oc_cppflags="$common_cppflags $internal_cppflags"
