@@ -297,5 +297,6 @@ and really_load_file recursive ppf name filename ic =
 let init () =
   let crc_intfs = Symtable.init_toplevel() in
   Compmisc.init_path ();
+  Topcommon.load_topdirs_signature ();
   Env.import_crcs ~source:Sys.executable_name crc_intfs;
   ()

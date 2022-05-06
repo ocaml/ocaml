@@ -36,6 +36,10 @@ val set_paths : unit -> unit
 
 val update_search_path_from_env : unit -> unit
 
+(* Load topdirs.cmi directly from +compiler-libs if not found in include dirs *)
+
+val load_topdirs_signature : unit -> unit
+
 (* Management and helpers for the execution *)
 
 val toplevel_env : Env.t ref
