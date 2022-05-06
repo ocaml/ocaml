@@ -825,6 +825,7 @@ model
 arch64
 arch
 SO
+runtime_asm_objects
 S
 libext
 OBJEXT
@@ -2871,6 +2872,7 @@ OCAML_VERSION_SHORT=5.0
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
+
 
 
 
@@ -14317,6 +14319,13 @@ case $host in #(
     arch=arm64; system=openbsd ;; #(
   *) :
      ;;
+esac
+
+case $ccomptype in #(
+  msvc) :
+    runtime_asm_objects=${arch}nt.${OBJEXT} ;; #(
+  *) :
+    runtime_asm_objects=${arch}.${OBJEXT} ;;
 esac
 
 case $enable_native_compiler,$arch in #(

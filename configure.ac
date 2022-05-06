@@ -91,6 +91,7 @@ AC_SUBST([exeext])
 AC_SUBST([OBJEXT])
 AC_SUBST([libext])
 AC_SUBST([S])
+AC_SUBST([runtime_asm_objects])
 AC_SUBST([SO])
 AC_SUBST([arch])
 AC_SUBST([arch64])
@@ -1126,6 +1127,11 @@ dnl   [arch=amd64; system=cygwin],
 dnl [riscv64-*-linux*],
 dnl   [arch=riscv; model=riscv64; system=linux]
 )
+
+AS_CASE([$ccomptype],
+  [msvc],
+    [runtime_asm_objects=${arch}nt.${OBJEXT}],
+  [runtime_asm_objects=${arch}.${OBJEXT}])
 
 AS_CASE([$enable_native_compiler,$arch],
   [no,*],
