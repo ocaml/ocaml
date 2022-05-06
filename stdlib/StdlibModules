@@ -67,6 +67,7 @@ STDLIB_MODULE_BASENAMES = \
   stack \
   queue \
   buffer \
+  dyn_array \
   mutex \
   condition \
   semaphore \
