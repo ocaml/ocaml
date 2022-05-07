@@ -2,6 +2,13 @@
 (** Growable, mutable array *)
 
 type 'a t
+(** A dynamic array containing values of type ['a].
+
+    This contains an underlying {!array} along with a size.
+    Operations such as {!push}, {!append}, and {!append_seq}, extend the
+    size (and might reallocate the underlying array).
+
+    Operations such as {!pop}, and {!truncate}, reduce the size. *)
 
 val create : unit -> 'a t
 (** Create a new, empty array. *)
@@ -20,6 +27,10 @@ val clear : 'a t -> unit
 
 val ensure_capacity_with : 'a t -> dummy:'a -> int -> unit
 (** Make sure that the array has at least the given capacity (underlying size).
+
+    This is a more advanced operation that is only useful for performance
+    purposes.
+
     @param dummy an element used if the underlying array is empty,
       to initialize it. It will not be retained anywhere.
     @raise Invalid_arg if the size is not suitable (negative, or too big for OCaml arrays)
@@ -27,45 +38,51 @@ val ensure_capacity_with : 'a t -> dummy:'a -> int -> unit
 
 val ensure_capacity_nonempty : 'a t -> int -> unit
 (** Make sure that the array has at least the given capacity (underlying size),
-      assuming it is non-empty.
+    assuming it is non-empty.
+
+    This is a more advanced operation that is only useful for performance
+    purposes.
+
     @raise Invalid_arg if the array is empty or
       if the size is not suitable (negative, or too big for OCaml arrays)
 *)
 
 val is_empty : 'a t -> bool
-(** Is the array empty? *)
+(** Is the array empty? This is synonymous to [length a = 0]. *)
 
 val push : 'a t -> 'a -> unit
-(** Add an element at the end of the array. *)
+(** Add an element at the end of the array. This might extend the underlying
+    array if it is full.
+
+    Calling [push] [n] times is amortized O(n) complexity,
+    and O(ln(n)) reallocations of the underlying array. *)
 
 val unsafe_push : 'a t -> 'a -> unit
-(** Push an element, assuming there is capacity for it (e.g. using {!ensure_capacity}).
-    It is unspecified what happens if the capacity is not enough. *)
+(** Push an element, assuming there is capacity for it
+    (e.g. using {!ensure_capacity}).
+
+    It is unspecified what happens if the capacity is not enough.
+    This is for advanced used only. *)
 
 val append : 'a t -> 'a t -> unit
-(** [append a b] adds all elements of b to a. *)
+(** [append a b] adds all elements of [b] to [a]. [b] is not modified. *)
 
 val append_array : 'a t -> 'a array -> unit
 (** Like {!append}, with an array. *)
 
 val append_seq : 'a t -> 'a Seq.t -> unit
-(** Append content of iterator. *)
+(** Like {!append} but with an iterator. *)
 
 val append_list : 'a t -> 'a list -> unit
-(** Append content of list. *)
+(** Like {!append} but with a list. *)
 
 val pop : 'a t -> 'a option
-(** Remove last element, or [None]. *)
+(** Remove and return the last element, or [None] if the
+    array is empty. *)
 
 val pop_exn : 'a t -> 'a
-(** Remove last element, or raise an exception if empty.
-    @raise Invalid_argument on an empty array. *)
-
-val top : 'a t -> 'a option
-(** Top element, if present. *)
-
-val top_exn : 'a t -> 'a
-(** Top element, if present.
+(** Remove the last element, or raise an exception if the
+    array is empty.
     @raise Invalid_argument on an empty array. *)
 
 val copy : 'a t -> 'a t

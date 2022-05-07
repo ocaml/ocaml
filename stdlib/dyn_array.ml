@@ -54,26 +54,26 @@ let[@inline] next_grow_ n =
   min Sys.max_array_length (n + n lsr 1)
 
 (* resize the underlying array using x to temporarily fill the array *)
-let actually_resize_array_ v newcapacity dummy : unit =
-  assert (newcapacity >= v.size);
-  assert (not (array_is_empty_ v));
+let actually_resize_array_ a newcapacity ~dummy : unit =
+  assert (newcapacity >= a.size);
+  assert (not (array_is_empty_ a));
   let new_array = Array.make newcapacity dummy in
-  Array.blit v.arr 0 new_array 0 v.size;
-  fill_with_junk_ new_array v.size (newcapacity-v.size);
-  v.arr <- new_array
+  Array.blit a.arr 0 new_array 0 a.size;
+  fill_with_junk_ new_array a.size (newcapacity-a.size);
+  a.arr <- new_array
 
 (* grow the array, using [x] as a temporary dummy if required *)
-let actually_grow_with_ v ~dummy =
-  if array_is_empty_ v then (
+let actually_grow_with_ a ~dummy : unit =
+  if array_is_empty_ a then (
     let len = 4 in
-    v.arr <- Array.make len dummy;
+    a.arr <- Array.make len dummy;
     (* do not really use [x], it was just for knowing the type *)
-    fill_with_junk_ v.arr 0 len;
+    fill_with_junk_ a.arr 0 len;
   ) else (
-    let n = Array.length v.arr in
+    let n = Array.length a.arr in
     let size = next_grow_ n in
-    if size = n then invalid_arg "Dyn_array: cannot grow the array"
-    actually_resize_array_ v size dummy
+    if size = n then invalid_arg "Dyn_array: cannot grow the array";
+    actually_resize_array_ a size ~dummy
   )
 
 (* v is not empty; ensure it has at least [size] slots.
@@ -87,7 +87,7 @@ let ensure_assuming_not_empty_ v ~size =
     let n = ref (Array.length v.arr) in
     while !n < size do n := next_grow_ !n done;
     let dummy = v.arr.(0) in
-    actually_resize_array_ v !n dummy
+    actually_resize_array_ v !n ~dummy;
   )
 
 let ensure_capacity_with v ~dummy size : unit =
@@ -105,10 +105,6 @@ let ensure_capacity_nonempty v size : unit =
 let[@inline] clear v =
   v.size <- 0
 
-let clear_and_reset v =
-  v.size <- 0;
-  v.arr <- [||]
-
 let[@inline] is_empty v = v.size = 0
 
 let[@inline] unsafe_push v x =
@@ -118,20 +114,6 @@ let[@inline] unsafe_push v x =
 let push v x =
   if v.size = Array.length v.arr then actually_grow_with_ v ~dummy:x;
   unsafe_push v x
-
-let resize_with v f size =
-  if size<0 then invalid_arg "Vec.resize_with";
-  if Array.length v.arr = 0 then (
-    let new_vec = Array.init size f in
-    v.arr <- new_vec;
-    v.size <- size
-  ) else (
-    ensure_assuming_not_empty_ v ~size;
-    for i = v.size to size - 1 do
-      Array.unsafe_set v.arr i (f i)
-    done;
-    v.size <- size
-  )
 
 let append a b =
   if array_is_empty_ a then (
