@@ -1401,6 +1401,7 @@ module Complex        = Complex
 module Condition      = Condition
 module Digest         = Digest
 module Domain         = Domain
+module Dyn_array      = Dyn_array
 module Effect         = Effect
 module Either         = Either
 module Ephemeron      = Ephemeron
