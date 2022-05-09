@@ -50,3 +50,6 @@ let of_string s = try Some (int_of_string s) with Failure _ -> None
 
 external format_int : string -> int -> string = "caml_format_int"
 let to_string x = format_int "%d" x
+
+let seeded_hash = Hashtbl.seeded_hash
+let hash = Hashtbl.hash

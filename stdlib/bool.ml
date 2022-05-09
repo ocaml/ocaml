@@ -31,3 +31,6 @@ let of_string = function
 *)
 
 let to_string = function false -> "false" | true -> "true"
+
+let seeded_hash = Hashtbl.seeded_hash
+let hash = Hashtbl.hash

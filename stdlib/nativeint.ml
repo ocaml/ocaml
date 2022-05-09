@@ -91,3 +91,6 @@ let unsigned_div n d =
 
 let unsigned_rem n d =
   sub n (mul (unsigned_div n d) d)
+
+let seeded_hash = Hashtbl.seeded_hash
+let hash = Hashtbl.hash
