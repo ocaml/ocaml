@@ -98,6 +98,7 @@ AC_SUBST([model])
 AC_SUBST([system])
 AC_SUBST([systhread_support])
 AC_SUBST([unix_or_win32])
+AC_SUBST([ocamlyacc_wstr_module])
 AC_SUBST([outputexe])
 AC_SUBST([outputobj])
 AC_SUBST([syslib])
@@ -521,8 +522,10 @@ AS_CASE([$ocaml_cv_cc_vendor],
 
 AS_CASE([$host],
   [*-*-mingw32|*-pc-windows],
-    [unix_or_win32="win32"],
-  [unix_or_win32="unix"])
+    [unix_or_win32="win32"
+    ocamlyacc_wstr_module="yacc/wstr"],
+  [unix_or_win32="unix"
+  ocamlyacc_wstr_module=""])
 AS_CASE([$host],
   [*-*-cygwin*|*-*-mingw32|*-pc-windows],
     [exeext=".exe"],

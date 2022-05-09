@@ -817,6 +817,7 @@ fpic
 syslib
 outputobj
 outputexe
+ocamlyacc_wstr_module
 unix_or_win32
 systhread_support
 system
@@ -2870,6 +2871,7 @@ OCAML_VERSION_SHORT=5.0
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
+
 
 
 
@@ -12651,9 +12653,11 @@ esac
 
 case $host in #(
   *-*-mingw32|*-pc-windows) :
-    unix_or_win32="win32" ;; #(
+    unix_or_win32="win32"
+    ocamlyacc_wstr_module="yacc/wstr" ;; #(
   *) :
-    unix_or_win32="unix" ;;
+    unix_or_win32="unix"
+  ocamlyacc_wstr_module="" ;;
 esac
 case $host in #(
   *-*-cygwin*|*-*-mingw32|*-pc-windows) :
