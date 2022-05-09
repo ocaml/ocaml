@@ -62,3 +62,6 @@ DOCDIR=@docdir@
 
 # Platform-dependent assembler files to use to build the runtime
 runtime_ASM_OBJECTS = @runtime_asm_objects@
+
+# Platform-dependent module for ocamlyacc
+ocamlyacc_WSTR_MODULE = @ocamlyacc_wstr_module@

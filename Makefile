@@ -87,7 +87,8 @@ ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
 else
   COLDSTART_DEPS = boot/ocamlruns$(EXE)
   BOOT_FLEXLINK_CMD = \
-    FLEXLINK_CMD="../boot/ocamlruns$(EXE) ../boot/flexlink.byte$(EXE)"
+    FLEXLINK_CMD='$$(ROOTDIR)/boot/ocamlruns$(EXE) \
+      $$(ROOTDIR)/boot/flexlink.byte$(EXE)'
 endif
 
 expunge := expunge$(EXE)
@@ -131,9 +132,11 @@ partialclean::
 .PHONY: beforedepend
 beforedepend:: utils/config.ml utils/domainstate.ml utils/domainstate.mli
 
-programs := expunge ocaml ocamlc ocamlc.opt ocamlnat ocamlopt ocamlopt.opt
+ocamlyacc_PROGRAM = yacc/ocamlyacc
+PROGRAMS = expunge ocaml ocamlc ocamlc.opt ocamlnat ocamlopt ocamlopt.opt \
+  $(ocamlyacc_PROGRAM)
 
-$(foreach program, $(programs), $(eval $(call PROGRAM_SYNONYM,$(program))))
+$(foreach PROGRAM, $(PROGRAMS), $(eval $(call PROGRAM_SYNONYM,$(PROGRAM))))
 
 USE_RUNTIME_PRIMS = -use-prims ../runtime/primitives
 USE_STDLIB = -nostdlib -I ../stdlib
@@ -421,7 +424,7 @@ ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	$(INSTALL_PROG) lex/ocamllex$(EXE) \
 	  "$(INSTALL_BINDIR)/ocamllex.byte$(EXE)"
 endif
-	$(INSTALL_PROG) yacc/ocamlyacc$(EXE) "$(INSTALL_BINDIR)"
+	$(INSTALL_PROG) $(ocamlyacc_PROGRAM)$(EXE) "$(INSTALL_BINDIR)"
 	$(INSTALL_DATA) \
 	   utils/*.cmi \
 	   parsing/*.cmi \
@@ -648,7 +651,7 @@ clean::
 
 # The clean target
 clean:: partialclean
-	rm -f $(programs) $(programs:=.exe)
+	rm -f $(PROGRAMS) $(PROGRAMS:=.exe)
 
 # The bytecode compiler
 
@@ -880,12 +883,27 @@ ocamllex.opt: ocamlopt
 partialclean::
 	$(MAKE) -C lex clean
 
+# The ocamlyacc parser generator
+
+ocamlyacc_OTHER_MODULES = $(addprefix yacc/,\
+  $(ocamlyacc_WSTR) closure error lalr lr0 main mkpar output reader skeleton \
+  symtab verbose warshall)
+
+ocamlyacc_MODULES = $(ocamlyacc_WSTR_MODULE) $(ocamlyacc_OTHER_MODULES)
+
+ocamlyacc_OBJECTS = $(ocamlyacc_MODULES:=.$(O))
+
 .PHONY: ocamlyacc
 ocamlyacc:
-	$(MAKE) -C yacc $(BOOT_FLEXLINK_CMD) all
+	$(MAKE) $(BOOT_FLEXLINK_CMD) $(ocamlyacc_PROGRAM)$(EXE)
+
+$(ocamlyacc_PROGRAM)$(EXE): $(ocamlyacc_OBJECTS)
+	$(MKEXE) -o $@ $^
 
 clean::
-	$(MAKE) -C yacc clean
+	rm -f $(ocamlyacc_MODULES:=.o) $(ocamlyacc_MODULES:=.obj)
+
+$(ocamlyacc_OTHER_MODULES:.$(O)): ocamlyacc/defs.h
 
 # The Menhir-generated parser
 
