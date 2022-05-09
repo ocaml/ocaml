@@ -119,7 +119,7 @@ install:
 	  $(INSTALL_PROG) dllthreads$(EXT_DLL) "$(INSTALL_STUBLIBDIR)"; \
 	fi
 	$(INSTALL_DATA) libthreads.$(A) "$(INSTALL_LIBDIR)"
-	mkdir -p "$(INSTALL_THREADSLIBDIR)"
+	$(MKDIR) "$(INSTALL_THREADSLIBDIR)"
 	$(INSTALL_DATA) \
 	  $(CMIFILES) threads.cma \
 	  "$(INSTALL_THREADSLIBDIR)"
@@ -129,7 +129,7 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	  "$(INSTALL_THREADSLIBDIR)"
 	$(INSTALL_DATA) $(MLIFILES) "$(INSTALL_THREADSLIBDIR)"
 endif
-	$(INSTALL_DATA) threads.h "$(INSTALL_LIBDIR)/caml"
+	$(INSTALL_DATA) threads.h "$(INSTALL_INCDIR)"
 
 installopt:
 	$(INSTALL_DATA) libthreadsnat.$(A) "$(INSTALL_LIBDIR)"
