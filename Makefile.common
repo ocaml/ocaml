@@ -39,6 +39,8 @@ INSTALL_DOCDIR := $(DESTDIR)$(DOCDIR)
 
 FLEXDLL_SUBMODULE_PRESENT := $(wildcard $(ROOTDIR)/flexdll/Makefile)
 
+IN_COREBOOT_CYCLE ?= false
+
 # Variables used to represent the OCaml runtime system
 # Most of the time, boot/ocamlrun and runtime/ocamlrun are the same.
 # However, under some circumstances it is important to be able to
