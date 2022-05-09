@@ -254,6 +254,10 @@ Working version
   (Sébastien Hinderer, review by David Allsopp, Nicolás Ojeda Bär,
   Xavier Leroy, Vincent Laviron and Antonin Décimo)
 
+- #11200: Install ocamlprof's Profiling runtime module to a +profiling,
+  removing it from the default namespace.
+  (David Allsopp, review by Sébastien Hinderer)
+
 ### Bug fixes:
 
 - #11167: Fix memory leak from signal stack.

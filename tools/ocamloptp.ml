@@ -85,10 +85,10 @@ end;
 if !with_impl then rev_profargs := "-impl" :: !rev_profargs;
 if !with_intf then rev_profargs := "-intf" :: !rev_profargs;
 let status =
-  Sys.command
-    (Printf.sprintf "ocamlopt -pp \"ocamlprof -instrument %s\" %s %s"
-        (String.concat " " (List.rev !rev_profargs))
-        (if !make_archive then "" else "profiling.cmx")
-        (String.concat " " (List.rev !rev_compargs)))
+  ksprintf Sys.command
+    "ocamlopt -pp \"ocamlprof -instrument %s\" -I +profiling %s %s"
+      (String.concat " " (List.rev !rev_profargs))
+      (if !make_archive then "" else "profiling.cmx")
+      (String.concat " " (List.rev !rev_compargs))
 in
 exit status
