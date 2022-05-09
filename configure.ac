@@ -1673,6 +1673,8 @@ AS_CASE([$ocaml_cv_cc_vendor,$host],
 
 ## Does stat support nanosecond precision
 
+stat_has_ns_precision=false
+
 AC_CHECK_MEMBER([struct stat.st_atim.tv_nsec],
   [stat_has_ns_precision=true
   AC_DEFINE([HAS_NANOSECOND_STAT], [1])],
