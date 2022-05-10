@@ -194,14 +194,15 @@ CAMLexport struct channel * caml_open_descriptor_out(int fd)
 CAMLexport void caml_close_channel(struct channel *channel)
 {
   close(channel->fd);
+
+  /* don't run concurrently with caml_ml_out_channels_list that may resurrect
+     a dead channel . */
   caml_plat_lock (&caml_all_opened_channels_mutex);
-  unlink_channel(channel);
-    if (atomic_load_acq(&channel->refcount) > 0) {
-    /* [caml_ml_out_channels_list] may have a reference to this channel. */
-    link_channel (channel);
+  if (atomic_load_acq(&channel->refcount) > 0) {
     caml_plat_unlock (&caml_all_opened_channels_mutex);
     return;
   }
+  unlink_channel(channel);
   caml_plat_unlock (&caml_all_opened_channels_mutex);
   if (caml_channel_mutex_free != NULL) (*caml_channel_mutex_free)(channel);
   caml_stat_free(channel->name);
@@ -509,14 +510,15 @@ void caml_finalize_channel(value vchan)
 {
   struct channel * chan = Channel(vchan);
   if ((chan->flags & CHANNEL_FLAG_MANAGED_BY_GC) == 0) return;
+
+  /* don't run concurrently with caml_ml_out_channels_list that may resurrect
+     a dead channel . */
   caml_plat_lock (&caml_all_opened_channels_mutex);
-  unlink_channel(chan);
   if (atomic_fetch_add (&chan->refcount, -1) > 1) {
-    /* [caml_ml_out_channels_list] may have a reference to this channel. */
-    link_channel (chan);
     caml_plat_unlock (&caml_all_opened_channels_mutex);
     return;
   }
+  unlink_channel(chan);
   caml_plat_unlock (&caml_all_opened_channels_mutex);
   if (caml_channel_mutex_free != NULL) (*caml_channel_mutex_free)(chan);
 
