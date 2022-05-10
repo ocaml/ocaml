@@ -6,6 +6,9 @@ Working version
 - #9975, #11365: Make empty types (`type t = |`) immediate.
   (Antal Spector-Zabusky, review by Gabriel Scherer)
 
+- #11252, RFC 27: Support raw identifier syntax \#foo
+  (Stephen Dolan, review by David Allsopp)
+
 * #11694: Add short syntax for generative functor types `() -> ...`
   (Jeremy Yallop, review by Gabriel Scherer, Nicolás Ojeda Bär,
   Jacques Garrigue)
@@ -93,7 +96,7 @@ Working version
   (Stephen Dolan, review by Xavier Leroy)
 
 - #11418, #11708: RISC-V multicore support.
-  (Nicolás Ojeda Bär, review by KC Sivaramakrishnan)
+  (Nicolás Ojeda Bär, review by KuC Sivaramakrishnan)
 
 - #11686: Better spilling heuristic for the Linear Scan allocator for more
   efficient stack usage.
