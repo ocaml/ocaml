@@ -829,15 +829,6 @@ clean::
 	$(MAKE) -C runtime clean
 	rm -f stdlib/libcamlrun.a stdlib/libcamlrun.lib
 
-subdirs = stdlib $(addprefix otherlibs/, $(ALL_OTHERLIBS)) \
-  debugger lex ocamldoc ocamltest tools
-
-.PHONY: alldepend
-alldepend: depend
-	for dir in $(subdirs); do \
-	  $(MAKE) -C $$dir depend || exit; \
-	done
-
 # The runtime system for the native-code compiler
 
 .PHONY: runtimeopt
@@ -851,6 +842,17 @@ stdlib/libasmrun.$(A): runtime/libasmrun.$(A)
 	cp $< $@
 clean::
 	rm -f stdlib/libasmrun.a stdlib/libasmrun.lib
+
+# Dependencies
+
+subdirs = stdlib $(addprefix otherlibs/, $(ALL_OTHERLIBS)) \
+  debugger lex ocamldoc ocamltest tools
+
+.PHONY: alldepend
+alldepend: depend
+	for dir in $(subdirs); do \
+	  $(MAKE) -C $$dir depend || exit; \
+	done
 
 # The standard library
 
