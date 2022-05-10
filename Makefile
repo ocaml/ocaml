@@ -903,7 +903,7 @@ $(ocamlyacc_PROGRAM)$(EXE): $(ocamlyacc_OBJECTS)
 clean::
 	rm -f $(ocamlyacc_MODULES:=.o) $(ocamlyacc_MODULES:=.obj)
 
-$(ocamlyacc_OTHER_MODULES:.$(O)): ocamlyacc/defs.h
+$(ocamlyacc_OTHER_MODULES:=.$(O)): yacc/defs.h
 
 # The Menhir-generated parser
 
