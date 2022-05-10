@@ -69,7 +69,6 @@ endif
 
 BOOT_OCAMLDEP = $(BOOT_OCAMLC) -depend
 
-FLEXLINK_CMD=flexlink
 ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
   FLEXLINK_ENV =
   CAMLOPT_CMD = $(CAMLOPT)
@@ -77,6 +76,7 @@ ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
   MKLIB_CMD = $(MKLIB)
   ocamlc_cmd = $(ocamlc)
   ocamlopt_cmd = $(ocamlopt)
+  FLEXLINK_CMD=flexlink
 else
 ifeq "$(wildcard $(ROOTDIR)/flexlink.opt$(EXE))" ""
   FLEXLINK_ENV = \
@@ -91,6 +91,8 @@ endif # ifeq "$(wildcard $(ROOTDIR)/flexlink.opt$(EXE))" ""
   MKLIB_CMD = $(FLEXLINK_ENV) $(MKLIB)
   ocamlc_cmd = $(FLEXLINK_ENV) $(ocamlc)
   ocamlopt_cmd = $(FLEXLINK_ENV) $(ocamlopt)
+  FLEXLINK_CMD=$(ROOTDIR)/boot/ocamlruns$(EXE) \
+               $(ROOTDIR)/boot/flexlink.byte$(EXE)
 endif # ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
 
 # List of other libraries

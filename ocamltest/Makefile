@@ -69,7 +69,6 @@ else
   CSC :=
   CSCFLAGS :=
 endif
-mkexe := $(MKEXE)
 
 ifeq "$(TOOLCHAIN)" "msvc"
 CPP := $(CPP) 2> nul
@@ -236,6 +235,9 @@ ocamltest_unix.ml: ocamltest_unix_$(ocamltest_unix).ml
 	echo '# 1 "$^"' > $@
 	cat $^ >> $@
 
+# This value should stay the same, regardless of bootstrapping, to cause
+# MKEXE, MKDLL and MKMAINDLL to be written correctly.
+ocamltest_config.ml: FLEXLINK_CMD=flexlink
 ocamltest_config.ml: ocamltest_config.ml.in Makefile ../Makefile.config
 	sed $(call SUBST,AFL_INSTRUMENT) \
 	    $(call SUBST,INSTRUMENTED_RUNTIME) \
@@ -262,7 +264,7 @@ ocamltest_config.ml: ocamltest_config.ml.in Makefile ../Makefile.config
 	    $(call SUBST_STRING,CSCFLAGS) \
 	    $(call SUBST_STRING,EXE) \
 	    $(call SUBST_STRING,MKDLL) \
-	    $(call SUBST_STRING,mkexe) \
+	    $(call SUBST_STRING,MKEXE) \
 	    $(call SUBST_STRING,BYTECCLIBS) \
 	    $(call SUBST_STRING,NATIVECCLIBS) \
 	    $(call SUBST_STRING,ASM) \
