@@ -886,8 +886,8 @@ partialclean::
 # The ocamlyacc parser generator
 
 ocamlyacc_OTHER_MODULES = $(addprefix yacc/,\
-  $(ocamlyacc_WSTR) closure error lalr lr0 main mkpar output reader skeleton \
-  symtab verbose warshall)
+  closure error lalr lr0 main mkpar output reader skeleton symtab \
+  verbose warshall)
 
 ocamlyacc_MODULES = $(ocamlyacc_WSTR_MODULE) $(ocamlyacc_OTHER_MODULES)
 
