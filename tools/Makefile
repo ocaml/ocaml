@@ -100,7 +100,7 @@ OCAMLCP = config.cmo build_path_prefix_map.cmo misc.cmo profile.cmo \
           warnings.cmo identifiable.cmo numbers.cmo arg_helper.cmo \
           clflags.cmo local_store.cmo \
           terminfo.cmo location.cmo load_path.cmo ccomp.cmo compenv.cmo \
-          main_args.cmo
+          main_args.cmo ocamlcp_common.cmo
 
 ocamlcp$(EXE): $(OCAMLCP) ocamlcp.cmo
 ocamlcp.opt$(EXE): $(call byte2native, $(OCAMLCP) ocamlcp.cmo)
