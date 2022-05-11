@@ -28,8 +28,9 @@ export LC_ALL=C
       dynlink backtrace_byt backtrace afl \
       bigarray eventlog prng
   do
-      sed -n -e 's/^CAMLprim value \([a-z0-9_][a-z0-9_]*\).*/\1/p' "$prim.c"
+      sed -n -e 's/^CAMLprim value \([a-z0-9_][a-z0-9_]*\).*/\1/p' \
+        "runtime/$prim.c"
   done
   sed -n -e 's/^CAMLprim_int64_[0-9](\([a-z0-9_][a-z0-9_]*\)).*/caml_int64_\1\
-caml_int64_\1_native/p' ints.c
+caml_int64_\1_native/p' runtime/ints.c
 ) | sort | uniq

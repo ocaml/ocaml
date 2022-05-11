@@ -40,6 +40,7 @@ _build
 
 # local to root directory
 
+/.dep
 /Makefile.build_config
 /Makefile.config
 /autom4te.cache
@@ -168,7 +169,6 @@ _build
 /runtime/ocamlruni
 /runtime/ld.conf
 /runtime/.gdb_history
-/runtime/.dep
 /runtime/build_config.h
 /runtime/sak
 /runtime/domain_state32.inc
