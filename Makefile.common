@@ -69,6 +69,7 @@ endif
 
 BOOT_OCAMLDEP = $(BOOT_OCAMLC) -depend
 
+FLEXLINK_CMD=flexlink
 ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
   FLEXLINK_ENV =
   CAMLOPT_CMD = $(CAMLOPT)
@@ -209,3 +210,9 @@ $(ROOTDIR)/%/sak$(EXE):
 ifneq "$(REQUIRES_CONFIGURATION)" ""
 $(ROOTDIR)/%/StdlibModules: $(SAK) ;
 endif
+
+# Used with the Microsoft toolchain to merge generated manifest files into
+# executables
+if_file_exists = ( test ! -f $(1) || $(2) && rm -f $(1) )
+MERGEMANIFESTEXE = $(call if_file_exists, $(1).manifest, \
+  mt -nologo -outputresource:$(1) -manifest $(1).manifest)
