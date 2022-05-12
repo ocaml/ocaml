@@ -131,6 +131,14 @@ let () =
        && check result 0 "abcde");
 
     (*
+       test replace
+    *)
+    Testing.test
+      (let result = replace 'a' 'f' abcde in
+      length result = 5
+      && check result 0 "fbcde");
+
+    (*
        test exists and for_all
     *)
     Testing.test
