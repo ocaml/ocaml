@@ -209,7 +209,7 @@ TOOLCHAIN=@toolchain@
 CMXS=@cmxs@
 
 # On Windows, MKDLL, MKEXE and MKMAINDLL must ultimately be equivalent to
-#   $(FLEXLINK_CMD) $(FLEXLINK_FLAGS) [-exe|-maindll]
+#   flexlink $(FLEXLINK_FLAGS) [-exe|-maindll]
 # or OCAML_FLEXLINK overriding will not work (see utils/config.mlp)
 
 FLEXDLL_CHAIN=@flexdll_chain@

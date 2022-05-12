@@ -75,8 +75,8 @@ let csc_flags = "%%CSCFLAGS%%"
 
 let exe = "%%EXE%%"
 
-let mkdll = "%%MKDLL%%"
-let mkexe = "%%MKEXE%%"
+let mkdll = "%%MKDLL_EXP%%"
+let mkexe = "%%MKEXE_EXP%%"
 
 let bytecc_libs = "%%BYTECCLIBS%%"
 
