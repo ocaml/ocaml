@@ -19,6 +19,10 @@ ROOTDIR = ..
 
 include $(ROOTDIR)/Makefile.common
 
+# This value should stay the same, regardless of bootstrapping, to cause
+# MKEXE, MKDLL and MKMAINDLL to be written correctly.
+FLEXLINK_CMD=flexlink
+
 ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
   FLEXDLL_DIR =
 else

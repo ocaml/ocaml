@@ -83,12 +83,8 @@ TOPINCLUDES=$(addprefix -I otherlibs/,$(filter-out %threads,$(OTHERLIBRARIES)))
 
 ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
   COLDSTART_DEPS =
-  BOOT_FLEXLINK_CMD =
 else
   COLDSTART_DEPS = boot/ocamlruns$(EXE)
-  BOOT_FLEXLINK_CMD = \
-    FLEXLINK_CMD='$$(ROOTDIR)/boot/ocamlruns$(EXE) \
-      $$(ROOTDIR)/boot/flexlink.byte$(EXE)'
 endif
 
 expunge := expunge$(EXE)
@@ -184,7 +180,7 @@ else
 	$(MAKE) -C stdlib OCAMLRUN='$$(ROOTDIR)/boot/ocamlruns$(EXE)' \
     CAMLC='$$(BOOT_OCAMLC)' all
 	$(MAKE) boot/flexlink.byte$(EXE)
-	$(MAKE) $(BOOT_FLEXLINK_CMD) runtime-all
+	$(MAKE) runtime-all
 endif # ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
 	cp runtime/ocamlrun$(EXE) boot/ocamlrun$(EXE)
 	cd boot; rm -f $(LIBFILES)
@@ -1021,8 +1017,7 @@ stdlib/flexdll:
 endif
 
 .PHONY: makeruntime
-makeruntime:
-	$(MAKE) $(BOOT_FLEXLINK_CMD) runtime-all
+makeruntime: runtime-all
 stdlib/libcamlrun.$(A): runtime-all
 	cd stdlib; $(LN) ../runtime/libcamlrun.$(A) .
 clean::
@@ -1040,8 +1035,7 @@ clean::
 runtimeopt: stdlib/libasmrun.$(A)
 
 .PHONY: makeruntimeopt
-makeruntimeopt:
-	$(MAKE) $(BOOT_FLEXLINK_CMD) runtime-allopt
+makeruntimeopt: runtime-allopt
 stdlib/libasmrun.$(A): runtime-allopt
 	cd stdlib; $(LN) ../runtime/libasmrun.$(A) .
 
@@ -1063,16 +1057,15 @@ alldepend: depend
 
 .PHONY: library
 library: ocamlc
-	$(MAKE) -C stdlib $(BOOT_FLEXLINK_CMD) all
+	$(MAKE) -C stdlib all
 
 .PHONY: library-cross
 library-cross:
-	$(MAKE) -C stdlib \
-	  $(BOOT_FLEXLINK_CMD) OCAMLRUN=../runtime/ocamlrun$(EXE) all
+	$(MAKE) -C stdlib OCAMLRUN=../runtime/ocamlrun$(EXE) all
 
 .PHONY: libraryopt
 libraryopt:
-	$(MAKE) -C stdlib $(BOOT_FLEXLINK_CMD) allopt
+	$(MAKE) -C stdlib allopt
 
 partialclean::
 	$(MAKE) -C stdlib clean
@@ -1101,8 +1094,7 @@ ocamlyacc_MODULES = $(ocamlyacc_WSTR_MODULE) $(ocamlyacc_OTHER_MODULES)
 ocamlyacc_OBJECTS = $(ocamlyacc_MODULES:=.$(O))
 
 .PHONY: ocamlyacc
-ocamlyacc:
-	$(MAKE) $(BOOT_FLEXLINK_CMD) $(ocamlyacc_PROGRAM)$(EXE)
+ocamlyacc: $(ocamlyacc_PROGRAM)$(EXE)
 
 $(ocamlyacc_PROGRAM)$(EXE): $(ocamlyacc_OBJECTS)
 	$(MKEXE) -o $@ $^
@@ -1245,7 +1237,7 @@ checkstack: tools/checkstack$(EXE)
 
 .INTERMEDIATE: tools/checkstack$(EXE) tools/checkstack.$(O)
 tools/checkstack$(EXE): tools/checkstack.$(O)
-	$(MAKE) -C tools $(BOOT_FLEXLINK_CMD) checkstack$(EXE)
+	$(MAKE) -C tools checkstack$(EXE)
 else
 checkstack:
 	@
