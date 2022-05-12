@@ -242,6 +242,10 @@ val exists : f:(char -> bool) -> string -> bool
     [p].
     @since 4.13.0 *)
 
+val replace : char -> char -> string -> string
+(** [replace a b s] replaces all instances of character [a] inside [s] to [b]. 
+    @since 5.0 *)
+
 val trim : string -> string
 (** [trim s] is [s] without leading and trailing whitespace. Whitespace
     characters are: [' '], ['\x0C'] (form feed), ['\n'], ['\r'], and ['\t'].
