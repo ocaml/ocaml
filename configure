@@ -750,6 +750,7 @@ build_os
 build_vendor
 build_cpu
 build
+QS
 force_instrumented_runtime
 compute_deps
 stdlib_manpages
@@ -2957,6 +2958,7 @@ OCAML_VERSION_SHORT=5.0
 
 
 
+
 ## Generated files
 
 ac_config_files="$ac_config_files Makefile.build_config"
@@ -2992,6 +2994,9 @@ $as_echo "#define OCAML_VERSION_ADDITIONAL \"dev0-2021-11-05\"" >>confdefs.h
 $as_echo "#define OCAML_VERSION 50000" >>confdefs.h
 
 $as_echo "#define OCAML_VERSION_STRING \"5.0.0+dev0-2021-11-05\"" >>confdefs.h
+
+
+# Works out how many "o"s are needed in quoted strings
 
 
 # Checks for system types
@@ -18193,6 +18198,26 @@ LIBOBJS=$ac_libobjs
 
 LTLIBOBJS=$ac_ltlibobjs
 
+
+
+  # Go through ac_subst_vars and put all the values to be substituted in
+  # $all_values.
+  QS=''
+  all_values=''
+  for name in $ac_subst_vars; do
+    eval "value=\$${name}"
+    all_values="$all_values $value"
+  done
+
+  # Keep adding 'o' to $QS until |$QS} doesn't appear in any substitution.
+  test_string=''
+  while test "x${test_string}" != "x${all_values}"; do
+    test_string="$all_values"
+    eval "test_string=\"\${test_string##*\|${QS}\}}\""
+    if test "x${test_string}" != "x${all_values}"; then
+      QS="o${QS}"
+    fi
+  done
 
 
   # Construct $mkexe

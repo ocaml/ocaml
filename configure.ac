@@ -169,6 +169,7 @@ AC_SUBST([PACKLD])
 AC_SUBST([stdlib_manpages])
 AC_SUBST([compute_deps])
 AC_SUBST([force_instrumented_runtime])
+AC_SUBST([QS])
 
 ## Generated files
 
@@ -191,6 +192,9 @@ m4_if([OCAML__VERSION_EXTRA],[], [],
   AC_DEFINE([OCAML_VERSION_EXTRA], ["][OCAML__VERSION_EXTRA]["])])
 AC_DEFINE([OCAML_VERSION], [OCAML__VERSION_NUMBER])
 AC_DEFINE([OCAML_VERSION_STRING], ["][OCAML__VERSION]["])
+
+# Works out how many "o"s are needed in quoted strings
+AC_CONFIG_COMMANDS_PRE(OCAML_QUOTED_STRING_ID)
 
 # Checks for system types
 
