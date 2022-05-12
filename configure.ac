@@ -148,7 +148,7 @@ AC_SUBST([AS])
 AC_SUBST([asm_cfi_supported])
 AC_SUBST([sharedlib_cflags])
 AC_SUBST([rpath])
-AC_SUBST([mksharedlib])
+AC_SUBST([mkdll])
 AC_SUBST([mkmaindll])
 AC_SUBST([mksharedlibrpath])
 AC_SUBST([install_bytecode_programs])
@@ -934,7 +934,7 @@ AS_IF([! $arch64],
 # Shared library support
 
 sharedlib_cflags=''
-mksharedlib='shared-libs-not-available'
+mkdll='shared-libs-not-available'
 rpath=''
 mksharedlibrpath=''
 natdynlinkopts=""
@@ -942,32 +942,32 @@ natdynlinkopts=""
 AS_IF([test x"$enable_shared" != "xno"],
   [AS_CASE([$host],
     [x86_64-apple-darwin*],
-      [mksharedlib='$(CC) -shared '\
+      [mkdll='$(CC) -shared '\
 '-undefined dynamic_lookup -Wl,-no_compact_unwind'
       supports_shared_libraries=true],
     [aarch64-apple-darwin*|arm64-apple-darwin*],
-      [mksharedlib='$(CC) -shared -undefined dynamic_lookup'
+      [mkdll='$(CC) -shared -undefined dynamic_lookup'
       supports_shared_libraries=true],
     [*-*-mingw32],
-      [mksharedlib="${flexlink_cmd} -chain ${flexdll_chain}"
+      [mkdll="${flexlink_cmd} -chain ${flexdll_chain}"
       mkmaindll="${flexlink_cmd} -maindll -chain ${flexdll_chain}"
       AS_IF([test -n "$oc_dll_ldflags"],[
-        mksharedlib="$mksharedlib -link \"$oc_dll_ldflags\""
+        mkdll="$mkdll -link \"$oc_dll_ldflags\""
         mkmaindll="$mkmaindll -link \"$oc_dll_ldflags\""])],
     [*-pc-windows],
-      [mksharedlib="${flexlink_cmd} -chain ${flexdll_chain}"
+      [mkdll="${flexlink_cmd} -chain ${flexdll_chain}"
       mkmaindll="${flexlink_cmd} -maindll -chain ${flexdll_chain}"],
     [*-*-cygwin*],
-      [mksharedlib="${flexlink_cmd} -chain ${flexdll_chain}"
+      [mkdll="${flexlink_cmd} -chain ${flexdll_chain}"
       mkmaindll="${flexlink_cmd} -maindll -chain ${flexdll_chain}"],
     [powerpc-ibm-aix*],
       [AS_CASE([$ocaml_cv_cc_vendor],
                [xlc*],
-               [mksharedlib='$(CC) -qmkshrobj -G'
+               [mkdll='$(CC) -qmkshrobj -G'
                 supports_shared_libraries=true])],
     [*-*-solaris*],
       [sharedlib_cflags="-fPIC"
-      mksharedlib='$(CC) -shared'
+      mkdll='$(CC) -shared'
       rpath="-Wl,-rpath,"
       mksharedlibrpath="-Wl,-rpath,"
       supports_shared_libraries=true],
@@ -976,19 +976,19 @@ AS_IF([test x"$enable_shared" != "xno"],
       [sharedlib_cflags="-fPIC"
        AS_CASE([$cc_basename,$host],
            [*gcc*,powerpc-*-linux*],
-           [mksharedlib='$(CC) -shared -mbss-plt'],
+           [mkdll='$(CC) -shared -mbss-plt'],
            [[*,i[3456]86-*]],
            # Disable DT_TEXTREL warnings on Linux and BSD i386
            # See https://github.com/ocaml/ocaml/issues/9800
-           [mksharedlib='$(CC) -shared -Wl,-z,notext'],
-           [mksharedlib='$(CC) -shared'])
+           [mkdll='$(CC) -shared -Wl,-z,notext'],
+           [mkdll='$(CC) -shared'])
       oc_ldflags="$oc_ldflags -Wl,-E"
       rpath="-Wl,-rpath,"
       mksharedlibrpath="-Wl,-rpath,"
       natdynlinkopts="-Wl,-E"
       supports_shared_libraries=true])])
 
-AS_IF([test -z "$mkmaindll"], [mkmaindll=$mksharedlib])
+AS_IF([test -z "$mkmaindll"], [mkmaindll=$mkdll])
 
 # Configure native dynlink
 
@@ -2074,7 +2074,7 @@ unset ac_cv_header_flexdll_h
 # Just before config.status is generated, determine the final values for MKEXE,
 # MKDLL, MKMAINDLL and MKEXE_VIA_CC. The final variables controlling these are:
 # $mkexe - the linking commmand and munged CFLAGS + any extra flexlink flags
-# $mksharedlib - the full linking command for DLLs
+# $mkdll - the full linking command for DLLs
 # $mkmaindll - the full linking command for main program in DLL
 # $oc_ldflags and $oc_dll_ldflags are handled as $(OC_LDFLAGS) and
 # $(OC_DLL_LDFLAGS) and can be overidden in the build.
@@ -2101,7 +2101,7 @@ ${mkdll_ldflags}"
     mkdll_ldflags='$(OC_DLL_LDFLAGS) $(LDFLAGS)'
     mkexe="${mkexe} \$(OC_LDFLAGS) \$(LDFLAGS)"
   ])
-  mksharedlib="$mksharedlib $mkdll_ldflags"
+  mkdll="$mkdll $mkdll_ldflags"
   mkmaindll="$mkmaindll $mkdll_ldflags"
   # Do similarly with $mkexe_via_cc_ldflags_prefix, but this is only needed for
   # the msvc ports.

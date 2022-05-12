@@ -216,7 +216,7 @@ FLEXDLL_CHAIN=@flexdll_chain@
 FLEXLINK_FLAGS=@mkexe_extra_flags@
 
 MKEXE=@mkexe@
-MKDLL=@mksharedlib@
+MKDLL=@mkdll@
 MKMAINDLL=@mkmaindll@
 MKEXEDEBUGFLAG=@mkexedebugflag@
 MKEXE_VIA_CC=$(CC) $(OC_CFLAGS) $(CFLAGS) @mkexe_via_cc_ldflags@

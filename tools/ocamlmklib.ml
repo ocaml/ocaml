@@ -36,14 +36,14 @@ let compiler_path name =
 let bytecode_objs = ref []  (* .cmo,.cma,.ml,.mli files to pass to ocamlc *)
 and native_objs = ref []    (* .cmx,.ml,.mli files to pass to ocamlopt *)
 and c_objs = ref []         (* .o, .a, .obj, .lib, .dll, .dylib, .so files to
-                               pass to mksharedlib and ar *)
+                               pass to mkdll and ar *)
 and caml_libs = ref []      (* -cclib to pass to ocamlc, ocamlopt *)
 and caml_opts = ref []      (* -ccopt to pass to ocamlc, ocamlopt *)
 and dynlink = ref Config.supports_shared_libraries
 and failsafe = ref false    (* whether to fall back on static build only *)
-and c_libs = ref []         (* libs to pass to mksharedlib and ocamlc -cclib *)
-and c_Lopts = ref []      (* options to pass to mksharedlib and ocamlc -cclib *)
-and c_opts = ref []       (* options to pass to mksharedlib and ocamlc -ccopt *)
+and c_libs = ref []         (* libs to pass to mkdll and ocamlc -cclib *)
+and c_Lopts = ref []      (* options to pass to mkdll and ocamlc -cclib *)
+and c_opts = ref []       (* options to pass to mkdll and ocamlc -ccopt *)
 and ld_opts = ref []        (* options to pass only to the linker *)
 and ocamlc = ref (compiler_path "ocamlc")
 and ocamlc_opts = ref []    (* options to pass only to ocamlc *)
