@@ -13244,7 +13244,7 @@ case $cc_basename,$host in #(
   *,*-*-cygwin*) :
     common_cppflags="$common_cppflags -U_WIN32"
     if $supports_shared_libraries; then :
-  mkexe_cmd='$(FLEXLINK_CMD) -exe -chain $(FLEXDLL_CHAIN)'
+  mkexe_cmd="${flexlink_cmd} -exe -chain ${flexdll_chain}"
       mkexe_cflags=''
       mkexe_ldflags_prefix='-link '
       mkexe_extra_flags=''
@@ -13261,7 +13261,7 @@ fi
 esac
     ostype="Win32"
     toolchain="mingw"
-    mkexe_cmd='$(FLEXLINK_CMD) -exe -chain $(FLEXDLL_CHAIN)'
+    mkexe_cmd="${flexlink_cmd} -exe -chain ${flexdll_chain}"
     mkexe_cflags=''
     mkexe_ldflags_prefix='-link '
     oc_ldflags='-municode'
@@ -13269,7 +13269,7 @@ esac
   *,*-pc-windows) :
     toolchain=msvc
     ostype="Win32"
-    mkexe_cmd='$(FLEXLINK_CMD) -exe -chain $(FLEXDLL_CHAIN)'
+    mkexe_cmd="${flexlink_cmd} -exe -chain ${flexdll_chain}"
     mkexe_cflags=''
     mkexe_ldflags_prefix='-link '
     mkexe_via_cc_ldflags_prefix='/link '
@@ -14095,19 +14095,19 @@ if test x"$enable_shared" != "xno"; then :
     mksharedlib='$(CC) -shared -undefined dynamic_lookup'
       supports_shared_libraries=true ;; #(
   *-*-mingw32) :
-    mksharedlib='$(FLEXLINK_CMD) -chain $(FLEXDLL_CHAIN)'
-      mkmaindll='$(FLEXLINK_CMD) -maindll -chain $(FLEXDLL_CHAIN)'
+    mksharedlib="${flexlink_cmd} -chain ${flexdll_chain}"
+      mkmaindll="${flexlink_cmd} -maindll -chain ${flexdll_chain}"
       if test -n "$oc_dll_ldflags"; then :
 
         mksharedlib="$mksharedlib -link \"$oc_dll_ldflags\""
         mkmaindll="$mkmaindll -link \"$oc_dll_ldflags\""
 fi ;; #(
   *-pc-windows) :
-    mksharedlib='$(FLEXLINK_CMD) -chain $(FLEXDLL_CHAIN)'
-      mkmaindll='$(FLEXLINK_CMD) -maindll -chain $(FLEXDLL_CHAIN)' ;; #(
+    mksharedlib="${flexlink_cmd} -chain ${flexdll_chain}"
+      mkmaindll="${flexlink_cmd} -maindll -chain ${flexdll_chain}" ;; #(
   *-*-cygwin*) :
-    mksharedlib='$(FLEXLINK_CMD) -chain $(FLEXDLL_CHAIN)'
-      mkmaindll='$(FLEXLINK_CMD) -maindll -chain $(FLEXDLL_CHAIN)' ;; #(
+    mksharedlib="${flexlink_cmd} -chain ${flexdll_chain}"
+      mkmaindll="${flexlink_cmd} -maindll -chain ${flexdll_chain}" ;; #(
   powerpc-ibm-aix*) :
     case $ocaml_cv_cc_vendor in #(
   xlc*) :
