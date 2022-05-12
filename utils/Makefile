@@ -19,10 +19,6 @@ ROOTDIR = ..
 
 include $(ROOTDIR)/Makefile.common
 
-# This value should stay the same, regardless of bootstrapping, to cause
-# MKEXE, MKDLL and MKMAINDLL to be written correctly.
-FLEXLINK_CMD=flexlink
-
 ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
   FLEXDLL_DIR =
 else
@@ -67,8 +63,8 @@ config_main.ml: config.mlp $(ROOTDIR)/Makefile.config Makefile config.common.ml
 	    $(call SUBST,HOST) \
 	    $(call SUBST_STRING,BINDIR) \
 	    $(call SUBST_STRING,LIBDIR) \
-	    $(call SUBST_STRING,MKDLL) \
-	    $(call SUBST_STRING,MKEXE) \
+	    $(call SUBST_STRING,MKDLL_EXP) \
+	    $(call SUBST_STRING,MKEXE_EXP) \
 	    $(call SUBST_STRING,FLEXLINK_LDFLAGS) \
 	    $(call SUBST_STRING,FLEXLINK_DLL_LDFLAGS) \
 	    $(call SUBST_STRING,MKMAINDLL) \
