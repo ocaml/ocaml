@@ -241,6 +241,10 @@ val exists : (char -> bool) -> string -> bool
 (** [exists p s] checks if at least one character of [s] satisfies the predicate
     [p].
     @since 4.13.0 *)
+    
+val replace : char -> char -> string -> string
+(** [replace a b s] replaces all instance of character [a] inside [s] to [b]. 
+    @since 5.0 *)
 
 val trim : string -> string
 (** [trim s] is [s] without leading and trailing whitespace. Whitespace
