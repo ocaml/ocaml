@@ -197,11 +197,11 @@ val fold_right : (char -> 'a -> 'a) -> bytes -> 'a -> 'a
 val for_all : (char -> bool) -> bytes -> bool
 (** [for_all p s] checks if all characters in [s] satisfy the predicate [p].
     @since 4.13.0 *)
-    
+
 val replace : char -> char -> bytes -> bytes
 (** [replace a b s] replaces all instances of character [a] inside [s] to [b]. 
     @since 5.0 *)
-    
+
 val exists : (char -> bool) -> bytes -> bool
 (** [exists p s] checks if at least one character of [s] satisfies the predicate
     [p].
