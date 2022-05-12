@@ -756,6 +756,7 @@ compute_deps
 stdlib_manpages
 PACKLD
 flexdll_chain
+flexlink_cmd
 afl
 function_sections
 flat_float_array
@@ -12899,6 +12900,10 @@ esac
 else
   supports_shared_libraries=true
 fi
+
+# The flexlink command
+
+flexlink_cmd=flexlink
 
 # Define flexlink chain and flags correctly for the different Windows ports
 case $host in #(

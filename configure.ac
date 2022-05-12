@@ -164,6 +164,7 @@ AC_SUBST([windows_unicode])
 AC_SUBST([flat_float_array])
 AC_SUBST([function_sections])
 AC_SUBST([afl])
+AC_SUBST([flexlink_cmd])
 AC_SUBST([flexdll_chain])
 AC_SUBST([PACKLD])
 AC_SUBST([stdlib_manpages])
@@ -690,6 +691,10 @@ AS_IF([test x"$enable_shared" = "xno"],
     [*-pc-windows|*-w64-mingw32],
     [AC_MSG_ERROR([Cannot build native Win32 with --disable-shared])])],
   [supports_shared_libraries=true])
+
+# The flexlink command
+
+flexlink_cmd=flexlink
 
 # Define flexlink chain and flags correctly for the different Windows ports
 AS_CASE([$host],
