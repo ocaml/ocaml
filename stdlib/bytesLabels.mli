@@ -203,7 +203,7 @@ val exists : f:(char -> bool) -> bytes -> bool
     [p].
     @since 4.13.0 *)
 
-val replace : char -> char -> string -> string
+val replace : char -> char -> bytes -> bytes
 (** [replace a b s] replaces all instances of character [a] inside [s] to [b]. 
     @since 5.0 *)
 
