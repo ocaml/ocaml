@@ -89,7 +89,7 @@ let exists f s =
   B.exists f (bos s)
 let for_all f s =
   B.for_all f (bos s)
-  
+
 let replace a b s =
   B.replace a b (bos s) |> bts
 
