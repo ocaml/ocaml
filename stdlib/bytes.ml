@@ -252,6 +252,11 @@ let for_all p s =
     else if p (unsafe_get s i) then loop (succ i)
     else false in
   loop 0
+  
+let replace a b =
+  map (function
+    | x when x = a -> b 
+    | x -> x)
 
 let uppercase_ascii s = map Char.uppercase_ascii s
 let lowercase_ascii s = map Char.lowercase_ascii s
