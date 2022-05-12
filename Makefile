@@ -934,8 +934,8 @@ $(foreach runtime_OBJECT_TYPE, $(runtime_OBJECT_TYPES), \
 runtime/$(UNIX_OR_WIN32)_non_shared.%.$(O): \
   OC_CPPFLAGS += -DBUILDING_LIBCAMLRUNS
 
-$(eval $(call COMPILE_C_FILE,\
-  runtime/$(UNIX_OR_WIN32)_non_shared.%, runtime/$(UNIX_OR_WIN32)))
+$(eval $(call COMPILE_C_FILE,runtime/$(UNIX_OR_WIN32)_non_shared.%, \
+  runtime/$(UNIX_OR_WIN32)))
 
 $(foreach runtime_OBJECT_TYPE,$(subst %,,$(runtime_OBJECT_TYPES)), \
   $(eval \
