@@ -127,7 +127,7 @@ Working version
 
 - #8878: Add String.hash and String.seeded_hash.
   (Tom Kelly, review by Alain Frisch and Nicolás Ojeda Bär)
-  
+
 * #11258: Add Bytes.replace and String.replace.
   (Boning Dong, review by )
 
