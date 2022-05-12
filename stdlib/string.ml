@@ -89,6 +89,9 @@ let exists f s =
   B.exists f (bos s)
 let for_all f s =
   B.for_all f (bos s)
+  
+let replace a b s =
+  B.replace a b (bos s) |> bts
 
 (* Beware: we cannot use B.trim or B.escape because they always make a
    copy, but String.mli spells out some cases where we are not allowed
