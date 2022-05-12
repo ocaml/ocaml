@@ -252,7 +252,7 @@ let for_all p s =
     else if p (unsafe_get s i) then loop (succ i)
     else false in
   loop 0
-  
+
 let replace a b =
   map (function
     | x when x = a -> b 
