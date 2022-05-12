@@ -205,7 +205,7 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 #define Op_val(x) ((value *) (x))
 #define Op_atomic_val(x) ((atomic_value *) (x))
 /* Fields are numbered from 0. */
-#define Field(x, i) (((value *)(x)) [i])           /* Also an l-value. */
+#define Field(x, i) (((volatile value *)(x)) [i]) /* Also an l-value. */
 
 /* Is_young(val) is true iff val is in the reserved area for minor heaps */
 

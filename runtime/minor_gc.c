@@ -418,7 +418,7 @@ again:
          re < ephe_ref_table.ptr; re++) {
       value *data = re->offset == CAML_EPHE_DATA_OFFSET
               ? &Ephe_data(re->ephe)
-              :  &Field(re->ephe, re->offset);
+              : (value*)&Field(re->ephe, re->offset);
       value v = *data;
       if (v != caml_ephe_none && Is_block(v) && Is_young(v) ) {
         mlsize_t offs = Tag_val(v) == Infix_tag ? Infix_offset_val(v) : 0;

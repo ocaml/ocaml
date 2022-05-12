@@ -631,7 +631,7 @@ CAMLprim value caml_ba_get_3(value vb, value vind1, value vind2, value vind3)
 
 CAMLprim value caml_ba_get_generic(value vb, value vind)
 {
-  return caml_ba_get_N(vb, &Field(vind, 0), Wosize_val(vind));
+  return caml_ba_get_N(vb, (value*)&Field(vind, 0), Wosize_val(vind));
 }
 
 
@@ -780,7 +780,7 @@ value caml_ba_set_N(value vb, value * vind, int nargs)
 
 CAMLprim value caml_ba_set_generic(value vb, value vind, value newval)
 {
-  return caml_ba_set_aux(vb, &Field(vind, 0), Wosize_val(vind), newval);
+  return caml_ba_set_aux(vb, (value*)&Field(vind, 0), Wosize_val(vind), newval);
 }
 
 CAMLprim value caml_ba_uint8_set16(value vb, value vind, value newval)

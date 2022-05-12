@@ -49,8 +49,8 @@ CAMLextern value caml_alloc_shr_preserving_profinfo (mlsize_t, tag_t,
 CAMLextern void caml_adjust_gc_speed (mlsize_t, mlsize_t);
 CAMLextern void caml_alloc_dependent_memory (mlsize_t bsz);
 CAMLextern void caml_free_dependent_memory (mlsize_t bsz);
-CAMLextern void caml_modify (value *, value);
-CAMLextern void caml_initialize (value *, value);
+CAMLextern void caml_modify (volatile value *, value);
+CAMLextern void caml_initialize (volatile value *, value);
 CAMLextern int caml_atomic_cas_field (value, intnat, value, value);
 CAMLextern value caml_check_urgent_gc (value);
 #ifdef CAML_INTERNALS

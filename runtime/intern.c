@@ -328,7 +328,7 @@ static struct intern_item * intern_resize_stack(struct caml_intern_state* s,
     if (_n > 0) {                                                       \
       PushItem(s);                                                      \
       sp->op = OReadItems;                                              \
-      sp->dest = _dest;                                                 \
+      sp->dest = (value*)_dest;                                         \
       sp->arg = _n;                                                     \
     }                                                                   \
   } while(0)

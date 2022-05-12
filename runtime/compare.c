@@ -280,8 +280,8 @@ static intnat do_compare_val(struct compare_stack* stk,
       if (sz1 > 1) {
         sp++;
         if (sp >= stk->limit) sp = compare_resize_stack(stk, sp);
-        sp->v1 = &Field(v1, 1);
-        sp->v2 = &Field(v2, 1);
+        sp->v1 = (value*)&Field(v1, 1);
+        sp->v2 = (value*)&Field(v2, 1);
         sp->count = sz1 - 1;
       }
       /* Continue comparison with first field */
