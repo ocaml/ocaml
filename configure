@@ -13255,7 +13255,7 @@ case $cc_basename,$host in #(
     common_cppflags="$common_cppflags -U_WIN32"
     if $supports_shared_libraries; then :
   mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain}"
-      if $bootstrapping_flexlink; then :
+      if $bootstrapping_flexdll; then :
   mkexe_cmd="$boot_flexlink_cmd -exe -chain ${flexdll_chain}"
 else
   mkexe_cmd="$mkexe_cmd_exp"
@@ -13277,7 +13277,7 @@ esac
     ostype="Win32"
     toolchain="mingw"
     mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain}"
-    if $bootstrapping_flexlink; then :
+    if $bootstrapping_flexdll; then :
   mkexe_cmd="${boot_flexlink_cmd} -exe -chain ${flexdll_chain}"
 else
   mkexe_cmd="$mkexe_cmd_exp"
@@ -13290,7 +13290,7 @@ fi
     toolchain=msvc
     ostype="Win32"
     mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain}"
-    if $bootstrapping_flexlink; then :
+    if $bootstrapping_flexdll; then :
   mkexe_cmd="${boot_flexlink_cmd} -exe -chain ${flexdll_chain}"
 else
   mkexe_cmd="$mkexe_cmd_exp"
