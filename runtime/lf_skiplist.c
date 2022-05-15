@@ -444,55 +444,52 @@ int caml_lf_skiplist_remove(struct lf_skiplist *sk, uintnat key) {
   struct lf_skipcell *succ;
   int marked;
 
-  while (1) {
-    /* As with insert. If the node doesn't exist, we don't need to do anything.
-       While we're checking for it we populate the predecessor nodes and
-       successor nodes at each level. */
-    int found = skiplist_find(sk, key, preds, succs);
+  /* As with insert. If the node doesn't exist, we don't need to do anything.
+     While we're checking for it we populate the predecessor nodes and successor
+     nodes at each level. */
+  int found = skiplist_find(sk, key, preds, succs);
 
-    if (!found) {
-      return 0;
-    } else {
-      /* When the node exists in the skiplist, then succs[0] must point to it.
-         Note: this isn't the case for levels > 0. */
-      struct lf_skipcell *to_remove = succs[0];
-      for (int level = to_remove->top_level; level >= 1; level--) {
-        /* We mark each of the forward pointers at every level the node is
-           present at. We may be raced by another thread deleting the same node
-           and by threads inserting new nodes directly after the node we are
-           removing, so we need to retry the CAS in a loop to deal with the
-           latter. */
+  if (!found) {
+    return 0;
+  } else {
+    /* When the node exists in the skiplist, then succs[0] must point to it.
+       Note: this isn't the case for levels > 0. */
+    struct lf_skipcell *to_remove = succs[0];
+    for (int level = to_remove->top_level; level >= 1; level--) {
+      /* We mark each of the forward pointers at every level the node is present
+         at. We may be raced by another thread deleting the same node and by
+         threads inserting new nodes directly after the node we are removing,
+         so we need to retry the CAS in a loop to deal with the latter. */
+      LF_SK_EXTRACT(to_remove->forward[level], marked, succ);
+
+      while (!marked) {
+        atomic_compare_exchange_strong(&to_remove->forward[level], &succ,
+                                       LF_SK_MARKED(succ));
         LF_SK_EXTRACT(to_remove->forward[level], marked, succ);
-
-        while (!marked) {
-          atomic_compare_exchange_strong(&to_remove->forward[level], &succ,
-                                         LF_SK_MARKED(succ));
-          LF_SK_EXTRACT(to_remove->forward[level], marked, succ);
-        }
       }
+    }
 
-      /* The bottom layer is what ultimately determines whether the node is
-         present in the skiplist or not. We try to remove it and if we succeed
-         then indicate so to the caller. If not then another thread raced us an
-         won. */
+    /* The bottom layer is what ultimately determines whether the node is
+       present in the skiplist or not. We try to remove it and if we succeed
+       then indicate so to the caller. If not then another thread raced us an
+       won. */
+    LF_SK_EXTRACT(to_remove->forward[0], marked, succ);
+    while (1) {
+      int mark_success = atomic_compare_exchange_strong(
+          &to_remove->forward[0], &succ, LF_SK_MARKED(succ));
+
       LF_SK_EXTRACT(to_remove->forward[0], marked, succ);
-      while (1) {
-        int mark_success = atomic_compare_exchange_strong(
-            &to_remove->forward[0], &succ, LF_SK_MARKED(succ));
 
-        LF_SK_EXTRACT(to_remove->forward[0], marked, succ);
-
-        if (mark_success) {
-          skiplist_find(sk, key, preds, succs); /* This will fix up the mark */
-          return 1;
-        } else if (marked) {
-          return 0; /* Someone else beat us to removing it */
-        }
-
-        /* If we end up here then we lost to a thread inserting a node directly
-           after the node we were removing. That's why we move on one successor.
-         */
+      if (mark_success) {
+        skiplist_find(sk, key, preds, succs); /* This will fix up the mark */
+        return 1;
+      } else if (marked) {
+        return 0; /* Someone else beat us to removing it */
       }
+
+      /* If we end up here then we lost to a thread inserting a node directly
+         after the node we were removing. That's why we move on one successor.
+       */
     }
   }
 }
