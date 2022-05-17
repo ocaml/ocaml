@@ -303,6 +303,10 @@ Working version
   the class definition.
   (Nicolás Ojeda Bär, review by Leo White)
 
+- #11263: caml/misc.h: check whether `_MSC_VER` is defined before using it. This
+  could break the build of the compiler on non-gcc non-clang Unix builds.
+  (Nicolás Ojeda Bär, review by Sebastien Hinderer)
+
 OCaml 4.14.0
 ----------------
 
