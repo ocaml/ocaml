@@ -170,7 +170,7 @@ CAMLexport struct channel * caml_open_descriptor_in(int fd)
   channel->curr = channel->max = channel->buff;
   channel->end = channel->buff + IO_BUFFER_SIZE;
   caml_plat_mutex_init(&channel->mutex);
-  atomic_store_rel(&channel->refcount, 0);
+  channel->refcount = 0;
   channel->prev = NULL;
   channel->name = NULL;
   channel->flags = descriptor_is_in_binary_mode(fd) ? 0 : CHANNEL_TEXT_MODE;
@@ -198,7 +198,7 @@ CAMLexport void caml_close_channel(struct channel *channel)
   /* don't run concurrently with caml_ml_out_channels_list that may resurrect
      a dead channel . */
   caml_plat_lock (&caml_all_opened_channels_mutex);
-  if (atomic_load_acq(&channel->refcount) > 0) {
+  if (channel->refcount > 0) {
     caml_plat_unlock (&caml_all_opened_channels_mutex);
     return;
   }
@@ -514,7 +514,7 @@ void caml_finalize_channel(value vchan)
   /* don't run concurrently with caml_ml_out_channels_list that may resurrect
      a dead channel . */
   caml_plat_lock (&caml_all_opened_channels_mutex);
-  if (atomic_fetch_add (&chan->refcount, -1) > 1) {
+  if ( chan->refcount-- > 1) {
     caml_plat_unlock (&caml_all_opened_channels_mutex);
     return;
   }
@@ -578,7 +578,7 @@ static struct custom_operations channel_operations = {
 CAMLexport value caml_alloc_channel(struct channel *chan)
 {
   value res;
-  atomic_fetch_add (&chan->refcount, 1);
+  chan->refcount += 1;
   res = caml_alloc_custom_mem(&channel_operations, sizeof(struct channel *),
                               sizeof(struct channel));
   Channel(res) = chan;
@@ -634,7 +634,7 @@ CAMLprim value caml_ml_out_channels_list (value unit)
     if (channel->max == NULL
         && channel->flags & CHANNEL_FLAG_MANAGED_BY_GC) {
       /* refcount is incremented here to keep the channel alive */
-      atomic_fetch_add (&channel->refcount, 1);
+      channel->refcount += 1;
       num_channels++;
       cl_tmp = caml_stat_alloc_noexc (sizeof(struct channel_list));
       if (cl_tmp == NULL)
@@ -649,10 +649,14 @@ CAMLprim value caml_ml_out_channels_list (value unit)
   res = Val_emptylist;
   cl_tmp = NULL;
   for (i = 0; i < num_channels; i++) {
+
+    caml_plat_lock (&caml_all_opened_channels_mutex);
     chan = caml_alloc_channel (channel_list->channel);
     /* refcount would have been incremented by caml_alloc_channel. Decrement
      * our earlier increment */
-    atomic_fetch_add (&channel_list->channel->refcount, -1);
+    channel_list->channel->refcount -= 1;
+    caml_plat_unlock (&caml_all_opened_channels_mutex);
+
     tail = res;
     res = caml_alloc_small (2, Tag_cons);
     Field (res, 0) = chan;

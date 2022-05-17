@@ -44,7 +44,7 @@ struct channel {
   char * max;                   /* Logical end of the buffer (for input) */
   caml_plat_mutex mutex;        /* Mutex protecting buffer */
   struct channel * next, * prev;/* Double chaining of channels (flush_all) */
-  atomic_uintnat refcount;      /* Number of custom blocks owning the channel */
+  uintnat refcount;             /* Number of custom blocks owning the channel */
   int flags;                    /* Bitfield */
   char buff[IO_BUFFER_SIZE];    /* The buffer itself */
   char * name;                  /* Optional name (to report fd leaks) */
