@@ -35,7 +35,7 @@
   /* Supported since at least GCC 3.1 */
   #define CAMLdeprecated_typedef(name, type) \
     typedef type name __attribute ((deprecated))
-#elif _MSC_VER >= 1310
+#elif defined(_MSC_VER) && _MSC_VER >= 1310
   /* NB deprecated("message") only supported from _MSC_VER >= 1400 */
   #define CAMLdeprecated_typedef(name, type) \
     typedef __declspec(deprecated) type name
