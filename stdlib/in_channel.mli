@@ -128,16 +128,25 @@ val really_input : t -> bytes -> int -> int -> unit option
     Returns [None] if the end of file is reached before [len] characters have
     been read.
 
+    If the same channel is read concurrently by multiple threads, the bytes
+    read by [really_input] are not guaranteed to be contiguous.
+
     @raise Invalid_argument if [pos] and [len] do not designate a valid range of
     [buf]. *)
 
 val really_input_string : t -> int -> string option
 (** [really_input_string ic len] reads [len] characters from channel [ic] and
     returns them in a new string.  Returns [None] if the end of file is reached
-    before [len] characters have been read. *)
+    before [len] characters have been read.
+
+    If the same channel is read concurrently by multiple threads, the returned
+    string is not guaranteed to contain contiguous characters from the input. *)
 
 val input_all : t -> string
-(** [input_all ic] reads all remaining data from [ic]. *)
+(** [input_all ic] reads all remaining data from [ic].
+
+    If the same channel is read concurrently by multiple threads, the returned
+    string is not guaranteed to contain contiguous characters from the input. *)
 
 val set_binary_mode : t -> bool -> unit
 (** [set_binary_mode ic true] sets the channel [ic] to binary mode: no
