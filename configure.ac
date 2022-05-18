@@ -206,6 +206,8 @@ AC_SUBST([PACKLD])
 AC_SUBST([stdlib_manpages])
 AC_SUBST([compute_deps])
 AC_SUBST([force_instrumented_runtime])
+AC_SUBST([ocaml_bindir])
+AC_SUBST([ocaml_libdir])
 AC_SUBST([QS])
 
 ## Generated files
@@ -2216,6 +2218,19 @@ AS_IF([test x"$enable_stdlib_manpages" != "xno"],
 
 # Do not permanently cache the result of flexdll.h
 unset ac_cv_header_flexdll_h
+
+# Evaluate install directories
+# (this is needed for the OCaml configuration module)
+AC_CONFIG_COMMANDS_PRE([
+  saved_exec_prefix="$exec_prefix"
+  saved_prefix="$prefix"
+  AS_IF([test "x$prefix" = "xNONE"],[prefix="$ac_default_prefix"])
+  AS_IF([test "x$exec_prefix" = "xNONE"],[exec_prefix="$prefix"])
+  eval "exec_prefix=\"$exec_prefix\""
+  eval "ocaml_bindir=\"$bindir\""
+  eval "ocaml_libdir=\"$libdir\""
+  prefix="$saved_prefix"
+  exec_prefix="$saved_exec_prefix"])
 
 # Just before config.status is generated, determine the final values for MKEXE,
 # MKDLL, MKMAINDLL and MKEXE_VIA_CC. The final variables controlling these are:

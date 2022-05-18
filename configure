@@ -751,6 +751,8 @@ build_vendor
 build_cpu
 build
 QS
+ocaml_libdir
+ocaml_bindir
 force_instrumented_runtime
 compute_deps
 stdlib_manpages
@@ -2978,6 +2980,8 @@ OCAML_VERSION_SHORT=5.1
 
 
  # TODO: rename this variable
+
+
 
 
 
@@ -18354,6 +18358,10 @@ fi
 # Do not permanently cache the result of flexdll.h
 unset ac_cv_header_flexdll_h
 
+# Evaluate install directories
+# (this is needed for the OCaml configuration module)
+
+
 # Just before config.status is generated, determine the final values for MKEXE,
 # MKDLL, MKMAINDLL and MKEXE_VIA_CC. The final variables controlling these are:
 # $mkexe - the linking commmand and munged CFLAGS + any extra flexlink flags
@@ -18494,6 +18502,20 @@ LTLIBOBJS=$ac_ltlibobjs
     fi
   done
 
+
+  saved_exec_prefix="$exec_prefix"
+  saved_prefix="$prefix"
+  if test "x$prefix" = "xNONE"; then :
+  prefix="$ac_default_prefix"
+fi
+  if test "x$exec_prefix" = "xNONE"; then :
+  exec_prefix="$prefix"
+fi
+  eval "exec_prefix=\"$exec_prefix\""
+  eval "ocaml_bindir=\"$bindir\""
+  eval "ocaml_libdir=\"$libdir\""
+  prefix="$saved_prefix"
+  exec_prefix="$saved_exec_prefix"
 
   # Construct $mkexe
   mkexe="$mkexe_cmd"
