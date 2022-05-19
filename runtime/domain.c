@@ -671,6 +671,7 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
   domain_state->external_raise = NULL;
   domain_state->trap_sp_off = 1;
   domain_state->trap_barrier_off = 0;
+  domain_state->trap_barrier_block = NULL;
 #endif
 
   caml_reset_young_limit(domain_state);

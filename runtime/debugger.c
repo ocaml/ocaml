@@ -254,6 +254,7 @@ void caml_debugger_init(void)
   caml_debugger_in_use = 1;
   /* Bigger than default caml_trap_sp_off (1) */
   Caml_state->trap_barrier_off = 2;
+  Caml_state->trap_barrier_block = NULL;
 }
 
 static value getval(struct channel *chan)
@@ -368,7 +369,7 @@ static struct stack_info *frame_block_address (intnat n)
   intnat i = frame_block_number (Caml_state->current_stack);
 
   if (n < 0 || n > i) return NULL;
-  while (i > n){
+  for (; i > n; i--){
     block = block->handler->parent;
     CAMLassert (block != NULL);
   }
@@ -558,6 +559,8 @@ void caml_debugger(enum event_kind event, value param)
       caml_flush(dbg_out);
       break;
     case REQ_SET_TRAP_BARRIER:
+      i = caml_getword(dbg_in);
+      Caml_state->trap_barrier_block = frame_block_address (i);
       i = caml_getword(dbg_in);
       Caml_state->trap_barrier_off = -i;
       break;
