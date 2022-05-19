@@ -578,7 +578,9 @@ static struct custom_operations channel_operations = {
 CAMLexport value caml_alloc_channel(struct channel *chan)
 {
   value res;
+  caml_plat_lock(&caml_all_opened_channels_mutex);
   chan->refcount += 1;
+  caml_plat_unlock(&caml_all_opened_channels_mutex);
   res = caml_alloc_custom_mem(&channel_operations, sizeof(struct channel *),
                               sizeof(struct channel));
   Channel(res) = chan;
@@ -649,14 +651,12 @@ CAMLprim value caml_ml_out_channels_list (value unit)
   res = Val_emptylist;
   cl_tmp = NULL;
   for (i = 0; i < num_channels; i++) {
-
-    caml_plat_lock (&caml_all_opened_channels_mutex);
     chan = caml_alloc_channel (channel_list->channel);
     /* refcount would have been incremented by caml_alloc_channel. Decrement
      * our earlier increment */
+    caml_plat_lock(&caml_all_opened_channels_mutex);
     channel_list->channel->refcount -= 1;
-    caml_plat_unlock (&caml_all_opened_channels_mutex);
-
+    caml_plat_unlock(&caml_all_opened_channels_mutex);
     tail = res;
     res = caml_alloc_small (2, Tag_cons);
     Field (res, 0) = chan;
