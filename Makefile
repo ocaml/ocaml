@@ -1028,7 +1028,7 @@ clean::
 	rm -f runtime/primitives runtime/primitives.new runtime/prims.c \
 	  $(runtime_BUILT_HEADERS)
 	rm -f runtime/domain_state*.inc
-	rm -rf $(DEPDIR)/runtime
+	rm -rf $(DEPDIR)
 	rm -f stdlib/libcamlrun.a stdlib/libcamlrun.lib
 
 .PHONY: runtimeopt
