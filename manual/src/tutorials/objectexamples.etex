@@ -796,7 +796,7 @@ While class types "c1" and "c2" are different, both object types
 Yet, when the domain of a coercion is left implicit and its co-domain
 is an abbreviation of a known class type, then the class type, rather
 than the object type, is used to derive the coercion function. This
-allows leaving the domain implicit in most cases when coercing form a
+allows leaving the domain implicit in most cases when coercing from a
 subclass to its superclass.
 %
 The type of a coercion can always be seen as below:
