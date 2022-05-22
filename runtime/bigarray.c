@@ -561,7 +561,7 @@ static value copy_two_doubles(double d0, double d1)
 
 /* Generic code to read from a big array */
 
-value caml_ba_get_N(value vb, value * vind, int nind)
+value caml_ba_get_N(value vb, volatile value * vind, int nind)
 {
   struct caml_ba_array * b = Caml_ba_array_val(vb);
   intnat index[CAML_BA_MAX_NUM_DIMS];
@@ -631,7 +631,7 @@ CAMLprim value caml_ba_get_3(value vb, value vind1, value vind2, value vind3)
 
 CAMLprim value caml_ba_get_generic(value vb, value vind)
 {
-  return caml_ba_get_N(vb, (value*)&Field(vind, 0), Wosize_val(vind));
+  return caml_ba_get_N(vb, &Field(vind, 0), Wosize_val(vind));
 }
 
 
@@ -702,7 +702,8 @@ CAMLprim value caml_ba_uint8_get64(value vb, value vind)
 
 /* Generic write to a big array */
 
-static value caml_ba_set_aux(value vb, value * vind, intnat nind, value newval)
+static value caml_ba_set_aux(value vb, volatile value * vind,
+                             intnat nind, value newval)
 {
   struct caml_ba_array * b = Caml_ba_array_val(vb);
   intnat index[CAML_BA_MAX_NUM_DIMS];
@@ -780,7 +781,7 @@ value caml_ba_set_N(value vb, value * vind, int nargs)
 
 CAMLprim value caml_ba_set_generic(value vb, value vind, value newval)
 {
-  return caml_ba_set_aux(vb, (value*)&Field(vind, 0), Wosize_val(vind), newval);
+  return caml_ba_set_aux(vb, &Field(vind, 0), Wosize_val(vind), newval);
 }
 
 CAMLprim value caml_ba_uint8_set16(value vb, value vind, value newval)

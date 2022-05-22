@@ -95,7 +95,7 @@ extern int caml_debug_is_major(value val);
   } while (0)
 
 Caml_inline void add_to_ephe_ref_table (struct caml_ephe_ref_table *tbl,
-                                          value ar, mlsize_t offset)
+                                        value ar, mlsize_t offset)
 {
   struct caml_ephe_ref_elt *ephe_ref;
   if (tbl->ptr >= tbl->limit){

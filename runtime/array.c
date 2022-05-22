@@ -582,7 +582,7 @@ CAMLprim value caml_array_fill(value array,
         caml_darken(NULL, old, NULL);
       }
       if (is_val_young_block)
-        Ref_table_add(&Caml_state->minor_tables->major_ref, (value*)fp);
+        Ref_table_add(&Caml_state->minor_tables->major_ref, fp);
     }
     if (is_val_young_block) caml_check_urgent_gc (Val_unit);
   }

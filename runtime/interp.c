@@ -657,25 +657,25 @@ value caml_interprete(code_t prog, asize_t prog_size)
       mlsize_t envofs = nfuncs * 3 - 1;
       mlsize_t blksize = envofs + nvars;
       int i;
-      value * p;
+      volatile value * p;
       if (nvars > 0) *--sp = accu;
       if (blksize <= Max_young_wosize) {
         Alloc_small(accu, blksize, Closure_tag, Enter_gc);
-        p = (value*)&Field(accu, envofs);
+        p = &Field(accu, envofs);
         for (i = 0; i < nvars; i++, p++) *p = sp[i];
       } else {
         /* PR#6385: must allocate in major heap */
         /* caml_alloc_shr and caml_initialize never trigger a GC,
            so no need to Setup_for_gc */
         accu = caml_alloc_shr(blksize, Closure_tag);
-        p = (value*)&Field(accu, envofs);
+        p = &Field(accu, envofs);
         for (i = 0; i < nvars; i++, p++) caml_initialize(p, sp[i]);
       }
       sp += nvars;
       /* The code pointers and infix headers are not in the heap,
          so no need to go through caml_initialize. */
       *--sp = accu;
-      p = (value*)&Field(accu, 0);
+      p = &Field(accu, 0);
       *p++ = (value) (pc + pc[0]);
       *p++ = Make_closinfo(0, envofs);
       for (i = 1; i < nfuncs; i++) {

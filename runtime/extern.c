@@ -48,7 +48,7 @@ enum {
 #define EXTERN_STACK_INIT_SIZE 256
 #define EXTERN_STACK_MAX_SIZE (1024*1024*100)
 
-struct extern_item { value * v; mlsize_t count; };
+struct extern_item { volatile value * v; mlsize_t count; };
 
 /* Hash table to record already-marshaled objects and their positions */
 
@@ -845,7 +845,7 @@ static void extern_rec(struct caml_extern_state* s, value v)
         sp++;
         if (sp >= s->extern_stack_limit)
           sp = extern_resize_stack(s, sp);
-        sp->v = (value*)&Field(v, i + 1);
+        sp->v = &Field(v, i + 1);
         sp->count = sz - i - 1;
       }
       /* Continue serialization with the first environment field */
@@ -862,7 +862,7 @@ static void extern_rec(struct caml_extern_state* s, value v)
         sp++;
         if (sp >= s->extern_stack_limit)
           sp = extern_resize_stack(s, sp);
-        sp->v = (value*)&Field(v, 1);
+        sp->v = &Field(v, 1);
         sp->count = sz - 1;
       }
       /* Continue serialization with the first field */
@@ -1244,7 +1244,7 @@ CAMLprim value caml_obj_reachable_words(value v)
             sp++;
             if (sp >= s->extern_stack_limit)
               sp = extern_resize_stack(s, sp);
-            sp->v = (value*)&Field(v, i + 1);
+            sp->v = &Field(v, i + 1);
             sp->count = sz - i - 1;
           }
           /* Continue with field i */

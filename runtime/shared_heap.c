@@ -710,7 +710,7 @@ struct heap_verify_state* caml_verify_begin (void)
   return st;
 }
 
-static void verify_push (void* st_v, value v, value* p)
+static void verify_push (void* st_v, value v, volatile value* ignored)
 {
   struct heap_verify_state* st = st_v;
   if (!Is_block(v)) return;
@@ -723,7 +723,7 @@ static void verify_push (void* st_v, value v, value* p)
   st->stack[st->sp++] = v;
 }
 
-void caml_verify_root(void* state, value v, value* p)
+void caml_verify_root(void* state, value v, volatile value* p)
 {
   verify_push(state, v, p);
 }
