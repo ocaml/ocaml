@@ -494,11 +494,6 @@ static void caml_thread_stop(void)
      again. */
   caml_thread_remove_and_free(Active_thread);
   caml_thread_restore_runtime_state();
-
-  /* If no other OCaml thread remains, ask the tick thread to stop
-     so that it does not prevent the whole process from exiting (#9971) */
-  if (Active_thread == NULL) caml_thread_cleanup(Val_unit);
-
   thread_lock_release(Caml_state->id);
 }
 
