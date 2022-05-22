@@ -165,11 +165,14 @@ static void caml_thread_scan_roots(
 
   active = th = thread_table[domain_state->id].active_thread;
 
-  /* GC could be triggered before [active_thread] is initialized */
+  /* The GC could be triggered before [active_thread] is initialized,
+     or after [caml_thread_domain_stop_hook] has been called; in this
+     case do nothing. */
   if (active != NULL) {
     do {
       (*action)(fdata, th->descr, &th->descr);
       (*action)(fdata, th->backtrace_last_exn, &th->backtrace_last_exn);
+      /* Don't rescan the stack of the current thread, it was done already */
       if (th != active) {
         if (th->current_stack != NULL)
           caml_do_local_roots(action, fflags, fdata,
@@ -179,11 +182,14 @@ static void caml_thread_scan_roots(
     } while (th != active);
   }
 
+  /* Hook */
   if (prev_scan_roots_hook != NULL)
     (*prev_scan_roots_hook)(action, fflags, fdata, domain_state);
 
   return;
 }
+
+/* Saving and restoring runtime state in this_thread */
 
 static void save_runtime_state(void)
 {
@@ -494,6 +500,10 @@ CAMLprim value caml_thread_initialize(value unit)
   return Val_unit;
 }
 
+/* Cleanup the thread machinery when the runtime is shut down. Joining the tick
+   thread take 25ms on average / 50ms in the worst case, so we don't do it on
+   program exit. (FIXME: not implemented in OCaml 5 yet) */
+
 CAMLprim value caml_thread_cleanup(value unit)
 {
   if (Tick_thread_running){
@@ -517,7 +527,7 @@ static void caml_thread_stop(void)
   /* The main domain thread does not go through [caml_thread_stop]. There is
      always one more thread in the chain at this point in time. */
   CAMLassert(Active_thread->next != Active_thread);
-
+  /* Signal that the thread has terminated */
   caml_threadstatus_terminate(Terminated(Active_thread->descr));
 
   /* The following also sets Active_thread to a sane value in case the
@@ -628,6 +638,9 @@ CAMLprim value caml_thread_new(value clos)
     sync_check_error(err, "Thread.create");
   }
 
+  /* Create the tick thread if not already done.
+     Because of PR#4666, we start the tick thread late, only when we create
+     the first additional thread in the current process */
   if (! Tick_thread_running) {
     err = create_tick_thread();
     sync_check_error(err, "Thread.create");
