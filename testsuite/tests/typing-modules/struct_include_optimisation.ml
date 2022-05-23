@@ -45,5 +45,20 @@ end : sig val d : int end)
 
 let () = count "reordering coercion"
 
+module Outer = struct
+  include (struct
+    module Inner = struct
+      include (struct
+        let e = next ()
+      end)
+    end
+  end)
+end
+
 let () =
-  Printf.printf "%20s: %d%d%d%d%d%d\n" "outputs" x y a b c d
+  (* The above might actually allocate the module blocks Outer and Inner,
+     but should not allocate more than 4 words (2 each) *)
+  assert (Gc.minor_words () -. allocs.total <= 4.)
+
+let () =
+  Printf.printf "%20s: %d%d%d%d%d%d%d\n" "outputs" x y a b c d Outer.Inner.e
