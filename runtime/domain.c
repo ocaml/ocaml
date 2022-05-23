@@ -1765,13 +1765,3 @@ CAMLprim value caml_domain_dls_get(value unused)
   CAMLnoalloc;
   return Caml_state->dls_root;
 }
-
-CAMLprim value caml_ml_domain_set_name(value name)
-{
-  CAMLparam1(name);
-
-  if (caml_string_length(name) >= MAX_DOMAIN_NAME_LENGTH)
-    caml_invalid_argument("caml_ml_domain_set_name");
-  caml_thread_setname(String_val(name));
-  CAMLreturn(Val_unit);
-}
