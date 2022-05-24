@@ -68,9 +68,9 @@ extern value win_alloc_handle(HANDLE);
 extern value win_alloc_socket(SOCKET);
 extern int win_CRT_fd_of_filedescr(value handle);
 
-extern SOCKET win32_socket(int domain, int type, int protocol,
-                           LPWSAPROTOCOL_INFO info,
-                           BOOL inherit);
+extern SOCKET caml_win32_socket(int domain, int type, int protocol,
+                                LPWSAPROTOCOL_INFO info,
+                                BOOL inherit);
 
 #define NO_CRT_FD (-1)
 

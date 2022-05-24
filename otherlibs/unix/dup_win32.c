@@ -45,8 +45,8 @@ static SOCKET duplicate_socket(BOOL inherit, SOCKET oldsock)
     return INVALID_SOCKET;
   }
 
-  return win32_socket(info.iAddressFamily, info.iSocketType, info.iProtocol,
-                      &info, inherit);
+  return caml_win32_socket(info.iAddressFamily, info.iSocketType,
+                           info.iProtocol, &info, inherit);
 }
 
 CAMLprim value unix_dup(value cloexec, value fd)

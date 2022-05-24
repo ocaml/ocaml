@@ -75,7 +75,7 @@ static int socketpair(int domain, int type, int protocol,
     goto fail_path;
   }
 
-  listener = win32_socket(domain, type, protocol, NULL, inherit);
+  listener = caml_win32_socket(domain, type, protocol, NULL, inherit);
   if (listener == INVALID_SOCKET)
     goto fail_wsa;
 
@@ -96,7 +96,7 @@ static int socketpair(int domain, int type, int protocol,
   if (rc == SOCKET_ERROR)
     goto fail_wsa;
 
-  client = win32_socket(domain, type, protocol, NULL, inherit);
+  client = caml_win32_socket(domain, type, protocol, NULL, inherit);
   if (client == INVALID_SOCKET)
     goto fail_wsa;
 
