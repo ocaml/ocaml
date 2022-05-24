@@ -247,9 +247,9 @@ val auto_include_alert: string -> unit
 (** Prints an alert that -I +lib has been automatically added to the load
     path *)
 
-val deprecated_script_alert: unit -> unit
-(** Prints an alert that [ocaml foo] has been deprecated in favour of
-    [ocaml ./foo] *)
+val deprecated_script_alert: string -> unit
+(** [deprecated_script_alert command] prints an alert that [command foo] has
+    been deprecated in favour of [command ./foo] *)
 
 (** {1 Reporting errors} *)
 

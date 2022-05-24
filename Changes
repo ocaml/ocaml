@@ -225,9 +225,9 @@ Working version
 - #11184: Stop calling ranlib on created / installed libraries
   (Sébastien Hinderer, review by Xavier Leroy)
 
-- #11253: Deprecate `ocaml script` where `script` has no extension and is an
-  implicit basename.
-  (David Allsopp, review by Florian Angeletti)
+- #11253: Deprecate `ocaml script` and `ocamlnat` script where `script` has no
+  extension and is an implicit basename.
+  (David Allsopp, review by Florian Angeletti and Sébastien Hinderer)
 
 ### Internal/compiler-libs changes:
 
