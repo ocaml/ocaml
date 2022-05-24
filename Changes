@@ -303,9 +303,11 @@ Working version
   the class definition.
   (Nicolás Ojeda Bär, review by Leo White)
 
-- #11263: caml/misc.h: check whether `_MSC_VER` is defined before using it. This
-  could break the build of the compiler on non-gcc non-clang Unix builds.
-  (Nicolás Ojeda Bär, review by Sebastien Hinderer)
+- #11263, #11267: caml/misc.h: check whether `_MSC_VER` is defined before using
+  it to ensure that the headers can always be used in code which turns on
+  -Wundef (or equivalent).
+  (David Allsopp and Nicolás Ojeda Bär, review by Nicolás Ojeda Bär and
+   Sebastien Hinderer)
 
 OCaml 4.14.0
 ----------------
