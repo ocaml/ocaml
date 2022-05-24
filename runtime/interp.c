@@ -133,14 +133,16 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
   goto dispatch_instr
 #endif
 
-inline void check_trap_barrier_for_exception (caml_domain_state* domain_state)
+Caml_inline void check_trap_barrier_for_exception
+  (caml_domain_state* domain_state)
 {
   if (domain_state->current_stack == domain_state->trap_barrier_block
       && domain_state->trap_sp_off >= domain_state->trap_barrier_off)
     caml_debugger(TRAP_BARRIER, Val_unit);
 }
 
-inline void check_trap_barrier_for_effect (caml_domain_state* domain_state)
+Caml_inline void check_trap_barrier_for_effect
+  (caml_domain_state* domain_state)
 {
   if (domain_state->current_stack == domain_state->trap_barrier_block){
     caml_debugger(TRAP_BARRIER, Val_unit);
