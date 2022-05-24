@@ -329,7 +329,7 @@ struct caml__roots_block {
   #define CAMLunused_start __attribute__ ((unused))
   #define CAMLunused_end
   #define CAMLunused __attribute__ ((unused))
-#elif _MSC_VER >= 1500
+#elif defined(_MSC_VER) && _MSC_VER >= 1500
   #define CAMLunused_start  __pragma( warning (push) )           \
     __pragma( warning (disable:4189 ) )
   #define CAMLunused_end __pragma( warning (pop))
