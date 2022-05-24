@@ -23,7 +23,7 @@
      callback.c weak.c
    finalise.c dynlink.c backtrace_byt.c backtrace.c
      afl.c
-   bigarray.c eventlog.c)
+   bigarray.c runtime_events.c)
  (action  (with-stdout-to %{targets} (run %{dep:gen_primitives.sh}))))
 
 (rule
@@ -40,7 +40,6 @@
      major_gc.c
    minor_gc.c memory.c alloc.c roots_byt.c globroots.c fail_byt.c signals.c
    signals_byt.c printexc.c backtrace_byt.c backtrace.c compare.c ints.c
-     eventlog.c
    floats.c str.c array.c io.c extern.c intern.c hash.c sys.c meta.c parsing.c
      gc_ctrl.c  md5.c obj.c
    lexing.c callback.c debugger.c weak.c compact.c finalise.c custom.c dynlink.c

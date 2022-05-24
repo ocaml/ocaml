@@ -4,6 +4,12 @@ Working version
 ### Language features:
 
 ### Runtime system:
+- #10964: Ring-buffer based runtime tracing (runtime_events)
+  Runtime_events is a very low overhead runtime tracing system designed for
+  continuous monitoring of OCaml applications.
+  (Sadiq Jaffer, review by Anil Madhavapeddy, Enguerrand Decorne,
+  Richard Warburton, Gabriel Scherer, Sabine Schmaltz, Florian Angeletti,
+  Patrick Ferris, Tom Kelly)
 
 - #10831: Multicore OCaml
   (The multicore team, caml-devel and more)

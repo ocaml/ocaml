@@ -97,6 +97,11 @@ let systhreads =
   (make_library_modifier
     "threads" [compiler_subdir ["otherlibs"; "systhreads"]])
 
+let runtime_events =
+  unix @
+  (make_library_modifier
+    "runtime_events" [compiler_subdir ["otherlibs"; "runtime_events"]])
+
 let compilerlibs_subdirs =
 [
   "asmcomp";
@@ -137,6 +142,7 @@ let _ =
       "ocamloptcomp";
       "ocamltoplevel";
     ];
+  register_modifiers "runtime_events" runtime_events;
   register_modifiers "systhreads" systhreads;
   register_modifiers "latex" latex;
   register_modifiers "html" html;

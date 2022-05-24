@@ -26,6 +26,7 @@
 #include "caml/misc.h"
 #include "caml/memory.h"
 #include "caml/mlvalues.h"
+#include "caml/runtime_events.h"
 #ifdef NATIVE_CODE
 #include "caml/stack.h"
 #include "caml/frame_descriptors.h"
@@ -35,7 +36,6 @@
 #include "caml/globroots.h"
 #include "caml/signals.h"
 #include "caml/startup.h"
-#include "caml/eventlog.h"
 #include "caml/fail.h"
 
 uintnat caml_max_stack_wsize;

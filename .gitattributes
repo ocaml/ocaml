@@ -137,7 +137,6 @@ testsuite/tests/lib-dynlink-domains/main.ml  typo.very-long-line
 testsuite/tests/tool-ocamltest/norm*.reference binary
 
 tools/magic                       typo.missing-header
-tools/eventlog_metadata.in        typo.missing-header
 
 # TODO we should fix the long-line errors in yacc/*.c
 /yacc/*.[ch]         typo.very-long-line=may

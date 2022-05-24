@@ -22,7 +22,7 @@
 #include "caml/config.h"
 #include "caml/codefrag.h"
 #include "caml/domain.h"
-#include "caml/eventlog.h"
+#include "caml/runtime_events.h"
 #include "caml/fail.h"
 #include "caml/fiber.h"
 #include "caml/finalise.h"
@@ -1079,6 +1079,11 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
      they should not run while global roots are being marked.*/
   caml_global_barrier();
 
+  /* Someone should flush the allocation stats we gathered during the cycle */
+  if( participating[0] == Caml_state ) {
+    CAML_EV_ALLOC_FLUSH();
+  }
+
   CAML_EV_END(EV_MAJOR_GC_STW);
   CAML_EV_END(EV_MAJOR_GC_CYCLE_DOMAINS);
 }
@@ -1174,7 +1179,8 @@ static char collection_slice_mode_char(collection_slice_mode mode)
 static intnat major_collection_slice(intnat howmuch,
                                      int participant_count,
                                      caml_domain_state** barrier_participants,
-                                     collection_slice_mode mode)
+                                     collection_slice_mode mode,
+                                     int major_cycle_spinning)
 {
   caml_domain_state* domain_state = Caml_state;
   intnat sweep_work = 0, mark_work = 0;
@@ -1183,8 +1189,11 @@ static intnat major_collection_slice(intnat howmuch,
   int was_marking = 0;
   uintnat saved_ephe_cycle;
   uintnat saved_major_cycle = caml_major_cycles_completed;
-  int log_events = mode != Slice_opportunistic || (caml_params->verb_gc & 0x40);
   intnat computed_work, budget, interrupted_budget = 0;
+
+  int log_events = mode != Slice_opportunistic ||
+                   (caml_params->verb_gc & 0x40) ||
+                   major_cycle_spinning;
 
   update_major_slice_work();
   computed_work = get_major_slice_work(howmuch);
@@ -1348,7 +1357,7 @@ mark_again:
 
 void caml_opportunistic_major_collection_slice(intnat howmuch)
 {
-  major_collection_slice(howmuch, 0, 0, Slice_opportunistic);
+  major_collection_slice(howmuch, 0, 0, Slice_opportunistic, 0);
 }
 
 void caml_major_collection_slice(intnat howmuch)
@@ -1360,7 +1369,8 @@ void caml_major_collection_slice(intnat howmuch)
         AUTO_TRIGGERED_MAJOR_SLICE,
         0,
         0,
-        Slice_interruptible
+        Slice_interruptible,
+        0
         );
     if (interrupted_work > 0) {
       caml_gc_log("Major slice interrupted, rescheduling major slice");
@@ -1369,7 +1379,7 @@ void caml_major_collection_slice(intnat howmuch)
   } else {
     /* TODO: could make forced API slices interruptible, but would need to do
        accounting or pass up interrupt */
-    major_collection_slice(howmuch, 0, 0, Slice_uninterruptible);
+    major_collection_slice(howmuch, 0, 0, Slice_uninterruptible, 0);
   }
 }
 
@@ -1383,10 +1393,12 @@ static void finish_major_cycle_callback (caml_domain_state* domain, void* arg,
   caml_empty_minor_heap_no_major_slice_from_stw
     (domain, (void*)0, participating_count, participating);
 
+  CAML_EV_BEGIN(EV_MAJOR_FINISH_CYCLE);
   while (saved_major_cycles == caml_major_cycles_completed) {
     major_collection_slice(10000000, participating_count, participating,
-                           Slice_uninterruptible);
+                           Slice_uninterruptible, 1);
   }
+  CAML_EV_END(EV_MAJOR_FINISH_CYCLE);
 }
 
 void caml_finish_major_cycle (void)

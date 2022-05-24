@@ -18,7 +18,7 @@
 #include <string.h>
 
 #include "caml/callback.h"
-#include "caml/eventlog.h"
+#include "caml/runtime_events.h"
 #include "caml/fail.h"
 #include "caml/finalise.h"
 #include "caml/memory.h"

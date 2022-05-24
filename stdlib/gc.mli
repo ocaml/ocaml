@@ -413,29 +413,11 @@ val delete_alarm : alarm -> unit
 (** [delete_alarm a] will stop the calls to the function associated
    to [a]. Calling [delete_alarm a] again has no effect. *)
 
-external eventlog_pause : unit -> unit = "caml_eventlog_pause"
-(** [eventlog_pause ()] will pause the collection of traces in the
-   runtime.
-   Traces are collected if the program is linked to the instrumented runtime
-   and started with the environment variable OCAML_EVENTLOG_ENABLED.
-   Events are flushed to disk after pausing, and no new events will be
-   recorded until [eventlog_resume] is called.
+val eventlog_pause : unit -> unit
+[@@ocaml.deprecated "Use Runtime_events.pause instead."]
 
-   @since 4.11
-  *)
-
-external eventlog_resume : unit -> unit = "caml_eventlog_resume"
-(** [eventlog_resume ()] will resume the collection of traces in the
-   runtime.
-   Traces are collected if the program is linked to the instrumented runtime
-   and started with the environment variable OCAML_EVENTLOG_ENABLED.
-   This call can be used after calling [eventlog_pause], or if the program
-   was started with OCAML_EVENTLOG_ENABLED=p. (which pauses the collection of
-   traces before the first event.)
-
-   @since 4.11
-  *)
-
+val eventlog_resume : unit -> unit
+[@@ocaml.deprecated "Use Runtime_events.resume instead."]
 
 (** [Memprof] is a sampling engine for allocated memory words. Every
    allocated word has a probability of being sampled equal to a

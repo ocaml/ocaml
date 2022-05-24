@@ -50,6 +50,7 @@
 #endif
 #include "caml/alloc.h"
 #include "caml/debugger.h"
+#include "caml/runtime_events.h"
 #include "caml/fail.h"
 #include "caml/gc_ctrl.h"
 #include "caml/major_gc.h"
@@ -159,9 +160,9 @@ CAMLexport void caml_do_exit(int retcode)
       }
 
       caml_gc_message(0x400, "allocated_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                      (intnat)allocated_words);
+                    (intnat)allocated_words);
       caml_gc_message(0x400, "minor_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                      (intnat) minwords);
+                    (intnat) minwords);
       caml_gc_message(0x400, "promoted_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
                       (intnat) s.alloc_stats.promoted_words);
       caml_gc_message(0x400, "major_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
@@ -176,13 +177,16 @@ CAMLexport void caml_do_exit(int retcode)
           "forced_major_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
           (intnat)s.alloc_stats.forced_major_collections);
       caml_gc_message(0x400, "heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                      heap_words);
+                    heap_words);
       caml_gc_message(0x400, "top_heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
                       top_heap_words);
       caml_gc_message(0x400, "mean_space_overhead: %lf\n",
                       caml_mean_space_overhead());
     }
   }
+
+/* Tear down runtime_events before we leave */
+CAML_RUNTIME_EVENTS_DESTROY();
 
 #ifndef NATIVE_CODE
   caml_debugger(PROGRAM_EXIT, Val_unit);

@@ -27,7 +27,7 @@
 #include "caml/callback.h"
 #include "caml/domain.h"
 #include "caml/domain_state.h"
-#include "caml/eventlog.h"
+#include "caml/runtime_events.h"
 #include "caml/fail.h"
 #include "caml/fiber.h"
 #include "caml/finalise.h"
@@ -878,8 +878,6 @@ void caml_init_domains(uintnat minor_heap_wsz) {
   CAMLassert (domain_self->state->unique_id == 0);
 
   caml_init_signal_handling();
-
-  CAML_EVENTLOG_INIT();
   caml_domain_set_name("Domain");
 }
 
@@ -950,11 +948,6 @@ static void* backup_thread_func(void* v)
   SET_Caml_state((void*)(di->state));
 
   caml_domain_set_name("Backup");
-
-  CAML_EVENTLOG_IS_BACKUP_THREAD();
-
-  /* TODO: how does the backup thread interact with the eventlog infra?
-   * caml_ev_tag_self_as_backup_thread(); */
 
   msg = atomic_load_acq (&di->backup_thread_msg);
   while (msg != BT_TERMINATE) {
@@ -1086,6 +1079,7 @@ static void* domain_thread_func(void* v)
     caml_gc_log("Domain starting (unique_id = %"ARCH_INTNAT_PRINTF_FORMAT"u)",
                 domain_self->interruptor.unique_id);
     caml_domain_set_name("Domain");
+    CAML_EV_LIFECYCLE(EV_DOMAIN_SPAWN, getpid());
     caml_callback(ml_values->callback, Val_unit);
     domain_terminate();
 
@@ -1114,7 +1108,6 @@ CAMLprim value caml_domain_spawn(value callback, value mutex)
   pthread_t th;
   int err;
 
-  CAML_EV_BEGIN(EV_DOMAIN_SPAWN);
   p.parent = &domain_self->interruptor;
   p.status = Dom_starting;
 
@@ -1169,7 +1162,7 @@ CAMLprim value caml_domain_spawn(value callback, value mutex)
   /* When domain 0 first spawns a domain, the backup thread is not active, we
      ensure it is started here. */
   install_backup_thread(domain_self);
-  CAML_EV_END(EV_DOMAIN_SPAWN);
+
   CAMLreturn (Val_long(p.unique_id));
 }
 
@@ -1498,10 +1491,8 @@ static void caml_poll_gc_work(void)
        (uintnat)Caml_state->young_start) ||
       Caml_state->requested_minor_gc) {
     /* out of minor heap or collection forced */
-    CAML_EV_BEGIN(EV_MINOR);
     Caml_state->requested_minor_gc = 0;
     caml_empty_minor_heaps_once();
-    CAML_EV_END(EV_MINOR);
 
     /* FIXME: a domain will only ever call finalizers if its minor
       heap triggers the minor collection
@@ -1533,8 +1524,8 @@ void caml_handle_gc_interrupt(void)
 {
   CAMLalloc_point_here;
 
-  CAML_EV_BEGIN(EV_INTERRUPT_GC);
   if (caml_incoming_interrupts_queued()) {
+    /* interrupt */
     CAML_EV_BEGIN(EV_INTERRUPT_REMOTE);
     caml_handle_incoming_interrupts();
     CAML_EV_END(EV_INTERRUPT_REMOTE);
@@ -1542,8 +1533,6 @@ void caml_handle_gc_interrupt(void)
 
   caml_reset_young_limit(Caml_state);
   caml_poll_gc_work();
-
-  CAML_EV_END(EV_INTERRUPT_GC);
 }
 
 CAMLexport int caml_bt_is_in_blocking_section(void)
@@ -1722,7 +1711,8 @@ static void domain_terminate (void)
   caml_free_intern_state();
   caml_free_extern_state();
   caml_teardown_major_gc();
-  CAML_EVENTLOG_TEARDOWN();
+  CAML_EV_LIFECYCLE(EV_DOMAIN_TERMINATE, getpid());
+
   caml_teardown_shared_heap(domain_state->shared_heap);
   domain_state->shared_heap = 0;
   caml_free_minor_tables(domain_state->minor_tables);

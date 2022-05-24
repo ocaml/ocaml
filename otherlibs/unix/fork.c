@@ -17,10 +17,21 @@
 
 #include <caml/mlvalues.h>
 #include <caml/debugger.h>
-#include <caml/eventlog.h>
+#include <caml/runtime_events.h>
 #include "unixsupport.h"
 #include <caml/domain.h>
 #include <caml/fail.h>
+
+/* Post-fork tasks to be carried out in the parent */
+void caml_atfork_parent(pid_t child_pid) {
+  CAML_EV_LIFECYCLE(EV_FORK_PARENT, child_pid);
+}
+
+/* Post-fork tasks to be carried out in the child */
+void caml_atfork_child() {
+  caml_runtime_events_post_fork();
+  CAML_EV_LIFECYCLE(EV_FORK_CHILD, 0);
+}
 
 CAMLprim value unix_fork(value unit)
 {
@@ -30,16 +41,17 @@ CAMLprim value unix_fork(value unit)
       ("Unix.fork may not be called while other domains were created");
   }
 
-  CAML_EV_FLUSH();
-
   ret = fork();
-  if (ret == 0) caml_atfork_hook();
+
   if (ret == -1) uerror("fork", Nothing);
 
-  CAML_EVENTLOG_DO({
-      if (ret == 0)
-        caml_eventlog_disable();
-  });
+  if (ret == 0) {
+    caml_atfork_child();
+    /* the following hook can be redefined in other places */
+    caml_atfork_hook();
+  } else {
+    caml_atfork_parent(ret);
+  }
 
   if (caml_debugger_in_use)
     if ((caml_debugger_fork_mode && ret == 0) ||
