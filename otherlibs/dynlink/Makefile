@@ -79,13 +79,13 @@ COMPILERLIBS_SOURCES=\
   utils/identifiable.ml \
   utils/numbers.ml \
   utils/arg_helper.ml \
+  utils/local_store.ml \
+  utils/load_path.ml \
   utils/clflags.ml \
   utils/profile.ml \
   utils/consistbl.ml \
   utils/terminfo.ml \
   utils/warnings.ml \
-  utils/local_store.ml \
-  utils/load_path.ml \
   utils/int_replace_polymorphic_compare.ml \
   utils/lazy_backtrack.ml \
   parsing/location.ml \
@@ -242,21 +242,29 @@ $(eval $(call PROGRAM_SYNONYM,extract_crc))
 $(extract_crc): dynlink.cma byte/dynlink_compilerlibs.cmo extract_crc.cmo
 	$(OCAMLC) -o $@ $^
 
+INSTALL_LIBDIR_DYNLINK = $(INSTALL_LIBDIR)/dynlink
+
 install:
+# If installing over a previous OCaml version, ensure dynlink is removed from
+# the previous installation.
+	rm -f "$(INSTALL_LIBDIR)"/dynlink.cm* "$(INSTALL_LIBDIR)/dynlink.mli" \
+        "$(INSTALL_LIBDIR)/dynlink.$(A)" \
+        $(addprefix "$(INSTALL_LIBDIR)/", $(notdir $(NATOBJS)))
+	$(MKDIR) "$(INSTALL_LIBDIR_DYNLINK)"
 	$(INSTALL_DATA) \
 	  dynlink.cmi dynlink.cma \
-	  "$(INSTALL_LIBDIR)"
+	  "$(INSTALL_LIBDIR_DYNLINK)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
 	  dynlink.cmti dynlink.mli \
-	  "$(INSTALL_LIBDIR)"
+	  "$(INSTALL_LIBDIR_DYNLINK)"
 endif
 
 installopt:
 ifeq "$(strip $(NATDYNLINK))" "true"
 	$(INSTALL_DATA) \
 	  $(NATOBJS) dynlink.cmxa dynlink.$(A) \
-	  "$(INSTALL_LIBDIR)"
+	  "$(INSTALL_LIBDIR_DYNLINK)"
 endif
 
 partialclean:

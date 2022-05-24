@@ -686,6 +686,10 @@ type token =
   | Letter of char * modifier option
   | Num of int * int * modifier
 
+let ghost_loc_in_file name =
+  let pos = { Lexing.dummy_pos with pos_fname = name } in
+  { loc_start = pos; loc_end = pos; loc_ghost = true }
+
 let letter_alert tokens =
   let print_warning_char ppf c =
     let lowercase = Char.lowercase_ascii c = c in
@@ -724,8 +728,7 @@ let letter_alert tokens =
   match consecutive_letters with
   | [] -> None
   | example :: _  ->
-      let pos = { Lexing.dummy_pos with pos_fname = "_none_" } in
-      let nowhere = { loc_start=pos; loc_end=pos; loc_ghost=true } in
+      let nowhere = ghost_loc_in_file "_none_" in
       let spelling_hint ppf =
         let max_seq_len =
           List.fold_left (fun l x -> Int.max l (List.length x))

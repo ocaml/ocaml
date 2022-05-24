@@ -72,6 +72,7 @@ command_line.cmo : \
     debugger_lexer.cmi \
     debugger_config.cmi \
     debugcom.cmi \
+    ../driver/compmisc.cmi \
     checkpoints.cmi \
     breakpoints.cmi \
     command_line.cmi
@@ -109,6 +110,7 @@ command_line.cmx : \
     debugger_lexer.cmx \
     debugger_config.cmx \
     debugcom.cmx \
+    ../driver/compmisc.cmx \
     checkpoints.cmx \
     breakpoints.cmx \
     command_line.cmi
@@ -323,6 +325,7 @@ main.cmo : \
     exec.cmi \
     debugger_config.cmi \
     ../utils/config.cmi \
+    ../driver/compmisc.cmi \
     command_line.cmi \
     ../file_formats/cmi_format.cmi \
     ../utils/clflags.cmi \
@@ -345,6 +348,7 @@ main.cmx : \
     exec.cmx \
     debugger_config.cmx \
     ../utils/config.cmx \
+    ../driver/compmisc.cmx \
     command_line.cmx \
     ../file_formats/cmi_format.cmx \
     ../utils/clflags.cmx \
@@ -470,6 +474,7 @@ program_management.cmo : \
     history.cmi \
     ../typing/envaux.cmi \
     debugger_config.cmi \
+    ../driver/compmisc.cmi \
     breakpoints.cmi \
     program_management.cmi
 program_management.cmx : \
@@ -487,6 +492,7 @@ program_management.cmx : \
     history.cmx \
     ../typing/envaux.cmx \
     debugger_config.cmx \
+    ../driver/compmisc.cmx \
     breakpoints.cmx \
     program_management.cmi
 program_management.cmi :

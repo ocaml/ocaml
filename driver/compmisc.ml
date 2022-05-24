@@ -13,6 +13,13 @@
 (*                                                                        *)
 (**************************************************************************)
 
+let auto_include find_in_dir fn =
+  if !Clflags.no_std_include then
+    raise Not_found
+  else
+    let alert = Location.auto_include_alert in
+    Load_path.auto_include_otherlibs alert find_in_dir fn
+
 (* Initialize the search path.
    [dir] (default: the current directory)
    is always searched first  unless -nocwd is specified,
@@ -37,7 +44,7 @@ let init_path ?(dir="") () =
     (if !Clflags.no_cwd then [] else [dir])
     @ List.rev_append exp_dirs (Clflags.std_include_dir ())
   in
-  Load_path.init(dirs);
+  Load_path.init ~auto_include dirs;
   Env.reset_cache ()
 
 (* Return the initial environment in which compilation proceeds. *)
