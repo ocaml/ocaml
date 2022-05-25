@@ -240,7 +240,7 @@ let execvpe prog args env =
   sys_execvpe prog (Array.map maybe_quote args) env
 
 external waitpid : wait_flag list -> int -> int * process_status
-                 = "win_waitpid"
+                 = "unix_waitpid"
 external _exit : int -> 'a = "unix_exit"
 external getpid : unit -> int = "unix_getpid"
 
@@ -309,9 +309,9 @@ let single_write_substring fd buf ofs len =
 (* Interfacing with the standard input/output library *)
 
 external in_channel_of_descr: file_descr -> in_channel
-   = "win_inchannel_of_filedescr"
+   = "unix_inchannel_of_filedescr"
 external out_channel_of_descr: file_descr -> out_channel
-   = "win_outchannel_of_filedescr"
+   = "unix_outchannel_of_filedescr"
 external descr_of_in_channel : in_channel -> file_descr
    = "win_filedescr_of_channel"
 external descr_of_out_channel : out_channel -> file_descr
@@ -446,8 +446,8 @@ external dup2 :
 external set_nonblock : file_descr -> unit = "unix_set_nonblock"
 external clear_nonblock : file_descr -> unit = "unix_clear_nonblock"
 
-external set_close_on_exec : file_descr -> unit = "win_set_close_on_exec"
-external clear_close_on_exec : file_descr -> unit = "win_clear_close_on_exec"
+external set_close_on_exec : file_descr -> unit = "unix_set_close_on_exec"
+external clear_close_on_exec : file_descr -> unit = "unix_clear_close_on_exec"
 
 (* Directories *)
 

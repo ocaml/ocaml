@@ -72,7 +72,7 @@ int caml_win32_CRT_fd_of_filedescr(value handle)
   }
 }
 
-CAMLprim value win_inchannel_of_filedescr(value handle)
+CAMLprim value unix_inchannel_of_filedescr(value handle)
 {
   CAMLparam1(handle);
   CAMLlocal1(vchan);
@@ -96,7 +96,7 @@ CAMLprim value win_inchannel_of_filedescr(value handle)
   CAMLreturn(vchan);
 }
 
-CAMLprim value win_outchannel_of_filedescr(value handle)
+CAMLprim value unix_outchannel_of_filedescr(value handle)
 {
   CAMLparam1(handle);
   CAMLlocal1(vchan);

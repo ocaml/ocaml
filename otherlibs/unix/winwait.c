@@ -38,7 +38,7 @@ enum { CAML_WNOHANG = 1, CAML_WUNTRACED = 2 };
 
 static int wait_flag_table[] = { CAML_WNOHANG, CAML_WUNTRACED };
 
-CAMLprim value win_waitpid(value vflags, value vpid_req)
+CAMLprim value unix_waitpid(value vflags, value vpid_req)
 {
   int flags;
   DWORD status, retcode;
