@@ -35,7 +35,7 @@ CAMLprim value win_startup(unit)
                   DUPLICATE_SAME_ACCESS);
   caml_win32_process_id = Val_int(h);
 
-  unix_worker_init();
+  caml_win32_worker_init();
 
   return Val_unit;
 }
@@ -43,7 +43,7 @@ CAMLprim value win_startup(unit)
 CAMLprim value win_cleanup(unit)
      value unit;
 {
-  unix_worker_cleanup();
+  caml_win32_worker_cleanup();
 
   (void) WSACleanup();
 

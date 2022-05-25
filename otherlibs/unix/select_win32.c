@@ -194,8 +194,8 @@ static LPSELECTDATA select_data_new (LPSELECTDATA lpSelectData,
   res = (LPSELECTDATA)caml_stat_alloc(sizeof(SELECTDATA));
 
   /* Init common data */
-  list_init((LPLIST)res);
-  list_next_set((LPLIST)res, (LPLIST)lpSelectData);
+  caml_win32_list_init((LPLIST)res);
+  caml_win32_list_next_set((LPLIST)res, (LPLIST)lpSelectData);
   res->EType         = EType;
   res->nResultsCount = 0;
 
@@ -223,7 +223,7 @@ static void select_data_free (LPSELECTDATA lpSelectData)
   /* Free APC related data, if they exists */
   if (lpSelectData->lpWorker != NULL)
   {
-    worker_job_finish(lpSelectData->lpWorker);
+    caml_win32_worker_job_finish(lpSelectData->lpWorker);
     lpSelectData->lpWorker = NULL;
   };
 
@@ -1157,7 +1157,7 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
 
       /* Building the list of handle to wait for */
       DEBUG_PRINT("Building events done array");
-      nEventsMax   = list_length((LPLIST)lpSelectData);
+      nEventsMax   = caml_win32_list_length((LPLIST)lpSelectData);
       nEventsCount = 0;
       lpEventsDone = (HANDLE *)caml_stat_alloc(sizeof(HANDLE) * nEventsMax);
 
@@ -1178,13 +1178,12 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
           if (iterSelectData->funcWorker != NULL)
             {
               iterSelectData->lpWorker =
-                worker_job_submit(
-                                  iterSelectData->funcWorker,
-                                  (void *)iterSelectData);
+                caml_win32_worker_job_submit(iterSelectData->funcWorker,
+                                             (void *)iterSelectData);
               DEBUG_PRINT("Job submitted to worker %x",
                           iterSelectData->lpWorker);
               lpEventsDone[nEventsCount]
-                = worker_job_event_done(iterSelectData->lpWorker);
+                = caml_win32_worker_job_event_done(iterSelectData->lpWorker);
               nEventsCount++;
             };
           iterSelectData = LIST_NEXT(LPSELECTDATA, iterSelectData);
@@ -1225,7 +1224,7 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
             {
               if (iterSelectData->lpWorker != NULL)
                 {
-                  worker_job_stop(iterSelectData->lpWorker);
+                  caml_win32_worker_job_stop(iterSelectData->lpWorker);
                 };
               iterSelectData = LIST_NEXT(LPSELECTDATA, iterSelectData);
             };
