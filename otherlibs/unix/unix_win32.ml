@@ -313,9 +313,9 @@ external in_channel_of_descr: file_descr -> in_channel
 external out_channel_of_descr: file_descr -> out_channel
    = "unix_outchannel_of_filedescr"
 external descr_of_in_channel : in_channel -> file_descr
-   = "win_filedescr_of_channel"
+   = "unix_filedescr_of_channel"
 external descr_of_out_channel : out_channel -> file_descr
-   = "win_filedescr_of_channel"
+   = "unix_filedescr_of_channel"
 
 (* Seeking and truncating *)
 
@@ -465,8 +465,8 @@ type dir_entry =
 type dir_handle =
   { dirname: string; mutable handle: int; mutable entry_read: dir_entry }
 
-external findfirst : string -> string * int = "win_findfirst"
-external findnext : int -> string= "win_findnext"
+external findfirst : string -> string * int = "unix_findfirst"
+external findnext : int -> string= "unix_findnext"
 
 let opendir dirname =
   try
@@ -481,12 +481,12 @@ let readdir d =
   | Dir_read name -> d.entry_read <- Dir_toread; name
   | Dir_toread -> findnext d.handle
 
-external win_findclose : int -> unit = "win_findclose"
+external findclose : int -> unit = "unix_findclose"
 
 let closedir d =
   match d.entry_read with
     Dir_empty -> ()
-  | _ -> win_findclose d.handle
+  | _ -> findclose d.handle
 
 let rewinddir d =
   closedir d;
@@ -549,7 +549,7 @@ type lock_command =
 
 external lockf : file_descr -> lock_command -> int -> unit = "unix_lockf"
 
-external terminate_process: int -> bool = "win_terminate_process"
+external terminate_process: int -> bool = "unix_terminate_process"
 
 let kill pid signo =
   if signo <> Sys.sigkill then
@@ -972,9 +972,9 @@ let getnameinfo addr opts =
 
 (* High-level process management (system, popen) *)
 
-external win_create_process : string -> string -> string option ->
+external create_process_stub: string -> string -> string option ->
                               file_descr -> file_descr -> file_descr -> int
-                            = "win_create_process" "win_create_process_native"
+                            = "unix_create_process" "unix_create_process_native"
 
 let make_cmdline args =
   String.concat " " (List.map maybe_quote (Array.to_list args))
@@ -986,12 +986,12 @@ let make_process_env env =
   String.concat "\000" (Array.to_list env) ^ "\000"
 
 let create_process prog args fd1 fd2 fd3 =
-  win_create_process prog (make_cmdline args) None fd1 fd2 fd3
+  create_process_stub prog (make_cmdline args) None fd1 fd2 fd3
 
 let create_process_env prog args env fd1 fd2 fd3 =
-  win_create_process prog (make_cmdline args)
-                     (Some(make_process_env env))
-                     fd1 fd2 fd3
+  create_process_stub prog (make_cmdline args)
+                      (Some(make_process_env env))
+                      fd1 fd2 fd3
 
 external system: string -> process_status = "unix_system"
 
@@ -1004,9 +1004,7 @@ type popen_process =
 let popen_processes = (Hashtbl.create 7 : (popen_process, int) Hashtbl.t)
 
 let open_proc prog cmdline optenv proc input output error =
-  let pid =
-    win_create_process prog cmdline optenv
-                       input output error in
+  let pid = create_process_stub prog cmdline optenv input output error in
   Hashtbl.add popen_processes proc pid
 
 let open_process_cmdline_in prog cmdline =

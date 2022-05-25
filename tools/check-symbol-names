@@ -28,8 +28,6 @@ $3 ~ /^[a-zU]$/ { next }
 # ignore "main", which should be externally linked
 $2 ~ /^_?main$/ { next }
 $2 ~ /^_?wmain$/ { next }
-# Ignore win_ in Unix library
-$1 ~ /\/unix/ && $2 ~/^_?win_/ { next }
 # uerror is too widely known!
 $2 ~ /^_?uerror$/ { next }
 # for x86 PIC mode

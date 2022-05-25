@@ -118,7 +118,7 @@ CAMLprim value unix_outchannel_of_filedescr(value handle)
   CAMLreturn(vchan);
 }
 
-CAMLprim value win_filedescr_of_channel(value vchan)
+CAMLprim value unix_filedescr_of_channel(value vchan)
 {
   CAMLparam1(vchan);
   CAMLlocal1(fd);
