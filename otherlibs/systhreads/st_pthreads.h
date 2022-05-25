@@ -288,7 +288,6 @@ static void * caml_thread_tick(void * arg)
   caml_init_domain_self(*domain_id);
   caml_domain_state *domain = Caml_state;
 
-  caml_domain_set_name("Tick");
   while(! atomic_load_acq(&Tick_thread_stop)) {
     st_msleep(Thread_timeout);
 

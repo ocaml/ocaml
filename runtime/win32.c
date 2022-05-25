@@ -1093,13 +1093,6 @@ CAMLexport clock_t caml_win32_clock(void)
   return (clock_t)(total / clocks_per_sec);
 }
 
-void caml_thread_setname(const char* name)
-{
-  /* XXX Duplicates unix.c, but MSVC will add some specific code here */
-  pthread_t self = pthread_self();
-  pthread_setname_np(self, name);
-}
-
 static LARGE_INTEGER frequency;
 static LARGE_INTEGER clock_offset;
 typedef void (WINAPI *LPFN_GETSYSTEMTIME) (LPFILETIME);
