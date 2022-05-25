@@ -28,7 +28,7 @@ CAMLprim value unix_fsync(value v)
 {
   int ret;
 #ifdef _WIN32
-  int fd = win_CRT_fd_of_filedescr(v);
+  int fd = caml_win32_CRT_fd_of_filedescr(v);
 #else
   int fd = Int_val(v);
 #endif

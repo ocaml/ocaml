@@ -37,8 +37,8 @@ CAMLprim value unix_pipe(value cloexec, value unit)
     caml_win32_maperr(GetLastError());
     uerror("pipe", Nothing);
   }
-  readfd = win_alloc_handle(readh);
-  writefd = win_alloc_handle(writeh);
+  readfd = caml_win32_alloc_handle(readh);
+  writefd = caml_win32_alloc_handle(writeh);
   res = caml_alloc_small(2, 0);
   Field(res, 0) = readfd;
   Field(res, 1) = writefd;

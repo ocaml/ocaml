@@ -87,5 +87,5 @@ CAMLprim value unix_open(value path, value flags, value perm)
     caml_win32_maperr(GetLastError());
     uerror("open", path);
   }
-  return win_alloc_handle(h);
+  return caml_win32_alloc_handle(h);
 }

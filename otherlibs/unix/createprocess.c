@@ -22,7 +22,7 @@
 #include <caml/osdeps.h>
 #include <errno.h>
 
-static int win_has_console(void);
+static int has_console(void);
 
 /* Ensures the handle [h] is inheritable. Returns the handle for the
    child process in [hStd] and in [to_close] if it needs to be closed
@@ -75,7 +75,7 @@ static DWORD do_create_process_native(wchar_t * exefile, wchar_t * cmdline,
      before running the process (keep it hidden for appearance).
      If we are starting a GUI application, the newly created
      console should not matter. */
-  if (win_has_console())
+  if (has_console())
     flags = 0;
   else {
     flags = CREATE_NEW_CONSOLE;
@@ -152,7 +152,7 @@ CAMLprim value win_create_process(value * argv, int argn)
                                    argv[3], argv[4], argv[5]);
 }
 
-static int win_has_console(void)
+static int has_console(void)
 {
   HANDLE h, log;
   int i;

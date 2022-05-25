@@ -40,8 +40,8 @@ CAMLprim value unix_accept(value cloexec, value sock)
     caml_win32_maperr(err);
     uerror("accept", Nothing);
   }
-  win_set_cloexec((HANDLE) snew, cloexec);
-  fd = win_alloc_socket(snew);
+  caml_win32_set_cloexec((HANDLE) snew, cloexec);
+  fd = caml_win32_alloc_socket(snew);
   adr = unix_alloc_sockaddr(&addr, addr_len, snew);
   res = caml_alloc_small(2, 0);
   Field(res, 0) = fd;

@@ -60,7 +60,7 @@ CAMLprim value unix_dup(value cloexec, value fd)
                                    Handle_val(fd));
     if (newh == INVALID_HANDLE_VALUE)
       uerror("dup", Nothing);
-    newfd = win_alloc_handle(newh);
+    newfd = caml_win32_alloc_handle(newh);
     CAMLreturn(newfd);
   }
   case KIND_SOCKET: {
@@ -68,7 +68,7 @@ CAMLprim value unix_dup(value cloexec, value fd)
                                       Socket_val(fd));
     if (newsock == INVALID_SOCKET)
       uerror("dup", Nothing);
-    newfd = win_alloc_socket(newsock);
+    newfd = caml_win32_alloc_socket(newsock);
     CAMLreturn(newfd);
   }
   default:
@@ -110,6 +110,7 @@ CAMLprim value unix_dup2(value cloexec, value fd1, value fd2)
 
   /* Reflect the dup2 on the CRT fds, if any */
   if (CRT_fd_val(fd1) != NO_CRT_FD || CRT_fd_val(fd2) != NO_CRT_FD)
-    _dup2(win_CRT_fd_of_filedescr(fd1), win_CRT_fd_of_filedescr(fd2));
+    _dup2(caml_win32_CRT_fd_of_filedescr(fd1),
+          caml_win32_CRT_fd_of_filedescr(fd2));
   CAMLreturn(Val_unit);
 }

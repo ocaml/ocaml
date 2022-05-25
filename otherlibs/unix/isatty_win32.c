@@ -20,5 +20,5 @@
 
 CAMLprim value unix_isatty(value fd)
 {
-  return Val_bool(caml_win32_isatty(win_CRT_fd_of_filedescr(fd)));
+  return Val_bool(caml_win32_isatty(caml_win32_CRT_fd_of_filedescr(fd)));
 }

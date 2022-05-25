@@ -48,7 +48,7 @@ SOCKET caml_win32_socket(int domain, int type, int protocol,
       s = WSASocket(domain, type, protocol, info, 0, flags);
       if (s == INVALID_SOCKET)
         goto err;
-      win_set_inherit((HANDLE) s, FALSE);
+      caml_win32_set_inherit((HANDLE) s, FALSE);
       return s;
     }
     goto err;
@@ -73,6 +73,6 @@ CAMLprim value unix_socket(value cloexec, value domain, value type, value proto)
                         ! unix_cloexec_p(cloexec));
   if (s == INVALID_SOCKET)
     uerror("socket", Nothing);
-  v_socket = win_alloc_socket(s);
+  v_socket = caml_win32_alloc_socket(s);
   CAMLreturn(v_socket);
 }

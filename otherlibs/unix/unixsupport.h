@@ -64,9 +64,9 @@ struct filedescr {
 #define CRT_fd_val(v) (((struct filedescr *) Data_custom_val(v))->crt_fd)
 #define Flags_fd_val(v) (((struct filedescr *) Data_custom_val(v))->flags_fd)
 
-extern value win_alloc_handle(HANDLE);
-extern value win_alloc_socket(SOCKET);
-extern int win_CRT_fd_of_filedescr(value handle);
+extern value caml_win32_alloc_handle(HANDLE);
+extern value caml_win32_alloc_socket(SOCKET);
+extern int caml_win32_CRT_fd_of_filedescr(value handle);
 
 extern SOCKET caml_win32_socket(int domain, int type, int protocol,
                                 LPWSAPROTOCOL_INFO info,
@@ -109,10 +109,10 @@ extern int unix_cloexec_default;
 extern int unix_cloexec_p(value cloexec);
 
 #ifdef _WIN32
-extern int win_set_inherit(HANDLE fd, BOOL inherit);
+extern int caml_win32_set_inherit(HANDLE fd, BOOL inherit);
 /* This is a best effort, not guaranteed to work, so don't fail on error */
-#define win_set_cloexec(fd, cloexec) \
-  win_set_inherit((fd), ! unix_cloexec_p((cloexec)))
+#define caml_win32_set_cloexec(fd, cloexec) \
+  caml_win32_set_inherit((fd), ! unix_cloexec_p((cloexec)))
 #else
 extern void unix_set_cloexec(int fd, char * cmdname, value arg);
 extern void unix_clear_cloexec(int fd, char * cmdname, value arg);

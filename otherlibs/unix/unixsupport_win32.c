@@ -26,33 +26,33 @@
 
 /* Heap-allocation of Windows file handles */
 
-static int win_handle_compare(value v1, value v2)
+static int handle_compare(value v1, value v2)
 {
   HANDLE h1 = Handle_val(v1);
   HANDLE h2 = Handle_val(v2);
   return h1 == h2 ? 0 : h1 < h2 ? -1 : 1;
 }
 
-static intnat win_handle_hash(value v)
+static intnat handle_hash(value v)
 {
   return (intnat) Handle_val(v);
 }
 
-static struct custom_operations win_handle_ops = {
+static struct custom_operations handle_ops = {
   "_handle",
   custom_finalize_default,
-  win_handle_compare,
-  win_handle_hash,
+  handle_compare,
+  handle_hash,
   custom_serialize_default,
   custom_deserialize_default,
   custom_compare_ext_default,
   custom_fixed_length_default
 };
 
-value win_alloc_handle(HANDLE h)
+value caml_win32_alloc_handle(HANDLE h)
 {
   value res =
-    caml_alloc_custom(&win_handle_ops, sizeof(struct filedescr), 0, 1);
+    caml_alloc_custom(&handle_ops, sizeof(struct filedescr), 0, 1);
   Handle_val(res) = h;
   Descr_kind_val(res) = KIND_HANDLE;
   CRT_fd_val(res) = NO_CRT_FD;
@@ -60,10 +60,10 @@ value win_alloc_handle(HANDLE h)
   return res;
 }
 
-value win_alloc_socket(SOCKET s)
+value caml_win32_alloc_socket(SOCKET s)
 {
   value res =
-    caml_alloc_custom(&win_handle_ops, sizeof(struct filedescr), 0, 1);
+    caml_alloc_custom(&handle_ops, sizeof(struct filedescr), 0, 1);
   Socket_val(res) = s;
   Descr_kind_val(res) = KIND_SOCKET;
   CRT_fd_val(res) = NO_CRT_FD;
@@ -336,7 +336,7 @@ int unix_cloexec_p(value cloexec)
     return unix_cloexec_default;
 }
 
-int win_set_inherit(HANDLE fd, BOOL inherit)
+int caml_win32_set_inherit(HANDLE fd, BOOL inherit)
 {
   /* According to the MSDN, SetHandleInformation may not work
      for console handles on WinNT4 and earlier versions. */
