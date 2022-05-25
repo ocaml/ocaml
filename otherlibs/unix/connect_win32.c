@@ -33,7 +33,7 @@ CAMLprim value unix_connect(socket, address)
   caml_leave_blocking_section();
   if (err) {
     caml_win32_maperr(err);
-    uerror("connect", Nothing);
+    caml_uerror("connect", Nothing);
   }
   return Val_unit;
 }

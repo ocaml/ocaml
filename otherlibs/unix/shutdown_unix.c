@@ -28,7 +28,7 @@ static int shutdown_command_table[] = {
 CAMLprim value unix_shutdown(value sock, value cmd)
 {
   if (shutdown(Int_val(sock), shutdown_command_table[Int_val(cmd)]) == -1)
-    uerror("shutdown", Nothing);
+    caml_uerror("shutdown", Nothing);
   return Val_unit;
 }
 

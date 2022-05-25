@@ -42,12 +42,12 @@ CAMLprim value unix_readlink(value opath)
   if (attributes == INVALID_FILE_ATTRIBUTES) {
     caml_stat_free(path);
     caml_win32_maperr(GetLastError());
-    uerror("readlink", opath);
+    caml_uerror("readlink", opath);
   }
   else if (!(attributes & FILE_ATTRIBUTE_REPARSE_POINT)) {
     caml_stat_free(path);
     errno = EINVAL;
-    uerror("readlink", opath);
+    caml_uerror("readlink", opath);
   }
   else {
     caml_enter_blocking_section();
@@ -61,7 +61,7 @@ CAMLprim value unix_readlink(value opath)
       caml_leave_blocking_section();
       caml_stat_free(path);
       errno = ENOENT;
-      uerror("readlink", opath);
+      caml_uerror("readlink", opath);
     }
     else {
       char buffer[16384];
@@ -91,14 +91,14 @@ CAMLprim value unix_readlink(value opath)
         else {
           errno = EINVAL;
           CloseHandle(h);
-          uerror("readlink", opath);
+          caml_uerror("readlink", opath);
         }
       }
       else {
         caml_leave_blocking_section();
         caml_win32_maperr(GetLastError());
         CloseHandle(h);
-        uerror("readlink", opath);
+        caml_uerror("readlink", opath);
       }
     }
   }

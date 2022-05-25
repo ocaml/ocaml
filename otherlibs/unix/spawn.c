@@ -121,7 +121,7 @@ CAMLprim value unix_spawn(value executable, /* string */
     /* This is the parent process */
     unix_cstringvect_free(argv);
     if (envp != NULL) unix_cstringvect_free(envp);
-    if (pid == -1) uerror("create_process", executable);
+    if (pid == -1) caml_uerror("create_process", executable);
     return Val_long(pid);
   }
   /* This is the child process */

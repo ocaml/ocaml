@@ -32,6 +32,6 @@ CAMLprim value unix_rmdir(value path)
   ret = rmdir_os(p);
   caml_leave_blocking_section();
   caml_stat_free(p);
-  if (ret == -1) uerror("rmdir", path);
+  if (ret == -1) caml_uerror("rmdir", path);
   CAMLreturn(Val_unit);
 }

@@ -35,7 +35,7 @@ CAMLprim value unix_socketpair(value cloexec, value domain,
 #endif
   if (socketpair(unix_socket_domain_table[Int_val(domain)],
                  ty, Int_val(proto), sv) == -1)
-    uerror("socketpair", Nothing);
+    caml_uerror("socketpair", Nothing);
 #ifndef SOCK_CLOEXEC
   if (unix_cloexec_p(cloexec)) {
     unix_set_cloexec(sv[0], "socketpair", Nothing);

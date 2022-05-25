@@ -48,7 +48,7 @@ CAMLprim value unix_socket(value cloexec, value domain,
 #endif
   retcode = socket(unix_socket_domain_table[Int_val(domain)],
                    ty, Int_val(proto));
-  if (retcode == -1) uerror("socket", Nothing);
+  if (retcode == -1) caml_uerror("socket", Nothing);
 #ifndef SOCK_CLOEXEC
   if (unix_cloexec_p(cloexec))
     unix_set_cloexec(retcode, "socket", Nothing);

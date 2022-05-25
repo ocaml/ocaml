@@ -65,11 +65,11 @@ CAMLprim value unix_waitpid(value vflags, value vpid_req)
   }
   if (err) {
     caml_win32_maperr(err);
-    uerror("waitpid", Nothing);
+    caml_uerror("waitpid", Nothing);
   }
   if (! GetExitCodeProcess(pid_req, &status)) {
     caml_win32_maperr(GetLastError());
-    uerror("waitpid", Nothing);
+    caml_uerror("waitpid", Nothing);
   }
   if (status == STILL_ACTIVE)
     return alloc_process_status((HANDLE) 0, 0);

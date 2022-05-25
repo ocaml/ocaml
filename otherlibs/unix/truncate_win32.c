@@ -81,7 +81,7 @@ CAMLprim value unix_truncate(value path, value len)
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret == -1)
-    uerror("truncate", path);
+    caml_uerror("truncate", path);
   CAMLreturn(Val_unit);
 }
 
@@ -98,7 +98,7 @@ CAMLprim value unix_truncate_64(value path, value vlen)
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret == -1)
-    uerror("truncate", path);
+    caml_uerror("truncate", path);
   CAMLreturn(Val_unit);
 }
 
@@ -110,7 +110,7 @@ CAMLprim value unix_ftruncate(value fd, value len)
   ret = ftruncate(h, Long_val(len));
   caml_leave_blocking_section();
   if (ret == -1)
-    uerror("ftruncate", Nothing);
+    caml_uerror("ftruncate", Nothing);
   return Val_unit;
 }
 
@@ -123,6 +123,6 @@ CAMLprim value unix_ftruncate_64(value fd, value vlen)
   ret = ftruncate(h, len);
   caml_leave_blocking_section();
   if (ret == -1)
-    uerror("ftruncate", Nothing);
+    caml_uerror("ftruncate", Nothing);
   return Val_unit;
 }

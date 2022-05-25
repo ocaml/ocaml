@@ -26,7 +26,7 @@ CAMLprim value unix_shutdown(sock, cmd)
   if (shutdown(Socket_val(sock),
                shutdown_command_table[Int_val(cmd)]) == -1) {
     caml_win32_maperr(WSAGetLastError());
-    uerror("shutdown", Nothing);
+    caml_uerror("shutdown", Nothing);
   }
   return Val_unit;
 }

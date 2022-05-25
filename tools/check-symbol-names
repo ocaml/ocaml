@@ -28,8 +28,6 @@ $3 ~ /^[a-zU]$/ { next }
 # ignore "main", which should be externally linked
 $2 ~ /^_?main$/ { next }
 $2 ~ /^_?wmain$/ { next }
-# uerror is too widely known!
-$2 ~ /^_?uerror$/ { next }
 # for x86 PIC mode
 $2 ~ /^__x86.get_pc_thunk./ { next }
 # for mingw32

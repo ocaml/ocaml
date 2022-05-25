@@ -26,8 +26,8 @@
 #include "caml/osdeps.h"
 #include "unixsupport.h"
 
-#define uerror(func, arg) \
-  do { caml_win32_maperr(GetLastError()); uerror(func, arg); } while(0)
+#define caml_uerror(func, arg) \
+  do { caml_win32_maperr(GetLastError()); caml_uerror(func, arg); } while(0)
 
 /* Defined in [mmap_ba.c] */
 extern value caml_unix_mapped_alloc(int, int, void *, intnat *);
@@ -78,9 +78,9 @@ CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
   }
   /* Determine file size */
   currpos = caml_set_file_pointer(fd, 0, FILE_CURRENT);
-  if (currpos == -1) uerror("map_file", Nothing);
+  if (currpos == -1) caml_uerror("map_file", Nothing);
   file_size = caml_set_file_pointer(fd, 0, FILE_END);
-  if (file_size == -1) uerror("map_file", Nothing);
+  if (file_size == -1) caml_uerror("map_file", Nothing);
   /* Determine array size in bytes (or size of array without the major
      dimension if that dimension wasn't specified) */
   array_size = caml_ba_element_size[flags & CAML_BA_KIND_MASK];
@@ -109,7 +109,7 @@ CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
   }
   li.QuadPart = startpos + array_size;
   fmap = CreateFileMapping(fd, NULL, perm, li.HighPart, li.LowPart, NULL);
-  if (fmap == NULL) uerror("map_file", Nothing);
+  if (fmap == NULL) caml_uerror("map_file", Nothing);
   /* Determine offset so that the mapping starts at the given file pos */
   GetSystemInfo(&sysinfo);
   delta = (uintnat) (startpos % sysinfo.dwAllocationGranularity);
@@ -117,7 +117,7 @@ CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
   li.QuadPart = startpos - delta;
   addr =
     MapViewOfFile(fmap, mode, li.HighPart, li.LowPart, array_size + delta);
-  if (addr == NULL) uerror("map_file", Nothing);
+  if (addr == NULL) caml_uerror("map_file", Nothing);
   addr = (void *) ((uintnat) addr + delta);
   /* Close the file mapping */
   CloseHandle(fmap);

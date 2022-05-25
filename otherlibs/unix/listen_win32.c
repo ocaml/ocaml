@@ -21,7 +21,7 @@ CAMLprim value unix_listen(sock, backlog)
 {
   if (listen(Socket_val(sock), Int_val(backlog)) == -1) {
     caml_win32_maperr(WSAGetLastError());
-    uerror("listen", Nothing);
+    caml_uerror("listen", Nothing);
   }
   return Val_unit;
 }

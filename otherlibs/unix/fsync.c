@@ -35,6 +35,6 @@ CAMLprim value unix_fsync(value v)
   caml_enter_blocking_section();
   ret = fsync(fd);
   caml_leave_blocking_section();
-  if (ret == -1) uerror("fsync", Nothing);
+  if (ret == -1) caml_uerror("fsync", Nothing);
   return Val_unit;
 }

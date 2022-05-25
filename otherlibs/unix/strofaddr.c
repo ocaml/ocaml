@@ -62,7 +62,7 @@ CAMLprim value unix_string_of_inet_addr(value a)
 #else
   res = inet_ntoa(GET_INET_ADDR(a));
 #endif
-  if (res == NULL) uerror("string_of_inet_addr", Nothing);
+  if (res == NULL) caml_uerror("string_of_inet_addr", Nothing);
   return caml_copy_string(res);
 }
 

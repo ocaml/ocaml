@@ -25,9 +25,9 @@ CAMLprim value unix_pipe(value cloexec, value vunit)
   value res;
 #ifdef HAS_PIPE2
   if (pipe2(fd, unix_cloexec_p(cloexec) ? O_CLOEXEC : 0) == -1)
-    uerror("pipe", Nothing);
+    caml_uerror("pipe", Nothing);
 #else
-  if (pipe(fd) == -1) uerror("pipe", Nothing);
+  if (pipe(fd) == -1) caml_uerror("pipe", Nothing);
   if (unix_cloexec_p(cloexec)) {
     unix_set_cloexec(fd[0], "pipe", Nothing);
     unix_set_cloexec(fd[1], "pipe", Nothing);

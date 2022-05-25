@@ -32,7 +32,7 @@ CAMLprim value unix_connect(value socket, value address)
   caml_enter_blocking_section();
   retcode = connect(Int_val(socket), &addr.s_gen, addr_len);
   caml_leave_blocking_section();
-  if (retcode == -1) uerror("connect", Nothing);
+  if (retcode == -1) caml_uerror("connect", Nothing);
   return Val_unit;
 }
 

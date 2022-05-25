@@ -29,7 +29,7 @@ CAMLprim value unix_realpath (value p)
 
   caml_unix_check_path (p, "realpath");
   r = realpath (String_val (p), NULL);
-  if (r == NULL) { uerror ("realpath", p); }
+  if (r == NULL) { caml_uerror ("realpath", p); }
   rp = caml_copy_string (r);
   free (r);
   CAMLreturn (rp);

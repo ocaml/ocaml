@@ -42,7 +42,7 @@ CAMLprim value unix_findfirst(value name)
       caml_raise_end_of_file();
     else {
       caml_win32_maperr(err);
-      uerror("opendir", Nothing);
+      caml_uerror("opendir", Nothing);
     }
   }
   valname = caml_copy_string_of_utf16(fileinfo.cFileName);
@@ -65,7 +65,7 @@ CAMLprim value unix_findnext(value valh)
       caml_raise_end_of_file();
     else {
       caml_win32_maperr(err);
-      uerror("readdir", Nothing);
+      caml_uerror("readdir", Nothing);
     }
   }
   return caml_copy_string_of_utf16(fileinfo.cFileName);
@@ -75,7 +75,7 @@ CAMLprim value unix_findclose(value valh)
 {
   if (! FindClose(Handle_val(valh))) {
     caml_win32_maperr(GetLastError());
-    uerror("closedir", Nothing);
+    caml_uerror("closedir", Nothing);
   }
   return Val_unit;
 }

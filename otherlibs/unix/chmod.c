@@ -34,6 +34,6 @@ CAMLprim value unix_chmod(value path, value perm)
   ret = chmod_os(p, Int_val(perm));
   caml_leave_blocking_section();
   caml_stat_free(p);
-  if (ret == -1) uerror("chmod", path);
+  if (ret == -1) caml_uerror("chmod", path);
   CAMLreturn(Val_unit);
 }

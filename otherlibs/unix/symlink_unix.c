@@ -37,7 +37,7 @@ CAMLprim value unix_symlink(value to_dir, value path1, value path2)
   caml_stat_free(p1);
   caml_stat_free(p2);
   if (ret == -1)
-    uerror("symlink", path2);
+    caml_uerror("symlink", path2);
   CAMLreturn(Val_unit);
 }
 

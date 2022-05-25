@@ -80,7 +80,7 @@ CAMLprim value unix_lockf(value fd, value cmd, value span)
     errno = EINVAL;
     ret = -1;
   }
-  if (ret == -1) uerror("lockf", Nothing);
+  if (ret == -1) caml_uerror("lockf", Nothing);
   return Val_unit;
 }
 
@@ -103,7 +103,7 @@ static int lock_command_table[] = {
 CAMLprim value unix_lockf(value fd, value cmd, value span)
 {
   if (lockf(Int_val(fd), lock_command_table[Int_val(cmd)], Long_val(span))
-      == -1) uerror("lockf", Nothing);
+      == -1) caml_uerror("lockf", Nothing);
   return Val_unit;
 }
 

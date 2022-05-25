@@ -32,6 +32,6 @@ CAMLprim value unix_chdir(value path)
   ret = chdir_os(p);
   caml_leave_blocking_section();
   caml_stat_free(p);
-  if (ret == -1) uerror("chdir", path);
+  if (ret == -1) caml_uerror("chdir", path);
   CAMLreturn(Val_unit);
 }

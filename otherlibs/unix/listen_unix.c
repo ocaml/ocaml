@@ -23,7 +23,8 @@
 
 CAMLprim value unix_listen(value sock, value backlog)
 {
-  if (listen(Int_val(sock), Int_val(backlog)) == -1) uerror("listen", Nothing);
+  if (listen(Int_val(sock), Int_val(backlog)) == -1)
+    caml_uerror("listen", Nothing);
   return Val_unit;
 }
 

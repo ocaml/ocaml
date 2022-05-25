@@ -23,6 +23,6 @@ CAMLprim value unix_close(value fd)
   caml_enter_blocking_section();
   ret = close(Int_val(fd));
   caml_leave_blocking_section();
-  if (ret == -1) uerror("close", Nothing);
+  if (ret == -1) caml_uerror("close", Nothing);
   return Val_unit;
 }

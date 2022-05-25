@@ -62,7 +62,7 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
   caml_stat_free(wpath);
   if (hFile == INVALID_HANDLE_VALUE) {
     caml_win32_maperr(GetLastError());
-    uerror("utimes", path);
+    caml_uerror("utimes", path);
   }
   if (at == 0.0 && mt == 0.0) {
     GetSystemTime(&systemTime);
@@ -78,7 +78,7 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
   if (res == 0) {
     caml_win32_maperr(GetLastError());
     CloseHandle(hFile);
-    uerror("utimes", path);
+    caml_uerror("utimes", path);
   }
   CloseHandle(hFile);
   CAMLreturn(Val_unit);

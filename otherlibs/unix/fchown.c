@@ -26,7 +26,7 @@ CAMLprim value unix_fchown(value fd, value uid, value gid)
   caml_enter_blocking_section();
   result = fchown(Int_val(fd), Int_val(uid), Int_val(gid));
   caml_leave_blocking_section();
-  if (result == -1) uerror("fchown", Nothing);
+  if (result == -1) caml_uerror("fchown", Nothing);
   return Val_unit;
 }
 

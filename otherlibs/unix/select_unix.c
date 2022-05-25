@@ -91,7 +91,7 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
   caml_enter_blocking_section();
   retcode = select(maxfd + 1, &read, &write, &except, tvp);
   caml_leave_blocking_section();
-  if (retcode == -1) uerror("select", Nothing);
+  if (retcode == -1) caml_uerror("select", Nothing);
   readfds = fdset_to_fdlist(readfds, &read);
   writefds = fdset_to_fdlist(writefds, &write);
   exceptfds = fdset_to_fdlist(exceptfds, &except);

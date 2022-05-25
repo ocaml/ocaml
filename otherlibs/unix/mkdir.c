@@ -37,6 +37,6 @@ CAMLprim value unix_mkdir(value path, value perm)
   ret = mkdir_os(p, Int_val(perm));
   caml_leave_blocking_section();
   caml_stat_free(p);
-  if (ret == -1) uerror("mkdir", path);
+  if (ret == -1) caml_uerror("mkdir", path);
   CAMLreturn(Val_unit);
 }

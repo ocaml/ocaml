@@ -44,7 +44,7 @@ CAMLprim value unix_accept(value cloexec, value sock)
   retcode = accept(Int_val(sock), &addr.s_gen, &addr_len);
 #endif
   caml_leave_blocking_section();
-  if (retcode == -1) uerror("accept", Nothing);
+  if (retcode == -1) caml_uerror("accept", Nothing);
 #if !(defined(HAS_ACCEPT4) && defined(SOCK_CLOEXEC))
   if (clo) unix_set_cloexec(retcode, "accept", Nothing);
 #endif

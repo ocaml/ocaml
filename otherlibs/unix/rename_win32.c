@@ -37,7 +37,7 @@ CAMLprim value unix_rename(value path1, value path2)
   caml_stat_free(wpath2);
   if (! ok) {
     caml_win32_maperr(GetLastError());
-    uerror("rename", path1);
+    caml_uerror("rename", path1);
   }
   return Val_unit;
 }

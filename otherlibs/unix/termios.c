@@ -282,7 +282,7 @@ static void decode_terminal_status(value *src)
             case Input:
               res = cfsetispeed(&terminal_status, speedtable[i].speed); break;
             }
-            if (res == -1) uerror("tcsetattr", Nothing);
+            if (res == -1) caml_uerror("tcsetattr", Nothing);
             goto ok;
           }
         }
@@ -302,7 +302,7 @@ CAMLprim value unix_tcgetattr(value fd)
   value res;
 
   if (tcgetattr(Int_val(fd), &terminal_status) == -1)
-    uerror("tcgetattr", Nothing);
+    caml_uerror("tcgetattr", Nothing);
   res = caml_alloc_tuple(NFIELDS);
   encode_terminal_status(&Field(res, 0));
   return res;
@@ -315,19 +315,19 @@ static int when_flag_table[] = {
 CAMLprim value unix_tcsetattr(value fd, value when, value arg)
 {
   if (tcgetattr(Int_val(fd), &terminal_status) == -1)
-    uerror("tcsetattr", Nothing);
+    caml_uerror("tcsetattr", Nothing);
   decode_terminal_status(&Field(arg, 0));
   if (tcsetattr(Int_val(fd),
                 when_flag_table[Int_val(when)],
                 &terminal_status) == -1)
-    uerror("tcsetattr", Nothing);
+    caml_uerror("tcsetattr", Nothing);
   return Val_unit;
 }
 
 CAMLprim value unix_tcsendbreak(value fd, value delay)
 {
   if (tcsendbreak(Int_val(fd), Int_val(delay)) == -1)
-    uerror("tcsendbreak", Nothing);
+    caml_uerror("tcsendbreak", Nothing);
   return Val_unit;
 }
 
@@ -337,7 +337,7 @@ CAMLprim value unix_tcdrain(value fd)
 #else
 CAMLprim value unix_tcdrain(value fd)
 {
-  if (tcdrain(Int_val(fd)) == -1) uerror("tcdrain", Nothing);
+  if (tcdrain(Int_val(fd)) == -1) caml_uerror("tcdrain", Nothing);
   return Val_unit;
 }
 #endif
@@ -349,7 +349,7 @@ static int queue_flag_table[] = {
 CAMLprim value unix_tcflush(value fd, value queue)
 {
   if (tcflush(Int_val(fd), queue_flag_table[Int_val(queue)]) == -1)
-    uerror("tcflush", Nothing);
+    caml_uerror("tcflush", Nothing);
   return Val_unit;
 }
 
@@ -360,7 +360,7 @@ static int action_flag_table[] = {
 CAMLprim value unix_tcflow(value fd, value action)
 {
   if (tcflow(Int_val(fd), action_flag_table[Int_val(action)]) == -1)
-    uerror("tcflow", Nothing);
+    caml_uerror("tcflow", Nothing);
   return Val_unit;
 }
 

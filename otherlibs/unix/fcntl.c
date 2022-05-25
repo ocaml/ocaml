@@ -31,7 +31,7 @@ CAMLprim value unix_set_nonblock(value fd)
   retcode = fcntl(Int_val(fd), F_GETFL, 0);
   if (retcode == -1 ||
       fcntl(Int_val(fd), F_SETFL, retcode | O_NONBLOCK) == -1)
-    uerror("set_nonblock", Nothing);
+    caml_uerror("set_nonblock", Nothing);
   return Val_unit;
 }
 
@@ -41,7 +41,7 @@ CAMLprim value unix_clear_nonblock(value fd)
   retcode = fcntl(Int_val(fd), F_GETFL, 0);
   if (retcode == -1 ||
       fcntl(Int_val(fd), F_SETFL, retcode & ~O_NONBLOCK) == -1)
-    uerror("clear_nonblock", Nothing);
+    caml_uerror("clear_nonblock", Nothing);
   return Val_unit;
 }
 

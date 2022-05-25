@@ -35,6 +35,6 @@ CAMLprim value unix_rename(value path1, value path2)
   caml_stat_free(p2);
   caml_stat_free(p1);
   if (ret == -1)
-    uerror("rename", path1);
+    caml_uerror("rename", path1);
   CAMLreturn(Val_unit);
 }

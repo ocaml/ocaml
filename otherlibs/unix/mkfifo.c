@@ -35,7 +35,7 @@ CAMLprim value unix_mkfifo(value path, value mode)
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret == -1)
-    uerror("mkfifo", path);
+    caml_uerror("mkfifo", path);
   CAMLreturn(Val_unit);
 }
 
@@ -58,7 +58,7 @@ CAMLprim value unix_mkfifo(value path, value mode)
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret == -1)
-    uerror("mkfifo", path);
+    caml_uerror("mkfifo", path);
   CAMLreturn(Val_unit);
 }
 

@@ -139,7 +139,7 @@ value unix_create_process_native(value cmd, value cmdline, value env,
   caml_stat_free(exefile);
   if (err != ERROR_SUCCESS) {
     caml_win32_maperr(err);
-    uerror("create_process", cmd);
+    caml_uerror("create_process", cmd);
   }
   /* Return the process handle as pseudo-PID
      (this is consistent with the wait() emulation in the MSVC C library */

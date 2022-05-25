@@ -29,6 +29,6 @@ CAMLprim value unix_nice(value incr)
 #else
   ret = 0;
 #endif
-  if (ret == -1 && errno != 0) uerror("nice", Nothing);
+  if (ret == -1 && errno != 0) caml_uerror("nice", Nothing);
   return Val_int(ret);
 }

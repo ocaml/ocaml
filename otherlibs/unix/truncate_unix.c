@@ -40,7 +40,7 @@ CAMLprim value unix_truncate(value path, value len)
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret == -1)
-    uerror("truncate", path);
+    caml_uerror("truncate", path);
   CAMLreturn(Val_unit);
 }
 
@@ -57,7 +57,7 @@ CAMLprim value unix_truncate_64(value path, value vlen)
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret == -1)
-    uerror("truncate", path);
+    caml_uerror("truncate", path);
   CAMLreturn(Val_unit);
 }
 

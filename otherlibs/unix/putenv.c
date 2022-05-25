@@ -42,7 +42,7 @@ CAMLprim value unix_putenv(value name, value val)
   ret = putenv_os(p);
   if (ret == -1) {
     caml_stat_free(p);
-    uerror("putenv", name);
+    caml_uerror("putenv", name);
   }
   return Val_unit;
 }

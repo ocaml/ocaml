@@ -41,7 +41,7 @@ CAMLprim value unix_setgroups(value groups)
   n = setgroups(size, gidset);
 
   caml_stat_free(gidset);
-  if (n == -1) uerror("setgroups", Nothing);
+  if (n == -1) caml_uerror("setgroups", Nothing);
   return Val_unit;
 }
 

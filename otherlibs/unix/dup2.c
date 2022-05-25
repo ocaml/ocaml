@@ -33,9 +33,9 @@ CAMLprim value unix_dup2(value cloexec, value fd1, value fd2)
 #ifdef HAS_DUP3
     if (dup3(Int_val(fd1), Int_val(fd2),
              unix_cloexec_p(cloexec) ? O_CLOEXEC : 0) == -1)
-      uerror("dup2", Nothing);
+      caml_uerror("dup2", Nothing);
 #else
-    if (dup2(Int_val(fd1), Int_val(fd2)) == -1) uerror("dup2", Nothing);
+    if (dup2(Int_val(fd1), Int_val(fd2)) == -1) caml_uerror("dup2", Nothing);
     if (unix_cloexec_p(cloexec))
       unix_set_cloexec(Int_val(fd2), "dup2", Nothing);
 #endif

@@ -72,7 +72,7 @@ CAMLprim value unix_socket(value cloexec, value domain, value type, value proto)
                         NULL,
                         ! unix_cloexec_p(cloexec));
   if (s == INVALID_SOCKET)
-    uerror("socket", Nothing);
+    caml_uerror("socket", Nothing);
   v_socket = caml_win32_alloc_socket(s);
   CAMLreturn(v_socket);
 }

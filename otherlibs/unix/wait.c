@@ -73,7 +73,7 @@ CAMLprim value unix_wait(value unit)
   caml_enter_blocking_section();
   pid = wait(&status);
   caml_leave_blocking_section();
-  if (pid == -1) uerror("wait", Nothing);
+  if (pid == -1) caml_uerror("wait", Nothing);
   return alloc_process_status(pid, status);
 }
 
@@ -95,7 +95,7 @@ CAMLprim value unix_waitpid(value flags, value pid_req)
   caml_enter_blocking_section();
   pid = waitpid(Int_val(pid_req), &status, cv_flags);
   caml_leave_blocking_section();
-  if (pid == -1) uerror("waitpid", Nothing);
+  if (pid == -1) caml_uerror("waitpid", Nothing);
   return alloc_process_status(pid, status);
 }
 

@@ -38,7 +38,7 @@ CAMLprim value unix_accept(value cloexec, value sock)
   caml_leave_blocking_section();
   if (snew == INVALID_SOCKET) {
     caml_win32_maperr(err);
-    uerror("accept", Nothing);
+    caml_uerror("accept", Nothing);
   }
   caml_win32_set_cloexec((HANDLE) snew, cloexec);
   fd = caml_win32_alloc_socket(snew);

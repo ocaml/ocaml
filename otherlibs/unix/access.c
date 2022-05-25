@@ -62,6 +62,6 @@ CAMLprim value unix_access(value path, value perms)
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret == -1)
-    uerror("access", path);
+    caml_uerror("access", path);
   CAMLreturn(Val_unit);
 }

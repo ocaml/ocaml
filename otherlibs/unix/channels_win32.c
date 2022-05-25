@@ -66,7 +66,7 @@ int caml_win32_CRT_fd_of_filedescr(value handle)
     return CRT_fd_val(handle);
   } else {
     int fd = _open_osfhandle((intptr_t) Handle_val(handle), O_BINARY);
-    if (fd == -1) uerror("channel_of_descr", Nothing);
+    if (fd == -1) caml_uerror("channel_of_descr", Nothing);
     CRT_fd_val(handle) = fd;
     return fd;
   }
@@ -85,7 +85,7 @@ CAMLprim value unix_inchannel_of_filedescr(value handle)
   err = check_stream_semantics(handle);
   if (err != 0) {
     caml_win32_maperr(err);
-    uerror("in_channel_of_descr", Nothing);
+    caml_uerror("in_channel_of_descr", Nothing);
   }
   chan = caml_open_descriptor_in(caml_win32_CRT_fd_of_filedescr(handle));
   chan->flags |= CHANNEL_FLAG_MANAGED_BY_GC;
@@ -107,7 +107,7 @@ CAMLprim value unix_outchannel_of_filedescr(value handle)
   err = check_stream_semantics(handle);
   if (err != 0) {
     caml_win32_maperr(err);
-    uerror("out_channel_of_descr", Nothing);
+    caml_uerror("out_channel_of_descr", Nothing);
   }
   chan = caml_open_descriptor_out(caml_win32_CRT_fd_of_filedescr(handle));
   chan->flags |= CHANNEL_FLAG_MANAGED_BY_GC;

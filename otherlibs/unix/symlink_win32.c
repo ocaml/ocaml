@@ -112,7 +112,7 @@ again:
 
   if (!result) {
     caml_win32_maperr(GetLastError());
-    uerror("symlink", odest);
+    caml_uerror("symlink", odest);
   }
 
   CAMLreturn(Val_unit);

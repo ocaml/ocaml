@@ -30,7 +30,7 @@ CAMLprim value unix_execv(value path, value args)
   (void) execv_os(wpath, EXECV_CAST argv);
   caml_stat_free(wpath);
   unix_cstringvect_free(argv);
-  uerror("execv", path);
+  caml_uerror("execv", path);
   return Val_unit;                  /* never reached, but suppress warnings */
                                 /* from smart compilers */
 }

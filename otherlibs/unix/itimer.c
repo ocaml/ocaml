@@ -53,7 +53,7 @@ CAMLprim value unix_setitimer(value which, value newval)
   unix_set_timeval(&new.it_interval, Double_field(newval, 0));
   unix_set_timeval(&new.it_value, Double_field(newval, 1));
   if (setitimer(itimers[Int_val(which)], &new, &old) == -1)
-    uerror("setitimer", Nothing);
+    caml_uerror("setitimer", Nothing);
   return unix_convert_itimer(&old);
 }
 
@@ -61,7 +61,7 @@ CAMLprim value unix_getitimer(value which)
 {
   struct itimerval val;
   if (getitimer(itimers[Int_val(which)], &val) == -1)
-    uerror("getitimer", Nothing);
+    caml_uerror("getitimer", Nothing);
   return unix_convert_itimer(&val);
 }
 

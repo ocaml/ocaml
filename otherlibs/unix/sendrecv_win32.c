@@ -43,7 +43,7 @@ CAMLprim value unix_recv(value sock, value buff, value ofs, value len,
   caml_leave_blocking_section();
   if (ret == -1) {
     caml_win32_maperr(err);
-    uerror("recv", Nothing);
+    caml_uerror("recv", Nothing);
   }
   memmove (&Byte(buff, Long_val(ofs)), iobuf, ret);
   CAMLreturn(Val_int(ret));
@@ -73,7 +73,7 @@ CAMLprim value unix_recvfrom(value sock, value buff, value ofs, value len,
   caml_leave_blocking_section();
   if (ret == -1) {
     caml_win32_maperr(err);
-    uerror("recvfrom", Nothing);
+    caml_uerror("recvfrom", Nothing);
   }
   memmove (&Byte(buff, Long_val(ofs)), iobuf, ret);
   adr = unix_alloc_sockaddr(&addr, addr_len, -1);
@@ -102,7 +102,7 @@ CAMLprim value unix_send(value sock, value buff, value ofs, value len,
   caml_leave_blocking_section();
   if (ret == -1) {
     caml_win32_maperr(err);
-    uerror("send", Nothing);
+    caml_uerror("send", Nothing);
   }
   return Val_int(ret);
 }
@@ -129,7 +129,7 @@ value unix_sendto_native(value sock, value buff, value ofs, value len,
   caml_leave_blocking_section();
   if (ret == -1) {
     caml_win32_maperr(err);
-    uerror("sendto", Nothing);
+    caml_uerror("sendto", Nothing);
   }
   return Val_int(ret);
 }

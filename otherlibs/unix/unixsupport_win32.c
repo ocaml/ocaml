@@ -316,7 +316,7 @@ void unix_error(int errcode, const char *cmdname, value cmdarg)
   CAMLnoreturn;
 }
 
-void uerror(const char * cmdname, value cmdarg)
+void caml_uerror(const char * cmdname, value cmdarg)
 {
   unix_error(errno, cmdname, cmdarg);
 }

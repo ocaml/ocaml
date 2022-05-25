@@ -43,7 +43,7 @@ CAMLprim value unix_fork(value unit)
 
   ret = fork();
 
-  if (ret == -1) uerror("fork", Nothing);
+  if (ret == -1) caml_uerror("fork", Nothing);
 
   if (ret == 0) {
     caml_atfork_child();

@@ -353,7 +353,7 @@ CAMLprim value unix_stat(value path)
 
   caml_unix_check_path(path, "stat");
   if (!do_stat(0, 0, String_val(path), NULL, &st_ino, &buf)) {
-    uerror("stat", path);
+    caml_uerror("stat", path);
   }
   return stat_aux(0, st_ino, &buf);
 }
@@ -365,7 +365,7 @@ CAMLprim value unix_stat_64(value path)
 
   caml_unix_check_path(path, "stat");
   if (!do_stat(0, 1, String_val(path), NULL, &st_ino, &buf)) {
-    uerror("stat", path);
+    caml_uerror("stat", path);
   }
   return stat_aux(1, st_ino, &buf);
 }
@@ -377,7 +377,7 @@ CAMLprim value unix_lstat(value path)
 
   caml_unix_check_path(path, "lstat");
   if (!do_stat(1, 0, String_val(path), NULL, &st_ino, &buf)) {
-    uerror("lstat", path);
+    caml_uerror("lstat", path);
   }
   return stat_aux(0, st_ino, &buf);
 }
@@ -389,7 +389,7 @@ CAMLprim value unix_lstat_64(value path)
 
   caml_unix_check_path(path, "lstat");
   if (!do_stat(1, 1, String_val(path), NULL, &st_ino, &buf)) {
-    uerror("lstat", path);
+    caml_uerror("lstat", path);
   }
   return stat_aux(1, st_ino, &buf);
 }
@@ -411,7 +411,7 @@ static value do_fstat(value handle, int use_64)
   switch(ft) {
   case FILE_TYPE_DISK:
     if (!safe_do_stat(0, use_64, NULL, Handle_val(handle), &st_ino, &buf)) {
-      uerror("fstat", Nothing);
+      caml_uerror("fstat", Nothing);
     }
     break;
   case FILE_TYPE_CHAR:
@@ -435,7 +435,7 @@ static value do_fstat(value handle, int use_64)
     unix_error(EBADF, "fstat", Nothing);
   default:
     caml_win32_maperr(GetLastError());
-    uerror("fstat", Nothing);
+    caml_uerror("fstat", Nothing);
   }
   return stat_aux(use_64, st_ino, &buf);
 }

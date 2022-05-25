@@ -51,7 +51,7 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
   ret = utimes(p, t);
   caml_leave_blocking_section();
   caml_stat_free(p);
-  if (ret == -1) uerror("utimes", path);
+  if (ret == -1) caml_uerror("utimes", path);
   CAMLreturn(Val_unit);
 }
 
@@ -82,7 +82,7 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
   ret = utime(p, t);
   caml_leave_blocking_section();
   caml_stat_free(p);
-  if (ret == -1) uerror("utimes", path);
+  if (ret == -1) caml_uerror("utimes", path);
   CAMLreturn(Val_unit);
 }
 

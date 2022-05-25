@@ -32,7 +32,7 @@ CAMLprim value unix_execvp(value path, value args)
   (void) execvp_os((const char_os *)wpath, EXECV_CAST argv);
   caml_stat_free(wpath);
   unix_cstringvect_free(argv);
-  uerror("execvp", path);
+  caml_uerror("execvp", path);
   return Val_unit;                  /* never reached, but suppress warnings */
                                     /* from smart compilers */
 }

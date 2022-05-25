@@ -46,7 +46,7 @@ CAMLprim value unix_lseek(value fd, value ofs, value cmd)
   ret = lseek(Int_val(fd), Long_val(ofs),
                        seek_command_table[Int_val(cmd)]);
   caml_leave_blocking_section();
-  if (ret == -1) uerror("lseek", Nothing);
+  if (ret == -1) caml_uerror("lseek", Nothing);
   if (ret > Max_long) unix_error(EOVERFLOW, "lseek", Nothing);
   return Val_long(ret);
 }
@@ -61,6 +61,6 @@ CAMLprim value unix_lseek_64(value fd, value ofs, value cmd)
   caml_enter_blocking_section();
   ret = lseek(Int_val(fd), ofs_c, seek_command_table[Int_val(cmd)]);
   caml_leave_blocking_section();
-  if (ret == -1) uerror("lseek", Nothing);
+  if (ret == -1) caml_uerror("lseek", Nothing);
   return Val_file_offset(ret);
 }

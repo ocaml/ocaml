@@ -52,7 +52,7 @@ CAMLprim value unix_read(value fd, value buf, value ofs, value vlen)
       numread = 0;
     } else {
       caml_win32_maperr(err);
-      uerror("read", Nothing);
+      caml_uerror("read", Nothing);
     }
   }
   memmove (&Byte(buf, Long_val(ofs)), iobuf, numread);

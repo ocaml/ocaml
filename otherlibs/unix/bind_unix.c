@@ -29,7 +29,7 @@ CAMLprim value unix_bind(value socket, value address)
 
   unix_get_sockaddr(address, &addr, &addr_len);
   ret = bind(Int_val(socket), &addr.s_gen, addr_len);
-  if (ret == -1) uerror("bind", Nothing);
+  if (ret == -1) caml_uerror("bind", Nothing);
   return Val_unit;
 }
 

@@ -187,7 +187,7 @@ CAMLprim value unix_socketpair(value cloexec, value domain, value type,
   caml_leave_blocking_section();
 
   if (rc == SOCKET_ERROR)
-    uerror("socketpair", Nothing);
+    caml_uerror("socketpair", Nothing);
 
   result = caml_alloc_tuple(2);
   Store_field(result, 0, caml_win32_alloc_socket(sv[0]));

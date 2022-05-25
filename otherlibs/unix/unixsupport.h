@@ -93,8 +93,13 @@ extern void unix_error (int errcode, const char * cmdname, value arg)
 CAMLnoreturn_end;
 
 CAMLnoreturn_start
-extern void uerror (const char * cmdname, value arg)
+extern void caml_uerror (const char * cmdname, value arg)
 CAMLnoreturn_end;
+
+/* Compatibility definitions for the pre-5.0 name of this function */
+#ifndef CAML_BUILDING_UNIX
+#define uerror caml_uerror
+#endif /* CAML_BUILDING_UNIX */
 
 extern void caml_unix_check_path(value path, const char * cmdname);
 

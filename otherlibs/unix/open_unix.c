@@ -79,7 +79,7 @@ CAMLprim value unix_open(value path, value flags, value perm)
   fd = open(p, cv_flags, Int_val(perm));
   caml_leave_blocking_section();
   caml_stat_free(p);
-  if (fd == -1) uerror("open", path);
+  if (fd == -1) caml_uerror("open", path);
 #if !defined(O_CLOEXEC)
   if (cloexec) unix_set_cloexec(fd, "open", path);
 #endif

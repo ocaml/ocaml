@@ -109,7 +109,7 @@ CAMLprim value unix_stat(value path)
   ret = stat(p, &buf);
   caml_leave_blocking_section();
   caml_stat_free(p);
-  if (ret == -1) uerror("stat", path);
+  if (ret == -1) caml_uerror("stat", path);
   if (buf.st_size > Max_long && (buf.st_mode & S_IFMT) == S_IFREG)
     unix_error(EOVERFLOW, "stat", path);
   CAMLreturn(stat_aux(0, &buf));
@@ -131,7 +131,7 @@ CAMLprim value unix_lstat(value path)
 #endif
   caml_leave_blocking_section();
   caml_stat_free(p);
-  if (ret == -1) uerror("lstat", path);
+  if (ret == -1) caml_uerror("lstat", path);
   if (buf.st_size > Max_long && (buf.st_mode & S_IFMT) == S_IFREG)
     unix_error(EOVERFLOW, "lstat", path);
   CAMLreturn(stat_aux(0, &buf));
@@ -144,7 +144,7 @@ CAMLprim value unix_fstat(value fd)
   caml_enter_blocking_section();
   ret = fstat(Int_val(fd), &buf);
   caml_leave_blocking_section();
-  if (ret == -1) uerror("fstat", Nothing);
+  if (ret == -1) caml_uerror("fstat", Nothing);
   if (buf.st_size > Max_long && (buf.st_mode & S_IFMT) == S_IFREG)
     unix_error(EOVERFLOW, "fstat", Nothing);
   return stat_aux(0, &buf);
@@ -162,7 +162,7 @@ CAMLprim value unix_stat_64(value path)
   ret = stat(p, &buf);
   caml_leave_blocking_section();
   caml_stat_free(p);
-  if (ret == -1) uerror("stat", path);
+  if (ret == -1) caml_uerror("stat", path);
   CAMLreturn(stat_aux(1, &buf));
 }
 
@@ -182,7 +182,7 @@ CAMLprim value unix_lstat_64(value path)
 #endif
   caml_leave_blocking_section();
   caml_stat_free(p);
-  if (ret == -1) uerror("lstat", path);
+  if (ret == -1) caml_uerror("lstat", path);
   CAMLreturn(stat_aux(1, &buf));
 }
 
@@ -193,6 +193,6 @@ CAMLprim value unix_fstat_64(value fd)
   caml_enter_blocking_section();
   ret = fstat(Int_val(fd), &buf);
   caml_leave_blocking_section();
-  if (ret == -1) uerror("fstat", Nothing);
+  if (ret == -1) caml_uerror("fstat", Nothing);
   return stat_aux(1, &buf);
 }

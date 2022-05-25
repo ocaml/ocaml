@@ -28,7 +28,7 @@ CAMLprim value unix_bind(socket, address)
   ret = bind(Socket_val(socket), &addr.s_gen, addr_len);
   if (ret == -1) {
     caml_win32_maperr(WSAGetLastError());
-    uerror("bind", Nothing);
+    caml_uerror("bind", Nothing);
   }
   return Val_unit;
 }

@@ -46,7 +46,7 @@ value unix_times(value unit) {
   if (!(GetProcessTimes(GetCurrentProcess(), &creation, &exit, &stime,
                         &utime))) {
     caml_win32_maperr(GetLastError());
-    uerror("times", Nothing);
+    caml_uerror("times", Nothing);
   }
 
   res = caml_alloc_small(4 * Double_wosize, Double_array_tag);

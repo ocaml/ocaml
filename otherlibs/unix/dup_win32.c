@@ -59,7 +59,7 @@ CAMLprim value unix_dup(value cloexec, value fd)
     HANDLE newh = duplicate_handle(! unix_cloexec_p(cloexec),
                                    Handle_val(fd));
     if (newh == INVALID_HANDLE_VALUE)
-      uerror("dup", Nothing);
+      caml_uerror("dup", Nothing);
     newfd = caml_win32_alloc_handle(newh);
     CAMLreturn(newfd);
   }
@@ -67,7 +67,7 @@ CAMLprim value unix_dup(value cloexec, value fd)
     SOCKET newsock = duplicate_socket(! unix_cloexec_p(cloexec),
                                       Socket_val(fd));
     if (newsock == INVALID_SOCKET)
-      uerror("dup", Nothing);
+      caml_uerror("dup", Nothing);
     newfd = caml_win32_alloc_socket(newsock);
     CAMLreturn(newfd);
   }
@@ -89,7 +89,7 @@ CAMLprim value unix_dup2(value cloexec, value fd1, value fd2)
       newh = duplicate_handle(! unix_cloexec_p(cloexec),
                               Handle_val(fd1));
     if (newh == INVALID_HANDLE_VALUE)
-      uerror("dup2", Nothing);
+      caml_uerror("dup2", Nothing);
     Handle_val(fd2) = newh;
     CloseHandle(oldh);
     break;
@@ -99,7 +99,7 @@ CAMLprim value unix_dup2(value cloexec, value fd1, value fd2)
       newsock = duplicate_socket(! unix_cloexec_p(cloexec),
                                  Socket_val(fd1));
     if (newsock == INVALID_SOCKET)
-      uerror("dup2", Nothing);
+      caml_uerror("dup2", Nothing);
     Socket_val(fd2) = newsock;
     closesocket(oldsock);
     break;
