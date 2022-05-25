@@ -251,11 +251,11 @@ let nice _ = invalid_arg "Unix.nice not implemented"
 
 (* Basic file input/output *)
 
-external filedescr_of_fd : int -> file_descr = "win_handle_fd"
+external filedescr_of_unix_fd_num : int -> file_descr = "unix_filedescr_of_fd"
 
-let stdin = filedescr_of_fd 0
-let stdout = filedescr_of_fd 1
-let stderr = filedescr_of_fd 2
+let stdin = filedescr_of_unix_fd_num 0
+let stdout = filedescr_of_unix_fd_num 1
+let stderr = filedescr_of_unix_fd_num 2
 
 type open_flag =
     O_RDONLY

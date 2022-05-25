@@ -136,7 +136,7 @@ CAMLprim value win_filedescr_of_channel(value vchan)
   CAMLreturn(fd);
 }
 
-CAMLprim value win_handle_fd(value vfd)
+CAMLprim value unix_filedescr_of_fd(value vfd)
 {
   int crt_fd = Int_val(vfd);
   /* PR#4750: do not use the _or_socket variant as it can cause performance
