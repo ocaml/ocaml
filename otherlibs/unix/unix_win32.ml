@@ -15,8 +15,8 @@
 
 (* Initialization *)
 
-external startup: unit -> unit = "win_startup"
-external cleanup: unit -> unit = "win_cleanup"
+external startup: unit -> unit = "unix_startup"
+external cleanup: unit -> unit = "unix_cleanup"
 
 let _ = startup(); at_exit cleanup
 
@@ -993,7 +993,7 @@ let create_process_env prog args env fd1 fd2 fd3 =
                      (Some(make_process_env env))
                      fd1 fd2 fd3
 
-external system: string -> process_status = "win_system"
+external system: string -> process_status = "unix_system"
 
 type popen_process =
     Process of in_channel * out_channel

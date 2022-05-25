@@ -22,7 +22,7 @@
 
 value caml_win32_process_id;
 
-CAMLprim value win_startup(unit)
+CAMLprim value unix_startup(unit)
      value unit;
 {
   WSADATA wsaData;
@@ -40,7 +40,7 @@ CAMLprim value win_startup(unit)
   return Val_unit;
 }
 
-CAMLprim value win_cleanup(unit)
+CAMLprim value unix_cleanup(unit)
      value unit;
 {
   caml_win32_worker_cleanup();
