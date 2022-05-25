@@ -30,7 +30,7 @@ BOOL (WINAPI *tCreateHardLink)(
   LPSECURITY_ATTRIBUTES lpSecurityAttributes
 );
 
-CAMLprim value unix_link(value follow, value path1, value path2)
+CAMLprim value caml_unix_link(value follow, value path1, value path2)
 {
   HMODULE hModKernel32;
   tCreateHardLink pCreateHardLink;

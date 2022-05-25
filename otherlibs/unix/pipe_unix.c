@@ -19,18 +19,18 @@
 #include "unixsupport.h"
 #include <fcntl.h>
 
-CAMLprim value unix_pipe(value cloexec, value vunit)
+CAMLprim value caml_unix_pipe(value cloexec, value vunit)
 {
   int fd[2];
   value res;
 #ifdef HAS_PIPE2
-  if (pipe2(fd, unix_cloexec_p(cloexec) ? O_CLOEXEC : 0) == -1)
+  if (pipe2(fd, caml_unix_cloexec_p(cloexec) ? O_CLOEXEC : 0) == -1)
     caml_uerror("pipe", Nothing);
 #else
   if (pipe(fd) == -1) caml_uerror("pipe", Nothing);
-  if (unix_cloexec_p(cloexec)) {
-    unix_set_cloexec(fd[0], "pipe", Nothing);
-    unix_set_cloexec(fd[1], "pipe", Nothing);
+  if (caml_unix_cloexec_p(cloexec)) {
+    caml_unix_set_cloexec(fd[0], "pipe", Nothing);
+    caml_unix_set_cloexec(fd[1], "pipe", Nothing);
   }
 #endif
   res = caml_alloc_small(2, 0);

@@ -99,7 +99,7 @@ static value stat_aux(int use_64, __int64 st_ino, struct _stat64 *buf)
   v = caml_alloc (12, 0);
   Store_field (v, 0, Val_int (buf->st_dev));
   Store_field (v, 1, Val_int (st_ino ? st_ino & Max_long : buf->st_ino));
-  Store_field (v, 2, unix_cst_to_constr (buf->st_mode & S_IFMT, file_kind_table,
+  Store_field (v, 2, caml_unix_cst_to_constr (buf->st_mode & S_IFMT, file_kind_table,
                                          sizeof(file_kind_table) / sizeof(int),
                                          0));
   Store_field (v, 3, Val_int(buf->st_mode & 07777));
@@ -346,7 +346,7 @@ static int do_stat(int do_lstat, int use_64, const char* opath, HANDLE fstat, __
   return ret;
 }
 
-CAMLprim value unix_stat(value path)
+CAMLprim value caml_unix_stat(value path)
 {
   struct _stat64 buf;
   __int64 st_ino;
@@ -358,7 +358,7 @@ CAMLprim value unix_stat(value path)
   return stat_aux(0, st_ino, &buf);
 }
 
-CAMLprim value unix_stat_64(value path)
+CAMLprim value caml_unix_stat_64(value path)
 {
   struct _stat64 buf;
   __int64 st_ino;
@@ -370,7 +370,7 @@ CAMLprim value unix_stat_64(value path)
   return stat_aux(1, st_ino, &buf);
 }
 
-CAMLprim value unix_lstat(value path)
+CAMLprim value caml_unix_lstat(value path)
 {
   struct _stat64 buf;
   __int64 st_ino;
@@ -382,7 +382,7 @@ CAMLprim value unix_lstat(value path)
   return stat_aux(0, st_ino, &buf);
 }
 
-CAMLprim value unix_lstat_64(value path)
+CAMLprim value caml_unix_lstat_64(value path)
 {
   struct _stat64 buf;
   __int64 st_ino;
@@ -432,7 +432,7 @@ static value do_fstat(value handle, int use_64)
     }
     break;
   case FILE_TYPE_UNKNOWN:
-    unix_error(EBADF, "fstat", Nothing);
+    caml_unix_error(EBADF, "fstat", Nothing);
   default:
     caml_win32_maperr(GetLastError());
     caml_uerror("fstat", Nothing);
@@ -440,12 +440,12 @@ static value do_fstat(value handle, int use_64)
   return stat_aux(use_64, st_ino, &buf);
 }
 
-CAMLprim value unix_fstat(value handle)
+CAMLprim value caml_unix_fstat(value handle)
 {
   return do_fstat(handle, 0);
 }
 
-CAMLprim value unix_fstat_64(value handle)
+CAMLprim value caml_unix_fstat_64(value handle)
 {
   return do_fstat(handle, 1);
 }

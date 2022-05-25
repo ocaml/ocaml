@@ -55,7 +55,7 @@ static int open_cloexec_table[15] = {
   CLOEXEC, KEEPEXEC
 };
 
-CAMLprim value unix_open(value path, value flags, value perm)
+CAMLprim value caml_unix_open(value path, value flags, value perm)
 {
   CAMLparam3(path, flags, perm);
   int fd, cv_flags, clo_flags, cloexec;
@@ -69,7 +69,7 @@ CAMLprim value unix_open(value path, value flags, value perm)
   else if (clo_flags & KEEPEXEC)
     cloexec = 0;
   else
-    cloexec = unix_cloexec_default;
+    cloexec = caml_unix_cloexec_default;
 #if defined(O_CLOEXEC)
   if (cloexec) cv_flags |= O_CLOEXEC;
 #endif
@@ -81,7 +81,7 @@ CAMLprim value unix_open(value path, value flags, value perm)
   caml_stat_free(p);
   if (fd == -1) caml_uerror("open", path);
 #if !defined(O_CLOEXEC)
-  if (cloexec) unix_set_cloexec(fd, "open", path);
+  if (cloexec) caml_unix_set_cloexec(fd, "open", path);
 #endif
   CAMLreturn (Val_int(fd));
 }

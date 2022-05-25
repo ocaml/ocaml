@@ -20,7 +20,7 @@
 
 #ifdef HAS_FCHMOD
 
-CAMLprim value unix_fchown(value fd, value uid, value gid)
+CAMLprim value caml_unix_fchown(value fd, value uid, value gid)
 {
   int result;
   caml_enter_blocking_section();
@@ -32,7 +32,7 @@ CAMLprim value unix_fchown(value fd, value uid, value gid)
 
 #else
 
-CAMLprim value unix_fchown(value fd, value uid, value gid)
+CAMLprim value caml_unix_fchown(value fd, value uid, value gid)
 { caml_invalid_argument("fchown not implemented"); }
 
 #endif

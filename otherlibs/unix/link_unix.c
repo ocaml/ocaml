@@ -26,7 +26,7 @@
 #include <unistd.h>
 #include <errno.h>
 
-CAMLprim value unix_link(value follow, value path1, value path2)
+CAMLprim value caml_unix_link(value follow, value path1, value path2)
 {
   CAMLparam3(follow, path1, path2);
   char * p1;

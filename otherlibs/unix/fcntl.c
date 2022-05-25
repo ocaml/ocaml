@@ -25,7 +25,7 @@
 #define O_NONBLOCK O_NDELAY
 #endif
 
-CAMLprim value unix_set_nonblock(value fd)
+CAMLprim value caml_unix_set_nonblock(value fd)
 {
   int retcode;
   retcode = fcntl(Int_val(fd), F_GETFL, 0);
@@ -35,7 +35,7 @@ CAMLprim value unix_set_nonblock(value fd)
   return Val_unit;
 }
 
-CAMLprim value unix_clear_nonblock(value fd)
+CAMLprim value caml_unix_clear_nonblock(value fd)
 {
   int retcode;
   retcode = fcntl(Int_val(fd), F_GETFL, 0);
@@ -45,14 +45,14 @@ CAMLprim value unix_clear_nonblock(value fd)
   return Val_unit;
 }
 
-CAMLprim value unix_set_close_on_exec(value fd)
+CAMLprim value caml_unix_set_close_on_exec(value fd)
 {
-  unix_set_cloexec(Int_val(fd), "set_close_on_exec", Nothing);
+  caml_unix_set_cloexec(Int_val(fd), "set_close_on_exec", Nothing);
   return Val_unit;
 }
 
-CAMLprim value unix_clear_close_on_exec(value fd)
+CAMLprim value caml_unix_clear_close_on_exec(value fd)
 {
-  unix_clear_cloexec(Int_val(fd), "set_close_on_exec", Nothing);
+  caml_unix_clear_cloexec(Int_val(fd), "set_close_on_exec", Nothing);
   return Val_unit;
 }

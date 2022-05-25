@@ -430,7 +430,7 @@ OCaml 4.14.0
 
 - #10926: Rename the two internal Windows Unicode functions with `caml_` prefix
   instead of `win_`.
-  (David Allsopp, review by Kate Deplaix and Xavier Leroy)
+  (David Allsopp, review by Kate Deplaix, Damien Doligez and Xavier Leroy)
 
 ### Code generation and optimizations:
 

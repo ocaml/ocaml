@@ -28,14 +28,14 @@
 
 #ifdef HAS_PUTENV
 
-CAMLprim value unix_putenv(value name, value val)
+CAMLprim value caml_unix_putenv(value name, value val)
 {
   char * s;
   char_os * p;
   int ret;
 
   if (! (caml_string_is_c_safe(name) && caml_string_is_c_safe(val)))
-    unix_error(EINVAL, "putenv", name);
+    caml_unix_error(EINVAL, "putenv", name);
   s = caml_stat_strconcat(3, name, "=", val);
   p = caml_stat_strdup_to_os(s);
   caml_stat_free(s);
@@ -49,7 +49,7 @@ CAMLprim value unix_putenv(value name, value val)
 
 #else
 
-CAMLprim value unix_putenv(value name, value val)
+CAMLprim value caml_unix_putenv(value name, value val)
 { caml_invalid_argument("putenv not implemented"); }
 
 #endif

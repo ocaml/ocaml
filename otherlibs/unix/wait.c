@@ -66,7 +66,7 @@ static value alloc_process_status(int pid, int status)
   CAMLreturn(res);
 }
 
-CAMLprim value unix_wait(value unit)
+CAMLprim value caml_unix_wait(value unit)
 {
   int pid, status;
 
@@ -87,7 +87,7 @@ static int wait_flag_table[] = {
   WNOHANG, WUNTRACED
 };
 
-CAMLprim value unix_waitpid(value flags, value pid_req)
+CAMLprim value caml_unix_waitpid(value flags, value pid_req)
 {
   int pid, status, cv_flags;
 
@@ -101,7 +101,7 @@ CAMLprim value unix_waitpid(value flags, value pid_req)
 
 #else
 
-CAMLprim value unix_waitpid(value flags, value pid_req)
+CAMLprim value caml_unix_waitpid(value flags, value pid_req)
 { caml_invalid_argument("waitpid not implemented"); }
 
 #endif

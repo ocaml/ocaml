@@ -21,7 +21,7 @@
 #include <caml/osdeps.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_chdir(value path)
+CAMLprim value caml_unix_chdir(value path)
 {
   CAMLparam1(path);
   char_os * p;

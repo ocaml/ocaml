@@ -25,7 +25,7 @@ static int shutdown_command_table[] = {
   0, 1, 2
 };
 
-CAMLprim value unix_shutdown(value sock, value cmd)
+CAMLprim value caml_unix_shutdown(value sock, value cmd)
 {
   if (shutdown(Int_val(sock), shutdown_command_table[Int_val(cmd)]) == -1)
     caml_uerror("shutdown", Nothing);
@@ -34,7 +34,7 @@ CAMLprim value unix_shutdown(value sock, value cmd)
 
 #else
 
-CAMLprim value unix_shutdown(value sock, value cmd)
+CAMLprim value caml_unix_shutdown(value sock, value cmd)
 { caml_invalid_argument("shutdown not implemented"); }
 
 #endif

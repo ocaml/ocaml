@@ -21,7 +21,7 @@
 #include <caml/memory.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_rename(value path1, value path2)
+CAMLprim value caml_unix_rename(value path1, value path2)
 {
   wchar_t * wpath1, * wpath2;
   BOOL ok;

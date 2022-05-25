@@ -18,7 +18,7 @@
 
 extern value caml_win32_process_id;
 
-CAMLprim value unix_getpid(value unit)
+CAMLprim value caml_unix_getpid(value unit)
 {
   return caml_win32_process_id;
 }

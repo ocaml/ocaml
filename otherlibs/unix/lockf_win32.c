@@ -48,7 +48,7 @@ static void set_file_pointer(HANDLE h, LARGE_INTEGER gohere,
   }
 }
 
-CAMLprim value unix_lockf(value fd, value cmd, value span)
+CAMLprim value caml_unix_lockf(value fd, value cmd, value span)
 {
   CAMLparam3(fd, cmd, span);
   OVERLAPPED overlap;

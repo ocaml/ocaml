@@ -17,14 +17,14 @@
 #include "unixsupport.h"
 #include <windows.h>
 
-CAMLprim value unix_set_close_on_exec(value fd)
+CAMLprim value caml_unix_set_close_on_exec(value fd)
 {
   if (caml_win32_set_inherit(Handle_val(fd), FALSE) == -1)
     caml_uerror("set_close_on_exec", Nothing);
   return Val_unit;
 }
 
-CAMLprim value unix_clear_close_on_exec(value fd)
+CAMLprim value caml_unix_clear_close_on_exec(value fd)
 {
   if (caml_win32_set_inherit(Handle_val(fd), TRUE) == -1)
     caml_uerror("clear_close_on_exec", Nothing);

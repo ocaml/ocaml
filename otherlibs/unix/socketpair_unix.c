@@ -22,24 +22,24 @@
 
 #include <sys/socket.h>
 
-extern int unix_socket_domain_table[], unix_socket_type_table[];
+extern int caml_unix_socket_domain_table[], caml_unix_socket_type_table[];
 
-CAMLprim value unix_socketpair(value cloexec, value domain,
+CAMLprim value caml_unix_socketpair(value cloexec, value domain,
                                value type, value proto)
 {
   int sv[2];
   value res;
-  int ty = unix_socket_type_table[Int_val(type)];
+  int ty = caml_unix_socket_type_table[Int_val(type)];
 #ifdef SOCK_CLOEXEC
-  if (unix_cloexec_p(cloexec)) ty |= SOCK_CLOEXEC;
+  if (caml_unix_cloexec_p(cloexec)) ty |= SOCK_CLOEXEC;
 #endif
-  if (socketpair(unix_socket_domain_table[Int_val(domain)],
+  if (socketpair(caml_unix_socket_domain_table[Int_val(domain)],
                  ty, Int_val(proto), sv) == -1)
     caml_uerror("socketpair", Nothing);
 #ifndef SOCK_CLOEXEC
-  if (unix_cloexec_p(cloexec)) {
-    unix_set_cloexec(sv[0], "socketpair", Nothing);
-    unix_set_cloexec(sv[1], "socketpair", Nothing);
+  if (caml_unix_cloexec_p(cloexec)) {
+    caml_unix_set_cloexec(sv[0], "socketpair", Nothing);
+    caml_unix_set_cloexec(sv[1], "socketpair", Nothing);
   }
 #endif
   res = caml_alloc_small(2, 0);
@@ -50,7 +50,7 @@ CAMLprim value unix_socketpair(value cloexec, value domain,
 
 #else
 
-CAMLprim value unix_socketpair(value cloexec, value domain, value type,
+CAMLprim value caml_unix_socketpair(value cloexec, value domain, value type,
                                value proto)
 { caml_invalid_argument("socketpair not implemented"); }
 

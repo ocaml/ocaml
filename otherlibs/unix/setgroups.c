@@ -28,7 +28,7 @@
 #include <grp.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_setgroups(value groups)
+CAMLprim value caml_unix_setgroups(value groups)
 {
   gid_t * gidset;
   mlsize_t size, i;
@@ -47,7 +47,7 @@ CAMLprim value unix_setgroups(value groups)
 
 #else
 
-CAMLprim value unix_setgroups(value groups)
+CAMLprim value caml_unix_setgroups(value groups)
 { caml_invalid_argument("setgroups not implemented"); }
 
 #endif

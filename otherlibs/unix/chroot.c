@@ -18,7 +18,7 @@
 #include <caml/signals.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_chroot(value path)
+CAMLprim value caml_unix_chroot(value path)
 {
   CAMLparam1(path);
   char * p;

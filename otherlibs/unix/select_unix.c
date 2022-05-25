@@ -62,7 +62,7 @@ static value fdset_to_fdlist(value fdlist, fd_set *fdset)
   CAMLreturn(res);
 }
 
-CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
+CAMLprim value caml_unix_select(value readfds, value writefds, value exceptfds,
                            value timeout)
 {
   CAMLparam3(readfds, writefds, exceptfds);
@@ -79,7 +79,7 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
   retcode += fdlist_to_fdset(writefds, &write, &maxfd);
   retcode += fdlist_to_fdset(exceptfds, &except, &maxfd);
   /* PR#5563: if a bad fd was encountered, report EINVAL error */
-  if (retcode != 0) unix_error(EINVAL, "select", Nothing);
+  if (retcode != 0) caml_unix_error(EINVAL, "select", Nothing);
   tm = Double_val(timeout);
   if (tm < 0.0)
     tvp = (struct timeval *) NULL;
@@ -104,7 +104,7 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
 
 #else
 
-CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
+CAMLprim value caml_unix_select(value readfds, value writefds, value exceptfds,
                            value timeout)
 { caml_invalid_argument("select not implemented"); }
 

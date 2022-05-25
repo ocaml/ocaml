@@ -26,7 +26,7 @@
 #include <caml/signals.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_mkdir(value path, value perm)
+CAMLprim value caml_unix_mkdir(value path, value perm)
 {
   CAMLparam2(path, perm);
   char_os * p;

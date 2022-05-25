@@ -31,7 +31,7 @@
 #include <windows.h>
 #include <stdio.h>
 
-CAMLprim value unix_realpath (value p)
+CAMLprim value caml_unix_realpath (value p)
 {
   CAMLparam1 (p);
   HANDLE h;

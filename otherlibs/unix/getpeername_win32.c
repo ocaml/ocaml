@@ -17,7 +17,7 @@
 #include "unixsupport.h"
 #include "socketaddr.h"
 
-CAMLprim value unix_getpeername(value sock)
+CAMLprim value caml_unix_getpeername(value sock)
 {
   int retcode;
   union sock_addr_union addr;
@@ -29,5 +29,5 @@ CAMLprim value unix_getpeername(value sock)
     caml_win32_maperr(WSAGetLastError());
     caml_uerror("getpeername", Nothing);
   }
-  return unix_alloc_sockaddr(&addr, addr_len, -1);
+  return caml_unix_alloc_sockaddr(&addr, addr_len, -1);
 }

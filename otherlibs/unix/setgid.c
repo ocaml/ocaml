@@ -16,7 +16,7 @@
 #include <caml/mlvalues.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_setgid(value gid)
+CAMLprim value caml_unix_setgid(value gid)
 {
   if (setgid(Int_val(gid)) == -1) caml_uerror("setgid", Nothing);
   return Val_unit;

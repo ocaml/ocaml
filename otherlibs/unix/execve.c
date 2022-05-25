@@ -20,19 +20,19 @@
 #include <caml/osdeps.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_execve(value path, value args, value env)
+CAMLprim value caml_unix_execve(value path, value args, value env)
 {
   char_os ** argv;
   char_os ** envp;
   char_os * wpath;
   caml_unix_check_path(path, "execve");
-  argv = unix_cstringvect(args, "execve");
-  envp = unix_cstringvect(env, "execve");
+  argv = caml_unix_cstringvect(args, "execve");
+  envp = caml_unix_cstringvect(env, "execve");
   wpath = caml_stat_strdup_to_os(String_val(path));
   (void) execve_os(wpath, EXECV_CAST argv, EXECV_CAST envp);
   caml_stat_free(wpath);
-  unix_cstringvect_free(argv);
-  unix_cstringvect_free(envp);
+  caml_unix_cstringvect_free(argv);
+  caml_unix_cstringvect_free(envp);
   caml_uerror("execve", path);
   return Val_unit;                  /* never reached, but suppress warnings */
                                 /* from smart compilers */

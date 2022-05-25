@@ -21,7 +21,7 @@
 #include <signal.h>
 #include <caml/signals.h>
 
-CAMLprim value unix_kill(value pid, value signal)
+CAMLprim value caml_unix_kill(value pid, value signal)
 {
   int sig;
   sig = caml_convert_signal_number(Int_val(signal));

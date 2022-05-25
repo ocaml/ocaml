@@ -39,7 +39,7 @@ static double to_sec(FILETIME ft) {
 }
 
 
-value unix_times(value unit) {
+value caml_unix_times(value unit) {
   value res;
   FILETIME creation, exit, stime, utime;
 

@@ -49,14 +49,14 @@ static SOCKET duplicate_socket(BOOL inherit, SOCKET oldsock)
                            info.iProtocol, &info, inherit);
 }
 
-CAMLprim value unix_dup(value cloexec, value fd)
+CAMLprim value caml_unix_dup(value cloexec, value fd)
 {
   CAMLparam2(cloexec, fd);
   CAMLlocal1(newfd);
 
   switch (Descr_kind_val(fd)) {
   case KIND_HANDLE: {
-    HANDLE newh = duplicate_handle(! unix_cloexec_p(cloexec),
+    HANDLE newh = duplicate_handle(! caml_unix_cloexec_p(cloexec),
                                    Handle_val(fd));
     if (newh == INVALID_HANDLE_VALUE)
       caml_uerror("dup", Nothing);
@@ -64,7 +64,7 @@ CAMLprim value unix_dup(value cloexec, value fd)
     CAMLreturn(newfd);
   }
   case KIND_SOCKET: {
-    SOCKET newsock = duplicate_socket(! unix_cloexec_p(cloexec),
+    SOCKET newsock = duplicate_socket(! caml_unix_cloexec_p(cloexec),
                                       Socket_val(fd));
     if (newsock == INVALID_SOCKET)
       caml_uerror("dup", Nothing);
@@ -76,7 +76,7 @@ CAMLprim value unix_dup(value cloexec, value fd)
   }
 }
 
-CAMLprim value unix_dup2(value cloexec, value fd1, value fd2)
+CAMLprim value caml_unix_dup2(value cloexec, value fd1, value fd2)
 {
   CAMLparam3(cloexec, fd1, fd2);
 
@@ -86,7 +86,7 @@ CAMLprim value unix_dup2(value cloexec, value fd1, value fd2)
   switch (Descr_kind_val(fd1)) {
   case KIND_HANDLE: {
     HANDLE oldh = Handle_val(fd2),
-      newh = duplicate_handle(! unix_cloexec_p(cloexec),
+      newh = duplicate_handle(! caml_unix_cloexec_p(cloexec),
                               Handle_val(fd1));
     if (newh == INVALID_HANDLE_VALUE)
       caml_uerror("dup2", Nothing);
@@ -96,7 +96,7 @@ CAMLprim value unix_dup2(value cloexec, value fd1, value fd2)
   }
   case KIND_SOCKET: {
     SOCKET oldsock = Socket_val(fd2),
-      newsock = duplicate_socket(! unix_cloexec_p(cloexec),
+      newsock = duplicate_socket(! caml_unix_cloexec_p(cloexec),
                                  Socket_val(fd1));
     if (newsock == INVALID_SOCKET)
       caml_uerror("dup2", Nothing);

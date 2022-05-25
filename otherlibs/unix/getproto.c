@@ -40,7 +40,7 @@ static value alloc_proto_entry(struct protoent *entry)
   CAMLreturn(res);
 }
 
-CAMLprim value unix_getprotobyname(value name)
+CAMLprim value caml_unix_getprotobyname(value name)
 {
   struct protoent * entry;
   if (! caml_string_is_c_safe(name)) caml_raise_not_found();
@@ -49,7 +49,7 @@ CAMLprim value unix_getprotobyname(value name)
   return alloc_proto_entry(entry);
 }
 
-CAMLprim value unix_getprotobynumber(value proto)
+CAMLprim value caml_unix_getprotobynumber(value proto)
 {
   struct protoent * entry;
   entry = getprotobynumber(Int_val(proto));
@@ -59,10 +59,10 @@ CAMLprim value unix_getprotobynumber(value proto)
 
 #else
 
-CAMLprim value unix_getprotobynumber(value proto)
+CAMLprim value caml_unix_getprotobynumber(value proto)
 { caml_invalid_argument("getprotobynumber not implemented"); }
 
-CAMLprim value unix_getprotobyname(value name)
+CAMLprim value caml_unix_getprotobyname(value name)
 { caml_invalid_argument("getprotobyname not implemented"); }
 
 #endif

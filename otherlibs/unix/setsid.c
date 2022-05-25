@@ -20,7 +20,7 @@
 #include <unistd.h>
 #endif
 
-CAMLprim value unix_setsid(value unit)
+CAMLprim value caml_unix_setsid(value unit)
 {
 #ifdef HAS_SETSID
   pid_t pid = setsid();

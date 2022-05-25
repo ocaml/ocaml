@@ -22,7 +22,7 @@
 
 #include "socketaddr.h"
 
-CAMLprim value unix_string_of_inet_addr(value a)
+CAMLprim value caml_unix_string_of_inet_addr(value a)
 {
   char * res;
 #ifdef HAS_IPV6
@@ -68,7 +68,7 @@ CAMLprim value unix_string_of_inet_addr(value a)
 
 #else
 
-CAMLprim value unix_string_of_inet_addr(value a)
+CAMLprim value caml_unix_string_of_inet_addr(value a)
 { caml_invalid_argument("string_of_inet_addr not implemented"); }
 
 #endif

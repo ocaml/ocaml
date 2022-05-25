@@ -83,7 +83,7 @@ static value stat_aux(int use_64, struct stat *buf)
   v = caml_alloc_small(12, 0);
   Field (v, 0) = Val_int (buf->st_dev);
   Field (v, 1) = Val_int (buf->st_ino);
-  Field (v, 2) = unix_cst_to_constr(buf->st_mode & S_IFMT, file_kind_table,
+  Field (v, 2) = caml_unix_cst_to_constr(buf->st_mode & S_IFMT, file_kind_table,
                                     sizeof(file_kind_table) / sizeof(int), 0);
   Field (v, 3) = Val_int (buf->st_mode & 07777);
   Field (v, 4) = Val_int (buf->st_nlink);
@@ -97,7 +97,7 @@ static value stat_aux(int use_64, struct stat *buf)
   CAMLreturn(v);
 }
 
-CAMLprim value unix_stat(value path)
+CAMLprim value caml_unix_stat(value path)
 {
   CAMLparam1(path);
   int ret;
@@ -111,11 +111,11 @@ CAMLprim value unix_stat(value path)
   caml_stat_free(p);
   if (ret == -1) caml_uerror("stat", path);
   if (buf.st_size > Max_long && (buf.st_mode & S_IFMT) == S_IFREG)
-    unix_error(EOVERFLOW, "stat", path);
+    caml_unix_error(EOVERFLOW, "stat", path);
   CAMLreturn(stat_aux(0, &buf));
 }
 
-CAMLprim value unix_lstat(value path)
+CAMLprim value caml_unix_lstat(value path)
 {
   CAMLparam1(path);
   int ret;
@@ -133,11 +133,11 @@ CAMLprim value unix_lstat(value path)
   caml_stat_free(p);
   if (ret == -1) caml_uerror("lstat", path);
   if (buf.st_size > Max_long && (buf.st_mode & S_IFMT) == S_IFREG)
-    unix_error(EOVERFLOW, "lstat", path);
+    caml_unix_error(EOVERFLOW, "lstat", path);
   CAMLreturn(stat_aux(0, &buf));
 }
 
-CAMLprim value unix_fstat(value fd)
+CAMLprim value caml_unix_fstat(value fd)
 {
   int ret;
   struct stat buf;
@@ -146,11 +146,11 @@ CAMLprim value unix_fstat(value fd)
   caml_leave_blocking_section();
   if (ret == -1) caml_uerror("fstat", Nothing);
   if (buf.st_size > Max_long && (buf.st_mode & S_IFMT) == S_IFREG)
-    unix_error(EOVERFLOW, "fstat", Nothing);
+    caml_unix_error(EOVERFLOW, "fstat", Nothing);
   return stat_aux(0, &buf);
 }
 
-CAMLprim value unix_stat_64(value path)
+CAMLprim value caml_unix_stat_64(value path)
 {
   CAMLparam1(path);
   int ret;
@@ -166,7 +166,7 @@ CAMLprim value unix_stat_64(value path)
   CAMLreturn(stat_aux(1, &buf));
 }
 
-CAMLprim value unix_lstat_64(value path)
+CAMLprim value caml_unix_lstat_64(value path)
 {
   CAMLparam1(path);
   int ret;
@@ -186,7 +186,7 @@ CAMLprim value unix_lstat_64(value path)
   CAMLreturn(stat_aux(1, &buf));
 }
 
-CAMLprim value unix_fstat_64(value fd)
+CAMLprim value caml_unix_fstat_64(value fd)
 {
   int ret;
   struct stat buf;

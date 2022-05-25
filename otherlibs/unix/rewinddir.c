@@ -26,17 +26,17 @@
 
 #ifdef HAS_REWINDDIR
 
-CAMLprim value unix_rewinddir(value vd)
+CAMLprim value caml_unix_rewinddir(value vd)
 {
   DIR * d = DIR_Val(vd);
-  if (d == (DIR *) NULL) unix_error(EBADF, "rewinddir", Nothing);
+  if (d == (DIR *) NULL) caml_unix_error(EBADF, "rewinddir", Nothing);
   rewinddir(d);
   return Val_unit;
 }
 
 #else
 
-CAMLprim value unix_rewinddir(value d)
+CAMLprim value caml_unix_rewinddir(value d)
 { caml_invalid_argument("rewinddir not implemented"); }
 
 #endif

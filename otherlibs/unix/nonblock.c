@@ -17,27 +17,27 @@
 #include <caml/signals.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_set_nonblock(socket)
+CAMLprim value caml_unix_set_nonblock(socket)
      value socket;
 {
   u_long non_block = 1;
 
   if (ioctlsocket(Socket_val(socket), FIONBIO, &non_block) != 0) {
     caml_win32_maperr(WSAGetLastError());
-    caml_uerror("unix_set_nonblock", Nothing);
+    caml_uerror("caml_unix_set_nonblock", Nothing);
   }
   Flags_fd_val(socket) = Flags_fd_val(socket) & ~FLAGS_FD_IS_BLOCKING;
   return Val_unit;
 }
 
-CAMLprim value unix_clear_nonblock(socket)
+CAMLprim value caml_unix_clear_nonblock(socket)
      value socket;
 {
   u_long non_block = 0;
 
   if (ioctlsocket(Socket_val(socket), FIONBIO, &non_block) != 0) {
     caml_win32_maperr(WSAGetLastError());
-    caml_uerror("unix_clear_nonblock", Nothing);
+    caml_uerror("caml_unix_clear_nonblock", Nothing);
   }
   Flags_fd_val(socket) = Flags_fd_val(socket) | FLAGS_FD_IS_BLOCKING;
   return Val_unit;

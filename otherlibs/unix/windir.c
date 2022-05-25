@@ -23,7 +23,7 @@
 #include <caml/osdeps.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_findfirst(value name)
+CAMLprim value caml_unix_findfirst(value name)
 {
   CAMLparam0();
   CAMLlocal2(valname, valh);
@@ -53,7 +53,7 @@ CAMLprim value unix_findfirst(value name)
   CAMLreturn(v);
 }
 
-CAMLprim value unix_findnext(value valh)
+CAMLprim value caml_unix_findnext(value valh)
 {
   WIN32_FIND_DATAW fileinfo;
   BOOL retcode;
@@ -71,7 +71,7 @@ CAMLprim value unix_findnext(value valh)
   return caml_copy_string_of_utf16(fileinfo.cFileName);
 }
 
-CAMLprim value unix_findclose(value valh)
+CAMLprim value caml_unix_findclose(value valh)
 {
   if (! FindClose(Handle_val(valh))) {
     caml_win32_maperr(GetLastError());

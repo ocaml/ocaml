@@ -21,7 +21,7 @@
 
 #ifdef HAS_REALPATH
 
-CAMLprim value unix_realpath (value p)
+CAMLprim value caml_unix_realpath (value p)
 {
   CAMLparam1 (p);
   char *r;
@@ -37,7 +37,7 @@ CAMLprim value unix_realpath (value p)
 
 #else
 
-CAMLprim value unix_realpath (value p)
+CAMLprim value caml_unix_realpath (value p)
 { caml_invalid_argument ("realpath not implemented"); }
 
 #endif

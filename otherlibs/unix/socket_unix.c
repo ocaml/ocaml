@@ -23,7 +23,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-int unix_socket_domain_table[] = {
+int caml_unix_socket_domain_table[] = {
   PF_UNIX, PF_INET,
 #if defined(HAS_IPV6)
   PF_INET6
@@ -34,31 +34,31 @@ int unix_socket_domain_table[] = {
 #endif
 };
 
-int unix_socket_type_table[] = {
+int caml_unix_socket_type_table[] = {
   SOCK_STREAM, SOCK_DGRAM, SOCK_RAW, SOCK_SEQPACKET
 };
 
-CAMLprim value unix_socket(value cloexec, value domain,
+CAMLprim value caml_unix_socket(value cloexec, value domain,
                            value type, value proto)
 {
   int retcode;
-  int ty = unix_socket_type_table[Int_val(type)];
+  int ty = caml_unix_socket_type_table[Int_val(type)];
 #ifdef SOCK_CLOEXEC
-  if (unix_cloexec_p(cloexec)) ty |= SOCK_CLOEXEC;
+  if (caml_unix_cloexec_p(cloexec)) ty |= SOCK_CLOEXEC;
 #endif
-  retcode = socket(unix_socket_domain_table[Int_val(domain)],
+  retcode = socket(caml_unix_socket_domain_table[Int_val(domain)],
                    ty, Int_val(proto));
   if (retcode == -1) caml_uerror("socket", Nothing);
 #ifndef SOCK_CLOEXEC
-  if (unix_cloexec_p(cloexec))
-    unix_set_cloexec(retcode, "socket", Nothing);
+  if (caml_unix_cloexec_p(cloexec))
+    caml_unix_set_cloexec(retcode, "socket", Nothing);
 #endif
   return Val_int(retcode);
 }
 
 #else
 
-CAMLprim value unix_socket(value cloexec, value domain,
+CAMLprim value caml_unix_socket(value cloexec, value domain,
                            value type,value proto)
 { caml_invalid_argument("socket not implemented"); }
 

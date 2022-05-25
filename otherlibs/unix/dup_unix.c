@@ -18,19 +18,19 @@
 #include "unixsupport.h"
 #include <fcntl.h>
 
-CAMLprim value unix_dup(value cloexec, value fd)
+CAMLprim value caml_unix_dup(value cloexec, value fd)
 {
   int ret;
 #ifdef F_DUPFD_CLOEXEC
   ret = fcntl(Int_val(fd),
-              (unix_cloexec_p(cloexec) ? F_DUPFD_CLOEXEC : F_DUPFD),
+              (caml_unix_cloexec_p(cloexec) ? F_DUPFD_CLOEXEC : F_DUPFD),
               0);
 #else
   ret = dup(Int_val(fd));
 #endif
   if (ret == -1) caml_uerror("dup", Nothing);
 #ifndef F_DUPFD_CLOEXEC
-  if (unix_cloexec_p(cloexec)) unix_set_cloexec(ret, "dup", Nothing);
+  if (caml_unix_cloexec_p(cloexec)) caml_unix_set_cloexec(ret, "dup", Nothing);
 #endif
   return Val_int(ret);
 }

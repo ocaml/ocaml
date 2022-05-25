@@ -24,7 +24,7 @@
 #define fsync(fd) fsync(fd)
 #endif
 
-CAMLprim value unix_fsync(value v)
+CAMLprim value caml_unix_fsync(value v)
 {
   int ret;
 #ifdef _WIN32

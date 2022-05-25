@@ -20,7 +20,7 @@
 #include <caml/signals.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_write(value fd, value buf, value vofs, value vlen)
+CAMLprim value caml_unix_write(value fd, value buf, value vofs, value vlen)
 {
   CAMLparam2(fd, buf);
   intnat ofs, len, written;
@@ -60,7 +60,8 @@ CAMLprim value unix_write(value fd, value buf, value vofs, value vlen)
   CAMLreturn(Val_long(written));
 }
 
-CAMLprim value unix_single_write(value fd, value buf, value vofs, value vlen)
+CAMLprim value caml_unix_single_write(value fd, value buf, value vofs,
+                                      value vlen)
 {
   CAMLparam1(buf);
   intnat ofs, len, written;

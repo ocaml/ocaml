@@ -25,7 +25,7 @@
 #include <sys/dir.h>
 #endif
 
-CAMLprim value unix_opendir(value path)
+CAMLprim value caml_unix_opendir(value path)
 {
   CAMLparam1(path);
   DIR * d;

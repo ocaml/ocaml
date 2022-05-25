@@ -16,7 +16,7 @@
 #include <caml/mlvalues.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_listen(sock, backlog)
+CAMLprim value caml_unix_listen(sock, backlog)
      value sock, backlog;
 {
   if (listen(Socket_val(sock), Int_val(backlog)) == -1) {

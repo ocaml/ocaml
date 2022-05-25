@@ -18,7 +18,7 @@
 #include <caml/signals.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_chown(value path, value uid, value gid)
+CAMLprim value caml_unix_chown(value path, value uid, value gid)
 {
   CAMLparam1(path);
   char * p;

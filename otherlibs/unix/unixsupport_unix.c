@@ -253,7 +253,7 @@ static int error_table[] = {
   EHOSTUNREACH, ELOOP, EOVERFLOW /*, EUNKNOWNERR */
 };
 
-value unix_error_of_code (int errcode)
+value caml_unix_error_of_code (int errcode)
 {
   int errconstr;
   value err;
@@ -264,7 +264,7 @@ value unix_error_of_code (int errcode)
 #endif
 
   errconstr =
-      unix_cst_to_constr(errcode, error_table,
+      caml_unix_cst_to_constr(errcode, error_table,
                          sizeof(error_table)/sizeof(int), -1);
   if (errconstr == Val_int(-1)) {
     err = caml_alloc_small(1, 0);
@@ -275,7 +275,7 @@ value unix_error_of_code (int errcode)
   return err;
 }
 
-int unix_code_of_unix_error (value error)
+int caml_unix_code_of_unix_error (value error)
 {
   if (Is_block(error)) {
     return Int_val(Field(error, 0));
@@ -284,26 +284,26 @@ int unix_code_of_unix_error (value error)
   }
 }
 
-static const value * _Atomic unix_error_exn = NULL;
+static const value * _Atomic caml_unix_error_exn = NULL;
 
-void unix_error(int errcode, const char *cmdname, value cmdarg)
+void caml_unix_error(int errcode, const char *cmdname, value cmdarg)
 {
   CAMLparam0();
   CAMLlocal3(name, err, arg);
   value res;
   const value * exn;
 
-  exn = atomic_load_explicit(&unix_error_exn, memory_order_acquire);
+  exn = atomic_load_explicit(&caml_unix_error_exn, memory_order_acquire);
   if (exn == NULL) {
     exn = caml_named_value("Unix.Unix_error");
     if (exn == NULL)
       caml_invalid_argument("Exception Unix.Unix_error not initialized,"
                             " please link unix.cma");
-    atomic_store(&unix_error_exn, exn);
+    atomic_store(&caml_unix_error_exn, exn);
   }
   arg = cmdarg == Nothing ? caml_copy_string("") : cmdarg;
   name = caml_copy_string(cmdname);
-  err = unix_error_of_code (errcode);
+  err = caml_unix_error_of_code (errcode);
   res = caml_alloc_small(4, 0);
   Field(res, 0) = *exn;
   Field(res, 1) = err;
@@ -315,25 +315,25 @@ void unix_error(int errcode, const char *cmdname, value cmdarg)
 
 void caml_uerror(const char *cmdname, value cmdarg)
 {
-  unix_error(errno, cmdname, cmdarg);
+  caml_unix_error(errno, cmdname, cmdarg);
 }
 
 void caml_unix_check_path(value path, const char * cmdname)
 {
-  if (! caml_string_is_c_safe(path)) unix_error(ENOENT, cmdname, path);
+  if (! caml_string_is_c_safe(path)) caml_unix_error(ENOENT, cmdname, path);
 }
 
-int unix_cloexec_default = 0;
+int caml_unix_cloexec_default = 0;
 
-int unix_cloexec_p(value cloexec)
+int caml_unix_cloexec_p(value cloexec)
 {
   if (Is_some(cloexec))
     return Bool_val(Some_val(cloexec));
   else
-    return unix_cloexec_default;
+    return caml_unix_cloexec_default;
 }
 
-void unix_set_cloexec(int fd, char *cmdname, value cmdarg)
+void caml_unix_set_cloexec(int fd, char *cmdname, value cmdarg)
 {
   int flags = fcntl(fd, F_GETFD, 0);
   if (flags == -1 ||
@@ -341,7 +341,7 @@ void unix_set_cloexec(int fd, char *cmdname, value cmdarg)
     caml_uerror(cmdname, cmdarg);
 }
 
-void unix_clear_cloexec(int fd, char *cmdname, value cmdarg)
+void caml_unix_clear_cloexec(int fd, char *cmdname, value cmdarg)
 {
   int flags = fcntl(fd, F_GETFD, 0);
   if (flags == -1 ||

@@ -23,7 +23,7 @@
 
 #ifdef HAS_MKFIFO
 
-CAMLprim value unix_mkfifo(value path, value mode)
+CAMLprim value caml_unix_mkfifo(value path, value mode)
 {
   CAMLparam2(path, mode);
   char * p;
@@ -46,7 +46,7 @@ CAMLprim value unix_mkfifo(value path, value mode)
 
 #ifdef S_IFIFO
 
-CAMLprim value unix_mkfifo(value path, value mode)
+CAMLprim value caml_unix_mkfifo(value path, value mode)
 {
   CAMLparam2(path, mode);
   char * p;
@@ -64,7 +64,7 @@ CAMLprim value unix_mkfifo(value path, value mode)
 
 #else
 
-CAMLprim value unix_mkfifo(value path, value mode)
+CAMLprim value caml_unix_mkfifo(value path, value mode)
 {
   caml_invalid_argument("mkfifo not implemented");
 }

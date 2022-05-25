@@ -99,7 +99,7 @@ static DWORD do_create_process_native(wchar_t * exefile, wchar_t * cmdline,
   return err;
 }
 
-value unix_create_process_native(value cmd, value cmdline, value env,
+value caml_unix_create_process_native(value cmd, value cmdline, value env,
                                  value fd1, value fd2, value fd3)
 {
   wchar_t * exefile, * wcmdline, * wenv, * wcmd;
@@ -109,7 +109,7 @@ value unix_create_process_native(value cmd, value cmdline, value env,
 
   caml_unix_check_path(cmd, "create_process");
   if (! caml_string_is_c_safe(cmdline))
-    unix_error(EINVAL, "create_process", cmdline);
+    caml_unix_error(EINVAL, "create_process", cmdline);
   /* [env] is checked for null bytes at construction time, see unix.ml */
 
   wcmd = caml_stat_strdup_to_utf16(String_val(cmd));
@@ -146,9 +146,9 @@ value unix_create_process_native(value cmd, value cmdline, value env,
   return Val_long(hProcess);
 }
 
-CAMLprim value unix_create_process(value * argv, int argn)
+CAMLprim value caml_unix_create_process(value * argv, int argn)
 {
-  return unix_create_process_native(argv[0], argv[1], argv[2],
+  return caml_unix_create_process_native(argv[0], argv[1], argv[2],
                                     argv[3], argv[4], argv[5]);
 }
 
@@ -167,7 +167,7 @@ static int has_console(void)
   }
 }
 
-CAMLprim value unix_terminate_process(value v_pid)
+CAMLprim value caml_unix_terminate_process(value v_pid)
 {
   return (Val_bool(TerminateProcess((HANDLE) Long_val(v_pid), 0)));
 }

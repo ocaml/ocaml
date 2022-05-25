@@ -27,7 +27,7 @@
 #define EWOULDBLOCK (-1)
 #endif
 
-CAMLprim value unix_write(value fd, value buf, value vofs, value vlen)
+CAMLprim value caml_unix_write(value fd, value buf, value vofs, value vlen)
 {
   CAMLparam1(buf);
   long ofs, len, written;
@@ -54,15 +54,16 @@ CAMLprim value unix_write(value fd, value buf, value vofs, value vlen)
   CAMLreturn(Val_long(written));
 }
 
-/* When an error occurs after the first loop, unix_write reports the
+/* When an error occurs after the first loop, caml_unix_write reports the
    error and discards the number of already written characters.
    In this case, it would be better to discard the error and return the
-   number of bytes written, since most likely, unix_write will be call again,
-   and the error will be reproduced and this time will be reported.
-   This problem is avoided in unix_single_write, which is faithful to the
+   number of bytes written, since most likely, caml_unix_write will be call
+   again, and the error will be reproduced and this time will be reported.
+   This problem is avoided in caml_unix_single_write, which is faithful to the
    Unix system call. */
 
-CAMLprim value unix_single_write(value fd, value buf, value vofs, value vlen)
+CAMLprim value caml_unix_single_write(value fd, value buf, value vofs,
+                                      value vlen)
 {
   CAMLparam1(buf);
   long ofs, len;

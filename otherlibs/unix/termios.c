@@ -266,7 +266,7 @@ static void decode_terminal_status(value *src)
         if (i >= 0 && i < num) {
           *dst = (*dst & ~msk) | pc[i];
         } else {
-          unix_error(EINVAL, "tcsetattr", Nothing);
+          caml_unix_error(EINVAL, "tcsetattr", Nothing);
         }
         pc += num;
         break; }
@@ -286,7 +286,7 @@ static void decode_terminal_status(value *src)
             goto ok;
           }
         }
-        unix_error(EINVAL, "tcsetattr", Nothing);
+        caml_unix_error(EINVAL, "tcsetattr", Nothing);
       ok:
         break; }
     case Char:
@@ -297,7 +297,7 @@ static void decode_terminal_status(value *src)
   }
 }
 
-CAMLprim value unix_tcgetattr(value fd)
+CAMLprim value caml_unix_tcgetattr(value fd)
 {
   value res;
 
@@ -312,7 +312,7 @@ static int when_flag_table[] = {
   TCSANOW, TCSADRAIN, TCSAFLUSH
 };
 
-CAMLprim value unix_tcsetattr(value fd, value when, value arg)
+CAMLprim value caml_unix_tcsetattr(value fd, value when, value arg)
 {
   if (tcgetattr(Int_val(fd), &terminal_status) == -1)
     caml_uerror("tcsetattr", Nothing);
@@ -324,7 +324,7 @@ CAMLprim value unix_tcsetattr(value fd, value when, value arg)
   return Val_unit;
 }
 
-CAMLprim value unix_tcsendbreak(value fd, value delay)
+CAMLprim value caml_unix_tcsendbreak(value fd, value delay)
 {
   if (tcsendbreak(Int_val(fd), Int_val(delay)) == -1)
     caml_uerror("tcsendbreak", Nothing);
@@ -332,10 +332,10 @@ CAMLprim value unix_tcsendbreak(value fd, value delay)
 }
 
 #if defined(__ANDROID__)
-CAMLprim value unix_tcdrain(value fd)
+CAMLprim value caml_unix_tcdrain(value fd)
 { caml_invalid_argument("tcdrain not implemented"); }
 #else
-CAMLprim value unix_tcdrain(value fd)
+CAMLprim value caml_unix_tcdrain(value fd)
 {
   if (tcdrain(Int_val(fd)) == -1) caml_uerror("tcdrain", Nothing);
   return Val_unit;
@@ -346,7 +346,7 @@ static int queue_flag_table[] = {
   TCIFLUSH, TCOFLUSH, TCIOFLUSH
 };
 
-CAMLprim value unix_tcflush(value fd, value queue)
+CAMLprim value caml_unix_tcflush(value fd, value queue)
 {
   if (tcflush(Int_val(fd), queue_flag_table[Int_val(queue)]) == -1)
     caml_uerror("tcflush", Nothing);
@@ -357,7 +357,7 @@ static int action_flag_table[] = {
   TCOOFF, TCOON, TCIOFF, TCION
 };
 
-CAMLprim value unix_tcflow(value fd, value action)
+CAMLprim value caml_unix_tcflow(value fd, value action)
 {
   if (tcflow(Int_val(fd), action_flag_table[Int_val(action)]) == -1)
     caml_uerror("tcflow", Nothing);
@@ -366,22 +366,22 @@ CAMLprim value unix_tcflow(value fd, value action)
 
 #else
 
-CAMLprim value unix_tcgetattr(value fd)
+CAMLprim value caml_unix_tcgetattr(value fd)
 { caml_invalid_argument("tcgetattr not implemented"); }
 
-CAMLprim value unix_tcsetattr(value fd, value when, value arg)
+CAMLprim value caml_unix_tcsetattr(value fd, value when, value arg)
 { caml_invalid_argument("tcsetattr not implemented"); }
 
-CAMLprim value unix_tcsendbreak(value fd, value delay)
+CAMLprim value caml_unix_tcsendbreak(value fd, value delay)
 { caml_invalid_argument("tcsendbreak not implemented"); }
 
-CAMLprim value unix_tcdrain(value fd)
+CAMLprim value caml_unix_tcdrain(value fd)
 { caml_invalid_argument("tcdrain not implemented"); }
 
-CAMLprim value unix_tcflush(value fd, value queue)
+CAMLprim value caml_unix_tcflush(value fd, value queue)
 { caml_invalid_argument("tcflush not implemented"); }
 
-CAMLprim value unix_tcflow(value fd, value action)
+CAMLprim value caml_unix_tcflow(value fd, value action)
 { caml_invalid_argument("tcflow not implemented"); }
 
 #endif

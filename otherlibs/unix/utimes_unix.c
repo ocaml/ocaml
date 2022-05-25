@@ -27,7 +27,7 @@
 #include <sys/types.h>
 #include <sys/time.h>
 
-CAMLprim value unix_utimes(value path, value atime, value mtime)
+CAMLprim value caml_unix_utimes(value path, value atime, value mtime)
 {
   CAMLparam3(path, atime, mtime);
   struct timeval tv[2], * t;
@@ -60,7 +60,7 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
 #include <sys/types.h>
 #include <utime.h>
 
-CAMLprim value unix_utimes(value path, value atime, value mtime)
+CAMLprim value caml_unix_utimes(value path, value atime, value mtime)
 {
   CAMLparam3(path, atime, mtime);
   struct utimbuf times, * t;
@@ -88,7 +88,7 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
 
 #else
 
-CAMLprim value unix_utimes(value path, value atime, value mtime)
+CAMLprim value caml_unix_utimes(value path, value atime, value mtime)
 { caml_invalid_argument("utimes not implemented"); }
 
 #endif

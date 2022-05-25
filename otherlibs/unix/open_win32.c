@@ -41,7 +41,7 @@ static int open_cloexec_flags[15] = {
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, CLOEXEC, KEEPEXEC
 };
 
-CAMLprim value unix_open(value path, value flags, value perm)
+CAMLprim value caml_unix_open(value path, value flags, value perm)
 {
   int fileaccess, createflags, fileattrib, filecreate, sharemode, cloexec;
   SECURITY_ATTRIBUTES attr;
@@ -76,7 +76,7 @@ CAMLprim value unix_open(value path, value flags, value perm)
   attr.bInheritHandle =
     cloexec & CLOEXEC ? FALSE
                       : cloexec & KEEPEXEC ? TRUE
-                                           : !unix_cloexec_default;
+                                           : !caml_unix_cloexec_default;
 
   wpath = caml_stat_strdup_to_utf16(String_val(path));
   h = CreateFile(wpath, fileaccess,

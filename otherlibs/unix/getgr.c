@@ -41,7 +41,7 @@ static value alloc_group_entry(struct group *entry)
   CAMLreturn(res);
 }
 
-CAMLprim value unix_getgrnam(value name)
+CAMLprim value caml_unix_getgrnam(value name)
 {
   struct group * entry;
   if (! caml_string_is_c_safe(name)) caml_raise_not_found();
@@ -57,7 +57,7 @@ CAMLprim value unix_getgrnam(value name)
   return alloc_group_entry(entry);
 }
 
-CAMLprim value unix_getgrgid(value gid)
+CAMLprim value caml_unix_getgrgid(value gid)
 {
   struct group * entry;
   errno = 0;

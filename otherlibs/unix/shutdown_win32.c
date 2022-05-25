@@ -20,7 +20,7 @@ static int shutdown_command_table[] = {
   0, 1, 2
 };
 
-CAMLprim value unix_shutdown(sock, cmd)
+CAMLprim value caml_unix_shutdown(sock, cmd)
      value sock, cmd;
 {
   if (shutdown(Socket_val(sock),

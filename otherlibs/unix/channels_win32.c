@@ -72,7 +72,7 @@ int caml_win32_CRT_fd_of_filedescr(value handle)
   }
 }
 
-CAMLprim value unix_inchannel_of_filedescr(value handle)
+CAMLprim value caml_unix_inchannel_of_filedescr(value handle)
 {
   CAMLparam1(handle);
   CAMLlocal1(vchan);
@@ -96,7 +96,7 @@ CAMLprim value unix_inchannel_of_filedescr(value handle)
   CAMLreturn(vchan);
 }
 
-CAMLprim value unix_outchannel_of_filedescr(value handle)
+CAMLprim value caml_unix_outchannel_of_filedescr(value handle)
 {
   CAMLparam1(handle);
   CAMLlocal1(vchan);
@@ -118,7 +118,7 @@ CAMLprim value unix_outchannel_of_filedescr(value handle)
   CAMLreturn(vchan);
 }
 
-CAMLprim value unix_filedescr_of_channel(value vchan)
+CAMLprim value caml_unix_filedescr_of_channel(value vchan)
 {
   CAMLparam1(vchan);
   CAMLlocal1(fd);
@@ -126,7 +126,7 @@ CAMLprim value unix_filedescr_of_channel(value vchan)
   HANDLE h;
 
   chan = Channel(vchan);
-  if (chan->fd == -1) unix_error(EBADF, "descr_of_channel", Nothing);
+  if (chan->fd == -1) caml_unix_error(EBADF, "descr_of_channel", Nothing);
   h = (HANDLE) _get_osfhandle(chan->fd);
   if (chan->flags & CHANNEL_FLAG_FROM_SOCKET)
     fd = caml_win32_alloc_socket((SOCKET) h);
@@ -136,7 +136,7 @@ CAMLprim value unix_filedescr_of_channel(value vchan)
   CAMLreturn(fd);
 }
 
-CAMLprim value unix_filedescr_of_fd(value vfd)
+CAMLprim value caml_unix_filedescr_of_fd(value vfd)
 {
   int crt_fd = Int_val(vfd);
   /* PR#4750: do not use the _or_socket variant as it can cause performance

@@ -25,7 +25,7 @@
 
 #include "socketaddr.h"
 
-CAMLprim value unix_accept(value cloexec, value sock)
+CAMLprim value caml_unix_accept(value cloexec, value sock)
 {
   CAMLparam0();
   CAMLlocal1(a);
@@ -33,7 +33,7 @@ CAMLprim value unix_accept(value cloexec, value sock)
   value res;
   union sock_addr_union addr;
   socklen_param_type addr_len;
-  int clo = unix_cloexec_p(cloexec);
+  int clo = caml_unix_cloexec_p(cloexec);
 
   addr_len = sizeof(addr);
   caml_enter_blocking_section();
@@ -46,9 +46,9 @@ CAMLprim value unix_accept(value cloexec, value sock)
   caml_leave_blocking_section();
   if (retcode == -1) caml_uerror("accept", Nothing);
 #if !(defined(HAS_ACCEPT4) && defined(SOCK_CLOEXEC))
-  if (clo) unix_set_cloexec(retcode, "accept", Nothing);
+  if (clo) caml_unix_set_cloexec(retcode, "accept", Nothing);
 #endif
-  a = unix_alloc_sockaddr(&addr, addr_len, retcode);
+  a = caml_unix_alloc_sockaddr(&addr, addr_len, retcode);
   res = caml_alloc_small(2, 0);
   Field(res, 0) = Val_int(retcode);
   Field(res, 1) = a;
@@ -57,7 +57,7 @@ CAMLprim value unix_accept(value cloexec, value sock)
 
 #else
 
-CAMLprim value unix_accept(value cloexec, value sock)
+CAMLprim value caml_unix_accept(value cloexec, value sock)
 { caml_invalid_argument("accept not implemented"); }
 
 #endif

@@ -25,7 +25,7 @@
 #include <winioctl.h>
 #include <caml/winsupport.h>
 
-CAMLprim value unix_readlink(value opath)
+CAMLprim value caml_unix_readlink(value opath)
 {
   CAMLparam1(opath);
   CAMLlocal1(result);

@@ -17,7 +17,7 @@
 #include "unixsupport.h"
 #include <caml/io.h>
 
-CAMLprim value unix_close(value fd)
+CAMLprim value caml_unix_close(value fd)
 {
   if (Descr_kind_val(fd) == KIND_SOCKET) {
     if (closesocket(Socket_val(fd)) != 0) {

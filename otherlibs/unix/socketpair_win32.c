@@ -25,8 +25,8 @@
 #include "socketaddr.h"
 #include <ws2tcpip.h>
 
-extern int unix_socket_domain_table[]; /* from socket.c */
-extern int unix_socket_type_table[]; /* from socket.c */
+extern int caml_unix_socket_domain_table[]; /* from socket.c */
+extern int caml_unix_socket_type_table[]; /* from socket.c */
 
 #ifdef HAS_SOCKETPAIR
 
@@ -170,7 +170,7 @@ fail:
   return SOCKET_ERROR;
 }
 
-CAMLprim value unix_socketpair(value cloexec, value domain, value type,
+CAMLprim value caml_unix_socketpair(value cloexec, value domain, value type,
                                value protocol)
 {
   CAMLparam4(cloexec, domain, type, protocol);
@@ -179,11 +179,11 @@ CAMLprim value unix_socketpair(value cloexec, value domain, value type,
   int rc;
 
   caml_enter_blocking_section();
-  rc = socketpair(unix_socket_domain_table[Int_val(domain)],
-                  unix_socket_type_table[Int_val(type)],
+  rc = socketpair(caml_unix_socket_domain_table[Int_val(domain)],
+                  caml_unix_socket_type_table[Int_val(type)],
                   Int_val(protocol),
                   sv,
-                  ! unix_cloexec_p(cloexec));
+                  ! caml_unix_cloexec_p(cloexec));
   caml_leave_blocking_section();
 
   if (rc == SOCKET_ERROR)

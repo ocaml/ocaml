@@ -22,7 +22,7 @@
 
 #include "socketaddr.h"
 
-CAMLprim value unix_inet_addr_of_string(value s)
+CAMLprim value caml_unix_inet_addr_of_string(value s)
 {
   if (! caml_string_is_c_safe(s)) caml_failwith("inet_addr_of_string");
 #if defined(HAS_IPV6)
@@ -42,14 +42,14 @@ CAMLprim value unix_inet_addr_of_string(value s)
   case AF_INET:
     {
       vres =
-        unix_alloc_inet_addr(
+        caml_unix_alloc_inet_addr(
           &((struct sockaddr_in *) res->ai_addr)->sin_addr);
       break;
     }
   case AF_INET6:
     {
       vres =
-        unix_alloc_inet6_addr(
+        caml_unix_alloc_inet6_addr(
           &((struct sockaddr_in6 *) res->ai_addr)->sin6_addr);
       break;
     }
@@ -67,9 +67,9 @@ CAMLprim value unix_inet_addr_of_string(value s)
   struct in_addr address;
   struct in6_addr address6;
   if (inet_pton(AF_INET, String_val(s), &address) > 0)
-    return unix_alloc_inet_addr(&address);
+    return caml_unix_alloc_inet_addr(&address);
   else if (inet_pton(AF_INET6, String_val(s), &address6) > 0)
-    return unix_alloc_inet6_addr(&address6);
+    return caml_unix_alloc_inet6_addr(&address6);
   else
     caml_failwith("inet_addr_of_string");
  }
@@ -79,21 +79,21 @@ CAMLprim value unix_inet_addr_of_string(value s)
   struct in_addr address;
   if (inet_aton(String_val(s), &address) == 0)
     caml_failwith("inet_addr_of_string");
-  return unix_alloc_inet_addr(&address);
+  return caml_unix_alloc_inet_addr(&address);
  }
 #else
  {
   struct in_addr address;
   address.s_addr = inet_addr(String_val(s));
   if (address.s_addr == (uint32_t) -1) caml_failwith("inet_addr_of_string");
-  return unix_alloc_inet_addr(&address);
+  return caml_unix_alloc_inet_addr(&address);
  }
 #endif
 }
 
 #else
 
-CAMLprim value unix_inet_addr_of_string(value s)
+CAMLprim value caml_unix_inet_addr_of_string(value s)
 { caml_invalid_argument("inet_addr_of_string not implemented"); }
 
 #endif

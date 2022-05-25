@@ -22,7 +22,7 @@
 
 #ifdef HAS_FCHMOD
 
-CAMLprim value unix_fchmod(value fd, value perm)
+CAMLprim value caml_unix_fchmod(value fd, value perm)
 {
   int result;
   caml_enter_blocking_section();
@@ -34,7 +34,7 @@ CAMLprim value unix_fchmod(value fd, value perm)
 
 #else
 
-CAMLprim value unix_fchmod(value fd, value perm)
+CAMLprim value caml_unix_fchmod(value fd, value perm)
 { caml_invalid_argument("fchmod not implemented"); }
 
 #endif
