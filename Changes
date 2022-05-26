@@ -187,6 +187,10 @@ Working version
 - #11192: Better documentation for condition variables.
   (François Pottier, review by Luc Maranget, Xavier Leroy, and Wiktor Kuchta)
 
+- #11290: BOOTSTRAP.adoc gives more details on the bootstrap procedure around
+  primitive addition/removal/renaming.
+  (Sabine Schmaltz, David Allsopp, review by Sébastien Hinderer)
+
 ### Compiler user-interface and warnings:
 
 - #9140, #11131: New command-line flag -nocwd to not include implicit
