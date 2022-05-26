@@ -19,6 +19,11 @@
 # OCaml's build system and so itself includes Makefile.config. It assumes that
 # $(ROOTDIR) has been defined.
 
+# This variable is added to prevent double-inclusion of this Makefile by
+# Makefile.config_if_required. override is used as this has highest $(origin )
+# priority (including over make BUILD_CONFIG_INCLUDED)
+override BUILD_CONFIG_INCLUDED =
+
 include $(ROOTDIR)/Makefile.config
 INSTALL ?= @INSTALL@ -p
 INSTALL_DATA ?= @INSTALL_DATA@
