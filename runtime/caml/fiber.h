@@ -57,6 +57,7 @@ struct stack_info {
    * [caml_fiber_wsz] or the stack is bigger than pooled sizes. */
   int cache_bucket;
   size_t size; /* only used when USE_MMAP_MAP_STACK is defined */
+  int64_t id;
   uintnat magic;
 };
 
