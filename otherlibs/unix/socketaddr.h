@@ -64,6 +64,13 @@ typedef int socklen_param_type;
 extern "C" {
 #endif
 
+/* Compatibility definitions for the pre-5.0 names of these functions */
+#ifndef CAML_BUILDING_UNIX
+#define get_sockaddr unix_get_sockaddr
+#define alloc_sockaddr unix_alloc_sockaddr
+#define alloc_inet_addr unix_alloc_inet_addr
+#endif /* CAML_BUILDING_UNIX */
+
 extern void unix_get_sockaddr (value mladdr,
                                union sock_addr_union * addr /*out*/,
                                socklen_param_type * addr_len /*out*/);
@@ -76,7 +83,12 @@ extern value unix_alloc_inet_addr (struct in_addr * inaddr);
 #ifdef HAS_IPV6
 extern value unix_alloc_inet6_addr (struct in6_addr * inaddr);
 #define GET_INET6_ADDR(v) (*((struct in6_addr *) (v)))
-#endif
+
+/* Compatibility definition for the pre-5.0 name of this function */
+#ifndef CAML_BUILDING_UNIX
+#define alloc_inet6_addr unix_alloc_inet6_addr
+#endif /* CAML_BUILDING_UNIX */
+#endif /* HAS_IPV6 */
 
 #ifdef __cplusplus
 }
