@@ -30,7 +30,7 @@ Line 2, characters 4-29:
 Warning 57 [ambiguous-var-in-pattern-guard]: Ambiguous or-pattern variables under guard;
 variable x appears in different places in different or-pattern alternatives.
 Only the first match will be used to evaluate the guard expression.
-(See manual section 11.5)
+(See manual section 13.5)
 val ambiguous_typical_example : expr * expr -> unit = <fun>
 |}]
 
@@ -99,7 +99,7 @@ Line 2, characters 4-43:
 Warning 57 [ambiguous-var-in-pattern-guard]: Ambiguous or-pattern variables under guard;
 variable y appears in different places in different or-pattern alternatives.
 Only the first match will be used to evaluate the guard expression.
-(See manual section 11.5)
+(See manual section 13.5)
 val ambiguous__y : [> `B of 'a * bool option * bool option ] -> unit = <fun>
 |}]
 
@@ -132,7 +132,7 @@ Line 2, characters 4-43:
 Warning 57 [ambiguous-var-in-pattern-guard]: Ambiguous or-pattern variables under guard;
 variable y appears in different places in different or-pattern alternatives.
 Only the first match will be used to evaluate the guard expression.
-(See manual section 11.5)
+(See manual section 13.5)
 val ambiguous__x_y : [> `B of 'a * 'a option * 'a option ] -> unit = <fun>
 |}]
 
@@ -147,7 +147,7 @@ Line 2, characters 4-43:
 Warning 57 [ambiguous-var-in-pattern-guard]: Ambiguous or-pattern variables under guard;
 variables y, z appear in different places in different or-pattern alternatives.
 Only the first match will be used to evaluate the guard expression.
-(See manual section 11.5)
+(See manual section 13.5)
 val ambiguous__x_y_z : [> `B of 'a * 'a option * 'a option ] -> unit = <fun>
 |}]
 
@@ -180,7 +180,7 @@ Line 2, characters 4-40:
 Warning 57 [ambiguous-var-in-pattern-guard]: Ambiguous or-pattern variables under guard;
 variable x appears in different places in different or-pattern alternatives.
 Only the first match will be used to evaluate the guard expression.
-(See manual section 11.5)
+(See manual section 13.5)
 val ambiguous__in_depth :
   [> `A of [> `B of bool option * bool option ] ] -> unit = <fun>
 |}]
@@ -213,7 +213,7 @@ Lines 2-3, characters 4-58:
 Warning 57 [ambiguous-var-in-pattern-guard]: Ambiguous or-pattern variables under guard;
 variable x appears in different places in different or-pattern alternatives.
 Only the first match will be used to evaluate the guard expression.
-(See manual section 11.5)
+(See manual section 13.5)
 val ambiguous__first_orpat :
   [> `A of
        [> `B of 'a option * 'a option ] *
@@ -233,7 +233,7 @@ Lines 2-3, characters 4-42:
 Warning 57 [ambiguous-var-in-pattern-guard]: Ambiguous or-pattern variables under guard;
 variable y appears in different places in different or-pattern alternatives.
 Only the first match will be used to evaluate the guard expression.
-(See manual section 11.5)
+(See manual section 13.5)
 val ambiguous__second_orpat :
   [> `A of
        [> `B of 'a option * 'b option * 'c option ] *
@@ -328,7 +328,7 @@ Lines 2-3, characters 2-17:
 Warning 57 [ambiguous-var-in-pattern-guard]: Ambiguous or-pattern variables under guard;
 variables x, y appear in different places in different or-pattern alternatives.
 Only the first match will be used to evaluate the guard expression.
-(See manual section 11.5)
+(See manual section 13.5)
 val ambiguous__amoi : amoi -> int = <fun>
 |}]
 
@@ -350,7 +350,7 @@ Lines 2-3, characters 4-24:
 Warning 57 [ambiguous-var-in-pattern-guard]: Ambiguous or-pattern variables under guard;
 variable M appears in different places in different or-pattern alternatives.
 Only the first match will be used to evaluate the guard expression.
-(See manual section 11.5)
+(See manual section 13.5)
 val ambiguous__module_variable :
   (module S) * (module S) * (int * int) -> bool -> int = <fun>
 |}]
@@ -399,7 +399,7 @@ Line 2, characters 4-56:
 Warning 57 [ambiguous-var-in-pattern-guard]: Ambiguous or-pattern variables under guard;
 variables x, y appear in different places in different or-pattern alternatives.
 Only the first match will be used to evaluate the guard expression.
-(See manual section 11.5)
+(See manual section 13.5)
 val ambiguous_xy_but_not_ambiguous_z : (int -> int -> bool) -> t2 -> int =
   <fun>
 |}, Principal{|
@@ -430,7 +430,7 @@ Line 2, characters 4-56:
 Warning 57 [ambiguous-var-in-pattern-guard]: Ambiguous or-pattern variables under guard;
 variables x, y appear in different places in different or-pattern alternatives.
 Only the first match will be used to evaluate the guard expression.
-(See manual section 11.5)
+(See manual section 13.5)
 val ambiguous_xy_but_not_ambiguous_z : (int -> int -> bool) -> t2 -> int =
   <fun>
 |}]
@@ -491,7 +491,7 @@ Line 3, characters 4-29:
 Warning 57 [ambiguous-var-in-pattern-guard]: Ambiguous or-pattern variables under guard;
 variable y appears in different places in different or-pattern alternatives.
 Only the first match will be used to evaluate the guard expression.
-(See manual section 11.5)
+(See manual section 13.5)
 val guarded_ambiguity : expr * expr -> unit = <fun>
 |}]
 
@@ -522,7 +522,7 @@ Line 4, characters 4-29:
 Warning 57 [ambiguous-var-in-pattern-guard]: Ambiguous or-pattern variables under guard;
 variable x appears in different places in different or-pattern alternatives.
 Only the first match will be used to evaluate the guard expression.
-(See manual section 11.5)
+(See manual section 13.5)
 val cmp : (a -> bool) -> a alg -> a alg -> unit = <fun>
 |}]
 

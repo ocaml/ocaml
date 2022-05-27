@@ -49,6 +49,8 @@ and as a
 \input{polymorphism.tex}
 \input{gadtexamples.tex}
 \input{advexamples.tex}
+\input{parallelism.tex}
+\input{memorymodel.tex}
 
 \part{The OCaml language}
 \label{p:refman}
