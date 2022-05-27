@@ -129,10 +129,18 @@ let mk_for_pack_opt f =
   \     ocamlopt -pack -o <ident>.cmx"
 
 let mk_g_byt f =
-  "-g", Arg.Unit f, " Save debugging information"
+  "-g", Arg.Unit (fun () -> f true), " Save debugging information"
+
+let mk_no_g_byt f =
+  "-no-g", Arg.Unit (fun () -> f false), " Do not save debugging information"
 
 let mk_g_opt f =
-  "-g", Arg.Unit f, " Record debugging information for exception backtrace"
+  "-g", Arg.Unit (fun () -> f true),
+  " Record debugging information for exception backtrace"
+
+let mk_no_g_opt f =
+  "-no-g", Arg.Unit (fun () -> f false),
+  " Do not record debugging information for exception backtrace"
 
 let mk_i f =
   "-i", Arg.Unit f, " Print inferred interface"
@@ -809,7 +817,7 @@ module type Compiler_options = sig
   val _config : unit -> unit
   val _config_var : string -> unit
   val _for_pack : string -> unit
-  val _g : unit -> unit
+  val _g : bool -> unit
   val _stop_after : string -> unit
   val _i : unit -> unit
   val _impl : string -> unit
@@ -1010,6 +1018,7 @@ struct
     mk_dtypes F._annot;
     mk_for_pack_byt F._for_pack;
     mk_g_byt F._g;
+    mk_no_g_byt F._g;
     mk_stop_after ~native:false F._stop_after;
     mk_i F._i;
     mk_I F._I;
@@ -1196,6 +1205,7 @@ struct
     mk_dtypes F._annot;
     mk_for_pack_opt F._for_pack;
     mk_g_opt F._g;
+    mk_no_g_opt F._g;
     mk_function_sections F._function_sections;
     mk_stop_after ~native:true F._stop_after;
     mk_save_ir_after ~native:true F._save_ir_after;
@@ -1710,7 +1720,7 @@ module Default = struct
     let _dump_into_file = set dump_into_file
     let _dump_dir s = dump_dir := Some s
     let _for_pack s = for_package := (Some s)
-    let _g = set debug
+    let _g x = debug := x
     let _i = set print_types
     let _impl = Compenv.impl
     let _intf = Compenv.intf

@@ -656,7 +656,7 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
 
   domain_state->backtrace_buffer = NULL;
   domain_state->backtrace_last_exn = Val_unit;
-  domain_state->backtrace_active = 0;
+  domain_state->backtrace_active = 1;
   caml_register_generational_global_root(&domain_state->backtrace_last_exn);
 
   domain_state->compare_unordered = 0;
