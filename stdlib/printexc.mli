@@ -70,10 +70,10 @@ val get_backtrace: unit -> string
 *)
 
 val record_backtrace: bool -> unit
-(** [Printexc.record_backtrace b] turns recording of exception backtraces
-    on (if [b = true]) or off (if [b = false]).  Initially, backtraces
-    are not recorded, unless the [b] flag is given to the program
-    through the [OCAMLRUNPARAM] variable.
+(** [Printexc.record_backtrace b] turns recording of exception backtraces on (if
+    [b = true]) or off (if [b = false]).  Backtraces are recorded by default,
+    unless the [b=0] flag is given to the program through the [OCAMLRUNPARAM]
+    variable.
     @since 3.11.0
 *)
 
