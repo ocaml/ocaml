@@ -29,9 +29,16 @@ Working version
 
 - #10965: `caml_fatal_error_hook`, GC timing hooks, and
   `caml_scan_roots_hook` are now atomic variables. Restore GC timing
-  hooks.
+  hooks in multicore.
   (Guillaume Munch-Maccagnoni, review by Enguerrand Decorne, Xavier
   Leroy, Gabriel Scherer, and KC Sivaramakrishnan)
+
+- #11209: Add a public and thread-safe timing hook running at domain
+  termination, after this domain has stopped running any OCaml code:
+  `caml_domain_terminated_hook`. This can be useful for implementing
+  domain-local state in C.
+  (Guillaume Munch-Maccagnoni, review by Xavier Leroy and Gabriel
+  Scherer)
 
 - #10875: Add option to allocate stacks with mmap(MAP_STACK) instead of malloc.
   This is exposed via a configure --enable-mmap-map-stack option, and is

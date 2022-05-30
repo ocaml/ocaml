@@ -186,10 +186,17 @@ CAMLdeprecated_typedef(addr, char *);
 extern "C" {
 #endif
 
-/* GC timing hooks. These can be assigned by the user. These hooks
-   must not allocate, change any heap value, nor call OCaml code. They
-   can obtain the domain id with Caml_state->id. These functions must
-   be reentrant. */
+/* Timing hooks. These can be assigned by the user. The functions
+   registered with these hooks must not allocate on the OCaml heap,
+   change any heap value, nor call OCaml code.
+
+   The hooks should be assigned using [atomic_exchange], and the
+   previous function should be called in the new one.
+
+   Thread-safety: These functions can be called from several domains
+   at once. They must be reentrant. They can obtain an identifier of
+   the current domain with [Caml_state->id] or
+   [Caml_state->unique_id].  */
 typedef void (*caml_timing_hook) (void);
 extern _Atomic caml_timing_hook caml_major_slice_begin_hook;
 extern _Atomic caml_timing_hook caml_major_slice_end_hook;
@@ -197,6 +204,7 @@ extern _Atomic caml_timing_hook caml_minor_gc_begin_hook;
 extern _Atomic caml_timing_hook caml_minor_gc_end_hook;
 extern _Atomic caml_timing_hook caml_finalise_begin_hook;
 extern _Atomic caml_timing_hook caml_finalise_end_hook;
+extern _Atomic caml_timing_hook caml_domain_terminated_hook;
 
 #ifdef CAML_INTERNALS
 
