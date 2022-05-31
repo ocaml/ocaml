@@ -32,6 +32,7 @@
     languages.
 *)
 
+(** The type for counter events emitted by the runtime *)
 type runtime_counter =
   EV_C_ALLOC_JUMP
 | EV_C_FORCE_MINOR_ALLOC_SMALL
@@ -51,8 +52,8 @@ type runtime_counter =
 | EV_C_REQUEST_MINOR_REALLOC_REF_TABLE
 | EV_C_REQUEST_MINOR_REALLOC_EPHE_REF_TABLE
 | EV_C_REQUEST_MINOR_REALLOC_CUSTOM_TABLE
-(** The type for counter events emitted by the runtime *)
 
+(** The type for span events emitted by the runtime *)
 type runtime_phase =
 | EV_EXPLICIT_GC_SET
 | EV_EXPLICIT_GC_STAT
@@ -94,8 +95,8 @@ type runtime_phase =
 | EV_MINOR_LOCAL_ROOTS_PROMOTE
 | EV_DOMAIN_CONDITION_WAIT
 | EV_DOMAIN_RESIZE_HEAP_RESERVATION
-(** The type for span events emitted by the runtime *)
 
+(** Lifecycle events for the ring itself *)
 type lifecycle =
   EV_RING_START
 | EV_RING_STOP
@@ -105,7 +106,6 @@ type lifecycle =
 | EV_FORK_CHILD
 | EV_DOMAIN_SPAWN
 | EV_DOMAIN_TERMINATE
-(** Lifecycle events for the ring itself *)
 
 val lifecycle_name : lifecycle -> string
 (** Return a string representation of a given lifecycle event type *)

@@ -112,7 +112,7 @@ be called from C \\
 \end{tabular}
 \subsubsection*{sss:stdlib-tracing}{Tracing:}
 \begin{tabular}{lll}
-"Runtime_events" & p.~\stdpageref{Runtime_events} & runtime event tracing \\
+"Runtime_events" & p.~\stdpageref{Runtime_events} tracing system \\
 \end{tabular}
 \subsubsection*{sss:stdlib-misc}{Misc:}
 \begin{tabular}{lll}
@@ -167,7 +167,7 @@ be called from C \\
 \stddocitem{Queue}{first-in first-out queues}
 \stddocitem{Random}{pseudo-random number generator (PRNG)}
 \stddocitem{Result}{result values}
-\stddocitem{Runtime_events}{Runtime event tracing}
+\stddocitem{Runtime_events}{Runtime_event tracing system}
 \stddocitem{Scanf}{formatted input functions}
 \stddocitem{Seq}{functional iterators}
 \stddocitem{Set}{sets over ordered types}

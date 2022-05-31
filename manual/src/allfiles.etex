@@ -70,7 +70,7 @@ and as a
 \input{intf-c.tex}
 \input{flambda.tex}
 \input{afl-fuzz.tex}
-\input{instrumented-runtime.tex}
+\input{runtime-tracing.tex}
 \input{tail-mod-cons.tex}
 
 \part{The OCaml library}
@@ -80,6 +80,7 @@ and as a
 \input{compilerlibs.tex}
 \input{libunix.tex}
 \input{libstr.tex}
+\input{libruntime_events.tex}
 \input{libthreads.tex}
 \input{libdynlink.tex}
 \input{old.tex}
