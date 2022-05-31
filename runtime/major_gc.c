@@ -42,10 +42,17 @@
    that can be in a pool, see POOL_WSIZE */
 #define MARK_STACK_INIT_SIZE (1 << 12)
 
+/* The mark stack contains spans of fields that need to be marked.
+   The mark stack is bounded relative to the heap size, if the mark stack
+   overflows the bound, then entries are compressed into entries
+   (k, bitfield) where the bitfield represents word offsets from k.
+   When the mark stack is empty, compressed entries (if any) are taken
+   from the compressed stack and processed. */
+
 typedef struct {
   value* start;
   value* end;
-} mark_entry;
+} mark_entry; /* represents fields in the span [start, end) */
 
 struct mark_stack {
   mark_entry* stack;
@@ -713,11 +720,6 @@ static intnat do_some_marking(struct mark_stack* stk, intnat budget) {
 #define PTR_TO_PAGE(v) (((uintnat)(v)>>3) & PAGE_MASK)
 #define PTR_TO_PAGE_OFFSET(v) ((((uintnat)(v)>>3) & ~PAGE_MASK))
 
-struct compressed_ptr_page {
-  uintnat bitfield;
-  uintnat count;
-};
-
 /* mark until the budget runs out or marking is done */
 static intnat mark(intnat budget) {
   caml_domain_state *domain_state = Caml_state;
@@ -729,9 +731,7 @@ static intnat mark(intnat budget) {
       addrmap_iterator it = mstk->compressed_stack_iter;
       if (caml_addrmap_iter_ok(&mstk->compressed_stack, it)) {
         uintnat k = caml_addrmap_iter_key(&mstk->compressed_stack, it);
-        struct compressed_ptr_page *v =
-             (struct compressed_ptr_page*)
-                caml_addrmap_iter_value(&mstk->compressed_stack, it);
+        value v = caml_addrmap_iter_value(&mstk->compressed_stack, it);
 
         /* NB: must update the iterator here, as possible that
            mark_slice_darken could lead to the mark stack being pruned
@@ -740,14 +740,11 @@ static intnat mark(intnat budget) {
                       caml_addrmap_next(&mstk->compressed_stack, it);
 
         for(i=0; i<BITS_PER_WORD; i++) {
-          if(v->bitfield & ((uintnat)1 << i)) {
+          if(v & ((uintnat)1 << i)) {
             value* p = (value*)((k + i)<<3);
             mark_slice_darken(domain_state->mark_stack, *p, &budget);
-            CAMLassert(v->count-- > 0);
           }
         }
-        CAMLassert(v->count == 0);
-        caml_stat_free(v);
       } else {
         ephe_next_cycle ();
         domain_state->marking_done = 1;
@@ -1473,27 +1470,19 @@ void caml_finish_sweeping (void)
 Caml_inline int add_addr(struct addrmap* amap, value v) {
   uintnat k = PTR_TO_PAGE(v);
   uintnat flag = (uintnat)1 << PTR_TO_PAGE_OFFSET(v);
-  struct compressed_ptr_page *p = NULL;
   int new_entry = 0;
 
   value* amap_pos = caml_addrmap_insert_pos(amap, k);
 
   if (*amap_pos == ADDRMAP_NOT_PRESENT) {
-    p = caml_stat_alloc_noexc(sizeof(struct compressed_ptr_page));
-    if (p == NULL)
-      caml_fatal_error("Unable to allocate for compressed entry address");
-    p->bitfield = p->count = 0;
     new_entry = 1;
-    *amap_pos = (value)p;
-  } else {
-    p = (struct compressed_ptr_page *)*amap_pos;
+    *amap_pos = 0;
   }
 
   CAMLassert(v == (value)((k + PTR_TO_PAGE_OFFSET(v))<<3));
 
-  if (!(p->bitfield & flag)) {
-    p->bitfield |= flag;
-    p->count++;
+  if (!(*amap_pos & flag)) {
+    *amap_pos |= flag;
   }
 
   return new_entry;
@@ -1501,7 +1490,10 @@ Caml_inline int add_addr(struct addrmap* amap, value v) {
 
 static void mark_stack_prune(struct mark_stack* stk)
 {
-  /* copy out old compressed entries */
+  /* We need to handle the case when the mark stack overflows and we already
+     have entries in the compressed stack. addrmap is (currently) using open
+     address hashing, to keep things simple we just copy out the remaining
+     compressed entries to a new map. */
   uintnat old_compressed_entries = 0;
   struct addrmap new_compressed_stack = ADDRMAP_INIT;
   addrmap_iterator it;
@@ -1517,8 +1509,10 @@ static void mark_stack_prune(struct mark_stack* stk)
     caml_gc_log("Preserved %"ARCH_INTNAT_PRINTF_FORMAT "d compressed entries",
                 old_compressed_entries);
   }
+  caml_addrmap_clear(&stk->compressed_stack);
+  stk->compressed_stack = new_compressed_stack;
 
-  /* scan mark stack and determine page densities */
+  /* scan mark stack and compress entries */
   int i;
   uintnat new_stk_count = 0, compressed_entries = 0, total_words = 0;
   for (i=0; i < stk->count; i++) {
@@ -1529,7 +1523,7 @@ static void mark_stack_prune(struct mark_stack* stk)
       stk->stack[new_stk_count++] = me;
     } else {
       while(me.start < me.end) {
-        compressed_entries += add_addr(&new_compressed_stack,
+        compressed_entries += add_addr(&stk->compressed_stack,
                                        (uintnat)me.start);
         me.start++;
       }
@@ -1545,9 +1539,7 @@ static void mark_stack_prune(struct mark_stack* stk)
   stk->count = new_stk_count;
   CAMLassert(stk->count < stk->size);
 
-  /* free old stack and replace with the new stack */
-  caml_addrmap_clear(&stk->compressed_stack);
-  stk->compressed_stack = new_compressed_stack;
+  /* setup the compressed stack iterator */
   stk->compressed_stack_iter = caml_addrmap_iterator(&stk->compressed_stack);
 }
 
