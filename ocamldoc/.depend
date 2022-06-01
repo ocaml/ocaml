@@ -117,7 +117,7 @@ odoc_ast.cmo : \
     odoc_module.cmo \
     odoc_messages.cmi \
     odoc_global.cmi \
-    odoc_extension.cmo \
+    odoc_extension.cmi \
     odoc_exception.cmo \
     odoc_env.cmi \
     odoc_class.cmo \
@@ -223,7 +223,7 @@ odoc_cross.cmo : \
     odoc_misc.cmi \
     odoc_messages.cmi \
     odoc_global.cmi \
-    odoc_extension.cmo \
+    odoc_extension.cmi \
     odoc_exception.cmo \
     odoc_class.cmo \
     ../utils/misc.cmi \
@@ -308,12 +308,20 @@ odoc_extension.cmo : \
     odoc_types.cmi \
     odoc_type.cmi \
     odoc_name.cmi \
-    ../parsing/asttypes.cmi
+    ../parsing/asttypes.cmi \
+    odoc_extension.cmi
 odoc_extension.cmx : \
     ../typing/types.cmx \
     odoc_types.cmx \
     odoc_type.cmx \
     odoc_name.cmx \
+    ../parsing/asttypes.cmi \
+    odoc_extension.cmi
+odoc_extension.cmi : \
+    ../typing/types.cmi \
+    odoc_types.cmi \
+    odoc_type.cmi \
+    odoc_name.cmi \
     ../parsing/asttypes.cmi
 odoc_gen.cmo : \
     odoc_texi.cmo \
@@ -385,7 +393,7 @@ odoc_info.cmo : \
     odoc_module.cmo \
     odoc_misc.cmi \
     odoc_global.cmi \
-    odoc_extension.cmo \
+    odoc_extension.cmi \
     odoc_exception.cmo \
     odoc_dep.cmo \
     odoc_config.cmi \
@@ -427,7 +435,7 @@ odoc_info.cmi : \
     odoc_parameter.cmi \
     odoc_module.cmo \
     odoc_global.cmi \
-    odoc_extension.cmo \
+    odoc_extension.cmi \
     odoc_exception.cmo \
     odoc_class.cmo \
     ../parsing/location.cmi \
@@ -480,7 +488,7 @@ odoc_merge.cmo : \
     odoc_module.cmo \
     odoc_messages.cmi \
     odoc_global.cmi \
-    odoc_extension.cmo \
+    odoc_extension.cmi \
     odoc_exception.cmo \
     odoc_class.cmo \
     odoc_merge.cmi
@@ -535,7 +543,7 @@ odoc_module.cmo : \
     odoc_types.cmi \
     odoc_type.cmi \
     odoc_name.cmi \
-    odoc_extension.cmo \
+    odoc_extension.cmi \
     odoc_exception.cmo \
     odoc_class.cmo \
     ../utils/misc.cmi
@@ -603,7 +611,7 @@ odoc_scan.cmo : \
     odoc_types.cmi \
     odoc_type.cmi \
     odoc_module.cmo \
-    odoc_extension.cmo \
+    odoc_extension.cmi \
     odoc_exception.cmo \
     odoc_class.cmo
 odoc_scan.cmx : \
@@ -620,7 +628,7 @@ odoc_search.cmo : \
     odoc_type.cmi \
     odoc_module.cmo \
     odoc_misc.cmi \
-    odoc_extension.cmo \
+    odoc_extension.cmi \
     odoc_exception.cmo \
     odoc_class.cmo \
     odoc_search.cmi
@@ -639,7 +647,7 @@ odoc_search.cmi : \
     odoc_types.cmi \
     odoc_type.cmi \
     odoc_module.cmo \
-    odoc_extension.cmo \
+    odoc_extension.cmi \
     odoc_exception.cmo \
     odoc_class.cmo
 odoc_see_lexer.cmo : \
@@ -659,7 +667,7 @@ odoc_sig.cmo : \
     odoc_messages.cmi \
     odoc_merge.cmi \
     odoc_global.cmi \
-    odoc_extension.cmo \
+    odoc_extension.cmi \
     odoc_exception.cmo \
     odoc_env.cmi \
     odoc_class.cmo \
@@ -714,7 +722,7 @@ odoc_str.cmo : \
     odoc_name.cmi \
     odoc_misc.cmi \
     odoc_messages.cmi \
-    odoc_extension.cmo \
+    odoc_extension.cmi \
     odoc_exception.cmo \
     odoc_class.cmo \
     ../parsing/asttypes.cmi \
@@ -737,7 +745,7 @@ odoc_str.cmi : \
     ../typing/types.cmi \
     odoc_value.cmi \
     odoc_type.cmi \
-    odoc_extension.cmo \
+    odoc_extension.cmi \
     odoc_exception.cmo \
     odoc_class.cmo
 odoc_test.cmo : \
