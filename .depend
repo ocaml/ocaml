@@ -524,7 +524,8 @@ typing/cmt2annot.cmx : \
     parsing/asttypes.cmi \
     typing/annot.cmi \
     typing/cmt2annot.cmi
-typing/cmt2annot.cmi :
+typing/cmt2annot.cmi : \
+    file_formats/cmt_format.cmi
 typing/ctype.cmo : \
     typing/types.cmi \
     typing/type_immediacy.cmi \
@@ -6033,9 +6034,12 @@ driver/errors.cmx : \
     driver/errors.cmi
 driver/errors.cmi :
 driver/main.cmo : \
-    driver/maindriver.cmi
+    driver/maindriver.cmi \
+    driver/main.cmi
 driver/main.cmx : \
-    driver/maindriver.cmx
+    driver/maindriver.cmx \
+    driver/main.cmi
+driver/main.cmi :
 driver/main_args.cmo : \
     utils/warnings.cmi \
     utils/profile.cmi \
