@@ -55,7 +55,8 @@ main.cmo : \
     lexer.cmi \
     cset.cmi \
     compact.cmi \
-    common.cmi
+    common.cmi \
+    main.cmi
 main.cmx : \
     syntax.cmx \
     parser.cmx \
@@ -65,7 +66,9 @@ main.cmx : \
     lexer.cmx \
     cset.cmx \
     compact.cmx \
-    common.cmx
+    common.cmx \
+    main.cmi
+main.cmi :
 output.cmo : \
     lexgen.cmi \
     compact.cmi \
