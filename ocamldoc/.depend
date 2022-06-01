@@ -222,7 +222,7 @@ odoc_cross.cmo : \
     odoc_types.cmi \
     odoc_type.cmi \
     odoc_search.cmi \
-    odoc_scan.cmo \
+    odoc_scan.cmi \
     odoc_parameter.cmi \
     odoc_name.cmi \
     odoc_module.cmi \
@@ -399,7 +399,7 @@ odoc_info.cmo : \
     odoc_text.cmi \
     odoc_str.cmi \
     odoc_search.cmi \
-    odoc_scan.cmo \
+    odoc_scan.cmi \
     odoc_print.cmi \
     odoc_parameter.cmi \
     odoc_name.cmi \
@@ -640,7 +640,8 @@ odoc_scan.cmo : \
     odoc_module.cmi \
     odoc_extension.cmi \
     odoc_exception.cmi \
-    odoc_class.cmi
+    odoc_class.cmi \
+    odoc_scan.cmi
 odoc_scan.cmx : \
     odoc_value.cmx \
     odoc_types.cmx \
@@ -648,7 +649,16 @@ odoc_scan.cmx : \
     odoc_module.cmx \
     odoc_extension.cmx \
     odoc_exception.cmx \
-    odoc_class.cmx
+    odoc_class.cmx \
+    odoc_scan.cmi
+odoc_scan.cmi : \
+    odoc_value.cmi \
+    odoc_types.cmi \
+    odoc_type.cmi \
+    odoc_module.cmi \
+    odoc_extension.cmi \
+    odoc_exception.cmi \
+    odoc_class.cmi
 odoc_search.cmo : \
     odoc_value.cmi \
     odoc_types.cmi \
