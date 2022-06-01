@@ -6162,9 +6162,12 @@ driver/opterrors.cmx : \
     driver/opterrors.cmi
 driver/opterrors.cmi :
 driver/optmain.cmo : \
-    driver/optmaindriver.cmi
+    driver/optmaindriver.cmi \
+    driver/optmain.cmi
 driver/optmain.cmx : \
-    driver/optmaindriver.cmx
+    driver/optmaindriver.cmx \
+    driver/optmain.cmi
+driver/optmain.cmi :
 driver/optmaindriver.cmo : \
     utils/warnings.cmi \
     utils/profile.cmi \
