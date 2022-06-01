@@ -507,7 +507,8 @@ typing/cmt2annot.cmo : \
     typing/env.cmi \
     file_formats/cmt_format.cmi \
     parsing/asttypes.cmi \
-    typing/annot.cmi
+    typing/annot.cmi \
+    typing/cmt2annot.cmi
 typing/cmt2annot.cmx : \
     typing/types.cmx \
     typing/typedtree.cmx \
@@ -521,7 +522,9 @@ typing/cmt2annot.cmx : \
     typing/env.cmx \
     file_formats/cmt_format.cmx \
     parsing/asttypes.cmi \
-    typing/annot.cmi
+    typing/annot.cmi \
+    typing/cmt2annot.cmi
+typing/cmt2annot.cmi :
 typing/ctype.cmo : \
     typing/types.cmi \
     typing/type_immediacy.cmi \
@@ -1685,7 +1688,7 @@ typing/typemod.cmo : \
     typing/ctype.cmi \
     utils/config.cmi \
     file_formats/cmt_format.cmi \
-    typing/cmt2annot.cmo \
+    typing/cmt2annot.cmi \
     file_formats/cmi_format.cmi \
     utils/clflags.cmi \
     parsing/builtin_attributes.cmi \
@@ -6232,13 +6235,16 @@ toplevel/expunge.cmo : \
     lambda/runtimedef.cmi \
     utils/misc.cmi \
     typing/ident.cmi \
-    bytecomp/bytesections.cmi
+    bytecomp/bytesections.cmi \
+    toplevel/expunge.cmi
 toplevel/expunge.cmx : \
     bytecomp/symtable.cmx \
     lambda/runtimedef.cmx \
     utils/misc.cmx \
     typing/ident.cmx \
-    bytecomp/bytesections.cmx
+    bytecomp/bytesections.cmx \
+    toplevel/expunge.cmi
+toplevel/expunge.cmi :
 toplevel/genprintval.cmo : \
     typing/types.cmi \
     parsing/syntaxerr.cmi \
