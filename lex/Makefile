@@ -32,7 +32,7 @@ OCAMLYACCFLAGS = -v
 CAMLC = $(BOOT_OCAMLC) $(BOOT_STDLIBFLAGS) \
   -use-prims $(ROOTDIR)/runtime/primitives -strict-sequence
 CAMLOPT = $(OCAMLRUN) $(ROOTDIR)/ocamlopt$(EXE) $(STDLIBFLAGS)
-COMPFLAGS = -g -absname -w +a-4-9-41-42-44-45-48-70 -warn-error +A \
+COMPFLAGS = -g -absname -w +a-4-9-41-42-44-45-48 -warn-error +A-70 \
             -safe-string -strict-sequence -strict-formats -bin-annot
 LINKFLAGS = -g
 
