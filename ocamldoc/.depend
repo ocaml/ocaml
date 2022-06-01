@@ -5,7 +5,8 @@ odoc.cmo : \
     odoc_gen.cmi \
     odoc_config.cmi \
     odoc_args.cmi \
-    odoc_analyse.cmi
+    odoc_analyse.cmi \
+    odoc.cmi
 odoc.cmx : \
     odoc_messages.cmx \
     odoc_info.cmx \
@@ -13,7 +14,9 @@ odoc.cmx : \
     odoc_gen.cmx \
     odoc_config.cmx \
     odoc_args.cmx \
-    odoc_analyse.cmx
+    odoc_analyse.cmx \
+    odoc.cmi
+odoc.cmi :
 odoc_analyse.cmo : \
     ../utils/warnings.cmi \
     ../typing/types.cmi \
