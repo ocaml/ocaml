@@ -184,7 +184,7 @@ odoc_comments.cmo : \
     odoc_misc.cmi \
     odoc_messages.cmi \
     odoc_merge.cmi \
-    odoc_lexer.cmo \
+    odoc_lexer.cmi \
     odoc_global.cmi \
     odoc_cross.cmi \
     odoc_comments_global.cmi \
@@ -475,12 +475,16 @@ odoc_lexer.cmo : \
     odoc_parser.cmi \
     odoc_messages.cmi \
     odoc_global.cmi \
-    odoc_comments_global.cmi
+    odoc_comments_global.cmi \
+    odoc_lexer.cmi
 odoc_lexer.cmx : \
     odoc_parser.cmx \
     odoc_messages.cmx \
     odoc_global.cmx \
-    odoc_comments_global.cmx
+    odoc_comments_global.cmx \
+    odoc_lexer.cmi
+odoc_lexer.cmi : \
+    odoc_parser.cmi
 odoc_man.cmo : \
     odoc_str.cmi \
     odoc_print.cmi \
