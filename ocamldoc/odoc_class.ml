@@ -17,7 +17,6 @@
 
 module Name = Odoc_name
 
-(** To keep the order of elements in a class *)
 type class_element =
     Class_attribute of Odoc_value.t_attribute
   | Class_method of Odoc_value.t_method
@@ -93,11 +92,6 @@ and t_class_type = {
     mutable clt_loc : Odoc_types.location ;
   }
 
-
-(** {1 Functions} *)
-
-(** Returns the text associated to the given parameter label
-   in the given class, or None. *)
 let class_parameter_text_by_name cl label =
   match cl.cl_info with
     None -> None
@@ -109,7 +103,6 @@ let class_parameter_text_by_name cl label =
         Not_found ->
           None
 
-(** Returns the list of elements of a t_class. *)
 let rec class_elements ?(trans=true) cl =
   let rec iter_kind k =
     match k with
@@ -141,7 +134,6 @@ let rec class_elements ?(trans=true) cl =
   in
   iter_kind cl.cl_kind
 
-(** Returns the list of elements of a t_class_type. *)
 and class_type_elements ?(trans=true) clt =
   match clt.clt_kind with
     Class_signature (_, elements) -> elements
@@ -152,7 +144,6 @@ and class_type_elements ?(trans=true) clt =
   | Class_type _ ->
       []
 
-(** Returns the attributes of a t_class. *)
 let class_attributes ?(trans=true) cl =
   List.fold_left
     (fun acc -> fun ele ->
@@ -165,7 +156,6 @@ let class_attributes ?(trans=true) cl =
     []
     (class_elements ~trans cl)
 
-(** Returns the methods of a t_class. *)
 let class_methods ?(trans=true) cl =
   List.fold_left
     (fun acc -> fun ele ->
@@ -178,7 +168,6 @@ let class_methods ?(trans=true) cl =
     []
     (class_elements ~trans cl)
 
-(** Returns the comments in a t_class. *)
 let class_comments ?(trans=true) cl =
   List.fold_left
     (fun acc -> fun ele ->
@@ -191,15 +180,12 @@ let class_comments ?(trans=true) cl =
     []
     (class_elements ~trans cl)
 
-
-(** Update the parameters text of a t_class, according to the cl_info field. *)
 let class_update_parameters_text cl =
   let f p =
     Odoc_parameter.update_parameter_text (class_parameter_text_by_name cl) p
   in
   List.iter f cl.cl_parameters
 
-(** Returns the attributes of a t_class_type. *)
 let class_type_attributes ?(trans=true) clt =
   List.fold_left
     (fun acc -> fun ele ->
@@ -212,7 +198,6 @@ let class_type_attributes ?(trans=true) clt =
     []
     (class_type_elements ~trans clt)
 
-(** Returns the methods of a t_class_type. *)
 let class_type_methods ?(trans=true) clt =
   List.fold_left
     (fun acc -> fun ele ->
@@ -225,7 +210,6 @@ let class_type_methods ?(trans=true) clt =
     []
     (class_type_elements ~trans clt)
 
-(** Returns the comments in a t_class_type. *)
 let class_type_comments ?(trans=true) clt =
   List.fold_left
     (fun acc -> fun ele ->
@@ -238,8 +222,6 @@ let class_type_comments ?(trans=true) clt =
     []
     (class_type_elements ~trans clt)
 
-(** Returns the text associated to the given parameter label
-   in the given class type, or None. *)
 let class_type_parameter_text_by_name clt label =
   match clt.clt_info with
     None -> None
