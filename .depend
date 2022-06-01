@@ -6454,9 +6454,12 @@ toplevel/toploop.cmi : \
     typing/env.cmi
 toplevel/topmain.cmi :
 toplevel/topstart.cmo : \
-    toplevel/topmain.cmi
+    toplevel/topmain.cmi \
+    toplevel/topstart.cmi
 toplevel/topstart.cmx : \
-    toplevel/topmain.cmi
+    toplevel/topmain.cmi \
+    toplevel/topstart.cmi
+toplevel/topstart.cmi :
 toplevel/trace.cmi : \
     typing/types.cmi \
     typing/path.cmi \
