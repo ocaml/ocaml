@@ -136,7 +136,7 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
 Caml_inline void check_trap_barrier_for_exception
   (caml_domain_state* domain_state)
 {
-  if (domain_state->current_stack == domain_state->trap_barrier_block
+  if (domain_state->current_stack->id == domain_state->trap_barrier_block
       && domain_state->trap_sp_off >= domain_state->trap_barrier_off)
     caml_debugger(TRAP_BARRIER, Val_unit);
 }
@@ -144,12 +144,13 @@ Caml_inline void check_trap_barrier_for_exception
 Caml_inline void check_trap_barrier_for_effect
   (caml_domain_state* domain_state)
 {
-  if (domain_state->current_stack == domain_state->trap_barrier_block){
+  if (domain_state->current_stack->id == domain_state->trap_barrier_block){
     caml_debugger(TRAP_BARRIER, Val_unit);
   }else{
     struct stack_info *parent_stack
       = domain_state->current_stack->handler->parent;
-    if (   parent_stack == domain_state->trap_barrier_block
+    if (parent_stack != NULL
+        && parent_stack->id == domain_state->trap_barrier_block
         && parent_stack->sp + 2 - Stack_high (parent_stack)
               /* Note: +2 is the same constant as in debugger.c:552 */
            == domain_state->trap_barrier_off){

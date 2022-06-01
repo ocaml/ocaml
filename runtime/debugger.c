@@ -254,7 +254,7 @@ void caml_debugger_init(void)
   caml_debugger_in_use = 1;
   /* Bigger than default caml_trap_sp_off (1) */
   Caml_state->trap_barrier_off = 2;
-  Caml_state->trap_barrier_block = NULL;
+  Caml_state->trap_barrier_block = -1;
 }
 
 static value getval(struct channel *chan)
@@ -351,7 +351,7 @@ void caml_debugger_code_unloaded(int index)
   })
 }
 
-/* return number of blocks between this one and bottom of stack */
+/* Return number of blocks between this one and bottom of stack. */
 static intnat frame_block_number (struct stack_info *block)
 {
   intnat n = 0;
@@ -362,7 +362,7 @@ static intnat frame_block_number (struct stack_info *block)
   return n;
 }
 
-/* find the [n+1]th block counting from bottom of stack */
+/* Find the [n+1]th block counting from bottom of stack. */
 static struct stack_info *frame_block_address (intnat n)
 {
   struct stack_info *block = Caml_state->current_stack;
@@ -374,6 +374,14 @@ static struct stack_info *frame_block_address (intnat n)
     CAMLassert (block != NULL);
   }
   return block;
+}
+
+/* Return the id of the [n+1]th block counting from bottom of stack,
+   or -1 if there is no such block. */
+static inline int64_t frame_block_id (intnat n)
+{
+  struct stack_info *addr = frame_block_address (n);
+  return addr == NULL ? -1 : addr->id;
 }
 
 #define Pc(sp) ((code_t)((sp)[0]))
@@ -560,7 +568,7 @@ void caml_debugger(enum event_kind event, value param)
       break;
     case REQ_SET_TRAP_BARRIER:
       i = caml_getword(dbg_in);
-      Caml_state->trap_barrier_block = frame_block_address (i);
+      Caml_state->trap_barrier_block = frame_block_id(i);
       i = caml_getword(dbg_in);
       Caml_state->trap_barrier_off = -i;
       break;
