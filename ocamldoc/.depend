@@ -179,7 +179,7 @@ odoc_class.cmi : \
 odoc_comments.cmo : \
     odoc_types.cmi \
     odoc_text.cmi \
-    odoc_see_lexer.cmo \
+    odoc_see_lexer.cmi \
     odoc_parser.cmi \
     odoc_misc.cmi \
     odoc_messages.cmi \
@@ -682,9 +682,13 @@ odoc_search.cmi : \
     odoc_exception.cmi \
     odoc_class.cmi
 odoc_see_lexer.cmo : \
-    odoc_parser.cmi
+    odoc_parser.cmi \
+    odoc_see_lexer.cmi
 odoc_see_lexer.cmx : \
-    odoc_parser.cmx
+    odoc_parser.cmx \
+    odoc_see_lexer.cmi
+odoc_see_lexer.cmi : \
+    odoc_parser.cmi
 odoc_sig.cmo : \
     ../typing/types.cmi \
     ../typing/typedtree.cmi \
