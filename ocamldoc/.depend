@@ -453,8 +453,6 @@ odoc_info.cmi : \
     odoc_class.cmi \
     ../parsing/location.cmi \
     ../parsing/asttypes.cmi
-odoc_inherit.cmo :
-odoc_inherit.cmx :
 odoc_latex.cmo : \
     odoc_to_text.cmo \
     odoc_messages.cmi \
