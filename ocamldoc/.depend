@@ -217,8 +217,6 @@ odoc_config.cmx : \
     ../utils/config.cmx \
     odoc_config.cmi
 odoc_config.cmi :
-odoc_control.cmo :
-odoc_control.cmx :
 odoc_cross.cmo : \
     odoc_value.cmi \
     odoc_types.cmi \
