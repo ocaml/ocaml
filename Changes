@@ -70,6 +70,9 @@ Working version
 
 ### Manual and documentation:
 
+- #9430, #11291: Document the general desugaring rules for binding operators.
+  (Gabriel Scherer, review by Nicolás Ojeda Bär)
+
 ### Compiler user-interface and warnings:
 
 - #10818: Preserve integer literal formatting in type hint.
