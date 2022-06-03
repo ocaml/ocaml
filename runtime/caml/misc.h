@@ -560,9 +560,6 @@ CAMLextern int caml_snwprintf(wchar_t * buf,
 #define snprintf_os snprintf
 #endif
 
-/* platform dependent best-effort thread naming */
-extern void caml_thread_setname(const char* name);
-
 /* Macro used to deactivate thread and address sanitizers on some
    functions. */
 #define CAMLno_tsan
