@@ -38,23 +38,33 @@ typedef struct link {
 static frame_descr * next_frame_descr(frame_descr * d) {
   unsigned char num_allocs = 0, *p;
   CAMLassert(d->retaddr >= 4096);
-  /* Skip to end of live_ofs */
-  p = (unsigned char*)&d->live_ofs[d->num_live];
-  /* Skip alloc_lengths if present */
-  if (d->frame_size & 2) {
-    num_allocs = *p;
-    p += num_allocs + 1;
+  if (d->frame_size != 0xFFFF) {
+    /* Skip to end of live_ofs */
+    p = (unsigned char*)&d->live_ofs[d->num_live];
+    /* Skip alloc_lengths if present */
+    if (d->frame_size & 2) {
+      num_allocs = *p;
+      p += num_allocs + 1;
+    }
+    /* Skip debug info if present */
+    if (d->frame_size & 1) {
+      /* Align to 32 bits */
+      p = Align_to(p, uint32_t);
+      p += sizeof(uint32_t) * (d->frame_size & 2 ? num_allocs : 1);
+    }
+    /* Align to word size */
+    p = Align_to(p, void*);
+    return ((frame_descr*) p);
+  } else {
+    /* This marks the top of an ML stack chunk. Skip over empty
+     * frame descriptor */
+    /* Skip to address of zero-sized live_ofs */
+    CAMLassert(d->num_live == 0);
+    p = (unsigned char*)&d->live_ofs[0];
+    /* Align to word size */
+    p = Align_to(p, void*);
+    return ((frame_descr*) p);
   }
-  /* Skip debug info if present */
-  if (d->frame_size & 1 &&
-      d->frame_size != (unsigned short)-1) {
-    /* Align to 32 bits */
-    p = Align_to(p, uint32_t);
-    p += sizeof(uint32_t) * (d->frame_size & 2 ? num_allocs : 1);
-  }
-  /* Align to word size */
-  p = Align_to(p, void*);
-  return ((frame_descr*) p);
 }
 
 static caml_frame_descrs build_frame_descriptors(link* frametables)
@@ -93,7 +103,9 @@ static caml_frame_descrs build_frame_descriptors(link* frametables)
         h = (h+1) & table.mask;
       }
       table.descriptors[h] = d;
-      d = next_frame_descr(d);
+      if (j != len - 1) {
+        d = next_frame_descr(d);
+      }
     }
   }
   return table;
