@@ -2031,6 +2031,15 @@ cclibs="$cclibs $mathlib"
 
 AC_CHECK_LIB(execinfo, backtrace, cclibs="$cclibs -lexecinfo",[])
 
+AS_CASE([$ocaml_cv_cc_vendor],
+  [gcc-*],
+  [AC_CHECK_TYPE([_Atomic int64_t], [], [cclibs="$cclibs -latomic"],
+    [
+     AC_INCLUDES_DEFAULT
+     #include <stdatomic.h>])],
+  [])
+
+
 AS_CASE([$host],
   [*-*-mingw32],
     [bytecclibs="-lws2_32 -lversion -lpthread -lgcc_eh -lDbgHelp"
