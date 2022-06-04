@@ -58,7 +58,7 @@ struct stack_info {
   int cache_bucket;
   size_t size; /* only used when USE_MMAP_MAP_STACK is defined */
   uintnat magic;
-  int64_t id;
+  ARCH_INT64_TYPE id;
 };
 
 CAML_STATIC_ASSERT(sizeof(struct stack_info) ==

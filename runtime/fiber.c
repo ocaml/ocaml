@@ -45,7 +45,7 @@
 #define fiber_debug_log(...)
 #endif
 
-static _Atomic int64_t fiber_id = 0;
+static _Atomic ARCH_INT64_TYPE fiber_id = 0;
 
 uintnat caml_get_init_stack_wsize (void)
 {
