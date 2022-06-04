@@ -209,7 +209,11 @@ typedef uint64_t uintnat;
 
 /* Number of words used in the control structure at the start of a stack
    (see fiber.h) */
-#define Stack_ctx_words 7
+#ifdef ARCH_SIXTYFOUR
+#define Stack_ctx_words (6 + 1)
+#else
+#define Stack_ctx_words (6 + 2)
+#endif
 
 /* Default maximum size of the stack (words). */
 /* (1 Gib for 64-bit platforms, 512 Mib for 32-bit platforms) */
