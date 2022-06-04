@@ -13,8 +13,6 @@
 /*                                                                        */
 /**************************************************************************/
 
-#include <limits.h>
-
 #ifndef CAML_CONFIG_H
 #define CAML_CONFIG_H
 
@@ -212,7 +210,7 @@ typedef uint64_t uintnat;
 /* Number of words used in the control structure at the start of a stack
    (see fiber.h)
    3 ptr + 1 int + 1 size_t + 1 uintnat + 1 int64_t */
-#define Stack_ctx_words (6 + 64 / (SIZEOF_PTR * CHAR_BIT))
+#define Stack_ctx_words (6 + 64 / (SIZEOF_PTR * __CHAR_BIT__))
 
 /* Default maximum size of the stack (words). */
 /* (1 Gib for 64-bit platforms, 512 Mib for 32-bit platforms) */
