@@ -944,6 +944,12 @@ AS_IF([! $arch64],
       [AC_DEFINE([ARCH_ALIGN_INT64], [1])])])
     ])])
 
+# Atomics library
+
+AS_IF([! $arch64],
+  [AS_CASE([$ocaml_cv_cc_vendor],
+    [gcc-*], [cclibs="$cclibs -latomic"])])
+
 # Shared library support
 
 sharedlib_cflags=''
