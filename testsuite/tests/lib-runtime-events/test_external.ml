@@ -1,5 +1,6 @@
 (* TEST
    include runtime_events
+   include unix
    * libunix
    ** bytecode
    ** native *)
