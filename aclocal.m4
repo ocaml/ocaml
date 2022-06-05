@@ -533,3 +533,27 @@ AC_DEFUN([OCAML_QUOTED_STRING_ID], [
     fi
   done
 ])
+
+AC_DEFUN([OCAML_CC_SUPPORTS_ATOMIC], [
+  AC_MSG_CHECKING([whether the C compiler supports _Atomic types])
+  saved_LIBS="$LIBS"
+  LIBS="$LIBS $1"
+  AC_LINK_IFELSE([AC_LANG_SOURCE([[
+    #include <stdint.h>
+    #include <stdatomic.h>
+    int main(void)
+    {
+      _Atomic int64_t n;
+      int m;
+      int * _Atomic p = &m;
+      atomic_store_explicit(&n, 123, memory_order_release);
+      * atomic_exchange(&p, 0) = 45;
+      return atomic_load_explicit(&n, memory_order_acquire);
+    }
+    ]])],
+  [cc_supports_atomic=true
+   AC_MSG_RESULT([yes])],
+  [cc_supports_atomic=false
+   AC_MSG_RESULT([no])])
+  LIBS="$saved_LIBS"
+])
