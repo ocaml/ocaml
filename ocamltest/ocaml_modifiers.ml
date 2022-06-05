@@ -98,9 +98,8 @@ let systhreads =
     "threads" [compiler_subdir ["otherlibs"; "systhreads"]])
 
 let runtime_events =
-  unix @
-  (make_library_modifier
-    "runtime_events" [compiler_subdir ["otherlibs"; "runtime_events"]])
+  make_library_modifier
+    "runtime_events" [compiler_subdir ["otherlibs"; "runtime_events"]]
 
 let compilerlibs_subdirs =
 [
