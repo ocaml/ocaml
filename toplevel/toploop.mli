@@ -32,7 +32,7 @@ val filename_of_input: input -> string
 
 (* Set the load paths, before running anything *)
 
-val set_paths : unit -> unit
+val set_paths : ?auto_include:Load_path.auto_include_callback -> unit -> unit
 
 (* The interactive toplevel loop *)
 

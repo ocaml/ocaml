@@ -29,7 +29,7 @@ open Format
 
 (* Set the load paths, before running anything *)
 
-val set_paths : unit -> unit
+val set_paths : ?auto_include:Load_path.auto_include_callback -> unit -> unit
 
 (* Add directories listed in OCAMLTOP_INCLUDE_PATH to the end of the search
    path *)

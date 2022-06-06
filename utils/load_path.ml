@@ -60,6 +60,9 @@ module Dir = struct
     { path; files = Array.to_list (readdir_compat path) }
 end
 
+type auto_include_callback =
+  (Dir.t -> string -> string option) -> string -> string
+
 let dirs = s_ref []
 let default_auto_include_callback _ _ = raise Not_found
 let auto_include_callback = ref default_auto_include_callback

@@ -6343,6 +6343,7 @@ toplevel/topcommon.cmi : \
     typing/outcometree.cmi \
     parsing/longident.cmi \
     parsing/location.cmi \
+    utils/load_path.cmi \
     typing/ident.cmi \
     toplevel/genprintval.cmi \
     typing/env.cmi
@@ -6439,6 +6440,7 @@ toplevel/toploop.cmi : \
     typing/outcometree.cmi \
     parsing/longident.cmi \
     parsing/location.cmi \
+    utils/load_path.cmi \
     typing/env.cmi
 toplevel/topmain.cmi :
 toplevel/topstart.cmo : \
