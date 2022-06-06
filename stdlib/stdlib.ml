@@ -567,7 +567,11 @@ let rec at_exit f =
   let success = atomic_compare_and_set exit_function old_exit new_exit in
   if not success then at_exit f
 
-let do_at_exit () = (atomic_get exit_function) ()
+let do_domain_local_at_exit = ref (fun () -> ())
+
+let do_at_exit () =
+  (!do_domain_local_at_exit) ();
+  (atomic_get exit_function) ()
 
 let exit retcode =
   do_at_exit ();

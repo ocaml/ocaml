@@ -38,28 +38,43 @@ val get_id : 'a t -> id
 val self : unit -> id
 (** [self ()] is the identifier of the currently running domain *)
 
-val at_first_spawn : (unit -> unit) -> unit
-(** Register the given function to be called before any domain is
-    spawned (except the initial domain) and before any function registered
-    with {!val:at_startup} is called. The functions registered with
-    [at_first_spawn] are called in 'last in, first out' order: the function
-    most recently added with [at_first_spawn] is called first.
+val before_first_spawn : (unit -> unit) -> unit
+(** [before_first_spawn f] registers [f] to be called before the first domain
+    is spawned by the program. The functions registered with
+    [before_first_spawn] are called on the main (initial) domain. The functions
+    registered with [before_first_spawn] are called in 'first in, first out'
+    order: the oldest function added with [before_first_spawn] is called first.
 
-    @raise Invalid_argument if the first domain has already been spawned. *)
+    @raise Invalid_argument if the program has already spawned a domain. *)
+
+val at_each_spawn : (unit -> unit) -> unit
+(** [at_each_spawn f] registers [f] to be called on the newly spawned domains.
+    The function [f] is executed before the callback [g] specified in [spawn g]
+    is executed. The registered functions are called in 'first in, first out'
+    order: the oldest function added with [at_each_spawn] is called first. *)
 
 val at_exit : (unit -> unit) -> unit
-(** Register the given function to be called at when a spawned domain exits.
-    This function is also registered with {!Stdlib.at_exit}. If the registered
-    function raises an exception, the exceptions are ignored. The registered
-    functions are called in 'last in, first out' order: the function most
-    recently added with [at_exit] is called first. *)
+(** [at_exit f] registers [f] to be called when the current domain exits. Note
+    that [at_exit] callbacks are domain-local and only apply to the calling
+    domain. The registered functions are called in 'last in, first out' order:
+    the function most recently added with [at_exit] is called first.
 
-val at_startup : (unit -> unit) -> unit
-(** Register the given function to be called when a domain starts. This
-    function is called before the callback specified to [spawn f] is
-    executed. The registered functions are called in 'last in, first out'
-    order: the function most recently added with [at_startup] is
-    called first. *)
+    The [at_exit] function can be used in combination with [at_each_spawn] to
+    clean up domain-local resources. Consider the following example:
+
+    {[
+let temp_file_key = Domain.DLS.new_key (fun _ ->
+  snd (Filename.open_temp_file "" ""))
+
+let _ = Domain.(at_each_spawn (fun _ ->
+  at_exit (fun _ -> close_out (DLS.get temp_file_key))))
+    ]}
+
+    The snippet above uses domain-local state ({!Domain.DLS}) to create a
+    temporary file for each domain. The [at_each_spawn] callback installs an
+    [at_exit] callback on each domain which closes the temporary file when the
+    domain terminates.
+    *)
 
 val cpu_relax : unit -> unit
 (** If busy-waiting, calling cpu_relax () between iterations
@@ -97,4 +112,4 @@ module DLS : sig
         the key [k] with value [v]. It overwrites any previous values associated
         to [k], which cannot be restored later. *)
 
-  end
+end

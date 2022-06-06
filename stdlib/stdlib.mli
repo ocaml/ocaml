@@ -1336,13 +1336,15 @@ val ( ^^ ) :
 (** {1 Program termination} *)
 
 val exit : int -> 'a
-(** Terminate the process, returning the given status code
-   to the operating system: usually 0 to indicate no errors,
-   and a small positive integer to indicate failure.
-   All open output channels are flushed with [flush_all].
-   An implicit [exit 0] is performed each time a program
-   terminates normally.  An implicit [exit 2] is performed if the program
-   terminates early because of an uncaught exception. *)
+(** Terminate the process, returning the given status code to the operating
+    system: usually 0 to indicate no errors, and a small positive integer to
+    indicate failure. All open output channels are flushed with [flush_all].
+    The callbacks registered with {!Domain.at_exit} are called followed by
+    those registed with {!Stdlib.at_exit}.
+
+    An implicit [exit 0] is performed each time a program terminates normally.
+    An implicit [exit 2] is performed if the program terminates early because
+    of an uncaught exception. *)
 
 val at_exit : (unit -> unit) -> unit
 (** Register the given function to be called at program termination
@@ -1364,6 +1366,8 @@ val valid_float_lexem : string -> string
 val unsafe_really_input : in_channel -> bytes -> int -> int -> unit
 
 val do_at_exit : unit -> unit
+
+val do_domain_local_at_exit : (unit -> unit) ref
 
 (**/**)
 
