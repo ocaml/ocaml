@@ -194,7 +194,8 @@ caml_runtime_events_create_cursor(const char_os* runtime_events_path, int pid,
 
   cursor->ring_file_size_bytes = tmp_stat.st_size;
 
-  cursor->metadata = mmap(NULL, cursor->ring_file_size_bytes, PROT_READ,
+  cursor->metadata = (struct runtime_events_metadata_header *)
+                      mmap(NULL, cursor->ring_file_size_bytes, PROT_READ,
                           MAP_SHARED, ring_fd, 0);
 
   if( cursor->metadata == MAP_FAILED ) {
@@ -282,7 +283,7 @@ void caml_runtime_events_free_cursor(struct caml_runtime_events_cursor *cursor){
     CloseHandle(cursor->ring_file_handle);
     CloseHandle(cursor->ring_handle);
 #else
-    munmap(cursor->metadata, cursor->ring_file_size_bytes);
+    munmap((void*)cursor->metadata, cursor->ring_file_size_bytes);
 #endif
     caml_stat_free(cursor->current_positions);
     caml_stat_free(cursor);
