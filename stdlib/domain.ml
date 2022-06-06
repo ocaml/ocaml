@@ -129,21 +129,31 @@ module DLS = struct
 
 end
 
+(******** Identity **********)
+
+let get_id { domain; _ } = domain
+
+let self () = Raw.self ()
+
+let is_main_domain () = (self () :> int) = 0
+
+(******** Callbacks **********)
+
 (* first spawn, domain startup and at exit functionality *)
 let first_domain_spawned = Atomic.make false
 
 let first_spawn_function = ref (fun () -> ())
 
-let at_first_spawn f =
+let before_first_spawn f =
   if Atomic.get first_domain_spawned then
     raise (Invalid_argument "First domain already spawned")
   else begin
     let old_f = !first_spawn_function in
-    let new_f () = f (); old_f () in
+    let new_f () = old_f (); f () in
     first_spawn_function := new_f
   end
 
-let do_at_first_spawn () =
+let do_before_first_spawn () =
   if not (Atomic.get first_domain_spawned) then begin
     Atomic.set first_domain_spawned true;
     !first_spawn_function();
@@ -151,34 +161,48 @@ let do_at_first_spawn () =
     first_spawn_function := (fun () -> ())
   end
 
-let exit_function = Atomic.make (fun () -> ())
+let at_exit_key = DLS.new_key (fun () -> (fun () -> ()))
 
-let rec at_exit f =
-  let wrapped_f () = try f () with _ -> () in
-  let old_exit = Atomic.get exit_function in
-  let new_exit () = wrapped_f (); old_exit () in
-  let success = Atomic.compare_and_set exit_function old_exit new_exit in
-  if success then
-    Stdlib.at_exit wrapped_f
-  else at_exit f
+let at_exit f =
+  let old_exit : unit -> unit = DLS.get at_exit_key in
+  let new_exit () =
+    (* The domain termination callbacks ([at_exit]) are run in
+       last-in-first-out (LIFO) order in order to be symmetric with the domain
+       creation callbacks ([at_each_spawn]) which run in first-in-fisrt-out
+       (FIFO) order. *)
+    f (); old_exit ()
+  in
+  DLS.set at_exit_key new_exit
 
-let do_at_exit () = (Atomic.get exit_function) ()
+let do_at_exit () =
+  let f : unit -> unit = DLS.get at_exit_key in
+  f ()
+
+let _ = Stdlib.do_domain_local_at_exit := do_at_exit
 
 let startup_function = Atomic.make (fun () -> ())
 
-let rec at_startup f =
+let rec at_each_spawn f =
   let old_startup = Atomic.get startup_function in
-  let new_startup () = f (); old_startup () in
+  let new_startup () =
+    (* The domain creation callbacks ([at_each_spawn]) are run in
+       first-in-first-out (FIFO) order in order to be symmetric with the domain
+       termination callbacks ([at_exit]) which run in last-in-fisrt-out (LIFO)
+       order. *)
+    old_startup (); f ()
+  in
   let success =
     Atomic.compare_and_set startup_function old_startup new_startup
   in
   if success then
     ()
   else
-    at_startup f
+    at_each_spawn f
+
+(******* Creation and Termination ********)
 
 let spawn f =
-  do_at_first_spawn ();
+  do_before_first_spawn ();
   let pk = DLS.get_initial_keys () in
 
   (* The [term_mutex] and [term_condition] are used to
@@ -187,25 +211,45 @@ let spawn f =
   let term_condition = Condition.create () in
   let term_state = ref Running in
 
-  let at_startup = Atomic.get startup_function in
+  let at_each_spawn = Atomic.get startup_function in
   let body () =
     let result =
       match
         DLS.create_dls ();
         DLS.set_initial_keys pk;
-        at_startup ();
-        f ()
+        at_each_spawn ();
+        let res = f () in
+        res
       with
       | x -> Ok x
       | exception ex -> Error ex
     in
-    do_at_exit ();
+
+    let result' =
+      (* Run the [at_exit] callbacks when the domain computation either
+         terminates normally or exceptionally. *)
+      match do_at_exit () with
+      | () -> result
+      | exception ex ->
+          begin match result with
+          | Ok _ ->
+              (* If the domain computation terminated normally, but the
+                 [at_exit] callbacks raised an exception, then return the
+                 exception. *)
+              Error ex
+          | Error _ ->
+              (* If both the domain computation and the [at_exit] callbacks
+                 raised exceptions, then ignore the exception from the
+                 [at_exit] callbacks and return the original exception. *)
+              result
+          end
+    in
 
     (* Synchronize with joining domains *)
     Mutex.lock term_mutex;
     match !term_state with
     | Running ->
-        term_state := Finished result;
+        term_state := Finished result';
         Condition.broadcast term_condition;
     | Finished _ ->
         failwith "internal error: Am I already finished?"
@@ -231,9 +275,3 @@ let join { term_mutex; term_condition; term_state; _ } =
   match loop () with
   | Ok x -> x
   | Error ex -> raise ex
-
-let get_id { domain; _ } = domain
-
-let self () = Raw.self ()
-
-let is_main_domain () = (self () :> int) == 0

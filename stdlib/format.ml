@@ -1474,7 +1474,7 @@ let flush_standard_formatters () =
 
 let () = at_exit flush_standard_formatters
 
-let () = Domain.at_first_spawn (fun () ->
+let () = Domain.before_first_spawn (fun () ->
   flush_standard_formatters ();
 
   let fs = pp_get_formatter_out_functions std_formatter () in
@@ -1487,4 +1487,4 @@ let () = Domain.at_first_spawn (fun () ->
     {fs with out_string = buffered_out_string err_buf_key;
              out_flush = buffered_out_flush Stdlib.stderr err_buf_key};
 
-  Domain.at_exit flush_standard_formatters)
+  Domain.at_each_spawn (fun _ -> Domain.at_exit flush_standard_formatters))
