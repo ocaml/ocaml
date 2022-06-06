@@ -255,11 +255,9 @@ fi
 
 if $bootstrap; then
   $make $jobs --warn-undefined-variables core
-  $make $jobs --warn-undefined-variables coreboot
+  $make $jobs --warn-undefined-variables bootstrap
   if $make_native; then
     $make $jobs --warn-undefined-variables opt.opt
-  else
-    $make $jobs --warn-undefined-variables all
   fi
 else
   $make $jobs --warn-undefined-variables
