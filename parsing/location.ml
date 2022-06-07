@@ -908,6 +908,19 @@ let auto_include_alert lib =
   in
   prerr_alert none alert
 
+let deprecated_script_alert program =
+  let message = Printf.sprintf "\
+    Running %s where the first argument is an implicit basename with no \
+    extension (e.g. %s script-file) is deprecated. Either rename the script \
+    (%s script-file.ml) or qualify the basename (%s ./script-file)"
+    program program program program
+  in
+  let alert =
+    {Warnings.kind="ocaml_deprecated_cli"; use=none; def=none;
+     message = Format.asprintf "@[@\n%a@]" Format.pp_print_text message}
+  in
+  prerr_alert none alert
+
 (******************************************************************************)
 (* Reporting errors on exceptions *)
 

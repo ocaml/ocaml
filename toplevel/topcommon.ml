@@ -301,6 +301,11 @@ let override_sys_argv new_argv =
   caml_sys_modify_argv new_argv;
   Arg.current := 0
 
+let is_command_like_name s =
+  not (String.length s = 0
+       || s.[0] = '-'
+       || Filename.basename s <> s
+       || Filename.extension s <> "")
 
 (* The table of toplevel directives.
    Filled by functions from module topdirs. *)

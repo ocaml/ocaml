@@ -244,8 +244,12 @@ val alert: ?def:t -> ?use:t -> kind:string -> t -> string -> unit
 (** Prints an arbitrary alert. *)
 
 val auto_include_alert: string -> unit
-(** Prints an alert that -I +lib has been automatically added ot the load
+(** Prints an alert that -I +lib has been automatically added to the load
     path *)
+
+val deprecated_script_alert: string -> unit
+(** [deprecated_script_alert command] prints an alert that [command foo] has
+    been deprecated in favour of [command ./foo] *)
 
 (** {1 Reporting errors} *)
 
