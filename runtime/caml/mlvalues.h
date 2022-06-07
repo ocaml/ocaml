@@ -206,8 +206,6 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 #define Op_atomic_val(x) ((atomic_value *) (x))
 /* Fields are numbered from 0. */
 #define Field(x, i) (((volatile value *)(x)) [i]) /* Also an l-value. */
-#define Load_field(x, i) \
-  (atomic_load_explicit(Op_atomic_val(x) + i, memory_order_acquire))
 
 /* Is_young(val) is true iff val is in the reserved area for minor heaps */
 
