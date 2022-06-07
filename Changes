@@ -81,6 +81,10 @@ Working version
   i.e. 1 Gib for 64-bit platforms and 512 Mib for 32-bit platforms.
   (Xavier Leroy, review by Sébastien Hinderer)
 
+* #11295: An ISO C 2011 compliant compiler, including full support for atomic
+  types, is now required to build the OCaml runtime system.
+  (Xavier Leroy, review by David Allsopp and Sébastien Hinderer)
+
 ### Code generation and optimizations:
 
 - #10972: ARM64 multicore support: OCaml & C stack separation;
