@@ -214,7 +214,10 @@ void caml_array_bound_error(void)
     }
     atomic_store_rel(&exn_cache, (uintnat)exn);
   }
-  caml_raise(*exn);
+  /* This exception is raised directly from OCaml, not C,
+     so we should not do the C-specific processing in caml_raise.
+     (In particular, we must not invoke GC, even if signals are pending) */
+  caml_raise_exception(Caml_state, *exn);
 }
 
 int caml_is_special_exception(value exn) {
