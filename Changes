@@ -140,7 +140,9 @@ OCaml 5.0
   i.e. 1 Gib for 64-bit platforms and 512 Mib for 32-bit platforms.
   (Xavier Leroy, review by Sébastien Hinderer)
 
-- #11284: Use compression of entries scheme when pruning mark stack
+- #11284: Use compression of entries scheme when pruning mark stack.
+  Can decrease memory usage for some workloads, otherwise should be
+  unobservable.
   (Tom Kelly, review by Sabine Schmaltz, Sadiq Jaffer and Damien Doligez)
 
 * #11295: An ISO C 2011 compliant compiler, including full support for atomic
