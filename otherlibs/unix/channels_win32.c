@@ -60,16 +60,41 @@ static DWORD check_stream_semantics(value handle)
   }
 }
 
+int caml_win32_get_CRT_fd(value handle)
+{
+  int fd;
+  do {
+    fd = (int)atomic_load(&CRT_fd_val(handle));
+  } while (fd == GETTING_CRT_FD);
+  return fd;
+}
+
 int caml_win32_CRT_fd_of_filedescr(value handle)
 {
-  if (CRT_fd_val(handle) != NO_CRT_FD) {
-    return CRT_fd_val(handle);
-  } else {
-    int fd = _open_osfhandle((intptr_t) Handle_val(handle), O_BINARY);
-    if (fd == -1) caml_uerror("channel_of_descr", Nothing);
-    CRT_fd_val(handle) = fd;
+  int fd = (int)atomic_load(&CRT_fd_val(handle));
+  if (fd != NO_CRT_FD && fd != GETTING_CRT_FD) {
     return fd;
+  } else if (fd == NO_CRT_FD) {
+    /* Attempt to take responsibility to allocate the C fd */
+    intnat expected_fd = (intnat)NO_CRT_FD;
+    if (atomic_compare_exchange_strong(&CRT_fd_val(handle), &expected_fd,
+        (intnat)GETTING_CRT_FD)) {
+      fd = _open_osfhandle((intptr_t) Handle_val(handle), O_BINARY);
+      if (fd == -1) {
+        atomic_store(&CRT_fd_val(handle), (intnat)NO_CRT_FD);
+        caml_uerror("channel_of_descr", Nothing);
+      }
+      atomic_store(&CRT_fd_val(handle), (intnat)fd);
+      return fd;
+    }
+    else {
+      goto busywait;
+    }
   }
+
+busywait:
+  while ((int)atomic_load(&CRT_fd_val(handle)) == GETTING_CRT_FD) /* Nothing */;
+  return (int)atomic_load(&CRT_fd_val(handle));
 }
 
 CAMLprim value caml_unix_inchannel_of_filedescr(value handle)
@@ -132,7 +157,8 @@ CAMLprim value caml_unix_filedescr_of_channel(value vchan)
     fd = caml_win32_alloc_socket((SOCKET) h);
   else
     fd = caml_win32_alloc_handle(h);
-  CRT_fd_val(fd) = chan->fd;
+  atomic_store_explicit(&CRT_fd_val(fd), (intnat)chan->fd,
+                        memory_order_relaxed);
   CAMLreturn(fd);
 }
 
@@ -143,6 +169,6 @@ CAMLprim value caml_unix_filedescr_of_fd(value vfd)
      degradation and this function is only used with the standard
      handles 0, 1, 2, which are not sockets. */
   value res = caml_win32_alloc_handle((HANDLE) _get_osfhandle(crt_fd));
-  CRT_fd_val(res) = crt_fd;
+  atomic_store_explicit(&CRT_fd_val(res), (intnat)crt_fd, memory_order_relaxed);
   return res;
 }

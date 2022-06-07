@@ -55,7 +55,8 @@ value caml_win32_alloc_handle(HANDLE h)
     caml_alloc_custom(&handle_ops, sizeof(struct filedescr), 0, 1);
   Handle_val(res) = h;
   Descr_kind_val(res) = KIND_HANDLE;
-  CRT_fd_val(res) = NO_CRT_FD;
+  atomic_store_explicit(&CRT_fd_val(res), (intnat)NO_CRT_FD,
+                        memory_order_relaxed);
   Flags_fd_val(res) = FLAGS_FD_IS_BLOCKING;
   return res;
 }
@@ -66,7 +67,8 @@ value caml_win32_alloc_socket(SOCKET s)
     caml_alloc_custom(&handle_ops, sizeof(struct filedescr), 0, 1);
   Socket_val(res) = s;
   Descr_kind_val(res) = KIND_SOCKET;
-  CRT_fd_val(res) = NO_CRT_FD;
+  atomic_store_explicit(&CRT_fd_val(res), (intnat)NO_CRT_FD,
+                        memory_order_relaxed);
   Flags_fd_val(res) = FLAGS_FD_IS_BLOCKING;
   return res;
 }

@@ -28,8 +28,9 @@ CAMLprim value caml_unix_close(value fd)
     /* If we have an fd then closing it also closes
      * the underlying handle. Also, closing only
      * the handle and not the fd leads to fd leaks. */
-    if (CRT_fd_val(fd) != NO_CRT_FD) {
-      if (_close(CRT_fd_val(fd)) != 0)
+    int crt_fd = caml_win32_get_CRT_fd(fd);
+    if (crt_fd != NO_CRT_FD) {
+      if (_close(crt_fd) != 0)
          caml_uerror("close", Nothing);
     } else {
       if (! CloseHandle(Handle_val(fd))) {
