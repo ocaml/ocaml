@@ -42,12 +42,20 @@
    that can be in a pool, see POOL_WSIZE */
 #define MARK_STACK_INIT_SIZE (1 << 12)
 
-/* The mark stack contains spans of fields that need to be marked.
-   The mark stack is bounded relative to the heap size, if the mark stack
-   overflows the bound, then entries are compressed into entries
-   (k, bitfield) where the bitfield represents word offsets from k.
-   When the mark stack is empty, compressed entries (if any) are taken
-   from the compressed stack and processed. */
+/* The mark stack consists of two parts:
+   1. the stack - consisting of spans of fields that need to be marked, and
+   2. the compressed stack - consisting of entries (k, bitfield)
+      where the bitfield represents word offsets from k that need to
+      be marked.
+   
+   The stack is bounded relative to the heap size. When the stack
+   overflows the bound, then entries from the stack are compressed and
+   transferred into the compressed stack.
+   
+   When the stack is empty, the compressed stack is processed.
+   The compressed stack iterator marks the point up to which
+   compressed stack entries have already been processed.   
+*/
 
 typedef struct {
   value* start;
