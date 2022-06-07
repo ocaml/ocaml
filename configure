@@ -14110,6 +14110,49 @@ if ! $arch64; then :
 esac
 fi
 
+# Support for C11 atomic types
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the C compiler supports _Atomic types" >&5
+$as_echo_n "checking whether the C compiler supports _Atomic types... " >&6; }
+  saved_LIBS="$LIBS"
+  LIBS="$LIBS $cclibs"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+    #include <stdint.h>
+    #include <stdatomic.h>
+    int main(void)
+    {
+      _Atomic int64_t n;
+      int m;
+      int * _Atomic p = &m;
+      atomic_store_explicit(&n, 123, memory_order_release);
+      * atomic_exchange(&p, 0) = 45;
+      return atomic_load_explicit(&n, memory_order_acquire);
+    }
+
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  cc_supports_atomic=true
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  cc_supports_atomic=false
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+  LIBS="$saved_LIBS"
+
+if ! $cc_supports_atomic; then :
+  { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "C11 atomic support is required, use another C compiler
+See \`config.log' for more details" "$LINENO" 5; }
+fi
+
 # Shared library support
 
 sharedlib_cflags=''
