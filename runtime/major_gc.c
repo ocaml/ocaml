@@ -47,14 +47,14 @@
    2. the compressed stack - consisting of entries (k, bitfield)
       where the bitfield represents word offsets from k that need to
       be marked.
-   
+
    The stack is bounded relative to the heap size. When the stack
    overflows the bound, then entries from the stack are compressed and
    transferred into the compressed stack.
-   
+
    When the stack is empty, the compressed stack is processed.
    The compressed stack iterator marks the point up to which
-   compressed stack entries have already been processed.   
+   compressed stack entries have already been processed.
 */
 
 typedef struct {
@@ -1499,9 +1499,9 @@ Caml_inline int add_addr(struct addrmap* amap, value v) {
 static void mark_stack_prune(struct mark_stack* stk)
 {
   /* Since addrmap is (currently) using open address hashing, we cannot insert
-     new compressed stack entries into an existing, partially-processed compressed
-     stack. Thus, we create a new compressed stack and insert the unprocessed
-     entries of the existing compressed stack into the new one. */
+     new compressed stack entries into an existing, partially-processed
+     compressed stack. Thus, we create a new compressed stack and insert the
+     unprocessed entries of the existing compressed stack into the new one. */
   uintnat old_compressed_entries = 0;
   struct addrmap new_compressed_stack = ADDRMAP_INIT;
   addrmap_iterator it;
