@@ -55,6 +55,10 @@ type auto_include_callback =
   (Dir.t -> string -> string option) -> string -> string
 (** The type of callback functions on for [init ~auto_include] *)
 
+val no_auto_include : auto_include_callback
+(** No automatic directory inclusion: misses in the load path raise [Not_found]
+    as normal. *)
+
 val init : auto_include:auto_include_callback -> string list -> unit
 (** [init l] is the same as [reset (); List.iter add_dir (List.rev l)] *)
 
