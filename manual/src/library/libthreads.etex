@@ -20,8 +20,8 @@ overlapping I/O operations.
 
 Programs that use threads must be linked as follows:
 \begin{alltt}
-        ocamlc -I +threads \var{other options} unix.cma threads.cma \var{other files}
-        ocamlopt -I +threads \var{other options} unix.cmxa threads.cmxa \var{other files}
+        ocamlc -I +unix -I +threads \var{other options} unix.cma threads.cma \var{other files}
+        ocamlopt -I +unix -I +threads \var{other options} unix.cmxa threads.cmxa \var{other files}
 \end{alltt}
 Compilation units that use the "threads" library must also be compiled with
 the "-I +threads" option (see chapter~\ref{c:camlc}).
