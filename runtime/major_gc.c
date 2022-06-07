@@ -1498,10 +1498,10 @@ Caml_inline int add_addr(struct addrmap* amap, value v) {
 
 static void mark_stack_prune(struct mark_stack* stk)
 {
-  /* We need to handle the case when the mark stack overflows and we already
-     have entries in the compressed stack. addrmap is (currently) using open
-     address hashing, to keep things simple we just copy out the remaining
-     compressed entries to a new map. */
+  /* Since addrmap is (currently) using open address hashing, we cannot insert
+     new compressed stack entries into an existing, partially-processed compressed
+     stack. Thus, we create a new compressed stack and insert the unprocessed
+     entries of the existing compressed stack into the new one. */
   uintnat old_compressed_entries = 0;
   struct addrmap new_compressed_stack = ADDRMAP_INIT;
   addrmap_iterator it;
