@@ -77,10 +77,12 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
 #define Restore_after_gc \
   { sp = domain_state->current_stack->sp; accu = sp[0]; env = sp[1]; sp += 3; }
 /* Do call asynchronous callbacks from allocation functions */
-#define Enter_gc \
-  { Setup_for_gc; \
-    caml_process_pending_actions();         \
-    Restore_after_gc; }
+#define Enter_gc(dom_st, wosize) do {                            \
+    Setup_for_gc;                                                \
+    Alloc_small_enter_GC_flags(CAML_DO_TRACK | CAML_FROM_CAML,   \
+                               dom_st, wosize);                  \
+    Restore_after_gc;                                            \
+  } while (0)
 
 /* We store [pc+1] in the stack so that, in case of an exception, the
    first backtrace slot points to the event following the C call

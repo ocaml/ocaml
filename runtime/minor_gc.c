@@ -206,7 +206,7 @@ static int try_update_object_header(value v, value *p, value result,
         /* Success. Now we can write the forwarding pointer. */
         atomic_store_explicit(Op_atomic_val(v), result, memory_order_relaxed);
         /* And update header ('release' ensures after update of fwd pointer) */
-        atomic_store_explicit(Hp_atomic_val(v), 0, memory_order_release);
+        atomic_store_rel(Hp_atomic_val(v), 0);
         /* Let the caller know we were responsible for the update */
         success = 1;
       } else {
@@ -781,6 +781,66 @@ void caml_empty_minor_heaps_once (void)
   do {
     caml_try_stw_empty_minor_heap_on_all_domains();
   } while (saved_minor_cycle == atomic_load(&caml_minor_cycles_started));
+}
+
+/* Called by minor allocations when [Caml_state->young_ptr] reaches
+   [Caml_state->young_limit]. We may have to either call memprof or
+   the gc. */
+void caml_alloc_small_dispatch (caml_domain_state * dom_st,
+                                intnat wosize, int flags,
+                                int nallocs, unsigned char* encoded_alloc_lens)
+{
+  intnat whsize = Whsize_wosize(wosize);
+
+  /* First, we un-do the allocation performed in [Alloc_small] */
+  dom_st->young_ptr += whsize;
+
+  while(1) {
+    /* We might be here because of an async callback / urgent GC
+       request. Take the opportunity to do what has been requested. */
+    if (flags & CAML_FROM_CAML)
+      /* In the case of allocations performed from OCaml, execute
+         asynchronous callbacks. */
+      caml_raise_if_exception(caml_do_pending_actions_exn());
+    else {
+      caml_handle_gc_interrupt();
+      /* In the case of long-running C code that regularly polls with
+         [caml_process_pending_actions], still force a query of all
+         callbacks at every minor collection or major slice. */
+      dom_st->action_pending = 1;
+    }
+
+    /* Now, there might be enough room in the minor heap to do our
+       allocation. */
+    if (dom_st->young_ptr - whsize >= dom_st->young_start)
+      break;
+
+    /* If not, then empty the minor heap, and check again for async
+       callbacks. */
+    CAML_EV_COUNTER(EV_C_FORCE_MINOR_ALLOC_SMALL, 1);
+    caml_poll_gc_work();
+  }
+
+  /* Re-do the allocation: we now have enough space in the minor heap. */
+  dom_st->young_ptr -= whsize;
+
+#if 0
+  /* Check if the allocated block has been sampled by memprof. */
+  if (dom_st->young_ptr < caml_memprof_young_trigger) {
+    if(flags & CAML_DO_TRACK) {
+      caml_memprof_track_young(wosize, flags & CAML_FROM_CAML,
+                               nallocs, encoded_alloc_lens);
+      /* Until the allocation actually takes place, the heap is in an invalid
+         state (see comments in [caml_memprof_track_young]). Hence, very little
+         heap operations are allowed before the actual allocation.
+
+         Moreover, [Caml_state->young_ptr] should not be modified before the
+         allocation, because its value has been used as the pointer to
+         the sampled block.
+      */
+    } else caml_memprof_renew_minor_sample();
+  }
+#endif
 }
 
 /* Request a minor collection and enter as if it were an interrupt.

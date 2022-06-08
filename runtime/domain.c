@@ -638,6 +638,8 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
   domain_state->c_stack = NULL;
   domain_state->exn_handler = NULL;
 
+  domain_state->action_pending = 0;
+
   domain_state->gc_regs_buckets = NULL;
   domain_state->gc_regs = NULL;
 
@@ -1233,7 +1235,6 @@ static void decrement_stw_domains_still_processing(void)
   }
 }
 
-static void caml_poll_gc_work(void);
 static void stw_handler(caml_domain_state* domain)
 {
   CAML_EV_BEGIN(EV_STW_HANDLER);
@@ -1467,21 +1468,21 @@ void caml_interrupt_self(void) {
 
 void caml_reset_young_limit(caml_domain_state * dom_st)
 {
-  CAMLassert(dom_st == Caml_state);
   /* An interrupt might have been queued in the meanwhile; this
      achieves the proper synchronisation. */
   atomic_exchange(&dom_st->young_limit, (uintnat)dom_st->young_start);
-  if (caml_incoming_interrupts_queued()
+  dom_internal * d = &all_domains[dom_st->id];
+  if (atomic_load_relaxed(&d->interruptor.interrupt_pending)
       || dom_st->requested_minor_gc
       || dom_st->requested_major_slice
-      || atomic_load_explicit(&dom_st->requested_external_interrupt,
-                              memory_order_relaxed)) {
+      || atomic_load_relaxed(&dom_st->requested_external_interrupt)
+      || dom_st->action_pending) {
     atomic_store_rel(&dom_st->young_limit, (uintnat)-1);
     CAMLassert(caml_check_gc_interrupt(dom_st));
   }
 }
 
-static void caml_poll_gc_work(void)
+void caml_poll_gc_work(void)
 {
   CAMLalloc_point_here;
 
@@ -1491,16 +1492,6 @@ static void caml_poll_gc_work(void)
     /* out of minor heap or collection forced */
     Caml_state->requested_minor_gc = 0;
     caml_empty_minor_heaps_once();
-
-    /* FIXME: a domain will only ever call finalizers if its minor
-      heap triggers the minor collection
-      Care may be needed with finalizers running when the domain
-      is waiting in a blocking section and serviced by the backup
-      thread.
-      */
-    CAML_EV_BEGIN(EV_MINOR_FINALIZED);
-    caml_raise_if_exception(caml_final_do_calls_exn());
-    CAML_EV_END(EV_MINOR_FINALIZED);
   }
 
   if (Caml_state->requested_major_slice) {
@@ -1513,11 +1504,9 @@ static void caml_poll_gc_work(void)
   if (atomic_load_acq(&Caml_state->requested_external_interrupt)) {
     caml_domain_external_interrupt_hook();
   }
-
   caml_reset_young_limit(Caml_state);
 }
 
-/* FIXME: do not raise async exceptions */
 void caml_handle_gc_interrupt(void)
 {
   CAMLalloc_point_here;
@@ -1529,7 +1518,6 @@ void caml_handle_gc_interrupt(void)
     CAML_EV_END(EV_INTERRUPT_REMOTE);
   }
 
-  caml_reset_young_limit(Caml_state);
   caml_poll_gc_work();
 }
 

@@ -27,6 +27,7 @@
 #include "domain.h"
 #include "misc.h"
 #include "mlvalues.h"
+#include "signals.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -195,17 +196,26 @@ Caml_inline void DEBUG_clear(value result, mlsize_t wosize) {
 #define DEBUG_clear(result, wosize)
 #endif
 
+enum caml_alloc_small_flags {
+  CAML_DONT_TRACK = 0, CAML_DO_TRACK = 1, // call memprof
+  CAML_FROM_C = 0,     CAML_FROM_CAML = 2 // call async callbacks
+};
+
+#define Alloc_small_enter_GC_flags(flags, dom_st, wosize) \
+  caml_alloc_small_dispatch((dom_st), (wosize), (flags), 1, NULL);
+
+// Do not call asynchronous callbacks from allocation functions
+#define Alloc_small_enter_GC(dom_st, wosize)    \
+  Alloc_small_enter_GC_flags(CAML_DO_TRACK | CAML_FROM_C, dom_st, wosize)
+
 #define Alloc_small_with_profinfo(result, wosize, tag, GC, profinfo) do{    \
-  caml_domain_state* dom_st;                                                \
                                                 CAMLassert ((wosize) >= 1); \
                                           CAMLassert ((tag_t) (tag) < 256); \
                                  CAMLassert ((wosize) <= Max_young_wosize); \
-  dom_st = Caml_state;                                                      \
+  caml_domain_state* dom_st = Caml_state;                                   \
   dom_st->young_ptr -=  Whsize_wosize(wosize);                              \
-  while (Caml_check_gc_interrupt(dom_st)) {                                 \
-    dom_st->young_ptr += Whsize_wosize(wosize);                             \
-    { GC }                                                                  \
-    dom_st->young_ptr -= Whsize_wosize(wosize);                             \
+  if (Caml_check_gc_interrupt(dom_st)) {                                    \
+    GC(dom_st, wosize);                                                     \
   }                                                                         \
   Hd_hp (dom_st->young_ptr) =                                               \
     Make_header_with_profinfo ((wosize), (tag), 0, profinfo);               \

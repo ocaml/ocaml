@@ -41,8 +41,7 @@ extern "C" {
 Caml_inline int caml_check_gc_interrupt(caml_domain_state * dom_st)
 {
   CAMLalloc_point_here;
-  uintnat young_limit =
-    atomic_load_explicit(&dom_st->young_limit, memory_order_relaxed);
+  uintnat young_limit = atomic_load_relaxed(&dom_st->young_limit);
   if ((uintnat)dom_st->young_ptr < young_limit) {
     /* Synchronise for the case when [young_limit] was used to interrupt
        us. */
@@ -62,6 +61,7 @@ void caml_update_minor_heap_max(uintnat minor_heap_wsz);
 /* is there a STW interrupt queued that needs servicing */
 int caml_incoming_interrupts_queued(void);
 
+void caml_poll_gc_work(void);
 void caml_handle_gc_interrupt(void);
 void caml_handle_incoming_interrupts(void);
 
