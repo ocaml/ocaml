@@ -25,6 +25,8 @@ module Raw = struct
     = "caml_ml_domain_id"
   external cpu_relax : unit -> unit
     = "caml_ml_domain_cpu_relax"
+  external recommended_domains: unit -> int
+    = "caml_recommended_domains"
 end
 
 let cpu_relax () = Raw.cpu_relax ()
@@ -275,3 +277,5 @@ let join { term_mutex; term_condition; term_state; _ } =
   match loop () with
   | Ok x -> x
   | Error ex -> raise ex
+
+let recommended_domains () = Raw.recommended_domains ()

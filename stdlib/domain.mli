@@ -83,6 +83,9 @@ val cpu_relax : unit -> unit
 val is_main_domain : unit -> bool
 (** [is_main_domain ()] returns true if called from the initial domain. *)
 
+val recommended_domains : unit -> int
+(** [recommended_domains ()] is the recommended maximum number of domains. *)
+
 module DLS : sig
 (** Domain-local Storage *)
 
