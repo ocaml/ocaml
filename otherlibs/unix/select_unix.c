@@ -28,7 +28,9 @@
 #include <sys/select.h>
 #endif
 #include <string.h>
+#ifdef HAS_UNISTD
 #include <unistd.h>
+#endif
 #include <errno.h>
 
 static int fdlist_to_fdset(value fdlist, fd_set *fdset, int *maxfd)

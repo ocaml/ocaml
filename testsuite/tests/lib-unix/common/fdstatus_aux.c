@@ -32,12 +32,15 @@ void process_fd(const char * s)
 
 #else
 
+#include "caml/config.h"
 #include <limits.h>
 #include <string.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifdef HAS_UNISTD
 #include <unistd.h>
+#endif
 
 void process_fd(const char * s)
 {

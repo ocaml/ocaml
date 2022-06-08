@@ -18,8 +18,11 @@
 
 #define CAML_INTERNALS
 
+#include "caml/config.h"
 #include <stdio.h>
+#ifdef HAS_UNISTD
 #include <unistd.h>
+#endif
 #include <pthread.h>
 #include <string.h>
 #include "caml/alloc.h"

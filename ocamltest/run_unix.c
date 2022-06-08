@@ -17,12 +17,15 @@
 
 #define CAML_INTERNALS
 
+#include "caml/config.h"
 #include <stdio.h>
 #include <limits.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#ifdef HAS_UNISTD
 #include <unistd.h>
+#endif
 #include <fcntl.h>
 #include <string.h>
 #include <errno.h>

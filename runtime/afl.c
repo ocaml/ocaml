@@ -38,7 +38,9 @@ CAMLexport value caml_setup_afl(value unit)
 
 #else
 
+#ifdef HAS_UNISTD
 #include <unistd.h>
+#endif
 #include <sys/types.h>
 #include <signal.h>
 #include <sys/shm.h>

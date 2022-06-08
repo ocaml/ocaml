@@ -23,7 +23,9 @@
 #include "unixsupport.h"
 
 #include <fcntl.h>
+#ifdef HAS_UNISTD
 #include <unistd.h>
+#endif
 #include <errno.h>
 
 CAMLprim value unix_link(value follow, value path1, value path2)

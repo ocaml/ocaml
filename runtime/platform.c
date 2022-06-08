@@ -15,8 +15,11 @@
 /**************************************************************************/
 #define CAML_INTERNALS
 
+#include "caml/config.h"
 #include <string.h>
+#ifdef HAS_UNISTD
 #include <unistd.h>
+#endif
 #include <errno.h>
 #include <sys/time.h>
 #include "caml/platform.h"
