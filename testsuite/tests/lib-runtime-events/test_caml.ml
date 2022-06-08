@@ -25,7 +25,7 @@ let lifecycle domain_id ts lifecycle_event data =
 
 let runtime_begin domain_id ts phase =
     match phase with
-    | EV_MAJOR_SLICE ->
+    | EV_MAJOR_FINISH_CYCLE ->
         begin
             assert(!major == 0);
             major := 1
@@ -39,7 +39,7 @@ let runtime_begin domain_id ts phase =
 
 let runtime_end domain_id ts phase =
     match phase with
-    | EV_MAJOR_SLICE ->
+    | EV_MAJOR_FINISH_CYCLE ->
         begin
             assert(!major == 1);
             major := 0;
@@ -76,4 +76,4 @@ let () =
         ignore(read_poll cursor callbacks None)
     done;
     assert(!got_start);
-    Printf.printf "minors: %d, majors: %d\n" !minors !majors
+    Printf.printf "minors: %d, major cycles: %d\n" !minors !majors
