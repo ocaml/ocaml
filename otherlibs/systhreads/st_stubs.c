@@ -95,10 +95,6 @@ struct caml_thread_struct {
   struct caml_exception_context* external_raise;
     /* saved value of Caml_state->external_raise */
 #endif
-
-#ifdef POSIX_SIGNALS
-  sigset_t init_mask;
-#endif
 };
 
 typedef struct caml_thread_struct* caml_thread_t;
@@ -575,12 +571,6 @@ static void * caml_thread_start(void * v)
   restore_runtime_state(th);
   signal_stack = caml_init_signal_stack();
 
-#ifdef POSIX_SIGNALS
-  /* restore the signal mask from the spawning thread, now it is safe for the
-     signal handler to run (as Caml_state is initialised) */
-  pthread_sigmask(SIG_SETMASK, &th->init_mask, NULL);
-#endif
-
   clos = Start_closure(Active_thread->descr);
   caml_modify(&(Start_closure(Active_thread->descr)), Val_unit);
   caml_callback_exn(clos, Val_unit);
@@ -595,8 +585,8 @@ static int create_tick_thread(void)
 #ifdef POSIX_SIGNALS
   sigset_t mask, old_mask;
 
-  /* Block all signals so that we don't try to execute an OCaml signal
-     handler in the new tick thread */
+  /* Block all signals, so that we do not try to execute a C signal
+     handler in the new tick thread. */
   sigfillset(&mask);
   pthread_sigmask(SIG_BLOCK, &mask, &old_mask);
 #endif
@@ -630,12 +620,6 @@ CAMLprim value caml_thread_new(value clos)
     Tick_thread_running = 1;
   }
 
-#ifdef POSIX_SIGNALS
-  sigset_t mask, old_mask;
-
-  sigfillset(&mask);
-  pthread_sigmask(SIG_BLOCK, &mask, &old_mask);
-#endif
 
   /* Create a thread info block */
   caml_thread_t th = caml_thread_new_info();
@@ -645,10 +629,6 @@ CAMLprim value caml_thread_new(value clos)
 
   th->descr = caml_thread_new_descriptor(clos);
 
-#ifdef POSIX_SIGNALS
-  th->init_mask = old_mask;
-#endif
-
   th->next = Active_thread->next;
   th->prev = Active_thread;
 
@@ -656,11 +636,6 @@ CAMLprim value caml_thread_new(value clos)
   Active_thread->next = th;
 
   err = st_thread_create(NULL, caml_thread_start, (void *) th);
-
-#ifdef POSIX_SIGNALS
-  /* regardless of error, return our sigmask to the original state */
-  pthread_sigmask(SIG_SETMASK, &old_mask, NULL);
-#endif
 
   if (err != 0) {
     /* Creation failed, remove thread info block from list of threads */
