@@ -1796,6 +1796,8 @@ CAMLprim value caml_recommended_domains(value unused)
   /* At least one, even if system says zero */
   if (n <= 0)
     n = 1;
+  else if (n > Max_domains)
+    n = Max_domains;
 
   return (Val_long(n));
 }
