@@ -674,8 +674,7 @@ CAMLprim value caml_thread_yield(value unit)
   st_thread_yield(&Thread_main_lock);
   Current_thread = st_tls_get(caml_thread_key);
   caml_thread_restore_runtime_state();
-  if (caml_check_pending_signals())
-    caml_set_action_pending(Caml_state);
+  caml_set_action_pending(Caml_state);
 
   return Val_unit;
 }

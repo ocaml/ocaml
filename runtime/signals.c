@@ -192,7 +192,8 @@ CAMLexport void caml_leave_blocking_section(void)
 
   /* Some other thread may have switched [Caml_state->action_pending]
      to 0 even though there are still pending actions, e.g. a signal
-     masked in the other thread.
+     masked in the other thread, or if the other thread was in the
+     middle of processing actions.
 
      Another case where this is necessary (even in a single threaded
      setting) is when the blocking section unmasks a pending signal:
@@ -201,10 +202,9 @@ CAMLexport void caml_leave_blocking_section(void)
      [Caml_state->action_pending] is 0 but the signal needs to be
      handled at this point.
 
-     So we force the examination of signals as soon as possible.
+     So we force the examination of all callbacks as soon as possible.
   */
-  if (caml_check_pending_signals())
-    caml_set_action_pending(Caml_state);
+  caml_set_action_pending(Caml_state);
 
   errno = saved_errno;
 }
