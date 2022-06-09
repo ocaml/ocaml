@@ -27,7 +27,7 @@ let auto_include find_in_dir fn =
    then the standard library directory (unless the -nostdlib option is given).
  *)
 
-let init_path ?(dir="") () =
+let init_path ?(auto_include=auto_include) ?(dir="") () =
   let dirs =
     if !Clflags.use_threads then "+threads" :: !Clflags.include_dirs
     else

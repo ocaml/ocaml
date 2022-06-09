@@ -60,16 +60,19 @@ module Dir = struct
     { path; files = Array.to_list (readdir_compat path) }
 end
 
+type auto_include_callback =
+  (Dir.t -> string -> string option) -> string -> string
+
 let dirs = s_ref []
-let default_auto_include_callback _ _ = raise Not_found
-let auto_include_callback = ref default_auto_include_callback
+let no_auto_include _ _ = raise Not_found
+let auto_include_callback = ref no_auto_include
 
 let reset () =
   assert (not Config.merlin || Local_store.is_bound ());
   STbl.clear !files;
   STbl.clear !files_uncap;
   dirs := [];
-  auto_include_callback := default_auto_include_callback
+  auto_include_callback := no_auto_include
 
 let get () = List.rev !dirs
 let get_paths () = List.rev_map Dir.path !dirs

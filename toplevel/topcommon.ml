@@ -259,7 +259,7 @@ let refill_lexbuf buffer len =
       len
   end
 
-let set_paths () =
+let set_paths ?(auto_include=Compmisc.auto_include) () =
   (* Add whatever -I options have been specified on the command line,
      but keep the directories that user code linked in with ocamlmktop
      may have added to load_path. *)
@@ -274,7 +274,7 @@ let set_paths () =
       [expand "+camlp4"];
     ]
   in
-  Load_path.init ~auto_include:Compmisc.auto_include load_path;
+  Load_path.init ~auto_include load_path;
   Dll.add_path load_path
 
 let update_search_path_from_env () =

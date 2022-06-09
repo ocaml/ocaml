@@ -287,7 +287,7 @@ Working version
   (Sébastien Hinderer, review by David Allsopp, Nicolás Ojeda Bär,
   Xavier Leroy, Vincent Laviron and Antonin Décimo)
 
-* #11198: Install the Dynlink, Str and Unix libraries to individual
+* #11198, #11298: Install the Dynlink, Str and Unix libraries to individual
   subdirectories of LIBDIR. The compiler, debugger and toplevel automatically
   add `-I +lib` if required, but display an alert.
   (David Allsopp, review by Florian Angeletti, Nicolás Ojeda Bär,

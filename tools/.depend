@@ -5,6 +5,7 @@ caml_tex.cmo : \
     ../parsing/parse.cmi \
     ../utils/misc.cmi \
     ../parsing/location.cmi \
+    ../utils/load_path.cmi \
     ../parsing/lexer.cmi \
     ../driver/compmisc.cmi \
     ../driver/compenv.cmi \
@@ -18,6 +19,7 @@ caml_tex.cmx : \
     ../parsing/parse.cmx \
     ../utils/misc.cmx \
     ../parsing/location.cmx \
+    ../utils/load_path.cmx \
     ../parsing/lexer.cmx \
     ../driver/compmisc.cmx \
     ../driver/compenv.cmx \

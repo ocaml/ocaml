@@ -51,13 +51,19 @@ module Dir : sig
       Foo.ml, either /path/Foo.ml or /path/foo.ml may be returned. *)
 end
 
-val init :
-  auto_include:((Dir.t -> string -> string option) -> string -> string) ->
-  string list -> unit
+type auto_include_callback =
+  (Dir.t -> string -> string option) -> string -> string
+(** The type of callback functions on for [init ~auto_include] *)
+
+val no_auto_include : auto_include_callback
+(** No automatic directory inclusion: misses in the load path raise [Not_found]
+    as normal. *)
+
+val init : auto_include:auto_include_callback -> string list -> unit
 (** [init l] is the same as [reset (); List.iter add_dir (List.rev l)] *)
 
 val auto_include_otherlibs :
-  (string -> unit) -> (Dir.t -> string -> string option) -> string -> string
+  (string -> unit) -> auto_include_callback
 (** [auto_include_otherlibs alert] is a callback function to be passed to
     {!Load_path.init} and automatically adds [-I +lib] to the load path after
     calling [alert lib]. *)
