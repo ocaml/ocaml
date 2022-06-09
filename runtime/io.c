@@ -54,10 +54,6 @@
 #define lseek _lseeki64
 #endif
 
-/* List of opened channels and its mutex */
-CAMLexport caml_plat_mutex
-  caml_all_opened_channels_mutex = CAML_PLAT_MUTEX_INITIALIZER;
-
 /* Hooks for locking channels */
 
 static __thread struct channel* last_channel_locked = NULL;
@@ -103,8 +99,12 @@ CAMLexport void (*caml_channel_mutex_unlock) (struct channel *)
 CAMLexport void (*caml_channel_mutex_unlock_exn) (void)
   = channel_mutex_unlock_exn_default;
 
-/* List of opened channels */
+/* List of channels opened from the OCaml side and managed by the GC */
 CAMLexport struct channel * caml_all_opened_channels = NULL;
+
+/* The mutex protecting the list above */
+CAMLexport caml_plat_mutex
+  caml_all_opened_channels_mutex = CAML_PLAT_MUTEX_INITIALIZER;
 
 /* Basic functions over type struct channel *.
    These functions can be called directly from C.
@@ -170,15 +170,11 @@ CAMLexport struct channel * caml_open_descriptor_in(int fd)
   channel->curr = channel->max = channel->buff;
   channel->end = channel->buff + IO_BUFFER_SIZE;
   caml_plat_mutex_init(&channel->mutex);
-  atomic_store_rel(&channel->refcount, 0);
+  channel->refcount = 0;
   channel->prev = NULL;
+  channel->next = NULL;
   channel->name = NULL;
   channel->flags = descriptor_is_in_binary_mode(fd) ? 0 : CHANNEL_TEXT_MODE;
-
-  caml_plat_lock (&caml_all_opened_channels_mutex);
-  link_channel (channel);
-  caml_plat_unlock (&caml_all_opened_channels_mutex);
-
   return channel;
 }
 
@@ -193,17 +189,8 @@ CAMLexport struct channel * caml_open_descriptor_out(int fd)
 
 CAMLexport void caml_close_channel(struct channel *channel)
 {
+  CAMLassert((channel->flags & CHANNEL_FLAG_MANAGED_BY_GC) == 0);
   close(channel->fd);
-
-  /* don't run concurrently with caml_ml_out_channels_list that may resurrect
-     a dead channel . */
-  caml_plat_lock (&caml_all_opened_channels_mutex);
-  if (atomic_load_acq(&channel->refcount) > 0) {
-    caml_plat_unlock (&caml_all_opened_channels_mutex);
-    return;
-  }
-  unlink_channel(channel);
-  caml_plat_unlock (&caml_all_opened_channels_mutex);
   if (caml_channel_mutex_free != NULL) (*caml_channel_mutex_free)(channel);
   caml_stat_free(channel->name);
   caml_stat_free(channel);
@@ -509,47 +496,44 @@ intnat caml_input_scan_line(struct channel *channel)
 void caml_finalize_channel(value vchan)
 {
   struct channel * chan = Channel(vchan);
+  int notflushed = 0;
   if ((chan->flags & CHANNEL_FLAG_MANAGED_BY_GC) == 0) return;
-
-  /* don't run concurrently with caml_ml_out_channels_list that may resurrect
+  /* Check for channels that have not been closed explicitly. */
+  if (chan->fd != -1 && chan->name && caml_runtime_warnings_active())
+    fprintf(stderr,
+            "[ocaml] channel opened on file '%s' dies without being closed\n",
+            chan->name);
+  if (chan->max == NULL && chan->curr != chan->buff) {
+    /* This is an unclosed out channel (chan->max == NULL) with a
+       non-empty buffer: keep it around so the OCaml [at_exit] function
+       gets a chance to flush it.  We would want to simply flush the
+       channel now, but (i) flushing can raise exceptions, and (ii) it
+       is potentially a blocking operation.  Both are forbidden in a
+       finalization function.
+       Refs: https://github.com/ocaml/ocaml/issues/6902
+             https://github.com/ocaml/ocaml/pull/210
+    */
+    if (chan->name && caml_runtime_warnings_active())
+      fprintf(stderr,
+              "[ocaml] (moreover, it has unflushed data)\n");
+    notflushed = 1;
+  }
+  /* Don't run concurrently with caml_ml_out_channels_list that may resurrect
      a dead channel . */
   caml_plat_lock (&caml_all_opened_channels_mutex);
-  if (atomic_fetch_add (&chan->refcount, -1) > 1) {
+  chan->refcount --;
+  if (chan->refcount > 0 || notflushed) {
+    /* We need to keep the channel around, either because it is being
+       added to the list returned by caml_ml_out_channels_list,
+       or because it contains unflushed data. */
     caml_plat_unlock (&caml_all_opened_channels_mutex);
     return;
   }
   unlink_channel(chan);
   caml_plat_unlock (&caml_all_opened_channels_mutex);
   if (caml_channel_mutex_free != NULL) (*caml_channel_mutex_free)(chan);
-
-  if (chan->fd != -1 && chan->name && caml_runtime_warnings_active())
-    fprintf(stderr,
-            "[ocaml] channel opened on file '%s' dies without being closed\n",
-            chan->name
-            );
-
-  if (chan->max == NULL && chan->curr != chan->buff){
-    /*
-      This is an unclosed out channel (chan->max == NULL) with a
-      non-empty buffer: keep it around so the OCaml [at_exit] function
-      gets a chance to flush it.  We would want to simply flush the
-      channel now, but (i) flushing can raise exceptions, and (ii) it
-      is potentially a blocking operation.  Both are forbidden in a
-      finalization function.
-      Refs:
-      http://caml.inria.fr/mantis/view.php?id=6902
-      https://github.com/ocaml/ocaml/pull/210
-    */
-    if (chan->name && caml_runtime_warnings_active())
-      fprintf(stderr,
-              "[ocaml] (moreover, it has unflushed data)\n"
-              );
-  }
-  else
-  {
-    caml_stat_free(chan->name);
-    caml_stat_free(chan);
-  }
+  caml_stat_free(chan->name);
+  caml_stat_free(chan);
 }
 
 static int compare_channel(value vchan1, value vchan2)
@@ -578,7 +562,6 @@ static struct custom_operations channel_operations = {
 CAMLexport value caml_alloc_channel(struct channel *chan)
 {
   value res;
-  atomic_fetch_add (&chan->refcount, 1);
   res = caml_alloc_custom_mem(&channel_operations, sizeof(struct channel *),
                               sizeof(struct channel));
   Channel(res) = chan;
@@ -589,6 +572,10 @@ CAMLprim value caml_ml_open_descriptor_in(value fd)
 {
   struct channel * chan = caml_open_descriptor_in(Int_val(fd));
   chan->flags |= CHANNEL_FLAG_MANAGED_BY_GC;
+  chan->refcount = 1;
+  caml_plat_lock (&caml_all_opened_channels_mutex);
+  link_channel (chan);
+  caml_plat_unlock (&caml_all_opened_channels_mutex);
   return caml_alloc_channel(chan);
 }
 
@@ -596,6 +583,10 @@ CAMLprim value caml_ml_open_descriptor_out(value fd)
 {
   struct channel * chan = caml_open_descriptor_out(Int_val(fd));
   chan->flags |= CHANNEL_FLAG_MANAGED_BY_GC;
+  chan->refcount = 1;
+  caml_plat_lock (&caml_all_opened_channels_mutex);
+  link_channel (chan);
+  caml_plat_unlock (&caml_all_opened_channels_mutex);
   return caml_alloc_channel(chan);
 }
 
@@ -629,12 +620,12 @@ CAMLprim value caml_ml_out_channels_list (value unit)
   for (channel = caml_all_opened_channels;
        channel != NULL;
        channel = channel->next) {
+    CAMLassert(channel->flags & CHANNEL_FLAG_MANAGED_BY_GC);
     /* Testing channel->fd >= 0 looks unnecessary, as
        caml_ml_close_channel changes max when setting fd to -1. */
-    if (channel->max == NULL
-        && channel->flags & CHANNEL_FLAG_MANAGED_BY_GC) {
+    if (channel->max == NULL) {
       /* refcount is incremented here to keep the channel alive */
-      atomic_fetch_add (&channel->refcount, 1);
+      channel->refcount ++;
       num_channels++;
       cl_tmp = caml_stat_alloc_noexc (sizeof(struct channel_list));
       if (cl_tmp == NULL)
@@ -650,13 +641,8 @@ CAMLprim value caml_ml_out_channels_list (value unit)
   cl_tmp = NULL;
   for (i = 0; i < num_channels; i++) {
     chan = caml_alloc_channel (channel_list->channel);
-    /* refcount would have been incremented by caml_alloc_channel. Decrement
-     * our earlier increment */
-    atomic_fetch_add (&channel_list->channel->refcount, -1);
     tail = res;
-    res = caml_alloc_small (2, Tag_cons);
-    Field (res, 0) = chan;
-    Field (res, 1) = tail;
+    res = caml_alloc_2(Tag_cons, chan, tail);
     cl_tmp = channel_list;
     channel_list = channel_list->next;
     caml_stat_free (cl_tmp);
