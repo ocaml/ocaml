@@ -159,3 +159,9 @@ val set_binary_mode : t -> bool -> unit
 
     This function has no effect under operating systems that do not distinguish
     between text mode and binary mode. *)
+
+val isatty : t -> bool
+(** [isatty ic] is [true] if [ic] refers to a terminal or console window,
+    [false] otherwise.
+
+    @since 5.1.0 *)

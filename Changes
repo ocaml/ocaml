@@ -9,6 +9,9 @@ Working version
 
 ### Standard library:
 
+- #11128: Add In_channel.isatty, Out_channel.isatty.
+  (Nicolás Ojeda Bär, review by Gabriel Scherer and Florian Angeletti)
+
 ### Other libraries:
 
 ### Tools:

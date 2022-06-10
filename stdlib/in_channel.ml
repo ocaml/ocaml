@@ -171,3 +171,5 @@ let input_all ic =
   end
 
 let set_binary_mode = Stdlib.set_binary_mode_in
+
+external isatty : t -> bool = "caml_sys_isatty"
