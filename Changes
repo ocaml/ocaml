@@ -29,6 +29,12 @@ OCaml 5.0
 ### Language features:
 
 ### Runtime system:
+- #11308: Add environment variable to preserve runtime_events after exit
+  If the environment variable OCAML_RUNTIME_EVENTS_PRESERVE exists then the
+  runtime will not remove the runtime events ring buffers at exit. This
+  makes tracing very short running programs more reliable.
+  (Sadiq Jaffer, review by KC Sivaramakrishnan)
+
 - #10964: Ring-buffer based runtime tracing (runtime_events)
   Runtime_events is a very low overhead runtime tracing system designed for
   continuous monitoring of OCaml applications.
