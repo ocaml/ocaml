@@ -164,4 +164,4 @@ val isatty : t -> bool
 (** [isatty ic] is [true] if [ic] refers to a terminal or console window,
     [false] otherwise.
 
-    @since 5.0.0 *)
+    @since 5.1.0 *)
