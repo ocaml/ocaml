@@ -26,7 +26,7 @@ module Raw = struct
   external cpu_relax : unit -> unit
     = "caml_ml_domain_cpu_relax"
   external get_recommended_domains: unit -> int
-    = "caml_recommended_domains"
+    = "caml_recommended_domains" [@@noalloc]
 end
 
 let cpu_relax () = Raw.cpu_relax ()
