@@ -30,7 +30,7 @@ define sort
 $(shell $(OCAMLDEP) -sort $(1))
 endef
 
-
+runtime_events_MLIS := runtime_events.mli
 str_MLIS := str.mli
 unix_MLIS := unix.mli unixLabels.mli
 dynlink_MLIS := dynlink.mli
@@ -53,6 +53,10 @@ endif
 
 ifneq "$(filter systhreads,$(OTHERLIBRARIES))" ""
 otherlibref += $(thread_MLIS:%.mli=%)
+endif
+
+ifneq "$(filter runtime_events,$(OTHERLIBRARIES))" ""
+otherlibref += $(runtime_events_MLIS:%.mli=%)
 endif
 
 libref_TEXT=Ocaml_operators Format_tutorial
