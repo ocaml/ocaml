@@ -139,6 +139,30 @@ CAMLprim value caml_int_of_string(value s)
     return Val_long(parse_intnat(s, 8 * sizeof(value) - 1, INT_ERRMSG));
 }
 
+CAMLprim intnat caml_int_clz(value v)
+{
+#if defined(__has_builtin) && __has_builtin(__builtin_clzl)
+  if (sizeof(v) == sizeof(long))
+    /* v is never zero due to the tagging bit. */
+    return __builtin_clzl(v);
+#endif
+
+  int count = 0;
+  uintnat bit = (uintnat) 1 << (8 * sizeof(uintnat) - 1);
+  uintnat u = v;
+  /* The loop stops at the tagging bit. */
+  while (!(u & bit)) {
+    ++count;
+    bit >>= 1;
+  }
+  return count;
+}
+
+CAMLprim value caml_int_clz_bytecode(value v)
+{
+  return Val_long(caml_int_clz(v));
+}
+
 #define FORMAT_BUFFER_SIZE 32
 
 static char parse_format(value fmt,
