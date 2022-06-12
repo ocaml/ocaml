@@ -99,6 +99,7 @@ type instruction =
   | ADDSD of arg * arg
   | AND of arg * arg
   | ANDPD of arg * arg
+  | BSR of arg * arg
   | BSWAP of arg
   | CALL of arg
   | CDQ

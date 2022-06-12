@@ -728,6 +728,12 @@ let emit_instr env fallthrough i =
       I.bswap (res i 0)
   | Lop(Ispecific(Ibswap _)) ->
       assert false
+  | Lop(Ispecific(Iclz)) ->
+      (* zero check not needed because the input is a tagged integer *)
+      if (arg i 0) <> (res i 0) then
+        I.xor (res32 i 0) (res32 i 0); (* avoid partial register stall *)
+      I.bsr (arg i 0) (res i 0);
+      I.xor (Imm 63L) (res i 0) (* convert BSR to CLZ *)
   | Lop(Ispecific Isqrtf) ->
       if arg i 0 <> res i 0 then
         I.xorpd (res i 0) (res i 0); (* avoid partial register stall *)

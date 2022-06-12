@@ -229,6 +229,8 @@ method! select_operation op args dbg =
   | Cextcall("caml_int64_direct_bswap", _, _, _)
   | Cextcall("caml_nativeint_direct_bswap", _, _, _) ->
       (Ispecific (Ibswap 64), args)
+  | Cextcall ("caml_int_clz", _, _, _) ->
+      (Ispecific Iclz, args)
   (* Recognize sign extension *)
   | Casr ->
       begin match args with
