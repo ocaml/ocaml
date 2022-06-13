@@ -22,23 +22,23 @@
 
 #include "socketaddr.h"
 
-CAMLprim value unix_connect(value socket, value address)
+CAMLprim value caml_unix_connect(value socket, value address)
 {
   int retcode;
   union sock_addr_union addr;
   socklen_param_type addr_len;
 
-  get_sockaddr(address, &addr, &addr_len);
+  caml_unix_get_sockaddr(address, &addr, &addr_len);
   caml_enter_blocking_section();
   retcode = connect(Int_val(socket), &addr.s_gen, addr_len);
   caml_leave_blocking_section();
-  if (retcode == -1) uerror("connect", Nothing);
+  if (retcode == -1) caml_uerror("connect", Nothing);
   return Val_unit;
 }
 
 #else
 
-CAMLprim value unix_connect(value socket, value address)
+CAMLprim value caml_unix_connect(value socket, value address)
 { caml_invalid_argument("connect not implemented"); }
 
 #endif

@@ -20,7 +20,9 @@ set -o pipefail
 
 nm -A -P "$@" | LC_ALL=C awk '
 # ignore caml_foo, camlFoo_bar, _caml_foo, _camlFoo_bar
-$2 ~ /^(_?caml[_A-Z])/ { next }
+$2 ~ /^(\.refptr\.)?(__emutls_v\.)?(_?caml[_A-Z])/ { next }
+# ignore re_foo
+$2 ~ /^(\.refptr\.)?(_?re_)/ { next }
 # ignore local and undefined symbols
 $3 ~ /^[a-zU]$/ { next }
 # ignore "main", which should be externally linked
@@ -30,9 +32,6 @@ $2 ~ /^_?wmain$/ { next }
 $2 ~ /^__x86.get_pc_thunk./ { next }
 # for mingw32
 $2 ~ /^.debug_/ { next }
-# windows unicode support
-$2 ~ /^_win_multi_byte_to_wide_char$/ { next }
-$2 ~ /^_win_wide_char_to_multi_byte$/ { next }
 # print the rest
 { found=1; print $1 " " $2 " " $3 }
 # fail if there were any results

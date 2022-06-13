@@ -38,8 +38,6 @@
 
 static int entry_h_length;
 
-extern int socket_domain_table[];
-
 static value alloc_one_addr(char const *a)
 {
   struct in_addr addr;
@@ -47,11 +45,11 @@ static value alloc_one_addr(char const *a)
   struct in6_addr addr6;
   if (entry_h_length == 16) {
     memmove(&addr6, a, 16);
-    return alloc_inet6_addr(&addr6);
+    return caml_unix_alloc_inet6_addr(&addr6);
   }
 #endif
   memmove (&addr, a, 4);
-  return alloc_inet_addr(&addr);
+  return caml_unix_alloc_inet_addr(&addr);
 }
 
 static value alloc_host_entry(struct hostent *entry)
@@ -82,7 +80,7 @@ static value alloc_host_entry(struct hostent *entry)
   CAMLreturn(res);
 }
 
-CAMLprim value unix_gethostbyaddr(value a)
+CAMLprim value caml_unix_gethostbyaddr(value a)
 {
   struct in_addr adr = GET_INET_ADDR(a);
   struct hostent * hp;
@@ -116,7 +114,7 @@ CAMLprim value unix_gethostbyaddr(value a)
   return alloc_host_entry(hp);
 }
 
-CAMLprim value unix_gethostbyname(value name)
+CAMLprim value caml_unix_gethostbyname(value name)
 {
   struct hostent * hp;
   char * hostname;
@@ -162,10 +160,10 @@ CAMLprim value unix_gethostbyname(value name)
 
 #else
 
-CAMLprim value unix_gethostbyaddr(value name)
+CAMLprim value caml_unix_gethostbyaddr(value name)
 { caml_invalid_argument("gethostbyaddr not implemented"); }
 
-CAMLprim value unix_gethostbyname(value name)
+CAMLprim value caml_unix_gethostbyname(value name)
 { caml_invalid_argument("gethostbyname not implemented"); }
 
 #endif

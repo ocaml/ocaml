@@ -172,10 +172,9 @@ union option_value {
   struct timeval tv;
 };
 
-CAMLexport value
-unix_getsockopt_aux(char * name,
-                    enum option_type ty, int level, int option,
-                    value socket)
+CAMLexport value caml_unix_getsockopt_aux(char * name,
+                                     enum option_type ty, int level, int option,
+                                     value socket)
 {
   CAMLparam0();
   CAMLlocal1(err);
@@ -194,12 +193,12 @@ unix_getsockopt_aux(char * name,
   case TYPE_TIMEVAL:
     optsize = sizeof(optval.tv); break;
   default:
-    unix_error(EINVAL, name, Nothing);
+    caml_unix_error(EINVAL, name, Nothing);
   }
 
   if (getsockopt(Int_val(socket), level, option,
                  (void *) &optval, &optsize) == -1)
-    uerror(name, Nothing);
+    caml_uerror(name, Nothing);
 
   switch (ty) {
   case TYPE_BOOL:
@@ -221,20 +220,19 @@ unix_getsockopt_aux(char * name,
     if (optval.i == 0) {
       res = Val_none;
     } else {
-      err = unix_error_of_code(optval.i);
+      err = caml_unix_error_of_code(optval.i);
       res = caml_alloc_some(err);
     }
     break;
   default:
-    unix_error(EINVAL, name, Nothing);
+    caml_unix_error(EINVAL, name, Nothing);
   }
   CAMLreturn(res);
 }
 
-CAMLexport value
-unix_setsockopt_aux(char * name,
-                    enum option_type ty, int level, int option,
-                    value socket, value val)
+CAMLexport value caml_unix_setsockopt_aux(char * name,
+                                     enum option_type ty, int level, int option,
+                                     value socket, value val)
 {
   union option_value optval;
   socklen_param_type optsize;
@@ -260,33 +258,33 @@ unix_setsockopt_aux(char * name,
     break;
   case TYPE_UNIX_ERROR:
   default:
-    unix_error(EINVAL, name, Nothing);
+    caml_unix_error(EINVAL, name, Nothing);
   }
 
   if (setsockopt(Int_val(socket), level, option,
                  (void *) &optval, optsize) == -1)
-    uerror(name, Nothing);
+    caml_uerror(name, Nothing);
 
   return Val_unit;
 }
 
-CAMLprim value unix_getsockopt(value vty, value vsocket, value voption)
+CAMLprim value caml_unix_getsockopt(value vty, value vsocket, value voption)
 {
   enum option_type ty = Int_val(vty);
   struct socket_option * opt = &(sockopt_table[ty][Int_val(voption)]);
-  return unix_getsockopt_aux(getsockopt_fun_name[ty],
+  return caml_unix_getsockopt_aux(getsockopt_fun_name[ty],
                              ty,
                              opt->level,
                              opt->option,
                              vsocket);
 }
 
-CAMLprim value unix_setsockopt(value vty, value vsocket, value voption,
+CAMLprim value caml_unix_setsockopt(value vty, value vsocket, value voption,
                                value val)
 {
   enum option_type ty = Int_val(vty);
   struct socket_option * opt = &(sockopt_table[ty][Int_val(voption)]);
-  return unix_setsockopt_aux(setsockopt_fun_name[ty],
+  return caml_unix_setsockopt_aux(setsockopt_fun_name[ty],
                              ty,
                              opt->level,
                              opt->option,
@@ -296,10 +294,11 @@ CAMLprim value unix_setsockopt(value vty, value vsocket, value voption,
 
 #else
 
-CAMLprim value unix_getsockopt(value vty, value socket, value option)
+CAMLprim value caml_unix_getsockopt(value vty, value socket, value option)
 { caml_invalid_argument("getsockopt not implemented"); }
 
-CAMLprim value unix_setsockopt(value vty, value socket, value option, value val)
+CAMLprim value caml_unix_setsockopt(value vty, value socket, value option,
+                                    value val)
 { caml_invalid_argument("setsockopt not implemented"); }
 
 #endif

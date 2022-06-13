@@ -91,7 +91,7 @@ exception Unix_error of error * string * string
 let _ = Callback.register_exception "Unix.Unix_error"
                                     (Unix_error(E2BIG, "", ""))
 
-external error_message : error -> string = "unix_error_message"
+external error_message : error -> string = "caml_unix_error_message"
 
 let () =
   Printexc.register_printer
@@ -187,11 +187,12 @@ let handle_unix_error f arg =
     prerr_endline (error_message err);
     exit 2
 
-external environment : unit -> string array = "unix_environment"
-external unsafe_environment : unit -> string array = "unix_environment_unsafe"
+external environment : unit -> string array = "caml_unix_environment"
+external unsafe_environment : unit -> string array
+                            = "caml_unix_environment_unsafe"
 external getenv: string -> string = "caml_sys_getenv"
 external unsafe_getenv: string -> string = "caml_sys_unsafe_getenv"
-external putenv: string -> string -> unit = "unix_putenv"
+external putenv: string -> string -> unit = "caml_unix_putenv"
 
 type process_status =
     WEXITED of int
@@ -202,19 +203,21 @@ type wait_flag =
     WNOHANG
   | WUNTRACED
 
-external execv : string -> string array -> 'a = "unix_execv"
-external execve : string -> string array -> string array -> 'a = "unix_execve"
-external execvp : string -> string array -> 'a = "unix_execvp"
-external execvpe : string -> string array -> string array -> 'a = "unix_execvpe"
+external execv : string -> string array -> 'a = "caml_unix_execv"
+external execve : string -> string array -> string array -> 'a
+                = "caml_unix_execve"
+external execvp : string -> string array -> 'a = "caml_unix_execvp"
+external execvpe : string -> string array -> string array -> 'a
+                 = "caml_unix_execvpe"
 
-external fork : unit -> int = "unix_fork"
-external wait : unit -> int * process_status = "unix_wait"
+external fork : unit -> int = "caml_unix_fork"
+external wait : unit -> int * process_status = "caml_unix_wait"
 external waitpid : wait_flag list -> int -> int * process_status
-   = "unix_waitpid"
-external _exit : int -> 'a = "unix_exit"
-external getpid : unit -> int = "unix_getpid"
-external getppid : unit -> int = "unix_getppid"
-external nice : int -> int = "unix_nice"
+   = "caml_unix_waitpid"
+external _exit : int -> 'a = "caml_unix_exit"
+external getpid : unit -> int = "caml_unix_getpid"
+external getppid : unit -> int = "caml_unix_getppid"
+external nice : int -> int = "caml_unix_nice"
 
 type file_descr = int
 
@@ -243,14 +246,15 @@ type file_perm = int
 
 
 external openfile : string -> open_flag list -> file_perm -> file_descr
-           = "unix_open"
-external close : file_descr -> unit = "unix_close"
-external fsync : file_descr -> unit = "unix_fsync"
+           = "caml_unix_open"
+external close : file_descr -> unit = "caml_unix_close"
+external fsync : file_descr -> unit = "caml_unix_fsync"
 external unsafe_read : file_descr -> bytes -> int -> int -> int
-   = "unix_read"
-external unsafe_write : file_descr -> bytes -> int -> int -> int = "unix_write"
+   = "caml_unix_read"
+external unsafe_write : file_descr -> bytes -> int -> int -> int
+                      = "caml_unix_write"
 external unsafe_single_write : file_descr -> bytes -> int -> int -> int
-   = "unix_single_write"
+   = "caml_unix_single_write"
 
 let read fd buf ofs len =
   if ofs < 0 || len < 0 || ofs > Bytes.length buf - len
@@ -275,9 +279,9 @@ let single_write_substring fd buf ofs len =
   single_write fd (Bytes.unsafe_of_string buf) ofs len
 
 external in_channel_of_descr : file_descr -> in_channel
-                             = "unix_inchannel_of_filedescr"
+                             = "caml_unix_inchannel_of_filedescr"
 external out_channel_of_descr : file_descr -> out_channel
-                              = "unix_outchannel_of_filedescr"
+                              = "caml_unix_outchannel_of_filedescr"
 external descr_of_in_channel : in_channel -> file_descr
                              = "caml_channel_descriptor"
 external descr_of_out_channel : out_channel -> file_descr
@@ -288,9 +292,9 @@ type seek_command =
   | SEEK_CUR
   | SEEK_END
 
-external lseek : file_descr -> int -> seek_command -> int = "unix_lseek"
-external truncate : string -> int -> unit = "unix_truncate"
-external ftruncate : file_descr -> int -> unit = "unix_ftruncate"
+external lseek : file_descr -> int -> seek_command -> int = "caml_unix_lseek"
+external truncate : string -> int -> unit = "caml_unix_truncate"
+external ftruncate : file_descr -> int -> unit = "caml_unix_ftruncate"
 
 type file_kind =
     S_REG
@@ -315,21 +319,21 @@ type stats =
     st_mtime : float;
     st_ctime : float }
 
-external stat : string -> stats = "unix_stat"
-external lstat : string -> stats = "unix_lstat"
-external fstat : file_descr -> stats = "unix_fstat"
-external isatty : file_descr -> bool = "unix_isatty"
-external unlink : string -> unit = "unix_unlink"
-external rename : string -> string -> unit = "unix_rename"
-external link : ?follow:bool -> string -> string -> unit = "unix_link"
-external realpath : string -> string = "unix_realpath"
+external stat : string -> stats = "caml_unix_stat"
+external lstat : string -> stats = "caml_unix_lstat"
+external fstat : file_descr -> stats = "caml_unix_fstat"
+external isatty : file_descr -> bool = "caml_unix_isatty"
+external unlink : string -> unit = "caml_unix_unlink"
+external rename : string -> string -> unit = "caml_unix_rename"
+external link : ?follow:bool -> string -> string -> unit = "caml_unix_link"
+external realpath : string -> string = "caml_unix_realpath"
 
 module LargeFile =
   struct
     external lseek : file_descr -> int64 -> seek_command -> int64
-       = "unix_lseek_64"
-    external truncate : string -> int64 -> unit = "unix_truncate_64"
-    external ftruncate : file_descr -> int64 -> unit = "unix_ftruncate_64"
+       = "caml_unix_lseek_64"
+    external truncate : string -> int64 -> unit = "caml_unix_truncate_64"
+    external ftruncate : file_descr -> int64 -> unit = "caml_unix_ftruncate_64"
     type stats =
       { st_dev : int;
         st_ino : int;
@@ -344,9 +348,9 @@ module LargeFile =
         st_mtime : float;
         st_ctime : float;
       }
-    external stat : string -> stats = "unix_stat_64"
-    external lstat : string -> stats = "unix_lstat_64"
-    external fstat : file_descr -> stats = "unix_fstat_64"
+    external stat : string -> stats = "caml_unix_stat_64"
+    external lstat : string -> stats = "caml_unix_lstat_64"
+    external fstat : file_descr -> stats = "caml_unix_fstat_64"
   end
 
 external map_internal:
@@ -365,43 +369,45 @@ type access_permission =
   | X_OK
   | F_OK
 
-external chmod : string -> file_perm -> unit = "unix_chmod"
-external fchmod : file_descr -> file_perm -> unit = "unix_fchmod"
-external chown : string -> int -> int -> unit = "unix_chown"
-external fchown : file_descr -> int -> int -> unit = "unix_fchown"
-external umask : int -> int = "unix_umask"
-external access : string -> access_permission list -> unit = "unix_access"
+external chmod : string -> file_perm -> unit = "caml_unix_chmod"
+external fchmod : file_descr -> file_perm -> unit = "caml_unix_fchmod"
+external chown : string -> int -> int -> unit = "caml_unix_chown"
+external fchown : file_descr -> int -> int -> unit = "caml_unix_fchown"
+external umask : int -> int = "caml_unix_umask"
+external access : string -> access_permission list -> unit = "caml_unix_access"
 
-external dup : ?cloexec: bool -> file_descr -> file_descr = "unix_dup"
+external dup : ?cloexec: bool -> file_descr -> file_descr = "caml_unix_dup"
 external dup2 :
-   ?cloexec: bool -> file_descr -> file_descr -> unit = "unix_dup2"
-external set_nonblock : file_descr -> unit = "unix_set_nonblock"
-external clear_nonblock : file_descr -> unit = "unix_clear_nonblock"
-external set_close_on_exec : file_descr -> unit = "unix_set_close_on_exec"
-external clear_close_on_exec : file_descr -> unit = "unix_clear_close_on_exec"
+   ?cloexec: bool -> file_descr -> file_descr -> unit = "caml_unix_dup2"
+external set_nonblock : file_descr -> unit = "caml_unix_set_nonblock"
+external clear_nonblock : file_descr -> unit = "caml_unix_clear_nonblock"
+external set_close_on_exec : file_descr -> unit = "caml_unix_set_close_on_exec"
+external clear_close_on_exec : file_descr -> unit
+                             = "caml_unix_clear_close_on_exec"
 
-external mkdir : string -> file_perm -> unit = "unix_mkdir"
-external rmdir : string -> unit = "unix_rmdir"
-external chdir : string -> unit = "unix_chdir"
-external getcwd : unit -> string = "unix_getcwd"
-external chroot : string -> unit = "unix_chroot"
+external mkdir : string -> file_perm -> unit = "caml_unix_mkdir"
+external rmdir : string -> unit = "caml_unix_rmdir"
+external chdir : string -> unit = "caml_unix_chdir"
+external getcwd : unit -> string = "caml_unix_getcwd"
+external chroot : string -> unit = "caml_unix_chroot"
 
 type dir_handle
 
-external opendir : string -> dir_handle = "unix_opendir"
-external readdir : dir_handle -> string = "unix_readdir"
-external rewinddir : dir_handle -> unit = "unix_rewinddir"
-external closedir : dir_handle -> unit = "unix_closedir"
+external opendir : string -> dir_handle = "caml_unix_opendir"
+external readdir : dir_handle -> string = "caml_unix_readdir"
+external rewinddir : dir_handle -> unit = "caml_unix_rewinddir"
+external closedir : dir_handle -> unit = "caml_unix_closedir"
 
 external pipe :
-  ?cloexec: bool -> unit -> file_descr * file_descr = "unix_pipe"
-external symlink : ?to_dir:bool -> string -> string -> unit = "unix_symlink"
-external has_symlink : unit -> bool = "unix_has_symlink"
-external readlink : string -> string = "unix_readlink"
-external mkfifo : string -> file_perm -> unit = "unix_mkfifo"
+  ?cloexec: bool -> unit -> file_descr * file_descr = "caml_unix_pipe"
+external symlink : ?to_dir:bool -> string -> string -> unit
+                 = "caml_unix_symlink"
+external has_symlink : unit -> bool = "caml_unix_has_symlink"
+external readlink : string -> string = "caml_unix_readlink"
+external mkfifo : string -> file_perm -> unit = "caml_unix_mkfifo"
 external select :
   file_descr list -> file_descr list -> file_descr list -> float ->
-        file_descr list * file_descr list * file_descr list = "unix_select"
+        file_descr list * file_descr list * file_descr list = "caml_unix_select"
 
 type lock_command =
     F_ULOCK
@@ -411,13 +417,13 @@ type lock_command =
   | F_RLOCK
   | F_TRLOCK
 
-external lockf : file_descr -> lock_command -> int -> unit = "unix_lockf"
-external kill : int -> int -> unit = "unix_kill"
+external lockf : file_descr -> lock_command -> int -> unit = "caml_unix_lockf"
+external kill : int -> int -> unit = "caml_unix_kill"
 type sigprocmask_command = SIG_SETMASK | SIG_BLOCK | SIG_UNBLOCK
 external sigprocmask: sigprocmask_command -> int list -> int list
-        = "unix_sigprocmask"
-external sigpending: unit -> int list = "unix_sigpending"
-external sigsuspend: int list -> unit = "unix_sigsuspend"
+        = "caml_unix_sigprocmask"
+external sigpending: unit -> int list = "caml_unix_sigpending"
+external sigsuspend: int list -> unit = "caml_unix_sigsuspend"
 
 let pause() =
   let sigs = sigprocmask SIG_BLOCK [] in sigsuspend sigs
@@ -440,17 +446,17 @@ type tm =
     tm_isdst : bool }
 
 external time : unit -> (float [@unboxed]) =
-  "unix_time" "unix_time_unboxed" [@@noalloc]
+  "caml_unix_time" "caml_unix_time_unboxed" [@@noalloc]
 external gettimeofday : unit -> (float [@unboxed]) =
-  "unix_gettimeofday" "unix_gettimeofday_unboxed" [@@noalloc]
-external gmtime : float -> tm = "unix_gmtime"
-external localtime : float -> tm = "unix_localtime"
-external mktime : tm -> float * tm = "unix_mktime"
-external alarm : int -> int = "unix_alarm"
-external sleepf : float -> unit = "unix_sleep"
+  "caml_unix_gettimeofday" "caml_unix_gettimeofday_unboxed" [@@noalloc]
+external gmtime : float -> tm = "caml_unix_gmtime"
+external localtime : float -> tm = "caml_unix_localtime"
+external mktime : tm -> float * tm = "caml_unix_mktime"
+external alarm : int -> int = "caml_unix_alarm"
+external sleepf : float -> unit = "caml_unix_sleep"
 let sleep duration = sleepf (float duration)
-external times : unit -> process_times = "unix_times"
-external utimes : string -> float -> float -> unit = "unix_utimes"
+external times : unit -> process_times = "caml_unix_times"
+external utimes : string -> float -> float -> unit = "caml_unix_utimes"
 
 type interval_timer =
     ITIMER_REAL
@@ -461,20 +467,22 @@ type interval_timer_status =
   { it_interval: float;                 (* Period *)
     it_value: float }                   (* Current value of the timer *)
 
-external getitimer: interval_timer -> interval_timer_status = "unix_getitimer"
+external getitimer:
+  interval_timer -> interval_timer_status
+  = "caml_unix_getitimer"
 external setitimer:
   interval_timer -> interval_timer_status -> interval_timer_status
-  = "unix_setitimer"
+  = "caml_unix_setitimer"
 
-external getuid : unit -> int = "unix_getuid"
-external geteuid : unit -> int = "unix_geteuid"
-external setuid : int -> unit = "unix_setuid"
-external getgid : unit -> int = "unix_getgid"
-external getegid : unit -> int = "unix_getegid"
-external setgid : int -> unit = "unix_setgid"
-external getgroups : unit -> int array = "unix_getgroups"
-external setgroups : int array -> unit = "unix_setgroups"
-external initgroups : string -> int -> unit = "unix_initgroups"
+external getuid : unit -> int = "caml_unix_getuid"
+external geteuid : unit -> int = "caml_unix_geteuid"
+external setuid : int -> unit = "caml_unix_setuid"
+external getgid : unit -> int = "caml_unix_getgid"
+external getegid : unit -> int = "caml_unix_getegid"
+external setgid : int -> unit = "caml_unix_setgid"
+external getgroups : unit -> int array = "caml_unix_getgroups"
+external setgroups : int array -> unit = "caml_unix_setgroups"
+external initgroups : string -> int -> unit = "caml_unix_initgroups"
 
 type passwd_entry =
   { pw_name : string;
@@ -492,20 +500,20 @@ type group_entry =
     gr_mem : string array }
 
 
-external getlogin : unit -> string = "unix_getlogin"
-external getpwnam : string -> passwd_entry = "unix_getpwnam"
-external getgrnam : string -> group_entry = "unix_getgrnam"
-external getpwuid : int -> passwd_entry = "unix_getpwuid"
-external getgrgid : int -> group_entry = "unix_getgrgid"
+external getlogin : unit -> string = "caml_unix_getlogin"
+external getpwnam : string -> passwd_entry = "caml_unix_getpwnam"
+external getgrnam : string -> group_entry = "caml_unix_getgrnam"
+external getpwuid : int -> passwd_entry = "caml_unix_getpwuid"
+external getgrgid : int -> group_entry = "caml_unix_getgrgid"
 
 type inet_addr = string
 
 let is_inet6_addr s = String.length s = 16
 
 external inet_addr_of_string : string -> inet_addr
-                                    = "unix_inet_addr_of_string"
+                                    = "caml_unix_inet_addr_of_string"
 external string_of_inet_addr : inet_addr -> string
-                                    = "unix_string_of_inet_addr"
+                                    = "caml_unix_string_of_inet_addr"
 
 let inet_addr_any = inet_addr_of_string "0.0.0.0"
 let inet_addr_loopback = inet_addr_of_string "127.0.0.1"
@@ -545,32 +553,33 @@ type msg_flag =
 
 external socket :
   ?cloexec: bool -> socket_domain -> socket_type -> int -> file_descr
-  = "unix_socket"
+  = "caml_unix_socket"
 external socketpair :
   ?cloexec: bool -> socket_domain -> socket_type -> int ->
                                            file_descr * file_descr
-  = "unix_socketpair"
+  = "caml_unix_socketpair"
 external accept :
-  ?cloexec: bool -> file_descr -> file_descr * sockaddr = "unix_accept"
-external bind : file_descr -> sockaddr -> unit = "unix_bind"
-external connect : file_descr -> sockaddr -> unit = "unix_connect"
-external listen : file_descr -> int -> unit = "unix_listen"
-external shutdown : file_descr -> shutdown_command -> unit = "unix_shutdown"
-external getsockname : file_descr -> sockaddr = "unix_getsockname"
-external getpeername : file_descr -> sockaddr = "unix_getpeername"
+  ?cloexec: bool -> file_descr -> file_descr * sockaddr = "caml_unix_accept"
+external bind : file_descr -> sockaddr -> unit = "caml_unix_bind"
+external connect : file_descr -> sockaddr -> unit = "caml_unix_connect"
+external listen : file_descr -> int -> unit = "caml_unix_listen"
+external shutdown : file_descr -> shutdown_command -> unit
+                  = "caml_unix_shutdown"
+external getsockname : file_descr -> sockaddr = "caml_unix_getsockname"
+external getpeername : file_descr -> sockaddr = "caml_unix_getpeername"
 
 external unsafe_recv :
   file_descr -> bytes -> int -> int -> msg_flag list -> int
-                                  = "unix_recv"
+                                  = "caml_unix_recv"
 external unsafe_recvfrom :
   file_descr -> bytes -> int -> int -> msg_flag list -> int * sockaddr
-                                  = "unix_recvfrom"
+                                  = "caml_unix_recvfrom"
 external unsafe_send :
   file_descr -> bytes -> int -> int -> msg_flag list -> int
-                                  = "unix_send"
+                                  = "caml_unix_send"
 external unsafe_sendto :
   file_descr -> bytes -> int -> int -> msg_flag list -> sockaddr -> int
-                                  = "unix_sendto" "unix_sendto_native"
+                                  = "caml_unix_sendto" "caml_unix_sendto_native"
 
 let recv fd buf ofs len flags =
   if ofs < 0 || len < 0 || ofs > Bytes.length buf - len
@@ -640,9 +649,9 @@ end = struct
   let float = 3
   let error = 4
   external get: ('opt, 'v) t -> file_descr -> 'opt -> 'v
-              = "unix_getsockopt"
+              = "caml_unix_getsockopt"
   external set: ('opt, 'v) t -> file_descr -> 'opt -> 'v -> unit
-              = "unix_setsockopt"
+              = "caml_unix_setsockopt"
 end
 
 let getsockopt fd opt = SO.get SO.bool fd opt
@@ -676,17 +685,17 @@ type service_entry =
     s_port : int;
     s_proto : string }
 
-external gethostname : unit -> string = "unix_gethostname"
-external gethostbyname : string -> host_entry = "unix_gethostbyname"
-external gethostbyaddr : inet_addr -> host_entry = "unix_gethostbyaddr"
+external gethostname : unit -> string = "caml_unix_gethostname"
+external gethostbyname : string -> host_entry = "caml_unix_gethostbyname"
+external gethostbyaddr : inet_addr -> host_entry = "caml_unix_gethostbyaddr"
 external getprotobyname : string -> protocol_entry
-                                         = "unix_getprotobyname"
+                                         = "caml_unix_getprotobyname"
 external getprotobynumber : int -> protocol_entry
-                                         = "unix_getprotobynumber"
+                                         = "caml_unix_getprotobynumber"
 external getservbyname : string -> string -> service_entry
-                                         = "unix_getservbyname"
+                                         = "caml_unix_getservbyname"
 external getservbyport : int -> string -> service_entry
-                                         = "unix_getservbyport"
+                                         = "caml_unix_getservbyport"
 
 type addr_info =
   { ai_family : socket_domain;
@@ -705,7 +714,7 @@ type getaddrinfo_option =
 
 external getaddrinfo_system
   : string -> string -> getaddrinfo_option list -> addr_info list
-  = "unix_getaddrinfo"
+  = "caml_unix_getaddrinfo"
 
 let getaddrinfo_emulation node service opts =
   (* Parse options *)
@@ -788,7 +797,7 @@ type getnameinfo_option =
 
 external getnameinfo_system
   : sockaddr -> getnameinfo_option list -> name_info
-  = "unix_getnameinfo"
+  = "caml_unix_getnameinfo"
 
 let getnameinfo_emulation addr opts =
   match addr with
@@ -858,24 +867,24 @@ type terminal_io = {
     mutable c_vstop: char
   }
 
-external tcgetattr: file_descr -> terminal_io = "unix_tcgetattr"
+external tcgetattr: file_descr -> terminal_io = "caml_unix_tcgetattr"
 
 type setattr_when = TCSANOW | TCSADRAIN | TCSAFLUSH
 
 external tcsetattr: file_descr -> setattr_when -> terminal_io -> unit
-               = "unix_tcsetattr"
-external tcsendbreak: file_descr -> int -> unit = "unix_tcsendbreak"
-external tcdrain: file_descr -> unit = "unix_tcdrain"
+               = "caml_unix_tcsetattr"
+external tcsendbreak: file_descr -> int -> unit = "caml_unix_tcsendbreak"
+external tcdrain: file_descr -> unit = "caml_unix_tcdrain"
 
 type flush_queue = TCIFLUSH | TCOFLUSH | TCIOFLUSH
 
-external tcflush: file_descr -> flush_queue -> unit = "unix_tcflush"
+external tcflush: file_descr -> flush_queue -> unit = "caml_unix_tcflush"
 
 type flow_action = TCOOFF | TCOON | TCIOFF | TCION
 
-external tcflow: file_descr -> flow_action -> unit = "unix_tcflow"
+external tcflow: file_descr -> flow_action -> unit = "caml_unix_tcflow"
 
-external setsid : unit -> int = "unix_setsid"
+external setsid : unit -> int = "caml_unix_setsid"
 
 (* High-level process management (system, popen) *)
 
@@ -885,7 +894,7 @@ let rec waitpid_non_intr pid =
 
 external spawn : string -> string array -> string array option ->
                  bool -> int array -> int
-               = "unix_spawn"
+               = "caml_unix_spawn"
 
 let system cmd =
   let pid = spawn shell [| shell; "-c"; cmd |] None false [| 0; 1; 2 |] in

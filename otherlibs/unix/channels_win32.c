@@ -30,7 +30,7 @@
    UDP (datagram) sockets.
    Returns 0 if OK, a Win32 error code if error. */
 
-static DWORD win_check_stream_semantics(value handle)
+static DWORD check_stream_semantics(value handle)
 {
   switch (Descr_kind_val(handle)) {
   case KIND_HANDLE:
@@ -60,19 +60,19 @@ static DWORD win_check_stream_semantics(value handle)
   }
 }
 
-int win_CRT_fd_of_filedescr(value handle)
+int caml_win32_CRT_fd_of_filedescr(value handle)
 {
   if (CRT_fd_val(handle) != NO_CRT_FD) {
     return CRT_fd_val(handle);
   } else {
     int fd = _open_osfhandle((intptr_t) Handle_val(handle), O_BINARY);
-    if (fd == -1) uerror("channel_of_descr", Nothing);
+    if (fd == -1) caml_uerror("channel_of_descr", Nothing);
     CRT_fd_val(handle) = fd;
     return fd;
   }
 }
 
-CAMLprim value win_inchannel_of_filedescr(value handle)
+CAMLprim value caml_unix_inchannel_of_filedescr(value handle)
 {
   CAMLparam1(handle);
   CAMLlocal1(vchan);
@@ -82,9 +82,12 @@ CAMLprim value win_inchannel_of_filedescr(value handle)
 #if defined(_MSC_VER) && _MSC_VER < 1400
   fflush(stdin);
 #endif
-  err = win_check_stream_semantics(handle);
-  if (err != 0) { win32_maperr(err); uerror("in_channel_of_descr", Nothing); }
-  chan = caml_open_descriptor_in(win_CRT_fd_of_filedescr(handle));
+  err = check_stream_semantics(handle);
+  if (err != 0) {
+    caml_win32_maperr(err);
+    caml_uerror("in_channel_of_descr", Nothing);
+  }
+  chan = caml_open_descriptor_in(caml_win32_CRT_fd_of_filedescr(handle));
   chan->flags |= CHANNEL_FLAG_MANAGED_BY_GC;
                  /* as in caml_ml_open_descriptor_in() */
   if (Descr_kind_val(handle) == KIND_SOCKET)
@@ -93,7 +96,7 @@ CAMLprim value win_inchannel_of_filedescr(value handle)
   CAMLreturn(vchan);
 }
 
-CAMLprim value win_outchannel_of_filedescr(value handle)
+CAMLprim value caml_unix_outchannel_of_filedescr(value handle)
 {
   CAMLparam1(handle);
   CAMLlocal1(vchan);
@@ -101,9 +104,12 @@ CAMLprim value win_outchannel_of_filedescr(value handle)
   struct channel * chan;
   DWORD err;
 
-  err = win_check_stream_semantics(handle);
-  if (err != 0) { win32_maperr(err); uerror("out_channel_of_descr", Nothing); }
-  chan = caml_open_descriptor_out(win_CRT_fd_of_filedescr(handle));
+  err = check_stream_semantics(handle);
+  if (err != 0) {
+    caml_win32_maperr(err);
+    caml_uerror("out_channel_of_descr", Nothing);
+  }
+  chan = caml_open_descriptor_out(caml_win32_CRT_fd_of_filedescr(handle));
   chan->flags |= CHANNEL_FLAG_MANAGED_BY_GC;
                  /* as in caml_ml_open_descriptor_out() */
   if (Descr_kind_val(handle) == KIND_SOCKET)
@@ -112,7 +118,7 @@ CAMLprim value win_outchannel_of_filedescr(value handle)
   CAMLreturn(vchan);
 }
 
-CAMLprim value win_filedescr_of_channel(value vchan)
+CAMLprim value caml_unix_filedescr_of_channel(value vchan)
 {
   CAMLparam1(vchan);
   CAMLlocal1(fd);
@@ -120,23 +126,23 @@ CAMLprim value win_filedescr_of_channel(value vchan)
   HANDLE h;
 
   chan = Channel(vchan);
-  if (chan->fd == -1) unix_error(EBADF, "descr_of_channel", Nothing);
+  if (chan->fd == -1) caml_unix_error(EBADF, "descr_of_channel", Nothing);
   h = (HANDLE) _get_osfhandle(chan->fd);
   if (chan->flags & CHANNEL_FLAG_FROM_SOCKET)
-    fd = win_alloc_socket((SOCKET) h);
+    fd = caml_win32_alloc_socket((SOCKET) h);
   else
-    fd = win_alloc_handle(h);
+    fd = caml_win32_alloc_handle(h);
   CRT_fd_val(fd) = chan->fd;
   CAMLreturn(fd);
 }
 
-CAMLprim value win_handle_fd(value vfd)
+CAMLprim value caml_unix_filedescr_of_fd(value vfd)
 {
   int crt_fd = Int_val(vfd);
   /* PR#4750: do not use the _or_socket variant as it can cause performance
      degradation and this function is only used with the standard
      handles 0, 1, 2, which are not sockets. */
-  value res = win_alloc_handle((HANDLE) _get_osfhandle(crt_fd));
+  value res = caml_win32_alloc_handle((HANDLE) _get_osfhandle(crt_fd));
   CRT_fd_val(res) = crt_fd;
   return res;
 }

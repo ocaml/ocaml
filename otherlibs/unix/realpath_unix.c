@@ -21,7 +21,7 @@
 
 #ifdef HAS_REALPATH
 
-CAMLprim value unix_realpath (value p)
+CAMLprim value caml_unix_realpath (value p)
 {
   CAMLparam1 (p);
   char *r;
@@ -29,7 +29,7 @@ CAMLprim value unix_realpath (value p)
 
   caml_unix_check_path (p, "realpath");
   r = realpath (String_val (p), NULL);
-  if (r == NULL) { uerror ("realpath", p); }
+  if (r == NULL) { caml_uerror ("realpath", p); }
   rp = caml_copy_string (r);
   free (r);
   CAMLreturn (rp);
@@ -37,7 +37,7 @@ CAMLprim value unix_realpath (value p)
 
 #else
 
-CAMLprim value unix_realpath (value p)
+CAMLprim value caml_unix_realpath (value p)
 { caml_invalid_argument ("realpath not implemented"); }
 
 #endif

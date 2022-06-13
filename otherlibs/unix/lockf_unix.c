@@ -22,7 +22,7 @@
 
 #if defined(F_GETLK) && defined(F_SETLK) && defined(F_SETLKW)
 
-CAMLprim value unix_lockf(value fd, value cmd, value span)
+CAMLprim value caml_unix_lockf(value fd, value cmd, value span)
 {
   struct flock l;
   int ret;
@@ -80,7 +80,7 @@ CAMLprim value unix_lockf(value fd, value cmd, value span)
     errno = EINVAL;
     ret = -1;
   }
-  if (ret == -1) uerror("lockf", Nothing);
+  if (ret == -1) caml_uerror("lockf", Nothing);
   return Val_unit;
 }
 
@@ -100,16 +100,16 @@ static int lock_command_table[] = {
   F_ULOCK, F_LOCK, F_TLOCK, F_TEST, F_LOCK, F_TLOCK
 };
 
-CAMLprim value unix_lockf(value fd, value cmd, value span)
+CAMLprim value caml_unix_lockf(value fd, value cmd, value span)
 {
   if (lockf(Int_val(fd), lock_command_table[Int_val(cmd)], Long_val(span))
-      == -1) uerror("lockf", Nothing);
+      == -1) caml_uerror("lockf", Nothing);
   return Val_unit;
 }
 
 #else
 
-CAMLprim value unix_lockf(value fd, value cmd, value span)
+CAMLprim value caml_unix_lockf(value fd, value cmd, value span)
 { caml_invalid_argument("lockf not implemented"); }
 
 #endif

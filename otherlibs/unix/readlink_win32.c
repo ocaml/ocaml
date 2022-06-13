@@ -25,7 +25,7 @@
 #include <winioctl.h>
 #include <caml/winsupport.h>
 
-CAMLprim value unix_readlink(value opath)
+CAMLprim value caml_unix_readlink(value opath)
 {
   CAMLparam1(opath);
   CAMLlocal1(result);
@@ -41,13 +41,13 @@ CAMLprim value unix_readlink(value opath)
 
   if (attributes == INVALID_FILE_ATTRIBUTES) {
     caml_stat_free(path);
-    win32_maperr(GetLastError());
-    uerror("readlink", opath);
+    caml_win32_maperr(GetLastError());
+    caml_uerror("readlink", opath);
   }
   else if (!(attributes & FILE_ATTRIBUTE_REPARSE_POINT)) {
     caml_stat_free(path);
     errno = EINVAL;
-    uerror("readlink", opath);
+    caml_uerror("readlink", opath);
   }
   else {
     caml_enter_blocking_section();
@@ -61,7 +61,7 @@ CAMLprim value unix_readlink(value opath)
       caml_leave_blocking_section();
       caml_stat_free(path);
       errno = ENOENT;
-      uerror("readlink", opath);
+      caml_uerror("readlink", opath);
     }
     else {
       char buffer[16384];
@@ -77,11 +77,11 @@ CAMLprim value unix_readlink(value opath)
           int cbLen = point->SymbolicLinkReparseBuffer.SubstituteNameLength / sizeof(WCHAR);
           int len;
           len =
-            win_wide_char_to_multi_byte(
+            caml_win32_wide_char_to_multi_byte(
               point->SymbolicLinkReparseBuffer.PathBuffer + point->SymbolicLinkReparseBuffer.SubstituteNameOffset / sizeof(WCHAR),
               cbLen, NULL, 0);
           result = caml_alloc_string(len);
-          win_wide_char_to_multi_byte(
+          caml_win32_wide_char_to_multi_byte(
             point->SymbolicLinkReparseBuffer.PathBuffer + point->SymbolicLinkReparseBuffer.SubstituteNameOffset / sizeof(WCHAR),
             cbLen,
             (char *)String_val(result),
@@ -91,14 +91,14 @@ CAMLprim value unix_readlink(value opath)
         else {
           errno = EINVAL;
           CloseHandle(h);
-          uerror("readlink", opath);
+          caml_uerror("readlink", opath);
         }
       }
       else {
         caml_leave_blocking_section();
-        win32_maperr(GetLastError());
+        caml_win32_maperr(GetLastError());
         CloseHandle(h);
-        uerror("readlink", opath);
+        caml_uerror("readlink", opath);
       }
     }
   }

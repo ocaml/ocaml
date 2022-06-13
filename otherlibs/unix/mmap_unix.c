@@ -125,7 +125,7 @@ CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
   caml_enter_blocking_section();
   if (fstat(fd, &st) == -1) {
     caml_leave_blocking_section();
-    uerror("map_file", Nothing);
+    caml_uerror("map_file", Nothing);
   }
   file_size = st.st_size;
   /* Determine array size in bytes (or size of array without the major
@@ -152,7 +152,7 @@ CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
     if (file_size < startpos + array_size) {
       if (caml_grow_file(fd, startpos + array_size) == -1) { /* PR#5543 */
         caml_leave_blocking_section();
-        uerror("map_file", Nothing);
+        caml_uerror("map_file", Nothing);
       }
     }
   }
@@ -167,7 +167,7 @@ CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
   else
     addr = NULL;                /* PR#5463 - mmap fails on empty region */
   caml_leave_blocking_section();
-  if (addr == (void *) MAP_FAILED) uerror("map_file", Nothing);
+  if (addr == (void *) MAP_FAILED) caml_uerror("map_file", Nothing);
   addr = (void *) ((uintnat) addr + delta);
   /* Build and return the OCaml bigarray */
   return caml_unix_mapped_alloc(flags, num_dims, addr, dim);

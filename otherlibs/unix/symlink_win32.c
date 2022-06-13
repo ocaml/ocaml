@@ -72,7 +72,7 @@ static BOOL IsDeveloperModeEnabled()
   return developerModeRegistryValue != 0;
 }
 
-CAMLprim value unix_symlink(value to_dir, value osource, value odest)
+CAMLprim value caml_unix_symlink(value to_dir, value osource, value odest)
 {
   CAMLparam3(to_dir, osource, odest);
   DWORD flags;
@@ -111,8 +111,8 @@ again:
   caml_stat_free(dest);
 
   if (!result) {
-    win32_maperr(GetLastError());
-    uerror("symlink", odest);
+    caml_win32_maperr(GetLastError());
+    caml_uerror("symlink", odest);
   }
 
   CAMLreturn(Val_unit);
@@ -120,7 +120,7 @@ again:
 
 #define luid_eq(l, r) (l.LowPart == r.LowPart && l.HighPart == r.HighPart)
 
-CAMLprim value unix_has_symlink(value unit)
+CAMLprim value caml_unix_has_symlink(value unit)
 {
   CAMLparam1(unit);
   HANDLE hProcess = GetCurrentProcess();

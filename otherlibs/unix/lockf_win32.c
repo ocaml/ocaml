@@ -38,8 +38,8 @@ static void set_file_pointer(HANDLE h, LARGE_INTEGER gohere,
   if(ret == INVALID_SET_FILE_POINTER) {
     DWORD err = GetLastError();
     if(err != NO_ERROR) {
-      win32_maperr(err);
-      uerror("lockf", Nothing);
+      caml_win32_maperr(err);
+      caml_uerror("lockf", Nothing);
     }
   }
   if(output != NULL) {
@@ -48,7 +48,7 @@ static void set_file_pointer(HANDLE h, LARGE_INTEGER gohere,
   }
 }
 
-CAMLprim value unix_lockf(value fd, value cmd, value span)
+CAMLprim value caml_unix_lockf(value fd, value cmd, value span)
 {
   CAMLparam3(fd, cmd, span);
   OVERLAPPED overlap;
@@ -98,7 +98,7 @@ CAMLprim value unix_lockf(value fd, value cmd, value span)
     lock_len.QuadPart = - l_len;
     if (lock_len.QuadPart > cur_position.QuadPart) {
       errno = EINVAL;
-      uerror("lockf", Nothing);
+      caml_uerror("lockf", Nothing);
     }
     beg_position.QuadPart = cur_position.QuadPart - lock_len.QuadPart;
     overlap.OffsetHigh = beg_position.HighPart;
@@ -150,11 +150,11 @@ CAMLprim value unix_lockf(value fd, value cmd, value span)
     break;
   default:
     errno = EINVAL;
-    uerror("lockf", Nothing);
+    caml_uerror("lockf", Nothing);
   }
   if (err != NO_ERROR) {
-    win32_maperr(err);
-    uerror("lockf", Nothing);
+    caml_win32_maperr(err);
+    caml_uerror("lockf", Nothing);
   }
   CAMLreturn(Val_unit);
 }

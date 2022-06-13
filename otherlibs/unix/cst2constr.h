@@ -13,4 +13,4 @@
 /*                                                                        */
 /**************************************************************************/
 
-extern value cst_to_constr(int n, int * tbl, int size, int deflt);
+extern value caml_unix_cst_to_constr(int n, int * tbl, int size, int deflt);

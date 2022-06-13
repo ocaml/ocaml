@@ -42,25 +42,28 @@ static __int64 caml_set_file_pointer(HANDLE h, __int64 dist, DWORD mode)
   i.LowPart = SetFilePointer(h, i.LowPart, &i.HighPart, mode);
   if (i.LowPart == INVALID_SET_FILE_POINTER) {
     err = GetLastError();
-    if (err != NO_ERROR) { win32_maperr(err); uerror("lseek", Nothing); }
+    if (err != NO_ERROR) {
+      caml_win32_maperr(err);
+      caml_uerror("lseek", Nothing);
+    }
   }
   return i.QuadPart;
 }
 
-CAMLprim value unix_lseek(value fd, value ofs, value cmd)
+CAMLprim value caml_unix_lseek(value fd, value ofs, value cmd)
 {
   __int64 ret;
 
   ret = caml_set_file_pointer(Handle_val(fd), Long_val(ofs),
                               seek_command_table[Int_val(cmd)]);
   if (ret > Max_long) {
-    win32_maperr(ERROR_ARITHMETIC_OVERFLOW);
-    uerror("lseek", Nothing);
+    caml_win32_maperr(ERROR_ARITHMETIC_OVERFLOW);
+    caml_uerror("lseek", Nothing);
   }
   return Val_long(ret);
 }
 
-CAMLprim value unix_lseek_64(value fd, value ofs, value cmd)
+CAMLprim value caml_unix_lseek_64(value fd, value ofs, value cmd)
 {
   __int64 ret;
 

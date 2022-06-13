@@ -17,12 +17,12 @@
 #include <caml/signals.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_close(value fd)
+CAMLprim value caml_unix_close(value fd)
 {
   int ret;
   caml_enter_blocking_section();
   ret = close(Int_val(fd));
   caml_leave_blocking_section();
-  if (ret == -1) uerror("close", Nothing);
+  if (ret == -1) caml_uerror("close", Nothing);
   return Val_unit;
 }

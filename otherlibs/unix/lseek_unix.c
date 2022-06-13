@@ -39,19 +39,19 @@ static int seek_command_table[] = {
   SEEK_SET, SEEK_CUR, SEEK_END
 };
 
-CAMLprim value unix_lseek(value fd, value ofs, value cmd)
+CAMLprim value caml_unix_lseek(value fd, value ofs, value cmd)
 {
   file_offset ret;
   caml_enter_blocking_section();
   ret = lseek(Int_val(fd), Long_val(ofs),
                        seek_command_table[Int_val(cmd)]);
   caml_leave_blocking_section();
-  if (ret == -1) uerror("lseek", Nothing);
-  if (ret > Max_long) unix_error(EOVERFLOW, "lseek", Nothing);
+  if (ret == -1) caml_uerror("lseek", Nothing);
+  if (ret > Max_long) caml_unix_error(EOVERFLOW, "lseek", Nothing);
   return Val_long(ret);
 }
 
-CAMLprim value unix_lseek_64(value fd, value ofs, value cmd)
+CAMLprim value caml_unix_lseek_64(value fd, value ofs, value cmd)
 {
   file_offset ret;
   /* [ofs] is an Int64, which is stored as a custom block; we must therefore
@@ -61,6 +61,6 @@ CAMLprim value unix_lseek_64(value fd, value ofs, value cmd)
   caml_enter_blocking_section();
   ret = lseek(Int_val(fd), ofs_c, seek_command_table[Int_val(cmd)]);
   caml_leave_blocking_section();
-  if (ret == -1) uerror("lseek", Nothing);
+  if (ret == -1) caml_uerror("lseek", Nothing);
   return Val_file_offset(ret);
 }

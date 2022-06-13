@@ -23,7 +23,7 @@
 #include <windows.h>
 
 /* Win32 doesn't have a notion of setuid bit. */
-CAMLprim value unix_environment(value unit)
+CAMLprim value caml_unix_environment(value unit)
 {
   CAMLparam0();
   CAMLlocal2(v, result);

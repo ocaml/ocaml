@@ -17,17 +17,17 @@
 #include <caml/memory.h>
 #include "unixsupport.h"
 
-int socket_domain_table[] = {
+int caml_unix_socket_domain_table[] = {
   PF_UNIX, PF_INET, PF_INET6
 };
 
-int socket_type_table[] = {
+int caml_unix_socket_type_table[] = {
   SOCK_STREAM, SOCK_DGRAM, SOCK_RAW, SOCK_SEQPACKET
 };
 
-SOCKET win32_socket(int domain, int type, int protocol,
-                    LPWSAPROTOCOL_INFO info,
-                    BOOL inherit)
+SOCKET caml_win32_socket(int domain, int type, int protocol,
+                         LPWSAPROTOCOL_INFO info,
+                         BOOL inherit)
 {
   SOCKET s;
   DWORD flags = WSA_FLAG_OVERLAPPED;
@@ -48,7 +48,7 @@ SOCKET win32_socket(int domain, int type, int protocol,
       s = WSASocket(domain, type, protocol, info, 0, flags);
       if (s == INVALID_SOCKET)
         goto err;
-      win_set_inherit((HANDLE) s, FALSE);
+      caml_win32_set_inherit((HANDLE) s, FALSE);
       return s;
     }
     goto err;
@@ -61,18 +61,19 @@ err:
   return INVALID_SOCKET;
 }
 
-CAMLprim value unix_socket(value cloexec, value domain, value type, value proto)
+CAMLprim value caml_unix_socket(value cloexec, value domain, value type,
+                                value proto)
 {
   CAMLparam4(cloexec, domain, type, proto);
   CAMLlocal1(v_socket);
   SOCKET s;
-  s = win32_socket(socket_domain_table[Int_val(domain)],
-                   socket_type_table[Int_val(type)],
-                   Int_val(proto),
-                   NULL,
-                   ! unix_cloexec_p(cloexec));
+  s = caml_win32_socket(caml_unix_socket_domain_table[Int_val(domain)],
+                        caml_unix_socket_type_table[Int_val(type)],
+                        Int_val(proto),
+                        NULL,
+                        ! caml_unix_cloexec_p(cloexec));
   if (s == INVALID_SOCKET)
-    uerror("socket", Nothing);
-  v_socket = win_alloc_socket(s);
+    caml_uerror("socket", Nothing);
+  v_socket = caml_win32_alloc_socket(s);
   CAMLreturn(v_socket);
 }

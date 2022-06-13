@@ -121,14 +121,18 @@ extern wchar_t *caml_win32_getenv(wchar_t const *);
 
 /* Windows Unicode support */
 
-CAMLextern int win_multi_byte_to_wide_char(const char* s,
-                                       int slen,
-                                       wchar_t *out,
-                                       int outlen);
-CAMLextern int win_wide_char_to_multi_byte(const wchar_t* s,
-                                       int slen,
-                                       char *out,
-                                       int outlen);
+CAMLextern int caml_win32_multi_byte_to_wide_char(const char* s,
+                                                  int slen,
+                                                  wchar_t *out,
+                                                  int outlen);
+CAMLextern int caml_win32_wide_char_to_multi_byte(const wchar_t* s,
+                                                  int slen,
+                                                  char *out,
+                                                  int outlen);
+
+/* Legacy names */
+#define win_multi_byte_to_wide_char caml_win32_multi_byte_to_wide_char
+#define win_wide_char_to_multi_byte caml_win32_wide_char_to_multi_byte
 
 CAMLextern int caml_win32_isatty(int fd);
 

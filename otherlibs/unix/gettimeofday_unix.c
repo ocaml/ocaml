@@ -20,14 +20,14 @@
 #include <sys/types.h>
 #include <sys/time.h>
 
-double unix_gettimeofday_unboxed(value unit)
+double caml_unix_gettimeofday_unboxed(value unit)
 {
   struct timeval tp;
   gettimeofday(&tp, NULL);
   return ((double) tp.tv_sec + (double) tp.tv_usec / 1e6);
 }
 
-CAMLprim value unix_gettimeofday(value unit)
+CAMLprim value caml_unix_gettimeofday(value unit)
 {
-  return caml_copy_double(unix_gettimeofday_unboxed(unit));
+  return caml_copy_double(caml_unix_gettimeofday_unboxed(unit));
 }

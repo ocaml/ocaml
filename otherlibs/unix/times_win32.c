@@ -19,7 +19,7 @@
 #include <windows.h>
 
 
-double to_sec(FILETIME ft) {
+static double to_sec(FILETIME ft) {
 #if defined(_MSC_VER) && _MSC_VER < 1300
   /* See gettimeofday.c - it is not possible for these values to be 64-bit, so
      there's no worry about using a signed struct in order to work around the
@@ -39,14 +39,14 @@ double to_sec(FILETIME ft) {
 }
 
 
-value unix_times(value unit) {
+value caml_unix_times(value unit) {
   value res;
   FILETIME creation, exit, stime, utime;
 
   if (!(GetProcessTimes(GetCurrentProcess(), &creation, &exit, &stime,
                         &utime))) {
-    win32_maperr(GetLastError());
-    uerror("times", Nothing);
+    caml_win32_maperr(GetLastError());
+    caml_uerror("times", Nothing);
   }
 
   res = caml_alloc_small(4 * Double_wosize, Double_array_tag);

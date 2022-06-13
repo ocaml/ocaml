@@ -143,10 +143,11 @@ case "$1" in
   test)
     FULL_BUILD_PREFIX="$APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX"
     run 'ocamlc.opt -version' "$FULL_BUILD_PREFIX-$PORT/ocamlc.opt" -version
-    if [[ $PORT = 'mingw32' ]] ; then
+    if [[ $PORT =~ mingw* ]] ; then
       run "Check runtime symbols" \
           "$FULL_BUILD_PREFIX-$PORT/tools/check-symbol-names" \
-          $FULL_BUILD_PREFIX-$PORT/runtime/*.a
+          $FULL_BUILD_PREFIX-$PORT/runtime/*.a \
+          $FULL_BUILD_PREFIX-$PORT/otherlibs/*/lib*.a
     fi
     # FIXME At present, running the testsuite takes too long
     #run "test $PORT" \

@@ -15,7 +15,7 @@
 
 #include "windbug.h"
 
-int debug_test (void)
+int caml_win32_debug_test (void)
 {
   static int debug_init = 0;
   static int debug = 0;

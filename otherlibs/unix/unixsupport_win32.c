@@ -26,33 +26,33 @@
 
 /* Heap-allocation of Windows file handles */
 
-static int win_handle_compare(value v1, value v2)
+static int handle_compare(value v1, value v2)
 {
   HANDLE h1 = Handle_val(v1);
   HANDLE h2 = Handle_val(v2);
   return h1 == h2 ? 0 : h1 < h2 ? -1 : 1;
 }
 
-static intnat win_handle_hash(value v)
+static intnat handle_hash(value v)
 {
   return (intnat) Handle_val(v);
 }
 
-static struct custom_operations win_handle_ops = {
+static struct custom_operations handle_ops = {
   "_handle",
   custom_finalize_default,
-  win_handle_compare,
-  win_handle_hash,
+  handle_compare,
+  handle_hash,
   custom_serialize_default,
   custom_deserialize_default,
   custom_compare_ext_default,
   custom_fixed_length_default
 };
 
-value win_alloc_handle(HANDLE h)
+value caml_win32_alloc_handle(HANDLE h)
 {
   value res =
-    caml_alloc_custom(&win_handle_ops, sizeof(struct filedescr), 0, 1);
+    caml_alloc_custom(&handle_ops, sizeof(struct filedescr), 0, 1);
   Handle_val(res) = h;
   Descr_kind_val(res) = KIND_HANDLE;
   CRT_fd_val(res) = NO_CRT_FD;
@@ -60,10 +60,10 @@ value win_alloc_handle(HANDLE h)
   return res;
 }
 
-value win_alloc_socket(SOCKET s)
+value caml_win32_alloc_socket(SOCKET s)
 {
   value res =
-    caml_alloc_custom(&win_handle_ops, sizeof(struct filedescr), 0, 1);
+    caml_alloc_custom(&handle_ops, sizeof(struct filedescr), 0, 1);
   Socket_val(res) = s;
   Descr_kind_val(res) = KIND_SOCKET;
   CRT_fd_val(res) = NO_CRT_FD;
@@ -154,7 +154,7 @@ static struct error_entry win_error_table[] = {
   { 0, -1, 0 }
 };
 
-void win32_maperr(DWORD errcode)
+void caml_win32_maperr(DWORD errcode)
 {
   int i;
 
@@ -166,7 +166,7 @@ void win32_maperr(DWORD errcode)
     }
   }
   /* Not found: save original error code, negated so that we can
-     recognize it in unix_error_message */
+     recognize it in caml_unix_error_message */
   errno = -errcode;
 }
 
@@ -247,7 +247,7 @@ void win32_maperr(DWORD errcode)
 #undef EACCESS
 #define EACCESS EACCES
 
-int error_table[] = {
+static int error_table[] = {
   E2BIG, EACCESS, EAGAIN, EBADF, EBUSY, ECHILD, EDEADLK, EDOM,
   EEXIST, EFAULT, EFBIG, EINTR, EINVAL, EIO, EISDIR, EMFILE, EMLINK,
   ENAMETOOLONG, ENFILE, ENODEV, ENOENT, ENOEXEC, ENOLCK, ENOMEM, ENOSPC,
@@ -261,13 +261,14 @@ int error_table[] = {
   EHOSTUNREACH, ELOOP, EOVERFLOW /*, EUNKNOWNERR */
 };
 
-value unix_error_of_code (int errcode)
+value caml_unix_error_of_code (int errcode)
 {
   int errconstr;
   value err;
 
   errconstr =
-      cst_to_constr(errcode, error_table, sizeof(error_table)/sizeof(int), -1);
+      caml_unix_cst_to_constr(errcode, error_table,
+                         sizeof(error_table)/sizeof(int), -1);
   if (errconstr == Val_int(-1)) {
     err = caml_alloc_small(1, 0);
     Field(err, 0) = Val_int(errcode);
@@ -277,7 +278,7 @@ value unix_error_of_code (int errcode)
   return err;
 }
 
-int code_of_unix_error (value error)
+int caml_unix_code_of_unix_error (value error)
 {
   if (Is_block(error)) {
     return Int_val(Field(error, 0));
@@ -286,26 +287,26 @@ int code_of_unix_error (value error)
   }
 }
 
-static const value * _Atomic unix_error_exn = NULL;
+static const value * _Atomic caml_unix_error_exn = NULL;
 
-void unix_error(int errcode, const char *cmdname, value cmdarg)
+void caml_unix_error(int errcode, const char *cmdname, value cmdarg)
 {
   CAMLparam0();
   CAMLlocal3(name, err, arg);
   value res;
   const value * exn;
 
-  exn = atomic_load_explicit(&unix_error_exn, memory_order_acquire);
+  exn = atomic_load_explicit(&caml_unix_error_exn, memory_order_acquire);
   if (exn == NULL) {
     exn = caml_named_value("Unix.Unix_error");
     if (exn == NULL)
       caml_invalid_argument("Exception Unix.Unix_error not initialized,"
                             " please link unix.cma");
-    atomic_store(&unix_error_exn, exn);
+    atomic_store(&caml_unix_error_exn, exn);
   }
   arg = cmdarg == Nothing ? caml_copy_string("") : cmdarg;
   name = caml_copy_string(cmdname);
-  err = unix_error_of_code (errcode);
+  err = caml_unix_error_of_code (errcode);
   res = caml_alloc_small(4, 0);
   Field(res, 0) = *exn;
   Field(res, 1) = err;
@@ -315,34 +316,34 @@ void unix_error(int errcode, const char *cmdname, value cmdarg)
   CAMLnoreturn;
 }
 
-void uerror(const char * cmdname, value cmdarg)
+void caml_uerror(const char * cmdname, value cmdarg)
 {
-  unix_error(errno, cmdname, cmdarg);
+  caml_unix_error(errno, cmdname, cmdarg);
 }
 
 void caml_unix_check_path(value path, const char * cmdname)
 {
-  if (! caml_string_is_c_safe(path)) unix_error(ENOENT, cmdname, path);
+  if (! caml_string_is_c_safe(path)) caml_unix_error(ENOENT, cmdname, path);
 }
 
-int unix_cloexec_default = 0;
+int caml_unix_cloexec_default = 0;
 
-int unix_cloexec_p(value cloexec)
+int caml_unix_cloexec_p(value cloexec)
 {
   if (Is_some(cloexec))
     return Bool_val(Some_val(cloexec));
   else
-    return unix_cloexec_default;
+    return caml_unix_cloexec_default;
 }
 
-int win_set_inherit(HANDLE fd, BOOL inherit)
+int caml_win32_set_inherit(HANDLE fd, BOOL inherit)
 {
   /* According to the MSDN, SetHandleInformation may not work
      for console handles on WinNT4 and earlier versions. */
   if (! SetHandleInformation(fd,
                              HANDLE_FLAG_INHERIT,
                              inherit ? HANDLE_FLAG_INHERIT : 0)) {
-    win32_maperr(GetLastError());
+    caml_win32_maperr(GetLastError());
     return -1;
   }
   return 0;
