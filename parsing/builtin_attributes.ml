@@ -110,9 +110,14 @@ let string_of_cst const =
   | Pconst_string(s, _, _) -> Some s
   | _ -> None
 
+let string_of_exp exp =
+  match exp.pexp_desc with
+  | Pexp_constant c -> string_of_cst c
+  | _ -> None
+
 let string_of_payload = function
-  | PStr[{pstr_desc=Pstr_eval({pexp_desc=Pexp_constant c},_)}] ->
-      string_of_cst c
+  | PStr[{pstr_desc=Pstr_eval(e,_)}] ->
+      string_of_exp e
   | _ -> None
 
 let string_of_opt_payload p =
@@ -120,7 +125,43 @@ let string_of_opt_payload p =
   | Some s -> s
   | None -> ""
 
+let int_of_cst const =
+  match const.pconst_desc with
+  | Pconst_integer(s, None) -> Some (int_of_string s)
+  | _ -> None
+
+let int_of_exp exp =
+  match exp.pexp_desc with
+  | Pexp_constant c -> int_of_cst c
+  | _ -> None
+
+let bool_of_exp exp =
+  match exp.pexp_desc with
+  | Pexp_construct ({txt = Longident.Lident "true" }, None) -> Some true
+  | Pexp_construct ({txt = Longident.Lident "false"}, None) -> Some false
+  | _ -> None
+
+let list_of_exp exp =
+  let rec loop acc = function
+  | {pexp_desc = Pexp_construct ({txt = Longident.Lident "[]"; _}, None)} ->
+      Ok (List.rev acc)
+  | {pexp_desc =
+       Pexp_construct (
+         {txt = Longident.Lident "::"; _},
+         Some {pexp_desc = Pexp_tuple [(None, e1); (None, e2)]}
+     )} ->
+      loop (e1 :: acc) e2
+  | {pexp_loc = loc} ->
+      Error loc
+  in loop [] exp
+
+let list_of_payload loc = function
+  | PStr[{pstr_desc = Pstr_eval (li, _)}] ->
+      list_of_exp li
+  | _ -> Error loc
+
 module Style = Misc.Style
+
 let error_of_extension ext =
   let submessage_from main_loc main_txt = function
     | {pstr_desc=Pstr_extension
@@ -416,3 +457,117 @@ let has_boxed attrs = has_attribute "boxed" attrs
 let has_remove_aliases attrs = has_attribute "remove_aliases" attrs
 
 let has_atomic attrs = has_attribute "atomic" attrs
+
+let find_shapes attrs : Asttypes.shape_name list option =
+  let err loc msg =
+    warn_payload loc "shape" msg;
+    None
+  in
+  let shape_of_exp exp : Asttypes.shape_name option =
+    let open Asttypes in
+    let loc = exp.pexp_loc in
+    match exp.pexp_desc with
+    | Pexp_ident {loc; txt = Longident.Lident shape_name} ->
+        let open Asttypes in
+        begin match shape_name with
+        | "any" -> Some Any
+        | "int" -> Some Int
+        | "float" -> Some Float
+        | "string" -> Some String
+        | "tuple" -> Some (Tuple { size = None })
+        | "array" -> Some Array
+        | "floatarray" -> Some Floatarray
+        | "function" -> Some Function
+        | "object" -> Some Object
+        | "continuation" -> Some Continuation
+        | "extensible_variant" -> Some Extensible_variant
+        | "abstract" -> Some (Abstract { size = None })
+        | "custom" -> Some (Custom { size = None })
+        | _ ->
+            Printf.ksprintf (err loc) "Unknown shape name %s." shape_name
+        end
+    | Pexp_apply ({pexp_desc = Pexp_ident {loc; txt = Longident.Lident name; _}}, args) ->
+        let consume_arg arg_of_exp = function
+          | (Nolabel, e) :: rest ->
+              Option.map (fun v -> (v, rest)) (arg_of_exp e)
+          | _ -> None
+        in
+        let consume_labelled_arg expected_label arg_of_exp = function
+          | (Labelled label, e) :: rest ->
+              if not (String.equal label expected_label) then None
+              else Option.map (fun v -> (v, rest)) (arg_of_exp e)
+          | _ -> None
+        in
+        begin match name with
+        | "imm" ->
+            begin match consume_arg int_of_exp args with
+            | Some (n, []) -> Some (Imm n)
+            | _ ->
+              err loc "The 'imm' shape-former expects a literal integer, for example: imm 2."
+            end
+        | ("tuple" | "abstract" | "custom") ->
+            let f size = match name with
+              | "tuple" -> Tuple { size }
+              | "abstract" -> Abstract { size }
+              | "custom" -> Custom { size }
+              | _ -> assert false
+            in
+            begin match consume_labelled_arg "size" int_of_exp args with
+            | Some (size, []) -> Some (f (Some size))
+            | _ ->
+              Printf.ksprintf (err loc)
+                "The '%s' shape-former excepts an optional ~size label \
+                 with an integer argument, for example: %s ~size:3."
+                name name
+            end
+        | "constructor" ->
+            let fail () =
+              err loc "The 'constructor' shape-former expects a tag \
+                       argument followed by an optional ~size:n \
+                       argument, for example: constructor 0, \
+                       or constructor 3 ~size:2."
+            in
+            begin match consume_arg int_of_exp args with
+            | None -> fail ()
+            | Some (tag, []) -> Some (Constructor { tag; size = None })
+            | Some (tag, args) ->
+            match consume_labelled_arg "size" int_of_exp args with
+            | Some (size, []) -> Some (Constructor {tag; size = Some size})
+            | _ -> fail ()
+            end
+        | "polymorphic_variant" ->
+            let fail () =
+              err loc "The 'polymorphic_variant' shape-former expects \
+                       two labelled boolean arguments, ~has_consts and \
+                       ~has_nonconsts (in that order), for example: \
+                       polymorphic_variant ~has_consts:true \
+                       ~has_nonconsts:false."
+            in
+            begin match consume_labelled_arg "has_consts" bool_of_exp args with
+            | None -> fail ()
+            | Some (has_consts, args) ->
+            match consume_labelled_arg "has_nonconsts" bool_of_exp args with
+            | Some (has_nonconsts, []) ->
+              Some (Polymorphic_variant { has_consts; has_nonconsts })
+            | _ -> fail ()
+            end
+        | _ -> Printf.ksprintf (err loc) "Unsupported shape-former '%s'" name
+        end
+    | _ ->
+        err loc "Unsupported shape format."
+  in
+  let shape_of_payload loc payload =
+    match list_of_payload loc payload with
+    | Error loc -> err loc "A shape list such as [int; lazy; custom] was expected."
+    | Ok args -> Some (List.filter_map shape_of_exp args)
+  in
+  let find_shape_payload a =
+    match a.attr_name.txt with
+    | "shape" | "ocaml.shape" ->
+        shape_of_payload a.attr_loc a.attr_payload
+    | _ -> None
+  in
+  match List.filter_map find_shape_payload attrs with
+  | [] -> None
+  | (_ :: _) as shape_specs ->
+      Some (List.fold_left List.rev_append [] shape_specs)
