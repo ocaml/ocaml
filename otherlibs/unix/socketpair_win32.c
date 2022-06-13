@@ -25,8 +25,8 @@
 #include "socketaddr.h"
 #include <ws2tcpip.h>
 
-extern int socket_domain_table[]; /* from socket.c */
-extern int socket_type_table[]; /* from socket.c */
+extern int caml_unix_socket_domain_table[]; /* from socket.c */
+extern int caml_unix_socket_type_table[]; /* from socket.c */
 
 #ifdef HAS_SOCKETPAIR
 
@@ -55,12 +55,12 @@ static int socketpair(int domain, int type, int protocol,
   int rc;
 
   if (GetTempPath(MAX_PATH + 1, dirname) == 0) {
-    win32_maperr(GetLastError());
+    caml_win32_maperr(GetLastError());
     goto fail;
   }
 
   if (GetTempFileName(dirname, L"osp", 0U, path) == 0) {
-    win32_maperr(GetLastError());
+    caml_win32_maperr(GetLastError());
     goto fail;
   }
 
@@ -71,11 +71,11 @@ static int socketpair(int domain, int type, int protocol,
   rc = WideCharToMultiByte(CP_UTF8, 0, path, -1, addr.s_unix.sun_path,
                            UNIX_PATH_MAX, NULL, NULL);
   if (rc == 0) {
-    win32_maperr(GetLastError());
+    caml_win32_maperr(GetLastError());
     goto fail_path;
   }
 
-  listener = win32_socket(domain, type, protocol, NULL, inherit);
+  listener = caml_win32_socket(domain, type, protocol, NULL, inherit);
   if (listener == INVALID_SOCKET)
     goto fail_wsa;
 
@@ -83,7 +83,7 @@ static int socketpair(int domain, int type, int protocol,
   if (DeleteFile(path) == 0) {
     drc = GetLastError();
     if (drc != ERROR_FILE_NOT_FOUND) {
-      win32_maperr(drc);
+      caml_win32_maperr(drc);
       goto fail_sockets;
     }
   }
@@ -96,7 +96,7 @@ static int socketpair(int domain, int type, int protocol,
   if (rc == SOCKET_ERROR)
     goto fail_wsa;
 
-  client = win32_socket(domain, type, protocol, NULL, inherit);
+  client = caml_win32_socket(domain, type, protocol, NULL, inherit);
   if (client == INVALID_SOCKET)
     goto fail_wsa;
 
@@ -137,7 +137,7 @@ static int socketpair(int domain, int type, int protocol,
     goto fail_wsa;
 
   if (DeleteFile(path) == 0) {
-    win32_maperr(GetLastError());
+    caml_win32_maperr(GetLastError());
     goto fail_sockets;
   }
 
@@ -153,7 +153,7 @@ static int socketpair(int domain, int type, int protocol,
   return 0;
 
 fail_wsa:
-  win32_maperr(WSAGetLastError());
+  caml_win32_maperr(WSAGetLastError());
 
 fail_path:
   DeleteFile(path);
@@ -170,7 +170,7 @@ fail:
   return SOCKET_ERROR;
 }
 
-CAMLprim value unix_socketpair(value cloexec, value domain, value type,
+CAMLprim value caml_unix_socketpair(value cloexec, value domain, value type,
                                value protocol)
 {
   CAMLparam4(cloexec, domain, type, protocol);
@@ -179,19 +179,19 @@ CAMLprim value unix_socketpair(value cloexec, value domain, value type,
   int rc;
 
   caml_enter_blocking_section();
-  rc = socketpair(socket_domain_table[Int_val(domain)],
-                  socket_type_table[Int_val(type)],
+  rc = socketpair(caml_unix_socket_domain_table[Int_val(domain)],
+                  caml_unix_socket_type_table[Int_val(type)],
                   Int_val(protocol),
                   sv,
-                  ! unix_cloexec_p(cloexec));
+                  ! caml_unix_cloexec_p(cloexec));
   caml_leave_blocking_section();
 
   if (rc == SOCKET_ERROR)
-    uerror("socketpair", Nothing);
+    caml_uerror("socketpair", Nothing);
 
   result = caml_alloc_tuple(2);
-  Store_field(result, 0, win_alloc_socket(sv[0]));
-  Store_field(result, 1, win_alloc_socket(sv[1]));
+  Store_field(result, 0, caml_win32_alloc_socket(sv[0]));
+  Store_field(result, 1, caml_win32_alloc_socket(sv[1]));
   CAMLreturn(result);
 }
 

@@ -99,8 +99,9 @@ static value stat_aux(int use_64, __int64 st_ino, struct _stat64 *buf)
   v = caml_alloc (12, 0);
   Store_field (v, 0, Val_int (buf->st_dev));
   Store_field (v, 1, Val_int (st_ino ? st_ino & Max_long : buf->st_ino));
-  Store_field (v, 2, cst_to_constr (buf->st_mode & S_IFMT, file_kind_table,
-                                    sizeof(file_kind_table) / sizeof(int), 0));
+  Store_field (v, 2, caml_unix_cst_to_constr (buf->st_mode & S_IFMT, file_kind_table,
+                                         sizeof(file_kind_table) / sizeof(int),
+                                         0));
   Store_field (v, 3, Val_int(buf->st_mode & 07777));
   Store_field (v, 4, Val_int (buf->st_nlink));
   Store_field (v, 5, Val_int (buf->st_uid));
@@ -207,7 +208,7 @@ static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, _
   else {
     caml_enter_blocking_section();
     if (!GetFileInformationByHandle(h, &info)) {
-      win32_maperr(GetLastError());
+      caml_win32_maperr(GetLastError());
       caml_leave_blocking_section();
       if (path) CloseHandle(h);
       return 0;
@@ -260,7 +261,7 @@ static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, _
         }
         else {
           if (!GetFileInformationByHandle(h, &info)) {
-            win32_maperr(GetLastError());
+            caml_win32_maperr(GetLastError());
             caml_leave_blocking_section();
             CloseHandle(h);
             return 0;
@@ -289,14 +290,14 @@ static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, _
     }
 
     if (!use_64 && res->st_size > Max_long) {
-      win32_maperr(ERROR_ARITHMETIC_OVERFLOW);
+      caml_win32_maperr(ERROR_ARITHMETIC_OVERFLOW);
       return 0;
     }
 
     if (!convert_time(&info.ftLastWriteTime, &res->st_mtime, 0) ||
         !convert_time(&info.ftLastAccessTime, &res->st_atime, res->st_mtime) ||
         !convert_time(&info.ftCreationTime, &res->st_ctime, res->st_mtime)) {
-      win32_maperr(GetLastError());
+      caml_win32_maperr(GetLastError());
       return 0;
     }
 
@@ -345,50 +346,50 @@ static int do_stat(int do_lstat, int use_64, const char* opath, HANDLE fstat, __
   return ret;
 }
 
-CAMLprim value unix_stat(value path)
+CAMLprim value caml_unix_stat(value path)
 {
   struct _stat64 buf;
   __int64 st_ino;
 
   caml_unix_check_path(path, "stat");
   if (!do_stat(0, 0, String_val(path), NULL, &st_ino, &buf)) {
-    uerror("stat", path);
+    caml_uerror("stat", path);
   }
   return stat_aux(0, st_ino, &buf);
 }
 
-CAMLprim value unix_stat_64(value path)
+CAMLprim value caml_unix_stat_64(value path)
 {
   struct _stat64 buf;
   __int64 st_ino;
 
   caml_unix_check_path(path, "stat");
   if (!do_stat(0, 1, String_val(path), NULL, &st_ino, &buf)) {
-    uerror("stat", path);
+    caml_uerror("stat", path);
   }
   return stat_aux(1, st_ino, &buf);
 }
 
-CAMLprim value unix_lstat(value path)
+CAMLprim value caml_unix_lstat(value path)
 {
   struct _stat64 buf;
   __int64 st_ino;
 
   caml_unix_check_path(path, "lstat");
   if (!do_stat(1, 0, String_val(path), NULL, &st_ino, &buf)) {
-    uerror("lstat", path);
+    caml_uerror("lstat", path);
   }
   return stat_aux(0, st_ino, &buf);
 }
 
-CAMLprim value unix_lstat_64(value path)
+CAMLprim value caml_unix_lstat_64(value path)
 {
   struct _stat64 buf;
   __int64 st_ino;
 
   caml_unix_check_path(path, "lstat");
   if (!do_stat(1, 1, String_val(path), NULL, &st_ino, &buf)) {
-    uerror("lstat", path);
+    caml_uerror("lstat", path);
   }
   return stat_aux(1, st_ino, &buf);
 }
@@ -410,7 +411,7 @@ static value do_fstat(value handle, int use_64)
   switch(ft) {
   case FILE_TYPE_DISK:
     if (!safe_do_stat(0, use_64, NULL, Handle_val(handle), &st_ino, &buf)) {
-      uerror("fstat", Nothing);
+      caml_uerror("fstat", Nothing);
     }
     break;
   case FILE_TYPE_CHAR:
@@ -431,20 +432,20 @@ static value do_fstat(value handle, int use_64)
     }
     break;
   case FILE_TYPE_UNKNOWN:
-    unix_error(EBADF, "fstat", Nothing);
+    caml_unix_error(EBADF, "fstat", Nothing);
   default:
-    win32_maperr(GetLastError());
-    uerror("fstat", Nothing);
+    caml_win32_maperr(GetLastError());
+    caml_uerror("fstat", Nothing);
   }
   return stat_aux(use_64, st_ino, &buf);
 }
 
-CAMLprim value unix_fstat(value handle)
+CAMLprim value caml_unix_fstat(value handle)
 {
   return do_fstat(handle, 0);
 }
 
-CAMLprim value unix_fstat_64(value handle)
+CAMLprim value caml_unix_fstat_64(value handle)
 {
   return do_fstat(handle, 1);
 }

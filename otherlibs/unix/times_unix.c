@@ -25,7 +25,7 @@
 #include <sys/resource.h>
 #endif
 
-CAMLprim value unix_times(value unit)
+CAMLprim value caml_unix_times(value unit)
 {
 #ifdef HAS_GETRUSAGE
 

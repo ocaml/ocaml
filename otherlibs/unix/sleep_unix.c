@@ -27,7 +27,7 @@
 #endif
 #endif
 
-CAMLprim value unix_sleep(value duration)
+CAMLprim value caml_unix_sleep(value duration)
 {
   double d = Double_val(duration);
   if (d < 0.0) return Val_unit;
@@ -46,7 +46,7 @@ CAMLprim value unix_sleep(value duration)
          section and re-entering it does the job. */
       caml_leave_blocking_section();
     } while (ret == -1 && errno == EINTR);
-    if (ret == -1) uerror("sleep", Nothing);
+    if (ret == -1) caml_uerror("sleep", Nothing);
   }
 #elif defined(HAS_SELECT)
   {
@@ -60,7 +60,7 @@ CAMLprim value unix_sleep(value duration)
       /* MPR#7903: same comment as above */
       caml_leave_blocking_section();
     } while (ret == -1 && errno == EINTR);
-    if (ret == -1) uerror("sleep", Nothing);
+    if (ret == -1) caml_uerror("sleep", Nothing);
   }
 #else
   /* Fallback implementation, resolution 1 second only.

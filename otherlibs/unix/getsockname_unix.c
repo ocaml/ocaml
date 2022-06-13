@@ -21,7 +21,7 @@
 
 #include "socketaddr.h"
 
-CAMLprim value unix_getsockname(value sock)
+CAMLprim value caml_unix_getsockname(value sock)
 {
   int retcode;
   union sock_addr_union addr;
@@ -29,13 +29,13 @@ CAMLprim value unix_getsockname(value sock)
 
   addr_len = sizeof(addr);
   retcode = getsockname(Int_val(sock), &addr.s_gen, &addr_len);
-  if (retcode == -1) uerror("getsockname", Nothing);
-  return alloc_sockaddr(&addr, addr_len, -1);
+  if (retcode == -1) caml_uerror("getsockname", Nothing);
+  return caml_unix_alloc_sockaddr(&addr, addr_len, -1);
 }
 
 #else
 
-CAMLprim value unix_getsockname(value sock)
+CAMLprim value caml_unix_getsockname(value sock)
 { caml_invalid_argument("getsockname not implemented"); }
 
 #endif

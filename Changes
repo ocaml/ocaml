@@ -428,6 +428,10 @@ OCaml 4.14.0
 - #10730, 10731: Fix bug in `Obj.reachable_words` causing a slowdown when called
   multiple time (Alain Frisch, report by ygrek, review by Xavier Leroy)
 
+- #10926: Rename the two internal Windows Unicode functions with `caml_` prefix
+  instead of `win_`.
+  (David Allsopp, review by Kate Deplaix, Damien Doligez and Xavier Leroy)
+
 ### Code generation and optimizations:
 
 - #10578: Increase the number of integer registers used for
@@ -534,6 +538,10 @@ OCaml 4.14.0
 - #10697: Bindings of dup and dup2 in win32unix now correctly call
   WSADuplicateSocket on sockets instead of DuplicateHandle.
   (Antonin Décimo, review by Xavier Leroy and Nicolás Ojeda Bär)
+
+- #10926: Prefix all C functions in the Unix library with `unix_` except for the
+  venerable `uerror`.
+  (David Allsopp, review by Kate Deplaix and Xavier Leroy)
 
 - #10951: Introduce the Thread.Exit exception as an alternative way to
   terminate threads prematurely.  This alternative way will become

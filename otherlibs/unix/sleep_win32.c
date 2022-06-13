@@ -17,7 +17,7 @@
 #include <caml/signals.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_sleep(t)
+CAMLprim value caml_unix_sleep(t)
      value t;
 {
   double d = Double_val(t);

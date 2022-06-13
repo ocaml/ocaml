@@ -31,7 +31,7 @@
 #include <windows.h>
 #include <stdio.h>
 
-CAMLprim value unix_realpath (value p)
+CAMLprim value caml_unix_realpath (value p)
 {
   CAMLparam1 (p);
   HANDLE h;
@@ -49,16 +49,16 @@ CAMLprim value unix_realpath (value p)
 
   if (h == INVALID_HANDLE_VALUE)
   {
-    win32_maperr (GetLastError ());
-    uerror ("realpath", p);
+    caml_win32_maperr (GetLastError ());
+    caml_uerror ("realpath", p);
   }
 
   wr_len = GetFinalPathNameByHandle (h, NULL, 0, VOLUME_NAME_DOS);
   if (wr_len == 0)
   {
-    win32_maperr (GetLastError ());
+    caml_win32_maperr (GetLastError ());
     CloseHandle (h);
-    uerror ("realpath", p);
+    caml_uerror ("realpath", p);
   }
 
   wr = caml_stat_alloc ((wr_len + 1) * sizeof (wchar_t));
@@ -66,10 +66,10 @@ CAMLprim value unix_realpath (value p)
 
   if (wr_len == 0)
   {
-    win32_maperr (GetLastError ());
+    caml_win32_maperr (GetLastError ());
     CloseHandle (h);
     caml_stat_free (wr);
-    uerror ("realpath", p);
+    caml_uerror ("realpath", p);
   }
 
   rp = caml_copy_string_of_utf16 (wr);

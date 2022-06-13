@@ -27,7 +27,7 @@
 #include <sys/types.h>
 #include <sys/time.h>
 
-CAMLprim value unix_utimes(value path, value atime, value mtime)
+CAMLprim value caml_unix_utimes(value path, value atime, value mtime)
 {
   CAMLparam3(path, atime, mtime);
   struct timeval tv[2], * t;
@@ -51,7 +51,7 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
   ret = utimes(p, t);
   caml_leave_blocking_section();
   caml_stat_free(p);
-  if (ret == -1) uerror("utimes", path);
+  if (ret == -1) caml_uerror("utimes", path);
   CAMLreturn(Val_unit);
 }
 
@@ -60,7 +60,7 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
 #include <sys/types.h>
 #include <utime.h>
 
-CAMLprim value unix_utimes(value path, value atime, value mtime)
+CAMLprim value caml_unix_utimes(value path, value atime, value mtime)
 {
   CAMLparam3(path, atime, mtime);
   struct utimbuf times, * t;
@@ -82,13 +82,13 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
   ret = utime(p, t);
   caml_leave_blocking_section();
   caml_stat_free(p);
-  if (ret == -1) uerror("utimes", path);
+  if (ret == -1) caml_uerror("utimes", path);
   CAMLreturn(Val_unit);
 }
 
 #else
 
-CAMLprim value unix_utimes(value path, value atime, value mtime)
+CAMLprim value caml_unix_utimes(value path, value atime, value mtime)
 { caml_invalid_argument("utimes not implemented"); }
 
 #endif

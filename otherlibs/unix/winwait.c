@@ -38,7 +38,7 @@ enum { CAML_WNOHANG = 1, CAML_WUNTRACED = 2 };
 
 static int wait_flag_table[] = { CAML_WNOHANG, CAML_WUNTRACED };
 
-CAMLprim value win_waitpid(value vflags, value vpid_req)
+CAMLprim value caml_unix_waitpid(value vflags, value vpid_req)
 {
   int flags;
   DWORD status, retcode;
@@ -64,12 +64,12 @@ CAMLprim value win_waitpid(value vflags, value vpid_req)
     if (retcode == WAIT_FAILED) err = GetLastError();
   }
   if (err) {
-    win32_maperr(err);
-    uerror("waitpid", Nothing);
+    caml_win32_maperr(err);
+    caml_uerror("waitpid", Nothing);
   }
   if (! GetExitCodeProcess(pid_req, &status)) {
-    win32_maperr(GetLastError());
-    uerror("waitpid", Nothing);
+    caml_win32_maperr(GetLastError());
+    caml_uerror("waitpid", Nothing);
   }
   if (status == STILL_ACTIVE)
     return alloc_process_status((HANDLE) 0, 0);

@@ -19,7 +19,7 @@
 #include <caml/signals.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_read(value fd, value buf, value ofs, value vlen)
+CAMLprim value caml_unix_read(value fd, value buf, value ofs, value vlen)
 {
   CAMLparam1(buf);
   intnat len;
@@ -51,8 +51,8 @@ CAMLprim value unix_read(value fd, value buf, value ofs, value vlen)
       err = 0;
       numread = 0;
     } else {
-      win32_maperr(err);
-      uerror("read", Nothing);
+      caml_win32_maperr(err);
+      caml_uerror("read", Nothing);
     }
   }
   memmove (&Byte(buf, Long_val(ofs)), iobuf, numread);

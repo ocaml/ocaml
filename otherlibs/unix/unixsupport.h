@@ -64,31 +64,44 @@ struct filedescr {
 #define CRT_fd_val(v) (((struct filedescr *) Data_custom_val(v))->crt_fd)
 #define Flags_fd_val(v) (((struct filedescr *) Data_custom_val(v))->flags_fd)
 
-extern value win_alloc_handle(HANDLE);
-extern value win_alloc_socket(SOCKET);
-extern int win_CRT_fd_of_filedescr(value handle);
+extern value caml_win32_alloc_handle(HANDLE);
+extern value caml_win32_alloc_socket(SOCKET);
+extern int caml_win32_CRT_fd_of_filedescr(value handle);
 
-extern SOCKET win32_socket(int domain, int type, int protocol,
-                           LPWSAPROTOCOL_INFO info,
-                           BOOL inherit);
+extern SOCKET caml_win32_socket(int domain, int type, int protocol,
+                                LPWSAPROTOCOL_INFO info,
+                                BOOL inherit);
 
 #define NO_CRT_FD (-1)
 
-extern void win32_maperr(DWORD errcode);
+extern void caml_win32_maperr(DWORD errcode);
+#define win32_maperr caml_win32_maperr
 #endif /* _WIN32 */
 
 #define Nothing ((value) 0)
 
-extern value unix_error_of_code (int errcode);
-extern int code_of_unix_error (value error);
+extern value caml_unix_error_of_code (int errcode);
+extern int caml_unix_code_of_unix_error (value error);
+
+/* Compatibility definitions for the pre-5.0 names of these functions */
+#ifndef CAML_BUILDING_UNIX
+#define unix_error_of_code caml_unix_error_of_code
+#define code_of_unix_error caml_unix_code_of_unix_error
+#endif /* CAML_BUILDING_UNIX */
 
 CAMLnoreturn_start
-extern void unix_error (int errcode, const char * cmdname, value arg)
+extern void caml_unix_error (int errcode, const char * cmdname, value arg)
 CAMLnoreturn_end;
 
 CAMLnoreturn_start
-extern void uerror (const char * cmdname, value arg)
+extern void caml_uerror (const char * cmdname, value arg)
 CAMLnoreturn_end;
+
+/* Compatibility definitions for the pre-5.0 names of these functions */
+#ifndef CAML_BUILDING_UNIX
+#define uerror caml_uerror
+#define unix_error caml_unix_error
+#endif /* CAML_BUILDING_UNIX */
 
 extern void caml_unix_check_path(value path, const char * cmdname);
 
@@ -96,20 +109,20 @@ extern void caml_unix_check_path(value path, const char * cmdname);
 
 #define DIR_Val(v) *((DIR **) &Field(v, 0))
 
-extern char_os ** cstringvect(value arg, char * cmdname);
-extern void cstringvect_free(char_os **);
+extern char_os ** caml_unix_cstringvect(value arg, char * cmdname);
+extern void caml_unix_cstringvect_free(char_os **);
 
-extern int unix_cloexec_default;
-extern int unix_cloexec_p(value cloexec);
+extern int caml_unix_cloexec_default;
+extern int caml_unix_cloexec_p(value cloexec);
 
 #ifdef _WIN32
-extern int win_set_inherit(HANDLE fd, BOOL inherit);
+extern int caml_win32_set_inherit(HANDLE fd, BOOL inherit);
 /* This is a best effort, not guaranteed to work, so don't fail on error */
-#define win_set_cloexec(fd, cloexec) \
-  win_set_inherit((fd), ! unix_cloexec_p((cloexec)))
+#define caml_win32_set_cloexec(fd, cloexec) \
+  caml_win32_set_inherit((fd), ! caml_unix_cloexec_p((cloexec)))
 #else
-extern void unix_set_cloexec(int fd, char * cmdname, value arg);
-extern void unix_clear_cloexec(int fd, char * cmdname, value arg);
+extern void caml_unix_set_cloexec(int fd, char * cmdname, value arg);
+extern void caml_unix_clear_cloexec(int fd, char * cmdname, value arg);
 #endif
 
 #ifdef __cplusplus

@@ -19,7 +19,7 @@
 #include <caml/signals.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_rename(value path1, value path2)
+CAMLprim value caml_unix_rename(value path1, value path2)
 {
   CAMLparam2(path1, path2);
   char * p1;
@@ -35,6 +35,6 @@ CAMLprim value unix_rename(value path1, value path2)
   caml_stat_free(p2);
   caml_stat_free(p1);
   if (ret == -1)
-    uerror("rename", path1);
+    caml_uerror("rename", path1);
   CAMLreturn(Val_unit);
 }

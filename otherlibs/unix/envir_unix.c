@@ -28,7 +28,7 @@
 
 extern char ** environ;
 
-CAMLprim value unix_environment_unsafe(value unit)
+CAMLprim value caml_unix_environment_unsafe(value unit)
 {
   if (environ != NULL) {
     return caml_copy_string_array((const char**)environ);
@@ -57,7 +57,7 @@ static char **secure_environ(void)
 #endif
 }
 
-CAMLprim value unix_environment(value unit)
+CAMLprim value caml_unix_environment(value unit)
 {
   char **e = secure_environ();
   if (e != NULL) {

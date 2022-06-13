@@ -23,12 +23,12 @@
 #include <caml/osdeps.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_error_message(value err)
+CAMLprim value caml_unix_error_message(value err)
 {
   int errnum;
   wchar_t buffer[512];
 
-  errnum = code_of_unix_error(err);
+  errnum = caml_unix_code_of_unix_error(err);
   if (errnum > 0)
     return caml_copy_string(strerror(errnum));
   if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,

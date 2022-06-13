@@ -30,7 +30,7 @@ BOOL (WINAPI *tCreateHardLink)(
   LPSECURITY_ATTRIBUTES lpSecurityAttributes
 );
 
-CAMLprim value unix_link(value follow, value path1, value path2)
+CAMLprim value caml_unix_link(value follow, value path1, value path2)
 {
   HMODULE hModKernel32;
   tCreateHardLink pCreateHardLink;
@@ -38,7 +38,7 @@ CAMLprim value unix_link(value follow, value path1, value path2)
   wchar_t * wpath1, * wpath2;
   if (Is_some(follow) && !Bool_val(Some_val(follow))) {
     errno = ENOSYS;
-    uerror("link", path2);
+    caml_uerror("link", path2);
   }
   hModKernel32 = GetModuleHandle(L"KERNEL32.DLL");
   pCreateHardLink =
@@ -57,8 +57,8 @@ CAMLprim value unix_link(value follow, value path1, value path2)
   caml_stat_free(wpath2);
 
   if (! result) {
-    win32_maperr(GetLastError());
-    uerror("link", path2);
+    caml_win32_maperr(GetLastError());
+    caml_uerror("link", path2);
   }
   return Val_unit;
 }

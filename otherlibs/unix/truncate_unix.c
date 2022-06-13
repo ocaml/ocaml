@@ -28,7 +28,7 @@
 
 #ifdef HAS_TRUNCATE
 
-CAMLprim value unix_truncate(value path, value len)
+CAMLprim value caml_unix_truncate(value path, value len)
 {
   CAMLparam2(path, len);
   char * p;
@@ -40,11 +40,11 @@ CAMLprim value unix_truncate(value path, value len)
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret == -1)
-    uerror("truncate", path);
+    caml_uerror("truncate", path);
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value unix_truncate_64(value path, value vlen)
+CAMLprim value caml_unix_truncate_64(value path, value vlen)
 {
   CAMLparam2(path, vlen);
   char * p;
@@ -57,16 +57,16 @@ CAMLprim value unix_truncate_64(value path, value vlen)
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret == -1)
-    uerror("truncate", path);
+    caml_uerror("truncate", path);
   CAMLreturn(Val_unit);
 }
 
 #else
 
-CAMLprim value unix_truncate(value path, value len)
+CAMLprim value caml_unix_truncate(value path, value len)
 { caml_invalid_argument("truncate not implemented"); }
 
-CAMLprim value unix_truncate_64(value path, value len)
+CAMLprim value caml_unix_truncate_64(value path, value len)
 { caml_invalid_argument("truncate not implemented"); }
 
 #endif

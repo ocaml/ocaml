@@ -33,7 +33,7 @@ void caml_atfork_child() {
   CAML_EV_LIFECYCLE(EV_FORK_CHILD, 0);
 }
 
-CAMLprim value unix_fork(value unit)
+CAMLprim value caml_unix_fork(value unit)
 {
   int ret;
   if (caml_domain_is_multicore()) {
@@ -43,7 +43,7 @@ CAMLprim value unix_fork(value unit)
 
   ret = fork();
 
-  if (ret == -1) uerror("fork", Nothing);
+  if (ret == -1) caml_uerror("fork", Nothing);
 
   if (ret == 0) {
     caml_atfork_child();

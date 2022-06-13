@@ -21,21 +21,21 @@
 
 #include "socketaddr.h"
 
-CAMLprim value unix_bind(value socket, value address)
+CAMLprim value caml_unix_bind(value socket, value address)
 {
   int ret;
   union sock_addr_union addr;
   socklen_param_type addr_len;
 
-  get_sockaddr(address, &addr, &addr_len);
+  caml_unix_get_sockaddr(address, &addr, &addr_len);
   ret = bind(Int_val(socket), &addr.s_gen, addr_len);
-  if (ret == -1) uerror("bind", Nothing);
+  if (ret == -1) caml_uerror("bind", Nothing);
   return Val_unit;
 }
 
 #else
 
-CAMLprim value unix_bind(value socket, value address)
+CAMLprim value caml_unix_bind(value socket, value address)
 { caml_invalid_argument("bind not implemented"); }
 
 #endif

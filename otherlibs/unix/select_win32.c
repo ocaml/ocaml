@@ -44,7 +44,7 @@ typedef struct _SELECTHANDLESET {
 
 typedef SELECTHANDLESET *LPSELECTHANDLESET;
 
-void handle_set_init (LPSELECTHANDLESET hds, LPHANDLE lpHdl, DWORD max)
+static void handle_set_init (LPSELECTHANDLESET hds, LPHANDLE lpHdl, DWORD max)
 {
   DWORD i;
 
@@ -59,7 +59,7 @@ void handle_set_init (LPSELECTHANDLESET hds, LPHANDLE lpHdl, DWORD max)
   };
 }
 
-void handle_set_add (LPSELECTHANDLESET hds, HANDLE hdl)
+static void handle_set_add (LPSELECTHANDLESET hds, HANDLE hdl)
 {
   LPSELECTHANDLESET res;
 
@@ -72,7 +72,7 @@ void handle_set_add (LPSELECTHANDLESET hds, HANDLE hdl)
   DEBUG_PRINT("Adding handle %x to set %x", hdl, hds);
 }
 
-BOOL handle_set_mem (LPSELECTHANDLESET hds, HANDLE hdl)
+static BOOL handle_set_mem (LPSELECTHANDLESET hds, HANDLE hdl)
 {
   BOOL  res;
   DWORD i;
@@ -86,7 +86,7 @@ BOOL handle_set_mem (LPSELECTHANDLESET hds, HANDLE hdl)
   return res;
 }
 
-void handle_set_reset (LPSELECTHANDLESET hds)
+static void handle_set_reset (LPSELECTHANDLESET hds)
 {
   DWORD i;
 
@@ -184,7 +184,8 @@ static BOOL check_error(LPSELECTDATA lpSelectData, BOOL bFailed)
 }
 
 /* Create data associated with a  select operation */
-LPSELECTDATA select_data_new (LPSELECTDATA lpSelectData, SELECTTYPE EType)
+static LPSELECTDATA select_data_new (LPSELECTDATA lpSelectData,
+                                     SELECTTYPE EType)
 {
   /* Allocate the data structure */
   LPSELECTDATA res;
@@ -193,8 +194,8 @@ LPSELECTDATA select_data_new (LPSELECTDATA lpSelectData, SELECTTYPE EType)
   res = (LPSELECTDATA)caml_stat_alloc(sizeof(SELECTDATA));
 
   /* Init common data */
-  list_init((LPLIST)res);
-  list_next_set((LPLIST)res, (LPLIST)lpSelectData);
+  caml_win32_list_init((LPLIST)res);
+  caml_win32_list_next_set((LPLIST)res, (LPLIST)lpSelectData);
   res->EType         = EType;
   res->nResultsCount = 0;
 
@@ -213,7 +214,7 @@ LPSELECTDATA select_data_new (LPSELECTDATA lpSelectData, SELECTTYPE EType)
 }
 
 /* Free select data */
-void select_data_free (LPSELECTDATA lpSelectData)
+static void select_data_free (LPSELECTDATA lpSelectData)
 {
   DWORD i;
 
@@ -222,7 +223,7 @@ void select_data_free (LPSELECTDATA lpSelectData)
   /* Free APC related data, if they exists */
   if (lpSelectData->lpWorker != NULL)
   {
-    worker_job_finish(lpSelectData->lpWorker);
+    caml_win32_worker_job_finish(lpSelectData->lpWorker);
     lpSelectData->lpWorker = NULL;
   };
 
@@ -234,8 +235,8 @@ void select_data_free (LPSELECTDATA lpSelectData)
 }
 
 /* Add a result to select data, return zero if something goes wrong. */
-DWORD select_data_result_add (LPSELECTDATA lpSelectData, SELECTMODE EMode,
-                              int lpOrigIdx)
+static DWORD select_data_result_add (LPSELECTDATA lpSelectData,
+                                     SELECTMODE EMode, int lpOrigIdx)
 {
   DWORD res;
   DWORD i;
@@ -254,11 +255,11 @@ DWORD select_data_result_add (LPSELECTDATA lpSelectData, SELECTMODE EMode,
 }
 
 /* Add a query to select data, return zero if something goes wrong */
-DWORD select_data_query_add (LPSELECTDATA lpSelectData,
-                             SELECTMODE EMode,
-                             HANDLE hFileDescr,
-                             int lpOrigIdx,
-                             unsigned int uFlagsFd)
+static DWORD select_data_query_add (LPSELECTDATA lpSelectData,
+                                    SELECTMODE EMode,
+                                    HANDLE hFileDescr,
+                                    int lpOrigIdx,
+                                    unsigned int uFlagsFd)
 {
   DWORD res;
   DWORD i;
@@ -282,8 +283,8 @@ DWORD select_data_query_add (LPSELECTDATA lpSelectData,
  * If none is found, create a new one. Return the corresponding SELECTDATA, and
  * update provided SELECTDATA head, if required.
  */
-LPSELECTDATA select_data_job_search (LPSELECTDATA *lppSelectData,
-                                     SELECTTYPE EType)
+static LPSELECTDATA select_data_job_search (LPSELECTDATA *lppSelectData,
+                                            SELECTTYPE EType)
 {
   LPSELECTDATA res;
 
@@ -318,7 +319,7 @@ LPSELECTDATA select_data_job_search (LPSELECTDATA *lppSelectData,
 /*      Console        */
 /***********************/
 
-void read_console_poll(HANDLE hStop, void *_data)
+static void read_console_poll(HANDLE hStop, void *_data)
 {
   HANDLE events[2];
   INPUT_RECORD record;
@@ -376,11 +377,11 @@ void read_console_poll(HANDLE hStop, void *_data)
 }
 
 /* Add a function to monitor console input */
-LPSELECTDATA read_console_poll_add (LPSELECTDATA lpSelectData,
-                                    SELECTMODE EMode,
-                                    HANDLE hFileDescr,
-                                    int lpOrigIdx,
-                                    unsigned int uFlagsFd)
+static LPSELECTDATA read_console_poll_add (LPSELECTDATA lpSelectData,
+                                           SELECTMODE EMode,
+                                           HANDLE hFileDescr,
+                                           int lpOrigIdx,
+                                           unsigned int uFlagsFd)
 {
   LPSELECTDATA res;
 
@@ -396,7 +397,7 @@ LPSELECTDATA read_console_poll_add (LPSELECTDATA lpSelectData,
 /***********************/
 
 /* Monitor a pipe for input */
-void read_pipe_poll (HANDLE hStop, void *_data)
+static void read_pipe_poll (HANDLE hStop, void *_data)
 {
   DWORD         res;
   DWORD         event;
@@ -467,11 +468,11 @@ void read_pipe_poll (HANDLE hStop, void *_data)
 }
 
 /* Add a function to monitor pipe input */
-LPSELECTDATA read_pipe_poll_add (LPSELECTDATA lpSelectData,
-                                 SELECTMODE EMode,
-                                 HANDLE hFileDescr,
-                                 int lpOrigIdx,
-                                 unsigned int uFlagsFd)
+static LPSELECTDATA read_pipe_poll_add (LPSELECTDATA lpSelectData,
+                                        SELECTMODE EMode,
+                                        HANDLE hFileDescr,
+                                        int lpOrigIdx,
+                                        unsigned int uFlagsFd)
 {
   LPSELECTDATA res;
   LPSELECTDATA hd;
@@ -496,7 +497,7 @@ LPSELECTDATA read_pipe_poll_add (LPSELECTDATA lpSelectData,
 /***********************/
 
 /* Monitor socket */
-void socket_poll (HANDLE hStop, void *_data)
+static void socket_poll (HANDLE hStop, void *_data)
 {
   LPSELECTDATA   lpSelectData;
   LPSELECTQUERY    iterQuery;
@@ -615,11 +616,11 @@ void socket_poll (HANDLE hStop, void *_data)
 }
 
 /* Add a function to monitor socket */
-LPSELECTDATA socket_poll_add (LPSELECTDATA lpSelectData,
-                              SELECTMODE EMode,
-                              HANDLE hFileDescr,
-                              int lpOrigIdx,
-                              unsigned int uFlagsFd)
+static LPSELECTDATA socket_poll_add (LPSELECTDATA lpSelectData,
+                                     SELECTMODE EMode,
+                                     HANDLE hFileDescr,
+                                     int lpOrigIdx,
+                                     unsigned int uFlagsFd)
 {
   LPSELECTDATA res;
   LPSELECTDATA candidate;
@@ -714,11 +715,11 @@ LPSELECTDATA socket_poll_add (LPSELECTDATA lpSelectData,
 /***********************/
 
 /* Add a static result */
-LPSELECTDATA static_poll_add (LPSELECTDATA lpSelectData,
-                              SELECTMODE EMode,
-                              HANDLE hFileDescr,
-                              int lpOrigIdx,
-                              unsigned int uFlagsFd)
+static LPSELECTDATA static_poll_add (LPSELECTDATA lpSelectData,
+                                     SELECTMODE EMode,
+                                     HANDLE hFileDescr,
+                                     int lpOrigIdx,
+                                     unsigned int uFlagsFd)
 {
   LPSELECTDATA res;
   LPSELECTDATA hd;
@@ -783,8 +784,9 @@ static SELECTHANDLETYPE get_handle_type(value fd)
 }
 
 /* Choose what to do with given data */
-LPSELECTDATA select_data_dispatch (LPSELECTDATA lpSelectData, SELECTMODE EMode,
-                                   value fd, int lpOrigIdx)
+static LPSELECTDATA select_data_dispatch (LPSELECTDATA lpSelectData,
+                                          SELECTMODE EMode,
+                                          value fd, int lpOrigIdx)
 {
   LPSELECTDATA    res;
   HANDLE          hFileDescr;
@@ -873,8 +875,8 @@ LPSELECTDATA select_data_dispatch (LPSELECTDATA lpSelectData, SELECTMODE EMode,
 
     default:
       DEBUG_PRINT("Handle %x is unknown", hFileDescr);
-      win32_maperr(ERROR_INVALID_HANDLE);
-      uerror("select", Nothing);
+      caml_win32_maperr(ERROR_INVALID_HANDLE);
+      caml_uerror("select", Nothing);
       break;
   };
 
@@ -975,7 +977,7 @@ static value fdset_to_fdlist(value fdlist, fd_set *fdset)
   CAMLreturn(res);
 }
 
-CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
+CAMLprim value caml_unix_select(value readfds, value writefds, value exceptfds,
                            value timeout)
 {
   /* Event associated to handle */
@@ -1058,8 +1060,8 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
       caml_leave_blocking_section();
       if (err) {
         DEBUG_PRINT("Error %ld occurred", err);
-        win32_maperr(err);
-        uerror("select", Nothing);
+        caml_win32_maperr(err);
+        caml_uerror("select", Nothing);
       }
       read_list = fdset_to_fdlist(readfds, &read);
       write_list = fdset_to_fdlist(writefds, &write);
@@ -1155,7 +1157,7 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
 
       /* Building the list of handle to wait for */
       DEBUG_PRINT("Building events done array");
-      nEventsMax   = list_length((LPLIST)lpSelectData);
+      nEventsMax   = caml_win32_list_length((LPLIST)lpSelectData);
       nEventsCount = 0;
       lpEventsDone = (HANDLE *)caml_stat_alloc(sizeof(HANDLE) * nEventsMax);
 
@@ -1176,13 +1178,12 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
           if (iterSelectData->funcWorker != NULL)
             {
               iterSelectData->lpWorker =
-                worker_job_submit(
-                                  iterSelectData->funcWorker,
-                                  (void *)iterSelectData);
+                caml_win32_worker_job_submit(iterSelectData->funcWorker,
+                                             (void *)iterSelectData);
               DEBUG_PRINT("Job submitted to worker %x",
                           iterSelectData->lpWorker);
               lpEventsDone[nEventsCount]
-                = worker_job_event_done(iterSelectData->lpWorker);
+                = caml_win32_worker_job_event_done(iterSelectData->lpWorker);
               nEventsCount++;
             };
           iterSelectData = LIST_NEXT(LPSELECTDATA, iterSelectData);
@@ -1223,7 +1224,7 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
             {
               if (iterSelectData->lpWorker != NULL)
                 {
-                  worker_job_stop(iterSelectData->lpWorker);
+                  caml_win32_worker_job_stop(iterSelectData->lpWorker);
                 };
               iterSelectData = LIST_NEXT(LPSELECTDATA, iterSelectData);
             };
@@ -1312,8 +1313,8 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
       DEBUG_PRINT("Raise error if required");
       if (err != 0)
         {
-          win32_maperr(err);
-          uerror("select", Nothing);
+          caml_win32_maperr(err);
+          caml_uerror("select", Nothing);
         }
     }
   }

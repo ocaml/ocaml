@@ -45,12 +45,12 @@ struct _WORKER {
 #define THREAD_WORKERS_MAX 16
 #define THREAD_WORKERS_MEM 4000
 
-LPWORKER lpWorkers       = NULL;
-DWORD    nWorkersCurrent = 0;
-DWORD    nWorkersMax     = 0;
-HANDLE   hWorkersMutex   = INVALID_HANDLE_VALUE;
+static LPWORKER lpWorkers       = NULL;
+static DWORD    nWorkersCurrent = 0;
+static DWORD    nWorkersMax     = 0;
+static HANDLE   hWorkersMutex   = INVALID_HANDLE_VALUE;
 
-DWORD WINAPI worker_wait (LPVOID _data)
+DWORD WINAPI caml_win32_worker_wait (LPVOID _data)
 {
   BOOL     bExit;
   LPWORKER lpWorker;
@@ -92,12 +92,12 @@ DWORD WINAPI worker_wait (LPVOID _data)
   return 0;
 }
 
-LPWORKER worker_new (void)
+LPWORKER caml_win32_worker_new (void)
 {
   LPWORKER lpWorker = NULL;
 
   lpWorker = (LPWORKER)caml_stat_alloc(sizeof(WORKER));
-  list_init((LPLIST)lpWorker);
+  caml_win32_list_init((LPLIST)lpWorker);
   lpWorker->hJobStarted  = CreateEvent(NULL, TRUE, FALSE, NULL);
   lpWorker->hJobStop     = CreateEvent(NULL, TRUE, FALSE, NULL);
   lpWorker->hJobDone     = CreateEvent(NULL, TRUE, FALSE, NULL);
@@ -108,7 +108,7 @@ LPWORKER worker_new (void)
   lpWorker->hThread = CreateThread(
     NULL,
     THREAD_WORKERS_MEM,
-    worker_wait,
+    caml_win32_worker_wait,
     (LPVOID)lpWorker,
     0,
     NULL);
@@ -116,7 +116,7 @@ LPWORKER worker_new (void)
   return lpWorker;
 };
 
-void worker_free (LPWORKER lpWorker)
+void caml_win32_worker_free (LPWORKER lpWorker)
 {
   /* Wait for termination of the worker */
   DEBUG_PRINT("Shutting down worker %x", lpWorker);
@@ -169,7 +169,7 @@ void worker_free (LPWORKER lpWorker)
   caml_stat_free(lpWorker);
 };
 
-LPWORKER worker_pop (void)
+LPWORKER caml_win32_worker_pop (void)
 {
   LPWORKER lpWorkerFree = NULL;
 
@@ -185,17 +185,17 @@ LPWORKER worker_pop (void)
   DEBUG_PRINT("Workers running current/running max/waiting: %d/%d/%d",
       nWorkersCurrent,
       nWorkersMax,
-      list_length((LPLIST)lpWorkers));
+      caml_win32_list_length((LPLIST)lpWorkers));
   ReleaseMutex(hWorkersMutex);
 
   if (lpWorkerFree == NULL)
   {
     /* We cannot find a free worker, create one. */
-    lpWorkerFree = worker_new();
+    lpWorkerFree = caml_win32_worker_new();
   }
 
   /* Ensure that we don't get dangling pointer to old data. */
-  list_init((LPLIST)lpWorkerFree);
+  caml_win32_list_init((LPLIST)lpWorkerFree);
   lpWorkerFree->lpJobUserData = NULL;
 
   /* Reset events */
@@ -206,7 +206,7 @@ LPWORKER worker_pop (void)
   return lpWorkerFree;
 }
 
-void worker_push(LPWORKER lpWorker)
+void caml_win32_worker_push(LPWORKER lpWorker)
 {
   BOOL bFreeWorker;
 
@@ -214,28 +214,29 @@ void worker_push(LPWORKER lpWorker)
 
   WaitForSingleObject(hWorkersMutex, INFINITE);
   DEBUG_PRINT("Testing if we are under the maximum number of running workers");
-  if (list_length((LPLIST)lpWorkers) < THREAD_WORKERS_MAX)
+  if (caml_win32_list_length((LPLIST)lpWorkers) < THREAD_WORKERS_MAX)
   {
     DEBUG_PRINT("Saving this worker for future use");
     DEBUG_PRINT("Next: %x", ((LPLIST)lpWorker)->lpNext);
-    lpWorkers = (LPWORKER)list_concat((LPLIST)lpWorker, (LPLIST)lpWorkers);
+    lpWorkers =
+      (LPWORKER)caml_win32_list_concat((LPLIST)lpWorker, (LPLIST)lpWorkers);
     bFreeWorker = FALSE;
   };
   nWorkersCurrent--;
   DEBUG_PRINT("Workers running current/running max/waiting: %d/%d/%d",
       nWorkersCurrent,
       nWorkersMax,
-      list_length((LPLIST)lpWorkers));
+      caml_win32_list_length((LPLIST)lpWorkers));
   ReleaseMutex(hWorkersMutex);
 
   if (bFreeWorker)
   {
     DEBUG_PRINT("Freeing worker %x", lpWorker);
-    worker_free(lpWorker);
+    caml_win32_worker_free(lpWorker);
   }
 }
 
-void worker_init (void)
+void caml_win32_worker_init (void)
 {
   int i = 0;
 
@@ -249,7 +250,7 @@ void worker_init (void)
   }
 }
 
-void worker_cleanup(void)
+void caml_win32_worker_cleanup(void)
 {
   LPWORKER lpWorker = NULL;
 
@@ -265,10 +266,10 @@ void worker_cleanup(void)
     while (lpWorkers != NULL)
     {
       ReleaseMutex(hWorkersMutex);
-      lpWorker = worker_pop();
+      lpWorker = caml_win32_worker_pop();
       DEBUG_PRINT("Freeing worker %x", lpWorker);
       WaitForSingleObject(hWorkersMutex, INFINITE);
-      worker_free(lpWorker);
+      caml_win32_worker_free(lpWorker);
     };
     ReleaseMutex(hWorkersMutex);
 
@@ -278,9 +279,9 @@ void worker_cleanup(void)
   };
 }
 
-LPWORKER worker_job_submit (WORKERFUNC f, void *user_data)
+LPWORKER caml_win32_worker_job_submit (WORKERFUNC f, void *user_data)
 {
-  LPWORKER lpWorker = worker_pop();
+  LPWORKER lpWorker = caml_win32_worker_pop();
 
   DEBUG_PRINT("Waiting for worker to be ready");
   caml_enter_blocking_section();
@@ -299,24 +300,24 @@ LPWORKER worker_job_submit (WORKERFUNC f, void *user_data)
   return (LPWORKER)lpWorker;
 }
 
-HANDLE worker_job_event_done (LPWORKER lpWorker)
+HANDLE caml_win32_worker_job_event_done (LPWORKER lpWorker)
 {
   return lpWorker->hJobDone;
 }
 
-void worker_job_stop (LPWORKER lpWorker)
+void caml_win32_worker_job_stop (LPWORKER lpWorker)
 {
   DEBUG_PRINT("Sending stop signal to worker %x", lpWorker);
   SetEvent(lpWorker->hJobStop);
   DEBUG_PRINT("Signal sent to worker %x", lpWorker);
 }
 
-void worker_job_finish (LPWORKER lpWorker)
+void caml_win32_worker_job_finish (LPWORKER lpWorker)
 {
   DEBUG_PRINT("Finishing call of worker %x", lpWorker);
   caml_enter_blocking_section();
   WaitForSingleObject(lpWorker->hJobDone, INFINITE);
   caml_leave_blocking_section();
 
-  worker_push(lpWorker);
+  caml_win32_worker_push(lpWorker);
 }

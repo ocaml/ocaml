@@ -32,7 +32,7 @@
 #endif
 #endif
 
-CAMLprim value unix_readlink(value path)
+CAMLprim value caml_unix_readlink(value path)
 {
   CAMLparam1(path);
   char buffer[PATH_MAX];
@@ -44,14 +44,14 @@ CAMLprim value unix_readlink(value path)
   len = readlink(p, buffer, sizeof(buffer) - 1);
   caml_leave_blocking_section();
   caml_stat_free(p);
-  if (len == -1) uerror("readlink", path);
+  if (len == -1) caml_uerror("readlink", path);
   buffer[len] = '\0';
   CAMLreturn(caml_copy_string(buffer));
 }
 
 #else
 
-CAMLprim value unix_readlink(value path)
+CAMLprim value caml_unix_readlink(value path)
 { caml_invalid_argument("readlink not implemented"); }
 
 #endif

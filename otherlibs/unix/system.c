@@ -24,7 +24,7 @@
 #include <process.h>
 #include <stdio.h>
 
-CAMLprim value win_system(cmd)
+CAMLprim value caml_unix_system(cmd)
      value cmd;
 {
   int ret;
@@ -38,7 +38,7 @@ CAMLprim value win_system(cmd)
   ret = _wsystem(buf);
   caml_leave_blocking_section();
   caml_stat_free(buf);
-  if (ret == -1) uerror("system", Nothing);
+  if (ret == -1) caml_uerror("system", Nothing);
   st = caml_alloc_small(1, 0); /* Tag 0: Exited */
   Field(st, 0) = Val_int(ret);
   return st;

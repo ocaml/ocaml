@@ -36,7 +36,7 @@ static void convert_time(double unixTime, FILETIME* ft)
   ft->dwHighDateTime = u.HighPart;
 }
 
-CAMLprim value unix_utimes(value path, value atime, value mtime)
+CAMLprim value caml_unix_utimes(value path, value atime, value mtime)
 {
   CAMLparam3(path, atime, mtime);
   WCHAR *wpath;
@@ -61,8 +61,8 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
   caml_leave_blocking_section();
   caml_stat_free(wpath);
   if (hFile == INVALID_HANDLE_VALUE) {
-    win32_maperr(GetLastError());
-    uerror("utimes", path);
+    caml_win32_maperr(GetLastError());
+    caml_uerror("utimes", path);
   }
   if (at == 0.0 && mt == 0.0) {
     GetSystemTime(&systemTime);
@@ -76,9 +76,9 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
   res = SetFileTime(hFile, NULL, &lastAccessTime, &lastModificationTime);
   caml_leave_blocking_section();
   if (res == 0) {
-    win32_maperr(GetLastError());
+    caml_win32_maperr(GetLastError());
     CloseHandle(hFile);
-    uerror("utimes", path);
+    caml_uerror("utimes", path);
   }
   CloseHandle(hFile);
   CAMLreturn(Val_unit);

@@ -34,7 +34,7 @@
    UDP (datagram) sockets.
    Returns 0 if OK, a nonzero error code if error. */
 
-static int unix_check_stream_semantics(int fd)
+static int caml_unix_check_stream_semantics(int fd)
 {
   struct stat buf;
 
@@ -64,22 +64,22 @@ static int unix_check_stream_semantics(int fd)
   }
 }
 
-CAMLprim value unix_inchannel_of_filedescr(value fd)
+CAMLprim value caml_unix_inchannel_of_filedescr(value fd)
 {
   int err;
   caml_enter_blocking_section();
-  err = unix_check_stream_semantics(Int_val(fd));
+  err = caml_unix_check_stream_semantics(Int_val(fd));
   caml_leave_blocking_section();
-  if (err != 0) unix_error(err, "in_channel_of_descr", Nothing);
+  if (err != 0) caml_unix_error(err, "in_channel_of_descr", Nothing);
   return caml_ml_open_descriptor_in(fd);
 }
 
-CAMLprim value unix_outchannel_of_filedescr(value fd)
+CAMLprim value caml_unix_outchannel_of_filedescr(value fd)
 {
   int err;
   caml_enter_blocking_section();
-  err = unix_check_stream_semantics(Int_val(fd));
+  err = caml_unix_check_stream_semantics(Int_val(fd));
   caml_leave_blocking_section();
-  if (err != 0) unix_error(err, "out_channel_of_descr", Nothing);
+  if (err != 0) caml_unix_error(err, "out_channel_of_descr", Nothing);
   return caml_ml_open_descriptor_out(fd);
 }

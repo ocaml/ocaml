@@ -20,13 +20,13 @@ static int shutdown_command_table[] = {
   0, 1, 2
 };
 
-CAMLprim value unix_shutdown(sock, cmd)
+CAMLprim value caml_unix_shutdown(sock, cmd)
      value sock, cmd;
 {
   if (shutdown(Socket_val(sock),
                shutdown_command_table[Int_val(cmd)]) == -1) {
-    win32_maperr(WSAGetLastError());
-    uerror("shutdown", Nothing);
+    caml_win32_maperr(WSAGetLastError());
+    caml_uerror("shutdown", Nothing);
   }
   return Val_unit;
 }

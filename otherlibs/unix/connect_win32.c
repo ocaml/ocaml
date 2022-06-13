@@ -18,7 +18,7 @@
 #include "unixsupport.h"
 #include "socketaddr.h"
 
-CAMLprim value unix_connect(socket, address)
+CAMLprim value caml_unix_connect(socket, address)
      value socket, address;
 {
   SOCKET s = Socket_val(socket);
@@ -26,14 +26,14 @@ CAMLprim value unix_connect(socket, address)
   socklen_param_type addr_len;
   DWORD err = 0;
 
-  get_sockaddr(address, &addr, &addr_len);
+  caml_unix_get_sockaddr(address, &addr, &addr_len);
   caml_enter_blocking_section();
   if (connect(s, &addr.s_gen, addr_len) == -1)
     err = WSAGetLastError();
   caml_leave_blocking_section();
   if (err) {
-    win32_maperr(err);
-    uerror("connect", Nothing);
+    caml_win32_maperr(err);
+    caml_uerror("connect", Nothing);
   }
   return Val_unit;
 }

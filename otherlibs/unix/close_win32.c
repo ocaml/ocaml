@@ -17,12 +17,12 @@
 #include "unixsupport.h"
 #include <caml/io.h>
 
-CAMLprim value unix_close(value fd)
+CAMLprim value caml_unix_close(value fd)
 {
   if (Descr_kind_val(fd) == KIND_SOCKET) {
     if (closesocket(Socket_val(fd)) != 0) {
-      win32_maperr(WSAGetLastError());
-      uerror("close", Nothing);
+      caml_win32_maperr(WSAGetLastError());
+      caml_uerror("close", Nothing);
     }
   } else {
     /* If we have an fd then closing it also closes
@@ -30,11 +30,11 @@ CAMLprim value unix_close(value fd)
      * the handle and not the fd leads to fd leaks. */
     if (CRT_fd_val(fd) != NO_CRT_FD) {
       if (_close(CRT_fd_val(fd)) != 0)
-         uerror("close", Nothing);
+         caml_uerror("close", Nothing);
     } else {
       if (! CloseHandle(Handle_val(fd))) {
-        win32_maperr(GetLastError());
-        uerror("close", Nothing);
+        caml_win32_maperr(GetLastError());
+        caml_uerror("close", Nothing);
       }
     }
   }

@@ -22,7 +22,7 @@
 /* PR#4749: pick a size that matches that of I/O buffers */
 #define SIZEBUF 4096
 
-CAMLprim value unix_pipe(value cloexec, value unit)
+CAMLprim value caml_unix_pipe(value cloexec, value unit)
 {
   CAMLparam0();
   CAMLlocal2(readfd, writefd);
@@ -32,13 +32,13 @@ CAMLprim value unix_pipe(value cloexec, value unit)
 
   attr.nLength = sizeof(attr);
   attr.lpSecurityDescriptor = NULL;
-  attr.bInheritHandle = unix_cloexec_p(cloexec) ? FALSE : TRUE;
+  attr.bInheritHandle = caml_unix_cloexec_p(cloexec) ? FALSE : TRUE;
   if (! CreatePipe(&readh, &writeh, &attr, SIZEBUF)) {
-    win32_maperr(GetLastError());
-    uerror("pipe", Nothing);
+    caml_win32_maperr(GetLastError());
+    caml_uerror("pipe", Nothing);
   }
-  readfd = win_alloc_handle(readh);
-  writefd = win_alloc_handle(writeh);
+  readfd = caml_win32_alloc_handle(readh);
+  writefd = caml_win32_alloc_handle(writeh);
   res = caml_alloc_small(2, 0);
   Field(res, 0) = readfd;
   Field(res, 1) = writefd;

@@ -20,7 +20,7 @@
 #include "unixsupport.h"
 #include "socketaddr.h"
 
-CAMLprim value unix_accept(value cloexec, value sock)
+CAMLprim value caml_unix_accept(value cloexec, value sock)
 {
   CAMLparam0();
   CAMLlocal2(fd, adr);
@@ -37,12 +37,12 @@ CAMLprim value unix_accept(value cloexec, value sock)
   if (snew == INVALID_SOCKET) err = WSAGetLastError ();
   caml_leave_blocking_section();
   if (snew == INVALID_SOCKET) {
-    win32_maperr(err);
-    uerror("accept", Nothing);
+    caml_win32_maperr(err);
+    caml_uerror("accept", Nothing);
   }
-  win_set_cloexec((HANDLE) snew, cloexec);
-  fd = win_alloc_socket(snew);
-  adr = alloc_sockaddr(&addr, addr_len, snew);
+  caml_win32_set_cloexec((HANDLE) snew, cloexec);
+  fd = caml_win32_alloc_socket(snew);
+  adr = caml_unix_alloc_sockaddr(&addr, addr_len, snew);
   res = caml_alloc_small(2, 0);
   Field(res, 0) = fd;
   Field(res, 1) = adr;

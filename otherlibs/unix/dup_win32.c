@@ -28,7 +28,7 @@ static HANDLE duplicate_handle(BOOL inherit, HANDLE oldh)
                         0L,
                         inherit,
                         DUPLICATE_SAME_ACCESS)) {
-    win32_maperr(GetLastError());
+    caml_win32_maperr(GetLastError());
     return INVALID_HANDLE_VALUE;
   }
   return newh;
@@ -41,34 +41,34 @@ static SOCKET duplicate_socket(BOOL inherit, SOCKET oldsock)
   if (SOCKET_ERROR == WSADuplicateSocket(oldsock,
                                          GetCurrentProcessId(),
                                          &info)) {
-    win32_maperr(WSAGetLastError());
+    caml_win32_maperr(WSAGetLastError());
     return INVALID_SOCKET;
   }
 
-  return win32_socket(info.iAddressFamily, info.iSocketType, info.iProtocol,
-                      &info, inherit);
+  return caml_win32_socket(info.iAddressFamily, info.iSocketType,
+                           info.iProtocol, &info, inherit);
 }
 
-CAMLprim value unix_dup(value cloexec, value fd)
+CAMLprim value caml_unix_dup(value cloexec, value fd)
 {
   CAMLparam2(cloexec, fd);
   CAMLlocal1(newfd);
 
   switch (Descr_kind_val(fd)) {
   case KIND_HANDLE: {
-    HANDLE newh = duplicate_handle(! unix_cloexec_p(cloexec),
+    HANDLE newh = duplicate_handle(! caml_unix_cloexec_p(cloexec),
                                    Handle_val(fd));
     if (newh == INVALID_HANDLE_VALUE)
-      uerror("dup", Nothing);
-    newfd = win_alloc_handle(newh);
+      caml_uerror("dup", Nothing);
+    newfd = caml_win32_alloc_handle(newh);
     CAMLreturn(newfd);
   }
   case KIND_SOCKET: {
-    SOCKET newsock = duplicate_socket(! unix_cloexec_p(cloexec),
+    SOCKET newsock = duplicate_socket(! caml_unix_cloexec_p(cloexec),
                                       Socket_val(fd));
     if (newsock == INVALID_SOCKET)
-      uerror("dup", Nothing);
-    newfd = win_alloc_socket(newsock);
+      caml_uerror("dup", Nothing);
+    newfd = caml_win32_alloc_socket(newsock);
     CAMLreturn(newfd);
   }
   default:
@@ -76,7 +76,7 @@ CAMLprim value unix_dup(value cloexec, value fd)
   }
 }
 
-CAMLprim value unix_dup2(value cloexec, value fd1, value fd2)
+CAMLprim value caml_unix_dup2(value cloexec, value fd1, value fd2)
 {
   CAMLparam3(cloexec, fd1, fd2);
 
@@ -86,20 +86,20 @@ CAMLprim value unix_dup2(value cloexec, value fd1, value fd2)
   switch (Descr_kind_val(fd1)) {
   case KIND_HANDLE: {
     HANDLE oldh = Handle_val(fd2),
-      newh = duplicate_handle(! unix_cloexec_p(cloexec),
+      newh = duplicate_handle(! caml_unix_cloexec_p(cloexec),
                               Handle_val(fd1));
     if (newh == INVALID_HANDLE_VALUE)
-      uerror("dup2", Nothing);
+      caml_uerror("dup2", Nothing);
     Handle_val(fd2) = newh;
     CloseHandle(oldh);
     break;
   }
   case KIND_SOCKET: {
     SOCKET oldsock = Socket_val(fd2),
-      newsock = duplicate_socket(! unix_cloexec_p(cloexec),
+      newsock = duplicate_socket(! caml_unix_cloexec_p(cloexec),
                                  Socket_val(fd1));
     if (newsock == INVALID_SOCKET)
-      uerror("dup2", Nothing);
+      caml_uerror("dup2", Nothing);
     Socket_val(fd2) = newsock;
     closesocket(oldsock);
     break;
@@ -110,6 +110,7 @@ CAMLprim value unix_dup2(value cloexec, value fd1, value fd2)
 
   /* Reflect the dup2 on the CRT fds, if any */
   if (CRT_fd_val(fd1) != NO_CRT_FD || CRT_fd_val(fd2) != NO_CRT_FD)
-    _dup2(win_CRT_fd_of_filedescr(fd1), win_CRT_fd_of_filedescr(fd2));
+    _dup2(caml_win32_CRT_fd_of_filedescr(fd1),
+          caml_win32_CRT_fd_of_filedescr(fd2));
   CAMLreturn(Val_unit);
 }
