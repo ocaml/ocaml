@@ -97,10 +97,11 @@ let string_is_prefix sub str =
 
 let rec lident_of_path = function
   | Path.Pident id -> Longident.Lident (Ident.name id)
-  | Path.Pdot (p, s) | Path.Pcstr_ty (p, s) -> Longident.Ldot (lident_of_path p, s)
-  | Path.Pext_ty p -> lident_of_path p
   | Path.Papply (p1, p2) ->
       Longident.Lapply (lident_of_path p1, lident_of_path p2)
+  | Path.Pdot (p, s) | Path.Pextra_ty (p, Pcstr_ty s) ->
+      Longident.Ldot (lident_of_path p, s)
+  | Path.Pextra_ty (p, _) -> lident_of_path p
 
 let map_loc sub {loc; txt} = {loc = sub.location sub loc; txt}
 

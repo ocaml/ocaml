@@ -266,9 +266,10 @@ let set_mode_pattern ~generate ~injective ~allow_recursive f =
 
 (*** Checks for type definitions ***)
 
-let in_current_module = function
+let rec in_current_module = function
   | Path.Pident _ -> true
   | Path.Pdot _ | Path.Papply _ -> false
+  | Path.Pextra_ty (p, _) -> in_current_module p
 
 let in_pervasives p =
   in_current_module p &&

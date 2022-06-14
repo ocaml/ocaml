@@ -84,9 +84,8 @@ let rec path_concat head p =
   match p with
     Pident tail -> Pdot (Pident head, Ident.name tail)
   | Pdot (pre, s) -> Pdot (path_concat head pre, s)
-  | Pcstr_ty (pre, s) -> Pcstr_ty (path_concat head pre, s)
-  | Pext_ty p -> Pext_ty (path_concat head p)
   | Papply _ -> assert false
+  | Pextra_ty (p, extra) -> Pextra_ty (path_concat head p, extra)
 
 (* Extract a signature from a module type *)
 
@@ -238,11 +237,12 @@ let make_variance p n i =
 let rec iter_path_apply p ~f =
   match p with
   | Pident _ -> ()
-  | Pdot (p, _) | Pcstr_ty (p, _) | Pext_ty p -> iter_path_apply p ~f
+  | Pdot (p, _) -> iter_path_apply p ~f
   | Papply (p1, p2) ->
      iter_path_apply p1 ~f;
      iter_path_apply p2 ~f;
      f p1 p2 (* after recursing, so we know both paths are well typed *)
+  | Pextra_ty _ -> assert false
 
 let path_is_strict_prefix =
   let rec list_is_strict_prefix l ~prefix =

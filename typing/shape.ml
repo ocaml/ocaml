@@ -471,9 +471,12 @@ let of_path ~find_shape ~namespace =
   let rec aux : Sig_component_kind.t -> Path.t -> t = fun ns -> function
     | Pident id -> find_shape ns id
     | Pdot (path, name) -> proj (aux Module path) (name, ns)
-    | Pcstr_ty (path, _) -> aux Type path
-    | Pext_ty path -> aux Extension_constructor path
     | Papply (p1, p2) -> app (aux Module p1) ~arg:(aux Module p2)
+    | Pextra_ty (path, extra) -> begin
+        match extra with
+          Pcstr_ty _ -> aux Type path
+        | Pext_ty -> aux Extension_constructor path
+      end
   in
   aux namespace
 

@@ -94,7 +94,7 @@ let rec module_path s path =
        Pdot(module_path s p, n)
     | Papply(p1, p2) ->
        Papply(module_path s p1, module_path s p2)
-    | Pcstr_ty _ | Pext_ty _ ->
+    | Pextra_ty _ ->
        fatal_error "Subst.module_path"
 
 let modtype_path s path =
@@ -106,15 +106,16 @@ let modtype_path s path =
          match path with
          | Pdot(p, n) ->
             Pdot(module_path s p, n)
-         | Papply _ | Pcstr_ty _ | Pext_ty _ ->
+         | Papply _ | Pextra_ty _ ->
             fatal_error "Subst.modtype_path"
          | Pident _ -> path
 
-let extension_path s path =
+(* For values, extension constructors, classes and class types *)
+let value_path s path =
   match path with
   | Pident _ -> path
   | Pdot(p, n) -> Pdot(module_path s p, n)
-  | Papply _ | Pcstr_ty _ | Pext_ty _ -> fatal_error "Subst.extension_path"
+  | Papply _ | Pextra_ty _ -> fatal_error "Subst.value_path"
 
 let rec type_path s path =
   match Path.Map.find path s.types with
@@ -125,10 +126,12 @@ let rec type_path s path =
      | Pident _ -> path
      | Pdot(p, n) ->
         Pdot(module_path s p, n)
-     | Pcstr_ty(p, n) -> Pcstr_ty(type_path s p, n)
-     | Pext_ty p -> Pext_ty (extension_path s p)
      | Papply _ ->
         fatal_error "Subst.type_path"
+     | Pextra_ty (p, extra) ->
+         match extra with
+         | Pcstr_ty _ -> Pextra_ty (type_path s p, extra)
+         | Pext_ty -> Pextra_ty (value_path s p, extra)
 
 let to_subst_by_type_function s p =
   match Path.Map.find p s.types with
@@ -585,7 +588,7 @@ and subst_lazy_modtype scoping s = function
           | Pident _ -> MtyL_ident p
           | Pdot(p, n) ->
              MtyL_ident(Pdot(module_path s p, n))
-          | Papply _ | Pcstr_ty _ | Pext_ty _ ->
+          | Papply _ | Pextra_ty _ ->
              fatal_error "Subst.modtype"
           end
       end
