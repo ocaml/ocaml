@@ -74,3 +74,13 @@ let ()  =
     assert(not (String.ends_with ~suffix:"foo" ""));
     assert(not (String.ends_with ~suffix:"obaz" "foobar"));
   end
+
+(* to/of hex *)
+let () =
+  assert String.(equal "0068656c6c6f20776f726c64" (to_hex"\000hello world"));
+  assert String.(equal "" (to_hex ""));
+  assert String.(equal "\000hello world" (of_hex_exn "0068656c6c6f20776f726c64"));
+  assert (None = String.(of_hex "oh no not in hex"));
+  assert (None = String.(of_hex "123"));
+  ()
+
