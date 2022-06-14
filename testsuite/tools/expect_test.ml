@@ -315,6 +315,17 @@ let process_expect_file fname =
 let repo_root = ref None
 let keep_original_error_size = ref false
 
+let always_read_topdir_signature root =
+  let compiler_libs =
+    Filename.concat Config.standard_library "compiler-libs" in
+  let installed_topdirs_cmi = Filename.concat compiler_libs "topdirs.cmi" in
+  if Sys.file_exists installed_topdirs_cmi then
+    () (* we have read topdirs from the installation directory *)
+  else
+    let in_tree_topdirs_cmi =
+      Filename.concat root @@ Filename.concat "toplevel"  "topdirs.cmi" in
+    ignore (Env.read_signature "Topdirs" in_tree_topdirs_cmi)
+
 let main fname =
   if not !keep_original_error_size then
     Clflags.error_size := 0;
@@ -323,6 +334,7 @@ let main fname =
        ~len:(Array.length Sys.argv - !Arg.current));
   (* Ignore OCAMLRUNPARAM=b to be reproducible *)
   Printexc.record_backtrace false;
+  Option.iter (always_read_topdir_signature) !repo_root;
   if not !Clflags.no_std_include then begin
     match !repo_root with
     | None -> ()
