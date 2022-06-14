@@ -12,7 +12,7 @@ Working version
 - #11128: Add In_channel.isatty, Out_channel.isatty.
   (Nicolás Ojeda Bär, review by Gabriel Scherer and Florian Angeletti)
 
-- #11320: Add String.{to_hex, of_hex, of_hex_exn}
+- #11320: Add {Bytes,String}.{to_hex, of_hex, of_hex_exn}
   (Simon Cruanes)
 
 ### Other libraries:
