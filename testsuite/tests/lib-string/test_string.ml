@@ -83,4 +83,3 @@ let () =
   assert (None = String.(of_hex "oh no not in hex"));
   assert (None = String.(of_hex "123"));
   ()
-
