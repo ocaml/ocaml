@@ -542,6 +542,27 @@ val get_int64_le : string -> int -> int64
     @since 4.13.0
 *)
 
+(** {1 Alphabet conversions} *)
+
+val to_hex : string -> string
+(** [to_hex s] turns [s] into a string in base16, using characters ['a'..'f']
+    and ['0'..'9']. The new string is twice as long.
+    @since 5.1
+*)
+
+val of_hex : string -> string option
+(** Decode an hexadecimal-encoded string.
+    Return [None] if the input is not valid hex or if its length is not even.
+    Both uppercase and lowercase letters are supported.
+    @since 5.1
+*)
+
+val of_hex_exn : string -> string
+(** Like {!of_hex} but raises in case of error.
+    @raise Invalid_argument if the string is not valid hex.
+    @since 5.1
+*)
+
 (**/**)
 
 (* The following is for system use only. Do not call directly. *)
