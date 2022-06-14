@@ -48,14 +48,14 @@ let next_group = function
             (* a class declaration for [c] is followed by the ghost
                declarations of class type [c], and types [c] and [#c] *)
             begin match q with
-            | ct::t::ht::q -> [ct;t;ht], q
+            | ct::t::q -> [ct;t], q
             | _ -> assert false
             end
         | Types.Sig_class_type _  ->
             (* a class type declaration for [ct] is followed by the ghost
                declarations of types [ct] and [#ct] *)
            begin match q with
-            | t::ht::q -> [t;ht], q
+            | t::q -> [t], q
             | _ -> assert false
            end
         | Types.(Sig_module _ | Sig_value _ | Sig_type _ | Sig_typext _

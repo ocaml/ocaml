@@ -84,9 +84,8 @@ let rec path_concat head p =
   match p with
     Pident tail -> Pdot (Pident head, Ident.name tail)
   | Pdot (pre, s) -> Pdot (path_concat head pre, s)
-  | Pcstr_ty (pre, s) -> Pcstr_ty (path_concat head pre, s)
-  | Pext_ty p -> Pext_ty (path_concat head p)
   | Papply _ -> assert false
+  | Pextra_ty (p, extra) -> Pextra_ty (path_concat head p, extra)
 
 (* Extract a signature from a module type *)
 
@@ -238,7 +237,7 @@ let make_variance p n i =
 let rec iter_path_apply p ~f =
   match p with
   | Pident _ -> ()
-  | Pdot (p, _) | Pcstr_ty (p, _) | Pext_ty p -> iter_path_apply p ~f
+  | Pdot (p, _) | Pextra_ty (p, _) -> iter_path_apply p ~f
   | Papply (p1, p2) ->
      iter_path_apply p1 ~f;
      iter_path_apply p2 ~f;
@@ -905,7 +904,6 @@ and approx_sig env ssg =
               Sig_class_type(decl.clsty_ty_id, decl.clsty_ty_decl, rs,
                              Exported);
               Sig_type(decl.clsty_obj_id, decl.clsty_obj_abbr, rs, Exported);
-              Sig_type(decl.clsty_typesharp_id, decl.clsty_abbr, rs, Exported);
             ]
           ) decls [rem]
           |> List.flatten
@@ -1624,7 +1622,6 @@ and transl_signature env sg =
               Signature_names.check_type names loc cls.cls_obj_id;
               Signature_names.check_class names loc cls.cls_id;
               Signature_names.check_class_type names loc cls.cls_ty_id;
-              Signature_names.check_type names loc cls.cls_typesharp_id;
               Env.register_uid cls.cls_decl.cty_uid cls.cls_decl.cty_loc;
             ) classes;
             let (trem, rem, final_env) = transl_sig newenv srem in
@@ -1633,8 +1630,8 @@ and transl_signature env sg =
                 let open Typeclass in
                 [Sig_class(cls.cls_id, cls.cls_decl, rs, Exported);
                  Sig_class_type(cls.cls_ty_id, cls.cls_ty_decl, rs, Exported);
-                 Sig_type(cls.cls_obj_id, cls.cls_obj_abbr, rs, Exported);
-                 Sig_type(cls.cls_typesharp_id, cls.cls_abbr, rs, Exported)]
+                 Sig_type(cls.cls_obj_id, cls.cls_obj_abbr, rs, Exported)
+                ]
               ) classes [rem]
               |> List.flatten
             in
@@ -1652,7 +1649,6 @@ and transl_signature env sg =
               let loc = decl.clsty_id_loc.Location.loc in
               Signature_names.check_class_type names loc decl.clsty_ty_id;
               Signature_names.check_type names loc decl.clsty_obj_id;
-              Signature_names.check_type names loc decl.clsty_typesharp_id;
               Env.register_uid
                 decl.clsty_ty_decl.clty_uid
                 decl.clsty_ty_decl.clty_loc;
@@ -1664,8 +1660,6 @@ and transl_signature env sg =
                 [Sig_class_type(decl.clsty_ty_id, decl.clsty_ty_decl, rs,
                                 Exported);
                  Sig_type(decl.clsty_obj_id, decl.clsty_obj_abbr, rs, Exported);
-                 Sig_type(decl.clsty_typesharp_id, decl.clsty_abbr, rs,
-                          Exported)
                 ]
               ) classes [rem]
               |> List.flatten
@@ -2698,13 +2692,11 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr =
             Signature_names.check_class names loc cls.cls_id;
             Signature_names.check_class_type names loc cls.cls_ty_id;
             Signature_names.check_type names loc cls.cls_obj_id;
-            Signature_names.check_type names loc cls.cls_typesharp_id;
             Env.register_uid cls.cls_decl.cty_uid loc;
             let map f id acc = f acc id cls.cls_decl.cty_uid in
             map Shape.Map.add_class cls.cls_id acc
             |> map Shape.Map.add_class_type cls.cls_ty_id
             |> map Shape.Map.add_type cls.cls_obj_id
-            |> map Shape.Map.add_type cls.cls_typesharp_id
           ) shape_map classes
         in
         Tstr_class
@@ -2717,8 +2709,8 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr =
               let open Typeclass in
               [Sig_class(cls.cls_id, cls.cls_decl, rs, Exported);
                Sig_class_type(cls.cls_ty_id, cls.cls_ty_decl, rs, Exported);
-               Sig_type(cls.cls_obj_id, cls.cls_obj_abbr, rs, Exported);
-               Sig_type(cls.cls_typesharp_id, cls.cls_abbr, rs, Exported)])
+               Sig_type(cls.cls_obj_id, cls.cls_obj_abbr, rs, Exported)
+              ])
              classes []),
         shape_map,
         new_env
@@ -2729,12 +2721,10 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr =
             let loc = decl.clsty_id_loc.Location.loc in
             Signature_names.check_class_type names loc decl.clsty_ty_id;
             Signature_names.check_type names loc decl.clsty_obj_id;
-            Signature_names.check_type names loc decl.clsty_typesharp_id;
             Env.register_uid decl.clsty_ty_decl.clty_uid loc;
             let map f id acc = f acc id decl.clsty_ty_decl.clty_uid in
             map Shape.Map.add_class_type decl.clsty_ty_id acc
             |> map Shape.Map.add_type decl.clsty_obj_id
-            |> map Shape.Map.add_type decl.clsty_typesharp_id
           ) shape_map classes
         in
         Tstr_class_type
@@ -2749,8 +2739,6 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr =
                 [Sig_class_type(decl.clsty_ty_id, decl.clsty_ty_decl, rs,
                                 Exported);
                  Sig_type(decl.clsty_obj_id, decl.clsty_obj_abbr, rs, Exported);
-                 Sig_type(decl.clsty_typesharp_id, decl.clsty_abbr, rs,
-                          Exported)
                 ])
              classes []),
         shape_map,
