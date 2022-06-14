@@ -20,6 +20,13 @@ Working version
   (Xavier Leroy, report by sliquister and Michael Bacarella,
    review by Gabriel Scherer)
 
+- #10834: The -safer-matching option disables type-based optimizations of
+  pattern-matching compilation. This allows to produce a match failure if
+  a pattern-matching was wrongly assumed to be exhaustive. Since the
+  exhaustiveness check for GADTs has had bugs in the past, it may be
+  useful if you need extra security with GADTs.
+  (Jacques Garrigue, review by Gabriel Scherer)
+
 ### Standard library:
 
 - #11128: Add In_channel.isatty, Out_channel.isatty.

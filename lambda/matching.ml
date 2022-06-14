@@ -3472,13 +3472,13 @@ let check_total ~scopes loc ~failer total lambda i =
 
 let toplevel_handler ~scopes loc ~failer partial args cases compile_fun =
   match partial with
-  | Total ->
+  | Total when not !Clflags.safer_matching ->
       let default = Default_environment.empty in
       let pm = { args; cases; default } in
       let (lam, total) = compile_fun Total pm in
       assert (Jumps.is_empty total);
       lam
-  | Partial ->
+  | Partial | Total (* when !Clflags.safer_matching *) ->
       let raise_num = next_raise_count () in
       let default =
         Default_environment.cons [ Patterns.omega_list args ] raise_num
