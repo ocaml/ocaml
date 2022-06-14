@@ -550,16 +550,16 @@ val to_hex : string -> string
     @since 5.1
 *)
 
-val of_hex : string -> string option
+val of_hex : string -> string
 (** Decode an hexadecimal-encoded string.
-    Return [None] if the input is not valid hex or if its length is not even.
     Both uppercase and lowercase letters are supported.
+    @raise Invalid_argument if the string is not valid hex.
     @since 5.1
 *)
 
-val of_hex_exn : string -> string
-(** Like {!of_hex} but raises in case of error.
-    @raise Invalid_argument if the string is not valid hex.
+val of_hex_opt : string -> string option
+(** Safe version of {!of_hex}
+    Return [None] if the input is not valid hex or if its length is not even.
     @since 5.1
 *)
 

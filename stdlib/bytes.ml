@@ -826,3 +826,36 @@ let is_valid_utf_16le b =
         | _lo -> loop max b (i + 4)
   in
   loop (length b - 1) b 0
+
+let to_hex b : bytes =
+  let i_to_hex (i:int) =
+    if i < 10 then Char.chr (i + Char.code '0')
+    else Char.chr (i - 10 + Char.code 'a')
+  in
+
+  let res = create (2 * length b) in
+  for i = 0 to length b-1 do
+    let n = Char.code (get b i) in
+    set res (2 * i) (i_to_hex ((n land 0xf0) lsr 4));
+    set res (2 * i + 1) (i_to_hex (n land 0x0f));
+  done;
+  res
+
+let of_hex b : bytes =
+  let n_of_c = function
+    | '0' .. '9' as c -> Char.code c - Char.code '0'
+    | 'a' .. 'f' as c -> 10 + Char.code c - Char.code 'a'
+    | _ -> invalid_arg "Bytes.of_hex: invalid hex"
+  in
+  if (length b mod 2 <> 0) then
+    invalid_arg "Bytes.of_hex: hex sequence must be of even length";
+  let res = make (length b / 2) '\x00' in
+  for i=0 to length b / 2-1 do
+    let n1 = n_of_c (get b (2*i)) in
+    let n2 = n_of_c (get b (2*i+1)) in
+    let n = (n1 lsl 4) lor n2 in
+    set res i (Char.chr n)
+  done;
+  res
+
+let of_hex_opt s = try Some (of_hex s) with Invalid_argument _ -> None

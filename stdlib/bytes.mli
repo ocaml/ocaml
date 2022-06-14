@@ -738,6 +738,26 @@ val set_int64_le : bytes -> int -> int64 -> unit
     @since 4.08
 *)
 
+(** {1 Alphabet conversions} *)
+
+val to_hex : bytes -> bytes
+(** [to_hex s] turns [s] into a string in base16, using characters ['a'..'f']
+    and ['0'..'9']. The new string is twice as long.
+    @since 5.1
+*)
+
+val of_hex : bytes -> bytes
+(** Decode an hexadecimal-encoded string.
+    Return [None] if the input is not valid hex or if its length is not even.
+    Both uppercase and lowercase letters are supported.
+    @raise Invalid_argument if the string is not valid hex.
+    @since 5.1
+*)
+
+val of_hex_opt : bytes -> bytes option
+(** Like {!of_hex} but does not raise.
+    @since 5.1
+*)
 
 (**/**)
 
