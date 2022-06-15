@@ -80,6 +80,7 @@ let () =
   assert String.(equal "0068656c6c6f20776f726c64" (to_hex"\000hello world"));
   assert String.(equal "" (to_hex ""));
   assert String.(equal "\000hello world" (of_hex "0068656c6c6f20776f726c64"));
+  assert String.(equal "hello world" (of_hex "68656C6C6F20776F726C64"));
   assert (None = String.(of_hex_opt "oh no not in hex"));
   assert (None = String.(of_hex_opt "123"));
   ()

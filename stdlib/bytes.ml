@@ -845,6 +845,7 @@ let of_hex b : bytes =
   let n_of_c = function
     | '0' .. '9' as c -> Char.code c - Char.code '0'
     | 'a' .. 'f' as c -> 10 + Char.code c - Char.code 'a'
+    | 'A' .. 'F' as c -> 10 + Char.code c - Char.code 'A'
     | _ -> invalid_arg "Bytes.of_hex: invalid hex"
   in
   if (length b mod 2 <> 0) then
