@@ -1768,7 +1768,7 @@ CAMLprim value caml_domain_dls_get(value unused)
   return Caml_state->dls_root;
 }
 
-CAMLprim value caml_recommended_domains(value unused)
+CAMLprim value caml_recommended_domain_count(value unused)
 {
   CAMLnoalloc;
   long n = -1;
