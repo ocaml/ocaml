@@ -571,10 +571,10 @@ CAMLexport value caml_alloc_channel(struct channel *chan)
   return res;
 }
 
-CAMLprim value caml_ml_open_descriptor_in(value fd)
+CAMLprim value caml_ml_open_descriptor_in_with_flags(int fd, int flags)
 {
-  struct channel * chan = caml_open_descriptor_in(Int_val(fd));
-  chan->flags |= CHANNEL_FLAG_MANAGED_BY_GC;
+  struct channel * chan = caml_open_descriptor_in(fd);
+  chan->flags |= flags | CHANNEL_FLAG_MANAGED_BY_GC;
   chan->refcount = 1;
   caml_plat_lock (&caml_all_opened_channels_mutex);
   link_channel (chan);
@@ -582,15 +582,23 @@ CAMLprim value caml_ml_open_descriptor_in(value fd)
   return caml_alloc_channel(chan);
 }
 
-CAMLprim value caml_ml_open_descriptor_out(value fd)
+CAMLprim value caml_ml_open_descriptor_in(value fd) {
+  return caml_ml_open_descriptor_in_with_flags(Int_val(fd), 0);
+}
+
+CAMLprim value caml_ml_open_descriptor_out_with_flags(int fd, int flags)
 {
-  struct channel * chan = caml_open_descriptor_out(Int_val(fd));
-  chan->flags |= CHANNEL_FLAG_MANAGED_BY_GC;
+  struct channel * chan = caml_open_descriptor_out(fd);
+  chan->flags |= flags | CHANNEL_FLAG_MANAGED_BY_GC;
   chan->refcount = 1;
   caml_plat_lock (&caml_all_opened_channels_mutex);
   link_channel (chan);
   caml_plat_unlock (&caml_all_opened_channels_mutex);
   return caml_alloc_channel(chan);
+}
+
+CAMLprim value caml_ml_open_descriptor_out(value fd) {
+  return caml_ml_open_descriptor_out_with_flags(Int_val(fd), 0);
 }
 
 CAMLprim value caml_ml_set_channel_name(value vchannel, value vname)
