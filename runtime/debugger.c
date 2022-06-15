@@ -140,9 +140,13 @@ static void open_connection(void)
   dbg_out = caml_open_descriptor_out(dbg_socket);
   /* We need to lock the channels because the low-level I/O calls expect
      to work on locked channels. We keep them locked because they are
-     private to this code and never used concurrently. */
+     private to this code and never used concurrently. We also have to
+     reset the [last_channel_locked] variable because these channels must
+     stay locked through raises, unlike normal channels. */
   Lock (dbg_in);
+  caml_channel_reset_last_locked ();
   Lock (dbg_out);
+  caml_channel_reset_last_locked ();
 
   if (!caml_debugger_in_use) caml_putword(dbg_out, -1); /* first connection */
 #ifdef _WIN32
@@ -486,7 +490,9 @@ void caml_debugger(enum event_kind event, value param)
       Unlock (dbg_in);
       i = fork();
       Lock (dbg_in);
+      caml_channel_reset_last_locked ();
       Lock (dbg_out);
+      caml_channel_reset_last_locked ();
       caml_acquire_domain_lock ();
       if (i == 0) {
         close_connection();     /* Close parent connection. */
