@@ -370,7 +370,10 @@ module Propagation :
 Line 13, characters 19-20:
 13 |     | BoolLit b -> b
                         ^
-Error: This expression has type bool but an expression was expected of type s
+Error: This expression has type bool but an expression was expected of type
+         s = bool
+       This instance of bool is ambiguous:
+       it would escape the scope of its equation
 |}];;
 
 module Normal_constrs = struct
@@ -782,13 +785,6 @@ Error: This expression has type [> `A of a ]
        Type a is not compatible with type b = a
        This instance of a is ambiguous:
        it would escape the scope of its equation
-|}, Principal{|
-Line 2, characters 9-15:
-2 |   fun Eq o -> o ;; (* fail *)
-             ^^^^^^
-Error: This expression has type ([> `A of b ] as 'a) -> 'a
-       but an expression was expected of type [> `A of a ] -> [> `A of b ]
-       Types for tag `A are incompatible
 |}];;
 
 let f (type a b) (eq : (a,b) eq) (v : [> `A of a]) : [> `A of b] =
