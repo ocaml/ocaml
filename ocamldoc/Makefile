@@ -56,7 +56,7 @@ endif
 
 
 INCLUDE_DIRS = $(addprefix $(ROOTDIR)/,\
-  utils parsing typing driver bytecomp toplevel)
+  utils parsing typing driver bytecomp toplevel) generators
 INCLUDES_DEP = $(addprefix -I ,$(INCLUDE_DIRS))
 INCLUDES_NODEP = $(addprefix -I $(ROOTDIR)/,\
   compilerlibs otherlibs/str otherlibs/dynlink \
@@ -343,6 +343,6 @@ distclean: clean
 .PHONY: depend
 depend: $(DEPEND_PREREQS)
 	$(OCAMLDEP_CMD) *.mll *.mly *.ml *.mli > .depend
-	$(OCAMLDEP_CMD) -shared generators/*.ml >> .depend
+	$(OCAMLDEP_CMD) -shared generators/*.ml generators/*.mli >> .depend
 
 include .depend
