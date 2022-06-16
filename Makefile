@@ -527,6 +527,9 @@ beforedepend:: lambda/runtimedef.ml
 
 # Choose the right machine-dependent files
 
+asmcomp/arch.mli: asmcomp/$(ARCH)/arch.mli
+	cd asmcomp; $(LN) $(ARCH)/arch.mli .
+
 asmcomp/arch.ml: asmcomp/$(ARCH)/arch.ml
 	cd asmcomp; $(LN) $(ARCH)/arch.ml .
 
@@ -1271,8 +1274,8 @@ partialclean::
 ## Test compilation of backend-specific parts
 
 ARCH_SPECIFIC =\
-  asmcomp/arch.ml asmcomp/proc.ml asmcomp/CSE.ml asmcomp/selection.ml \
-  asmcomp/scheduling.ml asmcomp/reload.ml
+  asmcomp/arch.mli asmcomp/arch.ml asmcomp/proc.ml asmcomp/CSE.ml \
+  asmcomp/selection.ml asmcomp/scheduling.ml asmcomp/reload.ml
 
 partialclean::
 	rm -f $(ARCH_SPECIFIC)
