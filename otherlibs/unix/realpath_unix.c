@@ -24,14 +24,16 @@
 CAMLprim value caml_unix_realpath (value p)
 {
   CAMLparam1 (p);
-  char *r;
+  char *r, *path;
   value rp;
 
   caml_unix_check_path (p, "realpath");
-  r = realpath (String_val (p), NULL);
+  path = caml_stat_strdup_to_os(String_val(p));
+  r = realpath (path, NULL);
   if (r == NULL) { caml_uerror ("realpath", p); }
   rp = caml_copy_string (r);
   free (r);
+  caml_stat_free(path);
   CAMLreturn (rp);
 }
 
