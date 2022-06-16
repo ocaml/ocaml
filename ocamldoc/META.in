@@ -1,4 +1,6 @@
+# @configure_input@
+
 requires = "compiler-libs"
-version = "[distributed with OCaml]"
+version = "@VERSION@"
 description = "ocamldoc plugin interface"
 directory= "+ocamldoc"

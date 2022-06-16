@@ -1,4 +1,6 @@
-version = "[distributed with OCaml]"
+# @configure_input@
+
+version = "@VERSION@"
 description = "Multi-threading"
 requires(mt,mt_posix) = "threads.posix"
 directory = "+"

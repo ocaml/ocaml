@@ -1,5 +1,5 @@
 # @configure_input@
-version = "[distributed with OCaml]"
+version = "@VERSION@"
 description = "Dynamic loading and linking of object files"
 directory = "+dynlink"
 archive(byte) = "dynlink.cma"

@@ -1,5 +1,7 @@
+# @configure_input@
+
 description = "Ring buffer-based runtime tracing"
-version = "[distributed with OCaml]"
+version = "@VERSION@"
 directory = "+runtime_events"
 archive(byte) = "runtime_events.cma"
 archive(native) = "runtime_events.cmxa"

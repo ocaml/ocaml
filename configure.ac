@@ -181,12 +181,15 @@ AC_SUBST([QS])
 AC_CONFIG_FILES([Makefile.build_config])
 AC_CONFIG_FILES([Makefile.config])
 AC_CONFIG_FILES([stdlib/sys.ml])
-AC_CONFIG_FILES([otherlibs/dynlink/META])
 AC_CONFIG_FILES([manual/src/version.tex])
 AC_CONFIG_FILES([manual/src/html_processing/src/common.ml])
 AC_CONFIG_HEADERS([runtime/caml/m.h])
 AC_CONFIG_HEADERS([runtime/caml/s.h])
 AC_CONFIG_HEADERS([runtime/caml/version.h])
+AC_CONFIG_FILES([compilerlibs/META])
+AC_CONFIG_FILES([otherlibs/dynlink/META])
+AC_CONFIG_FILES([otherlibs/runtime_events/META])
+AC_CONFIG_FILES([stdlib/META])
 
 # Definitions related to the version of OCaml
 AC_DEFINE([OCAML_VERSION_MAJOR], [OCAML__VERSION_MAJOR])
@@ -547,9 +550,11 @@ AS_CASE([$host],
 otherlibraries="dynlink runtime_events"
 AS_IF([test x"$enable_unix_lib" != "xno"],
   [enable_unix_lib=yes
-   otherlibraries="$otherlibraries unix"])
+  AC_CONFIG_FILES([otherlibs/unix/META])
+  otherlibraries="$otherlibraries unix"])
 AS_IF([test x"$enable_str_lib" != "xno"],
-  [otherlibraries="$otherlibraries str"])
+  [otherlibraries="$otherlibraries str"
+  AC_CONFIG_FILES([otherlibs/str/META])])
 
 # Checks for system services
 
@@ -1900,6 +1905,7 @@ AS_CASE([$enable_systhreads,$enable_unix_lib],
     [systhread_support=false
     AC_MSG_NOTICE([the threads library is disabled])],
   [systhread_support=true
+  AC_CONFIG_FILES([otherlibs/systhreads/META])
   otherlibraries="$otherlibraries systhreads"
   AC_MSG_NOTICE([the threads library is supported])])
 
@@ -1942,7 +1948,8 @@ AS_IF([test x"$enable_installing_source_artifacts" = "xno"],
 
 AS_IF([test x"$enable_ocamldoc" = "xno"],
   [ocamldoc=""],
-  [ocamldoc=ocamldoc])
+  [ocamldoc=ocamldoc
+  AC_CONFIG_FILES([ocamldoc/META])])
 
 documentation_tool_cmd=''
 AC_ARG_WITH([odoc],
