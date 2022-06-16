@@ -2445,28 +2445,23 @@ asmcomp/branch_relaxation.cmo : \
     asmcomp/mach.cmi \
     asmcomp/linear.cmi \
     asmcomp/cmm.cmi \
-    asmcomp/branch_relaxation_intf.cmo \
+    asmcomp/branch_relaxation_intf.cmi \
     asmcomp/branch_relaxation.cmi
 asmcomp/branch_relaxation.cmx : \
     utils/misc.cmx \
     asmcomp/mach.cmx \
     asmcomp/linear.cmx \
     asmcomp/cmm.cmx \
-    asmcomp/branch_relaxation_intf.cmx \
+    asmcomp/branch_relaxation_intf.cmi \
     asmcomp/branch_relaxation.cmi
 asmcomp/branch_relaxation.cmi : \
     asmcomp/linear.cmi \
-    asmcomp/branch_relaxation_intf.cmo
-asmcomp/branch_relaxation_intf.cmo : \
+    asmcomp/branch_relaxation_intf.cmi
+asmcomp/branch_relaxation_intf.cmi : \
     asmcomp/linear.cmi \
     lambda/debuginfo.cmi \
     asmcomp/cmm.cmi \
     asmcomp/arch.cmo
-asmcomp/branch_relaxation_intf.cmx : \
-    asmcomp/linear.cmx \
-    lambda/debuginfo.cmx \
-    asmcomp/cmm.cmx \
-    asmcomp/arch.cmx
 asmcomp/cmm.cmo : \
     utils/targetint.cmi \
     utils/misc.cmi \
