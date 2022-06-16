@@ -2186,11 +2186,15 @@ bytecomp/symtable.cmi : \
 asmcomp/CSE.cmo : \
     asmcomp/mach.cmi \
     asmcomp/CSEgen.cmi \
-    asmcomp/arch.cmo
+    asmcomp/arch.cmo \
+    asmcomp/CSE.cmi
 asmcomp/CSE.cmx : \
     asmcomp/mach.cmx \
     asmcomp/CSEgen.cmx \
-    asmcomp/arch.cmx
+    asmcomp/arch.cmx \
+    asmcomp/CSE.cmi
+asmcomp/CSE.cmi : \
+    asmcomp/mach.cmi
 asmcomp/CSEgen.cmo : \
     asmcomp/reg.cmi \
     asmcomp/proc.cmi \
@@ -2271,7 +2275,7 @@ asmcomp/asmgen.cmo : \
     asmcomp/cmm.cmi \
     utils/clflags.cmi \
     middle_end/clambda.cmi \
-    asmcomp/CSE.cmo \
+    asmcomp/CSE.cmi \
     middle_end/backend_intf.cmi \
     asmcomp/asmgen.cmi
 asmcomp/asmgen.cmx : \
