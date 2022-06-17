@@ -7449,3 +7449,4 @@ let goober a = match a with C (type a b) y -> y
 
 module type s = sig type ('a,'b) t end with type (-!'a, !+'b) t = 'b -> 'a list
 module type s = sig type ('a,'b) t end with type (!-'a, +!'b) t := 'b -> 'a list
+module type s = sig type ('a,'b) t end with type ('a,'b) t := 'b -> 'a list
