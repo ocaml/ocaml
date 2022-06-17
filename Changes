@@ -333,6 +333,11 @@ OCaml 5.0
 
 ### Bug fixes:
 
+- #10790: don't drop variance and injectivity annotations when pretty printing
+  `with` constraints (for example, `with type +!'a t = ...`).
+  (Florian Angeletti, report by Luke Maurer, review by Matthew Ryan and
+   Gabriel Scherer)
+
 - #11167: Fix memory leak from signal stack.
   (Antoni Żewierżejew, review by Gabriel Scherer and Enguerrand Decorne)
 
@@ -780,10 +785,6 @@ OCaml 4.14.0
 - #10742: strong call-by-need reduction for shapes
   (Gabriel Scherer and Nathanaëlle Courant,
    review by Florian Angeletti, Ulysse Gérard and Thomas Refis)
-
-- #10790: don't drop variance and injectivity annotations when pretty printing
-  `with` constraints (for example, `with type +!'a t = ...`).
-  (Florian Angeletti, report by Luke Maurer, review by ???)
 
 ### Build system:
 
