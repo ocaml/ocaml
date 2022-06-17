@@ -147,6 +147,37 @@ module State : sig
       correlation.  Both PRNGs can be split later, arbitrarily many times.
       @since 5.0 *)
 
+  val to_binary_string : t -> string
+  (** Serializes the PRNG state into an immutable sequence of bytes.
+      See {!of_binary_string} for deserialization.
+
+      The [string] type is intended here for serialization only, the
+      encoding is not human-readable and may not be printable.
+
+      Note that the serialization format may differ across OCaml
+      versions.
+
+      @since 5.1
+  *)
+
+  val of_binary_string : string -> t
+  (** Deserializes a byte sequence obtained by calling
+      {!to_binary_string}. The resulting PRNG state will produce the
+      same random numbers as the state that was passed as input to
+      {!to_binary_string}.
+
+      @raise Failure if the input is not in the expected format.
+
+      Note that the serialization format may differ across OCaml
+      versions.
+
+      Unlike the functions provided by the {!Marshal} module, this
+      function either produces a valid state or fails cleanly with
+      a [Failure] exception. It can be safely used on user-provided,
+      untrusted inputs.
+
+      @since 5.1
+  *)
 end
 
 val get_state : unit -> State.t
