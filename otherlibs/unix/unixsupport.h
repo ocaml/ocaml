@@ -83,12 +83,6 @@ extern void caml_win32_maperr(DWORD errcode);
 extern value caml_unix_error_of_code (int errcode);
 extern int caml_unix_code_of_unix_error (value error);
 
-/* Compatibility definitions for the pre-5.0 names of these functions */
-#ifndef CAML_BUILDING_UNIX
-#define unix_error_of_code caml_unix_error_of_code
-#define code_of_unix_error caml_unix_code_of_unix_error
-#endif /* CAML_BUILDING_UNIX */
-
 CAMLnoreturn_start
 extern void caml_unix_error (int errcode, const char * cmdname, value arg)
 CAMLnoreturn_end;
@@ -96,12 +90,6 @@ CAMLnoreturn_end;
 CAMLnoreturn_start
 extern void caml_uerror (const char * cmdname, value arg)
 CAMLnoreturn_end;
-
-/* Compatibility definitions for the pre-5.0 names of these functions */
-#ifndef CAML_BUILDING_UNIX
-#define uerror caml_uerror
-#define unix_error caml_unix_error
-#endif /* CAML_BUILDING_UNIX */
 
 extern void caml_unix_check_path(value path, const char * cmdname);
 
@@ -115,15 +103,6 @@ extern void caml_unix_cstringvect_free(char_os **);
 extern int caml_unix_cloexec_default;
 extern int caml_unix_cloexec_p(value cloexec);
 
-/* Compatibility definitions for the pre-5.0 names of these functions */
-#ifndef CAML_BUILDING_UNIX
-#define cstringvect caml_unix_cstringvect
-#define cstringvect_free caml_unix_cstringvect_free
-
-#define unix_cloexec_default caml_unix_cloexec_default
-#define unix_cloexec_p caml_unix_cloexec_p
-#endif /* CAML_BUILDING_UNIX */
-
 #ifdef _WIN32
 extern int caml_win32_set_inherit(HANDLE fd, BOOL inherit);
 /* This is a best effort, not guaranteed to work, so don't fail on error */
@@ -132,13 +111,27 @@ extern int caml_win32_set_inherit(HANDLE fd, BOOL inherit);
 #else
 extern void caml_unix_set_cloexec(int fd, char * cmdname, value arg);
 extern void caml_unix_clear_cloexec(int fd, char * cmdname, value arg);
+#endif /* _WIN32 */
 
 /* Compatibility definitions for the pre-5.0 names of these functions */
 #ifndef CAML_BUILDING_UNIX
+#define unix_error_of_code caml_unix_error_of_code
+#define code_of_unix_error caml_unix_code_of_unix_error
+
+#define uerror caml_uerror
+#define unix_error caml_unix_error
+
+#define cstringvect caml_unix_cstringvect
+#define cstringvect_free caml_unix_cstringvect_free
+
+#define unix_cloexec_default caml_unix_cloexec_default
+#define unix_cloexec_p caml_unix_cloexec_p
+
+#ifndef _WIN32
 #define unix_set_cloexec caml_unix_set_cloexec
 #define unix_clear_cloexec caml_unix_clear_cloexec
+#endif /* ! _WIN32 */
 #endif /* CAML_BUILDING_UNIX */
-#endif /* _WIN32 */
 
 #ifdef __cplusplus
 }
