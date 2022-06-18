@@ -115,6 +115,13 @@ extern void caml_unix_clear_cloexec(int fd, char * cmdname, value arg);
 
 /* Compatibility definitions for the pre-5.0 names of these functions */
 #ifndef CAML_BUILDING_UNIX
+#ifdef _WIN32
+#define win_alloc_handle caml_win32_alloc_handle
+#define win_alloc_socket caml_win32_alloc_socket
+#define win_CRT_fd_of_filedescr caml_win32_CRT_fd_of_filedescr
+#define win32_maperr caml_win32_maperr
+#endif /* _WIN32 */
+
 #define unix_error_of_code caml_unix_error_of_code
 #define code_of_unix_error caml_unix_code_of_unix_error
 
@@ -127,10 +134,13 @@ extern void caml_unix_clear_cloexec(int fd, char * cmdname, value arg);
 #define unix_cloexec_default caml_unix_cloexec_default
 #define unix_cloexec_p caml_unix_cloexec_p
 
-#ifndef _WIN32
+#ifdef _WIN32
+#define win_set_inherit caml_win32_set_inherit
+#define win_set_cloexec caml_win32_set_cloexec
+#else
 #define unix_set_cloexec caml_unix_set_cloexec
 #define unix_clear_cloexec caml_unix_clear_cloexec
-#endif /* ! _WIN32 */
+#endif /* _WIN32 */
 #endif /* CAML_BUILDING_UNIX */
 
 #ifdef __cplusplus

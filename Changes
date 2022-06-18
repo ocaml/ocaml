@@ -544,7 +544,8 @@ OCaml 4.14.0
   WSADuplicateSocket on sockets instead of DuplicateHandle.
   (Antonin Décimo, review by Xavier Leroy and Nicolás Ojeda Bär)
 
-* #10926: Ensure all C functions in the Unix library are prefixed with `caml_`.
+* #10926, #11336: Ensure all C functions in the Unix library are prefixed with
+  `caml_`.
   (David Allsopp, review by Kate Deplaix, Damien Doligez and Xavier Leroy)
 
 - #10951: Introduce the Thread.Exit exception as an alternative way to
