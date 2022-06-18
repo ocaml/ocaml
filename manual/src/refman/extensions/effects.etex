@@ -666,10 +666,10 @@ rather than relying on the finaliser.
 \subsection{s:effects-shallow}{Shallow handlers}
 
 The examples that we have seen so far have used \textit{deep} handlers. A deep
-handles all the effects performed (in sequence) by the computation. Whenever a
-continuation is captured in a deep handler, the captured continuation also
-includes the handler. This means that, when the continuation is resumed, the
-effect handler is automatically re-installed, and will handle the effect(s)
+handler handles all the effects performed (in sequence) by the computation.
+Whenever a continuation is captured in a deep handler, the captured continuation
+also includes the handler. This means that, when the continuation is resumed,
+the effect handler is automatically re-installed, and will handle the effect(s)
 that the computation may perform in the future.
 
 OCaml also provides \textit{shallow} handlers. Compared to deep handlers, a
