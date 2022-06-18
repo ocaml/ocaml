@@ -1,6 +1,10 @@
 name: Hygiene
 on:
   push:
+    branches:
+      - '4.**'
+      - '5.**'
+      - 'trunk'
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
 
