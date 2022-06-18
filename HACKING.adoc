@@ -539,6 +539,25 @@ Some files need special rules to opt out of `check-typo` checks; this
 is specified in the `.gitattributes` file at the root of the
 repository, using `typo.foo` attributes.
 
+[#disable-github-actions-on-your-fork]
+==== Disable Github Actions on your fork
+
+By default, whenever you push to your own github fork of OCaml, Github
+Actions will run and you receive emails about any failure:
+
+> [gasche/ocaml] Run failed: Build - prng-to-bytes (dcb0168)
+
+These Continuous Integration (CI) runs on your local fork are often
+redundant, if you are working on a Pull Request (PR) on the main
+repository anyway; they wastes compute time, adds noise to your
+mailbox, and the results are often ignored. (Sometimes you
+specifically want to test the CI by iterating on your local fork
+before sending a PR.)
+
+To disable Github Actions on your fork, go to your fork
+(github.com/<you>/ocaml), then go to "Settings > Actions > General"
+and select "Disable Actions".
+
 ==== GitHub's Continuous Integration: GitHub Actions and AppVeyor
 
 The scripts that are run on GitHub Actions are described in
