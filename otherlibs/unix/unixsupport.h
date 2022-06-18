@@ -115,6 +115,15 @@ extern void caml_unix_cstringvect_free(char_os **);
 extern int caml_unix_cloexec_default;
 extern int caml_unix_cloexec_p(value cloexec);
 
+/* Compatibility definitions for the pre-5.0 names of these functions */
+#ifndef CAML_BUILDING_UNIX
+#define cstringvect caml_unix_cstringvect
+#define cstringvect_free caml_unix_cstringvect_free
+
+#define unix_cloexec_default caml_unix_cloexec_default
+#define unix_cloexec_p caml_unix_cloexec_p
+#endif /* CAML_BUILDING_UNIX */
+
 #ifdef _WIN32
 extern int caml_win32_set_inherit(HANDLE fd, BOOL inherit);
 /* This is a best effort, not guaranteed to work, so don't fail on error */
@@ -123,7 +132,13 @@ extern int caml_win32_set_inherit(HANDLE fd, BOOL inherit);
 #else
 extern void caml_unix_set_cloexec(int fd, char * cmdname, value arg);
 extern void caml_unix_clear_cloexec(int fd, char * cmdname, value arg);
-#endif
+
+/* Compatibility definitions for the pre-5.0 names of these functions */
+#ifndef CAML_BUILDING_UNIX
+#define unix_set_cloexec caml_unix_set_cloexec
+#define unix_clear_cloexec caml_unix_clear_cloexec
+#endif /* CAML_BUILDING_UNIX */
+#endif /* _WIN32 */
 
 #ifdef __cplusplus
 }
