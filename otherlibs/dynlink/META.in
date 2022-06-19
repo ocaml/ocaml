@@ -1,4 +1,5 @@
 # @configure_input@
+
 version = "@VERSION@"
 description = "Dynamic loading and linking of object files"
 archive(byte) = "dynlink.cma"

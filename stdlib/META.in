@@ -1,5 +1,5 @@
 # @configure_input@
 
-description = "Standard library"
 version = "@VERSION@"
+description = "Standard library"
 directory = "+"

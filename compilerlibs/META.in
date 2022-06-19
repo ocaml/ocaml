@@ -1,4 +1,5 @@
 # @configure_input@
+
 version = "@VERSION@"
 description = "compiler-libs support library"
 
