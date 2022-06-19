@@ -8,7 +8,6 @@ type_of_threads = "posix"
 
 package "posix" (
   requires = "unix"
-  directory = "+threads"
   exists_if = "threads.cma"
   archive(byte,mt,mt_posix) = "threads.cma"
   archive(native,mt,mt_posix) = "threads.cmxa"

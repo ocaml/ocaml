@@ -2,7 +2,6 @@
 
 description = "Ring buffer-based runtime tracing"
 version = "@VERSION@"
-directory = "+runtime_events"
 archive(byte) = "runtime_events.cma"
 archive(native) = "runtime_events.cmxa"
 plugin(byte) = "runtime_events.cma"

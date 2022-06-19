@@ -2,7 +2,6 @@
 
 description = "Unix system calls"
 version = "@VERSION@"
-directory = "+unix"
 archive(byte) = "unix.cma"
 archive(native) = "unix.cmxa"
 plugin(byte) = "unix.cma"

@@ -3,4 +3,3 @@
 requires = "compiler-libs"
 version = "@VERSION@"
 description = "ocamldoc plugin interface"
-directory= "+ocamldoc"

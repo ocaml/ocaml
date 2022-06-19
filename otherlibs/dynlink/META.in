@@ -1,6 +1,5 @@
 # @configure_input@
 version = "@VERSION@"
 description = "Dynamic loading and linking of object files"
-directory = "+dynlink"
 archive(byte) = "dynlink.cma"
 archive(native) = "@natdynlink_archive@"

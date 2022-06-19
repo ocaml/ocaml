@@ -2,7 +2,6 @@
 
 description = "Regular expressions and string processing"
 version = "@VERSION@"
-directory = "+str"
 archive(byte) = "str.cma"
 archive(native) = "str.cmxa"
 plugin(byte) = "str.cma"

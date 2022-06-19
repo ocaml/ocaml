@@ -1,7 +1,6 @@
 # @configure_input@
 version = "@VERSION@"
 description = "compiler-libs support library"
-directory= "+compiler-libs"
 
 package "common" (
   requires = "compiler-libs"
