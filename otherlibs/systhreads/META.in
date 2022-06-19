@@ -2,19 +2,12 @@
 
 version = "@VERSION@"
 description = "Multi-threading"
-requires(mt,mt_posix) = "threads.posix"
-directory = "+"
+requires = "unix"
+archive(byte) = "threads.cma"
+archive(native) = "threads.cmxa"
 type_of_threads = "posix"
 
 package "posix" (
-  requires = "unix"
-  exists_if = "threads.cma"
-  archive(byte,mt,mt_posix) = "threads.cma"
-  archive(native,mt,mt_posix) = "threads.cmxa"
-  version = "[internal]"
-)
-
-package "none" (
-  error = "threading is not supported on this platform"
+  requires = "threads"
   version = "[internal]"
 )
