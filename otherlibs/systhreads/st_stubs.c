@@ -594,8 +594,22 @@ static int create_tick_thread(void)
 CAMLprim value caml_thread_new(value clos)
 {
   CAMLparam1(clos);
-  caml_thread_t th;
   st_retcode err;
+
+#ifndef NATIVE_CODE
+  if (caml_debugger_in_use)
+    caml_fatal_error("ocamldebug does not support multithreaded programs");
+#endif
+
+  /* Create the tick thread if not already done.
+     Because of PR#4666, we start the tick thread late, only when we create
+     the first additional thread in the current process */
+  if (! Tick_thread_running) {
+    err = create_tick_thread();
+    sync_check_error(err, "Thread.create");
+    Tick_thread_running = 1;
+  }
+
 #ifdef POSIX_SIGNALS
   sigset_t mask, old_mask;
 
@@ -603,12 +617,8 @@ CAMLprim value caml_thread_new(value clos)
   pthread_sigmask(SIG_BLOCK, &mask, &old_mask);
 #endif
 
-#ifndef NATIVE_CODE
-  if (caml_debugger_in_use)
-    caml_fatal_error("ocamldebug does not support multithreaded programs");
-#endif
   /* Create a thread info block */
-  th = caml_thread_new_info();
+  caml_thread_t th = caml_thread_new_info();
 
   if (th == NULL)
     caml_raise_out_of_memory();
@@ -638,14 +648,6 @@ CAMLprim value caml_thread_new(value clos)
     sync_check_error(err, "Thread.create");
   }
 
-  /* Create the tick thread if not already done.
-     Because of PR#4666, we start the tick thread late, only when we create
-     the first additional thread in the current process */
-  if (! Tick_thread_running) {
-    err = create_tick_thread();
-    sync_check_error(err, "Thread.create");
-    Tick_thread_running = 1;
-  }
   CAMLreturn(th->descr);
 }
 
