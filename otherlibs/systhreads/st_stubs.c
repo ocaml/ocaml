@@ -660,16 +660,11 @@ CAMLexport int caml_c_thread_register(void)
     return 0;
   }
   /* Add thread info block to the list of threads */
-  if (Active_thread == NULL) {
-    th->next = th;
-    th->prev = th;
-    Active_thread = th;
-  } else {
-    th->next = Active_thread->next;
-    th->prev = Active_thread;
-    Active_thread->next->prev = th;
-    Active_thread->next = th;
-  }
+  CAMLassert(Active_thread != NULL);
+  th->next = Active_thread->next;
+  th->prev = Active_thread;
+  Active_thread->next->prev = th;
+  Active_thread->next = th;
   /* Associate the thread descriptor with the thread */
   st_tls_set(caml_thread_key, (void *) th);
   /* Allocate the thread descriptor on the heap */
