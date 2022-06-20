@@ -601,7 +601,7 @@ and strengthened_module_decl ~loc ~aliasable env ~mark
 
 (* Inclusion between signatures *)
 
-and signatures  ~in_eq ~loc env ~mark subst sig1 sig2 mod_shape =
+and signatures'  ~in_eq ~loc env ~mark subst sig1 sig2 mod_shape =
   (* Environment used to check inclusion of components *)
   let new_env =
     Env.add_signature sig1 (Env.in_signature true env) in
@@ -711,6 +711,10 @@ and signatures  ~in_eq ~loc env ~mark subst sig1 sig2 mod_shape =
         end in
   (* Do the pairing and checking, and return the final coercion *)
   pair_components subst [] [] sig2
+
+and signatures ~in_eq ~loc env ~mark subst sig1 sig2 mod_shape =
+  Ctype.wrap_no_update_gadt_scopes env
+    (signatures' ~in_eq ~loc env ~mark subst sig1 sig2) mod_shape
 
 (* Inclusion between signature components *)
 

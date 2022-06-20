@@ -1462,6 +1462,22 @@ let () = Subst.ctype_apply_env_empty := apply Env.empty
                               (*  Abbreviation expansion  *)
                               (****************************)
 
+(**** Control GADT scope checks on abbreviation expansion*)
+
+let update_gadt_scopes = ref true
+let check_no_update_gadt_scopes env =
+  !update_gadt_scopes && Env.has_local_constraints env &&
+  (update_gadt_scopes := false; cleanup_abbrev (); true)
+
+let reset_no_update_gadt_scopes b =
+  if b then update_gadt_scopes := true
+
+let wrap_no_update_gadt_scopes env f x =
+  let b = check_no_update_gadt_scopes env in
+  let y = f x in
+  reset_no_update_gadt_scopes b;
+  y
+
 (*
    If the environment has changed, memorized expansions might not
    be correct anymore, and so we flush the cache. This is safe but
@@ -1542,10 +1558,11 @@ let expand_abbrev_gen kind find_type_expansion env ty =
             in
             (* For gadts, remember type as non exportable *)
             (* The ambiguous level registered for ty' should be the highest *)
-            (* if !trace_gadt_instances then begin *)
-            let scope = Int.max lv (get_scope ty) in
-            update_scope scope ty;
-            update_scope scope ty';
+            if !update_gadt_scopes then begin
+              let scope = Int.max lv (get_scope ty) in
+              update_scope scope ty;
+              update_scope scope ty'
+            end;
             ty'
       end
   | _ ->

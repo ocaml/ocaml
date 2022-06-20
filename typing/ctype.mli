@@ -419,6 +419,8 @@ val get_current_level: unit -> int
 val wrap_trace_gadt_instances: Env.t -> ('a -> 'b) -> 'a -> 'b
 val reset_reified_var_counter: unit -> unit
 
+val wrap_no_update_gadt_scopes: Env.t -> ('a -> 'b) -> 'a -> 'b
+
 val immediacy : Env.t -> type_expr -> Type_immediacy.t
 
 (* Stubs *)
