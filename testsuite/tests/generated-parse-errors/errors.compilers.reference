@@ -1942,9 +1942,9 @@ File "implementation: TRUE DOT LBRACE UIDENT WITH", line 1, characters 7-8:
   This '{' might be unmatched
 File "implementation: TRUE DOT LBRACE WITH", line 1, characters 9-13:
 Error: Syntax error
-File "implementation: TRUE DOT LBRACKET UIDENT RBRACKET LESSMINUS OBJECT END WHILE", line 1, characters 32-37:
+File "implementation: TRUE DOT LBRACKET UIDENT RBRACKET LESSMINUS OBJECT END WHILE", line 1, characters 18-20:
 Error: Syntax error
-File "implementation: TRUE DOT LBRACKET UIDENT RBRACKET LESSMINUS WITH", line 1, characters 21-25:
+File "implementation: TRUE DOT LBRACKET UIDENT RBRACKET LESSMINUS WITH", line 1, characters 18-20:
 Error: Syntax error
 File "implementation: TRUE DOT LBRACKET UIDENT RBRACKET WHILE", line 1, characters 18-23:
 Error: Syntax error
