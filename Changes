@@ -333,6 +333,10 @@ OCaml 5.0
 
 ### Bug fixes:
 
+- #10768, #11340: Fix typechecking regression when combining first class
+  modules and GADTs.
+  (Jacques Garrigue, report by François Thiré, review by Matthew Ryan)
+
 - #10790: don't drop variance and injectivity annotations when pretty printing
   `with` constraints (for example, `with type +!'a t = ...`).
   (Florian Angeletti, report by Luke Maurer, review by Matthew Ryan and
