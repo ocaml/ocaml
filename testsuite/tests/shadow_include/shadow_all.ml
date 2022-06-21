@@ -100,11 +100,11 @@ end
 Line 4, characters 2-11:
 4 |   include S
       ^^^^^^^^^
-Error: Illegal shadowing of included type t/147 by t/164
+Error: Illegal shadowing of included type t/131 by t/146
        Line 2, characters 2-11:
-         Type t/147 came from this include
+         Type t/131 came from this include
        Line 3, characters 2-24:
-         The value ignore has no valid type if t/147 is shadowed
+         The value ignore has no valid type if t/131 is shadowed
 |}]
 
 module type Module = sig
@@ -140,11 +140,11 @@ end
 Line 4, characters 2-11:
 4 |   include S
       ^^^^^^^^^
-Error: Illegal shadowing of included module M/237 by M/254
+Error: Illegal shadowing of included module M/211 by M/226
        Line 2, characters 2-11:
-         Module M/237 came from this include
+         Module M/211 came from this include
        Line 3, characters 2-26:
-         The value ignore has no valid type if M/237 is shadowed
+         The value ignore has no valid type if M/211 is shadowed
 |}]
 
 
@@ -181,11 +181,11 @@ end
 Line 4, characters 2-11:
 4 |   include S
       ^^^^^^^^^
-Error: Illegal shadowing of included module type T/323 by T/340
+Error: Illegal shadowing of included module type T/287 by T/302
        Line 2, characters 2-11:
-         Module type T/323 came from this include
+         Module type T/287 came from this include
        Line 3, characters 2-39:
-         The module F has no valid type if T/323 is shadowed
+         The module F has no valid type if T/287 is shadowed
 |}]
 
 module type Extension = sig
@@ -198,11 +198,11 @@ end
 Line 4, characters 2-11:
 4 |   include S
       ^^^^^^^^^
-Error: Illegal shadowing of included type ext/358 by ext/375
+Error: Illegal shadowing of included type ext/318 by ext/333
        Line 2, characters 2-11:
-         Type ext/358 came from this include
+         Type ext/318 came from this include
        Line 3, characters 14-16:
-         The extension constructor C2 has no valid type if ext/358 is shadowed
+         The extension constructor C2 has no valid type if ext/318 is shadowed
 |}]
 
 module type Class = sig
