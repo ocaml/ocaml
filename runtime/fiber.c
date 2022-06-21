@@ -221,8 +221,9 @@ void caml_get_stack_sp_pc (struct stack_info* stack,
   *sp = p + sizeof(value);
 }
 
-Caml_inline void scan_stack_frames(scanning_action f, void* fdata,
-                                   struct stack_info* stack, value* gc_regs)
+Caml_inline void scan_stack_frames(
+  scanning_action f, scanning_action_flags fflags, void* fdata,
+  struct stack_info* stack, value* gc_regs)
 {
   char * sp;
   uintnat retaddr;
@@ -278,11 +279,12 @@ next_chunk:
   }
 }
 
-void caml_scan_stack(scanning_action f, void* fdata,
-                     struct stack_info* stack, value* gc_regs)
+void caml_scan_stack(
+  scanning_action f, scanning_action_flags fflags, void* fdata,
+  struct stack_info* stack, value* gc_regs)
 {
   while (stack != NULL) {
-    scan_stack_frames(f, fdata, stack, gc_regs);
+    scan_stack_frames(f, fflags, fdata, stack, gc_regs);
 
     f(fdata, Stack_handle_value(stack), &Stack_handle_value(stack));
     f(fdata, Stack_handle_exception(stack), &Stack_handle_exception(stack));
@@ -353,12 +355,19 @@ CAMLprim value caml_ensure_stack_capacity(value required_space)
   Used by the GC to find roots on the stacks of running or runnable fibers.
 */
 
-Caml_inline int is_block_and_not_code_frag(value v) {
-  return Is_block(v) && caml_find_code_fragment_by_pc((char *) v) == NULL;
+/* Code pointers are stored on the bytecode stack as naked pointers.
+   We must avoid passing them to the scanning action,
+   unless we know that it is a no-op outside young values
+   (so it will safely ignore code pointers). */
+ Caml_inline int is_scannable(scanning_action_flags flags, value v) {
+  return
+      (flags & SCANNING_ONLY_YOUNG_VALUES)
+      || (Is_block(v) && caml_find_code_fragment_by_pc((char *) v) == NULL);
 }
 
-void caml_scan_stack(scanning_action f, void* fdata,
-                     struct stack_info* stack, value* v_gc_regs)
+void caml_scan_stack(
+  scanning_action f, scanning_action_flags fflags, void* fdata,
+  struct stack_info* stack, value* v_gc_regs)
 {
   value *low, *high, *sp;
 
@@ -368,19 +377,17 @@ void caml_scan_stack(scanning_action f, void* fdata,
     high = Stack_high(stack);
     low = stack->sp;
     for (sp = low; sp < high; sp++) {
-      /* Code pointers inside the stack are naked pointers.
-         We must avoid passing them to function [f]. */
       value v = *sp;
-      if (is_block_and_not_code_frag(v)) {
+      if (is_scannable(fflags, v)) {
         f(fdata, v, sp);
       }
     }
 
-    if (is_block_and_not_code_frag(Stack_handle_value(stack)))
+    if (is_scannable(fflags, Stack_handle_value(stack)))
       f(fdata, Stack_handle_value(stack), &Stack_handle_value(stack));
-    if (is_block_and_not_code_frag(Stack_handle_exception(stack)))
+    if (is_scannable(fflags, Stack_handle_exception(stack)))
       f(fdata, Stack_handle_exception(stack), &Stack_handle_exception(stack));
-    if (is_block_and_not_code_frag(Stack_handle_effect(stack)))
+    if (is_scannable(fflags, Stack_handle_effect(stack)))
       f(fdata, Stack_handle_effect(stack), &Stack_handle_effect(stack));
 
     stack = Stack_parent(stack);

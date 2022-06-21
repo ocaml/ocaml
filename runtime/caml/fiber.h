@@ -197,8 +197,11 @@ extern value caml_global_data;
 
 struct stack_info** caml_alloc_stack_cache (void);
 CAMLextern struct stack_info* caml_alloc_main_stack (uintnat init_wsize);
-void caml_scan_stack(scanning_action f, void* fdata,
-                     struct stack_info* stack, value* v_gc_regs);
+
+void caml_scan_stack(
+  scanning_action f, scanning_action_flags fflags, void* fdata,
+  struct stack_info* stack, value* v_gc_regs);
+
 /* try to grow the stack until at least required_size words are available.
    returns nonzero on success */
 CAMLextern int caml_try_realloc_stack (asize_t required_wsize);

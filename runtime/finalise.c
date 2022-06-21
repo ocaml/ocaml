@@ -179,7 +179,8 @@ value caml_final_do_calls_exn(void)
 
 /* Called my major_gc for marking roots */
 void caml_final_do_roots
-  (scanning_action act, void* fdata, caml_domain_state* d, int do_val)
+  (scanning_action act, scanning_action_flags fflags, void* fdata,
+   caml_domain_state* d, int do_val)
 {
   uintnat i;
   struct final_todo *todo;
@@ -209,7 +210,8 @@ void caml_final_do_roots
 
 /* Called by minor gc for marking roots */
 void caml_final_do_young_roots
-  (scanning_action act, void* fdata, caml_domain_state* d, int do_last_val)
+  (scanning_action act, scanning_action_flags fflags, void* fdata,
+   caml_domain_state* d, int do_last_val)
 {
   uintnat i;
   struct caml_final_info *f = d->final_info;
