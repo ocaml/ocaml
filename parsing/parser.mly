@@ -2240,18 +2240,23 @@ let_pattern:
       { $1 }
 ;
 
-%inline indexop_expr(dot, index, right):
+%inline indexop_expr_no_bracket(dot, index, right):
   | array=simple_expr d=dot LPAREN i=index RPAREN r=right
     { array, d, Paren,   i, r }
   | array=simple_expr d=dot LBRACE i=index RBRACE r=right
     { array, d, Brace,   i, r }
+;
+
+%inline indexop_expr(dot, index, right):
+  | indexop_expr_no_bracket(dot, index, right)
+    { $1 }
   | array=simple_expr d=dot LBRACKET i=index RBRACKET r=right
     { array, d, Bracket, i, r }
 ;
 
 %inline indexop_error(dot, index):
   | simple_expr dot _p=LPAREN index  _e=error
-    { indexop_unclosed_error $loc(_p)  Paren $loc(_e) }
+    { indexop_unclosed_error $loc(_p) Paren $loc(_e) }
   | simple_expr dot _p=LBRACE index  _e=error
     { indexop_unclosed_error $loc(_p) Brace $loc(_e) }
   | simple_expr dot _p=LBRACKET index  _e=error
@@ -2282,7 +2287,7 @@ expr:
       { mkexp ~loc:$sloc (Pexp_setinstvar($1, $3)) }
   | simple_expr DOT mkrhs(label_longident) LESSMINUS expr
       { mkexp ~loc:$sloc (Pexp_setfield($1, $3, $5)) }
-  | indexop_expr(DOT, seq_expr, LESSMINUS v=expr {Some v})
+  | indexop_expr_no_bracket(DOT, seq_expr, LESSMINUS v=expr {Some v})
     { mk_indexop_expr builtin_indexing_operators ~loc:$sloc $1 }
   | indexop_expr(qualified_dotop, expr_semi_list, LESSMINUS v=expr {Some v})
     { mk_indexop_expr user_indexing_operators ~loc:$sloc $1 }
