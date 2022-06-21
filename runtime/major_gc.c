@@ -1017,10 +1017,7 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
   /* If the heap is to be verified, do it before the domains continue
      running OCaml code. */
   if (caml_params->verify_heap) {
-    struct heap_verify_state* ver = caml_verify_begin();
-    caml_do_roots (&caml_verify_root, ver, domain, 1);
-    caml_scan_global_roots(&caml_verify_root, ver);
-    caml_verify_heap(ver);
+    caml_verify_heap(domain);
     caml_gc_log("Heap verified");
     caml_global_barrier();
   }

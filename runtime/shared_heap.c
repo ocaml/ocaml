@@ -765,7 +765,11 @@ static void verify_object(struct heap_verify_state* st, value v) {
   }
 }
 
-void caml_verify_heap(struct heap_verify_state* st) {
+void caml_verify_heap(caml_domain_state *domain) {
+  struct heap_verify_state* st = caml_verify_begin();
+  caml_do_roots (&caml_verify_root, st, domain, 1);
+  caml_scan_global_roots(&caml_verify_root, st);
+
   while (st->sp) verify_object(st, st->stack[--st->sp]);
 
   caml_addrmap_clear(&st->seen);
