@@ -110,11 +110,12 @@ let modtype_path s path =
             fatal_error "Subst.modtype_path"
          | Pident _ -> path
 
-let extension_path s path =
+(* For values, extension constructors, classes and class types *)
+let value_path s path =
   match path with
   | Pident _ -> path
   | Pdot(p, n) -> Pdot(module_path s p, n)
-  | Papply _ | Pextra_ty _ -> fatal_error "Subst.extension_path"
+  | Papply _ | Pextra_ty _ -> fatal_error "Subst.value_path"
 
 let rec type_path s path =
   match Path.Map.find path s.types with
@@ -130,7 +131,7 @@ let rec type_path s path =
      | Pextra_ty (p, extra) ->
          match extra with
          | Pcstr_ty _ -> Pextra_ty (type_path s p, extra)
-         | Pext_ty | Pcls_ty -> Pextra_ty (extension_path s p, extra)
+         | Pext_ty | Pcls_ty -> Pextra_ty (value_path s p, extra)
 
 let to_subst_by_type_function s p =
   match Path.Map.find p s.types with

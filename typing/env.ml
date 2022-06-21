@@ -1346,6 +1346,8 @@ let rec normalize_path_prefix oloc env path =
 
 let normalize_type_path = normalize_path_prefix
 
+let normalize_value_path = normalize_path_prefix
+
 let rec normalize_modtype_path env path =
   let path = normalize_path_prefix None env path in
   expand_modtype_path env path

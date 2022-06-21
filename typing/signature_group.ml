@@ -46,14 +46,14 @@ let next_group = function
         match src with
         | Types.Sig_class _ ->
             (* a class declaration for [c] is followed by the ghost
-               declarations of class type [c], and types [c] and [#c] *)
+               declarations of class type [c], and type [c] *)
             begin match q with
             | ct::t::q -> [ct;t], q
             | _ -> assert false
             end
         | Types.Sig_class_type _  ->
             (* a class type declaration for [ct] is followed by the ghost
-               declarations of types [ct] and [#ct] *)
+               declaration of type [ct] *)
            begin match q with
             | t::q -> [t], q
             | _ -> assert false

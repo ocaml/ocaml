@@ -27,7 +27,7 @@ but some other are meaningless
 {[
   let rec x = x
   let rec x = x+1
-|}
+]}
 
 Intuitively, a recursive definition makes sense when the body of the
 definition can be evaluated without fully knowing what the recursive
@@ -909,7 +909,7 @@ and path : Path.t -> term_judg =
           path f << Dereference;
           path p << Dereference;
         ]
-    | Path.Pextra_ty _ -> assert false
+    | Path.Pextra_ty _ -> assert false (* Only in type paths *)
 
 (* G |- struct ... end : m *)
 and structure : Typedtree.structure -> term_judg =

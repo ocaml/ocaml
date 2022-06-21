@@ -20,10 +20,22 @@ type t =
   | Pdot of t * string
   | Papply of t * t
   | Pextra_ty of t * extra_ty
+  (** [Pextra_ty (p, extra)] is type path derived from [p]
+      with characteristic [extra]
+   *)
 and extra_ty =
   | Pcstr_ty of string
+  (** [Pextra_ty (p, Pcstr_ty c)] is the type of the inline record for
+      constructor [c] inside type [p]
+   *)
   | Pext_ty
+  (** [Pextra_ty (p, Pext_ty)] is the type of the inline record for
+      the extension constructor [p]
+   *)
   | Pcls_ty
+  (** [Pextra_ty (p, Pcls_ty)] is the hash type associated with
+      the class type [p]
+   *)
 
 val same: t -> t -> bool
 val compare: t -> t -> int

@@ -115,7 +115,7 @@ module Namespace = struct
 
   let best_class_namespace = function
     | Papply _ | Pdot _ -> Module
-    | Pextra_ty _ -> Type
+    | Pextra_ty _ -> assert false (* Only in type path *)
     | Pident c ->
         match location Class c with
         | Some _ -> Class
