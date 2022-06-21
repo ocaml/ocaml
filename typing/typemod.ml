@@ -2041,8 +2041,11 @@ and package_constraints env loc mty constrs =
   end
 
 let modtype_of_package env loc p fl =
-  package_constraints env loc (Mty_ident p)
-    (List.map (fun (n, t) -> (Longident.flatten n, t)) fl)
+  let mty =
+    package_constraints env loc (Mty_ident p)
+      (List.map (fun (n, t) -> (Longident.flatten n, t)) fl)
+  in
+  Subst.modtype Keep Subst.identity mty
 
 let package_subtype env p1 fl1 p2 fl2 =
   let mkmty p fl =
@@ -2062,9 +2065,11 @@ let () = Ctype.package_subtype := package_subtype
 
 let wrap_constraint env mark arg mty explicit =
   let mark = if mark then Includemod.Mark_both else Includemod.Mark_neither in
+  let mty1 = Subst.modtype Keep Subst.identity arg.mod_type in
+  let mty2 = Subst.modtype Keep Subst.identity mty in
   let coercion =
     try
-      Includemod.modtypes ~loc:arg.mod_loc env ~mark arg.mod_type mty
+      Includemod.modtypes ~loc:arg.mod_loc env ~mark mty1 mty2
     with Includemod.Error msg ->
       raise(Error(arg.mod_loc, env, Not_included msg)) in
   { mod_desc = Tmod_constraint(arg, mty, explicit, coercion);
