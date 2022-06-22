@@ -804,6 +804,10 @@ SAK_CC ?= $(CC)
 SAK_CFLAGS ?= $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS)
 SAK_LINK ?= $(MKEXE_VIA_CC)
 
+# Ensure that $(SAK) doesn't interfere with the "unconfigured system" error
+# message.
+runtime/sak.$(O): | config.status
+
 $(SAK): runtime/sak.$(O)
 	$(call SAK_LINK,$@,$^)
 
