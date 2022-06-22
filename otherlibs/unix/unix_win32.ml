@@ -459,44 +459,44 @@ external chdir : string -> unit = "caml_unix_chdir"
 external getcwd : unit -> string = "caml_unix_getcwd"
 let chroot _ = invalid_arg "Unix.chroot not implemented"
 
-type dir_entry =
-    Dir_empty
-  | Dir_read of string
-  | Dir_toread
+type dir_descr
 
 type dir_handle =
-  { dirname: string; mutable handle: int; mutable entry_read: dir_entry }
+  { dirname: string;
+    mutable handle: dir_descr option;
+    mutable entry_read: string option }
 
-external findfirst : string -> string * int = "caml_unix_findfirst"
-external findnext : int -> string= "caml_unix_findnext"
+external findfirst : string -> string * dir_descr = "caml_unix_findfirst"
+external findnext : dir_descr -> string= "caml_unix_findnext"
 
 let opendir dirname =
   try
     let (first_entry, handle) = findfirst (Filename.concat dirname "*.*") in
-    { dirname = dirname; handle = handle; entry_read = Dir_read first_entry }
+    { dirname = dirname; handle = Some handle; entry_read = Some first_entry }
   with End_of_file ->
-    { dirname = dirname; handle = 0; entry_read = Dir_empty }
+    { dirname = dirname; handle = None; entry_read = None }
 
 let readdir d =
-  match d.entry_read with
-    Dir_empty -> raise End_of_file
-  | Dir_read name -> d.entry_read <- Dir_toread; name
-  | Dir_toread -> findnext d.handle
+  match d.handle, d.entry_read with
+    None, None -> raise End_of_file
+  | None, Some _ -> assert false
+  | Some _, Some name -> d.entry_read <- None; name
+  | Some handle, None -> findnext handle
 
 external findclose : int -> unit = "caml_unix_findclose"
 
 let closedir d =
-  match d.entry_read with
-    Dir_empty -> ()
-  | _ -> findclose d.handle
+  match d.handle with
+    None -> ()
+  | Some handle -> findclose handle
 
 let rewinddir d =
   closedir d;
   try
     let (first_entry, handle) = findfirst (d.dirname ^ "\\*.*") in
-    d.handle <- handle; d.entry_read <- Dir_read first_entry
+    d.handle <- Some handle; d.entry_read <- Some first_entry
   with End_of_file ->
-    d.handle <- 0; d.entry_read <- Dir_empty
+    d.handle <- None; d.entry_read <- None
 
 (* Pipes *)
 
