@@ -142,8 +142,9 @@ let prepare_error err =
       Location.errorf ~loc "invalid package type: %s" s
   | Removed_string_set loc ->
       Location.errorf ~loc
-        "Syntax error: the infix operator (.[]<-) used to be bound \
-         to String.set, which was removed in OCaml 5.0"
+        "Syntax error: strings are immutable, there is no assignment \
+         syntax for them.\n\
+         Hint: Mutable sequences of bytes are available in the Bytes module."
 
 let () =
   Location.register_error_of_exn
