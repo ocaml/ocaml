@@ -2063,7 +2063,7 @@ let package_subtype env p1 fl1 p2 fl2 =
 
 let () = Ctype.package_subtype := package_subtype
 
-let wrap_constraint env mark arg mty explicit =
+let wrap_constraint_package env mark arg mty explicit =
   let mark = if mark then Includemod.Mark_both else Includemod.Mark_neither in
   let mty1 = Subst.modtype Keep Subst.identity arg.mod_type in
   let mty2 = Subst.modtype Keep Subst.identity mty in
@@ -2951,7 +2951,7 @@ let type_package env m p fl =
       with Ctype.Unify _ ->
         raise (Error(modl.mod_loc, env, Scoping_pack (n,ty))))
     fl';
-  let modl = wrap_constraint env true modl mty Tmodtype_implicit in
+  let modl = wrap_constraint_package env true modl mty Tmodtype_implicit in
   modl, fl'
 
 (* Fill in the forward declarations *)
