@@ -9,4 +9,4 @@ manual.css
 odoc.css
 highlight.pack.js
 *.htoc
-*.svg
+/*.svg
