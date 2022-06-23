@@ -99,11 +99,6 @@ CAMLexport void (*caml_channel_mutex_unlock) (struct channel *)
 CAMLexport void (*caml_channel_mutex_unlock_exn) (void)
   = channel_mutex_unlock_exn_default;
 
-CAMLexport void caml_channel_reset_last_locked (void)
-{
-  last_channel_locked = NULL;
-}
-
 /* List of channels opened from the OCaml side and managed by the GC */
 CAMLexport struct channel * caml_all_opened_channels = NULL;
 
