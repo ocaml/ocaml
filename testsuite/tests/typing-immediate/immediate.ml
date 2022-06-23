@@ -54,6 +54,21 @@ module M_valid : S
 module FM_valid : S
 |}];;
 
+(* Valid for empty types *)
+module Empty_valid : S = struct type t = | end;;
+[%%expect{|
+Line 1, characters 25-46:
+1 | module Empty_valid : S = struct type t = | end;;
+                             ^^^^^^^^^^^^^^^^^^^^^
+Error: Signature mismatch:
+       Modules do not match: sig type t = | end is not included in S
+       Type declarations do not match:
+         type t = |
+       is not included in
+         type t [@@immediate]
+       The first is not an immediate type.
+|}];;
+
 (* Practical usage over modules *)
 module Foo : sig type t val x : t ref end = struct
   type t = int
