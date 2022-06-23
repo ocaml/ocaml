@@ -87,6 +87,7 @@ make distclean
 git clean -n -d -f -x  # Check that "make distclean" removed everything
 
 rm -rf ${INSTDIR}
+./tools/autogen
 ./configure --prefix=${INSTDIR}
 
 make -j5
@@ -95,7 +96,7 @@ make -j5
 make alldepend
 
 git diff
-# should have empty output
+# should have empty output, except about configure
 
 # check that .depend files have no absolute path in them
 find . -name .depend | xargs grep ' /'
@@ -126,48 +127,64 @@ make tests
 #   4.07.0+dev8-2018-06-19 => 4.07.0+dev9-2018-06-26
 # for production releases: check and change the Changes header
 #  (remove "next version" and add a date)
-make -B configure
+
+Updating the version number is achieved by (1) modifying
+build-aux/ocaml_version.m4 and (2) re-generating the configure script
+and the VERSION file by running:
+
+./tools/autogen
 git commit -a -m "last commit before tagging $VERSION"
 
-# update VERSION with the new release; for example,
+# update VERSION as described above with the new release; for example,
 #   4.07.0+dev9-2018-06-26 => 4.07.0+rc2
 # Update ocaml-variants.opam with new version.
 # Update \year in manual/src/macros.hva
-make -B configure
+./tools/autogen
 # For a production release
 make coreboot -j5
 make coreboot -j5 # must say "Fixpoint reached, bootstrap succeeded."
-git commit -m "release $VERSION" -a
+git commit -m "release $VERSION" -a -f
+
+(The -f option to git commit is to force configure to be commited although
+it is usually not checked in.)
+
 git tag -m "release $VERSION" $TAGVERSION
 
-# for production releases, change the VERSION file into (N+1)+dev0; for example,
+# for production releases, update the version as described above to
+# (N+1)+dev0; for example,
 #   4.08.0 => 4.08.1+dev0
 # for testing candidates, use N+dev(D+2) instead; for example,
 #   4.07.0+rc2 => 4.07.0+dev10-2018-06-26
-# Revert ocaml-variants.opam to its "trunk" version.
-make -B configure
-git commit -m "increment version number after tagging $VERSION" VERSION configure ocaml-variants.opam
+# Revert ocaml-variants.opam to its "trunk" version and remove configure
+# again since we want it only for releases.
+./tools/autogen
+git rm --cached configure
+git rm configure
+git commit -m "increment version number after tagging $VERSION" VERSION ocaml-variants.opam
 git push
 git push --tags
 ```
 
 ## 5-bis: Alternative for branching
 
-This needs to be more tested, tread with care.
+This needs to be tested more, read with care.
 ```
 # at this point, the VERSION file contains N+devD
 # increment it into N+dev(D+1); for example,
 #   4.07.0+dev0-2018-06-19 => 4.07.0+dev1-2018-06-26
+
+(see above how to update VERSION.)
+
 # Rename the "Working version" header in Changes
 # to "OCaml $BRANCH"
-make -B configure
+./tools/autogen
 git commit -a -m "last commit before branching $BRANCH"
 git branch $BRANCH
 
 # update VERSION with the new future branch,
 #   4.07.0+dev1-2018-06-26 => 4.08.0+dev0-2018-06-30
 # Update ocaml-variants.opam with new version.
-make -B configure
+tools/autogen
 # Add a "Working version" section" to Changes
 # Add common subsections in Changes, see Changelog.
 git commit -m "first commit after branching $BRANCH" -a
@@ -177,7 +194,7 @@ git push
 git checkout $BRANCH
 # increment VERSION, for instance
 #   4.07.0+dev1-2018-06-26 => 4.07.0+dev2-2018-06-30
-make -B configure
+tools/autogen
 git commit -m "first commit on branch $BRANCH" -a
 git push --set-upstream origin $BRANCH
 ```

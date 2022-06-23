@@ -233,6 +233,8 @@ git clean -f -d -x
 # Also make a hard reset
 git reset --hard HEAD
 
+tools/autogen
+
 if $flambda; then
   confoptions="$confoptions -enable-flambda --enable-flambda-invariants"
 fi

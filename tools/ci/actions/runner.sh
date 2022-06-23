@@ -35,6 +35,8 @@ request can be merged.
 ------------------------------------------------------------------------
 EOF
 
+  ./tools/autogen
+
   configure_flags="\
     --prefix=$PREFIX \
     --enable-debug-runtime \
@@ -153,6 +155,8 @@ ReportBuildStatus () {
 
 BasicCompiler () {
   trap ReportBuildStatus ERR
+
+  ./tools/autogen
 
   ./configure --disable-dependency-generation \
               --disable-debug-runtime \

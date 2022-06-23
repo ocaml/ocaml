@@ -240,6 +240,12 @@ export LC_ALL=C
 
 git clean -q -f -d -x
 
+# Print PATH
+echo $PATH
+
+# Generate the configure script
+tools/autogen
+
 if test "$flambda" = "true"; then
   confoptions="$confoptions --enable-flambda --enable-flambda-invariants"
 fi

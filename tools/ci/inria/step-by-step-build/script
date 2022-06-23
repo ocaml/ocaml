@@ -23,6 +23,9 @@ instdir="$HOME/ocaml-tmp-install-$$"
 # Make sure the repository is clean
 git clean -q -f -d -x
 
+# Generate the configure script
+tools/autogen
+
 ./configure --prefix "$instdir" --disable-dependency-generation
 make $jobs world
 make $jobs opt
