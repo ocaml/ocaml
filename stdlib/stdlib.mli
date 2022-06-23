@@ -852,7 +852,10 @@ val print_int : int -> unit
 (** Print an integer, in decimal, on standard output. *)
 
 val print_float : float -> unit
-(** Print a floating-point number, in decimal, on standard output. *)
+(** Print a floating-point number, in decimal, on standard output.
+
+    The conversion of the number to a string uses {!string_of_float} and
+    can involve a loss of precision. *)
 
 val print_endline : string -> unit
 (** Print a string, followed by a newline character, on
@@ -880,7 +883,10 @@ val prerr_int : int -> unit
 (** Print an integer, in decimal, on standard error. *)
 
 val prerr_float : float -> unit
-(** Print a floating-point number, in decimal, on standard error. *)
+(** Print a floating-point number, in decimal, on standard error.
+
+    The conversion of the number to a string uses {!string_of_float} and
+    can involve a loss of precision. *)
 
 val prerr_endline : string -> unit
 (** Print a string, followed by a newline character on standard
