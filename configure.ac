@@ -74,6 +74,7 @@ AC_CONFIG_AUX_DIR([build-aux])
 
 AC_SUBST([CONFIGURE_ARGS])
 AC_SUBST([native_compiler])
+AC_SUBST([default_build_target])
 AC_SUBST([VERSION], [AC_PACKAGE_VERSION])
 AC_SUBST([OCAML_DEVELOPMENT_VERSION], [OCAML__DEVELOPMENT_VERSION])
 AC_SUBST([OCAML_RELEASE_EXTRA], [OCAML__RELEASE_EXTRA])
@@ -1194,8 +1195,11 @@ AS_CASE([$enable_native_compiler,$arch],
     [native_compiler=false
     AC_MSG_NOTICE([the native compiler is not supported on this platform])],
   [*,*],
-    [native_compiler=true]
-)
+    [native_compiler=true])
+
+AS_IF([$native_compiler],
+  [default_build_target=world.opt],
+  [default_build_target=world])
 
 AS_IF([! $native_compiler], [natdynlink=false])
 
