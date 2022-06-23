@@ -155,7 +155,10 @@ default:
 	@echo "  one TEST=f      launch just this single test"
 	@echo "  one DIR=p       launch the tests located in path p"
 	@echo "  one LIST=f      launch the tests listed in f (one per line)"
-	@echo "  promote DIR=p   promote the reference files for the tests in p"
+	@echo "  promote TEST=f  promote the output for this single test"
+	@echo "  promote DIR=p   promote the output for the tests located in path p"
+	@echo "  promote LIST=f  promote the output for the tests listed in f (one \
+	per line)"
 	@echo "  lib             build library modules"
 	@echo "  tools           build test tools"
 	@echo "  clean           delete generated files"
@@ -253,7 +256,7 @@ one: lib tools
 	@case "$(words $(DIR) $(LIST) $(TEST))" in \
    0) echo 'No value set for variable DIR, LIST or TEST'>&2; exit 1;; \
    1) exit 0;; \
-   *) echo 'Please specify just one of DIR, LIST or TEST'>&2; exit 1;; \
+   *) echo 'Please specify exactly one of DIR, LIST or TEST'>&2; exit 1;; \
    esac
 	@if [ -n '$(DIR)' ] && [ ! -d '$(DIR)' ]; then \
     echo "Directory '$(DIR)' does not exist."; exit 1; \
@@ -317,22 +320,8 @@ clean-one:
 	fi
 
 .PHONY: promote
-promote:
-	@if [ -z "$(DIR)" ]; then \
-	  echo "No value set for variable 'DIR'."; \
-	  exit 1; \
-	fi
-	@if [ ! -d $(DIR) ]; then \
-	  echo "Directory '$(DIR)' does not exist."; \
-	  exit 1; \
-	fi
-	@if $(ocamltest) -list-tests $(DIR) >/dev/null 2>&1; then \
-	  $(MAKE) exec-ocamltest DIR=$(DIR) \
-	    OCAMLTESTENV="OCAMLTESTDIR=$(OCAMLTESTDIR)" \
-	    PROMOTE="true"; \
-	else \
-	  cd $(DIR) && $(MAKE) TERM=dumb BASEDIR=$(BASEDIR) promote; \
-	fi
+promote: lib tools
+	@$(MAKE) one PROMOTE=true
 
 .PHONY: lib
 lib:
