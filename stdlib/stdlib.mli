@@ -764,7 +764,10 @@ external int_of_string : string -> int = "caml_int_of_string"
    [Failure "int_of_string"] instead of returning [None]. *)
 
 val string_of_float : float -> string
-(** Return the string representation of a floating-point number. *)
+(** Return a string representation of a floating-point number.
+
+    This conversion can involve a loss of precision. For greater control over
+    the manner in which the number is printed, see {!Printf}. *)
 
 val float_of_string_opt: string -> float option
 (** Convert the given string to a float.  The string is read in decimal
