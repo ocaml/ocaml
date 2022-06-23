@@ -35,6 +35,8 @@
 
 * A POSIX-compatible `diff` is necessary to run the test suite.
 
+* GNU `autoconf`, if compiling from the Git repository
+
 * If you do not have write access to `/tmp`, you should set the environment
   variable `TMPDIR` to the name of some other temporary directory.
 
@@ -48,12 +50,15 @@
 
 == Configuration
 
-From the top directory, do:
+If you compile a clone of the Git repository, then run the following
+command from its root directory:
+
+        tools/autogen
+
+Then, in any case, configure the compiler by running the following
+command from the top directory:
 
         ./configure
-
-This generates the three configuration files `Makefile.config`,
-`runtime/caml/m.h` and `runtime/caml/s.h`.
 
 The `configure` script accepts options that can be discovered by running:
 

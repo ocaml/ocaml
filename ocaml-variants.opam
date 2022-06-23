@@ -3,6 +3,7 @@ version: "5.1.0+trunk"
 license: "LGPL-2.1-or-later WITH OCaml-LGPL-linking-exception"
 synopsis: "OCaml development version"
 depends: [
+  "conf-autoconf"
   "ocaml" {= "5.1.0" & post}
   "base-unix" {post}
   "base-bigarray" {post}
@@ -12,6 +13,7 @@ depends: [
 conflict-class: "ocaml-core-compiler"
 flags: compiler
 build: [
+  [tools/autogen]
   [
     "./configure"
     "--prefix=%{prefix}%"

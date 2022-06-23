@@ -60,7 +60,8 @@ methods are available, the officially supported environment for doing this is
 64-bit (x86_64) Cygwin.
 
 Only the `make` Cygwin package is required. `diffutils` is required if you wish
-to be able to run the test suite.
+to be able to run the test suite, and `autoconf` is required if you wish
+to build from the Git repository rather than from a release tarball.
 
 Unless you are also compiling the Cygwin port of OCaml, you do not need the
 `gcc-core` or `flexdll` packages. If you do install them, care may be required
@@ -113,8 +114,8 @@ Visual C/C++ Compiler as well as the Build Tools for Visual Studio.
 
 === COMPILATION FROM THE SOURCES
 
-The command-line tools must be compiled from the Unix source distribution
-(`ocaml-X.YY.Z.tar.gz`), which also contains the files modified for Windows.
+The command-line tools must be compiled from either a source tarball
+(`ocaml-X.YY.Z.tar.gz`), or from OCaml's Git repository.
 (Note: you should use cygwin's `tar` command to unpack this archive. If you
 use WinZip, you will need to deselect "TAR file smart CR/LF conversion" in
 the WinZip Options Window.)
@@ -167,7 +168,7 @@ You cannot at present use a cross-compiler to compile 64-bit OCaml on 32-bit
 Windows.
 
 Once you have started a Command Prompt, you can verify that you have the
-compiler you are expecting simply by running:
+C compiler you are expecting simply by running:
 
   cl
   Microsoft (R) C/C++ Optimizing Compiler Version 19.00.23506 for x86
@@ -195,7 +196,13 @@ the top-level of the OCaml distribution by running:
 If you forget to do this, `make` will fail relatively
 quickly as it will be unable to link `ocamlrun`.
 
-Now run:
+Now, if you are compiling from Git, run:
+
+        tools/autogen
+
+to generate the configure script
+
+Then, whether you compile from Git or from a release tarball, run:
 
         ./configure --build=i686-pc-cygwin --host=i686-pc-windows
 

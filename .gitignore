@@ -46,6 +46,7 @@ _build
 /autom4te.cache
 /ocamlc
 /config.cache
+/configure
 /ocaml-*.cache
 /config.log
 /config.status

@@ -73,6 +73,8 @@ export LC_ALL=C
 
 git clean -q -f -d -x
 
+tools/autogen
+
 ./configure \
    --disable-shared \
    --disable-debug-runtime \

@@ -46,10 +46,13 @@ function run {
 }
 
 # Function: set_configuration
-# Takes 3 arguments
+# Takes 2 arguments
 # $1:the Windows port. Recognized values: mingw, msvc and msvc64
 # $2: the prefix to use to install
 function set_configuration {
+    # Generate the configure script
+    tools/autogen
+
     case "$1" in
         cygwin*)
             dep='--disable-dependency-generation'

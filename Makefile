@@ -1654,6 +1654,7 @@ config.status:
 	@echo "- In file README.win32.adoc for Windows systems."
 	@echo "On Unix systems, if you've just unpacked the distribution,"
 	@echo "something like"
+	@echo "  tools/autogen (needed only for git clones)"
 	@echo "  ./configure"
 	@echo "  make"
 	@echo "  make install"
