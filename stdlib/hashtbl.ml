@@ -421,7 +421,7 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
                   if H.equal key k3 then Some d3 else find_rec_opt key next3
 
     let find_all h key =
-      let rec find_in_bucket = function
+      let[@tail_mod_cons] rec find_in_bucket = function
       | Empty ->
           []
       | Cons{key=k; data=d; next} ->
@@ -571,7 +571,7 @@ let find_opt h key =
               if compare key k3 = 0 then Some d3 else find_rec_opt key next3
 
 let find_all h key =
-  let rec find_in_bucket = function
+  let[@tail_mod_cons] rec find_in_bucket = function
   | Empty ->
       []
   | Cons{key=k; data; next} ->
