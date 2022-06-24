@@ -1,8 +1,9 @@
 === ⚠️ CAUTION
 
 The developer team is currently preparing the release of OCaml 5.0. This release
-sports a full rewrite of its runtime system in order to support thread-based
-parallelism and effect-based concurrency.
+sports a full rewrite of its runtime system for shared-memory parallel
+programming using domains and native support for concurrent programming using
+effect handlers.
 
 The initial release of OCaml 5.0 will only support the native compiler under
 ARM64 and x86-64 architectures under Linux. On Windows, only the Mingw-w64 port
