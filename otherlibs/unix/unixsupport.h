@@ -61,7 +61,6 @@ struct filedescr {
 #define Handle_val(v) (((struct filedescr *) Data_custom_val(v))->fd.handle)
 #define Socket_val(v) (((struct filedescr *) Data_custom_val(v))->fd.socket)
 #define Descr_kind_val(v) (((struct filedescr *) Data_custom_val(v))->kind)
-#define CRT_fd_val(v) (((struct filedescr *) Data_custom_val(v))->crt_fd)
 #define Flags_fd_val(v) (((struct filedescr *) Data_custom_val(v))->flags_fd)
 
 extern value caml_win32_alloc_handle(HANDLE);

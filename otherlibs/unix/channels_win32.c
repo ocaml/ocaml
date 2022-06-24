@@ -60,6 +60,8 @@ static DWORD check_stream_semantics(value handle)
   }
 }
 
+#define CRT_fd_val(v) (((struct filedescr *) Data_custom_val(v))->crt_fd)
+
 int caml_win32_get_CRT_fd(value handle)
 {
   int fd;
