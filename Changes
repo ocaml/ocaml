@@ -20,6 +20,9 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- #11338: Turn some partial application warnings into hints.
+  (Leo White, review by Stephen Dolan)
+
 ### Internal/compiler-libs changes:
 
 ### Build system:
