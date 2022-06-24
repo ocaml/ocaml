@@ -83,6 +83,14 @@ val cpu_relax : unit -> unit
 val is_main_domain : unit -> bool
 (** [is_main_domain ()] returns true if called from the initial domain. *)
 
+val get_name : unit -> string
+(** [get_name] get the domain's name. *)
+
+val set_name : string -> unit
+(** [set_name s] set the domain's name to [s]. [s] should not be longer
+    than 15 characters. If [s] is longer than 15 characters,
+    raise Invalid_argument. *)
+    
 module DLS : sig
 (** Domain-local Storage *)
 

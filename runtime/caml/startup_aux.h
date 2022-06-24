@@ -41,6 +41,7 @@ struct caml_params {
   uintnat verify_heap;
   uintnat print_magic;
   uintnat print_config;
+  uintnat assign_domain_thread_names;
 
   uintnat init_percent_free;
   uintnat init_minor_heap_wsz;

@@ -17,6 +17,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include "caml/startup.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -288,6 +289,9 @@ static void * caml_thread_tick(void * arg)
   caml_init_domain_self(*domain_id);
   caml_domain_state *domain = Caml_state;
 
+  if(caml_params->assign_domain_thread_names) {
+    caml_set_domain_thread_name("T");
+  }
   while(! atomic_load_acq(&Tick_thread_stop)) {
     st_msleep(Thread_timeout);
 

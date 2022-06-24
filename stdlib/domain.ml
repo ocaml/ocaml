@@ -275,3 +275,6 @@ let join { term_mutex; term_condition; term_state; _ } =
   match loop () with
   | Ok x -> x
   | Error ex -> raise ex
+
+external get_name : unit -> string = "caml_ml_domain_get_name"
+external set_name : string -> unit = "caml_ml_domain_set_name"
