@@ -58,6 +58,8 @@ tools/mantis2gh_stripped.csv typo.missing-header
 
 /.mailmap                typo.long-line typo.missing-header typo.non-ascii
 /CONTRIBUTING.md         typo.non-ascii=may
+/README.adoc             typo.non-ascii=may
+/README.win32.adoc       typo.non-ascii=may
 /.merlin                 typo.missing-header
 /Changes                 typo.utf8 typo.missing-header
 /release-info/News       typo.utf8 typo.missing-header
