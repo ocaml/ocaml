@@ -144,7 +144,8 @@ let prepare_error err =
       Location.errorf ~loc
         "Syntax error: strings are immutable, there is no assignment \
          syntax for them.\n\
-         Hint: Mutable sequences of bytes are available in the Bytes module."
+         Hint: Mutable sequences of bytes are available in the Bytes module.\n\
+         Instead of 's.[i] <- c', one may write 'Bytes.set s i c'."
 
 let () =
   Location.register_error_of_exn
