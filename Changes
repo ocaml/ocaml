@@ -143,7 +143,7 @@ OCaml 5.0
   another PRNG.
   (Xavier Leroy, review by Gabriel Scherer and Hugo Heuzard)
 
-* #10867: Remove deprecated values: Array.create, Array.make_float,
+* #10867, #11345: Remove deprecated values: Array.create, Array.make_float,
   Array.create_matrix, Bytes.uppercase, Bytes.lowercase, Bytes.capitalize,
   Bytes.uncapitalize, Char.lowercase, Char.uppercase, Filename.temp_dir_name,
   Int32.format, Int64.format, Nativeint.format, Format.bprintf, Format.kprintf,
@@ -161,7 +161,8 @@ OCaml 5.0
   Scanf.kfscanf, Stdlib.( & ), Stdlib.( or ), String.set, String.copy,
   String.fill, String.unsafe_set, String.unsafe_fill, String.uppercase,
   String.lowercase, String.capitalize, String.uncapitalize, Thread.kill,
-  Thread.wait_write, Thread.wait_read, the whole ThreadUnix module.
+  Thread.wait_write, Thread.wait_read, the whole ThreadUnix module, the
+  infix operator (.[]<-).
   (Nicolás Ojeda Bär, review by Damien Doligez)
 
 * #10896: Remove Stream, Genlex and Pervasives. Also remove legacy standalone

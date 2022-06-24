@@ -230,6 +230,9 @@ let unclosed opening_name opening_loc closing_name closing_loc =
 let expecting loc nonterm =
     raise Syntaxerr.(Error(Expecting(make_loc loc, nonterm)))
 
+let removed_string_set loc =
+  raise(Syntaxerr.Error(Syntaxerr.Removed_string_set(make_loc loc)))
+
 (* Using the function [not_expecting] in a semantic action means that this
    syntactic form is recognized by the parser but is in fact incorrect. This
    idiom is used in a few places to produce ad hoc syntax error messages. *)
@@ -304,7 +307,9 @@ let builtin_arraylike_name loc _ ~assign paren_kind n =
   let opname = if !Clflags.unsafe then "unsafe_" ^ opname else opname in
   let prefix = match paren_kind with
     | Paren -> Lident "Array"
-    | Bracket -> Lident "String"
+    | Bracket ->
+        if assign then removed_string_set loc
+        else Lident "String"
     | Brace ->
        let submodule_name = match n with
          | One -> "Array1"
