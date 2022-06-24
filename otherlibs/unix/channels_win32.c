@@ -153,7 +153,7 @@ CAMLprim value caml_unix_filedescr_of_channel(value vchan)
     fd = caml_win32_alloc_socket((SOCKET) h);
   else
     fd = caml_win32_alloc_handle(h);
-  atomic_store_explicit(&CRT_fd_val(fd), chan->fd, memory_order_relaxed);
+  CRT_fd_val(fd) = chan->fd;
   CAMLreturn(fd);
 }
 
@@ -164,6 +164,6 @@ CAMLprim value caml_unix_filedescr_of_fd(value vfd)
      degradation and this function is only used with the standard
      handles 0, 1, 2, which are not sockets. */
   value res = caml_win32_alloc_handle((HANDLE) _get_osfhandle(crt_fd));
-  atomic_store_explicit(&CRT_fd_val(res), crt_fd, memory_order_relaxed);
+  CRT_fd_val(res) = crt_fd;
   return res;
 }
