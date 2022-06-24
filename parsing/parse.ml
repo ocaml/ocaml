@@ -140,6 +140,12 @@ let prepare_error err =
         "broken invariant in parsetree: %s" s
   | Invalid_package_type (loc, s) ->
       Location.errorf ~loc "invalid package type: %s" s
+  | Removed_string_set loc ->
+      Location.errorf ~loc
+        "Syntax error: strings are immutable, there is no assignment \
+         syntax for them.\n\
+         Hint: Mutable sequences of bytes are available in the Bytes module.\n\
+         Hint: Did you mean to use 'Bytes.set'?"
 
 let () =
   Location.register_error_of_exn
