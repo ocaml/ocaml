@@ -846,6 +846,7 @@ OCAML_VERSION_MAJOR
 OCAML_RELEASE_EXTRA
 OCAML_DEVELOPMENT_VERSION
 VERSION
+default_build_target
 native_compiler
 CONFIGURE_ARGS
 target_alias
@@ -2854,6 +2855,7 @@ ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 
 
 ## Output variables
+
 
 
 
@@ -14445,11 +14447,16 @@ $as_echo "$as_me: the native compiler is disabled" >&6;} ;; #(
     { $as_echo "$as_me:${as_lineno-$LINENO}: the native compiler is not supported on this platform" >&5
 $as_echo "$as_me: the native compiler is not supported on this platform" >&6;} ;; #(
   *,*) :
-    native_compiler=true
- ;; #(
+    native_compiler=true ;; #(
   *) :
      ;;
 esac
+
+if $native_compiler; then :
+  default_build_target=world.opt
+else
+  default_build_target=world
+fi
 
 if ! $native_compiler; then :
   natdynlink=false

@@ -25,11 +25,7 @@ OCAMLLEX ?= $(BOOT_OCAMLLEX)
 include Makefile.common
 
 .PHONY: defaultentry
-ifeq "$(NATIVE_COMPILER)" "true"
-defaultentry: world.opt
-else
-defaultentry: world
-endif
+defaultentry: $(DEFAULT_BUILD_TARGET)
 
 ifeq "$(UNIX_OR_WIN32)" "win32"
 LN = cp
