@@ -3,6 +3,9 @@ Working version
 
 ### Language features:
 
+- #9975, #11365: Make empty types (`type t = |`) immediate.
+  (Antal Spector-Zabusky, review by Gabriel Scherer)
+
 ### Runtime system:
 
 ### Code generation and optimizations:
