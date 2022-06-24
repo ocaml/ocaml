@@ -89,7 +89,7 @@ int caml_win32_CRT_fd_of_filedescr(value handle)
       break; /* try again */
     default:
       return fd;
-  }
+    }
   }
 }
 
