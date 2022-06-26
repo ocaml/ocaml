@@ -172,7 +172,7 @@ val iteri : (int -> 'a -> unit) -> 'a list -> unit
 val map : ('a -> 'b) -> 'a list -> 'b list
 (** [map f [a1; ...; an]] applies function [f] to [a1, ..., an],
    and builds the list [[f a1; ...; f an]]
-   with the results returned by [f]. Not tail-recursive.
+   with the results returned by [f].
  *)
 
 val mapi : (int -> 'a -> 'b) -> 'a list -> 'b list
@@ -184,8 +184,7 @@ val mapi : (int -> 'a -> 'b) -> 'a list -> 'b list
 
 val rev_map : ('a -> 'b) -> 'a list -> 'b list
 (** [rev_map f l] gives the same result as
-   {!rev}[ (]{!map}[ f l)], but is tail-recursive and
-   more efficient.
+   {!rev}[ (]{!map}[ f l)], but is more efficient.
  *)
 
 val filter_map : ('a -> 'b option) -> 'a list -> 'b list

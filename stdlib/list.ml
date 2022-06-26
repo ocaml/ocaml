@@ -87,9 +87,25 @@ let rec flatten = function
 
 let concat = flatten
 
-let rec map f = function
+let[@tail_mod_cons] rec map f = function
     [] -> []
-  | a::l -> let r = f a in r :: map f l
+  | [a1] ->
+      let r1 = f a1 in
+      [r1]
+  | [a1; a2] ->
+      let r1 = f a1 in
+      let r2 = f a2 in
+      [r1; r2]
+  | [a1; a2; a3] ->
+      let r1 = f a1 in
+      let r2 = f a2 in
+      let r3 = f a3 in
+      [r1; r2; r3]
+  | a1::a2::a3::l ->
+      let r1 = f a1 in
+      let r2 = f a2 in
+      let r3 = f a3 in
+      r1 :: r2 :: r3 :: map f l
 
 let rec mapi i f = function
     [] -> []
