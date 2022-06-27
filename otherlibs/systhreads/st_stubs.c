@@ -130,9 +130,9 @@ static st_retcode caml_threadstatus_wait (value);
 
 static scan_roots_hook prev_scan_roots_hook;
 
-static void caml_thread_scan_roots(scanning_action action,
-                                   void *fdata,
-                                   caml_domain_state *domain_state)
+static void caml_thread_scan_roots(
+  scanning_action action, scanning_action_flags fflags, void *fdata,
+  caml_domain_state *domain_state)
 {
   caml_thread_t th;
 
@@ -145,8 +145,8 @@ static void caml_thread_scan_roots(scanning_action action,
       (*action)(fdata, th->backtrace_last_exn, &th->backtrace_last_exn);
       if (th != Current_thread) {
         if (th->current_stack != NULL)
-          caml_do_local_roots(action, fdata, th->local_roots,
-                              th->current_stack, th->gc_regs);
+          caml_do_local_roots(action, fflags, fdata,
+                              th->local_roots, th->current_stack, th->gc_regs);
       }
       th = th->next;
     } while (th != Current_thread);
@@ -154,7 +154,7 @@ static void caml_thread_scan_roots(scanning_action action,
   };
 
   if (prev_scan_roots_hook != NULL)
-    (*prev_scan_roots_hook)(action, fdata, domain_state);
+    (*prev_scan_roots_hook)(action, fflags, fdata, domain_state);
 
   return;
 }

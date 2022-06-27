@@ -35,6 +35,7 @@ OCaml 5.0
 ### Language features:
 
 ### Runtime system:
+
 - #11308: Add environment variable to preserve runtime_events after exit
   If the environment variable OCAML_RUNTIME_EVENTS_PRESERVE exists then the
   runtime will not remove the runtime events ring buffers at exit. This
@@ -126,6 +127,12 @@ OCaml 5.0
   asynchronous actions in multicore. Reimplement the old behaviour of
   `caml_process_pending*` for multicore.
   (Guillaume Munch-Maccagnoni, review by Sadiq Jaffer and Gabriel Scherer)
+
+- #11337: pass 'flags' metadata to root scanners, to optimize stack
+  scanning in the bytecode interpreter.
+  Changes the interface of user-provided root-scanning hooks.
+  (Gabriel Scherer, review by Xavier Leroy,
+   Guillaume Munch-Maccagnoni, Sadiq Jaffer and Tom Kelly)
 
 ### Code generation and optimizations:
 
