@@ -90,10 +90,10 @@ DEFAULT_BUILD_TARGET = @default_build_target@
 # at both stages, like e.g. -g, it should be added to both XXX_YYY_CFLAGS and
 # XXX_YYY_LDFLAGS.
 
-OC_COMMON_CFLAGS = -strict-sequence -principal -absname \
+OC_COMMON_CFLAGS = -g -strict-sequence -principal -absname \
   -w +a-4-9-40-41-42-44-45-48 -warn-error +a -bin-annot \
   -safe-string -strict-formats
-OC_COMMON_LDFLAGS =
+OC_COMMON_LDFLAGS = -g
 
 OC_NATIVE_CFLAGS = @oc_native_cflags@
 
