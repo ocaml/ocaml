@@ -742,6 +742,8 @@ static intnat mark(intnat budget) {
   return budget;
 }
 
+static scanning_action_flags darken_scanning_flags = 0;
+
 void caml_darken_cont(value cont)
 {
   CAMLassert(Is_block(cont) && !Is_young(cont) && Tag_val(cont) == Cont_tag);
@@ -757,7 +759,8 @@ void caml_darken_cont(value cont)
               With_status_hd(hd, NOT_MARKABLE))) {
         value stk = Field(cont, 0);
         if (Ptr_val(stk) != NULL)
-          caml_scan_stack(&caml_darken, 0, Ptr_val(stk), 0);
+          caml_scan_stack(&caml_darken, darken_scanning_flags, 0,
+                          Ptr_val(stk), 0);
         atomic_store_explicit(
           Hp_atomic_val(cont),
           With_status_hd(hd, caml_global_heap_state.MARKED),
@@ -1017,10 +1020,7 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
   /* If the heap is to be verified, do it before the domains continue
      running OCaml code. */
   if (caml_params->verify_heap) {
-    struct heap_verify_state* ver = caml_verify_begin();
-    caml_do_roots (&caml_verify_root, ver, domain, 1);
-    caml_scan_global_roots(&caml_verify_root, ver);
-    caml_verify_heap(ver);
+    caml_verify_heap(domain);
     caml_gc_log("Heap verified");
     caml_global_barrier();
   }
@@ -1035,7 +1035,7 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
   domain->major_gc_clock = 0.0;
 
   CAML_EV_BEGIN(EV_MAJOR_MARK_ROOTS);
-  caml_do_roots (&caml_darken, NULL, domain, 0);
+  caml_do_roots (&caml_darken, darken_scanning_flags, NULL, domain, 0);
   {
     uintnat work_unstarted = WORK_UNSTARTED;
     if(atomic_compare_exchange_strong(&domain_global_roots_started,

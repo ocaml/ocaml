@@ -72,10 +72,12 @@ void caml_final_merge_finalisable (struct finalisable *source,
 int caml_final_update_first (caml_domain_state* d);
 int caml_final_update_last (caml_domain_state* d);
 value caml_final_do_calls_exn (void);
-void caml_final_do_roots (scanning_action f, void* fdata,
-                          caml_domain_state* domain, int do_val);
-void caml_final_do_young_roots (scanning_action f, void* fdata,
-                                caml_domain_state* d, int do_last_val);
+void caml_final_do_roots (
+  scanning_action f, scanning_action_flags fflags, void* fdata,
+  caml_domain_state* domain, int do_val);
+void caml_final_do_young_roots (
+  scanning_action f, scanning_action_flags fflags, void* fdata,
+  caml_domain_state* d, int do_last_val);
 void caml_final_empty_young (caml_domain_state* d);
 void caml_final_update_last_minor (caml_domain_state* d);
 struct caml_final_info* caml_alloc_final_info(void);
