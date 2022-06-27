@@ -572,12 +572,12 @@ static void realloc_mark_stack (struct mark_stack* stk)
       stk->size *= 2;
       return;
     }
-    caml_gc_log ("No room for growing mark stack. Pruning..\n");
+    caml_gc_log ("No room for growing mark stack. Compressing..\n");
   }
 
   caml_gc_log ("Mark stack size is %"ARCH_INTNAT_PRINTF_FORMAT"u "
                "bytes (> major heap size of this domain %"
-               ARCH_INTNAT_PRINTF_FORMAT"u bytes / 32). Pruning..\n",
+               ARCH_INTNAT_PRINTF_FORMAT"u bytes / 32). Compressing..\n",
                mark_stack_bsize,
                caml_heap_size(Caml_state->shared_heap));
   mark_stack_prune(stk);

@@ -15,7 +15,7 @@ let populate_elements a m =
   done
 
 let make_arr () =
-  let a = Array.init 65_536 (fun _ -> []) in
+  let a = Array.init (1 lsl 16) (fun _ -> []) in
   populate_elements a 100_000;
   a
 

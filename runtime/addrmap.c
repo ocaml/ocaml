@@ -78,13 +78,13 @@ static void addrmap_alloc(struct addrmap* t, uintnat sz)
 }
 
 void caml_addrmap_init(struct addrmap* t) {
-  t->entries = 0;
+  t->entries = NULL;
   t->size = 0;
 }
 
 void caml_addrmap_clear(struct addrmap* t) {
   caml_stat_free(t->entries);
-  t->entries = 0;
+  t->entries = NULL;
   t->size = 0;
 }
 

@@ -303,6 +303,7 @@ static value ephe_get_field_copy (value e, mlsize_t offset)
     }
 
     if (Tag_val(v) < No_scan_tag) {
+      caml_domain_state* domain_state = Caml_state;
       i = 0;
       if (Tag_val (v) == Closure_tag) {
         /* Direct copy of the code pointers and closure info fields */
@@ -312,7 +313,7 @@ static value ephe_get_field_copy (value e, mlsize_t offset)
       /* Field-by-field copy and darkening of the remaining fields */
       for (/*nothing*/; i < Wosize_val(v); i++) {
         f = Field(v, i);
-        caml_darken (Caml_state, f, 0);
+        caml_darken (domain_state, f, 0);
         Store_field(elt, i, f);
       }
     } else {
@@ -387,20 +388,23 @@ static value ephe_blit_field (value es, mlsize_t offset_s,
   CAMLparam2(es,ed);
   CAMLlocal1(ar);
   long i;
+  caml_domain_state *domain_state;
+
 
   if (length == 0) CAMLreturn(Val_unit);
 
   caml_ephe_clean(es);
   caml_ephe_clean(ed);
 
+  domain_state = Caml_state;
   if (offset_d < offset_s) {
     for (i = 0; i < length; i++) {
-      caml_darken(Caml_state, Field(es, (offset_s + i)), 0);
+      caml_darken(domain_state, Field(es, (offset_s + i)), 0);
       do_set(ed, offset_d + i, Field(es, (offset_s + i)));
     }
   } else {
     for (i = length - 1; i >= 0; i--) {
-      caml_darken(Caml_state, Field(es, (offset_s + i)), 0);
+      caml_darken(domain_state, Field(es, (offset_s + i)), 0);
       do_set(ed, offset_d + i, Field(es, (offset_s + i)));
     }
   }
