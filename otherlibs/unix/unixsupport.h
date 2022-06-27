@@ -79,6 +79,9 @@ extern int caml_win32_CRT_fd_of_filedescr(value handle);
    win_CRT_fd_of_filedescr. */
 extern int caml_win32_get_CRT_fd(value handle);
 
+// Export this macro as an alias for the getter function, for compatibility
+#define CRT_fd_val caml_win32_get_CRT_fd
+
 extern SOCKET caml_win32_socket(int domain, int type, int protocol,
                                 LPWSAPROTOCOL_INFO info,
                                 BOOL inherit);
