@@ -21,7 +21,8 @@ let rec burn l =
 let test_parallel_spawn () =
   for i = 1 to 20 do
     Array.init num_domains (fun _ -> Domain.spawn (fun () -> burn [0]))
-    |> Array.iter join
+    |> Array.iter join;
+    Printf.printf "Round %d completed\n%!" i
   done
 
 let () =
@@ -39,6 +40,8 @@ let () =
 
   running := false;
   join domain_minor_gc;
+  Printf.printf "Minor GC joined\n%!";
   join domain_major_gc;
+  Printf.printf "Major GC joined\n%!";
 
   print_endline "ok"
