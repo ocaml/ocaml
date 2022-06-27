@@ -725,8 +725,8 @@ static intnat do_some_marking(struct mark_stack* stk, intnat budget) {
 
 /* compressed mark stack */
 #define PAGE_MASK (~(uintnat)(BITS_PER_WORD-1))
-#define PTR_TO_PAGE(v) (((uintnat)(v)>>3) & PAGE_MASK)
-#define PTR_TO_PAGE_OFFSET(v) ((((uintnat)(v)>>3) & ~PAGE_MASK))
+#define PTR_TO_PAGE(v) (((uintnat)(v)/sizeof(value)) & PAGE_MASK)
+#define PTR_TO_PAGE_OFFSET(v) ((((uintnat)(v)/sizeof(value)) & ~PAGE_MASK))
 
 /* mark until the budget runs out or marking is done */
 static intnat mark(intnat budget) {
@@ -749,7 +749,7 @@ static intnat mark(intnat budget) {
 
         for(i=0; i<BITS_PER_WORD; i++) {
           if(v & ((uintnat)1 << i)) {
-            value* p = (value*)((k + i)<<3);
+            value* p = (value*)((k + i)*sizeof(value));
             mark_slice_darken(domain_state->mark_stack, *p, &budget);
           }
         }
@@ -1487,7 +1487,7 @@ Caml_inline int add_addr(struct addrmap* amap, value v) {
     *amap_pos = 0;
   }
 
-  CAMLassert(v == (value)((k + PTR_TO_PAGE_OFFSET(v))<<3));
+  CAMLassert(v == (value)((k + PTR_TO_PAGE_OFFSET(v))*sizeof(value)));
 
   if (!(*amap_pos & flag)) {
     *amap_pos |= flag;
