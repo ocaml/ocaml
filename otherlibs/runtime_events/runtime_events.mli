@@ -30,6 +30,20 @@
     There is additionally a set of C APIs in runtime_events.h that can enable
     zero-impact monitoring of the current process or bindings for other
     languages.
+
+    The runtime events system's behaviour can be controlled by the following
+    environment variables:
+
+    - OCAML_RUNTIME_EVENTS_START if set will cause the runtime events system
+    to be started as part of the OCaml runtime initialization.
+
+    - OCAML_RUNTIME_EVENTS_DIR sets the directory where the runtime events
+    ring buffers will be located. If not present the program's working directory
+    will be used.
+
+  - OCAML_RUNTIME_EVENTS_PRESERVE if set will prevent the OCaml runtime from
+    removing its ring buffers when it terminates. This can help if monitoring
+    very short running programs.
 *)
 
 (** The type for counter events emitted by the runtime *)

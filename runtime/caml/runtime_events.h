@@ -16,6 +16,15 @@
 /*                                                                        */
 /**************************************************************************/
 
+/* Runtime events - ring buffer-based runtime tracing
+
+   This file contains the C API for runtime events. It is intended for use
+   cases where the OCaml API is impractical. See the Runtime_events OCaml
+   module source for more detailed information about the system and
+   environment variables to control it externally.
+
+*/
+
 #ifndef CAML_RUNTIME_EVENTS_H
 #define CAML_RUNTIME_EVENTS_H
 
