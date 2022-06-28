@@ -1106,12 +1106,10 @@ int64_t caml_time_counter(void)
 
   if (clock_freq == 0) {
     LARGE_INTEGER f;
-    if (!QueryPerformanceFrequency(&f))
-      return 0;
+    QueryPerformanceFrequency(&f);
     clock_freq = (1000000000.0 / f.QuadPart);
   };
 
-  if (!QueryPerformanceCounter(&now))
-    return 0;
+  QueryPerformanceCounter(&now);
   return (int64_t)(now.QuadPart * clock_freq);
 }
