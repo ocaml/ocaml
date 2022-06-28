@@ -54,21 +54,11 @@ CAMLprim value caml_unix_lockf(value fd, value cmd, value span)
   OVERLAPPED overlap;
   intnat l_len;
   HANDLE h;
-  OSVERSIONINFO version;
   LARGE_INTEGER cur_position;
   LARGE_INTEGER beg_position;
   LARGE_INTEGER lock_len;
   LARGE_INTEGER zero;
   DWORD err = NO_ERROR;
-
-  version.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-  if(GetVersionEx(&version) == 0) {
-    caml_invalid_argument("lockf only supported on WIN32_NT platforms:"
-                     " could not determine current platform.");
-  }
-  if(version.dwPlatformId != VER_PLATFORM_WIN32_NT) {
-    caml_invalid_argument("lockf only supported on WIN32_NT platforms");
-  }
 
   h = Handle_val(fd);
 
