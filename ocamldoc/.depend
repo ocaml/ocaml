@@ -959,17 +959,22 @@ generators/odoc_literate.cmo : \
     odoc_info.cmi \
     odoc_html.cmi \
     odoc_gen.cmi \
-    odoc_args.cmi
+    odoc_args.cmi \
+    generators/odoc_literate.cmi
 generators/odoc_literate.cmx : \
     odoc_info.cmx \
     odoc_html.cmx \
     odoc_gen.cmx \
-    odoc_args.cmx
+    odoc_args.cmx \
+    generators/odoc_literate.cmi
 generators/odoc_literate.cmxs : \
     odoc_info.cmx \
     odoc_html.cmx \
     odoc_gen.cmx \
-    odoc_args.cmx
+    odoc_args.cmx \
+    generators/odoc_literate.cmi
+generators/odoc_literate.cmi : \
+    odoc_html.cmi
 generators/odoc_todo.cmo : \
     odoc_module.cmi \
     odoc_info.cmi \
@@ -992,5 +997,6 @@ generators/odoc_todo.cmxs : \
     odoc_args.cmx \
     generators/odoc_todo.cmi
 generators/odoc_todo.cmi : \
+    odoc_scan.cmi \
     odoc_info.cmi \
     odoc_html.cmi
