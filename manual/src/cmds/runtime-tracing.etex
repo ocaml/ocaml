@@ -13,8 +13,7 @@ the size of allocated memory blocks, as well as value promotions from the
 
 \section{s:runtime-tracing-overview}{Overview}
 
-The runtime tracing system is flexible and was designed to support a range of
-use cases. At a high level runtime events can be used in two ways:
+The runtime events tracing system is designed to be used in different contexts:
 \begin{description}
 \item[Self monitoring] OCaml programs and libraries can install their own callbacks
 to listen for runtime events and react to them programmatically, for example,
