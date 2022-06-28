@@ -847,14 +847,20 @@ let type_manifest env ty1 params1 ty2 params2 priv2 kind2 =
     end
 
 let type_declarations ?(equality = false) ~loc env ~mark name
-      decl1 path decl2 =
+      decl1 path decl2 oargs =
   Builtin_attributes.check_alerts_inclusion
     ~def:decl1.type_loc
     ~use:decl2.type_loc
     loc
     decl1.type_attributes decl2.type_attributes
     name;
-  if decl1.type_arity <> decl2.type_arity then Some Arity else
+  let has_oargs, decl2_params =
+    match oargs with
+    | Some args -> true, args
+    | None -> false, decl2.type_params
+  in
+  let arity_mismatch = decl1.type_arity <> decl2.type_arity in
+  if not has_oargs && arity_mismatch then Some Arity else
   let err =
     match privacy_mismatch env decl1 decl2 with
     | Some err -> Some (Privacy err)
@@ -864,18 +870,18 @@ let type_declarations ?(equality = false) ~loc env ~mark name
   let err = match (decl1.type_manifest, decl2.type_manifest) with
       (_, None) ->
         begin
-          match Ctype.equal env true decl1.type_params decl2.type_params with
+          match Ctype.equal env true decl1.type_params decl2_params with
           | exception Ctype.Equality err -> Some (Constraint err)
           | () -> None
         end
     | (Some ty1, Some ty2) ->
-         type_manifest env ty1 decl1.type_params ty2 decl2.type_params
+         type_manifest env ty1 decl1.type_params ty2 decl2_params
            decl2.type_private decl2.type_kind
     | (None, Some ty2) ->
         let ty1 =
           Btype.newgenty (Tconstr(path, decl2.type_params, ref Mnil))
         in
-        match Ctype.equal env true decl1.type_params decl2.type_params with
+        match Ctype.equal env true decl1.type_params decl2_params with
         | exception Ctype.Equality err -> Some (Constraint err)
         | () ->
           match Ctype.equal env false [ty1] [ty2] with
@@ -899,7 +905,7 @@ let type_declarations ?(equality = false) ~loc env ~mark name
         end;
         Variant_diffing.compare_with_representation ~loc env
           decl1.type_params
-          decl2.type_params
+          decl2_params
           cstrs1
           cstrs2
           rep1
@@ -917,10 +923,11 @@ let type_declarations ?(equality = false) ~loc env ~mark name
           if equality then mark Env.Exported labels2
         end;
         Record_diffing.compare_with_representation ~loc env
-          decl1.type_params decl2.type_params
+          decl1.type_params decl2_params
           labels1 labels2
           rep1 rep2
-    | (Type_open, Type_open) -> None
+    | (Type_open, Type_open) ->
+        if has_oargs then Some Arity else None
     | (_, _) -> Some Kind
   in
   if err <> None then err else
@@ -944,7 +951,11 @@ let type_declarations ?(equality = false) ~loc env ~mark name
   let abstr = abstr || decl2.type_private = Private in
   let opn = decl2.type_kind = Type_open && decl2.type_manifest = None in
   let constrained ty = not (Btype.is_Tvar ty) in
-  if List.for_all2
+  (* When [equality = true], we know that the variance is already correct,
+     because [decl1] was found by expanding the path in the type manifest of
+     [decl2], and the variance was checked while constructing the type
+     manifest. See the use of [Typedecl_variance] in typing/typedecl.ml. *)
+  if equality || List.for_all2
       (fun ty (v1,v2) ->
         let open Variance in
         let imp a b = not a || b in

@@ -600,7 +600,7 @@ let check_constraints env sdecl (_, decl) =
    need to check that the equation refers to a type of the same kind
    with the same constructors and labels.
 *)
-let check_coherence env loc dpath decl =
+let check_coherence ?(arity = true) env loc dpath decl =
   match decl with
     { type_kind = (Type_variant _ | Type_record _| Type_open);
       type_manifest = Some ty } ->
@@ -609,20 +609,110 @@ let check_coherence env loc dpath decl =
           begin try
             let decl' = Env.find_type path env in
             let err =
-              if List.length args <> List.length decl.type_params
-              then Some Includecore.Arity
+              let inconsistent_arity =
+                List.length args <> List.length decl.type_params
+              in
+              let arity =
+                (* Always check arity and parameter equality for open types. *)
+                match decl.type_kind with Type_open -> true | _ -> arity
+              in
+              if arity && inconsistent_arity then Some Includecore.Arity
               else begin
-                match Ctype.equal env false args decl.type_params with
-                | exception Ctype.Equality err ->
-                    Some (Includecore.Constraint err)
-                | () ->
-                    Includecore.type_declarations ~loc ~equality:true env
-                      ~mark:true
-                      (Path.last path)
-                      decl'
-                      dpath
-                      (Subst.type_declaration
-                         (Subst.add_type_path dpath path Subst.identity) decl)
+                let err, oargs =
+                  match
+                    if arity || not inconsistent_arity then begin
+                      Ctype.equal env false args decl.type_params; true
+                    end else arity
+                  with
+                  | exception Ctype.Equality err ->
+                      if arity then
+                        (Some (Includecore.Constraint err), None)
+                      else
+                        (None, Some args)
+                  | true -> (None, None)
+                  | false -> (None, Some args)
+                in
+                let decl, decl', oargs =
+                  match oargs with
+                  | None ->
+                      ( Subst.type_declaration
+                          (Subst.add_type_path dpath path Subst.identity) decl
+                      , decl'
+                      , None )
+                  | Some args ->
+                      let with_fresh_params decl f =
+                        Btype.For_copy.with_scope (fun copy_scope ->
+                          let params =
+                            List.map (fun ty ->
+                                let ty' =
+                                  newty2 ~level:(get_level ty) (get_desc ty)
+                                in
+                                Btype.For_copy.redirect_desc copy_scope ty
+                                  (Tsubst (ty', None));
+                                ty' )
+                              decl.type_params
+                          in
+                          f params)
+                      in
+                      (* We emit fresh variables for the types to ensure that
+                         [Ctype.equal] will correctly treat both copies as
+                         independent, and to ensure that the substitution of
+                         [ty] doesn't interfere with its use as a type
+                         function for other substitutions.  *)
+                      let args, decl =
+                        with_fresh_params decl (fun params ->
+                          let args =
+                            List.map (Subst.type_expr Subst.identity) args
+                          in
+                          let body = Subst.type_expr Subst.identity ty in
+                          ( args
+                          , Subst.type_declaration
+                              (Subst.add_type_function dpath ~params ~body
+                                Subst.identity)
+                              decl ) )
+                      in
+                      (* We also emit fresh variables for the manifest type's
+                         declaration, so that we can unify without affecting the
+                         type declaration in the environment. *)
+                      let decl' =
+                        with_fresh_params decl' (fun _params ->
+                          Subst.type_declaration Subst.identity decl' )
+                      in
+                      begin match decl'.type_kind with
+                      | Type_variant (cstrs, _) ->
+                          (* Constrain the return type of GADTs, where
+                             possible. *)
+                          List.iter (fun cstr ->
+                            Option.iter (fun cd_res ->
+                                let snap = Btype.snapshot () in
+                                (* Create a fresh copy of the target type, to
+                                   avoid cross-unification. *)
+                                let ty =
+                                  with_fresh_params decl (fun _params ->
+                                    Subst.type_expr Subst.identity ty)
+                                in
+                                try Ctype.unify env cd_res ty
+                                with _ -> Btype.backtrack snap )
+                              cstr.Types.cd_res )
+                            cstrs
+                      | _ -> ()
+                      end;
+                      (* Constrain the type parameters of the declaration to
+                         match those given in the manifest. *)
+                      List.iter2 (Ctype.unify env) decl'.type_params args;
+                      ( decl
+                      , decl'
+                      , Some args )
+                in
+                if err <> None then err
+                else
+                  Includecore.type_declarations ~loc ~equality:true env
+                    ~mark:true
+                    (Path.last path)
+                    decl'
+                    dpath
+                    decl
+                    oargs
               end
             in
             if err <> None then
@@ -635,7 +725,7 @@ let check_coherence env loc dpath decl =
   | _ -> ()
 
 let check_abbrev env sdecl (id, decl) =
-  check_coherence env sdecl.ptype_loc (Path.Pident id) decl
+  check_coherence ~arity:false env sdecl.ptype_loc (Path.Pident id) decl
 
 (* Check that recursion is well-founded *)
 
