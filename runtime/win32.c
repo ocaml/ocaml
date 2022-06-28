@@ -1081,11 +1081,11 @@ CAMLexport clock_t caml_win32_clock(void)
     return (clock_t)(-1);
   }
 
-  tmp.u.LowPart = stime.dwLowDateTime;
-  tmp.u.HighPart = stime.dwHighDateTime;
+  tmp.LowPart = stime.dwLowDateTime;
+  tmp.HighPart = stime.dwHighDateTime;
   total = tmp.QuadPart;
-  tmp.u.LowPart = utime.dwLowDateTime;
-  tmp.u.HighPart = utime.dwHighDateTime;
+  tmp.LowPart = utime.dwLowDateTime;
+  tmp.HighPart = utime.dwHighDateTime;
   total += tmp.QuadPart;
 
   /* total in 100-nanosecond intervals (1e7 / CLOCKS_PER_SEC) */

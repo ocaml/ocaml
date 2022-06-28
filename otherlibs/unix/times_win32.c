@@ -20,10 +20,7 @@
 
 
 static double to_sec(FILETIME ft) {
-  ULARGE_INTEGER tmp;
-
-  tmp.u.LowPart = ft.dwLowDateTime;
-  tmp.u.HighPart = ft.dwHighDateTime;
+  ULARGE_INTEGER tmp = {{ft.dwLowDateTime, ft.dwHighDateTime}};
 
   /* convert to seconds:
      GetProcessTimes returns number of 100-nanosecond intervals */
