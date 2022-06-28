@@ -232,13 +232,12 @@ val map2 : f:('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
 (** [map2 ~f [a1; ...; an] [b1; ...; bn]] is
    [[f a1 b1; ...; f an bn]].
    @raise Invalid_argument if the two lists are determined
-   to have different lengths. Not tail-recursive.
+   to have different lengths.
  *)
 
 val rev_map2 : f:('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
 (** [rev_map2 ~f l1 l2] gives the same result as
-   {!rev}[ (]{!map2}[ f l1 l2)], but is tail-recursive and
-   more efficient.
+   {!rev}[ (]{!map2}[ f l1 l2)], but is more efficient.
  *)
 
 val fold_left2 :

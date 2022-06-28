@@ -141,10 +141,26 @@ let rec fold_right f l accu =
     [] -> accu
   | a::l -> f a (fold_right f l accu)
 
-let rec map2 f l1 l2 =
+let[@tail_mod_cons] rec map2 f l1 l2 =
   match (l1, l2) with
     ([], []) -> []
-  | (a1::l1, a2::l2) -> let r = f a1 a2 in r :: map2 f l1 l2
+  | ([a1], [b1]) ->
+      let r1 = f a1 b1 in
+      [r1]
+  | ([a1; a2], [b1; b2]) ->
+      let r1 = f a1 b1 in
+      let r2 = f a2 b2 in
+      [r1; r2]
+  | ([a1; a2; a3], [b1; b2; b3]) ->
+      let r1 = f a1 b1 in
+      let r2 = f a2 b2 in
+      let r3 = f a3 b3 in
+      [r1; r2; r3]
+  | (a1::a2::a3::l1, b1::b2::b3::l2) ->
+      let r1 = f a1 b1 in
+      let r2 = f a2 b2 in
+      let r3 = f a3 b3 in
+      r1::r2::r3::map2 f l1 l2
   | (_, _) -> invalid_arg "List.map2"
 
 let rev_map2 f l1 l2 =
