@@ -178,7 +178,7 @@ val map : f:('a -> 'b) -> 'a list -> 'b list
 val mapi : f:(int -> 'a -> 'b) -> 'a list -> 'b list
 (** Same as {!map}, but the function is applied to the index of
    the element as first argument (counting from 0), and the element
-   itself as second argument. Not tail-recursive.
+   itself as second argument.
    @since 4.00.0
  *)
 

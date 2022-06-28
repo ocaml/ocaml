@@ -107,9 +107,25 @@ let[@tail_mod_cons] rec map f = function
       let r3 = f a3 in
       r1 :: r2 :: r3 :: map f l
 
-let rec mapi i f = function
+let[@tail_mod_cons] rec mapi i f = function
     [] -> []
-  | a::l -> let r = f i a in r :: mapi (i + 1) f l
+  | [a1] ->
+      let r1 = f i a1 in
+      [r1]
+  | [a1; a2] ->
+      let r1 = f i a1 in
+      let r2 = f (i+1) a2 in
+      [r1; r2]
+  | [a1; a2; a3] ->
+      let r1 = f i a1 in
+      let r2 = f (i+1) a2 in
+      let r3 = f (i+2) a3 in
+      [r1; r2; r3]
+  | a1::a2::a3::l ->
+      let r1 = f i a1 in
+      let r2 = f (i+1) a2 in
+      let r3 = f (i+2) a3 in
+      r1::r2::r3::mapi (i+3) f l
 
 let mapi f l = mapi 0 f l
 
