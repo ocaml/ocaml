@@ -27,11 +27,8 @@
 static void convert_time(double unixTime, FILETIME* ft)
 {
   ULARGE_INTEGER u;
-  /* There are 11644473600 seconds between 1 January 1601 (the NT Epoch) and 1
-   * January 1970 (the Unix Epoch). FILETIME is measured in 100ns ticks.
-   */
   u.QuadPart =
-    (ULONGLONG)(unixTime * 10000000.0) + 116444736000000000ULL;
+    (ULONGLONG)(unixTime * 10000000.0) + CAML_NT_EPOCH_100ns_TICKS;
   ft->dwLowDateTime = u.LowPart;
   ft->dwHighDateTime = u.HighPart;
 }

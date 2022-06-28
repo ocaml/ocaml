@@ -19,9 +19,6 @@
 
 #include "unixsupport.h"
 
-/* Unix epoch as a Windows timestamp in hundreds of ns */
-#define epoch_ft 116444736000000000.0;
-
 double caml_unix_gettimeofday_unboxed(value unit)
 {
   FILETIME ft;
@@ -30,7 +27,7 @@ double caml_unix_gettimeofday_unboxed(value unit)
   GetSystemTimeAsFileTime(&ft);
   utime.LowPart = ft.dwLowDateTime;
   utime.HighPart = ft.dwHighDateTime;
-  tm = utime.QuadPart - epoch_ft; /* shift to Epoch-relative time */
+  tm = utime.QuadPart - CAML_NT_EPOCH_100ns_TICKS;
   return (tm * 1e-7);  /* tm is in 100ns */
 }
 
