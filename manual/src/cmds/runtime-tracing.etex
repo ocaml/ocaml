@@ -121,9 +121,9 @@ let () =
     let callbacks = Runtime_events.Callbacks.create ~runtime_begin ~runtime_end ()
     in
     while true do
-        let list_ref = ref [] in (* for later fake work *)
+        let list_ref = ref [] in (* for later fake GC work *)
         for _ = 1 to 100 do
-            (* here we do some fake work *)
+            (* here we do some fake GC work *)
             list_ref := [];
             for _ = 1 to 10 do
                 list_ref := (Sys.opaque_identity(ref 42)) :: !list_ref
