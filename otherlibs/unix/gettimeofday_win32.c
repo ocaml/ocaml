@@ -26,8 +26,11 @@ double caml_unix_gettimeofday_unboxed(value unit)
 {
   FILETIME ft;
   double tm;
+  ULARGE_INTEGER utime;
   GetSystemTimeAsFileTime(&ft);
-  tm = *(uint64_t *)&ft - epoch_ft; /* shift to Epoch-relative time */
+  utime.LowPart = ft.dwLowDateTime;
+  utime.HighPart = ft.dwHighDateTime;
+  tm = utime.QuadPart - epoch_ft; /* shift to Epoch-relative time */
   return (tm * 1e-7);  /* tm is in 100ns */
 }
 

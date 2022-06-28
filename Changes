@@ -83,6 +83,10 @@ Working version
 
 ### Other libraries:
 
+- #11374: Remove pointer cast to a type with stricter alignment requirements
+  in Windows implementation of Unix.gettimeofday.
+  (David Allsopp, review by Jonah Beckford and Xavier Leroy)
+
 - #11475: Make Unix terminal interface bindings domain-safe
   (Olivier Nicole and Xavier Leroy, review by Xavier Leroy)
 
