@@ -39,9 +39,6 @@
 #include <errno.h>
 #include <string.h>
 #include <signal.h>
-#if defined(DEBUG) || defined(NATIVE_CODE)
-#include <dbghelp.h>
-#endif
 #include "caml/alloc.h"
 #include "caml/codefrag.h"
 #include "caml/fail.h"
