@@ -36,6 +36,11 @@ OCaml 5.0
 
 ### Runtime system:
 
+- #11368: Runtime events buffer size OCAMLRUNPARAMS fix
+  The runtime events buffer size can now be set via the 'e' OCAMLRUNPARAM.
+  This is previously mistakenly enabled/disabled tracing instead.
+  (Sadiq Jaffer, review by ?)
+
 - #11308: Add environment variable to preserve runtime_events after exit
   If the environment variable OCAML_RUNTIME_EVENTS_PRESERVE exists then the
   runtime will not remove the runtime events ring buffers at exit. This
