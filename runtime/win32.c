@@ -1090,26 +1090,26 @@ CAMLexport clock_t caml_win32_clock(void)
   return (clock_t)(total / clocks_per_sec);
 }
 
+static double clock_period = 0;
+
 void caml_init_os_params(void)
 {
   SYSTEM_INFO si;
+  LARGE_INTEGER frequency;
 
   /* Get the system page size */
   GetSystemInfo(&si);
   caml_sys_pagesize = si.dwPageSize;
+
+  /* Get the number of nanoseconds for each tick in QueryPerformanceCounter */
+  QueryPerformanceFrequency(&frequency);
+  clock_period = (1000000000.0 / frequency.QuadPart);
 }
 
 int64_t caml_time_counter(void)
 {
-  static double clock_freq = 0;
   LARGE_INTEGER now;
 
-  if (clock_freq == 0) {
-    LARGE_INTEGER f;
-    QueryPerformanceFrequency(&f);
-    clock_freq = (1000000000.0 / f.QuadPart);
-  };
-
   QueryPerformanceCounter(&now);
-  return (int64_t)(now.QuadPart * clock_freq);
+  return (int64_t)(now.QuadPart * clock_period);
 }
