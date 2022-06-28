@@ -147,22 +147,22 @@ endif
 .PHONY: default
 default:
 	@echo "Available targets:"
-	@echo "  all             launch all tests"
-	@echo "  all-foo         launch all tests beginning with foo"
-	@echo "  parallel        launch all tests using GNU parallel"
-	@echo "  parallel-foo    launch all tests beginning with foo using \
+	@echo "  all                        launch all tests"
+	@echo "  all-foo                    launch all tests beginning with foo"
+	@echo "  parallel                   launch all tests using GNU parallel"
+	@echo "  parallel-foo               launch all tests beginning with foo using \
 	GNU parallel"
-	@echo "  one TEST=f      launch just this single test"
-	@echo "  one DIR=p       launch the tests located in path p"
-	@echo "  one LIST=f      launch the tests listed in f (one per line)"
-	@echo "  promote TEST=f  promote the output for this single test"
-	@echo "  promote DIR=p   promote the output for the tests located in path p"
-	@echo "  promote LIST=f  promote the output for the tests listed in f (one \
+	@echo "  one (TEST|DIR|LIST)=x      launch the specified tests ..."
+	@echo "  promote (TEST|DIR|LIST)=x  promote the output for the specified \
+	tests ..."
+	@echo "    ... TEST=f                 ... the single test in the file f"
+	@echo "    ... DIR=d                  ... the tests located in the directory d"
+	@echo "    ... LIST=f                 ... the tests listed in the file f (one \
 	per line)"
-	@echo "  lib             build library modules"
-	@echo "  tools           build test tools"
-	@echo "  clean           delete generated files"
-	@echo "  report          print the report for the last execution"
+	@echo "  lib                        build library modules"
+	@echo "  tools                      build test tools"
+	@echo "  clean                      delete generated files"
+	@echo "  report                     print the report for the last execution"
 	@echo
 	@echo "all*, parallel* and list can automatically re-run failed test"
 	@echo "directories if MAX_TESTSUITE_DIR_RETRIES permits"
