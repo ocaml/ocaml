@@ -1089,7 +1089,7 @@ CAMLexport clock_t caml_win32_clock(void)
   total += tmp.QuadPart;
 
   /* total in 100-nanosecond intervals (1e7 / CLOCKS_PER_SEC) */
-  clocks_per_sec = INT64_LITERAL(10000000U) / (ULONGLONG)CLOCKS_PER_SEC;
+  clocks_per_sec = 10000000ULL / (ULONGLONG)CLOCKS_PER_SEC;
   return (clock_t)(total / clocks_per_sec);
 }
 
@@ -1135,7 +1135,7 @@ void caml_init_os_params(void)
   /* Convert a FILETIME in 100ns ticks since 1 January 1601 to
      ns since 1 Jan 1970. */
   clock_offset.QuadPart =
-    ((now.QuadPart - INT64_LITERAL(0x19DB1DED53E8000U)) * 100);
+    ((now.QuadPart - 0x19DB1DED53E8000ULL) * 100);
 
   /* Get the offset between QueryPerformanceCounter and
      GetSystemTimePreciseAsFileTime in order to return a true timestamp, rather

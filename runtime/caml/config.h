@@ -35,6 +35,7 @@
 #endif /* __PIC__ */
 #endif /* HAS_ARCH_CODE32 */
 
+/* No longer used in the codebase, but kept because it was exported */
 #define INT64_LITERAL(s) s ## LL
 
 #if defined(_MSC_VER) && !defined(__cplusplus)
