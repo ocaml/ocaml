@@ -79,9 +79,6 @@ CAMLprim value caml_unix_inchannel_of_filedescr(value handle)
   struct channel * chan;
   DWORD err;
 
-#if defined(_MSC_VER) && _MSC_VER < 1400
-  fflush(stdin);
-#endif
   err = check_stream_semantics(handle);
   if (err != 0) {
     caml_win32_maperr(err);

@@ -108,13 +108,12 @@ C code (`ocamlc -custom`) require a Microsoft Visual C/C++ Compiler and the
 `flexlink` tool (see <<bmflex,above>>).
 
 Any edition (including Express/Community editions) of Microsoft Visual Studio
-2005 or later may be used to provide the required Windows headers and the C
+2008 or later may be used to provide the required Windows headers and the C
 compiler. Additionally, some older Microsoft Windows SDKs include the
 Visual C/C++ Compiler as well as the Build Tools for Visual Studio.
 
 |=====
 |                    | `cl` Version | Express                 | SDK/Build Tools
-| Visual Studio 2005 | 14.00.x.x    | 32-bit only <<vs1,(*)>> |
 | Visual Studio 2008 | 15.00.x.x    | 32-bit only             | Windows SDK 7.0 also provides 32/64-bit compilers
 | Visual Studio 2010 | 16.00.x.x    | 32-bit only             | Windows SDK 7.1 also provides 32/64-bit compilers
 | Visual Studio 2012 | 17.00.x.x    | 32/64-bit               |
@@ -123,11 +122,6 @@ Visual C/C++ Compiler as well as the Build Tools for Visual Studio.
 | Visual Studio 2017 | 19.10.x.x    | 32/64-bit               | Build Tools for Visual Studio 2017 also provides 32/64-bit compilers
 | Visual Studio 2019 | 19.20.x.x    | 32/64-bit               | Build Tools for Visual Studio 2019 also provides 32/64-bit compilers
 |=====
-
-[[vs1]]
-(*):: Visual C++ 2005 Express Edition does not provide an assembler; this can be
-      downloaded separately from
-      https://www.microsoft.com/en-gb/download/details.aspx?id=12654
 
 === COMPILATION FROM THE SOURCES
 
@@ -157,7 +151,7 @@ for 32-bit or:
 
   SetEnv /Release /x64
 
-for 64-bit. For Visual Studio 2005-2013, you need to use one of the shortcuts in
+for 64-bit. For Visual Studio 2008-2013, you need to use one of the shortcuts in
 the "Visual Studio Tools" program group under the main program group for the
 version of Visual Studio you installed. For Visual Studio 2015 and 2017, you
 need to use the shortcuts in the "Windows Desktop Command Prompts" (2015) or
@@ -166,7 +160,7 @@ need to use the shortcuts in the "Windows Desktop Command Prompts" (2015) or
 Unlike `SetEnv` for the Windows SDK, the architecture is selected by using a
 different shortcut, rather than by running a command.
 
-For Visual Studio 2005-2010, excluding version-specific prefixes, these are
+For Visual Studio 2008-2010, excluding version-specific prefixes, these are
 named "Command Prompt" for 32-bit and "x64 Cross Tools Command Prompt" or
 "x64 Win64 Command Prompt" for 64-bit. It does not matter whether you use a
 "Cross Tools" or "Win64" version for x64, this simply refers to whether the

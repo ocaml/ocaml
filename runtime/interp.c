@@ -1370,7 +1370,7 @@ do_resume: {
 
 #ifndef THREADED_CODE
     default:
-#if _MSC_VER >= 1200
+#ifdef _MSC_VER
       __assume(0);
 #else
       caml_fatal_error("bad opcode (%"
