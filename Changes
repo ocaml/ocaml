@@ -28,6 +28,9 @@ Working version
 
 ### Internal/compiler-libs changes:
 
+- #11364: Allow `make -C testsuite promote` to take `TEST` and `LIST` variables
+  (Antal Spector-Zabusky, review by Gabriel Scherer and David Allsopp)
+
 ### Build system:
 
 ### Bug fixes:

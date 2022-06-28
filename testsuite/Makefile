@@ -147,19 +147,22 @@ endif
 .PHONY: default
 default:
 	@echo "Available targets:"
-	@echo "  all             launch all tests"
-	@echo "  all-foo         launch all tests beginning with foo"
-	@echo "  parallel        launch all tests using GNU parallel"
-	@echo "  parallel-foo    launch all tests beginning with foo using \
+	@echo "  all                        launch all tests"
+	@echo "  all-foo                    launch all tests beginning with foo"
+	@echo "  parallel                   launch all tests using GNU parallel"
+	@echo "  parallel-foo               launch all tests beginning with foo using \
 	GNU parallel"
-	@echo "  one TEST=f      launch just this single test"
-	@echo "  one DIR=p       launch the tests located in path p"
-	@echo "  one LIST=f      launch the tests listed in f (one per line)"
-	@echo "  promote DIR=p   promote the reference files for the tests in p"
-	@echo "  lib             build library modules"
-	@echo "  tools           build test tools"
-	@echo "  clean           delete generated files"
-	@echo "  report          print the report for the last execution"
+	@echo "  one (TEST|DIR|LIST)=x      launch the specified tests ..."
+	@echo "  promote (TEST|DIR|LIST)=x  promote the output for the specified \
+	tests ..."
+	@echo "    ... TEST=f                 ... the single test in the file f"
+	@echo "    ... DIR=d                  ... the tests located in the directory d"
+	@echo "    ... LIST=f                 ... the tests listed in the file f (one \
+	per line)"
+	@echo "  lib                        build library modules"
+	@echo "  tools                      build test tools"
+	@echo "  clean                      delete generated files"
+	@echo "  report                     print the report for the last execution"
 	@echo
 	@echo "all*, parallel* and list can automatically re-run failed test"
 	@echo "directories if MAX_TESTSUITE_DIR_RETRIES permits"
@@ -253,7 +256,7 @@ one: lib tools
 	@case "$(words $(DIR) $(LIST) $(TEST))" in \
    0) echo 'No value set for variable DIR, LIST or TEST'>&2; exit 1;; \
    1) exit 0;; \
-   *) echo 'Please specify just one of DIR, LIST or TEST'>&2; exit 1;; \
+   *) echo 'Please specify exactly one of DIR, LIST or TEST'>&2; exit 1;; \
    esac
 	@if [ -n '$(DIR)' ] && [ ! -d '$(DIR)' ]; then \
     echo "Directory '$(DIR)' does not exist."; exit 1; \
@@ -317,22 +320,8 @@ clean-one:
 	fi
 
 .PHONY: promote
-promote:
-	@if [ -z "$(DIR)" ]; then \
-	  echo "No value set for variable 'DIR'."; \
-	  exit 1; \
-	fi
-	@if [ ! -d $(DIR) ]; then \
-	  echo "Directory '$(DIR)' does not exist."; \
-	  exit 1; \
-	fi
-	@if $(ocamltest) -list-tests $(DIR) >/dev/null 2>&1; then \
-	  $(MAKE) exec-ocamltest DIR=$(DIR) \
-	    OCAMLTESTENV="OCAMLTESTDIR=$(OCAMLTESTDIR)" \
-	    PROMOTE="true"; \
-	else \
-	  cd $(DIR) && $(MAKE) TERM=dumb BASEDIR=$(BASEDIR) promote; \
-	fi
+promote: lib tools
+	@$(MAKE) one PROMOTE=true
 
 .PHONY: lib
 lib:
