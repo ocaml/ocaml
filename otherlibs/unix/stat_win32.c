@@ -155,7 +155,7 @@ static value stat_aux(int use_64, __int64 st_ino, struct _stat64 *buf)
  * Microsoft CRT given in Microsoft Visual Studio 2013 Express
  */
 
-static int convert_time(FILETIME* time, __time64_t* result, __time64_t def)
+static void convert_time(FILETIME* time, __time64_t* result, __time64_t def)
 {
   /* Tempting though it may be, MSDN prohibits casting FILETIME directly
    * to __int64 for alignment concerns. While this doesn't affect our supported
@@ -172,8 +172,6 @@ static int convert_time(FILETIME* time, __time64_t* result, __time64_t def)
   else {
     *result = def;
   }
-
-  return 1;
 }
 
 /* path allocated outside the OCaml heap */
@@ -294,12 +292,9 @@ static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, _
       return 0;
     }
 
-    if (!convert_time(&info.ftLastWriteTime, &res->st_mtime, 0) ||
-        !convert_time(&info.ftLastAccessTime, &res->st_atime, res->st_mtime) ||
-        !convert_time(&info.ftCreationTime, &res->st_ctime, res->st_mtime)) {
-      caml_win32_maperr(GetLastError());
-      return 0;
-    }
+    convert_time(&info.ftLastWriteTime, &res->st_mtime, 0);
+    convert_time(&info.ftLastAccessTime, &res->st_atime, res->st_mtime);
+    convert_time(&info.ftCreationTime, &res->st_ctime, res->st_mtime);
 
     /*
      * Note MS CRT (still) puts st_nlink = 1 and gives st_ino = 0
