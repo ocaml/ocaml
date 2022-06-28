@@ -16,10 +16,9 @@ the size of allocated memory blocks, as well as value promotions from the
 The runtime tracing system is flexible and was designed to support a range of
 use cases. At a high level runtime events can be used in two ways:
 \begin{description}
-\item[Self monitoring] OCaml programs that are aware of runtime events and
-start the tracing system programmatically. They either install their own
-callbacks to listen for events or integrate a library to export events to disk
-or over the network.
+\item[Self monitoring] OCaml programs and libraries can install their own callbacks
+to listen for runtime events and react to them programmatically, for example,
+to export events to disk or over the network.
 \item[External monitoring] OCaml programs that are compiled with a version of
 OCaml with support for runtime events can be made to start the tracing system
 with an environment variable after which events can be consumed by an external
