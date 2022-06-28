@@ -167,7 +167,7 @@ static int convert_time(FILETIME* time, __time64_t* result, __time64_t def)
     /* There are 11644473600 seconds between 1 January 1601 (the NT Epoch) and 1
      * January 1970 (the Unix Epoch). FILETIME is measured in 100ns ticks.
      */
-    *result = (utime.QuadPart - INT64_LITERAL(116444736000000000U));
+    *result = (utime.QuadPart - 116444736000000000ULL);
   }
   else {
     *result = def;

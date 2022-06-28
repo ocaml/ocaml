@@ -35,12 +35,8 @@
 #endif /* __PIC__ */
 #endif /* HAS_ARCH_CODE32 */
 
-/* Microsoft introduced the LL integer literal suffix in Visual C++ .NET 2003 */
-#if defined(_MSC_VER) && _MSC_VER < 1400
-#define INT64_LITERAL(s) s ## i64
-#else
+/* No longer used in the codebase, but kept because it was exported */
 #define INT64_LITERAL(s) s ## LL
-#endif
 
 #if defined(_MSC_VER) && !defined(__cplusplus)
 #define Caml_inline static __inline

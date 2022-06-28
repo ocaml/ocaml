@@ -37,31 +37,6 @@
 /* Test if we are in dbug mode */
 int  caml_win32_debug_test    (void);
 
-#elif defined(_MSC_VER) && _MSC_VER < 1300
-
-#define DEBUG_PRINT(fmt)
-
-/* __pragma wasn't added until Visual C++ .NET 2002, so simply disable the
-   warning entirely
- */
-
-#pragma warning (disable:4002)
-
-#elif defined(_MSC_VER) && _MSC_VER <= 1400
-
-/* Not all versions of the Visual Studio 2005 C Compiler (Version 14) support
-   variadic macros, hence the test for this branch being <= 1400 rather than
-   < 1400.
-   This convoluted pair of macros allow DEBUG_PRINT to remain while temporarily
-   suppressing the warning displayed for a macro called with too many
-   parameters.
- */
-#define DEBUG_PRINT_S(fmt) __pragma(warning(pop))
-#define DEBUG_PRINT \
-  __pragma(warning(push)) \
-  __pragma(warning(disable:4002)) \
-  DEBUG_PRINT_S
-
 #else
 
 /* Visual Studio supports variadic macros in all versions from 2008 (CL 15). */

@@ -34,8 +34,7 @@
   /* Supported since at least GCC 3.1 */
   #define CAMLdeprecated_typedef(name, type) \
     typedef type name __attribute ((deprecated))
-#elif defined(_MSC_VER) && _MSC_VER >= 1310
-  /* NB deprecated("message") only supported from _MSC_VER >= 1400 */
+#elif defined(_MSC_VER)
   #define CAMLdeprecated_typedef(name, type) \
     typedef __declspec(deprecated) type name
 #else
@@ -90,7 +89,7 @@ CAMLdeprecated_typedef(addr, char *);
   #define CAMLnoreturn_start
   #define CAMLnoreturn_end __attribute__ ((noreturn))
   #define Noreturn __attribute__ ((noreturn))
-#elif defined(_MSC_VER) && _MSC_VER >= 1500
+#elif defined(_MSC_VER)
   #define CAMLnoreturn_start __declspec(noreturn)
   #define CAMLnoreturn_end
   #define Noreturn
@@ -143,7 +142,7 @@ CAMLdeprecated_typedef(addr, char *);
 #define CAMLalign(n) alignas(n)
 #elif defined(SUPPORTS_ALIGNED_ATTRIBUTE)
 #define CAMLalign(n) __attribute__((aligned(n)))
-#elif defined(_MSC_VER) && _MSC_VER >= 1500
+#elif defined(_MSC_VER)
 #define CAMLalign(n) __declspec(align(n))
 #else
 #error "How do I align values on this platform?"
@@ -171,7 +170,7 @@ CAMLdeprecated_typedef(addr, char *);
   #define CAMLunused_start __attribute__ ((unused))
   #define CAMLunused_end
   #define CAMLunused __attribute__ ((unused))
-#elif defined(_MSC_VER) && _MSC_VER >= 1500
+#elif defined(_MSC_VER)
   #define CAMLunused_start  __pragma( warning (push) )           \
     __pragma( warning (disable:4189 ) )
   #define CAMLunused_end __pragma( warning (pop))
@@ -498,16 +497,13 @@ int caml_runtime_warnings_active(void);
 
 #ifdef DEBUG
 #ifdef ARCH_SIXTYFOUR
-#define Debug_tag(x) (INT64_LITERAL(0xD700D7D7D700D6D7u) \
+#define Debug_tag(x) (0xD700D7D7D700D6D7ull \
                       | ((uintnat) (x) << 16) \
                       | ((uintnat) (x) << 48))
-#define Is_debug_tag(x) \
-  (((x) & \
-      INT64_LITERAL(0xff00ffffff00ffffu)) == INT64_LITERAL(0xD700D7D7D700D6D7u))
+#define Is_debug_tag(x) (((x) & 0xff00ffffff00ffffull) == 0xD700D7D7D700D6D7ull)
 #else
 #define Debug_tag(x) (0xD700D6D7ul | ((uintnat) (x) << 16))
-#define Is_debug_tag(x) \
-  (((x) & 0xff00fffful) == 0xD700D6D7ul)
+#define Is_debug_tag(x) (((x) & 0xff00fffful) == 0xD700D6D7ul)
 #endif /* ARCH_SIXTYFOUR */
 
 /*

@@ -75,7 +75,7 @@ extern value caml_start_program (caml_domain_state*);
 extern void caml_win32_overflow_detection (void);
 #endif
 
-#if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
+#ifdef _MSC_VER
 
 /* PR 4887: avoid crash box of windows runtime on some system calls */
 extern void caml_install_invalid_parameter_handler(void);
@@ -102,7 +102,7 @@ value caml_startup_common(char_os **argv, int pooling)
 
   caml_init_codefrag();
   caml_init_locale();
-#if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
+#ifdef _MSC_VER
   caml_install_invalid_parameter_handler();
 #endif
   caml_init_custom_operations();
