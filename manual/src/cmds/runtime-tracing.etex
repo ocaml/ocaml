@@ -246,7 +246,7 @@ In this section we cover the simple ocaml-runtime-tracer tool that produces simi
 data to the previous 'eventlog' instrumentation system available in OCaml
 4.12 to 4.14.
 
-To begin with install runtime_events_tools in an OCaml 5.0+ opam switch:
+First, install \texttt{runtime_events_tools} in an OCaml 5.0+ opam switch:
 
 \begin{verbatim}
 opam install runtime_events_tools
