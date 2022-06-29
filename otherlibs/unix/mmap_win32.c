@@ -26,26 +26,14 @@
 #include "caml/osdeps.h"
 #include "unixsupport.h"
 
-#define caml_uerror(func, arg) \
-  do { caml_win32_maperr(GetLastError()); caml_uerror(func, arg); } while(0)
+#define Leave_blocking_and_uerror_if(e) \
+  do { if (e) { \
+         caml_leave_blocking_section(); \
+         caml_win32_maperr(GetLastError()); \
+         caml_uerror("map_file", Nothing); } } while(0)
 
 /* Defined in [mmap_ba.c] */
 extern value caml_unix_mapped_alloc(int, int, void *, intnat *);
-
-#ifndef INVALID_SET_FILE_POINTER
-#define INVALID_SET_FILE_POINTER (-1)
-#endif
-
-static __int64 caml_set_file_pointer(HANDLE h, __int64 dist, DWORD mode)
-{
-  LARGE_INTEGER i;
-  DWORD err;
-
-  i.QuadPart = dist;
-  i.LowPart = SetFilePointer(h, i.LowPart, &i.HighPart, mode);
-  if (i.LowPart == INVALID_SET_FILE_POINTER) return -1;
-  return i.QuadPart;
-}
 
 CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
                                   value vshared, value vdim, value vstart)
@@ -54,7 +42,8 @@ CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
   int flags, major_dim, mode, perm;
   intnat num_dims, i;
   intnat dim[CAML_BA_MAX_NUM_DIMS];
-  __int64 currpos, startpos, file_size, data_size;
+  __int64 startpos, data_size;
+  LARGE_INTEGER file_size;
   uintnat array_size, page, delta;
   char c;
   void * addr;
@@ -77,10 +66,8 @@ CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
       caml_invalid_argument("Unix.map_file: negative dimension");
   }
   /* Determine file size */
-  currpos = caml_set_file_pointer(fd, 0, FILE_CURRENT);
-  if (currpos == -1) caml_uerror("map_file", Nothing);
-  file_size = caml_set_file_pointer(fd, 0, FILE_END);
-  if (file_size == -1) caml_uerror("map_file", Nothing);
+  caml_enter_blocking_section();
+  Leave_blocking_and_uerror_if(!GetFileSizeEx(fd, &file_size));
   /* Determine array size in bytes (or size of array without the major
      dimension if that dimension wasn't specified) */
   array_size = caml_ba_element_size[flags & CAML_BA_KIND_MASK];
@@ -89,27 +76,29 @@ CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
   /* Check if the first/last dimension is unknown */
   if (dim[major_dim] == -1) {
     /* Determine first/last dimension from file size */
-    if (file_size < startpos)
+    if (file_size.QuadPart < startpos) {
+      caml_leave_blocking_section();
       caml_failwith("Unix.map_file: file position exceeds file size");
-    data_size = file_size - startpos;
+    }
+    data_size = file_size.QuadPart - startpos;
     dim[major_dim] = (uintnat) (data_size / array_size);
     array_size = dim[major_dim] * array_size;
-    if (array_size != data_size)
+    if (array_size != data_size) {
+      caml_leave_blocking_section();
       caml_failwith("Unix.map_file: file size doesn't match array dimensions");
+    }
   }
-  /* Restore original file position */
-  caml_set_file_pointer(fd, currpos, FILE_BEGIN);
   /* Create the file mapping */
   if (Bool_val(vshared)) {
     perm = PAGE_READWRITE;
     mode = FILE_MAP_WRITE;
   } else {
-    perm = PAGE_READONLY;       /* doesn't work under Win98 */
+    perm = PAGE_READONLY;
     mode = FILE_MAP_COPY;
   }
   li.QuadPart = startpos + array_size;
   fmap = CreateFileMapping(fd, NULL, perm, li.HighPart, li.LowPart, NULL);
-  if (fmap == NULL) caml_uerror("map_file", Nothing);
+  Leave_blocking_and_uerror_if(fmap == NULL);
   /* Determine offset so that the mapping starts at the given file pos */
   GetSystemInfo(&sysinfo);
   delta = (uintnat) (startpos % sysinfo.dwAllocationGranularity);
@@ -117,10 +106,11 @@ CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
   li.QuadPart = startpos - delta;
   addr =
     MapViewOfFile(fmap, mode, li.HighPart, li.LowPart, array_size + delta);
-  if (addr == NULL) caml_uerror("map_file", Nothing);
+  Leave_blocking_and_uerror_if(addr == NULL);
   addr = (void *) ((uintnat) addr + delta);
   /* Close the file mapping */
   CloseHandle(fmap);
+  caml_leave_blocking_section();
   /* Build and return the OCaml bigarray */
   return caml_unix_mapped_alloc(flags, num_dims, addr, dim);
 }
