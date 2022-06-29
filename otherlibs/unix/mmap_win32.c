@@ -140,29 +140,3 @@ void caml_ba_unmap_file(void * addr, uintnat len)
   delta = (uintnat) addr % sysinfo.dwAllocationGranularity;
   UnmapViewOfFile((void *)((uintnat)addr - delta));
 }
-
-#ifdef IN_OCAML_BIGARRAY
-
-/* This function reports a Win32 error as a Sys_error exception.
-   It is included for backward compatibility with the old
-   Bigarray.*.map_file implementation.  */
-
-static void caml_ba_sys_error(void)
-{
-  wchar_t buffer[512];
-  DWORD errnum;
-
-  errnum = GetLastError();
-  if (!FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS,
-                     NULL,
-                     errnum,
-                     0,
-                     buffer,
-                     sizeof(buffer)/sizeof(wchar_t),
-                     NULL))
-    swprintf(buffer, sizeof(buffer)/sizeof(wchar_t),
-             L"Unknown error %ld\n", errnum);
-  caml_raise_sys_error(caml_copy_string_of_utf16(buffer));
-}
-
-#endif
