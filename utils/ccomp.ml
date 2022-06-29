@@ -184,7 +184,7 @@ let call_linker mode output_name files extra =
           (quote_files (remove_Wl files))
           extra
       else
-        Printf.sprintf "%s -o %s %s %s %s %s %s"
+        Printf.sprintf "%s -o %s %s %s %s %s"
           (match !Clflags.c_compiler, mode with
           | Some cc, _ -> cc
           | None, Exe -> Config.mkexe
@@ -195,7 +195,6 @@ let call_linker mode output_name files extra =
           (Filename.quote output_name)
           ""  (*(Clflags.std_include_flag "-I")*)
           (quote_prefixed "-L" (Load_path.get_paths ()))
-          (String.concat " " (List.rev !Clflags.all_ccopts))
           (quote_files files)
           extra
     in
