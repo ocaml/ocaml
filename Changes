@@ -18,6 +18,10 @@ Working version
 - #10789: Add `Stack.drop`
   (Léo Andrès, review by Gabriel Scherer)
 
+- #11362: List.map, List.mapi and List.map2 are tail-recursive and faster on
+  typical workloads.
+  (Nicolás Ojeda Bär, review by Gabriel Scherer)
+
 ### Other libraries:
 
 ### Tools:
