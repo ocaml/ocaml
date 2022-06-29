@@ -109,7 +109,8 @@ CAMLprim value caml_unix_dup2(value cloexec, value fd1, value fd2)
   }
 
   /* Reflect the dup2 on the CRT fds, if any */
-  if (CRT_fd_val(fd1) != NO_CRT_FD || CRT_fd_val(fd2) != NO_CRT_FD)
+  if (caml_win32_get_CRT_fd(fd1) != NO_CRT_FD ||
+      caml_win32_get_CRT_fd(fd2) != NO_CRT_FD)
     _dup2(caml_win32_CRT_fd_of_filedescr(fd1),
           caml_win32_CRT_fd_of_filedescr(fd2));
   CAMLreturn(Val_unit);

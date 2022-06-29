@@ -46,7 +46,7 @@ struct filedescr {
     SOCKET socket;
   } fd;                   /* Real windows handle */
   enum { KIND_HANDLE, KIND_SOCKET } kind;
-  int crt_fd;             /* C runtime descriptor */
+  _Atomic int crt_fd;     /* C runtime descriptor */
   unsigned int flags_fd;  /* See FLAGS_FD_* */
 };
 
@@ -61,18 +61,30 @@ struct filedescr {
 #define Handle_val(v) (((struct filedescr *) Data_custom_val(v))->fd.handle)
 #define Socket_val(v) (((struct filedescr *) Data_custom_val(v))->fd.socket)
 #define Descr_kind_val(v) (((struct filedescr *) Data_custom_val(v))->kind)
-#define CRT_fd_val(v) (((struct filedescr *) Data_custom_val(v))->crt_fd)
 #define Flags_fd_val(v) (((struct filedescr *) Data_custom_val(v))->flags_fd)
 
 extern value caml_win32_alloc_handle(HANDLE);
 extern value caml_win32_alloc_socket(SOCKET);
+
+#define NO_CRT_FD (-1)
+#define GETTING_CRT_FD (-2)
+
+/* Returns the C file descriptor associated with the handle, allocating it if
+   necessary. */
 extern int caml_win32_CRT_fd_of_filedescr(value handle);
+
+/* Returns the C file descriptor associated with the handle, or NO_CRT_FD
+   if none was allocated. The crt_fd field should only be accessed through this
+   function and not directly, to avoid race conditions with
+   win_CRT_fd_of_filedescr. */
+extern int caml_win32_get_CRT_fd(value handle);
+
+// Export this macro as an alias for the getter function, for compatibility
+#define CRT_fd_val caml_win32_get_CRT_fd
 
 extern SOCKET caml_win32_socket(int domain, int type, int protocol,
                                 LPWSAPROTOCOL_INFO info,
                                 BOOL inherit);
-
-#define NO_CRT_FD (-1)
 
 extern void caml_win32_maperr(DWORD errcode);
 #define win32_maperr caml_win32_maperr
