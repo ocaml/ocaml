@@ -252,7 +252,7 @@ opam install runtime_events_tools
 \end{verbatim}
 
 This should install the ocaml-runtime-tracer tool in your path. You can now generate
-runtime traces for programs compiled with OCaml 5.0+ as such:
+runtime traces for programs compiled with OCaml 5.0+:
 
 \begin{verbatim}
 ocaml-runtime-tracer trace.json your_program.exe .. args ..
