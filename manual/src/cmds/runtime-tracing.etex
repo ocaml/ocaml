@@ -259,7 +259,7 @@ ocaml-runtime-tracer trace.json your_program.exe .. args ..
 \end{verbatim}
 
 Runtime tracing data will be generated in the json Trace Event Format to trace.json.
-This can then be loaded in to the Chrome tracing viewer or \ifouthtml
+This can then be loaded into the Chrome tracing viewer or into \ifouthtml
 \ahref{https://ui.perfetto.dev/}{Perfetto}
 \else
 Perfetto
