@@ -18,29 +18,23 @@
 #include "unixsupport.h"
 #include <windows.h>
 
-
-static double to_sec(FILETIME ft) {
-  ULARGE_INTEGER tmp = {{ft.dwLowDateTime, ft.dwHighDateTime}};
-
-  /* convert to seconds:
-     GetProcessTimes returns number of 100-nanosecond intervals */
-  return tmp.QuadPart / 1e7;
-}
-
+#define CAML_INTERNALS
+#include <caml/winsupport.h>
 
 value caml_unix_times(value unit) {
   value res;
-  FILETIME creation, exit, stime, utime;
+  FILETIME _creation, _exit;
+  CAML_ULONGLONG_FILETIME stime, utime;
 
-  if (!(GetProcessTimes(GetCurrentProcess(), &creation, &exit, &stime,
-                        &utime))) {
+  if (!(GetProcessTimes(GetCurrentProcess(), &_creation, &_exit,
+                        &stime.ft, &utime.ft))) {
     caml_win32_maperr(GetLastError());
     caml_uerror("times", Nothing);
   }
 
   res = caml_alloc_small(4 * Double_wosize, Double_array_tag);
-  Store_double_field(res, 0, to_sec(utime));
-  Store_double_field(res, 1, to_sec(stime));
+  Store_double_field(res, 0, (double)(utime.ul / 1e7));
+  Store_double_field(res, 1, (double)(stime.ul / 1e7));
   Store_double_field(res, 2, 0);
   Store_double_field(res, 3, 0);
   return res;

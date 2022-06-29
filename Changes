@@ -87,7 +87,8 @@ Working version
   in Windows implementation of Unix.gettimeofday. Windows implementations of
   caml_unix_map_file, caml_unix_lseek and caml_unix_lseek_64 now release the
   runtime lock. Windows implementation of caml_unix_lockf modernised and
-  simplified.
+  simplified. Where possible, 64 bit integers are used instead of LARGE_INTEGER
+  structs.
   (David Allsopp, review by Jonah Beckford and Xavier Leroy)
 
 - #11475: Make Unix terminal interface bindings domain-safe

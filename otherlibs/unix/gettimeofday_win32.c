@@ -17,17 +17,17 @@
 #include <caml/alloc.h>
 #include <time.h>
 
+#define CAML_INTERNALS
+#include <caml/winsupport.h>
+
 #include "unixsupport.h"
 
 double caml_unix_gettimeofday_unboxed(value unit)
 {
-  FILETIME ft;
+  CAML_ULONGLONG_FILETIME utime;
   double tm;
-  ULARGE_INTEGER utime;
-  GetSystemTimeAsFileTime(&ft);
-  utime.LowPart = ft.dwLowDateTime;
-  utime.HighPart = ft.dwHighDateTime;
-  tm = utime.QuadPart - CAML_NT_EPOCH_100ns_TICKS;
+  GetSystemTimeAsFileTime(&utime.ft);
+  tm = utime.ul - CAML_NT_EPOCH_100ns_TICKS;
   return (tm * 1e-7);  /* tm is in 100ns */
 }
 
