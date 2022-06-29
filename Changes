@@ -121,7 +121,7 @@ OCaml 5.0
   (Enguerrand Decorne, report by Jon Ludlam,
   review by Tom Kelly, KC Sivaramakrishnan and Gabriel Scherer)
 
-- #11238: Increase the default limit on the stack size to 128 Mi words,
+- #11238: Increase the default limit for the stack size to 128 Mi words,
   i.e. 1 Gib for 64-bit platforms and 512 Mib for 32-bit platforms.
   (Xavier Leroy, review by Sébastien Hinderer)
 
@@ -134,7 +134,11 @@ OCaml 5.0
   `caml_process_pending*` for multicore.
   (Guillaume Munch-Maccagnoni, review by Sadiq Jaffer and Gabriel Scherer)
 
-- #11337: pass 'flags' metadata to root scanners, to optimize stack
+- #11304: Fix data race on Windows file descriptors
+  (Olivier Nicole and Xavier Leroy, review by Xavier Leroy, David Allsopp,
+   and Sadiq Jaffer)
+
+* #11337: pass 'flags' metadata to root scanners, to optimize stack
   scanning in the bytecode interpreter.
   Changes the interface of user-provided root-scanning hooks.
   (Gabriel Scherer, review by Xavier Leroy,

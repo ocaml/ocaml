@@ -60,15 +60,38 @@ static DWORD check_stream_semantics(value handle)
   }
 }
 
+#define CRT_field_val(v) (((struct filedescr *) Data_custom_val(v))->crt_fd)
+
+int caml_win32_get_CRT_fd(value handle)
+{
+  int fd;
+  SPIN_WAIT {
+    fd = atomic_load(&CRT_field_val(handle));
+    if (fd != GETTING_CRT_FD) return fd;
+  }
+}
+
 int caml_win32_CRT_fd_of_filedescr(value handle)
 {
-  if (CRT_fd_val(handle) != NO_CRT_FD) {
-    return CRT_fd_val(handle);
-  } else {
-    int fd = _open_osfhandle((intptr_t) Handle_val(handle), O_BINARY);
-    if (fd == -1) caml_uerror("channel_of_descr", Nothing);
-    CRT_fd_val(handle) = fd;
-    return fd;
+  SPIN_WAIT {
+    int fd = atomic_load(&CRT_field_val(handle));
+    switch (fd) {
+    case NO_CRT_FD:
+      if (! atomic_compare_exchange_strong(&CRT_field_val(handle),
+                                           &fd, GETTING_CRT_FD))
+        break; /* try again */
+      fd = _open_osfhandle((intptr_t) Handle_val(handle), O_BINARY);
+      if (fd == -1) {
+        atomic_store(&CRT_field_val(handle), NO_CRT_FD);
+        caml_uerror("channel_of_descr", Nothing);
+      }
+      atomic_store(&CRT_field_val(handle), fd);
+      return fd;
+    case GETTING_CRT_FD:
+      break; /* try again */
+    default:
+      return fd;
+    }
   }
 }
 
@@ -129,7 +152,7 @@ CAMLprim value caml_unix_filedescr_of_channel(value vchan)
     fd = caml_win32_alloc_socket((SOCKET) h);
   else
     fd = caml_win32_alloc_handle(h);
-  CRT_fd_val(fd) = chan->fd;
+  CRT_field_val(fd) = chan->fd;
   CAMLreturn(fd);
 }
 
@@ -140,6 +163,6 @@ CAMLprim value caml_unix_filedescr_of_fd(value vfd)
      degradation and this function is only used with the standard
      handles 0, 1, 2, which are not sockets. */
   value res = caml_win32_alloc_handle((HANDLE) _get_osfhandle(crt_fd));
-  CRT_fd_val(res) = crt_fd;
+  CRT_field_val(res) = crt_fd;
   return res;
 }
