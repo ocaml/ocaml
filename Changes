@@ -86,6 +86,7 @@ Working version
 - #11374: Remove pointer cast to a type with stricter alignment requirements
   in Windows implementation of Unix.gettimeofday. Windows implementation of
   caml_unix_map_file now releases the runtime lock while creating the map.
+  Windows implementation of caml_unix_lockf modernised and simplified.
   (David Allsopp, review by Jonah Beckford and Xavier Leroy)
 
 - #11475: Make Unix terminal interface bindings domain-safe
