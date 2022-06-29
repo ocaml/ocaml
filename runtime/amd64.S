@@ -256,13 +256,12 @@
 /* Switch between OCaml stacks. Clobbers %r12.
    Expects old stack in %rsi and target stack in %r10.
    Leaves old stack in %rsi and target stack in %r10. */
-#define SWITCH_OCAML_STACKS_AUX(OP)                       \
+#define SWITCH_OCAML_STACKS                               \
         ENTER_FUNCTION                                    \
     /* Save OCaml SP and exn_handler in the stack info */ \
         movq    %rsp, Stack_sp(%rsi);                     \
         movq    Caml_state(exn_handler), %r12;            \
         movq    %r12, Stack_exception(%rsi);              \
-        OP                                                \
     /* switch stacks */                                   \
         movq    %r10, Caml_state(current_stack);          \
         movq    Stack_sp(%r10), %rsp;                     \
@@ -272,20 +271,20 @@
         movq    %r12, Caml_state(exn_handler);            \
         LEAVE_FUNCTION
 
-#define SWITCH_OCAML_STACKS  SWITCH_OCAML_STACKS_AUX()
+/* Updates the oldest saved frame pointer in the target fiber.
 
-/* To be used by SWITCH_OCAML_STACKS_AUX for overwriting
-   the first base pointer on the new stack in case the
-   old stack was reallocated. */
+   REG: Stack_handler(target_fiber)
+
+   The frame pointer will be pushed into the stack immediately after these
+   instructions. The offset of the oldest saved rbp in a fiber from the stack
+   handler is 48 = 4 words (caml_runstack) + 2 words (rip and rbp).
+   */
 #ifdef WITH_FRAME_POINTERS
-#define OVERWRITE_BASE_POINTER                            \
-        movq    Stack_handler(%r10), %r12;                \
-    /* Overwrite saved rbp in caml_runstack frame */      \
-    /* offset: 4w (caml_runstack) + 2w (rip and rbp) */   \
-        leaq    -48(%r12), %r12;                          \
-        movq    %rbp, 0(%r12);
+#define UPDATE_BASE_POINTER(REG)                          \
+        leaq    -8(%rsp), %r11;                           \
+        movq    %r11, -48(REG)
 #else
-#define OVERWRITE_BASE_POINTER
+#define UPDATE_BASE_POINTER(REG)
 #endif
 
 /******************************************************************************/
@@ -875,21 +874,20 @@ CFI_STARTPROC
         leaq    1(%rsi), %rdi /* %rdi (last_fiber) := Val_ptr(old stack) */
         movq    %rdi, 0(%rbx) /* Initialise continuation */
 LBL(do_perform):
-    /*  %rsi: old stack
-        %rdi: last_fiber */
+    /*  %rsi: old stack */
         movq    Stack_handler(%rsi), %r11  /* %r11 := old stack -> handler */
         movq    Handler_parent(%r11), %r10 /* %r10 := parent stack */
         cmpq    $0, %r10                   /* parent is NULL? */
         je      LBL(112)
         SWITCH_OCAML_STACKS /* preserves r11 and rsi */
-        /* we have to null the Handler_parent after the switch because
-        the Handler_parent is needed to unwind the stack for backtraces */
+     /* We have to null the Handler_parent after the switch because the
+        Handler_parent is needed to unwind the stack for backtraces */
         movq    $0, Handler_parent(%r11) /* Set parent of performer to NULL */
         movq    Handler_effect(%r11), %rsi  /* %rsi := effect handler */
         jmp     GCALL(caml_apply3)
 LBL(112):
-    /* switch back to original performer before raising Unhandled
-        (no-op unless this is a reperform) */
+    /* Switch back to original performer before raising Unhandled
+       (no-op unless this is a reperform) */
         movq    0(%rbx), %r10  /* load performer stack from continuation */
         subq    $1, %r10       /* r10 := Ptr_val(r10) */
         movq    Caml_state(current_stack), %rsi
@@ -909,6 +907,9 @@ CFI_STARTPROC
         movq    (Stack_handler-1)(%rdi), %r10
         movq    %rsi, Handler_parent(%r10)       /* Append to last_fiber */
         leaq    1(%rsi), %rdi  /* %rdi (last_fiber) := Val_ptr(old stack) */
+     /* Need to update the olderst savde frame pointer here as the execution of
+        the handler may have caused the current fiber stack to reallocate. */
+        UPDATE_BASE_POINTER(%r10)
         jmp     LBL(do_perform)
 CFI_ENDPROC
 ENDFUNCTION(G(caml_reperform))
@@ -929,7 +930,11 @@ CFI_STARTPROC
         jnz     1b
         movq    Caml_state(current_stack), %rsi
         movq    %rsi, Handler_parent(%rcx)
-        SWITCH_OCAML_STACKS_AUX(OVERWRITE_BASE_POINTER)
+     /* Need to update the oldest saved frame pointer here as the current fiber
+        stack may have been reallocated or we may be resuming a computation
+        that was not originally run here. */
+        UPDATE_BASE_POINTER(%rcx)
+        SWITCH_OCAML_STACKS
         jmp     *(%rbx)
 2:      LEA_VAR(caml_exn_Continuation_already_taken, %rax)
         jmp LBL(caml_raise_exn)
