@@ -113,7 +113,7 @@ odoc_ast.cmo : \
     odoc_types.cmi \
     odoc_type.cmo \
     odoc_sig.cmi \
-    odoc_parameter.cmo \
+    odoc_parameter.cmi \
     odoc_module.cmo \
     odoc_messages.cmi \
     odoc_global.cmi \
@@ -160,7 +160,7 @@ odoc_class.cmo : \
     ../typing/types.cmi \
     odoc_value.cmo \
     odoc_types.cmi \
-    odoc_parameter.cmo \
+    odoc_parameter.cmi \
     odoc_name.cmi
 odoc_class.cmx : \
     ../typing/types.cmx \
@@ -217,7 +217,7 @@ odoc_cross.cmo : \
     odoc_type.cmo \
     odoc_search.cmi \
     odoc_scan.cmo \
-    odoc_parameter.cmo \
+    odoc_parameter.cmi \
     odoc_name.cmi \
     odoc_module.cmo \
     odoc_misc.cmi \
@@ -380,7 +380,7 @@ odoc_info.cmo : \
     odoc_search.cmi \
     odoc_scan.cmo \
     odoc_print.cmi \
-    odoc_parameter.cmo \
+    odoc_parameter.cmi \
     odoc_name.cmi \
     odoc_module.cmo \
     odoc_misc.cmi \
@@ -424,7 +424,7 @@ odoc_info.cmi : \
     odoc_types.cmi \
     odoc_type.cmo \
     odoc_search.cmi \
-    odoc_parameter.cmo \
+    odoc_parameter.cmi \
     odoc_module.cmo \
     odoc_global.cmi \
     odoc_extension.cmo \
@@ -476,7 +476,7 @@ odoc_merge.cmo : \
     odoc_value.cmo \
     odoc_types.cmi \
     odoc_type.cmo \
-    odoc_parameter.cmo \
+    odoc_parameter.cmi \
     odoc_module.cmo \
     odoc_messages.cmi \
     odoc_global.cmi \
@@ -567,10 +567,15 @@ odoc_ocamlhtml.cmo :
 odoc_ocamlhtml.cmx :
 odoc_parameter.cmo : \
     ../typing/types.cmi \
-    odoc_types.cmi
+    odoc_types.cmi \
+    odoc_parameter.cmi
 odoc_parameter.cmx : \
     ../typing/types.cmx \
-    odoc_types.cmx
+    odoc_types.cmx \
+    odoc_parameter.cmi
+odoc_parameter.cmi : \
+    ../typing/types.cmi \
+    odoc_types.cmi
 odoc_parser.cmo : \
     odoc_types.cmi \
     odoc_comments_global.cmi \
@@ -648,7 +653,7 @@ odoc_sig.cmo : \
     odoc_value.cmo \
     odoc_types.cmi \
     odoc_type.cmo \
-    odoc_parameter.cmo \
+    odoc_parameter.cmi \
     odoc_module.cmo \
     odoc_misc.cmi \
     odoc_messages.cmi \
@@ -820,7 +825,7 @@ odoc_types.cmi : \
 odoc_value.cmo : \
     ../typing/types.cmi \
     odoc_types.cmi \
-    odoc_parameter.cmo \
+    odoc_parameter.cmi \
     odoc_name.cmi \
     odoc_misc.cmi \
     ../parsing/asttypes.cmi
