@@ -830,11 +830,14 @@ odoc_str.cmi : \
 odoc_test.cmo : \
     odoc_info.cmi \
     odoc_gen.cmi \
-    odoc_args.cmi
+    odoc_args.cmi \
+    odoc_test.cmi
 odoc_test.cmx : \
     odoc_info.cmx \
     odoc_gen.cmx \
-    odoc_args.cmx
+    odoc_args.cmx \
+    odoc_test.cmi
+odoc_test.cmi :
 odoc_texi.cmo : \
     ../typing/types.cmi \
     odoc_to_text.cmi \
