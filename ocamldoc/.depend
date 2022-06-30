@@ -382,7 +382,7 @@ odoc_global.cmi : \
     odoc_types.cmi
 odoc_html.cmo : \
     odoc_text.cmi \
-    odoc_ocamlhtml.cmo \
+    odoc_ocamlhtml.cmi \
     odoc_messages.cmi \
     odoc_info.cmi \
     odoc_global.cmi \
@@ -620,8 +620,11 @@ odoc_name.cmi : \
     ../typing/path.cmi \
     ../parsing/longident.cmi \
     ../typing/ident.cmi
-odoc_ocamlhtml.cmo :
-odoc_ocamlhtml.cmx :
+odoc_ocamlhtml.cmo : \
+    odoc_ocamlhtml.cmi
+odoc_ocamlhtml.cmx : \
+    odoc_ocamlhtml.cmi
+odoc_ocamlhtml.cmi :
 odoc_parameter.cmo : \
     ../typing/types.cmi \
     odoc_types.cmi \
