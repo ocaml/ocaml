@@ -36,7 +36,7 @@ OCAMLDOC_LIBA=odoc_info.$(A)
 
 OCAMLDOC_LIBMLIS=$(addsuffix .mli,\
   odoc_dep odoc_extension odoc_info odoc_text_lexer odoc_messages \
-  odoc_parameter odoc_to_text odoc_type odoc_value)
+  odoc_parameter odoc_texi odoc_to_text odoc_type odoc_value)
 OCAMLDOC_LIBCMIS=$(OCAMLDOC_LIBMLIS:.mli=.cmi)
 OCAMLDOC_LIBCMTS=$(OCAMLDOC_LIBMLIS:.mli=.cmt) $(OCAMLDOC_LIBMLIS:.mli=.cmti)
 
