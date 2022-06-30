@@ -87,3 +87,5 @@ let windows_unicode = %%WINDOWS_UNICODE%% != 0
 let function_sections = %%FUNCTION_SECTIONS%%
 
 let instrumented_runtime = %%INSTRUMENTED_RUNTIME%%
+
+let frame_pointers = %%WITH_FRAME_POINTERS%%

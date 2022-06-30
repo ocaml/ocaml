@@ -432,6 +432,61 @@ rewrite_exception_stack(struct stack_info *old_stack,
     fiber_debug_log ("exn_ptr is null");
   }
 }
+
+#ifdef WITH_FRAME_POINTERS
+/* Update absolute base pointers for new stack */
+static void rewrite_frame_pointers(struct stack_info *old_stack,
+    struct stack_info *new_stack)
+{
+  struct frame_walker {
+    struct frame_walker *base_addr;
+    uintnat return_addr;
+  } *frame, *next;
+  ssize_t delta;
+  void *top, **p;
+
+  delta = (char*)Stack_high(new_stack) - (char*)Stack_high(old_stack);
+
+  /* Walk the frame-pointers linked list */
+  for (frame = __builtin_frame_address(0); frame; frame = next) {
+
+    top = (char*)&frame->return_addr
+      + 1 * sizeof(value) /* return address */
+      + 2 * sizeof(value) /* trap frame */
+      + 2 * sizeof(value); /* DWARF pointer & gc_regs */
+
+    /* Detect top of the fiber and bail out */
+    /* It also avoid to dereference invalid base pointer at main */
+    if (top == Stack_high(old_stack))
+      break;
+
+    /* Save the base address since it may be adjusted */
+    next = frame->base_addr;
+
+    if (!(Stack_base(old_stack) <= (value*)frame->base_addr
+        && (value*)frame->base_addr < Stack_high(old_stack))) {
+      /* No need to adjust base pointers that don't point into the reallocated
+       * fiber */
+      continue;
+    }
+
+    if (Stack_base(old_stack) <= (value*)&frame->base_addr
+        && (value*)&frame->base_addr < Stack_high(old_stack)) {
+      /* The base pointer itself is located inside the reallocated fiber
+       * and needs to be adjusted on the new fiber */
+      p = (void**)((char*)Stack_high(new_stack) - (char*)Stack_high(old_stack)
+          + (char*)&frame->base_addr);
+      CAMLassert(*p == frame->base_addr);
+      *p += delta;
+    }
+    else {
+      /* Base pointers on other stacks are adjusted in place */
+      frame->base_addr = (struct frame_walker*)((char*)frame->base_addr
+          + delta);
+    }
+  }
+}
+#endif
 #endif
 
 int caml_try_realloc_stack(asize_t required_space)
@@ -473,6 +528,9 @@ int caml_try_realloc_stack(asize_t required_space)
 #ifdef NATIVE_CODE
   rewrite_exception_stack(old_stack, (value**)&Caml_state->exn_handler,
                           new_stack);
+#ifdef WITH_FRAME_POINTERS
+  rewrite_frame_pointers(old_stack, new_stack);
+#endif
 #endif
 
   /* Update stack pointers in Caml_state->c_stack. It is possible to have
