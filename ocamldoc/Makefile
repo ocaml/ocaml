@@ -66,7 +66,7 @@ OC_OCAMLDEPDIRS = $(INCLUDE_DIRS)
 INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)
 
 COMPFLAGS = \
-  -g $(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error +A-70 \
+  -g $(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error +A \
   -safe-string -strict-sequence -strict-formats -bin-annot -principal
 
 LINKFLAGS = -g $(INCLUDES)
