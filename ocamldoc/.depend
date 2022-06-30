@@ -30,7 +30,7 @@ odoc_analyse.cmo : \
     odoc_messages.cmi \
     odoc_merge.cmi \
     odoc_global.cmi \
-    odoc_dep.cmo \
+    odoc_dep.cmi \
     odoc_cross.cmi \
     odoc_comments.cmi \
     odoc_class.cmi \
@@ -268,14 +268,21 @@ odoc_dep.cmo : \
     odoc_print.cmi \
     odoc_module.cmi \
     ../utils/misc.cmi \
-    ../parsing/depend.cmi
+    ../parsing/depend.cmi \
+    odoc_dep.cmi
 odoc_dep.cmx : \
     ../parsing/parsetree.cmi \
     odoc_type.cmx \
     odoc_print.cmx \
     odoc_module.cmx \
     ../utils/misc.cmx \
-    ../parsing/depend.cmx
+    ../parsing/depend.cmx \
+    odoc_dep.cmi
+odoc_dep.cmi : \
+    ../parsing/parsetree.cmi \
+    odoc_type.cmi \
+    odoc_module.cmi \
+    ../utils/misc.cmi
 odoc_dot.cmo : \
     odoc_messages.cmi \
     odoc_info.cmi
@@ -408,7 +415,7 @@ odoc_info.cmo : \
     odoc_global.cmi \
     odoc_extension.cmi \
     odoc_exception.cmi \
-    odoc_dep.cmo \
+    odoc_dep.cmi \
     odoc_config.cmi \
     odoc_comments.cmi \
     odoc_class.cmi \
