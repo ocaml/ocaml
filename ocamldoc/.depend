@@ -80,7 +80,7 @@ odoc_args.cmo : \
     odoc_html.cmi \
     odoc_global.cmi \
     odoc_gen.cmi \
-    odoc_dot.cmo \
+    odoc_dot.cmi \
     odoc_config.cmi \
     ../driver/main_args.cmi \
     ../utils/config.cmi \
@@ -285,10 +285,14 @@ odoc_dep.cmi : \
     ../utils/misc.cmi
 odoc_dot.cmo : \
     odoc_messages.cmi \
-    odoc_info.cmi
+    odoc_info.cmi \
+    odoc_dot.cmi
 odoc_dot.cmx : \
     odoc_messages.cmx \
-    odoc_info.cmx
+    odoc_info.cmx \
+    odoc_dot.cmi
+odoc_dot.cmi : \
+    odoc_info.cmi
 odoc_env.cmo : \
     ../typing/types.cmi \
     ../typing/predef.cmi \
@@ -349,7 +353,7 @@ odoc_gen.cmo : \
     odoc_man.cmi \
     odoc_latex.cmi \
     odoc_html.cmi \
-    odoc_dot.cmo \
+    odoc_dot.cmi \
     odoc_gen.cmi
 odoc_gen.cmx : \
     odoc_texi.cmx \
@@ -365,7 +369,7 @@ odoc_gen.cmi : \
     odoc_man.cmi \
     odoc_latex.cmi \
     odoc_html.cmi \
-    odoc_dot.cmo
+    odoc_dot.cmi
 odoc_global.cmo : \
     odoc_types.cmi \
     odoc_messages.cmi \
