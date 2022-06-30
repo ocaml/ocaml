@@ -132,7 +132,8 @@ let heads p =
 let rec last = function
   | Pident id -> Ident.name id
   | Pdot(_, s) | Pextra_ty (_, Pcstr_ty s) -> s
-  | Papply(_, p) | Pextra_ty (p, (Pext_ty | Pcls_ty)) -> last p
+  | Papply(_, p) | Pextra_ty (p, Pext_ty) -> last p
+  | Pextra_ty (p, Pcls_ty) -> "#" ^ last p
 
 let is_constructor_typath p =
   match p with
