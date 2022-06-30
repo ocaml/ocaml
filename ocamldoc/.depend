@@ -109,7 +109,7 @@ odoc_ast.cmo : \
     ../typing/predef.cmi \
     ../typing/path.cmi \
     ../parsing/parsetree.cmi \
-    odoc_value.cmo \
+    odoc_value.cmi \
     odoc_types.cmi \
     odoc_type.cmo \
     odoc_sig.cmi \
@@ -158,7 +158,7 @@ odoc_ast.cmi : \
     odoc_module.cmo
 odoc_class.cmo : \
     ../typing/types.cmi \
-    odoc_value.cmo \
+    odoc_value.cmi \
     odoc_types.cmi \
     odoc_parameter.cmi \
     odoc_name.cmi
@@ -212,7 +212,7 @@ odoc_config.cmi :
 odoc_control.cmo :
 odoc_control.cmx :
 odoc_cross.cmo : \
-    odoc_value.cmo \
+    odoc_value.cmi \
     odoc_types.cmi \
     odoc_type.cmo \
     odoc_search.cmi \
@@ -372,7 +372,7 @@ odoc_html.cmx : \
     ../parsing/asttypes.cmi
 odoc_info.cmo : \
     ../typing/printtyp.cmi \
-    odoc_value.cmo \
+    odoc_value.cmi \
     odoc_types.cmi \
     odoc_type.cmo \
     odoc_text.cmi \
@@ -420,7 +420,7 @@ odoc_info.cmx : \
     odoc_info.cmi
 odoc_info.cmi : \
     ../typing/types.cmi \
-    odoc_value.cmo \
+    odoc_value.cmi \
     odoc_types.cmi \
     odoc_type.cmo \
     odoc_search.cmi \
@@ -473,7 +473,7 @@ odoc_man.cmx : \
     odoc_info.cmx \
     ../parsing/asttypes.cmi
 odoc_merge.cmo : \
-    odoc_value.cmo \
+    odoc_value.cmi \
     odoc_types.cmi \
     odoc_type.cmo \
     odoc_parameter.cmi \
@@ -531,7 +531,7 @@ odoc_misc.cmi : \
     ../parsing/asttypes.cmi
 odoc_module.cmo : \
     ../typing/types.cmi \
-    odoc_value.cmo \
+    odoc_value.cmi \
     odoc_types.cmi \
     odoc_type.cmo \
     odoc_name.cmi \
@@ -599,7 +599,7 @@ odoc_print.cmx : \
 odoc_print.cmi : \
     ../typing/types.cmi
 odoc_scan.cmo : \
-    odoc_value.cmo \
+    odoc_value.cmi \
     odoc_types.cmi \
     odoc_type.cmo \
     odoc_module.cmo \
@@ -615,7 +615,7 @@ odoc_scan.cmx : \
     odoc_exception.cmx \
     odoc_class.cmx
 odoc_search.cmo : \
-    odoc_value.cmo \
+    odoc_value.cmi \
     odoc_types.cmi \
     odoc_type.cmo \
     odoc_module.cmo \
@@ -635,7 +635,7 @@ odoc_search.cmx : \
     odoc_class.cmx \
     odoc_search.cmi
 odoc_search.cmi : \
-    odoc_value.cmo \
+    odoc_value.cmi \
     odoc_types.cmi \
     odoc_type.cmo \
     odoc_module.cmo \
@@ -650,7 +650,7 @@ odoc_sig.cmo : \
     ../typing/types.cmi \
     ../typing/typedtree.cmi \
     ../parsing/parsetree.cmi \
-    odoc_value.cmo \
+    odoc_value.cmi \
     odoc_types.cmi \
     odoc_type.cmo \
     odoc_parameter.cmi \
@@ -708,7 +708,7 @@ odoc_sig.cmi : \
 odoc_str.cmo : \
     ../typing/types.cmi \
     ../typing/printtyp.cmi \
-    odoc_value.cmo \
+    odoc_value.cmi \
     odoc_type.cmo \
     odoc_print.cmi \
     odoc_name.cmi \
@@ -735,7 +735,7 @@ odoc_str.cmx : \
     odoc_str.cmi
 odoc_str.cmi : \
     ../typing/types.cmi \
-    odoc_value.cmo \
+    odoc_value.cmi \
     odoc_type.cmo \
     odoc_extension.cmo \
     odoc_exception.cmo \
@@ -828,14 +828,21 @@ odoc_value.cmo : \
     odoc_parameter.cmi \
     odoc_name.cmi \
     odoc_misc.cmi \
-    ../parsing/asttypes.cmi
+    ../parsing/asttypes.cmi \
+    odoc_value.cmi
 odoc_value.cmx : \
     ../typing/types.cmx \
     odoc_types.cmx \
     odoc_parameter.cmx \
     odoc_name.cmx \
     odoc_misc.cmx \
-    ../parsing/asttypes.cmi
+    ../parsing/asttypes.cmi \
+    odoc_value.cmi
+odoc_value.cmi : \
+    ../typing/types.cmi \
+    odoc_types.cmi \
+    odoc_parameter.cmi \
+    odoc_name.cmi
 generators/odoc_literate.cmo : \
     odoc_info.cmi \
     odoc_html.cmo \
