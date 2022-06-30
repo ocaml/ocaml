@@ -77,7 +77,7 @@ odoc_args.cmo : \
     odoc_messages.cmi \
     odoc_man.cmi \
     odoc_latex.cmi \
-    odoc_html.cmo \
+    odoc_html.cmi \
     odoc_global.cmi \
     odoc_gen.cmi \
     odoc_dot.cmo \
@@ -348,7 +348,7 @@ odoc_gen.cmo : \
     odoc_module.cmi \
     odoc_man.cmi \
     odoc_latex.cmi \
-    odoc_html.cmo \
+    odoc_html.cmi \
     odoc_dot.cmo \
     odoc_gen.cmi
 odoc_gen.cmx : \
@@ -364,7 +364,7 @@ odoc_gen.cmi : \
     odoc_module.cmi \
     odoc_man.cmi \
     odoc_latex.cmi \
-    odoc_html.cmo \
+    odoc_html.cmi \
     odoc_dot.cmo
 odoc_global.cmo : \
     odoc_types.cmi \
@@ -388,7 +388,8 @@ odoc_html.cmo : \
     odoc_global.cmi \
     odoc_dag2html.cmi \
     ../utils/misc.cmi \
-    ../parsing/asttypes.cmi
+    ../parsing/asttypes.cmi \
+    odoc_html.cmi
 odoc_html.cmx : \
     odoc_text.cmx \
     odoc_ocamlhtml.cmx \
@@ -397,7 +398,15 @@ odoc_html.cmx : \
     odoc_global.cmx \
     odoc_dag2html.cmx \
     ../utils/misc.cmx \
-    ../parsing/asttypes.cmi
+    ../parsing/asttypes.cmi \
+    odoc_html.cmi
+odoc_html.cmi : \
+    ../typing/types.cmi \
+    odoc_types.cmi \
+    odoc_parameter.cmi \
+    odoc_info.cmi \
+    odoc_dag2html.cmi \
+    ../utils/misc.cmi
 odoc_info.cmo : \
     ../typing/printtyp.cmi \
     odoc_value.cmi \
@@ -938,7 +947,7 @@ odoc_value.cmi : \
     odoc_name.cmi
 generators/odoc_literate.cmo : \
     odoc_info.cmi \
-    odoc_html.cmo \
+    odoc_html.cmi \
     odoc_gen.cmi \
     odoc_args.cmi
 generators/odoc_literate.cmx : \
@@ -954,7 +963,7 @@ generators/odoc_literate.cmxs : \
 generators/odoc_todo.cmo : \
     odoc_module.cmi \
     odoc_info.cmi \
-    odoc_html.cmo \
+    odoc_html.cmi \
     odoc_gen.cmi \
     odoc_args.cmi
 generators/odoc_todo.cmx : \
