@@ -463,7 +463,7 @@ odoc_info.cmi : \
 odoc_latex.cmo : \
     odoc_to_text.cmi \
     odoc_messages.cmi \
-    odoc_latex_style.cmo \
+    odoc_latex_style.cmi \
     odoc_info.cmi \
     ../parsing/asttypes.cmi
 odoc_latex.cmx : \
@@ -472,8 +472,11 @@ odoc_latex.cmx : \
     odoc_latex_style.cmx \
     odoc_info.cmx \
     ../parsing/asttypes.cmi
-odoc_latex_style.cmo :
-odoc_latex_style.cmx :
+odoc_latex_style.cmo : \
+    odoc_latex_style.cmi
+odoc_latex_style.cmx : \
+    odoc_latex_style.cmi
+odoc_latex_style.cmi :
 odoc_lexer.cmo : \
     odoc_parser.cmi \
     odoc_messages.cmi \
