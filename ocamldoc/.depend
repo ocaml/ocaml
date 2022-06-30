@@ -758,7 +758,7 @@ odoc_texi.cmx : \
 odoc_text.cmo : \
     odoc_types.cmi \
     odoc_text_parser.cmi \
-    odoc_text_lexer.cmo \
+    odoc_text_lexer.cmi \
     odoc_text.cmi
 odoc_text.cmx : \
     odoc_types.cmx \
@@ -769,10 +769,14 @@ odoc_text.cmi : \
     odoc_types.cmi
 odoc_text_lexer.cmo : \
     odoc_text_parser.cmi \
-    odoc_misc.cmi
+    odoc_misc.cmi \
+    odoc_text_lexer.cmi
 odoc_text_lexer.cmx : \
     odoc_text_parser.cmx \
-    odoc_misc.cmx
+    odoc_misc.cmx \
+    odoc_text_lexer.cmi
+odoc_text_lexer.cmi : \
+    odoc_text_parser.cmi
 odoc_text_parser.cmo : \
     odoc_types.cmi \
     odoc_misc.cmi \
