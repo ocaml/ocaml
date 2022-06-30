@@ -273,6 +273,14 @@
 
 /* Updates the oldest saved frame pointer in the target fiber.
 
+   A fiber stack may need to grow, causing the reallocation of the entire fiber,
+   including stack_info and stack_handler structures.
+   caml_try_realloc_stack will not be able to update the linked list of
+   frame-pointers if it has been split (ie, in a continuation).
+   caml_resume and caml_reperform use this macro to update the oldest saved rbp
+   (highest one in the stack) in case the fiber was reallocated to reattach the
+   frame-pointer linked list.
+
    REG: Stack_handler(target_fiber)
 
    The frame pointer will be pushed into the stack immediately after these
@@ -907,7 +915,7 @@ CFI_STARTPROC
         movq    (Stack_handler-1)(%rdi), %r10
         movq    %rsi, Handler_parent(%r10)       /* Append to last_fiber */
         leaq    1(%rsi), %rdi  /* %rdi (last_fiber) := Val_ptr(old stack) */
-     /* Need to update the olderst savde frame pointer here as the execution of
+     /* Need to update the oldest saved frame pointer here as the execution of
         the handler may have caused the current fiber stack to reallocate. */
         UPDATE_BASE_POINTER(%r10)
         jmp     LBL(do_perform)
