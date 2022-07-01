@@ -1154,7 +1154,7 @@ and transl_letop ~scopes loc env let_ ands param case partial =
           transl_ident (of_location ~scopes and_.bop_op_name.loc) env
             and_.bop_op_type and_.bop_op_path and_.bop_op_val
         in
-        let exp = transl_exp ~scopes and_.bop_exp in
+        let exp = transl_exp ~scopes and_.bop_expr in
         let lam =
           bind Strict right_id exp
             (Lapply{
@@ -1172,7 +1172,7 @@ and transl_letop ~scopes loc env let_ ands param case partial =
     transl_ident (of_location ~scopes let_.bop_op_name.loc) env
       let_.bop_op_type let_.bop_op_path let_.bop_op_val
   in
-  let exp = loop (transl_exp ~scopes let_.bop_exp) ands in
+  let exp = loop (transl_exp ~scopes let_.bop_expr) ands in
   let func =
     let (kind, params, return), body =
       event_function ~scopes case.c_rhs

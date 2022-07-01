@@ -4140,7 +4140,8 @@ and type_expect_
         exp_attributes = sexp.pexp_attributes;
         exp_env = env;
       }
-  | Pexp_letop{ let_ = slet; ands = sands; body = sbody } ->
+  | Pexp_letop { let_ = slet; ands = sands; body = sbody } ->
+
       let rec loop spat_acc ty_acc sands =
         match sands with
         | [] -> spat_acc, ty_acc
@@ -4178,12 +4179,15 @@ and type_expect_
            [ty_andops; ty_params; ty_func_result; ty_result])
         end
       in
-      let exp, ands = type_andops env slet.pbop_exp sands ty_andops in
+      let exp, ands = type_andops env slet.pbop_expr sands ty_andops in
       let scase = Ast_helper.Exp.case spat_params sbody in
       let cases, partial =
-        type_cases Value env
-          ty_params (mk_expected ty_func_result)
-          ~check_if_total:true loc [scase]
+        Builtin_attributes.warning_scope ~ppwarning:false slet.pbop_attributes
+          (fun () ->
+             type_cases Value env
+               ty_params (mk_expected ty_func_result)
+               ~check_if_total:true loc [scase]
+          )
       in
       let body =
         match cases with
@@ -4196,7 +4200,8 @@ and type_expect_
           bop_op_path = op_path;
           bop_op_val = op_desc;
           bop_op_type = op_type;
-          bop_exp = exp;
+          bop_expr = exp;
+          bop_attributes = slet.pbop_attributes;
           bop_loc = slet.pbop_loc; }
       in
       let desc =
@@ -6125,7 +6130,8 @@ and type_andops env sarg sands expected_ty =
   let rec loop env let_sarg rev_sands expected_ty =
     match rev_sands with
     | [] -> type_expect env let_sarg (mk_expected expected_ty), []
-    | { pbop_op = sop; pbop_exp = sexp; pbop_loc = loc; _ } :: rest ->
+    | { pbop_op = sop; pbop_expr = sexp; pbop_loc = loc; pbop_attributes }
+      :: rest ->
         let op_path, op_desc, op_type, ty_arg, ty_rest, ty_result =
           with_local_level_iter_if_principal begin fun () ->
             let op_path, op_desc = type_binding_op_ident env sop in
@@ -6159,7 +6165,8 @@ and type_andops env sarg sands expected_ty =
             bop_op_path = op_path;
             bop_op_val = op_desc;
             bop_op_type = op_type;
-            bop_exp = exp;
+            bop_expr = exp;
+            bop_attributes = pbop_attributes;
             bop_loc = loc }
         in
         let_arg, andop :: rest

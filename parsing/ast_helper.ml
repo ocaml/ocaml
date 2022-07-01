@@ -223,11 +223,12 @@ module Exp = struct
      pc_rhs = rhs;
     }
 
-  let binding_op op pat exp loc =
+  let binding_op op pat expr ?(attrs = []) loc =
     {
       pbop_op = op;
       pbop_pat = pat;
-      pbop_exp = exp;
+      pbop_expr = expr;
+      pbop_attributes = attrs;
       pbop_loc = loc;
     }
 end

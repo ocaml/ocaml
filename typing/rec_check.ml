@@ -890,7 +890,7 @@ and function_body body =
 
 and binding_op : Typedtree.binding_op -> term_judg =
   fun bop ->
-    join [path bop.bop_op_path; expression bop.bop_exp]
+    join [path bop.bop_op_path; expression bop.bop_expr]
 
 and class_structure : Typedtree.class_structure -> term_judg =
   fun cs -> list class_field cs.cstr_fields

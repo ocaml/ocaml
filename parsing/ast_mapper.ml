@@ -503,11 +503,11 @@ module E = struct
     | Pexp_extension x -> extension ~loc ~attrs (sub.extension sub x)
     | Pexp_unreachable -> unreachable ~loc ~attrs ()
 
-  let map_binding_op sub {pbop_op; pbop_pat; pbop_exp; pbop_loc} =
+  let map_binding_op sub {pbop_op; pbop_pat; pbop_expr; pbop_loc} =
     let open Exp in
     let op = map_loc sub pbop_op in
     let pat = sub.pat sub pbop_pat in
-    let exp = sub.expr sub pbop_exp in
+    let exp = sub.expr sub pbop_expr in
     let loc = sub.location sub pbop_loc in
     binding_op op pat exp loc
 

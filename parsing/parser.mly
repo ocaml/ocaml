@@ -2400,13 +2400,19 @@ fun_expr:
       { $1 }
   | let_bindings(ext) IN seq_expr
       { expr_of_let_bindings ~loc:$sloc $1 $3 }
-  | pbop_op=mkrhs(LETOP) attrs=ext_attributes bindings=letop_bindings
+  | pbop_op=mkrhs(LETOP) pbop_attributes=attributes bindings=letop_bindings
     IN body=seq_expr
-      { let (pbop_pat, pbop_exp, rev_ands) = bindings in
+      { let (pbop_pat, pbop_expr, rev_ands) = bindings in
         let ands = List.rev rev_ands in
         let pbop_loc = make_loc $sloc in
-        let let_ = {pbop_op; pbop_pat; pbop_exp; pbop_loc} in
-        mkexp_attrs ~loc:$sloc (Pexp_letop{ let_; ands; body}) attrs }
+        let let_ = {
+          pbop_op;
+          pbop_pat;
+          pbop_expr;
+          pbop_loc;
+          pbop_attributes;
+        } in
+        mkexp ~loc:$sloc (Pexp_letop{ let_; ands; body}) }
   | fun_expr COLONCOLON expr
       { mkexp_cons ~loc:$sloc $loc($2) (ghexp ~loc:$sloc (Pexp_tuple[$1;$3])) }
   | mkrhs(label) LESSMINUS expr
@@ -2720,11 +2726,12 @@ letop_bindings:
     body = letop_binding_body
       { let let_pat, let_exp = body in
         let_pat, let_exp, [] }
-  | bindings = letop_bindings pbop_op = mkrhs(ANDOP) body = letop_binding_body
+  | bindings=letop_bindings
+    pbop_op=mkrhs(ANDOP) pbop_attributes=attributes body=letop_binding_body
       { let let_pat, let_exp, rev_ands = bindings in
-        let pbop_pat, pbop_exp = body in
+        let pbop_pat, pbop_expr = body in
         let pbop_loc = make_loc $sloc in
-        let and_ = {pbop_op; pbop_pat; pbop_exp; pbop_loc} in
+        let and_ = {pbop_op; pbop_pat; pbop_expr; pbop_loc; pbop_attributes;} in
         let_pat, let_exp, and_ :: rev_ands }
 ;
 strict_binding:

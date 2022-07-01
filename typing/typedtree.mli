@@ -357,7 +357,8 @@ and binding_op =
     bop_op_type : Types.type_expr;
     (* This is the type at which the operator was used.
        It is always an instance of [bop_op_val.val_type] *)
-    bop_exp : expression;
+    bop_expr : expression;
+    bop_attributes : attributes;
     bop_loc : Location.t;
   }
 

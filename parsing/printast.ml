@@ -957,10 +957,11 @@ and value_constraint i ppf x =
 
 
 and binding_op i ppf x =
-  line i ppf "<binding_op> %a %a"
+  line i ppf "<binding_op> %a %a\n"
     fmt_string_loc x.pbop_op fmt_location x.pbop_loc;
+  attributes (i+1) ppf x.pbop_attributes;
   pattern (i+1) ppf x.pbop_pat;
-  expression (i+1) ppf x.pbop_exp;
+  expression (i+1) ppf x.pbop_expr;
 
 and string_x_expression i ppf (s, e) =
   line i ppf "<override> %a\n" fmt_string_loc s;

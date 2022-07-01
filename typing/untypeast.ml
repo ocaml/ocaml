@@ -525,7 +525,7 @@ let expression sub exp =
         let let_ = sub.binding_op sub let_ pat in
         let ands = List.map2 (sub.binding_op sub) ands and_pats in
         let body = sub.expr sub body.c_rhs in
-        Pexp_letop {let_; ands; body }
+        Pexp_letop {let_; ands; body}
     | Texp_unreachable ->
         Pexp_unreachable
     | Texp_extension_constructor (lid, _) ->
@@ -542,9 +542,10 @@ let expression sub exp =
 let binding_op sub bop pat =
   let pbop_op = bop.bop_op_name in
   let pbop_pat = sub.pat sub pat in
-  let pbop_exp = sub.expr sub bop.bop_exp in
+  let pbop_expr = sub.expr sub bop.bop_expr in
   let pbop_loc = bop.bop_loc in
-  {pbop_op; pbop_pat; pbop_exp; pbop_loc}
+  let pbop_attributes = sub.attributes sub bop.bop_attributes in
+  {pbop_op; pbop_pat; pbop_expr; pbop_loc; pbop_attributes; }
 
 let package_type sub pack =
   (map_loc sub pack.pack_txt,
