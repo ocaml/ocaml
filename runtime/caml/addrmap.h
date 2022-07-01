@@ -44,8 +44,7 @@ void caml_addrmap_iter(struct addrmap* t, void (*f)(value, value));
 
 /* iteration */
 typedef uintnat addrmap_iterator;
-Caml_inline addrmap_iterator caml_addrmap_iter_ok(struct addrmap* t,
-                                                  addrmap_iterator i)
+Caml_inline int caml_addrmap_iter_ok(struct addrmap* t, addrmap_iterator i)
 {
   if (i < t->size) {
     CAMLassert(t->entries[i].key != ADDRMAP_INVALID_KEY);
