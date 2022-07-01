@@ -418,6 +418,9 @@ OCaml 5.0
   (David Allsopp and Nicolás Ojeda Bär, review by Nicolás Ojeda Bär and
    Sebastien Hinderer)
 
+- #11358, #11379: Refactor the initialization of bytecode threading,
+  This avoids a "dangling pointer" warning of GCC 12.1.
+  (Xavier Leroy, report by Armaël Guéneau, review by Gabriel Scherer)
 
 OCaml 4.14.0
 ----------------
