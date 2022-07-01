@@ -116,12 +116,8 @@ CAMLprim value caml_reify_bytecode(value ls_prog,
   caml_thread_code((code_t) prog, len);
 #endif
 
-#if 0
-  /* TODO: support dynlink debugger: PR8654 */
   /* Notify debugger after fragment gets added and reified. */
   caml_debugger(CODE_LOADED, Val_long(fragnum));
-#endif
-  (void)fragnum; /* clobber warning */
 
   clos = caml_alloc_small (2, Closure_tag);
   Code_val(clos) = (code_t) prog;

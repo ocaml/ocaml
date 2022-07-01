@@ -245,6 +245,9 @@ OCaml 5.0
   documentation.
   (Jules Aguillon, review by Florian Angeletti)
 
+- #11065: Port the bytecode debugger to 5.0, adding support for effect handlers.
+  (Damien Doligez and @fabbing, review by @fabbing and Xavier Leroy)
+
 - #11079: Add the -nobanners option to dumpobj.
   (Sébastien Hinderer, review by Gabriel Scherer and Vincent Laviron)
 

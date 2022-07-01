@@ -44,7 +44,7 @@ type checkpoint = {
   mutable c_parent : checkpoint;
   mutable c_breakpoint_version : int;
   mutable c_breakpoints : (pc * int ref) list;
-  mutable c_trap_barrier : int;
+  mutable c_trap_barrier : Sp.t;
   mutable c_code_fragments : int list
   }
 
@@ -60,8 +60,8 @@ let rec root = {
   c_parent = root;
   c_breakpoint_version = 0;
   c_breakpoints = [];
-  c_trap_barrier = 0;
-  c_code_fragments = [0]
+  c_trap_barrier = Sp.null;
+  c_code_fragments = [main_frag]
   }
 
 (*** Current state ***)
