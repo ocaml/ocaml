@@ -1,0 +1,4 @@
+requires = "compiler-libs"
+version = "[distributed with OCaml]"
+description = "ocamldoc plugin interface"
+directory= "+ocamldoc"

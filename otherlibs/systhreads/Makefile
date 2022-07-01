@@ -121,7 +121,7 @@ install:
 	$(INSTALL_DATA) libthreads.$(A) "$(INSTALL_LIBDIR)"
 	$(MKDIR) "$(INSTALL_THREADSLIBDIR)"
 	$(INSTALL_DATA) \
-	  $(CMIFILES) threads.cma \
+	  $(CMIFILES) threads.cma META \
 	  "$(INSTALL_THREADSLIBDIR)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \

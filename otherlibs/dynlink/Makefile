@@ -252,7 +252,7 @@ install:
         $(addprefix "$(INSTALL_LIBDIR)/", $(notdir $(NATOBJS)))
 	$(MKDIR) "$(INSTALL_LIBDIR_DYNLINK)"
 	$(INSTALL_DATA) \
-	  dynlink.cmi dynlink.cma \
+	  dynlink.cmi dynlink.cma META \
 	  "$(INSTALL_LIBDIR_DYNLINK)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
@@ -282,6 +282,7 @@ clean: partialclean
 
 .PHONY: distclean
 distclean: clean
+	rm -f META
 
 .PHONY: beforedepend
 beforedepend: dynlink_platform_intf.mli
