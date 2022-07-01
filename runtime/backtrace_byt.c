@@ -461,7 +461,6 @@ static void read_main_debug_info(struct debug_info *di)
   if (caml_seek_optional_section(fd, &trail, "DBUG") != -1) {
     chan = caml_open_descriptor_in(fd);
 
-    Lock(chan);
     num_events = caml_getword(chan);
     events = caml_alloc(num_events, 0);
 
@@ -477,7 +476,6 @@ static void read_main_debug_info(struct debug_info *di)
       /* Record event list */
       Store_field(events, i, evl);
     }
-    Unlock(chan);
 
     caml_close_channel(chan);
 
