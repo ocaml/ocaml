@@ -127,7 +127,7 @@ let initialize_loading () =
     raise Toplevel;
   end;
   Symbols.clear_symbols ();
-  Symbols.read_symbols 0 !program_name;
+  Symbols.read_symbols Debugcom.main_frag !program_name;
   let dirs = Load_path.get_paths () @ !Symbols.program_source_dirs in
   Load_path.init ~auto_include:Compmisc.auto_include dirs;
   Envaux.reset_cache ();
@@ -136,7 +136,7 @@ let initialize_loading () =
   open_connection !socket_name
     (function () ->
       go_to _0;
-      Symbols.set_all_events 0;
+      Symbols.set_all_events Debugcom.main_frag;
       exit_main_loop ())
 
 (* Ensure the program is already loaded. *)

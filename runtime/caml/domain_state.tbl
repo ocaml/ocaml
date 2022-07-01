@@ -145,6 +145,7 @@ DOMAIN_STATE(int, inside_stw_handler)
 
 DOMAIN_STATE(intnat, trap_sp_off)
 DOMAIN_STATE(intnat, trap_barrier_off)
+DOMAIN_STATE(int64_t, trap_barrier_block)
 DOMAIN_STATE(struct caml_exception_context*, external_raise)
 /* Bytecode TLS vars, not used for native code */
 

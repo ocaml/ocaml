@@ -25,6 +25,7 @@
 #include "caml/alloc.h"
 #include "caml/backtrace.h"
 #include "caml/callback.h"
+#include "caml/debugger.h"
 #include "caml/domain.h"
 #include "caml/domain_state.h"
 #include "caml/runtime_events.h"
@@ -670,6 +671,7 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
   domain_state->external_raise = NULL;
   domain_state->trap_sp_off = 1;
   domain_state->trap_barrier_off = 0;
+  domain_state->trap_barrier_block = -1;
 #endif
 
   caml_reset_young_limit(domain_state);
@@ -1104,6 +1106,10 @@ CAMLprim value caml_domain_spawn(value callback, value mutex)
   sigset_t mask, old_mask;
 #endif
 
+#ifndef NATIVE_CODE
+  if (caml_debugger_in_use)
+    caml_fatal_error("ocamldebug does not support spawning multiple domains");
+#endif
   p.parent = &domain_self->interruptor;
   p.status = Dom_starting;
 
