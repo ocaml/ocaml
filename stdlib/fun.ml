@@ -36,3 +36,10 @@ let protect ~(finally : unit -> unit) work =
       let work_bt = Printexc.get_raw_backtrace () in
       finally_no_exn () ;
       Printexc.raise_with_backtrace work_exn work_bt
+
+let with_ref r v f =
+  let old = !r in
+  r := v;
+  match f () with
+  | x -> r := old; x
+  | exception e -> r := old; raise e

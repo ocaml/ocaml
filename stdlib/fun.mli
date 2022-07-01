@@ -61,3 +61,9 @@ exception Finally_raised of exn
     an unexpected exception or a programming error. As a general rule,
     one should not catch a [Finally_raised] exception except as part of
     a catch-all handler. *)
+
+val with_ref: 'a ref -> 'a -> (unit -> 'b) -> 'b
+(** [with_ref r v f] sets [r] to [v], calls [f ()] and sets [r] back to its
+    original value when [f] returns, either normally or by raising an exception.
+
+    @since 5.1.0 *)
