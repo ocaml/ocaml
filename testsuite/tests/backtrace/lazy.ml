@@ -1,6 +1,12 @@
 (* TEST
-   flags = "-g"
-   * native
+
+flags = "-g"
+* no-flambda
+** native
+* flambda
+reference = "${test_source_directory}/lazy.flambda.reference"
+** native
+
 *)
 
 
