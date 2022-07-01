@@ -15,13 +15,13 @@ let last_is_anys = function
 ;;
 [%%expect{|
 (let
-  (last_is_anys/30 =
-     (function param/32 : int
+  (last_is_anys/11 =
+     (function param/13 : int
        (catch
-         (if (field_imm 0 param/32) (if (field_imm 1 param/32) (exit 1) 1)
-           (if (field_imm 1 param/32) (exit 1) 2))
+         (if (field_imm 0 param/13) (if (field_imm 1 param/13) (exit 1) 1)
+           (if (field_imm 1 param/13) (exit 1) 2))
         with (1) 3)))
-  (apply (field_mut 1 (global Toploop!)) "last_is_anys" last_is_anys/30))
+  (apply (field_mut 1 (global Toploop!)) "last_is_anys" last_is_anys/11))
 val last_is_anys : bool * bool -> int = <fun>
 |}]
 
@@ -32,13 +32,13 @@ let last_is_vars = function
 ;;
 [%%expect{|
 (let
-  (last_is_vars/37 =
-     (function param/41 : int
+  (last_is_vars/18 =
+     (function param/22 : int
        (catch
-         (if (field_imm 0 param/41) (if (field_imm 1 param/41) (exit 3) 1)
-           (if (field_imm 1 param/41) (exit 3) 2))
+         (if (field_imm 0 param/22) (if (field_imm 1 param/22) (exit 3) 1)
+           (if (field_imm 1 param/22) (exit 3) 2))
         with (3) 3)))
-  (apply (field_mut 1 (global Toploop!)) "last_is_vars" last_is_vars/37))
+  (apply (field_mut 1 (global Toploop!)) "last_is_vars" last_is_vars/18))
 val last_is_vars : bool * bool -> int = <fun>
 |}]
 
@@ -52,12 +52,12 @@ type t += A | B of unit | C of bool * int;;
 0
 type t = ..
 (let
-  (A/45 = (makeblock 248 "A" (caml_fresh_oo_id 0))
-   B/46 = (makeblock 248 "B" (caml_fresh_oo_id 0))
-   C/47 = (makeblock 248 "C" (caml_fresh_oo_id 0)))
-  (seq (apply (field_mut 1 (global Toploop!)) "A/45" A/45)
-    (apply (field_mut 1 (global Toploop!)) "B/46" B/46)
-    (apply (field_mut 1 (global Toploop!)) "C/47" C/47)))
+  (A/26 = (makeblock 248 "A" (caml_fresh_oo_id 0))
+   B/27 = (makeblock 248 "B" (caml_fresh_oo_id 0))
+   C/28 = (makeblock 248 "C" (caml_fresh_oo_id 0)))
+  (seq (apply (field_mut 1 (global Toploop!)) "A/26" A/26)
+    (apply (field_mut 1 (global Toploop!)) "B/27" B/27)
+    (apply (field_mut 1 (global Toploop!)) "C/28" C/28)))
 type t += A | B of unit | C of bool * int
 |}]
 
@@ -71,20 +71,20 @@ let f = function
 ;;
 [%%expect{|
 (let
-  (C/47 = (apply (field_mut 0 (global Toploop!)) "C/47")
-   B/46 = (apply (field_mut 0 (global Toploop!)) "B/46")
-   A/45 = (apply (field_mut 0 (global Toploop!)) "A/45")
-   f/48 =
-     (function param/50 : int
-       (let (*match*/51 =a (field_imm 0 param/50))
+  (C/28 = (apply (field_mut 0 (global Toploop!)) "C/28")
+   B/27 = (apply (field_mut 0 (global Toploop!)) "B/27")
+   A/26 = (apply (field_mut 0 (global Toploop!)) "A/26")
+   f/29 =
+     (function param/31 : int
+       (let (*match*/32 =a (field_imm 0 param/31))
          (catch
-           (if (== *match*/51 A/45) (if (field_imm 1 param/50) 1 (exit 8))
+           (if (== *match*/32 A/26) (if (field_imm 1 param/31) 1 (exit 8))
              (exit 8))
           with (8)
-           (if (field_imm 1 param/50)
-             (if (== (field_imm 0 *match*/51) B/46) 2
-               (if (== (field_imm 0 *match*/51) C/47) 3 4))
-             (if (field_imm 2 param/50) 12 11))))))
-  (apply (field_mut 1 (global Toploop!)) "f" f/48))
+           (if (field_imm 1 param/31)
+             (if (== (field_imm 0 *match*/32) B/27) 2
+               (if (== (field_imm 0 *match*/32) C/28) 3 4))
+             (if (field_imm 2 param/31) 12 11))))))
+  (apply (field_mut 1 (global Toploop!)) "f" f/29))
 val f : t * bool * bool -> int = <fun>
 |}]
