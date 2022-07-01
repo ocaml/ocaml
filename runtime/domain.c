@@ -1529,13 +1529,13 @@ void caml_handle_gc_interrupt(void)
 
 CAMLexport int caml_bt_is_in_blocking_section(void)
 {
-  dom_internal* self = domain_self;
-  uintnat status = atomic_load_acq(&self->backup_thread_msg);
-  if (status == BT_IN_BLOCKING_SECTION)
-    return 1;
-  else
-    return 0;
+  uintnat status = atomic_load_acq(&domain_self->backup_thread_msg);
+  return status == BT_IN_BLOCKING_SECTION;
+}
 
+CAMLexport int caml_bt_is_self(void)
+{
+  return pthread_equal(domain_self->backup_thread, pthread_self());
 }
 
 CAMLexport intnat caml_domain_is_multicore (void)
