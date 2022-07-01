@@ -189,15 +189,16 @@ module Exp:
     val newtype: ?loc:loc -> ?attrs:attrs -> str -> expression -> expression
     val pack: ?loc:loc -> ?attrs:attrs -> module_expr -> package_type option
                -> expression
-    val letop: ?loc:loc -> ?attrs:attrs -> binding_op
-               -> binding_op list -> expression -> expression
+    val letop: ?loc:loc -> ?attrs:attrs -> binding_op -> binding_op list
+               -> expression -> expression
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> expression
     val unreachable: ?loc:loc -> ?attrs:attrs -> unit -> expression
     val struct_item: ?loc:loc -> ?attrs:attrs -> structure_item -> expression
       -> expression
 
     val case: pattern -> ?guard:expression -> expression -> case
-    val binding_op: str -> pattern -> expression -> loc -> binding_op
+    val binding_op: str -> pattern -> expression -> ?attrs:attrs -> loc
+                    -> binding_op
   end
 
 (** Value declarations *)

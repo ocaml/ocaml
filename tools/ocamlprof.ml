@@ -292,8 +292,8 @@ and rw_exp iflag sexp =
   | Pexp_newtype (_, sexp) -> rewrite_exp iflag sexp
   | Pexp_pack (smod, _) -> rewrite_mod iflag smod
   | Pexp_letop {let_; ands; body; _} ->
-      rewrite_exp iflag let_.pbop_exp;
-      List.iter (fun {pbop_exp; _} -> rewrite_exp iflag pbop_exp) ands;
+      rewrite_exp iflag let_.pbop_expr;
+      List.iter (fun {pbop_expr; _} -> rewrite_exp iflag pbop_expr) ands;
       rewrite_exp iflag body
   | Pexp_extension _ -> ()
   | Pexp_unreachable -> ()

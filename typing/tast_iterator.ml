@@ -398,10 +398,10 @@ let package_type sub {tpt_cstrs; tpt_txt; _} =
   List.iter (fun (lid, p) -> iter_loc_lid sub lid; sub.typ sub p) tpt_cstrs;
   iter_loc_lid sub tpt_txt
 
-let binding_op sub {bop_loc; bop_op_name; bop_exp; _} =
+let binding_op sub {bop_loc; bop_op_name; bop_expr; _} =
   sub.location sub bop_loc;
   iter_loc sub bop_op_name;
-  sub.expr sub bop_exp
+  sub.expr sub bop_expr
 
 let signature sub {sig_items; sig_final_env; _} =
   sub.env sub sig_final_env;

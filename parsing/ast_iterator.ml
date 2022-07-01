@@ -472,12 +472,14 @@ module E = struct
     | Pexp_struct_item (si, e) ->
         sub.structure_item sub si; sub.expr sub e
 
-  let iter_binding_op sub {pbop_op; pbop_pat; pbop_exp; pbop_loc} =
+  let iter_binding_op sub
+        {pbop_op; pbop_pat; pbop_expr; pbop_loc; pbop_attributes;}
+  =
     iter_loc sub pbop_op;
     sub.pat sub pbop_pat;
-    sub.expr sub pbop_exp;
-    sub.location sub pbop_loc
-
+    sub.expr sub pbop_expr;
+    sub.location sub pbop_loc;
+    sub.attributes sub pbop_attributes
 end
 
 module P = struct
