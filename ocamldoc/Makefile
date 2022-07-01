@@ -220,7 +220,7 @@ install:
 	$(MKDIR) "$(INSTALL_LIBDIR)/ocamldoc"
 	$(INSTALL_PROG) $(OCAMLDOC) "$(INSTALL_BINDIR)"
 	$(INSTALL_DATA) \
-	  ocamldoc.hva *.cmi $(OCAMLDOC_LIBCMA) \
+	  ocamldoc.hva *.cmi $(OCAMLDOC_LIBCMA) META \
 	  "$(INSTALL_LIBDIR)/ocamldoc"
 	$(INSTALL_DATA) \
 	  $(OCAMLDOC_LIBCMIS) \

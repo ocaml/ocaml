@@ -794,6 +794,7 @@ instrumented_runtime_libs
 instrumented_runtime
 debug_runtime
 cmxs
+natdynlink_archive
 natdynlinkopts
 natdynlink
 supports_shared_libraries
@@ -2930,6 +2931,7 @@ OCAML_VERSION_SHORT=5.1
 
 
 
+
  # TODO: rename this variable
 
 
@@ -2974,6 +2976,8 @@ ac_config_files="$ac_config_files Makefile.build_config"
 ac_config_files="$ac_config_files Makefile.config"
 
 ac_config_files="$ac_config_files stdlib/sys.ml"
+
+ac_config_files="$ac_config_files otherlibs/dynlink/META"
 
 ac_config_files="$ac_config_files manual/src/version.tex"
 
@@ -14467,6 +14471,11 @@ if $natdynlink; then :
 else
   cmxs="cmx"
 fi
+if $natdynlink; then :
+  natdynlink_archive="dynlink.cmxa"
+else
+  natdynlink_archive=""
+fi
 
 cat >>confdefs.h <<_ACEOF
 #define OCAML_OS_TYPE "$ostype"
@@ -19281,6 +19290,7 @@ do
     "Makefile.build_config") CONFIG_FILES="$CONFIG_FILES Makefile.build_config" ;;
     "Makefile.config") CONFIG_FILES="$CONFIG_FILES Makefile.config" ;;
     "stdlib/sys.ml") CONFIG_FILES="$CONFIG_FILES stdlib/sys.ml" ;;
+    "otherlibs/dynlink/META") CONFIG_FILES="$CONFIG_FILES otherlibs/dynlink/META" ;;
     "manual/src/version.tex") CONFIG_FILES="$CONFIG_FILES manual/src/version.tex" ;;
     "manual/src/html_processing/src/common.ml") CONFIG_FILES="$CONFIG_FILES manual/src/html_processing/src/common.ml" ;;
     "runtime/caml/m.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/m.h" ;;

@@ -50,6 +50,7 @@ VERSION                  typo.missing-header
 api_docgen/*.mld                typo.missing-header
 api_docgen/alldoc.tex           typo.missing-header
 tools/mantis2gh_stripped.csv typo.missing-header
+META                     typo.missing-header
 
 *.adoc                   typo.long-line=may typo.very-long-line=may
 

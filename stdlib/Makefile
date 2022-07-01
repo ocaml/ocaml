@@ -65,10 +65,14 @@ install::
     exit 1; \
   fi
 
+INSTALL_STDLIB_META_DIR=$(DESTDIR)$(LIBDIR)/stdlib
+
 install::
 	$(INSTALL_DATA) \
 	  stdlib.cma std_exit.cmo *.cmi camlheader_ur \
 	  "$(INSTALL_LIBDIR)"
+	$(MKDIR) "$(INSTALL_STDLIB_META_DIR)"
+	$(INSTALL_DATA) META "$(INSTALL_STDLIB_META_DIR)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
 	  *.cmt *.cmti *.mli *.ml *.ml.in \

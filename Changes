@@ -317,6 +317,12 @@ OCaml 5.0
   from +compiler-libs, as the debugger does.
   (David Allsopp, review by Sébastien Hinderer)
 
+- #11007: META files for the stdlib, compiler-libs and other libraries (unix,
+  dynlink, str, runtime_events, threads, ocamldoc) are now installed along with
+  the compiler.
+  (David Allsopp, Florian Angeletti, Nicolás Ojeda Bär and Sébastien Hinderer,
+   review by Daniel Bünzli, Kate Deplaix, Anil Madhavapeddy and Gabriel Scherer)
+
 ### Build system:
 
 * #10893: Remove configuration options --disable-force-safe-string and

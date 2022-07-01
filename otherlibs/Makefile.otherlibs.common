@@ -103,7 +103,7 @@ endif
           $(CAMLOBJS_NAT) $(LIBNAME).cmxa $(LIBNAME).cmxs $(LIBNAME).$(A))
 	$(MKDIR) "$(INSTALL_LIBDIR_LIBNAME)"
 	$(INSTALL_DATA) \
-	  $(LIBNAME).cma $(CMIFILES) \
+	  $(LIBNAME).cma $(CMIFILES) META \
 	  "$(INSTALL_LIBDIR_LIBNAME)/"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \

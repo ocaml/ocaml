@@ -130,6 +130,7 @@ AC_SUBST([mklib])
 AC_SUBST([supports_shared_libraries])
 AC_SUBST([natdynlink])
 AC_SUBST([natdynlinkopts])
+AC_SUBST([natdynlink_archive])
 AC_SUBST([cmxs])
 AC_SUBST([debug_runtime])
 AC_SUBST([instrumented_runtime])
@@ -180,6 +181,7 @@ AC_SUBST([QS])
 AC_CONFIG_FILES([Makefile.build_config])
 AC_CONFIG_FILES([Makefile.config])
 AC_CONFIG_FILES([stdlib/sys.ml])
+AC_CONFIG_FILES([otherlibs/dynlink/META])
 AC_CONFIG_FILES([manual/src/version.tex])
 AC_CONFIG_FILES([manual/src/html_processing/src/common.ml])
 AC_CONFIG_HEADERS([runtime/caml/m.h])
@@ -1204,6 +1206,9 @@ AS_IF([$native_compiler],
 AS_IF([! $native_compiler], [natdynlink=false])
 
 AS_IF([$natdynlink], [cmxs="cmxs"], [cmxs="cmx"])
+AS_IF([$natdynlink],
+  [natdynlink_archive="dynlink.cmxa"],
+  [natdynlink_archive=""])
 
 AC_DEFINE_UNQUOTED([OCAML_OS_TYPE], ["$ostype"])
 
