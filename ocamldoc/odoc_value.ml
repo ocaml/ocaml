@@ -17,9 +17,6 @@
 
 module Name = Odoc_name
 
-(** Types *)
-
-(** Representation of a value. *)
 type t_value = {
     val_name : Name.t ;
     mutable val_info : Odoc_types.info option ;
@@ -30,7 +27,6 @@ type t_value = {
     mutable val_loc : Odoc_types.location ;
   }
 
-(** Representation of a class attribute. *)
 type t_attribute = {
     att_value : t_value ; (** an attribute has almost all the same information
                              as a value *)
@@ -38,7 +34,6 @@ type t_attribute = {
     att_virtual : bool ;
   }
 
-(** Representation of a class method. *)
 type t_method = {
     met_value : t_value ; (** a method has almost all the same information
                              as a value *)
@@ -46,10 +41,6 @@ type t_method = {
     met_virtual : bool ;
   }
 
-(** Functions *)
-
-(** Returns the text associated to the given parameter name
-   in the given value, or None. *)
 let value_parameter_text_by_name v name =
   match v.val_info with
     None -> None
@@ -61,7 +52,6 @@ let value_parameter_text_by_name v name =
         Not_found ->
           None
 
-(** Update the parameters text of a t_value, according to the val_info field. *)
 let update_value_parameters_text v =
   let f p =
     Odoc_parameter.update_parameter_text (value_parameter_text_by_name v) p
@@ -92,11 +82,6 @@ let parameter_list_from_arrows typ =
   in
   iter typ
 
-(** Create a list of parameters with dummy names "??" from a type list.
-   Used when we want to merge the parameters of a value, from the .ml
-   and the .mli file. In the .mli file we don't have parameter names
-   so there is nothing to merge. With this dummy list we can merge the
-   parameter names from the .ml and the type from the .mli file. *)
 let dummy_parameter_list typ =
   let normal_name = Odoc_misc.label_name in
   let liste_param = parameter_list_from_arrows typ in
@@ -125,7 +110,6 @@ let dummy_parameter_list typ =
   in
   List.map iter liste_param
 
-(** Return true if the value is a function, i.e. has a functional type.*)
 let is_function v =
   let rec f t =
     match Types.get_desc t with

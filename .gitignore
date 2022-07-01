@@ -62,6 +62,7 @@ _build
 # specific files and patterns in sub-directories
 
 /asmcomp/emit.ml
+/asmcomp/arch.mli
 /asmcomp/arch.ml
 /asmcomp/proc.ml
 /asmcomp/selection.ml

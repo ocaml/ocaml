@@ -131,7 +131,7 @@ ocamlcmt.cmo : \
     ../typing/envaux.cmi \
     ../driver/compmisc.cmi \
     ../file_formats/cmt_format.cmi \
-    ../typing/cmt2annot.cmo \
+    ../typing/cmt2annot.cmi \
     ../utils/clflags.cmi \
     ../typing/annot.cmi
 ocamlcmt.cmx : \

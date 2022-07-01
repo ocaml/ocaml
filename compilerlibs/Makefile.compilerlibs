@@ -233,7 +233,6 @@ ASMCOMP = \
   file_formats/linear_format.cmo \
   asmcomp/schedgen.cmo \
   asmcomp/scheduling.cmo \
-  asmcomp/branch_relaxation_intf.cmo \
   asmcomp/branch_relaxation.cmo \
   asmcomp/emitaux.cmo \
   asmcomp/emit.cmo \

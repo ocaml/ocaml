@@ -2,9 +2,9 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*             Maxence Guesdon, projet Cristal, INRIA Rocquencourt        *)
+(*             Sebastien Hinderer, projet Cambium, INRIA Paris            *)
 (*                                                                        *)
-(*   Copyright 2001 Institut National de Recherche en Informatique et     *)
+(*   Copyright 2022 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
@@ -12,3 +12,7 @@
 (*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
+
+(** Main module for ocamldoc *)
+
+(* Empty interface, there is nothing to export at the moment *)

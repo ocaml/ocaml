@@ -43,7 +43,7 @@ DIRS = utils parsing typing bytecomp file_formats lambda middle_end \
   asmcomp driver toplevel
 INCLUDES = $(addprefix -I ,$(DIRS))
 COMPFLAGS=-strict-sequence -principal -absname \
-          -w +a-4-9-40-41-42-44-45-48-66-70 \
+          -w +a-4-9-40-41-42-44-45-48-66 \
           -warn-error +a \
           -bin-annot -safe-string -strict-formats $(INCLUDES)
 LINKFLAGS=
@@ -526,6 +526,9 @@ partialclean::
 beforedepend:: lambda/runtimedef.ml
 
 # Choose the right machine-dependent files
+
+asmcomp/arch.mli: asmcomp/$(ARCH)/arch.mli
+	cd asmcomp; $(LN) $(ARCH)/arch.mli .
 
 asmcomp/arch.ml: asmcomp/$(ARCH)/arch.ml
 	cd asmcomp; $(LN) $(ARCH)/arch.ml .
@@ -1271,8 +1274,8 @@ partialclean::
 ## Test compilation of backend-specific parts
 
 ARCH_SPECIFIC =\
-  asmcomp/arch.ml asmcomp/proc.ml asmcomp/CSE.ml asmcomp/selection.ml \
-  asmcomp/scheduling.ml asmcomp/reload.ml
+  asmcomp/arch.mli asmcomp/arch.ml asmcomp/proc.ml asmcomp/CSE.ml \
+  asmcomp/selection.ml asmcomp/scheduling.ml asmcomp/reload.ml
 
 partialclean::
 	rm -f $(ARCH_SPECIFIC)

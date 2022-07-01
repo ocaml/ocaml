@@ -266,20 +266,13 @@ stdlib__Ephemeron.cmx : ephemeron.ml \
 stdlib__Ephemeron.cmi : ephemeron.mli \
     stdlib__Seq.cmi \
     stdlib__Hashtbl.cmi
-stdlib__Eventring.cmo : eventring.ml \
-    stdlib__Domain.cmi \
-    stdlib__Eventring.cmi
-stdlib__Eventring.cmx : eventring.ml \
-    stdlib__Domain.cmx \
-    stdlib__Eventring.cmi
-stdlib__Eventring.cmi : eventring.mli \
-    stdlib__Domain.cmi
 stdlib__Filename.cmo : filename.ml \
     stdlib__Sys.cmi \
     stdlib__String.cmi \
     stdlib__Random.cmi \
     stdlib__Printf.cmi \
     stdlib__List.cmi \
+    stdlib__Fun.cmi \
     stdlib__Domain.cmi \
     stdlib__Buffer.cmi \
     stdlib__Filename.cmi
@@ -289,6 +282,7 @@ stdlib__Filename.cmx : filename.ml \
     stdlib__Random.cmx \
     stdlib__Printf.cmx \
     stdlib__List.cmx \
+    stdlib__Fun.cmx \
     stdlib__Domain.cmx \
     stdlib__Buffer.cmx \
     stdlib__Filename.cmi
@@ -356,12 +350,14 @@ stdlib__Gc.cmo : gc.ml \
     stdlib__String.cmi \
     stdlib__Printf.cmi \
     stdlib__Printexc.cmi \
+    stdlib__Atomic.cmi \
     stdlib__Gc.cmi
 stdlib__Gc.cmx : gc.ml \
     stdlib__Sys.cmx \
     stdlib__String.cmx \
     stdlib__Printf.cmx \
     stdlib__Printexc.cmx \
+    stdlib__Atomic.cmx \
     stdlib__Gc.cmi
 stdlib__Gc.cmi : gc.mli \
     stdlib__Printexc.cmi
@@ -373,6 +369,7 @@ stdlib__Hashtbl.cmo : hashtbl.ml \
     stdlib__Obj.cmi \
     stdlib__Int.cmi \
     stdlib__Domain.cmi \
+    stdlib__Atomic.cmi \
     stdlib__Array.cmi \
     stdlib__Hashtbl.cmi
 stdlib__Hashtbl.cmx : hashtbl.ml \
@@ -383,6 +380,7 @@ stdlib__Hashtbl.cmx : hashtbl.ml \
     stdlib__Obj.cmx \
     stdlib__Int.cmx \
     stdlib__Domain.cmx \
+    stdlib__Atomic.cmx \
     stdlib__Array.cmx \
     stdlib__Hashtbl.cmi
 stdlib__Hashtbl.cmi : hashtbl.mli \
@@ -717,8 +715,11 @@ stdlib__StdLabels.cmi : stdLabels.mli \
     stdlib__ListLabels.cmi \
     stdlib__BytesLabels.cmi \
     stdlib__ArrayLabels.cmi
-std_exit.cmo :
-std_exit.cmx :
+std_exit.cmo : \
+    std_exit.cmi
+std_exit.cmx : \
+    std_exit.cmi
+std_exit.cmi :
 stdlib__String.cmo : string.ml \
     stdlib.cmi \
     stdlib__Bytes.cmi \

@@ -507,7 +507,8 @@ typing/cmt2annot.cmo : \
     typing/env.cmi \
     file_formats/cmt_format.cmi \
     parsing/asttypes.cmi \
-    typing/annot.cmi
+    typing/annot.cmi \
+    typing/cmt2annot.cmi
 typing/cmt2annot.cmx : \
     typing/types.cmx \
     typing/typedtree.cmx \
@@ -521,7 +522,10 @@ typing/cmt2annot.cmx : \
     typing/env.cmx \
     file_formats/cmt_format.cmx \
     parsing/asttypes.cmi \
-    typing/annot.cmi
+    typing/annot.cmi \
+    typing/cmt2annot.cmi
+typing/cmt2annot.cmi : \
+    file_formats/cmt_format.cmi
 typing/ctype.cmo : \
     typing/types.cmi \
     typing/type_immediacy.cmi \
@@ -1685,7 +1689,7 @@ typing/typemod.cmo : \
     typing/ctype.cmi \
     utils/config.cmi \
     file_formats/cmt_format.cmi \
-    typing/cmt2annot.cmo \
+    typing/cmt2annot.cmi \
     file_formats/cmi_format.cmi \
     utils/clflags.cmi \
     parsing/builtin_attributes.cmi \
@@ -2182,11 +2186,15 @@ bytecomp/symtable.cmi : \
 asmcomp/CSE.cmo : \
     asmcomp/mach.cmi \
     asmcomp/CSEgen.cmi \
-    asmcomp/arch.cmo
+    asmcomp/arch.cmi \
+    asmcomp/CSE.cmi
 asmcomp/CSE.cmx : \
     asmcomp/mach.cmx \
     asmcomp/CSEgen.cmx \
-    asmcomp/arch.cmx
+    asmcomp/arch.cmx \
+    asmcomp/CSE.cmi
+asmcomp/CSE.cmi : \
+    asmcomp/mach.cmi
 asmcomp/CSEgen.cmo : \
     asmcomp/reg.cmi \
     asmcomp/proc.cmi \
@@ -2223,10 +2231,13 @@ asmcomp/afl_instrument.cmi : \
     asmcomp/cmm.cmi
 asmcomp/arch.cmo : \
     utils/config.cmi \
-    utils/clflags.cmi
+    utils/clflags.cmi \
+    asmcomp/arch.cmi
 asmcomp/arch.cmx : \
     utils/config.cmx \
-    utils/clflags.cmx
+    utils/clflags.cmx \
+    asmcomp/arch.cmi
+asmcomp/arch.cmi :
 asmcomp/asmgen.cmo : \
     lambda/translmod.cmi \
     asmcomp/split.cmi \
@@ -2267,7 +2278,7 @@ asmcomp/asmgen.cmo : \
     asmcomp/cmm.cmi \
     utils/clflags.cmi \
     middle_end/clambda.cmi \
-    asmcomp/CSE.cmo \
+    asmcomp/CSE.cmi \
     middle_end/backend_intf.cmi \
     asmcomp/asmgen.cmi
 asmcomp/asmgen.cmx : \
@@ -2441,28 +2452,23 @@ asmcomp/branch_relaxation.cmo : \
     asmcomp/mach.cmi \
     asmcomp/linear.cmi \
     asmcomp/cmm.cmi \
-    asmcomp/branch_relaxation_intf.cmo \
+    asmcomp/branch_relaxation_intf.cmi \
     asmcomp/branch_relaxation.cmi
 asmcomp/branch_relaxation.cmx : \
     utils/misc.cmx \
     asmcomp/mach.cmx \
     asmcomp/linear.cmx \
     asmcomp/cmm.cmx \
-    asmcomp/branch_relaxation_intf.cmx \
+    asmcomp/branch_relaxation_intf.cmi \
     asmcomp/branch_relaxation.cmi
 asmcomp/branch_relaxation.cmi : \
     asmcomp/linear.cmi \
-    asmcomp/branch_relaxation_intf.cmo
-asmcomp/branch_relaxation_intf.cmo : \
+    asmcomp/branch_relaxation_intf.cmi
+asmcomp/branch_relaxation_intf.cmi : \
     asmcomp/linear.cmi \
     lambda/debuginfo.cmi \
     asmcomp/cmm.cmi \
-    asmcomp/arch.cmo
-asmcomp/branch_relaxation_intf.cmx : \
-    asmcomp/linear.cmx \
-    lambda/debuginfo.cmx \
-    asmcomp/cmm.cmx \
-    asmcomp/arch.cmx
+    asmcomp/arch.cmi
 asmcomp/cmm.cmo : \
     utils/targetint.cmi \
     utils/misc.cmi \
@@ -2470,7 +2476,7 @@ asmcomp/cmm.cmo : \
     lambda/debuginfo.cmi \
     middle_end/backend_var.cmi \
     parsing/asttypes.cmi \
-    asmcomp/arch.cmo \
+    asmcomp/arch.cmi \
     asmcomp/cmm.cmi
 asmcomp/cmm.cmx : \
     utils/targetint.cmx \
@@ -2508,7 +2514,7 @@ asmcomp/cmm_helpers.cmo : \
     middle_end/clambda.cmi \
     middle_end/backend_var.cmi \
     parsing/asttypes.cmi \
-    asmcomp/arch.cmo \
+    asmcomp/arch.cmi \
     asmcomp/cmm_helpers.cmi
 asmcomp/cmm_helpers.cmx : \
     utils/targetint.cmx \
@@ -2571,7 +2577,7 @@ asmcomp/cmmgen.cmo : \
     middle_end/clambda.cmi \
     middle_end/backend_var.cmi \
     parsing/asttypes.cmi \
-    asmcomp/arch.cmo \
+    asmcomp/arch.cmi \
     asmcomp/afl_instrument.cmi \
     asmcomp/cmmgen.cmi
 asmcomp/cmmgen.cmx : \
@@ -2627,7 +2633,7 @@ asmcomp/comballoc.cmo : \
     asmcomp/mach.cmi \
     lambda/debuginfo.cmi \
     utils/config.cmi \
-    asmcomp/arch.cmo \
+    asmcomp/arch.cmi \
     asmcomp/comballoc.cmi
 asmcomp/comballoc.cmx : \
     asmcomp/reg.cmx \
@@ -2685,7 +2691,7 @@ asmcomp/emit.cmo : \
     asmcomp/cmm.cmi \
     utils/clflags.cmi \
     asmcomp/branch_relaxation.cmi \
-    asmcomp/arch.cmo \
+    asmcomp/arch.cmi \
     asmcomp/emit.cmi
 asmcomp/emit.cmx : \
     asmcomp/x86_proc.cmx \
@@ -2720,7 +2726,7 @@ asmcomp/emitaux.cmo : \
     utils/config.cmi \
     asmcomp/cmm.cmi \
     utils/clflags.cmi \
-    asmcomp/arch.cmo \
+    asmcomp/arch.cmi \
     asmcomp/emitaux.cmi
 asmcomp/emitaux.cmx : \
     asmcomp/linear.cmx \
@@ -2840,7 +2846,7 @@ asmcomp/mach.cmo : \
     lambda/debuginfo.cmi \
     asmcomp/cmm.cmi \
     parsing/asttypes.cmi \
-    asmcomp/arch.cmo \
+    asmcomp/arch.cmi \
     asmcomp/mach.cmi
 asmcomp/mach.cmx : \
     asmcomp/reg.cmx \
@@ -2856,7 +2862,7 @@ asmcomp/mach.cmi : \
     lambda/debuginfo.cmi \
     asmcomp/cmm.cmi \
     parsing/asttypes.cmi \
-    asmcomp/arch.cmo
+    asmcomp/arch.cmi
 asmcomp/polling.cmo : \
     utils/numbers.cmi \
     utils/misc.cmi \
@@ -2927,7 +2933,7 @@ asmcomp/printmach.cmo : \
     lambda/debuginfo.cmi \
     asmcomp/cmm.cmi \
     utils/clflags.cmi \
-    asmcomp/arch.cmo \
+    asmcomp/arch.cmi \
     asmcomp/printmach.cmi
 asmcomp/printmach.cmx : \
     asmcomp/reg.cmx \
@@ -2951,7 +2957,7 @@ asmcomp/proc.cmo : \
     asmcomp/mach.cmi \
     utils/config.cmi \
     asmcomp/cmm.cmi \
-    asmcomp/arch.cmo \
+    asmcomp/arch.cmi \
     asmcomp/proc.cmi
 asmcomp/proc.cmx : \
     asmcomp/x86_proc.cmx \
@@ -2983,7 +2989,7 @@ asmcomp/reload.cmo : \
     asmcomp/mach.cmi \
     asmcomp/cmm.cmi \
     utils/clflags.cmi \
-    asmcomp/arch.cmo \
+    asmcomp/arch.cmi \
     asmcomp/reload.cmi
 asmcomp/reload.cmx : \
     asmcomp/reloadgen.cmx \
@@ -3015,7 +3021,7 @@ asmcomp/schedgen.cmo : \
     asmcomp/linear.cmi \
     asmcomp/cmm.cmi \
     utils/clflags.cmi \
-    asmcomp/arch.cmo \
+    asmcomp/arch.cmi \
     asmcomp/schedgen.cmi
 asmcomp/schedgen.cmx : \
     asmcomp/reg.cmx \
@@ -3049,7 +3055,7 @@ asmcomp/selectgen.cmo : \
     asmcomp/cmm.cmi \
     middle_end/backend_var.cmi \
     parsing/asttypes.cmi \
-    asmcomp/arch.cmo \
+    asmcomp/arch.cmi \
     asmcomp/selectgen.cmi
 asmcomp/selectgen.cmx : \
     asmcomp/reg.cmx \
@@ -3073,14 +3079,14 @@ asmcomp/selectgen.cmi : \
     asmcomp/cmm.cmi \
     middle_end/backend_var.cmi \
     parsing/asttypes.cmi \
-    asmcomp/arch.cmo
+    asmcomp/arch.cmi
 asmcomp/selection.cmo : \
     asmcomp/selectgen.cmi \
     asmcomp/proc.cmi \
     asmcomp/mach.cmi \
     asmcomp/cmm.cmi \
     utils/clflags.cmi \
-    asmcomp/arch.cmo \
+    asmcomp/arch.cmi \
     asmcomp/selection.cmi
 asmcomp/selection.cmx : \
     asmcomp/selectgen.cmx \
@@ -3128,7 +3134,7 @@ asmcomp/strmatch.cmo : \
     asmcomp/cmm.cmi \
     middle_end/backend_var.cmi \
     parsing/asttypes.cmi \
-    asmcomp/arch.cmo \
+    asmcomp/arch.cmi \
     asmcomp/strmatch.cmi
 asmcomp/strmatch.cmx : \
     lambda/lambda.cmx \
@@ -6030,9 +6036,12 @@ driver/errors.cmx : \
     driver/errors.cmi
 driver/errors.cmi :
 driver/main.cmo : \
-    driver/maindriver.cmi
+    driver/maindriver.cmi \
+    driver/main.cmi
 driver/main.cmx : \
-    driver/maindriver.cmx
+    driver/maindriver.cmx \
+    driver/main.cmi
+driver/main.cmi :
 driver/main_args.cmo : \
     utils/warnings.cmi \
     utils/profile.cmi \
@@ -6155,9 +6164,12 @@ driver/opterrors.cmx : \
     driver/opterrors.cmi
 driver/opterrors.cmi :
 driver/optmain.cmo : \
-    driver/optmaindriver.cmi
+    driver/optmaindriver.cmi \
+    driver/optmain.cmi
 driver/optmain.cmx : \
-    driver/optmaindriver.cmx
+    driver/optmaindriver.cmx \
+    driver/optmain.cmi
+driver/optmain.cmi :
 driver/optmaindriver.cmo : \
     utils/warnings.cmi \
     utils/profile.cmi \
@@ -6176,7 +6188,7 @@ driver/optmaindriver.cmo : \
     asmcomp/asmpackager.cmi \
     asmcomp/asmlink.cmi \
     asmcomp/asmlibrarian.cmi \
-    asmcomp/arch.cmo \
+    asmcomp/arch.cmi \
     driver/optmaindriver.cmi
 driver/optmaindriver.cmx : \
     utils/warnings.cmx \
@@ -6232,13 +6244,16 @@ toplevel/expunge.cmo : \
     lambda/runtimedef.cmi \
     utils/misc.cmi \
     typing/ident.cmi \
-    bytecomp/bytesections.cmi
+    bytecomp/bytesections.cmi \
+    toplevel/expunge.cmi
 toplevel/expunge.cmx : \
     bytecomp/symtable.cmx \
     lambda/runtimedef.cmx \
     utils/misc.cmx \
     typing/ident.cmx \
-    bytecomp/bytesections.cmx
+    bytecomp/bytesections.cmx \
+    toplevel/expunge.cmi
+toplevel/expunge.cmi :
 toplevel/genprintval.cmo : \
     typing/types.cmi \
     parsing/syntaxerr.cmi \
@@ -6444,9 +6459,12 @@ toplevel/toploop.cmi : \
     typing/env.cmi
 toplevel/topmain.cmi :
 toplevel/topstart.cmo : \
-    toplevel/topmain.cmi
+    toplevel/topmain.cmi \
+    toplevel/topstart.cmi
 toplevel/topstart.cmx : \
-    toplevel/topmain.cmi
+    toplevel/topmain.cmi \
+    toplevel/topstart.cmi
+toplevel/topstart.cmi :
 toplevel/trace.cmi : \
     typing/types.cmi \
     typing/path.cmi \
@@ -6668,7 +6686,7 @@ toplevel/native/tophooks.cmo : \
     middle_end/backend_intf.cmi \
     asmcomp/asmlink.cmi \
     asmcomp/asmgen.cmi \
-    asmcomp/arch.cmo \
+    asmcomp/arch.cmi \
     toplevel/native/tophooks.cmi
 toplevel/native/tophooks.cmx : \
     toplevel/topcommon.cmx \

@@ -2,9 +2,9 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*             Maxence Guesdon, projet Cristal, INRIA Rocquencourt        *)
+(*             Sebastien Hinderer, projet Cambium, INRIA Paris            *)
 (*                                                                        *)
-(*   Copyright 2001 Institut National de Recherche en Informatique et     *)
+(*   Copyright 2022 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
@@ -12,3 +12,8 @@
 (*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
+
+(* Interface to the std_exit module *)
+
+(* This interface file is empty because the std_exit module only runs
+   code during initialisation and does not export any function *)

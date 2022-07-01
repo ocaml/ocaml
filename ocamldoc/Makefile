@@ -34,7 +34,10 @@ OCAMLDOC_LIBCMI=odoc_info.cmi
 OCAMLDOC_LIBCMXA=odoc_info.cmxa
 OCAMLDOC_LIBA=odoc_info.$(A)
 
-OCAMLDOC_LIBMLIS=odoc_info.mli
+OCAMLDOC_LIBMLIS=$(addsuffix .mli,\
+  odoc_dep odoc_dot odoc_extension odoc_html odoc_info odoc_latex \
+  odoc_latex_style odoc_man odoc_messages odoc_ocamlhtml odoc_parameter \
+  odoc_texi odoc_text_lexer odoc_to_text odoc_type odoc_value)
 OCAMLDOC_LIBCMIS=$(OCAMLDOC_LIBMLIS:.mli=.cmi)
 OCAMLDOC_LIBCMTS=$(OCAMLDOC_LIBMLIS:.mli=.cmt) $(OCAMLDOC_LIBMLIS:.mli=.cmti)
 
@@ -53,7 +56,7 @@ endif
 
 
 INCLUDE_DIRS = $(addprefix $(ROOTDIR)/,\
-  utils parsing typing driver bytecomp toplevel)
+  utils parsing typing driver bytecomp toplevel) generators
 INCLUDES_DEP = $(addprefix -I ,$(INCLUDE_DIRS))
 INCLUDES_NODEP = $(addprefix -I $(ROOTDIR)/,\
   compilerlibs otherlibs/str otherlibs/dynlink \
@@ -63,7 +66,7 @@ OC_OCAMLDEPDIRS = $(INCLUDE_DIRS)
 INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)
 
 COMPFLAGS = \
-  -g $(INCLUDES) -absname -w +a-4-9-41-42-44-45-48-70 -warn-error +A \
+  -g $(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error +A \
   -safe-string -strict-sequence -strict-formats -bin-annot -principal
 
 LINKFLAGS = -g $(INCLUDES)
@@ -95,8 +98,6 @@ CMOFILES=\
   odoc_merge.cmo \
   odoc_sig.cmo \
   odoc_ast.cmo \
-  odoc_control.cmo \
-  odoc_inherit.cmo \
   odoc_search.cmo \
   odoc_scan.cmo \
   odoc_cross.cmo \
@@ -342,6 +343,6 @@ distclean: clean
 .PHONY: depend
 depend: $(DEPEND_PREREQS)
 	$(OCAMLDEP_CMD) *.mll *.mly *.ml *.mli > .depend
-	$(OCAMLDEP_CMD) -shared generators/*.ml >> .depend
+	$(OCAMLDEP_CMD) -shared generators/*.ml generators/*.mli >> .depend
 
 include .depend
