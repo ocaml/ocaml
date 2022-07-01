@@ -50,9 +50,9 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
 #ifdef THREADED_CODE
 #  define Instruct(name) lbl_##name
 #  if defined(ARCH_SIXTYFOUR) && !defined(ARCH_CODE32)
-#    define Jumptbl_base ((char *) &&lbl_ACC0)
+#    define Jumptbl_base &&lbl_ACC0
 #  else
-#    define Jumptbl_base ((char *) 0)
+#    define Jumptbl_base 0
 #    define jumptbl_base ((char *) 0)
 #  endif
 #  ifdef DEBUG
@@ -249,8 +249,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
   if (prog == NULL) {           /* Interpreter is initializing */
 #ifdef THREADED_CODE
-    caml_instr_table = (char **) jumptable;
-    caml_instr_base = Jumptbl_base;
+    caml_init_thread_code(jumptable, Jumptbl_base);
 #endif
     return Val_unit;
   }
