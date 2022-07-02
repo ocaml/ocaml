@@ -70,7 +70,6 @@ void caml_reset_young_limit(caml_domain_state *);
 
 CAMLextern void caml_reset_domain_lock(void);
 CAMLextern int caml_bt_is_in_blocking_section(void);
-CAMLexport int caml_bt_is_self(void);
 CAMLextern intnat caml_domain_is_multicore (void);
 CAMLextern void caml_bt_enter_ocaml(void);
 CAMLextern void caml_bt_exit_ocaml(void);
