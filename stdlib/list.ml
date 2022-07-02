@@ -92,40 +92,20 @@ let[@tail_mod_cons] rec map f = function
   | [a1] ->
       let r1 = f a1 in
       [r1]
-  | [a1; a2] ->
+  | a1::a2::l ->
       let r1 = f a1 in
       let r2 = f a2 in
-      [r1; r2]
-  | [a1; a2; a3] ->
-      let r1 = f a1 in
-      let r2 = f a2 in
-      let r3 = f a3 in
-      [r1; r2; r3]
-  | a1::a2::a3::l ->
-      let r1 = f a1 in
-      let r2 = f a2 in
-      let r3 = f a3 in
-      r1 :: r2 :: r3 :: map f l
+      r1::r2::map f l
 
 let[@tail_mod_cons] rec mapi i f = function
     [] -> []
   | [a1] ->
       let r1 = f i a1 in
       [r1]
-  | [a1; a2] ->
+  | a1::a2::l ->
       let r1 = f i a1 in
       let r2 = f (i+1) a2 in
-      [r1; r2]
-  | [a1; a2; a3] ->
-      let r1 = f i a1 in
-      let r2 = f (i+1) a2 in
-      let r3 = f (i+2) a3 in
-      [r1; r2; r3]
-  | a1::a2::a3::l ->
-      let r1 = f i a1 in
-      let r2 = f (i+1) a2 in
-      let r3 = f (i+2) a3 in
-      r1::r2::r3::mapi (i+3) f l
+      r1::r2::mapi (i+2) f l
 
 let mapi f l = mapi 0 f l
 
@@ -163,20 +143,10 @@ let[@tail_mod_cons] rec map2 f l1 l2 =
   | ([a1], [b1]) ->
       let r1 = f a1 b1 in
       [r1]
-  | ([a1; a2], [b1; b2]) ->
+  | (a1::a2::l1, b1::b2::l2) ->
       let r1 = f a1 b1 in
       let r2 = f a2 b2 in
-      [r1; r2]
-  | ([a1; a2; a3], [b1; b2; b3]) ->
-      let r1 = f a1 b1 in
-      let r2 = f a2 b2 in
-      let r3 = f a3 b3 in
-      [r1; r2; r3]
-  | (a1::a2::a3::l1, b1::b2::b3::l2) ->
-      let r1 = f a1 b1 in
-      let r2 = f a2 b2 in
-      let r3 = f a3 b3 in
-      r1::r2::r3::map2 f l1 l2
+      r1::r2::map2 f l1 l2
   | (_, _) -> invalid_arg "List.map2"
 
 let rev_map2 f l1 l2 =
