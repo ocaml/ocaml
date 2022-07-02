@@ -71,6 +71,25 @@ static void st_thread_join(st_thread_id thr)
   /* best effort: ignore errors */
 }
 
+/* Thread-specific state */
+
+typedef pthread_key_t st_tlskey;
+
+static int st_tls_newkey(st_tlskey * res)
+{
+  return pthread_key_create(res, NULL);
+}
+
+Caml_inline void * st_tls_get(st_tlskey k)
+{
+  return pthread_getspecific(k);
+}
+
+Caml_inline void st_tls_set(st_tlskey k, void * v)
+{
+  pthread_setspecific(k, v);
+}
+
 /* The master lock.  This is a mutex that is held most of the time,
    so we implement it in a slightly convoluted way to avoid
    all risks of busy-waiting.  Also, we count the number of waiting
