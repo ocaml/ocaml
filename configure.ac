@@ -1184,8 +1184,8 @@ dnl   [arch=amd64; system=beos],
     [arch=arm64; system=openbsd],
 dnl [x86_64-*-cygwin*],
 dnl   [arch=amd64; system=cygwin],
-dnl [riscv64-*-linux*],
-dnl   [arch=riscv; model=riscv64; system=linux]
+  [riscv64-*-linux*],
+    [arch=riscv; model=riscv64; system=linux],
 )
 
 AS_CASE([$ccomptype],

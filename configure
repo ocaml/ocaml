@@ -14447,6 +14447,8 @@ case $host in #(
     arch=arm64; system=freebsd ;; #(
   aarch64-*-openbsd*) :
     arch=arm64; system=openbsd ;; #(
+    riscv64-*-linux*) :
+    arch=riscv; model=riscv64; system=linux ;; #(
   *) :
      ;;
 esac
