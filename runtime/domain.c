@@ -1533,11 +1533,6 @@ CAMLexport int caml_bt_is_in_blocking_section(void)
   return status == BT_IN_BLOCKING_SECTION;
 }
 
-CAMLexport int caml_bt_is_self(void)
-{
-  return pthread_equal(domain_self->backup_thread, pthread_self());
-}
-
 CAMLexport intnat caml_domain_is_multicore (void)
 {
   dom_internal *self = domain_self;

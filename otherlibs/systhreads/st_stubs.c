@@ -352,6 +352,7 @@ static void caml_thread_domain_stop_hook(void) {
     set_active(NULL);
 
     caml_stat_free(st_tls_get(caml_thread_key));
+    st_tls_set(caml_thread_key, NULL);
   };
 }
 
@@ -386,8 +387,9 @@ CAMLprim value caml_thread_yield(value unit);
 
 void caml_thread_interrupt_hook(void)
 {
-  /* Do not attempt to yield from the backup thread */
-  if (caml_bt_is_self()) return;
+  /* Do not attempt to yield from the backup thread or during domain
+     shutdown. */
+  if (st_tls_get(caml_thread_key) == NULL) return;
 
   uintnat is_on = 1;
   atomic_uintnat* req_external_interrupt =
