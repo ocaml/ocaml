@@ -2352,6 +2352,8 @@ expr:
 ;
 
 simple_expr:
+  | LPAREN DOT mkrhs(label_longident) RPAREN
+      { Pexp_fieldop($3) } 
   | LPAREN seq_expr RPAREN
       { reloc_exp ~loc:$sloc $2 }
   | LPAREN seq_expr error

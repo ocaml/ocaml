@@ -300,6 +300,9 @@ and expression i ppf x =
       expression i ppf e1;
       longident_loc i ppf li;
       expression i ppf e2;
+  | Pexp_fieldop (li) ->
+      line i ppf "Pexp_fieldop\n";
+      longident_loc i ppf li;
   | Pexp_array (l) ->
       line i ppf "Pexp_array\n";
       list i expression ppf l;
