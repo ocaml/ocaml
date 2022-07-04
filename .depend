@@ -2243,14 +2243,12 @@ asmcomp/arch.cmo : \
     asmcomp/x86_ast.cmi \
     lambda/lambda.cmi \
     utils/config.cmi \
-    asmcomp/cmm.cmi \
     utils/clflags.cmi \
     asmcomp/arch.cmi
 asmcomp/arch.cmx : \
     asmcomp/x86_ast.cmi \
     lambda/lambda.cmx \
     utils/config.cmx \
-    asmcomp/cmm.cmx \
     utils/clflags.cmx \
     asmcomp/arch.cmi
 asmcomp/arch.cmi : \

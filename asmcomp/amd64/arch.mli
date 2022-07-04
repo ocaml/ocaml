@@ -77,8 +77,5 @@ val operation_is_pure : specific_operation -> bool
 
 val operation_can_raise : specific_operation -> bool
 
-val float_cond_and_swap
-  :  Lambda.float_comparison
-  -> 'a
-  -> 'a
-  -> X86_ast.float_condition * 'a * 'a * bool
+val float_cond_and_need_swap
+  :  Lambda.float_comparison -> X86_ast.float_condition * bool

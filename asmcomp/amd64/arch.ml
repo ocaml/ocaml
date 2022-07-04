@@ -153,7 +153,6 @@ let operation_is_pure = function
 
 let operation_can_raise _ = false
 
-open Cmm
 open X86_ast
 
 (* Certain float conditions aren't represented directly in the opcode for
