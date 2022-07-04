@@ -2255,7 +2255,7 @@ asmcomp/arch.cmx : \
     asmcomp/arch.cmi
 asmcomp/arch.cmi : \
     asmcomp/x86_ast.cmi \
-    asmcomp/cmm.cmi
+    lambda/lambda.cmi
 asmcomp/asmgen.cmo : \
     lambda/translmod.cmi \
     asmcomp/split.cmi \
