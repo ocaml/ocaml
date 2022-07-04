@@ -2162,13 +2162,6 @@ let reify env t =
   in
   iterator t
 
-let is_public_type env p =
-  try
-    let decl = Env.find_type p env in
-    decl.type_kind = Type_abstract &&
-    decl.type_private = Public
-  with Not_found -> false
-
 let find_expansion_scope env path =
   let decl = Env.find_type path env in
   if decl.type_manifest = None then generic_level
@@ -2653,7 +2646,7 @@ and unify2_rec env t10 t1 t20 t2 =
   if unify_eq t1 t2 then () else
   try match (get_desc t1, get_desc t2) with
   | (Tconstr (p1, tl1, a1), Tconstr (p2, tl2, a2)) ->
-      if Path.same p1 p2 && tl1 = [] && tl2 = [] && is_public_type !env p1
+      if Path.same p1 p2 && tl1 = [] && tl2 = []
       && not (has_cached_expansion p1 !a1 || has_cached_expansion p2 !a2)
       then begin
         update_level_for Unify !env (get_level t1) t2;
