@@ -76,3 +76,6 @@ val win64 : bool
 val operation_is_pure : specific_operation -> bool
 
 val operation_can_raise : specific_operation -> bool
+
+val float_cond_and_swap
+  : Cmm.float_comparison -> 'a -> 'a -> X86_ast.float_condition * 'a * 'a * bool
