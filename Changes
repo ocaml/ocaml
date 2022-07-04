@@ -315,7 +315,7 @@ OCaml 5.0
   (Gabriel Scherer, review by Enguerrand Decorne)
 
 - #11058: basic debugging documentation in runtime/HACKING.adoc
-  (Gabriel Scherer, review by ???)
+  (Gabriel Scherer, review by Enguerrand Decorne and Nicolás Ojeda Bär)
 
 - #11199: Stop installing topdirs.cmi twice. The toplevel now reads topdirs.cmi
   from +compiler-libs, as the debugger does.
