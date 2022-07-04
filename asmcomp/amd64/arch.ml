@@ -160,7 +160,7 @@ open X86_ast
    float comparison, so we have to swap the arguments. The swap information
    is also needed downstream because one of the arguments is clobbered. *)
 let float_cond_and_swap cond a0 a1 =
-  match cond with
+  match (cond : Lambda.float_comparison) with
   | CFeq  -> EQf,  a0, a1, false
   | CFneq -> NEQf, a0, a1, false
   | CFlt  -> LTf,  a0, a1, false
