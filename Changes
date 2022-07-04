@@ -436,6 +436,9 @@ OCaml 5.0
   of both shadowing warnings and the `-bin-annot` compiler flag.
   (Florian Angeletti, report by Christophe Raffalli, review by Gabriel Scherer)
 
+- #11392, #11392: assertion failure with -rectypes and external definitions
+  (Gabriel Scherer, review by Florian Angeletti, report by Dmitrii Kosarev)
+
 OCaml 4.14.0
 ----------------
 

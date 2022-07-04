@@ -26,10 +26,9 @@ Error: This alias is bound to type int -> 'a nat
 
 #rectypes;;
 
-(* with rectypes: should be accepted, but crashes *)
+(* with rectypes: accepted (used to crash) *)
 external cast : int -> 'self nat as 'self = "%identity"
 ;;
 [%%expect{|
-Uncaught exception: File "typing/typedecl.ml", line 1341, characters 43-49: Assertion failed
-
+external cast : int -> 'a nat as 'a = "%identity"
 |}]
