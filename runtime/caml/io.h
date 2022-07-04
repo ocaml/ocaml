@@ -123,6 +123,8 @@ CAMLextern struct channel * caml_all_opened_channels;
 /* Primitives required by the Unix library */
 CAMLextern value caml_ml_open_descriptor_in(value fd);
 CAMLextern value caml_ml_open_descriptor_out(value fd);
+CAMLextern value caml_ml_open_descriptor_in_with_flags(int fd, int flags);
+CAMLextern value caml_ml_open_descriptor_out_with_flags(int fd, int flags);
 
 #endif /* CAML_INTERNALS */
 
