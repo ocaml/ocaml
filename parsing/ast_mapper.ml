@@ -417,7 +417,7 @@ module E = struct
     | Pexp_setfield (e1, lid, e2) ->
         setfield ~loc ~attrs (sub.expr sub e1) (map_loc sub lid)
           (sub.expr sub e2)
-    | Pexp_fieldop lid ->
+    | Pexp_fieldfun lid ->
         fieldop ~loc ~attrs (map_loc sub lid)
     | Pexp_array el -> array ~loc ~attrs (List.map (sub.expr sub) el)
     | Pexp_ifthenelse (e1, e2, e3) ->

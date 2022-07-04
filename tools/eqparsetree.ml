@@ -712,7 +712,7 @@ and eq_expression_desc :
       ((eq_expression (a0, b0)) &&
          (Asttypes.eq_loc Longident.eq_t (a1, b1)))
         && (eq_expression (a2, b2))
-  | (Pexp_fieldop a0, Pexp_fieldop b0) ->
+  | (Pexp_fieldfun a0, Pexp_fieldfun b0) ->
       (Asttypes.eq_loc Longident.eq_t (a0, b0))
   | (Pexp_array a0, Pexp_array b0) -> eq_list eq_expression (a0, b0)
   | (Pexp_ifthenelse (a0, a1, a2), Pexp_ifthenelse (b0, b1, b2)) ->

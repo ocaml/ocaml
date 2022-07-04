@@ -2791,7 +2791,7 @@ let unify_exp env exp expected_ty =
 
 let rec is_inferred sexp =
   match sexp.pexp_desc with
-  | Pexp_ident _ | Pexp_apply _ | Pexp_field _ | Pexp_constraint _
+  | Pexp_ident _ | Pexp_apply _ | Pexp_field _ | Pexp_fieldfun _ | Pexp_constraint _
   | Pexp_coerce _ | Pexp_send _ | Pexp_new _ -> true
   | Pexp_sequence (_, e) | Pexp_open (_, e) -> is_inferred e
   | Pexp_ifthenelse (_, e1, Some e2) -> is_inferred e1 && is_inferred e2
@@ -3310,6 +3310,9 @@ and type_expect_
         exp_type = instance Predef.type_unit;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
+  | Pexp_field(lid) ->
+    (* TODO find me *)
+    failwith ""
   | Pexp_array(sargl) ->
       let ty = newgenvar() in
       let to_unify = Predef.type_array ty in
