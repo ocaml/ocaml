@@ -116,8 +116,8 @@ let f (type a b) (x : (a, b) eq) =
 Line 3, characters 4-29:
 3 |   | Refl, [(_ : a) | (_ : b)] -> []
         ^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This pattern matches values of type (a, b) eq * b list
-       This instance of b is ambiguous:
+Error: This pattern matches values of type (a, b) eq * a list
+       This instance of a is ambiguous:
        it would escape the scope of its equation
 |}]
 
@@ -130,8 +130,8 @@ let g1 (type a b) (x : (a, b) eq) =
 Line 3, characters 4-29:
 3 |   | Refl, [(_ : a) | (_ : b)] -> []
         ^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This pattern matches values of type (a, b) eq * b list
-       This instance of b is ambiguous:
+Error: This pattern matches values of type (a, b) eq * a list
+       This instance of a is ambiguous:
        it would escape the scope of its equation
 |}]
 
@@ -158,8 +158,8 @@ let h1 (type a b) (x : (a, b) eq) =
 Line 4, characters 4-29:
 4 |   | Refl, [(_ : a) | (_ : b)] -> []
         ^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This pattern matches values of type (a, b) eq * b list
-       This instance of b is ambiguous:
+Error: This pattern matches values of type (a, b) eq * a list
+       This instance of a is ambiguous:
        it would escape the scope of its equation
 |}]
 
@@ -172,8 +172,8 @@ let h2 (type a b) (x : (a, b) eq) =
 Line 4, characters 4-29:
 4 |   | Refl, [(_ : a) | (_ : b)] -> []
         ^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This pattern matches values of type (a, b) eq * b list
-       This instance of b is ambiguous:
+Error: This pattern matches values of type (a, b) eq * a list
+       This instance of a is ambiguous:
        it would escape the scope of its equation
 |}]
 
@@ -232,9 +232,8 @@ Error: Signature mismatch:
        Values do not match:
          val r : '_weak1 list ref
        is not included in
-         val r : T.u list ref
-       The type '_weak1 list ref is not compatible with the type T.u list ref
-       Type '_weak1 is not compatible with type T.u = T.t
+         val r : T.t list ref
+       The type '_weak1 list ref is not compatible with the type T.t list ref
        This instance of T.t is ambiguous:
        it would escape the scope of its equation
 |}]

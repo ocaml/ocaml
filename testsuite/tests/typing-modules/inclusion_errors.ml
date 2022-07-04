@@ -725,9 +725,8 @@ Error: Signature mismatch:
        Values do not match:
          val r : '_weak4 list ref
        is not included in
-         val r : T.s list ref
-       The type '_weak4 list ref is not compatible with the type T.s list ref
-       Type '_weak4 is not compatible with type T.s = T.t
+         val r : T.t list ref
+       The type '_weak4 list ref is not compatible with the type T.t list ref
        This instance of T.t is ambiguous:
        it would escape the scope of its equation
 |}];;

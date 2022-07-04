@@ -35,6 +35,10 @@ Working version
 
 ### Bug fixes:
 
+- #10348: Expand GADT equations lazily during unification to avoid ambiguity
+  (Jacques Garrigue, review by Leo White)
+
+
 OCaml 5.0
 ---------
 
