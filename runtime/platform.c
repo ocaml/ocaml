@@ -172,9 +172,13 @@ void* caml_mem_map(uintnat size, uintnat alignment, int reserve_only)
   CAMLassert(Is_page_aligned(size));
   alignment = caml_mem_round_up_pages(alignment);
 
+#ifdef MMAP_ALIGNS_TO_PAGESIZE
+  uintnat alloc_sz = size;
+#else
   uintnat alloc_sz = size + alignment;
-  void* mem;
   uintnat base, aligned_start, aligned_end;
+#endif
+  void* mem;
 
 #ifdef DEBUG
   if (mmap_blocks.head == NULL) {
@@ -185,13 +189,21 @@ void* caml_mem_map(uintnat size, uintnat alignment, int reserve_only)
   }
 #endif
 
-  CAMLassert (alloc_sz > size);
 #ifdef _WIN32
-  /* Memory is only reserved at this point. It'll be committed after the
-     trim. */
-again:
-  mem = VirtualAlloc(NULL, alloc_sz, MEM_RESERVE, PAGE_NOACCESS);
+  /* caml_sys_pagesize has been engineered to be the granularity of
+     VirtualAlloc, so trimming will be unnecessary. */
+  if (alignment > caml_sys_pagesize)
+    caml_fatal_error("Cannot align memory to %" ARCH_INTNAT_PRINTF_FORMAT "x"
+                     " on this platform", alignment);
+  mem =
+    VirtualAlloc(NULL, alloc_sz,
+                 MEM_RESERVE | (reserve_only ? 0 : MEM_COMMIT),
+                 reserve_only ? PAGE_NOACCESS : PAGE_READWRITE);
 #else
+#ifdef __CYGWIN__
+  if (alignment > caml_sys_pagesize)
+    caml_fatal_error("Cannot align memory to %lx on this platform", alignment);
+#endif
   mem = mmap(0, alloc_sz, reserve_only ? PROT_NONE : (PROT_READ | PROT_WRITE),
              MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 #endif
@@ -203,52 +215,32 @@ again:
   caml_gc_message(0x1000, "mmap %" ARCH_INTNAT_PRINTF_FORMAT "d"
                           " bytes at %p for heaps\n", alloc_sz, mem);
 
+#ifndef MMAP_ALIGNS_TO_PAGESIZE
   /* trim to an aligned region */
   base = (uintnat)mem;
   aligned_start = round_up(base, alignment);
   aligned_end = aligned_start + size;
-#ifdef _WIN32
-  /* VirtualFree can be used to decommit portions of memory, but it can only
-     release the entire block of memory. For Windows, repeat the call but this
-     time specify the address. */
-  VirtualFree(mem, 0, MEM_RELEASE);
-  caml_gc_message(0x1000, "munmap %lld bytes at %p for heaps\n", alloc_sz, mem);
-  mem = VirtualAlloc((void*)aligned_start,
-                     aligned_end - aligned_start,
-                     MEM_RESERVE | (reserve_only ? 0 : MEM_COMMIT),
-                     reserve_only ? PAGE_NOACCESS : PAGE_READWRITE);
-  if (mem == NULL) {
-    /* VirtualAlloc can return the following three interesting errors:
-         - ERROR_INVALID_ADDRESS - pages are already reserved (race)
-         - ERROR_NOT_ENOUGH_MEMORY - address space exhausted
-         - ERROR_COMMITMENT_LIMIT - memory exhausted */
-    if (GetLastError() == ERROR_INVALID_ADDRESS) {
-      SetLastError(0);
-      /* Raced - try again. */
-      goto again;
-    } else {
-      return 0;
-    }
-  }
-  caml_gc_message(0x1000, "mmap %lld bytes at %p for heaps\n", alloc_sz, mem);
-  CAMLassert(mem == (void*)aligned_start);
-#else
   safe_munmap(base, aligned_start - base);
   safe_munmap(aligned_end, (base + alloc_sz) - aligned_end);
+  mem = (void*)aligned_start;
 #endif
+
 #ifdef DEBUG
-  caml_lf_skiplist_insert(&mmap_blocks,
-                          aligned_start, aligned_end - aligned_start);
+  caml_lf_skiplist_insert(&mmap_blocks, (uintnat)mem, size);
 #endif
-  return (void*)aligned_start;
+
+  return mem;
 }
 
 #ifndef _WIN32
 static void* map_fixed(void* mem, uintnat size, int prot)
 {
-  if (mmap((void*)mem, size, prot,
-           MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED,
+#ifdef __CYGWIN__
+  if (mprotect(mem, size, prot) != 0) {
+#else
+  if (mmap(mem, size, prot, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED,
            -1, 0) == MAP_FAILED) {
+#endif
     return 0;
   } else {
     return mem;

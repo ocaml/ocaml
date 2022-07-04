@@ -1094,7 +1094,13 @@ void caml_init_os_params(void)
 
   /* Get the system page size */
   GetSystemInfo(&si);
-  caml_sys_pagesize = si.dwPageSize;
+  /* Use the Allocation Granularity rather than the Page Size. Page Size only
+     applies when committing a previous reservation, which for OCaml only occurs
+     when committing a minor heap, which will necessarily be larger than both
+     page size and granularity. This simplifies caml_mem_map, since we can
+     guarantee that trimming will not be required. */
+  CAMLassert(si.dwAllocationGranularity >= si.dwPageSize);
+  caml_sys_pagesize = si.dwAllocationGranularity;
 
   /* Get the number of nanoseconds for each tick in QueryPerformanceCounter */
   QueryPerformanceFrequency(&frequency);
