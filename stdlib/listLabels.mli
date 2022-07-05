@@ -172,20 +172,19 @@ val iteri : f:(int -> 'a -> unit) -> 'a list -> unit
 val map : f:('a -> 'b) -> 'a list -> 'b list
 (** [map ~f [a1; ...; an]] applies function [f] to [a1, ..., an],
    and builds the list [[f a1; ...; f an]]
-   with the results returned by [f]. Not tail-recursive.
+   with the results returned by [f].
  *)
 
 val mapi : f:(int -> 'a -> 'b) -> 'a list -> 'b list
 (** Same as {!map}, but the function is applied to the index of
    the element as first argument (counting from 0), and the element
-   itself as second argument. Not tail-recursive.
+   itself as second argument.
    @since 4.00.0
  *)
 
 val rev_map : f:('a -> 'b) -> 'a list -> 'b list
 (** [rev_map ~f l] gives the same result as
-   {!rev}[ (]{!map}[ f l)], but is tail-recursive and
-   more efficient.
+   {!rev}[ (]{!map}[ f l)], but is more efficient.
  *)
 
 val filter_map : f:('a -> 'b option) -> 'a list -> 'b list
@@ -233,13 +232,12 @@ val map2 : f:('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
 (** [map2 ~f [a1; ...; an] [b1; ...; bn]] is
    [[f a1 b1; ...; f an bn]].
    @raise Invalid_argument if the two lists are determined
-   to have different lengths. Not tail-recursive.
+   to have different lengths.
  *)
 
 val rev_map2 : f:('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
 (** [rev_map2 ~f l1 l2] gives the same result as
-   {!rev}[ (]{!map2}[ f l1 l2)], but is tail-recursive and
-   more efficient.
+   {!rev}[ (]{!map2}[ f l1 l2)], but is more efficient.
  *)
 
 val fold_left2 :

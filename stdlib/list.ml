@@ -87,13 +87,25 @@ let rec flatten = function
 
 let concat = flatten
 
-let rec map f = function
+let[@tail_mod_cons] rec map f = function
     [] -> []
-  | a::l -> let r = f a in r :: map f l
+  | [a1] ->
+      let r1 = f a1 in
+      [r1]
+  | a1::a2::l ->
+      let r1 = f a1 in
+      let r2 = f a2 in
+      r1::r2::map f l
 
-let rec mapi i f = function
+let[@tail_mod_cons] rec mapi i f = function
     [] -> []
-  | a::l -> let r = f i a in r :: mapi (i + 1) f l
+  | [a1] ->
+      let r1 = f i a1 in
+      [r1]
+  | a1::a2::l ->
+      let r1 = f i a1 in
+      let r2 = f (i+1) a2 in
+      r1::r2::mapi (i+2) f l
 
 let mapi f l = mapi 0 f l
 
@@ -125,10 +137,16 @@ let rec fold_right f l accu =
     [] -> accu
   | a::l -> f a (fold_right f l accu)
 
-let rec map2 f l1 l2 =
+let[@tail_mod_cons] rec map2 f l1 l2 =
   match (l1, l2) with
     ([], []) -> []
-  | (a1::l1, a2::l2) -> let r = f a1 a2 in r :: map2 f l1 l2
+  | ([a1], [b1]) ->
+      let r1 = f a1 b1 in
+      [r1]
+  | (a1::a2::l1, b1::b2::l2) ->
+      let r1 = f a1 b1 in
+      let r2 = f a2 b2 in
+      r1::r2::map2 f l1 l2
   | (_, _) -> invalid_arg "List.map2"
 
 let rev_map2 f l1 l2 =
