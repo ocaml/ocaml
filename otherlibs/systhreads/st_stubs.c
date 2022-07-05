@@ -407,7 +407,6 @@ CAMLprim value caml_thread_initialize_domain(value v)
   st_tls_set(caml_thread_key, new_thread);
 
   Active_thread = new_thread;
-  Tick_thread_running = 0;
 
   CAMLreturn(Val_unit);
 }
