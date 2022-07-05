@@ -161,24 +161,23 @@ static void caml_thread_scan_roots(
   scanning_action action, scanning_action_flags fflags, void *fdata,
   caml_domain_state *domain_state)
 {
-  caml_thread_t th;
+  caml_thread_t active, th;
 
-  th = Active_thread;
+  active = th = thread_table[domain_state->id].active_thread;
 
-  /* GC could be triggered before [Active_thread] is initialized */
-  if (th != NULL) {
+  /* GC could be triggered before [active_thread] is initialized */
+  if (active != NULL) {
     do {
       (*action)(fdata, th->descr, &th->descr);
       (*action)(fdata, th->backtrace_last_exn, &th->backtrace_last_exn);
-      if (th != Active_thread) {
+      if (th != active) {
         if (th->current_stack != NULL)
           caml_do_local_roots(action, fflags, fdata,
                               th->local_roots, th->current_stack, th->gc_regs);
       }
       th = th->next;
-    } while (th != Active_thread);
-
-  };
+    } while (th != active);
+  }
 
   if (prev_scan_roots_hook != NULL)
     (*prev_scan_roots_hook)(action, fflags, fdata, domain_state);
