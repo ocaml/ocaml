@@ -1098,8 +1098,10 @@ static void* domain_thread_func(void* v)
     caml_gc_log("Domain starting (unique_id = %"ARCH_INTNAT_PRINTF_FORMAT"u)",
                 domain_self->interruptor.unique_id);
     CAML_EV_LIFECYCLE(EV_DOMAIN_SPAWN, getpid());
+    /* FIXME: ignoring errors and asynchronous exceptions during
+       domain initialization is unsafe and/or can deadlock. */
     caml_domain_initialize_hook();
-    caml_callback(ml_values->callback, Val_unit);
+    caml_callback_exn(ml_values->callback, Val_unit);
     domain_terminate();
 
     /* This domain currently holds the [term_mutex], and has signaled all the

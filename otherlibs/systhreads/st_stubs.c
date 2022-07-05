@@ -382,8 +382,9 @@ static void caml_thread_reinitialize(void)
      the effective owner of the lock. So there is no need to run
      st_masterlock_acquire (busy = 1) */
   st_masterlock *m = Thread_lock(Caml_state->id);
-  m->init = 0; /* force initialization */
-  st_masterlock_init(m);
+  m->init = 0; /* force reinitialization */
+  if (st_masterlock_init(m) != 0)
+    caml_fatal_error("Unix.fork: failed to reinitialize master lock");
 }
 
 CAMLprim value caml_thread_join(value th);
@@ -415,6 +416,9 @@ static void caml_thread_domain_stop_hook(void) {
   };
 }
 
+/* FIXME: this should return an encoded exception for use in
+   domain_thread_func, but the latter is not ready to handle it
+   yet. */
 static void caml_thread_domain_initialize_hook(void)
 {
 
@@ -423,7 +427,8 @@ static void caml_thread_domain_initialize_hook(void)
   /* OS-specific initialization */
   st_initialize();
 
-  st_masterlock_init(Thread_lock(Caml_state->id));
+  int ret = st_masterlock_init(Thread_lock(Caml_state->id));
+  sync_check_error(ret, "caml_thread_domain_initialize_hook");
 
   new_thread =
     (caml_thread_t) caml_stat_alloc(sizeof(struct caml_thread_struct));

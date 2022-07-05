@@ -103,19 +103,26 @@ typedef struct {
   pthread_cond_t is_free;         /* signaled when free */
 } st_masterlock;
 
-static void st_masterlock_init(st_masterlock * m)
+/* Returns non-zero on failure */
+static int st_masterlock_init(st_masterlock * m)
 {
+  int rc;
   if (!m->init) {
-    // FIXME: check errors
-    pthread_mutex_init(&m->lock, NULL);
-    pthread_cond_init(&m->is_free, NULL);
+    rc = pthread_mutex_init(&m->lock, NULL);
+    if (rc != 0) goto out_err;
+    rc = pthread_cond_init(&m->is_free, NULL);
+    if (rc != 0) goto out_err2;
     m->init = 1;
   }
   m->busy = 1;
   atomic_store_release(&m->waiters, 0);
+  return 0;
 
-  return;
-};
+ out_err2:
+  pthread_mutex_destroy(&m->lock);
+ out_err:
+  return rc;
+}
 
 static uintnat st_masterlock_waiters(st_masterlock * m)
 {
