@@ -26,6 +26,7 @@ type runtime_counter =
 | EV_C_MAJOR_WORK_MARK
 | EV_C_MAJOR_WORK_SWEEP
 | EV_C_MINOR_PROMOTED
+| EV_C_MINOR_ALLOCATED
 | EV_C_REQUEST_MAJOR_ALLOC_SHR
 | EV_C_REQUEST_MAJOR_ADJUST_GC_SPEED
 | EV_C_REQUEST_MINOR_REALLOC_REF_TABLE
@@ -99,6 +100,7 @@ let runtime_counter_name counter =
   | EV_C_MAJOR_WORK_MARK -> "major_work_mark"
   | EV_C_MAJOR_WORK_SWEEP -> "major_work_sweep"
   | EV_C_MINOR_PROMOTED -> "minor_promoted"
+  | EV_C_MINOR_ALLOCATED -> "minor_allocated"
   | EV_C_REQUEST_MAJOR_ALLOC_SHR -> "request_major_alloc_shr"
   | EV_C_REQUEST_MAJOR_ADJUST_GC_SPEED -> "request_major_adjust_gc_speed"
   | EV_C_REQUEST_MINOR_REALLOC_REF_TABLE -> "request_minor_realloc_ref_table"
