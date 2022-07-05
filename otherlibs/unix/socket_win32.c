@@ -57,7 +57,7 @@ SOCKET caml_win32_socket(int domain, int type, int protocol,
   return s;
 
 err:
-  win32_maperr(WSAGetLastError());
+  caml_win32_maperr(WSAGetLastError());
   return INVALID_SOCKET;
 }
 
