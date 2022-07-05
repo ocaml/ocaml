@@ -22,7 +22,7 @@
 
     When enabled (either via setting the OCAML_RUNTIME_EVENTS_START environment
     variable or calling Runtime_events.start) a file with the pid of the process
-    and extension .runtime_events will be created. By default this is in the
+    and extension .events will be created. By default this is in the
     current directory but can be over-ridden by the OCAML_RUNTIME_EVENTS_DIR
     environent variable. Each domain maintains its own ring buffer in a section
     of the larger file into which it emits events.
@@ -198,7 +198,7 @@ val create_cursor : (string * int) option -> cursor
   (for example if multiple consumers want different sets of events). If
    [path_pid] is None then a cursor is created for the current process.
    Otherwise the pair contains a string [path] to the directory that contains
-   the [pid].runtime_events file and int [pid] for the runtime_events of an
+   the [pid].events file and int [pid] for the runtime_events of an
    external process to monitor. *)
 
 val free_cursor : cursor -> unit
