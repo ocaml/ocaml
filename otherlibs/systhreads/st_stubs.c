@@ -354,7 +354,9 @@ static void caml_thread_reinitialize(void)
   /* The master lock needs to be initialized again. This process will also be
      the effective owner of the lock. So there is no need to run
      st_masterlock_acquire (busy = 1) */
-  st_masterlock_init(Thread_lock(Caml_state->id));
+  st_masterlock *m = Thread_lock(Caml_state->id);
+  m->init = 0; /* force initialization */
+  st_masterlock_init(m);
 }
 
 CAMLprim value caml_thread_join(value th);
