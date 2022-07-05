@@ -1042,6 +1042,7 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
         caml_stat_space_overhead.not_garbage_words_last_cycle
         = not_garbage_words;
       }
+
       domain->swept_words = 0;
 
       num_domains_in_stw = (uintnat)caml_global_barrier_num_domains();
@@ -1080,6 +1081,24 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
   }
 
   caml_cycle_heap(domain->shared_heap);
+
+  /* Collect domain-local stats to emit to runtime events */
+  struct heap_stats local_stats;
+  caml_collect_heap_stats_sample(Caml_state->shared_heap, &local_stats);
+
+  CAML_EV_COUNTER(EV_C_MAJOR_HEAP_POOL_WORDS,
+                  (uintnat)local_stats.pool_words);
+  CAML_EV_COUNTER(EV_C_MAJOR_HEAP_POOL_LIVE_WORDS,
+                  (uintnat)local_stats.pool_live_words);
+  CAML_EV_COUNTER(EV_C_MAJOR_HEAP_LARGE_WORDS,
+                  (uintnat)local_stats.large_words);
+  CAML_EV_COUNTER(EV_C_MAJOR_HEAP_POOL_FRAG_WORDS,
+                  (uintnat)(local_stats.pool_frag_words));
+  CAML_EV_COUNTER(EV_C_MAJOR_HEAP_POOL_LIVE_BLOCKS,
+                  (uintnat)local_stats.pool_live_blocks);
+  CAML_EV_COUNTER(EV_C_MAJOR_HEAP_LARGE_BLOCKS,
+                  (uintnat)local_stats.large_blocks);
+
   domain->sweeping_done = 0;
 
   /* Mark roots for new cycle */
