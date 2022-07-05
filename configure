@@ -16697,6 +16697,52 @@ if test "x$ac_cv_func__BitScanForward" = xyes; then :
 fi
 
 
+## pthread_getaffinity_np, args differ from GNU and BSD
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#define _GNU_SOURCE
+      #include <sched.h>
+      #include <pthread.h>
+int
+main ()
+{
+cpu_set_t cs;
+      CPU_ZERO(&cs);
+      CPU_COUNT(&cs);
+      pthread_getaffinity_np(pthread_self(), sizeof(cs), &cs);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  $as_echo "#define HAS_GNU_GETAFFINITY_NP 1" >>confdefs.h
+
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <pthread.h>
+        #include <pthread_np.h>
+        #include <sys/cpuset.h>
+int
+main ()
+{
+cpuset_t cs;
+        /* Not every BSD has CPU_ZERO and CPU_COUNT (NetBSD) */
+        CPU_ZERO(&cs);
+        CPU_COUNT(&cs);
+        pthread_getaffinity_np(pthread_self(), sizeof(cs), &cs);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  $as_echo "#define HAS_BSD_GETAFFINITY_NP 1" >>confdefs.h
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
 ## Determine whether the debugger should/can be built
 
 case $enable_debugger in #(

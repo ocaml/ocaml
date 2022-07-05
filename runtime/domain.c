@@ -18,10 +18,23 @@
 
 #define CAML_INTERNALS
 
+#define _GNU_SOURCE  /* For sched.h CPU_ZERO(3) and CPU_COUNT(3) */
+#include "caml/config.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <pthread.h>
 #include <string.h>
+#ifdef HAS_GNU_GETAFFINITY_NP
+#include <sched.h>
+#endif
+#ifdef HAS_BSD_GETAFFINITY_NP
+#include <pthread_np.h>
+#include <sys/cpuset.h>
+typedef cpuset_t cpu_set_t;
+#endif
+#ifdef _WIN32
+#include <sysinfoapi.h>
+#endif
 #include "caml/alloc.h"
 #include "caml/backtrace.h"
 #include "caml/callback.h"
@@ -1759,4 +1772,37 @@ CAMLprim value caml_domain_dls_get(value unused)
 {
   CAMLnoalloc;
   return Caml_state->dls_root;
+}
+
+CAMLprim value caml_recommended_domain_count(value unused)
+{
+  intnat n = -1;
+
+#if defined(HAS_GNU_GETAFFINITY_NP) || defined(HAS_BSD_GETAFFINITY_NP)
+  cpu_set_t cpuset;
+
+  CPU_ZERO(&cpuset);
+  /* error case fallsback into next method */
+  if (pthread_getaffinity_np(pthread_self(), sizeof(cpuset), &cpuset) == 0)
+    n = CPU_COUNT(&cpuset);
+#endif /* HAS_GNU_GETAFFINITY_NP || HAS_BSD_GETAFFINITY_NP */
+
+#ifdef _SC_NPROCESSORS_ONLN
+  if (n == -1)
+    n = sysconf(_SC_NPROCESSORS_ONLN);
+#endif /* _SC_NPROCESSORS_ONLN */
+
+#ifdef _WIN32
+  SYSTEM_INFO sysinfo;
+  GetSystemInfo(&sysinfo);
+  n = sysinfo.dwNumberOfProcessors;
+#endif /* _WIN32 */
+
+  /* At least one, even if system says zero */
+  if (n <= 0)
+    n = 1;
+  else if (n > Max_domains)
+    n = Max_domains;
+
+  return (Val_long(n));
 }
