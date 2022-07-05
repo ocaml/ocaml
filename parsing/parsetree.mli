@@ -353,7 +353,7 @@ and expression_desc =
          *)
   | Pexp_record of (Longident.t loc * expression) list * expression option
       (** [Pexp_record([(l1,P1) ; ... ; (ln,Pn)], exp0)] represents
-            - [{ l1=P1; ...; ln=Pn }]         when [exp0] is [None]
+        - [{ l1=P1; ...; ln=Pn }]         when [exp0] is [None]
             - [{ E0 with l1=P1; ...; ln=Pn }] when [exp0] is [Some E0]
 
            Invariant: [n > 0]
@@ -361,7 +361,7 @@ and expression_desc =
   | Pexp_field of expression * Longident.t loc  (** [E.l] *)
   | Pexp_setfield of expression * Longident.t loc * expression
       (** [E1.l <- E2] *)
-  | Pexp_fieldfun of Longident.t loc  (** [(.l)] *) 
+  | Pexp_fieldfun of Longident.t loc  (** [(.l)] *)
   | Pexp_array of expression list  (** [[| E1; ...; En |]] *)
   | Pexp_ifthenelse of expression * expression * expression option
       (** [if E1 then E2 else E3] *)

@@ -3000,6 +3000,16 @@ and type_expect_
   | Pexp_function caselist ->
       type_function ?in_function
         loc sexp.pexp_attributes env ty_expected_explained Nolabel caselist
+  | Pexp_fieldfun(lid) ->
+    let open Ast_helper in
+    let pat = Pat.var ~loc "*var*" in
+    let exp = Exp.ident ~loc "*var*" in
+    let body = Exp.field ~loc
+      ~attrs:[Attr.mk (mknoloc "#fieldfun") (PStr [])]
+      exp lid
+    in
+    type_function ?in_function loc sexp.pexp_attributes
+      env ty_expected_explained Nolable [Exp.case pat body]
   | Pexp_apply(sfunct, sargs) ->
       assert (sargs <> []);
       let rec lower_args seen ty_fun =
@@ -3310,9 +3320,6 @@ and type_expect_
         exp_type = instance Predef.type_unit;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
-  | Pexp_field(lid) ->
-    (* TODO find me *)
-    failwith ""
   | Pexp_array(sargl) ->
       let ty = newgenvar() in
       let to_unify = Predef.type_array ty in
