@@ -432,6 +432,10 @@ OCaml 5.0
   This avoids a "dangling pointer" warning of GCC 12.1.
   (Xavier Leroy, report by Armaël Guéneau, review by Gabriel Scherer)
 
+- #11387, module type with constraints no longer crash the compiler in presence
+  of both shadowing warnings and the `-bin-annot` compiler flag.
+  (Florian Angeletti, report by Christophe Raffalli, review by Gabriel Scherer)
+
 OCaml 4.14.0
 ----------------
 
