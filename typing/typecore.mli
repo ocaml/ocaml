@@ -146,14 +146,14 @@ type error =
   | Constructor_arity_mismatch of Longident.t * int * int
   | Label_mismatch of Longident.t * Errortrace.unification_error
   | Pattern_type_clash :
-      Errortrace.unification_error * _ Typedtree.pattern_desc option
+      Errortrace.unification_error * Parsetree.pattern_desc option
       -> error
   | Or_pattern_type_clash of Ident.t * Errortrace.unification_error
   | Multiply_bound_variable of string
   | Orpat_vars of Ident.t * Ident.t list
   | Expr_type_clash of
       Errortrace.unification_error * type_forcing_context option
-      * Typedtree.expression_desc option
+      * Parsetree.expression_desc option
   | Apply_non_function of type_expr
   | Apply_wrong_label of arg_label * type_expr * bool
   | Label_multiply_defined of string
