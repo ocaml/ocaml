@@ -398,7 +398,7 @@ let value_binding sub vb =
 
 let is_fieldfun_ident = function
   | { exp_desc = Texp_ident (_path, lid, _); _ } ->
-      Longident.Lident "*record*" = txt
+      Longident.Lident "*record*" = lid.txt
   | _ -> false
 
 let expression sub exp =

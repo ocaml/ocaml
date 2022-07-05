@@ -3008,8 +3008,7 @@ and type_expect_
     let exp = Exp.ident ~loc (mknoloc (Longident.Lident "*record*")) in
     let body = Exp.field ~loc exp lid in
     type_function ?in_function loc sexp.pexp_attributes
-      env ty_expected_explained Nolable
-      [Exp.case ~attrs:[Attr.mk (mknoloc "#fieldfun") (PStr [])] pat body]
+      env ty_expected_explained Nolabel [Exp.case pat body]
   | Pexp_apply(sfunct, sargs) ->
       assert (sargs <> []);
       let rec lower_args seen ty_fun =
