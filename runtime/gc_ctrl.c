@@ -221,6 +221,7 @@ CAMLprim value caml_gc_set(value v)
        (newminwsz != Caml_state->minor_heap_wsz) are both true,
        the current domain reallocates its own minor heap twice. */
     caml_set_minor_heap_size (newminwsz);
+    CAML_EV_COUNTER (EV_C_FORCE_MINOR_SET_MINOR_HEAP_SIZE, 1);
   }
 
   CAML_EV_END(EV_EXPLICIT_GC_SET);
