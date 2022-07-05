@@ -369,6 +369,20 @@ static void caml_thread_remove_and_free(caml_thread_t th)
 
 static void caml_thread_reinitialize(void)
 {
+  /* caml_thread_reinitialize is called as part of the
+     caml_atfork_hook, and therefore this function is executed right
+     after a fork.
+
+     Note: "If a multi-threaded process calls fork() [...] the child
+     process may only execute async-signal-safe operations until such
+     time as one of the exec functions is called." (POSIX fork())
+
+     Keeping OCaml+threads running after a fork is best-effort, and
+     relies on having a single domain whose domain lock ensures some
+     consistency of state. (If there are other C threads running we
+     are hopeless.)
+  */
+
   caml_thread_t th, next;
 
   th = Active_thread->next;
@@ -388,8 +402,14 @@ static void caml_thread_reinitialize(void)
      st_masterlock_acquire (busy = 1) */
   st_masterlock *m = Thread_lock(Caml_state->id);
   m->init = 0; /* force reinitialization */
+  /* Note: initializing an already-initialized mutex and cond variable
+     is UB (especially mutexes that are locked). This is best
+     effort. */
   if (st_masterlock_init(m) != 0)
     caml_fatal_error("Unix.fork: failed to reinitialize master lock");
+  /* FIXME: The same should be done (or not) for IO mutexes (as in the
+     pre-multicore world). However there they might be locked by
+     someone else, and we are probably in an inconsistent state. */
 }
 
 CAMLprim value caml_thread_join(value th);
