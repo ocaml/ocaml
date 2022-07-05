@@ -396,6 +396,11 @@ let value_binding sub vb =
     (sub.pat sub vb.vb_pat)
     (sub.expr sub vb.vb_expr)
 
+let is_fieldfun_ident = function
+  | { exp_desc = Texp_ident (_path, lid, _); _ } ->
+      Longident.Lident "*record*" = txt
+  | _ -> false
+
 let expression sub exp =
   let loc = sub.location sub exp.exp_loc in
   let attrs = sub.attributes sub exp.exp_attributes in
@@ -408,7 +413,15 @@ let expression sub exp =
           List.map (sub.value_binding sub) list,
           sub.expr sub exp)
 
-    (* Pexp_function can't have a label, so we split in 3 cases. *)
+    (* Pexp_function can't have a label, so we split in 4 cases. *)
+    (* No label, one case, no guard, *record* var name: It's a fieldfun. *)
+    | Texp_function { arg_label = Nolabel;
+          cases = [
+            {c_lhs={ pat_desc = Tpat_var (_, patlid); _ };
+             c_guard=None;
+             c_rhs={ exp_desc = Texp_field (e, lid, _); _ }}];
+          _ } when is_fieldfun_ident e && "*record*" = patlid.txt ->
+        Pexp_fieldfun lid
     (* One case, no guard: It's a fun. *)
     | Texp_function { arg_label; cases = [{c_lhs=p; c_guard=None; c_rhs=e}];
           _ } ->

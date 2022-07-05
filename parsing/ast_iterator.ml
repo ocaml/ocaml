@@ -377,6 +377,8 @@ module E = struct
     | Pexp_setfield (e1, lid, e2) ->
         sub.expr sub e1; iter_loc sub lid;
         sub.expr sub e2
+    | Pexp_fieldfun lid ->
+        iter_loc sub lid
     | Pexp_array el -> List.iter (sub.expr sub) el
     | Pexp_ifthenelse (e1, e2, e3) ->
         sub.expr sub e1; sub.expr sub e2;
@@ -420,8 +422,6 @@ module E = struct
         sub.expr sub body
     | Pexp_extension x -> sub.extension sub x
     | Pexp_unreachable -> ()
-    | Pexp_fieldfun lid ->
-        iter_loc sub lid
 
   let iter_binding_op sub {pbop_op; pbop_pat; pbop_exp; pbop_loc} =
     iter_loc sub pbop_op;
