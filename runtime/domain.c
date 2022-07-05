@@ -1770,7 +1770,6 @@ CAMLprim value caml_domain_dls_get(value unused)
 
 CAMLprim value caml_recommended_domain_count(value unused)
 {
-  CAMLnoalloc;
   intnat n = -1;
 
 #if defined(HAS_GNU_GETAFFINITY_NP) || defined(HAS_BSD_GETAFFINITY_NP)
