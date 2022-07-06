@@ -8,6 +8,13 @@ open Globroots
 module TestClassic = Test(Classic)
 module TestGenerational = Test(Generational)
 
+let test_size =
+  try int_of_string (Sys.getenv "OCAML_TEST_SIZE")
+  with Not_found | Failure _ -> 0
+
+let _ =
+  if test_size <= 1 then begin print_string "ok\n"; exit 0 end
+
 let n = 10
 
 let _ =
