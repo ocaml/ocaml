@@ -17,6 +17,7 @@
 
 #include "caml/alloc.h"
 #include "caml/backtrace.h"
+#include "caml/backtrace_prim.h"
 #include "caml/callback.h"
 #include "caml/custom.h"
 #include "caml/debugger.h"
@@ -65,6 +66,8 @@ struct caml_thread_struct {
   int domain_id;      /* The id of the domain to which this thread belongs */
   struct stack_info* current_stack;      /* saved Caml_state->current_stack */
   struct c_stack_link* c_stack;          /* saved Caml_state->c_stack */
+  /* Note: we do not save Caml_state->stack_cache, because it can
+     safely be shared between all threads on the same domain. */
   struct caml__roots_block *local_roots; /* saved value of local_roots */
   int backtrace_pos;           /* saved value of Caml_state->backtrace_pos */
   backtrace_slot * backtrace_buffer;
@@ -283,7 +286,30 @@ static void caml_thread_remove_info(caml_thread_t th)
     Active_thread = th->next;     /* PR#5295 */
   th->next->prev = th->prev;
   th->prev->next = th->next;
+  /* the following fields do not need any specific cleanup:
+     descr: heap-allocated
+     c_stack: stack-allocated
+     local_roots: stack-allocated
+     backtrace_last_exn: heap-allocated
+     gc_regs:
+       must be empty for a terminated thread
+       (we assume that the C call stack must be empty at
+        thread-termination point, so there are no gc_regs buckets in
+        use in this variable nor on the stack)
+     exn_handler: stack-allocated
+     external_raise: stack-allocated
+     init_mask: stack-allocated
+  */
   caml_free_stack(th->current_stack);
+  caml_free_backtrace_buffer(th->backtrace_buffer);
+
+  /* Remark: we could share gc_regs_buckets between threads on a same
+     domain, but this might break the invariant that it is always
+     non-empty at the point where we switch from OCaml to C, so we
+     would need to do something more complex when activating a thread
+     to restore this invariant. */
+  caml_free_gc_regs_buckets(th->gc_regs_buckets);
+
   caml_stat_free(th);
   return;
 }
