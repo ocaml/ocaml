@@ -531,13 +531,16 @@ module E = struct
     | Pexp_struct_item (si, e) ->
         struct_item ~loc ~attrs (sub.structure_item sub si) (sub.expr sub e)
 
-  let map_binding_op sub {pbop_op; pbop_pat; pbop_expr; pbop_loc} =
+  let map_binding_op sub
+      {pbop_op; pbop_pat; pbop_expr; pbop_loc; pbop_attributes; }
+  =
     let open Exp in
     let op = map_loc sub pbop_op in
     let pat = sub.pat sub pbop_pat in
     let exp = sub.expr sub pbop_expr in
     let loc = sub.location sub pbop_loc in
-    binding_op op pat exp loc
+    let attrs = sub.attributes sub pbop_attributes in
+    binding_op ~loc ~attrs op pat exp
 
 end
 
