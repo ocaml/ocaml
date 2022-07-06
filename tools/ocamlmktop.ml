@@ -24,8 +24,10 @@ let _ =
   let extra_quote = if Sys.win32 then "\"" else "" in
   let ocamlc = Filename.(quote (concat (dirname ocamlmktop) ocamlc)) in
   let cmdline =
-    extra_quote ^ ocamlc ^ " -I +compiler-libs -linkall ocamlcommon.cma " ^
-    "ocamlbytecomp.cma ocamltoplevel.cma " ^ args ^ " topstart.cmo" ^
+    extra_quote ^ ocamlc ^
+    " -I +compiler-libs -I +ocamlmktop " ^
+    "-linkall ocamlcommon.cma ocamlbytecomp.cma ocamltoplevel.cma " ^
+    "ocamlmktop_init.cmo " ^ args ^ " topstart.cmo" ^
     extra_quote
   in
   exit(Sys.command cmdline)

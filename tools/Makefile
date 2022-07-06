@@ -144,6 +144,14 @@ OCAMLMKTOP=config.cmo build_path_prefix_map.cmo misc.cmo \
 
 ocamlmktop$(EXE): $(OCAMLMKTOP)
 ocamlmktop.opt$(EXE): $(call byte2native, $(OCAMLMKTOP))
+# opt.opt means "after the toplevel has been built" here
+opt.opt: ocamlmktop_init.cmo
+INSTALL_LIBDIR_OCAMLMKTOP = $(INSTALL_LIBDIR)/ocamlmktop
+install::
+	$(MKDIR) "$(INSTALL_LIBDIR_OCAMLMKTOP)"
+	$(INSTALL_DATA) \
+    ocamlmktop_init.cmi ocamlmktop_init.cmo \
+    "$(INSTALL_LIBDIR_OCAMLMKTOP)"
 
 # Converter olabl/ocaml 2.99 to ocaml 3
 

@@ -300,6 +300,5 @@ let load_file _ (* fixme *) ppf name0 =
 
 let init () =
   Compmisc.init_path ();
-  Topcommon.load_topdirs_signature ();
   Clflags.dlcode := true;
   ()
