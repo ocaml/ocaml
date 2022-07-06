@@ -54,14 +54,14 @@ let _ =
   let pid = Unix.getpid () in
   let cntsent = ref 0 in
   (* We loop until each thread has received at least 5 signals and we
-    have sent more than 100 signals in total. We do not check that all
+    have sent more than 50 signals in total. We do not check that all
     signals get handled, because they could be missed because of the
     lack of fairness of the scheduler. *)
-  while !cntsent < 100 || !cnt1 < 5 || !cnt2 < 5 do
+  while !cntsent < 50 || !cnt1 < 5 || !cnt2 < 5 do
     Unix.kill pid Sys.sigusr1;
     Unix.kill pid Sys.sigusr2;
     incr cntsent;
-    Thread.delay 0.07;
+    Thread.delay 0.05;
 
     (* Still, if too many signals have been sent, we interrupt the
        test to avoid a timeout. *)
