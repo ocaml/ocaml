@@ -266,6 +266,11 @@ int caml_alloc_backtrace_buffer (void)
   return 0;
 }
 
+void caml_free_backtrace_buffer(backtrace_slot *backtrace_buffer) {
+  if (backtrace_buffer != NULL)
+    caml_stat_free(backtrace_buffer);
+}
+
 /* Store the return addresses contained in the given stack fragment
    into the backtrace array */
 

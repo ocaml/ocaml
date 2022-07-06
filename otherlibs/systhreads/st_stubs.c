@@ -67,7 +67,8 @@ struct caml_thread_struct {
   struct c_stack_link* c_stack;          /* saved Caml_state->c_stack */
   struct caml__roots_block *local_roots; /* saved value of local_roots */
   int backtrace_pos;           /* saved value of Caml_state->backtrace_pos */
-  code_t * backtrace_buffer;   /* saved value of Caml_state->backtrace_buffer */
+  backtrace_slot * backtrace_buffer;
+    /* saved value of Caml_state->backtrace_buffer */
   value backtrace_last_exn;
     /* saved value of Caml_state->backtrace_last_exn (root) */
   value * gc_regs;           /* saved value of Caml_state->gc_regs */

@@ -81,6 +81,8 @@ void caml_debuginfo_location(debuginfo dbg, /*out*/ struct caml_loc_info * li);
 /* Allocate Caml_state->backtrace_buffer. Returns 0 on success, -1 otherwise */
 int caml_alloc_backtrace_buffer(void);
 
+void caml_free_backtrace_buffer(backtrace_slot *backtrace_buffer);
+
 #ifndef NATIVE_CODE
 /* These two functions are used by the bytecode runtime when loading
    and unloading bytecode */
