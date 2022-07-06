@@ -8,6 +8,9 @@ on:
       - 'trunk'
   pull_request:
 
+# Restrict the GITHUB_TOKEN
+permissions: {}
+
 # List of test directories for the debug-s4096 and linux-O0 jobs.
 # These directories are selected because of their tendencies to reach corner
 # cases in the runtime system.
