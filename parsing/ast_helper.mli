@@ -193,7 +193,7 @@ module Exp:
     val unreachable: ?loc:loc -> ?attrs:attrs -> unit -> expression
 
     val case: pattern -> ?guard:expression -> expression -> case
-    val binding_op: str -> pattern -> expression -> ?attrs:attrs -> loc
+    val binding_op: ?loc:loc -> ?attrs:attrs -> str -> pattern -> expression
                     -> binding_op
   end
 
