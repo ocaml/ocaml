@@ -587,6 +587,16 @@ void caml_free_stack (struct stack_info* stack)
   }
 }
 
+void caml_free_gc_regs_buckets(value *gc_regs_buckets)
+{
+  while (gc_regs_buckets != NULL) {
+    value *next = (value*)gc_regs_buckets[0];
+    caml_stat_free(gc_regs_buckets);
+    gc_regs_buckets = next;
+  }
+}
+
+
 CAMLprim value caml_continuation_use_noexc (value cont)
 {
   value v;
