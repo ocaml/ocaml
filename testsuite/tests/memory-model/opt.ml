@@ -4,8 +4,10 @@ let test_size =
   try int_of_string (Sys.getenv "OCAML_TEST_SIZE")
   with Not_found | Failure _ -> 0
 
-let default_avail =
-  if test_size >= 3 then 8 else if test_size = 2 then 4 else 2
+let (default_avail, default_size, default_nruns) =
+  if test_size >= 3 then (8, 5000, 20)
+  else if test_size = 2 then (4, 5000, 20)
+  else (2, 1000, 10)
 
 let verbose = ref false
 and size = ref 5000
