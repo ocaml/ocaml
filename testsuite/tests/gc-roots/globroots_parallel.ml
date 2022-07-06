@@ -5,7 +5,16 @@
 
 open Globroots
 
-let num_domains = 8
+let test_size =
+  try int_of_string (Sys.getenv "OCAML_TEST_SIZE")
+  with Not_found | Failure _ -> 0
+
+let num_domains =
+  match test_size with
+  | 3 -> 8
+  | 2 -> 4
+  | _ -> print_string "ok\n"; exit 0
+
 let n = 125
 
 let _ =
