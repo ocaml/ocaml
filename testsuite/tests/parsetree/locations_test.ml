@@ -67,9 +67,9 @@ let x = M.{ contents = 3 };;
 
 let x = M.[ 3; 4 ];;
 
-let x = M.( 3; 4 );;
-
 let x = M.(.contents);;
+
+let x = M.( 3; 4 );;
 
 (* Indexing operators *)
 

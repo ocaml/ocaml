@@ -620,6 +620,25 @@ Ptop_def
 val x : int list = [3; 4]
 Ptop_def
   [
+    structure_item (//toplevel//[2,1+0]..[2,1+21])
+      Pstr_value Nonrec
+      [
+        <def>
+          pattern (//toplevel//[2,1+4]..[2,1+5])
+            Ppat_var "x" (//toplevel//[2,1+4]..[2,1+5])
+          expression (//toplevel//[2,1+8]..[2,1+21])
+            Pexp_open Fresh
+            module_expr (//toplevel//[2,1+8]..[2,1+9])
+              Pmod_ident "M" (//toplevel//[2,1+8]..[2,1+9])
+            expression (//toplevel//[2,1+8]..[2,1+21])
+              Pexp_fieldfun
+              "contents" (//toplevel//[2,1+12]..[2,1+20])
+      ]
+  ]
+
+val x : 'a ref -> 'a = <fun>
+Ptop_def
+  [
     structure_item (//toplevel//[2,1+0]..[2,1+18])
       Pstr_value Nonrec
       [
