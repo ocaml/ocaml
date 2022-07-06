@@ -273,6 +273,11 @@ OCaml 5.0
 - #11245: Merge the common code of ocamlcp and ocamloptp into a single module.
   (David Allsopp, review by Sébastien Hinderer)
 
+- #11382: OCamlmktop use a new initialization module "OCamlmktop_init" to
+  preserve backward-compatibility with user-module provided modules that install
+  toplevel printers.
+  (Florian Angeletti, review by Gabriel Scherer and David Allsopp)
+
 ### Manual and documentation:
 
 - #11058: runtime/HACKING.adoc tips on debugging the runtime
