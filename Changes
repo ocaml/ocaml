@@ -22,6 +22,9 @@ Working version
   typical workloads.
   (Nicolás Ojeda Bär, review by Gabriel Scherer)
 
+- #11412: Add Sys.is_regular_file
+  (Xavier Leroy, review by Anil Madhavapeddy, Nicolás Ojeda Bär, David Allsopp)
+
 ### Other libraries:
 
 ### Tools:
