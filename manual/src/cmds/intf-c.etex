@@ -1449,6 +1449,10 @@ the value \var{a} and returns the value returned by~\var{f}.
 (a curried OCaml function with three arguments) to \var{a}, \var{b} and \var{c}.
 \item "caml_callbackN("\var{f, n, args}")" applies the functional value \var{f}
 to the \var{n} arguments contained in the C array of values \var{args}.
+The array \var{args} must \emph{not} be declared with "CAMLlocalN".
+It should be declared as "value "\var{args}"["\var{n}"];".
+Alternatively, a C99 compound literal can be used:
+"caml_callbackN("\var{f, n, }"(value[]){"\nth{arg}{1}, \ldots, \nth{arg}{n}"})".
 \end{itemize}
 If the function \var{f} does not return, but raises an exception that
 escapes the scope of the application, then this exception is
