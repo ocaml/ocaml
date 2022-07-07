@@ -60,6 +60,8 @@ module type S =
     val compare: ('a -> 'a -> int) -> 'a t -> 'a t -> int
     val for_all: (key -> 'a -> bool) -> 'a t -> bool
     val exists: (key -> 'a -> bool) -> 'a t -> bool
+    val to_list : 'a t -> (key * 'a) list
+    val of_list : (key * 'a) list -> 'a t
     val to_seq : 'a t -> (key * 'a) Seq.t
     val to_rev_seq : 'a t -> (key * 'a) Seq.t
     val to_seq_from : key -> 'a t -> (key * 'a) Seq.t
@@ -497,6 +499,9 @@ module Make(Ord: OrderedType) = struct
     let choose = min_binding
 
     let choose_opt = min_binding_opt
+
+    let to_list = bindings
+    let of_list bs = List.fold_left (fun m (k, v) -> add k v m) empty bs
 
     let add_seq i m =
       Seq.fold_left (fun m (k,v) -> add k v m) m i

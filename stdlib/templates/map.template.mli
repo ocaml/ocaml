@@ -323,6 +323,16 @@ module type S =
 
     (** {1:converting Converting} *)
 
+    val to_list : 'a t -> (key * 'a) list
+    (** [to_list m] is {!bindings}[ m].
+        @since 5.1.0 *)
+
+    val of_list : (key * 'a) list -> 'a t
+    (** [of_list bs] adds the bindings of [bs] to the empty map,
+        in list order (if a key is bound twice in [bs] the last one
+        takes over).
+        @since 5.1.0 *)
+
     val to_seq : 'a t -> (key * 'a) Seq.t
     (** Iterate on the whole map, in ascending order of keys
         @since 4.07 *)
