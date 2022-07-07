@@ -52,7 +52,7 @@ programs_byte := \
 install_files += $(filter $(installed_tools), $(programs_byte))
 programs_opt := $(programs_byte:%=%.opt)
 
-.PHONY: all allopt opt.opt # allopt and opt.opt are synonyms
+.PHONY: all allopt opt.opt othertools # allopt and opt.opt are synonyms
 all: $(programs_byte)
 opt.opt: $(programs_opt)
 allopt: opt.opt
@@ -144,8 +144,8 @@ OCAMLMKTOP=config.cmo build_path_prefix_map.cmo misc.cmo \
 
 ocamlmktop$(EXE): $(OCAMLMKTOP)
 ocamlmktop.opt$(EXE): $(call byte2native, $(OCAMLMKTOP))
-# opt.opt means "after the toplevel has been built" here
-opt.opt: ocamlmktop_init.cmo
+# othertools means "after the toplevel has been built" here
+othertools: ocamlmktop_init.cmo
 INSTALL_LIBDIR_OCAMLMKTOP = $(INSTALL_LIBDIR)/ocamlmktop
 install::
 	$(MKDIR) "$(INSTALL_LIBDIR_OCAMLMKTOP)"
@@ -328,9 +328,9 @@ $(caml_tex): $(caml_tex_files)
 	  $(LINKFLAGS) -linkall -o $@ -no-alias-deps $^
 
 # we need str and unix which depend on the bytecode version of other tools
-# thus we delay building caml-tex to the opt.opt stage
+# thus we use the othertools target
 ifneq "$(WITH_CAMLTEX)" ""
-opt.opt: $(caml_tex)
+othertools: $(caml_tex)
 endif
 clean::
 	rm -f -- caml-tex caml-tex.exe caml_tex.cm?
