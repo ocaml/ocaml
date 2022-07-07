@@ -6,6 +6,9 @@ Working version
 - #9975, #11365: Make empty types (`type t = |`) immediate.
   (Antal Spector-Zabusky, review by Gabriel Scherer)
 
+- #11407: Propose syntactic sugar for record field accessing.
+  (Boning Dong, review by Gabriel Scherer and David Allsopp)
+
 ### Runtime system:
 
 ### Code generation and optimizations:

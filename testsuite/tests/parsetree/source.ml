@@ -7452,7 +7452,7 @@ module type s = sig type ('a,'b) t end with type (!-'a, +!'b) t := 'b -> 'a list
 module type s = sig type ('a,'b) t end with type ('a,'b) t := 'b -> 'a list
 
 
-(* PR#: fieldfun *)
+(* PR#11407: fieldfun *)
 type t = { contents : int; other : unit }
 module M = struct
   type t = { m_contents : int }
