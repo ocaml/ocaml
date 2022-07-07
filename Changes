@@ -25,6 +25,13 @@ OCaml 4.14 maintenance branch
 - #11392, #11392: assertion failure with -rectypes and external definitions
   (Gabriel Scherer, review by Florian Angeletti, report by Dmitrii Kosarev)
 
+### Manual and documentation:
+
+- #11045, #11409: document that the array argument to `caml_callbackN`
+  must not have been declared by `CAMLlocalN`.
+  (Xavier Leroy, report by Stephen Dolan, review by Gabriel Scherer.)
+
+
 OCaml 4.14.0 (28 March 2022)
 ----------------------------
 
