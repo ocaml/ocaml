@@ -85,6 +85,12 @@ module type S =
         of [key] in [m] disappears.
         @before 4.03 Physical equality was not ensured. *)
 
+    val add_to_list: key:key -> data:'a -> 'a list t -> 'a list t
+    (** [add_to_list ~key ~data m] is [m] with [key] mapped to [l] such
+        that [l] is [data :: Map.find key m] if [key] was bound in
+        [m] and [[v]] otherwise.
+        @since 5.1.0 *)
+
     val update: key:key -> f:('a option -> 'a option) -> 'a t -> 'a t
     (** [update ~key ~f m] returns a map containing the same bindings as
         [m], except for the binding of [key]. Depending on the value of
