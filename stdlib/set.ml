@@ -61,6 +61,7 @@ module type S =
     val subset: t -> t -> bool
     val for_all: (elt -> bool) -> t -> bool
     val exists: (elt -> bool) -> t -> bool
+    val to_list : t -> elt list
     val of_list: elt list -> t
     val to_seq_from : elt -> t -> elt Seq.t
     val to_seq : t -> elt Seq.t
@@ -573,6 +574,8 @@ module Make(Ord: OrderedType) =
             create left mid right, l
       in
       fst (sub (List.length l) l)
+
+    let to_list = elements
 
     let of_list l =
       match l with

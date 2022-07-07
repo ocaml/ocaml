@@ -285,6 +285,10 @@ module type S =
 
     (** {1:converting Converting} *)
 
+    val to_list : t -> elt list
+    (** [to_list s] is {!elements}[ s].
+        @since 5.0.1 *)
+
     val of_list: elt list -> t
     (** [of_list l] creates a set from a list of elements.
         This is usually more efficient than folding [add] over the list,
