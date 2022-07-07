@@ -270,7 +270,7 @@ endif
 	$(MAKE) ocamlopt.opt
 	$(MAKE) otherlibrariesopt
 	$(MAKE) ocamllex.opt ocamltoolsopt ocamltoolsopt.opt $(OCAMLDOC_OPT) \
-	  $(OCAMLTEST_OPT) ocamlnat
+	  $(OCAMLTEST_OPT) othertools ocamlnat
 ifeq "$(WITH_OCAMLDOC)-$(STDLIB_MANPAGES)" "ocamldoc-true"
 	$(MAKE) manpages
 endif
@@ -310,6 +310,7 @@ all: coreall
 	$(MAKE) ocaml
 	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC) \
          $(WITH_OCAMLTEST)
+	$(MAKE) othertools
 ifeq "$(WITH_OCAMLDOC)-$(STDLIB_MANPAGES)" "ocamldoc-true"
 	$(MAKE) manpages
 endif
@@ -1267,6 +1268,11 @@ ocamltoolsopt: ocamlopt
 .PHONY: ocamltoolsopt.opt
 ocamltoolsopt.opt: ocamlc.opt ocamllex.opt compilerlibs/ocamlmiddleend.cmxa
 	$(MAKE) -C tools opt.opt
+
+# tools that require a full ocaml distribution: otherlibs and toplevel
+.PHONY:othertools
+othertools:
+	$(MAKE) -C tools othertools
 
 partialclean::
 	$(MAKE) -C tools clean
