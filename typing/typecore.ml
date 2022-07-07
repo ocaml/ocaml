@@ -2462,6 +2462,8 @@ let rec type_approx env sexp =
       newty (Tarrow(p, ty, type_approx env e, commu_ok))
   | Pexp_function ({pc_rhs=e}::_) ->
       newty (Tarrow(Nolabel, newvar (), type_approx env e, commu_ok))
+  | Pexp_fieldfun _ ->
+      newty (Tarrow(Nolabel, newvar (), newvar (), commu_ok))
   | Pexp_match (_, {pc_rhs=e}::_) -> type_approx env e
   | Pexp_try (e, _) -> type_approx env e
   | Pexp_tuple l -> newty (Ttuple(List.map (type_approx env) l))
@@ -3000,6 +3002,13 @@ and type_expect_
   | Pexp_function caselist ->
       type_function ?in_function
         loc sexp.pexp_attributes env ty_expected_explained Nolabel caselist
+  | Pexp_fieldfun(lid) ->
+    let open Ast_helper in
+    let pat = Pat.var ~loc (mknoloc "*record*") in
+    let exp = Exp.ident ~loc (mknoloc (Longident.Lident "*record*")) in
+    let body = Exp.field ~loc exp lid in
+    type_function ?in_function loc sexp.pexp_attributes
+      env ty_expected_explained Nolabel [Exp.case pat body]
   | Pexp_apply(sfunct, sargs) ->
       assert (sargs <> []);
       let rec lower_args seen ty_fun =
@@ -5159,7 +5168,7 @@ and type_let
   List.iter (fun f -> f()) force;
   let sexp_is_fun { pvb_expr = sexp; _ } =
     match sexp.pexp_desc with
-    | Pexp_fun _ | Pexp_function _ -> true
+    | Pexp_fun _ | Pexp_function _ | Pexp_fieldfun _ -> true
     | _ -> false
   in
   let exp_env =

@@ -183,7 +183,8 @@ and expression_desc =
          *)
   | Texp_function of { arg_label : arg_label; param : Ident.t;
       cases : value case list; partial : partial; }
-        (** [Pexp_fun] and [Pexp_function] both translate to [Texp_function].
+        (** [Pexp_fun], [Pexp_function] and [Pexp_fieldfun] all translate
+            to [Texp_function].
             See {!Parsetree} for more details.
 
             [param] is the identifier that is to be used to name the

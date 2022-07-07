@@ -2352,6 +2352,8 @@ expr:
 ;
 
 simple_expr:
+  | LPAREN DOT mkrhs(label_longident) RPAREN
+      { mkexp ~loc:$sloc (Pexp_fieldfun($3)) }
   | LPAREN seq_expr RPAREN
       { reloc_exp ~loc:$sloc $2 }
   | LPAREN seq_expr error
@@ -2411,6 +2413,8 @@ simple_expr:
       { Pexp_override [] }
   | simple_expr DOT mkrhs(label_longident)
       { Pexp_field($1, $3) }
+  | od=open_dot_declaration DOT LPAREN DOT mkrhs(label_longident) RPAREN
+      { Pexp_open(od, mkexp ~loc:$sloc (Pexp_fieldfun($5))) }
   | od=open_dot_declaration DOT LPAREN seq_expr RPAREN
       { Pexp_open(od, $4) }
   | od=open_dot_declaration DOT LBRACELESS object_expr_content GREATERRBRACE

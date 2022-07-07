@@ -699,6 +699,9 @@ and expression ctxt f x =
     | Pexp_setfield (e1, li, e2) ->
         pp f "@[<2>%a.%a@ <-@ %a@]"
           (simple_expr ctxt) e1 longident_loc li (simple_expr ctxt) e2
+    | Pexp_fieldfun (li) ->
+        pp f "@[<2>(.%a)@]"
+          longident_loc li
     | Pexp_ifthenelse (e1, e2, eo) ->
         (* @;@[<2>else@ %a@]@] *)
         let fmt:(_,_,_)format ="@[<hv0>@[<2>if@ %a@]@;@[<2>then@ %a@]%a@]" in

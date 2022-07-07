@@ -7450,3 +7450,18 @@ let goober a = match a with C (type a b) y -> y
 module type s = sig type ('a,'b) t end with type (-!'a, !+'b) t = 'b -> 'a list
 module type s = sig type ('a,'b) t end with type (!-'a, +!'b) t := 'b -> 'a list
 module type s = sig type ('a,'b) t end with type ('a,'b) t := 'b -> 'a list
+
+
+(* PR#11407: fieldfun *)
+type t = { contents : int; other : unit }
+module M = struct
+  type t = { m_contents : int }
+  module N = struct
+    type t = { n_contents : int }
+  end
+end
+
+let x = (.contents)
+let x = M.(.m_contents)
+let x = (.M.m_contents)
+let x = (.M.N.n_contents)
