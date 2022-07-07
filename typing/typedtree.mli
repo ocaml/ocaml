@@ -183,7 +183,7 @@ and expression_desc =
          *)
   | Texp_function of { arg_label : arg_label; param : Ident.t;
       cases : value case list; partial : partial; }
-        (** [Pexp_fun], [Pexp_function] and [Pexp_fieldfun] all translate 
+        (** [Pexp_fun], [Pexp_function] and [Pexp_fieldfun] all translate
             to [Texp_function].
             See {!Parsetree} for more details.
 
