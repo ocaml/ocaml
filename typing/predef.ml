@@ -101,7 +101,6 @@ and ident_undefined_recursive_module =
         ident_create "Undefined_recursive_module"
 and ident_continuation_already_taken =
         ident_create "Continuation_already_taken"
-and ident_unhandled = ident_create "Unhandled"
 and ident_unhandled_effect = ident_create "Unhandled_effect"
 
 let all_predef_exns = [
@@ -117,7 +116,6 @@ let all_predef_exns = [
   ident_sys_blocked_io;
   ident_assert_failure;
   ident_undefined_recursive_module;
-  ident_unhandled;
   ident_continuation_already_taken;
   ident_unhandled_effect;
 ]
@@ -260,7 +258,6 @@ let build_initial_env add_type add_extension empty_env =
   |> add_extension ident_sys_error [type_string]
   |> add_extension ident_undefined_recursive_module
        [newgenty (Ttuple[type_string; type_int; type_int])]
-  |> add_extension ident_unhandled []
   |> add_extension ident_unhandled_effect [type_eff (newgenty (Tvar None))]
 
 let builtin_values =
