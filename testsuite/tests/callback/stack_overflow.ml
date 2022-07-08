@@ -17,7 +17,7 @@ let rec deep = function
 open Effect
 open Effect.Deep
 
-type _ t += E : unit t
+type _ eff += E : unit eff
 
 let () =
   Printf.printf "%d\n%d\n%!"
@@ -25,7 +25,7 @@ let () =
     (match_with deep 1000
      { retc = (fun x -> !x);
        exnc = (fun e -> raise e);
-       effc = fun (type a) (e : a t) ->
+       effc = fun (type a) (e : a eff) ->
          match e with
          | E -> Some (fun k -> assert false)
          | _ -> None })

@@ -4,7 +4,7 @@
 open Effect
 open Effect.Deep
 
-type _ t += E : unit t
+type _ eff += E : unit eff
 
 let f a b c d e f g h =
    let bb = b + b in
@@ -34,7 +34,7 @@ let () =
   match_with (fun _ -> f 1 2 3 4 5 6 7 8) ()
   { retc = (fun n -> Printf.printf "%d\n" n);
     exnc = (fun e -> raise e);
-    effc = fun (type a) (e : a t) ->
+    effc = fun (type a) (e : a eff) ->
       match e with
       | E -> Some (fun k -> assert false)
       | _ -> None }

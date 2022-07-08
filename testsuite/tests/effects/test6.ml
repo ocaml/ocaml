@@ -4,17 +4,17 @@
 open Effect
 open Effect.Deep
 
-type _ t += E : unit t
-          | F : unit t
+type _ eff += E : unit eff
+            | F : unit eff
 
 let () =
   let ok1 = ref false and ok2 = ref false in
   let f r =
-    try perform E with Unhandled -> r := true in
+    try perform E with Unhandled_effect E -> r := true in
   f ok1;
   Printf.printf "%b\n%!" !ok1;
   try_with f ok2 {
-    effc = fun (type a) (e : a t) ->
+    effc = fun (type a) (e : a eff) ->
       match e with
       | F -> Some (fun k -> assert false)
       | _ -> None

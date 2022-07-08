@@ -4,9 +4,9 @@
 open Effect
 open Effect.Shallow
 
-type _ t += Get   : int t
-          | Set   : int -> unit t
-          | Print : string -> unit t
+type _ eff += Get   : int eff
+            | Set   : int -> unit eff
+            | Print : string -> unit eff
 
 let handle_state init f x =
   let rec loop : type a r. int -> (a, r) continuation -> a -> r * int =
@@ -14,7 +14,7 @@ let handle_state init f x =
       continue_with k x
       { retc = (fun result -> result, state);
         exnc = (fun e -> raise e);
-        effc = (fun (type b) (eff : b t) ->
+        effc = (fun (type b) (eff : b eff) ->
           match eff with
           | Get -> Some (fun (k : (b,r) continuation) ->
               loop state k state)
@@ -30,7 +30,7 @@ let handle_print f =
       continue_with k ()
       { retc = (fun x -> x);
         exnc = (fun e -> raise e);
-        effc = (fun (type a) (eff : a t) ->
+        effc = (fun (type a) (eff : a eff) ->
           match eff with
           | Print s -> Some (fun (k : (a,r) continuation) ->
               print_string s; loop k)

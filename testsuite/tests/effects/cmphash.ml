@@ -4,11 +4,11 @@
 open Effect
 open Effect.Deep
 
-type _ t += E : unit t
+type _ eff += E : unit eff
 
 let () =
   try_with perform E
-  { effc = fun (type a) (e : a t) ->
+  { effc = fun (type a) (e : a eff) ->
       match e with
       | E -> Some (fun k ->
           begin match k = k with
