@@ -35,6 +35,7 @@ and ident_float = ident_create "float"
 and ident_bool = ident_create "bool"
 and ident_unit = ident_create "unit"
 and ident_exn = ident_create "exn"
+and ident_eff = ident_create "eff"
 and ident_array = ident_create "array"
 and ident_list = ident_create "list"
 and ident_option = ident_create "option"
@@ -53,6 +54,7 @@ and path_float = Pident ident_float
 and path_bool = Pident ident_bool
 and path_unit = Pident ident_unit
 and path_exn = Pident ident_exn
+and path_eff = Pident ident_eff
 and path_array = Pident ident_array
 and path_list = Pident ident_list
 and path_option = Pident ident_option
@@ -71,6 +73,7 @@ and type_float = newgenty (Tconstr(path_float, [], ref Mnil))
 and type_bool = newgenty (Tconstr(path_bool, [], ref Mnil))
 and type_unit = newgenty (Tconstr(path_unit, [], ref Mnil))
 and type_exn = newgenty (Tconstr(path_exn, [], ref Mnil))
+and type_eff t = newgenty (Tconstr(path_eff, [t], ref Mnil))
 and type_array t = newgenty (Tconstr(path_array, [t], ref Mnil))
 and type_list t = newgenty (Tconstr(path_list, [t], ref Mnil))
 and type_option t = newgenty (Tconstr(path_option, [t], ref Mnil))
@@ -99,6 +102,7 @@ and ident_undefined_recursive_module =
 and ident_continuation_already_taken =
         ident_create "Continuation_already_taken"
 and ident_unhandled = ident_create "Unhandled"
+and ident_unhandled_effect = ident_create "Unhandled_effect"
 
 let all_predef_exns = [
   ident_match_failure;
@@ -115,6 +119,7 @@ let all_predef_exns = [
   ident_undefined_recursive_module;
   ident_continuation_already_taken;
   ident_unhandled;
+  ident_unhandled_effect;
 ]
 
 let path_match_failure = Pident ident_match_failure
@@ -209,6 +214,10 @@ let build_initial_env add_type add_extension empty_env =
        ~kind:(variant [cstr ident_false []; cstr ident_true []])
   |> add_type ident_char ~immediate:Always
   |> add_type ident_exn ~kind:Type_open
+  |> add_type1 ident_eff
+       ~kind:(fun _ -> Type_open)
+       ~variance:Variance.full
+       ~separability:Separability.Ind
   |> add_type ident_extension_constructor
   |> add_type ident_float
   |> add_type ident_floatarray
@@ -252,6 +261,7 @@ let build_initial_env add_type add_extension empty_env =
   |> add_extension ident_undefined_recursive_module
        [newgenty (Ttuple[type_string; type_int; type_int])]
   |> add_extension ident_unhandled []
+  |> add_extension ident_unhandled_effect [type_eff (newgenty (Tvar None))]
 
 let builtin_values =
   List.map (fun id -> (Ident.name id, id)) all_predef_exns
