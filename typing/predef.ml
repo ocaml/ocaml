@@ -117,8 +117,8 @@ let all_predef_exns = [
   ident_sys_blocked_io;
   ident_assert_failure;
   ident_undefined_recursive_module;
-  ident_continuation_already_taken;
   ident_unhandled;
+  ident_continuation_already_taken;
   ident_unhandled_effect;
 ]
 

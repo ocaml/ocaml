@@ -43,6 +43,7 @@
 #define UNDEFINED_RECURSIVE_MODULE_EXN 11 /* "Undefined_recursive_module" */
 #define UNHANDLED_EXN 12        /* "Unhandled" */
 #define CONTINUATION_ALREADY_TAKEN_EXN 13 /* "Continuation_already_taken" */
+#define UNHANDLED_EFFECT_EXN 14 /* "Unhandled_effect" */
 
 #ifdef POSIX_SIGNALS
 struct longjmp_buffer {

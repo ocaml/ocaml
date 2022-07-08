@@ -1314,13 +1314,16 @@ do_resume: {
 
 
     Instruct(PERFORM): {
-      value cont;
+      value cont, uexn;
       struct stack_info* old_stack = domain_state->current_stack;
       struct stack_info* parent_stack = Stack_parent(old_stack);
 
       check_trap_barrier_for_effect (domain_state);
       if (parent_stack == NULL) {
-        accu = Field(caml_global_data, UNHANDLED_EXN);
+        uexn = caml_alloc_small(2, 0);
+        Field(uexn, 0) = Field(caml_global_data, UNHANDLED_EFFECT_EXN);
+        Field(uexn, 1) = accu;
+        accu = uexn;
         goto raise_exception;
       }
 
@@ -1364,9 +1367,12 @@ do_resume: {
       sp[1] = Val_long(extra_args);
 
       if (parent == NULL) {
-        accu = caml_continuation_use(cont);
+        resume_arg = caml_alloc_small (2, 0);
+        Field(resume_arg, 0) = Field(caml_global_data, UNHANDLED_EFFECT_EXN);
+        Field(resume_arg, 1) = accu;
+
         resume_fn = raise_unhandled;
-        resume_arg = Field(caml_global_data, UNHANDLED_EXN);
+        accu = caml_continuation_use(cont);
         goto do_resume;
       }
 
