@@ -34,26 +34,27 @@ COMPFLAGS = -g -absname -w +a-4-9-42-44-45-48 -warn-error +A \
             -principal -safe-string -strict-sequence -strict-formats -bin-annot
 LINKFLAGS = -g
 
-OBJS=cset.cmo syntax.cmo parser.cmo lexer.cmo table.cmo lexgen.cmo \
-     compact.cmo common.cmo output.cmo outputbis.cmo main.cmo
+ocamllex_MODULES = cset syntax parser lexer table lexgen compact  \
+  common output outputbis main
 
-programs := ocamllex ocamllex.opt
+ocamllex_PROGRAMS := ocamllex ocamllex.opt
 
-$(foreach program, $(programs), $(eval $(call PROGRAM_SYNONYM,$(program))))
+$(foreach PROGRAM, $(ocamllex_PROGRAMS),
+  $(eval $(call PROGRAM_SYNONYM,$(PROGRAM))))
 
 .PHONY: all allopt opt.opt # allopt and opt.opt are synonyms
 all: ocamllex
 allopt: ocamllex.opt
 opt.opt: allopt
 
-ocamllex$(EXE): $(OBJS)
+ocamllex$(EXE): $(ocamllex_MODULES:=.cmo)
 	$(CAMLC) $(LINKFLAGS) -compat-32 -o $@ $^
 
-ocamllex.opt$(EXE): $(OBJS:.cmo=.cmx)
+ocamllex.opt$(EXE): $(ocamllex_MODULES:=.cmx)
 	$(CAMLOPT_CMD) $(LINKFLAGS) -o $@ $^
 
 clean::
-	rm -f $(programs) $(programs:=.exe)
+	rm -f $(ocamllex_PROGRAMS) $(ocamllex_PROGRAMS:=.exe)
 	rm -f *.cmo *.cmi *.cmx *.cmt *.cmti *.o *.obj
 
 clean::
