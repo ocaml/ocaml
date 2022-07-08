@@ -30,8 +30,8 @@ include $(ROOTDIR)/Makefile.common
 CAMLC = $(BOOT_OCAMLC) $(BOOT_STDLIBFLAGS) \
   -use-prims $(ROOTDIR)/runtime/primitives
 CAMLOPT = $(OCAMLRUN) $(ROOTDIR)/ocamlopt$(EXE) $(STDLIBFLAGS)
-COMPFLAGS = -g -absname -w +a-4-9-41-42-44-45-48 -warn-error +A \
-            -safe-string -strict-sequence -strict-formats -bin-annot
+COMPFLAGS = -g -absname -w +a-4-9-42-44-45-48 -warn-error +A \
+            -principal -safe-string -strict-sequence -strict-formats -bin-annot
 LINKFLAGS = -g
 
 OBJS=cset.cmo syntax.cmo parser.cmo lexer.cmo table.cmo lexgen.cmo \
