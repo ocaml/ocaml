@@ -778,8 +778,9 @@ L(do_perform):
         ldr     x9, Caml_state(current_stack)
         SWITCH_OCAML_STACKS x9, x10
     /*  No parent stack. Raise Unhandled. */
-        ADDRGLOBAL(x0, caml_exn_Unhandled)
-        b       G(caml_raise_exn)
+        mov     x0, x1
+        ADDRGLOBAL(x0, caml_exn_Unhandled_effect)
+        bl      G(caml_raise_with_arg)
         CFI_ENDPROC
         END_FUNCTION(caml_perform)
 
