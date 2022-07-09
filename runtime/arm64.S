@@ -771,16 +771,17 @@ L(do_perform):
         mov     x3, TMP                /* x3 := effect handler */
         b       G(caml_apply3)
 1:
-    /*  switch back to original performer before raising Unhandled
+    /*  switch back to original performer before raising Unhandled_effect
         (no-op unless this is a reperform) */
         ldr     x10, [x1] /* load performer stack from continuation */
         sub     x10, x10, 1 /* x10 := Ptr_val(x10) */
         ldr     x9, Caml_state(current_stack)
         SWITCH_OCAML_STACKS x9, x10
-    /*  No parent stack. Raise Unhandled. */
-        mov     x0, x1
+    /*  No parent stack. Raise Unhandled_effect. */
+        mov     x1, x0
         ADDRGLOBAL(x0, caml_exn_Unhandled_effect)
-        bl      G(caml_raise_with_arg)
+        ADDRGLOBAL(ADDITIONAL_ARG, caml_raise_with_arg)
+        b       G(caml_c_call)
         CFI_ENDPROC
         END_FUNCTION(caml_perform)
 
