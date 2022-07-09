@@ -4145,9 +4145,13 @@ and type_expect_
       let rec loop spat_acc ty_acc sands =
         match sands with
         | [] -> spat_acc, ty_acc
-        | { pbop_pat = spat; _} :: rest ->
+        | { pbop_pat = spat; pbop_attributes; _ } :: rest ->
             let ty = newvar () in
             let loc = { slet.pbop_op.loc with Location.loc_ghost = true } in
+            let spat =
+              { spat with
+                ppat_attributes = spat.ppat_attributes @ pbop_attributes;
+              } in
             let spat_acc = Ast_helper.Pat.tuple ~loc [spat_acc; spat] in
             let ty_acc = newty (Ttuple [ty_acc; ty]) in
             loop spat_acc ty_acc rest
@@ -4159,7 +4163,13 @@ and type_expect_
           let let_loc = slet.pbop_op.loc in
           let op_path, op_desc = type_binding_op_ident env slet.pbop_op in
           let op_type = instance op_desc.val_type in
-          let spat_params, ty_params = loop slet.pbop_pat (newvar ()) sands in
+          let spat_params, ty_params =
+            let spat =
+              { slet.pbop_pat with
+                ppat_attributes =
+                  slet.pbop_pat.ppat_attributes @ slet.pbop_attributes }
+            in
+            loop spat (newvar ()) sands in
           let ty_func_result = newvar () in
           let ty_func =
             newty (Tarrow(Nolabel, ty_params, ty_func_result, commu_ok)) in
@@ -4179,15 +4189,12 @@ and type_expect_
            [ty_andops; ty_params; ty_func_result; ty_result])
         end
       in
-      let exp, ands = type_andops env slet.pbop_expr sands ty_andops in
+      let exp, ands = type_andops env slet sands ty_andops in
       let scase = Ast_helper.Exp.case spat_params sbody in
       let cases, partial =
-        Builtin_attributes.warning_scope ~ppwarning:false slet.pbop_attributes
-          (fun () ->
-             type_cases Value env
-               ty_params (mk_expected ty_func_result)
-               ~check_if_total:true loc [scase]
-          )
+        type_cases Value env
+          ty_params (mk_expected ty_func_result)
+          ~check_if_total:true loc [scase]
       in
       let body =
         match cases with
@@ -6129,7 +6136,12 @@ and type_let_def_wrap_warnings
 and type_andops env sarg sands expected_ty =
   let rec loop env let_sarg rev_sands expected_ty =
     match rev_sands with
-    | [] -> type_expect env let_sarg (mk_expected expected_ty), []
+    | [] ->
+        Builtin_attributes.warning_scope
+          ~ppwarning:false let_sarg.pbop_attributes
+          (fun () ->
+            type_expect env let_sarg.pbop_expr (mk_expected expected_ty), []
+          )
     | { pbop_op = sop; pbop_expr = sexp; pbop_loc = loc; pbop_attributes }
       :: rest ->
         let op_path, op_desc, op_type, ty_arg, ty_rest, ty_result =
@@ -6154,7 +6166,12 @@ and type_andops env sarg sands expected_ty =
           ~post:generalize_structure
         in
         let let_arg, rest = loop env let_sarg rest ty_rest in
-        let exp = type_expect env sexp (mk_expected ty_arg) in
+        let exp =
+          Builtin_attributes.warning_scope ~ppwarning:false pbop_attributes
+            (fun () ->
+               type_expect env sexp (mk_expected ty_arg)
+            )
+        in
         begin try
           unify env (instance ty_result) (instance expected_ty)
         with Unify err ->
