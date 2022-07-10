@@ -174,13 +174,28 @@ Line 2, characters 5-6:
 2 | List.(module struct end :;;
          ^
   This '(' might be unmatched
-
-Line 2, characters 2-3:
-2 | (=;
-      ^
+Line 2, characters 2-4:
+2 | (=;;
+      ^^
 Error: Syntax error: ')' expected
 Line 2, characters 0-1:
-2 | (=;
+2 | (=;;
     ^
   This '(' might be unmatched
+Line 2, characters 14-16:
+2 | while true do ();;
+                  ^^
+Error: Syntax error: 'done' expected
+Line 2, characters 11-13:
+2 | while true do ();;
+               ^^
+  This 'do' might be unmatched
+Line 2, characters 20-22:
+2 | for _ = e1 to e2 do ();;
+                        ^^
+Error: Syntax error: 'done' expected
+Line 2, characters 17-19:
+2 | for _ = e1 to e2 do ();;
+                     ^^
+  This 'do' might be unmatched
 

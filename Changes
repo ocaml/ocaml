@@ -6,6 +6,10 @@ Working version
 - #9975, #11365: Make empty types (`type t = |`) immediate.
   (Antal Spector-Zabusky, review by Gabriel Scherer)
 
+- #11297: Report "unclosed" error when "done" is missing in a "do .. done"
+  construct.
+  (Nicolás Ojeda Bär)
+
 ### Runtime system:
 
 ### Code generation and optimizations:
