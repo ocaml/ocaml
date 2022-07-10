@@ -59,13 +59,13 @@ let rec rev_append l1 l2 =
 
 let rev l = rev_append l []
 
-let[@tail_mod_cons] rec init i n f =
-  if i > n then []
-  else if i = n then [f i]
+let[@tail_mod_cons] rec init i last f =
+  if i > last then []
+  else if i = last then [f i]
   else
     let r1 = f i in
     let r2 = f (i+1) in
-    r1 :: r2 :: init (i+2) n f
+    r1 :: r2 :: init (i+2) last f
 
 let init len f =
   if len < 0 then invalid_arg "List.init" else
