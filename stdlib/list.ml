@@ -60,7 +60,7 @@ let rec rev_append l1 l2 =
 let rev l = rev_append l []
 
 let[@tail_mod_cons] rec init i n f =
-  if i >= n then []
+  if i > n then []
   else if i = n then [f i]
   else
     let r1 = f i in
