@@ -102,6 +102,8 @@
 
 #undef HAS_STDINT_H
 
+#undef HAS_PTHREAD_NP_H
+
 #undef HAS_UNISTD
 
 /* Define HAS_UNISTD if you have /usr/include/unistd.h. */
