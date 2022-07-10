@@ -497,9 +497,9 @@ beforedepend:: parsing/lexer.ml
 
 # The bytecode compiler compiled with the native-code compiler
 
-ocamlc.opt$(EXE): compilerlibs/ocamlcommon.cmxa \
-                  compilerlibs/ocamlbytecomp.cmxa $(BYTESTART:.cmo=.cmx)
-	$(CAMLOPT_CMD) $(LINKFLAGS) -o $@ $^ -cclib "$(BYTECCLIBS)"
+ocamlc.opt$(EXE): compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlbytecomp.cmxa \
+                  $(BYTESTART:.cmo=.cmx) stdlib/libasmrun.$(A)
+	$(CAMLOPT_CMD) $(LINKFLAGS) -o $@ $(filter-out %.$(A),$^) -cclib "$(BYTECCLIBS)"
 
 partialclean::
 	rm -f ocamlc.opt$(EXE)
@@ -509,8 +509,8 @@ partialclean::
 ocamlopt.opt$(EXE): \
                     compilerlibs/ocamlcommon.cmxa \
                     compilerlibs/ocamloptcomp.cmxa \
-                    $(OPTSTART:.cmo=.cmx)
-	$(CAMLOPT_CMD) $(LINKFLAGS) -o $@ $^
+                    $(OPTSTART:.cmo=.cmx) stdlib/libasmrun.$(A)
+	$(CAMLOPT_CMD) $(LINKFLAGS) -o $@ $(filter-out %.$(A),$^)
 
 partialclean::
 	rm -f ocamlopt.opt$(EXE)
@@ -1020,8 +1020,8 @@ endif
 
 .PHONY: makeruntime
 makeruntime: runtime-all
-stdlib/libcamlrun.$(A): runtime-all
-	cd stdlib; $(LN) ../runtime/libcamlrun.$(A) .
+stdlib/libcamlrun.$(A): runtime/libcamlrun.$(A)
+	cd stdlib; $(LN) ../$< .
 clean::
 	rm -f $(addprefix runtime/, *.o *.obj *.a *.lib *.so *.dll ld.conf)
 	rm -f $(addprefix runtime/, ocamlrun ocamlrund ocamlruni ocamlruns sak)
@@ -1038,8 +1038,8 @@ runtimeopt: stdlib/libasmrun.$(A)
 
 .PHONY: makeruntimeopt
 makeruntimeopt: runtime-allopt
-stdlib/libasmrun.$(A): runtime-allopt
-	cd stdlib; $(LN) ../runtime/libasmrun.$(A) .
+stdlib/libasmrun.$(A): runtime/libasmrun.$(A)
+	cd stdlib; $(LN) ../$< .
 
 clean::
 	rm -f stdlib/libasmrun.a stdlib/libasmrun.lib
