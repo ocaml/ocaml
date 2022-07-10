@@ -26,6 +26,9 @@
 #include <string.h>
 #ifdef HAS_GNU_GETAFFINITY_NP
 #include <sched.h>
+#ifdef __FreeBSD__
+#include <pthread_np.h>
+#endif
 #endif
 #ifdef HAS_BSD_GETAFFINITY_NP
 #include <pthread_np.h>
