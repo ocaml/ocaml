@@ -59,29 +59,17 @@ let rec rev_append l1 l2 =
 
 let rev l = rev_append l []
 
-let[@tail_mod_cons] rec init_tailrec_aux i n f =
+let[@tail_mod_cons] rec init i n f =
   if i >= n then []
+  else if i = n then [f i]
   else
-    let r = f i in
-    r :: init_tailrec_aux (i+1) n f
-
-let rec init_aux i n f =
-  if i >= n then []
-  else
-    let r = f i in
-    r :: init_aux (i+1) n f
-
-let rev_init_threshold =
-  match Sys.backend_type with
-  | Sys.Native | Sys.Bytecode -> 10_000
-  (* We don't know the size of the stack, better be safe and assume it's
-     small. *)
-  | Sys.Other _ -> 50
+    let r1 = f i in
+    let r2 = f (i+1) in
+    r1 :: r2 :: init (i+2) n f
 
 let init len f =
   if len < 0 then invalid_arg "List.init" else
-  if len > rev_init_threshold then init_tailrec_aux 0 len f
-  else init_aux 0 len f
+  init 0 (len - 1) f
 
 let rec flatten = function
     [] -> []
@@ -595,18 +583,11 @@ let to_seq l =
   in
   aux l
 
-let[@tail_mod_cons] rec of_seq_tailrec seq =
+let[@tail_mod_cons] rec of_seq seq =
   match seq () with
   | Seq.Nil -> []
-  | Seq.Cons (x, seq) -> x :: of_seq_tailrec seq
-
-let of_seq seq =
-  let rec direct depth seq : _ list =
-    if depth=0
-    then
-      of_seq_tailrec seq
-    else match seq() with
-      | Seq.Nil -> []
-      | Seq.Cons (x, next) -> x :: direct (depth-1) next
-  in
-  direct 500 seq
+  | Seq.Cons (x1, seq) ->
+      begin match seq () with
+      | Seq.Nil -> [x1]
+      | Seq.Cons (x2, seq) -> x1 :: x2 :: of_seq seq
+      end
