@@ -20,6 +20,9 @@ type ('a, 'b) stack
 external resume : ('a, 'b) stack -> ('c -> 'a) -> 'c -> 'b = "%resume"
 external runstack : ('a, 'b) stack -> ('c -> 'a) -> 'c -> 'b = "%runstack"
 
+exception Unhandled_effect = Unhandled_effect
+exception Continuation_already_taken = Continuation_already_taken
+
 module Deep = struct
 
   type ('a,'b) continuation
