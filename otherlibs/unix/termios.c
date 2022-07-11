@@ -192,7 +192,7 @@ static struct {
 
 #define NSPEEDS (sizeof(speedtable) / sizeof(speedtable[0]))
 
-static void encode_terminal_status(value *dst)
+static void encode_terminal_status(volatile value *dst)
 {
   long * pc;
   int i;
@@ -242,7 +242,7 @@ static void encode_terminal_status(value *dst)
   }
 }
 
-static void decode_terminal_status(value *src)
+static void decode_terminal_status(volatile value *src)
 {
   long * pc;
   int i;

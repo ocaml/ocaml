@@ -657,7 +657,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       mlsize_t envofs = nfuncs * 3 - 1;
       mlsize_t blksize = envofs + nvars;
       int i;
-      value * p;
+      volatile value * p;
       if (nvars > 0) *--sp = accu;
       if (blksize <= Max_young_wosize) {
         Alloc_small(accu, blksize, Closure_tag, Enter_gc);

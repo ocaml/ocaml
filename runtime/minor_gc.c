@@ -179,8 +179,8 @@ header_t caml_get_header_val(value v) {
 }
 
 
-static int try_update_object_header(value v, value *p, value result,
-                                      mlsize_t infix_offset) {
+static int try_update_object_header(value v, volatile value *p, value result,
+                                    mlsize_t infix_offset) {
   int success = 0;
 
   if( caml_domain_alone() ) {
@@ -228,7 +228,7 @@ static scanning_action_flags oldify_scanning_flags =
 
 /* Note that the tests on the tag depend on the fact that Infix_tag,
    Forward_tag, and No_scan_tag are contiguous. */
-static void oldify_one (void* st_v, value v, value *p)
+static void oldify_one (void* st_v, value v, volatile value *p)
 {
   struct oldify_state* st = st_v;
   value result;
@@ -416,9 +416,9 @@ again:
   if( do_ephemerons ) {
     for (re = ephe_ref_table.base;
          re < ephe_ref_table.ptr; re++) {
-      value *data = re->offset == CAML_EPHE_DATA_OFFSET
-              ? &Ephe_data(re->ephe)
-              :  &Field(re->ephe, re->offset);
+      volatile value *data = re->offset == CAML_EPHE_DATA_OFFSET
+                           ? &Ephe_data(re->ephe)
+                           : &Field(re->ephe, re->offset);
       value v = *data;
       if (v != caml_ephe_none && Is_block(v) && Is_young(v) ) {
         mlsize_t offs = Tag_val(v) == Infix_tag ? Infix_offset_val(v) : 0;
