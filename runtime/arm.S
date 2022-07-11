@@ -418,8 +418,8 @@ FUNCTION(caml_callback3_asm)
 
 FUNCTION(caml_ml_array_bound_error)
         CFI_STARTPROC
-    /* Load address of [caml_array_bound_error] in r7 */
-        ldr     r7, =caml_array_bound_error
+    /* Load address of [caml_array_bound_error_asm] in r7 */
+        ldr     r7, =caml_array_bound_error_asm
     /* Call that function */
         b       caml_c_call
         CFI_ENDPROC

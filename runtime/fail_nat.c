@@ -58,11 +58,7 @@ CAMLnoreturn_start
   extern void caml_raise_exception (caml_domain_state* state, value bucket)
 CAMLnoreturn_end;
 
-CAMLnoreturn_start
-  static void caml_raise_internal(value v, int process_pending_actions)
-CAMLnoreturn_end;
-
-static void caml_raise_internal(value v, int process_pending_actions)
+void caml_raise(value v)
 {
   char* exception_pointer;
 
@@ -70,12 +66,10 @@ static void caml_raise_internal(value v, int process_pending_actions)
 
   CAMLassert(!Is_exception_result(v));
 
-  if (process_pending_actions) {
-    // avoid calling caml_raise recursively
-    v = caml_process_pending_actions_with_root_exn(v);
-    if (Is_exception_result(v))
-      v = Extract_exception(v);
-  }
+  // avoid calling caml_raise recursively
+  v = caml_process_pending_actions_with_root_exn(v);
+  if (Is_exception_result(v))
+    v = Extract_exception(v);
 
   exception_pointer = (char*)Caml_state->c_stack;
 
@@ -87,11 +81,6 @@ static void caml_raise_internal(value v, int process_pending_actions)
   }
 
   caml_raise_exception(Caml_state, v);
-}
-
-void caml_raise(value v)
-{
-  caml_raise_internal(v, 1);
 }
 
 /* Used by the stack overflow handler -> deactivate ASAN (see
@@ -208,8 +197,7 @@ CAMLexport value caml_raise_if_exception(value res)
 /* We use a pre-allocated exception because we can't
    do a GC before the exception is raised (lack of stack descriptors
    for the ccall to [caml_array_bound_error]).  */
-
-void caml_array_bound_error(void)
+static value array_bound_exn()
 {
   static atomic_uintnat exn_cache = ATOMIC_UINTNAT_INIT(0);
   const value* exn = (const value*)atomic_load_acq(&exn_cache);
@@ -222,11 +210,19 @@ void caml_array_bound_error(void)
     }
     atomic_store_rel(&exn_cache, (uintnat)exn);
   }
-  /* This exception is raised directly from OCaml, not C.
-     Moreover, frame descriptors are not available for the exception
-     raising point.  Therefore, we must not invoke GC, even if signals
-     are pending. */
-  caml_raise_internal(*exn, 0);
+  return *exn;
+}
+
+void caml_array_bound_error(void)
+{
+  caml_raise(array_bound_exn());
+}
+
+void caml_array_bound_error_asm(void)
+{
+  /* This exception is raised directly from ocamlopt-compiled OCaml,
+     not C, so we jump directly to the OCaml handler (and avoid GC) */
+  caml_raise_exception(Caml_state, array_bound_exn());
 }
 
 int caml_is_special_exception(value exn) {
