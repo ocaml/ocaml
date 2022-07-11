@@ -20,14 +20,16 @@
  (c_flags (-I %{project_root}/runtime))
  (libraries stdlib)
  (c_names
-   accept access addrofstr alarm bind channels chdir chmod chown chroot close
-   fsync closedir connect cst2constr cstringv dup dup2 envir errmsg execv execve
-   execvp exit fchmod fchown fcntl fork ftruncate getaddrinfo getcwd getegid
-   geteuid getgid getgr getgroups gethost gethostname getlogin getnameinfo
-   getpeername getpid getppid getproto getpw gettimeofday getserv getsockname
-   getuid gmtime initgroups isatty itimer kill link listen lockf lseek mkdir
-   mkfifo mmap mmap_ba nice open opendir pipe putenv read readdir readlink
-   rename rewinddir rmdir select sendrecv setgid setgroups setsid setuid
-   shutdown signals sleep socket socketaddr socketpair sockopt stat strofaddr
-   symlink termios time times truncate umask unixsupport unlink utimes wait
-   write))
+   accept_unix access addrofstr alarm bind_unix channels_unix chdir chmod chown
+   chroot close_unix fsync closedir connect_unix cst2constr cstringv dup_unix
+   dup2 envir_unix errmsg_unix execv execve execvp exit fchmod fchown fcntl
+   fork ftruncate getaddrinfo getcwd getegid geteuid getgid getgr getgroups
+   gethost gethostname getlogin getnameinfo getpeername_unix getpid_unix
+   getppid getproto getpw gettimeofday_unix getserv getsockname_unix getuid
+   gmtime initgroups isatty_unix itimer kill link_unix listen_unix lockf_unix
+   lseek_unix mkdir mkfifo mmap_unix mmap_ba nice open_unix opendir pipe_unix
+   putenv read_unix readdir readlink_unix realpath_unix rename_unix rewinddir
+   rmdir select_unix sendrecv_unix setgid setgroups setsid setuid shutdown_unix
+   signals sleep_unix socket_unix socketaddr socketpair_unix sockopt_unix
+   stat_unix strofaddr symlink_unix termios time times_unix truncate_unix umask
+   unixsupport_unix unlink utimes_unix wait write_unix))
