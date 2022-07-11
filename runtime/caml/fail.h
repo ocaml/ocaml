@@ -41,8 +41,6 @@
 #define SYS_BLOCKED_IO 9        /* "Sys_blocked_io" */
 #define ASSERT_FAILURE_EXN 10   /* "Assert_failure" */
 #define UNDEFINED_RECURSIVE_MODULE_EXN 11 /* "Undefined_recursive_module" */
-#define UNHANDLED_EXN 12        /* "Unhandled" */
-#define CONTINUATION_ALREADY_TAKEN_EXN 13 /* "Continuation_already_taken" */
 
 #ifdef POSIX_SIGNALS
 struct longjmp_buffer {

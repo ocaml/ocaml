@@ -48,9 +48,7 @@ extern caml_generated_constant
   caml_exn_Sys_blocked_io,
   caml_exn_Stack_overflow,
   caml_exn_Assert_failure,
-  caml_exn_Undefined_recursive_module,
-  caml_exn_Unhandled,
-  caml_exn_Continuation_already_taken;
+  caml_exn_Undefined_recursive_module;
 
 /* Exception raising */
 
