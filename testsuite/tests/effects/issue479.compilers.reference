@@ -9,5 +9,5 @@ val f : unit -> unit = <fun>
 Hold 1
 1
 Hold 2
-Exception: Continuation_already_taken.
+Exception: Stdlib.Effect.Continuation_already_taken.
 

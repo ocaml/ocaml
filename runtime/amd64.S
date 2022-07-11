@@ -894,15 +894,16 @@ LBL(do_perform):
         movq    Handler_effect(%r11), %rsi  /* %rsi := effect handler */
         jmp     GCALL(caml_apply3)
 LBL(112):
-    /* Switch back to original performer before raising Unhandled
+    /* Switch back to original performer before raising Unhandled_effect
        (no-op unless this is a reperform) */
         movq    0(%rbx), %r10  /* load performer stack from continuation */
         subq    $1, %r10       /* r10 := Ptr_val(r10) */
         movq    Caml_state(current_stack), %rsi
         SWITCH_OCAML_STACKS
-    /* No parent stack. Raise Unhandled. */
-        LEA_VAR(caml_exn_Unhandled, %rax)
-        jmp LBL(caml_raise_exn)
+    /* No parent stack. Raise Unhandled_effect. */
+        movq    %rax, %rdi
+        LEA_VAR(caml_raise_unhandled_effect, %rax)
+        jmp     LBL(caml_c_call)
 CFI_ENDPROC
 ENDFUNCTION(G(caml_perform))
 
@@ -944,8 +945,8 @@ CFI_STARTPROC
         UPDATE_BASE_POINTER(%rcx)
         SWITCH_OCAML_STACKS
         jmp     *(%rbx)
-2:      LEA_VAR(caml_exn_Continuation_already_taken, %rax)
-        jmp LBL(caml_raise_exn)
+2:      LEA_VAR(caml_raise_continuation_already_taken, %rax)
+        jmp LBL(caml_c_call)
 CFI_ENDPROC
 ENDFUNCTION(G(caml_resume))
 

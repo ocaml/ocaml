@@ -601,13 +601,13 @@ fast.
 Unlike languages such as Eff and Koka, effect handlers in OCaml do not provide
 \textit{effect safety}; the compiler does not statically ensure that all the
 effects performed by the program are handled. If effects do not have a matching
-handler, then an "Unhandled" exception is raised at the point of the
+handler, then an "Unhandled_effect" exception is raised at the point of the
 corresponding "perform". For example, in the previous example, "bar" does not
-handle the effect "F". Hence, we will get an "Unhandled" exception when we run
-"bar".
+handle the effect "F". Hence, we will get an "Unhandled_effect F" exception
+when we run "bar".
 
 \begin{caml_example}{verbatim}
-try bar () with Unhandled -> "Saw unhandled exception"
+try bar () with Unhandled_effect F -> "Saw Unhandled_effect exception"
 \end{caml_example}
 
 \subsubsection{s:effects-linearity}{Linear continuations}

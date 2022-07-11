@@ -21,6 +21,7 @@
 #include <string.h>
 #include <unistd.h>
 #include "caml/alloc.h"
+#include "caml/callback.h"
 #include "caml/codefrag.h"
 #include "caml/fail.h"
 #include "caml/fiber.h"
@@ -666,4 +667,43 @@ CAMLprim value caml_drop_continuation (value cont)
   struct stack_info* stk = Ptr_val(caml_continuation_use(cont));
   caml_free_stack(stk);
   return Val_unit;
+}
+
+static const value * _Atomic caml_unhandled_effect_exn = NULL;
+static const value * _Atomic caml_continuation_already_taken_exn = NULL;
+
+CAMLexport void caml_raise_continuation_already_taken(void)
+{
+  const value * exn;
+
+  exn = atomic_load(&caml_continuation_already_taken_exn);
+  if (exn == NULL) {
+    exn = caml_named_value("Effect.Continuation_already_taken");
+    CAMLassert (exn);
+    atomic_store(&caml_continuation_already_taken_exn, exn);
+  }
+  caml_raise(*exn);
+}
+
+value caml_make_unhandled_effect_exn (value effect)
+{
+  CAMLparam1(effect);
+  value res;
+  const value * exn;
+
+  exn = atomic_load(&caml_unhandled_effect_exn);
+  if (exn == NULL) {
+    exn = caml_named_value("Effect.Unhandled_effect");
+    CAMLassert (exn);
+    atomic_store(&caml_unhandled_effect_exn, exn);
+  }
+  res = caml_alloc_small(2,0);
+  Field(res, 0) = *exn;
+  Field(res, 1) = effect;
+  CAMLreturn(res);
+}
+
+CAMLexport void caml_raise_unhandled_effect (value effect)
+{
+  caml_raise(caml_make_unhandled_effect_exn(effect));
 }
