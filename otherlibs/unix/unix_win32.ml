@@ -216,10 +216,8 @@ type wait_flag =
 type file_descr
 
 let maybe_quote f =
-  if String.contains f ' ' ||
-     String.contains f '\"' ||
-     String.contains f '\t' ||
-     f = ""
+  if f = ""
+  || String.exists (function ' ' | '\"'| '\t' -> true | _ -> false) f
   then Filename.quote f
   else f
 
@@ -369,8 +367,7 @@ external realpath : string -> string = "caml_unix_realpath"
 
 let realpath p =
   let cleanup p = (* Remove any \\?\ prefix. *)
-    if String.length p <= 4 then p else
-    if p.[0] = '\\' && p.[1] = '\\' && p.[2] = '?' && p.[3] = '\\'
+    if String.starts_with ~prefix:{|\\?\|} p
     then (String.sub p 4 (String.length p - 4))
     else p
   in
@@ -516,12 +513,8 @@ external symlink_stub : bool -> string -> string -> unit = "caml_unix_symlink"
    Windows call GetFullPathName to do this because we need relative paths to
    stay relative. *)
 let normalize_slashes path =
-  if String.length path >= 4 && path.[0] = '\\' && path.[1] = '\\'
-                             && path.[2] = '?' && path.[3] = '\\' then
-    path
-  else
-    String.init (String.length path)
-                (fun i -> match path.[i] with '/' -> '\\' | c -> c)
+  if String.starts_with ~prefix:{|\\?\|} path then path
+  else String.map (function '/' -> '\\' | c -> c) path
 
 let symlink ?to_dir source dest =
   let to_dir =

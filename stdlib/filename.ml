@@ -219,10 +219,10 @@ Quoting commands for execution by cmd.exe is difficult.
       s;
     Buffer.contents b
   let quote_cmd_filename f =
-    if String.contains f '\"' || String.contains f '%' then
+    if String.exists (function '\"' | '%' -> true | _ -> false) f then
       failwith ("Filename.quote_command: bad file name " ^ f)
     else if String.contains f ' ' then
-      "\"" ^ f ^ "\""
+      String.concat "" ["\""; f; "\""]
     else
       f
   (* Redirections in cmd.exe: see https://ss64.com/nt/syntax-redirection.html
