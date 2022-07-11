@@ -255,9 +255,9 @@ OCaml 5.0
   Unix module.
   (Nicolás Ojeda Bär, review by Anil Madhavapeddy)
 
-- #11309: Add Domain.recommended_domain_count.
-  (Christiano Haesbaert, review by David Allsopp, KC Sivaramakrishnan,
-  Gabriel Scherer, Nicolas Ojeda Bar)
+- #11309, #11424, #11427: Add Domain.recommended_domain_count.
+  (Christiano Haesbaert, Konstantin Belousov, review by David Allsopp,
+  KC Sivaramakrishnan, Gabriel Scherer, Nicolas Ojeda Bar)
 
 ### Tools:
 

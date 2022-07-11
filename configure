@@ -13495,6 +13495,13 @@ if test "x$ac_cv_header_stdint_h" = xyes; then :
 fi
 
 
+ac_fn_c_check_header_mongrel "$LINENO" "pthread_np.h" "ac_cv_header_pthread_np_h" "$ac_includes_default"
+if test "x$ac_cv_header_pthread_np_h" = xyes; then :
+  $as_echo "#define HAS_PTHREAD_NP_H 1" >>confdefs.h
+
+fi
+
+
 ac_fn_c_check_header_compile "$LINENO" "dirent.h" "ac_cv_header_dirent_h" "#include <sys/types.h>
 "
 if test "x$ac_cv_header_dirent_h" = xyes; then :
