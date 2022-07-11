@@ -25,7 +25,7 @@
 
 /* Structural comparison on trees. */
 
-struct compare_item { value * v1, * v2; mlsize_t count; };
+struct compare_item { volatile value * v1, * v2; mlsize_t count; };
 
 #define COMPARE_STACK_INIT_SIZE 8
 #define COMPARE_STACK_MIN_ALLOC_SIZE 32

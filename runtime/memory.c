@@ -146,7 +146,7 @@ Caml_inline void write_barrier(
    }
 }
 
-CAMLexport CAMLweakdef void caml_modify (value *fp, value val)
+CAMLexport CAMLweakdef void caml_modify (volatile value *fp, value val)
 {
   write_barrier((value)fp, 0, *fp, val);
 
@@ -205,7 +205,7 @@ CAMLexport void caml_adjust_gc_speed (mlsize_t res, mlsize_t max)
 
    [caml_initialize] never calls the GC, so you may call it while a block is
    unfinished (i.e. just after a call to [caml_alloc_shr].) */
-CAMLexport CAMLweakdef void caml_initialize (value *fp, value val)
+CAMLexport CAMLweakdef void caml_initialize (volatile value *fp, value val)
 {
 #ifdef DEBUG
   /* Previous value should not be a pointer.
@@ -223,7 +223,7 @@ CAMLexport int caml_atomic_cas_field (
 {
   if (caml_domain_alone()) {
     /* non-atomic CAS since only this thread can access the object */
-    value* p = &Field(obj, field);
+    volatile value* p = &Field(obj, field);
     if (*p == oldval) {
       *p = newval;
       write_barrier(obj, field, oldval, newval);

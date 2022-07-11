@@ -40,7 +40,7 @@
 
 /* Item on the stack with defined operation */
 struct intern_item {
-  value * dest;
+  volatile value * dest;
   intnat arg;
   enum {
     OReadItems, /* read arg items and store them in dest[0], dest[1], ... */
@@ -390,7 +390,7 @@ static value intern_alloc_obj(struct caml_intern_state* s, caml_domain_state* d,
 }
 
 static void intern_rec(struct caml_intern_state* s,
-                       value *dest)
+                       volatile value *dest)
 {
   unsigned int code;
   tag_t tag;
