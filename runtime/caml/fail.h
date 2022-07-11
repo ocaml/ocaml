@@ -151,10 +151,6 @@ CAMLnoreturn_start
 CAMLextern void caml_raise_sys_blocked_io (void)
 CAMLnoreturn_end;
 
-CAMLnoreturn_start
-CAMLextern void caml_raise_continuation_already_taken (void)
-CAMLnoreturn_end;
-
 #ifdef __cplusplus
 }
 #endif
