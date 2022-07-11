@@ -162,6 +162,14 @@ OCaml 5.0
 - #11144: Restore frame-pointers support for amd64
   (Fabrice Buoro, review by Frederic Bour and KC Sivaramakrishnan)
 
+* #11255: in the C interface, `&Field(v, i)` now has type `volatile value *`
+  instead of `value *` in OCaml 4.  This makes the memory model
+  for mixed OCaml/C code better defined, but can cause warnings or type
+  errors in user C code.
+  (KC Sivaramakrishnan, review by Xavier Leroy, Gabriel Scherer and
+  Guillaume Munch-Maccagnoni, additional discussions with Stephen
+  Dolan and Luc Maranget)
+
 ### Code generation and optimizations:
 
 - #10972: ARM64 multicore support: OCaml & C stack separation;
