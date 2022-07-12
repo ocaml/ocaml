@@ -213,8 +213,6 @@ type wait_flag =
     WNOHANG
   | WUNTRACED
 
-type file_descr
-
 let maybe_quote f =
   if f = ""
   || String.exists (function ' ' | '\"'| '\t' -> true | _ -> false) f
@@ -237,17 +235,19 @@ let execvp prog args =
 let execvpe prog args env =
   sys_execvpe prog (Array.map maybe_quote args) env
 
+let fork () = invalid_arg "Unix.fork not implemented"
+let wait () = invalid_arg "Unix.wait not implemented"
+
 external waitpid : wait_flag list -> int -> int * process_status
                  = "caml_unix_waitpid"
 external _exit : int -> 'a = "caml_unix_exit"
 external getpid : unit -> int = "caml_unix_getpid"
-
-let fork () = invalid_arg "Unix.fork not implemented"
-let wait () = invalid_arg "Unix.wait not implemented"
 let getppid () = invalid_arg "Unix.getppid not implemented"
 let nice _ = invalid_arg "Unix.nice not implemented"
 
 (* Basic file input/output *)
+
+type file_descr
 
 external filedescr_of_unix_fd_num : int -> file_descr
                                   = "caml_unix_filedescr_of_fd"
@@ -598,8 +598,8 @@ type interval_timer =
   | ITIMER_PROF
 
 type interval_timer_status =
-  { it_interval: float;
-    it_value: float }
+  { it_interval: float;                 (* Period *)
+    it_value: float }                   (* Current value of the timer *)
 
 let getitimer _it = invalid_arg "Unix.getitimer not implemented"
 let setitimer _it _tm = invalid_arg "Unix.setitimer not implemented"
@@ -1224,7 +1224,10 @@ let tcsendbreak _fd _n = invalid_arg "Unix.tcsendbreak not implemented"
 let tcdrain _fd = invalid_arg "Unix.tcdrain not implemented"
 
 type flush_queue = TCIFLUSH | TCOFLUSH | TCIOFLUSH
+
 let tcflush _fd _q = invalid_arg "Unix.tcflush not implemented"
+
 type flow_action = TCOOFF | TCOON | TCIOFF | TCION
+
 let tcflow _fd _fl = invalid_arg "Unix.tcflow not implemented"
 let setsid () = invalid_arg "Unix.setsid not implemented"
