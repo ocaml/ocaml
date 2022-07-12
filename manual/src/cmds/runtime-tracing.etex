@@ -17,6 +17,20 @@ Data emitted includes:
 
 \section{s:runtime-tracing-overview}{Overview}
 
+There are three main classes of events emitted by the runtime events system:
+
+\begin{description}
+\item[Spans] Events having a duration in time. An example of a span event in the
+OCaml garbage collector would be a a minor collection. Spans may contain other
+spans, e.g there may be other spans that begin after a minor collection has
+begun and end before it does.
+\item[Lifecycle events] Events that occur at a moment in time. An example of a
+lifecycle event would be the termination of a domain.
+\item[Counters] Events that include the measurement of some quantity of
+interest. An example of a counter would be the number of words promoted from
+the minor to the major heap during the last minor garbage collection.
+\end{description}
+
 The runtime events tracing system is designed to be used in different contexts:
 \begin{description}
 \item[Self monitoring] OCaml programs and libraries can install their own callbacks
@@ -31,20 +45,6 @@ Runtime events functions as a {\em flight recorder} with old events being
 overwritten by new events. This means that consumers can either continuously
 consume events or choose to only do so in response to some circumstance, e.g if
 a particular query or operation takes longer than expected to complete.
-
-There are three main classes of events emitted by runtime events:
-
-\begin{description}
-\item[Spans] Events having a duration in time. An example of a span event in the
-OCaml garbage collector would be a a minor collection. Spans may contain other
-spans, e.g there may be other spans that begin after a minor collection has
-begun and end before it does.
-\item[Lifecycle events] Events that occur at a moment in time. An example of a
-lifecycle event would be the termination of a domain.
-\item[Counters] Events that include the measurement of some quantity of
-interest. An example of a counter would be the number of words promoted from
-the minor to the major heap during the last minor garbage collection.
-\end{description}
 
 \section{s:runtime-tracing-architecture}{Architecture}
 
