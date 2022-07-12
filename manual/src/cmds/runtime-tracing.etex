@@ -4,12 +4,16 @@
 
 This chapter describes the runtime events tracing system which enables
 continuous extraction of performance information from the OCaml runtime with
-very low overhead. Collected metrics include time spent executing the {\em garbage collector}.
-The overall execution time of individual pauses are measured
-down to the time spent in specific parts of the garbage collection.
-Insight is also given on memory allocation and motion by recording
-the size of allocated memory blocks, as well as value promotions from the
-{\em minor heap} to the {\em major heap}.
+very low overhead. The system and interfaces are low-level and tightly coupled
+to the runtime implementation, it is intended for end-users to rely on tooling
+to consume and visualise data of interest.
+
+Data emitted includes:
+\begin{itemize}
+\item Event times of garbage collector and runtime phases
+\item Minor and major heap sizings and utilization
+\item Allocation and promotion rates between heaps
+\end{itemize}
 
 \section{s:runtime-tracing-overview}{Overview}
 
