@@ -241,9 +241,10 @@ Programmatic access to events enables very flexible use of the performance data
 from runtime events but is intended primarily for writers of observability
 libraries and tooling that end-users use.
 
-In this section we cover the simple ocaml-runtime-tracer tool that produces similar
-data to the previous 'eventlog' instrumentation system available in OCaml
-4.12 to 4.14.
+In this section we cover several utilities in the \texttt{runtime_events_tools}
+package which provide simple ways of extracting and summarisingdata from runtime
+events. The trace utility in particular produces similar data to the previous
+'eventlog' instrumentation system available in OCaml 4.12 to 4.14.
 
 First, install \texttt{runtime_events_tools} in an OCaml 5.0+ opam switch:
 
@@ -251,11 +252,11 @@ First, install \texttt{runtime_events_tools} in an OCaml 5.0+ opam switch:
 opam install runtime_events_tools
 \end{verbatim}
 
-This should install the ocaml-runtime-tracer tool in your path. You can now generate
-runtime traces for programs compiled with OCaml 5.0+:
+This should install the olly tool in your path. You can now generate
+runtime traces for programs compiled with OCaml 5.0+ using the trace subcommand:
 
 \begin{verbatim}
-ocaml-runtime-tracer trace.json your_program.exe .. args ..
+olly trace trace.json your_program.exe .. args ..
 \end{verbatim}
 
 Runtime tracing data will be generated in the json Trace Event Format to trace.json.
@@ -265,3 +266,41 @@ This can then be loaded into the Chrome tracing viewer or into \ifouthtml
 Perfetto
 \fi
 to visualize the collected trace.
+
+\subsubsection{s-runtime-tracing-latency}{Measuring GC latency}
+
+The olly utility also includes a latency subcommand which consumes runtime
+events data and on program completion emits a parseable histogram summary of
+pause durations. It can be run as follows:
+
+\begin{verbatim}
+olly latency your_program.exe .. args ..
+\end{verbatim}
+
+This should produce an output similar to the following:
+
+\begin{verbatim}
+GC latency profile:
+#[Mean (ms):	2.46,	 Stddev (ms):	3.87]
+#[Min (ms):	0.01,	 max (ms):	9.17]
+
+Percentile 	 Latency (ms)
+25.0000 	 0.01
+50.0000 	 0.23
+60.0000 	 0.23
+70.0000 	 0.45
+75.0000 	 0.45
+80.0000 	 0.45
+85.0000 	 0.45
+90.0000 	 9.17
+95.0000 	 9.17
+96.0000 	 9.17
+97.0000 	 9.17
+98.0000 	 9.17
+99.0000 	 9.17
+99.9000 	 9.17
+99.9900 	 9.17
+99.9990 	 9.17
+99.9999 	 9.17
+100.0000 	 9.17
+\end{verbatim}
