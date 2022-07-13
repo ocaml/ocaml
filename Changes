@@ -26,6 +26,9 @@ Working version
   typical workloads.
   (Nicolás Ojeda Bär, review by Gabriel Scherer)
 
+- #11412: Add Sys.is_regular_file
+  (Xavier Leroy, review by Anil Madhavapeddy, Nicolás Ojeda Bär, David Allsopp)
+
 ### Other libraries:
 
 ### Tools:
@@ -46,6 +49,10 @@ Working version
 
 ### Bug fixes:
 
+- #11302, #11412: `ocamlc` and `ocamlopt` should not remove generated files
+  when they are not regular files.
+  (Xavier Leroy, report by Thierry Martinez, review by
+   Anil Madhavapeddy, Nicolás Ojeda Bär, David Allsopp)
 - #10348: Expand GADT equations lazily during unification to avoid ambiguity
   (Jacques Garrigue, review by Leo White)
 

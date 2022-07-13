@@ -185,7 +185,9 @@ val find_in_path_uncap: string list -> string -> string
            if name is Foo.ml, allow /path/Foo.ml and /path/foo.ml
            to match. *)
 val remove_file: string -> unit
-        (* Delete the given file if it exists. Never raise an error. *)
+        (* Delete the given file if it exists and is a regular file.
+           Does nothing for other kinds of files.
+           Never raises an error. *)
 val expand_directory: string -> string -> string
         (* [expand_directory alt file] eventually expands a [+] at the
            beginning of file into [alt] (an alternate root directory) *)
