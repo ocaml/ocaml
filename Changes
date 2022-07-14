@@ -37,6 +37,9 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- #10818: Preserve integer literal formatting in type hint.
+  (Leonhard Markert, review by Gabriel Scherer and Florian Angeletti)
+
 - #11338: Turn some partial application warnings into hints.
   (Leo White, review by Stephen Dolan)
 
