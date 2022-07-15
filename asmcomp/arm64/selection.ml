@@ -216,9 +216,6 @@ method! insert_move_extcall_arg env ty_arg src dst =
   if macosx && ty_arg = XInt32 && is_stack_slot dst
   then self#insert env (Iop (Ispecific Imove32)) src dst
   else self#insert_moves env src dst
-
-method! mark_c_tailcall =
-  if !Clflags.debug then contains_calls := true
 end
 
 let fundecl ~future_funcnames f = (new selector)#emit_fundecl
