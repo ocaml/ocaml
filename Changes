@@ -14,6 +14,12 @@ Working version
 
 ### Code generation and optimizations:
 
+- #8998, #11321, #11430: change mangling of OCaml long identifiers
+  from `camlModule__name_NNN` to `camlModule.name_NNN`.  The previous
+  mangling schema, using `__`, was ambiguous.
+  (Xavier Leroy, report by sliquister and Michael Bacarella,
+   review by Gabriel Scherer)
+
 ### Standard library:
 
 - #11128: Add In_channel.isatty, Out_channel.isatty.
