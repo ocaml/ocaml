@@ -645,9 +645,9 @@ caml_system__code_end:
 /* Frame table */
 
         .section ".data"
-        .globl  caml_system__frametable
-        .type   caml_system__frametable, @object
-caml_system__frametable:
+        .globl  caml_system.frametable
+        .type   caml_system.frametable, @object
+caml_system.frametable:
         datag   1               /* one descriptor */
         datag   .L105 + 4       /* return address into callback */
         .short  -1              /* negative size count => use callback link */

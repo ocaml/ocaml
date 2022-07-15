@@ -49,7 +49,7 @@ let emit_label lbl =
 
 let emit_symbol s =
   if macosx then emit_string "_";
-  Emitaux.emit_symbol '$' s
+  Emitaux.emit_symbol s
 
 (* Object types *)
 
