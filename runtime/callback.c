@@ -136,7 +136,9 @@ CAMLexport value caml_callback3_exn(value closure,
   return caml_callbackN_exn(closure, 3, arg);
 }
 
-#else /* Nativecode callbacks */
+#else
+
+/* Native-code callbacks.  caml_callback[123]_asm are implemented in asm. */
 
 static void init_callback_code(void)
 {
@@ -210,8 +212,6 @@ CAMLexport value caml_callback3_exn(value closure,
     return caml_callback3_asm(domain_state, closure, args);
   }
 }
-
-/* Native-code callbacks.  caml_callback[123]_asm are implemented in asm. */
 
 CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
 {
