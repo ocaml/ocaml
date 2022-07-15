@@ -46,8 +46,12 @@ DOMAIN_STATE(struct stack_info**, stack_cache)
 /* This is a list of freelist buckets of stacks */
 
 DOMAIN_STATE(value*, gc_regs_buckets)
+/* Cache of free gc_regs buckets.
+   Documented in fiber.h. */
 
 DOMAIN_STATE(value*, gc_regs)
+/* Pointer to currently-used register bucket, or NULL.
+   Documented in fiber.h. */
 
 DOMAIN_STATE(struct caml_minor_tables*, minor_tables)
 
