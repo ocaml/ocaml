@@ -470,6 +470,7 @@ static void caml_thread_stop(void)
 
 /* Create a thread */
 
+/* the thread lock is not held when entering */
 static void * caml_thread_start(void * v)
 {
   caml_thread_t th = (caml_thread_t) v;
@@ -579,6 +580,7 @@ CAMLprim value caml_thread_new(value clos)
 
 #define Dom_c_threads 0
 
+/* the thread lock is not held when entering */
 CAMLexport int caml_c_thread_register(void)
 {
   /* Already registered? */
@@ -626,6 +628,7 @@ CAMLexport int caml_c_thread_register(void)
 /* Unregister a thread that was created from C and registered with
    the function above */
 
+/* the thread lock is not held when entering */
 CAMLexport int caml_c_thread_unregister(void)
 {
   caml_thread_t th = st_tls_get(caml_thread_key);
