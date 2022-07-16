@@ -2508,13 +2508,17 @@ CAMLprim stub_gethostbyname(value vname)
 }
 \end{verbatim}
 
+During the time the domain lock is released, the thread-local variable
+"Caml_state" is set to "NULL". This can be used to determine if the
+thread currently holds its domain lock.
+
 Callbacks from C to OCaml must be performed while holding the domain
 lock. This is naturally the case if the callback is performed by a C
 primitive that did not release the runtime system. If the C primitive
 released the domain lock previously, or the callback is performed from
 other C code that was not invoked from OCaml (e.g. an event loop in a
 GUI application), the lock must be acquired before the callback and
-released after:
+released after it:
 \begin{verbatim}
   caml_acquire_runtime_system();
   /* Resolve OCaml function vfun to be invoked */
