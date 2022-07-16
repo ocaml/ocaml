@@ -1565,6 +1565,7 @@ CAMLexport void caml_acquire_domain_lock(void)
 {
   dom_internal* self = domain_self;
   caml_plat_lock(&self->domain_lock);
+  SET_Caml_state(self->state);
 }
 
 CAMLexport void caml_bt_enter_ocaml(void)
@@ -1581,6 +1582,7 @@ CAMLexport void caml_bt_enter_ocaml(void)
 CAMLexport void caml_release_domain_lock(void)
 {
   dom_internal* self = domain_self;
+  SET_Caml_state(NULL);
   caml_plat_unlock(&self->domain_lock);
 }
 
