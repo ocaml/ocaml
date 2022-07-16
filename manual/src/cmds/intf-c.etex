@@ -1221,21 +1221,28 @@ has taken place since "r" was allocated.
 \subsection{ss:c-process-pending-actions}{Pending actions and asynchronous exceptions}
 
 Since 4.10, allocation functions are guaranteed not to call any OCaml
-callbacks from C, including finalisers and signal handlers, and delay
-their execution instead.
+callbacks from C, including finalisers and signal handlers, and to
+delay their execution instead.
 
 The function \verb"caml_process_pending_actions" from
 "<caml/signals.h>" executes any pending signal handlers and
-finalisers, Memprof callbacks, and requested minor and major garbage
-collections. In particular, it can raise asynchronous exceptions. It
-is recommended to call it regularly at safe points inside long-running
-non-blocking C code.
+finalisers, Memprof callbacks, thread preemption, and requested or
+incoming garbage collections events. In particular, it can raise
+asynchronous exceptions. It is recommended to call
+"caml_process_pending_actions" regularly at safe points inside
+long-running C code that holds the domain lock.
+
+In addition, in the rare case of long-running C code that holds the
+domain lock but does not allocate regularly, not calling
+"caml_process_pending_actions" regularly can cause all other domains
+to remain stuck while waiting for the C code to finish, due to pending
+garbage collection events.
 
 The variant \verb"caml_process_pending_actions_exn" is provided, that
-returns the exception instead of raising it directly into OCaml code.
-Its result must be tested using {\tt Is_exception_result}, and
-followed by {\tt Extract_exception} if appropriate. It is typically
-used for clean up before re-raising:
+does the same but returns the exception, instead of raising it
+directly into OCaml code. Its result must be tested using {\tt
+Is_exception_result}, and followed by {\tt Extract_exception} if
+appropriate. It is typically used for clean up before re-raising:
 
 \begin{verbatim}
     CAMLlocal1(exn);
@@ -2364,7 +2371,7 @@ code around C calls.  Technically it wraps every C call with the C function
 For small functions that are called repeatedly, this indirection can have
 a big impact on performances.  However this is not needed if we know that
 the C function doesn't allocate, doesn't raise exceptions, and doesn't release
-the master lock (see section~\ref{ss:parallel-execution-long-running-c-code}).
+the domain lock (see section~\ref{ss:parallel-execution-long-running-c-code}).
 We can instruct the OCaml native-code compiler of this fact by annotating the
 external declaration with the attribute "[\@\@noalloc]":
 
@@ -2403,66 +2410,67 @@ section.
 \subsection{ss:c-thread-register}{Registering threads created from C}
 
 Callbacks from C to OCaml are possible only if the calling thread is
-known to the OCaml run-time system.  Threads created from OCaml (through
+known to the OCaml runtime system.  Threads created from OCaml (through
 the "Thread.create" function of the system threads library) are
-automatically known to the run-time system.  If the application
+automatically known to the runtime system.  If the application
 creates additional threads from C and wishes to callback into OCaml
-code from these threads, it must first register them with the run-time
+code from these threads, it must first register them with the runtime
 system.  The following functions are declared in the include file
 "<caml/threads.h>".
 
 \begin{itemize}
 \item
 "caml_c_thread_register()" registers the calling thread with the OCaml
-run-time system.  Returns 1 on success, 0 on error.  Registering an
+runtime system.  Returns 1 on success, 0 on error.  Registering an
 already-registered thread does nothing and returns 0.
 \item
 "caml_c_thread_unregister()"  must be called before the thread
-  terminates, to unregister it from the OCaml run-time system.
+  terminates, to unregister it from the OCaml runtime system.
 Returns 1 on success, 0 on error.  If the calling thread was not
 previously registered, does nothing and returns 0.
 \end{itemize}
 
-\subsection{ss:parallel-execution-long-running-c-code}{Parallel execution of long-running C code}
+\subsection{ss:parallel-execution-long-running-c-code}{Parallel
+execution of long-running C code and blocking system calls}
 
-The OCaml run-time system is not reentrant: at any time, at most one
-thread can be executing OCaml code or C code that uses the OCaml
-run-time system.  Technically, this is enforced by a ``master lock''
-that any thread must hold while executing such code.
+The OCaml runtime system is not reentrant: at any time, at most one
+thread on any domain can be executing OCaml code, or C code that uses
+the OCaml runtime system. Technically, this is enforced by a ``domain
+lock'' that any thread must hold while executing such code.
 
-When OCaml calls the C code implementing a primitive, the master lock
+When OCaml calls the C code implementing a primitive, the domain lock
 is held, therefore the C code has full access to the facilities of the
-run-time system.  However, no other thread can execute OCaml code
-concurrently with the C code of the primitive.
+runtime system.  However, no other thread can execute OCaml code
+concurrently with the C code of the primitive on this domain.
 
 If a C primitive runs for a long time or performs potentially blocking
-input-output operations, it can explicitly release the master lock,
-enabling other OCaml threads to run concurrently with its operations.
-The C code must re-acquire the master lock before returning to OCaml.
-This is achieved with the following functions, declared in
-the include file "<caml/threads.h>".
+input-output operations, it can explicitly release the domain lock,
+enabling other threads to run concurrently with its operations. The C
+code must re-acquire the domain lock before returning to OCaml. This
+is achieved with the following functions, declared in the include file
+"<caml/threads.h>".
 
 \begin{itemize}
 \item
 "caml_release_runtime_system()"
-The calling thread releases the master lock and other OCaml resources,
+The calling thread releases the domain lock and other OCaml resources,
 enabling other threads to run OCaml code in parallel with the execution
-of the calling thread.
+of the calling thread on this domain.
 \item
 "caml_acquire_runtime_system()"
-The calling thread re-acquires the master lock and other OCaml
-resources.  It may block until no other thread uses the OCaml run-time
-system.
+The calling thread re-acquires the domain lock and other OCaml
+resources. This may block until no other thread uses the OCaml runtime
+system on this domain.
 \end{itemize}
 
-These functions poll for pending signals by calling asynchronous
-callbacks (section~\ref{ss:c-process-pending-actions}) before releasing and
-after acquiring the lock. They can therefore execute arbitrary OCaml
-code including raising an asynchronous exception.
+"caml_release_runtime_system()" polls for pending signals by calling
+asynchronous callbacks (section~\ref{ss:c-process-pending-actions})
+before releasing and after acquiring the lock. It can therefore
+execute arbitrary OCaml code, including raising an exception.
 
 After "caml_release_runtime_system()" was called and until
 "caml_acquire_runtime_system()" is called, the C code must not access
-any OCaml data, nor call any function of the run-time system, nor call
+any OCaml data, nor call any function of the runtime system, nor call
 back into OCaml code.  Consequently, arguments provided by OCaml to the
 C primitive must be copied into C data structures before calling
 "caml_release_runtime_system()", and results to be returned to OCaml
@@ -2471,7 +2479,7 @@ returns.
 
 Example: the following C primitive invokes "gethostbyname" to find the
 IP address of a host name.  The "gethostbyname" function can block for
-a long time, so we choose to release the OCaml run-time system while it
+a long time, so we choose to release the OCaml runtime system while it
 is running.
 \begin{verbatim}
 CAMLprim stub_gethostbyname(value vname)
@@ -2484,14 +2492,14 @@ CAMLprim stub_gethostbyname(value vname)
   /* Copy the string argument to a C string, allocated outside the
      OCaml heap. */
   name = caml_stat_strdup(String_val(vname));
-  /* Release the OCaml run-time system */
+  /* Release the OCaml runtime system */
   caml_release_runtime_system();
   /* Resolve the name */
   h = gethostbyname(name);
   /* Free the copy of the string, which we might as well do before
      acquiring the runtime system to benefit from parallelism. */
   caml_stat_free(name);
-  /* Re-acquire the OCaml run-time system */
+  /* Re-acquire the OCaml runtime system */
   caml_acquire_runtime_system();
   /* Encode the relevant fields of h as the OCaml value vres */
   ... /* Omitted */
@@ -2500,14 +2508,13 @@ CAMLprim stub_gethostbyname(value vname)
 }
 \end{verbatim}
 
-Callbacks from C to OCaml must be performed while holding the master
-lock to the OCaml run-time system.  This is naturally the case if the
-callback is performed by a C primitive that did not release the
-run-time system.  If the C primitive released the run-time system
-previously, or the callback is performed from other C code that was
-not invoked from OCaml (e.g. an event loop in a GUI application), the
-run-time system must be acquired before the callback and released
-after:
+Callbacks from C to OCaml must be performed while holding the domain
+lock. This is naturally the case if the callback is performed by a C
+primitive that did not release the runtime system. If the C primitive
+released the domain lock previously, or the callback is performed from
+other C code that was not invoked from OCaml (e.g. an event loop in a
+GUI application), the lock must be acquired before the callback and
+released after:
 \begin{verbatim}
   caml_acquire_runtime_system();
   /* Resolve OCaml function vfun to be invoked */
@@ -2518,8 +2525,8 @@ after:
 \end{verbatim}
 
 Note: the "acquire" and "release" functions described above were
-introduced in OCaml 3.12.  Older code uses the following historical
-names, declared in "<caml/signals.h>":
+introduced in OCaml 3.12. The following equivalent historical names
+are declared in "<caml/signals.h>" and are sometimes used instead:
 \begin{itemize}
 \item "caml_enter_blocking_section" as an alias for
   "caml_release_runtime_system"
@@ -2527,7 +2534,7 @@ names, declared in "<caml/signals.h>":
   "caml_acquire_runtime_system"
 \end{itemize}
 Intuition: a ``blocking section'' is a piece of C code that does not
-use the OCaml run-time system, typically a blocking input/output operation.
+use the OCaml runtime system, typically a blocking input/output operation.
 
 \section{s:interfacing-windows-unicode-apis}{Advanced topic: interfacing with Windows Unicode APIs}
 
