@@ -1,10 +1,11 @@
-version = "[distributed with OCaml]"
+# @configure_input@
+
+version = "@VERSION@"
 description = "compiler-libs support library"
-directory= "+compiler-libs"
 
 package "common" (
   requires = "compiler-libs"
-  version = "[distributed with OCaml]"
+  version = "@VERSION@"
   description = "Common compiler routines"
   archive(byte) = "ocamlcommon.cma"
   archive(native) = "ocamlcommon.cmxa"
@@ -12,7 +13,7 @@ package "common" (
 
 package "bytecomp" (
   requires = "compiler-libs.common"
-  version = "[distributed with OCaml]"
+  version = "@VERSION@"
   description = "Bytecode compiler"
   archive(byte) = "ocamlbytecomp.cma"
   archive(native) = "ocamlbytecomp.cmxa"
@@ -20,7 +21,7 @@ package "bytecomp" (
 
 package "optcomp" (
   requires = "compiler-libs.common"
-  version = "[distributed with OCaml]"
+  version = "@VERSION@"
   description = "Native-code compiler"
   archive(byte) = "ocamloptcomp.cma"
   archive(native) = "ocamloptcomp.cmxa"
@@ -29,14 +30,14 @@ package "optcomp" (
 
 package "toplevel" (
   requires = "compiler-libs.bytecomp"
-  version = "[distributed with OCaml]"
+  version = "@VERSION@"
   description = "Toplevel interactions"
   archive(byte) = "ocamltoplevel.cma"
 )
 
 package "native-toplevel" (
   requires = "compiler-libs.optcomp dynlink"
-  version = "[distributed with OCaml]"
+  version = "@VERSION@"
   description = "Toplevel interactions"
   archive(native) = "ocamltoplevel.cmxa"
   exists_if = "ocamltoplevel.cmxa"
