@@ -624,12 +624,22 @@ runtime, which is useful for debugging pointer problems in low-level
 code such as C stubs.
 }%notop
 
-\notop{
-\item["-stop-after" \var{pass}]
-Stop compilation after the given compilation pass. The currently
-supported passes are:
-"parsing", "typing"\nat{, "scheduling", "emit"}.
-}%notop
+\nat{%
+\item["-S"]
+Keep the assembly code produced during the compilation. The assembly
+code for the source file \var{x}".ml" is saved in the file \var{x}".s".
+}%nat
+
+\item["-safe-string"]
+Enforce the separation between types "string" and "bytes",
+thereby making strings read-only. This is the default, and enforced
+since OCaml 5.0.
+
+\item["-safer-matching"]
+Do not use type information to optimize pattern-matching.
+This allows to detect match failures even if a pattern-matching was
+wrongly assumed to be exhaustive. In particular this protects
+against potential bugs in the GADT exhaustiveness inference.
 
 \nat{
 \item["-save-ir-after" \var{pass}]
@@ -648,12 +658,6 @@ using "compiler-libs" library (see
 }%nat
 
 \nat{%
-\item["-S"]
-Keep the assembly code produced during the compilation. The assembly
-code for the source file \var{x}".ml" is saved in the file \var{x}".s".
-}%nat
-
-\nat{%
 \item["-shared"]
 Build a plugin (usually ".cmxs") that can be dynamically loaded with
 the "Dynlink" module. The name of the plugin must be
@@ -667,11 +671,6 @@ apply to the way the extra native objects have been compiled (under
 Linux AMD 64, they must contain only position-independent code).
 }%nat
 
-\item["-safe-string"]
-Enforce the separation between types "string" and "bytes",
-thereby making strings read-only. This is the default, and enforced
-since OCaml 5.0.
-
 \item["-short-paths"]
 When a type is visible under several module-paths, use the shortest
 one when printing the type's name in inferred interfaces and error and
@@ -684,6 +683,13 @@ their length.
 Read the standard input as a script file rather than starting an
 interactive session.
 }%top
+
+\notop{
+\item["-stop-after" \var{pass}]
+Stop compilation after the given compilation pass. The currently
+supported passes are:
+"parsing", "typing"\nat{, "scheduling", "emit"}.
+}%notop
 
 \item["-strict-sequence"]
 Force the left-hand part of each sequence to have type unit.
