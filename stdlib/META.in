@@ -1,3 +1,5 @@
+# @configure_input@
+
+version = "@VERSION@"
 description = "Standard library"
-version = "[distributed with OCaml]"
 directory = "+"

@@ -2977,8 +2977,6 @@ ac_config_files="$ac_config_files Makefile.config"
 
 ac_config_files="$ac_config_files stdlib/sys.ml"
 
-ac_config_files="$ac_config_files otherlibs/dynlink/META"
-
 ac_config_files="$ac_config_files manual/src/version.tex"
 
 ac_config_files="$ac_config_files manual/src/html_processing/src/common.ml"
@@ -2988,6 +2986,14 @@ ac_config_headers="$ac_config_headers runtime/caml/m.h"
 ac_config_headers="$ac_config_headers runtime/caml/s.h"
 
 ac_config_headers="$ac_config_headers runtime/caml/version.h"
+
+ac_config_files="$ac_config_files compilerlibs/META"
+
+ac_config_files="$ac_config_files otherlibs/dynlink/META"
+
+ac_config_files="$ac_config_files otherlibs/runtime_events/META"
+
+ac_config_files="$ac_config_files stdlib/META"
 
 
 # Definitions related to the version of OCaml
@@ -12688,10 +12694,14 @@ esac
 otherlibraries="dynlink runtime_events"
 if test x"$enable_unix_lib" != "xno"; then :
   enable_unix_lib=yes
-   otherlibraries="$otherlibraries unix"
+  ac_config_files="$ac_config_files otherlibs/unix/META"
+
+  otherlibraries="$otherlibraries unix"
 fi
 if test x"$enable_str_lib" != "xno"; then :
   otherlibraries="$otherlibraries str"
+  ac_config_files="$ac_config_files otherlibs/str/META"
+
 fi
 
 # Checks for system services
@@ -17532,6 +17542,8 @@ case $enable_systhreads,$enable_unix_lib in #(
 $as_echo "$as_me: the threads library is disabled" >&6;} ;; #(
   *) :
     systhread_support=true
+  ac_config_files="$ac_config_files otherlibs/systhreads/META"
+
   otherlibraries="$otherlibraries systhreads"
   { $as_echo "$as_me:${as_lineno-$LINENO}: the threads library is supported" >&5
 $as_echo "$as_me: the threads library is supported" >&6;} ;;
@@ -17817,6 +17829,8 @@ if test x"$enable_ocamldoc" = "xno"; then :
   ocamldoc=""
 else
   ocamldoc=ocamldoc
+  ac_config_files="$ac_config_files ocamldoc/META"
+
 fi
 
 documentation_tool_cmd=''
@@ -19326,13 +19340,20 @@ do
     "Makefile.build_config") CONFIG_FILES="$CONFIG_FILES Makefile.build_config" ;;
     "Makefile.config") CONFIG_FILES="$CONFIG_FILES Makefile.config" ;;
     "stdlib/sys.ml") CONFIG_FILES="$CONFIG_FILES stdlib/sys.ml" ;;
-    "otherlibs/dynlink/META") CONFIG_FILES="$CONFIG_FILES otherlibs/dynlink/META" ;;
     "manual/src/version.tex") CONFIG_FILES="$CONFIG_FILES manual/src/version.tex" ;;
     "manual/src/html_processing/src/common.ml") CONFIG_FILES="$CONFIG_FILES manual/src/html_processing/src/common.ml" ;;
     "runtime/caml/m.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/m.h" ;;
     "runtime/caml/s.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/s.h" ;;
     "runtime/caml/version.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/version.h" ;;
+    "compilerlibs/META") CONFIG_FILES="$CONFIG_FILES compilerlibs/META" ;;
+    "otherlibs/dynlink/META") CONFIG_FILES="$CONFIG_FILES otherlibs/dynlink/META" ;;
+    "otherlibs/runtime_events/META") CONFIG_FILES="$CONFIG_FILES otherlibs/runtime_events/META" ;;
+    "stdlib/META") CONFIG_FILES="$CONFIG_FILES stdlib/META" ;;
     "libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool" ;;
+    "otherlibs/unix/META") CONFIG_FILES="$CONFIG_FILES otherlibs/unix/META" ;;
+    "otherlibs/str/META") CONFIG_FILES="$CONFIG_FILES otherlibs/str/META" ;;
+    "otherlibs/systhreads/META") CONFIG_FILES="$CONFIG_FILES otherlibs/systhreads/META" ;;
+    "ocamldoc/META") CONFIG_FILES="$CONFIG_FILES ocamldoc/META" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac

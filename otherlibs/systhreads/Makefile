@@ -111,6 +111,7 @@ clean: partialclean
 
 .PHONY: distclean
 distclean: clean
+	rm -f META
 
 INSTALL_THREADSLIBDIR=$(INSTALL_LIBDIR)/$(LIBNAME)
 
