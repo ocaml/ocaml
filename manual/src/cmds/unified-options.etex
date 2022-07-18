@@ -638,8 +638,8 @@ since OCaml 5.0.
 \item["-safer-matching"]
 Do not use type information to optimize pattern-matching.
 This allows to detect match failures even if a pattern-matching was
-wrongly assumed to be exhaustive. In particular this protects
-against potential bugs in the GADT exhaustiveness inference.
+wrongly assumed to be exhaustive. This only impacts GADT and
+polymorphic variant compilation.
 
 \nat{
 \item["-save-ir-after" \var{pass}]

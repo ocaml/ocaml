@@ -564,23 +564,21 @@ code for the source file
 is saved in the file
 .IR x .s.
 .TP
-.BI \-stop\-after \ pass
-Stop compilation after the given compilation pass. The currently
-supported passes are:
-.BR parsing ,
-.BR typing ,
-.BR scheduling ,
-.BR emit .
+.B \-safe\-string
+Enforce the separation between types
+.BR string \ and\  bytes ,
+thereby making strings read-only. This is the default.
+.TP
+.B \-safer\-matching
+Do not use type information to optimize pattern-matching.
+This allows to detect match failures even if a pattern-matching was
+wrongly assumed to be exhaustive. This only impacts GADT and
+polymorphic variant compilation.
 .TP
 .BI \-save\-ir\-after \ pass
 Save intermediate representation after the given compilation pass. The currently
 supported passes are:
 .BR scheduling .
-.TP
-.B \-safe\-string
-Enforce the separation between types
-.BR string \ and\  bytes ,
-thereby making strings read-only. This is the default.
 .TP
 .B \-shared
 Build a plugin (usually .cmxs) that can be dynamically loaded with
@@ -604,6 +602,14 @@ Linux AMD 64, they must contain only position-independent code).
 When a type is visible under several module-paths, use the shortest
 one when printing the type's name in inferred interfaces and error and
 warning messages.
+.TP
+.BI \-stop\-after \ pass
+Stop compilation after the given compilation pass. The currently
+supported passes are:
+.BR parsing ,
+.BR typing ,
+.BR scheduling ,
+.BR emit .
 .TP
 .B \-strict\-sequence
 The left-hand part of a sequence must have type unit.
