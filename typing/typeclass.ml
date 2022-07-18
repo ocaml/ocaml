@@ -177,6 +177,13 @@ let check_virtual loc env virt kind sign =
       | meths, vars ->
           raise(Error(loc, env, Virtual_class(kind, meths, vars)))
 
+let rec check_virtual_clty loc env virt kind clty =
+  match clty with
+  | Cty_constr(_, _, clty) | Cty_arrow(_, _, clty) ->
+      check_virtual_clty loc env virt kind clty
+  | Cty_signature sign ->
+      check_virtual loc env virt kind sign
+
 (* Return the constructor type associated to a class type *)
 let rec constructor_type constr cty =
   match cty with
@@ -398,6 +405,8 @@ and class_type_aux env virt self_scope scty =
         )       styl params
       in
       let typ = Cty_constr (path, params, clty) in
+      (* Check for unexpected virtual methods *)
+      check_virtual_clty scty.pcty_loc env virt Class_type typ;
       cltyp (Tcty_constr ( path, lid , ctys)) typ
 
   | Pcty_signature pcsig ->
@@ -1077,6 +1086,8 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
            try Ctype.unify val_env ty' ty with Ctype.Unify err ->
              raise(Error(cty'.ctyp_loc, val_env, Parameter_mismatch err)))
         tyl params;
+      (* Check for unexpected virtual methods *)
+      check_virtual_clty scl.pcl_loc val_env virt Class clty';
       let cl =
         rc {cl_desc = Tcl_ident (path, lid, tyl);
             cl_loc = scl.pcl_loc;
