@@ -260,32 +260,9 @@ static caml_thread_t caml_thread_new_info(void)
   return th;
 }
 
-/* Allocate a thread descriptor block. */
-
-static value caml_thread_new_descriptor(value clos)
+/* Free the resources held by a thread. */
+void caml_thread_free_info(caml_thread_t th)
 {
-  CAMLparam1(clos);
-  CAMLlocal1(mu);
-  value descr;
-  /* Create and initialize the termination semaphore */
-  mu = caml_threadstatus_new();
-  /* Create a descriptor for the new thread */
-  descr = caml_alloc_3(0, Val_long(atomic_fetch_add(&thread_next_id, +1)),
-                       clos, mu);
-  CAMLreturn(descr);
-}
-
-/* Remove a thread info block from the list of threads.
-   Free it and its stack resources. */
-
-static void caml_thread_remove_info(caml_thread_t th)
-{
-  if (th->next == th)
-    Active_thread = NULL; /* last OCaml thread exiting */
-  else if (Active_thread == th)
-    Active_thread = th->next;     /* PR#5295 */
-  th->next->prev = th->prev;
-  th->prev->next = th->next;
   /* the following fields do not need any specific cleanup:
      descr: heap-allocated
      c_stack: stack-allocated
@@ -311,6 +288,35 @@ static void caml_thread_remove_info(caml_thread_t th)
   caml_free_gc_regs_buckets(th->gc_regs_buckets);
 
   caml_stat_free(th);
+}
+
+/* Allocate a thread descriptor block. */
+
+static value caml_thread_new_descriptor(value clos)
+{
+  CAMLparam1(clos);
+  CAMLlocal1(mu);
+  value descr;
+  /* Create and initialize the termination semaphore */
+  mu = caml_threadstatus_new();
+  /* Create a descriptor for the new thread */
+  descr = caml_alloc_3(0, Val_long(atomic_fetch_add(&thread_next_id, +1)),
+                       clos, mu);
+  CAMLreturn(descr);
+}
+
+/* Remove a thread info block from the list of threads
+   and free its resources. */
+static void caml_thread_remove_and_free(caml_thread_t th)
+{
+  if (th->next == th)
+    Active_thread = NULL; /* last OCaml thread exiting */
+  else if (Active_thread == th)
+    Active_thread = th->next;     /* PR#5295 */
+  th->next->prev = th->prev;
+  th->prev->next = th->next;
+
+  caml_thread_free_info(th);
   return;
 }
 
@@ -324,8 +330,7 @@ static void caml_thread_reinitialize(void)
   th = Active_thread->next;
   while (th != Active_thread) {
     next = th->next;
-    caml_free_stack(th->current_stack);
-    caml_stat_free(th);
+    caml_thread_free_info(th);
     th = next;
   }
   Active_thread->next = Active_thread;
@@ -472,7 +477,7 @@ static void caml_thread_stop(void)
   /* The following also sets Active_thread to a sane value in case the
      backup thread does a GC before the domain lock is acquired
      again. */
-  caml_thread_remove_info(Active_thread);
+  caml_thread_remove_and_free(Active_thread);
   caml_thread_restore_runtime_state();
 
   /* If no other OCaml thread remains, ask the tick thread to stop
@@ -576,7 +581,7 @@ CAMLprim value caml_thread_new(value clos)
 
   if (err != 0) {
     /* Creation failed, remove thread info block from list of threads */
-    caml_thread_remove_info(th);
+    caml_thread_remove_and_free(th);
     sync_check_error(err, "Thread.create");
   }
 
@@ -654,7 +659,7 @@ CAMLexport int caml_c_thread_unregister(void)
   /*  Forget the thread descriptor */
   st_tls_set(caml_thread_key, NULL);
   /* Remove thread info block from list of threads, and free it */
-  caml_thread_remove_info(th);
+  caml_thread_remove_and_free(th);
 
   /* If no other OCaml thread remains, ask the tick thread to stop
      so that it does not prevent the whole process from exiting (#9971) */
