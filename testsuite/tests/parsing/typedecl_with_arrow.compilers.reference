@@ -1,0 +1,4 @@
+File "typedecl_with_arrow.ml", line 10, characters 35-37:
+10 | type wrongly_rejected = Foo of int -> int
+                                        ^^
+Error: Syntax error
