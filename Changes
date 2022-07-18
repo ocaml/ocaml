@@ -25,17 +25,8 @@ OCaml 4.14 maintenance branch
 - #11392, #11392: assertion failure with -rectypes and external definitions
   (Gabriel Scherer, review by Florian Angeletti, report by Dmitrii Kosarev)
 
-### Compiler user-interface and warnings:
-
-- #11184: Stop calling ranlib on created / installed libraries
-  (Sébastien Hinderer, review by Xavier Leroy)
-
-### Manual and documentation:
-
-- #11045, #11409: document that the array argument to `caml_callbackN`
-  must not have been declared by `CAMLlocalN`.
-  (Xavier Leroy, report by Stephen Dolan, review by Gabriel Scherer.)
-
+- #11417: Fix regression allowing virtual methods in non-virtual classes.
+  (Leo White, review by Florian Angeletti)
 
 OCaml 4.14.0 (28 March 2022)
 ----------------------------
