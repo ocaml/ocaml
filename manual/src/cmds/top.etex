@@ -285,6 +285,9 @@ directories:
 
 \item[Compiler options]
   \begin{options}
+  \item["#debug "\var{bool}";;"]
+    Turn on/off the insertion of debugging events. Default is "true".
+
   \item["#labels "\var{bool}";;"]
     Ignore labels in function types if argument is "false", or switch back
     to default behaviour (commuting style) if argument is "true".

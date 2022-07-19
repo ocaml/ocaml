@@ -632,6 +632,13 @@ let _ = add_directive "print_length"
 
 (* Set various compiler flags *)
 
+let _ = add_directive "debug"
+    (Directive_bool(fun b -> Clflags.debug := b))
+    {
+      section = section_options;
+      doc = "Choose whether to generate debugging events.";
+    }
+
 let _ = add_directive "labels"
     (Directive_bool(fun b -> Clflags.classic := not b))
     {
