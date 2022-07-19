@@ -452,7 +452,7 @@ let rec pkey chan  = function
   let ok_inter = ref false
 
   (* compute a good test sequence for these cases *)
-  let rec opt_count top cases =
+  let rec opt_count cases =
     let key = make_key cases in
     try
       Hashtbl.find t key
@@ -465,7 +465,7 @@ let rec pkey chan  = function
           | _ when same_act cases -> No, ({n=0; ni=0},{n=0; ni=0})
           | _ ->
               if lcases < small_size_limit then
-                enum top cases
+                enum cases
               else if lcases < medium_size_limit then
                 heuristic cases
               else
@@ -479,8 +479,8 @@ let rec pkey chan  = function
     let _,left,right = coupe cases m in
     let ci = {n=1 ; ni=0}
     and cm = {n=1 ; ni=0}
-    and _,(cml,cleft) = opt_count false left
-    and _,(cmr,cright) = opt_count false right in
+    and _,(cml,cleft) = opt_count left
+    and _,(cmr,cright) = opt_count right in
     add_test ci cleft ;
     add_test ci cright ;
     if less_tests cml cmr then
@@ -500,8 +500,8 @@ let rec pkey chan  = function
         and _,_,act1 = cases.(lcases-1) in
         if act0 = act1 then begin
           let low, high, inside, outside = coupe_inter 1 (lcases-2) cases in
-          let _,(cmi,cinside) = opt_count false inside
-          and _,(cmo,coutside) = opt_count false outside
+          let _,(cmi,cinside) = opt_count inside
+          and _,(cmo,coutside) = opt_count outside
           and cmij = {n=1 ; ni=(if low=high then 0 else 1)}
           and cij = {n=1 ; ni=(if low=high then 0 else 1)} in
           add_test cij cinside ;
@@ -521,7 +521,7 @@ let rec pkey chan  = function
       inter,cinter
 
 
-  and enum top cases =
+  and enum cases =
     let lcases = Array.length cases in
     let lim, with_sep =
       let best = ref (-1) and best_cost = ref (too_much,too_much) in
@@ -530,8 +530,8 @@ let rec pkey chan  = function
         let _,left,right = coupe cases i in
         let ci = {n=1 ; ni=0}
         and cm = {n=1 ; ni=0}
-        and _,(cml,cleft) = opt_count false left
-        and _,(cmr,cright) = opt_count false right in
+        and _,(cml,cleft) = opt_count left
+        and _,(cmr,cright) = opt_count right in
         add_test ci cleft ;
         add_test ci cright ;
         if less_tests cml cmr then
@@ -542,8 +542,6 @@ let rec pkey chan  = function
         if
           less2tests (cm,ci) !best_cost
         then begin
-          if top then
-            Printf.fprintf stderr "Get it: %d\n" i ;
           best := i ;
           best_cost := (cm,ci)
         end
@@ -557,8 +555,8 @@ let rec pkey chan  = function
         for i=1 to lcases-2 do
           let low, high, inside, outside = coupe_inter i i cases in
           if low=high then begin
-            let _,(cmi,cinside) = opt_count false inside
-            and _,(cmo,coutside) = opt_count false outside
+            let _,(cmi,cinside) = opt_count inside
+            and _,(cmo,coutside) = opt_count outside
             and cmij = {n=1 ; ni=0}
             and cij = {n=1 ; ni=0} in
             add_test cij cinside ;
@@ -581,8 +579,8 @@ let rec pkey chan  = function
         for i=1 to lcases-2 do
           for j=i to lcases-2 do
             let low, high, inside, outside = coupe_inter i j cases in
-            let _,(cmi,cinside) = opt_count false inside
-            and _,(cmo,coutside) = opt_count false outside
+            let _,(cmi,cinside) = opt_count inside
+            and _,(cmo,coutside) = opt_count outside
             and cmij = {n=1 ; ni=(if low=high then 0 else 1)}
             and cij = {n=1 ; ni=(if low=high then 0 else 1)} in
             add_test cij cinside ;
@@ -672,7 +670,7 @@ let rec pkey chan  = function
 
     else begin
 
-      let w,_c = opt_count false cases in
+      let w,_c = opt_count cases in
 (*
   Printf.fprintf stderr
   "off=%d tactic=%a for %a\n"
@@ -682,8 +680,8 @@ let rec pkey chan  = function
       | No -> actions.(get_act cases 0) ctx
       | Inter (i,j) ->
           let low,high,inside, outside = coupe_inter i j cases in
-          let _,(cinside,_) = opt_count false inside
-          and _,(coutside,_) = opt_count false outside in
+          let _,(cinside,_) = opt_count inside
+          and _,(coutside,_) = opt_count outside in
           (* Costs are retrieved to put the code with more remaining tests
              in the privileged (positive) branch of ``if'' *)
           if low=high then begin
@@ -717,8 +715,8 @@ let rec pkey chan  = function
           end
       | Sep i ->
           let lim,left,right = coupe cases i in
-          let _,(cleft,_) = opt_count false left
-          and _,(cright,_) = opt_count false right in
+          let _,(cleft,_) = opt_count left
+          and _,(cright,_) = opt_count right in
           let left = {s with cases=left}
           and right = {s with cases=right} in
 
@@ -761,7 +759,7 @@ let rec pkey chan  = function
   let approx_count cases i j =
     let l = j-i+1 in
     if l < small_size_limit then
-      let _,(_,{n=ntests}) = opt_count false (Array.sub cases i l) in
+      let _,(_,{n=ntests}) = opt_count (Array.sub cases i l) in
       ntests
     else
       l-1
