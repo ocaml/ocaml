@@ -217,9 +217,9 @@ struct
 
   type 'a t_ctx =  {off : int ; arg : 'a}
 
-  let cut = ref 8
+  let small_size_limit = 8
 
-  and more_cut = ref 16
+  and medium_size_limit = 16
 
 (*
 let pint chan i =
@@ -464,9 +464,9 @@ let rec pkey chan  = function
           | 0 -> assert false
           | _ when same_act cases -> No, ({n=0; ni=0},{n=0; ni=0})
           | _ ->
-              if lcases < !cut then
+              if lcases < small_size_limit then
                 enum top cases
-              else if lcases < !more_cut then
+              else if lcases < medium_size_limit then
                 heuristic cases
               else
                 divide cases in
@@ -744,10 +744,10 @@ let rec pkey chan  = function
 
 
   (* Minimal density of switches *)
-  let theta = ref 0.33333
+  let theta = 0.33333
 
   (* Minimal number of tests to make a switch *)
-  let switch_min = ref 3
+  let switch_min = 3
 
   (* Particular case 0, 1, 2 *)
   let particular_case cases i j =
@@ -760,7 +760,7 @@ let rec pkey chan  = function
 
   let approx_count cases i j =
     let l = j-i+1 in
-    if l < !cut then
+    if l < small_size_limit then
       let _,(_,{n=ntests}) = opt_count false (Array.sub cases i l) in
       ntests
     else
@@ -778,9 +778,9 @@ let rec pkey chan  = function
   (ntests+1) >= theta * (h-l+1)
 *)
       particular_case cases i j ||
-      (ntests >= !switch_min &&
+      (ntests >= switch_min &&
        float_of_int ntests +. 1.0 >=
-       !theta *. (float_of_int h -. float_of_int l +. 1.0))
+       theta *. (float_of_int h -. float_of_int l +. 1.0))
 
   (* Compute clusters by dynamic programming
      Adaptation of the correction to Bernstein
