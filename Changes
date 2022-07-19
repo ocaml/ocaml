@@ -65,6 +65,9 @@ Working version
 - #11364: Allow `make -C testsuite promote` to take `TEST` and `LIST` variables
   (Antal Spector-Zabusky, review by Gabriel Scherer and David Allsopp)
 
+- #11446: document switch compilation (lambda/switch.ml)
+  (Gabriel Scherer, review by Luc Maranget and Vincent Laviron)
+
 ### Build system:
 
 ### Bug fixes:
