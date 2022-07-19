@@ -451,7 +451,7 @@ let rec pkey chan  = function
 
   let ok_inter = ref false
 
-  (* compute a good test sequence for these cases *)
+  (* Compute a good test sequence. *)
   let rec opt_count cases =
     let key = make_key cases in
     try
@@ -473,6 +473,7 @@ let rec pkey chan  = function
         Hashtbl.add t key r ;
         r
 
+  (* Large inputs: dichotomic sequence. *)
   and divide cases =
     let lcases = Array.length cases in
     let m = lcases/2 in
@@ -489,6 +490,7 @@ let rec pkey chan  = function
       add_test cm cml ;
     Sep m,(cm, ci)
 
+  (* Medium-size inputs: dichotomy or interval tests. *)
   and heuristic cases =
     let lcases = Array.length cases in
 
@@ -520,7 +522,7 @@ let rec pkey chan  = function
     else
       inter,cinter
 
-
+  (* Small inputs: exhaustive search for optimal sequence. *)
   and enum cases =
     let lcases = Array.length cases in
     let lim, with_sep =
@@ -662,6 +664,7 @@ let rec pkey chan  = function
              do_make_if_in
                (Arg.make_const d) arg (mk_ifso ctx) (mk_ifno ctx))
 
+  (* Generate the code for a good test sequence. *)
   let rec c_test ctx ({cases=cases ; actions=actions} as s) =
     let lcases = Array.length cases in
     assert(lcases > 0) ;
@@ -741,13 +744,13 @@ let rec pkey chan  = function
     end
 
 
-  (* Minimal density of switches *)
+  (* Minimal density of dense switches. *)
   let theta = 0.33333
 
-  (* Minimal number of tests to make a switch *)
+  (* Minimal number of tests to make a dense switch. *)
   let switch_min = 3
 
-  (* Particular case 0, 1, 2 *)
+  (* Particular case 0, 1, 2. *)
   let particular_case cases i j =
     j-i = 2 &&
     (let l1,_h1,act1 = cases.(i)
@@ -756,37 +759,37 @@ let rec pkey chan  = function
      l1+1=l2 && l2+1=l3 && l3=h3 &&
      act1 <> act3)
 
+  (* Approximation of the test sequence height,
+     used to determine cluster density. *)
   let approx_count cases i j =
     let l = j-i+1 in
     if l < small_size_limit then
+      (* on small input intervals, use test sequence height *)
       let _,(_,{n=ntests}) = opt_count (Array.sub cases i l) in
       ntests
     else
+      (* otherwise use the standard notion of density
+         (number of non-default cases) *)
       l-1
 
-  (* Sends back a boolean that says whether is switch is worth or not *)
-
+  (* Sends back a boolean that says whether it is worth making a jump table. *)
   let dense {cases} i j =
     if i=j then true
     else
       let l,_,_ = cases.(i)
       and _,h,_ = cases.(j) in
-      let ntests =  approx_count cases i j in
+      let ntests = approx_count cases i j in
 (*
   (ntests+1) >= theta * (h-l+1)
 *)
       particular_case cases i j ||
-      (ntests >= switch_min &&
+      ((* The switch_min test guarantees that we don't use jump tables
+          for very small switches. *)
+       ntests >= switch_min &&
        float_of_int ntests +. 1.0 >=
        theta *. (float_of_int h -. float_of_int l +. 1.0))
 
-  (* Compute clusters by dynamic programming
-     Adaptation of the correction to Bernstein
-     ``Correction to `Producing Good Code for the Case Statement' ''
-     S.K. Kannan and T.A. Proebsting
-     Software Practice and Experience Vol. 24(2) 233 (Feb 1994)
-  *)
-
+  (* Compute an optimal clustering by dynamic programming. *)
   let comp_clusters s =
     let len = Array.length s.cases in
     let min_clusters = Array.make len max_int
@@ -806,8 +809,11 @@ let rec pkey chan  = function
     done ;
     min_clusters.(len-1),k
 
-  (* Assume j > i *)
+  (* The code to generate a dense switch is provided
+     by the functor paramter as Arg.make_switch
+     (which will typically use a jump table) *)
   let make_switch loc {cases=cases ; actions=actions} i j =
+    (* Assume j > i *)
     let ll,_,_ = cases.(i)
     and _,hh,_ = cases.(j) in
     let tbl = Array.make (hh-ll+1) 0
@@ -842,7 +848,7 @@ let rec pkey chan  = function
              (Arg.make_offset ctx.arg (-ll-ctx.off))
              (fun arg -> Arg.make_switch loc arg tbl acts))
 
-
+  (* Generate code from a clustering choice. *)
   let make_clusters loc ({cases=cases ; actions=actions} as s) n_clusters k =
     let len = Array.length cases in
     let r = Array.make n_clusters (0,0,0)
@@ -916,12 +922,14 @@ let rec pkey chan  = function
         actions in
     !handlers,actions
 
+  (* Standard entry point. *)
   let zyva loc lh arg cases actions =
     assert (Array.length cases > 0) ;
     let actions = actions.act_get_shared () in
     let hs,actions = abstract_shared actions in
     hs (do_zyva loc lh arg cases actions)
 
+  (* Generate code using test sequences only, not Arg.make_switch *)
   and test_sequence arg cases actions =
     assert (Array.length cases > 0) ;
     let actions = actions.act_get_shared () in
