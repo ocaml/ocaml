@@ -636,21 +636,27 @@ then the
 .B d
 suffix is supported and gives a debug version of the runtime.
 .TP
-.BI \-stop\-after \ pass
-Stop compilation after the given compilation pass. The currently
-supported passes are:
-.BR parsing ,
-.BR typing .
-.TP
 .B \-safe\-string
 Enforce the separation between types
 .BR string \ and\  bytes ,
 thereby making strings read-only. This is the default.
 .TP
+.B \-safer\-matching
+Do not use type information to optimize pattern-matching.
+This allows to detect match failures even if a pattern-matching was
+wrongly assumed to be exhaustive. This only impacts GADT and
+polymorphic variant compilation.
+.TP
 .B \-short\-paths
 When a type is visible under several module-paths, use the shortest
 one when printing the type's name in inferred interfaces and error and
 warning messages.
+.TP
+.BI \-stop\-after \ pass
+Stop compilation after the given compilation pass. The currently
+supported passes are:
+.BR parsing ,
+.BR typing .
 .TP
 .B \-strict\-sequence
 Force the left-hand part of each sequence to have type unit.
