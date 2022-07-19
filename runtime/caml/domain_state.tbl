@@ -85,7 +85,7 @@ DOMAIN_STATE(intnat, backtrace_pos)
 
 DOMAIN_STATE(intnat, backtrace_active)
 
-DOMAIN_STATE(code_t*, backtrace_buffer)
+DOMAIN_STATE(backtrace_slot*, backtrace_buffer)
 
 DOMAIN_STATE(value, backtrace_last_exn)
 

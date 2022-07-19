@@ -17,6 +17,7 @@
 
 #include "caml/alloc.h"
 #include "caml/backtrace.h"
+#include "caml/backtrace_prim.h"
 #include "caml/callback.h"
 #include "caml/custom.h"
 #include "caml/debugger.h"
@@ -65,9 +66,12 @@ struct caml_thread_struct {
   int domain_id;      /* The id of the domain to which this thread belongs */
   struct stack_info* current_stack;      /* saved Caml_state->current_stack */
   struct c_stack_link* c_stack;          /* saved Caml_state->c_stack */
+  /* Note: we do not save Caml_state->stack_cache, because it can
+     safely be shared between all threads on the same domain. */
   struct caml__roots_block *local_roots; /* saved value of local_roots */
   int backtrace_pos;           /* saved value of Caml_state->backtrace_pos */
-  code_t * backtrace_buffer;   /* saved value of Caml_state->backtrace_buffer */
+  backtrace_slot * backtrace_buffer;
+    /* saved value of Caml_state->backtrace_buffer */
   value backtrace_last_exn;
     /* saved value of Caml_state->backtrace_last_exn (root) */
   value * gc_regs;           /* saved value of Caml_state->gc_regs */
@@ -268,6 +272,36 @@ static caml_thread_t caml_thread_new_info(void)
   return th;
 }
 
+/* Free the resources held by a thread. */
+void caml_thread_free_info(caml_thread_t th)
+{
+  /* the following fields do not need any specific cleanup:
+     descr: heap-allocated
+     c_stack: stack-allocated
+     local_roots: stack-allocated
+     backtrace_last_exn: heap-allocated
+     gc_regs:
+       must be empty for a terminated thread
+       (we assume that the C call stack must be empty at
+        thread-termination point, so there are no gc_regs buckets in
+        use in this variable nor on the stack)
+     exn_handler: stack-allocated
+     external_raise: stack-allocated
+     init_mask: stack-allocated
+  */
+  caml_free_stack(th->current_stack);
+  caml_free_backtrace_buffer(th->backtrace_buffer);
+
+  /* Remark: we could share gc_regs_buckets between threads on a same
+     domain, but this might break the invariant that it is always
+     non-empty at the point where we switch from OCaml to C, so we
+     would need to do something more complex when activating a thread
+     to restore this invariant. */
+  caml_free_gc_regs_buckets(th->gc_regs_buckets);
+
+  caml_stat_free(th);
+}
+
 /* Allocate a thread descriptor block. */
 
 static value caml_thread_new_descriptor(value clos)
@@ -283,10 +317,9 @@ static value caml_thread_new_descriptor(value clos)
   CAMLreturn(descr);
 }
 
-/* Remove a thread info block from the list of threads.
-   Free it and its stack resources. */
-
-static void caml_thread_remove_info(caml_thread_t th)
+/* Remove a thread info block from the list of threads
+   and free its resources. */
+static void caml_thread_remove_and_free(caml_thread_t th)
 {
   if (th->next == th)
     Active_thread = NULL; /* last OCaml thread exiting */
@@ -294,8 +327,8 @@ static void caml_thread_remove_info(caml_thread_t th)
     Active_thread = th->next;     /* PR#5295 */
   th->next->prev = th->prev;
   th->prev->next = th->next;
-  caml_free_stack(th->current_stack);
-  caml_stat_free(th);
+
+  caml_thread_free_info(th);
   return;
 }
 
@@ -309,8 +342,7 @@ static void caml_thread_reinitialize(void)
   th = Active_thread->next;
   while (th != Active_thread) {
     next = th->next;
-    caml_free_stack(th->current_stack);
-    caml_stat_free(th);
+    caml_thread_free_info(th);
     th = next;
   }
   Active_thread->next = Active_thread;
@@ -458,7 +490,7 @@ static void caml_thread_stop(void)
   /* The following also sets Active_thread to a sane value in case the
      backup thread does a GC before the domain lock is acquired
      again. */
-  caml_thread_remove_info(Active_thread);
+  caml_thread_remove_and_free(Active_thread);
   caml_thread_restore_runtime_state();
 
   /* If no other OCaml thread remains, ask the tick thread to stop
@@ -564,7 +596,7 @@ CAMLprim value caml_thread_new(value clos)
 
   if (err != 0) {
     /* Creation failed, remove thread info block from list of threads */
-    caml_thread_remove_info(th);
+    caml_thread_remove_and_free(th);
     sync_check_error(err, "Thread.create");
   }
 
@@ -640,7 +672,7 @@ CAMLexport int caml_c_thread_unregister(void)
   /*  Forget the thread descriptor */
   st_tls_set(caml_thread_key, NULL);
   /* Remove thread info block from list of threads, and free it */
-  caml_thread_remove_info(th);
+  caml_thread_remove_and_free(th);
 
   /* If no other OCaml thread remains, ask the tick thread to stop
      so that it does not prevent the whole process from exiting (#9971) */
