@@ -13,6 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(* see high-level comments in switch.mli *)
 
 type 'a shared = Shared of 'a | Single of 'a
 
@@ -135,25 +136,77 @@ sig
   val make_exit : int -> act
 end
 
-(* The module will ``produce good code for the case statement'' *)
-(*
+(* The module will ``produce good code for the case statement''
+
   Adaptation of
-   R.L. Berstein
+   Robert L. Berstein
    ``Producing good code for the case statement''
    Software Practice and Experience, 15(10) (1985)
- and
-   D.L. Spuler
+  and
+   Sampath Kannan and Todd A. Proebsting
+   ``Correction to ``Producing good code for the case statement'' ''
+   Software Practice and Experience, 24(2) (1993)
+  and
+   David L. Spuler
     ``Two-Way Comparison Search Trees, a Generalisation of Binary Search Trees
       and Split Trees''
     ``Compiler Code Generation for Multiway Branch Statement as
       a Static Search Problem''
    Technical Reports, James Cook University
-*)
-(*
-  Main adaptation is considering interval tests
- (implemented as one addition + one unsigned test and branch)
-  which leads to exhaustive search for finding the optimal
-  test sequence in small cases and heuristics otherwise.
+
+ The article of Bernstein considers how to compile C-style switches:
+ arrays of actions indexed over non-negative integers with some "missing"
+ cases that are sent to a default action.
+
+ The strategy proposed, which is followed in our implementation below,
+ is as follows:
+ 1. Compute a "clustering" of the cases as a disjoint union of smaller intervals
+    with a high enough "density" (few default cases on the interval).
+ 2. Generate "dense switch" code for each cluster, typically using a jump table.
+ 3. Generate a sequence of tests for the whole switch, whose leaves
+    are the dense switches generated for each cluster.
+
+ Berstein believes that computing the optimal clustering
+ (smaller number of clusters) is NP-complete, and only proposes
+ a suboptimal heuristic method. Kannan and Proebsting remark that it
+ can be solved by a quadratic dynamic algorithm, which is also used in
+ our implementation.
+
+ The article of Spuler explains how to generate good test sequences
+ (optimal in worst-case number of tests) for a two-way tests instead
+ of three-way tests: traditional dichotomic search assumes that we
+ check at each step whether the key is (1) equal to the pivot, (2)
+ strictly less or (3) strictly more, but the test instructions in our
+ intermediate representations typically only let us test for (1)
+ lesser or equal or (2) strictly bigger (or: (1) strictly less, (2)
+ bigger or equal, which is symmetric.). Spuler proves that, even in
+ this two-way setting, dichotomic search generates optimal test
+ sequences.
+
+ The code below uses two additional ideas from Luc Maranget.
+
+ 1. The code to compute an optimal sequence of tests also makes use of
+    an interval check (is the input in the range [m; n]), which
+    (as remarked by Bernstein) can be implemented efficiently as
+    a substraction and an unsigned comparison. We don't know of an
+    efficient algorithm to compute optimal test sequences using both
+    comparison and interval checks, so instead:
+    a. on large input intervals, we use the dichotomy
+    b. on medium-sized input intervals, we use the best of
+       the dichotomy and an interval check carving out
+       exactly the lowest and highest cases
+    c. on small input intervals, we use optimal exhaustive search.
+
+ 2. The works of Bernstein and Kannan-Proebsting compute clusters of
+    sufficient density, where density is defined naturally as the
+    proportion of non-default cases. Maranget instead computes density
+    as the height of the test sequence divided by interval size
+    (note that the number of non-default cases is an upperbound on the
+    test sequence height, as the length of the linear test sequence).
+    As a result, sub-intervals that can be efficiently decided by
+    tests get a lower density, so they are more likely to be merged
+    into the toplevel test sequence instead of generating a less
+    compact jump table.
 *)
 module Make (Arg : S) =
 struct
@@ -165,6 +218,7 @@ struct
   type 'a t_ctx =  {off : int ; arg : 'a}
 
   let cut = ref 8
+
   and more_cut = ref 16
 
 (*
@@ -397,6 +451,7 @@ let rec pkey chan  = function
 
   let ok_inter = ref false
 
+  (* compute a good test sequence for these cases *)
   let rec opt_count top cases =
     let key = make_key cases in
     try
