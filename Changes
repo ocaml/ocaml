@@ -492,7 +492,7 @@ OCaml 5.0
 
 - #11289, #11405: fix some leaks on systhread termination
   (Fabrice Buoro, Enguerrand Decorne, Gabriel Scherer,
-   review by ???, report by Romain Beauxis)
+   review by Xavier Leroy and Florian Angeletti, report by Romain Beauxis)
 
 - #11358, #11379: Refactor the initialization of bytecode threading,
   This avoids a "dangling pointer" warning of GCC 12.1.
