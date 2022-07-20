@@ -84,6 +84,11 @@ OCaml 5.0
 
 ### Runtime system:
 
+- #11400: Runtime events counters fixes
+  Fixes mismatch between OCaml and C APIs, removes events from 4.x that
+  are not present in the 5.0 GC and adds some missing probes.
+  (Sadiq Jaffer, review by ?)
+
 - #11368: Runtime events buffer size OCAMLRUNPARAMS fix
   The runtime events buffer size can now be set via the 'e' OCAMLRUNPARAM.
   This is previously mistakenly enabled/disabled tracing instead.
