@@ -22,11 +22,12 @@
 #include "caml/config.h"
 #include "caml/codefrag.h"
 #include "caml/domain.h"
-#include "caml/eventlog.h"
+#include "caml/runtime_events.h"
 #include "caml/fail.h"
 #include "caml/fiber.h"
 #include "caml/finalise.h"
 #include "caml/globroots.h"
+#include "caml/gc_stats.h"
 #include "caml/memory.h"
 #include "caml/mlvalues.h"
 #include "caml/platform.h"
@@ -627,7 +628,7 @@ static void mark_stack_push(struct mark_stack* stk, value block,
 }
 
 /* to fit scanning_action */
-static void mark_stack_push_act(void* state, value v, value* ignored)
+static void mark_stack_push_act(void* state, value v, volatile value* ignored)
 {
   if (Tag_val(v) < No_scan_tag && Tag_val(v) != Cont_tag)
     mark_stack_push(Caml_state->mark_stack, v, 0, NULL);
@@ -686,10 +687,9 @@ static void mark_slice_darken(struct mark_stack* stk, value v, mlsize_t i,
                   goto again;
           }
         } else {
-          atomic_store_explicit(
+          atomic_store_relaxed(
             Hp_atomic_val(child),
-            With_status_hd(chd, caml_global_heap_state.MARKED),
-            memory_order_relaxed);
+            With_status_hd(chd, caml_global_heap_state.MARKED));
         }
         if(Tag_hd(chd) < No_scan_tag){
           mark_stack_push(stk, child, 0, work);
@@ -742,13 +742,14 @@ static intnat mark(intnat budget) {
   return budget;
 }
 
+static scanning_action_flags darken_scanning_flags = 0;
+
 void caml_darken_cont(value cont)
 {
   CAMLassert(Is_block(cont) && !Is_young(cont) && Tag_val(cont) == Cont_tag);
   {
     SPIN_WAIT {
-      header_t hd
-            = atomic_load_explicit(Hp_atomic_val(cont), memory_order_relaxed);
+      header_t hd = atomic_load_relaxed(Hp_atomic_val(cont));
       CAMLassert(!Has_status_hd(hd, caml_global_heap_state.GARBAGE));
       if (Has_status_hd(hd, caml_global_heap_state.MARKED))
         break;
@@ -758,7 +759,8 @@ void caml_darken_cont(value cont)
               With_status_hd(hd, NOT_MARKABLE))) {
         value stk = Field(cont, 0);
         if (Ptr_val(stk) != NULL)
-          caml_scan_stack(&caml_darken, 0, Ptr_val(stk), 0);
+          caml_scan_stack(&caml_darken, darken_scanning_flags, 0,
+                          Ptr_val(stk), 0);
         atomic_store_explicit(
           Hp_atomic_val(cont),
           With_status_hd(hd, caml_global_heap_state.MARKED),
@@ -768,7 +770,7 @@ void caml_darken_cont(value cont)
   }
 }
 
-void caml_darken(void* state, value v, value* ignored) {
+void caml_darken(void* state, value v, volatile value* ignored) {
   header_t hd;
   if (!Is_markable (v)) return; /* foreign stack, at least */
 
@@ -785,10 +787,9 @@ void caml_darken(void* state, value v, value* ignored) {
     if (Tag_hd(hd) == Cont_tag) {
       caml_darken_cont(v);
     } else {
-      atomic_store_explicit(
+      atomic_store_relaxed(
          Hp_atomic_val(v),
-         With_status_hd(hd, caml_global_heap_state.MARKED),
-         memory_order_relaxed);
+         With_status_hd(hd, caml_global_heap_state.MARKED));
       if (Tag_hd(hd) < No_scan_tag) {
         mark_stack_push(Caml_state->mark_stack, v, 0, NULL);
       }
@@ -907,84 +908,6 @@ static intnat ephe_sweep (caml_domain_state* domain_state, intnat budget)
   return budget;
 }
 
-static struct gc_stats sampled_gc_stats[Max_domains];
-
-void caml_accum_heap_stats(struct heap_stats* acc, const struct heap_stats* h)
-{
-  acc->pool_words += h->pool_words;
-  if (acc->pool_max_words < h->pool_max_words)
-    acc->pool_max_words = h->pool_max_words;
-  acc->pool_live_words += h->pool_live_words;
-  acc->pool_live_blocks += h->pool_live_blocks;
-  acc->pool_frag_words += h->pool_frag_words;
-  acc->large_words += h->large_words;
-  if (acc->large_max_words < h->large_max_words)
-    acc->large_max_words = h->large_max_words;
-  acc->large_blocks += h->large_blocks;
-}
-
-void caml_remove_heap_stats(struct heap_stats* acc, const struct heap_stats* h)
-{
-  acc->pool_words -= h->pool_words;
-  acc->pool_live_words -= h->pool_live_words;
-  acc->pool_live_blocks -= h->pool_live_blocks;
-  acc->pool_frag_words -= h->pool_frag_words;
-  acc->large_words -= h->large_words;
-  acc->large_blocks -= h->large_blocks;
-}
-
-
-void caml_sample_gc_stats(struct gc_stats* buf)
-{
-  int i;
-  intnat pool_max = 0, large_max = 0;
-  int my_id = Caml_state->id;
-  memset(buf, 0, sizeof(*buf));
-
-  for (i=0; i<Max_domains; i++) {
-    struct gc_stats* s = &sampled_gc_stats[i];
-    struct heap_stats* h = &s->major_heap;
-    if (i != my_id) {
-      buf->minor_words += s->minor_words;
-      buf->promoted_words += s->promoted_words;
-      buf->major_words += s->major_words;
-      buf->minor_collections += s->minor_collections;
-      buf->forced_major_collections += s->forced_major_collections;
-    }
-    else {
-      buf->minor_words += Caml_state->stat_minor_words;
-      buf->promoted_words += Caml_state->stat_promoted_words;
-      buf->major_words += Caml_state->stat_major_words;
-      buf->minor_collections += Caml_state->stat_minor_collections;
-      buf->forced_major_collections += s->forced_major_collections;
-      //FIXME handle the case for major heap stats [h]
-    }
-    /* The instantaneous maximum heap size cannot be computed
-       from per-domain statistics, and would be very expensive
-       to maintain directly. Here, we just sum the per-domain
-       maxima, which is statistically dubious.
-
-       FIXME: maybe maintain coarse global maxima? */
-    pool_max += h->pool_max_words;
-    large_max += h->large_max_words;
-    caml_accum_heap_stats(&buf->major_heap, h);
-  }
-  buf->major_heap.pool_max_words = pool_max;
-  buf->major_heap.large_max_words = large_max;
-}
-
-/* update GC stats for this given domain */
-inline void caml_sample_gc_collect(caml_domain_state* domain)
-{
-  struct gc_stats* stats = &sampled_gc_stats[domain->id];
-
-  stats->minor_words = domain->stat_minor_words;
-  stats->promoted_words = domain->stat_promoted_words;
-  stats->major_words = domain->stat_major_words;
-  stats->minor_collections = domain->stat_minor_collections;
-  stats->forced_major_collections = domain->stat_forced_major_collections;
-  caml_sample_heap_stats(domain->shared_heap, &stats->major_heap);
-}
 
 static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
                                        int participating_count,
@@ -1022,10 +945,10 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
         struct gc_stats s;
         intnat heap_words, not_garbage_words, swept_words;
 
-        caml_sample_gc_stats(&s);
-        heap_words = s.major_heap.pool_words + s.major_heap.large_words;
-        not_garbage_words = s.major_heap.pool_live_words
-                            + s.major_heap.large_words;
+        caml_compute_gc_stats(&s);
+        heap_words = s.heap_stats.pool_words + s.heap_stats.large_words;
+        not_garbage_words = s.heap_stats.pool_live_words
+                            + s.heap_stats.large_words;
         swept_words = domain->swept_words;
         caml_gc_log ("heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d "
                       "not_garbage_words %"ARCH_INTNAT_PRINTF_FORMAT"d "
@@ -1097,15 +1020,11 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
   /* If the heap is to be verified, do it before the domains continue
      running OCaml code. */
   if (caml_params->verify_heap) {
-    struct heap_verify_state* ver = caml_verify_begin();
-    caml_do_roots (&caml_verify_root, ver, domain, 1);
-    caml_scan_global_roots(&caml_verify_root, ver);
-    caml_verify_heap(ver);
+    caml_verify_heap(domain);
     caml_gc_log("Heap verified");
     caml_global_barrier();
   }
 
-  domain->stat_major_collections++;
   caml_cycle_heap(domain->shared_heap);
   domain->sweeping_done = 0;
 
@@ -1116,7 +1035,7 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
   domain->major_gc_clock = 0.0;
 
   CAML_EV_BEGIN(EV_MAJOR_MARK_ROOTS);
-  caml_do_roots (&caml_darken, NULL, domain, 0);
+  caml_do_roots (&caml_darken, darken_scanning_flags, NULL, domain, 0);
   {
     uintnat work_unstarted = WORK_UNSTARTED;
     if(atomic_compare_exchange_strong(&domain_global_roots_started,
@@ -1156,6 +1075,11 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
      Mutators can alter the set of global roots, to preserve its correctness,
      they should not run while global roots are being marked.*/
   caml_global_barrier();
+
+  /* Someone should flush the allocation stats we gathered during the cycle */
+  if( participating[0] == Caml_state ) {
+    CAML_EV_ALLOC_FLUSH();
+  }
 
   CAML_EV_END(EV_MAJOR_GC_STW);
   CAML_EV_END(EV_MAJOR_GC_CYCLE_DOMAINS);
@@ -1252,7 +1176,8 @@ static char collection_slice_mode_char(collection_slice_mode mode)
 static intnat major_collection_slice(intnat howmuch,
                                      int participant_count,
                                      caml_domain_state** barrier_participants,
-                                     collection_slice_mode mode)
+                                     collection_slice_mode mode,
+                                     int major_cycle_spinning)
 {
   caml_domain_state* domain_state = Caml_state;
   intnat sweep_work = 0, mark_work = 0;
@@ -1261,8 +1186,11 @@ static intnat major_collection_slice(intnat howmuch,
   int was_marking = 0;
   uintnat saved_ephe_cycle;
   uintnat saved_major_cycle = caml_major_cycles_completed;
-  int log_events = mode != Slice_opportunistic || (caml_params->verb_gc & 0x40);
   intnat computed_work, budget, interrupted_budget = 0;
+
+  int log_events = mode != Slice_opportunistic ||
+                   (caml_params->verb_gc & 0x40) ||
+                   major_cycle_spinning;
 
   update_major_slice_work();
   computed_work = get_major_slice_work(howmuch);
@@ -1276,6 +1204,7 @@ static intnat major_collection_slice(intnat howmuch,
   }
 
   if (log_events) CAML_EV_BEGIN(EV_MAJOR_SLICE);
+  call_timing_hook(&caml_major_slice_begin_hook);
 
   if (!domain_state->sweeping_done) {
     if (log_events) CAML_EV_BEGIN(EV_MAJOR_SWEEP);
@@ -1387,6 +1316,7 @@ mark_again:
     }
   }
 
+  call_timing_hook(&caml_major_slice_end_hook);
   if (log_events) CAML_EV_END(EV_MAJOR_SLICE);
 
   caml_gc_log
@@ -1424,7 +1354,7 @@ mark_again:
 
 void caml_opportunistic_major_collection_slice(intnat howmuch)
 {
-  major_collection_slice(howmuch, 0, 0, Slice_opportunistic);
+  major_collection_slice(howmuch, 0, 0, Slice_opportunistic, 0);
 }
 
 void caml_major_collection_slice(intnat howmuch)
@@ -1436,7 +1366,8 @@ void caml_major_collection_slice(intnat howmuch)
         AUTO_TRIGGERED_MAJOR_SLICE,
         0,
         0,
-        Slice_interruptible
+        Slice_interruptible,
+        0
         );
     if (interrupted_work > 0) {
       caml_gc_log("Major slice interrupted, rescheduling major slice");
@@ -1445,7 +1376,7 @@ void caml_major_collection_slice(intnat howmuch)
   } else {
     /* TODO: could make forced API slices interruptible, but would need to do
        accounting or pass up interrupt */
-    major_collection_slice(howmuch, 0, 0, Slice_uninterruptible);
+    major_collection_slice(howmuch, 0, 0, Slice_uninterruptible, 0);
   }
 }
 
@@ -1459,10 +1390,12 @@ static void finish_major_cycle_callback (caml_domain_state* domain, void* arg,
   caml_empty_minor_heap_no_major_slice_from_stw
     (domain, (void*)0, participating_count, participating);
 
+  CAML_EV_BEGIN(EV_MAJOR_FINISH_CYCLE);
   while (saved_major_cycles == caml_major_cycles_completed) {
     major_collection_slice(10000000, participating_count, participating,
-                           Slice_uninterruptible);
+                           Slice_uninterruptible, 1);
   }
+  CAML_EV_END(EV_MAJOR_FINISH_CYCLE);
 }
 
 void caml_finish_major_cycle (void)
@@ -1565,7 +1498,7 @@ static void mark_stack_prune (struct mark_stack* stk)
           Caml_state->pools_to_rescan_len * sizeof(struct pool *));
     }
     Caml_state->pools_to_rescan[Caml_state->pools_to_rescan_count++]
-      = (struct pool*) (e->key);;
+      = (struct pool*) (e->key);
   });
 
   caml_gc_log(

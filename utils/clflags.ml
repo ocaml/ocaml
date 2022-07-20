@@ -42,10 +42,13 @@ let objfiles = ref ([] : string list)   (* .cmo and .cma files *)
 and ccobjs = ref ([] : string list)     (* .o, .a, .so and -cclib -lxxx *)
 and dllibs = ref ([] : string list)     (* .so and -dllib -lxxx *)
 
+let cmi_file = ref None
+
 let compile_only = ref false            (* -c *)
 and output_name = ref (None : string option) (* -o *)
 and include_dirs = ref ([] : string list)(* -I *)
 and no_std_include = ref false          (* -nostdlib *)
+and no_cwd = ref false                  (* -nocwd *)
 and print_types = ref false             (* -i *)
 and make_archive = ref false            (* -a *)
 and debug = ref false                   (* -g *)
@@ -63,6 +66,7 @@ and all_ccopts = ref ([] : string list)     (* -ccopt *)
 and classic = ref false                 (* -nolabels *)
 and nopervasives = ref false            (* -nopervasives *)
 and match_context_rows = ref 32         (* -match-context-rows *)
+and safer_matching = ref false          (* -safer-matching *)
 and preprocessor = ref(None : string option) (* -pp *)
 and all_ppx = ref ([] : string list)        (* -ppx *)
 let absname = ref false                 (* -absname *)
@@ -152,11 +156,9 @@ let insn_sched = ref insn_sched_default (* -[no-]insn-sched *)
 let std_include_flag prefix =
   if !no_std_include then ""
   else (prefix ^ (Filename.quote Config.standard_library))
-;;
 
 let std_include_dir () =
   if !no_std_include then [] else [Config.standard_library]
-;;
 
 let shared = ref false (* -shared *)
 let dlcode = ref true (* not -nodynlink *)
@@ -170,14 +172,10 @@ let runtime_variant =
         | true -> "i"
         | false -> "")
 
-let with_runtime = ref true;;         (* -with-runtime *)
+let with_runtime = ref true         (* -with-runtime *)
 
 let keep_docs = ref false              (* -keep-docs *)
 let keep_locs = ref true               (* -keep-locs *)
-let unsafe_string =
-  if Config.safe_string then ref false
-  else ref (not Config.default_safe_string)
-                                   (* -safe-string / -unsafe-string *)
 
 let classic_inlining = ref false       (* -Oclassic *)
 let inlining_report = ref false    (* -inlining-report *)

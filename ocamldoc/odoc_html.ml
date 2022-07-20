@@ -727,6 +727,13 @@ class virtual info =
         )
         l
 
+    method html_of_alerts b alerts =
+      List.iter (fun { alert_name; alert_payload } ->
+          bp b "<li><b>%s %s.</b>" Odoc_messages.alert alert_name;
+          (match alert_payload with Some p -> bp b " %s" p | None -> ());
+          bp b "</li>\n"
+        ) alerts
+
     (** Print html code for a description, except for the [i_params] field.
        @param indent can be specified not to use the style of info comments;
        default is [true].
@@ -767,6 +774,7 @@ class virtual info =
           self#html_of_raised_exceptions b' info.M.i_raised_exceptions;
           self#html_of_return_opt b' info.M.i_return_value;
           self#html_of_sees b' info.M.i_sees;
+          self#html_of_alerts b' info.M.i_alerts;
           self#html_of_custom b' info.M.i_custom;
           if Buffer.length b' > 0 then
             begin

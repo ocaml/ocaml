@@ -21,10 +21,12 @@ value caml_to_c_native (value a1, value a2, value a3, value a4, value a5,
     + Long_val (a9) + Long_val (a10) + Long_val (a11);
 
   printf ("[C] Call c_to_caml\n");
+  fflush(stdout);
   caml_callback(*c_to_caml_closure, Val_long(l));
   printf ("[C] Return from c_to_caml\n");
 
   printf ("[C] Leave caml_to_c\n");
+  fflush(stdout);
   CAMLreturn (Val_unit);
 }
 

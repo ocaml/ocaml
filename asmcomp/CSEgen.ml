@@ -226,7 +226,7 @@ method class_of_operation op =
   | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
   | Iextcall _ | Iopaque -> assert false       (* treated specially *)
   | Istackoffset _ -> Op_other
-  | Iload(_,_,mut) -> Op_load mut
+  | Iload { mutability } -> Op_load mutability
   | Istore(_,_,asg) -> Op_store asg
   | Ialloc _ | Ipoll _ -> assert false     (* treated specially *)
   | Iintop(Icheckbound) -> Op_checkbound

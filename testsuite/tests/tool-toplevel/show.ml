@@ -5,6 +5,26 @@
 (* this is a set of tests to test the #show functionality
  * of toplevel *)
 
+class o = object val x = 0 end;;
+[%%expect{|
+class o : object val x : int end
+|}];;
+#show o;;
+[%%expect{|
+type o = <  >
+class o : object val x : int end
+class type o = object val x : int end
+|}];;
+class type t = object val x : int end;;
+[%%expect{|
+class type t = object val x : int end
+|}];;
+#show t;;
+[%%expect{|
+type t = <  >
+class type t = object val x : int end
+|}];;
+
 #show Foo;;
 [%%expect {|
 Unknown element.

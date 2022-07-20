@@ -327,7 +327,7 @@ achieving the same effect as
         ocamlc -o myprog a.cmo b.cmo ... -dllib -lmylib
 \end{alltt}
 Using this mechanism, users of the library "mylib.cma" do not need to
-known that it references C code, nor whether this C code must be
+know that it references C code, nor whether this C code must be
 statically linked (using "-custom") or dynamically linked.
 
 \subsection{ss:c-static-vs-dynamic}{Choosing between static linking and dynamic linking}
@@ -463,8 +463,8 @@ floating-point numbers.}
 
 In earlier versions of OCaml, it was possible to use
 word-aligned pointers to addresses outside the heap as OCaml values,
-just by casting the pointer to type "value".  Starting with OCaml
-4.11, this usage is deprecated and will stop being supported in OCaml 5.00.
+just by casting the pointer to type "value".  This usage is no longer
+supported since OCaml 5.0.
 
 A correct way to manipulate pointers to out-of-heap blocks from
 OCaml is to store those pointers in OCaml blocks with tag
@@ -2499,6 +2499,10 @@ CAMLprim stub_gethostbyname(value vname)
   CAMLreturn (vres);
 }
 \end{verbatim}
+
+During the time the domain lock is released, the thread-local variable
+"Caml_state" is set to "NULL". This can be used to determine if the
+thread currently holds its domain lock.
 
 Callbacks from C to OCaml must be performed while holding the master
 lock to the OCaml run-time system.  This is naturally the case if the

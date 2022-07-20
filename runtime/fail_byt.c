@@ -37,16 +37,14 @@ CAMLexport void caml_raise(value v)
   CAMLassert(!Is_exception_result(v));
 
   // avoid calling caml_raise recursively
-  v = caml_process_pending_signals_with_root_exn(v);
+  v = caml_process_pending_actions_with_root_exn(v);
   if (Is_exception_result(v))
     v = Extract_exception(v);
 
   if (Caml_state->external_raise == NULL) caml_fatal_uncaught_exception(v);
   *Caml_state->external_raise->exn_bucket = v;
 
-  while(Caml_state->local_roots != Caml_state->external_raise->local_roots) {
-    Caml_state->local_roots = Caml_state->local_roots->next;
-  }
+  Caml_state->local_roots = Caml_state->external_raise->local_roots;
 
   siglongjmp(Caml_state->external_raise->jmp->buf, 1);
 }

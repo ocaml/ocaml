@@ -81,19 +81,22 @@ let load ppf phrase_name program =
     if Filename.is_implicit dll
     then Filename.concat (Sys.getcwd ()) dll
     else dll in
+  let remove_dll () =
+    (* note: under windows, cannot remove a loaded dll
+       (should remember the handles, close them in at_exit, and then
+       remove files) *)
+    try Sys.remove dll with Sys_error _ -> ()
+  in
   match
-    Fun.protect
-      ~finally:(fun () ->
-          (try Sys.remove dll with Sys_error _ -> ()))
-            (* note: under windows, cannot remove a loaded dll
-               (should remember the handles, close them in at_exit, and then
-               remove files) *)
-      (fun () -> dll_run dll phrase_name)
+    dll_run dll phrase_name
   with
-  | res -> res
+  | res ->
+     remove_dll ();
+     res
   | exception x ->
-      record_backtrace ();
-      Exception x
+     record_backtrace ();
+     remove_dll ();
+     Exception x
 
 type lookup_fn = string -> Obj.t option
 type load_fn =

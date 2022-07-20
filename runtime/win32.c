@@ -638,7 +638,7 @@ int caml_win32_random_seed (intnat data[16])
 }
 
 
-#if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
+#ifdef _MSC_VER
 
 static void invalid_parameter_handler(const wchar_t* expression,
    const wchar_t* function,
@@ -864,8 +864,8 @@ static uintnat windows_unicode_strict = 1;
    the argument string is encoded in the local codepage. */
 static uintnat windows_unicode_fallback = 1;
 
-CAMLexport int win_multi_byte_to_wide_char(const char *s, int slen,
-                                           wchar_t *out, int outlen)
+CAMLexport int caml_win32_multi_byte_to_wide_char(const char *s, int slen,
+                                                  wchar_t *out, int outlen)
 {
   int retcode;
 
@@ -896,8 +896,8 @@ CAMLexport int win_multi_byte_to_wide_char(const char *s, int slen,
 #define WC_ERR_INVALID_CHARS 0
 #endif
 
-CAMLexport int win_wide_char_to_multi_byte(const wchar_t *s, int slen,
-                                           char *out, int outlen)
+CAMLexport int caml_win32_wide_char_to_multi_byte(const wchar_t *s, int slen,
+                                                  char *out, int outlen)
 {
   int retcode;
 
@@ -928,9 +928,9 @@ CAMLexport value caml_copy_string_of_utf16(const wchar_t *s)
 
   slen = wcslen(s);
   /* Do not include final NULL */
-  retcode = win_wide_char_to_multi_byte(s, slen, NULL, 0);
+  retcode = caml_win32_wide_char_to_multi_byte(s, slen, NULL, 0);
   v = caml_alloc_string(retcode);
-  win_wide_char_to_multi_byte(s, slen, (char *)String_val(v), retcode);
+  caml_win32_wide_char_to_multi_byte(s, slen, (char *)String_val(v), retcode);
 
   return v;
 }
@@ -940,9 +940,9 @@ CAMLexport wchar_t* caml_stat_strdup_to_utf16(const char *s)
   wchar_t * ws;
   int retcode;
 
-  retcode = win_multi_byte_to_wide_char(s, -1, NULL, 0);
+  retcode = caml_win32_multi_byte_to_wide_char(s, -1, NULL, 0);
   ws = caml_stat_alloc_noexc(retcode * sizeof(*ws));
-  win_multi_byte_to_wide_char(s, -1, ws, retcode);
+  caml_win32_multi_byte_to_wide_char(s, -1, ws, retcode);
 
   return ws;
 }
@@ -952,9 +952,9 @@ CAMLexport caml_stat_string caml_stat_strdup_of_utf16(const wchar_t *s)
   caml_stat_string out;
   int retcode;
 
-  retcode = win_wide_char_to_multi_byte(s, -1, NULL, 0);
+  retcode = caml_win32_wide_char_to_multi_byte(s, -1, NULL, 0);
   out = caml_stat_alloc(retcode);
-  win_wide_char_to_multi_byte(s, -1, out, retcode);
+  caml_win32_wide_char_to_multi_byte(s, -1, out, retcode);
 
   return out;
 }
@@ -1089,20 +1089,8 @@ CAMLexport clock_t caml_win32_clock(void)
   total += tmp.QuadPart;
 
   /* total in 100-nanosecond intervals (1e7 / CLOCKS_PER_SEC) */
-  clocks_per_sec = INT64_LITERAL(10000000U) / (ULONGLONG)CLOCKS_PER_SEC;
+  clocks_per_sec = 10000000ULL / (ULONGLONG)CLOCKS_PER_SEC;
   return (clock_t)(total / clocks_per_sec);
-}
-
-int caml_thread_setname(const char* name)
-{
-  int ret;
-  /* XXX Duplicates unix.c, but MSVC will add some specific code here */
-  pthread_t self = pthread_self();
-
-  ret = pthread_setname_np(self, name);
-  if (ret == ERANGE)
-    return -1;
-  return 0;
 }
 
 static LARGE_INTEGER frequency;
@@ -1147,7 +1135,7 @@ void caml_init_os_params(void)
   /* Convert a FILETIME in 100ns ticks since 1 January 1601 to
      ns since 1 Jan 1970. */
   clock_offset.QuadPart =
-    ((now.QuadPart - INT64_LITERAL(0x19DB1DED53E8000U)) * 100);
+    ((now.QuadPart - 0x19DB1DED53E8000ULL) * 100);
 
   /* Get the offset between QueryPerformanceCounter and
      GetSystemTimePreciseAsFileTime in order to return a true timestamp, rather
@@ -1158,4 +1146,21 @@ void caml_init_os_params(void)
   now.LowPart = stamp.dwLowDateTime;
   now.HighPart = stamp.dwHighDateTime;
   now.QuadPart *= 100;
+}
+
+int64_t caml_time_counter(void)
+{
+  static double clock_freq = 0;
+  static LARGE_INTEGER now;
+
+  if (clock_freq == 0) {
+    LARGE_INTEGER f;
+    if (!QueryPerformanceFrequency(&f))
+      return 0;
+    clock_freq = (1000000000.0 / f.QuadPart);
+  };
+
+  if (!QueryPerformanceCounter(&now))
+    return 0;
+  return (int64_t)(now.QuadPart * clock_freq);
 }

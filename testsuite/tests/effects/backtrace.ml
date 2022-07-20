@@ -22,7 +22,7 @@ let rec bar i =
   end
   [@@inline never]
 
-type _ eff += Wait : unit eff
+type _ t += Wait : unit t
 
 let task1 () =
   try
@@ -45,7 +45,7 @@ let main () =
     exnc = (fun e ->
       let open Printexc in
       print_raw_backtrace stdout (get_raw_backtrace ()));
-    effc = fun (type a) (e : a eff) ->
+    effc = fun (type a) (e : a t) ->
       match e with
       | Wait -> Some (fun (k : (a, _) continuation) ->
           discontinue_with_backtrace k x bt)

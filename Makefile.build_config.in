@@ -19,8 +19,13 @@
 # OCaml's build system and so itself includes Makefile.config. It assumes that
 # $(ROOTDIR) has been defined.
 
+# This variable is added to prevent double-inclusion of this Makefile by
+# Makefile.config_if_required. override is used as this has highest $(origin )
+# priority (including over make BUILD_CONFIG_INCLUDED)
+override BUILD_CONFIG_INCLUDED =
+
 include $(ROOTDIR)/Makefile.config
-INSTALL ?= @INSTALL@
+INSTALL ?= @INSTALL@ -p
 INSTALL_DATA ?= @INSTALL_DATA@
 INSTALL_PROG ?= @INSTALL_PROGRAM@
 
@@ -31,12 +36,16 @@ INSTALL_OCAMLNAT = @install_ocamlnat@
 DEP_CC=@DEP_CC@ -MM
 COMPUTE_DEPS=@compute_deps@
 
-# This is munged into utils/config.ml, not overridable by other parts of
-# the build system.
-OC_DLL_LDFLAGS=@oc_dll_ldflags@
+# Which tool to use to display differences between files
+DIFF=@DIFF@
+# Which flags to pass to the diff tool
+DIFF_FLAGS=@DIFF_FLAGS@
 
 # The rlwrap command (for the *runtop targets)
 RLWRAP=@rlwrap@
+
+# The best sed which is available (GNU sed if available)
+SED=@SED@
 
 # Which document generator: odoc or ocamldoc?
 DOCUMENTATION_TOOL=@documentation_tool@
@@ -51,3 +60,18 @@ BOOTSTRAPPING_FLEXDLL=@bootstrapping_flexdll@
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
 datarootdir = @datarootdir@
 DOCDIR=@docdir@
+
+# Expanded form of MKEXE_EXP and MKDLL_EXP _with host flexlink command_
+MKEXE_EXP=@mkexe_exp@
+MKDLL_EXP=@mkdll_exp@
+
+# Which make target to build, depending on whether the native compiler
+# has been enabled or not during the configuration stage
+
+DEFAULT_BUILD_TARGET = @default_build_target@
+
+# Platform-dependent assembler files to use to build the runtime
+runtime_ASM_OBJECTS = $(addprefix runtime/,@runtime_asm_objects@)
+
+# Platform-dependent module for ocamlyacc
+ocamlyacc_WSTR_MODULE = @ocamlyacc_wstr_module@

@@ -32,7 +32,7 @@ else
   systhreads := true
 endif
 
-ifeq "$(filter $(UNIXLIB),$(OTHERLIBRARIES))" ""
+ifeq "$(filter unix,$(OTHERLIBRARIES))" ""
   ocamltest_unix := dummy
   unix_name :=
   unix_path :=
@@ -41,7 +41,7 @@ ifeq "$(filter $(UNIXLIB),$(OTHERLIBRARIES))" ""
 else
   ocamltest_unix := real
   unix_name := unix
-  unix_path := $(ROOTDIR)/otherlibs/$(UNIXLIB)
+  unix_path := $(ROOTDIR)/otherlibs/unix
   unix_include := -I $(unix_path) $(EMPTY)
   ifeq "$(UNIX_OR_WIN32)" "win32"
     unix := Some false
@@ -64,7 +64,6 @@ else
   CSC :=
   CSCFLAGS :=
 endif
-mkexe := $(MKEXE)
 
 ifeq "$(TOOLCHAIN)" "msvc"
 CPP := $(CPP) 2> nul
@@ -81,8 +80,6 @@ WITH_OCAMLDEBUG := true
 else
 WITH_OCAMLDEBUG := false
 endif
-
-OC_CPPFLAGS += -I$(ROOTDIR)/runtime -DCAML_INTERNALS
 
 ifdef UNIX_OR_WIN32
 run_source := run_$(UNIX_OR_WIN32).c
@@ -182,22 +179,18 @@ bytecode_modules := $(o_files) $(cmo_files)
 
 native_modules := $(o_files) $(cmx_files)
 
-directories := $(addprefix $(ROOTDIR)/,utils bytecomp parsing stdlib \
+directories := $(addprefix $(ROOTDIR)/,utils bytecomp parsing \
                                        compilerlibs file_formats)
 
 include_directories := $(addprefix -I , $(directories))
 
-flags := -g -nostdlib $(include_directories) \
+flags := $(STDLIBFLAGS) -g $(include_directories) \
   -strict-sequence -safe-string -strict-formats \
   -w +a-4-9-41-42-44-45-48 -warn-error +A
 
 ocamlc = $(BEST_OCAMLC) $(flags)
 
 ocamlopt = $(BEST_OCAMLOPT) $(flags)
-
-ocamldep := $(BEST_OCAMLDEP)
-depflags := -slash
-depincludes :=
 
 .SECONDARY: $(lexers:.mll=.ml) $(parsers:.mly=.mli) $(parsers:.mly=.ml)
 
@@ -249,7 +242,6 @@ ocamltest_config.ml: ocamltest_config.ml.in Makefile ../Makefile.config
 	    $(call SUBST_STRING,CPP) \
 	    $(call SUBST_STRING,ocamlsrcdir) \
 	    $(call SUBST,FLAMBDA) \
-	    $(call SUBST,FORCE_SAFE_STRING) \
 	    $(call SUBST,FLAT_FLOAT_ARRAY) \
 	    $(call SUBST,WITH_OCAMLDOC) \
 	    $(call SUBST,WITH_OCAMLDEBUG) \
@@ -263,17 +255,19 @@ ocamltest_config.ml: ocamltest_config.ml.in Makefile ../Makefile.config
 	    $(call SUBST_STRING,CSC) \
 	    $(call SUBST_STRING,CSCFLAGS) \
 	    $(call SUBST_STRING,EXE) \
-	    $(call SUBST_STRING,MKDLL) \
-	    $(call SUBST_STRING,mkexe) \
+	    $(call SUBST_STRING,MKDLL_EXP) \
+	    $(call SUBST_STRING,MKEXE_EXP) \
 	    $(call SUBST_STRING,BYTECCLIBS) \
 	    $(call SUBST_STRING,NATIVECCLIBS) \
 	    $(call SUBST_STRING,ASM) \
 	    $(call SUBST_STRING,CC) \
 	    $(call SUBST_STRING,OC_CFLAGS) \
 	    $(call SUBST,CCOMPTYPE) \
+	    $(call SUBST,DIFF) \
+	    $(call SUBST,DIFF_FLAGS) \
 	    $(call SUBST,WINDOWS_UNICODE) \
 	    $(call SUBST,FUNCTION_SECTIONS) \
-	    $(call SUBST,NAKED_POINTERS) \
+	    $(call SUBST,WITH_FRAME_POINTERS) \
 	    $< > $@
 
 # Manual
@@ -309,7 +303,6 @@ $(DEPDIR)/%.$(D): %.c | $(DEPDIR)
 
 .PHONY: depend
 depend: $(dependencies_generated_prereqs)
-	$(ocamldep) $(depflags) $(depincludes) $(mli_files) $(ml_files) \
-	  > .depend
+	$(OCAMLDEP_CMD) $(mli_files) $(ml_files) > .depend
 
 -include .depend

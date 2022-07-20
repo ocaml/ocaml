@@ -24,7 +24,7 @@
 #include <math.h>
 #include <sys/time.h>
 
-static void unix_set_timeval(struct timeval * tv, double d)
+static void caml_unix_set_timeval(struct timeval * tv, double d)
 {
   double integr, frac;
   frac = modf(d, &integr);
@@ -35,7 +35,7 @@ static void unix_set_timeval(struct timeval * tv, double d)
   if (tv->tv_usec >= 1000000) { tv->tv_sec++; tv->tv_usec = 0; }
 }
 
-static value unix_convert_itimer(struct itimerval *tp)
+static value caml_unix_convert_itimer(struct itimerval *tp)
 {
 #define Get_timeval(tv) (double) tv.tv_sec + (double) tv.tv_usec / 1e6
   value res = caml_alloc_small(Double_wosize * 2, Double_array_tag);
@@ -47,29 +47,29 @@ static value unix_convert_itimer(struct itimerval *tp)
 
 static int itimers[3] = { ITIMER_REAL, ITIMER_VIRTUAL, ITIMER_PROF };
 
-CAMLprim value unix_setitimer(value which, value newval)
+CAMLprim value caml_unix_setitimer(value which, value newval)
 {
   struct itimerval new, old;
-  unix_set_timeval(&new.it_interval, Double_field(newval, 0));
-  unix_set_timeval(&new.it_value, Double_field(newval, 1));
+  caml_unix_set_timeval(&new.it_interval, Double_field(newval, 0));
+  caml_unix_set_timeval(&new.it_value, Double_field(newval, 1));
   if (setitimer(itimers[Int_val(which)], &new, &old) == -1)
-    uerror("setitimer", Nothing);
-  return unix_convert_itimer(&old);
+    caml_uerror("setitimer", Nothing);
+  return caml_unix_convert_itimer(&old);
 }
 
-CAMLprim value unix_getitimer(value which)
+CAMLprim value caml_unix_getitimer(value which)
 {
   struct itimerval val;
   if (getitimer(itimers[Int_val(which)], &val) == -1)
-    uerror("getitimer", Nothing);
-  return unix_convert_itimer(&val);
+    caml_uerror("getitimer", Nothing);
+  return caml_unix_convert_itimer(&val);
 }
 
 #else
 
-CAMLprim value unix_setitimer(value which, value newval)
+CAMLprim value caml_unix_setitimer(value which, value newval)
 { caml_invalid_argument("setitimer not implemented"); }
-CAMLprim value unix_getitimer(value which)
+CAMLprim value caml_unix_getitimer(value which)
 { caml_invalid_argument("getitimer not implemented"); }
 
 #endif

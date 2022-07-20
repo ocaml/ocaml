@@ -222,6 +222,9 @@ let ends_with ~suffix s =
     else aux (i + 1)
   in diff >= 0 && aux 0
 
+external seeded_hash : int -> string -> int = "caml_string_hash" [@@noalloc]
+let hash x = seeded_hash 0 x
+
 (* duplicated in bytes.ml *)
 let split_on_char sep s =
   let r = ref [] in

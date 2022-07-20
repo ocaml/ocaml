@@ -41,4 +41,3 @@ let rec get_unboxed_type_representation env ty fuel =
 let get_unboxed_type_representation env ty =
   (* Do not give too much fuel: PR#7424 *)
   get_unboxed_type_representation env ty 100
-;;

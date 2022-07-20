@@ -19,7 +19,7 @@
     compilation. All components of this module can therefore be
     referred by their short name, without prefixing them by [Stdlib].
 
-    It particular, it provides the basic operations over the built-in
+    In particular, it provides the basic operations over the built-in
     types (numbers, booleans, byte sequences, strings, exceptions,
     references, lists, arrays, input-output channels, ...) and the
     {{!modules}standard library modules}.
@@ -371,8 +371,8 @@ external ( mod ) : int -> int -> int = "%modint"
 *)
 
 val abs : int -> int
-(** Return the absolute value of the argument.  Note that this may be
-  negative if the argument is [min_int]. *)
+(** [abs x] is the absolute value of [x]. On [min_int] this
+   is [min_int] itself and thus remains negative. *)
 
 val max_int : int
 (** The greatest representable integer. *)
@@ -764,7 +764,10 @@ external int_of_string : string -> int = "caml_int_of_string"
    [Failure "int_of_string"] instead of returning [None]. *)
 
 val string_of_float : float -> string
-(** Return the string representation of a floating-point number. *)
+(** Return a string representation of a floating-point number.
+
+    This conversion can involve a loss of precision. For greater control over
+    the manner in which the number is printed, see {!Printf}. *)
 
 val float_of_string_opt: string -> float option
 (** Convert the given string to a float.  The string is read in decimal
@@ -849,7 +852,10 @@ val print_int : int -> unit
 (** Print an integer, in decimal, on standard output. *)
 
 val print_float : float -> unit
-(** Print a floating-point number, in decimal, on standard output. *)
+(** Print a floating-point number, in decimal, on standard output.
+
+    The conversion of the number to a string uses {!string_of_float} and
+    can involve a loss of precision. *)
 
 val print_endline : string -> unit
 (** Print a string, followed by a newline character, on
@@ -877,7 +883,10 @@ val prerr_int : int -> unit
 (** Print an integer, in decimal, on standard error. *)
 
 val prerr_float : float -> unit
-(** Print a floating-point number, in decimal, on standard error. *)
+(** Print a floating-point number, in decimal, on standard error.
+
+    The conversion of the number to a string uses {!string_of_float} and
+    can involve a loss of precision. *)
 
 val prerr_endline : string -> unit
 (** Print a string, followed by a newline character on standard
@@ -892,8 +901,14 @@ val prerr_newline : unit -> unit
 
 val read_line : unit -> string
 (** Flush standard output, then read characters from standard input
-   until a newline character is encountered. Return the string of
-   all characters read, without the newline character at the end. *)
+   until a newline character is encountered.
+
+   Return the string of all characters read, without the newline character
+   at the end.
+
+   @raise End_of_file if the end of the file is reached at the beginning of
+   line.
+*)
 
 val read_int_opt: unit -> int option
 (** Flush standard output, then read one line from standard input
@@ -1272,7 +1287,7 @@ type ('a,'b) result = Ok of 'a | Error of 'b
       For [printf]-style functions from module {!Printf}, ['b] is typically
       [out_channel];
       for [printf]-style functions from module {!Format}, ['b] is typically
-      {!Format.formatter};
+      {!type:Format.formatter};
       for [scanf]-style functions from module {!Scanf}, ['b] is typically
       {!Scanf.Scanning.in_channel}.
 
@@ -1330,13 +1345,15 @@ val ( ^^ ) :
 (** {1 Program termination} *)
 
 val exit : int -> 'a
-(** Terminate the process, returning the given status code
-   to the operating system: usually 0 to indicate no errors,
-   and a small positive integer to indicate failure.
-   All open output channels are flushed with [flush_all].
-   An implicit [exit 0] is performed each time a program
-   terminates normally.  An implicit [exit 2] is performed if the program
-   terminates early because of an uncaught exception. *)
+(** Terminate the process, returning the given status code to the operating
+    system: usually 0 to indicate no errors, and a small positive integer to
+    indicate failure. All open output channels are flushed with [flush_all].
+    The callbacks registered with {!Domain.at_exit} are called followed by
+    those registed with {!Stdlib.at_exit}.
+
+    An implicit [exit 0] is performed each time a program terminates normally.
+    An implicit [exit 2] is performed if the program terminates early because
+    of an uncaught exception. *)
 
 val at_exit : (unit -> unit) -> unit
 (** Register the given function to be called at program termination
@@ -1358,6 +1375,8 @@ val valid_float_lexem : string -> string
 val unsafe_really_input : in_channel -> bytes -> int -> int -> unit
 
 val do_at_exit : unit -> unit
+
+val do_domain_local_at_exit : (unit -> unit) ref
 
 (**/**)
 

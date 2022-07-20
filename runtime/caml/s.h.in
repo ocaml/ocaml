@@ -61,6 +61,8 @@
 /* Define HAS_WORKING_ROUND is the round function is correctly implemented. This
    hatch exists primarily for https://sourceforge.net/p/mingw-w64/bugs/573/ */
 
+#undef HAS_GETENTROPY
+
 #undef HAS_GETRUSAGE
 
 #undef HAS_TIMES
@@ -100,6 +102,8 @@
 #undef HAS_IPV6
 
 #undef HAS_STDINT_H
+
+#undef HAS_PTHREAD_NP_H
 
 #undef HAS_UNISTD
 
@@ -283,8 +287,6 @@
 #undef HAS_FFS
 #undef HAS_BITSCANFORWARD
 
-#undef HAS_STACK_OVERFLOW_DETECTION
-
 #undef HAS_SIGWAIT
 
 #undef HAS_HUGE_PAGES
@@ -298,3 +300,6 @@
 #undef HAS_POSIX_MONOTONIC_CLOCK
 
 #undef HAS_MACH_ABSOLUTE_TIME
+
+#undef HAS_GNU_GETAFFINITY_NP
+#undef HAS_BSD_GETAFFINITY_NP

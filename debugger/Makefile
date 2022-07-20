@@ -19,15 +19,13 @@ include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 
 DYNLINKDIR=$(ROOTDIR)/otherlibs/dynlink
-UNIXDIR=$(ROOTDIR)/otherlibs/$(UNIXLIB)
+UNIXDIR=$(ROOTDIR)/otherlibs/unix
 
-CAMLC=$(BEST_OCAMLC) -g -nostdlib -I $(ROOTDIR)/stdlib
+CAMLC=$(BEST_OCAMLC) $(STDLIBFLAGS) -g
 COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48-70 -warn-error +A \
           -safe-string -strict-sequence -strict-formats
 LINKFLAGS=-linkall -I $(UNIXDIR) -I $(DYNLINKDIR)
-CAMLDEP=$(BEST_OCAMLDEP)
-DEPFLAGS=-slash
-DEPINCLUDES=$(INCLUDES)
+OC_OCAMLDEPDIRS = $(DIRECTORIES)
 
 DIRECTORIES=$(UNIXDIR) $(DYNLINKDIR) $(addprefix $(ROOTDIR)/,\
   utils parsing typing bytecomp toplevel driver file_formats lambda)
@@ -80,8 +78,7 @@ ocamldebug_entry.cmo: ocamldebug_entry.ml ocamldebug.cmo
 	$(CAMLC) -c $(COMPFLAGS) -for-pack ocamldebug $<
 
 depend: beforedepend
-	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mli *.ml \
-	| sed -e 's,$(UNIXDIR)/,$$(UNIXDIR)/,' > .depend
+	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 
 clean::
 	rm -f debugger_lexer.ml

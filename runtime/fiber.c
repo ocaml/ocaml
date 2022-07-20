@@ -35,6 +35,9 @@
 #include "caml/stack.h"
 #include "caml/frame_descriptors.h"
 #endif
+#ifdef USE_MMAP_MAP_STACK
+#include <sys/mman.h>
+#endif
 
 #ifdef DEBUG
 #define fiber_debug_log(...) caml_gc_log(__VA_ARGS__)
@@ -42,20 +45,37 @@
 #define fiber_debug_log(...)
 #endif
 
-void caml_change_max_stack_size (uintnat new_max_size)
+static _Atomic int64_t fiber_id = 0;
+
+uintnat caml_get_init_stack_wsize (void)
+{
+  uintnat default_stack_wsize = Wsize_bsize(Stack_init_bsize);
+  uintnat stack_wsize;
+
+  if (default_stack_wsize < caml_max_stack_wsize)
+    stack_wsize = default_stack_wsize;
+  else
+    stack_wsize = caml_max_stack_wsize;
+
+  return stack_wsize;
+}
+
+void caml_change_max_stack_size (uintnat new_max_wsize)
 {
   struct stack_info *current_stack = Caml_state->current_stack;
-  asize_t size = Stack_high(current_stack) - (value*)current_stack->sp
+  asize_t wsize = Stack_high(current_stack) - (value*)current_stack->sp
                  + Stack_threshold / sizeof (value);
 
-  if (new_max_size < size) new_max_size = size;
-  if (new_max_size != caml_max_stack_size){
+  if (new_max_wsize < wsize) new_max_wsize = wsize;
+  if (new_max_wsize != caml_max_stack_wsize){
     caml_gc_log ("Changing stack limit to %"
                  ARCH_INTNAT_PRINTF_FORMAT "uk bytes",
-                     new_max_size * sizeof (value) / 1024);
+                     new_max_wsize * sizeof (value) / 1024);
   }
-  caml_max_stack_size = new_max_size;
+  caml_max_stack_wsize = new_max_wsize;
 }
+
+#define NUM_STACK_SIZE_CLASSES 5
 
 struct stack_info** caml_alloc_stack_cache (void)
 {
@@ -75,42 +95,62 @@ struct stack_info** caml_alloc_stack_cache (void)
 
 Caml_inline struct stack_info* alloc_for_stack (mlsize_t wosize)
 {
-  return caml_stat_alloc_noexc(sizeof(struct stack_info) +
-                               sizeof(value) * wosize +
-                               8 /* for alignment */ +
-                               sizeof(struct stack_handler));
+  size_t len = sizeof(struct stack_info) +
+               sizeof(value) * wosize +
+               8 /* for alignment to 16-bytes, needed for arm64 */ +
+               sizeof(struct stack_handler);
+#ifdef USE_MMAP_MAP_STACK
+  struct stack_info* si;
+  si = mmap(NULL, len, PROT_WRITE | PROT_READ,
+             MAP_ANONYMOUS | MAP_PRIVATE | MAP_STACK, -1, 0);
+  if (si == MAP_FAILED)
+    return NULL;
+
+  si->size = len;
+  return si;
+#else
+  return caml_stat_alloc_noexc(len);
+#endif /* USE_MMAP_MAP_STACK */
 }
 
-Caml_inline struct stack_info** stack_cache_bucket (mlsize_t wosize) {
+/* Returns the index into the [Caml_state->stack_cache] array if this size is
+ * pooled. If unpooled, it is [-1].
+ *
+ * Stacks may be unpooled if either the stack size is not 2**N multiple of
+ * [caml_fiber_wsz] or the stack is bigger than pooled sizes. */
+Caml_inline int stack_cache_bucket (mlsize_t wosize) {
   mlsize_t size_bucket_wsz = caml_fiber_wsz;
-  struct stack_info** size_bucket = Caml_state->stack_cache;
-  struct stack_info** end = size_bucket + NUM_STACK_SIZE_CLASSES;
+  int bucket=0;
 
-  /* wosize is in stack cache bucket n iff wosize == caml_fiber_wsz * 2**n */
-  while (size_bucket < end) {
+  while (bucket < NUM_STACK_SIZE_CLASSES) {
     if (wosize == size_bucket_wsz)
-      return size_bucket;
-    ++size_bucket;
+      return bucket;
+    ++bucket;
     size_bucket_wsz += size_bucket_wsz;
   }
 
-  return NULL;
+  return -1;
 }
 
 static struct stack_info*
-alloc_size_class_stack_noexc(mlsize_t wosize, struct stack_info** size_bucket,
-                             value hval, value hexn, value heff)
+alloc_size_class_stack_noexc(mlsize_t wosize, int cache_bucket, value hval,
+                             value hexn, value heff, int64_t id)
 {
   struct stack_info* stack;
   struct stack_handler* hand;
+  struct stack_info **cache = Caml_state->stack_cache;
 
   CAML_STATIC_ASSERT(sizeof(struct stack_info) % sizeof(value) == 0);
   CAML_STATIC_ASSERT(sizeof(struct stack_handler) % sizeof(value) == 0);
 
-  if (size_bucket != NULL && *size_bucket != NULL) {
-    stack = *size_bucket;
-    *size_bucket = (struct stack_info*)stack->exception_ptr;
-    CAMLassert(stack->size_bucket == stack_cache_bucket(wosize));
+  CAMLassert(cache != NULL);
+
+  if (cache_bucket != -1 &&
+      cache[cache_bucket] != NULL) {
+    stack = cache[cache_bucket];
+    cache[cache_bucket] =
+      (struct stack_info*)stack->exception_ptr;
+    CAMLassert(stack->cache_bucket == stack_cache_bucket(wosize));
     hand = stack->handler;
   } else {
     /* couldn't get a cached stack, so have to create one */
@@ -119,7 +159,7 @@ alloc_size_class_stack_noexc(mlsize_t wosize, struct stack_info** size_bucket,
       return NULL;
     }
 
-    stack->size_bucket = size_bucket;
+    stack->cache_bucket = cache_bucket;
 
     /* Ensure 16-byte alignment because some architectures require it */
     hand = (struct stack_handler*)
@@ -134,6 +174,7 @@ alloc_size_class_stack_noexc(mlsize_t wosize, struct stack_info** size_bucket,
   hand->parent = NULL;
   stack->sp = (value*)hand;
   stack->exception_ptr = NULL;
+  stack->id = id;
 #ifdef DEBUG
   stack->magic = 42;
 #endif
@@ -144,19 +185,22 @@ alloc_size_class_stack_noexc(mlsize_t wosize, struct stack_info** size_bucket,
 }
 
 /* allocate a stack with at least "wosize" usable words of stack */
-static struct stack_info* alloc_stack_noexc(mlsize_t wosize, value hval,
-                                            value hexn, value heff)
+static struct stack_info*
+alloc_stack_noexc(mlsize_t wosize, value hval, value hexn, value heff,
+                  int64_t id)
 {
-  struct stack_info** size_bucket = stack_cache_bucket (wosize);
-  return alloc_size_class_stack_noexc(wosize, size_bucket, hval, hexn, heff);
+  int cache_bucket = stack_cache_bucket (wosize);
+  return alloc_size_class_stack_noexc(wosize, cache_bucket, hval, hexn, heff,
+                                      id);
 }
 
 #ifdef NATIVE_CODE
 
 value caml_alloc_stack (value hval, value hexn, value heff) {
+  const int64_t id = atomic_fetch_add(&fiber_id, 1);
   struct stack_info* stack =
-    alloc_size_class_stack_noexc(caml_fiber_wsz, Caml_state->stack_cache,
-                                 hval, hexn, heff);
+    alloc_size_class_stack_noexc(caml_fiber_wsz, 0 /* first bucket */,
+                                 hval, hexn, heff, id);
 
   if (!stack) caml_raise_out_of_memory();
 
@@ -166,18 +210,20 @@ value caml_alloc_stack (value hval, value hexn, value heff) {
   return Val_ptr(stack);
 }
 
+
 void caml_get_stack_sp_pc (struct stack_info* stack,
                            char** sp /* out */, uintnat* pc /* out */)
 {
   char* p = (char*)stack->sp;
 
-  p += sizeof(value);
-  *sp = p;
-  *pc = Saved_return_address(*sp);
+  Pop_frame_pointer(p);
+  *pc = *(uintnat*)p; /* ret addr */
+  *sp = p + sizeof(value);
 }
 
-Caml_inline void scan_stack_frames(scanning_action f, void* fdata,
-                                   struct stack_info* stack, value* gc_regs)
+Caml_inline void scan_stack_frames(
+  scanning_action f, scanning_action_flags fflags, void* fdata,
+  struct stack_info* stack, value* gc_regs)
 {
   char * sp;
   uintnat retaddr;
@@ -195,6 +241,7 @@ Caml_inline void scan_stack_frames(scanning_action f, void* fdata,
 next_chunk:
   if (sp == (char*)Stack_high(stack)) return;
 
+  Pop_frame_pointer(sp);
   retaddr = *(uintnat*)sp;
   sp += sizeof(value);
 
@@ -232,11 +279,12 @@ next_chunk:
   }
 }
 
-void caml_scan_stack(scanning_action f, void* fdata,
-                     struct stack_info* stack, value* gc_regs)
+void caml_scan_stack(
+  scanning_action f, scanning_action_flags fflags, void* fdata,
+  struct stack_info* stack, value* gc_regs)
 {
   while (stack != NULL) {
-    scan_stack_frames(f, fdata, stack, gc_regs);
+    scan_stack_frames(f, fflags, fdata, stack, gc_regs);
 
     f(fdata, Stack_handle_value(stack), &Stack_handle_value(stack));
     f(fdata, Stack_handle_exception(stack), &Stack_handle_exception(stack));
@@ -275,9 +323,10 @@ value caml_global_data;
 CAMLprim value caml_alloc_stack(value hval, value hexn, value heff)
 {
   value* sp;
+  const int64_t id = atomic_fetch_add(&fiber_id, 1);
   struct stack_info* stack =
-    alloc_size_class_stack_noexc(caml_fiber_wsz, Caml_state->stack_cache,
-                                 hval, hexn, heff);
+    alloc_size_class_stack_noexc(caml_fiber_wsz, 0 /* first bucket */,
+                                 hval, hexn, heff, id);
 
   if (!stack) caml_raise_out_of_memory();
 
@@ -306,12 +355,19 @@ CAMLprim value caml_ensure_stack_capacity(value required_space)
   Used by the GC to find roots on the stacks of running or runnable fibers.
 */
 
-Caml_inline int is_block_and_not_code_frag(value v) {
-  return Is_block(v) && caml_find_code_fragment_by_pc((char *) v) == NULL;
+/* Code pointers are stored on the bytecode stack as naked pointers.
+   We must avoid passing them to the scanning action,
+   unless we know that it is a no-op outside young values
+   (so it will safely ignore code pointers). */
+ Caml_inline int is_scannable(scanning_action_flags flags, value v) {
+  return
+      (flags & SCANNING_ONLY_YOUNG_VALUES)
+      || (Is_block(v) && caml_find_code_fragment_by_pc((char *) v) == NULL);
 }
 
-void caml_scan_stack(scanning_action f, void* fdata,
-                     struct stack_info* stack, value* v_gc_regs)
+void caml_scan_stack(
+  scanning_action f, scanning_action_flags fflags, void* fdata,
+  struct stack_info* stack, value* v_gc_regs)
 {
   value *low, *high, *sp;
 
@@ -321,19 +377,17 @@ void caml_scan_stack(scanning_action f, void* fdata,
     high = Stack_high(stack);
     low = stack->sp;
     for (sp = low; sp < high; sp++) {
-      /* Code pointers inside the stack are naked pointers.
-         We must avoid passing them to function [f]. */
       value v = *sp;
-      if (is_block_and_not_code_frag(v)) {
+      if (is_scannable(fflags, v)) {
         f(fdata, v, sp);
       }
     }
 
-    if (is_block_and_not_code_frag(Stack_handle_value(stack)))
+    if (is_scannable(fflags, Stack_handle_value(stack)))
       f(fdata, Stack_handle_value(stack), &Stack_handle_value(stack));
-    if (is_block_and_not_code_frag(Stack_handle_exception(stack)))
+    if (is_scannable(fflags, Stack_handle_exception(stack)))
       f(fdata, Stack_handle_exception(stack), &Stack_handle_exception(stack));
-    if (is_block_and_not_code_frag(Stack_handle_effect(stack)))
+    if (is_scannable(fflags, Stack_handle_effect(stack)))
       f(fdata, Stack_handle_effect(stack), &Stack_handle_effect(stack));
 
     stack = Stack_parent(stack);
@@ -378,37 +432,93 @@ rewrite_exception_stack(struct stack_info *old_stack,
     fiber_debug_log ("exn_ptr is null");
   }
 }
+
+#ifdef WITH_FRAME_POINTERS
+/* Update absolute base pointers for new stack */
+static void rewrite_frame_pointers(struct stack_info *old_stack,
+    struct stack_info *new_stack)
+{
+  struct frame_walker {
+    struct frame_walker *base_addr;
+    uintnat return_addr;
+  } *frame, *next;
+  ssize_t delta;
+  void *top, **p;
+
+  delta = (char*)Stack_high(new_stack) - (char*)Stack_high(old_stack);
+
+  /* Walk the frame-pointers linked list */
+  for (frame = __builtin_frame_address(0); frame; frame = next) {
+
+    top = (char*)&frame->return_addr
+      + 1 * sizeof(value) /* return address */
+      + 2 * sizeof(value) /* trap frame */
+      + 2 * sizeof(value); /* DWARF pointer & gc_regs */
+
+    /* Detect top of the fiber and bail out */
+    /* It also avoid to dereference invalid base pointer at main */
+    if (top == Stack_high(old_stack))
+      break;
+
+    /* Save the base address since it may be adjusted */
+    next = frame->base_addr;
+
+    if (!(Stack_base(old_stack) <= (value*)frame->base_addr
+        && (value*)frame->base_addr < Stack_high(old_stack))) {
+      /* No need to adjust base pointers that don't point into the reallocated
+       * fiber */
+      continue;
+    }
+
+    if (Stack_base(old_stack) <= (value*)&frame->base_addr
+        && (value*)&frame->base_addr < Stack_high(old_stack)) {
+      /* The base pointer itself is located inside the reallocated fiber
+       * and needs to be adjusted on the new fiber */
+      p = (void**)((char*)Stack_high(new_stack) - (char*)Stack_high(old_stack)
+          + (char*)&frame->base_addr);
+      CAMLassert(*p == frame->base_addr);
+      *p += delta;
+    }
+    else {
+      /* Base pointers on other stacks are adjusted in place */
+      frame->base_addr = (struct frame_walker*)((char*)frame->base_addr
+          + delta);
+    }
+  }
+}
+#endif
 #endif
 
 int caml_try_realloc_stack(asize_t required_space)
 {
   struct stack_info *old_stack, *new_stack;
-  asize_t size;
+  asize_t wsize;
   int stack_used;
   CAMLnoalloc;
 
   old_stack = Caml_state->current_stack;
   stack_used = Stack_high(old_stack) - (value*)old_stack->sp;
-  size = Stack_high(old_stack) - Stack_base(old_stack);
+  wsize = Stack_high(old_stack) - Stack_base(old_stack);
   do {
-    if (size >= caml_max_stack_size) return 0;
-    size *= 2;
-  } while (size < stack_used + required_space);
+    if (wsize >= caml_max_stack_wsize) return 0;
+    wsize *= 2;
+  } while (wsize < stack_used + required_space);
 
-  if (size > 4096 / sizeof(value)) {
+  if (wsize > 4096 / sizeof(value)) {
     caml_gc_log ("Growing stack to %"
                  ARCH_INTNAT_PRINTF_FORMAT "uk bytes",
-                 (uintnat) size * sizeof(value) / 1024);
+                 (uintnat) wsize * sizeof(value) / 1024);
   } else {
     caml_gc_log ("Growing stack to %"
                  ARCH_INTNAT_PRINTF_FORMAT "u bytes",
-                 (uintnat) size * sizeof(value));
+                 (uintnat) wsize * sizeof(value));
   }
 
-  new_stack = alloc_stack_noexc(size,
+  new_stack = alloc_stack_noexc(wsize,
                                 Stack_handle_value(old_stack),
                                 Stack_handle_exception(old_stack),
-                                Stack_handle_effect(old_stack));
+                                Stack_handle_effect(old_stack),
+                                old_stack->id);
   if (!new_stack) return 0;
   memcpy(Stack_high(new_stack) - stack_used,
          Stack_high(old_stack) - stack_used,
@@ -418,6 +528,9 @@ int caml_try_realloc_stack(asize_t required_space)
 #ifdef NATIVE_CODE
   rewrite_exception_stack(old_stack, (value**)&Caml_state->exn_handler,
                           new_stack);
+#ifdef WITH_FRAME_POINTERS
+  rewrite_frame_pointers(old_stack, new_stack);
+#endif
 #endif
 
   /* Update stack pointers in Caml_state->c_stack. It is possible to have
@@ -439,20 +552,25 @@ int caml_try_realloc_stack(asize_t required_space)
   return 1;
 }
 
-struct stack_info* caml_alloc_main_stack (uintnat init_size)
+struct stack_info* caml_alloc_main_stack (uintnat init_wsize)
 {
+  const int64_t id = atomic_fetch_add(&fiber_id, 1);
   struct stack_info* stk =
-    alloc_stack_noexc(init_size, Val_unit, Val_unit, Val_unit);
+    alloc_stack_noexc(init_wsize, Val_unit, Val_unit, Val_unit, id);
   return stk;
 }
 
 void caml_free_stack (struct stack_info* stack)
 {
   CAMLnoalloc;
+  struct stack_info** cache = Caml_state->stack_cache;
+
   CAMLassert(stack->magic == 42);
-  if (stack->size_bucket != NULL) {
-    stack->exception_ptr = (void*)(*stack->size_bucket);
-    *stack->size_bucket = stack;
+  CAMLassert(cache != NULL);
+  if (stack->cache_bucket != -1) {
+    stack->exception_ptr =
+      (void*)(cache[stack->cache_bucket]);
+    cache[stack->cache_bucket] = stack;
 #ifdef DEBUG
     memset(Stack_base(stack), 0x42,
            (Stack_high(stack)-Stack_base(stack))*sizeof(value));
@@ -461,9 +579,23 @@ void caml_free_stack (struct stack_info* stack)
 #ifdef DEBUG
     memset(stack, 0x42, (char*)stack->handler - (char*)stack);
 #endif
+#ifdef USE_MMAP_MAP_STACK
+    munmap(stack, stack->size);
+#else
     caml_stat_free(stack);
+#endif
   }
 }
+
+void caml_free_gc_regs_buckets(value *gc_regs_buckets)
+{
+  while (gc_regs_buckets != NULL) {
+    value *next = (value*)gc_regs_buckets[0];
+    caml_stat_free(gc_regs_buckets);
+    gc_regs_buckets = next;
+  }
+}
+
 
 CAMLprim value caml_continuation_use_noexc (value cont)
 {

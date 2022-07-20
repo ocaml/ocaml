@@ -93,7 +93,7 @@ function set_configuration {
 #    run "Content of $FILE" cat Makefile.config
 }
 
-PARALLEL_URL='https://ftpmirror.gnu.org/parallel/parallel-latest.tar.bz2'
+PARALLEL_URL='https://git.savannah.gnu.org/cgit/parallel.git/plain/src/parallel'
 APPVEYOR_BUILD_FOLDER=$(echo "$APPVEYOR_BUILD_FOLDER" | cygpath -f -)
 FLEXDLLROOT="$PROGRAMFILES/flexdll"
 OCAMLROOT=$(echo "$OCAMLROOT" | cygpath -f - -m)
@@ -105,7 +105,7 @@ if [[ $BOOTSTRAP_FLEXDLL = 'false' ]] ; then
   esac
 fi
 
-# This is needed at all stages while winpthreads is in use for 5.00
+# This is needed at all stages while winpthreads is in use for 5.0
 # This step can be moved back to the test phase (or removed entirely?) when
 # winpthreads stops being used.
 if [[ $PORT = 'mingw64' ]] ; then
@@ -116,13 +116,15 @@ fi
 
 case "$1" in
   install)
-    pushd /tmp &>/dev/null
-    curl -Ls $PARALLEL_URL | bunzip2 - | tar x
-    cd parallel-*
-    ./configure
-    make
-    make install
-    popd &/dev/null
+    if [ ! -e "$CACHE_DIRECTORY/parallel-source" ] || \
+       [ "$PARALLEL_URL" != "$(cat "$CACHE_DIRECTORY/parallel-source")" ] ; then
+      # Download latest version directly from the repo
+      curl -Ls $PARALLEL_URL -o "$CACHE_DIRECTORY/parallel"
+      echo "$PARALLEL_URL" > "$CACHE_DIRECTORY/parallel-source"
+    fi
+    cp "$CACHE_DIRECTORY/parallel" /usr/bin
+    chmod +x /usr/bin/parallel
+    parallel --version
     if [[ $BOOTSTRAP_FLEXDLL = 'false' ]] ; then
       mkdir -p "$FLEXDLLROOT"
       cd "$APPVEYOR_BUILD_FOLDER/../flexdll"
@@ -141,10 +143,11 @@ case "$1" in
   test)
     FULL_BUILD_PREFIX="$APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX"
     run 'ocamlc.opt -version' "$FULL_BUILD_PREFIX-$PORT/ocamlc.opt" -version
-    if [[ $PORT = 'mingw32' ]] ; then
+    if [[ $PORT =~ mingw* ]] ; then
       run "Check runtime symbols" \
           "$FULL_BUILD_PREFIX-$PORT/tools/check-symbol-names" \
-          $FULL_BUILD_PREFIX-$PORT/runtime/*.a
+          $FULL_BUILD_PREFIX-$PORT/runtime/*.a \
+          $FULL_BUILD_PREFIX-$PORT/otherlibs/*/lib*.a
     fi
     # FIXME At present, running the testsuite takes too long
     #run "test $PORT" \

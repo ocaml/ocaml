@@ -17,24 +17,24 @@
 
 ROOTDIR = ..
 
-# NOTE: it is important that OCAMLLEX is defined *before* Makefile.common
-# gets included, so that its definition here takes precedence
-# over the one there.
+# NOTE: it is important that the OCAMLDEP and OCAMLLEX variables
+# are defined *before* Makefile.common gets included, so that
+# their local definitions here take precedence over their
+# general shared definitions in Makefile.common.
+
+OCAMLDEP ?= $(BOOT_OCAMLDEP)
 OCAMLLEX ?= $(BOOT_OCAMLLEX)
 
 include $(ROOTDIR)/Makefile.common
 
 OCAMLYACCFLAGS = -v
 
-CAMLC = $(BOOT_OCAMLC) -strict-sequence -nostdlib \
-        -I $(ROOTDIR)/boot -use-prims $(ROOTDIR)/runtime/primitives
-CAMLOPT = $(OCAMLRUN) $(ROOTDIR)/ocamlopt$(EXE) -nostdlib -I $(ROOTDIR)/stdlib
-COMPFLAGS = -absname -w +a-4-9-41-42-44-45-48-70 -warn-error +A \
+CAMLC = $(BOOT_OCAMLC) $(BOOT_STDLIBFLAGS) \
+  -use-prims $(ROOTDIR)/runtime/primitives -strict-sequence
+CAMLOPT = $(OCAMLRUN) $(ROOTDIR)/ocamlopt$(EXE) $(STDLIBFLAGS)
+COMPFLAGS = -g -absname -w +a-4-9-41-42-44-45-48 -warn-error +A \
             -safe-string -strict-sequence -strict-formats -bin-annot
-LINKFLAGS =
-CAMLDEP = $(BOOT_OCAMLC) -depend
-DEPFLAGS = -slash
-DEPINCLUDES =
+LINKFLAGS = -g
 
 OBJS=cset.cmo syntax.cmo parser.cmo lexer.cmo table.cmo lexgen.cmo \
      compact.cmo common.cmo output.cmo outputbis.cmo main.cmo
@@ -52,7 +52,7 @@ ocamllex$(EXE): $(OBJS)
 	$(CAMLC) $(LINKFLAGS) -compat-32 -o $@ $^
 
 ocamllex.opt$(EXE): $(OBJS:.cmo=.cmx)
-	$(CAMLOPT_CMD) -o $@ $^
+	$(CAMLOPT_CMD) $(LINKFLAGS) -o $@ $^
 
 clean::
 	rm -f $(programs) $(programs:=.exe)
@@ -81,6 +81,6 @@ beforedepend:: lexer.ml
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
 depend: beforedepend
-	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mli *.ml > .depend
+	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 
 include .depend

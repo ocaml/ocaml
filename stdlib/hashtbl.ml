@@ -16,7 +16,7 @@
 (* Hash tables *)
 
 (* We do dynamic hashing, and resize the table and rehash the elements
-   when buckets become too long. *)
+   when the load factor becomes too high. *)
 
 type ('a, 'b) t =
   { mutable size: int;                        (* number of entries *)
@@ -52,10 +52,10 @@ let randomized_default =
     try Sys.getenv "CAMLRUNPARAM" with Not_found -> "" in
   String.contains params 'R'
 
-let randomized = ref randomized_default
+let randomized = Atomic.make randomized_default
 
-let randomize () = randomized := true
-let is_randomized () = !randomized
+let randomize () = Atomic.set randomized true
+let is_randomized () = Atomic.get randomized
 
 let prng_key = Domain.DLS.new_key Random.State.make_self_init
 
@@ -70,7 +70,7 @@ let rec power_2_above x n =
   else if x * 2 > Sys.max_array_length then x
   else power_2_above (x * 2) n
 
-let create ?(random = !randomized) initial_size =
+let create ?(random = Atomic.get randomized) initial_size =
   let s = power_2_above 16 initial_size in
   let seed =
     if random then Random.State.bits (Domain.DLS.get prng_key) else 0
@@ -284,7 +284,7 @@ module type SeededHashedType =
   sig
     type t
     val equal: t -> t -> bool
-    val hash: int -> t -> int
+    val seeded_hash: int -> t -> int
   end
 
 module type S =
@@ -354,7 +354,7 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
     let copy = copy
 
     let key_index h key =
-      (H.hash h.seed key) land (Array.length h.data - 1)
+      (H.seeded_hash h.seed key) land (Array.length h.data - 1)
 
     let add h key data =
       let i = key_index h key in
@@ -481,7 +481,7 @@ module Make(H: HashedType): (S with type key = H.t) =
     include MakeSeeded(struct
         type t = H.t
         let equal = H.equal
-        let hash (_seed: int) x = H.hash x
+        let seeded_hash (_seed: int) x = H.hash x
       end)
     let create sz = create ~random:false sz
     let of_seq i =
@@ -616,7 +616,7 @@ let of_seq i =
   replace_seq tbl i;
   tbl
 
-let rebuild ?(random = !randomized) h =
+let rebuild ?(random = Atomic.get randomized) h =
   let s = power_2_above 16 (Array.length h.data) in
   let seed =
     if random then Random.State.bits (Domain.DLS.get prng_key)

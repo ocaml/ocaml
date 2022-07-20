@@ -32,7 +32,7 @@ let new_buf () = Buffer.create 1024
 let bp = Printf.bprintf
 let bs = Buffer.add_string
 
-let linebreak = "\n.sp\n";;
+let linebreak = "\n.sp\n"
 
 (** A class used to get a [text] for info structures. *)
 class virtual info =
@@ -193,6 +193,23 @@ class virtual info =
         )
         [] l
 
+    method str_man_of_alerts l =
+      List.map (fun al ->
+          let b = Buffer.create 256 in
+          bs b ".B ";
+          bs b Odoc_messages.alert;
+          bs b " ";
+          bs b al.alert_name;
+          bs b ".\n";
+          (match al.alert_payload with
+           | None -> ()
+           | Some p ->
+               bs b p;
+               bs b "\n"
+          );
+          Buffer.contents b
+        ) l
+
     (** Print the groff string to display an optional info structure. *)
     method man_of_info ?margin:(_ :int option) b info_opt =
         match info_opt with
@@ -227,8 +244,9 @@ class virtual info =
                 self#str_man_of_raised_exceptions info.M.i_raised_exceptions;
                 self#str_man_of_return_opt info.M.i_return_value;
                 self#str_man_of_sees info.M.i_sees;
-              ] @
-                (self#str_man_of_custom info.M.i_custom)
+              ]
+              @ self#str_man_of_alerts info.M.i_alerts
+              @ self#str_man_of_custom info.M.i_custom
           in
           let l = List.filter ((<>) "") l in
           Buffer.add_string b (String.concat "\n.sp\n" l)

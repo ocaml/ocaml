@@ -947,7 +947,9 @@ and traverse_binding outer_ctx inner_ctx (var, def) =
       (Debuginfo.Scoped_location.to_location lfun.loc)
       Warnings.Unused_tmc_attribute;
   let direct =
-    Lfunction { lfun with body = Choice.direct fun_choice } in
+    let { kind; params; return; body = _; attr; loc } = lfun in
+    let body = Choice.direct fun_choice in
+    lfunction ~kind ~params ~return ~body ~attr ~loc in
   let dps =
     let dst_param = {
       var = Ident.create_local "dst";
@@ -955,13 +957,16 @@ and traverse_binding outer_ctx inner_ctx (var, def) =
       loc = lfun.loc;
     } in
     let dst = { dst_param with offset = Offset (Lvar dst_param.offset) } in
-    Lambda.duplicate @@ Lfunction { lfun with
-      kind =
+    Lambda.duplicate @@ lfunction
+      ~kind:
         (* Support of Tupled function: see [choice_apply]. *)
-        Curried;
-      params = add_dst_params dst_param lfun.params;
-      body = Choice.dps ~tail:true ~dst:dst fun_choice;
-    } in
+        Curried
+      ~params:(add_dst_params dst_param lfun.params)
+      ~return:lfun.return
+      ~body:(Choice.dps ~tail:true ~dst:dst fun_choice)
+      ~attr:lfun.attr
+      ~loc:lfun.loc
+  in
   let dps_var = special.dps_id in
   [(var, direct); (dps_var, dps)]
 

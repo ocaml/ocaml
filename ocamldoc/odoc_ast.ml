@@ -206,6 +206,15 @@ module Typedtree_search =
       iter cls.Typedtree.cstr_fields
   end
 
+(** Like {!Odoc_sig.analyze_toplevel_alerts} but acts on a structure. *)
+let analyze_toplevel_alerts info ast =
+  let rec extract_attributes = function
+    | { Parsetree.pstr_desc = Parsetree.Pstr_attribute attr; _ } :: tl ->
+        attr :: extract_attributes tl
+    | _ :: _ | [] -> []
+  in
+  Odoc_sig.analyze_alerts info (extract_attributes ast)
+
 module Analyser =
   functor (My_ir : Odoc_sig.Info_retriever) ->
 
@@ -333,8 +342,9 @@ module Analyser =
 
      (** Analysis of a Tstr_value from the typedtree. Create and return a list of [t_value].
         @raise Failure if an error occurs.*)
-     let tt_analyse_value env current_module_name comment_opt loc pat_exp rec_flag =
+     let tt_analyse_value env current_module_name comment_opt loc pat_exp rec_flag attrs =
        let (pat, exp) = pat_exp in
+       let comment_opt = Odoc_sig.analyze_alerts comment_opt attrs in
        match (pat.pat_desc, exp.exp_desc) with
          (Typedtree.Tpat_var (ident, _), Typedtree.Texp_function { cases = pat_exp_list2; _ }) ->
            (* a new function is defined *)
@@ -847,6 +857,9 @@ module Analyser =
           tt_class_exp
           table
       in
+      let comment_opt =
+        Odoc_sig.analyze_alerts comment_opt p_class_decl.Parsetree.pci_attributes
+      in
       {
         cl_name = complete_name ;
         cl_info = comment_opt ;
@@ -1078,7 +1091,7 @@ module Analyser =
             match p_e_list with
               [] ->
                 (acc_env, acc)
-            | {Parsetree.pvb_pat=pat; pvb_expr=exp} :: q ->
+            | {Parsetree.pvb_pat=pat; pvb_expr=exp;pvb_attributes=attrs} :: q ->
                 let value_name_opt = iter_pat pat.Parsetree.ppat_desc in
                 let new_last_pos = exp.Parsetree.pexp_loc.Location.loc_end.Lexing.pos_cnum in
                 match value_name_opt with
@@ -1103,6 +1116,7 @@ module Analyser =
                           loc
                           pat_exp
                           rec_flag
+                          attrs
                       in
                       let new_env = List.fold_left
                           (fun e -> fun v ->
@@ -1137,6 +1151,7 @@ module Analyser =
               else
                 None
             in
+            let comment_opt = Odoc_sig.analyze_alerts comment_opt val_desc.Parsetree.pval_attributes in
             let new_value = {
                 val_name = complete_name ;
                 val_info = comment_opt ;
@@ -1194,11 +1209,20 @@ module Analyser =
                     else
                       get_comments_in_module last_pos loc_start
                   in
+                  let new_end = loc_end + maybe_more in
+                  let (maybe_more2, info_after_opt) =
+                    My_ir.just_after_special
+                    !file_name
+                    (get_string_of_file new_end pos_limit2)
+                  in
+                  let com_opt = Sig.merge_infos com_opt info_after_opt in
+                  let com_opt =
+                    Odoc_sig.analyze_alerts com_opt type_decl.Parsetree.ptype_attributes
+                  in
                   let kind = Sig.get_type_kind
                     env name_comment_list
                     tt_type_decl.Types.type_kind
                   in
-                  let new_end = loc_end + maybe_more in
                   let t =
                     {
                       ty_name = complete_name ;
@@ -1227,12 +1251,6 @@ module Analyser =
                       ) ;
                     }
                   in
-                  let (maybe_more2, info_after_opt) =
-                    My_ir.just_after_special
-                    !file_name
-                    (get_string_of_file new_end pos_limit2)
-                  in
-                  t.ty_info <- Sig.merge_infos t.ty_info info_after_opt ;
                   let (maybe_more3, eles) = f (maybe_more + maybe_more2) (new_end + maybe_more2) q in
                   (maybe_more3, ele_comments @ ((Element_type t) :: eles))
             in
@@ -1260,6 +1278,10 @@ module Analyser =
               )
               env
               tyext.Parsetree.ptyext_constructors
+          in
+          let comment_opt =
+            Odoc_sig.analyze_alerts comment_opt
+              tyext.Parsetree.ptyext_attributes
           in
           let loc_start = loc.Location.loc_start.Lexing.pos_cnum in
           let loc_end =  loc.Location.loc_end.Lexing.pos_cnum in
@@ -1326,8 +1348,12 @@ module Analyser =
                       in
                       let s = get_string_of_file ext_loc_end pos_limit2 in
                       let (maybe_more, comment_opt) =  My_ir.just_after_special !file_name s in
-                        new_xt.xt_text <- comment_opt;
-                        analyse_extension_constructors maybe_more (new_xt :: exts_acc) q
+                      let comment_opt =
+                        Odoc_sig.analyze_alerts comment_opt
+                          tt_ext.ext_attributes
+                      in
+                      new_xt.xt_text <- comment_opt;
+                      analyse_extension_constructors maybe_more (new_xt :: exts_acc) q
           in
             let (maybe_more, exts) = analyse_extension_constructors 0 [] tt_tyext.tyext_constructors in
               new_te.te_constructors <- exts;
@@ -1342,6 +1368,9 @@ module Analyser =
             try Typedtree_search.search_exception table name.txt
             with Not_found ->
               raise (Failure (Odoc_messages.exception_not_found_in_typedtree complete_name))
+          in
+          let comment_opt =
+            Odoc_sig.analyze_alerts comment_opt ext.Parsetree.ptyexn_attributes
           in
           let new_env = Odoc_env.add_extension env complete_name in
           let new_ext =
@@ -1506,7 +1535,8 @@ module Analyser =
           let eles = f ~first: true loc.Location.loc_start.Lexing.pos_cnum mods in
           (0, new_env, eles)
 
-      | Parsetree.Pstr_modtype {Parsetree.pmtd_name=name; pmtd_type=modtype} ->
+      | Parsetree.Pstr_modtype {Parsetree.pmtd_name=name; pmtd_type=modtype;
+                                pmtd_attributes} ->
           let complete_name = Name.concat current_module_name name.txt in
           let tt_module_type =
             try Typedtree_search.search_module_type table name.txt
@@ -1520,6 +1550,9 @@ module Analyser =
                         modtype mty_type.mty_type),
                 Some mty_type.mty_type
             | _ -> None, None
+          in
+          let comment_opt =
+            Odoc_sig.analyze_alerts comment_opt pmtd_attributes
           in
           let mt =
             {
@@ -1635,6 +1668,10 @@ module Analyser =
                   else
                     get_comments_in_module last_pos class_type_decl.Parsetree.pci_loc.Location.loc_start.Lexing.pos_cnum
                 in
+                let com_opt =
+                  Odoc_sig.analyze_alerts com_opt
+                    class_type_decl.Parsetree.pci_attributes
+                in
                 let last_pos2 = class_type_decl.Parsetree.pci_loc.Location.loc_end.Lexing.pos_cnum in
                 let new_ele =
                   Element_class_type
@@ -1684,6 +1721,9 @@ module Analyser =
             Some (get_string_of_file loc_start loc_end)
         | _ ->
             None
+      in
+      let comment_opt =
+        Odoc_sig.analyze_alerts comment_opt p_module_expr.Parsetree.pmod_attributes
       in
       let m_base =
         {
@@ -1856,6 +1896,7 @@ module Analyser =
        let mod_name = String.capitalize_ascii (Filename.basename (Filename.chop_extension source_file)) in
        let len, info_opt = Sig.preamble !file_name !file
            (fun x -> x.Parsetree.pstr_loc) parsetree in
+      let info_opt = analyze_toplevel_alerts info_opt parsetree in
        (* we must complete the included modules *)
        let elements = analyse_structure Odoc_env.empty mod_name len (String.length !file) parsetree tree_structure in
        let included_modules_from_tt = tt_get_included_module_list tree_structure in

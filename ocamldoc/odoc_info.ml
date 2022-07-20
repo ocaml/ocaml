@@ -71,6 +71,11 @@ type param = (string * text)
 
 type raised_exception = (string * text)
 
+type alert = Odoc_types.alert = {
+  alert_name : string;
+  alert_payload : string option;
+}
+
 type info = Odoc_types.info = {
     i_desc : text option;
     i_authors : string list;
@@ -83,6 +88,7 @@ type info = Odoc_types.info = {
     i_raised_exceptions : raised_exception list;
     i_return_value : text option ;
     i_custom : (string * text) list ;
+    i_alerts : alert list ;
   }
 
 type location = Odoc_types.location = {
@@ -203,90 +209,6 @@ let apply_if_equal f v1 v2 =
 let text_of_string = Odoc_text.Texter.text_of_string
 
 let text_string_of_text = Odoc_text.Texter.string_of_text
-
-
-let escape_arobas s =
-  let len = String.length s in
-  let b = Buffer.create len in
-  for i = 0 to len - 1 do
-    match s.[i] with
-      '@' -> Buffer.add_string b "\\@"
-    | c -> Buffer.add_char b c
-  done;
-  Buffer.contents b
-
-let info_string_of_info i =
-  let b = Buffer.create 256 in
-  let p = Printf.bprintf in
-  (
-   match i.i_desc with
-     None -> ()
-   | Some t -> p b "%s" (escape_arobas (text_string_of_text t))
-  );
-  List.iter
-    (fun s -> p b "\n@@author %s" (escape_arobas s))
-    i.i_authors;
-  (
-   match i.i_version with
-     None -> ()
-   | Some s -> p b "\n@@version %s" (escape_arobas s)
-  );
-  (
-   (* TODO: escape characters ? *)
-   let f_see_ref = function
-       See_url s -> Printf.sprintf "<%s>" s
-     | See_file s -> Printf.sprintf "'%s'" s
-     | See_doc s -> Printf.sprintf "\"%s\"" s
-   in
-   List.iter
-     (fun (sref, t) ->
-       p b "\n@@see %s %s"
-         (escape_arobas (f_see_ref sref))
-         (escape_arobas (text_string_of_text t))
-     )
-     i.i_sees
-  );
-  (
-   match i.i_since with
-     None -> ()
-   | Some s -> p b "\n@@since %s" (escape_arobas s)
-  );
-  (
-   match i.i_deprecated with
-     None -> ()
-   | Some t ->
-       p b "\n@@deprecated %s"
-         (escape_arobas (text_string_of_text t))
-  );
-  List.iter
-    (fun (s, t) ->
-      p b "\n@@param %s %s"
-        (escape_arobas s)
-        (escape_arobas (text_string_of_text t))
-    )
-    i.i_params;
-  List.iter
-    (fun (s, t) ->
-      p b "\n@@raise %s %s"
-        (escape_arobas s)
-        (escape_arobas (text_string_of_text t))
-    )
-    i.i_raised_exceptions;
-  (
-   match i.i_return_value with
-     None -> ()
-   | Some t ->
-       p b "\n@@return %s"
-         (escape_arobas (text_string_of_text t))
-  );
-  List.iter
-    (fun (s, t) ->
-      p b "\n@@%s %s" s
-        (escape_arobas (text_string_of_text t))
-    )
-    i.i_custom;
-
-  Buffer.contents b
 
 let info_of_string = Odoc_comments.info_of_string
 let info_of_comment_file = Odoc_comments.info_of_comment_file

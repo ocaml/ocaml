@@ -29,6 +29,7 @@
 #include "caml/osdeps.h"
 #include "caml/startup_aux.h"
 #include "caml/prims.h"
+#include "caml/signals.h"
 
 #ifdef _WIN32
 extern void caml_win32_unregister_overflow_detection (void);
@@ -46,15 +47,13 @@ static void init_startup_params(void)
 #endif
 
   params.init_percent_free = Percent_free_def;
-  params.init_max_percent_free = Max_percent_free_def;
   params.init_minor_heap_wsz = Minor_heap_def;
-  params.init_heap_chunk_sz = Heap_chunk_def;
-  params.init_heap_wsz = Init_heap_def;
   params.init_custom_major_ratio = Custom_major_ratio_def;
   params.init_custom_minor_ratio = Custom_minor_ratio_def;
   params.init_custom_minor_max_bsz = Custom_minor_max_bsz_def;
   params.init_max_stack_wsz = Max_stack_def;
-  params.init_fiber_wsz = (Stack_threshold * 2) / sizeof(value);
+  params.runtime_events_log_wsize = Default_runtime_events_log_wsize;
+
 #ifdef DEBUG
   params.verb_gc = 0x3F;
 #endif
@@ -95,27 +94,20 @@ void caml_parse_ocamlrunparam(void)
   if (opt != NULL){
     while (*opt != '\0'){
       switch (*opt++){
-      //case 'a': scanmult (opt, &p); caml_set_allocation_policy (p); break;
       case 'b': scanmult (opt, &params.backtrace_enabled); break;
       case 'c': scanmult (opt, &params.cleanup_on_exit); break;
-      case 'e': scanmult (opt, &params.eventlog_enabled); break;
-      case 'f': scanmult (opt, &params.init_fiber_wsz); break;
-      case 'h': scanmult (opt, &params.init_heap_wsz); break;
-      //case 'H': scanmult (opt, &caml_use_huge_pages); break;
-      case 'i': scanmult (opt, &params.init_heap_chunk_sz); break;
+      case 'e': scanmult (opt, &params.runtime_events_enabled); break;
       case 'l': scanmult (opt, &params.init_max_stack_wsz); break;
       case 'M': scanmult (opt, &params.init_custom_major_ratio); break;
       case 'm': scanmult (opt, &params.init_custom_minor_ratio); break;
       case 'n': scanmult (opt, &params.init_custom_minor_max_bsz); break;
       case 'o': scanmult (opt, &params.init_percent_free); break;
-      case 'O': scanmult (opt, &params.init_max_percent_free); break;
       case 'p': scanmult (opt, &params.parser_trace); break;
       case 'R': break; /*  see stdlib/hashtbl.mli */
       case 's': scanmult (opt, &params.init_minor_heap_wsz); break;
       case 't': scanmult (opt, &params.trace_level); break;
       case 'v': scanmult (opt, &params.verb_gc); break;
       case 'V': scanmult (opt, &params.verify_heap); break;
-      //case 'w': scanmult (opt, &caml_init_major_window); break;
       case 'W': scanmult (opt, &caml_runtime_warnings); break;
       case ',': continue;
       }
@@ -178,6 +170,7 @@ CAMLexport void caml_shutdown(void)
   caml_free_shared_libs();
 #endif
   caml_stat_destroy_pool();
+  caml_free_signal_stack();
 #if defined(_WIN32) && defined(NATIVE_CODE)
   caml_win32_unregister_overflow_detection();
 #endif

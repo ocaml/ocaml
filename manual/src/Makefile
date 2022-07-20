@@ -22,21 +22,31 @@ APIDOC=$(ROOTDIR)/api_docgen
 ifeq ($(DOCUMENTATION_TOOL),odoc)
 latex_files:
 	make -C $(APIDOC) latex
-	cp $(APIDOC)/build/latex/*/*.tex library
+	cp $(APIDOC)/odoc/build/latex/*/*.tex library
+
 html_files:
 	make -C $(APIDOC) html
-	cp -r $(APIDOC)/build/html/*  htmlman
+	cp -r $(APIDOC)/odoc/build/html/*  htmlman
+
+ifocamldoc.tex: $(ROOTDIR)/Makefile.build_config
+	$(MAKE) -C $(APIDOC)/odoc build/latex/ifocamldoc.tex
+	cp $(APIDOC)/odoc/build/latex/ifocamldoc.tex $@
 else
 latex_files:
 	$(MAKE) -C $(APIDOC) latex
-	cp $(APIDOC)/build/latex/*.tex library
+	cp $(APIDOC)/ocamldoc/build/latex/*.tex library
+
 html_files:
 	$(MAKE) -C $(APIDOC) html
 	mkdir -p htmlman/libref
-	cp -r $(APIDOC)/build/html/libref htmlman
-	cp -r $(APIDOC)/build/html/compilerlibref htmlman
+	cp -r $(APIDOC)/ocamldoc/build/html/libref htmlman
+	cp -r $(APIDOC)/ocamldoc/build/html/compilerlibref htmlman
 	cp style.css htmlman/libref
 	cp style.css htmlman/compilerlibref
+
+ifocamldoc.tex: $(ROOTDIR)/Makefile.build_config
+	$(MAKE) -C $(APIDOC)/ocamldoc build/latex/ifocamldoc.tex
+	cp $(APIDOC)/ocamldoc/build/latex/ifocamldoc.tex $@
 endif
 
 manual: files latex_files
@@ -141,10 +151,6 @@ cmds/warnings-help.etex: $(ROOTDIR)/utils/warnings.ml $(ROOTDIR)/ocamlc
 	    $@ > $@.tmp;\
 	  mv $@.tmp $@;\
 	done
-
-ifocamldoc.tex: $(ROOTDIR)/Makefile.build_config
-	$(MAKE) -C $(APIDOC) build/latex/ifocamldoc.tex
-	cp $(APIDOC)/build/latex/ifocamldoc.tex $@
 
 .PHONY: clean
 clean:

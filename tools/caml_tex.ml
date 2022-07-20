@@ -182,7 +182,7 @@ module Toplevel = struct
     Clflags.color := Some Misc.Color.Never;
     Clflags.no_std_include := true;
     Compenv.last_include_dirs := [Filename.concat !repo_root "stdlib"];
-    Compmisc.init_path ();
+    Compmisc.init_path ~auto_include:Load_path.no_auto_include ();
     try
       Toploop.initialize_toplevel_env ();
       Sys.interactive := false

@@ -40,7 +40,7 @@
 
 /* Item on the stack with defined operation */
 struct intern_item {
-  value * dest;
+  volatile value * dest;
   intnat arg;
   enum {
     OReadItems, /* read arg items and store them in dest[0], dest[1], ... */
@@ -390,7 +390,7 @@ static value intern_alloc_obj(struct caml_intern_state* s, caml_domain_state* d,
 }
 
 static void intern_rec(struct caml_intern_state* s,
-                       value *dest)
+                       volatile value *dest)
 {
   unsigned int code;
   tag_t tag;
@@ -676,7 +676,7 @@ static value intern_end(struct caml_intern_state* s, value res)
   intern_cleanup(s);
 
   /* Give gc a chance to run, and run memprof callbacks */
-  res = caml_check_urgent_gc(res);
+  caml_process_pending_actions();
 
   CAMLreturn(res);
 }
@@ -794,7 +794,7 @@ CAMLprim value caml_input_value(value vchan)
 
 /* Reading from memory-resident blocks */
 
-/* XXX KC: Unused primitive. Remove with boostrap. */
+/* XXX KC: Unused primitive. Remove with bootstrap. */
 CAMLprim value caml_input_value_to_outside_heap(value vchan)
 {
   return caml_input_value(vchan);

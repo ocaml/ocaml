@@ -100,12 +100,10 @@ CAMLprim value caml_reify_bytecode(value ls_prog,
   prog = (code_t)buffer_of_bytes_array(ls_prog, &len);
   caml_add_debug_info(prog, Val_long(len), debuginfo);
   /* match (digest_opt : string option) with */
-  if (Is_block(digest_opt)) {
-    /* | Some digest -> */
+  if (Is_some(digest_opt)) {
     digest_kind = DIGEST_PROVIDED;
-    digest = (unsigned char *) String_val(Field(digest_opt, 0));
+    digest = (unsigned char *) String_val(Some_val(digest_opt));
   } else {
-    /* | None -> */
     digest_kind = DIGEST_LATER;
     digest = NULL;
   }
@@ -118,12 +116,8 @@ CAMLprim value caml_reify_bytecode(value ls_prog,
   caml_thread_code((code_t) prog, len);
 #endif
 
-#if 0
-  /* TODO: support dynlink debugger: PR8654 */
   /* Notify debugger after fragment gets added and reified. */
   caml_debugger(CODE_LOADED, Val_long(fragnum));
-#endif
-  (void)fragnum; /* clobber warning */
 
   clos = caml_alloc_small (2, Closure_tag);
   Code_val(clos) = (code_t) prog;
@@ -270,7 +264,5 @@ value caml_static_release_bytecode(value prog, value len)
   caml_invalid_argument("Meta.static_release_bytecode");
   return Val_unit; /* not reached */
 }
-
-void (* volatile caml_async_action_hook)(void);
 
 #endif

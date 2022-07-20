@@ -97,13 +97,13 @@ type error =
   | Constructor_arity_mismatch of Longident.t * int * int
   | Label_mismatch of Longident.t * Errortrace.unification_error
   | Pattern_type_clash :
-      Errortrace.unification_error * _ pattern_desc option -> error
+      Errortrace.unification_error * Parsetree.pattern_desc option -> error
   | Or_pattern_type_clash of Ident.t * Errortrace.unification_error
   | Multiply_bound_variable of string
   | Orpat_vars of Ident.t * Ident.t list
   | Expr_type_clash of
       Errortrace.unification_error * type_forcing_context option
-      * expression_desc option
+      * Parsetree.expression_desc option
   | Apply_non_function of type_expr
   | Apply_wrong_label of arg_label * type_expr * bool
   | Label_multiply_defined of string
@@ -209,15 +209,14 @@ let type_object =
 let re node =
   Cmt_format.add_saved_type (Cmt_format.Partial_expression node);
   node
-;;
+
 let rp node =
   Cmt_format.add_saved_type (Cmt_format.Partial_pattern (Value, node));
   node
-;;
+
 let rcp node =
   Cmt_format.add_saved_type (Cmt_format.Partial_pattern (Computation, node));
   node
-;;
 
 
 (* Context for inline record arguments; see [type_ident] *)
@@ -301,13 +300,19 @@ let extract_option_type env ty =
     Tconstr(path, [ty], _) when Path.same path Predef.path_option -> ty
   | _ -> assert false
 
+let protect_expansion env ty =
+  if Env.has_local_constraints env then generic_instance ty else ty
+
 type record_extraction_result =
   | Record_type of Path.t * Path.t * Types.label_declaration list
   | Not_a_record_type
   | Maybe_a_record_type
 
+let extract_concrete_typedecl_protected env ty =
+  extract_concrete_typedecl env (protect_expansion env ty)
+
 let extract_concrete_record env ty =
-  match extract_concrete_typedecl env ty with
+  match extract_concrete_typedecl_protected env ty with
   | Typedecl(p0, p, {type_kind=Type_record (fields, _)}) ->
     Record_type (p0, p, fields)
   | Has_no_typedecl | Typedecl(_, _, _) -> Not_a_record_type
@@ -319,7 +324,7 @@ type variant_extraction_result =
   | Maybe_a_variant_type
 
 let extract_concrete_variant env ty =
-  match extract_concrete_typedecl env ty with
+  match extract_concrete_typedecl_protected env ty with
   | Typedecl(p0, p, {type_kind=Type_variant (cstrs, _)}) ->
     Variant_type (p0, p, cstrs)
   | Typedecl(p0, p, {type_kind=Type_open}) ->
@@ -377,10 +382,13 @@ let unify_pat_types_return_equated_pairs ?(refine = None) loc env ty ty' =
 let unify_pat_types ?refine loc env ty ty' =
   ignore (unify_pat_types_return_equated_pairs ?refine loc env ty ty')
 
-let unify_pat ?refine env pat expected_ty =
+
+(** [sdesc_for_hint] is used by error messages to report literals in their
+    original formatting *)
+let unify_pat ?refine ?sdesc_for_hint env pat expected_ty =
   try unify_pat_types ?refine pat.pat_loc env pat.pat_type expected_ty
   with Error (loc, env, Pattern_type_clash(err, None)) ->
-    raise(Error(loc, env, Pattern_type_clash(err, Some pat.pat_desc)))
+    raise(Error(loc, env, Pattern_type_clash(err, sdesc_for_hint)))
 
 (* unification of a type with a Tconstr with freshly created arguments *)
 let unify_head_only ~refine loc env ty constr =
@@ -451,8 +459,7 @@ let reset_pattern allow =
   pattern_variables := [];
   pattern_force := [];
   allow_modules := allow;
-  module_variables := [];
-;;
+  module_variables := []
 
 let maybe_add_pattern_variables_ghost loc_let env pv =
   List.fold_right
@@ -559,7 +566,9 @@ and build_as_type_aux ~refine (env : Env.t ref) p =
         vto <> None (* be lazy and keep the type for node constraints *) in
       if keep then p.pat_type else
       let tyl = List.map (build_as_type env) pl in
-      let ty_args, ty_res, _ = instance_constructor cstr in
+      let ty_args, ty_res, _ =
+        instance_constructor Keep_existentials_flexible cstr
+      in
       List.iter2 (fun (p,ty) -> unify_pat ~refine env {p with pat_type = ty})
         (List.combine pl tyl) ty_args;
       ty_res
@@ -704,23 +713,35 @@ let solve_Ppat_construct ~refine env loc constr no_existentials
     match existential_styp with
       None ->
         let ty_args, ty_res, _ =
-          instance_constructor ~in_pattern:(env, expansion_scope) constr in
+          instance_constructor
+            (Make_existentials_abstract { env; scope = expansion_scope }) constr
+        in
         ty_args, ty_res, unify_res ty_res, None
     | Some (name_list, sty) ->
-        let in_pattern =
-          if name_list = [] then Some (env, expansion_scope) else None in
+        let existential_treatment =
+          if name_list = [] then
+            Make_existentials_abstract { env; scope = expansion_scope }
+          else
+            (* we will unify them (in solve_constructor_annotation) with the
+               local types provided by the user *)
+            Keep_existentials_flexible
+        in
         let ty_args, ty_res, ty_ex =
-          instance_constructor ?in_pattern constr in
+          instance_constructor existential_treatment constr
+        in
         let equated_types = unify_res ty_res in
         let ty_args, existential_ctyp =
           solve_constructor_annotation env name_list sty ty_args ty_ex in
         ty_args, ty_res, equated_types, existential_ctyp
   in
+  if constr.cstr_existentials <> [] then
+    lower_variables_only !env expansion_scope ty_res;
   end_def ();
   generalize_structure expected_ty;
   generalize_structure ty_res;
   List.iter generalize_structure ty_args;
-  if !Clflags.principal then begin
+  if !Clflags.principal && refine = None then begin
+    (* Do not warn for counter-examples *)
     let exception Warn_only_once in
     try
       TypePairs.iter
@@ -1238,7 +1259,6 @@ let type_label_a_list
       lbl_a_list
   in
   map_fold_cont type_lbl_a lbl_a_list k
-;;
 
 (* Checks over the labels mentioned in a record pattern:
    no duplicate definitions (error); properly closed (warning) *)
@@ -1606,7 +1626,7 @@ and type_pat_aux
   let refine =
     match mode with Normal -> None | Counter_example _ -> Some true in
   let solve_expected (x : pattern) : pattern =
-    unify_pat ~refine env x (instance expected_ty);
+    unify_pat ~refine ~sdesc_for_hint:sp.ppat_desc env x (instance expected_ty);
     x
   in
   let rp x =
@@ -2561,14 +2581,14 @@ let check_statement exp =
    If [exp] has a function type, we check that it is not syntactically the
    result of a function application, as this is often a bug in certain contexts
    (eg the rhs of a let-binding or in the argument of [ignore]). For example,
-   [ignore (List.map print_int)] written by mistake instad of [ignore (List.map
+   [ignore (List.map print_int)] written by mistake instead of [ignore (List.map
    print_int li)].
 
    The check can be disabled by explicitly annotating the expression with a type
    constraint, eg [(e : _ -> _)].
 
    If [statement] is [true] and the [ignored-partial-application] is {em not}
-   triggered, then the [non-unit-statement] check is performaed (see
+   triggered, then the [non-unit-statement] check is performed (see
    [check_statement]).
 
    If the type of [exp] is not known at the time this function is called, the
@@ -2762,12 +2782,14 @@ let name_cases default lst =
 
 (* Typing of expressions *)
 
-let unify_exp env exp expected_ty =
+(** [sdesc_for_hint] is used by error messages to report literals in their
+    original formatting *)
+let unify_exp ?sdesc_for_hint env exp expected_ty =
   let loc = proper_exp_loc exp in
   try
     unify_exp_types loc env exp.exp_type expected_ty
   with Error(loc, env, Expr_type_clash(err, tfc, None)) ->
-    raise (Error(loc, env, Expr_type_clash(err, tfc, Some exp.exp_desc)))
+    raise (Error(loc, env, Expr_type_clash(err, tfc, sdesc_for_hint)))
 
 (* If [is_inferred e] is true, [e] will be typechecked without using
    the "expected type" provided by the context. *)
@@ -2845,14 +2867,15 @@ and type_expect_
     env sexp ty_expected_explained =
   let { ty = ty_expected; explanation } = ty_expected_explained in
   let loc = sexp.pexp_loc in
+  let desc = sexp.pexp_desc in
   (* Record the expression type before unifying it with the expected type *)
   let with_explanation = with_explanation explanation in
   let rue exp =
     with_explanation (fun () ->
-      unify_exp env (re exp) (instance ty_expected));
+      unify_exp ~sdesc_for_hint:desc env (re exp) (instance ty_expected));
     exp
   in
-  match sexp.pexp_desc with
+  match desc with
   | Pexp_ident lid ->
       let path, desc = type_ident env ~recarg lid in
       let exp_desc =
@@ -2882,7 +2905,7 @@ and type_expect_
   | Pexp_constant(Pconst_string (str, _, _) as cst) -> (
     let cst = constant_or_raise env loc cst in
     (* Terrible hack for format strings *)
-    let ty_exp = expand_head env ty_expected in
+    let ty_exp = expand_head env (protect_expansion env ty_expected) in
     let fmt6_path =
       Path.(Pdot (Pident (Ident.create_persistent "CamlinternalFormatBasics"),
                   "format6"))
@@ -3029,18 +3052,12 @@ and type_expect_
       let (args, ty_res) = type_application env funct sargs in
       end_def ();
       unify_var env (newvar()) funct.exp_type;
-      let exp =
-        { exp_desc = Texp_apply(funct, args);
-          exp_loc = loc; exp_extra = [];
-          exp_type = ty_res;
-          exp_attributes = sexp.pexp_attributes;
-          exp_env = env } in
-      begin
-        try rue exp
-        with Error (_, _, Expr_type_clash _) as err ->
-          Misc.reraise_preserving_backtrace err (fun () ->
-            check_partial_application ~statement:false exp)
-      end
+      rue {
+        exp_desc = Texp_apply(funct, args);
+        exp_loc = loc; exp_extra = [];
+        exp_type = ty_res;
+        exp_attributes = sexp.pexp_attributes;
+        exp_env = env }
   | Pexp_match(sarg, caselist) ->
       begin_def ();
       let arg = type_exp env sarg in
@@ -3088,9 +3105,10 @@ and type_expect_
       type_construct env loc lid sarg ty_expected_explained sexp.pexp_attributes
   | Pexp_variant(l, sarg) ->
       (* Keep sharing *)
+      let ty_expected1 = protect_expansion env ty_expected in
       let ty_expected0 = instance ty_expected in
       begin try match
-        sarg, get_desc (expand_head env ty_expected),
+        sarg, get_desc (expand_head env ty_expected1),
         get_desc (expand_head env ty_expected0)
       with
       | Some sarg, Tvariant row, Tvariant row0 ->
@@ -3757,7 +3775,7 @@ and type_expect_
   | Pexp_poly(sbody, sty) ->
       if !Clflags.principal then begin_def ();
       let ty, cty =
-        match sty with None -> ty_expected, None
+        match sty with None -> protect_expansion env ty_expected, None
         | Some sty ->
             let sty = Ast_helper.Typ.force_poly sty in
             let cty = Typetexp.transl_simple_type env false sty in
@@ -3841,7 +3859,8 @@ and type_expect_
         match get_desc (Ctype.expand_head env (instance ty_expected)) with
           Tpackage (p, fl) ->
             if !Clflags.principal &&
-              get_level (Ctype.expand_head env ty_expected)
+              get_level (Ctype.expand_head env
+                           (protect_expansion env ty_expected))
                 < Btype.generic_level
             then
               Location.prerr_warning loc
@@ -4450,7 +4469,7 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
         (lv <> generic_level || get_level ty_fun' <> generic_level)
       and ty_fun = instance ty_fun' in
       let ty_arg, ty_res =
-        match get_desc (expand_head env ty_expected') with
+        match get_desc (expand_head env ty_expected) with
           Tarrow(Nolabel,ty_arg,ty_res,_) -> ty_arg, ty_res
         | _ -> assert false
       in
@@ -4582,10 +4601,30 @@ and type_application env funct sargs =
   in
   let warned = ref false in
   let rec type_args args ty_fun ty_fun0 sargs =
+    let type_unknown_args () =
+      (* We're not looking at a *known* function type anymore, or there are no
+         arguments left. *)
+      let ty_fun, typed_args =
+        List.fold_left type_unknown_arg (ty_fun0, args) sargs
+      in
+      let args =
+        (* Force typing of arguments.
+           Careful: the order matters here. Using [List.rev_map] would be
+           incorrect. *)
+        List.map
+          (function
+            | l, None -> l, None
+            | l, Some f -> l, Some (f ()))
+          (List.rev typed_args)
+      in
+      let result_ty = instance (result_type !omitted_parameters ty_fun) in
+      args, result_ty
+    in
+    if sargs = [] then type_unknown_args () else
     let ty_fun' = expand_head env ty_fun in
     match get_desc ty_fun', get_desc (expand_head env ty_fun0) with
     | Tarrow (l, ty, ty_fun, com), Tarrow (_, ty0, ty_fun0, _)
-      when sargs <> [] && is_commu_ok com ->
+      when is_commu_ok com ->
         let lv = get_level ty_fun' in
         let may_warn loc w =
           if not !warned && !Clflags.principal && lv <> generic_level
@@ -4663,23 +4702,7 @@ and type_application env funct sargs =
         in
         type_args ((l,arg)::args) ty_fun ty_fun0 remaining_sargs
     | _ ->
-        (* We're not looking at a *known* function type anymore, or there are no
-           arguments left. *)
-        let ty_fun, typed_args =
-          List.fold_left type_unknown_arg (ty_fun0, args) sargs
-        in
-        let args =
-          (* Force typing of arguments.
-             Careful: the order matters here. Using [List.rev_map] would be
-             incorrect. *)
-          List.map
-            (function
-              | l, None -> l, None
-              | l, Some f -> l, Some (f ()))
-            (List.rev typed_args)
-        in
-        let result_ty = instance (result_type !omitted_parameters ty_fun) in
-        args, result_ty
+        type_unknown_args ()
   in
   let is_ignore funct =
     is_prim ~name:"%ignore" funct &&
@@ -4730,7 +4753,9 @@ and type_construct env loc lid sarg ty_expected_explained attrs =
                             (lid.txt, constr.cstr_arity, List.length sargs)));
   let separate = !Clflags.principal || Env.has_local_constraints env in
   if separate then (begin_def (); begin_def ());
-  let (ty_args, ty_res, _) = instance_constructor constr in
+  let (ty_args, ty_res, _) =
+    instance_constructor Keep_existentials_flexible constr
+  in
   let texp =
     re {
       exp_desc = Texp_construct(lid, constr, []);
@@ -4970,6 +4995,8 @@ and type_cases
   ) half_typed_cases;
   (* type bodies *)
   let in_function = if List.length caselist = 1 then in_function else None in
+  let ty_res' = instance ty_res in
+  if !Clflags.principal then begin_def ();
   let cases =
     List.map
       (fun { typed_pat = pat; branch_env = ext_env; pat_vars = pvs; unpacks;
@@ -4992,14 +5019,8 @@ and type_cases
              tu_uid = Uid.mk ~current_unit:(Env.get_unit_name ())}
           ) unpacks
         in
-        let ty_res' =
-          if !Clflags.principal then begin
-            begin_def ();
-            let ty = instance ~partial:true ty_res in
-            end_def ();
-            generalize_structure ty; ty
-          end
-          else if contains_gadt then
+        let ty_expected =
+          if contains_gadt && not !Clflags.principal then
             (* allow propagation from preceding branches *)
             correct_levels ty_res
           else ty_res in
@@ -5013,20 +5034,17 @@ and type_cases
         in
         let exp =
           type_unpacks ?in_function ext_env
-            unpacks pc_rhs (mk_expected ?explanation ty_res')
+            unpacks pc_rhs (mk_expected ?explanation ty_expected)
         in
         {
          c_lhs = pat;
          c_guard = guard;
-         c_rhs = {exp with exp_type = instance ty_res'}
+         c_rhs = {exp with exp_type = ty_res'}
         }
       )
       half_typed_cases
   in
-  if !Clflags.principal || does_contain_gadt then begin
-    let ty_res' = instance ty_res in
-    List.iter (fun c -> unify_exp env c.c_rhs ty_res') cases
-  end;
+  if !Clflags.principal then end_def ();
   let do_init = may_contain_gadts || needs_exhaust_check in
   let ty_arg_check =
     if do_init then
@@ -5065,7 +5083,7 @@ and type_cases
   if may_contain_gadts then begin
     end_def ();
     (* Ensure that existential types do not escape *)
-    unify_exp_types loc env (instance ty_res) (newvar ()) ;
+    unify_exp_types loc env ty_res' (newvar ()) ;
   end;
   cases, partial
 
@@ -5444,10 +5462,7 @@ let type_clash_of_trace trace =
    and when the expected type is `int` *)
 let report_literal_type_constraint expected_type const =
   let const_str = match const with
-    | Const_int n -> Some (Int.to_string n)
-    | Const_int32 n -> Some (Int32.to_string n)
-    | Const_int64 n -> Some (Int64.to_string n)
-    | Const_nativeint n -> Some (Nativeint.to_string n)
+    | Pconst_integer (s, _) -> Some s
     | _ -> None
   in
   let suffix =
@@ -5474,15 +5489,26 @@ let report_literal_type_constraint const = function
       end
   | None -> []
 
+let report_partial_application = function
+  | Some tr -> begin
+      match get_desc tr.Errortrace.got.Errortrace.expanded with
+      | Tarrow _ ->
+          [ Location.msg
+              "@[Hint: This function application is partial,@ \
+               maybe some arguments are missing.@]" ]
+      | _ -> []
+    end
+  | None -> []
+
 let report_expr_type_clash_hints exp diff =
   match exp with
-  | Some (Texp_constant const) -> report_literal_type_constraint const diff
+  | Some (Pexp_constant const) -> report_literal_type_constraint const diff
+  | Some (Pexp_apply _) -> report_partial_application diff
   | _ -> []
 
-let report_pattern_type_clash_hints
-      (type k) (pat : k pattern_desc option) diff =
+let report_pattern_type_clash_hints pat diff =
   match pat with
-  | Some (Tpat_constant const) -> report_literal_type_constraint const diff
+  | Some (Ppat_constant const) -> report_literal_type_constraint const diff
   | _ -> []
 
 let report_type_expected_explanation expl ppf =

@@ -56,11 +56,12 @@ CAMLextern int caml_c_thread_unregister(void);
 /* If a thread is created by C code (instead of by OCaml itself),
    it must be registered with the OCaml runtime system before
    being able to call back into OCaml code or use other runtime system
-   functions.  Just call [caml_c_thread_register] once.
-   Before the thread finishes, it must call [caml_c_thread_unregister].
+   functions.  Just call [caml_c_thread_register] once. The domain lock
+   is not held when [caml_c_thread_register] returns.
+   Before the thread finishes, it must call [caml_c_thread_unregister]
+   (without holding the domain lock).
    Both functions return 1 on success, 0 on error.
-   In multicore OCaml, note that threads created by C code will be registered
-   to the domain 0 threads chaining.
+   Note that threads registered by C code belong to the domain 0.
 */
 
 #ifdef __cplusplus

@@ -266,25 +266,19 @@ let pret chan = function
           for i = 0 to len1-2 do
             r.(i) <- c1.(i)
           done ;
-
           let l =
-            if len1-2 >= 0 then begin
+            if len1 < 2 then l1
+            else begin (* 0 <= len1 - 2 < len1 *)
               let _,h,_ = r.(len1-2) in
-              if h+1 < l1 then
-                h+1
-              else
-                l1
-            end else
-              l1
+              min (h + 1) l1
+            end
           and h =
-            if 1 < len2-1 then begin
+            if len2 < 2 then h2
+            else begin (* 0 <= 1 < len2 *)
               let l,_,_ = c2.(1) in
-              if h2+1 < l then
-                l-1
-              else
-                h2
-            end else
-              h2 in
+              max h2 (l - 1)
+            end
+          in
           r.(len1-1) <- (l,h,act1) ;
           for i=1 to len2-1  do
             r.(len1-1+i) <- c2.(i)
@@ -837,7 +831,6 @@ let rec pkey chan  = function
     let acts = Array.make !index (fun _ -> assert false) in
     Hashtbl.iter (fun _ (i,act) -> acts.(i) <- act) t ;
     {cases = r ; actions = acts}
-  ;;
 
 
   let do_zyva loc (low,high) arg cases actions =
@@ -892,6 +885,5 @@ let rec pkey chan  = function
   prerr_endline "" ;
 *)
     hs (c_test {arg=arg ; off=0} s)
-  ;;
 
 end

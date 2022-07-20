@@ -19,7 +19,6 @@ type pers_flags =
   | Rectypes
   | Alerts of alerts
   | Opaque
-  | Unsafe_string
 
 type cmi_infos = {
     cmi_name : modname;

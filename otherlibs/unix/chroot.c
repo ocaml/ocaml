@@ -18,7 +18,7 @@
 #include <caml/signals.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_chroot(value path)
+CAMLprim value caml_unix_chroot(value path)
 {
   CAMLparam1(path);
   char * p;
@@ -29,6 +29,6 @@ CAMLprim value unix_chroot(value path)
   ret = chroot(p);
   caml_leave_blocking_section();
   caml_stat_free(p);
-  if (ret == -1) uerror("chroot", path);
+  if (ret == -1) caml_uerror("chroot", path);
   CAMLreturn(Val_unit);
 }

@@ -55,26 +55,25 @@
    See amd64.S and amd64/proc.ml for the indices */
 #define Wosize_gc_regs (13 /* int regs */ + 16 /* float regs */)
 #define Saved_return_address(sp) *((intnat *)((sp) - 8))
+#ifdef WITH_FRAME_POINTERS
+#define Pop_frame_pointer(sp) (sp) += sizeof(value)
+#else
+#define Pop_frame_pointer(sp)
+#endif
 #endif
 
 #ifdef TARGET_arm64
+/* Size of the gc_regs structure, in words.
+   See arm64.S and arm64/proc.ml for the indices */
+#define Wosize_gc_regs (2 + 24 /* int regs */ + 24 /* float regs */)
 #define Saved_return_address(sp) *((intnat *)((sp) - 8))
+#define Pop_frame_pointer(sp) sp += sizeof(value)
 #define Context_needs_padding /* keep stack 16-byte aligned */
 #endif
 
 #ifdef TARGET_riscv
 #define Saved_return_address(sp) *((intnat *)((sp) - 8))
 #endif
-
-/* Structure of OCaml callback contexts */
-
-struct caml_context {
-  uintnat exception_ptr;        /* exception pointer */
-  value * gc_regs;              /* pointer to register block */
-#ifdef Context_needs_padding
-  value padding;
-#endif
-};
 
 /* Declaration of variables used in the asm code */
 extern value * caml_globals[];

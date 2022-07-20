@@ -1,0 +1,61 @@
+barrier.cmo : \
+    barrier.cmi
+barrier.cmx : \
+    barrier.cmi
+barrier.cmi :
+forbidden.cmo : \
+    shared.cmi \
+    run.cmi \
+    outcome.cmi \
+    opt.cmi
+forbidden.cmx : \
+    shared.cmx \
+    run.cmx \
+    outcome.cmx \
+    opt.cmx
+hist.cmo : \
+    hist.cmi
+hist.cmx : \
+    hist.cmi
+hist.cmi :
+opt.cmo : \
+    opt.cmi
+opt.cmx : \
+    opt.cmi
+opt.cmi :
+outcome.cmo : \
+    outcome.cmi
+outcome.cmx : \
+    outcome.cmi
+outcome.cmi :
+publish.cmo : \
+    shared.cmi \
+    run.cmi \
+    outcome.cmi \
+    opt.cmi
+publish.cmx : \
+    shared.cmx \
+    run.cmx \
+    outcome.cmx \
+    opt.cmx
+run.cmo : \
+    shared.cmi \
+    opt.cmi \
+    hist.cmi \
+    barrier.cmi \
+    run.cmi
+run.cmx : \
+    shared.cmx \
+    opt.cmx \
+    hist.cmx \
+    barrier.cmx \
+    run.cmi
+run.cmi : \
+    shared.cmi \
+    opt.cmi \
+    hist.cmi
+shared.cmo : \
+    shared.cmi
+shared.cmx : \
+    shared.cmi
+shared.cmi :

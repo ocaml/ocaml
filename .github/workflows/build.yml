@@ -1,6 +1,12 @@
 name: Build
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - '4.**'
+      - '5.**'
+      - 'trunk'
+  pull_request:
 
 jobs:
 
@@ -18,11 +24,11 @@ jobs:
           MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh build
       - name: Prepare Artifact
         run: |
-          tar -czf /tmp/sources.tar.gz .
+          tar --zstd -cf /tmp/sources.tar.zstd .
       - uses: actions/upload-artifact@v2
         with:
           name: compiler
-          path: /tmp/sources.tar.gz
+          path: /tmp/sources.tar.zstd
           retention-days: 1
 
   build-misc:
@@ -42,6 +48,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      - name: OS Dependencies
+        if: runner.os == 'MacOS'
+        run: brew install parallel
       - name: configure tree
         run: |
           CONFIG_ARG=${{ matrix.config_arg }} MAKE_ARG=-j XARCH=x64 bash -xe tools/ci/actions/runner.sh configure
@@ -77,7 +86,7 @@ jobs:
           name: compiler
       - name: Unpack Artifact
         run: |
-          tar xf sources.tar.gz
+          tar --zstd -xf sources.tar.zstd
       - name: Run the testsuite
         if: ${{ matrix.id == 'normal' }}
         run: |

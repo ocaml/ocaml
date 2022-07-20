@@ -34,10 +34,12 @@ SUBST_QUOTE2=\
   -e 's!%%$1%%!$(if $2,$(call SED_ESCAPE,"$(call OCAML_ESCAPE,$2)"))!'
 SUBST_QUOTE=$(call SUBST_QUOTE2,$1,$($1))
 
-FLEXLINK_LDFLAGS=$(if $(OC_LDFLAGS), -link "$(OC_LDFLAGS)")
-FLEXLINK_DLL_LDFLAGS=$(if $(OC_DLL_LDFLAGS), -link "$(OC_DLL_LDFLAGS)")
+prefix_and_quote = $(if $(1), $(2)$(if $(word 2,$(1)),"$(1)",$(1)))
 
-config.ml: config.mlp $(ROOTDIR)/Makefile.config Makefile
+FLEXLINK_LDFLAGS = $(call prefix_and_quote,$(OC_LDFLAGS),-link $(EMPTY))
+FLEXLINK_DLL_LDFLAGS = $(call prefix_and_quote,$(OC_DLL_LDFLAGS),-link $(EMPTY))
+
+config_main.ml: config.mlp $(ROOTDIR)/Makefile.config Makefile config.common.ml
 	sed $(call SUBST,AFL_INSTRUMENT) \
 	    $(call SUBST,ARCH) \
 	    $(call SUBST_STRING,ARCMD) \
@@ -57,11 +59,12 @@ config.ml: config.mlp $(ROOTDIR)/Makefile.config Makefile
 	    $(call SUBST,WITH_CMM_INVARIANTS) \
 	    $(call SUBST_STRING,FLEXLINK_FLAGS) \
 	    $(call SUBST_QUOTE,FLEXDLL_DIR) \
+	    $(call SUBST_STRING,FLEXDLL_CHAIN) \
 	    $(call SUBST,HOST) \
 	    $(call SUBST_STRING,BINDIR) \
 	    $(call SUBST_STRING,LIBDIR) \
-	    $(call SUBST_STRING,MKDLL) \
-	    $(call SUBST_STRING,MKEXE) \
+	    $(call SUBST_STRING,MKDLL_EXP) \
+	    $(call SUBST_STRING,MKEXE_EXP) \
 	    $(call SUBST_STRING,FLEXLINK_LDFLAGS) \
 	    $(call SUBST_STRING,FLEXLINK_DLL_LDFLAGS) \
 	    $(call SUBST_STRING,MKMAINDLL) \
@@ -73,13 +76,9 @@ config.ml: config.mlp $(ROOTDIR)/Makefile.config Makefile
 	    $(call SUBST_STRING,OCAMLOPT_CPPFLAGS) \
 	    $(call SUBST_STRING,PACKLD) \
 	    $(call SUBST,PROFINFO_WIDTH) \
-	    $(call SUBST_STRING,RANLIBCMD) \
 	    $(call SUBST_STRING,RPATH) \
 	    $(call SUBST_STRING,MKSHAREDLIBRPATH) \
-	    $(call SUBST,FORCE_SAFE_STRING) \
-	    $(call SUBST,DEFAULT_SAFE_STRING) \
 	    $(call SUBST,WINDOWS_UNICODE) \
-	    $(call SUBST,NAKED_POINTERS) \
 	    $(call SUBST,SUPPORTS_SHARED_LIBRARIES) \
 	    $(call SUBST,SYSTEM) \
 	    $(call SUBST,SYSTHREAD_SUPPORT) \
@@ -92,6 +91,13 @@ config.ml: config.mlp $(ROOTDIR)/Makefile.config Makefile
 	    $(call SUBST,AS_HAS_DEBUG_PREFIX_MAP) \
 	    $(call SUBST,FORCE_INSTRUMENTED_RUNTIME) \
 	    $< > $@
+	cat config.common.ml >> $@
+
+config_boot.ml: config.fixed.ml config.common.ml Makefile
+	cat config.fixed.ml config.common.ml > $@
+
+config.ml: config_$(if $(filter true,$(IN_COREBOOT_CYCLE)),boot,main).ml
+	cp $^ $@
 
 # Test for the substitution functions above
 

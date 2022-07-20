@@ -24,13 +24,12 @@ ROOTDIR = ../..
 include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 
-OCAMLC=$(BEST_OCAMLC) -g -nostdlib -I $(ROOTDIR)/stdlib
-OCAMLOPT=$(BEST_OCAMLOPT) -g -nostdlib -I $(ROOTDIR)/stdlib
+OCAMLC=$(BEST_OCAMLC) $(STDLIBFLAGS) -g
+OCAMLOPT=$(BEST_OCAMLOPT) $(STDLIBFLAGS) -g
 
 # COMPFLAGS should be in sync with the toplevel Makefile's COMPFLAGS.
 COMPFLAGS=-strict-sequence -principal -absname \
-          -w +a-4-9-40-41-42-44-45-48-66-70 \
-          -warn-error +A \
+          -w +a-4-9-40-41-42-44-45-48-66 -warn-error +A \
           -bin-annot -safe-string -strict-formats
 ifeq "$(FLAMBDA)" "true"
 OPTCOMPFLAGS += -O3
@@ -79,13 +78,13 @@ COMPILERLIBS_SOURCES=\
   utils/identifiable.ml \
   utils/numbers.ml \
   utils/arg_helper.ml \
+  utils/local_store.ml \
+  utils/load_path.ml \
   utils/clflags.ml \
   utils/profile.ml \
   utils/consistbl.ml \
   utils/terminfo.ml \
   utils/warnings.ml \
-  utils/local_store.ml \
-  utils/load_path.ml \
   utils/int_replace_polymorphic_compare.ml \
   utils/lazy_backtrack.ml \
   parsing/location.ml \
@@ -189,10 +188,14 @@ $(LOCAL_SRC)/%.cmx: $(LOCAL_SRC)/%.ml
 # Rules for building the [Dynlink_compilerlibs] bytecode and native packs
 # from their components.
 
-byte/dynlink_compilerlibs.cmo: $(COMPILERLIBS_CMO)
-	$(OCAMLC) $(COMPFLAGS) -pack -o $@ $(COMPILERLIBS_CMO)
-
-byte/dynlink_compilerlibs.cmi: byte/dynlink_compilerlibs.cmo
+# A multi-target pattern rule can tell GNU make that the recipe simultaneously
+# produces both the cmo and cmi file for Dynlink_compilerlibs. GNU make 4.3+
+# would be required to do the same thing with a static rule (with its grouped
+# targets feature).
+byt%/dynlink_compilerlibs.cmo byt%/dynlink_compilerlibs.cmi: $(COMPILERLIBS_CMO)
+	@$(if $(filter-out e,$*),\
+        $(error Should only build byte/dynlink_compilerlibs.cmo!))
+	$(OCAMLC) $(COMPFLAGS) -pack -o byte/dynlink_compilerlibs.cmo $^
 
 native/dynlink_compilerlibs.cmx: $(COMPILERLIBS_CMX)
 	$(OCAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) -pack -o $@ $(COMPILERLIBS_CMX)
@@ -238,23 +241,30 @@ $(eval $(call PROGRAM_SYNONYM,extract_crc))
 $(extract_crc): dynlink.cma byte/dynlink_compilerlibs.cmo extract_crc.cmo
 	$(OCAMLC) -o $@ $^
 
+INSTALL_LIBDIR_DYNLINK = $(INSTALL_LIBDIR)/dynlink
+
 install:
+# If installing over a previous OCaml version, ensure dynlink is removed from
+# the previous installation.
+	rm -f "$(INSTALL_LIBDIR)"/dynlink.cm* "$(INSTALL_LIBDIR)/dynlink.mli" \
+        "$(INSTALL_LIBDIR)/dynlink.$(A)" \
+        $(addprefix "$(INSTALL_LIBDIR)/", $(notdir $(NATOBJS)))
+	$(MKDIR) "$(INSTALL_LIBDIR_DYNLINK)"
 	$(INSTALL_DATA) \
-	  dynlink.cmi dynlink.cma \
-	  "$(INSTALL_LIBDIR)"
+	  dynlink.cmi dynlink.cma META \
+	  "$(INSTALL_LIBDIR_DYNLINK)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
 	  dynlink.cmti dynlink.mli \
-	  "$(INSTALL_LIBDIR)"
+	  "$(INSTALL_LIBDIR_DYNLINK)"
 endif
 
 installopt:
-	if $(NATDYNLINK); then \
-	  $(INSTALL_DATA) \
-	    $(NATOBJS) dynlink.cmxa dynlink.$(A) \
-	    "$(INSTALL_LIBDIR)" && \
-	  cd "$(INSTALL_LIBDIR)" && $(RANLIB) dynlink.$(A); \
-	fi
+ifeq "$(strip $(NATDYNLINK))" "true"
+	$(INSTALL_DATA) \
+	  $(NATOBJS) dynlink.cmxa dynlink.$(A) \
+	  "$(INSTALL_LIBDIR_DYNLINK)"
+endif
 
 partialclean:
 	rm -f $(extract_crc) *.cm[ioaxt] *.cmti *.cmxa \
@@ -271,6 +281,7 @@ clean: partialclean
 
 .PHONY: distclean
 distclean: clean
+	rm -f META
 
 .PHONY: beforedepend
 beforedepend: dynlink_platform_intf.mli

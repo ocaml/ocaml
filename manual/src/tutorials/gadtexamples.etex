@@ -68,7 +68,7 @@ inside the function definition at a type that involves an existential
 GADT type variable, this variable flows to the type of the recursive
 function, and thus escapes its scope. In the above example, this happens
 in the branch "App(f,x)" when "eval" is called with "f" as an argument.
-In this branch, the type of "f" is "($App_'b -> a)". The prefix "$" in
+In this branch, the type of "f" is "($App_'b -> a) term". The prefix "$" in
 "$App_'b" denotes an existential type named by the compiler
 (see~\ref{s:existential-names}). Since the type of "eval" is
 "'a term -> 'a", the call "eval f" makes the existential type "$App_'b"

@@ -117,11 +117,6 @@ The following environment variables are also consulted:
  section~\ref{Gc}.
 \fi
   \begin{options}
-  \item[a] ("allocation_policy")
-        The policy used for allocating in the OCaml heap. Possible values
-        are "0" for the next-fit policy, "1" for the first-fit
-        policy, and "2" for the best-fit policy. The default is "2" (best-fit).
-        See the Gc module documentation for details.
   \item[b] (backtrace) Trigger the printing of a stack backtrace
         when an uncaught exception aborts the program. An optional argument can
         be provided: "b=0" turns backtrace printing off; "b=1" is equivalent to
@@ -134,12 +129,6 @@ The following environment variables are also consulted:
         "caml_shutdown" in section~\ref{ss:c-embedded-code}). The option also enables
         pooling (as in "caml_startup_pooled"). This mode can be used to detect
         leaks with a third-party memory debugger.
-  \item[h] The initial size of the major heap (in words).
-  \item[H] Allocate heap chunks by mmapping huge pages. Huge pages are locked into
-        memory, and are not swapped.
-  \item[i] ("major_heap_increment")  Default size increment for the
-        major heap. (in words if greater than 1000, else in percents of the 
-        head size)
   \item[l] ("stack_limit") The limit (in words) of the stack size. This is only
         relevant to the byte-code runtime, as the native code runtime uses the
         operating system's stack.
@@ -169,7 +158,6 @@ The following environment variables are also consulted:
         $2^{20}$, and $2^{30}$ respectively.
   \item[o] ("space_overhead")  The major GC speed setting.
         See the Gc module documentation for details.
-  \item[O] ("max_overhead")  The heap compaction trigger setting.
   \item[p] (parser trace) Turn on debugging support for
         "ocamlyacc"-generated parsers.  When this option is on,
         the pushdown automaton that executes the parsers prints a
@@ -200,9 +188,8 @@ The following environment variables are also consulted:
         \item[512 (= 0x200)] Computation of compaction-triggering condition.
         \item[1024 (= 0x400)] Output GC statistics at program exit.
   \end{options}
-  \item[w] ("window_size") Set the size of the window used by major GC for smoothing out 
-    variations in its workload. This is an integer between 1 and 50. 
-    (Default: 1)
+  \item[V] ("verify_heap") runs an integrity check on the heap just after
+    the completion of a major GC cycle
   \item[W] Print runtime warnings to stderr (such as Channel opened on file 
     dies without being closed, unflushed data, etc.)
 

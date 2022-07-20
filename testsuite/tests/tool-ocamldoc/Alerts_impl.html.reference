@@ -1,0 +1,108 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link rel="Up" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of extensions" rel=Appendix href="index_extensions.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Alerts_impl" rel="Chapter" href="Alerts_impl.html"><title>Alerts_impl</title>
+</head>
+<body>
+<div class="navbar">&nbsp;<a class="up" href="index.html" title="Index">Up</a>
+&nbsp;</div>
+<h1>Module <a href="type_Alerts_impl.html">Alerts_impl</a></h1>
+
+<pre><span id="MODULEAlerts_impl"><span class="keyword">module</span> Alerts_impl</span>: <code class="code"><span class="keyword">sig</span></code> <a href="Alerts_impl.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
+<div class="info-desc">
+<p>Alerts from implementation.</p>
+</div>
+</div>
+<hr width="100%">
+
+<pre><span id="VALx"><span class="keyword">val</span> x</span> : <code class="type">int</code></pre><div class="info ">
+<div class="info-deprecated">
+<span class="warning">Deprecated. </span>foo</div>
+</div>
+
+<pre><code><span id="TYPEr"><span class="keyword">type</span> <code class="type"></code>r</span> = {</code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTr.x">x</span>&nbsp;: <code class="type">int</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+<div class="info-deprecated">
+<span class="warning">Deprecated. </span>foo</div>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr></table>
+<code>}</code>
+
+
+
+<pre><code><span id="TYPEv"><span class="keyword">type</span> <code class="type"></code>v</span> = </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTv.C"><span class="constructor">C</span></span></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+<div class="info-deprecated">
+<span class="warning">Deprecated. </span>foo</div>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr></table>
+
+
+
+<pre><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> </pre>
+<div class="info ">
+<div class="info-deprecated">
+<span class="warning">Deprecated. </span>foo</div>
+</div>
+
+
+<pre><span id="EXCEPTIONE"><span class="keyword">exception</span> E</span></pre>
+
+<pre><span id="VALf"><span class="keyword">val</span> f</span> : <code class="type">int -&gt; int</code></pre><div class="info ">
+<div class="info-deprecated">
+<span class="warning">Deprecated. </span>foo</div>
+</div>
+
+<pre><span id="TYPEe"><span class="keyword">type</span> <code class="type"></code>e</span> = ..</pre>
+
+<pre><code><span class="keyword">type</span> <code class="type"></code><a href="Alerts_impl.html#TYPEe">e</a> += </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="EXTENSIONExt">Ext</span></code></td>
+
+</tr></table>
+
+<div class="info ">
+<div class="info-deprecated">
+<span class="warning">Deprecated. </span>foo</div>
+</div>
+
+<pre><code><span class="keyword">type</span> <code class="type"></code><a href="Alerts_impl.html#TYPEe">e</a> += </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="EXTENSIONExt2">Ext2</span></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+<div class="info-deprecated">
+<span class="warning">Deprecated. </span>foo</div>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr></table>
+
+
+</body></html>

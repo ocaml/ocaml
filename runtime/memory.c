@@ -32,7 +32,7 @@
 #include "caml/alloc.h"
 #include "caml/fiber.h"
 #include "caml/platform.h"
-#include "caml/eventlog.h"
+#include "caml/runtime_events.h"
 
 /* Note [MM]: Enforcing the memory model.
 
@@ -146,7 +146,7 @@ Caml_inline void write_barrier(
    }
 }
 
-CAMLexport CAMLweakdef void caml_modify (value *fp, value val)
+CAMLexport CAMLweakdef void caml_modify (volatile value *fp, value val)
 {
   write_barrier((value)fp, 0, *fp, val);
 
@@ -205,13 +205,13 @@ CAMLexport void caml_adjust_gc_speed (mlsize_t res, mlsize_t max)
 
    [caml_initialize] never calls the GC, so you may call it while a block is
    unfinished (i.e. just after a call to [caml_alloc_shr].) */
-CAMLexport CAMLweakdef void caml_initialize (value *fp, value val)
+CAMLexport CAMLweakdef void caml_initialize (volatile value *fp, value val)
 {
 #ifdef DEBUG
-  if (Is_young((value)fp))
-    CAMLassert(*fp == Debug_uninit_minor || *fp == Val_unit);
-  else
-    CAMLassert(*fp == Debug_uninit_major || *fp == Val_unit);
+  /* Previous value should not be a pointer.
+     In the debug runtime, it can be either a TMC placeholder,
+     or an uninitialized value canary (Debug_uninit_{major,minor}). */
+  CAMLassert(Is_long(*fp));
 #endif
   *fp = val;
   if (!Is_young((value)fp) && Is_block_and_young (val))
@@ -223,7 +223,7 @@ CAMLexport int caml_atomic_cas_field (
 {
   if (caml_domain_alone()) {
     /* non-atomic CAS since only this thread can access the object */
-    value* p = &Field(obj, field);
+    volatile value* p = &Field(obj, field);
     if (*p == oldval) {
       *p = newval;
       write_barrier(obj, field, oldval, newval);
@@ -234,7 +234,9 @@ CAMLexport int caml_atomic_cas_field (
   } else {
     /* need a real CAS */
     atomic_value* p = &Op_atomic_val(obj)[field];
-    if (atomic_compare_exchange_strong(p, &oldval, newval)) {
+    int cas_ret = atomic_compare_exchange_strong(p, &oldval, newval);
+    atomic_thread_fence(memory_order_release); /* generates `dmb ish` on Arm64*/
+    if (cas_ret) {
       write_barrier(obj, field, oldval, newval);
       return 1;
     } else {
@@ -268,6 +270,7 @@ CAMLprim value caml_atomic_exchange (value ref, value v)
     /* See Note [MM] above */
     atomic_thread_fence(memory_order_acquire);
     ret = atomic_exchange(Op_atomic_val(ref), v);
+    atomic_thread_fence(memory_order_release); /* generates `dmb ish` on Arm64*/
   }
   write_barrier(ref, 0, ret, v);
   return ret;
@@ -286,7 +289,9 @@ CAMLprim value caml_atomic_cas (value ref, value oldv, value newv)
     }
   } else {
     atomic_value* p = &Op_atomic_val(ref)[0];
-    if (atomic_compare_exchange_strong(p, &oldv, newv)) {
+    int cas_ret = atomic_compare_exchange_strong(p, &oldv, newv);
+    atomic_thread_fence(memory_order_release); /* generates `dmb ish` on Arm64*/
+    if (cas_ret) {
       write_barrier(ref, 0, oldv, newv);
       return Val_int(1);
     } else {
@@ -307,6 +312,7 @@ CAMLprim value caml_atomic_fetch_add (value ref, value incr)
   } else {
     atomic_value *p = &Op_atomic_val(ref)[0];
     ret = atomic_fetch_add(p, 2*Long_val(incr));
+    atomic_thread_fence(memory_order_release); /* generates `dmb ish` on Arm64*/
   }
   return ret;
 }
@@ -331,7 +337,7 @@ Caml_inline value alloc_shr(mlsize_t wosize, tag_t tag, int noexc)
     else
       return (value)NULL;
   }
-  CAML_EV_ALLOC(wosize);
+
   dom_st->allocated_words += Whsize_wosize(wosize);
   if (dom_st->allocated_words > dom_st->minor_heap_wsz) {
     CAML_EV_COUNTER (EV_C_REQUEST_MAJOR_ALLOC_SHR, 1);

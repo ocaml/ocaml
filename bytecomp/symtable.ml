@@ -184,8 +184,13 @@ let init () =
     Misc.try_finally
       ~always:(fun () -> remove_file primfile)
       (fun () ->
-         if Sys.command(Printf.sprintf "%s -p > %s"
-                          !Clflags.use_runtime primfile) <> 0
+         let cmd =
+           Filename.quote_command
+             !Clflags.use_runtime
+             ~stdout:primfile
+             ["-p"]
+         in
+         if Sys.command cmd <> 0
          then raise(Error(Wrong_vm !Clflags.use_runtime));
          set_prim_table_from_file primfile
       )

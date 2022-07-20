@@ -446,9 +446,9 @@ method select_operation op args _dbg =
     (Icall_ind, args)
   | (Cextcall(func, ty_res, ty_args, alloc), _) ->
     Iextcall { func; alloc; ty_res; ty_args; stack_ofs = -1}, args
-  | (Cload {memory_chunk; mutability}, [arg]) ->
-      let (addr, eloc) = self#select_addressing memory_chunk arg in
-      (Iload(memory_chunk, addr, mutability), [eloc])
+  | (Cload {memory_chunk; mutability; is_atomic}, [arg]) ->
+      let (addressing_mode, eloc) = self#select_addressing memory_chunk arg in
+      (Iload {memory_chunk; addressing_mode; mutability; is_atomic}, [eloc])
   | (Cstore (chunk, init), [arg1; arg2]) ->
       let (addr, eloc) = self#select_addressing chunk arg1 in
       let is_assign =

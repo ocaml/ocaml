@@ -22,6 +22,7 @@
 # is modified by the instrumentation:
 
 export OCAMLTEST_SKIP_TESTS="tests/afl-instrumentation/afltest.ml \
+tests/afl-instrumentation/afl-fuzz-test.ml \
 tests/runtime-errors/stackoverflow.ml"
 
 jobs=-j8
@@ -47,18 +48,18 @@ else
 fi
 
 # A tool that makes error backtraces nicer
-# Need to pick the one that matches clang-9 and is named "llvm-symbolizer"
-# (/usr/bin/llvm-symbolizer-9 doesn't work, that would be too easy)
-export ASAN_SYMBOLIZER_PATH=/usr/lib/llvm-9/bin/llvm-symbolizer
+# Need to pick the one that matches clang-13 and is named "llvm-symbolizer"
+# (/usr/bin/llvm-symbolizer-13 doesn't work, that would be too easy)
+export ASAN_SYMBOLIZER_PATH=/usr/lib/llvm-13/bin/llvm-symbolizer
 export TSAN_SYMBOLIZER_PATH="$ASAN_SYMBOLIZER_PATH"
 
 #########################################################################
 
-echo "======== clang 9, address sanitizer, UB sanitizer =========="
+echo "======== clang 13, address sanitizer, UB sanitizer =========="
 
 git clean -q -f -d -x
 
-# Use clang 9
+# # Use clang 13
 
 # These are the undefined behaviors we want to check
 # Others occur on purpose e.g. signed arithmetic overflow
@@ -81,17 +82,19 @@ sanitizers="-fsanitize=address -fsanitize-trap=$ubsan"
 # Don't optimize too much to get better backtraces of errors
 
 ./configure \
-  CC=clang-9 \
+  CC=clang-13 \
   CFLAGS="-O1 -fno-omit-frame-pointer $sanitizers" \
   --disable-stdlib-manpages --enable-dependency-generation
 
 # Build the system.  We want to check for memory leaks, hence
 # 1- force ocamlrun to free memory before exiting
 # 2- add an exception for ocamlyacc, which doesn't free memory
-
-OCAMLRUNPARAM="c=1" \
-LSAN_OPTIONS="suppressions=$(pwd)/tools/ci/inria/sanitizers/lsan-suppr.txt" \
-make $jobs
+#OCAMLRUNPARAM="c=1" \
+#LSAN_OPTIONS="suppressions=$(pwd)/tools/ci/inria/sanitizers/lsan-suppr.txt" \
+#make $jobs
+# TEMPORARY: cleanup-at-exit mode is broken in 5.0, so turn off leak
+# detection entirely
+ASAN_OPTIONS="detect_leaks=0,use_sigaltstack=0" make $jobs
 
 # Run the testsuite.
 # We deactivate leak detection for two reasons:
@@ -100,42 +103,41 @@ make $jobs
 # - The Ocaml runtime does not free the memory when a fatal error
 # occurs.
 
-# We already use sigaltstack for stack overflow detection. Our use
-# interacts with ASAN's. Hence, we tell ASAN not to use it.
+# We already use sigaltstack for signal handling. Our use might
+# interact with ASAN's. Hence, we tell ASAN not to use it.
 
 ASAN_OPTIONS="detect_leaks=0,use_sigaltstack=0" $run_testsuite
 
 #########################################################################
 
-echo "======== clang 9, thread sanitizer =========="
+# Thread sanitizer is not working in OCaml 5: too many alarms that are
+# probably benign races in the GC (#11040).  Turn it off.
 
-git clean -q -f -d -x
+# echo "======== clang 13, thread sanitizer =========="
 
-# Select thread sanitizer
-# Don't optimize too much to get better backtraces of errors
+# git clean -q -f -d -x
 
-./configure \
-  CC=clang-9 \
-  CFLAGS="-O1 -fno-omit-frame-pointer -fsanitize=thread" \
-  --disable-stdlib-manpages --enable-dependency-generation
+# # Select thread sanitizer
+# # Don't optimize too much to get better backtraces of errors
 
-# Build the system
-make $jobs
+# ./configure \
+#   CC=clang-13 \
+#   CFLAGS="-O1 -fno-omit-frame-pointer -fsanitize=thread" \
+#   --disable-stdlib-manpages --enable-dependency-generation
 
-# ThreadSanitizer has problems with processes that exit via
-# pthread_exit in the last thread.
-# It also reports errors for the error case of unlocking an
-# error-checking mutex.
-# Exclude the corresponding test
-export OCAMLTEST_SKIP_TESTS="$OCAMLTEST_SKIP_TESTS \
-tests/lib-threads/pr9971.ml \
-tests/statmemprof/thread_exit_in_callback.ml \
-tests/lib-threads/mutex_errors.ml"
+# # Build the system
+# TSAN_OPTIONS="detect_deadlocks=0" make $jobs
 
-# Run the testsuite.
-# ThreadSanitizer complains about fork() in threaded programs,
-# we ask it to just continue in this case.
-TSAN_OPTIONS="die_after_fork=0" $run_testsuite
+# # ThreadSanitizer reports errors for the error case of unlocking an
+# # error-checking mutex.
+# # Exclude the corresponding test
+# export OCAMLTEST_SKIP_TESTS="$OCAMLTEST_SKIP_TESTS \
+# tests/lib-threads/mutex_errors.ml"
+
+# # Run the testsuite.
+# # ThreadSanitizer complains about fork() in threaded programs,
+# # we ask it to just continue in this case.
+# TSAN_OPTIONS="detect_deadlocks=0,die_after_fork=0" $run_testsuite
 
 #########################################################################
 

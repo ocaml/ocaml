@@ -24,7 +24,7 @@ let server sock =
   for i = 1 to 3 do
     let n = Unix.recv s buf 2 (Bytes.length buf - 2) [] in
     if n = 0 then begin
-      Unix.close s; Thread.exit ()
+      Unix.close s; raise Thread.Exit
     end else begin
       ignore (Unix.send s buf 0 (n + 2) [])
     end

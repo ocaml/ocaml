@@ -44,7 +44,7 @@ CAMLprim value caml_memprof_stop(value unit)
 #include "caml/misc.h"
 #include "caml/compact.h"
 #include "caml/printexc.h"
-#include "caml/eventlog.h"
+#include "caml/runtime_events.h"
 
 #define RAND_BLOCK_SIZE 64
 
@@ -568,7 +568,7 @@ static void check_action_pending(void)
 {
   if (local->suspended) return;
   if (callback_idx < entries_global.len || local->entries.len > 0)
-    caml_set_action_pending();
+    caml_set_action_pending(Caml_state);
 }
 
 void caml_memprof_set_suspended(int s)
@@ -805,7 +805,7 @@ static void shift_sample(uintnat n)
     caml_memprof_young_trigger -= n;
   else
     caml_memprof_young_trigger = Caml_state->young_alloc_start;
-  caml_update_young_limit();
+  caml_reset_young_limit(Caml_state);
 }
 
 /* Renew the next sample in the minor heap. This needs to be called
@@ -828,7 +828,7 @@ void caml_memprof_renew_minor_sample(void)
       caml_memprof_young_trigger = Caml_state->young_ptr - (geom - 1);
   }
 
-  caml_update_young_limit();
+  caml_reset_young_limit(Caml_state);
 }
 
 /* Called when exceeding the threshold for the next sample in the

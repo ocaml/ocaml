@@ -81,6 +81,12 @@
     facility is fully type-checked at compile time.
 *)
 
+(** {2 Note on concurrent use} *)
+
+(** Since values of type {!Scanning.in_channel} contain inner mutable states,
+    they are not safe to use concurrently without external synchronization.
+*)
+
 (** {1 Formatted input channel} *)
 
 module Scanning : sig
@@ -92,6 +98,8 @@ type in_channel
    A Scanf.Scanning.in_channel value is also called a {i formatted input
    channel} or equivalently a {i scanning buffer}.
    The type {!Scanning.scanbuf} below is an alias for [Scanning.in_channel].
+   Note that a [Scanning.in_channel] is not concurrency-safe: concurrent use
+   may produce arbitrary values or exceptions.
    @since 3.12.0
 *)
 
@@ -223,6 +231,9 @@ type ('a, 'b, 'c, 'd) scanner =
     @since 3.10.0
 *)
 
+type ('a, 'b, 'c, 'd) scanner_opt =
+     ('a, Scanning.in_channel, 'b, 'c, 'a -> 'd option, 'd) format6 -> 'c
+
 exception Scan_failure of string
 (** When the input can not be read according to the format string
     specification, formatted input functions typically raise exception
@@ -246,6 +257,11 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner
     argument corresponding to the [%r] conversions specified in the format
     string.
 *)
+
+val bscanf_opt : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner_opt
+(** Same as {!Scanf.bscanf}, but returns [None] in case of scanning failure.
+
+    @since 5.0 *)
 
 (** {1 Format string description} *)
 
@@ -296,7 +312,8 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner
     - [x] or [X]: reads an unsigned hexadecimal integer ([[0-9a-fA-F]+]).
     - [o]: reads an unsigned octal integer ([[0-7]+]).
     - [s]: reads a string argument that spreads as much as possible, until the
-      following bounding condition holds: {ul
+      following bounding condition holds:
+      {ul
       {- a whitespace has been found (see {!Scanf.space}),}
       {- a scanning indication (see scanning {!Scanf.indication}) has been
          encountered,}
@@ -463,10 +480,20 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner
 val sscanf : string -> ('a, 'b, 'c, 'd) scanner
 (** Same as {!Scanf.bscanf}, but reads from the given string. *)
 
+val sscanf_opt : string -> ('a, 'b, 'c, 'd) scanner_opt
+(** Same as {!Scanf.sscanf}, but returns [None] in case of scanning failure.
+
+    @since 5.0 *)
+
 val scanf : ('a, 'b, 'c, 'd) scanner
 (** Same as {!Scanf.bscanf}, but reads from the predefined formatted input
     channel {!Scanf.Scanning.stdin} that is connected to {!Stdlib.stdin}.
 *)
+
+val scanf_opt : ('a, 'b, 'c, 'd) scanner_opt
+(** Same as {!Scanf.scanf}, but returns [None] in case of scanning failure.
+
+    @since 5.0 *)
 
 val kscanf :
   Scanning.in_channel -> (Scanning.in_channel -> exn -> 'd) ->

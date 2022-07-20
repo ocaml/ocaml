@@ -23,7 +23,7 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/signals.h"
-#include "caml/eventlog.h"
+#include "caml/runtime_events.h"
 
 static const mlsize_t mlsize_t_max = -1;
 
@@ -68,8 +68,7 @@ CAMLprim value caml_floatarray_get(value array, value index)
   if (idx < 0 || idx >= Wosize_val(array) / Double_wosize)
     caml_array_bound_error();
   d = Double_flat_field(array, idx);
-  Alloc_small(res, Double_wosize, Double_tag,
-    { caml_handle_gc_interrupt_no_async_exceptions(); });
+  Alloc_small(res, Double_wosize, Double_tag, Alloc_small_enter_GC);
   Store_double_val(res, d);
   return res;
 }
@@ -128,8 +127,7 @@ CAMLprim value caml_floatarray_unsafe_get(value array, value index)
 
   CAMLassert (Tag_val(array) == Double_array_tag);
   d = Double_flat_field(array, idx);
-  Alloc_small(res, Double_wosize, Double_tag,
-    { caml_handle_gc_interrupt_no_async_exceptions(); });
+  Alloc_small(res, Double_wosize, Double_tag, Alloc_small_enter_GC);
   Store_double_val(res, d);
   return res;
 }
@@ -189,15 +187,14 @@ CAMLprim value caml_floatarray_create(value len)
     if (wosize == 0)
       return Atom(0);
     else
-      Alloc_small (result, wosize, Double_array_tag,
-        { caml_handle_gc_interrupt_no_async_exceptions(); });
+      Alloc_small (result, wosize, Double_array_tag, Alloc_small_enter_GC);
   }else if (wosize > Max_wosize)
     caml_invalid_argument("Float.Array.create");
   else {
     result = caml_alloc_shr (wosize, Double_array_tag);
   }
-  /* Give the GC a chance to run */
-  return caml_check_urgent_gc (result);
+  /* Give the GC a chance to run, and run memprof callbacks */
+  return caml_process_pending_actions_with_root(result);
 }
 
 /* [len] is a [value] representing number of words or floats */
@@ -243,7 +240,7 @@ CAMLprim value caml_make_vect(value len, value init)
       for (i = 0; i < size; i++) Field(res, i) = init;
     }
   }
-  /* Give the GC a chance to run */
+  /* Give the GC a chance to run, and run memprof callbacks */
   caml_process_pending_actions ();
   CAMLreturn (res);
 }
@@ -296,6 +293,7 @@ CAMLprim value caml_make_array(value init)
         double d = Double_val(Field(init, i));
         Store_double_flat_field(res, i, d);
       }
+      /* run memprof callbacks */
       caml_process_pending_actions();
       CAMLreturn (res);
     }
@@ -317,13 +315,14 @@ CAMLprim value caml_make_array(value init)
    sufficient to prevent smart compilers from coalesing the writes into vector
    writes, and hence prevent mixed-mode accesses. [MM].
    */
-static void wo_memmove (value* const dst, const value* const src,
+static void wo_memmove (volatile value* const dst,
+                        volatile const value* const src,
                         mlsize_t nvals)
 {
   mlsize_t i;
 
   if (caml_domain_alone ()) {
-    memmove (dst, src, nvals * sizeof (value));
+    memmove ((value*)dst, (value*)src, nvals * sizeof (value));
   } else {
     /* See memory model [MM] notes in memory.c */
     atomic_thread_fence(memory_order_acquire);
@@ -358,7 +357,7 @@ CAMLprim value caml_floatarray_blit(value a1, value ofs1, value a2, value ofs2,
 CAMLprim value caml_array_blit(value a1, value ofs1, value a2, value ofs2,
                                value n)
 {
-  value * src, * dst;
+  volatile value * src, * dst;
   intnat count;
 
 #ifdef FLAT_FLOAT_ARRAY
@@ -415,7 +414,7 @@ static value caml_array_gather(intnat num_arrays,
   mlsize_t wsize;
 #endif
   mlsize_t i, size, count, pos;
-  value * src;
+  volatile value * src;
 
   /* Determine total size and whether result array is an array of floats */
   size = 0;
@@ -454,8 +453,8 @@ static value caml_array_gather(intnat num_arrays,
     for (i = 0, pos = 0; i < num_arrays; i++) {
       /* [res] is freshly allocated, and no other domain has a reference to it.
          Hence, a plain [memcpy] is sufficient. */
-      memcpy(&Field(res, pos),
-             &Field(arrays[i], offsets[i]),
+      memcpy((value*)&Field(res, pos),
+             (value*)&Field(arrays[i], offsets[i]),
              lengths[i] * sizeof(value));
       pos += lengths[i];
     }
@@ -480,7 +479,7 @@ static value caml_array_gather(intnat num_arrays,
     /* Many caml_initialize in a row can create a lot of old-to-young
        refs.  Give the minor GC a chance to run if it needs to.
        Run memprof callbacks for the major allocation. */
-    res = caml_check_urgent_gc(res);
+    res = caml_process_pending_actions_with_root (res);
   }
   CAMLreturn (res);
 }
@@ -511,7 +510,7 @@ CAMLprim value caml_array_concat(value al)
   value l, res;
 
   /* Length of list = number of arrays */
-  for (n = 0, l = al; l != Val_int(0); l = Field(l, 1)) n++;
+  for (n = 0, l = al; l != Val_emptylist; l = Field(l, 1)) n++;
   /* Allocate extra storage if too many arrays */
   if (n <= STATIC_SIZE) {
     arrays = static_arrays;
@@ -532,7 +531,7 @@ CAMLprim value caml_array_concat(value al)
     }
   }
   /* Build the parameters to caml_array_gather */
-  for (i = 0, l = al; l != Val_int(0); l = Field(l, 1), i++) {
+  for (i = 0, l = al; l != Val_emptylist; l = Field(l, 1), i++) {
     arrays[i] = Field(l, 0);
     offsets[i] = 0;
     lengths[i] = caml_array_length(Field(l, 0));
@@ -555,7 +554,7 @@ CAMLprim value caml_array_fill(value array,
 {
   intnat ofs = Long_val(v_ofs);
   intnat len = Long_val(v_len);
-  value* fp;
+  volatile value* fp;
 
   /* This duplicates the logic of caml_modify.  Please refer to the
      implementation of that function for a description of GC

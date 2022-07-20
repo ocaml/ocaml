@@ -24,7 +24,7 @@
      open StdLabels
 
      let to_upper = String.map ~f:Char.uppercase_ascii
-     let seq len = List.init ~f:(function i -> i) ~len
+     let seq len = List.init ~f:(fun i -> i) ~len
      let everything = Array.create_matrix ~dimx:42 ~dimy:42 42
    ]}
 

@@ -37,7 +37,7 @@
 #include "caml/debugger.h"
 #include "caml/domain_state.h"
 #include "caml/dynlink.h"
-#include "caml/eventlog.h"
+#include "caml/runtime_events.h"
 #include "caml/exec.h"
 #include "caml/fail.h"
 #include "caml/fiber.h"
@@ -235,9 +235,9 @@ static char_os * read_section_to_os(int fd, struct exec_trailer *trail,
   if (read(fd, data, len) != len)
     caml_fatal_error("error reading section %s", name);
   data[len] = 0;
-  wlen = win_multi_byte_to_wide_char(data, len, NULL, 0);
+  wlen = caml_win32_multi_byte_to_wide_char(data, len, NULL, 0);
   wdata = caml_stat_alloc((wlen + 1)*sizeof(wchar_t));
-  win_multi_byte_to_wide_char(data, len, wdata, wlen);
+  caml_win32_multi_byte_to_wide_char(data, len, wdata, wlen);
   wdata[wlen] = 0;
   caml_stat_free(data);
   return wdata;
@@ -441,7 +441,7 @@ static void do_print_config(void)
 extern void caml_signal_thread(void * lpParam);
 #endif
 
-#if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
+#ifdef _MSC_VER
 
 /* PR 4887: avoid crash box of windows runtime on some system calls */
 extern void caml_install_invalid_parameter_handler(void);
@@ -465,7 +465,7 @@ CAMLexport void caml_main(char_os **argv)
 
   /* Determine options */
   caml_parse_ocamlrunparam();
-  CAML_EVENTLOG_INIT();
+
 #ifdef DEBUG
   caml_gc_message (-1, "### OCaml runtime: debug mode ###\n");
 #endif
@@ -475,7 +475,7 @@ CAMLexport void caml_main(char_os **argv)
   caml_init_codefrag();
 
   caml_init_locale();
-#if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
+#ifdef _MSC_VER
   caml_install_invalid_parameter_handler();
 #endif
   caml_init_custom_operations();
@@ -535,6 +535,10 @@ CAMLexport void caml_main(char_os **argv)
   caml_read_section_descriptors(fd, &trail);
   /* Initialize the abstract machine */
   caml_init_gc ();
+
+  /* bring up runtime_events after we've initialised the gc */
+  CAML_RUNTIME_EVENTS_INIT();
+
   Caml_state->external_raise = NULL;
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
@@ -556,9 +560,8 @@ CAMLexport void caml_main(char_os **argv)
   /* Load the globals */
   caml_seek_section(fd, &trail, "DATA");
   chan = caml_open_descriptor_in(fd);
-  /* TODO: do we need multicore Lock here */
-  caml_modify_generational_global_root(&caml_global_data, caml_input_val(chan));
-  /* TODO: do we need multicore Unlock here */
+  value global_data = caml_input_val(chan);
+  caml_modify_generational_global_root(&caml_global_data, global_data);
   caml_close_channel(chan); /* this also closes fd */
   caml_stat_free(trail.section);
   /* Initialize system libraries */
@@ -602,7 +605,7 @@ CAMLexport value caml_startup_code_exn(
 
   /* Determine options */
   caml_parse_ocamlrunparam();
-  CAML_EVENTLOG_INIT();
+
 #ifdef DEBUG
   caml_gc_message (-1, "### OCaml runtime: debug mode ###\n");
 #endif
@@ -614,7 +617,7 @@ CAMLexport value caml_startup_code_exn(
   caml_init_codefrag();
 
   caml_init_locale();
-#if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
+#ifdef _MSC_VER
   caml_install_invalid_parameter_handler();
 #endif
   caml_init_custom_operations();
@@ -622,6 +625,10 @@ CAMLexport value caml_startup_code_exn(
 
   /* Initialize the abstract machine */
   caml_init_gc ();
+
+  /* runtime_events has to be brought up after the gc */
+  CAML_RUNTIME_EVENTS_INIT();
+
   exe_name = caml_executable_name();
   if (exe_name == NULL) exe_name = caml_search_exe_in_path(argv[0]);
   Caml_state->external_raise = NULL;

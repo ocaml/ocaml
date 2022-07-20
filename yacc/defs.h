@@ -42,7 +42,7 @@
 /*  MAXSHORT is the largest value of a C short                 */
 /*  MINSHORT is the most negative value of a C short           */
 /*  MAXTABLE is the maximum table size                         */
-/*  BITS_PER_WORD is the number of bits in a C unsigned        */
+/*  BITS_PER_INT is the number of bits in a C unsigned         */
 /*  WORDSIZE computes the number of words needed to            */
 /*        store n bits                                         */
 /*  BIT returns the value of the n-th bit starting             */
@@ -54,10 +54,10 @@
 #define MINSHORT        SHRT_MIN
 #define MAXTABLE        32500
 
-#define BITS_PER_WORD        (8*sizeof(unsigned))
-#define        WORDSIZE(n)        (((n)+(BITS_PER_WORD-1))/BITS_PER_WORD)
-#define        BIT(r, n)        ((((r)[(n)/BITS_PER_WORD])>>((n)%BITS_PER_WORD))&1)
-#define        SETBIT(r, n)        ((r)[(n)/BITS_PER_WORD]|=(1<<((n)%BITS_PER_WORD)))
+#define BITS_PER_INT    (8*sizeof(unsigned))
+#define WORDSIZE(n)     (((n)+(BITS_PER_INT-1))/BITS_PER_INT)
+#define BIT(r, n)       ((((r)[(n)/BITS_PER_INT])>>((n)%BITS_PER_INT))&1)
+#define SETBIT(r, n)    ((r)[(n)/BITS_PER_INT]|=(1<<((n)%BITS_PER_INT)))
 
 /*  character names  */
 

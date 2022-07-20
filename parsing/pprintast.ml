@@ -28,7 +28,7 @@ open Longident
 open Parsetree
 open Ast_helper
 
-let prefix_symbols  = [ '!'; '?'; '~' ] ;;
+let prefix_symbols  = [ '!'; '?'; '~' ]
 let infix_symbols = [ '='; '<'; '>'; '@'; '^'; '|'; '&'; '+'; '-'; '*'; '/';
                       '$'; '%'; '#' ]
 
@@ -1068,19 +1068,17 @@ and module_type ctxt f x =
 
 and with_constraint ctxt f = function
   | Pwith_type (li, ({ptype_params= ls ;_} as td)) ->
-      let ls = List.map fst ls in
       pp f "type@ %a %a =@ %a"
-        (list (core_type ctxt) ~sep:"," ~first:"(" ~last:")")
-        ls longident_loc li (type_declaration ctxt) td
+        (type_params ctxt) ls
+        longident_loc li (type_declaration ctxt) td
   | Pwith_module (li, li2) ->
       pp f "module %a =@ %a" longident_loc li longident_loc li2;
   | Pwith_modtype (li, mty) ->
       pp f "module type %a =@ %a" longident_loc li (module_type ctxt) mty;
   | Pwith_typesubst (li, ({ptype_params=ls;_} as td)) ->
-      let ls = List.map fst ls in
       pp f "type@ %a %a :=@ %a"
-        (list (core_type ctxt) ~sep:"," ~first:"(" ~last:")")
-        ls longident_loc li
+        (type_params ctxt) ls
+        longident_loc li
         (type_declaration ctxt) td
   | Pwith_modsubst (li, li2) ->
       pp f "module %a :=@ %a" longident_loc li longident_loc li2

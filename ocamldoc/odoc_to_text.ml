@@ -144,6 +144,18 @@ class virtual info =
         []
         l
 
+    method text_of_alerts alerts =
+      List.concat_map (fun al ->
+          let payload =
+            match al.alert_payload with
+            | Some p -> [ Raw ". "; Raw p ]
+            | None -> []
+          in
+          [ Bold [ Raw Odoc_messages.alert; Raw " "; Raw al.alert_name ] ]
+          @ payload
+          @ [ Newline ]
+        ) alerts
+
     (** @return [text] value for a description, except for the i_params field. *)
     method text_of_info ?(block=true) info_opt =
       match info_opt with
@@ -167,6 +179,7 @@ class virtual info =
             (self#text_of_raised_exceptions info.i_raised_exceptions) @
             (self#text_of_return_opt info.i_return_value) @
             (self#text_of_sees info.i_sees) @
+            (self#text_of_alerts info.i_alerts) @
             (self#text_of_custom info.i_custom)
           in
           if block then

@@ -77,8 +77,8 @@ let libunix = make
 let libwin32unix = make
   "libwin32unix"
   (Actions_helpers.pass_or_skip (Ocamltest_config.libunix = Some false)
-    "libwin32unix available"
-    "libwin32unix not available")
+    "win32 variant of the unix library available"
+    "win32 variant of the unix library not available")
 
 let hassysthreads = make
   "hassysthreads"
@@ -181,11 +181,11 @@ let function_sections = make
      "Target supports function sections"
      "Target does not support function sections")
 
-let naked_pointers = make
-  "naked_pointers"
-  (Actions_helpers.pass_or_skip (Ocamltest_config.naked_pointers)
-     "Runtime system supports naked pointers"
-     "Runtime system does not support naked pointers")
+let frame_pointers = make
+  "frame_pointers"
+  (Actions_helpers.pass_or_skip (Ocamltest_config.frame_pointers)
+     "frame-pointers available"
+     "frame-pointers not available")
 
 let has_symlink = make
   "has_symlink"
@@ -308,7 +308,7 @@ let _ =
     arch_i386;
     arch_power;
     function_sections;
-    naked_pointers;
+    frame_pointers;
     file_exists;
     copy;
   ]

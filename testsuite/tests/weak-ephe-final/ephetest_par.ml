@@ -149,6 +149,13 @@ let run () =
   ()
 end
 
+let test_size =
+  try int_of_string (Sys.getenv "OCAML_TEST_SIZE")
+  with Not_found | Failure _ -> 0
+
+let _ =
+  if test_size <= 1 then exit 0
+
 let _ =
   for _ = 1 to 5 do
     let d = Array.init 3 (fun _ -> let module Mx = M () in Domain.spawn Mx.run) in

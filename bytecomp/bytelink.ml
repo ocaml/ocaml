@@ -314,7 +314,9 @@ let link_bytecode ?final_name tolink exec_name standalone =
     | Link_object(file_name, _) when file_name = exec_name ->
       raise (Error (Wrong_object_name exec_name));
     | _ -> ()) tolink;
-  Misc.remove_file exec_name; (* avoid permission problems, cf PR#8354 *)
+  (* Remove the output file if it exists to avoid permission problems (PR#8354),
+     but don't risk removing a special file (PR#11302). *)
+  Misc.remove_file exec_name;
   let outperm = if !Clflags.with_runtime then 0o777 else 0o666 in
   let outchan =
     open_out_gen [Open_wronly; Open_trunc; Open_creat; Open_binary]
@@ -344,9 +346,9 @@ let link_bytecode ?final_name tolink exec_name standalone =
          let runtime = make_absolute !Clflags.use_runtime in
          let runtime =
            (* shebang mustn't exceed 128 including the #! and \0 *)
-           if String.length runtime > 125 then
+           if String.length runtime > 125 || String.contains runtime ' ' then
              "/bin/sh\n\
-              exec \"" ^ runtime ^ "\" \"$0\" \"$@\""
+              exec " ^ Filename.quote runtime ^ " \"$0\" \"$@\""
            else
              runtime
          in

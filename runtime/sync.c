@@ -15,10 +15,6 @@
 
 #define CAML_INTERNALS
 
-#include <pthread.h>
-#include <signal.h>
-#include <stdio.h>
-
 #include "caml/alloc.h"
 #include "caml/custom.h"
 #include "caml/domain_state.h"
@@ -27,42 +23,13 @@
 
 #include "caml/signals.h"
 #include "caml/sync.h"
-#include "caml/eventlog.h"
+#include "caml/sys.h"
+#include "caml/runtime_events.h"
+
+/* System-dependent part */
+#include "sync_posix.h"
 
 /* Mutex operations */
-
-static int sync_mutex_create(sync_mutex * res)
-{
-  int rc;
-  pthread_mutexattr_t attr;
-  sync_mutex m;
-
-  rc = pthread_mutexattr_init(&attr);
-  if (rc != 0) goto error1;
-  rc = pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
-  if (rc != 0) goto error2;
-  m = caml_stat_alloc_noexc(sizeof(pthread_mutex_t));
-  if (m == NULL) { rc = ENOMEM; goto error2; }
-  rc = pthread_mutex_init(m, &attr);
-  if (rc != 0) goto error3;
-  pthread_mutexattr_destroy(&attr);
-  *res = m;
-  return 0;
-error3:
-  caml_stat_free(m);
-error2:
-  pthread_mutexattr_destroy(&attr);
-error1:
-  return rc;
-}
-
-static int sync_mutex_destroy(sync_mutex m)
-{
-  int rc;
-  rc = pthread_mutex_destroy(m);
-  caml_stat_free(m);
-  return rc;
-}
 
 static void caml_mutex_finalize(value wrapper)
 {
@@ -92,7 +59,17 @@ static const struct custom_operations caml_mutex_ops = {
   custom_fixed_length_default
 };
 
-CAMLprim value caml_ml_mutex_new(value unit)        /* ML */
+CAMLexport int caml_mutex_lock(sync_mutex mut)
+{
+  return sync_mutex_lock(mut);
+}
+
+CAMLexport int caml_mutex_unlock(sync_mutex mut)
+{
+  return sync_mutex_unlock(mut);
+}
+
+CAMLprim value caml_ml_mutex_new(value unit)
 {
   sync_mutex mut = NULL;
   value wrapper;
@@ -104,24 +81,24 @@ CAMLprim value caml_ml_mutex_new(value unit)        /* ML */
   return wrapper;
 }
 
-CAMLprim value caml_ml_mutex_lock(value wrapper)     /* ML */
+CAMLprim value caml_ml_mutex_lock(value wrapper)
 {
+  CAMLparam1(wrapper);
   sync_retcode retcode;
   sync_mutex mut = Mutex_val(wrapper);
 
   /* PR#4351: first try to acquire mutex without releasing the master lock */
-  if (sync_mutex_trylock(mut) == MUTEX_PREVIOUSLY_UNLOCKED) return Val_unit;
-  /* If unsuccessful, block on mutex */
-  Begin_root(wrapper)
+  if (sync_mutex_trylock(mut) != MUTEX_PREVIOUSLY_UNLOCKED) {
+    /* If unsuccessful, block on mutex */
     caml_enter_blocking_section();
     retcode = sync_mutex_lock(mut);
     caml_leave_blocking_section();
-  End_roots();
-  sync_check_error(retcode, "Mutex.lock");
-  return Val_unit;
+    sync_check_error(retcode, "Mutex.lock");
+  }
+  CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_ml_mutex_unlock(value wrapper)           /* ML */
+CAMLprim value caml_ml_mutex_unlock(value wrapper)
 {
   sync_retcode retcode;
   sync_mutex mut = Mutex_val(wrapper);
@@ -131,7 +108,7 @@ CAMLprim value caml_ml_mutex_unlock(value wrapper)           /* ML */
   return Val_unit;
 }
 
-CAMLprim value caml_ml_mutex_try_lock(value wrapper)           /* ML */
+CAMLprim value caml_ml_mutex_try_lock(value wrapper)
 {
   sync_mutex mut = Mutex_val(wrapper);
   sync_retcode retcode;
@@ -141,27 +118,7 @@ CAMLprim value caml_ml_mutex_try_lock(value wrapper)           /* ML */
   return Val_true;
 }
 
-
-/* Conditions operations */
-
-static int sync_condvar_create(sync_condvar * res)
-{
-  int rc;
-  sync_condvar c = caml_stat_alloc_noexc(sizeof(pthread_cond_t));
-  if (c == NULL) return ENOMEM;
-  rc = pthread_cond_init(c, NULL);
-  if (rc != 0) { caml_stat_free(c); return rc; }
-  *res = c;
-  return 0;
-}
-
-static int sync_condvar_destroy(sync_condvar c)
-{
-  int rc;
-  rc = pthread_cond_destroy(c);
-  caml_stat_free(c);
-  return rc;
-}
+/* Condition variables operations */
 
 static void caml_condition_finalize(value wrapper)
 {
@@ -191,7 +148,7 @@ static struct custom_operations caml_condition_ops = {
   custom_fixed_length_default
 };
 
-CAMLprim value caml_ml_condition_new(value unit)        /* ML */
+CAMLprim value caml_ml_condition_new(value unit)
 {
   value wrapper;
   sync_condvar cond = NULL;
@@ -203,32 +160,31 @@ CAMLprim value caml_ml_condition_new(value unit)        /* ML */
   return wrapper;
 }
 
-CAMLprim value caml_ml_condition_wait(value wcond, value wmut)     /* ML */
+CAMLprim value caml_ml_condition_wait(value wcond, value wmut)
 {
+  CAMLparam2(wcond, wmut);
   sync_condvar cond = Condition_val(wcond);
   sync_mutex mut = Mutex_val(wmut);
   sync_retcode retcode;
 
   CAML_EV_BEGIN(EV_DOMAIN_CONDITION_WAIT);
-  Begin_roots2(wcond, wmut)
-    caml_enter_blocking_section();
-    retcode = sync_condvar_wait(cond, mut);
-    caml_leave_blocking_section();
-  End_roots();
+  caml_enter_blocking_section();
+  retcode = sync_condvar_wait(cond, mut);
+  caml_leave_blocking_section();
   sync_check_error(retcode, "Condition.wait");
   CAML_EV_END(EV_DOMAIN_CONDITION_WAIT);
 
-  return Val_unit;
+  CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_ml_condition_signal(value wrapper)           /* ML */
+CAMLprim value caml_ml_condition_signal(value wrapper)
 {
   sync_check_error(sync_condvar_signal(Condition_val(wrapper)),
                  "Condition.signal");
   return Val_unit;
 }
 
-CAMLprim value caml_ml_condition_broadcast(value wrapper)           /* ML */
+CAMLprim value caml_ml_condition_broadcast(value wrapper)
 {
   sync_check_error(sync_condvar_broadcast(Condition_val(wrapper)),
                  "Condition.broadcast");

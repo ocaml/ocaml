@@ -20,7 +20,7 @@ let new_buffer_channel() =
   let oc = new_channel() in
   let rec buffer_process front rear =
     match (front, rear) with
-    | (["EOF"], []) -> Thread.exit ()
+    | (["EOF"], []) -> raise Thread.Exit
     | ([], []) -> buffer_process [sync(receive ic)] []
     | (hd::tl, _) ->
         select [

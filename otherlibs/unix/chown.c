@@ -18,7 +18,7 @@
 #include <caml/signals.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_chown(value path, value uid, value gid)
+CAMLprim value caml_unix_chown(value path, value uid, value gid)
 {
   CAMLparam1(path);
   char * p;
@@ -29,6 +29,6 @@ CAMLprim value unix_chown(value path, value uid, value gid)
   ret = chown(p, Int_val(uid), Int_val(gid));
   caml_leave_blocking_section();
   caml_stat_free(p);
-  if (ret == -1) uerror("chown", path);
+  if (ret == -1) caml_uerror("chown", path);
   CAMLreturn(Val_unit);
 }

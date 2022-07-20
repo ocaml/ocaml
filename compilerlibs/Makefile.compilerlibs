@@ -31,10 +31,10 @@ UTILS = \
   utils/identifiable.cmo \
   utils/numbers.cmo \
   utils/arg_helper.cmo \
-  utils/clflags.cmo \
-  utils/profile.cmo \
   utils/local_store.cmo \
   utils/load_path.cmo \
+  utils/clflags.cmo \
+  utils/profile.cmo \
   utils/terminfo.cmo \
   utils/ccomp.cmo \
   utils/warnings.cmo \
@@ -233,7 +233,6 @@ ASMCOMP = \
   file_formats/linear_format.cmo \
   asmcomp/schedgen.cmo \
   asmcomp/scheduling.cmo \
-  asmcomp/branch_relaxation_intf.cmo \
   asmcomp/branch_relaxation.cmo \
   asmcomp/emitaux.cmo \
   asmcomp/emit.cmo \
@@ -406,8 +405,14 @@ partialclean::
 $(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(OPTCOMP:.cmo=.cmx): ocamlopt$(EXE)
 $(OPTTOPLEVEL:.cmo=.cmx): ocamlopt$(EXE)
 
+ALL_CONFIG_CMO = utils/config_main.cmo utils/config_boot.cmo
 
-compilerlibs/ocamlcommon.cma: $(COMMON_CMI) $(COMMON)
+utils/config_%.mli: utils/config.mli
+	cp $^ $@
+
+beforedepend:: utils/config_main.mli utils/config_boot.mli
+
+compilerlibs/ocamlcommon.cma: $(COMMON_CMI) $(ALL_CONFIG_CMO) $(COMMON)
 	$(CAMLC) -a -linkall -o $@ $(COMMON)
 partialclean::
 	rm -f compilerlibs/ocamlcommon.cma

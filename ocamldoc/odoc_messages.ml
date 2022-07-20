@@ -281,8 +281,8 @@ let should_escape_at_sign = "The character @ has a special meaning in ocamldoc c
 If you want to write a single @, you must escape it as \\@."
 let bad_tree = "Incorrect tree structure."
 let not_a_valid_tag s = s^" is not a valid tag."
-let fun_without_param f = "Function "^f^" has no parameter.";;
-let method_without_param f = "Method "^f^" has no parameter.";;
+let fun_without_param f = "Function "^f^" has no parameter."
+let method_without_param f = "Method "^f^" has no parameter."
 let anonymous_parameters f = "Function "^f^" has anonymous parameters."
 let function_colon f = "Function "^f^": "
 let implicit_match_in_parameter = "Parameters contain implicit pattern matching."
@@ -352,7 +352,6 @@ let sig_end = "sig ... end"
 
 let current_generator_is_not kind =
   Printf.sprintf "Current generator is not a %s generator" kind
-;;
 
 (** Messages for verbose mode. *)
 
@@ -390,6 +389,7 @@ let version = "Version"
 let since = "Since"
 let before = "Before"
 let deprecated = "Deprecated"
+let alert = "Alert"
 let raises = "Raises"
 let returns = "Returns"
 let inherits = "Inherits"

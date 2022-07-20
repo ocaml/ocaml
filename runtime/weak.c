@@ -26,15 +26,13 @@
 #include "caml/memory.h"
 #include "caml/mlvalues.h"
 #include "caml/shared_heap.h"
+#include "caml/signals.h"
 #include "caml/weak.h"
 
 value caml_dummy[] =
   {(value)Make_header(0,Abstract_tag, NOT_MARKABLE),
    Val_unit};
 value caml_ephe_none = (value)&caml_dummy[1];
-
-#define None_val (Val_int(0))
-#define Some_tag 0
 
 struct caml_ephe_info* caml_alloc_ephe_info (void)
 {
@@ -63,7 +61,8 @@ CAMLprim value caml_ephe_create (value len)
   domain_state->ephe_info->live = res;
   for (i = CAML_EPHE_DATA_OFFSET; i < size; i++)
     Field(res, i) = caml_ephe_none;
-  return res;
+  /* run memprof callbacks */
+  return caml_process_pending_actions_with_root(res);
 }
 
 CAMLprim value caml_weak_create (value len)
@@ -214,8 +213,8 @@ CAMLprim value caml_ephe_unset_key (value e, value n)
 
 value caml_ephe_set_key_option (value e, value n, value el)
 {
-  if (el != None_val && Is_block (el)) {
-    return caml_ephe_set_key (e, n, Field(el, 0));
+  if (Is_some (el)) {
+    return caml_ephe_set_key (e, n, Some_val(el));
   } else {
     return caml_ephe_unset_key (e, n);
   }
@@ -245,13 +244,15 @@ static value ephe_get_field (value e, mlsize_t offset)
   elt = Field(e, offset);
 
   if (elt == caml_ephe_none) {
-    res = None_val;
+    res = Val_none;
   } else {
     elt = Field(e, offset);
     caml_darken (0, elt, 0);
-    res = caml_alloc_shr (1, Some_tag);
+    res = caml_alloc_shr (1, Tag_some);
     caml_initialize(&Field(res, 0), elt);
   }
+  /* run GC and memprof callbacks */
+  caml_process_pending_actions();
   CAMLreturn (res);
 }
 
@@ -279,7 +280,10 @@ static value ephe_get_field_copy (value e, mlsize_t offset)
 
   clean_field(e, offset);
   v = Field(e, offset);
-  if (v == caml_ephe_none) CAMLreturn (None_val);
+  if (v == caml_ephe_none) {
+    res = Val_none;
+    goto out;
+  }
 
   /** Don't copy custom_block #7279 */
   if (Is_block(v) && Tag_val(v) != Custom_tag) {
@@ -291,7 +295,7 @@ static value ephe_get_field_copy (value e, mlsize_t offset)
 
     clean_field(e, offset);
     v = Field(e, offset);
-    if (v == caml_ephe_none) CAMLreturn (None_val);
+    if (v == caml_ephe_none) CAMLreturn (Val_none);
 
     if (Tag_val(v) == Infix_tag) {
       infix_offs = Infix_offset_val(v);
@@ -317,8 +321,11 @@ static value ephe_get_field_copy (value e, mlsize_t offset)
   } else {
     Field(e, offset) = elt = v;
   }
-  res = caml_alloc_shr (1, Some_tag);
+  res = caml_alloc_shr (1, Tag_some);
   caml_initialize(&Field(res, 0), elt + infix_offs);
+ out:
+  /* run GC and memprof callbacks */
+  caml_process_pending_actions();
   CAMLreturn(res);
 }
 

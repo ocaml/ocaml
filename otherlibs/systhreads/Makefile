@@ -24,12 +24,7 @@ endif
 
 OC_CFLAGS += $(SHAREDLIB_CFLAGS) $(PTHREAD_CFLAGS)
 
-OC_CPPFLAGS += -I$(ROOTDIR)/runtime
-
-NATIVE_CPPFLAGS = \
-  -DNATIVE_CODE -DTARGET_$(ARCH) -DMODEL_$(MODEL) -DSYS_$(SYSTEM)
-
-LIBS = -nostdlib -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/$(UNIXLIB)
+LIBS = $(STDLIBFLAGS) -I $(ROOTDIR)/otherlibs/unix
 
 CAMLC=$(BEST_OCAMLC) $(LIBS)
 CAMLOPT=$(BEST_OCAMLOPT) $(LIBS)
@@ -95,7 +90,7 @@ $(LIBNAME).cmxa: $(THREADS_NCOBJS)
 # st_stubs.n.$(O) from the same source file st_stubs.c (it is compiled
 # twice, each time with different options).
 
-st_stubs.n.$(O): OC_CPPFLAGS += $(NATIVE_CPPFLAGS)
+st_stubs.n.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
 
 ifneq "$(COMPUTE_DEPS)" "false"
 st_stubs.%.$(O): st_stubs.c
@@ -116,6 +111,7 @@ clean: partialclean
 
 .PHONY: distclean
 distclean: clean
+	rm -f META
 
 INSTALL_THREADSLIBDIR=$(INSTALL_LIBDIR)/$(LIBNAME)
 
@@ -124,10 +120,9 @@ install:
 	  $(INSTALL_PROG) dllthreads$(EXT_DLL) "$(INSTALL_STUBLIBDIR)"; \
 	fi
 	$(INSTALL_DATA) libthreads.$(A) "$(INSTALL_LIBDIR)"
-	cd "$(INSTALL_LIBDIR)"; $(RANLIB) libthreads.$(A)
-	mkdir -p "$(INSTALL_THREADSLIBDIR)"
+	$(MKDIR) "$(INSTALL_THREADSLIBDIR)"
 	$(INSTALL_DATA) \
-	  $(CMIFILES) threads.cma \
+	  $(CMIFILES) threads.cma META \
 	  "$(INSTALL_THREADSLIBDIR)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
@@ -135,15 +130,13 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	  "$(INSTALL_THREADSLIBDIR)"
 	$(INSTALL_DATA) $(MLIFILES) "$(INSTALL_THREADSLIBDIR)"
 endif
-	$(INSTALL_DATA) threads.h "$(INSTALL_LIBDIR)/caml"
+	$(INSTALL_DATA) threads.h "$(INSTALL_INCDIR)"
 
 installopt:
 	$(INSTALL_DATA) libthreadsnat.$(A) "$(INSTALL_LIBDIR)"
-	cd "$(INSTALL_LIBDIR)"; $(RANLIB) libthreadsnat.$(A)
 	$(INSTALL_DATA) \
 	  $(THREADS_NCOBJS) threads.cmxa threads.$(A) \
 	  "$(INSTALL_THREADSLIBDIR)"
-	cd "$(INSTALL_THREADSLIBDIR)" && $(RANLIB) threads.$(A)
 
 %.cmi: %.mli
 	$(CAMLC) -c $(COMPFLAGS) $<
@@ -163,8 +156,8 @@ ifeq "$(COMPUTE_DEPS)" "true"
 include $(addprefix $(DEPDIR)/, $(DEP_FILES))
 endif
 
-%.n.$(O): OC_CPPFLAGS += $(NATIVE_CPPFLAGS)
-%.n.$(D): OC_CPPFLAGS += $(NATIVE_CPPFLAGS)
+%.n.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
+%.n.$(D): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
 
 define GEN_RULE
 $(DEPDIR)/%.$(1).$(D): %.c | $(DEPDIR)

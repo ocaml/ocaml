@@ -19,7 +19,7 @@ module String = Misc.Stdlib.String
 let ppf = Format.err_formatter
 (* Print the dependencies *)
 
-type file_kind = ML | MLI;;
+type file_kind = ML | MLI
 
 let load_path = ref ([] : (string * string array) list)
 let ml_synonyms = ref [".ml"]
@@ -194,7 +194,6 @@ let print_filename s =
     loop 0 0;
     print_bytes result;
   end
-;;
 
 let print_dependencies target_files deps =
   let pos = ref 0 in
@@ -559,7 +558,6 @@ let parse_map fname =
   end;
   let mm = Depend.(weaken_map (String.Set.singleton modname) mm) in
   module_map := String.Map.add modname mm !module_map
-;;
 
 (* Dependency processing *)
 
@@ -578,13 +576,11 @@ let process_dep_args dep_args = List.iter process_dep_arg dep_args
 
 let print_version () =
   Format.printf "ocamldep, version %s@." Sys.ocaml_version;
-  exit 0;
-;;
+  exit 0
 
 let print_version_num () =
   Format.printf "%s@." Sys.ocaml_version;
-  exit 0;
-;;
+  exit 0
 
 
 let run_main argv =
@@ -641,6 +637,8 @@ let run_main argv =
         " Generate dependencies for native plugin files (.cmxs targets)";
       "-slash", Arg.Set Clflags.force_slash,
         " (Windows) Use forward slash / instead of backslash \\ in file paths";
+      "-no-slash", Arg.Clear Clflags.force_slash,
+        " (Windows) Preserve any backslash \\ in file paths";
       "-sort", Arg.Set sort_files,
         " Sort files according to their dependencies";
       "-version", Arg.Unit print_version,

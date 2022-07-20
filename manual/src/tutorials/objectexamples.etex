@@ -752,7 +752,7 @@ points.
 % Conversely, the class "int_comparable" inherits from class
 %"comparable", but type "int_comparable" is not a subtype of "comparable".
 %\begin{caml_example}{toplevel}
-%function x -> (x : int_comparable :> comparable);;
+%fun x -> (x : int_comparable :> comparable);;
 %\end{caml_example}
 
 The domain of a coercion can often be omitted. For instance, one can
@@ -796,7 +796,7 @@ While class types "c1" and "c2" are different, both object types
 Yet, when the domain of a coercion is left implicit and its co-domain
 is an abbreviation of a known class type, then the class type, rather
 than the object type, is used to derive the coercion function. This
-allows leaving the domain implicit in most cases when coercing form a
+allows leaving the domain implicit in most cases when coercing from a
 subclass to its superclass.
 %
 The type of a coercion can always be seen as below:
@@ -832,7 +832,7 @@ abbreviation not being completely defined yet, and so its subtypes are not
 clearly known.  Then, a coercion "(_ :> c)" or "(_ : #c :> c)" is taken to be
 the identity function, as in
 \begin{caml_example}{toplevel}
-function x -> (x :> 'a);;
+fun x -> (x :> 'a);;
 \end{caml_example}
 As a consequence, if the coercion is applied to "self", as in the
 following example, the type of "self" is unified with the closed type

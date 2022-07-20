@@ -121,14 +121,18 @@ extern wchar_t *caml_win32_getenv(wchar_t const *);
 
 /* Windows Unicode support */
 
-CAMLextern int win_multi_byte_to_wide_char(const char* s,
-                                       int slen,
-                                       wchar_t *out,
-                                       int outlen);
-CAMLextern int win_wide_char_to_multi_byte(const wchar_t* s,
-                                       int slen,
-                                       char *out,
-                                       int outlen);
+CAMLextern int caml_win32_multi_byte_to_wide_char(const char* s,
+                                                  int slen,
+                                                  wchar_t *out,
+                                                  int outlen);
+CAMLextern int caml_win32_wide_char_to_multi_byte(const wchar_t* s,
+                                                  int slen,
+                                                  char *out,
+                                                  int outlen);
+
+/* Legacy names */
+#define win_multi_byte_to_wide_char caml_win32_multi_byte_to_wide_char
+#define win_wide_char_to_multi_byte caml_win32_wide_char_to_multi_byte
 
 CAMLextern int caml_win32_isatty(int fd);
 
@@ -137,6 +141,15 @@ CAMLextern void caml_expand_command_line (int *, wchar_t ***);
 CAMLextern clock_t caml_win32_clock(void);
 
 #endif /* _WIN32 */
+
+/* Returns the current value of a counter that increments once per nanosecond.
+   On systems that support it, this uses a monotonic timesource which ignores
+   changes in the system time (so that this counter increases by 1000000 each
+   millisecond, even if the system clock was set back by an hour during that
+   millisecond). This makes it useful for benchmarking and timeouts, but not
+   for telling the time. The units are always nanoseconds, but the achieved
+   resolution may be less. The starting point is unspecified. */
+extern int64_t caml_time_counter(void);
 
 extern void caml_init_os_params(void);
 

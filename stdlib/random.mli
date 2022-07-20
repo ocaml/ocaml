@@ -44,7 +44,7 @@ val self_init : unit -> unit
 
 val bits : unit -> int
 (** Return 30 random bits in a nonnegative integer.
-    @before 5.00.0 used a different algorithm
+    @before 5.0.0 used a different algorithm
                    (affects all the following functions)
 *)
 
@@ -60,7 +60,7 @@ val full_int : int -> int
      If [bound] is less than 2{^30}, [Random.full_int bound] is equal to
      {!Random.int}[ bound]. If [bound] is greater than 2{^30} (on 64-bit systems
      or non-standard environments, such as JavaScript), [Random.full_int]
-     returns a value, where {!Random.int} raises {!Invalid_argument}.
+     returns a value, where {!Random.int} raises {!Stdlib.Invalid_argument}.
 
     @since 4.13.0 *)
 
@@ -142,21 +142,26 @@ module State : sig
 
   val split : t -> t
   (** Draw a fresh PRNG state from the given PRNG state.
+      (The given PRNG state is modified.)
       The new PRNG is statistically independent from the given PRNG.
       Data can be drawn from both PRNGs, in any order, without risk of
       correlation.  Both PRNGs can be split later, arbitrarily many times.
-      @since 5.00.0 *)
+      @since 5.0.0 *)
 
 end
 
 val get_state : unit -> State.t
-(** Return the current state of the domain-local generator used by the basic
-    functions. *)
+(** [get_state()] returns a fresh copy of the current state of the
+    domain-local generator (which is used by the basic functions). *)
 
 val set_state : State.t -> unit
-(** Set the state of the domain-local generator used by the basic functions. *)
+(** [set_state s] updates the current state of the domain-local
+    generator (which is used by the basic functions) by copying
+    the state [s] into it. *)
 
 val split : unit -> State.t
 (** Draw a fresh PRNG state from the current state of the domain-local
-    generator used by the default functions.  See {!Random.State.split}.
-    @since 5.00.0 *)
+    generator used by the default functions.
+    (The state of the domain-local generator is modified.)
+    See {!Random.State.split}.
+    @since 5.0.0 *)

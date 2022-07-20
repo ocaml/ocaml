@@ -34,13 +34,12 @@
 # Basenames of the source files for the standard library (i.e. unprefixed and
 # with lowercase first letters). These must be listed in dependency order.
 STDLIB_MODULE_BASENAMES = \
-  camlinternalFormatBasics camlinternalAtomic \
-  stdlib either \
-  sys obj camlinternalLazy lazy \
+  camlinternalFormatBasics stdlib either \
+  sys obj atomic camlinternalLazy lazy \
   seq option result bool char uchar \
   list int bytes string unit marshal array float int32 int64 nativeint \
   lexing parsing set map stack queue buffer \
-  atomic mutex condition semaphore domain \
+  mutex condition semaphore domain \
   camlinternalFormat printf arg \
   printexc fun gc digest bigarray random hashtbl weak \
   format scanf callback camlinternalOO oo camlinternalMod ephemeron \

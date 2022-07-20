@@ -1,3 +1,4 @@
+# 2 "asmcomp/arm64/selection.ml"
 (**************************************************************************)
 (*                                                                        *)
 (*                                 OCaml                                  *)
@@ -168,6 +169,11 @@ method! select_operation op args dbg =
           (Ispecific (Isignext (64 - n)), [k])
         | _ -> super#select_operation op args dbg
       end
+  (* Use trivial addressing mode for atomic loads *)
+  | Cload {memory_chunk; mutability; is_atomic = true} ->
+      (Iload {memory_chunk; addressing_mode = Iindexed 0;
+              mutability; is_atomic = true},
+       args)
   (* Recognize floating-point negate and multiply *)
   | Cnegf ->
       begin match args with
