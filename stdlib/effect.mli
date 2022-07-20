@@ -20,17 +20,17 @@ type _ t = ..
 (** The type of effects. *)
 
 exception Unhandled : 'a t -> exn
-(** Exception raised when an effect is performed and there is no matching
-    handler for that effect. The argument is the unhandled effect. *)
+(** [Unhandled e] is raised when effect [e] is performed and there is no
+    handler for it. *)
 
 exception Continuation_already_taken
-(** Exception raised when a continuation is resumed with a [continue] or
-    [discontinue] but the continuation has already been resumed. *)
+(** Exception raised when a continuation is continued or discontinued more
+    than once. *)
 
 external perform : 'a t -> 'a = "%perform"
 (** [perform e] performs an effect [e].
 
-    @raise Unhandled if there is no active handler. *)
+    @raise Unhandled e if there is no handler for [e]. *)
 
 module Deep : sig
   (** Deep handlers *)
