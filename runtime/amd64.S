@@ -894,13 +894,13 @@ LBL(do_perform):
         movq    Handler_effect(%r11), %rsi  /* %rsi := effect handler */
         jmp     GCALL(caml_apply3)
 LBL(112):
-    /* Switch back to original performer before raising Unhandled_effect
+    /* Switch back to original performer before raising Effect.Unhandled
        (no-op unless this is a reperform) */
         movq    0(%rbx), %r10  /* load performer stack from continuation */
         subq    $1, %r10       /* r10 := Ptr_val(r10) */
         movq    Caml_state(current_stack), %rsi
         SWITCH_OCAML_STACKS
-    /* No parent stack. Raise Unhandled_effect. */
+    /* No parent stack. Raise Effect.Unhandled. */
         movq    %rax, %rdi
         LEA_VAR(caml_raise_unhandled_effect, %rax)
         jmp     LBL(caml_c_call)

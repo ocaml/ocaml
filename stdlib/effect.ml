@@ -15,13 +15,13 @@
 type _ t = ..
 external perform : 'a t -> 'a = "%perform"
 
-exception Unhandled_effect : 'a t -> exn
+exception Unhandled : 'a t -> exn
 exception Continuation_already_taken
 
 (* Register the exceptions so that the runtime can access it *)
 type _ t += Should_not_see_this__ : unit t
-let _ = Callback.register_exception "Effect.Unhandled_effect"
-          (Unhandled_effect Should_not_see_this__)
+let _ = Callback.register_exception "Effect.Unhandled"
+          (Unhandled Should_not_see_this__)
 let _ = Callback.register_exception "Effect.Continuation_already_taken"
           Continuation_already_taken
 

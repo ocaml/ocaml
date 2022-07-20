@@ -693,7 +693,7 @@ value caml_make_unhandled_effect_exn (value effect)
 
   exn = atomic_load(&caml_unhandled_effect_exn);
   if (exn == NULL) {
-    exn = caml_named_value("Effect.Unhandled_effect");
+    exn = caml_named_value("Effect.Unhandled");
     CAMLassert (exn);
     atomic_store(&caml_unhandled_effect_exn, exn);
   }

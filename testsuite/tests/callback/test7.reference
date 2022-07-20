@@ -3,5 +3,5 @@
 [C] Call c_to_caml
 [Caml] Enter c_to_caml
 [Caml] c_to_caml: perform effect
-[Caml] Caught Unhandled_effect, perform effect
+[Caml] Caught Effect.Unhandled, perform effect
 [Caml] Caught effect

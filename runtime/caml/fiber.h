@@ -168,7 +168,7 @@ struct c_stack_link {
  *  caml_perform captures the current OCaml stack in the continuation object
  *  provided and raises the effect by switching to the parent OCaml stack and
  *  then executing the handle_effect function. Should there be no parent OCaml
- *  stack then the Unhandled_effect exception is raised.
+ *  stack then the Effect.Unhandled exception is raised.
  *
  * caml_reperform effect continuation last_fiber
  *  caml_reperform is used to walk up the parent OCaml stacks to execute the
@@ -201,7 +201,7 @@ struct c_stack_link {
  *   PERFORM captures the current stack in a continuation object it allocates.
  *   The parent stack is then switched to and the handle_effect function for
  *   the parent stack is executed. If no parent stack exists then the
- *   Unhandled_effect exception is raised.
+ *   Effect.Unhandled exception is raised.
  *
  *  Preperform -> REPERFORMTERM
  *   REPERFORMTERM is used to walk up the parent OCaml stacks to execute the
