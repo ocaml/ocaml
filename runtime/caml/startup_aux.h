@@ -36,7 +36,6 @@ struct caml_params {
   uintnat verb_gc;
   uintnat parser_trace;
   uintnat trace_level;
-  uintnat runtime_events_enabled;
   uintnat runtime_events_log_wsize;
   uintnat verify_heap;
   uintnat print_magic;
