@@ -14,7 +14,10 @@ OCaml 4.14 maintenance branch
   (David Allsopp and Nicolás Ojeda Bär, review by Nicolás Ojeda Bär and
    Sebastien Hinderer)
 
-- #11358, #11378: Refactor the initialization of bytecode threading.
+- #11314, #11416: fix non-informative error message for module inclusion
+  (Florian Angeletti, report by Thierry Martinez, review by Gabriel Scherer)
+
+- #11358, #11379: Refactor the initialization of bytecode threading,
   This avoids a "dangling pointer" warning of GCC 12.1.
   (Xavier Leroy, report by Armaël Guéneau, review by Gabriel Scherer)
 
