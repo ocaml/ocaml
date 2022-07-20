@@ -211,11 +211,19 @@ end
 module Make (Arg : S) =
 struct
 
-  type 'a inter =
-    {cases : (int * int * int) array ;
-     actions : 'a array}
+  (* A representation of switches over intervals rather than discrete
+     values the [cases] array stores triples [(low, high, act)], where
+     [low] is the lowest input value of the interval, [high] is the
+     highest input value, and [act] is an index into the [actions]
+     array.
 
-  type 'a t_ctx =  {off : int ; arg : 'a}
+     (There can be substantially less actions than intervals if many
+     actions are shared.)
+  *)
+  type 'a inter = {
+    cases : (int * int * int) array ;
+    actions : 'a array
+  }
 
   let small_size_limit = 8
 
@@ -250,6 +258,13 @@ let prerr_inter i = Printf.fprintf stderr
     let _,r,_ = cases.(i) in
     r
 
+  (* a "cost" as a number of tests in the worst case;
+     [n] is the total number of tests
+     [ni] is the number of interval tests
+
+     If two choices have the same total number of tests, we will prefer
+     the one with less interval tests as they cost slightly more.
+  *)
   type ctests = {
     mutable n : int ;
     mutable ni : int ;
@@ -290,6 +305,10 @@ let pta chan t =
     t1.n <- t1.n + t2.n ;
     t1.ni <- t1.ni + t2.ni ;
 
+  (* Represents tests in a test sequence
+     [Inter (low, high)] is an interval test
+     [Sep bound] is [fun x -> x < bound]
+     [No] is when no tests are necessary. *)
   type t_ret = Inter of int * int  | Sep of int | No
 
 (*
@@ -484,6 +503,8 @@ let rec pkey chan  = function
     and _,(cmr,cright) = opt_count right in
     add_test ci cleft ;
     add_test ci cright ;
+    (* To compute a worst-case cost, we add the more costly of the
+       left/right branches to the running total. *)
     if less_tests cml cmr then
       add_test cm cmr
     else
@@ -604,6 +625,49 @@ let rec pkey chan  = function
       r := Sep lim ; rc := with_sep
     end ;
     !r, !rc
+
+  (* Consider the following sequence of interval tests:
+
+       if a in [2; 10] then
+         if a in [2; 4] then act24
+         else if a in [5; 8] then act58
+         else act810
+       else act_default
+
+     Our interval check works by substracting the interval lower
+     bound, then checking a range [0; n] using an unsigned
+     comparison. Naively we would generate code with one substraction
+     to [a] before each comparison:
+
+       let tmp1 = a - 2 in
+       if tmp1 <=u 8 then
+         let tmp2 = a - 2 in
+         if tmp2 <=u 2 then act24
+         else
+           let tmp3 = a - 5 in
+           if tmp3 <=u 3 then act58
+           else act810
+       else act_default
+
+     but we can avoid some substractions by working with the result
+     of the first substraction, instead of the original index [a],
+     inside the interval.
+
+       let a2 = a - 2 in
+       if a2 <=u 8 then
+         if a2 in <=u 2 then act24
+         else
+           let a5 = a2 - 3 in
+           if a5 <=u 3 then act58
+           else act810
+       else act_default
+
+     The type [t_ctx] represents an input argumnt "shifted" by a certain
+     (negative) offset by repeated substractions.
+
+     In the example above, [a5] would be represented with [off = -5].
+  *)
+  type 'a t_ctx =  {off : int ; arg : 'a}
 
   let make_if_test test arg i ifso ifnot =
     Arg.make_if
