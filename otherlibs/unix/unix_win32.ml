@@ -467,9 +467,11 @@ type dir_handle =
 external findfirst : string -> string * int = "caml_unix_findfirst"
 external findnext : int -> string= "caml_unix_findnext"
 
+let find_first_file_in_dir dirname = findfirst (Filename.concat dirname "*.*")
+
 let opendir dirname =
   try
-    let (first_entry, handle) = findfirst (Filename.concat dirname "*.*") in
+    let (first_entry, handle) = find_first_file_in_dir dirname in
     { dirname = dirname; handle = handle; entry_read = Dir_read first_entry }
   with End_of_file ->
     { dirname = dirname; handle = 0; entry_read = Dir_empty }
@@ -490,7 +492,7 @@ let closedir d =
 let rewinddir d =
   closedir d;
   try
-    let (first_entry, handle) = findfirst (d.dirname ^ "\\*.*") in
+    let (first_entry, handle) = find_first_file_in_dir d.dirname in
     d.handle <- handle; d.entry_read <- Dir_read first_entry
   with End_of_file ->
     d.handle <- 0; d.entry_read <- Dir_empty
