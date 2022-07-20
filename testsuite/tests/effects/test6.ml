@@ -13,12 +13,12 @@ let () =
   and ok3 = ref false in
   let f e r =
     try perform e with
-    | Unhandled_effect E -> r := not !r
+    | Unhandled E -> r := not !r
   in
   f E ok1;
   Printf.printf "%b\n%!" !ok1;
 
-  begin try f F ok2 with Unhandled_effect _ -> () end;
+  begin try f F ok2 with Unhandled _ -> () end;
   Printf.printf "%b\n%!" !ok2;
 
   try_with (f E) ok3 {
