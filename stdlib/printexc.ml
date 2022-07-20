@@ -52,6 +52,19 @@ let use_printers x =
     | [] -> None in
   conv (Atomic.get printers)
 
+let walk_sum_type x =
+  if Obj.tag x <> 0 then
+    ((Obj.magic (Obj.field x 0) : string), None)
+  else
+    let constructor =
+      (Obj.magic (Obj.field (Obj.field x 0) 0) : string) in
+    (constructor, Some (fields x))
+
+let string_of_sum_type (constructor, fields_opt) =
+  match fields_opt with
+  | None -> constructor
+  | Some f -> constructor ^ f
+
 let to_string_default = function
   | Out_of_memory -> "Out of memory"
   | Stack_overflow -> "Stack overflow"
@@ -63,12 +76,14 @@ let to_string_default = function
       sprintf locfmt file line char (char+6) "Undefined recursive module"
   | x ->
       let x = Obj.repr x in
-      if Obj.tag x <> 0 then
-        (Obj.magic (Obj.field x 0) : string)
-      else
-        let constructor =
-          (Obj.magic (Obj.field (Obj.field x 0) 0) : string) in
-        constructor ^ (fields x)
+      let (cname, fields) = walk_sum_type x in
+      match cname with
+      | "Stdlib.Effect.Unhandled" -> begin
+        let f = Obj.field x 1 in (* The effect, type Effect.t *)
+        sprintf "Stdlib.Effect.Unhandled(%s)"
+          (string_of_sum_type (walk_sum_type f))
+        end
+      | _ -> string_of_sum_type (cname, fields)
 
 let to_string e =
   match use_printers e with

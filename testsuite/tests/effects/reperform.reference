@@ -19,4 +19,4 @@
  !3]
  !4]
  !5]
-Stdlib.Effect.Unhandled(_)
+Stdlib.Effect.Unhandled(Reperform.E(42))
