@@ -74,16 +74,13 @@ let to_string_default = function
       sprintf locfmt file line char (char+6) "Assertion failed"
   | Undefined_recursive_module(file, line, char) ->
       sprintf locfmt file line char (char+6) "Undefined recursive module"
+  | CamlinternalEffect.Unhandled e ->
+      sprintf "Stdlib.Effect.Unhandled(%s)"
+        (string_of_sum_type (walk_sum_type (Obj.repr e)))
   | x ->
       let x = Obj.repr x in
       let (cname, fields) = walk_sum_type x in
-      match cname with
-      | "Stdlib.Effect.Unhandled" -> begin
-        let f = Obj.field x 1 in (* The effect, type Effect.t *)
-        sprintf "Stdlib.Effect.Unhandled(%s)"
-          (string_of_sum_type (walk_sum_type f))
-        end
-      | _ -> string_of_sum_type (cname, fields)
+      string_of_sum_type (cname, fields)
 
 let to_string e =
   match use_printers e with
