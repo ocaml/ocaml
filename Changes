@@ -27,6 +27,9 @@ Working version
   useful if you need extra security with GADTs.
   (Jacques Garrigue, review by Gabriel Scherer)
 
+- #11102: Speed up register allocation by permanently spilling registers
+  (Stephen Dolan, review by Xavier Leroy)
+
 ### Standard library:
 
 - #11128: Add In_channel.isatty, Out_channel.isatty.
