@@ -12,10 +12,10 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type _ t = ..
+type 'a t = 'a CamlinternalEffect.t = ..
 external perform : 'a t -> 'a = "%perform"
 
-exception Unhandled : 'a t -> exn
+exception Unhandled = CamlinternalEffect.Unhandled
 exception Continuation_already_taken
 
 (* Register the exceptions so that the runtime can access it *)

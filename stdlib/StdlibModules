@@ -40,8 +40,8 @@ STDLIB_MODULE_BASENAMES = \
   list int bytes string unit marshal array float int32 int64 nativeint \
   lexing parsing set map stack queue buffer \
   mutex condition semaphore domain \
-  camlinternalFormat printf arg \
-  printexc fun gc digest bigarray random hashtbl weak \
+  camlinternalFormat printf arg camlinternalEffect printexc \
+  fun gc digest bigarray random hashtbl weak \
   format scanf callback camlinternalOO oo camlinternalMod ephemeron \
   filename complex arrayLabels listLabels bytesLabels stringLabels moreLabels \
   stdLabels in_channel out_channel effect
