@@ -335,7 +335,7 @@ clean:
 	rm -f odoc_lexer.ml odoc_text_lexer.ml odoc_see_lexer.ml odoc_ocamlhtml.ml
 	rm -f odoc_parser.ml odoc_parser.mli odoc_text_parser.ml odoc_text_parser.mli
 	rm -f generators/*.cm[taiox] generators/*.a generators/*.lib generators/*.o generators/*.obj \
-        generators/*.cmx[as]
+        generators/*.cmx[as] generators/*.cmti
 
 .PHONY: distclean
 distclean: clean
