@@ -124,8 +124,10 @@ void caml_set_minor_heap_size (asize_t wsize)
   caml_domain_state* domain_state = Caml_state;
   struct caml_minor_tables *r = domain_state->minor_tables;
 
-  if (domain_state->young_ptr != domain_state->young_end)
+  if (domain_state->young_ptr != domain_state->young_end) {
+    CAML_EV_COUNTER (EV_C_FORCE_MINOR_SET_MINOR_HEAP_SIZE, 1);
     caml_minor_collection();
+  }
 
   if(caml_reallocate_minor_heap(wsize) < 0) {
     caml_fatal_error("Fatal error: No memory for minor heap");
