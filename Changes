@@ -38,16 +38,16 @@ Working version
 - #10789: Add `Stack.drop`
   (Léo Andrès, review by Gabriel Scherer)
 
-- #11362: List.map, List.mapi and List.map2 are tail-recursive and faster on
-  typical workloads.
+- #11362: Rewrite List.map, List.mapi and List.map2 using TRMC, making them
+  faster as well as tail-recursive.
   (Nicolás Ojeda Bär, review by Gabriel Scherer)
 
 - #11412: Add Sys.is_regular_file
   (Xavier Leroy, review by Anil Madhavapeddy, Nicolás Ojeda Bär, David Allsopp)
 
-- #11402: List.init, List.filter, List.filteri, List.filter_map, List.of_seq are
-  rewritten to use TRMC instead of an accumulator, making them faster and
-  halving their memory usage while remaining tail-recursive.
+- #11402: Rewrite List.init, List.filter, List.filteri, List.filter_map and
+  List.of_seq using TRMC instead of an accumulator, making them faster and
+  halving memory usage while remaining tail-recursive.
   (Nicolás Ojeda Bär, review by Xavier Leroy and Gabriel Scherer)
 
 ### Other libraries:
