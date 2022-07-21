@@ -45,6 +45,11 @@ Working version
 - #11412: Add Sys.is_regular_file
   (Xavier Leroy, review by Anil Madhavapeddy, Nicolás Ojeda Bär, David Allsopp)
 
+- #11402: List.init, List.filter, List.filteri, List.filter_map, List.of_seq are
+  rewritten to use TRMC instead of an accumulator, making them faster and
+  halving their memory usage while remaining tail-recursive.
+  (Nicolás Ojeda Bär, review by Xavier Leroy and Gabriel Scherer)
+
 ### Other libraries:
 
 ### Tools:
