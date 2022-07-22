@@ -114,18 +114,19 @@ val nan : float
     IEEE 754 standard.  As for floating-point comparisons,
     [=], [<], [<=], [>] and [>=] return [false] and [<>] returns [true]
     if one or both of their arguments is [nan].
-    Returns [quiet_nan] since 5.0.0. *)
+
+    [nan] is [quiet_nan] since 5.1; it was a signaling NaN before. *)
 
 val signaling_nan : float
 (** Signaling NaN. The corresponding signals do not raise OCaml exception,
-    but the value can be useful for interop with C libraries.
+    but the value can be useful for interoperability with C libraries.
 
-    @since 5.0.0 *)
+    @since 5.1 *)
 
 val quiet_nan : float
 (** Quiet NaN.
 
-    @since 5.0.0 *)
+    @since 5.1 *)
 
 val pi : float
 (** The constant pi. *)

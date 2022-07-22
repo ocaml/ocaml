@@ -654,7 +654,8 @@ val nan : float
     IEEE 754 standard.  As for floating-point comparisons,
     [=], [<], [<=], [>] and [>=] return [false] and [<>] returns [true]
     if one or both of their arguments is [nan].
-    Returns [quiet_nan] since 5.0.0. *)
+
+    [nan] is a quiet NaN since 5.1;  it was a signaling NaN before. *)
 
 val max_float : float
 (** The largest positive finite value of type [float]. *)
