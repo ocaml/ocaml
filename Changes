@@ -38,6 +38,10 @@ Working version
 - #10789: Add `Stack.drop`
   (Léo Andrès, review by Gabriel Scherer)
 
+* #10899: Change Stdlib.nan from signaling NaN to quiet NaN.
+  (Greta Yorsh, review by Xavier Leroy, Guillaume Melquiond and
+  Gabriel Scherer)
+
 - #11354: Hashtbl.find_all is now tail-recursive.
   (Fermín Reig, review by Gabriel Scherer)
 

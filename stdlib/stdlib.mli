@@ -648,11 +648,14 @@ val neg_infinity : float
 
 val nan : float
 (** A special floating-point value denoting the result of an
-   undefined operation such as [0.0 /. 0.0].  Stands for
-   'not a number'.  Any floating-point operation with [nan] as
-   argument returns [nan] as result.  As for floating-point comparisons,
-   [=], [<], [<=], [>] and [>=] return [false] and [<>] returns [true]
-   if one or both of their arguments is [nan]. *)
+    undefined operation such as [0.0 /. 0.0].  Stands for
+    'not a number'.  Any floating-point operation with [nan] as
+    argument returns [nan] as result, unless otherwise specified in
+    IEEE 754 standard.  As for floating-point comparisons,
+    [=], [<], [<=], [>] and [>=] return [false] and [<>] returns [true]
+    if one or both of their arguments is [nan].
+
+    [nan] is a quiet NaN since 5.1;  it was a signaling NaN before. *)
 
 val max_float : float
 (** The largest positive finite value of type [float]. *)
