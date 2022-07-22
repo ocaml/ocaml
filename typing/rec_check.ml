@@ -855,11 +855,13 @@ and modexp : Typedtree.module_expr -> term_judg =
       structure s
     | Tmod_functor (_, e) ->
       modexp e << Delay
-    | Tmod_apply (f, p, _) ->
+    | Tmod_apply (f, Some (p, _)) ->
       join [
         modexp f << Dereference;
         modexp p << Dereference;
       ]
+    | Tmod_apply (f, None) ->
+      modexp f << Dereference
     | Tmod_constraint (mexp, _, _, coe) ->
       let rec coercion coe k = match coe with
         | Tcoerce_none ->

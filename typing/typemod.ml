@@ -1817,7 +1817,7 @@ exception Not_a_path
 let rec path_of_module mexp =
   match mexp.mod_desc with
   | Tmod_ident (p,_) -> p
-  | Tmod_apply(funct, arg, _coercion) when !Clflags.applicative_functors ->
+  | Tmod_apply(funct, Some (arg, _coe)) when !Clflags.applicative_functors ->
       Papply(path_of_module funct, path_of_module arg)
   | Tmod_constraint (mexp, _, _, _) ->
       path_of_module mexp
@@ -2102,13 +2102,16 @@ type application_summary = {
   attributes: attributes;
   f_loc: Location.t; (* loc for F *)
   arg_is_syntactic_unit: bool;
-  arg: Typedtree.module_expr;
+  arg: Typedtree.module_expr option;
   arg_path: Path.t option;
-  shape: Shape.t
+  shape: Shape.t option;
 }
 
 let simplify_app_summary app_view =
-  let mty = app_view.arg.mod_type in
+  let mty = match app_view.arg with
+    | Some arg -> arg.mod_type
+    | None -> Mty_signature []
+  in
   match app_view.arg_is_syntactic_unit , app_view.arg_path with
   | true,   _ -> Includemod.Error.Unit, mty
   | false, Some p -> Includemod.Error.Named p, mty
@@ -2262,18 +2265,28 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
 and type_application loc strengthen funct_body env smod =
   let rec extract_application funct_body env sargs smod =
     match smod.pmod_desc with
-    | Pmod_apply(f, sarg) ->
+    | Pmod_apply(f, Some sarg) ->
         let arg, shape = type_module true funct_body None env sarg in
-        let summary =
-          { loc=smod.pmod_loc;
-            attributes=smod.pmod_attributes;
-            f_loc = f.pmod_loc;
-            arg_is_syntactic_unit = sarg.pmod_desc = Pmod_structure [];
-            arg;
-            arg_path = path_of_module arg;
-            shape
-          }
-        in
+        let summary = {
+          loc = smod.pmod_loc;
+          attributes = smod.pmod_attributes;
+          f_loc = f.pmod_loc;
+          arg_is_syntactic_unit = false;
+          arg = Some arg;
+          arg_path = path_of_module arg;
+          shape = Some shape;
+        } in
+        extract_application funct_body env (summary::sargs) f
+    | Pmod_apply(f, None) ->
+        let summary = {
+          loc = smod.pmod_loc;
+          attributes = smod.pmod_attributes;
+          f_loc = f.pmod_loc;
+          arg_is_syntactic_unit = true;
+          arg = None;
+          arg_path = None;
+          shape = None;
+        } in
         extract_application funct_body env (summary::sargs) f
     | _ -> smod, sargs
   in
@@ -2288,25 +2301,24 @@ and type_application loc strengthen funct_body env smod =
     (funct, funct_shape) args
 
 and type_one_application ~ctx:(apply_loc,md_f,args)
-    funct_body env (funct, funct_shape)  app_view =
+    funct_body env (funct, funct_shape) app_view =
   match Env.scrape_alias env funct.mod_type with
   | Mty_functor (Unit, mty_res) ->
       if not app_view.arg_is_syntactic_unit then
         raise (Error (app_view.f_loc, env, Apply_generative));
       if funct_body && Mtype.contains_type env funct.mod_type then
         raise (Error (apply_loc, env, Not_allowed_in_functor_body));
-      { mod_desc = Tmod_apply(funct, app_view.arg, Tcoerce_none);
+      { mod_desc = Tmod_apply(funct, None);
         mod_type = mty_res;
         mod_env = env;
         mod_attributes = app_view.attributes;
         mod_loc = funct.mod_loc },
-      Shape.app funct_shape ~arg:app_view.shape
+      Shape.app funct_shape ~arg:Shape.dummy_mod
   | Mty_functor (Named (param, mty_param), mty_res) as mty_functor ->
+      let arg = Option.get app_view.arg in
       let coercion =
-        try
-          Includemod.modtypes
-            ~loc:app_view.arg.mod_loc ~mark:Mark_both env
-            app_view.arg.mod_type mty_param
+        try Includemod.modtypes
+              ~loc:arg.mod_loc ~mark:Mark_both env arg.mod_type mty_param
         with Includemod.Error _ ->
           let args = List.map simplify_app_summary args in
           let mty_f = md_f.mod_type in
@@ -2329,8 +2341,7 @@ and type_one_application ~ctx:(apply_loc,md_f,args)
               | None -> env, mty_res
               | Some param ->
                   let env =
-                    Env.add_module ~arg:true param Mp_present
-                      app_view.arg.mod_type env
+                    Env.add_module ~arg:true param Mp_present arg.mod_type env
                   in
                   check_well_formed_module env app_view.loc
                     "the signature of this functor application" mty_res;
@@ -2356,12 +2367,12 @@ and type_one_application ~ctx:(apply_loc,md_f,args)
       in
       check_well_formed_module env apply_loc
         "the signature of this functor application" mty_appl;
-      { mod_desc = Tmod_apply(funct, app_view.arg, coercion);
+      { mod_desc = Tmod_apply(funct, Some (arg, coercion));
         mod_type = mty_appl;
         mod_env = env;
         mod_attributes = app_view.attributes;
         mod_loc = app_view.loc },
-      Shape.app ~arg:app_view.shape funct_shape
+      Shape.app ~arg:(Option.get app_view.shape) funct_shape
   | Mty_alias path ->
       raise(Error(app_view.f_loc, env, Cannot_scrape_alias path))
   | _ ->

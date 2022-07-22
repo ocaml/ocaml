@@ -799,10 +799,14 @@ and module_expr i ppf x =
       line i ppf "Tmod_functor \"%a\"\n" fmt_modname s;
       module_type i ppf mt;
       module_expr i ppf me;
-  | Tmod_apply (me1, me2, _) ->
+  | Tmod_apply (me1, Some (me2, _)) ->
       line i ppf "Tmod_apply\n";
       module_expr i ppf me1;
       module_expr i ppf me2;
+  | Tmod_apply (me1, None) ->
+      line i ppf "Tmod_apply\n";
+      module_expr i ppf me1;
+      line (i+1) ppf "()\n";
   | Tmod_constraint (me, _, Tmodtype_explicit mt, _) ->
       line i ppf "Tmod_constraint\n";
       module_expr i ppf me;
