@@ -806,6 +806,9 @@ class latex =
           self#latex_of_text fmt [Code "("];
           self#latex_of_module_kind fmt father k2;
           self#latex_of_text fmt [Code ")"]
+      | Module_apply_unit k1 ->
+          self#latex_of_module_kind fmt father k1;
+          self#latex_of_text fmt [Code "()"]
       | Module_with (k, s) ->
           (* TODO: modify when Module_with will be more detailed *)
           self#latex_of_module_type_kind fmt father k;

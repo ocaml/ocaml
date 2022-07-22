@@ -2422,7 +2422,7 @@ and is_nonexpansive_mod mexp =
           | Tstr_attribute _ -> true
         )
         str.str_items
-  | Tmod_apply _ -> false
+  | Tmod_apply _ | Tmod_apply_unit _ -> false
 
 and is_nonexpansive_opt = function
   | None -> true

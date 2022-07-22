@@ -805,6 +805,9 @@ and module_expr i ppf x =
       line i ppf "Tmod_apply\n";
       module_expr i ppf me1;
       module_expr i ppf me2;
+  | Tmod_apply_unit me1 ->
+      line i ppf "Tmod_apply_unit\n";
+      module_expr i ppf me1;
   | Tmod_constraint (me, _, Tmodtype_explicit mt, _) ->
       line i ppf "Tmod_constraint\n";
       module_expr i ppf me;

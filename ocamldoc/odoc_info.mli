@@ -523,6 +523,8 @@ module Module :
                      (** A functor, with its parameter and the rest of its definition *)
       | Module_apply of module_kind * module_kind
                      (** A module defined by application of a functor. *)
+      | Module_apply_unit of module_kind
+                     (** A generative application of a functor. *)
       | Module_with of module_type_kind * string
                      (** A module whose type is a with ... constraint.
                         Should appear in interface files only. *)

@@ -1325,10 +1325,9 @@ module_expr:
     | (* In a functor application, the actual argument must be parenthesized. *)
       me1 = module_expr me2 = paren_module_expr
         { Pmod_apply(me1, me2) }
-    | (* Application to unit is sugar for application to an empty structure. *)
-      me1 = module_expr LPAREN RPAREN
-        { (* TODO review mkmod location *)
-          Pmod_apply(me1, mkmod ~loc:$sloc (Pmod_structure [])) }
+    | (* Functor applied to unit. *)
+      me = module_expr LPAREN RPAREN
+        { Pmod_apply_unit me }
     | (* An extension. *)
       ex = extension
         { Pmod_extension ex }

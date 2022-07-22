@@ -436,8 +436,11 @@ and add_module_expr bv modl =
           | Some name -> String.Map.add name bound bv
       in
       add_module_expr bv modl
-  | Pmod_apply(mod1, mod2) ->
-      add_module_expr bv mod1; add_module_expr bv mod2
+  | Pmod_apply (mod1, mod2) ->
+      add_module_expr bv mod1;
+      add_module_expr bv mod2
+  | Pmod_apply_unit mod1 ->
+      add_module_expr bv mod1
   | Pmod_constraint(modl, mty) ->
       add_module_expr bv modl; add_modtype bv mty
   | Pmod_unpack(e) ->

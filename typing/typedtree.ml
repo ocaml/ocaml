@@ -252,6 +252,7 @@ and module_expr_desc =
   | Tmod_structure of structure
   | Tmod_functor of functor_parameter * module_expr
   | Tmod_apply of module_expr * module_expr * module_coercion
+  | Tmod_apply_unit of module_expr
   | Tmod_constraint of
       module_expr * Types.module_type * module_type_constraint * module_coercion
   | Tmod_unpack of expression * Types.module_type

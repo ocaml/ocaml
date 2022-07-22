@@ -42,10 +42,17 @@ module H : functor () -> S
 
 (* Alias *)
 module U = struct end;;
-module M = F(struct end);; (* ok *)
+module M1 = F();; (* ok *)
+module M2 = F(struct end);; (* accepted with a warning *)
 [%%expect{|
 module U : sig end
-module M : S
+module M1 : S
+Line 3, characters 14-24:
+3 | module M2 = F(struct end);; (* accepted with a warning *)
+                  ^^^^^^^^^^
+Warning 73 [generative-application-expects-unit]: A generative functor
+should be applied to '()'; using '(struct end)' is deprecated.
+module M2 : S
 |}];;
 module M = F(U);; (* fail *)
 [%%expect{|

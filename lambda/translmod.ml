@@ -519,22 +519,28 @@ and transl_module ~scopes cc rootpath mexp =
       oo_wrap mexp.mod_env true (fun () ->
         compile_functor ~scopes mexp cc rootpath loc) ()
   | Tmod_apply(funct, arg, ccarg) ->
-      let inlined_attribute, funct =
-        Translattribute.get_and_remove_inlined_attribute_on_module funct
-      in
-      oo_wrap mexp.mod_env true
-        (apply_coercion loc Strict cc)
-        (Lapply{
-           ap_loc=loc;
-           ap_func=transl_module ~scopes Tcoerce_none None funct;
-           ap_args=[transl_module ~scopes ccarg None arg];
-           ap_tailcall=Default_tailcall;
-           ap_inlined=inlined_attribute;
-           ap_specialised=Default_specialise})
+      let translated_arg = transl_module ~scopes ccarg None arg in
+      transl_apply ~scopes ~loc ~cc mexp.mod_env funct translated_arg
+  | Tmod_apply_unit funct ->
+      transl_apply ~scopes ~loc ~cc mexp.mod_env funct lambda_unit
   | Tmod_constraint(arg, _, _, ccarg) ->
       transl_module ~scopes (compose_coercions cc ccarg) rootpath arg
   | Tmod_unpack(arg, _) ->
       apply_coercion loc Strict cc (Translcore.transl_exp ~scopes arg)
+
+and transl_apply ~scopes ~loc ~cc mod_env funct translated_arg =
+  let inlined_attribute, funct =
+    Translattribute.get_and_remove_inlined_attribute_on_module funct
+  in
+  oo_wrap mod_env true
+    (apply_coercion loc Strict cc)
+    (Lapply{
+       ap_loc=loc;
+       ap_func=transl_module ~scopes Tcoerce_none None funct;
+       ap_args=[translated_arg];
+       ap_tailcall=Default_tailcall;
+       ap_inlined=inlined_attribute;
+       ap_specialised=Default_specialise})
 
 and transl_struct ~scopes loc fields cc rootpath {str_final_env; str_items; _} =
   transl_structure ~scopes loc fields cc rootpath str_final_env str_items
