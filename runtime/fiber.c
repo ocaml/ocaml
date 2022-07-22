@@ -672,16 +672,27 @@ CAMLprim value caml_drop_continuation (value cont)
 static const value * _Atomic caml_unhandled_effect_exn = NULL;
 static const value * _Atomic caml_continuation_already_taken_exn = NULL;
 
-CAMLexport void caml_raise_continuation_already_taken(void)
+static const value * cache_named_exception(const value * _Atomic * cache,
+                                           const char * name)
 {
   const value * exn;
-
-  exn = atomic_load(&caml_continuation_already_taken_exn);
+  exn = atomic_load_explicit(cache, memory_order_acquire);
   if (exn == NULL) {
-    exn = caml_named_value("Effect.Continuation_already_taken");
-    CAMLassert (exn);
-    atomic_store(&caml_continuation_already_taken_exn, exn);
+    exn = caml_named_value(name);
+    if (exn == NULL) {
+      fprintf(stderr, "Fatal error: exception %s\n", name);
+      exit(2);
+    }
+    atomic_store_explicit(cache, exn, memory_order_release);
   }
+  return exn;
+}
+
+CAMLexport void caml_raise_continuation_already_taken(void)
+{
+  const value * exn =
+    cache_named_exception(&caml_continuation_already_taken_exn,
+                          "Effect.Continuation_already_taken");
   caml_raise(*exn);
 }
 
@@ -689,14 +700,8 @@ value caml_make_unhandled_effect_exn (value effect)
 {
   CAMLparam1(effect);
   value res;
-  const value * exn;
-
-  exn = atomic_load(&caml_unhandled_effect_exn);
-  if (exn == NULL) {
-    exn = caml_named_value("Effect.Unhandled");
-    CAMLassert (exn);
-    atomic_store(&caml_unhandled_effect_exn, exn);
-  }
+  const value * exn =
+    cache_named_exception(&caml_unhandled_effect_exn, "Effect.Unhandled");
   res = caml_alloc_small(2,0);
   Field(res, 0) = *exn;
   Field(res, 1) = effect;
