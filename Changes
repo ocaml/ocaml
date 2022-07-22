@@ -38,6 +38,9 @@ Working version
 - #10789: Add `Stack.drop`
   (Léo Andrès, review by Gabriel Scherer)
 
+- #11354: Hashtbl.find_all is now tail-recursive.
+  (Fermín Reig, review by Gabriel Scherer)
+
 - #11362: Rewrite List.map, List.mapi and List.map2 using TRMC, making them
   faster as well as tail-recursive.
   (Nicolás Ojeda Bär, review by Gabriel Scherer)
