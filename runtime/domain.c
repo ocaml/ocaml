@@ -26,6 +26,9 @@
 #include <string.h>
 #ifdef HAS_GNU_GETAFFINITY_NP
 #include <sched.h>
+#ifdef HAS_PTHREAD_NP_H
+#include <pthread_np.h>
+#endif
 #endif
 #ifdef HAS_BSD_GETAFFINITY_NP
 #include <pthread_np.h>
@@ -37,6 +40,7 @@ typedef cpuset_t cpu_set_t;
 #endif
 #include "caml/alloc.h"
 #include "caml/backtrace.h"
+#include "caml/backtrace_prim.h"
 #include "caml/callback.h"
 #include "caml/debugger.h"
 #include "caml/domain.h"
@@ -1561,6 +1565,7 @@ CAMLexport void caml_acquire_domain_lock(void)
 {
   dom_internal* self = domain_self;
   caml_plat_lock(&self->domain_lock);
+  SET_Caml_state(self->state);
 }
 
 CAMLexport void caml_bt_enter_ocaml(void)
@@ -1577,6 +1582,7 @@ CAMLexport void caml_bt_enter_ocaml(void)
 CAMLexport void caml_release_domain_lock(void)
 {
   dom_internal* self = domain_self;
+  SET_Caml_state(NULL);
   caml_plat_unlock(&self->domain_lock);
 }
 
@@ -1736,9 +1742,12 @@ static void domain_terminate (void)
      sample at this point as the shared heap is gone. */
   caml_clear_gc_stats_sample(domain_state);
 
+  /* TODO: can this ever be NULL? can we remove this check? */
   if(domain_state->current_stack != NULL) {
     caml_free_stack(domain_state->current_stack);
   }
+  caml_free_backtrace_buffer(domain_state->backtrace_buffer);
+  caml_free_gc_regs_buckets(domain_state->gc_regs_buckets);
 
   /* signal the domain termination to the backup thread
      NB: for a program with no additional domains, the backup thread

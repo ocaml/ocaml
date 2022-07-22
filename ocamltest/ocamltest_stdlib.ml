@@ -31,10 +31,8 @@ module Filename = struct
   let path_sep = if Sys.win32 then ";" else ":"
   (* This function comes from otherlibs/unix/unix_win32.ml *)
   let maybe_quote f =
-    if String.contains f ' ' ||
-      String.contains f '\"' ||
-      String.contains f '\t' ||
-       f = ""
+    if f = ""
+    || String.exists (function ' ' | '\"' | '\t' -> true | _ -> false) f
     then Filename.quote f
     else f
 

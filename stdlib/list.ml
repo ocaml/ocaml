@@ -59,27 +59,17 @@ let rec rev_append l1 l2 =
 
 let rev l = rev_append l []
 
-let rec init_tailrec_aux acc i n f =
-  if i >= n then acc
-  else init_tailrec_aux (f i :: acc) (i+1) n f
-
-let rec init_aux i n f =
-  if i >= n then []
+let[@tail_mod_cons] rec init i last f =
+  if i > last then []
+  else if i = last then [f i]
   else
-    let r = f i in
-    r :: init_aux (i+1) n f
-
-let rev_init_threshold =
-  match Sys.backend_type with
-  | Sys.Native | Sys.Bytecode -> 10_000
-  (* We don't know the size of the stack, better be safe and assume it's
-     small. *)
-  | Sys.Other _ -> 50
+    let r1 = f i in
+    let r2 = f (i+1) in
+    r1 :: r2 :: init (i+2) last f
 
 let init len f =
   if len < 0 then invalid_arg "List.init" else
-  if len > rev_init_threshold then rev (init_tailrec_aux [] 0 len f)
-  else init_aux 0 len f
+  init 0 (len - 1) f
 
 let rec flatten = function
     [] -> []
@@ -254,30 +244,26 @@ let rec find_map f = function
        | None -> find_map f l
      end
 
-let find_all p =
-  let rec find accu = function
-  | [] -> rev accu
-  | x :: l -> if p x then find (x :: accu) l else find accu l in
-  find []
+let[@tail_mod_cons] rec find_all p = function
+  | [] -> []
+  | x :: l -> if p x then x :: find_all p l else find_all p l
 
 let filter = find_all
 
-let filteri p l =
-  let rec aux i acc = function
-  | [] -> rev acc
-  | x::l -> aux (i + 1) (if p i x then x::acc else acc) l
-  in
-  aux 0 [] l
+let[@tail_mod_cons] rec filteri p i = function
+  | [] -> []
+  | x::l ->
+      let i' = i + 1 in
+      if p i x then x :: filteri p i' l else filteri p i' l
 
-let filter_map f =
-  let rec aux accu = function
-    | [] -> rev accu
-    | x :: l ->
-        match f x with
-        | None -> aux accu l
-        | Some v -> aux (v :: accu) l
-  in
-  aux []
+let filteri p l = filteri p 0 l
+
+let[@tail_mod_cons] rec filter_map f = function
+  | [] -> []
+  | x :: l ->
+      match f x with
+      | None -> filter_map f l
+      | Some v -> v :: filter_map f l
 
 let concat_map f l =
   let rec aux f acc = function
@@ -597,14 +583,11 @@ let to_seq l =
   in
   aux l
 
-let of_seq seq =
-  let rec direct depth seq : _ list =
-    if depth=0
-    then
-      Seq.fold_left (fun acc x -> x::acc) [] seq
-      |> rev (* tailrec *)
-    else match seq() with
-      | Seq.Nil -> []
-      | Seq.Cons (x, next) -> x :: direct (depth-1) next
-  in
-  direct 500 seq
+let[@tail_mod_cons] rec of_seq seq =
+  match seq () with
+  | Seq.Nil -> []
+  | Seq.Cons (x1, seq) ->
+      begin match seq () with
+      | Seq.Nil -> [x1]
+      | Seq.Cons (x2, seq) -> x1 :: x2 :: of_seq seq
+      end

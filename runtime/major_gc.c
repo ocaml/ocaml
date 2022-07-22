@@ -628,7 +628,7 @@ static void mark_stack_push(struct mark_stack* stk, value block,
 }
 
 /* to fit scanning_action */
-static void mark_stack_push_act(void* state, value v, value* ignored)
+static void mark_stack_push_act(void* state, value v, volatile value* ignored)
 {
   if (Tag_val(v) < No_scan_tag && Tag_val(v) != Cont_tag)
     mark_stack_push(Caml_state->mark_stack, v, 0, NULL);
@@ -770,7 +770,7 @@ void caml_darken_cont(value cont)
   }
 }
 
-void caml_darken(void* state, value v, value* ignored) {
+void caml_darken(void* state, value v, volatile value* ignored) {
   header_t hd;
   if (!Is_markable (v)) return; /* foreign stack, at least */
 

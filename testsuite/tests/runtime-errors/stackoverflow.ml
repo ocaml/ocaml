@@ -1,6 +1,6 @@
 (* TEST
 flags = "-w -a"
-ocamlrunparam = "l=100000"
+ocamlrunparam += "l=100000"
 *)
 
 let rec f x =

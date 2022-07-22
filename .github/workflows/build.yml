@@ -8,30 +8,88 @@ on:
       - 'trunk'
   pull_request:
 
-jobs:
+# List of test directories for the debug-s4096 and linux-O0 jobs.
+# These directories are selected because of their tendencies to reach corner
+# cases in the runtime system.
+env:
+  PARALLEL_TESTS: parallel callback gc-roots weak-ephe-final
 
+jobs:
+# This job will do the initial build of the compiler (on linux), with flambda on.
+# We then upload the compiler tree as a build artifact to enable re-use in
+# subsequent jobs.
   build:
-    name: 'linux'
     runs-on: 'ubuntu-latest'
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: configure tree
+      - name: Configure tree
         run: |
-          MAKE_ARG=-j XARCH=x64 bash -xe tools/ci/actions/runner.sh configure
+          MAKE_ARG=-j XARCH=x64 CONFIG_ARG='--enable-flambda --enable-cmm-invariants --enable-dependency-generation --enable-native-toplevel' OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh configure
       - name: Build
         run: |
           MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh build
       - name: Prepare Artifact
         run: |
+          git config --local --unset http.https://github.com/.extraheader
           tar --zstd -cf /tmp/sources.tar.zstd .
-      - uses: actions/upload-artifact@v2
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v2
         with:
           name: compiler
           path: /tmp/sources.tar.zstd
           retention-days: 1
 
-  build-misc:
+# Full testsuite run, and other sanity checks
+  normal:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: compiler
+      - name: Unpack Artifact
+        run: |
+          tar --zstd -xf sources.tar.zstd
+          rm -f sources.tar.zstd
+      - name: Packages
+        run: |
+          sudo apt-get update -y && sudo apt-get install -y texlive-latex-extra texlive-fonts-recommended hevea sass
+      - name: Run the testsuite
+        run: |
+          MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh test
+      - name: Build API Documentation
+        run: |
+          MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh api-docs
+      - name: Install
+        run: |
+         MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh install
+      - name: Check for manual changes
+        id: manual
+        run: >-
+         tools/ci/actions/check-manual-modified.sh
+         '${{ github.ref }}'
+         '${{ github.event_name }}'
+         '${{ github.event.pull_request.base.ref }}'
+         '${{ github.event.pull_request.base.sha }}'
+         '${{ github.event.pull_request.head.ref }}'
+         '${{ github.event.pull_request.head.sha }}'
+         '${{ github.event.ref }}'
+         '${{ github.event.before }}'
+         '${{ github.event.ref }}'
+         '${{ github.event.after }}'
+         '${{ github.event.repository.full_name }}'
+      - name: Build the manual
+        run: |
+          MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh manual
+        if: steps.manual.outputs.changed == 'true'
+      - name: Other checks
+        run: |
+          MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh other-checks
+
+# MacOS build+testsuite run, and Linux O0 run.
+  others:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -40,9 +98,6 @@ jobs:
           - name: linux-O0
             os: ubuntu-latest
             config_arg: CFLAGS='-O0'
-          - name: linux-debug
-            os: ubuntu-latest
-            env: OCAMLRUNPARAM=v=0,V=1 USE_RUNTIME=d
           - name: macos
             os: macos-latest
     steps:
@@ -61,52 +116,51 @@ jobs:
         if: ${{ matrix.name != 'linux-O0' }}
         run: |
           bash -c 'SHOW_TIMINGS=1 tools/ci/actions/runner.sh test'
-      - name: Run the testsuite (linux-O0, parallel)
+      - name: Run the testsuite (linux-O0)
         if: ${{ matrix.name == 'linux-O0' }}
         env:
           OCAMLRUNPARAM: v=0,V=1
           USE_RUNTIME: d
         run: |
-          bash -xe tools/ci/actions/runner.sh test_multicore 1 "parallel" "lib-threads" "lib-systhreads"
+          for dir in $PARALLEL_TESTS; do \
+           bash -cxe "SHOW_TIMINGS=1 tools/ci/actions/runner.sh test_prefix $dir"; \
+          done
 
-  testsuite:
+# "extra" testsuite runs, reusing the previously built compiler tree.
+# debug: running the full testsuite with the
+#        debug runtime and minor heap verification.
+# debug-s4086: select testsuite run with the debug runtime and a small
+#              minor heap.
+  extra:
     needs: build
-    # https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idneeds    strategy:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         id:
+          - debug
           - debug-s4096
-          - taskset
-          - normal
-          - super
     steps:
-      - uses: actions/download-artifact@v2
+      - name: Download artifact
+        uses: actions/download-artifact@v2
         with:
           name: compiler
       - name: Unpack Artifact
         run: |
           tar --zstd -xf sources.tar.zstd
-      - name: Run the testsuite
-        if: ${{ matrix.id == 'normal' }}
+          rm -f sources.tar.zstd
+      - name: Run the testsuite (debug runtime)
+        if: ${{ matrix.id == 'debug' }}
+        env:
+          OCAMLRUNPARAM: v=0,V=1
+          USE_RUNTIME: d
         run: |
-          bash -xe tools/ci/actions/runner.sh test
-      - name: Run the testsuite (Super Charged)
-        if: ${{ matrix.id == 'super' }}
-        run: |
-          bash -xe tools/ci/actions/runner.sh test_multicore 3 "parallel" \
-          "callback" "gc-roots" "lib-threads" "lib-systhreads" \
-          "weak-ephe-final"
+          bash -cxe "SHOW_TIMINGS=1 tools/ci/actions/runner.sh test"
       - name: Run the testsuite (s=4096, debug runtime)
+        if: ${{ matrix.id == 'debug-s4096' }}
         env:
           OCAMLRUNPARAM: s=4096,v=0
           USE_RUNTIME: d
-        if: ${{ matrix.id == 'debug-s4096' }}
         run: |
-          bash -xe tools/ci/actions/runner.sh test_multicore 1 "parallel" \
-          "lib-threads" "lib-systhreads" "weak-ephe-final"
-      - name: Run the testsuite (taskset -c 0)
-        if: ${{ matrix.id == 'taskset' }}
-        run: |
-          bash -xe tools/ci/actions/runner.sh test_multicore 1 "parallel" \
-          "lib-threads" "lib-systhreads" "weak-ephe-final"
+          for dir in $PARALLEL_TESTS; do \
+            bash -cxe "SHOW_TIMINGS=1 tools/ci/actions/runner.sh test_prefix $dir"; \
+          done

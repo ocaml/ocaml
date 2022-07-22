@@ -31,10 +31,7 @@ open Emitenv
 let emit_label lbl =
   emit_string ".L"; emit_int lbl
 
-(* Symbols *)
-
-let emit_symbol s =
-  Emitaux.emit_symbol '$' s
+(* Calls and tail calls *)
 
 let emit_call s =
   if !Clflags.dlcode || !Clflags.pic_code

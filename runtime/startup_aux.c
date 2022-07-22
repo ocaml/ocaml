@@ -96,7 +96,7 @@ void caml_parse_ocamlrunparam(void)
       switch (*opt++){
       case 'b': scanmult (opt, &params.backtrace_enabled); break;
       case 'c': scanmult (opt, &params.cleanup_on_exit); break;
-      case 'e': scanmult (opt, &params.runtime_events_enabled); break;
+      case 'e': scanmult (opt, &params.runtime_events_log_wsize); break;
       case 'l': scanmult (opt, &params.init_max_stack_wsz); break;
       case 'M': scanmult (opt, &params.init_custom_major_ratio); break;
       case 'm': scanmult (opt, &params.init_custom_minor_ratio); break;

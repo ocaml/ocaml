@@ -403,13 +403,13 @@
         .text
 
 #if defined(FUNCTION_SECTIONS)
-        TEXT_SECTION(caml_hot__code_begin)
-        .globl  G(caml_hot__code_begin)
-G(caml_hot__code_begin):
+        TEXT_SECTION(caml_hot.code_begin)
+        .globl  G(caml_hot.code_begin)
+G(caml_hot.code_begin):
 
-        TEXT_SECTION(caml_hot__code_end)
-        .globl  G(caml_hot__code_end)
-G(caml_hot__code_end):
+        TEXT_SECTION(caml_hot.code_end)
+        .globl  G(caml_hot.code_end)
+G(caml_hot.code_end):
 #endif
 
 /******************************************************************************/
@@ -1049,9 +1049,9 @@ ENDFUNCTION(G(caml_assert_stack_invariants))
 G(caml_system__code_end):
 
         .data
-        .globl  G(caml_system__frametable)
+        .globl  G(caml_system.frametable)
         .align  EIGHT_ALIGN
-G(caml_system__frametable):
+G(caml_system.frametable):
         .quad   2           /* two descriptors */
         .quad   LBL(108)    /* return address into callback */
         .value  -1          /* negative frame size => use callback link */

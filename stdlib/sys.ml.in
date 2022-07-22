@@ -50,6 +50,7 @@ external runtime_parameters : unit -> string = "caml_runtime_parameters"
 
 external file_exists: string -> bool = "caml_sys_file_exists"
 external is_directory : string -> bool = "caml_sys_is_directory"
+external is_regular_file : string -> bool = "caml_sys_is_regular_file"
 external remove: string -> unit = "caml_sys_remove"
 external rename : string -> string -> unit = "caml_sys_rename"
 external getenv: string -> string = "caml_sys_getenv"

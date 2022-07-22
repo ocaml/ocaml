@@ -204,7 +204,7 @@ stdlib.cmxa: $(OBJS:.cmo=.cmx)
 
 .PHONY: distclean
 distclean: clean
-	rm -f sys.ml
+	rm -f sys.ml META
 
 .PHONY: clean
 clean::

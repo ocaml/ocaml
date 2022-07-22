@@ -88,24 +88,15 @@ let current_unit =
     ui_force_link = false;
     ui_export_info = default_ui_export_info }
 
+let concat_symbol unitname id =
+  unitname ^ "." ^ id
+
 let symbolname_for_pack pack name =
   match pack with
   | None -> name
-  | Some p ->
-      let b = Buffer.create 64 in
-      for i = 0 to String.length p - 1 do
-        match p.[i] with
-        | '.' -> Buffer.add_string b "__"
-        |  c  -> Buffer.add_char b c
-      done;
-      Buffer.add_string b "__";
-      Buffer.add_string b name;
-      Buffer.contents b
+  | Some p -> concat_symbol p name
 
 let unit_id_from_name name = Ident.create_persistent name
-
-let concat_symbol unitname id =
-  unitname ^ "__" ^ id
 
 let make_symbol ?(unitname = current_unit.ui_symbol) idopt =
   let prefix = "caml" ^ unitname in

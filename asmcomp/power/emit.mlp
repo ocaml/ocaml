@@ -75,10 +75,6 @@ let (trap_size, trap_handler_offset, trap_previous_offset) =
   | ELF64v1 -> (32, 56, 64)
   | ELF64v2 -> (32, 40, 48)
 
-(* Output a symbol *)
-
-let emit_symbol s = Emitaux.emit_symbol '.' s
-
 (* Output a label *)
 
 let label_prefix = ".L"

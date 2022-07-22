@@ -14,6 +14,22 @@ Working version
 
 ### Code generation and optimizations:
 
+- #8998, #11321, #11430: change mangling of OCaml long identifiers
+  from `camlModule__name_NNN` to `camlModule.name_NNN`.  The previous
+  mangling schema, using `__`, was ambiguous.
+  (Xavier Leroy, report by sliquister and Michael Bacarella,
+   review by Gabriel Scherer)
+
+- #10834: The -safer-matching option disables type-based optimizations of
+  pattern-matching compilation. This allows to produce a match failure if
+  a pattern-matching was wrongly assumed to be exhaustive. Since the
+  exhaustiveness check for GADTs has had bugs in the past, it may be
+  useful if you need extra security with GADTs.
+  (Jacques Garrigue, review by Gabriel Scherer)
+
+- #11102: Speed up register allocation by permanently spilling registers
+  (Stephen Dolan, review by Xavier Leroy)
+
 ### Standard library:
 
 - #11128: Add In_channel.isatty, Out_channel.isatty.
@@ -26,18 +42,35 @@ Working version
   (Greta Yorsh, review by Xavier Leroy, Guillaume Melquiond and
   Gabriel Scherer)
 
-- #11362: List.map, List.mapi and List.map2 are tail-recursive and faster on
-  typical workloads.
+- #11354: Hashtbl.find_all is now tail-recursive.
+  (Fermín Reig, review by Gabriel Scherer)
+
+- #11362: Rewrite List.map, List.mapi and List.map2 using TRMC, making them
+  faster as well as tail-recursive.
   (Nicolás Ojeda Bär, review by Gabriel Scherer)
 
+- #11412: Add Sys.is_regular_file
+  (Xavier Leroy, review by Anil Madhavapeddy, Nicolás Ojeda Bär, David Allsopp)
+
+- #11402: Rewrite List.init, List.filter, List.filteri, List.filter_map and
+  List.of_seq using TRMC instead of an accumulator, making them faster and
+  halving memory usage while remaining tail-recursive.
+  (Nicolás Ojeda Bär, review by Xavier Leroy and Gabriel Scherer)
 
 ### Other libraries:
 
 ### Tools:
 
+- #9290: Add a directive to switch off debugging in toplevel.
+  This allows to see optimized bytecode with -dlambda.
+  (Jacques Garrigue, review by Gabriel Scherer)
+
 ### Manual and documentation:
 
 ### Compiler user-interface and warnings:
+
+- #10818: Preserve integer literal formatting in type hint.
+  (Leonhard Markert, review by Gabriel Scherer and Florian Angeletti)
 
 - #11338: Turn some partial application warnings into hints.
   (Leo White, review by Stephen Dolan)
@@ -47,10 +80,17 @@ Working version
 - #11364: Allow `make -C testsuite promote` to take `TEST` and `LIST` variables
   (Antal Spector-Zabusky, review by Gabriel Scherer and David Allsopp)
 
+- #11446: document switch compilation (lambda/switch.ml)
+  (Gabriel Scherer, review by Luc Maranget and Vincent Laviron)
+
 ### Build system:
 
 ### Bug fixes:
 
+- #11302, #11412: `ocamlc` and `ocamlopt` should not remove generated files
+  when they are not regular files.
+  (Xavier Leroy, report by Thierry Martinez, review by
+   Anil Madhavapeddy, Nicolás Ojeda Bär, David Allsopp)
 - #10348: Expand GADT equations lazily during unification to avoid ambiguity
   (Jacques Garrigue, review by Leo White)
 
@@ -61,6 +101,16 @@ OCaml 5.0
 ### Language features:
 
 ### Runtime system:
+
+- #11400: Runtime events counters fixes
+  Fixes mismatch between OCaml and C APIs, removes events from 4.x that
+  are not present in the 5.0 GC and adds some missing probes.
+  (Sadiq Jaffer, review by Gabriel Scherer, Florian Angeletti)
+
+- #11368: Runtime events buffer size OCAMLRUNPARAMS fix
+  The runtime events buffer size can now be set via the 'e' OCAMLRUNPARAM.
+  This is previously mistakenly enabled/disabled tracing instead.
+  (Sadiq Jaffer, review by KC Sivaramakrishnan, David Allsopp, Damien Doligez)
 
 - #11308: Add environment variable to preserve runtime_events after exit
   If the environment variable OCAML_RUNTIME_EVENTS_PRESERVE exists then the
@@ -167,6 +217,21 @@ OCaml 5.0
 - #11144: Restore frame-pointers support for amd64
   (Fabrice Buoro, review by Frederic Bour and KC Sivaramakrishnan)
 
+* #11255: in the C interface, `&Field(v, i)` now has type `volatile value *`
+  instead of `value *` in OCaml 4.  This makes the memory model
+  for mixed OCaml/C code better defined, but can cause warnings or type
+  errors in user C code.
+  (KC Sivaramakrishnan, review by Xavier Leroy, Gabriel Scherer and
+  Guillaume Munch-Maccagnoni, additional discussions with Stephen
+  Dolan and Luc Maranget)
+
+- #5299, #4787, #11138, #11272: `Caml_state` is `NULL` when the domain lock is
+  not held. This allows to test if the current thread holds the lock of its
+  domain, and it makes it simpler to debug when one forgets to acquire
+  the lock.
+  (Guillaume Munch-Maccagnoni, review by Sadiq Jaffer, Xavier Leroy and
+  Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 - #10972: ARM64 multicore support: OCaml & C stack separation;
@@ -252,9 +317,9 @@ OCaml 5.0
   Unix module.
   (Nicolás Ojeda Bär, review by Anil Madhavapeddy)
 
-- #11309: Add Domain.recommended_domain_count.
-  (Christiano Haesbaert, review by David Allsopp, KC Sivaramakrishnan,
-  Gabriel Scherer, Nicolas Ojeda Bar)
+- #11309, #11424, #11427: Add Domain.recommended_domain_count.
+  (Christiano Haesbaert, Konstantin Belousov, review by David Allsopp,
+  KC Sivaramakrishnan, Gabriel Scherer, Nicolas Ojeda Bar)
 
 ### Tools:
 
@@ -346,9 +411,9 @@ OCaml 5.0
   from +compiler-libs, as the debugger does.
   (David Allsopp, review by Sébastien Hinderer)
 
-- #11007: META files for the stdlib, compiler-libs and other libraries (unix,
-  dynlink, str, runtime_events, threads, ocamldoc) are now installed along with
-  the compiler.
+- #11007, #11399: META files for the stdlib, compiler-libs and other libraries
+  (unix, dynlink, str, runtime_events, threads, ocamldoc) are now installed
+  along with the compiler.
   (David Allsopp, Florian Angeletti, Nicolás Ojeda Bär and Sébastien Hinderer,
    review by Daniel Bünzli, Kate Deplaix, Anil Madhavapeddy and Gabriel Scherer)
 
@@ -453,6 +518,13 @@ OCaml 5.0
   (David Allsopp and Nicolás Ojeda Bär, review by Nicolás Ojeda Bär and
    Sebastien Hinderer)
 
+- #11289, #11405: fix some leaks on systhread termination
+  (Fabrice Buoro, Enguerrand Decorne, Gabriel Scherer,
+   review by Xavier Leroy and Florian Angeletti, report by Romain Beauxis)
+
+- #11314, #11416: fix non-informative error message for module inclusion
+  (Florian Angeletti, report by Thierry Martinez, review by Gabriel Scherer)
+
 - #11358, #11379: Refactor the initialization of bytecode threading,
   This avoids a "dangling pointer" warning of GCC 12.1.
   (Xavier Leroy, report by Armaël Guéneau, review by Gabriel Scherer)
@@ -463,6 +535,9 @@ OCaml 5.0
 
 - #11392, #11392: assertion failure with -rectypes and external definitions
   (Gabriel Scherer, review by Florian Angeletti, report by Dmitrii Kosarev)
+
+- #11417: Fix regression allowing virtual methods in non-virtual classes.
+  (Leo White, review by Florian Angeletti)
 
 OCaml 4.14.0 (28 March 2022)
 ----------------------------

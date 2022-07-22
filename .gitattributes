@@ -42,7 +42,7 @@
 # the lines involved in the conflict, which is arguably worse
 #/Changes                 merge=union
 
-# No header for text files (would be too obtrusive).
+# No header for text and META files (would be too obtrusive).
 *.md                     typo.missing-header
 README*                  typo.missing-header
 VERSION                  typo.missing-header
@@ -50,7 +50,7 @@ VERSION                  typo.missing-header
 api_docgen/*.mld                typo.missing-header
 api_docgen/alldoc.tex           typo.missing-header
 tools/mantis2gh_stripped.csv typo.missing-header
-META                     typo.missing-header
+META.in                  typo.missing-header
 
 *.adoc                   typo.long-line=may typo.very-long-line=may
 

@@ -17,6 +17,7 @@
 
 #include "caml/alloc.h"
 #include "caml/backtrace.h"
+#include "caml/backtrace_prim.h"
 #include "caml/callback.h"
 #include "caml/custom.h"
 #include "caml/debugger.h"
@@ -65,9 +66,12 @@ struct caml_thread_struct {
   int domain_id;      /* The id of the domain to which this thread belongs */
   struct stack_info* current_stack;      /* saved Caml_state->current_stack */
   struct c_stack_link* c_stack;          /* saved Caml_state->c_stack */
+  /* Note: we do not save Caml_state->stack_cache, because it can
+     safely be shared between all threads on the same domain. */
   struct caml__roots_block *local_roots; /* saved value of local_roots */
   int backtrace_pos;           /* saved value of Caml_state->backtrace_pos */
-  code_t * backtrace_buffer;   /* saved value of Caml_state->backtrace_buffer */
+  backtrace_slot * backtrace_buffer;
+    /* saved value of Caml_state->backtrace_buffer */
   value backtrace_last_exn;
     /* saved value of Caml_state->backtrace_last_exn (root) */
   value * gc_regs;           /* saved value of Caml_state->gc_regs */
@@ -102,13 +106,24 @@ struct caml_thread_table {
 /* thread_table instance, up to Max_domains */
 static struct caml_thread_table thread_table[Max_domains];
 
+#define Thread_lock(dom_id) &thread_table[dom_id].thread_lock
+
+static void thread_lock_acquire(int dom_id)
+{
+  st_masterlock_acquire(Thread_lock(dom_id));
+}
+
+static void thread_lock_release(int dom_id)
+{
+  st_masterlock_release(Thread_lock(dom_id));
+}
+
+/* The remaining fields are accessed while holding the domain lock */
+
 /* The descriptor for the currently executing thread for this domain;
    also the head of a circular list of thread descriptors for this
    domain. */
 #define Active_thread thread_table[Caml_state->id].active_thread
-
-/* The master lock protecting this domain's thread chaining */
-#define Thread_main_lock thread_table[Caml_state->id].thread_lock
 
 /* Whether the "tick" thread is already running for this domain */
 #define Tick_thread_running thread_table[Caml_state->id].tick_thread_running
@@ -201,17 +216,18 @@ static void caml_thread_enter_blocking_section(void)
      of the current thread */
   caml_thread_save_runtime_state();
   /* Tell other threads that the runtime is free */
-  st_masterlock_release(&Thread_main_lock);
+  thread_lock_release(Caml_state->id);
 }
 
 static void caml_thread_leave_blocking_section(void)
 {
+  caml_thread_t th = st_tls_get(caml_thread_key);
   /* Wait until the runtime is free */
-  st_masterlock_acquire(&Thread_main_lock);
+  thread_lock_acquire(th->domain_id);
   /* Update Active_thread to point to the thread descriptor corresponding to
      the thread currently executing */
-  Active_thread = st_tls_get(caml_thread_key);
-  /* Restore the runtime state from the curr_thread descriptor */
+  Active_thread = th;
+  /* Restore the runtime state from the Active_thread descriptor */
   caml_thread_restore_runtime_state();
 }
 
@@ -256,6 +272,36 @@ static caml_thread_t caml_thread_new_info(void)
   return th;
 }
 
+/* Free the resources held by a thread. */
+void caml_thread_free_info(caml_thread_t th)
+{
+  /* the following fields do not need any specific cleanup:
+     descr: heap-allocated
+     c_stack: stack-allocated
+     local_roots: stack-allocated
+     backtrace_last_exn: heap-allocated
+     gc_regs:
+       must be empty for a terminated thread
+       (we assume that the C call stack must be empty at
+        thread-termination point, so there are no gc_regs buckets in
+        use in this variable nor on the stack)
+     exn_handler: stack-allocated
+     external_raise: stack-allocated
+     init_mask: stack-allocated
+  */
+  caml_free_stack(th->current_stack);
+  caml_free_backtrace_buffer(th->backtrace_buffer);
+
+  /* Remark: we could share gc_regs_buckets between threads on a same
+     domain, but this might break the invariant that it is always
+     non-empty at the point where we switch from OCaml to C, so we
+     would need to do something more complex when activating a thread
+     to restore this invariant. */
+  caml_free_gc_regs_buckets(th->gc_regs_buckets);
+
+  caml_stat_free(th);
+}
+
 /* Allocate a thread descriptor block. */
 
 static value caml_thread_new_descriptor(value clos)
@@ -271,10 +317,9 @@ static value caml_thread_new_descriptor(value clos)
   CAMLreturn(descr);
 }
 
-/* Remove a thread info block from the list of threads.
-   Free it and its stack resources. */
-
-static void caml_thread_remove_info(caml_thread_t th)
+/* Remove a thread info block from the list of threads
+   and free its resources. */
+static void caml_thread_remove_and_free(caml_thread_t th)
 {
   if (th->next == th)
     Active_thread = NULL; /* last OCaml thread exiting */
@@ -282,8 +327,8 @@ static void caml_thread_remove_info(caml_thread_t th)
     Active_thread = th->next;     /* PR#5295 */
   th->next->prev = th->prev;
   th->prev->next = th->next;
-  caml_free_stack(th->current_stack);
-  caml_stat_free(th);
+
+  caml_thread_free_info(th);
   return;
 }
 
@@ -297,8 +342,7 @@ static void caml_thread_reinitialize(void)
   th = Active_thread->next;
   while (th != Active_thread) {
     next = th->next;
-    caml_free_stack(th->current_stack);
-    caml_stat_free(th);
+    caml_thread_free_info(th);
     th = next;
   }
   Active_thread->next = Active_thread;
@@ -310,7 +354,9 @@ static void caml_thread_reinitialize(void)
   /* The master lock needs to be initialized again. This process will also be
      the effective owner of the lock. So there is no need to run
      st_masterlock_acquire (busy = 1) */
-  st_masterlock_init(&Thread_main_lock);
+  st_masterlock *m = Thread_lock(Caml_state->id);
+  m->init = 0; /* force initialization */
+  st_masterlock_init(m);
 }
 
 CAMLprim value caml_thread_join(value th);
@@ -349,11 +395,12 @@ CAMLprim value caml_thread_initialize_domain(value v)
   /* OS-specific initialization */
   st_initialize();
 
-  st_masterlock_init(&Thread_main_lock);
+  st_masterlock_init(Thread_lock(Caml_state->id));
 
   new_thread =
     (caml_thread_t) caml_stat_alloc(sizeof(struct caml_thread_struct));
 
+  new_thread->domain_id = Caml_state->id;
   new_thread->descr = caml_thread_new_descriptor(Val_unit);
   new_thread->next = new_thread;
   new_thread->prev = new_thread;
@@ -362,7 +409,6 @@ CAMLprim value caml_thread_initialize_domain(value v)
   st_tls_set(caml_thread_key, new_thread);
 
   Active_thread = new_thread;
-  Tick_thread_running = 0;
 
   CAMLreturn(Val_unit);
 }
@@ -445,29 +491,31 @@ static void caml_thread_stop(void)
   /* The following also sets Active_thread to a sane value in case the
      backup thread does a GC before the domain lock is acquired
      again. */
-  caml_thread_remove_info(Active_thread);
+  caml_thread_remove_and_free(Active_thread);
   caml_thread_restore_runtime_state();
 
   /* If no other OCaml thread remains, ask the tick thread to stop
      so that it does not prevent the whole process from exiting (#9971) */
   if (Active_thread == NULL) caml_thread_cleanup(Val_unit);
 
-  st_masterlock_release(&Thread_main_lock);
+  thread_lock_release(Caml_state->id);
 }
 
 /* Create a thread */
 
+/* the thread lock is not held when entering */
 static void * caml_thread_start(void * v)
 {
   caml_thread_t th = (caml_thread_t) v;
+  int dom_id = th->domain_id;
   value clos;
 
-  caml_init_domain_self(th->domain_id);
+  caml_init_domain_self(dom_id);
 
   st_tls_set(caml_thread_key, th);
 
-  st_masterlock_acquire(&Thread_main_lock);
-  Active_thread = st_tls_get(caml_thread_key);
+  thread_lock_acquire(dom_id);
+  Active_thread = th;
   caml_thread_restore_runtime_state();
 
 #ifdef POSIX_SIGNALS
@@ -549,7 +597,7 @@ CAMLprim value caml_thread_new(value clos)
 
   if (err != 0) {
     /* Creation failed, remove thread info block from list of threads */
-    caml_thread_remove_info(th);
+    caml_thread_remove_and_free(th);
     sync_check_error(err, "Thread.create");
   }
 
@@ -563,23 +611,24 @@ CAMLprim value caml_thread_new(value clos)
 
 /* Register a thread already created from C */
 
+#define Dom_c_threads 0
+
+/* the thread lock is not held when entering */
 CAMLexport int caml_c_thread_register(void)
 {
-  caml_thread_t th;
-  st_retcode err;
-
   /* Already registered? */
-  if (Caml_state == NULL) {
-    caml_init_domain_self(0);
-  };
   if (st_tls_get(caml_thread_key) != NULL) return 0;
+
+  CAMLassert(Caml_state == NULL);
+  caml_init_domain_self(Dom_c_threads);
+
   /* Take master lock to protect access to the runtime */
-  st_masterlock_acquire(&Thread_main_lock);
+  thread_lock_acquire(Dom_c_threads);
   /* Create a thread info block */
-  th = caml_thread_new_info();
+  caml_thread_t th = caml_thread_new_info();
   /* If it fails, we release the lock and return an error. */
   if (th == NULL) {
-    st_masterlock_release(&Thread_main_lock);
+    thread_lock_release(Dom_c_threads);
     return 0;
   }
   /* Add thread info block to the list of threads */
@@ -599,35 +648,32 @@ CAMLexport int caml_c_thread_register(void)
   th->descr = caml_thread_new_descriptor(Val_unit);  /* no closure */
 
   if (! Tick_thread_running) {
-    err = create_tick_thread();
+    st_retcode err = create_tick_thread();
     sync_check_error(err, "caml_register_c_thread");
     Tick_thread_running = 1;
   }
 
   /* Release the master lock */
-  st_masterlock_release(&Thread_main_lock);
+  thread_lock_release(Dom_c_threads);
   return 1;
 }
 
 /* Unregister a thread that was created from C and registered with
    the function above */
 
+/* the thread lock is not held when entering */
 CAMLexport int caml_c_thread_unregister(void)
 {
-  caml_thread_t th;
+  caml_thread_t th = st_tls_get(caml_thread_key);
 
-  /* If Caml_state is not set, this thread was likely not registered */
-  if (Caml_state == NULL) return 0;
-
-  th = st_tls_get(caml_thread_key);
-  /* Not registered? */
+  /* If this thread is not set, then it was not registered */
   if (th == NULL) return 0;
   /* Wait until the runtime is available */
-  st_masterlock_acquire(&Thread_main_lock);
+  thread_lock_acquire(Dom_c_threads);
   /*  Forget the thread descriptor */
   st_tls_set(caml_thread_key, NULL);
   /* Remove thread info block from list of threads, and free it */
-  caml_thread_remove_info(th);
+  caml_thread_remove_and_free(th);
 
   /* If no other OCaml thread remains, ask the tick thread to stop
      so that it does not prevent the whole process from exiting (#9971) */
@@ -637,7 +683,7 @@ CAMLexport int caml_c_thread_unregister(void)
     caml_thread_restore_runtime_state();
 
   /* Release the runtime */
-  st_masterlock_release(&Thread_main_lock);
+  thread_lock_release(Dom_c_threads);
   return 1;
 }
 
@@ -672,7 +718,9 @@ CAMLprim value caml_thread_uncaught_exception(value exn)
 
 CAMLprim value caml_thread_yield(value unit)
 {
-  if (atomic_load_acq(&Thread_main_lock.waiters) == 0) return Val_unit;
+  st_masterlock *m = Thread_lock(Caml_state->id);
+  if (st_masterlock_waiters(m) == 0)
+    return Val_unit;
 
   /* Do all the parts of a blocking section enter/leave except lock
      manipulation, which we'll do more efficiently in st_thread_yield. (Since
@@ -682,7 +730,7 @@ CAMLprim value caml_thread_yield(value unit)
 
   caml_raise_if_exception(caml_process_pending_signals_exn());
   caml_thread_save_runtime_state();
-  st_thread_yield(&Thread_main_lock);
+  st_thread_yield(m);
   Active_thread = st_tls_get(caml_thread_key);
   caml_thread_restore_runtime_state();
   caml_raise_if_exception(caml_process_pending_signals_exn());

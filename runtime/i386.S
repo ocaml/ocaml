@@ -98,13 +98,13 @@
 
         .text
 #if defined(FUNCTION_SECTIONS)
-        TEXT_SECTION(caml_hot__code_begin)
-        .globl  G(caml_hot__code_begin)
-G(caml_hot__code_begin):
+        TEXT_SECTION(caml_hot.code_begin)
+        .globl  G(caml_hot.code_begin)
+G(caml_hot.code_begin):
 
-        TEXT_SECTION(caml_hot__code_end)
-        .globl  G(caml_hot__code_end)
-G(caml_hot__code_end):
+        TEXT_SECTION(caml_hot.code_end)
+        .globl  G(caml_hot.code_end)
+G(caml_hot.code_end):
 #endif
 
 /* Allocation */
@@ -422,8 +422,8 @@ FUNCTION(caml_ml_array_bound_error)
 G(caml_system__code_end):
 
         .data
-        .globl  G(caml_system__frametable)
-G(caml_system__frametable):
+        .globl  G(caml_system.frametable)
+G(caml_system.frametable):
         .long   1               /* one descriptor */
         .long   LBL(107)        /* return address into callback */
 #ifndef SYS_solaris
