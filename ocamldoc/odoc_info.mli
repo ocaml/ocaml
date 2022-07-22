@@ -521,7 +521,7 @@ module Module :
       | Module_alias of module_alias (** Complete name and corresponding module if we found it *)
       | Module_functor of module_parameter * module_kind
                      (** A functor, with its parameter and the rest of its definition *)
-      | Module_apply of module_kind * module_kind
+      | Module_apply of module_kind * module_kind option
                      (** A module defined by application of a functor. *)
       | Module_with of module_type_kind * string
                      (** A module whose type is a with ... constraint.

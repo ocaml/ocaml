@@ -50,7 +50,7 @@ and module_kind =
     Module_struct of module_element list
   | Module_alias of module_alias
   | Module_functor of module_parameter * module_kind
-  | Module_apply of module_kind * module_kind
+  | Module_apply of module_kind * module_kind option
   | Module_with of module_type_kind * string
   | Module_constraint of module_kind * module_type_kind
   | Module_typeof of string

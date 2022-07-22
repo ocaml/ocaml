@@ -338,9 +338,12 @@ let rec associate_in_module module_list (acc_b_modif, acc_incomplete_top_module_
             mt_is_interface = false ; mt_file = ""; mt_kind = Some tk ;
             mt_loc = Odoc_types.dummy_loc }
 
-    | Module_apply (k1, k2) ->
+    | Module_apply (k1, Some k2) ->
         let (acc_b2, acc_inc2, acc_names2) = iter_kind (acc_b, acc_inc, acc_names) k1 in
         iter_kind (acc_b2, acc_inc2, acc_names2) k2
+
+    | Module_apply (k1, None) ->
+        iter_kind (acc_b, acc_inc, acc_names) k1
 
     | Module_constraint (k, tk) ->
         let (acc_b2, acc_inc2, acc_names2) = iter_kind (acc_b, acc_inc, acc_names) k in
@@ -935,9 +938,13 @@ and assoc_comments_module_kind parent_name module_list mk =
   | Module_alias _
   | Module_functor _ ->
       mk
-  | Module_apply (mk1, mk2) ->
-      Module_apply (assoc_comments_module_kind parent_name module_list mk1,
-                    assoc_comments_module_kind parent_name module_list mk2)
+  | Module_apply (mk1, Some mk2) ->
+      Module_apply
+        (assoc_comments_module_kind parent_name module_list mk1,
+         Some (assoc_comments_module_kind parent_name module_list mk2))
+  | Module_apply (mk1, None) ->
+      Module_apply
+        (assoc_comments_module_kind parent_name module_list mk1, None)
   | Module_with (mtk, s) ->
       Module_with (assoc_comments_module_type_kind parent_name module_list mtk, s)
   | Module_constraint (mk1, mtk) ->

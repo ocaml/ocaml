@@ -543,11 +543,13 @@ class virtual to_text =
           | Some (Modtype mt) ->
               [Code ((if with_def_syntax then " = " else "")^mt.mt_name)]
           )
-      | Module_apply (k1, k2) ->
+      | Module_apply (k1, ok2) ->
           (if with_def_syntax then [Code " = "] else []) @
           (self#text_of_module_kind ~with_def_syntax: false k1) @
           [Code " ( "] @
-          (self#text_of_module_kind ~with_def_syntax: false k2) @
+          (match ok2 with
+           | None -> []
+           | Some k2 -> self#text_of_module_kind ~with_def_syntax: false k2) @
           [Code " ) "]
 
       | Module_with (tk, code) ->

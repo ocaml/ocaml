@@ -1412,12 +1412,12 @@ class html =
           self#html_of_module_kind b father ?modu k;
           if not !html_short_functors then
             bs b "</div>"
-      | Module_apply (k1, k2) ->
+      | Module_apply (k1, ok2) ->
           (* TODO: application is not correct in a .mli.
              What to do -> print typedtree module_type    *)
           self#html_of_module_kind b father k1;
           self#html_of_text b [Code "("];
-          self#html_of_module_kind b father k2;
+          Option.iter (self#html_of_module_kind b father) ok2;
           self#html_of_text b [Code ")"]
       | Module_with (k, s) ->
           (* TODO: modify when Module_with will be more detailed *)

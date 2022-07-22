@@ -1799,11 +1799,11 @@ module Analyser =
            let kind = m_base2.m_kind in
            { m_base with m_kind = Module_functor (param, kind) }
 
-      | (Parsetree.Pmod_apply (p_module_expr1, p_module_expr2),
-         Typedtree.Tmod_apply (tt_module_expr1, tt_module_expr2, _))
-      | (Parsetree.Pmod_apply (p_module_expr1, p_module_expr2),
+      | (Parsetree.Pmod_apply (p_module_expr1, Some p_module_expr2),
+         Typedtree.Tmod_apply (tt_module_expr1, Some (tt_module_expr2, _)))
+      | (Parsetree.Pmod_apply (p_module_expr1, Some p_module_expr2),
          Typedtree.Tmod_constraint
-           ({ Typedtree.mod_desc = Typedtree.Tmod_apply (tt_module_expr1, tt_module_expr2, _)}, _,
+           ({ Typedtree.mod_desc = Typedtree.Tmod_apply (tt_module_expr1, Some (tt_module_expr2, _))}, _,
             _, _)
         ) ->
           let m1 = analyse_module
@@ -1822,7 +1822,24 @@ module Analyser =
               p_module_expr2
               tt_module_expr2
           in
-          { m_base with m_kind = Module_apply (m1.m_kind, m2.m_kind) }
+          { m_base with m_kind = Module_apply (m1.m_kind, Some m2.m_kind) }
+
+      | (Parsetree.Pmod_apply (p_module_expr1, None),
+         Typedtree.Tmod_apply (tt_module_expr1, None))
+      | (Parsetree.Pmod_apply (p_module_expr1, None),
+         Typedtree.Tmod_constraint
+           ({ Typedtree.mod_desc = Typedtree.Tmod_apply (tt_module_expr1, None)}, _,
+            _, _)
+        ) ->
+          let m1 = analyse_module
+              env
+              current_module_name
+              module_name
+              None
+              p_module_expr1
+              tt_module_expr1
+          in
+          { m_base with m_kind = Module_apply (m1.m_kind, None) }
 
       | (Parsetree.Pmod_constraint (p_module_expr2, p_modtype),
          Typedtree.Tmod_constraint (tt_module_expr2, tt_modtype, _, _)) ->
