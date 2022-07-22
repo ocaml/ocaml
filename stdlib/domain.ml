@@ -148,7 +148,7 @@ let first_spawn_function = ref (fun () -> ())
 
 let before_first_spawn f =
   if Atomic.get first_domain_spawned then
-    raise (Invalid_argument "First domain already spawned")
+    raise (Invalid_argument "first domain already spawned")
   else begin
     let old_f = !first_spawn_function in
     let new_f () = old_f (); f () in
