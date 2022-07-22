@@ -518,7 +518,7 @@ and transl_module ~scopes cc rootpath mexp =
   | Tmod_functor _ ->
       oo_wrap mexp.mod_env true (fun () ->
         compile_functor ~scopes mexp cc rootpath loc) ()
-  | Tmod_apply(funct, arg, ccarg) ->
+  | Tmod_apply(funct, Some (arg, ccarg)) ->
       let inlined_attribute, funct =
         Translattribute.get_and_remove_inlined_attribute_on_module funct
       in
@@ -528,6 +528,19 @@ and transl_module ~scopes cc rootpath mexp =
            ap_loc=loc;
            ap_func=transl_module ~scopes Tcoerce_none None funct;
            ap_args=[transl_module ~scopes ccarg None arg];
+           ap_tailcall=Default_tailcall;
+           ap_inlined=inlined_attribute;
+           ap_specialised=Default_specialise})
+  | Tmod_apply(funct, None) ->
+      let inlined_attribute, funct =
+        Translattribute.get_and_remove_inlined_attribute_on_module funct
+      in
+      oo_wrap mexp.mod_env true
+        (apply_coercion loc Strict cc)
+        (Lapply{
+           ap_loc=loc;
+           ap_func=transl_module ~scopes Tcoerce_none None funct;
+           ap_args=[lambda_unit];
            ap_tailcall=Default_tailcall;
            ap_inlined=inlined_attribute;
            ap_specialised=Default_specialise})
