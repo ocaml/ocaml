@@ -905,7 +905,7 @@ let rec display_blanks state n =
 let display_indent = display_blanks
 
 (* Setting a formatter basic output functions as printing to a given
-   [Pervasive.out_channel] value. *)
+   [Stdlib.out_channel] value. *)
 let pp_set_formatter_out_channel state oc =
   state.pp_out_string <- output_substring oc;
   state.pp_out_flush <- (fun () -> flush oc);
@@ -994,7 +994,7 @@ let make_formatter output flush =
   ppf
 
 
-(* Make a formatter writing to a given [Pervasive.out_channel] value. *)
+(* Make a formatter writing to a given [Stdlib.out_channel] value. *)
 let formatter_of_out_channel oc =
   make_formatter (output_substring oc) (fun () -> flush oc)
 
