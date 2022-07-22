@@ -29,8 +29,7 @@ OCAMLOPT=$(BEST_OCAMLOPT) $(STDLIBFLAGS) -g
 
 # COMPFLAGS should be in sync with the toplevel Makefile's COMPFLAGS.
 COMPFLAGS=-strict-sequence -principal -absname \
-          -w +a-4-9-40-41-42-44-45-48-66-70 \
-          -warn-error +A \
+          -w +a-4-9-40-41-42-44-45-48-66 -warn-error +A \
           -bin-annot -safe-string -strict-formats
 ifeq "$(FLAMBDA)" "true"
 OPTCOMPFLAGS += -O3
@@ -252,7 +251,7 @@ install:
         $(addprefix "$(INSTALL_LIBDIR)/", $(notdir $(NATOBJS)))
 	$(MKDIR) "$(INSTALL_LIBDIR_DYNLINK)"
 	$(INSTALL_DATA) \
-	  dynlink.cmi dynlink.cma \
+	  dynlink.cmi dynlink.cma META \
 	  "$(INSTALL_LIBDIR_DYNLINK)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
@@ -282,6 +281,7 @@ clean: partialclean
 
 .PHONY: distclean
 distclean: clean
+	rm -f META
 
 .PHONY: beforedepend
 beforedepend: dynlink_platform_intf.mli

@@ -74,6 +74,7 @@ AC_CONFIG_AUX_DIR([build-aux])
 
 AC_SUBST([CONFIGURE_ARGS])
 AC_SUBST([native_compiler])
+AC_SUBST([default_build_target])
 AC_SUBST([VERSION], [AC_PACKAGE_VERSION])
 AC_SUBST([OCAML_DEVELOPMENT_VERSION], [OCAML__DEVELOPMENT_VERSION])
 AC_SUBST([OCAML_RELEASE_EXTRA], [OCAML__RELEASE_EXTRA])
@@ -129,6 +130,7 @@ AC_SUBST([mklib])
 AC_SUBST([supports_shared_libraries])
 AC_SUBST([natdynlink])
 AC_SUBST([natdynlinkopts])
+AC_SUBST([natdynlink_archive])
 AC_SUBST([cmxs])
 AC_SUBST([debug_runtime])
 AC_SUBST([instrumented_runtime])
@@ -184,6 +186,10 @@ AC_CONFIG_FILES([manual/src/html_processing/src/common.ml])
 AC_CONFIG_HEADERS([runtime/caml/m.h])
 AC_CONFIG_HEADERS([runtime/caml/s.h])
 AC_CONFIG_HEADERS([runtime/caml/version.h])
+AC_CONFIG_FILES([compilerlibs/META])
+AC_CONFIG_FILES([otherlibs/dynlink/META])
+AC_CONFIG_FILES([otherlibs/runtime_events/META])
+AC_CONFIG_FILES([stdlib/META])
 
 # Definitions related to the version of OCaml
 AC_DEFINE([OCAML_VERSION_MAJOR], [OCAML__VERSION_MAJOR])
@@ -544,9 +550,11 @@ AS_CASE([$host],
 otherlibraries="dynlink runtime_events"
 AS_IF([test x"$enable_unix_lib" != "xno"],
   [enable_unix_lib=yes
-   otherlibraries="$otherlibraries unix"])
+  AC_CONFIG_FILES([otherlibs/unix/META])
+  otherlibraries="$otherlibraries unix"])
 AS_IF([test x"$enable_str_lib" != "xno"],
-  [otherlibraries="$otherlibraries str"])
+  [otherlibraries="$otherlibraries str"
+  AC_CONFIG_FILES([otherlibs/str/META])])
 
 # Checks for system services
 
@@ -867,6 +875,7 @@ AS_IF([test "x$ac_cv_lib_m_cos" = xyes ], [mathlib="-lm"], [mathlib=""])
 AC_CHECK_HEADER([math.h])
 AC_CHECK_HEADERS([unistd.h],[AC_DEFINE([HAS_UNISTD])])
 AC_CHECK_HEADER([stdint.h],[AC_DEFINE([HAS_STDINT_H])])
+AC_CHECK_HEADER([pthread_np.h],[AC_DEFINE([HAS_PTHREAD_NP_H])])
 AC_CHECK_HEADER([dirent.h], [AC_DEFINE([HAS_DIRENT])], [],
   [#include <sys/types.h>])
 
@@ -1194,12 +1203,18 @@ AS_CASE([$enable_native_compiler,$arch],
     [native_compiler=false
     AC_MSG_NOTICE([the native compiler is not supported on this platform])],
   [*,*],
-    [native_compiler=true]
-)
+    [native_compiler=true])
+
+AS_IF([$native_compiler],
+  [default_build_target=world.opt],
+  [default_build_target=world])
 
 AS_IF([! $native_compiler], [natdynlink=false])
 
 AS_IF([$natdynlink], [cmxs="cmxs"], [cmxs="cmx"])
+AS_IF([$natdynlink],
+  [natdynlink_archive="dynlink.cmxa"],
+  [natdynlink_archive=""])
 
 AC_DEFINE_UNQUOTED([OCAML_OS_TYPE], ["$ostype"])
 
@@ -1822,6 +1837,29 @@ AC_CHECK_HEADER([spawn.h],
 AC_CHECK_FUNC([ffs], [AC_DEFINE([HAS_FFS])])
 AC_CHECK_FUNC([_BitScanForward], [AC_DEFINE([HAS_BITSCANFORWARD])])
 
+## pthread_getaffinity_np, args differ from GNU and BSD
+AC_COMPILE_IFELSE(
+  [AC_LANG_PROGRAM(
+    [[#define _GNU_SOURCE
+      #include <sched.h>
+      #include <pthread.h>]],
+    [[cpu_set_t cs;
+      CPU_ZERO(&cs);
+      CPU_COUNT(&cs);
+      pthread_getaffinity_np(pthread_self(), sizeof(cs), &cs);]])],
+  [AC_DEFINE([HAS_GNU_GETAFFINITY_NP])],
+  [AC_COMPILE_IFELSE(
+    [AC_LANG_PROGRAM(
+      [[#include <pthread.h>
+        #include <pthread_np.h>
+        #include <sys/cpuset.h>]],
+      [[cpuset_t cs;
+        /* Not every BSD has CPU_ZERO and CPU_COUNT (NetBSD) */
+        CPU_ZERO(&cs);
+        CPU_COUNT(&cs);
+        pthread_getaffinity_np(pthread_self(), sizeof(cs), &cs);]])],
+    [AC_DEFINE([HAS_BSD_GETAFFINITY_NP])])])
+
 ## Determine whether the debugger should/can be built
 
 AS_CASE([$enable_debugger],
@@ -1839,17 +1877,6 @@ AS_CASE([$enable_debugger],
 AS_CASE([$enable_debug_runtime],
   [no], [debug_runtime=false],
   [debug_runtime=true])
-
-## Determine if system stack overflows can be detected
-
-AC_MSG_CHECKING([whether stack overflows can be detected])
-
-AS_CASE([$arch,$system],
-  [i386,linux_elf|amd64,linux|amd64,macosx \
-    |amd64,openbsd|i386,bsd_elf|arm64,linux|arm64,macosx],
-    [AC_DEFINE([HAS_STACK_OVERFLOW_DETECTION])
-    AC_MSG_RESULT([yes])],
-  [AC_MSG_RESULT([no])])
 
 ## Determine how to link with the POSIX threads library
 
@@ -1878,6 +1905,7 @@ AS_CASE([$enable_systhreads,$enable_unix_lib],
     [systhread_support=false
     AC_MSG_NOTICE([the threads library is disabled])],
   [systhread_support=true
+  AC_CONFIG_FILES([otherlibs/systhreads/META])
   otherlibraries="$otherlibraries systhreads"
   AC_MSG_NOTICE([the threads library is supported])])
 
@@ -1920,7 +1948,8 @@ AS_IF([test x"$enable_installing_source_artifacts" = "xno"],
 
 AS_IF([test x"$enable_ocamldoc" = "xno"],
   [ocamldoc=""],
-  [ocamldoc=ocamldoc])
+  [ocamldoc=ocamldoc
+  AC_CONFIG_FILES([ocamldoc/META])])
 
 documentation_tool_cmd=''
 AC_ARG_WITH([odoc],

@@ -237,7 +237,8 @@ expression_list_eol :
 
 break_argument_eol :
     end_of_line                                 { BA_none }
-  | integer_eol                                 { BA_pc {frag = 0; pos = $1} }
+  | integer_eol                                 { BA_pc {frag = main_frag;
+                                                         pos = $1} }
   | INTEGER COLON integer_eol                   { BA_pc {frag = to_int $1;
                                                          pos = $3} }
   | expression end_of_line                      { BA_function $1 }

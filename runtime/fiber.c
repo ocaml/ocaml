@@ -221,8 +221,9 @@ void caml_get_stack_sp_pc (struct stack_info* stack,
   *sp = p + sizeof(value);
 }
 
-Caml_inline void scan_stack_frames(scanning_action f, void* fdata,
-                                   struct stack_info* stack, value* gc_regs)
+Caml_inline void scan_stack_frames(
+  scanning_action f, scanning_action_flags fflags, void* fdata,
+  struct stack_info* stack, value* gc_regs)
 {
   char * sp;
   uintnat retaddr;
@@ -278,11 +279,12 @@ next_chunk:
   }
 }
 
-void caml_scan_stack(scanning_action f, void* fdata,
-                     struct stack_info* stack, value* gc_regs)
+void caml_scan_stack(
+  scanning_action f, scanning_action_flags fflags, void* fdata,
+  struct stack_info* stack, value* gc_regs)
 {
   while (stack != NULL) {
-    scan_stack_frames(f, fdata, stack, gc_regs);
+    scan_stack_frames(f, fflags, fdata, stack, gc_regs);
 
     f(fdata, Stack_handle_value(stack), &Stack_handle_value(stack));
     f(fdata, Stack_handle_exception(stack), &Stack_handle_exception(stack));
@@ -353,12 +355,19 @@ CAMLprim value caml_ensure_stack_capacity(value required_space)
   Used by the GC to find roots on the stacks of running or runnable fibers.
 */
 
-Caml_inline int is_block_and_not_code_frag(value v) {
-  return Is_block(v) && caml_find_code_fragment_by_pc((char *) v) == NULL;
+/* Code pointers are stored on the bytecode stack as naked pointers.
+   We must avoid passing them to the scanning action,
+   unless we know that it is a no-op outside young values
+   (so it will safely ignore code pointers). */
+ Caml_inline int is_scannable(scanning_action_flags flags, value v) {
+  return
+      (flags & SCANNING_ONLY_YOUNG_VALUES)
+      || (Is_block(v) && caml_find_code_fragment_by_pc((char *) v) == NULL);
 }
 
-void caml_scan_stack(scanning_action f, void* fdata,
-                     struct stack_info* stack, value* v_gc_regs)
+void caml_scan_stack(
+  scanning_action f, scanning_action_flags fflags, void* fdata,
+  struct stack_info* stack, value* v_gc_regs)
 {
   value *low, *high, *sp;
 
@@ -368,19 +377,17 @@ void caml_scan_stack(scanning_action f, void* fdata,
     high = Stack_high(stack);
     low = stack->sp;
     for (sp = low; sp < high; sp++) {
-      /* Code pointers inside the stack are naked pointers.
-         We must avoid passing them to function [f]. */
       value v = *sp;
-      if (is_block_and_not_code_frag(v)) {
+      if (is_scannable(fflags, v)) {
         f(fdata, v, sp);
       }
     }
 
-    if (is_block_and_not_code_frag(Stack_handle_value(stack)))
+    if (is_scannable(fflags, Stack_handle_value(stack)))
       f(fdata, Stack_handle_value(stack), &Stack_handle_value(stack));
-    if (is_block_and_not_code_frag(Stack_handle_exception(stack)))
+    if (is_scannable(fflags, Stack_handle_exception(stack)))
       f(fdata, Stack_handle_exception(stack), &Stack_handle_exception(stack));
-    if (is_block_and_not_code_frag(Stack_handle_effect(stack)))
+    if (is_scannable(fflags, Stack_handle_effect(stack)))
       f(fdata, Stack_handle_effect(stack), &Stack_handle_effect(stack));
 
     stack = Stack_parent(stack);
@@ -425,6 +432,61 @@ rewrite_exception_stack(struct stack_info *old_stack,
     fiber_debug_log ("exn_ptr is null");
   }
 }
+
+#ifdef WITH_FRAME_POINTERS
+/* Update absolute base pointers for new stack */
+static void rewrite_frame_pointers(struct stack_info *old_stack,
+    struct stack_info *new_stack)
+{
+  struct frame_walker {
+    struct frame_walker *base_addr;
+    uintnat return_addr;
+  } *frame, *next;
+  ssize_t delta;
+  void *top, **p;
+
+  delta = (char*)Stack_high(new_stack) - (char*)Stack_high(old_stack);
+
+  /* Walk the frame-pointers linked list */
+  for (frame = __builtin_frame_address(0); frame; frame = next) {
+
+    top = (char*)&frame->return_addr
+      + 1 * sizeof(value) /* return address */
+      + 2 * sizeof(value) /* trap frame */
+      + 2 * sizeof(value); /* DWARF pointer & gc_regs */
+
+    /* Detect top of the fiber and bail out */
+    /* It also avoid to dereference invalid base pointer at main */
+    if (top == Stack_high(old_stack))
+      break;
+
+    /* Save the base address since it may be adjusted */
+    next = frame->base_addr;
+
+    if (!(Stack_base(old_stack) <= (value*)frame->base_addr
+        && (value*)frame->base_addr < Stack_high(old_stack))) {
+      /* No need to adjust base pointers that don't point into the reallocated
+       * fiber */
+      continue;
+    }
+
+    if (Stack_base(old_stack) <= (value*)&frame->base_addr
+        && (value*)&frame->base_addr < Stack_high(old_stack)) {
+      /* The base pointer itself is located inside the reallocated fiber
+       * and needs to be adjusted on the new fiber */
+      p = (void**)((char*)Stack_high(new_stack) - (char*)Stack_high(old_stack)
+          + (char*)&frame->base_addr);
+      CAMLassert(*p == frame->base_addr);
+      *p += delta;
+    }
+    else {
+      /* Base pointers on other stacks are adjusted in place */
+      frame->base_addr = (struct frame_walker*)((char*)frame->base_addr
+          + delta);
+    }
+  }
+}
+#endif
 #endif
 
 int caml_try_realloc_stack(asize_t required_space)
@@ -466,6 +528,9 @@ int caml_try_realloc_stack(asize_t required_space)
 #ifdef NATIVE_CODE
   rewrite_exception_stack(old_stack, (value**)&Caml_state->exn_handler,
                           new_stack);
+#ifdef WITH_FRAME_POINTERS
+  rewrite_frame_pointers(old_stack, new_stack);
+#endif
 #endif
 
   /* Update stack pointers in Caml_state->c_stack. It is possible to have
@@ -521,6 +586,16 @@ void caml_free_stack (struct stack_info* stack)
 #endif
   }
 }
+
+void caml_free_gc_regs_buckets(value *gc_regs_buckets)
+{
+  while (gc_regs_buckets != NULL) {
+    value *next = (value*)gc_regs_buckets[0];
+    caml_stat_free(gc_regs_buckets);
+    gc_regs_buckets = next;
+  }
+}
+
 
 CAMLprim value caml_continuation_use_noexc (value cont)
 {

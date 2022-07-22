@@ -96,6 +96,8 @@ Caml_inline void st_tls_set(st_tlskey k, void * v)
    threads. */
 
 typedef struct {
+  int init;                       /* have the mutex and the cond been
+                                     initialized already? */
   pthread_mutex_t lock;           /* to protect contents */
   uintnat busy;                   /* 0 = free, 1 = taken */
   atomic_uintnat waiters;         /* number of threads waiting on master lock */
@@ -104,14 +106,22 @@ typedef struct {
 
 static void st_masterlock_init(st_masterlock * m)
 {
-
-  pthread_mutex_init(&m->lock, NULL);
-  pthread_cond_init(&m->is_free, NULL);
+  if (!m->init) {
+    // FIXME: check errors
+    pthread_mutex_init(&m->lock, NULL);
+    pthread_cond_init(&m->is_free, NULL);
+    m->init = 1;
+  }
   m->busy = 1;
   atomic_store_rel(&m->waiters, 0);
 
   return;
 };
+
+static uintnat st_masterlock_waiters(st_masterlock * m)
+{
+  return atomic_load_acq(&m->waiters);
+}
 
 static void st_bt_lock_acquire(st_masterlock *m) {
 
@@ -132,7 +142,7 @@ static void st_bt_lock_release(st_masterlock *m) {
   /* Here we do want to signal the backup thread iff there's
      no thread waiting to be scheduled, and the backup thread is currently
      idle. */
-  if (atomic_load_acq(&m->waiters) == 0 &&
+  if (st_masterlock_waiters(m) == 0 &&
       caml_bt_is_in_blocking_section() == 0) {
     caml_bt_exit_ocaml();
   }
@@ -179,15 +189,13 @@ static void st_masterlock_release(st_masterlock * m)
 */
 Caml_inline void st_thread_yield(st_masterlock * m)
 {
-  uintnat waiters;
-
   pthread_mutex_lock(&m->lock);
   /* We must hold the lock to call this. */
 
   /* We already checked this without the lock, but we might have raced--if
      there's no waiter, there's nothing to do and no one to wake us if we did
      wait, so just keep going. */
-  waiters = atomic_load_acq(&m->waiters);
+  uintnat waiters = st_masterlock_waiters(m);
 
   if (waiters == 0) {
     pthread_mutex_unlock(&m->lock);

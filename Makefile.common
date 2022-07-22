@@ -207,7 +207,9 @@ $(ROOTDIR)/%/sak$(EXE):
 	$(MAKE) -C $(ROOTDIR)/$* sak$(EXE)
 
 ifneq "$(REQUIRES_CONFIGURATION)" ""
+ifneq "$(wildcard $(ROOTDIR)/Makefile.config)" ""
 $(ROOTDIR)/%/StdlibModules: $(SAK) ;
+endif
 endif
 
 # Used with the Microsoft toolchain to merge generated manifest files into

@@ -54,9 +54,9 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
 #ifdef THREADED_CODE
 #  define Instruct(name) lbl_##name
 #  if defined(ARCH_SIXTYFOUR) && !defined(ARCH_CODE32)
-#    define Jumptbl_base ((char *) &&lbl_ACC0)
+#    define Jumptbl_base &&lbl_ACC0
 #  else
-#    define Jumptbl_base ((char *) 0)
+#    define Jumptbl_base 0
 #    define jumptbl_base ((char *) 0)
 #  endif
 #  ifdef DEBUG
@@ -133,9 +133,31 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
   goto dispatch_instr
 #endif
 
-#define Check_trap_barrier \
-  if (domain_state->trap_sp_off >= domain_state->trap_barrier_off) \
-    caml_debugger(TRAP_BARRIER, Val_unit)
+Caml_inline void check_trap_barrier_for_exception
+  (caml_domain_state* domain_state)
+{
+  if (domain_state->current_stack->id == domain_state->trap_barrier_block
+      && domain_state->trap_sp_off >= domain_state->trap_barrier_off)
+    caml_debugger(TRAP_BARRIER, Val_unit);
+}
+
+Caml_inline void check_trap_barrier_for_effect
+  (caml_domain_state* domain_state)
+{
+  if (domain_state->current_stack->id == domain_state->trap_barrier_block){
+    caml_debugger(TRAP_BARRIER, Val_unit);
+  }else{
+    struct stack_info *parent_stack
+      = domain_state->current_stack->handler->parent;
+    if (parent_stack != NULL
+        && parent_stack->id == domain_state->trap_barrier_block
+        && parent_stack->sp + 2 - Stack_high (parent_stack)
+              /* Note: +2 is the same constant as in debugger.c:552 */
+           == domain_state->trap_barrier_off){
+      caml_debugger(TRAP_BARRIER, Val_unit);
+    }
+  }
+}
 
 /* Register optimization.
    Some compilers underestimate the use of the local variables representing
@@ -270,8 +292,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       (char *) raise_unhandled_code + sizeof(raise_unhandled_code),
       DIGEST_IGNORE, NULL);
 #ifdef THREADED_CODE
-    caml_instr_table = (char **) jumptable;
-    caml_instr_base = Jumptbl_base;
+    caml_init_thread_code(jumptable, Jumptbl_base);
     caml_thread_code(raise_unhandled_code,
                      sizeof(raise_unhandled_code));
 #endif
@@ -299,7 +320,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     sp = domain_state->current_stack->sp;
     accu = raise_exn_bucket;
 
-    Check_trap_barrier;
+    check_trap_barrier_for_exception (domain_state);
     if (domain_state->backtrace_active) {
          /* pc has already been pushed on the stack when calling the C
          function that raised the exception. No need to push it again
@@ -636,7 +657,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       mlsize_t envofs = nfuncs * 3 - 1;
       mlsize_t blksize = envofs + nvars;
       int i;
-      value * p;
+      volatile value * p;
       if (nvars > 0) *--sp = accu;
       if (blksize <= Max_young_wosize) {
         Alloc_small(accu, blksize, Closure_tag, Enter_gc);
@@ -926,11 +947,11 @@ value caml_interprete(code_t prog, asize_t prog_size)
       Next;
 
     Instruct(RAISE_NOTRACE):
-      Check_trap_barrier;
+      check_trap_barrier_for_exception (domain_state);
       goto raise_notrace;
 
     Instruct(RERAISE):
-      Check_trap_barrier;
+      check_trap_barrier_for_exception (domain_state);
       if (domain_state->backtrace_active) {
         *--sp = (value)(pc - 1);
         caml_stash_backtrace(accu, sp, 1);
@@ -939,7 +960,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
     Instruct(RAISE):
     raise_exception:
-      Check_trap_barrier;
+      check_trap_barrier_for_exception (domain_state);
       if (domain_state->backtrace_active) {
         *--sp = (value)(pc - 1);
         caml_stash_backtrace(accu, sp, 0);
@@ -1297,6 +1318,7 @@ do_resume: {
       struct stack_info* old_stack = domain_state->current_stack;
       struct stack_info* parent_stack = Stack_parent(old_stack);
 
+      check_trap_barrier_for_effect (domain_state);
       if (parent_stack == NULL) {
         accu = Field(caml_global_data, UNHANDLED_EXN);
         goto raise_exception;
@@ -1336,6 +1358,7 @@ do_resume: {
       struct stack_info* self = domain_state->current_stack;
       struct stack_info* parent = Stack_parent(domain_state->current_stack);
 
+      check_trap_barrier_for_effect (domain_state);
       sp = sp + *pc - 2;
       sp[0] = Val_long(domain_state->trap_sp_off);
       sp[1] = Val_long(extra_args);
@@ -1370,7 +1393,7 @@ do_resume: {
 
 #ifndef THREADED_CODE
     default:
-#if _MSC_VER >= 1200
+#ifdef _MSC_VER
       __assume(0);
 #else
       caml_fatal_error("bad opcode (%"

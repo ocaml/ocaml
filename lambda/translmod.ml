@@ -139,15 +139,17 @@ and wrap_id_pos_list loc id_pos_list get_field lam =
   (*Format.eprintf "%a@." Printlambda.lambda lam;
   Ident.Set.iter (fun id -> Format.eprintf "%a " Ident.print id) fv;
   Format.eprintf "@.";*)
-  let (lam,s) =
-    List.fold_left (fun (lam, s) (id',pos,c) ->
+  let (lam, _fv, s) =
+    List.fold_left (fun (lam, fv, s) (id',pos,c) ->
       if Ident.Set.mem id' fv then
         let id'' = Ident.create_local (Ident.name id') in
-        (Llet(Alias, Pgenval, id'',
-             apply_coercion loc Alias c (get_field pos),lam),
+        let rhs = apply_coercion loc Alias c (get_field pos) in
+        let fv_rhs = free_variables rhs in
+        (Llet(Alias, Pgenval, id'', rhs, lam),
+         Ident.Set.union fv fv_rhs,
          Ident.Map.add id' id'' s)
-      else (lam, s))
-      (lam, Ident.Map.empty) id_pos_list
+      else (lam, fv, s))
+      (lam, fv, Ident.Map.empty) id_pos_list
   in
   if s == Ident.Map.empty then lam else Lambda.rename s lam
 
@@ -164,7 +166,10 @@ let rec compose_coercions c1 c2 =
       let v2 = Array.of_list pc2 in
       let ids1 =
         List.map (fun (id,pos1,c1) ->
-          let (pos2,c2) = v2.(pos1) in (id, pos2, compose_coercions c1 c2))
+            if pos1 < 0 then (id, pos1, c1)
+            else
+              let (pos2,c2) = v2.(pos1) in
+              (id, pos2, compose_coercions c1 c2))
           ids1
       in
       Tcoerce_structure

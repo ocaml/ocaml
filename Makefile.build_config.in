@@ -65,6 +65,11 @@ DOCDIR=@docdir@
 MKEXE_EXP=@mkexe_exp@
 MKDLL_EXP=@mkdll_exp@
 
+# Which make target to build, depending on whether the native compiler
+# has been enabled or not during the configuration stage
+
+DEFAULT_BUILD_TARGET = @default_build_target@
+
 # Platform-dependent assembler files to use to build the runtime
 runtime_ASM_OBJECTS = $(addprefix runtime/,@runtime_asm_objects@)
 

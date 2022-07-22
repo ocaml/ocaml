@@ -22,27 +22,6 @@ open Odoc_text_parser
 let line_number = ref 0
 let char_number = ref 0
 
-let string_buffer = Buffer.create 32
-
-(** Reset the buffer *)
-let reset_string_buffer () = Buffer.reset string_buffer
-
-(** Add a character to the buffer *)
-let add_char_string = Buffer.add_char string_buffer
-
-(** Add a string to the buffer. *)
-let add_string = Buffer.add_string string_buffer
-
-let read_string () = Buffer.contents string_buffer
-
-
-(** the variable which will contain the description string.
-   Is initialized when we encounter the start of a special comment. *)
-
-let description = ref ""
-
-let blank = "[ \013\009\012]"
-
 (** this flag indicates whether we're in a string between begin_code and end_code tokens, to
    remember the number of open '[' and handle ']' correctly. *)
 let open_brackets = ref 0

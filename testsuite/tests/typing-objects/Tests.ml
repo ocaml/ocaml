@@ -1344,3 +1344,64 @@ let _ = (new foo)#f true
 class foo : object method f : bool -> bool end
 - : bool = true
 |}];;
+
+
+class c : object
+    method virtual m : int
+end = object
+    method m = 9
+  end
+[%%expect {|
+Lines 1-3, characters 10-3:
+1 | ..........object
+2 |     method virtual m : int
+3 | end.........
+Error: This non-virtual class type has virtual methods.
+       The following methods are virtual : m
+|}];;
+
+class virtual c : object
+    method virtual m : int
+end = object
+    method m = 42
+  end
+[%%expect {|
+class virtual c : object method virtual m : int end
+|}];;
+
+class virtual cv = object
+    method virtual m : int
+  end
+
+class c : cv = object
+    method m = 42
+  end
+[%%expect {|
+class virtual cv : object method virtual m : int end
+Line 5, characters 10-12:
+5 | class c : cv = object
+              ^^
+Error: This non-virtual class type has virtual methods.
+       The following methods are virtual : m
+|}];;
+
+class virtual c : cv = object
+    method m = 41
+  end
+[%%expect {|
+class virtual c : cv
+|}];;
+
+class c = cv
+[%%expect {|
+Line 1, characters 10-12:
+1 | class c = cv
+              ^^
+Error: This non-virtual class has virtual methods.
+       The following methods are virtual : m
+|}];;
+
+class virtual c = cv
+[%%expect {|
+class virtual c : cv
+|}];;

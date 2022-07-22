@@ -5052,10 +5052,10 @@ let get_buf s i =
 let set_buf s i u =
   let n = UChar.uint_code u in
   begin
-    s.[i] <- Char.chr (n lsr 24);
-    s.[i + 1] <- Char.chr (n lsr 16 lor 0xff);
-    s.[i + 2] <- Char.chr (n lsr 8 lor 0xff);
-    s.[i + 3] <- Char.chr (n lor 0xff);
+    s.![i] <- Char.chr (n lsr 24);
+    s.![i + 1] <- Char.chr (n lsr 16 lor 0xff);
+    s.![i + 2] <- Char.chr (n lsr 8 lor 0xff);
+    s.![i + 3] <- Char.chr (n lor 0xff);
   end
 
 let init_buf buf pos init =
@@ -5108,7 +5108,7 @@ class string init = string_raw (make_buf init)
 let of_string s =
   let buf = String.make (4 * String.length s) '\000' in
   for i = 0 to String.length s - 1 do
-    buf.[4 * i] <- s.[i]
+    buf.![4 * i] <- s.[i]
   done;
   new text_raw buf
 
@@ -7228,7 +7228,7 @@ let _ = function
       ignore (bg.{1, 2, 3, 4})
     end
   | b, s, ba1, ba2, ba3, bg -> begin
-      y.(0) <- 1; s.[1] <- 'c';
+      y.(0) <- 1; s.![1] <- 'c';
       ba1.{1} <- 2; ba2.{1, 2} <- 3; ba3.{1, 2, 3} <- 4;
       bg.{1, 2, 3, 4, 5} <- 0
     end

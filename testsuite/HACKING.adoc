@@ -3,31 +3,52 @@
 == Useful Makefile targets
 
 `make parallel`::
-  runs the tests in parallel using the
+  Runs the tests in parallel using the
   link:https://www.gnu.org/software/parallel/[GNU parallel] tool: tests run
   twice as fast with no difference in output order.
 
 `make all-foo`, `make parallel-foo`::
-  runs only the tests in the directories whose name starts with `foo`:
+  Runs only the tests in the directories whose name starts with `foo`:
   `parallel-typing`, `all-lib`, etc.
 
 `make one DIR=tests/foo`::
-  runs only the tests in the directory `tests/foo`. This is often equivalent to
+  Runs only the tests in the directory `tests/foo`. This is often equivalent to
   `cd tests/foo && make`, but sometimes the latter breaks the test makefile if
   it contains fragile relative filesystem paths. Such errors should be fixed if
   you find them, but `make one DIR=...` is the more reliable option as it runs
   exactly as `make all` which is heavily tested.
 
-`make promote DIR=tests/foo`::
-  Most tests run a program and compare the result of the program, store in a file
-  `foo.result`, with a reference output stored in `foo.reference` -- the test
-  fails if the two output differ. Sometimes a change in result is innocuous, it
-  comes from an intended change in output instead of a regression.
-  `make promote` copies the new result file into the reference file, making the
-  test pass again. Whenever you use this rule please check carefully, using
-  `git diff`, that the change really corresponds to an intended output
-  difference, and not to a regression. You then need to commit the change to
-  reference file, and your commit message should explain why the output changed.
+`make one TEST=tests/foo/bar.ml`::
+  Runs only the specific test `tests/foo/bar.ml`.
+
+`make one LIST=tests.txt`::
+  Runs only the tests in the directories listed in the file `tests.txt`.  The
+  file should contain one directory per line; for instance, if the contents of
+  `tests.txt` are:
++
+....
+tests/foo
+tests/bar
+tests/baz
+....
++
+then this will run all the tests in those three directories.
+
+`make promote DIR=tests/foo`, `make promote TEST=tests/foo/bar.ml`, `make promote LIST=file.txt`::
+  Most tests run a program and compare the result of the program, stored in a
+  file `foo.result`, with a reference output, stored in `foo.reference`; the
+  test fails if the two outputs differ. Similarly, many other tests are expect
+  tests, with the expected output following the code inline in the test file. In
+  both cases, sometimes a change in the result is innocuous, as it comes from an
+  intended change in output instead of a regression. `make promote` is like
+  `make one`, but for each failing test, it copies the new results into the
+  reference files (or into the expect test expected output), making the failing
+  test pass again. Whenever you use this rule please check carefully, using `git
+  diff`, that the changes really correspond to an intended output difference,
+  and not to a regression. You then need to commit the changes to the reference
+  files (or expect test output), and your commit message should explain why the
+  output changed. `make promote` takes the same variables as `make one` to
+  determine which tests to run (there is no analog to `make all`).
 
 == Creating a new test
 

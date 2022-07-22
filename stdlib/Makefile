@@ -25,9 +25,8 @@ TARGET_BINDIR ?= $(BINDIR)
 
 COMPILER=$(ROOTDIR)/ocamlc$(EXE)
 CAMLC=$(OCAMLRUN) $(COMPILER)
-COMPFLAGS=-strict-sequence -absname -w +a-4-9-41-42-44-45-48-70 \
-          -g -warn-error +A -bin-annot -nostdlib -principal \
-          -safe-string -strict-formats
+COMPFLAGS=-strict-sequence -absname -w +a-4-9-41-42-44-45-48 \
+          -g -warn-error +A -bin-annot -nostdlib -principal
 ifeq "$(FLAMBDA)" "true"
 OPTCOMPFLAGS += -O3
 endif
@@ -66,13 +65,17 @@ install::
     exit 1; \
   fi
 
+INSTALL_STDLIB_META_DIR=$(DESTDIR)$(LIBDIR)/stdlib
+
 install::
 	$(INSTALL_DATA) \
 	  stdlib.cma std_exit.cmo *.cmi camlheader_ur \
 	  "$(INSTALL_LIBDIR)"
+	$(MKDIR) "$(INSTALL_STDLIB_META_DIR)"
+	$(INSTALL_DATA) META "$(INSTALL_STDLIB_META_DIR)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
-	  *.cmt *.cmti *.mli *.ml \
+	  *.cmt *.cmti *.mli *.ml *.ml.in \
 	  "$(INSTALL_LIBDIR)"
 endif
 	$(INSTALL_DATA) target_camlheader "$(INSTALL_LIBDIR)/camlheader"
@@ -201,7 +204,7 @@ stdlib.cmxa: $(OBJS:.cmo=.cmx)
 
 .PHONY: distclean
 distclean: clean
-	rm -f sys.ml
+	rm -f sys.ml META
 
 .PHONY: clean
 clean::

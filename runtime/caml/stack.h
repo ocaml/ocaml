@@ -55,7 +55,11 @@
    See amd64.S and amd64/proc.ml for the indices */
 #define Wosize_gc_regs (13 /* int regs */ + 16 /* float regs */)
 #define Saved_return_address(sp) *((intnat *)((sp) - 8))
+#ifdef WITH_FRAME_POINTERS
+#define Pop_frame_pointer(sp) (sp) += sizeof(value)
+#else
 #define Pop_frame_pointer(sp)
+#endif
 #endif
 
 #ifdef TARGET_arm64

@@ -124,8 +124,10 @@ void caml_set_minor_heap_size (asize_t wsize)
   caml_domain_state* domain_state = Caml_state;
   struct caml_minor_tables *r = domain_state->minor_tables;
 
-  if (domain_state->young_ptr != domain_state->young_end)
+  if (domain_state->young_ptr != domain_state->young_end) {
+    CAML_EV_COUNTER (EV_C_FORCE_MINOR_SET_MINOR_HEAP_SIZE, 1);
     caml_minor_collection();
+  }
 
   if(caml_reallocate_minor_heap(wsize) < 0) {
     caml_fatal_error("Fatal error: No memory for minor heap");
@@ -179,8 +181,8 @@ header_t caml_get_header_val(value v) {
 }
 
 
-static int try_update_object_header(value v, value *p, value result,
-                                      mlsize_t infix_offset) {
+static int try_update_object_header(value v, volatile value *p, value result,
+                                    mlsize_t infix_offset) {
   int success = 0;
 
   if( caml_domain_alone() ) {
@@ -222,9 +224,13 @@ static int try_update_object_header(value v, value *p, value result,
   return success;
 }
 
+/* oldify_one is a no-op outside the minor heap. */
+static scanning_action_flags oldify_scanning_flags =
+  SCANNING_ONLY_YOUNG_VALUES;
+
 /* Note that the tests on the tag depend on the fact that Infix_tag,
    Forward_tag, and No_scan_tag are contiguous. */
-static void oldify_one (void* st_v, value v, value *p)
+static void oldify_one (void* st_v, value v, volatile value *p)
 {
   struct oldify_state* st = st_v;
   value result;
@@ -266,7 +272,8 @@ static void oldify_one (void* st_v, value v, value *p)
       struct stack_info* stk = Ptr_val(stack_value);
       Field(result, 0) = Val_ptr(stk);
       if (stk != NULL) {
-        caml_scan_stack(&oldify_one, st, stk, 0);
+        caml_scan_stack(&oldify_one, oldify_scanning_flags, st,
+                        stk, 0);
       }
     }
     else
@@ -411,9 +418,9 @@ again:
   if( do_ephemerons ) {
     for (re = ephe_ref_table.base;
          re < ephe_ref_table.ptr; re++) {
-      value *data = re->offset == CAML_EPHE_DATA_OFFSET
-              ? &Ephe_data(re->ephe)
-              :  &Field(re->ephe, re->offset);
+      volatile value *data = re->offset == CAML_EPHE_DATA_OFFSET
+                           ? &Ephe_data(re->ephe)
+                           : &Field(re->ephe, re->offset);
       value v = *data;
       if (v != caml_ephe_none && Is_block(v) && Is_young(v) ) {
         mlsize_t offs = Tag_val(v) == Infix_tag ? Infix_offset_val(v) : 0;
@@ -575,7 +582,8 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
 
   CAML_EV_BEGIN(EV_MINOR_FINALIZERS_OLDIFY);
   /* promote the finalizers unconditionally as we want to avoid barriers */
-  caml_final_do_young_roots (&oldify_one, &st, domain, 0);
+  caml_final_do_young_roots (&oldify_one, oldify_scanning_flags, &st,
+                             domain, 0);
   CAML_EV_END(EV_MINOR_FINALIZERS_OLDIFY);
 
   CAML_EV_BEGIN(EV_MINOR_REMEMBERED_SET_PROMOTE);
@@ -610,12 +618,13 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
 #endif
 
   CAML_EV_BEGIN(EV_MINOR_LOCAL_ROOTS);
-  caml_do_local_roots(&oldify_one, &st, domain->local_roots,
-                      domain->current_stack, domain->gc_regs);
+  caml_do_local_roots(
+    &oldify_one, oldify_scanning_flags, &st,
+    domain->local_roots, domain->current_stack, domain->gc_regs);
 
   scan_roots_hook = atomic_load(&caml_scan_roots_hook);
   if (scan_roots_hook != NULL)
-    (*scan_roots_hook)(&oldify_one, &st, domain);
+    (*scan_roots_hook)(&oldify_one, oldify_scanning_flags, &st, domain);
 
   CAML_EV_BEGIN(EV_MINOR_LOCAL_ROOTS_PROMOTE);
   oldify_mopup (&st, 0);

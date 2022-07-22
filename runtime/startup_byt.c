@@ -441,7 +441,7 @@ static void do_print_config(void)
 extern void caml_signal_thread(void * lpParam);
 #endif
 
-#if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
+#ifdef _MSC_VER
 
 /* PR 4887: avoid crash box of windows runtime on some system calls */
 extern void caml_install_invalid_parameter_handler(void);
@@ -475,7 +475,7 @@ CAMLexport void caml_main(char_os **argv)
   caml_init_codefrag();
 
   caml_init_locale();
-#if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
+#ifdef _MSC_VER
   caml_install_invalid_parameter_handler();
 #endif
   caml_init_custom_operations();
@@ -560,9 +560,7 @@ CAMLexport void caml_main(char_os **argv)
   /* Load the globals */
   caml_seek_section(fd, &trail, "DATA");
   chan = caml_open_descriptor_in(fd);
-  Lock(chan);
   value global_data = caml_input_val(chan);
-  Unlock(chan);
   caml_modify_generational_global_root(&caml_global_data, global_data);
   caml_close_channel(chan); /* this also closes fd */
   caml_stat_free(trail.section);
@@ -619,7 +617,7 @@ CAMLexport value caml_startup_code_exn(
   caml_init_codefrag();
 
   caml_init_locale();
-#if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
+#ifdef _MSC_VER
   caml_install_invalid_parameter_handler();
 #endif
   caml_init_custom_operations();

@@ -710,7 +710,7 @@ struct heap_verify_state* caml_verify_begin (void)
   return st;
 }
 
-static void verify_push (void* st_v, value v, value* p)
+static void verify_push (void* st_v, value v, volatile value* ignored)
 {
   struct heap_verify_state* st = st_v;
   if (!Is_block(v)) return;
@@ -723,10 +723,12 @@ static void verify_push (void* st_v, value v, value* p)
   st->stack[st->sp++] = v;
 }
 
-void caml_verify_root(void* state, value v, value* p)
+void caml_verify_root(void* state, value v, volatile value* p)
 {
   verify_push(state, v, p);
 }
+
+static scanning_action_flags verify_scanning_flags = 0;
 
 static void verify_object(struct heap_verify_state* st, value v) {
   intnat* entry;
@@ -752,7 +754,7 @@ static void verify_object(struct heap_verify_state* st, value v) {
   if (Tag_val(v) == Cont_tag) {
     struct stack_info* stk = Ptr_val(Field(v, 0));
     if (stk != NULL)
-      caml_scan_stack(verify_push, st, stk, 0);
+      caml_scan_stack(verify_push, verify_scanning_flags, st, stk, 0);
   } else if (Tag_val(v) < No_scan_tag) {
     int i = 0;
     if (Tag_val(v) == Closure_tag) {
@@ -765,7 +767,11 @@ static void verify_object(struct heap_verify_state* st, value v) {
   }
 }
 
-void caml_verify_heap(struct heap_verify_state* st) {
+void caml_verify_heap(caml_domain_state *domain) {
+  struct heap_verify_state* st = caml_verify_begin();
+  caml_do_roots (&caml_verify_root, verify_scanning_flags, st, domain, 1);
+  caml_scan_global_roots(&caml_verify_root, st);
+
   while (st->sp) verify_object(st, st->stack[--st->sp]);
 
   caml_addrmap_clear(&st->seen);

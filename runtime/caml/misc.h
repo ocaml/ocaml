@@ -34,8 +34,7 @@
   /* Supported since at least GCC 3.1 */
   #define CAMLdeprecated_typedef(name, type) \
     typedef type name __attribute ((deprecated))
-#elif defined(_MSC_VER) && _MSC_VER >= 1310
-  /* NB deprecated("message") only supported from _MSC_VER >= 1400 */
+#elif defined(_MSC_VER)
   #define CAMLdeprecated_typedef(name, type) \
     typedef __declspec(deprecated) type name
 #else
@@ -90,7 +89,7 @@ CAMLdeprecated_typedef(addr, char *);
   #define CAMLnoreturn_start
   #define CAMLnoreturn_end __attribute__ ((noreturn))
   #define Noreturn __attribute__ ((noreturn))
-#elif defined(_MSC_VER) && _MSC_VER >= 1500
+#elif defined(_MSC_VER)
   #define CAMLnoreturn_start __declspec(noreturn)
   #define CAMLnoreturn_end
   #define Noreturn
@@ -143,7 +142,7 @@ CAMLdeprecated_typedef(addr, char *);
 #define CAMLalign(n) alignas(n)
 #elif defined(SUPPORTS_ALIGNED_ATTRIBUTE)
 #define CAMLalign(n) __attribute__((aligned(n)))
-#elif defined(_MSC_VER) && _MSC_VER >= 1500
+#elif defined(_MSC_VER)
 #define CAMLalign(n) __declspec(align(n))
 #else
 #error "How do I align values on this platform?"
@@ -171,7 +170,7 @@ CAMLdeprecated_typedef(addr, char *);
   #define CAMLunused_start __attribute__ ((unused))
   #define CAMLunused_end
   #define CAMLunused __attribute__ ((unused))
-#elif defined(_MSC_VER) && _MSC_VER >= 1500
+#elif defined(_MSC_VER)
   #define CAMLunused_start  __pragma( warning (push) )           \
     __pragma( warning (disable:4189 ) )
   #define CAMLunused_end __pragma( warning (pop))
@@ -182,21 +181,11 @@ CAMLdeprecated_typedef(addr, char *);
   #define CAMLunused
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/* Timing hooks. These can be assigned by the user. The functions
-   registered with these hooks must not allocate on the OCaml heap,
-   change any heap value, nor call OCaml code.
-
-   The hooks should be assigned using [atomic_exchange], and the
-   previous function should be called in the new one.
-
-   Thread-safety: These functions can be called from several domains
-   at once. They must be reentrant. They can obtain an identifier of
-   the current domain with [Caml_state->id] or
-   [Caml_state->unique_id].  */
+/* GC timing hooks. These can be assigned by the user. These hooks
+   must not allocate, change any heap value, nor call OCaml code. They
+   can obtain the domain id with Caml_state->id. These functions must
+   be reentrant. */
+#ifndef __cplusplus
 typedef void (*caml_timing_hook) (void);
 extern _Atomic caml_timing_hook caml_major_slice_begin_hook;
 extern _Atomic caml_timing_hook caml_major_slice_end_hook;
@@ -205,6 +194,11 @@ extern _Atomic caml_timing_hook caml_minor_gc_end_hook;
 extern _Atomic caml_timing_hook caml_finalise_begin_hook;
 extern _Atomic caml_timing_hook caml_finalise_end_hook;
 extern _Atomic caml_timing_hook caml_domain_terminated_hook;
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #ifdef CAML_INTERNALS
 
@@ -297,8 +291,10 @@ void caml_alloc_point_here(void);
    [abort()] is called.
 
    This function must be reentrant. */
+#ifndef __cplusplus
 typedef void (*fatal_error_hook) (char *msg, va_list args);
 extern _Atomic fatal_error_hook caml_fatal_error_hook;
+#endif
 
 CAMLnoreturn_start
 CAMLextern void caml_fatal_error (char *, ...)
@@ -501,16 +497,13 @@ int caml_runtime_warnings_active(void);
 
 #ifdef DEBUG
 #ifdef ARCH_SIXTYFOUR
-#define Debug_tag(x) (INT64_LITERAL(0xD700D7D7D700D6D7u) \
+#define Debug_tag(x) (0xD700D7D7D700D6D7ull \
                       | ((uintnat) (x) << 16) \
                       | ((uintnat) (x) << 48))
-#define Is_debug_tag(x) \
-  (((x) & \
-      INT64_LITERAL(0xff00ffffff00ffffu)) == INT64_LITERAL(0xD700D7D7D700D6D7u))
+#define Is_debug_tag(x) (((x) & 0xff00ffffff00ffffull) == 0xD700D7D7D700D6D7ull)
 #else
 #define Debug_tag(x) (0xD700D6D7ul | ((uintnat) (x) << 16))
-#define Is_debug_tag(x) \
-  (((x) & 0xff00fffful) == 0xD700D6D7ul)
+#define Is_debug_tag(x) (((x) & 0xff00fffful) == 0xD700D6D7ul)
 #endif /* ARCH_SIXTYFOUR */
 
 /*

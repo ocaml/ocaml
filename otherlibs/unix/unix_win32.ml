@@ -213,13 +213,9 @@ type wait_flag =
     WNOHANG
   | WUNTRACED
 
-type file_descr
-
 let maybe_quote f =
-  if String.contains f ' ' ||
-     String.contains f '\"' ||
-     String.contains f '\t' ||
-     f = ""
+  if f = ""
+  || String.exists (function ' ' | '\"'| '\t' -> true | _ -> false) f
   then Filename.quote f
   else f
 
@@ -239,17 +235,19 @@ let execvp prog args =
 let execvpe prog args env =
   sys_execvpe prog (Array.map maybe_quote args) env
 
+let fork () = invalid_arg "Unix.fork not implemented"
+let wait () = invalid_arg "Unix.wait not implemented"
+
 external waitpid : wait_flag list -> int -> int * process_status
                  = "caml_unix_waitpid"
 external _exit : int -> 'a = "caml_unix_exit"
 external getpid : unit -> int = "caml_unix_getpid"
-
-let fork () = invalid_arg "Unix.fork not implemented"
-let wait () = invalid_arg "Unix.wait not implemented"
 let getppid () = invalid_arg "Unix.getppid not implemented"
 let nice _ = invalid_arg "Unix.nice not implemented"
 
 (* Basic file input/output *)
+
+type file_descr
 
 external filedescr_of_unix_fd_num : int -> file_descr
                                   = "caml_unix_filedescr_of_fd"
@@ -369,8 +367,7 @@ external realpath : string -> string = "caml_unix_realpath"
 
 let realpath p =
   let cleanup p = (* Remove any \\?\ prefix. *)
-    if String.length p <= 4 then p else
-    if p.[0] = '\\' && p.[1] = '\\' && p.[2] = '?' && p.[3] = '\\'
+    if String.starts_with ~prefix:{|\\?\|} p
     then (String.sub p 4 (String.length p - 4))
     else p
   in
@@ -470,9 +467,11 @@ type dir_handle =
 external findfirst : string -> string * int = "caml_unix_findfirst"
 external findnext : int -> string= "caml_unix_findnext"
 
+let find_first_file_in_dir dirname = findfirst (Filename.concat dirname "*.*")
+
 let opendir dirname =
   try
-    let (first_entry, handle) = findfirst (Filename.concat dirname "*.*") in
+    let (first_entry, handle) = find_first_file_in_dir dirname in
     { dirname = dirname; handle = handle; entry_read = Dir_read first_entry }
   with End_of_file ->
     { dirname = dirname; handle = 0; entry_read = Dir_empty }
@@ -493,7 +492,7 @@ let closedir d =
 let rewinddir d =
   closedir d;
   try
-    let (first_entry, handle) = findfirst (d.dirname ^ "\\*.*") in
+    let (first_entry, handle) = find_first_file_in_dir d.dirname in
     d.handle <- handle; d.entry_read <- Dir_read first_entry
   with End_of_file ->
     d.handle <- 0; d.entry_read <- Dir_empty
@@ -516,12 +515,8 @@ external symlink_stub : bool -> string -> string -> unit = "caml_unix_symlink"
    Windows call GetFullPathName to do this because we need relative paths to
    stay relative. *)
 let normalize_slashes path =
-  if String.length path >= 4 && path.[0] = '\\' && path.[1] = '\\'
-                             && path.[2] = '?' && path.[3] = '\\' then
-    path
-  else
-    String.init (String.length path)
-                (fun i -> match path.[i] with '/' -> '\\' | c -> c)
+  if String.starts_with ~prefix:{|\\?\|} path then path
+  else String.map (function '/' -> '\\' | c -> c) path
 
 let symlink ?to_dir source dest =
   let to_dir =
@@ -605,8 +600,8 @@ type interval_timer =
   | ITIMER_PROF
 
 type interval_timer_status =
-  { it_interval: float;
-    it_value: float }
+  { it_interval: float;                 (* Period *)
+    it_value: float }                   (* Current value of the timer *)
 
 let getitimer _it = invalid_arg "Unix.getitimer not implemented"
 let setitimer _it _tm = invalid_arg "Unix.setitimer not implemented"
@@ -1231,7 +1226,10 @@ let tcsendbreak _fd _n = invalid_arg "Unix.tcsendbreak not implemented"
 let tcdrain _fd = invalid_arg "Unix.tcdrain not implemented"
 
 type flush_queue = TCIFLUSH | TCOFLUSH | TCIOFLUSH
+
 let tcflush _fd _q = invalid_arg "Unix.tcflush not implemented"
+
 type flow_action = TCOOFF | TCOON | TCIOFF | TCION
+
 let tcflow _fd _fl = invalid_arg "Unix.tcflow not implemented"
 let setsid () = invalid_arg "Unix.setsid not implemented"

@@ -1,0 +1,8 @@
+# @configure_input@
+
+version = "@VERSION@"
+description = "Unix system calls"
+archive(byte) = "unix.cma"
+archive(native) = "unix.cmxa"
+plugin(byte) = "unix.cma"
+plugin(native) = "unix.cmxs"

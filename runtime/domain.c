@@ -18,13 +18,31 @@
 
 #define CAML_INTERNALS
 
+#define _GNU_SOURCE  /* For sched.h CPU_ZERO(3) and CPU_COUNT(3) */
+#include "caml/config.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <pthread.h>
 #include <string.h>
+#ifdef HAS_GNU_GETAFFINITY_NP
+#include <sched.h>
+#ifdef HAS_PTHREAD_NP_H
+#include <pthread_np.h>
+#endif
+#endif
+#ifdef HAS_BSD_GETAFFINITY_NP
+#include <pthread_np.h>
+#include <sys/cpuset.h>
+typedef cpuset_t cpu_set_t;
+#endif
+#ifdef _WIN32
+#include <sysinfoapi.h>
+#endif
 #include "caml/alloc.h"
 #include "caml/backtrace.h"
+#include "caml/backtrace_prim.h"
 #include "caml/callback.h"
+#include "caml/debugger.h"
 #include "caml/domain.h"
 #include "caml/domain_state.h"
 #include "caml/runtime_events.h"
@@ -670,6 +688,7 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
   domain_state->external_raise = NULL;
   domain_state->trap_sp_off = 1;
   domain_state->trap_barrier_off = 0;
+  domain_state->trap_barrier_block = -1;
 #endif
 
   caml_reset_young_limit(domain_state);
@@ -1104,6 +1123,10 @@ CAMLprim value caml_domain_spawn(value callback, value mutex)
   sigset_t mask, old_mask;
 #endif
 
+#ifndef NATIVE_CODE
+  if (caml_debugger_in_use)
+    caml_fatal_error("ocamldebug does not support spawning multiple domains");
+#endif
   p.parent = &domain_self->interruptor;
   p.status = Dom_starting;
 
@@ -1523,13 +1546,13 @@ void caml_handle_gc_interrupt(void)
 
 CAMLexport int caml_bt_is_in_blocking_section(void)
 {
-  dom_internal* self = domain_self;
-  uintnat status = atomic_load_acq(&self->backup_thread_msg);
-  if (status == BT_IN_BLOCKING_SECTION)
-    return 1;
-  else
-    return 0;
+  uintnat status = atomic_load_acq(&domain_self->backup_thread_msg);
+  return status == BT_IN_BLOCKING_SECTION;
+}
 
+CAMLexport int caml_bt_is_self(void)
+{
+  return pthread_equal(domain_self->backup_thread, pthread_self());
 }
 
 CAMLexport intnat caml_domain_is_multicore (void)
@@ -1542,6 +1565,7 @@ CAMLexport void caml_acquire_domain_lock(void)
 {
   dom_internal* self = domain_self;
   caml_plat_lock(&self->domain_lock);
+  SET_Caml_state(self->state);
 }
 
 CAMLexport void caml_bt_enter_ocaml(void)
@@ -1558,6 +1582,7 @@ CAMLexport void caml_bt_enter_ocaml(void)
 CAMLexport void caml_release_domain_lock(void)
 {
   dom_internal* self = domain_self;
+  SET_Caml_state(NULL);
   caml_plat_unlock(&self->domain_lock);
 }
 
@@ -1717,9 +1742,12 @@ static void domain_terminate (void)
      sample at this point as the shared heap is gone. */
   caml_clear_gc_stats_sample(domain_state);
 
+  /* TODO: can this ever be NULL? can we remove this check? */
   if(domain_state->current_stack != NULL) {
     caml_free_stack(domain_state->current_stack);
   }
+  caml_free_backtrace_buffer(domain_state->backtrace_buffer);
+  caml_free_gc_regs_buckets(domain_state->gc_regs_buckets);
 
   /* signal the domain termination to the backup thread
      NB: for a program with no additional domains, the backup thread
@@ -1753,4 +1781,37 @@ CAMLprim value caml_domain_dls_get(value unused)
 {
   CAMLnoalloc;
   return Caml_state->dls_root;
+}
+
+CAMLprim value caml_recommended_domain_count(value unused)
+{
+  intnat n = -1;
+
+#if defined(HAS_GNU_GETAFFINITY_NP) || defined(HAS_BSD_GETAFFINITY_NP)
+  cpu_set_t cpuset;
+
+  CPU_ZERO(&cpuset);
+  /* error case fallsback into next method */
+  if (pthread_getaffinity_np(pthread_self(), sizeof(cpuset), &cpuset) == 0)
+    n = CPU_COUNT(&cpuset);
+#endif /* HAS_GNU_GETAFFINITY_NP || HAS_BSD_GETAFFINITY_NP */
+
+#ifdef _SC_NPROCESSORS_ONLN
+  if (n == -1)
+    n = sysconf(_SC_NPROCESSORS_ONLN);
+#endif /* _SC_NPROCESSORS_ONLN */
+
+#ifdef _WIN32
+  SYSTEM_INFO sysinfo;
+  GetSystemInfo(&sysinfo);
+  n = sysinfo.dwNumberOfProcessors;
+#endif /* _WIN32 */
+
+  /* At least one, even if system says zero */
+  if (n <= 0)
+    n = 1;
+  else if (n > Max_domains)
+    n = Max_domains;
+
+  return (Val_long(n));
 }

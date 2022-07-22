@@ -20,15 +20,7 @@
 
 
 static double to_sec(FILETIME ft) {
-#if defined(_MSC_VER) && _MSC_VER < 1300
-  /* See gettimeofday.c - it is not possible for these values to be 64-bit, so
-     there's no worry about using a signed struct in order to work around the
-     lack of support for casting int64_t to double.
-   */
-  LARGE_INTEGER tmp;
-#else
   ULARGE_INTEGER tmp;
-#endif
 
   tmp.u.LowPart = ft.dwLowDateTime;
   tmp.u.HighPart = ft.dwHighDateTime;

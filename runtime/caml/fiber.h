@@ -78,7 +78,8 @@ CAML_STATIC_ASSERT(sizeof(struct stack_info) ==
  * +------------------------+
  * |  struct stack_handler  |
  * +------------------------+ <--- Stack_high
- * |     caml_runstack      |
+ * |    caml_runstack /     |
+ * |   caml_start_program   |
  * +------------------------+
  * |                        |
  * .      OCaml frames      . <--- sp
@@ -197,8 +198,11 @@ extern value caml_global_data;
 
 struct stack_info** caml_alloc_stack_cache (void);
 CAMLextern struct stack_info* caml_alloc_main_stack (uintnat init_wsize);
-void caml_scan_stack(scanning_action f, void* fdata,
-                     struct stack_info* stack, value* v_gc_regs);
+
+void caml_scan_stack(
+  scanning_action f, scanning_action_flags fflags, void* fdata,
+  struct stack_info* stack, value* v_gc_regs);
+
 /* try to grow the stack until at least required_size words are available.
    returns nonzero on success */
 CAMLextern int caml_try_realloc_stack (asize_t required_wsize);
@@ -206,6 +210,9 @@ CAMLextern uintnat caml_get_init_stack_wsize(void);
 void caml_change_max_stack_size (uintnat new_max_wsize);
 void caml_maybe_expand_stack(void);
 CAMLextern void caml_free_stack(struct stack_info* stk);
+
+/* gc_regs_buckets is allocated on-demand by [maybe_expand_stack]. */
+void caml_free_gc_regs_buckets(value *gc_regs_buckets);
 
 #ifdef NATIVE_CODE
 void caml_get_stack_sp_pc (struct stack_info* stack,

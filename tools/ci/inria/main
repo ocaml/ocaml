@@ -107,7 +107,7 @@ esac
 
 # be considerate towards other potential users of the test machine
 case "${OCAML_ARCH}" in
-  bsd|linux) renice 10 $$ ;;
+  linux) renice 10 $$ ;;
 esac
 
 # be verbose and stop on error

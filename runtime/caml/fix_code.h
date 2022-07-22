@@ -34,8 +34,7 @@ void caml_set_instruction (code_t pos, opcode_t instr);
 int caml_is_instruction (opcode_t instr1, opcode_t instr2);
 
 #ifdef THREADED_CODE
-extern char ** caml_instr_table;
-extern char * caml_instr_base;
+void caml_init_thread_code(void ** instr_table, void * instr_base);
 void caml_thread_code (code_t code, asize_t len);
 #endif
 

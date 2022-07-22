@@ -474,6 +474,7 @@ program_management.cmo : \
     history.cmi \
     ../typing/envaux.cmi \
     debugger_config.cmi \
+    debugcom.cmi \
     ../driver/compmisc.cmi \
     breakpoints.cmi \
     program_management.cmi
@@ -492,6 +493,7 @@ program_management.cmx : \
     history.cmx \
     ../typing/envaux.cmx \
     debugger_config.cmx \
+    debugcom.cmx \
     ../driver/compmisc.cmx \
     breakpoints.cmx \
     program_management.cmi
@@ -642,7 +644,8 @@ trap_barrier.cmx : \
     debugcom.cmx \
     checkpoints.cmx \
     trap_barrier.cmi
-trap_barrier.cmi :
+trap_barrier.cmi : \
+    debugcom.cmi
 unix_tools.cmo : \
     ../otherlibs/unix/unix.cmi \
     ../utils/misc.cmi \

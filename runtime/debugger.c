@@ -138,10 +138,7 @@ static void open_connection(void)
                      caml_strerror(errno, buf, sizeof(buf)));
   dbg_in = caml_open_descriptor_in(dbg_socket);
   dbg_out = caml_open_descriptor_out(dbg_socket);
-  /* The code in this file does not bracket channel I/O operations with
-     Lock and Unlock, but this is safe because the debugger only works
-     with single-threaded programs.  The program being debugged
-     will abort when it creates a thread. */
+
   if (!caml_debugger_in_use) caml_putword(dbg_out, -1); /* first connection */
 #ifdef _WIN32
   caml_putword(dbg_out, _getpid());
@@ -250,6 +247,7 @@ void caml_debugger_init(void)
   caml_debugger_in_use = 1;
   /* Bigger than default caml_trap_sp_off (1) */
   Caml_state->trap_barrier_off = 2;
+  Caml_state->trap_barrier_block = -1;
 }
 
 static value getval(struct channel *chan)
@@ -346,6 +344,39 @@ void caml_debugger_code_unloaded(int index)
   })
 }
 
+/* Return number of blocks between this one and bottom of stack. */
+static intnat frame_block_number (struct stack_info *block)
+{
+  intnat n = 0;
+  while (block->handler->parent != NULL){
+    ++ n;
+    block = block->handler->parent;
+  }
+  return n;
+}
+
+/* Find the [n+1]th block counting from bottom of stack. */
+static struct stack_info *frame_block_address (intnat n)
+{
+  struct stack_info *block = Caml_state->current_stack;
+  intnat i = frame_block_number (Caml_state->current_stack);
+
+  if (n < 0 || n > i) return NULL;
+  for (; i > n; i--){
+    block = block->handler->parent;
+    CAMLassert (block != NULL);
+  }
+  return block;
+}
+
+/* Return the id of the [n+1]th block counting from bottom of stack,
+   or -1 if there is no such block. */
+static inline int64_t frame_block_id (intnat n)
+{
+  struct stack_info *addr = frame_block_address (n);
+  return addr == NULL ? -1 : addr->id;
+}
+
 #define Pc(sp) ((code_t)((sp)[0]))
 #define Env(sp) ((sp)[1])
 #define Extra_args(sp) (Long_val(((sp)[2])))
@@ -356,14 +387,15 @@ void caml_debugger(enum event_kind event, value param)
   value *frame, *newframe;
   intnat i, pos;
   value val;
-  value* stack_high = Stack_high(Caml_state->current_stack);
+  struct stack_info *frame_block, *new_frame_block;
   int frag;
   struct code_fragment *cf;
 
   if (dbg_socket == -1) return;  /* Not connected to a debugger. */
 
   /* Reset current frame */
-  frame = Caml_state->current_stack->sp + 1;
+  frame_block = Caml_state->current_stack;
+  frame = frame_block->sp + 1;
 
   /* Report the event to the debugger */
   switch(event) {
@@ -405,15 +437,17 @@ void caml_debugger(enum event_kind event, value param)
   }
   caml_putword(dbg_out, caml_event_count);
   if (event == EVENT_COUNT || event == BREAKPOINT) {
-    caml_putword(dbg_out, stack_high - frame);
+    caml_putword(dbg_out, frame_block_number (frame_block));
+    caml_putword(dbg_out, Stack_high(frame_block) - frame);
     cf = caml_find_code_fragment_by_pc((char*) Pc(frame));
     CAMLassert(cf != NULL);
     caml_putword(dbg_out, cf->fragnum);
     caml_putword(dbg_out, (char*) Pc(frame) - cf->code_start);
   } else {
     /* No PC and no stack frame associated with other events */
-    caml_putword(dbg_out, 0);
     caml_putword(dbg_out, -1);
+    caml_putword(dbg_out, -1);
+    caml_putword(dbg_out, 0);
     caml_putword(dbg_out, 0);
   }
   caml_flush(dbg_out);
@@ -440,7 +474,9 @@ void caml_debugger(enum event_kind event, value param)
       break;
     case REQ_CHECKPOINT:
 #ifndef _WIN32
+      caml_release_domain_lock (); /* Don't fork while holding locks. */
       i = fork();
+      caml_acquire_domain_lock ();
       if (i == 0) {
         close_connection();     /* Close parent connection. */
         open_connection();      /* Open new connection with debugger */
@@ -466,11 +502,13 @@ void caml_debugger(enum event_kind event, value param)
 #endif
       break;
     case REQ_INITIAL_FRAME:
-      frame = Caml_state->current_stack->sp + 1;
+      frame_block = Caml_state->current_stack;
+      frame = frame_block->sp + 1;
       /* Fall through */
     case REQ_GET_FRAME:
-      caml_putword(dbg_out, stack_high - frame);
-      if (frame < stack_high &&
+      caml_putword(dbg_out, frame_block_number (frame_block));
+      caml_putword(dbg_out, Stack_high(frame_block) - frame);
+      if (frame < Stack_high(frame_block) &&
           (cf = caml_find_code_fragment_by_pc((char*) Pc(frame))) != NULL) {
         caml_putword(dbg_out, cf->fragnum);
         caml_putword(dbg_out, (char*) Pc(frame) - cf->code_start);
@@ -482,23 +520,44 @@ void caml_debugger(enum event_kind event, value param)
       break;
     case REQ_SET_FRAME:
       i = caml_getword(dbg_in);
-      frame = stack_high - i;
+      frame_block = frame_block_address (i);
+      i = caml_getword(dbg_in);
+      frame = Stack_high(frame_block) - i;
       break;
     case REQ_UP_FRAME:
       i = caml_getword(dbg_in);
       newframe = frame + Extra_args(frame) + i + 3;
-      if (newframe >= stack_high ||
-          (cf = caml_find_code_fragment_by_pc((char *) Pc(newframe))) == NULL) {
+      if (newframe >= Stack_high (frame_block)){
+        new_frame_block = frame_block->handler->parent;
+        if (new_frame_block == NULL){
+          newframe = NULL;
+        }else{
+          newframe = new_frame_block->sp + 2;
+        }
+      }else{
+        new_frame_block = frame_block;
+      }
+      if (newframe != NULL){
+        cf = caml_find_code_fragment_by_pc((char *) Pc(newframe));
+      }else{
+        cf = NULL;
+      }
+      if (cf == NULL) {
+        caml_putword(dbg_out, -1);
         caml_putword(dbg_out, -1);
       } else {
         frame = newframe;
-        caml_putword(dbg_out, stack_high - frame);
+        frame_block = new_frame_block;
+        caml_putword(dbg_out, frame_block_number (frame_block));
+        caml_putword(dbg_out, Stack_high(frame_block) - frame);
         caml_putword(dbg_out, cf->fragnum);
         caml_putword(dbg_out, (char*) Pc(frame) - cf->code_start);
       }
       caml_flush(dbg_out);
       break;
     case REQ_SET_TRAP_BARRIER:
+      i = caml_getword(dbg_in);
+      Caml_state->trap_barrier_block = frame_block_id(i);
       i = caml_getword(dbg_in);
       Caml_state->trap_barrier_off = -i;
       break;

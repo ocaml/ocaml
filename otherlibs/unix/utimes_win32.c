@@ -31,7 +31,7 @@ static void convert_time(double unixTime, FILETIME* ft)
    * January 1970 (the Unix Epoch). FILETIME is measured in 100ns ticks.
    */
   u.QuadPart =
-    (ULONGLONG)(unixTime * 10000000.0) + INT64_LITERAL(116444736000000000U);
+    (ULONGLONG)(unixTime * 10000000.0) + 116444736000000000ULL;
   ft->dwLowDateTime = u.LowPart;
   ft->dwHighDateTime = u.HighPart;
 }

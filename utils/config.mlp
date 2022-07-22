@@ -52,11 +52,9 @@ let mkdll, mkexe, mkmaindll =
       let flexlink =
         Option.value ~default:"flexlink" (Sys.getenv_opt "OCAML_FLEXLINK")
       in
-      let f i =
-        let c = flexlink.[i] in
-        if c = '/' && Sys.win32 then '\\' else c
-      in
-      String.init (String.length flexlink) f
+      if Sys.win32
+      then String.map (function '/' -> '\\' | c -> c) flexlink
+      else flexlink
     in
     let flags = " -chain %%FLEXDLL_CHAIN%% %%FLEXLINK_FLAGS%%" in
     flexlink ^ flags ^ "%%FLEXLINK_DLL_LDFLAGS%%",

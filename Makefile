@@ -25,11 +25,7 @@ OCAMLLEX ?= $(BOOT_OCAMLLEX)
 include Makefile.common
 
 .PHONY: defaultentry
-ifeq "$(NATIVE_COMPILER)" "true"
-defaultentry: world.opt
-else
-defaultentry: world
-endif
+defaultentry: $(DEFAULT_BUILD_TARGET)
 
 ifeq "$(UNIX_OR_WIN32)" "win32"
 LN = cp
@@ -47,7 +43,7 @@ DIRS = utils parsing typing bytecomp file_formats lambda middle_end \
   asmcomp driver toplevel
 INCLUDES = $(addprefix -I ,$(DIRS))
 COMPFLAGS=-strict-sequence -principal -absname \
-          -w +a-4-9-40-41-42-44-45-48-66-70 \
+          -w +a-4-9-40-41-42-44-45-48-66 \
           -warn-error +a \
           -bin-annot -safe-string -strict-formats $(INCLUDES)
 LINKFLAGS=
@@ -274,7 +270,7 @@ endif
 	$(MAKE) ocamlopt.opt
 	$(MAKE) otherlibrariesopt
 	$(MAKE) ocamllex.opt ocamltoolsopt ocamltoolsopt.opt $(OCAMLDOC_OPT) \
-	  $(OCAMLTEST_OPT) ocamlnat
+	  $(OCAMLTEST_OPT) othertools ocamlnat
 ifeq "$(WITH_OCAMLDOC)-$(STDLIB_MANPAGES)" "ocamldoc-true"
 	$(MAKE) manpages
 endif
@@ -314,6 +310,7 @@ all: coreall
 	$(MAKE) ocaml
 	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC) \
          $(WITH_OCAMLTEST)
+	$(MAKE) othertools
 ifeq "$(WITH_OCAMLDOC)-$(STDLIB_MANPAGES)" "ocamldoc-true"
 	$(MAKE) manpages
 endif
@@ -530,6 +527,9 @@ partialclean::
 beforedepend:: lambda/runtimedef.ml
 
 # Choose the right machine-dependent files
+
+asmcomp/arch.mli: asmcomp/$(ARCH)/arch.mli
+	cd asmcomp; $(LN) $(ARCH)/arch.mli .
 
 asmcomp/arch.ml: asmcomp/$(ARCH)/arch.ml
 	cd asmcomp; $(LN) $(ARCH)/arch.ml .
@@ -1269,14 +1269,19 @@ ocamltoolsopt: ocamlopt
 ocamltoolsopt.opt: ocamlc.opt ocamllex.opt compilerlibs/ocamlmiddleend.cmxa
 	$(MAKE) -C tools opt.opt
 
+# tools that require a full ocaml distribution: otherlibs and toplevel
+.PHONY:othertools
+othertools:
+	$(MAKE) -C tools othertools
+
 partialclean::
 	$(MAKE) -C tools clean
 
 ## Test compilation of backend-specific parts
 
 ARCH_SPECIFIC =\
-  asmcomp/arch.ml asmcomp/proc.ml asmcomp/CSE.ml asmcomp/selection.ml \
-  asmcomp/scheduling.ml asmcomp/reload.ml
+  asmcomp/arch.mli asmcomp/arch.ml asmcomp/proc.ml asmcomp/CSE.ml \
+  asmcomp/selection.ml asmcomp/scheduling.ml asmcomp/reload.ml
 
 partialclean::
 	rm -f $(ARCH_SPECIFIC)
@@ -1402,6 +1407,7 @@ distclean: clean
 	$(MAKE) -C stdlib distclean
 	$(MAKE) -C testsuite distclean
 	$(MAKE) -C tools distclean
+	rm -f compilerlibs/META
 	rm -f boot/ocamlrun boot/ocamlrun.exe boot/camlheader \
 	      boot/ocamlruns boot/ocamlruns.exe \
 	      boot/flexlink.byte boot/flexlink.byte.exe \
@@ -1468,7 +1474,7 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	   "$(INSTALL_COMPLIBDIR)"
 endif
 	$(INSTALL_DATA) \
-	  compilerlibs/*.cma \
+	  compilerlibs/*.cma compilerlibs/META \
 	  "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
 	   $(BYTESTART) $(TOPLEVELSTART) \

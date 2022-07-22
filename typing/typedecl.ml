@@ -1336,7 +1336,7 @@ let rec parse_native_repr_attributes env core_type ty ~global_repr =
       parse_native_repr_attributes env ct2 t2 ~global_repr
     in
     (repr_arg :: repr_args, repr_res)
-  | Ptyp_poly (_, t), _, _ ->
+  | (Ptyp_poly (_, t) | Ptyp_alias (t, _)), _, _ ->
      parse_native_repr_attributes env t ty ~global_repr
   | Ptyp_arrow _, _, _ | _, Tarrow _, _ -> assert false
   | _ -> ([], make_native_repr env core_type ty ~global_repr)

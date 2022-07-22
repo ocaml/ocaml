@@ -102,6 +102,8 @@
 
 #undef HAS_STDINT_H
 
+#undef HAS_PTHREAD_NP_H
+
 #undef HAS_UNISTD
 
 /* Define HAS_UNISTD if you have /usr/include/unistd.h. */
@@ -284,8 +286,6 @@
 #undef HAS_FFS
 #undef HAS_BITSCANFORWARD
 
-#undef HAS_STACK_OVERFLOW_DETECTION
-
 #undef HAS_SIGWAIT
 
 #undef HAS_HUGE_PAGES
@@ -299,3 +299,6 @@
 #undef HAS_POSIX_MONOTONIC_CLOCK
 
 #undef HAS_MACH_ABSOLUTE_TIME
+
+#undef HAS_GNU_GETAFFINITY_NP
+#undef HAS_BSD_GETAFFINITY_NP

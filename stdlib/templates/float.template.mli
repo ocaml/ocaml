@@ -178,7 +178,12 @@ val of_string_opt: string -> float option
 (** Same as [of_string], but returns [None] instead of raising. *)
 
 val to_string : float -> string
-(** Return the string representation of a floating-point number. *)
+(** Return a string representation of a floating-point number.
+
+    This conversion can involve a loss of precision. For greater control over
+    the manner in which the number is printed, see {!Printf}.
+
+    This function is an alias for {!Stdlib.string_of_float}. *)
 
 type fpclass = Stdlib.fpclass =
     FP_normal           (** Normal number, none of the below *)

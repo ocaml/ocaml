@@ -1,30 +1,28 @@
 (* TEST
 readonly_files = "a.ml b.ml"
 ocamldebug_script = "${test_source_directory}/input_script"
-* skip
-reason = "ocamldebug is broken (#34)"
-** debugger
-*** shared-libraries
-**** setup-ocamlc.byte-build-env
-***** ocamlc.byte
+* debugger
+** shared-libraries
+*** setup-ocamlc.byte-build-env
+**** ocamlc.byte
 module = "a.ml"
 flags = "-g -for-pack foo"
-****** ocamlc.byte
+***** ocamlc.byte
 module = ""
 all_modules = "a.cmo"
 program = "foo.cmo"
 flags = "-g -pack"
-******* ocamlc.byte
+****** ocamlc.byte
 module = "b.ml"
 flags = " -g "
-******** ocamlc.byte
+******* ocamlc.byte
 module = ""
 flags = " -g "
 all_modules = "foo.cmo b.cmo"
 program = "${test_build_directory}/noev.exe"
-********* check-ocamlc.byte-output
-********** ocamldebug
-*********** check-program-output
+******** check-ocamlc.byte-output
+********* ocamldebug
+********** check-program-output
 *)
 
 (* This file only contains the specification of how to run the test *)

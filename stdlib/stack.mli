@@ -40,6 +40,11 @@ val pop_opt : 'a t -> 'a option
    or returns [None] if the stack is empty.
    @since 4.08 *)
 
+val drop : 'a t -> unit
+(** [drop s] removes the topmost element in stack [s],
+   or raises {!Empty} if the stack is empty.
+   @since 5.1.0 *)
+
 val top : 'a t -> 'a
 (** [top s] returns the topmost element in stack [s],
    or raises {!Empty} if the stack is empty. *)

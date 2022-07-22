@@ -67,10 +67,10 @@ change_exe_magic_number() {
   sed -i.tmp 's/\x23define \+EXEC_MAGIC \+\x22'${old}\
 '\x22/#define EXEC_MAGIC "'${new}'"/' runtime/caml/exec.h
   rm -f runtime/caml/exec.h.tmp
-  # Change magic number in utils/config.mlp
+  # Change magic number in utils/config.common.ml
   sed -i.tmp 's/let \+exec_magic_number \+= \+\x22'${old}\
-'\x22/let exec_magic_number = "'${new}'"/' utils/config.mlp
-  rm -f utils/config.mlp.tmp
+'\x22/let exec_magic_number = "'${new}'"/' utils/config.common.ml
+  rm -f utils/config.common.ml.tmp
 }
 
 remove_primitive()

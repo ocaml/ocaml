@@ -794,6 +794,7 @@ instrumented_runtime_libs
 instrumented_runtime
 debug_runtime
 cmxs
+natdynlink_archive
 natdynlinkopts
 natdynlink
 supports_shared_libraries
@@ -846,6 +847,7 @@ OCAML_VERSION_MAJOR
 OCAML_RELEASE_EXTRA
 OCAML_DEVELOPMENT_VERSION
 VERSION
+default_build_target
 native_compiler
 CONFIGURE_ARGS
 target_alias
@@ -2857,6 +2859,7 @@ ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 
 
 
+
 VERSION=5.1.0+dev1-2022-06-09
 
 OCAML_DEVELOPMENT_VERSION=true
@@ -2878,6 +2881,7 @@ OCAML_VERSION_SHORT=5.1
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
+
 
 
 
@@ -2982,6 +2986,14 @@ ac_config_headers="$ac_config_headers runtime/caml/m.h"
 ac_config_headers="$ac_config_headers runtime/caml/s.h"
 
 ac_config_headers="$ac_config_headers runtime/caml/version.h"
+
+ac_config_files="$ac_config_files compilerlibs/META"
+
+ac_config_files="$ac_config_files otherlibs/dynlink/META"
+
+ac_config_files="$ac_config_files otherlibs/runtime_events/META"
+
+ac_config_files="$ac_config_files stdlib/META"
 
 
 # Definitions related to the version of OCaml
@@ -12682,10 +12694,14 @@ esac
 otherlibraries="dynlink runtime_events"
 if test x"$enable_unix_lib" != "xno"; then :
   enable_unix_lib=yes
-   otherlibraries="$otherlibraries unix"
+  ac_config_files="$ac_config_files otherlibs/unix/META"
+
+  otherlibraries="$otherlibraries unix"
 fi
 if test x"$enable_str_lib" != "xno"; then :
   otherlibraries="$otherlibraries str"
+  ac_config_files="$ac_config_files otherlibs/str/META"
+
 fi
 
 # Checks for system services
@@ -13485,6 +13501,13 @@ done
 ac_fn_c_check_header_mongrel "$LINENO" "stdint.h" "ac_cv_header_stdint_h" "$ac_includes_default"
 if test "x$ac_cv_header_stdint_h" = xyes; then :
   $as_echo "#define HAS_STDINT_H 1" >>confdefs.h
+
+fi
+
+
+ac_fn_c_check_header_mongrel "$LINENO" "pthread_np.h" "ac_cv_header_pthread_np_h" "$ac_includes_default"
+if test "x$ac_cv_header_pthread_np_h" = xyes; then :
+  $as_echo "#define HAS_PTHREAD_NP_H 1" >>confdefs.h
 
 fi
 
@@ -14445,11 +14468,16 @@ $as_echo "$as_me: the native compiler is disabled" >&6;} ;; #(
     { $as_echo "$as_me:${as_lineno-$LINENO}: the native compiler is not supported on this platform" >&5
 $as_echo "$as_me: the native compiler is not supported on this platform" >&6;} ;; #(
   *,*) :
-    native_compiler=true
- ;; #(
+    native_compiler=true ;; #(
   *) :
      ;;
 esac
+
+if $native_compiler; then :
+  default_build_target=world.opt
+else
+  default_build_target=world
+fi
 
 if ! $native_compiler; then :
   natdynlink=false
@@ -14459,6 +14487,11 @@ if $natdynlink; then :
   cmxs="cmxs"
 else
   cmxs="cmx"
+fi
+if $natdynlink; then :
+  natdynlink_archive="dynlink.cmxa"
+else
+  natdynlink_archive=""
 fi
 
 cat >>confdefs.h <<_ACEOF
@@ -16681,6 +16714,52 @@ if test "x$ac_cv_func__BitScanForward" = xyes; then :
 fi
 
 
+## pthread_getaffinity_np, args differ from GNU and BSD
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#define _GNU_SOURCE
+      #include <sched.h>
+      #include <pthread.h>
+int
+main ()
+{
+cpu_set_t cs;
+      CPU_ZERO(&cs);
+      CPU_COUNT(&cs);
+      pthread_getaffinity_np(pthread_self(), sizeof(cs), &cs);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  $as_echo "#define HAS_GNU_GETAFFINITY_NP 1" >>confdefs.h
+
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <pthread.h>
+        #include <pthread_np.h>
+        #include <sys/cpuset.h>
+int
+main ()
+{
+cpuset_t cs;
+        /* Not every BSD has CPU_ZERO and CPU_COUNT (NetBSD) */
+        CPU_ZERO(&cs);
+        CPU_COUNT(&cs);
+        pthread_getaffinity_np(pthread_self(), sizeof(cs), &cs);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  $as_echo "#define HAS_BSD_GETAFFINITY_NP 1" >>confdefs.h
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
 ## Determine whether the debugger should/can be built
 
 case $enable_debugger in #(
@@ -16707,23 +16786,6 @@ case $enable_debug_runtime in #(
     debug_runtime=false ;; #(
   *) :
     debug_runtime=true ;;
-esac
-
-## Determine if system stack overflows can be detected
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether stack overflows can be detected" >&5
-$as_echo_n "checking whether stack overflows can be detected... " >&6; }
-
-case $arch,$system in #(
-  i386,linux_elf|amd64,linux|amd64,macosx \
-    |amd64,openbsd|i386,bsd_elf|arm64,linux|arm64,macosx) :
-    $as_echo "#define HAS_STACK_OVERFLOW_DETECTION 1" >>confdefs.h
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; } ;; #(
-  *) :
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; } ;;
 esac
 
 ## Determine how to link with the POSIX threads library
@@ -17480,6 +17542,8 @@ case $enable_systhreads,$enable_unix_lib in #(
 $as_echo "$as_me: the threads library is disabled" >&6;} ;; #(
   *) :
     systhread_support=true
+  ac_config_files="$ac_config_files otherlibs/systhreads/META"
+
   otherlibraries="$otherlibraries systhreads"
   { $as_echo "$as_me:${as_lineno-$LINENO}: the threads library is supported" >&5
 $as_echo "$as_me: the threads library is supported" >&6;} ;;
@@ -17765,6 +17829,8 @@ if test x"$enable_ocamldoc" = "xno"; then :
   ocamldoc=""
 else
   ocamldoc=ocamldoc
+  ac_config_files="$ac_config_files ocamldoc/META"
+
 fi
 
 documentation_tool_cmd=''
@@ -19279,7 +19345,15 @@ do
     "runtime/caml/m.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/m.h" ;;
     "runtime/caml/s.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/s.h" ;;
     "runtime/caml/version.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/version.h" ;;
+    "compilerlibs/META") CONFIG_FILES="$CONFIG_FILES compilerlibs/META" ;;
+    "otherlibs/dynlink/META") CONFIG_FILES="$CONFIG_FILES otherlibs/dynlink/META" ;;
+    "otherlibs/runtime_events/META") CONFIG_FILES="$CONFIG_FILES otherlibs/runtime_events/META" ;;
+    "stdlib/META") CONFIG_FILES="$CONFIG_FILES stdlib/META" ;;
     "libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool" ;;
+    "otherlibs/unix/META") CONFIG_FILES="$CONFIG_FILES otherlibs/unix/META" ;;
+    "otherlibs/str/META") CONFIG_FILES="$CONFIG_FILES otherlibs/str/META" ;;
+    "otherlibs/systhreads/META") CONFIG_FILES="$CONFIG_FILES otherlibs/systhreads/META" ;;
+    "ocamldoc/META") CONFIG_FILES="$CONFIG_FILES ocamldoc/META" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac

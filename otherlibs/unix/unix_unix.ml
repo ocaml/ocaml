@@ -15,76 +15,81 @@
 
 let shell = "/bin/sh"
 
+(* Errors *)
+
 type error =
-    E2BIG
-  | EACCES
-  | EAGAIN
-  | EBADF
-  | EBUSY
-  | ECHILD
-  | EDEADLK
-  | EDOM
-  | EEXIST
-  | EFAULT
-  | EFBIG
-  | EINTR
-  | EINVAL
-  | EIO
-  | EISDIR
-  | EMFILE
-  | EMLINK
-  | ENAMETOOLONG
-  | ENFILE
-  | ENODEV
-  | ENOENT
-  | ENOEXEC
-  | ENOLCK
-  | ENOMEM
-  | ENOSPC
-  | ENOSYS
-  | ENOTDIR
-  | ENOTEMPTY
-  | ENOTTY
-  | ENXIO
-  | EPERM
-  | EPIPE
-  | ERANGE
-  | EROFS
-  | ESPIPE
-  | ESRCH
-  | EXDEV
-  | EWOULDBLOCK
-  | EINPROGRESS
-  | EALREADY
-  | ENOTSOCK
-  | EDESTADDRREQ
-  | EMSGSIZE
-  | EPROTOTYPE
-  | ENOPROTOOPT
-  | EPROTONOSUPPORT
-  | ESOCKTNOSUPPORT
-  | EOPNOTSUPP
-  | EPFNOSUPPORT
-  | EAFNOSUPPORT
-  | EADDRINUSE
-  | EADDRNOTAVAIL
-  | ENETDOWN
-  | ENETUNREACH
-  | ENETRESET
-  | ECONNABORTED
-  | ECONNRESET
-  | ENOBUFS
-  | EISCONN
-  | ENOTCONN
-  | ESHUTDOWN
-  | ETOOMANYREFS
-  | ETIMEDOUT
-  | ECONNREFUSED
-  | EHOSTDOWN
-  | EHOSTUNREACH
-  | ELOOP
+  (* Errors defined in the POSIX standard *)
+    E2BIG               (* Argument list too long *)
+  | EACCES              (* Permission denied *)
+  | EAGAIN              (* Resource temporarily unavailable; try again *)
+  | EBADF               (* Bad file descriptor *)
+  | EBUSY               (* Resource unavailable *)
+  | ECHILD              (* No child process *)
+  | EDEADLK             (* Resource deadlock would occur *)
+  | EDOM                (* Domain error for math functions, etc. *)
+  | EEXIST              (* File exists *)
+  | EFAULT              (* Bad address *)
+  | EFBIG               (* File too large *)
+  | EINTR               (* Function interrupted by signal *)
+  | EINVAL              (* Invalid argument *)
+  | EIO                 (* Hardware I/O error *)
+  | EISDIR              (* Is a directory *)
+  | EMFILE              (* Too many open files by the process *)
+  | EMLINK              (* Too many links *)
+  | ENAMETOOLONG        (* Filename too long *)
+  | ENFILE              (* Too many open files in the system *)
+  | ENODEV              (* No such device *)
+  | ENOENT              (* No such file or directory *)
+  | ENOEXEC             (* Not an executable file *)
+  | ENOLCK              (* No locks available *)
+  | ENOMEM              (* Not enough memory *)
+  | ENOSPC              (* No space left on device *)
+  | ENOSYS              (* Function not supported *)
+  | ENOTDIR             (* Not a directory *)
+  | ENOTEMPTY           (* Directory not empty *)
+  | ENOTTY              (* Inappropriate I/O control operation *)
+  | ENXIO               (* No such device or address *)
+  | EPERM               (* Operation not permitted *)
+  | EPIPE               (* Broken pipe *)
+  | ERANGE              (* Result too large *)
+  | EROFS               (* Read-only file system *)
+  | ESPIPE              (* Invalid seek e.g. on a pipe *)
+  | ESRCH               (* No such process *)
+  | EXDEV               (* Invalid link *)
+  (* Additional errors, mostly BSD *)
+  | EWOULDBLOCK         (* Operation would block *)
+  | EINPROGRESS         (* Operation now in progress *)
+  | EALREADY            (* Operation already in progress *)
+  | ENOTSOCK            (* Socket operation on non-socket *)
+  | EDESTADDRREQ        (* Destination address required *)
+  | EMSGSIZE            (* Message too long *)
+  | EPROTOTYPE          (* Protocol wrong type for socket *)
+  | ENOPROTOOPT         (* Protocol not available *)
+  | EPROTONOSUPPORT     (* Protocol not supported *)
+  | ESOCKTNOSUPPORT     (* Socket type not supported *)
+  | EOPNOTSUPP          (* Operation not supported on socket *)
+  | EPFNOSUPPORT        (* Protocol family not supported *)
+  | EAFNOSUPPORT        (* Address family not supported by protocol family *)
+  | EADDRINUSE          (* Address already in use *)
+  | EADDRNOTAVAIL       (* Can't assign requested address *)
+  | ENETDOWN            (* Network is down *)
+  | ENETUNREACH         (* Network is unreachable *)
+  | ENETRESET           (* Network dropped connection on reset *)
+  | ECONNABORTED        (* Software caused connection abort *)
+  | ECONNRESET          (* Connection reset by peer *)
+  | ENOBUFS             (* No buffer space available *)
+  | EISCONN             (* Socket is already connected *)
+  | ENOTCONN            (* Socket is not connected *)
+  | ESHUTDOWN           (* Can't send after socket shutdown *)
+  | ETOOMANYREFS        (* Too many references: can't splice *)
+  | ETIMEDOUT           (* Connection timed out *)
+  | ECONNREFUSED        (* Connection refused *)
+  | EHOSTDOWN           (* Host is down *)
+  | EHOSTUNREACH        (* No route to host *)
+  | ELOOP               (* Too many levels of symbolic links *)
   | EOVERFLOW
-  | EUNKNOWNERR of int
+  (* All other errors are mapped to EUNKNOWNERR *)
+  | EUNKNOWNERR of int  (* Unknown error *)
 
 exception Unix_error of error * string * string
 
@@ -219,6 +224,8 @@ external getpid : unit -> int = "caml_unix_getpid"
 external getppid : unit -> int = "caml_unix_getppid"
 external nice : int -> int = "caml_unix_nice"
 
+(* Basic file input/output *)
+
 type file_descr = int
 
 let stdin = 0
@@ -278,6 +285,8 @@ let write_substring fd buf ofs len =
 let single_write_substring fd buf ofs len =
   single_write fd (Bytes.unsafe_of_string buf) ofs len
 
+(* Interfacing with the standard input/output library *)
+
 external in_channel_of_descr : file_descr -> in_channel
                              = "caml_unix_inchannel_of_filedescr"
 external out_channel_of_descr : file_descr -> out_channel
@@ -287,6 +296,8 @@ external descr_of_in_channel : in_channel -> file_descr
 external descr_of_out_channel : out_channel -> file_descr
                               = "caml_channel_descriptor"
 
+(* Seeking and truncating *)
+
 type seek_command =
     SEEK_SET
   | SEEK_CUR
@@ -295,6 +306,8 @@ type seek_command =
 external lseek : file_descr -> int -> seek_command -> int = "caml_unix_lseek"
 external truncate : string -> int -> unit = "caml_unix_truncate"
 external ftruncate : file_descr -> int -> unit = "caml_unix_ftruncate"
+
+(* File statistics *)
 
 type file_kind =
     S_REG
@@ -323,10 +336,15 @@ external stat : string -> stats = "caml_unix_stat"
 external lstat : string -> stats = "caml_unix_lstat"
 external fstat : file_descr -> stats = "caml_unix_fstat"
 external isatty : file_descr -> bool = "caml_unix_isatty"
+
+(* Operations on file names *)
+
 external unlink : string -> unit = "caml_unix_unlink"
 external rename : string -> string -> unit = "caml_unix_rename"
 external link : ?follow:bool -> string -> string -> unit = "caml_unix_link"
 external realpath : string -> string = "caml_unix_realpath"
+
+(* Operations on large files *)
 
 module LargeFile =
   struct
@@ -353,6 +371,8 @@ module LargeFile =
     external fstat : file_descr -> stats = "caml_unix_fstat_64"
   end
 
+(* Mapping files into memory *)
+
 external map_internal:
    file_descr -> ('a, 'b) Stdlib.Bigarray.kind
               -> 'c Stdlib.Bigarray.layout
@@ -362,6 +382,8 @@ external map_internal:
 
 let map_file fd ?(pos=0L) kind layout shared dims =
   map_internal fd kind layout shared dims pos
+
+(* File permissions and ownership *)
 
 type access_permission =
     R_OK
@@ -376,6 +398,8 @@ external fchown : file_descr -> int -> int -> unit = "caml_unix_fchown"
 external umask : int -> int = "caml_unix_umask"
 external access : string -> access_permission list -> unit = "caml_unix_access"
 
+(* Operations on file descriptors *)
+
 external dup : ?cloexec: bool -> file_descr -> file_descr = "caml_unix_dup"
 external dup2 :
    ?cloexec: bool -> file_descr -> file_descr -> unit = "caml_unix_dup2"
@@ -384,6 +408,8 @@ external clear_nonblock : file_descr -> unit = "caml_unix_clear_nonblock"
 external set_close_on_exec : file_descr -> unit = "caml_unix_set_close_on_exec"
 external clear_close_on_exec : file_descr -> unit
                              = "caml_unix_clear_close_on_exec"
+
+(* Directories *)
 
 external mkdir : string -> file_perm -> unit = "caml_unix_mkdir"
 external rmdir : string -> unit = "caml_unix_rmdir"
@@ -398,16 +424,20 @@ external readdir : dir_handle -> string = "caml_unix_readdir"
 external rewinddir : dir_handle -> unit = "caml_unix_rewinddir"
 external closedir : dir_handle -> unit = "caml_unix_closedir"
 
+(* Pipes *)
+
 external pipe :
   ?cloexec: bool -> unit -> file_descr * file_descr = "caml_unix_pipe"
+external mkfifo : string -> file_perm -> unit = "caml_unix_mkfifo"
+
+(* Symbolic links *)
+
+external readlink : string -> string = "caml_unix_readlink"
 external symlink : ?to_dir:bool -> string -> string -> unit
                  = "caml_unix_symlink"
 external has_symlink : unit -> bool = "caml_unix_has_symlink"
-external readlink : string -> string = "caml_unix_readlink"
-external mkfifo : string -> file_perm -> unit = "caml_unix_mkfifo"
-external select :
-  file_descr list -> file_descr list -> file_descr list -> float ->
-        file_descr list * file_descr list * file_descr list = "caml_unix_select"
+
+(* Locking *)
 
 type lock_command =
     F_ULOCK
@@ -427,6 +457,8 @@ external sigsuspend: int list -> unit = "caml_unix_sigsuspend"
 
 let pause() =
   let sigs = sigprocmask SIG_BLOCK [] in sigsuspend sigs
+
+(* Time functions *)
 
 type process_times =
   { tms_utime : float;
@@ -506,6 +538,8 @@ external getgrnam : string -> group_entry = "caml_unix_getgrnam"
 external getpwuid : int -> passwd_entry = "caml_unix_getpwuid"
 external getgrgid : int -> group_entry = "caml_unix_getgrgid"
 
+(* Internet addresses *)
+
 type inet_addr = string
 
 let is_inet6_addr s = String.length s = 16
@@ -521,6 +555,8 @@ let inet6_addr_any =
   try inet_addr_of_string "::" with Failure _ -> inet_addr_any
 let inet6_addr_loopback =
   try inet_addr_of_string "::1" with Failure _ -> inet_addr_loopback
+
+(* Sockets *)
 
 type socket_domain =
     PF_UNIX
@@ -667,6 +703,8 @@ let getsockopt_float fd opt = SO.get SO.float fd opt
 let setsockopt_float fd opt v = SO.set SO.float fd opt v
 
 let getsockopt_error fd = SO.get SO.error fd SO_ERROR
+
+(* Host and protocol databases *)
 
 type host_entry =
   { h_name : string;
@@ -826,66 +864,6 @@ let getnameinfo addr opts =
   with Invalid_argument _ ->
     getnameinfo_emulation addr opts
 
-type terminal_io = {
-    mutable c_ignbrk: bool;
-    mutable c_brkint: bool;
-    mutable c_ignpar: bool;
-    mutable c_parmrk: bool;
-    mutable c_inpck: bool;
-    mutable c_istrip: bool;
-    mutable c_inlcr: bool;
-    mutable c_igncr: bool;
-    mutable c_icrnl: bool;
-    mutable c_ixon: bool;
-    mutable c_ixoff: bool;
-    mutable c_opost: bool;
-    mutable c_obaud: int;
-    mutable c_ibaud: int;
-    mutable c_csize: int;
-    mutable c_cstopb: int;
-    mutable c_cread: bool;
-    mutable c_parenb: bool;
-    mutable c_parodd: bool;
-    mutable c_hupcl: bool;
-    mutable c_clocal: bool;
-    mutable c_isig: bool;
-    mutable c_icanon: bool;
-    mutable c_noflsh: bool;
-    mutable c_echo: bool;
-    mutable c_echoe: bool;
-    mutable c_echok: bool;
-    mutable c_echonl: bool;
-    mutable c_vintr: char;
-    mutable c_vquit: char;
-    mutable c_verase: char;
-    mutable c_vkill: char;
-    mutable c_veof: char;
-    mutable c_veol: char;
-    mutable c_vmin: int;
-    mutable c_vtime: int;
-    mutable c_vstart: char;
-    mutable c_vstop: char
-  }
-
-external tcgetattr: file_descr -> terminal_io = "caml_unix_tcgetattr"
-
-type setattr_when = TCSANOW | TCSADRAIN | TCSAFLUSH
-
-external tcsetattr: file_descr -> setattr_when -> terminal_io -> unit
-               = "caml_unix_tcsetattr"
-external tcsendbreak: file_descr -> int -> unit = "caml_unix_tcsendbreak"
-external tcdrain: file_descr -> unit = "caml_unix_tcdrain"
-
-type flush_queue = TCIFLUSH | TCOFLUSH | TCIOFLUSH
-
-external tcflush: file_descr -> flush_queue -> unit = "caml_unix_tcflush"
-
-type flow_action = TCOOFF | TCOON | TCIOFF | TCION
-
-external tcflow: file_descr -> flow_action -> unit = "caml_unix_tcflow"
-
-external setsid : unit -> int = "caml_unix_setsid"
-
 (* High-level process management (system, popen) *)
 
 let rec waitpid_non_intr pid =
@@ -895,10 +873,6 @@ let rec waitpid_non_intr pid =
 external spawn : string -> string array -> string array option ->
                  bool -> int array -> int
                = "caml_unix_spawn"
-
-let system cmd =
-  let pid = spawn shell [| shell; "-c"; cmd |] None false [| 0; 1; 2 |] in
-  snd(waitpid_non_intr pid)
 
 let create_process_gen cmd args optenv
                        new_stdin new_stdout new_stderr =
@@ -934,6 +908,10 @@ let create_process cmd args new_stdin new_stdout new_stderr =
 
 let create_process_env cmd args env new_stdin new_stdout new_stderr =
   create_process_gen cmd args (Some env) new_stdin new_stdout new_stderr
+
+let system cmd =
+  let pid = spawn shell [| shell; "-c"; cmd |] None false [| 0; 1; 2 |] in
+  snd(waitpid_non_intr pid)
 
 type popen_process =
     Process of in_channel * out_channel
@@ -1086,6 +1064,13 @@ let close_process_full (inchan, outchan, errchan) =
   close_in errchan;
   snd(waitpid_non_intr pid)
 
+
+(* Polling *)
+
+external select :
+  file_descr list -> file_descr list -> file_descr list -> float ->
+        file_descr list * file_descr list * file_descr list = "caml_unix_select"
+
 (* High-level network functions *)
 
 let open_connection sockaddr =
@@ -1127,3 +1112,65 @@ let establish_server server_fun sockaddr =
             exit 0
     | id -> close s; ignore(waitpid_non_intr id) (* Reclaim the child *)
   done
+
+(* Terminal interface *)
+
+type terminal_io = {
+  mutable c_ignbrk: bool;
+  mutable c_brkint: bool;
+  mutable c_ignpar: bool;
+  mutable c_parmrk: bool;
+  mutable c_inpck: bool;
+  mutable c_istrip: bool;
+  mutable c_inlcr: bool;
+  mutable c_igncr: bool;
+  mutable c_icrnl: bool;
+  mutable c_ixon: bool;
+  mutable c_ixoff: bool;
+  mutable c_opost: bool;
+  mutable c_obaud: int;
+  mutable c_ibaud: int;
+  mutable c_csize: int;
+  mutable c_cstopb: int;
+  mutable c_cread: bool;
+  mutable c_parenb: bool;
+  mutable c_parodd: bool;
+  mutable c_hupcl: bool;
+  mutable c_clocal: bool;
+  mutable c_isig: bool;
+  mutable c_icanon: bool;
+  mutable c_noflsh: bool;
+  mutable c_echo: bool;
+  mutable c_echoe: bool;
+  mutable c_echok: bool;
+  mutable c_echonl: bool;
+  mutable c_vintr: char;
+  mutable c_vquit: char;
+  mutable c_verase: char;
+  mutable c_vkill: char;
+  mutable c_veof: char;
+  mutable c_veol: char;
+  mutable c_vmin: int;
+  mutable c_vtime: int;
+  mutable c_vstart: char;
+  mutable c_vstop: char
+}
+
+type setattr_when = TCSANOW | TCSADRAIN | TCSAFLUSH
+
+external tcgetattr: file_descr -> terminal_io = "caml_unix_tcgetattr"
+
+external tcsetattr: file_descr -> setattr_when -> terminal_io -> unit
+               = "caml_unix_tcsetattr"
+external tcsendbreak: file_descr -> int -> unit = "caml_unix_tcsendbreak"
+external tcdrain: file_descr -> unit = "caml_unix_tcdrain"
+
+type flush_queue = TCIFLUSH | TCOFLUSH | TCIOFLUSH
+
+external tcflush: file_descr -> flush_queue -> unit = "caml_unix_tcflush"
+
+type flow_action = TCOOFF | TCOON | TCIOFF | TCION
+
+external tcflow: file_descr -> flow_action -> unit = "caml_unix_tcflow"
+
+external setsid : unit -> int = "caml_unix_setsid"
