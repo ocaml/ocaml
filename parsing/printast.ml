@@ -783,10 +783,14 @@ and module_expr i ppf x =
       line i ppf "Pmod_functor %a\n" fmt_str_opt_loc s;
       module_type i ppf mt;
       module_expr i ppf me;
-  | Pmod_apply (me1, me2) ->
+  | Pmod_apply (me1, Some me2) ->
       line i ppf "Pmod_apply\n";
       module_expr i ppf me1;
       module_expr i ppf me2;
+  | Pmod_apply (me1, None) ->
+      line i ppf "Pmod_apply\n";
+      module_expr i ppf me1;
+      line (i+1) ppf "()\n";
   | Pmod_constraint (me, mt) ->
       line i ppf "Pmod_constraint\n";
       module_expr i ppf me;
