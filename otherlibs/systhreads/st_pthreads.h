@@ -96,6 +96,8 @@ Caml_inline void st_tls_set(st_tlskey k, void * v)
    threads. */
 
 typedef struct {
+  int init;                       /* have the mutex and the cond been
+                                     initialized already? */
   pthread_mutex_t lock;           /* to protect contents */
   uintnat busy;                   /* 0 = free, 1 = taken */
   atomic_uintnat waiters;         /* number of threads waiting on master lock */
@@ -104,9 +106,12 @@ typedef struct {
 
 static void st_masterlock_init(st_masterlock * m)
 {
-
-  pthread_mutex_init(&m->lock, NULL);
-  pthread_cond_init(&m->is_free, NULL);
+  if (!m->init) {
+    // FIXME: check errors
+    pthread_mutex_init(&m->lock, NULL);
+    pthread_cond_init(&m->is_free, NULL);
+    m->init = 1;
+  }
   m->busy = 1;
   atomic_store_rel(&m->waiters, 0);
 
