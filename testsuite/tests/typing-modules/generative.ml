@@ -42,7 +42,7 @@ module H : functor () -> S
 
 (* Alias *)
 module U = struct end;;
-module M = F(struct end);; (* ok *)
+module M = F();; (* ok *)
 [%%expect{|
 module U : sig end
 module M : S
