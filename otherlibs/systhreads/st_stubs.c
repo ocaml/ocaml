@@ -360,6 +360,7 @@ static void caml_thread_reinitialize(void)
 }
 
 CAMLprim value caml_thread_join(value th);
+CAMLprim value caml_thread_cleanup(value unit);
 
 /* This hook is run when a domain shuts down (see domains.c).
 
@@ -380,7 +381,10 @@ static void caml_thread_domain_stop_hook(void) {
 
     /* another domain thread may be joining on this domain's descriptor */
     caml_threadstatus_terminate(Terminated(Active_thread->descr));
-
+    /* Shut down the tick thread */
+    caml_thread_cleanup(Val_unit);
+    /* We free the thread info but not its resources: they are owned
+       by Caml_state at this point, and will be cleaned-up later. */
     caml_stat_free(Active_thread);
     Active_thread = NULL;
   };
