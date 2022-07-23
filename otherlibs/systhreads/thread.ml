@@ -88,6 +88,7 @@ let () =
   thread_initialize ();
   Domain.at_each_spawn thread_initialize_domain;
   Sys.set_signal preempt_signal (Sys.Signal_handle preempt);
+  (* Callback in [caml_shutdown], when the last domain exits. *)
   Callback.register "Thread.at_shutdown" (fun () ->
     thread_cleanup();
     (* In case of DLL-embedded OCaml the preempt_signal handler
