@@ -95,6 +95,8 @@ typedef struct caml_thread_struct* caml_thread_t;
 /* Thread-local key for accessing the current thread's [caml_thread_t] */
 st_tlskey caml_thread_key;
 
+#define This_thread ((caml_thread_t) st_tls_get(caml_thread_key))
+
 /* overall table for threads across domains */
 struct caml_thread_table {
   caml_thread_t active_thread;
@@ -221,7 +223,7 @@ static void caml_thread_enter_blocking_section(void)
 
 static void caml_thread_leave_blocking_section(void)
 {
-  caml_thread_t th = st_tls_get(caml_thread_key);
+  caml_thread_t th = This_thread;
   /* Wait until the runtime is free */
   thread_lock_acquire(th->domain_id);
   /* Update Active_thread to point to the thread descriptor corresponding to
@@ -483,7 +485,7 @@ static void caml_thread_stop(void)
 {
   /* PR#5188, PR#7220: some of the global runtime state may have
      changed as the thread was running, so we save it in the
-     curr_thread data to make sure that the cleanup logic
+     This_thread data to make sure that the cleanup logic
      below uses accurate information. */
   caml_thread_save_runtime_state();
 
@@ -619,7 +621,7 @@ CAMLprim value caml_thread_new(value clos)
 CAMLexport int caml_c_thread_register(void)
 {
   /* Already registered? */
-  if (st_tls_get(caml_thread_key) != NULL) return 0;
+  if (This_thread != NULL) return 0;
 
   CAMLassert(Caml_state_opt == NULL);
   caml_init_domain_self(Dom_c_threads);
@@ -666,7 +668,7 @@ CAMLexport int caml_c_thread_register(void)
 /* the thread lock is not held when entering */
 CAMLexport int caml_c_thread_unregister(void)
 {
-  caml_thread_t th = st_tls_get(caml_thread_key);
+  caml_thread_t th = This_thread;
 
   /* If this thread is not set, then it was not registered */
   if (th == NULL) return 0;
@@ -733,7 +735,7 @@ CAMLprim value caml_thread_yield(value unit)
   caml_raise_if_exception(caml_process_pending_signals_exn());
   caml_thread_save_runtime_state();
   st_thread_yield(m);
-  Active_thread = st_tls_get(caml_thread_key);
+  Active_thread = This_thread;
   caml_thread_restore_runtime_state();
   caml_raise_if_exception(caml_process_pending_signals_exn());
 
