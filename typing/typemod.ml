@@ -1817,7 +1817,7 @@ exception Not_a_path
 let rec path_of_module mexp =
   match mexp.mod_desc with
   | Tmod_ident (p,_) -> p
-  | Tmod_apply(funct, Some (arg, _coe)) when !Clflags.applicative_functors ->
+  | Tmod_apply(funct, arg, _coe) when !Clflags.applicative_functors ->
       Papply(path_of_module funct, path_of_module arg)
   | Tmod_constraint (mexp, _, _, _) ->
       path_of_module mexp
@@ -2218,7 +2218,7 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
         mod_attributes = smod.pmod_attributes;
         mod_loc = smod.pmod_loc },
       Shape.abs funct_shape_param body_shape
-  | Pmod_apply _ ->
+  | Pmod_apply _ | Pmod_apply_unit _ ->
       type_application smod.pmod_loc sttn funct_body env smod
   | Pmod_constraint(sarg, smty) ->
       let arg, arg_shape = type_module ~alias true funct_body anchor env sarg in
@@ -2271,7 +2271,7 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
 and type_application loc strengthen funct_body env smod =
   let rec extract_application funct_body env sargs smod =
     match smod.pmod_desc with
-    | Pmod_apply(f, Some sarg) ->
+    | Pmod_apply (f, sarg) ->
         let arg, shape = type_module true funct_body None env sarg in
         let summary = Normal_app {
           loc = smod.pmod_loc;
@@ -2283,7 +2283,7 @@ and type_application loc strengthen funct_body env smod =
           shape;
         } in
         extract_application funct_body env (summary::sargs) f
-    | Pmod_apply(f, None) ->
+    | Pmod_apply_unit f ->
         let summary = Unit_app {
           loc = smod.pmod_loc;
           attributes = smod.pmod_attributes;
@@ -2319,7 +2319,7 @@ and type_one_application ~ctx:(apply_loc,md_f,args)
         raise (Error (f_loc, env, Apply_generative));
       if funct_body && Mtype.contains_type env funct.mod_type then
         raise (Error (apply_loc, env, Not_allowed_in_functor_body));
-      { mod_desc = Tmod_apply(funct, None);
+      { mod_desc = Tmod_apply_unit funct;
         mod_type = mty_res;
         mod_env = env;
         mod_attributes = attributes;
@@ -2387,7 +2387,7 @@ and type_one_application ~ctx:(apply_loc,md_f,args)
       in
       check_well_formed_module env apply_loc
         "the signature of this functor application" mty_appl;
-      { mod_desc = Tmod_apply(funct, Some (arg, coercion));
+      { mod_desc = Tmod_apply(funct, arg, coercion);
         mod_type = mty_appl;
         mod_env = env;
         mod_attributes = app_attributes;

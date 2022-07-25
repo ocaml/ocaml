@@ -493,13 +493,14 @@ let module_expr sub x =
     | Tmod_structure st -> Tmod_structure (sub.structure sub st)
     | Tmod_functor (arg, mexpr) ->
         Tmod_functor (functor_parameter sub arg, sub.module_expr sub mexpr)
-    | Tmod_apply (mexp1, Some (mexp2, c)) ->
+    | Tmod_apply (mexp1, mexp2, c) ->
         Tmod_apply (
           sub.module_expr sub mexp1,
-          Some (sub.module_expr sub mexp2, sub.module_coercion sub c)
+          sub.module_expr sub mexp2,
+          sub.module_coercion sub c
         )
-    | Tmod_apply (mexp1, None) ->
-        Tmod_apply (sub.module_expr sub mexp1, None)
+    | Tmod_apply_unit mexp1 ->
+        Tmod_apply_unit (sub.module_expr sub mexp1)
     | Tmod_constraint (mexpr, mt, Tmodtype_implicit, c) ->
         Tmod_constraint (sub.module_expr sub mexpr, mt, Tmodtype_implicit,
                          sub.module_coercion sub c)

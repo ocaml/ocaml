@@ -348,9 +348,9 @@ module M = struct
         functor_ ~loc ~attrs
           (map_functor_param sub param)
           (sub.module_expr sub body)
-    | Pmod_apply (m1, Some m2) ->
+    | Pmod_apply (m1, m2) ->
         apply ~loc ~attrs (sub.module_expr sub m1) (sub.module_expr sub m2)
-    | Pmod_apply (m1, None) ->
+    | Pmod_apply_unit m1 ->
         apply_unit ~loc ~attrs (sub.module_expr sub m1)
     | Pmod_constraint (m, mty) ->
         constraint_ ~loc ~attrs (sub.module_expr sub m)

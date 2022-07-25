@@ -382,7 +382,9 @@ and rewrite_mod iflag smod =
   | Pmod_functor(_param, sbody) -> rewrite_mod iflag sbody
   | Pmod_apply(smod1, osmod2) ->
       rewrite_mod iflag smod1;
-      Option.iter (rewrite_mod iflag) osmod2
+      rewrite_mod iflag osmod2
+  | Pmod_apply_unit smod1 ->
+      rewrite_mod iflag smod1
   | Pmod_constraint(smod, _smty) -> rewrite_mod iflag smod
   | Pmod_unpack(sexp) -> rewrite_exp iflag sexp
   | Pmod_extension _ -> ()
