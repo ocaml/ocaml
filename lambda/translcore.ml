@@ -186,12 +186,11 @@ let event_function ~scopes exp lam =
 
 (* Assertions *)
 
-let assert_failed ~scopes exp =
+let assert_failed loc ~scopes exp =
   let slot =
     transl_extension_path Loc_unknown
       Env.initial Predef.path_assert_failure
   in
-  let loc = exp.exp_loc in
   let (fname, line, char) =
     Location.get_pos_info loc.Location.loc_start
   in
@@ -547,13 +546,13 @@ and transl_exp0 ~in_new_scope ~scopes e =
            transl_exp ~scopes body)
   | Texp_pack modl ->
       !transl_module ~scopes Tcoerce_none None modl
-  | Texp_assert {exp_desc=Texp_construct(_, {cstr_name="false"}, _)} ->
-      assert_failed ~scopes e
-  | Texp_assert (cond) ->
+  | Texp_assert ({exp_desc=Texp_construct(_, {cstr_name="false"}, _)}, loc) ->
+      assert_failed loc ~scopes e
+  | Texp_assert (cond, loc) ->
       if !Clflags.noassert
       then lambda_unit
       else Lifthenelse (transl_exp ~scopes cond, lambda_unit,
-                        assert_failed ~scopes e)
+                        assert_failed loc ~scopes e)
   | Texp_lazy e ->
       (* when e needs no computation (constants, identifiers, ...), we
          optimize the translation just as Lazy.lazy_from_val would

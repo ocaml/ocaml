@@ -75,6 +75,9 @@ Working version
 - #11338: Turn some partial application warnings into hints.
   (Leo White, review by Stephen Dolan)
 
+- #10911: Improve the location reported by parenthesized assert expressions
+  (Fabian Hemmer, review by Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
 
 - #11364: Allow `make -C testsuite promote` to take `TEST` and `LIST` variables

@@ -353,8 +353,8 @@ let expr sub x =
           sub.extension_constructor sub cd,
           sub.expr sub exp
         )
-    | Texp_assert exp ->
-        Texp_assert (sub.expr sub exp)
+    | Texp_assert (exp, loc) ->
+        Texp_assert (sub.expr sub exp, loc)
     | Texp_lazy exp ->
         Texp_lazy (sub.expr sub exp)
     | Texp_object (cl, sl) ->

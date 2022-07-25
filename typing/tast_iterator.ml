@@ -247,7 +247,7 @@ let expr sub {exp_extra; exp_desc; exp_env; _} =
   | Texp_letexception (cd, exp) ->
       sub.extension_constructor sub cd;
       sub.expr sub exp
-  | Texp_assert exp -> sub.expr sub exp
+  | Texp_assert (exp, _) -> sub.expr sub exp
   | Texp_lazy exp -> sub.expr sub exp
   | Texp_object (cl, _) -> sub.class_structure sub cl
   | Texp_pack mexpr -> sub.module_expr sub mexpr

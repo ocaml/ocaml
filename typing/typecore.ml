@@ -2353,7 +2353,7 @@ let rec is_nonexpansive exp =
      equivalent to (raise e; diverge), and a nonexpansive "diverge" can be
      produced using lazy values or the relaxed value restriction.
      See GPR#1142 *)
-  | Texp_assert exp ->
+  | Texp_assert (exp, _) ->
       is_nonexpansive exp
   | Texp_apply (
       { exp_desc = Texp_ident (_, _, {val_kind =
@@ -3743,8 +3743,14 @@ and type_expect_
         | _ ->
             instance Predef.type_unit
       in
+      let rec innermost_location loc_stack =
+        match loc_stack with
+        | [] -> loc
+        | [l] -> l
+        | _ :: s -> innermost_location s
+      in
       rue {
-        exp_desc = Texp_assert cond;
+        exp_desc = Texp_assert (cond, innermost_location sexp.pexp_loc_stack);
         exp_loc = loc; exp_extra = [];
         exp_type;
         exp_attributes = sexp.pexp_attributes;

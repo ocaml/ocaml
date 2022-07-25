@@ -406,7 +406,7 @@ and expression i ppf x =
       line i ppf "Texp_letexception\n";
       extension_constructor i ppf cd;
       expression i ppf e;
-  | Texp_assert (e) ->
+  | Texp_assert (e, _) ->
       line i ppf "Texp_assert";
       expression i ppf e;
   | Texp_lazy (e) ->
