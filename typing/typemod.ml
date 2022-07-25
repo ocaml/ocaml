@@ -2311,12 +2311,15 @@ and type_one_application ~ctx:(apply_loc,md_f,args)
       let Unit_app {f_loc; attributes; _} | Normal_app {f_loc; attributes; _} =
         app_view
       in
-      let app_is_unit = match app_view with
-        | Unit_app _ -> true
-        | Normal_app app -> app.arg_is_syntactic_unit
-      in
-      if not app_is_unit then
-        raise (Error (f_loc, env, Apply_generative));
+      begin match app_view with
+        | Unit_app _ -> ()
+        | Normal_app app ->
+          if app.arg_is_syntactic_unit then
+            Location.prerr_warning app.arg.mod_loc
+              Warnings.Generative_application_expects_unit
+          else
+            raise (Error (f_loc, env, Apply_generative));
+      end;
       if funct_body && Mtype.contains_type env funct.mod_type then
         raise (Error (apply_loc, env, Not_allowed_in_functor_body));
       { mod_desc = Tmod_apply_unit funct;

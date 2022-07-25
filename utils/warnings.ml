@@ -107,6 +107,7 @@ type t =
   | Missing_mli                             (* 70 *)
   | Unused_tmc_attribute                    (* 71 *)
   | Tmc_breaks_tailcall                     (* 72 *)
+  | Generative_application_expects_unit     (* 73 *)
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
    the numbers of existing warnings.
@@ -188,12 +189,13 @@ let number = function
   | Missing_mli -> 70
   | Unused_tmc_attribute -> 71
   | Tmc_breaks_tailcall -> 72
+  | Generative_application_expects_unit -> 73
 ;;
 (* DO NOT REMOVE the ;; above: it is used by
    the testsuite/ests/warnings/mnemonics.mll test to determine where
    the  definition of the number function above ends *)
 
-let last_warning_number = 72
+let last_warning_number = 73
 
 type description =
   { number : int;
@@ -1123,6 +1125,9 @@ let message = function
        Please either mark the called function with the [@tail_mod_cons]\n\
        attribute, or mark this call with the [@tailcall false] attribute\n\
        to make its non-tailness explicit."
+  | Generative_application_expects_unit ->
+      "A generative functor should be applied to '()', \
+       using '(struct end)' is deprecated."
 ;;
 
 let nerrors = ref 0
