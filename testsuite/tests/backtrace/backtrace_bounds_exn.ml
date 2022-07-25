@@ -3,11 +3,11 @@
    ocamlrunparam += ",b=1"
 *)
 
-(* bad bounds exception *)
+(* #11436: bad backtrace for out-of-bounds exception *)
 
 let xs = [| 0; 1; 2 |]
 
-let bad_bound_fn x =
+let [@inline never] bad_bound_fn x =
   !x + xs.(100)
 
 let _ =
