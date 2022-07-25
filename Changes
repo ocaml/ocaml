@@ -94,6 +94,10 @@ Working version
 - #10348: Expand GADT equations lazily during unification to avoid ambiguity
   (Jacques Garrigue, review by Leo White)
 
+- #11436: Fix wrong stack backtrace for out-of-bound exceptions raised
+  by leaf functions.
+  (Tom Kelly and Xavier Leroy, review by Mark Shinwell)
+
 
 OCaml 5.0
 ---------

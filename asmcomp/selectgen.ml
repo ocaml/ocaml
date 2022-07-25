@@ -411,7 +411,8 @@ method mark_call =
 
 method mark_tailcall = ()
 
-method mark_c_tailcall = ()
+method mark_c_tailcall =
+  if !Clflags.debug then contains_calls := true
 
 method mark_instr = function
   | Iop (Icall_ind | Icall_imm _ | Iextcall _) ->
