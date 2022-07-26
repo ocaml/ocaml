@@ -137,7 +137,7 @@ Caml_inline void write_barrier(
           then this is in a remembered set already */
        if (Is_young(old_val)) return;
        /* old is a block and in the major heap */
-       caml_darken(0, old_val, 0);
+       caml_darken(Caml_state, old_val, 0);
      }
      /* this update is creating a new link from major to minor, remember it */
      if (Is_block_and_young(new_val)) {

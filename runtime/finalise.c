@@ -107,7 +107,7 @@ static void generic_final_update
       for (i = 0; i < k; i++) {
         /* Note that item may already be dark due to multiple entries in
            the final table. */
-        caml_darken (NULL, f->todo_tail->item[i].val, NULL);
+        caml_darken (d, f->todo_tail->item[i].val, NULL);
       }
     }
   }
