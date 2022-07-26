@@ -228,11 +228,6 @@ type @'#' classtype-path '->' '#' classtype-path@ is usually not the same as
 type @('#' classtype-path 'as' "'" ident) '->' "'" ident@.
 %
 
-Use of \#-types to abbreviate polymorphic variant types is deprecated.
-If @@t@@ is an exact variant type then @"#"@t@@ translates to @"[<" @t@"]"@,
-and @"#"@t@"[>" "`"tag_1 \dots"`"tag_k"]"@ translates to
-@"[<" @t@ ">" "`"tag_1 \dots"`"tag_k"]"@
-
 \subsubsection*{sss:typexpr-variant-record}{Variant and record types}
 
 There are no type expressions describing (defined) variant types nor

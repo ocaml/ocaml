@@ -272,24 +272,8 @@ and transl_type_aux env policy styp =
       let ty, fields = transl_fields env policy o fields in
       ctyp (Ttyp_object (fields, o)) (newobj ty)
   | Ptyp_class(lid, stl) ->
-      let (path, decl, _is_variant) =
+      let (path, decl) =
         try
-          let path, decl = Env.find_type_by_name lid.txt env in
-          let rec check decl =
-            match decl.type_manifest with
-              None -> raise Not_found
-            | Some ty ->
-                match get_desc ty with
-                  Tvariant row when Btype.static_row row -> ()
-                | Tconstr (path, _, _) ->
-                    check (Env.find_type path env)
-                | _ -> raise Not_found
-          in check decl;
-          Location.deprecated styp.ptyp_loc
-            "old syntax for polymorphic variant type";
-          ignore(Env.lookup_type ~loc:lid.loc lid.txt env);
-          (path, decl,true)
-        with Not_found -> try
           let lid2 =
             match lid.txt with
               Longident.Lident s     -> Longident.Lident ("#" ^ s)
@@ -298,7 +282,7 @@ and transl_type_aux env policy styp =
           in
           let path, decl = Env.find_type_by_name lid2 env in
           ignore(Env.lookup_cltype ~loc:lid.loc lid.txt env);
-          (path, decl, false)
+          (path, decl)
         with Not_found ->
           ignore (Env.lookup_cltype ~loc:lid.loc lid.txt env); assert false
       in
@@ -315,31 +299,15 @@ and transl_type_aux env policy styp =
              raise (Error(sty.ptyp_loc, env, Type_mismatch err))
         )
         (List.combine stl args) params;
-        let ty_args = List.map (fun ctyp -> ctyp.ctyp_type) args in
+      let ty_args = List.map (fun ctyp -> ctyp.ctyp_type) args in
       let ty = Ctype.expand_head env (newconstr path ty_args) in
       let ty = match get_desc ty with
-        Tvariant row ->
-          let fields =
-            List.map
-              (fun (l,f) -> l,
-                match row_field_repr f with
-                | Rpresent oty -> rf_either_of oty
-                | _ -> f)
-              (row_fields row)
-          in
-          (* NB: row is always non-static here; more is thus never Tnil *)
-          let more =
-            if policy = Univars then new_pre_univar () else newvar () in
-          let row =
-            create_row ~fields ~more
-              ~closed:true ~fixed:None ~name:(Some (path, ty_args)) in
-          newty (Tvariant row)
-      | Tobject (fi, _) ->
-          let _, tv = flatten_fields fi in
-          if policy = Univars then pre_univars := tv :: !pre_univars;
-          ty
-      | _ ->
-          assert false
+        | Tobject (fi, _) ->
+            let _, tv = flatten_fields fi in
+            if policy = Univars then pre_univars := tv :: !pre_univars;
+            ty
+        | _ ->
+            assert false
       in
       ctyp (Ttyp_class (path, lid, args)) ty
   | Ptyp_alias(st, alias) ->

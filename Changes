@@ -10,6 +10,9 @@ Working version
   construct.
   (Nicolás Ojeda Bär)
 
+- #11457: Remove old polymorphic variant syntax.
+  (Stefan Muenzel, review by Gabriel Scherer and Jacques Garrigue)
+
 ### Runtime system:
 
 ### Code generation and optimizations:
@@ -104,7 +107,6 @@ Working version
 - #11436: Fix wrong stack backtrace for out-of-bound exceptions raised
   by leaf functions.
   (Tom Kelly and Xavier Leroy, review by Mark Shinwell)
-
 
 OCaml 5.0
 ---------

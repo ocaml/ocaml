@@ -178,26 +178,6 @@ Warning 37 [unused-constructor]: unused constructor A.
 module T5_bis : sig end
 |}]
 
-
-module T6 : sig end = struct
-  (* GPR9170 *)
-  module M = struct
-    type t = [`A | `B]
-  end
-  module type S = sig
-    open M
-    val f: #t -> unit
-  end
-  let _ = fun ((module S : S)) -> S.f `A
-end;;
-[%%expect {|
-Line 8, characters 11-13:
-8 |     val f: #t -> unit
-               ^^
-Alert deprecated: old syntax for polymorphic variant type
-module T6 : sig end
-|}]
-
 module T7 : sig end = struct
   (* GPR9170 *)
   module M = struct
