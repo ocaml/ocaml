@@ -950,7 +950,7 @@ ENDFUNCTION(G(caml_runstack))
 
 FUNCTION(G(caml_ml_array_bound_error))
 CFI_STARTPROC
-        LEA_VAR(caml_array_bound_error, %rax)
+        LEA_VAR(caml_array_bound_error_asm, %rax)
         jmp     LBL(caml_c_call)
 CFI_ENDPROC
 ENDFUNCTION(G(caml_ml_array_bound_error))

@@ -909,8 +909,8 @@ L(fiber_exn_handler):
 
 FUNCTION(caml_ml_array_bound_error)
         CFI_STARTPROC
-    /* Load address of [caml_array_bound_error] in ADDITIONAL_ARG */
-        ADDRGLOBAL(ADDITIONAL_ARG, caml_array_bound_error)
+    /* Load address of [caml_array_bound_error_asm] in ADDITIONAL_ARG */
+        ADDRGLOBAL(ADDITIONAL_ARG, caml_array_bound_error_asm)
     /* Call that function */
         b       G(caml_c_call)
         CFI_ENDPROC

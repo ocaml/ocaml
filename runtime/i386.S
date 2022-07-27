@@ -412,8 +412,8 @@ FUNCTION(caml_ml_array_bound_error)
         movl    %edx, CAML_STATE(bottom_of_stack, %ebx)
     /* Re-align the stack */
         andl    $-16, %esp
-    /* Branch to [caml_array_bound_error] (never returns) */
-        call    G(caml_array_bound_error)
+    /* Branch to [caml_array_bound_error_asm] (never returns) */
+        call    G(caml_array_bound_error_asm)
         CFI_ENDPROC
         ENDFUNCTION(caml_ml_array_bound_error)
 
