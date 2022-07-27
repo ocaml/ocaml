@@ -2,9 +2,8 @@
 
 include systhreads
 * hassysthreads
-** not-windows
-*** bytecode
-*** native
+** bytecode
+** native
 
 *)
 
