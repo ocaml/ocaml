@@ -994,18 +994,21 @@ and open_declaration = module_expr open_infos
     - [open M(N).O]
     - [open struct ... end] *)
 
-and 'a include_infos =
+and ('a, 'kind) include_infos =
     {
      pincl_mod: 'a;
      pincl_loc: Location.t;
      pincl_attributes: attributes;
+     pincl_kind: 'kind;
     }
 
-and include_description = module_type include_infos
+and include_description = (module_type, unit) include_infos
 (** Values of type [include_description] represents [include MT] *)
 
-and include_declaration = module_expr include_infos
-(** Values of type [include_declaration] represents [include ME] *)
+and include_declaration =
+  (module_expr, [ `Include | `Include_functor ]) include_infos
+(** Values of type [include_declaration] represents [include ME] or
+    [include functor ME] *)
 
 and with_constraint =
   | Pwith_type of Longident.t loc * type_declaration

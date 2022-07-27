@@ -237,6 +237,14 @@ let constr ppf l = Format_doc.compat Doc.constr ppf l
 
 let ident_of_name_loc ppf s = ident_of_name ppf s.txt
 
+let check_include_functor_attr attrs =
+  match
+    List.partition (fun attr ->
+        attr.attr_name.txt = "extension.include_functor") attrs
+  with
+  | [], _ -> attrs, false
+  | _::_, rest -> rest, true
+
 type space_formatter = (unit, Format.formatter, unit) format
 
 let override = function
@@ -403,6 +411,9 @@ let tyvar ppf v = Format_doc.compat Doc.tyvar ppf v
 
 let tyvar_loc f str = tyvar f str.txt
 let string_quot f x = pp f "`%a" ident_of_name x
+
+let maybe_functor f has_functor_attr =
+  if has_functor_attr then pp f "@ functor" else ()
 
 (* c ['a,'b] *)
 let rec class_params_def ctxt f =  function
@@ -1376,9 +1387,12 @@ and signature_item ctxt f x : unit =
         value_longident_loc od.popen_expr
         (item_attributes ctxt) od.popen_attributes
   | Psig_include incl ->
-      pp f "@[<hov2>include@ %a@]%a"
+      (* Print "include functor" rather than attribute *)
+      let attrs, incl_fun = check_include_functor_attr incl.pincl_attributes in
+      pp f "@[<hov2>include%a@ %a@]%a"
+        maybe_functor incl_fun
         (module_type ctxt) incl.pincl_mod
-        (item_attributes ctxt) incl.pincl_attributes
+        (item_attributes ctxt) attrs
   | Psig_modtype {pmtd_name=s; pmtd_type=md; pmtd_attributes=attrs} ->
       pp f "@[<hov2>module@ type@ %a%a@]%a"
         ident_of_name s.txt
@@ -1626,9 +1640,12 @@ and structure_item ctxt f x =
         (value_description ctxt) vd
         (item_attributes ctxt) vd.pval_attributes
   | Pstr_include incl ->
-      pp f "@[<hov2>include@ %a@]%a"
+      (* Print "include functor" rather than attribute *)
+      let attrs, incl_fun = check_include_functor_attr incl.pincl_attributes in
+      pp f "@[<hov2>include%a@ %a@]%a"
+        maybe_functor incl_fun
         (module_expr ctxt) incl.pincl_mod
-        (item_attributes ctxt) incl.pincl_attributes
+        (item_attributes ctxt) attrs
   | Pstr_recmodule decls -> (* 3.07 *)
       let aux f = function
         | ({pmb_expr={pmod_desc=Pmod_constraint (expr, typ)}} as pmb) ->

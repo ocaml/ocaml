@@ -750,15 +750,15 @@ let default_mapper =
       );
 
     include_description =
-      (fun this {pincl_mod; pincl_attributes; pincl_loc} ->
-         Incl.mk (this.module_type this pincl_mod)
+      (fun this {pincl_mod; pincl_attributes; pincl_loc; pincl_kind} ->
+         Incl.mk pincl_kind (this.module_type this pincl_mod)
            ~loc:(this.location this pincl_loc)
            ~attrs:(this.attributes this pincl_attributes)
       );
 
     include_declaration =
-      (fun this {pincl_mod; pincl_attributes; pincl_loc} ->
-         Incl.mk (this.module_expr this pincl_mod)
+      (fun this {pincl_mod; pincl_attributes; pincl_loc; pincl_kind} ->
+         Incl.mk pincl_kind (this.module_expr this pincl_mod)
            ~loc:(this.location this pincl_loc)
            ~attrs:(this.attributes this pincl_attributes)
       );

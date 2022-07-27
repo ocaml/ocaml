@@ -46,12 +46,21 @@ type hiding_error =
       user_loc: Location.t;
     }
 
+type functor_dependency_error =
+    Functor_applied
+  | Functor_included
+
 type error =
     Cannot_apply of module_type
   | Not_included of Includemod.explanation
-  | Cannot_eliminate_dependency of module_type
+  | Not_included_functor of Includemod.explanation
+  | Cannot_eliminate_dependency of functor_dependency_error * module_type
   | Signature_expected
   | Structure_expected of module_type
+  | Functor_expected of module_type
+  | Signature_parameter_expected of module_type
+  | Signature_result_expected of module_type
+  | Recursive_include_functor
   | With_no_component of Longident.t
   | With_mismatch of Longident.t * Includemod.explanation
   | With_makes_applicative_functor_ill_typed of
@@ -67,6 +76,7 @@ type error =
   | Implementation_is_required of string
   | Interface_not_compiled of string
   | Not_allowed_in_functor_body
+  | Not_includable_in_functor_body
   | Not_a_packed_module of type_expr
   | Incomplete_packed_module of type_expr
   | Scoping_pack of Longident.t * type_expr
@@ -108,6 +118,66 @@ let extract_sig_open env loc mty =
   | Mty_alias path ->
       raise(Error(loc, env, Cannot_scrape_alias path))
   | mty -> raise(Error(loc, env, Structure_expected mty))
+
+(* Extract the signature of a functor's body, using the provided [sig_acc]
+   signature to fill in names from its parameter *)
+let extract_sig_functor_open funct_body env loc mty sig_acc =
+  match Env.scrape_alias env mty with
+  | Mty_functor (Named (param, mty_param),mty_result) as mty_func ->
+      let sg_param =
+        match Mtype.scrape env mty_param with
+        | Mty_signature sg_param -> sg_param
+        | _ -> raise (Error (loc,env,Signature_parameter_expected mty_func))
+      in
+      let coercion =
+        try
+          Includemod.include_functor_signatures ~mark:true env
+            (List.rev sig_acc) sg_param
+        with Includemod.Error msg ->
+          raise (Error(loc, env, Not_included_functor msg))
+      in
+      let incl_kind, sg_result =
+        (* Accept functor types of the forms:
+              sig..end -> sig..end
+           and
+              sig..end -> () -> sig..end *)
+        match Mtype.scrape env mty_result with
+        | Mty_signature sg_result -> Tincl_functor coercion, sg_result
+        | Mty_functor (Unit,_) when funct_body && Mtype.contains_type env mty ->
+            raise (Error (loc, env, Not_includable_in_functor_body))
+        | Mty_functor (Unit,mty_result) -> begin
+            match Mtype.scrape env mty_result with
+            | Mty_signature sg_result -> Tincl_gen_functor coercion, sg_result
+            | sg -> raise (Error (loc,env,Signature_result_expected
+                                            (Mty_functor (Unit,sg))))
+          end
+        | sg -> raise (Error (loc,env,Signature_result_expected sg))
+      in
+      (* Like the [Pmod_apply] case, we want to use [nondep_supertype] to
+         eliminate references to the functor's parameter in its result type.
+         Unlike that case, we don't have an actual parameter, just the previous
+         contents of the module currently being checked.  So we create
+         definitions for the parameter's types with [sig_make_manifest] before
+         the call to [nondep_sig]. *)
+      let sg =
+        match param with
+        | None -> sg_result
+        | Some id ->
+          let sg_param = Mtype.sig_make_manifest sig_acc in
+          let env =
+            Env.add_module ~noalias:true id Mp_present (Mty_signature sg_param)
+              env
+          in
+          try Mtype.nondep_sig env [id] sg_result
+          with Ctype.Nondep_cannot_erase _ ->
+            raise(Error(loc, env, Cannot_eliminate_dependency
+                                    (Functor_included, mty_func)))
+      in
+      (sg, incl_kind)
+  | Mty_functor (Unit,_) as mty ->
+      raise(Error(loc, env, Signature_parameter_expected mty))
+  | Mty_alias path -> raise(Error(loc, env, Cannot_scrape_alias path))
+  | mty -> raise(Error(loc, env, Functor_expected mty))
 
 (* Compute the environment after opening a module *)
 
@@ -1829,6 +1899,8 @@ and transl_signature env sg =
               sg;
             let incl =
               { incl_mod = tmty;
+                (* There are no [include functor] in signatures *)
+                incl_kind = Tincl_structure;
                 incl_type = sg;
                 incl_attributes = sincl.pincl_attributes;
                 incl_loc = sincl.pincl_loc;
@@ -2637,7 +2709,9 @@ and type_one_application ~ctx:(apply_loc,sfunct,md_f,args)
                     "the signature of this functor application" mty_res;
                   try env, Mtype.nondep_supertype env [param] mty_res
                   with Ctype.Nondep_cannot_erase _ ->
-                    let error = Cannot_eliminate_dependency mty_functor in
+                    let error =
+                      Cannot_eliminate_dependency (Functor_applied, mty_functor)
+                    in
                     raise (Error(app_loc, env, error))
             in
             begin match
@@ -2741,38 +2815,40 @@ and type_open_decl_aux ?used_slot ?toplevel ~funct_body names env od =
     } in
     open_descr, sg, newenv
 
-and type_structure ?(toplevel = false) ~funct_body anchor env sstr =
+and type_structure ?(toplevel = None) ~funct_body anchor env sstr =
   let names = Signature_names.create () in
-  let rec type_struct env shape_map sstr =
+  let toplevel_sig = Option.value toplevel ~default:[] in
+  let rec type_struct env shape_map sstr str_acc sig_acc
+      sig_acc_include_functor =
     match sstr with
-    | [] -> ([], [], shape_map, env)
+    | [] -> (List.rev str_acc, List.rev sig_acc, shape_map, env)
     | pstr :: srem ->
         let previous_saved_types = Cmt_format.get_saved_types () in
         let str, sg, shape_map, new_env =
           type_str_item ~names ~toplevel ~funct_body anchor env shape_map pstr
+            sig_acc_include_functor
         in
         Cmt_format.set_saved_types (Cmt_format.Partial_structure_item str
                                     :: previous_saved_types);
-        let (str_rem, sig_rem, shape_map, final_env) =
-          type_struct new_env shape_map srem
-        in
-        (str :: str_rem, sg @ sig_rem, shape_map, final_env)
+        type_struct new_env shape_map srem (str :: str_acc)
+          (List.rev_append sg sig_acc)
+          (List.rev_append sg sig_acc_include_functor)
   in
   let previous_saved_types = Cmt_format.get_saved_types () in
   let run () =
     let (items, sg, shape_map, final_env) =
-      type_struct env Shape.Map.empty sstr
+      type_struct env Shape.Map.empty sstr [] [] toplevel_sig
     in
     let str = { str_items = items; str_type = sg; str_final_env = final_env } in
     Cmt_format.set_saved_types
       (Cmt_format.Partial_structure str :: previous_saved_types);
     str, sg, names, Shape.str shape_map, final_env
   in
-  if toplevel then run ()
+  if Option.is_some toplevel then run ()
   else Builtin_attributes.warning_scope [] run
 
 and type_str_item ~names ~toplevel ~funct_body anchor env shape_map
-    {pstr_loc = loc; pstr_desc = desc} =
+    {pstr_loc = loc; pstr_desc = desc} sig_acc =
   let desc, sg, shape_map, new_env =
     match desc with
     | Pstr_eval (sexpr, attrs) ->
@@ -3012,6 +3088,7 @@ and type_str_item ~names ~toplevel ~funct_body anchor env shape_map
         let map = Shape.Map.add_module_type shape_map id decl.mtd_uid in
         Tstr_modtype mtd, [Sig_modtype (id, decl, Exported)], map, newenv
     | Pstr_open sod ->
+        let toplevel = Option.is_some toplevel in
         let (od, sg, newenv) =
           type_open_decl ~toplevel ~funct_body names env sod
         in
@@ -3077,22 +3154,33 @@ and type_str_item ~names ~toplevel ~funct_body anchor env shape_map
         new_env
     | Pstr_include sincl ->
         let smodl = sincl.pincl_mod in
+        let sloc = sincl.pincl_loc in
         let modl, modl_shape =
+          (* CR onicole: Check this *)
           Builtin_attributes.warning_scope sincl.pincl_attributes
             (fun () -> type_module ~strengthen:true ~funct_body None env smodl)
+        in
+        let sg, incl_kind =
+          match sincl.pincl_kind with
+          | `Include_functor ->
+               extract_sig_functor_open funct_body env smodl.pmod_loc
+                 modl.mod_type sig_acc
+          | `Include ->
+              extract_sig_open env smodl.pmod_loc modl.mod_type, Tincl_structure
         in
         let scope = Ctype.create_scope () in
         (* Rename all identifiers bound by this signature to avoid clashes *)
         let sg, shape, new_env =
           Env.enter_signature_and_shape ~scope ~parent_shape:shape_map
-            modl_shape (extract_sig_open env smodl.pmod_loc modl.mod_type) env
+            modl_shape sg env
         in
         Signature_group.iter (Signature_names.check_sig_item names loc) sg;
         let incl =
           { incl_mod = modl;
             incl_type = sg;
+            incl_kind;
             incl_attributes = sincl.pincl_attributes;
-            incl_loc = sincl.pincl_loc;
+            incl_loc = sloc;
           }
         in
         Tstr_include incl, sg, shape, new_env
@@ -3104,9 +3192,9 @@ and type_str_item ~names ~toplevel ~funct_body anchor env shape_map
   in
   { str_desc = desc; str_loc = loc; str_env = env }, sg, shape_map, new_env
 
-let type_toplevel_phrase env s =
+let type_toplevel_phrase env sig_acc s =
   Env.reset_required_globals ();
-  type_structure ~toplevel:true ~funct_body:false None env s
+  type_structure ~toplevel:(Some sig_acc) ~funct_body:false None env s
 
 let type_module_alias =
   type_module ~alias:true ~strengthen:true ~funct_body:false None
@@ -3268,8 +3356,8 @@ let type_open_descr ?used_slot env od =
 let type_str_item env pstri =
   let si, _, _, new_env =
     type_str_item
-      ~toplevel:false ~funct_body:false ~names:(Signature_names.create ())
-      None env Shape.Map.empty pstri
+      ~toplevel:None ~funct_body:false ~names:(Signature_names.create ())
+      None env Shape.Map.empty pstri []
   in
   si, new_env
 
@@ -3514,18 +3602,45 @@ let report_error ~loc _env = function
       Location.errorf ~loc ~footnote:Out_type.Ident_conflicts.err_msg
         "@[<v>Signature mismatch:@ %a@]"
         Includemod_errorprinter.err_msgs errs
-  | Cannot_eliminate_dependency mty ->
+  | Not_included_functor errs ->
+      Location.errorf ~loc ~footnote:Out_type.Ident_conflicts.err_msg
+        "@[<v>Signature mismatch in included functor's parameter:@ %a@]"
+        Includemod_errorprinter.err_msgs errs
+  | Cannot_eliminate_dependency (dep_type, mty) ->
+      let hint =
+        match dep_type with
+        | Functor_applied -> "Please bind the argument to a module identifier"
+        | Functor_included -> "This functor can't be included directly; please \
+                               apply it to an explicit argument"
+      in
       Location.errorf ~loc
         "@[This functor has type@ %a@ \
            The parameter cannot be eliminated in the result type.@ \
-         Please bind the argument to a module identifier.@]"
+         %s.@]"
         (Style.as_inline_code modtype) mty
+        hint
   | Signature_expected ->
       Location.errorf ~loc "This module type is not a signature"
   | Structure_expected mty ->
       Location.errorf ~loc
         "@[This module is not a structure; it has type@ %a"
         (Style.as_inline_code modtype) mty
+  | Functor_expected mty ->
+      Location.errorf ~loc
+        "@[This module is not a functor; it has type@ %a" modtype mty
+  | Signature_parameter_expected mty ->
+      Location.errorf ~loc
+        "@[The type of this functor is:@ %a. @ \
+         Its parameter is not a signature."
+        modtype mty
+  | Signature_result_expected mty ->
+      Location.errorf ~loc
+        "@[The type of this functor's result is not includable; it is@ %a"
+        modtype mty
+  | Recursive_include_functor ->
+      Location.errorf ~loc
+        "@[Including a functor is not supported in recursive module signatures \
+         @]"
   | With_no_component lid ->
       Location.errorf ~loc
         "@[The signature constrained by %a has no component named %a@]"
@@ -3638,6 +3753,10 @@ let report_error ~loc _env = function
       Location.errorf ~loc
         "@[This expression creates fresh types.@ %s@]"
         "It is not allowed inside applicative functors."
+  | Not_includable_in_functor_body ->
+      Location.errorf ~loc
+        "@[This functor creates fresh types when applied.@ %s@]"
+        "Including it is not allowed inside applicative functors."
   | Not_a_packed_module ty ->
       Location.errorf ~loc
         "This expression is not a packed module. It has type@ %a"
