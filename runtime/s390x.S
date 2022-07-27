@@ -333,7 +333,7 @@ caml_ml_array_bound_error:
            the frame descriptor for the call site is not correct */
         stg     %r15, Caml_state(bottom_of_stack)
         lay     %r15, -160(%r15)    /* Reserve stack space for C call */
-        Addrglobal(%r7, caml_array_bound_error)
+        Addrglobal(%r7, caml_array_bound_error_asm)
         j       .L101
         .globl  caml_system__code_end
 caml_system__code_end:

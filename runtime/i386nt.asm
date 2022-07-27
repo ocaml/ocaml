@@ -22,7 +22,7 @@
         EXTERN  _caml_apply2: PROC
         EXTERN  _caml_apply3: PROC
         EXTERN  _caml_program: PROC
-        EXTERN  _caml_array_bound_error: PROC
+        EXTERN  _caml_array_bound_error_asm: PROC
         EXTERN  _caml_stash_backtrace: PROC
         EXTERN  _Caml_state: DWORD
 
@@ -293,8 +293,8 @@ _caml_ml_array_bound_error:
         ffree   st(5)
         ffree   st(6)
         ffree   st(7)
-    ; Branch to caml_array_bound_error
-        mov     eax, offset _caml_array_bound_error
+    ; Branch to caml_array_bound_error_asm
+        mov     eax, offset _caml_array_bound_error_asm
         jmp     _caml_c_call
 
         PUBLIC _caml_system__code_end

@@ -58,9 +58,6 @@ CAMLnoreturn_start
   extern void caml_raise_exception (caml_domain_state* state, value bucket)
 CAMLnoreturn_end;
 
-/* Used by the stack overflow handler -> deactivate ASAN (see
-   segv_handler in signals_nat.c). */
-CAMLno_asan
 void caml_raise(value v)
 {
   char* exception_pointer;
@@ -200,8 +197,7 @@ CAMLexport value caml_raise_if_exception(value res)
 /* We use a pre-allocated exception because we can't
    do a GC before the exception is raised (lack of stack descriptors
    for the ccall to [caml_array_bound_error]).  */
-
-void caml_array_bound_error(void)
+static value array_bound_exn()
 {
   static atomic_uintnat exn_cache = ATOMIC_UINTNAT_INIT(0);
   const value* exn = (const value*)atomic_load_acq(&exn_cache);
@@ -214,7 +210,19 @@ void caml_array_bound_error(void)
     }
     atomic_store_rel(&exn_cache, (uintnat)exn);
   }
-  caml_raise(*exn);
+  return *exn;
+}
+
+void caml_array_bound_error(void)
+{
+  caml_raise(array_bound_exn());
+}
+
+void caml_array_bound_error_asm(void)
+{
+  /* This exception is raised directly from ocamlopt-compiled OCaml,
+     not C, so we jump directly to the OCaml handler (and avoid GC) */
+  caml_raise_exception(Caml_state, array_bound_exn());
 }
 
 int caml_is_special_exception(value exn) {

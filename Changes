@@ -220,6 +220,9 @@ OCaml 5.0
   `caml_process_pending*` for multicore.
   (Guillaume Munch-Maccagnoni, review by Sadiq Jaffer and Gabriel Scherer)
 
+- #11303: Ensure that GC is not invoked from bounds check failures
+  (Stephen Dolan, review by Sadiq Jaffer and Xavier Leroy)
+
 - #11304: Fix data race on Windows file descriptors
   (Olivier Nicole and Xavier Leroy, review by Xavier Leroy, David Allsopp,
    and Sadiq Jaffer)
