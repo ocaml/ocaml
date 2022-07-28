@@ -609,7 +609,7 @@ let merge_constraint initial_env loc sg lid constr =
     | Sig_module(id, _, md, _rs, _), [s], With_modsubst (lid',path,md')
       when Ident.name id = s ->
         let sig_env = Env.add_signature sg_for_env outer_sig_env in
-        let aliasable = not (Env.is_functor_arg path sig_env) in
+        let aliasable = Env.is_aliasable path sig_env in
         ignore
           (Includemod.strengthened_module_decl ~loc ~mark:Mark_both
              ~aliasable sig_env md' path md);
@@ -1499,7 +1499,7 @@ and transl_signature env sg =
               Env.lookup_module ~loc:pms.pms_manifest.loc
                 pms.pms_manifest.txt env
             in
-            let aliasable = not (Env.is_functor_arg path env) in
+            let aliasable = Env.is_aliasable path env in
             let md =
               if not aliasable then
                 md
@@ -2129,7 +2129,7 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
                  mod_env = env;
                  mod_attributes = smod.pmod_attributes;
                  mod_loc = smod.pmod_loc } in
-      let aliasable = not (Env.is_functor_arg path env) in
+      let aliasable = Env.is_aliasable path env in
       let shape =
         Env.shape_of_path ~namespace:Shape.Sig_component_kind.Module env path
       in
