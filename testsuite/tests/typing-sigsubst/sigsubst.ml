@@ -185,31 +185,33 @@ module type S =
 
 type (_, _) eq = Refl : ('a, 'a) eq
 
-module Equal (M : Set.OrderedType) (N : Set.OrderedType with type t = M.t) : sig
-  val eq : (Set.Make(M).t, Set.Make(N).t) eq
-end = struct
-  type meq = Eq of (Set.Make(M).t, Set.Make(M).t) eq
-  module type S = sig
-    module N = M
-    type neq = meq = Eq of (Set.Make(M).t, Set.Make(N).t) eq
+
+module Test = struct
+  module M = Int
+  module N = struct include Int end
+  module Equal : sig
+    val eq : (Set.Make(M).t, Set.Make(N).t) eq
+  end = struct
+    type meq = Eq of (Set.Make(M).t, Set.Make(M).t) eq
+    module type S = sig
+      module N' = M
+      type neq = meq = Eq of (Set.Make(M).t, Set.Make(N').t) eq
+    end
+    module type T = S with type N'.t = M.t with module N' := N
+    module rec T : T = T
+    let eq =
+      let T.Eq eq = Eq Refl in
+      eq
   end
-  module type T = S with type N.t = M.t with module N := N;;
-  module rec T : T = T
-  let eq =
-    let T.Eq eq = Eq Refl in
-    eq
-end;;
+end
 [%%expect {|
 type (_, _) eq = Refl : ('a, 'a) eq
-Line 11, characters 18-58:
-11 |   module type T = S with type N.t = M.t with module N := N;;
-                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: In this `with' constraint, the new definition of N
+Line 15, characters 20-62:
+15 |     module type T = S with type N'.t = M.t with module N' := N
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In this `with' constraint, the new definition of N'
        does not match its original definition in the constrained signature:
-       Modules do not match:
-         sig type t = M.t val compare : t -> t -> int end
-       is not included in
-         (module M)
+       Modules do not match: (module N) is not included in (module M)
 |}]
 
 (* Checking that the uses of M.t are rewritten regardless of how they

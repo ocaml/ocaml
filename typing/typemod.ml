@@ -1282,7 +1282,14 @@ and transl_modtype_aux env smty =
         smty.pmty_attributes
   | Pmty_alias lid ->
       let path = transl_module_alias loc env lid.txt in
-      mkmty (Tmty_alias (path, lid)) (Mty_alias path) env loc
+      let aliasable = Env.is_aliasable path env in
+      let mty =
+        if aliasable then
+          Mty_alias path
+        else
+          Env.find_strengthened_module ~aliasable path env
+      in
+      mkmty (Tmty_alias (path, lid)) mty env loc
         smty.pmty_attributes
   | Pmty_signature ssg ->
       let sg = transl_signature env ssg in

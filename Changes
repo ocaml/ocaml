@@ -108,6 +108,11 @@ Working version
   by leaf functions.
   (Tom Kelly and Xavier Leroy, review by Mark Shinwell)
 
+- #11441, #11442: disallow module aliases on functor arguments in
+  module types
+  (Clément Blaudeau and Gabriel Scherer, report by Clément Blaudeau,
+   review by ???)
+
 OCaml 5.0
 ---------
 
