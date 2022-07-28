@@ -18,7 +18,8 @@
  (deps    (:mk Makefile)
           ../Makefile.config
           ; for now the utils Makefile does not use build_config
-          config.mlp)
+          config.mlp
+          config.common.ml)
  (action  (system "make -f %{mk} %{targets}")))
 
 (rule
