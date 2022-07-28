@@ -10,10 +10,13 @@ regex_trim_fun='^\(caml.*\)_[[:digit:]]*$'
 
 # - Ignore backtrace not coming from the program binary
 # - Discard the number suffix from OCaml function name
+# - Remove strange '[0x.....]' entries inserted by some implementation
+#   of backtrace_symbols_fd
 # - Keep the other lines
 sed -e \
   "/${regex_backtrace}/ {
     /^${program_escaped}/ ! d
     s/${regex_backtrace}/\1/
     s/${regex_trim_fun}/\1/
-  }"
+  }" \
+  -e '/^\[0x/d'
