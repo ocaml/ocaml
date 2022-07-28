@@ -39,6 +39,6 @@ ${main} -conf --disable-native-compiler \
         -no-native
 ${main} -conf --disable-flat-float-array
 ${main} -conf --enable-flambda
-${main} -conf --enable-frame-pointers --enable-reserved-header-bits=27
+${main} -conf --enable-frame-pointers -conf --enable-reserved-header-bits=27
 ${main} -with-bootstrap -conf --with-pic
 OCAMLRUNPARAM="c=1" ${main}
