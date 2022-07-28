@@ -19,7 +19,7 @@ compiler is supported.  Native-code support for these systems is under
 discussion.
 
 |=====
-| Branch `trunk` | Branch `4.14` | Branch `4.13` | Branch `4.12`
+| Branch `trunk` | Branch `5.0` | Branch `4.14` | Branch `4.13`
 
 | image:https://github.com/ocaml/ocaml/workflows/Build/badge.svg?branch=trunk["Github CI Build Status (trunk branch)",
      link="https://github.com/ocaml/ocaml/actions?query=workflow%3ABuild"]
@@ -27,17 +27,17 @@ discussion.
      link="https://github.com/ocaml/ocaml/actions?query=workflow%3AHygiene"]
   image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=trunk&svg=true["AppVeyor Build Status (trunk branch)",
      link="https://ci.appveyor.com/project/avsm/ocaml"]
-| image:https://github.com/ocaml/ocaml/workflows/main/badge.svg?branch=4.14["Github CI Build Status (4.14 branch)",
+| image:https://github.com/ocaml/ocaml/workflows/Build/badge.svg?branch=5.0["Github CI Build Status (5.0 branch)",
+     link="https://github.com/ocaml/ocaml/actions?query=workflow%3ABuild"]
+  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=5.0&svg=true["AppVeyor Build Status (5.0 branch)",
+     link="https://ci.appveyor.com/project/avsm/ocaml"]
+| image:https://github.com/ocaml/ocaml/workflows/Build/badge.svg?branch=4.14["Github CI Build Status (4.14 branch)",
      link="https://github.com/ocaml/ocaml/actions?query=workflow%3Amain"]
   image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.14&svg=true["AppVeyor Build Status (4.14 branch)",
      link="https://ci.appveyor.com/project/avsm/ocaml"]
 | image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.13["TravisCI Build Status (4.13 branch)",
      link="https://travis-ci.org/ocaml/ocaml"]
   image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.13&svg=true["AppVeyor Build Status (4.13 branch)",
-     link="https://ci.appveyor.com/project/avsm/ocaml"]
-| image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.12["TravisCI Build Status (4.12 branch)",
-     link="https://travis-ci.org/ocaml/ocaml"]
-  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.12&svg=true["AppVeyor Build Status (4.12 branch)",
      link="https://ci.appveyor.com/project/avsm/ocaml"]
 |=====
 
@@ -83,7 +83,7 @@ the compiler may work under other operating systems with little work.
 == Copyright
 
 All files marked "Copyright INRIA" in this distribution are
-Copyright (C) 1996-2021 Institut National de Recherche en Informatique et
+Copyright (C) 1996-2022 Institut National de Recherche en Informatique et
 en Automatique (INRIA) and distributed under the conditions stated in
 file LICENSE.
 
@@ -152,6 +152,7 @@ Some libraries and tools which used to be part of the OCaml distribution are
 now maintained separately. Please use the issue trackers at their respective
 new homes:
 
+- https://github.com/ocaml/camlp-streams/issues[The Stream and Genlex standard library modules] (removed in OCaml 5.0)
 - https://github.com/ocaml/graphics/issues[The Graphics library] (removed in OCaml 4.09)
 - https://github.com/ocaml/num/issues[The Num library] (removed in OCaml 4.06)
 - https://github.com/ocaml/ocamlbuild/issues[The OCamlbuild tool] (removed in OCaml 4.03)
