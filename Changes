@@ -59,6 +59,10 @@ Working version
 
 ### Other libraries:
 
+- #11461: Fix gethostbyaddr for IPv6 arguments and make it domain-safe
+  (Olivier Nicole, Nicolás Ojeda Bär and David Allsopp, review by Nicolás Ojeda
+  Bär and David Allsopp)
+
 ### Tools:
 
 - #9290: Add a directive to switch off debugging in toplevel.
