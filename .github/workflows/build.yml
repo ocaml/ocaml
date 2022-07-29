@@ -20,9 +20,26 @@ jobs:
 # subsequent jobs.
   build:
     runs-on: 'ubuntu-latest'
+    outputs:
+      manual_changed: ${{ steps.manual.outputs.manual_changed }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Check for manual changes
+        id: manual
+        run: >-
+         tools/ci/actions/check-manual-modified.sh
+         '${{ github.ref }}'
+         '${{ github.event_name }}'
+         '${{ github.event.pull_request.base.ref }}'
+         '${{ github.event.pull_request.base.sha }}'
+         '${{ github.event.pull_request.head.ref }}'
+         '${{ github.event.pull_request.head.sha }}'
+         '${{ github.event.ref }}'
+         '${{ github.event.before }}'
+         '${{ github.event.ref }}'
+         '${{ github.event.after }}'
+         '${{ github.event.repository.full_name }}'
       - name: Configure tree
         run: |
           MAKE_ARG=-j XARCH=x64 CONFIG_ARG='--enable-flambda --enable-cmm-invariants --enable-dependency-generation --enable-native-toplevel' OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh configure
@@ -65,25 +82,10 @@ jobs:
       - name: Install
         run: |
          MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh install
-      - name: Check for manual changes
-        id: manual
-        run: >-
-         tools/ci/actions/check-manual-modified.sh
-         '${{ github.ref }}'
-         '${{ github.event_name }}'
-         '${{ github.event.pull_request.base.ref }}'
-         '${{ github.event.pull_request.base.sha }}'
-         '${{ github.event.pull_request.head.ref }}'
-         '${{ github.event.pull_request.head.sha }}'
-         '${{ github.event.ref }}'
-         '${{ github.event.before }}'
-         '${{ github.event.ref }}'
-         '${{ github.event.after }}'
-         '${{ github.event.repository.full_name }}'
       - name: Build the manual
         run: |
           MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh manual
-        if: steps.manual.outputs.changed == 'true'
+        if: needs.build.outputs.manual_changed == 'true'
       - name: Other checks
         run: |
           MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh other-checks
