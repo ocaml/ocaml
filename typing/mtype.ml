@@ -499,6 +499,18 @@ let rec remove_aliases_mty env args pres mty =
     pres, mty
   end
 
+and remove_aliases_mtd env args mtd =
+  match mtd.mtd_type with
+  | None -> mtd
+  | Some mty ->
+      let args' = {args with modified = false} in
+      let _pres, mty' = remove_aliases_mty env args' Mp_absent mty in
+      if mty' = mty then mtd
+      else begin
+        args.modified <- true;
+        { mtd with mtd_type = Some mty' }
+      end
+
 and remove_aliases_sig env args sg =
   match sg with
     [] -> []
@@ -513,6 +525,7 @@ and remove_aliases_sig env args sg =
       Sig_module(id, pres, {md with md_type = mty} , rs, priv) ::
       remove_aliases_sig (Env.add_module id pres mty env) args rem
   | Sig_modtype(id, mtd, priv) :: rem ->
+      let mtd = remove_aliases_mtd env args mtd in
       Sig_modtype(id, mtd, priv) ::
       remove_aliases_sig (Env.add_modtype id mtd env) args rem
   | it :: rem ->
