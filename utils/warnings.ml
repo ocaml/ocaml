@@ -527,6 +527,11 @@ let descriptions = [
     description = "A tail call is turned into a non-tail call \
                    by the @tail_mod_cons transformation.";
     since = since 4 14 };
+  { number = 73;
+    names = ["generative-application-expects-unit"];
+    description = "A generative functor is applied to an empty structure \
+                   (struct end) rather than to ().";
+    since = since 4 15 };
 ]
 
 let name_to_number =
