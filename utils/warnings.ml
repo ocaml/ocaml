@@ -1124,7 +1124,7 @@ let message = function
        but is never applied in TMC position."
   | Tmc_breaks_tailcall ->
       "This call\n\
-       is in tail-modulo-cons positionin a TMC function,\n\
+       is in tail-modulo-cons position in a TMC function,\n\
        but the function called is not itself specialized for TMC,\n\
        so the call will not be transformed into a tail call.\n\
        Please either mark the called function with the [@tail_mod_cons]\n\

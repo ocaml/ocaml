@@ -19,7 +19,7 @@ Line 3, characters 17-40:
 3 |   | xs :: xss -> append xs (flatten xss)
                      ^^^^^^^^^^^^^^^^^^^^^^^
 Warning 72 [tmc-breaks-tailcall]: This call
-is in tail-modulo-cons positionin a TMC function,
+is in tail-modulo-cons position in a TMC function,
 but the function called is not itself specialized for TMC,
 so the call will not be transformed into a tail call.
 Please either mark the called function with the [@tail_mod_cons]
@@ -63,7 +63,7 @@ Line 10, characters 9-30:
 10 |       in append_flatten xs xss
               ^^^^^^^^^^^^^^^^^^^^^
 Warning 72 [tmc-breaks-tailcall]: This call
-is in tail-modulo-cons positionin a TMC function,
+is in tail-modulo-cons position in a TMC function,
 but the function called is not itself specialized for TMC,
 so the call will not be transformed into a tail call.
 Please either mark the called function with the [@tail_mod_cons]
@@ -107,7 +107,7 @@ Line 13, characters 12-23:
 13 |             flatten xss
                  ^^^^^^^^^^^
 Warning 72 [tmc-breaks-tailcall]: This call
-is in tail-modulo-cons positionin a TMC function,
+is in tail-modulo-cons position in a TMC function,
 but the function called is not itself specialized for TMC,
 so the call will not be transformed into a tail call.
 Please either mark the called function with the [@tail_mod_cons]
@@ -161,7 +161,7 @@ Lines 20-23, characters 10-27:
 22 |                the call becomes non-tailcall in the TMC version. *)
 23 |             (filter_1 f xs)
 Warning 72 [tmc-breaks-tailcall]: This call
-is in tail-modulo-cons positionin a TMC function,
+is in tail-modulo-cons position in a TMC function,
 but the function called is not itself specialized for TMC,
 so the call will not be transformed into a tail call.
 Please either mark the called function with the [@tail_mod_cons]
@@ -244,7 +244,7 @@ Line 16, characters 13-56:
 16 |         then (graft[@tailcall]) (* this should warn *) n
                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 72 [tmc-breaks-tailcall]: This call
-is in tail-modulo-cons positionin a TMC function,
+is in tail-modulo-cons position in a TMC function,
 but the function called is not itself specialized for TMC,
 so the call will not be transformed into a tail call.
 Please either mark the called function with the [@tail_mod_cons]
