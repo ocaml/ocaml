@@ -156,7 +156,69 @@ module Timestamp = struct
     t
 end
 
+module Type = struct
+
+  (* the data structure is primarily managed in C *)
+  type[@warning "-unused-field"] 'a custom = {
+    serialize: 'a -> bytes;
+    deserialize: bytes -> 'a;
+    (* id is used for the callback table *)
+    id: int;
+  }
+
+  type 'a t = 
+  | Event : unit t
+  | Counter : int t
+  | Custom : 'a custom -> 'a t
+
+  let event = Event
+  
+  let counter = Counter
+
+  let next_id = ref 2
+
+  let register serialize deserialize = 
+    incr next_id; 
+    Custom { serialize; deserialize; id = !next_id - 1}
+
+  let id: type a. a t -> int = function
+    | Event -> 0
+    | Counter -> 1
+    | Custom {id; _} -> id
+end
+
+module User = struct
+  type _ tag = ..
+
+  (* the UNK tag is used when an unknown event of a known type (event or 
+     counter) is received *)
+  type _ tag += UNK : 'a tag
+
+  (* the data structure is primarily managed in C *)
+  type [@warning "-unused-field"] 'a t = {
+    id: int;
+    name: string;
+    typ: 'a Type.t;
+    tag: 'a tag option;
+  }
+
+  external user_register : string -> 'a tag option -> 'a Type.t -> 'a t = "caml_runtime_events_user_register"
+  external user_write : 'a t -> 'a -> unit = "caml_runtime_events_user_write"
+
+  let register name tag typ = user_register name (Some tag) typ
+
+  let write event value = user_write event value
+
+  let name ev = ev.name
+
+  let tag ev = Option.value ~default:UNK ev.tag
+end
+
 module Callbacks = struct
+
+    (* Callbacks are bound to a specific event type *)
+    type user_callback = U : (int -> Timestamp.t -> 'a User.t -> 'a -> unit) -> user_callback
+
     (* these record callbacks are only called from C code in the runtime
        so we suppress the unused field warning *)
     type[@warning "-unused-field"] t = {
@@ -167,13 +229,31 @@ module Callbacks = struct
       alloc: (int -> Timestamp.t -> int array -> unit) option;
       lifecycle: (int -> Timestamp.t -> lifecycle
                   -> int option -> unit) option;
-      lost_events: (int -> int -> unit) option
+      lost_events: (int -> int -> unit) option;
+      (* user event callbacks is an array containing at each indice [i] a list 
+         of functions to call when an event of type id [i] happen *)
+      user_events: user_callback list array;
     }
 
-    let create ?runtime_begin ?runtime_end ?runtime_counter ?alloc ?lifecycle
-               ?lost_events () =
+    let create ?runtime_begin ?runtime_end ?runtime_counter ?alloc ?lifecycle ?lost_events () =
       { runtime_begin; runtime_end; runtime_counter;
-          alloc; lifecycle; lost_events}
+          alloc; lifecycle; lost_events; user_events = Array.make 2 [] }
+
+    let add ty callback t =
+      let cur_max_id = Array.length t.user_events - 1 in
+      let id = Type.id ty in
+      let user_events =
+        if id > cur_max_id then
+          (* we need to resize the array. TODO maybe double the size ? *)
+          let delta = id - cur_max_id in
+          let extra = Array.make delta [] in
+          Array.append t.user_events extra
+        else
+          t.user_events
+      in
+      user_events.(id) <- U callback :: user_events.(id);
+      {t with user_events}
+
   end
 
 external start : unit -> unit = "caml_runtime_events_start"

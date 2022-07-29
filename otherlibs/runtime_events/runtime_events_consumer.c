@@ -23,6 +23,7 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/osdeps.h"
+#include "caml/skiplist.h"
 
 #include <fcntl.h>
 #include <stdatomic.h>
@@ -71,6 +72,8 @@ struct caml_runtime_events_cursor {
   int (*lifecycle)(int domain_id, void *callback_data, int64_t timestamp,
                     ev_lifecycle lifecycle, int64_t data);
   int (*lost_events)(int domain_id, void *callback_data, int lost_words);
+  /* user events: mapped from type to callback */
+  int (*user_events)(int domain_id, void *callback_data, int64_t timestamp, value event, uintnat event_data_len, uint64_t* event_data);
 };
 
 /* C-API for reading from an runtime_events */
@@ -223,6 +226,7 @@ caml_runtime_events_create_cursor(const char_os* runtime_events_path, int pid,
   cursor->alloc = NULL;
   cursor->lifecycle = NULL;
   cursor->lost_events = NULL;
+  cursor->user_events = NULL;
 
   *cursor_res = cursor;
 
@@ -274,6 +278,17 @@ void caml_runtime_events_set_lost_events(
                                               void *callback_data,
                                               int lost_words)) {
   cursor->lost_events = f;
+}
+
+
+void caml_runtime_events_set_user_events(
+                                  struct caml_runtime_events_cursor *cursor,
+                                  int (*f)(int domain_id, void *callback_data,
+                                            int64_t timestamp,
+                                            value event,
+                                            uintnat event_data_len,
+                                            uint64_t* event_data)) {
+  cursor->user_events = f;
 }
 
 /* frees a cursor obtained from caml_runtime_events_reader_create */
@@ -392,52 +407,71 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
         }
       }
 
-      switch (RUNTIME_EVENTS_ITEM_TYPE(header)) {
-      case EV_BEGIN:
-        if (cursor->runtime_begin) {
-          if( !cursor->runtime_begin(domain_num, callback_data, buf[1],
+      if (RUNTIME_EVENTS_ITEM_IS_RUNTIME(header)) { 
+        switch (RUNTIME_EVENTS_ITEM_TYPE(header)) {
+        case EV_BEGIN:
+          if (cursor->runtime_begin) {
+            if( !cursor->runtime_begin(domain_num, callback_data, buf[1],
+                                        RUNTIME_EVENTS_ITEM_ID(header)) ) {
+                                          early_exit = 1;
+                                          continue;
+                                        }
+          }
+          break;
+        case EV_EXIT:
+          if (cursor->runtime_end) {
+            if( !cursor->runtime_end(domain_num, callback_data, buf[1],
                                       RUNTIME_EVENTS_ITEM_ID(header)) ) {
                                         early_exit = 1;
                                         continue;
-                                      }
+                                      };
+          }
+          break;
+        case EV_COUNTER:
+          if (cursor->runtime_counter) {
+            if( !cursor->runtime_counter(domain_num, callback_data, buf[1],
+                                        RUNTIME_EVENTS_ITEM_ID(header), buf[2]
+                                        ) ) {
+                                            early_exit = 1;
+                                            continue;
+                                          };
+          }
+          break;
+        case EV_ALLOC:
+          if (cursor->alloc) {
+            if( !cursor->alloc(domain_num, callback_data, buf[1], &buf[2])) {
+              early_exit = 1;
+              continue;
+            }
+          }
+          break;
+        case EV_LIFECYCLE:
+          if (cursor->lifecycle) {
+            if( !cursor->lifecycle(domain_num, callback_data, buf[1],
+                                    RUNTIME_EVENTS_ITEM_ID(header), buf[2]) ) {
+                                      early_exit = 1;
+                                      continue;
+                                    }
+          }
         }
-        break;
-      case EV_EXIT:
-        if (cursor->runtime_end) {
-          if( !cursor->runtime_end(domain_num, callback_data, buf[1],
-                                    RUNTIME_EVENTS_ITEM_ID(header)) ) {
+      } else if (cursor->user_events) { 
+        // User events
+        uintnat event_id = RUNTIME_EVENTS_ITEM_ID(header);
+        // First step is to obtain the event structure be it already known or
+        // reconstructed using the type information from the header.
+        value event = caml_runtime_events_user_resolve(
+          cursor->metadata, event_id, RUNTIME_EVENTS_ITEM_TYPE(header));
+
+        if ((void*) event != NULL) {
+          if( !cursor->user_events(domain_num, callback_data, buf[1], event,
+                                   msg_length - 2, &buf[2]) ) {
                                       early_exit = 1;
                                       continue;
                                     };
         }
-        break;
-      case EV_COUNTER:
-        if (cursor->runtime_counter) {
-          if( !cursor->runtime_counter(domain_num, callback_data, buf[1],
-                                       RUNTIME_EVENTS_ITEM_ID(header), buf[2]
-                                      ) ) {
-                                          early_exit = 1;
-                                          continue;
-                                        };
-        }
-        break;
-      case EV_ALLOC:
-        if (cursor->alloc) {
-          if( !cursor->alloc(domain_num, callback_data, buf[1], &buf[2])) {
-            early_exit = 1;
-            continue;
-          }
-        }
-        break;
-      case EV_LIFECYCLE:
-        if (cursor->lifecycle) {
-          if( !cursor->lifecycle(domain_num, callback_data, buf[1],
-                                  RUNTIME_EVENTS_ITEM_ID(header), buf[2]) ) {
-                                    early_exit = 1;
-                                    continue;
-                                  }
-        }
       }
+
+
 
       if (RUNTIME_EVENTS_ITEM_TYPE(header) != EV_INTERNAL) {
         consumed++;
@@ -664,6 +698,92 @@ static int ml_lost_events(int domain_id, void *callback_data, int lost_words) {
   return 1;
 }
 
+static int ml_user_events(int domain_id, void *callback_data, int64_t timestamp,
+                          value event, uintnat event_data_len, uint64_t* event_data) {
+  CAMLparam1(event);
+  CAMLlocal4(tmp_callback_array, tmp_callback_list, callbacks_root, res);
+  CAMLlocalN(params, 4);
+
+  struct callbacks_exception_holder* holder = callback_data;
+  callbacks_root = *holder->callbacks_val;
+
+  tmp_callback_array = Field(callbacks_root, 6); /* ev_user_events */
+  uintnat array_length = caml_array_length(tmp_callback_array);
+
+  uintnat event_index;
+  value event_type = Field(event, 2);
+  if (Is_block(event_type)) {
+    event_index = Int_val(Field(Field(event_type, 0), 2));
+  } else {
+    event_index = Int_val(event_type);
+  }
+
+  if (event_index >= array_length) {
+    CAMLdrop;
+    return 1;
+  }
+
+  tmp_callback_list = Field(tmp_callback_array, event_index);
+
+  if (Is_block(tmp_callback_list)) {
+    // at least one callback is listening for this event type, so we 
+    // deserialize the value and prepare the callback payload
+
+    value event_type = Field(event, 2);
+    CAMLlocal1(data);
+
+    if (Is_block(event_type)) {
+      CAMLlocal3(bytes, record, deserializer);
+      uintnat string_len = event_data_len * sizeof(uint64_t) - 1;
+      // because the ring buffer is 64-bits aligned, the whole ocaml value is 
+      // transferred, including the padding bytes and the last byte containing 
+      // the number of padding bytes. This information is crucial to determine
+      // the true size of the string.
+      bytes = caml_alloc_initialized_string(string_len - ((const char*) event_data)[string_len], (const char*) event_data);
+      record = Field(event_type, 0);
+      deserializer = Field(record, 1);
+      data = caml_callback(deserializer, bytes);
+
+    } else {
+      uintnat event_type_id = Int_val(event_type);
+      switch (event_type_id) {
+      case 0: // Event
+        data = Val_unit;
+        break;
+      case 1: // Counter
+        data = Val_int(*event_data);
+        break;
+      default:
+        caml_failwith("Unknown event type id");
+      }
+    }
+
+    params[0] = Val_long(domain_id);
+    params[1] = caml_copy_int64(timestamp);
+    params[2] = event;
+    params[3] = data;
+
+    // payload is prepared, we call the callbacks sequentially.
+    // TODO: what if there is an exception ?
+    while (Is_block(tmp_callback_list)) {
+      value callback = Field(Field(tmp_callback_list, 0), 0); // (wrapped in a gadt)
+      res = caml_callbackN_exn(callback, 4, params);
+
+      if( Is_exception_result(res) ) {
+        res = Extract_exception(res);
+        *holder->exception = res;
+        CAMLdrop;
+        return 0;
+      }
+
+      tmp_callback_list = Field(tmp_callback_list, 1);
+    }
+  }
+
+  CAMLdrop;
+  return 1;
+}
+
 static struct custom_operations cursor_operations = {
     "runtime_events.cursor",         finalise_cursor,
     custom_compare_default,     custom_hash_default,
@@ -724,6 +844,7 @@ CAMLprim value caml_ml_runtime_events_create_cursor(value path_pid_option) {
   caml_runtime_events_set_alloc(cursor, ml_alloc);
   caml_runtime_events_set_lifecycle(cursor, ml_lifecycle);
   caml_runtime_events_set_lost_events(cursor, ml_lost_events);
+  caml_runtime_events_set_user_events(cursor, ml_user_events);
 
   Cursor_val(wrapper) = cursor;
 
