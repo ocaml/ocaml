@@ -1,6 +1,12 @@
 OCaml 4.14 maintenance branch
 -----------------------------
 
+### Build system:
+
+- #11370, #11373: Don't pass CFLAGS to flexlink during configure.
+  (David Allsopp, report by William Hu, review by Xavier Leroy and
+   Sébastien Hinderer)
+
 ### Bug fixes:
 
 - #11204: Fix regression introduced in 4.14.0 that would trigger Warning 17 when
