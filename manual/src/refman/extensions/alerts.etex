@@ -85,12 +85,12 @@ command-line is equivalent to "-alert +deprecated", and:
 
 \begin{verbatim}
 val x: int
-  [@@@ocaml.deprecated "Please do something else"]
+  [@@ocaml.deprecated "Please do something else"]
 \end{verbatim}
 
 is equivalent to:
 
 \begin{verbatim}
 val x: int
-  [@@@ocaml.alert deprecated "Please do something else"]
+  [@@ocaml.alert deprecated "Please do something else"]
 \end{verbatim}
