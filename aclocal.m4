@@ -352,6 +352,7 @@ AC_DEFUN([OCAML_TEST_FLEXLINK], [
     CC="$1 -chain $2 -exe"
     LIBS="conftest2.$ac_objext"
     CPPFLAGS="$3 $CPPFLAGS"
+    CFLAGS=""
     AC_LINK_IFELSE(
       [AC_LANG_SOURCE([int main() { return 0; }])],
       [AC_MSG_RESULT([yes])],

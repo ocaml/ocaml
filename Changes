@@ -482,6 +482,10 @@ OCaml 5.0
   removing it from the default namespace.
   (David Allsopp, review by Sébastien Hinderer)
 
+- #11370, #11373: Don't pass CFLAGS to flexlink during configure.
+  (David Allsopp, report by William Hu, review by Xavier Leroy and
+   Sébastien Hinderer)
+
 ### Bug fixes:
 
 - #10768, #11340: Fix typechecking regression when combining first class
