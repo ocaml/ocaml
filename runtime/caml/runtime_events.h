@@ -181,8 +181,8 @@ struct runtime_events_metadata_header {
 
 #define RUNTIME_EVENTS_ITEM_LENGTH(header) \
         (((header) >> 54) & ((1UL << 10) - 1))
-#define RUNTIME_EVENTS_ITEM_IS_RUNTIME(header) !((header) | (1UL << 53))
-#define RUNTIME_EVENTS_ITEM_IS_USER(header) ((header) | (1UL << 53))
+#define RUNTIME_EVENTS_ITEM_IS_RUNTIME(header) !((header) & (1UL << 53))
+#define RUNTIME_EVENTS_ITEM_IS_USER(header) ((header) & (1UL << 53))
 #define RUNTIME_EVENTS_ITEM_TYPE(header) (((header) >> 49) & ((1UL << 4) - 1))
 #define RUNTIME_EVENTS_ITEM_ID(header) (((header) >> 36) & ((1UL << 13) - 1))
 
