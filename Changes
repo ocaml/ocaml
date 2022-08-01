@@ -345,6 +345,10 @@ OCaml 5.0
   (Christiano Haesbaert, Konstantin Belousov, review by David Allsopp,
   KC Sivaramakrishnan, Gabriel Scherer, Nicolas Ojeda Bar)
 
+- #11461: Fix gethostbyaddr for IPv6 arguments and make it domain-safe
+  (Olivier Nicole, Nicolás Ojeda Bär and David Allsopp, review by Nicolás Ojeda
+  Bär, David Allsopp and Xavier Leroy)
+
 ### Tools:
 
 * #11004: Litmus tests for checking the implementation of the
