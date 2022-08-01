@@ -36,26 +36,21 @@
 #define GETHOSTBYNAME_IS_REENTRANT 1
 #endif
 
-static value alloc_one_addr_ipv4(char const *a)
+static value alloc_one_addr_4(char const *a)
 {
-  struct in_addr addr;
-  memmove (&addr, a, 4);
-  return caml_unix_alloc_inet_addr(&addr);
+  return caml_alloc_initialized_string(4, a);
 }
 
-#ifdef HAS_IPV6
-static value alloc_one_addr_ipv6(char const *a)
+static value alloc_one_addr_16(char const *a)
 {
-  struct in6_addr addr6;
-  memmove(&addr6, a, 16);
-  return caml_unix_alloc_inet6_addr(&addr6);
+  return caml_alloc_initialized_string(16, a);
 }
-#endif
 
 static value alloc_host_entry(struct hostent *entry)
 {
   CAMLparam0();
   CAMLlocal4(name, aliases, addr_list, adr);
+  value (*alloc_one_addr)(char const *);
   value res;
 
   name = caml_copy_string((char *)(entry->h_name));
@@ -65,10 +60,14 @@ static value alloc_host_entry(struct hostent *entry)
     aliases = caml_copy_string_array((const char**)entry->h_aliases);
   else
     aliases = Atom(0);
+  if (entry->h_length == 16) {
+    alloc_one_addr = &alloc_one_addr_16;
+  } else {
+    CAMLassert(entry->h_length == 4);
+    alloc_one_addr = &alloc_one_addr_4;
+  }
   addr_list =
-    caml_alloc_array((entry->h_addrtype == AF_INET6) ?
-        alloc_one_addr_ipv6 : alloc_one_addr_ipv4,
-      (const char**)entry->h_addr_list);
+    caml_alloc_array(alloc_one_addr, (const char**)entry->h_addr_list);
   res = caml_alloc_small(4, 0);
   Field(res, 0) = name;
   Field(res, 1) = aliases;

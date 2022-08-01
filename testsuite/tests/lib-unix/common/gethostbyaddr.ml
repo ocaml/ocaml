@@ -7,9 +7,18 @@ include unix
 
 (* Checks that gethostbyaddr supports both IPv4 and IPv6 (see #11461) *)
 let check a ty =
-  let addr = Unix.inet_addr_of_string a in
-  let host = Unix.gethostbyaddr addr in
-  assert (host.Unix.h_addrtype = ty)
+  match Unix.inet_addr_of_string a with
+  | exception (Failure _) ->
+      (* IPv6 addresses not supported on this platform, just ignore *)
+      ()
+  | addr ->
+      match Unix.gethostbyaddr addr with
+      | exception Not_found ->
+          (* Name resolver badly configured? (observed on OmniOS).
+             Just ignore *)
+          ()
+      | host ->
+          assert (host.Unix.h_addrtype = ty)
 
 let () =
   check "127.0.0.1" Unix.PF_INET;
