@@ -27,7 +27,177 @@
    getpeername getpid getppid getproto getpw gettimeofday getserv getsockname
    getuid gmtime initgroups isatty itimer kill link listen lockf lseek mkdir
    mkfifo mmap mmap_ba nice open opendir pipe putenv read readdir readlink
-   rename rewinddir rmdir select sendrecv setgid setgroups setsid setuid
-   shutdown signals sleep socket socketaddr socketpair sockopt stat strofaddr
-   symlink termios time times truncate umask unixsupport unlink utimes wait
-   write))
+   realpath rename rewinddir rmdir select sendrecv setgid setgroups setsid
+   setuid shutdown signals sleep socket socketaddr socketpair sockopt stat
+   strofaddr symlink termios time times truncate umask unixsupport unlink utimes
+   wait write))
+
+(rule
+ (action (copy accept_unix.c accept.c))
+ (enabled_if (<> %{os_type} "Win32")))
+(rule (action (copy bind_unix.c bind.c)) (enabled_if (<> %{os_type} "Win32")))
+(rule
+ (action (copy channels_unix.c channels.c))
+ (enabled_if (<> %{os_type} "Win32")))
+(rule (action (copy close_unix.c close.c)) (enabled_if (<> %{os_type} "Win32")))
+(rule
+ (action (copy connect_unix.c connect.c))
+ (enabled_if (<> %{os_type} "Win32")))
+(rule (action (copy dup_unix.c dup.c)) (enabled_if (<> %{os_type} "Win32")))
+(rule (action (copy envir_unix.c envir.c)) (enabled_if (<> %{os_type} "Win32")))
+(rule
+ (action (copy errmsg_unix.c errmsg.c))
+ (enabled_if (<> %{os_type} "Win32")))
+(rule
+ (action (copy getpeername_unix.c getpeername.c))
+ (enabled_if (<> %{os_type} "Win32")))
+(rule
+ (action (copy getpid_unix.c getpid.c))
+ (enabled_if (<> %{os_type} "Win32")))
+(rule
+ (action (copy gettimeofday_unix.c gettimeofday.c))
+ (enabled_if (<> %{os_type} "Win32")))
+(rule
+ (action (copy getsockname_unix.c getsockname.c))
+ (enabled_if (<> %{os_type} "Win32")))
+(rule
+ (action (copy isatty_unix.c isatty.c))
+ (enabled_if (<> %{os_type} "Win32")))
+(rule (action (copy link_unix.c link.c)) (enabled_if (<> %{os_type} "Win32")))
+(rule
+ (action (copy listen_unix.c listen.c))
+ (enabled_if (<> %{os_type} "Win32")))
+(rule (action (copy lockf_unix.c lockf.c)) (enabled_if (<> %{os_type} "Win32")))
+(rule (action (copy lseek_unix.c lseek.c)) (enabled_if (<> %{os_type} "Win32")))
+(rule (action (copy mmap_unix.c mmap.c)) (enabled_if (<> %{os_type} "Win32")))
+(rule (action (copy open_unix.c open.c)) (enabled_if (<> %{os_type} "Win32")))
+(rule (action (copy pipe_unix.c pipe.c)) (enabled_if (<> %{os_type} "Win32")))
+(rule (action (copy read_unix.c read.c)) (enabled_if (<> %{os_type} "Win32")))
+(rule
+ (action (copy readlink_unix.c readlink.c))
+ (enabled_if (<> %{os_type} "Win32")))
+(rule
+ (action (copy realpath_unix.c realpath.c))
+ (enabled_if (<> %{os_type} "Win32")))
+(rule
+ (action (copy rename_unix.c rename.c))
+ (enabled_if (<> %{os_type} "Win32")))
+(rule
+ (action (copy select_unix.c select.c))
+ (enabled_if (<> %{os_type} "Win32")))
+(rule
+ (action (copy sendrecv_unix.c sendrecv.c))
+ (enabled_if (<> %{os_type} "Win32")))
+(rule
+ (action (copy shutdown_unix.c shutdown.c))
+ (enabled_if (<> %{os_type} "Win32")))
+(rule (action (copy sleep_unix.c sleep.c)) (enabled_if (<> %{os_type} "Win32")))
+(rule
+ (action (copy socket_unix.c socket.c))
+ (enabled_if (<> %{os_type} "Win32")))
+(rule
+ (action (copy socketpair_unix.c socketpair.c))
+ (enabled_if (<> %{os_type} "Win32")))
+(rule
+ (action (copy sockopt_unix.c sockopt.c))
+ (enabled_if (<> %{os_type} "Win32")))
+(rule (action (copy stat_unix.c stat.c)) (enabled_if (<> %{os_type} "Win32")))
+(rule
+ (action (copy symlink_unix.c symlink.c))
+ (enabled_if (<> %{os_type} "Win32")))
+(rule (action (copy times_unix.c times.c)) (enabled_if (<> %{os_type} "Win32")))
+(rule
+ (action (copy truncate_unix.c truncate.c))
+ (enabled_if (<> %{os_type} "Win32")))
+(rule
+ (action (copy unixsupport_unix.c unixsupport.c))
+ (enabled_if (<> %{os_type} "Win32")))
+(rule
+ (action (copy utimes_unix.c utimes.c))
+ (enabled_if (<> %{os_type} "Win32")))
+(rule (action (copy write_unix.c write.c)) (enabled_if (<> %{os_type} "Win32")))
+
+(rule
+ (action (copy accept_win32.c accept.c))
+ (enabled_if (= %{os_type} "Win32")))
+(rule (action (copy bind_win32.c bind.c)) (enabled_if (= %{os_type} "Win32")))
+(rule
+ (action (copy channels_win32.c channels.c))
+ (enabled_if (= %{os_type} "Win32")))
+(rule (action (copy close_win32.c close.c)) (enabled_if (= %{os_type} "Win32")))
+(rule
+ (action (copy connect_win32.c connect.c))
+ (enabled_if (= %{os_type} "Win32")))
+(rule (action (copy dup_win32.c dup.c)) (enabled_if (= %{os_type} "Win32")))
+(rule (action (copy envir_win32.c envir.c)) (enabled_if (= %{os_type} "Win32")))
+(rule
+ (action (copy errmsg_win32.c errmsg.c))
+ (enabled_if (= %{os_type} "Win32")))
+(rule
+ (action (copy getpeername_win32.c getpeername.c))
+ (enabled_if (= %{os_type} "Win32")))
+(rule
+ (action (copy getpid_win32.c getpid.c))
+ (enabled_if (= %{os_type} "Win32")))
+(rule
+ (action (copy gettimeofday_win32.c gettimeofday.c))
+ (enabled_if (= %{os_type} "Win32")))
+(rule
+ (action (copy getsockname_win32.c getsockname.c))
+ (enabled_if (= %{os_type} "Win32")))
+(rule
+ (action (copy isatty_win32.c isatty.c))
+ (enabled_if (= %{os_type} "Win32")))
+(rule (action (copy link_win32.c link.c)) (enabled_if (= %{os_type} "Win32")))
+(rule
+ (action (copy listen_win32.c listen.c))
+ (enabled_if (= %{os_type} "Win32")))
+(rule (action (copy lockf_win32.c lockf.c)) (enabled_if (= %{os_type} "Win32")))
+(rule (action (copy lseek_win32.c lseek.c)) (enabled_if (= %{os_type} "Win32")))
+(rule (action (copy mmap_win32.c mmap.c)) (enabled_if (= %{os_type} "Win32")))
+(rule (action (copy open_win32.c open.c)) (enabled_if (= %{os_type} "Win32")))
+(rule (action (copy pipe_win32.c pipe.c)) (enabled_if (= %{os_type} "Win32")))
+(rule (action (copy read_win32.c read.c)) (enabled_if (= %{os_type} "Win32")))
+(rule
+ (action (copy readlink_win32.c readlink.c))
+ (enabled_if (= %{os_type} "Win32")))
+(rule
+ (action (copy realpath_win32.c realpath.c))
+ (enabled_if (= %{os_type} "Win32")))
+(rule
+ (action (copy rename_win32.c rename.c))
+ (enabled_if (= %{os_type} "Win32")))
+(rule
+ (action (copy select_win32.c select.c))
+ (enabled_if (= %{os_type} "Win32")))
+(rule
+ (action (copy sendrecv_win32.c sendrecv.c))
+ (enabled_if (= %{os_type} "Win32")))
+(rule
+ (action (copy shutdown_win32.c shutdown.c))
+ (enabled_if (= %{os_type} "Win32")))
+(rule (action (copy sleep_win32.c sleep.c)) (enabled_if (= %{os_type} "Win32")))
+(rule
+ (action (copy socket_win32.c socket.c))
+ (enabled_if (= %{os_type} "Win32")))
+(rule
+ (action (copy socketpair_win32.c socketpair.c))
+ (enabled_if (= %{os_type} "Win32")))
+(rule
+ (action (copy sockopt_win32.c sockopt.c))
+ (enabled_if (= %{os_type} "Win32")))
+(rule (action (copy stat_win32.c stat.c)) (enabled_if (= %{os_type} "Win32")))
+(rule
+ (action (copy symlink_win32.c symlink.c))
+ (enabled_if (= %{os_type} "Win32")))
+(rule (action (copy times_win32.c times.c)) (enabled_if (= %{os_type} "Win32")))
+(rule
+ (action (copy truncate_win32.c truncate.c))
+ (enabled_if (= %{os_type} "Win32")))
+(rule
+ (action (copy unixsupport_win32.c unixsupport.c))
+ (enabled_if (= %{os_type} "Win32")))
+(rule
+ (action (copy utimes_win32.c utimes.c))
+ (enabled_if (= %{os_type} "Win32")))
+(rule (action (copy write_win32.c write.c)) (enabled_if (= %{os_type} "Win32")))
