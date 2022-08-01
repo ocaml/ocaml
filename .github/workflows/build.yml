@@ -126,6 +126,29 @@ jobs:
            bash -cxe "SHOW_TIMINGS=1 tools/ci/actions/runner.sh test_prefix $dir"; \
           done
 
+  i386:
+    runs-on: ubuntu-latest
+    container:
+      image: i386/ubuntu:18.04
+      options: --platform linux/i386 --user root
+    steps:
+      - name: OS Dependencies
+        run: |
+          apt-get update
+          apt-get install -y git gcc make parallel
+      - name: Checkout
+        # See https://github.com/actions/checkout/issues/334
+        uses: actions/checkout@v1
+      - name: configure tree
+        run: |
+          MAKE_ARG=-j XARCH=i386 bash -xe tools/ci/actions/runner.sh configure
+      - name: Build
+        run: |
+          MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh build
+      - name: Run the testsuite
+        run: |
+          bash -xe tools/ci/actions/runner.sh test
+
 # "extra" testsuite runs, reusing the previously built compiler tree.
 # debug: running the full testsuite with the
 #        debug runtime and minor heap verification.
