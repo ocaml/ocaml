@@ -18215,6 +18215,8 @@ case $host in #(
 
     $as_echo "#define HAS_STRERROR 1" >>confdefs.h
 
+    $as_echo "#define HAS_IPV6 1" >>confdefs.h
+
     $as_echo "#define HAS_NICE 1" >>confdefs.h
  ;; #(
   *-pc-windows) :

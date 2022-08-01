@@ -571,6 +571,10 @@ OCaml 5.0
 - #11417: Fix regression allowing virtual methods in non-virtual classes.
   (Leo White, review by Florian Angeletti)
 
+- #11468: Fix regression from #10186 (OCaml 4.13) detecting IPv6 on Windows for
+  mingw-w64 i686 port.
+  (David Allsopp, review by Xavier Leroy and Sébastien Hinderer)
+
 OCaml 4.14.0 (28 March 2022)
 ----------------------------
 
