@@ -59,10 +59,6 @@ Working version
 
 ### Other libraries:
 
-- #11461: Fix gethostbyaddr for IPv6 arguments and make it domain-safe
-  (Olivier Nicole, Nicolás Ojeda Bär and David Allsopp, review by Nicolás Ojeda
-  Bär and David Allsopp)
-
 ### Tools:
 
 - #9290: Add a directive to switch off debugging in toplevel.
@@ -343,6 +339,10 @@ OCaml 5.0
 - #11309, #11424, #11427: Add Domain.recommended_domain_count.
   (Christiano Haesbaert, Konstantin Belousov, review by David Allsopp,
   KC Sivaramakrishnan, Gabriel Scherer, Nicolas Ojeda Bar)
+
+- #11461: Fix gethostbyaddr for IPv6 arguments and make it domain-safe
+  (Olivier Nicole, Nicolás Ojeda Bär and David Allsopp, review by Nicolás Ojeda
+  Bär, David Allsopp and Xavier Leroy)
 
 ### Tools:
 
