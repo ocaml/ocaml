@@ -44,8 +44,8 @@ of an OCaml program whose runtime tracing system has been enabled by setting
 the corresponding environment variable.
 \end{description}
 
-Runtime events functions as a {\em flight recorder} with old events being
-overwritten by new events. This means that consumers can either continuously
+The runtime events tracing system logs events to a {\em ring buffer}. Consequently,
+old events are being overwritten by new events. Consumers can either continuously
 consume events or choose to only do so in response to some circumstance, e.g if
 a particular query or operation takes longer than expected to complete.
 
