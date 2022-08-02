@@ -20,15 +20,18 @@ Data emitted includes:
 There are three main classes of events emitted by the runtime events system:
 
 \begin{description}
-\item[Spans] Events having a duration in time. An example of a span event in the
-OCaml garbage collector would be a a minor collection. Spans may contain other
-spans, e.g there may be other spans that begin after a minor collection has
+\item[Spans] Events spanning over a duration in time. For example, the runtime
+events tracing system emits a span event that starts when a minor
+collection begins in the OCaml garbage collector and ends when
+the collection is completed. Spans can contain other spans, e.g other span
+events may be emitted that begin after a minor collection has
 begun and end before it does.
-\item[Lifecycle events] Events that occur at a moment in time. An example of a
-lifecycle event would be the termination of a domain.
-\item[Counters] Events that include the measurement of some quantity of
-interest. An example of a counter would be the number of words promoted from
-the minor to the major heap during the last minor garbage collection.
+\item[Lifecycle events] Events that occur at a moment in time. For example,
+when a domain terminates, a corresponding lifecycle event is emitted.
+\item[Counters] Events that include a measurement of some quantity of
+interest. For example, the number of words promoted from the minor to
+the major heap during the last minor garbage collection is emitted as a
+counter event.
 \end{description}
 
 The runtime events tracing system is designed to be used in different contexts:
