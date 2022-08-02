@@ -51,13 +51,15 @@ a particular query or operation takes longer than expected to complete.
 
 \section{s:runtime-tracing-architecture}{Architecture}
 
-The runtime tracing system can be split in to two parts. The probes which emit
-events and the rest of the system that ingest and transport them.
+The runtime tracing system conceptually consists of two parts: 1) the probes
+which emit events and 2) the events transport that ingests and transports
+these events.
 
 \subsection{s:runtime-tracing-probes}{Probes}
-Probes collect performance events from the runtime system. These are further
-split in to two sets, those always available and those only available in the
-instrumented runtime. Probes in the instrumented runtime are primarily of
+Probes collect events from the runtime system. These are further
+split in to two sets: 1) probes that are always available and 2) probes
+that are only available in the instrumented runtime.
+Probes in the instrumented runtime are primarily of
 interest to developers of the OCaml runtime and garbage collector and, at
 present, only consist of major heap allocation size counter events.
 
@@ -70,8 +72,8 @@ The full set of events emitted by probes and their documentation can be found in
 
 \subsection{s:runtime-tracing-ingestion}{Events transport}
 
-The second part of the system ingests events emitted by the probes and makes
-these available to consumers.
+The events transport part of the system ingests events emitted by the probes
+and makes them available to consumers.
 
 \subsubsection{s:runtime-tracing-ringbuffers}{Ring buffers}
 
@@ -85,24 +87,24 @@ head pointer is advanced and the oldest events are overwritten by new ones.
 The ring buffer implementation used in runtime events can be written by at most
 one producer at a time but can be read simultaneously by multiple consumers
 without coordination from the producer. There is a unique ring buffer for every
-running domain and on domain termination ring buffers may be re-used for newly
+running domain and, on domain termination, ring buffers may be re-used for newly
 spawned domains. The ring buffers themselves are stored in a memory-mapped file
 with the processes identifier as the name and the extension ".events", this
 enables them to be read from outside the main OCaml process.
 
 \subsubsection{s:runtime-tracing-apis}{Consumption APIs}
 
-Runtime events consists of both OCaml and C APIs which are cursor-based and
-polling-driven. The high-level process for consuming events is as follows:
+The runtime event tracing system provides both OCaml and C APIs which are
+cursor-based and polling-driven. The high-level process for consuming events
+is as follows:
 
 \begin{enumerate}
-  \item A cursor is created via Runtime_events.create_cursor for either the
+  \item A cursor is created via \texttt{Runtime_events.create_cursor} for either the
   current process or an external process (specified by a path and PID).
-  \item A callbacks record is created via Runtime_events.Callbacks.create with
-  the desired callback functions.
-  \item The cursor is polled via Runtime_events.read_poll using the callbacks
-  created in the previous step. Any supplied callback functions are called for
-  each matching event in the ring buffers.
+  \item \texttt{Runtime_events.Callbacks.create} is called to register a callback function to receive the events.
+  \item The cursor is polled via \texttt{Runtime_events.read_poll} using the callbacks
+  created in the previous step. For each matching event in the ring buffers, the
+  provided callback functions are called.
 \end{enumerate}
 
 \section{s-runtime-tracing-usage}{Usage}
@@ -110,7 +112,7 @@ polling-driven. The high-level process for consuming events is as follows:
 \subsection{s-runtime-tracing-ocaml-apis}{With OCaml APIs}
 
 We start with a simple example that prints the name, begin and end times
-for events:
+of events emitted by the runtime event tracing system:
 
 \begin{verbatim}
 let runtime_begin _ ts phase =
@@ -160,7 +162,7 @@ When using the {\em dune} build system, this example can be built as follows:
  (libraries unix runtime_events))
 \end{verbatim}
 
-Running the compiled example binary will give an output similar to:
+Running the compiled binary of the example gives an output similar to:
 
 \begin{verbatim}
 Begin   explicit_gc_full_major  24086187297852
@@ -188,15 +190,15 @@ End     stw_leader      24086187613209
 \end{verbatim}
 
 This is an example of self-monitoring, where a program explicitly starts
-runtime events and monitors itself.
+listening to runtime events and monitors itself.
 
-For external monitoring a program need not be aware of the existence of runtime
-events. Runtime events can be controlled via an environment variable
-"OCAML_RUNTIME_EVENTS_START" which, when set, will ensure that the runtime
-tracing system is started at program initialization.
+For external monitoring, a program does not need to be aware of the existence of runtime
+events. Runtime events can be controlled via the environment variable
+"OCAML_RUNTIME_EVENTS_START" which, when set, will cause the runtime
+tracing system to be started at program initialization.
 
-We could remove the "Runtime_events.start ();" from the previous example and
-instead as below to produce the same result:
+We could remove "Runtime_events.start ();" from the previous example and,
+instead, call the program as below to produce the same result:
 
 \begin{verbatim}
 OCAML_RUNTIME_EVENTS_START=1 ./example
@@ -204,29 +206,30 @@ OCAML_RUNTIME_EVENTS_START=1 ./example
 
 \subsubsection{s-runtime-tracing-environment-variables}{Environment variables}
 
-As we saw in the previous example, environment variables can be used to control
-aspects of the runtime events system. The following environment variables are
-available:
+Environment variables can be used to control different aspects of the runtime
+event tracing system. The following environment variables are available:
 
 \begin{itemize}
   \item OCAML_RUNTIME_EVENTS_START if set will cause the runtime events system
   to be started as part of the OCaml runtime initialization.
-  \item OCAML_RUNTIME_EVENTS_DIR sets the directory where the runtime events
-  ring buffers will be located. If not present the program's working directory
-  will be used.
-  \item OCAML_RUNTIME_EVENTS_PRESERVE if set will prevent the OCaml runtime from
-  removing its ring buffers when it terminates. This can help if monitoring very
-  short running programs.
+  \item OCAML_RUNTIME_EVENTS_DIR sets the directory where the ".events"
+  files containing the runtime event tracing system's ring buffers will be located.
+  If not present the program's working directory will be used.
+  \item OCAML_RUNTIME_EVENTS_PRESERVE if set will make the OCaml runtime
+  preserve the runtime events ring buffer files past the termination of the OCaml program.
+  This can be useful for monitoring very short running programs.
+  If not set, the ".events" files of the OCaml program will be deleted
+  at program termination.
 \end{itemize}
 
-The size of the runtime events ring buffers can also be configured via OCAMLRUNPARAM,
+The size of the runtime events ring buffers can be configured via OCAMLRUNPARAM,
 see section \ref{s:ocamlrun-options} for more information.
 
 \subsubsection{s-runtime-tracing-instrumented-runtime}{Building with the instrumented runtime}
 
-In order to use events only available in the instrumented runtime your program
-will need to be compiled and linked against it. To use our example program from
-earlier this can be achieved as so:
+To receive events that are only available in the instrumented runtime, the
+OCaml program needs to be compiled and linked against the instrumented runtime.
+For our example program from earlier, this is achieved as follows:
 
 \begin{verbatim}
 ocamlopt -runtime-variant i -I +runtime_events -I +unix unix.cmxa runtime_events.cmxa example.ml -o example
@@ -244,9 +247,9 @@ And for dune:
 
 \subsection{s-runtime-tracing-tooling}{With tooling}
 
-Programmatic access to events enables very flexible use of the performance data
-from runtime events but is intended primarily for writers of observability
-libraries and tooling that end-users use.
+Programmatic access to events is intended primarily for writers of observability
+libraries and tooling that end-users use. The flexible API enables use of
+the performance data from runtime events for logging and monitoring purposes.
 
 In this section we cover several utilities in the \texttt{runtime_events_tools}
 package which provide simple ways of extracting and summarisingdata from runtime
