@@ -2117,6 +2117,7 @@ AS_CASE([$host],
   [*-*-mingw32],
     [AC_DEFINE([HAS_BROKEN_PRINTF])
     AC_DEFINE([HAS_STRERROR])
+    AC_DEFINE([HAS_IPV6])
     AC_DEFINE([HAS_NICE])],
   [*-pc-windows],
     [AC_DEFINE([HAS_BROKEN_PRINTF])
