@@ -36,26 +36,21 @@
 #define GETHOSTBYNAME_IS_REENTRANT 1
 #endif
 
-static int entry_h_length;
-
-static value alloc_one_addr(char const *a)
+static value alloc_one_addr_4(char const *a)
 {
-  struct in_addr addr;
-#ifdef HAS_IPV6
-  struct in6_addr addr6;
-  if (entry_h_length == 16) {
-    memmove(&addr6, a, 16);
-    return caml_unix_alloc_inet6_addr(&addr6);
-  }
-#endif
-  memmove (&addr, a, 4);
-  return caml_unix_alloc_inet_addr(&addr);
+  return caml_alloc_initialized_string(4, a);
+}
+
+static value alloc_one_addr_16(char const *a)
+{
+  return caml_alloc_initialized_string(16, a);
 }
 
 static value alloc_host_entry(struct hostent *entry)
 {
   CAMLparam0();
   CAMLlocal4(name, aliases, addr_list, adr);
+  value (*alloc_one_addr)(char const *);
   value res;
 
   name = caml_copy_string((char *)(entry->h_name));
@@ -65,7 +60,12 @@ static value alloc_host_entry(struct hostent *entry)
     aliases = caml_copy_string_array((const char**)entry->h_aliases);
   else
     aliases = Atom(0);
-  entry_h_length = entry->h_length;
+  if (entry->h_length == 16) {
+    alloc_one_addr = &alloc_one_addr_16;
+  } else {
+    CAMLassert(entry->h_length == 4);
+    alloc_one_addr = &alloc_one_addr_4;
+  }
   addr_list =
     caml_alloc_array(alloc_one_addr, (const char**)entry->h_addr_list);
   res = caml_alloc_small(4, 0);
@@ -82,14 +82,31 @@ static value alloc_host_entry(struct hostent *entry)
 
 CAMLprim value caml_unix_gethostbyaddr(value a)
 {
-  struct in_addr adr = GET_INET_ADDR(a);
+  char * adr;
+  struct in_addr in4;
   struct hostent * hp;
+  int addr_type = AF_INET;
+  socklen_t addr_len = 4;
+#if HAS_IPV6
+  struct in6_addr in6;
+  if (caml_string_length(a) == 16) {
+    addr_type = AF_INET6;
+    addr_len = 16;
+    in6 = GET_INET6_ADDR(a);
+    adr = (char *)&in6;
+  } else {
+#endif
+    in4 = GET_INET_ADDR(a);
+    adr = (char *)&in4;
+#if HAS_IPV6
+  }
+#endif
 #if HAS_GETHOSTBYADDR_R == 7
   struct hostent h;
   char buffer[NETDB_BUFFER_SIZE];
   int h_errnop;
   caml_enter_blocking_section();
-  hp = gethostbyaddr_r((char *) &adr, 4, AF_INET,
+  hp = gethostbyaddr_r(adr, addr_len, addr_type,
                        &h, buffer, sizeof(buffer), &h_errnop);
   caml_leave_blocking_section();
 #elif HAS_GETHOSTBYADDR_R == 8
@@ -97,7 +114,7 @@ CAMLprim value caml_unix_gethostbyaddr(value a)
   char buffer[NETDB_BUFFER_SIZE];
   int h_errnop, rc;
   caml_enter_blocking_section();
-  rc = gethostbyaddr_r((char *) &adr, 4, AF_INET,
+  rc = gethostbyaddr_r(adr, addr_len, addr_type,
                        &h, buffer, sizeof(buffer), &hp, &h_errnop);
   caml_leave_blocking_section();
   if (rc != 0) hp = NULL;
@@ -105,7 +122,7 @@ CAMLprim value caml_unix_gethostbyaddr(value a)
 #ifdef GETHOSTBYADDR_IS_REENTRANT
   caml_enter_blocking_section();
 #endif
-  hp = gethostbyaddr((char *) &adr, 4, AF_INET);
+  hp = gethostbyaddr(adr, addr_len, addr_type);
 #ifdef GETHOSTBYADDR_IS_REENTRANT
   caml_leave_blocking_section();
 #endif

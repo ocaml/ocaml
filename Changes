@@ -70,6 +70,9 @@ Working version
 
 ### Manual and documentation:
 
+- #9430, #11291: Document the general desugaring rules for binding operators.
+  (Gabriel Scherer, review by Nicolás Ojeda Bär)
+
 ### Compiler user-interface and warnings:
 
 - #10818: Preserve integer literal formatting in type hint.
@@ -342,6 +345,10 @@ OCaml 5.0
   (Christiano Haesbaert, Konstantin Belousov, review by David Allsopp,
   KC Sivaramakrishnan, Gabriel Scherer, Nicolas Ojeda Bar)
 
+- #11461, #11466: Fix gethostbyaddr for IPv6 arguments and make it domain-safe
+  (Olivier Nicole, Nicolás Ojeda Bär, David Allsopp and Xavier Leroy,
+   review by the same)
+
 ### Tools:
 
 * #11004: Litmus tests for checking the implementation of the
@@ -478,6 +485,10 @@ OCaml 5.0
 - #11200: Install ocamlprof's Profiling runtime module to a +profiling,
   removing it from the default namespace.
   (David Allsopp, review by Sébastien Hinderer)
+
+- #11370, #11373: Don't pass CFLAGS to flexlink during configure.
+  (David Allsopp, report by William Hu, review by Xavier Leroy and
+   Sébastien Hinderer)
 
 ### Bug fixes:
 

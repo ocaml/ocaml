@@ -13083,6 +13083,7 @@ esac
     CC="$flexlink -chain $flexdll_chain -exe"
     LIBS="conftest2.$ac_objext"
     CPPFLAGS="$internal_cppflags $CPPFLAGS"
+    CFLAGS=""
     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 int main() { return 0; }

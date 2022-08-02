@@ -45,11 +45,7 @@ EOF
     ./configure $configure_flags
     ;;
   i386)
-    ./configure --build=x86_64-pc-linux-gnu --host=i386-linux \
-      CC='gcc -m32 -march=x86-64' \
-      AS='as --32' \
-      ASPP='gcc -m32 -march=x86-64 -c' \
-      PARTIALLD='ld -r -melf_i386' \
+    ./configure --build=x86_64-pc-linux-gnu --host=i386-pc-linux-gnu \
       $configure_flags
     ;;
   *)
@@ -60,7 +56,7 @@ EOF
 }
 
 Build () {
-  $MAKE world.opt
+  $MAKE
   echo Ensuring that all names are prefixed in the runtime
   ./tools/check-symbol-names runtime/*.a otherlibs/*/lib*.a
 }

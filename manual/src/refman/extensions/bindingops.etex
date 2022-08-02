@@ -22,6 +22,21 @@ expr:
 ;
 \end{syntax}
 
+Binding operators offer syntactic sugar to expose library functions
+under (a variant of) the familiar syntax of standard keywords.
+Currently supported ``binding operators'' are "let<op>" and "and<op>",
+where "<op>" is an operator symbol, for example "and+$".
+
+Binding operators were introduced to offer convenient syntax for
+working with monads and applicative functors; for those, we propose
+conventions using operators "*" and "+" respectively. They may be used
+for other purposes, but one should keep in mind that each new
+unfamiliar notation introduced makes programs harder to understand for
+non-experts. We expect that new conventions will be developped over
+time on other families of operator.
+
+\subsection{ss:letop-examples}{Examples}
+
 Users can define {\em let operators}:
 
 \begin{caml_example}{verbatim}
@@ -96,33 +111,9 @@ let sum3 z1 z2 z3 =
     (fun ((x1, x2), x3) -> x1 + x2 + x3)
 \end{caml_example}
 
+\subsection{ss:letops-conventions}{Conventions}
 
-\subsection{ss:letops-punning}{Short notation for variable bindings (let-punning)}
-
-(Introduced in 4.13.0)
-
-When the expression being bound is a variable, it can be convenient to
-use the shorthand notation "let+ x in ...", which expands to "let+ x =
-x in ...".  This notation, also known as let-punning, allows the
-"sum3" function above can be written more concisely as:
-
-\begin{caml_example}{verbatim}
-open ZipSeq
-let sum3 z1 z2 z3 =
-  let+ z1 and+ z2 and+ z3 in
-  z1 + z2 + z3
-\end{caml_example}
-
-This notation is also supported for extension nodes, expanding
-"let%foo x in ..." to "let%foo x = x in ...". However, to avoid
-confusion, this notation is not supported for plain "let" bindings.
-
-\subsection{ss:letops-rationale}{Rationale}
-
-This extension is intended to provide a convenient syntax for working
-with monads and applicatives.
-
-An applicative should provide a module implementing the following
+An applicative functor should provide a module implementing the following
 interface:
 
 \begin{caml_example*}{verbatim}
@@ -148,3 +139,80 @@ end
 
 where "(let*)" is bound to the "bind" operation, and "(and*)" is also
 bound to the monoidal product operation.
+
+\subsection{ss:letop-rules}{General desugaring rules}
+
+The form
+
+\begin{verbatim}
+let<op0>
+  x1 = e1
+and<op1>
+  x2 = e2
+and<op2>
+  x3 = e3
+in e
+\end{verbatim}
+
+desugars into
+
+\begin{verbatim}
+( let<op0> )
+  (( and<op2> )
+    (( and<op1> )
+      e1
+      e2)
+    e3)
+  (fun ((x1, x2), x3) -> e)
+\end{verbatim}
+
+This of course works for any number of nested "and"-operators. One can
+express the general rule by repeating the following simplification
+steps:
+\begin{itemize}
+\item
+The first "and"-operator in
+\begin{center}
+"let<op0> x1 = e1 and<op1> x2 = e2 and... in e"
+\end{center}
+can be desugared into a function application
+\begin{center}
+"let<op0> (x1, x2) = ( and<op1> ) e1 e2 and... in e".
+\end{center}
+
+\item
+Once all "and"-operators have been simplified away,
+the "let"-operator in
+\begin{center}
+"let<op> x1 = e1 in e"
+\end{center}
+can be desugared into an application
+\begin{center}
+"( let<op> ) e1 (fun x1 -> e)".
+\end{center}
+\end{itemize}
+
+Note that the grammar allows mixing different operator symbols in the
+same binding ("<op0>", "<op1>", "<op2>" may be distinct), but we
+strongly recommend APIs where let-operators and and-operators working
+together use the same symbol.
+
+\subsection{ss:letops-punning}{Short notation for variable bindings (let-punning)}
+
+(Introduced in 4.13.0)
+
+When the expression being bound is a variable, it can be convenient to
+use the shorthand notation "let+ x in ...", which expands to "let+ x =
+x in ...".  This notation, also known as let-punning, allows the
+"sum3" function above can be written more concisely as:
+
+\begin{caml_example}{verbatim}
+open ZipSeq
+let sum3 z1 z2 z3 =
+  let+ z1 and+ z2 and+ z3 in
+  z1 + z2 + z3
+\end{caml_example}
+
+This notation is also supported for extension nodes, expanding
+"let%foo x in ..." to "let%foo x = x in ...". However, to avoid
+confusion, this notation is not supported for plain "let" bindings.
