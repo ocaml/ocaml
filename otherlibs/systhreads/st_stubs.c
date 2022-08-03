@@ -437,7 +437,8 @@ void caml_thread_interrupt_hook(void)
    system. */
 CAMLprim value caml_thread_initialize(value unit)
 {
-  CAMLparam0();
+  /* Protect against repeated initialization (PR#3532) */
+  if (Active_thread != NULL) return Val_unit;
 
   if (!caml_domain_alone())
     caml_failwith("caml_thread_initialize: cannot initialize Thread "
@@ -458,7 +459,7 @@ CAMLprim value caml_thread_initialize(value unit)
 
   caml_atfork_hook = caml_thread_reinitialize;
 
-  CAMLreturn(Val_unit);
+  return Val_unit;
 }
 
 CAMLprim value caml_thread_cleanup(value unit)
