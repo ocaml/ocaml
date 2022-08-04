@@ -79,6 +79,18 @@
         let success = Atomic.compare_and_set stack cur tail in
         if success then Some x
         else pop stack ;;
+
+    # let st = Atomic.make [];;
+    # push st 1;;
+    - : unit = ()
+    # push st 2;;
+    - : unit = ()
+    # pop st;;
+    - : int option = Some 2
+    # pop st;;
+    - : int option = Some 1
+    # pop st;;
+    - : int option = None
     ]}
 
 
