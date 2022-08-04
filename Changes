@@ -59,6 +59,9 @@ Working version
   (Guillaume Munch-Maccagnoni, review by Gabriel Scherer and KC
    Sivaramakrishnan)
 
+- #11474: Add support for user-defined events in the runtime event tracing
+  system. (Lucas Pluvinage, review by Sadiq Jaffer)
+
 ### Type system:
 
 - #6941, #11187: prohibit using classes through recursive modules
