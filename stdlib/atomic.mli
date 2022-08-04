@@ -18,6 +18,64 @@
 (** Atomic references.
 
     @since 4.12
+
+    A basic use case is to have global counters that are updated in a
+    thread-safe way:
+
+    {[
+    let count_bytes_read = Atomic.make 0;;
+
+    (* prepare a file *)
+    let () =
+      let oc = open_out "/tmp/example_data" in
+      for i=1 to 100_000 do output_char oc 'x' done;
+      close_out oc ;;
+
+    let read_file () =
+      let ic = open_in "/tmp/example_data" in
+      let buf = Bytes.create 1024 in
+
+      let rec loop () =
+        let n = input ic buf 0 1024 in
+        Thread.yield();
+        if n> 0 then (
+          ignore (Atomic.fetch_and_add count_bytes_read n : int);
+          loop()
+        )
+      in
+      loop()
+    ;;
+
+    # let () =
+      let threads = Array.init 8 (fun _ -> Thread.create read_file ()) in
+      Array.iter Thread.join threads;
+      Printf.printf "read %d bytes\n" (Atomic.get count_bytes_read)
+    ;;
+    read 800000 bytes
+
+    ]}
+
+    Another example is a basic {{: https://en.wikipedia.org/wiki/Treiber_stack} Treiber stack}
+      (a thread-safe stack):
+    {[
+    type 'a stack = 'a list Atomic.t ;;
+
+    let rec push (stack: _ stack) elt : unit =
+      let cur = Atomic.get stack in
+      let success = Atomic.compare_and_set stack cur (elt :: cur) in
+      if not success then
+        push stack elt ;;
+
+
+    let rec pop (stack: _ stack) : _ option =
+      let cur = Atomic.get stack in
+      match cur with
+      | [] -> None
+      | x :: tail ->
+        let success = Atomic.compare_and_set stack cur tail in
+        if success then Some x
+        else pop stack ;;
+    ]}
 *)
 
 (** An atomic (mutable) reference to a value of type ['a]. *)
