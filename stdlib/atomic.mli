@@ -54,6 +54,7 @@
       Array.iter Thread.join threads;
       Printf.printf "read %d bytes\n" (Atomic.get count_bytes_read)
     ;;
+    - : unit = ()
     read 800000 bytes
 
     ]}
