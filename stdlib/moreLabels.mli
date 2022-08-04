@@ -36,6 +36,49 @@ module Hashtbl : sig
   (** Hash tables and hash functions.
 
      Hash tables are hashed association tables, with in-place modification.
+
+     Hash tables are hashed association tables, with in-place modification.
+     They're the bread-and-butter associative structure for imperative code,
+     with fast lookup.
+
+     The functors {!Make} and {!MakeSeeded} can be used when
+     performance or flexibility are key.
+     The user provides custom equality and hash functions for the key type,
+     and obtains a custom hash table type for this particular type of key.
+
+     The polymorphic {!t} hash table is useful in simpler cases or
+     in interactive environments.
+
+
+    {[
+      (* 0...99 *)
+      let seq = Seq.unfold (fun x->Some (x, succ x)) 0 |> Seq.take 100;;
+
+      (* build from Seq.t *)
+      # let tbl =
+          seq
+          |> Seq.map (fun x -> x, string_of_int x)
+          |> Hashtbl.of_seq ;;
+      val tbl : (int, string) Hashtbl.t = <abstr>
+
+      # Hashtbl.length tbl;;
+      - : int = 100
+
+      # Hashtbl.find_opt tbl 32;;
+      - : string option = Some "32"
+
+      # Hashtbl.find_opt tbl 166;;
+      - : string option = None
+
+      # Hashtbl.replace tbl 166 "one six six";;
+      - : unit = ()
+
+      # Hashtbl.find_opt tbl 166;;
+      - : string option = Some "one six six"
+
+      # Hashtbl.length tbl;;
+      - : int = 101
+      ]}
   *)
 
 
@@ -99,10 +142,13 @@ module Hashtbl : sig
   val add : ('a, 'b) t -> key:'a -> data:'b -> unit
   (** [Hashtbl.add tbl ~key ~data] adds a binding of [key] to [data]
      in table [tbl].
-     Previous bindings for [key] are not removed, but simply
+
+     {b WARNING}: Previous bindings for [key] are not removed, but simply
      hidden. That is, after performing {!remove}[ tbl key],
      the previous binding for [key], if any, is restored.
-     (Same behavior as with association lists.) *)
+     (Same behavior as with association lists.)
+
+     If you desire the classic behavior of replacing elements, see {!replace}. *)
 
   val find : ('a, 'b) t -> 'a -> 'b
   (** [Hashtbl.find tbl x] returns the current binding of [x] in [tbl],

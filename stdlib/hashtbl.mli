@@ -19,6 +19,8 @@
 (** Hash tables and hash functions.
 
    Hash tables are hashed association tables, with in-place modification.
+
+   Hash tables are hashed association tables, with in-place modification.
    They're the bread-and-butter associative structure for imperative code,
    with fast lookup.
 
@@ -158,7 +160,6 @@ val replace : ('a, 'b) t -> 'a -> 'b -> unit
 (** [Hashtbl.replace tbl key data] replaces the current binding of [key]
    in [tbl] by a binding of [key] to [data].  If [key] is unbound in [tbl],
    a binding of [key] to [data] is added to [tbl].
-
    This is functionally equivalent to {!remove}[ tbl key]
    followed by {!add}[ tbl key data]. *)
 
