@@ -17,20 +17,21 @@
 
 (** Atomic references.
 
-    @since 4.12
-
     A basic use case is to have global counters that are updated in a
     thread-safe way:
 
     {[
+    (* our counter *)
     let count_bytes_read = Atomic.make 0;;
 
-    (* prepare a file *)
+    (* prepare a sample file *)
     let () =
       let oc = open_out "/tmp/example_data" in
       for i=1 to 100_000 do output_char oc 'x' done;
       close_out oc ;;
 
+    (* just read from file, discard content but count bytes.
+       This is pretty useless and only used to show this. *)
     let read_file () =
       let ic = open_in "/tmp/example_data" in
       let buf = Bytes.create 1024 in
@@ -46,6 +47,7 @@
       loop()
     ;;
 
+    (* run multiple threads (or domains) that update the counter *)
     # let () =
       let threads = Array.init 8 (fun _ -> Thread.create read_file ()) in
       Array.iter Thread.join threads;
@@ -76,6 +78,9 @@
         if success then Some x
         else pop stack ;;
     ]}
+
+
+    @since 4.12
 *)
 
 (** An atomic (mutable) reference to a value of type ['a]. *)
