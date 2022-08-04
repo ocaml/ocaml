@@ -54,9 +54,9 @@
        edges: (int, int list) Hashtbl.t
      };;
 
-    (** Search in graph [g] using BFS, starting from node [start].
-        It returns the first node that satisfies [p], or [None] if
-        no node reachable from [start] satifies [p].
+    (* Search in graph [g] using BFS, starting from node [start].
+       It returns the first node that satisfies [p], or [None] if
+       no node reachable from [start] satifies [p].
     *)
     let search_for ~(g:graph) ~(start:int) (p:int -> bool) : int option =
       let to_explore = Queue.create() in
