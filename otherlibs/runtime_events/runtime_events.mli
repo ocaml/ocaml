@@ -139,7 +139,7 @@ module Type : sig
 
   val event : unit t
   (** An event has no data associated with it *)
-  
+
   val counter : int t
   (** A counter is a number *)
 
@@ -148,20 +148,20 @@ module Type : sig
 end
 
 module User : sig
-  (** User events is a way for libraries to provide runtime events that can be 
+  (** User events is a way for libraries to provide runtime events that can be
       consumed by other tools. These events can carry known data types or custom
       values. The current maximum number of user events is 8192. *)
 
   type 'a tag = ..
-  (** The type for an user event tag. Tags are used to discriminate between 
+  (** The type for an user event tag. Tags are used to discriminate between
       user events of the same type *)
 
   type 'value t
-  (** The type for an user event. User events describe their tag, carried data 
+  (** The type for an user event. User events describe their tag, carried data
       type and an unique string-based name *)
 
   val register : string -> 'value tag -> 'value Type.t -> 'value t
-  (** [register name tag ty] registers a new event with an unique [name], 
+  (** [register name tag ty] registers a new event with an unique [name],
       carrying a [tag] and values of type [ty] *)
 
   val write : 'value t -> 'value -> unit
@@ -204,10 +204,11 @@ module Callbacks : sig
       instrumented runtime. [lost_events] callbacks are called if the consumer
       code detects some unconsumed events have been overwritten.
       *)
-  
-  val add : 'a Type.t -> (int -> Timestamp.t -> 'a User.t -> 'a -> unit) -> t -> t
-  (** [add ty callback t] extends [t] to additionally subscribe to user events 
-      of type [ty], when such an event happen, [callback] is called with the 
+
+  val add : 'a Type.t -> (int -> Timestamp.t -> 'a User.t -> 'a -> unit) -> t
+            -> t
+  (** [add ty callback t] extends [t] to additionally subscribe to user events
+      of type [ty], when such an event happen, [callback] is called with the
       corresponding event and payload. *)
 end
 

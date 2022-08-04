@@ -4,9 +4,9 @@ include runtime_events
 open Runtime_events
 
 (* let's register some custom events *)
-type _ User.tag += 
-  | MyEvent : unit User.tag 
-  | MyCounter : int User.tag 
+type _ User.tag +=
+  | MyEvent : unit User.tag
+  | MyCounter : int User.tag
   | MyCounter2 : int User.tag
   | MyString : string User.tag
 let event = User.register "libname.event" MyEvent Type.event
@@ -15,7 +15,7 @@ let counter = User.register "libname.counter" MyCounter Type.counter
 
 let counter2 = User.register "libname.counter2" MyCounter2 Type.counter
 
-let custom_type = Type.register Bytes.unsafe_of_string Bytes.unsafe_to_string 
+let custom_type = Type.register Bytes.unsafe_of_string Bytes.unsafe_to_string
 
 let custom = User.register "libname.custom" MyString custom_type
 
@@ -38,7 +38,7 @@ let event_handler domain_id ts e () =
   | _ -> ()
 
 let counter_handler domain_id ts e v =
-  match User.tag e with 
+  match User.tag e with
   | MyCounter -> counter_value := v
   | _ -> ()
 
@@ -49,7 +49,7 @@ let custom_handler domain_id ts e v =
 
 let () =
   let cursor = create_cursor None in
-  let callbacks = 
+  let callbacks =
     Callbacks.create ()
     |> Callbacks.add Type.event event_handler
     |> Callbacks.add Type.counter counter_handler

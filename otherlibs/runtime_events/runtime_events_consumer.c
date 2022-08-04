@@ -73,7 +73,9 @@ struct caml_runtime_events_cursor {
                     ev_lifecycle lifecycle, int64_t data);
   int (*lost_events)(int domain_id, void *callback_data, int lost_words);
   /* user events: mapped from type to callback */
-  int (*user_events)(int domain_id, void *callback_data, int64_t timestamp, value event, uintnat event_data_len, uint64_t* event_data);
+  int (*user_events)(int domain_id, void *callback_data, int64_t timestamp,
+                      value event, uintnat event_data_len,
+                      uint64_t* event_data);
 };
 
 /* C-API for reading from an runtime_events */
@@ -407,7 +409,7 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
         }
       }
 
-      if (RUNTIME_EVENTS_ITEM_IS_RUNTIME(header)) { 
+      if (RUNTIME_EVENTS_ITEM_IS_RUNTIME(header)) {
         switch (RUNTIME_EVENTS_ITEM_TYPE(header)) {
         case EV_BEGIN:
           if (cursor->runtime_begin) {
@@ -454,7 +456,7 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
                                     }
           }
         }
-      } else if (cursor->user_events) { 
+      } else if (cursor->user_events) {
         // User events
         uintnat event_id = RUNTIME_EVENTS_ITEM_ID(header);
         // First step is to obtain the event structure be it already known or
@@ -699,7 +701,8 @@ static int ml_lost_events(int domain_id, void *callback_data, int lost_words) {
 }
 
 static int ml_user_events(int domain_id, void *callback_data, int64_t timestamp,
-                          value event, uintnat event_data_len, uint64_t* event_data) {
+                           value event, uintnat event_data_len,
+                           uint64_t* event_data) {
   CAMLparam1(event);
   CAMLlocal4(tmp_callback_array, tmp_callback_list, callbacks_root, res);
   CAMLlocalN(params, 4);
@@ -726,7 +729,7 @@ static int ml_user_events(int domain_id, void *callback_data, int64_t timestamp,
   tmp_callback_list = Field(tmp_callback_array, event_index);
 
   if (Is_block(tmp_callback_list)) {
-    // at least one callback is listening for this event type, so we 
+    // at least one callback is listening for this event type, so we
     // deserialize the value and prepare the callback payload
 
     value event_type = Field(event, 2);
@@ -734,12 +737,14 @@ static int ml_user_events(int domain_id, void *callback_data, int64_t timestamp,
 
     if (Is_block(event_type)) {
       CAMLlocal3(bytes, record, deserializer);
+      const char* data_str = (const char*) event_data;
       uintnat string_len = event_data_len * sizeof(uint64_t) - 1;
-      // because the ring buffer is 64-bits aligned, the whole ocaml value is 
-      // transferred, including the padding bytes and the last byte containing 
+      // because the ring buffer is 64-bits aligned, the whole ocaml value is
+      // transferred, including the padding bytes and the last byte containing
       // the number of padding bytes. This information is crucial to determine
       // the true size of the string.
-      bytes = caml_alloc_initialized_string(string_len - ((const char*) event_data)[string_len], (const char*) event_data);
+      uintnat caml_string_len = string_len - data_str[string_len];
+      bytes = caml_alloc_initialized_string(caml_string_len, data_str);
       record = Field(event_type, 0);
       deserializer = Field(record, 1);
       data = caml_callback(deserializer, bytes);
@@ -766,7 +771,8 @@ static int ml_user_events(int domain_id, void *callback_data, int64_t timestamp,
     // payload is prepared, we call the callbacks sequentially.
     // TODO: what if there is an exception ?
     while (Is_block(tmp_callback_list)) {
-      value callback = Field(Field(tmp_callback_list, 0), 0); // (wrapped in a gadt)
+       // two indirections as callback is a list item wrapped in a gadt
+      value callback = Field(Field(tmp_callback_list, 0), 0);
       res = caml_callbackN_exn(callback, 4, params);
 
       if( Is_exception_result(res) ) {

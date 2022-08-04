@@ -262,7 +262,8 @@ static void runtime_events_create_raw(void) {
     }
 
     current_ring_total_size =
-        RUNTIME_EVENTS_MAX_CUSTOM_EVENTS * sizeof(struct runtime_events_custom_event) +
+        RUNTIME_EVENTS_MAX_CUSTOM_EVENTS *
+          sizeof(struct runtime_events_custom_event) +
         Max_domains * (ring_size_words * sizeof(uint64_t) +
                         sizeof(struct runtime_events_buffer_header)) +
         sizeof(struct runtime_events_metadata_header);
@@ -609,9 +610,10 @@ void caml_ev_alloc_flush(void) {
 
 /* Registers the [index] -> [event_name] mapping in the dedicated space in the
    ring buffer */
-void events_register_write_buffer(int index, value event_name) {
+void events_register_write_buffer(int idx, value event_name) {
   struct runtime_events_custom_event *custom_event =
-    &((struct runtime_events_custom_event *) ((char *)current_metadata + current_metadata->custom_events_offset))[index];
+    &((struct runtime_events_custom_event *)
+      ((char *)current_metadata + current_metadata->custom_events_offset))[idx];
 
   // TODO: what if caml string is not C safe ?
   int length = caml_string_length(event_name);
@@ -619,11 +621,14 @@ void events_register_write_buffer(int index, value event_name) {
   custom_event->name[length] = 0; // necessary ? not sure.
 }
 
-CAMLprim value caml_runtime_events_user_register(value event_name, value event_tag, value event_type) {
+CAMLprim value caml_runtime_events_user_register(value event_name,
+  value event_tag, value event_type)
+{
   CAMLparam1(event_name);
   CAMLlocal2(list_item, event);
 
-  // TODO: check data races in particular as custom_events can be updated concurrently
+  // TODO: check data races in particular as custom_events can be updated
+  // concurrently
   int index = atomic_fetch_add(&runtime_custom_event_index, 1);
 
   if (index > RUNTIME_EVENTS_MAX_CUSTOM_EVENTS) {
@@ -676,8 +681,9 @@ CAMLprim value caml_runtime_events_user_write(value event, value event_content)
     value serializer = Field(record, 0);
     value bytes = caml_callback(serializer, event_content);
     uintnat len_bytes = caml_string_length(bytes);
-
-    write_to_ring(EV_USER, 2, Int_val(event_id), (len_bytes + sizeof(uint64_t)) / sizeof(uint64_t), (uint64_t *) Bytes_val(bytes), 0);
+    uintnat len_64bit_word = (len_bytes + sizeof(uint64_t)) / sizeof(uint64_t);
+    write_to_ring(EV_USER, 2, Int_val(event_id), len_64bit_word,
+      (uint64_t *) Bytes_val(bytes), 0);
 
   } else {
     // Event | Counter
@@ -713,7 +719,8 @@ CAMLprim value caml_runtime_events_user_resolve(
   CAMLlocal2(event, event_name);
 
   struct runtime_events_custom_event *custom_event =
-    &((struct runtime_events_custom_event *) ((char *)ring + ring->custom_events_offset))[index];
+    &((struct runtime_events_custom_event *)
+      ((char *)ring + ring->custom_events_offset))[index];
 
   value current_user_event = user_events;
 
@@ -735,13 +742,16 @@ CAMLprim value caml_runtime_events_user_resolve(
     // the event is not known, but its type is known
     // as we know the event type the event can be reconstructed
     value event_type = Val_int(event_type_id);
-    uintnat event_name_len = strnlen(custom_event->name, RUNTIME_EVENTS_CUSTOM_EVENT_ID_LENGTH);
-    event_name = caml_alloc_initialized_string(event_name_len, custom_event->name);
+    uintnat event_name_len = strnlen(custom_event->name,
+      RUNTIME_EVENTS_CUSTOM_EVENT_ID_LENGTH);
+    event_name = caml_alloc_initialized_string(event_name_len,
+      custom_event->name);
     event = caml_runtime_events_user_register(event_name, Val_none, event_type);
 
     CAMLreturn(event);
   } else {
-    // event_type_id is 2: it's a custom event so we don't know how to parse the data
+    // event_type_id is 2: it's a custom event, we don't know how to parse the
+    // data
   }
 
 

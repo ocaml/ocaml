@@ -3,14 +3,14 @@
    include unix
    * libunix
    ** bytecode
-   ** native 
+   ** native
 *)
 open Runtime_events
 
 type _ User.tag += Ev : int -> int User.tag
 
-let ev0 = 
-  User.register "ev0" (Ev 0) Type.counter 
+let ev0 =
+  User.register "ev0" (Ev 0) Type.counter
 
 let () =
   start ();
@@ -36,11 +36,11 @@ let () =
     | Ev i -> Printf.printf "known event ev %d => %d\n" i v
     | _ -> Printf.printf "unknown event %s => %d\n" (User.name ev) v
   in
-  let callbacks = 
+  let callbacks =
     Callbacks.create ()
     |> Callbacks.add Type.counter callback
   in
-  for _ = 0 to 10 do 
+  for _ = 0 to 10 do
     read_poll cursor callbacks None |> ignore
   done
   end

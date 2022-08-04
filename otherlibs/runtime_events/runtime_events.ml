@@ -166,19 +166,19 @@ module Type = struct
     id: int;
   }
 
-  type 'a t = 
+  type 'a t =
   | Event : unit t
   | Counter : int t
   | Custom : 'a custom -> 'a t
 
   let event = Event
-  
+
   let counter = Counter
 
   let next_id = ref 2
 
-  let register serialize deserialize = 
-    incr next_id; 
+  let register serialize deserialize =
+    incr next_id;
     Custom { serialize; deserialize; id = !next_id - 1}
 
   let id: type a. a t -> int = function
@@ -190,7 +190,7 @@ end
 module User = struct
   type _ tag = ..
 
-  (* the UNK tag is used when an unknown event of a known type (event or 
+  (* the UNK tag is used when an unknown event of a known type (event or
      counter) is received *)
   type _ tag += UNK : 'a tag
 
@@ -202,7 +202,8 @@ module User = struct
     tag: 'a tag option;
   }
 
-  external user_register : string -> 'a tag option -> 'a Type.t -> 'a t = "caml_runtime_events_user_register"
+  external user_register : string -> 'a tag option -> 'a Type.t -> 'a t
+                         = "caml_runtime_events_user_register"
   external user_write : 'a t -> 'a -> unit = "caml_runtime_events_user_write"
 
   let register name tag typ = user_register name (Some tag) typ
@@ -216,45 +217,47 @@ end
 
 module Callbacks = struct
 
-    (* Callbacks are bound to a specific event type *)
-    type user_callback = U : (int -> Timestamp.t -> 'a User.t -> 'a -> unit) -> user_callback
+  type 'a callback = int -> Timestamp.t -> 'a User.t -> 'a -> unit
+  (* Callbacks are bound to a specific event type *)
+  type any_callback = U : 'a callback -> any_callback
 
-    (* these record callbacks are only called from C code in the runtime
-       so we suppress the unused field warning *)
-    type[@warning "-unused-field"] t = {
-      runtime_begin: (int -> Timestamp.t -> runtime_phase -> unit) option;
-      runtime_end: (int -> Timestamp.t -> runtime_phase -> unit) option;
-      runtime_counter: (int -> Timestamp.t -> runtime_counter
-                        -> int -> unit) option;
-      alloc: (int -> Timestamp.t -> int array -> unit) option;
-      lifecycle: (int -> Timestamp.t -> lifecycle
-                  -> int option -> unit) option;
-      lost_events: (int -> int -> unit) option;
-      (* user event callbacks is an array containing at each indice [i] a list 
-         of functions to call when an event of type id [i] happen *)
-      user_events: user_callback list array;
-    }
+  (* these record callbacks are only called from C code in the runtime
+      so we suppress the unused field warning *)
+  type[@warning "-unused-field"] t = {
+    runtime_begin: (int -> Timestamp.t -> runtime_phase -> unit) option;
+    runtime_end: (int -> Timestamp.t -> runtime_phase -> unit) option;
+    runtime_counter: (int -> Timestamp.t -> runtime_counter
+                      -> int -> unit) option;
+    alloc: (int -> Timestamp.t -> int array -> unit) option;
+    lifecycle: (int -> Timestamp.t -> lifecycle
+                -> int option -> unit) option;
+    lost_events: (int -> int -> unit) option;
+    (* user event callbacks is an array containing at each indice [i] a list
+        of functions to call when an event of type id [i] happen *)
+    user_events: any_callback list array;
+  }
 
-    let create ?runtime_begin ?runtime_end ?runtime_counter ?alloc ?lifecycle ?lost_events () =
-      { runtime_begin; runtime_end; runtime_counter;
-          alloc; lifecycle; lost_events; user_events = Array.make 2 [] }
+  let create ?runtime_begin ?runtime_end ?runtime_counter ?alloc ?lifecycle
+             ?lost_events () =
+    { runtime_begin; runtime_end; runtime_counter;
+        alloc; lifecycle; lost_events; user_events = Array.make 2 [] }
 
-    let add ty callback t =
-      let cur_max_id = Array.length t.user_events - 1 in
-      let id = Type.id ty in
-      let user_events =
-        if id > cur_max_id then
-          (* we need to resize the array. TODO maybe double the size ? *)
-          let delta = id - cur_max_id in
-          let extra = Array.make delta [] in
-          Array.append t.user_events extra
-        else
-          t.user_events
-      in
-      user_events.(id) <- U callback :: user_events.(id);
-      {t with user_events}
+  let add ty callback t =
+    let cur_max_id = Array.length t.user_events - 1 in
+    let id = Type.id ty in
+    let user_events =
+      if id > cur_max_id then
+        (* we need to resize the array. TODO maybe double the size ? *)
+        let delta = id - cur_max_id in
+        let extra = Array.make delta [] in
+        Array.append t.user_events extra
+      else
+        t.user_events
+    in
+    user_events.(id) <- U callback :: user_events.(id);
+    {t with user_events}
 
-  end
+end
 
 external start : unit -> unit = "caml_runtime_events_start"
 external pause : unit -> unit = "caml_runtime_events_pause"

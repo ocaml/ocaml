@@ -186,7 +186,8 @@ struct runtime_events_metadata_header {
   uint64_t ring_size_elements; /* Ring size in 64-bit elements */
   uint64_t headers_offset; /* Offset from this struct to first header (bytes) */
   uint64_t data_offset; /* Offset from this struct to first data (byte) */
-  uint64_t custom_events_offset; /* Offset from this struct to first custom event (byte) */
+  uint64_t custom_events_offset; /* Offset from this struct to first custom
+                                    event (byte) */
 };
 
 #define RUNTIME_EVENTS_MAX_CUSTOM_EVENTS (1 << 13)
@@ -247,15 +248,19 @@ void caml_ev_alloc(uint64_t sz);
 void caml_ev_alloc_flush(void);
 
 
-/* Allocate a unique ID for the event and construct its value: there are at most 
-   RUNTIME_EVENTS_MAX_CUSTOM_EVENTS of them. */
-CAMLextern value caml_runtime_events_user_register(value event_name, value event_tag, value event_type);
+/* Allocate a unique ID for the event and construct its value: there are at
+   most RUNTIME_EVENTS_MAX_CUSTOM_EVENTS of them. */
+CAMLextern value caml_runtime_events_user_register(value event_name,
+   value event_tag, value event_type);
 
 /* Write event data to ring buffer. */
-CAMLextern value caml_runtime_events_user_write(value event, value event_content);
+CAMLextern value caml_runtime_events_user_write(value event,
+   value event_content);
 
 /* Resolve an event index using the custom event structure in the ring. */
-CAMLextern value caml_runtime_events_user_resolve(struct runtime_events_metadata_header* ring, uintnat index, uintnat event_type);
+CAMLextern value caml_runtime_events_user_resolve(
+   struct runtime_events_metadata_header* ring, uintnat index,
+   uintnat event_type);
 
 #endif /* CAML_INTERNALS */
 
