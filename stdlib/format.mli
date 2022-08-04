@@ -58,13 +58,12 @@
   A few warmup examples to get an idea of how Format is used.
 
   We have a list [l] of pairs [(int * bool)], which the toplevel prints for us:
-  {[# let l = List.init 100 (fun n -> n, n mod 2 = 0);;
+  {[# let l = List.init 20 (fun n -> n, n mod 2 = 0);;
   val l : (int * bool) list =
   [(0, true); (1, false); (2, true); (3, false); (4, true); (5, false);
    (6, true); (7, false); (8, true); (9, false); (10, true); (11, false);
-   ...
-   (96, true); (97, false); (98, true); (...); ...]
-   ]}
+   (12, true); (13, false); (14, true); (15, false); (16, true); (17, false);
+   (18, true); (19, false)]
 
   If we want to print it ourself without the toplevel magic, we can try this:
   {[
@@ -73,23 +72,10 @@
   # Format.printf "l: [@[<hov>%a@]]@."
     Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ") pp_pair)
     l;;
-  l: [(0, true); (1, false); (2, true); (3, false); (4, true); (5, false);
+    l: [(0, true); (1, false); (2, true); (3, false); (4, true); (5, false);
     (6, true); (7, false); (8, true); (9, false); (10, true); (11, false);
-    (12, true); (13, false); (14, true); (15, false); (16, true); (17, false);
-    (18, true); (19, false); (20, true); (21, false); (22, true); (23, false);
-    (24, true); (25, false); (26, true); (27, false); (28, true); (29, false);
-    (30, true); (31, false); (32, true); (33, false); (34, true); (35, false);
-    (36, true); (37, false); (38, true); (39, false); (40, true); (41, false);
-    (42, true); (43, false); (44, true); (45, false); (46, true); (47, false);
-    (48, true); (49, false); (50, true); (51, false); (52, true); (53, false);
-    (54, true); (55, false); (56, true); (57, false); (58, true); (59, false);
-    (60, true); (61, false); (62, true); (63, false); (64, true); (65, false);
-    (66, true); (67, false); (68, true); (69, false); (70, true); (71, false);
-    (72, true); (73, false); (74, true); (75, false); (76, true); (77, false);
-    (78, true); (79, false); (80, true); (81, false); (82, true); (83, false);
-    (84, true); (85, false); (86, true); (87, false); (88, true); (89, false);
-    (90, true); (91, false); (92, true); (93, false); (94, true); (95, false);
-    (96, true); (97, false); (98, true); (99, false)]
+    (12, true); (13, false); (14, true); (15, false); (16, true);
+    (17, false); (18, true); (19, false)]
 
     ]}
 
@@ -131,8 +117,7 @@
   {[# Format.printf "l: [@[<hov>%a@]]@."
       Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out "; ") pp_pair)
       l;;
-  l: [(0, true); (1, false); (2, true); ; ... (* omitted for concision *) ...;
-           (96, true); (97, false); (98, true); (99, false)]
+  l: [(0, true); (1, false); (2, true); ; ...; (18, true); (19, false)]
 - : unit = ()
     ]}
 
