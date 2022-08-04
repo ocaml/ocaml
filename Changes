@@ -60,6 +60,9 @@ Working version
   halving memory usage while remaining tail-recursive.
   (Nicolás Ojeda Bär, review by Xavier Leroy and Gabriel Scherer)
 
+- #11476: Add examples in documentation of Hashtbl, Queue, Atomic, Format
+  (Simon Cruanes)
+
 ### Other libraries:
 
 ### Tools:
