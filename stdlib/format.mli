@@ -53,6 +53,144 @@
    from {!formatter_of_out_channel} (on the standard out channels or others).
 *)
 
+(** {1 Format by example}
+
+  A few warmup examples to get an idea of how Format is used.
+
+  We have a list [l] of pairs [(int * bool)], which the toplevel prints for us:
+  {[# let l = List.init 100 (fun n -> n, n mod 2 = 0);;
+  val l : (int * bool) list =
+  [(0, true); (1, false); (2, true); (3, false); (4, true); (5, false);
+   (6, true); (7, false); (8, true); (9, false); (10, true); (11, false);
+   ...
+   (96, true); (97, false); (98, true); (...); ...]
+   ]}
+
+  If we want to print it ourself without the toplevel magic, we can try this:
+  {[
+  # let pp_pair out (x,y) = Format.fprintf out "(%d, %b)" x y;;
+  val pp_pair : Format.formatter -> int * bool -> unit = <fun>
+   # Format.printf "l = [@[<hov>%a@]]@."
+      Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ") pp_pair) l;;
+  l = [(0, true); (1, false); (2, true); (3, false); (4, true); (5, false);
+     (6, true); (7, false); (8, true); (9, false); (10, true); (11, false);
+     (12, true); (13, false); (14, true); (15, false); (16, true); (17, false);
+     (18, true); (19, false); (20, true); (21, false); (22, true); (23, false);
+     (24, true); (25, false); (26, true); (27, false); (28, true); (29, false);
+     (30, true); (31, false); (32, true); (33, false); (34, true); (35, false);
+     (36, true); (37, false); (38, true); (39, false); (40, true); (41, false);
+     (42, true); (43, false); (44, true); (45, false); (46, true); (47, false);
+     (48, true); (49, false); (50, true); (51, false); (52, true); (53, false);
+     (54, true); (55, false); (56, true); (57, false); (58, true); (59, false);
+     (60, true); (61, false); (62, true); (63, false); (64, true); (65, false);
+     (66, true); (67, false); (68, true); (69, false); (70, true); (71, false);
+     (72, true); (73, false); (74, true); (75, false); (76, true); (77, false);
+     (78, true); (79, false); (80, true); (81, false); (82, true); (83, false);
+     (84, true); (85, false); (86, true); (87, false); (88, true); (89, false);
+     (90, true); (91, false); (92, true); (93, false); (94, true); (95, false);
+     (96, true); (97, false); (98, true); (99, false)]
+
+    ]}
+
+
+  What this does, briefly, is:
+
+    - [pp_pair] prints a pair [bool*int] surrounded in "(" ")". It takes
+      a formatter (into which formatting happens), and the pair itself.
+      When printing is done it returns [()].
+
+    - [Format.printf "l = [@[<hov>%a@]]@." ... l] is like [printf], but
+      with additional formatting instructions (denoted with "@"). The pair
+      "@[<hov>" and "@]" is an "horizontal-or-vertical box".
+
+    - "@." ends formatting with a newline. It is similar to "\n" but is also
+      aware of the [Format.formatter]'s state. Do not use "\n" with [Format].
+
+    - "%a" is a formatting instruction, like "%d" or "%s" for [printf].
+      However, where "%d" prints an integer and "%s" prints a string,
+      "%a" takes a printer (of type [Format.formatter -> 'a -> unit])
+      and a value (of type ['a]) and applies the printer to the value.
+      This is key to compositionality of printers.
+
+    - We build a list printer using [Format.pp_print_list ~pp_sep:(...) pp_pair].
+      [pp_print_list] takes an element printer and returns a list printer.
+      The [?pp_sep] optional argument, if provided, is called in between each element
+      to print a separator.
+
+    - Here, for a separator, we use [(fun out () -> Format.fprintf out ";@ ")].
+      It prints ";", and then "@ " which is a breaking space (either it prints " ",
+      or it prints a newline if the box is about to overflow). This "@ " is
+      responsible for the list printing splitting into several lines.
+
+  If we omit "@ ", we get an ugly single-line print:
+
+  {[# Format.printf "l = [@[<hov>%a@]]@."
+      Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out "; ") pp_pair) l;;
+  l = [(0, true); (1, false); (2, true); (3, false); (4, true); (5, false); (6, true); (7, false); (8, true); (9, false); (10, true); (11, false); (12, true); (13, false); (14, true); (15, false); (16, true); (17, false); (18, true); (19, false); (20, true); (21, false); (22, true); (23, false); (24, true); (25, false); (26, true); (27, false); (28, true); (29, false); (30, true); (31, false); (32, true); (33, false); (34, true); (35, false); (36, true); (37, false); (38, true); (39, false); (40, true); (41, false); (42, true); (43, false); (44, true); (45, false); (46, true); (47, false); (48, true); (49, false); (50, true); (51, false); (52, true); (53, false); (54, true); (55, false); (56, true); (57, false); (58, true); (59, false); (60, true); (61, false); (62, true); (63, false); (64, true); (65, false); (66, true); (67, false); (68, true); (69, false); (70, true); (71, false); (72, true); (73, false); (74, true); (75, false); (76, true); (77, false); (78, true); (79, false); (80, true); (81, false); (82, true); (83, false); (84, true); (85, false); (86, true); (87, false); (88, true); (89, false); (90, true); (91, false); (92, true); (93, false); (94, true); (95, false); (96, true); (97, false); (98, true); (99, false)]
+- : unit = ()
+    ]}
+
+  Generally, it's good practice to define custom printers for important types
+  in one's program. If, for example, one was to define basic geometry types like so:
+
+  {[
+  type point = {
+    x: float;
+    y: float;
+  }
+
+  type square = {
+    ll: point; (* lower left *)
+    ur: point; (* upper right *)
+  }
+  ]}
+
+  It would be convenient, for debugging purpose, or to display information
+  in logs, or on the console, to define printers:
+
+  {[
+  let pp_point out (p:point) =
+    Format.fprintf out "{ @[x=%.3f;@ y=%.3f@] }" p.x p.y
+
+  let pp_square out (s:square) =
+    Format.fprintf out "{ @[ll=%a;@ ur=%a@] }"
+      pp_point s.ll pp_point s.ur;;
+  ]}
+
+  In the [.mli] file we could have:
+  {[
+    val pp_point : Format.formatter -> point -> unit
+
+    val pp_square : Format.formatter -> square -> unit
+  ]}
+
+  These printers can now be used with "%a" inside other printers.
+
+  {[ # Format.printf "some square: %a@."
+        (Format.pp_print_option pp_square)
+        (Some {ll={x=1.; y=2.}; ur={x=42.; y=500.12345}});;
+  some square: { l={ x=1.000; y=2.000 }; ur={ x=42.000; y=500.123 } }
+
+  # Format.printf "no square: %a@."
+        (Format.pp_option pp_square)
+        None;;
+  no square:
+  ]}
+
+  See how we combine [pp_print_option] (option printer) and our newly defined
+  square printer, like we did with [pp_print_list] earlier.
+
+
+  A last note: the [Format] module is a starting point.
+  The OCaml ecosystem has libraries that makes formatting easier
+  and more expressive, with more combinators, more concise names, etc.
+  An example of such a library is {{: https://erratique.ch/software/fmt} Fmt}.
+
+  Automatic deriving of pretty-printers from type definitions is also possible,
+  using {{: ppx_deriving.show} https://github.com/ocaml-ppx/ppx_deriving}
+  or similar ppx derivers.
+*)
+
 (** {1 Introduction}
 
    You may consider this module as providing an extension to the
