@@ -40,6 +40,7 @@
         let n = input ic buf 0 1024 in
         Thread.yield();
         if n> 0 then (
+          (* count_bytes_read += n, atomically *)
           ignore (Atomic.fetch_and_add count_bytes_read n : int);
           loop()
         )
