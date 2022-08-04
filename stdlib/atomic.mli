@@ -59,7 +59,8 @@
 
     ]}
 
-    Another example is a basic {{: https://en.wikipedia.org/wiki/Treiber_stack} Treiber stack}
+    Another example is a basic
+    {{: https://en.wikipedia.org/wiki/Treiber_stack} Treiber stack}
       (a thread-safe stack):
     {[
     type 'a stack = 'a list Atomic.t ;;

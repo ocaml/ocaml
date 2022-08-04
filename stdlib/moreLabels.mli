@@ -148,7 +148,8 @@ module Hashtbl : sig
      the previous binding for [key], if any, is restored.
      (Same behavior as with association lists.)
 
-     If you desire the classic behavior of replacing elements, see {!replace}. *)
+     If you desire the classic behavior of replacing elements,
+     see {!replace}. *)
 
   val find : ('a, 'b) t -> 'a -> 'b
   (** [Hashtbl.find tbl x] returns the current binding of [x] in [tbl],

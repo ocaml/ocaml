@@ -70,25 +70,26 @@
   {[
   # let pp_pair out (x,y) = Format.fprintf out "(%d, %b)" x y;;
   val pp_pair : Format.formatter -> int * bool -> unit = <fun>
-   # Format.printf "l = [@[<hov>%a@]]@."
-      Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ") pp_pair) l;;
-  l = [(0, true); (1, false); (2, true); (3, false); (4, true); (5, false);
-     (6, true); (7, false); (8, true); (9, false); (10, true); (11, false);
-     (12, true); (13, false); (14, true); (15, false); (16, true); (17, false);
-     (18, true); (19, false); (20, true); (21, false); (22, true); (23, false);
-     (24, true); (25, false); (26, true); (27, false); (28, true); (29, false);
-     (30, true); (31, false); (32, true); (33, false); (34, true); (35, false);
-     (36, true); (37, false); (38, true); (39, false); (40, true); (41, false);
-     (42, true); (43, false); (44, true); (45, false); (46, true); (47, false);
-     (48, true); (49, false); (50, true); (51, false); (52, true); (53, false);
-     (54, true); (55, false); (56, true); (57, false); (58, true); (59, false);
-     (60, true); (61, false); (62, true); (63, false); (64, true); (65, false);
-     (66, true); (67, false); (68, true); (69, false); (70, true); (71, false);
-     (72, true); (73, false); (74, true); (75, false); (76, true); (77, false);
-     (78, true); (79, false); (80, true); (81, false); (82, true); (83, false);
-     (84, true); (85, false); (86, true); (87, false); (88, true); (89, false);
-     (90, true); (91, false); (92, true); (93, false); (94, true); (95, false);
-     (96, true); (97, false); (98, true); (99, false)]
+  # Format.printf "l: [@[<hov>%a@]]@."
+    Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ") pp_pair)
+    l;;
+  l: [(0, true); (1, false); (2, true); (3, false); (4, true); (5, false);
+    (6, true); (7, false); (8, true); (9, false); (10, true); (11, false);
+    (12, true); (13, false); (14, true); (15, false); (16, true); (17, false);
+    (18, true); (19, false); (20, true); (21, false); (22, true); (23, false);
+    (24, true); (25, false); (26, true); (27, false); (28, true); (29, false);
+    (30, true); (31, false); (32, true); (33, false); (34, true); (35, false);
+    (36, true); (37, false); (38, true); (39, false); (40, true); (41, false);
+    (42, true); (43, false); (44, true); (45, false); (46, true); (47, false);
+    (48, true); (49, false); (50, true); (51, false); (52, true); (53, false);
+    (54, true); (55, false); (56, true); (57, false); (58, true); (59, false);
+    (60, true); (61, false); (62, true); (63, false); (64, true); (65, false);
+    (66, true); (67, false); (68, true); (69, false); (70, true); (71, false);
+    (72, true); (73, false); (74, true); (75, false); (76, true); (77, false);
+    (78, true); (79, false); (80, true); (81, false); (82, true); (83, false);
+    (84, true); (85, false); (86, true); (87, false); (88, true); (89, false);
+    (90, true); (91, false); (92, true); (93, false); (94, true); (95, false);
+    (96, true); (97, false); (98, true); (99, false)]
 
     ]}
 
@@ -112,26 +113,32 @@
       and a value (of type ['a]) and applies the printer to the value.
       This is key to compositionality of printers.
 
-    - We build a list printer using [Format.pp_print_list ~pp_sep:(...) pp_pair].
+    - We build a list printer using
+      [Format.pp_print_list ~pp_sep:(...) pp_pair].
       [pp_print_list] takes an element printer and returns a list printer.
-      The [?pp_sep] optional argument, if provided, is called in between each element
-      to print a separator.
+      The [?pp_sep] optional argument, if provided, is called in between
+      each element to print a separator.
 
     - Here, for a separator, we use [(fun out () -> Format.fprintf out ";@ ")].
-      It prints ";", and then "@ " which is a breaking space (either it prints " ",
-      or it prints a newline if the box is about to overflow). This "@ " is
-      responsible for the list printing splitting into several lines.
+      It prints ";", and then "@ " which is a breaking space
+      (either it prints " ", or it prints a newline if the box is about to
+      overflow).
+      This "@ " is responsible for the list printing splitting into several
+      lines.
 
   If we omit "@ ", we get an ugly single-line print:
 
-  {[# Format.printf "l = [@[<hov>%a@]]@."
-      Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out "; ") pp_pair) l;;
-  l = [(0, true); (1, false); (2, true); (3, false); (4, true); (5, false); ... (* omitted for concision *) ...; (96, true); (97, false); (98, true); (99, false)]
+  {[# Format.printf "l: [@[<hov>%a@]]@."
+      Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out "; ") pp_pair)
+      l;;
+  l: [(0, true); (1, false); (2, true); ; ... (* omitted for concision *) ...;
+           (96, true); (97, false); (98, true); (99, false)]
 - : unit = ()
     ]}
 
   Generally, it's good practice to define custom printers for important types
-  in one's program. If, for example, one was to define basic geometry types like so:
+  in one's program. If, for example, one was to define basic geometry
+  types like so:
 
   {[
   type point = {
