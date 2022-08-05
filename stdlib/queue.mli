@@ -23,26 +23,26 @@
 
    A basic example:
     {[
-    # let q = Queue.create ();;
+    # let q = Queue.create ()
     val q : '_weak1 Queue.t = <abstr>
 
 
-    # Queue.push 1 q; Queue.push 2 q; Queue.push 3 q;;
+    # Queue.push 1 q; Queue.push 2 q; Queue.push 3 q
     - : unit = ()
 
-    # Queue.length q;;
+    # Queue.length q
     - : int = 3
 
-    # Queue.pop q;;
+    # Queue.pop q
     - : int = 1
 
-    # Queue.pop q;;
+    # Queue.pop q
     - : int = 2
 
-    # Queue.pop q;;
+    # Queue.pop q
     - : int = 3
 
-    # Queue.pop q;;
+    # Queue.pop q
     Exception: Stdlib.Queue.Empty.
     ]}
 
@@ -52,7 +52,7 @@
    {[
      type graph = {
        edges: (int, int list) Hashtbl.t
-     };;
+     }
 
     (* Search in graph [g] using BFS, starting from node [start].
        It returns the first node that satisfies [p], or [None] if
@@ -63,7 +63,6 @@
       let explored = Hashtbl.create 16 in
 
       Queue.push start to_explore;
-
       let rec loop () =
         if Queue.is_empty to_explore then None
         else
@@ -88,7 +87,7 @@
           loop()
         )
       in
-      loop() ;;
+      loop()
 
     (* a sample graph *)
     let my_graph: graph =
@@ -101,16 +100,16 @@
           11, [0; 20];
         ]
         |> Hashtbl.of_seq
-      in {edges};;
+      in {edges}
 
 
-    # search_for ~g:my_graph ~start:1 (fun x -> x = 30) ;;
+    # search_for ~g:my_graph ~start:1 (fun x -> x = 30)
     - : int option = None
 
-    # search_for ~g:my_graph ~start:1 (fun x -> x >= 15) ;;
+    # search_for ~g:my_graph ~start:1 (fun x -> x >= 15)
     - : int option = Some 20
 
-    # search_for ~g:my_graph ~start:1 (fun x -> x >= 50) ;;
+    # search_for ~g:my_graph ~start:1 (fun x -> x >= 50)
     - : int option = Some 100
    ]}
 *)

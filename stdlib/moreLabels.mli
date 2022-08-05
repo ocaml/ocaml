@@ -52,31 +52,31 @@ module Hashtbl : sig
 
     {[
       (* 0...99 *)
-      let seq = Seq.unfold (fun x->Some (x, succ x)) 0 |> Seq.take 100;;
+      let seq = Seq.unfold (fun x->Some (x, succ x)) 0 |> Seq.take 100
 
       (* build from Seq.t *)
       # let tbl =
           seq
           |> Seq.map (fun x -> x, string_of_int x)
-          |> Hashtbl.of_seq ;;
+          |> Hashtbl.of_seq
       val tbl : (int, string) Hashtbl.t = <abstr>
 
-      # Hashtbl.length tbl;;
+      # Hashtbl.length tbl
       - : int = 100
 
-      # Hashtbl.find_opt tbl 32;;
+      # Hashtbl.find_opt tbl 32
       - : string option = Some "32"
 
-      # Hashtbl.find_opt tbl 166;;
+      # Hashtbl.find_opt tbl 166
       - : string option = None
 
-      # Hashtbl.replace tbl 166 "one six six";;
+      # Hashtbl.replace tbl 166 "one six six"
       - : unit = ()
 
-      # Hashtbl.find_opt tbl 166;;
+      # Hashtbl.find_opt tbl 166
       - : string option = Some "one six six"
 
-      # Hashtbl.length tbl;;
+      # Hashtbl.length tbl
       - : int = 101
       ]}
   *)

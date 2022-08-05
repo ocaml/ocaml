@@ -58,7 +58,7 @@
   A few warmup examples to get an idea of how Format is used.
 
   We have a list [l] of pairs [(int * bool)], which the toplevel prints for us:
-  {[# let l = List.init 20 (fun n -> n, n mod 2 = 0);;
+  {[# let l = List.init 20 (fun n -> n, n mod 2 = 0)
   val l : (int * bool) list =
   [(0, true); (1, false); (2, true); (3, false); (4, true); (5, false);
    (6, true); (7, false); (8, true); (9, false); (10, true); (11, false);
@@ -67,11 +67,10 @@
 
   If we want to print it ourself without the toplevel magic, we can try this:
   {[
-  # let pp_pair out (x,y) = Format.fprintf out "(%d, %b)" x y;;
+  # let pp_pair out (x,y) = Format.fprintf out "(%d, %b)" x y
   val pp_pair : Format.formatter -> int * bool -> unit = <fun>
   # Format.printf "l: [@[<hov>%a@]]@."
-    Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ") pp_pair)
-    l;;
+    Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ") pp_pair) l
     l: [(0, true); (1, false); (2, true); (3, false); (4, true); (5, false);
        (6, true); (7, false); (8, true); (9, false); (10, true); (11, false);
        (12, true); (13, false); (14, true); (15, false); (16, true);
@@ -115,8 +114,7 @@
   If we omit "@ ", we get an ugly single-line print:
 
   {[# Format.printf "l: [@[<hov>%a@]]@."
-      Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out "; ") pp_pair)
-      l;;
+      Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out "; ") pp_pair) l
   l: [(0, true); (1, false); (2, true); ; ...; (18, true); (19, false)]
 - : unit = ()
     ]}
@@ -149,7 +147,7 @@
 
   let pp_square out (s:square) =
     Format.fprintf out "{ @[ll=%a;@ ur=%a@] }"
-      pp_point s.ll pp_point s.ur;;
+      pp_point s.ll pp_point s.ur
   ]}
 
   In the [.mli] file, we could have:
@@ -164,12 +162,12 @@
 
   {[ # Format.printf "some square: %a@."
         (Format.pp_print_option pp_square)
-        (Some {ll={x=1.; y=2.}; ur={x=42.; y=500.12345}});;
+        (Some {ll={x=1.; y=2.}; ur={x=42.; y=500.12345}})
   some square: { l={ x=1.000; y=2.000 }; ur={ x=42.000; y=500.123 } }
 
   # Format.printf "no square: %a@."
         (Format.pp_option pp_square)
-        None;;
+        None
   no square:
   ]}
 

@@ -22,38 +22,35 @@
 
     {[
     (* our counter *)
-    let count_bytes_read = Atomic.make 0;;
+    let count_bytes_read = Atomic.make 0
 
     (* prepare a sample file *)
     let () =
       let oc = open_out "/tmp/example_data" in
       for i=1 to 100_000 do output_char oc 'x' done;
-      close_out oc ;;
+      close_out oc
 
     (* just read from file, discard content but count bytes.
        This is pretty useless and only used to show this. *)
     let read_file () =
       let ic = open_in "/tmp/example_data" in
       let buf = Bytes.create 1024 in
-
-      let rec loop () =
+      let rec read_next_chunk () =
         let n = input ic buf 0 1024 in
         Thread.yield();
         if n> 0 then (
           (* count_bytes_read += n, atomically *)
           ignore (Atomic.fetch_and_add count_bytes_read n : int);
-          loop()
+          read_next_chunk()
         )
       in
-      loop()
-    ;;
+      read_next_chunk()
 
     (* run multiple threads (or domains) that update the counter *)
     # let () =
       let threads = Array.init 8 (fun _ -> Thread.create read_file ()) in
       Array.iter Thread.join threads;
       Printf.printf "read %d bytes\n" (Atomic.get count_bytes_read)
-    ;;
     - : unit = ()
     read 800000 bytes
 
@@ -63,14 +60,13 @@
     {{: https://en.wikipedia.org/wiki/Treiber_stack} Treiber stack}
       (a thread-safe stack):
     {[
-    type 'a stack = 'a list Atomic.t ;;
+    type 'a stack = 'a list Atomic.t
 
     let rec push (stack: _ stack) elt : unit =
       let cur = Atomic.get stack in
       let success = Atomic.compare_and_set stack cur (elt :: cur) in
       if not success then
-        push stack elt ;;
-
+        push stack elt
 
     let rec pop (stack: _ stack) : _ option =
       let cur = Atomic.get stack in
@@ -79,21 +75,20 @@
       | x :: tail ->
         let success = Atomic.compare_and_set stack cur tail in
         if success then Some x
-        else pop stack ;;
+        else pop stack
 
-    # let st = Atomic.make [];;
-    # push st 1;;
+    # let st = Atomic.make []
+    # push st 1
     - : unit = ()
-    # push st 2;;
+    # push st 2
     - : unit = ()
-    # pop st;;
+    # pop st
     - : int option = Some 2
-    # pop st;;
+    # pop st
     - : int option = Some 1
-    # pop st;;
+    # pop st
     - : int option = None
     ]}
-
 
     @since 4.12
 *)
