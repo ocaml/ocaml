@@ -704,7 +704,8 @@ static int ml_user_events(int domain_id, void *callback_data, int64_t timestamp,
                            value event, uintnat event_data_len,
                            uint64_t* event_data) {
   CAMLparam1(event);
-  CAMLlocal4(tmp_callback_array, tmp_callback_list, callbacks_root, res);
+  CAMLlocal5(tmp_callback_array, tmp_callback_list, callbacks_root, res, 
+              event_type);
   CAMLlocalN(params, 4);
 
   struct callbacks_exception_holder* holder = callback_data;
@@ -714,7 +715,7 @@ static int ml_user_events(int domain_id, void *callback_data, int64_t timestamp,
   uintnat array_length = caml_array_length(tmp_callback_array);
 
   uintnat event_index;
-  value event_type = Field(event, 2);
+  event_type = Field(event, 2);
   if (Is_block(event_type)) {
     event_index = Int_val(Field(Field(event_type, 0), 2));
   } else {
@@ -732,7 +733,6 @@ static int ml_user_events(int domain_id, void *callback_data, int64_t timestamp,
     // at least one callback is listening for this event type, so we
     // deserialize the value and prepare the callback payload
 
-    value event_type = Field(event, 2);
     CAMLlocal1(data);
 
     if (Is_block(event_type)) {
@@ -769,7 +769,6 @@ static int ml_user_events(int domain_id, void *callback_data, int64_t timestamp,
     params[3] = data;
 
     // payload is prepared, we call the callbacks sequentially.
-    // TODO: what if there is an exception ?
     while (Is_block(tmp_callback_list)) {
        // two indirections as callback is a list item wrapped in a gadt
       value callback = Field(Field(tmp_callback_list, 0), 0);

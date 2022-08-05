@@ -111,13 +111,13 @@ static int preserve_ring = 0;
 
 static atomic_uintnat runtime_events_enabled = 0;
 static atomic_uintnat runtime_events_paused = 0;
-// CUSTOM EVENTS
 
 static atomic_uintnat runtime_custom_event_index = 0;
 
 /* List of globally known events. This is used to figure which event has a
    given string ID. */
 static value user_events = Val_none;
+static caml_plat_mutex user_events_lock;
 
 static void write_to_ring(ev_category category, ev_message_type type,
                           int event_id, int event_length, uint64_t *content,
@@ -128,6 +128,7 @@ static void runtime_events_create_raw(void);
 
 void caml_runtime_events_init(void) {
 
+  caml_plat_mutex_init(&user_events_lock);
   caml_register_generational_global_root(&user_events);
 
   runtime_events_path = caml_secure_getenv(T("OCAML_RUNTIME_EVENTS_DIR"));
@@ -373,12 +374,17 @@ static void runtime_events_create_raw(void) {
       ring_buffer->ring_tail = 0;
     }
 
+    // at the same instant: snapshot user_events list and set 
+    // runtime_events_enabled to 1
+    caml_plat_lock(&user_events_lock);
+    value current_user_event = user_events;
     atomic_store_rel(&runtime_events_enabled, 1);
+    caml_plat_unlock(&user_events_lock);
+
     atomic_store_rel(&runtime_events_paused, 0);
 
     caml_ev_lifecycle(EV_RING_START, pid);
 
-    value current_user_event = user_events;
 
     while (Is_some (current_user_event)) {
       value event = Field(current_user_event, 0);
@@ -615,29 +621,32 @@ void events_register_write_buffer(int idx, value event_name) {
     &((struct runtime_events_custom_event *)
       ((char *)current_metadata + current_metadata->custom_events_offset))[idx];
 
-  // TODO: what if caml string is not C safe ?
-  int length = caml_string_length(event_name);
-  strncpy(custom_event->name, String_val(event_name), length);
-  custom_event->name[length] = 0; // necessary ? not sure.
+  strncpy(custom_event->name, String_val(event_name), 
+          RUNTIME_EVENTS_CUSTOM_EVENT_ID_LENGTH - 1);
 }
 
 CAMLprim value caml_runtime_events_user_register(value event_name,
   value event_tag, value event_type)
 {
-  CAMLparam1(event_name);
+  CAMLparam3(event_name, event_tag, event_type);
   CAMLlocal2(list_item, event);
 
-  // TODO: check data races in particular as custom_events can be updated
-  // concurrently
   int index = atomic_fetch_add(&runtime_custom_event_index, 1);
 
   if (index > RUNTIME_EVENTS_MAX_CUSTOM_EVENTS) {
-    caml_failwith("Maximum number of custom events exceeded.");
+    caml_invalid_argument(
+      "Runtime_events.User.register: maximum number of custom events exceeded");
   }
 
   int length = caml_string_length(event_name);
   if (length > RUNTIME_EVENTS_CUSTOM_EVENT_ID_LENGTH - 1) {
-    caml_failwith("Maximum length for event name exceeded.");
+    caml_invalid_argument(
+      "Runtime_events.User.register: maximum length for event name exceeded");
+  }
+
+  if (!caml_string_is_c_safe(event_name)) {
+    caml_invalid_argument(
+      "Runtime_events.User.register: event name has null characters");
   }
 
   // type 'a t = {
@@ -652,27 +661,37 @@ CAMLprim value caml_runtime_events_user_register(value event_name,
   Field(event, 2) = event_type;
   Field(event, 3) = event_tag;
 
+
+  caml_plat_lock(&user_events_lock);
+  // critical section: when we update the user_events list we need to make sure
+  // it is not updated while we construct the pointer to the next element
+
   if (atomic_load_acq(&runtime_events_enabled)) {
     // Ring buffer is already available, we register the name
     events_register_write_buffer(index, event_name);
   }
 
-  /* event is added to the list of known events */
+  // event is added to the list of known events
   list_item = caml_alloc_small(2, 0);
   Field(list_item, 0) = event;
   Field(list_item, 1) = user_events;
   caml_modify_generational_global_root(&user_events, list_item);
+  // end critical section
+  caml_plat_unlock(&user_events_lock);
 
   CAMLreturn(event);
 }
 
 CAMLprim value caml_runtime_events_user_write(value event, value event_content)
 {
-  if ( !ring_is_active() )
-    return Val_unit;
+  CAMLparam2(event, event_content);
+  CAMLlocal2(event_id, event_type);
 
-  value event_id = Field(event, 0);
-  value event_type = Field(event, 2);
+  if ( !ring_is_active() )
+    CAMLreturn(Val_unit);
+
+  event_id = Field(event, 0);
+  event_type = Field(event, 2);
 
   // Check if event is custom or not.
   if (Is_block(event_type)) {
@@ -704,7 +723,7 @@ CAMLprim value caml_runtime_events_user_write(value event, value event_content)
     }
   }
 
-  return Val_unit;
+  CAMLreturn (Val_unit);
 }
 
 /* Find which event has the given ID using the user event data structure in the
@@ -722,7 +741,10 @@ CAMLprim value caml_runtime_events_user_resolve(
     &((struct runtime_events_custom_event *)
       ((char *)ring + ring->custom_events_offset))[index];
 
+  // TODO: it might be possible to atomic load instead
+  caml_plat_lock(&user_events_lock);
   value current_user_event = user_events;
+  caml_plat_unlock(&user_events_lock);
 
   // which try to find an event with the matching name
   while (Is_some (current_user_event)) {
@@ -743,9 +765,9 @@ CAMLprim value caml_runtime_events_user_resolve(
     // as we know the event type the event can be reconstructed
     value event_type = Val_int(event_type_id);
     uintnat event_name_len = strnlen(custom_event->name,
-      RUNTIME_EVENTS_CUSTOM_EVENT_ID_LENGTH);
+                                      RUNTIME_EVENTS_CUSTOM_EVENT_ID_LENGTH);
     event_name = caml_alloc_initialized_string(event_name_len,
-      custom_event->name);
+                                                custom_event->name);
     event = caml_runtime_events_user_register(event_name, Val_none, event_type);
 
     CAMLreturn(event);
