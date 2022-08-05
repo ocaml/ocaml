@@ -62,6 +62,9 @@ Working version
 
 ### Other libraries:
 
+- #11475: Make Unix terminal interface bindings domain-safe
+  (Olivier Nicole and Xavier Leroy, review by Xavier Leroy)
+
 ### Tools:
 
 - #9290: Add a directive to switch off debugging in toplevel.
