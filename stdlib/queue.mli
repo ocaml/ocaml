@@ -71,23 +71,20 @@
           explore_node node
 
       and explore_node node =
-        if p node then Some node (* found *)
-        else (
-
-          if not (Hashtbl.mem explored node) then (
+        if not (Hashtbl.mem explored node) then (
+          if p node then Some node (* found *)
+          else (
             Hashtbl.add explored node ();
-
             let children =
               Hashtbl.find_opt g.edges node
               |> Option.value ~default:[]
             in
-
             List.iter (fun child -> Queue.push child to_explore) children;
-          );
-          loop()
-        )
-      in
-      loop()
+            loop()
+          )
+        ) else loop()
+    in
+    loop()
 
     (* a sample graph *)
     let my_graph: graph =
@@ -101,7 +98,6 @@
         ]
         |> Hashtbl.of_seq
       in {edges}
-
 
     # search_for ~g:my_graph ~start:1 (fun x -> x = 30)
     - : int option = None
