@@ -48,7 +48,9 @@
 
     (* run multiple domains that update the counter *)
     # let () =
-      let threads = Array.init 8 (fun _ -> Domain.spawn (fun () -> read_file ())) in
+      let threads =
+        Array.init 8
+          (fun _ -> Domain.spawn (fun () -> read_file ())) in
       Array.iter Domain.join threads;
       Printf.printf "read %d bytes\n" (Atomic.get count_bytes_read)
     - : unit = ()
