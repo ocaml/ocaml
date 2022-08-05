@@ -46,10 +46,10 @@
       in
       read_next_chunk()
 
-    (* run multiple threads (or domains) that update the counter *)
+    (* run multiple domains that update the counter *)
     # let () =
-      let threads = Array.init 8 (fun _ -> Thread.create read_file ()) in
-      Array.iter Thread.join threads;
+      let threads = Array.init 8 (fun _ -> Domain.spawn (fun () -> read_file ())) in
+      Array.iter Domain.join threads;
       Printf.printf "read %d bytes\n" (Atomic.get count_bytes_read)
     - : unit = ()
     read 800000 bytes
