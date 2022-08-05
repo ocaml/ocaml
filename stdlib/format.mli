@@ -119,8 +119,8 @@
 - : unit = ()
     ]}
 
-  Generally, it's good practice to define custom printers for important types
-  in one's program. If, for example, one was to define basic geometry
+  Generally, it is good practice to define custom printers for important types
+  in your program. If, for example, you were to define basic geometry
   types like so:
 
   {[
