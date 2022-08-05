@@ -198,15 +198,15 @@ static void encode_terminal_status(volatile value *dst, struct termios *src)
   for(pc = terminal_io_descr; *pc != End; dst++) {
     switch(*pc++) {
     case Bool:
-      { int * src_p = (int *) ((char *)src + *pc++);
-        int msk = *pc++;
+      { tcflag_t * src_p = (tcflag_t *) ((char *)src + *pc++);
+        tcflag_t msk = *pc++;
         *dst = Val_bool(*src_p & msk);
         break; }
     case Enum:
-      { int * src_p = (int *) ((char *)src + *pc++);
+      { tcflag_t * src_p = (tcflag_t *) ((char *)src + *pc++);
         int ofs = *pc++;
         int num = *pc++;
-        int msk = *pc++;
+        tcflag_t msk = *pc++;
         for (i = 0; i < num; i++) {
           if ((*src_p & msk) == pc[i]) {
             *dst = Val_int(i + ofs);
@@ -248,18 +248,18 @@ static void decode_terminal_status(struct termios *dst, volatile value *src)
   for (pc = terminal_io_descr; *pc != End; src++) {
     switch(*pc++) {
     case Bool:
-      { int * dst_p = (int *) ((char *)dst + *pc++);
-        int msk = *pc++;
+      { tcflag_t * dst_p = (tcflag_t *) ((char *)dst + *pc++);
+        tcflag_t msk = *pc++;
         if (Bool_val(*src))
           *dst_p |= msk;
         else
           *dst_p &= ~msk;
         break; }
     case Enum:
-      { int * dst_p = (int *) ((char *)dst + *pc++);
+      { tcflag_t * dst_p = (tcflag_t *) ((char *)dst + *pc++);
         int ofs = *pc++;
         int num = *pc++;
-        int msk = *pc++;
+        tcflag_t msk = *pc++;
         i = Int_val(*src) - ofs;
         if (i >= 0 && i < num) {
           *dst_p = (*dst_p & ~msk) | pc[i];
