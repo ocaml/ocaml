@@ -126,7 +126,7 @@ val add : ('a, 'b) t -> 'a -> 'b -> unit
 (** [Hashtbl.add tbl key data] adds a binding of [key] to [data]
    in table [tbl].
 
-   {b WARNING}: Previous bindings for [key] are not removed, but simply
+   {b Warning}: Previous bindings for [key] are not removed, but simply
    hidden. That is, after performing {!remove}[ tbl key],
    the previous binding for [key], if any, is restored.
    (Same behavior as with association lists.)
