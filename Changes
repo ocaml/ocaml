@@ -76,6 +76,9 @@ Working version
 - #9430, #11291: Document the general desugaring rules for binding operators.
   (Gabriel Scherer, review by Nicolás Ojeda Bär)
 
+- #11481: Fix the type of Unix.umask to Unix.file_perm -> Unix.file_perm
+  (Favonia, review by Sébastien Hinderer)
+
 ### Compiler user-interface and warnings:
 
 - #10818: Preserve integer literal formatting in type hint.

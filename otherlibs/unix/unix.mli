@@ -681,7 +681,7 @@ val fchown : file_descr -> int -> int -> unit
 
     @raise Invalid_argument on Windows *)
 
-val umask : int -> int
+val umask : file_perm -> file_perm
 (** Set the process's file mode creation mask, and return the previous
     mask.
 
