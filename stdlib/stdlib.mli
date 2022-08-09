@@ -1243,6 +1243,11 @@ external decr : int ref -> unit = "%decr"
 (** @since 4.03.0 *)
 type ('a,'b) result = Ok of 'a | Error of 'b
 
+(** {1 Empty type} *)
+
+(** @since 5.0.0 *)
+type empty = |
+
 (** {1 Operations on format strings} *)
 
 (** Format strings are character strings with special lexical conventions
@@ -1403,6 +1408,7 @@ module Digest         = Digest
 module Domain         = Domain
 module Effect         = Effect
 module Either         = Either
+module Empty          = Empty
 module Ephemeron      = Ephemeron
 module Filename       = Filename
 module Float          = Float

@@ -37,7 +37,7 @@ STDLIB_MODULE_BASENAMES = \
   camlinternalFormatBasics stdlib either \
   sys obj atomic camlinternalLazy lazy \
   seq option result bool char uchar \
-  list int bytes string unit marshal array float int32 int64 nativeint \
+  list int bytes string unit empty marshal array float int32 int64 nativeint \
   lexing parsing set map stack queue buffer \
   mutex condition semaphore domain \
   camlinternalFormat printf arg \

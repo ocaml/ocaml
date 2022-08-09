@@ -41,6 +41,7 @@ Here is a short listing, by theme, of the standard library modules.
 "StdLabels" & p.~\stdpageref{StdLabels} & labelized versions of
 the above 4 modules \\
 "Unit" & p.~\stdpageref{Unit} & unit values \\
+"Empty" & p.~\stdpageref{Empty} & the empty type \\
 "Bool" & p.~\stdpageref{Bool} & boolean values \\
 "Char" & p.~\stdpageref{Char} & character operations \\
 "Uchar" & p.~\stdpageref{Uchar} & Unicode characters \\
@@ -179,6 +180,7 @@ be called from C \\
 \stddocitem{Sys}{system interface}
 \stddocitem{Uchar}{Unicode characters}
 \stddocitem{Unit}{unit values}
+\stddocitem{Empty}{the empty type}
 \stddocitem{Weak}{arrays of weak pointers}
 \ifouthtml\else
 \input{Ocaml_operators}

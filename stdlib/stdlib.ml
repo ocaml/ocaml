@@ -245,6 +245,10 @@ external decr : int ref -> unit = "%decr"
 
 type ('a,'b) result = Ok of 'a | Error of 'b
 
+(* Empty type *)
+
+type empty = |
+
 (* String conversion functions *)
 
 external format_int : string -> int -> string = "caml_format_int"
@@ -597,6 +601,7 @@ module Digest         = Digest
 module Domain         = Domain
 module Effect         = Effect
 module Either         = Either
+module Empty          = Empty
 module Ephemeron      = Ephemeron
 module Filename       = Filename
 module Float          = Float

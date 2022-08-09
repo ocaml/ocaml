@@ -759,6 +759,11 @@ stdlib__Unit.cmo : unit.ml \
 stdlib__Unit.cmx : unit.ml \
     stdlib__Unit.cmi
 stdlib__Unit.cmi : unit.mli
+stdlib__Empty.cmo : empty.ml \
+    stdlib__Empty.cmi
+stdlib__Empty.cmx : empty.ml \
+    stdlib__Empty.cmi
+stdlib__Empty.cmi : empty.mli
 stdlib__Weak.cmo : weak.ml \
     stdlib__Sys.cmi \
     stdlib__Obj.cmi \
