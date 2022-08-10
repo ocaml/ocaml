@@ -17,8 +17,53 @@
 
 (** Atomic references.
 
+  See {{!examples} the examples} below.
+
+    @since 4.12
+*)
+
+(** An atomic (mutable) reference to a value of type ['a]. *)
+type !'a t
+
+(** Create an atomic reference. *)
+val make : 'a -> 'a t
+
+(** Get the current value of the atomic reference. *)
+val get : 'a t -> 'a
+
+(** Set a new value for the atomic reference. *)
+val set : 'a t -> 'a -> unit
+
+(** Set a new value for the atomic reference, and return the current value. *)
+val exchange : 'a t -> 'a -> 'a
+
+(** [compare_and_set r seen v] sets the new value of [r] to [v] only
+    if its current value is physically equal to [seen] -- the
+    comparison and the set occur atomically. Returns [true] if the
+    comparison succeeded (so the set happened) and [false]
+    otherwise. *)
+val compare_and_set : 'a t -> 'a -> 'a -> bool
+
+(** [fetch_and_add r n] atomically increments the value of [r] by [n],
+    and returns the current value (before the increment). *)
+val fetch_and_add : int t -> int -> int
+
+(** [incr r] atomically increments the value of [r] by [1]. *)
+val incr : int t -> unit
+
+(** [decr r] atomically decrements the value of [r] by [1]. *)
+val decr : int t -> unit
+
+(** {1:examples Examples}
+
+    {3 Basic Counter}
+
     A basic use case is to have global counters that are updated in a
-    thread-safe way:
+    thread-safe way, for example to keep some sorts of metrics
+    over IOs performed by the program.
+    Here we're counting bytes read
+    from files, but it could as well measure bytes read or written through
+    network sockets.
 
     {[
     (* our counter *)
@@ -58,9 +103,12 @@
 
     ]}
 
+    {3 Treiber Stack}
+
     Another example is a basic
     {{: https://en.wikipedia.org/wiki/Treiber_stack} Treiber stack}
-      (a thread-safe stack):
+    (a thread-safe stack) that can be safely shared between threads:
+
     {[
     type 'a stack = 'a list Atomic.t
 
@@ -91,38 +139,4 @@
     # pop st
     - : int option = None
     ]}
-
-    @since 4.12
-*)
-
-(** An atomic (mutable) reference to a value of type ['a]. *)
-type !'a t
-
-(** Create an atomic reference. *)
-val make : 'a -> 'a t
-
-(** Get the current value of the atomic reference. *)
-val get : 'a t -> 'a
-
-(** Set a new value for the atomic reference. *)
-val set : 'a t -> 'a -> unit
-
-(** Set a new value for the atomic reference, and return the current value. *)
-val exchange : 'a t -> 'a -> 'a
-
-(** [compare_and_set r seen v] sets the new value of [r] to [v] only
-    if its current value is physically equal to [seen] -- the
-    comparison and the set occur atomically. Returns [true] if the
-    comparison succeeded (so the set happened) and [false]
-    otherwise. *)
-val compare_and_set : 'a t -> 'a -> 'a -> bool
-
-(** [fetch_and_add r n] atomically increments the value of [r] by [n],
-    and returns the current value (before the increment). *)
-val fetch_and_add : int t -> int -> int
-
-(** [incr r] atomically increments the value of [r] by [1]. *)
-val incr : int t -> unit
-
-(** [decr r] atomically decrements the value of [r] by [1]. *)
-val decr : int t -> unit
+  *)
