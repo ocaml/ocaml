@@ -554,6 +554,8 @@ module Hashtbl : sig
 
   (** {1:examples Examples}
 
+    {3 Basic Example}
+
     {[
       (* 0...99 *)
       let seq = Seq.unfold (fun x->Some (x, succ x)) 0 |> Seq.take 100
@@ -583,7 +585,46 @@ module Hashtbl : sig
       # Hashtbl.length tbl
       - : int = 101
       ]}
-      *)
+
+
+    {3 Counting Elements}
+
+    Given a sequence of elements (here, a {!Seq.t}), we want to count how many
+    times each distinct element occurs in the sequence. A simple way to do this,
+    assuming the elements are comparable and hashable, is to use a hash table
+    that maps elements to their number of occurrences.
+
+    Here we illustrate that principle using a sequence of (ascii) characters.
+
+    {[
+      # module Char_tbl = Hashtbl.Make(struct
+          type t = char
+          let equal = Char.equal
+          let hash = Hashtbl.hash
+        end)
+
+      # let count_chars seq =
+          let counts = Char_tbl.create 16 in
+          Seq.iter
+            (fun c ->
+              let count_c = Char_tbl.find_opt counts c |> Option.value ~default:0 in
+              Char_tbl.replace counts c (count_c + 1))
+            seq;
+          Char_tbl.fold (fun c n l -> (c,n) :: l) counts []
+            |> List.sort (fun (c1,_)(c2,_) -> Char.compare c1 c2)
+      val count_chars : Char_tbl.key Seq.t -> (Char.t * int) list = <fun>
+
+      # let seq = String.to_seq "hello world, and all the camels in it!"
+
+      # count_chars seq
+      - : (Char.t * int) list =
+      [(' ', 7); ('!', 1); (',', 1); ('a', 3); ('c', 1); ('d', 2); ('e', 3);
+       ('h', 2); ('i', 2); ('l', 6); ('m', 1); ('n', 2); ('o', 2); ('r', 1);
+       ('s', 1); ('t', 2); ('w', 1)]
+
+    ]}
+
+  *)
 
 end
 
