@@ -573,7 +573,8 @@ val seeded_hash_param : int -> int -> int -> 'a -> int
   assuming the elements are comparable and hashable, is to use a hash table
   that maps elements to their number of occurrences.
 
-  Here we illustrate that principle using a sequence of (ascii) characters.
+  Here we illustrate that principle using a sequence of (ascii) characters (type [char]).
+  We use a custom [Char_tbl] specialized for [char].
 
   {[
     # module Char_tbl = Hashtbl.Make(struct
@@ -594,6 +595,7 @@ val seeded_hash_param : int -> int -> int -> 'a -> int
     val count_chars : Char_tbl.key Seq.t -> (Char.t * int) list = <fun>
 
     # let seq = String.to_seq "hello world, and all the camels in it!"
+    val seq : char Seq.t = <fun>
 
     # count_chars seq
     - : (Char.t * int) list =
