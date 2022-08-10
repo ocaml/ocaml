@@ -606,6 +606,17 @@ val seeded_hash_param : int -> int -> int -> 'a -> int
      ('h', 2); ('i', 2); ('l', 6); ('m', 1); ('n', 2); ('o', 2); ('r', 1);
      ('s', 1); ('t', 2); ('w', 1)]
 
+    (* "abcabcabc..." *)
+    # let seq2 =
+        Seq.cycle (String.to_seq "abc") |> Seq.take 31
+    val seq2 : char Seq.t = <fun>
+
+    # String.of_seq seq2
+    - : String.t = "abcabcabcabcabcabcabcabcabcabca"
+
+    # count_chars seq2
+    - : (Char.t * int) list = [('a', 11); ('b', 10); ('c', 10)]
+
   ]}
 
 *)
