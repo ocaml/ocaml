@@ -496,6 +496,9 @@ OCaml 5.0
   (David Allsopp, report by William Hu, review by Xavier Leroy and
    Sébastien Hinderer)
 
+- #11???: Thwart FMA test optimization during configure
+  (William Hu, review by ???)
+
 ### Bug fixes:
 
 - #10768, #11340: Fix typechecking regression when combining first class
