@@ -43,9 +43,9 @@
    {!formatter_of_buffer}, {!formatter_of_symbolic_output_buffer} or using
    {{!section:formatter}custom formatters}.
 
-   {b Warning}: Since {{!section:formatter}formatters} contain mutable state, it is
-   not thread-safe to use the same formatter on multiple domains in parallel
-   without synchronization.
+   {b Warning}: Since {{!section:formatter}formatters} contain
+   mutable state, it is not thread-safe to use the same formatter on multiple
+   domains in parallel without synchronization.
 
    If multiple domains write to the same output channel using the
    predefined formatters (as obtained by {!get_std_formatter} or

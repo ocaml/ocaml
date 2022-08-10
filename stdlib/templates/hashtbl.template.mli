@@ -30,8 +30,8 @@
    and obtains a custom hash table type for this particular type of key.
 
    {b Warning} a hash table is only as good as the hash function. A bad hash
-   function will turn the table into a degenerate association list, with linear
-   time lookup instead of constant time lookup.
+   function will turn the table into a degenerate association list,
+   with linear time lookup instead of constant time lookup.
 
    The polymorphic {!t} hash table is useful in simpler cases or
    in interactive environments. It uses the polymorphic {!hash} function
@@ -573,7 +573,8 @@ val seeded_hash_param : int -> int -> int -> 'a -> int
   assuming the elements are comparable and hashable, is to use a hash table
   that maps elements to their number of occurrences.
 
-  Here we illustrate that principle using a sequence of (ascii) characters (type [char]).
+  Here we illustrate that principle using a sequence of (ascii) characters
+  (type [char]).
   We use a custom [Char_tbl] specialized for [char].
 
   {[
@@ -587,7 +588,9 @@ val seeded_hash_param : int -> int -> int -> 'a -> int
         let counts = Char_tbl.create 16 in
         Seq.iter
           (fun c ->
-            let count_c = Char_tbl.find_opt counts c |> Option.value ~default:0 in
+            let count_c =
+              Char_tbl.find_opt counts c
+              |> Option.value ~default:0 in
             Char_tbl.replace counts c (count_c + 1))
           seq;
         Char_tbl.fold (fun c n l -> (c,n) :: l) counts []
