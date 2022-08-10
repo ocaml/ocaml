@@ -55,16 +55,20 @@ CAML_STATIC_ASSERT(
   CAMLextern pthread_key_t caml_domain_state_key;
   CAMLextern void caml_init_domain_state_key(void);
   #define CAML_INIT_DOMAIN_STATE caml_init_domain_state_key()
-  #define Caml_state \
+  #define Caml_state_opt \
       ((caml_domain_state*) pthread_getspecific(caml_domain_state_key))
   #define SET_Caml_state(x) \
       (pthread_setspecific(caml_domain_state_key, x))
 #else
   CAMLextern __thread caml_domain_state* caml_state;
-  #define Caml_state caml_state
+  #define Caml_state_opt caml_state
   #define CAML_INIT_DOMAIN_STATE
-  #define SET_Caml_state(x) (Caml_state = (x))
+  #define SET_Caml_state(x) (caml_state = (x))
 #endif
+
+#define Caml_state (CAMLassert(Caml_state_opt != NULL), Caml_state_opt)
+
+
 
 #define Caml_state_field(field) (Caml_state->field)
 

@@ -622,7 +622,7 @@ CAMLexport int caml_c_thread_register(void)
   /* Already registered? */
   if (st_tls_get(caml_thread_key) != NULL) return 0;
 
-  CAMLassert(Caml_state == NULL);
+  CAMLassert(Caml_state_opt == NULL);
   caml_init_domain_self(Dom_c_threads);
 
   /* Take master lock to protect access to the runtime */
