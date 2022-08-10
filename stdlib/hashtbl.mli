@@ -19,49 +19,26 @@
 (** Hash tables and hash functions.
 
    Hash tables are hashed association tables, with in-place modification.
-
-   Hash tables are hashed association tables, with in-place modification.
-   They're the bread-and-butter associative structure for imperative code,
-   with fast lookup.
+   Because most operations on a hash table modify their input, they're
+   more commonly used in imperative code. The lookup of the value associated
+   with a key (see {!find}, {!find_opt}) is normally very fast, often faster
+   than the equivalent lookup in {!Map}.
 
    The functors {!Make} and {!MakeSeeded} can be used when
    performance or flexibility are key.
    The user provides custom equality and hash functions for the key type,
    and obtains a custom hash table type for this particular type of key.
 
+   {b Warning} a hash table is only as good as the hash function. A bad hash
+   function will turn the table into a degenerate association list, with linear
+   time lookup instead of constant time lookup.
+
    The polymorphic {!t} hash table is useful in simpler cases or
-   in interactive environments.
+   in interactive environments. It uses the polymorphic {!hash} function
+   defined in the OCaml runtime (at the time of writing, it's SipHash),
+   as well as the polymorphic equality [(=)].
 
-
-  {[
-    (* 0...99 *)
-    let seq = Seq.unfold (fun x->Some (x, succ x)) 0 |> Seq.take 100
-
-    (* build from Seq.t *)
-    # let tbl =
-        seq
-        |> Seq.map (fun x -> x, string_of_int x)
-        |> Hashtbl.of_seq
-    val tbl : (int, string) Hashtbl.t = <abstr>
-
-    # Hashtbl.length tbl
-    - : int = 100
-
-    # Hashtbl.find_opt tbl 32
-    - : string option = Some "32"
-
-    # Hashtbl.find_opt tbl 166
-    - : string option = None
-
-    # Hashtbl.replace tbl 166 "one six six"
-    - : unit = ()
-
-    # Hashtbl.find_opt tbl 166
-    - : string option = Some "one six six"
-
-    # Hashtbl.length tbl
-    - : int = 101
-    ]}
+   See {{!examples} the examples section}.
 *)
 
 
@@ -553,3 +530,36 @@ val seeded_hash_param : int -> int -> int -> 'a -> int
    an integer seed.  Usage:
    [Hashtbl.seeded_hash_param meaningful total seed x].
    @since 4.00.0 *)
+
+(** {1:examples Examples}
+
+  {[
+    (* 0...99 *)
+    let seq = Seq.unfold (fun x->Some (x, succ x)) 0 |> Seq.take 100
+
+    (* build from Seq.t *)
+    # let tbl =
+        seq
+        |> Seq.map (fun x -> x, string_of_int x)
+        |> Hashtbl.of_seq
+    val tbl : (int, string) Hashtbl.t = <abstr>
+
+    # Hashtbl.length tbl
+    - : int = 100
+
+    # Hashtbl.find_opt tbl 32
+    - : string option = Some "32"
+
+    # Hashtbl.find_opt tbl 166
+    - : string option = None
+
+    # Hashtbl.replace tbl 166 "one six six"
+    - : unit = ()
+
+    # Hashtbl.find_opt tbl 166
+    - : string option = Some "one six six"
+
+    # Hashtbl.length tbl
+    - : int = 101
+    ]}
+    *)
