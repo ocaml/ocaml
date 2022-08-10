@@ -19,8 +19,6 @@
 (** Hash tables and hash functions.
 
    Hash tables are hashed association tables, with in-place modification.
-
-   Hash tables are hashed association tables, with in-place modification.
    They're the bread-and-butter associative structure for imperative code,
    with fast lookup.
 
