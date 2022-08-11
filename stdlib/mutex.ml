@@ -25,6 +25,5 @@ let[@inline] protect m f =
   | x ->
     unlock m; x
   | exception e ->
-    let bt = Printexc.get_raw_backtrace () in
     unlock m;
-    Printexc.raise_with_backtrace e bt
+    raise e
