@@ -26,5 +26,6 @@ let[@inline never] with_locked m f =
   | x ->
     unlock m; x
   | exception e ->
+    (* NOTE: [unlock] does not poll for asynchronous exceptions *)
     unlock m;
     raise e

@@ -64,4 +64,8 @@ val with_locked : t -> (unit -> 'a) -> 'a
     is locked (using {!lock}); it then takes care of releasing [mutex],
     whether [f()] returned a value or raised an exception.
 
+    The unlocking operation is guaranteed to always takes place,
+    even in the event an asynchronous exception (e.g. {!Sys.Break}) is raised
+    in some signal handler.
+
     @since 5.1 *)
