@@ -59,9 +59,9 @@ val unlock : t -> unit
    @before 4.12 {!Sys_error} was not raised when unlocking an unlocked mutex
    or when unlocking a mutex from a different thread. *)
 
-val protect : t -> (unit -> 'a) -> 'a
-(** [protect mutex f] runs [f()] in a critical section where [mutex]
-    is locked; it then takes care of releasing [mutex], whether [f()] returned
-    a value or raised an exception.
+val with_locked : t -> (unit -> 'a) -> 'a
+(** [with_locked mutex f] runs [f()] in a critical section where [mutex]
+    is locked (using {!lock}); it then takes care of releasing [mutex],
+    whether [f()] returned a value or raised an exception.
 
     @since 5.1 *)
