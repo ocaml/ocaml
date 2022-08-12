@@ -110,7 +110,7 @@ val of_seq : 'a Seq.t -> 'a t
 
 (** {1:examples Examples}
 
-  {3 Basic Example}
+  {2 Basic Example}
 
    A basic example:
     {[
@@ -137,7 +137,7 @@ val of_seq : 'a Seq.t -> 'a t
     Exception: Stdlib.Queue.Empty.
     ]}
 
-  {3 Search Through a Graph}
+  {2 Search Through a Graph}
 
    For a more elaborate example, a classic algorithmic use of queues
    is to implement a BFS (breadth-first search) through a graph.

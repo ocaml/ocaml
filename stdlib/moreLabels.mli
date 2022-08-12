@@ -554,7 +554,7 @@ module Hashtbl : sig
 
   (** {1:examples Examples}
 
-    {3 Basic Example}
+    {2 Basic Example}
 
     {[
       (* 0...99 *)
@@ -587,7 +587,7 @@ module Hashtbl : sig
       ]}
 
 
-    {3 Counting Elements}
+    {2 Counting Elements}
 
     Given a sequence of elements (here, a {!Seq.t}), we want to count how many
     times each distinct element occurs in the sequence. A simple way to do this,

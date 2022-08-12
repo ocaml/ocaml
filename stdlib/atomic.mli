@@ -56,7 +56,7 @@ val decr : int t -> unit
 
 (** {1:examples Examples}
 
-    {3 Basic Counter}
+    {2 Basic Counter}
 
     A basic use case is to have global counters that are updated in a
     thread-safe way, for example to keep some sorts of metrics
@@ -103,7 +103,7 @@ val decr : int t -> unit
 
     ]}
 
-    {3 Treiber Stack}
+    {2 Treiber Stack}
 
     Another example is a basic
     {{: https://en.wikipedia.org/wiki/Treiber_stack} Treiber stack}

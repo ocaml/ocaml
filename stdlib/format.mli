@@ -1408,7 +1408,7 @@ val kasprintf : (string -> 'a) -> ('b, formatter, unit, 'a) format4 -> 'b
   @since 4.03
 *)
 
-(** {1:examples Format by example}
+(** {1:examples Examples}
 
   A few warmup examples to get an idea of how Format is used.
 
