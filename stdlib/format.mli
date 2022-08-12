@@ -1487,7 +1487,7 @@ val kasprintf : (string -> 'a) -> ('b, formatter, unit, 'a) format4 -> 'b
     y: float;
   }
 
-  type square = {
+  type rectangle = {
     ll: point; (* lower left *)
     ur: point; (* upper right *)
   }
@@ -1503,9 +1503,9 @@ val kasprintf : (string -> 'a) -> ('b, formatter, unit, 'a) format4 -> 'b
   let pp_point out (p:point) =
     Format.fprintf out "{ @[x=%.3f;@ y=%.3f@] }" p.x p.y
 
-  let pp_square out (s:square) =
+  let pp_rectangle out (r:rectangle) =
     Format.fprintf out "{ @[ll=%a;@ ur=%a@] }"
-      pp_point s.ll pp_point s.ur
+      pp_point r.ll pp_point r.ur
   ]}
 
   In the [.mli] file, we could have:
@@ -1513,25 +1513,28 @@ val kasprintf : (string -> 'a) -> ('b, formatter, unit, 'a) format4 -> 'b
   {[
     val pp_point : Format.formatter -> point -> unit
 
-    val pp_square : Format.formatter -> square -> unit
+    val pp_rectangle : Format.formatter -> rectangle -> unit
   ]}
 
   These printers can now be used with "%a" inside other printers.
 
-  {[ # Format.printf "some square: %a@."
-        (Format.pp_print_option pp_square)
+  {[ # Format.printf "some rectangle: %a@."
+        (Format.pp_print_option pp_rectangle)
         (Some {ll={x=1.; y=2.}; ur={x=42.; y=500.12345}})
-  some square: { l={ x=1.000; y=2.000 }; ur={ x=42.000; y=500.123 } }
+  some rectangle: { l={ x=1.000; y=2.000 }; ur={ x=42.000; y=500.123 } }
 
-  # Format.printf "no square: %a@."
-        (Format.pp_option pp_square)
+  # Format.printf "no rectangle: %a@."
+        (Format.pp_option pp_rectangle)
         None
-  no square:
+  no rectangle:
   ]}
 
   See how we combine [pp_print_option] (option printer) and our newly defined
-  square printer, like we did with [pp_print_list] earlier.
+  rectangle printer, like we did with [pp_print_list] earlier.
 
+  For a more extensive tutorial, see
+  {{: https://caml.inria.fr/resources/doc/guides/format.en.html}
+    "Using the Format module"}.
 
   A last note: the [Format] module is a starting point.
   The OCaml ecosystem has libraries that makes formatting easier
