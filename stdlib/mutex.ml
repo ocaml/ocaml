@@ -19,7 +19,8 @@ external lock: t -> unit = "caml_ml_mutex_lock"
 external try_lock: t -> bool = "caml_ml_mutex_try_lock"
 external unlock: t -> unit = "caml_ml_mutex_unlock"
 
-let[@inline] with_locked m f =
+(* cannot inline, otherwise flambda might move code around. *)
+let[@inline never] with_locked m f =
   lock m;
   match f() with
   | x ->
