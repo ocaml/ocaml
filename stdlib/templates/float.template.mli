@@ -294,7 +294,7 @@ external atan2 : float -> float -> float = "caml_atan2_float" "atan2"
 
 external hypot : float -> float -> float = "caml_hypot_float" "caml_hypot"
 [@@unboxed] [@@noalloc]
-(** [hypot x y] returns [sqrt(x *. x + y *. y)], that is, the length
+(** [hypot x y] returns [sqrt(x *. x +. y *. y)], that is, the length
     of the hypotenuse of a right-angled triangle with sides of length
     [x] and [y], or, equivalently, the distance of the point [(x,y)]
     to origin.  If one of [x] or [y] is infinite, returns [infinity]
