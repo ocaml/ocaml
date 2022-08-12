@@ -1413,14 +1413,17 @@ val kasprintf : (string -> 'a) -> ('b, formatter, unit, 'a) format4 -> 'b
   A few warmup examples to get an idea of how Format is used.
 
   We have a list [l] of pairs [(int * bool)], which the toplevel prints for us:
+
   {[# let l = List.init 20 (fun n -> n, n mod 2 = 0)
   val l : (int * bool) list =
   [(0, true); (1, false); (2, true); (3, false); (4, true); (5, false);
    (6, true); (7, false); (8, true); (9, false); (10, true); (11, false);
    (12, true); (13, false); (14, true); (15, false); (16, true); (17, false);
    (18, true); (19, false)]
+ ]}
 
   If we want to print it ourself without the toplevel magic, we can try this:
+
   {[
   # let pp_pair out (x,y) = Format.fprintf out "(%d, %b)" x y
   val pp_pair : Format.formatter -> int * bool -> unit = <fun>
@@ -1431,7 +1434,7 @@ val kasprintf : (string -> 'a) -> ('b, formatter, unit, 'a) format4 -> 'b
        (12, true); (13, false); (14, true); (15, false); (16, true);
        (17, false); (18, true); (19, false)]
 
-    ]}
+  ]}
 
 
   What this does, briefly, is:
@@ -1470,7 +1473,7 @@ val kasprintf : (string -> 'a) -> ('b, formatter, unit, 'a) format4 -> 'b
 
   {[# Format.printf "l: [@[<hov>%a@]]@."
       Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out "; ") pp_pair) l
-  l: [(0, true); (1, false); (2, true); ; ...; (18, true); (19, false)]
+  l: [(0, true); (1, false); (2, true); (* ... *); (18, true); (19, false)]
 - : unit = ()
     ]}
 
