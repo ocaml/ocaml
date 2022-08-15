@@ -251,7 +251,7 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner
     gives the result of the [bscanf] call.
 
     For instance, if [f] is the function [fun s i -> i + 1], then
-    [Scanf.sscanf "x= 1" "%s = %i" f] returns [2].
+    [Scanf.sscanf "x = 1" "%s = %i" f] returns [2].
 
     Arguments [r1] to [rN] are user-defined input functions that read the
     argument corresponding to the [%r] conversions specified in the format
