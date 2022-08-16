@@ -547,7 +547,7 @@ static int caml_set_signal_action(int signo, int action)
 #ifdef POSIX_SIGNALS
   sigact.sa_handler = act;
   sigemptyset(&sigact.sa_mask);
-  sigact.sa_flags = 0;
+  sigact.sa_flags = SA_ONSTACK;
   if (sigaction(signo, &sigact, &oldsigact) == -1) return -1;
   oldact = oldsigact.sa_handler;
 #else
