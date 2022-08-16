@@ -73,7 +73,10 @@ void caml_raise(value v)
 
   exception_pointer = (char*)Caml_state->c_stack;
 
-  if (exception_pointer == NULL) caml_fatal_uncaught_exception(v);
+  if (exception_pointer == NULL) {
+    caml_terminate_signals();
+    caml_fatal_uncaught_exception(v);
+  }
 
   while (Caml_state->local_roots != NULL &&
          (char *) Caml_state->local_roots < exception_pointer) {

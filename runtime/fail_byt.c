@@ -41,7 +41,10 @@ CAMLexport void caml_raise(value v)
   if (Is_exception_result(v))
     v = Extract_exception(v);
 
-  if (Caml_state->external_raise == NULL) caml_fatal_uncaught_exception(v);
+  if (Caml_state->external_raise == NULL) {
+    caml_terminate_signals();
+    caml_fatal_uncaught_exception(v);
+  }
   *Caml_state->external_raise->exn_bucket = v;
 
   Caml_state->local_roots = Caml_state->external_raise->local_roots;

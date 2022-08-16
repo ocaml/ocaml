@@ -463,7 +463,7 @@ CAMLexport int caml_rev_convert_signal_number(int signo)
   return signo;
 }
 
-int caml_init_signal_stack(void)
+void * caml_init_signal_stack(void)
 {
 #ifdef POSIX_SIGNALS
   stack_t stk;
@@ -476,11 +476,11 @@ int caml_init_signal_stack(void)
      nasty piece of undefined behaviour forced on the caller. */
   stk.ss_sp = malloc(stk.ss_size);
   if(stk.ss_sp == NULL) {
-    return -1;
+    return NULL;
   }
   if (sigaltstack(&stk, NULL) < 0) {
     free(stk.ss_sp);
-    return -1;
+    return NULL;
   }
 
   /* gprof installs a signal handler for SIGPROF.
@@ -497,23 +497,53 @@ int caml_init_signal_stack(void)
       }
     }
   }
+  return stk.ss_sp;
+#else
+  return NULL;
 #endif
-  return 0;
 }
 
-void caml_free_signal_stack(void)
+void caml_free_signal_stack(void * signal_stack)
 {
 #ifdef POSIX_SIGNALS
-  stack_t stk, disable = {0};
+  stack_t stk, disable;
   disable.ss_flags = SS_DISABLE;
-  /* POSIX says ss_size is ignored when SS_DISABLE is set,
-     but OSX/Darwin fails if the size isn't set. */
-  disable.ss_size = SIGSTKSZ;
+  disable.ss_sp = NULL;  /* not required but avoids a valgrind false alarm */
+  disable.ss_size = SIGSTKSZ; /* macOS wants a valid size here */
   if (sigaltstack(&disable, &stk) < 0) {
     caml_fatal_error("Failed to reset signal stack (err %d)", errno);
   }
+  /* Check whether someone else installed their own signal stack */
+  if (!(stk.ss_flags & SS_DISABLE) && stk.ss_sp != signal_stack) {
+    /* Re-activate their signal stack. */
+    sigaltstack(&stk, NULL);
+  }
   /* Memory was allocated with malloc directly; see caml_init_signal_stack */
-  free(stk.ss_sp);
+  free(signal_stack);
+#endif
+}
+
+/* This is the alternate signal stack block for domain 0 */
+static void * caml_signal_stack_0 = NULL;
+
+void caml_init_signals(void)
+{
+  /* Bound-check trap handling for Power and S390x will go here eventually. */
+
+  /* Set up alternate signal stack for domain 0 */
+#ifdef POSIX_SIGNALS
+  caml_signal_stack_0 = caml_init_signal_stack();
+  if (caml_signal_stack_0 == NULL) {
+    caml_fatal_error("Failed to allocate signal stack for domain 0");
+  }
+#endif
+}
+
+void caml_terminate_signals(void)
+{
+#ifdef POSIX_SIGNALS
+  caml_free_signal_stack(caml_signal_stack_0);
+  caml_signal_stack_0 = NULL;
 #endif
 }
 
