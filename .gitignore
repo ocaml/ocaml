@@ -75,6 +75,7 @@ META
 
 /boot/ocamlrun
 /boot/camlheader
+/boot/runtime-launch-info
 /boot/ocamlc.opt
 
 /byte/**
@@ -250,13 +251,13 @@ META
 /runtime/sak
 
 /stdlib/camlheader
-/stdlib/target_camlheader
-/stdlib/camlheader[di]
-/stdlib/target_camlheader[di]
-/stdlib/camlheader_ur
+/stdlib/runtime.info
+/stdlib/runtime-launch-info
 /stdlib/labelled-*
 /stdlib/caml
 /stdlib/sys.ml
+/stdlib/target_runtime.info
+/stdlib/target_runtime-launch-info
 
 /testsuite/**/*.result
 /testsuite/**/*.opt_result
