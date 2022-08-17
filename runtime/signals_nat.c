@@ -359,7 +359,7 @@ CAMLexport int caml_stop_stack_overflow_detection(void * signal_stack)
   stack_t oldstk, stk;
   stk.ss_flags = SS_DISABLE;
   stk.ss_sp = NULL;  /* not required but avoids a valgrind false alarm */
-  stk.ss_size = 0;   /* likewise */
+  stk.ss_size = SIGSTKSZ; /* macOS wants a valid size here */
   if (sigaltstack(&stk, &oldstk) == -1) return -1;
   /* Check whether someone else installed their own signal stack */
   if (!(oldstk.ss_flags & SS_DISABLE) && oldstk.ss_sp != signal_stack) {
