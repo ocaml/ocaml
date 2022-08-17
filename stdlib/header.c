@@ -30,14 +30,6 @@
 #include "caml/mlvalues.h"
 #include "caml/exec.h"
 
-/* Two macros are required so that QUOTE(foo) stringizes the _expansion_ of foo
-   rather than foo itself. cf. the Stringizing chapter in the cpp manual
-   (https://gcc.gnu.org/onlinedocs/gcc-13.1.0/cpp/Stringizing.html). */
-#define Q(x) #x
-#define QUOTE(x) Q(x)
-
-char * default_runtime_path = QUOTE(RUNTIME_NAME);
-
 #ifndef MAXPATHLEN
 #define MAXPATHLEN 1024
 #endif
@@ -161,11 +153,10 @@ static char * read_runtime_path(int fd)
     } else if (path_size > 0)
       ofs += read_size(buffer + 4);
   }
-  if (path_size == 0) return default_runtime_path;
+  if (path_size == 0) return NULL;
   if (path_size >= MAXPATHLEN) return NULL;
   lseek(fd, -ofs, SEEK_END);
   if (read(fd, runtime_path, path_size) != path_size) return NULL;
-  runtime_path[path_size - 1] = 0;
   return runtime_path;
 }
 

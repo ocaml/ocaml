@@ -50,7 +50,7 @@ OC_OCAMLDEPDIRS = $(VPATH)
 # capitalized module names.
 PERVASIVES=$(STDLIB_MODULES) outcometree topprinters topdirs toploop
 
-LIBFILES=stdlib.cma std_exit.cmo *.cmi camlheader $(HEADER_NAME)
+LIBFILES=stdlib.cma std_exit.cmo *.cmi $(HEADER_NAME)
 
 COMPLIBDIR=$(LIBDIR)/compiler-libs
 

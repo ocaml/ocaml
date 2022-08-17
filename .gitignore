@@ -74,7 +74,6 @@ META
 /asmcomp/stackframe.ml
 
 /boot/ocamlrun
-/boot/camlheader
 /boot/runtime-launch-info
 /boot/ocamlc.opt
 
@@ -250,7 +249,6 @@ META
 /runtime/build_config.h
 /runtime/sak
 
-/stdlib/camlheader
 /stdlib/runtime.info
 /stdlib/runtime-launch-info
 /stdlib/labelled-*
