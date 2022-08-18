@@ -16,7 +16,15 @@
 
 (* Instruction scheduling for the RISC-V *)
 
-open! Schedgen (* to create a dependency *)
+(* The "open!" directive below is necessary because, although
+   this module does not actually depend on Schedgen in this backend, the
+   dependency exists in other backends and our build system requires
+   that all the backends have the same dependencies.
+   We thus have to use "open!" and disable the corresponding warning
+   only for this compilation unit.
+*)
+
+open! Schedgen [@@warning "-66"]
 
 (* Scheduling is turned off. *)
 
