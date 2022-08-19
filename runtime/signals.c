@@ -482,21 +482,6 @@ void * caml_init_signal_stack(void)
     free(stk.ss_sp);
     return NULL;
   }
-
-  /* gprof installs a signal handler for SIGPROF.
-     Make it run on the alternate signal stack, to prevent segfaults. */
-  {
-    struct sigaction act;
-    sigaction(SIGPROF, NULL, &act);
-    if ((act.sa_flags & SA_SIGINFO) ||
-        (act.sa_handler != SIG_IGN && act.sa_handler != SIG_DFL)) {
-      /* found a handler */
-      if ((act.sa_flags & SA_ONSTACK) == 0) {
-        act.sa_flags |= SA_ONSTACK;
-        sigaction(SIGPROF, &act, NULL);
-      }
-    }
-  }
   return stk.ss_sp;
 #else
   return NULL;
@@ -535,6 +520,21 @@ void caml_init_signals(void)
   caml_signal_stack_0 = caml_init_signal_stack();
   if (caml_signal_stack_0 == NULL) {
     caml_fatal_error("Failed to allocate signal stack for domain 0");
+  }
+
+  /* gprof installs a signal handler for SIGPROF.
+     Make it run on the alternate signal stack, to prevent segfaults. */
+  {
+    struct sigaction act;
+    sigaction(SIGPROF, NULL, &act);
+    if ((act.sa_flags & SA_SIGINFO) ||
+        (act.sa_handler != SIG_IGN && act.sa_handler != SIG_DFL)) {
+      /* found a handler */
+      if ((act.sa_flags & SA_ONSTACK) == 0) {
+        act.sa_flags |= SA_ONSTACK;
+        sigaction(SIGPROF, &act, NULL);
+      }
+    }
   }
 #endif
 }
