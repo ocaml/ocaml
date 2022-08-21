@@ -493,21 +493,23 @@ let link_bytecode_as_c tolink outfile with_main =
     (fun () ->
        (* The bytecode *)
        output_string outchan
-{|#define CAML_INTERNALS
+{|#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define CAML_INTERNALS
 #define CAMLDLLIMPORT
 
-#ifdef __cplusplus
-extern "C" {
-#endif|};
-       List.iter (fun (f, f') -> Printf.fprintf outchan "\n#define %s %s" f f')
+|};
+       List.iter (fun (f, f') -> Printf.fprintf outchan "#define %s %s\n" f f')
          guarded_primitives;
-       output_string outchan {|
-#include <caml/mlvalues.h>
+       output_string outchan
+{|#include <caml/mlvalues.h>
 #include <caml/startup.h>
 #include <caml/sys.h>
 #include <caml/misc.h>
 |};
-       List.iter (fun (f, _) -> Printf.fprintf outchan "\n#undef %s" f)
+       List.iter (fun (f, _) -> Printf.fprintf outchan "#undef %s\n" f)
          guarded_primitives;
        output_string outchan {|
 static int caml_code[] = {
@@ -705,6 +707,7 @@ let link objfiles output_name =
 {|#ifdef __cplusplus
 extern "C" {
 #endif
+
 #ifdef _WIN64
 #ifdef __MINGW32__
 typedef long long value;
@@ -714,10 +717,12 @@ typedef __int64 value;
 #else
 typedef long value;
 #endif
+
 |};
          Symtable.output_primitive_table poc;
          output_string poc
-{|#ifdef __cplusplus
+{|
+#ifdef __cplusplus
 }
 #endif
 |};
