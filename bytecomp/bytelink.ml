@@ -485,6 +485,13 @@ let guarded_primitives = [
     "caml_set_oo_id", "caml__set_oo_id";
   ]
 
+let output_without_guarded_primitives outchan s =
+  List.iter (fun (f, f') -> Printf.fprintf outchan "#define %s %s\n" f f')
+    guarded_primitives;
+  output_string outchan s;
+  List.iter (fun (f, _) -> Printf.fprintf outchan "#undef %s\n" f)
+    guarded_primitives
+
 let link_bytecode_as_c tolink outfile with_main =
   let outchan = open_out outfile in
   Misc.try_finally
@@ -501,16 +508,12 @@ extern "C" {
 #define CAMLDLLIMPORT
 
 |};
-       List.iter (fun (f, f') -> Printf.fprintf outchan "#define %s %s\n" f f')
-         guarded_primitives;
-       output_string outchan
+       output_without_guarded_primitives outchan
 {|#include <caml/mlvalues.h>
 #include <caml/startup.h>
 #include <caml/sys.h>
 #include <caml/misc.h>
 |};
-       List.iter (fun (f, _) -> Printf.fprintf outchan "#undef %s\n" f)
-         guarded_primitives;
        output_string outchan {|
 static int caml_code[] = {
 |};
@@ -623,23 +626,21 @@ let build_custom_runtime prim_name exec_name =
     if not !Clflags.with_runtime
     then ""
     else "-lcamlrun" ^ !Clflags.runtime_variant in
-  let debug_prefix_map =
-    if Config.c_has_debug_prefix_map && not !Clflags.keep_camlprimc_file then
-      let flag =
-        [Printf.sprintf "-fdebug-prefix-map=%s=camlprim.c" prim_name]
-      in
-        if Ccomp.linker_is_flexlink then
-          "-link" :: flag
-        else
-          flag
+  let stable_name =
+    if not !Clflags.keep_camlprimc_file then
+      Some "camlprim.c"
     else
-      [] in
-  let exitcode =
-    (Clflags.std_include_flag "-I" ^ " " ^ Config.bytecomp_c_libraries)
+      None
   in
-  Ccomp.call_linker Ccomp.Exe exec_name
-    (debug_prefix_map @ [prim_name] @ List.rev !Clflags.ccobjs @ [runtime_lib])
-    exitcode = 0
+  let prims_obj = Filename.temp_file "camlprim" Config.ext_obj in
+  let result =
+    Ccomp.compile_file ~output:prims_obj ?stable_name prim_name = 0
+    && Ccomp.call_linker Ccomp.Exe exec_name
+        ([prims_obj] @ List.rev !Clflags.ccobjs @ [runtime_lib])
+        (Clflags.std_include_flag "-I" ^ " " ^ Config.bytecomp_c_libraries) = 0
+  in
+  remove_file prims_obj;
+  result
 
 let append_bytecode bytecode_name exec_name =
   let oc = open_out_gen [Open_wronly; Open_append; Open_binary] 0 exec_name in
@@ -708,20 +709,13 @@ let link objfiles output_name =
 extern "C" {
 #endif
 
-#ifdef _WIN64
-#ifdef __MINGW32__
-typedef long long value;
-#else
-typedef __int64 value;
-#endif
-#else
-typedef long value;
-#endif
-
 |};
+         output_without_guarded_primitives poc
+{|#include <caml/mlvalues.h>
+|};
+         output_char poc '\n';
          Symtable.output_primitive_table poc;
-         output_string poc
-{|
+         output_string poc {|
 #ifdef __cplusplus
 }
 #endif
