@@ -254,6 +254,10 @@ DECLARE_SIGNAL_HANDLER(segv_handler)
 
 /* Initialization of signal stuff */
 
+#ifdef HAS_STACK_OVERFLOW_DETECTION
+static void * caml_signal_stack = NULL;
+#endif
+
 void caml_init_signals(void)
 {
   /* Bound-check trap handling */
@@ -278,7 +282,8 @@ void caml_init_signals(void)
 #endif
 
 #ifdef HAS_STACK_OVERFLOW_DETECTION
-  if (caml_setup_stack_overflow_detection() != -1) {
+  caml_signal_stack = caml_setup_stack_overflow_detection();
+  if (caml_signal_stack != NULL) {
     struct sigaction act;
     SET_SIGACT(act, segv_handler);
     act.sa_flags |= SA_ONSTACK | SA_NODEFER;
@@ -314,7 +319,8 @@ void caml_terminate_signals(void)
 
 #ifdef HAS_STACK_OVERFLOW_DETECTION
   set_signal_default(SIGSEGV);
-  caml_stop_stack_overflow_detection();
+  caml_stop_stack_overflow_detection(caml_signal_stack);
+  caml_signal_stack = NULL;
 #endif
 }
 
@@ -323,37 +329,44 @@ void caml_terminate_signals(void)
    Each thread needs its own alternate stack.
    The alternate stack used to be statically-allocated for the main thread,
    but this is incompatible with Glibc 2.34 and newer, where SIGSTKSZ
-   may not be a compile-time constant (issue #10250). */
+   may not be a compile-time constant (issue #10250).
+   Return the dynamically-allocated alternate signal stack, or NULL
+   if an error occurred.
+   The returned pointer must be passed to [caml_stop_stack_overflow_detection].
+*/
 
-CAMLexport int caml_setup_stack_overflow_detection(void)
+CAMLexport void * caml_setup_stack_overflow_detection(void)
 {
 #ifdef HAS_STACK_OVERFLOW_DETECTION
   stack_t stk;
-  stk.ss_sp = malloc(SIGSTKSZ);
-  if (stk.ss_sp == NULL) return -1;
   stk.ss_size = SIGSTKSZ;
+  stk.ss_sp = malloc(stk.ss_size);
+  if (stk.ss_sp == NULL) return NULL;
   stk.ss_flags = 0;
   if (sigaltstack(&stk, NULL) == -1) {
     free(stk.ss_sp);
-    return -1;
+    return NULL;
   }
+  return stk.ss_sp;
+#else
+  return NULL;
 #endif
-  /* Success (or stack overflow detection not available) */
-  return 0;
 }
 
-CAMLexport int caml_stop_stack_overflow_detection(void)
+CAMLexport int caml_stop_stack_overflow_detection(void * signal_stack)
 {
 #ifdef HAS_STACK_OVERFLOW_DETECTION
   stack_t oldstk, stk;
   stk.ss_flags = SS_DISABLE;
+  stk.ss_sp = NULL;  /* not required but avoids a valgrind false alarm */
+  stk.ss_size = SIGSTKSZ; /* macOS wants a valid size here */
   if (sigaltstack(&stk, &oldstk) == -1) return -1;
-  /* If caml_setup_stack_overflow_detection failed, we are not using
-     an alternate signal stack.  SS_DISABLE will be set in oldstk,
-     and there is nothing to free in this case. */
-  if (! (oldstk.ss_flags & SS_DISABLE)) free(oldstk.ss_sp);
-  return 0;
-#else
-  return 0;
+  /* Check whether someone else installed their own signal stack */
+  if (!(oldstk.ss_flags & SS_DISABLE) && oldstk.ss_sp != signal_stack) {
+    /* Re-activate their signal stack. */
+    sigaltstack(&oldstk, NULL);
+  }
+  free(signal_stack);
 #endif
+  return 0;
 }
