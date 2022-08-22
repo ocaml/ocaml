@@ -261,9 +261,9 @@ CAMLextern value caml_runtime_events_user_register(value event_name,
 CAMLextern value caml_runtime_events_user_write(value event,
    value event_content);
 
-/* Resolve an event index using the custom event structure in the ring. */
-CAMLextern value caml_runtime_events_user_resolve(
-   struct runtime_events_metadata_header* ring, uintnat index,
+/* Resolve an event name to the associated event value using known registered
+   events. */
+CAMLextern value caml_runtime_events_user_resolve(char* event_name, 
    uintnat event_type);
 
 #endif /* CAML_INTERNALS */

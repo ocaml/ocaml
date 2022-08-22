@@ -73,8 +73,12 @@ struct caml_runtime_events_cursor {
                     ev_lifecycle lifecycle, int64_t data);
   int (*lost_events)(int domain_id, void *callback_data, int lost_words);
   /* user events: mapped from type to callback */
-  int (*user_events)(int domain_id, void *callback_data, int64_t timestamp,
-                      value event, uintnat event_data_len,
+  int (*user_event)(int domain_id, void* callback_data, int64_t timestamp, 
+                      char* event_name);
+  int (*user_counter)(int domain_id, void* callback_data, int64_t timestamp,
+                      char* event_name, uint64_t val);
+  int (*user_custom)(int domain_id, void *callback_data, int64_t timestamp,
+                      char* event_name, uintnat event_data_len,
                       uint64_t* event_data);
 };
 
@@ -228,7 +232,9 @@ caml_runtime_events_create_cursor(const char_os* runtime_events_path, int pid,
   cursor->alloc = NULL;
   cursor->lifecycle = NULL;
   cursor->lost_events = NULL;
-  cursor->user_events = NULL;
+  cursor->user_event = NULL;
+  cursor->user_counter = NULL;
+  cursor->user_custom = NULL;
 
   *cursor_res = cursor;
 
@@ -282,15 +288,31 @@ void caml_runtime_events_set_lost_events(
   cursor->lost_events = f;
 }
 
-
-void caml_runtime_events_set_user_events(
+void caml_runtime_events_set_user_event(
                                   struct caml_runtime_events_cursor *cursor,
                                   int (*f)(int domain_id, void *callback_data,
                                             int64_t timestamp,
-                                            value event,
+                                            char* event_name)) {
+  cursor->user_event = f;
+}
+
+void caml_runtime_events_set_user_counter(
+                                  struct caml_runtime_events_cursor *cursor,
+                                  int (*f)(int domain_id, void *callback_data,
+                                            int64_t timestamp,
+                                            char* event_name,
+                                            uint64_t val)) {
+  cursor->user_counter = f;
+}
+
+void caml_runtime_events_set_user_custom(
+                                  struct caml_runtime_events_cursor *cursor,
+                                  int (*f)(int domain_id, void *callback_data,
+                                            int64_t timestamp,
+                                            char* event_name,
                                             uintnat event_data_len,
                                             uint64_t* event_data)) {
-  cursor->user_events = f;
+  cursor->user_custom = f;
 }
 
 /* frees a cursor obtained from caml_runtime_events_reader_create */
@@ -456,20 +478,44 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
                                     }
           }
         }
-      } else if (cursor->user_events) {
+      } else {
         // User events
         uintnat event_id = RUNTIME_EVENTS_ITEM_ID(header);
-        // First step is to obtain the event structure be it already known or
-        // reconstructed using the type information from the header.
-        value event = caml_runtime_events_user_resolve(
-          cursor->metadata, event_id, RUNTIME_EVENTS_ITEM_TYPE(header));
 
-        if ((void*) event != NULL) {
-          if( !cursor->user_events(domain_num, callback_data, buf[1], event,
-                                   msg_length - 2, &buf[2]) ) {
-                                      early_exit = 1;
-                                      continue;
-                                    };
+        struct runtime_events_custom_event *custom_event =
+          &((struct runtime_events_custom_event *)
+            ((char *)cursor->metadata + cursor->metadata->custom_events_offset))
+            [event_id];
+        char* event_name = custom_event->name;
+
+        switch (RUNTIME_EVENTS_ITEM_TYPE(header)) {
+          case RUNTIME_EVENTS_CUSTOM_EVENT_TYPE_EVENT:
+            if (cursor->user_event) {
+              if( !cursor->user_event(domain_num, callback_data, buf[1],
+                                      event_name) ) {
+                                        early_exit = 1;
+                                        continue;
+                                      }
+            }
+            break;
+          case RUNTIME_EVENTS_CUSTOM_EVENT_TYPE_COUNTER:
+            if (cursor->user_counter) {
+              if( !cursor->user_counter(domain_num, callback_data, buf[1],
+                                      event_name, buf[2]) ) {
+                                        early_exit = 1;
+                                        continue;
+                                      }
+            }
+            break;
+          default: // custom
+            if (cursor->user_custom) {
+              if( !cursor->user_custom(domain_num, callback_data, buf[1],
+                                      event_name, msg_length - 2, &buf[2]) ) {
+                                        early_exit = 1;
+                                        continue;
+                                      }
+            }
+            break;
         }
       }
 
@@ -700,17 +746,11 @@ static int ml_lost_events(int domain_id, void *callback_data, int lost_words) {
   return 1;
 }
 
-static int ml_user_events(int domain_id, void *callback_data, int64_t timestamp,
-                           value event, uintnat event_data_len,
-                           uint64_t* event_data) {
-  CAMLparam1(event);
-  CAMLlocal5(tmp_callback_array, tmp_callback_list, callbacks_root, res, 
-              event_type);
-  CAMLlocalN(params, 4);
 
-  struct callbacks_exception_holder* holder = callback_data;
-  callbacks_root = *holder->callbacks_val;
-
+static value user_events_find_callback_list_for_event_type(value callbacks_root, 
+                                                          value event) {
+  CAMLparam2(callbacks_root, event);
+  CAMLlocal2(tmp_callback_array, event_type);                                                      
   tmp_callback_array = Field(callbacks_root, 6); /* ev_user_events */
   uintnat array_length = caml_array_length(tmp_callback_array);
 
@@ -723,45 +763,138 @@ static int ml_user_events(int domain_id, void *callback_data, int64_t timestamp,
   }
 
   if (event_index >= array_length) {
-    CAMLdrop;
-    return 1;
+    CAMLreturn(Val_none);
   }
 
-  tmp_callback_list = Field(tmp_callback_array, event_index);
+  CAMLreturn(Field(tmp_callback_array, event_index));
+}
 
-  if (Is_block(tmp_callback_list)) {
+static int user_events_call_callback_list(
+  struct callbacks_exception_holder* holder, value callback_list, 
+  value params[4]) {
+  CAMLparam5(callback_list, params[0], params[1], params[2], params[3]);
+  CAMLlocal2(callback, res);
+
+  while (Is_block(callback_list)) {
+      // two indirections as callback is a list item wrapped in a gadt
+    value callback = Field(Field(callback_list, 0), 0);
+    res = caml_callbackN_exn(callback, 4, params);
+
+    if( Is_exception_result(res) ) {
+      res = Extract_exception(res);
+      *holder->exception = res;
+      CAMLdrop;
+      return 0;
+    }
+
+    callback_list = Field(callback_list, 1);
+  }
+
+  CAMLdrop;
+  return 1;
+}
+
+static int ml_user_event(int domain_id, void *callback_data, int64_t timestamp,
+                           char* event_name) {
+  CAMLparam0();
+  CAMLlocal3(callback_list, event, callbacks_root);
+  CAMLlocalN(params, 4);
+
+  struct callbacks_exception_holder* holder = callback_data;
+  callbacks_root = *holder->callbacks_val;
+
+  event = caml_runtime_events_user_resolve(event_name, 
+                                        RUNTIME_EVENTS_CUSTOM_EVENT_TYPE_EVENT);
+
+  callback_list = user_events_find_callback_list_for_event_type(callbacks_root, 
+                                                                event);
+
+  if (Is_block(callback_list)) {
     // at least one callback is listening for this event type, so we
     // deserialize the value and prepare the callback payload
 
-    CAMLlocal1(data);
+    params[0] = Val_long(domain_id);
+    params[1] = caml_copy_int64(timestamp);
+    params[2] = event;
+    params[3] = Val_unit;
 
-    if (Is_block(event_type)) {
-      CAMLlocal3(bytes, record, deserializer);
-      const char* data_str = (const char*) event_data;
-      uintnat string_len = event_data_len * sizeof(uint64_t) - 1;
-      // because the ring buffer is 64-bits aligned, the whole ocaml value is
-      // transferred, including the padding bytes and the last byte containing
-      // the number of padding bytes. This information is crucial to determine
-      // the true size of the string.
-      uintnat caml_string_len = string_len - data_str[string_len];
-      bytes = caml_alloc_initialized_string(caml_string_len, data_str);
-      record = Field(event_type, 0);
-      deserializer = Field(record, 1);
-      data = caml_callback(deserializer, bytes);
-
-    } else {
-      uintnat event_type_id = Int_val(event_type);
-      switch (event_type_id) {
-      case RUNTIME_EVENTS_CUSTOM_EVENT_TYPE_EVENT:
-        data = Val_unit;
-        break;
-      case RUNTIME_EVENTS_CUSTOM_EVENT_TYPE_COUNTER:
-        data = Val_int(*event_data);
-        break;
-      default:
-        caml_failwith("Unknown event type id");
-      }
+    // payload is prepared, we call the callbacks sequentially.
+    if (user_events_call_callback_list(holder, callback_list, params) == 0) {
+      return 0;
     }
+  }
+
+  CAMLdrop;
+  return 1;
+}
+
+static int ml_user_counter(int domain_id, void *callback_data, int64_t timestamp,
+                           char* event_name, uint64_t val) {
+  CAMLparam0();
+  CAMLlocal3(callback_list, event, callbacks_root);
+  CAMLlocalN(params, 4);
+
+  struct callbacks_exception_holder* holder = callback_data;
+  callbacks_root = *holder->callbacks_val;
+
+  event = caml_runtime_events_user_resolve(event_name, 
+                                      RUNTIME_EVENTS_CUSTOM_EVENT_TYPE_COUNTER);
+
+  callback_list = user_events_find_callback_list_for_event_type(callbacks_root, 
+                                                                event);
+
+  if (Is_block(callback_list)) {
+    // at least one callback is listening for this event type, so we
+    // deserialize the value and prepare the callback payload
+
+    params[0] = Val_long(domain_id);
+    params[1] = caml_copy_int64(timestamp);
+    params[2] = event;
+    params[3] = Val_int(val);;
+
+    // payload is prepared, we call the callbacks sequentially.
+    if (user_events_call_callback_list(holder, callback_list, params) == 0) {
+      return 0;
+    }
+  }
+
+  CAMLdrop;
+  return 1;
+}
+
+static int ml_user_custom(int domain_id, void *callback_data, int64_t timestamp,
+                           char* event_name, uintnat event_data_len,
+                           uint64_t* event_data) {
+  CAMLparam0();
+  CAMLlocal4(callback_list, event, callbacks_root, event_type);
+  CAMLlocalN(params, 4);
+
+  struct callbacks_exception_holder* holder = callback_data;
+  callbacks_root = *holder->callbacks_val;
+
+  event = caml_runtime_events_user_resolve(event_name, 
+                                      RUNTIME_EVENTS_CUSTOM_EVENT_TYPE_CUSTOM);
+  event_type = Field(event, 2);
+
+  callback_list = user_events_find_callback_list_for_event_type(callbacks_root, 
+                                                                event);
+
+  if (Is_block(callback_list)) {
+    // at least one callback is listening for this event type, so we
+    // deserialize the value and prepare the callback payload
+    CAMLlocal4(data, bytes, record, deserializer);
+
+    const char* data_str = (const char*) event_data;
+    uintnat string_len = event_data_len * sizeof(uint64_t) - 1;
+    // because the ring buffer is 64-bits aligned, the whole ocaml value is
+    // transferred, including the padding bytes and the last byte containing
+    // the number of padding bytes. This information is crucial to determine
+    // the true size of the string.
+    uintnat caml_string_len = string_len - data_str[string_len];
+    bytes = caml_alloc_initialized_string(caml_string_len, data_str);
+    record = Field(event_type, 0);
+    deserializer = Field(record, 1);
+    data = caml_callback(deserializer, bytes);
 
     params[0] = Val_long(domain_id);
     params[1] = caml_copy_int64(timestamp);
@@ -769,19 +902,8 @@ static int ml_user_events(int domain_id, void *callback_data, int64_t timestamp,
     params[3] = data;
 
     // payload is prepared, we call the callbacks sequentially.
-    while (Is_block(tmp_callback_list)) {
-       // two indirections as callback is a list item wrapped in a gadt
-      value callback = Field(Field(tmp_callback_list, 0), 0);
-      res = caml_callbackN_exn(callback, 4, params);
-
-      if( Is_exception_result(res) ) {
-        res = Extract_exception(res);
-        *holder->exception = res;
-        CAMLdrop;
-        return 0;
-      }
-
-      tmp_callback_list = Field(tmp_callback_list, 1);
+    if (user_events_call_callback_list(holder, callback_list, params) == 0) {
+      return 0;
     }
   }
 
@@ -849,7 +971,9 @@ CAMLprim value caml_ml_runtime_events_create_cursor(value path_pid_option) {
   caml_runtime_events_set_alloc(cursor, ml_alloc);
   caml_runtime_events_set_lifecycle(cursor, ml_lifecycle);
   caml_runtime_events_set_lost_events(cursor, ml_lost_events);
-  caml_runtime_events_set_user_events(cursor, ml_user_events);
+  caml_runtime_events_set_user_event(cursor, ml_user_event);
+  caml_runtime_events_set_user_counter(cursor, ml_user_counter);
+  caml_runtime_events_set_user_custom(cursor, ml_user_custom);
 
   Cursor_val(wrapper) = cursor;
 

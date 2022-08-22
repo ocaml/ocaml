@@ -726,20 +726,15 @@ CAMLprim value caml_runtime_events_user_write(value event, value event_content)
   CAMLreturn (Val_unit);
 }
 
-/* Find which event has the given ID using the user event data structure in the
-   ring and the list of globally known events. If the event is not globally
-   known but the type is one of the known types, then it can be partially
-   reconstructed, the only missing information being the associated tag.  */
+/* Find which event has the given name using the list of globally known events. 
+   If the event is not globally known but the type is one of the known types, 
+   then it can be partially reconstructed, the only missing information being 
+   the associated tag.  */
 CAMLprim value caml_runtime_events_user_resolve(
-  struct runtime_events_metadata_header * ring,
-  uintnat index, uintnat event_type_id)
+  char* event_name, uintnat event_type_id)
 {
   CAMLparam0();
-  CAMLlocal2(event, event_name);
-
-  struct runtime_events_custom_event *custom_event =
-    &((struct runtime_events_custom_event *)
-      ((char *)ring + ring->custom_events_offset))[index];
+  CAMLlocal3(event, cur_event_name, ml_event_name);
 
   // TODO: it might be possible to atomic load instead
   caml_plat_lock(&user_events_lock);
@@ -749,10 +744,9 @@ CAMLprim value caml_runtime_events_user_resolve(
   // which try to find an event with the matching name
   while (Is_some (current_user_event)) {
     event = Field(current_user_event, 0);
-    value event_name = Field(event, 1);
+    cur_event_name = Field(event, 1);
 
-    if (strncmp(String_val(event_name),
-                custom_event->name,
+    if (strncmp(String_val(cur_event_name), event_name,
                 RUNTIME_EVENTS_CUSTOM_EVENT_ID_LENGTH) == 0) {
       CAMLreturn(event);
     }
@@ -765,11 +759,11 @@ CAMLprim value caml_runtime_events_user_resolve(
     // the event is not known, but its type is known
     // as we know the event type the event can be reconstructed
     value event_type = Val_int(event_type_id);
-    uintnat event_name_len = strnlen(custom_event->name,
+    uintnat event_name_len = strnlen(event_name,
                                       RUNTIME_EVENTS_CUSTOM_EVENT_ID_LENGTH);
-    event_name = caml_alloc_initialized_string(event_name_len,
-                                                custom_event->name);
-    event = caml_runtime_events_user_register(event_name, Val_none, event_type);
+    ml_event_name = caml_alloc_initialized_string(event_name_len, event_name);
+    event = caml_runtime_events_user_register(ml_event_name, Val_none, 
+                                              event_type);
 
     CAMLreturn(event);
   } else {
