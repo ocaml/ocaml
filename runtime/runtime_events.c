@@ -701,8 +701,8 @@ CAMLprim value caml_runtime_events_user_write(value event, value event_content)
     value bytes = caml_callback(serializer, event_content);
     uintnat len_bytes = caml_string_length(bytes);
     uintnat len_64bit_word = (len_bytes + sizeof(uint64_t)) / sizeof(uint64_t);
-    write_to_ring(EV_USER, 2, Int_val(event_id), len_64bit_word,
-      (uint64_t *) Bytes_val(bytes), 0);
+    write_to_ring(EV_USER, RUNTIME_EVENTS_CUSTOM_EVENT_TYPE_CUSTOM, 
+      Int_val(event_id), len_64bit_word, (uint64_t *) Bytes_val(bytes), 0);
 
   } else {
     // Event | Counter
@@ -710,13 +710,13 @@ CAMLprim value caml_runtime_events_user_write(value event, value event_content)
     int event_type_id = Int_val(event_type);
 
     // Event
-    if (event_type_id == 0) {
+    if (event_type_id == RUNTIME_EVENTS_CUSTOM_EVENT_TYPE_EVENT) {
       write_to_ring(EV_USER, event_type_id,
         Int_val(event_id), 0, NULL, 0);
     }
 
     // Counter
-    if (event_type_id == 1) {
+    if (event_type_id == RUNTIME_EVENTS_CUSTOM_EVENT_TYPE_COUNTER) {
       uint64_t c_event_content = Int_val(event_content);
       write_to_ring(EV_USER, event_type_id,
         Int_val(event_id), 1, &c_event_content, 0);
@@ -760,7 +760,8 @@ CAMLprim value caml_runtime_events_user_resolve(
     current_user_event = Field(current_user_event, 1);
   }
 
-  if (event_type_id == 0 || event_type_id == 1) {
+  if (event_type_id == RUNTIME_EVENTS_CUSTOM_EVENT_TYPE_EVENT 
+      || event_type_id == RUNTIME_EVENTS_CUSTOM_EVENT_TYPE_COUNTER) {
     // the event is not known, but its type is known
     // as we know the event type the event can be reconstructed
     value event_type = Val_int(event_type_id);

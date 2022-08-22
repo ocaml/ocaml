@@ -752,10 +752,10 @@ static int ml_user_events(int domain_id, void *callback_data, int64_t timestamp,
     } else {
       uintnat event_type_id = Int_val(event_type);
       switch (event_type_id) {
-      case 0: // Event
+      case RUNTIME_EVENTS_CUSTOM_EVENT_TYPE_EVENT:
         data = Val_unit;
         break;
-      case 1: // Counter
+      case RUNTIME_EVENTS_CUSTOM_EVENT_TYPE_COUNTER:
         data = Val_int(*event_data);
         break;
       default:
