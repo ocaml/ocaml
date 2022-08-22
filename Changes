@@ -48,6 +48,9 @@ Working version
 - #11354: Hashtbl.find_all is now tail-recursive.
   (Fermín Reig, review by Gabriel Scherer)
 
+- #11500: Make Hashtbl.mem non-allocating.
+  (Simmo Saan, review by Nicolás Ojeda Bär)
+
 - #11362: Rewrite List.map, List.mapi and List.map2 using TRMC, making them
   faster as well as tail-recursive.
   (Nicolás Ojeda Bär, review by Gabriel Scherer)
