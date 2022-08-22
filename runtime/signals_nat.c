@@ -339,9 +339,9 @@ CAMLexport void * caml_setup_stack_overflow_detection(void)
 {
 #ifdef HAS_STACK_OVERFLOW_DETECTION
   stack_t stk;
-  stk.ss_sp = malloc(SIGSTKSZ);
-  if (stk.ss_sp == NULL) return NULL;
   stk.ss_size = SIGSTKSZ;
+  stk.ss_sp = malloc(stk.ss_size);
+  if (stk.ss_sp == NULL) return NULL;
   stk.ss_flags = 0;
   if (sigaltstack(&stk, NULL) == -1) {
     free(stk.ss_sp);
