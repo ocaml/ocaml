@@ -177,9 +177,9 @@ module Type = struct
 
   let next_id = ref 2
 
-  let register serialize deserialize =
+  let register ~encode ~decode =
     incr next_id;
-    Custom { serialize; deserialize; id = !next_id - 1}
+    Custom { serialize = encode; deserialize = decode; id = !next_id - 1}
 
   let id: type a. a t -> int = function
     | Event -> 0

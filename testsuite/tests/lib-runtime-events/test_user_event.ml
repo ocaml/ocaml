@@ -15,7 +15,8 @@ let counter = User.register "libname.counter" MyCounter Type.counter
 
 let counter2 = User.register "libname.counter2" MyCounter2 Type.counter
 
-let custom_type = Type.register Bytes.unsafe_of_string Bytes.unsafe_to_string
+let custom_type = Type.register ~encode:Bytes.unsafe_of_string 
+                                ~decode:Bytes.unsafe_to_string
 
 let custom = User.register "libname.custom" MyString custom_type
 
