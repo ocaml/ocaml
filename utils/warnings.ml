@@ -687,7 +687,8 @@ type token =
   | Num of int * int * modifier
 
 let ghost_loc_in_file name =
-  let pos = { Lexing.dummy_pos with pos_fname = name } in
+  let open Lexing in
+  let pos = { dummy_pos with pos_fname = name } in
   { loc_start = pos; loc_end = pos; loc_ghost = true }
 
 let letter_alert tokens =

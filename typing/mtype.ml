@@ -33,11 +33,12 @@ let rec scrape_lazy env mty =
 let scrape env mty =
   match mty with
     Mty_ident p ->
-     Subst.Lazy.force_modtype (scrape_lazy env (MtyL_ident p))
+     Subst.Lazy.force_modtype (scrape_lazy env (Subst.Lazy.MtyL_ident p))
   | _ -> mty
 
 let freshen ~scope mty =
-  Subst.modtype (Rescope scope) Subst.identity mty
+  let open Subst in
+  modtype (Rescope scope) identity mty
 
 let rec strengthen_lazy ~aliasable env mty p =
   let open Subst.Lazy in

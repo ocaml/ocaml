@@ -680,12 +680,14 @@ let rec lam ppf = function
          the end-user goal when using -dno-locations), as it strongly
          reduces the nesting level of subterms. *)
       if not !Clflags.locations then lam ppf expr
-      else begin match ev.lev_loc with
+      else begin
+      let open Debuginfo.Scoped_location in
+      match ev.lev_loc with
       | Loc_unknown ->
         fprintf ppf "@[<2>(%s <unknown location>@ %a)@]" kind lam expr
       | Loc_known {scopes; loc} ->
         fprintf ppf "@[<2>(%s %s %s(%i)%s:%i-%i@ %a)@]" kind
-                (Debuginfo.Scoped_location.string_of_scopes scopes)
+                (string_of_scopes scopes)
                 loc.Location.loc_start.Lexing.pos_fname
                 loc.Location.loc_start.Lexing.pos_lnum
                 (if loc.Location.loc_ghost then "<ghost>" else "")

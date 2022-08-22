@@ -676,6 +676,7 @@ and print_out_type_decl kwd ppf td =
   | Asttypes.Public -> ()
   in
   let print_immediate ppf =
+    let open Type_immediacy in
     match td.otype_immediate with
     | Unknown -> ()
     | Always -> fprintf ppf " [%@%@immediate]"

@@ -25,7 +25,7 @@ let main argv ppf =
     ["-depend", Arg.Unit Makedepend.main_from_option,
      "<options> Compute dependencies (use 'ocamlc -depend -help' for details)"];
   match
-    Compenv.readenv ppf Before_args;
+    Compenv.readenv ppf Compenv.Before_args;
     Compenv.parse_arguments (ref argv) Compenv.anonymous program;
     Compmisc.read_clflags_from_env ();
     if !Clflags.plugin then
@@ -44,7 +44,7 @@ let main argv ppf =
         exit 2
       end
     end;
-    Compenv.readenv ppf Before_link;
+    Compenv.readenv ppf Compenv.Before_link;
     if
       List.length
         (List.filter (fun x -> !x)

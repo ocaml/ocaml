@@ -28,6 +28,7 @@ let dir_trace ppf lid =
   match Env.find_value_by_name lid !Topcommon.toplevel_env with
   | (path, desc) -> begin
       (* Check if this is a primitive *)
+      let open Types in
       match desc.val_kind with
       | Val_prim _ ->
           Format.fprintf ppf
@@ -94,7 +95,9 @@ let dir_untrace_all ppf () =
     !traced_functions;
   traced_functions := []
 
-let _ = Topcommon.add_directive "trace"
+let _ =
+  let open Topcommon in
+  add_directive "trace"
     (Directive_ident (dir_trace Format.std_formatter))
     {
       section = Topdirs.section_trace;
@@ -102,14 +105,18 @@ let _ = Topcommon.add_directive "trace"
           named function-name will be traced.";
     }
 
-let _ = Topcommon.add_directive "untrace"
+let _ =
+  let open Topcommon in
+  add_directive "untrace"
     (Directive_ident (dir_untrace Format.std_formatter))
     {
       section = Topdirs.section_trace;
       doc = "Stop tracing the given function.";
     }
 
-let _ = Topcommon.add_directive "untrace_all"
+let _ =
+  let open Topcommon in
+  add_directive "untrace_all"
     (Directive_none (dir_untrace_all Format.std_formatter))
     {
       section = Topdirs.section_trace;
@@ -176,7 +183,7 @@ let input_argument name =
       let newargs = Array.sub !argv !current
                               (Array.length !argv - !current)
       in
-      Compenv.readenv ppf Before_link;
+      Compenv.readenv ppf Compenv.Before_link;
       Compmisc.read_clflags_from_env ();
       if prepare ppf && Toploop.run_script ppf name newargs
       then raise (Compenv.Exit_with_status 0)
@@ -207,12 +214,12 @@ let main () =
     Array.length !argv >= 2 && Topcommon.is_command_like_name !argv.(1)
   in
   Topcommon.update_search_path_from_env ();
-  Compenv.readenv ppf Before_args;
+  Compenv.readenv ppf Compenv.Before_args;
   if display_deprecated_script_alert then
     Location.deprecated_script_alert program;
   Clflags.add_arguments __LOC__ Options.list;
   Compenv.parse_arguments ~current argv file_argument program;
-  Compenv.readenv ppf Before_link;
+  Compenv.readenv ppf Compenv.Before_link;
   Compmisc.read_clflags_from_env ();
   if not (prepare ppf) then raise (Compenv.Exit_with_status 2);
   Compmisc.init_path ();

@@ -61,6 +61,7 @@ let implementation ~start_from ~source_file ~output_prefix =
   in
   with_info ~source_file ~output_prefix ~dump_ext:"cmo" @@ fun info ->
   match (start_from : Clflags.Compiler_pass.t) with
-  | Parsing -> Compile_common.implementation info ~backend
+  | Clflags.Compiler_pass.Parsing ->
+    Compile_common.implementation info ~backend
   | _ -> Misc.fatal_errorf "Cannot start from %s"
            (Clflags.Compiler_pass.to_string start_from)

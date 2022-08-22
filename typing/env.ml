@@ -72,13 +72,13 @@ let constructor_usage_complaint ~rebind priv cu
   match priv, rebind with
   | Asttypes.Private, _ | _, true ->
       if cu.cu_positive || cu.cu_pattern || cu.cu_exported_private then None
-      else Some Unused
+      else Some Warnings.Unused
   | Asttypes.Public, false -> begin
       match cu.cu_positive, cu.cu_pattern, cu.cu_exported_private with
       | true, _, _ -> None
-      | false, false, false -> Some Unused
-      | false, true, _ -> Some Not_constructed
-      | false, false, true -> Some Only_exported_private
+      | false, false, false -> Some Warnings.Unused
+      | false, true, _ -> Some Warnings.Not_constructed
+      | false, false, true -> Some Warnings.Only_exported_private
     end
 
 let used_constructors : constructor_usage usage_tbl ref =
@@ -112,19 +112,19 @@ let label_usage_complaint priv mut lu
   match priv, mut with
   | Asttypes.Private, _ ->
       if lu.lu_projection then None
-      else Some Unused
+      else Some Warnings.Unused
   | Asttypes.Public, Asttypes.Immutable -> begin
       match lu.lu_projection, lu.lu_construct with
       | true, _ -> None
-      | false, false -> Some Unused
-      | false, true -> Some Not_read
+      | false, false -> Some Warnings.Unused
+      | false, true -> Some Warnings.Not_read
     end
   | Asttypes.Public, Asttypes.Mutable -> begin
       match lu.lu_projection, lu.lu_mutation, lu.lu_construct with
       | true, true, _ -> None
-      | false, false, false -> Some Unused
-      | false, _, _ -> Some Not_read
-      | true, false, _ -> Some Not_mutated
+      | false, false, false -> Some Warnings.Unused
+      | false, _, _ -> Some Warnings.Not_read
+      | true, false, _ -> Some Warnings.Not_mutated
     end
 
 let used_labels : label_usage usage_tbl ref =
@@ -982,7 +982,7 @@ let modtype_of_functor_appl fcomp p1 p2 =
             | Named (None, _) -> Subst.identity
             | Named (Some param, _) -> Subst.add_module param p2 Subst.identity
           in
-          Subst.modtype (Rescope scope) subst mty
+          Subst.modtype (Subst.Rescope scope) subst mty
         in
         Hashtbl.add fcomp.fcomp_subst_cache p2 mty;
         mty
@@ -1060,8 +1060,9 @@ let find_module_lazy ~alias path env =
 
 let find_strengthened_module ~aliasable path env =
   let md = find_module_lazy ~alias:true path env in
+  let open Subst.Lazy in
   let mty = !strengthen ~aliasable env md.mdl_type path in
-  Subst.Lazy.force_modtype mty
+  force_modtype mty
 
 let find_value_full path env =
   match path with
@@ -1251,6 +1252,7 @@ let find_hash_type path env =
       raise Not_found
 
 let find_shape env (ns : Shape.Sig_component_kind.t) id =
+  let open Shape.Sig_component_kind in
   match ns with
   | Type ->
       (IdTbl.find_same id env.types).tda_shape
@@ -1313,6 +1315,7 @@ let rec normalize_module_path lax env = function
       expand_module_path lax env path
 
 and expand_module_path lax env path =
+  let open Subst.Lazy in
   try match find_module_lazy ~alias:true path env with
     {mdl_type=MtyL_alias path1} ->
       let path' = normalize_module_path lax env path1 in
@@ -1370,6 +1373,7 @@ let rec normalize_modtype_path env path =
   expand_modtype_path env path
 
 and expand_modtype_path env path =
+  let open Subst.Lazy in
   match (find_modtype_lazy path env).mtdl_type with
   | Some (MtyL_ident path) -> normalize_modtype_path env path
   | _ | exception Not_found -> path
@@ -1410,7 +1414,7 @@ let find_type_expansion_opt path env =
   | _ -> raise Not_found
 
 let find_modtype_expansion_lazy path env =
-  match (find_modtype_lazy path env).mtdl_type with
+  match (find_modtype_lazy path env).Subst.Lazy.mtdl_type with
   | None -> raise Not_found
   | Some mty -> mty
 
@@ -1693,6 +1697,7 @@ let is_identchar c =
 let rec components_of_module_maker
           {cm_env; cm_prefixing_subst;
            cm_path; cm_addr; cm_mty; cm_shape} : _ result =
+  let open Subst.Lazy in
   match scrape_alias cm_env cm_mty with
     MtyL_signature sg ->
       let c =
@@ -1826,7 +1831,7 @@ let rec components_of_module_maker
             let final_decl =
               (* The prefixed items get the same scope as [cm_path], which is
                  the prefix. *)
-              Subst.Lazy.modtype_decl (Rescope (Path.scope cm_path))
+              Subst.Lazy.modtype_decl (Subst.Rescope (Path.scope cm_path))
                 sub decl
             in
             let shape = Shape.proj cm_shape (Shape.Item.module_type id) in
@@ -1917,7 +1922,7 @@ and store_value ?check id addr decl shape env =
 
 and store_constructor ~check type_decl type_id cstr_id cstr env =
   if check && not type_decl.type_loc.Location.loc_ghost
-     && Warnings.is_active (Warnings.Unused_constructor ("", Unused))
+     && Warnings.is_active (Warnings.Unused_constructor ("", Warnings.Unused))
   then begin
     let ty_name = Ident.name type_id in
     let name = cstr.cstr_name in
@@ -1949,7 +1954,7 @@ and store_constructor ~check type_decl type_id cstr_id cstr env =
 
 and store_label ~check type_decl type_id lbl_id lbl env =
   if check && not type_decl.type_loc.Location.loc_ghost
-     && Warnings.is_active (Warnings.Unused_field ("", Unused))
+     && Warnings.is_active (Warnings.Unused_field ("", Warnings.Unused))
   then begin
     let ty_name = Ident.name type_id in
     let priv = type_decl.type_private in
@@ -2040,7 +2045,7 @@ and store_extension ~check ~rebind id addr ext shape env =
       cda_shape = shape }
   in
   if check && not loc.Location.loc_ghost &&
-    Warnings.is_active (Warnings.Unused_extension ("", false, Unused))
+    Warnings.is_active (Warnings.Unused_extension ("", false, Warnings.Unused))
   then begin
     let priv = ext.ext_private in
     let is_exception = Path.same ext.ext_type_path Predef.path_exn in
@@ -2132,7 +2137,9 @@ let components_of_functor_appl ~loc ~f_path ~f_comp ~arg env =
     in
     (* we have to apply eagerly instead of passing sub to [components_of_module]
        because of the call to [check_well_formed_module]. *)
-    let mty = Subst.modtype (Rescope (Path.scope p)) sub f_comp.fcomp_res in
+    let mty =
+      Subst.modtype (Subst.Rescope (Path.scope p)) sub f_comp.fcomp_res
+    in
     let addr = Lazy_backtrack.create_failed Not_found in
     !check_well_formed_module env loc
       ("the signature of " ^ Path.name p) mty;
@@ -2187,7 +2194,7 @@ and add_module_declaration ?(arg=false) ?shape ~check id presence md env =
   in
   let md = Subst.Lazy.of_module_decl md in
   let addr = module_declaration_address env id presence md in
-  let shape = shape_or_leaf md.mdl_uid shape in
+  let shape = shape_or_leaf md.Subst.Lazy.mdl_uid shape in
   let env = store_module ~check id addr presence md shape env in
   if arg then add_functor_arg id env else env
 
@@ -2312,7 +2319,7 @@ let rec add_signature (map, mod_shape) sg env =
       add_signature (map, mod_shape) rem env
 
 let enter_signature_and_shape ~scope ~parent_shape mod_shape sg env =
-  let sg = Subst.signature (Rescope scope) Subst.identity sg in
+  let sg = Subst.signature (Subst.Rescope scope) Subst.identity sg in
   let shape, env = add_signature (parent_shape, mod_shape) sg env in
   sg, shape, env
 
@@ -2530,9 +2537,10 @@ let persistent_structures_of_dir dir =
 
 (* Save a signature to a file *)
 let save_signature_with_transform cmi_transform ~alerts sg modname filename =
+  let open Subst in
   Btype.cleanup_abbrev ();
-  Subst.reset_for_saving ();
-  let sg = Subst.signature Make_local (Subst.for_saving Subst.identity) sg in
+  reset_for_saving ();
+  let sg = signature Make_local (for_saving identity) sg in
   let cmi =
     Persistent_env.make_cmi !persistent_env modname sg alerts
     |> cmi_transform in

@@ -77,6 +77,7 @@ type wrong_kind_sort =
   | Unit
 
 let wrong_kind_sort_of_constructor (lid : Longident.t) =
+  let open Longident in
   match lid with
   | Lident "true" | Lident "false" | Ldot(_, "true") | Ldot(_, "false") ->
       Boolean
@@ -468,7 +469,7 @@ let maybe_add_pattern_variables_ghost loc_let env pv =
        if Env.bound_value name env then env
        else begin
          Env.enter_unbound_value name
-           (Val_unbound_ghost_recursive loc_let) env
+           (Env.Val_unbound_ghost_recursive loc_let) env
        end
     ) pv env
 
@@ -977,7 +978,7 @@ end) = struct
 
   (* warn if there are several distinct candidates in scope *)
   let warn_if_ambiguous warn lid env lbl rest =
-    if Warnings.is_active (Ambiguous_name ([],[],false,"")) then begin
+    if Warnings.is_active (Warnings.Ambiguous_name ([],[],false,"")) then begin
       Printtyp.Conflicts.reset ();
       let paths = ambiguous_types env lbl rest in
       let expansion =
@@ -997,7 +998,7 @@ end) = struct
 
   (* we selected a name out of the lexical scope *)
   let warn_out_of_scope warn lid env tpath =
-    if Warnings.is_active (Name_out_of_scope ("",[],false)) then begin
+    if Warnings.is_active (Warnings.Name_out_of_scope ("",[],false)) then begin
       let path_s =
         Printtyp.wrap_printing_env ~error:true env
           (fun () -> Printtyp.string_of_path tpath) in
@@ -3035,13 +3036,16 @@ and type_expect_
         let funct = type_sfunct sfunct in
         match funct.exp_desc, sargs with
         | Texp_ident (_, _,
-                      {val_kind = Val_prim {prim_name="%revapply"}; val_type}),
+                      {
+                        val_kind = Val_prim {Primitive.prim_name="%revapply"};
+                        val_type}),
           [Nolabel, sarg; Nolabel, actual_sfunct]
           when is_inferred actual_sfunct
             && check_apply_prim_type Revapply val_type ->
             type_sfunct actual_sfunct, [Nolabel, sarg]
         | Texp_ident (_, _,
-                      {val_kind = Val_prim {prim_name="%apply"}; val_type}),
+                      {val_kind = Val_prim {Primitive.prim_name="%apply"};
+                        val_type}),
           [Nolabel, actual_sfunct; Nolabel, sarg]
           when check_apply_prim_type Apply val_type ->
             type_sfunct actual_sfunct, [Nolabel, sarg]
@@ -3465,6 +3469,7 @@ and type_expect_
                 force ();
                 begin try Ctype.unify env arg.exp_type ty with Unify err ->
                   let expanded = full_expand ~may_forget_scope:true env ty' in
+                  let open Errortrace in
                   raise(Error(sarg.pexp_loc, env,
                               Coercion_failure({ty = ty'; expanded}, err, b)))
                 end
@@ -4877,7 +4882,7 @@ and type_unpacks ?(in_function : (Location.t * type_expr) option)
      and refine them into Scoping_let_module errors
   *)
   let body = type_expect ?in_function extended_env sbody expected_ty in
-  let exp_loc = { body.exp_loc with loc_ghost = true } in
+  let exp_loc = { body.exp_loc with Location.loc_ghost = true } in
   let exp_attributes = [Ast_helper.Attr.mk (mknoloc "#modulepat") (PStr [])] in
   List.fold_left (fun body (id, name, pres, modl) ->
     (* go back to parent level *)
@@ -5567,7 +5572,7 @@ let report_error ~loc env = function
         (function ppf ->
            fprintf ppf "but is mixed here with fields of type")
   | Pattern_type_clash (err, pat) ->
-      let diff = type_clash_of_trace err.trace in
+      let diff = type_clash_of_trace err.Errortrace.trace in
       let sub = report_pattern_type_clash_hints pat diff in
       report_unification_error ~loc ~sub env err
         (function ppf ->
@@ -5594,7 +5599,7 @@ let report_error ~loc env = function
         spellcheck_idents ppf id valid_idents
       ) ()
   | Expr_type_clash (err, explanation, exp) ->
-      let diff = type_clash_of_trace err.trace in
+      let diff = type_clash_of_trace err.Errortrace.trace in
       let sub = report_expr_type_clash_hints exp diff in
       report_unification_error ~loc ~sub env err
         ~type_expected_explanation:
@@ -5731,7 +5736,7 @@ let report_error ~loc env = function
              let ty_exp = Printtyp.prepare_expansion ty_exp in
              fprintf ppf "This expression cannot be coerced to type@;<1 2>%a;@ \
                           it has type"
-             (Printtyp.type_expansion Type) ty_exp)
+             (Printtyp.type_expansion Printtyp.Type) ty_exp)
           (function ppf ->
              fprintf ppf "but is here used with type");
         if b then

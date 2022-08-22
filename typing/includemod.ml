@@ -423,7 +423,7 @@ let rec modtypes ~in_eq ~loc env ~mark subst mty1 mty2 shape =
   match try_modtypes ~in_eq ~loc env ~mark subst mty1 mty2 shape with
   | Ok _ as ok -> ok
   | Error reason ->
-    let mty2 = Subst.modtype Make_local subst mty2 in
+    let mty2 = Subst.modtype Subst.Make_local subst mty2 in
     Error Error.(diff mty1 mty2 reason)
 
 and try_modtypes ~in_eq ~loc env ~mark subst mty1 mty2 orig_shape =
@@ -459,14 +459,14 @@ and try_modtypes ~in_eq ~loc env ~mark subst mty1 mty2 orig_shape =
         begin match expand_modtype_path env p1, expand_modtype_path env p2 with
         | Some mty1, Some mty2 ->
             try_modtypes ~in_eq ~loc env ~mark subst mty1 mty2 orig_shape
-        | None, _  | _, None -> Error (Error.Mt_core Abstract_module_type)
+        | None, _  | _, None -> Error (Error.(Mt_core Abstract_module_type))
         end
   | (Mty_ident p1, _) ->
       let p1 = Env.normalize_modtype_path env p1 in
       begin match expand_modtype_path env p1 with
       | Some p1 ->
           try_modtypes ~in_eq ~loc env ~mark subst p1 mty2 orig_shape
-      | None -> Error (Error.Mt_core Abstract_module_type)
+      | None -> Error (Error.(Mt_core Abstract_module_type))
       end
   | (_, Mty_ident p2) ->
       let p2 = Env.normalize_modtype_path env (Subst.modtype_path subst p2) in
@@ -524,8 +524,8 @@ and try_modtypes ~in_eq ~loc env ~mark subst mty1 mty2 orig_shape =
           in
           Ok (Tcoerce_functor(cc_arg, cc_res), final_shape)
       | _, Error {Error.symptom = Error.Functor Error.Params res; _} ->
-          let got_params, got_res = res.got in
-          let expected_params, expected_res = res.expected in
+          let got_params, got_res = res.Error.got in
+          let expected_params, expected_res = res.Error.expected in
           let d = Error.sdiff
               (param1::got_params, got_res)
               (param2::expected_params, expected_res) in
@@ -554,7 +554,7 @@ and functor_param ~in_eq ~loc env ~mark subst param1 param2 =
   | Unit, Unit ->
       Ok Tcoerce_none, env, subst
   | Named (name1, arg1), Named (name2, arg2) ->
-      let arg2' = Subst.modtype Keep subst arg2 in
+      let arg2' = Subst.modtype Subst.Keep subst arg2 in
       let cc_arg =
         match
           modtypes ~in_eq ~loc env ~mark Subst.identity arg2' arg1
@@ -857,7 +857,7 @@ and modtype_infos ~in_eq ~loc env ~mark subst id info1 info2 =
     loc
     info1.mtd_attributes info2.mtd_attributes
     (Ident.name id);
-  let info2 = Subst.modtype_declaration Keep subst info2 in
+  let info2 = Subst.modtype_declaration Subst.Keep subst info2 in
   let r =
     match (info1.mtd_type, info2.mtd_type) with
       (None, None) -> Ok Tcoerce_none
@@ -995,7 +995,8 @@ module Functor_inclusion_diff = struct
       | Named(x,_) -> x
       | Unit -> None
 
-  let weight: Diff.change -> _ = function
+  let weight: Diff.change -> _ =
+    let open Diffing in function
     | Insert _ -> 10
     | Delete _ -> 10
     | Change _ -> 10
@@ -1030,7 +1031,9 @@ module Functor_inclusion_diff = struct
     | None -> state, [||]
     | Some (res, expansion) -> { state with res }, expansion
 
-  let update (d:Diff.change) st = match d with
+  let update (d:Diff.change) st =
+    let open Diffing in
+    match d with
     | Insert (Unit | Named (None,_))
     | Delete (Unit | Named (None,_))
     | Keep (Unit,_,_)
@@ -1040,12 +1043,12 @@ module Functor_inclusion_diff = struct
     | Insert (Named (Some id, arg))
     | Delete (Named (Some id, arg))
     | Change (Unit, Named (Some id, arg), _) ->
-        let arg' = Subst.modtype Keep st.subst arg in
+        let arg' = Subst.modtype Subst.Keep st.subst arg in
         let env = Env.add_module id Mp_present arg' st.env in
         expand_params { st with env }
     | Keep (Named (name1, _), Named (name2, arg2), _)
     | Change (Named (name1, _), Named (name2, arg2), _) -> begin
-        let arg' = Subst.modtype Keep st.subst arg2 in
+        let arg' = Subst.modtype Subst.Keep st.subst arg2 in
         match name1, name2 with
         | Some id1, Some id2 ->
             let env = Env.add_module id1 Mp_present arg' st.env in
@@ -1094,7 +1097,8 @@ module Functor_app_diff = struct
   end
   module Diff = Diffing.Define(Defs)
 
-  let weight: Diff.change -> _ = function
+  let weight: Diff.change -> _ =
+    let open Diffing in function
     | Insert _ -> 10
     | Delete _ -> 10
     | Change _ -> 10
@@ -1102,7 +1106,8 @@ module Functor_app_diff = struct
         (* We assign a small penalty to named arguments with
            non-matching names *)
         begin
-          let desc1 : Error.functor_arg_descr = fst param1 in
+          let open Error in
+          let desc1 : functor_arg_descr = fst param1 in
           match desc1, I.param_name param2 with
           | (Unit | Anonymous) , None
             -> 0
@@ -1115,6 +1120,7 @@ module Functor_app_diff = struct
 
   let update (d: Diff.change) (st:Defs.state) =
     let open Error in
+    let open Diffing in
     match d with
     | Insert _
     | Delete _
@@ -1131,12 +1137,12 @@ module Functor_app_diff = struct
               Option.map (fun res ->
                   let scope = Ctype.create_scope () in
                   let subst = Subst.add_module param arg Subst.identity in
-                  Subst.modtype (Rescope scope) subst res
+                  Subst.modtype (Subst.Rescope scope) subst res
                 )
-                st.res
+                st.I.Defs.res
             in
-            let subst = Subst.add_module param arg st.subst in
-            I.expand_params { st with subst; res }
+            let subst = Subst.add_module param arg st.I.Defs.subst in
+            I.expand_params { st with I.Defs.subst; I.Defs.res }
         | None ->
             st, [||]
         end
@@ -1144,12 +1150,12 @@ module Functor_app_diff = struct
     | Change ((Anonymous, mty), Named (param_name, _param), _) -> begin
         begin match param_name with
         | Some param ->
-            let mty' = Subst.modtype Keep st.subst mty in
+            let mty' = Subst.modtype Subst.Keep st.I.Defs.subst mty in
             let env =
-              Env.add_module ~arg:true param Mp_present mty' st.env in
+              Env.add_module ~arg:true param Mp_present mty' st.I.Defs.env in
             let res =
-              Option.map (Mtype.nondep_supertype env [param]) st.res in
-            I.expand_params { st with env; res}
+              Option.map (Mtype.nondep_supertype env [param]) st.I.Defs.res in
+            I.expand_params { st with I.Defs.env; res}
         | None ->
             st, [||]
         end
@@ -1162,13 +1168,13 @@ module Functor_app_diff = struct
         let test (state:Defs.state) (arg,arg_mty) param =
           let loc = Location.none in
           let res = match (arg:Error.functor_arg_descr), param with
-            | Unit, Unit -> Ok Tcoerce_none
-            | Unit, Named _ | (Anonymous | Named _), Unit ->
+            | Error.Unit, Unit -> Ok Tcoerce_none
+            | Error.Unit, Named _ | (Error.Anonymous | Error.Named _), Unit ->
                 Result.Error (Error.Incompatible_params(arg,param))
-            | ( Anonymous | Named _ ) , Named (_, param) ->
+            | (Error.Anonymous | Error.Named _ ), Named (_, param) ->
                 match
-                  modtypes ~in_eq:false ~loc state.env ~mark:Mark_neither
-                    state.subst arg_mty param Shape.dummy_mod
+                  modtypes ~in_eq:false ~loc state.I.Defs.env ~mark:Mark_neither
+                    state.I.Defs.subst arg_mty param Shape.dummy_mod
                 with
                 | Error mty -> Result.Error (Error.Mismatch mty)
                 | Ok (cc, _) -> Ok cc
@@ -1179,6 +1185,7 @@ module Functor_app_diff = struct
     in
     let args = Array.of_list args in
     let params = Array.of_list params in
+    let open I.Defs in
     let state : Defs.state =
       { env; subst = Subst.identity; res = I.keep_expansible_param res }
     in
@@ -1227,7 +1234,7 @@ let expand_module_alias ~strengthen env path =
   match expand_module_alias ~strengthen env path with
   | Ok x -> x
   | Result.Error _ ->
-      raise (Error(env,In_Expansion(Error.Unbound_module_path path)))
+      raise (Error(env,Error.In_Expansion(Error.Unbound_module_path path)))
 
 let check_modtype_equiv ~loc env id mty1 mty2 =
   match check_modtype_equiv ~in_eq:false ~loc env ~mark:Mark_both mty1 mty2 with

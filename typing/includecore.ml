@@ -217,12 +217,12 @@ let report_value_mismatch first second env ppf err =
   | Not_a_primitive ->
       pr "The implementation is not a primitive."
   | Type trace ->
-      Printtyp.report_moregen_error ppf Type_scheme env trace
+      Printtyp.report_moregen_error ppf Printtyp.Type_scheme env trace
         (fun ppf -> Format.fprintf ppf "The type")
         (fun ppf -> Format.fprintf ppf "is not compatible with the type")
 
 let report_type_inequality env ppf err =
-  Printtyp.report_equality_error ppf Type_scheme env err
+  Printtyp.report_equality_error ppf Printtyp.Type_scheme env err
     (fun ppf -> Format.fprintf ppf "The type")
     (fun ppf -> Format.fprintf ppf "is not equal to the type")
 
@@ -248,14 +248,15 @@ let report_label_mismatch first second env ppf err =
         (choose_other ord first second)
 
 let pp_record_diff first second prefix decl env ppf (x : record_change) =
+  let module DWK = Diffing_with_keys in
   match x with
-  | Delete cd ->
+  | DWK.Delete cd ->
       Format.fprintf ppf "%aAn extra field, %s, is provided in %s %s."
         prefix x (Ident.name cd.delete.ld_id) first decl
-  | Insert cd ->
+  | DWK.Insert cd ->
       Format.fprintf  ppf "%aA field, %s, is missing in %s %s."
         prefix x (Ident.name cd.insert.ld_id) first decl
-  | Change Type {got=lbl1; expected=lbl2; reason} ->
+  | DWK.Change DWK.Type {got=lbl1; expected=lbl2; reason} ->
       Format.fprintf ppf
         "@[<hv>%aFields do not match:@;<1 2>\
          %a@ is not the same as:\
@@ -264,13 +265,13 @@ let pp_record_diff first second prefix decl env ppf (x : record_change) =
         Printtyp.label lbl1
         Printtyp.label lbl2
         (report_label_mismatch first second env) reason
-  | Change Name n ->
+  | DWK.Change DWK.Name n ->
       Format.fprintf ppf "%aFields have different names, %s and %s."
         prefix x n.got n.expected
-  | Swap sw ->
+  | DWK.Swap sw ->
       Format.fprintf ppf "%aFields %s and %s have been swapped."
         prefix x sw.first sw.last
-  | Move {name; got; expected } ->
+  | DWK.Move {name; got; expected } ->
       Format.fprintf ppf
         "@[<2>%aField %s has been moved@ from@ position %d@ to %d.@]"
         prefix x name expected got
@@ -314,14 +315,15 @@ let report_constructor_mismatch first second decl env ppf err =
         (choose_other ord first second)
 
 let pp_variant_diff first second prefix decl env ppf (x : variant_change) =
+  let module DWK = Diffing_with_keys in
   match x with
-  | Delete cd ->
+  | DWK.Delete cd ->
       Format.fprintf ppf  "%aAn extra constructor, %s, is provided in %s %s."
         prefix x (Ident.name cd.delete.cd_id) first decl
-  | Insert cd ->
+  | DWK.Insert cd ->
       Format.fprintf ppf "%aA constructor, %s, is missing in %s %s."
         prefix x (Ident.name cd.insert.cd_id) first decl
-  | Change Type {got; expected; reason} ->
+  | DWK.Change DWK.Type {got; expected; reason} ->
       Format.fprintf ppf
         "@[<hv>%aConstructors do not match:@;<1 2>\
          %a@ is not the same as:\
@@ -330,15 +332,15 @@ let pp_variant_diff first second prefix decl env ppf (x : variant_change) =
         Printtyp.constructor got
         Printtyp.constructor expected
         (report_constructor_mismatch first second decl env) reason
-  | Change Name n ->
+  | DWK.Change DWK.Name n ->
       Format.fprintf ppf
         "%aConstructors have different names, %s and %s."
         prefix x n.got n.expected
-  | Swap sw ->
+  | DWK.Swap sw ->
       Format.fprintf ppf
         "%aConstructors %s and %s have been swapped."
         prefix x sw.first sw.last
-  | Move {name; got; expected} ->
+  | DWK.Move {name; got; expected} ->
       Format.fprintf ppf
         "@[<2>%aConstructor %s has been moved@ from@ position %d@ to %d.@]"
         prefix x name expected got
@@ -470,16 +472,18 @@ module Record_diffing = struct
   module Diff = Diffing_with_keys.Define(Defs)
 
   let update (d:Diff.change) (params1,params2 as st) =
+    let open Diffing in
     match d with
     | Insert _ | Change _ | Delete _ -> st
     | Keep (x,y,_) ->
         (* We need to add equality between existential type parameters
            (in inline records) *)
+        let open Diffing_with_keys in
         x.data.ld_type::params1, y.data.ld_type::params2
 
   let test _loc env (params1,params2)
-      ({pos; data=lbl1}: Diff.left)
-      ({data=lbl2; _ }: Diff.right)
+      ({Diffing_with_keys.pos; Diffing_with_keys.data=lbl1}: Diff.left)
+      ({Diffing_with_keys.data=lbl2; _ }: Diff.right)
     =
     let name1, name2 = Ident.name lbl1.ld_id, Ident.name lbl2.ld_id in
     if  name1 <> name2 then
@@ -498,7 +502,8 @@ module Record_diffing = struct
           )
       | None -> Ok ()
 
-  let weight: Diff.change -> _ = function
+  let weight: Diff.change -> _ =
+    let open Diffing in function
     | Insert _ -> 10
     | Delete _ -> 10
     | Keep _ -> 0
@@ -617,7 +622,8 @@ module Variant_diffing = struct
 
   let update _ st = st
 
-  let weight: D.change -> _ = function
+  let weight: D.change -> _ =
+    let open Diffing in function
     | Insert _ -> 10
     | Delete _ -> 10
     | Keep _ -> 0
@@ -627,8 +633,8 @@ module Variant_diffing = struct
 
 
   let test loc env (params1,params2)
-      ({pos; data=cd1}: D.left)
-      ({data=cd2; _}: D.right) =
+      ({Diffing_with_keys.pos; Diffing_with_keys.data=cd1}: D.left)
+      ({Diffing_with_keys.data=cd2; _}: D.right) =
     let name1, name2 = Ident.name cd1.cd_id, Ident.name cd2.cd_id in
     if  name1 <> name2 then
       let types_match =

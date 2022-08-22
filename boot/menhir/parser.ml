@@ -593,7 +593,7 @@ let lapply ~loc p1 p2 =
 let loc_map (f : 'a -> 'b) (x : 'a Location.loc) : 'b Location.loc =
   { x with txt = f x.txt }
 
-let make_ghost x = { x with loc = { x.loc with loc_ghost = true }}
+let make_ghost x = { x with loc = { x.loc with Location.loc_ghost = true }}
 
 let loc_last (id : Longident.t Location.loc) : string Location.loc =
   loc_map Longident.last id

@@ -473,6 +473,7 @@ let worst_msig decl = List.map (fun _ -> Deepsep) decl.type_params
     Note: this differs from {!Types.Separability.default_signature},
     which does not have access to the declaration and its immediacy. *)
 let msig_of_external_type decl =
+  let open Type_immediacy in
   match decl.type_immediate with
   | Always | Always_on_64bits -> best_msig decl
   | Unknown -> worst_msig decl

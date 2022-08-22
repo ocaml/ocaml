@@ -109,9 +109,9 @@ let update_rec_next rs rem =
   | Types.Trec_next -> rem
   | Types.(Trec_first | Trec_not) ->
       match rem with
-      | Types.Sig_type (id, decl, Trec_next, priv) :: rem ->
+      | Types.Sig_type (id, decl, Types.Trec_next, priv) :: rem ->
           Types.Sig_type (id, decl, rs, priv) :: rem
-      | Types.Sig_module (id, pres, mty, Trec_next, priv) :: rem ->
+      | Types.Sig_module (id, pres, mty, Types.Trec_next, priv) :: rem ->
           Types.Sig_module (id, pres, mty, rs, priv) :: rem
       | _ -> rem
 

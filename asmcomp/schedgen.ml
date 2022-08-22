@@ -139,7 +139,7 @@ let some_load =
   Iload {
     memory_chunk = Cmm.Word_int;
     addressing_mode = Arch.identity_addressing;
-    mutability = Mutable;
+    mutability = Asttypes.Mutable;
     is_atomic = false }
 
 (* The generic scheduler *)

@@ -49,7 +49,7 @@ module Equations = struct
 
   let add op_class op v m =
     match op_class with
-    | Op_load Mutable ->
+    | Op_load Asttypes.Mutable ->
       { m with mutable_load_equations =
                  Rhs_map.add op v m.mutable_load_equations }
     | _ ->
@@ -57,7 +57,7 @@ module Equations = struct
 
   let find op_class op m =
     match op_class with
-    | Op_load Mutable ->
+    | Op_load Asttypes.Mutable ->
       Rhs_map.find op m.mutable_load_equations
     | _ ->
       Rhs_map.find op m.other_equations
@@ -236,7 +236,7 @@ method class_of_operation op =
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat -> Op_pure
   | Ispecific _ -> Op_other
-  | Idls_get -> Op_load Mutable
+  | Idls_get -> Op_load Asttypes.Mutable
 
 (* Operations that are so cheap that it isn't worth factoring them. *)
 method is_cheap_operation op =

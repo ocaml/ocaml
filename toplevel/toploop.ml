@@ -34,8 +34,8 @@ let use_lexbuf ppf ~wrap_in_module lb name filename =
   (* Skip initial #! line if any *)
   Lexer.skip_hash_bang lb;
   Misc.protect_refs
-    [ R (Location.input_name, filename);
-      R (Location.input_lexbuf, Some lb); ]
+    [ Misc.R (Location.input_name, filename);
+      Misc.R (Location.input_lexbuf, Some lb); ]
     (fun () ->
     try
       List.iter
@@ -101,7 +101,7 @@ let use_file ppf name =
 
 let use_silently ppf name =
   Misc.protect_refs
-    [ R (use_print_results, false) ]
+    [ Misc.R (use_print_results, false) ]
     (fun () -> use_input ppf name)
 
 let load_file = load_file false

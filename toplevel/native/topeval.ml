@@ -52,10 +52,11 @@ let close_phrase lam =
   let open Lambda in
   Ident.Set.fold (fun id l ->
     let glb, pos = toplevel_value id in
+    let loc_unknown = Debuginfo.Scoped_location.Loc_unknown in
     let glob =
-      Lprim (Pfield (pos, Pointer, Mutable),
-             [Lprim (Pgetglobal glb, [], Loc_unknown)],
-             Loc_unknown)
+      Lprim (Pfield (pos, Pointer, Asttypes.Mutable),
+             [Lprim (Pgetglobal glb, [], loc_unknown)],
+             loc_unknown)
     in
     Llet(Strict, Pgenval, id, glob, l)
   ) (free_variables lam) lam
@@ -141,7 +142,7 @@ let name_expression ~loc ~attrs exp =
        vb_loc = loc; }
    in
    let item =
-     { str_desc = Tstr_value(Nonrecursive, [vb]);
+     { str_desc = Tstr_value(Asttypes.Nonrecursive, [vb]);
        str_loc = loc;
        str_env = exp.exp_env; }
    in
@@ -166,7 +167,8 @@ let execute_phrase print_outcome ppf phr =
       in
       if !Clflags.dump_typedtree then Printtyped.implementation ppf str;
       let sg' = Typemod.Signature_names.simplify newenv names sg in
-      ignore (Includemod.signatures oldenv ~mark:Mark_positive sg sg');
+      ignore
+        (Includemod.signatures oldenv ~mark:Includemod.Mark_positive sg sg');
       Typecore.force_delayed_checks ();
       let shape = Shape.local_reduce shape in
       if !Clflags.dump_shape then Shape.print ppf shape;

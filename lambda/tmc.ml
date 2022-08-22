@@ -124,14 +124,16 @@ end = struct
 
   let tmc_placeholder =
     (* we choose a placeholder whose tagged representation will be
-       reconizable. *)
-    Lconst (Const_base (Const_int (0xBBBB / 2)))
+       recognizable. *)
+    Lconst (Const_base (Asttypes.Const_int (0xBBBB / 2)))
 
   let with_placeholder constr (body : offset destination -> lambda) =
     let k_with_placeholder =
-      apply { constr with flag = Mutable } tmc_placeholder in
+      apply { constr with flag = Asttypes.Mutable } tmc_placeholder in
     let placeholder_pos = List.length constr.before in
-    let placeholder_pos_lam = Lconst (Const_base (Const_int placeholder_pos)) in
+    let placeholder_pos_lam =
+      Lconst (Const_base (Asttypes.Const_int placeholder_pos))
+    in
     let block_var = Ident.create_local "block" in
     Llet (Strict, Pgenval, block_var, k_with_placeholder,
           body {
@@ -731,7 +733,7 @@ let rec choice ctx t =
         in
         { apply with ap_tailcall } in
       { (Choice.lambda (Lapply apply)) with
-        direct = (fun () -> Lapply apply_no_bailout);
+        Choice.direct = (fun () -> Lapply apply_no_bailout);
       }
 
   and choice_makeblock ctx ~tail:_ (tag, flag, shape) blockargs loc =
@@ -781,7 +783,7 @@ let rec choice ctx t =
           Choice.dps = Dps.make (fun ~tail:_ ~dst:_ ->
             let arguments =
               let info (t : lambda Choice.t) : subterm_information = {
-                tmc_calls = t.tmc_calls;
+                tmc_calls = t.Choice.tmc_calls;
               } in
               {
                 explicit;
@@ -801,6 +803,7 @@ let rec choice ctx t =
             after;
             loc;
         } in
+        let open Choice in
         assert (choice.tmc_calls <> []);
         {
           Choice.direct = (fun () ->

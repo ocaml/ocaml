@@ -100,7 +100,7 @@ let main () =
     Array.length !argv >= 2 && Topcommon.is_command_like_name !argv.(1)
   in
   Topcommon.update_search_path_from_env ();
-  Compenv.readenv ppf Before_args;
+  Compenv.readenv ppf Compenv.Before_args;
   if display_deprecated_script_alert then
     Location.deprecated_script_alert program;
   Clflags.add_arguments __LOC__ Options.list;

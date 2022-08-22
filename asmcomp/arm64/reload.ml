@@ -24,7 +24,7 @@ inherit Reloadgen.reload_generic as super
 
 method! reload_operation op arg res =
   match op with
-  | Ispecific Imove32 ->
+  | Mach.Ispecific Arch.Imove32 ->
       (* Like Imove: argument or result can be on stack but not both *)
       begin match arg.(0), res.(0) with
       | {loc = Stack s1}, {loc = Stack s2} when s1 <> s2 ->

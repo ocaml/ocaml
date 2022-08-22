@@ -106,6 +106,7 @@ let test tst ppf arg =
 
 let operation op arg ppf res =
   if Array.length res > 0 then fprintf ppf "%a := " regs res;
+  let open Asttypes in
   match op with
   | Imove -> regs ppf arg
   | Ispill -> fprintf ppf "%a (spill)" regs arg

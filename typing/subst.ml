@@ -632,7 +632,7 @@ and force_modtype_decl mtd =
 
 and subst_lazy_signature scoping s sg =
   match Lazy_backtrack.get_contents sg with
-  | Left (scoping', s', sg) ->
+  | Either.Left (scoping', s', sg) ->
      let scoping =
        match scoping', scoping with
        | sc, Keep -> sc
@@ -640,7 +640,7 @@ and subst_lazy_signature scoping s sg =
      in
      let s = compose s' s in
      Lazy_backtrack.create (scoping, s, sg)
-  | Right sg ->
+  | Either.Right sg ->
      Lazy_backtrack.create (scoping, s, sg)
 
 and force_signature sg =

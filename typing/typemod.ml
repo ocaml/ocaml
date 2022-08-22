@@ -218,7 +218,7 @@ let check_type_decl env sg loc id row_id newdecl decl =
   in
   let newdecl = Subst.type_declaration sub newdecl in
   let decl = Subst.type_declaration sub decl in
-  let sg = List.map (Subst.signature_item Keep sub) sg in
+  let sg = List.map (Subst.signature_item Subst.Keep sub) sg in
   let env = Env.add_type ~check:false fresh_id newdecl env in
   let env =
     match fresh_row_id with
@@ -226,7 +226,8 @@ let check_type_decl env sg loc id row_id newdecl decl =
     | Some fresh_row_id -> Env.add_type ~check:false fresh_row_id newdecl env
   in
   let env = Env.add_signature sg env in
-  Includemod.type_declarations ~mark:Mark_both ~loc env fresh_id newdecl decl;
+  let open Includemod in
+  type_declarations ~mark:Mark_both ~loc env fresh_id newdecl decl;
   Typedecl.check_coherence env loc path newdecl
 
 let make_variance p n i =
@@ -515,7 +516,7 @@ let merge_constraint initial_env loc sg lid constr =
             type_is_newtype = false;
             type_expansion_scope = Btype.lowest_level;
             type_attributes = [];
-            type_immediate = Unknown;
+            type_immediate = Type_immediacy.Unknown;
             type_unboxed_default = false;
             type_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
           }
@@ -601,7 +602,7 @@ let merge_constraint initial_env loc sg lid constr =
         let mty = Mtype.scrape_for_type_of ~remove_aliases sig_env mty in
         let md'' = { md' with md_type = mty } in
         let newmd = Mtype.strengthen_decl ~aliasable:false sig_env md'' path in
-        ignore(Includemod.modtypes  ~mark:Mark_both ~loc sig_env
+        ignore(Includemod.modtypes  ~mark:Includemod.Mark_both ~loc sig_env
                  newmd.md_type md.md_type);
         return
           ~replace_by:(Some(Sig_module(id, pres, newmd, rs, priv)))
@@ -611,7 +612,8 @@ let merge_constraint initial_env loc sg lid constr =
         let sig_env = Env.add_signature sg_for_env outer_sig_env in
         let aliasable = not (Env.is_functor_arg path sig_env) in
         ignore
-          (Includemod.strengthened_module_decl ~loc ~mark:Mark_both
+          (Includemod.strengthened_module_decl ~loc
+             ~mark:Includemod.Mark_both
              ~aliasable sig_env md' path md);
         real_ids := [Pident id];
         return ~replace_by:None (Pident id, lid, Twith_modsubst (path, lid'))
@@ -677,7 +679,7 @@ let merge_constraint initial_env loc sg lid constr =
           by the caller. So what we do with the scope doesn't really matter. But
           making it local makes it unlikely that we will ever use the result of
           this function unfreshened without issue. *)
-       Subst.signature Make_local sub sg
+       Subst.signature Subst.Make_local sub sg
     | (_, _, Twith_modsubst (real_path, _)) ->
        let sub = Subst.change_locs Subst.identity loc in
        let sub =
@@ -687,12 +689,12 @@ let merge_constraint initial_env loc sg lid constr =
            !real_ids
        in
        (* See explanation in the [Twith_typesubst] case above. *)
-       Subst.signature Make_local sub sg
+       Subst.signature Subst.Make_local sub sg
     | (_, _, Twith_modtypesubst tmty) ->
         let add s p = Subst.add_modtype_path p tmty.mty_type s in
         let sub = Subst.change_locs Subst.identity loc in
         let sub = List.fold_left add sub !real_ids in
-        Subst.signature Make_local sub sg
+        Subst.signature Subst.Make_local sub sg
     | _ ->
        sg
     in
@@ -1118,7 +1120,9 @@ end = struct
     in
     (* we can ignore x.pre_ghosts: they are eliminated by strengthening, and
        thus never appear in includes *)
-     List.iter (check ?info names loc) (Signature_group.rec_items item.group)
+     List.iter
+       (check ?info names loc)
+       (Signature_group.rec_items item.Signature_group.group)
 
   (*
     Before applying local module type substitutions where the
@@ -1187,7 +1191,7 @@ end = struct
           else
             begin
               check_unpackable_modtypes ~loc:user_loc ~env to_remove component;
-              Subst.signature_item Keep to_remove.subst component
+              Subst.signature_item Subst.Keep to_remove.subst component
             end
         in
         let component =
@@ -1761,7 +1765,7 @@ and transl_recmodule_modtypes env sdecls =
       (fun env ->
          Option.fold ~none:env ~some:(fun id -> (* cf #5965 *)
            Env.enter_unbound_module (Ident.name id)
-             Mod_unbound_illegal_recursion env
+             Env.Mod_unbound_illegal_recursion env
          ))
       env ids
   in
@@ -1919,7 +1923,7 @@ let check_recmodule_inclusion env bindings =
      the number of mutually recursive declarations. *)
 
   let subst_and_strengthen env scope s id mty =
-    let mty = Subst.modtype (Rescope scope) s mty in
+    let mty = Subst.modtype (Subst.Rescope scope) s mty in
     match id with
     | None -> mty
     | Some id ->
@@ -1971,12 +1975,12 @@ let check_recmodule_inclusion env bindings =
          and insert coercion if needed *)
       let check_inclusion
             (id, name, mty_decl, modl, mty_actual, attrs, loc, shape, uid) =
-        let mty_decl' = Subst.modtype (Rescope scope) s mty_decl.mty_type
+        let mty_decl' = Subst.modtype (Subst.Rescope scope) s mty_decl.mty_type
         and mty_actual' = subst_and_strengthen env scope s id mty_actual in
         let coercion, shape =
           try
             Includemod.modtypes_with_shape ~shape
-              ~loc:modl.mod_loc ~mark:Mark_both
+              ~loc:modl.mod_loc ~mark:Includemod.Mark_both
               env mty_actual' mty_decl'
           with Includemod.Error msg ->
             raise(Error(modl.mod_loc, env, Not_included msg)) in
@@ -2045,7 +2049,7 @@ let modtype_of_package env loc p fl =
     package_constraints env loc (Mty_ident p)
       (List.map (fun (n, t) -> (Longident.flatten n, t)) fl)
   in
-  Subst.modtype Keep Subst.identity mty
+  Subst.modtype Subst.Keep Subst.identity mty
 
 let package_subtype env p1 fl1 p2 fl2 =
   let mkmty p fl =
@@ -2057,7 +2061,7 @@ let package_subtype env p1 fl1 p2 fl2 =
   | exception Error(_, _, Cannot_scrape_package_type _) -> false
   | mty1, mty2 ->
     let loc = Location.none in
-    match Includemod.modtypes ~loc ~mark:Mark_both env mty1 mty2 with
+    match Includemod.modtypes ~loc ~mark:Includemod.Mark_both env mty1 mty2 with
     | Tcoerce_none -> true
     | _ | exception Includemod.Error _ -> false
 
@@ -2065,8 +2069,8 @@ let () = Ctype.package_subtype := package_subtype
 
 let wrap_constraint_package env mark arg mty explicit =
   let mark = if mark then Includemod.Mark_both else Includemod.Mark_neither in
-  let mty1 = Subst.modtype Keep Subst.identity arg.mod_type in
-  let mty2 = Subst.modtype Keep Subst.identity mty in
+  let mty1 = Subst.modtype Subst.Keep Subst.identity arg.mod_type in
+  let mty2 = Subst.modtype Subst.Keep Subst.identity mty in
   let coercion =
     try
       Includemod.modtypes ~loc:arg.mod_loc env ~mark mty1 mty2
@@ -2305,7 +2309,7 @@ and type_one_application ~ctx:(apply_loc,md_f,args)
       let coercion =
         try
           Includemod.modtypes
-            ~loc:app_view.arg.mod_loc ~mark:Mark_both env
+            ~loc:app_view.arg.mod_loc ~mark:Includemod.Mark_both env
             app_view.arg.mod_type mty_param
         with Includemod.Error _ ->
           let args = List.map simplify_app_summary args in
@@ -2322,7 +2326,7 @@ and type_one_application ~ctx:(apply_loc,md_f,args)
               | None -> Subst.identity
               | Some p -> Subst.add_module p path Subst.identity
             in
-            Subst.modtype (Rescope scope) subst mty_res
+            Subst.modtype (Subst.Rescope scope) subst mty_res
         | None ->
             let env, nondep_mty =
               match param with
@@ -2341,7 +2345,8 @@ and type_one_application ~ctx:(apply_loc,md_f,args)
             in
             begin match
               Includemod.modtypes
-                ~loc:app_view.loc ~mark:Mark_neither env mty_res nondep_mty
+                ~loc:app_view.loc ~mark:Includemod.Mark_neither env
+                mty_res nondep_mty
             with
             | Tcoerce_none -> ()
             | _ ->
@@ -3023,7 +3028,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
           in
           let dclsig = Env.read_signature modulename intf_file in
           let coercion, shape =
-            Includemod.compunit initial_env ~mark:Mark_positive
+            Includemod.compunit initial_env ~mark:Includemod.Mark_positive
               sourcefile sg intf_file dclsig shape
           in
           Typecore.force_delayed_checks ();
@@ -3044,7 +3049,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
           Location.prerr_warning (Location.in_file sourcefile)
             Warnings.Missing_mli;
           let coercion, shape =
-            Includemod.compunit initial_env ~mark:Mark_positive
+            Includemod.compunit initial_env ~mark:Includemod.Mark_positive
               sourcefile sg "(inferred signature)" simple_sg shape
           in
           check_nongen_signature finalenv simple_sg;
@@ -3113,7 +3118,7 @@ let package_signatures units =
     (fun (_, newid, sg) ->
       (* This signature won't be used for anything, it'll just be saved in a cmi
          and cmt. *)
-      let sg = Subst.signature Make_local subst sg in
+      let sg = Subst.signature Subst.Make_local subst sg in
       let md =
         { md_type=Mty_signature sg;
           md_attributes=[];
@@ -3160,7 +3165,7 @@ let package_units initial_env objfiles cmifile modulename =
     end;
     let dclsig = Env.read_signature modulename cmifile in
     let cc, _shape =
-      Includemod.compunit initial_env ~mark:Mark_both
+      Includemod.compunit initial_env ~mark:Includemod.Mark_both
         "(obtained by packing)" sg mlifile dclsig shape
     in
     Cmt_format.save_cmt  (prefix ^ ".cmt") modulename

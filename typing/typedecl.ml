@@ -117,7 +117,7 @@ let enter_type rec_flag env sdecl (id, uid) =
       type_expansion_scope = Btype.lowest_level;
       type_loc = sdecl.ptype_loc;
       type_attributes = sdecl.ptype_attributes;
-      type_immediate = Unknown;
+      type_immediate = Type_immediacy.Unknown;
       type_unboxed_default = false;
       type_uid = uid;
     }
@@ -447,7 +447,7 @@ let transl_declaration env sdecl (id, uid) =
         type_expansion_scope = Btype.lowest_level;
         type_loc = sdecl.ptype_loc;
         type_attributes = sdecl.ptype_attributes;
-        type_immediate = Unknown;
+        type_immediate = Type_immediacy.Unknown;
         type_unboxed_default = unboxed_default;
         type_uid = uid;
       } in
@@ -1004,7 +1004,7 @@ let transl_extension_constructor ~scope env type_path type_params
         in
         let cdescr = Env.lookup_constructor ~loc:lid.loc usage lid.txt env in
         let (args, cstr_res, _ex) =
-          Ctype.instance_constructor Keep_existentials_flexible cdescr
+          Ctype.instance_constructor Ctype.Keep_existentials_flexible cdescr
         in
         let res, ret_type =
           if cdescr.cstr_generalized then
@@ -1515,7 +1515,7 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
       type_expansion_scope = Btype.lowest_level;
       type_loc = loc;
       type_attributes = sdecl.ptype_attributes;
-      type_immediate = Unknown;
+      type_immediate = Type_immediacy.Unknown;
       type_unboxed_default;
       type_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
     }
@@ -1594,7 +1594,7 @@ let abstract_type_decl ~injective arity =
       type_expansion_scope = Btype.lowest_level;
       type_loc = Location.none;
       type_attributes = [];
-      type_immediate = Unknown;
+      type_immediate = Type_immediacy.Unknown;
       type_unboxed_default = false;
       type_uid = Uid.internal_not_actually_unique;
      } in
@@ -1723,8 +1723,8 @@ let report_error ppf = function
              All uses need to match the definition for the recursive type \
              to be regular.@]"
             (Path.name definition)
-            !Oprint.out_type (Printtyp.tree_of_typexp Type defined_as)
-            !Oprint.out_type (Printtyp.tree_of_typexp Type used_as)
+            !Oprint.out_type (Printtyp.tree_of_typexp Printtyp.Type defined_as)
+            !Oprint.out_type (Printtyp.tree_of_typexp Printtyp.Type used_as)
       | _ :: _ ->
           fprintf ppf
             "@[<hv>This recursive type is not regular.@ \
@@ -1734,8 +1734,8 @@ let report_error ppf = function
              All uses need to match the definition for the recursive type \
              to be regular.@]"
             (Path.name definition)
-            !Oprint.out_type (Printtyp.tree_of_typexp Type defined_as)
-            !Oprint.out_type (Printtyp.tree_of_typexp Type used_as)
+            !Oprint.out_type (Printtyp.tree_of_typexp Printtyp.Type defined_as)
+            !Oprint.out_type (Printtyp.tree_of_typexp Printtyp.Type used_as)
             pp_expansions expansions
       end
   | Inconsistent_constraint (env, err) ->
@@ -1825,6 +1825,7 @@ let report_error ppf = function
         | false, true  -> inj ^ "contravariant"
         | false, false -> if inj = "" then "unrestricted" else inj
       in
+      let open Typedecl_variance in
       (match n with
        | Variance_not_reflected ->
            fprintf ppf "@[%s@ %s@ It"

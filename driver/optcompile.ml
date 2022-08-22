@@ -96,7 +96,8 @@ let implementation ~backend ~start_from ~source_file ~output_prefix =
     else clambda info backend typed
   in
   with_info ~source_file ~output_prefix ~dump_ext:"cmx" @@ fun info ->
-  match (start_from:Clflags.Compiler_pass.t) with
+  let open Clflags.Compiler_pass in
+  match start_from with
   | Parsing -> Compile_common.implementation info ~backend
   | Emit -> emit info
   | _ -> Misc.fatal_errorf "Cannot start from %s"

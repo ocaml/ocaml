@@ -356,6 +356,8 @@ type program =
     required_globals : Ident.Set.t;
     code : lambda }
 
+let loc_unknown = Debuginfo.Scoped_location.Loc_unknown
+
 let const_int n = Const_base (Const_int n)
 
 let const_unit = const_int 0
@@ -414,7 +416,7 @@ let make_key e =
     | Lapply ap ->
         Lapply {ap with ap_func = tr_rec env ap.ap_func;
                         ap_args = tr_recs env ap.ap_args;
-                        ap_loc = Loc_unknown}
+                        ap_loc = loc_unknown}
     | Llet (Alias,_k,x,ex,e) -> (* Ignore aliases -> substitute *)
         let ex = tr_rec env ex in
         tr_rec (Ident.add x ex env) e
@@ -430,7 +432,7 @@ let make_key e =
         let y = make_key x in
         Lmutlet (k,y,ex,tr_rec (Ident.add x (Lmutvar y) env) e)
     | Lprim (p,es,_) ->
-        Lprim (p,tr_recs env es, Loc_unknown)
+        Lprim (p,tr_recs env es, loc_unknown)
     | Lswitch (e,sw,loc) ->
         Lswitch (tr_rec env e,tr_sw env sw,loc)
     | Lstringswitch (e,sw,d,_) ->
@@ -438,7 +440,7 @@ let make_key e =
           (tr_rec env e,
            List.map (fun (s,e) -> s,tr_rec env e) sw,
            tr_opt env d,
-          Loc_unknown)
+          loc_unknown)
     | Lstaticraise (i,es) ->
         Lstaticraise (i,tr_recs env es)
     | Lstaticcatch (e1,xs,e2) ->
@@ -452,7 +454,7 @@ let make_key e =
     | Lassign (x,e) ->
         Lassign (x,tr_rec env e)
     | Lsend (m,e1,e2,es,_loc) ->
-        Lsend (m,tr_rec env e1,tr_rec env e2,tr_recs env es,Loc_unknown)
+        Lsend (m,tr_rec env e1,tr_rec env e2,tr_recs env es,loc_unknown)
     | Lifused (id,e) -> Lifused (id,tr_rec env e)
     | Lletrec _|Lfunction _
     | Lfor _ | Lwhile _
@@ -697,7 +699,7 @@ let transl_prim mod_name name =
   let env = Env.add_persistent_structure pers Env.empty in
   let lid = Longident.Ldot (Longident.Lident mod_name, name) in
   match Env.find_value_by_name lid env with
-  | path, _ -> transl_value_path Loc_unknown env path
+  | path, _ -> transl_value_path loc_unknown env path
   | exception Not_found ->
       fatal_error ("Primitive " ^ name ^ " not found.")
 

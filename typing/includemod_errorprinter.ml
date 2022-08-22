@@ -92,6 +92,7 @@ module Illegal_permutation = struct
 
   (** We extract a lone transposition from a full tree of permutations. *)
   let rec transposition_under path (coerc:Typedtree.module_coercion) =
+    let open Typedtree in
     match coerc with
     | Tcoerce_structure(c,_) ->
         either
@@ -140,7 +141,9 @@ module Illegal_permutation = struct
 
   (* Find module type at position [path] and convert the [coerce_pos] path to
      a [pos] path *)
-  let rec find env ctx path (mt:Types.module_type) = match mt, path with
+  let rec find env ctx path (mt:Types.module_type) =
+    let open Types in
+    match mt, path with
     | (Mty_ident p | Mty_alias p), _ ->
         begin match (Env.find_modtype p env).mtd_type with
         | None -> raise Not_found
@@ -326,7 +329,7 @@ module With_shorthand = struct
 
   let qualified_param x = match functor_param x with
     | Unit -> Format.dprintf "()"
-    | Named (None, Original (Mty_signature []) ) ->
+    | Named (None, Original (Types.Mty_signature []) ) ->
         Format.dprintf "(sig end)"
     | Named (None, short_mty) ->
         pp dmodtype short_mty
@@ -336,7 +339,8 @@ module With_shorthand = struct
 
   let definition_of_argument ua =
     let arg, mty = ua.item in
-    match (arg: Err.functor_arg_descr) with
+    let open Err in
+    match (arg: functor_arg_descr) with
     | Unit -> Format.dprintf "()"
     | Named p ->
         let mty = modtype { ua with item = mty } in
@@ -354,7 +358,8 @@ module With_shorthand = struct
 
   let arg ua =
     let arg, mty = ua.item in
-    match (arg: Err.functor_arg_descr) with
+    let open Err in
+    match (arg: functor_arg_descr) with
     | Unit -> Format.dprintf "()"
     | Named p -> fun ppf -> Printtyp.path ppf p
     | Anonymous ->
@@ -384,7 +389,8 @@ module Functor_suberror = struct
     Printtyp.functor_parameters ~sep elt params
 
   let expected d =
-    let extract: _ Diffing.change -> _ = function
+    let extract: _ Diffing.change -> _ =
+      let open Diffing in function
       | Insert mty
       | Keep(_,mty,_)
       | Change (_,mty,_) as x ->
@@ -407,7 +413,8 @@ module Functor_suberror = struct
   module Inclusion = struct
 
     let got d =
-      let extract: _ Diffing.change -> _ = function
+      let extract: _ Diffing.change -> _ =
+      let open Diffing in function
       | Delete mty
       | Keep (mty,_,_)
       | Change (mty,_,_) as x ->
@@ -450,7 +457,7 @@ module Functor_suberror = struct
 
       let patch env got expected =
         Includemod.Functor_inclusion_diff.diff env got expected
-        |> prepare_patch ~drop:false ~ctx:Inclusion
+        |> prepare_patch ~drop:false ~ctx:With_shorthand.Inclusion
 
     end
 
@@ -458,10 +465,11 @@ module Functor_suberror = struct
 
     let patch env ~f ~args =
       Includemod.Functor_app_diff.diff env ~f ~args
-      |> prepare_patch ~drop:true ~ctx:App
+      |> prepare_patch ~drop:true ~ctx:With_shorthand.App
 
     let got d =
-      let extract: _ Diffing.change -> _ = function
+      let extract: _ Diffing.change -> _ =
+      let open Diffing in function
         | Delete mty
         | Keep (mty,_,_)
         | Change (mty,_,_) as x ->
@@ -479,7 +487,7 @@ module Functor_suberror = struct
 
     let ok x y =
       let pp_orig_name = match With_shorthand.functor_param y with
-        | With_shorthand.Named (_, Original mty) ->
+        | With_shorthand.Named (_, With_shorthand.Original mty) ->
             Format.dprintf " %t" (dmodtype mty)
         | _ -> ignore
       in
@@ -608,51 +616,54 @@ let core env id x =
         (Printtyp.tree_of_value_description id diff.expected)
         (Includecore.report_value_mismatch
            "the first" "the second" env) diff.symptom
-        show_locs (diff.got.val_loc, diff.expected.val_loc)
+        show_locs (diff.got.Types.val_loc, diff.expected.Types.val_loc)
         Printtyp.Conflicts.print_explanations
   | Err.Type_declarations diff ->
       Format.dprintf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]%a%a%t@]"
         "Type declarations do not match"
         !Oprint.out_sig_item
-        (Printtyp.tree_of_type_declaration id diff.got Trec_first)
+        (Printtyp.tree_of_type_declaration id diff.got Types.Trec_first)
         "is not included in"
         !Oprint.out_sig_item
-        (Printtyp.tree_of_type_declaration id diff.expected Trec_first)
+        (Printtyp.tree_of_type_declaration id diff.expected Types.Trec_first)
         (Includecore.report_type_mismatch
            "the first" "the second" "declaration" env) diff.symptom
-        show_locs (diff.got.type_loc, diff.expected.type_loc)
+        show_locs (diff.got.Types.type_loc, diff.expected.Types.type_loc)
         Printtyp.Conflicts.print_explanations
   | Err.Extension_constructors diff ->
       Format.dprintf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]@ %a%a%t@]"
         "Extension declarations do not match"
         !Oprint.out_sig_item
-        (Printtyp.tree_of_extension_constructor id diff.got Text_first)
+        (Printtyp.tree_of_extension_constructor id diff.got Types.Text_first)
         "is not included in"
         !Oprint.out_sig_item
-        (Printtyp.tree_of_extension_constructor id diff.expected Text_first)
+        (Printtyp.tree_of_extension_constructor
+          id diff.expected Types.Text_first)
         (Includecore.report_extension_constructor_mismatch
            "the first" "the second" "declaration" env) diff.symptom
-        show_locs (diff.got.ext_loc, diff.expected.ext_loc)
+        show_locs (diff.got.Types.ext_loc, diff.expected.Types.ext_loc)
         Printtyp.Conflicts.print_explanations
   | Err.Class_type_declarations diff ->
       Format.dprintf
         "@[<hv 2>Class type declarations do not match:@ \
          %a@;<1 -2>does not match@ %a@]@ %a%t"
         !Oprint.out_sig_item
-        (Printtyp.tree_of_cltype_declaration id diff.got Trec_first)
+        (Printtyp.tree_of_cltype_declaration id diff.got Types.Trec_first)
         !Oprint.out_sig_item
-        (Printtyp.tree_of_cltype_declaration id diff.expected Trec_first)
-        (Includeclass.report_error Type_scheme) diff.symptom
+        (Printtyp.tree_of_cltype_declaration id diff.expected Types.Trec_first)
+        (Includeclass.report_error Printtyp.Type_scheme) diff.symptom
         Printtyp.Conflicts.print_explanations
   | Err.Class_declarations {got;expected;symptom} ->
-      let t1 = Printtyp.tree_of_class_declaration id got Trec_first in
-      let t2 = Printtyp.tree_of_class_declaration id expected Trec_first in
+      let t1 = Printtyp.tree_of_class_declaration id got Types.Trec_first in
+      let t2 =
+        Printtyp.tree_of_class_declaration id expected Types.Trec_first
+      in
       Format.dprintf
         "@[<hv 2>Class declarations do not match:@ \
          %a@;<1 -2>does not match@ %a@]@ %a%t"
         !Oprint.out_sig_item t1
         !Oprint.out_sig_item t2
-        (Includeclass.report_error Type_scheme) symptom
+        (Includeclass.report_error Printtyp.Type_scheme) symptom
         Printtyp.Conflicts.print_explanations
 
 let missing_field ppf item =
@@ -809,12 +820,13 @@ and module_type_decl ~expansion_token ~env ~before ~ctx id diff =
       begin match diff.got.Types.mtd_type with
       | None -> assert false
       | Some mty ->
-          with_context (Modtype id::ctx)
+          with_context (Context.Modtype id::ctx)
             (Illegal_permutation.pp Context.alt_pp env) (mty,c)
           :: before
       end
 
 and functor_arg_diff ~expansion_token env (patch: _ Diffing.change) =
+  let open Diffing in
   match patch with
   | Insert mty -> Functor_suberror.Inclusion.insert mty
   | Delete mty -> Functor_suberror.Inclusion.delete mty
@@ -830,6 +842,7 @@ and functor_arg_diff ~expansion_token env (patch: _ Diffing.change) =
       Functor_suberror.Inclusion.diff g e more
 
 let functor_app_diff ~expansion_token env  (patch: _ Diffing.change) =
+  let open Diffing in
   match patch with
   | Insert mty ->  Functor_suberror.App.insert mty
   | Delete mty ->  Functor_suberror.App.delete mty
@@ -845,6 +858,7 @@ let functor_app_diff ~expansion_token env  (patch: _ Diffing.change) =
       Functor_suberror.App.diff g e more
 
 let module_type_subst ~env id diff =
+  let open Context in
   match diff.symptom with
   | Not_less_than mts ->
       module_type ~expansion_token:true ~eqmode:true ~before:[] ~env
@@ -900,9 +914,9 @@ let report_apply_error ~loc env (lid_app, mty_f, args) =
   match d with
   (* We specialize the one change and one argument case to remove the
      presentation of the functor arguments *)
-  | [ _,  Change (_, _, Err.Incompatible_params (i,_)) ] ->
+  | [ _,  Diffing.Change (_, _, Err.Incompatible_params (i,_)) ] ->
       Location.errorf ~loc "%t" (Functor_suberror.App.incompatible i)
-  | [ _, Change (g, e,  Err.Mismatch mty_diff) ] ->
+  | [ _, Diffing.Change (g, e,  Err.Mismatch mty_diff) ] ->
       let more () =
         subcase_list @@
         module_type_symptom ~eqmode:false ~expansion_token:true ~env ~before:[]

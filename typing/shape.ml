@@ -456,10 +456,12 @@ let local_reduce shape =
 let dummy_mod = { uid = None; desc = Struct Item.Map.empty }
 
 let of_path ~find_shape ~namespace =
-  let rec aux : Sig_component_kind.t -> Path.t -> t = fun ns -> function
-    | Pident id -> find_shape ns id
-    | Pdot (path, name) -> proj (aux Module path) (name, ns)
-    | Papply (p1, p2) -> app (aux Module p1) ~arg:(aux Module p2)
+  let module SigCompKind = Sig_component_kind in
+  let rec aux : SigCompKind.t -> Path.t -> t = fun ns -> function
+    | Path.Pident id -> find_shape ns id
+    | Path.Pdot (path, name) -> proj (aux SigCompKind.Module path) (name, ns)
+    | Path.Papply (p1, p2) ->
+      app (aux SigCompKind.Module p1) ~arg:(aux SigCompKind.Module p2)
   in
   aux namespace
 

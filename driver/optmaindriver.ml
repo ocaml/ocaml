@@ -39,7 +39,7 @@ let main argv ppf =
   native_code := true;
   let program = "ocamlopt" in
   match
-    Compenv.readenv ppf Before_args;
+    Compenv.readenv ppf Compenv.Before_args;
     Clflags.add_arguments __LOC__ (Arch.command_line_options @ Options.list);
     Clflags.add_arguments __LOC__
       ["-depend", Arg.Unit Makedepend.main_from_option,
@@ -63,7 +63,7 @@ let main argv ppf =
         exit 2
       end
     end;
-    Compenv.readenv ppf Before_link;
+    Compenv.readenv ppf Compenv.Before_link;
     if
       List.length (List.filter (fun x -> !x)
                      [make_package; make_archive; shared;

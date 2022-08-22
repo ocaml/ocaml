@@ -47,7 +47,7 @@ module EvalBase = struct
     if Ident.persistent id || Ident.global id then begin
       try
         Symtable.get_global_value id
-      with Symtable.Error (Undefined_global name) ->
+      with Symtable.Error (Symtable.Undefined_global name) ->
         raise (Undefined_global name)
     end else begin
       let name = Translmod.toplevel_name id in
@@ -125,7 +125,8 @@ let execute_phrase print_outcome ppf phr =
       in
       if !Clflags.dump_typedtree then Printtyped.implementation ppf str;
       let sg' = Typemod.Signature_names.simplify newenv sn sg in
-      ignore (Includemod.signatures ~mark:Mark_positive oldenv sg sg');
+      ignore
+        (Includemod.signatures ~mark:Includemod.Mark_positive oldenv sg sg');
       Typecore.force_delayed_checks ();
       let shape = Shape.local_reduce shape in
       if !Clflags.dump_shape then Shape.print ppf shape;

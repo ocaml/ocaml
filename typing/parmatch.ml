@@ -1179,7 +1179,7 @@ let rec list_satisfying_vectors pss qs =
                   in
                   if full_match false constrs then for_constrs () else
                   begin match p.pat_desc with
-                  | Construct _ ->
+                  | Patterns.Head.Construct _ ->
                       (* activate this code
                          for checking non-gadt constructors *)
                       wild default (build_other_constrs constrs p)
@@ -1435,7 +1435,7 @@ let rec pressure_variants tdefs = function
               | _, None -> ()
               | (d, _) :: _, Some env ->
                 match d.pat_desc with
-                | Variant { type_row; _ } ->
+                | Patterns.Head.Variant { type_row; _ } ->
                   let row = type_row () in
                   if Btype.has_fixed_explanation row
                   || pressure_variants None default then ()

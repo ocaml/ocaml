@@ -177,7 +177,7 @@ let build_initial_env add_type add_extension empty_env =
        type_is_newtype = false;
        type_expansion_scope = lowest_level;
        type_attributes = [];
-       type_immediate = Unknown;
+       type_immediate = Type_immediacy.Unknown;
        type_unboxed_default = false;
        type_uid = Uid.of_predef_id type_ident;
       }
@@ -205,14 +205,14 @@ let build_initial_env add_type add_extension empty_env =
        ~variance:Variance.full
        ~separability:Separability.Ind
   |> add_type ident_bool
-       ~immediate:Always
+       ~immediate:Type_immediacy.Always
        ~kind:(variant [cstr ident_false []; cstr ident_true []])
-  |> add_type ident_char ~immediate:Always
+  |> add_type ident_char ~immediate:Type_immediacy.Always
   |> add_type ident_exn ~kind:Type_open
   |> add_type ident_extension_constructor
   |> add_type ident_float
   |> add_type ident_floatarray
-  |> add_type ident_int ~immediate:Always
+  |> add_type ident_int ~immediate:Type_immediacy.Always
   |> add_type ident_int32
   |> add_type ident_int64
   |> add_type1 ident_lazy_t
@@ -232,7 +232,7 @@ let build_initial_env add_type add_extension empty_env =
   |> add_type ident_string
   |> add_type ident_bytes
   |> add_type ident_unit
-       ~immediate:Always
+       ~immediate:Type_immediacy.Always
        ~kind:(variant [cstr ident_void []])
   (* Predefined exceptions - alphabetical order *)
   |> add_extension ident_assert_failure

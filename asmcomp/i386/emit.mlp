@@ -597,10 +597,10 @@ let emit_instr env fallthrough i =
   | Lop(Ialloc { bytes = n; dbginfo }) ->
       if env.f.fun_fast then begin
         load_domain_state ebx;
-        I.mov (domain_field Domain_young_ptr RBX) eax;
+        I.mov (domain_field Domainstate.Domain_young_ptr RBX) eax;
         I.sub (int n) eax;
-        I.mov eax (domain_field Domain_young_ptr RBX);
-        I.cmp (domain_field Domain_young_limit RBX) eax;
+        I.mov eax (domain_field Domainstate.Domain_young_ptr RBX);
+        I.cmp (domain_field Domainstate.Domain_young_limit RBX) eax;
         let lbl_call_gc = new_label() in
         let lbl_frame =
           record_frame_label env i.live (Dbg_alloc dbginfo) in
@@ -858,14 +858,14 @@ let emit_instr env fallthrough i =
       if trap_frame_size > 8 then
         I.sub (int (trap_frame_size - 8)) esp;
       load_domain_state edx;
-      I.push (domain_field Domain_exn_handler RDX);
+      I.push (domain_field Domainstate.Domain_exn_handler RDX);
       cfi_adjust_cfa_offset trap_frame_size;
-      I.mov esp (domain_field Domain_exn_handler RDX);
+      I.mov esp (domain_field Domainstate.Domain_exn_handler RDX);
       env.stack_offset <- env.stack_offset + trap_frame_size
   | Lpoptrap ->
       I.mov edx (mem32 DWORD 4 RSP);
       load_domain_state edx;
-      I.pop (domain_field Domain_exn_handler RDX);
+      I.pop (domain_field Domainstate.Domain_exn_handler RDX);
       I.pop edx;
       if trap_frame_size > 8 then
         I.add (int (trap_frame_size - 8)) esp;
@@ -875,16 +875,15 @@ let emit_instr env fallthrough i =
       begin match k with
       | Lambda.Raise_regular ->
           load_domain_state ebx;
-          I.mov (int 0) (domain_field Domain_backtrace_pos RBX);
+          I.mov (int 0) (domain_field Domainstate.Domain_backtrace_pos RBX);
           emit_call "caml_raise_exn";
           record_frame env Reg.Set.empty (Dbg_raise i.dbg)
       | Lambda.Raise_reraise ->
           emit_call "caml_raise_exn";
           record_frame env Reg.Set.empty (Dbg_raise i.dbg)
       | Lambda.Raise_notrace ->
-          load_domain_state ebx;
-          I.mov (domain_field Domain_exn_handler RBX) esp;
-          I.pop (domain_field Domain_exn_handler RBX);
+          load_domain_state ebx;          I.mov (domain_field Domainstate.Domain_exn_handler RBX) esp;
+          I.pop (domain_field Domainstate.Domain_exn_handler RBX);
           if trap_frame_size > 8 then
             I.add (int (trap_frame_size - 8)) esp;
           I.pop ebx;

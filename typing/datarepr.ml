@@ -82,7 +82,7 @@ let constructor_args ~current_unit priv cd_args cd_res path rep =
           type_expansion_scope = Btype.lowest_level;
           type_loc = Location.none;
           type_attributes = [];
-          type_immediate = Unknown;
+          type_immediate = Type_immediacy.Unknown;
           type_unboxed_default = false;
           type_uid = Uid.mk ~current_unit;
         }

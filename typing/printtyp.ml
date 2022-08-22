@@ -1382,7 +1382,8 @@ let rec tree_of_type_decl id decl =
           let is_var = is_Tvar ty in
           if abstr || not is_var then
             let inj =
-              decl.type_kind = Type_abstract && Variance.mem Inj v &&
+              let open Types.Variance in
+              decl.type_kind = Type_abstract && mem Inj v &&
               match decl.type_manifest with
               | None -> true
               | Some ty -> (* only abstract or private row types *)
@@ -1781,7 +1782,7 @@ let dummy =
     type_expansion_scope = Btype.lowest_level;
     type_loc = Location.none;
     type_attributes = [];
-    type_immediate = Unknown;
+    type_immediate = Type_immediacy.Unknown;
     type_unboxed_default = false;
     type_uid = Uid.internal_not_actually_unique;
   }
@@ -1870,7 +1871,8 @@ and tree_of_signature_rec env' sg =
 
 and trees_of_recursive_sigitem_group env
     (syntactic_group: Signature_group.rec_group) =
-  let display (x:Signature_group.sig_item) = x.src, tree_of_sigitem x.src in
+  let open Signature_group in
+  let display (x:sig_item) = x.src, tree_of_sigitem x.src in
   let env = Env.add_signature syntactic_group.pre_ghosts env in
   match syntactic_group.group with
   | Not_rec x -> add_sigitem env x, [display x]
@@ -2070,9 +2072,11 @@ let diff_printing_status Errortrace.{ got      = {ty = t1; expanded = t1'};
   else if same_path t1 t1' && same_path t2 t2' then Optional_refinement
   else Keep
 
-let printing_status = function
-  | Errortrace.Diff d -> diff_printing_status d
-  | Errortrace.Escape {kind = Constraint} -> Keep
+let printing_status e =
+  let open Errortrace in
+  match e with
+  | Diff d -> diff_printing_status d
+  | Escape {kind = Constraint} -> Keep
   | _ -> Keep
 
 (** Flatten the trace and remove elements that are always discarded
@@ -2268,16 +2272,17 @@ let explain_object (type variety) : variety Errortrace.obj -> _ = function
       Some (dprintf "@,Self type cannot be unified with a closed object type")
 
 let explanation (type variety) intro prev env
-  : (Errortrace.expanded_type, variety) Errortrace.elt -> _ = function
-  | Errortrace.Diff {got; expected} ->
+  : (Errortrace.expanded_type, variety) Errortrace.elt -> _ =
+  let open Errortrace in function
+  | Diff {got; expected} ->
     explanation_diff env got.expanded expected.expanded
-  | Errortrace.Escape {kind; context} ->
+  | Escape {kind; context} ->
     let pre =
       match context, kind, prev with
       | Some ctx, _, _ ->
         reserve_names ctx;
         dprintf "@[%t@;<1 2>%a@]" intro type_expr_with_reserved_names ctx
-      | None, Univ _, Some(Errortrace.Incompatible_fields {name; diff}) ->
+      | None, Univ _, Some(Incompatible_fields {name; diff}) ->
         reserve_names diff.got;
         reserve_names diff.expected;
         dprintf "@,@[The method %s has type@ %a,@ \
@@ -2288,13 +2293,13 @@ let explanation (type variety) intro prev env
       | _ -> ignore
     in
     explain_escape pre kind
-  | Errortrace.Incompatible_fields { name; _ } ->
+  | Incompatible_fields { name; _ } ->
     Some(dprintf "@,Types for method %s are incompatible" name)
-  | Errortrace.Variant v ->
+  | Variant v ->
     explain_variant v
-  | Errortrace.Obj o ->
+  | Obj o ->
     explain_object o
-  | Errortrace.Rec_occur(x,y) ->
+  | Rec_occur(x,y) ->
     reserve_names x;
     reserve_names y;
     begin match get_desc x with
@@ -2404,17 +2409,18 @@ let report_error trace_format ppf mode env tr
       type_expected_explanation)
 
 let report_unification_error
-      ppf env ({trace} : Errortrace.unification_error) =
+      ppf env ({Errortrace.trace} : Errortrace.unification_error) =
   report_error Unification ppf Type env
     ?subst:None trace
 
 let report_equality_error
-      ppf mode env ({subst; trace} : Errortrace.equality_error) =
+      ppf mode env
+      ({Errortrace.subst; Errortrace.trace} : Errortrace.equality_error) =
   report_error Equality ppf mode env
     ~subst ?type_expected_explanation:None trace
 
 let report_moregen_error
-      ppf mode env ({trace} : Errortrace.moregen_error) =
+      ppf mode env ({Errortrace.trace} : Errortrace.moregen_error) =
   report_error Moregen ppf mode env
     ?subst:None ?type_expected_explanation:None trace
 
@@ -2486,8 +2492,9 @@ module Subtype = struct
       reset ();
       let tr_sub = prepare_trace prepare_expansion tr_sub in
       let tr_unif = prepare_unification_trace prepare_expansion tr_unif in
+      let module ET = Errortrace in
       let keep_first = match tr_unif with
-        | [Obj _ | Variant _ | Escape _ ] | [] -> true
+        | [ET.Obj _ | ET.Variant _ | ET.Escape _ ] | [] -> true
         | _ -> false in
       fprintf ppf "@[<v>%a"
         (trace filter_subtype_trace subtype_get_diff true keep_first txt1)

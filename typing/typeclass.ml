@@ -443,13 +443,13 @@ let class_type env virt self_scope scty =
 (*******************************)
 
 let enter_ancestor_val name val_env =
-  Env.enter_unbound_value name Val_unbound_ancestor val_env
+  Env.enter_unbound_value name Env.Val_unbound_ancestor val_env
 
 let enter_self_val name val_env =
-  Env.enter_unbound_value name Val_unbound_self val_env
+  Env.enter_unbound_value name Env.Val_unbound_self val_env
 
 let enter_instance_var_val name val_env =
-  Env.enter_unbound_value name Val_unbound_instance_variable val_env
+  Env.enter_unbound_value name Env.Val_unbound_instance_variable val_env
 
 let enter_ancestor_met ~loc name ~sign ~meths ~cl_num ~ty ~attrs met_env =
   let check s = Warnings.Unused_ancestor s in
@@ -1445,7 +1445,7 @@ let temp_abbrev loc env id arity uid =
        type_expansion_scope = Btype.lowest_level;
        type_loc = loc;
        type_attributes = []; (* or keep attrs from the class decl? *)
-       type_immediate = Unknown;
+       type_immediate = Type_immediacy.Unknown;
        type_unboxed_default = false;
        type_uid = uid;
       }
@@ -1680,7 +1680,7 @@ let class_infos define_class kind
      type_expansion_scope = Btype.lowest_level;
      type_loc = cl.pci_loc;
      type_attributes = []; (* or keep attrs from cl? *)
-     type_immediate = Unknown;
+     type_immediate = Type_immediacy.Unknown;
      type_unboxed_default = false;
      type_uid = dummy_class.cty_uid;
     }
@@ -1703,7 +1703,7 @@ let class_infos define_class kind
      type_expansion_scope = Btype.lowest_level;
      type_loc = cl.pci_loc;
      type_attributes = []; (* or keep attrs from cl? *)
-     type_immediate = Unknown;
+     type_immediate = Type_immediacy.Unknown;
      type_unboxed_default = false;
      type_uid = dummy_class.cty_uid;
     }
@@ -2007,9 +2007,9 @@ let report_error env ppf = function
       Printtyp.prepare_for_printing [abbrev; actual; expected];
       fprintf ppf "@[The abbreviation@ %a@ expands to type@ %a@ \
        but is used with type@ %a@]"
-        !Oprint.out_type (Printtyp.tree_of_typexp Type abbrev)
-        !Oprint.out_type (Printtyp.tree_of_typexp Type actual)
-        !Oprint.out_type (Printtyp.tree_of_typexp Type expected)
+        !Oprint.out_type (Printtyp.tree_of_typexp Printtyp.Type abbrev)
+        !Oprint.out_type (Printtyp.tree_of_typexp Printtyp.Type actual)
+        !Oprint.out_type (Printtyp.tree_of_typexp Printtyp.Type expected)
   | Constructor_type_mismatch (c, err) ->
       Printtyp.report_unification_error ppf env err
         (function ppf ->
@@ -2052,10 +2052,10 @@ let report_error env ppf = function
         "@[The abbreviation %a@ is used with parameters@ %a@ \
            which are incompatible with constraints@ %a@]"
         Printtyp.ident id
-        !Oprint.out_type (Printtyp.tree_of_typexp Type params)
-        !Oprint.out_type (Printtyp.tree_of_typexp Type cstrs)
+        !Oprint.out_type (Printtyp.tree_of_typexp Printtyp.Type params)
+        !Oprint.out_type (Printtyp.tree_of_typexp Printtyp.Type cstrs)
   | Class_match_failure error ->
-      Includeclass.report_error Type ppf error
+      Includeclass.report_error Printtyp.Type ppf error
   | Unbound_val lab ->
       fprintf ppf "Unbound instance variable %s" lab
   | Unbound_type_var (printer, reason) ->
@@ -2066,8 +2066,8 @@ let report_error env ppf = function
         fprintf ppf
           "The method %s@ has type@;<1 2>%a@ where@ %a@ is unbound"
           lab
-          !Oprint.out_type (Printtyp.tree_of_typexp Type ty)
-          !Oprint.out_type (Printtyp.tree_of_typexp Type ty0)
+          !Oprint.out_type (Printtyp.tree_of_typexp Printtyp.Type ty)
+          !Oprint.out_type (Printtyp.tree_of_typexp Printtyp.Type ty0)
       in
       fprintf ppf
         "@[<v>@[Some type variables are unbound in this type:@;<1 2>%t@]@ \

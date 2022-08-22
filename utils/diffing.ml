@@ -238,9 +238,10 @@ end
 *)
 
 let select_final_state m0 =
+  let module M = Matrix in
   let maybe_final i j =
-    match Matrix.shape_at m0 i j with
-    | Some shape_here -> shape_here.l = i && shape_here.c = j
+    match M.shape_at m0 i j with
+    | Some shape_here -> shape_here.M.l = i && shape_here.M.c = j
     | None -> false
   in
   let best_state (i0,j0,weigth0) (i,j) =
@@ -249,8 +250,8 @@ let select_final_state m0 =
   in
   let res = ref (0,0,max_int) in
   let shape = Matrix.shape m0 in
-  for i = 0 to shape.l do
-    for j = 0 to shape.c do
+  for i = 0 to shape.M.l do
+    for j = 0 to shape.M.c do
       if maybe_final i j then
         res := best_state !res (i,j)
     done
@@ -367,15 +368,16 @@ let compute_cell  m i j =
    and repeat the process
 *)
 let compute_matrix state0 =
-  let m0 = Matrix.make { l = 0 ; c = 0 } in
-  Matrix.set m0 0 0 ~weight:0 ~state:state0 ~diff:None;
+  let module M = Matrix in
+  let m0 = M.make { M.l = 0 ; c = 0 } in
+  M.set m0 0 0 ~weight:0 ~state:state0 ~diff:None;
   let rec loop m =
-    let shape = Matrix.shape m in
-    let new_shape = Matrix.real_shape m in
-    if new_shape.l > shape.l || new_shape.c > shape.c then
-      let m = Matrix.reshape new_shape m in
-      for i = 0 to new_shape.l do
-        for j = 0 to new_shape.c do
+    let shape = M.shape m in
+    let new_shape = M.real_shape m in
+    if new_shape.M.l > shape.M.l || new_shape.M.c > shape.M.c then
+      let m = M.reshape new_shape m in
+      for i = 0 to new_shape.M.l do
+        for j = 0 to new_shape.M.c do
           compute_cell m i j
         done
       done;

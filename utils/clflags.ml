@@ -521,7 +521,7 @@ module Compiler_pass = struct
 
   let of_input_filename name =
     match Compiler_ir.extract_extension_with_pass name with
-    | Some (Linear, _) -> Some Emit
+    | Some (Compiler_ir.Linear, _) -> Some Emit
     | None -> None
 end
 

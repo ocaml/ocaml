@@ -732,6 +732,7 @@ method emit_expr (env:environment) exp =
               let bytes = size_expr env (Ctuple new_args) in
               assert (bytes mod Arch.size_addr = 0);
               let alloc_words = bytes / Arch.size_addr in
+              let open Debuginfo in
               let op =
                 Ialloc { bytes; dbginfo = [{alloc_words; alloc_dbg = dbg}] }
               in
@@ -864,7 +865,7 @@ method private bind_let_mut (env:environment) v k r1 =
   let rv = self#regs_for k in
   name_regs v rv;
   self#insert_moves env r1 rv;
-  env_add ~mut:Mutable v rv env
+  env_add ~mut:Asttypes.Mutable v rv env
 
 (* The following two functions, [emit_parts] and [emit_parts_list], force
    right-to-left evaluation order as required by the Flambda [Un_anf] pass

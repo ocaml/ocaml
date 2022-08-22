@@ -279,12 +279,12 @@ let instrument_fundecl ~future_funcnames:_ (f : Mach.fundecl) : Mach.fundecl =
     contains_polls := false;
     let new_body = instr_body handler_needs_poll f.fun_body in
     begin match f.fun_poll with
-    | Error_poll -> begin
+    | Lambda.Error_poll -> begin
         match find_poll_alloc_or_calls new_body with
         | [] -> ()
         | poll_error_instrs -> raise (Error(Poll_error poll_error_instrs))
       end
-    | Default_poll -> () end;
+    | Lambda.Default_poll -> () end;
     let new_contains_calls = f.fun_contains_calls || !contains_polls in
     { f with fun_body = new_body; fun_contains_calls = new_contains_calls }
   end

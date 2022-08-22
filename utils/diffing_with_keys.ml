@@ -133,14 +133,14 @@ module Define(D:Diffing.Defs with type eq := unit) = struct
       let add (state,(swaps,moves)) (d:change) =
         update d state,
         match d with
-        | Change (x,y,_) ->
+        | Diffing.Change (x,y,_) ->
             let k, edge = edge state x y in
             Swap.update k (merge_edge edge) swaps, moves
-        | Insert nx ->
+        | Diffing.Insert nx ->
             let k = key_right nx.data in
             let edge = Right (nx.pos, state,nx) in
             swaps, Move.update k (merge_edge edge) moves
-        | Delete nx ->
+        | Diffing.Delete nx ->
             let k, edge = key_left nx.data, Left (nx.pos, state, nx) in
             swaps, Move.update k (merge_edge edge) moves
         | _ -> swaps, moves
@@ -175,19 +175,20 @@ module Define(D:Diffing.Defs with type eq := unit) = struct
 
     let refine state patch =
       let _, (swaps, moves) = two_cycles state patch in
+      let module D = Diffing in
       let filter: change -> composite_change option = function
-        | Keep _ -> None
-        | Insert x ->
+        | D.Keep _ -> None
+        | D.Insert x ->
             begin match move moves (Either.Right x) with
             | Some _ as move -> move
             | None -> Some (Insert {pos=x.pos;insert=x.data})
             end
-        | Delete x ->
+        | D.Delete x ->
             begin match move moves (Either.Left x) with
             | Some _ -> None
             | None -> Some (Delete {pos=x.pos; delete=x.data})
             end
-        | Change(x,y, reason) ->
+        | D.Change(x,y, reason) ->
             match swap swaps x y with
             | Some ({pos=pos1; data=first}, {pos=pos2; data=last}) ->
                 if x.pos = pos1 then

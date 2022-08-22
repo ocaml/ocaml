@@ -425,10 +425,11 @@ let is_nonrec_type id td =
           nonrecursive_use:= true
     | _ -> ()
   in
-  let it =  Btype.{type_iterators with it_path } in
+  let open Btype in
+  let it = {type_iterators with it_path } in
   let () =
     it.it_type_declaration it td;
-    Btype.unmark_iterators.it_type_declaration Btype.unmark_iterators td
+    unmark_iterators.it_type_declaration unmark_iterators td
   in
   match !recursive_use, !nonrecursive_use with
   | false, true -> Trec_not
@@ -440,7 +441,7 @@ let () =
     (fun env loc id lid ->
        let path, desc = Env.lookup_type ~loc lid env in
        let id, rs = match path with
-         | Pident id -> id, is_nonrec_type id desc
+         | Path.Pident id -> id, is_nonrec_type id desc
          | _ -> id, Trec_first
        in
        [ Sig_type (id, desc, rs, Exported) ]
@@ -527,12 +528,13 @@ let is_rec_module id md =
     | Path.Pident id' -> if (Ident.same id id') then raise Exit
     | _ -> ()
   in
-  let it =  Btype.{type_iterators with it_path } in
+  let open Btype in
+  let it = {type_iterators with it_path } in
   let rs = match it.it_module_declaration it md with
     | () -> Trec_not
     | exception Exit -> Trec_first
   in
-  Btype.unmark_iterators.it_module_declaration Btype.unmark_iterators md;
+  unmark_iterators.it_module_declaration unmark_iterators md;
   rs
 
 
@@ -541,7 +543,7 @@ let () =
     (fun env loc id lid ->
        let path, md = Env.lookup_module ~loc lid env in
        let id = match path with
-         | Pident id -> id
+         | Path.Pident id -> id
          | _ -> id
        in
        let rec accum_aliases md acc =

@@ -1183,7 +1183,7 @@ let new_local_type ?(loc = Location.none) ?manifest_and_scope () =
     type_expansion_scope = expansion_scope;
     type_loc = loc;
     type_attributes = [];
-    type_immediate = Unknown;
+    type_immediate = Type_immediacy.Unknown;
     type_unboxed_default = false;
     type_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
   }

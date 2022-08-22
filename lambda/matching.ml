@@ -98,6 +98,8 @@ open Printpat
 
 module Scoped_location = Debuginfo.Scoped_location
 
+let loc_unknown = Scoped_location.Loc_unknown
+
 let dbg = false
 
 (*
@@ -532,7 +534,7 @@ end = struct
 
   let empty = []
 
-  let start n : t = [ { left = []; right = Patterns.omegas n } ]
+  let start n : t = [ { Row.left = []; Row.right = Patterns.omegas n } ]
 
   let is_empty = function
     | [] -> true
@@ -1186,7 +1188,7 @@ let rec omega_like p =
 
 let simple_omega_like p =
   match (Simple.head p).pat_desc with
-  | Any -> true
+  | Patterns.Head.Any -> true
   | _ -> false
 
 let equiv_pat p q = le_pat p q && le_pat q p
@@ -1872,7 +1874,7 @@ let get_mod_field modname field =
          match Env.find_value_by_name (Longident.Lident field) env with
          | exception Not_found ->
              fatal_error ("Primitive " ^ modname ^ "." ^ field ^ " not found.")
-         | path, _ -> transl_value_path Loc_unknown env path
+         | path, _ -> transl_value_path loc_unknown env path
        ))
 
 let code_force_lazy_block = get_mod_field "CamlinternalLazy" "force_lazy_block"
@@ -2340,12 +2342,12 @@ module SArg = struct
   type test = Lambda.lambda
   type act = Lambda.lambda
 
-  let make_prim p args = Lprim (p, args, Loc_unknown)
+  let make_prim p args = Lprim (p, args, loc_unknown)
 
   let make_offset arg n =
     match n with
     | 0 -> arg
-    | _ -> Lprim (Poffsetint n, [ arg ], Loc_unknown)
+    | _ -> Lprim (Poffsetint n, [ arg ], loc_unknown)
 
   let bind arg body =
     let newvar, newarg =
@@ -2359,15 +2361,15 @@ module SArg = struct
 
   let make_const i = Lconst (Const_base (Const_int i))
 
-  let make_isout h arg = Lprim (Pisout, [ h; arg ], Loc_unknown)
+  let make_isout h arg = Lprim (Pisout, [ h; arg ], loc_unknown)
 
-  let make_isin h arg = Lprim (Pnot, [ make_isout h arg ], Loc_unknown)
+  let make_isin h arg = Lprim (Pnot, [ make_isout h arg ], loc_unknown)
 
   let make_is_nonzero arg =
     if !Clflags.native_code then
       Lprim (Pintcomp Cne,
              [arg; Lconst (Const_base (Const_int 0))],
-             Loc_unknown)
+             loc_unknown)
     else
       arg
 
@@ -3437,7 +3439,7 @@ type failer_kind =
 let failure_handler ~scopes loc ~failer () =
   match failer with
   | Reraise_noloc exn_lam ->
-    Lprim (Praise Raise_reraise, [ exn_lam ], Scoped_location.Loc_unknown)
+    Lprim (Praise Raise_reraise, [ exn_lam ], loc_unknown)
   | Raise_match_failure ->
     let sloc = Scoped_location.of_location ~scopes loc in
     let slot =

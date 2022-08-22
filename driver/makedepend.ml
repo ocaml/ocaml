@@ -403,7 +403,7 @@ let mli_file_dependencies source_file =
   files := (source_file, MLI, extracted_deps, !Depend.pp_deps) :: !files
 
 let process_file_as process_fun def source_file =
-  Compenv.readenv ppf (Before_compile source_file);
+  Compenv.readenv ppf (Compenv.Before_compile source_file);
   load_path := [];
   let cwd = if !nocwd then [] else [Filename.current_dir_name] in
   List.iter add_to_load_path (
@@ -588,7 +588,7 @@ let run_main argv =
   let add_dep_arg f s = dep_args_rev := (f s) :: !dep_args_rev in
   Clflags.classic := false;
   try
-    Compenv.readenv ppf Before_args;
+    Compenv.readenv ppf Compenv.Before_args;
     Clflags.reset_arguments (); (* reset arguments from ocamlc/ocamlopt *)
     Clflags.add_arguments __LOC__ [
       "-absname", Arg.Set Clflags.absname,
@@ -656,7 +656,7 @@ let run_main argv =
     Compenv.parse_arguments (ref argv)
       (add_dep_arg (fun f -> Src (f, None))) program;
     process_dep_args (List.rev !dep_args_rev);
-    Compenv.readenv ppf Before_link;
+    Compenv.readenv ppf Compenv.Before_link;
     if !sort_files then sort_files_by_dependencies !files
     else List.iter print_file_dependencies (List.sort compare !files);
     (if Error_occurred.get () then 2 else 0)

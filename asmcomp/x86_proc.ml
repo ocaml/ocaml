@@ -230,7 +230,7 @@ let string_of_rounding = function
 let internal_assembler = ref None
 let register_internal_assembler f = internal_assembler := Some f
 let with_internal_assembler assemble k =
-  Misc.protect_refs [ R (internal_assembler, Some assemble) ] k
+  Misc.protect_refs [ Misc.R (internal_assembler, Some assemble) ] k
 
 (* Which asm conventions to use *)
 let masm =
