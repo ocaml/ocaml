@@ -2500,9 +2500,15 @@ CAMLprim stub_gethostbyname(value vname)
 }
 \end{verbatim}
 
-During the time the domain lock is released, the thread-local variable
-"Caml_state" is set to "NULL". This can be used to determine if the
-thread currently holds its domain lock.
+The macro "Caml_state" evaluates to the domain state variable, and
+checks in debug mode that the domain lock is held. Such a check is
+also placed in normal mode at key entry points of the C API; this is
+why calling some of the runtime functions and macros without correctly
+owning the domain lock can result in a fatal error: "no domain lock
+held". The variant "Caml_state_opt" does not perform any check but
+evaluates to "NULL" when the domain lock is not held. This lets you
+determine whether a thread belonging to a domain currently holds its
+domain lock, for various purposes.
 
 Callbacks from C to OCaml must be performed while holding the master
 lock to the OCaml run-time system.  This is naturally the case if the

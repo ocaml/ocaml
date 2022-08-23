@@ -264,12 +264,15 @@ OCaml 5.0
   Guillaume Munch-Maccagnoni, additional discussions with Stephen
   Dolan and Luc Maranget)
 
-- #5299, #4787, #11138, #11272: `Caml_state` is `NULL` when the domain lock is
-  not held. This allows to test if the current thread holds the lock of its
-  domain, and it makes it simpler to debug when one forgets to acquire
-  the lock.
-  (Guillaume Munch-Maccagnoni, review by Sadiq Jaffer, Xavier Leroy and
-  Gabriel Scherer)
+- #5299, #4787, #11138, #11272, #11506: To help debugging, `Caml_state`
+  now dynamically checks that the domain lock is held, and fails
+  otherwise (with a fatal error at most entry points of the C API, or
+  systematically in debug mode). A new variable `Caml_state_opt` is
+  introduced, and is `NULL` when the domain lock is not held. This
+  allows to test from C code if the current thread holds the lock of
+  its domain.
+  (Guillaume Munch-Maccagnoni, review by Florian Angeletti, Damien
+  Doligez, Sadiq Jaffer, Xavier Leroy, and Gabriel Scherer)
 
 - #11223: The serialization format of custom blocks changed in 4.08,
   but the deserializer would still support the pre-4.08 format.  OCaml
