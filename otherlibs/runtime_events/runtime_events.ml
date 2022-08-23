@@ -160,8 +160,8 @@ module Type = struct
 
   (* the data structure is primarily managed in C *)
   type[@warning "-unused-field"] 'a custom = {
-    serialize: 'a -> bytes;
-    deserialize: bytes -> 'a;
+    serialize: bytes -> 'a -> int;
+    deserialize: bytes -> int -> 'a;
     (* id is used for the callback table *)
     id: int;
   }

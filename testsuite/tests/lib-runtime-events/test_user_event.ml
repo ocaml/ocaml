@@ -15,8 +15,18 @@ let counter = User.register "libname.counter" MyCounter Type.counter
 
 let counter2 = User.register "libname.counter2" MyCounter2 Type.counter
 
-let custom_type = Type.register ~encode:Bytes.unsafe_of_string 
-                                ~decode:Bytes.unsafe_to_string
+let custom_type = 
+  let encode buf value =
+    let l = String.length value in
+    Bytes.blit_string value 0 buf 0 l;
+    l
+  in
+  let decode buf size =
+    let target = Bytes.create size in
+    Bytes.blit buf 0 target 0 size;
+    Bytes.unsafe_to_string target
+  in
+  Type.register ~encode ~decode
 
 let custom = User.register "libname.custom" MyString custom_type
 

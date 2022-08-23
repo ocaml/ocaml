@@ -563,6 +563,7 @@ static void finalise_cursor(value v) {
 struct callbacks_exception_holder {
   value* callbacks_val;
   value* exception;
+  value* wrapper;
 };
 
 static int ml_runtime_begin(int domain_id, void *callback_data,
@@ -868,9 +869,11 @@ static int ml_user_custom(int domain_id, void *callback_data, int64_t timestamp,
   CAMLparam0();
   CAMLlocal4(callback_list, event, callbacks_root, event_type);
   CAMLlocalN(params, 4);
+  CAMLlocal2(wrapper_root, read_buffer);
 
   struct callbacks_exception_holder* holder = callback_data;
   callbacks_root = *holder->callbacks_val;
+  wrapper_root = *holder->wrapper;
 
   event = caml_runtime_events_user_resolve(event_name, 
                                       RUNTIME_EVENTS_CUSTOM_EVENT_TYPE_CUSTOM);
@@ -882,7 +885,7 @@ static int ml_user_custom(int domain_id, void *callback_data, int64_t timestamp,
   if (Is_block(callback_list)) {
     // at least one callback is listening for this event type, so we
     // deserialize the value and prepare the callback payload
-    CAMLlocal4(data, bytes, record, deserializer);
+    CAMLlocal3(data, record, deserializer);
 
     const char* data_str = (const char*) event_data;
     uintnat string_len = event_data_len * sizeof(uint64_t) - 1;
@@ -891,10 +894,20 @@ static int ml_user_custom(int domain_id, void *callback_data, int64_t timestamp,
     // the number of padding bytes. This information is crucial to determine
     // the true size of the string.
     uintnat caml_string_len = string_len - data_str[string_len];
-    bytes = caml_alloc_initialized_string(caml_string_len, data_str);
+
     record = Field(event_type, 0);
     deserializer = Field(record, 1);
-    data = caml_callback(deserializer, bytes);
+
+    if (Field(wrapper_root, 1) == Val_none) {
+      read_buffer = caml_alloc_string(RUNTIME_EVENTS_MAX_MSG_LENGTH);
+      Store_field(wrapper_root, 1, read_buffer);
+    } else {
+      read_buffer = Field(wrapper_root, 1);
+    }
+
+    memcpy(Bytes_val(read_buffer), data_str, caml_string_len);
+
+    data = caml_callback2(deserializer, read_buffer, Val_int(caml_string_len));
 
     params[0] = Val_long(domain_id);
     params[1] = caml_copy_int64(timestamp);
@@ -919,7 +932,7 @@ static struct custom_operations cursor_operations = {
 
 CAMLprim value caml_ml_runtime_events_create_cursor(value path_pid_option) {
   CAMLparam1(path_pid_option);
-  CAMLlocal1(wrapper);
+  CAMLlocal2(wrapper, result);
   struct caml_runtime_events_cursor *cursor;
   int pid;
   char_os* path;
@@ -981,12 +994,15 @@ CAMLprim value caml_ml_runtime_events_create_cursor(value path_pid_option) {
     caml_stat_free(path);
   }
 
-  CAMLreturn(wrapper);
+  result = caml_alloc_2(0, wrapper, Val_none);
+
+  CAMLreturn(result);
 }
 
-CAMLprim value caml_ml_runtime_events_free_cursor(value wrapped_cursor) {
-  CAMLparam1(wrapped_cursor);
-
+CAMLprim value caml_ml_runtime_events_free_cursor(value wrapper) {
+  CAMLparam1(wrapper);
+  CAMLlocal1(wrapped_cursor);
+  wrapped_cursor = Field(wrapper, 0);
   struct caml_runtime_events_cursor *cursor = Cursor_val(wrapped_cursor);
 
   if (cursor != NULL) {
@@ -997,18 +1013,20 @@ CAMLprim value caml_ml_runtime_events_free_cursor(value wrapped_cursor) {
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_ml_runtime_events_read_poll(value wrapped_cursor,
+CAMLprim value caml_ml_runtime_events_read_poll(value wrapper,
                                                 value callbacks_val,
                                                 value max_events_val) {
-  CAMLparam3(wrapped_cursor, callbacks_val, max_events_val);
-  CAMLlocal1(exception);
+  CAMLparam3(wrapper, callbacks_val, max_events_val);
+  CAMLlocal2(wrapped_cursor, exception);
+  wrapped_cursor = Field(wrapper, 0);
 
   uintnat events_consumed = 0;
   int max_events = Is_some(max_events_val) ? Some_val(max_events_val) : 0;
   struct caml_runtime_events_cursor *cursor = Cursor_val(wrapped_cursor);
   runtime_events_error res;
 
-  struct callbacks_exception_holder holder = { &callbacks_val, &exception };
+  struct callbacks_exception_holder holder = { 
+    &callbacks_val, &exception, &wrapper };
   exception = Val_unit;
 
   if (cursor == NULL) {

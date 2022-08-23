@@ -119,6 +119,10 @@ static atomic_uintnat runtime_custom_event_index = 0;
 static value user_events = Val_none;
 static caml_plat_mutex user_events_lock;
 
+/* Custom type write buffer */
+static value write_buffer = Val_none;
+static caml_plat_mutex write_buffer_lock;
+
 static void write_to_ring(ev_category category, ev_message_type type,
                           int event_id, int event_length, uint64_t *content,
                           int word_offset);
@@ -130,6 +134,8 @@ void caml_runtime_events_init(void) {
 
   caml_plat_mutex_init(&user_events_lock);
   caml_register_generational_global_root(&user_events);
+
+  caml_plat_mutex_init(&write_buffer_lock);
 
   runtime_events_path = caml_secure_getenv(T("OCAML_RUNTIME_EVENTS_DIR"));
 
@@ -391,6 +397,7 @@ static void runtime_events_create_raw(void) {
       events_register_write_buffer(Int_val(Field(event, 0)), Field(event, 1));
       current_user_event = Field(current_user_event, 1);
     }
+
 
   }
 }
@@ -685,7 +692,7 @@ CAMLprim value caml_runtime_events_user_register(value event_name,
 CAMLprim value caml_runtime_events_user_write(value event, value event_content)
 {
   CAMLparam2(event, event_content);
-  CAMLlocal2(event_id, event_type);
+  CAMLlocal3(event_id, event_type, res);
 
   if ( !ring_is_active() )
     CAMLreturn(Val_unit);
@@ -698,11 +705,32 @@ CAMLprim value caml_runtime_events_user_write(value event, value event_content)
     // Custom { serialize; deserialize; id }
     value record = Field(event_type, 0);
     value serializer = Field(record, 0);
-    value bytes = caml_callback(serializer, event_content);
-    uintnat len_bytes = caml_string_length(bytes);
+
+    caml_plat_lock(&write_buffer_lock);
+
+    if (write_buffer == Val_none) {
+      write_buffer = caml_alloc_string(RUNTIME_EVENTS_MAX_MSG_LENGTH);
+      caml_register_generational_global_root(&write_buffer);
+    }
+
+    res = caml_callback2_exn(serializer, write_buffer, event_content);
+
+    if (Is_exception_result(res)) {
+      caml_plat_unlock(&write_buffer_lock);
+
+      res = Extract_exception(res);
+      caml_raise(res);
+    }
+
+    uintnat len_bytes = Int_val(res);
     uintnat len_64bit_word = (len_bytes + sizeof(uint64_t)) / sizeof(uint64_t);
+    uintnat offset_index = len_64bit_word * sizeof(uint64_t) - 1;
+    Bytes_val(write_buffer)[offset_index] = offset_index - len_bytes;
     write_to_ring(EV_USER, RUNTIME_EVENTS_CUSTOM_EVENT_TYPE_CUSTOM, 
-      Int_val(event_id), len_64bit_word, (uint64_t *) Bytes_val(bytes), 0);
+      Int_val(event_id), len_64bit_word, (uint64_t *) Bytes_val(write_buffer), 
+      0);
+    
+    caml_plat_unlock(&write_buffer_lock);
 
   } else {
     // Event | Counter

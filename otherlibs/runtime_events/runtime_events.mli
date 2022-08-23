@@ -143,8 +143,10 @@ module Type : sig
   val counter : int t
   (** A counter is a number *)
 
-  val register : encode:('a -> bytes) -> decode:(bytes -> 'a) -> 'a t
-  (** Registers a custom type by providing a serializer and a deserializer *)
+  val register : encode:(bytes -> 'a -> int) -> decode:(bytes -> int -> 'a) 
+                                                                        -> 'a t
+  (** Registers a custom type by providing an encoder and a decoder. The encoded
+      writes the value in the provided buffer and returns  *)
 end
 
 module User : sig
