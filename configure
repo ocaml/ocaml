@@ -758,6 +758,7 @@ PACKLD
 flexdll_chain
 flexlink_cmd
 afl
+oc_native_cflags
 function_sections
 flat_float_array
 windows_unicode
@@ -2933,6 +2934,7 @@ OCAML_VERSION_SHORT=5.1
 
 
  # TODO: rename this variable
+
 
 
 
@@ -18031,6 +18033,8 @@ esac
 
 fi
 
+oc_native_cflags=''
+
 if test x"$enable_function_sections" = "xno"; then :
   function_sections=false
 else
@@ -18058,6 +18062,7 @@ $as_echo "$as_me: Function sections are not supported
               in Clang prior to version 3.5." >&6;} ;; #(
   gcc-*|clang-*) :
     function_sections=true;
+              oc_native_cflags='-function-sections'
               internal_cflags="$internal_cflags -ffunction-sections";
               $as_echo "#define FUNCTION_SECTIONS 1" >>confdefs.h
  ;; #(

@@ -70,6 +70,33 @@ MKDLL_EXP=@mkdll_exp@
 
 DEFAULT_BUILD_TARGET = @default_build_target@
 
+# Flags to use when compiling and linking OCaml programs
+
+# The names of the variables below take the form XXX_YYY_ZZZ where
+#
+# XXX is one of OC, OCAML or the name of a module. The OC prefix
+# is for private variables (i.e. reserved by the compiler's build system),
+# the OCAML prefix is used for variables the user can define to add their
+# own flags and the module-name prefix is for flags that apply only
+# to one module.
+#
+# YYY refers to the backend. At the moment, it can take the values
+# COMMON for the flags shared by all the backends, BYTECODE or NATIVE
+# (other backends may be added in the future).
+#
+# ZZZ is either CFLAGS (compile-time flags) or LDFLAGS (link-time flags).
+# However, contrary to what is done for C compilers, the flags in the
+# CFLAGS category are not passed at link time, so if a flag is needed
+# at both stages, like e.g. -g, it should be added to both XXX_YYY_CFLAGS and
+# XXX_YYY_LDFLAGS.
+
+OC_COMMON_CFLAGS = -strict-sequence -principal -absname \
+  -w +a-4-9-40-41-42-44-45-48 -warn-error +a -bin-annot \
+  -safe-string -strict-formats
+OC_COMMON_LDFLAGS =
+
+OC_NATIVE_CFLAGS = @oc_native_cflags@
+
 # Platform-dependent assembler files to use to build the runtime
 runtime_ASM_OBJECTS = $(addprefix runtime/,@runtime_asm_objects@)
 
