@@ -330,6 +330,7 @@ CAMLexport void caml_set_fields (value obj, value v)
 
 Caml_inline value alloc_shr(mlsize_t wosize, tag_t tag, int noexc)
 {
+  Caml_check_caml_state();
   caml_domain_state *dom_st = Caml_state;
   value *v = caml_shared_try_alloc(dom_st->shared_heap, wosize, tag, 0);
   if (v == NULL) {

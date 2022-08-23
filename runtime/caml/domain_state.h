@@ -68,7 +68,17 @@ CAML_STATIC_ASSERT(
 
 #define Caml_state (CAMLassert(Caml_state_opt != NULL), Caml_state_opt)
 
+CAMLnoreturn_start
+CAMLextern void caml_bad_caml_state(void)
+CAMLnoreturn_end;
 
+/* This check is performed regardless of debug mode. It is placed once
+   at every code path starting from entry points of the public C API,
+   whenever the load of Caml_state_opt can be eliminated by CSE (or if
+   the function is not performance-sensitive). */
+#define Caml_check_caml_state()                                         \
+  (CAMLlikely(Caml_state_opt != NULL) ? (void)0 :                       \
+   caml_bad_caml_state())
 
 #define Caml_state_field(field) (Caml_state->field)
 

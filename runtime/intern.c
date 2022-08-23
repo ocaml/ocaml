@@ -88,6 +88,7 @@ struct caml_intern_state {
 /* Allocates the domain local intern state if needed */
 static struct caml_intern_state* get_intern_state (void)
 {
+  Caml_check_caml_state();
   struct caml_intern_state* s;
 
   if (Caml_state->intern_state != NULL)

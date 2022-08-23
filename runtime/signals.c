@@ -166,6 +166,7 @@ CAMLexport void caml_leave_blocking_section(void)
   /* Save the value of errno (PR#5982). */
   saved_errno = errno;
   caml_leave_blocking_section_hook ();
+  Caml_check_caml_state();
 
   /* Some other thread may have switched [Caml_state->action_pending]
      to 0 even though there are still pending actions, e.g. a signal
@@ -286,6 +287,7 @@ void caml_set_action_pending(caml_domain_state * dom_st)
 
 CAMLexport int caml_check_pending_actions(void)
 {
+  Caml_check_caml_state();
   return Caml_check_gc_interrupt(Caml_state) || Caml_state->action_pending;
 }
 

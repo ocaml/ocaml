@@ -229,6 +229,7 @@ CAMLprim value caml_gc_set(value v)
 
 CAMLprim value caml_gc_minor(value v)
 {
+  Caml_check_caml_state();
   CAML_EV_BEGIN(EV_EXPLICIT_GC_MINOR);
   CAMLassert (v == Val_unit);
   caml_minor_collection ();
@@ -250,6 +251,7 @@ static value gc_major_exn(void)
 
 CAMLprim value caml_gc_major(value v)
 {
+  Caml_check_caml_state();
   CAMLassert (v == Val_unit);
   return caml_raise_if_exception(gc_major_exn());
 }
@@ -275,6 +277,7 @@ static value gc_full_major_exn(void)
 
 CAMLprim value caml_gc_full_major(value v)
 {
+  Caml_check_caml_state();
   CAMLassert (v == Val_unit);
   return caml_raise_if_exception(gc_full_major_exn());
 }
@@ -291,6 +294,7 @@ CAMLprim value caml_gc_major_slice (value v)
 
 CAMLprim value caml_gc_compaction(value v)
 {
+  Caml_check_caml_state();
   value exn = Val_unit;
   CAML_EV_BEGIN(EV_EXPLICIT_GC_COMPACT);
   CAMLassert (v == Val_unit);
