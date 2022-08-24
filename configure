@@ -841,6 +841,8 @@ libext
 OBJEXT
 exeext
 ac_tool_prefix
+CSCFLAGS
+CSC
 DIFF_FLAGS
 CC
 OCAML_VERSION_SHORT
@@ -2813,6 +2815,11 @@ ocamlc_cflags=""
 ocamlc_cppflags=""
 oc_ldflags=""
 oc_dll_ldflags=""
+
+# The C# compiler and its flags
+CSC=""
+CSCFLAGS=""
+
 ostype="Unix"
 SO="so"
 toolchain="cc"
@@ -2879,6 +2886,8 @@ OCAML_VERSION_PATCHLEVEL=0
 OCAML_VERSION_EXTRA=dev1-2022-06-09
 
 OCAML_VERSION_SHORT=5.1
+
+
 
 
 
@@ -3169,6 +3178,20 @@ case $host in #(
   SO=so
   outputexe='-o '
   syslib='-l$(1)' ;;
+esac
+
+case $host in #(
+  *-*-mingw32|*-pc-windows) :
+    CSC=csc
+    CSCFLAGS="/nologo /nowarn:1668"
+    case $host_cpu in #(
+  i*86) :
+    CSCFLAGS="$CSCFLAGS /platform:x86" ;; #(
+  *) :
+     ;;
+esac ;; #(
+  *) :
+     ;;
 esac
 
 # Environment variables that are taken into account

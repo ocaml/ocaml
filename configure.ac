@@ -52,6 +52,11 @@ ocamlc_cflags=""
 ocamlc_cppflags=""
 oc_ldflags=""
 oc_dll_ldflags=""
+
+# The C# compiler and its flags
+CSC=""
+CSCFLAGS=""
+
 ostype="Unix"
 SO="so"
 toolchain="cc"
@@ -85,6 +90,8 @@ AC_SUBST([OCAML_VERSION_EXTRA], [OCAML__VERSION_EXTRA])
 AC_SUBST([OCAML_VERSION_SHORT], [OCAML__VERSION_SHORT])
 AC_SUBST([CC])
 AC_SUBST([DIFF_FLAGS])
+AC_SUBST([CSC])
+AC_SUBST([CSCFLAGS])
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
@@ -242,6 +249,12 @@ AS_CASE([$host],
   SO=so
   outputexe='-o '
   syslib='-l$(1)'])
+
+AS_CASE([$host],
+  [*-*-mingw32|*-pc-windows],
+    [CSC=csc
+    CSCFLAGS="/nologo /nowarn:1668"
+    AS_CASE([$host_cpu], [i*86], [CSCFLAGS="$CSCFLAGS /platform:x86"])])
 
 # Environment variables that are taken into account
 

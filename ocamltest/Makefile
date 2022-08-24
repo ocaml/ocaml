@@ -50,19 +50,6 @@ else
   endif
 endif
 
-ifeq "$(UNIX_OR_WIN32)" "win32"
-  CSC := csc
-  ifeq "$(HOST:i686-%=i686)" "i686"
-    CSCFLAGS := /platform:x86
-  else
-    CSCFLAGS :=
-  endif
-  CSCFLAGS += /nologo /nowarn:1668
-else
-  CSC :=
-  CSCFLAGS :=
-endif
-
 ifeq "$(TOOLCHAIN)" "msvc"
 CPP := $(CPP) 2> nul
 endif
@@ -249,8 +236,6 @@ ocamltest_config.ml: ocamltest_config.mlp Makefile ../Makefile.config
 	    $(call SUBST,NATDYNLINK) \
 	    $(call SUBST_STRING,SHAREDLIB_CFLAGS) \
 	    $(call SUBST,SO) \
-	    $(call SUBST_STRING,CSC) \
-	    $(call SUBST_STRING,CSCFLAGS) \
 	    $(call SUBST_STRING,EXE) \
 	    $(call SUBST_STRING,MKDLL_EXP) \
 	    $(call SUBST_STRING,MKEXE_EXP) \
