@@ -18,8 +18,6 @@ ROOTDIR = ..
 include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 
-OCAMLYACCFLAGS = --strict -v
-
 OCAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
 OCAMLOPT = $(BEST_OCAMLOPT) $(STDLIBFLAGS)
 

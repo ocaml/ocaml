@@ -27,8 +27,6 @@ OCAMLLEX ?= $(BOOT_OCAMLLEX)
 
 include $(ROOTDIR)/Makefile.common
 
-OCAMLYACCFLAGS = -v
-
 CAMLC = $(BOOT_OCAMLC) $(BOOT_STDLIBFLAGS) \
   -use-prims $(ROOTDIR)/runtime/primitives
 CAMLOPT = $(OCAMLRUN) $(ROOTDIR)/ocamlopt$(EXE) $(STDLIBFLAGS)

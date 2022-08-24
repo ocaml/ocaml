@@ -193,7 +193,7 @@ OCAMLLEXFLAGS ?= -q
 
 OCAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc$(EXE)
 
-OCAMLYACCFLAGS ?=
+OCAMLYACCFLAGS ?= --strict -v
 
 %.ml %.mli: %.mly
 	$(OCAMLYACC) $(OCAMLYACCFLAGS) $<
