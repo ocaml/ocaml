@@ -253,7 +253,7 @@ libraries and tooling that end-users use. The flexible API enables use of
 the performance data from runtime events for logging and monitoring purposes.
 
 In this section we cover several utilities in the \texttt{runtime_events_tools}
-package which provide simple ways of extracting and summarisingdata from runtime
+package which provide simple ways of extracting and summarising data from runtime
 events. The trace utility in particular produces similar data to the previous
 'eventlog' instrumentation system available in OCaml 4.12 to 4.14.
 
