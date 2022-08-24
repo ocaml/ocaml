@@ -91,7 +91,7 @@ running domain and, on domain termination, ring buffers may be re-used for newly
 spawned domains. The ring buffers themselves are stored in a memory-mapped file
 with the processes identifier as the name and the extension ".events", this
 enables them to be read from outside the main OCaml process. See
-\libdocitem{Runtime_events}{runtime events} for more information.
+\stdmoduleref{Runtime_events} for more information.
 
 \subsubsection{s:runtime-tracing-apis}{Consumption APIs}
 
