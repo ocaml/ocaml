@@ -753,3 +753,5 @@ external unsafe_blit_string :
   = "caml_blit_string" [@@noalloc]
 external unsafe_fill :
   bytes -> int -> int -> char -> unit = "caml_fill_bytes" [@@noalloc]
+
+val unsafe_escape : bytes -> bytes
