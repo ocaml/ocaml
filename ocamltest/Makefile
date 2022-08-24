@@ -51,7 +51,6 @@ else
 endif
 
 ifeq "$(UNIX_OR_WIN32)" "win32"
-  ocamlsrcdir := $(shell echo "$(abspath $(shell pwd)/..)" | cygpath -w -f -)
   CSC := csc
   ifeq "$(HOST:i686-%=i686)" "i686"
     CSCFLAGS := /platform:x86
@@ -60,7 +59,6 @@ ifeq "$(UNIX_OR_WIN32)" "win32"
   endif
   CSCFLAGS += /nologo /nowarn:1668
 else
-  ocamlsrcdir := $(abspath $(shell pwd)/..)
   CSC :=
   CSCFLAGS :=
 endif
@@ -101,7 +99,7 @@ endif
 
 core := \
   $(run_source) run_stubs.c \
-  ocamltest_config.mli ocamltest_config.ml.in \
+  ocamltest_config.mli ocamltest_config.mlp \
   ocamltest_unix.mli ocamltest_unix.ml \
   ocamltest_stdlib.mli ocamltest_stdlib.ml \
   run_command.mli run_command.ml \
@@ -144,7 +142,7 @@ sources := $(core) $(ocaml_plugin) \
 
 ml_files := \
   $(filter %.ml, \
-    $(subst .ml.in,.ml,$(subst .mll,.ml,$(subst .mly,.ml,$(sources)))) \
+    $(subst .mlp,.ml,$(subst .mll,.ml,$(subst .mly,.ml,$(sources)))) \
   )
 
 cmo_files := $(ml_files:.ml=.cmo)
@@ -165,11 +163,11 @@ lexers := $(filter %.mll,$(sources))
 
 parsers := $(filter %.mly,$(sources))
 
-config_files := $(filter %.ml.in,$(sources))
+config_files := $(filter %.mlp,$(sources))
 
 dependencies_generated_prereqs := \
   ocamltest_unix.ml \
-  $(config_files:.ml.in=.ml) \
+  $(config_files:.mlp=.ml) \
   $(lexers:.mll=.ml) \
   $(parsers:.mly=.mli) $(parsers:.mly=.ml)
 
@@ -230,7 +228,7 @@ ocamltest_unix.ml: ocamltest_unix_$(ocamltest_unix).ml
 	echo '# 1 "$^"' > $@
 	cat $^ >> $@
 
-ocamltest_config.ml: ocamltest_config.ml.in Makefile ../Makefile.config
+ocamltest_config.ml: ocamltest_config.mlp Makefile ../Makefile.config
 	sed $(call SUBST,AFL_INSTRUMENT) \
 	    $(call SUBST,INSTRUMENTED_RUNTIME) \
 	    $(call SUBST,ARCH) \
@@ -240,7 +238,6 @@ ocamltest_config.ml: ocamltest_config.ml.in Makefile ../Makefile.config
 	    $(call SUBST,str) \
 	    $(call SUBST,SYSTEM) \
 	    $(call SUBST_STRING,CPP) \
-	    $(call SUBST_STRING,ocamlsrcdir) \
 	    $(call SUBST,FLAMBDA) \
 	    $(call SUBST,FLAT_FLOAT_ARRAY) \
 	    $(call SUBST,WITH_OCAMLDOC) \
@@ -297,6 +294,7 @@ endif
 
 .PHONY: distclean
 distclean: clean
+	rm -f ocamltest_config.mlp
 
 $(DEPDIR)/%.$(D): %.c | $(DEPDIR)
 	$(DEP_CC) $(OC_CPPFLAGS) $(CPPFLAGS) $< -MT '$*.$(O)' -MF $@

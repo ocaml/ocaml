@@ -828,6 +828,7 @@ outputobj
 outputexe
 ocamlyacc_wstr_module
 unix_or_win32
+ocamlsrcdir
 systhread_support
 system
 model
@@ -2935,6 +2936,7 @@ OCAML_VERSION_SHORT=5.1
 
 
 
+
  # TODO: rename this variable
 
 
@@ -2986,6 +2988,8 @@ ac_config_files="$ac_config_files stdlib/sys.ml"
 ac_config_files="$ac_config_files manual/src/version.tex"
 
 ac_config_files="$ac_config_files manual/src/html_processing/src/common.ml"
+
+ac_config_files="$ac_config_files ocamltest/ocamltest_config.mlp"
 
 ac_config_headers="$ac_config_headers runtime/caml/m.h"
 
@@ -12680,16 +12684,33 @@ case $ocaml_cv_cc_vendor in #(
   CPP="$CC -E -P" ;;
 esac
 
+# Absolute path to the toplevel source directory
+
+# A sentinel character (X) is added at the end of the directory name
+# and then removed, in case the directory name finishes with an odd character.
+# (The $(...) construct strips trailing \n characters.)
+# Also, it is important to use `printf` rather than `echo` because the
+# behaviour of `echo` is indeterminate and uncontrollable if the
+# absolute path contains backslashes, which will definitely be the case
+# on Windows
+# See https://lists.gnu.org/archive/html/autoconf/2019-07/msg00002.html
+# for the detailed explanation.
+
+ocamlsrcdir=$(unset CDPATH; cd -- "$srcdir" && printf %sX "$PWD") || fail
+ocamlsrcdir=${ocamlsrcdir%X}
+
 # Libraries to build depending on the host
 
 case $host in #(
   *-*-mingw32|*-pc-windows) :
     unix_or_win32="win32"
+    ocamlsrcdir="$(LC_ALL=C.UTF-8 cygpath -w -- "$ocamlsrcdir")"
     ocamlyacc_wstr_module="yacc/wstr" ;; #(
   *) :
     unix_or_win32="unix"
   ocamlyacc_wstr_module="" ;;
 esac
+
 case $host in #(
   *-*-cygwin*|*-*-mingw32|*-pc-windows) :
     exeext=".exe" ;; #(
@@ -19367,6 +19388,7 @@ do
     "stdlib/sys.ml") CONFIG_FILES="$CONFIG_FILES stdlib/sys.ml" ;;
     "manual/src/version.tex") CONFIG_FILES="$CONFIG_FILES manual/src/version.tex" ;;
     "manual/src/html_processing/src/common.ml") CONFIG_FILES="$CONFIG_FILES manual/src/html_processing/src/common.ml" ;;
+    "ocamltest/ocamltest_config.mlp") CONFIG_FILES="$CONFIG_FILES ocamltest/ocamltest_config.mlp" ;;
     "runtime/caml/m.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/m.h" ;;
     "runtime/caml/s.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/s.h" ;;
     "runtime/caml/version.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/version.h" ;;
