@@ -874,7 +874,7 @@ let rec pkey chan  = function
     min_clusters.(len-1),k
 
   (* The code to generate a dense switch is provided
-     by the functor paramter as Arg.make_switch
+     by the functor parameter as Arg.make_switch
      (which will typically use a jump table) *)
   let make_switch loc {cases=cases ; actions=actions} i j =
     (* Assume j > i *)
