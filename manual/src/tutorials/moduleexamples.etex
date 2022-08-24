@@ -12,7 +12,7 @@ these definitions. This avoids running out of names or accidentally
 confusing names. Such a package is called a {\em structure} and
 is introduced by the "struct"\ldots"end" construct, which contains an
 arbitrary sequence of definitions. The structure is usually given a
-name with the "module" binding. Here is for instance a structure
+name with the "module" binding. For instance, here is a structure
 packaging together a type of priority queues and their operations:
 \begin{caml_example}{toplevel}
 module PrioQueue =
@@ -61,7 +61,7 @@ insert empty 1 "hello";;
 \end{caml_example}
 
 Opening a module enables lighter access to its components, at the
-cost of making it harder to identify in which module a identifier
+cost of making it harder to identify in which module an identifier
 has been defined. In particular, opened modules can shadow
 identifiers present in the current scope, potentially leading
 to confusing errors:
