@@ -6741,3 +6741,124 @@ toplevel/native/trace.cmi : \
     typing/path.cmi \
     parsing/longident.cmi \
     typing/env.cmi
+lex/common.cmo : \
+    lex/syntax.cmi \
+    lex/lexgen.cmi \
+    lex/common.cmi
+lex/common.cmx : \
+    lex/syntax.cmx \
+    lex/lexgen.cmx \
+    lex/common.cmi
+lex/common.cmi : \
+    lex/syntax.cmi \
+    lex/lexgen.cmi
+lex/compact.cmo : \
+    lex/table.cmi \
+    lex/lexgen.cmi \
+    lex/compact.cmi
+lex/compact.cmx : \
+    lex/table.cmx \
+    lex/lexgen.cmx \
+    lex/compact.cmi
+lex/compact.cmi : \
+    lex/lexgen.cmi
+lex/cset.cmo : \
+    lex/cset.cmi
+lex/cset.cmx : \
+    lex/cset.cmi
+lex/cset.cmi :
+lex/lexer.cmo : \
+    lex/syntax.cmi \
+    lex/parser.cmi \
+    lex/lexer.cmi
+lex/lexer.cmx : \
+    lex/syntax.cmx \
+    lex/parser.cmx \
+    lex/lexer.cmi
+lex/lexer.cmi : \
+    lex/parser.cmi
+lex/lexgen.cmo : \
+    lex/table.cmi \
+    lex/syntax.cmi \
+    lex/cset.cmi \
+    lex/lexgen.cmi
+lex/lexgen.cmx : \
+    lex/table.cmx \
+    lex/syntax.cmx \
+    lex/cset.cmx \
+    lex/lexgen.cmi
+lex/lexgen.cmi : \
+    lex/syntax.cmi
+lex/main.cmo : \
+    lex/syntax.cmi \
+    lex/parser.cmi \
+    lex/outputbis.cmi \
+    lex/output.cmi \
+    lex/lexgen.cmi \
+    lex/lexer.cmi \
+    lex/cset.cmi \
+    lex/compact.cmi \
+    lex/common.cmi \
+    lex/main.cmi
+lex/main.cmx : \
+    lex/syntax.cmx \
+    lex/parser.cmx \
+    lex/outputbis.cmx \
+    lex/output.cmx \
+    lex/lexgen.cmx \
+    lex/lexer.cmx \
+    lex/cset.cmx \
+    lex/compact.cmx \
+    lex/common.cmx \
+    lex/main.cmi
+lex/main.cmi :
+lex/output.cmo : \
+    lex/lexgen.cmi \
+    lex/compact.cmi \
+    lex/common.cmi \
+    lex/output.cmi
+lex/output.cmx : \
+    lex/lexgen.cmx \
+    lex/compact.cmx \
+    lex/common.cmx \
+    lex/output.cmi
+lex/output.cmi : \
+    lex/syntax.cmi \
+    lex/lexgen.cmi \
+    lex/compact.cmi \
+    lex/common.cmi
+lex/outputbis.cmo : \
+    lex/lexgen.cmi \
+    lex/common.cmi \
+    lex/outputbis.cmi
+lex/outputbis.cmx : \
+    lex/lexgen.cmx \
+    lex/common.cmx \
+    lex/outputbis.cmi
+lex/outputbis.cmi : \
+    lex/syntax.cmi \
+    lex/lexgen.cmi \
+    lex/common.cmi
+lex/parser.cmo : \
+    lex/syntax.cmi \
+    lex/cset.cmi \
+    lex/parser.cmi
+lex/parser.cmx : \
+    lex/syntax.cmx \
+    lex/cset.cmx \
+    lex/parser.cmi
+lex/parser.cmi : \
+    lex/syntax.cmi
+lex/syntax.cmo : \
+    lex/cset.cmi \
+    lex/syntax.cmi
+lex/syntax.cmx : \
+    lex/cset.cmx \
+    lex/syntax.cmi
+lex/syntax.cmi : \
+    lex/cset.cmi
+lex/table.cmo : \
+    lex/table.cmi
+lex/table.cmx : \
+    lex/table.cmi
+lex/table.cmi :

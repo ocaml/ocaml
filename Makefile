@@ -119,9 +119,12 @@ partialclean::
 .PHONY: beforedepend
 beforedepend:: utils/config.ml utils/domainstate.ml utils/domainstate.mli
 
+ocamllex_PROGRAMS := $(addprefix lex/,ocamllex ocamllex.opt)
+
 ocamlyacc_PROGRAM = yacc/ocamlyacc
+
 PROGRAMS = expunge ocaml ocamlc ocamlc.opt ocamlnat ocamlopt ocamlopt.opt \
-  $(ocamlyacc_PROGRAM)
+  $(ocamllex_PROGRAMS) $(ocamlyacc_PROGRAM)
 
 $(foreach PROGRAM, $(PROGRAMS), $(eval $(call PROGRAM_SYNONYM,$(PROGRAM))))
 
@@ -1042,7 +1045,7 @@ clean::
 # Dependencies
 
 subdirs = stdlib $(addprefix otherlibs/, $(ALL_OTHERLIBS)) \
-  debugger lex ocamldoc ocamltest tools
+  debugger ocamldoc ocamltest tools
 
 .PHONY: alldepend
 alldepend: depend
@@ -1067,18 +1070,39 @@ libraryopt:
 partialclean::
 	$(MAKE) -C stdlib clean
 
-# The lexer and parser generators
+# The lexer generator
+
+ocamllex_MODULES = $(addprefix lex/,\
+  cset syntax parser lexer table lexgen compact  common output outputbis main)
+
+.PHONY: lex-all
+lex-all: lex/ocamllex
+
+.PHONY: lex-allopt
+lex-allopt: lex/ocamllex.opt
 
 .PHONY: ocamllex
 ocamllex: ocamlyacc
-	$(MAKE) -C lex all
+	$(MAKE) lex-all
 
 .PHONY: ocamllex.opt
 ocamllex.opt: ocamlopt
-	$(MAKE) -C lex allopt
+	$(MAKE) lex-allopt
+
+lex/ocamllex$(EXE): $(ocamllex_MODULES:=.cmo)
+	$(CAMLC) $(LINKFLAGS) -compat-32 -o $@ $^
+
+lex/ocamllex.opt$(EXE): $(ocamllex_MODULES:=.cmx)
+	$(CAMLOPT_CMD) $(LINKFLAGS) -o $@ $^
 
 partialclean::
-	$(MAKE) -C lex clean
+	rm -f lex/*.cm* lex/*.o lex/*.obj
+
+beforedepend:: lex/parser.ml lex/parser.mli lex/lexer.ml
+
+clean::
+	rm -f lex/parser.ml lex/parser.mli lex/parser.output
+	rm -f lex/lexer.ml
 
 # The ocamlyacc parser generator
 
@@ -1320,7 +1344,7 @@ ocamlnat$(EXE): $(ocamlnat_dependencies)
 	$(CAMLOPT_CMD) $(OC_COMMON_LDFLAGS) -linkall -I toplevel/native -o $@ $^
 
 COMPILE_NATIVE_MODULE = \
-  $(CAMLOPT_CMD) $(OC_COMMON_CFLAGS) $(INCLUDES) $(OC_NATIVE_CFLAGS)
+  $(CAMLOPT_CMD) $(OC_COMMON_CFLAGS) -I $(@D) $(INCLUDES) $(OC_NATIVE_CFLAGS)
 
 toplevel/topdirs.cmx toplevel/toploop.cmx $(TOPLEVELSTART:.cmo=.cmx): \
   OC_NATIVE_CFLAGS += -I toplevel/native
@@ -1360,13 +1384,13 @@ endif
 # Default rules
 
 %.cmo: %.ml
-	$(CAMLC) $(OC_COMMON_CFLAGS) $(INCLUDES) -c $< -I $(@D)
+	$(CAMLC) $(OC_COMMON_CFLAGS) -I $(@D) $(INCLUDES) -c $<
 
 %.cmi: %.mli
-	$(CAMLC) $(OC_COMMON_CFLAGS) $(INCLUDES) -c $<
+	$(CAMLC) $(OC_COMMON_CFLAGS) -I $(@D) $(INCLUDES) -c $<
 
 %.cmx: %.ml
-	$(COMPILE_NATIVE_MODULE) -I $(@D) -c $<
+	$(COMPILE_NATIVE_MODULE) -c $<
 
 partialclean::
 	for d in utils parsing typing bytecomp asmcomp middle_end file_formats \
@@ -1382,7 +1406,7 @@ depend: beforedepend
 	(for d in utils parsing typing bytecomp asmcomp middle_end \
          lambda file_formats middle_end/closure middle_end/flambda \
          middle_end/flambda/base_types \
-         driver toplevel toplevel/byte toplevel/native; \
+         driver toplevel toplevel/byte toplevel/native lex; \
 	 do \
 	   $(OCAMLDEP) $(OC_OCAMLDEPFLAGS) -I $$d $(INCLUDES) \
 	   $(OCAMLDEPFLAGS) $$d/*.mli $$d/*.ml \
@@ -1392,7 +1416,6 @@ depend: beforedepend
 .PHONY: distclean
 distclean: clean
 	$(MAKE) -C debugger distclean
-	$(MAKE) -C lex distclean
 	$(MAKE) -C manual distclean
 	$(MAKE) -C ocamldoc distclean
 	$(MAKE) -C ocamltest distclean
