@@ -64,6 +64,10 @@ DOCDIR=@docdir@
 # Expanded form of MKEXE_EXP and MKDLL_EXP _with host flexlink command_
 MKEXE_EXP=@mkexe_exp@
 MKDLL_EXP=@mkdll_exp@
+ocamltest_unix_impl = @ocamltest_unix_impl@
+ocamltest_unix_name = @ocamltest_unix_name@
+ocamltest_unix_path = @ocamltest_unix_path@
+ocamltest_unix_include = @ocamltest_unix_include@$(EMPTY)
 
 # Which make target to build, depending on whether the native compiler
 # has been enabled or not during the configuration stage

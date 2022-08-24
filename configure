@@ -786,11 +786,23 @@ ASPP
 ocamltest
 documentation_tool_cmd
 documentation_tool
+ocamltest_ocamldoc
 ocamldoc
 with_camltex
+ocamltest_ocamldebug
 with_debugger
 as_has_debug_prefix_map
 cc_has_debug_prefix_map
+ocamltest_unix_include
+ocamltest_unix_path
+ocamltest_unix_name
+ocamltest_unix_impl
+ocamltest_libunix
+ocamltest_CPP
+lib_unix
+lib_systhreads
+lib_str
+lib_dynlink
 otherlibraries
 has_monotonic_clock
 instrumented_runtime_libs
@@ -2829,6 +2841,15 @@ instrumented_runtime=true
 force_instrumented_runtime=false
 instrumented_runtime_libs=""
 bootstrapping_flexdll=false
+lib_dynlink=false
+lib_str=false
+lib_systhreads=false
+lib_unix=false
+ocamltest_libunix=None
+ocamltest_unix_impl="dummy"
+ocamltest_unix_name=""
+ocamltest_unix_path=""
+ocamltest_unix_include=""
 
 # Information about the package
 
@@ -2946,7 +2967,19 @@ OCAML_VERSION_SHORT=5.1
 
 
 
+
+
+
+
+
+
+
+
+
+
  # TODO: rename this variable
+
+
 
 
 
@@ -2998,7 +3031,7 @@ ac_config_files="$ac_config_files manual/src/version.tex"
 
 ac_config_files="$ac_config_files manual/src/html_processing/src/common.ml"
 
-ac_config_files="$ac_config_files ocamltest/ocamltest_config.mlp"
+ac_config_files="$ac_config_files ocamltest/ocamltest_config.ml"
 
 ac_config_headers="$ac_config_headers runtime/caml/m.h"
 
@@ -12695,16 +12728,18 @@ fi
 # manually to make sure the backward compatibility is preserved
 case $ocaml_cv_cc_vendor in #(
   xlc-*) :
-    CPP="$CC -E -qnoppline" ;; #(
-  # suppress incompatible XLC line directives
+    CPP="$CC -E -qnoppline" # suppress incompatible XLC line directives
+    ocamltest_CPP="$CPP" ;; #(
   sunc-*) :
-    CPP="$CC -E -Qn" ;; #(
-  # suppress generation of Sun PRO ident string
+    CPP="$CC -E -Qn" # suppress generation of Sun PRO ident string
+    ocamltest_CPP="$CPP" ;; #(
   msvc-*) :
-    CPP="$CC -nologo -EP" ;; #(
+    CPP="$CC -nologo -EP"
+    ocamltest_CPP="$CPP 2>null" ;; #(
   *) :
     #  TODO: why can we not use $CPP in multicore, fix this?
-  CPP="$CC -E -P" ;;
+  CPP="$CC -E -P"
+  ocamltest_CPP="$CPP" ;;
 esac
 
 # Absolute path to the toplevel source directory
@@ -12727,10 +12762,12 @@ ocamlsrcdir=${ocamlsrcdir%X}
 case $host in #(
   *-*-mingw32|*-pc-windows) :
     unix_or_win32="win32"
+    ocamltest_libunix="Some false"
     ocamlsrcdir="$(LC_ALL=C.UTF-8 cygpath -w -- "$ocamlsrcdir")"
     ocamlyacc_wstr_module="yacc/wstr" ;; #(
   *) :
     unix_or_win32="unix"
+  ocamltest_libunix="Some true"
   ocamlyacc_wstr_module="" ;;
 esac
 
@@ -12742,14 +12779,22 @@ case $host in #(
 esac
 
 otherlibraries="dynlink runtime_events"
+lib_dynlink=true
 if test x"$enable_unix_lib" != "xno"; then :
   enable_unix_lib=yes
   ac_config_files="$ac_config_files otherlibs/unix/META"
 
   otherlibraries="$otherlibraries unix"
+  lib_unix=true
+  ocamltest_unix_impl="real"
+  ocamltest_unix_name="unix"
+  ocamltest_unix_path='$(ROOTDIR)/otherlibs/unix'
+  ocamltest_unix_include='-I $(ROOTDIR)/otherlibs/unix '
 fi
+
 if test x"$enable_str_lib" != "xno"; then :
   otherlibraries="$otherlibraries str"
+  lib_str=true
   ac_config_files="$ac_config_files otherlibs/str/META"
 
 fi
@@ -16822,15 +16867,18 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 case $enable_debugger in #(
   no) :
     with_debugger=""
+    ocamltest_ocamldebug=false
     { $as_echo "$as_me:${as_lineno-$LINENO}: replay debugger disabled" >&5
 $as_echo "$as_me: replay debugger disabled" >&6;} ;; #(
   *) :
     if $sockets; then :
   with_debugger="ocamldebugger"
+    ocamltest_ocamldebug=true
     { $as_echo "$as_me:${as_lineno-$LINENO}: replay debugger supported" >&5
 $as_echo "$as_me: replay debugger supported" >&6;}
 else
   with_debugger=""
+    ocamltest_ocamldebug=false
     { $as_echo "$as_me:${as_lineno-$LINENO}: replay debugger not supported" >&5
 $as_echo "$as_me: replay debugger not supported" >&6;}
 fi
@@ -17602,6 +17650,7 @@ $as_echo "$as_me: the threads library is disabled" >&6;} ;; #(
   ac_config_files="$ac_config_files otherlibs/systhreads/META"
 
   otherlibraries="$otherlibraries systhreads"
+  lib_systhreads=true
   { $as_echo "$as_me:${as_lineno-$LINENO}: the threads library is supported" >&5
 $as_echo "$as_me: the threads library is supported" >&6;} ;;
 esac
@@ -17884,8 +17933,10 @@ fi
 
 if test x"$enable_ocamldoc" = "xno"; then :
   ocamldoc=""
+  ocamltest_ocamldoc=false
 else
   ocamldoc=ocamldoc
+  ocamltest_ocamldoc=true
   ac_config_files="$ac_config_files ocamldoc/META"
 
 fi
@@ -19411,7 +19462,7 @@ do
     "stdlib/sys.ml") CONFIG_FILES="$CONFIG_FILES stdlib/sys.ml" ;;
     "manual/src/version.tex") CONFIG_FILES="$CONFIG_FILES manual/src/version.tex" ;;
     "manual/src/html_processing/src/common.ml") CONFIG_FILES="$CONFIG_FILES manual/src/html_processing/src/common.ml" ;;
-    "ocamltest/ocamltest_config.mlp") CONFIG_FILES="$CONFIG_FILES ocamltest/ocamltest_config.mlp" ;;
+    "ocamltest/ocamltest_config.ml") CONFIG_FILES="$CONFIG_FILES ocamltest/ocamltest_config.ml" ;;
     "runtime/caml/m.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/m.h" ;;
     "runtime/caml/s.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/s.h" ;;
     "runtime/caml/version.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/version.h" ;;
