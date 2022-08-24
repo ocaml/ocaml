@@ -110,28 +110,6 @@ ifeq "$(FUNCTION_SECTIONS)" "true"
 OPTCOMPFLAGS += -function-sections
 endif
 
-# Escape special characters in the argument string.
-# There are four characters that need escaping:
-# - backslash and ampersand, which are special in the replacement text
-#   of sed's "s" command
-# - exclamation mark, which is the delimiter we use for sed's "s" command
-# - single quote, which interferes with shell quoting.  We are inside
-#   single quotes already, so the proper escape is '\''
-#   (close single quotation, insert single quote character,
-#    reopen single quotation).
-SED_ESCAPE=$(subst ','\'',$(subst !,\!,$(subst &,\&,$(subst \,\\,$1))))
-
-# Escape special characters in an OCaml string literal "..."
-# There are two: backslash and double quote.
-OCAML_ESCAPE=$(subst ",\",$(subst \,\\,$1))
-
-# SUBST generates the sed substitution for the variable *named* in $1
-SUBST=-e 's!%%$1%%!$(call SED_ESCAPE,$($1))!'
-
-# SUBST_STRING does the same, for a variable that occurs between "..."
-# in config.mlp.  Thus, backslashes and double quotes must be escaped.
-SUBST_STRING=-e 's!%%$1%%!$(call SED_ESCAPE,$(call OCAML_ESCAPE,$($1)))!'
-
 # The rule to compile C files
 
 # This rule is similar to GNU make's implicit rule, except that it is more
