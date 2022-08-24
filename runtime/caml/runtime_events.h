@@ -263,7 +263,7 @@ CAMLextern value caml_runtime_events_user_write(value event,
 
 /* Resolve an event name to the associated event value using known registered
    events. */
-CAMLextern value caml_runtime_events_user_resolve(char* event_name, 
+CAMLextern value caml_runtime_events_user_resolve(char* event_name,
    uintnat event_type);
 
 #endif /* CAML_INTERNALS */

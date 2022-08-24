@@ -15,7 +15,7 @@ let counter = User.register "libname.counter" MyCounter Type.counter
 
 let counter2 = User.register "libname.counter2" MyCounter2 Type.counter
 
-let custom_type = 
+let custom_type =
   let encode buf value =
     let l = String.length value in
     Bytes.blit_string value 0 buf 0 l;
