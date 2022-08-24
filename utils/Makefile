@@ -33,7 +33,7 @@ prefix_and_quote = $(if $(1), $(2)$(if $(word 2,$(1)),"$(1)",$(1)))
 FLEXLINK_LDFLAGS = $(call prefix_and_quote,$(OC_LDFLAGS),-link $(EMPTY))
 FLEXLINK_DLL_LDFLAGS = $(call prefix_and_quote,$(OC_DLL_LDFLAGS),-link $(EMPTY))
 
-config_main.ml: config.mlp $(ROOTDIR)/Makefile.config Makefile config.common.ml
+config.generated.ml: config.generated.mlp
 	sed $(call SUBST,AFL_INSTRUMENT) \
 	    $(call SUBST,ARCH) \
 	    $(call SUBST_STRING,ARCMD) \
@@ -85,7 +85,10 @@ config_main.ml: config.mlp $(ROOTDIR)/Makefile.config Makefile config.common.ml
 	    $(call SUBST,AS_HAS_DEBUG_PREFIX_MAP) \
 	    $(call SUBST,FORCE_INSTRUMENTED_RUNTIME) \
 	    $< > $@
-	cat config.common.ml >> $@
+
+config_main.ml: \
+  config.generated.ml $(ROOTDIR)/Makefile.config Makefile config.common.ml
+	cat config.generated.ml config.common.ml > $@
 
 config_boot.ml: config.fixed.ml config.common.ml Makefile
 	cat config.fixed.ml config.common.ml > $@

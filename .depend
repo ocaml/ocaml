@@ -49,6 +49,8 @@ utils/config.common.cmo :
 utils/config.common.cmx :
 utils/config.fixed.cmo :
 utils/config.fixed.cmx :
+utils/config.generated.cmo :
+utils/config.generated.cmx :
 utils/config.cmo : \
     utils/config.cmi
 utils/config.cmx : \

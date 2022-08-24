@@ -91,7 +91,7 @@ CONFIG_MODULE_DEPENDENCIES = \
 utils/config.ml: utils/config_main.ml utils/config_boot.ml
 	$(MAKE) -C utils config.ml
 
-utils/config_main.ml: utils/config.mlp $(CONFIG_MODULE_DEPENDENCIES)
+utils/config_main.ml: utils/config.generated.mlp $(CONFIG_MODULE_DEPENDENCIES)
 	$(MAKE) -C utils config_main.ml
 
 utils/config_boot.ml: utils/config.fixed.ml $(CONFIG_MODULE_DEPENDENCIES)
@@ -112,8 +112,9 @@ configure: configure.ac aclocal.m4 build-aux/ocaml_version.m4 tools/autogen
 
 .PHONY: partialclean
 partialclean::
-	rm -f utils/config.ml utils/config_main.ml utils/config_main.mli \
-        utils/config_boot.ml utils/config_boot.mli \
+	rm -f utils/config.ml utils/config.generated.ml \
+	utils/config_main.ml utils/config_main.mli \
+	utils/config_boot.ml utils/config_boot.mli \
         utils/domainstate.ml utils/domainstate.mli
 
 .PHONY: beforedepend

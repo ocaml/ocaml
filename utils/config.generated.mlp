@@ -1,4 +1,4 @@
-#2 "utils/config.mlp"
+#2 "utils/config.generated.mlp"
 (**************************************************************************)
 (*                                                                        *)
 (*                                 OCaml                                  *)
@@ -13,6 +13,9 @@
 (*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
+
+(* This file is included in config_main.ml during the build rather
+   than compiled on its own *)
 
 let bindir = "%%BINDIR%%"
 
