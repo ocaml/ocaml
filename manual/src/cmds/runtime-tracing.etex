@@ -267,7 +267,7 @@ This should install the olly tool in your path. You can now generate
 runtime traces for programs compiled with OCaml 5.0+ using the trace subcommand:
 
 \begin{verbatim}
-olly trace trace.json your_program.exe .. args ..
+olly trace trace.json 'your_program.exe .. args ..'
 \end{verbatim}
 
 Runtime tracing data will be generated in the json Trace Event Format to trace.json.
@@ -285,7 +285,7 @@ events data and on program completion emits a parseable histogram summary of
 pause durations. It can be run as follows:
 
 \begin{verbatim}
-olly latency your_program.exe .. args ..
+olly latency 'your_program.exe .. args ..'
 \end{verbatim}
 
 This should produce an output similar to the following:
