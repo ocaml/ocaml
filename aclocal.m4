@@ -464,7 +464,7 @@ int main (void) {
      broken implementations of Cygwin64, mingw-w64 (x86_64) and VS2013-2017.
      The static volatile variables aim to thwart GCC's constant folding. */
   static volatile double x, y, z;
-  double t264, t265, t266;
+  volatile double t264, t265, t266;
   x = 0x3.bd5b7dde5fddap-496;
   y = 0x3.bd5b7dde5fddap-496;
   z = -0xd.fc352bc352bap-992;
