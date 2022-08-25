@@ -499,8 +499,8 @@ OCaml 5.0
   (David Allsopp, report by William Hu, review by Xavier Leroy and
    Sébastien Hinderer)
 
-- #11???: Thwart FMA test optimization during configure
-  (William Hu, review by ???)
+- #11487: Thwart FMA test optimization during configure
+  (William Hu, review by David Allsopp and Sébastien Hinderer)
 
 ### Bug fixes:
 
@@ -560,7 +560,7 @@ OCaml 5.0
   it to ensure that the headers can always be used in code which turns on
   -Wundef (or equivalent).
   (David Allsopp and Nicolás Ojeda Bär, review by Nicolás Ojeda Bär and
-   Sebastien Hinderer)
+   Sébastien Hinderer)
 
 - #11289, #11405: fix some leaks on systhread termination
   (Fabrice Buoro, Enguerrand Decorne, Gabriel Scherer,
