@@ -2007,7 +2007,7 @@ let type_path_expansion ppf = function
 let rec trace fst txt ppf = function
   | {Errortrace.got; expected} :: rem ->
       if not fst then fprintf ppf "@,";
-      fprintf ppf "@[Type@;<1 2>%a@ %s@;<1 2>%a@] %a"
+      fprintf ppf "@[Type@;<1 2>%a@ %s@;<1 2>%a@]%a"
        type_expansion got txt type_expansion expected
        (trace false txt) rem
   | _ -> ()

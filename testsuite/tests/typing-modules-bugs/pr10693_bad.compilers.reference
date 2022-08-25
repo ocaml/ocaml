@@ -46,7 +46,7 @@ Error: Signature mismatch:
        is not included in
          val x : X/2.t option
        The type X.t option is not compatible with the type X/2.t option
-       Type X.t is not compatible with type X/2.t 
+       Type X.t is not compatible with type X/2.t
        File "_none_", line 1:
          Definition of module X
        File "_none_", line 1:
