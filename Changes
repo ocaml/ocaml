@@ -7,8 +7,8 @@ OCaml 4.14 maintenance branch
   (David Allsopp, report by William Hu, review by Xavier Leroy and
    Sébastien Hinderer)
 
-- #11???: Thwart FMA test optimization during configure
-  (William Hu, review by ???)
+- #11487: Thwart FMA test optimization during configure
+  (William Hu, review by David Allsopp and Sébastien Hinderer)
 
 ### Bug fixes:
 
@@ -21,7 +21,7 @@ OCaml 4.14 maintenance branch
   before using it to ensure that the headers can always be used in code which
   turns on -Wundef (or equivalent).
   (David Allsopp and Nicolás Ojeda Bär, review by Nicolás Ojeda Bär and
-   Sebastien Hinderer)
+   Sébastien Hinderer)
 
 - #11314, #11416: fix non-informative error message for module inclusion
   (Florian Angeletti, report by Thierry Martinez, review by Gabriel Scherer)
