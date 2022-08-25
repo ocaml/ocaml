@@ -7,6 +7,9 @@ OCaml 4.14 maintenance branch
   (David Allsopp, report by William Hu, review by Xavier Leroy and
    Sébastien Hinderer)
 
+- #11???: Thwart FMA test optimization during configure
+  (William Hu, review by ???)
+
 ### Bug fixes:
 
 - #11204: Fix regression introduced in 4.14.0 that would trigger Warning 17 when
