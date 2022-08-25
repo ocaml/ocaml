@@ -192,7 +192,7 @@ received function is really applied to an argument.
 \section{s:label-suggestions}{Suggestions for labeling}
 
 Like for names, choosing labels for functions is not an easy task. A
-good label is one which
+good labeling is one which
 
 \begin{itemize}
 \item makes programs more readable,

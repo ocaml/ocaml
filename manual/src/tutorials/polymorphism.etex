@@ -28,7 +28,7 @@ Since the type of "None" is "'a option" and the function "ref" has type
 "'a option ref". However, the inferred type, "'_weak1 option ref", is
 different. Type variables whose names start with a "_weak" prefix like
 "'_weak1" are weakly polymorphic type variables, sometimes shortened to
-"weak type variables".
+``weak type variables''.
 A weak type variable is a placeholder for a single type that is currently
 unknown. Once the specific type "t" behind the placeholder type "'_weak1"
 is known, all occurrences of "'_weak1" will be replaced by "t". For instance,
@@ -151,7 +151,7 @@ polymorphic types. For instance, the type "'a list" is covariant in "'a":
   let f () = [];;
   let empty = f ();;
 \end{caml_example}
-Remark that the type inferred for "empty" is "'a list" and not the "'_weak5 list"
+Note that the type inferred for "empty" is "'a list" and not the "'_weak5 list"
 that should have occurred with the value restriction. This is because "f ()"
 is a function application.
 
