@@ -19,12 +19,6 @@ ROOTDIR = ..
 
 include $(ROOTDIR)/Makefile.common
 
-ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
-  FLEXDLL_DIR =
-else
-  FLEXDLL_DIR = +flexdll
-endif
-
 FLEXLINK_FLAGS ?=
 
 # SUBST_QUOTE does the same as SUBST_STRING, adding OCaml quotes around

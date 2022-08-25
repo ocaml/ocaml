@@ -66,6 +66,7 @@ instrumented_runtime=true
 force_instrumented_runtime=false
 instrumented_runtime_libs=""
 bootstrapping_flexdll=false
+flexdll_dir=
 lib_dynlink=false
 lib_str=false
 lib_systhreads=false
@@ -140,6 +141,7 @@ AC_SUBST([ocamlc_cflags])
 AC_SUBST([ocamlc_cppflags])
 AC_SUBST([flexdir])
 AC_SUBST([bootstrapping_flexdll])
+AC_SUBST([flexdll_dir])
 AC_SUBST([long_shebang])
 AC_SUBST([shebangscripts])
 AC_SUBST([AR])
@@ -831,6 +833,7 @@ AS_IF([test x"$supports_shared_libraries" != 'xfalse'], [
         [AC_MSG_RESULT([no])],
         [AC_MSG_RESULT([$iflexdir$flexmsg])
         bootstrapping_flexdll=true
+        flexdll_dir=+flexdll
         # The submodule should be searched *before* any other -I paths
         internal_cppflags="-I $iflexdir $internal_cppflags"])],
       [AS_IF([test x"$with_flexdll" != 'x'],

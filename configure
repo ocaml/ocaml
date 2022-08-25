@@ -819,6 +819,7 @@ mklib
 AR
 shebangscripts
 long_shebang
+flexdll_dir
 bootstrapping_flexdll
 flexdir
 ocamlc_cppflags
@@ -2843,6 +2844,7 @@ instrumented_runtime=true
 force_instrumented_runtime=false
 instrumented_runtime_libs=""
 bootstrapping_flexdll=false
+flexdll_dir=
 lib_dynlink=false
 lib_str=false
 lib_systhreads=false
@@ -2917,6 +2919,7 @@ OCAML_VERSION_SHORT=5.1
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
+
 
 
 
@@ -13094,6 +13097,7 @@ else
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: $iflexdir$flexmsg" >&5
 $as_echo "$iflexdir$flexmsg" >&6; }
         bootstrapping_flexdll=true
+        flexdll_dir=+flexdll
         # The submodule should be searched *before* any other -I paths
         internal_cppflags="-I $iflexdir $internal_cppflags"
 fi ;; #(

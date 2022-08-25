@@ -55,6 +55,7 @@ DOCUMENTATION_TOOL_CMD=@documentation_tool_cmd@
 # Git submodule)
 FLEXDLL_SOURCES=@flexdir@
 BOOTSTRAPPING_FLEXDLL=@bootstrapping_flexdll@
+FLEXDLL_DIR=@flexdll_dir@
 
 ### Where to install documentation
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
