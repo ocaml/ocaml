@@ -85,10 +85,9 @@ static void scanmult (char_os *opt, uintnat *var)
 
 void caml_parse_ocamlrunparam(void)
 {
-  char_os *opt = caml_secure_getenv (T("OCAMLRUNPARAM"));
-
   init_startup_params();
 
+  char_os *opt = caml_secure_getenv (T("OCAMLRUNPARAM"));
   if (opt == NULL) opt = caml_secure_getenv (T("CAMLRUNPARAM"));
 
   if (opt != NULL){
