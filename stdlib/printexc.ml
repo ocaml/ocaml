@@ -52,7 +52,7 @@ let use_printers x =
     | [] -> None in
   conv (Atomic.get printers)
 
-let walk_sum_type x =
+let destruct_ext_constructor x =
   if Obj.tag x <> 0 then
     ((Obj.magic (Obj.field x 0) : string), None)
   else
@@ -60,7 +60,8 @@ let walk_sum_type x =
       (Obj.magic (Obj.field (Obj.field x 0) 0) : string) in
     (constructor, Some (fields x))
 
-let string_of_sum_type (constructor, fields_opt) =
+let string_of_extension_constructor t =
+  let constructor, fields_opt = destruct_ext_constructor t in
   match fields_opt with
   | None -> constructor
   | Some f -> constructor ^ f
@@ -74,13 +75,8 @@ let to_string_default = function
       sprintf locfmt file line char (char+6) "Assertion failed"
   | Undefined_recursive_module(file, line, char) ->
       sprintf locfmt file line char (char+6) "Undefined recursive module"
-  | CamlinternalEffect.Unhandled e ->
-      sprintf "Stdlib.Effect.Unhandled(%s)"
-        (string_of_sum_type (walk_sum_type (Obj.repr e)))
   | x ->
-      let x = Obj.repr x in
-      let (cname, fields) = walk_sum_type x in
-      string_of_sum_type (cname, fields)
+      string_of_extension_constructor (Obj.repr x)
 
 let to_string e =
   match use_printers e with
