@@ -107,11 +107,6 @@ stdlib__Callback.cmx : callback.ml \
     stdlib__Obj.cmx \
     stdlib__Callback.cmi
 stdlib__Callback.cmi : callback.mli
-camlinternalEffect.cmo : \
-    camlinternalEffect.cmi
-camlinternalEffect.cmx : \
-    camlinternalEffect.cmi
-camlinternalEffect.cmi :
 camlinternalFormat.cmo : \
     stdlib__Sys.cmi \
     stdlib__String.cmi \
@@ -234,13 +229,15 @@ stdlib__Domain.cmx : domain.ml \
     stdlib__Domain.cmi
 stdlib__Domain.cmi : domain.mli
 stdlib__Effect.cmo : effect.ml \
+    stdlib__Printf.cmi \
     stdlib__Printexc.cmi \
-    camlinternalEffect.cmi \
+    stdlib__Obj.cmi \
     stdlib__Callback.cmi \
     stdlib__Effect.cmi
 stdlib__Effect.cmx : effect.ml \
+    stdlib__Printf.cmx \
     stdlib__Printexc.cmx \
-    camlinternalEffect.cmx \
+    stdlib__Obj.cmx \
     stdlib__Callback.cmx \
     stdlib__Effect.cmi
 stdlib__Effect.cmi : effect.mli \
@@ -577,7 +574,6 @@ stdlib__Printexc.cmo : printexc.ml \
     stdlib.cmi \
     stdlib__Printf.cmi \
     stdlib__Obj.cmi \
-    camlinternalEffect.cmi \
     stdlib__Buffer.cmi \
     stdlib__Atomic.cmi \
     stdlib__Array.cmi \
@@ -586,12 +582,12 @@ stdlib__Printexc.cmx : printexc.ml \
     stdlib.cmx \
     stdlib__Printf.cmx \
     stdlib__Obj.cmx \
-    camlinternalEffect.cmx \
     stdlib__Buffer.cmx \
     stdlib__Atomic.cmx \
     stdlib__Array.cmx \
     stdlib__Printexc.cmi
-stdlib__Printexc.cmi : printexc.mli
+stdlib__Printexc.cmi : printexc.mli \
+    stdlib__Obj.cmi
 stdlib__Printf.cmo : printf.ml \
     camlinternalFormatBasics.cmi \
     camlinternalFormat.cmi \

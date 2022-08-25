@@ -12,11 +12,22 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type 'a t = 'a CamlinternalEffect.t = ..
+type 'a t = ..
 external perform : 'a t -> 'a = "%perform"
 
-exception Unhandled = CamlinternalEffect.Unhandled
+type exn += Unhandled: 'a t -> exn
 exception Continuation_already_taken
+
+let () =
+  let printer = function
+    | Unhandled x ->
+        let msg = Printf.sprintf "Stdlib.Effect.Unhandled(%s)"
+            (Printexc.string_of_extension_constructor @@ Obj.repr x)
+        in
+        Some msg
+    | _ -> None
+  in
+  Printexc.register_printer printer
 
 (* Register the exceptions so that the runtime can access it *)
 type _ t += Should_not_see_this__ : unit t
