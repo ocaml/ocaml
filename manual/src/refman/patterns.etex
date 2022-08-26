@@ -55,7 +55,7 @@ of names to values''.
 
 \subsubsection*{sss:pat-variable}{Variable patterns}
 
-A pattern that consists in a value name matches any value,
+A pattern that consists of a value name matches any value,
 binding the name to the value. The pattern @"_"@ also matches
 any value, but does not bind any name.
 
