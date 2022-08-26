@@ -16,6 +16,15 @@
 /*                                                                        */
 /**************************************************************************/
 
+/* Runtime events - ring buffer-based runtime tracing
+
+   This file contains the C API for runtime events. It is intended for use
+   cases where the OCaml API is impractical. See the Runtime_events OCaml
+   module source for more detailed information about the system and
+   environment variables to control it externally.
+
+*/
+
 #ifndef CAML_RUNTIME_EVENTS_H
 #define CAML_RUNTIME_EVENTS_H
 
@@ -134,16 +143,21 @@ typedef enum {
 } runtime_events_error;
 
 /* Starts runtime_events. Needs to be called before
-   [caml_runtime_events_create_cursor] */
+   [caml_runtime_events_create_cursor]. Needs the runtime lock held to call and
+   will trigger a stop-the-world pause. Returns Val_unit. */
 CAMLextern value caml_runtime_events_start();
 
-/* Pauses runtime_events. No new events (other than the pause itself) will be
-   written to the ring buffer by this domain immediately and all other domains
-   soon. */
+/* Pauses runtime_events if not currently paused otherwise does nothing.
+   No new events (other than the pause itself) will be written to the ring
+   buffer by this domain immediately and all other domains soon. Needs the
+   runtime lock held to call as a pause event is written during this call.
+   Returns Val_unit. */
 CAMLextern value caml_runtime_events_pause();
 
-/* Removes runtime_events. New events (as well as a resume event) will be
-   written to this domain immediately and all other domains soon. */
+/* Resumes runtime_events if currently paused otherwise does nothing. New events
+   (as well as a resume event) will be written to this domain immediately and
+   all other domains soon. Needs the runtime lock held to call as a resume event
+   is written during this call. Returns Val_unit. */
 CAMLextern value caml_runtime_events_resume();
 
 #ifdef CAML_INTERNALS

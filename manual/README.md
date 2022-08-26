@@ -84,7 +84,7 @@ chapters (or sometimes sections) are mapped to a distinct `.etex` file:
     - Interfacing C with OCaml: `intf-c.etex`
     - Optimisation with Flambda: `flambda.etex`
     - Fuzzing with afl-fuzz: `afl-fuzz.etex`
-    - Runtime tracing with the instrumented runtime: `instrumented-runtime.etex`
+    - Runtime tracing with Runtime_events: `runtime_tracing.etex`
 
 Note that ocamlc,ocamlopt and the toplevel options overlap a lot.
 Consequently, these options are described together in the file
@@ -101,6 +101,7 @@ of `unified-options.etex` contains the relevant information.
     - The unix library: Unix system calls: `libunix.etex`
     - The str library: regular expressions and string processing: `libstr.etex`
     - The threads library: `libthreads.etex`
+    - The runtime_events library: `libruntime_events.etex`
     - The dynlink library: dynamic loading and linking of object files:
       `libdynlink.etex`
 

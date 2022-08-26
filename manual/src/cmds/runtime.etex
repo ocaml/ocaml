@@ -129,6 +129,9 @@ The following environment variables are also consulted:
         "caml_shutdown" in section~\ref{ss:c-embedded-code}). The option also enables
         pooling (as in "caml_startup_pooled"). This mode can be used to detect
         leaks with a third-party memory debugger.
+  \item[e] ("runtime_events_log_wsize") Size of the per-domain runtime events ring
+        buffers in log powers of two words. Defaults to 16, giving 64k word or
+        512kb buffers on 64-bit systems.
   \item[l] ("stack_limit") The limit (in words) of the stack size. This is only
         relevant to the byte-code runtime, as the native code runtime uses the
         operating system's stack.
@@ -190,7 +193,7 @@ The following environment variables are also consulted:
   \end{options}
   \item[V] ("verify_heap") runs an integrity check on the heap just after
     the completion of a major GC cycle
-  \item[W] Print runtime warnings to stderr (such as Channel opened on file 
+  \item[W] Print runtime warnings to stderr (such as Channel opened on file
     dies without being closed, unflushed data, etc.)
 
   If the option letter is not recognized, the whole parameter is ignored;
