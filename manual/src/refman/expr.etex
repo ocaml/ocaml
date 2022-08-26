@@ -181,13 +181,13 @@ It is simple to test or refresh one's understanding:
 
 \subsubsection*{sss:expr-constants}{Constants}
 
-An expression consisting of a constant evaluates to that constant. For example,
+An expression consisting in a constant evaluates to this constant. For example,
 \texttt{3.14} or \texttt{[||]}.
 
 \subsubsection*{sss:expr-var}{Value paths}
 
-An expression consisting of an access path evaluates to the value bound to
-that path in the current evaluation environment. The path can
+An expression consisting in an access path evaluates to the value bound to
+this path in the current evaluation environment. The path can
 be either a value name or an access path to a value component of a module.
 
 \begin{caml_example}{toplevel}
