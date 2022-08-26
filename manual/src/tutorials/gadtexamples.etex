@@ -231,7 +231,7 @@ let get_dyn : type a. a typ -> dyn -> a option =
 
 \section{s:existential-names}{Existential type names in error messages}
 
-The typing of pattern matching in presence of GADT can generate many
+The typing of pattern matching in the presence of GADTs can generate many
 existential types. When necessary, error messages refer to these
 existential types using compiler-generated names. Currently, the
 compiler generates these names according to the following nomenclature:
