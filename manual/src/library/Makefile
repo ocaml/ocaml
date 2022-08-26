@@ -3,7 +3,8 @@ ROOTDIR = ../../..
 TEXQUOTE = $(ROOTDIR)/runtime/ocamlrun ../../tools/texquote2
 
 FILES = core.tex builtin.tex stdlib-blurb.tex compilerlibs.tex \
-  libunix.tex libstr.tex old.tex libthreads.tex libdynlink.tex
+  libunix.tex libstr.tex old.tex libthreads.tex libdynlink.tex \
+  libruntime_events.tex
 
 etex-files: $(FILES)
 all: etex-files

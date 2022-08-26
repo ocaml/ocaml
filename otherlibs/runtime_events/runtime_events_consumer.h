@@ -16,7 +16,8 @@
 #define CAML_RUNTIME_EVENTS_CONSUMER_H
 
 /* This file contains the runtime_events consumer functionality. For producer
-   functionality see `caml/runtime_events.h`. */
+   functionality and functions for starting/pausing/resuming runtime events
+   see `caml/runtime_events.h`. */
 
 #include "caml/runtime_events.h"
 
@@ -26,13 +27,18 @@
    multiple cursors open concurrently (for example if multiple consumers want
    different sets of events). To create one for the current process, pass
    [runtime_events_path] as NULL and a [pid] < 0. Otherwise
-   [runtime_events_path] is a path to a directory containing the .runtime_events
+   [runtime_events_path] is a path to a directory containing the .events
    files. [pid] is the process id (or equivalent) of the startup OCaml process.
    The resulting cursor can be used with `caml_runtime_events_read_poll` to read
    events from the runtime_events ring-buffers. */
 CAMLextern runtime_events_error
 caml_runtime_events_create_cursor(const char_os* runtime_events_path, int pid,
                              struct caml_runtime_events_cursor **cursor_res);
+
+/* The following functions set callbacks on the cursor to be called with
+   matching events when the cursor is polled. These return an int, 1 if
+   processing should continue or 0 if the cursor poll should stop at the
+   current event */
 
 /* Set the runtime_begin event callback on the cursor */
 CAMLextern void caml_runtime_events_set_runtime_begin(
@@ -74,11 +80,10 @@ CAMLextern void
 caml_runtime_events_free_cursor(struct caml_runtime_events_cursor *cursor);
 
 /* polls the runtime_events pointed to by [cursor] and calls the appropriate
-   callback for each new event up to at most [max_events] times.
-
-    Returns the number of events consumed in [events_consumed], if set.
-
-    0 for [max_events] indicates no limit to the number of callbacks. */
+   callback for each new event up to at most [max_events] times. 0 for
+   [max_events] indicates no limit to the number of callbacks. Returns the
+   number of events consumed in [events_consumed], if set. [callback_data] is
+   passed to any callbacks run for events. */
 CAMLextern runtime_events_error caml_runtime_events_read_poll(
     struct caml_runtime_events_cursor *cursor,
     void *callback_data,
