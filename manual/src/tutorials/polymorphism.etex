@@ -152,8 +152,7 @@ polymorphic types. For instance, the type "'a list" is covariant in "'a":
   let empty = f ();;
 \end{caml_example}
 Note that the type inferred for "empty" is "'a list" and not the "'_weak5 list"
-that should have occurred with the value restriction. This is because "f ()"
-is a function application.
+that should have occurred with the value restriction.
 
 The value restriction combined with this generalization for covariant type
 parameters is called the relaxed value restriction.
