@@ -1799,7 +1799,6 @@ let report_error ppf = function
       let reaching_path = Reaching_path.simplify reaching_path in
       Printtyp.prepare_for_printing [used_as; defined_as];
       Reaching_path.add_to_preparation reaching_path;
-      Printtyp.Naming_context.reset ();
       fprintf ppf
         "@[<hv>This recursive type is not regular.@ \
          The type constructor %s is defined as@;<1 2>type %a@ \

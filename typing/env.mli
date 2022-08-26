@@ -267,6 +267,18 @@ val find_constructor_by_name:
 val find_label_by_name:
   Longident.t -> t -> label_description
 
+(** The [find_*_index] functions computes a "namespaced" De Bruijn index
+    of an identifier in a given environment. In other words, it returns how many
+    times an identifier has been shadowed by a more recent identifiers with the
+    same name in a given environment.
+*)
+val find_value_index:   Ident.t -> t -> int option
+val find_type_index:    Ident.t -> t -> int option
+val find_module_index:  Ident.t -> t -> int option
+val find_modtype_index: Ident.t -> t -> int option
+val find_class_index:   Ident.t -> t -> int option
+val find_cltype_index:  Ident.t -> t -> int option
+
 (* Check if a name is bound *)
 
 val bound_value: string -> t -> bool

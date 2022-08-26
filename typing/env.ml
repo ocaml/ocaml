@@ -435,6 +435,19 @@ module IdTbl =
           List.map (fun (p, desc) -> (p, f desc))
             (find_all wrap name next)
 
+    let rec find_all_idents name tbl =
+      List.map
+        (fun (id, _) -> Some id)
+        (Ident.find_all name tbl.current) @
+      match tbl.layer with
+      | Nothing -> []
+      | Open { next; components; _ } ->
+          if NameMap.mem name components then
+            None :: find_all_idents name next
+          else
+            find_all_idents name next
+      | Map {next; _ } -> find_all_idents name next
+
     let rec fold_name wrap f tbl acc =
       let acc =
         Ident.fold_name
@@ -3159,6 +3172,23 @@ let find_constructor_by_name lid env =
 let find_label_by_name lid env =
   let loc = Location.(in_file !input_name) in
   lookup_label ~errors:false ~use:false ~loc Projection lid env
+
+(* Stable name lookup for printing *)
+
+let find_index_tbl ident tbl  =
+  let lbs = IdTbl.find_all_idents (Ident.name ident) tbl in
+  let find_ident (n,p) = match p with
+    | Some i -> if Ident.same ident i then Some n else None
+    | _ -> None
+  in
+  Seq.find_map find_ident @@ Seq.mapi (fun i x -> i,x) @@ List.to_seq lbs
+
+let find_value_index id env = find_index_tbl id env.values
+let find_type_index id env = find_index_tbl id env.types
+let find_module_index id env = find_index_tbl id env.modules
+let find_modtype_index id env = find_index_tbl id env.modtypes
+let find_class_index id env = find_index_tbl id env.classes
+let find_cltype_index id env = find_index_tbl id env.cltypes
 
 (* Ordinary lookup functions *)
 
