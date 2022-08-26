@@ -604,8 +604,9 @@ baz = "hij"
 ** Other useful tests
 
 This section introduces three tests provided by =ocamltest= and that can
-be of particular interest. A complete list of available tests and
-actions and their detailed descriptions are given in chapters
+be of particular interest. A brief description of each available test is shown
+by the option `-show-tests` of ocamltest. A complete list of available tests
+and actions and their detailed descriptions are given in chapters
 [[#builtins]] and [[#ocaml-specific]].
 
 *** Testing the top-level: the =toplevel= and =expect= tests
@@ -711,12 +712,33 @@ output:
 
 ** Variables, environments and how they are inherited
 
+** Builtin variables
+
+The list of builtin variables can be obtained by running =ocamltest
+-show-variables=.
+
 ** Environment modifiers
+
+Environment variables for a test can be set using:
+#+begin_src
+set VARIABLE_NAME="value"
+#+end_src
+in the test header (the quotes are mandatory).
+
+On the contrary, you can ensure that an environment variable is not set when
+the test runs with:
+#+begin_src
+unset VARIABLE_NAME
+#+end_src
 
 * Built-in actions and tests
   :PROPERTIES:
   :CUSTOM_ID: builtins
   :END:
+
+The list of builtin and OCaml-specific actions and tests can be obtained by
+running =ocamltest -show-actions=.
+
 
 * OCaml-specific actions and tests
   :PROPERTIES:
