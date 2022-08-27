@@ -105,14 +105,10 @@ let trim s =
   else s
 
 let escaped s =
-  let rec escape_if_needed s n i =
-    if i >= n then s else
-      match unsafe_get s i with
-      | '\"' | '\\' | '\000'..'\031' | '\127'.. '\255' ->
-          bts (B.escaped (bos s))
-      | _ -> escape_if_needed s n (i+1)
-  in
-  escape_if_needed s (length s) 0
+  let b = bos s in
+  (* We satisfy [unsafe_escape]'s precondition by passing an
+     immutable byte sequence [b]. *)
+  bts (B.unsafe_escape b)
 
 (* duplicated in bytes.ml *)
 let rec index_rec s lim i c =

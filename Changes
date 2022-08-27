@@ -587,6 +587,11 @@ OCaml 5.0
   mingw-w64 i686 port.
   (David Allsopp, review by Xavier Leroy and Sébastien Hinderer)
 
+- #11508, #11509: make Bytes.escaped domain-safe
+  (Christiano Haesbaert and Gabriel Scherer,
+   review by Xavier Leroy,
+   report by Jan Midtgaard and Tom Kelly)
+
 OCaml 4.14.0 (28 March 2022)
 ----------------------------
 
