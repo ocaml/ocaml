@@ -540,6 +540,8 @@ CAMLexport void caml_main(char_os **argv)
   CAML_RUNTIME_EVENTS_INIT();
 
   Caml_state->external_raise = NULL;
+  /* Setup signal handling */
+  caml_init_signals();
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
   /* Initialize the debugger, if needed */
@@ -587,6 +589,7 @@ CAMLexport void caml_main(char_os **argv)
     }
     caml_fatal_uncaught_exception(exn);
   }
+  caml_terminate_signals();
 }
 
 /* Main entry point when code is linked in as initialized data */
@@ -599,6 +602,7 @@ CAMLexport value caml_startup_code_exn(
            char_os **argv)
 {
   char_os * exe_name;
+  value res;
 
   /* Initialize the domain */
   CAML_INIT_DOMAIN_STATE;
@@ -638,6 +642,8 @@ CAMLexport value caml_startup_code_exn(
   Caml_state->external_raise = NULL;
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
+  /* Setup signal handling */
+  caml_init_signals();
   /* Initialize the debugger, if needed */
   caml_debugger_init();
   /* Load the code */
@@ -662,7 +668,9 @@ CAMLexport value caml_startup_code_exn(
   caml_load_main_debug_info();
   /* Execute the program */
   caml_debugger(PROGRAM_START, Val_unit);
-  return caml_interprete(caml_start_code, caml_code_size);
+  res = caml_interprete(caml_start_code, caml_code_size);
+  caml_terminate_signals();
+  return res;
 }
 
 CAMLexport void caml_startup_code(

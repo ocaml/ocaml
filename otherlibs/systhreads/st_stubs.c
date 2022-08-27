@@ -509,6 +509,7 @@ static void * caml_thread_start(void * v)
   caml_thread_t th = (caml_thread_t) v;
   int dom_id = th->domain_id;
   value clos;
+  void * signal_stack;
 
   caml_init_domain_self(dom_id);
 
@@ -517,6 +518,7 @@ static void * caml_thread_start(void * v)
   thread_lock_acquire(dom_id);
   Active_thread = th;
   caml_thread_restore_runtime_state();
+  signal_stack = caml_init_signal_stack();
 
 #ifdef POSIX_SIGNALS
   /* restore the signal mask from the spawning thread, now it is safe for the
@@ -528,7 +530,7 @@ static void * caml_thread_start(void * v)
   caml_modify(&(Start_closure(Active_thread->descr)), Val_unit);
   caml_callback_exn(clos, Val_unit);
   caml_thread_stop();
-
+  caml_free_signal_stack(signal_stack);
   return 0;
 }
 

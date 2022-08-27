@@ -88,6 +88,7 @@ extern void caml_install_invalid_parameter_handler(void);
 value caml_startup_common(char_os **argv, int pooling)
 {
   char_os * exe_name, * proc_self_exe;
+  value res;
 
   /* Initialize the domain */
   CAML_INIT_DOMAIN_STATE;
@@ -117,6 +118,7 @@ value caml_startup_common(char_os **argv, int pooling)
   CAML_RUNTIME_EVENTS_INIT();
 
   init_segments();
+  caml_init_signals();
 #ifdef _WIN32
   caml_win32_overflow_detection();
 #endif
@@ -130,7 +132,9 @@ value caml_startup_common(char_os **argv, int pooling)
     exe_name = caml_search_exe_in_path(exe_name);
   caml_sys_init(exe_name, argv);
   caml_maybe_expand_stack();
-  return caml_start_program(Caml_state);
+  res = caml_start_program(Caml_state);
+  caml_terminate_signals();
+  return res;
 }
 
 value caml_startup_exn(char_os **argv)

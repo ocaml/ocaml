@@ -196,6 +196,7 @@ CAML_RUNTIME_EVENTS_DESTROY();
 #ifdef _WIN32
   caml_restore_win32_terminal();
 #endif
+  caml_terminate_signals();
   exit(retcode);
 }
 
