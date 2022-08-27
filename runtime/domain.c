@@ -607,10 +607,6 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
   domain_state->dependent_size = 0;
   domain_state->dependent_allocated = 0;
 
-  if (caml_init_signal_stack() < 0) {
-    goto init_signal_stack_failure;
-  }
-
   /* the minor heap will be initialized by
      [caml_reallocate_minor_heap] below. */
   domain_state->young_start =
@@ -707,8 +703,6 @@ init_shared_heap_failure:
   caml_free_minor_tables(domain_state->minor_tables);
   domain_state->minor_tables = NULL;
 alloc_minor_tables_failure:
-  caml_free_signal_stack();
-init_signal_stack_failure:
   domain_self = NULL;
 
 
@@ -1064,6 +1058,13 @@ static void* domain_thread_func(void* v)
 #ifndef _WIN32
   sigset_t mask = *(p->mask);
 #endif
+  void * signal_stack;
+
+  signal_stack = caml_init_signal_stack();
+  if (signal_stack == NULL) {
+    caml_gc_log("Failed to create domain: signal stack");
+    return 0;
+  }
 
   create_domain(caml_params->init_minor_heap_wsz);
   /* this domain is now part of the STW participant set */
@@ -1110,6 +1111,7 @@ static void* domain_thread_func(void* v)
   } else {
     caml_gc_log("Failed to create domain");
   }
+  caml_free_signal_stack(signal_stack);
   return 0;
 }
 
@@ -1731,7 +1733,6 @@ static void domain_terminate (void)
   domain_state->shared_heap = 0;
   caml_free_minor_tables(domain_state->minor_tables);
   domain_state->minor_tables = 0;
-  caml_free_signal_stack();
 
   caml_orphan_alloc_stats(domain_state);
   /* Heap stats were orphaned by caml_teardown_shared_heap above.
