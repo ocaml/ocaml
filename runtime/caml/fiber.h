@@ -105,6 +105,39 @@ struct c_stack_link {
   struct c_stack_link* prev;
 };
 
+/* `gc_regs` and `gc_regs_buckets`.
+
+   When entering certain runtime functions, the OCaml runtime saves
+   all registers into a `gc_regs` "bucket", a value array allocated on
+   the C heap. This is notably used by the garbage collector to know
+   which registers contain local roots.
+
+   `Caml_state->gc_regs` points to the bucket currently in use, or
+   NULL if no runtime function saving all registers is currently being
+   called.
+
+   `Caml_state->gc_regs_buckets` is a domain-local cache of buckets
+   that are not currently in use. It has a linked list structure
+   (the first element of each bucket is a pointer to the next
+   available bucket or 0). It is guaranteed to be non-empty, to
+   contain at least one free bucket, whenever we are running OCaml
+   code on the domain. This invariant is maintained by calling
+   [caml_maybe_expand_stack] before calling OCaml code from C code,
+   which allocates a new bucket if the list is empty.
+
+   When OCaml code needs to save all registers, it pops the next
+   bucket from `gc_regs_bucket`. It is pushed back on return.
+
+   When C code passes control to an OCaml callback, the current
+   `Caml_state->gc_regs` value is saved to the top of the OCaml stack
+   (see the `caml_start_program` logic, which is also used by
+   `caml_callback` functions). In general we can thus have several
+   buckets storing registers, one for each nested call to runtime
+   functions saving all registers, with the currently-active one in
+   `Caml_state` and the rest at the beginning of each OCaml stack
+   fragment created from C.
+*/
+
 /* Overview of the stack switching primitives for effects
  *
  * For an understanding of effect handlers in OCaml please see:

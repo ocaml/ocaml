@@ -308,8 +308,8 @@ void caml_maybe_expand_stack (void)
       caml_raise_stack_overflow();
 
   if (Caml_state->gc_regs_buckets == NULL) {
-    /* ensure there is at least one gc_regs bucket available before
-       running any OCaml code */
+    /* Ensure there is at least one gc_regs bucket available before
+       running any OCaml code. See fiber.h for documentation. */
     value* bucket = caml_stat_alloc(sizeof(value) * Wosize_gc_regs);
     bucket[0] = 0; /* no next bucket */
     Caml_state->gc_regs_buckets = bucket;
