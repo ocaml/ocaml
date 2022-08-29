@@ -19,6 +19,9 @@ external lock: t -> unit = "caml_ml_mutex_lock"
 external try_lock: t -> bool = "caml_ml_mutex_try_lock"
 external unlock: t -> unit = "caml_ml_mutex_unlock"
 
+(* private re-export *)
+external reraise : exn -> 'a = "%reraise"
+
 (* cannot inline, otherwise flambda might move code around. *)
 let[@inline never] with_locked m f =
   lock m;
@@ -28,4 +31,4 @@ let[@inline never] with_locked m f =
   | exception e ->
     (* NOTE: [unlock] does not poll for asynchronous exceptions *)
     unlock m;
-    raise e
+    reraise e
