@@ -15149,6 +15149,8 @@ then :
     natdynlink=true ;; #(
   aarch64-*-openbsd*) :
     natdynlink=true ;; #(
+  aarch64-*-netbsd*) :
+    natdynlink=true ;; #(
   riscv*-*-linux*) :
     natdynlink=true ;; #(
   *) :
@@ -15275,6 +15277,8 @@ case $host in #(
     arch=arm64; system=freebsd ;; #(
   aarch64-*-openbsd*) :
     arch=arm64; system=openbsd ;; #(
+  aarch64-*-netbsd*) :
+    arch=arm64; system=netbsd ;; #(
   *) :
      ;;
 esac
