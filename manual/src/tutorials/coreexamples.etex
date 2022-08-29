@@ -825,7 +825,7 @@ pp_expr stdout e; print_newline ();;
 pp_expr stdout (deriv e "x"); print_newline ();;
 \end{caml_example}
 
-Due to the way that format string are built, storing a format string requires
+Due to the way that format strings are built, storing a format string requires
 an explicit type annotation:
 \begin{caml_example*}{toplevel}
 let str : _ format =
