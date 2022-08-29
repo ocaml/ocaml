@@ -117,6 +117,10 @@ Working version
 
 ### Build system:
 
+- #13494: Use native symlinks on Windows for the OCaml installation, reducing
+  disk usage considerably.
+  (David Allsopp, review by Nicolás Ojeda Bär and Gabriel Scherer)
+
 ### Bug fixes:
 
 - #13408: Fix misplaced debug runtime assertion triggerable by a race
