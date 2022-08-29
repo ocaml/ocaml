@@ -119,6 +119,11 @@ static void runtime_events_create_raw();
 void caml_runtime_events_init() {
   runtime_events_path = caml_secure_getenv(T("OCAML_RUNTIME_EVENTS_DIR"));
 
+  if (runtime_events_path) {
+    /* caml_secure_getenv's return shouldn't be cached */
+    runtime_events_path = caml_stat_strdup_os(runtime_events_path);
+  }
+
   ring_size_words = 1 << caml_params->runtime_events_log_wsize;
 
   preserve_ring =
