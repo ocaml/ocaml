@@ -1193,6 +1193,7 @@ caml_system.frametable:
         .short  -1              /* negative frame size => use callback link */
         .short  0               /* no roots here */
         .align 3
+        .size   caml_system.frametable, .-caml_system.frametable
 
 /* TOC entries */
 

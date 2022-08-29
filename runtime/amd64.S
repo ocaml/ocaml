@@ -77,8 +77,12 @@
 #if defined(SYS_linux) || defined(SYS_gnu)
 #define ENDFUNCTION(name) \
         .size name, . - name
+#define ENDOBJECT(name) \
+        .type name, @object; \
+        .size name, . - name;
 #else
 #define ENDFUNCTION(name)
+#define ENDOBJECT(name)
 #endif
 
 #include "../runtime/caml/asm.h"
@@ -1331,6 +1335,7 @@ G(caml_system.frametable):
         .quad   LBL(frame_runstack) /* return address into fiber_val_handler */
         .value  -1          /* negative frame size => use callback link */
         .value  0           /* no roots here */
+        ENDOBJECT(G(caml_system.frametable))
 
 #if defined(SYS_macosx)
         .literal16
