@@ -502,6 +502,9 @@ OCaml 5.0
 - #11487: Thwart FMA test optimization during configure
   (William Hu, review by David Allsopp and Sébastien Hinderer)
 
+- #11097: Build native-code compilers on NetBSD/aarch64
+  (Kate Deplaix, review by Anil Madhavapeddy)
+
 ### Bug fixes:
 
 - #10768, #11340: Fix typechecking regression when combining first class
