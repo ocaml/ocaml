@@ -231,43 +231,43 @@ let match_simple_printer_type desc ~is_old_style =
     then Topprinters.printer_type_old
     else Topprinters.printer_type_new
   in
-  Ctype.begin_def();
-  let ty_arg = Ctype.newvar() in
-  match
-    Ctype.unify !toplevel_env
-      (make_printer_type ty_arg)
-      (Ctype.instance desc.val_type);
-  with
-  | exception Ctype.Unify _ -> None
-  | () ->
-      Ctype.end_def();
-      Ctype.generalize ty_arg;
-      if is_old_style
-      then Some (Printer.Old ty_arg)
-      else Some (Printer.Simple ty_arg)
+    match 
+      Ctype.wrap_def ~post:Ctype.generalize begin fun () ->
+        let ty_arg = Ctype.newvar() in
+        Ctype.unify !toplevel_env
+          (make_printer_type ty_arg)
+          (Ctype.instance desc.val_type);
+        ty_arg
+      end
+    with
+    | exception Ctype.Unify _ -> None
+    | ty_arg ->
+        if is_old_style
+        then Some (Printer.Old ty_arg)
+        else Some (Printer.Simple ty_arg)
 
 let match_generic_printer_type desc ty_path args =
   let make_printer_type = Topprinters.printer_type_new in
-  Ctype.begin_def();
-  let args = List.map (fun _ -> Ctype.newvar ()) args in
-  let ty_target = Ctype.newty (Tconstr (ty_path, args, ref Mnil)) in
-  let printer_args_ty =
-    List.map (fun ty_var -> make_printer_type ty_var) args in
-  let ty_expected =
-    List.fold_right Topprinters.type_arrow
-      printer_args_ty (make_printer_type ty_target) in
   match
-    Ctype.unify !toplevel_env
+    Ctype.wrap_def ~post:generalize begin fun () ->
+      let args = List.map (fun _ -> Ctype.newvar ()) args in
+      let ty_target = Ctype.newty (Tconstr (ty_path, args, ref Mnil)) in
+      let printer_args_ty =
+        List.map (fun ty_var -> make_printer_type ty_var) args in
+      let ty_expected =
+        List.fold_right Topprinters.type_arrow
+          printer_args_ty (make_printer_type ty_target) in
+      Ctype.unify !toplevel_env
+        ty_expected
+        (Ctype.instance desc.val_type);
       ty_expected
-      (Ctype.instance desc.val_type);
+    end
   with
   | exception Ctype.Unify _ -> None
-  | _ ->
-    Ctype.end_def();
-    Ctype.generalize ty_expected;
-    if Ctype.all_distinct_vars !toplevel_env args
-    then Some ()
-    else None
+  | ty_expected ->
+      if Ctype.all_distinct_vars !toplevel_env args
+      then Some ()
+      else None
 
 let match_printer_type desc =
   match match_simple_printer_type desc ~is_old_style:false with

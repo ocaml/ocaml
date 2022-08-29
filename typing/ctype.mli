@@ -33,14 +33,49 @@ exception Matches_failure of Env.t * Errortrace.unification_error
 exception Incompatible
   (* Raised from [mcomp] *)
 
+(* Old API
 val init_def: int -> unit
         (* Set the initial variable level *)
 val begin_def: unit -> unit
         (* Raise the variable level by one at the beginning of a definition. *)
+val begin_class_def: unit -> unit
+        (* Raise the current level not touching the nongen level *)
+val raise_nongen_level: unit -> unit
+        (* Raise the nongen level to the current level *)
 val end_def: unit -> unit
         (* Lower the variable level by one at the end of a definition *)
-val begin_class_def: unit -> unit
-val raise_nongen_level: unit -> unit
+*)
+
+val wrap_def: ?post:('a -> unit) -> (unit -> 'a) -> 'a
+        (* [wrap_def (fun () -> cmd) ~post] evaluates [cmd] at a raised level.
+           If given, [post] is applied to the result, at the original level.
+           It is expected to contain only level related post-processing. *)
+val wrap_def_if: bool -> (unit -> 'a) -> post:('a -> unit) -> 'a
+        (* Same as [wrap_init_def], but only raise the level conditionally.
+           [post] also is only called if the level is raised. *)
+val wrap_def_process: (unit -> 'a * 'b list) -> proc:('b -> unit) -> 'a
+        (* Variant of [wrap_def], where [proc] is iterated on the returned
+           list. *)
+val wrap_def_process_if:
+    bool -> (unit -> 'a * 'b list) -> proc:('b -> unit) -> 'a
+        (* Conditional variant of [wrap_def_process] *)
+val wrap_init_def: level: int -> (unit -> 'a) -> 'a
+        (* [wrap_init_def ~level (fun () -> cmd)] evaluates [cmd] with
+           [current_level] set to [level] *)
+val wrap_init_def_if: bool -> level: int -> (unit -> 'a) -> 'a
+        (* Conditional variant of [wrap_init_def] *)
+val wrap_def_principal: (unit -> 'a) -> post:('a -> unit) -> 'a
+val wrap_def_process_principal:
+    (unit -> 'a * 'b list) -> proc:('b -> unit) -> 'a
+        (* Applications of [wrap_def_if] and [wrap_def_process_if] to
+           [!Clflags.principal] *)
+
+val wrap_class_def: ?post:('a -> unit) -> (unit -> 'a) -> 'a
+        (* Variant of [wrap_def], where the current level is raised but
+           the nongen level is not touched *)
+val wrap_raise_nongen_level: (unit -> 'a) -> 'a
+        (* Variant of [wrap_def], raises the nongen level to the current level *)
+
 val reset_global_level: unit -> unit
         (* Reset the global level before typing an expression *)
 val increase_global_level: unit -> int
@@ -115,6 +150,8 @@ val lower_contravariant: Env.t -> type_expr -> unit
            to be used before generalize for expansive expressions *)
 val lower_variables_only: Env.t -> int -> type_expr -> unit
         (* Lower all variables to the given level *)
+val enforce_current_level: Env.t -> type_expr -> unit
+        (* Lower whole type to !current_level *)
 val generalize_structure: type_expr -> unit
         (* Generalize the structure of a type, lowering variables
            to !current_level *)

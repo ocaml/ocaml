@@ -182,6 +182,52 @@ let end_def () =
 let create_scope () =
   init_def (!current_level + 1);
   !current_level
+let wrap_def ?post f =
+  begin_def ();
+  let result = f () in
+  end_def ();
+  Option.iter (fun g -> g result) post;
+  result
+let wrap_def_process_if cond f ~proc =
+  if cond then begin_def ();
+  let result, l = f () in
+  if cond then begin
+    end_def ();
+    List.iter proc l;
+  end;
+  result
+let wrap_def_process f ~proc = wrap_def_process_if true f ~proc
+let wrap_def_if cond f ~post =
+  if cond then begin_def ();
+  let result = f () in
+  if cond then begin
+    end_def ();
+    post result;
+  end;
+  result
+let wrap_def_principal f ~post = wrap_def_if !Clflags.principal f ~post
+let wrap_def_process_principal f ~proc =
+  wrap_def_process_if !Clflags.principal f ~proc
+let wrap_init_def_if cond ~level f =
+  if cond then (begin_def (); init_def level);
+  let result = f () in
+  if cond then end_def ();
+  result
+let wrap_init_def ~level f = wrap_init_def_if true ~level f
+
+let wrap_class_def ?post f =
+  begin_class_def ();
+  let result = f () in
+  end_def ();
+  Option.iter (fun g -> g result) post;
+  result
+
+let wrap_raise_nongen_level f =
+  raise_nongen_level ();
+  let result = f () in
+  end_def ();
+  result
+
 
 let reset_global_level () =
   global_level := !current_level + 1
@@ -1671,16 +1717,13 @@ let full_expand ~may_forget_scope env ty =
     if may_forget_scope then
       try expand_head_unif env ty with Unify_trace _ ->
         (* #10277: forget scopes when printing trace *)
-        begin_def ();
-        init_def (get_level ty);
-        let ty =
+        wrap_def begin fun () ->
+          init_def (get_level ty);
           (* The same as [expand_head], except in the failing case we return the
-             *original* type, not [correct_levels ty].*)
+           *original* type, not [correct_levels ty].*)
           try try_expand_head try_expand_safe env (correct_levels ty) with
           | Cannot_expand -> ty
-        in
-        end_def ();
-        ty
+        end
     else expand_head env ty
   in
   match get_desc ty with
@@ -3166,6 +3209,8 @@ let unify_pairs env ty1 ty2 pairs =
 let unify env ty1 ty2 =
   unify_pairs (ref env) ty1 ty2 []
 
+(* Lower the level of a type to the current level *)
+let enforce_current_level env ty = unify_var env (newvar ()) ty
 
 
 (**** Special cases of unification ****)
