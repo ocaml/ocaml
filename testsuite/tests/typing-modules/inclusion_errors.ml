@@ -1602,7 +1602,7 @@ Error: Signature mismatch:
          type t = private { x : int; y : bool; }
        is not included in
          type t = A | B
-       Their kinds differ.
+       The first is a record, but the second is a variant.
 |}];;
 
 module M : sig
@@ -1624,7 +1624,7 @@ Error: Signature mismatch:
          type t = private A | B
        is not included in
          type t = { x : int; y : bool; }
-       Their kinds differ.
+       The first is a variant, but the second is a record.
 |}];;
 
 module M : sig

@@ -208,7 +208,7 @@ Line 1, characters 0-59:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type
          ('a, [> `A ]) def
-       Their kinds differ.
+       The original is a record, but this is a variant.
 |}]
 
 type d = { x:int; y : int }
