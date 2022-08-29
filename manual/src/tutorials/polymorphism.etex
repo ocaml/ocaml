@@ -340,8 +340,8 @@ is universally quantified. In other words, "'a.'a nested -> int" reads as
 ``for all type "'a", "depth" maps "'a nested" values to integers''.
 Whereas the standard type "'a nested -> int" can be interpreted
 as ``let be a type variable "'a", then "depth" maps "'a nested" values
-to integers''. There are two major differences with these two type
-expressions. First, the explicit polymorphic annotation indicates to the
+inferred by OCaml might not be general enough to allow the definition of
+some recursive functions, in particular for recursive functions acting on
 type checker that it needs to introduce a new type variable every time
 the function "depth" is applied. This solves our problem with the definition
 of the function "depth".
