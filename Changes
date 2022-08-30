@@ -94,6 +94,9 @@ Working version
   (Fabian Hemmer, review by Gabriel Scherer)
 
 ### Internal/compiler-libs changes:
+- #11027: Separate typing counter-examples from type_pat into retype_pat;
+  type_pat is no longer in CPS.
+  (Jacques Garrigue and Takafumi Saikawa, review by Gabriel Scherer)
 
 - #11018: Clean up Types.Variance, adding a description of the lattice used,
   and defining explicitly composition.
