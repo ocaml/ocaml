@@ -28,9 +28,20 @@ export LC_ALL=C
       dynlink backtrace_byt backtrace afl \
       bigarray prng
   do
-      sed -n -e 's/^CAMLprim value \([a-z0-9_][a-z0-9_]*\).*/\1/p' \
-        "runtime/$prim.c"
+      if [[ $1 = "RUNNING_FROM_RUNTIME_DIR" ]]; then
+          output="$prim.c"
+      else
+          output="runtime/$prim.c"
+      fi
+
+      sed -n -e 's/^CAMLprim value \([a-z0-9_][a-z0-9_]*\).*/\1/p' $output
   done
+
+  if [[ $1 = "RUNNING_FROM_RUNTIME_DIR" ]]; then
+      output="ints.c"
+  else
+      output="runtime/ints.c"
+  fi
   sed -n -e 's/^CAMLprim_int64_[0-9](\([a-z0-9_][a-z0-9_]*\)).*/caml_int64_\1\
-caml_int64_\1_native/p' runtime/ints.c
+caml_int64_\1_native/p' $output
 ) | sort | uniq
