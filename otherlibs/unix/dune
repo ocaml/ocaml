@@ -33,6 +33,13 @@
    wait write))
 
 (rule
+  (action (copy unix_unix.ml unix.ml))
+  (enabled_if (<> %{os_type} "Win32")))
+(rule
+  (action (copy unix_win32.ml unix.ml))
+  (enabled_if (= %{os_type} "Win32")))
+
+(rule
  (action (copy accept_unix.c accept.c))
  (enabled_if (<> %{os_type} "Win32")))
 (rule (action (copy bind_unix.c bind.c)) (enabled_if (<> %{os_type} "Win32")))
