@@ -4845,61 +4845,59 @@ and type_statement ?explanation env sexp =
 
 and type_unpacks ?(in_function : (Location.t * type_expr) option)
     env (unpacks : to_unpack list) sbody expected_ty =
-  if unpacks = [] then type_expect ?in_function env sbody expected_ty else
-  let ty = newvar() in
-  (* remember original level *)
-  let extended_env, tunpacks =
-    List.fold_left (fun (env, tunpacks) unpack ->
-      begin_def ();
-      let context = Typetexp.narrow () in
-      let modl, md_shape =
-        !type_module env
-          Ast_helper.(
-            Mod.unpack ~loc:unpack.tu_loc
-              (Exp.ident ~loc:unpack.tu_name.loc
-                 (mkloc (Longident.Lident unpack.tu_name.txt)
-                    unpack.tu_name.loc)))
-      in
-      Mtype.lower_nongen (get_level ty) modl.mod_type;
-      let pres =
-        match modl.mod_type with
-        | Mty_alias _ -> Mp_absent
-        | _ -> Mp_present
-      in
-      let scope = create_scope () in
-      let md =
-        { md_type = modl.mod_type; md_attributes = [];
-          md_loc = unpack.tu_name.loc;
-          md_uid = unpack.tu_uid; }
-      in
-      let (id, env) =
-        Env.enter_module_declaration ~scope ~shape:md_shape
-          unpack.tu_name.txt pres md env
-      in
-      Typetexp.widen context;
-      env, (id, unpack.tu_name, pres, modl) :: tunpacks
-    ) (env, []) unpacks
+  let ty = newvar() (* remember original level *)
+  and exp_loc = { sbody.pexp_loc with loc_ghost = true }
+  and exp_attributes = [Ast_helper.Attr.mk (mknoloc "#modulepat") (PStr [])]
   in
-  (* ideally, we should catch Expr_type_clash errors
-     in type_expect triggered by escaping identifiers from the local module
-     and refine them into Scoping_let_module errors
-  *)
-  let body = type_expect ?in_function extended_env sbody expected_ty in
-  let exp_loc = { body.exp_loc with loc_ghost = true } in
-  let exp_attributes = [Ast_helper.Attr.mk (mknoloc "#modulepat") (PStr [])] in
-  List.fold_left (fun body (id, name, pres, modl) ->
-    (* go back to parent level *)
-    end_def ();
-    Ctype.unify_var extended_env ty body.exp_type;
-    re {
-      exp_desc = Texp_letmodule(Some id, { name with txt = Some name.txt },
-                                pres, modl, body);
-      exp_loc;
-      exp_attributes;
-      exp_extra = [];
-      exp_type = ty;
-      exp_env = env }
-  ) body tunpacks
+  let rec fold_unpacks env = function
+    | [] ->
+        (* ideally, we should catch Expr_type_clash errors
+           in type_expect triggered by escaping identifiers from the local
+           module and refine them into Scoping_let_module errors
+         *)
+        type_expect ?in_function env sbody expected_ty
+    | unpack :: rem ->
+        begin_def ();
+        let context = Typetexp.narrow () in
+        let name = unpack.tu_name in
+        let modl, md_shape =
+          !type_module env
+            Ast_helper.(
+              Mod.unpack ~loc:unpack.tu_loc
+                (Exp.ident ~loc:name.loc
+                   (mkloc (Longident.Lident name.txt) name.loc)))
+        in
+        Mtype.lower_nongen (get_level ty) modl.mod_type;
+        let pres =
+          match modl.mod_type with
+          | Mty_alias _ -> Mp_absent
+          | _ -> Mp_present
+        in
+        let scope = create_scope () in
+        let md =
+          { md_type = modl.mod_type; md_attributes = [];
+            md_loc = name.loc;
+            md_uid = unpack.tu_uid; }
+        in
+        let (id, extended_env) =
+          Env.enter_module_declaration ~scope ~shape:md_shape
+            name.txt pres md env
+        in
+        Typetexp.widen context;
+        let body = fold_unpacks extended_env rem in
+        (* go back to parent level *)
+        end_def ();
+        Ctype.unify_var extended_env ty body.exp_type;
+        re {
+        exp_desc = Texp_letmodule(Some id, { name with txt = Some name.txt },
+                                  pres, modl, body);
+        exp_loc;
+        exp_attributes;
+        exp_extra = [];
+        exp_type = ty;
+        exp_env = env }
+  in
+  fold_unpacks env unpacks
 
 (* Typing of match cases *)
 and type_cases
