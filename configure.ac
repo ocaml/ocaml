@@ -220,6 +220,7 @@ AC_CONFIG_FILES([stdlib/sys.ml])
 AC_CONFIG_FILES([manual/src/version.tex])
 AC_CONFIG_FILES([manual/src/html_processing/src/common.ml])
 AC_CONFIG_FILES([ocamltest/ocamltest_config.ml])
+AC_CONFIG_FILES([utils/config.generated.ml])
 AC_CONFIG_HEADERS([runtime/caml/m.h])
 AC_CONFIG_HEADERS([runtime/caml/s.h])
 AC_CONFIG_HEADERS([runtime/caml/version.h])
@@ -833,7 +834,7 @@ AS_IF([test x"$supports_shared_libraries" != 'xfalse'], [
         [AC_MSG_RESULT([no])],
         [AC_MSG_RESULT([$iflexdir$flexmsg])
         bootstrapping_flexdll=true
-        flexdll_dir=+flexdll
+        flexdll_dir=\"+flexdll\"
         # The submodule should be searched *before* any other -I paths
         internal_cppflags="-I $iflexdir $internal_cppflags"])],
       [AS_IF([test x"$with_flexdll" != 'x'],

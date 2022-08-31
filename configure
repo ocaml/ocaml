@@ -3040,6 +3040,8 @@ ac_config_files="$ac_config_files manual/src/html_processing/src/common.ml"
 
 ac_config_files="$ac_config_files ocamltest/ocamltest_config.ml"
 
+ac_config_files="$ac_config_files utils/config.generated.ml"
+
 ac_config_headers="$ac_config_headers runtime/caml/m.h"
 
 ac_config_headers="$ac_config_headers runtime/caml/s.h"
@@ -13097,7 +13099,7 @@ else
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: $iflexdir$flexmsg" >&5
 $as_echo "$iflexdir$flexmsg" >&6; }
         bootstrapping_flexdll=true
-        flexdll_dir=+flexdll
+        flexdll_dir=\"+flexdll\"
         # The submodule should be searched *before* any other -I paths
         internal_cppflags="-I $iflexdir $internal_cppflags"
 fi ;; #(
@@ -19489,6 +19491,7 @@ do
     "manual/src/version.tex") CONFIG_FILES="$CONFIG_FILES manual/src/version.tex" ;;
     "manual/src/html_processing/src/common.ml") CONFIG_FILES="$CONFIG_FILES manual/src/html_processing/src/common.ml" ;;
     "ocamltest/ocamltest_config.ml") CONFIG_FILES="$CONFIG_FILES ocamltest/ocamltest_config.ml" ;;
+    "utils/config.generated.ml") CONFIG_FILES="$CONFIG_FILES utils/config.generated.ml" ;;
     "runtime/caml/m.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/m.h" ;;
     "runtime/caml/s.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/s.h" ;;
     "runtime/caml/version.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/version.h" ;;

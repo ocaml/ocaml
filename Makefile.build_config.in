@@ -55,16 +55,12 @@ DOCUMENTATION_TOOL_CMD=@documentation_tool_cmd@
 # Git submodule)
 FLEXDLL_SOURCES=@flexdir@
 BOOTSTRAPPING_FLEXDLL=@bootstrapping_flexdll@
-FLEXDLL_DIR=@flexdll_dir@
 
 ### Where to install documentation
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
 datarootdir = @datarootdir@
 DOCDIR=@docdir@
 
-# Expanded form of MKEXE_EXP and MKDLL_EXP _with host flexlink command_
-MKEXE_EXP=@mkexe_exp@
-MKDLL_EXP=@mkdll_exp@
 ocamltest_unix_impl = @ocamltest_unix_impl@
 ocamltest_unix_name = @ocamltest_unix_name@
 ocamltest_unix_path = @ocamltest_unix_path@
