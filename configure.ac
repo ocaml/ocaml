@@ -171,6 +171,8 @@ AC_SUBST([oc_native_cflags])
 AC_SUBST([afl])
 AC_SUBST([flexlink_cmd])
 AC_SUBST([flexdll_chain])
+AC_SUBST([mkdll_ldflags_exp])
+AC_SUBST([mkexe_ldflags_exp])
 AC_SUBST([PACKLD])
 AC_SUBST([stdlib_manpages])
 AC_SUBST([compute_deps])
@@ -236,7 +238,7 @@ AS_CASE([$host],
   [ccomptype=cc
   S=s
   SO=so
-  outputexe='-o $(EMPTY)'
+  outputexe='-o '
   syslib='-l$(1)'])
 
 # Environment variables that are taken into account
@@ -601,16 +603,16 @@ AS_IF(
 
 AS_CASE([$ocaml_cv_cc_vendor],
   [xlc-*],
-    [outputobj='-o $(EMPTY)'
+    [outputobj='-o '
     warn_error_flag=''
     cc_warnings='-qflag=i:i'], # all warnings enabled
   [sunc-*],
-    [outputobj='-o $(EMPTY)'; cc_warnings=""],
+    [outputobj='-o '; cc_warnings=""],
   [msvc-*],
     [outputobj='-Fo'
     warn_error_flag='-WX'
     cc_warnings=''],
-  [outputobj='-o $(EMPTY)'
+  [outputobj='-o '
   warn_error_flag='-Werror'
   cc_warnings='-Wall'])
 
@@ -1235,13 +1237,13 @@ AS_IF([test -z "$PARTIALLD"],
   # The string for PACKLD must be capable of being concatenated with the
   # output filename. Don't assume that all C compilers understand GNU -ofoo
   # form, so ensure that the definition includes a space at the end (which is
-  # achieved using the $(EMPTY) expansion trick).
-   AS_IF([test x"$cc_basename" = "xcl"],
+  # achieved using the $(EMPTY) expansion trick in Makefile.config.in).
+  AS_IF([test x"$cc_basename" = "xcl"],
     # For the Microsoft C compiler there must be no space at the end of the
     # string.
     [PACKLD="link -lib -nologo $machine -out:"],
-    [PACKLD="$DIRECT_LD -r$PACKLD_FLAGS -o \$(EMPTY)"])],
-  [PACKLD="$PARTIALLD -o \$(EMPTY)"])
+    [PACKLD="$DIRECT_LD -r$PACKLD_FLAGS -o "])],
+  [PACKLD="$PARTIALLD -o "])
 
 # Disable PIE at link time when ocamlopt does not produce position-independent
 # code and the system produces PIE executables by default and demands PIC
@@ -2073,8 +2075,8 @@ AS_IF([test "$ccomptype" != "msvc"],
 
 oc_cflags="$common_cflags $internal_cflags"
 oc_cppflags="$common_cppflags $internal_cppflags"
-ocamlc_cflags="$common_cflags $sharedlib_cflags \$(CFLAGS)"
-ocamlc_cppflags="$common_cppflags \$(CPPFLAGS)"
+ocamlc_cflags="$common_cflags $sharedlib_cflags $CFLAGS"
+ocamlc_cppflags="$common_cppflags $CPPFLAGS"
 cclibs="$cclibs $mathlib"
 
 AC_CHECK_LIB(execinfo, backtrace, cclibs="$cclibs -lexecinfo",[])
@@ -2171,31 +2173,37 @@ AC_CONFIG_COMMANDS_PRE([
     AS_IF([test -n "${LDFLAGS}"],
       [for flag in ${LDFLAGS}; do
         mkdll_ldflags="${mkdll_ldflags} ${mkexe_ldflags_prefix}${flag}"
-      done])
+      done
+      mkdll_ldflags_exp="$mkdll_ldflags"])
     tmp_oc_ldflags=""
     AS_IF([test -n "${oc_ldflags}"],
       [for flag in ${oc_ldflags}; do
         tmp_oc_ldflags="$tmp_oc_ldflags ${mkexe_ldflags_prefix}${flag}"
-      done])
+      done
+      mkdll_ldflags_exp="$mkdll_ldflags_exp $tmp_oc_ldflags"])
     tmp_oc_dll_ldflags=""
     AS_IF([test -n "${oc_dll_ldflags}"],
       [for flag in ${oc_dll_ldflags}; do
         tmp_oc_dll_ldflags="$tmp_oc_dll_ldflags ${mkexe_ldflags_prefix}${flag}"
-      done])
-    mkdll_ldflags_exp="$mkdll_ldflags $tmp_oc_ldflags $tmp_oc_dll_ldflags"
-    mkexe=\
-"${mkexe} \$(addprefix ${mkexe_ldflags_prefix},\$(OC_LDFLAGS))${mkdll_ldflags}"
-    mkexe_exp=\
-"${mkexe_exp} ${tmp_oc_ldflags} ${mkdll_ldflags}"
+      done
+      mkdll_ldflags_exp="$mkdll_ldflags_exp $tmp_oc_dll_ldflags"])
+    mkexe_ldflags=\
+"\$(addprefix ${mkexe_ldflags_prefix},\$(OC_LDFLAGS))${mkdll_ldflags}"
+    mkexe_ldflags_exp=\
+"${tmp_oc_ldflags} ${mkdll_ldflags}"
 
     mkdll_ldflags="\$(addprefix ${mkexe_ldflags_prefix},\$(OC_DLL_LDFLAGS)) \
 ${mkdll_ldflags}"
   ],[
     mkdll_ldflags='$(OC_DLL_LDFLAGS) $(LDFLAGS)'
-    mkdll_ldflags_exp="${oc_dll_ldflags} ${LDFLAGS}"
-    mkexe="${mkexe} \$(OC_LDFLAGS) \$(LDFLAGS)"
-    mkexe_exp="${mkexe_exp} ${oc_ldflags} ${LDFLAGS}"
+    mkdll_ldflags_exp="${oc_dll_ldflags}"
+    AS_IF([test -n ${LDFLAGS}],
+      [mkdll_ldflags_exp="$mkdll_ldflags_exp $LDFLAGS"])
+    mkexe_ldflags="\$(OC_LDFLAGS) \$(LDFLAGS)"
+    mkexe_ldflags_exp="${oc_ldflags} ${LDFLAGS}"
   ])
+  mkexe="$mkexe $mkexe_ldflags"
+  mkexe_exp="$mkexe_exp $mkexe_ldflags_exp"
   mkdll="$mkdll $mkdll_ldflags"
   mkdll_exp="$mkdll_exp $mkdll_ldflags_exp"
   mkmaindll="$mkmaindll $mkdll_ldflags_exp"
