@@ -109,6 +109,9 @@ Working version
 
 ### Bug fixes:
 
+- #11516, #11524: Fix the `deprecated_mutable` attribute.
+  (Chris Casinghino, review by TBD)
+
 - #11302, #11412: `ocamlc` and `ocamlopt` should not remove generated files
   when they are not regular files.
   (Xavier Leroy, report by Thierry Martinez, review by
