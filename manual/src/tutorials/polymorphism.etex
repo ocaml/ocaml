@@ -273,7 +273,7 @@ We then recover polymorphism:
 The second major class of non-genericity is directly related to the problem
 of type inference for polymorphic functions. In some circumstances, the type
 inferred by OCaml might be not general enough to allow the definition of
-some recursive functions, in particular for recursive function acting on
+some recursive functions, in particular for recursive functions acting on
 non-regular algebraic data types.
 
 With a regular polymorphic algebraic data type, the type parameters of
