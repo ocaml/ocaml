@@ -769,7 +769,7 @@ the format specifier, the compiler will display an error message:
 Printf.printf "Float value: %F" 42;;
 \end{caml_example}
 The "fprintf" function is like "printf" except that it takes an output channel as
-the first argument. The "%a" specifier can be useful to define custom printer
+the first argument. The "%a" specifier can be useful to define custom printers
 (for custom types). For instance, we can create a printing template that converts
 an integer argument to signed decimal:
 \begin{caml_example}{toplevel}
@@ -825,7 +825,7 @@ pp_expr stdout e; print_newline ();;
 pp_expr stdout (deriv e "x"); print_newline ();;
 \end{caml_example}
 
-Due to the way that format string are build, storing a format string requires
+Due to the way that format strings are built, storing a format string requires
 an explicit type annotation:
 \begin{caml_example*}{toplevel}
 let str : _ format =
