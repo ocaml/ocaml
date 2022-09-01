@@ -84,6 +84,9 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- #11530: Include kinds in kind mismatch error message.
+  (Leonhard Markert, review by Gabriel Scherer and Florian Angeletti)
+
 - #10818: Preserve integer literal formatting in type hint.
   (Leonhard Markert, review by Gabriel Scherer and Florian Angeletti)
 
