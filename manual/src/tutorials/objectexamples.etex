@@ -128,7 +128,7 @@ class adjusted_point x_init =
   end;;
 \end{caml_example}
 (One could also raise an exception if the "x_init" coordinate is not
-on the grid.) In fact, the same effect could here be obtained by
+on the grid.) In fact, the same effect could be obtained here by
 calling the definition of class "point" with the value of the
 "origin".
 \begin{caml_example}{toplevel}
@@ -357,7 +357,7 @@ class point_again x =
 \end{caml_example}
 
 Of course, private methods can also be virtual. Then, the keywords must
-appear in this order "method private virtual".
+appear in this order: "method private virtual".
 
 \section{s:class-interfaces}{Class interfaces}
 
@@ -998,8 +998,8 @@ p = q, p = p;;
 Other generic comparisons such as ("<", "<=", ...) can also be used on
 objects.  The
 relation "<" defines an unspecified but strict ordering on objects.  The
-ordering relationship between two objects is fixed once for all after the
-two objects have been created and it is not affected by mutation of fields.
+ordering relationship between two objects is fixed permanently once the
+two objects have been created, and it is not affected by mutation of fields.
 
 Cloning and override have a non empty intersection.
 They are interchangeable when used within an object and without
