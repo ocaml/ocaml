@@ -635,15 +635,12 @@ CAMLexport value caml_startup_code_exn(
 
   exe_name = caml_executable_name();
   if (exe_name == NULL) exe_name = caml_search_exe_in_path(argv[0]);
+
   Caml_state->external_raise = NULL;
-  caml_sys_init(exe_name, argv);
-  /* Load debugging info, if b>=2 */
-  caml_load_main_debug_info();
-  Caml_state->external_raise = NULL;
-  /* Initialize the interpreter */
-  caml_interprete(NULL, 0);
   /* Setup signal handling */
   caml_init_signals();
+  /* Initialize the interpreter */
+  caml_interprete(NULL, 0);
   /* Initialize the debugger, if needed */
   caml_debugger_init();
   /* Load the code */
@@ -659,13 +656,14 @@ CAMLexport value caml_startup_code_exn(
   /* Load the globals */
   caml_modify_generational_global_root
     (&caml_global_data, caml_input_value_from_block(data, data_size));
-  caml_minor_collection(); /* ensure all globals are in major heap */
-  /* Record the sections (for caml_get_section_table in meta.c) */
-  caml_init_section_table(section_table, section_table_size);
   /* Initialize system libraries */
   caml_sys_init(exe_name, argv);
   /* Load debugging info, if b>=2 */
   caml_load_main_debug_info();
+  /* ensure all globals are in major heap */
+  caml_minor_collection();
+  /* Record the sections (for caml_get_section_table in meta.c) */
+  caml_init_section_table(section_table, section_table_size);
   /* Execute the program */
   caml_debugger(PROGRAM_START, Val_unit);
   res = caml_interprete(caml_start_code, caml_code_size);
