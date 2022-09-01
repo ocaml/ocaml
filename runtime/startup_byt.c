@@ -637,10 +637,6 @@ CAMLexport value caml_startup_code_exn(
   if (exe_name == NULL) exe_name = caml_search_exe_in_path(argv[0]);
 
   Caml_state->external_raise = NULL;
-  caml_sys_init(exe_name, argv);
-  /* Load debugging info, if b>=2 */
-  caml_load_main_debug_info();
-  Caml_state->external_raise = NULL;
   /* Setup signal handling */
   caml_init_signals();
   /* Initialize the interpreter */
