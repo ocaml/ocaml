@@ -656,13 +656,14 @@ CAMLexport value caml_startup_code_exn(
   /* Load the globals */
   caml_modify_generational_global_root
     (&caml_global_data, caml_input_value_from_block(data, data_size));
-  caml_minor_collection(); /* ensure all globals are in major heap */
-  /* Record the sections (for caml_get_section_table in meta.c) */
-  caml_init_section_table(section_table, section_table_size);
   /* Initialize system libraries */
   caml_sys_init(exe_name, argv);
   /* Load debugging info, if b>=2 */
   caml_load_main_debug_info();
+  /* ensure all globals are in major heap */
+  caml_minor_collection();
+  /* Record the sections (for caml_get_section_table in meta.c) */
+  caml_init_section_table(section_table, section_table_size);
   /* Execute the program */
   caml_debugger(PROGRAM_START, Val_unit);
   res = caml_interprete(caml_start_code, caml_code_size);
