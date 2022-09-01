@@ -74,7 +74,7 @@
 #define CODE_DOUBLE_ARRAY64_LITTLE 0x17
 #define CODE_CODEPOINTER 0x10
 #define CODE_INFIXPOINTER 0x11
-/* #define CODE_CUSTOM 0x12  -- no longer supported */
+#define OLD_CODE_CUSTOM 0x12  // no longer supported
 #define CODE_CUSTOM_LEN 0x18
 #define CODE_CUSTOM_FIXED 0x19
 
