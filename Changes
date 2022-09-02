@@ -607,6 +607,9 @@ OCaml 5.0
    review by Xavier Leroy,
    report by Jan Midtgaard and Tom Kelly)
 
+- #11516, #11524: Fix the `deprecated_mutable` attribute.
+  (Chris Casinghino, review by Nicolás Ojeda Bär and Florian Angeletti)
+
 OCaml 4.14.0 (28 March 2022)
 ----------------------------
 
