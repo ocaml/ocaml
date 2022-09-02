@@ -109,9 +109,6 @@ Working version
 
 ### Bug fixes:
 
-- #11516, #11524: Fix the `deprecated_mutable` attribute.
-  (Chris Casinghino, review by Nicolás Ojeda Bär)
-
 - #11302, #11412: `ocamlc` and `ocamlopt` should not remove generated files
   when they are not regular files.
   (Xavier Leroy, report by Thierry Martinez, review by
@@ -597,6 +594,9 @@ OCaml 5.0
   (Christiano Haesbaert and Gabriel Scherer,
    review by Xavier Leroy,
    report by Jan Midtgaard and Tom Kelly)
+
+- #11516, #11524: Fix the `deprecated_mutable` attribute.
+  (Chris Casinghino, review by Nicolás Ojeda Bär and Florian Angeletti)
 
 OCaml 4.14.0 (28 March 2022)
 ----------------------------
