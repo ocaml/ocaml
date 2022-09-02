@@ -3508,84 +3508,7 @@ and type_expect_
       }
   | Pexp_send (e, {txt=met}) ->
       if !Clflags.principal then begin_def ();
-      let obj = type_exp env e in
-      let (meth, typ) =
-        match obj.exp_desc with
-        | Texp_ident(_, _, {val_kind = Val_self(sign, meths, _, _)}) ->
-            let id, typ =
-              match meths with
-              | Self_concrete meths ->
-                  let id =
-                    match Meths.find met meths with
-                    | id -> id
-                    | exception Not_found ->
-                        let valid_methods =
-                          Meths.fold (fun lab _ acc -> lab :: acc) meths []
-                        in
-                        raise (Error(e.pexp_loc, env,
-                          Undefined_self_method (met, valid_methods)))
-                  in
-                  let typ = Btype.method_type met sign in
-                  id, typ
-              | Self_virtual meths_ref -> begin
-                  match Meths.find met !meths_ref with
-                  | id -> id, Btype.method_type met sign
-                  | exception Not_found ->
-                      let id = Ident.create_local met in
-                      let ty = newvar () in
-                      meths_ref := Meths.add met id !meths_ref;
-                      add_method env met Private Virtual ty sign;
-                      Location.prerr_warning loc
-                        (Warnings.Undeclared_virtual_method met);
-                      id, ty
-                end
-            in
-            Tmeth_val id, typ
-        | Texp_ident(_, _, {val_kind = Val_anc (sign, meths, cl_num)}) ->
-            let id =
-              match Meths.find met meths with
-              | id -> id
-              | exception Not_found ->
-                  let valid_methods =
-                    Meths.fold (fun lab _ acc -> lab :: acc) meths []
-                  in
-                  raise (Error(e.pexp_loc, env,
-                    Undefined_self_method (met, valid_methods)))
-            in
-            let typ = Btype.method_type met sign in
-            let (self_path, _) =
-              Env.find_value_by_name
-                (Longident.Lident ("self-" ^ cl_num)) env
-            in
-            Tmeth_ancestor(id, self_path), typ
-        | _ ->
-            let ty =
-              match filter_method env met obj.exp_type with
-              | ty -> ty
-              | exception Filter_method_failed err ->
-                let error =
-                  match err with
-                  | Unification_error err ->
-                      Expr_type_clash(err, explanation, None)
-                  | Not_an_object ty ->
-                      Not_an_object(ty, explanation)
-                  | Not_a_method ->
-                      let valid_methods =
-                        match get_desc (expand_head env obj.exp_type) with
-                        | Tobject (fields, _) ->
-                            let (fields, _) = Ctype.flatten_fields fields in
-                            let collect_fields li (meth, meth_kind, _meth_ty) =
-                              if field_kind_repr meth_kind = Fpublic
-                              then meth::li else li
-                            in
-                            Some (List.fold_left collect_fields [] fields)
-                        | _ -> None
-                      in
-                      Undefined_method(obj.exp_type, met, valid_methods)
-                in
-                raise (Error(e.pexp_loc, env, error))
-            in
-            Tmeth_name met, ty
+      let (obj,meth,typ) = type_send env loc explanation e met
       in
       if !Clflags.principal then begin
         end_def ();
@@ -5422,6 +5345,89 @@ and type_andops env sarg sands expected_ty =
   in
   let let_arg, rev_ands = loop env sarg (List.rev sands) expected_ty in
   let_arg, List.rev rev_ands
+
+(* Typing of method call *)
+and type_send env loc explanation e met =
+  let obj = type_exp env e in
+  let (meth, typ) =
+    match obj.exp_desc with
+    | Texp_ident(_, _, {val_kind = Val_self(sign, meths, _, _)}) ->
+        let id, typ =
+          match meths with
+          | Self_concrete meths ->
+              let id =
+                match Meths.find met meths with
+                | id -> id
+                | exception Not_found ->
+                    let valid_methods =
+                      Meths.fold (fun lab _ acc -> lab :: acc) meths []
+                    in
+                    raise (Error(e.pexp_loc, env,
+                                 Undefined_self_method (met, valid_methods)))
+              in
+              let typ = Btype.method_type met sign in
+              id, typ
+          | Self_virtual meths_ref -> begin
+              match Meths.find met !meths_ref with
+              | id -> id, Btype.method_type met sign
+              | exception Not_found ->
+                  let id = Ident.create_local met in
+                  let ty = newvar () in
+                  meths_ref := Meths.add met id !meths_ref;
+                  add_method env met Private Virtual ty sign;
+                  Location.prerr_warning loc
+                    (Warnings.Undeclared_virtual_method met);
+                  id, ty
+          end
+        in
+        Tmeth_val id, typ
+    | Texp_ident(_, _, {val_kind = Val_anc (sign, meths, cl_num)}) ->
+        let id =
+          match Meths.find met meths with
+          | id -> id
+          | exception Not_found ->
+              let valid_methods =
+                Meths.fold (fun lab _ acc -> lab :: acc) meths []
+              in
+              raise (Error(e.pexp_loc, env,
+                           Undefined_self_method (met, valid_methods)))
+        in
+        let typ = Btype.method_type met sign in
+        let (self_path, _) =
+          Env.find_value_by_name
+            (Longident.Lident ("self-" ^ cl_num)) env
+        in
+        Tmeth_ancestor(id, self_path), typ
+    | _ ->
+        let ty =
+          match filter_method env met obj.exp_type with
+          | ty -> ty
+          | exception Filter_method_failed err ->
+              let error =
+                match err with
+                | Unification_error err ->
+                    Expr_type_clash(err, explanation, None)
+                | Not_an_object ty ->
+                    Not_an_object(ty, explanation)
+                | Not_a_method ->
+                    let valid_methods =
+                      match get_desc (expand_head env obj.exp_type) with
+                      | Tobject (fields, _) ->
+                          let (fields, _) = Ctype.flatten_fields fields in
+                          let collect_fields li (meth, meth_kind, _meth_ty) =
+                            if field_kind_repr meth_kind = Fpublic
+                            then meth::li else li
+                          in
+                          Some (List.fold_left collect_fields [] fields)
+                      | _ -> None
+                    in
+                    Undefined_method(obj.exp_type, met, valid_methods)
+              in
+              raise (Error(e.pexp_loc, env, error))
+        in
+        Tmeth_name met, ty
+  in
+  (obj,meth,typ)
 
 (* Typing of toplevel bindings *)
 
