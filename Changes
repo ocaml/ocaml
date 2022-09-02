@@ -47,6 +47,8 @@ OCaml 4.14 maintenance branch
 - #11489, #11496: More prudent deallocation of alternate signal stack
   (Xavier Leroy, report by @rajdakin, review by Florian Angeletti)
 
+- #11516, #11524: Fix the `deprecated_mutable` attribute.
+  (Chris Casinghino, review by Nicolás Ojeda Bär and Florian Angeletti)
 
 OCaml 4.14.0 (28 March 2022)
 ----------------------------
