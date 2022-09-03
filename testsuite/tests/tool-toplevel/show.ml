@@ -132,6 +132,7 @@ type 'a t += A : int t
 #show Set.OrderedType;;
 [%%expect {|
 module type OrderedType = Set.OrderedType
+module type OrderedType = sig type t val compare : t -> t -> int end
 |}];;
 
 module U = Stdlib.Unit;;
@@ -159,7 +160,11 @@ module U :
   end
 |}];;
 
+(* Similar stuttering here now that (post-11533) module type synonyms
+   are also followed. *)
 #show OT;;
 [%%expect {|
 module type OT = Set.OrderedType
+module type OT = Set.OrderedType
+module type OT = sig type t val compare : t -> t -> int end
 |}];;

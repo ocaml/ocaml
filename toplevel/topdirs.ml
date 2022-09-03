@@ -563,8 +563,21 @@ let () =
 let () =
   reg_show_prim "show_module_type"
     (fun env loc id lid ->
-       let _path, desc = Env.lookup_modtype ~loc lid env in
-       [ Sig_modtype (id, desc, Exported) ]
+       let path, mtd = Env.lookup_modtype ~loc lid env in
+       let id = match path with
+         | Pident id -> id
+         | _ -> id
+       in
+       let rec accum_defs mtd acc =
+         let acc = Sig_modtype (id, mtd, Exported) :: acc in
+         match mtd.mtd_type with
+         | Some (Mty_ident path) ->
+             let mtd = Env.find_modtype path env in
+             accum_defs mtd acc
+         | None | Some (Mty_alias _ | Mty_signature _ | Mty_functor _) ->
+             List.rev acc
+       in
+       accum_defs mtd []
     )
     "Print the signature of the corresponding module type."
 
