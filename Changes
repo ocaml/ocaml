@@ -12,6 +12,10 @@ OCaml 4.11 maintenance branch
   code or an OCaml thread stops.
   (Xavier Leroy, review by David Allsopp, Florian Angeletti and Damien Doligez)
 
+- #11358, #11378: Refactor the initialization of bytecode threading.
+  This avoids a "dangling pointer" warning of GCC 12.1.
+  (Xavier Leroy, report by Armaël Guéneau, review by Gabriel Scherer)
+
 OCaml 4.11.2 (24 February 2021)
 -------------------------------
 
