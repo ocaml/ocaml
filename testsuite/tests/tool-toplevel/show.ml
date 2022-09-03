@@ -124,3 +124,42 @@ type _ t += A : int t
 [%%expect{|
 type 'a t += A : int t
 |}];;
+
+
+
+
+(* regression tests for #11533 *)
+#show Set.OrderedType;;
+[%%expect {|
+module type OrderedType = Set.OrderedType
+|}];;
+
+module U = Stdlib.Unit;;
+module type OT = Set.OrderedType;;
+[%%expect {|
+module U = Unit
+module type OT = Set.OrderedType
+|}];;
+
+(* the stuttering in this example is a bit silly, it seems to be
+   a result of strengthening that only shows up for aliases on
+   non-local modules (from another compilation unit).
+
+   Note: This behavior predates the regression tracked in #11533.  *)
+#show U;;
+[%%expect {|
+module U = Unit
+module U = Unit
+module U :
+  sig
+    type t = unit = ()
+    val equal : t -> t -> bool
+    val compare : t -> t -> int
+    val to_string : t -> string
+  end
+|}];;
+
+#show OT;;
+[%%expect {|
+module type OT = Set.OrderedType
+|}];;
