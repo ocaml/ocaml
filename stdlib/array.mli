@@ -72,7 +72,7 @@ val init : int -> (int -> 'a) -> 'a array
 (** [init n f] returns a fresh array of length [n],
    with element number [i] initialized to the result of [f i].
    In other terms, [init n f] tabulates the results of [f]
-   applied to the integers [0] to [n-1].
+   applied in order to the integers [0] to [n-1].
 
    @raise Invalid_argument if [n < 0] or [n > Sys.max_array_length].
    If the return type of [f] is [float], then the maximum
