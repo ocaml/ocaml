@@ -74,12 +74,12 @@ struct caml_runtime_events_cursor {
   int (*lost_events)(int domain_id, void *callback_data, int lost_words);
   /* user events: mapped from type to callback */
   int (*user_event)(int domain_id, void* callback_data, int64_t timestamp,
-                      char* event_name);
+                      uintnat event_id, char* event_name);
   int (*user_counter)(int domain_id, void* callback_data, int64_t timestamp,
-                      char* event_name, uint64_t val);
+                      uintnat event_id, char* event_name, uint64_t val);
   int (*user_custom)(int domain_id, void *callback_data, int64_t timestamp,
-                      char* event_name, uintnat event_data_len,
-                      uint64_t* event_data);
+                      uintnat event_id, char* event_name,
+                      uintnat event_data_len, uint64_t* event_data);
 };
 
 /* C-API for reading from an runtime_events */
@@ -292,6 +292,7 @@ void caml_runtime_events_set_user_event(
                                   struct caml_runtime_events_cursor *cursor,
                                   int (*f)(int domain_id, void *callback_data,
                                             int64_t timestamp,
+                                            uintnat event_id,
                                             char* event_name)) {
   cursor->user_event = f;
 }
@@ -300,6 +301,7 @@ void caml_runtime_events_set_user_counter(
                                   struct caml_runtime_events_cursor *cursor,
                                   int (*f)(int domain_id, void *callback_data,
                                             int64_t timestamp,
+                                            uintnat event_id,
                                             char* event_name,
                                             uint64_t val)) {
   cursor->user_counter = f;
@@ -309,6 +311,7 @@ void caml_runtime_events_set_user_custom(
                                   struct caml_runtime_events_cursor *cursor,
                                   int (*f)(int domain_id, void *callback_data,
                                             int64_t timestamp,
+                                            uintnat event_id,
                                             char* event_name,
                                             uintnat event_data_len,
                                             uint64_t* event_data)) {
@@ -492,7 +495,7 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
           case RUNTIME_EVENTS_CUSTOM_EVENT_TYPE_EVENT:
             if (cursor->user_event) {
               if( !cursor->user_event(domain_num, callback_data, buf[1],
-                                      event_name) ) {
+                                      event_id, event_name) ) {
                                         early_exit = 1;
                                         continue;
                                       }
@@ -501,7 +504,7 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
           case RUNTIME_EVENTS_CUSTOM_EVENT_TYPE_COUNTER:
             if (cursor->user_counter) {
               if( !cursor->user_counter(domain_num, callback_data, buf[1],
-                                      event_name, buf[2]) ) {
+                                      event_id, event_name, buf[2]) ) {
                                         early_exit = 1;
                                         continue;
                                       }
@@ -510,7 +513,8 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
           default: // custom
             if (cursor->user_custom) {
               if( !cursor->user_custom(domain_num, callback_data, buf[1],
-                                      event_name, msg_length - 2, &buf[2]) ) {
+                                      event_id, event_name,
+                                      msg_length - 2, &buf[2]) ) {
                                         early_exit = 1;
                                         continue;
                                       }
@@ -795,17 +799,81 @@ static int user_events_call_callback_list(
   return 1;
 }
 
+static value caml_runtime_events_user_resolve_cached(
+  value wrapper_root, uintnat event_id, char* event_name, uintnat event_type) {
+  CAMLparam1(wrapper_root);
+  CAMLlocal3(event, cache_resized, cache);
+
+  cache = Field(wrapper_root, 2);
+
+  if (!Is_block(cache)) {
+    // initialize cache array
+    uintnat new_len = 256;
+    while (event_id >= new_len) {
+      new_len *= 2;
+    }
+
+    cache_resized = caml_alloc(new_len, 0);
+    for (uintnat i = 0; i < new_len; i++) {
+      Field(cache_resized, i) = Val_none;
+    }
+
+    Store_field(wrapper_root, 2, cache_resized);
+    cache = cache_resized;
+  }
+
+  uintnat len = Wosize_val(cache);
+
+  if (event_id < len) {
+    if (Is_block(Field(cache, event_id))) {
+      // cache hit !
+      CAMLreturn (Field(cache, event_id));
+    }
+  }
+
+  // we never encountered this ID
+  event = caml_runtime_events_user_resolve(event_name, event_type);
+
+  if (event_id >= len) { // TODO/ what's the limit ?
+    // we grow the cache to fit the event
+    uintnat new_len = len * 2;
+    while (event_id >= new_len) {
+      new_len *= 2;
+    }
+
+    cache_resized = caml_alloc(new_len, 0);
+
+    for (uintnat i = 0; i < len; i++) {
+      Field(cache_resized, i) = Field(cache, i);
+    }
+
+    for (uintnat i = len; i < new_len; i++) {
+      Field(cache_resized, i) = Val_none;
+    }
+
+    Store_field(wrapper_root, 2, cache_resized);
+    cache = cache_resized;
+  }
+
+  Store_field(cache, event_id, event);
+
+  CAMLreturn(event);
+}
+
 static int ml_user_event(int domain_id, void *callback_data, int64_t timestamp,
-                           char* event_name) {
+                           uintnat event_id, char* event_name) {
   CAMLparam0();
   CAMLlocal3(callback_list, event, callbacks_root);
   CAMLlocalN(params, 4);
+  CAMLlocal1(wrapper_root);
 
   struct callbacks_exception_holder* holder = callback_data;
   callbacks_root = *holder->callbacks_val;
+  wrapper_root = *holder->wrapper;
 
-  event = caml_runtime_events_user_resolve(event_name,
-                                        RUNTIME_EVENTS_CUSTOM_EVENT_TYPE_EVENT);
+  event = caml_runtime_events_user_resolve_cached(wrapper_root, event_id,
+                                                                  event_name,
+                                      RUNTIME_EVENTS_CUSTOM_EVENT_TYPE_COUNTER);
 
   callback_list = user_events_find_callback_list_for_event_type(callbacks_root,
                                                                 event);
@@ -830,15 +898,19 @@ static int ml_user_event(int domain_id, void *callback_data, int64_t timestamp,
 }
 
 static int ml_user_counter(int domain_id, void *callback_data,
-                           int64_t timestamp, char* event_name, uint64_t val) {
+                           int64_t timestamp, uintnat event_id,
+                           char* event_name, uint64_t val) {
   CAMLparam0();
   CAMLlocal3(callback_list, event, callbacks_root);
   CAMLlocalN(params, 4);
+  CAMLlocal1(wrapper_root);
 
   struct callbacks_exception_holder* holder = callback_data;
   callbacks_root = *holder->callbacks_val;
+  wrapper_root = *holder->wrapper;
 
-  event = caml_runtime_events_user_resolve(event_name,
+  event = caml_runtime_events_user_resolve_cached(wrapper_root, event_id,
+                                                                  event_name,
                                       RUNTIME_EVENTS_CUSTOM_EVENT_TYPE_COUNTER);
 
   callback_list = user_events_find_callback_list_for_event_type(callbacks_root,
@@ -864,7 +936,8 @@ static int ml_user_counter(int domain_id, void *callback_data,
 }
 
 static int ml_user_custom(int domain_id, void *callback_data, int64_t timestamp,
-                           char* event_name, uintnat event_data_len,
+                           uintnat event_id, char* event_name,
+                           uintnat event_data_len,
                            uint64_t* event_data) {
   CAMLparam0();
   CAMLlocal4(callback_list, event, callbacks_root, event_type);
@@ -875,7 +948,8 @@ static int ml_user_custom(int domain_id, void *callback_data, int64_t timestamp,
   callbacks_root = *holder->callbacks_val;
   wrapper_root = *holder->wrapper;
 
-  event = caml_runtime_events_user_resolve(event_name,
+  event = caml_runtime_events_user_resolve_cached(wrapper_root, event_id,
+                                                                event_name,
                                       RUNTIME_EVENTS_CUSTOM_EVENT_TYPE_CUSTOM);
   event_type = Field(event, 2);
 
@@ -994,7 +1068,11 @@ CAMLprim value caml_ml_runtime_events_create_cursor(value path_pid_option) {
     caml_stat_free(path);
   }
 
-  result = caml_alloc_2(0, wrapper, Val_none);
+  // 3 words block:
+  //  - cursor
+  //  - custom event read buffer: bytes
+  //  - resolve cache (producer event ID -> consumer event): Event.t array
+  result = caml_alloc_3(0, wrapper, Val_none, Val_none);
 
   CAMLreturn(result);
 }
