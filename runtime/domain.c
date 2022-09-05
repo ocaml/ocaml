@@ -1057,14 +1057,13 @@ static void* domain_thread_func(void* v)
   struct domain_ml_values *ml_values = p->ml_values;
 #ifndef _WIN32
   sigset_t mask = *(p->mask);
-#endif
   void * signal_stack;
 
   signal_stack = caml_init_signal_stack();
   if (signal_stack == NULL) {
-    caml_gc_log("Failed to create domain: signal stack");
-    return 0;
+    caml_fatal_error("Failed to create domain: signal stack");
   }
+#endif
 
   create_domain(caml_params->init_minor_heap_wsz);
   /* this domain is now part of the STW participant set */
@@ -1111,7 +1110,9 @@ static void* domain_thread_func(void* v)
   } else {
     caml_gc_log("Failed to create domain");
   }
+#ifndef _WIN32
   caml_free_signal_stack(signal_stack);
+#endif
   return 0;
 }
 
