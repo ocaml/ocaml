@@ -96,6 +96,10 @@ Working version
 - #10911: Improve the location reported by parenthesized assert expressions
   (Fabian Hemmer, review by Gabriel Scherer)
 
+- #1391, #7645, #3922: Add an early error when compiling different
+  modules with mismatching -for-pack
+  (Pierre Chambart and Vincent Laviron, review by Mark Shinwell)
+
 ### Internal/compiler-libs changes:
 - #11027: Separate typing counter-examples from type_pat into retype_pat;
   type_pat is no longer in CPS.
