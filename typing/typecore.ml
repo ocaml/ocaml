@@ -4915,10 +4915,8 @@ and type_cases
           (* Ensure that no ambivalent pattern type escapes its branch *)
           check_scope_escape htc.typed_pat.pat_loc env outer_level
             htc.pat_type_for_unif;
-          if !Clflags.principal then (* XXX find a bettery way? *)
-            let pat = htc.typed_pat in
-            {htc with typed_pat = { pat with pat_type = instance pat.pat_type }}
-          else htc
+          let pat = htc.typed_pat in
+          {htc with typed_pat = { pat with pat_type = instance pat.pat_type }}
         )
         caselist in
       let patl =
