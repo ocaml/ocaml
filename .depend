@@ -1833,7 +1833,6 @@ typing/typetexp.cmo : \
     typing/errortrace.cmi \
     typing/env.cmi \
     typing/ctype.cmi \
-    utils/clflags.cmi \
     parsing/builtin_attributes.cmi \
     typing/btype.cmi \
     parsing/asttypes.cmi \
@@ -1854,7 +1853,6 @@ typing/typetexp.cmx : \
     typing/errortrace.cmx \
     typing/env.cmx \
     typing/ctype.cmx \
-    utils/clflags.cmx \
     parsing/builtin_attributes.cmx \
     typing/btype.cmx \
     parsing/asttypes.cmi \
