@@ -135,6 +135,21 @@ module type OrderedType = Set.OrderedType
 module type OrderedType = sig type t val compare : t -> t -> int end
 |}];;
 
+(* extra tests after #11533
+
+   The regression in #11533 would only show up when showing values defined
+   outside the current module. Those new tests below test modules and module
+   types from the standard library. To minimize test churn / promotion,
+   we are looking for some that will change as little as possible
+   in the future.
+
+   - For module type it's easy: OrderedType is fixed in stone as
+     changing it would break all code using Set.Make.
+
+   - For modules we use Stdlib.Unit, one of the stdlib modules
+     that is less likely to change very often (there are only
+     so many features you can add to 'unit').
+*)
 module U = Stdlib.Unit;;
 module type OT = Set.OrderedType;;
 [%%expect {|
