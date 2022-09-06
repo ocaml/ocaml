@@ -74,7 +74,8 @@ val wrap_class_def: ?post:('a -> unit) -> (unit -> 'a) -> 'a
         (* Variant of [wrap_def], where the current level is raised but
            the nongen level is not touched *)
 val wrap_raise_nongen_level: (unit -> 'a) -> 'a
-        (* Variant of [wrap_def], raises the nongen level to the current level *)
+        (* Variant of [wrap_def],
+           raises the nongen level to the current level *)
 
 val reset_global_level: unit -> unit
         (* Reset the global level before typing an expression *)

@@ -229,8 +229,9 @@ Working version
 - #11446: document switch compilation (lambda/switch.ml)
   (Gabriel Scherer, review by Luc Maranget and Vincent Laviron)
 
-- #11536: Introduce wrapper functions for level management ([Ctype.wrap_def], etc)
-  and for type variable scoping ([Typetexp.wrap_type_variable_scope]).
+- #11536: Introduce wrapper functions for level management
+  ([Ctype.wrap_def], etc) and for type variable scoping
+  ([Typetexp.wrap_type_variable_scope]).
   The older API ([Ctype.(begin_def,end_def)], [Typetexp.(narrow,widen)], etc.)
   is now removed.
   (Jacques Garrigue and Takafumi Saikawa, review by Gabriel Scherer)
