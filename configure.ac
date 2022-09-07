@@ -167,6 +167,7 @@ AC_SUBST([cmm_invariants])
 AC_SUBST([windows_unicode])
 AC_SUBST([flat_float_array])
 AC_SUBST([function_sections])
+AC_SUBST([oc_native_cflags])
 AC_SUBST([afl])
 AC_SUBST([flexlink_cmd])
 AC_SUBST([flexdll_chain])
@@ -2024,6 +2025,8 @@ AS_IF([test x"$enable_mmap_map_stack" = "xyes"],
      [with_mmap_map_stack=false])
   ])
 
+oc_native_cflags=''
+
 AS_IF([test x"$enable_function_sections" = "xno"],
   [function_sections=false],
   [AS_CASE([$arch],
@@ -2044,6 +2047,7 @@ AS_IF([test x"$enable_function_sections" = "xno"],
               in Clang prior to version 3.5.])],
             [gcc-*|clang-*],
               [function_sections=true;
+              oc_native_cflags='-function-sections'
               internal_cflags="$internal_cflags -ffunction-sections";
               AC_DEFINE([FUNCTION_SECTIONS])],
             [*],

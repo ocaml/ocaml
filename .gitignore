@@ -83,6 +83,7 @@ META
 /debugger/debugger_lexer.ml
 /debugger/debugger_parser.ml
 /debugger/debugger_parser.mli
+/debugger/debugger_parser.output
 /debugger/ocamldebug
 
 /emacs/ocamltags
@@ -132,6 +133,7 @@ META
 /ocamltest/tsl_lexer.ml
 /ocamltest/tsl_parser.ml
 /ocamltest/tsl_parser.mli
+/ocamltest/tsl_parser.output
 /ocamltest/ocamltest.html
 
 /otherlibs/*/.dep
@@ -202,6 +204,7 @@ META
 /testsuite/tools/lexcmm.ml
 /testsuite/tools/parsecmm.ml
 /testsuite/tools/parsecmm.mli
+/testsuite/tools/parsecmm.output
 
 /tools/ocamldep
 /tools/ocamldep.opt

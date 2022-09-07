@@ -85,7 +85,7 @@ clean::
 beforedepend:: debugger_lexer.ml
 
 clean::
-	rm -f debugger_parser.ml debugger_parser.mli
+	rm -f $(addprefix debugger_parser.,ml mli output)
 beforedepend:: debugger_parser.ml debugger_parser.mli
 
 include .depend
