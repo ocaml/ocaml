@@ -59,7 +59,7 @@ module Simple = struct
     | `Variant of label * pattern option * row_desc ref
     | `Record of
         (Longident.t loc * label_description * pattern) list * closed_flag
-    | `Array of pattern list
+    | `Array of mutable_flag * pattern list
     | `Lazy of pattern
   ]
 
@@ -102,7 +102,7 @@ module General = struct
        `Variant (cstr, arg, row_desc)
     | Tpat_record (fields, closed) ->
        `Record (fields, closed)
-    | Tpat_array ps -> `Array ps
+    | Tpat_array (am,ps) -> `Array (am, ps)
     | Tpat_or (p, q, row_desc) -> `Or (p, q, row_desc)
     | Tpat_lazy p -> `Lazy p
 
@@ -121,7 +121,7 @@ module General = struct
        Tpat_variant (cstr, arg, row_desc)
     | `Record (fields, closed) ->
        Tpat_record (fields, closed)
-    | `Array ps -> Tpat_array ps
+    | `Array (am, ps) -> Tpat_array (am, ps)
     | `Or (p, q, row_desc) -> Tpat_or (p, q, row_desc)
     | `Lazy p -> Tpat_lazy p
 
@@ -148,7 +148,7 @@ module Head : sig
         { tag: label; has_arg: bool;
           cstr_row: row_desc ref;
           type_row : unit -> row_desc; }
-    | Array of int
+    | Array of mutable_flag * int
     | Lazy
 
   type t = desc pattern_data
@@ -175,7 +175,7 @@ end = struct
           type_row : unit -> row_desc; }
           (* the row of the type may evolve if [close_variant] is called,
              hence the (unit -> ...) delay *)
-    | Array of int
+    | Array of mutable_flag * int
     | Lazy
 
   type t = desc pattern_data
@@ -200,8 +200,8 @@ end = struct
             | _ -> assert false
           in
           Variant {tag; has_arg; cstr_row; type_row}, pats
-      | `Array args ->
-          Array (List.length args), args
+      | `Array (am, args) ->
+          Array (am, List.length args), args
       | `Record (largs, _) ->
           let lbls = List.map (fun (_,lbl,_) -> lbl) largs in
           let pats = List.map (fun (_,_,pat) -> pat) largs in
@@ -217,7 +217,7 @@ end = struct
       | Any -> 0
       | Constant _ -> 0
       | Construct c -> c.cstr_arity
-      | Tuple n | Array n -> n
+      | Tuple n | Array (_, n) -> n
       | Record l -> List.length l
       | Variant { has_arg; _ } -> if has_arg then 1 else 0
       | Lazy -> 1
@@ -230,7 +230,7 @@ end = struct
       | Lazy -> Tpat_lazy omega
       | Constant c -> Tpat_constant c
       | Tuple n -> Tpat_tuple (omegas n)
-      | Array n -> Tpat_array (omegas n)
+      | Array (am, n) -> Tpat_array (am, omegas n)
       | Construct c ->
           let lid_loc = mkloc (Longident.Lident c.cstr_name) in
           Tpat_construct (lid_loc, c, omegas c.cstr_arity, None)

@@ -238,7 +238,7 @@ and rw_exp iflag sexp =
     rewrite_exp iflag srecord;
     rewrite_exp iflag snewval
 
-  | Pexp_array(sargl) ->
+  | Pexp_array sargl ->
     rewrite_exp_list iflag sargl
 
   | Pexp_ifthenelse(scond, sifso, None) ->

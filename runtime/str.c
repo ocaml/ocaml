@@ -477,3 +477,13 @@ CAMLprim value caml_bytes_of_string(value bv)
 {
   return bv;
 }
+
+CAMLprim value caml_iarray_of_array(value bv)
+{
+  return bv;
+}
+
+CAMLprim value caml_array_of_iarray(value bv)
+{
+  return bv;
+}

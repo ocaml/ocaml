@@ -258,8 +258,8 @@ and pattern : type k . _ -> _ -> k general_pattern -> unit = fun i ppf x ->
   | Tpat_record (l, _c) ->
       line i ppf "Tpat_record\n";
       list i longident_x_pattern ppf l;
-  | Tpat_array (l) ->
-      line i ppf "Tpat_array\n";
+  | Tpat_array (am, l) ->
+      line i ppf "Tpat_array %a\n" fmt_mutable_flag am;
       list i pattern ppf l;
   | Tpat_lazy p ->
       line i ppf "Tpat_lazy\n";
@@ -388,8 +388,8 @@ and expression i ppf x =
       expression i ppf e1;
       longident i ppf li;
       expression i ppf e2;
-  | Texp_array (l) ->
-      line i ppf "Texp_array\n";
+  | Texp_array (mut, l) ->
+      line i ppf "Texp_array %a\n" fmt_mutable_flag mut;
       list i expression ppf l;
   | Texp_ifthenelse (e1, e2, eo) ->
       line i ppf "Texp_ifthenelse\n";
