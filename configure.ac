@@ -52,6 +52,7 @@ ocamlc_cflags=""
 ocamlc_cppflags=""
 oc_ldflags=""
 oc_dll_ldflags=""
+oc_exe_ldflags=""
 
 # The C# compiler and its flags
 CSC=""
@@ -135,6 +136,7 @@ AC_SUBST([oc_cflags])
 AC_SUBST([oc_cppflags])
 AC_SUBST([oc_ldflags])
 AC_SUBST([oc_dll_ldflags])
+AC_SUBST([oc_exe_ldflags])
 AC_SUBST([bytecclibs])
 AC_SUBST([nativecclibs])
 AC_SUBST([ocamlc_cflags])
@@ -918,7 +920,8 @@ AS_CASE([$cc_basename,$host],
       [mkexe_cmd="$mkexe_cmd_exp"])
     mkexe_cflags=''
     mkexe_ldflags_prefix='-link '
-    mkexe_extra_flags='-link -municode'
+    oc_exe_ldflags='-municode'
+    mkexe_extra_flags="$mkexe_ldflags_prefix$oc_exe_ldflags"
     SO="dll"],
   [*,*-pc-windows],
     [toolchain=msvc
@@ -931,7 +934,8 @@ AS_CASE([$cc_basename,$host],
     mkexe_cflags=''
     mkexe_ldflags_prefix='-link '
     mkexe_via_cc_ldflags_prefix='/link '
-    mkexe_extra_flags='-link /ENTRY:wmainCRTStartup'
+    oc_exe_ldflags='/ENTRY:wmainCRTStartup'
+    mkexe_extra_flags="$mkexe_ldflags_prefix$oc_exe_ldflags"
     mkexedebugflag=''],
   [*,x86_64-*-linux*],
     AC_DEFINE([HAS_ARCH_CODE32], [1]),
@@ -2247,7 +2251,7 @@ AC_CONFIG_COMMANDS_PRE([
 # $mkdll - the full linking command for DLLs
 # $mkdll_exp: same as above but expanded
 # $mkmaindll - the full linking command for main program in DLL
-# $oc_ldflags and $oc_dll_ldflags are handled as $(OC_LDFLAGS) and
+# $oc_ldflags $oc_dll_ldflags are handled as $(OC_LDFLAGS) and
 # $(OC_DLL_LDFLAGS) and can be overidden in the build.
 AC_CONFIG_COMMANDS_PRE([
   # Construct $mkexe

@@ -83,6 +83,7 @@ AS_HAS_DEBUG_PREFIX_MAP=@as_has_debug_prefix_map@
 # our own symbols):
 OC_LDFLAGS=@oc_ldflags@
 OC_DLL_LDFLAGS=@oc_dll_ldflags@
+OC_EXE_LDFLAGS=@oc_exe_ldflags@
 
 LDFLAGS?=@LDFLAGS@
 
@@ -219,7 +220,8 @@ MKEXE=@mkexe@
 MKDLL=@mkdll@
 MKMAINDLL=@mkmaindll@
 MKEXEDEBUGFLAG=@mkexedebugflag@
-MKEXE_VIA_CC=$(CC) $(OC_CFLAGS) $(CFLAGS) @mkexe_via_cc_ldflags@
+MKEXE_VIA_CC=\
+  $(CC) $(OC_EXE_LDFLAGS) $(OC_CFLAGS) $(CFLAGS) @mkexe_via_cc_ldflags@
 
 RUNTIMED=@debug_runtime@
 INSTRUMENTED_RUNTIME=@instrumented_runtime@
