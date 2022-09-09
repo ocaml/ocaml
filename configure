@@ -751,10 +751,14 @@ build_vendor
 build_cpu
 build
 QS
+ocaml_libdir
+ocaml_bindir
 force_instrumented_runtime
 compute_deps
 stdlib_manpages
 PACKLD
+mkexe_ldflags_exp
+mkdll_ldflags_exp
 flexdll_chain
 flexlink_cmd
 afl
@@ -784,11 +788,23 @@ ASPP
 ocamltest
 documentation_tool_cmd
 documentation_tool
+ocamltest_ocamldoc
 ocamldoc
 with_camltex
+ocamltest_ocamldebug
 with_debugger
 as_has_debug_prefix_map
 cc_has_debug_prefix_map
+ocamltest_unix_include
+ocamltest_unix_path
+ocamltest_unix_name
+ocamltest_unix_impl
+ocamltest_libunix
+ocamltest_CPP
+lib_unix
+lib_systhreads
+lib_str
+lib_dynlink
 otherlibraries
 has_monotonic_clock
 instrumented_runtime_libs
@@ -803,6 +819,7 @@ mklib
 AR
 shebangscripts
 long_shebang
+flexdll_dir
 bootstrapping_flexdll
 flexdir
 ocamlc_cppflags
@@ -826,6 +843,7 @@ outputobj
 outputexe
 ocamlyacc_wstr_module
 unix_or_win32
+ocamlsrcdir
 systhread_support
 system
 model
@@ -838,6 +856,8 @@ libext
 OBJEXT
 exeext
 ac_tool_prefix
+CSCFLAGS
+CSC
 DIFF_FLAGS
 CC
 OCAML_VERSION_SHORT
@@ -2810,6 +2830,11 @@ ocamlc_cflags=""
 ocamlc_cppflags=""
 oc_ldflags=""
 oc_dll_ldflags=""
+
+# The C# compiler and its flags
+CSC=""
+CSCFLAGS=""
+
 ostype="Unix"
 SO="so"
 toolchain="cc"
@@ -2819,6 +2844,16 @@ instrumented_runtime=true
 force_instrumented_runtime=false
 instrumented_runtime_libs=""
 bootstrapping_flexdll=false
+flexdll_dir=
+lib_dynlink=false
+lib_str=false
+lib_systhreads=false
+lib_unix=false
+ocamltest_libunix=None
+ocamltest_unix_impl="dummy"
+ocamltest_unix_name=""
+ocamltest_unix_path=""
+ocamltest_unix_include=""
 
 # Information about the package
 
@@ -2879,9 +2914,23 @@ OCAML_VERSION_SHORT=5.1
 
 
 
+
+
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2971,6 +3020,12 @@ OCAML_VERSION_SHORT=5.1
 
 
 
+
+
+
+
+
+
 ## Generated files
 
 ac_config_files="$ac_config_files Makefile.build_config"
@@ -2982,6 +3037,10 @@ ac_config_files="$ac_config_files stdlib/sys.ml"
 ac_config_files="$ac_config_files manual/src/version.tex"
 
 ac_config_files="$ac_config_files manual/src/html_processing/src/common.ml"
+
+ac_config_files="$ac_config_files ocamltest/ocamltest_config.ml"
+
+ac_config_files="$ac_config_files utils/config.generated.ml"
 
 ac_config_headers="$ac_config_headers runtime/caml/m.h"
 
@@ -3159,8 +3218,22 @@ case $host in #(
     ccomptype=cc
   S=s
   SO=so
-  outputexe='-o $(EMPTY)'
+  outputexe='-o '
   syslib='-l$(1)' ;;
+esac
+
+case $host in #(
+  *-*-mingw32|*-pc-windows) :
+    CSC=csc
+    CSCFLAGS="/nologo /nowarn:1668"
+    case $host_cpu in #(
+  i*86) :
+    CSCFLAGS="$CSCFLAGS /platform:x86" ;; #(
+  *) :
+     ;;
+esac ;; #(
+  *) :
+     ;;
 esac
 
 # Environment variables that are taken into account
@@ -12664,28 +12737,49 @@ fi
 # manually to make sure the backward compatibility is preserved
 case $ocaml_cv_cc_vendor in #(
   xlc-*) :
-    CPP="$CC -E -qnoppline" ;; #(
-  # suppress incompatible XLC line directives
+    CPP="$CC -E -qnoppline" # suppress incompatible XLC line directives
+    ocamltest_CPP="$CPP" ;; #(
   sunc-*) :
-    CPP="$CC -E -Qn" ;; #(
-  # suppress generation of Sun PRO ident string
+    CPP="$CC -E -Qn" # suppress generation of Sun PRO ident string
+    ocamltest_CPP="$CPP" ;; #(
   msvc-*) :
-    CPP="$CC -nologo -EP" ;; #(
+    CPP="$CC -nologo -EP"
+    ocamltest_CPP="$CPP 2>null" ;; #(
   *) :
     #  TODO: why can we not use $CPP in multicore, fix this?
-  CPP="$CC -E -P" ;;
+  CPP="$CC -E -P"
+  ocamltest_CPP="$CPP" ;;
 esac
+
+# Absolute path to the toplevel source directory
+
+# A sentinel character (X) is added at the end of the directory name
+# and then removed, in case the directory name finishes with an odd character.
+# (The $(...) construct strips trailing \n characters.)
+# Also, it is important to use `printf` rather than `echo` because the
+# behaviour of `echo` is indeterminate and uncontrollable if the
+# absolute path contains backslashes, which will definitely be the case
+# on Windows
+# See https://lists.gnu.org/archive/html/autoconf/2019-07/msg00002.html
+# for the detailed explanation.
+
+ocamlsrcdir=$(unset CDPATH; cd -- "$srcdir" && printf %sX "$PWD") || fail
+ocamlsrcdir=${ocamlsrcdir%X}
 
 # Libraries to build depending on the host
 
 case $host in #(
   *-*-mingw32|*-pc-windows) :
     unix_or_win32="win32"
+    ocamltest_libunix="Some false"
+    ocamlsrcdir="$(LC_ALL=C.UTF-8 cygpath -w -- "$ocamlsrcdir")"
     ocamlyacc_wstr_module="yacc/wstr" ;; #(
   *) :
     unix_or_win32="unix"
+  ocamltest_libunix="Some true"
   ocamlyacc_wstr_module="" ;;
 esac
+
 case $host in #(
   *-*-cygwin*|*-*-mingw32|*-pc-windows) :
     exeext=".exe" ;; #(
@@ -12694,14 +12788,22 @@ case $host in #(
 esac
 
 otherlibraries="dynlink runtime_events"
+lib_dynlink=true
 if test x"$enable_unix_lib" != "xno"; then :
   enable_unix_lib=yes
   ac_config_files="$ac_config_files otherlibs/unix/META"
 
   otherlibraries="$otherlibraries unix"
+  lib_unix=true
+  ocamltest_unix_impl="real"
+  ocamltest_unix_name="unix"
+  ocamltest_unix_path='$(ROOTDIR)/otherlibs/unix'
+  ocamltest_unix_include='-I $(ROOTDIR)/otherlibs/unix '
 fi
+
 if test x"$enable_str_lib" != "xno"; then :
   otherlibraries="$otherlibraries str"
+  lib_str=true
   ac_config_files="$ac_config_files otherlibs/str/META"
 
 fi
@@ -12778,18 +12880,18 @@ fi
 
 case $ocaml_cv_cc_vendor in #(
   xlc-*) :
-    outputobj='-o $(EMPTY)'
+    outputobj='-o '
     warn_error_flag=''
     cc_warnings='-qflag=i:i' ;; #(
   # all warnings enabled
   sunc-*) :
-    outputobj='-o $(EMPTY)'; cc_warnings="" ;; #(
+    outputobj='-o '; cc_warnings="" ;; #(
   msvc-*) :
     outputobj='-Fo'
     warn_error_flag='-WX'
     cc_warnings='' ;; #(
   *) :
-    outputobj='-o $(EMPTY)'
+    outputobj='-o '
   warn_error_flag='-Werror'
   cc_warnings='-Wall' ;;
 esac
@@ -12997,6 +13099,7 @@ else
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: $iflexdir$flexmsg" >&5
 $as_echo "$iflexdir$flexmsg" >&6; }
         bootstrapping_flexdll=true
+        flexdll_dir=\"+flexdll\"
         # The submodule should be searched *before* any other -I paths
         internal_cppflags="-I $iflexdir $internal_cppflags"
 fi ;; #(
@@ -14618,16 +14721,16 @@ esac
   # The string for PACKLD must be capable of being concatenated with the
   # output filename. Don't assume that all C compilers understand GNU -ofoo
   # form, so ensure that the definition includes a space at the end (which is
-  # achieved using the $(EMPTY) expansion trick).
-   if test x"$cc_basename" = "xcl"; then :
+  # achieved using the $(EMPTY) expansion trick in Makefile.config.in).
+  if test x"$cc_basename" = "xcl"; then :
   # For the Microsoft C compiler there must be no space at the end of the
     # string.
     PACKLD="link -lib -nologo $machine -out:"
 else
-  PACKLD="$DIRECT_LD -r$PACKLD_FLAGS -o \$(EMPTY)"
+  PACKLD="$DIRECT_LD -r$PACKLD_FLAGS -o "
 fi
 else
-  PACKLD="$PARTIALLD -o \$(EMPTY)"
+  PACKLD="$PARTIALLD -o "
 fi
 
 # Disable PIE at link time when ocamlopt does not produce position-independent
@@ -16774,15 +16877,18 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 case $enable_debugger in #(
   no) :
     with_debugger=""
+    ocamltest_ocamldebug=false
     { $as_echo "$as_me:${as_lineno-$LINENO}: replay debugger disabled" >&5
 $as_echo "$as_me: replay debugger disabled" >&6;} ;; #(
   *) :
     if $sockets; then :
   with_debugger="ocamldebugger"
+    ocamltest_ocamldebug=true
     { $as_echo "$as_me:${as_lineno-$LINENO}: replay debugger supported" >&5
 $as_echo "$as_me: replay debugger supported" >&6;}
 else
   with_debugger=""
+    ocamltest_ocamldebug=false
     { $as_echo "$as_me:${as_lineno-$LINENO}: replay debugger not supported" >&5
 $as_echo "$as_me: replay debugger not supported" >&6;}
 fi
@@ -17554,6 +17660,7 @@ $as_echo "$as_me: the threads library is disabled" >&6;} ;; #(
   ac_config_files="$ac_config_files otherlibs/systhreads/META"
 
   otherlibraries="$otherlibraries systhreads"
+  lib_systhreads=true
   { $as_echo "$as_me:${as_lineno-$LINENO}: the threads library is supported" >&5
 $as_echo "$as_me: the threads library is supported" >&6;} ;;
 esac
@@ -17836,8 +17943,10 @@ fi
 
 if test x"$enable_ocamldoc" = "xno"; then :
   ocamldoc=""
+  ocamltest_ocamldoc=false
 else
   ocamldoc=ocamldoc
+  ocamltest_ocamldoc=true
   ac_config_files="$ac_config_files ocamldoc/META"
 
 fi
@@ -18110,8 +18219,8 @@ fi
 
 oc_cflags="$common_cflags $internal_cflags"
 oc_cppflags="$common_cppflags $internal_cppflags"
-ocamlc_cflags="$common_cflags $sharedlib_cflags \$(CFLAGS)"
-ocamlc_cppflags="$common_cppflags \$(CPPFLAGS)"
+ocamlc_cflags="$common_cflags $sharedlib_cflags $CFLAGS"
+ocamlc_cppflags="$common_cppflags $CPPFLAGS"
 cclibs="$cclibs $mathlib"
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for backtrace in -lexecinfo" >&5
@@ -18255,6 +18364,10 @@ fi
 # Do not permanently cache the result of flexdll.h
 unset ac_cv_header_flexdll_h
 
+# Evaluate install directories
+# (this is needed for the OCaml configuration module)
+
+
 # Just before config.status is generated, determine the final values for MKEXE,
 # MKDLL, MKMAINDLL and MKEXE_VIA_CC. The final variables controlling these are:
 # $mkexe - the linking commmand and munged CFLAGS + any extra flexlink flags
@@ -18396,6 +18509,20 @@ LTLIBOBJS=$ac_ltlibobjs
   done
 
 
+  saved_exec_prefix="$exec_prefix"
+  saved_prefix="$prefix"
+  if test "x$prefix" = "xNONE"; then :
+  prefix="$ac_default_prefix"
+fi
+  if test "x$exec_prefix" = "xNONE"; then :
+  exec_prefix="$prefix"
+fi
+  eval "exec_prefix=\"$exec_prefix\""
+  eval "ocaml_bindir=\"$bindir\""
+  eval "ocaml_libdir=\"$libdir\""
+  prefix="$saved_prefix"
+  exec_prefix="$saved_exec_prefix"
+
   # Construct $mkexe
   mkexe="$mkexe_cmd"
   mkexe_exp="$mkexe_cmd_exp"
@@ -18420,24 +18547,26 @@ fi
   for flag in ${LDFLAGS}; do
         mkdll_ldflags="${mkdll_ldflags} ${mkexe_ldflags_prefix}${flag}"
       done
+      mkdll_ldflags_exp="$mkdll_ldflags"
 fi
     tmp_oc_ldflags=""
     if test -n "${oc_ldflags}"; then :
   for flag in ${oc_ldflags}; do
         tmp_oc_ldflags="$tmp_oc_ldflags ${mkexe_ldflags_prefix}${flag}"
       done
+      mkdll_ldflags_exp="$mkdll_ldflags_exp $tmp_oc_ldflags"
 fi
     tmp_oc_dll_ldflags=""
     if test -n "${oc_dll_ldflags}"; then :
   for flag in ${oc_dll_ldflags}; do
         tmp_oc_dll_ldflags="$tmp_oc_dll_ldflags ${mkexe_ldflags_prefix}${flag}"
       done
+      mkdll_ldflags_exp="$mkdll_ldflags_exp $tmp_oc_dll_ldflags"
 fi
-    mkdll_ldflags_exp="$mkdll_ldflags $tmp_oc_ldflags $tmp_oc_dll_ldflags"
-    mkexe=\
-"${mkexe} \$(addprefix ${mkexe_ldflags_prefix},\$(OC_LDFLAGS))${mkdll_ldflags}"
-    mkexe_exp=\
-"${mkexe_exp} ${tmp_oc_ldflags} ${mkdll_ldflags}"
+    mkexe_ldflags=\
+"\$(addprefix ${mkexe_ldflags_prefix},\$(OC_LDFLAGS))${mkdll_ldflags}"
+    mkexe_ldflags_exp=\
+"${tmp_oc_ldflags} ${mkdll_ldflags}"
 
     mkdll_ldflags="\$(addprefix ${mkexe_ldflags_prefix},\$(OC_DLL_LDFLAGS)) \
 ${mkdll_ldflags}"
@@ -18445,11 +18574,16 @@ ${mkdll_ldflags}"
 else
 
     mkdll_ldflags='$(OC_DLL_LDFLAGS) $(LDFLAGS)'
-    mkdll_ldflags_exp="${oc_dll_ldflags} ${LDFLAGS}"
-    mkexe="${mkexe} \$(OC_LDFLAGS) \$(LDFLAGS)"
-    mkexe_exp="${mkexe_exp} ${oc_ldflags} ${LDFLAGS}"
+    mkdll_ldflags_exp="${oc_dll_ldflags}"
+    if test -n ${LDFLAGS}; then :
+  mkdll_ldflags_exp="$mkdll_ldflags_exp $LDFLAGS"
+fi
+    mkexe_ldflags="\$(OC_LDFLAGS) \$(LDFLAGS)"
+    mkexe_ldflags_exp="${oc_ldflags} ${LDFLAGS}"
 
 fi
+  mkexe="$mkexe $mkexe_ldflags"
+  mkexe_exp="$mkexe_exp $mkexe_ldflags_exp"
   mkdll="$mkdll $mkdll_ldflags"
   mkdll_exp="$mkdll_exp $mkdll_ldflags_exp"
   mkmaindll="$mkmaindll $mkdll_ldflags_exp"
@@ -19356,6 +19490,8 @@ do
     "stdlib/sys.ml") CONFIG_FILES="$CONFIG_FILES stdlib/sys.ml" ;;
     "manual/src/version.tex") CONFIG_FILES="$CONFIG_FILES manual/src/version.tex" ;;
     "manual/src/html_processing/src/common.ml") CONFIG_FILES="$CONFIG_FILES manual/src/html_processing/src/common.ml" ;;
+    "ocamltest/ocamltest_config.ml") CONFIG_FILES="$CONFIG_FILES ocamltest/ocamltest_config.ml" ;;
+    "utils/config.generated.ml") CONFIG_FILES="$CONFIG_FILES utils/config.generated.ml" ;;
     "runtime/caml/m.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/m.h" ;;
     "runtime/caml/s.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/s.h" ;;
     "runtime/caml/version.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/version.h" ;;

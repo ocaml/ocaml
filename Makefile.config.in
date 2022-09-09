@@ -24,7 +24,7 @@ OCAML_VERSION_MINOR=@OCAML_VERSION_MINOR@
 OCAML_VERSION_PATCHLEVEL=@OCAML_VERSION_PATCHLEVEL@
 OCAML_VERSION_EXTRA=@OCAML_VERSION_EXTRA@
 
-## The EMPTY variable, used in other definitions
+## The EMPTY variable, used in other definitions to preserve spaces
 EMPTY=
 
 ## Arguments passed to the configure script
@@ -97,7 +97,7 @@ O=@OBJEXT@
 EXT_OBJ=.@OBJEXT@
 
 ### How to tell the C compiler to output an object file
-OUTPUTOBJ=@outputobj@
+OUTPUTOBJ=@outputobj@$(EMPTY)
 
 ### Extension of static libraries
 A=@libext@
@@ -181,15 +181,15 @@ UNIX_OR_WIN32=@unix_or_win32@
 INSTALL_SOURCE_ARTIFACTS=@install_source_artifacts@
 
 OC_CFLAGS=@oc_cflags@
-CFLAGS?=@CFLAGS@
+CFLAGS=@CFLAGS@
 OC_CPPFLAGS=-I$(ROOTDIR)/runtime @oc_cppflags@
-CPPFLAGS?=@CPPFLAGS@
+CPPFLAGS=@CPPFLAGS@
 OCAMLC_CFLAGS=@ocamlc_cflags@
 
 OCAMLC_CPPFLAGS=@ocamlc_cppflags@
 BYTECCLIBS=@bytecclibs@
 EXE=@exeext@
-OUTPUTEXE=@outputexe@
+OUTPUTEXE=@outputexe@$(EMPTY)
 SUPPORTS_SHARED_LIBRARIES=@supports_shared_libraries@
 MKSHAREDLIBRPATH=@mksharedlibrpath@
 DYNLINKOPTS=@DLLIBS@
@@ -203,7 +203,7 @@ OCAMLOPT_CFLAGS=@ocamlc_cflags@
 OCAMLOPT_CPPFLAGS=@ocamlc_cppflags@
 NATIVECCLIBS=@nativecclibs@
 SYSTHREAD_SUPPORT=@systhread_support@
-PACKLD=@PACKLD@
+PACKLD=@PACKLD@$(EMPTY)
 CCOMPTYPE=@ccomptype@
 TOOLCHAIN=@toolchain@
 CMXS=@cmxs@

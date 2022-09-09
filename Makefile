@@ -85,17 +85,14 @@ include compilerlibs/Makefile.compilerlibs
 
 # The configuration file
 
-CONFIG_MODULE_DEPENDENCIES = \
-  utils/config.common.ml Makefile.config utils/Makefile
+utils/config.ml: \
+  utils/config_$(if $(filter true,$(IN_COREBOOT_CYCLE)),boot,main).ml
+	cp $< $@
+utils/config_boot.ml: utils/config.fixed.ml utils/config.common.ml
+	cat $^ > $@
 
-utils/config.ml: utils/config_main.ml utils/config_boot.ml
-	$(MAKE) -C utils config.ml
-
-utils/config_main.ml: utils/config.mlp $(CONFIG_MODULE_DEPENDENCIES)
-	$(MAKE) -C utils config_main.ml
-
-utils/config_boot.ml: utils/config.fixed.ml $(CONFIG_MODULE_DEPENDENCIES)
-	$(MAKE) -C utils config_boot.ml
+utils/config_main.ml: utils/config.generated.ml utils/config.common.ml
+	cat $^ > $@
 
 .PHONY: reconfigure
 reconfigure:
@@ -112,12 +109,15 @@ configure: configure.ac aclocal.m4 build-aux/ocaml_version.m4 tools/autogen
 
 .PHONY: partialclean
 partialclean::
-	rm -f utils/config.ml utils/config_main.ml utils/config_main.mli \
-        utils/config_boot.ml utils/config_boot.mli \
+	rm -f utils/config.ml utils/config.generated.ml \
+	utils/config_main.ml utils/config_main.mli \
+	utils/config_boot.ml utils/config_boot.mli \
         utils/domainstate.ml utils/domainstate.mli
 
 .PHONY: beforedepend
-beforedepend:: utils/config.ml utils/domainstate.ml utils/domainstate.mli
+beforedepend:: \
+  utils/config.ml utils/config_boot.ml utils/config_main.ml \
+  utils/domainstate.ml utils/domainstate.mli
 
 ocamllex_PROGRAMS := $(addprefix lex/,ocamllex ocamllex.opt)
 

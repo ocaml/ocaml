@@ -249,7 +249,11 @@ META
 /toplevel/native/trace.mli
 /toplevel/native/topmain.mli
 
-/utils/config_*.ml*
+/utils/config_boot.ml
+/utils/config_boot.mli
+/utils/config.generated.ml
+/utils/config_main.ml
+/utils/config_main.mli
 /utils/config.ml
 /utils/domainstate.ml
 /utils/domainstate.mli
