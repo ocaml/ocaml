@@ -213,7 +213,7 @@ CMXS=@cmxs@
 # or OCAML_FLEXLINK overriding will not work (see utils/config.mlp)
 
 FLEXDLL_CHAIN=@flexdll_chain@
-FLEXLINK_FLAGS=@mkexe_extra_flags@
+FLEXLINK_FLAGS=@flexlink_flags@
 
 MKEXE=@mkexe@
 MKDLL=@mkdll@
