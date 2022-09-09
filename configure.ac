@@ -898,7 +898,7 @@ AS_CASE([$cc_basename,$host],
         [mkexe_cmd="$boot_flexlink_cmd -exe -chain ${flexdll_chain}"],
         [mkexe_cmd="$mkexe_cmd_exp"])
       mkexe_cflags=''
-      mkexe_ldflags_prefix='-link ']
+      mkexe_ldflags_prefix='-link '],
       [mkexe_extra_flags=''
       oc_ldflags='-Wl,--stack,16777216']
     )

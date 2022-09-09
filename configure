@@ -13382,7 +13382,8 @@ else
 fi
       mkexe_cflags=''
       mkexe_ldflags_prefix='-link '
-      mkexe_extra_flags=''
+else
+  mkexe_extra_flags=''
       oc_ldflags='-Wl,--stack,16777216'
 
 fi
