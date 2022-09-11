@@ -729,7 +729,7 @@ runtime-all: \
   $(runtime_PROGRAMS) $(SAK)
 
 .PHONY: runtime-allopt
-ifneq "$(NATIVE_COMPILER)" "false"
+ifeq "$(NATIVE_COMPILER)" "true"
 runtime-allopt: \
   $(runtime_NATIVE_STATIC_LIBRARIES) $(runtime_NATIVE_SHARED_LIBRARIES)
 else
@@ -897,7 +897,7 @@ $(DEPDIR)/runtime/%.npic.$(D): \
 # that corresponds to the name of the generated object file
 # (without the extension, which is added by the macro)
 define COMPILE_C_FILE
-ifneq "$(COMPUTE_DEPS)" "false"
+ifeq "$(COMPUTE_DEPS)" "true"
 ifneq "$(1)" "%"
 # -MG would ensure that the dependencies are generated even if the files listed
 # in $$(runtime_BUILT_HEADERS) haven't been assembled yet. However,
@@ -915,7 +915,7 @@ else
 $(1).$(O): $(2).c \
   $(runtime_CONFIGURED_HEADERS) $(runtime_BUILT_HEADERS) \
   $(RUNTIME_HEADERS)
-endif # ifneq "$(COMPUTE_DEPS)" "false"
+endif # ifeq "$(COMPUTE_DEPS)" "true"
 	$$(CC) -c $$(OC_CFLAGS) $$(CFLAGS) $$(OC_CPPFLAGS) $$(CPPFLAGS) \
 	  $$(OUTPUTOBJ)$$@ $$<
 endef
@@ -924,7 +924,7 @@ $(DEPDIR)/runtime:
 	$(MKDIR) $@
 
 runtime_OBJECT_TYPES = % %.b %.bd %.bi %.bpic
-ifneq "$(NATIVE_COMPILER)" "false"
+ifeq "$(NATIVE_COMPILER)" "true"
 runtime_OBJECT_TYPES += %.n %.nd %.ni %.np %.npic
 endif
 
@@ -993,7 +993,7 @@ runtime/%_libasmrunpic.obj: runtime/%.asm
 
 runtime_DEP_FILES := $(addsuffix .b, \
   $(basename $(runtime_BYTECODE_C_SOURCES) runtime/instrtrace))
-ifneq "$(NATIVE_COMPILER)" "false"
+ifeq "$(NATIVE_COMPILER)" "true"
 runtime_DEP_FILES += $(addsuffix .n, $(basename $(runtime_NATIVE_C_SOURCES)))
 endif
 runtime_DEP_FILES += $(addsuffix d, $(runtime_DEP_FILES)) \
@@ -1240,7 +1240,7 @@ partialclean::
 # Check that the native-code compiler is supported
 .PHONY: checknative
 checknative:
-ifneq "$(NATIVE_COMPILER)" "true"
+ifeq "$(NATIVE_COMPILER)" "false"
 	$(error The source tree was configured with --disable-native-compiler!)
 else
 ifeq "$(ARCH)" "none"

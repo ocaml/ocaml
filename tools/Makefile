@@ -329,7 +329,7 @@ $(caml_tex): $(caml_tex_files)
 
 # we need str and unix which depend on the bytecode version of other tools
 # thus we use the othertools target
-ifneq "$(WITH_CAMLTEX)" ""
+ifeq "$(WITH_CAMLTEX)" "true"
 othertools: $(caml_tex)
 endif
 clean::
