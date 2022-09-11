@@ -160,6 +160,7 @@ AC_SUBST([instrumented_runtime_libs])
 AC_SUBST([has_monotonic_clock])
 AC_SUBST([otherlibraries])
 AC_SUBST([lib_dynlink])
+AC_SUBST([lib_runtime_events])
 AC_SUBST([lib_str])
 AC_SUBST([lib_systhreads])
 AC_SUBST([lib_unix])
@@ -619,6 +620,7 @@ AS_CASE([$host],
 
 otherlibraries="dynlink runtime_events"
 lib_dynlink=true
+lib_runtime_events=true
 AS_IF([test x"$enable_unix_lib" != "xno"],
   [enable_unix_lib=yes
   AC_CONFIG_FILES([otherlibs/unix/META])

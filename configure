@@ -804,6 +804,7 @@ ocamltest_CPP
 lib_unix
 lib_systhreads
 lib_str
+lib_runtime_events
 lib_dynlink
 otherlibraries
 has_monotonic_clock
@@ -2922,6 +2923,7 @@ OCAML_VERSION_SHORT=5.1
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
+
 
 
 
@@ -12794,6 +12796,7 @@ esac
 
 otherlibraries="dynlink runtime_events"
 lib_dynlink=true
+lib_runtime_events=true
 if test x"$enable_unix_lib" != "xno"; then :
   enable_unix_lib=yes
   ac_config_files="$ac_config_files otherlibs/unix/META"

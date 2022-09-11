@@ -55,7 +55,7 @@ ifneq "$(filter systhreads,$(OTHERLIBRARIES))" ""
 otherlibref += $(thread_MLIS:%.mli=%)
 endif
 
-ifneq "$(filter runtime_events,$(OTHERLIBRARIES))" ""
+ifeq "$(lib_runtime_events)" "true"
 otherlibref += $(runtime_events_MLIS:%.mli=%)
 endif
 
