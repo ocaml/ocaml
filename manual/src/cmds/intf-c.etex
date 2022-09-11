@@ -727,8 +727,7 @@ $\hbox{"string_length"}(v)-1$.
 or byte sequence \var{v}, with type "unsigned char". Bytes are
 numbered from 0 to $\hbox{"string_length"}(v)-1$.
 \item "String_val("\var{v}")" returns a pointer to the first byte of the string
-\var{v}, with type "char *" or, when OCaml is configured with
-"-force-safe-string", with type "const char *".
+\var{v}, with type "const char *".
 This pointer is a valid C string: there is a null byte after the last
 byte in the string. However, OCaml strings can contain embedded null bytes,
 which will confuse the usual C functions over strings.

@@ -30,7 +30,7 @@ CAMLC=$(BEST_OCAMLC) $(LIBS)
 CAMLOPT=$(BEST_OCAMLOPT) $(LIBS)
 
 MKLIB=$(OCAMLRUN) $(ROOTDIR)/tools/ocamlmklib$(EXE)
-COMPFLAGS=-w +33..39 -warn-error +A -g -bin-annot -safe-string
+COMPFLAGS=-w +33..39 -warn-error +A -g -bin-annot
 ifeq "$(FLAMBDA)" "true"
 OPTCOMPFLAGS += -O3
 endif
