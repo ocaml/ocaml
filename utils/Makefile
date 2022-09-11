@@ -36,7 +36,8 @@ SUBST_QUOTE=$(call SUBST_QUOTE2,$1,$($1))
 
 prefix_and_quote = $(if $(1), $(2)$(if $(word 2,$(1)),"$(1)",$(1)))
 
-FLEXLINK_LDFLAGS = $(call prefix_and_quote,$(OC_LDFLAGS),-link $(EMPTY))
+FLEXLINK_LDFLAGS = \
+  $(call prefix_and_quote,$(OC_LDFLAGS),-link $(EMPTY)) $(MKEXE_EXTRA_FLAGS)
 FLEXLINK_DLL_LDFLAGS = $(call prefix_and_quote,$(OC_DLL_LDFLAGS),-link $(EMPTY))
 
 config_main.ml: config.mlp $(ROOTDIR)/Makefile.config Makefile config.common.ml
