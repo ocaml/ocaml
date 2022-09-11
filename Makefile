@@ -1508,7 +1508,7 @@ endif
 	for i in $(OTHERLIBRARIES); do \
 	  $(MAKE) -C otherlibs/$$i install || exit $$?; \
 	done
-ifneq "$(WITH_OCAMLDOC)" ""
+ifeq "$(build_ocamldoc)" "true"
 	$(MAKE) -C ocamldoc install
 endif
 ifeq "$(WITH_OCAMLDOC)-$(STDLIB_MANPAGES)" "ocamldoc-true"
@@ -1596,7 +1596,7 @@ endif
 	$(INSTALL_DATA) \
 	    $(OPTSTART) \
 	    "$(INSTALL_COMPLIBDIR)"
-ifneq "$(WITH_OCAMLDOC)" ""
+ifeq "$(build_ocamldoc)" "true"
 	$(MAKE) -C ocamldoc installopt
 endif
 	for i in $(OTHERLIBRARIES); do \

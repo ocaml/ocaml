@@ -31,6 +31,10 @@ INSTALL_PROG ?= @INSTALL_PROGRAM@
 
 # Whether to build certain libraries and tools
 
+build_ocamldebug = @build_ocamldebug@
+
+build_ocamldoc = @build_ocamldoc@
+
 lib_dynlink = @lib_dynlink@
 lib_runtime_events = @lib_runtime_events@
 lib_str = @lib_str@

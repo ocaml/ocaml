@@ -788,10 +788,10 @@ ASPP
 ocamltest
 documentation_tool_cmd
 documentation_tool
-ocamltest_ocamldoc
+build_ocamldoc
 ocamldoc
 with_camltex
-ocamltest_ocamldebug
+build_ocamldebug
 with_debugger
 as_has_debug_prefix_map
 cc_has_debug_prefix_map
@@ -16889,18 +16889,18 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 case $enable_debugger in #(
   no) :
     with_debugger=""
-    ocamltest_ocamldebug=false
+    build_ocamldebug=false
     { $as_echo "$as_me:${as_lineno-$LINENO}: replay debugger disabled" >&5
 $as_echo "$as_me: replay debugger disabled" >&6;} ;; #(
   *) :
     if $sockets; then :
   with_debugger="ocamldebugger"
-    ocamltest_ocamldebug=true
+    build_ocamldebug=true
     { $as_echo "$as_me:${as_lineno-$LINENO}: replay debugger supported" >&5
 $as_echo "$as_me: replay debugger supported" >&6;}
 else
   with_debugger=""
-    ocamltest_ocamldebug=false
+    build_ocamldebug=false
     { $as_echo "$as_me:${as_lineno-$LINENO}: replay debugger not supported" >&5
 $as_echo "$as_me: replay debugger not supported" >&6;}
 fi
@@ -17955,10 +17955,10 @@ fi
 
 if test x"$enable_ocamldoc" = "xno"; then :
   ocamldoc=""
-  ocamltest_ocamldoc=false
+  build_ocamldoc=false
 else
   ocamldoc=ocamldoc
-  ocamltest_ocamldoc=true
+  build_ocamldoc=true
   ac_config_files="$ac_config_files ocamldoc/META"
 
 fi
