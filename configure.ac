@@ -52,6 +52,7 @@ ocamlc_cflags=""
 ocamlc_cppflags=""
 oc_ldflags=""
 oc_dll_ldflags=""
+oc_exe_ldflags=""
 
 # The C# compiler and its flags
 CSC=""
@@ -135,6 +136,7 @@ AC_SUBST([oc_cflags])
 AC_SUBST([oc_cppflags])
 AC_SUBST([oc_ldflags])
 AC_SUBST([oc_dll_ldflags])
+AC_SUBST([oc_exe_ldflags])
 AC_SUBST([bytecclibs])
 AC_SUBST([nativecclibs])
 AC_SUBST([ocamlc_cflags])
@@ -142,6 +144,7 @@ AC_SUBST([ocamlc_cppflags])
 AC_SUBST([flexdir])
 AC_SUBST([bootstrapping_flexdll])
 AC_SUBST([flexdll_dir])
+AC_SUBST([flexlink_flags])
 AC_SUBST([long_shebang])
 AC_SUBST([shebangscripts])
 AC_SUBST([AR])
@@ -779,29 +782,30 @@ AS_IF([test x"$enable_shared" = "xno"],
 # The flexlink command
 
 flexlink_cmd=flexlink
+flexlink_flags=''
 
 # Define flexlink chain and flags correctly for the different Windows ports
 AS_CASE([$host],
   [i686-*-cygwin],
     [flexdll_chain='cygwin'
-    mkexe_extra_flags='-merge-manifest -stack 16777216'],
+    flexlink_flags='-merge-manifest -stack 16777216'],
   [x86_64-*-cygwin],
     [flexdll_chain='cygwin64'
-    mkexe_extra_flags='-merge-manifest -stack 16777216'],
+    flexlink_flags='-merge-manifest -stack 16777216'],
   [*-*-cygwin*],
     [AC_MSG_ERROR([unknown cygwin variant])],
   [i686-w64-mingw32],
     [flexdll_chain='mingw'
-    mkexe_extra_flags='-stack 16777216'],
+    flexlink_flags='-stack 16777216'],
   [x86_64-w64-mingw32],
     [flexdll_chain='mingw64'
-    mkexe_extra_flags='-stack 33554432'],
+    flexlink_flags='-stack 33554432'],
   [i686-pc-windows],
     [flexdll_chain='msvc'
-    mkexe_extra_flags='-merge-manifest -stack 16777216'],
+    flexlink_flags='-merge-manifest -stack 16777216'],
   [x86_64-pc-windows],
     [flexdll_chain='msvc64'
-    mkexe_extra_flags='-merge-manifest -stack 33554432'],
+    flexlink_flags='-merge-manifest -stack 33554432'],
   [flexdll_chain=''])
 
 AS_IF([test x"$supports_shared_libraries" != 'xfalse'], [
@@ -893,12 +897,13 @@ AS_CASE([$cc_basename,$host],
   [*,*-*-cygwin*],
     [common_cppflags="$common_cppflags -U_WIN32"
     AS_IF([$supports_shared_libraries],
-      [mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain}"
+      [mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
       AS_IF([$bootstrapping_flexdll],
-        [mkexe_cmd="$boot_flexlink_cmd -exe -chain ${flexdll_chain}"],
+        [mkexe_cmd=\
+"$boot_flexlink_cmd -exe -chain ${flexdll_chain} ${flexlink_flags}"],
         [mkexe_cmd="$mkexe_cmd_exp"])
       mkexe_cflags=''
-      mkexe_ldflags_prefix='-link ']
+      mkexe_ldflags_prefix='-link '],
       [mkexe_extra_flags=''
       oc_ldflags='-Wl,--stack,16777216']
     )
@@ -908,25 +913,29 @@ AS_CASE([$cc_basename,$host],
       [i686-*-*], [oc_dll_ldflags="-static-libgcc"])
     ostype="Win32"
     toolchain="mingw"
-    mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain}"
+    mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
     AS_IF([$bootstrapping_flexdll],
-      [mkexe_cmd="${boot_flexlink_cmd} -exe -chain ${flexdll_chain}"],
+      [mkexe_cmd=\
+"${boot_flexlink_cmd} -exe -chain ${flexdll_chain} ${flexlink_flags}"],
       [mkexe_cmd="$mkexe_cmd_exp"])
     mkexe_cflags=''
     mkexe_ldflags_prefix='-link '
-    oc_ldflags='-municode'
+    oc_exe_ldflags='-municode'
+    mkexe_extra_flags="$mkexe_ldflags_prefix$oc_exe_ldflags"
     SO="dll"],
   [*,*-pc-windows],
     [toolchain=msvc
     ostype="Win32"
-    mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain}"
+    mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
     AS_IF([$bootstrapping_flexdll],
-      [mkexe_cmd="${boot_flexlink_cmd} -exe -chain ${flexdll_chain}"],
+      [mkexe_cmd=\
+"${boot_flexlink_cmd} -exe -chain ${flexdll_chain} ${flexlink_flags}"],
       [mkexe_cmd="$mkexe_cmd_exp"])
     mkexe_cflags=''
     mkexe_ldflags_prefix='-link '
     mkexe_via_cc_ldflags_prefix='/link '
-    oc_ldflags='/ENTRY:wmainCRTStartup'
+    oc_exe_ldflags='/ENTRY:wmainCRTStartup'
+    mkexe_extra_flags="$mkexe_ldflags_prefix$oc_exe_ldflags"
     mkexedebugflag=''],
   [*,x86_64-*-linux*],
     AC_DEFINE([HAS_ARCH_CODE32], [1]),
@@ -1060,20 +1069,19 @@ AS_IF([test x"$enable_shared" != "xno"],
       [mkdll_flags='-shared -undefined dynamic_lookup'
       supports_shared_libraries=true],
     [*-*-mingw32],
-      [mkdll_ld="${flexlink_cmd} -chain ${flexdll_chain}"
-      mkmaindll="${flexlink_cmd} -maindll -chain ${flexdll_chain}"
-      AS_IF([test -n "$oc_dll_ldflags"],[
-        mkdll_flags=" -link \"$oc_dll_ldflags\""
-        mkmaindll="$mkmaindll -link \"$oc_dll_ldflags\""],[
-        mkdll_flags=''])],
+      [mkdll_ld="${flexlink_cmd} -chain ${flexdll_chain} ${flexlink_flags}"
+      mkmaindll=\
+"${flexlink_cmd} -maindll -chain ${flexdll_chain} ${flexlink_flags}"],
     [*-pc-windows],
-      [mkdll_ld="${flexlink_cmd} -chain ${flexdll_chain}"
+      [mkdll_ld="${flexlink_cmd} -chain ${flexdll_chain} ${flexlink_flags}"
       mkdll_flags=''
-      mkmaindll="${flexlink_cmd} -maindll -chain ${flexdll_chain}"],
+      mkmaindll=\
+"${flexlink_cmd} -maindll -chain ${flexdll_chain} ${flexlink_flags}"],
     [*-*-cygwin*],
-      [mkdll_ld="${flexlink_cmd} -chain ${flexdll_chain}"
+      [mkdll_ld="${flexlink_cmd} -chain ${flexdll_chain} ${flexlink_flags}"
       mkdll_flags=''
-      mkmaindll="${flexlink_cmd} -maindll -chain ${flexdll_chain}"],
+      mkmaindll=\
+"${flexlink_cmd} -maindll -chain ${flexdll_chain} ${flexlink_flags}"],
     [powerpc-ibm-aix*],
       [AS_CASE([$ocaml_cv_cc_vendor],
                [xlc*],
@@ -2243,7 +2251,7 @@ AC_CONFIG_COMMANDS_PRE([
 # $mkdll - the full linking command for DLLs
 # $mkdll_exp: same as above but expanded
 # $mkmaindll - the full linking command for main program in DLL
-# $oc_ldflags and $oc_dll_ldflags are handled as $(OC_LDFLAGS) and
+# $oc_ldflags $oc_dll_ldflags are handled as $(OC_LDFLAGS) and
 # $(OC_DLL_LDFLAGS) and can be overidden in the build.
 AC_CONFIG_COMMANDS_PRE([
   # Construct $mkexe
