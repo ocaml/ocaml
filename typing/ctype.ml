@@ -2182,7 +2182,6 @@ let is_instantiable env p =
   with Not_found -> false
 
 
-(* PR#7113: -safe-string should be a global property *)
 let compatible_paths p1 p2 =
   let open Predef in
   Path.same p1 p2 ||
