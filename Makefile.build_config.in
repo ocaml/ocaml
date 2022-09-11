@@ -29,8 +29,13 @@ INSTALL ?= @INSTALL@ -p
 INSTALL_DATA ?= @INSTALL_DATA@
 INSTALL_PROG ?= @INSTALL_PROGRAM@
 
-# Whether to build the runtime_events library
+# Whether to build certain libraries and tools
+
+lib_dynlink = @lib_dynlink@
 lib_runtime_events = @lib_runtime_events@
+lib_str = @lib_str@
+lib_systhreads = @lib_systhreads@
+lib_unix = @lib_unix@
 
 # Whether to install the native toplevel (ocamlnat)
 INSTALL_OCAMLNAT = @install_ocamlnat@
