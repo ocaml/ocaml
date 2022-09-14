@@ -1430,9 +1430,9 @@ val kasprintf : (string -> 'a) -> ('b, formatter, unit, 'a) format4 -> 'b
   # Format.printf "l: [@[<hov>%a@]]@."
     Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ") pp_pair) l
     l: [(0, true); (1, false); (2, true); (3, false); (4, true); (5, false);
-       (6, true); (7, false); (8, true); (9, false); (10, true); (11, false);
-       (12, true); (13, false); (14, true); (15, false); (16, true);
-       (17, false); (18, true); (19, false)]
+        (6, true); (7, false); (8, true); (9, false); (10, true); (11, false);
+        (12, true); (13, false); (14, true); (15, false); (16, true);
+        (17, false); (18, true); (19, false)]
 
   ]}
 
