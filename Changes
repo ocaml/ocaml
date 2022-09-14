@@ -63,6 +63,10 @@ Working version
   halving memory usage while remaining tail-recursive.
   (Nicolás Ojeda Bär, review by Xavier Leroy and Gabriel Scherer)
 
+- #11476: Add examples in documentation of Hashtbl, Queue, Atomic, Format
+  (Simon Cruanes, review by Yotam Barnoy, Gabriel Scherer, Daniel Bünzli,
+   Ulugbek Abdullaev, and Nicolás Ojeda Bär)
+
 ### Other libraries:
 
 - #11475: Make Unix terminal interface bindings domain-safe

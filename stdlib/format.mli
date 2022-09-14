@@ -15,6 +15,8 @@
 
 (** Pretty-printing.
 
+   If you are new to this module, see the {{!examples} examples} below.
+
    This module implements a pretty-printing facility to format values
    within {{!boxes}'pretty-printing boxes'} and {{!tags}'semantic tags'}
    combined with a set of {{!fpp}printf-like functions}.
@@ -41,9 +43,9 @@
    {!formatter_of_buffer}, {!formatter_of_symbolic_output_buffer} or using
    {{!section:formatter}custom formatters}.
 
-   Warning: Since {{!section:formatter}formatters} contain mutable state, it is
-   not thread-safe to use the same formatter on multiple domains in parallel
-   without synchronization.
+   {b Warning}: Since {{!section:formatter}formatters} contain
+   mutable state, it is not thread-safe to use the same formatter on multiple
+   domains in parallel without synchronization.
 
    If multiple domains write to the same output channel using the
    predefined formatters (as obtained by {!get_std_formatter} or
@@ -1404,4 +1406,143 @@ val kasprintf : (string -> 'a) -> ('b, formatter, unit, 'a) format4 -> 'b
   passes it to the first argument.
 
   @since 4.03
+*)
+
+(** {1:examples Examples}
+
+  A few warmup examples to get an idea of how Format is used.
+
+  We have a list [l] of pairs [(int * bool)], which the toplevel prints for us:
+
+  {[# let l = List.init 20 (fun n -> n, n mod 2 = 0)
+  val l : (int * bool) list =
+  [(0, true); (1, false); (2, true); (3, false); (4, true); (5, false);
+   (6, true); (7, false); (8, true); (9, false); (10, true); (11, false);
+   (12, true); (13, false); (14, true); (15, false); (16, true); (17, false);
+   (18, true); (19, false)]
+ ]}
+
+  If we want to print it ourself without the toplevel magic, we can try this:
+
+  {[
+  # let pp_pair out (x,y) = Format.fprintf out "(%d, %b)" x y
+  val pp_pair : Format.formatter -> int * bool -> unit = <fun>
+  # Format.printf "l: [@[<hov>%a@]]@."
+    Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ") pp_pair) l
+    l: [(0, true); (1, false); (2, true); (3, false); (4, true); (5, false);
+        (6, true); (7, false); (8, true); (9, false); (10, true); (11, false);
+        (12, true); (13, false); (14, true); (15, false); (16, true);
+        (17, false); (18, true); (19, false)]
+
+  ]}
+
+
+  What this does, briefly, is:
+
+    - [pp_pair] prints a pair [bool*int] surrounded in "(" ")". It takes
+      a formatter (into which formatting happens), and the pair itself.
+      When printing is done it returns [()].
+
+    - [Format.printf "l = [@[<hov>%a@]]@." ... l] is like [printf], but
+      with additional formatting instructions (denoted with "@"). The pair
+      "@[<hov>" and "@]" is a "horizontal-or-vertical box".
+
+    - "@." ends formatting with a newline. It is similar to "\n" but is also
+      aware of the [Format.formatter]'s state. Do not use "\n" with [Format].
+
+    - "%a" is a formatting instruction, like "%d" or "%s" for [printf].
+      However, where "%d" prints an integer and "%s" prints a string,
+      "%a" takes a printer (of type [Format.formatter -> 'a -> unit])
+      and a value (of type ['a]) and applies the printer to the value.
+      This is key to compositionality of printers.
+
+    - We build a list printer using
+      [Format.pp_print_list ~pp_sep:(...) pp_pair].
+      [pp_print_list] takes an element printer and returns a list printer.
+      The [?pp_sep] optional argument, if provided, is called in between
+      each element to print a separator.
+
+    - Here, for a separator, we use [(fun out () -> Format.fprintf out ";@ ")].
+      It prints ";", and then "@ " which is a breaking space
+      (either it prints " ", or it prints a newline if the box is about to
+      overflow).
+      This "@ " is responsible for the list printing splitting into several
+      lines.
+
+  If we omit "@ ", we get an ugly single-line print:
+
+  {[# Format.printf "l: [@[<hov>%a@]]@."
+      Format.(pp_print_list ~pp_sep:(fun out () -> fprintf out "; ") pp_pair) l
+  l: [(0, true); (1, false); (2, true); (* ... *); (18, true); (19, false)]
+- : unit = ()
+    ]}
+
+  Generally, it is good practice to define custom printers for important types
+  in your program. If, for example, you were to define basic geometry
+  types like so:
+
+  {[
+  type point = {
+    x: float;
+    y: float;
+  }
+
+  type rectangle = {
+    ll: point; (* lower left *)
+    ur: point; (* upper right *)
+  }
+  ]}
+
+  For debugging purpose, or to display information in logs, or on the console,
+  it would be convenient to define printers for these types.
+  Here is an example of to do it.
+  Note that "%.3f" is a [float] printer up to 3 digits of precision
+  after the dot; "%f" would print as many digits as required, which is
+  somewhat verbose; "%h" is an hexadecimal float printer.
+
+  {[
+  let pp_point out (p:point) =
+    Format.fprintf out "{ @[x=%.3f;@ y=%.3f@] }" p.x p.y
+
+  let pp_rectangle out (r:rectangle) =
+    Format.fprintf out "{ @[ll=%a;@ ur=%a@] }"
+      pp_point r.ll pp_point r.ur
+  ]}
+
+  In the [.mli] file, we could have:
+
+  {[
+    val pp_point : Format.formatter -> point -> unit
+
+    val pp_rectangle : Format.formatter -> rectangle -> unit
+  ]}
+
+  These printers can now be used with "%a" inside other printers.
+
+  {[ # Format.printf "some rectangle: %a@."
+        (Format.pp_print_option pp_rectangle)
+        (Some {ll={x=1.; y=2.}; ur={x=42.; y=500.12345}})
+  some rectangle: { l={ x=1.000; y=2.000 }; ur={ x=42.000; y=500.123 } }
+
+  # Format.printf "no rectangle: %a@."
+        (Format.pp_option pp_rectangle)
+        None
+  no rectangle:
+  ]}
+
+  See how we combine [pp_print_option] (option printer) and our newly defined
+  rectangle printer, like we did with [pp_print_list] earlier.
+
+  For a more extensive tutorial, see
+  {{: https://caml.inria.fr/resources/doc/guides/format.en.html}
+    "Using the Format module"}.
+
+  A final note: the [Format] module is a starting point.
+  The OCaml ecosystem has libraries that makes formatting easier
+  and more expressive, with more combinators, more concise names, etc.
+  An example of such a library is {{: https://erratique.ch/software/fmt} Fmt}.
+
+  Automatic deriving of pretty-printers from type definitions is also possible,
+  using {{: ppx_deriving.show} https://github.com/ocaml-ppx/ppx_deriving}
+  or similar ppx derivers.
 *)

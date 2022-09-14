@@ -36,6 +36,26 @@ module Hashtbl : sig
   (** Hash tables and hash functions.
 
      Hash tables are hashed association tables, with in-place modification.
+     Because most operations on a hash table modify their input, they're
+     more commonly used in imperative code. The lookup of the value associated
+     with a key (see {!find}, {!find_opt}) is normally very fast, often faster
+     than the equivalent lookup in {!Map}.
+
+     The functors {!Make} and {!MakeSeeded} can be used when
+     performance or flexibility are key.
+     The user provides custom equality and hash functions for the key type,
+     and obtains a custom hash table type for this particular type of key.
+
+     {b Warning} a hash table is only as good as the hash function. A bad hash
+     function will turn the table into a degenerate association list,
+     with linear time lookup instead of constant time lookup.
+
+     The polymorphic {!t} hash table is useful in simpler cases or
+     in interactive environments. It uses the polymorphic {!hash} function
+     defined in the OCaml runtime (at the time of writing, it's SipHash),
+     as well as the polymorphic equality [(=)].
+
+     See {{!examples} the examples section}.
   *)
 
 
@@ -99,10 +119,14 @@ module Hashtbl : sig
   val add : ('a, 'b) t -> key:'a -> data:'b -> unit
   (** [Hashtbl.add tbl ~key ~data] adds a binding of [key] to [data]
      in table [tbl].
-     Previous bindings for [key] are not removed, but simply
+
+     {b Warning}: Previous bindings for [key] are not removed, but simply
      hidden. That is, after performing {!remove}[ tbl key],
      the previous binding for [key], if any, is restored.
-     (Same behavior as with association lists.) *)
+     (Same behavior as with association lists.)
+
+     If you desire the classic behavior of replacing elements,
+     see {!replace}. *)
 
   val find : ('a, 'b) t -> 'a -> 'b
   (** [Hashtbl.find tbl x] returns the current binding of [x] in [tbl],
@@ -527,6 +551,100 @@ module Hashtbl : sig
      an integer seed.  Usage:
      [Hashtbl.seeded_hash_param meaningful total seed x].
      @since 4.00.0 *)
+
+  (** {1:examples Examples}
+
+    {2 Basic Example}
+
+    {[
+      (* 0...99 *)
+      let seq = Seq.ints 0 |> Seq.take 100
+
+      (* build from Seq.t *)
+      # let tbl =
+          seq
+          |> Seq.map (fun x -> x, string_of_int x)
+          |> Hashtbl.of_seq
+      val tbl : (int, string) Hashtbl.t = <abstr>
+
+      # Hashtbl.length tbl
+      - : int = 100
+
+      # Hashtbl.find_opt tbl 32
+      - : string option = Some "32"
+
+      # Hashtbl.find_opt tbl 166
+      - : string option = None
+
+      # Hashtbl.replace tbl 166 "one six six"
+      - : unit = ()
+
+      # Hashtbl.find_opt tbl 166
+      - : string option = Some "one six six"
+
+      # Hashtbl.length tbl
+      - : int = 101
+      ]}
+
+
+    {2 Counting Elements}
+
+    Given a sequence of elements (here, a {!Seq.t}), we want to count how many
+    times each distinct element occurs in the sequence. A simple way to do this,
+    assuming the elements are comparable and hashable, is to use a hash table
+    that maps elements to their number of occurrences.
+
+    Here we illustrate that principle using a sequence of (ascii) characters
+    (type [char]).
+    We use a custom [Char_tbl] specialized for [char].
+
+    {[
+      # module Char_tbl = Hashtbl.Make(struct
+          type t = char
+          let equal = Char.equal
+          let hash = Hashtbl.hash
+        end)
+
+      (*  count distinct occurrences of chars in [seq] *)
+      # let count_chars (seq:char Seq.t) : _ list =
+          let counts = Char_tbl.create 16 in
+          Seq.iter
+            (fun c ->
+              let count_c =
+                Char_tbl.find_opt counts c
+                |> Option.value ~default:0
+              in
+              Char_tbl.replace counts c (count_c + 1))
+            seq;
+          (* turn into a list *)
+          Char_tbl.fold (fun c n l -> (c,n) :: l) counts []
+            |> List.sort (fun (c1,_)(c2,_) -> Char.compare c1 c2)
+      val count_chars : Char_tbl.key Seq.t -> (Char.t * int) list = <fun>
+
+      (* basic seq from a string *)
+      # let seq = String.to_seq "hello world, and all the camels in it!"
+      val seq : char Seq.t = <fun>
+
+      # count_chars seq
+      - : (Char.t * int) list =
+      [(' ', 7); ('!', 1); (',', 1); ('a', 3); ('c', 1); ('d', 2); ('e', 3);
+       ('h', 2); ('i', 2); ('l', 6); ('m', 1); ('n', 2); ('o', 2); ('r', 1);
+       ('s', 1); ('t', 2); ('w', 1)]
+
+      (* "abcabcabc..." *)
+      # let seq2 =
+          Seq.cycle (String.to_seq "abc") |> Seq.take 31
+      val seq2 : char Seq.t = <fun>
+
+      # String.of_seq seq2
+      - : String.t = "abcabcabcabcabcabcabcabcabcabca"
+
+      # count_chars seq2
+      - : (Char.t * int) list = [('a', 11); ('b', 10); ('c', 10)]
+
+    ]}
+
+  *)
 
 end
 
