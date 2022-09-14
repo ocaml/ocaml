@@ -78,6 +78,8 @@ val decr : int t -> unit
     (* total number of individual attempts to find a number *)
     let num_attempts = Atomic.make 0
 
+    (* find a number that satisfies [p], by… trying random numbers
+       until one fits. *)
     let find_number_where (p:int -> bool) =
       let rand = Random.State.make_self_init() in
       while not (Atomic.get stop_all_threads) do
