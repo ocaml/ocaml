@@ -61,7 +61,8 @@ Working version
   (Nicolás Ojeda Bär, review by Xavier Leroy and Gabriel Scherer)
 
 - #11476: Add examples in documentation of Hashtbl, Queue, Atomic, Format
-  (Simon Cruanes)
+  (Simon Cruanes, review by Yotam Barnoy, Gabriel Scherer, Daniel Bünzli,
+   Ulugbek Abdullaev, and Nicolás Ojeda Bär)
 
 ### Other libraries:
 
