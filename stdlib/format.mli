@@ -1536,7 +1536,7 @@ val kasprintf : (string -> 'a) -> ('b, formatter, unit, 'a) format4 -> 'b
   {{: https://caml.inria.fr/resources/doc/guides/format.en.html}
     "Using the Format module"}.
 
-  A last note: the [Format] module is a starting point.
+  A final note: the [Format] module is a starting point.
   The OCaml ecosystem has libraries that makes formatting easier
   and more expressive, with more combinators, more concise names, etc.
   An example of such a library is {{: https://erratique.ch/software/fmt} Fmt}.
