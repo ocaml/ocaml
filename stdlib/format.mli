@@ -1493,9 +1493,10 @@ val kasprintf : (string -> 'a) -> ('b, formatter, unit, 'a) format4 -> 'b
   }
   ]}
 
-  It would be convenient, for debugging purpose, or to display information
-  in logs, or on the console, to define printers. Here is an example of to do
-  it. Note that "%.3f" is a [float] printer up to 3 digits of precision
+  For debugging purpose, or to display information in logs, or on the console,
+  it would be convenient to define printers for these types.
+  Here is an example of to do it.
+  Note that "%.3f" is a [float] printer up to 3 digits of precision
   after the dot; "%f" would print as many digits as required, which is
   somewhat verbose; "%h" is an hexadecimal float printer.
 
