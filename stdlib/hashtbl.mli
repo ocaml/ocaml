@@ -573,7 +573,7 @@ val seeded_hash_param : int -> int -> int -> 'a -> int
   assuming the elements are comparable and hashable, is to use a hash table
   that maps elements to their number of occurrences.
 
-  Here we illustrate that principle using a sequence of (ascii) characters
+  Here we illustrate that principle using a sequence of (ASCII) characters
   (type [char]).
   We use a custom [Char_tbl] specialized for [char].
 
