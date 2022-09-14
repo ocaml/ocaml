@@ -176,8 +176,8 @@ val of_seq : 'a Seq.t -> 'a t
             loop()
           )
         ) else loop()
-    in
-    loop()
+      in
+      loop()
 
     (* a sample graph *)
     let my_graph: graph =
