@@ -537,7 +537,7 @@ val seeded_hash_param : int -> int -> int -> 'a -> int
 
   {[
     (* 0...99 *)
-    let seq = Seq.unfold (fun x->Some (x, succ x)) 0 |> Seq.take 100
+    let seq = Seq.ints 0 |> Seq.take 100
 
     (* build from Seq.t *)
     # let tbl =
