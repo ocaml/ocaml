@@ -145,10 +145,6 @@ OCAMLMKTOP=config.cmo build_path_prefix_map.cmo misc.cmo \
 ocamlmktop$(EXE): $(OCAMLMKTOP)
 ocamlmktop.opt$(EXE): $(call byte2native, $(OCAMLMKTOP))
 
-# Converter olabl/ocaml 2.99 to ocaml 3
-
-LIBRARY3=config.cmo build_path_prefix_map.cmo misc.cmo warnings.cmo location.cmo
-
 ifeq ($(UNIX_OR_WIN32),unix)
 LN := ln -sf
 else
@@ -235,16 +231,6 @@ clean::
 beforedepend:: opnames.ml
 
 # Display info on compiled files
-
-DEF_SYMBOL_PREFIX = '-Dsymbol_prefix=""'
-
-ifeq "$(SYSTEM)" "macosx"
-DEF_SYMBOL_PREFIX = '-Dsymbol_prefix="_"'
-endif
-
-ifeq "$(SYSTEM)" "cygwin"
-DEF_SYMBOL_PREFIX = '-Dsymbol_prefix="_"'
-endif
 
 OCAMLOBJINFO=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
              $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
