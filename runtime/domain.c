@@ -409,7 +409,7 @@ asize_t caml_norm_minor_heap_size (intnat wsize)
 
   This is done below in
     [caml_reallocate_minor_heap]
-  which is called both at domain-initialization (by [create_domain])
+  which is called both at domain-initialization (by [domain_create])
   and if a request comes to change the minor heap size.
 
   The boundaries of this committed memory area are
@@ -537,7 +537,7 @@ static uintnat fresh_domain_unique_id(void) {
 }
 
 /* must be run on the domain's thread */
-static void create_domain(uintnat initial_minor_heap_wsize) {
+static void domain_create(uintnat initial_minor_heap_wsize) {
   dom_internal* d = 0;
   caml_domain_state* domain_state;
   struct interruptor* s;
@@ -880,7 +880,7 @@ void caml_init_domains(uintnat minor_heap_wsz) {
     dom->backup_thread_msg = BT_INIT;
   }
 
-  create_domain(minor_heap_wsz);
+  domain_create(minor_heap_wsz);
   if (!domain_self) caml_fatal_error("Failed to create main domain");
   CAMLassert (domain_self->state->unique_id == 0);
 
@@ -1065,7 +1065,7 @@ static void* domain_thread_func(void* v)
   }
 #endif
 
-  create_domain(caml_params->init_minor_heap_wsz);
+  domain_create(caml_params->init_minor_heap_wsz);
   /* this domain is now part of the STW participant set */
   p->newdom = domain_self;
 
@@ -1320,8 +1320,8 @@ int caml_domain_is_in_stw(void) {
      returns 0, the STW section did not run at all, so you should call
      this function in a loop.)
 
-   - Domain initialization code from [create_domain] will not run in
-     parallel with a STW section, as [create_domain] starts by
+   - Domain initialization code from [domain_create] will not run in
+     parallel with a STW section, as [domain_create] starts by
      looping until (1) it has the [all_domains_lock] and (2) there is
      no current STW section (using the [stw_leader] variable).
 
@@ -1346,13 +1346,13 @@ int caml_domain_is_in_stw(void) {
    but additional synchronization would be required to update it
    during domain cleanup.
 
-   Note: in the case of both [create_domain] and [domain_terminate] it
+   Note: in the case of both [domain_create] and [domain_terminate] it
    is important that the loops (waiting for STW sections to finish)
    regularly release [all_domains_lock], to avoid deadlocks scenario
    with in-progress STW sections.
     - For [domain_terminate] we release the lock and join
       the STW section before resuming.
-    - For [create_domain] we wait until the end of the section using
+    - For [domain_create] we wait until the end of the section using
       the condition variable [all_domains_cond] over
       [all_domains_lock], which is broadcasted when a STW section
       finishes.
