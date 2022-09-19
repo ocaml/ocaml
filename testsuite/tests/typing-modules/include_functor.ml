@@ -548,3 +548,35 @@ val r19 : int ref = {contents = 0}
 module F19 : (X : sig val x : int end) -> sig end
 module M19 : sig val x : int end
 |}];;
+
+(* Test 20: Shadowed types *)
+module I20 = struct
+  type t = int
+end
+
+module F20 (M : sig
+    type t = string
+  end) =
+struct
+  let go (arg : M.t) = print_endline arg
+end
+
+module M20 = struct
+  include I20
+
+  type t = string
+
+  include functor F20
+end
+
+let () = M20.go 3;;
+[%%expect{|
+module I20 : sig type t = int end
+module F20 : (M : sig type t = string end) -> sig val go : M.t -> unit end
+module M20 : sig type t = string val go : string -> unit end
+Line 20, characters 16-17:
+20 | let () = M20.go 3;;
+                     ^
+Error: The constant "3" has type "int" but an expression was expected of type
+         "string"
+|}];;
