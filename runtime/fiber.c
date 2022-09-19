@@ -185,9 +185,9 @@ alloc_size_class_stack_noexc(mlsize_t wosize, int cache_bucket, value hval,
 }
 
 /* allocate a stack with at least "wosize" usable words of stack */
-static struct stack_info*
-alloc_stack_noexc(mlsize_t wosize, value hval, value hexn, value heff,
-                  int64_t id)
+struct stack_info*
+caml_alloc_stack_noexc(mlsize_t wosize, value hval, value hexn, value heff,
+                       int64_t id)
 {
   int cache_bucket = stack_cache_bucket (wosize);
   return alloc_size_class_stack_noexc(wosize, cache_bucket, hval, hexn, heff,
@@ -404,9 +404,8 @@ void caml_scan_stack(
 
 #ifdef NATIVE_CODE
 /* Update absolute exception pointers for new stack*/
-static void
-rewrite_exception_stack(struct stack_info *old_stack,
-                        value** exn_ptr, struct stack_info *new_stack)
+void caml_rewrite_exception_stack(struct stack_info *old_stack,
+                                  value** exn_ptr, struct stack_info *new_stack)
 {
   fiber_debug_log("Old [%p, %p]", Stack_base(old_stack), Stack_high(old_stack));
   fiber_debug_log("New [%p, %p]", Stack_base(new_stack), Stack_high(new_stack));
@@ -459,11 +458,12 @@ int caml_try_realloc_stack(asize_t required_space)
                  (uintnat) wsize * sizeof(value));
   }
 
-  new_stack = alloc_stack_noexc(wsize,
-                                Stack_handle_value(old_stack),
-                                Stack_handle_exception(old_stack),
-                                Stack_handle_effect(old_stack),
-                                old_stack->id);
+  new_stack = caml_alloc_stack_noexc(wsize,
+                                     Stack_handle_value(old_stack),
+                                     Stack_handle_exception(old_stack),
+                                     Stack_handle_effect(old_stack),
+                                     old_stack->id);
+
   if (!new_stack) return 0;
   memcpy(Stack_high(new_stack) - stack_used,
          Stack_high(old_stack) - stack_used,
@@ -471,7 +471,7 @@ int caml_try_realloc_stack(asize_t required_space)
   new_stack->sp = Stack_high(new_stack) - stack_used;
   Stack_parent(new_stack) = Stack_parent(old_stack);
 #ifdef NATIVE_CODE
-  rewrite_exception_stack(old_stack, (value**)&Caml_state->exn_handler,
+  caml_rewrite_exception_stack(old_stack, (value**)&Caml_state->exn_handler,
                           new_stack);
 #endif
 
@@ -498,7 +498,7 @@ struct stack_info* caml_alloc_main_stack (uintnat init_wsize)
 {
   const int64_t id = atomic_fetch_add(&fiber_id, 1);
   struct stack_info* stk =
-    alloc_stack_noexc(init_wsize, Val_unit, Val_unit, Val_unit, id);
+    caml_alloc_stack_noexc(init_wsize, Val_unit, Val_unit, Val_unit, id);
   return stk;
 }
 
