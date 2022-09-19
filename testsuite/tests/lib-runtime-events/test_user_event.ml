@@ -4,19 +4,15 @@ include runtime_events
 open Runtime_events
 
 (* let's register some custom events *)
-type _ User.tag +=
-  | MyEvent : unit User.tag
-  | MyCounter : int User.tag
-  | MyCounter2 : int User.tag
-  | MySpan : Type.span User.tag
-  | MyString : string User.tag
-let event = User.register "libname.event" MyEvent Type.event
+type User.tag += Libname | Counters of int
 
-let span = User.register "libname.phase" MySpan Type.span
+let event = User.register "libname.event" Libname Type.event
 
-let counter = User.register "libname.counter" MyCounter Type.counter
+let span = User.register "libname.phase" Libname Type.span
 
-let counter2 = User.register "libname.counter2" MyCounter2 Type.counter
+let counter = User.register "libname.counter" (Counters 1) Type.counter
+
+let counter2 = User.register "libname.counter2" (Counters 2) Type.counter
 
 let custom_type =
   let encode buf value =
@@ -31,7 +27,7 @@ let custom_type =
   in
   Type.register ~encode ~decode
 
-let custom = User.register "libname.custom" MyString custom_type
+let custom = User.register "libname.custom" Libname custom_type
 
 let () =
   start ();
@@ -39,6 +35,7 @@ let () =
   User.write span Begin;
   User.write event ();
   User.write counter 17;
+  User.write counter2 18;
   User.write custom "hello";
   User.write span End
 
@@ -52,23 +49,23 @@ let custom_value = ref ""
 
 let event_handler domain_id ts e () =
   match User.tag e with
-  | MyEvent -> got_event := true
+  | Libname -> got_event := true
   | _ -> ()
 
 let counter_handler domain_id ts e v =
   match User.tag e with
-  | MyCounter -> counter_value := v
+  | Counters 2 -> counter_value := v
   | _ -> ()
 
 let span_handler domain_id ts e v =
   match User.tag e with
-  | MySpan when v = Type.Begin -> got_span_begin := true
-  | MySpan when v = Type.End -> got_span_end := true
+  | Libname when v = Type.Begin -> got_span_begin := true
+  | Libname when v = Type.End -> got_span_end := true
   | _ -> ()
 
 let custom_handler domain_id ts e v =
   match User.tag e with
-  | MyString -> custom_value := v
+  | Libname -> custom_value := v
   | _ -> ()
 
 let () =
@@ -84,7 +81,7 @@ let () =
     ignore(read_poll cursor callbacks None)
   done;
   assert (!got_event);
-  assert (!counter_value = 17);
+  assert (!counter_value = 18);
   assert (!got_span_begin);
   assert (!got_span_end);
   assert (!custom_value = "hello")

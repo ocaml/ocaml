@@ -159,7 +159,7 @@ module User : sig
       consumed by other tools. These events can carry known data types or custom
       values. The current maximum number of user events is 8192. *)
 
-  type 'a tag = ..
+  type tag = ..
   (** The type for an user event tag. Tags are used to discriminate between
       user events of the same type *)
 
@@ -167,7 +167,7 @@ module User : sig
   (** The type for an user event. User events describe their tag, carried data
       type and an unique string-based name *)
 
-  val register : string -> 'value tag -> 'value Type.t -> 'value t
+  val register : string -> tag -> 'value Type.t -> 'value t
   (** [register name tag ty] registers a new event with an unique [name],
       carrying a [tag] and values of type [ty] *)
 
@@ -177,7 +177,7 @@ module User : sig
   val name : _ t -> string
   (** [name t] is the uniquely identifying name of event [t] *)
 
-  val tag : 'a t -> 'a tag
+  val tag : 'a t -> tag
   (** [tag t] is the associated tag of event [t], when it is known.
       Events can be unknown if the event has not been *)
 

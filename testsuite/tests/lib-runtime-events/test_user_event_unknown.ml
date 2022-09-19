@@ -7,7 +7,7 @@
 *)
 open Runtime_events
 
-type _ User.tag += Ev : int -> int User.tag | Sp : Type.span User.tag
+type User.tag += Ev of int
 
 let ev0 =
   User.register "ev0" (Ev 0) Type.counter
@@ -21,7 +21,7 @@ let () =
   begin
     let ev1 = User.register "ev1" (Ev 1) Type.counter in
     let ev2 = User.register "ev2" (Ev 2) Type.counter in
-    let ev3 = User.register "ev3" Sp Type.span in
+    let ev3 = User.register "ev3" (Ev 3) Type.span in
     User.write ev0 17;
     User.write ev1 12;
     User.write ev2 28;

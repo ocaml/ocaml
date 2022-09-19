@@ -195,21 +195,21 @@ module Type = struct
 end
 
 module User = struct
-  type _ tag = ..
+  type tag = ..
 
   (* the UNK tag is used when an unknown event of a known type (event or
      counter) is received *)
-  type _ tag += UNK : 'a tag
+  type tag += UNK : tag
 
   (* the data structure is primarily managed in C *)
   type [@warning "-unused-field"] 'a t = {
     id: int;
     name: string;
     typ: 'a Type.t;
-    tag: 'a tag option;
+    tag: tag option;
   }
 
-  external user_register : string -> 'a tag option -> 'a Type.t -> 'a t
+  external user_register : string -> tag option -> 'a Type.t -> 'a t
                          = "caml_runtime_events_user_register"
   external user_write : 'a t -> 'a -> unit = "caml_runtime_events_user_write"
 
