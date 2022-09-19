@@ -236,6 +236,8 @@ void caml_scan_stack(
   scanning_action f, scanning_action_flags fflags, void* fdata,
   struct stack_info* stack, value* v_gc_regs);
 
+struct stack_info* caml_alloc_stack_noexc(mlsize_t wosize, value hval,
+                                          value hexn, value heff, int64_t id);
 /* try to grow the stack until at least required_size words are available.
    returns nonzero on success */
 CAMLextern int caml_try_realloc_stack (asize_t required_wsize);
@@ -250,6 +252,9 @@ void caml_free_gc_regs_buckets(value *gc_regs_buckets);
 #ifdef NATIVE_CODE
 void caml_get_stack_sp_pc (struct stack_info* stack,
                            char** sp /* out */, uintnat* pc /* out */);
+void
+caml_rewrite_exception_stack(struct stack_info *old_stack,
+                             value** exn_ptr, struct stack_info *new_stack);
 #endif
 
 value caml_continuation_use (value cont);
@@ -259,6 +264,7 @@ value caml_continuation_use (value cont);
    between continuation_use and continuation_replace.
    Used for cloning continuations and continuation backtraces. */
 void caml_continuation_replace(value cont, struct stack_info* stack);
+
 
 #endif /* CAML_INTERNALS */
 
