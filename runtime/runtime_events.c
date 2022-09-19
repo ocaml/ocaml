@@ -697,8 +697,24 @@ CAMLprim value caml_runtime_events_user_write(value event, value event_content)
   if ( !ring_is_active() )
     CAMLreturn(Val_unit);
 
+  /* event type:
+  type 'a t = {
+    id: int;
+    name: string;
+    typ: 'a Type.t;
+    tag: 'a tag option;
+  }
+  */
   event_id = Field(event, 0);
+
   event_type = Field(event, 2);
+  /* event_type type:
+  type 'a t =
+  | Event : unit t
+  | Counter : int t
+  | Span : span t
+  | Custom : 'a custom -> 'a t
+  */
 
   // Check if event is custom or not.
   if (Is_block(event_type)) {
@@ -726,28 +742,41 @@ CAMLprim value caml_runtime_events_user_write(value event, value event_content)
     uintnat len_64bit_word = (len_bytes + sizeof(uint64_t)) / sizeof(uint64_t);
     uintnat offset_index = len_64bit_word * sizeof(uint64_t) - 1;
     Bytes_val(write_buffer)[offset_index] = offset_index - len_bytes;
-    write_to_ring(EV_USER, RUNTIME_EVENTS_CUSTOM_EVENT_TYPE_CUSTOM,
+    write_to_ring(EV_USER, RUNTIME_EVENTS_CUSTOM_EVENT_MSG_TYPE_CUSTOM,
       Int_val(event_id), len_64bit_word, (uint64_t *) Bytes_val(write_buffer),
       0);
 
     caml_plat_unlock(&write_buffer_lock);
 
   } else {
-    // Event | Counter
+    // Event | Counter | Span
 
     int event_type_id = Int_val(event_type);
 
     // Event
-    if (event_type_id == RUNTIME_EVENTS_CUSTOM_EVENT_TYPE_EVENT) {
-      write_to_ring(EV_USER, event_type_id,
+    if (event_type_id == RUNTIME_EVENTS_CUSTOM_EVENT_ML_TYPE_EVENT) {
+      write_to_ring(EV_USER, RUNTIME_EVENTS_CUSTOM_EVENT_MSG_TYPE_EVENT,
         Int_val(event_id), 0, NULL, 0);
     }
 
     // Counter
-    if (event_type_id == RUNTIME_EVENTS_CUSTOM_EVENT_TYPE_COUNTER) {
+    if (event_type_id == RUNTIME_EVENTS_CUSTOM_EVENT_ML_TYPE_COUNTER) {
       uint64_t c_event_content = Int_val(event_content);
-      write_to_ring(EV_USER, event_type_id,
+      write_to_ring(EV_USER, RUNTIME_EVENTS_CUSTOM_EVENT_MSG_TYPE_COUNTER,
         Int_val(event_id), 1, &c_event_content, 0);
+    }
+
+    // Span
+    if (event_type_id == RUNTIME_EVENTS_CUSTOM_EVENT_ML_TYPE_SPAN) {
+      // event_content type is Begin | End
+      int message_type;
+      if (Int_val(event_content) == 0) {
+        message_type = RUNTIME_EVENTS_CUSTOM_EVENT_MSG_TYPE_SPAN_BEGIN;
+      } else {
+        message_type = RUNTIME_EVENTS_CUSTOM_EVENT_MSG_TYPE_SPAN_END;
+      }
+      write_to_ring(EV_USER, message_type,
+        Int_val(event_id), 0, NULL, 0);
     }
   }
 
@@ -782,8 +811,7 @@ CAMLprim value caml_runtime_events_user_resolve(
     current_user_event = Field(current_user_event, 1);
   }
 
-  if (event_type_id == RUNTIME_EVENTS_CUSTOM_EVENT_TYPE_EVENT
-      || event_type_id == RUNTIME_EVENTS_CUSTOM_EVENT_TYPE_COUNTER) {
+  if (event_type_id != RUNTIME_EVENTS_CUSTOM_EVENT_ML_TYPE_CUSTOM) {
     // the event is not known, but its type is known
     // as we know the event type the event can be reconstructed
     value event_type = Val_int(event_type_id);
@@ -794,9 +822,6 @@ CAMLprim value caml_runtime_events_user_resolve(
                                               event_type);
 
     CAMLreturn(event);
-  } else {
-    // event_type_id is 2: it's a custom event, we don't know how to parse the
-    // data
   }
 
 

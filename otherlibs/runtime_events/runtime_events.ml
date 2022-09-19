@@ -166,16 +166,21 @@ module Type = struct
     id: int;
   }
 
+  type span = Begin | End
+
   type 'a t =
   | Event : unit t
   | Counter : int t
+  | Span : span t
   | Custom : 'a custom -> 'a t
 
   let event = Event
 
+  let span = Span
+
   let counter = Counter
 
-  let next_id = ref 2
+  let next_id = ref 3
 
   let register ~encode ~decode =
     incr next_id;
@@ -184,7 +189,9 @@ module Type = struct
   let id: type a. a t -> int = function
     | Event -> 0
     | Counter -> 1
+    | Span -> 2
     | Custom {id; _} -> id
+
 end
 
 module User = struct

@@ -140,6 +140,11 @@ module Type : sig
   val event : unit t
   (** An event has no data associated with it *)
 
+  type span = Begin | End
+
+  val span : span t
+  (** An event that have a beginning and an end *)
+
   val counter : int t
   (** A counter is a number *)
 
