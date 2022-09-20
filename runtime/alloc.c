@@ -56,6 +56,13 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
   return result;
 }
 
+/* This is used by the native compiler for large block allocations. */
+CAMLexport value caml_alloc_shr_check_gc (mlsize_t wosize, tag_t tag)
+{
+  caml_check_urgent_gc (Val_unit);
+  return caml_alloc_shr (wosize, tag);
+}
+
 Caml_inline value do_alloc_small(mlsize_t wosize, tag_t tag, value* vals)
 {
   value v;

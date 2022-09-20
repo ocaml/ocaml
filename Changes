@@ -463,6 +463,10 @@ OCaml 5.0
   mingw-w64 i686 port.
   (David Allsopp, review by Xavier Leroy and Sébastien Hinderer)
 
+- #11482, #11542: Fix random crash in large closure allocation
+  (Damien Doligez, report by Thierry Martinez and Vincent Laviron, review by
+   Xavier Leroy)
+
 - #11508, #11509: make Bytes.escaped domain-safe
   (Christiano Haesbaert and Gabriel Scherer,
    review by Xavier Leroy,
