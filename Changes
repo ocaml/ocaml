@@ -127,6 +127,7 @@ Working version
   when they are not regular files.
   (Xavier Leroy, report by Thierry Martinez, review by
    Anil Madhavapeddy, Nicolás Ojeda Bär, David Allsopp)
+
 - #10348: Expand GADT equations lazily during unification to avoid ambiguity
   (Jacques Garrigue, review by Leo White)
 
@@ -609,6 +610,10 @@ OCaml 5.0
 - #11468: Fix regression from #10186 (OCaml 4.13) detecting IPv6 on Windows for
   mingw-w64 i686 port.
   (David Allsopp, review by Xavier Leroy and Sébastien Hinderer)
+
+- #11482, #11542: Fix random crash in large closure allocation
+  (Damien Doligez, report by Thierry Martinez and Vincent Laviron, review by
+   Xavier Leroy)
 
 - #11508, #11509: make Bytes.escaped domain-safe
   (Christiano Haesbaert and Gabriel Scherer,
