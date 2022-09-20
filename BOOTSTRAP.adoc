@@ -1,7 +1,10 @@
 = Bootstrapping the compiler
 
-This file explains how to bootstrap the OCaml compiler, i.e. how to
-update the binaries in the link:boot/[] directory.
+This file explains how to bootstrap the OCaml compiler, i.e. how to update the
+bytecode binaries in the link:boot/[] directory (notably, `ocamlc`, `ocamlrun`,
+and `ocamllex`). These binaries are used in the build process of the compiler to
+first build a bytecode binary of `ocamlc`, which is then used to build
+`ocamlopt.byte`, which later builds the platform-specific native binaries.
 
 A bootstrap is required for example when something changes in the
 runtime system (the magic number of bytecode executables, the format of
@@ -13,22 +16,26 @@ of .cmi files and thus require a bootstrap.
 
 Here is how to perform a change that requires a bootstrap:
 
-1. Make sure you start with a clean source tree (e.g. check with
-   `git status`)
+1. Make sure to start with a clean source tree (e.g. check with `git status`; it
+may be adviseable to start in a new branch too, check it out with `git checkout
+-b new-branch`). To make sure there are no build artifacts from previous builds
+around, perform
 
-2. Configure your source tree by running:
+        make distclean
+
+2. Configure the source tree by running:
 
         ./configure
 
-3. Bring your system to a stable state. Concretely, this means that the
-   boot/ directory should contain a version of ocamlrun and all the
+3. Bring the system to a stable state. Concretely, this means that the
+   `boot/` directory should contain a version of `ocamlrun` and all the
    \*.cm* files of the standard library. This stable state can be reached
    by running
 
         make world
 +
 (Actually, running `make coldstart` should be enough but `make world` is
-safer. Similarly, `make world.opt` will also bring you to such a stable
+safer. Similarly, `make world.opt` will also result in such a stable
 state but builds more things than actually required.)
 
 4. Now, and only now, edit the sources. Changes here may include removing
@@ -36,66 +43,123 @@ state but builds more things than actually required.)
    number of bytecode executable files, changing the way types are
    represented or anything else in the format of .cmi files, etc.
 
-5. Run:
+5. Build the core system:
 
         make coreall
 +
-This will rebuild runtime/ocamlrun, ocamlc, etc.
+This will rebuild runtime/ocamlrun, ocamlc, etc. Optionally, the new system
+can now be tested:
 
-6. (optional) The new system can now be tested:
+        echo 'let _ = print_string "Hello world!\n"' > hello.ml
+        ./boot/ocamlrun ./ocamlc -I ./stdlib hello.ml -o hello.exe
+        ./runtime/ocamlrun hello.exe
 
-        echo 'let _ = print_string "Hello world!\n"' > foo.ml
-        ./boot/ocamlrun ./ocamlc -I ./stdlib foo.ml
-        ./runtime/ocamlrun a.out
+6. If planning to upstream, commit the changes now, so that the bootstrap can be
+repeated (e.g. for when the patch needs to be rebased after another bootstrap
+was committed to trunk). Indicate in the commit message that the changes need a
+bootstrap.
 
-7. We now know the system works and can thus build the new boot/
-   binaries:
+7. Perform the bootstrap, which results in updated binaries in the `boot/`
+directory:
 
         make bootstrap
 
-= Problems
+8. If planning to upstream, commit the files in `boot/` now.
 
-If you notice that this procedure fails for a given change you are
-trying to implement, please report it so that the procedure can be
-updated to also cope with your change.
-
-= Upstreaming
-
-If you want to upstream your changes, indicate in the message of the
-commit that the changes need a bootstrap. Perform the bootstrap and
-commit the result of the bootstrap separately, after that commit.
+We refer to this sequence of steps as "the bootstrap procedure".
 
 = Adding, removing and renaming primitives
 
-Primitives can be added without having to bootstrap, however it is necessary
-to repeat `make coldstart` in order to use your new primitive in the standard
+The execution of an OCaml program relies on so-called "primitives". A primitive
+is a function of the runtime that is called from OCaml code. Thus, a primitive
+must obey the usual FFI conventions. Primitives implement features of the
+language itself, for instance testing equality.
+
+To create the primitives table (used by both the interpreter and the compiler)
+during the build process, a script scans the C files of the runtime and collects
+the names of the functions annotated with the C preprocessor macro `CAMLprim`
+(see `runtime/gen_primitives.sh`). The collected function names are used to
+generate `runtime/prims.c`, which declares the primitives table.
+
+Every OCaml bytecode executable file contains a `PRIMS` section listing all the
+primitives it relies on (see `bytecomp/bytelink.ml`).
+
+When running a bytecode executable, in `runtime/dynlink.c`, the bytecode
+interpreter checks that the primitives listed in the bytecode executable's
+`PRIMS` section are all present in the interpreter's primitives table. If a
+primitive is missing, `ocamlrun` will not run the bytecode executable,
+throwing an exception instead.
+
+Now, the OCaml bytecode compiler (`ocamlc`) actually depends on two (potentially
+different) sets of primitives: On the one hand, there is 1) the set of
+primitives the `ocamlc` bytecode executable requires to run, and on the other
+hand, there is 2) the set of primitives that the programs it generates require
+to run.
+
+== Adding a primitive
+
+Since
+
+1. the existing `boot/ocamlc` can be run by an interpreter that knows a
+larger set of primitives, and
+
+2. in the build process of the OCaml compiler, the list of primitives available
+in the new runtime is always provided explicitly as a parameter to
+`boot/ocamlc`,
+
+primitives can be added without having to bootstrap. However it is necessary to
+repeat `make coldstart` in order to use a new primitive in the standard
 library.
 
-There are five steps to renaming a primitive:
+== Removing a primitive
 
-1. Rename the primitive and its uses
+When a primitive is removed, the resulting `ocamlrun` can no longer run
+`boot/ocamlc` if the removed primitive is listed in the `PRIMS` section of
+`boot/ocamlc` but not in the primitives table of the new interpreter.
 
-2. Create a temporary stub with the old primitive's name. This stub simply
-   passes its arguments on to the new primitive:
+To remove a primitive, start with steps 1-3 of the bootstrap procedure.
+Then:
+
+[loweralpha]
+a. Remove the primitive from OCaml source files (`.ml`, `.mli`, `.mll`, `.mly`
+etc.)
+
+b. Build the core system (step 5 of the bootstrap procedure). Now, the standard library no longer depends on the
+removed primitive
++
+        make coreall
+
+c. Remove the C implementation of the primitive (annotated with `CAMLprim`)
+
+Continue with step 6-8 of the bootstrap procedure.
+
+== Renaming a primitive
+
+To rename a primitive, start with steps 1-3 of the bootstrap procedure.
+Then:
+
+[loweralpha]
+a. Rename the primitive and its uses (in both C and OCaml code)
+
+b. Since the existing `boot/ocamlc` still needs the old primitive to run, there
+must be a C implementation for the old primitive. This implementation can simply
+call the renamed primitive:
 
         CAMLprim value caml_old_primitive(value a1, value a2) {
           return caml_new_primitive(a1, a2);
         }
 
-3. Deal with the addition of the new primitive:
+c. Deal with the addition of the new primitive:
 
         make coldstart
 
-4. Ensure the system still works:
+d. Build the core system (step 5 of the bootstrap procedure):
 
         make coreall
 
-5. Now remove the old primitive stub and issue:
+e. Remove the C implementation of the old primitive (from step b)
 
-        make bootstrap
-
-It is desirable for bootstraps to be easily repeatable, so you should commit
-changes after step 4.
+Continue with steps 6-8 of the bootstrap procedure.
 
 = Bootstrap test script
 
@@ -107,3 +171,9 @@ a primitive from the runtime. It then makes sure the bootstrap still
 works after these changes. This script can be run locally as follows:
 
         OCAML_ARCH=linux ./tools/ci/inria/bootstrap
+
+= Reporting Problems
+
+If you notice that one of these procedures fails for a given change you are
+trying to implement, please report it so that the procedure can be updated to
+also cope with your change.
