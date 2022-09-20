@@ -55,7 +55,6 @@ let rec fmt_path_aux f x =
   | Path.Papply (y, z) ->
       fprintf f "%a(%a)" fmt_path_aux y fmt_path_aux z
   | Path.Pextra_ty (y, Pext_ty) -> fmt_path_aux f y
-  | Path.Pextra_ty (y, Pcls_ty) -> fprintf f "#%a" fmt_path_aux y
 
 let fmt_path f x = fprintf f "\"%a\"" fmt_path_aux x
 

@@ -431,8 +431,6 @@ let rec tree_of_path namespace = function
           Oide_dot (tree_of_path Type p, s)
       | Pext_ty ->
           tree_of_path Other p
-      | Pcls_ty ->
-          tree_of_path Class_type p
     end
 
 let tree_of_path namespace p =
@@ -726,7 +724,6 @@ let rec lid_of_path = function
   | Path.Papply (p1, p2) ->
       Longident.Lapply (lid_of_path p1, lid_of_path p2)
   | Path.Pextra_ty (p, Pext_ty) -> lid_of_path p
-  | Path.Pextra_ty (p, Pcls_ty) -> Longident.Ldot (lid_of_path p, "#")
 
 let is_unambiguous path env =
   let l = Env.find_shadowed_types path env in

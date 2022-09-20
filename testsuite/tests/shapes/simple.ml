@@ -115,6 +115,7 @@ and M2 : sig type t val x : t end
 class c = object end
 [%%expect{|
 {
+ "#c"[type] -> <.32>;
  "c"[type] -> <.32>;
  "c"[class] -> <.32>;
  "c"[class type] -> <.32>;
@@ -125,6 +126,7 @@ class c : object  end
 class type c = object end
 [%%expect{|
 {
+ "#c"[type] -> <.34>;
  "c"[type] -> <.34>;
  "c"[class type] -> <.34>;
  }

@@ -1107,14 +1107,6 @@ let type_of_cstr path = function
       end
   | _ -> assert false
 
-let find_cltype path env =
-  match path with
-  | Pident id -> (IdTbl.find_same id env.cltypes).cltda_declaration
-  | Pdot(p, s) ->
-      let sc = find_structure_components p env in
-      (NameMap.find s sc.comp_cltypes).cltda_declaration
-  | Papply _ | Pextra_ty _ -> raise Not_found
-
 let rec find_type_data path env =
   match Path.Map.find path env.local_constraints with
   | decl ->
@@ -1144,14 +1136,6 @@ let rec find_type_data path env =
           | Pext_ty ->
               let cda = find_extension p env in
               type_of_cstr path cda.cda_description
-          | Pcls_ty ->
-              let clty = find_cltype p env in
-              let decl = clty.clty_ty in
-              {
-                tda_declaration = decl;
-                tda_descriptions = Type_abstract;
-                tda_shape = Shape.leaf decl.type_uid;
-              }
         end
     end
 
@@ -1172,6 +1156,14 @@ let find_class_full path env =
   | Pdot(p, s) ->
       let sc = find_structure_components p env in
       NameMap.find s sc.comp_classes
+  | Papply _ | Pextra_ty _ -> raise Not_found
+
+let find_cltype path env =
+  match path with
+  | Pident id -> (IdTbl.find_same id env.cltypes).cltda_declaration
+  | Pdot(p, s) ->
+      let sc = find_structure_components p env in
+      (NameMap.find s sc.comp_cltypes).cltda_declaration
   | Papply _ | Pextra_ty _ -> raise Not_found
 
 let find_value path env =
@@ -1235,15 +1227,16 @@ let find_constructor_address path env =
 let find_hash_type path env =
   match path with
   | Pident id ->
-      let name = Ident.name id in
-      let _, cltda =
-        IdTbl.find_name wrap_identity ~mark:false name env.cltypes
+      let name = "#" ^ Ident.name id in
+      let _, tda =
+        IdTbl.find_name wrap_identity ~mark:false name env.types
       in
-      cltda.cltda_declaration.clty_ty
-  | Pdot(p, name) ->
+      tda.tda_declaration
+  | Pdot(p, s) ->
       let c = find_structure_components p env in
-      let cltda = NameMap.find name c.comp_cltypes in
-      cltda.cltda_declaration.clty_ty
+      let name = "#" ^ s in
+      let tda = NameMap.find name c.comp_types in
+      tda.tda_declaration
   | Papply _ | Pextra_ty _ -> raise Not_found
 
 let find_shape env (ns : Shape.Sig_component_kind.t) id =

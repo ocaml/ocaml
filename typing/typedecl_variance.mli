@@ -55,9 +55,9 @@ val update_decls :
 
 val update_class_decls :
   Env.t ->
-  (Ident.t * Typedecl_properties.decl *
+  (Ident.t * Typedecl_properties.decl * Types.type_declaration *
    Types.class_declaration * Types.class_type_declaration *
    'a Typedtree.class_infos) list ->
-  (Typedecl_properties.decl *
+  (Typedecl_properties.decl * Types.type_declaration *
    Types.class_declaration * Types.class_type_declaration) list
 (* FIXME: improve this horrible interface *)

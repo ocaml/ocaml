@@ -193,11 +193,15 @@ let restore_global_level gl =
   global_level := gl
 
 (**** Whether a path points to an object type (with hidden row variable) ****)
+let is_object_type_name name =
+  name.[0] = '#'
 
 let is_object_type path =
   match path with
-  | Path.Pextra_ty (_, Path.Pcls_ty) -> true
-  | _ -> false
+  | Path.Pident id -> is_object_type_name (Ident.name id)
+  | Path.Pdot(_, s) -> is_object_type_name s
+  | Path.Pextra_ty _ -> false
+  | Path.Papply _ -> assert false
 
 (**** Control tracing of GADT instances *)
 
@@ -5377,7 +5381,6 @@ let nondep_cltype_declaration env ids decl =
       clty_variance = decl.clty_variance;
       clty_type = nondep_class_type env ids decl.clty_type;
       clty_path = decl.clty_path;
-      clty_ty = nondep_type_decl env ids false decl.clty_ty;
       clty_loc = decl.clty_loc;
       clty_attributes = decl.clty_attributes;
       clty_uid = decl.clty_uid;

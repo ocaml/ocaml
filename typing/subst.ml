@@ -131,7 +131,7 @@ let rec type_path s path =
      | Pextra_ty (p, extra) ->
          match extra with
          | Pcstr_ty _ -> Pextra_ty (type_path s p, extra)
-         | Pext_ty | Pcls_ty -> Pextra_ty (value_path s p, extra)
+         | Pext_ty -> Pextra_ty (value_path s p, extra)
 
 let to_subst_by_type_function s p =
   match Path.Map.find p s.types with
@@ -386,7 +386,6 @@ let cltype_declaration' copy_scope s decl =
     clty_variance = decl.clty_variance;
     clty_type = class_type copy_scope s decl.clty_type;
     clty_path = type_path s decl.clty_path;
-    clty_ty = type_declaration' copy_scope s decl.clty_ty;
     clty_loc = loc s decl.clty_loc;
     clty_attributes = attrs s decl.clty_attributes;
     clty_uid = decl.clty_uid;
