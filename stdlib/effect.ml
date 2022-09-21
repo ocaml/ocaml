@@ -16,7 +16,7 @@ type 'a t = ..
 external perform : 'a t -> 'a = "%perform"
 
 type exn += Unhandled: 'a t -> exn
-exception Continuation_already_taken
+exception Continuation_already_resumed
 
 let () =
   let printer = function
@@ -33,8 +33,8 @@ let () =
 type _ t += Should_not_see_this__ : unit t
 let _ = Callback.register_exception "Effect.Unhandled"
           (Unhandled Should_not_see_this__)
-let _ = Callback.register_exception "Effect.Continuation_already_taken"
-          Continuation_already_taken
+let _ = Callback.register_exception "Effect.Continuation_already_resumed"
+          Continuation_already_resumed
 
 type ('a, 'b) stack
 

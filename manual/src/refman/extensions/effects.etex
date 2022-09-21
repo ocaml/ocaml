@@ -616,7 +616,7 @@ As discussed earlier~\ref{s:effects-discontinue}, the delimited continuations
 in OCaml must be used linearly -- \emph{\textbf{every captured continuation
 must be resumed either with a "continue" or "discontinue" exactly once}}.
 Attempting to use a continuation more than once raises a
-"Continuation_already_taken" exception. For example:
+"Continuation_already_resumed" exception. For example:
 
 \begin{caml_example}{verbatim}
 try_with perform (Xchg 0)

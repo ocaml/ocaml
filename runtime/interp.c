@@ -1292,7 +1292,7 @@ do_resume: {
       struct stack_info* stk = Ptr_val(accu);
       if (stk == NULL) {
         Setup_for_c_call;
-        caml_raise_continuation_already_taken();
+        caml_raise_continuation_already_resumed();
       }
       while (Stack_parent(stk) != NULL) stk = Stack_parent(stk);
       Stack_parent(stk) = Caml_state->current_stack;

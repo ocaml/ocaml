@@ -631,7 +631,7 @@ CAMLprim value caml_continuation_use (value cont)
 {
   value v = caml_continuation_use_noexc(cont);
   if (v == Val_ptr(NULL))
-    caml_raise_continuation_already_taken();
+    caml_raise_continuation_already_resumed();
   return v;
 }
 
@@ -670,7 +670,7 @@ CAMLprim value caml_drop_continuation (value cont)
 }
 
 static const value * _Atomic caml_unhandled_effect_exn = NULL;
-static const value * _Atomic caml_continuation_already_taken_exn = NULL;
+static const value * _Atomic caml_continuation_already_resumed_exn = NULL;
 
 static const value * cache_named_exception(const value * _Atomic * cache,
                                            const char * name)
@@ -688,11 +688,11 @@ static const value * cache_named_exception(const value * _Atomic * cache,
   return exn;
 }
 
-CAMLexport void caml_raise_continuation_already_taken(void)
+CAMLexport void caml_raise_continuation_already_resumed(void)
 {
   const value * exn =
-    cache_named_exception(&caml_continuation_already_taken_exn,
-                          "Effect.Continuation_already_taken");
+    cache_named_exception(&caml_continuation_already_resumed_exn,
+                          "Effect.Continuation_already_resumed");
   caml_raise(*exn);
 }
 

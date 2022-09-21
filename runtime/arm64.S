@@ -816,7 +816,7 @@ CFI_STARTPROC
         SWITCH_OCAML_STACKS x9, x0
         mov     x0, x2
         br      x3
-2:      ADDRGLOBAL(ADDITIONAL_ARG, caml_raise_continuation_already_taken)
+2:      ADDRGLOBAL(ADDITIONAL_ARG, caml_raise_continuation_already_resumed)
         b       G(caml_c_call)
         CFI_ENDPROC
         END_FUNCTION(caml_resume)

@@ -945,7 +945,7 @@ CFI_STARTPROC
         UPDATE_BASE_POINTER(%rcx)
         SWITCH_OCAML_STACKS
         jmp     *(%rbx)
-2:      LEA_VAR(caml_raise_continuation_already_taken, %rax)
+2:      LEA_VAR(caml_raise_continuation_already_resumed, %rax)
         jmp LBL(caml_c_call)
 CFI_ENDPROC
 ENDFUNCTION(G(caml_resume))

@@ -267,7 +267,7 @@ value caml_continuation_use (value cont);
 void caml_continuation_replace(value cont, struct stack_info* stack);
 
 CAMLnoreturn_start
-CAMLextern void caml_raise_continuation_already_taken (void)
+CAMLextern void caml_raise_continuation_already_resumed (void)
 CAMLnoreturn_end;
 
 CAMLnoreturn_start
