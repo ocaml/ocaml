@@ -206,7 +206,7 @@ struct c_stack_link {
  *  Preperform -> REPERFORMTERM
  *   REPERFORMTERM is used to walk up the parent OCaml stacks to execute the
  *   next effect handler installed in the chain. The instruction takes care to
- *   switch back to the continuation stack to raise the Unhandledi_effect
+ *   switch back to the continuation stack to raise the Effect.Unhandled
  *   exception in in the case no parent is left. Otherwise the instruction
  *   switches to the parent stack and executes the handle_effect function for
  *   that parent stack.
