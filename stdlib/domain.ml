@@ -278,4 +278,4 @@ let join { term_mutex; term_condition; term_state; _ } =
   | Ok x -> x
   | Error ex -> raise ex
 
-let recommended_domain_count = Raw.get_recommended_domain_count ()
+let recommended_domain_count = Raw.get_recommended_domain_count
