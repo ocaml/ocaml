@@ -30,7 +30,7 @@ exception Continuation_already_resumed
 external perform : 'a t -> 'a = "%perform"
 (** [perform e] performs an effect [e].
 
-    @raise Unhandled e if there is no handler for [e]. *)
+    @raise Unhandled if there is no handler for [e]. *)
 
 module Deep : sig
   (** Deep handlers *)
