@@ -83,7 +83,7 @@ val cpu_relax : unit -> unit
 val is_main_domain : unit -> bool
 (** [is_main_domain ()] returns true if called from the initial domain. *)
 
-val recommended_domain_count : int
+val recommended_domain_count : unit -> int
 (** The recommended maximum number of domains to be spawned. *)
 
 module DLS : sig

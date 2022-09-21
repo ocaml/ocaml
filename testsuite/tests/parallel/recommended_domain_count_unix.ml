@@ -19,10 +19,12 @@ let _ =
       match try_ext cmd with
       | None -> ()
       | Some n ->
-          if Domain.recommended_domain_count > n then
+          let recommended_domain_count =
+            Domain.recommended_domain_count () in
+          if recommended_domain_count > n then
             failwith
               (Printf.sprintf
                  "external tool %s says n=%d, recommended domain says=%d\n"
-                 cmd n Domain.recommended_domain_count))
+                 cmd n recommended_domain_count))
     ["nproc"; "sysctl -n hw.ncpu"];
   print_string "passed\n"
