@@ -152,6 +152,7 @@ callback_stub caml_callback_asm, caml_callback2_asm, caml_callback3_asm;
 
 CAMLexport value caml_callback_exn(value closure, value arg)
 {
+  Caml_check_caml_state();
   caml_domain_state* domain_state = Caml_state;
   caml_maybe_expand_stack();
 
@@ -172,6 +173,7 @@ CAMLexport value caml_callback_exn(value closure, value arg)
 
 CAMLexport value caml_callback2_exn(value closure, value arg1, value arg2)
 {
+  Caml_check_caml_state();
   value args[] = {arg1, arg2};
   caml_domain_state* domain_state = Caml_state;
   caml_maybe_expand_stack();
@@ -194,6 +196,7 @@ CAMLexport value caml_callback2_exn(value closure, value arg1, value arg2)
 CAMLexport value caml_callback3_exn(value closure,
                                     value arg1, value arg2, value arg3)
 {
+  Caml_check_caml_state();
   value args[] = {arg1, arg2, arg3};
   caml_domain_state* domain_state = Caml_state;
   caml_maybe_expand_stack();

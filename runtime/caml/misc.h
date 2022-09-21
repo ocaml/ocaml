@@ -242,7 +242,7 @@ typedef char char_os;
 #endif
 
 #define CAMLassert(x) \
-  ((x) ? (void) 0 : caml_failed_assert ( #x , __OSFILE__, __LINE__))
+  (CAMLlikely(x) ? (void) 0 : caml_failed_assert ( #x , __OSFILE__, __LINE__))
 CAMLnoreturn_start
 CAMLextern void caml_failed_assert (char *, char_os *, int)
 CAMLnoreturn_end;
@@ -250,15 +250,15 @@ CAMLnoreturn_end;
 #define CAMLassert(x) ((void) 0)
 #endif
 
-#ifdef CAML_INTERNALS
-
 #ifdef __GNUC__
-#define CAMLlikely(e)   __builtin_expect((e), 1)
-#define CAMLunlikely(e) __builtin_expect((e), 0)
+#define CAMLlikely(e)   __builtin_expect(!!(e), 1)
+#define CAMLunlikely(e) __builtin_expect(!!(e), 0)
 #else
 #define CAMLlikely(e) (e)
 #define CAMLunlikely(e) (e)
 #endif
+
+#ifdef CAML_INTERNALS
 
 /* GC status assertions.
 
