@@ -23,7 +23,7 @@ external unlock: t -> unit = "caml_ml_mutex_unlock"
 external reraise : exn -> 'a = "%reraise"
 
 (* cannot inline, otherwise flambda might move code around. *)
-let[@inline never] with_locked m f =
+let[@inline never] protect m f =
   lock m;
   match f() with
   | x ->
