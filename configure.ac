@@ -627,7 +627,8 @@ AS_IF([test x"$enable_unix_lib" != "xno"],
   ocamltest_unix_impl="real"
   ocamltest_unix_name="unix"
   ocamltest_unix_path='$(ROOTDIR)/otherlibs/unix'
-  ocamltest_unix_include='-I $(ROOTDIR)/otherlibs/unix '])
+  ocamltest_unix_include='-I $(ROOTDIR)/otherlibs/unix '],
+  [ocamltest_libunix="None"])
 
 AS_IF([test x"$enable_str_lib" != "xno"],
   [otherlibraries="$otherlibraries str"

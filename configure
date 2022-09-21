@@ -12804,6 +12804,8 @@ if test x"$enable_unix_lib" != "xno"; then :
   ocamltest_unix_name="unix"
   ocamltest_unix_path='$(ROOTDIR)/otherlibs/unix'
   ocamltest_unix_include='-I $(ROOTDIR)/otherlibs/unix '
+else
+  ocamltest_libunix="None"
 fi
 
 if test x"$enable_str_lib" != "xno"; then :

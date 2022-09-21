@@ -5,13 +5,14 @@
    script = "${ocamlrun} ${ocamlsrcdir}/tools/caml-tex \
    -repo-root ${ocamlsrcdir} ${readonly_files} -o ${output}"
   * hasstr
-  ** native-compiler
-  *** shared-libraries
-  **** script with unix,str
-  ***** check-program-output
-  *** no-shared-libraries
-  **** script with unix,str
+  ** hasunix
+  *** native-compiler
+  **** shared-libraries
+  ***** script with unix,str
+  ****** check-program-output
+  **** no-shared-libraries
+  ***** script with unix,str
    script = "${ocamlsrcdir}/tools/caml-tex \
    -repo-root ${ocamlsrcdir} ${readonly_files} -o ${output}"
-  ***** check-program-output
+  ****** check-program-output
 *)
