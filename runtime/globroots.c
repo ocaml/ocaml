@@ -94,6 +94,7 @@ static enum gc_root_class classify_gc_root(value v)
 
 CAMLexport void caml_register_generational_global_root(value *r)
 {
+  Caml_check_caml_state();
   CAMLassert (((intnat) r & 3) == 0);  /* compact.c demands this (for now) */
 
   switch(classify_gc_root(*r)) {

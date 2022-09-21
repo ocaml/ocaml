@@ -33,6 +33,7 @@
 
 CAMLexport void caml_raise(value v)
 {
+  Caml_check_caml_state();
   Unlock_exn();
   CAMLassert(!Is_exception_result(v));
 

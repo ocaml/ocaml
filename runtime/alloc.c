@@ -41,6 +41,7 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
     if (wosize == 0){
       result = Atom (tag);
     }else{
+      Caml_check_caml_state();
       Alloc_small (result, wosize, tag, Alloc_small_enter_GC);
       if (tag < No_scan_tag){
         for (i = 0; i < wosize; i++) Field (result, i) = Val_unit;
@@ -65,6 +66,7 @@ CAMLexport value caml_alloc_shr_check_gc (mlsize_t wosize, tag_t tag)
 
 Caml_inline value do_alloc_small(mlsize_t wosize, tag_t tag, value* vals)
 {
+  Caml_check_caml_state();
   value v;
   mlsize_t i;
   CAMLassert (tag < 256);
@@ -188,6 +190,7 @@ CAMLexport value caml_alloc_string (mlsize_t len)
   mlsize_t wosize = (len + sizeof (value)) / sizeof (value);
 
   if (wosize <= Max_young_wosize) {
+    Caml_check_caml_state();
     Alloc_small (result, wosize, String_tag, Alloc_small_enter_GC);
   }else{
     result = caml_alloc_shr (wosize, String_tag);
@@ -251,6 +254,7 @@ CAMLexport value caml_alloc_array(value (*funct)(char const *),
 value caml_alloc_float_array(mlsize_t len)
 {
 #ifdef FLAT_FLOAT_ARRAY
+  Caml_check_caml_state();
   mlsize_t wosize = len * Double_wosize;
   value result;
   /* For consistency with [caml_make_vect], which can't tell whether it should

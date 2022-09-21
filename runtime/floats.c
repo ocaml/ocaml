@@ -151,6 +151,7 @@ void caml_free_locale(void)
 
 CAMLexport value caml_copy_double(double d)
 {
+  Caml_check_caml_state();
   value res;
 
   Alloc_small(res, Double_wosize, Double_tag, Alloc_small_enter_GC);

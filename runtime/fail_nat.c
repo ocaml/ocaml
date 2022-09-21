@@ -60,6 +60,7 @@ CAMLnoreturn_end;
 
 void caml_raise(value v)
 {
+  Caml_check_caml_state();
   char* exception_pointer;
 
   Unlock_exn();
