@@ -59,11 +59,12 @@ type deferred_action =
   | ProcessImplementation of string
   | ProcessInterface of string
   | ProcessCFile of string
+  | ProcessCppFile of string
   | ProcessOtherFile of string
   | ProcessObjects of string list
   | ProcessDLLs of string list
 
-val c_object_of_filename : string -> string
+val c_object_of_filename : ext:string -> string -> string
 
 val defer : deferred_action -> unit
 val anonymous : string -> unit
