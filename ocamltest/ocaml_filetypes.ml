@@ -21,6 +21,7 @@ type t =
   | Implementation
   | Interface
   | C
+  | Cpp
   | C_minus_minus
   | Lexer
   | Grammar
@@ -38,6 +39,7 @@ let string_of_filetype = function
   | Implementation -> "implementation"
   | Interface -> "interface"
   | C -> "C source file"
+  | Cpp -> "C++ source file"
   | C_minus_minus -> "C minus minus source file"
   | Lexer -> "lexer"
   | Grammar -> "grammar"
@@ -52,6 +54,7 @@ let extension_of_filetype = function
   | Implementation -> "ml"
   | Interface -> "mli"
   | C -> "c"
+  | Cpp -> "cpp"
   | C_minus_minus -> "cmm"
   | Lexer -> "mll"
   | Grammar -> "mly"
@@ -72,6 +75,7 @@ let filetype_of_extension = function
   | "ml" -> Implementation
   | "mli" -> Interface
   | "c" -> C
+  | "cpp" -> Cpp
   | "cmm" -> C_minus_minus
   | "mll" -> Lexer
   | "mly" -> Grammar
@@ -111,6 +115,7 @@ let action_of_filetype = function
   | Implementation -> "Compiling implementation"
   | Interface -> "Compiling interface"
   | C -> "Compiling C source file"
+  | Cpp -> "Compiling C++ source file"
   | C_minus_minus -> "Processing C-- file"
   | Lexer -> "Generating lexer"
   | Grammar -> "Generating parser"

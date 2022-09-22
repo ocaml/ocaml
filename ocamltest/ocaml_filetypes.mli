@@ -21,6 +21,7 @@ type t =
   | Implementation
   | Interface
   | C
+  | Cpp
   | C_minus_minus
   | Lexer
   | Grammar
