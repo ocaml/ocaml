@@ -32,7 +32,7 @@ LABLABREGEX="s/\([a-z_]+:([a-z\('])/\(\1/g"
 
 #Remove a tilde if it is followed by a label name and a space or closing
 #OCamldoc code section with ]
-TILDEREGEX="s/~([a-z_]+[ \]])/\1/g"
+TILDEREGEX="s/ ~([a-z_]+(?=[ \]]))/ \1/g"
 
 #Indent a non-blank line by two characters, for moreLabels templates
 INDENTREGEX="s/^(.+)$/  \1/m"
