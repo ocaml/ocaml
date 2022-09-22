@@ -162,7 +162,7 @@ let prepare_module output_variable log env input =
   let input_type = snd input in
   let open Ocaml_filetypes in
   match input_type with
-    | Implementation | Interface | C | Obj -> [input]
+    | Implementation | Interface | C | Cpp | Obj -> [input]
     | Binary_interface -> [input]
     | Backend_specific _ -> [input]
     | C_minus_minus -> assert false
