@@ -65,7 +65,8 @@ else
   # The testsuite needs an absolute path to the runtime, so override the
   # definition in Makefile.common
   FLEXLINK_DLL_LDFLAGS=$(if $(OC_DLL_LDFLAGS), -link "$(OC_DLL_LDFLAGS)")
-  FLEXLINK_EXE_LDFLAGS=$(if $(OC_LDFLAGS), -link "$(OC_LDFLAGS)")
+  FLEXLINK_EXE_LDFLAGS=$(if $(OC_LDFLAGS), -link "$(OC_LDFLAGS)") \
+                       $(if $(OC_EXE_LDFLAGS), -link "$(OC_EXE_LDFLAGS)")
 ifeq "$(wildcard $(ROOTDIR_HOST)/flexlink.opt$(EXE))" ""
   FLEXLINK_ENV = \
     OCAML_FLEXLINK="$(ROOTDIR_HOST)/boot/ocamlrun$(EXE) \
