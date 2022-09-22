@@ -1,7 +1,7 @@
 (* TEST
    modules = "cpp_stubs1.cpp cpp_stubs2.cpp"
    readonly_files = "all-includes.h"
-   flags = "-cc c++ -ccopt -Wno-write-strings"
+   flags = "-cc c++"
    * native
 *)
 
