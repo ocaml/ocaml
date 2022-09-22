@@ -32,7 +32,7 @@
 #define SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE (0x2)
 #endif
 
-static _Atomic DWORD additional_symlink_flags = 0;
+static _Atomic DWORD additional_symlink_flags = -1;
 
 // Developer Mode allows the creation of symlinks without elevation - see
 // https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createsymboliclinkw
@@ -80,7 +80,7 @@ CAMLprim value caml_unix_symlink(value to_dir, value osource, value odest)
 
   additional_flags = atomic_load_explicit(&additional_symlink_flags,
       memory_order_relaxed);
-  if(additional_flags == -1) {
+  if (additional_flags == -1) {
     additional_flags = IsDeveloperModeEnabled() ?
       SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE : 0;
     atomic_store_explicit(&additional_symlink_flags, additional_flags,
