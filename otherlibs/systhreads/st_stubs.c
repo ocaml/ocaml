@@ -17,7 +17,7 @@
 
 #if defined(_WIN32) && !defined(NATIVE_CODE)
 /* Ensure that pthread.h marks symbols __declspec(dllimport) so that they can be
-   picked up from the runtime (which will have loaded libwinpthread-1.dll) */
+   picked up from the runtime (which will have linked winpthreads statically) */
 #define DLL_EXPORT
 #endif
 
