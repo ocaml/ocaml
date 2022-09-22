@@ -202,11 +202,13 @@ extern "C" {
 
 #ifdef CAML_INTERNALS
 
+#ifndef __cplusplus
 Caml_inline void call_timing_hook(_Atomic caml_timing_hook * a)
 {
   caml_timing_hook h = atomic_load_explicit(a, memory_order_relaxed);
   if (h != NULL) (*h)();
 }
+#endif
 
 #endif /* CAML_INTERNALS */
 
