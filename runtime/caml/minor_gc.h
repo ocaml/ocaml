@@ -16,6 +16,7 @@
 #ifndef CAML_MINOR_GC_H
 #define CAML_MINOR_GC_H
 
+#include "address_class.h"
 #include "misc.h"
 #include "config.h"
 

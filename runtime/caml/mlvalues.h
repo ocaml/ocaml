@@ -207,15 +207,6 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 /* Fields are numbered from 0. */
 #define Field(x, i) (((volatile value *)(x)) [i]) /* Also an l-value. */
 
-/* Is_young(val) is true iff val is in the reserved area for minor heaps */
-
-#define Is_young(val) \
-  (CAMLassert (Is_block (val)), \
-   (char *)(val) < (char *)caml_minor_heaps_end && \
-   (char *)(val) > (char *)caml_minor_heaps_start)
-
-#define Is_block_and_young(val) (Is_block(val) && Is_young(val))
-
 /* NOTE: [Forward_tag] and [Infix_tag] must be just under
    [No_scan_tag], with [Infix_tag] the lower one.
    See [caml_oldify_one] in minor_gc.c for more details.

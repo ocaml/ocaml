@@ -88,8 +88,6 @@ CAMLextern void caml_init_domain_self(int);
 CAMLextern uintnat caml_minor_heap_max_wsz;
 
 CAMLextern atomic_uintnat caml_num_domains_running;
-CAMLextern uintnat caml_minor_heaps_start;
-CAMLextern uintnat caml_minor_heaps_end;
 
 Caml_inline intnat caml_domain_alone(void)
 {
