@@ -1,8 +1,9 @@
 (* TEST
 * libwin32unix
 include unix
-** bytecode
-** native
+** has_symlink
+*** bytecode
+*** native
 *)
 
 let create_symlink barrier src dst () =
