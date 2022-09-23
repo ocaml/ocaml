@@ -742,7 +742,7 @@ CAMLprim value caml_runtime_events_user_write(value event, value event_content)
     uintnat len_64bit_word = (len_bytes + sizeof(uint64_t)) / sizeof(uint64_t);
     uintnat offset_index = len_64bit_word * sizeof(uint64_t) - 1;
     Bytes_val(write_buffer)[offset_index] = offset_index - len_bytes;
-    write_to_ring(EV_USER, RUNTIME_EVENTS_CUSTOM_EVENT_MSG_TYPE_CUSTOM,
+    write_to_ring(EV_USER, EV_USER_MSG_TYPE_CUSTOM,
       Int_val(event_id), len_64bit_word, (uint64_t *) Bytes_val(write_buffer),
       0);
 
@@ -754,26 +754,26 @@ CAMLprim value caml_runtime_events_user_write(value event, value event_content)
     int event_type_id = Int_val(event_type);
 
     // Event
-    if (event_type_id == RUNTIME_EVENTS_CUSTOM_EVENT_ML_TYPE_EVENT) {
-      write_to_ring(EV_USER, RUNTIME_EVENTS_CUSTOM_EVENT_MSG_TYPE_EVENT,
+    if (event_type_id == EV_USER_ML_TYPE_EVENT) {
+      write_to_ring(EV_USER, EV_USER_MSG_TYPE_EVENT,
         Int_val(event_id), 0, NULL, 0);
     }
 
     // Counter
-    if (event_type_id == RUNTIME_EVENTS_CUSTOM_EVENT_ML_TYPE_COUNTER) {
+    if (event_type_id == EV_USER_ML_TYPE_COUNTER) {
       uint64_t c_event_content = Int_val(event_content);
-      write_to_ring(EV_USER, RUNTIME_EVENTS_CUSTOM_EVENT_MSG_TYPE_COUNTER,
+      write_to_ring(EV_USER, EV_USER_MSG_TYPE_COUNTER,
         Int_val(event_id), 1, &c_event_content, 0);
     }
 
     // Span
-    if (event_type_id == RUNTIME_EVENTS_CUSTOM_EVENT_ML_TYPE_SPAN) {
+    if (event_type_id == EV_USER_ML_TYPE_SPAN) {
       // event_content type is Begin | End
       int message_type;
       if (Int_val(event_content) == 0) {
-        message_type = RUNTIME_EVENTS_CUSTOM_EVENT_MSG_TYPE_SPAN_BEGIN;
+        message_type = EV_USER_MSG_TYPE_SPAN_BEGIN;
       } else {
-        message_type = RUNTIME_EVENTS_CUSTOM_EVENT_MSG_TYPE_SPAN_END;
+        message_type = EV_USER_MSG_TYPE_SPAN_END;
       }
       write_to_ring(EV_USER, message_type,
         Int_val(event_id), 0, NULL, 0);
@@ -788,7 +788,7 @@ CAMLprim value caml_runtime_events_user_write(value event, value event_content)
    then it can be partially reconstructed, the only missing information being
    the associated tag.  */
 CAMLprim value caml_runtime_events_user_resolve(
-  char* event_name, uintnat event_type_id)
+  char* event_name, ev_user_ml_type event_type_id)
 {
   CAMLparam0();
   CAMLlocal3(event, cur_event_name, ml_event_name);
@@ -811,7 +811,7 @@ CAMLprim value caml_runtime_events_user_resolve(
     current_user_event = Field(current_user_event, 1);
   }
 
-  if (event_type_id != RUNTIME_EVENTS_CUSTOM_EVENT_ML_TYPE_CUSTOM) {
+  if (event_type_id != EV_USER_ML_TYPE_CUSTOM) {
     // the event is not known, but its type is known
     // as we know the event type the event can be reconstructed
     value event_type = Val_int(event_type_id);

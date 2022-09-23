@@ -127,6 +127,11 @@ typedef enum {
     EV_C_REQUEST_MINOR_REALLOC_CUSTOM_TABLE
 } ev_runtime_counter;
 
+typedef enum {
+    EV_USER_SPAN_BEGIN,
+    EV_USER_SPAN_END
+} ev_user_span;
+
 /* external C-API for reading from the runtime_events */
 struct caml_runtime_events_cursor;
 
@@ -176,16 +181,23 @@ struct runtime_events_custom_event {
    char name[RUNTIME_EVENTS_CUSTOM_EVENT_ID_LENGTH];
 };
 
-#define RUNTIME_EVENTS_CUSTOM_EVENT_MSG_TYPE_EVENT 0
-#define RUNTIME_EVENTS_CUSTOM_EVENT_MSG_TYPE_COUNTER 1
-#define RUNTIME_EVENTS_CUSTOM_EVENT_MSG_TYPE_SPAN_BEGIN 2
-#define RUNTIME_EVENTS_CUSTOM_EVENT_MSG_TYPE_SPAN_END 3
-#define RUNTIME_EVENTS_CUSTOM_EVENT_MSG_TYPE_CUSTOM 4
+/* The type for event messages in the ring. Span is separated in two types as an
+   optimization to avoid associating a value with the span event. */
+typedef enum {
+   EV_USER_MSG_TYPE_EVENT,
+   EV_USER_MSG_TYPE_COUNTER,
+   EV_USER_MSG_TYPE_SPAN_BEGIN,
+   EV_USER_MSG_TYPE_SPAN_END,
+   EV_USER_MSG_TYPE_CUSTOM
+} ev_user_msg_type;
 
-#define RUNTIME_EVENTS_CUSTOM_EVENT_ML_TYPE_EVENT 0
-#define RUNTIME_EVENTS_CUSTOM_EVENT_ML_TYPE_COUNTER 1
-#define RUNTIME_EVENTS_CUSTOM_EVENT_ML_TYPE_SPAN 2
-#define RUNTIME_EVENTS_CUSTOM_EVENT_ML_TYPE_CUSTOM 3
+/* The type for event messages in OCaml. */
+typedef enum {
+   EV_USER_ML_TYPE_EVENT,
+   EV_USER_ML_TYPE_COUNTER,
+   EV_USER_ML_TYPE_SPAN,
+   EV_USER_ML_TYPE_CUSTOM
+} ev_user_ml_type;
 
 /* For a more detailed explanation of the runtime_events file layout, see
    runtime_events.c */
@@ -271,7 +283,7 @@ CAMLextern value caml_runtime_events_user_write(value event,
 /* Resolve an event name to the associated event value using known registered
    events. */
 CAMLextern value caml_runtime_events_user_resolve(char* event_name,
-   uintnat event_type);
+   ev_user_ml_type event_type);
 
 #endif /* CAML_INTERNALS */
 
