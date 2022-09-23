@@ -289,6 +289,10 @@ OCaml 5.0
   in this case.
   (Hugo Heuzard, review by Gabriel Scherer)
 
+- #11504, #11522: Use static allocation in `caml_make_float_vect` in
+  no-flat-float-array mode, it's more efficient and avoids a a race condition
+  (Xavier Leroy, report by Guillaume Munch-Maccagnoni, review by David Allsopp)
+
 ### Code generation and optimizations:
 
 - #10972: ARM64 multicore support: OCaml & C stack separation;
