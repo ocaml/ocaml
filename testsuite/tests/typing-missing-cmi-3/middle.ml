@@ -1,4 +1,5 @@
 type 'a t = 'a Original.t = T
+type 'a ti = 'a Original.t
 
 let f: (module Original.T with type t = int) -> unit = fun _ -> ()
 let x = (module struct type t end: Original.T )
@@ -13,3 +14,7 @@ let r = Original.r
 
 type s = Original.s = S
 let s = Original.s
+
+(* Check expansion in gadt *)
+type ('a,'b) gadt =
+| G: ('a, 'a ti) gadt
