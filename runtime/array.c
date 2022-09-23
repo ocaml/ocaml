@@ -252,12 +252,19 @@ CAMLprim value caml_make_float_vect(value len)
 #ifdef FLAT_FLOAT_ARRAY
   return caml_floatarray_create (len);
 #else
-  static value uninitialized_float = Val_unit;
-  if (uninitialized_float == Val_unit){
-    uninitialized_float = caml_alloc_shr (Double_wosize, Double_tag);
-    caml_register_generational_global_root (&uninitialized_float);
-  }
-  return caml_make_vect (len, uninitialized_float);
+  /* A signaling NaN, statically allocated */
+  static uintnat some_float_contents[] = {
+    Caml_out_of_heap_header(Double_wosize, Double_tag),
+#if defined(ARCH_SIXTYFOUR)
+    0x7FF0000000000001
+#elif defined(ARCH_BIG_ENDIAN)
+    0x7FF00000, 0x00000001,
+#else
+    0x00000001, 0x7FF00000
+#endif
+  };
+  value some_float = Val_hp(some_float_contents);
+  return caml_make_vect (len, some_float);
 #endif
 }
 
