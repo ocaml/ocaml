@@ -59,6 +59,7 @@ the above 4 modules \\
 "Stack" & p.~\stdpageref{Stack} & last-in first-out stacks \\
 "Queue" & p.~\stdpageref{Queue} & first-in first-out queues \\
 "Buffer" & p.~\stdpageref{Buffer} & buffers that grow on demand \\
+"Dyn_array" & p.~\stdpageref{Dyn_array} & arrays that grow on demand \\
 "Seq" & p.~\stdpageref{Seq} & functional iterators \\
 "Lazy" & p.~\stdpageref{Lazy} & delayed evaluation \\
 "Weak" & p.~\stdpageref{Weak} & references that don't prevent objects
