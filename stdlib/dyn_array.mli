@@ -25,14 +25,15 @@ val clear : 'a t -> unit
     and possibly references to former elements, which are therefore
     not garbage collectible. *)
 
-val ensure_capacity_with : 'a t -> dummy:'a -> int -> unit
+val ensure_capacity_with : 'a t -> filler:'a -> int -> unit
 (** Make sure that the array has at least the given capacity (underlying size).
 
     This is a more advanced operation that is only useful for performance
     purposes.
 
-    @param dummy an element used if the underlying array is empty,
-      to initialize it. It will not be retained anywhere.
+    @param filler an element used if the underlying array is empty,
+      to initialize it. It will be retained until the array is totally
+      empty or until it is garbage collected.
     @raise Invalid_arg if the size is not suitable (negative, or too big for OCaml arrays)
 *)
 

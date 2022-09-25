@@ -4,24 +4,13 @@ type 'a t = {
   mutable arr : 'a array;
 }
 
-external as_float_arr : 'a array -> float array = "%identity"
-external as_obj_arr : 'a array -> Obj.t array = "%identity"
+(* TODO: move to runtime? bypass write barrier *)
+let[@inline] fill_ (a:_ array) i ~filler : unit =
+  Array.unsafe_set a i filler
 
-(* TODO: move to runtime *)
-let set_junk_ (a:_ array) i : unit =
-  if Obj.(tag (repr a) = double_array_tag) then (
-    Array.unsafe_set (as_float_arr a) i 0.;
-  ) else (
-    Array.unsafe_set (as_obj_arr a) i (Obj.repr ());
-  )
-
-(* TODO: move to runtime *)
-let fill_with_junk_ (a:_ array) i len : unit =
-  if Obj.(tag (repr a) = double_array_tag) then (
-    Array.fill (as_float_arr a) i len 0.;
-  ) else (
-    Array.fill (as_obj_arr a) i len (Obj.repr ());
-  )
+(* TODO: move to runtime? bypass write barrier *)
+let[@inline] fill_with_junk_ (a:_ array) i len ~filler : unit =
+  Array.fill a i len filler
 
 let create () = {
   size = 0;
@@ -54,29 +43,27 @@ let[@inline] next_grow_ n =
   min Sys.max_array_length (n + n lsr 1)
 
 (* resize the underlying array using x to temporarily fill the array *)
-let actually_resize_array_ a newcapacity ~dummy : unit =
+let actually_resize_array_ a newcapacity ~filler : unit =
   assert (newcapacity >= a.size);
   assert (not (array_is_empty_ a));
-  let new_array = Array.make newcapacity dummy in
+  let new_array = Array.make newcapacity filler in
   Array.blit a.arr 0 new_array 0 a.size;
-  fill_with_junk_ new_array a.size (newcapacity-a.size);
+  fill_with_junk_ new_array a.size (newcapacity-a.size) ~filler;
   a.arr <- new_array
 
-(* grow the array, using [x] as a temporary dummy if required *)
-let actually_grow_with_ a ~dummy : unit =
+(* grow the array, using [x] as a temporary filler if required *)
+let actually_grow_with_ a ~filler : unit =
   if array_is_empty_ a then (
     let len = 4 in
-    a.arr <- Array.make len dummy;
-    (* do not really use [x], it was just for knowing the type *)
-    fill_with_junk_ a.arr 0 len;
+    a.arr <- Array.make len filler;
   ) else (
     let n = Array.length a.arr in
     let size = next_grow_ n in
     if size = n then invalid_arg "Dyn_array: cannot grow the array";
-    actually_resize_array_ a size ~dummy
+    actually_resize_array_ a size ~filler
   )
 
-(* v is not empty; ensure it has at least [size] slots.
+(* [v] is not empty; ensure it has at least [size] slots.
 
    Use {!resize_} so that calling [ensure_capacity v (length v+1)] in a loop
    is still behaving well. *)
@@ -86,14 +73,13 @@ let ensure_assuming_not_empty_ v ~size =
   ) else if size > Array.length v.arr then (
     let n = ref (Array.length v.arr) in
     while !n < size do n := next_grow_ !n done;
-    let dummy = v.arr.(0) in
-    actually_resize_array_ v !n ~dummy;
+    let filler = v.arr.(0) in
+    actually_resize_array_ v !n ~filler;
   )
 
-let ensure_capacity_with v ~dummy size : unit =
+let ensure_capacity_with v ~filler size : unit =
   if array_is_empty_ v then (
-    v.arr <- Array.make size dummy;
-    fill_with_junk_ v.arr 0 size
+    v.arr <- Array.make size filler;
   ) else (
     ensure_assuming_not_empty_ v ~size
   )
@@ -112,7 +98,7 @@ let[@inline] unsafe_push v x =
   v.size <- v.size + 1
 
 let push v x =
-  if v.size = Array.length v.arr then actually_grow_with_ v ~dummy:x;
+  if v.size = Array.length v.arr then actually_grow_with_ v ~filler:x;
   unsafe_push v x
 
 let append a b =
@@ -158,12 +144,12 @@ let append_array a b =
 let append_list a b = match b with
   | [] -> ()
   | x :: _ ->
-    (* use [x] as the dummy, in case the array is empty.
+    (* use [x] as the filler, in case the array is empty.
        We ensure capacity once, then we can skip the resizing checks
        and use {!unsafe_push}. *)
     let len_a = a.size in
     let len_b = List.length b in
-    ensure_capacity_with ~dummy:x a (len_a + len_b);
+    ensure_capacity_with ~filler:x a (len_a + len_b);
     List.iter (unsafe_push a) b
 
 let pop_exn v =
@@ -171,7 +157,13 @@ let pop_exn v =
   let new_size = v.size - 1 in
   v.size <- new_size;
   let x = v.arr.(new_size) in
-  set_junk_ v.arr new_size; (* remove pointer to (removed) last element *)
+  if new_size = 0 then (
+      v.arr <- [||]; (* free elements *)
+    ) else (
+      (* remove pointer to (removed) last element *)
+      let filler = Array.unsafe_get v.arr 0 in
+      fill_ v.arr new_size ~filler;
+    );
   x
 
 let pop v =
@@ -186,10 +178,15 @@ let[@inline] copy v = {
 
 let truncate v n =
   let old_size = v.size in
-  if n < old_size then (
+  if n = 0 then (
     v.size <- n;
-    (* free elements by erasing them *)
-    fill_with_junk_ v.arr n (old_size-n);
+    (* free all elements *)
+    v.arr <- [||];
+  ) else if n < old_size then (
+    (* free elements by erasing them with the first element *)
+    v.size <- n;
+    let filler = Array.unsafe_get v.arr 0 in
+    fill_with_junk_ v.arr n (old_size-n) ~filler;
   )
 
 let shrink_capacity v : unit =
@@ -285,7 +282,7 @@ let of_list l = match l with
   | [x;y] -> {size=2; arr=[| x; y |]}
   | x::_ ->
     let v = create() in
-    ensure_capacity_with v (List.length l) ~dummy:x;
+    ensure_capacity_with v (List.length l) ~filler:x;
     List.iter (unsafe_push v) l;
     v
 
