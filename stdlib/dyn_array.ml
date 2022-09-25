@@ -54,7 +54,7 @@ let[@inline] array_is_empty_ v =
    provides the good behavior of amortized O(1) number of allocations
    without wasting too much memory in the worst case. *)
 let[@inline] next_grow_ n =
-  min Sys.max_array_length (n + n lsr 1)
+  min Sys.max_array_length (1 + n + n lsr 1)
 
 (* resize the underlying array using x to temporarily fill the array *)
 let actually_resize_array_ a newcapacity ~filler : unit =
