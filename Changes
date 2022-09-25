@@ -69,7 +69,7 @@ Working version
 
 - #11246: Add "hash" and "seeded_hash" functions to Bool, Int, Char, Float,
   Int32, Int64, and Nativeint.
-  (Nicolás Ojeda Bär)
+  (Nicolás Ojeda Bär, review by Xavier Leroy)
 
 ### Other libraries:
 
