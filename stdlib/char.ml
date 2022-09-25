@@ -59,5 +59,7 @@ type t = char
 let compare c1 c2 = code c1 - code c2
 let equal (c1: t) (c2: t) = compare c1 c2 = 0
 
-let seeded_hash = Hashtbl.seeded_hash
-let hash = Hashtbl.hash
+external seeded_hash_param :
+  int -> int -> int -> 'a -> int = "caml_hash" [@@noalloc]
+let seeded_hash seed x = seeded_hash_param 10 100 seed x
+let hash x = seeded_hash_param 10 100 0 x
