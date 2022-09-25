@@ -17,6 +17,11 @@ let () =
   assert (A.length a = 3);;
 
 let () =
+  let a = A.make 1 5 in
+  A.push a 6;
+  assert (A.to_list a = [5;6]);;
+
+let () =
   List.iter
     (fun l ->
       let a = A.of_list l in
