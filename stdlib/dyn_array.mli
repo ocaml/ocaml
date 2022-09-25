@@ -13,7 +13,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Growable, mutable array *)
+(** Growable, mutable array.
+
+
+
+    @since 5.1
+*)
 
 type 'a t
 (** A dynamic array containing values of type ['a].
@@ -54,7 +59,7 @@ val ensure_capacity_with : 'a t -> filler:'a -> int -> unit
 
 val ensure_capacity_nonempty : 'a t -> int -> unit
 (** Make sure that the array has at least the given capacity (underlying size),
-    assuming it is non-empty.
+    assuming it is non-empty. The first element is used as the filler.
 
     This is a more advanced operation that is only useful for performance
     purposes.
