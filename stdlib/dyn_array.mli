@@ -1,3 +1,17 @@
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                            Simon Cruanes                               *)
+(*                                                                        *)
+(*   Copyright 2022 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Growable, mutable array *)
 
@@ -34,7 +48,8 @@ val ensure_capacity_with : 'a t -> filler:'a -> int -> unit
     @param filler an element used if the underlying array is empty,
       to initialize it. It will be retained until the array is totally
       empty or until it is garbage collected.
-    @raise Invalid_arg if the size is not suitable (negative, or too big for OCaml arrays)
+    @raise Invalid_arg if the size is not suitable (negative, or too big for
+    OCaml arrays)
 *)
 
 val ensure_capacity_nonempty : 'a t -> int -> unit
@@ -139,7 +154,8 @@ val length : _ t -> int
 (** Number of elements in the array. *)
 
 val of_array : 'a array -> 'a t
-(** [of_array a] returns a array corresponding to the array [a]. Operates in [O(n)] time. *)
+(** [of_array a] returns a array corresponding to the array [a].
+    Operates in [O(n)] time. *)
 
 val of_list : 'a list -> 'a t
 

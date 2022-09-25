@@ -1,3 +1,17 @@
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                            Simon Cruanes                               *)
+(*                                                                        *)
+(*   Copyright 2022 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 type 'a t = {
   mutable size : int;
@@ -36,7 +50,7 @@ let blit v1 i1 v2 i2 len =
 let[@inline] array_is_empty_ v =
   Array.length v.arr = 0
 
-(* next capacity, if current one is [n]. Roughly use [n × 1.5], because it
+(* next capacity, if current one is [n]. Roughly use [n * 1.5], because it
    provides the good behavior of amortized O(1) number of allocations
    without wasting too much memory in the worst case. *)
 let[@inline] next_grow_ n =
@@ -85,7 +99,8 @@ let ensure_capacity_with v ~filler size : unit =
   )
 
 let ensure_capacity_nonempty v size : unit =
-  if array_is_empty_ v then invalid_arg "Dyn_array.ensure_capacity_nonempty: empty";
+  if array_is_empty_ v then
+    invalid_arg "Dyn_array.ensure_capacity_nonempty: empty";
   ensure_assuming_not_empty_  v ~size
 
 let[@inline] clear v =
@@ -196,7 +211,6 @@ let shrink_capacity v : unit =
     v.arr <- Array.sub v.arr 0 v.size
   )
 
-
 let iter k v =
   let n = v.size in
   for i = 0 to n-1 do
@@ -295,4 +309,3 @@ let to_list v =
     l := unsafe_get v i :: !l
   done;
   !l
-
