@@ -150,7 +150,7 @@ let () =
 
 let () =
   let a = A.create() in
-  A.ensure_capacity_with ~dummy:42 a 200;
+  A.ensure_capacity_with ~filler:42 a 200;
   for i=1 to 200 do
     A.unsafe_push a i
   done;
@@ -168,4 +168,3 @@ let () =
   assert (A.to_list a = list_range 1 200);;
 
 let () = print_endline "OK";;
-
