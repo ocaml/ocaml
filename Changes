@@ -67,6 +67,10 @@ Working version
   (Simon Cruanes, review by Yotam Barnoy, Gabriel Scherer, Daniel Bünzli,
    Ulugbek Abdullaev, and Nicolás Ojeda Bär)
 
+- #11246: Add "hash" and "seeded_hash" functions to Bool, Int, Char, Float,
+  Int32, Int64, and Nativeint.
+  (Nicolás Ojeda Bär)
+
 ### Other libraries:
 
 - #11475: Make Unix terminal interface bindings domain-safe
