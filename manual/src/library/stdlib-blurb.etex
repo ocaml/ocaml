@@ -137,6 +137,7 @@ be called from C \\
 \stddocitem{Condition}{condition variables to synchronize between threads}
 \stddocitem{Domain}{Domain spawn/join and domain local variables}
 \stddocitem{Digest}{MD5 message digest}
+\stddocitem{Dyn_array}{Growable, mutable arrays}
 \stddocitem{Effect}{deep and shallow effect handlers}
 \stddocitem{Either}{either values}
 \stddocitem{Ephemeron}{Ephemerons and weak hash table}
