@@ -70,7 +70,7 @@ Working version
   (Simon Cruanes, review by Yotam Barnoy, Gabriel Scherer, Daniel Bünzli,
    Ulugbek Abdullaev, and Nicolás Ojeda Bär)
 
-- #11563: Add the Dyn_array module to the stdlib
+- #11563: Add the Dynarray module to the stdlib
   (Simon Cruanes and Florian Angeletti)
 
 ### Other libraries:
