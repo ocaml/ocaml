@@ -228,21 +228,21 @@ stdlib__Domain.cmx : domain.ml \
     stdlib__Array.cmx \
     stdlib__Domain.cmi
 stdlib__Domain.cmi : domain.mli
-stdlib__Dyn_array.cmo : dyn_array.ml \
+stdlib__Dynarray.cmo : dynarray.ml \
     stdlib__Sys.cmi \
     stdlib__Seq.cmi \
     stdlib__Obj.cmi \
     stdlib__List.cmi \
     stdlib__Array.cmi \
-    stdlib__Dyn_array.cmi
-stdlib__Dyn_array.cmx : dyn_array.ml \
+    stdlib__Dynarray.cmi
+stdlib__Dynarray.cmx : dynarray.ml \
     stdlib__Sys.cmx \
     stdlib__Seq.cmx \
     stdlib__Obj.cmx \
     stdlib__List.cmx \
     stdlib__Array.cmx \
-    stdlib__Dyn_array.cmi
-stdlib__Dyn_array.cmi : dyn_array.mli \
+    stdlib__Dynarray.cmi
+stdlib__Dynarray.cmi : dynarray.mli \
     stdlib__Seq.cmi
 stdlib__Effect.cmo : effect.ml \
     stdlib__Printf.cmi \

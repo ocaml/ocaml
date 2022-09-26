@@ -43,7 +43,7 @@ let init n f = {
 
 let blit v1 i1 v2 i2 len =
   if i1<0 || i2<0 || i1+len >= v1.size || i2 + len >= v2.size then
-    invalid_arg "Dyn_array.blit";
+    invalid_arg "Dynarray.blit";
   Array.blit v1.arr i1 v2.arr i2 len
 
 (* is the underlying array empty? *)
@@ -73,7 +73,7 @@ let actually_grow_with_ a ~filler : unit =
   ) else (
     let n = Array.length a.arr in
     let size = next_grow_ n in
-    if size = n then invalid_arg "Dyn_array: cannot grow the array";
+    if size = n then invalid_arg "Dynarray: cannot grow the array";
     actually_resize_array_ a size ~filler
   )
 
@@ -100,7 +100,7 @@ let ensure_capacity_with v ~filler size : unit =
 
 let ensure_capacity_nonempty v size : unit =
   if array_is_empty_ v then
-    invalid_arg "Dyn_array.ensure_capacity_nonempty: empty";
+    invalid_arg "Dynarray.ensure_capacity_nonempty: empty";
   ensure_assuming_not_empty_  v ~size
 
 let[@inline] clear v =
@@ -130,14 +130,14 @@ let append a b =
   )
 
 let[@inline] get v i =
-  if i < 0 || i >= v.size then invalid_arg "Dyn_array.get";
+  if i < 0 || i >= v.size then invalid_arg "Dynarray.get";
   Array.unsafe_get v.arr i
 
 let[@inline] unsafe_get v i =
   Array.unsafe_get v.arr i
 
 let[@inline] set v i x =
-  if i < 0 || i >= v.size then invalid_arg "Dyn_array.set";
+  if i < 0 || i >= v.size then invalid_arg "Dynarray.set";
   Array.unsafe_set v.arr i x
 
 let[@inline] unsafe_set v i x =
@@ -168,7 +168,7 @@ let append_list a b = match b with
     List.iter (unsafe_push a) b
 
 let pop_exn v =
-  if v.size = 0 then invalid_arg "Dyn_array.pop_exn: empty";
+  if v.size = 0 then invalid_arg "Dynarray.pop_exn: empty";
   let new_size = v.size - 1 in
   v.size <- new_size;
   let x = v.arr.(new_size) in

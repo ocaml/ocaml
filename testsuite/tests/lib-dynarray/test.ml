@@ -1,7 +1,7 @@
 (* TEST
 *)
 
-module A = Dyn_array
+module A = Dynarray
 
 let () =
   let a = A.create() in

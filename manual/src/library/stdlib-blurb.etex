@@ -59,7 +59,7 @@ the above 4 modules \\
 "Stack" & p.~\stdpageref{Stack} & last-in first-out stacks \\
 "Queue" & p.~\stdpageref{Queue} & first-in first-out queues \\
 "Buffer" & p.~\stdpageref{Buffer} & buffers that grow on demand \\
-"Dyn_array" & p.~\stdpageref{Dyn_array} & arrays that grow on demand \\
+"Dynarray" & p.~\stdpageref{Dynarray} & arrays that grow on demand \\
 "Seq" & p.~\stdpageref{Seq} & functional iterators \\
 "Lazy" & p.~\stdpageref{Lazy} & delayed evaluation \\
 "Weak" & p.~\stdpageref{Weak} & references that don't prevent objects
@@ -134,7 +134,7 @@ be called from C \\
 \stddocitem{Condition}{condition variables to synchronize between threads}
 \stddocitem{Domain}{Domain spawn/join and domain local variables}
 \stddocitem{Digest}{MD5 message digest}
-\stddocitem{Dyn_array}{Growable, mutable arrays}
+\stddocitem{Dynarray}{Growable, mutable arrays}
 \stddocitem{Effect}{deep and shallow effect handlers}
 \stddocitem{Either}{either values}
 \stddocitem{Ephemeron}{Ephemerons and weak hash table}

@@ -1406,7 +1406,7 @@ module Domain         = Domain
 [@@alert unstable
     "The Domain interface may change in incompatible ways in the future."
 ]
-module Dyn_array      = Dyn_array
+module Dynarray       = Dynarray
 module Effect         = Effect
 [@@alert "-unstable"]
 [@@alert unstable
