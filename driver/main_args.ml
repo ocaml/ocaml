@@ -709,7 +709,7 @@ let mk_opaque f =
 
 let mk_strict_formats f =
   "-strict-formats", Arg.Unit f,
-  " Reject invalid formats accepted by legacy implementations\n\
+  " Reject invalid formats accepted by legacy implementations (default)\n\
   \     (Warning: Invalid formats may behave differently from\n\
   \      previous OCaml versions, and will become always-rejected\n\
   \      in future OCaml versions. You should always use this flag\n\
@@ -717,7 +717,7 @@ let mk_strict_formats f =
 
 let mk_no_strict_formats f =
   "-no-strict-formats", Arg.Unit f,
-  " Accept invalid formats accepted by legacy implementations (default)\n\
+  " Accept invalid formats accepted by legacy implementations\n\
   \     (Warning: Invalid formats may behave differently from\n\
   \      previous OCaml versions, and will become always-rejected\n\
   \      in future OCaml versions. You should never use this flag\n\

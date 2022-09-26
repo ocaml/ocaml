@@ -13,6 +13,9 @@ Working version
 - #11457: Remove old polymorphic variant syntax.
   (Stefan Muenzel, review by Gabriel Scherer and Jacques Garrigue)
 
+* #11565: Enable -strict-formats by default.
+  (Nicolás Ojeda Bär, review by David Allsopp)
+
 ### Runtime system:
 
 ### Code generation and optimizations:
