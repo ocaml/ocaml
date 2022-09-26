@@ -601,13 +601,13 @@ fast.
 Unlike languages such as Eff and Koka, effect handlers in OCaml do not provide
 \textit{effect safety}; the compiler does not statically ensure that all the
 effects performed by the program are handled. If effects do not have a matching
-handler, then an "Unhandled" exception is raised at the point of the
+handler, then an "Effect.Unhandled" exception is raised at the point of the
 corresponding "perform". For example, in the previous example, "bar" does not
-handle the effect "F". Hence, we will get an "Unhandled" exception when we run
-"bar".
+handle the effect "F". Hence, we will get an "Effect.Unhandled F" exception
+when we run "bar".
 
 \begin{caml_example}{verbatim}
-try bar () with Unhandled -> "Saw unhandled exception"
+try bar () with Effect.Unhandled F -> "Saw Effect.Unhandled exception"
 \end{caml_example}
 
 \subsubsection{s:effects-linearity}{Linear continuations}
@@ -616,7 +616,7 @@ As discussed earlier~\ref{s:effects-discontinue}, the delimited continuations
 in OCaml must be used linearly -- \emph{\textbf{every captured continuation
 must be resumed either with a "continue" or "discontinue" exactly once}}.
 Attempting to use a continuation more than once raises a
-"Continuation_already_taken" exception. For example:
+"Continuation_already_resumed" exception. For example:
 
 \begin{caml_example}{verbatim}
 try_with perform (Xchg 0)

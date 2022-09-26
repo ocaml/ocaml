@@ -168,7 +168,7 @@ struct c_stack_link {
  *  caml_perform captures the current OCaml stack in the continuation object
  *  provided and raises the effect by switching to the parent OCaml stack and
  *  then executing the handle_effect function. Should there be no parent OCaml
- *  stack then the Unhandled exception is raised.
+ *  stack then the Effect.Unhandled exception is raised.
  *
  * caml_reperform effect continuation last_fiber
  *  caml_reperform is used to walk up the parent OCaml stacks to execute the
@@ -201,14 +201,15 @@ struct c_stack_link {
  *   PERFORM captures the current stack in a continuation object it allocates.
  *   The parent stack is then switched to and the handle_effect function for
  *   the parent stack is executed. If no parent stack exists then the
- *   Unhandled exception is raised.
+ *   Effect.Unhandled exception is raised.
  *
  *  Preperform -> REPERFORMTERM
  *   REPERFORMTERM is used to walk up the parent OCaml stacks to execute the
  *   next effect handler installed in the chain. The instruction takes care to
- *   switch back to the continuation stack to raise the Unhandled exception in
- *   in the case no parent is left. Otherwise the instruction switches to the
- *   parent stack and executes the handle_effect function for that parent stack.
+ *   switch back to the continuation stack to raise the Effect.Unhandled
+ *   exception in in the case no parent is left. Otherwise the instruction
+ *   switches to the parent stack and executes the handle_effect function for
+ *   that parent stack.
  *
  *  Special return handling:
  *   There is special handling on every function return (see do_return of
@@ -265,6 +266,15 @@ value caml_continuation_use (value cont);
    Used for cloning continuations and continuation backtraces. */
 void caml_continuation_replace(value cont, struct stack_info* stack);
 
+CAMLnoreturn_start
+CAMLextern void caml_raise_continuation_already_resumed (void)
+CAMLnoreturn_end;
+
+CAMLnoreturn_start
+CAMLextern void caml_raise_unhandled_effect (value effect)
+CAMLnoreturn_end;
+
+value caml_make_unhandled_effect_exn (value effect);
 
 #endif /* CAML_INTERNALS */
 

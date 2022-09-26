@@ -19,10 +19,18 @@
 type _ t = ..
 (** The type of effects. *)
 
+exception Unhandled : 'a t -> exn
+(** [Unhandled e] is raised when effect [e] is performed and there is no
+    handler for it. *)
+
+exception Continuation_already_resumed
+(** Exception raised when a continuation is continued or discontinued more
+    than once. *)
+
 external perform : 'a t -> 'a = "%perform"
 (** [perform e] performs an effect [e].
 
-    @raise Unhandled if there is no active handler. *)
+    @raise Unhandled if there is no handler for [e]. *)
 
 module Deep : sig
   (** Deep handlers *)
@@ -34,14 +42,14 @@ module Deep : sig
   val continue: ('a, 'b) continuation -> 'a -> 'b
   (** [continue k x] resumes the continuation [k] by passing [x] to [k].
 
-      @raise Continuation_already_taken if the continuation has already been
+      @raise Continuation_already_resumed if the continuation has already been
       resumed. *)
 
   val discontinue: ('a, 'b) continuation -> exn -> 'b
   (** [discontinue k e] resumes the continuation [k] by raising the
       exception [e] in [k].
 
-      @raise Continuation_already_taken if the continuation has already been
+      @raise Continuation_already_resumed if the continuation has already been
       resumed. *)
 
   val discontinue_with_backtrace:
@@ -50,7 +58,7 @@ module Deep : sig
       raising the exception [e] in [k] using [bt] as the origin for the
       exception.
 
-      @raise Continuation_already_taken if the continuation has already been
+      @raise Continuation_already_resumed if the continuation has already been
       resumed. *)
 
   type ('a,'b) handler =
@@ -102,7 +110,7 @@ module Shallow : sig
   (** [continue_with k v h] resumes the continuation [k] with value [v] with
       the handler [h].
 
-      @raise Continuation_already_taken if the continuation has already been
+      @raise Continuation_already_resumed if the continuation has already been
       resumed.
    *)
 
@@ -110,7 +118,7 @@ module Shallow : sig
   (** [discontinue_with k e h] resumes the continuation [k] by raising the
       exception [e] with the handler [h].
 
-      @raise Continuation_already_taken if the continuation has already been
+      @raise Continuation_already_resumed if the continuation has already been
       resumed.
    *)
 
@@ -121,7 +129,7 @@ module Shallow : sig
       exception [e] with the handler [h] using the raw backtrace [bt] as the
       origin of the exception.
 
-      @raise Continuation_already_taken if the continuation has already been
+      @raise Continuation_already_resumed if the continuation has already been
       resumed.
    *)
 

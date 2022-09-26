@@ -96,9 +96,6 @@ and ident_sys_blocked_io = ident_create "Sys_blocked_io"
 and ident_assert_failure = ident_create "Assert_failure"
 and ident_undefined_recursive_module =
         ident_create "Undefined_recursive_module"
-and ident_continuation_already_taken =
-        ident_create "Continuation_already_taken"
-and ident_unhandled = ident_create "Unhandled"
 
 let all_predef_exns = [
   ident_match_failure;
@@ -113,8 +110,6 @@ let all_predef_exns = [
   ident_sys_blocked_io;
   ident_assert_failure;
   ident_undefined_recursive_module;
-  ident_continuation_already_taken;
-  ident_unhandled;
 ]
 
 let path_match_failure = Pident ident_match_failure
@@ -237,7 +232,6 @@ let build_initial_env add_type add_extension empty_env =
   (* Predefined exceptions - alphabetical order *)
   |> add_extension ident_assert_failure
        [newgenty (Ttuple[type_string; type_int; type_int])]
-  |> add_extension ident_continuation_already_taken []
   |> add_extension ident_division_by_zero []
   |> add_extension ident_end_of_file []
   |> add_extension ident_failure [type_string]
@@ -251,7 +245,6 @@ let build_initial_env add_type add_extension empty_env =
   |> add_extension ident_sys_error [type_string]
   |> add_extension ident_undefined_recursive_module
        [newgenty (Ttuple[type_string; type_int; type_int])]
-  |> add_extension ident_unhandled []
 
 let builtin_values =
   List.map (fun id -> (Ident.name id, id)) all_predef_exns

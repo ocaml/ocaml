@@ -410,3 +410,12 @@ val exn_slot_name: exn -> string
 
     @since 4.02.0
 *)
+
+(**/**)
+
+(**  {1 Obj printer}
+  Unsafe printer used in this module and exposed to the other standard library
+   module
+*)
+
+val string_of_extension_constructor: Obj.t -> string
