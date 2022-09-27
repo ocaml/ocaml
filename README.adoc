@@ -13,7 +13,7 @@ the ports not yet supported in the 5.0 release you must use the 4.14 release.
 
 The initial release of OCaml 5.0 will only support the native compiler under
 ARM64 and x86-64 architectures under Linux and macOS. On Windows, only the
-Mingw-w64 port is supported.  Support for other 64-bit architectures and systems
+MinGW-w64 port is supported.  Support for other 64-bit architectures and systems
 will be added back in later releases. On 32-bit systems, only the bytecode
 compiler is supported.  Native-code support for these systems is under
 discussion.
