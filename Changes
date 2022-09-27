@@ -83,7 +83,7 @@ Working version
 
 - #11166: ocamllex: the union of two character sets "cset1 | cset2" can now be
   used in any context where a character set is expected.
-  (Nicolás Ojeda Bär, Martin Jambon, review by XXX)
+  (Nicolás Ojeda Bär, Martin Jambon, review by Sébastien Hinderer)
 
 ### Manual and documentation:
 
