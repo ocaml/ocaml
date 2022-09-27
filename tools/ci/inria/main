@@ -144,6 +144,7 @@ cleanup=false
 check_make_alldepend=false
 jobs=''
 bootstrap=false
+init_submodule=false
 
 case "${OCAML_ARCH}" in
   bsd|solaris)
@@ -216,6 +217,12 @@ fi
 
 pwd
 cd "$jenkinsdir"
+
+if $init_submodule; then
+  git submodule update --init flexdll
+elif [ -f flexdll/Makefile ]; then
+  git submodule deinit --force flexdll
+fi
 
 #########################################################################
 # parse optional command-line arguments (has to be done after the "cd")
