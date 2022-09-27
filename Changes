@@ -81,6 +81,10 @@ Working version
   This allows to see optimized bytecode with -dlambda.
   (Jacques Garrigue, review by Gabriel Scherer)
 
+- #11166: ocamllex: the union of two character sets "cset1 | cset2" can now be
+  used in any context where a character set is expected.
+  (Nicolás Ojeda Bär, Martin Jambon, review by Sébastien Hinderer)
+
 ### Manual and documentation:
 
 - #9430, #11291: Document the general desugaring rules for binding operators.
