@@ -92,7 +92,7 @@ $(LIBNAME).cmxa: $(THREADS_NCOBJS)
 
 st_stubs.n.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
 
-ifneq "$(COMPUTE_DEPS)" "false"
+ifeq "$(COMPUTE_DEPS)" "true"
 st_stubs.%.$(O): st_stubs.c
 else
 st_stubs.%.$(O): st_stubs.c $(RUNTIME_HEADERS) $(wildcard *.h)
@@ -148,7 +148,7 @@ installopt:
 	$(CAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
 
 DEP_FILES := st_stubs.b.$(D)
-ifneq "$(NATIVE_COMPILER)" "false"
+ifeq "$(NATIVE_COMPILER)" "true"
 DEP_FILES += st_stubs.n.$(D)
 endif
 

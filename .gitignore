@@ -239,7 +239,7 @@ META
 /tools/stripdebug.opt
 /tools/make_opcodes
 /tools/make_opcodes.ml
-/tools/caml-tex
+/tools/ocamltex
 /tools/eventlog_metadata
 
 /toplevel/byte/topeval.mli

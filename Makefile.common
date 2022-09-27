@@ -115,7 +115,7 @@ endif
 # This rule is similar to GNU make's implicit rule, except that it is more
 # general (it supports both .o and .obj)
 
-ifneq "$(COMPUTE_DEPS)" "false"
+ifeq "$(COMPUTE_DEPS)" "true"
 RUNTIME_HEADERS :=
 REQUIRED_HEADERS :=
 else

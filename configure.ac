@@ -160,6 +160,7 @@ AC_SUBST([instrumented_runtime_libs])
 AC_SUBST([has_monotonic_clock])
 AC_SUBST([otherlibraries])
 AC_SUBST([lib_dynlink])
+AC_SUBST([lib_runtime_events])
 AC_SUBST([lib_str])
 AC_SUBST([lib_systhreads])
 AC_SUBST([lib_unix])
@@ -172,10 +173,10 @@ AC_SUBST([ocamltest_unix_include])
 AC_SUBST([cc_has_debug_prefix_map])
 AC_SUBST([as_has_debug_prefix_map])
 AC_SUBST([with_debugger]) # TODO: rename this variable
-AC_SUBST([ocamltest_ocamldebug])
-AC_SUBST([with_camltex])
+AC_SUBST([build_ocamldebug])
+AC_SUBST([build_ocamltex])
 AC_SUBST([ocamldoc])
-AC_SUBST([ocamltest_ocamldoc])
+AC_SUBST([build_ocamldoc])
 AC_SUBST([documentation_tool])
 AC_SUBST([documentation_tool_cmd])
 AC_SUBST([ocamltest])
@@ -491,8 +492,8 @@ AS_IF([test x"$enable_unix_lib" = "xno" || test x"$enable_str_lib" = "xno"],
   [AS_IF([test x"$enable_ocamldoc" = "xyes"],
     [AC_MSG_ERROR([ocamldoc requires the unix and str libraries])],
     [enable_ocamldoc="no"
-     with_camltex=""])],
-  [with_camltex="true"])
+     build_ocamltex=false])],
+  [build_ocamltex=true])
 
 # Initialization of libtool
 # Allow the MSVC linker to be found even if ld isn't installed.
@@ -619,6 +620,7 @@ AS_CASE([$host],
 
 otherlibraries="dynlink runtime_events"
 lib_dynlink=true
+lib_runtime_events=true
 AS_IF([test x"$enable_unix_lib" != "xno"],
   [enable_unix_lib=yes
   AC_CONFIG_FILES([otherlibs/unix/META])
@@ -1954,14 +1956,14 @@ AC_COMPILE_IFELSE(
 AS_CASE([$enable_debugger],
   [no],
     [with_debugger=""
-    ocamltest_ocamldebug=false
+    build_ocamldebug=false
     AC_MSG_NOTICE([replay debugger disabled])],
   [AS_IF([$sockets],
     [with_debugger="ocamldebugger"
-    ocamltest_ocamldebug=true
+    build_ocamldebug=true
     AC_MSG_NOTICE([replay debugger supported])],
     [with_debugger=""
-    ocamltest_ocamldebug=false
+    build_ocamldebug=false
     AC_MSG_NOTICE([replay debugger not supported])])
   ])
 
@@ -2041,9 +2043,9 @@ AS_IF([test x"$enable_installing_source_artifacts" = "xno"],
 
 AS_IF([test x"$enable_ocamldoc" = "xno"],
   [ocamldoc=""
-  ocamltest_ocamldoc=false],
+  build_ocamldoc=false],
   [ocamldoc=ocamldoc
-  ocamltest_ocamldoc=true
+  build_ocamldoc=true
   AC_CONFIG_FILES([ocamldoc/META])])
 
 documentation_tool_cmd=''
