@@ -46,6 +46,8 @@ val end_def: unit -> unit
         (* Lower the variable level by one at the end of a definition *)
 *)
 
+(* All the following wrapper functions revert to the original level,
+   even in case of exception. *)
 val wrap_def: ?post:('a -> unit) -> (unit -> 'a) -> 'a
         (* [wrap_def (fun () -> cmd) ~post] evaluates [cmd] at a raised level.
            If given, [post] is applied to the result, at the original level.

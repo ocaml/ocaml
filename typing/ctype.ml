@@ -182,51 +182,42 @@ let end_def () =
 let create_scope () =
   init_def (!current_level + 1);
   !current_level
+
+let wrap_end_def f = Misc.try_finally f ~always:end_def
+
 let wrap_def ?post f =
   begin_def ();
-  let result = f () in
-  end_def ();
+  let result = wrap_end_def f in
   Option.iter (fun g -> g result) post;
   result
-let wrap_def_process_if cond f ~proc =
-  if cond then begin_def ();
-  let result, l = f () in
-  if cond then begin
-    end_def ();
-    List.iter proc l;
-  end;
-  result
-let wrap_def_process f ~proc = wrap_def_process_if true f ~proc
 let wrap_def_if cond f ~post =
-  if cond then begin_def ();
-  let result = f () in
-  if cond then begin
-    end_def ();
-    post result;
-  end;
+  if cond then wrap_def f ~post else f ()
+let wrap_def_process f ~proc =
+  begin_def ();
+  let result, l = wrap_end_def f in
+  List.iter proc l;
   result
+let wrap_def_process_if cond f ~proc =
+  if cond then wrap_def_process f ~proc else fst (f ())
 let wrap_def_principal f ~post = wrap_def_if !Clflags.principal f ~post
 let wrap_def_process_principal f ~proc =
   wrap_def_process_if !Clflags.principal f ~proc
-let wrap_init_def_if cond ~level f =
-  if cond then (begin_def (); init_def level);
-  let result = f () in
-  if cond then end_def ();
+let wrap_init_def ~level f =
+  begin_def (); init_def level;
+  let result = wrap_end_def f in
   result
-let wrap_init_def ~level f = wrap_init_def_if true ~level f
+let wrap_init_def_if cond ~level f =
+  if cond then wrap_init_def ~level f else f ()
 
 let wrap_class_def ?post f =
   begin_class_def ();
-  let result = f () in
-  end_def ();
+  let result = wrap_end_def f in
   Option.iter (fun g -> g result) post;
   result
 
 let wrap_raise_nongen_level f =
   raise_nongen_level ();
-  let result = f () in
-  end_def ();
-  result
+  wrap_end_def f
 
 
 let reset_global_level () =
