@@ -159,7 +159,7 @@ case "$1" in
     $MAKE -C "$FULL_BUILD_PREFIX-$PORT/ocamltest" -j all allopt
     # And run the entire testsuite, skipping all the native-code tests
     run "test $PORT" \
-        $MAKE -C "$FULL_BUILD_PREFIX-$PORT/testsuite" SHOW_TIMINGS=1 parallel
+        make -C "$FULL_BUILD_PREFIX-$PORT/testsuite" SHOW_TIMINGS=1 all
     run "install $PORT" $MAKE -C "$FULL_BUILD_PREFIX-$PORT" install
     if [[ $PORT = 'msvc64' ]] ; then
       run "$MAKE check_all_arches" \
