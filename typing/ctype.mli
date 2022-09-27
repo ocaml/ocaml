@@ -181,10 +181,14 @@ val instance_label:
         bool -> label_description -> type_expr list * type_expr * type_expr
         (* Same, for a label *)
 val apply:
+        ?use_current_level:bool ->
         Env.t -> type_expr list -> type_expr -> type_expr list -> type_expr
-        (* [apply [p1...pN] t [a1...aN]] match the arguments [ai] to
-        the parameters [pi] and returns the corresponding instance of
-        [t]. Exception [Cannot_apply] is raised in case of failure. *)
+        (* [apply [p1...pN] t [a1...aN]] applies the type function
+           [fun p1 ... pN -> t] to the arguments [a1...aN] and returns the
+           resulting instance of [t].
+           New nodes default to generic level except if [use_current_level] is
+           set to true.
+           Exception [Cannot_apply] is raised in case of failure. *)
 
 val try_expand_once_opt: Env.t -> type_expr -> type_expr
 val try_expand_safe_opt: Env.t -> type_expr -> type_expr

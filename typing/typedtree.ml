@@ -612,7 +612,6 @@ and 'a class_infos =
     ci_id_class: Ident.t;
     ci_id_class_type: Ident.t;
     ci_id_object: Ident.t;
-    ci_id_typehash: Ident.t;
     ci_expr: 'a;
     ci_decl: Types.class_declaration;
     ci_type_decl: Types.class_type_declaration;

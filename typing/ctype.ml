@@ -192,14 +192,6 @@ let increase_global_level () =
 let restore_global_level gl =
   global_level := gl
 
-(**** Whether a path points to an object type (with hidden row variable) ****)
-let is_object_type path =
-  let name =
-    match path with Path.Pident id -> Ident.name id
-    | Path.Pdot(_, s) -> s
-    | Path.Papply _ -> assert false
-  in name.[0] = '#'
-
 (**** Control tracing of GADT instances *)
 
 let trace_gadt_instances = ref false
@@ -221,9 +213,8 @@ let wrap_trace_gadt_instances env f x =
 
 let simple_abbrevs = ref Mnil
 
-let proper_abbrevs path tl abbrev =
-  if tl <> [] || !trace_gadt_instances || !Clflags.principal ||
-     is_object_type path
+let proper_abbrevs tl abbrev =
+  if tl <> [] || !trace_gadt_instances || !Clflags.principal
   then abbrev
   else simple_abbrevs
 
@@ -613,13 +604,12 @@ let rec generalize_structure ty =
   if level <> generic_level then begin
     if is_Tvar ty && level > !current_level then
       set_level ty !current_level
-    else if
-      level > !current_level &&
-      match get_desc ty with
-        Tconstr (p, _, abbrev) ->
-          not (is_object_type p) && (abbrev := Mnil; true)
-      | _ -> true
-    then begin
+    else if level > !current_level then begin
+      begin match get_desc ty with
+        Tconstr (_, _, abbrev) ->
+          abbrev := Mnil
+      | _ -> ()
+      end;
       set_level ty generic_level;
       iter_type_expr generalize_structure ty
     end
@@ -648,7 +638,7 @@ let rec generalize_spine ty =
   | Tpackage (_, fl) ->
       set_level ty generic_level;
       List.iter (fun (_n, ty) -> generalize_spine ty) fl
-  | Tconstr (p, tyl, memo) when not (is_object_type p) ->
+  | Tconstr (_, tyl, memo) ->
       set_level ty generic_level;
       memo := Mnil;
       List.iter generalize_spine tyl
@@ -1042,7 +1032,7 @@ let rec copy ?partial ?keep_names copy_scope ty =
     let desc' =
       match desc with
       | Tconstr (p, tl, _) ->
-          let abbrevs = proper_abbrevs p tl !abbreviations in
+          let abbrevs = proper_abbrevs tl !abbreviations in
           begin match find_repr p !abbrevs with
             Some ty when not (eq_type ty t) ->
               Tlink ty
@@ -1430,7 +1420,7 @@ let subst env level priv abbrev oty params args body =
     | Some ty ->
         match get_desc ty with
           Tconstr (path, tl, _) ->
-            let abbrev = proper_abbrevs path tl abbrev in
+            let abbrev = proper_abbrevs tl abbrev in
             memorize_abbrev abbrev priv path ty body0;
             fun () -> forget_abbrev abbrev path
         | _ -> assert false
@@ -1449,14 +1439,15 @@ let subst env level priv abbrev oty params args body =
     raise Cannot_subst
 
 (*
-   Only the shape of the type matters, not whether it is generic or
-   not. [generic_level] might be somewhat slower, but it ensures
-   invariants on types are enforced (decreasing levels), and we don't
+   Default to generic level. Usually, only the shape of the type matters, not
+   whether it is generic or not. [generic_level] might be somewhat slower, but
+   it ensures invariants on types are enforced (decreasing levels), and we don't
    care about efficiency here.
 *)
-let apply env params body args =
+let apply ?(use_current_level = false) env params body args =
+  let level = if use_current_level then !current_level else generic_level in
   try
-    subst env generic_level Public (ref Mnil) None params args body
+    subst env level Public (ref Mnil) None params args body
   with
     Cannot_subst -> raise Cannot_apply
 
@@ -1506,7 +1497,7 @@ let expand_abbrev_gen kind find_type_expansion env ty =
     Tconstr (path, args, abbrev) ->
       let level = get_level ty in
       let scope = get_scope ty in
-      let lookup_abbrev = proper_abbrevs path args abbrev in
+      let lookup_abbrev = proper_abbrevs args abbrev in
       begin match find_expans kind path !lookup_abbrev with
         Some ty' ->
           (* prerr_endline
@@ -2158,8 +2149,6 @@ let reify env t =
             | _ -> assert false
           end;
           iter_row iterator r
-      | Tconstr (p, _, _) when is_object_type p ->
-          iter_type_expr iterator (full_expand ~may_forget_scope:false !env ty)
       | _ ->
           iter_type_expr iterator ty
     end
@@ -5380,6 +5369,7 @@ let nondep_cltype_declaration env ids decl =
       clty_variance = decl.clty_variance;
       clty_type = nondep_class_type env ids decl.clty_type;
       clty_path = decl.clty_path;
+      clty_ty = nondep_type_decl env ids false decl.clty_ty;
       clty_loc = decl.clty_loc;
       clty_attributes = decl.clty_attributes;
       clty_uid = decl.clty_uid;

@@ -25,7 +25,6 @@ type 'a class_info = {
   cls_ty_decl : class_type_declaration;
   cls_obj_id : Ident.t;
   cls_obj_abbr : type_declaration;
-  cls_typesharp_id : Ident.t;
   cls_abbr : type_declaration;
   cls_arity : int;
   cls_pub_methods : string list;
@@ -38,7 +37,6 @@ type class_type_info = {
   clsty_ty_decl : class_type_declaration;
   clsty_obj_id : Ident.t;
   clsty_obj_abbr : type_declaration;
-  clsty_typesharp_id : Ident.t;
   clsty_abbr : type_declaration;
   clsty_info : Typedtree.class_type_declaration;
 }

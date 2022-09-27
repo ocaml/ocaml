@@ -367,7 +367,7 @@ let update_decls env sdecls decls =
 let update_class_decls env cldecls =
   let decls, required =
     List.fold_right
-      (fun (obj_id, obj_abbr, _cl_abbr, _clty, _cltydef, ci) (decls, req) ->
+      (fun (obj_id, obj_abbr, _clty, _cltydef, ci) (decls, req) ->
         (obj_id, obj_abbr) :: decls,
         variance_of_params ci.Typedtree.ci_params :: req)
       cldecls ([],[])
@@ -375,9 +375,11 @@ let update_class_decls env cldecls =
   let decls =
     Typedecl_properties.compute_property property env decls required in
   List.map2
-    (fun (_,decl) (_, _, cl_abbr, clty, cltydef, _) ->
+    (fun (_,decl) (_, _, clty, cltydef, _) ->
       let variance = decl.type_variance in
-      (decl, {cl_abbr with type_variance = variance},
-       {clty with cty_variance = variance},
-       {cltydef with clty_variance = variance}))
+      (decl, {clty with cty_variance = variance},
+       {cltydef with
+        clty_variance = variance;
+        clty_ty = {cltydef.clty_ty with type_variance = variance}
+       }))
     decls cldecls
