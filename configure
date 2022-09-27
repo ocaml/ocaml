@@ -14075,7 +14075,7 @@ if test x"$enable_shared" != "xno"; then :
   case $host in #(
   *-apple-darwin*) :
     mksharedlib="$CC -shared \
-                   -undefined dynamic_lookup -Wl,-no_compact_unwind \
+                   -undefined dynamic_lookup -Wl,-no_compact_unwind -Wl,-w \
                    \$(LDFLAGS)"
       supports_shared_libraries=true ;; #(
   *-*-mingw32) :
