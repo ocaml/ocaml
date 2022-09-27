@@ -790,7 +790,7 @@ documentation_tool_cmd
 documentation_tool
 build_ocamldoc
 ocamldoc
-with_camltex
+build_ocamltex
 build_ocamldebug
 with_debugger
 as_has_debug_prefix_map
@@ -3534,10 +3534,10 @@ if test x"$enable_unix_lib" = "xno" || test x"$enable_str_lib" = "xno"; then :
   as_fn_error $? "ocamldoc requires the unix and str libraries" "$LINENO" 5
 else
   enable_ocamldoc="no"
-     with_camltex=""
+     build_ocamltex=false
 fi
 else
-  with_camltex="true"
+  build_ocamltex=true
 fi
 
 # Initialization of libtool

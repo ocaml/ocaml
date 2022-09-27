@@ -301,13 +301,13 @@ CMPBYT=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
 cmpbyt$(EXE): $(CMPBYT)
 cmpbyt.opt$(EXE): $(call byte2native, $(CMPBYT))
 
-caml_tex_files := \
+ocamltex_files := \
   $(ROOTDIR)/compilerlibs/ocamlcommon.cma \
   $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
   $(ROOTDIR)/compilerlibs/ocamltoplevel.cma \
   $(ROOTDIR)/otherlibs/str/str.cma \
   $(ROOTDIR)/otherlibs/unix/unix.cma \
-  caml_tex.ml
+  ocamltex.ml
 
 # checkstack tool
 
@@ -316,24 +316,24 @@ checkstack$(EXE): checkstack.$(O)
 
 #Scan latex files, and run ocaml code examples
 
-caml_tex := caml-tex$(EXE)
+ocamltex := ocamltex$(EXE)
 
-# caml-tex uses str.cma and unix.cma and so must be compiled with
+# ocamltex uses str.cma and unix.cma and so must be compiled with
 # $(ROOTDIR)/ocamlc not $(ROOTDIR)/boot/ocamlc since the boot
 # compiler does not necessarily have the correct shared library
 # configuration.
-$(caml_tex): INCLUDES += $(addprefix -I $(ROOTDIR)/otherlibs/,str unix)
-$(caml_tex): $(caml_tex_files)
+$(ocamltex): INCLUDES += $(addprefix -I $(ROOTDIR)/otherlibs/,str unix)
+$(ocamltex): $(ocamltex_files)
 	$(OCAMLRUN) $(ROOTDIR)/ocamlc$(EXE) $(STDLIBFLAGS) \
 	  $(LINKFLAGS) -linkall -o $@ -no-alias-deps $^
 
 # we need str and unix which depend on the bytecode version of other tools
 # thus we use the othertools target
-ifeq "$(WITH_CAMLTEX)" "true"
-othertools: $(caml_tex)
+ifeq "$(build_ocamltex)" "true"
+othertools: $(ocamltex)
 endif
 clean::
-	rm -f -- caml-tex caml-tex.exe caml_tex.cm?
+	rm -f -- ocamltex ocamltex.exe ocamltex.cm?
 
 # Common stuff
 

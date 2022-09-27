@@ -35,6 +35,8 @@ build_ocamldebug = @build_ocamldebug@
 
 build_ocamldoc = @build_ocamldoc@
 
+build_ocamltex = @build_ocamltex@
+
 lib_dynlink = @lib_dynlink@
 lib_runtime_events = @lib_runtime_events@
 lib_str = @lib_str@

@@ -174,7 +174,7 @@ AC_SUBST([cc_has_debug_prefix_map])
 AC_SUBST([as_has_debug_prefix_map])
 AC_SUBST([with_debugger]) # TODO: rename this variable
 AC_SUBST([build_ocamldebug])
-AC_SUBST([with_camltex])
+AC_SUBST([build_ocamltex])
 AC_SUBST([ocamldoc])
 AC_SUBST([build_ocamldoc])
 AC_SUBST([documentation_tool])
@@ -492,8 +492,8 @@ AS_IF([test x"$enable_unix_lib" = "xno" || test x"$enable_str_lib" = "xno"],
   [AS_IF([test x"$enable_ocamldoc" = "xyes"],
     [AC_MSG_ERROR([ocamldoc requires the unix and str libraries])],
     [enable_ocamldoc="no"
-     with_camltex=""])],
-  [with_camltex="true"])
+     build_ocamltex=false])],
+  [build_ocamltex=true])
 
 # Initialization of libtool
 # Allow the MSVC linker to be found even if ld isn't installed.

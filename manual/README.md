@@ -128,7 +128,7 @@ A similar macro, `\lparagraph`, is provided for paragraphs.
 
 ### Caml environments
 
-The tool `tools/caml-tex` is used to generate the LaTeX code for the examples
+The tool `tools/ocamltex` is used to generate the LaTeX code for the examples
 in the introduction and language extension parts of the manual. It implements
 two pseudo-environments: `caml_example` and `caml_eval`.
 
@@ -162,10 +162,10 @@ val none : 'a option
 \end{caml_example*}
 ```
 
-By default, `caml-tex` raises an error and stops if the output of one the
+By default, `ocamltex` raises an error and stops if the output of one the
 `caml_example` environment contains an unexpected error or warning. If such an
 error or warning is, in fact, expected, it is necessary to indicate the expected
-output status to `caml-tex` by adding either an option to the `caml_example`
+output status to `ocamltex` by adding either an option to the `caml_example`
 environment:
 ```latex
 \begin{caml_example}{toplevel}[error]
