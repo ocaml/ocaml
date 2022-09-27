@@ -5,7 +5,7 @@
 #include <assert.h>
 #define FMT ARCH_INTNAT_PRINTF_FORMAT
 
-CAMLextern value test_skiplist_serial(value val) {
+CAMLprim value test_skiplist_serial(value val) {
   CAMLparam0();
 
   struct lf_skiplist list;
@@ -39,7 +39,7 @@ CAMLextern value test_skiplist_serial(value val) {
 
 static struct lf_skiplist the_list;
 
-CAMLextern value init_skiplist(value val) {
+CAMLprim value init_skiplist(value val) {
   CAMLparam0();
 
   caml_lf_skiplist_init(&the_list);
@@ -47,7 +47,7 @@ CAMLextern value init_skiplist(value val) {
   CAMLreturn(Val_unit);
 }
 
-CAMLextern value cardinal_skiplist(value val) {
+CAMLprim value cardinal_skiplist(value val) {
   CAMLparam0();
   uintnat r = 0;
   FOREACH_LF_SKIPLIST_ELEMENT(p,&the_list,r++);
@@ -77,7 +77,7 @@ static uintnat count_marks(struct lf_skiplist *sk) {
   return r;
 }
 
-CAMLextern value clean_skiplist(value val) {
+CAMLprim value clean_skiplist(value val) {
   CAMLparam1(val);
   intnat v = Long_val(val) ;
 
@@ -96,7 +96,7 @@ CAMLextern value clean_skiplist(value val) {
   CAMLreturn(Val_unit);
 }
 
-CAMLextern value hammer_skiplist(value domain_id_val) {
+CAMLprim value hammer_skiplist(value domain_id_val) {
   CAMLparam1(domain_id_val);
 
   uintnat domain_id = Long_val(domain_id_val);
@@ -132,7 +132,7 @@ inline static uintnat calc_value(uintnat id) { return id; }
 inline static uintnat calc_key(uintnat id,uintnat turn) { return 1024*id+turn+1; }
 inline static uintnat calc_right(uintnat id,uintnat turn,uintnat ndoms) { return (id+turn) % ndoms; }
 
-CAMLextern value insert_skiplist(value turn_val,value ndoms_val,value domain_id_val) {
+CAMLprim value insert_skiplist(value turn_val,value ndoms_val,value domain_id_val) {
   CAMLparam3(turn_val,ndoms_val,domain_id_val);
   uintnat domain_id = Long_val(domain_id_val);
   uintnat ndoms = Long_val(ndoms_val);
@@ -145,7 +145,7 @@ CAMLextern value insert_skiplist(value turn_val,value ndoms_val,value domain_id_
   CAMLreturn(Val_unit);
 }
 
-CAMLextern value find_skiplist(value turn_val,value ndoms_val,value domain_id_val) {
+CAMLprim value find_skiplist(value turn_val,value ndoms_val,value domain_id_val) {
   CAMLparam3(turn_val,ndoms_val,domain_id_val);
   uintnat domain_id = Long_val(domain_id_val);
   uintnat ndoms = Long_val(ndoms_val);
