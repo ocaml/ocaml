@@ -1064,10 +1064,11 @@ mkdll_ld=''
 AS_IF([test x"$enable_shared" != "xno"],
   [AS_CASE([$host],
     [x86_64-apple-darwin*],
-      [mkdll_flags='-shared -undefined dynamic_lookup -Wl,-no_compact_unwind'
+      [mkdll_flags=\
+'-shared -undefined dynamic_lookup -Wl,-no_compact_unwind -Wl,-w'
       supports_shared_libraries=true],
     [aarch64-apple-darwin*|arm64-apple-darwin*],
-      [mkdll_flags='-shared -undefined dynamic_lookup'
+      [mkdll_flags='-shared -undefined dynamic_lookup -Wl,-w'
       supports_shared_libraries=true],
     [*-*-mingw32],
       [mkdll_ld="${flexlink_cmd} -chain ${flexdll_chain} ${flexlink_flags}"
