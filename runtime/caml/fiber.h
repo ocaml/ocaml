@@ -248,7 +248,7 @@ void caml_maybe_expand_stack(void);
 CAMLextern void caml_free_stack(struct stack_info* stk);
 
 /* gc_regs_buckets is allocated on-demand by [maybe_expand_stack]. */
-void caml_free_gc_regs_buckets(value *gc_regs_buckets);
+CAMLextern void caml_free_gc_regs_buckets(value *gc_regs_buckets);
 
 #ifdef NATIVE_CODE
 void caml_get_stack_sp_pc (struct stack_info* stack,
