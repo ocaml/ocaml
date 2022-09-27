@@ -786,7 +786,7 @@ runtime/caml/opnames.h : runtime/caml/instruct.h
 	tr -d '\r' < $< | \
 	sed -e '/\/\*/d' \
 	    -e '/^#/d' \
-	    -e 's/enum /static char * names_of_/' \
+	    -e 's/enum /static const char * names_of_/' \
 	    -e 's/{$$/[] = {/' \
 	    -e 's/\([[:upper:]][[:upper:]_0-9]*\)/"\1"/g' > $@
 

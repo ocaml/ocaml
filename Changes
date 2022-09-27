@@ -81,6 +81,9 @@ Working version
   This allows to see optimized bytecode with -dlambda.
   (Jacques Garrigue, review by Gabriel Scherer)
 
+- #11557: Make ocamlc/ocamlopt accept C++ files as input
+  (Kate Deplaix, review by <TODO>)
+
 ### Manual and documentation:
 
 - #9430, #11291: Document the general desugaring rules for binding operators.

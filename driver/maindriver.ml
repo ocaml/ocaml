@@ -88,7 +88,8 @@ let main argv ppf =
           let s = Compenv.extract_output !output_name in
           if (Filename.check_suffix s Config.ext_obj
             || Filename.check_suffix s Config.ext_dll
-            || Filename.check_suffix s ".c")
+            || Filename.check_suffix s ".c"
+            || Filename.check_suffix s ".cpp")
           then s
           else
             Compenv.fatal
