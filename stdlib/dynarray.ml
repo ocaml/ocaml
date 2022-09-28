@@ -244,6 +244,20 @@ let fold_left f acc v =
       fold (f acc x) (i+1)
   in fold acc 0
 
+let filter f a =
+  let b = create() in
+  iter (fun x -> if f x then push_last b x) a;
+  b
+
+let filter_map f a =
+  let b = create() in
+  iter (fun x ->
+      match f x with
+      | None -> ()
+      | Some y -> push_last b y)
+    a;
+  b
+
 let exists p v =
   let n = v.size in
   let rec check i =
