@@ -28,16 +28,19 @@ type 'a t
     Operations such as {!pop}, and {!truncate}, reduce the size. *)
 
 val create : unit -> 'a t
-(** Create a new, empty array. *)
+(** [create ()] is a new, empty array. *)
 
 val make : int -> 'a -> 'a t
-(** [make n x] makes a array of size [n], filled with [x]. *)
+(** [make n x] makes a array of length [n], filled with [x]. *)
 
 val init : int -> (int -> 'a) -> 'a t
-(** Init the array with the given function and size. *)
+(** [init n f] is a new array of length [n],
+    such that [get (init n f) i] is [f i].
+
+    This is the equivalent of {!Array.init}. *)
 
 val clear : 'a t -> unit
-(** Clear the content of the array.
+(** [clear a] clears the content of [a], and sets its length to 0.
     This ensures that [length v = 0] but the underlying array is kept,
     and possibly references to former elements, which are therefore
     not garbage collectible. *)
@@ -95,14 +98,18 @@ val append_seq : 'a t -> 'a Seq.t -> unit
 val append_list : 'a t -> 'a list -> unit
 (** Like {!append} but with a list. *)
 
-val pop : 'a t -> 'a option
+val pop_last_opt : 'a t -> 'a option
 (** Remove and return the last element, or [None] if the
     array is empty. *)
 
-val pop_exn : 'a t -> 'a
+val pop_last : 'a t -> 'a
 (** Remove the last element, or raise an exception if the
     array is empty.
-    @raise Invalid_argument on an empty array. *)
+    @raise Not_found on an empty array. *)
+
+val remove_last : 'a t -> unit
+(** [remove_last a] removes the last element of [a], or does nothing
+    if [is_empty a]. *)
 
 val copy : 'a t -> 'a t
 (** Shallow copy. *)
