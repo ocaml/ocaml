@@ -16,7 +16,7 @@
 platform:
   - x64
 
-image: Visual Studio 2015
+image: Visual Studio 2022
 
 # Do a shallow clone of the repo to speed up the build
 clone_depth: 1
