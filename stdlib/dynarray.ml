@@ -20,7 +20,7 @@ type 'a t = {
 
 (* TODO: move to runtime? bypass write barrier *)
 let[@inline] fill_ (a:_ array) i ~filler : unit =
-  Array.unsafe_set a i filler
+  Array.set a i filler
 
 (* TODO: move to runtime? bypass write barrier *)
 let[@inline] fill_with_junk_ (a:_ array) i len ~filler : unit =
@@ -109,7 +109,7 @@ let[@inline] clear v =
 let[@inline] is_empty v = v.size = 0
 
 let[@inline] unsafe_push_last v x =
-  Array.unsafe_set v.arr v.size x;
+  Array.set v.arr v.size x;
   v.size <- v.size + 1
 
 let push_last v x =
@@ -131,17 +131,11 @@ let append a b =
 
 let[@inline] get v i =
   if i < 0 || i >= v.size then invalid_arg "Dynarray.get";
-  Array.unsafe_get v.arr i
-
-let[@inline] unsafe_get v i =
-  Array.unsafe_get v.arr i
+  Array.get v.arr i
 
 let[@inline] set v i x =
   if i < 0 || i >= v.size then invalid_arg "Dynarray.set";
-  Array.unsafe_set v.arr i x
-
-let[@inline] unsafe_set v i x =
-  Array.unsafe_set v.arr i x
+  Array.set v.arr i x
 
 let append_seq a seq = Seq.iter (fun x -> push_last a x) seq
 
@@ -176,7 +170,7 @@ let pop_last v =
       v.arr <- [||]; (* free elements *)
     ) else (
       (* remove pointer to (removed) last element *)
-      let filler = Array.unsafe_get v.arr 0 in
+      let filler = Array.get v.arr 0 in
       fill_ v.arr new_size ~filler;
     );
   x
@@ -203,7 +197,7 @@ let truncate v n =
   ) else if n < old_size then (
     (* free elements by erasing them with the first element *)
     v.size <- n;
-    let filler = Array.unsafe_get v.arr 0 in
+    let filler = Array.get v.arr 0 in
     fill_with_junk_ v.arr n (old_size-n) ~filler;
   )
 
@@ -217,20 +211,20 @@ let shrink_capacity v : unit =
 let iter k v =
   let n = v.size in
   for i = 0 to n-1 do
-    k (Array.unsafe_get v.arr i)
+    k (Array.get v.arr i)
   done
 
 let iteri k v =
   let n = v.size in
   for i = 0 to n-1 do
-    k i (Array.unsafe_get v.arr i)
+    k i (Array.get v.arr i)
   done
 
 let map f v =
   if array_is_empty_ v
   then create ()
   else (
-    let arr = Array.init v.size (fun i -> f (Array.unsafe_get v.arr i)) in
+    let arr = Array.init v.size (fun i -> f (Array.get v.arr i)) in
     { size=v.size; arr; }
   )
 
@@ -238,7 +232,7 @@ let mapi f v =
   if array_is_empty_ v
   then create ()
   else (
-    let arr = Array.init v.size (fun i -> f i (Array.unsafe_get v.arr i)) in
+    let arr = Array.init v.size (fun i -> f i (Array.get v.arr i)) in
     { size=v.size; arr; }
   )
 
@@ -246,7 +240,7 @@ let fold_left f acc v =
   let rec fold acc i =
     if i = v.size then acc
     else
-      let x = Array.unsafe_get v.arr i in
+      let x = Array.get v.arr i in
       fold (f acc x) (i+1)
   in fold acc 0
 
@@ -309,6 +303,6 @@ let to_array v =
 let to_list v =
   let l = ref [] in
   for i=length v-1 downto 0 do
-    l := unsafe_get v i :: !l
+    l := get v i :: !l
   done;
   !l
