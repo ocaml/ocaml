@@ -281,14 +281,14 @@ let of_seq seq =
 
 let to_seq v =
   let rec aux i () =
-    if i>= length v then Seq.Nil
+    if i >= length v then Seq.Nil
     else Seq.Cons (v.arr.(i), aux (i+1))
   in
   aux 0
 
 let to_seq_rev v =
   let rec aux i () =
-    if i<0 || i > length v then Seq.Nil
+    if i < 0 || i > length v then Seq.Nil
     else Seq.Cons (v.arr.(i), aux (i-1))
   in
   aux (length v-1)
