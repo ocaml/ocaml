@@ -155,7 +155,7 @@ let append_list a b = match b with
   | x :: _ ->
     (* use [x] as the filler, in case the array is empty.
        We ensure capacity once, then we can skip the resizing checks
-       and use {!unsafe_push}. *)
+       and use {!unsafe_push_last}. *)
     let len_a = a.size in
     let len_b = List.length b in
     ensure_capacity_with ~filler:x a (len_a + len_b);
