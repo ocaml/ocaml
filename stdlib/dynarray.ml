@@ -167,8 +167,8 @@ let append_list a b = match b with
     ensure_capacity_with ~filler:x a (len_a + len_b);
     List.iter (unsafe_push a) b
 
-let pop_exn v =
-  if v.size = 0 then invalid_arg "Dynarray.pop_exn: empty";
+let pop_last v =
+  if v.size = 0 then raise Not_found;
   let new_size = v.size - 1 in
   v.size <- new_size;
   let x = v.arr.(new_size) in
@@ -181,10 +181,13 @@ let pop_exn v =
     );
   x
 
-let pop v =
-  try Some (pop_exn v)
-  with Invalid_argument _ -> None
+let pop_last_opt v =
+  try Some (pop_last v)
+  with Not_found -> None
 
+let remove_last v =
+  try ignore (pop_last v)
+  with Not_found -> ()
 
 let[@inline] copy v = {
   size = v.size;
