@@ -1567,18 +1567,8 @@ Error: This expression has type
 let f (n : < m : 'a. [< `Foo of 'a & int | `Bar] >) =
   (n : < m : 'b. [< `Foo of 'b & int | `Bar] >)
 [%%expect{|
-Line 1:
-Error: Values do not match:
-         val f :
-           < m : 'a. [< `Bar | `Foo of 'a & int ] as 'c > -> < m : 'b. 'c >
-       is not included in
-         val f :
-           < m : 'a. [< `Bar | `Foo of 'b & int ] as 'c > -> < m : 'b. 'c >
-       The type
-         < m : 'a. [< `Bar | `Foo of 'b & int ] as 'c > -> < m : 'b. 'c >
-       is not compatible with the type
-         < m : 'a. [< `Bar | `Foo of 'b & int ] as 'd > -> < m : 'b. 'd >
-       Types for tag `Foo are incompatible
+val f : < m : 'b. [< `Bar | `Foo of 'b & int ] as 'a > -> < m : 'b. 'a > =
+  <fun>
 |}]
 
 (* PR#6171 *)

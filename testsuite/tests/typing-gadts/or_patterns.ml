@@ -270,7 +270,26 @@ let simple_merged_annotated_under_poly_variant (type a) (pair : a t * a) =
 ;;
 
 [%%expect{|
-val simple_merged_annotated_under_poly_variant : 'a t * 'a -> unit = <fun>
+Line 3, characters 19-20:
+3 |   | `Foo ( IntLit, 3
+                       ^
+Error: This pattern matches values of type int
+       but a pattern was expected which matches values of type a = int
+       This instance of int is ambiguous:
+       it would escape the scope of its equation
+|}, Principal{|
+Line 3, characters 11-17:
+3 |   | `Foo ( IntLit, 3
+               ^^^^^^
+Warning 18 [not-principal]: typing this pattern requires considering int and a as equal.
+But the knowledge of these types is not principal.
+Line 3, characters 19-20:
+3 |   | `Foo ( IntLit, 3
+                       ^
+Error: This pattern matches values of type int
+       but a pattern was expected which matches values of type a = int
+       This instance of int is ambiguous:
+       it would escape the scope of its equation
 |}]
 
 let simple_merged_annotated_under_poly_variant_annotated (type a) pair =

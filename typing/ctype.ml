@@ -608,6 +608,8 @@ let generalize ty =
 
 (* Generalize the structure and lower the variables *)
 
+let update_level_noenv = ref (fun _lev _ty -> assert false)
+
 let rec generalize_structure ty =
   let level = get_level ty in
   if level <> generic_level then begin
@@ -618,6 +620,8 @@ let rec generalize_structure ty =
       match get_desc ty with
         Tconstr (p, _, abbrev) ->
           not (is_object_type p) && (abbrev := Mnil; true)
+      | Tvariant row when not (is_fixed row) && not (static_row row) ->
+          !update_level_noenv !current_level ty; false
       | _ -> true
     then begin
       set_level ty generic_level;
@@ -786,6 +790,12 @@ let rec update_level env level expand ty =
         (* XXX what about abbreviations in Tconstr ? *)
         iter_type_expr (update_level env level expand) ty
   end
+
+let () =
+  update_level_noenv :=
+    (fun lev ty ->
+      try update_level Env.empty lev false ty
+      with _ -> assert false)
 
 (* First try without expanding, then expand everything,
    to avoid combinatorial blow-up *)
