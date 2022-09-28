@@ -70,11 +70,6 @@ Working version
   (Simon Cruanes, review by Yotam Barnoy, Gabriel Scherer, Daniel Bünzli,
    Ulugbek Abdullaev, and Nicolás Ojeda Bär)
 
-- #11576: Fix bug in Bigarray.Genarray.init in the the case of zero-dimensional
-  arrays.
-  (Nicolás Ojeda Bär, Jeremy Yallop, report by Masayuki Takeda, review by Jeremy
-  Yallop and Florian Angeletti)
-
 ### Other libraries:
 
 - #11475: Make Unix terminal interface bindings domain-safe
@@ -641,6 +636,11 @@ OCaml 5.0
 
 - #11516, #11524: Fix the `deprecated_mutable` attribute.
   (Chris Casinghino, review by Nicolás Ojeda Bär and Florian Angeletti)
+
+- #11576: Fix bug in Bigarray.Genarray.init in the the case of zero-dimensional
+  arrays.
+  (Nicolás Ojeda Bär, Jeremy Yallop, report by Masayuki Takeda, review by Jeremy
+  Yallop and Florian Angeletti)
 
 OCaml 4.14.0 (28 March 2022)
 ----------------------------
