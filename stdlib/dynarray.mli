@@ -165,14 +165,6 @@ val set : 'a t -> int -> 'a -> unit
     @raise Invalid_argument if the index is
     invalid (i.e. not in [[0.. length v-1]]). *)
 
-(**/**)
-
-val unsafe_get : 'a t -> int -> 'a
-
-val unsafe_set : 'a t -> int -> 'a -> unit
-
-(**/**)
-
 val blit : 'a t -> int -> 'a t -> int -> int -> unit
 (** [blit a i ab j len] copies [len] elements from [a],
     starting at index [i], into [b], starting at index [j].
