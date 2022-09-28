@@ -108,13 +108,13 @@ let[@inline] clear v =
 
 let[@inline] is_empty v = v.size = 0
 
-let[@inline] unsafe_push_back v x =
+let[@inline] unsafe_push_last v x =
   Array.unsafe_set v.arr v.size x;
   v.size <- v.size + 1
 
-let push_back v x =
+let push_last v x =
   if v.size = Array.length v.arr then actually_grow_with_ v ~filler:x;
-  unsafe_push_back v x
+  unsafe_push_last v x
 
 let append a b =
   if array_is_empty_ a then (
@@ -143,7 +143,7 @@ let[@inline] set v i x =
 let[@inline] unsafe_set v i x =
   Array.unsafe_set v.arr i x
 
-let append_seq a seq = Seq.iter (fun x -> push_back a x) seq
+let append_seq a seq = Seq.iter (fun x -> push_last a x) seq
 
 let append_array a b =
   let len_b = Array.length b in
@@ -165,7 +165,7 @@ let append_list a b = match b with
     let len_a = a.size in
     let len_b = List.length b in
     ensure_capacity_with ~filler:x a (len_a + len_b);
-    List.iter (unsafe_push_back a) b
+    List.iter (unsafe_push_last a) b
 
 let pop_last v =
   if v.size = 0 then raise Not_found;
@@ -300,7 +300,7 @@ let of_list l = match l with
   | x::_ ->
     let v = create() in
     ensure_capacity_with v (List.length l) ~filler:x;
-    List.iter (unsafe_push_back v) l;
+    List.iter (unsafe_push_last v) l;
     v
 
 let to_array v =
