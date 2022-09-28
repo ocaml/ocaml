@@ -81,14 +81,24 @@ val push_last : 'a t -> 'a -> unit
     and O(ln(n)) reallocations of the underlying array. *)
 
 val unsafe_push_last : 'a t -> 'a -> unit
-(** Push an element, assuming there is capacity for it
+(** [unsafe_push_last a x] pushes [x] as the last element of [a],
+    assuming there is capacity for it in [a] already
     (e.g. using {!ensure_capacity}).
 
     It is unspecified what happens if the capacity is not enough.
-    This is for advanced used only. *)
+    This is for advanced use cases only. *)
 
 val append : 'a t -> 'a t -> unit
-(** [append a b] adds all elements of [b] to [a]. [b] is not modified. *)
+(** [append a b] adds all elements of [b] at the end of [a],
+    in the order they appear in [b]. [b] is not modified.
+
+    For example, [a] will contain [1,2,3,4,5,6] after this code runs:
+    {[
+      let a = of_list [1;2;3];;
+      let b = of_list [4;5;6];;
+      let () = append a b;;
+    ]}
+    *)
 
 val append_array : 'a t -> 'a array -> unit
 (** Like {!append}, with an array. *)
@@ -179,6 +189,8 @@ val of_array : 'a array -> 'a t
     Operates in [O(n)] time. *)
 
 val of_list : 'a list -> 'a t
+(** [of_list l] is the array containing the elements of [l] in
+    the same order. *)
 
 val to_array : 'a t -> 'a array
 (** [to_array v] returns an array corresponding to the array [v]. *)
