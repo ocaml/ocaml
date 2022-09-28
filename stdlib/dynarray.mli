@@ -149,6 +149,16 @@ val mapi : (int -> 'a -> 'b) -> 'a t -> 'b t
 (** [map f v] is just like {!map}, but it also passes in the index
     of each element as the first argument to the function [f]. *)
 
+val filter : ('a -> bool) -> 'a t -> 'a t
+(** [filter f a] is an array containing all elements of [a] that satisfy [f] *)
+
+val filter_map : ('a -> 'b option) -> 'a t -> 'b t
+(** [filter_map f a] is a new array [b], such that for each item [x] in [a]:
+  - if [f x = Some y], then [y] is in [b]
+  - if [f x = None], then no element is added to [b].
+
+  It is similar to {!List.filter_map}. *)
+
 val fold_left : ('b -> 'a -> 'b) -> 'b -> 'a t -> 'b
 (** Fold on elements of the array *)
 
