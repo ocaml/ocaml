@@ -72,14 +72,15 @@ val ensure_capacity_nonempty : 'a t -> int -> unit
 val is_empty : 'a t -> bool
 (** Is the array empty? This is synonymous to [length a = 0]. *)
 
-val push : 'a t -> 'a -> unit
-(** Add an element at the end of the array. This might extend the underlying
-    array if it is full.
+val push_back : 'a t -> 'a -> unit
+(** [push_back a x] adds the element [x] at the end of the array [a].
 
-    Calling [push] [n] times is amortized O(n) complexity,
+    This might grow the underlying storage of [a] if it is full.
+
+    Calling [push_back a] n times is amortized O(n) complexity,
     and O(ln(n)) reallocations of the underlying array. *)
 
-val unsafe_push : 'a t -> 'a -> unit
+val unsafe_push_back : 'a t -> 'a -> unit
 (** Push an element, assuming there is capacity for it
     (e.g. using {!ensure_capacity}).
 
