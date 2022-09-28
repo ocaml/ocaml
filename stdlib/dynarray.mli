@@ -167,16 +167,17 @@ val exists : ('a -> bool) -> 'a t -> bool
 val for_all : ('a -> bool) -> 'a t -> bool
 
 val get : 'a t -> int -> 'a
-(** Access element by its index, or
-    @raise Invalid_argument if bad index. *)
+(** [get a i] is the [i]-th element of [a].
+    @raise Invalid_argument if the index is
+      invalid (i.e. not in [[0.. length a-1]]). *)
 
 val set : 'a t -> int -> 'a -> unit
-(** Modify element at given index, or
-    @raise Invalid_argument if the index is
-    invalid (i.e. not in [[0.. length v-1]]). *)
+(** [set a i x] sets the [i]-th element of [a] to be [x].
+    Just like {!Array.set}, indexing starts at 0.
+    @raise Invalid_argument if the index is invalid. *)
 
 val blit : 'a t -> int -> 'a t -> int -> int -> unit
-(** [blit a i ab j len] copies [len] elements from [a],
+(** [blit a i b j len] copies [len] elements from [a],
     starting at index [i], into [b], starting at index [j].
 
     See {!Array.blit}.
@@ -195,16 +196,18 @@ val of_list : 'a list -> 'a t
     the same order. *)
 
 val to_array : 'a t -> 'a array
-(** [to_array v] returns an array corresponding to the array [v]. *)
+(** [to_array a] returns an array corresponding to the dynamic array [a].
+    This always allocate a new array and copies item into it. *)
 
 val to_list : 'a t -> 'a list
-(** Return a list with the elements contained in the array. *)
+(** [to_list a] is a list with the elements contained in the array [a]. *)
 
 val of_seq : 'a Seq.t -> 'a t
-(** Convert an Iterator to a array. *)
+(** Convert a sequence of items to an array containing them in the
+    same order. *)
 
 val to_seq : 'a t -> 'a Seq.t
-(** Return an iterator with the elements contained in the array. *)
+(** [of_seq a] is the sequence of items [get a 0], [get a 1], etc. *)
 
 val to_seq_rev : 'a t -> 'a Seq.t
 (** Iterate over the array, starting from the last (top) element. *)
