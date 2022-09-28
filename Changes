@@ -73,7 +73,7 @@ Working version
 - #11576: Fix bug in Bigarray.Genarray.init in the the case of zero-dimensional
   arrays.
   (Nicolás Ojeda Bär, Jeremy Yallop, report by Masayuki Takeda, review by Jeremy
-  Yallop)
+  Yallop and Florian Angeletti)
 
 ### Other libraries:
 
