@@ -149,9 +149,17 @@ case "$1" in
           $FULL_BUILD_PREFIX-$PORT/runtime/*.a \
           $FULL_BUILD_PREFIX-$PORT/otherlibs/*/lib*.a
     fi
-    # FIXME At present, running the testsuite takes too long
-    #run "test $PORT" \
-    #    $MAKE -C "$FULL_BUILD_PREFIX-$PORT/testsuite" SHOW_TIMINGS=1 parallel
+    # The testsuite is too slow to run on AppVeyor in full. Run the dynlink
+    # tests now (to include natdynlink)
+    run "test dynlink $PORT" \
+        $MAKE -C "$FULL_BUILD_PREFIX-$PORT/testsuite" parallel-lib-dynlink
+    # Now reconfigure ocamltest to run in bytecode-only mode
+    sed -i '/native_/s/true/false/' \
+           "$FULL_BUILD_PREFIX-$PORT/ocamltest/ocamltest_config.ml"
+    $MAKE -C "$FULL_BUILD_PREFIX-$PORT/ocamltest" -j all allopt
+    # And run the entire testsuite, skipping all the native-code tests
+    run "test $PORT" \
+        make -C "$FULL_BUILD_PREFIX-$PORT/testsuite" SHOW_TIMINGS=1 all
     run "install $PORT" $MAKE -C "$FULL_BUILD_PREFIX-$PORT" install
     if [[ $PORT = 'msvc64' ]] ; then
       run "$MAKE check_all_arches" \

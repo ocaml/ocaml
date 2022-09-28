@@ -36,7 +36,7 @@ let bytecode =
   test_name = "bytecode";
   test_run_by_default = true;
   test_actions =
-  (if Sys.win32 && Ocamltest_config.arch<>"none" then
+  (if Sys.win32 && Ocamltest_config.native_compiler then
     opt_build
   else
     byte_build) @
