@@ -18,6 +18,9 @@ OCaml 4.14 maintenance version
 
 ### Build system:
 
+- #11294: Switch minimum required autoconf to 2.71.
+  (David Allsopp, review by Xavier Leroy)
+
 - #11590: Allow installing to a destination path containing spaces.
   (Élie Brami, review by Sébastien Hinderer and David Allsopp)
 
