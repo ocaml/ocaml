@@ -265,7 +265,7 @@ type 'a option = Some of 'a | None;;
 This type is particularly useful when defining function that can
 fail in common situations, for instance
 \begin{caml_example}{toplevel}
-let safe_square_root x = if x > 0. then Some(sqrt x) else None;;
+let safe_square_root x = if x >= 0. then Some(sqrt x) else None;;
 \end{caml_example}
 
 The most common usage of variant types is to describe recursive data
