@@ -530,6 +530,9 @@ OCaml 5.0
   removing it from the default namespace.
   (David Allsopp, review by Sébastien Hinderer)
 
+- #11294: Switch minimum required autoconf to 2.71.
+  (David Allsopp, review by Xavier Leroy)
+
 - #11370, #11373: Don't pass CFLAGS to flexlink during configure.
   (David Allsopp, report by William Hu, review by Xavier Leroy and
    Sébastien Hinderer)
