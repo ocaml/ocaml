@@ -482,6 +482,11 @@ OCaml 5.0
 - #11516, #11524: Fix the `deprecated_mutable` attribute.
   (Chris Casinghino, review by Nicolás Ojeda Bär and Florian Angeletti)
 
+- #11576: Fix bug in Bigarray.Genarray.init in the the case of zero-dimensional
+  arrays.
+  (Nicolás Ojeda Bär, Jeremy Yallop, report by Masayuki Takeda, review by Jeremy
+  Yallop and Florian Angeletti)
+
 OCaml 4.14.0 (28 March 2022)
 ----------------------------
 
