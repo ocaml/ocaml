@@ -715,7 +715,7 @@ AS_CASE([$host],
   [*-*-mingw32],
     [AS_CASE([$ocaml_cv_cc_vendor],
       [gcc-[[01234]]-*],
-        [AC_MSG_ERROR(m4_normalize([This version of Mingw GCC is too old.
+        [AC_MSG_ERROR(m4_normalize([This version of MinGW-w64 GCC is too old.
           Please use GCC version 5 or above.]))],
       [gcc-*],
         [internal_cflags="-Wno-unused $cc_warnings \
@@ -725,7 +725,7 @@ AS_CASE([$host],
         internal_cppflags='-D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE'
         internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
         internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
-      [AC_MSG_ERROR([Unsupported C compiler for a Mingw build])])],
+      [AC_MSG_ERROR([Unsupported C compiler for a MinGW-w64 build])])],
   [AS_CASE([$ocaml_cv_cc_vendor],
     [clang-*],
       [common_cflags="-O2 -fno-strict-aliasing -fwrapv";

@@ -12930,7 +12930,7 @@ case $host in #(
   *-*-mingw32) :
     case $ocaml_cv_cc_vendor in #(
   gcc-[01234]-*) :
-    as_fn_error $? "This version of Mingw GCC is too old. Please use GCC version 5 or above." "$LINENO" 5 ;; #(
+    as_fn_error $? "This version of MinGW-w64 GCC is too old. Please use GCC version 5 or above." "$LINENO" 5 ;; #(
   gcc-*) :
     internal_cflags="-Wno-unused $cc_warnings \
 -fexcess-precision=standard"
@@ -12940,7 +12940,7 @@ case $host in #(
         internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
         internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)" ;; #(
   *) :
-    as_fn_error $? "Unsupported C compiler for a Mingw build" "$LINENO" 5 ;;
+    as_fn_error $? "Unsupported C compiler for a MinGW-w64 build" "$LINENO" 5 ;;
 esac ;; #(
   *) :
     case $ocaml_cv_cc_vendor in #(

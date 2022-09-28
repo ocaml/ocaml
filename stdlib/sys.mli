@@ -133,7 +133,7 @@ val interactive : bool ref
 val os_type : string
 (** Operating system currently executing the OCaml program. One of
 -  ["Unix"] (for all Unix versions, including Linux and Mac OS X),
--  ["Win32"] (for MS-Windows, OCaml compiled with MSVC++ or Mingw),
+-  ["Win32"] (for MS-Windows, OCaml compiled with MSVC++ or MinGW-w64),
 -  ["Cygwin"] (for MS-Windows, OCaml compiled with Cygwin). *)
 
 type backend_type =
