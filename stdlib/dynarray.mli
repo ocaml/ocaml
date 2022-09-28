@@ -15,8 +15,6 @@
 
 (** Growable, mutable array.
 
-
-
     @since 5.1
 *)
 
