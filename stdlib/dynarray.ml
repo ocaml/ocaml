@@ -137,7 +137,10 @@ let[@inline] set v i x =
   if i < 0 || i >= v.size then invalid_arg "Dynarray.set";
   Array.set v.arr i x
 
-let append_seq a seq = Seq.iter (fun x -> add_last a x) seq
+let append_iter a iter b =
+  iter (fun x -> add_last a x) b
+
+let append_seq a seq = append_iter a Seq.iter seq
 
 let append_array a b =
   let len_b = Array.length b in
@@ -201,7 +204,7 @@ let truncate v n =
     fill_with_junk_ v.arr n (old_size-n) ~filler;
   )
 
-let shrink_capacity v : unit =
+let fit_capacity v : unit =
   if v.size = 0 then (
     v.arr <- [| |]
   ) else if v.size < Array.length v.arr then (
@@ -273,6 +276,15 @@ let for_all p v =
   in check 0
 
 let length v = v.size
+
+let rev a =
+  if is_empty a then create()
+  else (
+    let old_arr = a.arr in
+    let n = Array.length old_arr in
+    let arr = Array.init n (fun i -> old_arr.(n - i - 1)) in
+    { size=a.size; arr}
+  )
 
 let of_seq seq =
   let init = create() in

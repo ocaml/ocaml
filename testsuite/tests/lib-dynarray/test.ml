@@ -127,7 +127,7 @@ let () =
   for i = 0 to 200 do
     A.add_last a i;
   done;
-  A.shrink_capacity a;
+  A.fit_capacity a;
   assert (A.length a = 201);;
 
 let () =
@@ -166,5 +166,13 @@ let () =
   done;
   assert (A.length a = 200);
   assert (A.to_list a = list_range 1 200);;
+
+let () =
+  assert (A.of_list [1;2;3] |> A.rev |> A.to_list = [3;2;1]);
+  assert (A.of_list [1;2] |> A.rev |> A.to_list = [2;1]);
+  assert (A.of_list [1] |> A.rev |> A.to_list = [1]);
+  assert (A.of_list [] |> A.rev |> A.to_list = []);
+  assert (A.of_seq (Seq.ints 0 |> Seq.take 1000) |> A.rev |> A.length = 1000);
+  ()
 
 let () = print_endline "OK";;
