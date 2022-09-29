@@ -362,6 +362,12 @@ OCaml 5.0
   the same module.
   (Nicolás Ojeda Bär, review by Gabriel Scherer and Xavier Leroy)
 
+- #11279, #11585: Stop using unsafe functions in the Buffer implementation to
+  eliminate segfaults on parallel accesses. This is the simplest implementation
+  to restore memory safety, but comes at a considerable performance cost to
+  correct sequential code.
+  (David Allsopp, report by Jan Midtgaard, review by ???)
+
 - #8878: Add String.hash and String.seeded_hash.
   (Tom Kelly, review by Alain Frisch and Nicolás Ojeda Bär)
 

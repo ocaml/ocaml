@@ -48,13 +48,13 @@ let blit src srcoff dst dstoff len =
              || dstoff < 0 || dstoff > (Bytes.length dst) - len
   then invalid_arg "Buffer.blit"
   else
-    Bytes.unsafe_blit src.buffer srcoff dst dstoff len
+    Bytes.blit src.buffer srcoff dst dstoff len
 
 
 let nth b ofs =
   if ofs < 0 || ofs >= b.position then
    invalid_arg "Buffer.nth"
-  else Bytes.unsafe_get b.buffer ofs
+  else Bytes.get b.buffer ofs
 
 
 let length b = b.position
@@ -131,7 +131,7 @@ let resize b more =
 let add_char b c =
   let pos = b.position in
   if pos >= b.length then resize b 1;
-  Bytes.unsafe_set b.buffer pos c;
+  Bytes.set b.buffer pos c;
   b.position <- pos + 1
 
 let uchar_utf_8_byte_length_max = 4
@@ -166,7 +166,7 @@ let add_substring b s offset len =
   then invalid_arg "Buffer.add_substring/add_subbytes";
   let new_position = b.position + len in
   if new_position > b.length then resize b len;
-  Bytes.unsafe_blit_string s offset b.buffer b.position len;
+  Bytes.blit_string s offset b.buffer b.position len;
   b.position <- new_position
 
 let add_subbytes b s offset len =
@@ -176,7 +176,7 @@ let add_string b s =
   let len = String.length s in
   let new_position = b.position + len in
   if new_position > b.length then resize b len;
-  Bytes.unsafe_blit_string s 0 b.buffer b.position len;
+  Bytes.blit_string s 0 b.buffer b.position len;
   b.position <- new_position
 
 let add_bytes b s = add_string b (Bytes.unsafe_to_string s)
@@ -306,7 +306,7 @@ let to_seq b =
     (* Note that b.position is not a constant and cannot be lifted out of aux *)
     if i >= b.position then Seq.Nil
     else
-      let x = Bytes.unsafe_get b.buffer i in
+      let x = Bytes.get b.buffer i in
       Seq.Cons (x, aux (i+1))
   in
   aux 0
@@ -316,7 +316,7 @@ let to_seqi b =
     (* Note that b.position is not a constant and cannot be lifted out of aux *)
     if i >= b.position then Seq.Nil
     else
-      let x = Bytes.unsafe_get b.buffer i in
+      let x = Bytes.get b.buffer i in
       Seq.Cons ((i,x), aux (i+1))
   in
   aux 0
@@ -330,10 +330,10 @@ let of_seq i =
 
 (** {6 Binary encoding of integers} *)
 
-external unsafe_set_int8 : bytes -> int -> int -> unit = "%bytes_unsafe_set"
-external unsafe_set_int16 : bytes -> int -> int -> unit = "%caml_bytes_set16u"
-external unsafe_set_int32 : bytes -> int -> int32 -> unit = "%caml_bytes_set32u"
-external unsafe_set_int64 : bytes -> int -> int64 -> unit = "%caml_bytes_set64u"
+external safe_set_int8 : bytes -> int -> int -> unit = "%bytes_safe_set"
+external safe_set_int16 : bytes -> int -> int -> unit = "%caml_bytes_set16"
+external safe_set_int32 : bytes -> int -> int32 -> unit = "%caml_bytes_set32"
+external safe_set_int64 : bytes -> int -> int64 -> unit = "%caml_bytes_set64"
 external swap16 : int -> int = "%bswap16"
 external swap32 : int32 -> int32 = "%bswap_int32"
 external swap64 : int64 -> int64 = "%bswap_int64"
@@ -342,25 +342,25 @@ external swap64 : int64 -> int64 = "%bswap_int64"
 let add_int8 b x =
   let new_position = b.position + 1 in
   if new_position > b.length then resize b 1;
-  unsafe_set_int8 b.buffer b.position x;
+  safe_set_int8 b.buffer b.position x;
   b.position <- new_position
 
 let add_int16_ne b x =
   let new_position = b.position + 2 in
   if new_position > b.length then resize b 2;
-  unsafe_set_int16 b.buffer b.position x;
+  safe_set_int16 b.buffer b.position x;
   b.position <- new_position
 
 let add_int32_ne b x =
   let new_position = b.position + 4 in
   if new_position > b.length then resize b 4;
-  unsafe_set_int32 b.buffer b.position x;
+  safe_set_int32 b.buffer b.position x;
   b.position <- new_position
 
 let add_int64_ne b x =
   let new_position = b.position + 8 in
   if new_position > b.length then resize b 8;
-  unsafe_set_int64 b.buffer b.position x;
+  safe_set_int64 b.buffer b.position x;
   b.position <- new_position
 
 let add_int16_le b x =
