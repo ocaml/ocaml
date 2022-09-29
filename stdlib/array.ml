@@ -44,6 +44,53 @@ module Floatarray = struct
       = "%floatarray_unsafe_set"
 end
 
+module Optionarray = struct
+  type 'a t
+  type obj
+
+  external get_null : unit -> obj = "caml_get_null" [@@noalloc]
+  let null = get_null ()
+
+  external new_block : int -> int -> 'a t = "caml_obj_block"
+
+  external length : 'a t -> int = "%obj_size"
+  external field : 'a t -> int -> obj = "%obj_field"
+  external set_field : 'a t -> int -> obj -> unit = "%obj_set_field"
+
+  external obj : obj -> 'a = "%identity"
+  external repr : 'a -> obj = "%identity"
+
+  external unsafe_set_some : 'a t -> int -> 'a -> unit = "%obj_set_field"
+
+  let create (n : int) =
+    let a = new_block 0 n in
+    for i = 0 to n - 1 do
+      set_field a i null
+    done;
+    a
+
+  let get (a : 'a t) (i : int) : 'a option =
+    if i < 0 || i >= length a then
+      invalid_arg "Array.Optionarray.get";
+    let v = field a i in
+    if v == null then
+      None
+    else
+      Some (obj v)
+
+  let set (a : 'a t) (i : int) (v : 'a option) : unit =
+    if i < 0 || i >= length a then
+      invalid_arg "Array.Optionarray.set";
+    let v =
+      match v with
+      | None ->
+          null
+      | Some v ->
+          repr v
+    in
+    set_field a i v
+end
+
 let init l f =
   if l = 0 then [||] else
   if l < 0 then invalid_arg "Array.init"

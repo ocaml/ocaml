@@ -338,3 +338,12 @@ module Floatarray : sig
   external unsafe_set : floatarray -> int -> float -> unit
       = "%floatarray_unsafe_set"
 end
+
+module Optionarray : sig
+  type 'a t
+  val create : int -> 'a t
+  external length : 'a t -> int = "%obj_size"
+  val get : 'a t -> int -> 'a option
+  val set : 'a t -> int -> 'a option -> unit
+  external unsafe_set_some : 'a t -> int -> 'a -> unit = "%obj_set_field"
+end
