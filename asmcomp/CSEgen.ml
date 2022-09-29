@@ -253,16 +253,17 @@ method private kill_loads n =
 (* Perform CSE on the given instruction [i] and its successors.
    [n] is the value numbering current at the beginning of [i]. *)
 
-method private cse n i =
+method private cse n i cont =
   match i.desc with
   | Iend | Ireturn | Iop(Itailcall_ind) | Iop(Itailcall_imm _)
   | Iexit _ | Iraise _ ->
-      i
+      cont i
   | Iop (Imove | Ispill | Ireload) ->
       (* For moves, we associate the same value number to the result reg
          as to the argument reg. *)
       let n1 = set_move n i.arg.(0) i.res.(0) in
-      {i with next = self#cse n1 i.next}
+      self#cse n1 i.next @@ fun next ->
+      cont {i with next}
   | Iop (Icall_ind | Icall_imm _ | Iextcall _) ->
       (* For function calls, we should at least forget:
          - equations involving memory loads, since the callee can
@@ -276,10 +277,12 @@ method private cse n i =
          could be kept, but won't be usable for CSE as one of their
          arguments is always a memory load.  For simplicity, we
          just forget everything. *)
-      {i with next = self#cse empty_numbering i.next}
+      self#cse empty_numbering i.next @@ fun next ->
+      cont {i with next}
   | Iop Iopaque ->
       (* Assume arbitrary side effects from Iopaque *)
-      {i with next = self#cse empty_numbering i.next}
+      self#cse empty_numbering i.next @@ fun next ->
+      cont {i with next}
   | Iop (Ialloc _) | Iop (Ipoll _) ->
       (* For allocations, we must avoid extending the live range of a
          pseudoregister across the allocation if this pseudoreg
@@ -293,7 +296,8 @@ method private cse n i =
          Hence, all equations over mutable loads must be removed. *)
        let n1 = kill_addr_regs (self#kill_loads n) in
        let n2 = set_unknown_regs n1 i.res in
-       {i with next = self#cse n2 i.next}
+       self#cse n2 i.next @@ fun next ->
+       cont {i with next}
   | Iop op ->
       begin match self#class_of_operation op with
       | (Op_pure | Op_checkbound | Op_load _) as op_class ->
@@ -313,59 +317,72 @@ method private cse n i =
                   let n3 = set_known_regs n1 i.res vres in
                   (* This is n1 above and not n2 because the move
                      does not destroy any regs *)
-                  insert_move res i.res (self#cse n3 i.next)
+                  self#cse n3 i.next @@ fun next ->
+                  cont (insert_move res i.res next)
               | _ ->
                   (* We already computed the operation but lost its
                      results.  Associate the result registers to
                      the result valnums of the previous operation. *)
                   let n3 = set_known_regs n2 i.res vres in
-                  {i with next = self#cse n3 i.next}
+                  self#cse n3 i.next @@ fun next ->
+                  cont {i with next}
               end
           | None ->
               (* This operation produces a result we haven't seen earlier. *)
               let n3 = set_fresh_regs n2 i.res (op, varg) op_class in
-              {i with next = self#cse n3 i.next}
+              self#cse n3 i.next @@ fun next ->
+              cont {i with next}
           end
       | Op_store false | Op_other ->
           (* An initializing store or an "other" operation do not invalidate
              any equations, but we do not know anything about the results. *)
          let n1 = set_unknown_regs n (Proc.destroyed_at_oper i.desc) in
          let n2 = set_unknown_regs n1 i.res in
-         {i with next = self#cse n2 i.next}
+         self#cse n2 i.next @@ fun next ->
+         cont {i with next}
       | Op_store true ->
           (* A non-initializing store can invalidate
              anything we know about prior mutable loads. *)
          let n1 = set_unknown_regs n (Proc.destroyed_at_oper i.desc) in
          let n2 = set_unknown_regs n1 i.res in
          let n3 = self#kill_loads n2 in
-         {i with next = self#cse n3 i.next}
+         self#cse n3 i.next @@ fun next ->
+         cont {i with next}
       end
   (* For control structures, we set the numbering to empty at every
      join point, but propagate the current numbering across fork points. *)
   | Iifthenelse(test, ifso, ifnot) ->
      let n1 = set_unknown_regs n (Proc.destroyed_at_oper i.desc) in
-      {i with desc = Iifthenelse(test, self#cse n1 ifso, self#cse n1 ifnot);
-              next = self#cse empty_numbering i.next}
+     self#cse n1 ifso @@ fun ifso ->
+     self#cse n1 ifnot @@ fun ifnot ->
+     self#cse empty_numbering i.next @@ fun next ->
+     cont {i with desc = Iifthenelse(test, ifso, ifnot);
+                  next}
   | Iswitch(index, cases) ->
      let n1 = set_unknown_regs n (Proc.destroyed_at_oper i.desc) in
-      {i with desc = Iswitch(index, Array.map (self#cse n1) cases);
-              next = self#cse empty_numbering i.next}
+     self#cse empty_numbering i.next @@ fun next ->
+     cont {i with desc = Iswitch(index, Array.map (fun i -> self#cse n1 i Fun.id) cases);
+                  next}
   | Icatch(rec_flag, handlers, body) ->
       let aux (nfail, handler) =
-        nfail, self#cse empty_numbering handler
+        nfail, self#cse empty_numbering handler Fun.id
       in
-      {i with desc = Icatch(rec_flag, List.map aux handlers, self#cse n body);
-              next = self#cse empty_numbering i.next}
+      self#cse n body @@ fun body ->
+      self#cse empty_numbering i.next @@ fun next ->
+      cont {i with desc = Icatch(rec_flag, List.map aux handlers, body);
+                   next}
   | Itrywith(body, handler) ->
-      {i with desc = Itrywith(self#cse n body,
-                              self#cse empty_numbering handler);
-              next = self#cse empty_numbering i.next}
+      self#cse n body @@ fun body ->
+      self#cse empty_numbering handler @@ fun handler ->
+      self#cse empty_numbering i.next @@ fun next ->
+      cont {i with desc = Itrywith(body, handler);
+                   next}
 
 method fundecl f =
   (* CSE can trigger bad register allocation behaviors, see MPR#7630 *)
   if List.mem Cmm.No_CSE f.fun_codegen_options then
     f
   else
-    {f with fun_body = self#cse empty_numbering f.fun_body }
+    {f with fun_body = self#cse empty_numbering f.fun_body Fun.id }
 
 end
