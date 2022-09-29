@@ -647,6 +647,9 @@ static void intern_rec(struct caml_intern_state* s,
         }
         break;
       }
+      case CODE_NULL:
+        v = caml_null_val;
+        break;
       default:
         intern_cleanup(s);
         caml_failwith("input_value: ill-formed message");

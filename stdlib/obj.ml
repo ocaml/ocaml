@@ -47,6 +47,10 @@ external dup : t -> t = "caml_obj_dup"
 external add_offset : t -> Int32.t -> t = "caml_obj_add_offset"
 external with_tag : int -> t -> t = "caml_obj_with_tag"
 
+external get_null : unit -> t = "caml_get_null" [@@noalloc]
+
+let null = get_null ()
+
 let first_non_constant_constructor_tag = 0
 let last_non_constant_constructor_tag = 243
 

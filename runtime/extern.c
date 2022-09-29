@@ -780,7 +780,11 @@ static void extern_rec(struct caml_extern_state* s, value v)
     /* Atoms are treated specially for two reasons: they are not allocated
        in the externed block, and they are automatically shared. */
     if (sz == 0) {
-      extern_header(s, 0, tag);
+      if (v == caml_null_val) {
+        write(s, CODE_NULL);
+      } else {
+        extern_header(s, 0, tag);
+      }
       goto next_item;
     }
     /* Check if object already seen */

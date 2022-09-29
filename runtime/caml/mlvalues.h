@@ -396,6 +396,9 @@ CAMLextern int64_t caml_Int64_val(value v);
 CAMLextern value caml_atom(tag_t);
 #define Atom(tag) caml_atom(tag)
 
+/* null is a 0-tuples.  It is statically allocated once and for all. */
+CAMLextern const value caml_null_val;
+
 /* Booleans are integers 0 or 1 */
 
 #define Val_bool(x) Val_int((x) != 0)

@@ -684,6 +684,13 @@ CAMLexport value caml_atom(tag_t tag) {
   return Val_hp(&atoms[tag]);
 }
 
+/* NULL */
+const header_t caml_null_header = Make_header(0, 42, NOT_MARKABLE);
+const value caml_null_val = Val_hp(&caml_null_header);
+CAMLprim value caml_get_null(value unit) {
+  return caml_null_val;
+}
+
 void caml_init_major_heap (asize_t size) {
 }
 
