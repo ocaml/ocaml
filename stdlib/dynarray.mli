@@ -21,11 +21,11 @@
 type 'a t
 (** A dynamic array containing values of type ['a].
 
-    This contains an underlying {!array} along with a size.
+    This contains an underlying array along with a size.
     Operations such as {!add_last}, {!append}, and {!append_seq}, extend the
     size (and might reallocate the underlying array).
 
-    Operations such as {!pop}, and {!truncate}, reduce the size. *)
+    Operations such as {!pop_last}, and {!truncate}, reduce the size. *)
 
 val create : unit -> 'a t
 (** [create ()] is a new, empty array. *)
@@ -88,7 +88,7 @@ val add_last : 'a t -> 'a -> unit
 val unsafe_add_last : 'a t -> 'a -> unit
 (** [unsafe_add_last a x] adds [x] as the last element of [a],
     assuming there is room for it in [a] already
-    (e.g. using {!ensure_capacity}).
+    (e.g. using {!ensure_capacity_with}).
 
     It is unspecified what happens if the capacity is not enough.
     This is for advanced use cases only. *)
