@@ -32,11 +32,7 @@
 #define SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE (0x2)
 #endif
 
-typedef BOOLEAN (WINAPI *LPFN_CREATESYMBOLICLINK) (LPWSTR, LPWSTR, DWORD);
-
-static LPFN_CREATESYMBOLICLINK pCreateSymbolicLink = NULL;
-static int no_symlink = 0;
-static DWORD additional_symlink_flags = 0;
+static _Atomic DWORD additional_symlink_flags = -1;
 
 // Developer Mode allows the creation of symlinks without elevation - see
 // https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createsymboliclinkw
@@ -75,36 +71,31 @@ static BOOL IsDeveloperModeEnabled()
 CAMLprim value caml_unix_symlink(value to_dir, value osource, value odest)
 {
   CAMLparam3(to_dir, osource, odest);
-  DWORD flags;
+  DWORD flags, additional_flags;
   BOOLEAN result;
   LPWSTR source;
   LPWSTR dest;
   caml_unix_check_path(osource, "symlink");
   caml_unix_check_path(odest, "symlink");
 
-again:
-  if (no_symlink) {
-    caml_invalid_argument("symlink not available");
+  additional_flags = atomic_load_explicit(&additional_symlink_flags,
+      memory_order_relaxed);
+  if (additional_flags == -1) {
+    additional_flags = IsDeveloperModeEnabled() ?
+      SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE : 0;
+    atomic_store_explicit(&additional_symlink_flags, additional_flags,
+        memory_order_relaxed);
   }
 
-  if (!pCreateSymbolicLink) {
-    if (!(pCreateSymbolicLink = (LPFN_CREATESYMBOLICLINK)GetProcAddress(GetModuleHandle(L"kernel32"), "CreateSymbolicLinkW"))) {
-      no_symlink = 1;
-    } else if (IsDeveloperModeEnabled()) {
-      additional_symlink_flags = SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
-    }
-
-    goto again;
-  }
-
-  flags = (Bool_val(to_dir) ? SYMBOLIC_LINK_FLAG_DIRECTORY : 0) | additional_symlink_flags;
+  flags =
+    (Bool_val(to_dir) ? SYMBOLIC_LINK_FLAG_DIRECTORY : 0) | additional_flags;
 
   /* Copy source and dest outside the OCaml heap */
   source = caml_stat_strdup_to_utf16(String_val(osource));
   dest = caml_stat_strdup_to_utf16(String_val(odest));
 
   caml_enter_blocking_section();
-  result = pCreateSymbolicLink(dest, source, flags);
+  result = CreateSymbolicLink(dest, source, flags);
   caml_leave_blocking_section();
 
   caml_stat_free(source);

@@ -244,6 +244,9 @@ OCaml 5.0
   (Olivier Nicole, Nicolás Ojeda Bär, David Allsopp and Xavier Leroy,
    review by the same)
 
+- #11479: Make Unix.symlink domain-safe on Windows
+  (Olivier Nicole, review by Xavier Leroy and David Allsopp)
+
 ### Tools:
 
 * #11004: Litmus tests for checking the implementation of the
