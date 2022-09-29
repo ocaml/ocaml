@@ -4,7 +4,7 @@ caml_runstack
 camlEffects.entry
 caml_program
 caml_start_program
-caml_main
+caml_main/caml_startup
 main
 # perform effect (E 0)
 # caught effect (E 0). continuing...
@@ -12,7 +12,7 @@ camlEffects.h_effect_e
 camlEffects.entry
 caml_program
 caml_start_program
-caml_main
+caml_main/caml_startup
 main
 # perform returns 1
 camlEffects.f
@@ -21,7 +21,7 @@ camlEffects.h_effect_e
 camlEffects.entry
 caml_program
 caml_start_program
-caml_main
+caml_main/caml_startup
 main
 # done 2
 camlEffects.v_retc
@@ -29,13 +29,13 @@ camlEffects.h_effect_e
 camlEffects.entry
 caml_program
 caml_start_program
-caml_main
+caml_main/caml_startup
 main
 # continue returns 3
 camlEffects.h_effect_e
 camlEffects.entry
 caml_program
 caml_start_program
-caml_main
+caml_main/caml_startup
 main
 # result=4
