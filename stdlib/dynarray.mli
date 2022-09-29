@@ -46,7 +46,8 @@ val clear : 'a t -> unit
     not garbage collectible. *)
 
 val ensure_capacity_with : 'a t -> filler:'a -> int -> unit
-(** Make sure that the array has at least the given capacity (underlying size).
+(** [ensure_capacity_with a ~filler n] makes sure that [a]
+    has at least a capacity for storing [n] elements.
 
     This is a more advanced operation that is only useful for performance
     purposes.
@@ -59,8 +60,9 @@ val ensure_capacity_with : 'a t -> filler:'a -> int -> unit
 *)
 
 val ensure_capacity_nonempty : 'a t -> int -> unit
-(** Make sure that the array has at least the given capacity (underlying size),
-    assuming it is non-empty. The first element is used as the filler.
+(** [ensure_capacity_nonempty a n] makes sure that [a] has at least the
+    capacity [n], assuming it is already non-empty.
+    The first element is used as the filler.
 
     This is a more advanced operation that is only useful for performance
     purposes.
@@ -70,7 +72,10 @@ val ensure_capacity_nonempty : 'a t -> int -> unit
 *)
 
 val is_empty : 'a t -> bool
-(** Is the array empty? This is synonymous to [length a = 0]. *)
+(** [is_empty a] is [true] if [a] is empty, that is, if [length a = 0].
+
+    Note that an empty dynarray might still have non-0 underlying capacity
+    and therefore non-0 memory footprint. *)
 
 val add_last : 'a t -> 'a -> unit
 (** [add_last a x] adds the element [x] at the end of the array [a].
@@ -81,8 +86,8 @@ val add_last : 'a t -> 'a -> unit
     and O(ln(n)) reallocations of the underlying array. *)
 
 val unsafe_add_last : 'a t -> 'a -> unit
-(** [unsafe_add_last a x] pushes [x] as the last element of [a],
-    assuming there is capacity for it in [a] already
+(** [unsafe_add_last a x] adds [x] as the last element of [a],
+    assuming there is room for it in [a] already
     (e.g. using {!ensure_capacity}).
 
     It is unspecified what happens if the capacity is not enough.
@@ -109,13 +114,24 @@ val append_seq : 'a t -> 'a Seq.t -> unit
 val append_list : 'a t -> 'a list -> unit
 (** Like {!append} but with a list. *)
 
+val append_iter :
+  'a t ->
+  (('a -> unit) -> 'iter-> unit) ->
+  'iter -> unit
+(** [append_iter a iter x] adds to [a] each element in [x]. It uses [iter]
+    to iterate over [x].
+
+    For example, [append_iter a List.iter [1;2;3]] would add elements
+    [1], [2], and [3] at the end of [a].
+    [append_iter a Queue.iter q] adds elements from the queue [q]. *)
+
 val pop_last_opt : 'a t -> 'a option
-(** Remove and return the last element, or [None] if the
-    array is empty. *)
+(** [pop_last_opt a] removes and returns the last element of [a],
+    or [None] if the array is empty. *)
 
 val pop_last : 'a t -> 'a
-(** Remove the last element, or raise an exception if the
-    array is empty.
+(** [pop_last a] removes and returns the last element of [a], assuming
+    [a] is not empty.
     @raise Not_found on an empty array. *)
 
 val remove_last : 'a t -> unit
@@ -123,30 +139,41 @@ val remove_last : 'a t -> unit
     if [is_empty a]. *)
 
 val copy : 'a t -> 'a t
-(** Shallow copy. *)
+(** [copy a] is a shallow copy of [a], that can be modified independently. *)
 
 val truncate : 'a t -> int -> unit
-(** Truncate to the given size (remove elements above this size).
-    Does nothing if the parameter is bigger than the current size.
+(** [truncate a n] truncates [a] to have at most [n] elements.
 
-    [truncate arr n] is similar to:
-    [while length arr > n do ignore (pop_exn arr) done] *)
+    It removes elements whose index is great or equal than [n].
+    It does nothing if [n >= length a].
 
-val shrink_capacity : 'a t -> unit
-(** Shrink internal array to fit the size of the array. This can be useful
-    to make sure there is no memory wasted on a long-held array. *)
+    It is similar to:
+    {[
+      while length a > n do
+        remove_last a
+      done
+    ]} *)
+
+val fit_capacity : 'a t -> unit
+(** [fit_capacity a] shrinks the internal array to fit [length a] exactly,
+    with no additional empty space at the end. This can be useful
+    to make sure there is no memory wasted on a long-lived array.
+    This does nothing if [a] is already full. *)
 
 val iter : ('a -> unit) -> 'a t -> unit
-(** Iterate on the array's content. *)
+(** [iter f a] calls [f] on each element of [a], in increasing index order. *)
 
 val iteri : (int -> 'a -> unit) -> 'a t -> unit
-(** Iterate on the array, with indexes. *)
+(** [iteri f a] calls [f i x] for each [x] at index [i] in [a].. *)
 
 val map : ('a -> 'b) -> 'a t -> 'b t
-(** Map elements of the array, yielding a new array. *)
+(** [map f a] is a new array of length [length a], with elements mapped
+    from [a] using [f].
+
+    It is similar to [to_array a |> Array.map f |> of_array]. *)
 
 val mapi : (int -> 'a -> 'b) -> 'a t -> 'b t
-(** [map f v] is just like {!map}, but it also passes in the index
+(** [mapi f v] is just like {!map}, but it also passes in the index
     of each element as the first argument to the function [f]. *)
 
 val filter : ('a -> bool) -> 'a t -> 'a t
@@ -160,20 +187,25 @@ val filter_map : ('a -> 'b option) -> 'a t -> 'b t
   It is similar to {!List.filter_map}. *)
 
 val fold_left : ('b -> 'a -> 'b) -> 'b -> 'a t -> 'b
-(** Fold on elements of the array *)
+(** [fold_left f acc a] folds [f] over [a] starting with accumulator [acc].
+
+    It is similar to [Array.fold_left f acc (to_array a)]. *)
 
 val exists : ('a -> bool) -> 'a t -> bool
+(** [exists f a] returns [true] if some element of [a] satisfies [f]. *)
 
 val for_all : ('a -> bool) -> 'a t -> bool
+(** [for_all f a] returns [true] if all elements of [a] satisfie [f].
+    This includes the case where [a] is empty. *)
 
 val get : 'a t -> int -> 'a
-(** [get a i] is the [i]-th element of [a].
+(** [get a i] is the [i]-th element of [a], starting with index [0].
     @raise Invalid_argument if the index is
       invalid (i.e. not in [[0.. length a-1]]). *)
 
 val set : 'a t -> int -> 'a -> unit
 (** [set a i x] sets the [i]-th element of [a] to be [x].
-    Just like {!Array.set}, indexing starts at 0.
+    Just like {!get}, indexing starts at 0.
     @raise Invalid_argument if the index is invalid. *)
 
 val blit : 'a t -> int -> 'a t -> int -> int -> unit
@@ -184,12 +216,18 @@ val blit : 'a t -> int -> 'a t -> int -> int -> unit
     @raise Invalid_argument if the indices or lengthts are not valid.
 *)
 
+val rev : 'a t -> 'a t
+(** [rev a] is a new array containing the same elements as [a], but in the
+    reverse order. *)
+
 val length : _ t -> int
-(** Number of elements in the array. *)
+(** [length a] is the number of elements in the array.
+    The last element of [a], if not empty, is [get a (length a - 1)].
+    This operation is constant time. *)
 
 val of_array : 'a array -> 'a t
 (** [of_array a] returns a array corresponding to the array [a].
-    Operates in [O(n)] time. *)
+    Operates in [O(n)] time by making a copy. *)
 
 val of_list : 'a list -> 'a t
 (** [of_list l] is the array containing the elements of [l] in
@@ -203,11 +241,15 @@ val to_list : 'a t -> 'a list
 (** [to_list a] is a list with the elements contained in the array [a]. *)
 
 val of_seq : 'a Seq.t -> 'a t
-(** Convert a sequence of items to an array containing them in the
-    same order. *)
+(** [of_seq seq] is an array containing the same elements as [seq].
+
+    It traverses [seq] only once and will terminate only if [seq] is finite. *)
 
 val to_seq : 'a t -> 'a Seq.t
-(** [of_seq a] is the sequence of items [get a 0], [get a 1], etc. *)
+(** [of_seq a] is the sequence of items [get a 0], [get a 1], etc.
+    This sequence can be safely reused multiple times as long as [a]
+    is not changed in the mean time. *)
 
 val to_seq_rev : 'a t -> 'a Seq.t
-(** Iterate over the array, starting from the last (top) element. *)
+(** [to_seq_rev a] is like [to_seq (rev a)].
+    It yields the last element of [a] first. *)
