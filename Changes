@@ -75,6 +75,9 @@ Working version
 - #11475: Make Unix terminal interface bindings domain-safe
   (Olivier Nicole and Xavier Leroy, review by Xavier Leroy)
 
+- #11479: Make Unix.symlink domain-safe on Windows
+  (Olivier Nicole, review by Xavier Leroy and David Allsopp)
+
 ### Tools:
 
 - #9290: Add a directive to switch off debugging in toplevel.
