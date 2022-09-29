@@ -108,13 +108,13 @@ let[@inline] clear v =
 
 let[@inline] is_empty v = v.size = 0
 
-let[@inline] unsafe_push_last v x =
+let[@inline] unsafe_add_last v x =
   Array.set v.arr v.size x;
   v.size <- v.size + 1
 
-let push_last v x =
+let add_last v x =
   if v.size = Array.length v.arr then actually_grow_with_ v ~filler:x;
-  unsafe_push_last v x
+  unsafe_add_last v x
 
 let append a b =
   if array_is_empty_ a then (
@@ -137,7 +137,7 @@ let[@inline] set v i x =
   if i < 0 || i >= v.size then invalid_arg "Dynarray.set";
   Array.set v.arr i x
 
-let append_seq a seq = Seq.iter (fun x -> push_last a x) seq
+let append_seq a seq = Seq.iter (fun x -> add_last a x) seq
 
 let append_array a b =
   let len_b = Array.length b in
@@ -155,11 +155,11 @@ let append_list a b = match b with
   | x :: _ ->
     (* use [x] as the filler, in case the array is empty.
        We ensure capacity once, then we can skip the resizing checks
-       and use {!unsafe_push_last}. *)
+       and use {!unsafe_add_last}. *)
     let len_a = a.size in
     let len_b = List.length b in
     ensure_capacity_with ~filler:x a (len_a + len_b);
-    List.iter (unsafe_push_last a) b
+    List.iter (unsafe_add_last a) b
 
 let pop_last v =
   if v.size = 0 then raise Not_found;
@@ -246,7 +246,7 @@ let fold_left f acc v =
 
 let filter f a =
   let b = create() in
-  iter (fun x -> if f x then push_last b x) a;
+  iter (fun x -> if f x then add_last b x) a;
   b
 
 let filter_map f a =
@@ -254,7 +254,7 @@ let filter_map f a =
   iter (fun x ->
       match f x with
       | None -> ()
-      | Some y -> push_last b y)
+      | Some y -> add_last b y)
     a;
   b
 
@@ -308,7 +308,7 @@ let of_list l = match l with
   | x::_ ->
     let v = create() in
     ensure_capacity_with v (List.length l) ~filler:x;
-    List.iter (unsafe_push_last v) l;
+    List.iter (unsafe_add_last v) l;
     v
 
 let to_array v =
