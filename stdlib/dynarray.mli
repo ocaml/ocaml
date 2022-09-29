@@ -22,7 +22,7 @@ type 'a t
 (** A dynamic array containing values of type ['a].
 
     This contains an underlying {!array} along with a size.
-    Operations such as {!push_last}, {!append}, and {!append_seq}, extend the
+    Operations such as {!add_last}, {!append}, and {!append_seq}, extend the
     size (and might reallocate the underlying array).
 
     Operations such as {!pop}, and {!truncate}, reduce the size. *)
@@ -72,16 +72,16 @@ val ensure_capacity_nonempty : 'a t -> int -> unit
 val is_empty : 'a t -> bool
 (** Is the array empty? This is synonymous to [length a = 0]. *)
 
-val push_last : 'a t -> 'a -> unit
-(** [push_last a x] adds the element [x] at the end of the array [a].
+val add_last : 'a t -> 'a -> unit
+(** [add_last a x] adds the element [x] at the end of the array [a].
 
     This might grow the underlying storage of [a] if it is full.
 
-    Calling [push_last a] n times is amortized O(n) complexity,
+    Calling [add_last a] n times is amortized O(n) complexity,
     and O(ln(n)) reallocations of the underlying array. *)
 
-val unsafe_push_last : 'a t -> 'a -> unit
-(** [unsafe_push_last a x] pushes [x] as the last element of [a],
+val unsafe_add_last : 'a t -> 'a -> unit
+(** [unsafe_add_last a x] pushes [x] as the last element of [a],
     assuming there is capacity for it in [a] already
     (e.g. using {!ensure_capacity}).
 
