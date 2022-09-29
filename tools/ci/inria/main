@@ -170,6 +170,7 @@ case "${OCAML_ARCH}" in
     instdir='C:/ocamlmgw'
     cleanup=true
     check_make_alldepend=true
+    init_submodule=true
   ;;
   mingw64)
     build='--build=x86_64-pc-cygwin'
@@ -177,6 +178,7 @@ case "${OCAML_ARCH}" in
     instdir='C:/ocamlmgw64'
     cleanup=true
     check_make_alldepend=true
+    init_submodule=true
   ;;
   msvc)
     build='--build=i686-pc-cygwin'
