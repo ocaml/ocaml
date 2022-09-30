@@ -83,8 +83,8 @@ values. It encodes objects of several base types (integers,
 floating-point numbers, strings,~\ldots) as well as OCaml data
 structures. The type "value" and the associated conversion
 functions and macros are described in detail below.  For instance,
-here is the declaration for the C function implementing the "input"
-primitive:
+here is the declaration for the C function implementing the "In_channel.input"
+primitive, which takes 4 arguments:
 \begin{verbatim}
 CAMLprim value input(value channel, value buffer, value offset, value length)
 {
@@ -140,25 +140,23 @@ actually implements the primitive, taking native C values as
 arguments and returning a native C value. The second function,
 often called the ``stub code'', is a simple wrapper around the first
 function that converts its arguments from OCaml values to C values,
-call the first function, and convert the returned C value to OCaml
-value. For instance, here is the stub code for the "input"
+calls the first function, and converts the returned C value to an OCaml
+value. For instance, here is the stub code for the "Int64.float_of_bits"
 primitive:
 \begin{verbatim}
-CAMLprim value input(value channel, value buffer, value offset, value length)
+CAMLprim value caml_int64_float_of_bits(value vi)
 {
-  return Val_long(getblock((struct channel *) channel,
-                           &Byte(buffer, Long_val(offset)),
-                           Long_val(length)));
+  return caml_copy_double(caml_int64_float_of_bits_unboxed(Int64_val(vi)));
 }
 \end{verbatim}
-(Here, "Val_long", "Long_val" and so on are conversion macros for the
-type "value", that will be described later.  The "CAMLprim" macro
+(Here, "caml_copy_double" and "Int64_val" are conversion functions and
+macros for the type "value", that will be described later.  The "CAMLprim" macro
 expands to the required compiler directives to ensure that the
 function is exported and accessible from OCaml.)
-The hard work is performed by the function "getblock", which is
+The hard work is performed by the function "caml_int64_float_of_bits_unboxed", which is
 declared as:
 \begin{verbatim}
-long getblock(struct channel * channel, char * p, long n)
+double caml_int64_float_of_bits_unboxed(int64_t i)
 {
   ...
 }
