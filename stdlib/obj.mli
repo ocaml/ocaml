@@ -75,6 +75,36 @@ external with_tag : int -> t -> t = "caml_obj_with_tag"
   (* @since 4.09.0 *)
 
 val null : t
+(** This value is a dangerous beast that must not be released into the wild.
+
+    It is intended to be used for filling undefined fields of mutable data
+    structures.
+
+    You are responsible for NEVER letting it escape from your own control.
+    This would break the invariants of other code (including the stdlib)
+    using this for the intended use case. You should not have to check a
+    user provided value for nullity.
+
+    * Do not return a value that can be the [null] value outside of you code
+    * Do not pass it as argument to any function that you didn't write
+
+    This is ok
+    {[module M : sig type t val v : t end = struct
+        type t = { mutable x : Obj.t }
+        let v = { x = Obj.null }
+    ]}
+
+    This is not
+    {[module M : sig type 'a t val v : 'a t end = struct
+        type 'a t = Obj.t
+        let v = Obj.null
+    ]}
+
+    {[Obj.null == a]} is guaranteed to be true iff a is aliased to Obj.null
+    {[Marshal.from_string 0 (Marshal.to_string Obj.null []) == Obj.null]} is
+    always true
+
+    @since 5.00.0 *)
 
 val first_non_constant_constructor_tag : int
 val last_non_constant_constructor_tag : int
