@@ -2947,8 +2947,14 @@ let combine_variant loc row arg partial ctx def (tag_lambda_list, total1, _pats)
         | [ (_, act1) ], [ (_, act2) ] when fail = None ->
             test_int_or_block arg act1 act2
         | _, [] ->
-            (* One can compare integers and pointers *)
-            make_test_sequence_variant_constant fail arg consts
+            begin match fail with
+            | None ->
+              make_test_sequence_variant_constant fail arg consts
+            | Some act ->
+              test_int_or_block arg
+                (make_test_sequence_variant_constant fail arg consts)
+                act
+            end
         | [], _ -> (
             let lam = call_switcher_variant_constr loc fail arg nonconsts in
             (* One must not dereference integers *)
