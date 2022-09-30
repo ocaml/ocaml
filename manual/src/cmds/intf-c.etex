@@ -140,7 +140,7 @@ actually implements the primitive, taking native C values as
 arguments and returning a native C value. The second function,
 often called the ``stub code'', is a simple wrapper around the first
 function that converts its arguments from OCaml values to C values,
-call the first function, and convert the returned C value to OCaml
+calls the first function, and converts the returned C value to an OCaml
 value. For instance, here is the stub code for the "Int64.float_of_bits"
 primitive:
 \begin{verbatim}
