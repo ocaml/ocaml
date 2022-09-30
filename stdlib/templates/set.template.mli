@@ -287,7 +287,7 @@ module type S =
 
     val to_list : t -> elt list
     (** [to_list s] is {!elements}[ s].
-        @since 5.0.1 *)
+        @since 5.1.0 *)
 
     val of_list: elt list -> t
     (** [of_list l] creates a set from a list of elements.
