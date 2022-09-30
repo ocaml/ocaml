@@ -153,7 +153,7 @@ CAMLprim value caml_int64_float_of_bits(value vi)
 macros for the type "value", that will be described later.  The "CAMLprim" macro
 expands to the required compiler directives to ensure that the
 function is exported and accessible from OCaml.)
-The hard work is performed by the function "caml_int64_of_bits_unboxed", which is
+The hard work is performed by the function "caml_int64_float_of_bits_unboxed", which is
 declared as:
 \begin{verbatim}
 double caml_int64_float_of_bits_unboxed(int64_t i)
