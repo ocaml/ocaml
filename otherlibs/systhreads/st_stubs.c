@@ -386,9 +386,8 @@ static void caml_thread_domain_stop_hook(void) {
   };
 }
 
-CAMLprim value caml_thread_initialize_domain(value v)
+static void caml_thread_domain_initialize_hook(void)
 {
-  CAMLparam0();
 
   caml_thread_t new_thread;
 
@@ -410,7 +409,6 @@ CAMLprim value caml_thread_initialize_domain(value v)
 
   Active_thread = new_thread;
 
-  CAMLreturn(Val_unit);
 }
 
 CAMLprim value caml_thread_yield(value unit);
@@ -448,13 +446,14 @@ CAMLprim value caml_thread_initialize(value unit)
   st_tls_newkey(&caml_thread_key);
 
   /* First initialise the systhread chain on this domain */
-  caml_thread_initialize_domain(Val_unit);
+  caml_thread_domain_initialize_hook();
 
   prev_scan_roots_hook = atomic_exchange(&caml_scan_roots_hook,
                                          caml_thread_scan_roots);
   caml_enter_blocking_section_hook = caml_thread_enter_blocking_section;
   caml_leave_blocking_section_hook = caml_thread_leave_blocking_section;
   caml_domain_external_interrupt_hook = caml_thread_interrupt_hook;
+  caml_domain_initialize_hook = caml_thread_domain_initialize_hook;
   caml_domain_stop_hook = caml_thread_domain_stop_hook;
 
   caml_atfork_hook = caml_thread_reinitialize;
