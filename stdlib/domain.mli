@@ -47,12 +47,6 @@ val before_first_spawn : (unit -> unit) -> unit
 
     @raise Invalid_argument if the program has already spawned a domain. *)
 
-val at_each_spawn : (unit -> unit) -> unit
-(** [at_each_spawn f] registers [f] to be called on the newly spawned domains.
-    The function [f] is executed before the callback [g] specified in [spawn g]
-    is executed. The registered functions are called in 'first in, first out'
-    order: the oldest function added with [at_each_spawn] is called first. *)
-
 val at_exit : (unit -> unit) -> unit
 (** [at_exit f] registers [f] to be called when the current domain exits. Note
     that [at_exit] callbacks are domain-local and only apply to the calling
